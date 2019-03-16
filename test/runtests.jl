@@ -2,5 +2,8 @@ using Numa
 using Test
 
 @testset "Numa.jl" begin
-    # Write your own tests here.
+  @time @testset "Polynomial" begin include("polynomialtests.jl") end
+  #@time @testset "Polytope" begin include("polytopetests.jl") end
+  #@time @testset "RefFE" begin include("reffetests.jl") end
+  #@time @testset "Mesh" begin include("meshtests.jl") end
 end
