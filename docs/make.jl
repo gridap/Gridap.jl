@@ -8,6 +8,6 @@ makedocs(
         )
 
 deploydocs(
-           repo = "github.com/LSSC-team/Numa.jl.git"
+           repo = "github.com/lssc-team/Numa.jl.git"
           )
 

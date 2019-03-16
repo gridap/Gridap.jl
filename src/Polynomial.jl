@@ -3,14 +3,13 @@ export TensorProductMonomialBasis
 export TensorProductLagrangianPolynomialBasis
 
 export PolynomialBasis
-export LagrangianPolynomialBasis
 export MonomialBasis
+export LagrangianPolynomialBasis
 
 export derivative, tensorproduct!, gradient, tensorproductsquare!
 
 export gradient
 
-#abstract type TensorProductPolynomialBasis end
 abstract type PolynomialBasis end
 
 struct MonomialBasis <: PolynomialBasis
@@ -23,19 +22,21 @@ struct LagrangianPolynomialBasis
     weights::Vector{Float64}
 end
 
-"""
-PolynomialBasis(order::Int;
-                basistype::String="Lagrangian",
-                nodestype::String="Equispaced")
-
-Create 1-dim polynomial basis of type [`Lagrangian`, `Monomial`] for a given order and a set of nodes. The nodes can be equispaced or Chebyshev nodes of second kind and take values [`Equispaced`, `Chebyshev`]
-
-See also: [`(polynomials::LagrangianPolynomialBasis)`](@ref)
+#"""
+#PolynomialBasis(order::Int;
+#                basistype::String="Lagrangian",
+#                nodestype::String="Equispaced")
+#
+#Create 1-dim polynomial basis of type [`Lagrangian`, `Monomial`] for a given order and a set of nodes. The nodes can be equispaced or Chebyshev nodes of second kind and take values [`Equispaced`, `Chebyshev`]
+#
+#See also: [`(polynomials::LagrangianPolynomialBasis)`](@ref)
 
 # Examples
-```jldoctest
-julia> a = LagrangianPolynomialBasis(2,nodestype="Equispaced")
-```
+#```jldoctest
+#julia> a = LagrangianPolynomialBasis(2,nodestype="Equispaced")
+#```
+"""
+   Create 1-dim polynomial basis of type [`Lagrangian`, `Monomial`] for a given order and a set of nodes. The nodes can be equispaced or Chebyshev nodes of second kind and take values [`Equispaced`, `Chebyshev`]
 """
 function PolynomialBasis(order::Int64; basistype::String="Lagrangian", nodestype::String="Equispaced")
     if basistype=="Lagrangian"
@@ -63,31 +64,26 @@ function LagrangianPolynomialBasis(order::Int64; nodestype::String="Equispaced")
     return LagrangianPolynomialBasis(order,nodescoordinates,weights)
 end
 
-"""
-(polynomials::LagrangianPolynomialBasis)(x)
-
-Evaluate all the elements of the 1-dim Lagrangian polynomial basis at a given point x using the modified Lagrangian formula, see [The numerical stability of barycentric Lagrange interpolation, N. Higham, IMA Journal of Numerical Analysis (2004) 24, 547–556](http://www.maths.manchester.ac.uk/~higham/narep/narep440.pdf). I previously implemented a modification of the barycentric formula in [Barycentric Lagrange Interpolation, J-L Berrut and Ll. N. Trefethen, SIAM Review 46(3), pp. 501-517, 2004](https://people.maths.ox.ac.uk/trefethen/barycentric.pdf).
-
-"""
+#"""
+#(polynomials::LagrangianPolynomialBasis)(x)
+#
+#Evaluate all the elements of the 1-dim Lagrangian polynomial basis at a given point x using the modified Lagrangian formula, see [The numerical stability of barycentric Lagrange interpolation, N. Higham, IMA Journal of Numerical Analysis (2004) 24, 547–556](http://www.maths.manchester.ac.uk/~higham/narep/narep440.pdf). I previously implemented a modification of the barycentric formula in [Barycentric Lagrange Interpolation, J-L Berrut and Ll. N. Trefethen, SIAM Review 46(3), pp. 501-517, 2004](https://people.maths.ox.ac.uk/trefethen/barycentric.pdf).
+#
+#"""
 function (polynomials::LagrangianPolynomialBasis)(x)
     ordp1 = length(polynomials.nodescoordinates)
     aux = polynomials.nodescoordinates.-x
     praux = prod(aux)
     # Modified Lagrangian formula
     return [ (x ≈ polynomials.nodescoordinates[i]) ? 1.0 : praux*polynomials.weights[i]/aux[i] for i=1:ordp1 ]
-    # return [prod(aux)*polynomials.weights[i]/aux[i] for i=1:ordp1]
-    # Barycentric formula (W/ small modification)
-    #`` \ell_j(x) \doteq \frac{w_j}{(x-x_j)\sum_{k \noteq j}\frac{w_k}{x-x_k}+w_j}.``
-    #aux2 = (aux.^(-1)).*polynomials.weights
-    #return [ 1/(1+(aux[i]/polynomials.weights[i])*(sum(aux2[1:i-1])+sum(aux2[i+1:ordp1]))) for i=1:ordp1]
 end
 
-"""
-
-Evaluate all the elements of the 1-dim monomial basis at a given point x.
-
-See also: [`TensorProductMonomialPolynomialBasis`](@ref)
-"""
+#"""
+#
+#Evaluate all the elements of the 1-dim monomial basis at a given point x.
+#
+#See also: [`TensorProductMonomialPolynomialBasis`](@ref)
+#"""
 function (monomials::MonomialBasis)(x::Array{Float64,1})
     #return hcat([x.^(i-1) for i = 1:monomials.order+1]'...)
     c = Array{Float64,2}(undef,monomials.order+1,size(x,1))
@@ -99,11 +95,11 @@ function (monomials::MonomialBasis)(x::Array{Float64,1})
     return c
 end
 
-"""
-derivative(monomial::MonomialBasis,numder::Int64,x::Array{Float64,1})
-
-Compute the numder-th derivative of a monomial at point x
-"""
+#"""
+#derivative(monomial::MonomialBasis,numder::Int64,x::Array{Float64,1})
+#
+#Compute the numder-th derivative of a monomial at point x
+#"""
 function derivative(monomials::MonomialBasis,numder::Int64,x::Array{Float64,1})
     #c = prod([i-j for j=0:numder-1])*x^(i-numder) for i=numder:monomials.order+1]
     c = Array{Float64,2}(undef,monomials.order+1,size(x,1))
@@ -121,34 +117,34 @@ struct TensorProductPolynomialBasis
     polynomials::Array{PolynomialBasis,1}
 end
 
-"""
-
-TensorProductLagrangianPolynomial(order::Int; basistype::String="Lagrangian", nodestype::String="Equispaced")
-
-Create a multi-dimensional tensor product polynomial basis [`Lagrangian`,`Monomial`] for a given order and a set of nodes. For a Lagrangian basis, the nodes can be equispaced or Chebyshev nodes of second kind and take values [`Equispaced`,`Chebyshev`]
-
-# Examples
-```jldoctest
-julia> a = TensorProductPolynomialBasis([2,4]; basistype="Lagrangian", nodestype="Equispaced")
-julia> b = [1 2; 3 4]
-julia> mapslices(a,b,dims=[2])
-```
-"""
+#"""
+#
+#TensorProductLagrangianPolynomial(order::Int; basistype::String="Lagrangian", nodestype::String="Equispaced")
+#
+#Create a multi-dimensional tensor product polynomial basis [`Lagrangian`,`Monomial`] for a given order and a set of nodes. For a Lagrangian basis, the nodes can be equispaced or Chebyshev nodes of second kind and take values [`Equispaced`,`Chebyshev`]
+#
+## Examples
+#```jldoctest
+#julia> a = TensorProductPolynomialBasis([2,4]; basistype="Lagrangian", nodestype="Equispaced")
+#julia> b = [1 2; 3 4]
+#julia> mapslices(a,b,dims=[2])
+#```
+#"""
 function TensorProductPolynomialBasis(order::Vector{Int64}; basistype="Lagrangian", nodestype="Equispaced")
     polynomials = TensorProductPolynomialBasis([PolynomialBasis(order[i],
                   basistype=basistype, nodestype=nodestype) for i=1:length(order)])
 end
 
-"""
-TensorProductPolynomialBasis(order::Vector{Int},nodestype)
-
-Compute the n-dim tensor product polynomial basis given n 1D polynomial bases.
-# Examples
-```jldoctest
-julia> a = TensorProductPolynomialBasis([2,4]; basistype="Lagrangian", nodestype="Equispaced")
-julia> b = a([0.0, 1.0])
-```
-"""
+#"""
+#TensorProductPolynomialBasis(order::Vector{Int},nodestype)
+#
+#Compute the n-dim tensor product polynomial basis given n 1D polynomial bases.
+## Examples
+#```jldoctest
+#julia> a = TensorProductPolynomialBasis([2,4]; basistype="Lagrangian", nodestype="Equispaced")
+#julia> b = a([0.0, 1.0])
+#```
+#"""
 function (a::TensorProductPolynomialBasis)(x::Array{Float64,2})
     numdims = length(a.polynomials)
     @assert numdims == size(x,2) "Point dim and polynomial basis dim must be identical"
@@ -215,13 +211,6 @@ end
     end
 end
 
-        # @nloops $N i A begin
-        #     t = @ntuple $N i; d = length(t)
-        #     dim = t[d]
-        #     nodedim = t[dim]
-        #     (@nref $N A i) = c[dim][nodedim]
-        # end
-
 function gradient(a::TensorProductPolynomialBasis, x::Array{Array{Float64,1},1})
     spdims = length(a.polynomials)
     c = [a.polynomials[i](x[i]) for i=1:spdims]
@@ -244,7 +233,6 @@ function gradient(a::TensorProductPolynomialBasis, x::Array{Array{Float64,1},1})
     end
     return grad
 end
-
 
 function gradient(a::TensorProductPolynomialBasis, x::Array{Float64,2})
     spdims = length(a.polynomials)
