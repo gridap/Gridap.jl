@@ -58,26 +58,26 @@ grads = gradient(polb,x)
 @test (grads[end,2,2]==192.0)
 ##
 
-## Efficient evaluation of tensor product functions
-###
-#orders=[2,3]
-#gps=[1,2]
-#quad = Quadrature(gps)
-#a=TensorProductPolynomialBasis(orders, basistype="Monomial")
-#numdims = length(a.polynomials)
-#A = a(quad.points)
-#@test size(A,1)== 12
-#@test A[4,1] ≈ -1/√3
-#@test A[4,2] ≈ 1/√3
-###
-#
-## Evaluate tensor product-based computation of monomial basis gradients
-###
-#orders=[2,3]
-#gps=[1,2]
-#quad = Quadrature(gps)
-#a=TensorProductPolynomialBasis(orders, basistype="Monomial")
-#grad = gradient(a,quad.points)
-#@test size(grad)==(12,2,2)
-#@test grad[7,1,2]==-1.1547005383792517
-###
+# Efficient evaluation of tensor product functions
+##
+orders=[2,3]
+gps=[1,2]
+quad = Quadrature(gps)
+a=TensorProductPolynomialBasis(orders, basistype="Monomial")
+numdims = length(a.polynomials)
+A = a(quad.points)
+@test size(A,1)== 12
+@test A[4,1] ≈ -1/√3
+@test A[4,2] ≈ 1/√3
+##
+
+# Evaluate tensor product-based computation of monomial basis gradients
+##
+orders=[2,3]
+gps=[1,2]
+quad = Quadrature(gps)
+a=TensorProductPolynomialBasis(orders, basistype="Monomial")
+grad = gradient(a,quad.points)
+@test size(grad)==(12,2,2)
+@test grad[7,1,2]==-1.1547005383792517
+##
