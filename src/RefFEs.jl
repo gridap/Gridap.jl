@@ -1,8 +1,14 @@
 export LagrangianRefFE
 export shfsps, gradshfsps
 
+"""
+Abstract Reference Finite Element
+"""
 abstract type RefFE end
 
+"""
+Reference Finite Element a la Ciarlet, i.e., it relies on a local function (polynomial) space, an array of nodes (DOFs), and a polytope (cell topology). The rank of the approximating field can be arbitrary. The current implementation relies on the prebasis (e.g., monomial basis of polynomials) and a change-of-basis (using the node array) to generate the canonical basis, i.e., the shape functions.
+"""
 struct LagrangianRefFE<:RefFE
 	polytope::Polytope
 	prebasis::TensorProductPolynomialBasis
@@ -24,17 +30,13 @@ struct LagrangianRefFE<:RefFE
 		spdim=dim(polytope)
 		numdof = size(changeofbasis,1)*(spdim)^rank
 		reffe=new(polytope, prebasis, nodes, changeofbasis, dofsnface, rank, numdof)
-        # reffe=new()
-		# reffe.polytope=polytope
-		# reffe.nodes=NodesArray(polytope,orders)
-		# reffe.prebasis=TensorProductPolynomialBasis(orders, basistype="Monomial")
-		# dofspb=reffe.prebasis(reffe.nodes.coordinates)
-		# reffe.changeofbasis=inv(dofspb)
-		# reffe.dofsnface=reffe.nodes.nfacenodes
-		# reffe.rank=rank
         return reffe
     end
 end
+
+"""
+Compute shape functions in a set of points
+"""
 function shfsps(reffe::LagrangianRefFE,points)
 	spdim=dim(reffe.polytope)
 	scalm=reffe.changeofbasis*reffe.prebasis(points)
@@ -50,19 +52,9 @@ function shfsps(reffe::LagrangianRefFE,points)
 	return shfss
 end
 
-# @generated function tensorfill!(A::Array{T,N},c) where {T,N}
-#     quote
-#         @nloops $N i rg begin
-# 			shfval[rgshfdim]
-#
-#             t = @ntuple $N i; d = length(t)
-#             dim = t[d]
-#             nodedim = t[dim]
-#             (@nref $N A i) = c[dim][nodedim]
-#         end
-#     end
-# end
-
+"""
+Compute shape functions gradients (to be re-implemented)
+"""
 function gradshfsps(reffe::LagrangianRefFE,points)
 	spdim = length(reffe.prebasis.polynomials)
 	grad  = gradient(reffe.prebasis,points)
