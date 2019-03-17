@@ -8,4 +8,5 @@ using Test
   @time @testset "Polytopes" begin include("polytopetests.jl") end
   @time @testset "RefFEs" begin include("reffetests.jl") end
   @time @testset "Meshes" begin include("meshtests.jl") end
+  @time @testset "FESpaces" begin include("fespacetests.jl") end
 end

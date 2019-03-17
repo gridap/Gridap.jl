@@ -10,6 +10,6 @@ include("Quadratures.jl")
 include("Polytopes.jl")
 include("RefFEs.jl")
 include("Meshes.jl")
-#include("FESpace.jl")
+include("FESpaces.jl")
 #include("BilinearForm.jl")
 end #module
