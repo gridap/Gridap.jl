@@ -1,6 +1,7 @@
 export CellArray, IndexableCellArray
 export CellFieldValues, CellBasisValues
 export CellScalars, CellVectors, CellMatrices
+export ConstantCellArray
 
 """
 Abstract type representing an iterable collection of Arrays{T,N},
@@ -80,3 +81,19 @@ associated with a collection of points in each cell
 """
 const CellMatrices{T} = CellArray{T,3} where T
 
+
+# Concrete implementations
+
+"""
+Concrete implementation of CellArray, where the same array
+is associated to all cells. Typically, this is useful for
+discretizations with a single cell type.
+"""
+struct ConstantCellArray{T,N} <: IndexableCellArray{T,N}
+  array::Array{T,N}
+  length::Int
+end
+
+Base.getindex(self::ConstantCellArray,cell::Int) = self.array
+
+Base.length(self::ConstantCellArray) = self.length
