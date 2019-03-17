@@ -11,5 +11,5 @@ include("Polytopes.jl")
 include("RefFEs.jl")
 include("Meshes.jl")
 include("FESpaces.jl")
-#include("BilinearForm.jl")
+include("BilinearForms.jl")
 end #module

@@ -9,4 +9,5 @@ using Test
   @time @testset "RefFEs" begin include("reffetests.jl") end
   @time @testset "Meshes" begin include("meshtests.jl") end
   @time @testset "FESpaces" begin include("fespacetests.jl") end
+  @time @testset "BilinearForms" begin include("bilinearformtests.jl") end
 end
