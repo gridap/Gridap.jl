@@ -1,6 +1,9 @@
 export FESpace
 export globalnumbering, computelgidvefs
 
+"""
+FE Space structure, where only one RefFE is possible in the whole mesh (to be improved in the future)
+"""
 struct FESpace
 	reffe::LagrangianRefFE
 	mesh::Mesh
