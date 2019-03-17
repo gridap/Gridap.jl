@@ -48,6 +48,12 @@ end
 # TODO: To discuss. I (@fverdugo) think that it is not required to
 # define new abstract types to represent the following concepts. They can be
 # expressed all of them as CellArrays for specific values of the N parameter
+# EDIT: Perhaps it is not even necessary to define the following
+# aliases and work always with CellArrays with the corresponding
+# type parameters depending of the context (see ConstantCellQuadrature
+# where I am using ConstantCellArray{T,1} instead
+# of introducing a new ConstantCellFieldValues{T}).
+# This would heavily reduce the number of names in the library
 
 """
 Abstract type that represents a field with value of type T
