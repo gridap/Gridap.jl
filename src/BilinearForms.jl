@@ -13,8 +13,6 @@ export assemblesystem
 # export RequiredOpDict
 # export requireddiffops!
 
-
-
 struct RefFEValues
 	id::Array{Float64}
 	grad::Array{Float64}
