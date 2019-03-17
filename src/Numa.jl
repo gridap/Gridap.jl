@@ -2,6 +2,9 @@ __precompile__()
 
 module Numa
 using Base.Cartesian
+include("Helpers.jl")
+include("CellArrays.jl")
+include("CellQuadratures.jl")
 include("Polynomial.jl")
 #include("Polytope.jl")
 #include("RefFE.jl")
