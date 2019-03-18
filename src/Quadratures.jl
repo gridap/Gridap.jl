@@ -1,7 +1,7 @@
 using QuadGK
 
 export Quadrature, coordinates, weights
-export TensorProductQuadratureWithPoints, TensorProductQuadratureOld
+export TensorProductQuadrature, TensorProductQuadratureOld
 
 """
 Abstract type representing a quadrature rule on a Polytope in a space of D dimensions
@@ -17,12 +17,12 @@ weights(::Quadrature)::Array{Float64,1} = @abstractmethod
 """
 Tensor product quadrature rule (nodes and weights) on a hyper cube [-1,1]^D
 """
-struct TensorProductQuadratureWithPoints{D} <: Quadrature{D}
+struct TensorProductQuadrature{D} <: Quadrature{D}
 
   coords::Array{Point{D},1}
   weights::Array{Float64,1}
 
-  function TensorProductQuadratureWithPoints{D}(;orders::Array{Int,1}) where D
+  function TensorProductQuadrature{D}(;orders::Array{Int,1}) where D
     @assert D == length(orders)
     npoints = [ ceil(Int,(orders[i]+1.0)/2.0) for i in 1:D ]
     quads = [ gauss( eltype(Point{D}), npoints[i] ) for i in 1:D ]
@@ -53,9 +53,9 @@ function tensor_product(quads,npoints,::Val{D}) where D
   (flatten(coords), flatten(weights))
 end
 
-coordinates(self::TensorProductQuadratureWithPoints) = self.coords
+coordinates(self::TensorProductQuadrature) = self.coords
 
-weights(self::TensorProductQuadratureWithPoints) = self.weights
+weights(self::TensorProductQuadrature) = self.weights
 
 """
 Tensor product quadrature rule (nodes and weights) integrating exactly 2´order´-1 polynomials

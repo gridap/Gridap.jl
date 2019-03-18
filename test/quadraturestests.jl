@@ -1,6 +1,6 @@
 
 const D = 2
-quad = TensorProductQuadratureWithPoints{D}(orders=[2,4])
+quad = TensorProductQuadrature{D}(orders=[2,4])
 
 coords_ref = [
   -0.57735 0.57735 -0.57735 0.57735 -0.57735 0.57735;
