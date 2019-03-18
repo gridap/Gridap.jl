@@ -1,7 +1,7 @@
 using QuadGK
 
 export Quadrature, coordinates, weights
-export TensorProductQuadratureWithPoints, TensorProductQuadrature
+export TensorProductQuadratureWithPoints, TensorProductQuadratureOld
 
 """
 Abstract type representing a quadrature rule on a Polytope in a space of D dimensions
@@ -60,12 +60,12 @@ weights(self::TensorProductQuadratureWithPoints) = self.weights
 """
 Tensor product quadrature rule (nodes and weights) integrating exactly 2´order´-1 polynomials
 """
-struct TensorProductQuadrature
+struct TensorProductQuadratureOld
   points::Array{Array{Float64,1},1}
   weights::Array{Array{Float64,1},1}
   tppoints::Array{Float64,2}
   tpweights::Array{Float64,1}
-  function TensorProductQuadrature(gps::Array{Int64,1})
+  function TensorProductQuadratureOld(gps::Array{Int64,1})
     spdims = length(gps)
     points=Array{Array{Float64,1}}(undef,length(gps))
     weights=Array{Array{Float64,1}}(undef,length(gps))

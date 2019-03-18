@@ -13,7 +13,7 @@ reffe = LagrangianRefFE(polytope,orders)
 orders=[1,1]
 polytope = Polytope([1,1])
 gps=[2,2]
-quad=TensorProductQuadrature(gps)
+quad=TensorProductQuadratureOld(gps)
 reffe = LagrangianRefFE(polytope,orders)
 shfs = shfsps(reffe,quad.points)
 gradshfs = gradshfsps(reffe,quad.points)
@@ -26,7 +26,7 @@ orders=[1]
 polytope = Polytope([1])
 #orders/2=gps
 gps=[2]
-quad=TensorProductQuadrature(gps)
+quad=TensorProductQuadratureOld(gps)
 reffe = LagrangianRefFE(polytope,orders)
 shfs = shfsps(reffe,quad.points)
 elmatgp=[ shfs[:,igp]*shfs[:,igp]' for igp=1:prod(gps)]
@@ -39,7 +39,7 @@ orders=[1,1]
 polytope = Polytope([1,1])
 #orders/2=gps
 gps=[2,2]
-quad=TensorProductQuadrature(gps)
+quad=TensorProductQuadratureOld(gps)
 reffe = LagrangianRefFE(polytope,orders)
 shfs = shfsps(reffe,quad.points)
 elmatgp=[ shfs[:,igp]*shfs[:,igp]' for igp=1:prod(gps)]
@@ -52,7 +52,7 @@ orders=[2,2]
 polytope = Polytope([1,1])
 #orders/2=gps
 gps=[3,3]
-quad=TensorProductQuadrature(gps)
+quad=TensorProductQuadratureOld(gps)
 reffe = LagrangianRefFE(polytope,orders)
 shfs = shfsps(reffe,quad.points)
 elmatgp=[ shfs[:,igp]*shfs[:,igp]' for igp=1:prod(gps)]
@@ -67,7 +67,7 @@ orders=[2,2,2]
 polytope = Polytope([1,1,1])
 #orders/2=gps
 gps=[6,6,6]
-quad=TensorProductQuadrature(gps)
+quad=TensorProductQuadratureOld(gps)
 reffe = LagrangianRefFE(polytope,orders)
 shfs = shfsps(reffe,quad.points)
 elmatgp=[ shfs[:,igp]*shfs[:,igp]' for igp=1:prod(gps)]
@@ -82,7 +82,7 @@ orders=[1]
 polytope = Polytope([1])
 #orders/2=gps
 gps=[4]
-quad=TensorProductQuadrature(gps)
+quad=TensorProductQuadratureOld(gps)
 reffe = LagrangianRefFE(polytope,orders)
 gradshfs = gradshfsps(reffe,quad.points)
 elmatgp = [ view(gradshfs,:,igp,:)*view(gradshfs,:,igp,:)' for igp=1:prod(gps)]
@@ -95,7 +95,7 @@ orders=[1,1]
 polytope = Polytope([1,1])
 #2*orders+1<2*gps
 gps=[2,2]
-quad=TensorProductQuadrature(gps)
+quad=TensorProductQuadratureOld(gps)
 reffe = LagrangianRefFE(polytope,orders)
 gradshfs = gradshfsps(reffe,quad.points)
 elmatgp = [ view(gradshfs,:,igp,:)*view(gradshfs,:,igp,:)' for igp=1:prod(gps)]
@@ -110,7 +110,7 @@ orders=[2,2]
 polytope = Polytope([1,1])
 #2*orders+1<2*gps
 gps=[4,4]
-quad=TensorProductQuadrature(gps)
+quad=TensorProductQuadratureOld(gps)
 reffe = LagrangianRefFE(polytope,orders)
 gradshfs = gradshfsps(reffe,quad.points)
 elmatgp = [ view(gradshfs,:,igp,:)*view(gradshfs,:,igp,:)' for igp=1:prod(gps)]
@@ -125,7 +125,7 @@ orders=[3,3,3]
 polytope = Polytope([1,1,1])
 #2*orders+1<2*gps
 gps=[4,4,4]
-quad=TensorProductQuadrature(gps)
+quad=TensorProductQuadratureOld(gps)
 reffe = LagrangianRefFE(polytope,orders)
 gradshfs = gradshfsps(reffe,quad.points)
 elmatgp = [ view(gradshfs,:,igp,:)*view(gradshfs,:,igp,:)' for igp=1:prod(gps)]
@@ -144,7 +144,7 @@ orders=order*ones(Int64,spdims)
 polytope = Polytope(ones(Int64,spdims))
 reffe = LagrangianRefFE(polytope,orders)
 gps=[2,2]
-quad=TensorProductQuadrature(gps)
+quad=TensorProductQuadratureOld(gps)
 shfscal = shfsps(reffe,quad.points)
 reffe = LagrangianRefFE(polytope,orders,2)
 shftens = shfsps(reffe,quad.points)
