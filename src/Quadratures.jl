@@ -57,6 +57,7 @@ coordinates(self::TensorProductQuadrature) = self.coords
 
 weights(self::TensorProductQuadrature) = self.weights
 
+
 """
 Tensor product quadrature rule (nodes and weights) integrating exactly 2´order´-1 polynomials
 """

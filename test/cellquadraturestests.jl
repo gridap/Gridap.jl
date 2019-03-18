@@ -36,4 +36,8 @@ for (iq,iw) in zip(quad)
   @test iw == w
 end
 
+ref_quad = TensorProductQuadrature{D}(orders=[5,4])
+quad2 = ConstantCellQuadrature(ref_quad,l)
+
+@test isa(quad2,CellQuadrature)
 
