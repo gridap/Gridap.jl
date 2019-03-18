@@ -5,7 +5,7 @@ orders=[2,2]
 polytope = Polytope([1,1])
 #2*orders+1<2*gps
 gps=[4,4]
-quad=Quadrature(gps)
+quad=TensorProductQuadrature(gps)
 reffe = LagrangianRefFE(polytope,orders)
 shfs = shfsps(reffe,quad.points)
 points = quad.points
@@ -29,7 +29,7 @@ orders=[3,3,3]
 polytope = Polytope([1,1,1])
 #2*orders+1<2*gps
 gps=[4,4,4]
-quad=Quadrature(gps)
+quad=TensorProductQuadrature(gps)
 reffe = LagrangianRefFE(polytope,orders)
 gradshfs = gradshfsps(reffe,quad.points)
 elmatgp = [ view(gradshfs,:,igp,:)*view(gradshfs,:,igp,:)' for igp=1:prod(gps)]
@@ -41,7 +41,7 @@ elmat = sum(quad.tpweights.*elmatgp)
 ##
 polytope = Polytope([1])
 orders=[1]; gps=[1]
-quad=Quadrature(gps)
+quad=TensorProductQuadrature(gps)
 reffe = LagrangianRefFE(polytope,orders)
 shfs = shfsps(reffe,quad.points)
 elmass = [ view(shfs,:,igp)*view(shfs,:,igp)' for igp=1:prod(gps)]
@@ -67,7 +67,7 @@ v = TrialFEBasis(fesp)
 #TrialSpace(u) should allow not to compute things twice
 gps1d=2
 gps=gps1d*ones(Int64, spdims)
-quad=Quadrature(gps)
+quad=TensorProductQuadrature(gps)
 feform = v*u
 sysmat = assemblesystem(feform, quad)
 feform = v*u

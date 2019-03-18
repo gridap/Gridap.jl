@@ -1,15 +1,15 @@
 using QuadGK
 
-export Quadrature
+export TensorProductQuadrature
 """
 Tensor product quadrature rule (nodes and weights) integrating exactly 2´order´-1 polynomials
 """
-struct Quadrature
+struct TensorProductQuadrature
 	points::Array{Array{Float64,1},1}
 	weights::Array{Array{Float64,1},1}
 	tppoints::Array{Float64,2}
 	tpweights::Array{Float64,1}
-	function Quadrature(gps::Array{Int64,1})
+	function TensorProductQuadrature(gps::Array{Int64,1})
 		spdims = length(gps)
 		points=Array{Array{Float64,1}}(undef,length(gps))
 		weights=Array{Array{Float64,1}}(undef,length(gps))
