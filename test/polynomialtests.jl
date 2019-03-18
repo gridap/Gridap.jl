@@ -62,7 +62,7 @@ grads = gradient(polb,x)
 ##
 orders=[2,3]
 gps=[1,2]
-quad = Quadrature(gps)
+quad = TensorProductQuadratureOld(gps)
 a=TensorProductPolynomialBasis(orders, basistype="Monomial")
 numdims = length(a.polynomials)
 A = a(quad.points)
@@ -75,7 +75,7 @@ A = a(quad.points)
 ##
 orders=[2,3]
 gps=[1,2]
-quad = Quadrature(gps)
+quad = TensorProductQuadratureOld(gps)
 a=TensorProductPolynomialBasis(orders, basistype="Monomial")
 grad = gradient(a,quad.points)
 @test size(grad)==(12,2,2)

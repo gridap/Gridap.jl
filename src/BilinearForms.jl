@@ -118,7 +118,7 @@ function requireddiffops!(feform::SumBilinearForm, reqoptest::RequiredOpDict, re
 	requireddiffops!(feform.cellm2, reqoptest, reqoptrial)
 end
 
-function refcelldiffops(reffe::RefFE, quad::Quadrature, dict::RequiredOpDict)
+function refcelldiffops(reffe::RefFE, quad::TensorProductQuadratureOld, dict::RequiredOpDict)
 	refval = [0]; refgrad = [0]
 	if get(dict.reqop, "Id", false)
 		refval = shfsps(reffe,quad.points)
@@ -188,7 +188,7 @@ function assemblecellmatrix!(elmat::Array{Float64,2}, sysmat::Array{Float64,2}, 
 	vsysm+=elmat
 end
 
-function assemblesystem(feform::AbstractBilinearForm,quad::Quadrature)
+function assemblesystem(feform::AbstractBilinearForm,quad::TensorProductQuadratureOld)
 	elmat = allocatecellmatrix(feform)
 	testbasis = gettestbasis(feform)
 	trialbasis = gettrialbasis(feform)

@@ -1,12 +1,5 @@
-export Point, CellQuadrature, ConstantCellQuadrature
+export CellQuadrature, ConstantCellQuadrature
 export coordinates, weights
-
-using StaticArrays
-
-"""
-Type representing a point of D dimensions
-"""
-const Point{D} = SVector{D,Float64} where D
 
 """
 Abstract type representing a collection of quadratures, one for each cell
@@ -22,7 +15,6 @@ function Base.Iterators.zip(self::CellQuadrature)
   w = weights(self)
   zip(c,w)
 end
-
 
 # Concrete implementations
 
@@ -40,6 +32,12 @@ function ConstantCellQuadrature(c::Array{Point{D},1} where D,w::Array{Float64,1}
   coords = ConstantCellArray(c,l)
   weights = ConstantCellArray(w,l)
   ConstantCellQuadrature(coords,weights)
+end
+
+function ConstantCellQuadrature(quad::Quadrature{D} where D,l::Int)
+  c = coordinates(quad)
+  w = weights(quad)
+  ConstantCellQuadrature(c,w,l)
 end
 
 coordinates(self::ConstantCellQuadrature) = self.coords
