@@ -1,4 +1,4 @@
-export Point, CellQuadrature, ConstantCellQuadrature
+export Point, MPoint, CellQuadrature, ConstantCellQuadrature
 export coordinates, weights
 
 using StaticArrays
@@ -7,6 +7,7 @@ using StaticArrays
 Type representing a point of D dimensions
 """
 const Point{D} = SVector{D,Float64} where D
+const MPoint{D} = MVector{D,Float64} where D
 
 """
 Abstract type representing a collection of quadratures, one for each cell

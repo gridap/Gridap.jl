@@ -2,6 +2,7 @@ using Numa
 using Test
 
 @testset "Numa.jl" begin
+  @time @testset "Quadratures" begin include("quadraturestests.jl") end
   @time @testset "CellArrays" begin include("cellarraystests.jl") end
   @time @testset "CellQuadratures" begin include("cellquadraturestests.jl") end
   @time @testset "Polynomials" begin include("polynomialtests.jl") end

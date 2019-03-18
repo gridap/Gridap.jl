@@ -5,3 +5,5 @@ macro abstractmethod()
   end
 end
 
+flatten(a::Array) = reshape(a,(length(a),))
+
