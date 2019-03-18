@@ -121,6 +121,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "#Numa.MPoint",
+    "page": "Numa.jl",
+    "title": "Numa.MPoint",
+    "category": "type",
+    "text": "The mutable version of Point{D}\n\n\n\n\n\n"
+},
+
+{
     "location": "#Numa.NFace",
     "page": "Numa.jl",
     "title": "Numa.NFace",
