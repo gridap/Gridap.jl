@@ -25,6 +25,7 @@ struct LagrangianRefFE<:RefFE
 		nodes=NodesArray(polytope,orders)
 		prebasis=TensorProductPolynomialBasis(orders, basistype="Monomial")
 		dofspb=prebasis(nodes.coordinates)
+		# dofspbs = dofbasis(prebasis)
 		changeofbasis=inv(dofspb)
 		dofsnface=nodes.nfacenodes
 		spdim=dim(polytope)
