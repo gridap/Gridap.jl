@@ -1,4 +1,5 @@
 export CellArray, IndexableCellArray
+export maxlength
 export CellFieldValues, CellBasisValues
 export CellScalars, CellVectors, CellMatrices
 export ConstantCellArray
@@ -14,6 +15,14 @@ Base.iterate(::CellArray)::Union{Nothing,Tuple{Array{T,N},Any}} = @abstractmetho
 Base.iterate(::CellArray,state)::Union{Nothing,Tuple{Array{T,N},Any}} = @abstractmethod
 
 Base.length(::CellArray)::Int = @abstractmethod
+
+function maxlength(self::CellArray)
+  ml = 0
+  for a in self
+    ml = max(ml,length(a))
+  end
+  ml
+end
 
 Base.eltype(::Type{C}) where C<:CellArray{T,N} where {T,N} = Array{T,N}
 
@@ -62,6 +71,11 @@ evaluated at a collection of points in each cell
 const CellFieldValues{T} = CellArray{T,1} where T
 
 """
+An array of points for each cell
+"""
+const CellPoints{D} = CellFieldValues{Point{D}} where D
+
+"""
 Abstract type that represents a function basis with value of type T
 evaluated at a collection of points in each cell
 """
@@ -103,3 +117,5 @@ end
 Base.getindex(self::ConstantCellArray,cell::Int) = self.array
 
 Base.length(self::ConstantCellArray) = self.length
+
+maxlength(self::ConstantCellArray) = length(self.array)
