@@ -17,6 +17,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "#Numa.gradient-Tuple{CellBasis}",
+    "page": "Numa.jl",
+    "title": "Numa.gradient",
+    "category": "method",
+    "text": "Returns another CellBasis object that represents the gradient TG is a value whose rank is one order grater than the one of T\n\n\n\n\n\n"
+},
+
+{
     "location": "#Numa.gradient-Tuple{MultivariatePolynomialBasis}",
     "page": "Numa.jl",
     "title": "Numa.gradient",
