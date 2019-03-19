@@ -9,6 +9,22 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "#Numa.evaluate!-Union{Tuple{D}, Tuple{T}, Tuple{MultivariatePolynomialBasis{T,D},Array{SArray{Tuple{D},Float64,1,D},1},Array{T,2}}} where D where T",
+    "page": "Numa.jl",
+    "title": "Numa.evaluate!",
+    "category": "method",
+    "text": "First axis of v for dofs, second for points\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.gradient-Tuple{MultivariatePolynomialBasis}",
+    "page": "Numa.jl",
+    "title": "Numa.gradient",
+    "category": "method",
+    "text": "Returns a MultivariatePolynomialBasis{TG,D} where TG is a type whose rank is one unit grater than the one of T\n\n\n\n\n\n"
+},
+
+{
     "location": "#Numa.gradshfsps-Tuple{LagrangianRefFE,Any}",
     "page": "Numa.jl",
     "title": "Numa.gradshfsps",
@@ -129,6 +145,22 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "#Numa.MVectorValue",
+    "page": "Numa.jl",
+    "title": "Numa.MVectorValue",
+    "category": "type",
+    "text": "Mutable version of VectorValue\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.MultivariatePolynomialBasis",
+    "page": "Numa.jl",
+    "title": "Numa.MultivariatePolynomialBasis",
+    "category": "type",
+    "text": "Abstract type representing a multivariate polynomial basis with value of type T in a coordinate space of D dimensions\n\n\n\n\n\n"
+},
+
+{
     "location": "#Numa.NFace",
     "page": "Numa.jl",
     "title": "Numa.NFace",
@@ -190,6 +222,14 @@ var documenterSearchIndex = {"docs": [
     "title": "Numa.TensorProductQuadratureOld",
     "category": "type",
     "text": "Tensor product quadrature rule (nodes and weights) integrating exactly 2´order´-1 polynomials\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.VectorValue",
+    "page": "Numa.jl",
+    "title": "Numa.VectorValue",
+    "category": "type",
+    "text": "Type representing a vector value of D components\n\n\n\n\n\n"
 },
 
 {
