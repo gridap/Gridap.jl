@@ -233,6 +233,30 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "#Numa.CellBasisValuesFromSingleInterpolation",
+    "page": "Numa.jl",
+    "title": "Numa.CellBasisValuesFromSingleInterpolation",
+    "category": "type",
+    "text": "Concrete implementation for the case of the same interpolation on all cells, but arbitrary sampling points in each cell. This is typically needed for unfitted methods\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.CellPoints",
+    "page": "Numa.jl",
+    "title": "Numa.CellPoints",
+    "category": "type",
+    "text": "An array of points for each cell\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.ConstantCellBasisValues",
+    "page": "Numa.jl",
+    "title": "Numa.ConstantCellBasisValues",
+    "category": "type",
+    "text": "Concrete implementation for the case of the same interpolation and the same sampling points on all cells\n\n\n\n\n\n"
+},
+
+{
     "location": "#Numa.RefFE",
     "page": "Numa.jl",
     "title": "Numa.RefFE",
