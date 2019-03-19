@@ -1,4 +1,3 @@
-using Numa, Test
 
 # Test to check nodes on the closure of an nface of a polytope
 ##

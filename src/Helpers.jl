@@ -5,5 +5,11 @@ macro abstractmethod()
   end
 end
 
+macro notimplemented()
+  quote
+    error("This function in not yet implemented")
+  end
+end
+
 flatten(a::Array) = reshape(a,(length(a),))
 

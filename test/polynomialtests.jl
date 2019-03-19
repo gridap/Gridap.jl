@@ -1,5 +1,33 @@
-using Numa
-using Test
+
+basis = ShapeFunctionsScalarQua4()
+
+n = length(basis)
+vt = valuetype(basis)
+
+@test n == 4
+@test vt == Float64
+
+quad = TensorProductQuadrature{2}(orders=[2,2])
+
+points = coordinates(quad)
+
+values = Array{vt,2}(undef, (n, length(points)) )
+
+evaluate!(basis,points,values)
+
+grad_basis = gradient(basis)
+
+grad_vt = valuetype(grad_basis)
+
+@test grad_vt == VectorValue{2}
+
+@test length(grad_basis) == 4
+
+grad_values = Array{grad_vt,2}(undef, (n, length(points)) )
+
+evaluate!(grad_basis,points,grad_values)
+
+
 ##
 # a = TensorProductPolynomialBasis([1,2]; basistype="Lagrangian", nodestype="Equispaced")
 # b = a([1.0 1.0])
