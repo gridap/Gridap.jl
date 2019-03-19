@@ -37,6 +37,11 @@ function tensor_product(quads,npoints,::Val{D}) where D
   @assert length(npoints) == D
   coords = Array{Point{D},D}(undef,tuple(npoints...))
   weights = Array{Float64,D}(undef,tuple(npoints...))
+  tensor_product!(quads,coords,weights)
+  (flatten(coords), flatten(weights))
+end
+
+function tensor_product!(quads,coords::Array{Point{D},D},weights) where D
   p = MPoint{D}(zeros(D))
   for ci in CartesianIndices(coords)
     p[:] = 0.0
@@ -50,7 +55,6 @@ function tensor_product(quads,npoints,::Val{D}) where D
     coords[ci] = p
     weights[ci] = w
   end
-  (flatten(coords), flatten(weights))
 end
 
 coordinates(self::TensorProductQuadrature) = self.coords
