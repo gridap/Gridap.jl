@@ -24,3 +24,11 @@ for (values,values2) in zip(cellbasisvalues,cellbasisvalues2)
   @test values == values2
 end
 
+gradcellbasis = gradient(cellbasis)
+
+@test isa(gradcellbasis,CellBasis{VectorValue{2}})
+
+gradcellbasisvalues = evaluate(gradcellbasis,cellpoints)
+
+@test isa(gradcellbasisvalues,CellBasisValues{VectorValue{2}})
+

@@ -5,6 +5,12 @@ abstract type CellBasis{T} end
 
 evaluate(::CellBasis{T} where T,::CellPoints{D} where D)::CellBasisValues{T} = @abstractmethod
 
+"""
+Returns another CellBasis object that represents the gradient
+TG is a value whose rank is one order grater than the one of T
+"""
+gradient(::CellBasis{T} where T)::CellBasis{TG} = @abstractmethod
+
 # Concrete implementations
 
 """
@@ -72,6 +78,7 @@ maxlength(self::ConstantCellBasisValues) = length(self.points)*length(self.basis
 
 Base.getindex(self::ConstantCellBasisValues,cell::Int) = self.values
 
+
 struct CellBasisFromSingleInterpolation{T,D} <: CellBasis{T}
   basis::MultivariatePolynomialBasis{T,D}
 end
@@ -88,3 +95,7 @@ function evaluate(
   end
 end
 
+function gradient(self::CellBasisFromSingleInterpolation)
+  grad_basis = gradient(self.basis)
+  CellBasisFromSingleInterpolation(grad_basis)
+end
