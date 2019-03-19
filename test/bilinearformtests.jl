@@ -83,8 +83,8 @@ sysmat = assemblesystem(feop(u,v), quad)
 @test 1.0+sum(sysmat)≈1.0
 @test sum(sysmat,dims=2).+1≈fill(0,size(sysmat,1)).+1
 @test sysmat[1,1] ≈ 2/3
-##
 
+##
 
 # Now we play with binary tree expression over BilinearForm, binary tree expressions over TrialSpaceField/TestSpaceField. Later consider functions and constants (as a type of field of 1 dim in terms of nshf). TestSpaceField could be just the "adjoint" of TrialSpaceField and thus, not repeat all operations (?). Similar as adjoint (dual here) for matrices in Julia Base.
 
@@ -98,3 +98,33 @@ sysmat = assemblesystem(feop(u,v), quad)
 # Next, thing how to write inside...
 #
 ##
+
+# using StaticArrays
+# const VectorField{D} = SVector{D,Float64} where D
+# const ScalarField = Float64
+# abstract type TensorField{N} end
+# struct TensorField2 <: TensorField{2}
+# 	values::SMatrix{2,2,Float64,4}
+# end
+# struct TensorField3 <: TensorField{3}
+# 	values::SMatrix{3,3,Float64,9}
+# end
+# const TensorField2 = SMatrix{2,2,Float64,4}
+# const TensorField3 = SMatrix{3,3,Float64,9}
+#
+# using Base
+# Base.@pure tuple_prod(T::Tuple) = prod(T)
+#
+# # Given a value D, I want to return a SArray{(D,D),Type,2,D*D}
+# t = tuple($D,$D)
+# return SArray(t,T,2,prod(t))
+#
+# struct TensorFieldNew
+# 	values::SMatrix
+# 	function TensorFieldNew(spdim::Int64)(x)
+# 		SMatrix
+# 	end
+# end
+# function Tensor(a::Int) where {T,N}
+# 		return SMatrix{a,a,Float64,a*a}
+# end
