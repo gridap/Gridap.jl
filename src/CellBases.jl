@@ -48,7 +48,7 @@ function Base.iterate(self::CellBasisValuesFromSingleInterpolation,state)
   end
 end
 
-maxlength(self::CellBasisValuesFromSingleInterpolation) = maxlength(self.points)*length(self.basis)
+maxsize(self::CellBasisValuesFromSingleInterpolation) = (length(self.basis), maxlength(self.points))
 
 """
 Concrete implementation for the case of the same interpolation
@@ -74,7 +74,7 @@ end
 
 Base.length(self::ConstantCellBasisValues) = self.l
 
-maxlength(self::ConstantCellBasisValues) = length(self.points)*length(self.basis)
+maxsize(self::ConstantCellBasisValues) = (length(self.basis),length(self.points))
 
 Base.getindex(self::ConstantCellBasisValues,cell::Int) = self.values
 

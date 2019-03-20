@@ -1,5 +1,5 @@
 export CellArray, IndexableCellArray
-export maxlength
+export maxlength, maxsize
 export CellFieldValues, CellBasisValues
 export CellScalars, CellVectors, CellMatrices
 export ConstantCellArray
@@ -16,13 +16,20 @@ Base.iterate(::CellArray,state)::Union{Nothing,Tuple{Array{T,N},Any}} = @abstrac
 
 Base.length(::CellArray)::Int = @abstractmethod
 
-function maxlength(self::CellArray)
-  ml = 0
+function maxsize(self::CellArray{N}) where N
+  ms = zeros(Int,N)
   for a in self
-    ml = max(ml,length(a))
+    s = size(a)
+    @assert length(s) == N
+    @inbounds for i in 1:N
+      si = ms[i]
+      ms[i] = max(si,s[i])
+    end
   end
-  ml
+  Tuple(ms)
 end
+
+maxlength(self::CellArray) = prod(maxsize(self))
 
 Base.eltype(::Type{C}) where C<:CellArray{T,N} where {T,N} = Array{T,N}
 
@@ -41,8 +48,6 @@ abstract type IndexableCellArray{T,N} <: CellArray{T,N} end
 
 Base.getindex(::IndexableCellArray{T,N} where {T,N},cell::Int)::Array{T,N} = @abstractmethod
 
-Base.length(::IndexableCellArray)::Int = @abstractmethod
-
 Base.iterate(self::IndexableCellArray) = iterate(self,0)
 
 function Base.iterate(self::IndexableCellArray,state::Int)
@@ -53,16 +58,6 @@ function Base.iterate(self::IndexableCellArray,state::Int)
     (self[k],k)
   end
 end
-
-# TODO: To discuss. I (@fverdugo) think that it is not required to
-# define new abstract types to represent the following concepts. They can be
-# expressed all of them as CellArrays for specific values of the N parameter
-# EDIT: Perhaps it is not even necessary to define the following
-# aliases and work always with CellArrays with the corresponding
-# type parameters depending of the context (see ConstantCellQuadrature
-# where I am using ConstantCellArray{T,1} instead
-# of introducing a new ConstantCellFieldValues{T}).
-# This would heavily reduce the number of names in the library
 
 """
 Abstract type that represents a field with value of type T
@@ -118,4 +113,4 @@ Base.getindex(self::ConstantCellArray,cell::Int) = self.array
 
 Base.length(self::ConstantCellArray) = self.length
 
-maxlength(self::ConstantCellArray) = length(self.array)
+maxsize(self::ConstantCellArray) = size(self.array)
