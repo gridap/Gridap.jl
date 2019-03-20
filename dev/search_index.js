@@ -9,7 +9,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "#Numa.evaluate!-Union{Tuple{D}, Tuple{T}, Tuple{MultivariatePolynomialBasis{T,D},Array{SArray{Tuple{D},Float64,1,D},1},Array{T,2}}} where D where T",
+    "location": "#Numa.evaluate!-Union{Tuple{T}, Tuple{D}, Tuple{MultivariatePolynomialBasis{D,T},Array{SArray{Tuple{D},Float64,1,D},1},Array{T,2}}} where T where D",
     "page": "Numa.jl",
     "title": "Numa.evaluate!",
     "category": "method",
@@ -65,6 +65,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "#Numa.CellBasis",
+    "page": "Numa.jl",
+    "title": "Numa.CellBasis",
+    "category": "type",
+    "text": "T is for the type of value D is for the dimension of the domain\n\n\n\n\n\n"
+},
+
+{
     "location": "#Numa.CellBasisValues",
     "page": "Numa.jl",
     "title": "Numa.CellBasisValues",
@@ -86,6 +94,14 @@ var documenterSearchIndex = {"docs": [
     "title": "Numa.CellMatrices",
     "category": "type",
     "text": "Abstract type that represents a matrix of value T associated with a collection of points in each cell (typically the cell matrix at the quadrature points)\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.CellPoints",
+    "page": "Numa.jl",
+    "title": "Numa.CellPoints",
+    "category": "type",
+    "text": "An array of points for each cell\n\n\n\n\n\n"
 },
 
 {
@@ -142,6 +158,22 @@ var documenterSearchIndex = {"docs": [
     "title": "Numa.IndexableCellArray",
     "category": "type",
     "text": "Abstract type representing an indexable CellArray. By implementing a concrete IndexableCellArray, one automatically gets an type that is also iterable\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.IntegrationDomain",
+    "page": "Numa.jl",
+    "title": "Numa.IntegrationDomain",
+    "category": "type",
+    "text": "This is the very minimum needed to describe the domain for numerical integration\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.IntegrationMesh",
+    "page": "Numa.jl",
+    "title": "Numa.IntegrationMesh",
+    "category": "type",
+    "text": "Minimal interface for a mesh used for numerical integration\n\n\n\n\n\n"
 },
 
 {
@@ -262,14 +294,6 @@ var documenterSearchIndex = {"docs": [
     "title": "Numa.CellFieldValuesFromInterpolation",
     "category": "type",
     "text": "General implementation Accepts any kind of CellBasisValues{TB} representing the evaluated shape functions and CellFieldValues{TN} representing the \"nodal\" values of the field to be interpolated at the points, where the shape functions are evaluated. This implementation only assumes that * is defined for instances of TB and TN. The result is of type T\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.CellPoints",
-    "page": "Numa.jl",
-    "title": "Numa.CellPoints",
-    "category": "type",
-    "text": "An array of points for each cell\n\n\n\n\n\n"
 },
 
 {
