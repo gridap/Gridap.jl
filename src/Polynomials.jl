@@ -5,22 +5,22 @@ export MultivariatePolynomialBasis, evaluate!, valuetype, grad
 Abstract type representing a multivariate polynomial basis
 with value of type T in a coordinate space of D dimensions
 """
-abstract type MultivariatePolynomialBasis{T,D} end
+abstract type MultivariatePolynomialBasis{D,T} end
 
 Base.length(::MultivariatePolynomialBasis)::Int = @abstractmethod
 
 """
 First axis of v for dofs, second for points
 """
-evaluate!(::MultivariatePolynomialBasis{T,D},::Array{Point{D},1},v::Array{T,2}) where {T,D} = @abstractmethod
+evaluate!(::MultivariatePolynomialBasis{D,T},::Array{Point{D},1},v::Array{T,2}) where {D,T} = @abstractmethod
 
 """
 Returns a MultivariatePolynomialBasis{TG,D} where TG
 is a type whose rank is one unit grater than the one of T
 """
-gradient(::MultivariatePolynomialBasis{T,D} where{T,D})::MultivariatePolynomialBasis{TG,D} = @abstractmethod
+gradient(::MultivariatePolynomialBasis{D,T} where{D,T})::MultivariatePolynomialBasis{D,TG} = @abstractmethod
 
-valuetype(::Type{R} where R<:MultivariatePolynomialBasis{T,D}) where {T,D} = T
+valuetype(::Type{R} where R<:MultivariatePolynomialBasis{D,T}) where {D,T} = T
 
 valuetype(self::MultivariatePolynomialBasis) = valuetype(typeof(self))
 
@@ -33,9 +33,9 @@ valuetype(self::MultivariatePolynomialBasis) = valuetype(typeof(self))
 
 export ShapeFunctionsScalarQua4
 
-struct ShapeFunctionsScalarQua4 <: MultivariatePolynomialBasis{Float64,2} end
+struct ShapeFunctionsScalarQua4 <: MultivariatePolynomialBasis{2,Float64} end
 
-struct GradShapeFunctionsScalarQua4 <: MultivariatePolynomialBasis{VectorValue{2},2} end
+struct GradShapeFunctionsScalarQua4 <: MultivariatePolynomialBasis{2,VectorValue{2}} end
 
 Base.length(::ShapeFunctionsScalarQua4) = 4
 

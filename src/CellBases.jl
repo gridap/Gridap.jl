@@ -1,15 +1,19 @@
 export CellBasis
 export evaluate
 
-abstract type CellBasis{T,D} end
+"""
+T is for the type of value
+D is for the dimension of the domain
+"""
+abstract type CellBasis{D,T} end
 
-evaluate(::CellBasis{T,D} where {T,D} ,::CellPoints{D} where D)::CellBasisValues{T}= @abstractmethod
+evaluate(::CellBasis{D,T} where {D,T} ,::CellPoints{D} where D)::CellBasisValues{T}= @abstractmethod
 
 """
 Returns another CellBasis object that represents the gradient
 TG is a value whose rank is one order grater than the one of T
 """
-gradient(::CellBasis{T,D} where {T,D})::CellBasis{TG,D} = @abstractmethod
+gradient(::CellBasis{D,T} where {D,T})::CellBasis{D,TG} = @abstractmethod
 
 # Concrete implementations
 
@@ -19,7 +23,7 @@ all cells, but arbitrary sampling points in each cell. This is typically needed
 for unfitted methods
 """
 struct CellBasisValuesFromSingleInterpolation{T,D} <: CellBasisValues{T}
-  basis::MultivariatePolynomialBasis{T,D}
+  basis::MultivariatePolynomialBasis{D,T}
   points::CellPoints{D}
 end
 
@@ -54,17 +58,15 @@ maxsize(self::CellBasisValuesFromSingleInterpolation) = (length(self.basis), max
 Concrete implementation for the case of the same interpolation
 and the same sampling points on all cells
 """
-struct ConstantCellBasisValues{T,D} <: IndexableCellArray{T,2}
-  basis::MultivariatePolynomialBasis{T,D}
+struct ConstantCellBasisValues{D,T} <: IndexableCellArray{T,2}
+  basis::MultivariatePolynomialBasis{D,T}
   points::Array{Point{D},1}
   l::Int
   values::Array{T,2}
 end
 
 function ConstantCellBasisValues(
-  basis::MultivariatePolynomialBasis{T,D},
-  points::Array{Point{D},1},
-  l::Int) where {T,D}
+  basis::MultivariatePolynomialBasis{D,T}, points::Array{Point{D},1}, l::Int) where {D,T}
   ndofs = length(basis)
   npoin = length(points)
   values = Array{T,2}(undef,(ndofs,npoin))
@@ -79,15 +81,14 @@ maxsize(self::ConstantCellBasisValues) = (length(self.basis),length(self.points)
 Base.getindex(self::ConstantCellBasisValues,cell::Int) = self.values
 
 
-struct CellBasisFromSingleInterpolation{T,D} <: CellBasis{T,D}
-  basis::MultivariatePolynomialBasis{T,D}
+struct CellBasisFromSingleInterpolation{D,T} <: CellBasis{D,T}
+  basis::MultivariatePolynomialBasis{D,T}
 end
 
 function evaluate(
-  self::CellBasisFromSingleInterpolation{T,D},
-  cellpoints::CellPoints{D}) where {T,D}
+  self::CellBasisFromSingleInterpolation{D,T}, cellpoints::CellPoints{D}) where {D,T}
   if isa(cellpoints,ConstantCellArray)
-    points = cellpoints[1]
+    points = cellpoints.array
     l = length(cellpoints)
     ConstantCellBasisValues(self.basis,points,l)
   else

@@ -10,7 +10,7 @@ cellbasis = Numa.CellBasisFromSingleInterpolation(basis)
 
 cellbasisvalues = evaluate(cellbasis,cellpoints)
 
-@test isa(cellbasis,CellBasis{Float64})
+@test isa(cellbasis,CellBasis{2,Float64})
 
 @test isa(cellbasisvalues,CellBasisValues{Float64})
 
@@ -26,7 +26,7 @@ end
 
 gradcellbasis = gradient(cellbasis)
 
-@test isa(gradcellbasis,CellBasis{VectorValue{2}})
+@test isa(gradcellbasis,CellBasis{2,VectorValue{2}})
 
 gradcellbasisvalues = evaluate(gradcellbasis,cellpoints)
 

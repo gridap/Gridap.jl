@@ -7,6 +7,7 @@ using Test
   @time @testset "CellQuadratures" begin include("cellquadraturestests.jl") end
   @time @testset "Polynomials" begin include("polynomialtests.jl") end
   @time @testset "CellBases" begin include("cellbasestests.jl") end
+  @time @testset "CellFields" begin include("cellfieldstests.jl") end
   @time @testset "Polytopes" begin include("polytopetests.jl") end
   @time @testset "RefFEs" begin include("reffetests.jl") end
   @time @testset "Meshes" begin include("meshtests.jl") end
