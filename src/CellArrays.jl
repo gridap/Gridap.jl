@@ -1,6 +1,7 @@
 export CellArray, IndexableCellArray
 export maxlength, maxsize
 export CellFieldValues, CellBasisValues
+export CellPoints
 export CellScalars, CellVectors, CellMatrices
 export ConstantCellArray
 

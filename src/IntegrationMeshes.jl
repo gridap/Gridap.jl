@@ -1,3 +1,4 @@
+export IntegrationDomain, IntegrationMesh, geomap, cellcoordinates, cellbasis
 
 """
 This is the very minimum needed to describe the
@@ -7,16 +8,19 @@ abstract type IntegrationDomain{Z,D} end
 
 geomap(::IntegrationDomain{Z,D} where {Z,D})::CellField{Z,Point{D}}= @abstractmethod
 
+"""
+Minimal interface for a mesh used for numerical integration
+"""
 abstract type IntegrationMesh{Z,D} <: IntegrationDomain{Z,D} end
 
 cellcoordinates(::IntegrationMesh{Z,D} where {Z,D})::CellPoints{D} = @abstractmethod
 
 cellbasis(::IntegrationMesh{Z,D} where {Z,D})::CellBasis{Float64,Z} = @abstractmethod
 
-function geomap(self::IntegrationMesh)
+function geomap(self::IntegrationMesh{Z,D}) where {Z,D}
   coords = cellcoordinates(self)
   basis = cellbasis(self)
-  CellBasisFromSingleInterpolation(basis,coords)
+  CellFieldFromInterpolation{Z,Point{D},Float64,Point{D}}(basis,coords)
 end
 
 # Concrete implementations
@@ -65,13 +69,18 @@ maxsize(self::DummyCellCoordinates2D) = (4,)
 
 struct DummyIntegrationMesh2D <: IntegrationMesh{2,2}
   cellcoords::DummyCellCoordinates2D
-  cellbasis::CellBasisFromSingleInterpolation{Float64,2}
+  cellbasis::CellBasisFromSingleInterpolation{2,Float64}
 end
 
 function DummyIntegrationMesh2D(;partition::Tuple{Int,Int})
-  cellcoords = DummyCellCoordinates2D(partition)
   basis = ShapeFunctionsScalarQua4()
   cellbasis = CellBasisFromSingleInterpolation(basis)
+  cellcoords = DummyCellCoordinates2D(partition=partition)
   DummyIntegrationMesh2D(cellcoords,cellbasis)
 end
+
+cellcoordinates(self::DummyIntegrationMesh2D) = self.cellcoords
+
+cellbasis(self::DummyIntegrationMesh2D) = self.cellbasis
+
 
