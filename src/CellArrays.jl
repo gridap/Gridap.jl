@@ -109,7 +109,11 @@ struct ConstantCellArray{T,N} <: IndexableCellArray{T,N}
   length::Int
 end
 
-Base.getindex(self::ConstantCellArray,cell::Int) = self.array
+function Base.getindex(self::ConstantCellArray,cell::Int)
+  @assert 1 <= cell
+  @assert cell <= length(self)
+  self.array
+end
 
 Base.length(self::ConstantCellArray) = self.length
 
