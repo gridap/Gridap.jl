@@ -25,6 +25,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "#Numa.gradient-Tuple{CellField}",
+    "page": "Numa.jl",
+    "title": "Numa.gradient",
+    "category": "method",
+    "text": "Returns another CellField object that represents the gradient. TG is a value whose rank is one order grater than the one of T\n\n\n\n\n\n"
+},
+
+{
     "location": "#Numa.gradient-Tuple{MultivariatePolynomialBasis}",
     "page": "Numa.jl",
     "title": "Numa.gradient",
@@ -246,6 +254,14 @@ var documenterSearchIndex = {"docs": [
     "title": "Numa.CellBasisValuesFromSingleInterpolation",
     "category": "type",
     "text": "Concrete implementation for the case of the same interpolation on all cells, but arbitrary sampling points in each cell. This is typically needed for unfitted methods\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.CellFieldValuesFromInterpolation",
+    "page": "Numa.jl",
+    "title": "Numa.CellFieldValuesFromInterpolation",
+    "category": "type",
+    "text": "General implementation Accepts any kind of CellBasisValues{TB} representing the evaluated shape functions and CellFieldValues{TN} representing the \"nodal\" values of the field to be interpolated at the points, where the shape functions are evaluated. This implementation only assumes that * is defined for instances of TB and TN. The result is of type T\n\n\n\n\n\n"
 },
 
 {
