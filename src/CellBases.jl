@@ -1,15 +1,15 @@
 export CellBasis
 export evaluate
 
-abstract type CellBasis{T} end
+abstract type CellBasis{T,D} end
 
-evaluate(::CellBasis{T} where T,::CellPoints{D} where D)::CellBasisValues{T} = @abstractmethod
+evaluate(::CellBasis{T,D} where {T,D} ,::CellPoints{D} where D)::CellBasisValues{T}= @abstractmethod
 
 """
 Returns another CellBasis object that represents the gradient
 TG is a value whose rank is one order grater than the one of T
 """
-gradient(::CellBasis{T} where T)::CellBasis{TG} = @abstractmethod
+gradient(::CellBasis{T,D} where {T,D})::CellBasis{TG,D} = @abstractmethod
 
 # Concrete implementations
 
@@ -79,7 +79,7 @@ maxsize(self::ConstantCellBasisValues) = (length(self.basis),length(self.points)
 Base.getindex(self::ConstantCellBasisValues,cell::Int) = self.values
 
 
-struct CellBasisFromSingleInterpolation{T,D} <: CellBasis{T}
+struct CellBasisFromSingleInterpolation{T,D} <: CellBasis{T,D}
   basis::MultivariatePolynomialBasis{T,D}
 end
 
