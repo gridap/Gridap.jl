@@ -129,6 +129,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "#Numa.CellValues",
+    "page": "Numa.jl",
+    "title": "Numa.CellValues",
+    "category": "type",
+    "text": "An array of values for each cell\n\n\n\n\n\n"
+},
+
+{
     "location": "#Numa.CellVectors",
     "page": "Numa.jl",
     "title": "Numa.CellVectors",
