@@ -1,7 +1,7 @@
 export CellArray, IndexableCellArray
 export maxlength, maxsize
 export CellFieldValues, CellBasisValues
-export CellPoints
+export CellValues, CellPoints
 export CellScalars, CellVectors, CellMatrices
 export ConstantCellArray
 
@@ -17,7 +17,7 @@ Base.iterate(::CellArray,state)::Union{Nothing,Tuple{Array{T,N},Any}} = @abstrac
 
 Base.length(::CellArray)::Int = @abstractmethod
 
-function maxsize(self::CellArray{N}) where N
+function maxsize(self::CellArray{T,N}) where {T,N}
   ms = zeros(Int,N)
   for a in self
     s = size(a)
@@ -28,6 +28,11 @@ function maxsize(self::CellArray{N}) where N
     end
   end
   Tuple(ms)
+end
+
+function maxsize(self::CellArray,i::Int)
+  s = maxsize(self)
+  s[i]
 end
 
 maxlength(self::CellArray) = prod(maxsize(self))
@@ -82,26 +87,6 @@ An array of points for each cell
 """
 const CellPoints{D} = CellValues{Point{D}} where D
 
-
-"""
-Abstract type that represents a scalar of value T
-associated with a collection of points in each cell
-"""
-const CellScalars{T} = CellArray{T,1} where T
-
-"""
-Abstract type that represents a vector of value T
-associated with a collection of points in each cell
-(typically the cell rhs vector at the quadrature points)
-"""
-const CellVectors{T} = CellArray{T,2} where T
-
-"""
-Abstract type that represents a matrix of value T
-associated with a collection of points in each cell
-(typically the cell matrix at the quadrature points)
-"""
-const CellMatrices{T} = CellArray{T,3} where T
 
 
 # Concrete implementations

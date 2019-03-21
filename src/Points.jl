@@ -29,6 +29,8 @@ gradient(::Type{VectorValue{D}},::Val{Z}) where {D,Z} = SMatrix{Z,D,Float64,Z*D}
 
 outer(a::T,b::T) where T <: Number = a*b
 
+inner(a::T,b::T) where T <: Number = a*b
+
 outer(a::T,b::SVector{D,T}) where {T <: Number,D} = a*b
 
 function outer(a::SVector{D,T},b::SVector{Z,T}) where {D,Z,T}
@@ -36,6 +38,13 @@ function outer(a::SVector{D,T},b::SVector{Z,T}) where {D,Z,T}
     SMatrix{2,2,T,4}( a[1]*b[1], a[2]*b[1], a[1]*b[2], a[2]*b[2] )
   else
     @notimplemented
+  end
+end
+
+function inner(a::SVector{D,T},b::SVector{D,T}) where {D,T}
+  v = 0.0
+  @inbounds for i=1:D
+    v += a[i]*b[i]
   end
 end
 
