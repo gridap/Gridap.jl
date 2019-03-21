@@ -19,7 +19,7 @@ Accepts any kind of `CellBasisValues{TB}` representing
 the evaluated shape functions and `CellFieldValues{TN}` representing
 the "nodal" values of the field to be interpolated at the points,
 where the shape functions are evaluated. This implementation only assumes
-that * is defined for instances of TB and TN. The result is of type T
+that outer(·,·) is defined for instances of TB and TN. The result is of type T
 """
 struct CellFieldValuesFromInterpolation{TB,TN,T} <: CellFieldValues{T}
   cellbasisvalues::CellBasisValues{TB}
@@ -68,7 +68,7 @@ function interpolate_kernel!(basisvals,nodalvals,pointvalues)
     @inbounds for j = 1:ndofs
       # TODO: to think about the best order in this multiplication
       # It will depend in how we define the gradient
-      pointvalues[i] += dyadic(basisvals[j,i],nodalvals[j])
+      pointvalues[i] += outer(basisvals[j,i],nodalvals[j])
     end
   end
 end
