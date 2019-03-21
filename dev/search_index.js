@@ -49,6 +49,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "#Numa.mapderivatives-Union{Tuple{T}, Tuple{D}, Tuple{CellBasis{D,T},CellField{D,SArray{Tuple{D},Float64,1,D}}}} where T where D",
+    "page": "Numa.jl",
+    "title": "Numa.mapderivatives",
+    "category": "method",
+    "text": "Returns another CellBasis, whose spatial derivatives are respect to the coordinates of the range space of geomap\n\n\n\n\n\n"
+},
+
+{
     "location": "#Numa.shfsps-Tuple{LagrangianRefFE,Any}",
     "page": "Numa.jl",
     "title": "Numa.shfsps",
@@ -289,11 +297,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "#Numa.CellBasisWithMappedDerivaties",
+    "page": "Numa.jl",
+    "title": "Numa.CellBasisWithMappedDerivaties",
+    "category": "type",
+    "text": "This type implements the result of mapderivatives\n\n\n\n\n\n"
+},
+
+{
     "location": "#Numa.CellFieldValuesFromInterpolation",
     "page": "Numa.jl",
     "title": "Numa.CellFieldValuesFromInterpolation",
     "category": "type",
-    "text": "General implementation Accepts any kind of CellBasisValues{TB} representing the evaluated shape functions and CellFieldValues{TN} representing the \"nodal\" values of the field to be interpolated at the points, where the shape functions are evaluated. This implementation only assumes that * is defined for instances of TB and TN. The result is of type T\n\n\n\n\n\n"
+    "text": "General implementation Accepts any kind of CellBasisValues{TB} representing the evaluated shape functions and CellFieldValues{TN} representing the \"nodal\" values of the field to be interpolated at the points, where the shape functions are evaluated. This implementation only assumes that outer(·,·) is defined for instances of TB and TN. The result is of type T\n\n\n\n\n\n"
 },
 
 {
@@ -302,6 +318,22 @@ var documenterSearchIndex = {"docs": [
     "title": "Numa.ConstantCellBasisValues",
     "category": "type",
     "text": "Concrete implementation for the case of the same interpolation and the same sampling points on all cells\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.GradOfCellBasisMappedWithJacob",
+    "page": "Numa.jl",
+    "title": "Numa.GradOfCellBasisMappedWithJacob",
+    "category": "type",
+    "text": "Un-evaluated version of GradOfCellBasisValuesMappedWithJacob\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.GradOfCellBasisValuesMappedWithJacob",
+    "page": "Numa.jl",
+    "title": "Numa.GradOfCellBasisValuesMappedWithJacob",
+    "category": "type",
+    "text": "Values of the gradients of a cell basis mapped with a given Jacobian J stands for the type of the values of the Jacobian, i.e., gradient(Point{D},Val(D))\n\n\n\n\n\n"
 },
 
 {
