@@ -1,6 +1,8 @@
 
+imesh = Numa.DummyIntegrationMesh2D(partition=(2,2))
+
 quad = TensorProductQuadrature{2}(orders=[2,2])
-l = 10
+l = ncells(imesh)
 cellquad = ConstantCellQuadrature(quad,l)
 
 cellpoints = coordinates(cellquad)
@@ -31,4 +33,18 @@ gradcellbasis = gradient(cellbasis)
 gradcellbasisvalues = evaluate(gradcellbasis,cellpoints)
 
 @test isa(gradcellbasisvalues,CellBasisValues{VectorValue{2}})
+
+phi = geomap(imesh)
+
+physcellbasis = mapderivatives(cellbasis,phi)
+
+physgradcellbasis = gradient(physcellbasis)
+
+physgradcellbasis_q = evaluate(physgradcellbasis,cellpoints)
+
+for dNcg in physgradcellbasis_q
+  for dNg in dNcg
+    @test isa(dNg,VectorValue{2})
+  end
+end
 

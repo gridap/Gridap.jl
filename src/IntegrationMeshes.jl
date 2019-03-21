@@ -1,4 +1,4 @@
-export IntegrationDomain, IntegrationMesh, geomap, cellcoordinates, cellbasis
+export IntegrationDomain, IntegrationMesh, geomap, cellcoordinates, cellbasis, ncells
 
 """
 This is the very minimum needed to describe the
@@ -21,6 +21,11 @@ function geomap(self::IntegrationMesh{Z,D}) where {Z,D}
   coords = cellcoordinates(self)
   basis = cellbasis(self)
   CellFieldFromInterpolation{Z,Point{D},Float64,Point{D}}(basis,coords)
+end
+
+function ncells(self::IntegrationMesh)
+  coords = cellcoordinates(self)
+  length(coords)
 end
 
 # Concrete implementations
