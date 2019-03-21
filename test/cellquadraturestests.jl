@@ -15,9 +15,9 @@ quad = ConstantCellQuadrature(c,w,l)
 q = coordinates(quad)
 qw = weights(quad)
 
-@test isa(q,CellFieldValues{Point{D}})
+@test isa(q,CellValues{Point{D}})
 
-@test isa(qw,CellFieldValues{Float64})
+@test isa(qw,CellValues{Float64})
 
 # We can iterate coordinates and weights separately
 
