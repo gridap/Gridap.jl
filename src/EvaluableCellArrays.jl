@@ -25,3 +25,25 @@ function evaluate(self::EvaluableCellArrayFromBinaryOp,points::CellPoints)
   bvals = evaluate(self.b,points)
   self.op(avals,bvals)
 end
+
+ """
+ Implements the composition `a ∘ b` of two instances `a` and `b` of `EvaluableCellArray`
+ """
+ struct EvaluableCellArrayFromComposition{D,T,N} <: EvaluableCellArray{D,T,N}
+   a::EvaluableCellArray{D,T,N}
+   b::EvaluableCellArray{D,Point{D},1}
+ end
+# @santiagobadia: Not sure about {D,Point{D}}, we can probably want a different space
+# dimension D and point dimension. Think about problems on manifolds.
+
+ Base.:∘(f::EvaluableCellArray{D,T,N},
+         g::EvaluableCellArray{D,Point{D},1}) where{D,T,N} =
+		 EvaluableCellArrayFromComposition(f,g)
+
+"""
+Evaluate a `EvaluableCellArrayFromComposition`
+"""
+function evaluate(self::EvaluableCellArrayFromComposition, points::CellPoints)
+  gpoins = evaluate(self.g,points)
+  bvals = evaluate(self.b,gpoins)
+end

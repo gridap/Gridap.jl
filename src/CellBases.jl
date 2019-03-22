@@ -18,11 +18,14 @@ gradient(::CellBasis{D,T} where {D,T})::CellBasis{D,TG} = @abstractmethod
 (∇)(self::CellBasis) = gradient(self)
 
 """
-Returns another CellBasis, whose spatial
-derivatives are respect to the coordinates of
+Returns another `CellBasis` whose spatial
+derivatives are with respect to the coordinates of
 the range space of geomap
 """
 function mapderivatives(
   self::CellBasis{D,T}, geomap::CellField{D,Point{D}} ) where {D,T}
   CellBasisWithMappedDerivatives(self,geomap)
 end
+# @santiagobadia : I would define the composition of two EvaluableCellArray that
+# would be aplicable for all cases. It seems to me that the previous method is a
+# particular case. I have implemented it in EvaluableCellArrays. To be discussed.
