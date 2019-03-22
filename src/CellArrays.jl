@@ -179,7 +179,7 @@ Base.length(self::CellArrayFromUnaryOp) = length(self.a)
 maxsize(self::CellArrayFromUnaryOp) = maxsize(self.a)
 
 function Base.iterate(self::CellArrayFromUnaryOp{S,T,N}) where {S,T,N}
-  values = Array{S,N}(undef,maxsize(self))
+  values = Array{T,N}(undef,maxsize(self))
   anext = iterate(self.a)
   state = (values,anext)
   iterate(self,state)

@@ -37,3 +37,27 @@ end
 V = compute_domain_vol(jac_g)
 @test V ≈ 1.0
 
+
+fun(x::Point{2}) = 2x[1]+x[2]
+
+fun(::Type{Point{2}}) = Float64
+
+g = compose(fun,phi)
+
+@test isa(g,CellField{2,Float64})
+
+gq = evaluate(g,q)
+
+@test length(gq) == length(q)
+
+@test maxsize(gq) == maxsize(q)
+
+x = evaluate(phi,q)
+
+for (fi,xi) in zip(gq,x)
+  for (fii,xii) in zip(fi,xi)
+    @assert fii == fun(xii)
+  end
+end
+
+

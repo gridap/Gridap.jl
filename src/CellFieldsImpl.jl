@@ -74,3 +74,24 @@ function gradient(self::CellFieldFromInterpolation{D,T,TB,TN}) where {D,T,TB,TN}
   TBG = gradient(TB,Val(D))
   CellFieldFromInterpolation{D,TG,TBG,TN}(grad_cellbasis,self.cellnodalvalues)
 end
+
+struct CellFieldFromComposeWithLambda{D,S,T} <: CellField{D,T}
+  f
+  g::CellField{D,S}
+end
+
+function evaluate(
+  self::CellFieldFromComposeWithLambda{D,S,T},points::CellPoints{D}) where {D,S,T}
+  function computevals!(g,values)
+    values .= self.f.(g)
+  end
+  g = evaluate(self.g,points)
+  CellArrayFromUnaryOp{S,T,1}(g,computevals!)
+end
+
+function gradient(self::CellFieldFromComposeWithLambda{D,S,T}) where {D,S,T}
+  gradf = gradient(f)
+  TG = gradf(T)
+  CellFieldFromComposeWithLambda{D,S,TG}(gradf,g)
+end
+
