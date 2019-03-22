@@ -37,3 +37,37 @@ end
 V = compute_domain_vol(jac_g)
 @test V ≈ 1.0
 
+
+fun(x::Point{2}) = 2x[1]+x[2]
+
+fun(::Type{Point{2}}) = Float64
+
+grad_fun(x::Point{2}) = VectorValue{2}(2.0,1.0)
+
+grad_fun(::Type{Point{2}}) = VectorValue{2}
+
+Numa.gradient(::typeof(fun)) = grad_fun
+
+g = compose(fun,phi)
+
+@test isa(g,CellField{2,Float64})
+
+gq = evaluate(g,q)
+
+@test length(gq) == length(q)
+
+@test maxsize(gq) == maxsize(q)
+
+x = evaluate(phi,q)
+
+for (fi,xi) in zip(gq,x)
+  for (fii,xii) in zip(fi,xi)
+    @assert fii == fun(xii)
+  end
+end
+
+grad_g = gradient(g)
+
+@test isa(evaluate(grad_g,q),CellFieldValues{VectorValue{2}})
+
+

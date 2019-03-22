@@ -66,3 +66,29 @@ let
 
 
 end
+
+let
+
+  l = 10
+  aa = [3.0,0.1,2.0]
+  
+  a = ConstantCellArray(aa,l)
+
+  T=Float64
+
+  function computevals!(a,c)
+    c .= 2a
+    c
+  end
+
+  c = Numa.CellArrayFromUnaryOp{T,T,1}(a,computevals!)
+
+  @test length(c) == l
+  @test maxsize(c) == (3,)
+
+  for ci in c
+    @assert ci == 2aa
+  end
+
+
+end

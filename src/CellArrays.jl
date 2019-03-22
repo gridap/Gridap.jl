@@ -165,3 +165,36 @@ function Base.iterate(self::CellArrayFromBinaryOp,state)
   end
 end
 
+"""
+Type that implements the lazy result of an unary operation
+on an instance of `CellArray`
+"""
+struct CellArrayFromUnaryOp{S,T,N} <: CellArray{T,N}
+  a::CellArray{S,N}
+  computevals!
+end
+
+Base.length(self::CellArrayFromUnaryOp) = length(self.a)
+
+maxsize(self::CellArrayFromUnaryOp) = maxsize(self.a)
+
+function Base.iterate(self::CellArrayFromUnaryOp{S,T,N}) where {S,T,N}
+  values = Array{T,N}(undef,maxsize(self))
+  anext = iterate(self.a)
+  state = (values,anext)
+  iterate(self,state)
+end
+
+function Base.iterate(self::CellArrayFromUnaryOp,state)
+  (values,anext) = state
+  if anext == nothing
+    nothing
+  else
+    (avals,astate) = anext
+    vals = self.computevals!(avals,values)
+    anext = iterate(self.a,astate)
+    state = (values,anext)
+    (vals, state)
+  end
+end
+
