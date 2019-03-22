@@ -129,6 +129,76 @@ function inner_vector_kernel!(testvals,trialvals,values)
   end
 end
 
+#TODO this is not DRY
+
+struct CellMatricesFromInner{T} <: CellVectors{T}
+  test::CellBasisValues{T}
+  trial::CellBasisValues{T}
+end
+
+function Base.length(self::CellMatricesFromInner)
+  @assert length(self.test) == length(self.trial)
+  length(self.test)
+end
+
+function maxsize(self::CellMatricesFromInner)
+  @assert maxsize(self.test,2) == maxsize(self.trial,2)
+  npoints = maxsize(self.test,2)
+  ndofstest = maxsize(self.test,1)
+  ndofstrial = maxsize(self.trial,1)
+  (ndofstest,ndofstrial,npoints)
+end
+
+function Base.iterate(self::CellMatricesFromInner{T}) where {T}
+  npoints = maxsize(self.test,2)
+  ndofstest = maxsize(self.test,1)
+  ndofstrial = maxsize(self.trial,1)
+  values = Array{T,3}(undef,(ndofstest,ndofstrial,npoints))
+  testnext = iterate(self.test)
+  trialnext = iterate(self.trial)
+  state = (values,testnext,trialnext)
+  iterate(self,state)
+end
+
+function Base.iterate(self::CellMatricesFromInner,state)
+  (values,testnext,trialnext) = state
+  if testnext == nothing || trialnext == nothing
+    nothing
+  else
+    (testvals,teststate) = testnext
+    (trialvals,trialstate) = trialnext
+    inner_matrix_kernel!(testvals,trialvals,values)
+    npoints = size(testvals,2)
+    ndofstest = size(testvals,1)
+    ndofstrial = size(trialvals,1)
+    vals = @view values[1:ndofstest,1:ndofstrial,1:npoints]
+    testnext = iterate(self.test,teststate)
+    trialnext = iterate(self.trial,trialstate)
+    state = (values,testnext,trialnext)
+    (vals, state)
+  end
+end
+
+function inner_matrix_kernel!(testvals,trialvals,values)
+  @assert size(testvals,2) <= size(values,3)
+  @assert size(testvals,1) <= size(values,1)
+  @assert size(trialvals,2) <= size(values,3)
+  @assert size(trialvals,1) <= size(values,2)
+  npoints = size(testvals,2)
+  ndofstest = size(testvals,1)
+  ndofstrial = size(trialvals,1)
+  @inbounds for i = 1:npoints
+    @inbounds for j = 1:ndofstrial
+      @inbounds for k = 1:ndofstest
+        values[k,j,i] = inner(testvals[k,i],trialvals[j,i])
+      end
+    end
+  end
+end
+
 inner(test::CellFieldValues,trial::CellFieldValues) = CellScalarsFromInner(test,trial)
 
 inner(test::CellBasisValues,trial::CellFieldValues) = CellVectorsFromInner(test,trial)
+
+inner(test::CellBasisValues,trial::CellBasisValues) = CellMatricesFromInner(test,trial)
+
