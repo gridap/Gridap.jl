@@ -166,9 +166,9 @@ struct CellBasisWithMappedDerivatives{D,T} <: CellBasis{D,T}
   geomap::CellField{D,Point{D}}
 end
 
-evaluate(self::CellBasisWithMappedDerivaties,points) = evaluate(self.basis,points)
+evaluate(self::CellBasisWithMappedDerivatives,points) = evaluate(self.basis,points)
 
-function gradient(self::CellBasisWithMappedDerivaties{D,T}) where {D,T}
+function gradient(self::CellBasisWithMappedDerivatives{D,T}) where {D,T}
   gradrefbasis = gradient(self.basis)
   jacobian = gradient(self.geomap)
   TG = gradient(T,Val(D))

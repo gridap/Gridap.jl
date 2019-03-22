@@ -22,5 +22,5 @@ the range space of geomap
 """
 function mapderivatives(
   self::CellBasis{D,T}, geomap::CellField{D,Point{D}} ) where {D,T}
-  CellBasisWithMappedDerivaties(self,geomap)
+  CellBasisWithMappedDerivatives(self,geomap)
 end
