@@ -29,7 +29,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Numa.jl",
     "title": "Numa.gradient",
     "category": "method",
-    "text": "Returns another CellField object that represents the gradient. TG is a value whose rank is one order grater than the one of T\n\n\n\n\n\n"
+    "text": "Returns another CellField object that represents the gradient. TG has a rank one order greater than the one of T\n\n\n\n\n\n"
 },
 
 {
@@ -77,7 +77,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Numa.jl",
     "title": "Numa.CellBasis",
     "category": "type",
-    "text": "T is for the type of value D is for the dimension of the domain\n\n\n\n\n\n"
+    "text": "Abstract type that represents a cell-wise basis for a field space, where T is the type of value and D the dimension of the domain\n\n\n\n\n\n"
 },
 
 {
@@ -86,6 +86,14 @@ var documenterSearchIndex = {"docs": [
     "title": "Numa.CellBasisValues",
     "category": "type",
     "text": "Abstract type that represents a function basis with value of type T evaluated at a collection of points in each cell\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.CellField",
+    "page": "Numa.jl",
+    "title": "Numa.CellField",
+    "category": "type",
+    "text": "Abstract type that represents a cell-wise field, where T stands for the type that represents the field at a point (e.g., scalar, vector, tensor) and D stands for the space dimension\n\n\n\n\n\n"
 },
 
 {
@@ -173,7 +181,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Numa.jl",
     "title": "Numa.IndexableCellArray",
     "category": "type",
-    "text": "Abstract type representing an indexable CellArray. By implementing a concrete IndexableCellArray, one automatically gets an type that is also iterable\n\n\n\n\n\n"
+    "text": "Abstract type representing an indexable CellArray. By implementing a concrete IndexableCellArray, one automatically gets a type that is also iterable\n\n\n\n\n\n"
 },
 
 {
@@ -305,9 +313,9 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "#Numa.CellBasisWithMappedDerivaties",
+    "location": "#Numa.CellBasisWithMappedDerivatives",
     "page": "Numa.jl",
-    "title": "Numa.CellBasisWithMappedDerivaties",
+    "title": "Numa.CellBasisWithMappedDerivatives",
     "category": "type",
     "text": "This type implements the result of mapderivatives\n\n\n\n\n\n"
 },
@@ -317,7 +325,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Numa.jl",
     "title": "Numa.CellFieldValuesFromInterpolation",
     "category": "type",
-    "text": "General implementation Accepts any kind of CellBasisValues{TB} representing the evaluated shape functions and CellFieldValues{TN} representing the \"nodal\" values of the field to be interpolated at the points, where the shape functions are evaluated. This implementation only assumes that outer(·,·) is defined for instances of TB and TN. The result is of type T\n\n\n\n\n\n"
+    "text": "General implementation Cell-wise interpolation of a field evaluated at a set of points CellFieldValues{TN} with a CellBasisValues{TB} of shape functions evaluated at the same points. Accepts any kind of CellBasisValues{TB} and CellFieldValues{TN} representing. This implementation only assumes that outer(·,·) is defined for instances of TB and TN. The result is of type T\n\n\n\n\n\n"
 },
 
 {
