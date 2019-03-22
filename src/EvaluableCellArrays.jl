@@ -9,7 +9,7 @@ evaluate(::EvaluableCellArray{D,T,N} where {D,T,N},::CellPoints{D} where D)::Cel
 # Concrete implementations
 
 """
-Implements the results of a binary operation between two instances of `EvaluableCellArray`
+Implements the results of a binary operation `op` between two instances `a` and `b` of `EvaluableCellArray`
 """
 struct EvaluableCellArrayFromBinaryOp{D,T,N,A,B} <: EvaluableCellArray{D,T,N}
   a::EvaluableCellArray{D,T,A}
@@ -17,9 +17,11 @@ struct EvaluableCellArrayFromBinaryOp{D,T,N,A,B} <: EvaluableCellArray{D,T,N}
   op
 end
 
+"""
+Compute the operation `op(a,b)` for a `EvaluableCellArrayFromBinaryOp`
+"""
 function evaluate(self::EvaluableCellArrayFromBinaryOp,points::CellPoints)
   avals = evaluate(self.a,points)
   bvals = evaluate(self.b,points)
   self.op(avals,bvals)
 end
-
