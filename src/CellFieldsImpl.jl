@@ -90,8 +90,8 @@ function evaluate(
 end
 
 function gradient(self::CellFieldFromComposeWithLambda{D,S,T}) where {D,S,T}
-  gradf = gradient(f)
-  TG = gradf(T)
-  CellFieldFromComposeWithLambda{D,S,TG}(gradf,g)
+  gradf = gradient(self.f)
+  TG = gradf(S)
+  CellFieldFromComposeWithLambda{D,S,TG}(gradf,self.g)
 end
 
