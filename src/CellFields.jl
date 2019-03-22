@@ -27,3 +27,5 @@ function compose(f,g::CellField{D,S}) where {D,S}
   T = f(S)
   CellFieldFromComposeWithLambda{D,S,T}(f,g)
 end
+
+Base.:∘(f,g::CellField) = compose(f,g)

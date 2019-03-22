@@ -48,7 +48,9 @@ grad_fun(::Type{Point{2}}) = VectorValue{2}
 
 Numa.gradient(::typeof(fun)) = grad_fun
 
-g = compose(fun,phi)
+#g = compose(fun,phi)
+
+g = fun ∘ phi
 
 @test isa(g,CellField{2,Float64})
 
