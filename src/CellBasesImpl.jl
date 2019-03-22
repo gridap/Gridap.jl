@@ -161,7 +161,7 @@ gradient(::GradOfCellBasisMappedWithJacob) = @notimplemented
 """
 This type implements the result of mapderivatives
 """
-struct CellBasisWithMappedDerivaties{D,T} <: CellBasis{D,T}
+struct CellBasisWithMappedDerivatives{D,T} <: CellBasis{D,T}
   basis::CellBasis{D,T}
   geomap::CellField{D,Point{D}}
 end
@@ -175,4 +175,3 @@ function gradient(self::CellBasisWithMappedDerivaties{D,T}) where {D,T}
   J = gradient(Point{D},Val(D))
   GradOfCellBasisMappedWithJacob{D,TG,J}(gradrefbasis,jacobian)
 end
-

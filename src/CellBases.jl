@@ -2,8 +2,8 @@ export CellBasis
 export evaluate, gradient, mapderivatives
 
 """
-T is for the type of value
-D is for the dimension of the domain
+Abstract type that represents a cell-wise basis for a field space,
+where T is the type of value and D the dimension of the domain
 """
 abstract type CellBasis{D,T} end
 
@@ -24,4 +24,3 @@ function mapderivatives(
   self::CellBasis{D,T}, geomap::CellField{D,Point{D}} ) where {D,T}
   CellBasisWithMappedDerivaties(self,geomap)
 end
-

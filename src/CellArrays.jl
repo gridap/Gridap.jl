@@ -48,7 +48,7 @@ end
 """
 Abstract type representing an indexable CellArray.
 By implementing a concrete IndexableCellArray, one automatically
-gets an type that is also iterable
+gets a type that is also iterable
 """
 abstract type IndexableCellArray{T,N} <: CellArray{T,N} end
 

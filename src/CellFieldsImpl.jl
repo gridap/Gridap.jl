@@ -2,10 +2,9 @@
 
 """
 General implementation
-Accepts any kind of `CellBasisValues{TB}` representing
-the evaluated shape functions and `CellFieldValues{TN}` representing
-the "nodal" values of the field to be interpolated at the points,
-where the shape functions are evaluated. This implementation only assumes
+Cell-wise interpolation of a field evaluated at a set of points `CellFieldValues{TN}` with a `CellBasisValues{TB}` of shape functions
+evaluated at the same points. Accepts any kind of `CellBasisValues{TB}`
+and `CellFieldValues{TN}` representing. This implementation only assumes
 that outer(·,·) is defined for instances of TB and TN. The result is of type T
 """
 struct CellFieldValuesFromInterpolation{TB,TN,T} <: CellFieldValues{T}
@@ -75,5 +74,3 @@ function gradient(self::CellFieldFromInterpolation{D,T,TB,TN}) where {D,T,TB,TN}
   TBG = gradient(TB,Val(D))
   CellFieldFromInterpolation{D,TG,TBG,TN}(grad_cellbasis,self.cellnodalvalues)
 end
-
-
