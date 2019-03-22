@@ -13,7 +13,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Numa.jl",
     "title": "Numa.compose",
     "category": "method",
-    "text": "Composes a lambda function with a CellField f has to be overloaded with 2 methods one that returns the type of the result, and another that returns the result\n\n\n\n\n\n"
+    "text": "Composes a lambda function f with a CellField g to provide f ∘ g. It has to be overloaded with 2 methods, one that returns the type of the result, and another one that returns the result\n\n\n\n\n\n"
 },
 
 {
@@ -22,6 +22,14 @@ var documenterSearchIndex = {"docs": [
     "title": "Numa.evaluate!",
     "category": "method",
     "text": "First axis of v for dofs, second for points\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.evaluate-Tuple{Numa.EvaluableCellArrayFromBinaryOp,CellArray{StaticArrays.SArray{Tuple{D},Float64,1,D},1} where D}",
+    "page": "Numa.jl",
+    "title": "Numa.evaluate",
+    "category": "method",
+    "text": "Compute the operation op(a,b) for a EvaluableCellArrayFromBinaryOp\n\n\n\n\n\n"
 },
 
 {
@@ -373,7 +381,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Numa.jl",
     "title": "Numa.EvaluableCellArrayFromBinaryOp",
     "category": "type",
-    "text": "Implements the results of a binary operation between two instances of EvaluableCellArray\n\n\n\n\n\n"
+    "text": "Implements the results of a binary operation op between two instances a and b of EvaluableCellArray\n\n\n\n\n\n"
 },
 
 {
