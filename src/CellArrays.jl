@@ -112,6 +112,7 @@ Base.length(self::ConstantCellArray) = self.length
 maxsize(self::ConstantCellArray) = size(self.array)
 
 
+#TODO: A related abstract type could also be useful
 """
 Concrete implementation of `CellArray` that represents the lazy result
 of applying a binary operation on two instances of `CellArray`
@@ -123,7 +124,6 @@ provides the size of the result and
 computes the result.
 This type is essential for DRY (don't repeat yourself)
 """
-
 struct CellArrayFromBinaryOp{A,P,B,Q,T,N} <: CellArray{T,N}
   a::CellArray{A,P}
   b::CellArray{B,Q}
