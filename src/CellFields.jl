@@ -31,3 +31,5 @@ function compose(f,g::CellField{D,S}) where {D,S}
 end
 
 Base.:∘(f,g::CellField) = compose(f,g)
+# Can we put ∘ and ∇ as compose(,) and gradient() in the base module using duck-typing
+# only once for all cases?

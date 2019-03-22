@@ -7,7 +7,7 @@ export ConstantCellArray
 
 """
 Abstract type representing an iterable collection of Arrays{T,N},
-where each array is associated with a cell.
+where each array is associated to a cell.
 """
 abstract type CellArray{T,N} end
 
@@ -141,7 +141,7 @@ Base.length(self::ConstantCellArray) = self.length
 maxsize(self::ConstantCellArray) = size(self.array)
 
 
-#TODO: A related abstract type could also be useful
+# TODO: A related abstract type could also be useful
 """
 Concrete implementation of `CellArray` that represents the lazy result
 of applying a binary operation on two instances of `CellArray`
@@ -242,4 +242,3 @@ function Base.iterate(self::CellArrayFromUnaryOp,state)
     (vals, state)
   end
 end
-
