@@ -5,7 +5,7 @@ export evaluate, gradient, mapderivatives
 Abstract type that represents a cell-wise basis for a field space,
 where T is the type of value and D the dimension of the domain
 """
-abstract type CellBasis{D,T} end
+const CellBasis{D,T} = EvaluableCellArray{D,T,2} where {D,T}
 
 evaluate(::CellBasis{D,T} where {D,T} ,::CellPoints{D} where D)::CellBasisValues{T}= @abstractmethod
 

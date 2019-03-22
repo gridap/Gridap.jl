@@ -7,7 +7,7 @@ T stands for the type that represents the field at a point
 (e.g., scalar, vector, tensor) and D stands for the space
 dimension
 """
-abstract type CellField{D,T} end
+const CellField{D,T} = EvaluableCellArray{D,T,1} where {D,T}
 
 evaluate(::CellField{D,T} where {D,T},::CellPoints{D} where D)::CellFieldValues{T} = @abstractmethod
 
