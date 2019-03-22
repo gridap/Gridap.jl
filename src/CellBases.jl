@@ -15,6 +15,8 @@ TG is a value whose rank is one order grater than the one of T
 """
 gradient(::CellBasis{D,T} where {D,T})::CellBasis{D,TG} = @abstractmethod
 
+(∇)(self::CellBasis) = gradient(self)
+
 """
 Returns another CellBasis, whose spatial
 derivatives are respect to the coordinates of

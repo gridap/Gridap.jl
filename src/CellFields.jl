@@ -17,6 +17,8 @@ Returns another CellField object that represents the gradient.
 """
 gradient(::CellField{D,T} where {D,T})::CellField{D,TG} = @abstractmethod
 
+(∇)(self::CellField) = gradient(self)
+
 """
 Composes a lambda function `f` with a `CellField`
 `g` to provide `f ∘ g`. It has to be overloaded with 2 methods,
