@@ -33,6 +33,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "#Numa.evaluate-Tuple{Numa.EvaluableCellArrayFromComposition,CellArray{StaticArrays.SArray{Tuple{D},Float64,1,D},1} where D}",
+    "page": "Numa.jl",
+    "title": "Numa.evaluate",
+    "category": "method",
+    "text": "Evaluate a EvaluableCellArrayFromComposition\n\n\n\n\n\n"
+},
+
+{
     "location": "#Numa.gradient-Tuple{MultivariatePolynomialBasis}",
     "page": "Numa.jl",
     "title": "Numa.gradient",
@@ -69,7 +77,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Numa.jl",
     "title": "Numa.mapderivatives",
     "category": "method",
-    "text": "Returns another CellBasis, whose spatial derivatives are respect to the coordinates of the range space of geomap\n\n\n\n\n\n"
+    "text": "Returns another CellBasis whose spatial derivatives are with respect to the coordinates of the range space of geomap\n\n\n\n\n\n"
 },
 
 {
@@ -382,6 +390,14 @@ var documenterSearchIndex = {"docs": [
     "title": "Numa.EvaluableCellArrayFromBinaryOp",
     "category": "type",
     "text": "Implements the results of a binary operation op between two instances a and b of EvaluableCellArray\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.EvaluableCellArrayFromComposition",
+    "page": "Numa.jl",
+    "title": "Numa.EvaluableCellArrayFromComposition",
+    "category": "type",
+    "text": "Implements the composition a ∘ b of two instances a and b of EvaluableCellArray\n\n\n\n\n\n"
 },
 
 {
