@@ -81,7 +81,7 @@ let
     c
   end
 
-  c = Numa.CellArrayFromUnaryOp{T,T,1}(a,computevals!)
+  c = Numa.CellArrayFromUnaryOp(a,computevals!)
 
   @test length(c) == l
   @test maxsize(c) == (3,)

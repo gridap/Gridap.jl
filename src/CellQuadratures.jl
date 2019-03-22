@@ -6,9 +6,9 @@ Abstract type representing a collection of quadratures, one for each cell
 """
 abstract type CellQuadrature{D} end
 
-coordinates(::CellQuadrature{D} where D )::CellFieldValues{Point{D}} = @abstractmethod
+coordinates(::CellQuadrature{D} where D )::CellPoints{D} = @abstractmethod
 
-weights(::CellQuadrature)::CellFieldValues{Float64} = @abstractmethod
+weights(::CellQuadrature)::CellValues{Float64} = @abstractmethod
 
 function Base.Iterators.zip(self::CellQuadrature)
   c = coordinates(self)

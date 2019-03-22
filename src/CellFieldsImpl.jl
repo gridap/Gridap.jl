@@ -82,11 +82,14 @@ end
 
 function evaluate(
   self::CellFieldFromComposeWithLambda{D,S,T},points::CellPoints{D}) where {D,S,T}
+  function computesize(a)
+    a
+  end
   function computevals!(g,values)
     values .= self.f.(g)
   end
   g = evaluate(self.g,points)
-  CellArrayFromUnaryOp{S,T,1}(g,computevals!)
+  CellArrayFromUnaryOp{S,1,T,1}(g,computevals!,computesize)
 end
 
 function gradient(self::CellFieldFromComposeWithLambda{D,S,T}) where {D,S,T}

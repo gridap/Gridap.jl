@@ -1,5 +1,5 @@
 export CellArray, IndexableCellArray
-export maxlength, maxsize
+export maxlength, maxsize, cellsum
 export CellFieldValues, CellBasisValues
 export CellValues, CellPoints
 export CellScalars, CellVectors, CellMatrices
@@ -43,6 +43,35 @@ function Base.show(io::IO,self::CellArray)
   for (i,a) in enumerate(self)
     println(io,"$i -> $a")
   end
+end
+
+function cellsum(self::CellArray{T,N};dim::Int) where {T,N}
+  if N == 1
+    #TODO This case would lead to a degenerated CellArray{T,0}
+    # and deserves special attention
+    @notimplemented
+  else
+    function computesize(a)
+      b = [v for (i,v) in enumerate(a) if i!=dim ]
+      (b...,)
+    end
+    function computevals!(a,values)
+      #TODO This allocates memory
+      sum(a,dims=N)
+    end
+    CellArrayFromUnaryOp{T,N,T,N-1}(self,computevals!,computesize)
+  end
+end
+
+function Base.:*(a::CellArray{T,N}, b::CellArray{T,N} ) where {T,N}
+  function computevals!(a,b,values)
+    if (size(a) != size(values) || size(b) != size(values))
+      @notimplemented
+    end
+    values .= a .* b
+    values
+  end
+  CellArrayFromBinaryOp(a,b,computevals!)
 end
 
 """
@@ -131,6 +160,14 @@ struct CellArrayFromBinaryOp{A,P,B,Q,T,N} <: CellArray{T,N}
   computesize
 end
 
+function CellArrayFromBinaryOp(a::CellArray{T,N},b::CellArray{T,N},computevals) where {T,N}
+  function computesize(a,b)
+    @assert a == b
+    a
+  end
+  CellArrayFromBinaryOp{T,N,T,N,T,N}(a,b,computevals,computesize)
+end
+
 function Base.length(self::CellArrayFromBinaryOp)
   @assert length(self.a) == length(self.b)
   length(self.a)
@@ -169,16 +206,24 @@ end
 Type that implements the lazy result of an unary operation
 on an instance of `CellArray`
 """
-struct CellArrayFromUnaryOp{S,T,N} <: CellArray{T,N}
-  a::CellArray{S,N}
+struct CellArrayFromUnaryOp{S,M,T,N} <: CellArray{T,N}
+  a::CellArray{S,M}
   computevals!
+  computesize
+end
+
+function CellArrayFromUnaryOp(a::CellArray{T,N},computevals) where {T,N}
+  function computesize(a)
+    a
+  end
+  CellArrayFromUnaryOp{T,N,T,N}(a,computevals,computesize)
 end
 
 Base.length(self::CellArrayFromUnaryOp) = length(self.a)
 
-maxsize(self::CellArrayFromUnaryOp) = maxsize(self.a)
+maxsize(self::CellArrayFromUnaryOp) = self.computesize(maxsize(self.a))
 
-function Base.iterate(self::CellArrayFromUnaryOp{S,T,N}) where {S,T,N}
+function Base.iterate(self::CellArrayFromUnaryOp{S,M,T,N}) where {S,M,T,N}
   values = Array{T,N}(undef,maxsize(self))
   anext = iterate(self.a)
   state = (values,anext)
