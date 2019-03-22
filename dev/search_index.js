@@ -9,6 +9,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "#Numa.compose-Union{Tuple{S}, Tuple{D}, Tuple{Any,EvaluableCellArray{D,S,1}}} where S where D",
+    "page": "Numa.jl",
+    "title": "Numa.compose",
+    "category": "method",
+    "text": "Composes a lambda function with a CellField f has to be overloaded with 2 methods one that returns the type of the result, and another that returns the result\n\n\n\n\n\n"
+},
+
+{
     "location": "#Numa.evaluate!-Union{Tuple{T}, Tuple{D}, Tuple{MultivariatePolynomialBasis{D,T},Array{SArray{Tuple{D},Float64,1,D},1},Array{T,2}}} where T where D",
     "page": "Numa.jl",
     "title": "Numa.evaluate!",
@@ -310,6 +318,14 @@ var documenterSearchIndex = {"docs": [
     "title": "Numa.CellArrayFromBinaryOp",
     "category": "type",
     "text": "Concrete implementation of CellArray that represents the lazy result of applying a binary operation on two instances of CellArray the functions computevals! and computesize represents the binary operation two be performed on the two arrays. computesize(::NTuple{P,Int},NTuple{Q,Int})::NTuple{N,Int} provides the size of the result and computevals!(::Array{A,P},::Array{B,Q},::Array{T,N})::Array{T,N} computes the result. This type is essential for DRY (don\'t repeat yourself)\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.CellArrayFromUnaryOp",
+    "page": "Numa.jl",
+    "title": "Numa.CellArrayFromUnaryOp",
+    "category": "type",
+    "text": "Type that implements the lazy result of an unary operation on an instance of CellArray\n\n\n\n\n\n"
 },
 
 {
