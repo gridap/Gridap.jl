@@ -17,15 +17,15 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "#Numa.gradient-Tuple{CellBasis}",
+    "location": "#Numa.gradient-Tuple{MultivariatePolynomialBasis}",
     "page": "Numa.jl",
     "title": "Numa.gradient",
     "category": "method",
-    "text": "Returns another CellBasis object that represents the gradient TG is a value whose rank is one order grater than the one of T\n\n\n\n\n\n"
+    "text": "Returns a MultivariatePolynomialBasis{TG,D} where TG is a type whose rank is one unit grater than the one of T\n\n\n\n\n\n"
 },
 
 {
-    "location": "#Numa.gradient-Tuple{CellField}",
+    "location": "#Numa.gradient-Tuple{Numa.EvaluableCellArray{D,T,1} where T where D}",
     "page": "Numa.jl",
     "title": "Numa.gradient",
     "category": "method",
@@ -33,11 +33,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "#Numa.gradient-Tuple{MultivariatePolynomialBasis}",
+    "location": "#Numa.gradient-Tuple{Numa.EvaluableCellArray{D,T,2} where T where D}",
     "page": "Numa.jl",
     "title": "Numa.gradient",
     "category": "method",
-    "text": "Returns a MultivariatePolynomialBasis{TG,D} where TG is a type whose rank is one unit grater than the one of T\n\n\n\n\n\n"
+    "text": "Returns another CellBasis object that represents the gradient TG is a value whose rank is one order grater than the one of T\n\n\n\n\n\n"
 },
 
 {
@@ -49,7 +49,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "#Numa.mapderivatives-Union{Tuple{T}, Tuple{D}, Tuple{CellBasis{D,T},CellField{D,SArray{Tuple{D},Float64,1,D}}}} where T where D",
+    "location": "#Numa.mapderivatives-Union{Tuple{T}, Tuple{D}, Tuple{EvaluableCellArray{D,T,2},EvaluableCellArray{D,SArray{Tuple{D},Float64,1,D},1}}} where T where D",
     "page": "Numa.jl",
     "title": "Numa.mapderivatives",
     "category": "method",
@@ -342,6 +342,22 @@ var documenterSearchIndex = {"docs": [
     "title": "Numa.ConstantCellBasisValues",
     "category": "type",
     "text": "Concrete implementation for the case of the same interpolation and the same sampling points on all cells\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.EvaluableCellArray",
+    "page": "Numa.jl",
+    "title": "Numa.EvaluableCellArray",
+    "category": "type",
+    "text": "Abstract type that represents both a CellField and a CellBasis\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.EvaluableCellArrayFromBinaryOp",
+    "page": "Numa.jl",
+    "title": "Numa.EvaluableCellArrayFromBinaryOp",
+    "category": "type",
+    "text": "Implements the results of a binary operation between two instances of EvaluableCellArray\n\n\n\n\n\n"
 },
 
 {
