@@ -110,3 +110,58 @@ end
 Base.length(self::ConstantCellArray) = self.length
 
 maxsize(self::ConstantCellArray) = size(self.array)
+
+
+"""
+Concrete implementation of `CellArray` that represents the lazy result
+of applying a binary operation on two instances of `CellArray`
+the functions `computevals!` and `computesize` represents the binary
+operation two be performed on the two arrays.
+`computesize(::NTuple{P,Int},NTuple{Q,Int})::NTuple{N,Int}`
+provides the size of the result and
+`computevals!(::Array{A,P},::Array{B,Q},::Array{T,N})::Array{T,N}`
+computes the result.
+This type is essential for DRY (don't repeat yourself)
+"""
+
+struct CellArrayFromBinaryOp{A,P,B,Q,T,N} <: CellArray{T,N}
+  a::CellArray{A,P}
+  b::CellArray{B,Q}
+  computevals!
+  computesize
+end
+
+function Base.length(self::CellArrayFromBinaryOp)
+  @assert length(self.a) == length(self.b)
+  length(self.a)
+end
+
+function maxsize(self::CellArrayFromBinaryOp{A,P,B,Q,T,N}) where {A,P,B,Q,T,N}
+  s = self.computesize(maxsize(self.a), maxsize(self.b))
+  @assert isa(s,NTuple{N,Int})
+  s
+end
+
+function Base.iterate(self::CellArrayFromBinaryOp{A,P,B,Q,T,N}) where {A,P,B,Q,T,N}
+  values = Array{T,N}(undef,maxsize(self))
+  anext = iterate(self.a)
+  bnext = iterate(self.b)
+  state = (values,anext,bnext)
+  iterate(self,state)
+end
+
+function Base.iterate(self::CellArrayFromBinaryOp,state)
+  (values,anext,bnext) = state
+  if anext == nothing || bnext == nothing
+    nothing
+  else
+    (avals,astate) = anext
+    (bvals,bstate) = bnext
+    vals = self.computevals!(avals,bvals,values)
+    anext = iterate(self.a,astate)
+    bnext = iterate(self.b,bstate)
+    state = (values,anext,bnext)
+    (vals, state)
+  end
+end
+
