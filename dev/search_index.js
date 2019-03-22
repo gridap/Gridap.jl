@@ -305,6 +305,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "#Numa.CellArrayFromBinaryOp",
+    "page": "Numa.jl",
+    "title": "Numa.CellArrayFromBinaryOp",
+    "category": "type",
+    "text": "Concrete implementation of CellArray that represents the lazy result of applying a binary operation on two instances of CellArray the functions computevals! and computesize represents the binary operation two be performed on the two arrays. computesize(::NTuple{P,Int},NTuple{Q,Int})::NTuple{N,Int} provides the size of the result and computevals!(::Array{A,P},::Array{B,Q},::Array{T,N})::Array{T,N} computes the result. This type is essential for DRY (don\'t repeat yourself)\n\n\n\n\n\n"
+},
+
+{
     "location": "#Numa.CellBasisValuesFromSingleInterpolation",
     "page": "Numa.jl",
     "title": "Numa.CellBasisValuesFromSingleInterpolation",
