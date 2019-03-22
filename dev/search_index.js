@@ -93,7 +93,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Numa.jl",
     "title": "Numa.CellArray",
     "category": "type",
-    "text": "Abstract type representing an iterable collection of Arrays{T,N}, where each array is associated with a cell.\n\n\n\n\n\n"
+    "text": "Abstract type representing an iterable collection of Arrays{T,N}, where each array is associated to a cell.\n\n\n\n\n\n"
 },
 
 {
