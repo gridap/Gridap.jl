@@ -9,6 +9,7 @@ using Test
   @time @testset "CellBases" begin include("cellbasestests.jl") end
   @time @testset "CellFields" begin include("cellfieldstests.jl") end
   @time @testset "CellScalarsVectorsAndMatrices" begin include("CellScalarsVectorsAndMatricesTests.jl") end
+  @time @testset "EvaluableCellArrays" begin include("EvaluableCellArraysTests.jl") end
   @time @testset "IntegrationMeshes" begin include("integrationmeshestests.jl") end
   @time @testset "Polytopes" begin include("polytopetests.jl") end
   @time @testset "RefFEs" begin include("reffetests.jl") end

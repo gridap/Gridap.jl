@@ -46,5 +46,6 @@ function inner(a::SVector{D,T},b::SVector{D,T}) where {D,T}
   @inbounds for i=1:D
     v += a[i]*b[i]
   end
+  v
 end
 

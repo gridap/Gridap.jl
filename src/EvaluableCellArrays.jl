@@ -20,5 +20,6 @@ end
 function evaluate(self::EvaluableCellArrayFromBinaryOp,points::CellPoints)
   avals = evaluate(self.a,points)
   bvals = evaluate(self.b,points)
-  op(avals,bvals)
+  self.op(avals,bvals)
 end
+

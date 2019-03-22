@@ -36,7 +36,7 @@ function inner(test::CellFieldValues{T},trial::CellFieldValues{T}) where T
     @view values[1:npoin]
   end
 
-  CellArrayFromBinaryOp{T,1,T,1,T,1}(test,trial,computevals!,computesize)
+  CellArrayFromBinaryOp{T,1,T,1,Float64,1}(test,trial,computevals!,computesize)
 
 end
 
@@ -60,7 +60,7 @@ function inner(test::CellBasisValues{T},trial::CellFieldValues{T}) where T
     @view values[1:ndofs,1:npoin]
   end
 
-  CellArrayFromBinaryOp{T,2,T,1,T,2}(test,trial,computevals!,computesize)
+  CellArrayFromBinaryOp{T,2,T,1,Float64,2}(test,trial,computevals!,computesize)
 
 end
 
@@ -89,7 +89,19 @@ function inner(test::CellBasisValues{T},trial::CellBasisValues{T}) where T
     @view values[1:ndofstest,1:ndofstrial,1:npoints]
   end
 
-  CellArrayFromBinaryOp{T,2,T,2,T,3}(test,trial,computevals!,computesize)
+  CellArrayFromBinaryOp{T,2,T,2,Float64,3}(test,trial,computevals!,computesize)
 
+end
+
+function inner(test::CellField{D,T},trial::CellField{D,T}) where {D,T}
+  EvaluableCellArrayFromBinaryOp{D,T,1,1,1}(test,trial,inner)
+end
+
+function inner(test::CellBasis{D,T},trial::CellField{D,T}) where {D,T}
+  EvaluableCellArrayFromBinaryOp{D,T,2,2,1}(test,trial,inner)
+end
+
+function inner(test::CellBasis{D,T},trial::CellBasis{D,T}) where {D,T}
+  EvaluableCellArrayFromBinaryOp{D,T,3,2,2}(test,trial,inner)
 end
 
