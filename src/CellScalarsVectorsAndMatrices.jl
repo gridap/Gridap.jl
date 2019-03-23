@@ -19,6 +19,10 @@ associated with a collection of points in each cell
 """
 const CellMatrices{T} = CellArray{T,3} where T
 
+# @santiagobadia : I do not get it, since I would say that
+# CellVectors{T} = CellArray{T,1}, and T can be a FieldType
+# I guess I misunderstood something... probably looking at usage...
+
 function inner(test::CellFieldValues{T},trial::CellFieldValues{T}) where T
 
   function computesize(test,trial)
@@ -104,4 +108,3 @@ end
 function inner(test::CellBasis{D,T},trial::CellBasis{D,T}) where {D,T}
   EvaluableCellArrayFromBinaryOp{D,T,3,2,2}(test,trial,inner)
 end
-

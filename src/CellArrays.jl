@@ -224,6 +224,8 @@ function CellArrayFromUnaryOp(a::CellArray{T,N},computevals) where {T,N}
   CellArrayFromUnaryOp{T,N,T,N}(a,computevals,computesize)
 end
 
+# @santiagobadia : computesize returns a? size(a)?
+
 Base.length(self::CellArrayFromUnaryOp) = length(self.a)
 
 maxsize(self::CellArrayFromUnaryOp) = self.computesize(maxsize(self.a))
