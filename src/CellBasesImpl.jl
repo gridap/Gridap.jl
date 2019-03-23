@@ -183,7 +183,10 @@ struct CellBasisWithMappedDerivatives{D,T} <: CellBasis{D,T}
 end
 
 # @santiagobadia : Not sure about name, no derivatives, just info
-# about ref to phys space
+# about ref to phys space. Related to it, not sure about name mapderivatives,
+# it should be "add geomap info"... it is just a composition of ref_fe functions
+# and geomap and the derivative obtained with chain rule
+# CellBasisWithPointMap better?
 
 evaluate(self::CellBasisWithMappedDerivatives,points) = evaluate(self.basis,points)
 
