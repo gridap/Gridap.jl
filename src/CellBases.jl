@@ -17,6 +17,9 @@ gradient(::CellBasis{D,T} where {D,T})::CellBasis{D,TG} = @abstractmethod
 
 (∇)(self::CellBasis) = gradient(self)
 
+# @santiagobadia : Very minor comment, the gradient is not a basis anymore :-)
+# Can we live with this inconsistency?
+
 """
 Returns another `CellBasis` whose spatial
 derivatives are with respect to the coordinates of

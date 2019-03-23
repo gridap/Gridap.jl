@@ -33,8 +33,12 @@ end
    a::EvaluableCellArray{D,T,N}
    b::EvaluableCellArray{D,Point{D},1}
  end
-# @santiagobadia: Not sure about {D,Point{D}}, we can probably want a different space
+# @santiagobadia : Not sure about {D,Point{D}}, we can probably want a different space
 # dimension D and point dimension. Think about problems on manifolds.
+
+# @santiagobadia : Not sure this method will be pf practical use in our FE integration
+# machinery, since we cannot provide the more concrete type. Should we create a composition
+# for every concrete CellBasis and CellField? Or simply checking that D,T,N are right...
 
  Base.:∘(f::EvaluableCellArray{D,T,N},
          g::EvaluableCellArray{D,Point{D},1}) where{D,T,N} =

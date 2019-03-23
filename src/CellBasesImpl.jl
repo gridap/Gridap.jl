@@ -10,6 +10,8 @@ struct CellBasisValuesFromSingleInterpolation{T,D} <: CellBasisValues{T}
   points::CellPoints{D}
 end
 
+# @santiagobadia : Better D,T for consistency
+
 Base.length(self::CellBasisValuesFromSingleInterpolation) = length(self.points)
 
 function Base.iterate(self::CellBasisValuesFromSingleInterpolation{T,D}) where {T,D}
@@ -48,6 +50,9 @@ struct ConstantCellBasisValues{D,T} <: IndexableCellArray{T,2}
   values::Array{T,2}
 end
 
+# @santiagobadia : I would define
+# const PointsArray{D} = Array{Point{D},1}
+
 function ConstantCellBasisValues(
   basis::MultivariatePolynomialBasis{D,T}, points::Array{Point{D},1}, l::Int) where {D,T}
   ndofs = length(basis)
@@ -78,6 +83,17 @@ function evaluate(
     CellBasisValuesFromSingleInterpolation(self.basis,cellpoints)
   end
 end
+
+# @santiagobadia : Better two evaluates, one for ConstantCellArray
+#
+# const ConstantCellPoints{D} = ConstantCellArray{Point{D},1} where D
+#
+# function evaluate(
+#   self::CellBasisFromSingleInterpolation{D,T}, cellpoints::ConstantCellPoints{D}) where {D,T}
+#  points = cellpoints.array
+#  l = length(cellpoints)
+#  ConstantCellBasisValues(self.basis,points,l)
+# end
 
 function gradient(self::CellBasisFromSingleInterpolation)
   grad_basis = gradient(self.basis)
@@ -165,6 +181,9 @@ struct CellBasisWithMappedDerivatives{D,T} <: CellBasis{D,T}
   basis::CellBasis{D,T}
   geomap::CellField{D,Point{D}}
 end
+
+# @santiagobadia : Not sure about name, no derivatives, just info
+# about ref to phys space
 
 evaluate(self::CellBasisWithMappedDerivatives,points) = evaluate(self.basis,points)
 

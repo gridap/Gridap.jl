@@ -100,6 +100,9 @@ evaluated at a collection of points in each cell
 """
 const CellFieldValues{T} = CellArray{T,1} where T
 
+# @santiagobadia : Shouldn't we define an object that covers all field types and say that
+# T <: FieldType. Idem below and across the project.
+
 """
 Abstract type that represents a function basis with value of type T
 evaluated at a collection of points in each cell
@@ -146,7 +149,7 @@ maxsize(self::ConstantCellArray) = size(self.array)
 Concrete implementation of `CellArray` that represents the lazy result
 of applying a binary operation on two instances of `CellArray`
 the functions `computevals!` and `computesize` represents the binary
-operation two be performed on the two arrays.
+operation to be performed on the two arrays.
 `computesize(::NTuple{P,Int},NTuple{Q,Int})::NTuple{N,Int}`
 provides the size of the result and
 `computevals!(::Array{A,P},::Array{B,Q},::Array{T,N})::Array{T,N}`
@@ -167,6 +170,8 @@ function CellArrayFromBinaryOp(a::CellArray{T,N},b::CellArray{T,N},computevals) 
   end
   CellArrayFromBinaryOp{T,N,T,N,T,N}(a,b,computevals,computesize)
 end
+
+# @santiagobadia : computesize is returning a CellArray?
 
 function Base.length(self::CellArrayFromBinaryOp)
   @assert length(self.a) == length(self.b)
