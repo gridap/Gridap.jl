@@ -119,7 +119,7 @@ Function to be eliminated in the future. Compute the numder-th derivative of a m
 at a set of 1D point
 """
 function derivative(monomials::UnivariateMonomialBasis, numder::Int64, x::Vector{Float64})
-    c = Vector{Vector{Float64}}(undef, length(points))
+    c = Vector{Vector{Float64}}(undef, length(x))
     # monomials.order+1, length(x))
     for j=1:size(c,2)
         for i=1:size(c,1)
