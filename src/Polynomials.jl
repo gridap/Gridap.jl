@@ -60,10 +60,10 @@ function evaluate!(
   for (i,point) in enumerate(points)
     xi = point[1]
     eta = point[2]
-    v[1,i] = VectorValue{2}( (eta-1)/4.0, (xi-1)/4.0 ) 
-    v[2,i] = VectorValue{2}( (1-eta)/4.0,-(1+xi)/4.0 ) 
-    v[3,i] = VectorValue{2}(-(1+eta)/4.0, (1-xi)/4.0 ) 
-    v[4,i] = VectorValue{2}( (1+eta)/4.0, (1+xi)/4.0 ) 
+    v[1,i] = VectorValue{2}( (eta-1)/4.0, (xi-1)/4.0 )
+    v[2,i] = VectorValue{2}( (1-eta)/4.0,-(1+xi)/4.0 )
+    v[3,i] = VectorValue{2}(-(1+eta)/4.0, (1-xi)/4.0 )
+    v[4,i] = VectorValue{2}( (1+eta)/4.0, (1+xi)/4.0 )
   end
 end
 
@@ -74,96 +74,41 @@ gradient(::GradShapeFunctionsScalarQua4) = @notimplemented
 
 export TensorProductPolynomialBasis
 export TensorProductMonomialBasis
-export TensorProductLagrangianPolynomialBasis
 
 export PolynomialBasis
 export MonomialBasis
-export LagrangianPolynomialBasis
 
 export derivative, tensorproduct!, gradient, tensorproductsquare!
-
 export gradient
 
+"""
+Abstract basis of univariate polynomials
+"""
 abstract type PolynomialBasis end
 
+"""
+Univariate monomial basis of a given `order`
+"""
 struct MonomialBasis <: PolynomialBasis
     order::Int64
 end
 
-struct LagrangianPolynomialBasis
-    order::Int64
-    nodescoordinates::Vector{Float64}
-    weights::Vector{Float64}
-end
-
-#"""
-#PolynomialBasis(order::Int;
-#                basistype::String="Lagrangian",
-#                nodestype::String="Equispaced")
-#
-#Create 1-dim polynomial basis of type [`Lagrangian`, `Monomial`] for a given order and a set of nodes. The nodes can be equispaced or Chebyshev nodes of second kind and take values [`Equispaced`, `Chebyshev`]
-#
-#See also: [`(polynomials::LagrangianPolynomialBasis)`](@ref)
-
-# Examples
-#```jldoctest
-#julia> a = LagrangianPolynomialBasis(2,nodestype="Equispaced")
-#```
 """
-   Create 1-dim polynomial basis of type [`Lagrangian`, `Monomial`] for a given order and a set of nodes. The nodes can be equispaced or Chebyshev nodes of second kind and take values [`Equispaced`, `Chebyshev`]
+Create 1-dim polynomial basis of `MonomialBasis` type
 """
-function PolynomialBasis(order::Int64; basistype::String="Lagrangian", nodestype::String="Equispaced")
-    if basistype=="Lagrangian"
-        polynomialbasis=LagrangianPolynomialBasis(order,nodestype=nodestype)
-    elseif basistype=="Monomial"
-        polynomialbasis=MonomialBasis(order)
-    else
-        @assert (0==1) "Polynomial basis type not implemented"
-    end
-    return polynomialbasis
+function PolynomialBasis(order::Int64)
+    polynomialbasis=MonomialBasis(order)
 end
 
-function LagrangianPolynomialBasis(order::Int64; nodestype::String="Equispaced")
-    @assert ((nodestype=="Equispaced") | (nodestype=="Chebyshev"))
-    "Node type not implemented"
-    ordp1 = order+1
-    if nodestype == "Chebyshev"
-        nodescoordinates = [cos((i-1.0)*pi/order) for i=1:ordp1]
-        weights = [ ((j==1 || j==ordp1) ? wj=0.5
-                    : wj=1.0 )*((-1.0)^(mod(j,2)+1)) for j=1:ordp1 ]
-    elseif nodestype == "Equispaced"
-        (order != 0) ? nodescoordinates = (2.0/order)*[ i-1 for i=1:ordp1].-1 : nodescoordinates = [0.0]
-        weights = [binomial(order,j-1)*((-1.0)^(mod(j,2)+1)) for j=1:ordp1]
-    end
-    return LagrangianPolynomialBasis(order,nodescoordinates,weights)
-end
-
-#"""
-#(polynomials::LagrangianPolynomialBasis)(x)
-#
-#Evaluate all the elements of the 1-dim Lagrangian polynomial basis at a given point x using the modified Lagrangian formula, see [The numerical stability of barycentric Lagrange interpolation, N. Higham, IMA Journal of Numerical Analysis (2004) 24, 547–556](http://www.maths.manchester.ac.uk/~higham/narep/narep440.pdf). I previously implemented a modification of the barycentric formula in [Barycentric Lagrange Interpolation, J-L Berrut and Ll. N. Trefethen, SIAM Review 46(3), pp. 501-517, 2004](https://people.maths.ox.ac.uk/trefethen/barycentric.pdf).
-#
-#"""
-function (polynomials::LagrangianPolynomialBasis)(x)
-    ordp1 = length(polynomials.nodescoordinates)
-    aux = polynomials.nodescoordinates.-x
-    praux = prod(aux)
-    # Modified Lagrangian formula
-    return [ (x ≈ polynomials.nodescoordinates[i]) ? 1.0 : praux*polynomials.weights[i]/aux[i] for i=1:ordp1 ]
-end
-
-#"""
-#
-#Evaluate all the elements of the 1-dim monomial basis at a given point x.
-#
-#See also: [`TensorProductMonomialPolynomialBasis`](@ref)
-#"""
-function (monomials::MonomialBasis)(x::Array{Float64,1})
-    #return hcat([x.^(i-1) for i = 1:monomials.order+1]'...)
-    c = Array{Float64,2}(undef,monomials.order+1,size(x,1))
-    for j=1:size(c,2) # num eval points
-        for i=1:size(c,1) # dim pol basis 1D
-            c[i,j] = x[j]^(i-1)
+"""
+Evaluate univariate monomial basis in a set of 1D points
+"""
+function (monomials::MonomialBasis)(points::Array{Float64,1})
+    dbas = monomials.order+1
+    c = Array{Float64,2}(undef, dbas, length(points))
+    for p ∈ points
+        for i= 1:dbas
+            c[i,j] = p^(i-1)
         end
     end
     return c
