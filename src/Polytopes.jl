@@ -79,7 +79,7 @@ end
 Array of nodes for a give polytope and order
 """
 mutable struct NodesArray
-    coordinates::ArrayOfPoints{D} where D
+    coordinates::VectorOfPoints{D} where D
     nfacenodes::Array{Array{Int64,1},1}
     closurenfacenodes::Array{Array{Int64,1},1}
     function NodesArray(polytope::Polytope,orders::Array{Int64,1})
