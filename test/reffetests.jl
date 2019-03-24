@@ -4,6 +4,10 @@ using Numa, Test
 # 1D reffe
 orders=[2]
 polytope = Polytope([1])
+
+nodes=NodesArray(polytope,orders)
+
+prebasis=TensorProductPolynomialBasis(orders)
 reffe = LagrangianRefFE(polytope,orders)
 @test reffe.changeofbasis==[0.0  -0.5   0.5; 1.0   0.0  -1.0; 0.0   0.5   0.5]
 ##
