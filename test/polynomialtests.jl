@@ -39,12 +39,8 @@ p = Point{2}(2.0, 3.0)
 b = a([p])
 @test b ≈ [1.0 2.0 4.0 3.0 6.0 12.0 9.0 18.0 36.0 27.0 54.0 108.0]'
 ##
-#Create a 1D polynomial basis of type Lagrangian with equispaced nodes
-lagpole=PolynomialBasis(2, basistype="Lagrangian", nodestype="Equispaced")
-#Create a 1D polynomial basis of type Lagrangian with Chebyshev nodes of the second kind
-lagpolc=PolynomialBasis(2, basistype="Lagrangian", nodestype="Chebyshev")
 #Create a 1D monomial basis
-monpol=PolynomialBasis(2, basistype="Monomial", nodestype="Equispaced")
+monpol=UnivariatePolynomialBasis(2)
 #Evaluate a monomial in a point
 monpol([2.0])
 #Evaluate derivatives of a monomial
@@ -52,15 +48,16 @@ monpolder=derivative(monpol,2,[0.0])
 
 ##
 #Tensor product polynomial basis for multidimensional problems
-multidpolb=TensorProductPolynomialBasis([2,3,2], basistype="Monomial")
-mdpbval=multidpolb([2.0 3.0 4.0])
+multidpolb=TensorProductPolynomialBasis([2,3,2])
+point = Point{3}(2.0,3.0,4.0)
+mdpbval=multidpolb([point])
 mdpbval[end]
 @test (mdpbval[end]==(2.0^2*3.0^3*4.0^2))
 ##
 
 ##
 #Evaluation of derivatives for monomials
-polb=PolynomialBasis(2)
+polb = UnivariatePolynomialBasis(2)
 #polb=TensorProductPolynomialBasis([2], basistype="Monomial")
 polval=polb([3.0])
 derval1=derivative(polb, 1, [3.0; 4.0])
@@ -91,10 +88,10 @@ grads = gradient(polb,x)
 ##
 orders=[2,3]
 gps=[1,2]
-quad = TensorProductQuadratureOld(gps)
-a=TensorProductPolynomialBasis(orders, basistype="Monomial")
+quad = TensorProductQuadrature{2}(orders=gps)
+a=TensorProductPolynomialBasis(orders)
 numdims = length(a.polynomials)
-A = a(quad.points)
+A = a(quad.coords)
 @test size(A,1)== 12
 @test A[4,1] ≈ -1/√3
 @test A[4,2] ≈ 1/√3
