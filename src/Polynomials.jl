@@ -75,8 +75,8 @@ gradient(::GradShapeFunctionsScalarQua4) = @notimplemented
 export TensorProductPolynomialBasis
 export TensorProductMonomialBasis
 
-export PolynomialBasis
-export MonomialBasis
+export UnivariatePolynomialBasis
+export UnivariateMonomialBasis
 
 export derivative, tensorproduct!, gradient, tensorproductsquare!
 export gradient
@@ -84,29 +84,29 @@ export gradient
 """
 Abstract basis of univariate polynomials
 """
-abstract type PolynomialBasis end
+abstract type UnivariatePolynomialBasis end
 
 """
 Univariate monomial basis of a given `order`
 """
-struct MonomialBasis <: PolynomialBasis
+struct UnivariateMonomialBasis <: UnivariatePolynomialBasis
     order::Int64
 end
 
 """
-Create 1-dim polynomial basis of `MonomialBasis` type
+Create 1-dim univariate polynomial basis of `UnivariateMonomialBasis` type
 """
-function PolynomialBasis(order::Int64)
-    polynomialbasis=MonomialBasis(order)
+function UnivariatePolynomialBasis(order::Int64)
+    UnivariateMonomialBasis(order)
 end
 
 """
 Evaluate univariate monomial basis in a set of 1D points
 """
-function (monomials::MonomialBasis)(points::Array{Float64,1})
+function (monomials::UnivariateMonomialBasis)(points::AbstractVector{Float64})
     dbas = monomials.order+1
     c = Array{Float64,2}(undef, dbas, length(points))
-    for p ∈ points
+    for (j,p) ∈ enumerate(points)
         for i= 1:dbas
             c[i,j] = p^(i-1)
         end
@@ -114,87 +114,71 @@ function (monomials::MonomialBasis)(points::Array{Float64,1})
     return c
 end
 
-#"""
-#derivative(monomial::MonomialBasis,numder::Int64,x::Array{Float64,1})
-#
-#Compute the numder-th derivative of a monomial at point x
-#"""
-function derivative(monomials::MonomialBasis,numder::Int64,x::Array{Float64,1})
-    #c = prod([i-j for j=0:numder-1])*x^(i-numder) for i=numder:monomials.order+1]
-    c = Array{Float64,2}(undef,monomials.order+1,size(x,1))
+"""
+Function to be eliminated in the future. Compute the numder-th derivative of a monomial
+at a set of 1D point
+"""
+function derivative(monomials::UnivariateMonomialBasis, numder::Int64, x::Vector{Float64})
+    c = Vector{Vector{Float64}}(undef, length(points))
+    # monomials.order+1, length(x))
     for j=1:size(c,2)
         for i=1:size(c,1)
             c[i,j] = (i<=numder) ? 0.0 : prod([i-k-1 for k=0:numder-1])x[j]^(i-numder-1)
         end
     end
     return c
-    # return [ (j<=numder) ? 0 : prod([j-k-1 for k=0:numder-1])x^(j-numder-1) for j=1:monomial.order+1]
 end
 
-
+"""
+Multivariate polynomial basis obtained as tensor product of univariate polynomial basis
+per dimension
+"""
 struct TensorProductPolynomialBasis
-    polynomials::Array{PolynomialBasis,1}
+    polynomials::Vector{UnivariatePolynomialBasis}
 end
 
-#"""
-#
-#TensorProductLagrangianPolynomial(order::Int; basistype::String="Lagrangian", nodestype::String="Equispaced")
-#
-#Create a multi-dimensional tensor product polynomial basis [`Lagrangian`,`Monomial`] for a given order and a set of nodes. For a Lagrangian basis, the nodes can be equispaced or Chebyshev nodes of second kind and take values [`Equispaced`,`Chebyshev`]
-#
-## Examples
-#```jldoctest
-#julia> a = TensorProductPolynomialBasis([2,4]; basistype="Lagrangian", nodestype="Equispaced")
-#julia> b = [1 2; 3 4]
-#julia> mapslices(a,b,dims=[2])
-#```
-#"""
-function TensorProductPolynomialBasis(order::Vector{Int64}; basistype="Lagrangian", nodestype="Equispaced")
-    polynomials = TensorProductPolynomialBasis([PolynomialBasis(order[i],
-                  basistype=basistype, nodestype=nodestype) for i=1:length(order)])
+"""
+Provide a `TensorProductPolynomialBasis` for a vector `order` providing the order per
+dimension
+"""
+function TensorProductPolynomialBasis(order::Vector{Int64})
+    TensorProductPolynomialBasis([UnivariatePolynomialBasis(order[i])
+                                 for i=1:length(order)])
 end
 
 #"""
 #TensorProductPolynomialBasis(order::Vector{Int},nodestype)
 #
-#Compute the n-dim tensor product polynomial basis given n 1D polynomial bases.
 ## Examples
 #```jldoctest
 #julia> a = TensorProductPolynomialBasis([2,4]; basistype="Lagrangian", nodestype="Equispaced")
 #julia> b = a([0.0, 1.0])
 #```
 #"""
-function (a::TensorProductPolynomialBasis)(x::Array{Float64,2})
+
+const VectorOfPoints{D} = Vector{Point{D}} where D
+"""
+Evaluate a `TensorProductPolynomialBasis` at an array of `Point{D}`
+"""
+function (a::TensorProductPolynomialBasis)(points::ArrayOfPoints{D}) where {D}
     numdims = length(a.polynomials)
-    @assert numdims == size(x,2) "Point dim and polynomial basis dim must be identical"
-    c = [ a.polynomials[i](x[:,i]) for i = 1:numdims]
-    orders = [(a.polynomials[i].order+1) for i = 1:numdims]
+    @assert numdims == D "Point dim and polynomial basis dim must be identical"
+    c = Vector{Array{Float64,2}}(undef,D)
+    for i ∈ 1:D
+        pi = [p[i] for p ∈ points]
+        c[i] = a.polynomials[i](pi)
+    end
+    # @santiagobadia : Unfortunately, I have to do all this to get i-th coordinate
+    orders = [(a.polynomials[i].order+1) for i ∈ 1:D]
     dims = tuple(orders...)
-    A = Array{Float64,length(c)}(undef,dims)
-    B = Array{Float64,2}(undef,length(A),size(x,1))
-    for j = 1:size(x,1)
+    A = Array{Float64,D}(undef,dims)
+    B = Array{Float64,2}(undef,length(A),length(points))
+    for j = 1:length(points)
         A.= 1
         tensorproduct!(A,c,j)
         B[:,j] = reshape(A, length(A))
     end
     return B
-end
-
-function (a::TensorProductPolynomialBasis)(x::Array{Array{Float64,1},1})
-    numdims = length(a.polynomials)
-    @assert numdims == length(x) "Point dim and polynomial basis dim must be identical"
-    c = [ a.polynomials[i](x[i]) for i = 1:numdims]
-    ordsp1 = [(a.polynomials[i].order+1) for i = 1:numdims]
-    gps=[length(x[i]) for i=1:numdims]
-    dims = tuple(ordsp1...)
-    A = Array{Array{Float64,numdims},numdims}(undef,(gps...))
-    for i in eachindex(A) # linear indexing
-        A[i]=ones(Float64,dims)
-    end
-    tensorproductsquare!(A,c)
-    A = reshape(A,prod(gps))
-    A = hcat([ reshape(A[i],length(A[i])) for i in 1:length(A)]...)
-    return A
 end
 
 function (a::TensorProductPolynomialBasis)(numders::Int64, x::Array{Float64,1})

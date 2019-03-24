@@ -34,8 +34,9 @@ evaluate!(grad_basis,points,grad_values)
 # @test b ≈ [0.0 0.0 0.0 0.0 0.0 1.0]'
 ##
 ##
-a = TensorProductPolynomialBasis([2,3]; basistype="Monomial", nodestype="Equispaced")
-b = a([2.0 3.0])
+a = TensorProductPolynomialBasis([2,3])
+p = Point{2}(2.0, 3.0)
+b = a([p])
 @test b ≈ [1.0 2.0 4.0 3.0 6.0 12.0 9.0 18.0 36.0 27.0 54.0 108.0]'
 ##
 #Create a 1D polynomial basis of type Lagrangian with equispaced nodes
@@ -59,7 +60,7 @@ mdpbval[end]
 
 ##
 #Evaluation of derivatives for monomials
-polb=PolynomialBasis(2, basistype="Monomial", nodestype="Equispaced")
+polb=PolynomialBasis(2)
 #polb=TensorProductPolynomialBasis([2], basistype="Monomial")
 polval=polb([3.0])
 derval1=derivative(polb, 1, [3.0; 4.0])
