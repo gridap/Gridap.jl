@@ -23,7 +23,7 @@ struct LagrangianRefFE<:RefFE
 	numdof::Int64
     function LagrangianRefFE(polytope::Polytope,orders::Array{Int64,1},rank::Int64=0)
 		nodes=NodesArray(polytope,orders)
-		prebasis=TensorProductPolynomialBasis(orders, basistype="Monomial")
+		prebasis=TensorProductPolynomialBasis(orders)
 		dofspb=prebasis(nodes.coordinates)
 		# dofspbs = dofbasis(prebasis)
 		changeofbasis=inv(dofspb)

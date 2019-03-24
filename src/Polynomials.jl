@@ -160,7 +160,7 @@ const VectorOfPoints{D} = Vector{Point{D}} where D
 """
 Evaluate a `TensorProductPolynomialBasis` at an array of `Point{D}`
 """
-function (a::TensorProductPolynomialBasis)(points::ArrayOfPoints{D}) where {D}
+function (a::TensorProductPolynomialBasis)(points::VectorOfPoints{D}) where {D}
     numdims = length(a.polynomials)
     @assert numdims == D "Point dim and polynomial basis dim must be identical"
     c = Vector{Array{Float64,2}}(undef,D)

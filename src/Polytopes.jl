@@ -79,7 +79,7 @@ end
 Array of nodes for a give polytope and order
 """
 mutable struct NodesArray
-    coordinates::Array{Float64,N} where N
+    coordinates::ArrayOfPoints{D} where D
     nfacenodes::Array{Array{Int64,1},1}
     closurenfacenodes::Array{Array{Int64,1},1}
     function NodesArray(polytope::Polytope,orders::Array{Int64,1})
@@ -89,6 +89,7 @@ mutable struct NodesArray
         spdims = length(orders)
         coords = [nodescoordinates(orders[i], nodestype="Equispaced") for i=1:spdims]
         ordsp1=orders.+1; dims = tuple(ordsp1...)
+		# @santiagobadia : I have to change the coordinates to Point{D}
         nodes.coordinates=Array{Float64,spdims+1}(undef,tuple(dims...,spdims))
         tensorfill!(nodes.coordinates,coords)
         nodes.coordinates = reshape(nodes.coordinates,:,spdims)
