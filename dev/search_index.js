@@ -17,6 +17,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "#Numa.derivative-Tuple{UnivariateMonomialBasis,Int64,Array{Float64,1}}",
+    "page": "Numa.jl",
+    "title": "Numa.derivative",
+    "category": "method",
+    "text": "Function to be eliminated in the future. Compute the numder-th derivative of a monomial at a set of 1D point\n\n\n\n\n\n"
+},
+
+{
     "location": "#Numa.evaluate!-Union{Tuple{T}, Tuple{D}, Tuple{MultivariatePolynomialBasis{D,T},Array{SArray{Tuple{D},Float64,1,D},1},Array{T,2}}} where T where D",
     "page": "Numa.jl",
     "title": "Numa.evaluate!",
@@ -281,14 +289,6 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "#Numa.PolynomialBasis-Tuple{Int64}",
-    "page": "Numa.jl",
-    "title": "Numa.PolynomialBasis",
-    "category": "method",
-    "text": "Create 1-dim polynomial basis of type [Lagrangian, Monomial] for a given order and a set of nodes. The nodes can be equispaced or Chebyshev nodes of second kind and take values [Equispaced, Chebyshev]\n\n\n\n\n\n"
-},
-
-{
     "location": "#Numa.Polytope",
     "page": "Numa.jl",
     "title": "Numa.Polytope",
@@ -302,6 +302,22 @@ var documenterSearchIndex = {"docs": [
     "title": "Numa.Quadrature",
     "category": "type",
     "text": "Abstract type representing a quadrature rule on a Polytope in a space of D dimensions\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.TensorProductPolynomialBasis",
+    "page": "Numa.jl",
+    "title": "Numa.TensorProductPolynomialBasis",
+    "category": "type",
+    "text": "Multivariate polynomial basis obtained as tensor product of univariate polynomial basis per dimension\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.TensorProductPolynomialBasis-Tuple{Array{Int64,1}}",
+    "page": "Numa.jl",
+    "title": "Numa.TensorProductPolynomialBasis",
+    "category": "method",
+    "text": "Provide a TensorProductPolynomialBasis for a vector order providing the order per dimension\n\n\n\n\n\n"
 },
 
 {
@@ -321,11 +337,35 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "#Numa.VectorValue",
+    "location": "#Numa.UnivariateMonomialBasis",
     "page": "Numa.jl",
-    "title": "Numa.VectorValue",
+    "title": "Numa.UnivariateMonomialBasis",
     "category": "type",
-    "text": "Type representing a vector value of D components\n\n\n\n\n\n"
+    "text": "Univariate monomial basis of a given order\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.UnivariateMonomialBasis-Tuple{AbstractArray{Float64,1}}",
+    "page": "Numa.jl",
+    "title": "Numa.UnivariateMonomialBasis",
+    "category": "method",
+    "text": "Evaluate univariate monomial basis in a set of 1D points\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.UnivariatePolynomialBasis",
+    "page": "Numa.jl",
+    "title": "Numa.UnivariatePolynomialBasis",
+    "category": "type",
+    "text": "Abstract basis of univariate polynomials\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.UnivariatePolynomialBasis-Tuple{Int64}",
+    "page": "Numa.jl",
+    "title": "Numa.UnivariatePolynomialBasis",
+    "category": "method",
+    "text": "Create 1-dim univariate polynomial basis of UnivariateMonomialBasis type\n\n\n\n\n\n"
 },
 
 {
@@ -422,6 +462,22 @@ var documenterSearchIndex = {"docs": [
     "title": "Numa.RefFE",
     "category": "type",
     "text": "Abstract Reference Finite Element\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.TensorField",
+    "page": "Numa.jl",
+    "title": "Numa.TensorField",
+    "category": "type",
+    "text": "Type representing a tensor value of D components\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.VectorField",
+    "page": "Numa.jl",
+    "title": "Numa.VectorField",
+    "category": "type",
+    "text": "Type representing a vector value of D components\n\n\n\n\n\n"
 },
 
 {
