@@ -31,14 +31,3 @@ function compose(f,g::CellField{D,S}) where {D,S}
   T = f(S)
   CellFieldFromComposeWithLambda{D,S,T}(f,g)
 end
-
-# @santiagobadia : The idea about two methods is very good, but
-# I was wondering whether there is an automatic way to extract it
-# from Julia if we provide info in the function interface about what
-# it receives and what it provides. Simplifying, is the type method
-# already in Julia if we feed it right?
-
-Base.:∘(f,g::CellField) = compose(f,g)
-
-# Can we put ∘ and ∇ as compose(,) and gradient() in the base module using duck-typing
-# only once for all cases?

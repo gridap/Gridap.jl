@@ -91,11 +91,10 @@ end
 @generated function tensorfill!(A::Array{T,N},c) where {T,N}
   quote
     @nloops $N i A begin
-      t = @ntuple $N i; d = length(t)
-      dim = t[d]
-      nodedim = t[dim]
-      (@nref $N A i) = c[dim][nodedim]
-    end
+    t = @ntuple $N i; d = length(t)
+    dim = t[d]
+    nodedim = t[dim]
+    (@nref $N A i) = c[dim][nodedim]
   end
 end
-
+end

@@ -98,7 +98,7 @@ end
 Abstract type that represents a field with value of type T
 evaluated at a collection of points in each cell
 """
-const CellFieldValues{T} = CellArray{T,1} where T
+const CellFieldValues{T} = CellArray{T,1} where T <: Field
 
 # @santiagobadia : Shouldn't we define an object that covers all field types and say that
 # T <: FieldType. Idem below and across the project.
@@ -171,8 +171,6 @@ function CellArrayFromBinaryOp(a::CellArray{T,N},b::CellArray{T,N},computevals) 
   CellArrayFromBinaryOp{T,N,T,N,T,N}(a,b,computevals,computesize)
 end
 
-# @santiagobadia : computesize is returning a CellArray?
-
 function Base.length(self::CellArrayFromBinaryOp)
   @assert length(self.a) == length(self.b)
   length(self.a)
@@ -223,8 +221,6 @@ function CellArrayFromUnaryOp(a::CellArray{T,N},computevals) where {T,N}
   end
   CellArrayFromUnaryOp{T,N,T,N}(a,computevals,computesize)
 end
-
-# @santiagobadia : computesize returns a? size(a)?
 
 Base.length(self::CellArrayFromUnaryOp) = length(self.a)
 

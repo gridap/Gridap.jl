@@ -97,7 +97,3 @@ function gradient(self::CellFieldFromComposeWithLambda{D,S,T}) where {D,S,T}
   TG = gradf(S)
   CellFieldFromComposeWithLambda{D,S,TG}(gradf,self.g)
 end
-
-# @santiagobadia : Thus, we must implement gradient of a general lambda function
-# Does it have any sense? I think it is wrong, no chain rule? We should compute
-# gradient(self.g)

@@ -6,7 +6,19 @@ using StaticArrays
 """
 Type representing a vector value of D components
 """
+const VectorField{D} = SVector{D,Float64} where D
 const VectorValue{D} = SVector{D,Float64} where D
+
+"""
+Type representing a tensor value of D components
+"""
+const TensorField{D,DD} = SMatrix{D,D,Float64,DD} where D
+
+const ScalarField = Float64
+
+const Field = Union{ScalarField, VectorField, TensorField}
+
+# Mutable version...
 
 """
 Mutable version of VectorValue
@@ -48,4 +60,3 @@ function inner(a::SVector{D,T},b::SVector{D,T}) where {D,T}
   end
   v
 end
-

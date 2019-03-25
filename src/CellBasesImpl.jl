@@ -50,9 +50,6 @@ struct ConstantCellBasisValues{D,T} <: IndexableCellArray{T,2}
   values::Array{T,2}
 end
 
-# @santiagobadia : I would define
-# const PointsArray{D} = Array{Point{D},1}
-
 function ConstantCellBasisValues(
   basis::MultivariatePolynomialBasis{D,T}, points::Array{Point{D},1}, l::Int) where {D,T}
   ndofs = length(basis)

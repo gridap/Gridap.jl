@@ -90,28 +90,28 @@ abstract type UnivariatePolynomialBasis end
 Univariate monomial basis of a given `order`
 """
 struct UnivariateMonomialBasis <: UnivariatePolynomialBasis
-    order::Int64
+  order::Int64
 end
 
 """
 Create 1-dim univariate polynomial basis of `UnivariateMonomialBasis` type
 """
 function UnivariatePolynomialBasis(order::Int64)
-    UnivariateMonomialBasis(order)
+  UnivariateMonomialBasis(order)
 end
 
 """
 Evaluate univariate monomial basis in a set of 1D points
 """
 function (monomials::UnivariateMonomialBasis)(points::AbstractVector{Float64})
-    dbas = monomials.order+1
-    c = Array{Float64,2}(undef, dbas, length(points))
-    for (j,p) ∈ enumerate(points)
-        for i= 1:dbas
-            c[i,j] = p^(i-1)
-        end
+  dbas = monomials.order+1
+  c = Array{Float64,2}(undef, dbas, length(points))
+  for (j,p) ∈ enumerate(points)
+    for i= 1:dbas
+      c[i,j] = p^(i-1)
     end
-    return c
+  end
+  return c
 end
 
 """
@@ -119,14 +119,14 @@ Function to be eliminated in the future. Compute the numder-th derivative of a m
 at a set of 1D point
 """
 function derivative(monomials::UnivariateMonomialBasis, numder::Int64, x::Vector{Float64})
-    c = Vector{Vector{Float64}}(undef, length(x))
-    # monomials.order+1, length(x))
-    for j=1:size(c,2)
-        for i=1:size(c,1)
-            c[i,j] = (i<=numder) ? 0.0 : prod([i-k-1 for k=0:numder-1])x[j]^(i-numder-1)
-        end
+  c = Vector{Vector{Float64}}(undef, length(x))
+  # monomials.order+1, length(x))
+  for j=1:size(c,2)
+    for i=1:size(c,1)
+      c[i,j] = (i<=numder) ? 0.0 : prod([i-k-1 for k=0:numder-1])x[j]^(i-numder-1)
     end
-    return c
+  end
+  return c
 end
 
 """
@@ -134,7 +134,7 @@ Multivariate polynomial basis obtained as tensor product of univariate polynomia
 per dimension
 """
 struct TensorProductPolynomialBasis
-    polynomials::Vector{UnivariatePolynomialBasis}
+  polynomials::Vector{UnivariatePolynomialBasis}
 end
 
 """
@@ -142,116 +142,108 @@ Provide a `TensorProductPolynomialBasis` for a vector `order` providing the orde
 dimension
 """
 function TensorProductPolynomialBasis(order::Vector{Int64})
-    TensorProductPolynomialBasis([UnivariatePolynomialBasis(order[i])
-                                 for i=1:length(order)])
+  TensorProductPolynomialBasis([UnivariatePolynomialBasis(order[i]) for i=1:length(order)])
 end
 
-#"""
-#TensorProductPolynomialBasis(order::Vector{Int},nodestype)
-#
-## Examples
-#```jldoctest
-#julia> a = TensorProductPolynomialBasis([2,4]; basistype="Lagrangian", nodestype="Equispaced")
-#julia> b = a([0.0, 1.0])
-#```
-#"""
-
 const VectorOfPoints{D} = Vector{Point{D}} where D
-"""
-Evaluate a `TensorProductPolynomialBasis` at an array of `Point{D}`
-"""
+
+# @santiagobadia : If I put any comment to the function Documenter crashes
+#"""
+# Evaluate a `TensorProductPolynomialBasis` at an array of `Point{D}`
+#"""
 function (a::TensorProductPolynomialBasis)(points::VectorOfPoints{D}) where {D}
-    numdims = length(a.polynomials)
-    @assert numdims == D "Point dim and polynomial basis dim must be identical"
-    c = Vector{Array{Float64,2}}(undef,D)
-    for i ∈ 1:D
-        pi = [p[i] for p ∈ points]
-        c[i] = a.polynomials[i](pi)
-    end
-    # @santiagobadia : Unfortunately, I have to do all this to get i-th coordinate
-    orders = [(a.polynomials[i].order+1) for i ∈ 1:D]
-    dims = tuple(orders...)
-    A = Array{Float64,D}(undef,dims)
-    B = Array{Float64,2}(undef,length(A),length(points))
-    for j = 1:length(points)
-        A.= 1
-        tensorproduct!(A,c,j)
-        B[:,j] = reshape(A, length(A))
-    end
-    return B
+  numdims = length(a.polynomials)
+  @assert numdims == D
+  c = Vector{Array{Float64,2}}(undef,D)
+  for i ∈ 1:D
+    pi = [p[i] for p ∈ points]
+    c[i] = a.polynomials[i](pi)
+  end
+  # reinterpret(SVector{3,Float64}, x, (size(x,2),)) ?
+  # @santiagobadia : Unfortunately, I have to do all this to get i-th coordinate
+  orders = [(a.polynomials[i].order+1) for i ∈ 1:D]
+  dims = tuple(orders...)
+  A = Array{Float64,D}(undef,dims)
+  B = Array{Float64,2}(undef,length(A),length(points))
+  for j = 1:length(points)
+    A.= 1
+    tensorproduct!(A,c,j)
+    B[:,j] = reshape(A, length(A))
+  end
+  return B
 end
 
 function (a::TensorProductPolynomialBasis)(numders::Int64, x::Array{Float64,1})
-    numdims = length(a.polynomials)
-    @assert numdims == size(x,2) "Point dim and polynomial basis dim must be identical"
-    c = [[derivative(a.polynomials[i], j, x[:,i]) for j=1:numders] for i = 1:numdims]
-    orders = [(a.polynomials[i].order+1) for i = 1:numdims]
-    dims = tuple(orders...)
-    # A=ones(Float64,dims)
-    A = Array{Float64,length(c)}(undef,dims)
-    A.= 1.0
-    tensorproduct!(A,c)
-    A = reshape(A, length(A))
-    return A
+  numdims = length(a.polynomials)
+  @assert numdims == size(x,2) "Point dim and polynomial basis dim must be identical"
+  c = [[derivative(a.polynomials[i], j, x[:,i]) for j=1:numders] for i = 1:numdims]
+  orders = [(a.polynomials[i].order+1) for i = 1:numdims]
+  dims = tuple(orders...)
+  # A=ones(Float64,dims)
+  A = Array{Float64,length(c)}(undef,dims)
+  A.= 1.0
+  tensorproduct!(A,c)
+  A = reshape(A, length(A))
+  return A
 end
 
 @generated function tensorproduct!(A::Array{Float64,N},c,ip=1) where {N}
-    quote
-        @nloops $N i A begin
-            @nexprs $N j->( (@nref $N A i) *= c[j][i_j,ip])
-        end
-    end
+  quote
+    @nloops $N i A begin
+    @nexprs $N j->( (@nref $N A i) *= c[j][i_j,ip])
+  end
+end
 end
 
 @generated function tensorproductsquare!(A::Array{Array{Float64,N},M},c) where {N,M}
-    quote
-        @nloops $N i A begin
-            B = (@nref $N A i)
-            @nloops $M k B begin
-                @nexprs $N j ->((@nref $N B k) *= c[j][k_j,i_j])
-            end
-        end
-    end
+  quote
+    @nloops $N i A begin
+    B = (@nref $N A i)
+    @nloops $M k B begin
+    @nexprs $N j ->((@nref $N B k) *= c[j][k_j,i_j])
+  end
+end
+end
 end
 
 function gradient(a::TensorProductPolynomialBasis, x::Array{Array{Float64,1},1})
-    spdims = length(a.polynomials)
-    c = [a.polynomials[i](x[i]) for i=1:spdims]
-    dc = [derivative(a.polynomials[i], 1, x[i]) for i=1:spdims]
-    ordsp1 = [(a.polynomials[i].order+1) for i=1:spdims]
-    gps=[length(x[i]) for i=1:spdims]
-    pldims = tuple(ordsp1...)
-    vals = Array{Array{Float64,spdims},spdims}(undef,(gps...))
-    grad = Array{Float64,3}(undef,prod(pldims),prod(gps),spdims)
-    for k=1:spdims
-        for i in eachindex(vals) # linear indexing
-            vals[i]=ones(Float64,pldims)
-        end
-        d = [ (i==k) ? dc[i] : c[i] for i=1:spdims]
-        tensorproductsquare!(vals,d)
-        aux = copy(vals)
-        aux = reshape(aux,prod(gps))
-        aux = hcat([ reshape(aux[i],length(aux[i])) for i in 1:length(aux)]...)
-        grad[:,:,k] = aux
+  spdims = length(a.polynomials)
+  c = [a.polynomials[i](x[i]) for i=1:spdims]
+  dc = [derivative(a.polynomials[i], 1, x[i]) for i=1:spdims]
+  ordsp1 = [(a.polynomials[i].order+1) for i=1:spdims]
+  gps=[length(x[i]) for i=1:spdims]
+  pldims = tuple(ordsp1...)
+  vals = Array{Array{Float64,spdims},spdims}(undef,(gps...))
+  grad = Array{Float64,3}(undef,prod(pldims),prod(gps),spdims)
+  for k=1:spdims
+    for i in eachindex(vals) # linear indexing
+      vals[i]=ones(Float64,pldims)
     end
-    return grad
+    d = [ (i==k) ? dc[i] : c[i] for i=1:spdims]
+    tensorproductsquare!(vals,d)
+    aux = copy(vals)
+    aux = reshape(aux,prod(gps))
+    aux = hcat([ reshape(aux[i],length(aux[i])) for i in 1:length(aux)]...)
+    grad[:,:,k] = aux
+  end
+  return grad
 end
 
 function gradient(a::TensorProductPolynomialBasis, x::Array{Float64,2})
-    spdims = length(a.polynomials)
-    c = [a.polynomials[i](x[:,i]) for i=1:spdims]
-    dc = [derivative(a.polynomials[i], 1, x[:,i]) for i=1:spdims]
-    orders = [(a.polynomials[i].order+1) for i=1:spdims]
-    pldims = tuple(orders...)
-    vals = Array{Float64,spdims}(undef,pldims)
-    grad = Array{Float64,3}(undef,length(vals),size(x,1),spdims)
-    for k=1:spdims
-        d = [ (i==k) ? dc[i] : c[i] for i=1:spdims]
-        for j = 1:size(x,1)
-            vals .= 1.0
-            tensorproduct!(vals,d,j)
-            grad[:,j,k] = copy(reshape(vals,length(vals)))
-        end
+  spdims = length(a.polynomials)
+  c = [a.polynomials[i](x[:,i]) for i=1:spdims]
+  dc = [derivative(a.polynomials[i], 1, x[:,i]) for i=1:spdims]
+  orders = [(a.polynomials[i].order+1) for i=1:spdims]
+  pldims = tuple(orders...)
+  vals = Array{Float64,spdims}(undef,pldims)
+  grad = Array{Float64,3}(undef,length(vals),size(x,1),spdims)
+  for k=1:spdims
+    d = [ (i==k) ? dc[i] : c[i] for i=1:spdims]
+    for j = 1:size(x,1)
+      vals .= 1.0
+      tensorproduct!(vals,d,j)
+      grad[:,j,k] = copy(reshape(vals,length(vals)))
     end
-    return grad
+  end
+  return grad
 end
