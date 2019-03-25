@@ -98,7 +98,7 @@ end
 Abstract type that represents a field with value of type T
 evaluated at a collection of points in each cell
 """
-const CellFieldValues{T} = CellArray{T,1} where T <: Field
+const CellFieldValues{T} = CellArray{T,1} where T <: FieldValue
 
 # @santiagobadia : Shouldn't we define an object that covers all field types and say that
 # T <: FieldType. Idem below and across the project.

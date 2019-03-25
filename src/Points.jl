@@ -6,17 +6,16 @@ using StaticArrays
 """
 Type representing a vector value of D components
 """
-const VectorField{D} = SVector{D,Float64} where D
 const VectorValue{D} = SVector{D,Float64} where D
 
 """
 Type representing a tensor value of D components
 """
-const TensorField{D,DD} = SMatrix{D,D,Float64,DD} where D
+const TensorValue{D,DD} = SMatrix{D,D,Float64,DD} where D
 
-const ScalarField = Float64
+const ScalarValue = Float64
 
-const Field = Union{ScalarField, VectorField, TensorField}
+const FieldValue = Union{ScalarValue, VectorValue, TensorValue}
 
 # @santiagobadia : Mutable version...
 
