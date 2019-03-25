@@ -7,11 +7,9 @@ Abstract type that represents a cell-wise field, where
 (e.g., scalar, vector, tensor) and `D` stands for the space
 dimension
 """
-const CellField{D,T} = EvaluableCellArray{D,T,1} where {D,T}
+const CellField{D,T} = EvaluableCellArray{D,T,1} where {D,T<:FieldValue}
 
 evaluate(::CellField{D,T} where {D,T},::CellPoints{D} where D)::CellFieldValues{T} = @abstractmethod
-
-# @santiagobadia : Again, T, TG, etc, should be <: FieldType (TBD)
 
 """
 Returns another CellField object that represents the gradient.
