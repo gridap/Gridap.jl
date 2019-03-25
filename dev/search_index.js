@@ -249,11 +249,19 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "#Numa.MTensorValue",
+    "page": "Numa.jl",
+    "title": "Numa.MTensorValue",
+    "category": "type",
+    "text": "Mutable version of TensorValue{D,DD}\n\n\n\n\n\n"
+},
+
+{
     "location": "#Numa.MVectorValue",
     "page": "Numa.jl",
     "title": "Numa.MVectorValue",
     "category": "type",
-    "text": "Mutable version of VectorValue\n\n\n\n\n\n"
+    "text": "Mutable version of VectorValue{D}\n\n\n\n\n\n"
 },
 
 {
@@ -305,6 +313,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "#Numa.ScalarValue",
+    "page": "Numa.jl",
+    "title": "Numa.ScalarValue",
+    "category": "type",
+    "text": "Type representing a scalar value\n\n\n\n\n\n"
+},
+
+{
     "location": "#Numa.TensorProductPolynomialBasis",
     "page": "Numa.jl",
     "title": "Numa.TensorProductPolynomialBasis",
@@ -337,6 +353,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "#Numa.TensorValue",
+    "page": "Numa.jl",
+    "title": "Numa.TensorValue",
+    "category": "type",
+    "text": "Type representing a tensor value of dimension D\n\n\n\n\n\n"
+},
+
+{
     "location": "#Numa.UnivariateMonomialBasis",
     "page": "Numa.jl",
     "title": "Numa.UnivariateMonomialBasis",
@@ -366,6 +390,14 @@ var documenterSearchIndex = {"docs": [
     "title": "Numa.UnivariatePolynomialBasis",
     "category": "method",
     "text": "Create 1-dim univariate polynomial basis of UnivariateMonomialBasis type\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.VectorValue",
+    "page": "Numa.jl",
+    "title": "Numa.VectorValue",
+    "category": "type",
+    "text": "Type representing a vector value of dimension D\n\n\n\n\n\n"
 },
 
 {
@@ -462,22 +494,6 @@ var documenterSearchIndex = {"docs": [
     "title": "Numa.RefFE",
     "category": "type",
     "text": "Abstract Reference Finite Element\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.TensorField",
-    "page": "Numa.jl",
-    "title": "Numa.TensorField",
-    "category": "type",
-    "text": "Type representing a tensor value of D components\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.VectorField",
-    "page": "Numa.jl",
-    "title": "Numa.VectorField",
-    "category": "type",
-    "text": "Type representing a vector value of D components\n\n\n\n\n\n"
 },
 
 {
