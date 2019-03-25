@@ -14,6 +14,6 @@ end
 flatten(a::Array) = reshape(a,(length(a),))
 
 # Unicode aliases
-const ∘(f,g) = compose(f,g)
+const Base.:∘(f,g) = compose(f,g)
 
 const ∇(f) = gradient(f)
