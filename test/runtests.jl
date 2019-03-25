@@ -3,18 +3,18 @@ using Test
 
 @testset "Numa.jl" begin
   @time @testset "OtherCellArrays" begin include("OtherCellArraysTests.jl") end
-  @time @testset "Quadratures" begin include("quadraturestests.jl") end
-  @time @testset "CellArrays" begin include("cellarraystests.jl") end
-  @time @testset "CellQuadratures" begin include("cellquadraturestests.jl") end
+  @time @testset "Quadratures" begin include("QuadraturesTests.jl") end
+  @time @testset "CellArrays" begin include("CellArraysTests.jl") end
+  @time @testset "CellQuadratures" begin include("CellQuadraturesTests.jl") end
   # @time @testset "Polynomials" begin include("polynomialtests.jl") end
-  @time @testset "CellBases" begin include("cellbasestests.jl") end
-  @time @testset "CellFields" begin include("cellfieldstests.jl") end
+  @time @testset "CellBases" begin include("CellBasesTests.jl") end
+  @time @testset "CellFields" begin include("CellFieldsTests.jl") end
   @time @testset "CellScalarsVectorsAndMatrices" begin include("CellScalarsVectorsAndMatricesTests.jl") end
   @time @testset "EvaluableCellArrays" begin include("EvaluableCellArraysTests.jl") end
-  @time @testset "IntegrationMeshes" begin include("integrationmeshestests.jl") end
-  # @time @testset "Polytopes" begin include("polytopetests.jl") end
-  # @time @testset "RefFEs" begin include("reffetests.jl") end
-  @time @testset "Meshes" begin include("meshtests.jl") end
-  # @time @testset "FESpaces" begin include("fespacetests.jl") end
-  # @time @testset "BilinearForms" begin include("bilinearformtests.jl") end
+  @time @testset "IntegrationMeshes" begin include("IntegrationMeshesTests.jl") end
+  # @time @testset "Polytopes" begin include("PolytopesTests.jl") end
+  # @time @testset "RefFEs" begin include("RefFEsTests.jl") end
+  @time @testset "Meshes" begin include("MeshesTests.jl") end
+  # @time @testset "FESpaces" begin include("FESpacesTests.jl") end
+  # @time @testset "BilinearForms" begin include("BilinearFormsTests.jl") end
 end
