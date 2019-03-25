@@ -5,16 +5,14 @@ Concrete implementation for the case of the same interpolation on
 all cells, but arbitrary sampling points in each cell. This is typically needed
 for unfitted methods
 """
-struct CellBasisValuesFromSingleInterpolation{T,D} <: CellBasisValues{T}
+struct CellBasisValuesFromSingleInterpolation{D,T} <: CellBasisValues{T}
   basis::MultivariatePolynomialBasis{D,T}
   points::CellPoints{D}
 end
 
-# @santiagobadia : Better D,T for consistency
-
 Base.length(self::CellBasisValuesFromSingleInterpolation) = length(self.points)
 
-function Base.iterate(self::CellBasisValuesFromSingleInterpolation{T,D}) where {T,D}
+function Base.iterate(self::CellBasisValuesFromSingleInterpolation{D,T}) where {D,T}
   maxpoints = maxlength(self.points)
   ndofs = length(self.basis)
   values = Array{T,2}(undef,(ndofs,maxpoints))
