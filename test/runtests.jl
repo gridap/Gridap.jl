@@ -2,7 +2,7 @@ using Numa
 using Test
 
 @testset "Numa.jl" begin
-  @time @testset "OtherCellArrays" begin include("OtherCellArraysTests.jl") end
+  include("OtherCellArraysTests.jl")
   @time @testset "Quadratures" begin include("QuadraturesTests.jl") end
   @time @testset "CellArrays" begin include("CellArraysTests.jl") end
   @time @testset "CellQuadratures" begin include("CellQuadraturesTests.jl") end

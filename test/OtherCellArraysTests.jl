@@ -1,5 +1,5 @@
 
-let
+@time @testset "OtherCellArrays" begin 
 
   aa = [1.0,2.0,2.1]
   l = 10
