@@ -2,6 +2,7 @@
 @time @testset "OtherCellArrays" begin 
 
   aa = [1.0,2.0,2.1]
+  bb = [aa';aa']
   l = 10
   a = Numa.OtherConstantCellArray(aa,l)
 
@@ -57,7 +58,6 @@
 
     end)
 
-    bb = [aa';aa']
     b = DummyCellArray(a)
 
     @test Numa.inputcellarray(b) === a
@@ -71,6 +71,35 @@
       @assert br == bb
       @assert brs == size(bb)
     end
+
+  end
+
+  @testset "OtherCellArrayFromUnaryOpFromLambdas" begin
+
+      csize(asize) = (2,asize[1])
+
+      function cvals!(a,asize,v,vsize)
+        @assert vsize == (2,asize[1])
+        @inbounds for j in 1:asize[1]
+          for i in 1:2
+            v[i,j] = a[j]
+          end
+        end
+      end
+
+      b = Numa.OtherCellArrayFromUnaryOpFromLambdas{typeof(a),Float64,2}(a,csize,cvals!)
+
+      @test Numa.inputcellarray(b) === a
+      @test length(b) == l
+      @test maxsize(b) == (2,size(aa,1))
+      @test maxsize(b,1) == 2
+      @test maxsize(b,2) == size(aa,1)
+      @test eltype(b) == Array{Float64,2}
+      @test maxlength(b) == 2*length(aa)
+      for (br,brs) in b
+        @assert br == bb
+        @assert brs == size(bb)
+      end
 
   end
 

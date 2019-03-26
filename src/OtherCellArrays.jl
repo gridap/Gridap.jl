@@ -110,11 +110,19 @@ Base.length(self::OtherConstantCellArray) = self.length
 
 maxsize(self::OtherConstantCellArray) = size(self.array)
 
-###struct OtherCellArrayFromUnaryOp{S,M,T,N} <: OtherCellArray{T,N}
-###  a::OtherCellArray{S,M}
-###  computevals!
-###  computesize
-###end
+struct OtherCellArrayFromUnaryOpFromLambdas{C,T,N} <: OtherCellArrayFromUnaryOp{C,T,N}
+  a::C
+  csize
+  cvals!
+end
+
+inputcellarray(self::OtherCellArrayFromUnaryOpFromLambdas) = self.a
+
+computesize(self::OtherCellArrayFromUnaryOpFromLambdas, asize) = self.csize(asize)
+
+computevals!(self::OtherCellArrayFromUnaryOpFromLambdas, a, asize, v, vsize) = self.cvals!(a,asize,v,vsize)
+
+
 ###
 ###Base.length(self::OtherCellArrayFromUnaryOp) = length(self.a)
 ###
