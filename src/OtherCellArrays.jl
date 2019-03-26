@@ -50,7 +50,7 @@ end
 Abstract type to be used for the implementation of types representing
 the lazy result of applying an unary operation on a CellArray
 """
-abstract type OtherCellArrayFromUnaryOp{C,T,N} <: OtherCellArray{T,N} end
+abstract type OtherCellArrayFromUnaryOp{C<:OtherCellArray,T,N} <: OtherCellArray{T,N} end
 
 inputcellarray(::OtherCellArrayFromUnaryOp{C,T,N} where {C,T,N})::C = @abstractmethod
 
