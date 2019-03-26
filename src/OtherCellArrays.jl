@@ -1,5 +1,9 @@
 #TODO This is a temporary file in order to explore an alternative CellArray design.
 
+"""
+Abstract type representing an iterable collection of Arrays{T,N},
+where each array is associated to a cell.
+"""
 abstract type OtherCellArray{T,N} end
 
 Base.iterate(::OtherCellArray)::Union{Nothing,Tuple{Array{T,N},Any}} = @abstractmethod
@@ -22,6 +26,11 @@ function Base.show(io::IO,self::OtherCellArray)
   end
 end
 
+"""
+Abstract type representing an indexable CellArray.
+By implementing a concrete IndexableCellArray, one automatically
+gets a type that is also iterable
+"""
 abstract type OtherIndexableCellArray{T,N} <: OtherCellArray{T,N} end
 
 Base.getindex(::OtherIndexableCellArray{T,N} where {T,N},cell::Int)::Array{T,N} = @abstractmethod
@@ -37,39 +46,52 @@ function Base.iterate(self::OtherIndexableCellArray,state::Int)
   end
 end
 
-###abstract type AbstractOtherCellArrayFromUnaryOp{S,M,T,N} <: OtherCellArray{T,N} end
-###
-###inputcellarray(
-###  ::AbstractOtherCellArrayFromUnaryOp{S,M,T,N} where {S,M,T,N})::CellArray{S,M} = @abstractmethod
-###
-###computesize(::AbstractOtherCellArrayFromUnaryOp, asize) = @abstractmethod
-###
-###computevals!(::AbstractOtherCellArrayFromUnaryOp, a, asize ,v, vsize) = @abstractmethod
-###
-###Base.length(self::AbstractOtherCellArrayFromUnaryOp) = length(inputcellarray(self))
-###
-###maxsize(self::AbstractOtherCellArrayFromUnaryOp) = computesize(self,maxsize(inputcellarray(self)))
-###
-###function Base.iterate(self::AbstractOtherCellArrayFromUnaryOp{S,M,T,N}) where {S,M,T,N}
-###  values = Array{T,N}(undef,maxsize(self))
-###  anext = iterate(inputcellarray(self))
-###  state = (values,anext)
-###  iterate(self,state)
-###end
-###
-###function Base.iterate(self::AbstractOtherCellArrayFromUnaryOp,state)
-###  (values,anext) = state
-###  if anext == nothing
-###    nothing
-###  else
-###    ((avals,asize),astate) = anext
-###    s = computesize(self,asize)
-###    computevals!(self,avals,asize,values,s)
-###    anext = iterate(inputcellarray(self),astate)
-###    state = (values,anext)
-###    ((values,s), state)
-###  end
-###end
+"""
+Abstract type to be used for the implementation of types representing
+the lazy result of applying an unary operation on a CellArray
+"""
+abstract type OtherCellArrayFromUnaryOp{T,N} <: OtherCellArray{T,N} end
+
+inputcellarray(::OtherCellArrayFromUnaryOp)::CellArray = @abstractmethod
+
+computesize(::OtherCellArrayFromUnaryOp, asize) = @abstractmethod
+
+computevals!(::OtherCellArrayFromUnaryOp, a, v) = @abstractmethod
+
+Base.length(self::OtherCellArrayFromUnaryOp) = length(inputcellarray(self))
+
+maxsize(self::OtherCellArrayFromUnaryOp) = computesize(self,maxsize(inputcellarray(self)))
+
+function Base.iterate(self::OtherCellArrayFromUnaryOp{T,N}) where {T,N}
+  v = Array{T,N}(undef,maxsize(self))
+  anext = iterate(inputcellarray(self))
+  if anext === nothing; return nothing end
+  iteratekernel(self,anext,v)
+end
+
+function Base.iterate(self::OtherCellArrayFromUnaryOp,state)
+  v, astate = state
+  anext = iterate(inputcellarray(self),astate)
+  if anext === nothing; return nothing end
+  iteratekernel(self,anext,v)
+end
+
+function iteratekernel(self::OtherCellArrayFromUnaryOp,anext,v)
+  a, astate = anext
+  s = computesize(self,size(a))
+  if size(v) != s; @notimplemented end
+  computevals!(self,a,v)
+  state = (v, astate)
+  (v,state)
+end
+
+"""
+Like OtherCellArrayFromUnaryOp but for the particular case of element-wise operation
+in the elements of the returned array
+"""
+abstract type OtherCellArrayFromElemUnaryOp{T,N} <: OtherCellArrayFromUnaryOp{T,N} end
+
+computesize(::OtherCellArrayFromElemUnaryOp, asize) = asize
 
 # Concrete implementations
 

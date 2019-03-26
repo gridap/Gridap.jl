@@ -32,6 +32,43 @@
 
   end
 
+  @testset "OtherCellArrayFromUnaryOp" begin
+
+    eval(quote
+
+      struct DummyCellArray <: Numa.OtherCellArrayFromUnaryOp{Float64,2}
+        a::Numa.OtherCellArray{Float64,1}
+      end
+      
+      Numa.inputcellarray(self::DummyCellArray) = self.a
+      
+      Numa.computesize(self::DummyCellArray,asize) = (2,asize[1])
+      
+      function Numa.computevals!(self::DummyCellArray,a,v)
+        @inbounds for i in 1:size(a,1)
+          v[1,i] = a[i]
+          v[2,i] = a[i]
+        end
+      end
+
+    end)
+
+    bb = [aa';aa']
+    b = DummyCellArray(a)
+
+    @test inputcellarray(b) === a
+    @test length(b) == l
+    @test maxsize(b) == (2,size(aa,1))
+    @test maxsize(b,1) == 2
+    @test maxsize(b,2) == size(aa,1)
+    @test eltype(b) == Array{Float64,2}
+    @test maxlength(b) == 2*length(aa)
+    for br in b
+      @assert br == bb
+    end
+
+  end
+
   #cs(asize) = (2,asize[1])
 
   #function cv!(avals,asize,vals,s)
