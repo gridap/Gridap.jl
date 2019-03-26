@@ -41,22 +41,4 @@ let
   print("OtherCellArrayFromUnaryOp ->"); @time doloop(b)
   print("OtherCellArrayFromUnaryOp ->"); @time doloop(b)
 
-  csize(asize) = (2,asize[1])
-
-  function cvals!(a,asize,v,vsize)
-    @assert vsize == (2,asize[1])
-    @inbounds for j in 1:asize[1]
-      for i in 1:2
-        v[i,j] = a[j]
-      end
-    end
-  end
-
-  c = Numa.OtherCellArrayFromUnaryOpFromLambdas{typeof(a),Float64,2}(a,csize,cvals!)
-
-  print("OtherCellArrayFromUnaryOpFromLambdas ->"); @time doloop(c)
-  print("OtherCellArrayFromUnaryOpFromLambdas ->"); @time doloop(c)
-
-  @code_warntype iterate(c)
-
 end
