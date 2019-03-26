@@ -38,12 +38,6 @@ let
 
   b = DummyCellArray(a)
 
-  #(v,state) = iterate(b)
-  #@code_warntype iterate(b)
-  #v, astate = state
-  #anext = iterate(Numa.inputcellarray(b),astate)
-  #@code_warntype Numa.iteratekernel(b,anext,v)
-
   print("OtherCellArrayFromUnaryOp ->"); @time doloop(b)
   print("OtherCellArrayFromUnaryOp ->"); @time doloop(b)
 
