@@ -489,6 +489,38 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "#Numa.OtherCellArray",
+    "page": "Numa.jl",
+    "title": "Numa.OtherCellArray",
+    "category": "type",
+    "text": "Abstract type representing an iterable collection of Arrays{T,N}, where each array is associated to a cell.\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.OtherCellArrayFromElemUnaryOp",
+    "page": "Numa.jl",
+    "title": "Numa.OtherCellArrayFromElemUnaryOp",
+    "category": "type",
+    "text": "Like OtherCellArrayFromUnaryOp but for the particular case of element-wise operation in the elements of the returned array\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.OtherCellArrayFromUnaryOp",
+    "page": "Numa.jl",
+    "title": "Numa.OtherCellArrayFromUnaryOp",
+    "category": "type",
+    "text": "Abstract type to be used for the implementation of types representing the lazy result of applying an unary operation on a CellArray\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.OtherIndexableCellArray",
+    "page": "Numa.jl",
+    "title": "Numa.OtherIndexableCellArray",
+    "category": "type",
+    "text": "Abstract type representing an indexable CellArray. By implementing a concrete IndexableCellArray, one automatically gets a type that is also iterable\n\n\n\n\n\n"
+},
+
+{
     "location": "#Numa.RefFE",
     "page": "Numa.jl",
     "title": "Numa.RefFE",
