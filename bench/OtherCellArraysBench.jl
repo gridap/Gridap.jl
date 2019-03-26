@@ -18,8 +18,8 @@ let
 
   eval(quote
 
-    struct DummyCellArray <: Numa.OtherCellArrayFromUnaryOp{Float64,2}
-      a::Numa.OtherCellArray{Float64,1}
+    struct DummyCellArray{C} <: Numa.OtherCellArrayFromUnaryOp{C,Float64,2}
+      a::C
     end
     
     Numa.inputcellarray(self::DummyCellArray) = self.a
@@ -27,9 +27,10 @@ let
     Numa.computesize(self::DummyCellArray,asize) = (2,asize[1])
     
     function Numa.computevals!(self::DummyCellArray,a,v)
-      @inbounds for i in 1:size(a,1)
-        v[1,i] = a[i]
-        v[2,i] = a[i]
+      @inbounds for j in 1:size(a,1)
+        for i in 1:2
+          v[i,j] = a[j]
+        end
       end
     end
 

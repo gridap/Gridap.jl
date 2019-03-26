@@ -50,9 +50,9 @@ end
 Abstract type to be used for the implementation of types representing
 the lazy result of applying an unary operation on a CellArray
 """
-abstract type OtherCellArrayFromUnaryOp{T,N} <: OtherCellArray{T,N} end
+abstract type OtherCellArrayFromUnaryOp{C,T,N} <: OtherCellArray{T,N} end
 
-inputcellarray(::OtherCellArrayFromUnaryOp)::CellArray = @abstractmethod
+inputcellarray(::OtherCellArrayFromUnaryOp{C,T,N} where {C,T,N})::C = @abstractmethod
 
 computesize(::OtherCellArrayFromUnaryOp, asize) = @abstractmethod
 
@@ -62,7 +62,7 @@ Base.length(self::OtherCellArrayFromUnaryOp) = length(inputcellarray(self))
 
 maxsize(self::OtherCellArrayFromUnaryOp) = computesize(self,maxsize(inputcellarray(self)))
 
-function Base.iterate(self::OtherCellArrayFromUnaryOp{T,N}) where {T,N}
+function Base.iterate(self::OtherCellArrayFromUnaryOp{C,T,N}) where {C,T,N}
   v = Array{T,N}(undef,maxsize(self))
   anext = iterate(inputcellarray(self))
   if anext === nothing; return nothing end
@@ -89,7 +89,7 @@ end
 Like OtherCellArrayFromUnaryOp but for the particular case of element-wise operation
 in the elements of the returned array
 """
-abstract type OtherCellArrayFromElemUnaryOp{T,N} <: OtherCellArrayFromUnaryOp{T,N} end
+abstract type OtherCellArrayFromElemUnaryOp{C,T,N} <: OtherCellArrayFromUnaryOp{C,T,N} end
 
 computesize(::OtherCellArrayFromElemUnaryOp, asize) = asize
 

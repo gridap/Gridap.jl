@@ -36,8 +36,9 @@
 
     eval(quote
 
-      struct DummyCellArray <: Numa.OtherCellArrayFromUnaryOp{Float64,2}
-        a::Numa.OtherCellArray{Float64,1}
+
+      struct DummyCellArray{C} <: Numa.OtherCellArrayFromUnaryOp{C,Float64,2}
+        a::C
       end
       
       Numa.inputcellarray(self::DummyCellArray) = self.a
