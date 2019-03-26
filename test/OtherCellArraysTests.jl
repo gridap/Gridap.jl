@@ -56,7 +56,7 @@
     bb = [aa';aa']
     b = DummyCellArray(a)
 
-    @test inputcellarray(b) === a
+    @test Numa.inputcellarray(b) === a
     @test length(b) == l
     @test maxsize(b) == (2,size(aa,1))
     @test maxsize(b,1) == 2
