@@ -513,6 +513,22 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "#Numa.OtherConstantCellArray",
+    "page": "Numa.jl",
+    "title": "Numa.OtherConstantCellArray",
+    "category": "type",
+    "text": "Concrete implementation of CellArray, where the same array is associated to all cells. Typically, this is useful for discretizations with a single cell type.\n\n\n\n\n\n"
+},
+
+{
+    "location": "#Numa.OtherConstantCellArrayFromDet",
+    "page": "Numa.jl",
+    "title": "Numa.OtherConstantCellArrayFromDet",
+    "category": "type",
+    "text": "Type that stores the lazy result of evaluating the determinant of each element in a CellArray\n\n\n\n\n\n"
+},
+
+{
     "location": "#Numa.OtherIndexableCellArray",
     "page": "Numa.jl",
     "title": "Numa.OtherIndexableCellArray",
