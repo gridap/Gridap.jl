@@ -6,9 +6,9 @@ where each array is associated to a cell.
 """
 abstract type OtherCellArray{T,N} end
 
-Base.iterate(::OtherCellArray)::Union{Nothing,Tuple{Array{T,N},Any}} = @abstractmethod
+Base.iterate(::OtherCellArray)::Union{Nothing,Tuple{Tuple{Array{T,N},NTuple{N,Int}},Any}} = @abstractmethod
 
-Base.iterate(::OtherCellArray,state)::Union{Nothing,Tuple{Array{T,N},Any}} = @abstractmethod
+Base.iterate(::OtherCellArray,state)::Union{Nothing,Tuple{Tuple{Array{T,N},NTuple{N,Int}},Any}} = @abstractmethod
 
 Base.length(::OtherCellArray)::Int = @abstractmethod
 
@@ -21,8 +21,9 @@ maxsize(self::OtherCellArray,i::Int) = (s = maxsize(self); s[i])
 maxlength(self::OtherCellArray) = prod(maxsize(self))
 
 function Base.show(io::IO,self::OtherCellArray)
-  for (i,a) in enumerate(self)
-    println(io,"$i -> $a")
+  for (i,(a,s)) in enumerate(self)
+    v = viewtosize(a,s)
+    println(io,"$i -> $v")
   end
 end
 
@@ -33,7 +34,7 @@ gets a type that is also iterable
 """
 abstract type OtherIndexableCellArray{T,N} <: OtherCellArray{T,N} end
 
-Base.getindex(::OtherIndexableCellArray{T,N} where {T,N},cell::Int)::Array{T,N} = @abstractmethod
+Base.getindex(::OtherIndexableCellArray{T,N} where {T,N},cell::Int)::Tuple{Array{T,N},NTuple{N,Int}} = @abstractmethod
 
 Base.iterate(self::OtherIndexableCellArray) = iterate(self,0)
 
@@ -56,7 +57,7 @@ inputcellarray(::OtherCellArrayFromUnaryOp{C,T,N} where {C,T,N})::C = @abstractm
 
 computesize(::OtherCellArrayFromUnaryOp, asize) = @abstractmethod
 
-computevals!(::OtherCellArrayFromUnaryOp, a, v) = @abstractmethod
+computevals!(::OtherCellArrayFromUnaryOp, a, asize, v, vsize) = @abstractmethod
 
 Base.length(self::OtherCellArrayFromUnaryOp) = length(inputcellarray(self))
 
@@ -77,12 +78,11 @@ function Base.iterate(self::OtherCellArrayFromUnaryOp,state)
 end
 
 function iteratekernel(self::OtherCellArrayFromUnaryOp,anext,v)
-  a, astate = anext
-  s = computesize(self,size(a))
-  if size(v) != s; @notimplemented end
-  computevals!(self,a,v)
+  (a,asize), astate = anext
+  vsize = computesize(self,asize)
+  computevals!(self,a,asize,v,vsize)
   state = (v, astate)
-  (v,state)
+  ((v,vsize),state)
 end
 
 """
@@ -103,7 +103,7 @@ end
 function Base.getindex(self::OtherConstantCellArray,cell::Int)
   @assert 1 <= cell
   @assert cell <= length(self)
-  self.array
+  (self.array, size(self.array))
 end
 
 Base.length(self::OtherConstantCellArray) = self.length

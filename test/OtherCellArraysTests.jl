@@ -12,8 +12,9 @@
     @test maxsize(a,1) == size(aa,1)
     @test eltype(a) == Array{Float64,1}
     @test maxlength(a) == length(aa)
-    for ar in a
+    for (ar,ars) in a
       @assert ar == aa
+      @assert ars == size(aa)
     end
     s = string(a)
     s0 = """
@@ -45,10 +46,12 @@
       
       Numa.computesize(self::DummyCellArray,asize) = (2,asize[1])
       
-      function Numa.computevals!(self::DummyCellArray,a,v)
-        @inbounds for i in 1:size(a,1)
-          v[1,i] = a[i]
-          v[2,i] = a[i]
+      function Numa.computevals!(self::DummyCellArray,a,asize,v,vsize)
+        @assert vsize == (2,asize[1])
+        @inbounds for j in 1:asize[1]
+          for i in 1:2
+            v[i,j] = a[j]
+          end
         end
       end
 
@@ -64,8 +67,9 @@
     @test maxsize(b,2) == size(aa,1)
     @test eltype(b) == Array{Float64,2}
     @test maxlength(b) == 2*length(aa)
-    for br in b
+    for (br,brs) in b
       @assert br == bb
+      @assert brs == size(bb)
     end
 
   end

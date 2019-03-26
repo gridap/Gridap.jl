@@ -26,8 +26,8 @@ let
     
     Numa.computesize(self::DummyCellArray,asize) = (2,asize[1])
     
-    function Numa.computevals!(self::DummyCellArray,a,v)
-      @inbounds for j in 1:size(a,1)
+    function Numa.computevals!(self::DummyCellArray,a,asize,v,vsize)
+      @inbounds for j in 1:asize[1]
         for i in 1:2
           v[i,j] = a[j]
         end
