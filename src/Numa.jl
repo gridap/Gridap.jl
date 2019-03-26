@@ -1,7 +1,10 @@
 __precompile__()
 
 module Numa
+
 using Base.Cartesian
+using LinearAlgebra
+
 include("Helpers.jl")
 include("OtherCellArrays.jl")
 include("Points.jl")
@@ -21,4 +24,5 @@ include("RefFEs.jl")
 include("Meshes.jl")
 include("FESpaces.jl")
 include("BilinearForms.jl")
+
 end #module

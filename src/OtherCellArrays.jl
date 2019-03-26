@@ -95,6 +95,11 @@ computesize(::OtherCellArrayFromElemUnaryOp, asize) = asize
 
 # Concrete implementations
 
+"""
+Concrete implementation of CellArray, where the same array
+is associated to all cells. Typically, this is useful for
+discretizations with a single cell type.
+"""
 struct OtherConstantCellArray{T,N} <: OtherIndexableCellArray{T,N}
   array::Array{T,N}
   length::Int
@@ -109,4 +114,21 @@ end
 Base.length(self::OtherConstantCellArray) = self.length
 
 maxsize(self::OtherConstantCellArray) = size(self.array)
+
+"""
+Type that stores the lazy result of evaluating the determinant
+of each element in a CellArray
+"""
+struct OtherConstantCellArrayFromDet{C,T,N} <: OtherCellArrayFromElemUnaryOp{C,T,N}
+  a::C
+end
+
+inputcellarray(self::OtherConstantCellArrayFromDet) = self.a
+
+function computevals!(::OtherConstantCellArrayFromDet, a, asize, v, vsize)
+  if length(asize) != 1; @notimplemented end
+  for i in 1:asize[1]
+    v[i] = det(a[i])
+  end
+end
 

@@ -1,3 +1,4 @@
+using LinearAlgebra
 
 @time @testset "OtherCellArrays" begin 
 
@@ -70,6 +71,28 @@
     for (br,brs) in b
       @assert br == bb
       @assert brs == size(bb)
+    end
+
+  end
+
+  @testset "OtherConstantCellArrayFromDet" begin
+
+    tv = TensorValue{2,4}(0.0,1.0,2.0,2.0)
+    tt = [tv, tv, 4*tv, -1*tv]
+    dett = [ det(tti) for tti in tt ]
+    t = Numa.OtherConstantCellArray(tt,l)
+
+    b = Numa.OtherConstantCellArrayFromDet{typeof(t),Float64,1}(t)
+
+    @test Numa.inputcellarray(b) === t
+    @test length(b) == l
+    @test maxsize(b) == size(tt)
+    @test maxsize(b,1) == size(tt,1)
+    @test eltype(b) == Array{Float64,1}
+    @test maxlength(b) == size(tt,1)
+    for (br,brs) in b
+      @assert br == dett
+      @assert brs == size(tt)
     end
 
   end

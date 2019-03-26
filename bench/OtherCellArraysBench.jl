@@ -41,4 +41,14 @@ let
   print("OtherCellArrayFromUnaryOp ->"); @time doloop(b)
   print("OtherCellArrayFromUnaryOp ->"); @time doloop(b)
 
+
+  tv = TensorValue{2,4}(0.0,1.0,2.0,2.0)
+  tt = [tv, tv, 4*tv, -1*tv]
+  t = Numa.OtherConstantCellArray(tt,N)
+  c = Numa.OtherConstantCellArrayFromDet{typeof(t),Float64,1}(t)
+
+  print("OtherConstantCellArrayFromDet ->"); @time doloop(c)
+  print("OtherConstantCellArrayFromDet ->"); @time doloop(c)
+
+
 end

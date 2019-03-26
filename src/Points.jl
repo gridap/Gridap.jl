@@ -18,7 +18,7 @@ const VectorValue{D} = SVector{D,Float64} where D
 """
 Type representing a tensor value of dimension `D`
 """
-const TensorValue{D,DD} = SMatrix{D,D,Float64,DD} where D
+const TensorValue{D,DD} = SMatrix{D,D,Float64,DD} where {D,DD}
 # @santiagobadia : Any way to eliminate DD?
 
 """
@@ -29,7 +29,7 @@ const MVectorValue{D} = MVector{D,Float64} where D
 """
 Mutable version of `TensorValue{D,DD}`
 """
-const MTensorValue{D,DD} = MMatrix{D,D,Float64,DD} where D
+const MTensorValue{D,DD} = MMatrix{D,D,Float64,DD} where {D,DD}
 # @santiagobadia : Any way to eliminate DD?
 
 """
