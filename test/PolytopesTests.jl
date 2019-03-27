@@ -1,3 +1,12 @@
+using Numa, Test
+
+##
+orders=[2,3,2]
+polytope = Polytope([1,1,1])
+nodes = NodesArray(polytope,orders)
+@test length(nodes.closurenfacenodes[end-1])==12
+@test nodes.closurenfacenodes[end-1][end-1]==33
+##
 
 # Test to check nodes on the closure of an nface of a polytope
 ##
@@ -22,11 +31,12 @@ nodes = NodesArray(polytope,orders)
 orders=[2,3,4]
 polytope = Polytope([1,1,1])
 nodes = NodesArray(polytope,orders)
-@test length(nodes.coordinates)==180
-@test nodes.coordinates[33,:] ≈ [1.0, 1.0/3.0, 0.0]
+@test length(nodes.coordinates)==60
+@test nodes.coordinates[33] ≈ [1.0, 1.0/3.0, 0.0]
 nfacenodes = nodes.closurenfacenodes[end-1]
 coords = nodes.coordinates[nfacenodes,:]
-@test (prod(coords[:,1])==1)
+f = i -> coords[i][1]
+@test (prod(f(i) for i=1:length(coords))==1)
 ##
 
 # Test to check the views of n-face set for a given n
