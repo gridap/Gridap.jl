@@ -1,10 +1,12 @@
 using Numa, Test
+using Numa.Polytopes
+using Numa.Polytopes: PointInt
 
 # Test to check nodes on the closure of an nface of a polytope
 ##
 D=3
 orders=[2,3,2]
-extrusion = Numa.PointInt{D}(1,1,1)
+extrusion = PointInt{D}(1,1,1)
 polytope = Polytope(extrusion)
 nodes = NodesArray(polytope,orders)
 @test length(nodes.closurenfacenodes[end-1])==12
@@ -15,7 +17,7 @@ nodes = NodesArray(polytope,orders)
 ##
 D=3
 orders=[2,3,2]
-extrusion = Numa.PointInt{D}(1,1,1)
+extrusion = PointInt{D}(1,1,1)
 polytope = Polytope(extrusion)
 nodes = NodesArray(polytope,orders)
 @test length(nodes.nfacenodes[end-1])==2
@@ -26,7 +28,7 @@ nodes = NodesArray(polytope,orders)
 ##
 D=3
 orders=[2,3,4]
-extrusion = Numa.PointInt{D}(1,1,1)
+extrusion = PointInt{D}(1,1,1)
 polytope = Polytope(extrusion)
 nodes = NodesArray(polytope,orders)
 @test length(nodes.coordinates)==60
@@ -40,7 +42,7 @@ f = i -> coords[i][1]
 # Test to check the views of n-face set for a given n
 ##
 D=3
-extrusion = Numa.PointInt{D}(1,1,1)
+extrusion = PointInt{D}(1,1,1)
 polytope = Polytope(extrusion)
 for j=1:length(polytope.extrusion)+1
 	for i=1:length(polytope.nfaces[polytope.dimnfs[j]])
