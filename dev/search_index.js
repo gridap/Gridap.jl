@@ -101,7 +101,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Numa.jl",
     "title": "Numa.NFace",
     "category": "type",
-    "text": "n-face of the polytope, i.e., any polytope of lower dimension (n) representing its boundary and the polytope itself (for n equal to the space dimension)\n\n\n\n\n\n"
+    "text": "n-face of the polytope, i.e., any polytope of lower dimension N representing its boundary and the polytope itself (for N equal to the space dimension D)\n\n\n\n\n\n"
 },
 
 {
