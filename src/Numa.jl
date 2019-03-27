@@ -3,7 +3,6 @@ __precompile__()
 module Numa
 
 using Base.Cartesian
-using LinearAlgebra
 
 include("Helpers.jl")
 include("OtherCellArrays.jl")
