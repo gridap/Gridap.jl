@@ -1,3 +1,10 @@
+module Helpers
+
+export @abstractmethod
+export @notimplemented
+export viewtosize
+export flatten
+export ∇
 
 macro abstractmethod()
   quote
@@ -20,6 +27,8 @@ flatten(a::Array) = reshape(a,(length(a),))
 end
 
 # Unicode aliases
-const Base.:∘(f,g) = compose(f,g)
+#const Base.:∘(f,g) = compose(f,g)
 
 const ∇(f) = gradient(f)
+
+end # module Helpers

@@ -3,6 +3,8 @@ const N = 1000000
 
 let
 
+  using Numa.OtherCellArrays
+
   println("+++ OtherCellArraysBench ( length = $N ) +++")
 
   function doloop(a)
@@ -11,22 +13,26 @@ let
   end
 
   aa = [1.0,2.0,2.1]
-  a = Numa.OtherConstantCellArray(aa,N)
+  a = OtherConstantCellArray(aa,N)
 
   print("OtherConstantCellArray ->"); @time doloop(a)
   print("OtherConstantCellArray ->"); @time doloop(a)
 
   eval(quote
 
-    struct DummyCellArray{C} <: Numa.OtherCellArrayFromUnaryOp{C,Float64,2}
+    struct DummyCellArray{C} <: OtherCellArrayFromUnaryOp{C,Float64,2}
       a::C
     end
+
+    import Numa.OtherCellArrays: inputcellarray
+    import Numa.OtherCellArrays: computesize
+    import Numa.OtherCellArrays: computevals!
     
-    Numa.inputcellarray(self::DummyCellArray) = self.a
+    inputcellarray(self::DummyCellArray) = self.a
     
-    Numa.computesize(self::DummyCellArray,asize) = (2,asize[1])
+    computesize(self::DummyCellArray,asize) = (2,asize[1])
     
-    function Numa.computevals!(self::DummyCellArray,a,asize,v,vsize)
+    function computevals!(self::DummyCellArray,a,asize,v,vsize)
       @inbounds for j in 1:asize[1]
         for i in 1:2
           v[i,j] = a[j]
@@ -44,11 +50,16 @@ let
 
   tv = TensorValue{2,4}(0.0,1.0,2.0,2.0)
   tt = [tv, tv, 4*tv, -1*tv]
-  t = Numa.OtherConstantCellArray(tt,N)
-  c = Numa.OtherConstantCellArrayFromDet{typeof(t),Float64,1}(t)
+  t = OtherConstantCellArray(tt,N)
+  c = Numa.OtherCellArrays.OtherCellArrayFromDet{typeof(t),Float64,1}(t)
 
-  print("OtherConstantCellArrayFromDet ->"); @time doloop(c)
-  print("OtherConstantCellArrayFromDet ->"); @time doloop(c)
+  print("OtherCellArrayFromDet ->"); @time doloop(c)
+  print("OtherCellArrayFromDet ->"); @time doloop(c)
+
+  d = Numa.OtherCellArrays.OtherCellArrayFromInv{typeof(t),typeof(tv),1}(t)
+
+  print("OtherCellArrayFromInv ->"); @time doloop(d)
+  print("OtherCellArrayFromInv ->"); @time doloop(d)
 
 
 end
