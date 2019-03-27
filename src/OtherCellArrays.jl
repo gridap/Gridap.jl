@@ -148,14 +148,14 @@ Base.length(self::OtherCellArrayFromUnaryOp) = length(inputcellarray(self))
 
 maxsize(self::OtherCellArrayFromUnaryOp) = computesize(self,maxsize(inputcellarray(self)))
 
-function Base.iterate(self::OtherCellArrayFromUnaryOp{C,T,N}) where {C,T,N}
+@inline function Base.iterate(self::OtherCellArrayFromUnaryOp{C,T,N}) where {C,T,N}
   v = Array{T,N}(undef,maxsize(self))
   anext = iterate(inputcellarray(self))
   if anext === nothing; return nothing end
   iteratekernel(self,anext,v)
 end
 
-function Base.iterate(self::OtherCellArrayFromUnaryOp,state)
+@inline function Base.iterate(self::OtherCellArrayFromUnaryOp,state)
   v, astate = state
   anext = iterate(inputcellarray(self),astate)
   if anext === nothing; return nothing end
