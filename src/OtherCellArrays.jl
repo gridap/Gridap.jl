@@ -104,6 +104,38 @@ struct OtherCellArrayFromInv{C,T,N} <: OtherCellArrayFromElemUnaryOp{C,T,N}
   a::C
 end
 
+"""
+Lazy sum of two cell arrays
+"""
+struct OtherCellArrayFromSum{A,B,T,N} <: OtherCellArrayFromElemBinaryOp{A,B,T,N}
+  a::A
+  b::B
+end
+
+"""
+Lazy subtraction of two cell arrays
+"""
+struct OtherCellArrayFromSub{A,B,T,N} <: OtherCellArrayFromElemBinaryOp{A,B,T,N}
+  a::A
+  b::B
+end
+
+"""
+Lazy multiplication of two cell arrays
+"""
+struct OtherCellArrayFromMul{A,B,T,N} <: OtherCellArrayFromElemBinaryOp{A,B,T,N}
+  a::A
+  b::B
+end
+
+"""
+Lazy division of two cell arrays
+"""
+struct OtherCellArrayFromDiv{A,B,T,N} <: OtherCellArrayFromElemBinaryOp{A,B,T,N}
+  a::A
+  b::B
+end
+
 # Methods
 
 # OtherCellArray
@@ -132,6 +164,22 @@ function Base.:(==)(a::OtherCellArray{T,N},b::OtherCellArray{T,N}) where {T,N}
     end
   end
   return true
+end
+
+function Base.:+(a::OtherCellArray{T,N},b::OtherCellArray{T,N}) where {T,N}
+  OtherCellArrayFromSum{typeof(a),typeof(b),T,N}(a,b)
+end
+
+function Base.:-(a::OtherCellArray{T,N},b::OtherCellArray{T,N}) where {T,N}
+  OtherCellArrayFromSub{typeof(a),typeof(b),T,N}(a,b)
+end
+
+function Base.:*(a::OtherCellArray{T,N},b::OtherCellArray{T,N}) where {T,N}
+  OtherCellArrayFromMul{typeof(a),typeof(b),T,N}(a,b)
+end
+
+function Base.:/(a::OtherCellArray{T,N},b::OtherCellArray{T,N}) where {T,N}
+  OtherCellArrayFromDiv{typeof(a),typeof(b),T,N}(a,b)
 end
 
 """
@@ -255,6 +303,38 @@ function Base.:(==)(a::OtherConstantCellArray{T,N},b::OtherConstantCellArray{T,N
   return true
 end
 
+function Base.:+(a::OtherConstantCellArray{T,N},b::OtherConstantCellArray{T,N}) where {T,N}
+  @assert size(a.array) == size(b.array)
+  @assert length(a) == length(b)
+  c = Array{T,N}(undef,size(a.array))
+  c .= a.array .+ b.array
+  OtherConstantCellArray(c,a.length)
+end
+
+function Base.:-(a::OtherConstantCellArray{T,N},b::OtherConstantCellArray{T,N}) where {T,N}
+  @assert size(a.array) == size(b.array)
+  @assert length(a) == length(b)
+  c = Array{T,N}(undef,size(a.array))
+  c .= a.array .- b.array
+  OtherConstantCellArray(c,a.length)
+end
+
+function Base.:*(a::OtherConstantCellArray{T,N},b::OtherConstantCellArray{T,N}) where {T,N}
+  @assert size(a.array) == size(b.array)
+  @assert length(a) == length(b)
+  c = Array{T,N}(undef,size(a.array))
+  c .= a.array .* b.array
+  OtherConstantCellArray(c,a.length)
+end
+
+function Base.:/(a::OtherConstantCellArray{T,N},b::OtherConstantCellArray{T,N}) where {T,N}
+  @assert size(a.array) == size(b.array)
+  @assert length(a) == length(b)
+  c = Array{T,N}(undef,size(a.array))
+  c .= a.array ./ b.array
+  OtherConstantCellArray(c,a.length)
+end
+
 """
 Assumes that det is defined for instances of T
 and that the result is Float64
@@ -279,10 +359,7 @@ end
 inputcellarray(self::OtherCellArrayFromDet) = self.a
 
 function computevals!(::OtherCellArrayFromDet, a, asize, v, vsize)
-  if length(asize) != 1; @notimplemented end
-  for i in 1:asize[1]
-    v[i] = det(a[i])
-  end
+  v .= det.(a)
 end
 
 # OtherCellArrayFromInv
@@ -290,10 +367,47 @@ end
 inputcellarray(self::OtherCellArrayFromInv) = self.a
 
 function computevals!(::OtherCellArrayFromInv, a, asize, v, vsize)
-  if length(asize) != 1; @notimplemented end
-  for i in 1:asize[1]
-    v[i] = inv(a[i])
-  end
+  v .= inv.(a)
+end
+
+# OtherCellArrayFromSum
+
+leftcellarray(self::OtherCellArrayFromSum) = self.a
+
+rightcellarray(self::OtherCellArrayFromSum) = self.b
+
+function computevals!(::OtherCellArrayFromSum, a, asize, b, bsize, v, vsize)
+  v .= a .+ b
+end
+
+# OtherCellArrayFromSub
+
+leftcellarray(self::OtherCellArrayFromSub) = self.a
+
+rightcellarray(self::OtherCellArrayFromSub) = self.b
+
+function computevals!(::OtherCellArrayFromSub, a, asize, b, bsize, v, vsize)
+  v .= a .- b
+end
+
+# OtherCellArrayFromMul
+
+leftcellarray(self::OtherCellArrayFromMul) = self.a
+
+rightcellarray(self::OtherCellArrayFromMul) = self.b
+
+function computevals!(::OtherCellArrayFromMul, a, asize, b, bsize, v, vsize)
+  v .= a .* b
+end
+
+# OtherCellArrayFromDiv
+
+leftcellarray(self::OtherCellArrayFromDiv) = self.a
+
+rightcellarray(self::OtherCellArrayFromDiv) = self.b
+
+function computevals!(::OtherCellArrayFromDiv, a, asize, b, bsize, v, vsize)
+  v .= a ./ b
 end
 
 end # module OtherCellArrays
