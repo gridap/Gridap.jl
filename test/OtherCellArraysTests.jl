@@ -2,10 +2,12 @@ using LinearAlgebra
 
 @time @testset "OtherCellArrays" begin 
 
+  using Numa.OtherCellArrays
+
   aa = [1.0,2.0,2.1]
   bb = [aa';aa']
   l = 10
-  a = Numa.OtherConstantCellArray(aa,l)
+  a = OtherConstantCellArray(aa,l)
 
   @testset "OtherConstantCellArray" begin
 
@@ -40,15 +42,19 @@ using LinearAlgebra
     eval(quote
 
 
-      struct DummyCellArray{C} <: Numa.OtherCellArrayFromUnaryOp{C,Float64,2}
+      struct DummyCellArray{C} <: OtherCellArrayFromUnaryOp{C,Float64,2}
         a::C
       end
+
+      import Numa.OtherCellArrays: inputcellarray
+      import Numa.OtherCellArrays: computesize
+      import Numa.OtherCellArrays: computevals!
       
-      Numa.inputcellarray(self::DummyCellArray) = self.a
+      inputcellarray(self::DummyCellArray) = self.a
       
-      Numa.computesize(self::DummyCellArray,asize) = (2,asize[1])
+      computesize(self::DummyCellArray,asize) = (2,asize[1])
       
-      function Numa.computevals!(self::DummyCellArray,a,asize,v,vsize)
+      function computevals!(self::DummyCellArray,a,asize,v,vsize)
         @assert vsize == (2,asize[1])
         @inbounds for j in 1:asize[1]
           for i in 1:2
@@ -61,7 +67,7 @@ using LinearAlgebra
 
     b = DummyCellArray(a)
 
-    @test Numa.inputcellarray(b) === a
+    @test inputcellarray(b) === a
     @test length(b) == l
     @test maxsize(b) == (2,size(aa,1))
     @test maxsize(b,1) == 2
@@ -77,14 +83,16 @@ using LinearAlgebra
 
   @testset "OtherConstantCellArrayFromDet" begin
 
+    using Numa.OtherCellArrays: OtherConstantCellArrayFromDet
+
     tv = TensorValue{2,4}(0.0,1.0,2.0,2.0)
     tt = [tv, tv, 4*tv, -1*tv]
     dett = [ det(tti) for tti in tt ]
-    t = Numa.OtherConstantCellArray(tt,l)
+    t = OtherConstantCellArray(tt,l)
 
-    b = Numa.OtherConstantCellArrayFromDet{typeof(t),Float64,1}(t)
+    b = OtherConstantCellArrayFromDet{typeof(t),Float64,1}(t)
 
-    @test Numa.inputcellarray(b) === t
+    @test inputcellarray(b) === t
     @test length(b) == l
     @test maxsize(b) == size(tt)
     @test maxsize(b,1) == size(tt,1)
