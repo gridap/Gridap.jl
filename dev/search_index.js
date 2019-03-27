@@ -9,14 +9,6 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "#Numa.compose-Union{Tuple{S}, Tuple{D}, Tuple{Any,EvaluableCellArray{D,S,1}}} where S where D",
-    "page": "Numa.jl",
-    "title": "Numa.compose",
-    "category": "method",
-    "text": "Composes a lambda function f with a CellField g to provide f ∘ g. It has to be overloaded with 2 methods, one that returns the type of the result, and another one that returns the result\n\n\n\n\n\n"
-},
-
-{
     "location": "#Numa.derivative-Tuple{UnivariateMonomialBasis,Int64,Array{Float64,1}}",
     "page": "Numa.jl",
     "title": "Numa.derivative",
@@ -33,43 +25,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "#Numa.evaluate-Tuple{Numa.EvaluableCellArrayFromBinaryOp,CellArray{StaticArrays.SArray{Tuple{D},Float64,1,D},1} where D}",
-    "page": "Numa.jl",
-    "title": "Numa.evaluate",
-    "category": "method",
-    "text": "Compute the operation op(a,b) for a EvaluableCellArrayFromBinaryOp\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.evaluate-Tuple{Numa.EvaluableCellArrayFromComposition,CellArray{StaticArrays.SArray{Tuple{D},Float64,1,D},1} where D}",
-    "page": "Numa.jl",
-    "title": "Numa.evaluate",
-    "category": "method",
-    "text": "Evaluate a EvaluableCellArrayFromComposition\n\n\n\n\n\n"
-},
-
-{
     "location": "#Numa.gradient-Tuple{MultivariatePolynomialBasis}",
     "page": "Numa.jl",
     "title": "Numa.gradient",
     "category": "method",
     "text": "Returns a MultivariatePolynomialBasis{TG,D} where TG is a type whose rank is one unit grater than the one of T\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.gradient-Tuple{Numa.EvaluableCellArray{D,T,1} where T where D}",
-    "page": "Numa.jl",
-    "title": "Numa.gradient",
-    "category": "method",
-    "text": "Returns another CellField object that represents the gradient. TG has a rank one order greater than the one of T\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.gradient-Tuple{Numa.EvaluableCellArray{D,T,2} where T where D}",
-    "page": "Numa.jl",
-    "title": "Numa.gradient",
-    "category": "method",
-    "text": "Returns another CellBasis object that represents the gradient TG is a value whose rank is one order grater than the one of T\n\n\n\n\n\n"
 },
 
 {
@@ -81,14 +41,6 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "#Numa.mapderivatives-Union{Tuple{T}, Tuple{D}, Tuple{EvaluableCellArray{D,T,2},EvaluableCellArray{D,SArray{Tuple{D},Float64,1,D},1}}} where T where D",
-    "page": "Numa.jl",
-    "title": "Numa.mapderivatives",
-    "category": "method",
-    "text": "Returns another CellBasis whose spatial derivatives are with respect to the coordinates of the range space of geomap\n\n\n\n\n\n"
-},
-
-{
     "location": "#Numa.shfsps-Tuple{LagrangianRefFE,Any}",
     "page": "Numa.jl",
     "title": "Numa.shfsps",
@@ -97,139 +49,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "#Numa.CellArray",
-    "page": "Numa.jl",
-    "title": "Numa.CellArray",
-    "category": "type",
-    "text": "Abstract type representing an iterable collection of Arrays{T,N}, where each array is associated to a cell.\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.CellBasis",
-    "page": "Numa.jl",
-    "title": "Numa.CellBasis",
-    "category": "type",
-    "text": "Abstract type that represents a cell-wise basis for a field space, where T is the type of value and D the dimension of the domain\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.CellBasisValues",
-    "page": "Numa.jl",
-    "title": "Numa.CellBasisValues",
-    "category": "type",
-    "text": "Abstract type that represents a function basis with value of type T evaluated at a collection of points in each cell\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.CellField",
-    "page": "Numa.jl",
-    "title": "Numa.CellField",
-    "category": "type",
-    "text": "Abstract type that represents a cell-wise field, where T stands for the type that represents the field at a point (e.g., scalar, vector, tensor) and D stands for the space dimension\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.CellFieldValues",
-    "page": "Numa.jl",
-    "title": "Numa.CellFieldValues",
-    "category": "type",
-    "text": "Abstract type that represents a field with value of type T evaluated at a collection of points in each cell\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.CellMatrices",
-    "page": "Numa.jl",
-    "title": "Numa.CellMatrices",
-    "category": "type",
-    "text": "Abstract type that represents a matrix of value T associated with a collection of points in each cell (typically the cell matrix at the quadrature points)\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.CellPoints",
-    "page": "Numa.jl",
-    "title": "Numa.CellPoints",
-    "category": "type",
-    "text": "An array of points for each cell\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.CellQuadrature",
-    "page": "Numa.jl",
-    "title": "Numa.CellQuadrature",
-    "category": "type",
-    "text": "Abstract type representing a collection of quadratures, one for each cell\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.CellScalars",
-    "page": "Numa.jl",
-    "title": "Numa.CellScalars",
-    "category": "type",
-    "text": "Abstract type that represents a scalar of value T associated with a collection of points in each cell\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.CellValues",
-    "page": "Numa.jl",
-    "title": "Numa.CellValues",
-    "category": "type",
-    "text": "An array of values for each cell\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.CellVectors",
-    "page": "Numa.jl",
-    "title": "Numa.CellVectors",
-    "category": "type",
-    "text": "Abstract type that represents a vector of value T associated with a collection of points in each cell (typically the cell rhs vector at the quadrature points)\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.ConstantCellArray",
-    "page": "Numa.jl",
-    "title": "Numa.ConstantCellArray",
-    "category": "type",
-    "text": "Concrete implementation of CellArray, where the same array is associated to all cells. Typically, this is useful for discretizations with a single cell type.\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.ConstantCellQuadrature",
-    "page": "Numa.jl",
-    "title": "Numa.ConstantCellQuadrature",
-    "category": "type",
-    "text": "A concrete implementation of CellQuadrature for the particular case that all cells have the same quadrature\n\n\n\n\n\n"
-},
-
-{
     "location": "#Numa.FESpace",
     "page": "Numa.jl",
     "title": "Numa.FESpace",
     "category": "type",
     "text": "FE Space structure, where only one RefFE is possible in the whole mesh (to be improved in the future)\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.IndexableCellArray",
-    "page": "Numa.jl",
-    "title": "Numa.IndexableCellArray",
-    "category": "type",
-    "text": "Abstract type representing an indexable CellArray. By implementing a concrete IndexableCellArray, one automatically gets a type that is also iterable\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.IntegrationDomain",
-    "page": "Numa.jl",
-    "title": "Numa.IntegrationDomain",
-    "category": "type",
-    "text": "This is the very minimum needed to describe the domain for numerical integration\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.IntegrationMesh",
-    "page": "Numa.jl",
-    "title": "Numa.IntegrationMesh",
-    "category": "type",
-    "text": "Minimal interface for a mesh used for numerical integration\n\n\n\n\n\n"
 },
 
 {
@@ -398,142 +222,6 @@ var documenterSearchIndex = {"docs": [
     "title": "Numa.VectorValue",
     "category": "type",
     "text": "Type representing a vector value of dimension D\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.CellArrayFromBinaryOp",
-    "page": "Numa.jl",
-    "title": "Numa.CellArrayFromBinaryOp",
-    "category": "type",
-    "text": "Concrete implementation of CellArray that represents the lazy result of applying a binary operation on two instances of CellArray the functions computevals! and computesize represents the binary operation to be performed on the two arrays. computesize(::NTuple{P,Int},NTuple{Q,Int})::NTuple{N,Int} provides the size of the result and computevals!(::Array{A,P},::Array{B,Q},::Array{T,N})::Array{T,N} computes the result. This type is essential for DRY (don\'t repeat yourself)\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.CellArrayFromUnaryOp",
-    "page": "Numa.jl",
-    "title": "Numa.CellArrayFromUnaryOp",
-    "category": "type",
-    "text": "Type that implements the lazy result of an unary operation on an instance of CellArray\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.CellBasisValuesFromSingleInterpolation",
-    "page": "Numa.jl",
-    "title": "Numa.CellBasisValuesFromSingleInterpolation",
-    "category": "type",
-    "text": "Concrete implementation for the case of the same interpolation on all cells, but arbitrary sampling points in each cell. This is typically needed for unfitted methods\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.CellBasisWithMappedDerivatives",
-    "page": "Numa.jl",
-    "title": "Numa.CellBasisWithMappedDerivatives",
-    "category": "type",
-    "text": "This type implements the result of mapderivatives\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.CellFieldValuesFromInterpolation",
-    "page": "Numa.jl",
-    "title": "Numa.CellFieldValuesFromInterpolation",
-    "category": "type",
-    "text": "General implementation Cell-wise interpolation of a field evaluated at a set of points CellFieldValues{TN} with a CellBasisValues{TB} of shape functions evaluated at the same points. Accepts any kind of CellBasisValues{TB} and CellFieldValues{TN} representing. This implementation only assumes that outer(·,·) is defined for instances of TB and TN. The result is of type T\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.ConstantCellBasisValues",
-    "page": "Numa.jl",
-    "title": "Numa.ConstantCellBasisValues",
-    "category": "type",
-    "text": "Concrete implementation for the case of the same interpolation and the same sampling points on all cells\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.EvaluableCellArray",
-    "page": "Numa.jl",
-    "title": "Numa.EvaluableCellArray",
-    "category": "type",
-    "text": "Abstract type that represents both a CellField and a CellBasis\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.EvaluableCellArrayFromBinaryOp",
-    "page": "Numa.jl",
-    "title": "Numa.EvaluableCellArrayFromBinaryOp",
-    "category": "type",
-    "text": "Implements the results of a binary operation op between two instances a and b of EvaluableCellArray\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.EvaluableCellArrayFromComposition",
-    "page": "Numa.jl",
-    "title": "Numa.EvaluableCellArrayFromComposition",
-    "category": "type",
-    "text": "Implements the composition a ∘ b of two instances a and b of EvaluableCellArray\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.GradOfCellBasisMappedWithJacob",
-    "page": "Numa.jl",
-    "title": "Numa.GradOfCellBasisMappedWithJacob",
-    "category": "type",
-    "text": "Un-evaluated version of GradOfCellBasisValuesMappedWithJacob\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.GradOfCellBasisValuesMappedWithJacob",
-    "page": "Numa.jl",
-    "title": "Numa.GradOfCellBasisValuesMappedWithJacob",
-    "category": "type",
-    "text": "Values of the gradients of a cell basis mapped with a given Jacobian J stands for the type of the values of the Jacobian, i.e., gradient(Point{D},Val(D))\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.OtherCellArray",
-    "page": "Numa.jl",
-    "title": "Numa.OtherCellArray",
-    "category": "type",
-    "text": "Abstract type representing an iterable collection of Arrays{T,N}, where each array is associated to a cell.\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.OtherCellArrayFromElemUnaryOp",
-    "page": "Numa.jl",
-    "title": "Numa.OtherCellArrayFromElemUnaryOp",
-    "category": "type",
-    "text": "Like OtherCellArrayFromUnaryOp but for the particular case of element-wise operation in the elements of the returned array\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.OtherCellArrayFromUnaryOp",
-    "page": "Numa.jl",
-    "title": "Numa.OtherCellArrayFromUnaryOp",
-    "category": "type",
-    "text": "Abstract type to be used for the implementation of types representing the lazy result of applying an unary operation on a CellArray\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.OtherConstantCellArray",
-    "page": "Numa.jl",
-    "title": "Numa.OtherConstantCellArray",
-    "category": "type",
-    "text": "Concrete implementation of CellArray, where the same array is associated to all cells. Typically, this is useful for discretizations with a single cell type.\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.OtherConstantCellArrayFromDet",
-    "page": "Numa.jl",
-    "title": "Numa.OtherConstantCellArrayFromDet",
-    "category": "type",
-    "text": "Type that stores the lazy result of evaluating the determinant of each element in a CellArray\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.OtherIndexableCellArray",
-    "page": "Numa.jl",
-    "title": "Numa.OtherIndexableCellArray",
-    "category": "type",
-    "text": "Abstract type representing an indexable CellArray. By implementing a concrete IndexableCellArray, one automatically gets a type that is also iterable\n\n\n\n\n\n"
 },
 
 {
