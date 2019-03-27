@@ -2,8 +2,7 @@ export Polytope
 export NodesArray
 export NFace
 export dim, numnftypes
-#export nfaceperms, cartesianindexmatrix!, nodescoordinates, tensorfill!
-#
+
 """
 n-face of the polytope, i.e., any polytope of lower dimension (n) representing its boundary and the polytope itself (for n equal to the space dimension)
 """
@@ -79,20 +78,26 @@ end
 Array of nodes for a give polytope and order
 	"""
 	mutable struct NodesArray
-		coordinates::VectorOfPoints{D} where D
+		coordinates::Vector{Point{D}} where D
 		nfacenodes::Array{Array{Int64,1},1}
 		closurenfacenodes::Array{Array{Int64,1},1}
 		function NodesArray(polytope::Polytope,orders::Array{Int64,1})
 			nodes=new()
 			nodes.closurenfacenodes = [createnodes(polytope.nfaces[i], orders) for i=1:length(polytope.nfaces)]
 			nodes.nfacenodes = [createnodes(polytope.nfaces[i], orders, isopen=true) for i=1:length(polytope.nfaces)]
-			spdims = length(orders)
-			coords = [nodescoordinates(orders[i], nodestype="Equispaced") for i=1:spdims]
+			# spdims = length(orders)
+			coords = [nodescoordinates(orders[i], nodestype="Equispaced") for i=1:D]
 			ordsp1=orders.+1; dims = tuple(ordsp1...)
 			# @santiagobadia : I have to change the coordinates to Point{D}
-			nodes.coordinates=Array{Float64,spdims+1}(undef,tuple(dims...,spdims))
-			tensorfill!(nodes.coordinates,coords)
-			nodes.coordinates = reshape(nodes.coordinates,:,spdims)
+			coords_arr=Array{Float64,D+1}(undef,tuple(D,dims...))
+			coordinates=Array{Float64,D+1}(undef,tuple(dims...,D))
+			tensorfill!(coords_arr,coords)
+			coords_arr = reshape(coords_arr,D,:)
+			tpcoo = Vector{Point{D}}(undef,size(coords_arr,1))
+			for i in 1:size(coords_arr,1)
+				tpcoo[i] = Point{D}(coords_arr[i,:])
+			end
+			nodes.coordinates = tpcoo
 			return nodes
 		end
 	end
@@ -149,7 +154,18 @@ Array of nodes for a give polytope and order
 			@nloops $N i A begin (@nref $N A i) = [((@ntuple $N i).-1)...] end
 		end
 	end
+end
 
+	@generated function tensorfillpoint!(A::Array{T,N},c) where {T,N}
+		quote
+			@nloops $N i A begin
+			t = @ntuple $N i; d = length(t)
+			dim = t[1]
+			nodedim = t[dim+1]
+			(@nref $N A i) = c[dim][nodedim]
+		end
+	end
+end
 	@generated function tensorfill!(A::Array{T,N},c) where {T,N}
 		quote
 			@nloops $N i A begin
