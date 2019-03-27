@@ -1,6 +1,7 @@
 module OtherCellArrays
 
 using LinearAlgebra: det
+import LinearAlgebra
 
 using Numa.Helpers
 
@@ -27,19 +28,6 @@ Base.iterate(::OtherCellArray,state)::Union{Nothing,Tuple{Tuple{Array{T,N},NTupl
 Base.length(::OtherCellArray)::Int = @abstractmethod
 
 maxsize(::OtherCellArray{T,N} where {T,N})::NTuple{N,Int} = @abstractmethod
-
-Base.eltype(::Type{C}) where C<:OtherCellArray{T,N} where {T,N} = Array{T,N}
-
-maxsize(self::OtherCellArray,i::Int) = (s = maxsize(self); s[i])
-
-maxlength(self::OtherCellArray) = prod(maxsize(self))
-
-function Base.show(io::IO,self::OtherCellArray)
-  for (i,(a,s)) in enumerate(self)
-    v = viewtosize(a,s)
-    println(io,"$i -> $v")
-  end
-end
 
 """
 Abstract type representing an indexable CellArray.
@@ -84,11 +72,34 @@ end
 Type that stores the lazy result of evaluating the determinant
 of each element in a CellArray
 """
-struct OtherConstantCellArrayFromDet{C,T,N} <: OtherCellArrayFromElemUnaryOp{C,T,N}
+struct OtherCellArrayFromDet{C,T,N} <: OtherCellArrayFromElemUnaryOp{C,T,N}
   a::C
 end
 
 # Methods
+
+# OtherCellArray
+
+Base.eltype(::Type{C}) where C<:OtherCellArray{T,N} where {T,N} = Array{T,N}
+
+maxsize(self::OtherCellArray,i::Int) = (s = maxsize(self); s[i])
+
+maxlength(self::OtherCellArray) = prod(maxsize(self))
+
+function Base.show(io::IO,self::OtherCellArray)
+  for (i,(a,s)) in enumerate(self)
+    v = viewtosize(a,s)
+    println(io,"$i -> $v")
+  end
+end
+
+"""
+Assumes that det is defined for instances of T
+and that the result is Float64
+"""
+function LinearAlgebra.det(self::OtherCellArray{T,N}) where {T,N}
+  OtherCellArrayFromDet{typeof(self),Float64,N}(self)
+end
 
 # OtherIndexableCellArray
 
@@ -147,9 +158,21 @@ Base.length(self::OtherConstantCellArray) = self.length
 
 maxsize(self::OtherConstantCellArray) = size(self.array)
 
-inputcellarray(self::OtherConstantCellArrayFromDet) = self.a
+"""
+Assumes that det is defined for instances of T
+and that the result is Float64
+"""
+function LinearAlgebra.det(self::OtherConstantCellArray{T,N}) where {T,N}
+  deta = Array{Float64,N}(undef,size(self.array))
+  deta .= det.(self.array)
+  OtherConstantCellArray(deta,self.length)
+end
 
-function computevals!(::OtherConstantCellArrayFromDet, a, asize, v, vsize)
+# OtherCellArrayFromDet
+
+inputcellarray(self::OtherCellArrayFromDet) = self.a
+
+function computevals!(::OtherCellArrayFromDet, a, asize, v, vsize)
   if length(asize) != 1; @notimplemented end
   for i in 1:asize[1]
     v[i] = det(a[i])

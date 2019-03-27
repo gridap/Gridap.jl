@@ -51,10 +51,10 @@ let
   tv = TensorValue{2,4}(0.0,1.0,2.0,2.0)
   tt = [tv, tv, 4*tv, -1*tv]
   t = OtherConstantCellArray(tt,N)
-  c = Numa.OtherCellArrays.OtherConstantCellArrayFromDet{typeof(t),Float64,1}(t)
+  c = Numa.OtherCellArrays.OtherCellArrayFromDet{typeof(t),Float64,1}(t)
 
-  print("OtherConstantCellArrayFromDet ->"); @time doloop(c)
-  print("OtherConstantCellArrayFromDet ->"); @time doloop(c)
+  print("OtherCellArrayFromDet ->"); @time doloop(c)
+  print("OtherCellArrayFromDet ->"); @time doloop(c)
 
 
 end
