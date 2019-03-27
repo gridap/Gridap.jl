@@ -56,6 +56,26 @@ in the elements of the returned array
 """
 abstract type OtherCellArrayFromElemUnaryOp{C,T,N} <: OtherCellArrayFromUnaryOp{C,T,N} end
 
+"""
+Abstract type to be used for the implementation of types representing
+the lazy result of applying a binary operation on two CellArray objects
+"""
+abstract type OtherCellArrayFromBinaryOp{A<:OtherCellArray,B<:OtherCellArray,T,N} <: OtherCellArray{T,N} end
+
+leftcellarray(::OtherCellArrayFromBinaryOp{A,B,T,N} where {A,B,T,N})::A = @abstractmethod
+
+rightcellarray(::OtherCellArrayFromBinaryOp{A,B,T,N} where {A,B,T,N})::B = @abstractmethod
+
+computesize(::OtherCellArrayFromBinaryOp, asize, bsize) = @abstractmethod
+
+computevals!(::OtherCellArrayFromBinaryOp, a, asize, b, bsize, v, vsize) = @abstractmethod
+
+"""
+Like OtherCellArrayFromBinaryOp but for the particular case of element-wise operation
+in the elements of the returned array
+"""
+abstract type OtherCellArrayFromElemBinaryOp{A,B,T,N} <: OtherCellArrayFromBinaryOp{A,B,T,N} end
+
 # Concrete implementations
 
 """
@@ -173,6 +193,49 @@ end
 # OtherCellArrayFromElemUnaryOp
 
 computesize(::OtherCellArrayFromElemUnaryOp, asize) = asize
+
+# OtherCellArrayFromBinaryOp
+
+function Base.length(self::OtherCellArrayFromBinaryOp)
+  @assert length(rightcellarray(self)) == length(leftcellarray(self))
+  length(rightcellarray(self))
+end
+
+maxsize(self::OtherCellArrayFromBinaryOp) = computesize(self,maxsize(leftcellarray(self)),maxsize(rightcellarray(self)))
+
+@inline function Base.iterate(self::OtherCellArrayFromBinaryOp{A,B,T,N}) where {A,B,T,N}
+  v = Array{T,N}(undef,maxsize(self))
+  anext = iterate(leftcellarray(self))
+  if anext === nothing; return nothing end
+  bnext = iterate(rightcellarray(self))
+  if bnext === nothing; return nothing end
+  iteratekernel(self,anext,bnext,v)
+end
+
+@inline function Base.iterate(self::OtherCellArrayFromBinaryOp,state)
+  v, astate, bstate = state
+  anext = iterate(leftcellarray(self),astate)
+  if anext === nothing; return nothing end
+  bnext = iterate(rightcellarray(self),bstate)
+  if bnext === nothing; return nothing end
+  iteratekernel(self,anext,bnext,v)
+end
+
+function iteratekernel(self::OtherCellArrayFromBinaryOp,anext,bnext,v)
+  (a,asize), astate = anext
+  (b,bsize), bstate = bnext
+  vsize = computesize(self,asize,bsize)
+  computevals!(self,a,asize,b,bsize,v,vsize)
+  state = (v, astate, bstate)
+  ((v,vsize),state)
+end
+
+# OtherCellArrayFromElemBinaryOp
+
+function computesize(::OtherCellArrayFromElemBinaryOp, asize, bsize)
+  @assert asize == bsize
+  asize
+end
 
 # OtherConstantCellArray
 
