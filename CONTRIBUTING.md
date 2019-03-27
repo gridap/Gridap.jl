@@ -9,5 +9,6 @@
 * Use whitespace for readability
 * 80 characterl line length limit
 * Use method! for muting methods
+* Wrap multiline expressions in parentheses to avoid errors
 
 See [the Julia CONTRIBUTING.md](https://github.com/JuliaLang/julia/blob/master/CONTRIBUTING.md) for further information.
