@@ -14,6 +14,8 @@ let
 
   aa = [1.0,2.0,2.1]
   a = OtherConstantCellArray(aa,N)
+  aa2 = [0.0,2.1,1.1]
+  a2 = OtherConstantCellArray(aa2,N)
 
   print("OtherConstantCellArray ->"); @time doloop(a)
   print("OtherConstantCellArray ->"); @time doloop(a)
@@ -61,5 +63,9 @@ let
   print("OtherCellArrayFromInv ->"); @time doloop(d)
   print("OtherCellArrayFromInv ->"); @time doloop(d)
 
+  e = Numa.OtherCellArrays.OtherCellArrayFromSum{typeof(a),typeof(a2),Float64,1}(a,a2)
+
+  print("OtherCellArrayFromSum ->"); @time doloop(e)
+  print("OtherCellArrayFromSum ->"); @time doloop(e)
 
 end
