@@ -5,6 +5,8 @@ export ScalarValue, VectorValue, TensorValue
 export MVectorValue, MTensorValue
 using StaticArrays
 
+using Numa.Helpers
+
 """
 Type representing a scalar value
 """

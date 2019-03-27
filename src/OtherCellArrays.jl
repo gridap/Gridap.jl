@@ -2,6 +2,8 @@ module OtherCellArrays
 
 using LinearAlgebra: det
 
+using Numa.Helpers
+
 export OtherCellArray
 export IndexableCellArray
 export OtherCellArrayFromUnaryOp
@@ -11,8 +13,6 @@ export maxsize
 export maxlength
 
 #TODO This is a temporary file in order to explore an alternative CellArray design.
-
-using Numa: @abstractmethod, @notimplemented, viewtosize
 
 """
 Abstract type representing an iterable collection of Arrays{T,N},
