@@ -56,5 +56,10 @@ let
   print("OtherCellArrayFromDet ->"); @time doloop(c)
   print("OtherCellArrayFromDet ->"); @time doloop(c)
 
+  d = Numa.OtherCellArrays.OtherCellArrayFromInv{typeof(t),typeof(tv),1}(t)
+
+  print("OtherCellArrayFromInv ->"); @time doloop(d)
+  print("OtherCellArrayFromInv ->"); @time doloop(d)
+
 
 end
