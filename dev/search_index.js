@@ -109,7 +109,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Numa.jl",
     "title": "Numa.NodesArray",
     "category": "type",
-    "text": "Array of nodes for a give polytope and order\n\n\n\n\n\n"
+    "text": "Array of nodes for a given polytope and order\n\n\n\n\n\n"
 },
 
 {
