@@ -9,6 +9,10 @@ using LinearAlgebra
   l = 10
   a = OtherConstantCellArray(aa,l)
 
+  tv = TensorValue{2,4}(0.0,1.0,2.0,2.0)
+  tt = [tv, tv, 4*tv, -1*tv]
+  t = OtherConstantCellArray(tt,l)
+
   @testset "OtherConstantCellArray" begin
 
     @test length(a) == l
@@ -85,10 +89,7 @@ using LinearAlgebra
 
     using Numa.OtherCellArrays: OtherCellArrayFromDet
 
-    tv = TensorValue{2,4}(0.0,1.0,2.0,2.0)
-    tt = [tv, tv, 4*tv, -1*tv]
     dett = [ det(tti) for tti in tt ]
-    t = OtherConstantCellArray(tt,l)
 
     b = OtherCellArrayFromDet{typeof(t),Float64,1}(t)
 
@@ -103,28 +104,38 @@ using LinearAlgebra
       @assert brs == size(tt)
     end
 
+    c = det(t)
+
+    @test b == c
+
+    @test isa(c,OtherConstantCellArray)
+
   end
 
-  @testset "DetOfConstantCellArray" begin
+  @testset "OtherCellArrayFromInv" begin
 
-    tv = TensorValue{2,4}(0.0,1.0,2.0,2.0)
-    tt = [tv, tv, 4*tv, -1*tv]
-    dett = [ det(tti) for tti in tt ]
-    t = OtherConstantCellArray(tt,l)
+    using Numa.OtherCellArrays: OtherCellArrayFromInv
 
-    b = det(t)
+    invt = [ inv(tti) for tti in tt ]
 
-    @test isa(b,OtherConstantCellArray)
+    b = OtherCellArrayFromInv{typeof(t),typeof(tv),1}(t)
 
+    @test inputcellarray(b) === t
     @test length(b) == l
     @test maxsize(b) == size(tt)
     @test maxsize(b,1) == size(tt,1)
-    @test eltype(b) == Array{Float64,1}
+    @test eltype(b) == Array{typeof(tv),1}
     @test maxlength(b) == size(tt,1)
     for (br,brs) in b
-      @assert br == dett
+      @assert br == invt
       @assert brs == size(tt)
     end
+
+    c = inv(t)
+
+    @test b == c
+
+    @test isa(c,OtherConstantCellArray)
 
   end
 

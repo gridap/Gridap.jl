@@ -76,6 +76,14 @@ struct OtherCellArrayFromDet{C,T,N} <: OtherCellArrayFromElemUnaryOp{C,T,N}
   a::C
 end
 
+"""
+Type that stores the lazy result of evaluating the inverse of
+of each element in a CellArray
+"""
+struct OtherCellArrayFromInv{C,T,N} <: OtherCellArrayFromElemUnaryOp{C,T,N}
+  a::C
+end
+
 # Methods
 
 # OtherCellArray
@@ -93,12 +101,32 @@ function Base.show(io::IO,self::OtherCellArray)
   end
 end
 
+function Base.:(==)(a::OtherCellArray{T,N},b::OtherCellArray{T,N}) where {T,N}
+  length(a) != length(b) && return false
+  maxsize(a) != maxsize(b) && return false
+  if N != 1; @notimplemented end
+  for ((ai,ais),(bi,bis)) in zip(a,b)
+    ais != bis && return false
+    for j in 1:ais[1]
+      ai[j] != bi[j] && return false
+    end
+  end
+  return true
+end
+
 """
 Assumes that det is defined for instances of T
 and that the result is Float64
 """
 function LinearAlgebra.det(self::OtherCellArray{T,N}) where {T,N}
   OtherCellArrayFromDet{typeof(self),Float64,N}(self)
+end
+
+"""
+Assumes that inv is defined for instances of T
+"""
+function LinearAlgebra.inv(self::OtherCellArray{T,N}) where {T,N}
+  OtherCellArrayFromInv{typeof(self),T,N}(self)
 end
 
 # OtherIndexableCellArray
@@ -158,6 +186,12 @@ Base.length(self::OtherConstantCellArray) = self.length
 
 maxsize(self::OtherConstantCellArray) = size(self.array)
 
+function Base.:(==)(a::OtherConstantCellArray{T,N},b::OtherConstantCellArray{T,N}) where {T,N}
+  a.array != b.array && return false
+  a.length != b.length && return false
+  return true
+end
+
 """
 Assumes that det is defined for instances of T
 and that the result is Float64
@@ -165,6 +199,15 @@ and that the result is Float64
 function LinearAlgebra.det(self::OtherConstantCellArray{T,N}) where {T,N}
   deta = Array{Float64,N}(undef,size(self.array))
   deta .= det.(self.array)
+  OtherConstantCellArray(deta,self.length)
+end
+
+"""
+Assumes that inv is defined for instances of T
+"""
+function LinearAlgebra.inv(self::OtherConstantCellArray{T,N}) where {T,N}
+  deta = Array{T,N}(undef,size(self.array))
+  deta .= inv.(self.array)
   OtherConstantCellArray(deta,self.length)
 end
 
@@ -176,6 +219,17 @@ function computevals!(::OtherCellArrayFromDet, a, asize, v, vsize)
   if length(asize) != 1; @notimplemented end
   for i in 1:asize[1]
     v[i] = det(a[i])
+  end
+end
+
+# OtherCellArrayFromInv
+
+inputcellarray(self::OtherCellArrayFromInv) = self.a
+
+function computevals!(::OtherCellArrayFromInv, a, asize, v, vsize)
+  if length(asize) != 1; @notimplemented end
+  for i in 1:asize[1]
+    v[i] = inv(a[i])
   end
 end
 
