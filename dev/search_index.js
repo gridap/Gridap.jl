@@ -97,35 +97,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "#Numa.NFace",
-    "page": "Numa.jl",
-    "title": "Numa.NFace",
-    "category": "type",
-    "text": "n-face of the polytope, i.e., any polytope of lower dimension N representing its boundary and the polytope itself (for N equal to the space dimension D)\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.NodesArray",
-    "page": "Numa.jl",
-    "title": "Numa.NodesArray",
-    "category": "type",
-    "text": "Array of nodes for a given polytope and order\n\n\n\n\n\n"
-},
-
-{
     "location": "#Numa.Point",
     "page": "Numa.jl",
     "title": "Numa.Point",
     "category": "type",
     "text": "Type representing a point of D dimensions\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.Polytope",
-    "page": "Numa.jl",
-    "title": "Numa.Polytope",
-    "category": "type",
-    "text": "Aggregation of all n-faces that compose the polytope boundary and the polytope itself, the classification of n-faces with respect to their dimension and type\n\n\n\n\n\n"
 },
 
 {
