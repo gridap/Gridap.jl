@@ -53,6 +53,10 @@ function cellsum(self::CellArray{T,N};dims::Int) where {T,N}
   CellArrayFromCellSum{dims,N-1,typeof(self),T}(self)
 end
 
+function cellreshape(self::CellArray{T,N},shape::NTuple{M,Int}) where {T,N,M}
+  CellArrayFrom{typeof(self),T,M}(self,shape)
+end
+
 # Ancillary types associated with the operations above
 
 """
@@ -197,5 +201,25 @@ end
 @generated function computevals!(::CellArrayFromCellSum{A,N}, a, v) where {A,N}
   @notimplementedif A != (N+1)
   :(sum!(v,a))
+end
+
+"""
+Lazy result of cellreshape
+"""
+struct CellArrayFromCellReshape{C,T,N} <: CellArrayFromUnaryOp{C,T,N}
+  a::C
+  shape::NTuple{N,Int}
+end
+
+inputcellarray(self::CellArrayFromCellReshape) = self.a
+
+function computesize(self::CellArrayFromCellReshape,asize)
+  self.shape
+end
+
+function computevals!(::CellArrayFromCellReshape, a, v)
+  for (vi,ai) in zip(CartesianIndices(v),CartesianIndices(a))
+    v[vi] = a[ai]
+  end
 end
 

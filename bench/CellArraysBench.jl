@@ -81,4 +81,10 @@ let
   print("NestedLazyCellArray ->"); @time doloop(g)
   print("NestedLazyCellArray ->"); @time doloop(g)
 
+  shape = (1,2,1,3,1)
+  h = Numa.CellArrays.CellArrayFromCellReshape{typeof(z),Float64,length(shape)}(z,shape)
+
+  print("CellArrayFromCellReshape ->"); @time doloop(h)
+  print("CellArrayFromCellReshape ->"); @time doloop(h)
+
 end

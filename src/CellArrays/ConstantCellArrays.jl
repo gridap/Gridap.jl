@@ -94,3 +94,8 @@ function cellsum(self::ConstantCellArray{T,N};dims::Int) where {T,N}
   c = copy(reshape(b,s))
   ConstantCellArray(c,self.length)
 end
+
+function cellreshape(self::ConstantCellArray,shape::NTuple{M,Int}) where M
+  c = copy(reshape(self.array,shape))
+  ConstantCellArray(c,self.length)
+end

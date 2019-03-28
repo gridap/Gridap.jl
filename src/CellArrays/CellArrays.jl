@@ -14,13 +14,11 @@ export ConstantCellArray
 export cellsize
 export celllength
 export cellsum
+export cellreshape
 
 include("CachedArray.jl")
-
 include("AbstractCellArrays.jl")
-
 include("Operators.jl")
-
 include("ConstantCellArrays.jl")
 
 end # module CellArrays

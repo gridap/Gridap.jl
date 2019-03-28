@@ -269,4 +269,30 @@ using LinearAlgebra
 
   end
 
+  @testset "CellArrayFromCellReshape" begin
+
+    using Numa.CellArrays: CellArrayFromCellReshape
+
+    z = ConstantCellArray(bb,l)
+    shape = (1,2,1,3,1)
+    b = CellArrayFromCellReshape{typeof(z),Float64,length(shape)}(z,shape)
+
+    @test inputcellarray(b) === z
+    @test length(b) == l
+    @test cellsize(b) == shape
+    @test cellsize(b,1) == shape[1]
+    @test celllength(b) == prod(shape)
+    bbs = reshape(bb,shape)
+    for br in b
+      @assert br == bbs
+    end
+
+    c = cellreshape(z,shape)
+
+    @test b == c
+
+    @test isa(c,ConstantCellArray)
+
+  end
+
 end
