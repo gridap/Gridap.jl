@@ -69,7 +69,7 @@ extrusion = PointInt{D}(1,1)
 polytope = Polytope(extrusion)
 #orders/2=gps
 # gps=[3,3]
-quad=TensorProductQuadrature{D}(orders=orders)
+quad=TensorProductQuadrature{D}(orders=2*orders)
 reffe = LagrangianRefFE(polytope,orders)
 shfs = shfsps(reffe,quad.coords)
 numgps = length(quad.weights)
@@ -86,7 +86,7 @@ orders=[2,2,2]
 extrusion = PointInt{D}(1,1,1)
 #orders/2=gps
 gps=[6,6,6]
-quad=TensorProductQuadrature{D}(orders=gps)
+quad=TensorProductQuadrature{D}(orders=2*orders)
 reffe = LagrangianRefFE(polytope,orders)
 shfs = shfsps(reffe,quad.points)
 elmatgp=[ shfs[:,igp]*shfs[:,igp]' for igp=1:prod(gps)]

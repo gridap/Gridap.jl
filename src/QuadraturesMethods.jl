@@ -1,9 +1,7 @@
-function TensorProductQuadrature{D}(;orders::Array{Int64,1}) where D
+function TensorProductQuadrature{D}(;orders::Array{Int,1}) where D
     @assert D == length(orders)
-    npoints = [ ceil(Int,(2*orders[i]+1.0)/2.0) for i in 1:D ]
+    npoints = [ ceil(Int,(orders[i]+1.0)/2.0) for i in 1:D ]
     quads = [ gauss( eltype(Point{D}), npoints[i] ) for i in 1:D ]
-    # quads = [ gauss( eltype(Point{D}), orders[i] ) for i in 1:D ]
-    # (coords, weights) = tensor_product(quads,npoints,Val(D))
     (coords, weights) = tensor_product(quads,npoints,Val(D))
     TensorProductQuadrature{D}(coords,weights)
   end
