@@ -1,7 +1,8 @@
 
-const N = 1000000
 
 let
+
+  N = 1000000
 
   using Numa.CellArrays
 
@@ -74,5 +75,10 @@ let
 
   print("CellArrayFromCellSum ->"); @time doloop(f)
   print("CellArrayFromCellSum ->"); @time doloop(f)
+
+  g = d + t
+
+  print("NestedLazyCellArray ->"); @time doloop(g)
+  print("NestedLazyCellArray ->"); @time doloop(g)
 
 end
