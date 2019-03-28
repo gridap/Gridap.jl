@@ -22,6 +22,6 @@ include("Polytopes.jl")
 include("RefFEs.jl")
 include("Meshes.jl")
 include("FESpaces.jl")
-include("BilinearForms.jl")
+# include("BilinearForms.jl")
 
 end #module Numa

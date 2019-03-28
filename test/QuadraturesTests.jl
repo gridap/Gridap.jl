@@ -1,3 +1,4 @@
+using Test
 
 const D = 2
 quad = TensorProductQuadrature{D}(orders=[2,4])
@@ -20,4 +21,3 @@ weigs = weights(quad)
 weigs_ref = [0.555556, 0.555556, 0.888889, 0.888889, 0.555556, 0.555556]
 
 @test isapprox(weigs,weigs_ref,rtol=10-3)
-
