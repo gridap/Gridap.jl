@@ -207,40 +207,19 @@ end
 end
 end
 
-function gradient(a::TensorProductPolynomialBasis, x::Array{Array{Float64,1},1})
-  spdims = length(a.polynomials)
-  c = [a.polynomials[i](x[i]) for i=1:spdims]
-  dc = [derivative(a.polynomials[i], 1, x[i]) for i=1:spdims]
-  ordsp1 = [(a.polynomials[i].order+1) for i=1:spdims]
-  gps=[length(x[i]) for i=1:spdims]
-  pldims = tuple(ordsp1...)
-  vals = Array{Array{Float64,spdims},spdims}(undef,(gps...))
-  grad = Array{Float64,3}(undef,prod(pldims),prod(gps),spdims)
-  for k=1:spdims
-    for i in eachindex(vals) # linear indexing
-      vals[i]=ones(Float64,pldims)
-    end
-    d = [ (i==k) ? dc[i] : c[i] for i=1:spdims]
-    tensorproductsquare!(vals,d)
-    aux = copy(vals)
-    aux = reshape(aux,prod(gps))
-    aux = hcat([ reshape(aux[i],length(aux[i])) for i in 1:length(aux)]...)
-    grad[:,:,k] = aux
-  end
-  return grad
-end
-
-function gradient(a::TensorProductPolynomialBasis, x::Array{Float64,2})
-  spdims = length(a.polynomials)
-  c = [a.polynomials[i](x[:,i]) for i=1:spdims]
-  dc = [derivative(a.polynomials[i], 1, x[:,i]) for i=1:spdims]
-  orders = [(a.polynomials[i].order+1) for i=1:spdims]
+function gradient(a::TensorProductPolynomialBasis,
+                  points::Vector{Point{D}}) where D
+  @assert D == length(a.polynomials)
+  x = reshape( reinterpret(Float64,points), (D,length(points)))
+  c = [a.polynomials[i](x[i,:]) for i=1:D]
+  dc = [derivative(a.polynomials[i], 1, x[i,:]) for i=1:D]
+  orders = [(a.polynomials[i].order+1) for i=1:D]
   pldims = tuple(orders...)
-  vals = Array{Float64,spdims}(undef,pldims)
-  grad = Array{Float64,3}(undef,length(vals),size(x,1),spdims)
-  for k=1:spdims
-    d = [ (i==k) ? dc[i] : c[i] for i=1:spdims]
-    for j = 1:size(x,1)
+  vals = Array{Float64,D}(undef,pldims)
+  grad = Array{Float64,3}(undef,length(vals),size(x,2),D)
+  for k=1:D
+    d = [ (i==k) ? dc[i] : c[i] for i=1:D]
+    for j = 1:size(x,2)
       vals .= 1.0
       tensorproduct!(vals,d,j)
       grad[:,j,k] = copy(reshape(vals,length(vals)))
