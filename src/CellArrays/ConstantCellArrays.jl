@@ -12,10 +12,12 @@ end
 function Base.getindex(self::ConstantCellArray,cell::Int)
   @assert 1 <= cell
   @assert cell <= length(self)
-  (self.array, size(self.array))
+  self.array
 end
 
 Base.length(self::ConstantCellArray) = self.length
+
+Base.eltype(::Type{ConstantCellArray{T,N}}) where {T,N} = Array{T,N}
 
 cellsize(self::ConstantCellArray) = size(self.array)
 

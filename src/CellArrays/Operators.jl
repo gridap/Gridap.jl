@@ -18,12 +18,8 @@ end
 function Base.:(==)(a::CellArray{T,N},b::CellArray{T,N}) where {T,N}
   length(a) != length(b) && return false
   cellsize(a) != cellsize(b) && return false
-  if N != 1; @notimplemented end
-  for ((ai,ais),(bi,bis)) in zip(a,b)
-    ais != bis && return false
-    for j in 1:ais[1]
-      ai[j] != bi[j] && return false
-    end
+  for (ai,bi) in zip(a,b)
+    ai != bi && return false
   end
   return true
 end
@@ -53,7 +49,7 @@ end
 
 inputcellarray(self::CellArrayFromDet) = self.a
 
-function computevals!(::CellArrayFromDet, a, asize, v, vsize)
+function computevals!(::CellArrayFromDet, a, v)
   v .= det.(a)
 end
 
@@ -67,7 +63,7 @@ end
 
 inputcellarray(self::CellArrayFromInv) = self.a
 
-function computevals!(::CellArrayFromInv, a, asize, v, vsize)
+function computevals!(::CellArrayFromInv, a, v)
   v .= inv.(a)
 end
 
@@ -83,7 +79,7 @@ leftcellarray(self::CellArrayFromSum) = self.a
 
 rightcellarray(self::CellArrayFromSum) = self.b
 
-function computevals!(::CellArrayFromSum, a, asize, b, bsize, v, vsize)
+function computevals!(::CellArrayFromSum, a, b, v)
   v .= a .+ b
 end
 
@@ -99,7 +95,7 @@ leftcellarray(self::CellArrayFromSub) = self.a
 
 rightcellarray(self::CellArrayFromSub) = self.b
 
-function computevals!(::CellArrayFromSub, a, asize, b, bsize, v, vsize)
+function computevals!(::CellArrayFromSub, a, b, v)
   v .= a .- b
 end
 
@@ -115,7 +111,7 @@ leftcellarray(self::CellArrayFromMul) = self.a
 
 rightcellarray(self::CellArrayFromMul) = self.b
 
-function computevals!(::CellArrayFromMul, a, asize, b, bsize, v, vsize)
+function computevals!(::CellArrayFromMul, a, b, v)
   v .= a .* b
 end
 
@@ -131,6 +127,6 @@ leftcellarray(self::CellArrayFromDiv) = self.a
 
 rightcellarray(self::CellArrayFromDiv) = self.b
 
-function computevals!(::CellArrayFromDiv, a, asize, b, bsize, v, vsize)
+function computevals!(::CellArrayFromDiv, a, b, v)
   v .= a ./ b
 end

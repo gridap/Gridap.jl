@@ -5,24 +5,23 @@ where each array is associated to a cell.
 """
 abstract type CellArray{T,N} end
 
-Base.iterate(::CellArray)::Union{Nothing,Tuple{Tuple{Array{T,N},NTuple{N,Int}},Any}} = @abstractmethod
+Base.iterate(::CellArray)::Union{Nothing,Tuple{AbstractArray{T,N},Any}} = @abstractmethod
 
-Base.iterate(::CellArray,state)::Union{Nothing,Tuple{Tuple{Array{T,N},NTuple{N,Int}},Any}} = @abstractmethod
+Base.iterate(::CellArray,state)::Union{Nothing,Tuple{AbstractArray{T,N},Any}} = @abstractmethod
 
 Base.length(::CellArray)::Int = @abstractmethod
 
 cellsize(::CellArray{T,N} where {T,N})::NTuple{N,Int} = @abstractmethod
 
-Base.eltype(::Type{C}) where C<:CellArray{T,N} where {T,N} = Array{T,N}
+Base.IteratorEltype(::Type{C} where C <: CellArray{T,N} where {T,N}) = EltypeUnknown()
 
 cellsize(self::CellArray,i::Int) = (s = cellsize(self); s[i])
 
 celllength(self::CellArray) = prod(cellsize(self))
 
 function Base.show(io::IO,self::CellArray)
-  for (i,(a,s)) in enumerate(self)
-    v = viewtosize(a,s)
-    println(io,"$i -> $v")
+  for (i, a) in enumerate(self)
+    println(io,"$i -> $a")
   end
 end
 
@@ -33,7 +32,7 @@ gets a type that is also iterable
 """
 abstract type IndexableCellArray{T,N} <: CellArray{T,N} end
 
-Base.getindex(::IndexableCellArray{T,N} where {T,N},cell::Int)::Tuple{Array{T,N},NTuple{N,Int}} = @abstractmethod
+Base.getindex(::IndexableCellArray{T,N} where {T,N},cell::Int)::AbstractArray{T,N} = @abstractmethod
 
 @inline Base.iterate(self::IndexableCellArray) = iterate(self,0)
 
@@ -78,11 +77,12 @@ end
 end
 
 function iteratekernel(self::CellArrayFromUnaryOp,anext,v)
-  (a,asize), astate = anext
-  vsize = computesize(self,asize)
-  computevals!(self,a,asize,v,vsize)
+  a, astate = anext
+  vsize = computesize(self,size(a))
+  setsize!(v,vsize)
+  computevals!(self,a,v)
   state = (v, astate)
-  ((v,vsize),state)
+  (v,state)
 end
 
 """
@@ -134,12 +134,13 @@ end
 end
 
 function iteratekernel(self::CellArrayFromBinaryOp,anext,bnext,v)
-  (a,asize), astate = anext
-  (b,bsize), bstate = bnext
-  vsize = computesize(self,asize,bsize)
-  computevals!(self,a,asize,b,bsize,v,vsize)
+  a, astate = anext
+  b, bstate = bnext
+  vsize = computesize(self,size(a),size(b))
+  setsize!(v,vsize)
+  computevals!(self,a,b,v)
   state = (v, astate, bstate)
-  ((v,vsize),state)
+  (v,state)
 end
 
 """

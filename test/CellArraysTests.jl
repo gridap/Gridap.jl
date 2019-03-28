@@ -22,11 +22,9 @@ using LinearAlgebra
     @test length(a) == l
     @test cellsize(a) == size(aa)
     @test cellsize(a,1) == size(aa,1)
-    @test eltype(a) == Array{Float64,1}
     @test celllength(a) == length(aa)
-    for (ar,ars) in a
+    for ar in a
       @assert ar == aa
-      @assert ars == size(aa)
     end
     s = string(a)
     s0 = """
@@ -76,9 +74,8 @@ using LinearAlgebra
       
       computesize(self::DummyCellArray,asize) = (2,asize[1])
       
-      function computevals!(self::DummyCellArray,a,asize,v,vsize)
-        @assert vsize == (2,asize[1])
-        @inbounds for j in 1:asize[1]
+      function computevals!(self::DummyCellArray,a,v)
+        @inbounds for j in 1:size(a,1)
           for i in 1:2
             v[i,j] = a[j]
           end
@@ -94,11 +91,9 @@ using LinearAlgebra
     @test cellsize(b) == (2,size(aa,1))
     @test cellsize(b,1) == 2
     @test cellsize(b,2) == size(aa,1)
-    @test eltype(b) == Array{Float64,2}
     @test celllength(b) == 2*length(aa)
-    for (br,brs) in b
+    for br in b
       @assert br == bb
-      @assert brs == size(bb)
     end
 
   end
@@ -115,11 +110,9 @@ using LinearAlgebra
     @test length(b) == l
     @test cellsize(b) == size(tt)
     @test cellsize(b,1) == size(tt,1)
-    @test eltype(b) == Array{Float64,1}
     @test celllength(b) == size(tt,1)
-    for (br,brs) in b
+    for br in b
       @assert br == dett
-      @assert brs == size(tt)
     end
 
     c = det(t)
@@ -142,11 +135,9 @@ using LinearAlgebra
     @test length(b) == l
     @test cellsize(b) == size(tt)
     @test cellsize(b,1) == size(tt,1)
-    @test eltype(b) == Array{typeof(tv),1}
     @test celllength(b) == size(tt,1)
-    for (br,brs) in b
+    for br in b
       @assert br == invt
-      @assert brs == size(tt)
     end
 
     c = inv(t)
@@ -168,11 +159,9 @@ using LinearAlgebra
     @test length(b) == l
     @test cellsize(b) == size(aa)
     @test cellsize(b,1) == size(aa,1)
-    @test eltype(b) == Array{Float64,1}
     @test celllength(b) == size(aa,1)
-    for (br,brs) in b
+    for br in b
       @assert br == aa + aa2
-      @assert brs == size(aa)
     end
 
     c = a + a2
@@ -194,11 +183,9 @@ using LinearAlgebra
     @test length(b) == l
     @test cellsize(b) == size(aa)
     @test cellsize(b,1) == size(aa,1)
-    @test eltype(b) == Array{Float64,1}
     @test celllength(b) == size(aa,1)
-    for (br,brs) in b
+    for br in b
       @assert br == aa - aa2
-      @assert brs == size(aa)
     end
 
     c = a - a2
@@ -220,11 +207,9 @@ using LinearAlgebra
     @test length(b) == l
     @test cellsize(b) == size(aa)
     @test cellsize(b,1) == size(aa,1)
-    @test eltype(b) == Array{Float64,1}
     @test celllength(b) == size(aa,1)
-    for (br,brs) in b
+    for br in b
       @assert br == aa .* aa2
-      @assert brs == size(aa)
     end
 
     c = a * a2
@@ -246,11 +231,9 @@ using LinearAlgebra
     @test length(b) == l
     @test cellsize(b) == size(aa)
     @test cellsize(b,1) == size(aa,1)
-    @test eltype(b) == Array{Float64,1}
     @test celllength(b) == size(aa,1)
-    for (br,brs) in b
+    for br in b
       @assert br == aa ./ aa2
-      @assert brs == size(aa)
     end
 
     c = a / a2
