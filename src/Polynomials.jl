@@ -103,7 +103,7 @@ end
 """
 Evaluate univariate monomial basis in a set of 1D points
 """
-function (monomials::UnivariateMonomialBasis)(points::AbstractVector{Float64})
+function (monomials::UnivariateMonomialBasis)(points::Vector{Float64})
   dbas = monomials.order+1
   c = Array{Float64,2}(undef, dbas, length(points))
   for (j,p) ∈ enumerate(points)
@@ -118,12 +118,13 @@ end
 Function to be eliminated in the future. Compute the numder-th derivative of a monomial
 at a set of 1D point
 """
-function derivative(monomials::UnivariateMonomialBasis, numder::Int64, x::Vector{Float64})
-  c = Vector{Vector{Float64}}(undef, length(x))
-  # monomials.order+1, length(x))
-  for j=1:size(c,2)
+function derivative(monomials::UnivariateMonomialBasis, numder::Int64,
+                    points::Vector{Float64})
+  dbas = monomials.order+1
+  c = Array{Float64,2}(undef, dbas, length(points))
+  for (j,p) ∈ enumerate(points)
     for i=1:size(c,1)
-      c[i,j] = (i<=numder) ? 0.0 : prod([i-k-1 for k=0:numder-1])x[j]^(i-numder-1)
+      c[i,j] = (i<=numder) ? 0.0 : prod([i-k-1 for k=0:numder-1])p^(i-numder-1)
     end
   end
   return c

@@ -1,4 +1,6 @@
 using Test
+using Numa
+using Numa.Quadratures
 
 const D = 2
 quad = TensorProductQuadrature{D}(orders=[2,4])
