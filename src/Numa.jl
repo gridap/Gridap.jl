@@ -5,7 +5,7 @@ module Numa
 using Base.Cartesian
 
 include("Helpers.jl")
-include("OtherCellArrays.jl")
+include("CellArrays/CellArrays.jl")
 include("Points.jl")
 include("Quadratures.jl")
 include("Polynomials.jl")
