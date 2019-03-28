@@ -15,6 +15,16 @@ function Base.:/(a::CellArray{T,N},b::CellArray{T,N}) where {T,N}
   CellArrayFromDiv{typeof(a),typeof(b),T,N}(a,b)
 end
 
+function outer(a::CellArray{T,N} where T,b::CellArray{S,N} where S) where N
+  R = outer(T,S)
+  CellArrayFromOuter{typeof(a),typeof(b),R,N}(a,b)
+end
+
+function inner(a::CellArray{T,N},b::CellArray{T,N}) where {T,N}
+  R = inner(T)
+  CellArrayFromInner{typeof(a),typeof(b),R,N}(a,b)
+end
+
 function Base.:(==)(a::CellArray{T,N},b::CellArray{T,N}) where {T,N}
   length(a) != length(b) && return false
   cellsize(a) != cellsize(b) && return false
@@ -135,6 +145,38 @@ rightcellarray(self::CellArrayFromDiv) = self.b
 
 function computevals!(::CellArrayFromDiv, a, b, v)
   v .= a ./ b
+end
+
+"""
+Lazy outer of two cell arrays
+"""
+struct CellArrayFromOuter{A,B,T,N} <: CellArrayFromElemBinaryOp{A,B,T,N}
+  a::A
+  b::B
+end
+
+leftcellarray(self::CellArrayFromOuter) = self.a
+
+rightcellarray(self::CellArrayFromOuter) = self.b
+
+function computevals!(::CellArrayFromOuter, a, b, v)
+  v .= outer.(a,b)
+end
+
+"""
+Lazy inner of two cell arrays
+"""
+struct CellArrayFromInner{A,B,T,N} <: CellArrayFromElemBinaryOp{A,B,T,N}
+  a::A
+  b::B
+end
+
+leftcellarray(self::CellArrayFromInner) = self.a
+
+rightcellarray(self::CellArrayFromInner) = self.b
+
+function computevals!(::CellArrayFromInner, a, b, v)
+  v .= inner.(a,b)
 end
 
 """
