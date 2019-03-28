@@ -20,10 +20,10 @@ using LinearAlgebra
   @testset "ConstantCellArray" begin
 
     @test length(a) == l
-    @test maxsize(a) == size(aa)
-    @test maxsize(a,1) == size(aa,1)
+    @test cellsize(a) == size(aa)
+    @test cellsize(a,1) == size(aa,1)
     @test eltype(a) == Array{Float64,1}
-    @test maxlength(a) == length(aa)
+    @test celllength(a) == length(aa)
     for (ar,ars) in a
       @assert ar == aa
       @assert ars == size(aa)
@@ -77,11 +77,11 @@ using LinearAlgebra
 
     @test inputcellarray(b) === a
     @test length(b) == l
-    @test maxsize(b) == (2,size(aa,1))
-    @test maxsize(b,1) == 2
-    @test maxsize(b,2) == size(aa,1)
+    @test cellsize(b) == (2,size(aa,1))
+    @test cellsize(b,1) == 2
+    @test cellsize(b,2) == size(aa,1)
     @test eltype(b) == Array{Float64,2}
-    @test maxlength(b) == 2*length(aa)
+    @test celllength(b) == 2*length(aa)
     for (br,brs) in b
       @assert br == bb
       @assert brs == size(bb)
@@ -99,10 +99,10 @@ using LinearAlgebra
 
     @test inputcellarray(b) === t
     @test length(b) == l
-    @test maxsize(b) == size(tt)
-    @test maxsize(b,1) == size(tt,1)
+    @test cellsize(b) == size(tt)
+    @test cellsize(b,1) == size(tt,1)
     @test eltype(b) == Array{Float64,1}
-    @test maxlength(b) == size(tt,1)
+    @test celllength(b) == size(tt,1)
     for (br,brs) in b
       @assert br == dett
       @assert brs == size(tt)
@@ -126,10 +126,10 @@ using LinearAlgebra
 
     @test inputcellarray(b) === t
     @test length(b) == l
-    @test maxsize(b) == size(tt)
-    @test maxsize(b,1) == size(tt,1)
+    @test cellsize(b) == size(tt)
+    @test cellsize(b,1) == size(tt,1)
     @test eltype(b) == Array{typeof(tv),1}
-    @test maxlength(b) == size(tt,1)
+    @test celllength(b) == size(tt,1)
     for (br,brs) in b
       @assert br == invt
       @assert brs == size(tt)
@@ -152,10 +152,10 @@ using LinearAlgebra
     @test leftcellarray(b) === a
     @test rightcellarray(b) === a2
     @test length(b) == l
-    @test maxsize(b) == size(aa)
-    @test maxsize(b,1) == size(aa,1)
+    @test cellsize(b) == size(aa)
+    @test cellsize(b,1) == size(aa,1)
     @test eltype(b) == Array{Float64,1}
-    @test maxlength(b) == size(aa,1)
+    @test celllength(b) == size(aa,1)
     for (br,brs) in b
       @assert br == aa + aa2
       @assert brs == size(aa)
@@ -178,10 +178,10 @@ using LinearAlgebra
     @test leftcellarray(b) === a
     @test rightcellarray(b) === a2
     @test length(b) == l
-    @test maxsize(b) == size(aa)
-    @test maxsize(b,1) == size(aa,1)
+    @test cellsize(b) == size(aa)
+    @test cellsize(b,1) == size(aa,1)
     @test eltype(b) == Array{Float64,1}
-    @test maxlength(b) == size(aa,1)
+    @test celllength(b) == size(aa,1)
     for (br,brs) in b
       @assert br == aa - aa2
       @assert brs == size(aa)
@@ -204,10 +204,10 @@ using LinearAlgebra
     @test leftcellarray(b) === a
     @test rightcellarray(b) === a2
     @test length(b) == l
-    @test maxsize(b) == size(aa)
-    @test maxsize(b,1) == size(aa,1)
+    @test cellsize(b) == size(aa)
+    @test cellsize(b,1) == size(aa,1)
     @test eltype(b) == Array{Float64,1}
-    @test maxlength(b) == size(aa,1)
+    @test celllength(b) == size(aa,1)
     for (br,brs) in b
       @assert br == aa .* aa2
       @assert brs == size(aa)
@@ -230,10 +230,10 @@ using LinearAlgebra
     @test leftcellarray(b) === a
     @test rightcellarray(b) === a2
     @test length(b) == l
-    @test maxsize(b) == size(aa)
-    @test maxsize(b,1) == size(aa,1)
+    @test cellsize(b) == size(aa)
+    @test cellsize(b,1) == size(aa,1)
     @test eltype(b) == Array{Float64,1}
-    @test maxlength(b) == size(aa,1)
+    @test celllength(b) == size(aa,1)
     for (br,brs) in b
       @assert br == aa ./ aa2
       @assert brs == size(aa)

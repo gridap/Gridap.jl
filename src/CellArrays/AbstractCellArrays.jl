@@ -11,13 +11,13 @@ Base.iterate(::CellArray,state)::Union{Nothing,Tuple{Tuple{Array{T,N},NTuple{N,I
 
 Base.length(::CellArray)::Int = @abstractmethod
 
-maxsize(::CellArray{T,N} where {T,N})::NTuple{N,Int} = @abstractmethod
+cellsize(::CellArray{T,N} where {T,N})::NTuple{N,Int} = @abstractmethod
 
 Base.eltype(::Type{C}) where C<:CellArray{T,N} where {T,N} = Array{T,N}
 
-maxsize(self::CellArray,i::Int) = (s = maxsize(self); s[i])
+cellsize(self::CellArray,i::Int) = (s = cellsize(self); s[i])
 
-maxlength(self::CellArray) = prod(maxsize(self))
+celllength(self::CellArray) = prod(cellsize(self))
 
 function Base.show(io::IO,self::CellArray)
   for (i,(a,s)) in enumerate(self)
@@ -60,10 +60,10 @@ computevals!(::CellArrayFromUnaryOp, a, asize, v, vsize) = @abstractmethod
 
 Base.length(self::CellArrayFromUnaryOp) = length(inputcellarray(self))
 
-maxsize(self::CellArrayFromUnaryOp) = computesize(self,maxsize(inputcellarray(self)))
+cellsize(self::CellArrayFromUnaryOp) = computesize(self,cellsize(inputcellarray(self)))
 
 @inline function Base.iterate(self::CellArrayFromUnaryOp{C,T,N}) where {C,T,N}
-  v = Array{T,N}(undef,maxsize(self))
+  v = Array{T,N}(undef,cellsize(self))
   anext = iterate(inputcellarray(self))
   if anext === nothing; return nothing end
   iteratekernel(self,anext,v)
@@ -111,10 +111,10 @@ function Base.length(self::CellArrayFromBinaryOp)
   length(rightcellarray(self))
 end
 
-maxsize(self::CellArrayFromBinaryOp) = computesize(self,maxsize(leftcellarray(self)),maxsize(rightcellarray(self)))
+cellsize(self::CellArrayFromBinaryOp) = computesize(self,cellsize(leftcellarray(self)),cellsize(rightcellarray(self)))
 
 @inline function Base.iterate(self::CellArrayFromBinaryOp{A,B,T,N}) where {A,B,T,N}
-  v = Array{T,N}(undef,maxsize(self))
+  v = Array{T,N}(undef,cellsize(self))
   anext = iterate(leftcellarray(self))
   if anext === nothing; return nothing end
   bnext = iterate(rightcellarray(self))

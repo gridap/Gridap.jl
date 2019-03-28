@@ -10,8 +10,8 @@ export IndexableCellArray
 export CellArrayFromUnaryOp
 export CellArrayFromElemUnaryOp
 export ConstantCellArray
-export maxsize
-export maxlength
+export cellsize
+export celllength
 
 include("AbstractCellArrays.jl")
 

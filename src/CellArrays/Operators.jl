@@ -17,7 +17,7 @@ end
 
 function Base.:(==)(a::CellArray{T,N},b::CellArray{T,N}) where {T,N}
   length(a) != length(b) && return false
-  maxsize(a) != maxsize(b) && return false
+  cellsize(a) != cellsize(b) && return false
   if N != 1; @notimplemented end
   for ((ai,ais),(bi,bis)) in zip(a,b)
     ais != bis && return false
