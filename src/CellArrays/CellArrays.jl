@@ -1,15 +1,15 @@
-module OtherCellArrays
+module CellArrays
 
 using LinearAlgebra: det
 import LinearAlgebra
 
 using Numa.Helpers
 
-export OtherCellArray
+export CellArray
 export IndexableCellArray
-export OtherCellArrayFromUnaryOp
-export OtherCellArrayFromElemUnaryOp
-export OtherConstantCellArray
+export CellArrayFromUnaryOp
+export CellArrayFromElemUnaryOp
+export ConstantCellArray
 export maxsize
 export maxlength
 
@@ -19,4 +19,4 @@ include("Operators.jl")
 
 include("ConstantCellArrays.jl")
 
-end # module OtherCellArrays
+end # module CellArrays

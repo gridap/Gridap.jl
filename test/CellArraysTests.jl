@@ -1,94 +1,250 @@
+using LinearAlgebra
 
-let
+@time @testset "CellArrays" begin 
 
-  a = [3.0,0.1,2.0]
+  using Numa.CellArrays
+  using Numa.CellArrays: leftcellarray
+  using Numa.CellArrays: rightcellarray
+
+  aa = [1.0,2.0,2.1]
+  aa2 = [0.0,2.1,1.1]
+  bb = [aa';aa']
   l = 10
-  
-  dca = ConstantCellArray(a,l)
-  
-  @test isa(dca,CellArray)
-  
-  @test eltype(ConstantCellArray{Float64,1}) == Array{Float64,1}
-  
-  @test eltype(dca) == Array{Float64,1}
-  
-  @test length(dca) == l
-  
-  for b in dca
-    @test b == a
-  end
-  
-  s=string(dca)
-  
-  s_ref = """
-  1 -> [3.0, 0.1, 2.0]
-  2 -> [3.0, 0.1, 2.0]
-  3 -> [3.0, 0.1, 2.0]
-  4 -> [3.0, 0.1, 2.0]
-  5 -> [3.0, 0.1, 2.0]
-  6 -> [3.0, 0.1, 2.0]
-  7 -> [3.0, 0.1, 2.0]
-  8 -> [3.0, 0.1, 2.0]
-  9 -> [3.0, 0.1, 2.0]
-  10 -> [3.0, 0.1, 2.0]
-  """
-  
-  @test s == s_ref
-
-end
-
-let
-
-  l = 10
-  aa = [3.0,0.1,2.0]
-  bb = [1.0,0.0,2.0]
-  
   a = ConstantCellArray(aa,l)
-  b = ConstantCellArray(bb,l)
+  a2 = ConstantCellArray(aa2,l)
 
-  T=Float64
+  tv = TensorValue{2,4}(0.0,1.0,2.0,2.0)
+  tt = [tv, tv, 4*tv, -1*tv]
+  t = ConstantCellArray(tt,l)
 
-  function computevals!(a,b,c)
-    c .= a .+ b
-    c
+  @testset "ConstantCellArray" begin
+
+    @test length(a) == l
+    @test maxsize(a) == size(aa)
+    @test maxsize(a,1) == size(aa,1)
+    @test eltype(a) == Array{Float64,1}
+    @test maxlength(a) == length(aa)
+    for (ar,ars) in a
+      @assert ar == aa
+      @assert ars == size(aa)
+    end
+    s = string(a)
+    s0 = """
+    1 -> [1.0, 2.0, 2.1]
+    2 -> [1.0, 2.0, 2.1]
+    3 -> [1.0, 2.0, 2.1]
+    4 -> [1.0, 2.0, 2.1]
+    5 -> [1.0, 2.0, 2.1]
+    6 -> [1.0, 2.0, 2.1]
+    7 -> [1.0, 2.0, 2.1]
+    8 -> [1.0, 2.0, 2.1]
+    9 -> [1.0, 2.0, 2.1]
+    10 -> [1.0, 2.0, 2.1]
+    """
+    @test s == s0
+
   end
 
-  computesize(a,b) = a
+  @testset "CellArrayFromUnaryOp" begin
 
-  c = Numa.CellArrayFromBinaryOp{T,1,T,1,T,1}(a,b,computevals!,computesize)
+    eval(quote
 
-  @test length(c) == l
-  @test maxsize(c) == (3,)
 
-  for ci in c
-    @assert ci == aa + bb
+      struct DummyCellArray{C} <: CellArrayFromUnaryOp{C,Float64,2}
+        a::C
+      end
+
+      import Numa.CellArrays: inputcellarray
+      import Numa.CellArrays: computesize
+      import Numa.CellArrays: computevals!
+      
+      inputcellarray(self::DummyCellArray) = self.a
+      
+      computesize(self::DummyCellArray,asize) = (2,asize[1])
+      
+      function computevals!(self::DummyCellArray,a,asize,v,vsize)
+        @assert vsize == (2,asize[1])
+        @inbounds for j in 1:asize[1]
+          for i in 1:2
+            v[i,j] = a[j]
+          end
+        end
+      end
+
+    end)
+
+    b = DummyCellArray(a)
+
+    @test inputcellarray(b) === a
+    @test length(b) == l
+    @test maxsize(b) == (2,size(aa,1))
+    @test maxsize(b,1) == 2
+    @test maxsize(b,2) == size(aa,1)
+    @test eltype(b) == Array{Float64,2}
+    @test maxlength(b) == 2*length(aa)
+    for (br,brs) in b
+      @assert br == bb
+      @assert brs == size(bb)
+    end
+
   end
 
+  @testset "CellArrayFromDet" begin
 
-end
+    using Numa.CellArrays: CellArrayFromDet
 
-let
+    dett = [ det(tti) for tti in tt ]
 
-  l = 10
-  aa = [3.0,0.1,2.0]
-  
-  a = ConstantCellArray(aa,l)
+    b = CellArrayFromDet{typeof(t),Float64,1}(t)
 
-  T=Float64
+    @test inputcellarray(b) === t
+    @test length(b) == l
+    @test maxsize(b) == size(tt)
+    @test maxsize(b,1) == size(tt,1)
+    @test eltype(b) == Array{Float64,1}
+    @test maxlength(b) == size(tt,1)
+    for (br,brs) in b
+      @assert br == dett
+      @assert brs == size(tt)
+    end
 
-  function computevals!(a,c)
-    c .= 2a
-    c
+    c = det(t)
+
+    @test b == c
+
+    @test isa(c,ConstantCellArray)
+
   end
 
-  c = Numa.CellArrayFromUnaryOp(a,computevals!)
+  @testset "CellArrayFromInv" begin
 
-  @test length(c) == l
-  @test maxsize(c) == (3,)
+    using Numa.CellArrays: CellArrayFromInv
 
-  for ci in c
-    @assert ci == 2aa
+    invt = [ inv(tti) for tti in tt ]
+
+    b = CellArrayFromInv{typeof(t),typeof(tv),1}(t)
+
+    @test inputcellarray(b) === t
+    @test length(b) == l
+    @test maxsize(b) == size(tt)
+    @test maxsize(b,1) == size(tt,1)
+    @test eltype(b) == Array{typeof(tv),1}
+    @test maxlength(b) == size(tt,1)
+    for (br,brs) in b
+      @assert br == invt
+      @assert brs == size(tt)
+    end
+
+    c = inv(t)
+
+    @test b == c
+
+    @test isa(c,ConstantCellArray)
+
   end
 
+  @testset "CellArrayFromSum" begin
+
+    using Numa.CellArrays: CellArrayFromSum
+
+    b = CellArrayFromSum{typeof(a),typeof(a2),Float64,1}(a,a2)
+
+    @test leftcellarray(b) === a
+    @test rightcellarray(b) === a2
+    @test length(b) == l
+    @test maxsize(b) == size(aa)
+    @test maxsize(b,1) == size(aa,1)
+    @test eltype(b) == Array{Float64,1}
+    @test maxlength(b) == size(aa,1)
+    for (br,brs) in b
+      @assert br == aa + aa2
+      @assert brs == size(aa)
+    end
+
+    c = a + a2
+
+    @test b == c
+
+    @test isa(c,ConstantCellArray)
+
+  end
+
+  @testset "CellArrayFromSum" begin
+
+    using Numa.CellArrays: CellArrayFromSub
+
+    b = CellArrayFromSub{typeof(a),typeof(a2),Float64,1}(a,a2)
+
+    @test leftcellarray(b) === a
+    @test rightcellarray(b) === a2
+    @test length(b) == l
+    @test maxsize(b) == size(aa)
+    @test maxsize(b,1) == size(aa,1)
+    @test eltype(b) == Array{Float64,1}
+    @test maxlength(b) == size(aa,1)
+    for (br,brs) in b
+      @assert br == aa - aa2
+      @assert brs == size(aa)
+    end
+
+    c = a - a2
+
+    @test b == c
+
+    @test isa(c,ConstantCellArray)
+
+  end
+
+  @testset "CellArrayFromMul" begin
+
+    using Numa.CellArrays: CellArrayFromMul
+
+    b = CellArrayFromMul{typeof(a),typeof(a2),Float64,1}(a,a2)
+
+    @test leftcellarray(b) === a
+    @test rightcellarray(b) === a2
+    @test length(b) == l
+    @test maxsize(b) == size(aa)
+    @test maxsize(b,1) == size(aa,1)
+    @test eltype(b) == Array{Float64,1}
+    @test maxlength(b) == size(aa,1)
+    for (br,brs) in b
+      @assert br == aa .* aa2
+      @assert brs == size(aa)
+    end
+
+    c = a * a2
+
+    @test b == c
+
+    @test isa(c,ConstantCellArray)
+
+  end
+
+  @testset "CellArrayFromDiv" begin
+
+    using Numa.CellArrays: CellArrayFromDiv
+
+    b = CellArrayFromDiv{typeof(a),typeof(a2),Float64,1}(a,a2)
+
+    @test leftcellarray(b) === a
+    @test rightcellarray(b) === a2
+    @test length(b) == l
+    @test maxsize(b) == size(aa)
+    @test maxsize(b,1) == size(aa,1)
+    @test eltype(b) == Array{Float64,1}
+    @test maxlength(b) == size(aa,1)
+    for (br,brs) in b
+      @assert br == aa ./ aa2
+      @assert brs == size(aa)
+    end
+
+    c = a / a2
+
+    @test b == c
+
+    @test isa(c,ConstantCellArray)
+
+  end
 
 end
