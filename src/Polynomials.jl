@@ -16,6 +16,7 @@ export UnivariateMonomialBasis
 export derivative, tensorproduct!, gradient, tensorproductsquare!
 export gradient
 
+# @santiagobadia : To put my polynomials in accordance with Abstract methods
 # Abstract types and interfaces
 
 """

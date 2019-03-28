@@ -1,12 +1,17 @@
 using Numa, Test
 
+using Numa.Quadratures
+using Numa.Polytopes
+using Numa.Polynomials
+
+using Numa.Polytopes: PointInt
 ##
 # 1D reffe
+D = 1
 orders=[2]
-polytope = Polytope([1])
-
+extrusion = PointInt{D}(1)
+polytope = Polytope(extrusion)
 nodes=NodesArray(polytope,orders)
-
 prebasis=TensorProductPolynomialBasis(orders)
 reffe = LagrangianRefFE(polytope,orders)
 @test reffe.changeofbasis==[0.0  -0.5   0.5; 1.0   0.0  -1.0; 0.0   0.5   0.5]
@@ -14,64 +19,74 @@ reffe = LagrangianRefFE(polytope,orders)
 
 ##
 # Integration
+D = 2
 orders=[1,1]
-polytope = Polytope([1,1])
+extrusion = PointInt{D}(1,1)
+polytope = Polytope(extrusion)
 gps=[2,2]
-quad=TensorProductQuadratureOld(gps)
+quad=TensorProductQuadrature{D}(orders=gps)
 reffe = LagrangianRefFE(polytope,orders)
-shfs = shfsps(reffe,quad.points)
-gradshfs = gradshfsps(reffe,quad.points)
+shfs = shfsps(reffe,quad.coords)
+gradshfs = gradshfsps(reffe,quad.coords)
 @test sum(gradshfs) ≈ 0.0
 @test sum(shfs) ≈ prod(gps)
 @test size(gradshfs) == (4,4,2)
 @test size(shfs) == (4,4)
 ##
+D = 1
 orders=[1]
-polytope = Polytope([1])
+extrusion = PointInt{D}(1)
+polytope = Polytope(extrusion)
 #orders/2=gps
 gps=[2]
-quad=TensorProductQuadratureOld(gps)
+quad=TensorProductQuadrature{D}(orders=gps)
 reffe = LagrangianRefFE(polytope,orders)
-shfs = shfsps(reffe,quad.points)
+shfs = shfsps(reffe,quad.coords)
 elmatgp=[ shfs[:,igp]*shfs[:,igp]' for igp=1:prod(gps)]
-elmat = sum(quad.tpweights.*elmatgp)
+elmat = sum(quad.weights.*elmatgp)
 @test elmat≈[2/3 1/3; 1/3 2/3]
 ##
 
 ##
+D=2
 orders=[1,1]
-polytope = Polytope([1,1])
+extrusion = PointInt{D}(1,1)
+polytope = Polytope(extrusion)
 #orders/2=gps
 gps=[2,2]
-quad=TensorProductQuadratureOld(gps)
+quad=TensorProductQuadrature{D}(orders=gps)
 reffe = LagrangianRefFE(polytope,orders)
-shfs = shfsps(reffe,quad.points)
+shfs = shfsps(reffe,quad.coords)
 elmatgp=[ shfs[:,igp]*shfs[:,igp]' for igp=1:prod(gps)]
-elmat = sum(quad.tpweights.*elmatgp)
+elmat = sum(quad.weights.*elmatgp)
 @test elmat≈[4/9 2/9 2/9 1/9; 2/9 4/9 1/9 2/9; 2/9 1/9 4/9 2/9; 1/9 2/9 2/9 4/9]
 ##
 
 ##
+D=2
 orders=[2,2]
-polytope = Polytope([1,1])
+extrusion = PointInt{D}(1,1)
+polytope = Polytope(extrusion)
 #orders/2=gps
-gps=[3,3]
-quad=TensorProductQuadratureOld(gps)
+# gps=[3,3]
+quad=TensorProductQuadrature{D}(orders=orders)
 reffe = LagrangianRefFE(polytope,orders)
-shfs = shfsps(reffe,quad.points)
-elmatgp=[ shfs[:,igp]*shfs[:,igp]' for igp=1:prod(gps)]
-elmat = sum(quad.tpweights.*elmatgp)
+shfs = shfsps(reffe,quad.coords)
+numgps = length(quad.weights)
+elmatgp=[ shfs[:,igp]*shfs[:,igp]' for igp=1:numgps]
+elmat = sum(quad.weights.*elmatgp)
 @test sum(elmat)≈4
 @test elmat[1,1] ≈ 16/225
 @test elmat[1,2] ≈ 8/225
 ##
 
 ##
+D=3
 orders=[2,2,2]
-polytope = Polytope([1,1,1])
+extrusion = PointInt{D}(1,1,1)
 #orders/2=gps
 gps=[6,6,6]
-quad=TensorProductQuadratureOld(gps)
+quad=TensorProductQuadrature{D}(orders=gps)
 reffe = LagrangianRefFE(polytope,orders)
 shfs = shfsps(reffe,quad.points)
 elmatgp=[ shfs[:,igp]*shfs[:,igp]' for igp=1:prod(gps)]
