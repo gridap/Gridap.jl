@@ -45,6 +45,20 @@ using LinearAlgebra
 
   end
 
+  @testset "CachedArray" begin
+
+    using Numa.CellArrays: CachedArray
+
+    x = rand(10,5)
+
+    y = CachedArray(x)
+
+    @test y == x
+
+    z = y + x
+
+  end
+
   @testset "CellArrayFromUnaryOp" begin
 
     eval(quote

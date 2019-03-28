@@ -63,7 +63,8 @@ Base.length(self::CellArrayFromUnaryOp) = length(inputcellarray(self))
 cellsize(self::CellArrayFromUnaryOp) = computesize(self,cellsize(inputcellarray(self)))
 
 @inline function Base.iterate(self::CellArrayFromUnaryOp{C,T,N}) where {C,T,N}
-  v = Array{T,N}(undef,cellsize(self))
+  u = Array{T,N}(undef,cellsize(self))
+  v = CachedArray(u)
   anext = iterate(inputcellarray(self))
   if anext === nothing; return nothing end
   iteratekernel(self,anext,v)
@@ -114,7 +115,8 @@ end
 cellsize(self::CellArrayFromBinaryOp) = computesize(self,cellsize(leftcellarray(self)),cellsize(rightcellarray(self)))
 
 @inline function Base.iterate(self::CellArrayFromBinaryOp{A,B,T,N}) where {A,B,T,N}
-  v = Array{T,N}(undef,cellsize(self))
+  u = Array{T,N}(undef,cellsize(self))
+  v = CachedArray(u)
   anext = iterate(leftcellarray(self))
   if anext === nothing; return nothing end
   bnext = iterate(rightcellarray(self))

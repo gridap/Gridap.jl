@@ -2,6 +2,7 @@ module CellArrays
 
 using LinearAlgebra: det
 import LinearAlgebra
+using Base: @propagate_inbounds
 
 using Numa.Helpers
 
@@ -12,6 +13,8 @@ export CellArrayFromElemUnaryOp
 export ConstantCellArray
 export cellsize
 export celllength
+
+include("CachedArray.jl")
 
 include("AbstractCellArrays.jl")
 
