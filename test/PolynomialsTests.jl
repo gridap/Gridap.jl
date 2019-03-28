@@ -1,3 +1,7 @@
+using Numa
+using Test
+using Numa.Polynomials
+
 ##
 basis = ShapeFunctionsScalarQua4()
 n = length(basis)
@@ -45,6 +49,7 @@ mdpbval=multidpolb([point])
 mdpbval[end]
 @test (mdpbval[end]==(2.0^2*3.0^3*4.0^2))
 ##
+
 
 ##
 #Evaluation of derivatives for monomials

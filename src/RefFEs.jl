@@ -1,4 +1,5 @@
 using Numa.Polytopes
+using Numa.Polynomials
 
 export LagrangianRefFE
 export shfsps, gradshfsps

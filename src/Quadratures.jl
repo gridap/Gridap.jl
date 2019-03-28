@@ -7,7 +7,7 @@ using QuadGK
 export Quadrature, coordinates, weights
 export TensorProductQuadrature, TensorProductQuadratureOld
 
-# Abstract type and abstract interfaces
+# Abstract types and interfaces
 
 """
 Abstract type representing a quadrature rule on a Polytope in a space of D dimensions
