@@ -39,6 +39,12 @@ function LinearAlgebra.inv(self::CellArray{T,N}) where {T,N}
   CellArrayFromInv{typeof(self),T,N}(self)
 end
 
+function cellsum(self::CellArray{T,N};dims::Int) where {T,N}
+  CellArrayFromCellSum{dims,N-1,typeof(self),T}(self)
+end
+
+# Ancillary types associated with the operations above
+
 """
 Type that stores the lazy result of evaluating the determinant
 of each element in a CellArray
@@ -130,3 +136,24 @@ rightcellarray(self::CellArrayFromDiv) = self.b
 function computevals!(::CellArrayFromDiv, a, b, v)
   v .= a ./ b
 end
+
+"""
+Lazy result of cellsum
+"""
+struct CellArrayFromCellSum{A,N,C,T} <: CellArrayFromUnaryOp{C,T,N}
+  a::C
+end
+
+inputcellarray(self::CellArrayFromCellSum) = self.a
+
+@generated function computesize(self::CellArrayFromCellSum{A,N},asize) where {A,N}
+    @assert N > 0
+    str = join([ "asize[$i]," for i in 1:(N+1) if i !=A ])
+    Meta.parse("($str)")
+end
+
+@generated function computevals!(::CellArrayFromCellSum{A,N}, a, v) where {A,N}
+  @notimplementedif A != (N+1)
+  :(sum!(v,a))
+end
+

@@ -13,6 +13,7 @@ export CellArrayFromElemUnaryOp
 export ConstantCellArray
 export cellsize
 export celllength
+export cellsum
 
 include("CachedArray.jl")
 

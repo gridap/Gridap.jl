@@ -244,4 +244,29 @@ using LinearAlgebra
 
   end
 
+  @testset "CellArrayFromCellSum" begin
+
+    using Numa.CellArrays: CellArrayFromCellSum
+
+    z = ConstantCellArray(bb,l)
+    b = CellArrayFromCellSum{2,1,typeof(z),Float64}(z)
+
+    @test inputcellarray(b) === z
+    @test length(b) == l
+    @test cellsize(b) == (2,)
+    @test cellsize(b,1) == 2
+    @test celllength(b) == 2
+    bbs = reshape(sum(bb,dims=2),(2,))
+    for br in b
+      @assert br == bbs
+    end
+
+    c = cellsum(z,dims=2)
+
+    @test b == c
+
+    @test isa(c,ConstantCellArray)
+
+  end
+
 end

@@ -16,6 +16,8 @@ let
   a = ConstantCellArray(aa,N)
   aa2 = [0.0,2.1,1.1]
   a2 = ConstantCellArray(aa2,N)
+  bb = [aa';aa']
+  z = ConstantCellArray(bb,N)
 
   print("ConstantCellArray ->"); @time doloop(a)
   print("ConstantCellArray ->"); @time doloop(a)
@@ -67,5 +69,10 @@ let
 
   print("CellArrayFromSum ->"); @time doloop(e)
   print("CellArrayFromSum ->"); @time doloop(e)
+
+  f = Numa.CellArrays.CellArrayFromCellSum{2,1,typeof(z),Float64}(z)
+
+  print("CellArrayFromCellSum ->"); @time doloop(f)
+  print("CellArrayFromCellSum ->"); @time doloop(f)
 
 end

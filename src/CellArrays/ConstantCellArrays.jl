@@ -77,3 +77,12 @@ function LinearAlgebra.inv(self::ConstantCellArray{T,N}) where {T,N}
   deta .= inv.(self.array)
   ConstantCellArray(deta,self.length)
 end
+
+function cellsum(self::ConstantCellArray{T,N};dims::Int) where {T,N}
+  b = sum(self.array,dims=dims)
+  @notimplementedif dims != N
+  sb = size(b)
+  s = tuple([v for (i,v) in enumerate(sb) if i<length(sb) ]...)
+  c = copy(reshape(b,s))
+  ConstantCellArray(c,self.length)
+end

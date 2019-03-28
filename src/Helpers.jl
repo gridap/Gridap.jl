@@ -2,6 +2,7 @@ module Helpers
 
 export @abstractmethod
 export @notimplemented
+export @notimplementedif
 export viewtosize
 export flatten
 export ∇
@@ -15,6 +16,14 @@ end
 macro notimplemented()
   quote
     error("This function in not yet implemented")
+  end
+end
+
+macro notimplementedif(condition)
+  quote
+    if $(esc(condition))
+      @notimplemented
+    end
   end
 end
 
