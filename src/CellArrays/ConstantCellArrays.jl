@@ -27,35 +27,45 @@ function Base.:(==)(a::ConstantCellArray{T,N},b::ConstantCellArray{T,N}) where {
   return true
 end
 
-function Base.:+(a::ConstantCellArray{T,N},b::ConstantCellArray{T,N}) where {T,N}
-  @assert size(a.array) == size(b.array)
+function Base.:+(a::ConstantCellArray,b::ConstantCellArray)
   @assert length(a) == length(b)
-  c = Array{T,N}(undef,size(a.array))
-  c .= a.array .+ b.array
+  c = a.array .+ b.array
   ConstantCellArray(c,a.length)
 end
 
-function Base.:-(a::ConstantCellArray{T,N},b::ConstantCellArray{T,N}) where {T,N}
-  @assert size(a.array) == size(b.array)
+function Base.:-(a::ConstantCellArray,b::ConstantCellArray)
   @assert length(a) == length(b)
-  c = Array{T,N}(undef,size(a.array))
-  c .= a.array .- b.array
+  c = a.array .- b.array
   ConstantCellArray(c,a.length)
 end
 
-function Base.:*(a::ConstantCellArray{T,N},b::ConstantCellArray{T,N}) where {T,N}
-  @assert size(a.array) == size(b.array)
+function Base.:*(a::ConstantCellArray,b::ConstantCellArray)
   @assert length(a) == length(b)
-  c = Array{T,N}(undef,size(a.array))
-  c .= a.array .* b.array
+  c = a.array .* b.array
   ConstantCellArray(c,a.length)
 end
 
-function Base.:/(a::ConstantCellArray{T,N},b::ConstantCellArray{T,N}) where {T,N}
-  @assert size(a.array) == size(b.array)
+function Base.:/(a::ConstantCellArray,b::ConstantCellArray)
   @assert length(a) == length(b)
-  c = Array{T,N}(undef,size(a.array))
-  c .= a.array ./ b.array
+  c = a.array ./ b.array
+  ConstantCellArray(c,a.length)
+end
+
+function outer(a::ConstantCellArray{T,N} where T, b::ConstantCellArray{S,N} where S) where N
+  @assert length(a) == length(b)
+  R = outer(T,S)
+  s = Base.Broadcast.broadcast_shape(size(a),size(b))
+  c = Array{R,N}(undef,s)
+  c .= outer.(a.array,b.array)
+  ConstantCellArray(c,a.length)
+end
+
+function inner(a::ConstantCellArray{T,N}, b::ConstantCellArray{T,N}) where {T,N}
+  @assert length(a) == length(b)
+  R = inner(T,S)
+  s = Base.Broadcast.broadcast_shape(size(a),size(b))
+  c = Array{R,N}(undef,s)
+  c .= inner.(a.array,b.array)
   ConstantCellArray(c,a.length)
 end
 
@@ -63,18 +73,16 @@ end
 Assumes that det is defined for instances of T
 and that the result is Float64
 """
-function LinearAlgebra.det(self::ConstantCellArray{T,N}) where {T,N}
-  deta = Array{Float64,N}(undef,size(self.array))
-  deta .= det.(self.array)
+function LinearAlgebra.det(self::ConstantCellArray)
+  deta = det.(self.array)
   ConstantCellArray(deta,self.length)
 end
 
 """
 Assumes that inv is defined for instances of T
 """
-function LinearAlgebra.inv(self::ConstantCellArray{T,N}) where {T,N}
-  deta = Array{T,N}(undef,size(self.array))
-  deta .= inv.(self.array)
+function LinearAlgebra.inv(self::ConstantCellArray)
+  deta = inv.(self.array)
   ConstantCellArray(deta,self.length)
 end
 
@@ -84,5 +92,10 @@ function cellsum(self::ConstantCellArray{T,N};dims::Int) where {T,N}
   sb = size(b)
   s = tuple([v for (i,v) in enumerate(sb) if i<length(sb) ]...)
   c = copy(reshape(b,s))
+  ConstantCellArray(c,self.length)
+end
+
+function cellreshape(self::ConstantCellArray,shape::NTuple{M,Int}) where M
+  c = copy(reshape(self.array,shape))
   ConstantCellArray(c,self.length)
 end

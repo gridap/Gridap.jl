@@ -150,7 +150,6 @@ in the elements of the returned array
 abstract type CellArrayFromElemBinaryOp{A,B,T,N} <: CellArrayFromBinaryOp{A,B,T,N} end
 
 function computesize(::CellArrayFromElemBinaryOp, asize, bsize)
-  @assert asize == bsize
-  asize
+  Base.Broadcast.broadcast_shape(asize,bsize)
 end
 

@@ -15,6 +15,16 @@ function Base.:/(a::CellArray{T,N},b::CellArray{T,N}) where {T,N}
   CellArrayFromDiv{typeof(a),typeof(b),T,N}(a,b)
 end
 
+function outer(a::CellArray{T,N} where T,b::CellArray{S,N} where S) where N
+  R = outer(T,S)
+  CellArrayFromOuter{typeof(a),typeof(b),R,N}(a,b)
+end
+
+function inner(a::CellArray{T,N},b::CellArray{T,N}) where {T,N}
+  R = inner(T)
+  CellArrayFromInner{typeof(a),typeof(b),R,N}(a,b)
+end
+
 function Base.:(==)(a::CellArray{T,N},b::CellArray{T,N}) where {T,N}
   length(a) != length(b) && return false
   cellsize(a) != cellsize(b) && return false
@@ -41,6 +51,10 @@ end
 
 function cellsum(self::CellArray{T,N};dims::Int) where {T,N}
   CellArrayFromCellSum{dims,N-1,typeof(self),T}(self)
+end
+
+function cellreshape(self::CellArray{T,N},shape::NTuple{M,Int}) where {T,N,M}
+  CellArrayFrom{typeof(self),T,M}(self,shape)
 end
 
 # Ancillary types associated with the operations above
@@ -138,6 +152,38 @@ function computevals!(::CellArrayFromDiv, a, b, v)
 end
 
 """
+Lazy outer of two cell arrays
+"""
+struct CellArrayFromOuter{A,B,T,N} <: CellArrayFromElemBinaryOp{A,B,T,N}
+  a::A
+  b::B
+end
+
+leftcellarray(self::CellArrayFromOuter) = self.a
+
+rightcellarray(self::CellArrayFromOuter) = self.b
+
+function computevals!(::CellArrayFromOuter, a, b, v)
+  v .= outer.(a,b)
+end
+
+"""
+Lazy inner of two cell arrays
+"""
+struct CellArrayFromInner{A,B,T,N} <: CellArrayFromElemBinaryOp{A,B,T,N}
+  a::A
+  b::B
+end
+
+leftcellarray(self::CellArrayFromInner) = self.a
+
+rightcellarray(self::CellArrayFromInner) = self.b
+
+function computevals!(::CellArrayFromInner, a, b, v)
+  v .= inner.(a,b)
+end
+
+"""
 Lazy result of cellsum
 """
 struct CellArrayFromCellSum{A,N,C,T} <: CellArrayFromUnaryOp{C,T,N}
@@ -155,5 +201,25 @@ end
 @generated function computevals!(::CellArrayFromCellSum{A,N}, a, v) where {A,N}
   @notimplementedif A != (N+1)
   :(sum!(v,a))
+end
+
+"""
+Lazy result of cellreshape
+"""
+struct CellArrayFromCellReshape{C,T,N} <: CellArrayFromUnaryOp{C,T,N}
+  a::C
+  shape::NTuple{N,Int}
+end
+
+inputcellarray(self::CellArrayFromCellReshape) = self.a
+
+function computesize(self::CellArrayFromCellReshape,asize)
+  self.shape
+end
+
+function computevals!(::CellArrayFromCellReshape, a, v)
+  for (vi,ai) in zip(CartesianIndices(v),CartesianIndices(a))
+    v[vi] = a[ai]
+  end
 end
 
