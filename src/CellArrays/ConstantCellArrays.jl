@@ -27,35 +27,27 @@ function Base.:(==)(a::ConstantCellArray{T,N},b::ConstantCellArray{T,N}) where {
   return true
 end
 
-function Base.:+(a::ConstantCellArray{T,N},b::ConstantCellArray{T,N}) where {T,N}
-  @assert size(a.array) == size(b.array)
+function Base.:+(a::ConstantCellArray,b::ConstantCellArray)
   @assert length(a) == length(b)
-  c = Array{T,N}(undef,size(a.array))
-  c .= a.array .+ b.array
+  c = a.array .+ b.array
   ConstantCellArray(c,a.length)
 end
 
-function Base.:-(a::ConstantCellArray{T,N},b::ConstantCellArray{T,N}) where {T,N}
-  @assert size(a.array) == size(b.array)
+function Base.:-(a::ConstantCellArray,b::ConstantCellArray)
   @assert length(a) == length(b)
-  c = Array{T,N}(undef,size(a.array))
-  c .= a.array .- b.array
+  c = a.array .- b.array
   ConstantCellArray(c,a.length)
 end
 
-function Base.:*(a::ConstantCellArray{T,N},b::ConstantCellArray{T,N}) where {T,N}
-  @assert size(a.array) == size(b.array)
+function Base.:*(a::ConstantCellArray,b::ConstantCellArray)
   @assert length(a) == length(b)
-  c = Array{T,N}(undef,size(a.array))
-  c .= a.array .* b.array
+  c = a.array .* b.array
   ConstantCellArray(c,a.length)
 end
 
-function Base.:/(a::ConstantCellArray{T,N},b::ConstantCellArray{T,N}) where {T,N}
-  @assert size(a.array) == size(b.array)
+function Base.:/(a::ConstantCellArray,b::ConstantCellArray)
   @assert length(a) == length(b)
-  c = Array{T,N}(undef,size(a.array))
-  c .= a.array ./ b.array
+  c = a.array ./ b.array
   ConstantCellArray(c,a.length)
 end
 
@@ -63,18 +55,16 @@ end
 Assumes that det is defined for instances of T
 and that the result is Float64
 """
-function LinearAlgebra.det(self::ConstantCellArray{T,N}) where {T,N}
-  deta = Array{Float64,N}(undef,size(self.array))
-  deta .= det.(self.array)
+function LinearAlgebra.det(self::ConstantCellArray)
+  deta = det.(self.array)
   ConstantCellArray(deta,self.length)
 end
 
 """
 Assumes that inv is defined for instances of T
 """
-function LinearAlgebra.inv(self::ConstantCellArray{T,N}) where {T,N}
-  deta = Array{T,N}(undef,size(self.array))
-  deta .= inv.(self.array)
+function LinearAlgebra.inv(self::ConstantCellArray)
+  deta = inv.(self.array)
   ConstantCellArray(deta,self.length)
 end
 
