@@ -1,6 +1,8 @@
 export FESpace
 export globalnumbering, computelgidvefs
 
+using Numa.Meshes
+
 """
 FE Space structure, where only one RefFE is possible in the whole mesh (to be improved in the future)
 """

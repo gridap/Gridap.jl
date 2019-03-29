@@ -2,7 +2,8 @@ using Numa, Test
 
 using Numa.Polytopes
 using Numa.Polytopes: PointInt
-
+using Numa.Meshes
+using Base.Cartesian
 
 ##
 D = 2
@@ -15,7 +16,7 @@ iproc = tuple(zeros(Int64,D)...)
 # linfs = LexIndexSet(2*ones(Int64,D))
 extrusion = PointInt{D}(ones(Int64,D))
 polytope = Polytope(extrusion)
-@time mesh = StructHexMesh(nparts)
+@time mesh = Meshes.StructHexMesh(nparts)
 @test mesh.cellvefs[end][mesh.polytope.dimnfs[1]][end] == (nparts1d+1)^D
 # @test mesh.graph[mesh.polytope.dimfs[D+1],:][end] == 25#nparts1d^D
 ##
