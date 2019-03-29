@@ -20,9 +20,9 @@ include("Polynomials.jl")
 #include("CellScalarsVectorsAndMatrices.jl")
 #include("IntegrationMeshes.jl")
 include("Polytopes.jl")
-include("RefFEs.jl")
+include("FESpaces/RefFEs.jl")
 include("Meshes.jl")
-include("FESpaces.jl")
+include("FESpaces/FESpaces.jl")
 # include("BilinearForms.jl")
 
 end #module Numa

@@ -1,24 +1,9 @@
-export FESpace
-export globalnumbering, computelgidvefs
 
-using Numa.Meshes
-using Numa.RefFEs
-
-"""
-FE Space structure, where only one RefFE is possible in the whole mesh (to be improved in the future)
-"""
-struct FESpace
-	reffe::LagrangianRefFE
-	mesh::Mesh
-	l2giddof::Array{Array{Int64,1},1}
-	numgdof::Int64
-	# Constructor not mutable HERE NOW
 	function FESpace(reffe::RefFE,mesh::Mesh)
 		giddof=globalnumbering(reffe,mesh)
 		l2giddof=computelgidvefs(reffe,mesh,giddof[1])
-		return new(reffe,mesh,l2giddof,giddof[2])
+		FESpace(reffe,mesh,l2giddof,giddof[2])
 	end
-end
 
 function globalnumbering(reffe::RefFE,mesh::Mesh)
 	nfdofs=Array{Array{Int64},1}(undef,length(mesh.vefcells))
@@ -46,9 +31,3 @@ function computelgidvefs(reffe::RefFE, mesh::Mesh,gldofs)
 	end
 	return lgidvefs
 end
-
-# Target:
-# integrate(f[q]*inner(testspace[U].grad[q],trialspace[U].grad[q]))
-# U = shapefunctions(V), V: fespace
-# V = shapefunctions(W), W: fespace
-# f = function
