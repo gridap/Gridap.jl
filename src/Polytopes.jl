@@ -10,7 +10,7 @@ export NodesArray
 export NFace
 export dim, numnftypes
 
-# Abstract types
+# Abstract types and interfaces
 
 # Concrete structs
 
