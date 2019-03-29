@@ -41,62 +41,6 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "#Numa.MPoint",
-    "page": "Numa.jl",
-    "title": "Numa.MPoint",
-    "category": "type",
-    "text": "The mutable version of Point{D}\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.MTensorValue",
-    "page": "Numa.jl",
-    "title": "Numa.MTensorValue",
-    "category": "type",
-    "text": "Mutable version of TensorValue{D,DD}\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.MVectorValue",
-    "page": "Numa.jl",
-    "title": "Numa.MVectorValue",
-    "category": "type",
-    "text": "Mutable version of VectorValue{D}\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.Point",
-    "page": "Numa.jl",
-    "title": "Numa.Point",
-    "category": "type",
-    "text": "Type representing a point of D dimensions\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.ScalarValue",
-    "page": "Numa.jl",
-    "title": "Numa.ScalarValue",
-    "category": "type",
-    "text": "Type representing a scalar value\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.TensorValue",
-    "page": "Numa.jl",
-    "title": "Numa.TensorValue",
-    "category": "type",
-    "text": "Type representing a tensor value of dimension D\n\n\n\n\n\n"
-},
-
-{
-    "location": "#Numa.VectorValue",
-    "page": "Numa.jl",
-    "title": "Numa.VectorValue",
-    "category": "type",
-    "text": "Type representing a vector value of dimension D\n\n\n\n\n\n"
-},
-
-{
     "location": "#Numa.RefFE",
     "page": "Numa.jl",
     "title": "Numa.RefFE",
