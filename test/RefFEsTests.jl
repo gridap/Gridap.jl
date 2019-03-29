@@ -3,6 +3,7 @@ using Numa, Test
 using Numa.Quadratures
 using Numa.Polytopes
 using Numa.Polynomials
+using Numa.RefFEs
 
 using Numa.Polytopes: PointInt
 ##
