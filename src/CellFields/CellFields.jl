@@ -3,6 +3,8 @@ module CellFields
 export CellFieldValues
 export CellBasisValues
 export CellPoints
+export expand
+export inner
 
 using Numa.FieldValues
 using Numa.CellArrays

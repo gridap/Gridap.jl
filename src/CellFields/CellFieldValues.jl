@@ -23,3 +23,11 @@ const CellPoints{D} = CellFieldValues{Point{D}} where D
 
 # Operations
 
+inner(a::CellFieldValues,b::CellFieldValues) = binner(a,b)
+
+inner(a::CellBasisValues,b::CellFieldValues) = binner(a,cellnewaxis(b,dim=1))
+
+inner(a::CellBasisValues,b::CellBasisValues) = binner(cellnewaxis(a,dim=2),cellnewaxis(b,dim=1))
+
+expand(a::CellBasisValues,b::CellFieldValues) = cellsum(bouter(a,b),dim=1)
+

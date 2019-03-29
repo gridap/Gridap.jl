@@ -3,6 +3,7 @@ module CellArrays
 using LinearAlgebra: det
 import LinearAlgebra
 using Base: @propagate_inbounds
+using Base.Cartesian: @nloops, @nexprs, @nref
 
 using Numa.Helpers
 using Numa.FieldValues
@@ -19,6 +20,7 @@ export cellnewaxis
 export binner
 export bouter
 
+include("Helpers.jl")
 include("CachedArray.jl")
 include("AbstractCellArrays.jl")
 include("Operators.jl")

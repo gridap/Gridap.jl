@@ -94,9 +94,7 @@ end
 
 function cellsum(self::ConstantCellArray{T,N};dim::Int) where {T,N}
   b = sum(self.array,dims=dim)
-  @notimplementedif dim != N
-  sb = size(b)
-  s = tuple([v for (i,v) in enumerate(sb) if i<length(sb) ]...)
+  s = cellsumsize(size(b),Val(dim))
   c = copy(reshape(b,s))
   ConstantCellArray(c,self.length)
 end

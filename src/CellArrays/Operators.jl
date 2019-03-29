@@ -198,15 +198,12 @@ end
 
 inputcellarray(self::CellArrayFromCellSum) = self.a
 
-@generated function computesize(self::CellArrayFromCellSum{A,N},asize) where {A,N}
-    @assert N > 0
-    str = join([ "asize[$i]," for i in 1:(N+1) if i !=A ])
-    Meta.parse("($str)")
+function computesize(self::CellArrayFromCellSum{A},asize) where A
+  cellsumsize(asize,Val(A))
 end
 
-@generated function computevals!(::CellArrayFromCellSum{A,N}, a, v) where {A,N}
-  @notimplementedif A != (N+1)
-  :(sum!(v,a))
+function computevals!(::CellArrayFromCellSum{A}, a, v) where A
+  cellsumvals!(a,v,Val(A))
 end
 
 """
