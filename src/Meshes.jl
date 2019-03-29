@@ -1,3 +1,5 @@
+# using ..Polytopes: PointInt
+
 export gidscellxtype, gidscellxtypefast
 export flip
 export LexIndexSet
@@ -14,27 +16,28 @@ struct StructHexMesh <: Mesh
 	coordinates::Array{Float64,2}
 	polytope::Polytope
 	function StructHexMesh(nparts,nprocs=-1,iproc=0)
-		spdims = length(nparts)
+		D = length(nparts)
 		if (iproc == 0)
-			iproc = tuple(zeros(Int64,spdims)...)
+			iproc = tuple(zeros(Int64,D)...)
 		end
-		polytope = Polytope(ones(Int64,spdims))
+		extrusion = Polytopes.PointInt{D}(ones(Int64,D))
+		polytope = Polytope(extrusion)
 		numnfs=length(polytope.nfaces)
 		nvefs=length(polytope.nfaces)-1
-		aux = 2*ones(Int64,spdims)
-		offst = [ prod(aux[1:i-1]) for i=1:spdims]
+		aux = 2*ones(Int64,D)
+		offst = [ prod(aux[1:i-1]) for i=1:D]
 		# offst = linfs.offset
 		nfspol = hcat([polytope.nfaces[i].extrusion for i=1:nvefs+1]...)
 		# nftypep1 = lex2int(linfs,nfspol)
 		nftype = [offst'*polytope.nfaces[i].extrusion for i=1:nvefs+1].+1
-		spdimv=2*ones(Int64,spdims)
+		spdimv=2*ones(Int64,D)
 		exttypes = Array{Array{Int64,1}}(undef,spdimv...)
 		cartesianindexmatrix!(exttypes)
 		exttypes = hcat(reshape(exttypes, length(exttypes))...)'
 		dimtypes = [sum(exttypes[i,:]) for i=1:size(exttypes,1)]
 		extli = hcat([(nparts+flip.(exttypes[i,:])) for i=1:size(exttypes,1)]...)
-		offnf= hcat([[prod(extli[1:i-1,j]) for i=1:spdims] for j=1:size(exttypes,1)]...)
-		extli = [ prod(extli[1:spdims,j]) for j=1:size(exttypes,1)]
+		offnf= hcat([[prod(extli[1:i-1,j]) for i=1:D] for j=1:size(exttypes,1)]...)
+		extli = [ prod(extli[1:D,j]) for j=1:size(exttypes,1)]
 		perm = sortperm(dimtypes)
 		invperm = sortperm(perm)
 		offst = accumulate(+, extli[perm])
@@ -107,4 +110,10 @@ end
 		offst=offst.-1
         @nloops $N i A begin (@nref $N A i) = [map(+,(@ntuple $N i),offst)...] end
     end
+end
+
+@generated function cartesianindexmatrix!(A::Array{Array{T,M},N}) where {T,M,N}
+  quote
+    @nloops $N i A begin (@nref $N A i) = [((@ntuple $N i).-1)...] end
+  end
 end
