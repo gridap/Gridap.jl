@@ -4,6 +4,7 @@ using Numa.Quadratures
 using Numa.Polytopes
 using Numa.RefFEs
 using Numa.Meshes
+using Numa.FESpaces
 
 using Numa.Polytopes: PointInt
 
