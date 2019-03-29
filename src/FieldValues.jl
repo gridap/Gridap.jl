@@ -8,8 +8,6 @@ export inner, outer
 
 using StaticArrays: SVector, MVector, SMatrix, MMatrix
 
-using Numa.Helpers
-
 """
 Type representing a scalar value
 """
@@ -24,8 +22,6 @@ const VectorValue{D} = SVector{D,Float64} where D
 Type representing a tensor value of dimension `D`
 """
 const TensorValue{D,DD} = SMatrix{D,D,Float64,DD} where {D,DD}
-# @santiagobadia : Any way to eliminate DD?
-# @fverdugo yes: see Constructors (but I am not sure about efficiency)
 
 """
 Mutable version of `VectorValue{D}`
@@ -36,7 +32,6 @@ const MVectorValue{D} = MVector{D,Float64} where D
 Mutable version of `TensorValue{D,DD}`
 """
 const MTensorValue{D,DD} = MMatrix{D,D,Float64,DD} where {D,DD}
-# @santiagobadia : Any way to eliminate DD?
 
 """
 Type representing all possible field value types
@@ -98,7 +93,7 @@ outer(::Type{T},::Type{SMatrix{D,E,T,DE}}) where {T <: Number,D,E,DE} = SMatrix{
 
 @generated function outer(a::SVector{D,T},b::SVector{Z,T}) where {D,Z,T}
   str = join(["a[$i]*b[$j], " for j in 1:Z for i in 1:D])
-  Meta.parse("SMatrix($str)")
+  Meta.parse("SMatrix{$D,$Z,Float64,$(D*Z)}($str)")
 end
 
 @generated function outer(::Type{SVector{D,T}},::Type{SVector{Z,T}}) where {D,Z,T}
