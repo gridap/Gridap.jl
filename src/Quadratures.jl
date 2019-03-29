@@ -2,6 +2,7 @@ module Quadratures
 
 using Numa # @santiagobadia : To be eliminated
 using Numa.Helpers
+using Numa.FieldValues
 using QuadGK
 
 export Quadrature, coordinates, weights

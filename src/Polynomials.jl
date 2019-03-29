@@ -1,8 +1,10 @@
 module Polynomials
 
-using Numa
+using Numa #@fverdugo to be eliminated
 using Numa.Helpers
+using Numa.FieldValues
 using Numa.Quadratures
+
 using Base.Cartesian
 
 export MultivariatePolynomialBasis, evaluate!, valuetype, grad

@@ -1,4 +1,5 @@
 using Numa, Test
+using Numa.FieldValues
 using Numa.Polytopes
 using Numa.Polytopes: PointInt
 

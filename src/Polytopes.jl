@@ -2,7 +2,8 @@ module Polytopes
 
 using StaticArrays
 using Base.Cartesian
-using Numa
+using Numa #@fverdugo to be eliminated
+using Numa.FieldValues
 
 export Polytope
 export NodesArray

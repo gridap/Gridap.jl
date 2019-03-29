@@ -1,3 +1,4 @@
+using Numa.FieldValues
 using Numa.Polytopes
 using Numa.Polynomials
 

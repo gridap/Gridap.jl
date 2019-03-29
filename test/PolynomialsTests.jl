@@ -1,5 +1,6 @@
 using Numa
 using Test
+using Numa.FieldValues
 using Numa.Polynomials
 
 ##

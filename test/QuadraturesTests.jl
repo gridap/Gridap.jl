@@ -1,5 +1,6 @@
 using Test
 using Numa
+using Numa.FieldValues
 using Numa.Quadratures
 
 const D = 2

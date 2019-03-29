@@ -1,8 +1,10 @@
-export VectorValue, MVectorValue
-export Point, MPoint
+module FieldValues
+
 export FieldValue
+export Point, MPoint
 export ScalarValue, VectorValue, TensorValue
 export MVectorValue, MTensorValue
+
 using StaticArrays
 
 using Numa.Helpers
@@ -50,6 +52,8 @@ The mutable version of Point{D}
 """
 const MPoint{D} = MVector{D,Float64} where D
 
+# Operations
+
 gradient(::Type{Float64},::Val{D}) where D = VectorValue{D}
 
 gradient(::Type{VectorValue{D}},::Val{Z}) where {D,Z} = SMatrix{Z,D,Float64,Z*D}
@@ -75,3 +79,5 @@ function inner(a::SVector{D,T},b::SVector{D,T}) where {D,T}
   end
   v
 end
+
+end # module FieldValues

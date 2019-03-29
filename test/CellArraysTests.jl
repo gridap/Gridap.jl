@@ -2,6 +2,7 @@ using LinearAlgebra
 
 @time @testset "CellArrays" begin 
 
+  using Numa.FieldValues
   using Numa.CellArrays
   using Numa.CellArrays: leftcellarray
   using Numa.CellArrays: rightcellarray
