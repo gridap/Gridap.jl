@@ -5,6 +5,7 @@ import LinearAlgebra
 using Base: @propagate_inbounds
 
 using Numa.Helpers
+using Numa.FieldValues
 
 export CellArray
 export IndexableCellArray
@@ -15,6 +16,8 @@ export cellsize
 export celllength
 export cellsum
 export cellnewaxis
+export binner
+export bouter
 
 include("CachedArray.jl")
 include("AbstractCellArrays.jl")

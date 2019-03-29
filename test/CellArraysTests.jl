@@ -1,4 +1,4 @@
-using LinearAlgebra
+using LinearAlgebra: inv, det
 
 @time @testset "CellArrays" begin 
 
@@ -14,9 +14,13 @@ using LinearAlgebra
   a = ConstantCellArray(aa,l)
   a2 = ConstantCellArray(aa2,l)
 
-  tv = TensorValue{2,4}(0.0,1.0,2.0,2.0)
+  tv = TensorValue(0.0,1.0,2.0,2.0)
   tt = [tv, tv, 4*tv, -1*tv]
   t = ConstantCellArray(tt,l)
+
+  vv = VectorValue(0.0,1.0,2.0)
+  vvv = [vv, -2.0*vv, 4*vv]
+  v = ConstantCellArray(vvv,l)
 
   @testset "ConstantCellArray" begin
 
@@ -289,6 +293,58 @@ using LinearAlgebra
     end
 
     c = cellnewaxis(z,dim=2)
+
+    @test b == c
+
+    @test isa(c,ConstantCellArray)
+
+  end
+
+  @testset "CellArrayFromOuter" begin
+
+    using Numa.CellArrays: CellArrayFromOuter
+
+    aavv = [  outer(aa[i],vvv[i]) for i in 1:3 ]
+
+    b = CellArrayFromOuter{typeof(a),typeof(v),VectorValue{3},1}(a,v)
+
+    @test leftcellarray(b) === a
+    @test rightcellarray(b) === v
+    @test length(b) == l
+    @test cellsize(b) == size(aa)
+    @test cellsize(b,1) == size(aa,1)
+    @test celllength(b) == size(aa,1)
+    for br in b
+      @assert br == aavv
+    end
+
+    c = bouter(a,v)
+
+    @test b == c
+
+    @test isa(c,ConstantCellArray)
+
+  end
+
+  @testset "CellArrayFromInner" begin
+
+    using Numa.CellArrays: CellArrayFromInner
+
+    aavv = [  inner(vvv[i],vvv[i]) for i in 1:3 ]
+
+    b = CellArrayFromInner{typeof(v),typeof(v),Float64,1}(v,v)
+
+    @test leftcellarray(b) === v
+    @test rightcellarray(b) === v
+    @test length(b) == l
+    @test cellsize(b) == size(vvv)
+    @test cellsize(b,1) == size(vvv,1)
+    @test celllength(b) == size(vvv,1)
+    for br in b
+      @assert br == aavv
+    end
+
+    c = binner(v,v)
 
     @test b == c
 

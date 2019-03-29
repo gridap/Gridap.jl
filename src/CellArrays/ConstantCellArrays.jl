@@ -51,19 +51,25 @@ function Base.:/(a::ConstantCellArray,b::ConstantCellArray)
   ConstantCellArray(c,a.length)
 end
 
-function outer(a::ConstantCellArray{T,N} where T, b::ConstantCellArray{S,N} where S) where N
+"""
+Assumes that outer is defined for instances of T and T as type as well
+"""
+function bouter(a::ConstantCellArray{T,N}, b::ConstantCellArray{S,N}) where {T,S,N}
   @assert length(a) == length(b)
   R = outer(T,S)
-  s = Base.Broadcast.broadcast_shape(size(a),size(b))
+  s = Base.Broadcast.broadcast_shape(size(a.array),size(b.array))
   c = Array{R,N}(undef,s)
   c .= outer.(a.array,b.array)
   ConstantCellArray(c,a.length)
 end
 
-function inner(a::ConstantCellArray{T,N}, b::ConstantCellArray{T,N}) where {T,N}
+"""
+Assumes that inner is defined for instances of T and T as type as well
+"""
+function binner(a::ConstantCellArray{T,N}, b::ConstantCellArray{T,N}) where {T,N}
   @assert length(a) == length(b)
-  R = inner(T,S)
-  s = Base.Broadcast.broadcast_shape(size(a),size(b))
+  R = inner(T,T)
+  s = Base.Broadcast.broadcast_shape(size(a.array),size(b.array))
   c = Array{R,N}(undef,s)
   c .= inner.(a.array,b.array)
   ConstantCellArray(c,a.length)

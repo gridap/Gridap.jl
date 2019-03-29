@@ -15,13 +15,19 @@ function Base.:/(a::CellArray{T,N},b::CellArray{T,N}) where {T,N}
   CellArrayFromDiv{typeof(a),typeof(b),T,N}(a,b)
 end
 
-function outer(a::CellArray{T,N} where T,b::CellArray{S,N} where S) where N
+"""
+Assumes that outer is defined by instances of T,S, and T,S as types as well
+"""
+function bouter(a::CellArray{T,N},b::CellArray{S,N}) where {T,S,N}
   R = outer(T,S)
   CellArrayFromOuter{typeof(a),typeof(b),R,N}(a,b)
 end
 
-function inner(a::CellArray{T,N},b::CellArray{T,N}) where {T,N}
-  R = inner(T)
+"""
+Assumes that inner is defined by instances of T and T as type as well
+"""
+function binner(a::CellArray{T,N},b::CellArray{T,N}) where {T,N}
+  R = inner(T,T)
   CellArrayFromInner{typeof(a),typeof(b),R,N}(a,b)
 end
 
