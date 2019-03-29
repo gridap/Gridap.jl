@@ -17,8 +17,6 @@ end
 
 Base.length(self::ConstantCellArray) = self.length
 
-Base.eltype(::Type{ConstantCellArray{T,N}}) where {T,N} = Array{T,N}
-
 cellsize(self::ConstantCellArray) = size(self.array)
 
 function Base.:(==)(a::ConstantCellArray{T,N},b::ConstantCellArray{T,N}) where {T,N}

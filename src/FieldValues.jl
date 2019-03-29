@@ -87,9 +87,17 @@ outer(a::T,b::SVector{D,T}) where {T <: Number,D} = a*b
 
 outer(::Type{T},::Type{SVector{D,T}}) where {T <: Number,D} = SVector{D,T}
 
+outer(b::SVector{D,T},a::T) where {T <: Number,D} = a*b
+
+outer(::Type{SVector{D,T}},::Type{T}) where {T <: Number,D} = SVector{D,T}
+
 outer(a::T,b::SMatrix{D,E,T,DE}) where {T <: Number,D,E,DE} = a*b
 
 outer(::Type{T},::Type{SMatrix{D,E,T,DE}}) where {T <: Number,D,E,DE} = SMatrix{D,E,T,DE}
+
+outer(b::SMatrix{D,E,T,DE},a::T) where {T <: Number,D,E,DE} = a*b
+
+outer(::Type{SMatrix{D,E,T,DE}},::Type{T}) where {T <: Number,D,E,DE} = SMatrix{D,E,T,DE}
 
 @generated function outer(a::SVector{D,T},b::SVector{Z,T}) where {D,Z,T}
   str = join(["a[$i]*b[$j], " for j in 1:Z for i in 1:D])

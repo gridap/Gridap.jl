@@ -29,5 +29,5 @@ inner(a::CellBasisValues,b::CellFieldValues) = binner(a,cellnewaxis(b,dim=1))
 
 inner(a::CellBasisValues,b::CellBasisValues) = binner(cellnewaxis(a,dim=2),cellnewaxis(b,dim=1))
 
-expand(a::CellBasisValues,b::CellFieldValues) = cellsum(bouter(a,b),dim=1)
+expand(a::CellBasisValues,b::CellFieldValues) = cellsum(bouter(a,cellnewaxis(b,dim=2)),dim=1)
 

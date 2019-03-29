@@ -216,7 +216,7 @@ end
 inputcellarray(self::CellArrayFromCellNewAxis) = self.a
 
 @generated function computesize(self::CellArrayFromCellNewAxis{A},asize::NTuple{M,Int}) where {A,M}
-  @assert A <= M
+  @assert A <= M+1
   str = ["asize[$i]," for i in 1:M]
   insert!(str,A,"1,")
   Meta.parse("($(join(str)))")
