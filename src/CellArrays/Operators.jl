@@ -49,12 +49,12 @@ function LinearAlgebra.inv(self::CellArray{T,N}) where {T,N}
   CellArrayFromInv{typeof(self),T,N}(self)
 end
 
-function cellsum(self::CellArray{T,N};dims::Int) where {T,N}
-  CellArrayFromCellSum{dims,N-1,typeof(self),T}(self)
+function cellsum(self::CellArray{T,N};dim::Int) where {T,N}
+  CellArrayFromCellSum{dim,N-1,typeof(self),T}(self)
 end
 
-function cellreshape(self::CellArray{T,N},shape::NTuple{M,Int}) where {T,N,M}
-  CellArrayFrom{typeof(self),T,M}(self,shape)
+function cellnewaxis(self::CellArray{T,N};dim::Int) where {T,N}
+  CellArrayFromCellNewAxis{dim,typeof(self),T,N+1}(self)
 end
 
 # Ancillary types associated with the operations above
@@ -204,20 +204,22 @@ end
 end
 
 """
-Lazy result of cellreshape
+Lazy result of cellnewaxis
 """
-struct CellArrayFromCellReshape{C,T,N} <: CellArrayFromUnaryOp{C,T,N}
+struct CellArrayFromCellNewAxis{A,C,T,N} <: CellArrayFromUnaryOp{C,T,N}
   a::C
-  shape::NTuple{N,Int}
 end
 
-inputcellarray(self::CellArrayFromCellReshape) = self.a
+inputcellarray(self::CellArrayFromCellNewAxis) = self.a
 
-function computesize(self::CellArrayFromCellReshape,asize)
-  self.shape
+@generated function computesize(self::CellArrayFromCellNewAxis{A},asize::NTuple{M,Int}) where {A,M}
+  @assert A <= M
+  str = ["asize[$i]," for i in 1:M]
+  insert!(str,A,"1,")
+  Meta.parse("($(join(str)))")
 end
 
-function computevals!(::CellArrayFromCellReshape, a, v)
+function computevals!(::CellArrayFromCellNewAxis, a, v)
   for (vi,ai) in zip(CartesianIndices(v),CartesianIndices(a))
     v[vi] = a[ai]
   end

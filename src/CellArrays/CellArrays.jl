@@ -14,7 +14,7 @@ export ConstantCellArray
 export cellsize
 export celllength
 export cellsum
-export cellreshape
+export cellnewaxis
 
 include("CachedArray.jl")
 include("AbstractCellArrays.jl")

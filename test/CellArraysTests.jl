@@ -261,7 +261,7 @@ using LinearAlgebra
       @assert br == bbs
     end
 
-    c = cellsum(z,dims=2)
+    c = cellsum(z,dim=2)
 
     @test b == c
 
@@ -269,25 +269,25 @@ using LinearAlgebra
 
   end
 
-  @testset "CellArrayFromCellReshape" begin
+  @testset "CellArrayFromCellNewAxis" begin
 
-    using Numa.CellArrays: CellArrayFromCellReshape
+    using Numa.CellArrays: CellArrayFromCellNewAxis
 
     z = ConstantCellArray(bb,l)
-    shape = (1,2,1,3,1)
-    b = CellArrayFromCellReshape{typeof(z),Float64,length(shape)}(z,shape)
+    ls = length(size(bb))+1
+    b = CellArrayFromCellNewAxis{2,typeof(z),Float64,ls}(z)
 
     @test inputcellarray(b) === z
     @test length(b) == l
-    @test cellsize(b) == shape
-    @test cellsize(b,1) == shape[1]
-    @test celllength(b) == prod(shape)
-    bbs = reshape(bb,shape)
+    @test cellsize(b) == (2,1,3)
+    @test cellsize(b,1) == 2
+    @test celllength(b) == 6
+    bbs = reshape(bb,(2,1,3))
     for br in b
       @assert br == bbs
     end
 
-    c = cellreshape(z,shape)
+    c = cellnewaxis(z,dim=2)
 
     @test b == c
 

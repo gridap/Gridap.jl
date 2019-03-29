@@ -86,16 +86,19 @@ function LinearAlgebra.inv(self::ConstantCellArray)
   ConstantCellArray(deta,self.length)
 end
 
-function cellsum(self::ConstantCellArray{T,N};dims::Int) where {T,N}
-  b = sum(self.array,dims=dims)
-  @notimplementedif dims != N
+function cellsum(self::ConstantCellArray{T,N};dim::Int) where {T,N}
+  b = sum(self.array,dims=dim)
+  @notimplementedif dim != N
   sb = size(b)
   s = tuple([v for (i,v) in enumerate(sb) if i<length(sb) ]...)
   c = copy(reshape(b,s))
   ConstantCellArray(c,self.length)
 end
 
-function cellreshape(self::ConstantCellArray,shape::NTuple{M,Int}) where M
+function cellnewaxis(self::ConstantCellArray;dim::Int)
+  s = [ v for v in size(self.array)]
+  insert!(s,dim,1)
+  shape = tuple(s...)
   c = copy(reshape(self.array,shape))
   ConstantCellArray(c,self.length)
 end
