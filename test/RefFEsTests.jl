@@ -84,89 +84,98 @@ elmat = sum(quad.weights.*elmatgp)
 D=3
 orders=[2,2,2]
 extrusion = PointInt{D}(1,1,1)
+polytope = Polytope(extrusion)
 #orders/2=gps
-gps=[6,6,6]
 quad=TensorProductQuadrature{D}(orders=2*orders)
 reffe = LagrangianRefFE(polytope,orders)
-shfs = shfsps(reffe,quad.points)
-elmatgp=[ shfs[:,igp]*shfs[:,igp]' for igp=1:prod(gps)]
-elmat = sum(quad.tpweights.*elmatgp)
+shfs = shfsps(reffe,quad.coords)
+numgps = length(quad.weights)
+elmatgp=[ shfs[:,igp]*shfs[:,igp]' for igp=1:prod(numgps)]
+elmat = sum(quad.weights.*elmatgp)
 @test sum(elmat)≈8
 @test elmat[1,1] ≈ 64/3375
 @test elmat[1,2] ≈ 32/3375
 ##
 
 ##
+D=1
 orders=[1]
-polytope = Polytope([1])
+extrusion = PointInt{D}(1)
+polytope = Polytope(extrusion)
 #orders/2=gps
-gps=[4]
-quad=TensorProductQuadratureOld(gps)
+quad=TensorProductQuadrature{D}(orders=2*orders)
 reffe = LagrangianRefFE(polytope,orders)
-gradshfs = gradshfsps(reffe,quad.points)
-elmatgp = [ view(gradshfs,:,igp,:)*view(gradshfs,:,igp,:)' for igp=1:prod(gps)]
-elmat = sum(quad.tpweights.*elmatgp)
+gradshfs = gradshfsps(reffe,quad.coords)
+numgps = length(quad.weights)
+elmatgp = [ view(gradshfs,:,igp,:)*view(gradshfs,:,igp,:)' for igp=1:numgps]
+elmat = sum(quad.weights.*elmatgp)
 @test elmat ≈ [1/2 -1/2; -1/2 1/2]
 ##
 
 ##
+D=2
 orders=[1,1]
-polytope = Polytope([1,1])
+extrusion = PointInt{D}(1,1)
+polytope = Polytope(extrusion)
 #2*orders+1<2*gps
-gps=[2,2]
-quad=TensorProductQuadratureOld(gps)
+quad=TensorProductQuadrature{D}(orders=2*orders)
 reffe = LagrangianRefFE(polytope,orders)
-gradshfs = gradshfsps(reffe,quad.points)
-elmatgp = [ view(gradshfs,:,igp,:)*view(gradshfs,:,igp,:)' for igp=1:prod(gps)]
-elmat = sum(quad.tpweights.*elmatgp)
+gradshfs = gradshfsps(reffe,quad.coords)
+numgps = length(quad.weights)
+elmatgp = [ view(gradshfs,:,igp,:)*view(gradshfs,:,igp,:)' for igp=1:numgps]
+elmat = sum(quad.weights.*elmatgp)
 @test 1.0+sum(elmat)≈1.0
 @test sum(elmat,dims=2).+1≈fill(0,size(elmat,1)).+1
 @test elmat[1,1] ≈ 2/3
 ##
 
 ##
+D=2
 orders=[2,2]
-polytope = Polytope([1,1])
+extrusion = PointInt{D}(1,1)
+polytope = Polytope(extrusion)
 #2*orders+1<2*gps
-gps=[4,4]
-quad=TensorProductQuadratureOld(gps)
+quad=TensorProductQuadrature{D}(orders=2*orders)
 reffe = LagrangianRefFE(polytope,orders)
-gradshfs = gradshfsps(reffe,quad.points)
-elmatgp = [ view(gradshfs,:,igp,:)*view(gradshfs,:,igp,:)' for igp=1:prod(gps)]
-elmat = sum(quad.tpweights.*elmatgp)
+gradshfs = gradshfsps(reffe,quad.coords)
+numgps = length(quad.weights)
+elmatgp = [ view(gradshfs,:,igp,:)*view(gradshfs,:,igp,:)' for igp=1:numgps]
+elmat = sum(quad.weights.*elmatgp)
 @test 1.0+sum(elmat)≈1.0
 @test sum(elmat,dims=2).+1≈fill(0,size(elmat,1)).+1
 @test elmat[1,1] ≈ 28/45
 ##
 
 ##
+D=3
 orders=[3,3,3]
-polytope = Polytope([1,1,1])
-#2*orders+1<2*gps
-gps=[4,4,4]
-quad=TensorProductQuadratureOld(gps)
+extrusion = PointInt{D}(1,1,1)
+polytope = Polytope(extrusion)
+quad=TensorProductQuadrature{D}(orders=2*orders)
 reffe = LagrangianRefFE(polytope,orders)
-gradshfs = gradshfsps(reffe,quad.points)
-elmatgp = [ view(gradshfs,:,igp,:)*view(gradshfs,:,igp,:)' for igp=1:prod(gps)]
-elmat = sum(quad.tpweights.*elmatgp)
+gradshfs = gradshfsps(reffe,quad.coords)
+numgps = length(quad.weights)
+elmatgp = [ view(gradshfs,:,igp,:)*view(gradshfs,:,igp,:)' for igp=1:numgps]
+elmat = sum(quad.weights.*elmatgp)
 @test 1.0+sum(elmat)≈1.0
 @test sum(elmat,dims=2).+1≈fill(0,size(elmat,1)).+1
 ##
 
 ##
 # Vector FE space
-spdims = 2
+D = 2
 nparts1d = 2
-nparts = nparts1d*ones(Int64,spdims)
+nparts = nparts1d*ones(Int64,D)
 order=2
-orders=order*ones(Int64,spdims)
-polytope = Polytope(ones(Int64,spdims))
+orders=order*ones(Int64,D)
+extrusion = PointInt{D}(ones(Int64,D))
+polytope = Polytope(extrusion)
 reffe = LagrangianRefFE(polytope,orders)
 gps=[2,2]
-quad=TensorProductQuadratureOld(gps)
-shfscal = shfsps(reffe,quad.points)
+quad=TensorProductQuadrature{D}(orders = 2*orders)
+shfscal = shfsps(reffe,quad.coords)
 reffe = LagrangianRefFE(polytope,orders,2)
-shftens = shfsps(reffe,quad.points)
+shftens = shfsps(reffe,quad.coords)
 @test shftens[36,1,2,2]==shfscal[9,1,1]
 ##
 ##
