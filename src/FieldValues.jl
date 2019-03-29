@@ -4,8 +4,9 @@ export FieldValue
 export Point, MPoint
 export ScalarValue, VectorValue, TensorValue
 export MVectorValue, MTensorValue
+export inner, outer
 
-using StaticArrays
+using StaticArrays: SVector, MVector, SMatrix, MMatrix
 
 using Numa.Helpers
 
@@ -24,6 +25,7 @@ Type representing a tensor value of dimension `D`
 """
 const TensorValue{D,DD} = SMatrix{D,D,Float64,DD} where {D,DD}
 # @santiagobadia : Any way to eliminate DD?
+# @fverdugo yes: see Constructors (but I am not sure about efficiency)
 
 """
 Mutable version of `VectorValue{D}`
@@ -52,32 +54,73 @@ The mutable version of Point{D}
 """
 const MPoint{D} = MVector{D,Float64} where D
 
+# Constructors
+
+@generated function VectorValue(args::Vararg{Float64,D}) where D
+  :( VectorValue{$D}(args...)  )
+end
+
+@generated function MVectorValue(args::Vararg{Float64,D}) where D
+  :( MVectorValue{$D}(args...)  )
+end
+
+@generated function TensorValue(args::Vararg{Float64,DD}) where DD
+  SQ = sqrt(DD)
+  D = ceil(Int,SQ)
+  @assert D == SQ
+  :( TensorValue{$D,$DD}(args...)  )
+end
+
+@generated function MTensorValue(args::Vararg{Float64,DD}) where DD
+  SQ = sqrt(DD)
+  D = ceil(Int,SQ)
+  @assert D == SQ
+  :( MTensorValue{$D,$DD}(args...)  )
+end
+
+Point(x) = VectorValue(x)
+
+MPoint(x) = MVectorValue(x)
+
 # Operations
-
-gradient(::Type{Float64},::Val{D}) where D = VectorValue{D}
-
-gradient(::Type{VectorValue{D}},::Val{Z}) where {D,Z} = SMatrix{Z,D,Float64,Z*D}
 
 outer(a::T,b::T) where T <: Number = a*b
 
-inner(a::T,b::T) where T <: Number = a*b
+outer(::Type{T},::Type{T}) where T <: Number = T
 
 outer(a::T,b::SVector{D,T}) where {T <: Number,D} = a*b
 
-function outer(a::SVector{D,T},b::SVector{Z,T}) where {D,Z,T}
-  if D==2 && Z==2
-    SMatrix{2,2,T,4}( a[1]*b[1], a[2]*b[1], a[1]*b[2], a[2]*b[2] )
-  else
-    @notimplemented
-  end
+outer(::Type{T},::Type{SVector{D,T}}) where {T <: Number,D} = SVector{D,T}
+
+outer(a::T,b::SMatrix{D,E,T,DE}) where {T <: Number,D,E,DE} = a*b
+
+outer(::Type{T},::Type{SMatrix{D,E,T,DE}}) where {T <: Number,D,E,DE} = SMatrix{D,E,T,DE}
+
+@generated function outer(a::SVector{D,T},b::SVector{Z,T}) where {D,Z,T}
+  str = join(["a[$i]*b[$j], " for j in 1:Z for i in 1:D])
+  Meta.parse("SMatrix($str)")
 end
 
-function inner(a::SVector{D,T},b::SVector{D,T}) where {D,T}
-  v = 0.0
-  @inbounds for i=1:D
-    v += a[i]*b[i]
-  end
-  v
+@generated function outer(::Type{SVector{D,T}},::Type{SVector{Z,T}}) where {D,Z,T}
+  Meta.parse("SMatrix{$D,$Z,$T,$(D*Z)}")
 end
+
+inner(a::T,b::T) where T <: Number = a*b
+
+inner(::Type{T},::Type{T}) where T <: Number = T
+
+@generated function inner(a::SVector{D,T},b::SVector{D,T}) where {D,T}
+  str = join([" a[$i]*b[$i] +" for i in 1:D])
+  Meta.parse(str[1:(end-1)])
+end
+
+inner(::Type{SVector{D,T}},::Type{SVector{D,T}}) where {D,T} = T
+
+@generated function inner(a::SMatrix{D,Z,T,DZ},b::SMatrix{D,Z,T,DZ}) where {D,Z,T,DZ}
+  str = join([" a[$i,$j]*b[$i,$j] +" for j in 1:Z for i in 1:D])
+  Meta.parse(str[1:(end-1)])
+end
+
+inner(::Type{SMatrix{D,Z,T,DZ}},::Type{SMatrix{D,Z,T,DZ}}) where {D,Z,T,DZ} = T
 
 end # module FieldValues

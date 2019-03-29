@@ -3,6 +3,7 @@ using Test
 
 @testset "Numa.jl" begin
   include("CellArraysTests.jl")
+  @time @testset "FieldValues" begin include("FieldValuesTests.jl") end
   @time @testset "Quadratures" begin include("QuadraturesTests.jl") end
   #@time @testset "CellArrays" begin include("CellArraysTests.jl") end
   #@time @testset "CellQuadratures" begin include("CellQuadraturesTests.jl") end
