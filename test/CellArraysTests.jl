@@ -177,7 +177,7 @@ using LinearAlgebra: inv, det
 
   end
 
-  @testset "CellArrayFromSum" begin
+  @testset "CellArrayFromSub" begin
 
     using Numa.CellArrays: CellArrayFromSub
 
