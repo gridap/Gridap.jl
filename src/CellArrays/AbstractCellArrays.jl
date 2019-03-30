@@ -25,6 +25,8 @@ function Base.show(io::IO,self::CellArray)
   end
 end
 
+const CellVector{T} = CellArray{T,1} where T
+
 """
 Abstract type representing an indexable CellArray.
 By implementing a concrete IndexableCellArray, one automatically
@@ -55,7 +57,7 @@ inputcellarray(::CellArrayFromUnaryOp{C,T,N} where {C,T,N})::C = @abstractmethod
 
 computesize(::CellArrayFromUnaryOp, asize) = @abstractmethod
 
-computevals!(::CellArrayFromUnaryOp, a, asize, v, vsize) = @abstractmethod
+computevals!(::CellArrayFromUnaryOp, a, v) = @abstractmethod
 
 Base.length(self::CellArrayFromUnaryOp) = length(inputcellarray(self))
 
@@ -105,7 +107,7 @@ rightcellarray(::CellArrayFromBinaryOp{A,B,T,N} where {A,B,T,N})::B = @abstractm
 
 computesize(::CellArrayFromBinaryOp, asize, bsize) = @abstractmethod
 
-computevals!(::CellArrayFromBinaryOp, a, asize, b, bsize, v, vsize) = @abstractmethod
+computevals!(::CellArrayFromBinaryOp, a, b, v) = @abstractmethod
 
 function Base.length(self::CellArrayFromBinaryOp)
   @assert length(rightcellarray(self)) == length(leftcellarray(self))

@@ -9,6 +9,7 @@ using Numa.Helpers
 using Numa.FieldValues
 
 export CellArray
+export CellVector
 export IndexableCellArray
 export CellArrayFromUnaryOp
 export CellArrayFromElemUnaryOp
