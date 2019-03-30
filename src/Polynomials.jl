@@ -8,6 +8,7 @@ using Numa.Quadratures
 using Base.Cartesian
 
 export MultivariatePolynomialBasis, evaluate!, valuetype, grad
+#@fverdugo grad and gradient? really needed 2 different names?
 
 export TensorProductPolynomialBasis
 export TensorProductMonomialBasis

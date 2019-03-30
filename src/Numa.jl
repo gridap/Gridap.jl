@@ -6,10 +6,10 @@ using Base.Cartesian
 
 include("Helpers.jl")
 include("FieldValues.jl")
-include("CellArrays/CellArrays.jl")
-include("CellFields/CellFields.jl")
 include("Quadratures.jl")
 include("Polynomials.jl")
+include("CellArrays/CellArrays.jl")
+include("CellFields/CellFields.jl")
 #include("CellArrays.jl")
 #include("CellQuadratures.jl")
 #include("EvaluableCellArrays.jl")
