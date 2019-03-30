@@ -1,4 +1,12 @@
 
+Base.:+(a::CellFunction{S,M,T,N},b::CellFunction{S,M,T,N}) where {S,M,T,N} = CellFunctionFromBaseOp(a,b,typeof(+))
+
+Base.:-(a::CellFunction{S,M,T,N},b::CellFunction{S,M,T,N}) where {S,M,T,N} = CellFunctionFromBaseOp(a,b,typeof(-))
+
+Base.:*(a::CellFunction{S,M,T,N},b::CellFunction{S,M,T,N}) where {S,M,T,N} = CellFunctionFromBaseOp(a,b,typeof(*))
+
+Base.:/(a::CellFunction{S,M,T,N},b::CellFunction{S,M,T,N}) where {S,M,T,N} = CellFunctionFromBaseOp(a,b,typeof(/))
+
 function inner(a::CellField{D,T},b::CellField{D,T}) where {D,T}
   S = inner(T,T)
   CellFunctionFromInner{D,T,1,1,S,1}(a,b)
@@ -27,6 +35,18 @@ inner(a::CellBasisValues{T},b::CellBasisValues{T}) where T = binner(cellnewaxis(
 expand(a::CellBasisValues,b::CellFieldValues) = cellsum(bouter(a,cellnewaxis(b,dim=2)),dim=1)
 
 # Ancillary types associated with operations above
+
+struct CellFunctionFromBaseOp{O,S,M,T,N} <: CellFunction{S,M,T,N}
+  a::CellFunction{S,M,T,N}
+  b::CellFunction{S,M,T,N}
+  op::O
+end
+
+function evaluate(self::CellFunctionFromBaseOp{S,M,T,N},input::CellArray{S,M}) where {S,M,T,N}
+  avals = evaluate(self.a,input)
+  bvals = evaluate(self.b,input)
+  self.op(avals,bvals)
+end
 
 struct CellFunctionFromInner{D,R,A,B,T,N} <: CellFunction{Point{D},1,T,N}
   a::CellFunction{Point{D},1,R,A}
