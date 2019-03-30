@@ -5,6 +5,8 @@ module Numa
 using Base.Cartesian
 
 include("Helpers.jl")
+
+# CellArrays tools
 include("FieldValues.jl")
 include("CellArrays/CellArrays.jl")
 include("CellFields/CellFields.jl")
@@ -20,9 +22,12 @@ include("Polynomials.jl")
 #include("CellScalarsVectorsAndMatrices.jl")
 #include("IntegrationMeshes.jl")
 include("Polytopes.jl")
+
+# FESpaces tools
 include("FESpaces/RefFEs.jl")
 include("Meshes.jl")
 include("FESpaces/FESpaces.jl")
+
 # include("BilinearForms.jl")
 
 end #module Numa
