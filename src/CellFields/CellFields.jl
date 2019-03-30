@@ -6,11 +6,13 @@ export CellPoints
 export expand
 export inner
 
+using Numa.Helpers
 using Numa.FieldValues
 using Numa.CellArrays
 
 import Numa.FieldValues: inner, outer
 
-include("CellFieldValues.jl")
+include("AbstractCellFunctions.jl")
+include("Operators.jl")
 
 end # module CellFields

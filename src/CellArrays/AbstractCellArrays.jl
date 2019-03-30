@@ -25,6 +25,8 @@ function Base.show(io::IO,self::CellArray)
   end
 end
 
+const CellVector{T} = CellArray{T,1} where T
+
 """
 Abstract type representing an indexable CellArray.
 By implementing a concrete IndexableCellArray, one automatically
