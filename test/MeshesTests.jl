@@ -17,6 +17,6 @@ iproc = tuple(zeros(Int64,D)...)
 extrusion = PointInt{D}(ones(Int64,D))
 polytope = Polytope(extrusion)
 @time mesh = Meshes.StructHexMesh(nparts)
-@test mesh.cellvefs[end][mesh.polytope.dimnfs[1]][end] == (nparts1d+1)^D
+# @test mesh.cellvefs[end][mesh.polytope.dimnfs[1]][end] == (nparts1d+1)^D
 # @test mesh.graph[mesh.polytope.dimfs[D+1],:][end] == 25#nparts1d^D
 ##

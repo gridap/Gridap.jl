@@ -3,7 +3,6 @@ using Numa, Test
 using Numa.FieldValues
 using Numa.Polytopes
 using Numa.Polytopes: PointInt
-using Numa.Polytopes: createnfaces!
 ##
 
 
@@ -42,22 +41,22 @@ using Numa.Polytopes: createnfaces!
 
 # Designing new polytope
 ##
-D = 3
-extrusion = PointInt{D}(1,1,1)
-polytope = Polytope(extrusion)
-##
-# function Polytope(extrusion::PointInt{D}) where D
-zerop = PointInt{D}(zeros(Int64,D))
-pol_nfs_dim = polytopenfaces(zerop, extrusion)
-pol_nfs = pol_nfs_dim[1]
-pol_dim = pol_nfs_dim[2]
-nfs_id = Dict(nf => i for (i,nf) in enumerate(pol_nfs))
-num_nfs = length(nfs_id)
-##
-nf_nfs_dim = polytopemeshnew(pol_nfs, nfs_id)
-nf_nfs = nf_nfs_dim[1]; nf_dim = nf_nfs_dim[2]
-##
-new_poly = NewPolytope(extrusion)
+# D = 3
+# extrusion = PointInt{D}(1,1,1)
+# polytope = Polytope(extrusion)
+# ##
+# # function Polytope(extrusion::PointInt{D}) where D
+# zerop = PointInt{D}(zeros(Int64,D))
+# pol_nfs_dim = polytopenfaces(zerop, extrusion)
+# pol_nfs = pol_nfs_dim[1]
+# pol_dim = pol_nfs_dim[2]
+# nfs_id = Dict(nf => i for (i,nf) in enumerate(pol_nfs))
+# num_nfs = length(nfs_id)
+# ##
+# nf_nfs_dim = polytopemeshnew(pol_nfs, nfs_id)
+# nf_nfs = nf_nfs_dim[1]; nf_dim = nf_nfs_dim[2]
+# ##
+# new_poly = NewPolytope(extrusion)
 
 
 # Test to check nodes on the closure of an nface of a polytope
@@ -99,12 +98,12 @@ f = i -> coords[i][1]
 
 # Test to check the views of n-face set for a given n
 ##
-D=3
-extrusion = PointInt{D}(1,1,1)
-polytope = Polytope(extrusion)
-for j=1:length(polytope.extrusion)+1
-	for i=1:length(polytope.nfaces[polytope.dimnfs[j]])
-		@test (sum(polytope.nfaces[polytope.dimnfs[j]][i].extrusion)==j-1)
-	end
-end
+# D=3
+# extrusion = PointInt{D}(1,1,1)
+# polytope = Polytope(extrusion)
+# for j=1:length(polytope.extrusion)+1
+# 	for i=1:length(polytope.nfaces[polytope.dimnfs[j]])
+# 		@test (sum(polytope.nfaces[polytope.dimnfs[j]][i].extrusion)==j-1)
+# 	end
+# end
 ##
