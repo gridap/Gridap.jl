@@ -9,7 +9,7 @@ function Polytope(extrusion::PointInt{D}) where D
 	pol_dim = pol_nfs_dim[2]
 	nfs_id = Dict(nf => i for (i,nf) in enumerate(pol_nfs))
 	num_nfs = length(nfs_id)
-	nf_nfs_dim = polytopemeshnew(pol_nfs, nfs_id)
+	nf_nfs_dim = polytopemesh(pol_nfs, nfs_id)
 	nf_nfs = nf_nfs_dim[1]; nf_dim = nf_nfs_dim[2]
 	Polytope{D}(extrusion, pol_nfs, nf_nfs, nf_dim)
 end
@@ -20,7 +20,7 @@ Provides the number of n-faces of a polytope
 numnftypes(polytope::Polytope) = 2^dim(polytope)
 
 
-function polytopemeshnew(nfaces,nfaceid)
+function polytopemesh(nfaces,nfaceid)
 	num_nfs = length(nfaces)
 	nfnfs = Vector{Vector{Int64}}(undef,num_nfs)
 	nfnfs_dim = Vector{Vector{UnitRange{Int64}}}(undef,num_nfs)
@@ -35,8 +35,19 @@ function polytopemeshnew(nfaces,nfaceid)
 	return [nfnfs, nfnfs_dim]
 end
 
+function nfdim(ext::PointInt{D}) where D
+	c= 0
+	for i in 1:D
+		if (ext[i] > 0)
+			c +=1
+		end
+	end
+	return c
+end
+
 function polytopenfaces(anchor::PointInt{D}, extrusion::PointInt{D}) where D
-	dnf = sum(extrusion)
+	# dnf = sum(extrusion)
+	dnf = nfdim(extrusion)
 	zerop = PointInt{D}(zeros(Int64,D))
 	nf_nfs = []
 	nf_nfs = nfaceboundary!(anchor, zerop, extrusion, true, nf_nfs)
@@ -44,7 +55,7 @@ function polytopenfaces(anchor::PointInt{D}, extrusion::PointInt{D}) where D
 	[sort!(nf_nfs, by = x -> x.extrusion[i]) for i=1:length(extrusion)]
 	[sort!(nf_nfs, by = x -> sum(x.extrusion))]
 	numnfs = length(nf_nfs)
-	nfsdim = [sum(nf_nfs[i].extrusion) for i=1:numnfs]
+	nfsdim = [nfdim(nf_nfs[i].extrusion) for i=1:numnfs]
 	dimnfs = Array{UnitRange{Int64},1}(undef,dnf+1)
 	dim=0; i=1
 	for iface=1:numnfs
@@ -81,7 +92,7 @@ function nfaceboundary!(
 			elseif (isanchor)
 				list = nfaceboundary!(edim, extrusion, newext, false, list)
 			end
-			list = nfaceboundary!(anchor, extrusion+edim, newext, false, list)
+			list = nfaceboundary!(anchor, extrusion+edim*curex, newext, false, list)
 		end
 	end
 	return list
