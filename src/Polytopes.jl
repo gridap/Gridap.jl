@@ -42,11 +42,17 @@ end
 Aggregation of all n-faces that compose the polytope boundary and the polytope
 itself, the classification of n-faces with respect to their dimension and type
 """
+# struct Polytope{D}
+#   extrusion::PointInt{D}
+#   nfaces::Vector{NFace}
+#   dimnfs::Vector{UnitRange{Int64}}
+#   nftype::Vector{Int64}
+# end
 struct Polytope{D}
   extrusion::PointInt{D}
   nfaces::Vector{NFace}
-  dimnfs::Vector{UnitRange{Int64}}
-  nftype::Vector{Int64}
+	nf_nfs::Vector{Vector{Int64}}
+	nf_dim::Vector{Vector{UnitRange{Int64}}}
 end
 
 """
