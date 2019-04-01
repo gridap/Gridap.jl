@@ -187,4 +187,78 @@ end
 
 end
 
+@testset "CellBasisFromSingleInterpolation" begin
+
+  include("PolynomialsTestsMocks.jl")
+
+  using Numa.Quadratures
+  using Numa.CellQuadratures
+  using Numa.CellFunctions: CellBasisValuesFromSingleInterpolation
+
+  l = 10
+
+  refquad = TensorProductQuadrature(orders=(5,4))
+  refpoints = coordinates(refquad)
+
+  quad = ConstantCellQuadrature(refquad,l)
+  points = coordinates(quad)
+
+  refbasis = ShapeFunctionsScalarQua4()
+
+  refvals = evaluate(refbasis,refpoints)
+
+  vals = CellBasisValuesFromSingleInterpolation(refbasis,points)
+
+  @test isa(vals,CellBasisValues{Float64})
+
+  for refvals2 in vals
+    @assert refvals2 == refvals
+  end
+
+  basis = CellBasisFromSingleInterpolation(refbasis)
+
+  @test isa(basis,CellBasis{2,Float64})
+
+  vals = evaluate(basis,points)
+
+  @test isa(vals,CellBasisValues{Float64})
+
+  @test isa(vals,ConstantCellArray{Float64,2})
+
+  for refvals2 in vals
+    @assert refvals2 == refvals
+  end
+
+  vals = evaluate(basis,vfv)
+
+  @test isa(vals,CellBasisValues{Float64})
+
+  @test isa(vals,CellBasisValuesFromSingleInterpolation)
+
+  refbasisgrad = gradient(refbasis)
+
+  refvalsgrad = evaluate(refbasisgrad,refpoints)
+
+  basisgrad = gradient(basis)
+
+  valsgrad = evaluate(basisgrad,points)
+
+  @test isa(valsgrad,CellBasisValues{VectorValue{2}})
+
+  @test isa(valsgrad,ConstantCellArray{VectorValue{2},2})
+
+  for refvalsgrad2 in valsgrad
+    @assert refvalsgrad2 == refvalsgrad
+  end
+
+  valsgrad = CellBasisValuesFromSingleInterpolation(refbasisgrad,points)
+
+  @test isa(valsgrad,CellBasisValues{VectorValue{2}})
+
+  for refvalsgrad2 in valsgrad
+    @assert refvalsgrad2 == refvalsgrad
+  end
+
+end
+
 end  # module CellFieldsTests

@@ -53,7 +53,7 @@ the lazy result of applying an unary operation on a CellArray
 """
 abstract type CellArrayFromUnaryOp{C<:CellArray,T,N} <: CellArray{T,N} end
 
-inputcellarray(::CellArrayFromUnaryOp{C,T,N} where {C,T,N})::C = @abstractmethod
+inputcellarray(::CellArrayFromUnaryOp{C,T,N} where {C,T,N})::C where C = @abstractmethod
 
 computesize(::CellArrayFromUnaryOp, asize) = @abstractmethod
 

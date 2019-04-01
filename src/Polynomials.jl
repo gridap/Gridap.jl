@@ -14,6 +14,7 @@ export UnivariatePolynomialBasis
 export UnivariateMonomialBasis
 
 export evaluate!
+export evaluate
 export gradient
 
 # @fverdugo: really needed to export?
@@ -34,7 +35,16 @@ Base.length(::MultivariatePolynomialBasis)::Int = @abstractmethod
 """
 First axis of v for dofs, second for points
 """
-evaluate!(::MultivariatePolynomialBasis{D,T},::Array{Point{D},1},v::Array{T,2}) where {D,T} = @abstractmethod
+evaluate!(::MultivariatePolynomialBasis{D,T},::AbstractArray{Point{D},1},v::AbstractArray{T,2}) where {D,T} = @abstractmethod
+
+"""
+Same as evaluate! but allocates output
+"""
+function evaluate(self::MultivariatePolynomialBasis{D,T},points::AbstractArray{Point{D},1}) where {D,T}
+  vals = Array{T,2}(undef,(length(self),length(points)))
+  evaluate!(self,points,vals)
+  vals
+end
 
 """
 Returns a MultivariatePolynomialBasis{TG,D} where TG

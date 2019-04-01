@@ -4,11 +4,14 @@ Concrete implementation of CellBasis for the case of the same interpolation on a
 """
 struct CellBasisFromSingleInterpolation{D,T,B<:MultivariatePolynomialBasis{D,T}} <: CellBasis{D,T}
   basis::B
+  function CellBasisFromSingleInterpolation{D,T,B}(basis::MultivariatePolynomialBasis{D,T}) where {D,T,B}
+    new(basis)
+  end
 end
 
-#function CellBasisFromSingleInterpolation(basis::MultivariatePolynomialBasis{D,T}) where {D,T}
-#  CellBasisFromSingleInterpolation{D,T,typeof(basis)}(basis)
-#end
+function CellBasisFromSingleInterpolation(basis::MultivariatePolynomialBasis{D,T}) where {D,T}
+  CellBasisFromSingleInterpolation{D,T,typeof(basis)}(basis)
+end
 
 function evaluate(self::CellBasisFromSingleInterpolation{D,T},points::ConstantCellArray{Point{D},1}) where {D,T}
   ndofs = length(self.basis)
@@ -48,11 +51,11 @@ end
 
 inputcellarray(self::CellBasisValuesFromSingleInterpolation) = self.cellpoints
 
-function computesize(::CellBasisValuesFromSingleInterpolation, asize)
+function computesize(self::CellBasisValuesFromSingleInterpolation, asize)
   (self.ndofs,asize[1])
 end
 
-function computevals!(::CellBasisValuesFromSingleInterpolation, a, v)
+function computevals!(self::CellBasisValuesFromSingleInterpolation, a, v)
   evaluate!(self.basis,a,v)
 end
 

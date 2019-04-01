@@ -12,7 +12,7 @@ struct GradShapeFunctionsScalarQua4 <: MultivariatePolynomialBasis{2,VectorValue
 Base.length(::ShapeFunctionsScalarQua4) = 4
 
 function evaluate!(
-  ::ShapeFunctionsScalarQua4,points::Array{Point{2},1},v::Array{Float64,2})
+  ::ShapeFunctionsScalarQua4,points::AbstractArray{Point{2},1},v::AbstractArray{Float64,2})
   for (i,point) in enumerate(points)
     xi = point[1]
     eta = point[2]
@@ -28,7 +28,7 @@ gradient(::ShapeFunctionsScalarQua4) = GradShapeFunctionsScalarQua4()
 Base.length(::GradShapeFunctionsScalarQua4) = 4
 
 function evaluate!(
-  ::GradShapeFunctionsScalarQua4,points::Array{Point{2},1},v::Array{VectorValue{2},2})
+  ::GradShapeFunctionsScalarQua4,points::AbstractArray{Point{2},1},v::AbstractArray{VectorValue{2},2})
   for (i,point) in enumerate(points)
     xi = point[1]
     eta = point[2]
