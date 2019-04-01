@@ -1,24 +1,16 @@
 """
 Constructs a `Polytope` given the type of extrusion, i.e., 1 for "hex" extrusion
-and 0 for "tet" extrusion
+and 2 for "tet" extrusion
 """
 function Polytope(extrusion::PointInt{D}) where D
   zerop = PointInt{D}(zeros(Int64,D))
 	pol_nfs_dim = polytopenfaces(zerop, extrusion)
-	pol_nfs = pol_nfs_dim[1]
-	pol_dim = pol_nfs_dim[2]
+	pol_nfs = pol_nfs_dim[1]; pol_dim = pol_nfs_dim[2]
 	nfs_id = Dict(nf => i for (i,nf) in enumerate(pol_nfs))
-	num_nfs = length(nfs_id)
 	nf_nfs_dim = polytopemesh(pol_nfs, nfs_id)
 	nf_nfs = nf_nfs_dim[1]; nf_dim = nf_nfs_dim[2]
 	Polytope{D}(extrusion, pol_nfs, nf_nfs, nf_dim)
 end
-
-"""
-Provides the number of n-faces of a polytope
-"""
-numnftypes(polytope::Polytope) = 2^dim(polytope)
-
 
 function polytopemesh(nfaces,nfaceid)
 	num_nfs = length(nfaces)

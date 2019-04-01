@@ -3,9 +3,23 @@ using Numa, Test
 using Numa.FieldValues
 using Numa.Polytopes
 using Numa.Polytopes: PointInt
+# Checking all topologies
 ##
 D=3
-extrusion = PointInt{D}(2,2,2)
+# Cube
+extrusion = PointInt{D}(1,1,1)
+polytope = Polytope(extrusion)
+@test length(polytope.nfaces) == 27
+# Pyramid
+extrusion = PointInt{D}(1,1,2)
+polytope = Polytope(extrusion)
+@test length(polytope.nfaces) == 19
+# Prysm
+extrusion = PointInt{D}(1,2,1)
+polytope = Polytope(extrusion)
+@test length(polytope.nfaces) == 21
+# Tetrahedron
+extrusion = PointInt{D}(1,2,2)
 polytope = Polytope(extrusion)
 @test length(polytope.nfaces) == 15
 ##
