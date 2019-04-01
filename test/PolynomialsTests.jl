@@ -1,27 +1,33 @@
-using Numa
+module PolynomialsTests
+
 using Test
 using Numa.FieldValues
 using Numa.Polynomials
+using Numa.Quadratures
 
 ##
-basis = ShapeFunctionsScalarQua4()
-n = length(basis)
-vt = valuetype(basis)
-@test n == 4
-@test vt == Float64
 
+@testset "Mocks" begin
 
-quad = TensorProductQuadrature{2}(orders=[2,2])
-points = coordinates(quad)
-values = Array{vt,2}(undef, (n, length(points)) )
-evaluate!(basis,points,values)
-grad_basis = gradient(basis)
-grad_vt = valuetype(grad_basis)
-@test grad_vt == VectorValue{2}
-@test length(grad_basis) == 4
+  include("PolynomialsTestsMocks.jl")
 
-grad_values = Array{grad_vt,2}(undef, (n, length(points)) )
-evaluate!(grad_basis,points,grad_values)
+  basis = ShapeFunctionsScalarQua4()
+  n = length(basis)
+  @test n == 4
+  
+  
+  quad = TensorProductQuadrature{2}(orders=[2,2])
+  points = coordinates(quad)
+  values = Array{Float64,2}(undef, (n, length(points)) )
+  evaluate!(basis,points,values)
+  grad_basis = gradient(basis)
+  @test length(grad_basis) == 4
+  
+  grad_values = Array{VectorValue{2},2}(undef, (n, length(points)) )
+  evaluate!(grad_basis,points,grad_values)
+
+end
+
 ##
 
 ##
@@ -109,3 +115,5 @@ grad = gradient(a,quad.coords)
 @test size(grad)==(12,2,2)
 @test grad[7,1,2]==-1.1547005383792517
 ##
+
+end # module PolynomialsTests
