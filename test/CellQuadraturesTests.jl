@@ -1,4 +1,10 @@
+module CellQuadraturesTests
 
+using Test
+using Numa.FieldValues
+using Numa.Quadratures
+using Numa.CellArrays
+using Numa.CellQuadratures
 
 const D = 2
 
@@ -15,9 +21,9 @@ quad = ConstantCellQuadrature(c,w,l)
 q = coordinates(quad)
 qw = weights(quad)
 
-@test isa(q,CellValues{Point{D}})
+@test isa(q,CellVector{Point{D}})
 
-@test isa(qw,CellValues{Float64})
+@test isa(qw,CellVector{Float64})
 
 # We can iterate coordinates and weights separately
 
@@ -41,3 +47,4 @@ quad2 = ConstantCellQuadrature(ref_quad,l)
 
 @test isa(quad2,CellQuadrature)
 
+end # module CellQuadraturesTests
