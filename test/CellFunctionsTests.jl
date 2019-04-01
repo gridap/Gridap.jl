@@ -3,11 +3,11 @@ module CellFieldsTests
 using Test
 using Numa.FieldValues
 using Numa.CellArrays
-using Numa.CellFields
+using Numa.CellFunctions
 
 l = 10
 
-include("CellFieldsTestsMocks.jl")
+include("CellFunctionsTestsMocks.jl")
 
 @testset "InnerFieldField" begin
 

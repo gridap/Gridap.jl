@@ -7,7 +7,7 @@ using Test
   @time @testset "Polynomials" begin include("PolynomialsTests.jl") end
   @time @testset "CellArrays" begin include("CellArraysTests.jl") end
   @time @testset "CellQuadratures" begin include("CellQuadraturesTests.jl") end
-  @time @testset "CellFields" begin include("CellFieldsTests.jl") end
+  @time @testset "CellFunctions" begin include("CellFunctionsTests.jl") end
   #@time @testset "CellBases" begin include("CellBasesTests.jl") end
   #@time @testset "CellFields" begin include("CellFieldsTests.jl") end
   #@time @testset "CellScalarsVectorsAndMatrices" begin include("CellScalarsVectorsAndMatricesTests.jl") end

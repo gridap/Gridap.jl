@@ -4,4 +4,4 @@ using Test
 
 include("CellArraysBench.jl")
 
-include("CellFieldsBench.jl")
+include("CellFunctionsBench.jl")

@@ -2,11 +2,11 @@ module CellFieldsBench
 
 using Numa.FieldValues
 using Numa.CellArrays
-using Numa.CellFields
+using Numa.CellFunctions
 
 l = 1000000
 
-include("../test/CellFieldsTestsMocks.jl")
+include("../test/CellFunctionsTestsMocks.jl")
 
 function doloop(x)
   for xi in x
