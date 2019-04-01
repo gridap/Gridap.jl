@@ -25,5 +25,6 @@ import Numa.CellArrays: inputcellarray, computesize, computevals!
 include("AbstractCellFunctions.jl")
 include("Operators.jl")
 include("CellBasisFromSingleInterpolation.jl")
+include("CellBasisWithGeomap.jl")
 
 end # module CellFunctions

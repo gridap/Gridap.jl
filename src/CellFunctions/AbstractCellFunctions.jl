@@ -18,8 +18,6 @@ Instances of TG is a value whose rank is one order grater than the one of T
 """
 gradient(::CellBasis{D,T} where {D,T})::CellBasis{D,TG} = @abstractmethod
 
-(∇)(self::CellBasis) = gradient(self)
-
 """
 Abstract type that represents a cell-wise field, where
 `T` stands for the type that represents the field at a point
@@ -33,8 +31,6 @@ Returns another CellField object that represents the gradient.
 Instances of `TG` have a rank order a unit greater than the ones of `T`
 """
 gradient(::CellField{D,T} where {D,T})::CellField{D,TG} = @abstractmethod
-
-(∇)(self::CellField) = gradient(self)
 
 # Abstract types for the input and output values
 # of CellFields and CellBasis
