@@ -1,5 +1,14 @@
+module CellQuadratures
+
 export CellQuadrature, ConstantCellQuadrature
-export coordinates, weights
+
+using Numa.Helpers
+using Numa.FieldValues
+using Numa.Quadratures
+using Numa.CellArrays
+
+import Numa.Quadratures: coordinates
+import Numa.Quadratures: weights
 
 """
 Abstract type representing a collection of quadratures, one for each cell
@@ -43,3 +52,6 @@ end
 coordinates(self::ConstantCellQuadrature) = self.coords
 
 weights(self::ConstantCellQuadrature) = self.weights
+
+
+end # module CellQuadratures

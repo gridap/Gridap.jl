@@ -1,4 +1,4 @@
-module CellFields
+module CellFunctions
 
 export CellFieldValues
 export CellBasisValues
@@ -17,4 +17,4 @@ include("AbstractCellFunctions.jl")
 include("Operators.jl")
 include("CellBasisFromSingleInterpolation.jl")
 
-end # module CellFields
+end # module CellFunctions

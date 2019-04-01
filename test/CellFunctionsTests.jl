@@ -3,13 +3,13 @@ module CellFieldsTests
 using Test
 using Numa.FieldValues
 using Numa.CellArrays
-using Numa.CellFields
+using Numa.CellFunctions
 
 l = 10
 
-include("CellFieldsTestsMocks.jl")
+include("CellFunctionsTestsMocks.jl")
 
-@testset "InnerFieldField" begin
+@testset "InnerFieldValuesFieldValues" begin
 
   siff = inner(sfv,sfv)
   siffa = [ inner(sfva[i],sfva[i]) for i in 1:4 ]
@@ -40,7 +40,7 @@ include("CellFieldsTestsMocks.jl")
 
 end
 
-@testset "InnerBasisField" begin
+@testset "InnerBasisValuesFieldValues" begin
 
   siff = inner(sbv,sfv)
   siffa = zeros(3,4)
@@ -86,7 +86,7 @@ end
 
 end
 
-@testset "InnerBasisBasis" begin
+@testset "InnerBasisValuesBasisValues" begin
 
   siff = inner(sbv,sbv)
   siffa = zeros(3,3,4)
@@ -138,7 +138,7 @@ end
 
 end
 
-@testset "Expand" begin
+@testset "ExpandBasisValuesFieldValues" begin
 
   sexpand = expand(sbv,sfv2)
   sexpanda = Array{Float64,1}(undef,(4,))
