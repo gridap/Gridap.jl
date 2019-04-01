@@ -1,10 +1,12 @@
+module QuadraturesTests
+
 using Test
-using Numa
+
 using Numa.FieldValues
 using Numa.Quadratures
 
 const D = 2
-quad = TensorProductQuadrature{D}(orders=[2,4])
+quad = TensorProductQuadrature(orders=(2,4))
 
 coords_ref = [
   -0.57735 0.57735 -0.57735 0.57735 -0.57735 0.57735;
@@ -24,3 +26,5 @@ weigs = weights(quad)
 weigs_ref = [0.555556, 0.555556, 0.888889, 0.888889, 0.555556, 0.555556]
 
 @test isapprox(weigs,weigs_ref,rtol=10-3)
+
+end # module QuadraturesTests

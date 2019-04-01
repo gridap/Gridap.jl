@@ -33,7 +33,7 @@ extrusion = PointInt{D}(ones(Int64,D))
 polytope = Polytopes.Polytope(extrusion)
 reffe = LagrangianRefFE(polytope,orders)
 gps=[2,2]
-quad=Quadratures.TensorProductQuadrature{D}(orders = 2*orders)
+quad=Quadratures.TensorProductQuadrature(orders = tuple(2*orders...))
 shfscal = shfsps(reffe,quad.coords)
 reffe = LagrangianRefFE(polytope,orders,2)
 shftens = shfsps(reffe,quad.coords)

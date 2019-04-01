@@ -24,8 +24,8 @@ D = 2
 orders=[1,1]
 extrusion = PointInt{D}(1,1)
 polytope = Polytope(extrusion)
-gps=[2,2]
-quad=TensorProductQuadrature{D}(orders=gps)
+gps=(2,2)
+quad=TensorProductQuadrature(orders=gps)
 reffe = LagrangianRefFE(polytope,orders)
 shfs = shfsps(reffe,quad.coords)
 gradshfs = gradshfsps(reffe,quad.coords)
@@ -39,8 +39,8 @@ orders=[1]
 extrusion = PointInt{D}(1)
 polytope = Polytope(extrusion)
 #orders/2=gps
-gps=[2]
-quad=TensorProductQuadrature{D}(orders=gps)
+gps=(2,)
+quad=TensorProductQuadrature(orders=gps)
 reffe = LagrangianRefFE(polytope,orders)
 shfs = shfsps(reffe,quad.coords)
 elmatgp=[ shfs[:,igp]*shfs[:,igp]' for igp=1:prod(gps)]
@@ -54,8 +54,8 @@ orders=[1,1]
 extrusion = PointInt{D}(1,1)
 polytope = Polytope(extrusion)
 #orders/2=gps
-gps=[2,2]
-quad=TensorProductQuadrature{D}(orders=gps)
+gps=(2,2)
+quad=TensorProductQuadrature(orders=gps)
 reffe = LagrangianRefFE(polytope,orders)
 shfs = shfsps(reffe,quad.coords)
 elmatgp=[ shfs[:,igp]*shfs[:,igp]' for igp=1:prod(gps)]
@@ -69,8 +69,8 @@ orders=[2,2]
 extrusion = PointInt{D}(1,1)
 polytope = Polytope(extrusion)
 #orders/2=gps
-# gps=[3,3]
-quad=TensorProductQuadrature{D}(orders=2*orders)
+# gps=(3,3)
+quad=TensorProductQuadrature(orders=tuple(2*orders...))
 reffe = LagrangianRefFE(polytope,orders)
 shfs = shfsps(reffe,quad.coords)
 numgps = length(quad.weights)
@@ -87,7 +87,7 @@ orders=[2,2,2]
 extrusion = PointInt{D}(1,1,1)
 polytope = Polytope(extrusion)
 #orders/2=gps
-quad=TensorProductQuadrature{D}(orders=2*orders)
+quad=TensorProductQuadrature(orders=tuple(2*orders...))
 reffe = LagrangianRefFE(polytope,orders)
 shfs = shfsps(reffe,quad.coords)
 numgps = length(quad.weights)
@@ -104,7 +104,7 @@ orders=[1]
 extrusion = PointInt{D}(1)
 polytope = Polytope(extrusion)
 #orders/2=gps
-quad=TensorProductQuadrature{D}(orders=2*orders)
+quad=TensorProductQuadrature(orders=tuple(2*orders...))
 reffe = LagrangianRefFE(polytope,orders)
 gradshfs = gradshfsps(reffe,quad.coords)
 numgps = length(quad.weights)
@@ -119,7 +119,7 @@ orders=[1,1]
 extrusion = PointInt{D}(1,1)
 polytope = Polytope(extrusion)
 #2*orders+1<2*gps
-quad=TensorProductQuadrature{D}(orders=2*orders)
+quad=TensorProductQuadrature(orders=tuple(2*orders...))
 reffe = LagrangianRefFE(polytope,orders)
 gradshfs = gradshfsps(reffe,quad.coords)
 numgps = length(quad.weights)
@@ -136,7 +136,7 @@ orders=[2,2]
 extrusion = PointInt{D}(1,1)
 polytope = Polytope(extrusion)
 #2*orders+1<2*gps
-quad=TensorProductQuadrature{D}(orders=2*orders)
+quad=TensorProductQuadrature(orders=tuple(2*orders...))
 reffe = LagrangianRefFE(polytope,orders)
 gradshfs = gradshfsps(reffe,quad.coords)
 numgps = length(quad.weights)
@@ -152,7 +152,7 @@ D=3
 orders=[3,3,3]
 extrusion = PointInt{D}(1,1,1)
 polytope = Polytope(extrusion)
-quad=TensorProductQuadrature{D}(orders=2*orders)
+quad=TensorProductQuadrature(orders=tuple(2*orders...))
 reffe = LagrangianRefFE(polytope,orders)
 gradshfs = gradshfsps(reffe,quad.coords)
 numgps = length(quad.weights)
@@ -173,7 +173,7 @@ extrusion = PointInt{D}(ones(Int64,D))
 polytope = Polytope(extrusion)
 reffe = LagrangianRefFE(polytope,orders)
 gps=[2,2]
-quad=TensorProductQuadrature{D}(orders = 2*orders)
+quad=TensorProductQuadrature(orders = tuple(2*orders...))
 shfscal = shfsps(reffe,quad.coords)
 reffe = LagrangianRefFE(polytope,orders,2)
 shftens = shfsps(reffe,quad.coords)

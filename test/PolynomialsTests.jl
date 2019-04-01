@@ -16,7 +16,7 @@ using Numa.Quadratures
   @test n == 4
   
   
-  quad = TensorProductQuadrature{2}(orders=[2,2])
+  quad = TensorProductQuadrature(orders=(2,2))
   points = coordinates(quad)
   values = Array{Float64,2}(undef, (n, length(points)) )
   evaluate!(basis,points,values)
@@ -95,8 +95,8 @@ grads = gradient(polb,points)
 ##
 # Efficient evaluation of tensor product functions
 orders=[2,3]
-gps=[1,2]
-quad = TensorProductQuadrature{2}(orders=gps)
+gps=(1,2)
+quad = TensorProductQuadrature(orders=gps)
 a=TensorProductPolynomialBasis(orders)
 numdims = length(a.polynomials)
 A = a(quad.coords)
@@ -108,8 +108,8 @@ A = a(quad.coords)
 # Evaluate tensor product-based computation of monomial basis gradients
 ##
 orders=[2,3]
-gps=[1,2]
-quad = TensorProductQuadrature{2}(orders=gps)
+gps=(1,2)
+quad = TensorProductQuadrature(orders=gps)
 a=TensorProductPolynomialBasis(orders)
 grad = gradient(a,quad.coords)
 @test size(grad)==(12,2,2)
