@@ -4,6 +4,8 @@ using Test
 using Numa.FieldValues
 using Numa.CellArrays
 using Numa.CellFunctions
+using Numa.Quadratures
+using Numa.CellQuadratures
 
 l = 10
 
@@ -191,8 +193,6 @@ end
 
   include("PolynomialsTestsMocks.jl")
 
-  using Numa.Quadratures
-  using Numa.CellQuadratures
   using Numa.CellFunctions: CellBasisValuesFromSingleInterpolation
 
   l = 10
@@ -258,6 +258,16 @@ end
   for refvalsgrad2 in valsgrad
     @assert refvalsgrad2 == refvalsgrad
   end
+
+end
+
+@testset "CellBasisWithGeomap" begin
+
+  include("IntegrationMeshesTestsMocks.jl")
+  imesh = DummyIntegrationMesh2D(partition=(3,3))
+  refquad = TensorProductQuadrature(orders=(2,2))
+  #quad = ConstantCellQuadrature(refquad,length(basis))
+  #points = coordinates(quad)
 
 end
 

@@ -32,6 +32,12 @@ Instances of `TG` have a rank order a unit greater than the ones of `T`
 """
 gradient(::CellField{D,T} where {D,T})::CellField{D,TG} = @abstractmethod
 
+"""
+Abstract type representing a cell-wise transformation
+between two geometrical domains
+"""
+const CellGeomap{D,Z} = CellField{D,Point{Z}}
+
 # Abstract types for the input and output values
 # of CellFields and CellBasis
 

@@ -7,6 +7,7 @@ export CellPoints
 export CellFunction
 export CellField
 export CellBasis
+export CellGeomap
 
 export expand
 export inner

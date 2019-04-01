@@ -20,7 +20,7 @@ include("CellFunctions/CellFunctions.jl")
 #include("CellBasesImpl.jl")
 #include("CellFieldsImpl.jl")
 #include("CellScalarsVectorsAndMatrices.jl")
-#include("IntegrationMeshes.jl")
+include("IntegrationMeshes.jl")
 include("Polytopes.jl")
 
 # FESpaces tools

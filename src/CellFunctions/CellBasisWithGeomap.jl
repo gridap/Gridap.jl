@@ -1,5 +1,5 @@
 
-struct CellBasisWithGeomap{D,O,T,B<:CellBasis{D,T},G<:CellField{D,Point{D}}} <: CellBasis{D,T}
+struct CellBasisWithGeomap{D,O,T,B<:CellBasis{D,T},G<:CellGeomap{D,D}} <: CellBasis{D,T}
   basis::B
   geomap::G
   function CellBasisWithGeomap(basis::CellBasis{D,T},geomap::CellField{D,Point{D}},order::Int) where {D,T}
@@ -23,7 +23,7 @@ evaluate(self::CellBasisWithGeomap{D,0},points::CellPoints{D}) where D = evaluat
 function evaluate(self::CellBasisWithGeomap{D,1},points::CellPoints{D}) where D
   vals = evaluate(self.basis,points)
   jaco = gradient(self.geomap)
-  jacovals = evaluate(jace,points)
+  jacovals = evaluate(jaco,points)
   inv(jacovals) * vals
 end
 
