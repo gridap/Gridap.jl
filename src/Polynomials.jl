@@ -15,7 +15,7 @@ export UnivariateMonomialBasis
 
 export evaluate!
 export evaluate
-export gradient
+export gradient, ∇
 
 # @fverdugo: really needed to export?
 # If they are just needed in the tests use qualified names there
@@ -51,6 +51,10 @@ Returns a MultivariatePolynomialBasis{TG,D} where TG
 is a type whose rank is one unit grater than the one of T
 """
 gradient(::MultivariatePolynomialBasis{D,T} where{D,T})::MultivariatePolynomialBasis{D,TG} = @abstractmethod
+
+const ∇ = gradient
+
+Base.:*(::typeof(∇),f) = ∇(f)
 
 """
 Abstract basis of univariate polynomials

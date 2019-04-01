@@ -5,7 +5,6 @@ export @notimplemented
 export @notimplementedif
 export viewtosize
 export flatten
-export ∇
 
 macro abstractmethod()
   quote
@@ -34,10 +33,5 @@ flatten(a::Array) = reshape(a,(length(a),))
     str = join([ ", 1:s[$i]" for i in 1:N ])
     Meta.parse("view(a$str)")
 end
-
-# Unicode aliases
-#const Base.:∘(f,g) = compose(f,g)
-
-const ∇(f) = gradient(f)
 
 end # module Helpers

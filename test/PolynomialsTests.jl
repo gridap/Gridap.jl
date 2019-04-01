@@ -20,7 +20,7 @@ using Numa.Quadratures
   points = coordinates(quad)
   values = Array{Float64,2}(undef, (n, length(points)) )
   evaluate!(basis,points,values)
-  grad_basis = gradient(basis)
+  grad_basis = ∇*basis
   @test length(grad_basis) == 4
   
   grad_values = Array{VectorValue{2},2}(undef, (n, length(points)) )
