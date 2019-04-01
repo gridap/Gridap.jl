@@ -3,6 +3,7 @@ using Numa, Test
 using Numa.FieldValues
 using Numa.Polytopes
 using Numa.Polytopes: PointInt
+
 # Checking all topologies
 ##
 D=3
@@ -18,7 +19,6 @@ polytope = Polytope(extrusion)
 extrusion = PointInt{D}(1,2,1)
 polytope = Polytope(extrusion)
 @test length(polytope.nfaces) == 21
-# Tetrahedron
 extrusion = PointInt{D}(1,2,2)
 polytope = Polytope(extrusion)
 @test length(polytope.nfaces) == 15

@@ -12,33 +12,12 @@ function Polytope(extrusion::PointInt{D}) where D
 	Polytope{D}(extrusion, pol_nfs, nf_nfs, nf_dim)
 end
 
-function polytopemesh(nfaces,nfaceid)
-	num_nfs = length(nfaces)
-	nfnfs = Vector{Vector{Int64}}(undef,num_nfs)
-	nfnfs_dim = Vector{Vector{UnitRange{Int64}}}(undef,num_nfs)
-	for (inf,nf) in enumerate(nfaces)
-		nfs_dim_nf = polytopenfaces(nf.anchor, nf.extrusion)
-		# nfs_dim_nf = nfaceboundary!(nf.anchor, zerop, nf.extrusion, true, nfaces)
-    nf_nfs = nfs_dim_nf[1]
-		dimnfs = nfs_dim_nf[2]
-		nfnfs[inf] = [ get(nfaceid,nf,nf) for nf in nf_nfs ]
-		nfnfs_dim[inf] = dimnfs
-	end
-	return [nfnfs, nfnfs_dim]
-end
+nfdim(a::PointInt{D}) where D = sum([a[i] > 0 ? 1 : 0 for i =1:D ])
 
-function nfdim(ext::PointInt{D}) where D
-	c= 0
-	for i in 1:D
-		if (ext[i] > 0)
-			c +=1
-		end
-	end
-	return c
-end
-
+"""
+Generates the array of n-faces of a polytope
+"""
 function polytopenfaces(anchor::PointInt{D}, extrusion::PointInt{D}) where D
-	# dnf = sum(extrusion)
 	dnf = nfdim(extrusion)
 	zerop = PointInt{D}(zeros(Int64,D))
 	nf_nfs = []
@@ -52,24 +31,40 @@ function polytopenfaces(anchor::PointInt{D}, extrusion::PointInt{D}) where D
 	dim=0; i=1
 	for iface=1:numnfs
 		if (nfsdim[iface]>dim)
-			# global dim
-			# global i
+			# global dim; # global i
 			dim+=1
 			dimnfs[dim]=i:iface-1
 			i=iface
 		end
 	end
 	dimnfs[dnf+1]=numnfs:numnfs
-	# aux=2*ones(Int64,D)
-	# offst=[ prod(aux[1:i-1]) for i=1:D]
-	# nftype=[offst'*nf_nfs[i].extrusion for i=1:numnfs].+1
-	# Polytope{D}(extrusion,nf_nfs,dimnfs,nftype)
 	return [nf_nfs,dimnfs]
 end
 
-function nfaceboundary!(
-	anchor::PointInt{D}, extrusion::PointInt{D}, extend::PointInt{D},
-	isanchor::Bool, list) where D
+"""
+Provides for all n-faces of a polytope the d-faces for 0 <= d <n on its
+boundary (e.g., given a face, it provides the set of edges and corners on its
+boundary) using the global n-face numbering of the base polytope
+"""
+function polytopemesh(nfaces::Vector{NFace{D}}, nfaceid::Dict) where D
+	num_nfs = length(nfaces)
+	nfnfs = Vector{Vector{Int64}}(undef,num_nfs)
+	nfnfs_dim = Vector{Vector{UnitRange{Int64}}}(undef,num_nfs)
+	for (inf,nf) in enumerate(nfaces)
+		nfs_dim_nf = polytopenfaces(nf.anchor, nf.extrusion)
+    nf_nfs = nfs_dim_nf[1]; dimnfs = nfs_dim_nf[2]
+		nfnfs[inf] = [ get(nfaceid,nf,nf) for nf in nf_nfs ]
+		nfnfs_dim[inf] = dimnfs
+	end
+	return [nfnfs, nfnfs_dim]
+end
+
+"""
+Generates the list of n-face of a polytope the d-faces for 0 <= d <n on its
+boundary
+"""
+function nfaceboundary!(anchor::PointInt{D}, extrusion::PointInt{D},
+	                      extend::PointInt{D}, isanchor::Bool, list) where D
 	newext = extend
 	list = [list..., NFace{D}(anchor, extrusion)]
 	for i = 1:D
@@ -89,6 +84,9 @@ function nfaceboundary!(
 	end
 	return list
 end
+
+# @santiagobadia : The rest is waiting for a geomap
+
 """
 Creates an array of nodes `NodesArray` for a given polytope and the order per
 dimension
