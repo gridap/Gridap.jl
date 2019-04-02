@@ -55,15 +55,12 @@ Alocate and evaluate an array with all the elements of the
 a `UnivariateMonomialBasis` evaluated at a set of 1D points. The array axis are
 first the basis polynomial index and next the point label
 """
-function (this::UnivariateMonomialBasis)(points::Vector{Point{1}})
+function (this::UnivariateMonomialBasis)(points::AbstractVector{Point{1}})::Array{Float64,2}
   dbas = length(this)
   v = Array{Float64,2}(undef, dbas, length(points))
   evaluate!(this, points, v)
   return v
 end
-
-function evaluate(self::UnivariateMonomialBasis,
-  points::AbstractVector{Point{1}}) self(points) end
 
 """
 Auxiliary function that does the same as evaluate but using a pre-allocated
@@ -76,6 +73,22 @@ function evaluate!(this::UnivariateMonomialBasis,
       v[i,j] = p[1]^(i-1)
     end
   end
+end
+
+"""
+Compute the numder-th derivative of a monomial at a set of 1D points,
+returning an array with first axis basis function label, second axis point label
+"""
+function derivative(this::UnivariateMonomialBasis,
+  points::AbstractVector{Point{1}}; numd=1::Int)::Array{Float64,2}
+  dbas = length(this)
+  v = Array{Float64,2}(undef, dbas, length(points))
+  for (j,p) ∈ enumerate(points)
+    for i in 1:length(this)
+      v[i,j] = (i<=numd) ? 0.0 : prod([i-k-1 for k=0:numd-1])p[1]^(i-numd-1)
+    end
+  end
+  return v
 end
 
 end # module NewPolynomials

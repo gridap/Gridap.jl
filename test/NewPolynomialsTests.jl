@@ -20,6 +20,9 @@ points = [Point{1}(1.0), Point{1}(2.0), Point{1}(3.0)]
 values = a(points)
 @test values[3,3] == 9
 ##
+ders = derivative(a,points,numd=1)
+@test values[3,3] == 6
+
 
 
 # end
