@@ -106,11 +106,9 @@ end
 
 @testset "CellArrayFromDet" begin
 
-  using Numa.CellArrays: CellArrayFromDet
-
   dett = [ det(tti) for tti in tt ]
 
-  b = CellArrayFromDet{typeof(t),Float64,1}(t)
+  b = CellArrayFromGivenUnaryOp{typeof(det),typeof(t),Float64,1}(t,det)
 
   @test inputcellarray(b) === t
   @test length(b) == l
@@ -131,11 +129,9 @@ end
 
 @testset "CellArrayFromInv" begin
 
-  using Numa.CellArrays: CellArrayFromInv
-
   invt = [ inv(tti) for tti in tt ]
 
-  b = CellArrayFromInv{typeof(t),typeof(tv),1}(t)
+  b = CellArrayFromGivenUnaryOp{typeof(inv),typeof(t),typeof(tv),1}(t,inv)
 
   @test inputcellarray(b) === t
   @test length(b) == l
