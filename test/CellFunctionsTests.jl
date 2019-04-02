@@ -11,6 +11,15 @@ l = 10
 
 include("CellFunctionsTestsMocks.jl")
 
+include("IntegrationMeshesTestsMocks.jl")
+
+imesh = DummyIntegrationMesh2D(partition=(3,3))
+refquad = TensorProductQuadrature(orders=(0,0))
+meshcoords = cellcoordinates(imesh)
+quad = ConstantCellQuadrature(refquad,length(meshcoords))
+points = coordinates(quad)
+phi = geomap(imesh)
+
 @testset "InnerFieldValuesFieldValues" begin
 
   siff = inner(sfv,sfv)
@@ -313,16 +322,47 @@ end
 
 end
 
+@testset "CellFieldFromCompose" begin
+
+  @eval begin 
+  
+    ufun(::Type{Point{2}}) = Float64
+
+    ufun(x::Point{2}) = x[1]*x[2] + x[1]
+
+    gradufun(::Type{Point{2}}) = VectorValue{2}
+
+    gradufun(x::Point{2}) = VectorValue(x[2]+1.0,x[1])
+
+    gradient(::typeof(ufun)) = gradufun
+
+  end
+
+  @test isa(phi,CellField)
+  @test isa(ufun,Function)
+
+  cfield = compose(ufun,phi)
+
+  @test isa(cfield,CellField{2,Float64})
+
+  cfieldgrad = gradient(cfield)
+
+  @test isa(cfieldgrad,CellField{2,VectorValue{2}})
+
+  uatx = evaluate(cfield,points)
+
+  ugradatx = evaluate(cfieldgrad,points)
+
+  x = evaluate(phi,points)
+
+  for (ui,uigrad,xi) in zip(uatx,ugradatx,x)
+    @assert ui == ufun.(xi)
+    @assert uigrad == gradufun.(xi)
+  end
+
+end
+
 @testset "CellBasisWithGeomap" begin
-
-  include("IntegrationMeshesTestsMocks.jl")
-
-  imesh = DummyIntegrationMesh2D(partition=(3,3))
-  refquad = TensorProductQuadrature(orders=(0,0))
-  meshcoords = cellcoordinates(imesh)
-  quad = ConstantCellQuadrature(refquad,length(meshcoords))
-  points = coordinates(quad)
-  phi = geomap(imesh)
 
   basis = cellbasis(imesh)
 

@@ -12,6 +12,7 @@ export CellGeomap
 export expand
 export inner
 export attachgeomap
+export compose
 
 export CellBasisFromSingleInterpolation
 

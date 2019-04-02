@@ -13,6 +13,7 @@ export CellVector
 export IndexableCellArray
 export CellArrayFromUnaryOp
 export CellArrayFromElemUnaryOp
+export CellArrayFromGivenUnaryOp
 export ConstantCellArray
 export cellsize
 export celllength

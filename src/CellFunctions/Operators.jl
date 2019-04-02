@@ -7,6 +7,8 @@ Base.:*(a::CellFunction{S,M,T,N},b::CellFunction{S,M,T,N}) where {S,M,T,N} = Cel
 
 Base.:/(a::CellFunction{S,M,T,N},b::CellFunction{S,M,T,N}) where {S,M,T,N} = CellFunctionFromBaseOp(a,b,/)
 
+Base.:∘(f::Function,g::CellField) = compose(f,g)
+
 function inner(a::CellField{D,T},b::CellField{D,T}) where {D,T}
   S = inner(T,T)
   CellFunctionFromInner{D,T,1,1,S,1}(a,b)
@@ -26,6 +28,13 @@ function expand(a::CellBasis,b::CellVector)
   CellFieldFromExpand(a,b)
 end
 
+function compose(f::Function,g::CellField{D,S}) where {D,S}
+  O = typeof(f)
+  C = typeof(g)
+  T = f(S)
+  CellFieldFromCompose{D,O,C,T}(g,f)
+end
+
 inner(a::CellFieldValues{T},b::CellFieldValues{T}) where T = binner(a,b)
 
 inner(a::CellBasisValues{T},b::CellFieldValues{T}) where T = binner(a,cellnewaxis(b,dim=1))
@@ -36,6 +45,24 @@ expand(a::CellBasisValues,b::CellFieldValues) = cellsum(bouter(a,cellnewaxis(b,d
 
 # Ancillary types associated with operations above
 
+struct CellFieldFromCompose{D,O,C<:CellField{D},T} <: CellField{D,T}
+  a::C
+  op::O
+end
+
+function evaluate(self::CellFieldFromCompose{D,O,C,T},points::CellPoints{D}) where {D,O,C,T}
+  avals = evaluate(self.a,points)
+  CellArrayFromGivenUnaryOp{O,typeof(avals),T,1}(avals,self.op)
+end
+
+function gradient(self::CellFieldFromCompose{D,O,C,T}) where {D,O,C,T}
+  gradop = gradient(self.op)
+  OG = typeof(gradop)
+  TG = gradop(Point{D})
+  CellFieldFromCompose{D,OG,C,TG}(self.a,gradop)
+end
+
+# @fverdugo this is type unstable (however, not a big problem here)
 struct CellFunctionFromBaseOp{O,S,M,T,N} <: CellFunction{S,M,T,N}
   a::CellFunction{S,M,T,N}
   b::CellFunction{S,M,T,N}

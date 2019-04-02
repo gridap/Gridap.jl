@@ -46,14 +46,14 @@ Assumes that det is defined for instances of T
 and that the result is Float64
 """
 function LinearAlgebra.det(self::CellArray{T,N}) where {T,N}
-  CellArrayFromDet{typeof(self),Float64,N}(self)
+  CellArrayFromGivenUnaryOp{typeof(det),typeof(self),Float64,N}(self,det)
 end
 
 """
 Assumes that inv is defined for instances of T
 """
 function LinearAlgebra.inv(self::CellArray{T,N}) where {T,N}
-  CellArrayFromInv{typeof(self),T,N}(self)
+  CellArrayFromGivenUnaryOp{typeof(inv),typeof(self),T,N}(self,inv)
 end
 
 function cellsum(self::CellArray{T,N};dim::Int) where {T,N}
@@ -66,32 +66,15 @@ end
 
 # Ancillary types associated with the operations above
 
-"""
-Type that stores the lazy result of evaluating the determinant
-of each element in a CellArray
-"""
-struct CellArrayFromDet{C,T,N} <: CellArrayFromElemUnaryOp{C,T,N}
+struct CellArrayFromGivenUnaryOp{O<:Function,C,T,N} <: CellArrayFromElemUnaryOp{C,T,N}
   a::C
+  op::O
 end
 
-inputcellarray(self::CellArrayFromDet) = self.a
+inputcellarray(self::CellArrayFromGivenUnaryOp) = self.a
 
-function computevals!(::CellArrayFromDet, a, v)
-  v .= det.(a)
-end
-
-"""
-Type that stores the lazy result of evaluating the inverse of
-of each element in a CellArray
-"""
-struct CellArrayFromInv{C,T,N} <: CellArrayFromElemUnaryOp{C,T,N}
-  a::C
-end
-
-inputcellarray(self::CellArrayFromInv) = self.a
-
-function computevals!(::CellArrayFromInv, a, v)
-  v .= inv.(a)
+function computevals!(self::CellArrayFromGivenUnaryOp, a, v)
+  v .= self.op.(a)
 end
 
 """
