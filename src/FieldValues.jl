@@ -126,4 +126,8 @@ end
 
 inner(::Type{SMatrix{D,Z,T,DZ}},::Type{SMatrix{D,Z,T,DZ}}) where {D,Z,T,DZ} = T
 
+Base.:*(::Type{T},::Type{T}) where T<:Number = T
+
+Base.:*(::Type{SMatrix{D,Z,T,DZ}},::Type{SVector{Z,T}}) where {D,Z,T,DZ} = SVector{D,T}
+
 end # module FieldValues

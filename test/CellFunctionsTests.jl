@@ -4,6 +4,8 @@ using Test
 using Numa.FieldValues
 using Numa.CellArrays
 using Numa.CellFunctions
+using Numa.Quadratures
+using Numa.CellQuadratures
 
 l = 10
 
@@ -183,6 +185,114 @@ end
   @test cellsize(vexpand) == size(vexpanda)
   for a in vexpand
     @assert a == vexpanda
+  end
+
+end
+
+@testset "CellBasisFromSingleInterpolation" begin
+
+  include("PolynomialsTestsMocks.jl")
+
+  using Numa.CellFunctions: CellBasisValuesFromSingleInterpolation
+
+  l = 10
+
+  refquad = TensorProductQuadrature(orders=(5,4))
+  refpoints = coordinates(refquad)
+
+  quad = ConstantCellQuadrature(refquad,l)
+  points = coordinates(quad)
+
+  refbasis = ShapeFunctionsScalarQua4()
+
+  refvals = evaluate(refbasis,refpoints)
+
+  vals = CellBasisValuesFromSingleInterpolation(refbasis,points)
+
+  @test isa(vals,CellBasisValues{Float64})
+
+  for refvals2 in vals
+    @assert refvals2 == refvals
+  end
+
+  basis = CellBasisFromSingleInterpolation(refbasis)
+
+  @test isa(basis,CellBasis{2,Float64})
+
+  vals = evaluate(basis,points)
+
+  @test isa(vals,CellBasisValues{Float64})
+
+  @test isa(vals,ConstantCellArray{Float64,2})
+
+  for refvals2 in vals
+    @assert refvals2 == refvals
+  end
+
+  vals = evaluate(basis,vfv)
+
+  @test isa(vals,CellBasisValues{Float64})
+
+  @test isa(vals,CellBasisValuesFromSingleInterpolation)
+
+  refbasisgrad = gradient(refbasis)
+
+  refvalsgrad = evaluate(refbasisgrad,refpoints)
+
+  basisgrad = gradient(basis)
+
+  valsgrad = evaluate(basisgrad,points)
+
+  @test isa(valsgrad,CellBasisValues{VectorValue{2}})
+
+  @test isa(valsgrad,ConstantCellArray{VectorValue{2},2})
+
+  for refvalsgrad2 in valsgrad
+    @assert refvalsgrad2 == refvalsgrad
+  end
+
+  valsgrad = CellBasisValuesFromSingleInterpolation(refbasisgrad,points)
+
+  @test isa(valsgrad,CellBasisValues{VectorValue{2}})
+
+  for refvalsgrad2 in valsgrad
+    @assert refvalsgrad2 == refvalsgrad
+  end
+
+end
+
+@testset "CellBasisWithGeomap" begin
+
+  include("IntegrationMeshesTestsMocks.jl")
+
+  imesh = DummyIntegrationMesh2D(partition=(3,3))
+  refquad = TensorProductQuadrature(orders=(0,0))
+  meshcoords = cellcoordinates(imesh)
+  quad = ConstantCellQuadrature(refquad,length(meshcoords))
+  points = coordinates(quad)
+  phi = geomap(imesh)
+
+  basis = cellbasis(imesh)
+
+  physbasis = attachgeomap(basis,phi)
+
+  vals = evaluate(physbasis,points)
+
+  @test isa(vals,ConstantCellArray{Float64,2})
+
+  physbasisgrad = gradient(physbasis)
+
+  valsgrad = evaluate(physbasisgrad,points)
+
+  tv1 = VectorValue(-1.5, -1.5)
+  tv2 = VectorValue(1.5, -1.5)
+  tv3 = VectorValue(-1.5, 1.5)
+  tv4 = VectorValue(1.5, 1.5)
+  
+  valsgradref = reshape([tv1, tv2, tv3, tv4],(4,1))
+
+  for v in valsgrad
+    @assert v ≈ valsgradref
   end
 
 end

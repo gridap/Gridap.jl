@@ -1,17 +1,37 @@
+module IntegrationMeshesTests
 
-imesh = Numa.DummyIntegrationMesh2D(partition=(3,3))
+using Test
+using Numa.CellFunctions
+using Numa.IntegrationMeshes
 
-@test isa(imesh,Numa.IntegrationMesh)
+include("IntegrationMeshesTestsMocks.jl")
 
-coords = cellcoordinates(imesh)
+imesh = DummyIntegrationMesh2D(partition=(3,3))
 
-basis = Numa.cellbasis(imesh)
+@testset "Mocks" begin
 
-phi = geomap(imesh)
+  @test isa(imesh,IntegrationMesh)
+  
+  coords = cellcoordinates(imesh)
+  
+  basis = cellbasis(imesh)
+  
+  phi = geomap(imesh)
+  
+  @test isa(coords,CellPoints{2})
+  
+  @test isa(basis,CellBasis{2,Float64})
+  
+  @test isa(phi,CellField{2,Point{2}})
 
-@test isa(coords,CellPoints{2})
+end
 
-@test isa(basis,CellBasis{2,Float64})
+@testset "Geomap" begin
 
-@test isa(phi,CellField{2,Point{2}})
+  phi = geomap(imesh)
 
+  @test isa(phi,CellGeomap{2,2})
+
+end
+
+end # module IntegrationMeshesTests

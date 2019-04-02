@@ -7,7 +7,8 @@ function Base.:-(a::CellArray{T,N},b::CellArray{T,N}) where {T,N}
   CellArrayFromSub{typeof(a),typeof(b),T,N}(a,b)
 end
 
-function Base.:*(a::CellArray{T,N},b::CellArray{T,N}) where {T,N}
+function Base.:*(a::CellArray{A,N},b::CellArray{B,N}) where {A,B,N}
+  T = A * B
   CellArrayFromMul{typeof(a),typeof(b),T,N}(a,b)
 end
 
@@ -222,9 +223,14 @@ inputcellarray(self::CellArrayFromCellNewAxis) = self.a
   Meta.parse("($(join(str)))")
 end
 
-function computevals!(::CellArrayFromCellNewAxis, a, v)
-  for (vi,ai) in zip(CartesianIndices(v),CartesianIndices(a))
-    v[vi] = a[ai]
-  end
+@generated function computevals!(::CellArrayFromCellNewAxis{D}, A::AbstractArray{T,M}, B::AbstractArray{T,N}) where {D,T,M,N}
+  @assert N == M + 1
+  @assert D <= N
+  quote
+    @nloops $M a A begin
+      @nexprs $N j->(b_j = j == $D ? 1 : a_{ j < $D ? j : j-1 } )
+      (@nref $N B b) = @nref $M A a 
+    end
+  end    
 end
 
