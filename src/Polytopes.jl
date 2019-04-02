@@ -16,18 +16,9 @@ export dim, numnftypes
 
 const PointInt{D} = SVector{D,Int64} where D
 # @santiagobadia : Probably add Type of coordinates in Point{D}
-# @santiagobadia : I will re-think this part when I have at my disposal
+# @santiagobadia : I will re-think the NodeArray when I have at my disposal
 # the geomap on n-faces, etc. And a clearer definition of the mesh object
 # to discuss with @fverdugo
-
-# Approach: 1) Create the n-faces of the cell; 2) Dictionary from n-face to
-# index; 3) Create n-faces for all n-faces; 4) Apply the dictionary to all
-# n-faces with cell numbering; 5) Provide the information as a mesh, in which
-# one has composition; 6) Dual mesh algorithm with a touch; 7) All dim to dim
-# for all n-faces
-# Algorithm 1 must be extended to whatever extrusion.
-# NodeArray over the mesh, and over the 1) corners, 2) edges, ... D) cell,
-# For a given n-face and extrusion, create its own nodes
 
 """
 n-face of the polytope, i.e., any polytope of lower dimension `N` representing

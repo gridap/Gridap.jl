@@ -17,10 +17,6 @@ export evaluate!
 export evaluate
 export gradient, ∇
 
-# @fverdugo: really needed to export?
-# If they are just needed in the tests use qualified names there
-export derivative, tensorproduct!, tensorproductsquare!
-
 # @santiagobadia : To put my polynomials in accordance with Abstract methods
 # Abstract types and interfaces
 
@@ -74,9 +70,13 @@ end
 Multivariate polynomial basis obtained as tensor product of univariate polynomial basis
 per dimension
 """
-struct TensorProductPolynomialBasis
+struct TensorProductPolynomialBasis#{D}
   polynomials::Vector{UnivariatePolynomialBasis}
+  # Ntuple{D,UnivariatePolynomialBasis}
 end
+
+# @santiagobadia : Create a concretization of MultivariatePolynomialBasis
+# with rank T from here...
 
 # Methods
 
