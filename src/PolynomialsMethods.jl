@@ -69,19 +69,19 @@ function (a::TensorProductPolynomialBasis)(points::Vector{Point{D}}) where {D}
   return B
 end
 
-function (a::TensorProductPolynomialBasis)(numders::Int64, x::Array{Float64,1})
-  numdims = length(a.polynomials)
-  @assert numdims == size(x,2) "Point dim and polynomial basis dim must be identical"
-  c = [[derivative(a.polynomials[i], j, x[:,i]) for j=1:numders] for i = 1:numdims]
-  orders = [(a.polynomials[i].order+1) for i = 1:numdims]
-  dims = tuple(orders...)
-  # A=ones(Float64,dims)
-  A = Array{Float64,length(c)}(undef,dims)
-  A.= 1.0
-  tensorproduct!(A,c)
-  A = reshape(A, length(A))
-  return A
-end
+# function (a::TensorProductPolynomialBasis)(numders::Int64, x::Array{Float64,1})
+#   numdims = length(a.polynomials)
+#   @assert numdims == size(x,2) "Point dim and polynomial basis dim must be identical"
+#   c = [[derivative(a.polynomials[i], j, x[:,i]) for j=1:numders] for i = 1:numdims]
+#   orders = [(a.polynomials[i].order+1) for i = 1:numdims]
+#   dims = tuple(orders...)
+#   # A=ones(Float64,dims)
+#   A = Array{Float64,length(c)}(undef,dims)
+#   A.= 1.0
+#   tensorproduct!(A,c)
+#   A = reshape(A, length(A))
+#   return A
+# end
 
 @generated function tensorproduct!(A::Array{Float64,N},c,ip=1) where {N}
   quote
@@ -91,16 +91,16 @@ end
 end
 end
 
-@generated function tensorproductsquare!(A::Array{Array{Float64,N},M},c) where {N,M}
-  quote
-    @nloops $N i A begin
-    B = (@nref $N A i)
-    @nloops $M k B begin
-    @nexprs $N j ->((@nref $N B k) *= c[j][k_j,i_j])
-  end
-end
-end
-end
+# @generated function tensorproductsquare!(A::Array{Array{Float64,N},M},c) where {N,M}
+#   quote
+#     @nloops $N i A begin
+#     B = (@nref $N A i)
+#     @nloops $M k B begin
+#     @nexprs $N j ->((@nref $N B k) *= c[j][k_j,i_j])
+#   end
+# end
+# end
+# end
 
 function gradient(a::TensorProductPolynomialBasis,
                   points::Vector{Point{D}}) where D

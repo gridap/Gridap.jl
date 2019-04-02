@@ -1,9 +1,11 @@
 module PolynomialsTests
-
+##
 using Test
 using Numa.FieldValues
 using Numa.Polynomials
 using Numa.Quadratures
+using Numa.Polynomials: TensorProductPolynomialBasis
+##
 
 ##
 
@@ -14,15 +16,15 @@ using Numa.Quadratures
   basis = ShapeFunctionsScalarQua4()
   n = length(basis)
   @test n == 4
-  
-  
+
+
   quad = TensorProductQuadrature(orders=(2,2))
   points = coordinates(quad)
   values = Array{Float64,2}(undef, (n, length(points)) )
   evaluate!(basis,points,values)
   grad_basis = ∇*basis
   @test length(grad_basis) == 4
-  
+
   grad_values = Array{VectorValue{2},2}(undef, (n, length(points)) )
   evaluate!(grad_basis,points,grad_values)
 
@@ -44,6 +46,7 @@ monpol=UnivariatePolynomialBasis(2)
 monpol([2.0])
 #Evaluate derivatives of a monomial
 a = [0.0]
+using Numa.Polynomials: derivative
 monpolder=derivative(monpol,2,[0.0])
 @test monpolder[3] == 2.0
 ##
