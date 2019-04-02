@@ -1,4 +1,5 @@
 
+#@fverdugo Allow different dims and julia broadcast will do the rest
 function Base.:+(a::CellArray{T,N},b::CellArray{T,N}) where {T,N}
   CellArrayFromSum{typeof(a),typeof(b),T,N}(a,b)
 end
@@ -7,9 +8,11 @@ function Base.:-(a::CellArray{T,N},b::CellArray{T,N}) where {T,N}
   CellArrayFromSub{typeof(a),typeof(b),T,N}(a,b)
 end
 
-function Base.:*(a::CellArray{A,N},b::CellArray{B,N}) where {A,B,N}
+function Base.:*(a::CellArray{A,M},b::CellArray{B,N}) where {A,B,M,N}
+  #@fverdugo I don't know if this the julia way
+  # explore promotion to do this
   T = A * B
-  CellArrayFromMul{typeof(a),typeof(b),T,N}(a,b)
+  CellArrayFromMul{typeof(a),typeof(b),T,max(M,N)}(a,b)
 end
 
 function Base.:/(a::CellArray{T,N},b::CellArray{T,N}) where {T,N}

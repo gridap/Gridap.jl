@@ -28,6 +28,7 @@ function expand(a::CellBasis,b::CellVector)
   CellFieldFromExpand(a,b)
 end
 
+# @fverdugo TODO: optimize for ConstantCellArrays
 function compose(f::Function,g::CellField{D,S}) where {D,S}
   O = typeof(f)
   C = typeof(g)
