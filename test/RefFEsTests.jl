@@ -6,6 +6,20 @@ using Numa.Polynomials
 using Numa.RefFEs
 
 using Numa.Polytopes: PointInt
+
+
+# Create dofbasis using node array for Lagrangian FEs
+
+# Create MultivariatePolynomialBasisWithChangeOfBasis
+# i.e., CanonicalBasis given DOFs
+
+# nfacetoowndofs
+
+
+
+
+
+
 ##
 # 1D reffe
 D = 1

@@ -60,9 +60,13 @@ end
 Multivariate polynomial basis obtained as tensor product of univariate polynomial basis
 per dimension
 """
-struct TensorProductPolynomialBasis
+struct TensorProductPolynomialBasis{D}
   polynomials::Vector{UnivariatePolynomialBasis}
+  # Ntuple{D,UnivariatePolynomialBasis}
 end
+
+# @santiagobadia : Create a concretization of MultivariatePolynomialBasis
+# with rank T from here...
 
 # Methods
 
