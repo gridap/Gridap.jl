@@ -27,10 +27,37 @@ function evaluate(self::MultivariatePolynomialBasis{D,T},points::AbstractArray{P
 end
 
 """
-Returns a MultivariatePolynomialBasis{TG,D} where TG
-is a type whose rank is one unit grater than the one of T
+Object that represents the gradient of the elements of a basis
 """
-gradient(::MultivariatePolynomialBasis{D,T} where{D,T})::MultivariatePolynomialBasis{D,TG} = @abstractmethod
+struct GradMultivariatePolynomialBasis{D,TG,T,B<:MultivariatePolynomialBasis{D,T}} <: MultivariatePolynomialBasis{D,TG}
+  basis::B
+end
+
+"""
+evaluate! overwritten for gradients of bases
+"""
+function evaluate(self::MultivariatePolynomialBasis{D,T},points::AbstractArray{Point{D},1}) where {D,T}
+  vals = Array{T,2}(undef,(length(self),length(points)))
+  evaluategradients!(self.basis,points,vals)
+  vals
+end
+
+"""
+Create a `GradMultivariatePolynomialBasis` object from a basis
+`MultivariatePolynomialBasis`. The result is a
+MultivariatePolynomialBasis{TG,D} where TG is a type whose rank is one unit
+greater than the one of T
+"""
+function gradient(self::MultivariatePolynomialBasis{D,T}) where{D,T}
+  TG = outer(Point{D},T)
+  B = typeof(self)
+  GradMultivariatePolynomialBasis{D,TG,T,B}(self)
+end
+
+Base.length(this::GradMultivariatePolynomialBasis)::Int = length(this.basis)
+
+function gradient(::GradMultivariatePolynomialBasis{D,T,B} where{D,T,B})
+ @error("Gradient of a gradient not available") end
 
 const ∇ = gradient
 
@@ -80,15 +107,41 @@ Compute the numder-th derivative of a monomial at a set of 1D points,
 returning an array with first axis basis function label, second axis point label
 """
 function derivative(this::UnivariateMonomialBasis,
-  points::AbstractVector{Point{1}}; numd=1::Int)::Array{Float64,2}
+  points::AbstractVector{Point{1}}; numd=1::Int)::Array{VectorValue{1},2}
   dbas = length(this)
-  v = Array{Float64,2}(undef, dbas, length(points))
+  v = Array{VectorValue{1},2}(undef, dbas, length(points))
   for (j,p) ∈ enumerate(points)
     for i in 1:length(this)
-      v[i,j] = (i<=numd) ? 0.0 : prod([i-k-1 for k=0:numd-1])p[1]^(i-numd-1)
+      val = (i<=numd) ? 0.0 : prod([i-k-1 for k=0:numd-1])p[1]^(i-numd-1)
+      v[i,j] = VectorValue{1}(val)
     end
   end
   return v
 end
+
+
+
+
+
+
+function evaluategradients!(this::UnivariateMonomialBasis,
+  points::AbstractVector{Point{1}},v::AbstractArray{VectorValue{1},2})
+  derivative(this, points)
+  numd = 1
+  for (j,p) ∈ enumerate(points)
+    for i in 1:length(this)
+      val = (i<=numd) ? 0.0 : prod([i-k-1 for k=0:numd-1])p[1]^(i-numd-1)
+      v[i,j] = VectorValue{1}(val)
+    end
+  end
+end
+
+
+
+
+
+
+
+
 
 end # module NewPolynomials
