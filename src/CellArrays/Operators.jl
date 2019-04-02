@@ -7,7 +7,8 @@ function Base.:-(a::CellArray{T,N},b::CellArray{T,N}) where {T,N}
   CellArrayFromSub{typeof(a),typeof(b),T,N}(a,b)
 end
 
-function Base.:*(a::CellArray{T,N},b::CellArray{T,N}) where {T,N}
+function Base.:*(a::CellArray{A,N},b::CellArray{B,N}) where {A,B,N}
+  T = A * B
   CellArrayFromMul{typeof(a),typeof(b),T,N}(a,b)
 end
 

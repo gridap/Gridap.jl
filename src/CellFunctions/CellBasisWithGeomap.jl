@@ -1,4 +1,6 @@
 
+attachgeomap(a::CellBasis{D},b::CellGeomap{D,D}) where D = CellBasisWithGeomap(a,b)
+
 struct CellBasisWithGeomap{D,O,T,B<:CellBasis{D,T},G<:CellGeomap{D,D}} <: CellBasis{D,T}
   basis::B
   geomap::G
@@ -24,7 +26,7 @@ function evaluate(self::CellBasisWithGeomap{D,1},points::CellPoints{D}) where D
   vals = evaluate(self.basis,points)
   jaco = gradient(self.geomap)
   jacovals = evaluate(jaco,points)
-  inv(jacovals) * vals
+  cellnewaxis(inv(jacovals),dim=1) * vals
 end
 
 function gradient(self::CellBasisWithGeomap{D,0}) where D

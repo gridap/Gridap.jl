@@ -264,10 +264,36 @@ end
 @testset "CellBasisWithGeomap" begin
 
   include("IntegrationMeshesTestsMocks.jl")
+
   imesh = DummyIntegrationMesh2D(partition=(3,3))
-  refquad = TensorProductQuadrature(orders=(2,2))
-  #quad = ConstantCellQuadrature(refquad,length(basis))
-  #points = coordinates(quad)
+  refquad = TensorProductQuadrature(orders=(0,0))
+  meshcoords = cellcoordinates(imesh)
+  quad = ConstantCellQuadrature(refquad,length(meshcoords))
+  points = coordinates(quad)
+  phi = geomap(imesh)
+
+  basis = cellbasis(imesh)
+
+  physbasis = attachgeomap(basis,phi)
+
+  vals = evaluate(physbasis,points)
+
+  @test isa(vals,ConstantCellArray{Float64,2})
+
+  physbasisgrad = gradient(physbasis)
+
+  valsgrad = evaluate(physbasisgrad,points)
+
+  tv1 = VectorValue(-1.5, -1.5)
+  tv2 = VectorValue(1.5, -1.5)
+  tv3 = VectorValue(-1.5, 1.5)
+  tv4 = VectorValue(1.5, 1.5)
+  
+  valsgradref = reshape([tv1, tv2, tv3, tv4],(4,1))
+
+  for v in valsgrad
+    @assert v ≈ valsgradref
+  end
 
 end
 
