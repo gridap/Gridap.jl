@@ -48,3 +48,14 @@ for j in 1:4
 end
 tfv = CellFieldValuesMockup{TensorValue{2,4}}(tfva,l)
 tbv = CellBasisValuesMockup{TensorValue{2,4}}(tbva,l)
+
+import Numa.CellFunctions: evaluate
+
+struct ScalarFieldMock <: CellField{2,Float64} end
+
+evaluate(::ScalarFieldMock,points::CellPoints{2}) = sfv
+
+struct ScalarBasisMock <: CellBasis{2,Float64} end
+
+evaluate(::ScalarBasisMock,points::CellPoints{2}) = sbv
+

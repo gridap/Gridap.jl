@@ -261,6 +261,58 @@ end
 
 end
 
+@testset "CellBasisOps" begin
+
+  sb = ScalarBasisMock()
+
+  vals = evaluate(sb + sb,vfv)
+
+  @test isa(sb + sb,CellBasis{2,Float64})
+
+  for a in vals
+    @assert a == sbva + sbva
+  end
+
+  vals = evaluate(sb - sb,vfv)
+
+  @test isa(sb - sb,CellBasis{2,Float64})
+
+  for a in vals
+    @assert a == sbva - sbva
+  end
+
+  vals = evaluate(sb * sb,vfv)
+
+  @test isa(sb * sb,CellBasis{2,Float64})
+
+  for a in vals
+    @assert a == sbva .* sbva
+  end
+
+  vals = evaluate(sb / sb,vfv)
+
+  @test isa(sb / sb,CellBasis{2,Float64})
+
+  for a in vals
+    @assert a == sbva ./ sbva
+  end
+
+  vals = evaluate(inner(sb,sb),vfv)
+
+  @test isa(vals,CellArray{Float64,3})
+
+  sf = ScalarFieldMock()
+
+  vals = evaluate(inner(sf,sf),vfv)
+
+  @test isa(vals,CellArray{Float64,1})
+
+  vals = evaluate(inner(sb,sf),vfv)
+
+  @test isa(vals,CellArray{Float64,2})
+
+end
+
 @testset "CellBasisWithGeomap" begin
 
   include("IntegrationMeshesTestsMocks.jl")

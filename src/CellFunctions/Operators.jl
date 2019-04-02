@@ -1,11 +1,11 @@
 
-Base.:+(a::CellFunction{S,M,T,N},b::CellFunction{S,M,T,N}) where {S,M,T,N} = CellFunctionFromBaseOp(a,b,typeof(+))
+Base.:+(a::CellFunction{S,M,T,N},b::CellFunction{S,M,T,N}) where {S,M,T,N} = CellFunctionFromBaseOp(a,b,+)
 
-Base.:-(a::CellFunction{S,M,T,N},b::CellFunction{S,M,T,N}) where {S,M,T,N} = CellFunctionFromBaseOp(a,b,typeof(-))
+Base.:-(a::CellFunction{S,M,T,N},b::CellFunction{S,M,T,N}) where {S,M,T,N} = CellFunctionFromBaseOp(a,b,-)
 
-Base.:*(a::CellFunction{S,M,T,N},b::CellFunction{S,M,T,N}) where {S,M,T,N} = CellFunctionFromBaseOp(a,b,typeof(*))
+Base.:*(a::CellFunction{S,M,T,N},b::CellFunction{S,M,T,N}) where {S,M,T,N} = CellFunctionFromBaseOp(a,b,*)
 
-Base.:/(a::CellFunction{S,M,T,N},b::CellFunction{S,M,T,N}) where {S,M,T,N} = CellFunctionFromBaseOp(a,b,typeof(/))
+Base.:/(a::CellFunction{S,M,T,N},b::CellFunction{S,M,T,N}) where {S,M,T,N} = CellFunctionFromBaseOp(a,b,/)
 
 function inner(a::CellField{D,T},b::CellField{D,T}) where {D,T}
   S = inner(T,T)
@@ -42,7 +42,7 @@ struct CellFunctionFromBaseOp{O,S,M,T,N} <: CellFunction{S,M,T,N}
   op::O
 end
 
-function evaluate(self::CellFunctionFromBaseOp{S,M,T,N},input::CellArray{S,M}) where {S,M,T,N}
+function evaluate(self::CellFunctionFromBaseOp{O,S,M,T,N},input::CellArray{S,M}) where {O,S,M,T,N}
   avals = evaluate(self.a,input)
   bvals = evaluate(self.b,input)
   self.op(avals,bvals)
