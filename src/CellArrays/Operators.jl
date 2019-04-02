@@ -223,9 +223,14 @@ inputcellarray(self::CellArrayFromCellNewAxis) = self.a
   Meta.parse("($(join(str)))")
 end
 
-function computevals!(::CellArrayFromCellNewAxis, a, v)
-  for (vi,ai) in zip(CartesianIndices(v),CartesianIndices(a))
-    v[vi] = a[ai]
-  end
+@generated function computevals!(::CellArrayFromCellNewAxis{D}, A::AbstractArray{T,M}, B::AbstractArray{T,N}) where {D,T,M,N}
+  @assert N == M + 1
+  @assert D <= N
+  quote
+    @nloops $M a A begin
+      @nexprs $N j->(b_j = j == $D ? 1 : a_{ j < $D ? j : j-1 } )
+      (@nref $N B b) = @nref $M A a 
+    end
+  end    
 end
 
