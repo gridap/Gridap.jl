@@ -48,14 +48,15 @@ print("DummyMeshCoords2D ->"); @time doloop(meshcoords)
 print("DummyCellBasis2D ->"); @time doloop(vals)
 print("DummyCellBasis2D ->"); @time doloop(vals)
 
-kk = cellnewaxis(meshcoords,dim=1)
-print("kk ->"); @time doloop(kk)
-print("kk ->"); @time doloop(kk)
-
 print("xg ->"); @time doloop(xg)
 print("xg ->"); @time doloop(xg)
 
 print("PhysBasisGradVals ->"); @time doloop(valsgrad)
 print("PhysBasisGradVals ->"); @time doloop(valsgrad)
+
+kmatg = inner(valsgrad, valsgrad)
+
+print("DummyStiffnessMatrix2D ->"); @time doloop(kmatg)
+print("DummyStiffnessMatrix2D ->"); @time doloop(kmatg)
 
 end

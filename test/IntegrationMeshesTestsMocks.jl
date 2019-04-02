@@ -11,9 +11,9 @@ import Numa.CellArrays: cellsize
 using Numa.IntegrationMeshes
 import Numa.IntegrationMeshes: cellcoordinates, cellbasis
 
-
 struct DummyCellCoordinates2D <: IndexableCellArray{Point{2},1}
   x::Array{Point{2},2}
+  c::Array{Point{2},1}
 end
 
 function DummyCellCoordinates2D(;partition::Tuple{Int,Int})
@@ -40,10 +40,16 @@ function DummyCellCoordinates2D(;partition::Tuple{Int,Int})
       cell += 1
     end
   end
-  DummyCellCoordinates2D(x)
+  c = Array{Point{2},1}(undef,(4,))
+  DummyCellCoordinates2D(x,c)
 end
 
-Base.getindex(self::DummyCellCoordinates2D,cell::Int) = @view self.x[:,cell]
+function Base.getindex(self::DummyCellCoordinates2D,cell::Int)
+  @inbounds for i in 1:4
+    self.c[i] = self.x[i,cell]
+  end
+  self.c
+end
 
 Base.length(self::DummyCellCoordinates2D) = size(self.x,2)
 
