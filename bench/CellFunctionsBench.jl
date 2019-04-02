@@ -25,4 +25,37 @@ vexpand = expand(vbv,sfv2)
 print("VectorScalarExpand ->"); @time doloop(vexpand)
 print("VectorScalarExpand ->"); @time doloop(vexpand)
 
+include("../test/IntegrationMeshesTestsMocks.jl")
+using Numa.Quadratures
+using Numa.CellQuadratures
+
+imesh = DummyIntegrationMesh2D(partition=(1000,1000))
+refquad = TensorProductQuadrature(orders=(2,2))
+meshcoords = cellcoordinates(imesh)
+quad = ConstantCellQuadrature(refquad,length(meshcoords))
+points = coordinates(quad)
+phi = geomap(imesh)
+basis = cellbasis(imesh)
+physbasis = attachgeomap(basis,phi)
+physbasisgrad = gradient(physbasis)
+valsgrad = evaluate(physbasisgrad,points)
+xg = evaluate(phi,points)
+vals = evaluate(basis,points)
+
+print("DummyMeshCoords2D ->"); @time doloop(meshcoords)
+print("DummyMeshCoords2D ->"); @time doloop(meshcoords)
+
+print("DummyCellBasis2D ->"); @time doloop(vals)
+print("DummyCellBasis2D ->"); @time doloop(vals)
+
+kk = cellnewaxis(meshcoords,dim=1)
+print("kk ->"); @time doloop(kk)
+print("kk ->"); @time doloop(kk)
+
+print("xg ->"); @time doloop(xg)
+print("xg ->"); @time doloop(xg)
+
+print("PhysBasisGradVals ->"); @time doloop(valsgrad)
+print("PhysBasisGradVals ->"); @time doloop(valsgrad)
+
 end
