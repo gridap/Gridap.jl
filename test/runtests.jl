@@ -5,6 +5,7 @@ using Test
   @time @testset "FieldValues" begin include("FieldValuesTests.jl") end
   @time @testset "Quadratures" begin include("QuadraturesTests.jl") end
   @time @testset "Polynomials" begin include("PolynomialsTests.jl") end
+  @time @testset "NewPolynomials" begin include("NewPolynomialsTests.jl") end
   @time @testset "CellArrays" begin include("CellArraysTests.jl") end
   @time @testset "CellQuadratures" begin include("CellQuadraturesTests.jl") end
   @time @testset "CellFunctions" begin include("CellFunctionsTests.jl") end

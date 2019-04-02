@@ -26,6 +26,9 @@ function evaluate(self::MultivariatePolynomialBasis{D,T},points::AbstractArray{P
   vals
 end
 
+# const (this::MultivariatePolynomialBasis{D,T})(points) = evaluate(this, points)
+  # evaluate(this, points) end
+
 """
 Object that represents the gradient of the elements of a basis
 """
@@ -36,7 +39,7 @@ end
 """
 evaluate! overwritten for gradients of bases
 """
-function evaluate(self::MultivariatePolynomialBasis{D,T},points::AbstractArray{Point{D},1}) where {D,T}
+function evaluate(self::GradMultivariatePolynomialBasis{D,T},points::AbstractArray{Point{D},1}) where {D,T}
   vals = Array{T,2}(undef,(length(self),length(points)))
   evaluategradients!(self.basis,points,vals)
   vals
@@ -78,18 +81,6 @@ end
 Base.length(this::UnivariateMonomialBasis)::Int = this.order+1
 
 """
-Alocate and evaluate an array with all the elements of the
-a `UnivariateMonomialBasis` evaluated at a set of 1D points. The array axis are
-first the basis polynomial index and next the point label
-"""
-function (this::UnivariateMonomialBasis)(points::AbstractVector{Point{1}})::Array{Float64,2}
-  dbas = length(this)
-  v = Array{Float64,2}(undef, dbas, length(points))
-  evaluate!(this, points, v)
-  return v
-end
-
-"""
 Auxiliary function that does the same as evaluate but using a pre-allocated
 array
 """
@@ -119,11 +110,6 @@ function derivative(this::UnivariateMonomialBasis,
   return v
 end
 
-
-
-
-
-
 function evaluategradients!(this::UnivariateMonomialBasis,
   points::AbstractVector{Point{1}},v::AbstractArray{VectorValue{1},2})
   derivative(this, points)
@@ -136,12 +122,40 @@ function evaluategradients!(this::UnivariateMonomialBasis,
   end
 end
 
+"""
+Multivariate monomial basis obtained as tensor product of univariate polynomial
+basis per dimension
+"""
+struct TensorProductMonomialBasis{D} <: MultivariatePolynomialBasis{D,ScalarValue}
+  univariatebases::Vector{UnivariateMonomialBasis}
+end
 
+"""
+Provide a `TensorProductMonomialBasis` for a vector `order` providing the order per
+dimension
+"""
+function TensorProductMonomialBasis(order::Vector{Int64})
+  uvmbs = [UnivariateMonomialBasis(order[i]) for i=1:length(order)]
+  D = length(order)
+  TensorProductMonomialBasis{D}(uvmbs)
+end
 
+function Base.length(this::TensorProductMonomialBasis{D})::Int where D
+  prod([length(this.univariatebases[i]) for i in 1:D])
+end
 
-
-
-
-
+function evaluate!(this::TensorProductMonomialBasis{D},
+  points::AbstractVector{Point{D}}, v::AbstractArray{ScalarValue,2}) where D
+  tpcoor = i -> [ Point{1}(p[i]) for p in points]
+  cooruv = [tpcoor(i) for i in 1:D]
+  univals = [evaluate(this.univariatebases[i],cooruv[i]) for i in 1:D]
+  cid = ntuple(i -> 1:length(this.univariatebases[i]), D)
+  cid = CartesianIndices(cid)
+  for (i,j) in enumerate(cid)
+    for k in 1:length(points)
+      v[i,k] = prod([ univals[i][j[i],k] for i in 1:D ])
+    end
+  end
+end
 
 end # module NewPolynomials
