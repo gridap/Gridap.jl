@@ -50,16 +50,44 @@ res = RefFEs.nodeevaluate(dofsb,prebasis)
 @test res[8,8] == 1.0
 ##
 reffe = LagrangianRefFE{D,VectorValue{D}}(polytope,orders)
-val = RefFEs.nodeevaluate(reffe.dofs, reffe.prebasis)
-kk1 = reffe.changeofbasis*val
-val = RefFEs.nodeevaluate(reffe.dofs, reffe.basis)
+# val = RefFEs.nodeevaluate(reffe.dofs, reffe.prebasis)
+# kk1 = reffe.changeofbasis*val
+# val = RefFEs.nodeevaluate(reffe.dofs, reffe.basis)
 val1 = evaluate(reffe.basis,nodes.coordinates)
-val2 = evaluate(reffe.basis.basis,nodes.coordinates)
-val1 - val2
-reffe.basis.changeofbasis*val1
+id = zeros(VectorValue{D},size(val1))
+for i in 1:4
+  id[i,i] = VectorValue{D}(1.0,0.0)
+  id[i+4,i] = VectorValue{D}(0.0, 1.0)
+end
+@test val1 == id
+dofv = RefFEs.nodeevaluate(reffe.dofs, reffe.basis)
+id = zeros(Float64,length(reffe.basis), length(reffe.basis))
+for i in 1:length(reffe.basis)
+  id[i,i] = 1.0
+end
+dofv
+@test dofv == id
 ##
-typeof(reffe.basis)
-typeof(nodes.coordinates)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ##
 # 1D reffe
