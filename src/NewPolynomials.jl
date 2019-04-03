@@ -151,6 +151,24 @@ function evaluate!(this::TensorProductMonomialBasis{D,T},
   cooruv = [tpcoor(i) for i in 1:D]
   univals = [evaluate(this.univariatebases[i],cooruv[i]) for i in 1:D]
   cid = ntuple(i -> 1:length(this.univariatebases[i]), D)
+  lent = length(T)
+  cid = (cid..., 1:lent)
+  cid = CartesianIndices(cid)
+  for (i,j) in enumerate(cid)
+    d = j[D+1]
+    for k in 1:length(points)
+      val = prod([ univals[i][j[i],k] for i in 1:D ])
+      v[i,k] = T(ntuple(i->(i==d) ? val : 0.0, lent))
+    end
+  end
+end
+
+function oldevaluate!(this::TensorProductMonomialBasis{D,T},
+  points::AbstractVector{Point{D}}, v::AbstractArray{T,2}) where {D,T}
+  tpcoor = i -> [ Point{1}(p[i]) for p in points]
+  cooruv = [tpcoor(i) for i in 1:D]
+  univals = [evaluate(this.univariatebases[i],cooruv[i]) for i in 1:D]
+  cid = ntuple(i -> 1:length(this.univariatebases[i]), D)
   cid = CartesianIndices(cid)
   for (i,j) in enumerate(cid)
     for k in 1:length(points)
