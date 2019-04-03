@@ -193,12 +193,18 @@ function evaluate!(this::MPB_WithChangeOfBasis{D,T},
   points::AbstractVector{Point{D}}, v::AbstractArray{T,2}) where {D,T}
 	evaluate!(this.basis,points,v)
 	println(v)
-	v = copy(this.changeofbasis*v)
-	println(v)
-	# v = 
-	# println()
+	v .= this.changeofbasis*v
+	# @santiagobadia : Why v = this.changeofbasis*v is not enough?
+	# or copy(this.changeofbasis*v) ?
 end
 
+# function evaluate(this::MPB_WithChangeOfBasis{D,T},points::AbstractVector{Point{D}}) where {D,T}
+#   vals = Array{T,2}(undef,(length(this),length(points)))
+#   evaluate!(this.basis,points,vals)
+#   return this.changeofbasis*vals
+# end
 # @fverdugo delete PolynomialsMethods.jl if not needed
+
+# @santiagobadia : Missing evaluategradients for TensorProductMonomialBasis !!!
 
 end # module Polynomials
