@@ -1,12 +1,14 @@
 module RefFEs
 
+using Numa.Helpers
 using Numa.FieldValues
 using Numa.Polytopes
 using Numa.Polynomials
 
-export RefFE
-export LagrangianRefFE
-export shfsps, gradshfsps
+export DOFBasis
+# export RefFE
+# export LagrangianRefFE
+# export shfsps, gradshfsps
 
 # Abstract types and interfaces
 
@@ -15,39 +17,58 @@ Abstract DOF cell basis
 """
 abstract type DOFBasis{D,T} end
 
-evaluate(self::DOFBasis, prebasis::MultivariatePolynomialBasis{D,T})::Array{Float64,2} = @abstractmethod
+function nodeevaluate(this::DOFBasis{D,T},
+	prebasis::MultivariatePolynomialBasis{D,T})::Array{Float64,2} where {D,T}
+	@abstractmethod
+end
 
-evaluate(self::DOFBasis, prebasis::Field{D,T})::Vector{Float64} = @abstractmethod
+# evaluate(this::DOFBasis, prebasis::Field{D,T})::Vector{Float64} = @abstractmethod
 # Field to be implemented, to answer evaluate and gradient, it can be a local FE
 # function or an analytical function
 
+"""
+Lagrangian DOF basis, which consists on evaluating the polynomial basis
+(prebasis) in a set of points (nodes)
+"""
+struct LagrangianDOFBasis{D,T} <: DOFBasis{D,T}
+  nodes::Array{Point{D}}
+end
+
+"""
+Evaluate the DOFs basis on a set of nodes
+"""
+function nodeevaluate(this::LagrangianDOFBasis{D,T}, prebasis::MultivariatePolynomialBasis{D,T}) where {D,T}
+	vals = evaluate(prebasis,this.nodes)
+	b = Array{Float64,2}(undef,length(prebasis),length(prebasis))
+	nnodes = length(this.nodes)
+	@assert nnodes*length(T) == length(prebasis)
+	for j in 1:length(T)
+		off = (0,nnodes*(j-1))
+		for i in CartesianIndices(vals)
+			ij = Tuple(i).+off
+			b[ij...] = vals[i][j]
+		end
+	end
+	return b
+end
+# @santiagobadia : Issue with evaluate name I cannot udnerstand
 """
 Abstract Reference Finite Element
 """
 abstract type RefFE{D,T} end
 
-dofs(self::RefFE{D,T} where {D,T})::DOFBasis{D,T} = @abstractmethod
+dofs(this::RefFE{D,T} where {D,T})::DOFBasis{D,T} = @abstractmethod
 
-permutation(self::RefFE, nf::Int, cell_vertex_gids::AbstractVector{Int},
-nface_vertex_gids::AbstractVector{Int}, nface_order::Int)::Vector{Int}
-= @abstractmethod
+# permutation(this::RefFE, nf::Int, cell_vertex_gids::AbstractVector{Int},
+# nface_vertex_gids::AbstractVector{Int}, nface_order::Int)::Vector{Int}
+# = @abstractmethod
+# @santiagobadia : To do in the future, not needed for the moment
 
-polytope(self::RefFE{D,T} where {D,T})::Polytope{D} = @abstractmethod
+polytope(this::RefFE{D,T} where {D,T})::Polytope{D} = @abstractmethod
 
-shapefunctions(self::RefFE{D,T} where {D,T})::MultivariatePolynomialBasis{D,T}
-= @abstractmethod
+shapefunctions(this::RefFE{D,T} where {D,T})::MultivariatePolynomialBasis{D,T} = @abstractmethod
 
-nfacetoowndofs(self::RefFE{D,T} where {D,T})::Vector{Vector{Int}}
-= @abstractmethod
-
-# Put changeofbasis inside concrete MultivariatePolynomialBasis
-
-# Result is the permutation from the VEF to the local nface index within the cell
-# cell_dofs[nface_dofs[v]] = face_dofs
-
-# Field evaluate and gradient
-
-# Concrete structs
+nfacetoowndofs(this::RefFE{D,T} where {D,T})::Vector{Vector{Int}} = @abstractmethod
 
 """
 Reference Finite Element a la Ciarlet, i.e., it relies on a local function
@@ -58,20 +79,21 @@ change-of-basis (using the node array) to generate the canonical basis, i.e.,
 the shape functions.
 """
 struct LagrangianRefFE{D,T} <: RefFE{D,T}
-	polytope::Polytope{D,T}
-	basis::TensorProductPolynomialBasisWithChangeOfBasis
-	dofs::LagrangianDofBasis
-	nfacetoowndofs::Vector{Vector{Int}}
+	polytope::Polytope{D}
+	# basis::TensorProductPolynomialBasisWithChangeOfBasis
+	dofs::LagrangianDOFBasis{D,T}
+	nfacedofs::Vector{Vector{Int}}
 end
 
-struct LagrangianDOFBasis <: DOFBasis
-	nodes::NodesArray{D} # In dofbasis
-	# send it to the polynomial basis...
-	changeofbasis::Array{Float64,2} # In dofbasis
+function LagrangianRefFE{D,T}(polytope::Polytope{D},
+	orders::Array{Int64,1}) where {D,T}
+	nodes=NodesArray(polytope,orders)
+	dofsb = LagrangianDOFBasis{D,ScalarValue}(nodes.coordinates)
+	prebasis = TensorProductMonomialBasis{D,T}(orders)
+	changeofbasis=inv(evaluate(prebasis,dofsb.nodes))
+	nfacedofs=nodes.nfacenodes
+	# numdof = size(changeofbasis,1)*length(T)
+	LagrangianRefFE{D}(polytope, prebasis, nodes, changeofbasis, dofsnface, rank, numdof)
 end
-
-# Methods
-
-include("RefFEsMethods.jl")
 
 end # module RefFEs
