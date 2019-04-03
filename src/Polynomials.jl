@@ -192,7 +192,11 @@ end
 function evaluate!(this::MPB_WithChangeOfBasis{D,T},
   points::AbstractVector{Point{D}}, v::AbstractArray{T,2}) where {D,T}
 	evaluate!(this.basis,points,v)
-	v = this.changeofbasis*v
+	println(v)
+	v = copy(this.changeofbasis*v)
+	println(v)
+	# v = 
+	# println()
 end
 
 # @fverdugo delete PolynomialsMethods.jl if not needed
