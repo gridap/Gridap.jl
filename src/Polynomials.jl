@@ -7,7 +7,7 @@ using Numa.FieldValues
 # using Base.Cartesian
 
 export MultivariatePolynomialBasis
-# export TensorProductMonomialBasis
+export TensorProductMonomialBasis
 # export UnivariatePolynomialBasis
 # export UnivariateMonomialBasis
 

@@ -8,7 +8,6 @@ using Numa.Polynomials
 using Numa.Polytopes: PointInt
 using Numa.FieldValues
 using Numa.RefFEs
-using Numa.Polynomials: TensorProductMonomialBasis
 
 using Base.Cartesian
 ##
@@ -48,66 +47,13 @@ dofsb = LagrangianDOFBasis{D,VectorValue{D}}(nodes.coordinates)
 prebasis = TensorProductMonomialBasis{D,VectorValue{D}}(orders)
 using Numa.RefFEs: evaluate
 res = RefFEs.nodeevaluate(dofsb,prebasis)
+@test res[8,8] == 1.0
 ##
-vals = evaluate(prebasis,dofsb.nodes)
-b = Array{Float64,2}(undef,length(prebasis),length(prebasis))
-nnodes = length(dofsb.nodes)
-@assert nnodes*length(VectorValue{D}) == length(prebasis)
-for j in 1:length(VectorValue{D})
-	off = (0,nnodes*(j-1))
-	for i in CartesianIndices(vals)
-		ij = Tuple(i).+off
-		b[ij...] = vals[i][j]
-		# b[i.+off] = vals[i][j]
-	end
-end
-b
-vals[4,1][2]
-function nodeevaluate(this::LagrangianDOFBasis,
-	prebasis::MultivariatePolynomialBasis{D,T}) where {D,T}
-	vals = evaluate(prebasis,this.nodes)
-	b = Array{Float64,2}(undef,size(vals)...)
-	for d in 1:D
-	end
-	return b
-end
-
-a = (0,4)
-b = (3,1)
-a.+b
-
-
-
-
-function evaluate!(this::TensorProductMonomialBasis{D,T},
-  points::AbstractVector{Point{D}}, v::AbstractArray{T,2}) where {D,T}
-  tpcoor = i -> [ Point{1}(p[i]) for p in points]
-  cooruv = [tpcoor(i) for i in 1:D]
-  univals = [evaluate(this.univariatebases[i],cooruv[i]) for i in 1:D]
-  cid = ntuple(i -> 1:length(this.univariatebases[i]), D)
-  lent = length(T)
-  cid = (cid..., 1:lent)
-  cid = CartesianIndices(cid)
-  for (i,j) in enumerate(cid)
-    d = j[D+1]
-    for k in 1:length(points)
-      val = prod([ univals[i][j[i],k] for i in 1:D ])
-      v[i,k] = T(ntuple(i->(i==d) ? val : 0.0, lent)...)
-    end
-  end
-end
-
-
-
-
-
-
-
-
-
-
-reffe = LagrangianRefFE(polytope,orders)
+reffe = LagrangianRefFE{D,VectorValue{D}}(polytope,orders)
 @test reffe.changeofbasis==[0.0  -0.5   0.5; 1.0   0.0  -1.0; 0.0   0.5   0.5]
+
+evaluate
+
 ##
 
 
@@ -117,9 +63,7 @@ D = 1
 orders=[2]
 extrusion = PointInt{D}(1)
 polytope = Polytope(extrusion)
-nodes=NodesArray(polytope,orders)
-prebasis=TensorProductPolynomialBasis(orders)
-reffe = LagrangianRefFE(polytope,orders)
+reffe = LagrangianRefFE{D,VectorValue{D}}(polytope,orders)
 @test reffe.changeofbasis==[0.0  -0.5   0.5; 1.0   0.0  -1.0; 0.0   0.5   0.5]
 ##
 

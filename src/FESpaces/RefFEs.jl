@@ -6,8 +6,8 @@ using Numa.Polytopes
 using Numa.Polynomials
 
 export DOFBasis
-# export RefFE
-# export LagrangianRefFE
+export RefFE
+export LagrangianRefFE
 # export shfsps, gradshfsps
 
 # Abstract types and interfaces
@@ -35,7 +35,7 @@ struct LagrangianDOFBasis{D,T} <: DOFBasis{D,T}
 end
 
 """
-Evaluate the DOFs basis on a set of nodes
+Evaluate the Lagrangian DOFs basis on a set of nodes
 """
 function nodeevaluate(this::LagrangianDOFBasis{D,T}, prebasis::MultivariatePolynomialBasis{D,T}) where {D,T}
 	vals = evaluate(prebasis,this.nodes)
@@ -80,20 +80,23 @@ the shape functions.
 """
 struct LagrangianRefFE{D,T} <: RefFE{D,T}
 	polytope::Polytope{D}
-	# basis::TensorProductPolynomialBasisWithChangeOfBasis
+	# prebasis::TensorProductPolynomialBasisWithChangeOfBasis
+	prebasis::TensorProductMonomialBasis
 	dofs::LagrangianDOFBasis{D,T}
 	nfacedofs::Vector{Vector{Int}}
+	changeofbasis
 end
 
 function LagrangianRefFE{D,T}(polytope::Polytope{D},
 	orders::Array{Int64,1}) where {D,T}
 	nodes=NodesArray(polytope,orders)
-	dofsb = LagrangianDOFBasis{D,ScalarValue}(nodes.coordinates)
+	dofsb = LagrangianDOFBasis{D,T}(nodes.coordinates)
 	prebasis = TensorProductMonomialBasis{D,T}(orders)
-	changeofbasis=inv(evaluate(prebasis,dofsb.nodes))
+	changeofbasis=inv(nodeevaluate(dofsb,prebasis))
 	nfacedofs=nodes.nfacenodes
+	println(changeofbasis)
 	# numdof = size(changeofbasis,1)*length(T)
-	LagrangianRefFE{D}(polytope, prebasis, nodes, changeofbasis, dofsnface, rank, numdof)
+	LagrangianRefFE{D,T}(polytope, prebasis, dofsb,  nfacedofs, changeofbasis)
 end
 
 end # module RefFEs
