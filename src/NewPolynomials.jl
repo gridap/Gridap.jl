@@ -126,7 +126,7 @@ end
 Multivariate monomial basis obtained as tensor product of univariate polynomial
 basis per dimension
 """
-struct TensorProductMonomialBasis{D} <: MultivariatePolynomialBasis{D,ScalarValue}
+struct TensorProductMonomialBasis{D,T} <: MultivariatePolynomialBasis{D,T}
   univariatebases::Vector{UnivariateMonomialBasis}
 end
 
@@ -134,18 +134,19 @@ end
 Provide a `TensorProductMonomialBasis` for a vector `order` providing the order per
 dimension
 """
-function TensorProductMonomialBasis(order::Vector{Int64})
+function TensorProductMonomialBasis{D,T}(order::Vector{Int64}) where {D,T}
+  @assert(length(order) == D)
   uvmbs = [UnivariateMonomialBasis(order[i]) for i=1:length(order)]
-  D = length(order)
-  TensorProductMonomialBasis{D}(uvmbs)
+  TensorProductMonomialBasis{D,T}(uvmbs)
 end
 
-function Base.length(this::TensorProductMonomialBasis{D})::Int where D
-  prod([length(this.univariatebases[i]) for i in 1:D])
+Base.length(::Type{ScalarValue}) = 1
+function Base.length(this::TensorProductMonomialBasis{D,T})::Int where {D,T}
+  length(T)*prod([length(this.univariatebases[i]) for i in 1:D])
 end
 
-function evaluate!(this::TensorProductMonomialBasis{D},
-  points::AbstractVector{Point{D}}, v::AbstractArray{ScalarValue,2}) where D
+function evaluate!(this::TensorProductMonomialBasis{D,T},
+  points::AbstractVector{Point{D}}, v::AbstractArray{T,2}) where {D,T}
   tpcoor = i -> [ Point{1}(p[i]) for p in points]
   cooruv = [tpcoor(i) for i in 1:D]
   univals = [evaluate(this.univariatebases[i],cooruv[i]) for i in 1:D]
