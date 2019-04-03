@@ -11,9 +11,9 @@ export MultivariatePolynomialBasis
 # export UnivariatePolynomialBasis
 # export UnivariateMonomialBasis
 
-# export evaluate!
 export evaluate
 export gradient, ∇
+export evaluate! # @santiagobadia : I would not export it
 
 """
 Abstract type representing a multivariate polynomial basis
@@ -167,7 +167,7 @@ function evaluate!(this::TensorProductMonomialBasis{D,T},
     d = j[D+1]
     for k in 1:length(points)
       val = prod([ univals[i][j[i],k] for i in 1:D ])
-      v[i,k] = T(ntuple(i->(i==d) ? val : 0.0, lent))
+      v[i,k] = T(ntuple(i->(i==d) ? val : 0.0, lent)...)
     end
   end
 end
