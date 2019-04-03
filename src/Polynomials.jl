@@ -14,6 +14,7 @@ export MultivariatePolynomialBasis
 export evaluate
 export gradient, ∇
 export evaluate! # @santiagobadia : I would not export it
+# @fverdugo, basically the clients of polynomial will call evaluate!, gradient, and length
 
 """
 Abstract type representing a multivariate polynomial basis
@@ -45,6 +46,7 @@ struct GradMultivariatePolynomialBasis{D,TG,T,B<:MultivariatePolynomialBasis{D,T
   basis::B
 end
 
+# @fverdugo the function we want to overwrite is evaluate! not evaluate
 """
 evaluate! overwritten for gradients of bases
 """
@@ -69,11 +71,12 @@ end
 Base.length(this::GradMultivariatePolynomialBasis)::Int = length(this.basis)
 
 function gradient(::GradMultivariatePolynomialBasis{D,T,B} where{D,T,B})
- @error("Gradient of a gradient not available") end
+ error("Gradient of a gradient not available")
+end
 
 const ∇ = gradient
 
-Base.:*(::typeof(∇),f) = ∇(f)
+Base.:*(::typeof(∇),f) = ∇(f) # @fverdugo I have introduce it, but I would remove it
 
 """
 Abstract type representing a univariate polynomial basis in dimension one
@@ -103,29 +106,32 @@ function evaluate!(this::UnivariateMonomialBasis,
 end
 
 """
-Compute the numder-th derivative of a monomial at a set of 1D points,
+Compute the number-th derivative of a monomial at a set of 1D points,
 returning an array with first axis basis function label, second axis point label
 """
 function derivative(this::UnivariateMonomialBasis,
   points::AbstractVector{Point{1}}; numd=1::Int)::Array{VectorValue{1},2}
   dbas = length(this)
+  #@fverdugo we are allocating a vector, thus it is not efficient to call this function in a loop
+  # (in unfitted methods it is typically needed to evaluate polynomials within a loop over cut cells)
   v = Array{VectorValue{1},2}(undef, dbas, length(points))
   for (j,p) ∈ enumerate(points)
     for i in 1:length(this)
-      val = (i<=numd) ? 0.0 : prod([i-k-1 for k=0:numd-1])p[1]^(i-numd-1)
+      val = (i<=numd) ? 0.0 : prod([i-k-1 for k=0:numd-1])p[1]^(i-numd-1)#@fverdugo [...] allocates a temporary array
       v[i,j] = VectorValue{1}(val)
     end
   end
   return v
 end
 
+# @fverdugo code repetition in derivative and evaluategradients that can be easily fixed
 function evaluategradients!(this::UnivariateMonomialBasis,
   points::AbstractVector{Point{1}},v::AbstractArray{VectorValue{1},2})
-  derivative(this, points)
+  derivative(this, points) # @fverdugo the output of this routine is not used??
   numd = 1
   for (j,p) ∈ enumerate(points)
     for i in 1:length(this)
-      val = (i<=numd) ? 0.0 : prod([i-k-1 for k=0:numd-1])p[1]^(i-numd-1)
+      val = (i<=numd) ? 0.0 : prod([i-k-1 for k=0:numd-1])p[1]^(i-numd-1)#@fverdugo [...] allocates a temporary array
       v[i,j] = VectorValue{1}(val)
     end
   end
@@ -149,16 +155,17 @@ function TensorProductMonomialBasis{D,T}(order::Vector{Int64}) where {D,T}
   TensorProductMonomialBasis{D,T}(uvmbs)
 end
 
-Base.length(::Type{ScalarValue}) = 1
+
+Base.length(::Type{ScalarValue}) = 1 #@fverdugo why it is needed? length(::Type{Float64}) already defined by julia
 function Base.length(this::TensorProductMonomialBasis{D,T})::Int where {D,T}
-  length(T)*prod([length(this.univariatebases[i]) for i in 1:D])
+  length(T)*prod([length(this.univariatebases[i]) for i in 1:D])#@fverdugo [...] allocates a temporary array
 end
 
 function evaluate!(this::TensorProductMonomialBasis{D,T},
   points::AbstractVector{Point{D}}, v::AbstractArray{T,2}) where {D,T}
-  tpcoor = i -> [ Point{1}(p[i]) for p in points]
-  cooruv = [tpcoor(i) for i in 1:D]
-  univals = [evaluate(this.univariatebases[i],cooruv[i]) for i in 1:D]
+  tpcoor = i -> [ Point{1}(p[i]) for p in points]#@fverdugo [...] allocates a temporary array
+  cooruv = [tpcoor(i) for i in 1:D]#@fverdugo [...] allocates a temporary array
+  univals = [evaluate(this.univariatebases[i],cooruv[i]) for i in 1:D]#@fverdugo [...] allocates a temporary array
   cid = ntuple(i -> 1:length(this.univariatebases[i]), D)
   lent = length(T)
   cid = (cid..., 1:lent)
@@ -166,12 +173,13 @@ function evaluate!(this::TensorProductMonomialBasis{D,T},
   for (i,j) in enumerate(cid)
     d = j[D+1]
     for k in 1:length(points)
-      val = prod([ univals[i][j[i],k] for i in 1:D ])
-      v[i,k] = T(ntuple(i->(i==d) ? val : 0.0, lent)...)
+      val = prod([ univals[i][j[i],k] for i in 1:D ])#@fverdugo [...] allocates a temporary array
+      v[i,k] = T(ntuple(i->(i==d) ? val : 0.0, lent)...)# @fverdugo I would say that this is not type stable
     end
   end
 end
 
+# @fverdugo needed?
 function oldevaluate!(this::TensorProductMonomialBasis{D,T},
   points::AbstractVector{Point{D}}, v::AbstractArray{T,2}) where {D,T}
   tpcoor = i -> [ Point{1}(p[i]) for p in points]
@@ -185,5 +193,7 @@ function oldevaluate!(this::TensorProductMonomialBasis{D,T},
     end
   end
 end
+
+# @fverdugo delete PolynomialsMethods.jl if not needed
 
 end # module Polynomials
