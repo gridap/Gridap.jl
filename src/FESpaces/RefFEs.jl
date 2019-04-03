@@ -80,11 +80,9 @@ the shape functions.
 """
 struct LagrangianRefFE{D,T} <: RefFE{D,T}
 	polytope::Polytope{D}
-	# prebasis::TensorProductPolynomialBasisWithChangeOfBasis
-	prebasis::TensorProductMonomialBasis
+	basis::MPB_WithChangeOfBasis{D,T}
 	dofs::LagrangianDOFBasis{D,T}
 	nfacedofs::Vector{Vector{Int}}
-	changeofbasis
 end
 
 function LagrangianRefFE{D,T}(polytope::Polytope{D},
@@ -93,10 +91,11 @@ function LagrangianRefFE{D,T}(polytope::Polytope{D},
 	dofsb = LagrangianDOFBasis{D,T}(nodes.coordinates)
 	prebasis = TensorProductMonomialBasis{D,T}(orders)
 	changeofbasis=inv(nodeevaluate(dofsb,prebasis))
+	basis = MPB_WithChangeOfBasis{D,T}(prebasis, changeofbasis)
 	nfacedofs=nodes.nfacenodes
 	println(changeofbasis)
 	# numdof = size(changeofbasis,1)*length(T)
-	LagrangianRefFE{D,T}(polytope, prebasis, dofsb,  nfacedofs, changeofbasis)
+	LagrangianRefFE{D,T}(polytope, basis, dofsb,  nfacedofs)
 end
 
 end # module RefFEs

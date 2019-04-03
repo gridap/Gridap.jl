@@ -50,10 +50,8 @@ res = RefFEs.nodeevaluate(dofsb,prebasis)
 @test res[8,8] == 1.0
 ##
 reffe = LagrangianRefFE{D,VectorValue{D}}(polytope,orders)
-@test reffe.changeofbasis==[0.0  -0.5   0.5; 1.0   0.0  -1.0; 0.0   0.5   0.5]
-
-evaluate
-
+val = RefFEs.nodeevaluate(reffe.dofs, reffe.prebasis)
+kk1 = reffe.changeofbasis*val
 ##
 
 

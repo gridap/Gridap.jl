@@ -8,6 +8,7 @@ using Numa.FieldValues
 
 export MultivariatePolynomialBasis
 export TensorProductMonomialBasis
+export MPB_WithChangeOfBasis
 # export UnivariatePolynomialBasis
 # export UnivariateMonomialBasis
 
@@ -179,19 +180,19 @@ function evaluate!(this::TensorProductMonomialBasis{D,T},
   end
 end
 
-# @fverdugo needed?
-function oldevaluate!(this::TensorProductMonomialBasis{D,T},
+struct MPB_WithChangeOfBasis{D,T} <: MultivariatePolynomialBasis{D,T}
+  basis::MultivariatePolynomialBasis{D,T}
+	changeofbasis::Array{Float64,2}
+end
+
+function Base.length(this::MPB_WithChangeOfBasis{D,T})::Int where {D,T}
+  length(this.basis)
+end
+
+function evaluate!(this::MPB_WithChangeOfBasis{D,T},
   points::AbstractVector{Point{D}}, v::AbstractArray{T,2}) where {D,T}
-  tpcoor = i -> [ Point{1}(p[i]) for p in points]
-  cooruv = [tpcoor(i) for i in 1:D]
-  univals = [evaluate(this.univariatebases[i],cooruv[i]) for i in 1:D]
-  cid = ntuple(i -> 1:length(this.univariatebases[i]), D)
-  cid = CartesianIndices(cid)
-  for (i,j) in enumerate(cid)
-    for k in 1:length(points)
-      v[i,k] = prod([ univals[i][j[i],k] for i in 1:D ])
-    end
-  end
+	evaluate!(this.basis,points,v)
+	v = this.changeofbasis*v
 end
 
 # @fverdugo delete PolynomialsMethods.jl if not needed
