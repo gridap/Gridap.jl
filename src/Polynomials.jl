@@ -77,8 +77,6 @@ end
 
 const ∇ = gradient
 
-Base.:*(::typeof(∇),f) = ∇(f) # @fverdugo I have introduce it, but I would remove it
-
 """
 Abstract type representing a univariate polynomial basis in dimension one
 """
@@ -128,8 +126,8 @@ end
 # @fverdugo code repetition in derivative and evaluategradients that can be easily fixed
 function evaluategradients!(this::UnivariateMonomialBasis,
   points::AbstractVector{Point{1}},v::AbstractArray{VectorValue{1},2})
-  derivative(this, points) # @fverdugo the output of this routine is not used??
-  numd = 1
+  numd = 1 # Changing this number, we get higher order derivatives, to be used
+	# for Hessians, etc.
   for (j,p) ∈ enumerate(points)
     for i in 1:length(this)
       val = (i<=numd) ? 0.0 : prod([i-k-1 for k=0:numd-1])p[1]^(i-numd-1)#@fverdugo [...] allocates a temporary array
@@ -165,6 +163,7 @@ end
 
 
 Base.length(::Type{ScalarValue}) = 1 #@fverdugo why it is needed? length(::Type{Float64}) already defined by julia
+# @santiagobadia : If I comment this line, it does not work
 function Base.length(this::TensorProductMonomialBasis{D,T})::Int where {D,T}
   length(T)*prod([length(this.univariatebases[i]) for i in 1:D])#@fverdugo [...] allocates a temporary array
 end
@@ -233,17 +232,8 @@ function evaluate!(this::MPB_WithChangeOfBasis{D,T},
 	evaluate!(this.basis,points,v)
 	println(v)
 	v .= this.changeofbasis*v
-	# @santiagobadia : Why v = this.changeofbasis*v is not enough?
-	# or copy(this.changeofbasis*v) ?
 end
 
-# function evaluate(this::MPB_WithChangeOfBasis{D,T},points::AbstractVector{Point{D}}) where {D,T}
-#   vals = Array{T,2}(undef,(length(this),length(points)))
-#   evaluate!(this.basis,points,vals)
-#   return this.changeofbasis*vals
-# end
 # @fverdugo delete PolynomialsMethods.jl if not needed
-
-# @santiagobadia : Missing evaluategradients for TensorProductMonomialBasis !!!
 
 end # module Polynomials
