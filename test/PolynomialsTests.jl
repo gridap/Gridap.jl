@@ -10,6 +10,7 @@ using Numa.Polynomials: UnivariateMonomialBasis
 using Numa.Polynomials: evaluate
 ##
 
+##
 @test UnivariatePolynomialBasis <: MultivariatePolynomialBasis{1,ScalarValue}
 a = UnivariateMonomialBasis(2)
 @test typeof(a) <: MultivariatePolynomialBasis{1,ScalarValue}
@@ -19,17 +20,16 @@ points = [Point{1}(1.0), Point{1}(2.0), Point{1}(3.0)]
 values = evaluate(a,points)
 @test values[3,3] == 9
 ##
-# using Numa.Polynomials: derivative
-# ders = derivative(a,points,numd=1)
-# @test ders[3,3][1] == 6.0
+
 ##
 using Numa.Polynomials: gradient
 grad = gradient(a)
 length(grad)
-# gradient(grad)
 using Numa.Polynomials: evaluate
 gval = evaluate(grad, points)
 @test gval[3,3][1] == 6.0
+##
+
 ##
 using Numa.Polynomials: TensorProductMonomialBasis
 D = 2
@@ -39,6 +39,8 @@ tpmb = TensorProductMonomialBasis{D,ScalarValue}(orders)
 points = [ Point{2}(1.0, 1.0), Point{2}(1.0, 2.0), Point{2}(2.0, 2.0)]
 vals = evaluate(tpmb, points)
 @test vals[12,3] == 32.0
+##
+
 ##
 D = 2
 orders=[1,1]
@@ -52,7 +54,6 @@ vals = evaluate(grbas, points)
 vals
 @test vals[4,2][1] == 2.0
 ##
-
 
 ##
 D = 2

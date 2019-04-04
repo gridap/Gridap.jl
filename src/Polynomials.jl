@@ -152,9 +152,9 @@ end
 
 function evaluate!(this::TensorProductMonomialBasis{D,T},
   points::AbstractVector{Point{D}}, v::AbstractArray{T,2}) where {D,T}
-  tpcoor = i -> [ Point{1}(p[i]) for p in points]#@fverdugo [...] allocates a temporary array
-  cooruv = [tpcoor(i) for i in 1:D]#@fverdugo [...] allocates a temporary array
-  univals = [evaluate(this.univariatebases[i],cooruv[i]) for i in 1:D]#@fverdugo [...] allocates a temporary array
+  tpcoor = i -> [ Point{1}(p[i]) for p in points]
+  cooruv = [tpcoor(i) for i in 1:D]
+  univals = [evaluate(this.univariatebases[i],cooruv[i]) for i in 1:D]
 	# @santiagobadia : In the future, we can create a new evaluate! interface with
 	# an additional scratch data with univals. To be used in unfitted FEM
 	# @santiagobadia : Strided array of points foer every dim instead of cooruv
@@ -185,15 +185,6 @@ function insertentry!(a::Float64, b::AbstractArray, d::Int)
 	b
 end
 
-# @generated function deltakronecker(::Val{L},::Val{P},x::Float64,::Type{T}) where {L,P,T}
-# 	str = join([ (i==P) ? "x, " : "0.0, " for i in 1:L])
-# 	Meta.parse("$T($str)")
-# end
-# @generated function canonicalbasiselement(::Val{L},::Val{P},::Type{T}) where {L,P,T}
-# 	str = join([ (i==P) ? "1.0, " : "0.0, " for i in 1:L])
-# 	Meta.parse("$T($str)")
-# end
-
 function evaluategradients!(this::TensorProductMonomialBasis{D,T},
   points::AbstractVector{Point{D}}, v::AbstractArray{TG,2}) where {D,T,TG}
   tpcoor = i -> [ Point{1}(p[i]) for p in points]#@fverdugo [...] allocates a temporary array
@@ -210,19 +201,8 @@ function evaluategradients!(this::TensorProductMonomialBasis{D,T},
   for (i,I) in enumerate(cid)
     d = I[D+1]
     for (p,P) in enumerate(points)
-			# aux = VectorValue{D}([tpder(α, I, p, univals, dervals) for α in 1:D])
 			tpder!(aux, I, p, univals, dervals)
-			# eb = canonicalbasiselement(lent, d, T)
 			# @santiagobadia : Any better solution?
-			# eb = T(ntuple(i->(i==d) ? 1 : 0.0, lent)...)# @fverdugo I would say that this is not type stable
-			println("********")
-			println(aux)
-			println(eb)
-			println(typeof(aux))
-			println(typeof(eb))
-			println(typeof(v[i,p]))
-			println(outer(aux,eb))
-			println(typeof(outer(aux,eb)))
 			eb = insertentry!(one(E),eb,d)
 			v[i,p] = outer(aux,eb)
 			insertentry!(zero(E),aux,d)
