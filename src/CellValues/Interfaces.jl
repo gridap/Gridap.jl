@@ -11,14 +11,6 @@ end
 
 length(::IterCellValue)::Int = @abstractmethod
 
-eltype(::Type{C}) where C <: IterCellValue{T} where T = T
-
-function Base.show(io::IO,self::IterCellValue)
-  for (i, a) in enumerate(self)
-    println(io,"$i -> $a")
-  end
-end
-
 abstract type IndexCellValue{T} <: AbstractVector{T} end
 
 const CellValue{T} = Union{IterCellValue{T},IndexCellValue{T}}
@@ -29,6 +21,14 @@ const CellVector{T} = CellArray{T,1} where T
 
 function cellsize(::CellArray{T,N})::NTuple{N,Int}  where {T,N}
   @abstractmethod
+end
+
+eltype(::Type{C}) where C <: IterCellValue{T} where T = T
+
+function Base.show(io::IO,self::CellValue)
+  for (i, a) in enumerate(self)
+    println(io,"$i -> $a")
+  end
 end
 
 cellsize(self::CellArray,i::Int) = (s = cellsize(self); s[i])

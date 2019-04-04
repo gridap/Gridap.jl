@@ -1,5 +1,16 @@
 module CellValues
 
+export CellValue
+export CellArray
+export CellVector
+
+export ConstantCellValue
+export ConstantCellArray
+export ConstantCellVector
+
+export cellsize
+export celllength
+
 using Numa.Helpers
 
 import Base: iterate
