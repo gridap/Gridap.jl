@@ -12,7 +12,13 @@ IndexStyle(::Type{ConstantCellValue{T}} where T) = IndexLinear()
 
 const ConstantCellArray{T,N} = ConstantCellValue{<:AbstractArray{T,N}} where {T,N}
 
+const ConstantCellVector{T,N} = ConstantCellArray{T,1} where T
+
 cellsize(self::ConstantCellArray) = size(self.value)
+
+ConstantCellArray(a::AbstractArray,l) = ConstantCellValue(a,l)
+
+ConstantCellVector(a::AbstractVector,l) = ConstantCellValue(a,l)
 
 function (==)(a::ConstantCellValue,b::ConstantCellValue)
   a.value != b.value && return false
@@ -20,7 +26,7 @@ function (==)(a::ConstantCellValue,b::ConstantCellValue)
   return true
 end
 
-for op in (+,-,*,/,inner,outer)
+for op in (:+,:-,:*,:/,:(inner),:(outer))
 
   @eval begin
     function ($op)(a::ConstantCellValue,b::ConstantCellValue)
@@ -32,7 +38,7 @@ for op in (+,-,*,/,inner,outer)
 
 end
 
-for op in (det,inv)
+for op in (:+,:-,:(det),:(inv))
 
   @eval begin
     function ($op)(a::ConstantCellValue)
