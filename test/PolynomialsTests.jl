@@ -40,6 +40,32 @@ points = [ Point{2}(1.0, 1.0), Point{2}(1.0, 2.0), Point{2}(2.0, 2.0)]
 vals = evaluate(tpmb, points)
 @test vals[12,3] == 32.0
 ##
+D = 2
+orders=[1,1]
+tpmb = TensorProductMonomialBasis{D,ScalarValue}(orders)
+points = [ Point{2}(1.0, 1.0), Point{2}(1.0, 2.0)]
+T = ScalarValue
+this = tpmb
+points
+grbas = gradient(tpmb)
+vals = evaluate(grbas, points)
+vals
+@test vals[4,2][1] == 2.0
+##
+
+
+##
+D = 2
+orders=[1,1]
+tpmb = TensorProductMonomialBasis{D,VectorValue{D}}(orders)
+points = [ Point{2}(1.0, 1.0), Point{2}(1.0, 2.0)]
+T = VectorValue{D}
+this = tpmb
+points
+grbas = gradient(tpmb)
+v = evaluate(grbas, points)
+@test v[8,2][1,2] == 2.0
+##
 
 ##
 using Numa.Polynomials: TensorProductMonomialBasis

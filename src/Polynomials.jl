@@ -138,6 +138,13 @@ function evaluategradients!(this::UnivariateMonomialBasis,
   end
 end
 
+function evaluategradients(self::UnivariateMonomialBasis,
+	points::AbstractVector{Point{1}})
+  vals = Array{VectorValue{1},2}(undef,(length(self),length(points)))
+  evaluategradients!(self,points,vals)
+  vals
+end
+
 """
 Multivariate monomial basis obtained as tensor product of univariate polynomial
 basis per dimension
@@ -167,17 +174,49 @@ function evaluate!(this::TensorProductMonomialBasis{D,T},
   tpcoor = i -> [ Point{1}(p[i]) for p in points]#@fverdugo [...] allocates a temporary array
   cooruv = [tpcoor(i) for i in 1:D]#@fverdugo [...] allocates a temporary array
   univals = [evaluate(this.univariatebases[i],cooruv[i]) for i in 1:D]#@fverdugo [...] allocates a temporary array
+	cid = ntuple(i -> 1:length(this.univariatebases[i]), D)
+	lent = length(T)
+	cid = (cid..., 1:lent)
+	cid = CartesianIndices(cid)
+	for (i,j) in enumerate(cid)
+		d = j[D+1]
+		for k in 1:length(points)
+			val = prod([ univals[i][j[i],k] for i in 1:D ])#@fverdugo [...] allocates a temporary array
+			v[i,k] = T(ntuple(i->(i==d) ? val : 0.0, lent)...)# @fverdugo I would say that this is not type stable
+		end
+	end
+end
+
+function evaluategradients!(this::TensorProductMonomialBasis{D,T},
+  points::AbstractVector{Point{D}}, v::AbstractArray{TG,2}) where {D,T,TG}
+  tpcoor = i -> [ Point{1}(p[i]) for p in points]#@fverdugo [...] allocates a temporary array
+  cooruv = [tpcoor(i) for i in 1:D]#@fverdugo [...] allocates a temporary array
+  univals = [evaluate(this.univariatebases[i],cooruv[i]) for i in 1:D]#@fverdugo [...] allocates a temporary array
+	dervals = [evaluategradients(this.univariatebases[i],cooruv[i]) for i in 1:D]#@fverdugo [...] allocates a temporary array
   cid = ntuple(i -> 1:length(this.univariatebases[i]), D)
   lent = length(T)
   cid = (cid..., 1:lent)
   cid = CartesianIndices(cid)
-  for (i,j) in enumerate(cid)
-    d = j[D+1]
-    for k in 1:length(points)
-      val = prod([ univals[i][j[i],k] for i in 1:D ])#@fverdugo [...] allocates a temporary array
-      v[i,k] = T(ntuple(i->(i==d) ? val : 0.0, lent)...)# @fverdugo I would say that this is not type stable
+  for (i,I) in enumerate(cid)
+    d = I[D+1]
+    for (p,P) in enumerate(points)
+			aux = VectorValue{D}([tpder(α, I, p, univals, dervals) for α in 1:D])
+			eb = T(ntuple(i->(i==d) ? 1 : 0.0, lent)...)# @fverdugo I would say that this is not type stable
+			v[i,p] = outer(aux,eb)
     end
   end
+end
+
+function tpder(α::Int, I::CartesianIndex{D}, p::Int, univals, dervals)::Float64 where D
+	aux = 1
+	for β in 1:D-1
+		if β != α
+			aux = aux*univals[β][I[β],p][1]
+		else
+			aux = aux*dervals[β][I[β],p][1]
+		end
+	end
+	return aux
 end
 
 struct MPB_WithChangeOfBasis{D,T} <: MultivariatePolynomialBasis{D,T}
