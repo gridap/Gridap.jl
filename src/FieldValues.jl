@@ -13,6 +13,9 @@ Type representing a scalar value
 """
 const ScalarValue = Float64
 
+# length of Float64 not defined in Julia
+Base.length(::Type{ScalarValue}) = 1
+
 """
 Type representing a vector value of dimension `D`
 """
@@ -89,6 +92,8 @@ outer(::Type{T},::Type{SVector{D,T}}) where {T <: Number,D} = SVector{D,T}
 
 outer(b::SVector{D,T},a::T) where {T <: Number,D} = a*b
 
+outer(b::MVector{D,T},a::T) where {T <: Number,D} = a*b
+
 outer(::Type{SVector{D,T}},::Type{T}) where {T <: Number,D} = SVector{D,T}
 
 outer(a::T,b::SMatrix{D,E,T,DE}) where {T <: Number,D,E,DE} = a*b
@@ -106,6 +111,11 @@ end
 
 @generated function outer(::Type{SVector{D,T}},::Type{SVector{Z,T}}) where {D,Z,T}
   Meta.parse("SMatrix{$D,$Z,$T,$(D*Z)}")
+end
+
+@generated function outer(a::MVector{D,T},b::MVector{Z,T}) where {D,Z,T}
+  str = join(["a[$i]*b[$j], " for j in 1:Z for i in 1:D])
+  Meta.parse("SMatrix{$D,$Z,Float64,$(D*Z)}($str)")
 end
 
 inner(a::T,b::T) where T <: Number = a*b
@@ -129,5 +139,11 @@ inner(::Type{SMatrix{D,Z,T,DZ}},::Type{SMatrix{D,Z,T,DZ}}) where {D,Z,T,DZ} = T
 Base.:*(::Type{T},::Type{T}) where T<:Number = T
 
 Base.:*(::Type{SMatrix{D,Z,T,DZ}},::Type{SVector{Z,T}}) where {D,Z,T,DZ} = SVector{D,T}
+
+mutable(::Type{ScalarValue}) = ScalarValue
+
+mutable(::Type{VectorValue{D}}) where D = MVectorValue{D}
+
+mutable(::Type{TensorValue{D,DD}}) where {D,DD} = MTensorValue{D,DD}
 
 end # module FieldValues

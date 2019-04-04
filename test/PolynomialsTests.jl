@@ -19,9 +19,9 @@ points = [Point{1}(1.0), Point{1}(2.0), Point{1}(3.0)]
 values = evaluate(a,points)
 @test values[3,3] == 9
 ##
-using Numa.Polynomials: derivative
-ders = derivative(a,points,numd=1)
-@test ders[3,3][1] == 6.0
+# using Numa.Polynomials: derivative
+# ders = derivative(a,points,numd=1)
+# @test ders[3,3][1] == 6.0
 ##
 using Numa.Polynomials: gradient
 grad = gradient(a)
@@ -85,8 +85,8 @@ vals = evaluate(tpmb, points)
 using Numa.Polynomials: TensorProductMonomialBasis
 D = 2
 orders=[2,3]
-tpmb = TensorProductMonomialBasis{D,TensorValue{D}}(orders)
-@test typeof(tpmb) <: MultivariatePolynomialBasis{2,TensorValue{D}}
+tpmb = TensorProductMonomialBasis{D,TensorValue{D,D*D}}(orders)
+@test typeof(tpmb) <: MultivariatePolynomialBasis{2,TensorValue{D,D*D}}
 points = [ Point{2}(1.0, 1.0), Point{2}(1.0, 2.0), Point{2}(2.0, 2.0)]
 vals = evaluate(tpmb, points)
 @test vals[12,3][1,1] == 32.0
