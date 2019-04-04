@@ -12,7 +12,6 @@ sca = TestCellValue(sa,l)
 sa2 = [sv sv; sv sv; sv sv]
 sca2 = TestCellValue(sa2,l)
 
-using Numa.CellValues: CellValueFromUnaryOp
 
 @testset "Interfaces" begin
 
@@ -42,6 +41,9 @@ using Numa.CellValues: CellValueFromUnaryOp
 
 end
 
+using Numa.CellValues: CellValueFromUnaryOp
+using Numa.CellValues: CellValueFromBinaryOp
+
 @testset "Operations" begin
 
   for op in (:+,:-)
@@ -51,6 +53,17 @@ end
       @test length(scv3) == l
       for vi in scv3
         @assert vi == $op(sv)
+      end
+    end
+  end
+
+  for op in (:+,:-,:*,:/,:(inner),:(outer))
+    @eval begin
+      scv3 = $op(scv,scv2)
+      @test isa(scv3,CellValueFromBinaryOp{Float64,typeof($op)})
+      @test length(scv3) == l
+      for vi in scv3
+        @assert vi == $op(sv,sv2)
       end
     end
   end

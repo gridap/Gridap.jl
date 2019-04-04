@@ -61,4 +61,12 @@ for op in (:+,:-)
   end
 end
 
+for op in (:+,:-,:*,:/)
+  @eval begin
+    scv3 = $op(scv,scv2)
+    print("CellValueBinary($(string($op))) ->"); @time doloop(scv3)
+    print("CellValueBinary($(string($op))) ->"); @time doloop(scv3)
+  end
+end
+
 end # module CellValuesBench
