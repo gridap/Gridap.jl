@@ -237,7 +237,12 @@ end
 function evaluate!(this::MPB_WithChangeOfBasis{D,T},
   points::AbstractVector{Point{D}}, v::AbstractArray{T,2}) where {D,T}
 	evaluate!(this.basis,points,v)
-	println(v)
+	v .= this.changeofbasis*v
+end
+
+function evaluategradients!(this::MPB_WithChangeOfBasis{D,T},
+  points::AbstractVector{Point{D}}, v::AbstractArray{TG,2}) where {D,T,TG}
+	evaluategradients!(this.basis,points,v)
 	v .= this.changeofbasis*v
 end
 

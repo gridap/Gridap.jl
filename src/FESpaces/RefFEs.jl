@@ -51,7 +51,7 @@ function nodeevaluate(this::LagrangianDOFBasis{D,T}, prebasis::MultivariatePolyn
 	end
 	return b
 end
-# @santiagobadia : Issue with evaluate name I cannot udnerstand
+
 """
 Abstract Reference Finite Element
 """
@@ -80,8 +80,8 @@ the shape functions.
 """
 struct LagrangianRefFE{D,T} <: RefFE{D,T}
 	polytope::Polytope{D}
-	basis::MPB_WithChangeOfBasis{D,T}
-	dofs::LagrangianDOFBasis{D,T}
+	dofbasis::LagrangianDOFBasis{D,T}
+	shfbasis::MPB_WithChangeOfBasis{D,T}
 	nfacedofs::Vector{Vector{Int}}
 end
 
@@ -93,9 +93,9 @@ function LagrangianRefFE{D,T}(polytope::Polytope{D},
 	changeofbasis=inv(nodeevaluate(dofsb,prebasis))
 	basis = MPB_WithChangeOfBasis{D,T}(prebasis, changeofbasis)
 	nfacedofs=nodes.nfacenodes
-	println(changeofbasis)
+	# println(changeofbasis)
 	# numdof = size(changeofbasis,1)*length(T)
-	LagrangianRefFE{D,T}(polytope, basis, dofsb,  nfacedofs)
+	LagrangianRefFE{D,T}(polytope, dofsb, basis, nfacedofs)
 end
 
 end # module RefFEs
