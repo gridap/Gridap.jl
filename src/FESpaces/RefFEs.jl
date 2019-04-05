@@ -2,13 +2,13 @@ module RefFEs
 
 using Numa.Helpers
 using Numa.FieldValues
+using Numa.Fields
 using Numa.Polytopes
 using Numa.Polynomials
 
 export DOFBasis
 export RefFE
 export LagrangianRefFE
-# export shfsps, gradshfsps
 
 # Abstract types and interfaces
 
@@ -25,7 +25,9 @@ function evaluatedofs(this::DOFBasis{D,T},
 	@abstractmethod
 end
 
-# evaluate(this::DOFBasis, prebasis::Field{D,T})::Vector{Float64} = @abstractmethod
+function evaluatedofs(this::DOFBasis{D,T},
+	prebasis::Field{D,T})::Vector{Float64} where {D,T}
+	@abstractmethod end
 # Field to be implemented, to answer evaluate and gradient, it can be a local FE
 # function or an analytical function
 
@@ -63,6 +65,34 @@ function evaluatedofs(this::LagrangianDOFBasis{D,T},
 	return b
 end
 
+"""
+Evaluate the Lagrangian DOFs basis (i.e., nodal values) for a given field in
+the reference space
+"""
+# @santiagobadia : Be careful, a physical field must be composed with geomap
+# before being used here. Is this what we want?
+function evaluatedofs(this::LagrangianDOFBasis{D,T},
+	field::Field{D,T}) where {D,T}
+	vals = evaluatefield(field,this.nodes)
+	# I would like to use evaluate everywhere, putting evaluate in Numa and
+	# importing it in all submodules
+	# This way we could use the same evaluatedofs for bases and fields...
+	# @santiagobadia : TO BE DONE
+	lt = length(T)
+	E = eltype(T)
+	nnd = length(this.nodes)
+	b = Vector{E}(undef,lt*nnd)
+	return b
+	function computeb2!(a,b,lt,nnd)
+		for k in 1:lt
+			off = nnd*(k-1)
+			for j in 1:nnd
+				b[j+off] = a[j][k]
+			end
+		end
+	end
+	computeb2!(vals,b,lt,nnd)
+end
 
 """
 Abstract Reference Finite Element
