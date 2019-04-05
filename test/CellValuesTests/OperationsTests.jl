@@ -45,6 +45,7 @@ using Numa.CellValues: CellArrayFromBroadcastUnaryOp
 using Numa.CellValues: CellArrayFromCellSum
 using Numa.CellValues: CellArrayFromCellNewAxis
 using Numa.CellValues: CellValueFromCellArrayReduce
+using Numa.CellValues: CellArrayFromBoradcastBinaryOp
 
 @testset "Operations" begin
 
@@ -59,7 +60,7 @@ using Numa.CellValues: CellValueFromCellArrayReduce
     end
   end
 
-  for op in (:+,:-,:*,:/,:(inner),:(outer))
+  for op in (:+,:-,:*,:/,:(outer))
     @eval begin
       scv3 = $op(scv,scv2)
       @test isa(scv3,CellValueFromBinaryOp{Float64,typeof($op)})
@@ -74,9 +75,45 @@ using Numa.CellValues: CellValueFromCellArrayReduce
     @eval begin
       sca3 = $op(sca)
       @test isa(sca3,CellArrayFromBroadcastUnaryOp{typeof($op)})
-      @test length(scv3) == l
+      @test length(sca3) == l
       for vi in sca3
         @assert vi == $op.(sa)
+      end
+    end
+  end
+
+  for op in (:+,:-,:*,:/,:(outer))
+    @eval begin
+      sca3 = $op(sca,sca2)
+      @test isa(sca3,CellArrayFromBoradcastBinaryOp{typeof($op),Float64,2})
+      @test length(sca3) == l
+      @test cellsize(sca3) == (3,2)
+      for vi in sca3
+        @assert vi == $op.(sa,sa2)
+      end
+    end
+  end
+
+  for op in (:+,:-,:*,:/,:(outer))
+    @eval begin
+      sca3 = $op(scv,sca2)
+      @test isa(sca3,CellArrayFromBoradcastBinaryOp{typeof($op),Float64,2})
+      @test length(sca3) == l
+      @test cellsize(sca3) == (3,2)
+      for vi in sca3
+        @assert vi == $op.(sv,sa2)
+      end
+    end
+  end
+
+  for op in (:+,:-,:*,:/,:(outer))
+    @eval begin
+      sca3 = $op(sca2,scv)
+      @test isa(sca3,CellArrayFromBoradcastBinaryOp{typeof($op),Float64,2})
+      @test length(sca3) == l
+      @test cellsize(sca3) == (3,2)
+      for vi in sca3
+        @assert vi == $op.(sa2,sv)
       end
     end
   end

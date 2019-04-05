@@ -47,12 +47,16 @@ function (==)(a::CellValue{T},b::CellValue{T}) where T
   return true
 end
 
-for op in (:+, :-, :*, :/, :(inner), :(outer))
+for op in (:+, :-, :*, :/, :(outer))
   @eval begin
     function ($op)(a::CellValue,b::CellValue)
       CellValueFromBinaryOp($op,a,b)
     end
   end
+end
+
+function binner(a::CellValue,b::CellValue)
+  CellValueFromBinaryOp(inner,a,b)
 end
 
 # Ancillary types
@@ -261,4 +265,122 @@ function (==)(a::CellArray{T,N},b::CellArray{T,N}) where {T,N}
   return true
 end
 
+for op in (:+, :-, :*, :/, :(outer))
+  @eval begin
+    function ($op)(a::CellArray,b::CellArray)
+      CellArrayFromBoradcastBinaryOp($op,a,b)
+    end
+    function ($op)(a::CellArray,b::CellValue)
+      CellArrayFromBoradcastBinaryOp($op,a,b)
+    end
+    function ($op)(a::CellValue,b::CellArray)
+      CellArrayFromBoradcastBinaryOp($op,a,b)
+    end
+  end
+end
+
+function binner(a::CellArray,b::CellArray)
+  CellArrayFromBoradcastBinaryOp(inner,a,b)
+end
+function binner(a::CellArray,b::CellValue)
+  CellArrayFromBoradcastBinaryOp(inner,a,b)
+end
+function binner(a::CellValue,b::CellArray)
+  CellArrayFromBoradcastBinaryOp(inner,a,b)
+end
+
+# Ancillary types
+
+abstract type CellArrayFromBinaryOp{A<:CellData,B<:CellData,T,N} <: CellArray{T,N} end
+
+function leftcellarray(::CellArrayFromBinaryOp{A,B,T,N})::A where {A,B,T,N}
+  @abstractmethod
+end
+
+function rightcellarray(::CellArrayFromBinaryOp{A,B,T,N})::B where {A,B,T,N}
+  @abstractmethod
+end
+
+computesize(::CellArrayFromBinaryOp, asize, bsize) = @abstractmethod
+
+computevals!(::CellArrayFromBinaryOp, a, b, v) = @abstractmethod
+
+function Base.length(self::CellArrayFromBinaryOp)
+  @assert length(rightcellarray(self)) == length(leftcellarray(self))
+  length(rightcellarray(self))
+end
+
+cellsize(self::CellArrayFromBinaryOp) = computesize(self,cellsize(leftcellarray(self)),cellsize(rightcellarray(self)))
+
+@inline function Base.iterate(self::CellArrayFromBinaryOp{A,B,T,N}) where {A,B,T,N}
+  u = Array{T,N}(undef,cellsize(self))
+  v = CachedArray(u)
+  anext = iterate(leftcellarray(self))
+  if anext === nothing; return nothing end
+  bnext = iterate(rightcellarray(self))
+  if bnext === nothing; return nothing end
+  iteratekernel(self,anext,bnext,v)
+end
+
+@inline function Base.iterate(self::CellArrayFromBinaryOp,state)
+  v, astate, bstate = state
+  anext = iterate(leftcellarray(self),astate)
+  if anext === nothing; return nothing end
+  bnext = iterate(rightcellarray(self),bstate)
+  if bnext === nothing; return nothing end
+  iteratekernel(self,anext,bnext,v)
+end
+
+function iteratekernel(self::CellArrayFromBinaryOp,anext,bnext,v)
+  a, astate = anext
+  b, bstate = bnext
+  vsize = computesize(self,size(a),size(b))
+  setsize!(v,vsize)
+  computevals!(self,a,b,v)
+  state = (v, astate, bstate)
+  (v,state)
+end
+
+struct CellArrayFromBoradcastBinaryOp{O<:Function,T,N,A,B} <: CellArrayFromBinaryOp{A,B,T,N}
+  op::O
+  a::A
+  b::B
+end
+
+function CellArrayFromBoradcastBinaryOp(op::Function,a::CellArray{T,N},b::CellArray{S,M}) where {T,S,N,M}
+  O = typeof(op)
+  A = typeof(a)
+  B = typeof(b)
+  R = Base._return_type(op,Tuple{T,S})
+  L = max(N,M)
+  CellArrayFromBoradcastBinaryOp{O,S,L,A,B}(op,a,b)
+end
+
+function CellArrayFromBoradcastBinaryOp(op::Function,a::CellArray{T,N},b::CellValue{S}) where {T,S,N}
+  O = typeof(op)
+  A = typeof(a)
+  B = typeof(b)
+  R = Base._return_type(op,Tuple{T,S})
+  CellArrayFromBoradcastBinaryOp{O,S,N,A,B}(op,a,b)
+end
+
+function CellArrayFromBoradcastBinaryOp(op::Function,a::CellValue{T},b::CellArray{S,N}) where {T,S,N}
+  O = typeof(op)
+  A = typeof(a)
+  B = typeof(b)
+  R = Base._return_type(op,Tuple{T,S})
+  CellArrayFromBoradcastBinaryOp{O,S,N,A,B}(op,a,b)
+end
+
+leftcellarray(self::CellArrayFromBoradcastBinaryOp) = self.a
+
+rightcellarray(self::CellArrayFromBoradcastBinaryOp) = self.b
+
+function computesize(::CellArrayFromBoradcastBinaryOp, asize, bsize)
+  Base.Broadcast.broadcast_shape(asize,bsize)
+end
+
+function computevals!(self::CellArrayFromBoradcastBinaryOp, a, b, v)
+  broadcast!(self.op,v,a,b)
+end
 

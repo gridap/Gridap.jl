@@ -22,6 +22,8 @@ abstract type IndexCellValue{T} <: AbstractVector{T} end
 
 const CellValue{T} = Union{IterCellValue{T},IndexCellValue{T}}
 
+cellsize(::CellValue) = ()
+
 # Iterable cell Arrays
 
 abstract type CellArray{T,N} end
@@ -77,3 +79,4 @@ function Base.show(io::IO,self::CellData)
   end
 end
 
+cellsize(::CellData) = @abstractmethod

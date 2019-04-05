@@ -13,7 +13,6 @@ export celllength
 export cellsum
 export cellnewaxis
 export binner
-export bouter
 
 using Base: @propagate_inbounds
 using Base.Cartesian: @nloops, @nexprs, @nref
