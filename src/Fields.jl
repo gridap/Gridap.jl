@@ -5,6 +5,10 @@ using Numa.Helpers
 using Numa.FieldValues
 
 export Field
+export evaluatefield
+export evaluategradient
+export evaluatefield!
+export evaluategradient!
 
 """
 Abstract field of rank `T` (e.g., scalar, vector, tensor) on a manifold of
@@ -18,17 +22,49 @@ abstract type Field{D,T} end
 """
 Evaluate the field on a set of points
 """
-function evaluate(this::Field{D,T},
-	points::Vector{Point{D}})::Vector{T} where {D,T}
-	@abstractmethod end
+function evaluatefield!(this::Field{D,T},
+	points::AbstractVector{Point{D}}, v::Vector{T}) where {D,T}
+	@abstractmethod
+end
 
-function evaluategradient(this::Field{D,T},
-	points::Vector{Point{D}})::Vector{T} where {D,T}
-	@abstractmethod end
+function evaluatefieldgradient!(this::Field{D,T},
+	points::AbstractVector{Point{D}}, v::Vector{TG}) where {D,T,TG}
+	@abstractmethod
+end
+
+
+"""
+Same as evaluate! but allocates output
+"""
+function evaluatefield(this::Field{D,T},
+	points::AbstractVector{Point{D}}) where {D,T}
+  vals = Vector{T}(undef,length(points))
+  evaluatefield!(this, points, vals)
+  vals
+end
+
+function evaluatefieldgradient(this::Field{D,T},
+	points::AbstractVector{Point{D}}) where {D,T}
+	TG = outer(Point{D},T)
+  vals = Vector{TG}(undef,length(points))
+  evaluatefieldgradient!(this, points, vals)
+  vals
+end
 
 # struct AnalyticalField{D,T} where {D,T}
 # 	f
 # 	gf
+# end
+
+# struct MyField{D,T} <: Field{D,T} end
+#
+# function evaluatefield(this::MyField{D,T}, point::Point{D})
+# 	return sum(point)*one(T)
+# end
+#
+# function evaluategradient(this::MyField{D,T}, point::Point{D})
+#   TG = outer(Point{D},T)
+# 	return one(TG)
 # end
 
 
