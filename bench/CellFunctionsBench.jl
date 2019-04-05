@@ -28,6 +28,7 @@ print("VectorScalarExpand ->"); @time doloop(vexpand)
 include("../test/CellIntegrationTestsMocks.jl")
 using Numa.Quadratures
 using Numa.CellQuadratures
+using Numa.CellIntegration
 
 imesh = DummyIntegrationMesh2D(partition=(1000,1000))
 refquad = TensorProductQuadrature(orders=(2,2))
@@ -56,7 +57,15 @@ print("PhysBasisGradVals ->"); @time doloop(valsgrad)
 
 kmatg = varinner(valsgrad, valsgrad)
 
-print("DummyStiffnessMatrix2D ->"); @time doloop(kmatg)
-print("DummyStiffnessMatrix2D ->"); @time doloop(kmatg)
+print("DummyStiffnessMatrix2DAtQPoints ->"); @time doloop(kmatg)
+print("DummyStiffnessMatrix2DAtQPoints ->"); @time doloop(kmatg)
+
+a(v,u) = inner(∇(v),∇(u)) + inner(v,u)
+V = physbasis
+U = physbasis
+kmat = integrate(a(V,U),imesh,quad)
+
+print("DummyStiffnessMatrix2D ->"); @time doloop(kmat)
+print("DummyStiffnessMatrix2D ->"); @time doloop(kmat)
 
 end
