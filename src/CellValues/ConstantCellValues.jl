@@ -1,38 +1,83 @@
 
+# ConstantCellValue
+
 struct ConstantCellValue{T} <: IndexCellValue{T}
   value::T
   length::Int
 end
 
-size(self::ConstantCellValue) = (self.length,)
+celldata(self::ConstantCellValue) = self.value
 
-getindex(self::ConstantCellValue,cell::Int) = self.value
+size(self::ConstantCellValue) = (self.length,)
 
 IndexStyle(::Type{ConstantCellValue{T}} where T) = IndexLinear()
 
-const ConstantCellArray{T,N} = ConstantCellValue{<:AbstractArray{T,N}} where {T,N}
+# ConstantCellArray
 
-const ConstantCellVector{T,N} = ConstantCellArray{T,1} where T
+struct ConstantCellArray{T,N} <: IndexCellArray{T,N}
+  array::Array{T,N}
+  length::Int
+end
 
-cellsize(self::ConstantCellArray) = size(self.value)
+const ConstantCellVector{T} = ConstantCellArray{T,1}
 
-ConstantCellArray(a::AbstractArray,l) = ConstantCellValue(a,l)
+const ConstantCellMatrix{T} = ConstantCellArray{T,2}
 
-ConstantCellVector(a::AbstractVector,l) = ConstantCellValue(a,l)
+celldata(self::ConstantCellArray) = self.array
 
-function (==)(a::ConstantCellValue,b::ConstantCellValue)
-  a.value != b.value && return false
-  a.length != b.length && return false
+length(self::ConstantCellArray) = self.length
+
+cellsize(self::ConstantCellArray) = size(self.array)
+
+function cellsum(self::ConstantCellArray{T,N};dim::Int) where {T,N}
+  b = sum(self.array,dims=dim)
+  s = cellsumsize(size(b),Val(dim))
+  c = copy(reshape(b,s))
+  ConstantCellArray(c,self.length)
+end
+
+function cellsum(self::ConstantCellArray{T,1};dim::Int) where T
+  b = sum(self.array)
+  ConstantCellValue(b,self.length)
+end
+
+function cellnewaxis(self::ConstantCellArray;dim::Int)
+  s = [ v for v in size(self.array)]
+  insert!(s,dim,1)
+  shape = tuple(s...)
+  c = copy(reshape(self.array,shape))
+  ConstantCellArray(c,self.length)
+end
+
+# ConstantCellData
+
+const ConstantCellData{T} = Union{ConstantCellValue{T},ConstantCellArray{T}}
+
+function ConstantCellData(a,l::Int)
+  ConstantCellValue(a,l)
+end
+
+function ConstantCellData(a::AbstractArray,l::Int)
+  ConstantCellArray(a,l)
+end
+
+celldata(::ConstantCellData) = @abstractmethod
+
+getindex(self::ConstantCellData,cell::Int) = celldata(self)
+
+function (==)(a::ConstantCellData,b::ConstantCellData)
+  celldata(a) != celldata(b) && return false
+  length(a) != length(b) && return false
   return true
 end
 
 for op in (:+,:-,:*,:/,:(inner),:(outer))
 
   @eval begin
-    function ($op)(a::ConstantCellValue,b::ConstantCellValue)
+    function ($op)(a::ConstantCellData,b::ConstantCellData)
       @assert length(a) == length(b)
-      c = broadcast($op,a.value,b.value)
-      ConstantCellValue(c,a.length)
+      c = broadcast($op,celldata(a),celldata(b))
+      ConstantCellData(c,length(a))
     end
   end
 
@@ -41,9 +86,9 @@ end
 for op in (:+,:-,:(det),:(inv))
 
   @eval begin
-    function ($op)(a::ConstantCellValue)
-      c = broadcast($op,a.value)
-      ConstantCellValue(c,a.length)
+    function ($op)(a::ConstantCellData)
+      c = broadcast($op,celldata(a))
+      ConstantCellData(c,length(a))
     end
   end
 

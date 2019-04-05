@@ -20,6 +20,7 @@ sca2 = ConstantCellArray(sa2,l)
   for vi in scv
     @assert vi === sv
   end
+  @test scv == scv
 
   @test isa(sca,CellVector{Float64})
   @test isa(sca,CellArray{Float64,1})
@@ -28,6 +29,7 @@ sca2 = ConstantCellArray(sa2,l)
   for vi in sca
     @assert vi === sa
   end
+  @test sca == sca
 
   for op in (:+,:-,:*,:/,:(inner),:(outer))
     @eval begin
@@ -64,7 +66,7 @@ sca2 = ConstantCellArray(sa2,l)
     end
   end
 
-  for op in (:+,:-)
+  for op in (:+,:-,:(det),:(inv))
     @eval begin
       sca3 = $op(sca2)
       @test isa(sca3,ConstantCellArray{Float64,2})
@@ -74,6 +76,29 @@ sca2 = ConstantCellArray(sa2,l)
         @assert vi == broadcast($op,sa2)
       end
     end
+  end
+
+  sca3 = cellsum(sca2,dim=2)
+  @test isa(sca3,ConstantCellArray{Float64,1})
+  @test length(sca3) == l
+  @test cellsize(sca3) == (3,)
+  for vi in sca3
+    @assert vi == reshape(sum(sa2,dims=2),(3,))
+  end
+
+  sca3 = cellsum(sca,dim=1)
+  @test isa(sca3,ConstantCellValue{Float64})
+  @test length(sca3) == l
+  for vi in sca3
+    @assert vi == sum(sa)
+  end
+
+  sca3 = cellnewaxis(sca2,dim=2)
+  @test isa(sca3,ConstantCellArray{Float64,3})
+  @test length(sca3) == l
+  @test cellsize(sca3) == (3,1,2)
+  for vi in sca3
+    @assert vi == reshape(sa2,(3,1,2))
   end
 
 end
