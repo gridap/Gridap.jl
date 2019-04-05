@@ -1,90 +1,76 @@
 
-Base.:+(a::CellFunction{S,M,T,N},b::CellFunction{S,M,T,N}) where {S,M,T,N} = CellFunctionFromBaseOp(a,b,+)
+# Unary operations
 
-Base.:-(a::CellFunction{S,M,T,N},b::CellFunction{S,M,T,N}) where {S,M,T,N} = CellFunctionFromBaseOp(a,b,-)
+for op in (:+, :-)
+  @eval begin
+    function ($op)(a::CellFunction)
+      CellFunctionFromUnaryOp($op,a)
+    end
+  end
+end
 
-Base.:*(a::CellFunction{S,M,T,N},b::CellFunction{S,M,T,N}) where {S,M,T,N} = CellFunctionFromBaseOp(a,b,*)
+struct CellFunctionFromUnaryOp{O,A,S,M,T,N} <: CellFunction{S,M,T,N}
+  op::O
+  a::A
+end
 
-Base.:/(a::CellFunction{S,M,T,N},b::CellFunction{S,M,T,N}) where {S,M,T,N} = CellFunctionFromBaseOp(a,b,/)
+function CellFunctionFromUnaryOp(op::Function,a::CellFunction{S,M,T,N}) where {S,M,T,N}
+  O = typeof(op)
+  A = typeof(a)
+  R = Base._return_type(op,Tuple{T})
+  CellFunctionFromUnaryOp{O,A,S,M,R,N}(op,a)
+end
 
-Base.:∘(f::Function,g::CellField) = compose(f,g)
+function evaluate(self::CellFunctionFromUnaryOp{O,A,S,M,T,N},input::CellArray{S,M}) where {O,A,S,M,T,N}
+  avals = evaluate(self.a,input)
+  self.op(avals)
+end
+
+# Binary operations
+
+for op in (:+, :-, :*, :/)
+  @eval begin
+    function ($op)(a::CellFunction,b::CellFunction)
+      CellFunctionFromBinaryOp($op,a,b)
+    end
+  end
+end
 
 function inner(a::CellField{D,T},b::CellField{D,T}) where {D,T}
-  S = inner(T,T)
-  CellFunctionFromInner{D,T,1,1,S,1}(a,b)
+  CellFunctionFromBinaryOp(varinner,a,b)
 end
 
 function inner(a::CellBasis{D,T},b::CellField{D,T}) where {D,T}
-  S = inner(T,T)
-  CellFunctionFromInner{D,T,2,1,S,2}(a,b)
+  CellFunctionFromBinaryOp(varinner,a,b)
 end
 
 function inner(a::CellBasis{D,T},b::CellBasis{D,T}) where {D,T}
-  S = inner(T,T)
-  CellFunctionFromInner{D,T,2,2,S,3}(a,b)
+  CellFunctionFromBinaryOp(varinner,a,b)
 end
 
 function expand(a::CellBasis,b::CellVector)
   CellFieldFromExpand(a,b)
 end
 
-# @fverdugo TODO: optimize for ConstantCellArrays
-function compose(f::Function,g::CellField{D,S}) where {D,S}
-  O = typeof(f)
-  C = typeof(g)
-  T = f(S)
-  CellFieldFromCompose{D,O,C,T}(g,f)
-end
-
-inner(a::CellFieldValues{T},b::CellFieldValues{T}) where T = binner(a,b)
-
-inner(a::CellBasisValues{T},b::CellFieldValues{T}) where T = binner(a,cellnewaxis(b,dim=1))
-
-inner(a::CellBasisValues{T},b::CellBasisValues{T}) where T = binner(cellnewaxis(a,dim=2),cellnewaxis(b,dim=1))
-
-expand(a::CellBasisValues,b::CellFieldValues) = cellsum(bouter(a,cellnewaxis(b,dim=2)),dim=1)
-
-# Ancillary types associated with operations above
-
-struct CellFieldFromCompose{D,O,C<:CellField{D},T} <: CellField{D,T}
-  a::C
+struct CellFunctionFromBinaryOp{O,A,B,S,M,T,N} <: CellFunction{S,M,T,N}
   op::O
+  a::A
+  b::B
 end
 
-function evaluate(self::CellFieldFromCompose{D,O,C,T},points::CellPoints{D}) where {D,O,C,T}
-  avals = evaluate(self.a,points)
-  CellArrayFromGivenUnaryOp{O,typeof(avals),T,1}(avals,self.op)
+function CellFunctionFromBinaryOp(op::Function,a::CellFunction{S,M,TA,NA},b::CellFunction{S,M,TB,NB}) where {S,M,TA,NA,TB,NB}
+  O = typeof(op)
+  A = typeof(a)
+  B = typeof(b)
+  R = Base._return_type(op,Tuple{TA,TB})
+  N = max(NA,NB)
+  CellFunctionFromBinaryOp{O,A,B,S,M,R,N}(op,a,b)
 end
 
-function gradient(self::CellFieldFromCompose{D,O,C,T}) where {D,O,C,T}
-  gradop = gradient(self.op)
-  OG = typeof(gradop)
-  TG = gradop(Point{D})
-  CellFieldFromCompose{D,OG,C,TG}(self.a,gradop)
-end
-
-# @fverdugo this is type unstable (however, not a big problem here)
-struct CellFunctionFromBaseOp{O,S,M,T,N} <: CellFunction{S,M,T,N}
-  a::CellFunction{S,M,T,N}
-  b::CellFunction{S,M,T,N}
-  op::O
-end
-
-function evaluate(self::CellFunctionFromBaseOp{O,S,M,T,N},input::CellArray{S,M}) where {O,S,M,T,N}
+function evaluate(self::CellFunctionFromBinaryOp{O,A,B,S,M,T,N},input::CellArray{S,M}) where {O,A,B,S,M,T,N}
   avals = evaluate(self.a,input)
   bvals = evaluate(self.b,input)
   self.op(avals,bvals)
-end
-
-struct CellFunctionFromInner{D,R,A,B,T,N} <: CellFunction{Point{D},1,T,N}
-  a::CellFunction{Point{D},1,R,A}
-  b::CellFunction{Point{D},1,R,B}
-end
-
-function evaluate(self::CellFunctionFromInner{D},points::CellPoints{D}) where D
-  a = evaluate(self.a,points)
-  b = evaluate(self.b,points)
-  inner(a,b)
 end
 
 struct CellFieldFromExpand{D,S,R,T} <: CellField{D,T}
@@ -93,7 +79,7 @@ struct CellFieldFromExpand{D,S,R,T} <: CellField{D,T}
 end
 
 function CellFieldFromExpand(basis::CellBasis{D,S},coeffs::CellVector{R}) where {D,S,R}
-  T = outer(S,R)
+  T = Base._return_type(outer,Tuple{S,R})
   CellFieldFromExpand{D,S,R,T}(basis,coeffs)
 end
 
@@ -105,5 +91,54 @@ end
 function gradient(self::CellFieldFromExpand)
   gradbasis = gradient(self.basis)
   CellFieldFromExpand(gradbasis,self.coeffs)
+end
+
+varinner(a::FieldValue,b::FieldValue) = inner(a,b)
+
+varinner(a::CellFieldValues{T},b::CellFieldValues{T}) where T = inner(a,b)
+
+varinner(a::CellBasisValues{T},b::CellFieldValues{T}) where T = inner(a,cellnewaxis(b,dim=1))
+
+varinner(a::CellBasisValues{T},b::CellBasisValues{T}) where T = inner(cellnewaxis(a,dim=2),cellnewaxis(b,dim=1))
+
+expand(a::CellBasisValues,b::CellFieldValues) = cellsum(outer(a,cellnewaxis(b,dim=2)),dim=1)
+
+# Composition
+
+function compose(f::Function,g::CellField{D,S}) where {D,S}
+  CellFieldFromCompose(f,g)
+end
+
+(∘)(f::Function,g::CellField) = compose(f,g)
+
+struct CellFieldFromCompose{D,O,C<:CellField{D},T} <: CellField{D,T}
+  a::C
+  op::O
+end
+
+function CellFieldFromCompose(f::Function,g::CellField{D,S}) where {D,S}
+  O = typeof(f)
+  C = typeof(g)
+  T = Base._return_type(f,Tuple{S})
+  CellFieldFromCompose{D,O,C,T}(g,f)
+end
+
+function evaluate(self::CellFieldFromCompose{D},points::CellPoints{D}) where D
+  avals = evaluate(self.a,points)
+  composekernel(self,avals)
+end
+
+function composekernel(self::CellFieldFromCompose,avals::CellArray)
+  CellArrayFromBroadcastUnaryOp(self.op,avals)
+end
+
+function composekernel(self::CellFieldFromCompose,avals::ConstantCellArray)
+  b = broadcast(self.op,celldata(avals))
+  ConstantCellArray(b,length(avals))
+end
+
+function gradient(self::CellFieldFromCompose)
+  gradop = gradient(self.op)
+  CellFieldFromCompose(gradop,self.a)
 end
 

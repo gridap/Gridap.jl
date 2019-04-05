@@ -71,7 +71,7 @@ function (==)(a::ConstantCellData,b::ConstantCellData)
   return true
 end
 
-for op in (:+,:-,:*,:/,:(outer))
+for op in (:+,:-,:*,:/,:(outer),:(inner))
 
   @eval begin
     function ($op)(a::ConstantCellData,b::ConstantCellData)
@@ -81,12 +81,6 @@ for op in (:+,:-,:*,:/,:(outer))
     end
   end
 
-end
-
-function binner(a::ConstantCellData,b::ConstantCellData)
-  @assert length(a) == length(b)
-  c = broadcast(inner,celldata(a),celldata(b))
-  ConstantCellData(c,length(a))
 end
 
 for op in (:+,:-,:(det),:(inv))

@@ -10,7 +10,7 @@ export CellBasis
 export CellGeomap
 
 export expand
-export inner
+export varinner
 export attachgeomap
 export compose
 
@@ -18,12 +18,16 @@ export CellBasisFromSingleInterpolation
 
 using Numa.Helpers
 using Numa.FieldValues
-using Numa.CellArrays
+using Numa.CellValues
+using Numa.CellValues: CellArrayFromUnaryOp
+using Numa.CellValues: CellArrayFromBroadcastUnaryOp
 using Numa.Polynomials
+
+import Base: +, -, *, /, ∘
 
 import Numa.FieldValues: inner, outer
 import Numa.Polynomials: evaluate, gradient
-import Numa.CellArrays: inputcellarray, computesize, computevals!
+import Numa.CellValues: inputcellarray, computesize, computevals!
 
 include("AbstractCellFunctions.jl")
 include("Operators.jl")

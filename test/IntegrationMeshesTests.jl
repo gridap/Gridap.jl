@@ -1,7 +1,7 @@
 module IntegrationMeshesTests
 
 using Test
-using Numa.CellArrays
+using Numa.CellValues
 using Numa.CellFunctions
 using Numa.CellQuadratures
 using Numa.IntegrationMeshes
@@ -14,17 +14,17 @@ imesh = DummyIntegrationMesh2D(partition=(3,3))
 @testset "Mocks" begin
 
   @test isa(imesh,IntegrationMesh)
-  
+
   coords = cellcoordinates(imesh)
-  
+
   basis = cellbasis(imesh)
-  
+
   phi = geomap(imesh)
-  
+
   @test isa(coords,CellPoints{2})
-  
+
   @test isa(basis,CellBasis{2,Float64})
-  
+
   @test isa(phi,CellField{2,Point{2}})
 
 end
@@ -49,18 +49,14 @@ end
 
   @test isa(mmat,CellArray{Float64,2})
 
-  @eval begin
-    ufun(x::Point{2}) = 1
-    ufun(::Type{Point{2}}) = Float64
-  end
+  ufun(x::Point{2}) = 1.0
 
   cellvol = integrate(ufun,imesh,quad)
 
-  # @fverdugo TODO: it should return an array scalar
-  @test isa(cellvol,CellArray{Float64,0})
+  @test isa(cellvol,CellValue{Float64})
 
   for vi in cellvol
-    @assert vi[1] ≈ (1.0/3)^2
+    @assert vi ≈ (1.0/3)^2
   end
 
 end

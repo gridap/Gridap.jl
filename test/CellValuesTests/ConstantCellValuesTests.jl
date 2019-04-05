@@ -42,7 +42,7 @@ sca2 = ConstantCellArray(sa2,l)
     end
   end
 
-  for op in (:+,:-,:*,:/,:(outer))
+  for op in (:+,:-,:*,:/,:(outer),:(inner))
     @eval begin
       sca3 = $op(sca,sca2)
       @test isa(sca3,ConstantCellArray{Float64,2})
@@ -54,7 +54,7 @@ sca2 = ConstantCellArray(sa2,l)
     end
   end
 
-  for op in (:+,:-,:*,:/,:(outer))
+  for op in (:+,:-,:*,:/,:(outer),:(inner))
     @eval begin
       sca3 = $op(scv,sca2)
       @test isa(sca3,ConstantCellArray{Float64,2})

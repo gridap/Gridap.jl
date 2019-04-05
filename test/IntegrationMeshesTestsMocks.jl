@@ -6,12 +6,12 @@
 
 include("PolynomialsTestsMocks.jl")
 
-using Numa.CellArrays: IndexableCellArray
-import Numa.CellArrays: cellsize
+using Numa.CellValues: IndexCellArray
+import Numa.CellValues: cellsize
 using Numa.IntegrationMeshes
 import Numa.IntegrationMeshes: cellcoordinates, cellbasis
 
-struct DummyCellCoordinates2D <: IndexableCellArray{Point{2},1}
+struct DummyCellCoordinates2D <: IndexCellArray{Point{2},1}
   x::Array{Point{2},2}
   c::Array{Point{2},1}
 end

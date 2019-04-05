@@ -82,7 +82,7 @@ using Numa.CellValues: CellArrayFromBoradcastBinaryOp
     end
   end
 
-  for op in (:+,:-,:*,:/,:(outer))
+  for op in (:+,:-,:*,:/,:(outer),:(inner))
     @eval begin
       sca3 = $op(sca,sca2)
       @test isa(sca3,CellArrayFromBoradcastBinaryOp{typeof($op),Float64,2})
@@ -94,7 +94,7 @@ using Numa.CellValues: CellArrayFromBoradcastBinaryOp
     end
   end
 
-  for op in (:+,:-,:*,:/,:(outer))
+  for op in (:+,:-,:*,:/,:(outer),:(inner))
     @eval begin
       sca3 = $op(scv,sca2)
       @test isa(sca3,CellArrayFromBoradcastBinaryOp{typeof($op),Float64,2})
@@ -106,7 +106,7 @@ using Numa.CellValues: CellArrayFromBoradcastBinaryOp
     end
   end
 
-  for op in (:+,:-,:*,:/,:(outer))
+  for op in (:+,:-,:*,:/,:(outer),:(inner))
     @eval begin
       sca3 = $op(sca2,scv)
       @test isa(sca3,CellArrayFromBoradcastBinaryOp{typeof($op),Float64,2})

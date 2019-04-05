@@ -2,7 +2,7 @@ module CellFieldsTests
 
 using Test
 using Numa.FieldValues
-using Numa.CellArrays
+using Numa.CellValues
 using Numa.CellFunctions
 using Numa.Quadratures
 using Numa.CellQuadratures
@@ -22,7 +22,7 @@ phi = geomap(imesh)
 
 @testset "InnerFieldValuesFieldValues" begin
 
-  siff = inner(sfv,sfv)
+  siff = varinner(sfv,sfv)
   siffa = [ inner(sfva[i],sfva[i]) for i in 1:4 ]
 
   @test length(siff) == l
@@ -31,7 +31,7 @@ phi = geomap(imesh)
     @assert a == siffa
   end
 
-  viff = inner(vfv,vfv)
+  viff = varinner(vfv,vfv)
   viffa = [ inner(vfva[i],vfva[i]) for i in 1:4 ]
 
   @test length(viff) == l
@@ -40,7 +40,7 @@ phi = geomap(imesh)
     @assert a == viffa
   end
 
-  tiff = inner(tfv,tfv)
+  tiff = varinner(tfv,tfv)
   tiffa = [ inner(tfva[i],tfva[i]) for i in 1:4 ]
 
   @test length(tiff) == l
@@ -53,7 +53,7 @@ end
 
 @testset "InnerBasisValuesFieldValues" begin
 
-  siff = inner(sbv,sfv)
+  siff = varinner(sbv,sfv)
   siffa = zeros(3,4)
   for j in 1:4
     for i in 1:3
@@ -67,7 +67,7 @@ end
     @assert a == siffa
   end
 
-  viff = inner(vbv,vfv)
+  viff = varinner(vbv,vfv)
   viffa = zeros(3,4)
   for j in 1:4
     for i in 1:3
@@ -81,7 +81,7 @@ end
     @assert a == viffa
   end
 
-  tiff = inner(tbv,tfv)
+  tiff = varinner(tbv,tfv)
   tiffa = zeros(3,4)
   for j in 1:4
     for i in 1:3
@@ -99,7 +99,7 @@ end
 
 @testset "InnerBasisValuesBasisValues" begin
 
-  siff = inner(sbv,sbv)
+  siff = varinner(sbv,sbv)
   siffa = zeros(3,3,4)
   for j in 1:4
     for i in 1:3
@@ -115,7 +115,7 @@ end
     @assert a == siffa
   end
 
-  viff = inner(vbv,vbv)
+  viff = varinner(vbv,vbv)
   viffa = zeros(3,3,4)
   for j in 1:4
     for i in 1:3
@@ -131,7 +131,7 @@ end
     @assert a == viffa
   end
 
-  tiff = inner(tbv,tbv)
+  tiff = varinner(tbv,tbv)
   tiffa = zeros(3,3,4)
   for j in 1:4
     for i in 1:3
@@ -324,13 +324,9 @@ end
 
 @testset "CellFieldFromCompose" begin
 
-  @eval begin 
-  
-    ufun(::Type{Point{2}}) = Float64
+  @eval begin
 
     ufun(x::Point{2}) = x[1]*x[2] + x[1]
-
-    gradufun(::Type{Point{2}}) = VectorValue{2}
 
     gradufun(x::Point{2}) = VectorValue(x[2]+1.0,x[1])
 
@@ -380,7 +376,7 @@ end
   tv2 = VectorValue(1.5, -1.5)
   tv3 = VectorValue(-1.5, 1.5)
   tv4 = VectorValue(1.5, 1.5)
-  
+
   valsgradref = reshape([tv1, tv2, tv3, tv4],(4,1))
 
   for v in valsgrad

@@ -47,16 +47,12 @@ function (==)(a::CellValue{T},b::CellValue{T}) where T
   return true
 end
 
-for op in (:+, :-, :*, :/, :(outer))
+for op in (:+, :-, :*, :/, :(outer), :(inner))
   @eval begin
     function ($op)(a::CellValue,b::CellValue)
       CellValueFromBinaryOp($op,a,b)
     end
   end
-end
-
-function binner(a::CellValue,b::CellValue)
-  CellValueFromBinaryOp(inner,a,b)
 end
 
 # Ancillary types
@@ -265,7 +261,7 @@ function (==)(a::CellArray{T,N},b::CellArray{T,N}) where {T,N}
   return true
 end
 
-for op in (:+, :-, :*, :/, :(outer))
+for op in (:+, :-, :*, :/, :(inner), :(outer))
   @eval begin
     function ($op)(a::CellArray,b::CellArray)
       CellArrayFromBoradcastBinaryOp($op,a,b)
@@ -277,16 +273,6 @@ for op in (:+, :-, :*, :/, :(outer))
       CellArrayFromBoradcastBinaryOp($op,a,b)
     end
   end
-end
-
-function binner(a::CellArray,b::CellArray)
-  CellArrayFromBoradcastBinaryOp(inner,a,b)
-end
-function binner(a::CellArray,b::CellValue)
-  CellArrayFromBoradcastBinaryOp(inner,a,b)
-end
-function binner(a::CellValue,b::CellArray)
-  CellArrayFromBoradcastBinaryOp(inner,a,b)
 end
 
 # Ancillary types
@@ -353,7 +339,7 @@ function CellArrayFromBoradcastBinaryOp(op::Function,a::CellArray{T,N},b::CellAr
   B = typeof(b)
   R = Base._return_type(op,Tuple{T,S})
   L = max(N,M)
-  CellArrayFromBoradcastBinaryOp{O,S,L,A,B}(op,a,b)
+  CellArrayFromBoradcastBinaryOp{O,R,L,A,B}(op,a,b)
 end
 
 function CellArrayFromBoradcastBinaryOp(op::Function,a::CellArray{T,N},b::CellValue{S}) where {T,S,N}
@@ -361,7 +347,7 @@ function CellArrayFromBoradcastBinaryOp(op::Function,a::CellArray{T,N},b::CellVa
   A = typeof(a)
   B = typeof(b)
   R = Base._return_type(op,Tuple{T,S})
-  CellArrayFromBoradcastBinaryOp{O,S,N,A,B}(op,a,b)
+  CellArrayFromBoradcastBinaryOp{O,R,N,A,B}(op,a,b)
 end
 
 function CellArrayFromBoradcastBinaryOp(op::Function,a::CellValue{T},b::CellArray{S,N}) where {T,S,N}
@@ -369,7 +355,7 @@ function CellArrayFromBoradcastBinaryOp(op::Function,a::CellValue{T},b::CellArra
   A = typeof(a)
   B = typeof(b)
   R = Base._return_type(op,Tuple{T,S})
-  CellArrayFromBoradcastBinaryOp{O,S,N,A,B}(op,a,b)
+  CellArrayFromBoradcastBinaryOp{O,R,N,A,B}(op,a,b)
 end
 
 leftcellarray(self::CellArrayFromBoradcastBinaryOp) = self.a
