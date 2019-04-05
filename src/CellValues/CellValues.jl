@@ -12,6 +12,7 @@ export ConstantCellVector
 export ConstantCellMatrix
 export ConstantCellData
 
+export celldata
 export cellsize
 export celllength
 export cellsum

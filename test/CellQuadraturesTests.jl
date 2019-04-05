@@ -3,7 +3,7 @@ module CellQuadraturesTests
 using Test
 using Numa.FieldValues
 using Numa.Quadratures
-using Numa.CellArrays
+using Numa.CellValues
 using Numa.CellQuadratures
 
 const D = 2

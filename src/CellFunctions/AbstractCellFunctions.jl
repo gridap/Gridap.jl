@@ -4,7 +4,9 @@ An abstract type that maps a CellArray into another CellArray
 """
 abstract type CellFunction{S,M,T,N} end
 
-evaluate(::CellFunction{S,M,T,N} where {S,M,T,N},::CellArray{S,M} where {S,M})::(CellArray{T,N})  = @abstractmethod
+function evaluate(::CellFunction{S,M,T,N},::CellArray{S,M})::CellArray{T,N} where {S,M,T,N}
+  @abstractmethod
+end
 
 """
 Abstract type that represents a cell-wise basis for a field space,
@@ -16,7 +18,9 @@ const CellBasis{D,T} = CellFunction{Point{D},1,T,2} where {D,T<:FieldValue}
 Returns another CellBasis object that represents the gradient.
 Instances of TG is a value whose rank is one order grater than the one of T
 """
-gradient(::CellBasis{D,T} where {D,T})::CellBasis{D,TG} = @abstractmethod
+function gradient(::CellBasis{D,T})::CellBasis{D,TG} where {D,T}
+  @abstractmethod
+end
 
 """
 Abstract type that represents a cell-wise field, where
@@ -30,7 +34,9 @@ const CellField{D,T} = CellFunction{Point{D},1,T,1} where {D,T<:FieldValue}
 Returns another CellField object that represents the gradient.
 Instances of `TG` have a rank order a unit greater than the ones of `T`
 """
-gradient(::CellField{D,T} where {D,T})::CellField{D,TG} = @abstractmethod
+function gradient(::CellField{D,T})::CellField{D,TG} where {D,T}
+  @abstractmethod
+end
 
 """
 Abstract type representing a cell-wise transformation

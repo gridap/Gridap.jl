@@ -9,8 +9,8 @@ using LinearAlgebra: det
 using Numa.Helpers
 using Numa.FieldValues
 using Numa.Polynomials
+using Numa.CellValues
 using Numa.CellFunctions
-using Numa.CellArrays
 using Numa.CellQuadratures
 using Numa.Quadratures
 

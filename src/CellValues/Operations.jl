@@ -339,7 +339,7 @@ function CellArrayFromBoradcastBinaryOp(op::Function,a::CellArray{T,N},b::CellAr
   B = typeof(b)
   R = Base._return_type(op,Tuple{T,S})
   L = max(N,M)
-  CellArrayFromBoradcastBinaryOp{O,S,L,A,B}(op,a,b)
+  CellArrayFromBoradcastBinaryOp{O,R,L,A,B}(op,a,b)
 end
 
 function CellArrayFromBoradcastBinaryOp(op::Function,a::CellArray{T,N},b::CellValue{S}) where {T,S,N}
@@ -347,7 +347,7 @@ function CellArrayFromBoradcastBinaryOp(op::Function,a::CellArray{T,N},b::CellVa
   A = typeof(a)
   B = typeof(b)
   R = Base._return_type(op,Tuple{T,S})
-  CellArrayFromBoradcastBinaryOp{O,S,N,A,B}(op,a,b)
+  CellArrayFromBoradcastBinaryOp{O,R,N,A,B}(op,a,b)
 end
 
 function CellArrayFromBoradcastBinaryOp(op::Function,a::CellValue{T},b::CellArray{S,N}) where {T,S,N}
@@ -355,7 +355,7 @@ function CellArrayFromBoradcastBinaryOp(op::Function,a::CellValue{T},b::CellArra
   A = typeof(a)
   B = typeof(b)
   R = Base._return_type(op,Tuple{T,S})
-  CellArrayFromBoradcastBinaryOp{O,S,N,A,B}(op,a,b)
+  CellArrayFromBoradcastBinaryOp{O,R,N,A,B}(op,a,b)
 end
 
 leftcellarray(self::CellArrayFromBoradcastBinaryOp) = self.a

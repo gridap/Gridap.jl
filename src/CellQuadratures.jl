@@ -5,7 +5,8 @@ export CellQuadrature, ConstantCellQuadrature
 using Numa.Helpers
 using Numa.FieldValues
 using Numa.Quadratures
-using Numa.CellArrays
+using Numa.CellValues
+using Numa.CellFunctions
 
 import Numa.Quadratures: coordinates
 import Numa.Quadratures: weights

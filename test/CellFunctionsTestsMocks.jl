@@ -1,7 +1,8 @@
 
-import Numa.CellArrays: cellsize
+import Numa.CellValues: cellsize
+using Numa.CellValues: IndexCellArray
 
-struct CellArrayMockup{T,N} <: IndexableCellArray{T,N}
+struct CellArrayMockup{T,N} <: IndexCellArray{T,N}
   a::Array{T,N}
   l::Int
 end
