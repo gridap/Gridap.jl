@@ -8,8 +8,8 @@ include("PolynomialsTestsMocks.jl")
 
 using Numa.CellValues: IndexCellArray
 import Numa.CellValues: cellsize
-using Numa.IntegrationMeshes
-import Numa.IntegrationMeshes: cellcoordinates, cellbasis
+using Numa.CellIntegration
+import Numa.CellIntegration: cellcoordinates, cellbasis
 
 struct DummyCellCoordinates2D <: IndexCellArray{Point{2},1}
   x::Array{Point{2},2}

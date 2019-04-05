@@ -11,7 +11,7 @@ l = 10
 
 include("CellFunctionsTestsMocks.jl")
 
-include("IntegrationMeshesTestsMocks.jl")
+include("CellIntegrationTestsMocks.jl")
 
 imesh = DummyIntegrationMesh2D(partition=(3,3))
 refquad = TensorProductQuadrature(orders=(0,0))

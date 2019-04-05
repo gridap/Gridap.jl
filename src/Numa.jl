@@ -12,10 +12,9 @@ include("Quadratures.jl")
 include("Polynomials.jl")
 # include("NewPolynomials.jl")
 include("CellValues/CellValues.jl")
-#include("CellArrays/CellArrays.jl") # @fverdugo to be replaced by CellValues
 include("CellFunctions/CellFunctions.jl")
 include("CellQuadratures.jl")
-include("IntegrationMeshes.jl")
+include("CellIntegration.jl")
 include("Polytopes.jl")
 
 # FESpaces tools

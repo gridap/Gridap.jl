@@ -8,7 +8,7 @@ using Test
   @time @testset "CellValues" begin include("CellValuesTests/CellValuesTests.jl") end
   @time @testset "CellQuadratures" begin include("CellQuadraturesTests.jl") end
   @time @testset "CellFunctions" begin include("CellFunctionsTests.jl") end
-  @time @testset "IntegrationMeshes" begin include("IntegrationMeshesTests.jl") end
+  @time @testset "CellIntegration" begin include("CellIntegrationTests.jl") end
   @time @testset "Polytopes" begin include("PolytopesTests.jl") end
   @time @testset "RefFEs" begin include("RefFEsTests.jl") end
   # @time @testset "Meshes" begin include("MeshesTests.jl") end

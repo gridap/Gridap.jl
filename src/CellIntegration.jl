@@ -1,10 +1,8 @@
-module IntegrationMeshes
+module CellIntegration
 
 export IntegrationMesh
 export geomap, cellcoordinates, cellbasis, ncells
 export integrate
-
-using LinearAlgebra: det
 
 using Numa.Helpers
 using Numa.FieldValues
@@ -39,10 +37,7 @@ function integrate(cellfun::CellFunction{Point{D},1,T,N},phi::CellGeomap{D,Z},qu
   w = weights(quad)
   f = evaluate(cellfun,z)
   j = evaluate(gradient(phi),z)
-  @notimplementedif D != Z
-  # @fverdugo for the moment we assume positive jacobian
-  # and that D == Z. To fixed soon.
-  cellsum( f*(det(j)*w), dim=N )
+  cellsum( f*(meas(j)*w), dim=N )
 end
 
 function integrate(cellfun::CellFunction{Point{D},1},mesh::IntegrationMesh{D,Z},quad::CellQuadrature{D}) where {D,Z}
@@ -56,4 +51,4 @@ function integrate(fun::Function,mesh::IntegrationMesh{D,Z},quad::CellQuadrature
   integrate(cellfun,phi,quad)
 end
 
-end # module IntegrationMeshes
+end # module CellIntegration

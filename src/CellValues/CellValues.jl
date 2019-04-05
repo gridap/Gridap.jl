@@ -33,7 +33,7 @@ import Base: +, -, *, /
 import Base: ==
 import LinearAlgebra: inv, det
 
-import Numa.FieldValues: inner, outer
+import Numa.FieldValues: inner, outer, meas
 
 include("Helpers.jl")
 include("CachedArray.jl")

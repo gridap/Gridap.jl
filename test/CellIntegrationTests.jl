@@ -1,13 +1,13 @@
-module IntegrationMeshesTests
+module CellIntegrationTests
 
 using Test
 using Numa.CellValues
 using Numa.CellFunctions
 using Numa.CellQuadratures
-using Numa.IntegrationMeshes
+using Numa.CellIntegration
 using Numa.Quadratures
 
-include("IntegrationMeshesTestsMocks.jl")
+include("CellIntegrationTestsMocks.jl")
 
 imesh = DummyIntegrationMesh2D(partition=(3,3))
 
@@ -61,4 +61,4 @@ end
 
 end
 
-end # module IntegrationMeshesTests
+end # module CellIntegrationTests
