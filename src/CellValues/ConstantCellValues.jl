@@ -83,7 +83,7 @@ for op in (:+,:-,:*,:/,:(outer),:(inner))
 
 end
 
-for op in (:+,:-,:(det),:(inv))
+for op in (:+,:-,:(det),:(inv),:(meas))
 
   @eval begin
     function ($op)(a::ConstantCellData)

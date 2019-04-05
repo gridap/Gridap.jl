@@ -1,7 +1,7 @@
 
 # Unary operations on CellValue
 
-for op in (:+, :-, :(inv), :(det))
+for op in (:+, :-, :(inv), :(det), :(meas))
   @eval begin
     function ($op)(a::CellValue)
       CellValueFromUnaryOp($op,a)
@@ -102,7 +102,7 @@ end
 
 # Unary operations on CellArray
 
-for op in (:+, :-, :(inv), :(det))
+for op in (:+, :-, :(inv), :(det), :(meas))
   @eval begin
     function ($op)(a::CellArray)
       CellArrayFromBroadcastUnaryOp($op,a)

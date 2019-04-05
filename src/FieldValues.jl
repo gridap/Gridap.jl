@@ -4,9 +4,11 @@ export FieldValue
 export Point, MPoint
 export ScalarValue, VectorValue, TensorValue
 export MVectorValue, MTensorValue
-export inner, outer
+export inner, outer, meas
+
 
 using StaticArrays: SVector, MVector, SMatrix, MMatrix
+using LinearAlgebra: det
 
 """
 Type representing a scalar value
@@ -84,6 +86,7 @@ MPoint(x) = MVectorValue(x)
 
 outer(a::T,b::T) where T <: Number = a*b
 
+# TODO @fverdugo the versions taking types are to be deleted
 outer(::Type{T},::Type{T}) where T <: Number = T
 
 outer(a::T,b::SVector{D,T}) where {T <: Number,D} = a*b
@@ -139,6 +142,10 @@ inner(::Type{SMatrix{D,Z,T,DZ}},::Type{SMatrix{D,Z,T,DZ}}) where {D,Z,T,DZ} = T
 Base.:*(::Type{T},::Type{T}) where T<:Number = T
 
 Base.:*(::Type{SMatrix{D,Z,T,DZ}},::Type{SVector{Z,T}}) where {D,Z,T,DZ} = SVector{D,T}
+
+meas(a::VectorValue) = sqrt(inner(a,a))
+
+meas(a::TensorValue) = abs(det(a))
 
 mutable(::Type{ScalarValue}) = ScalarValue
 
