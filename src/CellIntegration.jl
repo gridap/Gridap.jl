@@ -1,4 +1,4 @@
-module IntegrationMeshes
+module CellIntegration
 
 export IntegrationMesh
 export geomap, cellcoordinates, cellbasis, ncells
@@ -51,4 +51,4 @@ function integrate(fun::Function,mesh::IntegrationMesh{D,Z},quad::CellQuadrature
   integrate(cellfun,phi,quad)
 end
 
-end # module IntegrationMeshes
+end # module CellIntegration

@@ -14,7 +14,7 @@ include("Polynomials.jl")
 include("CellValues/CellValues.jl")
 include("CellFunctions/CellFunctions.jl")
 include("CellQuadratures.jl")
-include("IntegrationMeshes.jl")
+include("CellIntegration.jl")
 include("Polytopes.jl")
 
 # FESpaces tools
