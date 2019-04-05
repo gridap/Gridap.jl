@@ -83,7 +83,7 @@ function evaluatedofs(this::LagrangianDOFBasis{D,T},
 	nnd = length(this.nodes)
 	b = Vector{E}(undef,lt*nnd)
 	return b
-	function computeb2!(a,b,lt,nnd)
+	function computeb!(a,b,lt,nnd)
 		for k in 1:lt
 			off = nnd*(k-1)
 			for j in 1:nnd
@@ -91,7 +91,7 @@ function evaluatedofs(this::LagrangianDOFBasis{D,T},
 			end
 		end
 	end
-	computeb2!(vals,b,lt,nnd)
+	computeb!(vals,b,lt,nnd)
 end
 
 """
