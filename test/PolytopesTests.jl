@@ -57,8 +57,8 @@ nodes = NodesArray(polytope,orders)
 @test nodes.coordinates[33] ≈ [1.0, 1.0/3.0, 0.0]
 nfacenodes = nodes.closurenfacenodes[end-1]
 coords = nodes.coordinates[nfacenodes,:]
-f = i -> coords[i][1]
-@test (prod(f(i) for i=1:length(coords))==1)
+fco = i -> coords[i][1]
+@test (prod(fco(i) for i=1:length(coords))==1)
 ##
 
 # Test to check the views of n-face set for a given n

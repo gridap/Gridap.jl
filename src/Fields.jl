@@ -57,15 +57,17 @@ Field generated from user-provided lambda-functions for field value and its
 gradient
 """
 struct AnalyticalField{D,T} <: Field{D,T}
-	f
+	funct
 	gradf
+	# @santiagobadia : Even this value is exported with analyticfield and creates
+	# conflicts in other tests that define a f function
 end
 # @santiagobadia: How can we enforce f : Point{D} -> T and
 # g : Point{D} -> TG
 
 function evaluatefield!(this::AnalyticalField{D,T}, points::Vector{Point{D}}, v::Vector{T}) where {D,T}
 	for (p,P) in enumerate(points)
-		v[p] = this.f(P)
+		v[p] = this.funct(P)
 	end
 end
 function evaluatefieldgradient!(this::AnalyticalField{D,T}, points::Vector{Point{D}}, v::Vector{TG}) where {D,T,TG}
