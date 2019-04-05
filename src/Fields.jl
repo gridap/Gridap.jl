@@ -5,6 +5,7 @@ using Numa.Helpers
 using Numa.FieldValues
 
 export Field
+export AnalyticalField
 export evaluatefield
 export evaluategradient
 export evaluatefield!
@@ -51,6 +52,27 @@ function evaluatefieldgradient(this::Field{D,T},
   vals
 end
 
+"""
+Field generated from user-provided lambda-functions for field value and its
+gradient
+"""
+struct AnalyticalField{D,T} <: Field{D,T}
+	f
+	gradf
+end
+# @santiagobadia: How can we enforce f : Point{D} -> T and
+# g : Point{D} -> TG
+
+function evaluatefield!(this::AnalyticalField{D,T}, points::Vector{Point{D}}, v::Vector{T}) where {D,T}
+	for (p,P) in enumerate(points)
+		v[p] = this.f(P)
+	end
+end
+function evaluatefieldgradient!(this::AnalyticalField{D,T}, points::Vector{Point{D}}, v::Vector{TG}) where {D,T,TG}
+	for (p,P) in enumerate(points)
+		v[p] = this.gradf(P)
+	end
+end
 # struct AnalyticalField{D,T} where {D,T}
 # 	f
 # 	gf

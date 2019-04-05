@@ -44,3 +44,17 @@ gv = Numa.Fields.evaluatefieldgradient(MyField{D,ScalarValue}(),[p,p])
 @test v[1] = v[2] == 2.0
 @test gv[1][1] == gv[1][2] == gv[2][1] == gv[2][2] == 1.0
 ##
+
+
+##
+D=2
+f(a::Point{D})::ScalarValue = sum(a)
+gradf(a::Point{D})::VectorValue{D} = ones(VectorValue{D})
+p = Point{D}(1.0,1.0)
+anfield = AnalyticalField{D,ScalarValue}(f,gradf)
+v = Numa.Fields.evaluatefield(anfield,[p,p])
+v
+gv = Numa.Fields.evaluatefieldgradient(anfield,[p,p])
+@test v[1] = v[2] == 2.0
+@test gv[1][1] == gv[1][2] == gv[2][1] == gv[2][2] == 1.0
+##
