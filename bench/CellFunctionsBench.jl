@@ -1,7 +1,7 @@
 module CellFieldsBench
 
 using Numa.FieldValues
-using Numa.CellArrays
+using Numa.CellValues
 using Numa.CellFunctions
 
 l = 1000000
@@ -15,7 +15,7 @@ end
 
 println("+++ CellFieldsBench ( length = $l ) +++")
 
-tiff = inner(tbv,tbv)
+tiff = varinner(tbv,tbv)
 
 print("TensorBasisBasisInner ->"); @time doloop(tiff)
 print("TensorBasisBasisInner ->"); @time doloop(tiff)
@@ -54,7 +54,7 @@ print("xg ->"); @time doloop(xg)
 print("PhysBasisGradVals ->"); @time doloop(valsgrad)
 print("PhysBasisGradVals ->"); @time doloop(valsgrad)
 
-kmatg = inner(valsgrad, valsgrad)
+kmatg = varinner(valsgrad, valsgrad)
 
 print("DummyStiffnessMatrix2D ->"); @time doloop(kmatg)
 print("DummyStiffnessMatrix2D ->"); @time doloop(kmatg)

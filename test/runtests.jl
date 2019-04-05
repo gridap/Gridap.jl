@@ -6,7 +6,6 @@ using Test
   @time @testset "Quadratures" begin include("QuadraturesTests.jl") end
   @time @testset "Polynomials" begin include("PolynomialsTests.jl") end
   @time @testset "CellValues" begin include("CellValuesTests/CellValuesTests.jl") end
-  #@time @testset "CellArrays" begin include("CellArraysTests.jl") end
   @time @testset "CellQuadratures" begin include("CellQuadraturesTests.jl") end
   @time @testset "CellFunctions" begin include("CellFunctionsTests.jl") end
   @time @testset "IntegrationMeshes" begin include("IntegrationMeshesTests.jl") end
