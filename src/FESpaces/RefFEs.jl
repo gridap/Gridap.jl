@@ -20,7 +20,7 @@ abstract type DOFBasis{D,T} end
 """
 Evaluate the DOFs for a given polynomial basis
 """
-function evaluateDOFs(this::DOFBasis{D,T},
+function evaluatedofs(this::DOFBasis{D,T},
 	prebasis::MultivariatePolynomialBasis{D,T})::Array{Float64,2} where {D,T}
 	@abstractmethod
 end
@@ -41,7 +41,7 @@ end
 Evaluate the Lagrangian DOFs basis (i.e., nodal values) for a given polynomial
 basis
 """
-function evaluateDOFs(this::LagrangianDOFBasis{D,T},
+function evaluatedofs(this::LagrangianDOFBasis{D,T},
 	prebasis::MultivariatePolynomialBasis{D,T}) where {D,T}
 	vals = evaluate(prebasis,this.nodes)
 	l = length(prebasis); lt = length(T)
@@ -102,7 +102,7 @@ function LagrangianRefFE{D,T}(polytope::Polytope{D},
 	nodes=NodesArray(polytope,orders)
 	dofsb = LagrangianDOFBasis{D,T}(nodes.coordinates)
 	prebasis = TensorProductMonomialBasis{D,T}(orders)
-	changeofbasis=inv(evaluateDOFs(dofsb,prebasis))
+	changeofbasis=inv(evaluatedofs(dofsb,prebasis))
 	basis = MPB_WithChangeOfBasis{D,T}(prebasis, changeofbasis)
 	nfacedofs=nodes.nfacenodes
 	LagrangianRefFE{D,T}(polytope, dofsb, basis, nfacedofs)

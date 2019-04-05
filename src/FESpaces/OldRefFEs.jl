@@ -29,7 +29,7 @@ struct LagrangianDOFBasis{D,T} <: DOFBasis{D,T}
   nodes::Array{Point{D}}
 end
 
-function evaluateDOFs(this::LagrangianDOFBasis, 
+function evaluatedofs(this::LagrangianDOFBasis, 
 	prebasis::MultivariatePolynomialBasis{D,T}) where {D,T}
   return evaluate(prebasis,this.nodes)
 end

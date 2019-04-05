@@ -45,7 +45,7 @@ nodes = NodesArray(polytope, orders)
 using Numa.RefFEs: LagrangianDOFBasis
 dofsb = LagrangianDOFBasis{D,VectorValue{D}}(nodes.coordinates)
 prebasis = TensorProductMonomialBasis{D,VectorValue{D}}(orders)
-res = RefFEs.evaluateDOFs(dofsb,prebasis)
+res = RefFEs.evaluatedofs(dofsb,prebasis)
 @test res[8,8] == 1.0
 ##
 D=2
@@ -62,7 +62,7 @@ for i in 1:4
   id[i+4,i] = VectorValue{D}(0.0, 1.0)
 end
 @test val1 == id
-dofv = RefFEs.evaluateDOFs(reffe.dofbasis, reffe.shfbasis)
+dofv = RefFEs.evaluatedofs(reffe.dofbasis, reffe.shfbasis)
 id = zeros(Float64,length(reffe.shfbasis), length(reffe.shfbasis))
 for i in 1:length(reffe.shfbasis)
   id[i,i] = 1.0
