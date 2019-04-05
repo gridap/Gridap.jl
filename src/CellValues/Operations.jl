@@ -47,16 +47,12 @@ function (==)(a::CellValue{T},b::CellValue{T}) where T
   return true
 end
 
-for op in (:+, :-, :*, :/, :(outer))
+for op in (:+, :-, :*, :/, :(outer), :(inner))
   @eval begin
     function ($op)(a::CellValue,b::CellValue)
       CellValueFromBinaryOp($op,a,b)
     end
   end
-end
-
-function binner(a::CellValue,b::CellValue)
-  CellValueFromBinaryOp(inner,a,b)
 end
 
 # Ancillary types
@@ -265,7 +261,7 @@ function (==)(a::CellArray{T,N},b::CellArray{T,N}) where {T,N}
   return true
 end
 
-for op in (:+, :-, :*, :/, :(outer))
+for op in (:+, :-, :*, :/, :(inner), :(outer))
   @eval begin
     function ($op)(a::CellArray,b::CellArray)
       CellArrayFromBoradcastBinaryOp($op,a,b)
@@ -277,16 +273,6 @@ for op in (:+, :-, :*, :/, :(outer))
       CellArrayFromBoradcastBinaryOp($op,a,b)
     end
   end
-end
-
-function binner(a::CellArray,b::CellArray)
-  CellArrayFromBoradcastBinaryOp(inner,a,b)
-end
-function binner(a::CellArray,b::CellValue)
-  CellArrayFromBoradcastBinaryOp(inner,a,b)
-end
-function binner(a::CellValue,b::CellArray)
-  CellArrayFromBoradcastBinaryOp(inner,a,b)
 end
 
 # Ancillary types

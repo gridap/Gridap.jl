@@ -72,7 +72,7 @@ sca3 = cellnewaxis(sca2,dim=2)
 print("CellArrayFromNewAxis ->"); @time doloop(sca3)
 print("CellArrayFromNewAxis ->"); @time doloop(sca3)
 
-for op in (:+,:-,:*,:/,:(outer),:(binner))
+for op in (:+,:-,:*,:/,:(outer),:(inner))
   @eval begin
     scv3 = $op(scv,scv2)
     print("CellValueBinary($(string($op))) ->"); @time doloop(scv3)
@@ -80,7 +80,7 @@ for op in (:+,:-,:*,:/,:(outer),:(binner))
   end
 end
 
-for op in (:+,:-,:*,:/,:(outer),:(binner))
+for op in (:+,:-,:*,:/,:(outer),:(inner))
   @eval begin
     sca3 = $op(sca,sca2)
     print("CellArrayBinary($(string($op))) ->"); @time doloop(sca3)
@@ -88,7 +88,7 @@ for op in (:+,:-,:*,:/,:(outer),:(binner))
   end
 end
 
-for op in (:+,:-,:*,:/,:(outer),:(binner))
+for op in (:+,:-,:*,:/,:(outer),:(inner))
   @eval begin
     sca3 = $op(scv,sca2)
     print("CellValueArrayBinary($(string($op))) ->"); @time doloop(sca3)

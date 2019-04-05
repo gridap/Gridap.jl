@@ -2,17 +2,20 @@ module CellValues
 
 export CellValue
 export CellArray
+export CellMatrix
 export CellVector
+export CellData
 
 export ConstantCellValue
 export ConstantCellArray
 export ConstantCellVector
+export ConstantCellMatrix
+export ConstantCellData
 
 export cellsize
 export celllength
 export cellsum
 export cellnewaxis
-export binner
 
 using Base: @propagate_inbounds
 using Base.Cartesian: @nloops, @nexprs, @nref
