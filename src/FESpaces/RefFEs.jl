@@ -17,7 +17,10 @@ Abstract DOF cell basis
 """
 abstract type DOFBasis{D,T} end
 
-function nodeevaluate(this::DOFBasis{D,T},
+"""
+Evaluate the DOFs for a given polynomial basis
+"""
+function evaluatedofs(this::DOFBasis{D,T},
 	prebasis::MultivariatePolynomialBasis{D,T})::Array{Float64,2} where {D,T}
 	@abstractmethod
 end
@@ -35,9 +38,10 @@ struct LagrangianDOFBasis{D,T} <: DOFBasis{D,T}
 end
 
 """
-Evaluate the Lagrangian DOFs basis on a set of nodes
+Evaluate the Lagrangian DOFs basis (i.e., nodal values) for a given polynomial
+basis
 """
-function nodeevaluate(this::LagrangianDOFBasis{D,T},
+function evaluatedofs(this::LagrangianDOFBasis{D,T},
 	prebasis::MultivariatePolynomialBasis{D,T}) where {D,T}
 	vals = evaluate(prebasis,this.nodes)
 	l = length(prebasis); lt = length(T)
@@ -74,9 +78,9 @@ dofs(this::RefFE{D,T} where {D,T})::DOFBasis{D,T} = @abstractmethod
 
 polytope(this::RefFE{D,T} where {D,T})::Polytope{D} = @abstractmethod
 
-shapefunctions(this::RefFE{D,T} where {D,T})::MultivariatePolynomialBasis{D,T} = @abstractmethod
+shfbasis(this::RefFE{D,T} where {D,T})::MultivariatePolynomialBasis{D,T} = @abstractmethod
 
-nfacetoowndofs(this::RefFE{D,T} where {D,T})::Vector{Vector{Int}} = @abstractmethod
+nfacedofs(this::RefFE{D,T} where {D,T})::Vector{Vector{Int}} = @abstractmethod
 
 """
 Reference Finite Element a la Ciarlet, i.e., it relies on a local function
@@ -98,12 +102,18 @@ function LagrangianRefFE{D,T}(polytope::Polytope{D},
 	nodes=NodesArray(polytope,orders)
 	dofsb = LagrangianDOFBasis{D,T}(nodes.coordinates)
 	prebasis = TensorProductMonomialBasis{D,T}(orders)
-	changeofbasis=inv(nodeevaluate(dofsb,prebasis))
+	changeofbasis=inv(evaluatedofs(dofsb,prebasis))
 	basis = MPB_WithChangeOfBasis{D,T}(prebasis, changeofbasis)
 	nfacedofs=nodes.nfacenodes
-	# println(changeofbasis)
-	# numdof = size(changeofbasis,1)*length(T)
 	LagrangianRefFE{D,T}(polytope, dofsb, basis, nfacedofs)
 end
+
+dofs(this::LagrangianRefFE{D,T} where {D,T})::DOFBasis{D,T} = this.dofbasis
+
+polytope(this::LagrangianRefFE{D,T} where {D,T})::Polytope{D} = this.polytope
+
+shfbasis(this::LagrangianRefFE{D,T} where {D,T})::MultivariatePolynomialBasis{D,T} = this.shfbasis
+
+nfacedofs(this::LagrangianRefFE{D,T} where {D,T})::Vector{Vector{Int}} = this.nfacedofs
 
 end # module RefFEs
