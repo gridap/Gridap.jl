@@ -1,13 +1,12 @@
 module CellValuesBench
 
+using Numa.FieldValues
 using Numa.CellValues
 
 include("../test/CellValuesTests/Mocks.jl")
 
 function doloop(x)
-  i = 0
   for xi in x
-    i += 1
   end
 end
 
@@ -35,9 +34,9 @@ scv = TestCellValue(sv,l)
 sv2 = 1.1
 scv2 = TestCellValue(sv2,l)
 sa = [sv, sv, sv]
-sca = TestCellValue(sa,l)
+sca = TestCellArray(sa,l)
 sa2 = [sv sv; sv sv; sv sv]
-sca2 = TestCellValue(sa2,l)
+sca2 = TestCellArray(sa2,l)
 
 print("TestCellValue ->"); @time doloop(scv)
 print("TestCellValue ->"); @time doloop(scv)
@@ -61,11 +60,39 @@ for op in (:+,:-)
   end
 end
 
-for op in (:+,:-,:*,:/)
+sca3 = cellsum(sca2,dim=2)
+print("CellArrayFromCellSum ->"); @time doloop(sca3)
+print("CellArrayFromCellSum ->"); @time doloop(sca3)
+
+sca3 = cellsum(sca,dim=1)
+print("CellValueFromCellSum ->"); @time doloop(sca3)
+print("CellValueFromCellSum ->"); @time doloop(sca3)
+
+sca3 = cellnewaxis(sca2,dim=2)
+print("CellArrayFromNewAxis ->"); @time doloop(sca3)
+print("CellArrayFromNewAxis ->"); @time doloop(sca3)
+
+for op in (:+,:-,:*,:/,:(outer),:(binner))
   @eval begin
     scv3 = $op(scv,scv2)
     print("CellValueBinary($(string($op))) ->"); @time doloop(scv3)
     print("CellValueBinary($(string($op))) ->"); @time doloop(scv3)
+  end
+end
+
+for op in (:+,:-,:*,:/,:(outer),:(binner))
+  @eval begin
+    sca3 = $op(sca,sca2)
+    print("CellArrayBinary($(string($op))) ->"); @time doloop(sca3)
+    print("CellArrayBinary($(string($op))) ->"); @time doloop(sca3)
+  end
+end
+
+for op in (:+,:-,:*,:/,:(outer),:(binner))
+  @eval begin
+    sca3 = $op(scv,sca2)
+    print("CellValueArrayBinary($(string($op))) ->"); @time doloop(sca3)
+    print("CellValueArrayBinary($(string($op))) ->"); @time doloop(sca3)
   end
 end
 
