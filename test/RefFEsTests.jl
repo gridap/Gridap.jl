@@ -265,63 +265,63 @@ elmatscal = sum(quad.weights.*elmatgp)
 
 ##
 
-using Numa.FieldValues
-nnd = 10
-D = 3
-t = ntuple(i -> i, D)
-p = VectorValue{D}(ntuple(i -> i, D))
-a = Array{VectorValue{D},2}(undef,nnd*D,nnd)
-for I in CartesianIndices(a); a[I] = p; end
-length(eltype(a))
-
-function computeb0(a,l,D)
-  lt = length(eltype(a))
-  b = Array{Float64,2}(undef,size(a,1),size(a,1))
-  @inbounds for k in 1:lt
-    off = nnd*(k-1)
-    for j in 1:size(a,2)
-      for i in 1:size(a,1)
-        b[i,j+off] = a[i,j][k]
-      end
-    end
-  end
-  return b
-end
-
-function computeb1(a,l,D)
-  lt = length(eltype(a))
-  b = Array{Float64,2}(undef,size(a,1),size(a,1))
-  for k in 1:lt
-    off = nnd*(k-1)
-    for j in 1:size(a,2)
-      for i in 1:size(a,1)
-        b[i,j+off] = a[i,j][k]
-      end
-    end
-  end
-  return b
-end
-
-function computeb2(a,l,D)
-  lt = length(eltype(a))
-  b = Array{Float64,2}(undef,size(a,1),size(a,1))
-  for k in 1:lt
-		off = (0,nnd*(k-1))
-		for i in CartesianIndices(a)
-			ij = Tuple(i).+off
-			b[ij...] = a[i][k]
-		end
-	end
-	return b
-end
-
-b = computeb1(a,nnd,D)
-b = computeb2(a,nnd,D)
-##
-
-##
-println("+++ Array copy +++")
-print("ConstantCellValue ->"); @time b = computeb0(a,nnd,D)
-print("ConstantCellValue ->"); @time b = computeb1(a,nnd,D)
-print("ConstantCellValue ->"); @time b = computeb2(a,nnd,D)
-##
+# using Numa.FieldValues
+# nnd = 10
+# D = 3
+# t = ntuple(i -> i, D)
+# p = VectorValue{D}(ntuple(i -> i, D))
+# a = Array{VectorValue{D},2}(undef,nnd*D,nnd)
+# for I in CartesianIndices(a); a[I] = p; end
+# length(eltype(a))
+#
+# function computeb0(a,l,D)
+#   lt = length(eltype(a))
+#   b = Array{Float64,2}(undef,size(a,1),size(a,1))
+#   @inbounds for k in 1:lt
+#     off = nnd*(k-1)
+#     for j in 1:size(a,2)
+#       for i in 1:size(a,1)
+#         b[i,j+off] = a[i,j][k]
+#       end
+#     end
+#   end
+#   return b
+# end
+#
+# function computeb1(a,l,D)
+#   lt = length(eltype(a))
+#   b = Array{Float64,2}(undef,size(a,1),size(a,1))
+#   for k in 1:lt
+#     off = nnd*(k-1)
+#     for j in 1:size(a,2)
+#       for i in 1:size(a,1)
+#         b[i,j+off] = a[i,j][k]
+#       end
+#     end
+#   end
+#   return b
+# end
+#
+# function computeb2(a,l,D)
+#   lt = length(eltype(a))
+#   b = Array{Float64,2}(undef,size(a,1),size(a,1))
+#   for k in 1:lt
+# 		off = (0,nnd*(k-1))
+# 		for i in CartesianIndices(a)
+# 			ij = Tuple(i).+off
+# 			b[ij...] = a[i][k]
+# 		end
+# 	end
+# 	return b
+# end
+#
+# b = computeb1(a,nnd,D)
+# b = computeb2(a,nnd,D)
+# ##
+#
+# ##
+# println("+++ Array copy +++")
+# print("ConstantCellValue ->"); @time b = computeb0(a,nnd,D)
+# print("ConstantCellValue ->"); @time b = computeb1(a,nnd,D)
+# print("ConstantCellValue ->"); @time b = computeb2(a,nnd,D)
+# ##
