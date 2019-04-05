@@ -37,20 +37,28 @@ end
 """
 Evaluate the Lagrangian DOFs basis on a set of nodes
 """
-function nodeevaluate(this::LagrangianDOFBasis{D,T}, prebasis::MultivariatePolynomialBasis{D,T}) where {D,T}
+function nodeevaluate(this::LagrangianDOFBasis{D,T},
+	prebasis::MultivariatePolynomialBasis{D,T}) where {D,T}
 	vals = evaluate(prebasis,this.nodes)
-	b = Array{Float64,2}(undef,length(prebasis),length(prebasis))
-	nnodes = length(this.nodes)
-	@assert nnodes*length(T) == length(prebasis)
-	for j in 1:length(T)
-		off = (0,nnodes*(j-1))
-		for i in CartesianIndices(vals)
-			ij = Tuple(i).+off
-			b[ij...] = vals[i][j]
+	l = length(prebasis); lt = length(T)
+	E = eltype(T)
+	b = Array{E,2}(undef,l, l)
+	nnd = length(this.nodes)
+	@assert nnd*length(T) == length(prebasis)
+	function computeb!(a,b,lt,nnd)
+		for k in 1:lt
+			off = nnd*(k-1)
+			for j in 1:size(a,2)
+				for i in 1:size(a,1)
+					b[i,j+off] = a[i,j][k]
+				end
+			end
 		end
 	end
+	computeb!(vals,b,lt,nnd)
 	return b
 end
+
 
 """
 Abstract Reference Finite Element
