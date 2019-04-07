@@ -5,6 +5,7 @@ export Point, MPoint
 export ScalarValue, VectorValue, TensorValue
 export MVectorValue, MTensorValue
 export inner, outer, meas
+export mutable
 
 
 using StaticArrays: SVector, MVector, SMatrix, MMatrix

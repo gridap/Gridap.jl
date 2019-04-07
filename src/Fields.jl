@@ -74,12 +74,16 @@ struct AnalyticalField{D,T} <: Field{D,T}
 end
 # @santiagobadia: How can we enforce f : Point{D} -> T and
 # g : Point{D} -> TG
-
 function evaluatefield!(this::AnalyticalField{D,T}, points::Vector{Point{D}}, v::Vector{T}) where {D,T}
-	for (p,P) in enumerate(points)
-		v[p] = this.funct(P)
+	MT = mutable(eltype(v))
+	z = zero(MT)
+	@inbounds for p in 1:length(points)
+		z = zero(z)
+		this.funct(points[p],z)
+		v[p] = z
 	end
 end
+
 function evaluatefieldgradient!(this::AnalyticalField{D,T}, points::Vector{Point{D}}, v::Vector{TG}) where {D,T,TG}
 	for (p,P) in enumerate(points)
 		v[p] = this.gradf(P)
