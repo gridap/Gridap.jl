@@ -16,9 +16,6 @@ Abstract field of rank `T` (e.g., scalar, vector, tensor) on a manifold of
 dimension `D`
 """
 abstract type Field{D,T} end
-# @santiagobadia :  We must check whether we are constraining the environment
-# space D, e.g., the point dimension in Point{D}, with the dimension of the
-# manifold, e.g., the field value in VectorValue{MD}.
 
 """
 Evaluate the field on a set of points

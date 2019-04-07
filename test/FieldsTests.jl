@@ -8,22 +8,19 @@ using Numa.Polytopes
 ##
 
 # Extension of Field for Analytical Fields
-# Quite complicated... use Lambda-functions?
-# Think how to be efficient for an array of points...
-# Do we want to create evaluatefield! and evaluatefield?, etc
-struct MyField{D,T} <: Field{D,T} end
-import Numa.Fields: evaluatefield!
-import Numa.Fields: evaluatefieldgradient!
-function evaluatefield!(this::MyField{D,T}, points::Vector{Point{D}}, v::Vector{T}) where {D,T}
-	for (p,P) in enumerate(points)
-		v[p] = sum(P)*one(T)
-	end
-end
-function evaluatefieldgradient!(this::MyField{D,T}, points::Vector{Point{D}}, v::Vector{TG}) where {D,T,TG}
-	for (p,P) in enumerate(points)
-		v[p] = ones(TG)
-	end
-end
+# struct MyField{D,T} <: Field{D,T} end
+# import Numa.Fields: evaluatefield!
+# import Numa.Fields: evaluatefieldgradient!
+# function evaluatefield!(this::MyField{D,T}, points::Vector{Point{D}}, v::Vector{T}) where {D,T}
+# 	for (p,P) in enumerate(points)
+# 		v[p] = sum(P)*one(T)
+# 	end
+# end
+# function evaluatefieldgradient!(this::MyField{D,T}, points::Vector{Point{D}}, v::Vector{TG}) where {D,T,TG}
+# 	for (p,P) in enumerate(points)
+# 		v[p] = ones(TG)
+# 	end
+# end
 ##
 using Numa.Polytopes: PointInt
 D = 2
@@ -49,13 +46,11 @@ gv = Numa.Fields.evaluatefieldgradient(MyField{D,ScalarValue}(),[p,p])
 using StaticArrays
 using Numa.FieldValues
 function foo_mvector_point(a::Vector{T},p::Vector{Point{D}}) where {D,T}
-	# z = zero(mutable(T))
 	MT = FieldValues.mutable(eltype(a))
 	z = zero(MT)
 	@inbounds for i in 1:length(a)
 		z = zero(z)
 		foo_mvector_point!(p[i],z)
-		# println(z)
 		a[i] = z
 	end
 end
