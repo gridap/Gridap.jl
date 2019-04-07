@@ -75,30 +75,13 @@ function evaluatefield!(this::AnalyticalField{D,T}, points::Vector{Point{D}}, v:
 end
 
 function evaluatefieldgradient!(this::AnalyticalField{D,T}, points::Vector{Point{D}}, v::Vector{TG}) where {D,T,TG}
-	for (p,P) in enumerate(points)
-		v[p] = this.gradf(P)
+	MTG = mutable(eltype(v))
+	z = zero(MTG)
+	@inbounds for p in 1:length(points)
+		z = zero(z)
+		this.gradf(points[p],z)
+		v[p] = z
 	end
 end
-# struct AnalyticalField{D,T} where {D,T}
-# 	f
-# 	gf
-# end
-
-# struct MyField{D,T} <: Field{D,T} end
-#
-# function evaluatefield(this::MyField{D,T}, point::Point{D})
-# 	return sum(point)*one(T)
-# end
-#
-# function evaluategradient(this::MyField{D,T}, point::Point{D})
-#   TG = outer(Point{D},T)
-# 	return one(TG)
-# end
-
-
-
-
-
-
 
 end  # module Fields
