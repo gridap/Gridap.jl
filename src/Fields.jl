@@ -1,4 +1,4 @@
-module Fields2
+module Fields
 
 using Numa.Helpers
 using Numa.FieldValues
@@ -69,4 +69,4 @@ function gradient(this::AnalyticalField{D}) where D
   AnalyticalField(gradfun,D)
 end
 
-end # module Fields2
+end # module Fields

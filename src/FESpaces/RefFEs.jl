@@ -73,7 +73,7 @@ the reference space
 # before being used here. Is this what we want?
 function evaluatedofs(this::LagrangianDOFBasis{D,T},
 	field::Field{D,T}) where {D,T}
-	vals = evaluatefield(field,this.nodes)
+	vals = evaluate(field,this.nodes)
 	# I would like to use evaluate everywhere, putting evaluate in Numa and
 	# importing it in all submodules
 	# This way we could use the same evaluatedofs for bases and fields...

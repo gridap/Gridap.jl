@@ -1,10 +1,10 @@
-module FieldsTests2
+module FieldsTests
 
 using Test
-using Numa.Fields2
+using Numa.Fields
 using Numa.FieldValues
 
-import Numa.Fields2: gradient
+import Numa.Fields: gradient
 
 fun(x::Point{2}) = x[1]*x[2] + x[1]
 typeof(fun)
@@ -55,11 +55,7 @@ l = 100000
 D=2
 p = [ones(Point{D}) for i in 1:l]
 fun(x::Point{D}) = VectorValue(x[2]+1.0,x[1])
+anfield = AnalyticalField(fun,D)
 @time v = evaluate(anfield,p)
-# @santiagobadia : evaluatefield! allocates as much as
-# evaluatefield but it does not happen when calling foo_mvector_point
-# Commenting this.funct(points[p],z) or in evaluatefields! no allocations
-# If I declare the function in Fields.jl it works too... somehow, we must
-# "fix" the function interface in Fields.jl
 
-end #module FieldsTests2
+end #module FieldsTests
