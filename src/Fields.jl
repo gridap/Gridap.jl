@@ -1,94 +1,72 @@
-module Fields
+module Fields2
 
-using Numa #@fverdugo to be eliminated
 using Numa.Helpers
 using Numa.FieldValues
 
 export Field
 export AnalyticalField
-export evaluatefield
-export evaluategradient
-export evaluatefield!
-export evaluategradient!
+
+export evaluate
+export evaluate!
+export gradient
 
 """
 Abstract field of rank `T` (e.g., scalar, vector, tensor) on a manifold of
 dimension `D`
 """
-abstract type Field{D,T} end
+abstract type Field{D,T<:FieldValue} end
 
-# @fverdugo I would use `evaluate!` instead of `evaluatefield!` (julia dispatch will do the rest)
-# Idem for related functions `evaluatefieldgradients!`, `evaluatefield`, etc.
-# I also would define the abstract interface gradient(::Field)::Field = @abstractmethod in order to
-# be consistent with other parts of the code, which in turn will allow to reduce a lot of code replication
-# See Fields2.jl as an example of the proposed interface
-
-#@fverdugo v::AbstractVector{T}
 """
 Evaluate the field on a set of points
 """
-function evaluatefield!(this::Field{D,T},
-	points::AbstractVector{Point{D}}, v::Vector{T}) where {D,T}
-	@abstractmethod
+function evaluate!(
+  this::Field{D,T},
+  points::AbstractVector{Point{D}},
+  v::AbstractVector{T}) where {D,T<:FieldValue}
+  @abstractmethod
 end
 
-function evaluatefieldgradient!(this::Field{D,T},
-	points::AbstractVector{Point{D}}, v::Vector{TG}) where {D,T,TG}
-	@abstractmethod
+"""
+Creates the gradient field of a field
+"""
+function gradient(
+  this::Field{D,T})::Field{D,TG} where {D,T<:FieldValue,TG<:FieldValue}
+  @abstractmethod
 end
-
 
 """
 Same as evaluate! but allocates output
 """
-function evaluatefield(this::Field{D,T},
-	points::AbstractVector{Point{D}}) where {D,T}
-  vals = Vector{T}(undef,length(points))
-  evaluatefield!(this, points, vals)
-  vals
+function evaluate(
+  this::Field{D,T},points::AbstractVector{Point{D}}) where {D,T<:FieldValue}
+  v = Array{T,1}(undef, (length(points),) )
+  evaluate!(this,points,v)
+  v
 end
 
-function evaluatefieldgradient(this::Field{D,T},
-	points::AbstractVector{Point{D}}) where {D,T}
-	TG = outer(Point{D},T)
-  vals = Vector{TG}(undef,length(points))
-  evaluatefieldgradient!(this, points, vals)
-  vals
-end
-
-# @fverdugo this type is type unstable, and it is limited to 2nd other derivatives.
-# See file Fields2.jl and the api in FieldsTests2.jl for an alternative implementation
-# which fixes both issues.
 """
-Field generated from user-provided lambda-functions for field value and its
-gradient
+Field generated from an analytical function
 """
-struct AnalyticalField{D,T} <: Field{D,T}
-	funct
-	gradf
-	# @santiagobadia : Even this value is exported with analyticfield and creates
-	# conflicts in other tests that define a f function
-end
-# @santiagobadia: How can we enforce f : Point{D} -> T and
-# g : Point{D} -> TG
-function evaluatefield!(this::AnalyticalField{D,T}, points::Vector{Point{D}}, v::Vector{T}) where {D,T}
-	MT = mutable(eltype(v))
-	z = zero(MT)
-	@inbounds for p in 1:length(points)
-		z = zero(z)
-		this.funct(points[p],z)
-		v[p] = z
-	end
+struct AnalyticalField{D,T<:FieldValue,F<:Function} <: Field{D,T}
+  fun::F
 end
 
-function evaluatefieldgradient!(this::AnalyticalField{D,T}, points::Vector{Point{D}}, v::Vector{TG}) where {D,T,TG}
-	MTG = mutable(eltype(v))
-	z = zero(MTG)
-	@inbounds for p in 1:length(points)
-		z = zero(z)
-		this.gradf(points[p],z)
-		v[p] = z
-	end
+function AnalyticalField(fun::Function,D::Int)
+  T = Base._return_type(fun,Tuple{Point{D}})
+  F = typeof(fun)
+  AnalyticalField{D,T,F}(fun)
 end
 
-end  # module Fields
+function evaluate!(
+  this::AnalyticalField{D,T},
+  points::AbstractVector{Point{D}},
+  v::AbstractVector{T}) where {D,T<:FieldValue}
+  v .= this.fun.(points)
+end
+
+function gradient(this::AnalyticalField{D}) where D
+  gradfun = gradient(this.fun)
+  AnalyticalField(gradfun,D)
+end
+
+end # module Fields2
