@@ -4,12 +4,15 @@
 # It will be removed in the future and replaced by other more general
 # and elegant implementations
 
-include("PolynomialsTestsMocks.jl")
+# include("PolynomialsTestsMocks.jl")
 
 using Numa.CellValues: IndexCellArray
 import Numa.CellValues: cellsize
 using Numa.CellIntegration
 import Numa.CellIntegration: cellcoordinates, cellbasis
+using Numa.Polytopes
+using Numa.RefFEs
+using Numa.FieldValues
 
 struct DummyCellCoordinates2D <: IndexCellArray{Point{2},1}
   x::Array{Point{2},2}
@@ -61,7 +64,10 @@ struct DummyIntegrationMesh2D <: IntegrationMesh{2,2}
 end
 
 function DummyIntegrationMesh2D(;partition::Tuple{Int,Int})
-  basis = ShapeFunctionsScalarQua4()
+  # basis = ShapeFunctionsScalarQua4()
+  polytope = Polytope(Polytopes.PointInt{2}(1,1))
+  reffe = LagrangianRefFE{2,ScalarValue}(polytope,[1,1])
+  basis = reffe.shfbasis
   cellbasis = CellBasisFromSingleInterpolation(basis)
   cellcoords = DummyCellCoordinates2D(partition=partition)
   DummyIntegrationMesh2D(cellcoords,cellbasis)

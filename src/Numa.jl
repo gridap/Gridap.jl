@@ -7,8 +7,8 @@ using Base.Cartesian
 include("Helpers.jl")
 
 # CellArrays tools
-include("FieldValues.jl")
-include("Fields.jl")
+include("Fields/FieldValues.jl")
+include("Fields/Fields.jl")
 include("Quadratures.jl")
 include("Polynomials.jl")
 # include("NewPolynomials.jl")

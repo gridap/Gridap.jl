@@ -1,11 +1,12 @@
 module FieldsTests
 
+##
 using Test
 using Numa.Fields
 using Numa.FieldValues
 
 import Numa.Fields: gradient
-
+##
 fun(x::Point{2}) = x[1]*x[2] + x[1]
 typeof(fun)
 
@@ -57,5 +58,6 @@ p = [ones(Point{D}) for i in 1:l]
 fun(x::Point{D}) = VectorValue(x[2]+1.0,x[1])
 anfield = AnalyticalField(fun,D)
 @time v = evaluate(anfield,p)
+##
 
 end #module FieldsTests
