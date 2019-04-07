@@ -52,8 +52,8 @@ res = RefFEs.evaluatedofs(dofsb,prebasis)
 fun(x::Point{D}) = VectorValue(x[2]+1.0,x[1])
 anfield = AnalyticalField(fun,D)
 Fields.evaluate(anfield,nodes.coordinates)
-RefFEs.evaluatedofs(dofsb,anfield)
-RefFEs.evaluatedofs(dofsb,anfield)
+res2 = RefFEs.evaluatedofs(dofsb,anfield)
+@test res2[8] == 1.0
 ##
 D=2
 orders=[1,1]
