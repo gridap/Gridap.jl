@@ -17,6 +17,13 @@ dimension `D`
 """
 abstract type Field{D,T} end
 
+# @fverdugo I would use `evaluate!` instead of `evaluatefield!` (julia dispatch will do the rest)
+# Idem for related functions `evaluatefieldgradients!`, `evaluatefield`, etc.
+# I also would define the abstract interface gradient(::Field)::Field = @abstractmethod in order to
+# be consistent with other parts of the code, which in turn will allow to reduce a lot of code replication
+# See Fields2.jl as an example of the proposed interface
+
+#@fverdugo v::AbstractVector{T}
 """
 Evaluate the field on a set of points
 """
@@ -49,6 +56,9 @@ function evaluatefieldgradient(this::Field{D,T},
   vals
 end
 
+# @fverdugo this type is type unstable, and it is limited to 2nd other derivatives.
+# See file Fields2.jl and the api in FieldsTests2.jl for an alternative implementation
+# which fixes both issues.
 """
 Field generated from user-provided lambda-functions for field value and its
 gradient

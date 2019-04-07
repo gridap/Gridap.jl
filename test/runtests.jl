@@ -4,6 +4,7 @@ using Test
 @testset "Numa.jl" begin
   @time @testset "FieldValues" begin include("FieldValuesTests.jl") end
   @time @testset "Fields" begin include("FieldsTests.jl") end
+  @time @testset "Fields2" begin include("FieldsTests2.jl") end
   @time @testset "Quadratures" begin include("QuadraturesTests.jl") end
   @time @testset "Polynomials" begin include("PolynomialsTests.jl") end
   @time @testset "CellValues" begin include("CellValuesTests/CellValuesTests.jl") end
