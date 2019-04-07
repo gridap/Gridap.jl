@@ -45,7 +45,7 @@ basis
 """
 function evaluatedofs(this::LagrangianDOFBasis{D,T},
 	prebasis::MultivariatePolynomialBasis{D,T}) where {D,T}
-	vals = evaluate(prebasis,this.nodes)
+	vals = Polynomials.evaluate(prebasis,this.nodes)
 	l = length(prebasis); lt = length(T)
 	E = eltype(T)
 	b = Array{E,2}(undef,l, l)
@@ -73,7 +73,7 @@ the reference space
 # before being used here. Is this what we want?
 function evaluatedofs(this::LagrangianDOFBasis{D,T},
 	field::Field{D,T}) where {D,T}
-	vals = evaluate(field,this.nodes)
+	vals = Fields.evaluate(field,this.nodes)
 	# I would like to use evaluate everywhere, putting evaluate in Numa and
 	# importing it in all submodules
 	# This way we could use the same evaluatedofs for bases and fields...
@@ -82,7 +82,6 @@ function evaluatedofs(this::LagrangianDOFBasis{D,T},
 	E = eltype(T)
 	nnd = length(this.nodes)
 	b = Vector{E}(undef,lt*nnd)
-	return b
 	function computeb!(a,b,lt,nnd)
 		for k in 1:lt
 			off = nnd*(k-1)
@@ -92,6 +91,7 @@ function evaluatedofs(this::LagrangianDOFBasis{D,T},
 		end
 	end
 	computeb!(vals,b,lt,nnd)
+	return b
 end
 
 """
