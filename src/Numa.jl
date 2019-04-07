@@ -9,7 +9,6 @@ include("Helpers.jl")
 # CellArrays tools
 include("FieldValues.jl")
 include("Fields.jl")
-include("Fields2.jl")#@fverdugo alternative implementation proposal
 include("Quadratures.jl")
 include("Polynomials.jl")
 # include("NewPolynomials.jl")
