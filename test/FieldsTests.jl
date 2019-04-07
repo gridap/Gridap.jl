@@ -5,7 +5,7 @@ using Test
 using Numa.Fields
 using Numa.FieldValues
 
-import Numa.Fields: gradient
+import Numa.Commons: evaluate, gradient
 ##
 fun(x::Point{2}) = x[1]*x[2] + x[1]
 typeof(fun)

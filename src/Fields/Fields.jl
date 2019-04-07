@@ -6,9 +6,8 @@ using Numa.FieldValues
 export Field
 export AnalyticalField
 
-export evaluate
+import Numa.Commons: evaluate, gradient
 export evaluate!
-export gradient
 
 """
 Abstract field of rank `T` (e.g., scalar, vector, tensor) on a manifold of

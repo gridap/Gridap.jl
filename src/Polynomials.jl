@@ -14,8 +14,8 @@ export MPB_WithChangeOfBasis
 # export UnivariatePolynomialBasis
 # export UnivariateMonomialBasis
 
-export evaluate
-export gradient, ∇
+import Numa.Commons: evaluate
+import Numa.Commons: gradient, ∇
 export evaluate!
 
 """
@@ -75,7 +75,6 @@ function gradient(::GradMultivariatePolynomialBasis{D,T,B} where{D,T,B})
  error("Gradient of a gradient not available")
 end
 
-const ∇ = gradient
 
 """
 Abstract type representing a univariate polynomial basis in dimension one
