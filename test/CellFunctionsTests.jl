@@ -10,6 +10,8 @@ using Numa.Polytopes
 using Numa.RefFEs
 # using Numa.Polynomials
 
+import Numa.Commons: gradient
+
 l = 10
 
 include("CellFunctionsTestsMocks.jl")
@@ -206,7 +208,6 @@ end
   # include("PolynomialsTestsMocks.jl")
 
   using Numa.CellFunctions: CellBasisValuesFromSingleInterpolation
-  using Numa.Polynomials: gradient
 
   l = 10
 
@@ -337,7 +338,7 @@ end
 
     gradufun(x::Point{2}) = VectorValue(x[2]+1.0,x[1])
 
-    # gradient(::typeof(ufun)) = gradufun
+    gradient(::typeof(ufun)) = gradufun
 
   end
 
@@ -348,20 +349,20 @@ end
 
   @test isa(cfield,CellField{2,Float64})
 
-  # cfieldgrad = gradient(cfield)
+  cfieldgrad = gradient(cfield)
 
-  # @test isa(cfieldgrad,CellField{2,VectorValue{2}})
+  @test isa(cfieldgrad,CellField{2,VectorValue{2}})
 
   uatx = evaluate(cfield,points)
 
-  # ugradatx = evaluate(cfieldgrad,points)
+  ugradatx = evaluate(cfieldgrad,points)
 
   x = evaluate(phi,points)
 
-  # for (ui,uigrad,xi) in zip(uatx,ugradatx,x)
-  #   @assert ui == ufun.(xi)
-  #   @assert uigrad == gradufun.(xi)
-  # end
+  for (ui,uigrad,xi) in zip(uatx,ugradatx,x)
+    @assert ui == ufun.(xi)
+    @assert uigrad == gradufun.(xi)
+  end
 
 end
 
