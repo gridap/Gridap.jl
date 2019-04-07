@@ -45,16 +45,43 @@ gv = Numa.Fields.evaluatefieldgradient(MyField{D,ScalarValue}(),[p,p])
 @test gv[1][1] == gv[1][2] == gv[2][1] == gv[2][2] == 1.0
 ##
 
-
 ##
+using StaticArrays
+using Numa.FieldValues
+function foo_mvector_point(a::Vector{T},p::Vector{Point{D}}) where {D,T}
+	# z = zero(mutable(T))
+	MT = FieldValues.mutable(eltype(a))
+	z = zero(MT)
+	@inbounds for i in 1:length(a)
+		z = zero(z)
+		foo_mvector_point!(p[i],z)
+		# println(z)
+		a[i] = z
+	end
+end
+function foo_mvector_point!(p,z)
+	z[1] = p[1]+p[2]*2
+	z[2] = p[2]-p[1]
+end
+##
+##
+l = 100000
 D=2
-f(a::Point{D})::ScalarValue = sum(a)
-gradf(a::Point{D})::VectorValue{D} = ones(VectorValue{D})
-p = Point{D}(1.0,1.0)
-anfield = AnalyticalField{D,ScalarValue}(f,gradf)
-v = Numa.Fields.evaluatefield(anfield,[p,p])
-v
-gv = Numa.Fields.evaluatefieldgradient(anfield,[p,p])
-@test v[1] = v[2] == 2.0
-@test gv[1][1] == gv[1][2] == gv[2][1] == gv[2][2] == 1.0
+a = Vector{VectorValue{D}}(undef,(l,))
+MT = FieldValues.mutable(eltype(a))
+p = Vector{Point{D}}(undef,(l,))
+p = [ones(Point{D}) for i in 1:l]
+println("++++++MVector++++++")
+@time foo_mvector_point(a,p)
+@time foo_mvector_point(a,p)
+anfield = AnalyticalField{D,VectorValue{D}}(foo_mvector_point!,foo_mvector_point!)
+@time v = Numa.Fields.evaluatefield(anfield,p)
+@time Numa.Fields.evaluatefield!(anfield,p,v)
+@time Numa.Fields.evaluatefield!(anfield,p,v)
+# @santiagobadia : evaluatefield! allocates as much as
+# evaluatefield but it does not happen when calling foo_mvector_point
+# Commenting this.funct(points[p],z) or in evaluatefields! no allocations
+# If I declare the function in Fields.jl it works too... somehow, we must
+# "fix" the function interface in Fields.jl
+
 ##
