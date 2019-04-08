@@ -6,7 +6,7 @@ using Numa.FieldValues
 export Field
 export AnalyticalField
 
-import Numa.Commons: evaluate, gradient
+import Numa: evaluate, gradient
 export evaluate!
 
 """

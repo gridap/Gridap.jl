@@ -12,7 +12,7 @@ using Numa.CellFunctions
 using Numa.CellQuadratures
 using Numa.Quadratures
 
-import Numa.Commons: evaluate, gradient
+import Numa: evaluate, gradient
 
 """
 Minimal interface for a mesh used for numerical integration

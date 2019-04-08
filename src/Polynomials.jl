@@ -14,8 +14,8 @@ export BasisWithChangeOfBasis
 # export UnivariatePolynomialBasis
 # export UnivariateMonomialBasis
 
-import Numa.Commons: evaluate
-import Numa.Commons: gradient, ∇
+import Numa: evaluate
+import Numa: gradient, ∇
 export evaluate!
 
 """

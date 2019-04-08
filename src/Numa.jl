@@ -4,8 +4,8 @@ module Numa
 
 using Base.Cartesian
 
+include("Methods.jl")
 include("Helpers.jl")
-include("Commons.jl")
 
 # CellArrays tools
 include("Fields/FieldValues.jl")

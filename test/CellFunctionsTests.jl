@@ -10,7 +10,7 @@ using Numa.Polytopes
 using Numa.RefFEs
 # using Numa.Polynomials
 
-import Numa.Commons: gradient
+import Numa: gradient
 
 l = 10
 

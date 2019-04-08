@@ -26,7 +26,7 @@ using Numa.Polynomials
 import Base: +, -, *, /, ∘
 
 import Numa.FieldValues: inner, outer
-import Numa.Commons: evaluate, gradient
+import Numa: evaluate, gradient
 import Numa.CellValues: inputcellarray, computesize, computevals!
 
 include("AbstractCellFunctions.jl")
