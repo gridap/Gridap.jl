@@ -366,6 +366,47 @@ end
 
 end
 
+@testset "CellFieldFromComposeExtended" begin
+
+  @eval begin
+
+    fun(x::Point{2},u::VectorValue{2}) = x[1]*x[2]*u[2] + x[1]*u[1]
+
+    gradfun(x::Point{2},u::VectorValue{2}) = VectorValue(x[2]*u[2]+u[1],x[1]*u[2])
+
+    gradient(::typeof(fun)) = gradfun
+
+  end
+
+  @test isa(phi,CellField)
+  @test isa(fun,Function)
+
+  u = phi
+  @test isa(u,CellField)
+
+  cfield = compose(fun,phi,u)
+
+  @test isa(cfield,CellField{2,Float64})
+
+  cfieldgrad = gradient(cfield)
+
+  @test isa(cfieldgrad,CellField{2,VectorValue{2}})
+
+  cfatx = evaluate(cfield,points)
+
+  gradcfatx = evaluate(cfieldgrad,points)
+
+  x = evaluate(phi,points)
+
+  uatx = evaluate(u,x)
+
+  for (cfi,cfigrad,xi,ui) in zip(cfatx,gradcfatx,x,uatx)
+    @assert cfi == fun.(xi,ui)
+    @assert cfigrad == gradfun.(xi,ui)
+  end
+
+end
+
 @testset "CellBasisWithGeomap" begin
 
   basis = cellbasis(imesh)

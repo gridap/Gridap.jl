@@ -21,6 +21,7 @@ using Numa.FieldValues
 using Numa.CellValues
 using Numa.CellValues: CellArrayFromUnaryOp
 using Numa.CellValues: CellArrayFromBroadcastUnaryOp
+using Numa.CellValues: CellArrayFromBoradcastBinaryOp
 using Numa.Polynomials
 
 import Base: +, -, *, /, ∘
