@@ -13,6 +13,7 @@ using Numa.CellQuadratures
 using Numa.Quadratures
 
 import Numa: evaluate, gradient
+import Numa: cellfield
 
 """
 Minimal interface for a mesh used for numerical integration
@@ -51,6 +52,16 @@ function integrate(fun::Function,mesh::IntegrationMesh{D,Z},quad::CellQuadrature
   phi = geomap(mesh)
   cellfun = compose(fun,phi)
   integrate(cellfun,phi,quad)
+end
+
+function cellfield(mesh::IntegrationMesh,fun::Function)
+  phi = geomap(mesh)
+  compose(fun,phi)
+end
+
+function cellfield(mesh::IntegrationMesh{D,Z},fun::Function,u::CellField{Z}) where {D,Z}
+  phi = geomap(mesh)
+  compose(fun,phi,u)
 end
 
 end # module CellIntegration
