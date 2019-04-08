@@ -20,9 +20,13 @@ Minimal interface for a mesh used for numerical integration
 """
 abstract type IntegrationMesh{Z,D} end
 
-cellcoordinates(::IntegrationMesh{Z,D} where {Z,D})::CellPoints{D} = @abstractmethod
+function cellcoordinates(::IntegrationMesh{Z,D})::CellPoints{D} where {Z,D}
+ @abstractmethod
+end
 
-cellbasis(::IntegrationMesh{Z,D} where {Z,D})::CellBasis{Z,Float64} = @abstractmethod
+function cellbasis(::IntegrationMesh{Z,D})::CellBasis{Z,Float64} where {Z,D}
+  @abstractmethod
+end
 
 function geomap(self::IntegrationMesh)
   coords = cellcoordinates(self)
