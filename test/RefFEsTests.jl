@@ -15,7 +15,7 @@ using Base.Cartesian
 
 # Create dofbasis using node array for Lagrangian FEs
 
-# Create MultivariatePolynomialBasisWithChangeOfBasis
+# Create BasisWithChangeOfBasis
 # i.e., CanonicalBasis given DOFs
 
 # nfacetoowndofs

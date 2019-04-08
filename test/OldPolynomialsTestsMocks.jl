@@ -5,9 +5,9 @@ using Numa.Polynomials
 
 import Numa.Polynomials: evaluate!, gradient
 
-struct ShapeFunctionsScalarQua4 <: MultivariatePolynomialBasis{2,Float64} end
+struct ShapeFunctionsScalarQua4 <: Basis{2,Float64} end
 
-struct GradShapeFunctionsScalarQua4 <: MultivariatePolynomialBasis{2,VectorValue{2}} end
+struct GradShapeFunctionsScalarQua4 <: Basis{2,VectorValue{2}} end
 
 Base.length(::ShapeFunctionsScalarQua4) = 4
 

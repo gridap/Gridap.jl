@@ -21,7 +21,7 @@ abstract type DOFBasis{D,T} end
 Evaluate the DOFs for a given polynomial basis
 """
 function evaluatedofs(this::DOFBasis{D,T},
-	prebasis::MultivariatePolynomialBasis{D,T})::Array{Float64,2} where {D,T}
+	prebasis::Basis{D,T})::Array{Float64,2} where {D,T}
 	@abstractmethod
 end
 
@@ -44,7 +44,7 @@ Evaluate the Lagrangian DOFs basis (i.e., nodal values) for a given polynomial
 basis
 """
 function evaluatedofs(this::LagrangianDOFBasis{D,T},
-	prebasis::MultivariatePolynomialBasis{D,T}) where {D,T}
+	prebasis::Basis{D,T}) where {D,T}
 	vals = Polynomials.evaluate(prebasis,this.nodes)
 	l = length(prebasis); lt = length(T)
 	E = eltype(T)
@@ -108,7 +108,7 @@ dofs(this::RefFE{D,T} where {D,T})::DOFBasis{D,T} = @abstractmethod
 
 polytope(this::RefFE{D,T} where {D,T})::Polytope{D} = @abstractmethod
 
-shfbasis(this::RefFE{D,T} where {D,T})::MultivariatePolynomialBasis{D,T} = @abstractmethod
+shfbasis(this::RefFE{D,T} where {D,T})::Basis{D,T} = @abstractmethod
 
 nfacedofs(this::RefFE{D,T} where {D,T})::Vector{Vector{Int}} = @abstractmethod
 
@@ -123,7 +123,7 @@ the shape functions.
 struct LagrangianRefFE{D,T} <: RefFE{D,T}
 	polytope::Polytope{D}
 	dofbasis::LagrangianDOFBasis{D,T}
-	shfbasis::MPB_WithChangeOfBasis{D,T}
+	shfbasis::BasisWithChangeOfBasis{D,T}
 	nfacedofs::Vector{Vector{Int}}
 end
 
@@ -133,7 +133,7 @@ function LagrangianRefFE{D,T}(polytope::Polytope{D},
 	dofsb = LagrangianDOFBasis{D,T}(nodes.coordinates)
 	prebasis = TensorProductMonomialBasis{D,T}(orders)
 	changeofbasis=inv(evaluatedofs(dofsb,prebasis))
-	basis = MPB_WithChangeOfBasis{D,T}(prebasis, changeofbasis)
+	basis = BasisWithChangeOfBasis{D,T}(prebasis, changeofbasis)
 	nfacedofs=nodes.nfacenodes
 	LagrangianRefFE{D,T}(polytope, dofsb, basis, nfacedofs)
 end
@@ -142,7 +142,7 @@ dofs(this::LagrangianRefFE{D,T} where {D,T})::DOFBasis{D,T} = this.dofbasis
 
 polytope(this::LagrangianRefFE{D,T} where {D,T})::Polytope{D} = this.polytope
 
-shfbasis(this::LagrangianRefFE{D,T} where {D,T})::MultivariatePolynomialBasis{D,T} = this.shfbasis
+shfbasis(this::LagrangianRefFE{D,T} where {D,T})::Basis{D,T} = this.shfbasis
 
 nfacedofs(this::LagrangianRefFE{D,T} where {D,T})::Vector{Vector{Int}} = this.nfacedofs
 

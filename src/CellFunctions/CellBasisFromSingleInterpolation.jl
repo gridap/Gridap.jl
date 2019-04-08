@@ -2,14 +2,14 @@
 """
 Concrete implementation of CellBasis for the case of the same interpolation on all cells
 """
-struct CellBasisFromSingleInterpolation{D,T,B<:MultivariatePolynomialBasis{D,T}} <: CellBasis{D,T}
+struct CellBasisFromSingleInterpolation{D,T,B<:Basis{D,T}} <: CellBasis{D,T}
   basis::B
-  function CellBasisFromSingleInterpolation{D,T,B}(basis::MultivariatePolynomialBasis{D,T}) where {D,T,B}
+  function CellBasisFromSingleInterpolation{D,T,B}(basis::Basis{D,T}) where {D,T,B}
     new(basis)
   end
 end
 
-function CellBasisFromSingleInterpolation(basis::MultivariatePolynomialBasis{D,T}) where {D,T}
+function CellBasisFromSingleInterpolation(basis::Basis{D,T}) where {D,T}
   CellBasisFromSingleInterpolation{D,T,typeof(basis)}(basis)
 end
 
@@ -33,7 +33,7 @@ end
 # Ancillary types
 
 # @fverdugo a way to say the following?
-# B <: MultivariatePolynomialBasis{D,T}
+# B <: Basis{D,T}
 # C <: CellPoints{D}
 # T <: FieldValue
 struct CellBasisValuesFromSingleInterpolation{D,T,B,C} <: CellArrayFromUnaryOp{C,T,2}
@@ -43,7 +43,7 @@ struct CellBasisValuesFromSingleInterpolation{D,T,B,C} <: CellArrayFromUnaryOp{C
 end
 
 function CellBasisValuesFromSingleInterpolation(
-  basis::MultivariatePolynomialBasis{D,T},cellpoints::CellPoints{D}) where {D,T}
+  basis::Basis{D,T},cellpoints::CellPoints{D}) where {D,T}
   B = typeof(basis)
   C = typeof(cellpoints)
   CellBasisValuesFromSingleInterpolation{D,T,B,C}(basis,length(basis),cellpoints)
