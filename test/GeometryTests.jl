@@ -1,4 +1,4 @@
-module CartesianTests
+module GeometryTests
 
 using Test
 using Numa
@@ -7,7 +7,7 @@ using Numa.CellValues
 using Numa.Geometry
 using Numa.Polytopes
 
-@testset "Cartesian" begin
+@testset "CartesianGrid" begin
 
   grid = CartesianGrid(domain=(0.0,1.0,-1.0,2.0),partition=(3,4))
 
@@ -62,4 +62,4 @@ end
 
 end
 
-end # module CartesianTests
+end # module GeometryTests

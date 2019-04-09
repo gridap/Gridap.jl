@@ -22,7 +22,7 @@ using Numa.CellValues: IndexCellValue, IndexCellArray
 using Numa.Polytopes
 
 include("Interfaces.jl")
-include("Cartesian.jl")
+include("CartesianGrid.jl")
 include("Vtkio.jl")
 
 end # module Geometry
