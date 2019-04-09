@@ -40,10 +40,22 @@ end
 @testset "VTKio" begin
 
   d = mktempdir()
+  f = joinpath(d,"grid")
 
   grid = CartesianGrid(domain=(0.0,1.0,-1.0,2.0,0.0,1.0),partition=(10,10,10))
 
-  writevtk(grid,joinpath(d,"grid"))
+  cd1 = rand(length(connectivity(grid)))
+  cd2 = 1:length(connectivity(grid))
+  pd1 = rand(length(coordinates(grid)))
+  pd2 = 1:length(coordinates(grid))
+
+  cdat = ["cd1"=>cd1,"cd2"=>cd2]
+  pdat = ["pd1"=>pd1,"pd2"=>pd2]
+
+  writevtk(grid,f)
+  writevtk(grid,f,celldata=cdat)
+  writevtk(grid,f,pointdata=pdat)
+  writevtk(grid,f,celldata=cdat,pointdata=pdat)
 
   rm(d,recursive=true)
 

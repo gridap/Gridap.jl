@@ -1,10 +1,16 @@
 
-function writevtk(grid::Grid,filebase)
+function writevtk(grid::Grid,filebase;celldata=Dict(),pointdata=Dict())
   points = vtkpoints(grid)
   cells = vtkcells(grid)
   vtkfile = vtk_grid(filebase, points, cells)
+  for (k,v) in celldata
+    vtk_cell_data(vtkfile, v, k)
+  end
+  for (k,v) in pointdata
+    vtk_point_data(vtkfile, v, k)
+  end
   outfiles = vtk_save(vtkfile)
-  reportfiles(outfiles)
+  #reportfiles(outfiles)
 end
 
 function vtkpoints(grid::Grid{D}) where D
