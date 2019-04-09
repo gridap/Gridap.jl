@@ -3,7 +3,7 @@
 
 """
 Minimal interface needed to describe a conforming linear discretization
-of a domain.
+of a domain. E.g., this is the minimum needed to visualize the results.
 
 D is the dimension of the coordinates and Z is the dimension of the cells
 """
@@ -15,7 +15,6 @@ end
 
 cells(::Grid)::IndexCellVector{Int} = @abstractmethod
 
-# @fverdugo better to return the polytope instead?
 """
 Returns the tuple uniquely identifying the Polytope of each cell
 """
