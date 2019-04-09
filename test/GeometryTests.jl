@@ -68,7 +68,12 @@ end
 
   grid = UnstructuredGrid(cgrid)
 
-  writevtk(grid,"grid")
+  d = mktempdir()
+  f = joinpath(d,"grid")
+
+  writevtk(grid,f)
+
+  rm(d,recursive=true)
 
 end
 

@@ -23,4 +23,17 @@ t = cells(grid)
 print("CartesianGridCells ->"); @time doloop(t)
 print("CartesianGridCells ->"); @time doloop(t)
 
+print("UnstructuredConstructor ->"); @time ugrid = UnstructuredGrid(grid)
+print("UnstructuredConstructor ->"); @time ugrid = UnstructuredGrid(grid)
+
+x = points(ugrid)
+
+print("UnstructuredGridPoints ->"); @time doloop(x)
+print("UnstructuredGridPoints ->"); @time doloop(x)
+
+t = cells(ugrid)
+
+print("UnstructuredGridCells ->"); @time doloop(t)
+print("UnstructuredGridCells ->"); @time doloop(t)
+
 end # module GeometryBenchs
