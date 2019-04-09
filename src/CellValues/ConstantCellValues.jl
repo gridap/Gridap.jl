@@ -1,7 +1,7 @@
 
 # ConstantCellValue
 
-struct ConstantCellValue{T} <: IndexCellValue{T}
+struct ConstantCellValue{T} <: IndexCellValue{T,1}
   value::T
   length::Int
 end

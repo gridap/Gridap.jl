@@ -16,7 +16,7 @@ eltype(::Type{C}) where C <: IterCellValue{T} where T = T
 
 # Indexable cell Values
 
-abstract type IndexCellValue{T} <: AbstractVector{T} end
+abstract type IndexCellValue{T,N} <: AbstractArray{T,N} end
 
 # Cell Values
 

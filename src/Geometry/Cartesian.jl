@@ -5,7 +5,7 @@ struct CartesianGrid{D,Z} <: Grid{D,Z}
   extrusion::NTuple{Z,Int}
 end
 
-struct CartesianGridCoords{D} <: AbstractArray{Point{D},D}
+struct CartesianGridCoords{D} <: IndexCellValue{Point{D},D}
   dim_to_limits::NTuple{D,NTuple{2,Float64}}
   dim_to_npoint::NTuple{D,Int}
 end

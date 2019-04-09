@@ -11,9 +11,7 @@ using Numa.Geometry: CartesianGridConnectivity
   npoints = (3,2,4)
   x = CartesianGridCoords(domain,npoints)
 
-  for xi in x
-    @show xi
-  end
+  println(x)
 
   ncells = (2,3)
   t = CartesianGridConnectivity(ncells)

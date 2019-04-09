@@ -3,7 +3,7 @@ using Numa.CellValues: IndexCellValue, IndexCellArray
 import Base: size, getindex, IndexStyle, length
 import Numa.CellValues: cellsize
 
-struct TestCellValue{T} <: IndexCellValue{T}
+struct TestCellValue{T} <: IndexCellValue{T,1}
   a::T
   l::Int
 end
