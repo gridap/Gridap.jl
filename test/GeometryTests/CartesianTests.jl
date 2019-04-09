@@ -37,4 +37,16 @@ using Numa.Polytopes
 
 end
 
+@testset "VTKio" begin
+
+  d = mktempdir()
+
+  grid = CartesianGrid(domain=(0.0,1.0,-1.0,2.0,0.0,1.0),partition=(10,10,10))
+
+  writevtk(grid,joinpath(d,"grid"))
+
+  rm(d,recursive=true)
+
+end
+
 end # module CartesianTests
