@@ -26,48 +26,35 @@ cellsize(::CellValue) = ()
 
 # Iterable cell Arrays
 
-abstract type CellArray{T,N} end
+abstract type IterCellArray{T,N} end
+
+function iterate(::IterCellArray{T,N})::Union{Nothing,Tuple{AbstractArray{T,N},Any}} where {T,N}
+  @abstractmethod
+end
+
+function iterate(::IterCellArray{T,N},state)::Union{Nothing,Tuple{AbstractArray{T,N},Any}} where {T,N}
+  @abstractmethod
+end
+
+length(::IterCellArray)::Int = @abstractmethod
+
+IteratorEltype(::Type{C} where C <: IterCellArray{T,N} where {T,N}) = EltypeUnknown()
+
+# Indexable cell arrays
+
+abstract type IndexCellArray{T,N,A<:AbstractArray{T,N},D} <: AbstractArray{A,D} end
+
+# Cell Arrays
+
+const CellArray{T,N} = Union{IterCellArray{T,N},IndexCellArray{T,N}}
 
 const CellVector{T} = CellArray{T,1} where T
 
 const CellMatrix{T} = CellArray{T,2} where T
 
-function iterate(::CellArray{T,N})::Union{Nothing,Tuple{AbstractArray{T,N},Any}} where {T,N}
-  @abstractmethod
-end
-
-function iterate(::CellArray{T,N},state)::Union{Nothing,Tuple{AbstractArray{T,N},Any}} where {T,N}
-  @abstractmethod
-end
-
-length(::CellArray)::Int = @abstractmethod
-
-IteratorEltype(::Type{C} where C <: CellArray{T,N} where {T,N}) = EltypeUnknown()
-
 cellsize(self::CellArray,i::Int) = (s = cellsize(self); s[i])
 
 celllength(self::CellArray) = prod(cellsize(self))
-
-# Indexable cell Arrays
-# We don't extend from AbstractVector, since in general we do not know
-# the type of the returned matrix
-
-abstract type IndexCellArray{T,N} <: CellArray{T,N} end
-
-function getindex(::IndexCellArray{T,N},cell::Int)::AbstractArray{T,N} where {T,N}
-  @abstractmethod
-end
-
-@inline iterate(self::IndexCellArray) = iterate(self,0)
-
-@inline function iterate(self::IndexCellArray,state::Int)
-  if length(self) == state
-    nothing
-  else
-    k = state+1
-    (self[k],k)
-  end
-end
 
 # Cell Data
 

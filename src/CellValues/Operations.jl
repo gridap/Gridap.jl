@@ -124,7 +124,7 @@ end
 
 # Ancillary types
 
-abstract type CellArrayFromUnaryOp{C<:CellArray,T,N} <: CellArray{T,N} end
+abstract type CellArrayFromUnaryOp{C<:CellArray,T,N} <: IterCellArray{T,N} end
 
 function inputcellarray(::CellArrayFromUnaryOp{C,T,N})::C  where {C,T,N}
   @abstractmethod
@@ -277,7 +277,7 @@ end
 
 # Ancillary types
 
-abstract type CellArrayFromBinaryOp{A<:CellData,B<:CellData,T,N} <: CellArray{T,N} end
+abstract type CellArrayFromBinaryOp{A<:CellData,B<:CellData,T,N} <: IterCellArray{T,N} end
 
 function leftcellarray(::CellArrayFromBinaryOp{A,B,T,N})::A where {A,B,T,N}
   @abstractmethod

@@ -2,18 +2,22 @@
 import Numa.CellValues: cellsize
 using Numa.CellValues: IndexCellArray
 
-struct CellArrayMockup{T,N} <: IndexCellArray{T,N}
+import Base: IndexStyle, size, getindex
+
+struct CellArrayMockup{T,N} <: IndexCellArray{T,N,Array{T,N},1}
   a::Array{T,N}
   l::Int
 end
 
-function Base.getindex(self::CellArrayMockup,cell::Int)
+function getindex(self::CellArrayMockup,cell::Int)
   @assert 1 <= cell
   @assert cell <= length(self)
   self.a
 end
 
-Base.length(self::CellArrayMockup) = self.l
+size(self::CellArrayMockup) = (self.l,)
+
+IndexStyle(::Type{CellArrayMockup{T,N}} where {T,N}) = IndexLinear()
 
 cellsize(self::CellArrayMockup) = size(self.a)
 
