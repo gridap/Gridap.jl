@@ -12,6 +12,9 @@ export ConstantCellVector
 export ConstantCellMatrix
 export ConstantCellData
 
+export CellValueFromArray
+export CellArrayFromArrayOfArrays
+
 export celldata
 export cellsize
 export celllength
@@ -40,5 +43,6 @@ include("CachedArray.jl")
 include("Interfaces.jl")
 include("Operations.jl")
 include("ConstantCellValues.jl")
+include("Wrappers.jl")
 
 end # module CellValues
