@@ -11,6 +11,7 @@ using Test
   @time @testset "CellFunctions" begin include("CellFunctionsTests.jl") end
   @time @testset "CellIntegration" begin include("CellIntegrationTests.jl") end
   @time @testset "Polytopes" begin include("PolytopesTests.jl") end
+  @time @testset "Geometry" begin include("GeometryTests/GeometryTests.jl") end
   @time @testset "RefFEs" begin include("RefFEsTests.jl") end
   # @time @testset "Meshes" begin include("MeshesTests.jl") end
   # @time @testset "FESpaces" begin include("FESpacesTests.jl") end

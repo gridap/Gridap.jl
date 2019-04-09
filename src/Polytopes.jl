@@ -9,6 +9,12 @@ export Polytope
 export NodesArray
 export NFace
 export dim, numnftypes
+export HEX_AXIS, TET_AXIS
+
+# Module constants
+
+const HEX_AXIS = 1
+const TET_AXIS = 2
 
 # Abstract types and interfaces
 

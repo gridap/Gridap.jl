@@ -42,9 +42,7 @@ IteratorEltype(::Type{C} where C <: IterCellArray{T,N} where {T,N}) = EltypeUnkn
 
 # Indexable cell arrays
 
-#@fverdugo why it does not work?
-#abstract type IndexCellArray{T,N,A<:AbstractArray{T,N},D} <: AbstractArray{A,D} end
-abstract type IndexCellArray{T,N,A<:AbstractArray,D} <: AbstractArray{A,D} end
+abstract type IndexCellArray{T,N,A<:AbstractArray{T,N},D} <: AbstractArray{A,D} end
 
 # Cell Arrays
 

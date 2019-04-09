@@ -1,9 +1,28 @@
 
-struct CartesianGrid{D,Z} <: Grid{D,Z}
+struct CartesianGrid{D} <: Grid{D,D}
   dim_to_limits::NTuple{D,NTuple{2,Float64}}
   dim_to_ncells::NTuple{D,Int}
-  extrusion::NTuple{Z,Int}
+  extrusion::NTuple{D,Int}
 end
+
+function CartesianGrid(;domain::NTuple{D2,Float64},partition::NTuple{D,Int}) where {D2,D}
+  @assert D2 == 2*D
+  dim_to_limits = tuple([(domain[2*i-1],domain[2*i]) for i in 1:D ]...)
+  extrusion = tuple(fill(HEX_AXIS,D)...)
+  dim_to_ncells = partition
+  CartesianGrid{D}(dim_to_limits,dim_to_ncells,extrusion)
+end
+
+function coordinates(self::CartesianGrid)
+  dim_to_npoint = tuple([ i+1 for i in self.dim_to_ncells ]...)
+  CartesianGridCoords(self.dim_to_limits,dim_to_npoint)
+end
+
+connectivity(self::CartesianGrid) = CartesianGridConnectivity(self.dim_to_ncells)
+
+celltypes(self::CartesianGrid) = ConstantCellValue(self.extrusion,prod(self.dim_to_ncells))
+
+# Ancillary types
 
 struct CartesianGridCoords{D} <: IndexCellValue{Point{D},D}
   dim_to_limits::NTuple{D,NTuple{2,Float64}}
@@ -24,7 +43,7 @@ function getindex(self::CartesianGridCoords{D}, I::Vararg{Int, D}) where D
   Point{D}(p)
 end
 
-struct CartesianGridConnectivity{D,L} <: IndexCellArray{Int,L,SVector{L,Int},D}
+struct CartesianGridConnectivity{D,L} <: IndexCellArray{Int,1,SVector{L,Int},D}
   dim_to_ncell::SVector{D,Int}
 end
 
