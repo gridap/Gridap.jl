@@ -24,7 +24,7 @@ function getindex(self::CartesianGridCoords{D}, I::Vararg{Int, D}) where D
   Point{D}(p)
 end
 
-struct CartesianGridConnectivity{D,L} <: AbstractArray{SVector{L,Int},D}
+struct CartesianGridConnectivity{D,L} <: IndexCellArray{Int,L,SVector{L,Int},D}
   dim_to_ncell::SVector{D,Int}
 end
 

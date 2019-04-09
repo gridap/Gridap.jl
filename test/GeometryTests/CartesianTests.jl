@@ -16,6 +16,8 @@ using Numa.Geometry: CartesianGridConnectivity
   ncells = (2,3)
   t = CartesianGridConnectivity(ncells)
 
+  println(t)
+
   for ti in t
     @show ti
   end
