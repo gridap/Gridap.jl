@@ -9,11 +9,11 @@ D is the dimension of the coordinates and Z is the dimension of the cells
 """
 abstract type Grid{D,Z} end
 
-function coordinates(::Grid{D})::IndexCellValue{Point{D}} where D
+function points(::Grid{D})::IndexCellValue{Point{D}} where D
   @abstractmethod
 end
 
-connectivity(::Grid)::IndexCellVector{Int} = @abstractmethod
+cells(::Grid)::IndexCellVector{Int} = @abstractmethod
 
 # @fverdugo better to return the polytope instead?
 """

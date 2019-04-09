@@ -1,7 +1,7 @@
 module Geometry
 
 export Grid, CartesianGrid
-export connectivity, celltypes
+export cells, points, celltypes
 export writevtk
 
 import Base: size, getindex, IndexStyle
@@ -20,8 +20,6 @@ using Numa.FieldValues
 using Numa.CellValues
 using Numa.CellValues: IndexCellValue, IndexCellArray
 using Numa.Polytopes
-
-import Numa: coordinates
 
 include("Interfaces.jl")
 include("Cartesian.jl")

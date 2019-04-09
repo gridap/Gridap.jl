@@ -14,16 +14,16 @@ function writevtk(grid::Grid,filebase;celldata=Dict(),pointdata=Dict())
 end
 
 function vtkpoints(grid::Grid{D}) where D
-  x = coordinates(grid)
-  points = collect(x)
-  reshape(reinterpret(Float64,points),(D,length(x)))
+  x = points(grid)
+  x1d = collect(x)
+  reshape(reinterpret(Float64,x1d),(D,length(x)))
 end
 
 function vtkcells(grid::Grid)
   types = vtkcelltypedict()
   nodes = vtkcellnodesdict()
   c = celltypes(grid)
-  n = connectivity(grid)
+  n = cells(grid)
   [  MeshCell(types[ci], ni[nodes[ci]]) for (ci,ni) in zip(c,n) ] 
 end
 

@@ -1,7 +1,6 @@
 module GeometryBenchs
 
-using Numa.Geometry: CartesianGridCoords
-using Numa.Geometry: CartesianGridConnectivity
+using Numa.Geometry
 
 function doloop(a)
   for ai in a
@@ -12,17 +11,16 @@ l = 1000000
 
 println("+++ GeometryBenchs ( length = $l ) +++")
 
-domain = ((0.0,1.0),(-1.0,2.0),(2.0,3.0))
-npoints = (101,101,101)
-x = CartesianGridCoords(domain,npoints)
+grid = CartesianGrid(domain=(0.0,1.0,-1.0,2.0,2.0,3.0),partition=(100,100,100))
 
-print("CartesianGridCoords ->"); @time doloop(x)
-print("CartesianGridCoords ->"); @time doloop(x)
+x = points(grid)
 
-ncells = (100,100,100)
-t = CartesianGridConnectivity(ncells)
+print("CartesianGridPoints ->"); @time doloop(x)
+print("CartesianGridPoints ->"); @time doloop(x)
 
-print("CartesianGridConnectivity ->"); @time doloop(t)
-print("CartesianGridConnectivity ->"); @time doloop(t)
+t = cells(grid)
+
+print("CartesianGridCells ->"); @time doloop(t)
+print("CartesianGridCells ->"); @time doloop(t)
 
 end # module GeometryBenchs

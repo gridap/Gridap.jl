@@ -13,27 +13,27 @@ function CartesianGrid(;domain::NTuple{D2,Float64},partition::NTuple{D,Int}) whe
   CartesianGrid{D}(dim_to_limits,dim_to_ncells,extrusion)
 end
 
-function coordinates(self::CartesianGrid)
+function points(self::CartesianGrid)
   dim_to_npoint = tuple([ i+1 for i in self.dim_to_ncells ]...)
-  CartesianGridCoords(self.dim_to_limits,dim_to_npoint)
+  CartesianGridPoints(self.dim_to_limits,dim_to_npoint)
 end
 
-connectivity(self::CartesianGrid) = CartesianGridConnectivity(self.dim_to_ncells)
+cells(self::CartesianGrid) = CartesianGridCells(self.dim_to_ncells)
 
 celltypes(self::CartesianGrid) = ConstantCellValue(self.extrusion,prod(self.dim_to_ncells))
 
 # Ancillary types
 
-struct CartesianGridCoords{D} <: IndexCellValue{Point{D},D}
+struct CartesianGridPoints{D} <: IndexCellValue{Point{D},D}
   dim_to_limits::NTuple{D,NTuple{2,Float64}}
   dim_to_npoint::NTuple{D,Int}
 end
 
-size(self::CartesianGridCoords) = self.dim_to_npoint
+size(self::CartesianGridPoints) = self.dim_to_npoint
 
-IndexStyle(::Type{CartesianGridCoords{D}} where D) = IndexCartesian()
+IndexStyle(::Type{CartesianGridPoints{D}} where D) = IndexCartesian()
 
-function getindex(self::CartesianGridCoords{D}, I::Vararg{Int, D}) where D
+function getindex(self::CartesianGridPoints{D}, I::Vararg{Int, D}) where D
   p = zero(MPoint{D})
   @inbounds for d in 1:D
     xa = self.dim_to_limits[d][1]
@@ -43,19 +43,19 @@ function getindex(self::CartesianGridCoords{D}, I::Vararg{Int, D}) where D
   Point{D}(p)
 end
 
-struct CartesianGridConnectivity{D,L} <: IndexCellArray{Int,1,SVector{L,Int},D}
+struct CartesianGridCells{D,L} <: IndexCellArray{Int,1,SVector{L,Int},D}
   dim_to_ncell::SVector{D,Int}
 end
 
-function CartesianGridConnectivity(dim_to_ncell::NTuple{D,Int}) where D
-  CartesianGridConnectivity{D,2^D}(dim_to_ncell)
+function CartesianGridCells(dim_to_ncell::NTuple{D,Int}) where D
+  CartesianGridCells{D,2^D}(dim_to_ncell)
 end
 
-size(self::CartesianGridConnectivity) = self.dim_to_ncell.data
+size(self::CartesianGridCells) = self.dim_to_ncell.data
 
-IndexStyle(::Type{CartesianGridConnectivity{D,L}} where {D,L}) = IndexCartesian()
+IndexStyle(::Type{CartesianGridCells{D,L}} where {D,L}) = IndexCartesian()
 
-function getindex(self::CartesianGridConnectivity{D,L}, I::Vararg{Int, D}) where {D,L}
+function getindex(self::CartesianGridCells{D,L}, I::Vararg{Int, D}) where {D,L}
   dim_to_ngpoint = 1 .+ self.dim_to_ncell
   dim_to_nlpoint = @SVector fill(2,D)
   offset = @SVector fill(1,D)

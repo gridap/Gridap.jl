@@ -11,7 +11,7 @@ using Numa.Polytopes
 
   grid = CartesianGrid(domain=(0.0,1.0,-1.0,2.0),partition=(3,4))
 
-  x = coordinates(grid)
+  x = points(grid)
 
   @test isa(x,CellValue{Point{2}})
 
@@ -21,7 +21,7 @@ using Numa.Polytopes
   @test x[1] == [0.0,-1.0]
   @test x[end] == [1.0,2.0]
 
-  t = connectivity(grid)
+  t = cells(grid)
 
   @test isa(t,CellArray{Int,1})
 
@@ -44,10 +44,11 @@ end
 
   grid = CartesianGrid(domain=(0.0,1.0,-1.0,2.0,0.0,1.0),partition=(10,10,10))
 
-  cd1 = rand(length(connectivity(grid)))
-  cd2 = 1:length(connectivity(grid))
-  pd1 = rand(length(coordinates(grid)))
-  pd2 = 1:length(coordinates(grid))
+  cd1 = rand(length(cells(grid)))
+  cd2 = 1:length(cells(grid))
+
+  pd1 = rand(length(points(grid)))
+  pd2 = 1:length(points(grid))
 
   cdat = ["cd1"=>cd1,"cd2"=>cd2]
   pdat = ["pd1"=>pd1,"pd2"=>pd2]
