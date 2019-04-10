@@ -61,8 +61,39 @@ function vtkcellnodesdict()
   d
 end
 
-function writevtk(points::CellPoints,filebase)
-  grid = FlexibleUnstructuredGrid(points)
-  writevtk(grid,filebase)
+function writevtk(points::CellPoints,filebase;celldata=Dict(),pointdata=Dict())
+  grid, p_to_cell = cellpoints_to_grid(points)
+  pdat = prepare_pointdata(pointdata)
+  k = "cellid"
+  @assert ! haskey(pdat,k)
+  pdat[k] = p_to_cell
+  writevtk(grid,filebase,pointdata=pdat)
+end
+
+function cellpoints_to_grid(points::CellPoints{D}) where D
+  ps = Array{Point{D},1}(undef,(0,))
+  p_to_cell = Array{Int,1}(undef,(0,))
+  for (cell,p) in enumerate(points)
+    for pj in p
+      push!(ps,pj)
+      push!(p_to_cell,cell)
+    end
+  end
+  cs = [ [i,] for i in 1:length(ps) ]
+  ts = [ () for i in 1:length(ps) ]
+  grid = FlexibleUnstructuredGrid(ps,cs,ts)
+  (grid, p_to_cell)
+end
+
+function prepare_pointdata(pointdata)
+  pdat = Dict()
+  for (k,v) in pointdata
+    if isa(v,CellArray)
+      pdat[k] = collect(flatten(v))
+    else
+      pdat[k] = v
+    end
+  end
+  pdat
 end
 

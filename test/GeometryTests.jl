@@ -94,7 +94,12 @@ end
 
   x = evaluate(phi,q)
 
+  ufun(x) = 2*x[1] + x[2]
+
+  u = cellfield(imesh,ufun)
+
   writevtk(x,"x")
+  writevtk(x,"x",pointdata=["u"=>evaluate(u,q)])
 
 end
 

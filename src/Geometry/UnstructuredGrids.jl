@@ -26,14 +26,3 @@ function FlexibleUnstructuredGrid(grid::CartesianGrid{D}) where D
   FlexibleUnstructuredGrid(ps,cs,ts)
 end
 
-function FlexibleUnstructuredGrid(points::CellPoints{D}) where D
-  ps = Array{Point{D},1}(undef,(0,))
-  for p in points
-    for pj in p
-      push!(ps,pj)
-    end
-  end
-  cs = [ [i,] for i in 1:length(ps) ]
-  ts = [ () for i in 1:length(ps) ]
-  FlexibleUnstructuredGrid(ps,cs,ts)
-end

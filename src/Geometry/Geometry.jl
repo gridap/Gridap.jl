@@ -15,6 +15,7 @@ using WriteVTK.VTKCellTypes: VTK_QUAD
 using WriteVTK.VTKCellTypes: VTK_TETRA
 using WriteVTK.VTKCellTypes: VTK_HEXAHEDRON
 
+using Numa
 using Numa.Helpers
 using Numa.FieldValues
 using Numa.CellValues
