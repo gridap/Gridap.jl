@@ -34,7 +34,7 @@ quad = ConstantCellQuadrature(refquad,ncells)
 phi = geomap(imesh)
 basis = cellbasis(imesh)
 physbasis = attachgeomap(basis,phi)
-a(v,u) = inner(∇(v),∇(u)) + inner(v,u)
+ab(v,u) = inner(∇(v),∇(u)) + inner(v,u)
 V = physbasis
 U = physbasis
 # fun(x::Point{2}) = x[1]*x[2] + x[1]
@@ -43,8 +43,8 @@ fun(x::Point{2}) = x[1]
 gradfun(x::Point{2}) = VectorValue(1.0, 0.0)
 gradient(::typeof(fun)) = gradfun
 uphys = fun ∘ phi
-kmat = integrate(a(uphys,uphys),imesh,quad)
-sum(kmat)
-kmat = integrate(a(V,U),imesh,quad)
-sum(kmat)
+ksca = integrate(ab(uphys,uphys),imesh,quad)
+sum(ksca)
+kvec = integrate(ab(V,uphys),imesh,quad)
+kmat = integrate(ab(V,U),imesh,quad)
 ##
