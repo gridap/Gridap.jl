@@ -9,6 +9,10 @@ for op in (:+, :-, :(inv), :(det), :(meas))
   end
 end
 
+function apply(op::Function,a::CellValue)
+  CellValueFromUnaryOp(op,a)
+end
+
 struct CellValueFromUnaryOp{T,O<:Function,C<:CellValue} <: IterCellValue{T}
   op::O
   values::C
@@ -108,6 +112,10 @@ for op in (:+, :-, :(inv), :(det), :(meas))
       CellArrayFromBroadcastUnaryOp($op,a)
     end
   end
+end
+
+function apply(op::Function,a::CellArray)
+  CellArrayFromBroadcastUnaryOp(op,a)
 end
 
 function cellsum(self::CellArray{T,N};dim::Int) where {T,N}

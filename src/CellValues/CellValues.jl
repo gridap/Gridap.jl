@@ -16,6 +16,7 @@ export ConstantCellData
 export CellValueFromArray
 export CellArrayFromArrayOfArrays
 
+export apply
 export celldata
 export cellsize
 export celllength
