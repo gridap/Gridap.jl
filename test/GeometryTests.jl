@@ -111,4 +111,21 @@ end
 
 end
 
+@testset "WritevtkForCellPoint" begin
+
+  d = mktempdir()
+  f = joinpath(d,"x")
+
+  imesh = DummyIntegrationMesh2D(partition=(3,3))
+
+  xe = cellcoordinates(imesh)
+
+  x = cellmean(xe)
+
+  writevtk(x,f)
+
+  rm(d,recursive=true)
+
+end
+
 end # module GeometryTests

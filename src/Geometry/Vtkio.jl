@@ -70,6 +70,12 @@ function writevtk(points::CellPoints,filebase;celldata=Dict(),pointdata=Dict())
   writevtk(grid,filebase,pointdata=pdat)
 end
 
+function writevtk(points::CellValue{Point{D}} where D,filebase;celldata=Dict(),pointdata=Dict())
+  grid = cellpoint_to_grid(points)
+  pdat = prepare_pointdata(pointdata)
+  writevtk(grid,filebase,pointdata=pdat)
+end
+
 function cellpoints_to_grid(points::CellPoints{D}) where D
   ps = Array{Point{D},1}(undef,(0,))
   p_to_cell = Array{Int,1}(undef,(0,))
@@ -83,6 +89,13 @@ function cellpoints_to_grid(points::CellPoints{D}) where D
   ts = [ () for i in 1:length(ps) ]
   grid = FlexibleUnstructuredGrid(ps,cs,ts)
   (grid, p_to_cell)
+end
+
+function cellpoint_to_grid(points::CellValue{Point{D}}) where D
+  ps = collect(points)
+  cs = [ [i,] for i in 1:length(ps) ]
+  ts = [ () for i in 1:length(ps) ]
+  FlexibleUnstructuredGrid(ps,cs,ts)
 end
 
 function prepare_pointdata(pointdata)
