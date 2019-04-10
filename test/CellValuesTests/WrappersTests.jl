@@ -23,5 +23,19 @@
   end
   @test IndexStyle(typeof(a)) == IndexStyle(typeof(ca))
 
+  #       1,2,3,4,5,6,7,8,9,0,1,2
+  data = [2,3,1,3,6,7,3,2,5,6,3,4]
+  ptrs = [1,4,4,7,13]
+
+  ca = CellVectorFromDataAndPtrs(data,ptrs)
+
+  @test length(ca) == length(ptrs)-1
+  @test ca[1] == data[1:3]
+  @test ca[2] == data[4:3]
+  @test ca[3] == data[4:6]
+  @test ca[4] == data[7:12]
+
+  @test cellsize(ca) == (6,)
+
 end
 

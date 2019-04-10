@@ -15,6 +15,7 @@ export ConstantCellData
 
 export CellValueFromArray
 export CellArrayFromArrayOfArrays
+export CellVectorFromDataAndPtrs
 
 export apply
 export celldata
@@ -33,7 +34,7 @@ import Base: iterate
 import Base: length
 import Base: eltype
 import Base: size
-import Base: getindex
+import Base: getindex, setindex!
 import Base: IndexStyle, IteratorSize
 import Base: +, -, *, /
 import Base: ==
