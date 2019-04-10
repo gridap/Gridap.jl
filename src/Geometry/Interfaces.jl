@@ -15,6 +15,8 @@ end
 
 cells(::Grid)::IndexCellVector{Int} = @abstractmethod
 
+#@fverdugo In some situations it would be much more efficient to
+# encode the extrusion tuple into an integer
 """
 Returns the tuple uniquely identifying the Polytope of each cell
 """

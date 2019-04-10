@@ -10,15 +10,17 @@ function writevtk(grid::Grid,filebase;celldata=Dict(),pointdata=Dict())
     vtk_point_data(vtkfile, v, k)
   end
   outfiles = vtk_save(vtkfile)
-  #reportfiles(outfiles)
 end
 
 function vtkpoints(grid::Grid{D}) where D
   x = points(grid)
-  x1d = collect(x)
-  reshape(reinterpret(Float64,x1d),(D,length(x)))
+  xflat = collect(x)
+  reshape(reinterpret(Float64,xflat),(D,length(x)))
 end
 
+# @fverdugo this allocates a lot of small objects
+# Not very crucial since it is for visualization
+# but it would be nice to have a better way
 function vtkcells(grid::Grid)
   types = vtkcelltypedict()
   nodes = vtkcellnodesdict()
@@ -27,12 +29,8 @@ function vtkcells(grid::Grid)
   [  MeshCell(types[ci], ni[nodes[ci]]) for (ci,ni) in zip(c,n) ] 
 end
 
-function reportfiles(outfiles)
-  for file in outfiles
-    println("Generated results file: $file")
-  end
-end
-
+# @fverdugo it would be far more efficient to have
+# a Pair instead of a Dict
 function vtkcelltypedict()
   d = Dict()
   h = HEX_AXIS
@@ -47,6 +45,8 @@ function vtkcelltypedict()
   d
 end
 
+# @fverdugo it would be far more efficient to have
+# a Pair instead of a Dict
 function vtkcellnodesdict()
   d = Dict()
   h = HEX_AXIS
