@@ -4,6 +4,8 @@ export @abstractmethod
 export @notimplemented
 export @notimplementedif
 export viewtosize
+export rewind_ptrs!
+export length_to_ptrs!
 
 import Numa: flatten
 
@@ -33,6 +35,20 @@ flatten(a::Array) = reshape(a,(length(a),))
     @assert N > 0
     str = join([ ", 1:s[$i]" for i in 1:N ])
     Meta.parse("view(a$str)")
+end
+
+function rewind_ptrs!(ptrs::AbstractArray{T,1}) where T
+  @inbounds for i in (length(ptrs)-1):-1:1
+    ptrs[i+1] = ptrs[i]
+  end
+  ptrs[1] = 1
+end
+
+function length_to_ptrs!(ptrs::AbstractArray{T,1}) where T
+  ptrs[1] = 1
+  @inbounds for i in 1:(length(ptrs)-1)
+    ptrs[i+1] += ptrs[i]
+  end
 end
 
 end # module Helpers
