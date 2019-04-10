@@ -19,6 +19,7 @@ using Numa.Helpers
 using Numa.FieldValues
 using Numa.CellValues
 using Numa.CellValues: IndexCellValue, IndexCellArray
+using Numa.CellFunctions
 using Numa.Polytopes
 
 include("Interfaces.jl")

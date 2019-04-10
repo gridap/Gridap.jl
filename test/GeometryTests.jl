@@ -6,6 +6,11 @@ using Numa.FieldValues
 using Numa.CellValues
 using Numa.Geometry
 using Numa.Polytopes
+using Numa.Quadratures
+using Numa.CellQuadratures
+using Numa.CellFunctions
+
+include("CellIntegrationTestsMocks.jl")
 
 @testset "CartesianGrid" begin
 
@@ -74,6 +79,22 @@ end
   writevtk(grid,f)
 
   rm(d,recursive=true)
+
+end
+
+@testset "WritevtkForCellPoints" begin
+
+  imesh = DummyIntegrationMesh2D(partition=(3,3))
+  refquad = TensorProductQuadrature(orders=(2,2))
+  quad = ConstantCellQuadrature(refquad,ncells(imesh))
+
+  phi = geomap(imesh)
+
+  q = coordinates(quad)
+
+  x = evaluate(phi,q)
+
+  writevtk(x,"x")
 
 end
 

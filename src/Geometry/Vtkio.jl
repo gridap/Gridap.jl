@@ -60,3 +60,9 @@ function vtkcellnodesdict()
   d[(h,h,h)] = [1,2,4,3,5,6,8,7]
   d
 end
+
+function writevtk(points::CellPoints,filebase)
+  grid = FlexibleUnstructuredGrid(points)
+  writevtk(grid,filebase)
+end
+
