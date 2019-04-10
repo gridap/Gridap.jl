@@ -83,6 +83,21 @@ end
 
 end
 
+@testset "UnstructuredGrid" begin
+
+  cgrid = CartesianGrid(domain=(0.0,1.0,-1.0,2.0),partition=(3,4))
+
+  grid = UnstructuredGrid(cgrid)
+
+  d = mktempdir()
+  f = joinpath(d,"grid")
+
+  writevtk(grid,f)
+
+  rm(d,recursive=true)
+
+end
+
 @testset "WritevtkForCellPoints" begin
 
   d = mktempdir()

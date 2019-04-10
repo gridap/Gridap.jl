@@ -2,6 +2,7 @@ using Numa
 using Test
 
 @testset "Numa.jl" begin
+  @time @testset "Helpers" begin include("HelpersTests.jl") end
   @time @testset "FieldValues" begin include("FieldValuesTests.jl") end
   @time @testset "Fields" begin include("FieldsTests.jl") end
   @time @testset "Quadratures" begin include("QuadraturesTests.jl") end

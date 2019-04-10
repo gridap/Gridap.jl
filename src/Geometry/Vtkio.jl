@@ -85,17 +85,22 @@ function cellpoints_to_grid(points::CellPoints{D}) where D
       push!(p_to_cell,cell)
     end
   end
-  cs = [ [i,] for i in 1:length(ps) ]
-  ts = [ () for i in 1:length(ps) ]
-  grid = FlexibleUnstructuredGrid(ps,cs,ts)
+  data, ptrs, ts = prepare_cells(ps)
+  grid = UnstructuredGrid(ps,data,ptrs,ts)
   (grid, p_to_cell)
 end
 
 function cellpoint_to_grid(points::CellValue{Point{D}}) where D
   ps = collect(points)
-  cs = [ [i,] for i in 1:length(ps) ]
+  data, ptrs, ts = prepare_cells(ps)
+  UnstructuredGrid(ps,data,ptrs,ts)
+end
+
+function prepare_cells(ps)
+  data = [ i for i in 1:length(ps) ]
+  ptrs = [ i for i in 1:(length(ps)+1) ]
   ts = [ () for i in 1:length(ps) ]
-  FlexibleUnstructuredGrid(ps,cs,ts)
+  (data,ptrs,ts)
 end
 
 function prepare_pointdata(pointdata)

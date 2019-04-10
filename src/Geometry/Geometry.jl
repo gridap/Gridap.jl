@@ -1,6 +1,7 @@
 module Geometry
 
-export Grid, CartesianGrid, FlexibleUnstructuredGrid
+export Grid, CartesianGrid
+export UnstructuredGrid, FlexibleUnstructuredGrid
 export cells, points, celltypes
 export writevtk
 
