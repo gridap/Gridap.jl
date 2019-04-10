@@ -120,6 +120,11 @@ function prepare_data(v::IterData{<:VectorValue{2}})
   vcat(b,z)
 end
 
+function prepare_data(v::IterData{<:TensorValue{D}}) where D
+  a = collect(v)
+  reshape(reinterpret(Float64,a),(D*D,length(a)))
+end
+
 prepare_data(v::CellArray{<:Number}) = collect(flatten(v))
 
 function prepare_data(v::CellArray{<:VectorValue{D}}) where D
@@ -134,5 +139,8 @@ function prepare_data(v::CellArray{<:VectorValue{2}})
   vcat(b,z)
 end
 
-prepare_data(v::CellArray{<:TensorValue{D}}) where D = @notimplemented
+function prepare_data(v::CellArray{<:TensorValue{D}}) where D
+  a = collect(flatten(v))
+  reshape(reinterpret(Float64,a),(D*D,length(a)))
+end
 

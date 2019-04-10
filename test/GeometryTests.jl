@@ -87,6 +87,7 @@ end
 
   d = mktempdir()
   f = joinpath(d,"x")
+  f = "x"
 
   imesh = DummyIntegrationMesh2D(partition=(3,3))
   refquad = TensorProductQuadrature(orders=(2,2))
@@ -104,8 +105,13 @@ end
   vfun(x) = VectorValue(x[1],1.0)
   v = cellfield(imesh,vfun)
 
+  tfun(x) = TensorValue(x[1],1.0,x[2],0.1)
+  t = cellfield(imesh,tfun)
+
+  pdata =["u"=>evaluate(u,q),"v"=>evaluate(v,q),"t"=>evaluate(t,q)]
+
   writevtk(x,f)
-  writevtk(x,f,pointdata=["u"=>evaluate(u,q),"v"=>evaluate(v,q)])
+  writevtk(x,f,pointdata=pdata)
 
   rm(d,recursive=true)
 
