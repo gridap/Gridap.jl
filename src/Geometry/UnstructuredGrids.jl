@@ -1,11 +1,11 @@
 
-struct UnstructuredGrid{D,Z} <: Grid{D,Z}
+struct FlexibleUnstructuredGrid{D,Z} <: Grid{D,Z}
   points::Vector{Point{D}}
   cells::Vector{Vector{Int}}
   ctypes::Vector{NTuple{Z,Int}}
 end
 
-function UnstructuredGrid(grid::CartesianGrid{D}) where D
+function FlexibleUnstructuredGrid(grid::CartesianGrid{D}) where D
   ps = Array{Point{D},1}(undef,(length(points(grid)),))
   for (i,xi) in enumerate(points(grid))
     ps[i] = xi
@@ -15,11 +15,11 @@ function UnstructuredGrid(grid::CartesianGrid{D}) where D
     cs[i] .= ci
   end
   ts = [ ti for ti in celltypes(grid) ]
-  UnstructuredGrid(ps,cs,ts)
+  FlexibleUnstructuredGrid(ps,cs,ts)
 end
 
-points(self::UnstructuredGrid) = CellValueFromArray(self.points)
+points(self::FlexibleUnstructuredGrid) = CellValueFromArray(self.points)
 
-cells(self::UnstructuredGrid) = CellArrayFromArrayOfArrays(self.cells)
+cells(self::FlexibleUnstructuredGrid) = CellArrayFromArrayOfArrays(self.cells)
 
-celltypes(self::UnstructuredGrid) = CellValueFromArray(self.ctypes)
+celltypes(self::FlexibleUnstructuredGrid) = CellValueFromArray(self.ctypes)

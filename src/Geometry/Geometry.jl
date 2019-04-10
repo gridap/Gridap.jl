@@ -1,6 +1,6 @@
 module Geometry
 
-export Grid, CartesianGrid, UnstructuredGrid
+export Grid, CartesianGrid, FlexibleUnstructuredGrid
 export cells, points, celltypes
 export writevtk
 
@@ -22,8 +22,8 @@ using Numa.CellValues: IndexCellValue, IndexCellArray
 using Numa.Polytopes
 
 include("Interfaces.jl")
-include("CartesianGrid.jl")
-include("UnstructuredGrid.jl")
+include("CartesianGrids.jl")
+include("UnstructuredGrids.jl")
 include("Vtkio.jl")
 
 end # module Geometry

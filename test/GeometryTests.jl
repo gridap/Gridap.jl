@@ -62,11 +62,11 @@ end
 
 end
 
-@testset "UnstructuredGrid" begin
+@testset "FlexibleUnstructuredGrid" begin
 
   cgrid = CartesianGrid(domain=(0.0,1.0,-1.0,2.0),partition=(3,4))
 
-  grid = UnstructuredGrid(cgrid)
+  grid = FlexibleUnstructuredGrid(cgrid)
 
   d = mktempdir()
   f = joinpath(d,"grid")
