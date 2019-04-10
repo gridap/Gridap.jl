@@ -54,9 +54,10 @@ end
 
   pd1 = rand(length(points(grid)))
   pd2 = 1:length(points(grid))
+  pd3 = [ VectorValue(1.0,2.0) for i in 1:length(points(grid)) ]
 
   cdat = ["cd1"=>cd1,"cd2"=>cd2]
-  pdat = ["pd1"=>pd1,"pd2"=>pd2]
+  pdat = ["pd1"=>pd1,"pd2"=>pd2,"pd3"=>pd3]
 
   writevtk(grid,f)
   writevtk(grid,f,celldata=cdat)

@@ -4,10 +4,10 @@ function writevtk(grid::Grid,filebase;celldata=Dict(),pointdata=Dict())
   cells = vtkcells(grid)
   vtkfile = vtk_grid(filebase, points, cells)
   for (k,v) in celldata
-    vtk_cell_data(vtkfile, v, k)
+    vtk_cell_data(vtkfile, prepare_data(v), k)
   end
   for (k,v) in pointdata
-    vtk_point_data(vtkfile, v, k)
+    vtk_point_data(vtkfile, prepare_data(v), k)
   end
   outfiles = vtk_save(vtkfile)
 end
@@ -95,6 +95,18 @@ end
 
 prepare_data(v) = v
 
+function prepare_data(v::IterData{<:VectorValue{D}}) where D
+  a = collect(v)
+  reshape(reinterpret(Float64,a),(D,length(a)))
+end
+
+function prepare_data(v::IterData{<:VectorValue{2}})
+  a = collect(v)
+  b = reshape(reinterpret(Float64,a),(2,length(a)))
+  z = zeros((1,size(b,2)))
+  vcat(b,z)
+end
+
 prepare_data(v::CellArray{<:Number}) = collect(flatten(v))
 
 function prepare_data(v::CellArray{<:VectorValue{D}}) where D
@@ -109,5 +121,5 @@ function prepare_data(v::CellArray{<:VectorValue{2}})
   vcat(b,z)
 end
 
-prepare_data(v::CellArray{<:TensorValue{D}}) = @notimplemented
+prepare_data(v::CellArray{<:TensorValue{D}}) where D = @notimplemented
 

@@ -67,3 +67,5 @@ function Base.show(io::IO,self::CellData)
 end
 
 cellsize(::CellData) = @abstractmethod
+
+const IterData{T} = Union{CellData{T},AbstractArray{T}}

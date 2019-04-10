@@ -5,6 +5,7 @@ export CellArray
 export CellMatrix
 export CellVector
 export CellData
+export IterData
 
 export ConstantCellValue
 export ConstantCellArray
