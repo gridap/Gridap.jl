@@ -109,6 +109,10 @@ function compose(f::Function,g::CellField{D,S}) where {D,S}
   CellFieldFromCompose(f,g)
 end
 
+function compose(f::Function,g::CellGeomap{D,Z},u::CellField{Z,S}) where {D,Z,S}
+  CellFieldFromComposeExtended(f,g,u)
+end
+
 (∘)(f::Function,g::CellField) = compose(f,g)
 
 struct CellFieldFromCompose{D,O,C<:CellField{D},T} <: CellField{D,T}
@@ -140,5 +144,30 @@ end
 function gradient(self::CellFieldFromCompose)
   gradop = gradient(self.op)
   CellFieldFromCompose(gradop,self.a)
+end
+
+struct CellFieldFromComposeExtended{D,O,G<:CellGeomap{D},U<:CellField,T} <: CellField{D,T}
+  f::O
+  g::G
+  u::U
+end
+
+function CellFieldFromComposeExtended(f::Function,g::CellGeomap{D,Z},u::CellField{Z,S}) where {D,Z,S}
+  O = typeof(f)
+  G = typeof(g)
+  U = typeof(u)
+  T = Base._return_type(f,Tuple{Point{Z},S})
+  CellFieldFromComposeExtended{D,O,G,U,T}(f,g,u)
+end
+
+function evaluate(self::CellFieldFromComposeExtended{D},points::CellPoints{D}) where D
+  gvals = evaluate(self.g,points)
+  uvals = evaluate(self.u,gvals)
+  CellArrayFromBoradcastBinaryOp(self.f,gvals,uvals)
+end
+
+function gradient(self::CellFieldFromComposeExtended)
+  gradf = gradient(self.f)
+  CellFieldFromComposeExtended(gradf,self.g,self.u)
 end
 

@@ -14,7 +14,7 @@ using Numa.Polytopes
 using Numa.RefFEs
 using Numa.FieldValues
 
-struct DummyCellCoordinates2D <: IndexCellArray{Point{2},1}
+struct DummyCellCoordinates2D <: IndexCellArray{Point{2},1,Array{Point{2},1},1}
   x::Array{Point{2},2}
   c::Array{Point{2},1}
 end
@@ -54,7 +54,9 @@ function Base.getindex(self::DummyCellCoordinates2D,cell::Int)
   self.c
 end
 
-Base.length(self::DummyCellCoordinates2D) = size(self.x,2)
+Base.size(self::DummyCellCoordinates2D) = (size(self.x,2),)
+
+IndexStyle(::Type{DummyCellCoordinates2D}) = IndexLinear()
 
 cellsize(self::DummyCellCoordinates2D) = (4,)
 

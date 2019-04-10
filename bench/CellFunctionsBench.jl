@@ -1,5 +1,6 @@
 module CellFieldsBench
 
+using Numa
 using Numa.FieldValues
 using Numa.CellValues
 using Numa.CellFunctions

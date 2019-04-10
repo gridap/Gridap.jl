@@ -1,6 +1,7 @@
 module CellIntegrationTests
 
 using Test
+using Numa
 using Numa.CellValues
 using Numa.CellFunctions
 using Numa.CellQuadratures
@@ -58,6 +59,21 @@ end
   for vi in cellvol
     @assert vi ≈ (1.0/3)^2
   end
+
+end
+
+@testset "cellfield" begin
+
+  ufun(x::Point{2}) = 2*x[1]+x[2]
+
+  u = cellfield(imesh,ufun)
+
+  νfun(x::Point{2},u::Float64) = TensorValue(x[1], u*x[2], 0.0, u)
+
+  ν(u) = cellfield(imesh,νfun,u)
+
+  @test isa(u,CellField{2,Float64})
+  @test isa(ν(u),CellField{2,TensorValue{2,4}})
 
 end
 

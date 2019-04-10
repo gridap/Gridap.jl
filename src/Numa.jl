@@ -18,6 +18,8 @@ include("CellQuadratures.jl")
 include("CellIntegration.jl")
 include("Polytopes.jl")
 
+include("Geometry/Geometry.jl")
+
 # FESpaces tools
 include("FESpaces/RefFEs.jl")
 # include("Meshes.jl")

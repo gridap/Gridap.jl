@@ -1,7 +1,7 @@
 
 # ConstantCellValue
 
-struct ConstantCellValue{T} <: IndexCellValue{T}
+struct ConstantCellValue{T} <: IndexCellValue{T,1}
   value::T
   length::Int
 end
@@ -14,7 +14,7 @@ IndexStyle(::Type{ConstantCellValue{T}} where T) = IndexLinear()
 
 # ConstantCellArray
 
-struct ConstantCellArray{T,N} <: IndexCellArray{T,N}
+struct ConstantCellArray{T,N} <: IndexCellArray{T,N,Array{T,N},1}
   array::Array{T,N}
   length::Int
 end
@@ -25,7 +25,9 @@ const ConstantCellMatrix{T} = ConstantCellArray{T,2}
 
 celldata(self::ConstantCellArray) = self.array
 
-length(self::ConstantCellArray) = self.length
+size(self::ConstantCellArray) = (self.length,)
+
+IndexStyle(::Type{ConstantCellArray{T,N}} where {T,N}) = IndexLinear()
 
 cellsize(self::ConstantCellArray) = size(self.array)
 

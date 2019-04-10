@@ -122,9 +122,15 @@ function cellnewaxis(self::CellArray{T,N};dim::Int) where {T,N}
   CellArrayFromCellNewAxis{dim,typeof(self),T,N+1}(self)
 end
 
+mean(a) = sum(a)/length(a)
+
+function cellmean(self::CellArray)
+  CellValueFromCellArrayReduce(mean,self)
+end
+
 # Ancillary types
 
-abstract type CellArrayFromUnaryOp{C<:CellArray,T,N} <: CellArray{T,N} end
+abstract type CellArrayFromUnaryOp{C<:CellArray,T,N} <: IterCellArray{T,N} end
 
 function inputcellarray(::CellArrayFromUnaryOp{C,T,N})::C  where {C,T,N}
   @abstractmethod
@@ -277,7 +283,7 @@ end
 
 # Ancillary types
 
-abstract type CellArrayFromBinaryOp{A<:CellData,B<:CellData,T,N} <: CellArray{T,N} end
+abstract type CellArrayFromBinaryOp{A<:CellData,B<:CellData,T,N} <: IterCellArray{T,N} end
 
 function leftcellarray(::CellArrayFromBinaryOp{A,B,T,N})::A where {A,B,T,N}
   @abstractmethod
@@ -369,4 +375,47 @@ end
 function computevals!(self::CellArrayFromBoradcastBinaryOp, a, b, v)
   broadcast!(self.op,v,a,b)
 end
+
+# Miscellaneous operations
+
+function flatten(a::CellArray)
+  FlattedCellArray(a)
+end
+
+struct FlattedCellArray{T,N,A<:CellArray{T,N}} <: IterCellValue{T}
+  a::A
+end
+
+@inline function iterate(self::FlattedCellArray)
+  anext = iterate(self.a)
+  firststep(anext)
+end
+
+@inline function iterate(self::FlattedCellArray,state)
+  anext, aistate = state
+  a, astate = anext
+  ainext = iterate(a,aistate)
+  if ainext === nothing
+    anext2 = iterate(self.a,astate)
+    return firststep(anext2)
+  else
+    ai, aistate = ainext
+    state = (anext,aistate)
+    return (ai,state)
+  end
+end
+
+@inline function firststep(anext)
+  if anext === nothing; return nothing end
+  a, astate = anext
+  ainext = iterate(a)
+  if ainext === nothing; return nothing end
+  ai, aistate = ainext
+  state = (anext,aistate)
+  (ai,state)
+end
+
+IteratorSize(::Type{FlattedCellArray{T,N,A}} where {T,N,A}) = Base.SizeUnknown()
+
+length(::FlattedCellArray)::Int = @notimplemented
 

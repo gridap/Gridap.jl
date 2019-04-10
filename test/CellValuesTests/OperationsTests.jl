@@ -133,6 +133,13 @@ using Numa.CellValues: CellArrayFromBoradcastBinaryOp
     @assert vi == sum(sa)
   end
 
+  sca3 = cellmean(sca)
+  @test isa(sca3,CellValueFromCellArrayReduce{Float64,typeof(Numa.CellValues.mean),typeof(sca)})
+  @test length(sca3) == l
+  for vi in sca3
+    @assert vi == Numa.CellValues.mean(sa)
+  end
+
   sca3 = cellnewaxis(sca2,dim=2)
   @test isa(sca3,CellArrayFromCellNewAxis{2,typeof(sca2),Float64,3})
   @test length(sca3) == l
@@ -142,3 +149,20 @@ using Numa.CellValues: CellArrayFromBoradcastBinaryOp
   end
 
 end
+
+@testset "FlattedCellArray" begin
+
+  scv3 = flatten(sca)
+
+  c = collect(scv3)
+
+  i = 1
+  for a in sca
+    for ai in a
+      @assert c[i] == ai
+      i += 1
+    end
+  end
+
+end
+

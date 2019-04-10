@@ -1,3 +1,5 @@
+
+# @fverdugo 1 and 2 are magic numbers (use the constants HEX_AXIS, TET_AXIS) instead
 """
 Constructs a `Polytope` given the type of extrusion, i.e., 1 for "hex" extrusion
 and 2 for "tet" extrusion
