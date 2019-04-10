@@ -21,6 +21,7 @@ export cellsize
 export celllength
 export cellsum
 export cellnewaxis
+export cellmean
 
 using Base: @propagate_inbounds
 using Base.Cartesian: @nloops, @nexprs, @nref

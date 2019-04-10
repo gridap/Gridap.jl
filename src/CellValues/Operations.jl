@@ -122,6 +122,12 @@ function cellnewaxis(self::CellArray{T,N};dim::Int) where {T,N}
   CellArrayFromCellNewAxis{dim,typeof(self),T,N+1}(self)
 end
 
+mean(a) = sum(a)/length(a)
+
+function cellmean(self::CellArray)
+  CellValueFromCellArrayReduce(mean,self)
+end
+
 # Ancillary types
 
 abstract type CellArrayFromUnaryOp{C<:CellArray,T,N} <: IterCellArray{T,N} end
