@@ -88,12 +88,26 @@ end
 function prepare_pointdata(pointdata)
   pdat = Dict()
   for (k,v) in pointdata
-    if isa(v,CellArray)
-      pdat[k] = collect(flatten(v))
-    else
-      pdat[k] = v
-    end
+    pdat[k] = prepare_data(v)
   end
   pdat
 end
+
+prepare_data(v) = v
+
+prepare_data(v::CellArray{<:Number}) = collect(flatten(v))
+
+function prepare_data(v::CellArray{<:VectorValue{D}}) where D
+  a = collect(flatten(v))
+  reshape(reinterpret(Float64,a),(D,length(a)))
+end
+
+function prepare_data(v::CellArray{<:VectorValue{2}})
+  a = collect(flatten(v))
+  b = reshape(reinterpret(Float64,a),(2,length(a)))
+  z = zeros((1,size(b,2)))
+  vcat(b,z)
+end
+
+prepare_data(v::CellArray{<:TensorValue{D}}) = @notimplemented
 

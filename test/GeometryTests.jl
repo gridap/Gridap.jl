@@ -84,6 +84,9 @@ end
 
 @testset "WritevtkForCellPoints" begin
 
+  d = mktempdir()
+  f = joinpath(d,"x")
+
   imesh = DummyIntegrationMesh2D(partition=(3,3))
   refquad = TensorProductQuadrature(orders=(2,2))
   quad = ConstantCellQuadrature(refquad,ncells(imesh))
@@ -95,11 +98,15 @@ end
   x = evaluate(phi,q)
 
   ufun(x) = 2*x[1] + x[2]
-
   u = cellfield(imesh,ufun)
 
-  writevtk(x,"x")
-  writevtk(x,"x",pointdata=["u"=>evaluate(u,q)])
+  vfun(x) = VectorValue(x[1],1.0)
+  v = cellfield(imesh,vfun)
+
+  writevtk(x,f)
+  writevtk(x,f,pointdata=["u"=>evaluate(u,q),"v"=>evaluate(v,q)])
+
+  rm(d,recursive=true)
 
 end
 
