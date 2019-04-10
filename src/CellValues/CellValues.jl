@@ -31,11 +31,12 @@ import Base: length
 import Base: eltype
 import Base: size
 import Base: getindex
-import Base: IndexStyle
+import Base: IndexStyle, IteratorSize
 import Base: +, -, *, /
 import Base: ==
 import LinearAlgebra: inv, det
 
+import Numa: flatten
 import Numa.FieldValues: inner, outer, meas
 
 include("Helpers.jl")

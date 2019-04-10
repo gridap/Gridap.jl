@@ -142,3 +142,20 @@ using Numa.CellValues: CellArrayFromBoradcastBinaryOp
   end
 
 end
+
+@testset "FlattedCellArray" begin
+
+  scv3 = flatten(sca)
+
+  c = collect(scv3)
+
+  i = 1
+  for a in sca
+    for ai in a
+      @assert c[i] == ai
+      i += 1
+    end
+  end
+
+end
+

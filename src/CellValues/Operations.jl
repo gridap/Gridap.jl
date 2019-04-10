@@ -370,3 +370,46 @@ function computevals!(self::CellArrayFromBoradcastBinaryOp, a, b, v)
   broadcast!(self.op,v,a,b)
 end
 
+# Miscellaneous operations
+
+function flatten(a::CellArray)
+  FlattedCellArray(a)
+end
+
+struct FlattedCellArray{T,N,A<:CellArray{T,N}} <: IterCellValue{T}
+  a::A
+end
+
+@inline function iterate(self::FlattedCellArray)
+  anext = iterate(self.a)
+  firststep(anext)
+end
+
+@inline function iterate(self::FlattedCellArray,state)
+  anext, aistate = state
+  a, astate = anext
+  ainext = iterate(a,aistate)
+  if ainext === nothing
+    anext2 = iterate(self.a,astate)
+    return firststep(anext2)
+  else
+    ai, aistate = ainext
+    state = (anext,aistate)
+    return (ai,state)
+  end
+end
+
+@inline function firststep(anext)
+  if anext === nothing; return nothing end
+  a, astate = anext
+  ainext = iterate(a)
+  if ainext === nothing; return nothing end
+  ai, aistate = ainext
+  state = (anext,aistate)
+  (ai,state)
+end
+
+IteratorSize(::Type{FlattedCellArray{T,N,A}} where {T,N,A}) = Base.SizeUnknown()
+
+length(::FlattedCellArray)::Int = @notimplemented
+

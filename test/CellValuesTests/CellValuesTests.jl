@@ -3,6 +3,7 @@ module CellValuesTests
 using Test
 using LinearAlgebra: inv, det
 
+using Numa
 using Numa.FieldValues
 using Numa.CellValues
 

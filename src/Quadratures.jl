@@ -7,7 +7,7 @@ export weights
 
 using QuadGK: gauss
 
-using Numa # @santiagobadia : To be eliminated
+using Numa: flatten
 using Numa.Helpers
 using Numa.FieldValues
 

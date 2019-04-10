@@ -4,7 +4,8 @@ export @abstractmethod
 export @notimplemented
 export @notimplementedif
 export viewtosize
-export flatten
+
+import Numa: flatten
 
 macro abstractmethod()
   quote
