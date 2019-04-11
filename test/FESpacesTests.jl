@@ -3,29 +3,44 @@ using Numa, Test
 using Numa.Quadratures
 using Numa.Polytopes
 using Numa.RefFEs
-using Numa.Meshes
-using Numa.FESpaces
+# using Numa.Meshes
+# using Numa.FESpaces
 
 using Numa.Polytopes: PointInt
 using Numa.CellValues
 
+##
+# Constant Pointer struct
 
+struct ConstantPointerVector <: AbstractVector{Int}
+  length::Int
+  gap::Int
+end
 
-#       1,2,3,4,5,6,7,8,9,0,1,2
+import Base: size
+size(self::ConstantPointerVector) = (self.length,)
+
+import Base:getindex
+getindex(self::ConstantPointerVector, i::Int)::Int = (i-1)*self.gap+1
+getindex(self::ConstantPointerVector, I::Vararg{Integer,1})::Int = (I[1]-1)*self.gap+1
+
+import Base:setindex!
+function setindex!(self::ConstantPointerVector, v, i)
+    error("Index of ConstantPointerVector cannot be set")
+end
+##
+point = ConstantPointerVector(10,3)
+point[1]
+point[3]
+@test point == [(i-1)*point.gap+1 for i=1:length(point)]
+##
+
+##
 data = [2,3,1,3,6,7,3,2,5,6,3,4]
-ptrs = [1,4,4,7,13]
-
-ca = CellVectorFromDataAndPtrs(data,ptrs)
-
-@test length(ca) == length(ptrs)-1
-@test ca[1] == data[1:3]
-@test ca[2] == data[4:3]
-@test ca[3] == data[4:6]
-@test ca[4] == data[7:12]
-
-# @santiagobadia : Consider a "constant pointer"
-
-@test cellsize(ca) == (6,)
+ptrs = ConstantPointerVector(7,2)
+celldata = CellVectorFromDataAndPtrs(data,ptrs)
+@test celldata[end] == [3,4]
+##
 
 
 ##
