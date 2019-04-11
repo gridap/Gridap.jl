@@ -24,20 +24,58 @@ using WriteVTK.VTKCellTypes: VTK_QUAD
 using WriteVTK.VTKCellTypes: VTK_TETRA
 using WriteVTK.VTKCellTypes: VTK_HEXAHEDRON
 
+# Types
+
+struct VisualizationGrid{D,Z,G<:Grid{D,Z},C<:IndexCellValue{Int},P<:CellPoints{Z}} <: Grid{D,Z}
+  grid::G
+  coarsecells::C
+  samplingpoints::P
+end
+
+points(vg::VisualizationGrid) = points(vg.grid)
+
+cells(vg::VisualizationGrid) = cells(vg.grid)
+
+celltypes(vg::VisualizationGrid) = celltypes(vg.grid)
+
+# Functionality given by this module
+
 function writevtk(grid::Grid,filebase;celldata=Dict(),pointdata=Dict())
-  points = vtkpoints(grid)
-  cells = vtkcells(grid)
+  _writevtk(grid,filebase,celldata,pointdata)
+end
+
+function writevtk(points::CellPoints,filebase;celldata=Dict(),pointdata=Dict())
+  _writevtk(points,filebase,celldata,pointdata)
+end
+
+function writevtk(points::CellValue{Point{D}} where D,filebase;celldata=Dict(),pointdata=Dict())
+  _writevtk(points,filebase,celldata,pointdata)
+end
+
+function writevtk(vg::VisualizationGrid,filebase;celldata=Dict(),cellfields=Dict())
+  _writevtk(vg,filebase,celldata,cellfields)
+end
+
+function visgrid(imesh::IntegrationMesh;nref=0)
+  _visgrid(imesh,nref)
+end
+
+# Helpers
+
+function _writevtk(grid::Grid,filebase,celldata,pointdata)
+  points = _vtkpoints(grid)
+  cells = _vtkcells(grid)
   vtkfile = vtk_grid(filebase, points, cells)
   for (k,v) in celldata
-    vtk_cell_data(vtkfile, prepare_data(v), k)
+    vtk_cell_data(vtkfile, _prepare_data(v), k)
   end
   for (k,v) in pointdata
-    vtk_point_data(vtkfile, prepare_data(v), k)
+    vtk_point_data(vtkfile, _prepare_data(v), k)
   end
   outfiles = vtk_save(vtkfile)
 end
 
-function vtkpoints(grid::Grid{D}) where D
+function _vtkpoints(grid::Grid{D}) where D
   x = points(grid)
   xflat = collect(x)
   reshape(reinterpret(Float64,xflat),(D,length(x)))
@@ -46,9 +84,9 @@ end
 # @fverdugo this allocates a lot of small objects
 # Not very crucial since it is for visualization
 # but it would be nice to have a better way
-function vtkcells(grid::Grid)
-  types = vtkcelltypedict()
-  nodes = vtkcellnodesdict()
+function _vtkcells(grid::Grid)
+  types = _vtkcelltypedict()
+  nodes = _vtkcellnodesdict()
   c = celltypes(grid)
   n = cells(grid)
   [ MeshCell(types[encode_extrusion(ci)], ni[nodes[encode_extrusion(ci)]])
@@ -81,7 +119,7 @@ end
 Generates the lookup table (as a Dict) in order to convert between
 Numa Polytope identifiers into VTK cell type identifiers
 """
-function vtkcelltypedict()
+function _vtkcelltypedict()
   d = Dict{Int,WriteVTK.VTKCellTypes.VTKCellType}()
   h = HEX_AXIS
   t = TET_AXIS
@@ -100,7 +138,7 @@ end
 Generates the lookup table (as a Dict) in order to convert between
 Numa Polytope corner numbering into VTK corner numbering
 """
-function vtkcellnodesdict()
+function _vtkcellnodesdict()
   d = Dict{Int,Vector{Int}}()
   h = HEX_AXIS
   t = TET_AXIS
@@ -114,22 +152,22 @@ function vtkcellnodesdict()
   d
 end
 
-function writevtk(points::CellPoints,filebase;celldata=Dict(),pointdata=Dict())
-  grid, p_to_cell = cellpoints_to_grid(points)
-  pdat = prepare_pointdata(pointdata)
+function _writevtk(points::CellPoints,filebase,celldata,pointdata)
+  grid, p_to_cell = _cellpoints_to_grid(points)
+  pdat = _prepare_pointdata(pointdata)
   k = "cellid"
   @assert ! haskey(pdat,k)
   pdat[k] = p_to_cell
   writevtk(grid,filebase,pointdata=pdat)
 end
 
-function writevtk(points::CellValue{Point{D}} where D,filebase;celldata=Dict(),pointdata=Dict())
-  grid = cellpoint_to_grid(points)
-  pdat = prepare_pointdata(pointdata)
+function _writevtk(points::CellValue{Point{D}} where D,filebase,celldata,pointdata)
+  grid = _cellpoint_to_grid(points)
+  pdat = _prepare_pointdata(pointdata)
   writevtk(grid,filebase,pointdata=pdat)
 end
 
-function cellpoints_to_grid(points::CellPoints{D}) where D
+function _cellpoints_to_grid(points::CellPoints{D}) where D
   ps = Array{Point{D},1}(undef,(0,))
   p_to_cell = Array{Int,1}(undef,(0,))
   for (cell,p) in enumerate(points)
@@ -138,94 +176,82 @@ function cellpoints_to_grid(points::CellPoints{D}) where D
       push!(p_to_cell,cell)
     end
   end
-  data, ptrs, ts = prepare_cells(ps)
+  data, ptrs, ts = _prepare_cells(ps)
   grid = UnstructuredGrid(ps,data,ptrs,ts)
   (grid, p_to_cell)
 end
 
-function cellpoint_to_grid(points::CellValue{Point{D}}) where D
+function _cellpoint_to_grid(points::CellValue{Point{D}}) where D
   ps = collect(points)
-  data, ptrs, ts = prepare_cells(ps)
+  data, ptrs, ts = _prepare_cells(ps)
   UnstructuredGrid(ps,data,ptrs,ts)
 end
 
-function prepare_cells(ps)
+function _prepare_cells(ps)
   data = [ i for i in 1:length(ps) ]
   ptrs = [ i for i in 1:(length(ps)+1) ]
   ts = [ () for i in 1:length(ps) ]
   (data,ptrs,ts)
 end
 
-function prepare_pointdata(pointdata)
+function _prepare_pointdata(pointdata)
   pdat = Dict()
   for (k,v) in pointdata
-    pdat[k] = prepare_data(v)
+    pdat[k] = _prepare_data(v)
   end
   pdat
 end
 
-prepare_data(v) = v
+_prepare_data(v) = v
 
-function prepare_data(v::IterData{<:VectorValue{D}}) where D
+function _prepare_data(v::IterData{<:VectorValue{D}}) where D
   a = collect(v)
   reshape(reinterpret(Float64,a),(D,length(a)))
 end
 
-function prepare_data(v::IterData{<:VectorValue{2}})
+function _prepare_data(v::IterData{<:VectorValue{2}})
   a = collect(v)
   b = reshape(reinterpret(Float64,a),(2,length(a)))
   z = zeros((1,size(b,2)))
   vcat(b,z)
 end
 
-function prepare_data(v::IterData{<:TensorValue{D}}) where D
+function _prepare_data(v::IterData{<:TensorValue{D}}) where D
   a = collect(v)
   reshape(reinterpret(Float64,a),(D*D,length(a)))
 end
 
-prepare_data(v::CellArray{<:Number}) = collect(flatten(v))
+_prepare_data(v::CellArray{<:Number}) = collect(flatten(v))
 
-function prepare_data(v::CellArray{<:VectorValue{D}}) where D
+function _prepare_data(v::CellArray{<:VectorValue{D}}) where D
   a = collect(flatten(v))
   reshape(reinterpret(Float64,a),(D,length(a)))
 end
 
-function prepare_data(v::CellArray{<:VectorValue{2}})
+function _prepare_data(v::CellArray{<:VectorValue{2}})
   a = collect(flatten(v))
   b = reshape(reinterpret(Float64,a),(2,length(a)))
   z = zeros((1,size(b,2)))
   vcat(b,z)
 end
 
-function prepare_data(v::CellArray{<:TensorValue{D}}) where D
+function _prepare_data(v::CellArray{<:TensorValue{D}}) where D
   a = collect(flatten(v))
   reshape(reinterpret(Float64,a),(D*D,length(a)))
 end
 
-struct VisualizationGrid{D,Z,G<:Grid{D,Z},C<:IndexCellValue{Int},P<:CellPoints{Z}} <: Grid{D,Z}
-  grid::G
-  coarsecells::C
-  samplingpoints::P
-end
-
-points(vg::VisualizationGrid) = points(vg.grid)
-
-cells(vg::VisualizationGrid) = cells(vg.grid)
-
-celltypes(vg::VisualizationGrid) = celltypes(vg.grid)
-
-function writevtk(vg::VisualizationGrid,filebase;celldata=Dict(),cellfields=Dict())
-  cdata = prepare_cdata(celldata,vg.coarsecells)
-  pdata = prepare_pdata(cellfields,vg.samplingpoints)
+function _writevtk(vg::VisualizationGrid,filebase,celldata,cellfields)
+  cdata = _prepare_cdata(celldata,vg.coarsecells)
+  pdata = _prepare_pdata(cellfields,vg.samplingpoints)
   writevtk(vg.grid,filebase,celldata=cdata,pointdata=pdata)
 end
 
-function prepare_cdata(celldata,fine_to_coarse)
+function _prepare_cdata(celldata,fine_to_coarse)
   cdata = Dict()
   for (k,v) in celldata
     acoarse = collect(v)
-    afine = allocate_afine(acoarse,length(fine_to_coarse))
-    fill_afine!(afine,acoarse,fine_to_coarse)
+    afine = _allocate_afine(acoarse,length(fine_to_coarse))
+    _fill_afine!(afine,acoarse,fine_to_coarse)
     cdata[k] = afine
   end
   k2 = "cellid"
@@ -234,15 +260,15 @@ function prepare_cdata(celldata,fine_to_coarse)
   cdata
 end
 
-allocate_afine(acoarse::Array{T},l) where T = Array{T,1}(undef,(l,))
+_allocate_afine(acoarse::Array{T},l) where T = Array{T,1}(undef,(l,))
 
-function fill_afine!(afine,acoarse,fine_to_coarse)
+function _fill_afine!(afine,acoarse,fine_to_coarse)
   for (i,coarse) in enumerate(fine_to_coarse)
     afine[i] = acoarse[coarse]
   end
 end
 
-function prepare_pdata(cellfields,samplingpoints)
+function _prepare_pdata(cellfields,samplingpoints)
   pdata = Dict()
   for (k,v) in cellfields
     pdata[k] = collect(flatten(evaluate(v,samplingpoints)))
@@ -250,26 +276,24 @@ function prepare_pdata(cellfields,samplingpoints)
   pdata
 end
 
-function visgrid(self::IntegrationMesh;nref=0)
+function _visgrid(self::IntegrationMesh,nref)
   grid, coarsecells, samplingpoints = _prepare_grid(celltypes(self),geomap(self),nref)
   VisualizationGrid(grid,coarsecells,samplingpoints)
 end
 
-# @fverdugo Avoid code repetition with a generated function
+function _refgrid end
 
-function refgrid end
-
-function refgrid(::Val{(HEX_AXIS,)},nref::Int)
+function _refgrid(::Val{(HEX_AXIS,)},nref::Int)
   n = 2^nref
   CartesianGrid(domain=(-1.0,1.0),partition=(n,))
 end
 
-function refgrid(::Val{(HEX_AXIS,HEX_AXIS)},nref::Int)
+function _refgrid(::Val{(HEX_AXIS,HEX_AXIS)},nref::Int)
   n = 2^nref
   CartesianGrid(domain=(-1.0,1.0,-1.0,1.0),partition=(n,n))
 end
 
-function refgrid(::Val{(HEX_AXIS,HEX_AXIS,HEX_AXIS)},nref::Int)
+function _refgrid(::Val{(HEX_AXIS,HEX_AXIS,HEX_AXIS)},nref::Int)
   n = 2^nref
   CartesianGrid(domain=(-1.0,1.0,-1.0,1.0,-1.0,1.0),partition=(n,n,n))
 end
@@ -290,7 +314,7 @@ end
 
 function _prepare_refgrid(ctypes,nref)
   extrusion = celldata(ctypes)
-  refgrid(Val(extrusion),nref)
+  _refgrid(Val(extrusion),nref)
 end
 
 function _prepare_samplingpoints(refgrid,ctypes)
