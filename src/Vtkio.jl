@@ -1,6 +1,6 @@
 module Vtkio
 
-export writevtk, visgrid
+export writevtk
 
 using Numa
 using Numa: flatten
@@ -26,18 +26,30 @@ using WriteVTK.VTKCellTypes: VTK_HEXAHEDRON
 
 # Functionality given by this module
 
+"""
+Write a Grid object into a vtk file
+"""
 function writevtk(grid::Grid,filebase;celldata=Dict(),pointdata=Dict())
   _writevtk(grid,filebase,celldata,pointdata)
 end
 
+"""
+Write a CellPoints object into vtk file
+"""
 function writevtk(points::CellPoints,filebase;celldata=Dict(),pointdata=Dict())
   _writevtk(points,filebase,celldata,pointdata)
 end
 
+"""
+Write a CellValue{Point{D}} object into vtk file
+"""
 function writevtk(points::CellValue{Point{D}} where D,filebase;celldata=Dict(),pointdata=Dict())
   _writevtk(points,filebase,celldata,pointdata)
 end
 
+"""
+Write an IntegrationMesh object into vtk
+"""
 function writevtk(imesh::IntegrationMesh,filebase;nref=0,celldata=Dict(),cellfields=Dict())
   _writevtk(imesh,filebase,nref,celldata,cellfields)
 end
@@ -74,8 +86,6 @@ function _vtkcells(grid::Grid)
   [ MeshCell(types[encode_extrusion(ci)], ni[nodes[encode_extrusion(ci)]])
      for (ci,ni) in zip(c,n) ] 
 end
-
-# @fverdugo move this to another place, Polytope.jl?
 
 """
 Encodes the tuple defining a Polytope into an integer
