@@ -15,12 +15,32 @@ end
 
 cells(::Grid)::IndexCellVector{Int} = @abstractmethod
 
-#@fverdugo In some situations it would be much more efficient to
-# encode the extrusion tuple into an integer
+# @fverdugo Return the encoded extrusion instead?
 """
 Returns the tuple uniquely identifying the Polytope of each cell
 """
 function celltypes(::Grid{D,Z})::IndexCellValue{NTuple{Z}} where {D,Z}
   @abstractmethod
+end
+
+
+# @fverdugo move this to another place, Polytope.jl?
+
+"""
+Encodes the tuple defining a Polytope into an integer
+"""
+function encode_extrusion(extrusion::NTuple{Z,Int}) where Z
+  k = 0
+  for (i,v) in enumerate(extrusion)
+    k += v*3^i
+  end
+  k
+end
+
+"""
+Decodes an integer into a tuple defining a Polytope
+"""
+function decode_extrusion(i::Int,::Val{Z}) where Z
+  @notimplemented
 end
 
