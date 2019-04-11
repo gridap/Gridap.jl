@@ -26,38 +26,43 @@ function vtkcells(grid::Grid)
   nodes = vtkcellnodesdict()
   c = celltypes(grid)
   n = cells(grid)
-  [  MeshCell(types[ci], ni[nodes[ci]]) for (ci,ni) in zip(c,n) ] 
+  [ MeshCell(types[encode_extrusion(ci)], ni[nodes[encode_extrusion(ci)]])
+     for (ci,ni) in zip(c,n) ] 
 end
 
-# @fverdugo it would be far more efficient to have
-# a Pair instead of a Dict
+"""
+Generates the lookup table (as a Dict) in order to convert between
+Numa Polytope identifiers into VTK cell type identifiers
+"""
 function vtkcelltypedict()
-  d = Dict()
+  d = Dict{Int,WriteVTK.VTKCellTypes.VTKCellType}()
   h = HEX_AXIS
   t = TET_AXIS
-  d[()] = VTK_VERTEX
-  d[(t,)] = VTK_LINE
-  d[(h,)] = VTK_LINE
-  d[(t,t)] = VTK_TRIANGLE
-  d[(h,h)] = VTK_QUAD
-  d[(t,t,t)] = VTK_TETRA
-  d[(h,h,h)] = VTK_HEXAHEDRON
+  d[encode_extrusion(())] = VTK_VERTEX
+  d[encode_extrusion((t,))] = VTK_LINE
+  d[encode_extrusion((h,))] = VTK_LINE
+  d[encode_extrusion((t,t))] = VTK_TRIANGLE
+  d[encode_extrusion((h,h))] = VTK_QUAD
+  d[encode_extrusion((t,t,t))] = VTK_TETRA
+  d[encode_extrusion((h,h,h))] = VTK_HEXAHEDRON
   d
 end
 
-# @fverdugo it would be far more efficient to have
-# a Pair instead of a Dict
+"""
+Generates the lookup table (as a Dict) in order to convert between
+Numa Polytope corner numbering into VTK corner numbering
+"""
 function vtkcellnodesdict()
-  d = Dict()
+  d = Dict{Int,Vector{Int}}()
   h = HEX_AXIS
   t = TET_AXIS
-  d[()] = [1,]
-  d[(t,)] = [1,2]
-  d[(h,)] = d[(t,)]
-  d[(t,t)] = [1,2,3]
-  d[(h,h)] = [1,2,4,3]
-  d[(t,t,t)] = [1,2,3,4]
-  d[(h,h,h)] = [1,2,4,3,5,6,8,7]
+  d[encode_extrusion(())] = [1,]
+  d[encode_extrusion((t,))] = [1,2]
+  d[encode_extrusion((h,))] = [1,2]
+  d[encode_extrusion((t,t))] = [1,2,3]
+  d[encode_extrusion((h,h))] = [1,2,4,3]
+  d[encode_extrusion((t,t,t))] = [1,2,3,4]
+  d[encode_extrusion((h,h,h))] = [1,2,4,3,5,6,8,7]
   d
 end
 

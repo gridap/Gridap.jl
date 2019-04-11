@@ -12,13 +12,13 @@ include("Fields/FieldValues.jl")
 include("Fields/Fields.jl")
 include("Quadratures.jl")
 include("Polynomials.jl")
+include("Polytopes.jl")
 include("CellValues/CellValues.jl")
 include("CellFunctions/CellFunctions.jl")
+include("Geometry/Geometry.jl")
 include("CellQuadratures.jl")
 include("CellIntegration.jl")
-include("Polytopes.jl")
 
-include("Geometry/Geometry.jl")
 
 # FESpaces tools
 include("FESpaces/RefFEs.jl")

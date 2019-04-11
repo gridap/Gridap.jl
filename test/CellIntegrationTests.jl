@@ -7,6 +7,7 @@ using Numa.CellFunctions
 using Numa.CellQuadratures
 using Numa.CellIntegration
 using Numa.Quadratures
+using Numa.Geometry: celltypes
 
 include("CellIntegrationTestsMocks.jl")
 
@@ -20,6 +21,8 @@ imesh = DummyIntegrationMesh2D(partition=(3,3))
 
   basis = cellbasis(imesh)
 
+  types = celltypes(imesh)
+
   phi = geomap(imesh)
 
   @test isa(coords,CellPoints{2})
@@ -27,6 +30,8 @@ imesh = DummyIntegrationMesh2D(partition=(3,3))
   @test isa(basis,CellBasis{2,Float64})
 
   @test isa(phi,CellField{2,Point{2}})
+
+  @test isa(types,CellValue{NTuple{2,Int}})
 
 end
 

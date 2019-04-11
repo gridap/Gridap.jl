@@ -14,6 +14,7 @@ using Numa.Quadratures
 
 import Numa: evaluate, gradient
 import Numa: cellfield
+import Numa.Geometry: celltypes
 
 """
 Minimal interface for a mesh used for numerical integration
@@ -25,6 +26,13 @@ function cellcoordinates(::IntegrationMesh{Z,D})::CellPoints{D} where {Z,D}
 end
 
 function cellbasis(::IntegrationMesh{Z,D})::CellBasis{Z,Float64} where {Z,D}
+  @abstractmethod
+end
+
+"""
+Returns the tuple uniquely identifying the Polytope of each cell
+"""
+function celltypes(::IntegrationMesh{Z,D})::CellValue{NTuple{Z}} where {Z,D}
   @abstractmethod
 end
 
