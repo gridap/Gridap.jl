@@ -2,15 +2,13 @@
 using Numa
 using Numa.Quadratures
 using Numa.CellQuadratures
-using Numa.CellIntegration
-using Numa.CellValues
+# using Numa.CellIntegration
+# using Numa.CellValues
 using Numa.CellFunctions
 import Numa.CellIntegration: cellcoordinates, cellbasis
 
 using Numa.CellValues: IndexCellArray
 import Numa.CellValues: cellsize
-using Numa.CellIntegration
-import Numa.CellIntegration: cellcoordinates, cellbasis
 using Numa.Polytopes
 using Numa.RefFEs
 using Numa.FieldValues

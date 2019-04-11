@@ -59,6 +59,11 @@ struct SubAssembledSystem{E} where E
 	assembly_op_cols::CellVector{Int}
 end
 
+# @santiagobadia: CellVectorFromDataAndPtrs can be used for assemply_op_xxx in
+# practice, we can also make these types abstract and consider concretizations.
+# the only abstract method is assembly... In fact, I would eliminate sub if we
+# want... The assembled system will be a plain matrix...
+
 # A FE Space would be...
 
 struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T,Float64} where {D,Z,T}
