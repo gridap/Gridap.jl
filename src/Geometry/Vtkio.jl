@@ -30,6 +30,7 @@ function vtkcells(grid::Grid)
      for (ci,ni) in zip(c,n) ] 
 end
 
+# @fverdugo This can also be done by dispatching on value
 """
 Generates the lookup table (as a Dict) in order to convert between
 Numa Polytope identifiers into VTK cell type identifiers
@@ -48,6 +49,7 @@ function vtkcelltypedict()
   d
 end
 
+# @fverdugo This can also be done by dispatching on value
 """
 Generates the lookup table (as a Dict) in order to convert between
 Numa Polytope corner numbering into VTK corner numbering

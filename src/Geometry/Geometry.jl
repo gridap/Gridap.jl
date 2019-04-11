@@ -2,6 +2,7 @@ module Geometry
 
 export Grid, CartesianGrid
 export UnstructuredGrid, FlexibleUnstructuredGrid
+export VisualizationGrid
 export cells, points, celltypes
 export writevtk
 
@@ -28,5 +29,6 @@ include("Interfaces.jl")
 include("CartesianGrids.jl")
 include("UnstructuredGrids.jl")
 include("Vtkio.jl")
+include("VisualizationGrids.jl")
 
 end # module Geometry
