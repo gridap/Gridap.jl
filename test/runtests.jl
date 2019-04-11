@@ -14,6 +14,7 @@ using Test
   @time @testset "Polytopes" begin include("PolytopesTests.jl") end
   @time @testset "Geometry" begin include("GeometryTests.jl") end
   @time @testset "RefFEs" begin include("RefFEsTests.jl") end
+  @time @testset "Vtkio" begin include("VtkioTests.jl") end
   # @time @testset "Meshes" begin include("MeshesTests.jl") end
   # @time @testset "FESpaces" begin include("FESpacesTests.jl") end
   # @time @testset "BilinearForms" begin include("BilinearFormsTests.jl") end

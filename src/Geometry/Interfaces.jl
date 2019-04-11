@@ -24,23 +24,3 @@ function celltypes(::Grid{D,Z})::IndexCellValue{NTuple{Z}} where {D,Z}
 end
 
 
-# @fverdugo move this to another place, Polytope.jl?
-
-"""
-Encodes the tuple defining a Polytope into an integer
-"""
-function encode_extrusion(extrusion::NTuple{Z,Int}) where Z
-  k = 0
-  for (i,v) in enumerate(extrusion)
-    k += v*3^i
-  end
-  k
-end
-
-"""
-Decodes an integer into a tuple defining a Polytope
-"""
-function decode_extrusion(i::Int,::Val{Z}) where Z
-  @notimplemented
-end
-

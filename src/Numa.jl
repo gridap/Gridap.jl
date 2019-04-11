@@ -18,6 +18,7 @@ include("CellFunctions/CellFunctions.jl")
 include("Geometry/Geometry.jl")
 include("CellQuadratures.jl")
 include("CellIntegration.jl")
+include("Vtkio.jl")
 
 
 # FESpaces tools

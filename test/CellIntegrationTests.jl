@@ -82,29 +82,4 @@ end
 
 end
 
-@testset "VisualizationGrid" begin
-
-  using Numa.CellIntegration: visgrid
-  using Numa.Geometry
-
-  vg = visgrid(imesh,nref=2)
-
-  ufun(x) = 3*x[2]*x[1]
-  u = cellfield(imesh,ufun)
-
-  vfun(x) = VectorValue(3*x[2]*x[1],2*x[2])
-  v = cellfield(imesh,vfun)
-
-  d = mktempdir()
-  f = joinpath(d,"grid")
-
-  writevtk(vg,f,)
-  writevtk(vg,f,celldata=["r"=>rand(9)])
-  writevtk(vg,f,cellfields=["u"=>u,"v"=>v])
-  writevtk(vg,f,celldata=["r"=>rand(9)],cellfields=["u"=>u,"v"=>v])
-
-  rm(d,recursive=true)
-
-end
-
 end # module CellIntegrationTests
