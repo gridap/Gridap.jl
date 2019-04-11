@@ -13,6 +13,7 @@ import Numa.CellIntegration: cellcoordinates, cellbasis
 using Numa.Polytopes
 using Numa.RefFEs
 using Numa.FieldValues
+import Numa.Geometry: celltypes
 
 struct DummyCellCoordinates2D <: IndexCellArray{Point{2},1,Array{Point{2},1},1}
   x::Array{Point{2},2}
@@ -63,6 +64,7 @@ cellsize(self::DummyCellCoordinates2D) = (4,)
 struct DummyIntegrationMesh2D <: IntegrationMesh{2,2}
   cellcoords::DummyCellCoordinates2D
   cellbasis::CellBasisFromSingleInterpolation{2,Float64}
+  celltypes::ConstantCellValue{NTuple{2,Int}}
 end
 
 function DummyIntegrationMesh2D(;partition::Tuple{Int,Int})
@@ -72,9 +74,12 @@ function DummyIntegrationMesh2D(;partition::Tuple{Int,Int})
   basis = reffe.shfbasis
   cellbasis = CellBasisFromSingleInterpolation(basis)
   cellcoords = DummyCellCoordinates2D(partition=partition)
-  DummyIntegrationMesh2D(cellcoords,cellbasis)
+  celltypes = ConstantCellValue((HEX_AXIS,HEX_AXIS),length(cellcoords))
+  DummyIntegrationMesh2D(cellcoords,cellbasis,celltypes)
 end
 
 cellcoordinates(self::DummyIntegrationMesh2D) = self.cellcoords
 
 cellbasis(self::DummyIntegrationMesh2D) = self.cellbasis
+
+celltypes(self::DummyIntegrationMesh2D) = self.celltypes
