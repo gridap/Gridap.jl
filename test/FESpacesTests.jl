@@ -4,7 +4,7 @@ using Numa.Quadratures
 using Numa.Polytopes
 using Numa.RefFEs
 # using Numa.Meshes
-# using Numa.FESpaces
+using Numa.FESpaces
 
 using Numa.Polytopes: PointInt
 using Numa.CellValues
@@ -41,6 +41,9 @@ ptrs = ConstantPointerVector(7,2)
 celldata = CellVectorFromDataAndPtrs(data,ptrs)
 @test celldata[end] == [3,4]
 ##
+
+# Now return such structure from FESpace with same cell everywhere and conforming
+# meshes
 
 
 ##

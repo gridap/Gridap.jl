@@ -23,9 +23,6 @@ include("Vtkio.jl")
 
 # FESpaces tools
 include("FESpaces/RefFEs.jl")
-# include("Meshes.jl")
-# include("FESpaces/FESpaces.jl")
-
-# include("BilinearForms.jl")
+include("FESpaces/FESpaces.jl")
 
 end #module Numa
