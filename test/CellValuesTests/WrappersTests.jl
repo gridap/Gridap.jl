@@ -1,5 +1,5 @@
 
-@testset "Wappers" begin
+@testset "Wrappers" begin
 
   v = [ Point{2}(i,i) for i in 1:10 ]
 
@@ -38,4 +38,3 @@
   @test cellsize(ca) == (6,)
 
 end
-

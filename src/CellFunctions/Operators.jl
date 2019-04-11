@@ -163,7 +163,7 @@ end
 function evaluate(self::CellFieldFromComposeExtended{D},points::CellPoints{D}) where D
   gvals = evaluate(self.g,points)
   uvals = evaluate(self.u,gvals)
-  CellArrayFromBoradcastBinaryOp(self.f,gvals,uvals)
+  CellArrayFromBroadcastBinaryOp(self.f,gvals,uvals)
 end
 
 function gradient(self::CellFieldFromComposeExtended)

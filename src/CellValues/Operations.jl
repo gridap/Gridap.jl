@@ -231,9 +231,9 @@ end
   quote
     @nloops $M a A begin
       @nexprs $N j->(b_j = j == $D ? 1 : a_{ j < $D ? j : j-1 } )
-      (@nref $N B b) = @nref $M A a 
+      (@nref $N B b) = @nref $M A a
     end
-  end    
+  end
 end
 
 struct CellValueFromCellArrayReduce{T,O<:Function,C<:CellArray} <: IterCellValue{T}
@@ -278,13 +278,13 @@ end
 for op in (:+, :-, :*, :/, :(inner), :(outer))
   @eval begin
     function ($op)(a::CellArray,b::CellArray)
-      CellArrayFromBoradcastBinaryOp($op,a,b)
+      CellArrayFromBroadcastBinaryOp($op,a,b)
     end
     function ($op)(a::CellArray,b::CellValue)
-      CellArrayFromBoradcastBinaryOp($op,a,b)
+      CellArrayFromBroadcastBinaryOp($op,a,b)
     end
     function ($op)(a::CellValue,b::CellArray)
-      CellArrayFromBoradcastBinaryOp($op,a,b)
+      CellArrayFromBroadcastBinaryOp($op,a,b)
     end
   end
 end
@@ -341,46 +341,46 @@ function iteratekernel(self::CellArrayFromBinaryOp,anext,bnext,v)
   (v,state)
 end
 
-struct CellArrayFromBoradcastBinaryOp{O<:Function,T,N,A,B} <: CellArrayFromBinaryOp{A,B,T,N}
+struct CellArrayFromBroadcastBinaryOp{O<:Function,T,N,A,B} <: CellArrayFromBinaryOp{A,B,T,N}
   op::O
   a::A
   b::B
 end
 
-function CellArrayFromBoradcastBinaryOp(op::Function,a::CellArray{T,N},b::CellArray{S,M}) where {T,S,N,M}
+function CellArrayFromBroadcastBinaryOp(op::Function,a::CellArray{T,N},b::CellArray{S,M}) where {T,S,N,M}
   O = typeof(op)
   A = typeof(a)
   B = typeof(b)
   R = Base._return_type(op,Tuple{T,S})
   L = max(N,M)
-  CellArrayFromBoradcastBinaryOp{O,R,L,A,B}(op,a,b)
+  CellArrayFromBroadcastBinaryOp{O,R,L,A,B}(op,a,b)
 end
 
-function CellArrayFromBoradcastBinaryOp(op::Function,a::CellArray{T,N},b::CellValue{S}) where {T,S,N}
+function CellArrayFromBroadcastBinaryOp(op::Function,a::CellArray{T,N},b::CellValue{S}) where {T,S,N}
   O = typeof(op)
   A = typeof(a)
   B = typeof(b)
   R = Base._return_type(op,Tuple{T,S})
-  CellArrayFromBoradcastBinaryOp{O,R,N,A,B}(op,a,b)
+  CellArrayFromBroadcastBinaryOp{O,R,N,A,B}(op,a,b)
 end
 
-function CellArrayFromBoradcastBinaryOp(op::Function,a::CellValue{T},b::CellArray{S,N}) where {T,S,N}
+function CellArrayFromBroadcastBinaryOp(op::Function,a::CellValue{T},b::CellArray{S,N}) where {T,S,N}
   O = typeof(op)
   A = typeof(a)
   B = typeof(b)
   R = Base._return_type(op,Tuple{T,S})
-  CellArrayFromBoradcastBinaryOp{O,R,N,A,B}(op,a,b)
+  CellArrayFromBroadcastBinaryOp{O,R,N,A,B}(op,a,b)
 end
 
-leftcellarray(self::CellArrayFromBoradcastBinaryOp) = self.a
+leftcellarray(self::CellArrayFromBroadcastBinaryOp) = self.a
 
-rightcellarray(self::CellArrayFromBoradcastBinaryOp) = self.b
+rightcellarray(self::CellArrayFromBroadcastBinaryOp) = self.b
 
-function computesize(::CellArrayFromBoradcastBinaryOp, asize, bsize)
+function computesize(::CellArrayFromBroadcastBinaryOp, asize, bsize)
   Base.Broadcast.broadcast_shape(asize,bsize)
 end
 
-function computevals!(self::CellArrayFromBoradcastBinaryOp, a, b, v)
+function computevals!(self::CellArrayFromBroadcastBinaryOp, a, b, v)
   broadcast!(self.op,v,a,b)
 end
 
@@ -426,4 +426,3 @@ end
 IteratorSize(::Type{FlattedCellArray{T,N,A}} where {T,N,A}) = Base.SizeUnknown()
 
 length(::FlattedCellArray)::Int = @notimplemented
-
