@@ -92,11 +92,9 @@ end
 
 end
 
-@testset "VisualizationGrid" begin
+@testset "WritevtkForIntegrationMesh" begin
 
   imesh = DummyIntegrationMesh2D(partition=(3,3))
-
-  vg = visgrid(imesh,nref=2)
 
   ufun(x) = 3*x[2]*x[1]
   u = cellfield(imesh,ufun)
@@ -105,12 +103,13 @@ end
   v = cellfield(imesh,vfun)
 
   d = mktempdir()
-  f = joinpath(d,"grid")
+  f = joinpath(d,"imesh")
 
-  writevtk(vg,f,)
-  writevtk(vg,f,celldata=["r"=>rand(9)])
-  writevtk(vg,f,cellfields=["u"=>u,"v"=>v])
-  writevtk(vg,f,celldata=["r"=>rand(9)],cellfields=["u"=>u,"v"=>v])
+  writevtk(imesh,f)
+  writevtk(imesh,f,nref=2,)
+  writevtk(imesh,f,nref=2,celldata=["r"=>rand(9)])
+  writevtk(imesh,f,nref=2,cellfields=["u"=>u,"v"=>v])
+  writevtk(imesh,f,nref=2,celldata=["r"=>rand(9)],cellfields=["u"=>u,"v"=>v])
 
   rm(d,recursive=true)
 

@@ -24,20 +24,6 @@ using WriteVTK.VTKCellTypes: VTK_QUAD
 using WriteVTK.VTKCellTypes: VTK_TETRA
 using WriteVTK.VTKCellTypes: VTK_HEXAHEDRON
 
-# Types
-
-struct VisualizationGrid{D,Z,G<:Grid{D,Z},C<:IndexCellValue{Int},P<:CellPoints{Z}} <: Grid{D,Z}
-  grid::G
-  coarsecells::C
-  samplingpoints::P
-end
-
-points(vg::VisualizationGrid) = points(vg.grid)
-
-cells(vg::VisualizationGrid) = cells(vg.grid)
-
-celltypes(vg::VisualizationGrid) = celltypes(vg.grid)
-
 # Functionality given by this module
 
 function writevtk(grid::Grid,filebase;celldata=Dict(),pointdata=Dict())
@@ -52,12 +38,8 @@ function writevtk(points::CellValue{Point{D}} where D,filebase;celldata=Dict(),p
   _writevtk(points,filebase,celldata,pointdata)
 end
 
-function writevtk(vg::VisualizationGrid,filebase;celldata=Dict(),cellfields=Dict())
-  _writevtk(vg,filebase,celldata,cellfields)
-end
-
-function visgrid(imesh::IntegrationMesh;nref=0)
-  _visgrid(imesh,nref)
+function writevtk(imesh::IntegrationMesh,filebase;nref=0,celldata=Dict(),cellfields=Dict())
+  _writevtk(imesh,filebase,nref,celldata,cellfields)
 end
 
 # Helpers
@@ -240,10 +222,22 @@ function _prepare_data(v::CellArray{<:TensorValue{D}}) where D
   reshape(reinterpret(Float64,a),(D*D,length(a)))
 end
 
+struct VisualizationGrid{D,Z,G<:Grid{D,Z},C<:IndexCellValue{Int},P<:CellPoints{Z}} <: Grid{D,Z}
+  grid::G
+  coarsecells::C
+  samplingpoints::P
+end
+
+points(vg::VisualizationGrid) = points(vg.grid)
+
+cells(vg::VisualizationGrid) = cells(vg.grid)
+
+celltypes(vg::VisualizationGrid) = celltypes(vg.grid)
+
 function _writevtk(vg::VisualizationGrid,filebase,celldata,cellfields)
   cdata = _prepare_cdata(celldata,vg.coarsecells)
   pdata = _prepare_pdata(cellfields,vg.samplingpoints)
-  writevtk(vg.grid,filebase,celldata=cdata,pointdata=pdata)
+  _writevtk(vg.grid,filebase,cdata,pdata)
 end
 
 function _prepare_cdata(celldata,fine_to_coarse)
@@ -274,6 +268,11 @@ function _prepare_pdata(cellfields,samplingpoints)
     pdata[k] = collect(flatten(evaluate(v,samplingpoints)))
   end
   pdata
+end
+
+function _writevtk(imesh::IntegrationMesh,filebase,nref,celldata,cellfields)
+  vg = _visgrid(imesh,nref)
+  _writevtk(vg,filebase,celldata,cellfields)
 end
 
 function _visgrid(self::IntegrationMesh,nref)
