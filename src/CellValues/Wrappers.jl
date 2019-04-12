@@ -116,4 +116,38 @@ function cellsize(self::CellVectorFromDataAndStride)
   (self.stride,)
 end
 
+struct CellVectorFromLocalToGlobal{T,L<:IndexCellArray{Int,1},V<:IndexCellValue{T}} <: IndexCellArray{T,1,CachedArray{T,1,Array{T,1}},1}
+  lid_to_gid::L
+  gid_to_val::V
+  cv::CachedArray{T,1,Array{T,1}}
+end
+
+function CellVectorFromLocalToGlobal(lid_to_gid::IndexCellArray{Int,1}, gid_to_val::IndexCellValue{T}) where T
+  L = typeof(lid_to_gid)
+  V = typeof(gid_to_val)
+  a = Vector{T}(undef,(celllength(lid_to_gid),))
+  cv = CachedArray(a,size(a))
+  CellVectorFromLocalToGlobal{T,L,V}(lid_to_gid,gid_to_val,cv)
+end
+
+function CellVectorFromLocalToGlobal(lid_to_gid::IndexCellArray{Int,1},gid_to_val::AbstractArray{T,N}) where {T,N}
+  _gid_to_val = CellValueFromArray(gid_to_val)
+  CellVectorFromLocalToGlobal(lid_to_gid,_gid_to_val)
+end
+
+@propagate_inbounds function getindex(self::CellVectorFromLocalToGlobal,cell::Int)
+  lid_to_gid = self.lid_to_gid[cell]
+  setsize!(self.cv,(length(lid_to_gid),))
+  for (lid,gid) in enumerate(lid_to_gid)
+    self.cv[lid] = self.gid_to_val[gid]
+  end
+  self.cv
+end
+
+size(self::CellVectorFromLocalToGlobal) = (length(self.lid_to_gid),)
+
+IndexStyle(::Type{CellVectorFromLocalToGlobal{T,L,V}}) where {T,L,V} = IndexLinear()
+
+cellsize(self::CellVectorFromLocalToGlobal) = cellsize(self.lid_to_gid)
+
 

@@ -47,4 +47,22 @@
 
   @test cellsize(ca) == (3,)
 
+  p = Point(2.0,1.0)
+  #       1,2,3,4,5,6,7,8,9,0,1,2
+  data = [2,3,1,3,4,4,3,2,5,4,3,4]
+  ptrs = [1,4,4,7,13]
+  gid_to_val = [p, 2*p, 3*p, -p, p]
+
+  lid_to_gid = CellVectorFromDataAndPtrs(data,ptrs)
+  ca = CellVectorFromLocalToGlobal(lid_to_gid,gid_to_val)
+
+  @test length(ca) == length(ptrs)-1
+  @test cellsize(ca) == (6,)
+
+  @test ca[1] == gid_to_val[data[1:3]]
+  @test ca[2] == gid_to_val[data[4:3]]
+  @test ca[3] == gid_to_val[data[4:6]]
+  @test ca[4] == gid_to_val[data[7:12]]
+
+
 end

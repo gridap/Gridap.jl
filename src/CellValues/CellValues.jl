@@ -17,6 +17,7 @@ export CellValueFromArray
 export CellArrayFromArrayOfArrays
 export CellVectorFromDataAndPtrs
 export CellVectorFromDataAndStride
+export CellVectorFromLocalToGlobal
 
 export apply
 export celldata
