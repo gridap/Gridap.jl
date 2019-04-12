@@ -16,6 +16,7 @@ export ConstantCellData
 export CellValueFromArray
 export CellArrayFromArrayOfArrays
 export CellVectorFromDataAndPtrs
+export CellVectorFromDataAndStride
 
 export apply
 export celldata

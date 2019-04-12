@@ -89,4 +89,31 @@ function cellsize(self::CellVectorFromDataAndPtrs)
   (l,)
 end
 
+struct CellVectorFromDataAndStride{T,V} <: IndexCellArray{T,1,CachedSubVector{T,V},1}
+  data::V
+  stride::Int
+  cv::CachedSubVector{T,V}
+end
+
+function CellVectorFromDataAndStride(data::AbstractArray{T,1},stride::Int) where T
+  V = typeof(data)
+  cv = CachedSubVector(data,0,0)
+  CellVectorFromDataAndStride{T,V}(data,stride,cv)
+end
+
+@propagate_inbounds function getindex(self::CellVectorFromDataAndStride,cell::Int)
+  pini = self.stride*(cell - 1) + 1
+  pend = self.stride*cell
+  locate!(self.cv,pini,pend)
+  self.cv
+end
+
+size(self::CellVectorFromDataAndStride) = (ceil(Int,length(self.data)/self.stride),)
+
+IndexStyle(::Type{CellVectorFromDataAndStride{T,V}}) where {T,V} = IndexLinear()
+
+function cellsize(self::CellVectorFromDataAndStride)
+  (self.stride,)
+end
+
 

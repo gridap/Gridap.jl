@@ -37,4 +37,14 @@
 
   @test cellsize(ca) == (6,)
 
+  ca = CellVectorFromDataAndStride(data,3)
+
+  @test length(ca) == 4
+  @test ca[1] == data[1:3]
+  @test ca[2] == data[4:6]
+  @test ca[3] == data[7:9]
+  @test ca[4] == data[10:12]
+
+  @test cellsize(ca) == (3,)
+
 end
