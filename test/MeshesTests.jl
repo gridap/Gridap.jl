@@ -4,6 +4,8 @@ using Numa.Polytopes
 using Numa.Polytopes: PointInt
 using Numa.Meshes
 using Base.Cartesian
+using Numa.CellValues: CellVectorFromDataAndStride
+using Numa.CellValues
 
 ##
 D = 2

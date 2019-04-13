@@ -48,7 +48,7 @@ Conforming FE Space, where only one RefFE is possible in the whole mesh
 struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T,Float64}
 	# For the moment, I am not considering E (to think)
 	reffe::LagrangianRefFE{D,T}
-	mesh::Grid{D,Z}
+	# mesh::Mesh{D,Z}
 end
 
 # Methods

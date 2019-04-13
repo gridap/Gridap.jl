@@ -22,6 +22,7 @@ include("Vtkio.jl")
 
 
 # FESpaces tools
+include("Meshes.jl")
 include("FESpaces/RefFEs.jl")
 include("FESpaces/FESpaces.jl")
 

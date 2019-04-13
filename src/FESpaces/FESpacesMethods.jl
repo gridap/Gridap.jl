@@ -1,11 +1,15 @@
 
-	function FESpace(reffe::RefFE,mesh::Mesh)
-		giddof=globalnumbering(reffe,mesh)
-		l2giddof=computelgidvefs(reffe,mesh,giddof[1])
-		FESpace(reffe,mesh,l2giddof,giddof[2])
-	end
+	# function FESpace(reffe::RefFE,mesh::Mesh)
+		# giddof=globalnumbering(reffe,mesh)
+		# l2giddof=computelgidvefs(reffe,mesh,giddof[1])
+		# FESpace(reffe,mesh,l2giddof,giddof[2])
+	# end
 
-function globalnumbering(reffe::RefFE,mesh::Mesh)
+# What do I need from the mesh?
+# cellvefs::CellVector{Int}
+# vefcells::CellVector{Int}
+
+function globaldofs(this::FEspace)
 	nfdofs=Array{Array{Int64},1}(undef,length(mesh.vefcells))
 	c=1
 	igvef=0
@@ -20,6 +24,8 @@ function globalnumbering(reffe::RefFE,mesh::Mesh)
 	return [nfdofs,c-1]
 end
 
+# Not sure we need this part... we could work vef based... and create a cell
+# array from the vefarray
 function computelgidvefs(reffe::RefFE, mesh::Mesh,gldofs)
 	polytope=reffe.polytope
 	lgidvefs=Array{Array{Int64,1},1}(undef,length(mesh.cellvefs))
