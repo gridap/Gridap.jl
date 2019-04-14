@@ -11,6 +11,8 @@ using Numa.Geometry
 
 using Numa.Meshes
 
+using Numa.CellValues: CellVectorByComposition
+
 # Abstract types and interfaces
 
 """
@@ -42,6 +44,13 @@ struct ConformingAssembler{E} <: Assembler{E}
 	assembly_op_rows::CellVector{Int}
 	assembly_op_cols::CellVector{Int}
 	num_dofs::Int
+end
+
+function ConformingAssembler(fesp::FESpace)
+	gldofs = globaldofs(fesp)
+	ndofs = gldofs[end][end]
+	cell_to_dofs = CellVectorByComposition(fesp.mesh.cellvefs, gldofs)
+	ConformingAssembler{Float64}(cell_to_dofs, cell_to_dofs, ndofs)
 end
 
 """
