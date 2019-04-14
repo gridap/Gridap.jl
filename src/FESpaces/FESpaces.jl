@@ -10,6 +10,7 @@ using Numa.CellValues
 using Numa.Geometry
 
 using Numa.Meshes
+using SparseArrays
 
 using Numa.CellValues: CellVectorByComposition
 
@@ -64,7 +65,37 @@ end
 
 # Methods
 
+function assemble(this::Assembler, vals::CellVector{T}) where T
+  rows_m = this.assembly_op_rows
+	# @santiagobadia : Evaluate efficiency, best way to do it in Julia
+	# without pre-allocate loop?
+  aux_row = []; aux_vals = []
+  for vals_c in vals
+    aux_vals = [aux_vals..., vals_c...]
+  end
+  for rows_c in rows_m
+    aux_row = [ aux_row..., rows_c...]
+  end
+  return sparsevec(aux_row, aux_vals)
+end
 
+function assemble(this::Assembler, vals::CellMatrix{T}) where T
+  rows_m = this.assembly_op_rows
+  cols_m = this.assembly_op_cols
+	# @santiagobadia : Evaluate efficiency, best way to do it in Julia
+	# without pre-allocate loop?
+  aux_row = []; aux_col = []; aux_vals = []
+  for vals_c in vals
+    aux_vals = [aux_vals..., vec(vals_c)...]
+  end
+  for (rows_c, cols_c) in zip(rows_m,cols_m)
+    for I in Iterators.product(rows_c, cols_c)
+      aux_row = [aux_row..., I[1]]
+      aux_col = [aux_col..., I[2]]
+    end
+  end
+  return sparse(aux_row, aux_col, aux_vals)
+end
 
 include("FESpacesMethods.jl")
 

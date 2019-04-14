@@ -10,24 +10,34 @@ import Numa.CellIntegration: cellcoordinates, cellbasis
 using Numa.CellValues: IndexCellArray
 import Numa.CellValues: cellsize
 using Numa.Polytopes
+using Numa.Polytopes: PointInt
 using Numa.RefFEs
 using Numa.FieldValues
 
 import Numa: gradient
+using Numa.CellValues: ConstantCellValue
 include("CellIntegrationTestsMocks.jl")
+
+using Numa.Meshes
+using Numa.FESpaces: ConformingFESpace
+
 ##
 ##
-polytope = Polytope(Polytopes.PointInt{2}(1,1))
-reffe = LagrangianRefFE{2,ScalarValue}(polytope,[1,1])
+D=2
+nparts1d = 3
+nparts = nparts1d*ones(Int64,D)
+nparts_t = tuple(nparts...)
+order=1
+orders=order*ones(Int64,D)
+extrusion = PointInt{D}(ones(Int64,D))
+polytope = Polytopes.Polytope(extrusion)
+reffe = LagrangianRefFE{D,ScalarValue}(polytope,orders)
 basis = reffe.shfbasis
 cellb = CellBasisFromSingleInterpolation(basis)
-cellcoords = DummyCellCoordinates2D(partition=(2,2))
-imesh = DummyIntegrationMesh2D(cellcoords,cellb)
+imesh = DummyIntegrationMesh2D(partition=nparts_t)
 refquad = TensorProductQuadrature(orders=(2,2))
 meshcoords = cellcoordinates(imesh)
 ncells = length(meshcoords)
-# @santiagobadia : I would like a method that given a mesh, it provides the
-# number of active cells
 quad = ConstantCellQuadrature(refquad,ncells)
 phi = geomap(imesh)
 basis = cellbasis(imesh)
@@ -44,5 +54,23 @@ uphys = fun ∘ phi
 ksca = integrate(ab(uphys,uphys),imesh,quad)
 sum(ksca)
 kvec = integrate(ab(V,uphys),imesh,quad)
+typeof(kvec)
 kmat = integrate(ab(V,U),imesh,quad)
 ##
+# Now let us assemble all these values
+
+# @santiagobadia : I need to harmonize meshes...
+mesh = StructHexMesh(nparts)
+fesp = ConformingFESpace{D,D,ScalarValue}(reffe,mesh)
+using Numa.FESpaces: globaldofs
+gldofs = globaldofs(fesp)
+ndofs = gldofs[end][end]
+using Numa.FESpaces: ConformingAssembler
+assembler = ConformingAssembler(fesp)
+using SparseArrays
+using Numa.FESpaces: Assembler
+
+# @santiagobadia : Not tested yet
+using Numa.FESpaces: assemble
+sys_vec = assemble(assembler,kvec)
+sys_mat = assemble(assembler,kmat)

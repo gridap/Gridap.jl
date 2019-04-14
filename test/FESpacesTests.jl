@@ -39,8 +39,7 @@ assembler = ConformingAssembler(fesp)
 @test assembler.assembly_op_cols[1] == cell_to_dofs[1]
 ##
 
-
-
+# Now assemble a vector and a matrix!
 
 
 
