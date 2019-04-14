@@ -150,4 +150,42 @@ IndexStyle(::Type{CellVectorFromLocalToGlobal{T,L,V}}) where {T,L,V} = IndexLine
 
 cellsize(self::CellVectorFromLocalToGlobal) = cellsize(self.lid_to_gid)
 
+# @santiagobadia : I think that the following struct is very useful. E.g., to
+# create the local to global from the cell when gids are nface-based, the way
+# to go (I think).
+struct CellVectorByComposition{T,L<:IndexCellVector{Int},V<:IndexCellVector{T}} <: IndexCellArray{T,1,CachedArray{T,1,Array{T,1}},1}
+  cell_to_x::L
+  x_to_vals::V
+  cv::CachedVector{T,Vector{T}}
+end
 
+function CellVectorByComposition(cell_to_x::IndexCellVector{Int}, x_to_vals::IndexCellVector{T}) where T
+  L = typeof(cell_to_x)
+  V = typeof(x_to_vals)
+  a = Vector{T}(undef,(celllength(cell_to_x)*celllength(x_to_vals),))
+  cv = CachedArray(a)
+  CellVectorByComposition{T,L,V}(cell_to_x, x_to_vals, cv)
+end
+
+@propagate_inbounds function getindex(self::CellVectorByComposition,cell::Int)
+  cell_to_x = self.cell_to_x[cell]
+  l = 0
+  for x in cell_to_x
+    l += length(self.x_to_vals[x])
+  end
+  setsize!(self.cv,(l,))
+  l = 1
+  for x in cell_to_x
+    for val in self.x_to_vals[x]
+      self.cv[l] = val
+      l += 1
+    end
+  end
+  self.cv
+end
+
+size(self::CellVectorByComposition) = (length(self.cell_to_x),)
+
+IndexStyle(::Type{CellVectorByComposition{T,L,V}}) where {T,L,V} = IndexLinear()
+
+cellsize(self::CellVectorByComposition) = cellsize(self.cell_to_x)*cellsize(self.x_to_vals)

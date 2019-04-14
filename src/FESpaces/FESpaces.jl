@@ -9,6 +9,8 @@ using Numa.Polytopes
 using Numa.CellValues
 using Numa.Geometry
 
+using Numa.Meshes
+
 # Abstract types and interfaces
 
 """
@@ -48,11 +50,13 @@ Conforming FE Space, where only one RefFE is possible in the whole mesh
 struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T,Float64}
 	# For the moment, I am not considering E (to think)
 	reffe::LagrangianRefFE{D,T}
-	# mesh::Mesh{D,Z}
+	mesh::Mesh{D}
 end
 
 # Methods
 
-# include("FESpacesMethods.jl")
+
+
+include("FESpacesMethods.jl")
 
 end # module FESpaces

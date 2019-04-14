@@ -5,6 +5,7 @@ using Numa.Polytopes
 using Base.Cartesian
 using Numa.CellValues
 using Numa.FieldValues
+using Numa.Helpers
 
 export gidscellxtype, gidscellxtypefast
 export flip
@@ -17,6 +18,10 @@ export Mesh, StructHexMesh
 # Abstract types and interfaces
 
 abstract type Mesh{D} end
+
+cellvefs(::Mesh)::CellVector{Int} = @abstractmethod
+
+vefcells(::Mesh)::CellVector{Int} = @abstractmethod
 
 # Concrete structs
 
@@ -32,6 +37,10 @@ struct StructHexMesh{D} <: Mesh{D}
 	vefcells::CellVector{Int}
 	# coordinates::Array{Point{D}}
 end
+
+cellvefs(this::StructHexMesh)::CellVector{Int} = this.cellvefs
+
+vefcells(this::StructHexMesh)::CellVector{Int} = this.vefcells
 
 struct LexIndexSet
     range::Vector{Int64}

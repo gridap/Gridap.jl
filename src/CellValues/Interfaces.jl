@@ -44,6 +44,8 @@ IteratorEltype(::Type{C} where C <: IterCellArray{T,N} where {T,N}) = EltypeUnkn
 
 abstract type IndexCellArray{T,N,A<:AbstractArray{T,N},D} <: AbstractArray{A,D} end
 
+const IndexCellVector{T,A,D} = IndexCellArray{T,1,A,D}
+
 # Cell Arrays
 
 const CellArray{T,N} = Union{IterCellArray{T,N},IndexCellArray{T,N}}

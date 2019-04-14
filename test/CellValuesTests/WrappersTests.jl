@@ -64,5 +64,14 @@
   @test ca[3] == gid_to_val[data[4:6]]
   @test ca[4] == gid_to_val[data[7:12]]
 
-
+  cell_to_x_l = [2,3,1,3,4,4,3,2,5,4,3,4]
+  cell_to_x_p = [1,4,4,7,13]
+  cell_to_x = CellVectorFromDataAndPtrs(cell_to_x_l,cell_to_x_p)
+  x_to_vals_l = [5,4,1,2,3,6,7,8,9,10]
+  x_to_vals_p = [1,3,5,6,10,11]
+  x_to_vals = CellVectorFromDataAndPtrs(x_to_vals_l,x_to_vals_p)
+  using Numa.CellValues: CellVectorByComposition
+  cell_to_vals = CellVectorByComposition(cell_to_x, x_to_vals)
+  @test cell_to_vals[1] == [1,2,3,5,4]
+  
 end
