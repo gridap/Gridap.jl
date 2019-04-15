@@ -10,6 +10,8 @@ export DOFBasis
 export RefFE
 export LagrangianRefFE
 
+import Numa: evaluate
+
 # Abstract types and interfaces
 
 """
@@ -20,12 +22,12 @@ abstract type DOFBasis{D,T} end
 """
 Evaluate the DOFs for a given polynomial basis
 """
-function evaluatedofs(this::DOFBasis{D,T},
+function evaluate(this::DOFBasis{D,T},
 	prebasis::Basis{D,T})::Array{Float64,2} where {D,T}
 	@abstractmethod
 end
 
-function evaluatedofs(this::DOFBasis{D,T},
+function evaluate(this::DOFBasis{D,T},
 	prebasis::Field{D,T})::Vector{Float64} where {D,T}
 	@abstractmethod end
 # Field to be implemented, to answer evaluate and gradient, it can be a local FE
@@ -43,7 +45,7 @@ end
 Evaluate the Lagrangian DOFs basis (i.e., nodal values) for a given polynomial
 basis
 """
-function evaluatedofs(this::LagrangianDOFBasis{D,T},
+function evaluate(this::LagrangianDOFBasis{D,T},
 	prebasis::Basis{D,T}) where {D,T}
 	vals = Polynomials.evaluate(prebasis,this.nodes)
 	l = length(prebasis); lt = length(T)
@@ -71,12 +73,12 @@ the reference space
 """
 # @santiagobadia : Be careful, a physical field must be composed with geomap
 # before being used here. Is this what we want?
-function evaluatedofs(this::LagrangianDOFBasis{D,T},
+function evaluate(this::LagrangianDOFBasis{D,T},
 	field::Field{D,T}) where {D,T}
 	vals = Fields.evaluate(field,this.nodes)
 	# I would like to use evaluate everywhere, putting evaluate in Numa and
 	# importing it in all submodules
-	# This way we could use the same evaluatedofs for bases and fields...
+	# This way we could use the same evaluate for bases and fields...
 	# @santiagobadia : TO BE DONE
 	lt = length(T)
 	E = eltype(T)
@@ -132,18 +134,18 @@ function LagrangianRefFE{D,T}(polytope::Polytope{D},
 	nodes=NodesArray(polytope,orders)
 	dofsb = LagrangianDOFBasis{D,T}(nodes.coordinates)
 	prebasis = TensorProductMonomialBasis{D,T}(orders)
-	changeofbasis=inv(evaluatedofs(dofsb,prebasis))
+	changeofbasis=inv(evaluate(dofsb,prebasis))
 	basis = BasisWithChangeOfBasis{D,T}(prebasis, changeofbasis)
 	nfacedofs=nodes.nfacenodes
 	LagrangianRefFE{D,T}(polytope, dofsb, basis, nfacedofs)
 end
 
-dofs(this::LagrangianRefFE{D,T} where {D,T})::DOFBasis{D,T} = this.dofbasis
+dofs(this::LagrangianRefFE{D,T} where {D,T}) = this.dofbasis
 
-polytope(this::LagrangianRefFE{D,T} where {D,T})::Polytope{D} = this.polytope
+polytope(this::LagrangianRefFE{D,T} where {D,T}) = this.polytope
 
-shfbasis(this::LagrangianRefFE{D,T} where {D,T})::Basis{D,T} = this.shfbasis
+shfbasis(this::LagrangianRefFE{D,T} where {D,T}) = this.shfbasis
 
-nfacedofs(this::LagrangianRefFE{D,T} where {D,T})::Vector{Vector{Int}} = this.nfacedofs
+nfacedofs(this::LagrangianRefFE{D,T} where {D,T}) = this.nfacedofs
 
 end # module RefFEs

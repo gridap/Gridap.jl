@@ -45,14 +45,14 @@ nodes = NodesArray(polytope, orders)
 using Numa.RefFEs: LagrangianDOFBasis
 dofsb = LagrangianDOFBasis{D,VectorValue{D}}(nodes.coordinates)
 prebasis = TensorProductMonomialBasis{D,VectorValue{D}}(orders)
-res = RefFEs.evaluatedofs(dofsb,prebasis)
+res = RefFEs.evaluate(dofsb,prebasis)
 @test res[8,8] == 1.0
-res = RefFEs.evaluatedofs(dofsb,prebasis)
+res = RefFEs.evaluate(dofsb,prebasis)
 @test res[8,8] == 1.0
 fun(x::Point{D}) = VectorValue(x[2]+1.0,x[1])
 anfield = AnalyticalField(fun,D)
 Fields.evaluate(anfield,nodes.coordinates)
-res2 = RefFEs.evaluatedofs(dofsb,anfield)
+res2 = RefFEs.evaluate(dofsb,anfield)
 @test res2[8] == 1.0
 ##
 D=2
@@ -69,7 +69,7 @@ for i in 1:4
   id[i+4,i] = VectorValue{D}(0.0, 1.0)
 end
 @test val1 == id
-dofv = RefFEs.evaluatedofs(reffe.dofbasis, reffe.shfbasis)
+dofv = RefFEs.evaluate(reffe.dofbasis, reffe.shfbasis)
 id = zeros(Float64,length(reffe.shfbasis), length(reffe.shfbasis))
 for i in 1:length(reffe.shfbasis)
   id[i,i] = 1.0

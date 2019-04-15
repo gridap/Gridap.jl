@@ -76,7 +76,7 @@ function assemble(this::Assembler, vals::CellVector{T}) where T
   for rows_c in rows_m
     aux_row = [ aux_row..., rows_c...]
   end
-  return sparsevec(aux_row, aux_vals)
+  return Array(sparsevec(aux_row, aux_vals))
 end
 
 function assemble(this::Assembler, vals::CellMatrix{T}) where T

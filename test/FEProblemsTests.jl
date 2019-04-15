@@ -24,7 +24,7 @@ using Numa.FESpaces: ConformingFESpace
 ##
 ##
 D=2
-nparts1d = 3
+nparts1d = 2
 nparts = nparts1d*ones(Int64,D)
 nparts_t = tuple(nparts...)
 order=1
@@ -42,7 +42,7 @@ quad = ConstantCellQuadrature(refquad,ncells)
 phi = geomap(imesh)
 basis = cellbasis(imesh)
 physbasis = attachgeomap(basis,phi)
-ab(v,u) = inner(∇(v),∇(u)) + inner(v,u)
+ab(v,u) = inner(∇(v),∇(u)) #+ inner(v,u)
 V = physbasis
 U = physbasis
 # fun(x::Point{2}) = x[1]*x[2] + x[1]
@@ -74,3 +74,19 @@ using Numa.FESpaces: Assembler
 using Numa.FESpaces: assemble
 sys_vec = assemble(assembler,kvec)
 sys_mat = assemble(assembler,kmat)
+sys_mat*ones(Float64,16)
+
+fun(x::Point{2}) = x[1]
+gradfun(x::Point{2}) = VectorValue(1.0, 0.0)
+gradient(::typeof(fun)) = gradfun
+f = AnalyticalField(fun,2)
+
+
+using Numa.RefFEs: dofs
+dofb = dofs(reffe)
+reffe.dofbasis
+g = f ∘ phi
+
+using Numa.RefFEs: evaluate
+evaluate(dofb,g)
+# santiagobadia : How do we want to evaluate fields with geomap ?
