@@ -59,7 +59,7 @@ end
 function _writevtk(grid::Grid,filebase,celldata,pointdata)
   points = _vtkpoints(grid)
   cells = _vtkcells(grid)
-  vtkfile = vtk_grid(filebase, points, cells)
+  vtkfile = vtk_grid(filebase, points, cells, compress=false)
   for (k,v) in celldata
     vtk_cell_data(vtkfile, _prepare_data(v), k)
   end
