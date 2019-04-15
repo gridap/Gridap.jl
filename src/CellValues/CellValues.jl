@@ -18,6 +18,7 @@ export CellArrayFromArrayOfArrays
 export CellVectorFromDataAndPtrs
 export CellVectorFromDataAndStride
 export CellVectorFromLocalToGlobal
+export CellVectorFromLocalToGlobalPosAndNeg
 
 export apply
 export celldata

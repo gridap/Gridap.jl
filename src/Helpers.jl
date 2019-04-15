@@ -3,6 +3,7 @@ module Helpers
 export @abstractmethod
 export @notimplemented
 export @notimplementedif
+export @unreachable
 export viewtosize
 export rewind_ptrs!
 export length_to_ptrs!
@@ -26,6 +27,12 @@ macro notimplementedif(condition)
     if $(esc(condition))
       @notimplemented
     end
+  end
+end
+
+macro unreachable()
+  quote
+    error("This line of code cannot be reached")
   end
 end
 

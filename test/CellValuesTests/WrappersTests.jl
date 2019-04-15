@@ -64,6 +64,24 @@
   @test ca[3] == gid_to_val[data[4:6]]
   @test ca[4] == gid_to_val[data[7:12]]
 
+  #       1,2,3,4,5,6,7,8,9,0,1,2
+  data = [-2,3,-1,3,4,-4,-3,2,5,4,3,-4]
+  ptrs = [1,4,4,7,13]
+  p = 1
+  gid_to_val_pos = [p, 2*p, 3*p, -p, p]
+  gid_to_val_neg = [2*p, p, 5*p, 3*p, p]
+
+  lid_to_gid = CellVectorFromDataAndPtrs(data,ptrs)
+  ca = CellVectorFromLocalToGlobalPosAndNeg(lid_to_gid,gid_to_val_pos,gid_to_val_neg)
+
+  @test length(ca) == length(ptrs)-1
+  @test cellsize(ca) == (6,)
+
+  @test ca[1] == [1, 3, 2]
+  @test ca[2] == Int64[]
+  @test ca[3] == [3, -1, 3]
+  @test ca[4] == [5, 2, 1, -1, 3, 3]
+
   cell_to_x_l = [2,3,1,3,4,4,3,2,5,4,3,4]
   cell_to_x_p = [1,4,4,7,13]
   cell_to_x = CellVectorFromDataAndPtrs(cell_to_x_l,cell_to_x_p)
