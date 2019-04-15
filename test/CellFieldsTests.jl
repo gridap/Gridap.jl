@@ -1,28 +1,51 @@
-
-# Iterable cell fields
-
-abstract type IterCellField{D,T} end
-
-function iterate(::IterCellField{D,T})::Union{Nothing,Tuple{Field{D,T},Any}} where {D,T}
-  @abstractmethod
+"""
+Cell-wise field created from a `Field`
+"""
+struct CellFieldFromField{D,T,F<:Field{D,T}} <: CellField{D,T}
+  field::F
 end
 
-function iterate(::IterCellField{D,T},state)::Union{Nothing,Tuple{Field{D,T},Any}} where {D,T}
-  @abstractmethod
+function evaluate(self::CellFieldFromField{D,T},points::CellPoints{D}) where D
+  CellFieldValuesFromField(self.field,points)
 end
 
-length(::IterCellField)::Int = @abstractmethod
+function gradient(self::CellFieldFromField)
+  gradfield = gradient(self.field)
+  CellFieldFromField(gradfield)
+end
 
-eltype(::Type{C}) where C <: IterCellField{D,T} where {D,T} = Field{D,T}
+"""
+Result of the lazy evaluation of a `CellFieldFromField` on a cell-wise array
+of points `CellPoints{D}`
+"""
+struct CellFieldValuesFromField{D,T,F,C} # <: IndexCellArray{T,1,C}
+  # @santiagobadia : Not sure from where to extend
+  field::F
+  cellpoints::C
+  cv::CachedVector{T,Vector{T}}
+end
 
-IteratorEltype(::Type{C} where C <: IterCellField{D,T} where {D,T}) = EltypeUnknown()
+function CellFieldValuesFromField(
+  field::Field{D,T},cellpoints::CellPoints{D}) where {D,T}
+  F = typeof(field)
+  C = typeof(cellpoints)
+  a = Vector{T}(undef,celllength(cellpoints))
+  cv = CachedArray(a)
+  CellFieldValuesFromField{D,T,F,C}(field,cellpoints,cv)
+end
 
-# Indexable cell fields
+# @santiagobadia : I am probably missing interface methods
 
-abstract type IndexCellArray{T,N,A<:AbstractArray{T,N},D} <: AbstractArray{A,D} end
+@propagate_inbounds function getindex(self::CellFieldValuesFromField,cell::Int)
+  points = self.cellpoints[cell]
+  setsize!(self.cv,(length(points),))
+  evaluate!(self.field,points,cv)
+end
 
-const CellField{D,T} = Union{IterCellField{D,T},IndexCellField{D,T}}
+inputcellarray(self::CellFieldValuesFromField) = self.cellpoints
 
-cellsize(self::CellArray,i::Int) = (s = cellsize(self); s[i])
+computesize(self::CellFieldValuesFromField, asize) = asize[1]
 
-celllength(self::CellArray) = prod(cellsize(self))
+function computevals!(self::CellFieldValuesFromField, a, v)
+  evaluate!(self.field,a,v)
+end

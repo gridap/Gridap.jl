@@ -4,12 +4,13 @@ attachgeomap(a::CellBasis{D},b::CellGeomap{D,D}) where D = CellBasisWithGeomap(a
 struct CellBasisWithGeomap{D,O,T,B<:CellBasis{D,T},G<:CellGeomap{D,D}} <: CellBasis{D,T}
   basis::B
   geomap::G
-  function CellBasisWithGeomap(basis::CellBasis{D,T},geomap::CellField{D,Point{D}},order::Int) where {D,T}
-    B = typeof(basis)
-    G = typeof(geomap)
-    O = order
-    new{D,O,T,B,G}(basis,geomap)
-  end
+end
+
+function CellBasisWithGeomap(basis::CellBasis{D,T},geomap::CellField{D,Point{D}},order::Int) where {D,T}
+  B = typeof(basis)
+  G = typeof(geomap)
+  O = order
+  CellBasisWithGeomap{D,O,T,B,G}(basis,geomap)
 end
 
 function CellBasisWithGeomap(basis::CellBasis{D,T},geomap::CellField{D,Point{D}}) where {D,T}
