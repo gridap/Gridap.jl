@@ -4,9 +4,6 @@ Concrete implementation of CellBasis for the case of the same interpolation on a
 """
 struct CellBasisFromSingleInterpolation{D,T,B<:Basis{D,T}} <: CellBasis{D,T}
   basis::B
-  function CellBasisFromSingleInterpolation{D,T,B}(basis::Basis{D,T}) where {D,T,B}
-    new(basis)
-  end
 end
 
 function CellBasisFromSingleInterpolation(basis::Basis{D,T}) where {D,T}
@@ -58,4 +55,3 @@ end
 function computevals!(self::CellBasisValuesFromSingleInterpolation, a, v)
   evaluate!(self.basis,a,v)
 end
-
