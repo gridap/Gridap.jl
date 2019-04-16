@@ -2,7 +2,10 @@ module Geometry
 
 export Grid, CartesianGrid
 export UnstructuredGrid, FlexibleUnstructuredGrid
-export cells, points, celltypes
+export cells, points, celltypes, gridgraph
+export GridGraph
+export celltovefs
+export veftocells
 
 import Base: size, getindex, IndexStyle
 
@@ -12,9 +15,10 @@ using Numa
 using Numa.Helpers
 using Numa.FieldValues
 using Numa.CellValues
-using Numa.CellValues: IndexCellValue, IndexCellArray
+using Numa.CellValues: IndexCellValue, IndexCellArray, IndexCellVector
 using Numa.CellFunctions
 using Numa.Polytopes
+using Numa.Meshes
 
 include("Interfaces.jl")
 include("CartesianGrids.jl")

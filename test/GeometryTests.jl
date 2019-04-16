@@ -36,6 +36,14 @@ using Numa.Vtkio
   @test celldata(c) == (HEX_AXIS,HEX_AXIS)
   @test length(c) == 12
 
+  graph = gridgraph(grid)
+
+  @test isa(graph,GridGraph)
+
+  @test isa(celltovefs(graph), IndexCellVector{Int})
+
+  @test isa(veftocells(graph), IndexCellVector{Int})
+
 end
 
 @testset "FlexibleUnstructuredGrid" begin

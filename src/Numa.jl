@@ -15,14 +15,16 @@ include("Polynomials.jl")
 include("Polytopes.jl")
 include("CellValues/CellValues.jl")
 include("CellFunctions/CellFunctions.jl")
+
+include("Meshes.jl")
 include("Geometry/Geometry.jl")
+
 include("CellQuadratures.jl")
 include("CellIntegration.jl")
 include("Vtkio.jl")
 
 
 # FESpaces tools
-include("Meshes.jl")
 include("FESpaces/RefFEs.jl")
 include("FESpaces/FESpaces.jl")
 

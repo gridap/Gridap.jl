@@ -5,6 +5,19 @@ export CellArray
 export CellMatrix
 export CellVector
 export CellData
+
+export IterCellValue
+export IterCellArray
+export IterCellMatrix
+export IterCellVector
+export IterCellData
+
+export IndexCellValue
+export IndexCellArray
+export IndexCellMatrix
+export IndexCellVector
+export IndexCellData
+
 export IterData
 
 export ConstantCellValue

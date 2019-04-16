@@ -22,6 +22,13 @@ cells(self::CartesianGrid) = CartesianGridCells(self.dim_to_ncells)
 
 celltypes(self::CartesianGrid) = ConstantCellValue(self.extrusion,prod(self.dim_to_ncells))
 
+function gridgraph(self::CartesianGrid)
+  #fverdugo this is a temporary implementation
+  nparts = [i for i in self.dim_to_ncells]
+  mesh = StructHexMesh(nparts)
+  GridGraphFromData(mesh.cellvefs,mesh.vefcells)
+end
+
 # Ancillary types
 
 struct CartesianGridPoints{D} <: IndexCellValue{Point{D},D}
