@@ -2,38 +2,17 @@ module CellIntegrationTests
 
 using Test
 using Numa
+using Numa.FieldValues
 using Numa.CellValues
 using Numa.CellFunctions
 using Numa.CellQuadratures
 using Numa.CellIntegration
 using Numa.Quadratures
 using Numa.Geometry
+using Numa.Geometry.Cartesian
 
-include("CellIntegrationTestsMocks.jl")
-
-trian = DummyIntegrationMesh2D(partition=(3,3))
-
-@testset "Mocks" begin
-
-  @test isa(trian,Triangulation)
-
-  coords = cellcoordinates(trian)
-
-  basis = cellbasis(trian)
-
-  types = celltypes(trian)
-
-  phi = geomap(trian)
-
-  @test isa(coords,CellPoints{2})
-
-  @test isa(basis,CellBasis{2,Float64})
-
-  @test isa(phi,CellField{2,Point{2}})
-
-  @test isa(types,CellValue{NTuple{2,Int}})
-
-end
+grid = CartesianGrid(partition=(3,3))
+trian = triangulation(grid)
 
 @testset "Geomap" begin
 
@@ -62,7 +41,7 @@ end
   @test isa(cellvol,CellValue{Float64})
 
   for vi in cellvol
-    @assert vi ≈ (1.0/3)^2
+    @assert vi ≈ (2.0/3)^2
   end
 
 end

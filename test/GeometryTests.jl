@@ -52,10 +52,12 @@ using Numa.Vtkio
 
   @test isa(veftocells(graph), IndexCellVector{Int})
 
-  xe = cellcoordinates(grid)
+  trian = triangulation(grid)
+
+  xe = cellcoordinates(trian)
   @test isa(xe,CellPoints{2})
 
-  cb = cellbasis(grid)
+  cb = cellbasis(trian)
   @test isa(cb,CellBasis{2,ScalarValue})
 
 end
@@ -76,12 +78,6 @@ end
   @test isa(o,ConstantCellValue{Int})
   @test celldata(o) == 1
   @test length(o) == 12
-
-  xe = cellcoordinates(grid)
-  @test isa(xe,CellPoints{2})
-
-  cb = cellbasis(grid)
-  @test isa(cb,CellBasis{2,ScalarValue})
 
   d = mktempdir()
   f = joinpath(d,"grid")
@@ -107,12 +103,6 @@ end
   @test isa(o,ConstantCellValue{Int})
   @test celldata(o) == 1
   @test length(o) == 12
-
-  xe = cellcoordinates(grid)
-  @test isa(xe,CellPoints{2})
-
-  cb = cellbasis(grid)
-  @test isa(cb,CellBasis{2,ScalarValue})
 
   d = mktempdir()
   f = joinpath(d,"grid")

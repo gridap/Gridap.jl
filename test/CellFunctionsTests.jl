@@ -9,7 +9,7 @@ using Numa.CellQuadratures
 using Numa.Polytopes
 using Numa.RefFEs
 using Numa.Geometry
-# using Numa.Polynomials
+using Numa.Geometry.Cartesian
 
 import Numa: gradient
 
@@ -17,14 +17,13 @@ l = 10
 
 include("CellFunctionsTestsMocks.jl")
 
-include("CellIntegrationTestsMocks.jl")
-
-imesh = DummyIntegrationMesh2D(partition=(3,3))
+grid = CartesianGrid(partition=(3,3),domain=(0,1,0,1))
+trian = triangulation(grid)
 refquad = TensorProductQuadrature(orders=(0,0))
-meshcoords = cellcoordinates(imesh)
+meshcoords = cellcoordinates(trian)
 quad = ConstantCellQuadrature(refquad,length(meshcoords))
 points = coordinates(quad)
-phi = geomap(imesh)
+phi = geomap(trian)
 
 @testset "InnerFieldValuesFieldValues" begin
 
@@ -410,7 +409,7 @@ end
 
 @testset "CellBasisWithGeomap" begin
 
-  basis = cellbasis(imesh)
+  basis = cellbasis(trian)
 
   physbasis = attachgeomap(basis,phi)
 

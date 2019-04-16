@@ -4,6 +4,8 @@ using Numa
 using Numa.FieldValues
 using Numa.CellValues
 using Numa.CellFunctions
+using Numa.Geometry
+using Numa.Geometry.Cartesian
 
 l = 1000000
 
@@ -27,18 +29,19 @@ print("VectorScalarExpand ->"); @time doloop(vexpand)
 print("VectorScalarExpand ->"); @time doloop(vexpand)
 
 using Numa.Geometry
-include("../test/CellIntegrationTestsMocks.jl")
 using Numa.Quadratures
 using Numa.CellQuadratures
 using Numa.CellIntegration
 
-imesh = DummyIntegrationMesh2D(partition=(1000,1000))
+grid = CartesianGrid(partition=(1000,1000))
+trian = triangulation(grid)
+
 refquad = TensorProductQuadrature(orders=(2,2))
-meshcoords = cellcoordinates(imesh)
+meshcoords = cellcoordinates(trian)
 quad = ConstantCellQuadrature(refquad,length(meshcoords))
 points = coordinates(quad)
-phi = geomap(imesh)
-basis = cellbasis(imesh)
+phi = geomap(trian)
+basis = cellbasis(trian)
 physbasis = attachgeomap(basis,phi)
 physbasisgrad = gradient(physbasis)
 valsgrad = evaluate(physbasisgrad,points)
@@ -65,7 +68,7 @@ print("DummyStiffnessMatrix2DAtQPoints ->"); @time doloop(kmatg)
 a(v,u) = inner(∇(v),∇(u)) + inner(v,u)
 V = physbasis
 U = physbasis
-kmat = integrate(a(V,U),imesh,quad)
+kmat = integrate(a(V,U),trian,quad)
 
 print("DummyStiffnessMatrix2D ->"); @time doloop(kmat)
 print("DummyStiffnessMatrix2D ->"); @time doloop(kmat)

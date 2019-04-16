@@ -24,13 +24,8 @@ struct CartesianGrid{D} <: Grid{D,D}
   order:: Int
 end
 
-function CartesianGrid(;domain::NTuple{D2,Float64},partition::NTuple{D,Int},order::Int=1) where {D2,D}
-  @assert D2 == 2*D
-  dim_to_limits = tuple([(domain[2*i-1],domain[2*i]) for i in 1:D ]...)
-  extrusion = tuple(fill(HEX_AXIS,D)...)
-  dim_to_ncells = partition
-  @notimplementedif order != 1
-  CartesianGrid{D}(dim_to_limits,dim_to_ncells,extrusion,order)
+function CartesianGrid(;partition::NTuple{D,Int},domain=nothing,order::Int=1) where D
+  _cartesiangrid(partition,domain,order)
 end
 
 function points(self::CartesianGrid)
@@ -51,7 +46,20 @@ function gridgraph(self::CartesianGrid)
   GridGraphFromData(mesh.cellvefs,mesh.vefcells)
 end
 
-# Low level details
+# Helpers
+
+function _cartesiangrid(partition::NTuple{D,Int},domain,order) where D
+  if domain === nothing
+    _domain = [ i*(-1)^j for i in ones(D) for j in 1:2 ]
+  else
+    _domain = domain
+  end
+  dim_to_limits = tuple([(_domain[2*i-1],_domain[2*i]) for i in 1:D ]...)
+  extrusion = tuple(fill(HEX_AXIS,D)...)
+  dim_to_ncells = partition
+  @notimplementedif order != 1
+  CartesianGrid{D}(dim_to_limits,dim_to_ncells,extrusion,order)
+end
 
 struct CartesianGridPoints{D} <: IndexCellValue{Point{D},D}
   dim_to_limits::NTuple{D,NTuple{2,Float64}}

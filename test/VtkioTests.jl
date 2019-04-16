@@ -2,16 +2,16 @@ module VtkioTests
 
 using Test
 using Numa
+using Numa.FieldValues
 using Numa.Quadratures
 using Numa.CellQuadratures
 using Numa.CellFunctions
 using Numa.CellValues
+using Numa.CellIntegration
 using Numa.Geometry
 using Numa.Geometry.Cartesian
 using Numa.Polytopes
 using Numa.Vtkio
-
-include("CellIntegrationTestsMocks.jl")
 
 @testset "VTKioGrid" begin
 
@@ -44,7 +44,8 @@ end
   d = mktempdir()
   f = joinpath(d,"x")
 
-  trian = DummyIntegrationMesh2D(partition=(3,3))
+  grid = CartesianGrid(partition=(3,3))
+  trian = triangulation(grid)
   refquad = TensorProductQuadrature(orders=(2,2))
   quad = ConstantCellQuadrature(refquad,ncells(trian))
 
@@ -77,7 +78,8 @@ end
   d = mktempdir()
   f = joinpath(d,"x")
 
-  trian = DummyIntegrationMesh2D(partition=(3,3))
+  grid = CartesianGrid(partition=(3,3))
+  trian = triangulation(grid)
 
   xe = cellcoordinates(trian)
 
@@ -95,7 +97,8 @@ end
 
 @testset "WritevtkForIntegrationMesh" begin
 
-  trian = DummyIntegrationMesh2D(partition=(3,3))
+  grid = CartesianGrid(partition=(3,3))
+  trian = triangulation(grid)
 
   ufun(x) = 3*x[2]*x[1]
   u = cellfield(trian,ufun)

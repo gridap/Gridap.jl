@@ -16,7 +16,6 @@ using Numa.FieldValues
 
 import Numa: gradient
 using Numa.CellValues: ConstantCellValue
-include("CellIntegrationTestsMocks.jl")
 
 using Numa.Meshes
 using Numa.FESpaces: ConformingFESpace
@@ -34,7 +33,8 @@ polytope = Polytopes.Polytope(extrusion)
 reffe = LagrangianRefFE{D,ScalarValue}(polytope,orders)
 basis = reffe.shfbasis
 cellb = CellBasisFromSingleInterpolation(basis)
-trian = DummyIntegrationMesh2D(partition=nparts_t)
+grid = CartesianGrid(partition=nparts_t)
+trian = triangulation(grid)
 refquad = TensorProductQuadrature(orders=(2,2))
 meshcoords = cellcoordinates(trian)
 ncells = length(meshcoords)

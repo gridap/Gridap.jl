@@ -17,6 +17,7 @@ export GridGraph
 export GridGraphFromData
 export points
 export cells
+export triangulation
 export celltypes
 export cellorders
 export celltovefs
@@ -69,7 +70,7 @@ end
 Abstract type representing a FE mesh a.k.a. grid
 D is the dimension of the coordinates and Z is the dimension of the cells
 """
-abstract type Grid{D,Z} <: Triangulation{Z,D} end
+abstract type Grid{D,Z} end
 
 function points(::Grid{D})::IndexCellValue{Point{D}} where D
   @abstractmethod
@@ -77,9 +78,7 @@ end
 
 cells(::Grid)::IndexCellVector{Int} = @abstractmethod
 
-function cellcoordinates(grid::Grid)
-  CellVectorFromLocalToGlobal(cells(grid),points(grid))
-end
+triangulation(grid::Grid) = TriangulationFromGrid(grid)
 
 """
 Abstract type that provides extended connectivity information associated with a grid.
@@ -126,5 +125,17 @@ function _cellbasis(
   basis = shfbasis(reffe)
   CellBasisFromSingleInterpolation(basis)
 end
+
+struct TriangulationFromGrid{D,Z,G<:Grid{D,Z}} <: Triangulation{Z,D}
+  grid::G
+end
+
+function cellcoordinates(self::TriangulationFromGrid)
+  CellVectorFromLocalToGlobal(cells(self.grid),points(self.grid))
+end
+
+celltypes(self::TriangulationFromGrid) = celltypes(self.grid)
+
+cellorders(self::TriangulationFromGrid) = cellorders(self.grid)
 
 end # module Geometry
