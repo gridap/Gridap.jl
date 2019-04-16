@@ -8,6 +8,7 @@ using Numa.Quadratures
 using Numa.CellQuadratures
 using Numa.Polytopes
 using Numa.RefFEs
+using Numa.Geometry
 # using Numa.Polynomials
 
 import Numa: gradient

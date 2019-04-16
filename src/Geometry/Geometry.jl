@@ -4,25 +4,64 @@ module Geometry
 
 using Numa.Helpers
 using Numa.CellValues
+using Numa.CellFunctions
 
 # Functionality provided by this module
 
+export IntegrationMesh
 export Grid
+export GridGraph
+export GridGraphFromData
 export points
 export cells
 export celltypes
-export GridGraph
 export celltovefs
 export veftocells
 export gridgraph
-export GridGraphFromData
+export geomap
+export cellcoordinates
+export cellbasis
+export ncells
+
+"""
+Minimal interface for a mesh used for numerical integration
+"""
+abstract type IntegrationMesh{Z,D} end
+
+function cellcoordinates(::IntegrationMesh{Z,D})::CellPoints{D} where {Z,D}
+ @abstractmethod
+end
+
+function cellbasis(::IntegrationMesh{Z,D})::CellBasis{Z,Float64} where {Z,D}
+  @abstractmethod
+end
+
+#@fverdugo TODO extend to high order
+"""
+Returns the tuple uniquely identifying the Polytope of each cell
+"""
+function celltypes(::IntegrationMesh{Z,D})::CellValue{NTuple{Z}} where {Z,D}
+  @abstractmethod
+end
+
+function geomap(self::IntegrationMesh)
+  coords = cellcoordinates(self)
+  basis = cellbasis(self)
+  expand(basis,coords)
+end
+
+function ncells(self::IntegrationMesh)
+  coords = cellcoordinates(self)
+  length(coords)
+end
+
 
 #@fverdugo TODO grid could also be high order
 """
 Abstract type representing a FE mesh a.k.a. grid
 D is the dimension of the coordinates and Z is the dimension of the cells
 """
-abstract type Grid{D,Z} end # <: Triangulation{Z,D}
+abstract type Grid{D,Z} end
 
 function points(::Grid{D})::IndexCellValue{Point{D}} where D
   @abstractmethod

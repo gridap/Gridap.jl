@@ -7,7 +7,7 @@ using Numa.CellFunctions
 using Numa.CellQuadratures
 using Numa.CellIntegration
 using Numa.Quadratures
-using Numa.Geometry: celltypes
+using Numa.Geometry
 
 include("CellIntegrationTestsMocks.jl")
 
@@ -67,7 +67,7 @@ end
 
 end
 
-@testset "cellfield" begin
+@testset "Cellfield" begin
 
   ufun(x::Point{2}) = 2*x[1]+x[2]
 
