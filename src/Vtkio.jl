@@ -82,8 +82,16 @@ function _vtkcells(grid::Grid)
   nodes = _vtkcellnodesdict()
   c = celltypes(grid)
   n = cells(grid)
+  _check_order(cellorders(grid))
   [ MeshCell(types[encode_extrusion(ci)], ni[nodes[encode_extrusion(ci)]])
      for (ci,ni) in zip(c,n) ] 
+end
+
+_check_order(co) = @notimplemented
+
+function _check_order(co::ConstantCellValue{Int})
+  o = celldata(co)
+  @notimplementedif o != 1
 end
 
 """
