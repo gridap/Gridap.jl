@@ -17,6 +17,7 @@ include("CellValues/CellValues.jl")
 include("CellFunctions/CellFunctions.jl")
 
 include("Meshes.jl")
+include("FESpaces/RefFEs.jl")
 include("Geometry/Geometry.jl")
 
 include("CellQuadratures.jl")
@@ -25,7 +26,6 @@ include("Vtkio.jl")
 
 
 # FESpaces tools
-include("FESpaces/RefFEs.jl")
 include("FESpaces/FESpaces.jl")
 
 end #module Numa

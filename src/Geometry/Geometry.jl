@@ -3,6 +3,9 @@ module Geometry
 # Dependencies of this module
 
 using Numa.Helpers
+using Numa.FieldValues
+using Numa.Polytopes
+using Numa.RefFEs
 using Numa.CellValues
 using Numa.CellFunctions
 
@@ -33,10 +36,10 @@ function cellcoordinates(::Triangulation{Z,D})::CellPoints{D} where {Z,D}
  @abstractmethod
 end
 
-function cellbasis(::Triangulation{Z,D})::CellBasis{Z,Float64} where {Z,D}
-  @abstractmethod
-end
-
+# @fverdugo Return the encoded extrusion instead?
+# If we restrict to polytopes that can be build form
+# extrusion tuples, then we cannot accommodate polygonal elements, etc.
+# This is a strong limitation IMHO that has to be worked out
 """
 Returns the tuple uniquely identifying the Polytope of each cell
 """
@@ -45,6 +48,10 @@ function celltypes(::Triangulation{Z,D})::CellValue{NTuple{Z}} where {Z,D}
 end
 
 cellorders(::Triangulation)::CellValue{Int} = @abstractmethod
+
+function cellbasis(trian::Triangulation{Z,D}) where {Z,D}
+  _cellbasis(trian,celltypes(trian),cellorders(trian))
+end
 
 function geomap(self::Triangulation)
   coords = cellcoordinates(self)
@@ -57,12 +64,12 @@ function ncells(self::Triangulation)
   length(coords)
 end
 
-
+#@fverdugo make Z,D and D,Z consistent
 """
 Abstract type representing a FE mesh a.k.a. grid
 D is the dimension of the coordinates and Z is the dimension of the cells
 """
-abstract type Grid{D,Z} end
+abstract type Grid{D,Z} <: Triangulation{Z,D} end
 
 function points(::Grid{D})::IndexCellValue{Point{D}} where D
   @abstractmethod
@@ -70,18 +77,9 @@ end
 
 cells(::Grid)::IndexCellVector{Int} = @abstractmethod
 
-# @fverdugo Return the encoded extrusion instead?
-# If we restrict to polytopes that can be build form
-# extrusion tuples, then we cannot accommodate polygonal elements, etc.
-# This is a strong limitation IMHO that has to be worked out
-"""
-Returns the tuple uniquely identifying the Polytope of each cell
-"""
-function celltypes(::Grid{D,Z})::IndexCellValue{NTuple{Z}} where {D,Z}
-  @abstractmethod
+function cellcoordinates(grid::Grid)
+  CellVectorFromLocalToGlobal(cells(grid),points(grid))
 end
-
-cellorders(::Grid)::CellValue{Int} = @abstractmethod
 
 """
 Abstract type that provides extended connectivity information associated with a grid.
@@ -112,5 +110,21 @@ veftocells(self::GridGraphFromData) = self.veftocells
 
 include("Cartesian.jl")
 include("Unstructured.jl")
+
+# Helpers
+
+_cellbasis( trian, ctypes, corders ) = @notimplemented
+
+function _cellbasis(
+  trian::Triangulation{Z,D},
+  ctypes::ConstantCellValue{NTuple{Z,Int}},
+  corders::ConstantCellValue{Int}) where {Z,D}
+  ct = celldata(ctypes)
+  co = celldata(corders)
+  polytope = Polytope(Polytopes.PointInt{Z}(ct...))
+  reffe = LagrangianRefFE{Z,ScalarValue}(polytope,fill(co,Z))
+  basis = shfbasis(reffe)
+  CellBasisFromSingleInterpolation(basis)
+end
 
 end # module Geometry

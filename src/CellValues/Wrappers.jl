@@ -34,6 +34,14 @@ end
   @inbounds self.c[I...]
 end
 
+function cellsize(self::CellArrayFromArrayOfArrays{T,N}) where {T,N}
+  s = tuple(zeros(Int,N)...)
+  for ci in self.c
+    s = max(s,size(ci))
+  end
+  s
+end
+
 size(self::CellArrayFromArrayOfArrays) = size(self.c)
 
 IndexStyle(::Type{CellArrayFromArrayOfArrays{T,N,D,A,C}}) where {T,N,D,A,C} = IndexStyle(C)

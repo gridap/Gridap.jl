@@ -14,6 +14,7 @@ using Numa.CellValues
 
 export CartesianGrid
 import Base: size, getindex, IndexStyle
+import Numa.CellValues: cellsize
 import Numa.Geometry: points, cells, celltypes, cellorders, gridgraph
 
 struct CartesianGrid{D} <: Grid{D,D}
@@ -78,6 +79,8 @@ end
 function CartesianGridCells(dim_to_ncell::NTuple{D,Int}) where D
   CartesianGridCells{D,2^D}(dim_to_ncell)
 end
+
+cellsize(self::CartesianGridCells{D,L}) where {D,L} = (L,)
 
 size(self::CartesianGridCells) = self.dim_to_ncell.data
 

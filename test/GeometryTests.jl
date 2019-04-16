@@ -4,6 +4,7 @@ using Test
 using Numa
 using Numa.FieldValues
 using Numa.CellValues
+using Numa.CellFunctions
 using Numa.Geometry
 using Numa.Geometry.Cartesian
 using Numa.Geometry.Unstructured
@@ -51,6 +52,12 @@ using Numa.Vtkio
 
   @test isa(veftocells(graph), IndexCellVector{Int})
 
+  xe = cellcoordinates(grid)
+  @test isa(xe,CellPoints{2})
+
+  cb = cellbasis(grid)
+  @test isa(cb,CellBasis{2,ScalarValue})
+
 end
 
 @testset "FlexibleUnstructuredGrid" begin
@@ -60,7 +67,7 @@ end
   grid = FlexibleUnstructuredGrid(cgrid)
 
   c = celltypes(grid)
-  @show typeof(c)
+
   @test isa(c,ConstantCellValue{NTuple{2,Int}})
   @test celldata(c) == (HEX_AXIS,HEX_AXIS)
   @test length(c) == 12
@@ -69,6 +76,12 @@ end
   @test isa(o,ConstantCellValue{Int})
   @test celldata(o) == 1
   @test length(o) == 12
+
+  xe = cellcoordinates(grid)
+  @test isa(xe,CellPoints{2})
+
+  cb = cellbasis(grid)
+  @test isa(cb,CellBasis{2,ScalarValue})
 
   d = mktempdir()
   f = joinpath(d,"grid")
@@ -94,6 +107,12 @@ end
   @test isa(o,ConstantCellValue{Int})
   @test celldata(o) == 1
   @test length(o) == 12
+
+  xe = cellcoordinates(grid)
+  @test isa(xe,CellPoints{2})
+
+  cb = cellbasis(grid)
+  @test isa(cb,CellBasis{2,ScalarValue})
 
   d = mktempdir()
   f = joinpath(d,"grid")

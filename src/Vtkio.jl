@@ -167,22 +167,23 @@ function _cellpoints_to_grid(points::CellPoints{D}) where D
       push!(p_to_cell,cell)
     end
   end
-  data, ptrs, ts = _prepare_cells(ps)
-  grid = UnstructuredGrid(ps,data,ptrs,ts)
+  data, ptrs, ts, os = _prepare_cells(ps)
+  grid = UnstructuredGrid(ps,data,ptrs,ts,os)
   (grid, p_to_cell)
 end
 
 function _cellpoint_to_grid(points::CellValue{Point{D}}) where D
   ps = collect(points)
-  data, ptrs, ts = _prepare_cells(ps)
-  UnstructuredGrid(ps,data,ptrs,ts)
+  data, ptrs, ts, os = _prepare_cells(ps)
+  UnstructuredGrid(ps,data,ptrs,ts,os)
 end
 
 function _prepare_cells(ps)
   data = [ i for i in 1:length(ps) ]
   ptrs = [ i for i in 1:(length(ps)+1) ]
-  ts = [ () for i in 1:length(ps) ]
-  (data,ptrs,ts)
+  ts = ConstantCellValue( (), length(ps) )
+  os = ConstantCellValue( 1, length(ps) )
+  (data,ptrs,ts,os)
 end
 
 function _prepare_pointdata(pointdata)
@@ -316,7 +317,8 @@ function _prepare_grid(ctypes::ConstantCellValue{NTuple{Z,Int}},phi::CellGeomap{
   ps, offsets = _prepare_points(samplingpoints,points(refgrid),phi)
   data, ptrs, coarsecells = _prepare_cells(refgrid,offsets)
   ts = _prepare_celltypes(length(ctypes),celltypes(refgrid))
-  grid = UnstructuredGrid(ps,data,ptrs,ts)
+  os = _prepare_cellorders(length(ctypes),celltypes(refgrid))
+  grid = UnstructuredGrid(ps,data,ptrs,ts,os)
   (grid, coarsecells, samplingpoints)
 end
 
@@ -385,7 +387,11 @@ end
 
 function _prepare_celltypes(ncells,refcelltypes::ConstantCellValue)
   refextrusion = celldata(refcelltypes)
-  fill(refextrusion,ncells*length(refcelltypes) )
+  ConstantCellValue(refextrusion,ncells*length(refcelltypes) )
+end
+
+function _prepare_cellorders(ncells,refcelltypes::ConstantCellValue)
+  ConstantCellValue(1,ncells*length(refcelltypes) )
 end
 
 end # module Vtkio
