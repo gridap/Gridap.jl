@@ -3,6 +3,7 @@ module Cartesian
 # Dependencies of this module
 
 using StaticArrays: SVector, MVector, @SVector
+using Numa.Helpers
 using Numa.FieldValues
 using Numa.Polytopes
 using Numa.Meshes
@@ -13,20 +14,22 @@ using Numa.CellValues
 
 export CartesianGrid
 import Base: size, getindex, IndexStyle
-import Numa.Geometry: points, cells, celltypes, gridgraph
+import Numa.Geometry: points, cells, celltypes, cellorders, gridgraph
 
 struct CartesianGrid{D} <: Grid{D,D}
   dim_to_limits::NTuple{D,NTuple{2,Float64}}
   dim_to_ncells::NTuple{D,Int}
   extrusion::NTuple{D,Int}
+  order:: Int
 end
 
-function CartesianGrid(;domain::NTuple{D2,Float64},partition::NTuple{D,Int}) where {D2,D}
+function CartesianGrid(;domain::NTuple{D2,Float64},partition::NTuple{D,Int},order::Int=1) where {D2,D}
   @assert D2 == 2*D
   dim_to_limits = tuple([(domain[2*i-1],domain[2*i]) for i in 1:D ]...)
   extrusion = tuple(fill(HEX_AXIS,D)...)
   dim_to_ncells = partition
-  CartesianGrid{D}(dim_to_limits,dim_to_ncells,extrusion)
+  @notimplementedif order != 1
+  CartesianGrid{D}(dim_to_limits,dim_to_ncells,extrusion,order)
 end
 
 function points(self::CartesianGrid)
@@ -37,6 +40,8 @@ end
 cells(self::CartesianGrid) = CartesianGridCells(self.dim_to_ncells)
 
 celltypes(self::CartesianGrid) = ConstantCellValue(self.extrusion,prod(self.dim_to_ncells))
+
+cellorders(self::CartesianGrid) = ConstantCellValue(self.order,prod(self.dim_to_ncells))
 
 function gridgraph(self::CartesianGrid)
   #fverdugo this is a temporary implementation

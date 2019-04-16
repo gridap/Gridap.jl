@@ -38,6 +38,11 @@ using Numa.Vtkio
   @test celldata(c) == (HEX_AXIS,HEX_AXIS)
   @test length(c) == 12
 
+  o = cellorders(grid)
+  @test isa(o,ConstantCellValue{Int})
+  @test celldata(o) == 1
+  @test length(o) == 12
+
   graph = gridgraph(grid)
 
   @test isa(graph,GridGraph)
@@ -54,6 +59,17 @@ end
 
   grid = FlexibleUnstructuredGrid(cgrid)
 
+  c = celltypes(grid)
+  @show typeof(c)
+  @test isa(c,ConstantCellValue{NTuple{2,Int}})
+  @test celldata(c) == (HEX_AXIS,HEX_AXIS)
+  @test length(c) == 12
+
+  o = cellorders(grid)
+  @test isa(o,ConstantCellValue{Int})
+  @test celldata(o) == 1
+  @test length(o) == 12
+
   d = mktempdir()
   f = joinpath(d,"grid")
 
@@ -68,6 +84,16 @@ end
   cgrid = CartesianGrid(domain=(0.0,1.0,-1.0,2.0),partition=(3,4))
 
   grid = UnstructuredGrid(cgrid)
+
+  c = celltypes(grid)
+  @test isa(c,ConstantCellValue{NTuple{2,Int}})
+  @test celldata(c) == (HEX_AXIS,HEX_AXIS)
+  @test length(c) == 12
+
+  o = cellorders(grid)
+  @test isa(o,ConstantCellValue{Int})
+  @test celldata(o) == 1
+  @test length(o) == 12
 
   d = mktempdir()
   f = joinpath(d,"grid")

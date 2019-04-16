@@ -15,6 +15,7 @@ export GridGraphFromData
 export points
 export cells
 export celltypes
+export cellorders
 export celltovefs
 export veftocells
 export gridgraph
@@ -36,13 +37,14 @@ function cellbasis(::Triangulation{Z,D})::CellBasis{Z,Float64} where {Z,D}
   @abstractmethod
 end
 
-#@fverdugo TODO extend to high order
 """
 Returns the tuple uniquely identifying the Polytope of each cell
 """
 function celltypes(::Triangulation{Z,D})::CellValue{NTuple{Z}} where {Z,D}
   @abstractmethod
 end
+
+cellorders(::Triangulation)::CellValue{Int} = @abstractmethod
 
 function geomap(self::Triangulation)
   coords = cellcoordinates(self)
@@ -56,7 +58,6 @@ function ncells(self::Triangulation)
 end
 
 
-#@fverdugo TODO grid could also be high order
 """
 Abstract type representing a FE mesh a.k.a. grid
 D is the dimension of the coordinates and Z is the dimension of the cells
@@ -79,6 +80,8 @@ Returns the tuple uniquely identifying the Polytope of each cell
 function celltypes(::Grid{D,Z})::IndexCellValue{NTuple{Z}} where {D,Z}
   @abstractmethod
 end
+
+cellorders(::Grid)::CellValue{Int} = @abstractmethod
 
 """
 Abstract type that provides extended connectivity information associated with a grid.
