@@ -36,9 +36,8 @@ using Numa.CellIntegration
 grid = CartesianGrid(partition=(1000,1000))
 trian = triangulation(grid)
 
-refquad = TensorProductQuadrature(orders=(2,2))
 meshcoords = cellcoordinates(trian)
-quad = ConstantCellQuadrature(refquad,length(meshcoords))
+quad = quadrature(trian,order=2)
 points = coordinates(quad)
 phi = geomap(trian)
 basis = cellbasis(trian)

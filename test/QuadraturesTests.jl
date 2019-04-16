@@ -4,6 +4,7 @@ using Test
 
 using Numa.FieldValues
 using Numa.Quadratures
+using Numa.Polytopes
 
 const D = 2
 quad = TensorProductQuadrature(orders=(2,4))
@@ -26,5 +27,9 @@ weigs = weights(quad)
 weigs_ref = [0.555556, 0.555556, 0.888889, 0.888889, 0.555556, 0.555556]
 
 @test isapprox(weigs,weigs_ref,rtol=10-3)
+
+quad = quadrature((HEX_AXIS,HEX_AXIS,HEX_AXIS),order=2)
+
+@test isa(quad,TensorProductQuadrature{3})
 
 end # module QuadraturesTests

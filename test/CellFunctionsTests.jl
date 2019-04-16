@@ -19,9 +19,8 @@ include("CellFunctionsTestsMocks.jl")
 
 grid = CartesianGrid(partition=(3,3),domain=(0,1,0,1))
 trian = triangulation(grid)
-refquad = TensorProductQuadrature(orders=(0,0))
 meshcoords = cellcoordinates(trian)
-quad = ConstantCellQuadrature(refquad,length(meshcoords))
+quad = quadrature(trian,order=0)
 points = coordinates(quad)
 phi = geomap(trian)
 

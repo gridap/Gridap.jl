@@ -10,9 +10,9 @@ include("Helpers.jl")
 # CellArrays tools
 include("Fields/FieldValues.jl")
 include("Fields/Fields.jl")
-include("Quadratures.jl")
 include("Polynomials.jl")
 include("Polytopes.jl")
+include("Quadratures.jl")
 include("CellValues/CellValues.jl")
 include("CellFunctions/CellFunctions.jl")
 

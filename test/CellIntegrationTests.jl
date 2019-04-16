@@ -26,9 +26,7 @@ end
 
   basis = cellbasis(trian)
 
-  refquad = TensorProductQuadrature(orders=(2,2))
-
-  quad = ConstantCellQuadrature(refquad,ncells(trian))
+  quad = quadrature(trian,order=2)
 
   mmat = integrate(inner(basis,basis),trian,quad)
 

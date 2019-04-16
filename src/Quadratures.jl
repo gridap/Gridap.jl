@@ -1,15 +1,20 @@
 module Quadratures
 
+# Dependencies of this module
+
+using QuadGK: gauss
+using Numa: flatten
+using Numa.Helpers
+using Numa.FieldValues
+using Numa.Polytopes
+
+# Functionality provided by this module
+
 export Quadrature
 export TensorProductQuadrature
 export coordinates
 export weights
-
-using QuadGK: gauss
-
-using Numa: flatten
-using Numa.Helpers
-using Numa.FieldValues
+export quadrature
 
 # Abstract types and interfaces
 
@@ -22,7 +27,16 @@ coordinates(::Quadrature{D} where D)::Array{Point{D},1} = @abstractmethod
 
 weights(::Quadrature)::Array{Float64,1} = @abstractmethod
 
-#Concrete structs
+# Factories
+
+"""
+Factory function to create Quadrature objects in a convenient way
+"""
+function quadrature(extrusion::NTuple{D,Int};order::Int) where D
+  _quadtrature(extrusion,order)
+end
+
+# Concrete structs
 
 """
 Tensor product quadrature rule (nodes and weights) on a hyper cube [-1,1]^D
@@ -32,26 +46,35 @@ struct TensorProductQuadrature{D} <: Quadrature{D}
   weights::Array{Float64,1}
 end
 
-# Methods
-
 function TensorProductQuadrature(;orders::NTuple{D,Int}) where D
     @assert D == length(orders)
     npoints = [ ceil(Int,(orders[i]+1.0)/2.0) for i in 1:D ]
     quads = [ gauss( eltype(Point{D}), npoints[i] ) for i in 1:D ]
-    (coords, weights) = tensor_product(quads,npoints,Val(D))
+    (coords, weights) = _tensor_product(quads,npoints,Val(D))
     TensorProductQuadrature{D}(coords,weights)
-  end
+end
 
-function tensor_product(quads,npoints,::Val{D}) where D
+coordinates(self::TensorProductQuadrature) = self.coords
+
+weights(self::TensorProductQuadrature) = self.weights
+
+# Helpers
+
+function _quadtrature(extrusion::NTuple{D,Int},order) where D
+  @notimplementedif any(extrusion == TET_AXIS)
+  TensorProductQuadrature(orders=tuple(fill(order,D)...))
+end
+
+function _tensor_product(quads,npoints,::Val{D}) where D
   @assert length(quads) == D
   @assert length(npoints) == D
   coords = Array{Point{D},D}(undef,tuple(npoints...))
   weights = Array{Float64,D}(undef,tuple(npoints...))
-  tensor_product!(quads,coords,weights)
+  _tensor_product!(quads,coords,weights)
   (flatten(coords), flatten(weights))
 end
 
-function tensor_product!(quads,coords::Array{Point{D},D},weights) where D
+function _tensor_product!(quads,coords::Array{Point{D},D},weights) where D
   p = MPoint{D}(zeros(D))
   for ci in CartesianIndices(coords)
     p[:] = 0.0
@@ -66,9 +89,5 @@ function tensor_product!(quads,coords::Array{Point{D},D},weights) where D
     weights[ci] = w
   end
 end
-
-coordinates(self::TensorProductQuadrature) = self.coords
-
-weights(self::TensorProductQuadrature) = self.weights
 
 end # module Quadratures
