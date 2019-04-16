@@ -26,6 +26,7 @@ vexpand = expand(vbv,sfv2)
 print("VectorScalarExpand ->"); @time doloop(vexpand)
 print("VectorScalarExpand ->"); @time doloop(vexpand)
 
+using Numa.Geometry
 include("../test/CellIntegrationTestsMocks.jl")
 using Numa.Quadratures
 using Numa.CellQuadratures
