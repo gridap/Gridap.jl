@@ -38,6 +38,7 @@ struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T,Float64}
 	grid::Grid{D,D}
 end
 
+# @santiagobadia : I would like to import grid... Check where is it being used
 get_grid(this::ConformingFESpace) = this.grid
 
 """

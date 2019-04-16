@@ -26,6 +26,9 @@ using Numa.FESpaces: ConformingAssembler
 using SparseArrays
 using Numa.FESpaces: Assembler
 
+using Numa.Geometry
+using Numa.Geometry.Cartesian
+
 ##
 D=2
 nparts1d = 2
