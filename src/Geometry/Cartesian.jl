@@ -1,16 +1,31 @@
+module Cartesian
+
+# Dependencies of this module
+
+using StaticArrays: SVector, MVector, @SVector
+using Numa.Helpers
+using Numa.FieldValues
+using Numa.Polytopes
+using Numa.Meshes
+using Numa.Geometry
+using Numa.CellValues
+
+# Functionality provided 
+
+export CartesianGrid
+import Base: size, getindex, IndexStyle
+import Numa.CellValues: cellsize
+import Numa.Geometry: points, cells, celltypes, cellorders, gridgraph
 
 struct CartesianGrid{D} <: Grid{D,D}
   dim_to_limits::NTuple{D,NTuple{2,Float64}}
   dim_to_ncells::NTuple{D,Int}
   extrusion::NTuple{D,Int}
+  order:: Int
 end
 
-function CartesianGrid(;domain::NTuple{D2,Float64},partition::NTuple{D,Int}) where {D2,D}
-  @assert D2 == 2*D
-  dim_to_limits = tuple([(domain[2*i-1],domain[2*i]) for i in 1:D ]...)
-  extrusion = tuple(fill(HEX_AXIS,D)...)
-  dim_to_ncells = partition
-  CartesianGrid{D}(dim_to_limits,dim_to_ncells,extrusion)
+function CartesianGrid(;partition::NTuple{D,Int},domain=nothing,order::Int=1) where D
+  _cartesiangrid(partition,domain,order)
 end
 
 function points(self::CartesianGrid)
@@ -22,6 +37,8 @@ cells(self::CartesianGrid) = CartesianGridCells(self.dim_to_ncells)
 
 celltypes(self::CartesianGrid) = ConstantCellValue(self.extrusion,prod(self.dim_to_ncells))
 
+cellorders(self::CartesianGrid) = ConstantCellValue(self.order,prod(self.dim_to_ncells))
+
 function gridgraph(self::CartesianGrid)
   #fverdugo this is a temporary implementation
   nparts = [i for i in self.dim_to_ncells]
@@ -29,7 +46,20 @@ function gridgraph(self::CartesianGrid)
   GridGraphFromData(mesh.cellvefs,mesh.vefcells)
 end
 
-# Ancillary types
+# Helpers
+
+function _cartesiangrid(partition::NTuple{D,Int},domain,order) where D
+  if domain === nothing
+    _domain = [ i*(-1)^j for i in ones(D) for j in 1:2 ]
+  else
+    _domain = domain
+  end
+  dim_to_limits = tuple([(_domain[2*i-1],_domain[2*i]) for i in 1:D ]...)
+  extrusion = tuple(fill(HEX_AXIS,D)...)
+  dim_to_ncells = partition
+  @notimplementedif order != 1
+  CartesianGrid{D}(dim_to_limits,dim_to_ncells,extrusion,order)
+end
 
 struct CartesianGridPoints{D} <: IndexCellValue{Point{D},D}
   dim_to_limits::NTuple{D,NTuple{2,Float64}}
@@ -58,6 +88,8 @@ function CartesianGridCells(dim_to_ncell::NTuple{D,Int}) where D
   CartesianGridCells{D,2^D}(dim_to_ncell)
 end
 
+cellsize(self::CartesianGridCells{D,L}) where {D,L} = (L,)
+
 size(self::CartesianGridCells) = self.dim_to_ncell.data
 
 IndexStyle(::Type{CartesianGridCells{D,L}} where {D,L}) = IndexCartesian()
@@ -77,3 +109,4 @@ function getindex(self::CartesianGridCells{D,L}, I::Vararg{Int, D}) where {D,L}
   SVector{L,Int}(ids)
 end
 
+end # module Cartesian

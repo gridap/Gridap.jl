@@ -2,42 +2,21 @@ module CellIntegrationTests
 
 using Test
 using Numa
+using Numa.FieldValues
 using Numa.CellValues
 using Numa.CellFunctions
 using Numa.CellQuadratures
 using Numa.CellIntegration
 using Numa.Quadratures
-using Numa.Geometry: celltypes
+using Numa.Geometry
+using Numa.Geometry.Cartesian
 
-include("CellIntegrationTestsMocks.jl")
-
-imesh = DummyIntegrationMesh2D(partition=(3,3))
-
-@testset "Mocks" begin
-
-  @test isa(imesh,IntegrationMesh)
-
-  coords = cellcoordinates(imesh)
-
-  basis = cellbasis(imesh)
-
-  types = celltypes(imesh)
-
-  phi = geomap(imesh)
-
-  @test isa(coords,CellPoints{2})
-
-  @test isa(basis,CellBasis{2,Float64})
-
-  @test isa(phi,CellField{2,Point{2}})
-
-  @test isa(types,CellValue{NTuple{2,Int}})
-
-end
+grid = CartesianGrid(partition=(3,3))
+trian = triangulation(grid)
 
 @testset "Geomap" begin
 
-  phi = geomap(imesh)
+  phi = geomap(trian)
 
   @test isa(phi,CellGeomap{2,2})
 
@@ -45,37 +24,35 @@ end
 
 @testset "Integrate" begin
 
-  basis = cellbasis(imesh)
+  basis = cellbasis(trian)
 
-  refquad = TensorProductQuadrature(orders=(2,2))
+  quad = quadrature(trian,order=2)
 
-  quad = ConstantCellQuadrature(refquad,ncells(imesh))
-
-  mmat = integrate(inner(basis,basis),imesh,quad)
+  mmat = integrate(inner(basis,basis),trian,quad)
 
   @test isa(mmat,CellArray{Float64,2})
 
   ufun(x::Point{2}) = 1.0
 
-  cellvol = integrate(ufun,imesh,quad)
+  cellvol = integrate(ufun,trian,quad)
 
   @test isa(cellvol,CellValue{Float64})
 
   for vi in cellvol
-    @assert vi ≈ (1.0/3)^2
+    @assert vi ≈ (2.0/3)^2
   end
 
 end
 
-@testset "cellfield" begin
+@testset "Cellfield" begin
 
   ufun(x::Point{2}) = 2*x[1]+x[2]
 
-  u = cellfield(imesh,ufun)
+  u = cellfield(trian,ufun)
 
   νfun(x::Point{2},u::Float64) = TensorValue(x[1], u*x[2], 0.0, u)
 
-  ν(u) = cellfield(imesh,νfun,u)
+  ν(u) = cellfield(trian,νfun,u)
 
   @test isa(u,CellField{2,Float64})
   @test isa(ν(u),CellField{2,TensorValue{2,4}})

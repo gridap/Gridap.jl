@@ -2,15 +2,16 @@ module VtkioTests
 
 using Test
 using Numa
+using Numa.FieldValues
 using Numa.Quadratures
 using Numa.CellQuadratures
 using Numa.CellFunctions
 using Numa.CellValues
+using Numa.CellIntegration
 using Numa.Geometry
+using Numa.Geometry.Cartesian
 using Numa.Polytopes
 using Numa.Vtkio
-
-include("CellIntegrationTestsMocks.jl")
 
 @testset "VTKioGrid" begin
 
@@ -43,24 +44,24 @@ end
   d = mktempdir()
   f = joinpath(d,"x")
 
-  imesh = DummyIntegrationMesh2D(partition=(3,3))
-  refquad = TensorProductQuadrature(orders=(2,2))
-  quad = ConstantCellQuadrature(refquad,ncells(imesh))
+  grid = CartesianGrid(partition=(3,3))
+  trian = triangulation(grid)
+  quad = quadrature(trian,order=2)
 
-  phi = geomap(imesh)
+  phi = geomap(trian)
 
   q = coordinates(quad)
 
   x = evaluate(phi,q)
 
   ufun(x) = 2*x[1] + x[2]
-  u = cellfield(imesh,ufun)
+  u = cellfield(trian,ufun)
 
   vfun(x) = VectorValue(x[1],1.0)
-  v = cellfield(imesh,vfun)
+  v = cellfield(trian,vfun)
 
   tfun(x) = TensorValue(x[1],1.0,x[2],0.1)
-  t = cellfield(imesh,tfun)
+  t = cellfield(trian,tfun)
 
   pdata =["u"=>evaluate(u,q),"v"=>evaluate(v,q),"t"=>evaluate(t,q),"t2"=>apply(tfun,x)]
 
@@ -76,9 +77,10 @@ end
   d = mktempdir()
   f = joinpath(d,"x")
 
-  imesh = DummyIntegrationMesh2D(partition=(3,3))
+  grid = CartesianGrid(partition=(3,3))
+  trian = triangulation(grid)
 
-  xe = cellcoordinates(imesh)
+  xe = cellcoordinates(trian)
 
   x = cellmean(xe)
 
@@ -94,22 +96,23 @@ end
 
 @testset "WritevtkForIntegrationMesh" begin
 
-  imesh = DummyIntegrationMesh2D(partition=(3,3))
+  grid = CartesianGrid(partition=(3,3))
+  trian = triangulation(grid)
 
   ufun(x) = 3*x[2]*x[1]
-  u = cellfield(imesh,ufun)
+  u = cellfield(trian,ufun)
 
   vfun(x) = VectorValue(3*x[2]*x[1],2*x[2])
-  v = cellfield(imesh,vfun)
+  v = cellfield(trian,vfun)
 
   d = mktempdir()
-  f = joinpath(d,"imesh")
+  f = joinpath(d,"trian")
 
-  writevtk(imesh,f)
-  writevtk(imesh,f,nref=2,)
-  writevtk(imesh,f,nref=2,celldata=["r"=>rand(9)])
-  writevtk(imesh,f,nref=2,cellfields=["u"=>u,"v"=>v])
-  writevtk(imesh,f,nref=2,celldata=["r"=>rand(9)],cellfields=["u"=>u,"v"=>v])
+  writevtk(trian,f)
+  writevtk(trian,f,nref=2,)
+  writevtk(trian,f,nref=2,celldata=["r"=>rand(9)])
+  writevtk(trian,f,nref=2,cellfields=["u"=>u,"v"=>v])
+  writevtk(trian,f,nref=2,celldata=["r"=>rand(9)],cellfields=["u"=>u,"v"=>v])
 
   rm(d,recursive=true)
 

@@ -5,6 +5,8 @@ using Numa.FieldValues
 using Numa.Quadratures
 using Numa.CellValues
 using Numa.CellQuadratures
+using Numa.Geometry
+using Numa.Geometry.Cartesian
 
 const D = 2
 
@@ -46,5 +48,12 @@ ref_quad = TensorProductQuadrature(orders=(5,4))
 quad2 = ConstantCellQuadrature(ref_quad,l)
 
 @test isa(quad2,CellQuadrature)
+
+grid = CartesianGrid(partition=(2,3))
+trian = triangulation(grid)
+
+quad = quadrature(trian,order=2)
+
+@test isa(quad,CellQuadrature{2})
 
 end # module CellQuadraturesTests

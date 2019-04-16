@@ -1,20 +1,16 @@
 module Vtkio
 
-export writevtk
-
 using Numa
-using Numa: flatten
 using Numa.Helpers
 using Numa.CellValues
-using Numa.CellValues: IndexCellValue
 using Numa.CellFunctions
 using Numa.FieldValues
 using Numa.Polytopes
 using Numa.Geometry
+using Numa.Geometry.Unstructured
+using Numa.Geometry.Cartesian
 using Numa.Polytopes
 using Numa.CellIntegration
-
-import Numa.Geometry: cells, points, celltypes
 
 using WriteVTK
 using WriteVTK.VTKCellTypes: VTK_VERTEX
@@ -25,6 +21,9 @@ using WriteVTK.VTKCellTypes: VTK_TETRA
 using WriteVTK.VTKCellTypes: VTK_HEXAHEDRON
 
 # Functionality given by this module
+
+export writevtk
+import Numa.Geometry: cells, points, celltypes
 
 """
 Write a Grid object into a vtk file
@@ -48,10 +47,10 @@ function writevtk(points::CellValue{Point{D}} where D,filebase;celldata=Dict(),p
 end
 
 """
-Write an IntegrationMesh object into vtk
+Write an Triangulation object into vtk
 """
-function writevtk(imesh::IntegrationMesh,filebase;nref=0,celldata=Dict(),cellfields=Dict())
-  _writevtk(imesh,filebase,nref,celldata,cellfields)
+function writevtk(trian::Triangulation,filebase;nref=0,celldata=Dict(),cellfields=Dict())
+  _writevtk(trian,filebase,nref,celldata,cellfields)
 end
 
 # Helpers
@@ -83,8 +82,16 @@ function _vtkcells(grid::Grid)
   nodes = _vtkcellnodesdict()
   c = celltypes(grid)
   n = cells(grid)
+  _check_order(cellorders(grid))
   [ MeshCell(types[encode_extrusion(ci)], ni[nodes[encode_extrusion(ci)]])
      for (ci,ni) in zip(c,n) ] 
+end
+
+_check_order(co) = @notimplemented
+
+function _check_order(co::ConstantCellValue{Int})
+  o = celldata(co)
+  @notimplementedif o != 1
 end
 
 """
@@ -168,22 +175,23 @@ function _cellpoints_to_grid(points::CellPoints{D}) where D
       push!(p_to_cell,cell)
     end
   end
-  data, ptrs, ts = _prepare_cells(ps)
-  grid = UnstructuredGrid(ps,data,ptrs,ts)
+  data, ptrs, ts, os = _prepare_cells(ps)
+  grid = UnstructuredGrid(ps,data,ptrs,ts,os)
   (grid, p_to_cell)
 end
 
 function _cellpoint_to_grid(points::CellValue{Point{D}}) where D
   ps = collect(points)
-  data, ptrs, ts = _prepare_cells(ps)
-  UnstructuredGrid(ps,data,ptrs,ts)
+  data, ptrs, ts, os = _prepare_cells(ps)
+  UnstructuredGrid(ps,data,ptrs,ts,os)
 end
 
 function _prepare_cells(ps)
   data = [ i for i in 1:length(ps) ]
   ptrs = [ i for i in 1:(length(ps)+1) ]
-  ts = [ () for i in 1:length(ps) ]
-  (data,ptrs,ts)
+  ts = ConstantCellValue( (), length(ps) )
+  os = ConstantCellValue( 1, length(ps) )
+  (data,ptrs,ts,os)
 end
 
 function _prepare_pointdata(pointdata)
@@ -280,12 +288,12 @@ function _prepare_pdata(cellfields,samplingpoints)
   pdata
 end
 
-function _writevtk(imesh::IntegrationMesh,filebase,nref,celldata,cellfields)
-  vg = _visgrid(imesh,nref)
+function _writevtk(trian::Triangulation,filebase,nref,celldata,cellfields)
+  vg = _visgrid(trian,nref)
   _writevtk(vg,filebase,celldata,cellfields)
 end
 
-function _visgrid(self::IntegrationMesh,nref)
+function _visgrid(self::Triangulation,nref)
   grid, coarsecells, samplingpoints = _prepare_grid(celltypes(self),geomap(self),nref)
   VisualizationGrid(grid,coarsecells,samplingpoints)
 end
@@ -317,7 +325,8 @@ function _prepare_grid(ctypes::ConstantCellValue{NTuple{Z,Int}},phi::CellGeomap{
   ps, offsets = _prepare_points(samplingpoints,points(refgrid),phi)
   data, ptrs, coarsecells = _prepare_cells(refgrid,offsets)
   ts = _prepare_celltypes(length(ctypes),celltypes(refgrid))
-  grid = UnstructuredGrid(ps,data,ptrs,ts)
+  os = _prepare_cellorders(length(ctypes),celltypes(refgrid))
+  grid = UnstructuredGrid(ps,data,ptrs,ts,os)
   (grid, coarsecells, samplingpoints)
 end
 
@@ -386,7 +395,11 @@ end
 
 function _prepare_celltypes(ncells,refcelltypes::ConstantCellValue)
   refextrusion = celldata(refcelltypes)
-  fill(refextrusion,ncells*length(refcelltypes) )
+  ConstantCellValue(refextrusion,ncells*length(refcelltypes) )
+end
+
+function _prepare_cellorders(ncells,refcelltypes::ConstantCellValue)
+  ConstantCellValue(1,ncells*length(refcelltypes) )
 end
 
 end # module Vtkio

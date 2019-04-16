@@ -16,7 +16,6 @@ using Numa.FieldValues
 
 import Numa: gradient
 using Numa.CellValues: ConstantCellValue
-include("CellIntegrationTestsMocks.jl")
 
 using Numa.Meshes
 using Numa.FESpaces: ConformingFESpace
@@ -34,13 +33,13 @@ polytope = Polytopes.Polytope(extrusion)
 reffe = LagrangianRefFE{D,ScalarValue}(polytope,orders)
 basis = reffe.shfbasis
 cellb = CellBasisFromSingleInterpolation(basis)
-imesh = DummyIntegrationMesh2D(partition=nparts_t)
-refquad = TensorProductQuadrature(orders=(2,2))
-meshcoords = cellcoordinates(imesh)
+grid = CartesianGrid(partition=nparts_t)
+trian = triangulation(grid)
+meshcoords = cellcoordinates(trian)
 ncells = length(meshcoords)
-quad = ConstantCellQuadrature(refquad,ncells)
-phi = geomap(imesh)
-basis = cellbasis(imesh)
+quad = quadrature(trian,order=2)
+phi = geomap(trian)
+basis = cellbasis(trian)
 physbasis = attachgeomap(basis,phi)
 ab(v,u) = inner(∇(v),∇(u)) #+ inner(v,u)
 V = physbasis
@@ -51,11 +50,11 @@ fun(x::Point{2}) = x[1]
 gradfun(x::Point{2}) = VectorValue(1.0, 0.0)
 gradient(::typeof(fun)) = gradfun
 uphys = fun ∘ phi
-ksca = integrate(ab(uphys,uphys),imesh,quad)
+ksca = integrate(ab(uphys,uphys),trian,quad)
 sum(ksca)
-kvec = integrate(ab(V,uphys),imesh,quad)
+kvec = integrate(ab(V,uphys),trian,quad)
 typeof(kvec)
-kmat = integrate(ab(V,U),imesh,quad)
+kmat = integrate(ab(V,U),trian,quad)
 ##
 # Now let us assemble all these values
 

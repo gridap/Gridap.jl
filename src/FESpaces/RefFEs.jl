@@ -9,6 +9,7 @@ using Numa.Polynomials
 export DOFBasis
 export RefFE
 export LagrangianRefFE
+export shfbasis
 
 import Numa: evaluate
 

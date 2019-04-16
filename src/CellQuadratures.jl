@@ -1,15 +1,24 @@
 module CellQuadratures
 
-export CellQuadrature, ConstantCellQuadrature
+# Dependencies of this module
 
 using Numa.Helpers
 using Numa.FieldValues
 using Numa.Quadratures
 using Numa.CellValues
 using Numa.CellFunctions
+using Numa.Geometry
 
+# Functionality provided by this module
+
+export CellQuadrature
+export ConstantCellQuadrature
+import Base.Iterators: zip
 import Numa.Quadratures: coordinates
 import Numa.Quadratures: weights
+import Numa.Quadratures: quadrature
+
+# Abstract types and interfaces
 
 """
 Abstract type representing a collection of quadratures, one for each cell
@@ -20,13 +29,22 @@ coordinates(::CellQuadrature{D} where D )::CellPoints{D} = @abstractmethod
 
 weights(::CellQuadrature)::CellValues{Float64} = @abstractmethod
 
-function Base.Iterators.zip(self::CellQuadrature)
+function zip(self::CellQuadrature)
   c = coordinates(self)
   w = weights(self)
   zip(c,w)
 end
 
-# Concrete implementations
+# Factories
+
+"""
+Factory function to create CellQuadrature objects in a convenient way
+"""
+function quadrature(trian::Triangulation;order::Int)
+  _quadtrature(celltypes(trian),order)
+end
+
+# Concrete structs
 
 """
 A concrete implementation of CellQuadrature for the particular case
@@ -54,5 +72,14 @@ coordinates(self::ConstantCellQuadrature) = self.coords
 
 weights(self::ConstantCellQuadrature) = self.weights
 
+# Helpers
+
+_quadtrature(ct,order) = @notimplemented
+
+function _quadtrature(ct::ConstantCellValue{NTuple{Z,Int}},order) where Z
+  t = celldata(ct)
+  q = quadrature(t,order=order)
+  ConstantCellQuadrature(q,length(ct))
+end
 
 end # module CellQuadratures

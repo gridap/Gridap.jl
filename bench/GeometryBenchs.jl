@@ -1,6 +1,8 @@
 module GeometryBenchs
 
 using Numa.Geometry
+using Numa.Geometry.Cartesian
+using Numa.Geometry.Unstructured
 
 function doloop(a)
   for ai in a

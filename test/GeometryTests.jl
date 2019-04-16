@@ -4,7 +4,10 @@ using Test
 using Numa
 using Numa.FieldValues
 using Numa.CellValues
+using Numa.CellFunctions
 using Numa.Geometry
+using Numa.Geometry.Cartesian
+using Numa.Geometry.Unstructured
 using Numa.Polytopes
 using Numa.Vtkio
 
@@ -36,6 +39,11 @@ using Numa.Vtkio
   @test celldata(c) == (HEX_AXIS,HEX_AXIS)
   @test length(c) == 12
 
+  o = cellorders(grid)
+  @test isa(o,ConstantCellValue{Int})
+  @test celldata(o) == 1
+  @test length(o) == 12
+
   graph = gridgraph(grid)
 
   @test isa(graph,GridGraph)
@@ -44,6 +52,14 @@ using Numa.Vtkio
 
   @test isa(veftocells(graph), IndexCellVector{Int})
 
+  trian = triangulation(grid)
+
+  xe = cellcoordinates(trian)
+  @test isa(xe,CellPoints{2})
+
+  cb = cellbasis(trian)
+  @test isa(cb,CellBasis{2,ScalarValue})
+
 end
 
 @testset "FlexibleUnstructuredGrid" begin
@@ -51,6 +67,17 @@ end
   cgrid = CartesianGrid(domain=(0.0,1.0,-1.0,2.0),partition=(3,4))
 
   grid = FlexibleUnstructuredGrid(cgrid)
+
+  c = celltypes(grid)
+
+  @test isa(c,ConstantCellValue{NTuple{2,Int}})
+  @test celldata(c) == (HEX_AXIS,HEX_AXIS)
+  @test length(c) == 12
+
+  o = cellorders(grid)
+  @test isa(o,ConstantCellValue{Int})
+  @test celldata(o) == 1
+  @test length(o) == 12
 
   d = mktempdir()
   f = joinpath(d,"grid")
@@ -66,6 +93,16 @@ end
   cgrid = CartesianGrid(domain=(0.0,1.0,-1.0,2.0),partition=(3,4))
 
   grid = UnstructuredGrid(cgrid)
+
+  c = celltypes(grid)
+  @test isa(c,ConstantCellValue{NTuple{2,Int}})
+  @test celldata(c) == (HEX_AXIS,HEX_AXIS)
+  @test length(c) == 12
+
+  o = cellorders(grid)
+  @test isa(o,ConstantCellValue{Int})
+  @test celldata(o) == 1
+  @test length(o) == 12
 
   d = mktempdir()
   f = joinpath(d,"grid")
