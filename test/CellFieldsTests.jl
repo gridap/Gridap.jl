@@ -21,6 +21,8 @@ include("CellIntegrationTestsMocks.jl")
 using Numa.Meshes
 using Numa.FESpaces: ConformingFESpace
 
+using Numa.Fields: AnalyticalField
+
 ##
 ##
 D=2
@@ -40,21 +42,39 @@ meshcoords = cellcoordinates(imesh)
 ncells = length(meshcoords)
 quad = ConstantCellQuadrature(refquad,ncells)
 phi = geomap(imesh)
-basis = cellbasis(imesh)
-physbasis = attachgeomap(basis,phi)
-ab(v,u) = inner(∇(v),∇(u)) #+ inner(v,u)
-V = physbasis
-U = physbasis
-# fun(x::Point{2}) = x[1]*x[2] + x[1]
-# gradfun(x::Point{2}) = VectorValue(x[2] + 1.0, x[1])
+##
 fun(x::Point{2}) = x[1]
 gradfun(x::Point{2}) = VectorValue(1.0, 0.0)
 gradient(::typeof(fun)) = gradfun
-uphys = fun ∘ phi
+f = AnalyticalField(fun,2)
+cell_map = CellFieldFromField(f)
 
 
+using Numa.Fields
+"""
+Cell-wise field created from a `Field`
+"""
+struct CellFieldFromField{D,T,F<:Field{D,T}} <: CellField{D,T}
+  field::F
+end
 
+function CellFieldFromField(f::Field{D,T}) where {D,T}
+  F = typeof(f)  
+  CellFieldFromField{D,T,F}(f)
+end
 
+function evaluate(self::CellFieldFromField{D,T},points::CellPoints{D}) where {D,T}
+  CellFieldValuesFromField(self.field,points)
+end
+
+function gradient(self::CellFieldFromField)
+  gradfield = gradient(self.field)
+  CellFieldFromField(gradfield)
+end
+
+struct Map
+  a
+end
 
 
 
