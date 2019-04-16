@@ -6,10 +6,6 @@ struct CellBasisFromSingleInterpolation{D,T,B<:Basis{D,T}} <: CellBasis{D,T}
   basis::B
 end
 
-function CellBasisFromSingleInterpolation(basis::Basis{D,T}) where {D,T}
-  CellBasisFromSingleInterpolation{D,T,typeof(basis)}(basis)
-end
-
 function evaluate(self::CellBasisFromSingleInterpolation{D,T},points::ConstantCellArray{Point{D},1}) where {D,T}
   ndofs = length(self.basis)
   npoints = length(points.array)
