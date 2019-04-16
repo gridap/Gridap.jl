@@ -47,10 +47,10 @@ function writevtk(points::CellValue{Point{D}} where D,filebase;celldata=Dict(),p
 end
 
 """
-Write an IntegrationMesh object into vtk
+Write an Triangulation object into vtk
 """
-function writevtk(imesh::IntegrationMesh,filebase;nref=0,celldata=Dict(),cellfields=Dict())
-  _writevtk(imesh,filebase,nref,celldata,cellfields)
+function writevtk(trian::Triangulation,filebase;nref=0,celldata=Dict(),cellfields=Dict())
+  _writevtk(trian,filebase,nref,celldata,cellfields)
 end
 
 # Helpers
@@ -279,12 +279,12 @@ function _prepare_pdata(cellfields,samplingpoints)
   pdata
 end
 
-function _writevtk(imesh::IntegrationMesh,filebase,nref,celldata,cellfields)
-  vg = _visgrid(imesh,nref)
+function _writevtk(trian::Triangulation,filebase,nref,celldata,cellfields)
+  vg = _visgrid(trian,nref)
   _writevtk(vg,filebase,celldata,cellfields)
 end
 
-function _visgrid(self::IntegrationMesh,nref)
+function _visgrid(self::Triangulation,nref)
   grid, coarsecells, samplingpoints = _prepare_grid(celltypes(self),geomap(self),nref)
   VisualizationGrid(grid,coarsecells,samplingpoints)
 end

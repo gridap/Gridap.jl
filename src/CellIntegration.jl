@@ -21,24 +21,24 @@ function integrate(cellfun::CellFunction{Point{D},1,T,N},phi::CellGeomap{D,Z},qu
   cellsum( f*(meas(j)*w), dim=N )
 end
 
-function integrate(cellfun::CellFunction{Point{D},1},mesh::IntegrationMesh{D,Z},quad::CellQuadrature{D}) where {D,Z}
-  phi = geomap(mesh)
+function integrate(cellfun::CellFunction{Point{D},1},trian::Triangulation{D,Z},quad::CellQuadrature{D}) where {D,Z}
+  phi = geomap(trian)
   integrate(cellfun,phi,quad)
 end
 
-function integrate(fun::Function,mesh::IntegrationMesh{D,Z},quad::CellQuadrature{D}) where {D,Z}
-  phi = geomap(mesh)
+function integrate(fun::Function,trian::Triangulation{D,Z},quad::CellQuadrature{D}) where {D,Z}
+  phi = geomap(trian)
   cellfun = compose(fun,phi)
   integrate(cellfun,phi,quad)
 end
 
-function cellfield(mesh::IntegrationMesh,fun::Function)
-  phi = geomap(mesh)
+function cellfield(trian::Triangulation,fun::Function)
+  phi = geomap(trian)
   compose(fun,phi)
 end
 
-function cellfield(mesh::IntegrationMesh{D,Z},fun::Function,u::CellField{Z}) where {D,Z}
-  phi = geomap(mesh)
+function cellfield(trian::Triangulation{D,Z},fun::Function,u::CellField{Z}) where {D,Z}
+  phi = geomap(trian)
   compose(fun,phi,u)
 end
 

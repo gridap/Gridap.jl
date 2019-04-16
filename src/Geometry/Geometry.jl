@@ -8,7 +8,7 @@ using Numa.CellFunctions
 
 # Functionality provided by this module
 
-export IntegrationMesh
+export Triangulation
 export Grid
 export GridGraph
 export GridGraphFromData
@@ -26,13 +26,13 @@ export ncells
 """
 Minimal interface for a mesh used for numerical integration
 """
-abstract type IntegrationMesh{Z,D} end
+abstract type Triangulation{Z,D} end
 
-function cellcoordinates(::IntegrationMesh{Z,D})::CellPoints{D} where {Z,D}
+function cellcoordinates(::Triangulation{Z,D})::CellPoints{D} where {Z,D}
  @abstractmethod
 end
 
-function cellbasis(::IntegrationMesh{Z,D})::CellBasis{Z,Float64} where {Z,D}
+function cellbasis(::Triangulation{Z,D})::CellBasis{Z,Float64} where {Z,D}
   @abstractmethod
 end
 
@@ -40,17 +40,17 @@ end
 """
 Returns the tuple uniquely identifying the Polytope of each cell
 """
-function celltypes(::IntegrationMesh{Z,D})::CellValue{NTuple{Z}} where {Z,D}
+function celltypes(::Triangulation{Z,D})::CellValue{NTuple{Z}} where {Z,D}
   @abstractmethod
 end
 
-function geomap(self::IntegrationMesh)
+function geomap(self::Triangulation)
   coords = cellcoordinates(self)
   basis = cellbasis(self)
   expand(basis,coords)
 end
 
-function ncells(self::IntegrationMesh)
+function ncells(self::Triangulation)
   coords = cellcoordinates(self)
   length(coords)
 end

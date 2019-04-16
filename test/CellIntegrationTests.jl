@@ -11,19 +11,19 @@ using Numa.Geometry
 
 include("CellIntegrationTestsMocks.jl")
 
-imesh = DummyIntegrationMesh2D(partition=(3,3))
+trian = DummyIntegrationMesh2D(partition=(3,3))
 
 @testset "Mocks" begin
 
-  @test isa(imesh,IntegrationMesh)
+  @test isa(trian,Triangulation)
 
-  coords = cellcoordinates(imesh)
+  coords = cellcoordinates(trian)
 
-  basis = cellbasis(imesh)
+  basis = cellbasis(trian)
 
-  types = celltypes(imesh)
+  types = celltypes(trian)
 
-  phi = geomap(imesh)
+  phi = geomap(trian)
 
   @test isa(coords,CellPoints{2})
 
@@ -37,7 +37,7 @@ end
 
 @testset "Geomap" begin
 
-  phi = geomap(imesh)
+  phi = geomap(trian)
 
   @test isa(phi,CellGeomap{2,2})
 
@@ -45,19 +45,19 @@ end
 
 @testset "Integrate" begin
 
-  basis = cellbasis(imesh)
+  basis = cellbasis(trian)
 
   refquad = TensorProductQuadrature(orders=(2,2))
 
-  quad = ConstantCellQuadrature(refquad,ncells(imesh))
+  quad = ConstantCellQuadrature(refquad,ncells(trian))
 
-  mmat = integrate(inner(basis,basis),imesh,quad)
+  mmat = integrate(inner(basis,basis),trian,quad)
 
   @test isa(mmat,CellArray{Float64,2})
 
   ufun(x::Point{2}) = 1.0
 
-  cellvol = integrate(ufun,imesh,quad)
+  cellvol = integrate(ufun,trian,quad)
 
   @test isa(cellvol,CellValue{Float64})
 
@@ -71,11 +71,11 @@ end
 
   ufun(x::Point{2}) = 2*x[1]+x[2]
 
-  u = cellfield(imesh,ufun)
+  u = cellfield(trian,ufun)
 
   νfun(x::Point{2},u::Float64) = TensorValue(x[1], u*x[2], 0.0, u)
 
-  ν(u) = cellfield(imesh,νfun,u)
+  ν(u) = cellfield(trian,νfun,u)
 
   @test isa(u,CellField{2,Float64})
   @test isa(ν(u),CellField{2,TensorValue{2,4}})

@@ -61,7 +61,7 @@ IndexStyle(::Type{DummyCellCoordinates2D}) = IndexLinear()
 
 cellsize(self::DummyCellCoordinates2D) = (4,)
 
-struct DummyIntegrationMesh2D <: IntegrationMesh{2,2}
+struct DummyIntegrationMesh2D <: Triangulation{2,2}
   cellcoords::DummyCellCoordinates2D
   cellbasis::CellBasisFromSingleInterpolation{2,Float64}
   celltypes::ConstantCellValue{NTuple{2,Int}}
