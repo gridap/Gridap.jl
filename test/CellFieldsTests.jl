@@ -1,3 +1,89 @@
+##
+using Numa
+using Numa.Quadratures
+using Numa.CellQuadratures
+# using Numa.CellIntegration
+# using Numa.CellValues
+using Numa.CellFunctions
+import Numa.CellIntegration: cellcoordinates, cellbasis
+
+using Numa.CellValues: IndexCellArray
+import Numa.CellValues: cellsize
+using Numa.Polytopes
+using Numa.Polytopes: PointInt
+using Numa.RefFEs
+using Numa.FieldValues
+
+import Numa: gradient
+using Numa.CellValues: ConstantCellValue
+include("CellIntegrationTestsMocks.jl")
+
+using Numa.Meshes
+using Numa.FESpaces: ConformingFESpace
+
+##
+##
+D=2
+nparts1d = 2
+nparts = nparts1d*ones(Int64,D)
+nparts_t = tuple(nparts...)
+order=1
+orders=order*ones(Int64,D)
+extrusion = PointInt{D}(ones(Int64,D))
+polytope = Polytopes.Polytope(extrusion)
+reffe = LagrangianRefFE{D,ScalarValue}(polytope,orders)
+basis = reffe.shfbasis
+cellb = CellBasisFromSingleInterpolation(basis)
+imesh = DummyIntegrationMesh2D(partition=nparts_t)
+refquad = TensorProductQuadrature(orders=(2,2))
+meshcoords = cellcoordinates(imesh)
+ncells = length(meshcoords)
+quad = ConstantCellQuadrature(refquad,ncells)
+phi = geomap(imesh)
+basis = cellbasis(imesh)
+physbasis = attachgeomap(basis,phi)
+ab(v,u) = inner(∇(v),∇(u)) #+ inner(v,u)
+V = physbasis
+U = physbasis
+# fun(x::Point{2}) = x[1]*x[2] + x[1]
+# gradfun(x::Point{2}) = VectorValue(x[2] + 1.0, x[1])
+fun(x::Point{2}) = x[1]
+gradfun(x::Point{2}) = VectorValue(1.0, 0.0)
+gradient(::typeof(fun)) = gradfun
+uphys = fun ∘ phi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##
+
+
+"""
+Concrete implementation of CellFunction for the case of the same function on all cells
+"""
+struct ConstantCellFunction{S,M,T,N}
+  A::Function{S,M,T,N}  # Or put an acceptable name here
+end
+
+function CellBasisFromSingleInterpolation(f::ConstantCellFunction{S,M,T,N}) where {S,M,T,N}
+  ConstantCellFunction{S,M,T,N}(f)
+end
+
+
 """
 Cell-wise field created from a `Field`
 """

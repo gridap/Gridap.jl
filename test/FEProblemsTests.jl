@@ -80,15 +80,3 @@ fun(x::Point{2}) = x[1]
 gradfun(x::Point{2}) = VectorValue(1.0, 0.0)
 gradient(::typeof(fun)) = gradfun
 f = AnalyticalField(fun,2)
-f ∘ phi
-
-
-
-using Numa.RefFEs: dofs
-dofb = dofs(reffe)
-reffe.dofbasis
-g = f ∘ phi
-
-using Numa.RefFEs: evaluate
-evaluate(dofb,g)
-# santiagobadia : How do we want to evaluate fields with geomap ?
