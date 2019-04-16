@@ -1,27 +1,74 @@
 module Geometry
 
-export Grid, CartesianGrid
-export UnstructuredGrid, FlexibleUnstructuredGrid
-export cells, points, celltypes, gridgraph
+# Dependencies of this module
+
+using Numa.Helpers
+using Numa.CellValues
+
+# Functionality provided by this module
+
+export Grid
+export points
+export cells
+export celltypes
 export GridGraph
 export celltovefs
 export veftocells
+export gridgraph
+export GridGraphFromData
 
-import Base: size, getindex, IndexStyle
+#@fverdugo TODO grid could also be high order
+"""
+Abstract type representing a FE mesh a.k.a. grid
+D is the dimension of the coordinates and Z is the dimension of the cells
+"""
+abstract type Grid{D,Z} end # <: Triangulation{Z,D}
 
-using StaticArrays: SVector, MVector, @SVector
+function points(::Grid{D})::IndexCellValue{Point{D}} where D
+  @abstractmethod
+end
 
-using Numa
-using Numa.Helpers
-using Numa.FieldValues
-using Numa.CellValues
-using Numa.CellValues: IndexCellValue, IndexCellArray, IndexCellVector
-using Numa.CellFunctions
-using Numa.Polytopes
-using Numa.Meshes
+cells(::Grid)::IndexCellVector{Int} = @abstractmethod
 
-include("Interfaces.jl")
-include("CartesianGrids.jl")
-include("UnstructuredGrids.jl")
+# @fverdugo Return the encoded extrusion instead?
+# If we restrict to polytopes that can be build form
+# extrusion tuples, then we cannot accommodate polygonal elements, etc.
+# This is a strong limitation IMHO that has to be worked out
+"""
+Returns the tuple uniquely identifying the Polytope of each cell
+"""
+function celltypes(::Grid{D,Z})::IndexCellValue{NTuple{Z}} where {D,Z}
+  @abstractmethod
+end
+
+"""
+Abstract type that provides extended connectivity information associated with a grid.
+This is the basic interface needed to distribute dof ids in
+the construction of FE spaces.
+"""
+abstract type GridGraph end
+
+celltovefs(::GridGraph)::IndexCellVector{Int} = @abstractmethod
+
+veftocells(::GridGraph)::IndexCellVector{Int} = @abstractmethod
+
+"""
+Extracts the grid graph of the given grid
+"""
+gridgraph(::Grid)::GridGraph = @notimplemented
+
+struct GridGraphFromData{C<:IndexCellVector{Int},V<:IndexCellVector{Int}} <: GridGraph
+  celltovefs::C
+  veftocells::V
+end
+
+celltovefs(self::GridGraphFromData) = self.celltovefs
+
+veftocells(self::GridGraphFromData) = self.veftocells
+
+# Submodules
+
+include("Cartesian.jl")
+include("Unstructured.jl")
 
 end # module Geometry

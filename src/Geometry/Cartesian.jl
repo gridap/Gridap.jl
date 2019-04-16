@@ -1,3 +1,19 @@
+module Cartesian
+
+# Dependencies of this module
+
+using StaticArrays: SVector, MVector, @SVector
+using Numa.FieldValues
+using Numa.Polytopes
+using Numa.Meshes
+using Numa.Geometry
+using Numa.CellValues
+
+# Functionality provided 
+
+export CartesianGrid
+import Base: size, getindex, IndexStyle
+import Numa.Geometry: points, cells, celltypes, gridgraph
 
 struct CartesianGrid{D} <: Grid{D,D}
   dim_to_limits::NTuple{D,NTuple{2,Float64}}
@@ -29,7 +45,7 @@ function gridgraph(self::CartesianGrid)
   GridGraphFromData(mesh.cellvefs,mesh.vefcells)
 end
 
-# Ancillary types
+# Low level details
 
 struct CartesianGridPoints{D} <: IndexCellValue{Point{D},D}
   dim_to_limits::NTuple{D,NTuple{2,Float64}}
@@ -77,3 +93,4 @@ function getindex(self::CartesianGridCells{D,L}, I::Vararg{Int, D}) where {D,L}
   SVector{L,Int}(ids)
 end
 
+end # module Cartesian

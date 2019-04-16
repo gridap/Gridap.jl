@@ -1,20 +1,16 @@
 module Vtkio
 
-export writevtk
-
 using Numa
-using Numa: flatten
 using Numa.Helpers
 using Numa.CellValues
-using Numa.CellValues: IndexCellValue
 using Numa.CellFunctions
 using Numa.FieldValues
 using Numa.Polytopes
 using Numa.Geometry
+using Numa.Geometry.Unstructured
+using Numa.Geometry.Cartesian
 using Numa.Polytopes
 using Numa.CellIntegration
-
-import Numa.Geometry: cells, points, celltypes
 
 using WriteVTK
 using WriteVTK.VTKCellTypes: VTK_VERTEX
@@ -25,6 +21,9 @@ using WriteVTK.VTKCellTypes: VTK_TETRA
 using WriteVTK.VTKCellTypes: VTK_HEXAHEDRON
 
 # Functionality given by this module
+
+export writevtk
+import Numa.Geometry: cells, points, celltypes
 
 """
 Write a Grid object into a vtk file

@@ -5,6 +5,8 @@ using Numa
 using Numa.FieldValues
 using Numa.CellValues
 using Numa.Geometry
+using Numa.Geometry.Cartesian
+using Numa.Geometry.Unstructured
 using Numa.Polytopes
 using Numa.Vtkio
 

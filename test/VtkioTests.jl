@@ -7,6 +7,7 @@ using Numa.CellQuadratures
 using Numa.CellFunctions
 using Numa.CellValues
 using Numa.Geometry
+using Numa.Geometry.Cartesian
 using Numa.Polytopes
 using Numa.Vtkio
 
