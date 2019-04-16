@@ -9,7 +9,6 @@ using Numa.Polytopes
 using Numa.CellValues
 using Numa.Geometry
 
-using Numa.Meshes
 using SparseArrays
 
 using Numa.CellValues: CellVectorByComposition
@@ -22,9 +21,24 @@ the cell dimension `Z`, and the field type `T` (rank) and the number type `E`
 """
 abstract type FESpace{D,Z,T,E} end
 
-function globaldofs(::FESpace{D,Z,T,E})::CellVector{Int}  where {D,Z,T,E}
+function globaldofs(::FESpace{D,Z,T,E}, cellvefs, vefcells)::CellVector{Int} where {D,Z,T,E}
   @abstractmethod
 end
+
+function get_grid(::FESpace{D,Z,T,E})::Grid{D,Z} where {D,Z,T,E}
+	@abstractmethod
+end
+
+"""
+Conforming FE Space, where only one RefFE is possible in the whole mesh
+"""
+struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T,Float64}
+	# For the moment, I am not considering E (to think)
+	reffe::LagrangianRefFE{D,T}
+	grid::Grid{D,D}
+end
+
+get_grid(this::ConformingFESpace) = this.grid
 
 """
 Abstract assembly operator
@@ -47,21 +61,21 @@ struct ConformingAssembler{E} <: Assembler{E}
 	num_dofs::Int
 end
 
-function ConformingAssembler(fesp::FESpace)
-	gldofs = globaldofs(fesp)
+function ConformingAssembler(this::FESpace)
+	grid = get_grid(this)
+	graph = gridgraph(grid) # Generates the GridGraph associated with this grid.
+	cellvefs = celltovefs(graph) # Show vefs for each cell
+	vefcells = veftocells(graph) # Show cells around each vef
+	# @santiagobadia : I had the celltovefs and veftocells calls inside globaldofs
+	# Now here in order to call the previous methods once, since they can be
+	# costly (for some concrete grids).
+	gldofs = globaldofs(this, cellvefs, vefcells)
 	ndofs = gldofs[end][end]
-	cell_to_dofs = CellVectorByComposition(fesp.mesh.cellvefs, gldofs)
+	# @santiagobadia : We are calling twice cell_to_vefs...
+	cell_to_dofs = CellVectorByComposition(cellvefs, gldofs)
 	ConformingAssembler{Float64}(cell_to_dofs, cell_to_dofs, ndofs)
 end
 
-"""
-Conforming FE Space, where only one RefFE is possible in the whole mesh
-"""
-struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T,Float64}
-	# For the moment, I am not considering E (to think)
-	reffe::LagrangianRefFE{D,T}
-	mesh::Mesh{D}
-end
 
 # Methods
 
@@ -97,6 +111,22 @@ function assemble(this::Assembler, vals::CellMatrix{T}) where T
   return sparse(aux_row, aux_col, aux_vals)
 end
 
-include("FESpacesMethods.jl")
+function globaldofs(this::ConformingFESpace, cellvefs, vefcells)
+	reffe = this.reffe
+	nfdofs=Array{Array{Int64},1}(undef,length(vefcells))
+	c=1
+	nfdofs_l = []
+	nfdofs_g = zeros(Int, length(vefcells)+1)
+	nfdofs_g[1] = 1
+	for (ignf,nf) in enumerate(vefcells)
+		owner_cell = nf[1]
+		lid_vef = findfirst(i->i==ignf,cellvefs[owner_cell])
+		num_nf_dofs = length(reffe.nfacedofs[lid_vef])
+		nfdofs_l = [nfdofs_l..., c:c+num_nf_dofs-1... ]
+		nfdofs_g[ignf+1] += num_nf_dofs + nfdofs_g[ignf]
+		c += num_nf_dofs
+	end
+	return CellVectorFromDataAndPtrs(nfdofs_l, nfdofs_g)
+end
 
 end # module FESpaces
