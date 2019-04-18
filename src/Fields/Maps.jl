@@ -25,7 +25,7 @@ const Field{D,T} = Map{Point{D},1,T,1}
 Abstract basis for a field of rank `T` (e.g., scalar, vector, tensor) on a manifold of
 dimension `D`
 """
-# cont Basis{D,T} = Map{Point{D},1,T,2}
+const Basis{D,T} = Map{Point{D},1,T,2}
 
 """
 Evaluate the Map on a set of points

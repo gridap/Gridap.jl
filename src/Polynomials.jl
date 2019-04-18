@@ -3,6 +3,7 @@ module Polynomials
 using Numa #@fverdugo to be eliminated
 using Numa.Helpers
 using Numa.FieldValues
+using Numa.Maps: Basis
 using Numa.FieldValues: mutable
 using StaticArrays: MVector
 # using Numa.Quadratures
@@ -22,7 +23,7 @@ export evaluate!
 Abstract type representing a multivariate polynomial basis
 with value of type T in a coordinate space of D dimensions
 """
-abstract type Basis{D,T} end
+# abstract type Basis{D,T} end
 
 Base.length(::Basis)::Int = @abstractmethod
 
