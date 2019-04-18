@@ -2,7 +2,7 @@ module RefFEs
 
 using Numa.Helpers
 using Numa.FieldValues
-using Numa.Fields
+using Numa.Maps
 using Numa.Polytopes
 using Numa.Polynomials
 
@@ -76,7 +76,7 @@ the reference space
 # before being used here. Is this what we want?
 function evaluate(this::LagrangianDOFBasis{D,T},
 	field::Field{D,T}) where {D,T}
-	vals = Fields.evaluate(field,this.nodes)
+	vals = Maps.evaluate(field,this.nodes)
 	# I would like to use evaluate everywhere, putting evaluate in Numa and
 	# importing it in all submodules
 	# This way we could use the same evaluate for bases and fields...

@@ -7,7 +7,7 @@ using Numa.Polytopes
 using Numa.Polynomials
 using Numa.Polytopes: PointInt
 using Numa.FieldValues
-using Numa.Fields
+using Numa.Maps
 using Numa.RefFEs
 
 using Base.Cartesian
@@ -51,7 +51,7 @@ res = RefFEs.evaluate(dofsb,prebasis)
 @test res[8,8] == 1.0
 fun(x::Point{D}) = VectorValue(x[2]+1.0,x[1])
 anfield = AnalyticalField(fun,D)
-Fields.evaluate(anfield,nodes.coordinates)
+Maps.evaluate(anfield,nodes.coordinates)
 res2 = RefFEs.evaluate(dofsb,anfield)
 @test res2[8] == 1.0
 ##

@@ -21,7 +21,7 @@ include("CellIntegrationTestsMocks.jl")
 using Numa.Meshes
 using Numa.FESpaces: ConformingFESpace
 
-using Numa.Fields: AnalyticalField
+using Numa.Maps: AnalyticalField
 
 ##
 ##
@@ -50,7 +50,7 @@ f = AnalyticalField(fun,2)
 cell_map = CellFieldFromField(f)
 
 
-using Numa.Fields
+using Numa.Maps
 """
 Cell-wise field created from a `Field`
 """

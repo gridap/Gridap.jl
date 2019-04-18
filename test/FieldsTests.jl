@@ -2,7 +2,7 @@ module FieldsTests
 
 ##
 using Test
-using Numa.Fields
+using Numa.Maps
 using Numa.FieldValues
 
 import Numa: evaluate, gradient

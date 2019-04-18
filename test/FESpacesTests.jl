@@ -11,7 +11,7 @@ using Numa.FESpaces: ConformingFESpace
 using Numa.Polytopes: PointInt
 using Numa.CellValues
 
-using Numa.Fields
+using Numa.Maps
 using Numa.FieldValues
 
 using Numa.Meshes
