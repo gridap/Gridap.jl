@@ -32,8 +32,8 @@ Evaluate the Map on a set of points
 """
 function evaluate!(
   this::Map{S,M,T,N},
-  points::AbstractVector{AbstractArray{S,M}},
-  v::AbstractVector{Array{T,N}}) where {S,M,T,N}
+  points::AbstractVector{P},
+  v::Vector{R}) where {S,M,T,N,P,R}
   @abstractmethod
 end
 
@@ -50,7 +50,7 @@ Same as evaluate! but allocates output
 """
 function evaluate(
   this::Map{S,M,T,N},
-  points::AbstractVector{AbstractArray{S,M}}) where {S,M,T,N}
+  points::AbstractVector{P}) where {S,M,T,N,P}
   @abstractmethod
 end
 
@@ -58,14 +58,12 @@ end
 evaluate! for `Field`
 """
 function evaluate(
-  this::Field{D,T},points::AbstractVector{Point{D}}) where {D,T<:FieldValue}
-  v = Array{T,1}(undef, (length(points),) )
+  this::Field{D,T},
+  points::AbstractVector{Point{D}}) where {D,T<:FieldValue}
+  v = Vector{T}(undef, (length(points),) )
   evaluate!(this,points,v)
   v
 end
-# @santiagobadia: Not sure this is the way to go. Should it be in Map, it does
-# not seem posible, since not concrete the way AbstractArray{T,N} stored,
-# abstract at this point
 
 """
 Field generated from an analytical function
@@ -83,7 +81,7 @@ end
 function evaluate!(
   this::AnalyticalField{D,T},
   points::AbstractVector{Point{D}},
-  v::AbstractVector{T}) where {D,T}
+  v::Vector{T}) where {D,T}
   v .= this.fun.(points)
 end
 
