@@ -55,6 +55,16 @@ function evaluate(
 end
 
 """
+Return dimension of the input array
+"""
+inputsize(::Map)::Tuple = @abstractmethod
+
+"""
+Return dimension of the output array
+"""
+valsize(::Map)::Tuple = @abstractmethod
+
+"""
 evaluate! for `Field`
 """
 function evaluate(
@@ -89,5 +99,8 @@ function gradient(this::AnalyticalField{D}) where D
   gradfun = gradient(this.fun)
   AnalyticalField(gradfun,D)
 end
+
+inputsize(::AnalyticalField) = (1,)
+outputsize(::AnalyticalField) = (1,)
 
 end # module Maps

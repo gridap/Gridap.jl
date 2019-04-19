@@ -41,7 +41,7 @@ end
 Factory function to create CellQuadrature objects in a convenient way
 """
 function quadrature(trian::Triangulation;order::Int)
-  _quadtrature(celltypes(trian),order)
+  _quadrature(celltypes(trian),order)
 end
 
 # Concrete structs
@@ -74,9 +74,9 @@ weights(self::ConstantCellQuadrature) = self.weights
 
 # Helpers
 
-_quadtrature(ct,order) = @notimplemented
+_quadrature(ct,order) = @notimplemented
 
-function _quadtrature(ct::ConstantCellValue{NTuple{Z,Int}},order) where Z
+function _quadrature(ct::ConstantCellValue{NTuple{Z,Int}},order) where Z
   t = celldata(ct)
   q = quadrature(t,order=order)
   ConstantCellQuadrature(q,length(ct))

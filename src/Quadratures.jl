@@ -33,7 +33,7 @@ weights(::Quadrature)::Array{Float64,1} = @abstractmethod
 Factory function to create Quadrature objects in a convenient way
 """
 function quadrature(extrusion::NTuple{D,Int};order::Int) where D
-  _quadtrature(extrusion,order)
+  _quadrature(extrusion,order)
 end
 
 # Concrete structs
@@ -60,7 +60,7 @@ weights(self::TensorProductQuadrature) = self.weights
 
 # Helpers
 
-function _quadtrature(extrusion::NTuple{D,Int},order) where D
+function _quadrature(extrusion::NTuple{D,Int},order) where D
   @notimplementedif any(extrusion == TET_AXIS)
   TensorProductQuadrature(orders=tuple(fill(order,D)...))
 end

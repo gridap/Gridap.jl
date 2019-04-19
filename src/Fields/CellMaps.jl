@@ -2,6 +2,7 @@ module CellMaps
 
 using Numa.Maps
 using Numa.Helpers
+using Numa.CellValues
 
 import Base: iterate
 import Base: length
@@ -45,8 +46,10 @@ const CellMap{S,M,T,N} = Union{IterCellMap{S,M,T,N},IndexCellMap{S,M,T,N}}
 
 length(::CellMap)::Int = @abstractmethod
 
-cellsize(::CellMap) = ()
+cellsize(::CellMap) = @abstractmethod
 # @santiagobadia : What should I put here?
+
+
 
 function Base.show(io::IO,self::CellMap)
   for (i, a) in enumerate(self)
@@ -62,7 +65,7 @@ Cell-wise map created from a `Map`
 """
 struct ConstantCellMap{S,M,T,N,R} <: IndexCellMap{S,M,T,N,R}
   map::R
-  length::Int
+  num_cells::Int
 end
 
 function ConstantCellMap(m::Map{S,M,T,N}, l::Int) where {S,M,T,N}
@@ -84,5 +87,41 @@ end
 getindex(this::ConstantCellMap, i::Int) = this.map
 firstindex(this::ConstantCellMap) = this.map
 lastindex(this::ConstantCellMap) = this.map
+
+# CellMapValues
+
+struct IterConstantCellMapValues{S,M,T,N,A<:Map{S,M,T,N},B<:CellArray{S,M}} <: IterCellArray{T,N}
+  map::A
+  cellpoints::B
+end
+
+@inline function Base.iterate(this::IterConstantCellMapValues{S,M,T,N,A,B}) where {S,M,T,N,A,B}
+  u = Vector{Array{T,N}}(undef,cellsize(this.cellpoints))
+  v = CachedVector(u)
+  for vi in v
+    vi = Array{T,N}(undef,valsize(this.map))
+  end
+  next = iterate(this.cellpoints)
+  if next === nothing; return nothing end
+  iteratekernel(this,next,v)
+end
+
+@inline function Base.iterate(this::IterConstantCellMapValues{S,M,T,N,A,B},state) where {S,M,T,N,A,B}
+  v, astate = state
+  next = iterate(this.cellpoints,state)
+  if next === nothing; return nothing end
+  iteratekernel(this,next,v)
+end
+
+function iteratekernel(this::IterConstantCellMapValues,next,v)
+  a, astate = next
+  vsize = computesize(size(a))
+  setsize!(v,vsize)
+  computevals!(this,a,v)
+  state = (v, astate)
+  (v, state)
+  # @santiagobadia : I don't understand the last step, I have copied from a
+  # similar situation in other part of the code, but
+end
 
 end #module CellMaps
