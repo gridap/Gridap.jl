@@ -19,13 +19,13 @@ abstract type Map{S,M,T,N} end
 Abstract field of rank `T` (e.g., scalar, vector, tensor) on a manifold of
 dimension `D`
 """
-const Field{D,T} = Map{Point{D},1,T,1}
+const Field{D,T} = Map{Point{D},1,T,1} where {D,T<:FieldValue}
 
 """
 Abstract basis for a field of rank `T` (e.g., scalar, vector, tensor) on a manifold of
 dimension `D`
 """
-const Basis{D,T} = Map{Point{D},1,T,2}
+const Basis{D,T} = Map{Point{D},1,T,2} where {D,T<:FieldValue}
 
 """
 Evaluate the Map on a set of points
@@ -59,7 +59,7 @@ evaluate! for `Field`
 """
 function evaluate(
   this::Field{D,T},
-  points::AbstractVector{Point{D}}) where {D,T<:FieldValue}
+  points::AbstractVector{Point{D}}) where {D,T}
   v = Vector{T}(undef, (length(points),) )
   evaluate!(this,points,v)
   v
@@ -68,7 +68,7 @@ end
 """
 Field generated from an analytical function
 """
-struct AnalyticalField{D,T<:FieldValue,F<:Function} <: Field{D,T}
+struct AnalyticalField{D,T,F<:Function} <: Field{D,T}
   fun::F
 end
 
