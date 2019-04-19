@@ -82,7 +82,7 @@ function gradient(self::ConstantCellMap)
 end
 
 getindex(this::ConstantCellMap, i::Int) = this.map
-firstindex(this::ConstantCellMap, i::Int) = this.map
-lastindex(this::ConstantCellMap, i::Int) = this.map
+firstindex(this::ConstantCellMap) = this.map
+lastindex(this::ConstantCellMap) = this.map
 
 end #module CellMaps
