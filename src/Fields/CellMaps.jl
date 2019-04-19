@@ -62,11 +62,12 @@ Cell-wise map created from a `Map`
 """
 struct ConstantCellMap{S,M,T,N,R} <: IndexCellMap{S,M,T,N,R}
   map::R
+  length::Int
 end
 
-function ConstantCellMap(m::Map{S,M,T,N}) where {S,M,T,N}
+function ConstantCellMap(m::Map{S,M,T,N}, l::Int) where {S,M,T,N}
   R = typeof(m)
-  ConstantCellMap{S,M,T,N,R}(m)
+  ConstantCellMap{S,M,T,N,R}(m,l)
 end
 
 function evaluate(self::ConstantCellMap{S,M,T,N,R},points::AbstractVector{P}) where {S,M,T,N,R,P}
@@ -80,6 +81,8 @@ function gradient(self::ConstantCellMap)
   ConstantCellMap(gradfield)
 end
 
-
+getindex(this::ConstantCellMap, i::Int) = this.map
+firstindex(this::ConstantCellMap, i::Int) = this.map
+lastindex(this::ConstantCellMap, i::Int) = this.map
 
 end #module CellMaps
