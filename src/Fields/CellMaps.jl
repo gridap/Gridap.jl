@@ -110,7 +110,8 @@ cellsize(this::IterConstantCellMapValues) = cellsize(this.cellpoints)
   # @santiagobadia : Here is the problem...
   #  a field should be S,0,T,0 and after evaluation, it would take e.g., S,1
   # and return T,1... i.e. T,N+1
-  u = Array{T,N}(undef,cellsize(this.cellpoints))
+  u_size = (valsize(this.map)..., cellsize(this.cellpoints)...)   
+  u = Array{T,N}(undef, u_size)
   v = CachedArray(u)
   anext = iterate(this.cellpoints)
   if anext === nothing; return nothing end

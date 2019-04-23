@@ -100,7 +100,9 @@ function gradient(this::AnalyticalField{D}) where D
   AnalyticalField(gradfun,D)
 end
 
-inputsize(::AnalyticalField) = (1,)
-valsize(::AnalyticalField) = (1,)
+inputsize(::AnalyticalField) = ()
+valsize(::AnalyticalField) = ()
+# @santiagobadia : When S and T are equal to 1, here I put nothing,
+# since it represents the dims not taking into account "vectorization"
 
 end # module Maps
