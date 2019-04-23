@@ -19,6 +19,8 @@ import Numa: evaluate
 import Numa: gradient, ∇
 export evaluate!
 
+import Numa.Maps: domain_size, range_size
+
 """
 Abstract type representing a multivariate polynomial basis
 with value of type T in a coordinate space of D dimensions
@@ -26,6 +28,8 @@ with value of type T in a coordinate space of D dimensions
 # abstract type Basis{D,T} end
 
 Base.length(::Basis)::Int = @abstractmethod
+domain_size(::Basis) = ()
+range_size(this::Basis) = (this.length,)
 
 
 """

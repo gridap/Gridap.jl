@@ -124,21 +124,6 @@ evaluated at a collection of points in each cell
 """
 const CellBasisValues{T} = CellArray{T,2} where T <: FieldValue
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # @santiagobadia : Using the same as CellArray and CellValue
 
 # Concrete structs
@@ -207,6 +192,8 @@ end
   if anext === nothing; return nothing end
   iteratekernel(this,anext,v)
 end
+# @santiagobadia :  Create version with ConstantCellArray{Point{D},1}
+# Does it pay the price? Performance?
 
 @inline function Base.iterate(this::IterConstantCellMapValues{S,M,T,N,A,B},state) where {S,M,T,N,A,B}
   v, astate = state
