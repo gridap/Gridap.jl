@@ -52,8 +52,8 @@ Same as `evaluate!` but allocates output
 function evaluate(
   this::Map{S,M,T,N},
   points::AbstractArray{S,M}) where {S,M,T,N}
-  v_size = (range_size(this)..., cellsize(points)...)
-  v = Array{T,N}(undef, u_size)
+  v_size = (range_size(this)..., size(points)...)
+  v = Array{T,N}(undef, v_size)
   evaluate!(this,points,v)
   return v
 end
