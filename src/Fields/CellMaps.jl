@@ -4,6 +4,7 @@ using Numa.Maps
 using Numa.Maps: range_size
 
 using Numa.Helpers
+using Numa.FieldValues
 using Numa.CellValues
 using Numa.CellValues: CachedArray
 using Numa.CellValues: setsize!
@@ -56,6 +57,21 @@ const CellMap{S,M,T,N} = Union{IterCellMap{S,M,T,N},IndexCellMap{S,M,T,N}}
 # santiagobadia : Problem if IterCellMap and IndexCellMap not same template types?
 # Is this correct? IndexCellMap{S,M,T,N} when IndexCellMap{S,M,T,N,R}?
 
+"""
+Returns the evaluation of a `CellMap`
+"""
+function evaluate(::CellMap{S,M,T,N},::CellArray{S,M})::CellArray{T,N} where {S,M,T,N}
+  @abstractmethod
+end
+
+"""
+Returns another `CellMap` object that represents its gradient. Instances of `TG`
+have a rank order a unit greater than the ones of `T`
+"""
+function gradient(::CellMap{S,M,T,N})::CellMap{S,M,TG,N} where {S,M,T<:FieldValue,N,TG}
+  @abstractmethod
+end
+
 length(::CellMap)::Int = @abstractmethod
 
 cellsize(::CellMap) = @abstractmethod
@@ -66,6 +82,63 @@ function Base.show(io::IO,self::CellMap)
     println(io,"$i -> $a")
   end
 end
+
+"""
+Abstract type that represents a cell-wise basis for a field space,
+where T is the type of value and D the dimension of the domain
+"""
+const CellBasis{D,T} = CellMap{Point{D},1,T,2} where {D,T<:FieldValue}
+
+"""
+Abstract type that represents a cell-wise field, where
+`T` stands for the type that represents the field at a point
+(e.g., scalar, vector, tensor) and `D` stands for the space
+dimension
+"""
+const CellField{D,T} = CellMap{Point{D},1,T,1} where {D,T<:FieldValue}
+
+"""
+Abstract type representing a cell-wise transformation
+between two geometrical domains
+"""
+const CellGeomap{D,Z} = CellField{D,Point{Z}}
+
+# Abstract types for the input and output values
+# of CellFields and CellBasis
+
+"""
+An array of points for each cell.
+This type represent the objects where CellField and CellBasis are evaluated
+"""
+const CellPoints{D} = CellVector{Point{D}} where D
+
+"""
+Abstract type that represents a field with value of type T
+evaluated at a collection of points in each cell
+"""
+const CellFieldValues{T} = CellVector{T} where T <: FieldValue
+
+"""
+Abstract type that represents a function basis with value of type T
+evaluated at a collection of points in each cell
+"""
+const CellBasisValues{T} = CellArray{T,2} where T <: FieldValue
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # @santiagobadia : Using the same as CellArray and CellValue
 
 # Concrete structs
