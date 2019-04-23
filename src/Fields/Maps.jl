@@ -91,7 +91,7 @@ end
 function evaluate!(
   this::AnalyticalField{D,T},
   points::AbstractVector{Point{D}},
-  v::Vector{T}) where {D,T}
+  v::AbstractVector{T}) where {D,T}
   v .= this.fun.(points)
 end
 
@@ -101,6 +101,6 @@ function gradient(this::AnalyticalField{D}) where D
 end
 
 inputsize(::AnalyticalField) = (1,)
-outputsize(::AnalyticalField) = (1,)
+valsize(::AnalyticalField) = (1,)
 
 end # module Maps

@@ -1,14 +1,21 @@
 module CellMaps
 
 using Numa.Maps
+using Numa.Maps: valsize
+
 using Numa.Helpers
 using Numa.CellValues
+using Numa.CellValues: CachedArray
+using Numa.CellValues: setsize!
 
 import Base: iterate
 import Base: length
 import Base: eltype
 import Base: size
 import Base: getindex, setindex!
+
+import Numa: evaluate, gradient
+import Numa.CellValues: cellsize
 
 # Iterable cell Maps
 
@@ -68,16 +75,17 @@ struct ConstantCellMap{S,M,T,N,R} <: IndexCellMap{S,M,T,N,R}
   num_cells::Int
 end
 
+size(this::ConstantCellMap) = (this.num_cells,)
+length(this::ConstantCellMap) = this.num_cells
+
 function ConstantCellMap(m::Map{S,M,T,N}, l::Int) where {S,M,T,N}
   R = typeof(m)
   ConstantCellMap{S,M,T,N,R}(m,l)
 end
 
-function evaluate(self::ConstantCellMap{S,M,T,N,R},points::AbstractVector{P}) where {S,M,T,N,R,P}
-  ConstantCellMapValues(self.maps,points)
+function evaluate(self::ConstantCellMap{S,M,T,N,R},points::CellArray{S,M}) where {S,M,T,N,R,P}
+  IterConstantCellMapValues(self.map,points)
 end
-# @santiagobadia : Is the P type OK? I would put <: AbstractArray{S,M} but I guess
-# I will have problems for M=0, i.e., just a value of S...
 
 function gradient(self::ConstantCellMap)
   gradfield = gradient(self.field)
@@ -95,33 +103,40 @@ struct IterConstantCellMapValues{S,M,T,N,A<:Map{S,M,T,N},B<:CellArray{S,M}} <: I
   cellpoints::B
 end
 
+cellsize(this::IterConstantCellMapValues) = cellsize(this.cellpoints)
+
 @inline function Base.iterate(this::IterConstantCellMapValues{S,M,T,N,A,B}) where {S,M,T,N,A,B}
-  u = Vector{Array{T,N}}(undef,cellsize(this.cellpoints))
-  v = CachedVector(u)
-  for vi in v
-    vi = Array{T,N}(undef,valsize(this.map))
-  end
-  next = iterate(this.cellpoints)
-  if next === nothing; return nothing end
-  iteratekernel(this,next,v)
+  R = Base._return_type(evaluate,Tuple{A,B})
+  # @santiagobadia : Here is the problem...
+  #  a field should be S,0,T,0 and after evaluation, it would take e.g., S,1
+  # and return T,1... i.e. T,N+1
+  u = Array{T,N}(undef,cellsize(this.cellpoints))
+  v = CachedArray(u)
+  anext = iterate(this.cellpoints)
+  if anext === nothing; return nothing end
+  iteratekernel(this,anext,v)
 end
 
 @inline function Base.iterate(this::IterConstantCellMapValues{S,M,T,N,A,B},state) where {S,M,T,N,A,B}
   v, astate = state
-  next = iterate(this.cellpoints,state)
-  if next === nothing; return nothing end
-  iteratekernel(this,next,v)
+  anext = iterate(this.cellpoints,astate)
+  if anext === nothing; return nothing end
+  iteratekernel(this,anext,v)
 end
 
 function iteratekernel(this::IterConstantCellMapValues,next,v)
   a, astate = next
-  vsize = computesize(size(a))
+  # vsize = computesize(size(a))
+  vsize = size(a)
   setsize!(v,vsize)
-  computevals!(this,a,v)
+  evaluate!(this.map,a,v)
+  # computevals!(this,a,v)
   state = (v, astate)
   (v, state)
   # @santiagobadia : I don't understand the last step, I have copied from a
   # similar situation in other part of the code, but
 end
+
+const ConstantCellMapValues = IterConstantCellMapValues
 
 end #module CellMaps
