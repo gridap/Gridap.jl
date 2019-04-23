@@ -8,10 +8,11 @@ export Field
 export AnalyticalField
 
 import Numa: evaluate, gradient
-export evaluate!
 
-"""Create a new object Map{S,M,T,N} that given an M-dim array of S provides an N-dim array of T
-Abstract map that takes an `M`-dim array of `S` values and returns an `N`-dim array of `T` values
+"""
+Abstract map that takes an `M`-dim array of `S` values and returns an `N`-dim
+array of `T` values. For vectorization purposes, a function that takes `S` and
+returns `T` is declared as `Map{S,1,T,1}`
 """
 abstract type Map{S,M,T,N} end
 
@@ -22,23 +23,23 @@ dimension `D`
 const Field{D,T} = Map{Point{D},1,T,1} where {D,T<:FieldValue}
 
 """
-Abstract basis for a field of rank `T` (e.g., scalar, vector, tensor) on a manifold of
-dimension `D`
+Abstract basis for a space of fields of rank `T` (e.g., scalar, vector, tensor)
+on a manifold of dimension `D`
 """
 const Basis{D,T} = Map{Point{D},1,T,2} where {D,T<:FieldValue}
 
 """
-Evaluate the Map on a set of points
+Evaluate a `Map` on a set of points
 """
 function evaluate!(
   this::Map{S,M,T,N},
-  points::AbstractVector{P},
-  v::Vector{R}) where {S,M,T,N,P,R}
+  points::AbstractArray{S,M},
+  v::AbstractArray{T,N}) where {S,M,T,N}
   @abstractmethod
 end
 
 """
-Creates the gradient Map of a Map
+Creates the gradient of a `Map`
 """
 function gradient(
   this::Map{S,M,T,N})::Map{S,M,TG,N} where {S,M,T,N,TG}
@@ -46,34 +47,28 @@ function gradient(
 end
 
 """
-Same as evaluate! but allocates output
+Same as `evaluate!` but allocates output
 """
 function evaluate(
   this::Map{S,M,T,N},
-  points::AbstractVector{P}) where {S,M,T,N,P}
-  @abstractmethod
-end
-
-"""
-Return dimension of the input array
-"""
-inputsize(::Map)::Tuple = @abstractmethod
-
-"""
-Return dimension of the output array
-"""
-valsize(::Map)::Tuple = @abstractmethod
-
-"""
-evaluate! for `Field`
-"""
-function evaluate(
-  this::Field{D,T},
-  points::AbstractVector{Point{D}}) where {D,T}
-  v = Vector{T}(undef, (length(points),) )
+  points::AbstractArray{S,M}) where {S,M,T,N}
+  v_size = (range_size(this)..., cellsize(points)...)
+  v = Array{T,N}(undef, u_size)
   evaluate!(this,points,v)
-  v
+  return v
 end
+
+"""
+Return dimension of the input array (without taking into account vectorization)
+"""
+domain_size(::Map)::Tuple = @abstractmethod
+
+"""
+Return dimension of the output array (without taking into account vectorization)
+"""
+range_size(::Map)::Tuple = @abstractmethod
+
+# Concrete structs
 
 """
 Field generated from an analytical function
@@ -100,8 +95,8 @@ function gradient(this::AnalyticalField{D}) where D
   AnalyticalField(gradfun,D)
 end
 
-inputsize(::AnalyticalField) = ()
-valsize(::AnalyticalField) = ()
+domain_size(::AnalyticalField) = ()
+range_size(::AnalyticalField) = ()
 # @santiagobadia : When S and T are equal to 1, here I put nothing,
 # since it represents the dims not taking into account "vectorization"
 

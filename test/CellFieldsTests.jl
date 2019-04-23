@@ -54,7 +54,6 @@ p = Point{D}(2,2)
 quad = quadrature(trian,order=2)
 points = quad.coords.array
 @test ccm[1].fun.(points)[1]  ≈ - 1*sqrt(3)/3
-##
 using Numa.CellValues
 points = quad.coords
 @test typeof(points) <: CellArray{Point{D},1}
@@ -63,10 +62,3 @@ typeof(ccm)
 val = evaluate(ccm,points)
 @test cellsize(points) == cellsize(val)
 ##
-p1 = VectorValue(0.1,1.0)
-p2 = VectorValue(1.1,2.0)
-p3 = VectorValue(1.4,5.0)
-p = [p1,p2,p3]
-typeof(p) <: AbstractVector{Point{D}}
-typeof(points.array) <: AbstractVector{Point{D}}
-ccm[1].fun.(p)
