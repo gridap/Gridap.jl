@@ -36,20 +36,10 @@ nparts_t = tuple(nparts...)
 grid = CartesianGrid(partition=nparts_t,domain=(0,1,0,1),order=1) # domain, and order are optional
 trian = triangulation(grid) # Generates the Triangulation associated with this grid
 graph = gridgraph(grid) # Generates the GridGraph associated with this grid.
-##
-self = trian
-coords = cellcoordinates(self)
-basis = cellbasis(self)
-typeof(coords) <: CellVector
-typeof(basis) <: CellBasis
-typeof(basis)
-
-expand(basis,coords)
-
-
 phi = geomap(trian)
-fun(x::Point{2}) = x[1]
-gradfun(x::Point{2}) = VectorValue(1.0, 0.0)
+x = evaluate(phi,points)
+fun(x::Point{2}) = x[2]
+gradfun(x::Point{2}) = VectorValue(0.0, 1.0)
 gradient(::typeof(fun)) = gradfun
 f = AnalyticalField(fun,2)
 ##
@@ -60,22 +50,57 @@ ccm = ConstantCellMap(f,10)
 @test typeof(ccm[1]) <: AnalyticalField
 @test length(ccm) ==  10
 @test size(ccm) == (10,)
-
-##
-p = Point{D}(2,2)
-@test ccm[1].fun(p) == 2.0
-
-quad = quadrature(trian,order=2)
-points = quad.coords.array
-@test ccm[1].fun.(points)[1]  ≈ - 1*sqrt(3)/3
-using Numa.CellValues
-points = quad.coords
-@test typeof(points) <: CellArray{Point{D},1}
-@test typeof(f) <: Map{Point{D},1,Float64,1}
-typeof(ccm)
-val = evaluate(ccm,points)
+res = evaluate(ccm,x)
 @test cellsize(points) == cellsize(val)
 ##
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 l = 10
 

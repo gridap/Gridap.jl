@@ -95,4 +95,3 @@ for op in (:+,:-,:(det),:(inv),:(meas))
   end
 
 end
-

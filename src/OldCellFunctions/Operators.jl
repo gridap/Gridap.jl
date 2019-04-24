@@ -170,4 +170,3 @@ function gradient(self::CellFieldFromComposeExtended)
   gradf = gradient(self.f)
   CellFieldFromComposeExtended(gradf,self.g,self.u)
 end
-

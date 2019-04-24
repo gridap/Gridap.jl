@@ -1,6 +1,6 @@
 attachgeomap(a::CellBasis{D},b::CellGeomap{D,D}) where D = CellBasisWithGeomap(a,b)
 
-struct CellBasisWithGeomap{D,O,T,B<:CellBasis{D,T},G<:CellGeomap{D,D}} <: CellBasis{D,T}
+struct CellBasisWithGeomap{D,O,T,B<:CellBasis{D,T},G<:CellGeomap{D,D}} <: IterCellBasis{D,T}
   basis::B
   geomap::G
 end
@@ -33,3 +33,5 @@ function gradient(self::CellBasisWithGeomap{D,0}) where D
   basisgrad = gradient(self.basis)
   CellBasisWithGeomap(basisgrad,self.geomap,1)
 end
+
+########## TO BE IMPLEMENTED

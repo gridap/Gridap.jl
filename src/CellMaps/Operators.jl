@@ -72,7 +72,7 @@ function evaluate(self::CellMapFromBinaryOp{O,A,B,S,M,T,N},input::CellArray{S,M}
   self.op(avals,bvals)
 end
 
-struct CellFieldFromExpand{D,S,R,T<:FieldValue} <: CellField{D,T}
+struct CellFieldFromExpand{D,S,R,T<:FieldValue} <: IterCellField{D,T}
   basis::CellBasis{D,S}
   coeffs::CellVector{R}
 end
@@ -100,7 +100,7 @@ varinner(a::CellBasisValues{T},b::CellFieldValues{T}) where T = inner(a,cellnewa
 
 varinner(a::CellBasisValues{T},b::CellBasisValues{T}) where T = inner(cellnewaxis(a,dim=2),cellnewaxis(b,dim=1))
 
-expand(a::CellBasisValues,b::CellFieldValues) = cellsum(outer(a,cellnewaxis(b,dim=2)),dim=1)
+expand(a::CellBasisValues,b::CellFieldValues) = cellsum(outer(a,newaxis(b,dim=2)),dim=1)
 
 # Composition
 
@@ -114,7 +114,7 @@ end
 
 (∘)(f::Function,g::CellField) = compose(f,g)
 
-struct CellFieldFromCompose{D,O,C<:CellField{D},T} <: CellField{D,T}
+struct CellFieldFromCompose{D,O,C<:CellField{D},T} <: IterCellField{D,T}
   a::C
   op::O
 end
@@ -145,7 +145,7 @@ function gradient(self::CellFieldFromCompose)
   CellFieldFromCompose(gradop,self.a)
 end
 
-struct CellFieldFromComposeExtended{D,O,G<:CellGeomap{D},U<:CellField,T} <: CellField{D,T}
+struct CellFieldFromComposeExtended{D,O,G<:CellGeomap{D},U<:CellField,T} <: IterCellField{D,T}
   f::O
   g::G
   u::U

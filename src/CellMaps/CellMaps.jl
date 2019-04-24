@@ -109,7 +109,10 @@ end
 Abstract type that represents a cell-wise basis for a field space,
 where T is the type of value and D the dimension of the domain
 """
-const CellBasis{D,T} = IterCellMap{Point{D},1,T,2} where {D,T<:FieldValue}
+# const CellBasis{D,T} = CellMap{Point{D},1,T,2} where {D,T<:FieldValue}
+const IterCellBasis{D,T} = IterCellMap{Point{D},1,T,2} where {D,T<:FieldValue}
+const IndexCellBasis{D,T,R} = IndexCellMap{Point{D},1,T,2,R} where {D,T<:FieldValue,R}
+const CellBasis{D,T} = Union{IterCellBasis{D,T},IndexCellBasis{D,T}}
 
 """
 Abstract type that represents a cell-wise field, where
@@ -117,7 +120,10 @@ Abstract type that represents a cell-wise field, where
 (e.g., scalar, vector, tensor) and `D` stands for the space
 dimension
 """
-const CellField{D,T} = IterCellMap{Point{D},1,T,1} where {D,T<:FieldValue}
+# const CellField{D,T} = CellMap{Point{D},1,T,1} where {D,T<:FieldValue}
+const IterCellField{D,T} = IterCellMap{Point{D},1,T,1} where {D,T<:FieldValue}
+const IndexCellField{D,T,R} = IndexCellMap{Point{D},1,T,1,R} where {D,T<:FieldValue,R}
+const CellField{D,T} = Union{IterCellField{D,T},IndexCellField{D,T}}
 
 """
 Abstract type representing a cell-wise transformation
@@ -204,10 +210,8 @@ function cellsize(this::IterConstantCellMapValues)
 end
 
 @inline function Base.iterate(this::IterConstantCellMapValues{S,M,T,N,A,B}) where {S,M,T,N,A,B}
-  R = Base._return_type(evaluate,Tuple{A,B})
-  # @santiagobadia : Here is the problem...
-  #  a field should be S,0,T,0 and after evaluation, it would take e.g., S,1
-  # and return T,1... i.e. T,N+1
+  # R = Base._return_type(evaluate,Tuple{A,B})
+  # I could write a more general type by temp wrt R
   u = Array{T,N}(undef, cellsize(this))
   v = CachedArray(u)
   anext = iterate(this.cellpoints)

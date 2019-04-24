@@ -6,9 +6,15 @@ using Numa.FieldValues
 export Map
 export Field
 export AnalyticalField
+export GeoMap
+export Basis
 
 import Numa: evaluate, gradient
 export evaluate!
+
+import Base: +, -, *, /, ∘
+
+import Numa.FieldValues: inner, outer
 
 """
 Abstract map that takes an `M`-dim array of `S` values and returns an `N`-dim
@@ -28,6 +34,11 @@ Abstract basis for a space of fields of rank `T` (e.g., scalar, vector, tensor)
 on a manifold of dimension `D`
 """
 const Basis{D,T} = Map{Point{D},1,T,2} where {D,T<:FieldValue}
+
+"""
+Abstract geometry map
+"""
+const Geomap{D,Z} = Field{D,Point{Z}}
 
 """
 Evaluate a `Map` on a set of points
@@ -100,5 +111,7 @@ domain_size(::AnalyticalField) = ()
 range_size(::AnalyticalField) = ()
 # @santiagobadia : When S and T are equal to 1, here I put nothing,
 # since it represents the dims not taking into account "vectorization"
+
+include("Operators.jl")
 
 end # module Maps

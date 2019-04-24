@@ -1,4 +1,4 @@
-module FieldsTests
+# module FieldsTests
 
 ##
 using Test
@@ -35,6 +35,66 @@ f = AnalyticalField(fun,2)
 
 
 ##
+gradf = gradient(f)
+valf = evaluate(f,p)
+valgf = evaluate(gradf,p)
+@test isa(f,Map)
+g = -f
+@test evaluate(g,p) == -1*valf
+gg = -gradf
+@test evaluate(gg,p) == -1*valgf
+g = f+f
+@test evaluate(g,p) == 2*valf
+gg = gradf+gradf
+@test evaluate(gg,p) == 2*valgf
+g = f-f
+@test evaluate(g,p) == 0*valf
+g = inner(f,f)
+@test evaluate(g,p) == valf.*valf
+g = f*f
+@test evaluate(g,p) == valf.*valf
+g = inner(gradf,gradf)
+@test evaluate(g,p) == broadcast(inner,valgf,valgf)
+##
+# Now tests with basis
+using Numa.Polytopes
+using Numa.RefFEs
+using Numa.Polytopes: PointInt
+D = 2
+orders=[1,1]
+extrusion = PointInt{D}(1,1)
+polytope = Polytope(extrusion)
+reffe = LagrangianRefFE{D,ScalarValue}(polytope, orders)
+bas = reffe.shfbasis
+gradb = gradient(reffe.shfbasis)
+@test isa(bas,Basis)
+@test isa(bas,Map)
+@test isa(gradb,Basis)
+#
+vals = [1.0,2.0,3.0,4.0]
+using Numa.Maps: FieldFromExpand
+fef = FieldFromExpand(bas,vals)
+@test evaluate(fef,p) ≈ evaluate(bas,p)'*vals
+#
+fun(x::Float64) = 2*x
+using Numa.Maps: FieldFromCompose
+ff = FieldFromCompose(fun,f)
+@test evaluate(ff,p) == evaluate(f,p)*2
+#
+gfun(x::Point{2}) = 2*x
+g = AnalyticalField(gfun,2)
+using Numa.Maps: Geomap
+isa(g,Geomap)
+using Numa.Maps: FieldFromComposeExtended
+fce = FieldFromComposeExtended(fun,g,f)
+pp = evaluate(g,p)
+a1 = evaluate(f,pp)
+a2 = broadcast(fun,a1)
+@test evaluate(fce,p) == a2
+##
+
+
+##
 using StaticArrays
 using Numa.FieldValues
 function foo_mvector_point(a::Vector{T},p::Vector{Point{D}}) where {D,T}
@@ -60,4 +120,4 @@ anfield = AnalyticalField(fun,D)
 @time v = evaluate(anfield,p)
 ##
 
-end #module FieldsTests
+# end #module FieldsTests
