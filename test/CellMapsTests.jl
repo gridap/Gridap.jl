@@ -35,8 +35,16 @@ nparts = nparts1d*ones(Int64,D)
 nparts_t = tuple(nparts...)
 grid = CartesianGrid(partition=nparts_t,domain=(0,1,0,1),order=1) # domain, and order are optional
 trian = triangulation(grid) # Generates the Triangulation associated with this grid
-graph = gridgraph(grid) # Generates the GridGraph associated with this grid.
-phi = geomap(trian);
+graph = gridgraph(grid)
+## # Generates the GridGraph associated with this grid.
+iterate(phi)
+for (i,v) in enumerate(phi)
+  println(i,typeof(v))
+end
+phi = geomap(trian)
+
+using Numa.CellMaps: CellFieldFromExpand
+typeof(phi) <: CellFieldFromExpand
 l = prod(nparts_t)
 refquad = TensorProductQuadrature(orders=(5,4))
 refpoints = coordinates(refquad)

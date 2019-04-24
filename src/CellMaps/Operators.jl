@@ -51,7 +51,7 @@ function expand(a::CellBasis,b::CellVector)
   CellFieldFromExpand(a,b)
 end
 
-struct CellMapFromBinaryOp{O,A,B,S,M,T,N} <: IterCellMap{S,M,T,N}
+struct CellMapFromBinaryOp{O,A,B,S,M,T,N} <: IterCellMap{S,M,T,N}}
   op::O
   a::A
   b::B
@@ -76,6 +76,35 @@ struct CellFieldFromExpand{D,S,R,T<:FieldValue} <: IterCellField{D,T}
   basis::CellBasis{D,S}
   coeffs::CellVector{R}
 end
+
+
+@inline function Base.iterate(this::CellFieldFromExpand{D,S,R,T}) where {D,S,R,T}
+  bnext = iterate(this.basis)
+  cnext = iterate(this.coeffs)
+  if bnext === nothing; return nothing end
+  if cnext === nothing; return nothing end
+  b, bstate = bnext
+  c, cstate = cnext
+  v = FieldFromExpand(b,c)
+  state = (v, bstate, cstate)
+  (v, state)
+end
+
+@inline function Base.iterate(this::CellFieldFromExpand{D,S,R,T},state) where {D,S,R,T}
+  v, bstate, cstate = state
+  bnext = iterate(this.basis,bstate)
+  cnext = iterate(this.coeffs,cstate)
+  if bnext === nothing; return nothing end
+  if cnext === nothing; return nothing end
+  b, bstate = bnext
+  c, cstate = cnext
+  v = FieldFromExpand(b,c)
+  state = (v, bstate, cstate)
+  (v, state)
+end
+
+# @santiagobadia : NOT IMPLEMENTED IN THE OTHER STRUCTS!!! I want to talk to
+# @fverdugo first
 
 function CellFieldFromExpand(basis::CellBasis{D,S},coeffs::CellVector{R}) where {D,S,R}
   T = Base._return_type(outer,Tuple{S,R})

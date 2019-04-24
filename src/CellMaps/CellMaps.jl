@@ -4,6 +4,12 @@ using Numa.Helpers
 
 using Numa.Maps
 using Numa.Maps: range_size
+using Numa.Maps: MapFromUnaryOp
+using Numa.Maps: MapFromBinaryOp
+using Numa.Maps: FieldFromExpand
+using Numa.Maps: FieldFromCompose
+using Numa.Maps: FieldFromComposeExtended
+
 using Numa.FieldValues
 import Numa.FieldValues: inner, outer
 using Numa.CellValues
