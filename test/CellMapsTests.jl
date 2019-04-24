@@ -37,10 +37,6 @@ grid = CartesianGrid(partition=nparts_t,domain=(0,1,0,1),order=1) # domain, and 
 trian = triangulation(grid) # Generates the Triangulation associated with this grid
 graph = gridgraph(grid)
 ## # Generates the GridGraph associated with this grid.
-iterate(phi)
-for (i,v) in enumerate(phi)
-  println(i,typeof(v))
-end
 phi = geomap(trian)
 
 using Numa.CellMaps: CellFieldFromExpand

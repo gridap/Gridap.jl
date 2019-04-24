@@ -242,8 +242,6 @@ function iteratekernel(this::IterConstantCellMapValues,next,v)
   evaluate!(this.map,a,v)
   state = (v, astate)
   (v, state)
-  # @santiagobadia : I don't understand the last step, I have copied from a
-  # similar situation in other part of the code...
 end
 
 const ConstantCellMapValues = IterConstantCellMapValues

@@ -13,6 +13,25 @@ struct CellMapFromUnaryOp{O,A,S,M,T,N} <: IterCellMap{S,M,T,N}
   a::A
 end
 
+@inline function Base.iterate(this::CellMapFromUnaryOp{O,A,S,M,T,N}) where {O,A,S,M,T,N}
+  anext = iterate(this.a)
+  iteratekernel(this,anext)
+end
+
+@inline function Base.iterate(this::CellMapFromUnaryOp{O,A,S,M,T,N},state) where {O,A,S,M,T,N}
+  v, astate = state
+  anext = iterate(this.a,astate)
+  iteratekernel(this,anext)
+end
+
+function iteratekernel(this::CellMapFromUnaryOp,anext)
+  if anext === nothing; return nothing end
+  a, astate = anext
+  v = MapFromUnaryOp(this.op,a)
+  state = (v, astate)
+  (v, state)
+end
+
 function CellMapFromUnaryOp(op::Function,a::CellMap{S,M,T,N}) where {S,M,T,N}
   O = typeof(op)
   A = typeof(a)
@@ -51,10 +70,33 @@ function expand(a::CellBasis,b::CellVector)
   CellFieldFromExpand(a,b)
 end
 
-struct CellMapFromBinaryOp{O,A,B,S,M,T,N} <: IterCellMap{S,M,T,N}}
+struct CellMapFromBinaryOp{O,A,B,S,M,T,N} <: IterCellMap{S,M,T,N}
   op::O
   a::A
   b::B
+end
+
+@inline function Base.iterate(this::CellMapFromBinaryOp{O,A,B,S,M,T,N}) where {O,A,B,S,M,T,N}
+  anext = iterate(this.a)
+  bnext = iterate(this.b)
+  iteratekernel(this,anext,bnext)
+end
+
+@inline function Base.iterate(this::CellMapFromBinaryOp{O,A,B,S,M,T,N},state) where {O,A,B,S,M,T,N}
+  v, astate, bstate = state
+  anext = iterate(this.a,astate)
+  bnext = iterate(this.b,bstate)
+  iteratekernel(this,anext,bnext)
+end
+
+function iteratekernel(this::CellMapFromBinaryOp,anext,bnext)
+  if anext === nothing; return nothing end
+  if bnext === nothing; return nothing end
+  a, astate = anext
+  b, bstate = bnext
+  v = MapFromBinaryOp(this.op,a,b)
+  state = (v, astate, bstate)
+  (v, state)
 end
 
 function CellMapFromBinaryOp(op::Function,a::CellMap{S,M,TA,NA},b::CellMap{S,M,TB,NB}) where {S,M,TA,NA,TB,NB}
@@ -81,19 +123,17 @@ end
 @inline function Base.iterate(this::CellFieldFromExpand{D,S,R,T}) where {D,S,R,T}
   bnext = iterate(this.basis)
   cnext = iterate(this.coeffs)
-  if bnext === nothing; return nothing end
-  if cnext === nothing; return nothing end
-  b, bstate = bnext
-  c, cstate = cnext
-  v = FieldFromExpand(b,c)
-  state = (v, bstate, cstate)
-  (v, state)
+  iteratekernel(this,bnext,cnext)
 end
 
 @inline function Base.iterate(this::CellFieldFromExpand{D,S,R,T},state) where {D,S,R,T}
   v, bstate, cstate = state
   bnext = iterate(this.basis,bstate)
   cnext = iterate(this.coeffs,cstate)
+  iteratekernel(this,bnext,cnext)
+end
+
+function iteratekernel(this::CellFieldFromExpand,bnext,cnext)
   if bnext === nothing; return nothing end
   if cnext === nothing; return nothing end
   b, bstate = bnext
@@ -148,6 +188,25 @@ struct CellFieldFromCompose{D,O,C<:CellField{D},T} <: IterCellField{D,T}
   op::O
 end
 
+@inline function Base.iterate(this::CellFieldFromCompose{D,O,C,T}) where {D,O,C,T}
+  anext = iterate(this.a)
+  iteratekernel(this,anext)
+end
+
+@inline function Base.iterate(this::CellFieldFromCompose{D,O,C,T},state) where {D,O,C,T}
+  v, astate = state
+  anext = iterate(this.a,astate)
+  iteratekernel(this,anext)
+end
+
+function iteratekernel(this::CellFieldFromCompose,anext)
+  if anext === nothing; return nothing end
+  a, astate = anext
+  v = FieldFromCompose(this.op,a)
+  state = (v, astate)
+  (v, state)
+end
+
 function CellFieldFromCompose(f::Function,g::CellField{D,S}) where {D,S}
   O = typeof(f)
   C = typeof(g)
@@ -178,6 +237,29 @@ struct CellFieldFromComposeExtended{D,O,G<:CellGeomap{D},U<:CellField,T} <: Iter
   f::O
   g::G
   u::U
+end
+
+@inline function Base.iterate(this::CellFieldFromComposeExtended{D,O,G,U,T}) where {D,O,G,U,T}
+  gnext = iterate(this.g)
+  unext = iterate(this.u)
+  iteratekernel(this,gnext,unext)
+end
+
+@inline function Base.iterate(this::CellFieldFromComposeExtended{D,O,G,U,T},state) where {D,O,G,U,T}
+  v, gstate, ustate = state
+  gnext = iterate(this.g,astate)
+  unext = iterate(this.u,bstate)
+  iteratekernel(this,gnext,unext)
+end
+
+function iteratekernel(this::CellFieldFromComposeExtended,gnext,unext)
+  if gnext === nothing; return nothing end
+  if unext === nothing; return nothing end
+  g, gstate = gnext
+  u, ustate = unext
+  v = FieldFromComposeExtended(this.op,g,u)
+  state = (v, gstate, ustate)
+  (v, state)
 end
 
 function CellFieldFromComposeExtended(f::Function,g::CellGeomap{D,Z},u::CellField{Z,S}) where {D,Z,S}
