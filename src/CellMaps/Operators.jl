@@ -100,7 +100,7 @@ varinner(a::CellBasisValues{T},b::CellFieldValues{T}) where T = inner(a,cellnewa
 
 varinner(a::CellBasisValues{T},b::CellBasisValues{T}) where T = inner(cellnewaxis(a,dim=2),cellnewaxis(b,dim=1))
 
-expand(a::CellBasisValues,b::CellFieldValues) = cellsum(outer(a,newaxis(b,dim=2)),dim=1)
+expand(a::CellBasisValues,b::CellFieldValues) = cellsum(outer(a,cellnewaxis(b,dim=2)),dim=1)
 
 # Composition
 
