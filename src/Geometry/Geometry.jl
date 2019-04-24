@@ -7,7 +7,7 @@ using Numa.FieldValues
 using Numa.Polytopes
 using Numa.RefFEs
 using Numa.CellValues
-using Numa.CellFunctions
+using Numa.CellMaps
 
 # Functionality provided by this module
 
@@ -104,7 +104,7 @@ abstract type Grid{D,Z} end
 # meaningful than points... It is a point but it is more than that. It is the
 # set of points that define the polytope as its convex hull...
 # @fverdugo Just to clarify since (I don't know why) I removed the queries
-# celltypes and cellorders from the Grid interface (I have added them again). 
+# celltypes and cellorders from the Grid interface (I have added them again).
 # Grid can have high order cells in the current design. Thus, vertices would not be a meaningful name...
 # but of course we can change the name points (and also cells) if we find better names.
 # At the beginning, I was thinking on an abstract type that represents only a linear Grid (i.e.,
@@ -193,7 +193,7 @@ function _cellbasis(
   polytope = Polytope(Polytopes.PointInt{Z}(ct...))
   reffe = LagrangianRefFE{Z,ScalarValue}(polytope,fill(co,Z))
   basis = shfbasis(reffe)
-  CellBasisFromSingleInterpolation(basis)
+  ConstantCellMap(basis, length(ctypes)...)
 end
 
 struct TriangulationFromGrid{D,Z,G<:Grid{D,Z}} <: Triangulation{Z,D}

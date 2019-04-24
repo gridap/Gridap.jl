@@ -1,14 +1,36 @@
 module CellMaps
 
+using Numa.Helpers
+
 using Numa.Maps
 using Numa.Maps: range_size
-
-using Numa.Helpers
 using Numa.FieldValues
+import Numa.FieldValues: inner, outer
 using Numa.CellValues
+using Numa.CellValues: CellArrayFromUnaryOp
+using Numa.CellValues: CellArrayFromBroadcastUnaryOp
+using Numa.CellValues: CellArrayFromBroadcastBinaryOp
 using Numa.CellValues: CachedArray
 using Numa.CellValues: setsize!
 
+export CellMap
+export CellField
+export CellBasis
+export CellGeomap
+
+export CellMapValues
+export CellBasisValues
+export CellPoints
+
+export ConstantCellMap
+
+export expand
+export varinner
+export attachgeomap
+export compose
+
+
+import Base: +, -, *, /, ∘
 import Base: iterate
 import Base: length
 import Base: eltype
@@ -17,7 +39,7 @@ import Base: getindex, setindex!
 
 import Numa: evaluate, gradient
 import Numa.CellValues: cellsize
-# @santiagobadia :  To be put in Numa base
+import Numa.CellValues: inputcellarray, computesize, computevals!
 
 # Iterable cell Maps
 """
@@ -87,7 +109,7 @@ end
 Abstract type that represents a cell-wise basis for a field space,
 where T is the type of value and D the dimension of the domain
 """
-const CellBasis{D,T} = CellMap{Point{D},1,T,2} where {D,T<:FieldValue}
+const CellBasis{D,T} = IterCellMap{Point{D},1,T,2} where {D,T<:FieldValue}
 
 """
 Abstract type that represents a cell-wise field, where
@@ -95,7 +117,7 @@ Abstract type that represents a cell-wise field, where
 (e.g., scalar, vector, tensor) and `D` stands for the space
 dimension
 """
-const CellField{D,T} = CellMap{Point{D},1,T,1} where {D,T<:FieldValue}
+const CellField{D,T} = IterCellMap{Point{D},1,T,1} where {D,T<:FieldValue}
 
 """
 Abstract type representing a cell-wise transformation
@@ -153,8 +175,8 @@ end
 Computes the gradient of a `ConstantCellMap`
 """
 function gradient(self::ConstantCellMap)
-  gradfield = gradient(self.field)
-  ConstantCellMap(gradfield)
+  gradfield = gradient(self.map)
+  ConstantCellMap(gradfield,self.num_cells)
 end
 
 getindex(this::ConstantCellMap, i::Int) = this.map
@@ -204,7 +226,8 @@ end
 
 function iteratekernel(this::IterConstantCellMapValues,next,v)
   a, astate = next
-  vsize = size(a)
+  vsize = (range_size(this.map)..., size(a)...)
+  # vsize = size(a)
   setsize!(v,vsize)
   evaluate!(this.map,a,v)
   state = (v, astate)
@@ -214,5 +237,8 @@ function iteratekernel(this::IterConstantCellMapValues,next,v)
 end
 
 const ConstantCellMapValues = IterConstantCellMapValues
+
+include("Operators.jl")
+include("CellBasisWithGeomap.jl")
 
 end #module CellMaps

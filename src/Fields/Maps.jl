@@ -8,6 +8,7 @@ export Field
 export AnalyticalField
 
 import Numa: evaluate, gradient
+export evaluate!
 
 """
 Abstract map that takes an `M`-dim array of `S` values and returns an `N`-dim

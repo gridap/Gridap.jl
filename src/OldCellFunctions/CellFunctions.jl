@@ -22,7 +22,9 @@ using Numa.CellValues
 using Numa.CellValues: CellArrayFromUnaryOp
 using Numa.CellValues: CellArrayFromBroadcastUnaryOp
 using Numa.CellValues: CellArrayFromBroadcastBinaryOp
-using Numa.Polynomials
+# using Numa.Polynomials
+using Numa.Maps: Basis
+
 
 import Base: +, -, *, /, ∘
 

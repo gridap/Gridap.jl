@@ -6,7 +6,7 @@ using Numa.Helpers
 using Numa.FieldValues
 using Numa.Quadratures
 using Numa.CellValues
-using Numa.CellFunctions
+using Numa.CellMaps
 using Numa.Geometry
 
 # Functionality provided by this module

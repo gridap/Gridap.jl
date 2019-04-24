@@ -4,7 +4,7 @@ using Test
 using Numa
 using Numa.FieldValues
 using Numa.CellValues
-using Numa.CellFunctions
+using Numa.CellMaps
 using Numa.Geometry
 using Numa.Geometry.Cartesian
 using Numa.Geometry.Unstructured

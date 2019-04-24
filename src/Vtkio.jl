@@ -3,7 +3,7 @@ module Vtkio
 using Numa
 using Numa.Helpers
 using Numa.CellValues
-using Numa.CellFunctions
+using Numa.CellMaps
 using Numa.FieldValues
 using Numa.Polytopes
 using Numa.Geometry
@@ -84,7 +84,7 @@ function _vtkcells(grid::Grid)
   n = cells(grid)
   _check_order(cellorders(grid))
   [ MeshCell(types[encode_extrusion(ci)], ni[nodes[encode_extrusion(ci)]])
-     for (ci,ni) in zip(c,n) ] 
+     for (ci,ni) in zip(c,n) ]
 end
 
 _check_order(co) = @notimplemented

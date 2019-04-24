@@ -9,14 +9,12 @@ include("Helpers.jl")
 
 # CellArrays tools
 include("Fields/FieldValues.jl")
-# include("Fields/Fields.jl")
 include("Fields/Maps.jl")
 include("Polynomials.jl")
 include("Polytopes.jl")
 include("Quadratures.jl")
 include("CellValues/CellValues.jl")
-include("Fields/CellMaps.jl")
-include("CellFunctions/CellFunctions.jl")
+include("CellMaps/CellMaps.jl")
 
 include("Meshes.jl")
 include("FESpaces/RefFEs.jl")

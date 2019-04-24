@@ -5,6 +5,7 @@ using Numa.FieldValues
 using Numa.Maps
 using Numa.Polytopes
 using Numa.Polynomials
+using Numa.Maps: Basis
 
 export DOFBasis
 export RefFE
@@ -126,7 +127,7 @@ the shape functions.
 struct LagrangianRefFE{D,T} <: RefFE{D,T}
 	polytope::Polytope{D}
 	dofbasis::LagrangianDOFBasis{D,T}
-	shfbasis::BasisWithChangeOfBasis{D,T}
+	shfbasis::PolynomialBasisWithChangeOfBasis{D,T}
 	nfacedofs::Vector{Vector{Int}}
 end
 
@@ -136,7 +137,7 @@ function LagrangianRefFE{D,T}(polytope::Polytope{D},
 	dofsb = LagrangianDOFBasis{D,T}(nodes.coordinates)
 	prebasis = TensorProductMonomialBasis{D,T}(orders)
 	changeofbasis=inv(evaluate(dofsb,prebasis))
-	basis = BasisWithChangeOfBasis{D,T}(prebasis, changeofbasis)
+	basis = PolynomialBasisWithChangeOfBasis{D,T}(prebasis, changeofbasis)
 	nfacedofs=nodes.nfacenodes
 	LagrangianRefFE{D,T}(polytope, dofsb, basis, nfacedofs)
 end

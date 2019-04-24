@@ -9,15 +9,15 @@ using StaticArrays: MVector
 # using Numa.Quadratures
 # using Base.Cartesian
 
-export Basis
+export PolynomialBasis
 export TensorProductMonomialBasis
-export BasisWithChangeOfBasis
+export PolynomialBasisWithChangeOfBasis
 # export UnivariatePolynomialBasis
 # export UnivariateMonomialBasis
 
 import Numa: evaluate
 import Numa: gradient, ∇
-export evaluate!
+import Numa.Maps: evaluate!
 
 import Numa.Maps: domain_size, range_size
 
@@ -25,17 +25,17 @@ import Numa.Maps: domain_size, range_size
 Abstract type representing a multivariate polynomial basis
 with value of type T in a coordinate space of D dimensions
 """
-# abstract type Basis{D,T} end
+abstract type PolynomialBasis{D,T} <: Basis{D,T} end
 
-Base.length(::Basis)::Int = @abstractmethod
-domain_size(::Basis) = ()
-range_size(this::Basis) = (this.length,)
+Base.length(::PolynomialBasis{D,T} where {D,T})::Int = @abstractmethod
+domain_size(::PolynomialBasis) = ()
+range_size(this::PolynomialBasis) = (length(this),)
 
 
 """
 Same as evaluate! but allocates output
 """
-function evaluate(self::Basis{D,T},points::AbstractArray{Point{D},1}) where {D,T}
+function evaluate(self::PolynomialBasis{D,T},points::AbstractArray{Point{D},1}) where {D,T}
   vals = Array{T,2}(undef,(length(self),length(points)))
   evaluate!(self,points,vals)
   vals
@@ -44,39 +44,39 @@ end
 """
 First axis of v for dofs, second for points
 """
-evaluate!(::Basis{D,T},::AbstractVector{Point{D}},v::AbstractArray{T,2}) where {D,T} = @abstractmethod
+evaluate!(::PolynomialBasis{D,T},::AbstractVector{Point{D}},v::AbstractArray{T,2}) where {D,T} = @abstractmethod
 
 """
 Object that represents the gradient of the elements of a basis
 """
-struct GradBasis{D,TG,T,B<:Basis{D,T}} <: Basis{D,TG}
+struct GradPolynomialBasis{D,TG,T,B<:PolynomialBasis{D,T}} <: PolynomialBasis{D,TG}
   basis::B
 end
 
 """
 evaluate! overwritten for gradients of bases
 """
-function evaluate!(self::GradBasis{D,T},
+function evaluate!(self::GradPolynomialBasis{D,T},
 	points::AbstractArray{Point{D},1}, v::AbstractArray{T,2}) where {D,T}
   evaluategradients!(self.basis,points,v)
 end
 
 """
-Create a `GradBasis` object from a basis
-`Basis`. The result is a
-Basis{TG,D} where TG is a type whose rank is one unit
+Create a `GradPolynomialBasis` object from a basis
+`PolynomialBasis`. The result is a
+PolynomialBasis{TG,D} where TG is a type whose rank is one unit
 greater than the one of T
 """
-function gradient(self::Basis{D,T}) where{D,T}
+function gradient(self::PolynomialBasis{D,T}) where{D,T}
   TG = outer(Point{D},T)
   # TG = Base._return_type(outer,Tuple{Point{D},T})
   B = typeof(self)
-  GradBasis{D,TG,T,B}(self)
+  GradPolynomialBasis{D,TG,T,B}(self)
 end
 
-Base.length(this::GradBasis)::Int = length(this.basis)
+Base.length(this::GradPolynomialBasis)::Int = length(this.basis)
 
-function gradient(::GradBasis{D,T,B} where{D,T,B})
+function gradient(::GradPolynomialBasis{D,T,B} where{D,T,B})
  error("Gradient of a gradient not available")
 end
 
@@ -84,7 +84,7 @@ end
 """
 Abstract type representing a univariate polynomial basis in dimension one
 """
-abstract type UnivariatePolynomialBasis <: Basis{1,ScalarValue} end
+abstract type UnivariatePolynomialBasis <: PolynomialBasis{1,ScalarValue} end
 
 """
 Univariate monomial basis of a given `order`
@@ -132,7 +132,7 @@ end
 Multivariate monomial basis obtained as tensor product of univariate polynomial
 basis per dimension
 """
-struct TensorProductMonomialBasis{D,T} <: Basis{D,T}
+struct TensorProductMonomialBasis{D,T} <: PolynomialBasis{D,T}
   univariatebases::NTuple{D,UnivariateMonomialBasis}
 end
 
@@ -229,22 +229,22 @@ function tpder!(aux::MVector{D,E}, I::CartesianIndex{L}, p::Int, univals, derval
 	end
 end
 
-struct BasisWithChangeOfBasis{D,T} <: Basis{D,T}
-  basis::Basis{D,T}
+struct PolynomialBasisWithChangeOfBasis{D,T} <: PolynomialBasis{D,T}
+  basis::PolynomialBasis{D,T}
 	changeofbasis::Array{Float64,2}
 end
 
-function Base.length(this::BasisWithChangeOfBasis{D,T})::Int where {D,T}
+function Base.length(this::PolynomialBasisWithChangeOfBasis{D,T})::Int where {D,T}
   length(this.basis)
 end
 
-function evaluate!(this::BasisWithChangeOfBasis{D,T},
+function evaluate!(this::PolynomialBasisWithChangeOfBasis{D,T},
   points::AbstractVector{Point{D}}, v::AbstractArray{T,2}) where {D,T}
 	evaluate!(this.basis,points,v)
 	v .= this.changeofbasis*v
 end
 
-function evaluategradients!(this::BasisWithChangeOfBasis{D,T},
+function evaluategradients!(this::PolynomialBasisWithChangeOfBasis{D,T},
   points::AbstractVector{Point{D}}, v::AbstractArray{TG,2}) where {D,T,TG}
 	evaluategradients!(this.basis,points,v)
 	v .= this.changeofbasis*v
