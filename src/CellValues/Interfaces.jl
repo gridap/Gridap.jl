@@ -26,7 +26,8 @@ cellsize(::CellValue) = ()
 
 # Iterable cell Arrays
 
-abstract type IterCellArray{T,N} end
+const IterCellArray{T,N} = IterCellValue{AbstractArray{T,N}}
+# abstract type IterCellArray{T,N} end
 
 function iterate(::IterCellArray{T,N})::Union{Nothing,Tuple{AbstractArray{T,N},Any}} where {T,N}
   @abstractmethod
@@ -42,6 +43,7 @@ IteratorEltype(::Type{C} where C <: IterCellArray{T,N} where {T,N}) = EltypeUnkn
 
 # Indexable cell arrays
 
+# const IndexCellArray{T,N,A<:AbstractArray{T,N},D} = IndexCellValue{A,D}
 abstract type IndexCellArray{T,N,A<:AbstractArray{T,N},D} <: AbstractArray{A,D} end
 
 const IndexCellVector{T,A,D} = IndexCellArray{T,1,A,D}
