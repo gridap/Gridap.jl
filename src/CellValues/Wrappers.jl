@@ -204,13 +204,14 @@ cellsize(self::CellVectorFromLocalToGlobalPosAndNeg) = cellsize(self.lid_to_gid)
 # @santiagobadia : I think that the following struct is very useful. E.g., to
 # create the local to global from the cell when gids are nface-based, the way
 # to go (I think).
-struct CellVectorByComposition{T,L<:IndexCellVector{Int},V<:IndexCellVector{T}} <: IndexCellArray{T,1,CachedArray{T,1,Array{T,1}},1}
+struct CellVectorByComposition{T,L<:IndexCellArray{Int,1},V<:IndexCellArray{T,1}} <: IndexCellArray{T,1,CachedArray{T,1,Array{T,1}},1}
   cell_to_x::L
   x_to_vals::V
   cv::CachedVector{T,Vector{T}}
 end
+# @santiagobadia : For some reason, IndexCellVector{Int} not working
 
-function CellVectorByComposition(cell_to_x::IndexCellVector{Int}, x_to_vals::IndexCellVector{T}) where T
+function CellVectorByComposition(cell_to_x::IndexCellArray{Int,1}, x_to_vals::IndexCellArray{T,1}) where T
   L = typeof(cell_to_x)
   V = typeof(x_to_vals)
   a = Vector{T}(undef,(celllength(cell_to_x)*celllength(x_to_vals),))
@@ -228,8 +229,10 @@ end
   l = 1
   for x in cell_to_x
     for val in self.x_to_vals[x]
-      self.cv[l] = val
-      l += 1
+      for iv in val
+        self.cv[l] = iv
+        l += 1
+      end
     end
   end
   self.cv

@@ -43,10 +43,12 @@ IteratorEltype(::Type{C} where C <: IterCellArray{T,N} where {T,N}) = EltypeUnkn
 
 # Indexable cell arrays
 
-# const IndexCellArray{T,N,A<:AbstractArray{T,N},D} = IndexCellValue{A,D}
-abstract type IndexCellArray{T,N,A<:AbstractArray{T,N},D} <: AbstractArray{A,D} end
+const IndexCellArray{T,N,A<:AbstractArray{T,N},D} = IndexCellValue{A,D}
+# abstract type IndexCellArray{T,N,A<:AbstractArray{T,N},D} <: AbstractArray{A,D} end
 
 const IndexCellVector{T,A,D} = IndexCellArray{T,1,A,D}
+# @santiagobadia : I don't get why
+# IndexCellVector{T} <: IndexCellArray{T,1} not true????
 
 # Cell Arrays
 
@@ -70,6 +72,6 @@ function Base.show(io::IO,self::CellData)
   end
 end
 
-cellsize(::CellData) = @abstractmethod
+# cellsize(::CellData) = @abstractmethod
 
 const IterData{T} = Union{CellData{T},AbstractArray{T}}
