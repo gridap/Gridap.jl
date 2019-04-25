@@ -115,7 +115,7 @@ function points(::Grid{D})::IndexCellValue{Point{D}} where D
   @abstractmethod
 end
 
-cells(::Grid)::IndexCellVector{Int} = @abstractmethod
+cells(::Grid)::IndexCellArray{Int,1} = @abstractmethod
 
 function celltypes(::Grid{D,Z})::CellValue{NTuple{Z}} where {D,Z}
   @abstractmethod
@@ -132,9 +132,9 @@ the construction of FE spaces.
 """
 abstract type GridGraph end
 
-celltovefs(::GridGraph)::IndexCellVector{Int} = @abstractmethod
+celltovefs(::GridGraph)::IndexCellArray{Int,1} = @abstractmethod
 
-veftocells(::GridGraph)::IndexCellVector{Int} = @abstractmethod
+veftocells(::GridGraph)::IndexCellArray{Int,1} = @abstractmethod
 
 # @santiagobadia : I would put this method in the interface of Grid...
 # @fverdugo this would require define GridGraph before grid (which I find
@@ -146,7 +146,7 @@ Extracts the grid graph of the given grid
 gridgraph(::Grid)::GridGraph = @notimplemented
 
 
-struct GridGraphFromData{C<:IndexCellVector{Int},V<:IndexCellVector{Int}} <: GridGraph
+struct GridGraphFromData{C<:IndexCellArray{Int,1},V<:IndexCellArray{Int,1}} <: GridGraph
   celltovefs::C
   veftocells::V
 end

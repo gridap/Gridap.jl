@@ -48,9 +48,9 @@ using Numa.Vtkio
 
   @test isa(graph,GridGraph)
 
-  @test isa(celltovefs(graph), IndexCellVector{Int})
+  @test isa(celltovefs(graph), IndexCellArray{Int,1})
 
-  @test isa(veftocells(graph), IndexCellVector{Int})
+  @test isa(veftocells(graph), IndexCellArray{Int,1})
 
   trian = triangulation(grid)
 

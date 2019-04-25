@@ -46,7 +46,7 @@ IteratorEltype(::Type{C} where C <: IterCellArray{T,N} where {T,N}) = EltypeUnkn
 const IndexCellArray{T,N,A<:AbstractArray{T,N},D} = IndexCellValue{A,D}
 # abstract type IndexCellArray{T,N,A<:AbstractArray{T,N},D} <: AbstractArray{A,D} end
 
-const IndexCellVector{T,A,D} = IndexCellArray{T,1,A,D}
+# const IndexCellVector{T,A,D} = IndexCellArray{T,1,A,D}
 # @santiagobadia : I don't get why
 # IndexCellVector{T} <: IndexCellArray{T,1} not true????
 
