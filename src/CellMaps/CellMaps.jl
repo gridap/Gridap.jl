@@ -51,9 +51,8 @@ import Numa.CellValues: inputcellarray, computesize, computevals!
 Abstract object that traverses a set of cells and at every cell returns a
 `Map{S,M,T,N}`
 """
-abstract type IterCellMap{S,M,T,N} end
-# @santiagobadia : Why don't put the result type R as template parameter,
-# as for IndexCellMap ?
+const IterCellMap{S,M,T,N} = IterCellValue{Map{S,M,T,N}}
+# abstract type IterCellMap{S,M,T,N} end
 
 function iterate(::IterCellMap{S,M,T,N})::Union{Nothing,Tuple{Map{S,M,T,N},Any}} where {S,M,T,N}
   @abstractmethod
@@ -67,8 +66,7 @@ eltype(::Type{C}) where C <: IterCellMap{S,M,T,N} where {S,M,T,N} = Map{S,M,T,N}
 # @santiagobadia :  I think this method must be overriden, better in CellMap?
 
 # Indexable cell Maps
-
-abstract type IndexCellMap{S,M,T,N,R<:Map{S,M,T,N}} <: AbstractVector{R} end
+const IndexCellMap{S,M,T,N,R<:Map{S,M,T,N}} = IndexCellValue{Map{S,M,T,N},R}
 
 function getindex(::IndexCellMap{S,M,T,N,R}, ::Int)::R where {S,M,T,N,R}
   @abstractmethod
