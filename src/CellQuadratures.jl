@@ -57,8 +57,8 @@ end
 
 function ConstantCellQuadrature(c::Array{Point{D},1} where D,w::Array{Float64,1},l::Int)
   @assert length(c) == length(w)
-  coords = ConstantCellArray(c,l)
-  weights = ConstantCellArray(w,l)
+  coords = ConstantCellValue(c,l)
+  weights = ConstantCellValue(w,l)
   ConstantCellQuadrature(coords,weights)
 end
 
@@ -79,6 +79,7 @@ _quadrature(ct,order) = @notimplemented
 function _quadrature(ct::ConstantCellValue{NTuple{Z,Int}},order) where Z
   t = celldata(ct)
   q = quadrature(t,order=order)
+  length(ct)
   ConstantCellQuadrature(q,length(ct))
 end
 

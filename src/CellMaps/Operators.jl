@@ -225,7 +225,7 @@ end
 
 function composekernel(self::CellFieldFromCompose,avals::ConstantCellArray)
   b = broadcast(self.op,celldata(avals))
-  ConstantCellArray(b,length(avals))
+  ConstantCellValue(b,length(avals))
 end
 
 function gradient(self::CellFieldFromCompose)

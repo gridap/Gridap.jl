@@ -19,15 +19,15 @@ scv = ConstantCellValue(sv,l)
 sv2 = 1.1
 scv2 = ConstantCellValue(sv2,l)
 sa = [sv, sv, sv]
-sca = ConstantCellArray(sa,l)
+sca = ConstantCellValue(sa,l)
 sa2 = [sv sv; sv sv; sv sv]
-sca2 = ConstantCellArray(sa2,l)
+sca2 = ConstantCellValue(sa2,l)
 
 print("ConstantCellValue ->"); @time doloop(scv)
 print("ConstantCellValue ->"); @time doloop(scv)
 
-print("ConstantCellArray ->"); @time doloop(sca2)
-print("ConstantCellArray ->"); @time doloop(sca2)
+print("ConstantCellValue ->"); @time doloop(sca2)
+print("ConstantCellValue ->"); @time doloop(sca2)
 
 sv = 1.0
 scv = TestCellValue(sv,l)

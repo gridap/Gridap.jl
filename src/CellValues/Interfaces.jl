@@ -62,16 +62,10 @@ cellsize(self::CellArray,i::Int) = (s = cellsize(self); s[i])
 
 celllength(self::CellArray) = prod(cellsize(self))
 
-# Cell Data
-
-const CellData{T} = Union{CellValue{T},CellArray{T}}
-
-function Base.show(io::IO,self::CellData)
+function Base.show(io::IO,self::CellValue)
   for (i, a) in enumerate(self)
     println(io,"$i -> $a")
   end
 end
 
-# cellsize(::CellData) = @abstractmethod
-
-const IterData{T} = Union{CellData{T},AbstractArray{T}}
+const IterData{T} = Union{CellValue{T},AbstractArray{T}}

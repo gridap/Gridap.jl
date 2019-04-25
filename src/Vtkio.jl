@@ -337,7 +337,7 @@ end
 
 function _prepare_samplingpoints(refgrid,ctypes)
   refpoints = flatten(collect(points(refgrid)))
-  ConstantCellArray(refpoints,length(ctypes))
+  ConstantCellValue(refpoints,length(ctypes))
 end
 
 function _prepare_points(samplingpoints,refpoints,phi::CellGeomap{Z,D}) where {Z,D}

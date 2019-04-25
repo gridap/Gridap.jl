@@ -12,13 +12,6 @@ size(self::ConstantCellValue) = (self.length,)
 
 IndexStyle(::Type{ConstantCellValue{T}} where T) = IndexLinear()
 
-# ConstantCellArray
-
-# struct ConstantCellArray{T,N} <: IndexCellArray{T,N,Array{T,N},1}
-  # array::Array{T,N}
-  # length::Int
-# end
-
 const ConstantCellArray{T,N} = ConstantCellValue{Array{T,N}}
 
 const ConstantCellVector{T} = ConstantCellArray{T,1}
