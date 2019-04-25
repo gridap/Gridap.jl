@@ -64,21 +64,16 @@ Same as `evaluate!` but allocates output
 function evaluate(
   this::Map{S,M,T,N},
   points::AbstractArray{S,M}) where {S,M,T,N}
-  v_size = (range_size(this)..., size(points)...)
+  v_size = return_size(this, size(points))
   v = Array{T,N}(undef, v_size)
   evaluate!(this,points,v)
   return v
 end
 
 """
-Return dimension of the input array (without taking into account vectorization)
+Return dimension of the output array
 """
-domain_size(::Map)::Tuple = @abstractmethod
-
-"""
-Return dimension of the output array (without taking into account vectorization)
-"""
-range_size(::Map)::Tuple = @abstractmethod
+return_size(::Map,::NTuple{N,Int} where N)::Tuple = @abstractmethod
 
 # Concrete structs
 
@@ -106,11 +101,7 @@ function gradient(this::AnalyticalField{D}) where D
   gradfun = gradient(this.fun)
   AnalyticalField(gradfun,D)
 end
-
-domain_size(::AnalyticalField) = ()
-range_size(::AnalyticalField) = ()
-# @santiagobadia : When S and T are equal to 1, here I put nothing,
-# since it represents the dims not taking into account "vectorization"
+return_size(::AnalyticalField, p_size::Tuple{Vararg{Int64,N}} where N) = p_size
 
 include("Operators.jl")
 

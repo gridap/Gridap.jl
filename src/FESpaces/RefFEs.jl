@@ -25,6 +25,12 @@ abstract type DOFBasis{D,T} end
 Evaluate the DOFs for a given polynomial basis
 """
 function evaluate(this::DOFBasis{D,T},
+	fields::Map{Point{D},N,T,N})::Array{Float64,N} where {D,T,N}
+	@abstractmethod
+end
+# @santiagobadia : To replace the following ones
+
+function evaluate(this::DOFBasis{D,T},
 	prebasis::Basis{D,T})::Array{Float64,2} where {D,T}
 	@abstractmethod
 end
@@ -32,8 +38,6 @@ end
 function evaluate(this::DOFBasis{D,T},
 	prebasis::Field{D,T})::Vector{Float64} where {D,T}
 	@abstractmethod end
-# Field to be implemented, to answer evaluate and gradient, it can be a local FE
-# function or an analytical function
 
 """
 Lagrangian DOF basis, which consists on evaluating the polynomial basis

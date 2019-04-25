@@ -3,7 +3,6 @@ module CellMaps
 using Numa.Helpers
 
 using Numa.Maps
-using Numa.Maps: range_size
 using Numa.Maps: MapFromUnaryOp
 using Numa.Maps: MapFromBinaryOp
 using Numa.Maps: FieldFromExpand
@@ -212,13 +211,12 @@ struct IterConstantCellMapValues{S,M,T,N,A<:Map{S,M,T,N},B<:CellArray{S,M}} <: I
 end
 
 function cellsize(this::IterConstantCellMapValues)
-  return (range_size(this.map)..., cellsize(this.cellpoints)...)
+  return_size(this.map, cellsize(this.cellpoints)...)
+  @notimplemented
 end
 
 @inline function Base.iterate(this::IterConstantCellMapValues{S,M,T,N,A,B}) where {S,M,T,N,A,B}
-  # R = Base._return_type(evaluate,Tuple{A,B})
-  # I could write a more general type by temp wrt R
-  u = Array{T,N}(undef, cellsize(this))
+  u = Array{T,N}(undef, cellsize(this.cellpoints))
   v = CachedArray(u)
   anext = iterate(this.cellpoints)
   if anext === nothing; return nothing end
@@ -236,8 +234,7 @@ end
 
 function iteratekernel(this::IterConstantCellMapValues,next,v)
   a, astate = next
-  vsize = (range_size(this.map)..., size(a)...)
-  # vsize = size(a)
+  vsize = return_size(this.map,a)
   setsize!(v,vsize)
   evaluate!(this.map,a,v)
   state = (v, astate)
