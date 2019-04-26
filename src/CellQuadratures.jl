@@ -55,11 +55,14 @@ struct ConstantCellQuadrature{D} <: CellQuadrature{D}
   weights::ConstantCellArray{Float64,1}
 end
 
-function ConstantCellQuadrature(c::Array{Point{D},1} where D,w::Array{Float64,1},l::Int)
+function ConstantCellQuadrature(c::Array{Point{D},1},w::Array{Float64,1},l::Int) where D
   @assert length(c) == length(w)
   coords = ConstantCellValue(c,l)
   weights = ConstantCellValue(w,l)
-  ConstantCellQuadrature(coords,weights)
+  ConstantCellQuadrature{D}(coords,weights)
+  # santiagobadia : Be careful here... without D it does not work because
+  # ConstantCellValue not templatized by dim. Why did it work with
+  # ConstantCellArray
 end
 
 function ConstantCellQuadrature(quad::Quadrature{D} where D,l::Int)
@@ -79,7 +82,6 @@ _quadrature(ct,order) = @notimplemented
 function _quadrature(ct::ConstantCellValue{NTuple{Z,Int}},order) where Z
   t = celldata(ct)
   q = quadrature(t,order=order)
-  length(ct)
   ConstantCellQuadrature(q,length(ct))
 end
 
