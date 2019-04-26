@@ -152,9 +152,18 @@ end
   self.cv
 end
 
+@propagate_inbounds function getindex(self::CellVectorFromLocalToGlobal,cell::Vararg{Int,N} where N)
+  lid_to_gid = self.lid_to_gid[cell]
+  setsize!(self.cv,(length(lid_to_gid),))
+  for (lid,gid) in enumerate(lid_to_gid)
+    self.cv[lid] = self.gid_to_val[gid]
+  end
+  self.cv
+end
+
 size(self::CellVectorFromLocalToGlobal) = (length(self.lid_to_gid),)
 
-IndexStyle(::Type{CellVectorFromLocalToGlobal{T,L,V}}) where {T,L,V} = IndexLinear()
+IndexStyle(::Type{CellVectorFromLocalToGlobal{T,L,V}}) where {T,L,V} = IndexStyle(L)
 
 cellsize(self::CellVectorFromLocalToGlobal) = cellsize(self.lid_to_gid)
 

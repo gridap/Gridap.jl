@@ -11,6 +11,7 @@ export Basis
 
 import Numa: evaluate, gradient
 export evaluate!
+export return_size
 
 import Base: +, -, *, /, ∘
 
@@ -102,6 +103,7 @@ function gradient(this::AnalyticalField{D}) where D
   AnalyticalField(gradfun,D)
 end
 return_size(::AnalyticalField, p_size::Tuple{Vararg{Int64,N}} where N) = p_size
+return_size(::AnalyticalField, p_size::Int) = (p_size)
 
 include("Operators.jl")
 

@@ -26,25 +26,27 @@ using Numa.Maps: AnalyticalField
 
 using Numa.Geometry
 using Numa.Geometry.Cartesian
+using Numa.Geometry.Unstructured
 
 using Numa.CellMaps
-##
+
 D=2
 nparts1d = 2
 nparts = nparts1d*ones(Int64,D)
 nparts_t = tuple(nparts...)
 grid = CartesianGrid(partition=nparts_t,domain=(0,1,0,1),order=1) # domain, and order are optional
+grid = UnstructuredGrid(grid)
 trian = triangulation(grid) # Generates the Triangulation associated with this grid
-graph = gridgraph(grid)
+# graph = gridgraph(grid)
 ## # Generates the GridGraph associated with this grid.
 phi = geomap(trian)
-
 using Numa.CellMaps: CellFieldFromExpand
 typeof(phi) <: CellFieldFromExpand
 l = prod(nparts_t)
 refquad = TensorProductQuadrature(orders=(5,4))
 refpoints = coordinates(refquad)
 quad = ConstantCellQuadrature(refquad,l)
+quad
 p = coordinates(quad)
 x = evaluate(phi,p)
 ##
@@ -52,7 +54,6 @@ fun(x::Point{2}) = x[2]
 gradfun(x::Point{2}) = VectorValue(0.0, 1.0)
 gradient(::typeof(fun)) = gradfun
 f = AnalyticalField(fun,2)
-##
 using Numa.Maps
 using Numa.CellMaps: ConstantCellMap
 @test typeof(f) <: Map{Point{D},1,Float64,1}
@@ -62,8 +63,9 @@ ccm = ConstantCellMap(f,10)
 @test size(ccm) == (10,)
 res = evaluate(ccm,x)
 ##
-
-
+AnalyticalField{2,Float64,typeof(fun)} <: Map{Point{D},1,Float64,1}
+isa(ccm,ConstantCellValue{AnalyticalField{2,Float64,typeof(fun)}})
+isa(ccm,ConstantCellMap{Point{D},1,Float64,1})
 
 
 

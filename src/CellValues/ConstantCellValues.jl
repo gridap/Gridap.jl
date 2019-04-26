@@ -10,6 +10,8 @@ celldata(self::ConstantCellValue) = self.value
 
 size(self::ConstantCellValue) = (self.length,)
 
+length(self::ConstantCellValue) = self.length
+
 IndexStyle(::Type{ConstantCellValue{T}} where T) = IndexLinear()
 
 const ConstantCellArray{T,N} = ConstantCellValue{Array{T,N}}

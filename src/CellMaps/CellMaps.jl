@@ -52,7 +52,6 @@ Abstract object that traverses a set of cells and at every cell returns a
 `Map{S,M,T,N}`
 """
 const IterCellMap{S,M,T,N} = IterCellValue{Map{S,M,T,N}}
-# abstract type IterCellMap{S,M,T,N} end
 
 function iterate(::IterCellMap{S,M,T,N})::Union{Nothing,Tuple{Map{S,M,T,N},Any}} where {S,M,T,N}
   @abstractmethod
@@ -66,11 +65,15 @@ eltype(::Type{C}) where C <: IterCellMap{S,M,T,N} where {S,M,T,N} = Map{S,M,T,N}
 # @santiagobadia :  I think this method must be overriden, better in CellMap?
 
 # Indexable cell Maps
-const IndexCellMap{S,M,T,N,R<:Map{S,M,T,N}} = IndexCellValue{Map{S,M,T,N},R}
+const IndexCellMap{S,M,T,N,R<:Map{S,M,T,N}} = IndexCellValue{R}
 
 function getindex(::IndexCellMap{S,M,T,N,R}, ::Int)::R where {S,M,T,N,R}
   @abstractmethod
 end
+
+# function getindex(::IndexCellMap{S,M,T,N,R}, ::Vararg{Int,D}) where {S,M,T,N,R,D}
+#   @abstractmethod
+# end
 
 lastindex(x::IndexCellMap) = x[length(x)]
 
@@ -114,7 +117,7 @@ where T is the type of value and D the dimension of the domain
 """
 # const CellBasis{D,T} = CellMap{Point{D},1,T,2} where {D,T<:FieldValue}
 const IterCellBasis{D,T} = IterCellMap{Point{D},1,T,2} where {D,T<:FieldValue}
-const IndexCellBasis{D,T,R} = IndexCellMap{Point{D},1,T,2,R} where {D,T<:FieldValue,R}
+const IndexCellBasis{D,T} = IndexCellMap{Point{D},1,T,2} where {D,T<:FieldValue}
 const CellBasis{D,T} = Union{IterCellBasis{D,T},IndexCellBasis{D,T}}
 
 """
@@ -162,37 +165,33 @@ const CellBasisValues{T} = CellArray{T,2} where T <: FieldValue
 """
 Cell-wise map created from a `Map` of concrete type `R`
 """
-struct ConstantCellMap{S,M,T,N,R <: Map{S,M,T,N}} <: IndexCellMap{S,M,T,N,R}
-  map::R
-  num_cells::Int
+const ConstantCellMap{S,M,T,N,R<:Map{S,M,T,N}} = ConstantCellValue{R}
+
+function ConstantCellMap(a::Map,l::Int)
+  return ConstantCellValue(a,l)
 end
-
-size(this::ConstantCellMap) = (this.num_cells,)
-
-length(this::ConstantCellMap) = this.num_cells
-
 """
 Evaluate a `ConstantCellMap` on a set of points represented with a
 `CellArray{S,M}`
 """
 function evaluate(self::ConstantCellMap{S,M,T,N,R},
   points::CellArray{S,M}) where {S,M,T,N,R}
-  IterConstantCellMapValues(self.map,points)
+  IterConstantCellMapValues(self.value,points)
 end
 
 """
 Computes the gradient of a `ConstantCellMap`
 """
 function gradient(self::ConstantCellMap)
-  gradfield = gradient(self.map)
+  gradfield = gradient(self.value)
   ConstantCellMap(gradfield,self.num_cells)
 end
 
-getindex(this::ConstantCellMap, i::Int) = this.map
+getindex(this::ConstantCellMap, i::Int) = this.value
 
-firstindex(this::ConstantCellMap) = this.map
+firstindex(this::ConstantCellMap) = this.value
 
-lastindex(this::ConstantCellMap) = this.map
+lastindex(this::ConstantCellMap) = this.value
 
 # CellMapValues
 
@@ -210,11 +209,11 @@ end
 
 function cellsize(this::IterConstantCellMapValues)
   return_size(this.map, cellsize(this.cellpoints)...)
-  @notimplemented
+  # @notimplemented
 end
 
 @inline function Base.iterate(this::IterConstantCellMapValues{S,M,T,N,A,B}) where {S,M,T,N,A,B}
-  u = Array{T,N}(undef, cellsize(this.cellpoints))
+  u = Array{T,N}(undef, cellsize(this)...)
   v = CachedArray(u)
   anext = iterate(this.cellpoints)
   if anext === nothing; return nothing end
@@ -232,7 +231,7 @@ end
 
 function iteratekernel(this::IterConstantCellMapValues,next,v)
   a, astate = next
-  vsize = return_size(this.map,a)
+  vsize = return_size(this.map,size(a))
   setsize!(v,vsize)
   evaluate!(this.map,a,v)
   state = (v, astate)
