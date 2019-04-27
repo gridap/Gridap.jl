@@ -55,4 +55,3 @@ end
 Return dimension of the output array
 """
 return_size(::Map,::NTuple{N,Int} where N)::Tuple = @abstractmethod
-return_size(::Map,::Int)::Tuple = @abstractmethod

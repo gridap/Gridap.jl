@@ -209,7 +209,7 @@ struct IterConstantCellMapValues{S,M,T,N,A<:Map{S,M,T,N},B<:CellArray{S,M}} <: I
 end
 
 function cellsize(this::IterConstantCellMapValues)
-  return_size(this.map, cellsize(this.cellpoints)...)
+  return_size(this.map, cellsize(this.cellpoints))
   # @notimplemented
 end
 

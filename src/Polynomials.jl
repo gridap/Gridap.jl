@@ -28,7 +28,6 @@ abstract type PolynomialBasis{D,T} <: Basis{D,T} end
 
 Base.length(::PolynomialBasis{D,T} where {D,T})::Int = @abstractmethod
 return_size(this::PolynomialBasis, p_size::NTuple{N,Int} where N) = (length(this),p_size...)
-return_size(this::PolynomialBasis, p_size::Int) = (length(this),p_size)
 
 """
 Same as evaluate! but allocates output
