@@ -58,3 +58,26 @@ function gradient(self::FieldFromComposeExtended)
   FieldFromComposeExtended(gradf,self.g,self.u)
   # @santiagobadia : THIS IS WRONG
 end
+
+# @santiagobadia : I think the following struct would be useful
+
+# struct MapComposition{A<:Map{Q,O,T,N} where {Q,O}, B<:Map{S,M,Q,O} where {Q,O}} <: Map{S,M,T,N}
+#   map_left::A # A∘B(x)
+#   map_right::B
+# end
+#
+# function compose(f::Map,g::Map)
+#   MapComposition(f,g)
+# end
+#
+# (∘)(f::Map,g::Map) = compose(f,g)
+#
+# function evaluate(this::MapComposition{S,M,T,N},points::AbstractArray{S,M}) where {S,M,T,N}
+#   bvals = evaluate(self.map_right,points)
+#   avals = evaluate(self.map_left,gvals)
+# end
+#
+# function gradient(this::MapComposition)
+#   @notimplemented
+#   # Here, the chain rule
+# end
