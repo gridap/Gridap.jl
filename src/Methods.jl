@@ -1,12 +1,19 @@
 export evaluate
-export gradient, ∇
-export flatten
 export evaluate!
+export flatten
+export gradient, ∇
+export inner
+export meas
+export outer
 export return_size
 
 function evaluate end
 function evaluate! end
-function gradient end
-function return_size end
-const ∇ = gradient
 function flatten end
+function gradient end
+function inner end
+function meas end
+function outer end
+function return_size end
+
+const ∇ = gradient

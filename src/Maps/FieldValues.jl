@@ -4,9 +4,9 @@ export FieldValue
 export Point, MPoint
 export ScalarValue, VectorValue, TensorValue
 export MVectorValue, MTensorValue
-export inner, outer, meas
 export mutable
 
+import Numa: inner, outer, meas
 
 using StaticArrays: SVector, MVector, SMatrix, MMatrix
 using LinearAlgebra: det

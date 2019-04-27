@@ -14,12 +14,11 @@ import Numa: evaluate!, return_size
 
 import Base: +, -, *, /, ∘
 
-import Numa.FieldValues: inner, outer
+import Numa: inner, outer
 
 """
 Abstract map that takes an `M`-dim array of `S` values and returns an `N`-dim
-array of `T` values. For vectorization purposes, a function that takes `S` and
-returns `T` is declared as `Map{S,1,T,1}`
+array of `T` values.
 """
 abstract type Map{S,M,T,N} end
 

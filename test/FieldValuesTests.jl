@@ -1,7 +1,10 @@
 module FieldValuesTests
 
 using Test
+using Numa
 using Numa.FieldValues
+
+
 
 @testset "FieldValuesConstructors" begin
 
