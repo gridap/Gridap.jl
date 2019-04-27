@@ -8,7 +8,7 @@ include("Methods.jl")
 include("Helpers.jl")
 
 # CellArrays tools
-include("Maps/FieldValues.jl")
+include("FieldValues.jl")
 include("Maps/Maps.jl")
 include("Polynomials.jl")
 include("Polytopes.jl")

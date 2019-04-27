@@ -1,16 +1,20 @@
 # Unary operations
 
+
+"""
+Map generated from a `Map` and a unary operator
+"""
+struct MapFromUnaryOp{O,A,S,M,T,N} <: Map{S,M,T,N}
+  op::O
+  a::A
+end
+
 for op in (:+, :-)
   @eval begin
     function ($op)(a::Map)
       MapFromUnaryOp($op,a)
     end
   end
-end
-
-struct MapFromUnaryOp{O,A,S,M,T,N} <: Map{S,M,T,N}
-  op::O
-  a::A
 end
 
 function MapFromUnaryOp(op::Function,a::Map{S,M,T,N}) where {S,M,T,N}
@@ -26,6 +30,15 @@ function evaluate(self::MapFromUnaryOp{O,A,S,M,T,N},input::AbstractArray{S,M}) w
 end
 
 # Binary operations
+
+"""
+Map generated from a binary operator over two `Map`
+"""
+struct MapFromBinaryOp{O,A,B,S,M,T,N} <: Map{S,M,T,N}
+  op::O
+  a::A
+  b::B
+end
 
 for op in (:+, :-, :*, :/)
   @eval begin
@@ -52,11 +65,6 @@ function expand(a::Basis,b::AbstractVector)
   FieldFromExpand(a,b)
 end
 
-struct MapFromBinaryOp{O,A,B,S,M,T,N} <: Map{S,M,T,N}
-  op::O
-  a::A
-  b::B
-end
 
 function MapFromBinaryOp(op::Function,a::Map{S,M,TA,NA},b::Map{S,M,TB,NB}) where {S,M,TA,NA,TB,NB}
   O = typeof(op)
@@ -117,67 +125,6 @@ function expand(a::AbstractArray{T,2}, b::AbstractVector{S}) where {T,S}
 end
 # @santiagobadia : Think about efficiency improvements or other methods to
 # implement this function
-
-# Composition
-
-function compose(f::Function,g::Field{D,S}) where {D,S}
-  FieldFromCompose(f,g)
-end
-
-function compose(f::Function,g::Geomap{D,Z},u::Field{Z,S}) where {D,Z,S}
-  FieldFromComposeExtended(f,g,u)
-end
-
-(∘)(f::Function,g::Field) = compose(f,g)
-
-struct FieldFromCompose{D,O,C<:Field{D},T} <: Field{D,T}
-  a::C
-  op::O
-end
-
-function FieldFromCompose(f::Function,g::Field{D,S}) where {D,S}
-  O = typeof(f)
-  C = typeof(g)
-  T = Base._return_type(f,Tuple{S})
-  FieldFromCompose{D,O,C,T}(g,f)
-end
-
-function evaluate(self::FieldFromCompose{D},points::AbstractVector{Point{D}}) where D
-  avals = evaluate(self.a,points)
-  return broadcast(self.op,avals)
-end
-
-function gradient(self::FieldFromCompose)
-  gradop = gradient(self.op)
-  FieldFromCompose(gradop,self.a)
-  # @santiagobadia : THIS IS WRONG
-end
-
-struct FieldFromComposeExtended{D,O,G<:Geomap{D},U<:Field,T} <: Field{D,T}
-  f::O
-  g::G
-  u::U
-end
-
-function FieldFromComposeExtended(f::Function,g::Geomap{D,Z},u::Field{Z,S}) where {D,Z,S}
-  O = typeof(f)
-  G = typeof(g)
-  U = typeof(u)
-  T = Base._return_type(f,Tuple{Point{Z},S})
-  FieldFromComposeExtended{D,O,G,U,T}(f,g,u)
-end
-
-function evaluate(self::FieldFromComposeExtended{D},points::AbstractVector{Point{D}}) where D
-  gvals = evaluate(self.g,points)
-  uvals = evaluate(self.u,gvals)
-  return broadcast(self.f,uvals)
-end
-
-function gradient(self::FieldFromComposeExtended)
-  gradf = gradient(self.f)
-  FieldFromComposeExtended(gradf,self.g,self.u)
-  # @santiagobadia : THIS IS WRONG
-end
 
 function newaxis(self::AbstractArray;dim::Int)
   s = [ v for v in size(self)]
