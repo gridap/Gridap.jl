@@ -14,9 +14,24 @@ length(::IterCellValue)::Int = @abstractmethod
 
 eltype(::Type{C}) where C <: IterCellValue{T} where T = T
 
+# @santiagobadia : Check all the methods to be defined for abstract iterators
+# and arrays
+
 # Indexable cell Values
 
 abstract type IndexCellValue{T,N} <: AbstractArray{T,N} end
+
+function getindex(::IndexCellValue{T,N}, ::Int)::R where {T,N,R}
+  @abstractmethod
+end
+
+function getindex(::IndexCellValue{T,N}, ::Vararg{Int,D})::R where {T,N,R,D}
+  @abstractmethod
+end
+
+size(x::IndexCellValue) = @abstractmethod
+
+lastindex(x::IndexCellValue) = x[length(x)]
 
 # Cell Values
 
@@ -27,24 +42,12 @@ cellsize(::CellValue) = ()
 # Iterable cell Arrays
 
 const IterCellArray{T,N} = IterCellValue{AbstractArray{T,N}}
-# abstract type IterCellArray{T,N} end
-
-function iterate(::IterCellArray{T,N})::Union{Nothing,Tuple{AbstractArray{T,N},Any}} where {T,N}
-  @abstractmethod
-end
-
-function iterate(::IterCellArray{T,N},state)::Union{Nothing,Tuple{AbstractArray{T,N},Any}} where {T,N}
-  @abstractmethod
-end
-
-length(::IterCellArray)::Int = @abstractmethod
 
 IteratorEltype(::Type{C} where C <: IterCellArray{T,N} where {T,N}) = EltypeUnknown()
 
 # Indexable cell arrays
 
 const IndexCellArray{T,N,A<:AbstractArray{T,N},D} = IndexCellValue{A,D}
-# abstract type IndexCellArray{T,N,A<:AbstractArray{T,N},D} <: AbstractArray{A,D} end
 
 # const IndexCellVector{T,A,D} = IndexCellArray{T,1,A,D}
 # @santiagobadia : I don't get why
