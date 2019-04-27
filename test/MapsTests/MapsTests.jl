@@ -91,10 +91,6 @@ gradient(::typeof(f)) = gradf
   end
 end
 
-
-
-# FieldFromExpand
-
 # FieldFromComposeExtended
 using Numa.Maps: Geomap
 MockMap <: Geomap
@@ -112,6 +108,39 @@ geomap = MockMap(b)
   gres = evaluate(gcemap,p)
   for i in 1:length(p)
     @test gres[i] == gradf(p[i])
+  end
+end
+
+include("MockBasis.jl")
+
+bas = MockBasis(a,3)
+
+@testset "MockBasis" begin
+  res = evaluate(bas,p)
+  v_size = return_size(bas, size(p))
+  v = Array{Point{2},2}(undef, v_size)
+  for j = 1:3
+    for (i,pi) in enumerate(p)
+      @test res[j,i] == pi*j+a
+    end
+  end
+  gbas = gradient(bas)
+  gres = evaluate(gbas,p)
+  for j = 1:3
+    for (i,pi) in enumerate(p)
+      @test gres[j,i] == j*pi
+    end
+  end
+end
+
+using Numa.Maps: FieldFromExpand
+@testset "FieldFromExpand" begin
+  coefs = [1.0,1.0,1.0]
+  ffe = FieldFromExpand(bas,coefs)
+  res = evaluate(ffe,p)
+  r1 = evaluate(ffe.basis,p)
+  for i in 1:ffe.basis.dim
+    @test res[i] == sum(r1[:,i])
   end
 end
 

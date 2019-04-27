@@ -102,11 +102,10 @@ varinner(a::BasisValues{T},b::T) where T<:FieldValue = inner(a,newaxis(b,dim=1))
 varinner(a::BasisValues{T},b::BasisValues{T}) where T<:FieldValue = inner(newaxis(a,dim=2),newaxis(b,dim=1))
 
 # expand(a::BasisValues,b) = cellsum(outer.(a,newaxis(b,dim=2)),dim=1)
-function expand(a::BasisValues{T}, b::AbstractVector{S}) where {D,T,S}
-  println("Or here")
+function expand(a::AbstractArray{T,2}, b::AbstractVector{S}) where {T,S}
   num_dofs = length(b)
   @assert size(a)[1] == length(b)
-  num_points = size(a)[2]
+  num_points = size(a)[end]
   R = Base._return_type(outer,Tuple{T,S})
   c = zeros(R,num_points)
   for i in 1:num_dofs

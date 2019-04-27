@@ -6,7 +6,6 @@ function evaluate!(
   this::MockMap{D},
   points::AbstractArray{Point{D},1},
   v::AbstractArray{Point{D},1}) where {D}
-  l = length(points)
   for (i,pi) in enumerate(points)
     v[i] = pi+this.val
   end
@@ -21,7 +20,7 @@ function evaluate(
   return v
 end
 
-return_size(::Map, p_size::NTuple{N,Int} where N) = p_size
+return_size(::MockMap, p_size::NTuple{N,Int} where N) = p_size
 
 function gradient(this::MockMap{D}) where D
   MockMap{D}(zeros(Point{D}))
