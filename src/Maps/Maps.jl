@@ -10,8 +10,7 @@ export GeoMap
 export Basis
 
 import Numa: evaluate, gradient
-export evaluate!
-export return_size
+import Numa: evaluate!, return_size
 
 import Base: +, -, *, /, ∘
 
@@ -75,6 +74,7 @@ end
 Return dimension of the output array
 """
 return_size(::Map,::NTuple{N,Int} where N)::Tuple = @abstractmethod
+return_size(::Map,::Int)::Tuple = @abstractmethod
 
 # Concrete structs
 

@@ -43,6 +43,7 @@ import Base: size
 import Base: getindex, setindex!
 
 import Numa: evaluate, gradient
+import Numa: evaluate!, return_size
 import Numa.CellValues: cellsize
 import Numa.CellValues: inputcellarray, computesize, computevals!
 
