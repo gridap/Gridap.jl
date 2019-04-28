@@ -14,11 +14,15 @@ using Numa.Geometry
 export CellQuadrature
 export ConstantCellQuadrature
 import Base.Iterators: zip
-import Numa.Quadratures: coordinates
-import Numa.Quadratures: weights
-import Numa.Quadratures: quadrature
+import Numa: coordinates
+import Numa: weights
+import Numa: quadrature
 
 # Abstract types and interfaces
+
+# @santiagobadia : I would create a JoinCellValues struc, and define this one as
+# sub-type with nothing but coordinates and weights methods... Do we really need
+# it?
 
 """
 Abstract type representing a collection of quadratures, one for each cell

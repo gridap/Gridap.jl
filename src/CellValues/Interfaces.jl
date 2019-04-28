@@ -20,6 +20,8 @@ eltype(::Type{C}) where C <: IterCellValue{T} where T = T
 # Indexable cell Values
 
 abstract type IndexCellValue{T,N} <: AbstractArray{T,N} end
+# @santiagobadia : I think it should be a sub-type of AbstractArray{T,N}
+# since the arrays can have variable size at different cells
 
 function getindex(::IndexCellValue{T,N}, ::Int)::R where {T,N,R}
   @abstractmethod
@@ -32,12 +34,16 @@ end
 size(x::IndexCellValue) = @abstractmethod
 
 lastindex(x::IndexCellValue) = x[length(x)]
+# @santiagobadia : Not true if it is sub-typing AbsttractArray{T,N}
+
+IndexStyle(::IndexCellValue) = @abstractmethod
 
 # Cell Values
 
 const CellValue{T} = Union{IterCellValue{T},IndexCellValue{T}}
 
 cellsize(::CellValue) = ()
+# @santiagobadia : Does it have sense here?
 
 # Iterable cell Arrays
 
@@ -56,6 +62,8 @@ const IndexCellArray{T,N,A<:AbstractArray{T,N},D} = IndexCellValue{A,D}
 # Cell Arrays
 
 const CellArray{T,N} = Union{IterCellArray{T,N},IndexCellArray{T,N}}
+# @santiagobadia : Related to the previous comment, it is not valid to sub-type
+# CellArray{T,N}. Same for CellField and CellBasis
 
 const CellVector{T} = CellArray{T,1} where T
 

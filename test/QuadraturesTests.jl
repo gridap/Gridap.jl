@@ -5,6 +5,7 @@ using Test
 using Numa.FieldValues
 using Numa.Quadratures
 using Numa.Polytopes
+using Numa: coordinates, weights, quadrature
 
 const D = 2
 quad = TensorProductQuadrature(orders=(2,4))

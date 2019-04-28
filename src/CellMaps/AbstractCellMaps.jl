@@ -38,14 +38,6 @@ end
 # end
 
 """
-Abstract type that represents a cell-wise basis for a field space,
-where T is the type of value and D the dimension of the domain
-"""
-const IterCellBasis{D,T} = IterCellMap{Point{D},1,T,2} where {D,T<:FieldValue}
-const IndexCellBasis{D,T} = IndexCellMap{Point{D},1,T,2} where {D,T<:FieldValue}
-const CellBasis{D,T} = Union{IterCellBasis{D,T},IndexCellBasis{D,T}}
-
-"""
 Abstract type that represents a cell-wise field, where
 `T` stands for the type that represents the field at a point
 (e.g., scalar, vector, tensor) and `D` stands for the space
@@ -54,6 +46,14 @@ dimension
 const IterCellField{D,T} = IterCellMap{Point{D},1,T,1} where {D,T<:FieldValue}
 const IndexCellField{D,T,R} = IndexCellMap{Point{D},1,T,1,R} where {D,T<:FieldValue,R}
 const CellField{D,T} = Union{IterCellField{D,T},IndexCellField{D,T}}
+
+"""
+Abstract type that represents a cell-wise basis for a field space,
+where T is the type of value and D the dimension of the domain
+"""
+const IterCellBasis{D,T} = IterCellMap{Point{D},1,T,2} where {D,T<:FieldValue}
+const IndexCellBasis{D,T} = IndexCellMap{Point{D},1,T,2} where {D,T<:FieldValue}
+const CellBasis{D,T} = Union{IterCellBasis{D,T},IndexCellBasis{D,T}}
 
 """
 Abstract type representing a cellwise transformation between two geometrical

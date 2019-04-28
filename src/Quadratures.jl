@@ -12,9 +12,7 @@ using Numa.Polytopes
 
 export Quadrature
 export TensorProductQuadrature
-export coordinates
-export weights
-export quadrature
+import Numa: coordinates, weights, quadrature
 
 # Abstract types and interfaces
 

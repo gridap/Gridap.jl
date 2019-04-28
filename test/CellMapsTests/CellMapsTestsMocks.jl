@@ -1,4 +1,3 @@
-
 import Numa.CellValues: cellsize
 using Numa.CellValues: IndexCellArray
 
@@ -9,7 +8,7 @@ struct CellArrayMockup{T,N} <: IndexCellArray{T,N,Array{T,N},1}
   l::Int
 end
 
-function getindex(self::CellArrayMockup,cell::Int)
+function getindex(self::CellArrayMockup,cell::Vararg{Int,N} where N)
   @assert 1 <= cell
   @assert cell <= length(self)
   self.a
@@ -54,13 +53,13 @@ end
 tfv = CellFieldValuesMockup{TensorValue{2,4}}(tfva,l)
 tbv = CellBasisValuesMockup{TensorValue{2,4}}(tbva,l)
 
-import Numa.CellFunctions: evaluate
+import Numa: evaluate
+using Numa.CellMaps: IterCellField, IterCellBasis
 
-struct ScalarFieldMock <: CellField{2,Float64} end
+struct ScalarFieldMock <: IterCellField{2,Float64} end
 
 evaluate(::ScalarFieldMock,points::CellPoints{2}) = sfv
 
-struct ScalarBasisMock <: CellBasis{2,Float64} end
+struct ScalarBasisMock <: IterCellBasis{2,Float64} end
 
 evaluate(::ScalarBasisMock,points::CellPoints{2}) = sbv
-

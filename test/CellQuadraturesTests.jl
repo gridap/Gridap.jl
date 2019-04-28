@@ -8,6 +8,8 @@ using Numa.CellQuadratures
 using Numa.Geometry
 using Numa.Geometry.Cartesian
 
+using Numa: coordinates, weights, quadrature
+
 const D = 2
 
 p = Point{D}(1.0,1.1)
