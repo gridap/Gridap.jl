@@ -23,22 +23,22 @@ abstract type IndexCellValue{T,N} <: AbstractArray{T,N} end
 # @santiagobadia : I think it should be a sub-type of AbstractArray{T,N}
 # since the arrays can have variable size at different cells
 
-function getindex(::IndexCellValue{T,N}, ::Int)::R where {T,N,R}
-  @abstractmethod
-end
-
-# function getindex(::IndexCellValue{T,N}, ::Vararg{Int,D})::R where {T,N,R,D}
+# function getindex(::IndexCellValue{T,N}, ::Int)::T where {T,N}
   # @abstractmethod
 # end
+
+function getindex(::IndexCellValue{T,N}, ::Vararg{Int,N})::T where {T,N}
+  @abstractmethod
+end
 # @santiagobadia : If I uncomment this method concrete implementations with
 # IndexLinear do not work, because they get here (?)
 
 size(x::IndexCellValue) = @abstractmethod
 
-lastindex(x::IndexCellValue) = x[length(x)]
+# lastindex(x::IndexCellValue) = x[length(x)]
 # @santiagobadia : Not true if it is sub-typing AbsttractArray{T,N}
 
-IndexStyle(::IndexCellValue) = IndexLinear()
+IndexStyle(::Type{IndexCellValue{T,N}} where {T,N}) = IndexLinear()
 
 # Cell Values
 
@@ -59,7 +59,7 @@ const IndexCellArray{T,N,A<:AbstractArray{T,N},D} = IndexCellValue{A,D}
 
 # const IndexCellVector{T,A,D} = IndexCellArray{T,1,A,D}
 # @santiagobadia : I don't get why
-# IndexCellVector{T} <: IndexCellArray{T,1} not true????
+# IndexCellVector{T,A,D} <: IndexCellArray{T,1,A,D} not true????
 
 # Cell Arrays
 

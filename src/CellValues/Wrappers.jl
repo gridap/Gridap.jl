@@ -143,17 +143,8 @@ function CellVectorFromLocalToGlobal(lid_to_gid::IndexCellArray{Int,1},gid_to_va
   CellVectorFromLocalToGlobal(lid_to_gid,_gid_to_val)
 end
 
-@propagate_inbounds function getindex(self::CellVectorFromLocalToGlobal,cell::Int)
-  lid_to_gid = self.lid_to_gid[cell]
-  setsize!(self.cv,(length(lid_to_gid),))
-  for (lid,gid) in enumerate(lid_to_gid)
-    self.cv[lid] = self.gid_to_val[gid]
-  end
-  self.cv
-end
-
 @propagate_inbounds function getindex(self::CellVectorFromLocalToGlobal,cell::Vararg{Int,N} where N)
-  lid_to_gid = self.lid_to_gid[cell]
+  lid_to_gid = self.lid_to_gid[cell...]
   setsize!(self.cv,(length(lid_to_gid),))
   for (lid,gid) in enumerate(lid_to_gid)
     self.cv[lid] = self.gid_to_val[gid]

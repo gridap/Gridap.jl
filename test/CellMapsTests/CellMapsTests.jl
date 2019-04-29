@@ -38,43 +38,13 @@ l = 10
 include("CellMapsTestsMocks.jl")
 
 ##
-
-
-
-
-sfva = [1.0,2.3,3.1,3.2]
-sbva = [sfva'; sfva'; sfva']
-sfv = CellFieldValuesMockup{Float64}(sfva,l)
-typeof(sfv) <: AbstractArray{Array{Float64,1},1}
-typeof(sfv) <: AbstractArray{Float64,2}
-typeof(sfv) <: IndexCellArray{Float64,1,Array{Float64,1},1}
-typeof(sfv) <: IndexCellValue{Array{Float64,1},1}
-IndexStyle(sfv)
-
-size(sfv)
-length(sfv)
-typeof(sfv)
-print(sfv)
-getindex(sfv,1)
-firstindex(sfv)
-lastindex(sfv)
-sfv.a
-sfv.l
-sfv
-sfv[1]
-
-
-
-##
 grid = CartesianGrid(partition=(3,3),domain=(0,1,0,1))
 trian = triangulation(grid)
 meshcoords = cellcoordinates(trian)
-# @santiagobadia : Here I have a problem with Cartesian index to be analyzed
 quad = quadrature(trian,order=0)
 points = coordinates(quad)
-# @santiagobadia : Here I have a problem with Cartesian index to be analyzed
 phi = geomap(trian)
-# @santiagobadia : Here I have a problem with Cartesian index to be analyzed
+map, state = iterate(phi)
 
 @testset "InnerFieldValuesFieldValues" begin
 
@@ -254,82 +224,76 @@ end
 
 end
 
-# @testset "ConstantCellBasis" begin
-
 # include("PolynomialsTestsMocks.jl")
 
-l = 10
+@testset "ConstantCellBasis" begin
 
-refquad = TensorProductQuadrature(orders=(5,4))
-refpoints = coordinates(refquad)
+  l = 10
 
-quad = ConstantCellQuadrature(refquad,l)
-quad.coords
-quad.weights
+  refquad = TensorProductQuadrature(orders=(5,4))
+  refpoints = coordinates(refquad)
+  quad = ConstantCellQuadrature(refquad,l)
+  points = coordinates(quad)
+  polytope = Polytope(Polytopes.PointInt{2}(1,1))
+  reffe = LagrangianRefFE{2,ScalarValue}(polytope,[1,1])
+  refbasis = reffe.shfbasis
+  refvals = evaluate(refbasis,refpoints)
+  vals = ConstantCellMapValues(refbasis,points)
 
+  @test isa(vals,CellBasisValues{Float64})
 
-points = coordinates(quad)
+  for refvals2 in vals
+    @assert refvals2 == refvals
+  end
 
-# refbasis = ShapeFunctionsScalarQua4()
-polytope = Polytope(Polytopes.PointInt{2}(1,1))
-reffe = LagrangianRefFE{2,ScalarValue}(polytope,[1,1])
-refbasis = reffe.shfbasis
+  basis = ConstantCellMap(refbasis,l)
 
-refvals = evaluate(refbasis,refpoints)
+  @test isa(basis,CellBasis{2,Float64})
 
-vals = ConstantCellMapValues(refbasis,points)
+  vals = evaluate(basis,points)
 
-@test isa(vals,CellBasisValues{Float64})
+  @test isa(vals,CellBasisValues{Float64})
 
-for refvals2 in vals
-  @assert refvals2 == refvals
+  # @test isa(vals,ConstantCellArray{Float64,2})
+  @test isa(vals,CellArray{Float64,2})
+  # @santiagobadia: It is wrong, it cannot be constant, since points are just a CellArray
+
+  for refvals2 in vals
+    @assert refvals2 == refvals
+  end
+
+  vals = evaluate(basis,vfv)
+
+  @test isa(vals,CellBasisValues{Float64})
+
+  @test isa(vals,ConstantCellMapValues)
+
+  refbasisgrad = gradient(refbasis)
+
+  refvalsgrad = evaluate(refbasisgrad,refpoints)
+
+  basisgrad = gradient(basis)
+
+  valsgrad = evaluate(basisgrad,points)
+
+  @test isa(valsgrad,CellBasisValues{VectorValue{2}})
+
+  @test isa(valsgrad,CellArray{VectorValue{2},2})
+  # @santiagobadia : Idem as above
+
+  for refvalsgrad2 in valsgrad
+    @assert refvalsgrad2 == refvalsgrad
+  end
+
+  valsgrad = ConstantCellMapValues(refbasisgrad,points)
+
+  @test isa(valsgrad,CellBasisValues{VectorValue{2}})
+
+  for refvalsgrad2 in valsgrad
+    @assert refvalsgrad2 == refvalsgrad
+  end
+
 end
-
-basis = ConstantCellMap(refbasis)
-
-@test isa(basis,CellBasis{2,Float64})
-
-vals = evaluate(basis,points)
-
-@test isa(vals,CellBasisValues{Float64})
-
-@test isa(vals,ConstantCellArray{Float64,2})
-
-for refvals2 in vals
-  @assert refvals2 == refvals
-end
-
-vals = evaluate(basis,vfv)
-
-@test isa(vals,CellBasisValues{Float64})
-
-@test isa(vals,ConstantCellMapValues)
-
-refbasisgrad = gradient(refbasis)
-
-refvalsgrad = evaluate(refbasisgrad,refpoints)
-
-basisgrad = gradient(basis)
-
-valsgrad = evaluate(basisgrad,points)
-
-@test isa(valsgrad,CellBasisValues{VectorValue{2}})
-
-@test isa(valsgrad,ConstantCellArray{VectorValue{2},2})
-
-for refvalsgrad2 in valsgrad
-  @assert refvalsgrad2 == refvalsgrad
-end
-
-valsgrad = ConstantCellMapValues(refbasisgrad,points)
-
-@test isa(valsgrad,CellBasisValues{VectorValue{2}})
-
-for refvalsgrad2 in valsgrad
-  @assert refvalsgrad2 == refvalsgrad
-end
-
-# end
 
 @testset "CellBasisOps" begin
 
@@ -398,6 +362,7 @@ end
   @test isa(phi,CellField)
   @test isa(ufun,Function)
 
+  ufun
   cfield = compose(ufun,phi)
 
   @test isa(cfield,CellField{2,Float64})
@@ -468,7 +433,7 @@ end
 
   vals = evaluate(physbasis,points)
 
-  @test isa(vals,ConstantCellArray{Float64,2})
+  @test isa(vals,CellArray{Float64,2})
 
   physbasisgrad = gradient(physbasis)
 
@@ -488,189 +453,3 @@ end
 end
 
 end  # module CellFieldsTests
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-D=2
-nparts1d = 2
-nparts = nparts1d*ones(Int64,D)
-nparts_t = tuple(nparts...)
-grid = CartesianGrid(partition=nparts_t,domain=(0,1,0,1),order=1) # domain, and order are optional
-grid = UnstructuredGrid(grid)
-trian = triangulation(grid) # Generates the Triangulation associated with this grid
-# graph = gridgraph(grid)
-## # Generates the GridGraph associated with this grid.
-phi = geomap(trian)
-using Numa.CellMaps: CellFieldFromExpand
-typeof(phi) <: CellFieldFromExpand
-l = prod(nparts_t)
-refquad = TensorProductQuadrature(orders=(5,4))
-refpoints = coordinates(refquad)
-quad = ConstantCellQuadrature(refquad,l)
-quad
-p = coordinates(quad)
-x = evaluate(phi,p)
-##
-fun(x::Point{2}) = x[2]
-gradfun(x::Point{2}) = VectorValue(0.0, 1.0)
-gradient(::typeof(fun)) = gradfun
-f = AnalyticalField(fun,2)
-using Numa.Maps
-using Numa.CellMaps: ConstantCellMap
-@test typeof(f) <: Map{Point{D},1,Float64,1}
-ccm = ConstantCellMap(f,10)
-@test typeof(ccm[1]) <: AnalyticalField
-@test length(ccm) ==  10
-@test size(ccm) == (10,)
-res = evaluate(ccm,x)
-##
-AnalyticalField{2,Float64,typeof(fun)} <: Map{Point{D},1,Float64,1}
-isa(ccm,ConstantCellValue{AnalyticalField{2,Float64,typeof(fun)}})
-isa(ccm,ConstantCellMap{Point{D},1,Float64,1})
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#
-# l = 10
-#
-# refquad = TensorProductQuadrature(orders=(5,4))
-# refpoints = coordinates(refquad)
-#
-# quad = ConstantCellQuadrature(refquad,l)
-# points = coordinates(quad)
-#
-# polytope = Polytope(Polytopes.PointInt{2}(1,1))
-# reffe = LagrangianRefFE{2,ScalarValue}(polytope,[1,1])
-# refbasis = reffe.shfbasis
-#
-# refvals = evaluate(refbasis,refpoints)
-# ##
-# import Numa.CellMaps: IterConstantCellMapValues
-# vals = IterConstantCellMapValues(refbasis,points)
-# typeof(vals)
-# @test isa(vals,CellBasisValues)
-#
-# for refvals2 in vals
-#   @assert refvals2 == refvals
-# end
-#
-# basis = ConstantCellMap(refbasis, length(points))
-#
-# vals = evaluate(basis,points)
-#
-#
-# for refvals2 in vals
-#   @assert refvals2 == refvals
-# end
-#
-# refbasisgrad = gradient(refbasis)
-#
-# refvalsgrad = evaluate(refbasisgrad,refpoints)
-#
-# basisgrad = gradient(basis)
-#
-# valsgrad = evaluate(basisgrad,points)
-#
-# @test isa(valsgrad,CellBasisValues{VectorValue{2}})
-#
-#
-# for refvalsgrad2 in valsgrad
-#   @assert refvalsgrad2 == refvalsgrad
-# end
-#
-# valsgrad = IterConstantCellMapValues(refbasisgrad,points)
-#
-# @test isa(valsgrad,CellBasisValues{VectorValue{2}})
-#
-# for refvalsgrad2 in valsgrad
-#   @assert refvalsgrad2 == refvalsgrad
-# end
-# ##
-#
-#
-# @eval begin
-#
-#   ufun(x::Point{2}) = x[1]*x[2] + x[1]
-#
-#   gradufun(x::Point{2}) = VectorValue(x[2]+1.0,x[1])
-#
-#   gradient(::typeof(ufun)) = gradufun
-#
-# end
-#
-# @test isa(phi,CellField)
-# @test isa(ufun,Function)
-#
-# cfield = compose(ufun,phi)
-#
-# @test isa(cfield,CellField{2,Float64})
-#
-# cfieldgrad = gradient(cfield)
-#
-# @test isa(cfieldgrad,CellField{2,VectorValue{2}})
-#
-# uatx = evaluate(cfield,points)
-#
-# ugradatx = evaluate(cfieldgrad,points)
-#
-# x = evaluate(phi,points)
-#
-# for (ui,uigrad,xi) in zip(uatx,ugradatx,x)
-#   @assert ui == ufun.(xi)
-#   @assert uigrad == gradufun.(xi)
-# end

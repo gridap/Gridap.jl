@@ -280,3 +280,10 @@ function gradient(self::CellFieldFromComposeExtended)
   gradf = gradient(self.f)
   CellFieldFromComposeExtended(gradf,self.g,self.u)
 end
+
+
+
+# struct CellMapFromComposition{Q,O,A<:CellMap{S,M,Q,O},B<:CellMap{Q,O,T,N}) <: IterCellMap{S,M,T,N}
+#   a::A
+#   b::B
+# end

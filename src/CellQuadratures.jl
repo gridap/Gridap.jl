@@ -29,6 +29,8 @@ Abstract type representing a collection of quadratures, one for each cell
 """
 abstract type CellQuadrature{D} end
 
+# const CellQuadrature{D} = CellValue{Quadrature{D}}
+
 coordinates(::CellQuadrature{D} where D )::CellPoints{D} = @abstractmethod
 
 weights(::CellQuadrature)::CellValues{Float64} = @abstractmethod

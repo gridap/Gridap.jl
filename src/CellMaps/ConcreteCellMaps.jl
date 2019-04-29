@@ -20,7 +20,7 @@ Computes the gradient of a `ConstantCellMap`
 """
 function gradient(self::ConstantCellMap)
   gradfield = gradient(self.value)
-  ConstantCellMap(gradfield,self.num_cells)
+  ConstantCellMap(gradfield,self.length)
 end
 
 getindex(this::ConstantCellMap, i::Int) = this.value
