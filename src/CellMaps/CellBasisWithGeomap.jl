@@ -33,5 +33,3 @@ function gradient(self::CellBasisWithGeomap{D,0}) where D
   basisgrad = gradient(self.basis)
   CellBasisWithGeomap(basisgrad,self.geomap,1)
 end
-
-########## TO BE IMPLEMENTED
