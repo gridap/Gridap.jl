@@ -20,26 +20,14 @@ import Numa: quadrature
 
 # Abstract types and interfaces
 
-# @santiagobadia : I would create a JoinCellValues struc, and define this one as
-# sub-type with nothing but coordinates and weights methods... Do we really need
-# it?
-
 """
 Abstract type representing a collection of quadratures, one for each cell
 """
-# abstract type CellQuadrature{D} end
-
 const CellQuadrature{D} = CellValue{Quadrature{D}}
 
 coordinates(::CellQuadrature{D} where D )::CellPoints{D} = @abstractmethod
 
 weights(::CellQuadrature)::CellValues{Float64} = @abstractmethod
-
-# function zip(self::CellQuadrature)
-#   c = coordinates(self)
-#   w = weights(self)
-#   zip(c,w)
-# end
 
 # Factories
 
@@ -59,31 +47,9 @@ that all cells have the same quadrature
 const ConstantCellQuadrature{D} = ConstantCellValue{Quadrature{D}}
 
 ConstantCellQuadrature(quad::Quadrature{D}, l::Int) where D =  ConstantCellQuadrature{D}(quad, l)
-# struct ConstantCellQuadrature{D} <: CellQuadrature{D}
-#   coords::ConstantCellArray{Point{D},1}
-#   weights::ConstantCellArray{Float64,1}
-# end
 
-# function ConstantCellQuadrature(c::Array{Point{D},1},w::Array{Float64,1},l::Int) where D
-#   @assert length(c) == length(w)
-#   coords = ConstantCellValue(c,l)
-#   weights = ConstantCellValue(w,l)
-#   ConstantCellQuadrature{D}(coords,weights)
-#   # santiagobadia : Be careful here... without D it does not work because
-#   # ConstantCellValue not templatized by dim. Why did it work with
-#   # ConstantCellArray
-# end
-
-# function ConstantCellQuadrature(quad::Quadrature{D} where D,l::Int)
-#   c = coordinates(quad)
-#   w = weights(quad)
-#   ConstantCellQuadrature(c,w,l)
-# end
-
-# coordinates(self::ConstantCellQuadrature) = self.coords
 coordinates(self::ConstantCellQuadrature) = ConstantCellValue(coordinates(self.value), self.length)
 
-# weights(self::ConstantCellQuadrature) = self.weights
 weights(self::ConstantCellQuadrature) = ConstantCellValue(weights(self.value), self.length)
 
 # Helpers
