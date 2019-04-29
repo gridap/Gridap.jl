@@ -4,7 +4,7 @@ using Test
 using Numa
 using Numa.FieldValues
 using Numa.CellValues
-using Numa.CellFunctions
+using Numa.CellMaps
 using Numa.CellQuadratures
 using Numa.CellIntegration
 using Numa.Quadratures
@@ -22,27 +22,27 @@ trian = triangulation(grid)
 
 end
 
-@testset "Integrate" begin
+# @testset "Integrate" begin
 
-  basis = cellbasis(trian)
+# basis = cellbasis(trian)
+#
+# quad = quadrature(trian,order=2)
+#
+# mmat = integrate(inner(basis,basis),trian,quad)
+#
+# @test isa(mmat,CellArray{Float64,2})
+#
+# ufun(x::Point{2}) = 1.0
+#
+# cellvol = integrate(ufun,trian,quad)
+#
+# @test isa(cellvol,CellValue{Float64})
+#
+# for vi in cellvol
+#   @assert vi ≈ (2.0/3)^2
+# end
 
-  quad = quadrature(trian,order=2)
-
-  mmat = integrate(inner(basis,basis),trian,quad)
-
-  @test isa(mmat,CellArray{Float64,2})
-
-  ufun(x::Point{2}) = 1.0
-
-  cellvol = integrate(ufun,trian,quad)
-
-  @test isa(cellvol,CellValue{Float64})
-
-  for vi in cellvol
-    @assert vi ≈ (2.0/3)^2
-  end
-
-end
+# end
 
 @testset "Cellfield" begin
 
