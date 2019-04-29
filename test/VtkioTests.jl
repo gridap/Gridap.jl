@@ -1,17 +1,19 @@
 module VtkioTests
 
+##
 using Test
 using Numa
 using Numa.FieldValues
 using Numa.Quadratures
 using Numa.CellQuadratures
-using Numa.CellFunctions
+using Numa.CellMaps
 using Numa.CellValues
 using Numa.CellIntegration
 using Numa.Geometry
 using Numa.Geometry.Cartesian
 using Numa.Polytopes
 using Numa.Vtkio
+##
 
 @testset "VTKioGrid" begin
 
@@ -94,28 +96,28 @@ end
 
 end
 
-@testset "WritevtkForIntegrationMesh" begin
+# @testset "WritevtkForIntegrationMesh" begin
 
-  grid = CartesianGrid(partition=(3,3))
-  trian = triangulation(grid)
+# grid = CartesianGrid(partition=(3,3))
+# trian = triangulation(grid)
+#
+# ufun(x) = 3*x[2]*x[1]
+# u = cellfield(trian,ufun)
+#
+# vfun(x) = VectorValue(3*x[2]*x[1],2*x[2])
+# v = cellfield(trian,vfun)
+#
+# d = mktempdir()
+# f = joinpath(d,"trian")
+#
+# writevtk(trian,f)
+# writevtk(trian,f,nref=2,)
+# writevtk(trian,f,nref=2,celldata=["r"=>rand(9)])
+# writevtk(trian,f,nref=2,cellfields=["u"=>u,"v"=>v])
+# writevtk(trian,f,nref=2,celldata=["r"=>rand(9)],cellfields=["u"=>u,"v"=>v])
+#
+# rm(d,recursive=true)
 
-  ufun(x) = 3*x[2]*x[1]
-  u = cellfield(trian,ufun)
-
-  vfun(x) = VectorValue(3*x[2]*x[1],2*x[2])
-  v = cellfield(trian,vfun)
-
-  d = mktempdir()
-  f = joinpath(d,"trian")
-
-  writevtk(trian,f)
-  writevtk(trian,f,nref=2,)
-  writevtk(trian,f,nref=2,celldata=["r"=>rand(9)])
-  writevtk(trian,f,nref=2,cellfields=["u"=>u,"v"=>v])
-  writevtk(trian,f,nref=2,celldata=["r"=>rand(9)],cellfields=["u"=>u,"v"=>v])
-
-  rm(d,recursive=true)
-
-end
+# end
 
 end # module VtkioTests
