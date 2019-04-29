@@ -143,9 +143,6 @@ function iteratekernel(this::CellFieldFromExpand,bnext,cnext)
   (v, state)
 end
 
-# @santiagobadia : NOT IMPLEMENTED IN THE OTHER STRUCTS!!! I want to talk to
-# @fverdugo first
-
 function CellFieldFromExpand(basis::CellBasis{D,S},coeffs::CellVector{R}) where {D,S,R}
   T = Base._return_type(outer,Tuple{S,R})
   CellFieldFromExpand{D,S,R,T}(basis,coeffs)
@@ -281,8 +278,8 @@ function gradient(self::CellFieldFromComposeExtended)
   CellFieldFromComposeExtended(gradf,self.g,self.u)
 end
 
-
-
+# @santiagobadia: With the following structure + unary/binary operators we can
+# express CellFieldFromComposeExtended (after CellMapFromCompose)
 # struct CellMapFromComposition{Q,O,A<:CellMap{S,M,Q,O},B<:CellMap{Q,O,T,N}) <: IterCellMap{S,M,T,N}
 #   a::A
 #   b::B

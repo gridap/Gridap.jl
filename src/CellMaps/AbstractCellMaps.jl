@@ -31,12 +31,6 @@ function gradient(::CellMap{S,M,T,N})::CellMap{S,M,TG,N} where {S,M,T<:FieldValu
   @abstractmethod
 end
 
-# function Base.show(io::IO,self::CellMap)
-#   for (i, a) in enumerate(self)
-#     println(io,"$i -> $a")
-#   end
-# end
-
 """
 Abstract type that represents a cell-wise field, where
 `T` stands for the type that represents the field at a point

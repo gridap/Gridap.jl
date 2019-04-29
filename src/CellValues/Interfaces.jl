@@ -14,29 +14,15 @@ length(::IterCellValue)::Int = @abstractmethod
 
 eltype(::Type{C}) where C <: IterCellValue{T} where T = T
 
-# @santiagobadia : Check all the methods to be defined for abstract iterators
-# and arrays
-
 # Indexable cell Values
 
 abstract type IndexCellValue{T,N} <: AbstractArray{T,N} end
-# @santiagobadia : I think it should be a sub-type of AbstractArray{T,N}
-# since the arrays can have variable size at different cells
-
-# function getindex(::IndexCellValue{T,N}, ::Int)::T where {T,N}
-  # @abstractmethod
-# end
 
 function getindex(::IndexCellValue{T,N}, ::Vararg{Int,N})::T where {T,N}
   @abstractmethod
 end
-# @santiagobadia : If I uncomment this method concrete implementations with
-# IndexLinear do not work, because they get here (?)
 
 size(x::IndexCellValue) = @abstractmethod
-
-# lastindex(x::IndexCellValue) = x[length(x)]
-# @santiagobadia : Not true if it is sub-typing AbsttractArray{T,N}
 
 IndexStyle(::Type{IndexCellValue{T,N}} where {T,N}) = IndexLinear()
 
@@ -64,8 +50,6 @@ const IndexCellArray{T,N,A<:AbstractArray{T,N},D} = IndexCellValue{A,D}
 # Cell Arrays
 
 const CellArray{T,N} = Union{IterCellArray{T,N},IndexCellArray{T,N}}
-# @santiagobadia : Related to the previous comment, it is not valid to sub-type
-# CellArray{T,N}. Same for CellField and CellBasis
 
 const CellVector{T} = CellArray{T,1} where T
 

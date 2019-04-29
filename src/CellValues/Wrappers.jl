@@ -201,9 +201,6 @@ IndexStyle(::Type{CellVectorFromLocalToGlobalPosAndNeg{T,L,V}}) where {T,L,V} = 
 
 cellsize(self::CellVectorFromLocalToGlobalPosAndNeg) = cellsize(self.lid_to_gid)
 
-# @santiagobadia : I think that the following struct is very useful. E.g., to
-# create the local to global from the cell when gids are nface-based, the way
-# to go (I think).
 struct CellVectorByComposition{T,L<:IndexCellArray{Int,1},V<:IndexCellArray{T,1}} <: IndexCellArray{T,1,CachedArray{T,1,Array{T,1}},1}
   cell_to_x::L
   x_to_vals::V
