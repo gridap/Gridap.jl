@@ -27,16 +27,18 @@ function getindex(::IndexCellValue{T,N}, ::Int)::R where {T,N,R}
   @abstractmethod
 end
 
-function getindex(::IndexCellValue{T,N}, ::Vararg{Int,D})::R where {T,N,R,D}
-  @abstractmethod
-end
+# function getindex(::IndexCellValue{T,N}, ::Vararg{Int,D})::R where {T,N,R,D}
+  # @abstractmethod
+# end
+# @santiagobadia : If I uncomment this method concrete implementations with
+# IndexLinear do not work, because they get here (?)
 
 size(x::IndexCellValue) = @abstractmethod
 
 lastindex(x::IndexCellValue) = x[length(x)]
 # @santiagobadia : Not true if it is sub-typing AbsttractArray{T,N}
 
-IndexStyle(::IndexCellValue) = @abstractmethod
+IndexStyle(::IndexCellValue) = IndexLinear()
 
 # Cell Values
 

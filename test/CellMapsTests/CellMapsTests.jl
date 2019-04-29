@@ -36,6 +36,35 @@ using Numa.CellMaps: ConstantCellMapValues
 l = 10
 
 include("CellMapsTestsMocks.jl")
+
+##
+
+
+
+
+sfva = [1.0,2.3,3.1,3.2]
+sbva = [sfva'; sfva'; sfva']
+sfv = CellFieldValuesMockup{Float64}(sfva,l)
+typeof(sfv) <: AbstractArray{Array{Float64,1},1}
+typeof(sfv) <: AbstractArray{Float64,2}
+typeof(sfv) <: IndexCellArray{Float64,1,Array{Float64,1},1}
+typeof(sfv) <: IndexCellValue{Array{Float64,1},1}
+IndexStyle(sfv)
+
+size(sfv)
+length(sfv)
+typeof(sfv)
+print(sfv)
+getindex(sfv,1)
+firstindex(sfv)
+lastindex(sfv)
+sfv.a
+sfv.l
+sfv
+sfv[1]
+
+
+
 ##
 grid = CartesianGrid(partition=(3,3),domain=(0,1,0,1))
 trian = triangulation(grid)
@@ -238,15 +267,6 @@ quad = ConstantCellQuadrature(refquad,l)
 quad.coords
 quad.weights
 
-
-sfva = [1.0,2.3,3.1,3.2]
-sbva = [sfva'; sfva'; sfva']
-sfv = CellFieldValuesMockup{Float64}(sfva,l)
-sfv.a
-sfv.l
-sfv
-typeof(sfv)
-sfv[1]
 
 points = coordinates(quad)
 

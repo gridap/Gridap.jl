@@ -8,7 +8,7 @@ struct CellArrayMockup{T,N} <: IndexCellArray{T,N,Array{T,N},1}
   l::Int
 end
 
-function getindex(self::CellArrayMockup,cell::Vararg{Int,N} where N)
+function getindex(self::CellArrayMockup,cell::Int where N)
   @assert 1 <= cell
   @assert cell <= length(self)
   self.a
