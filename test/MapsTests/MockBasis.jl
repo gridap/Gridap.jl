@@ -8,8 +8,8 @@ function evaluate!(
   points::AbstractVector{Point{D}},
   v::AbstractArray{Point{D},2}) where {D}
   for j in 1:this.dim
-    for (i,pi) in enumerate(points)
-      v[j,i] = j*pi+this.val
+    for (i,qi) in enumerate(points)
+      v[j,i] = j*qi+this.val
     end
   end
 end

@@ -147,8 +147,8 @@ bas = MockBasis(a,3)
   gbas = gradient(bas)
   gres = evaluate(gbas,p)
   for j = 1:3
-    for (i,pi) in enumerate(p)
-      @test gres[j,i] == j*pi
+    for (i,qi) in enumerate(p)
+      @test gres[j,i] == j*qi
     end
   end
 end
@@ -160,7 +160,7 @@ using Numa.Maps: FieldFromExpand
   @test is_a_map(ffe)
   res = evaluate(ffe,p)
   r1 = evaluate(ffe.basis,p)
-  for i in 1:ffe.basis.dim
+  for i in 1:length(p)
     @test res[i] == sum(r1[:,i])
   end
 end
