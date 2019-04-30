@@ -19,7 +19,7 @@ function is_a_map(m::Map{S,M,T,N}) where {S,M,T,N}
   sa = tuple([0 for i in 1:M]...)
   sb = return_size(m,sa)
   a = zeros(S,sa)
-  b = Array{S,M}(undef,sb)
+  b = Array{T,N}(undef,sb)
   evaluate!(m,a,b)
   #gm = gradient(m)
   true
@@ -74,13 +74,12 @@ using Numa.Maps: MapFromBinaryOp
 @testset "BinaryOp" begin
   for op in (:+, :-, :inner, :outer)
     @eval begin
-      umap = MapFromBinaryOp($op,map1,map2)
+      umap = $op(map1,map2)
       @test is_a_map(umap)
       resu = evaluate(umap,p)
       for i in 1:length(p)
         @test resu[i] == $op(res1[i],res2[i])
       end
-      isa(umap,MapFromBinaryOp{typeof($op),MockMap{2}})
     end
   end
 end
@@ -112,6 +111,9 @@ using Numa.Maps: Geomap
 MockMap <: Geomap
 map = MockMap(a)
 geomap = MockMap(b)
+f(p::Point{2},u::Point{2}) = 2*p + 3*u
+gradf(p::Point{2},u::Point{2}) = VectorValue(2.0,2.0)
+gradient(::typeof(f)) = gradf
 @testset "ComposeExtended" begin
   using Numa.Maps: FieldFromComposeExtended
   cemap = FieldFromComposeExtended(f,geomap,map)

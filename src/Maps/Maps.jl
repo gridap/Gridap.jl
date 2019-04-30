@@ -4,6 +4,8 @@ using Numa.Helpers
 using Numa.FieldValues
 using Numa.CachedArrays
 
+using Base.Cartesian: @nloops, @nexprs, @nref
+
 export Map
 export Field
 export AnalyticalField

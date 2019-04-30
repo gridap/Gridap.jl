@@ -42,6 +42,7 @@ using Base.Cartesian: @nloops, @nexprs, @nref
 
 using Numa.Helpers
 using Numa.CachedArrays
+using Numa.Maps: newaxis_kernel!, newaxis_size
 
 import Base: iterate
 import Base: length
