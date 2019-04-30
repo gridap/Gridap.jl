@@ -4,7 +4,7 @@ using Numa.Quadratures
 using Numa.CellQuadratures
 # using Numa.CellIntegration
 # using Numa.CellValues
-using Numa.CellFunctions
+using Numa.CellMaps
 import Numa.CellIntegration: cellcoordinates, cellbasis
 
 using Numa.CellValues: IndexCellArray
@@ -41,13 +41,16 @@ phi = geomap(trian)
 order=1
 orders=order*ones(Int64,D)
 pol_array = celltypes(trian)
-pol_array[1]
-D
 extrusion = PointInt{D}(pol_array[1])
 polytope = Polytopes.Polytope(extrusion)
 reffe = LagrangianRefFE{D,ScalarValue}(polytope,orders)
 basis = reffe.shfbasis
-cellb = CellBasisFromSingleInterpolation(basis)
+cellb = ConstantCellValue(basis, )
+length(phi)
+length(phi.coeffs)
+typeof(phi)
+ncells(trian)
+
 quad = quadrature(trian,order=2)
 phi = geomap(trian)
 basis = cellbasis(trian)

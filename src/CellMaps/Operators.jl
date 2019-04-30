@@ -119,6 +119,7 @@ struct CellFieldFromExpand{D,S,R,T<:FieldValue} <: IterCellField{D,T}
   coeffs::CellVector{R}
 end
 
+length(this::CellFieldFromExpand) = length(this.basis)
 
 @inline function Base.iterate(this::CellFieldFromExpand{D,S,R,T}) where {D,S,R,T}
   bnext = iterate(this.basis)
@@ -185,6 +186,8 @@ struct CellFieldFromCompose{D,O,C<:CellField{D},T} <: IterCellField{D,T}
   op::O
 end
 
+length(this::CellFieldFromCompose) = length(this.a)
+
 @inline function Base.iterate(this::CellFieldFromCompose{D,O,C,T}) where {D,O,C,T}
   anext = iterate(this.a)
   iteratekernel(this,anext)
@@ -235,6 +238,8 @@ struct CellFieldFromComposeExtended{D,O,G<:CellGeomap{D},U<:CellField,T} <: Iter
   g::G
   u::U
 end
+
+length(this::CellFieldFromComposeExtended) = length(this.u)
 
 @inline function Base.iterate(this::CellFieldFromComposeExtended{D,O,G,U,T}) where {D,O,G,U,T}
   gnext = iterate(this.g)

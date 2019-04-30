@@ -43,6 +43,8 @@ struct IterConstantCellMapValues{S,M,T,N,A<:Map{S,M,T,N},B<:CellArray{S,M}} <: I
   cellpoints::B
 end
 
+length(this::IterConstantCellMapValues) = length(this.map)
+
 function cellsize(this::IterConstantCellMapValues)
   return_size(this.map, cellsize(this.cellpoints))
   # @notimplemented
