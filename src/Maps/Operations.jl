@@ -144,8 +144,11 @@ function computevals!(m::FieldFromExpand, a, v)
   lin_comb_kernel!(a,b,v)
 end
 
-function lin_comb_kernel!(a,b,v)
+function lin_comb_kernel!(a,b,v::AbstractArray{T}) where T
   ndofs, npoints = size(a)
+  for i in eachindex(v)
+    v[i] = zero(T)
+  end
   for j in 1:npoints
     for i in 1:ndofs
       v[j] += a[i,j]*b[i]
