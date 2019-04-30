@@ -12,6 +12,19 @@ import Numa.FieldValues: inner, outer
 
 include("MockMap.jl")
 
+"""
+Check whether all the queries of the Map interface have been defined
+"""
+function is_a_map(m::Map{S,M,T,N}) where {S,M,T,N}
+  sa = tuple([0 for i in 1:M]...)
+  sb = return_size(m,sa)
+  a = zeros(S,sa)
+  b = Array{S,M}(undef,sb)
+  evaluate!(m,a,b)
+  #gm = gradient(m)
+  true
+end
+
 a = Point{2}(10,10)
 b = Point{2}(15,20)
 p1 = Point{2}(1,1)
@@ -22,6 +35,7 @@ p = [p1,p2,p3]
 @testset "MockMap" begin
   length(p)
   map = MockMap(a)
+  @test is_a_map(map)
   res = evaluate(map,p)
   for i in 1:length(p)
     @test res[i] == a+p[i]
@@ -41,12 +55,12 @@ res = evaluate(mymap,p)
 @testset "UnaryOp" begin
   for op in (:+, :-)
     @eval begin
-      umap = MapFromUnaryOp($op,mymap)
+      umap = $op(mymap)
+      @test is_a_map(umap)
       res2 = evaluate(umap,p)
       for i in 1:length(p)
         @test res2[i] == $op(res[i])
       end
-      isa(umap,MapFromUnaryOp{typeof($op),MockMap{2}})
     end
   end
 end
@@ -61,6 +75,7 @@ using Numa.Maps: MapFromBinaryOp
   for op in (:+, :-, :inner, :outer)
     @eval begin
       umap = MapFromBinaryOp($op,map1,map2)
+      @test is_a_map(umap)
       resu = evaluate(umap,p)
       for i in 1:length(p)
         @test resu[i] == $op(res1[i],res2[i])
@@ -79,6 +94,7 @@ gradient(::typeof(f)) = gradf
   @test MockMap <: Field
   map = MockMap(a)
   umap = FieldFromCompose(f,map)
+  @test is_a_map(umap)
   res = evaluate(map,p)
   resu = evaluate(umap,p)
   for i in 1:length(p)
@@ -99,6 +115,7 @@ geomap = MockMap(b)
 @testset "ComposeExtended" begin
   using Numa.Maps: FieldFromComposeExtended
   cemap = FieldFromComposeExtended(f,geomap,map)
+  @test is_a_map(cemap)
   res = evaluate(cemap,p)
   for i in 1:length(p)
     res[i] == f(evaluate(map,evaluate(geomap,[p[i]]))...)
@@ -114,6 +131,7 @@ end
 include("MockBasis.jl")
 
 bas = MockBasis(a,3)
+@test is_a_map(bas)
 
 @testset "MockBasis" begin
   res = evaluate(bas,p)
@@ -137,6 +155,7 @@ using Numa.Maps: FieldFromExpand
 @testset "FieldFromExpand" begin
   coefs = [1.0,1.0,1.0]
   ffe = FieldFromExpand(bas,coefs)
+  @test is_a_map(ffe)
   res = evaluate(ffe,p)
   r1 = evaluate(ffe.basis,p)
   for i in 1:ffe.basis.dim

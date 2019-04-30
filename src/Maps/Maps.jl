@@ -2,6 +2,7 @@ module Maps
 
 using Numa.Helpers
 using Numa.FieldValues
+using Numa.CachedArrays
 
 export Map
 export Field

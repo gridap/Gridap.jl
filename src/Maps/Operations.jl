@@ -1,33 +1,103 @@
 # Unary operations
 
-
-"""
-Map generated from a `Map` and a unary operator
-"""
-struct MapFromUnaryOp{O,A,S,M,T,N} <: Map{S,M,T,N}
-  op::O
-  a::A
-end
-
 for op in (:+, :-)
   @eval begin
     function ($op)(a::Map)
-      MapFromUnaryOp($op,a)
+      MapFromBroadcastUnaryOp($op,a)
     end
   end
 end
 
-function MapFromUnaryOp(op::Function,a::Map{S,M,T,N}) where {S,M,T,N}
-  O = typeof(op)
-  A = typeof(a)
-  R = Base._return_type(op,Tuple{T})
-  MapFromUnaryOp{O,A,S,M,R,N}(op,a)
+"""
+Abstract type representing a Map resulting from a generic unary operation
+This includes, e.g., broadcasted operators, reductions, expansions, etc.
+"""
+abstract type MapFromUnaryOp{S,M,T,N} <: Map{S,M,T,N} end
+
+inputmap(::MapFromUnaryOp) = @abstractmethod
+
+computevals!(::MapFromUnaryOp, a, v) = @abstractmethod
+
+computesize(::MapFromUnaryOp, sa) = @abstractmethod
+
+cachedarray(::MapFromUnaryOp) = @abstractmethod
+
+function return_size(
+  self::MapFromUnaryOp{S,M}, s::NTuple{M,Int}) where {S,M}
+  ma = inputmap(self)
+  sa = return_size(ma,s)
+  computesize(self,sa)
 end
 
-function evaluate(self::MapFromUnaryOp{O,A,S,M,T,N},input::AbstractArray{S,M}) where {O,A,S,M,T,N}
-  avals = evaluate(self.a,input)
-  self.op(avals)
+function evaluate!(
+  self::MapFromUnaryOp{S,M,T,N},
+  points::AbstractArray{S,M}, v::AbstractArray{T,N}) where {S,M,T,N}
+  cache = cachedarray(self)
+  ma = inputmap(self)
+  sa = return_size(ma,size(points))
+  setsize!(cache,sa)
+  evaluate!(ma,points,cache)
+  computevals!(self,cache,v)
 end
+
+gradient(::MapFromUnaryOp) = @notimplemented
+
+"""
+Map generated from a `Map` and a unary operator in broadcasted form
+"""
+struct MapFromBroadcastUnaryOp{
+  O<:Function,S,M,T,N,U,A<:Map{S,M,U,N}} <: MapFromUnaryOp{S,M,T,N}
+  op::O
+  ma::A
+  cache::CachedArray{U,N,Array{U,N}}
+end
+
+function MapFromBroadcastUnaryOp(
+  op::Function, ma::Map{S,M,U,N}) where {S,M,U,N}
+  cache = CachedArray(U,N)
+  O = typeof(op)
+  A = typeof(ma)
+  T = Base._return_type(op,Tuple{U})
+  MapFromBroadcastUnaryOp{O,S,M,T,N,U,A}(op,ma,cache)
+end
+
+inputmap(self::MapFromBroadcastUnaryOp) = self.ma
+
+function computevals!(self::MapFromBroadcastUnaryOp, a, v)
+  v .= self.op.(a)
+end
+
+computesize(self::MapFromBroadcastUnaryOp, sa) = sa
+
+cachedarray(self::MapFromBroadcastUnaryOp) = self.cache
+
+#"""
+#Map generated from a `Map` and a unary operator
+#"""
+#struct MapFromUnaryOp{O,A,S,M,T,N} <: Map{S,M,T,N}
+#  op::O
+#  a::A
+#end
+#
+#for op in (:+, :-)
+#  @eval begin
+#    function ($op)(a::Map)
+#      MapFromUnaryOp($op,a)
+#    end
+#  end
+#end
+#
+#function MapFromUnaryOp(op::Function,a::Map{S,M,T,N}) where {S,M,T,N}
+#  O = typeof(op)
+#  A = typeof(a)
+#  R = Base._return_type(op,Tuple{T})
+#  MapFromUnaryOp{O,A,S,M,R,N}(op,a)
+#end
+#
+#function evaluate(self::MapFromUnaryOp{O,A,S,M,T,N},input::AbstractArray{S,M}) where {O,A,S,M,T,N}
+#  avals = evaluate(self.a,input)
+#  self.op(avals)
+#end
 
 # Binary operations
 
