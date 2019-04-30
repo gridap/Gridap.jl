@@ -4,23 +4,14 @@ end
 
 function evaluate!(
   this::MockMap{D},
-  points::AbstractArray{Point{D},1},
-  v::AbstractArray{Point{D},1}) where {D}
-  for (i,pi) in enumerate(points)
-    v[i] = pi+this.val
+  points::AbstractVector{Point{D}},
+  v::AbstractVector{Point{D}}) where {D}
+  for (i,qi) in enumerate(points)
+    v[i] = qi+this.val
   end
 end
 
-function evaluate(
-  this::MockMap{D},
-  points::AbstractArray{Point{D},1}) where {D}
-  v_size = return_size(this, size(points))
-  v = Array{Point{D},1}(undef, v_size)
-  evaluate!(this,points,v)
-  return v
-end
-
-return_size(::MockMap, p_size::NTuple{N,Int} where N) = p_size
+return_size(::MockMap, psize::Tuple{Int}) = psize
 
 function gradient(this::MockMap{D}) where D
   MockMap{D}(zeros(Point{D}))

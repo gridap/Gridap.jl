@@ -4,6 +4,7 @@ using Test
 # @testset "Numa.jl" begin
 @time @testset "Helpers" begin include("HelpersTests.jl") end
 @time @testset "FieldValues" begin include("FieldValuesTests.jl") end
+@time @testset "CachedArrays" begin include("CachedArraysTests.jl") end
 @time @testset "Maps" begin include("MapsTests/MapsTests.jl") end
 @time @testset "Quadratures" begin include("QuadraturesTests.jl") end
 @time @testset "Polynomials" begin include("PolynomialsTests.jl") end

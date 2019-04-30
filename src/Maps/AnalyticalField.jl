@@ -22,4 +22,5 @@ function gradient(this::AnalyticalField{D}) where D
   gradfun = gradient(this.fun)
   AnalyticalField(gradfun,D)
 end
-return_size(::AnalyticalField, p_size::Tuple{Vararg{Int64,N}} where N) = p_size
+
+return_size(::AnalyticalField, psize::Tuple{Int}) = psize
