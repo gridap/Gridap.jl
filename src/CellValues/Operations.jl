@@ -218,22 +218,12 @@ end
 
 inputcellarray(self::CellArrayFromCellNewAxis) = self.a
 
-@generated function computesize(self::CellArrayFromCellNewAxis{A},asize::NTuple{M,Int}) where {A,M}
-  @assert A <= M+1
-  str = ["asize[$i]," for i in 1:M]
-  insert!(str,A,"1,")
-  Meta.parse("($(join(str)))")
+function computesize(self::CellArrayFromCellNewAxis{A},asize::NTuple{M,Int}) where {A,M}
+  newaxis_size(Val(A),asize)
 end
 
-@generated function computevals!(::CellArrayFromCellNewAxis{D}, A::AbstractArray{T,M}, B::AbstractArray{T,N}) where {D,T,M,N}
-  @assert N == M + 1
-  @assert D <= N
-  quote
-    @nloops $M a A begin
-      @nexprs $N j->(b_j = j == $D ? 1 : a_{ j < $D ? j : j-1 } )
-      (@nref $N B b) = @nref $M A a
-    end
-  end
+function computevals!(::CellArrayFromCellNewAxis{D}, A::AbstractArray{T,M}, B::AbstractArray{T,N}) where {D,T,M,N}
+  newaxis_kernel!(Val(D),A,B)
 end
 
 struct CellValueFromCellArrayReduce{T,O<:Function,C<:CellArray} <: IterCellValue{T}

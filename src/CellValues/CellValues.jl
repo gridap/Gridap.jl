@@ -41,6 +41,8 @@ using Base: @propagate_inbounds
 using Base.Cartesian: @nloops, @nexprs, @nref
 
 using Numa.Helpers
+using Numa.CachedArrays
+using Numa.Maps: newaxis_kernel!, newaxis_size
 
 import Base: iterate
 import Base: length
@@ -56,7 +58,6 @@ import Numa: flatten
 import Numa.FieldValues: inner, outer, meas
 
 include("Helpers.jl")
-include("CachedArray.jl")
 include("Interfaces.jl")
 include("Operations.jl")
 include("ConstantCellValues.jl")

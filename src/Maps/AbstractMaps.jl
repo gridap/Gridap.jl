@@ -40,6 +40,14 @@ function gradient(
 end
 
 """
+Return dimension of the output array
+"""
+function return_size(
+  ::Map{S,M,T,N},::NTuple{M,Int})::NTuple{N,Int} where {S,M,T,N}
+  @abstractmethod
+end
+
+"""
 Same as `evaluate!` but allocates output
 """
 function evaluate(
@@ -51,7 +59,3 @@ function evaluate(
   return v
 end
 
-"""
-Return dimension of the output array
-"""
-return_size(::Map,::NTuple{N,Int} where N)::Tuple = @abstractmethod

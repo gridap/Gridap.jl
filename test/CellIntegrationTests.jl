@@ -32,7 +32,7 @@ end
 
  mmat = integrate(m,trian,quad)
 
- # TODO this one still does not work
+ # TODO Not passing
  #@test isa(mmat,CellArray{Float64,2})
 
  ufun(x::Point{2}) = 1.0
