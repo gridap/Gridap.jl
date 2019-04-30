@@ -57,20 +57,45 @@ for op in (:+,:-,:*,:/,:(outer),:(inner))
   @eval begin
     function ($op)(a::ConstantCellValue,b::ConstantCellValue)
       @assert length(a) == length(b)
-      c = broadcast($op,celldata(a),celldata(b))
+      c = _bin_op_kernel($op,celldata(a),celldata(b))
       ConstantCellValue(c,length(a))
     end
   end
 
+end
+
+function _bin_op_kernel(op,a,b)
+  op(a,b)
+end
+
+function _bin_op_kernel(op,a::AbstractArray,b::AbstractArray)
+  broadcast(op,a,b)
+end
+
+function _bin_op_kernel(op,a,b::AbstractArray)
+  broadcast(op,a,b)
+end
+
+function _bin_op_kernel(op,a::AbstractArray,b)
+  broadcast(op,a,b)
 end
 
 for op in (:+,:-,:(det),:(inv),:(meas))
 
   @eval begin
     function ($op)(a::ConstantCellValue)
-      c = broadcast($op,celldata(a))
+      c = _unary_op_kernel($op,celldata(a))
       ConstantCellValue(c,length(a))
     end
   end
 
 end
+
+function _unary_op_kernel(op,a)
+  op(a)
+end
+
+function _unary_op_kernel(op,a::AbstractArray)
+  broadcast(op,a)
+end
+

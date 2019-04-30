@@ -22,27 +22,30 @@ trian = triangulation(grid)
 
 end
 
-# @testset "Integrate" begin
+ @testset "Integrate" begin
 
-# basis = cellbasis(trian)
-#
-# quad = quadrature(trian,order=2)
-#
-# mmat = integrate(inner(basis,basis),trian,quad)
-#
-# @test isa(mmat,CellArray{Float64,2})
-#
-# ufun(x::Point{2}) = 1.0
-#
-# cellvol = integrate(ufun,trian,quad)
-#
-# @test isa(cellvol,CellValue{Float64})
-#
-# for vi in cellvol
-#   @assert vi ≈ (2.0/3)^2
-# end
+ basis = cellbasis(trian)
 
-# end
+ quad = quadrature(trian,order=2)
+
+ m = inner(basis,basis)
+
+ mmat = integrate(m,trian,quad)
+
+ # TODO this one still does not work
+ #@test isa(mmat,CellArray{Float64,2})
+
+ ufun(x::Point{2}) = 1.0
+
+ cellvol = integrate(ufun,trian,quad)
+
+ @test isa(cellvol,CellValue{Float64})
+
+ for vi in cellvol
+   @assert vi ≈ (2.0/3)^2
+ end
+
+ end
 
 @testset "Cellfield" begin
 
