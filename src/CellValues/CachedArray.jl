@@ -12,8 +12,12 @@ CachedArray(a::AbstractArray) = CachedArray(a,size(a))
 size(self::CachedArray) = self.size
 
 function setsize!(self::CachedArray{T,N},s::NTuple{N,Int}) where {T,N}
-  @assert s <= size(self.array)
-  self.size = s
+  if s <= size(self.array)
+    self.size = s
+  else
+    self.array = Array{T,N}(undef,s)
+    self.size = s
+  end
 end
 
 @propagate_inbounds function getindex(self::CachedArray{T,N}, kj::Vararg{Integer,N}) where {T,N}
