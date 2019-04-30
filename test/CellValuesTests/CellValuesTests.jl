@@ -8,7 +8,6 @@ using Numa.FieldValues
 using Numa.CellValues
 
 include("Mocks.jl")
-include("CachedArraysTests.jl")
 include("OperationsTests.jl")
 include("ConstantCellValuesTests.jl")
 include("WrappersTests.jl")

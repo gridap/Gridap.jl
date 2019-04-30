@@ -1,3 +1,14 @@
+module CachedArrays
+
+using Base: @propagate_inbounds
+
+import Base: size
+import Base: getindex, setindex!
+
+export CachedArray
+export CachedMatrix
+export CachedVector
+export setsize!
 
 mutable struct CachedArray{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
   array::A
@@ -8,6 +19,12 @@ const CachedMatrix{T,A} = CachedArray{T,2,A}
 const CachedVector{T,A} = CachedArray{T,1,A}
 
 CachedArray(a::AbstractArray) = CachedArray(a,size(a))
+
+function CachedArray(T,N)
+  s = tuple([0 for i in 1:N]...)
+  a = Array{T,N}(undef,s)
+  CachedArray(a)
+end
 
 size(self::CachedArray) = self.size
 
@@ -28,3 +45,5 @@ end
     @inbounds B.array[kj...] = v
     v
 end
+
+end # module CachedArrays
