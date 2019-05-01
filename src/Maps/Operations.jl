@@ -151,7 +151,7 @@ function lin_comb_kernel!(a,b,v::AbstractArray{T}) where T
   end
   for j in 1:npoints
     for i in 1:ndofs
-      v[j] += a[i,j]*b[i]
+      v[j] += outer(a[i,j],b[i])
     end
   end
 end
