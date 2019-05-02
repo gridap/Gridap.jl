@@ -285,6 +285,7 @@ veftocells(self::GridGraphFromData) = self.veftocells
 
 # Submodules
 
+include("Wrappers.jl")
 include("Cartesian.jl")
 include("Unstructured.jl")
 

@@ -3,6 +3,7 @@ module Cartesian
 # Dependencies of this module
 
 using StaticArrays: SVector, MVector, @SVector
+using UnstructuredGrids: generate_dual_connections
 using Numa.Helpers
 using Numa.FieldValues
 using Numa.Polytopes
@@ -44,6 +45,9 @@ function gridgraph(self::CartesianGrid)
   nparts = [i for i in self.dim_to_ncells]
   mesh = StructHexMesh(nparts)
   GridGraphFromData(mesh.cellvefs,mesh.vefcells)
+end
+
+struct CartesianDiscreteModel
 end
 
 # Helpers
