@@ -200,8 +200,6 @@ end
 
 size(self::CellVectorFromLocalToGlobalPosAndNeg) = size(self.lid_to_gid)
 
-IndexStyle(::Type{CellVectorFromLocalToGlobalPosAndNeg{T,L,V}}) where {T,L,V} = IndexLinear()
-
 cellsize(self::CellVectorFromLocalToGlobalPosAndNeg) = cellsize(self.lid_to_gid)
 
 struct CellVectorByComposition{T,L<:IndexCellArray{Int,1},V<:IndexCellArray{T,1}} <: IndexCellArray{T,1,CachedArray{T,1,Array{T,1}},1}
