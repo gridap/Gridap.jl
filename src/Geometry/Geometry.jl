@@ -27,6 +27,9 @@ export geomap
 export cellcoordinates
 export cellbasis
 export ncells
+export NFacesLabels
+export nface_to_geolabel
+export geolabels
 
 """
 Minimal interface for a mesh used for numerical integration
@@ -144,6 +147,36 @@ veftocells(::GridGraph)::IndexCellArray{Int,1} = @abstractmethod
 Extracts the grid graph of the given grid
 """
 gridgraph(::Grid)::GridGraph = @notimplemented
+
+"""
+Classification of nfaces into geometrical and physical labels
+D dimension of the space, N = D+1
+"""
+struct NFacesLabels{D,N,V<:NTuple{N,<:AbstractVector{Int}}}
+  dim_to_nface_to_geolabel::V
+  physlabel_to_geolabels::Vector{Vector{Int}}
+end
+
+function NFacesLabels(
+  dim_to_nface_to_geolabel::NTuple{N,<:AbstractVector{Int}},
+  physlabel_to_geolabels::Vector{Vector{Int}}) where N
+  D = N-1
+  V = typeof(dim_to_nface_to_geolabel)
+  NFacesLabels{D,N,V}(
+    dim_to_nface_to_geolabel,
+    physlabel_to_geolabels)
+end
+
+"""
+Returns an AbstractVector{Int} that represent the geolabel for
+each nface of dimension dim
+"""
+nface_to_geolabel(l::NFacesLabels,dim::Integer) = l.dim_to_nface_to_geolabel[dim+1]
+
+"""
+Returns a Vector{Int} with the goelabels associated with a given physlabel
+"""
+geolabels(l::NFacesLabels,physlabel::Integer) = l.physlabel_to_geolabels[physlabel]
 
 
 struct GridGraphFromData{C<:IndexCellArray{Int,1},V<:IndexCellArray{Int,1}} <: GridGraph

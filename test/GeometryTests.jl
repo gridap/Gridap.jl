@@ -113,4 +113,23 @@ end
 
 end
 
+@testset "NFacesLabels" begin
+
+vertex_to_geolabel = [1,1,2,2,2,1,1,3,3]
+edge_to_geolabel = [4,4,5,5,5,5,6,6,4]
+physlabel_1 = [1,3,4]
+physlabel_2 = [5,3,6,2]
+
+nfacelabels = NFacesLabels(
+  (vertex_to_geolabel, edge_to_geolabel),
+  [physlabel_1, physlabel_2])
+
+@test isa(nfacelabels,NFacesLabels{1})
+@test nface_to_geolabel(nfacelabels,0) == vertex_to_geolabel
+@test nface_to_geolabel(nfacelabels,1) == edge_to_geolabel
+@test geolabels(nfacelabels,1) == physlabel_1
+@test geolabels(nfacelabels,2) == physlabel_2
+
+end
+
 end # module GeometryTests
