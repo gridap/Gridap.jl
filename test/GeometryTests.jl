@@ -115,20 +115,40 @@ end
 
 @testset "NFacesLabels" begin
 
-vertex_to_geolabel = [1,1,2,2,2,1,1,3,3]
-edge_to_geolabel = [4,4,5,5,5,5,6,6,4]
-physlabel_1 = [1,3,4]
-physlabel_2 = [5,3,6,2]
+  vertex_to_geolabel = [1,1,2,2,2,1,1,3,3]
+  edge_to_geolabel = [4,4,5,5,5,5,6,6,4]
+  physlabel_1 = [1,3,4]
+  physlabel_2 = [5,3,6,2]
+  
+  nfacelabels = NFacesLabels(
+    (vertex_to_geolabel, edge_to_geolabel),
+    [physlabel_1, physlabel_2])
+  
+  @test isa(nfacelabels,NFacesLabels{1})
+  @test nfacegeolabel(nfacelabels,0) == vertex_to_geolabel
+  @test nfacegeolabel(nfacelabels,1) == edge_to_geolabel
+  @test geolabels(nfacelabels,1) == physlabel_1
+  @test geolabels(nfacelabels,2) == physlabel_2
 
-nfacelabels = NFacesLabels(
-  (vertex_to_geolabel, edge_to_geolabel),
-  [physlabel_1, physlabel_2])
+end
 
-@test isa(nfacelabels,NFacesLabels{1})
-@test nface_to_geolabel(nfacelabels,0) == vertex_to_geolabel
-@test nface_to_geolabel(nfacelabels,1) == edge_to_geolabel
-@test geolabels(nfacelabels,1) == physlabel_1
-@test geolabels(nfacelabels,2) == physlabel_2
+@testset "GridGraph" begin
+
+  # Dummy data. Not related with an actual grid
+  cell_to_vertices = CellArrayFromArrayOfArrays([[1,2,4,2], [2,3,1,3]])
+  cell_to_edges = CellArrayFromArrayOfArrays([[1,2,3,4], [4,1,2,3]])
+  vertex_to_cells = CellArrayFromArrayOfArrays([[1,2],[2],[1],[1]])
+  edge_to_cells = CellArrayFromArrayOfArrays([[1],[1,2],[2,1],[2]])
+
+  graph = NewGridGraph(
+    (cell_to_vertices, cell_to_edges),
+    (vertex_to_cells, edge_to_cells))
+
+  @test isa(graph,NewGridGraph{1})
+  @test cellvefs(graph,0) == cell_to_vertices
+  @test cellvefs(graph,1) == cell_to_edges
+  @test vefcells(graph,0) == vertex_to_cells
+  @test vefcells(graph,1) == edge_to_cells
 
 end
 

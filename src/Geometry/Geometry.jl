@@ -28,8 +28,11 @@ export cellcoordinates
 export cellbasis
 export ncells
 export NFacesLabels
-export nface_to_geolabel
+export nfacegeolabel
 export geolabels
+export NewGridGraph
+export cellvefs
+export vefcells
 
 """
 Minimal interface for a mesh used for numerical integration
@@ -152,13 +155,22 @@ gridgraph(::Grid)::GridGraph = @notimplemented
 Classification of nfaces into geometrical and physical labels
 D dimension of the space, N = D+1
 """
-struct NFacesLabels{D,N,V<:NTuple{N,<:AbstractVector{Int}}}
+struct NFacesLabels{D,N,V<:NTuple{N,<:IndexCellValue{Int}}}
   dim_to_nface_to_geolabel::V
   physlabel_to_geolabels::Vector{Vector{Int}}
 end
 
 function NFacesLabels(
   dim_to_nface_to_geolabel::NTuple{N,<:AbstractVector{Int}},
+  physlabel_to_geolabels::Vector{Vector{Int}}) where N
+  cv = tuple( [ CellValueFromArray(v) for v in dim_to_nface_to_geolabel ]...)
+  NFacesLabels(
+    cv,
+    physlabel_to_geolabels)
+end
+
+function NFacesLabels(
+  dim_to_nface_to_geolabel::NTuple{N,<:IndexCellValue{Int}},
   physlabel_to_geolabels::Vector{Vector{Int}}) where N
   D = N-1
   V = typeof(dim_to_nface_to_geolabel)
@@ -171,13 +183,36 @@ end
 Returns an AbstractVector{Int} that represent the geolabel for
 each nface of dimension dim
 """
-nface_to_geolabel(l::NFacesLabels,dim::Integer) = l.dim_to_nface_to_geolabel[dim+1]
+nfacegeolabel(l::NFacesLabels,dim::Integer) = l.dim_to_nface_to_geolabel[dim+1]
 
 """
 Returns a Vector{Int} with the goelabels associated with a given physlabel
 """
 geolabels(l::NFacesLabels,physlabel::Integer) = l.physlabel_to_geolabels[physlabel]
 
+struct NewGridGraph{
+  D,
+  N,
+  C<:NTuple{N,<:IndexCellArray{Int,1}},
+  V<:NTuple{N,<:IndexCellArray{Int,1}}} <: GridGraph
+  dim_to_cell_to_vefs::C
+  dim_to_vefs_to_cells::V
+end
+
+function NewGridGraph(
+  dim_to_cell_to_vefs::NTuple{N,<:IndexCellArray{Int,1}},
+  dim_to_vefs_to_cells::NTuple{N,<:IndexCellArray{Int,1}}) where N
+  D = N-1
+  C = typeof(dim_to_cell_to_vefs)
+  V = typeof(dim_to_vefs_to_cells)
+  NewGridGraph{D,N,C,V}(
+    dim_to_cell_to_vefs,
+    dim_to_vefs_to_cells)
+end
+
+cellvefs(graph::NewGridGraph,dim::Integer) = graph.dim_to_cell_to_vefs[dim+1]
+
+vefcells(graph::NewGridGraph,dim::Integer) = graph.dim_to_vefs_to_cells[dim+1]
 
 struct GridGraphFromData{C<:IndexCellArray{Int,1},V<:IndexCellArray{Int,1}} <: GridGraph
   celltovefs::C
