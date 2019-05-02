@@ -151,6 +151,7 @@ Extracts the grid graph of the given grid
 """
 gridgraph(::Grid)::GridGraph = @notimplemented
 
+#@fverdugo Do we need an abstract one?
 """
 Classification of nfaces into geometrical and physical labels
 D dimension of the space, N = D+1
@@ -190,6 +191,7 @@ Returns a Vector{Int} with the goelabels associated with a given physlabel
 """
 geolabels(l::NFacesLabels,physlabel::Integer) = l.physlabel_to_geolabels[physlabel]
 
+#@fverdugo Do we need an abstract one?
 struct NewGridGraph{
   D,
   N,
@@ -214,6 +216,47 @@ cellvefs(graph::NewGridGraph,dim::Integer) = graph.dim_to_cell_to_vefs[dim+1]
 
 vefcells(graph::NewGridGraph,dim::Integer) = graph.dim_to_vefs_to_cells[dim+1]
 
+"""
+D is number of components of the points in the model
+"""
+abstract type DiscreteModel{D} end
+
+"""
+extracts the Grid{D,Z} from the Model
+"""
+function grid(::DiscreteModel{D},::Val{Z})::Grid{D,Z} where {D,Z}
+  @abstractmethod
+end
+
+"""
+Extracts the gridgraph for the grid made of nfaces of dim Z
+"""
+function gridgraph(::DiscreteModel,::Val{Z})::GridGraph{Z} where Z
+  @abstractmethod
+end
+
+"""
+Extracts the NFacesLabels object providing information
+about the geometrical and physical labels of all the
+nfaces in the model
+"""
+function nfacelabels(::DiscreteModel{D})::NFacesLabels{D} where D
+  @abstractmethod
+end
+
+"""
+Provides a vector containing the labels of the geometrical entities
+that touch the boundary
+"""
+function boundarylabels(::DiscreteModel)::Vector{Int}
+  @abstractmethod
+end
+
+grid(m::DiscreteModel,dim::Integer) = grid(m,Val(dim)) 
+
+gridgraph(m::DiscreteModel,dim::Integer) = gridgraph(m,Val(dim))
+
+#@fverdugo to be deleted together with (old) GridGraph
 struct GridGraphFromData{C<:IndexCellArray{Int,1},V<:IndexCellArray{Int,1}} <: GridGraph
   celltovefs::C
   veftocells::V
