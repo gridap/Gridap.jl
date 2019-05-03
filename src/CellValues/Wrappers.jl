@@ -124,21 +124,26 @@ function cellsize(self::CellVectorFromDataAndStride)
   (self.stride,)
 end
 
-struct CellVectorFromLocalToGlobal{T,L<:IndexCellArray{Int,1},V<:IndexCellValue{T}} <: IndexCellArray{T,1,CachedArray{T,1,Array{T,1}},1}
+struct CellVectorFromLocalToGlobal{
+  T,D,L<:IndexCellArray{Int,1},V<:IndexCellValue{T}} <: IndexCellArray{T,1,CachedArray{T,1,Array{T,1}},D}
   lid_to_gid::L
   gid_to_val::V
   cv::CachedArray{T,1,Array{T,1}}
 end
 
-function CellVectorFromLocalToGlobal(lid_to_gid::IndexCellArray{Int,1}, gid_to_val::IndexCellValue{T}) where T
+function CellVectorFromLocalToGlobal(
+  lid_to_gid::IndexCellArray{Int,1,A,D},
+  gid_to_val::IndexCellValue{T}) where {T,A,D}
   L = typeof(lid_to_gid)
   V = typeof(gid_to_val)
   a = Vector{T}(undef,(celllength(lid_to_gid),))
   cv = CachedArray(a,size(a))
-  CellVectorFromLocalToGlobal{T,L,V}(lid_to_gid,gid_to_val,cv)
+  CellVectorFromLocalToGlobal{T,D,L,V}(lid_to_gid,gid_to_val,cv)
 end
 
-function CellVectorFromLocalToGlobal(lid_to_gid::IndexCellArray{Int,1},gid_to_val::AbstractArray{T,N}) where {T,N}
+function CellVectorFromLocalToGlobal(
+  lid_to_gid::IndexCellArray{Int,1,A,D},
+  gid_to_val::AbstractArray{T}) where {T,A,D}
   _gid_to_val = CellValueFromArray(gid_to_val)
   CellVectorFromLocalToGlobal(lid_to_gid,_gid_to_val)
 end
@@ -158,23 +163,30 @@ IndexStyle(::Type{CellVectorFromLocalToGlobal{T,L,V}}) where {T,L,V} = IndexStyl
 
 cellsize(self::CellVectorFromLocalToGlobal) = cellsize(self.lid_to_gid)
 
-struct CellVectorFromLocalToGlobalPosAndNeg{T,L<:IndexCellArray{Int,1},V<:IndexCellValue{T},W<:IndexCellValue{T}} <: IndexCellArray{T,1,CachedArray{T,1,Array{T,1}},1}
+struct CellVectorFromLocalToGlobalPosAndNeg{
+  T,D,L<:IndexCellArray{Int,1},V<:IndexCellValue{T},W<:IndexCellValue{T}} <: IndexCellArray{T,1,CachedArray{T,1,Array{T,1}},D}
   lid_to_gid::L
   gid_to_val_pos::V
   gid_to_val_neg::W
   cv::CachedArray{T,1,Array{T,1}}
 end
 
-function CellVectorFromLocalToGlobalPosAndNeg(lid_to_gid::IndexCellArray{Int,1}, gid_to_val_pos::IndexCellValue{T}, gid_to_val_neg::IndexCellValue{T}) where T
+function CellVectorFromLocalToGlobalPosAndNeg(
+  lid_to_gid::IndexCellArray{Int,1,A,D},
+  gid_to_val_pos::IndexCellValue{T},
+  gid_to_val_neg::IndexCellValue{T}) where {T,A,D}
   L = typeof(lid_to_gid)
   V = typeof(gid_to_val_pos)
   W = typeof(gid_to_val_neg)
   a = Vector{T}(undef,(celllength(lid_to_gid),))
   cv = CachedArray(a,size(a))
-  CellVectorFromLocalToGlobalPosAndNeg{T,L,V,W}(lid_to_gid,gid_to_val_pos,gid_to_val_neg,cv)
+  CellVectorFromLocalToGlobalPosAndNeg{T,D,L,V,W}(lid_to_gid,gid_to_val_pos,gid_to_val_neg,cv)
 end
 
-function CellVectorFromLocalToGlobalPosAndNeg(lid_to_gid::IndexCellArray{Int,1},gid_to_val_pos::AbstractArray{T,N}, gid_to_val_neg::AbstractArray{T,N}) where {T,N}
+function CellVectorFromLocalToGlobalPosAndNeg(
+  lid_to_gid::IndexCellArray{Int,1,A,D},
+  gid_to_val_pos::AbstractArray{T},
+  gid_to_val_neg::AbstractArray{T}) where {T,A,D}
   _gid_to_val_pos = CellValueFromArray(gid_to_val_pos)
   _gid_to_val_neg = CellValueFromArray(gid_to_val_neg)
   CellVectorFromLocalToGlobalPosAndNeg(lid_to_gid,_gid_to_val_pos,_gid_to_val_neg)

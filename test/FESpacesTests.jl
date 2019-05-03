@@ -18,6 +18,9 @@ using Numa.Meshes
 
 using Numa.CellValues: CellVectorByComposition
 
+using Numa.CellMaps
+
+using Numa.Geometry
 using Numa.Geometry.Cartesian
 
 
@@ -44,13 +47,14 @@ expand(basis,coords)
 # but when I iterate, it does not work... The iterate for a AbstractArray is
 # in Julia...
 
-size(coords)
-IndexStyle(coords)
-coords.lid_to_gid
-coords.gid_to_val
-coords.cv
-length(coords)
-isa(coords, AbstractArray)
+@show size(coords)
+@show typeof(coords)
+@show IndexStyle(coords)
+@show coords.lid_to_gid
+@show coords.gid_to_val
+@show coords.cv
+@show length(coords)
+@show isa(coords, AbstractArray)
 @show coords
 
 for a in coords
