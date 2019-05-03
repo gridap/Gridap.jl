@@ -14,6 +14,7 @@ using Numa.Geometry
 using SparseArrays
 
 using Numa.CellValues: CellVectorByComposition
+using Numa.CellMaps
 using Numa.CellMaps: CellFieldFromExpand
 
 # Abstract types and interfaces
@@ -23,14 +24,6 @@ Abstract FE Space parameterized with respec to the environment dimension `D`,
 the cell dimension `Z`, and the field type `T` (rank) and the number type `E`
 """
 abstract type FESpace{D,Z,T,E} end
-
-# function globaldofs(::RefFE, cellvefs, vefcells)::CellVector{Int}
-  # @abstractmethod
-# end
-
-function get_grid(::FESpace{D,Z,T,E})::Grid{D,Z} where {D,Z,T,E}
-	@abstractmethod
-end
 
 """
 Conforming FE Space, where only one RefFE is possible in the whole mesh
@@ -148,8 +141,8 @@ function interpolate(fun::Function, fesp::FESpace)
     free_dofs[l2g] = evaluate(dofb,imap)
   end
   shb = ConstantCellValue(reffe.shfbasis, ncells(trian))
-  intu = CellFieldFromExpand(shb, free_dofs)
-  CellVectorFromLocalToGlobal(celldofs,free_dofs)
+	cdofs = CellVectorFromLocalToGlobal(celldofs,free_dofs)
+  intu = CellFieldFromExpand(shb, cdofs)
 end
 
 end # module FESpaces
