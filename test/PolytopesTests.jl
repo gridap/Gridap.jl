@@ -72,3 +72,12 @@ fco = i -> coords[i][1]
 # 	end
 # end
 ##
+using Numa.Polytopes
+D = 3
+wedge = Polytope(1,2,1)
+@show wedge.nf_nfs
+writevtk(wedge,"wedge")
+wedge.nfaces
+for i in wedge.nfaces
+  @show i
+end

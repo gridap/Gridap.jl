@@ -1,8 +1,11 @@
 module FESpaces
 
 export FESpace
+export ConformingFESpace
 export globalnumbering, computelgidvefs
 export interpolate
+export Assembler
+export ConformingAssembler
 
 using Numa: evaluate
 using Numa.Helpers
