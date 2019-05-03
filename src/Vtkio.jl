@@ -9,6 +9,7 @@ using Numa.Polytopes
 using Numa.Geometry
 using Numa.Geometry.Unstructured
 using Numa.Geometry.Cartesian
+using Numa.Geometry.Wrappers
 using Numa.Polytopes
 using Numa.CellIntegration
 
@@ -24,6 +25,7 @@ using WriteVTK.VTKCellTypes: VTK_HEXAHEDRON
 
 export writevtk
 import Numa.Geometry: cells, points, celltypes
+import UnstructuredGrids: writevtk
 
 """
 Write a Grid object into a vtk file
@@ -51,6 +53,14 @@ Write an Triangulation object into vtk
 """
 function writevtk(trian::Triangulation,filebase;nref=0,celldata=Dict(),cellfields=Dict())
   _writevtk(trian,filebase,nref,celldata,cellfields)
+end
+
+"""
+Write a Polytope object into vtk
+"""
+function writevtk(polytope::Polytope,filebase)
+  refcell = RefCell(polytope)
+  writevtk(refcell,filebase)
 end
 
 # Helpers

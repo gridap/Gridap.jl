@@ -96,6 +96,19 @@ end
 
 end
 
+@testset "WritePolytope" begin
+
+  d = mktempdir()
+  f = joinpath(d,"polytope")
+
+  polytope = Polytope(1,1,1)
+
+  writevtk(polytope,f)
+
+  rm(d,recursive=true)
+
+end
+
 # TODO Not passing
 # @testset "WritevtkForIntegrationMesh" begin
 
