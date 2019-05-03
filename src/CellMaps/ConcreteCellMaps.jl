@@ -25,9 +25,9 @@ end
 
 getindex(this::ConstantCellMap, i::Int) = this.value
 
-firstindex(this::ConstantCellMap) = this.value
+# firstindex(this::ConstantCellMap) = this.value
 
-lastindex(this::ConstantCellMap) = this.value
+# lastindex(this::ConstantCellMap) = this.value
 
 # CellMapValues
 

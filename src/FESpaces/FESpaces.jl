@@ -129,7 +129,6 @@ function globaldofs(reffe::RefFE, cellvefs, vefcells)
 end
 
 function interpolate(fun::Function, fesp::FESpace)
-  this = fesp
   reffe = fesp.reffe
   dofb = reffe.dofbasis
   trian = fesp.trian

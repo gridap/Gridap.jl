@@ -33,3 +33,26 @@ function gradient(self::CellBasisWithGeomap{D,0}) where D
   basisgrad = gradient(self.basis)
   CellBasisWithGeomap(basisgrad,self.geomap,1)
 end
+
+# @inline function Base.iterate(this::CellBasisWithGeomap{D,O,T,B,G}) where {D,O,T,B,G}
+#   gnext = iterate(this.geomap)
+#   bnext = iterate(this.basis)
+#   iteratekernel(this,gnext,bnext)
+# end
+#
+# @inline function Base.iterate(this::CellBasisWithGeomap{D,O,T,B,G}, state) where {D,O,T,B,G}
+#   v, gstate, bstate = state
+#   gnext = iterate(this.geomap,astate)
+#   bnext = iterate(this.basis,bstate)
+#   iteratekernel(this,gnext,bnext)
+# end
+#
+# function iteratekernel(this::CellBasisWithGeomap,gnext,bnext)
+#   if gnext === nothing; return nothing end
+#   if bnext === nothing; return nothing end
+#   g, gstate = gnext
+#   b, bstate = bnext
+#   v = BasisWithGeomap(g,b)
+#   state = (v, gstate, bstate)
+#   (v, state)
+# end

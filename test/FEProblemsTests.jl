@@ -1,4 +1,6 @@
 ##
+using Test
+
 using Numa
 using Numa.Quadratures
 using Numa.CellQuadratures
@@ -38,6 +40,7 @@ grid = CartesianGrid(partition=nparts_t,domain=(0,1,0,1),order=1) # domain, and 
 trian = triangulation(grid) # Generates the Triangulation associated with this grid
 graph = gridgraph(grid) # Generates the GridGraph associated with this grid.
 phi = geomap(trian)
+typeof(phi)
 order=1
 orders=order*ones(Int64,D)
 pol_array = celltypes(trian)
@@ -48,14 +51,97 @@ basis = reffe.shfbasis
 cellb = ConstantCellValue(basis, ncells(trian))
 quad = quadrature(trian,order=2)
 
-fun(x::Point{2}) = x[1]
+fun(x::Point{2}) = x[1]^2
 gradfun(x::Point{2}) = VectorValue(1.0, 0.0)
 gradient(::typeof(fun)) = gradfun
 uphys = fun ∘ phi
-# There are errors in the modified version by @fverdugo
+typeof(uphys)
+qps = coordinates(quad)
+evaluate(uphys,qps)
+nods = [Point{2}(-1.0,-1.0), Point{2}(1.0,-1.0), Point{2}(-1.0,1.0), Point{2}(1.0,1.0)]
+cnods = ConstantCellValue(nods,ncells(trian))
+evaluate(phi,cnods)
+evaluate(uphys,cnods)
+##
+
+using Numa.FESpaces
+using Numa.FESpaces: interpolate
+fesp = ConformingFESpace(reffe,trian,graph)
+assembler = ConformingAssembler(fesp)
+funh = interpolate(fun, fesp)
+
+# @santiagobadia : To do, replace RefFE with an array of RefFEs!!!
+
+##
+v = zeros(Int64, assembler.num_dofs)
+for l2g in celldofs
+  v[l2g] = l2g
+end
+@show v
+@test v == [ i for i in 1:assembler.num_dofs]
+
+
+# Zero: Here I want to extract the gdofs of the vefs of a cell and create a global
+# vector using the Assembler, of the global dofs. The test would be gid[i] = i
+# In a second step, do it for Dirichlet too.
+
+# Two: Compute the free and dof vectors for an analytical function, see below
+
+# Three: Create the FEFunction
+
+
+
+
+
+
+
+Interpolator(fesp, fun, phi)
+# @santiagobadia : Don't we want a triangulation not a grid in fespace
+
+
+
+isa(uphys, CellField)
+isa(dofb, CellValue)
+using Numa.CellValues
+struct Interpolator{M<:CellField,V<:DOFBasis}
+  u::M
+  dofb::V
+  # cached vector, etc...
+  # Probably better just CellValue{<:RefFE} from FESpace
+  # How to make it efficient ?
+end
+using Numa.FESpaces
+function Interpolator(this::FESpace, fun::Function, ass::Assembler)
+  reffe = this.reffe
+  dofb = reffe.dofbasis
+  trian = fesp.trian
+  phi = geomap(trian)
+  uphys = fun ∘ phi
+  celldofs = assembler.assembly_op_rows
+  v = zeros(Int64, assembler.num_dofs)
+  for (imap,l2g) in zip(uphys,celldofs)
+      dofs[l2g] = evaluate(dofb,imap)
+    end
+end
+
+  # Interpolator(uphys, dofb)
+end
+
+function iterate
+end
+
+function computevals!
+  evaluate(dofb, cmap)
+end
+
+##
+
+
+
 
 basis = cellbasis(trian)
-physbasis = attachgeomap(basis,phi);
+physbasis = attachgeomap(basis,phi)
+points = (trian)
 ab(v,u) = inner(∇(v),∇(u)) #+ inner(v,u)
 V = physbasis
 U = physbasis
@@ -67,8 +153,16 @@ kvec = integrate(ab(V,uphys),trian,quad)
 typeof(kvec)
 kmat = integrate(ab(V,U),trian,quad)
 ##
-fesp = ConformingFESpace{D,D,ScalarValue}(reffe,grid)
-assembler = ConformingAssembler(fesp)
+
+
+for (i,cell) in enumerate(trian)
+  @show cell
+  @show i
+end
+
+
+
+
 # @santiagobadia : Not tested yet
 using Numa.FESpaces: assemble
 sys_vec = assemble(assembler,kvec)
