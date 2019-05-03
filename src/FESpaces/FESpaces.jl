@@ -35,13 +35,25 @@ Conforming FE Space, where only one RefFE is possible in the whole mesh
 struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T,Float64}
 	# For the moment, I am not considering E (to think)
 	reffe::LagrangianRefFE{D,T}
-	trian::Triangulation{D,D}
+	trian::Triangulation{D,Z}
 	graph::GridGraph
+	dof_eqclass::CellVector{Int}
+	num_free_dofs::Int
+	num_fixed_dofs::Int
 end
 
-# @santiagobadia : I would like to import grid... Check where is it being used
-get_grid(this::ConformingFESpace) = this.grid
-
+function ConformingFESpace(
+	reffe::LagrangianRefFE{D,T},
+	trian::Triangulation{D,Z},
+	graph::GridGraph) where {D,Z,T}
+	cellvefs = celltovefs(graph)
+	vefcells = veftocells(graph)
+	gldofs = globaldofs(reffe, cellvefs, vefcells)
+	ndofs = gldofs[end][end]
+	# @santiagobadia : We are calling twice cell_to_vefs...
+	dof_eqclass = CellVectorByComposition(cellvefs, gldofs)
+	ConformingFESpace{D,Z,T}(reffe, trian, graph, dof_eqclass, ndofs, 0)
+end
 """
 Abstract assembly operator
 """
@@ -64,9 +76,7 @@ struct ConformingAssembler{E} <: Assembler{E}
 end
 
 function ConformingAssembler(this::FESpace)
-	# grid = get_grid(this)
 	graph = this.graph
-	# graph = gridgraph(grid) # Generates the GridGraph associated with this grid.
 	cellvefs = celltovefs(graph) # Show vefs for each cell
 	vefcells = veftocells(graph) # Show cells around each vef
 	# @santiagobadia : I had the celltovefs and veftocells calls inside globaldofs
@@ -114,8 +124,7 @@ function assemble(this::Assembler, vals::CellMatrix{T}) where T
   return sparse(aux_row, aux_col, aux_vals)
 end
 
-function globaldofs(this::ConformingFESpace, cellvefs, vefcells)
-	reffe = this.reffe
+function globaldofs(reffe::RefFE, cellvefs, vefcells)
 	nfdofs=Array{Array{Int64},1}(undef,length(vefcells))
 	c=1
 	nfdofs_l = []

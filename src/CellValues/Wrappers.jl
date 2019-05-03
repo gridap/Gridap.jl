@@ -240,4 +240,4 @@ size(self::CellVectorByComposition) = (length(self.cell_to_x),)
 
 IndexStyle(::Type{CellVectorByComposition{T,L,V}}) where {T,L,V} = IndexLinear()
 
-cellsize(self::CellVectorByComposition) = cellsize(self.cell_to_x)*cellsize(self.x_to_vals)
+cellsize(self::CellVectorByComposition) = (celllength(self.cell_to_x)*celllength(self.x_to_vals),)
