@@ -2,22 +2,69 @@ module Wrappers
 
 # Dependencies of this module
 
+using Numa.Helpers
 using Numa.Polytopes
+using Numa.CellValues
 using Numa.Geometry
+using Numa.Geometry.Unstructured
 using UnstructuredGrids.Core: VERTEX
 using UnstructuredGrids.Kernels: UNSET
+using UnstructuredGrids: UGrid
 
 # Functionality provided by this module
 
 export RefCell
+export UGrid
 import UnstructuredGrids.Core: RefCell
+import UnstructuredGrids: UGrid
 
 """
 Construct a RefCell from a Polytope
 """
 RefCell(polytope::Polytope) = _ref_cell_from_polytope(polytope)
 
+"""
+Create a UGrid from a UnstructuredGrid
+"""
+UGrid(grid::UnstructuredGrid) = _unstructured_grid_to_ugrid(grid)
+
 # Helpers
+
+function _unstructured_grid_to_ugrid(grid::UnstructuredGrid{D}) where D
+
+  x = points(grid)
+  npoins = length(x)
+  coords = reshape(reinterpret(Float64,x),(D,npoins))
+
+  ctypes, refcells = _setup_ctypes_and_refcells(
+    celltypes(grid), cellorders(grid))
+
+  UGrid(
+    cellsdata(grid),
+    cellsptrs(grid),
+    ctypes,
+    refcells,
+    coords)
+
+end
+
+function _setup_ctypes_and_refcells(cell_to_code, cell_to_order)
+  @notimplemented
+end
+
+function _setup_ctypes_and_refcells(
+  cell_to_code::ConstantCellValue,
+  cell_to_order::ConstantCellValue)
+  order = celldata(cell_to_order)
+  @notimplementedif order != 1
+  code = celldata(cell_to_code)
+  polytope = Polytope(code)
+  refcell = RefCell(polytope)
+  ncells = length(cell_to_code)
+  cell_to_ctype = ConstantCellValue(1,ncells)
+  ctype_to_refcell = [refcell]
+  (cell_to_ctype, ctype_to_refcell)
+end
 
 function _ref_cell_from_polytope(polytope::Polytope{D}) where D
 

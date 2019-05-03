@@ -9,6 +9,7 @@ using Numa.FieldValues
 using Numa.Polytopes
 using Numa.Meshes
 using Numa.Geometry
+using Numa.Geometry.Unstructured
 using Numa.CellValues
 
 # Functionality provided 
@@ -17,6 +18,8 @@ export CartesianGrid
 import Base: size, getindex, IndexStyle
 import Numa.CellValues: cellsize
 import Numa.Geometry: points, cells, celltypes, cellorders, gridgraph
+import Numa.Geometry.Unstructured: UnstructuredGrid
+import Numa.Geometry.Unstructured: FlexibleUnstructuredGrid
 
 struct CartesianGrid{D} <: Grid{D,D}
   dim_to_limits::NTuple{D,NTuple{2,Float64}}
@@ -45,6 +48,36 @@ function gridgraph(self::CartesianGrid)
   nparts = [i for i in self.dim_to_ncells]
   mesh = StructHexMesh(nparts)
   GridGraphFromData(mesh.cellvefs,mesh.vefcells)
+end
+
+"""
+Construct an `UnstructuredGrid` from a `CartesianGrid`
+"""
+function UnstructuredGrid(grid::CartesianGrid{D}) where D
+  ps = _compute_points(grid)
+  ts = celltypes(grid)
+  os = cellorders(grid)
+  data, ptrs = _compute_cells(grid,UnstructuredGrid{D,D})
+  UnstructuredGrid(ps,data,ptrs,ts,os)
+end
+
+"""
+Construct an `FlexibleUnstructuredGrid` from a `CartesianGrid`
+"""
+function FlexibleUnstructuredGrid(grid::CartesianGrid{D}) where D
+  ps = _compute_points(grid)
+  ts = celltypes(grid)
+  os = cellorders(grid)
+  cs = _compute_cells(grid,FlexibleUnstructuredGrid{D,D})
+  FlexibleUnstructuredGrid(ps,cs,ts,os)
+end
+
+function _compute_points(grid::CartesianGrid{D}) where D
+  ps = Array{Point{D},1}(undef,(length(points(grid)),))
+  for (i,xi) in enumerate(points(grid))
+    ps[i] = xi
+  end
+  ps
 end
 
 struct CartesianDiscreteModel
@@ -111,6 +144,33 @@ function getindex(self::CartesianGridCells{D,L}, I::Vararg{Int, D}) where {D,L}
     ids[l] = pointgids[pgid]
   end
   SVector{L,Int}(ids)
+end
+
+
+function _compute_cells(grid::CartesianGrid{D},::Type{FlexibleUnstructuredGrid{D,D}}) where D
+  cs = [ Array{Int,1}(undef,(2^D,)) for i in 1:length(cells(grid)) ]
+  for (i,ci) in enumerate(cells(grid))
+    cs[i] .= ci
+  end
+  cs
+end
+
+function _compute_cells(grid::CartesianGrid{D},::Type{UnstructuredGrid{D,D}}) where D
+  ptrs = fill(2^D,(length(cells(grid))+1,))
+  length_to_ptrs!(ptrs)
+  data = zeros(Int,ptrs[end]-1)
+  _fill_cell_data!(data,cells(grid))
+  (data, ptrs)
+end
+
+function _fill_cell_data!(data,cells)
+  k = 1
+  for v in cells
+    for vi in v
+      @inbounds data[k] = vi
+      k +=1
+    end
+  end
 end
 
 end # module Cartesian
