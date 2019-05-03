@@ -2,7 +2,9 @@ module FESpaces
 
 export FESpace
 export globalnumbering, computelgidvefs
+export interpolate
 
+using Numa: evaluate
 using Numa.Helpers
 using Numa.RefFEs
 using Numa.Polytopes
@@ -12,6 +14,7 @@ using Numa.Geometry
 using SparseArrays
 
 using Numa.CellValues: CellVectorByComposition
+using Numa.CellMaps: CellFieldFromExpand
 
 # Abstract types and interfaces
 
@@ -21,9 +24,9 @@ the cell dimension `Z`, and the field type `T` (rank) and the number type `E`
 """
 abstract type FESpace{D,Z,T,E} end
 
-function globaldofs(::FESpace{D,Z,T,E}, cellvefs, vefcells)::CellVector{Int} where {D,Z,T,E}
-  @abstractmethod
-end
+# function globaldofs(::RefFE, cellvefs, vefcells)::CellVector{Int}
+  # @abstractmethod
+# end
 
 function get_grid(::FESpace{D,Z,T,E})::Grid{D,Z} where {D,Z,T,E}
 	@abstractmethod
@@ -69,6 +72,7 @@ function assemblematrix(::CellMatrix{E})::Matrix{E} where {E}
 	@abstractmethod
 end
 
+
 struct ConformingAssembler{E} <: Assembler{E}
 	assembly_op_rows::CellVector{Int}
 	assembly_op_cols::CellVector{Int}
@@ -76,17 +80,7 @@ struct ConformingAssembler{E} <: Assembler{E}
 end
 
 function ConformingAssembler(this::FESpace)
-	graph = this.graph
-	cellvefs = celltovefs(graph) # Show vefs for each cell
-	vefcells = veftocells(graph) # Show cells around each vef
-	# @santiagobadia : I had the celltovefs and veftocells calls inside globaldofs
-	# Now here in order to call the previous methods once, since they can be
-	# costly (for some concrete grids).
-	gldofs = globaldofs(this, cellvefs, vefcells)
-	ndofs = gldofs[end][end]
-	# @santiagobadia : We are calling twice cell_to_vefs...
-	cell_to_dofs = CellVectorByComposition(cellvefs, gldofs)
-	ConformingAssembler{Float64}(cell_to_dofs, cell_to_dofs, ndofs)
+	ConformingAssembler{Int}(this.dof_eqclass, this.dof_eqclass, this.num_free_dofs)
 end
 
 
@@ -139,6 +133,23 @@ function globaldofs(reffe::RefFE, cellvefs, vefcells)
 		c += num_nf_dofs
 	end
 	return CellVectorFromDataAndPtrs(nfdofs_l, nfdofs_g)
+end
+
+function interpolate(fun::Function, fesp::FESpace)
+  this = fesp
+  reffe = fesp.reffe
+  dofb = reffe.dofbasis
+  trian = fesp.trian
+  phi = geomap(trian)
+  uphys = fun ∘ phi
+  celldofs = fesp.dof_eqclass
+  free_dofs = zeros(Float64, fesp.num_free_dofs)
+  for (imap,l2g) in zip(uphys,celldofs)
+    free_dofs[l2g] = evaluate(dofb,imap)
+  end
+  shb = ConstantCellValue(reffe.shfbasis, ncells(trian))
+  intu = CellFieldFromExpand(shb, free_dofs)
+  CellVectorFromLocalToGlobal(celldofs,free_dofs)
 end
 
 end # module FESpaces
