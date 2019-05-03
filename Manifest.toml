@@ -114,7 +114,7 @@ uuid = "9cd2e232-b78e-5341-8154-33bf4eafe965"
 version = "0.1.0"
 
 [[WriteVTK]]
-deps = ["Base64", "CodecZlib", "LightXML", "Printf", "Random", "SHA", "Test", "TranscodingStreams"]
-git-tree-sha1 = "9aa900089a09fdb7af6cc02f70bc6ae9d78f57d2"
+deps = ["Base64", "CodecZlib", "LightXML", "Printf", "TranscodingStreams"]
+git-tree-sha1 = "f7c7fb5fb3c7d47b17b3490256105d8186477c7c"
 uuid = "64499a7a-5c06-52f2-abe2-ccb03c286192"
-version = "1.0.1"
+version = "1.0.2"

@@ -1,14 +1,25 @@
 module Wrappers
 
+# Dependencies of this module
+
 using Numa.Polytopes
 using Numa.Geometry
 using UnstructuredGrids.Core: VERTEX
 using UnstructuredGrids.Kernels: UNSET
 
-import UnstructuredGrids.Core: RefCell
-export RefCell
+# Functionality provided by this module
 
-function RefCell(polytope::Polytope{D}) where D
+export RefCell
+import UnstructuredGrids.Core: RefCell
+
+"""
+Construct a RefCell from a Polytope
+"""
+RefCell(polytope::Polytope) = _ref_cell_from_polytope(polytope)
+
+# Helpers
+
+function _ref_cell_from_polytope(polytope::Polytope{D}) where D
 
   dim_to_jface_to_vertices, dim_to_jface_to_code = _faces(polytope)
 
