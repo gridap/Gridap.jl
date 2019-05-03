@@ -8,6 +8,7 @@ using Numa.CellMaps
 using Numa.Geometry
 using Numa.Geometry.Cartesian
 using Numa.Geometry.Unstructured
+using Numa.Geometry.Wrappers
 using Numa.Polytopes
 using Numa.Vtkio
 
@@ -152,30 +153,12 @@ end
 
 end
 
-#using Numa.Polytopes
-#using StaticArrays
-#
-#p = Polytope(SVector(2,1,2))
-#
-#@show p.nfaces
-#
-#@show length(p.nfaces)
-#
-#using Numa.Geometry.Wrappers: _faces
-#using Numa.Geometry.Wrappers: _find_unique_codes
-#
-#dim_to_jface_to_vertices, dim_to_jface_to_code = _faces(p)
-#
-#@show dim_to_jface_to_vertices
-#@show dim_to_jface_to_code
-#
-#for d in 1:length(dim_to_jface_to_code)
-#  jface_to_code = dim_to_jface_to_code[d]
-#  jface_to_ftype, ftype_to_code = _find_unique_codes(jface_to_code)
-#  @show d-1
-#  @show jface_to_ftype
-#  @show ftype_to_code 
-#end
+@testset "RefCellFromPolytope" begin
 
+  polytope = Polytope((1,1,1))
+
+  refcell = RefCell(polytope)
+
+end
 
 end # module GeometryTests

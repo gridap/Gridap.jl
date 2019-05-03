@@ -14,6 +14,10 @@ function Polytope(extrusion::PointInt{D}) where D
 	Polytope{D}(extrusion, pol_nfs, nf_nfs, nf_dim)
 end
 
+function Polytope(extrusion::NTuple{D,Int}) where D
+  Polytope(SVector(extrusion...))
+end
+
 nfdim(a::PointInt{D}) where D = sum([a[i] > 0 ? 1 : 0 for i =1:D ])
 
 """
