@@ -31,6 +31,7 @@ export NFacesLabels
 export nfacegeolabel
 export geolabels
 export NewGridGraph
+export DiscreteModel
 export cellvefs
 export vefcells
 

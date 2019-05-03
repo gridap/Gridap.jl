@@ -20,6 +20,7 @@ import Numa.CellValues: cellsize
 import Numa.Geometry: points, cells, celltypes, cellorders, gridgraph
 import Numa.Geometry.Unstructured: UnstructuredGrid
 import Numa.Geometry.Unstructured: FlexibleUnstructuredGrid
+export CartesianDiscreteModel
 
 struct CartesianGrid{D} <: Grid{D,D}
   dim_to_limits::NTuple{D,NTuple{2,Float64}}
@@ -72,15 +73,13 @@ function FlexibleUnstructuredGrid(grid::CartesianGrid{D}) where D
   FlexibleUnstructuredGrid(ps,cs,ts,os)
 end
 
-function _compute_points(grid::CartesianGrid{D}) where D
-  ps = Array{Point{D},1}(undef,(length(points(grid)),))
-  for (i,xi) in enumerate(points(grid))
-    ps[i] = xi
-  end
-  ps
+struct CartesianDiscreteModel{D} <: DiscreteModel{D}
+  grid::CartesianGrid{D}
 end
 
-struct CartesianDiscreteModel
+function CartesianDiscreteModel(; args...)
+  grid = CartesianGrid(; args...)
+  CartesianDiscreteModel(grid)
 end
 
 # Helpers
@@ -146,6 +145,13 @@ function getindex(self::CartesianGridCells{D,L}, I::Vararg{Int, D}) where {D,L}
   SVector{L,Int}(ids)
 end
 
+function _compute_points(grid::CartesianGrid{D}) where D
+  ps = Array{Point{D},1}(undef,(length(points(grid)),))
+  for (i,xi) in enumerate(points(grid))
+    ps[i] = xi
+  end
+  ps
+end
 
 function _compute_cells(grid::CartesianGrid{D},::Type{FlexibleUnstructuredGrid{D,D}}) where D
   cs = [ Array{Int,1}(undef,(2^D,)) for i in 1:length(cells(grid)) ]

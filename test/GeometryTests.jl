@@ -169,4 +169,12 @@ end
 
 end
 
+@testset "CartesianDiscreteModel" begin
+
+  model = CartesianDiscreteModel(
+    domain=(0.0,1.0,-1.0,2.0,0.0,1.0),
+    partition=(3,4,2))
+
+end
+
 end # module GeometryTests
