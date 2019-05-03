@@ -2,21 +2,34 @@ module Wrappers
 
 using Numa.Polytopes
 using Numa.Geometry
+using UnstructuredGrids.Core: VERTEX
+using UnstructuredGrids.Kernels: UNSET
 
 import UnstructuredGrids.Core: RefCell
+export RefCell
 
-#function RefCell(::Polytope{D}) where D
-#
-#
-#  ndims = D
-#  faces::Vector{Vector{Vector{Int}}}
-#  facetypes::Vector{Vector{Int}}
-#  reffaces::Vector{Vector{RefCell}}
-#  coordinates::Array{Float64,2}
-#  vtkid::Int
-#  vtknodes::Vector{Int}
-#
-#end
+function RefCell(polytope::Polytope{D}) where D
+
+  dim_to_jface_to_vertices, dim_to_jface_to_code = _faces(polytope)
+
+  vertex_to_coords = _coordinates(polytope)
+
+  dim_to_jface_to_ftype, dim_to_ftype_to_code = _ftypes(dim_to_jface_to_code)
+
+  dim_to_ftype_to_refface = _reffaces(dim_to_ftype_to_code)
+
+  _vtkid, _vtknodes = _vtkinfo(polytope)
+
+  RefCell(
+    ndims = D,
+    faces = dim_to_jface_to_vertices,
+    facetypes = dim_to_jface_to_ftype,
+    reffaces = dim_to_ftype_to_refface,
+    coordinates = vertex_to_coords,
+    vtkid = _vtkid,
+    vtknodes = _vtknodes)
+
+end
 
 function _faces(polytope)
 
@@ -28,6 +41,88 @@ function _faces(polytope)
       nface_to_dim, nface_to_vertices, nface_to_code) )
 
  (dim_to_jface_to_vertices, dim_to_jface_to_code)
+end
+
+function _reffaces(dim_to_ftype_to_code)
+
+  [ [ _code_to_refface(code) for code in ftype_to_code ]
+   for ftype_to_code in dim_to_ftype_to_code ]
+
+end
+
+function _code_to_refface(code)
+  if length(code) == 0
+    return VERTEX
+  else
+    t = tuple(code...)
+    p = Polytope(t)
+    return RefCell(p)
+  end
+end
+
+function _ftypes(dim_to_jface_to_code)
+  dim_to_jface_to_ftype = Vector{Int}[]
+  dim_to_ftype_to_code = Vector{Vector{Int}}[]
+  for d in 1:length(dim_to_jface_to_code)
+    jface_to_code = dim_to_jface_to_code[d]
+    jface_to_ftype, ftype_to_code = _find_unique_codes(jface_to_code)
+    push!(dim_to_jface_to_ftype,jface_to_ftype)
+    push!(dim_to_ftype_to_code,ftype_to_code)
+  end
+  (dim_to_jface_to_ftype, dim_to_ftype_to_code)
+end
+
+function _coordinates(polytope)
+  num_nfaces = length(polytope.nf_dim)
+  nvertices = 0
+  for nface in 1:num_nfaces
+    d = length(polytope.nf_dim[nface])-1
+    if d == 0
+      nvertices += 1
+    end
+  end
+  dim = length(polytope.extrusion)
+  coords = Array{Float64,2}(undef,(dim,nvertices))
+  x = Vector{Float64}(undef,dim)
+  for nface in 1:num_nfaces
+    d = length(polytope.nf_dim[nface])-1
+    if d == 0
+      x .= polytope.nfaces[nface].anchor
+      coords[:,nface] .= x
+    end
+  end
+  coords
+end
+
+function _vtknodes(code)
+  h = HEX_AXIS
+  t = TET_AXIS
+  if code == [] ; [1,]
+  elseif code[2:end] == [] ; [1,2]
+  elseif code[2:end] == [t] ; [1,2,3]
+  elseif code[2:end] == [h] ; [1,2,4,3]
+  elseif code[2:end] == [t,t] ; [1,2,3,4]
+  elseif code[2:end] == [h,h] ; [1,2,4,3,5,6,8,7]
+  else; Int[]
+  end
+end
+
+function _vtkid(code)
+  h = HEX_AXIS
+  t = TET_AXIS
+  if code == []; 1
+  elseif code[2:end] == []; 3
+  elseif code[2:end] == [t]; 5
+  elseif code[2:end] == [h]; 9
+  elseif code[2:end] == [t,t]; 10
+  elseif code[2:end] == [h,h]; 12
+  else; UNSET
+  end
+end
+
+function _vtkinfo(polytope)
+  code = [i for i in polytope.extrusion]
+  (_vtkid(code), _vtknodes(code))
 end
 
 function _extract_nface_to_info(polytope)
