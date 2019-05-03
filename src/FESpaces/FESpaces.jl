@@ -35,7 +35,8 @@ Conforming FE Space, where only one RefFE is possible in the whole mesh
 struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T,Float64}
 	# For the moment, I am not considering E (to think)
 	reffe::LagrangianRefFE{D,T}
-	grid::Grid{D,D}
+	trian::Triangulation{D,D}
+	graph::GridGraph
 end
 
 # @santiagobadia : I would like to import grid... Check where is it being used
@@ -63,8 +64,9 @@ struct ConformingAssembler{E} <: Assembler{E}
 end
 
 function ConformingAssembler(this::FESpace)
-	grid = get_grid(this)
-	graph = gridgraph(grid) # Generates the GridGraph associated with this grid.
+	# grid = get_grid(this)
+	graph = this.graph
+	# graph = gridgraph(grid) # Generates the GridGraph associated with this grid.
 	cellvefs = celltovefs(graph) # Show vefs for each cell
 	vefcells = veftocells(graph) # Show cells around each vef
 	# @santiagobadia : I had the celltovefs and veftocells calls inside globaldofs
