@@ -12,7 +12,7 @@ export AnalyticalField
 export GeoMap
 export Basis
 
-import Numa: evaluate, gradient
+import Numa: evaluate, gradient, ∇
 import Numa: evaluate!, return_size
 import Numa: inner, outer
 

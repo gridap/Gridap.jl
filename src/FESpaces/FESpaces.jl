@@ -20,6 +20,8 @@ using Numa.CellValues: CellVectorByComposition
 using Numa.CellMaps
 using Numa.CellMaps: CellFieldFromExpand
 
+import Numa: evaluate
+
 # Abstract types and interfaces
 
 """
