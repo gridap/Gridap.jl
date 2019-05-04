@@ -99,6 +99,7 @@ int = sum(ksca)
 ##
 
 kvec = integrate(ab(V,uphys),trian,quad)
+# @santiagobadia : Problem when showing this result, in iterate
 kvec = integrate(am(V,uphys),trian,quad)
 typeof(kvec)
 kmat = integrate(ab(V,U),trian,quad)
