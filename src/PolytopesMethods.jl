@@ -84,10 +84,12 @@ function nfaceboundary!(anchor::PointInt{D}, extrusion::PointInt{D},
 			newext = PointInt{D}([func1(i) for i=1:D])
 			func2 = (j -> j==i ? 1 : 0)
 			edim = PointInt{D}([func2(i) for i=1:D])
+			func3 = (j -> j >= i ? anchor[j] : 0 )
+			tetp = PointInt{D}([func3(i) for i=1:D]) + edim
 			if (curex == 1) # Quad extension
 				list = nfaceboundary!(anchor+edim, extrusion, newext, false, list)
 			elseif (isanchor)
-				list = nfaceboundary!(edim, extrusion, newext, false, list)
+				list = nfaceboundary!(tetp, extrusion, newext, false, list)
 			end
 			list = nfaceboundary!(anchor, extrusion+edim*curex, newext, false, list)
 		end
