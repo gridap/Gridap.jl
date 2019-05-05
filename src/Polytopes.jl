@@ -8,8 +8,9 @@ using Numa.FieldValues
 export Polytope
 export NodesArray
 export NFace
-export dim, numnftypes
+export dim, numnftypes #@fverdugo really needed?
 export HEX_AXIS, TET_AXIS
+export num_nfaces
 
 # Module constants
 
@@ -69,6 +70,21 @@ end
 #@fverdugo add here a public API to access the polytope info instead
 # of using the struct fields directly as it is currently done
 # in some places of the code.
+
+"""
+Returns number of nfaces of dimension dim
+"""
+function num_nfaces(polytope::Polytope, dim::Integer)
+  n = length(polytope.nf_dim)
+  k = 0
+  for nface in 1:n
+    d = length(polytope.nf_dim[nface])-1
+    if d == dim
+      k +=1
+    end
+  end
+  k
+end
 
 """
 Array of nodes for a given polytope and order

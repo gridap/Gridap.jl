@@ -18,6 +18,8 @@ using Numa.Vtkio
 
   @test celldim(grid) == 2
   @test pointdim(grid) == 2
+  @test ncells(grid) == 3*4
+  @test npoints(grid) == (3+1)*(4+1)
 
   x = points(grid)
 
@@ -117,18 +119,18 @@ end
 
 end
 
-@testset "NFacesLabels" begin
+@testset "NFaceLabels" begin
 
   vertex_to_geolabel = [1,1,2,2,2,1,1,3,3]
   edge_to_geolabel = [4,4,5,5,5,5,6,6,4]
   physlabel_1 = [1,3,4]
   physlabel_2 = [5,3,6,2]
   
-  nfacelabels = NFacesLabels(
-    (vertex_to_geolabel, edge_to_geolabel),
+  nfacelabels = NFaceLabels(
+    [vertex_to_geolabel, edge_to_geolabel],
     [physlabel_1, physlabel_2])
   
-  @test isa(nfacelabels,NFacesLabels{1})
+  @test isa(nfacelabels,NFaceLabels{1})
   @test nfacegeolabel(nfacelabels,0) == vertex_to_geolabel
   @test nfacegeolabel(nfacelabels,1) == edge_to_geolabel
   @test geolabels(nfacelabels,1) == physlabel_1
@@ -189,6 +191,16 @@ end
   grid = Grid(model,2)
   grid = Grid(model,1)
   grid = Grid(model,0)
+
+  labels = NFaceLabels(model)
+
+  @test isa(labels,NFaceLabels{3})
+  @show nfacegeolabel(labels,0)
+  @show nfacegeolabel(labels,1)
+  @show nphyslabels(labels)
+  @show geolabels(labels,1)
+  @show geolabels(labels,2)
+
 
 end
 

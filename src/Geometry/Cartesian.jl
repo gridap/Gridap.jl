@@ -137,8 +137,26 @@ function GridGraph(model::CartesianDiscreteModel{D},::Val{Z}) where {D,Z}
   @notimplemented
 end
 
-function NFaceLabels(::CartesianDiscreteModel{D}) where D
-  @notimplemented
+#@fverdugo precompute this result
+function NFaceLabels(model::CartesianDiscreteModel{D}) where D
+  dim_to_face_to_geolabel = Vector{Vector{Int}}(undef,D+1)
+  dim_to_offset = _generate_dim_to_offset(D)
+  interior_id = dim_to_offset[end]+1
+  for d in 0:(D-1)
+    face_to_cells = veftocells(model.gridgraph, d)
+    cell_to_faces = celltovefs(model.gridgraph, d)
+    offset = dim_to_offset[d+1]
+    face_to_geolabel = _generate_pre_geolabel(
+      face_to_cells,
+      cell_to_faces,
+      offset,
+      interior_id)
+    dim_to_face_to_geolabel[d+1] = face_to_geolabel
+  end
+  _ncells = ncells(model.cgrid)
+  dim_to_face_to_geolabel[end] = ConstantCellValue(interior_id,_ncells)
+  phys_labels = [ [i] for i in 1:interior_id ]
+  NFaceLabels(dim_to_face_to_geolabel, phys_labels)
 end
 
 function boundarylabels(::CartesianDiscreteModel)
@@ -146,6 +164,65 @@ function boundarylabels(::CartesianDiscreteModel)
 end
 
 # Helpers
+
+function _generate_dim_to_offset(D)
+  code = tuple(fill(HEX_AXIS,D)...)
+  polytope = Polytope(code)
+  dim_to_offset = zeros(Int,D+1)
+  for d in 1:D
+    dim_to_offset[d+1] = dim_to_offset[d] + num_nfaces(polytope,d-1)
+  end
+  dim_to_offset
+end
+
+function _generate_pre_geolabel(
+  face_to_cells,
+  cell_to_faces,
+  offset,
+  interior_id)
+
+  nfaces = length(face_to_cells)
+  face_to_geolabel = fill(interior_id,nfaces)
+
+  _generate_pre_geolabel_kernel!(
+    face_to_geolabel,
+    face_to_cells.data,
+    face_to_cells.ptrs,
+    cell_to_faces.data,
+    cell_to_faces.ptrs,
+    offset)
+
+  face_to_geolabel
+end
+
+function _generate_pre_geolabel_kernel!(
+  face_to_geolabel,
+  face_to_cells_data,
+  face_to_cells_ptrs,
+  cell_to_faces_data,
+  cell_to_faces_ptrs,
+  offset)
+
+  nfaces = length(face_to_geolabel)
+  for face in 1:nfaces
+    a = face_to_cells_ptrs[face]-1
+    ncells_around = face_to_cells_ptrs[face+1] - (a+1)
+    if ncells_around == 1
+      icell_around = 1
+      cell = face_to_cells_data[a+icell_around]
+      b = cell_to_faces_ptrs[cell]-1
+      nlfaces = cell_to_faces_ptrs[cell+1] - (b+1)
+      for lface in 1:nlfaces
+        face2 = cell_to_faces_data[b+lface]
+        if face == face2
+          face_to_geolabel[face] = lface + offset
+          break
+        end
+      end
+    end
+  end
+
+end
 
 function _setup_grid_graph(ugrid,D)
 

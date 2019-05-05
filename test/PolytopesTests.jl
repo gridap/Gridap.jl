@@ -11,6 +11,10 @@ D=3
 extrusion = PointInt{D}(1,1,1)
 polytope = Polytope(extrusion)
 @test length(polytope.nfaces) == 27
+@test num_nfaces(polytope,0) == 8
+@test num_nfaces(polytope,1) == 12
+@test num_nfaces(polytope,2) == 6
+@test num_nfaces(polytope,3) == 1
 # Pyramid
 extrusion = PointInt{D}(1,1,2)
 polytope = Polytope(extrusion)

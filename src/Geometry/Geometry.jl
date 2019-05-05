@@ -27,13 +27,15 @@ export geomap
 export cellcoordinates
 export cellbasis
 export ncells
-export NFacesLabels
+export npoints
+export NFaceLabels
 export nfacegeolabel
 export geolabels
 export NewGridGraph
 export DiscreteModel
 export celldim
 export pointdim
+export nphyslabels
 
 """
 Minimal interface for a mesh used for numerical integration
@@ -134,6 +136,10 @@ celldim(::Grid{D,Z}) where {D,Z} = Z
 
 pointdim(::Grid{D,Z}) where {D,Z} = D
 
+ncells(g::Grid) = length(celltypes(g))
+
+npoints(g::Grid) = length(points(g))
+
 triangulation(grid::Grid) = TriangulationFromGrid(grid) #@fverdugo replace by Triangulation
 
 """
@@ -161,26 +167,26 @@ gridgraph(::Grid)::GridGraph = @notimplemented #@fverdugo Replace by GridGraph
 Classification of nfaces into geometrical and physical labels
 D dimension of the space, N = D+1
 """
-struct NFacesLabels{D,N,V<:NTuple{N,<:IndexCellValue{Int}}}
+struct NFaceLabels{D,N,V<:NTuple{N,<:IndexCellValue{Int}}}
   dim_to_nface_to_geolabel::V
   physlabel_to_geolabels::Vector{Vector{Int}}
 end
 
-function NFacesLabels(
-  dim_to_nface_to_geolabel::NTuple{N,<:AbstractVector{Int}},
-  physlabel_to_geolabels::Vector{Vector{Int}}) where N
+function NFaceLabels(
+  dim_to_nface_to_geolabel::Vector{<:AbstractVector{Int}},
+  physlabel_to_geolabels::Vector{Vector{Int}})
   cv = tuple( [ CellValueFromArray(v) for v in dim_to_nface_to_geolabel ]...)
-  NFacesLabels(
+  NFaceLabels(
     cv,
     physlabel_to_geolabels)
 end
 
-function NFacesLabels(
+function NFaceLabels(
   dim_to_nface_to_geolabel::NTuple{N,<:IndexCellValue{Int}},
   physlabel_to_geolabels::Vector{Vector{Int}}) where N
   D = N-1
   V = typeof(dim_to_nface_to_geolabel)
-  NFacesLabels{D,N,V}(
+  NFaceLabels{D,N,V}(
     dim_to_nface_to_geolabel,
     physlabel_to_geolabels)
 end
@@ -189,12 +195,14 @@ end
 Returns an AbstractVector{Int} that represent the geolabel for
 each nface of dimension dim
 """
-nfacegeolabel(l::NFacesLabels,dim::Integer) = l.dim_to_nface_to_geolabel[dim+1]
+nfacegeolabel(l::NFaceLabels,dim::Integer) = l.dim_to_nface_to_geolabel[dim+1]
 
 """
 Returns a Vector{Int} with the goelabels associated with a given physlabel
 """
-geolabels(l::NFacesLabels,physlabel::Integer) = l.physlabel_to_geolabels[physlabel]
+geolabels(l::NFaceLabels,physlabel::Integer) = l.physlabel_to_geolabels[physlabel]
+
+nphyslabels(l::NFaceLabels) = length(l.physlabel_to_geolabels)
 
 #@fverdugo Do we need an abstract one?
 struct NewGridGraph{
@@ -237,11 +245,11 @@ function GridGraph(::DiscreteModel,::Val{Z})::GridGraph{Z} where Z
 end
 
 """
-Extracts the NFacesLabels object providing information
+Extracts the NFaceLabels object providing information
 about the geometrical and physical labels of all the
 nfaces in the model
 """
-function NFaceLabels(::DiscreteModel{D})::NFacesLabels{D} where D
+function NFaceLabels(::DiscreteModel{D})::NFaceLabels{D} where D
   @abstractmethod
 end
 
