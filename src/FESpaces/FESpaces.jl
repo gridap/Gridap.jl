@@ -133,6 +133,32 @@ function globaldofs(reffe::RefFE, cellvefs, vefcells)
 	return CellVectorFromDataAndPtrs(nfdofs_l, nfdofs_g)
 end
 
+# @santiagobadia : Version with Dirichlet data. When I will know better the
+# way to get whether a VEF is fixed or not, I will change it and eliminate the
+# one above.
+function globaldofs(reffe::RefFE, cellvefs, vefcells, is_fixed_vef::AbstractVector)
+	nfdofs=Array{Array{Int64},1}(undef,length(vefcells))
+	c=1
+	c_n = -1
+	nfdofs_l = []
+	nfdofs_g = zeros(Int, length(vefcells)+1)
+	nfdofs_g[1] = 1
+	for (ignf,nf) in enumerate(vefcells)
+		owner_cell = nf[1]
+		lid_vef = findfirst(i->i==ignf,cellvefs[owner_cell])
+		num_nf_dofs = length(reffe.nfacedofs[lid_vef])
+		if ( is_fixed_vef[ignf] )
+			nfdofs_l = [nfdofs_l..., c_n:c_n-num_nf_dofs+1... ]
+			c_n -= num_nf_dofs
+		else
+			nfdofs_l = [nfdofs_l..., c:c+num_nf_dofs-1... ]
+			c += num_nf_dofs
+		end
+		nfdofs_g[ignf+1] += num_nf_dofs + nfdofs_g[ignf]
+	end
+	return CellVectorFromDataAndPtrs(nfdofs_l, nfdofs_g), c-1, -c_n-1
+end
+
 function interpolate(fun::Function, fesp::FESpace)
   reffe = fesp.reffe
   dofb = reffe.dofbasis

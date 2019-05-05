@@ -105,11 +105,77 @@ typeof(kvec)
 kmat = integrate(ab(V,U),trian,quad)
 # @santiagobadia : Problem in evaluation...
 
-# using Numa.CellMaps: CellFieldFromCompose
-# function gradient(self::CellFieldFromCompose)
-#   gradop = gradient(self.op)
-#   CellFieldFromCompose(gradop,self.a)
+
+cellvefs = celltovefs(graph)
+vefcells = veftocells(graph)
+
+is_fixed_vef = zeros(Bool, 25)
+is_fixed_vef[1:4] .= true
+import Numa.FESpaces: globaldofs
+gldofs, nfree, nfixed = globaldofs(reffe, cellvefs, vefcells, is_fixed_vef)
+dof_eqclass = CellVectorByComposition(cellvefs, gldofs)
+cellsize(dof_eqclass)
+u = zeros(Float64,cellsize(dof_eqclass)...)
+# v = CachedArray(u)
+# setsize!(v,vsize)
+
+# function interpolate(fun::Function, fesp::FESpace)
+reffe = fesp.reffe
+dofb = reffe.dofbasis
+trian = fesp.trian
+phi = geomap(trian)
+uphys = fun ∘ phi
+celldofs = fesp.dof_eqclass
+
+celldofs = dof_eqclass
+# free_dofs = zeros(Float64, fesp.num_free_dofs)
+# fixed_dofs = zeros(Float64, fesp.num_fixed_dofs)
+free_dofs = zeros(Float64, nfree)
+fixed_dofs = zeros(Float64, nfixed)
+for (imap,l2g) in zip(uphys,celldofs)
+	# free_dofs[l2g] = evaluate(dofb,imap)
+	b = evaluate(dofb,imap)
+	for (i,gdof) in enumerate(l2g)
+		if (gdof > 0)
+			free_dofs[gdof] = b[i]
+		else
+			fixed_dofs[-gdof] = b[i]
+		end
+	end
+end
+free_dofs
+fixed_dofs
+shb = ConstantCellValue(reffe.shfbasis, ncells(trian))
+
+using Numa.CellValues: CellVectorFromLocalToGlobalPosAndNeg
+using Numa.CellMaps: CellFieldFromExpand
+cdofs = CellVectorFromLocalToGlobalPosAndNeg(celldofs, free_dofs, fixed_dofs)
+intu = CellFieldFromExpand(shb, cdofs)
+
+
+
+
 # end
 
-
-gradient(fun)
+# function globaldofs(reffe::RefFE, cellvefs, vefcells, is_fixed_vef::AbstractVector)
+# 	nfdofs=Array{Array{Int64},1}(undef,length(vefcells))
+# 	c=1
+# 	c_n = -1
+# 	nfdofs_l = []
+# 	nfdofs_g = zeros(Int, length(vefcells)+1)
+# 	nfdofs_g[1] = 1
+# 	for (ignf,nf) in enumerate(vefcells)
+# 		owner_cell = nf[1]
+# 		lid_vef = findfirst(i->i==ignf,cellvefs[owner_cell])
+# 		num_nf_dofs = length(reffe.nfacedofs[lid_vef])
+# 		if ( is_fixed_vef[ignf] )
+# 			nfdofs_l = [nfdofs_l..., c_n:c_n-num_nf_dofs+1... ]
+# 			c_n -= num_nf_dofs
+# 		else
+# 			nfdofs_l = [nfdofs_l..., c:c+num_nf_dofs-1... ]
+# 			c += num_nf_dofs
+# 		end
+# 		nfdofs_g[ignf+1] += num_nf_dofs + nfdofs_g[ignf]
+# 	end
+# 	return CellVectorFromDataAndPtrs(nfdofs_l, nfdofs_g)
+# end
