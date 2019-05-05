@@ -109,6 +109,22 @@ end
 
 end
 
+@testset "CartesianDiscreteModel" begin
+
+  d = mktempdir()
+  f = joinpath(d,"model")
+  #f = "model"
+
+  model = CartesianDiscreteModel(
+    domain=(0.0,1.0,-1.0,2.0,0.0,1.0),
+    partition=(3,4,2))
+
+  writevtk(model,f)
+
+  rm(d,recursive=true)
+
+end
+
 # TODO Not passing
 # @testset "WritevtkForIntegrationMesh" begin
 

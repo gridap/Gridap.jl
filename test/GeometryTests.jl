@@ -195,12 +195,6 @@ end
   labels = NFaceLabels(model)
 
   @test isa(labels,NFaceLabels{3})
-  @show nfacegeolabel(labels,0)
-  @show nfacegeolabel(labels,1)
-  @show nphyslabels(labels)
-  @show geolabels(labels,1)
-  @show geolabels(labels,2)
-
 
 end
 

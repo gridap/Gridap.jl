@@ -63,6 +63,19 @@ function writevtk(polytope::Polytope,filebase)
   writevtk(refcell,filebase)
 end
 
+"""
+Write a DiscreteModel into vtk
+"""
+function writevtk(model::DiscreteModel{D},filebase) where D
+  labels = NFaceLabels(model)
+  for d in 0:D
+    f = "$(filebase)_$(d)"
+    grid = Grid(model,d)
+    cell_to_geolabel = nfacegeolabel(labels,d)
+    writevtk(grid,f,celldata=["geolabel" => cell_to_geolabel])
+  end
+end
+
 # Helpers
 
 function _writevtk(grid::Grid,filebase,celldata,pointdata)
