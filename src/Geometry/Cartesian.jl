@@ -7,6 +7,8 @@ using UnstructuredGrids: UGrid
 using UnstructuredGrids: generate_dual_connections
 using UnstructuredGrids: generate_cell_to_faces
 using UnstructuredGrids: connections
+using UnstructuredGrids: coordinates
+using UnstructuredGrids: Connections
 using Numa.Helpers
 using Numa.FieldValues
 using Numa.Polytopes
@@ -99,12 +101,39 @@ end
 Grid(model::CartesianDiscreteModel{D},::Val{D}) where D = model.cgrid
 
 function Grid(model::CartesianDiscreteModel{D},::Val{Z}) where {D,Z}
-  @notimplemented
+
+  ugrid = model.ugrid
+  v2c = veftocells(model.gridgraph,0)
+  c2f = celltovefs(model.gridgraph,Z)
+  vertex_to_cells = Connections(v2c.data,v2c.ptrs)
+  cell_to_faces = Connections(c2f.data,c2f.ptrs)
+
+  fugrid = UGrid(ugrid,Z,vertex_to_cells,cell_to_faces)
+
+  face_to_vertices = connections(fugrid)
+  nfaces = length(face_to_vertices.ptrs)-1
+  fcode = tuple([HEX_AXIS for i in 1:Z]...)
+
+  order = 1
+  @notimplementedif order != celldata(cellorders(model.cgrid))
+
+  _points = coordinates(ugrid)
+  _cells_data = face_to_vertices.list
+  _cells_ptrs = face_to_vertices.ptrs
+  _ctypes = ConstantCellValue(fcode,nfaces)
+  _corders = ConstantCellValue(order,nfaces)
+
+  UnstructuredGrid(
+    _points,
+    _cells_data,
+    _cells_ptrs,
+    _ctypes,
+    _corders)
 end
 
 GridGraph(model::CartesianDiscreteModel{D},::Val{D}) where D = model.gridgraph
 
-function GridGraph(::CartesianDiscreteModel{D},::Val{Z}) where {D,Z}
+function GridGraph(model::CartesianDiscreteModel{D},::Val{Z}) where {D,Z}
   @notimplemented
 end
 

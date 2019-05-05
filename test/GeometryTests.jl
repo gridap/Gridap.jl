@@ -186,6 +186,10 @@ end
 
   @test isa(gridgraph, NewGridGraph)
 
+  grid = Grid(model,2)
+  grid = Grid(model,1)
+  grid = Grid(model,0)
+
 end
 
 end # module GeometryTests

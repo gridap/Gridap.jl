@@ -17,12 +17,32 @@ export cellsdata, cellsptrs
 """
 Struct representing an unstructured grid with efficient memory layout
 """
-struct UnstructuredGrid{D,Z,A<:IndexCellValue{NTuple{Z,Int}},B<:IndexCellValue{Int}} <: Grid{D,Z}
-  points::Vector{Point{D}}
+struct UnstructuredGrid{
+  D,Z,P<:AbstractVector{Point{D}},A<:IndexCellValue{NTuple{Z,Int}},B<:IndexCellValue{Int}} <: Grid{D,Z}
+  points::P
   cells_data::Vector{Int}
   cells_ptrs::Vector{Int}
   ctypes::A
   corders::B
+end
+
+function UnstructuredGrid(
+  points::AbstractArray{Float64,2},
+  cells_data,
+  cells_ptrs,
+  ctypes,
+  corders)
+
+  dim, npoints = size(points)
+  k = reshape(points,(dim*npoints,))
+  _points = reinterpret(Point{dim},k)
+
+  UnstructuredGrid(
+    _points,
+    cells_data,
+    cells_ptrs,
+    ctypes,
+    corders)
 end
 
 points(self::UnstructuredGrid) = CellValueFromArray(self.points)
