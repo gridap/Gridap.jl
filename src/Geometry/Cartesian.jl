@@ -3,7 +3,10 @@ module Cartesian
 # Dependencies of this module
 
 using StaticArrays: SVector, MVector, @SVector
+using UnstructuredGrids: UGrid
 using UnstructuredGrids: generate_dual_connections
+using UnstructuredGrids: generate_cell_to_faces
+using UnstructuredGrids: connections
 using Numa.Helpers
 using Numa.FieldValues
 using Numa.Polytopes
@@ -18,6 +21,7 @@ export CartesianGrid
 import Base: size, getindex, IndexStyle
 import Numa.CellValues: cellsize
 import Numa.Geometry: points, cells, celltypes, cellorders, gridgraph
+import Numa.Geometry: Grid, GridGraph, NFaceLabels, boundarylabels
 import Numa.Geometry.Unstructured: UnstructuredGrid
 import Numa.Geometry.Unstructured: FlexibleUnstructuredGrid
 export CartesianDiscreteModel
@@ -73,16 +77,77 @@ function FlexibleUnstructuredGrid(grid::CartesianGrid{D}) where D
   FlexibleUnstructuredGrid(ps,cs,ts,os)
 end
 
-struct CartesianDiscreteModel{D} <: DiscreteModel{D}
-  grid::CartesianGrid{D}
+"""
+DiscreteModel associated with a CartesianGrid
+"""
+struct CartesianDiscreteModel{
+  D,U<:UGrid,G<:NewGridGraph{D}} <: DiscreteModel{D}
+
+  cgrid::CartesianGrid{D}
+  ugrid::U
+  gridgraph::G
 end
 
 function CartesianDiscreteModel(; args...)
-  grid = CartesianGrid(; args...)
-  CartesianDiscreteModel(grid)
+  cgrid = CartesianGrid(; args...)
+  grid = UnstructuredGrid(cgrid)
+  ugrid = UGrid(grid)
+  gridgraph = _setup_grid_graph(ugrid,celldim(cgrid))
+  CartesianDiscreteModel(cgrid, ugrid, gridgraph)
+end
+
+Grid(model::CartesianDiscreteModel{D},::Val{D}) where D = model.cgrid
+
+function Grid(model::CartesianDiscreteModel{D},::Val{Z}) where {D,Z}
+  @notimplemented
+end
+
+GridGraph(model::CartesianDiscreteModel{D},::Val{D}) where D = model.gridgraph
+
+function GridGraph(::CartesianDiscreteModel{D},::Val{Z}) where {D,Z}
+  @notimplemented
+end
+
+function NFaceLabels(::CartesianDiscreteModel{D}) where D
+  @notimplemented
+end
+
+function boundarylabels(::CartesianDiscreteModel)
+  @notimplemented
 end
 
 # Helpers
+
+function _setup_grid_graph(ugrid,D)
+
+  cell_to_vertices = connections(ugrid)
+  vertex_to_cells = generate_dual_connections(cell_to_vertices)
+  dim_to_cell_to_vefs = Vector{IndexCellArray{Int,1}}(undef,D)
+  dim_to_vef_to_cells = Vector{IndexCellArray{Int,1}}(undef,D)
+
+  d=0
+  dim_to_cell_to_vefs[d+1] = CellVectorFromDataAndPtrs(
+    cell_to_vertices.list,cell_to_vertices.ptrs)
+
+  dim_to_vef_to_cells[d+1] = CellVectorFromDataAndPtrs(
+    vertex_to_cells.list,vertex_to_cells.ptrs)
+
+  for d=1:(D-1)
+
+    cell_to_dfaces = generate_cell_to_faces(d,ugrid,vertex_to_cells)
+    dface_to_cells = generate_dual_connections(cell_to_dfaces)
+
+    dim_to_cell_to_vefs[d+1] = CellVectorFromDataAndPtrs(
+      cell_to_dfaces.list,cell_to_dfaces.ptrs)
+
+    dim_to_vef_to_cells[d+1] = CellVectorFromDataAndPtrs(
+    dface_to_cells.list,dface_to_cells.ptrs)
+
+  end
+
+  NewGridGraph(dim_to_cell_to_vefs, dim_to_vef_to_cells)
+
+end
 
 function _cartesiangrid(partition::NTuple{D,Int},domain,order) where D
   if domain === nothing

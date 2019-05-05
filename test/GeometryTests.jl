@@ -16,6 +16,9 @@ using Numa.Vtkio
 
   grid = CartesianGrid(domain=(0.0,1.0,-1.0,2.0),partition=(3,4))
 
+  @test celldim(grid) == 2
+  @test pointdim(grid) == 2
+
   x = points(grid)
 
   @test isa(x,CellValue{Point{2}})
@@ -142,14 +145,14 @@ end
   edge_to_cells = CellArrayFromArrayOfArrays([[1],[1,2],[2,1],[2]])
 
   graph = NewGridGraph(
-    (cell_to_vertices, cell_to_edges),
-    (vertex_to_cells, edge_to_cells))
+    [cell_to_vertices, cell_to_edges],
+    [vertex_to_cells, edge_to_cells])
 
-  @test isa(graph,NewGridGraph{1})
-  @test cellvefs(graph,0) == cell_to_vertices
-  @test cellvefs(graph,1) == cell_to_edges
-  @test vefcells(graph,0) == vertex_to_cells
-  @test vefcells(graph,1) == edge_to_cells
+  @test isa(graph,NewGridGraph{2})
+  @test celltovefs(graph,0) == cell_to_vertices
+  @test celltovefs(graph,1) == cell_to_edges
+  @test veftocells(graph,0) == vertex_to_cells
+  @test veftocells(graph,1) == edge_to_cells
 
 end
 
@@ -174,6 +177,14 @@ end
   model = CartesianDiscreteModel(
     domain=(0.0,1.0,-1.0,2.0,0.0,1.0),
     partition=(3,4,2))
+
+  grid = Grid(model,3)
+
+  @test isa(grid,CartesianGrid{3})
+
+  gridgraph = GridGraph(model,3)
+
+  @test isa(gridgraph, NewGridGraph)
 
 end
 

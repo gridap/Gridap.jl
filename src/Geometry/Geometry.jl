@@ -32,8 +32,8 @@ export nfacegeolabel
 export geolabels
 export NewGridGraph
 export DiscreteModel
-export cellvefs
-export vefcells
+export celldim
+export pointdim
 
 """
 Minimal interface for a mesh used for numerical integration
@@ -130,7 +130,11 @@ end
 
 cellorders(::Grid)::CellValue{Int} = @abstractmethod
 
-triangulation(grid::Grid) = TriangulationFromGrid(grid)
+celldim(::Grid{D,Z}) where {D,Z} = Z
+
+pointdim(::Grid{D,Z}) where {D,Z} = D
+
+triangulation(grid::Grid) = TriangulationFromGrid(grid) #@fverdugo replace by Triangulation
 
 """
 Abstract type that provides extended connectivity information associated with a grid.
@@ -150,7 +154,7 @@ veftocells(::GridGraph)::IndexCellArray{Int,1} = @abstractmethod
 """
 Extracts the grid graph of the given grid
 """
-gridgraph(::Grid)::GridGraph = @notimplemented
+gridgraph(::Grid)::GridGraph = @notimplemented #@fverdugo Replace by GridGraph
 
 #@fverdugo Do we need an abstract one?
 """
@@ -195,27 +199,23 @@ geolabels(l::NFacesLabels,physlabel::Integer) = l.physlabel_to_geolabels[physlab
 #@fverdugo Do we need an abstract one?
 struct NewGridGraph{
   D,
-  N,
-  C<:NTuple{N,<:IndexCellArray{Int,1}},
-  V<:NTuple{N,<:IndexCellArray{Int,1}}} <: GridGraph
+  C<:NTuple{D,<:IndexCellArray{Int,1}},
+  V<:NTuple{D,<:IndexCellArray{Int,1}}}
   dim_to_cell_to_vefs::C
   dim_to_vefs_to_cells::V
 end
 
 function NewGridGraph(
-  dim_to_cell_to_vefs::NTuple{N,<:IndexCellArray{Int,1}},
-  dim_to_vefs_to_cells::NTuple{N,<:IndexCellArray{Int,1}}) where N
-  D = N-1
-  C = typeof(dim_to_cell_to_vefs)
-  V = typeof(dim_to_vefs_to_cells)
-  NewGridGraph{D,N,C,V}(
-    dim_to_cell_to_vefs,
-    dim_to_vefs_to_cells)
+  dim_to_cell_to_vefs::Vector{<:IndexCellArray{Int,1}},
+  dim_to_vefs_to_cells::Vector{<:IndexCellArray{Int,1}})
+  c = tuple(dim_to_cell_to_vefs...)
+  v = tuple(dim_to_vefs_to_cells...)
+  NewGridGraph(c,v)
 end
 
-cellvefs(graph::NewGridGraph,dim::Integer) = graph.dim_to_cell_to_vefs[dim+1]
+celltovefs(graph::NewGridGraph,dim::Integer) = graph.dim_to_cell_to_vefs[dim+1]
 
-vefcells(graph::NewGridGraph,dim::Integer) = graph.dim_to_vefs_to_cells[dim+1]
+veftocells(graph::NewGridGraph,dim::Integer) = graph.dim_to_vefs_to_cells[dim+1]
 
 """
 D is number of components of the points in the model
@@ -225,14 +225,14 @@ abstract type DiscreteModel{D} end
 """
 extracts the Grid{D,Z} from the Model
 """
-function grid(::DiscreteModel{D},::Val{Z})::Grid{D,Z} where {D,Z}
+function Grid(::DiscreteModel{D},::Val{Z})::Grid{D,Z} where {D,Z}
   @abstractmethod
 end
 
 """
 Extracts the gridgraph for the grid made of nfaces of dim Z
 """
-function gridgraph(::DiscreteModel,::Val{Z})::GridGraph{Z} where Z
+function GridGraph(::DiscreteModel,::Val{Z})::GridGraph{Z} where Z
   @abstractmethod
 end
 
@@ -241,7 +241,7 @@ Extracts the NFacesLabels object providing information
 about the geometrical and physical labels of all the
 nfaces in the model
 """
-function nfacelabels(::DiscreteModel{D})::NFacesLabels{D} where D
+function NFaceLabels(::DiscreteModel{D})::NFacesLabels{D} where D
   @abstractmethod
 end
 
@@ -253,9 +253,9 @@ function boundarylabels(::DiscreteModel)::Vector{Int}
   @abstractmethod
 end
 
-grid(m::DiscreteModel,dim::Integer) = grid(m,Val(dim)) 
+Grid(m::DiscreteModel,dim::Integer) = Grid(m,Val(dim)) 
 
-gridgraph(m::DiscreteModel,dim::Integer) = gridgraph(m,Val(dim))
+GridGraph(m::DiscreteModel,dim::Integer) = GridGraph(m,Val(dim))
 
 #@fverdugo to be deleted together with (old) GridGraph
 struct GridGraphFromData{C<:IndexCellArray{Int,1},V<:IndexCellArray{Int,1}} <: GridGraph
