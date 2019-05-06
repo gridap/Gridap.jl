@@ -25,18 +25,18 @@ abstract type DOFBasis{D,T} end
 Evaluate the DOFs for a given polynomial basis
 """
 function evaluate(this::DOFBasis{D,T},
-	fields::Map{Point{D},N,T,N})::Array{Float64,N} where {D,T,N}
+	fields::Map{Point{D},N,T,N}, auxv::AbstractArray)::Array{Float64,N} where {D,T,N}
 	@abstractmethod
 end
 # @santiagobadia : To replace the following ones
 
 function evaluate(this::DOFBasis{D,T},
-	prebasis::Basis{D,T})::Array{Float64,2} where {D,T}
+	prebasis::Basis{D,T}, auxv::AbstractMatrix)::Array{Float64,2} where {D,T}
 	@abstractmethod
 end
 
 function evaluate(this::DOFBasis{D,T},
-	prebasis::Field{D,T})::Vector{Float64} where {D,T}
+	prebasis::Field{D,T}, auxv::AbstractVector)::Vector{Float64} where {D,T}
 	@abstractmethod end
 
 """
@@ -52,11 +52,11 @@ Evaluate the Lagrangian DOFs basis (i.e., nodal values) for a given polynomial
 basis
 """
 function evaluate(this::LagrangianDOFBasis{D,T},
-	prebasis::Basis{D,T}) where {D,T}
+	prebasis::Basis{D,T}, b::AbstractMatrix{Float64}) where {D,T}
 	vals = Polynomials.evaluate(prebasis,this.nodes)
 	l = length(prebasis); lt = length(T)
-	E = eltype(T)
-	b = Array{E,2}(undef,l, l)
+	# E = eltype(T)
+	# b = Array{E,2}(undef,l, l)
 	nnd = length(this.nodes)
 	@assert nnd*length(T) == length(prebasis)
 	function computeb!(a,b,lt,nnd)
@@ -77,19 +77,27 @@ end
 Evaluate the Lagrangian DOFs basis (i.e., nodal values) for a given field in
 the reference space
 """
+function numlocaldofs(this::LagrangianDOFBasis{D,T}) where {D,T}
+	lt = length(T)
+	# E = eltype(T)
+	nnd = length(this.nodes)
+	# return b = Vector{E}(undef,lt*nnd)
+	return lt*nnd
+end
+
 # @santiagobadia : Be careful, a physical field must be composed with geomap
 # before being used here. Is this what we want?
 function evaluate(this::LagrangianDOFBasis{D,T},
-	field::Field{D,T}) where {D,T}
+	field::Field{D,T}, b::AbstractVector{Float64}) where {D,T}
 	vals = Maps.evaluate(field,this.nodes)
 	# I would like to use evaluate everywhere, putting evaluate in Numa and
 	# importing it in all submodules
 	# This way we could use the same evaluate for bases and fields...
 	# @santiagobadia : TO BE DONE
 	lt = length(T)
-	E = eltype(T)
+	# E = eltype(T)
 	nnd = length(this.nodes)
-	b = Vector{E}(undef,lt*nnd)
+	# b = Vector{E}(undef,lt*nnd)
 	function computeb!(a,b,lt,nnd)
 		for k in 1:lt
 			off = nnd*(k-1)
@@ -140,7 +148,9 @@ function LagrangianRefFE{D,T}(polytope::Polytope{D},
 	nodes=NodesArray(polytope,orders)
 	dofsb = LagrangianDOFBasis{D,T}(nodes.coordinates)
 	prebasis = TensorProductMonomialBasis{D,T}(orders)
-	changeofbasis=inv(evaluate(dofsb,prebasis))
+	aux = zeros(Float64,numlocaldofs(dofsb),numlocaldofs(dofsb))
+	@assert numlocaldofs(dofsb) == length(prebasis)
+	changeofbasis=inv(evaluate(dofsb,prebasis,aux))
 	basis = PolynomialBasisWithChangeOfBasis{D,T}(prebasis, changeofbasis)
 	nfacedofs=nodes.nfacenodes
 	LagrangianRefFE{D,T}(polytope, dofsb, basis, nfacedofs)
