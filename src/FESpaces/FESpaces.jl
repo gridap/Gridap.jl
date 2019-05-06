@@ -34,20 +34,20 @@ function assemblycellgids(::FESpace)::CellVector{Int}
 	@abstractmethod
 end
 
-# function applyconstraints(::FESpace,
-# 	cellvec::CellVector, dof_eqclass::CellVector{Int})::Tuple{CellVector,CellVector{Int}}
-# 	@abstractmethod
-# end
-#
-# function applyconstraintsrows(::FESpace,
-# 	cellmat::CellMatrix, dof_eqclass::CellVector{Int})::Tuple{CellMatrix,CellVector{Int}}
-# 	@abstractmethod
-# end
-#
-# function applyconstraintscols(::FESpace,
-# 	cellmat::CellMatrix, dof_eqclass::CellVector{Int})::Tuple{CellMatrix,CellVector{Int}}
-# 	@abstractmethod
-# end
+function applyconstraints(::FESpace,
+	cellvec::CellVector)::Tuple{CellVector,CellVector{Int}}
+	@abstractmethod
+end
+
+function applyconstraintsrows(::FESpace,
+	cellmat::CellMatrix)::Tuple{CellMatrix,CellVector{Int}}
+	@abstractmethod
+end
+
+function applyconstraintscols(::FESpace,
+	cellmat::CellMatrix)::Tuple{CellMatrix,CellVector{Int}}
+	@abstractmethod
+end
 
 """
 Conforming FE Space, where only one RefFE is possible in the whole mesh
@@ -78,21 +78,18 @@ function ConformingFESpace(
 end
 
 function applyconstraints(this::ConformingFESpace,
-	cellvec::CellVector,
-	dof_eqclass=this.dof_eqclass::CellVector{Int})
-	return cellvec, dof_eqclass
+	cellvec::CellVector)
+	return cellvec, this.dof_eqclass
 end
 
 function applyconstraintsrows(this::ConformingFESpace,
-	cellmat::CellMatrix,
-	dof_eqclass=this.dof_eqclass::CellVector{Int})
-	return cellmat, dof_eqclass
+	cellmat::CellMatrix)
+	return cellmat, this.dof_eqclass
 end
 
 function applyconstraintscols(this::ConformingFESpace,
-	cellmat::CellMatrix,
-	dof_eqclass=this.dof_eqclass::CellVector{Int})
-	return cellmat, dof_eqclass
+	cellmat::CellMatrix)
+	return cellmat, this.dof_eqclass
 end
 
 """
@@ -145,7 +142,7 @@ end
 
 function assemble(this::Assembler, vals::CellMatrix{T}) where T
 	_vals, rows_m = applyconstraintsrows(this.testfesp, vals)
-	_vals, cols_m = applyconstraintscols(this.trialfesp, _vals)
+	_vals, cols_m = applyconstraintscols(this.trialfesp, _vals, )
 	# @santiagobadia : Evaluate efficiency, best way to do it in Julia
 	# without pre-allocate loop?
 	aux_row = []; aux_col = []; aux_vals = []
