@@ -118,12 +118,12 @@ is_fixed_vef[1:4] .= true
 
 fesp = ConformingFESpace(reffe,trian,graph,is_fixed_vef)
 assembler = ConformingAssembler(fesp)
-assembler.assembly_op_cols
+# assembler.assembly_op_cols
 funh = interpolate(fun, fesp)
 funh.coeffs.gid_to_val_pos
 funh.coeffs.gid_to_val_neg
 ##
 
-# using Numa.FESpaces: assemble
-# sys_vec = assemble(assembler,kvec)
-# sys_mat = assemble(assembler,kmat)
+using Numa.FESpaces: assemble
+sys_vec = assemble(assembler,kvec)
+sys_mat = assemble(assembler,kmat)
