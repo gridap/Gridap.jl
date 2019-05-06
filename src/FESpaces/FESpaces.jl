@@ -20,7 +20,7 @@ using Numa.CellValues: CellVectorByComposition
 using Numa.CellMaps
 using Numa.CellMaps: CellFieldFromExpand
 
-import Numa: evaluate
+import Numa: evaluate!
 
 # Abstract types and interfaces
 
@@ -85,7 +85,6 @@ function ConformingAssembler(this::FESpace)
 	ConformingAssembler{Int}(this.dof_eqclass, this.dof_eqclass, this.num_free_dofs)
 end
 
-
 # Methods
 
 function assemble(this::Assembler, vals::CellVector{T}) where T
@@ -120,26 +119,6 @@ function assemble(this::Assembler, vals::CellMatrix{T}) where T
 	return sparse(aux_row, aux_col, aux_vals)
 end
 
-# function globaldofs(reffe::RefFE, cellvefs, vefcells)
-# 	nfdofs=Array{Array{Int64},1}(undef,length(vefcells))
-# 	c=1
-# 	nfdofs_l = []
-# 	nfdofs_g = zeros(Int, length(vefcells)+1)
-# 	nfdofs_g[1] = 1
-# 	for (ignf,nf) in enumerate(vefcells)
-# 		owner_cell = nf[1]
-# 		lid_vef = findfirst(i->i==ignf,cellvefs[owner_cell])
-# 		num_nf_dofs = length(reffe.nfacedofs[lid_vef])
-# 		nfdofs_l = [nfdofs_l..., c:c+num_nf_dofs-1... ]
-# 		nfdofs_g[ignf+1] += num_nf_dofs + nfdofs_g[ignf]
-# 		c += num_nf_dofs
-# 	end
-# 	return CellVectorFromDataAndPtrs(nfdofs_l, nfdofs_g)
-# end
-
-# @santiagobadia : Version with Dirichlet data. When I will know better the
-# way to get whether a VEF is fixed or not, I will change it and eliminate the
-# one above.
 function globaldofs(reffe::RefFE, cellvefs, vefcells, is_fixed_vef::AbstractVector)
 	nfdofs=Array{Array{Int64},1}(undef,length(vefcells))
 	c=1
@@ -174,7 +153,7 @@ function interpolate(fun::Function, fesp::FESpace)
 	fixed_dofs = zeros(Float64, fesp.num_fixed_dofs)
 	aux = zeros(Float64,cellsize(fesp.dof_eqclass)...)
 	for (imap,l2g) in zip(uphys,celldofs)
-		evaluate(dofb,imap,aux)
+		evaluate!(dofb,imap,aux)
 		for (i,gdof) in enumerate(l2g)
 			if (gdof > 0)
 				free_dofs[gdof] = aux[i]

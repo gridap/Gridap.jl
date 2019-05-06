@@ -45,6 +45,7 @@ nodes = NodesArray(polytope, orders)
 using Numa.RefFEs: LagrangianDOFBasis
 dofsb = LagrangianDOFBasis{D,VectorValue{D}}(nodes.coordinates)
 prebasis = TensorProductMonomialBasis{D,VectorValue{D}}(orders)
+# res = RefFEs.evaluate!(dofsb,prebasis,aux)
 res = RefFEs.evaluate(dofsb,prebasis)
 @test res[8,8] == 1.0
 res = RefFEs.evaluate(dofsb,prebasis)

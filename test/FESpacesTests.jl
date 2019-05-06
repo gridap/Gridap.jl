@@ -97,7 +97,7 @@ uphys = fun ∘ phi
 evaluate(phi, gps)
 evaluate(uphys, gps)
 ksca = integrate(ab(uphys,uphys),trian,quad)
-typeof(kvec)
+typeof(ksca)
 int = sum(ksca)
 @test int ≈ 1.0
 ##
@@ -124,6 +124,6 @@ funh.coeffs.gid_to_val_pos
 funh.coeffs.gid_to_val_neg
 ##
 
-using Numa.FESpaces: assemble
-sys_vec = assemble(assembler,kvec)
-sys_mat = assemble(assembler,kmat)
+# using Numa.FESpaces: assemble
+# sys_vec = assemble(assembler,kvec)
+# sys_mat = assemble(assembler,kmat)

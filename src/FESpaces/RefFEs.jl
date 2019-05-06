@@ -6,13 +6,14 @@ using Numa.Maps
 using Numa.Polytopes
 using Numa.Polynomials
 using Numa.Maps: Basis
+using Numa.Maps: return_size
 
 export DOFBasis
 export RefFE
 export LagrangianRefFE
 export shfbasis
 
-import Numa: evaluate
+import Numa: evaluate, evaluate!
 
 # Abstract types and interfaces
 
@@ -25,17 +26,25 @@ abstract type DOFBasis{D,T} end
 Evaluate the DOFs for a given polynomial basis
 """
 function evaluate(this::DOFBasis{D,T},
+	fields::Map{Point{D},N,T,M})::Array{Float64,M} where {D,T,N,M}
+	size_arr = return_size(fields, (numlocaldofs(this),))
+	aux = zeros(Float64, size_arr...)
+	evaluate!(this,fields,aux)
+	return aux
+end
+
+function evaluate!(this::DOFBasis{D,T},
 	fields::Map{Point{D},N,T,N}, auxv::AbstractArray)::Array{Float64,N} where {D,T,N}
 	@abstractmethod
 end
 # @santiagobadia : To replace the following ones
 
-function evaluate(this::DOFBasis{D,T},
+function evaluate!(this::DOFBasis{D,T},
 	prebasis::Basis{D,T}, auxv::AbstractMatrix)::Array{Float64,2} where {D,T}
 	@abstractmethod
 end
 
-function evaluate(this::DOFBasis{D,T},
+function evaluate!(this::DOFBasis{D,T},
 	prebasis::Field{D,T}, auxv::AbstractVector)::Vector{Float64} where {D,T}
 	@abstractmethod end
 
@@ -51,7 +60,7 @@ end
 Evaluate the Lagrangian DOFs basis (i.e., nodal values) for a given polynomial
 basis
 """
-function evaluate(this::LagrangianDOFBasis{D,T},
+function evaluate!(this::LagrangianDOFBasis{D,T},
 	prebasis::Basis{D,T}, b::AbstractMatrix{Float64}) where {D,T}
 	vals = Polynomials.evaluate(prebasis,this.nodes)
 	l = length(prebasis); lt = length(T)
@@ -87,7 +96,7 @@ end
 
 # @santiagobadia : Be careful, a physical field must be composed with geomap
 # before being used here. Is this what we want?
-function evaluate(this::LagrangianDOFBasis{D,T},
+function evaluate!(this::LagrangianDOFBasis{D,T},
 	field::Field{D,T}, b::AbstractVector{Float64}) where {D,T}
 	vals = Maps.evaluate(field,this.nodes)
 	# I would like to use evaluate everywhere, putting evaluate in Numa and
@@ -150,7 +159,7 @@ function LagrangianRefFE{D,T}(polytope::Polytope{D},
 	prebasis = TensorProductMonomialBasis{D,T}(orders)
 	aux = zeros(Float64,numlocaldofs(dofsb),numlocaldofs(dofsb))
 	@assert numlocaldofs(dofsb) == length(prebasis)
-	changeofbasis=inv(evaluate(dofsb,prebasis,aux))
+	changeofbasis=inv(evaluate!(dofsb,prebasis,aux))
 	basis = PolynomialBasisWithChangeOfBasis{D,T}(prebasis, changeofbasis)
 	nfacedofs=nodes.nfacenodes
 	LagrangianRefFE{D,T}(polytope, dofsb, basis, nfacedofs)
