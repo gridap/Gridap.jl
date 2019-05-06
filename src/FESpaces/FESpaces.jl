@@ -30,6 +30,25 @@ the cell dimension `Z`, and the field type `T` (rank) and the number type `E`
 """
 abstract type FESpace{D,Z,T,E} end
 
+function assemblycellgids(::FESpace)::CellVector{Int}
+	@abstractmethod
+end
+
+# function applyconstraints(::FESpace,
+# 	cellvec::CellVector, dof_eqclass::CellVector{Int})::Tuple{CellVector,CellVector{Int}}
+# 	@abstractmethod
+# end
+#
+# function applyconstraintsrows(::FESpace,
+# 	cellmat::CellMatrix, dof_eqclass::CellVector{Int})::Tuple{CellMatrix,CellVector{Int}}
+# 	@abstractmethod
+# end
+#
+# function applyconstraintscols(::FESpace,
+# 	cellmat::CellMatrix, dof_eqclass::CellVector{Int})::Tuple{CellMatrix,CellVector{Int}}
+# 	@abstractmethod
+# end
+
 """
 Conforming FE Space, where only one RefFE is possible in the whole mesh
 """
@@ -41,22 +60,39 @@ struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T,Float64}
 	dof_eqclass::CellVector{Int}
 	num_free_dofs::Int
 	num_fixed_dofs::Int
+	# dirichlet_tags::Array{Int} # Physical tags that describe strong dirichlet boundary
 end
 
 function ConformingFESpace(
 	reffe::LagrangianRefFE{D,T},
 	trian::Triangulation{D,Z},
 	graph::GridGraph,
+	# @santiagobadia : To be eliminated
 	is_fixed_vef::AbstractVector{Bool}) where {D,Z,T}
 	cellvefs = celltovefs(graph)
 	vefcells = veftocells(graph)
-	# @santiagobadia : To be eliminated
-	# is_fixed_vef = zeros(Bool, length(vefcells))
 	gldofs, nfree, nfixed  = globaldofs(reffe, cellvefs, vefcells, is_fixed_vef)
-	# ndofs = gldofs[end][end]
 	# @santiagobadia : We are calling twice cell_to_vefs...
 	dof_eqclass = CellVectorByComposition(cellvefs, gldofs)
 	ConformingFESpace{D,Z,T}(reffe, trian, graph, dof_eqclass, nfree, nfixed)
+end
+
+function applyconstraints(this::ConformingFESpace,
+	cellvec::CellVector,
+	dof_eqclass=this.dof_eqclass::CellVector{Int})
+	return cellvec, dof_eqclass
+end
+
+function applyconstraintsrows(this::ConformingFESpace,
+	cellmat::CellMatrix,
+	dof_eqclass=this.dof_eqclass::CellVector{Int})
+	return cellmat, dof_eqclass
+end
+
+function applyconstraintscols(this::ConformingFESpace,
+	cellmat::CellMatrix,
+	dof_eqclass=this.dof_eqclass::CellVector{Int})
+	return cellmat, dof_eqclass
 end
 
 """
@@ -74,25 +110,29 @@ function assemblematrix(::CellMatrix{E})::Matrix{E} where {E}
 	@abstractmethod
 end
 
-
 struct ConformingAssembler{E} <: Assembler{E}
-	assembly_op_rows::CellVector{Int}
-	assembly_op_cols::CellVector{Int}
+	testfesp::FESpace
+	trialfesp::FESpace
 	num_dofs::Int
 end
 
 function ConformingAssembler(this::FESpace)
-	ConformingAssembler{Int}(this.dof_eqclass, this.dof_eqclass, this.num_free_dofs)
+	ConformingAssembler{Int}(this, this, this.num_free_dofs)
+end
+
+function ConformingAssembler(test::FESpace, trial::FESpace)
+	@assert trial.num_free_dofs == test.num_free_dofs
+	ConformingAssembler{Int}(trial, test, trial.num_free_dofs)
 end
 
 # Methods
 
 function assemble(this::Assembler, vals::CellVector{T}) where T
-	rows_m = this.assembly_op_rows
+	_vals, rows_m = applyconstraints(this.testfesp, vals)
 	# @santiagobadia : Evaluate efficiency, best way to do it in Julia
 	# without pre-allocate loop?
 	aux_row = []; aux_vals = []
-	for vals_c in vals
+	for vals_c in _vals
 		aux_vals = [aux_vals..., vals_c...]
 	end
 	for rows_c in rows_m
@@ -102,12 +142,12 @@ function assemble(this::Assembler, vals::CellVector{T}) where T
 end
 
 function assemble(this::Assembler, vals::CellMatrix{T}) where T
-	rows_m = this.assembly_op_rows
-	cols_m = this.assembly_op_cols
+	_vals, rows_m = applyconstraintsrows(this.testfesp, vals)
+	_vals, cols_m = applyconstraintscols(this.trialfesp, _vals)
 	# @santiagobadia : Evaluate efficiency, best way to do it in Julia
 	# without pre-allocate loop?
 	aux_row = []; aux_col = []; aux_vals = []
-	for vals_c in vals
+	for vals_c in _vals
 		aux_vals = [aux_vals..., vec(vals_c)...]
 	end
 	for (rows_c, cols_c) in zip(rows_m,cols_m)
