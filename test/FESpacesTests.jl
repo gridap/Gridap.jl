@@ -124,6 +124,6 @@ funh.coeffs.gid_to_val_pos
 funh.coeffs.gid_to_val_neg
 ##
 
-# using Numa.FESpaces: assemble
-# sys_vec = assemble(assembler,kvec)
-# sys_mat = assemble(assembler,kmat)
+using Numa.FESpaces: assemble
+sys_vec = assemble(assembler,kvec)
+sys_mat = assemble(assembler,kmat)
