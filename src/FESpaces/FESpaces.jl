@@ -132,11 +132,13 @@ function assemble(this::Assembler, vals::CellVector{T}) where T
 	# @santiagobadia : Evaluate efficiency, best way to do it in Julia
 	# without pre-allocate loop?
 	aux_row = []; aux_vals = []
-	for vals_c in _vals
-		aux_vals = [aux_vals..., vals_c...]
-	end
-	for rows_c in rows_m
-		aux_row = [ aux_row..., rows_c...]
+	for (rows_c,vals_c) in zip(rows_m,_vals)
+		for (i,gid) in enumerate(rows_c)
+			if gid > 0
+				aux_vals = [aux_vals..., vals_c[i]]
+				aux_row = [ aux_row..., rows_c[i]...]
+			end
+		end
 	end
 	return Array(sparsevec(aux_row, aux_vals))
 end
@@ -148,12 +150,23 @@ function assemble(this::Assembler, vals::CellMatrix{T}) where T
 	# without pre-allocate loop?
 	aux_row = []; aux_col = []; aux_vals = []
 	for vals_c in _vals
-		aux_vals = [aux_vals..., vec(vals_c)...]
 	end
-	for (rows_c, cols_c) in zip(rows_m,cols_m)
-		for I in Iterators.product(rows_c, cols_c)
-			aux_row = [aux_row..., I[1]]
-			aux_col = [aux_col..., I[2]]
+	for (rows_c, cols_c, vals_c) in zip(rows_m,cols_m,_vals)
+		for (i,gidrow) in enumerate(rows_c)
+			if gidrow > 0
+				for (j,gidcol) in enumerate(cols_c)
+					if gidcol > 0
+						aux_row = [aux_row..., rows_c[i]]
+						aux_col = [aux_col..., cols_c[j]]
+						aux_vals = [aux_vals..., vals_c[i,j]]
+						# for I in Iterators.product(rows_c, cols_c)
+						# 	aux_row = [aux_row..., I[1]]
+						# 	aux_col = [aux_col..., I[2]]
+						# end
+						# aux_vals = [aux_vals..., vec(vals_c)...]
+					end
+				end
+			end
 		end
 	end
 	return sparse(aux_row, aux_col, aux_vals)
