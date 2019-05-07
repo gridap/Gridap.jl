@@ -14,6 +14,7 @@ using UnstructuredGrids
 export UnstructuredGrid
 export FlexibleUnstructuredGrid
 import Numa.Geometry: points, cells, celltypes, cellorders
+import Numa.Geometry: FullGridGraph
 export cellsdata, cellsptrs
 export UGrid
 import UnstructuredGrids: UGrid
@@ -61,11 +62,25 @@ celltypes(self::UnstructuredGrid) = self.ctypes
 
 cellorders(self::UnstructuredGrid) = self.corders
 
-
 """
 Create a UGrid from a UnstructuredGrid
 """
 UGrid(grid::UnstructuredGrid) = _unstructured_grid_to_ugrid(grid)
+
+function FullGridGraph(grid::UnstructuredGrid)
+  ugrid = UGrid(grid)
+  g = generate_full_grid_graph(ugrid)
+  data = Array{IndexCellArray,2}(undef,size(g))
+  for j in 1:size(g,2)
+    for i in 1:size(g,1)
+      if i != j || (i==1 && j==1)
+        x = g[i,j]
+        data[i,j] = CellVectorFromDataAndPtrs(x.list,x.ptrs)
+      end
+    end
+  end
+  FullGridGraph(data)
+end
 
 """
 Struct representing an unstructured grid with efficient memory layout

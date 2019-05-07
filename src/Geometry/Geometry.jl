@@ -36,6 +36,8 @@ export DiscreteModel
 export celldim
 export pointdim
 export nphyslabels
+export FullGridGraph
+export connections
 
 """
 Minimal interface for a mesh used for numerical integration
@@ -224,6 +226,15 @@ end
 celltovefs(graph::NewGridGraph,dim::Integer) = graph.dim_to_cell_to_vefs[dim+1]
 
 veftocells(graph::NewGridGraph,dim::Integer) = graph.dim_to_vefs_to_cells[dim+1]
+
+struct FullGridGraph
+  data::Array{IndexCellArray,2}
+end
+
+function connections(g::FullGridGraph,from::Integer,to::Integer)
+  @assert from != to || (from == 0 && to == 0)
+  g.data[from+1,to+1]
+end
 
 """
 D is number of components of the points in the model

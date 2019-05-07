@@ -172,6 +172,21 @@ end
 
   ugrid = UGrid(grid)
 
+  graph = FullGridGraph(grid)
+  @test isa(connections(graph,3,0), CellArray)
+  @test isa(connections(graph,3,1), CellArray)
+  @test isa(connections(graph,3,2), CellArray)
+  @test isa(connections(graph,2,0), CellArray)
+  @test isa(connections(graph,2,1), CellArray)
+  @test isa(connections(graph,2,3), CellArray)
+  @test isa(connections(graph,1,0), CellArray)
+  @test isa(connections(graph,1,2), CellArray)
+  @test isa(connections(graph,1,3), CellArray)
+  @test isa(connections(graph,0,0), CellArray)
+  @test isa(connections(graph,0,1), CellArray)
+  @test isa(connections(graph,0,2), CellArray)
+  @test isa(connections(graph,0,3), CellArray)
+
 end
 
 @testset "CartesianDiscreteModel" begin
