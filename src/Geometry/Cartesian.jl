@@ -3,12 +3,6 @@ module Cartesian
 # Dependencies of this module
 
 using StaticArrays: SVector, MVector, @SVector
-using UnstructuredGrids: UGrid
-using UnstructuredGrids: generate_dual_connections
-using UnstructuredGrids: generate_cell_to_faces
-using UnstructuredGrids: connections
-using UnstructuredGrids: coordinates
-using UnstructuredGrids: Connections
 using Numa.Helpers
 using Numa.FieldValues
 using Numa.Polytopes
@@ -20,13 +14,14 @@ using Numa.CellValues
 # Functionality provided 
 
 export CartesianGrid
+export CartesianDiscreteModel
 import Base: size, getindex, IndexStyle
 import Numa.CellValues: cellsize
 import Numa.Geometry: points, cells, celltypes, cellorders, gridgraph
-import Numa.Geometry: Grid, GridGraph, NFaceLabels, boundarylabels
+import Numa.Geometry: Grid, GridGraph, FaceLabels
 import Numa.Geometry.Unstructured: UnstructuredGrid
 import Numa.Geometry.Unstructured: FlexibleUnstructuredGrid
-export CartesianDiscreteModel
+import Numa.Geometry: FullGridGraph
 
 struct CartesianGrid{D} <: Grid{D,D}
   dim_to_limits::NTuple{D,NTuple{2,Float64}}
@@ -82,19 +77,16 @@ end
 """
 DiscreteModel associated with a CartesianGrid
 """
-struct CartesianDiscreteModel{
-  D,U<:UGrid,G<:NewGridGraph{D}} <: DiscreteModel{D}
-
+struct CartesianDiscreteModel{D} <: DiscreteModel{D}
   cgrid::CartesianGrid{D}
-  ugrid::U
-  gridgraph::G
+  ugrid::UnstructuredGrid
+  gridgraph::FullGridGraph
 end
 
 function CartesianDiscreteModel(; args...)
   cgrid = CartesianGrid(; args...)
-  grid = UnstructuredGrid(cgrid)
-  ugrid = UGrid(grid)
-  gridgraph = _setup_grid_graph(ugrid,celldim(cgrid))
+  ugrid = UnstructuredGrid(cgrid)
+  gridgraph = FullGridGraph(ugrid)
   CartesianDiscreteModel(cgrid, ugrid, gridgraph)
 end
 
@@ -103,22 +95,16 @@ Grid(model::CartesianDiscreteModel{D},::Val{D}) where D = model.cgrid
 function Grid(model::CartesianDiscreteModel{D},::Val{Z}) where {D,Z}
 
   ugrid = model.ugrid
-  v2c = veftocells(model.gridgraph,0)
-  c2f = celltovefs(model.gridgraph,Z)
-  vertex_to_cells = Connections(v2c.data,v2c.ptrs)
-  cell_to_faces = Connections(c2f.data,c2f.ptrs)
-
-  fugrid = UGrid(ugrid,Z,vertex_to_cells,cell_to_faces)
-
-  face_to_vertices = connections(fugrid)
-  nfaces = length(face_to_vertices.ptrs)-1
+  gridgraph = model.gridgraph
+  face_to_vertices = connections(gridgraph,Z,0)
+  nfaces = length(face_to_vertices)
   fcode = tuple([HEX_AXIS for i in 1:Z]...)
 
   order = 1
   @notimplementedif order != celldata(cellorders(model.cgrid))
 
-  _points = coordinates(ugrid)
-  _cells_data = face_to_vertices.list
+  _points = points(ugrid)
+  _cells_data = face_to_vertices.data
   _cells_ptrs = face_to_vertices.ptrs
   _ctypes = ConstantCellValue(fcode,nfaces)
   _corders = ConstantCellValue(order,nfaces)
@@ -131,36 +117,44 @@ function Grid(model::CartesianDiscreteModel{D},::Val{Z}) where {D,Z}
     _corders)
 end
 
-GridGraph(model::CartesianDiscreteModel{D},::Val{D}) where D = model.gridgraph
-
-function GridGraph(model::CartesianDiscreteModel{D},::Val{Z}) where {D,Z}
-  @notimplemented
-end
+FullGridGraph(model::CartesianDiscreteModel) = model.gridgraph
 
 #@fverdugo precompute this result
-function NFaceLabels(model::CartesianDiscreteModel{D}) where D
+function FaceLabels(model::CartesianDiscreteModel{D}) where D
   dim_to_face_to_geolabel = Vector{Vector{Int}}(undef,D+1)
   dim_to_offset = _generate_dim_to_offset(D)
   interior_id = dim_to_offset[end]+1
+  boundary_id = -1
   for d in 0:(D-1)
-    face_to_cells = veftocells(model.gridgraph, d)
-    cell_to_faces = celltovefs(model.gridgraph, d)
+    face_to_cells = connections(model.gridgraph,d,D)
+    cell_to_faces = connections(model.gridgraph,D,d)
     offset = dim_to_offset[d+1]
     face_to_geolabel = _generate_pre_geolabel(
       face_to_cells,
       cell_to_faces,
       offset,
-      interior_id)
+      interior_id,boundary_id,d,D)
     dim_to_face_to_geolabel[d+1] = face_to_geolabel
+  end
+  for d in 0:(D-2)
+    for j in (d+1):(D-1)
+      dface_to_jfaces = connections(model.gridgraph,d,j)
+      dface_to_geolabel = dim_to_face_to_geolabel[d+1]
+      jface_to_geolabel = dim_to_face_to_geolabel[j+1]
+      _fix_dface_geolabels!(
+        dface_to_geolabel,
+        jface_to_geolabel,
+        dface_to_jfaces,
+        interior_id,boundary_id)
+    end
   end
   _ncells = ncells(model.cgrid)
   dim_to_face_to_geolabel[end] = ConstantCellValue(interior_id,_ncells)
   phys_labels = [ [i] for i in 1:interior_id ]
-  NFaceLabels(dim_to_face_to_geolabel, phys_labels)
-end
-
-function boundarylabels(::CartesianDiscreteModel)
-  @notimplemented
+  push!(phys_labels,[i for i in 1:(interior_id-1)])
+  tag_to_name = ["physical_tag_$i" for i in 1:interior_id]
+  push!(tag_to_name,"boundary")
+  FaceLabels(dim_to_face_to_geolabel, phys_labels, tag_to_name)
 end
 
 # Helpers
@@ -179,10 +173,13 @@ function _generate_pre_geolabel(
   face_to_cells,
   cell_to_faces,
   offset,
-  interior_id)
+  interior_id,
+  boundary_id,d,D)
 
   nfaces = length(face_to_cells)
   face_to_geolabel = fill(interior_id,nfaces)
+
+  max_ncells_around = 2^(D-d)
 
   _generate_pre_geolabel_kernel!(
     face_to_geolabel,
@@ -190,7 +187,7 @@ function _generate_pre_geolabel(
     face_to_cells.ptrs,
     cell_to_faces.data,
     cell_to_faces.ptrs,
-    offset)
+    offset,boundary_id,max_ncells_around)
 
   face_to_geolabel
 end
@@ -201,7 +198,7 @@ function _generate_pre_geolabel_kernel!(
   face_to_cells_ptrs,
   cell_to_faces_data,
   cell_to_faces_ptrs,
-  offset)
+  offset,boundary_id,max_ncells_around)
 
   nfaces = length(face_to_geolabel)
   for face in 1:nfaces
@@ -219,39 +216,31 @@ function _generate_pre_geolabel_kernel!(
           break
         end
       end
+    elseif ncells_around != max_ncells_around
+      face_to_geolabel[face] = boundary_id
     end
   end
 
 end
 
-function _setup_grid_graph(ugrid,D)
+function _fix_dface_geolabels!(
+  dface_to_geolabel,
+  jface_to_geolabel,
+  dface_to_jfaces,
+  interior_id,boundary_id)
 
-  cell_to_vertices = connections(ugrid)
-  vertex_to_cells = generate_dual_connections(cell_to_vertices)
-  dim_to_cell_to_vefs = Vector{IndexCellArray{Int,1}}(undef,D)
-  dim_to_vef_to_cells = Vector{IndexCellArray{Int,1}}(undef,D)
-
-  d=0
-  dim_to_cell_to_vefs[d+1] = CellVectorFromDataAndPtrs(
-    cell_to_vertices.list,cell_to_vertices.ptrs)
-
-  dim_to_vef_to_cells[d+1] = CellVectorFromDataAndPtrs(
-    vertex_to_cells.list,vertex_to_cells.ptrs)
-
-  for d=1:(D-1)
-
-    cell_to_dfaces = generate_cell_to_faces(d,ugrid,vertex_to_cells)
-    dface_to_cells = generate_dual_connections(cell_to_dfaces)
-
-    dim_to_cell_to_vefs[d+1] = CellVectorFromDataAndPtrs(
-      cell_to_dfaces.list,cell_to_dfaces.ptrs)
-
-    dim_to_vef_to_cells[d+1] = CellVectorFromDataAndPtrs(
-    dface_to_cells.list,dface_to_cells.ptrs)
-
+  for (dface, jfaces) in enumerate(dface_to_jfaces)
+    if dface_to_geolabel[dface] != boundary_id
+      continue
+    end
+    for jface in jfaces
+      geolabel = jface_to_geolabel[jface]
+      if geolabel != interior_id && geolabel != boundary_id
+        dface_to_geolabel[dface] = geolabel
+        break
+      end
+    end
   end
-
-  NewGridGraph(dim_to_cell_to_vefs, dim_to_vef_to_cells)
 
 end
 

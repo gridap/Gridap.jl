@@ -28,14 +28,18 @@ export cellcoordinates
 export cellbasis
 export ncells
 export npoints
-export NFaceLabels
-export nfacegeolabel
-export geolabels
+export FaceLabels
+export labels_on_dim
+export labels_on_tag
+export ntags
+export tag_from_name
+export name_from_tag
 export NewGridGraph
 export DiscreteModel
 export celldim
 export pointdim
-export nphyslabels
+export FullGridGraph
+export connections
 
 """
 Minimal interface for a mesh used for numerical integration
@@ -162,68 +166,56 @@ Extracts the grid graph of the given grid
 """
 gridgraph(::Grid)::GridGraph = @notimplemented #@fverdugo Replace by GridGraph
 
-#@fverdugo Do we need an abstract one?
 """
 Classification of nfaces into geometrical and physical labels
-D dimension of the space, N = D+1
 """
-struct NFaceLabels{D,N,V<:NTuple{N,<:IndexCellValue{Int}}}
-  dim_to_nface_to_geolabel::V
-  physlabel_to_geolabels::Vector{Vector{Int}}
+struct FaceLabels
+  dim_to_nface_to_label::Vector{IndexCellValue}
+  tag_to_labels::Vector{Vector{Int}}
+  tag_to_name::Vector{String}
 end
 
-function NFaceLabels(
-  dim_to_nface_to_geolabel::Vector{<:AbstractVector{Int}},
-  physlabel_to_geolabels::Vector{Vector{Int}})
-  cv = tuple( [ CellValueFromArray(v) for v in dim_to_nface_to_geolabel ]...)
-  NFaceLabels(
-    cv,
-    physlabel_to_geolabels)
-end
+function FaceLabels(
+  dim_to_nface_to_label::Vector{Vector{Int}},
+  physlabel_to_labels::Vector{Vector{Int}},
+  tag_to_name::Vector{String})
 
-function NFaceLabels(
-  dim_to_nface_to_geolabel::NTuple{N,<:IndexCellValue{Int}},
-  physlabel_to_geolabels::Vector{Vector{Int}}) where N
-  D = N-1
-  V = typeof(dim_to_nface_to_geolabel)
-  NFaceLabels{D,N,V}(
-    dim_to_nface_to_geolabel,
-    physlabel_to_geolabels)
+  cv = [ CellValueFromArray(v) for v in dim_to_nface_to_label ]
+  FaceLabels(cv, physlabel_to_labels, tag_to_name)
 end
 
 """
-Returns an AbstractVector{Int} that represent the geolabel for
+Returns an AbstractVector{Int} that represent the label for
 each nface of dimension dim
 """
-nfacegeolabel(l::NFaceLabels,dim::Integer) = l.dim_to_nface_to_geolabel[dim+1]
+labels_on_dim(l::FaceLabels,dim::Integer) = l.dim_to_nface_to_label[dim+1]
 
 """
-Returns a Vector{Int} with the goelabels associated with a given physlabel
+Returns a Vector{Int} with the goelabels associated with a given phystag
 """
-geolabels(l::NFaceLabels,physlabel::Integer) = l.physlabel_to_geolabels[physlabel]
+labels_on_tag(l::FaceLabels,tag::Integer) = l.tag_to_labels[tag]
 
-nphyslabels(l::NFaceLabels) = length(l.physlabel_to_geolabels)
+ntags(l::FaceLabels) = length(l.tag_to_labels)
 
-#@fverdugo Do we need an abstract one?
-struct NewGridGraph{
-  D,
-  C<:NTuple{D,<:IndexCellArray{Int,1}},
-  V<:NTuple{D,<:IndexCellArray{Int,1}}}
-  dim_to_cell_to_vefs::C
-  dim_to_vefs_to_cells::V
+function tag_from_name(l::FaceLabels,name::String)
+  for tag in 1:ntags(l)
+    if l.tag_to_name[tag] == name
+      return tag
+    end
+  end
+  0
 end
 
-function NewGridGraph(
-  dim_to_cell_to_vefs::Vector{<:IndexCellArray{Int,1}},
-  dim_to_vefs_to_cells::Vector{<:IndexCellArray{Int,1}})
-  c = tuple(dim_to_cell_to_vefs...)
-  v = tuple(dim_to_vefs_to_cells...)
-  NewGridGraph(c,v)
+name_from_tag(l::FaceLabels,tag::Integer) = l.tag_to_name[tag]
+
+struct FullGridGraph
+  data::Array{IndexCellArray,2}
 end
 
-celltovefs(graph::NewGridGraph,dim::Integer) = graph.dim_to_cell_to_vefs[dim+1]
-
-veftocells(graph::NewGridGraph,dim::Integer) = graph.dim_to_vefs_to_cells[dim+1]
+function connections(g::FullGridGraph,from::Integer,to::Integer)
+  @assert from != to || (from == 0 && to == 0)
+  g.data[from+1,to+1]
+end
 
 """
 D is number of components of the points in the model
@@ -237,27 +229,16 @@ function Grid(::DiscreteModel{D},::Val{Z})::Grid{D,Z} where {D,Z}
   @abstractmethod
 end
 
-"""
-Extracts the gridgraph for the grid made of nfaces of dim Z
-"""
-function GridGraph(::DiscreteModel,::Val{Z})::GridGraph{Z} where Z
+function FullGridGraph(::DiscreteModel)
   @abstractmethod
 end
 
 """
-Extracts the NFaceLabels object providing information
-about the geometrical and physical labels of all the
-nfaces in the model
+Extracts the FaceLabels object providing information
+about the geometrical labels and physical tags of all the
+n-faces in the model for n=0,...,D
 """
-function NFaceLabels(::DiscreteModel{D})::NFaceLabels{D} where D
-  @abstractmethod
-end
-
-"""
-Provides a vector containing the labels of the geometrical entities
-that touch the boundary
-"""
-function boundarylabels(::DiscreteModel)::Vector{Int}
+function FaceLabels(::DiscreteModel{D})::FaceLabels{D} where D
   @abstractmethod
 end
 

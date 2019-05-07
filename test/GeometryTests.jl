@@ -119,42 +119,25 @@ end
 
 end
 
-@testset "NFaceLabels" begin
+@testset "FaceLabels" begin
 
   vertex_to_geolabel = [1,1,2,2,2,1,1,3,3]
   edge_to_geolabel = [4,4,5,5,5,5,6,6,4]
   physlabel_1 = [1,3,4]
   physlabel_2 = [5,3,6,2]
+  tag_to_name = ["label1","label2"]
   
-  nfacelabels = NFaceLabels(
+  labels = FaceLabels(
     [vertex_to_geolabel, edge_to_geolabel],
-    [physlabel_1, physlabel_2])
+    [physlabel_1, physlabel_2],
+    tag_to_name)
   
-  @test isa(nfacelabels,NFaceLabels{1})
-  @test nfacegeolabel(nfacelabels,0) == vertex_to_geolabel
-  @test nfacegeolabel(nfacelabels,1) == edge_to_geolabel
-  @test geolabels(nfacelabels,1) == physlabel_1
-  @test geolabels(nfacelabels,2) == physlabel_2
-
-end
-
-@testset "GridGraph" begin
-
-  # Dummy data. Not related with an actual grid
-  cell_to_vertices = CellArrayFromArrayOfArrays([[1,2,4,2], [2,3,1,3]])
-  cell_to_edges = CellArrayFromArrayOfArrays([[1,2,3,4], [4,1,2,3]])
-  vertex_to_cells = CellArrayFromArrayOfArrays([[1,2],[2],[1],[1]])
-  edge_to_cells = CellArrayFromArrayOfArrays([[1],[1,2],[2,1],[2]])
-
-  graph = NewGridGraph(
-    [cell_to_vertices, cell_to_edges],
-    [vertex_to_cells, edge_to_cells])
-
-  @test isa(graph,NewGridGraph{2})
-  @test celltovefs(graph,0) == cell_to_vertices
-  @test celltovefs(graph,1) == cell_to_edges
-  @test veftocells(graph,0) == vertex_to_cells
-  @test veftocells(graph,1) == edge_to_cells
+  @test isa(labels,FaceLabels)
+  @test labels_on_dim(labels,0) == vertex_to_geolabel
+  @test labels_on_dim(labels,1) == edge_to_geolabel
+  @test labels_on_tag(labels,1) == physlabel_1
+  @test labels_on_tag(labels,2) == physlabel_2
+  @test tag_from_name(labels,"label1")==1
 
 end
 
@@ -172,6 +155,21 @@ end
 
   ugrid = UGrid(grid)
 
+  graph = FullGridGraph(grid)
+  @test isa(connections(graph,3,0), CellArray)
+  @test isa(connections(graph,3,1), CellArray)
+  @test isa(connections(graph,3,2), CellArray)
+  @test isa(connections(graph,2,0), CellArray)
+  @test isa(connections(graph,2,1), CellArray)
+  @test isa(connections(graph,2,3), CellArray)
+  @test isa(connections(graph,1,0), CellArray)
+  @test isa(connections(graph,1,2), CellArray)
+  @test isa(connections(graph,1,3), CellArray)
+  @test isa(connections(graph,0,0), CellArray)
+  @test isa(connections(graph,0,1), CellArray)
+  @test isa(connections(graph,0,2), CellArray)
+  @test isa(connections(graph,0,3), CellArray)
+
 end
 
 @testset "CartesianDiscreteModel" begin
@@ -180,21 +178,28 @@ end
     domain=(0.0,1.0,-1.0,2.0,0.0,1.0),
     partition=(3,4,2))
 
-  grid = Grid(model,3)
+  grid3 = Grid(model,3)
 
-  @test isa(grid,CartesianGrid{3})
+  @test isa(grid3,CartesianGrid{3})
 
-  gridgraph = GridGraph(model,3)
+  gridgraph = FullGridGraph(model)
 
-  @test isa(gridgraph, NewGridGraph)
+  @test isa(gridgraph, FullGridGraph)
 
-  grid = Grid(model,2)
-  grid = Grid(model,1)
-  grid = Grid(model,0)
+  grid2 = Grid(model,2)
+  grid1 = Grid(model,1)
+  grid0 = Grid(model,0)
 
-  labels = NFaceLabels(model)
+  labels = FaceLabels(model)
 
-  @test isa(labels,NFaceLabels{3})
+  @test isa(labels,FaceLabels)
+  @test length(labels_on_dim(labels,3)) == ncells(grid3)
+  @test length(labels_on_dim(labels,2)) == ncells(grid2)
+  @test length(labels_on_dim(labels,1)) == ncells(grid1)
+  @test length(labels_on_dim(labels,0)) == ncells(grid0)
+
+  @test ntags(labels) == 28
+  @test name_from_tag(labels,28) == "boundary"
 
 end
 

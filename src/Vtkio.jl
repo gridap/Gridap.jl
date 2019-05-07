@@ -67,16 +67,40 @@ end
 Write a DiscreteModel into vtk
 """
 function writevtk(model::DiscreteModel{D},filebase) where D
-  labels = NFaceLabels(model)
+  labels = FaceLabels(model)
   for d in 0:D
     f = "$(filebase)_$(d)"
     grid = Grid(model,d)
-    cell_to_geolabel = nfacegeolabel(labels,d)
-    writevtk(grid,f,celldata=["geolabel" => cell_to_geolabel])
+    cdat = _prepare_cdata_model(labels,d)
+    writevtk(grid,f,celldata=cdat)
   end
 end
 
 # Helpers
+
+function _prepare_cdata_model(labels,d)
+  dface_to_label = labels_on_dim(labels,d)
+  ndfaces = length(dface_to_label)
+  cdat = []
+  for tag in 1:ntags(labels)
+    dface_to_isontag = zeros(Int,ndfaces)
+    for label in labels_on_tag(labels,tag)
+      _set_label!(dface_to_isontag,dface_to_label,label)
+    end
+    name = name_from_tag(labels,tag)
+    push!(cdat, name => dface_to_isontag )
+  end
+  push!(cdat,"geolabel" => dface_to_label)
+  cdat
+end
+
+function _set_label!(dface_to_isontag,dface_to_label,label)
+  for i in 1:length(dface_to_label)
+    if dface_to_label[i] == label
+      dface_to_isontag[i] = 1
+    end
+  end
+end
 
 function _writevtk(grid::Grid,filebase,celldata,pointdata)
   points = _vtkpoints(grid)
