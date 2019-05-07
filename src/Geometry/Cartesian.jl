@@ -124,6 +124,7 @@ function NFaceLabels(model::CartesianDiscreteModel{D}) where D
   dim_to_face_to_geolabel = Vector{Vector{Int}}(undef,D+1)
   dim_to_offset = _generate_dim_to_offset(D)
   interior_id = dim_to_offset[end]+1
+  boundary_id = -1
   for d in 0:(D-1)
     face_to_cells = connections(model.gridgraph,d,D)
     cell_to_faces = connections(model.gridgraph,D,d)
@@ -132,8 +133,20 @@ function NFaceLabels(model::CartesianDiscreteModel{D}) where D
       face_to_cells,
       cell_to_faces,
       offset,
-      interior_id)
+      interior_id,boundary_id,d,D)
     dim_to_face_to_geolabel[d+1] = face_to_geolabel
+  end
+  for d in 0:(D-2)
+    for j in (d+1):(D-1)
+      dface_to_jfaces = connections(model.gridgraph,d,j)
+      dface_to_geolabel = dim_to_face_to_geolabel[d+1]
+      jface_to_geolabel = dim_to_face_to_geolabel[j+1]
+      _fix_dface_geolabels!(
+        dface_to_geolabel,
+        jface_to_geolabel,
+        dface_to_jfaces,
+        interior_id,boundary_id)
+    end
   end
   _ncells = ncells(model.cgrid)
   dim_to_face_to_geolabel[end] = ConstantCellValue(interior_id,_ncells)
@@ -161,10 +174,13 @@ function _generate_pre_geolabel(
   face_to_cells,
   cell_to_faces,
   offset,
-  interior_id)
+  interior_id,
+  boundary_id,d,D)
 
   nfaces = length(face_to_cells)
   face_to_geolabel = fill(interior_id,nfaces)
+
+  max_ncells_around = 2^(D-d)
 
   _generate_pre_geolabel_kernel!(
     face_to_geolabel,
@@ -172,7 +188,7 @@ function _generate_pre_geolabel(
     face_to_cells.ptrs,
     cell_to_faces.data,
     cell_to_faces.ptrs,
-    offset)
+    offset,boundary_id,max_ncells_around)
 
   face_to_geolabel
 end
@@ -183,7 +199,7 @@ function _generate_pre_geolabel_kernel!(
   face_to_cells_ptrs,
   cell_to_faces_data,
   cell_to_faces_ptrs,
-  offset)
+  offset,boundary_id,max_ncells_around)
 
   nfaces = length(face_to_geolabel)
   for face in 1:nfaces
@@ -201,39 +217,31 @@ function _generate_pre_geolabel_kernel!(
           break
         end
       end
+    elseif ncells_around != max_ncells_around
+      face_to_geolabel[face] = boundary_id
     end
   end
 
 end
 
-function _setup_grid_graph(ugrid,D)
+function _fix_dface_geolabels!(
+  dface_to_geolabel,
+  jface_to_geolabel,
+  dface_to_jfaces,
+  interior_id,boundary_id)
 
-  cell_to_vertices = connections(ugrid)
-  vertex_to_cells = generate_dual_connections(cell_to_vertices)
-  dim_to_cell_to_vefs = Vector{IndexCellArray{Int,1}}(undef,D)
-  dim_to_vef_to_cells = Vector{IndexCellArray{Int,1}}(undef,D)
-
-  d=0
-  dim_to_cell_to_vefs[d+1] = CellVectorFromDataAndPtrs(
-    cell_to_vertices.list,cell_to_vertices.ptrs)
-
-  dim_to_vef_to_cells[d+1] = CellVectorFromDataAndPtrs(
-    vertex_to_cells.list,vertex_to_cells.ptrs)
-
-  for d=1:(D-1)
-
-    cell_to_dfaces = generate_cell_to_faces(d,ugrid,vertex_to_cells)
-    dface_to_cells = generate_dual_connections(cell_to_dfaces)
-
-    dim_to_cell_to_vefs[d+1] = CellVectorFromDataAndPtrs(
-      cell_to_dfaces.list,cell_to_dfaces.ptrs)
-
-    dim_to_vef_to_cells[d+1] = CellVectorFromDataAndPtrs(
-    dface_to_cells.list,dface_to_cells.ptrs)
-
+  for (dface, jfaces) in enumerate(dface_to_jfaces)
+    if dface_to_geolabel[dface] != boundary_id
+      continue
+    end
+    for jface in jfaces
+      geolabel = jface_to_geolabel[jface]
+      if geolabel != interior_id && geolabel != boundary_id
+        dface_to_geolabel[dface] = geolabel
+        break
+      end
+    end
   end
-
-  NewGridGraph(dim_to_cell_to_vefs, dim_to_vef_to_cells)
 
 end
 
