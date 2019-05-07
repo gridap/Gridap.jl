@@ -248,10 +248,7 @@ function Grid(::DiscreteModel{D},::Val{Z})::Grid{D,Z} where {D,Z}
   @abstractmethod
 end
 
-"""
-Extracts the gridgraph for the grid made of nfaces of dim Z
-"""
-function GridGraph(::DiscreteModel,::Val{Z})::GridGraph{Z} where Z
+function FullGridGraph(::DiscreteModel)
   @abstractmethod
 end
 

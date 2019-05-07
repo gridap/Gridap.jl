@@ -195,21 +195,25 @@ end
     domain=(0.0,1.0,-1.0,2.0,0.0,1.0),
     partition=(3,4,2))
 
-  grid = Grid(model,3)
+  grid3 = Grid(model,3)
 
-  @test isa(grid,CartesianGrid{3})
+  @test isa(grid3,CartesianGrid{3})
 
-  gridgraph = GridGraph(model,3)
+  gridgraph = FullGridGraph(model)
 
-  @test isa(gridgraph, NewGridGraph)
+  @test isa(gridgraph, FullGridGraph)
 
-  grid = Grid(model,2)
-  grid = Grid(model,1)
-  grid = Grid(model,0)
+  grid2 = Grid(model,2)
+  grid1 = Grid(model,1)
+  grid0 = Grid(model,0)
 
   labels = NFaceLabels(model)
 
   @test isa(labels,NFaceLabels{3})
+  @test length(nfacegeolabel(labels,3)) == ncells(grid3)
+  @test length(nfacegeolabel(labels,2)) == ncells(grid2)
+  @test length(nfacegeolabel(labels,1)) == ncells(grid1)
+  @test length(nfacegeolabel(labels,0)) == ncells(grid0)
 
 end
 

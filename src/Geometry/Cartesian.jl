@@ -3,12 +3,6 @@ module Cartesian
 # Dependencies of this module
 
 using StaticArrays: SVector, MVector, @SVector
-using UnstructuredGrids: UGrid
-using UnstructuredGrids: generate_dual_connections
-using UnstructuredGrids: generate_cell_to_faces
-using UnstructuredGrids: connections
-using UnstructuredGrids: coordinates
-using UnstructuredGrids: Connections
 using Numa.Helpers
 using Numa.FieldValues
 using Numa.Polytopes
@@ -20,13 +14,14 @@ using Numa.CellValues
 # Functionality provided 
 
 export CartesianGrid
+export CartesianDiscreteModel
 import Base: size, getindex, IndexStyle
 import Numa.CellValues: cellsize
 import Numa.Geometry: points, cells, celltypes, cellorders, gridgraph
 import Numa.Geometry: Grid, GridGraph, NFaceLabels, boundarylabels
 import Numa.Geometry.Unstructured: UnstructuredGrid
 import Numa.Geometry.Unstructured: FlexibleUnstructuredGrid
-export CartesianDiscreteModel
+import Numa.Geometry: FullGridGraph
 
 struct CartesianGrid{D} <: Grid{D,D}
   dim_to_limits::NTuple{D,NTuple{2,Float64}}
@@ -82,19 +77,16 @@ end
 """
 DiscreteModel associated with a CartesianGrid
 """
-struct CartesianDiscreteModel{
-  D,U<:UGrid,G<:NewGridGraph{D}} <: DiscreteModel{D}
-
+struct CartesianDiscreteModel{D} <: DiscreteModel{D}
   cgrid::CartesianGrid{D}
-  ugrid::U
-  gridgraph::G
+  ugrid::UnstructuredGrid
+  gridgraph::FullGridGraph
 end
 
 function CartesianDiscreteModel(; args...)
   cgrid = CartesianGrid(; args...)
-  grid = UnstructuredGrid(cgrid)
-  ugrid = UGrid(grid)
-  gridgraph = _setup_grid_graph(ugrid,celldim(cgrid))
+  ugrid = UnstructuredGrid(cgrid)
+  gridgraph = FullGridGraph(ugrid)
   CartesianDiscreteModel(cgrid, ugrid, gridgraph)
 end
 
@@ -103,22 +95,16 @@ Grid(model::CartesianDiscreteModel{D},::Val{D}) where D = model.cgrid
 function Grid(model::CartesianDiscreteModel{D},::Val{Z}) where {D,Z}
 
   ugrid = model.ugrid
-  v2c = veftocells(model.gridgraph,0)
-  c2f = celltovefs(model.gridgraph,Z)
-  vertex_to_cells = Connections(v2c.data,v2c.ptrs)
-  cell_to_faces = Connections(c2f.data,c2f.ptrs)
-
-  fugrid = UGrid(ugrid,Z,vertex_to_cells,cell_to_faces)
-
-  face_to_vertices = connections(fugrid)
-  nfaces = length(face_to_vertices.ptrs)-1
+  gridgraph = model.gridgraph
+  face_to_vertices = connections(gridgraph,Z,0)
+  nfaces = length(face_to_vertices)
   fcode = tuple([HEX_AXIS for i in 1:Z]...)
 
   order = 1
   @notimplementedif order != celldata(cellorders(model.cgrid))
 
-  _points = coordinates(ugrid)
-  _cells_data = face_to_vertices.list
+  _points = points(ugrid)
+  _cells_data = face_to_vertices.data
   _cells_ptrs = face_to_vertices.ptrs
   _ctypes = ConstantCellValue(fcode,nfaces)
   _corders = ConstantCellValue(order,nfaces)
@@ -131,11 +117,7 @@ function Grid(model::CartesianDiscreteModel{D},::Val{Z}) where {D,Z}
     _corders)
 end
 
-GridGraph(model::CartesianDiscreteModel{D},::Val{D}) where D = model.gridgraph
-
-function GridGraph(model::CartesianDiscreteModel{D},::Val{Z}) where {D,Z}
-  @notimplemented
-end
+FullGridGraph(model::CartesianDiscreteModel) = model.gridgraph
 
 #@fverdugo precompute this result
 function NFaceLabels(model::CartesianDiscreteModel{D}) where D
@@ -143,8 +125,8 @@ function NFaceLabels(model::CartesianDiscreteModel{D}) where D
   dim_to_offset = _generate_dim_to_offset(D)
   interior_id = dim_to_offset[end]+1
   for d in 0:(D-1)
-    face_to_cells = veftocells(model.gridgraph, d)
-    cell_to_faces = celltovefs(model.gridgraph, d)
+    face_to_cells = connections(model.gridgraph,d,D)
+    cell_to_faces = connections(model.gridgraph,D,d)
     offset = dim_to_offset[d+1]
     face_to_geolabel = _generate_pre_geolabel(
       face_to_cells,
