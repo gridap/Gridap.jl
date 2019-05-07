@@ -138,7 +138,8 @@ end
 
 # Ancillary types
 
-abstract type CellArrayFromUnaryOp{C<:CellArray,T,N} <: IterCellArray{T,N} end
+abstract type CellArrayFromUnaryOp{
+  C<:CellArray,T,N} <: IterCellArray{T,N,CachedArray{T,N,Array{T,N}}} end
 
 function inputcellarray(::CellArrayFromUnaryOp{C,T,N})::C  where {C,T,N}
   @abstractmethod
@@ -178,7 +179,8 @@ function iteratekernel(self::CellArrayFromUnaryOp,anext,v)
   (v,state)
 end
 
-struct CellArrayFromBroadcastUnaryOp{O<:Function,C<:CellArray,T,N} <: CellArrayFromUnaryOp{C,T,N}
+struct CellArrayFromBroadcastUnaryOp{
+  O<:Function,C<:CellArray,T,N} <: CellArrayFromUnaryOp{C,T,N}
   op::O
   a::C
 end
@@ -281,7 +283,8 @@ end
 
 # Ancillary types
 
-abstract type CellArrayFromBinaryOp{A<:CellValue,B<:CellValue,T,N} <: IterCellArray{T,N} end
+abstract type CellArrayFromBinaryOp{
+  A<:CellValue,B<:CellValue,T,N} <: IterCellArray{T,N,CachedArray{T,N,Array{T,N}}} end
 
 function leftcellarray(::CellArrayFromBinaryOp{A,B,T,N})::A where {A,B,T,N}
   @abstractmethod

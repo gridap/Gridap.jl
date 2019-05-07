@@ -30,30 +30,29 @@ IndexStyle(::Type{IndexCellValue{T,N}} where {T,N}) = IndexLinear()
 
 const CellValue{T} = Union{IterCellValue{T},IndexCellValue{T}}
 
-cellsize(::CellValue) = ()
-# @santiagobadia : Does it have sense here?
-
 # Iterable cell Arrays
 
-const IterCellArray{T,N} = IterCellValue{AbstractArray{T,N}}
+const IterCellArray{T,N,A<:AbstractArray{T,N}} = IterCellValue{A}
 
-IteratorEltype(::Type{C} where C <: IterCellArray{T,N} where {T,N}) = EltypeUnknown()
+const IterCellVector{T,A} = IterCellArray{T,1,A}
+
+const IterCellMatrix{T,A} = IterCellArray{T,2,A}
 
 # Indexable cell arrays
 
 const IndexCellArray{T,N,A<:AbstractArray{T,N},D} = IndexCellValue{A,D}
 
-# const IndexCellVector{T,A,D} = IndexCellArray{T,1,A,D}
-# @santiagobadia : I don't get why
-# IndexCellVector{T,A,D} <: IndexCellArray{T,1,A,D} not true????
+const IndexCellVector{T,A,D} = IndexCellArray{T,1,A,D}
+
+const IndexCellMatrix{T,A,D} = IndexCellArray{T,2,A,D}
 
 # Cell Arrays
 
 const CellArray{T,N} = Union{IterCellArray{T,N},IndexCellArray{T,N}}
 
-const CellVector{T} = CellArray{T,1} where T
+const CellVector{T} = CellArray{T,1}
 
-const CellMatrix{T} = CellArray{T,2} where T
+const CellMatrix{T} = CellArray{T,2}
 
 cellsize(self::CellArray,i::Int) = (s = cellsize(self); s[i])
 
@@ -64,5 +63,7 @@ function Base.show(io::IO,self::CellValue)
     println(io,"$i -> $a")
   end
 end
+
+cellsize(::CellValue) = ()
 
 const IterData{T} = Union{CellValue{T},AbstractArray{T}}
