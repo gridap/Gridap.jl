@@ -18,7 +18,7 @@ export CartesianDiscreteModel
 import Base: size, getindex, IndexStyle
 import Numa.CellValues: cellsize
 import Numa.Geometry: points, cells, celltypes, cellorders, gridgraph
-import Numa.Geometry: Grid, GridGraph, NFaceLabels, boundarylabels
+import Numa.Geometry: Grid, GridGraph, FaceLabels
 import Numa.Geometry.Unstructured: UnstructuredGrid
 import Numa.Geometry.Unstructured: FlexibleUnstructuredGrid
 import Numa.Geometry: FullGridGraph
@@ -120,7 +120,7 @@ end
 FullGridGraph(model::CartesianDiscreteModel) = model.gridgraph
 
 #@fverdugo precompute this result
-function NFaceLabels(model::CartesianDiscreteModel{D}) where D
+function FaceLabels(model::CartesianDiscreteModel{D}) where D
   dim_to_face_to_geolabel = Vector{Vector{Int}}(undef,D+1)
   dim_to_offset = _generate_dim_to_offset(D)
   interior_id = dim_to_offset[end]+1
@@ -151,11 +151,13 @@ function NFaceLabels(model::CartesianDiscreteModel{D}) where D
   _ncells = ncells(model.cgrid)
   dim_to_face_to_geolabel[end] = ConstantCellValue(interior_id,_ncells)
   phys_labels = [ [i] for i in 1:interior_id ]
-  NFaceLabels(dim_to_face_to_geolabel, phys_labels)
-end
-
-function boundarylabels(::CartesianDiscreteModel)
-  @notimplemented
+  push!(phys_labels,[i for i in 1:(interior_id-1)])
+  name_to_tag = Dict{String,Int}()
+  for tag in 1:interior_id
+    name_to_tag["physical_tag_$tag"] = tag
+  end
+  name_to_tag["boundary"] = interior_id + 1
+  FaceLabels(dim_to_face_to_geolabel, phys_labels, name_to_tag)
 end
 
 # Helpers
