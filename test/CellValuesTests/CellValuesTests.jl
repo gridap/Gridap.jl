@@ -1,15 +1,13 @@
 module CellValuesTests
 
 using Test
-using LinearAlgebra: inv, det
 
-using Numa
-using Numa.FieldValues
-using Numa.CellValues
+@testset "ConstantCellValues" begin
+  include("ConstantCellValuesTests.jl")
+end
 
-include("Mocks.jl")
-include("OperationsTests.jl")
-include("ConstantCellValuesTests.jl")
-include("WrappersTests.jl")
+#include("Mocks.jl")
+#include("OperationsTests.jl")
+#include("WrappersTests.jl")
 
 end # module CellValuesTests

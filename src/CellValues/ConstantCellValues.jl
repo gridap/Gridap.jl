@@ -12,13 +12,27 @@ size(self::ConstantCellValue) = (self.length,)
 
 length(self::ConstantCellValue) = self.length
 
-IndexStyle(::Type{ConstantCellValue{T}} where T) = IndexLinear()
-
 const ConstantCellArray{T,N} = ConstantCellValue{Array{T,N}}
 
 const ConstantCellVector{T} = ConstantCellArray{T,1}
 
 const ConstantCellMatrix{T} = ConstantCellArray{T,2}
+
+function ConstantCellArray(v::AbstractArray{T,N},l::Integer) where {T,N}
+  ConstantCellArray{T,N}(v,l)
+end
+
+function ConstantCellVector(v::AbstractVector{T},l::Integer) where T
+  ConstantCellVector{T}(v,l)
+end
+
+function ConstantCellMatrix(v::AbstractMatrix{T},l::Integer) where T
+  ConstantCellMatrix{T}(v,l)
+end
+
+ConstantCellVector(args...) = ConstantCellValue(args...)
+
+ConstantCellMatrix(args...) = ConstantCellValue(args...)
 
 cellsize(self::ConstantCellValue) = size(self.value)
 

@@ -1,3 +1,5 @@
+module RunTests
+
 using Numa
 using Test
 
@@ -19,3 +21,5 @@ using Test
 #@time @testset "Vtkio" begin include("VtkioTests.jl") end
 # @time @testset "FESpaces" begin include("FEProblemsTests.jl") end
 # end
+
+end # module RunTests

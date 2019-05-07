@@ -24,7 +24,7 @@ end
 
 size(x::IndexCellValue) = @abstractmethod
 
-IndexStyle(::Type{IndexCellValue{T,N}} where {T,N}) = IndexLinear()
+IndexStyle(::Type{<:IndexCellValue{T,N}} where {T,N}) = IndexLinear()
 
 # Cell Values
 
@@ -54,6 +54,10 @@ const CellVector{T} = CellArray{T,1}
 
 const CellMatrix{T} = CellArray{T,2}
 
+# Misc.
+
+const IterData{T} = Union{CellValue{T},AbstractArray{T}}
+
 cellsize(self::CellArray,i::Int) = (s = cellsize(self); s[i])
 
 celllength(self::CellArray) = prod(cellsize(self))
@@ -66,4 +70,3 @@ end
 
 cellsize(::CellValue) = ()
 
-const IterData{T} = Union{CellValue{T},AbstractArray{T}}

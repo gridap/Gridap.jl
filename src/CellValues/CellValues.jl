@@ -13,7 +13,7 @@ export IterCellVector
 export IndexCellValue
 export IndexCellArray
 export IndexCellMatrix
-# export IndexCellVector
+export IndexCellVector
 
 export IterData
 
