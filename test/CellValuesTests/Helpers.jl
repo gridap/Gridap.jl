@@ -1,6 +1,6 @@
 
 function test_iter_cell_value(
-  iter_cell_value::IterCellValue{T}, values::Array{T}) where T
+  iter_cell_value::IterCellValue{T}, values::AbstractArray{T}) where T
 
   @test length(iter_cell_value) == length(values)
 
@@ -21,7 +21,7 @@ function test_iter_cell_value(
 end
 
 function test_index_cell_value(
-  index_cell_value::IndexCellValue{T,N}, values::Array{T,N}) where {T,N}
+  index_cell_value::IndexCellValue{T,N}, values::AbstractArray{T,N}) where {T,N}
 
   @test length(index_cell_value) == length(values)
 
@@ -39,7 +39,7 @@ function test_index_cell_value(
 
   @test index_cell_value == index_cell_value
 
-  cellsize(index_cell_value) == maximum([ size(v) for v in values ])
+  #cellsize(index_cell_value) == maximum([ size(v) for v in values ])
 
 end
 
