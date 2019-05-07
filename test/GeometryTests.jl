@@ -125,12 +125,12 @@ end
   edge_to_geolabel = [4,4,5,5,5,5,6,6,4]
   physlabel_1 = [1,3,4]
   physlabel_2 = [5,3,6,2]
-  name_to_tag = Dict{String,Int}("label1"=>1,"label2"=>2)
+  tag_to_name = ["label1","label2"]
   
   labels = FaceLabels(
     [vertex_to_geolabel, edge_to_geolabel],
     [physlabel_1, physlabel_2],
-    name_to_tag)
+    tag_to_name)
   
   @test isa(labels,FaceLabels)
   @test labels_on_dim(labels,0) == vertex_to_geolabel
@@ -197,6 +197,9 @@ end
   @test length(labels_on_dim(labels,2)) == ncells(grid2)
   @test length(labels_on_dim(labels,1)) == ncells(grid1)
   @test length(labels_on_dim(labels,0)) == ncells(grid0)
+
+  @test ntags(labels) == 28
+  @test name_from_tag(labels,28) == "boundary"
 
 end
 

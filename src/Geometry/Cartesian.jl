@@ -152,12 +152,9 @@ function FaceLabels(model::CartesianDiscreteModel{D}) where D
   dim_to_face_to_geolabel[end] = ConstantCellValue(interior_id,_ncells)
   phys_labels = [ [i] for i in 1:interior_id ]
   push!(phys_labels,[i for i in 1:(interior_id-1)])
-  name_to_tag = Dict{String,Int}()
-  for tag in 1:interior_id
-    name_to_tag["physical_tag_$tag"] = tag
-  end
-  name_to_tag["boundary"] = interior_id + 1
-  FaceLabels(dim_to_face_to_geolabel, phys_labels, name_to_tag)
+  tag_to_name = ["physical_tag_$i" for i in 1:interior_id]
+  push!(tag_to_name,"boundary")
+  FaceLabels(dim_to_face_to_geolabel, phys_labels, tag_to_name)
 end
 
 # Helpers

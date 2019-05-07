@@ -71,12 +71,18 @@ function writevtk(model::DiscreteModel{D},filebase) where D
   for d in 0:D
     f = "$(filebase)_$(d)"
     grid = Grid(model,d)
-    cell_to_geolabel = labels_on_dim(labels,d)
-    writevtk(grid,f,celldata=["geolabel" => cell_to_geolabel])
+    cdat = _prepare_cdata_model(labels,d)
+    writevtk(grid,f,celldata=cdat)
   end
 end
 
 # Helpers
+
+function _prepare_cdata_model(labels,d)
+  dface_to_label = labels_on_dim(labels,d)
+  cdat = ["geolabel" => cell_to_geolabel]
+  cdat
+end
 
 function _writevtk(grid::Grid,filebase,celldata,pointdata)
   points = _vtkpoints(grid)
