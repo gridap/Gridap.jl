@@ -34,7 +34,6 @@ export labels_on_tag
 export ntags
 export tag_from_name
 export name_from_tag
-export NewGridGraph
 export DiscreteModel
 export celldim
 export pointdim
