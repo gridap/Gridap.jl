@@ -28,6 +28,9 @@ export CellVectorFromDataAndPtrs
 export CellVectorFromDataAndStride
 export CellVectorFromLocalToGlobal
 export CellVectorFromLocalToGlobalPosAndNeg
+export IndexCellValueByGlobalAppend
+export IndexCellValueByLocalAppend
+
 
 export apply
 export celldata

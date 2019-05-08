@@ -128,7 +128,7 @@ function assemble(this::Assembler, vals::CellVector{T}) where T
 	_vals, rows_m = applyconstraints(this.testfesp, vals)
 	# @santiagobadia : Evaluate efficiency, best way to do it in Julia
 	# without pre-allocate loop?
-	aux_row = []; aux_vals = []
+	aux_row = Int[]; aux_vals = Int[]
 	for (rows_c,vals_c) in zip(rows_m,_vals)
 		for (i,gid) in enumerate(rows_c)
 			if gid > 0
@@ -145,7 +145,7 @@ function assemble(this::Assembler, vals::CellMatrix{T}) where T
 	_vals, cols_m = applyconstraintscols(this.trialfesp, _vals, )
 	# @santiagobadia : Evaluate efficiency, best way to do it in Julia
 	# without pre-allocate loop?
-	aux_row = []; aux_col = []; aux_vals = []
+	aux_row = Int[]; aux_col = Int[]; aux_vals = Int[]
 	for vals_c in _vals
 	end
 	for (rows_c, cols_c, vals_c) in zip(rows_m,cols_m,_vals)
@@ -167,7 +167,7 @@ end
 function globaldofs(reffe::RefFE{D,T}, gridgr::FullGridGraph, labels::FaceLabels) where {D,T}
 	in_tag = tag_from_name(labels,"interior")
 	# @santiagobadia : For the moment fixing everything on the boundary
-	dim_eqclass = []
+	dim_eqclass = Int[]
 	c=1
 	c_n = -1
 	for vef_dim in 0:D-1
@@ -176,7 +176,7 @@ function globaldofs(reffe::RefFE{D,T}, gridgr::FullGridGraph, labels::FaceLabels
 		vef_labels = labels_on_dim(labels,vef_dim)
 		num_vefs = length(vefcells)
 		nfdofs=Array{Array{Int64},1}(undef,num_vefs)
-		nfdofs_l = []
+		nfdofs_l = Int[]
 		nfdofs_g = zeros(Int, num_vefs+1)
 		nfdofs_g[1] = 1
 		for (ignf,nf) in enumerate(vefcells)
@@ -186,10 +186,10 @@ function globaldofs(reffe::RefFE{D,T}, gridgr::FullGridGraph, labels::FaceLabels
 			# @santiagobadia : Better a method for nfs of a particular type...
 			num_nf_dofs = length(reffe.nfacedofs[lid_vef])
 			if ( vef_labels[ignf] != in_tag)
-				nfdofs_l = [nfdofs_l..., c_n:-1:c_n-num_nf_dofs+1... ]
+				nfdofs_l = Int[nfdofs_l..., c_n:-1:c_n-num_nf_dofs+1... ]
 				c_n -= num_nf_dofs
 			else
-				nfdofs_l = [nfdofs_l..., c:c+num_nf_dofs-1... ]
+				nfdofs_l = Int[nfdofs_l..., c:c+num_nf_dofs-1... ]
 				c += num_nf_dofs
 			end
 			nfdofs_g[ignf+1] += num_nf_dofs + nfdofs_g[ignf]

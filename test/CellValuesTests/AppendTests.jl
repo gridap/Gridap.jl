@@ -53,7 +53,7 @@ end
 
 
 @testset "IndexCellValueByLocalAppend" begin
-
+  ##
   cv1_1 = [1, 2, 4, 5]
   cv2_1 = [2, 3, 5, 6]
   _cv_1 = [cv1_1, cv2_1]
@@ -76,10 +76,6 @@ end
 
   using Numa.CellValues: IndexCellValueByLocalAppend
   cv12 = IndexCellValueByLocalAppend(cv_1,cv_2)
-  cv12[2]
-  size(cv12)
-  length(cv12)
-  IndexStyle(cv12)
   @test isa(cv12, IndexCellValue{<:AbstractArray{Int64,1},1})
 
   @test size(cv12) == size(cv_1)
@@ -88,8 +84,6 @@ end
     @test cv12[i] == [cv_1[i]..., cv_2[i]...]
   end
 
-  cv12
-  cv_3
   cv123 = IndexCellValueByLocalAppend(cv12,cv_3)
   ncv123 = IndexCellValueByLocalAppend(cv_1, cv_2, cv_3)
 
@@ -98,5 +92,30 @@ end
   for i in 1:length(ncv123)
     @test ncv123[i] == [cv_1[i]..., cv_2[i]..., cv_3[i]...]
   end
-  
+
+  using Numa.CellValues: IndexCellValueByLocalAppendWithOffset
+  cv12 = IndexCellValueByLocalAppendWithOffset(cv_1,cv_2)
+  @test isa(cv12, IndexCellValue{<:AbstractArray{Int64,1},1})
+
+  @test size(cv12) == size(cv_1)
+
+  for i in 1:length(cv12)
+    @test cv12[i] == [cv_1[i]..., cv_2[i].+6...]
+  end
+
+  ncv12 = IndexCellValueByLocalAppend( 6, cv_1, cv_2 )
+  @test ncv12 == cv12
+
+  cv123 = IndexCellValueByLocalAppendWithOffset(cv12,cv_3)
+  ncv123 = IndexCellValueByLocalAppendWithOffset(cv_1, cv_2, cv_3)
+
+  @test sum(cv123 .== ncv123) == length(ncv123)
+  @test size(ncv123) == size(cv123)
+  for i in 1:length(ncv123)
+    @test ncv123[i] == [cv_1[i]..., cv_2[i].+6..., cv_3[i].+13...]
+  end
+
+  nncv123 = IndexCellValueByLocalAppendWithOffset( (6,13), cv_1, cv_2, cv_3)
+  nncv123 == ncv123
+  ##
 end

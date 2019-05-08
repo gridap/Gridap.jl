@@ -26,6 +26,7 @@ using Numa.Geometry.Cartesian
 import Numa: gradient, ∇
 
 using Numa.CellIntegration
+using UnstructuredGrids
 ##
 
 D=2
@@ -149,116 +150,21 @@ dofs, nfree, nfixed = FESpaces.globaldofs(reffe, gridgr::FullGridGraph, labels)
 dofs
 @test nfree == 1
 @test nfixed == 8
+##
+
+offset = tuple(length.(dofs[1:end])...)
+
+dofs[1]
+dofs[2]
+
+using Numa.Geometry: connections
+cellvefs = [connections(gridgr,D,i) for i in 0:1]
+cellvefs[1]
+cellvefs[2]
 
 
-# dofs[1]
-# dofs[2]
+dofs_all = IndexCellValueByGlobalAppend(dofs...)
+using Numa.CellValues: IndexCellValueByLocalAppendWithOffset
+cellvefs_all = IndexCellValueByLocalAppendWithOffset(offset, cellvefs...)
 
-# cellvefs = [connections(gridgr,D,i) for i in 0:1]
-
-
-
-# POSSIBLE WAYS TO CREATE A "MULTIVALUE CELL ARRAY" FOR CELL TO ALL DOFS,
-# SINCE NOW DOFS ARE ALSO INDEXED BY DIM...
-#
-# struct CellVectorByMultiComposition{T,L<:IndexCellArray{Int,1},V<:IndexCellArray{T,1}} <: IndexCellArray{T,1,CachedArray{T,1,Array{T,1}},1}
-#   cell_to_x::Vector{L}
-#   x_to_vals::Vector{V}
-#   cv::CachedVector{T,Vector{T}}
-# end
-# # @santiagobadia : For some reason, IndexCellVector{Int} not working
-#
-# function CellVectorByMultiComposition(cell_to_x::AbstractVector{L},
-#   x_to_vals::AbstractVector{V}) where {T,L<:IndexCellArray{Int,1},V<:IndexCellArray{T,1}}
-#   # L = eltype(cell_to_x)
-#   # V = eltype(x_to_vals)
-#   @assert length(cell_to_x) == length(x_to_vals)
-#   num_vecs = length(cell_to_x)
-#   c = 0
-#   for i in 1:num_vecs
-#     c += celllength(cell_to_x[i])*celllength(x_to_vals[i])
-#   end
-#   a = Vector{T}(undef,(c,))
-#   cv = CachedArray(a)
-#   CellVectorByMultiComposition{T,L,V}(cell_to_x, x_to_vals, cv)
-# end
-#
-# @propagate_inbounds function getindex(self::CellVectorByMultiComposition,cell::Int)
-#   setsize!(self.cv,_cellsize(this,cell))
-#   l = 1
-#   for idim in 1:length(self.cell_to_x)
-#     cell_to_x = self.cell_to_x[idim][cell]
-#     for x in cell_to_x
-#       for val in self.x_to_vals[idim][x]
-#         for iv in val
-#           self.cv[l] = iv
-#           l += 1
-#         end
-#       end
-#     end
-#   end
-#   self.cv
-# end
-#
-# size(self::CellVectorByMultiComposition) = (length(self.cell_to_x[1]),)
-#
-# IndexStyle(::Type{CellVectorByMultiComposition{T,L,V}}) where {T,L,V} = IndexLinear()
-#
-# function cellsize(this::CellVectorByMultiComposition)
-#   c = 0
-#   for idime in 1:length(this.cell_to_x)
-#     c += celllength(this.cell_to_x[idime][i])*celllength(this.x_to_vals[idime][i])
-#   end
-#   return (c,)
-# end
-#
-# function _cellsize(self::CellVectorByMultiComposition, cell::Int)
-#   for idim in 1:length(self.cell_to_x)
-#     cell_to_x = self.cell_to_x[idim][cell]
-#     l = 0
-#     for x in cell_to_x
-#       l += length(self.x_to_vals[idim][x])
-#     end
-#   end
-#   return (l,)
-# end
-#
-#
-#
-# struct CellVectorFromMultiDataAndPtrs{T,V,P} <: IndexCellArray{T,1,CachedSubVector{T,V},1}
-#   data::V
-#   ptrs::P
-#   cv::Vector{CachedSubVector{T,V}}
-# end
-#
-# function CellVectorFromMultiDataAndPtrs(data::AbstractArray{T,1},ptrs::AbstractArray{Int,1}) where T
-#   V = typeof(data)
-#   P = typeof(ptrs)
-#   for i in 1:length(data)
-#     cv[i] = CachedSubVector(data[i],0,0)
-#   end
-#   CellVectorFromMultiDataAndPtrs{T,V,P}(data,ptrs,cv)
-# end
-#
-# @propagate_inbounds function getindex(self::CellVectorFromDataAndPtrs,cell::Int,i::Int)
-#   pini = self.ptrs[cell][i]
-#   pend = self.ptrs[cell+1][i]-1
-#   locate!(self.cv[i],pini,pend)
-#   self.cv
-# end
-#
-# size(self::CellVectorFromDataAndPtrs) = (length(self.ptrs)-1,)
-#
-# IndexStyle(::Type{CellVectorFromDataAndPtrs{T,V,P}}) where {T,V,P} = IndexLinear()
-#
-# function cellsize(self::CellVectorFromDataAndPtrs)
-#   l = 0
-#   for i in 1:(length(self.ptrs)-1)
-#     c = 0
-#     for j in 1:length(self.data)
-#       c += self.ptrs[i+1][j]-self.ptrs[i][j]
-#     end
-#     l = max(l,c)
-#   end
-#   (l,)
-# end
+##
