@@ -62,11 +62,8 @@ const CellVector{T} = CellArray{T,1}
 
 const CellMatrix{T} = CellArray{T,2}
 
-# Misc.
 
-const IterData{T} = Union{CellValue{T},AbstractArray{T}}
-
-# Misc. methods depending on the abstract interface
+# Misc. methods that can be implemented at this level
 
 cellsize(self::CellValue) = ()
 

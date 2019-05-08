@@ -15,8 +15,6 @@ export IndexCellArray
 export IndexCellMatrix
 export IndexCellVector
 
-export IterData
-
 export ConstantCellValue
 export ConstantCellArray
 export ConstantCellVector
@@ -57,7 +55,6 @@ import Base: +, -, *, /
 import Base: ==
 import LinearAlgebra: inv, det
 
-import Numa: flatten
 import Numa.FieldValues: inner, outer, meas
 
 include("Helpers.jl")

@@ -207,19 +207,5 @@ for scai in [sca2, sca2_v, sca2_t]
   test_iter_cell_array(sca3,fill(reshape(sai,(3,1,2)),l))
 end
 
-function test_flatten()
-  scv3 = flatten(sca)
-  #test_iter_cell_value(scv3,fill(sv,3*l))
-  c = collect(scv3)
-  i = 1
-  for a in sca
-    for ai in a
-      @assert c[i] == ai
-      i += 1
-    end
-  end
-end
-test_flatten()
-
 end # module OperationsTests
 
