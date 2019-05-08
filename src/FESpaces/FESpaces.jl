@@ -56,8 +56,8 @@ struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T,Float64}
 	# For the moment, I am not considering E (to think)
 	reffe::LagrangianRefFE{D,T}
 	trian::Triangulation{D,Z}
-	graph::GridGraph
-	dof_eqclass::CellVector{Int}
+	graph::FullGridGraph
+	dof_eqclass #::CellVector{Int}
 	num_free_dofs::Int
 	num_fixed_dofs::Int
 	# dirichlet_tags::Array{Int} # Physical tags that describe strong dirichlet boundary
@@ -66,15 +66,15 @@ end
 function ConformingFESpace(
 	reffe::LagrangianRefFE{D,T},
 	trian::Triangulation{D,Z},
-	graph::GridGraph,
-	# @santiagobadia : To be eliminated
-	is_fixed_vef::AbstractVector{Bool}) where {D,Z,T}
-	cellvefs = celltovefs(graph)
-	vefcells = veftocells(graph)
-	gldofs, nfree, nfixed  = globaldofs(reffe, cellvefs, vefcells, is_fixed_vef)
+	graph::FullGridGraph,
+	labels::FaceLabels) where {D,Z,T}
+	gldofs, nfree, nfixed  = globaldofs(reffe, graph, labels)
 	# @santiagobadia : We are calling twice cell_to_vefs...
-	dof_eqclass = CellVectorByComposition(cellvefs, gldofs)
-	ConformingFESpace{D,Z,T}(reffe, trian, graph, dof_eqclass, nfree, nfixed)
+	# dof_eqclass = CellVectorByComposition(cellvefs, gldofs)
+	# @santiagobadia : Here we want to have a new CellVectorByComposition with
+	# multiple cellvefs and multiple gldofs (in this case, as many as dimensions)
+
+	ConformingFESpace{D,Z,T}(reffe, trian, graph, gldofs, nfree, nfixed)
 end
 
 function applyconstraints(this::ConformingFESpace,
@@ -156,11 +156,6 @@ function assemble(this::Assembler, vals::CellMatrix{T}) where T
 						aux_row = [aux_row..., rows_c[i]]
 						aux_col = [aux_col..., cols_c[j]]
 						aux_vals = [aux_vals..., vals_c[i,j]]
-						# for I in Iterators.product(rows_c, cols_c)
-						# 	aux_row = [aux_row..., I[1]]
-						# 	aux_col = [aux_col..., I[2]]
-						# end
-						# aux_vals = [aux_vals..., vec(vals_c)...]
 					end
 				end
 			end
@@ -169,27 +164,39 @@ function assemble(this::Assembler, vals::CellMatrix{T}) where T
 	return sparse(aux_row, aux_col, aux_vals)
 end
 
-function globaldofs(reffe::RefFE, cellvefs, vefcells, is_fixed_vef::AbstractVector)
-	nfdofs=Array{Array{Int64},1}(undef,length(vefcells))
+function globaldofs(reffe::RefFE{D,T}, gridgr::FullGridGraph, labels::FaceLabels) where {D,T}
+	in_tag = tag_from_name(labels,"interior")
+	# @santiagobadia : For the moment fixing everything on the boundary
+	dim_eqclass = []
 	c=1
 	c_n = -1
-	nfdofs_l = []
-	nfdofs_g = zeros(Int, length(vefcells)+1)
-	nfdofs_g[1] = 1
-	for (ignf,nf) in enumerate(vefcells)
-		owner_cell = nf[1]
-		lid_vef = findfirst(i->i==ignf,cellvefs[owner_cell])
-		num_nf_dofs = length(reffe.nfacedofs[lid_vef])
-		if ( is_fixed_vef[ignf] )
-			nfdofs_l = [nfdofs_l..., c_n:c_n-num_nf_dofs+1... ]
-			c_n -= num_nf_dofs
-		else
-			nfdofs_l = [nfdofs_l..., c:c+num_nf_dofs-1... ]
-			c += num_nf_dofs
+	for vef_dim in 0:D-1
+		vefcells= connections(gridgr,vef_dim,D)
+		cellvefs= connections(gridgr,D,vef_dim)
+		vef_labels = labels_on_dim(labels,vef_dim)
+		num_vefs = length(vefcells)
+		nfdofs=Array{Array{Int64},1}(undef,num_vefs)
+		nfdofs_l = []
+		nfdofs_g = zeros(Int, num_vefs+1)
+		nfdofs_g[1] = 1
+		for (ignf,nf) in enumerate(vefcells)
+			owner_cell = nf[1]
+			lid_vef_dim = findfirst(i->i==ignf,cellvefs[owner_cell])
+			lid_vef = reffe.polytope.nf_dim[end][vef_dim+1][1]+lid_vef_dim-1
+			# @santiagobadia : Better a method for nfs of a particular type...
+			num_nf_dofs = length(reffe.nfacedofs[lid_vef])
+			if ( vef_labels[ignf] != in_tag)
+				nfdofs_l = [nfdofs_l..., c_n:-1:c_n-num_nf_dofs+1... ]
+				c_n -= num_nf_dofs
+			else
+				nfdofs_l = [nfdofs_l..., c:c+num_nf_dofs-1... ]
+				c += num_nf_dofs
+			end
+			nfdofs_g[ignf+1] += num_nf_dofs + nfdofs_g[ignf]
 		end
-		nfdofs_g[ignf+1] += num_nf_dofs + nfdofs_g[ignf]
+		dim_eqclass = [ dim_eqclass..., CellVectorFromDataAndPtrs(nfdofs_l, nfdofs_g) ]
 	end
-	return CellVectorFromDataAndPtrs(nfdofs_l, nfdofs_g), c-1, -c_n-1
+	return [ dim_eqclass , c-1, -c_n-1 ]
 end
 
 function interpolate(fun::Function, fesp::FESpace)
@@ -198,7 +205,10 @@ function interpolate(fun::Function, fesp::FESpace)
 	trian = fesp.trian
 	phi = geomap(trian)
 	uphys = fun ∘ phi
-	celldofs = fesp.dof_eqclass
+	# celldofs = fesp.dof_eqclass
+	celldofs = fesp.dof_eqclass[1]
+	# @santiagobadia : It only works for 1st order LagrangianRefFE
+	# Waiting for new implementation of cellvefs that aggregates all dims
 	free_dofs = zeros(Float64, fesp.num_free_dofs)
 	fixed_dofs = zeros(Float64, fesp.num_fixed_dofs)
 	aux = zeros(Float64,cellsize(fesp.dof_eqclass)...)
