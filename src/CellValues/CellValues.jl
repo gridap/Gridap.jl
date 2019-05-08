@@ -59,6 +59,7 @@ import Numa.FieldValues: inner, outer, meas
 
 include("Helpers.jl")
 include("Interfaces.jl")
+include("Append.jl")
 include("Operations.jl")
 include("ConstantCellValues.jl")
 include("Wrappers.jl")
