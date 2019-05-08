@@ -2,6 +2,37 @@
 function test_iter_cell_value(
   iter_cell_value::IterCellValue{T}, values::AbstractArray{T}) where T
 
+  _test_iter_cell_value(iter_cell_value, values)
+end
+
+function test_index_cell_value(
+  index_cell_value::IndexCellValue{T,N}, values::AbstractArray{T,N}) where {T,N}
+
+  _test_index_cell_value(index_cell_value, values)
+end
+
+function test_iter_cell_array(
+  iter_cell_array::IterCellArray{T,N},
+  arrays::Array{Array{T,N}}) where {T,N}
+
+  _test_iter_cell_value(iter_cell_array,arrays)
+
+  cellsize(iter_cell_array) == maximum([ size(v) for v in arrays ])
+
+end
+
+function test_index_cell_array(
+  index_cell_array::IndexCellArray{T,N},
+  arrays::Array{Array{T,N}}) where {T,N}
+
+  _test_index_cell_value(index_cell_array,arrays)
+
+  cellsize(index_cell_array) == maximum([ size(v) for v in arrays ])
+
+end
+
+function _test_iter_cell_value(iter_cell_value, values)
+
   @test length(iter_cell_value) == length(values)
 
   i = 0
@@ -16,12 +47,9 @@ function test_iter_cell_value(
 
   @test iter_cell_value == iter_cell_value
 
-  cellsize(iter_cell_value) == maximum([ size(v) for v in values ])
-
 end
 
-function test_index_cell_value(
-  index_cell_value::IndexCellValue{T,N}, values::AbstractArray{T,N}) where {T,N}
+function _test_index_cell_value( index_cell_value, values)
 
   @test length(index_cell_value) == length(values)
 
@@ -39,23 +67,4 @@ function test_index_cell_value(
 
   @test index_cell_value == index_cell_value
 
-  #cellsize(index_cell_value) == maximum([ size(v) for v in values ])
-
 end
-
-function test_iter_cell_array(
-  iter_cell_array::IterCellArray{T,N},
-  arrays::Array{Array{T,N}}) where {T,N}
-
-  test_iter_cell_value(iter_cell_array,arrays)
-
-end
-
-function test_index_cell_array(
-  iter_cell_array::IndexCellArray{T,N},
-  arrays::Array{Array{T,N}}) where {T,N}
-
-  test_index_cell_value(iter_cell_array,arrays)
-
-end
-

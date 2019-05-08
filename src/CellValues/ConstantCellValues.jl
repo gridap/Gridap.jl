@@ -1,6 +1,4 @@
 
-# ConstantCellValue
-
 struct ConstantCellValue{T} <: IndexCellValue{T,1}
   value::T
   length::Int
@@ -30,11 +28,7 @@ function ConstantCellMatrix(v::AbstractMatrix{T},l::Integer) where T
   ConstantCellMatrix{T}(v,l)
 end
 
-ConstantCellVector(args...) = ConstantCellValue(args...)
-
-ConstantCellMatrix(args...) = ConstantCellValue(args...)
-
-cellsize(self::ConstantCellValue) = size(self.value)
+cellsize(self::ConstantCellArray) = size(self.value)
 
 function cellsum(self::ConstantCellArray{T,N};dim::Int) where {T,N}
   b = sum(self.value,dims=dim)
@@ -55,8 +49,6 @@ function cellnewaxis(self::ConstantCellArray;dim::Int)
   c = copy(reshape(self.value,shape))
   ConstantCellValue(c,self.length)
 end
-
-# ConstantCellValue
 
 getindex(self::ConstantCellValue,cell::Int) = celldata(self)
 

@@ -28,6 +28,7 @@ export CellVectorFromDataAndPtrs
 export CellVectorFromDataAndStride
 export CellVectorFromLocalToGlobal
 export CellVectorFromLocalToGlobalPosAndNeg
+export CellVectorByComposition
 
 export apply
 export celldata

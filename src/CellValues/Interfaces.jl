@@ -38,6 +38,10 @@ const IterCellVector{T,A} = IterCellArray{T,1,A}
 
 const IterCellMatrix{T,A} = IterCellArray{T,2,A}
 
+function cellsize(::IterCellArray{T,N})::NTuple{N,Int} where {T,N}
+  @abstractmethod
+end
+
 # Indexable cell arrays
 
 const IndexCellArray{T,N,A<:AbstractArray{T,N},D} = IndexCellValue{A,D}
@@ -45,6 +49,10 @@ const IndexCellArray{T,N,A<:AbstractArray{T,N},D} = IndexCellValue{A,D}
 const IndexCellVector{T,A,D} = IndexCellArray{T,1,A,D}
 
 const IndexCellMatrix{T,A,D} = IndexCellArray{T,2,A,D}
+
+function cellsize(::IndexCellArray{T,N})::NTuple{N,Int} where {T,N}
+  @abstractmethod
+end
 
 # Cell Arrays
 
@@ -58,6 +66,8 @@ const CellMatrix{T} = CellArray{T,2}
 
 const IterData{T} = Union{CellValue{T},AbstractArray{T}}
 
+# Misc. methods depending on the abstract interface
+
 cellsize(self::CellArray,i::Int) = (s = cellsize(self); s[i])
 
 celllength(self::CellArray) = prod(cellsize(self))
@@ -68,5 +78,5 @@ function Base.show(io::IO,self::CellValue)
   end
 end
 
-cellsize(::CellValue) = ()
+#cellsize(::CellValue) = ()
 

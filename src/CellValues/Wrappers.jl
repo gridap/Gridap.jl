@@ -12,6 +12,14 @@ size(self::CellValueFromArray) = size(self.v)
 
 IndexStyle(::Type{CellValueFromArray{T,N,V}}) where {T,N,V} = IndexStyle(V)
 
+function cellsize(self::CellValueFromArray{<:AbstractArray{S,M}}) where {S,M}
+  s = tuple(fill(0,M)...)
+  for v in self
+    s = max(s,size(v))
+  end
+  s
+end
+
 mutable struct CachedSubVector{T,V<:AbstractArray{T,1}} <: AbstractArray{T,1}
   vector::V
   pini::Int
