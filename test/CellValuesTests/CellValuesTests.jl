@@ -10,7 +10,10 @@ end
   include("WrappersTests.jl")
 end
 
-#include("Mocks.jl")
+@testset "OperationsTests" begin
+  include("OperationsTests.jl")
+end
+
 #include("OperationsTests.jl")
 #include("WrappersTests.jl")
 

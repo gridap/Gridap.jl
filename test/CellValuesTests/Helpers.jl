@@ -3,17 +3,21 @@ function test_iter_cell_value(
   iter_cell_value::IterCellValue{T}, values::AbstractArray{T}) where T
 
   _test_iter_cell_value(iter_cell_value, values)
+
+  @test cellsize(iter_cell_value) == ()
 end
 
 function test_index_cell_value(
   index_cell_value::IndexCellValue{T,N}, values::AbstractArray{T,N}) where {T,N}
 
   _test_index_cell_value(index_cell_value, values)
+
+  @test cellsize(index_cell_value) == ()
 end
 
 function test_iter_cell_array(
   iter_cell_array::IterCellArray{T,N},
-  arrays::Array{Array{T,N}}) where {T,N}
+  arrays::AbstractArray{Array{T,N}}) where {T,N}
 
   _test_iter_cell_value(iter_cell_array,arrays)
 
@@ -43,7 +47,9 @@ function _test_iter_cell_value(iter_cell_value, values)
 
   @test i == length(values)
 
-  @test eltype(iter_cell_value) == eltype(values)
+  for v in iter_cell_value
+    @assert eltype(iter_cell_value) == typeof(v)
+  end
 
   @test iter_cell_value == iter_cell_value
 

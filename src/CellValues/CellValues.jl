@@ -41,6 +41,8 @@ export cellmean
 using Base: @propagate_inbounds
 using Base.Cartesian: @nloops, @nexprs, @nref
 
+using StaticArrays
+
 using Numa.Helpers
 using Numa.CachedArrays
 using Numa.Maps: newaxis_kernel!, newaxis_size

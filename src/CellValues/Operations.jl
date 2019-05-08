@@ -6,6 +6,9 @@ for op in (:+, :-, :(inv), :(det), :(meas))
     function ($op)(a::CellValue)
       CellValueFromUnaryOp($op,a)
     end
+    function ($op)(a::CellValue{<:SArray})
+      CellValueFromUnaryOp($op,a)
+    end
   end
 end
 
@@ -44,6 +47,14 @@ end
 # Binary operations on CellValue
 
 function (==)(a::CellValue{T},b::CellValue{T}) where T
+  _cell_value_eq_kernel(a,b)
+end
+
+function (==)(a::CellValue{T},b::CellValue{T}) where T<:SArray
+  _cell_value_eq_kernel(a,b)
+end
+
+function _cell_value_eq_kernel(a,b)
   length(a) != length(b) && return false
   for (ai,bi) in zip(a,b)
     ai != bi && return false
@@ -54,6 +65,9 @@ end
 for op in (:+, :-, :*, :/, :(outer), :(inner))
   @eval begin
     function ($op)(a::CellValue,b::CellValue)
+      CellValueFromBinaryOp($op,a,b)
+    end
+    function ($op)(a::CellValue{<:SArray},b::CellValue{<:SArray})
       CellValueFromBinaryOp($op,a,b)
     end
   end
@@ -327,12 +341,16 @@ end
 function iteratekernel(self::CellArrayFromBinaryOp,anext,bnext,v)
   a, astate = anext
   b, bstate = bnext
-  vsize = computesize(self,size(a),size(b))
+  vsize = computesize(self,_custom_size(a),_custom_size(b))
   setsize!(v,vsize)
   computevals!(self,a,b,v)
   state = (v, astate, bstate)
   (v,state)
 end
+
+_custom_size(a) = size(a)
+
+_custom_size(a::SArray) = ()
 
 struct CellArrayFromBroadcastBinaryOp{O<:Function,T,N,A,B} <: CellArrayFromBinaryOp{A,B,T,N}
   op::O
@@ -365,6 +383,22 @@ function CellArrayFromBroadcastBinaryOp(op::Function,a::CellValue{T},b::CellArra
   CellArrayFromBroadcastBinaryOp{O,R,N,A,B}(op,a,b)
 end
 
+function CellArrayFromBroadcastBinaryOp(op::Function,a::CellArray{T,N},b::CellValue{S}) where {T,S<:SArray,N}
+  O = typeof(op)
+  A = typeof(a)
+  B = typeof(b)
+  R = Base._return_type(op,Tuple{T,S})
+  CellArrayFromBroadcastBinaryOp{O,R,N,A,B}(op,a,b)
+end
+
+function CellArrayFromBroadcastBinaryOp(op::Function,a::CellValue{T},b::CellArray{S,N}) where {T<:SArray,S,N}
+  O = typeof(op)
+  A = typeof(a)
+  B = typeof(b)
+  R = Base._return_type(op,Tuple{T,S})
+  CellArrayFromBroadcastBinaryOp{O,R,N,A,B}(op,a,b)
+end
+
 leftcellarray(self::CellArrayFromBroadcastBinaryOp) = self.a
 
 rightcellarray(self::CellArrayFromBroadcastBinaryOp) = self.b
@@ -374,7 +408,23 @@ function computesize(::CellArrayFromBroadcastBinaryOp, asize, bsize)
 end
 
 function computevals!(self::CellArrayFromBroadcastBinaryOp, a, b, v)
-  broadcast!(self.op,v,a,b)
+  _custom_broadcast!(self.op,v,a,b)
+end
+
+function _custom_broadcast!(op,v,a,b)
+  broadcast!(op,v,a,b)
+end
+
+function _custom_broadcast!(op,v::AbstractArray,a::SArray,b::AbstractArray)
+  @inbounds for i in eachindex(b)
+    v[i] = op(a,b[i])
+  end
+end
+
+function _custom_broadcast!(op,v::AbstractArray,a::AbstractArray,b::SArray)
+  @inbounds for i in eachindex(a)
+    v[i] = op(a[i],b)
+  end
 end
 
 # Miscellaneous operations

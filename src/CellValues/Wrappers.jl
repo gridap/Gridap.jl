@@ -12,6 +12,8 @@ size(self::CellValueFromArray) = size(self.v)
 
 IndexStyle(::Type{CellValueFromArray{T,N,V}}) where {T,N,V} = IndexStyle(V)
 
+cellsize(self::CellValueFromArray{<:SArray}) = ()
+
 function cellsize(self::CellValueFromArray{<:AbstractArray{S,M}}) where {S,M}
   s = tuple(fill(0,M)...)
   for v in self

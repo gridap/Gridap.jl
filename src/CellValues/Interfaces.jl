@@ -68,6 +68,10 @@ const IterData{T} = Union{CellValue{T},AbstractArray{T}}
 
 # Misc. methods depending on the abstract interface
 
+cellsize(self::CellValue) = ()
+
+cellsize(self::CellValue{<:SArray}) = ()
+
 cellsize(self::CellArray,i::Int) = (s = cellsize(self); s[i])
 
 celllength(self::CellArray) = prod(cellsize(self))
@@ -77,6 +81,4 @@ function Base.show(io::IO,self::CellValue)
     println(io,"$i -> $a")
   end
 end
-
-#cellsize(::CellValue) = ()
 
