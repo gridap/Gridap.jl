@@ -9,6 +9,7 @@ using Numa.CellValues
 
 include("Mocks.jl")
 include("OperationsTests.jl")
+include("AppendTests.jl")
 include("ConstantCellValuesTests.jl")
 include("WrappersTests.jl")
 

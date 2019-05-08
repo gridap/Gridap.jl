@@ -28,3 +28,24 @@ function IndexCellValueByGlobalAppend(cvs::Vararg{IndexCellValue{T,1},N}) where 
   end
   return aux
 end
+
+struct IndexCellValueByLocalAppend{T,V<:IndexCellValue{T,1},W<:IndexCellValue{T,1}} <: IndexCellValue{T,1}
+  cvs1::V
+  cvs2::W
+end
+
+@propagate_inbounds function getindex(self::IndexCellValueByLocalAppend,cell::Int)
+  return [ self.cvs1[cell]..., self.cvs2[cell]...]
+end
+
+size(self::IndexCellValueByLocalAppend) = size(self.cvs1)
+
+# IndexStyle(::Type{IndexCellValueByLocalAppend{T,N,V}}) where {T,N,V} =  IndexLinear()
+
+function IndexCellValueByLocalAppend(cvs::Vararg{IndexCellValue{T,1},N}) where {T,N}
+  aux = cvs[1]
+  for i in 2:N
+    aux = IndexCellValueByLocalAppend(aux, cvs[i])
+  end
+  return aux
+end
