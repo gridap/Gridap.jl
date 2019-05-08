@@ -46,9 +46,9 @@ end
 
 const IndexCellArray{T,N,A<:AbstractArray{T,N},D} = IndexCellValue{A,D}
 
-const IndexCellVector{T,A,D} = IndexCellArray{T,1,A,D}
+const IndexCellVector{T,A<:AbstractArray{T,1},D} = IndexCellArray{T,1,A,D}
 
-const IndexCellMatrix{T,A,D} = IndexCellArray{T,2,A,D}
+const IndexCellMatrix{T,A<:AbstractArray{T,2},D} = IndexCellArray{T,2,A,D}
 
 function cellsize(::IndexCellArray{T,N})::NTuple{N,Int} where {T,N}
   @abstractmethod

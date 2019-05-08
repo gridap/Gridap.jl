@@ -188,18 +188,20 @@ size(self::CellVectorFromLocalToGlobalPosAndNeg) = size(self.lid_to_gid)
 
 cellsize(self::CellVectorFromLocalToGlobalPosAndNeg) = cellsize(self.lid_to_gid)
 
-struct CellVectorByComposition{T,L<:IndexCellArray{Int,1},V<:IndexCellArray{T,1}} <: IndexCellArray{T,1,CachedArray{T,1,Array{T,1}},1}
+struct CellVectorByComposition{
+  T,L<:IndexCellVector{Int},V<:IndexCellVector{T}} <: IndexCellVector{T,CachedVector{T,Vector{T}},1}
+
   cell_to_x::L
   x_to_vals::V
   cv::CachedVector{T,Vector{T}}
 end
-# @santiagobadia : For some reason, IndexCellVector{Int} not working
 
-function CellVectorByComposition(cell_to_x::IndexCellArray{Int,1}, x_to_vals::IndexCellArray{T,1}) where T
+function CellVectorByComposition(
+  cell_to_x::IndexCellVector{Int}, x_to_vals::IndexCellVector{T}) where T
   L = typeof(cell_to_x)
   V = typeof(x_to_vals)
   a = Vector{T}(undef,(celllength(cell_to_x)*celllength(x_to_vals),))
-  cv = CachedArray(a)
+  cv = CachedVector(a)
   CellVectorByComposition{T,L,V}(cell_to_x, x_to_vals, cv)
 end
 
