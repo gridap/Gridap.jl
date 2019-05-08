@@ -30,6 +30,7 @@ export CellVectorFromLocalToGlobal
 export CellVectorFromLocalToGlobalPosAndNeg
 export IndexCellValueByGlobalAppend
 export IndexCellValueByLocalAppend
+export IndexCellValueByLocalAppendWithOffset
 
 
 export apply

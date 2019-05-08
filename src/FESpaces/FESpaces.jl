@@ -208,7 +208,7 @@ function interpolate(fun::Function, fesp::FESpace{D}) where {D}
 	uphys = fun ∘ phi
 	celldofs = fesp.cell_eqclass
 	# dofs_eqclass = IndexCellValueByGlobalAppend(fesp.dof_eqclass...)
-	maxs = max(length(fesp.dof_eqclass[i]) for i=0:D-1)
+	maxs = max([length(fesp.dof_eqclass[i]) for i=1:D]...)
 	free_dofs = zeros(Float64, fesp.num_free_dofs)
 	fixed_dofs = zeros(Float64, fesp.num_fixed_dofs)
 	# aux = zeros(Float64,cellsize(fesp.dof_eqclass)...)

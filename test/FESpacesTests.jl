@@ -152,26 +152,15 @@ dofs, nfree, nfixed = FESpaces.globaldofs(reffe, gridgr::FullGridGraph, labels)
 dofs
 @test nfree == 1
 @test nfixed == 8
-##
 
-offset = tuple(length.(fesp.dof_eqclass[1:end])...)
-fesp.dof_eqclass
+fun(x::Point{2}) = x[1]
+gradfun(x::Point{2}) = VectorValue(1.0, 0.0)
+gradient(::typeof(fun)) = gradfun
+funh = interpolate(fun, fesp)
 
-dofs[1]
-dofs[2]
+funh.coeffs.gid_to_val_neg
+funh.coeffs.gid_to_val_pos
 
-using Numa.Geometry: connections
-cellvefs = [connections(gridgr,D,i) for i in 0:1]
-cellvefs[1]
-cellvefs[2]
-
-
-
-using Numa.CellValues: IndexCellValueByLocalAppendWithOffset
-offset = tuple(length.(fesp.dof_eqclass)...)
-cellvefs_dim = [connections(gridgr,D,i) for i in 0:1]
-cellvefs = IndexCellValueByLocalAppendWithOffset(offset, cellvefs_dim...)
-dofs_all = IndexCellValueByGlobalAppend(dofs...)
-dof_eqclass = CellVectorByComposition(cellvefs, dofs_all)
+# Now check interpolation
 
 ##
