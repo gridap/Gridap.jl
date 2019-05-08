@@ -8,6 +8,7 @@ using Numa.FieldValues
 using LinearAlgebra: det, inv
 using StaticArrays
 using Numa.CellValues: _custom_broadcast!
+using Numa.CellValues: mean
 
 include("Helpers.jl")
 include("Mocks.jl")
@@ -178,95 +179,47 @@ for op in (:+,:-,:*,:/,:(inner))
   end
 end
 
-end # module OperationsTests
+for scai in [sca2, sca2_v, sca2_t]
+  sai = scai.a
+  sca3 = cellsum(scai,dim=2)
+  @test isa(sca3,CellArrayFromCellSum{2})
+  test_iter_cell_array(sca3,fill(reshape(sum(sai,dims=2),(3,)),l))
+end
 
-#
-#@testset "Operations" begin
-#
-#
-#
-#
-#  for op in (:+,:-,:*,:/,:(outer),:(inner))
-#    @eval begin
-#      sca3 = $op(sca,sca2)
-#      @test isa(sca3,CellArrayFromBroadcastBinaryOp{typeof($op),Float64,2})
-#      @test length(sca3) == l
-#      @test cellsize(sca3) == (3,2)
-#      for vi in sca3
-#        @assert vi == $op.(sa,sa2)
-#      end
-#    end
-#  end
-#
-#  for op in (:+,:-,:*,:/,:(outer),:(inner))
-#    @eval begin
-#      sca3 = $op(scv,sca2)
-#      @test isa(sca3,CellArrayFromBroadcastBinaryOp{typeof($op),Float64,2})
-#      @test length(sca3) == l
-#      @test cellsize(sca3) == (3,2)
-#      for vi in sca3
-#        @assert vi == $op.(sv,sa2)
-#      end
-#    end
-#  end
-#
-#  for op in (:+,:-,:*,:/,:(outer),:(inner))
-#    @eval begin
-#      sca3 = $op(sca2,scv)
-#      @test isa(sca3,CellArrayFromBroadcastBinaryOp{typeof($op),Float64,2})
-#      @test length(sca3) == l
-#      @test cellsize(sca3) == (3,2)
-#      for vi in sca3
-#        @assert vi == $op.(sa2,sv)
-#      end
-#    end
-#  end
-#
-#  sca3 = cellsum(sca2,dim=2)
-#  @test isa(sca3,CellArrayFromCellSum{2,1,typeof(sca2),Float64})
-#  @test length(sca3) == l
-#  @test cellsize(sca3) == (3,)
-#  for vi in sca3
-#    @assert vi == reshape(sum(sa2,dims=2),(3,))
-#  end
-#
-#  sca3 = cellsum(sca,dim=1)
-#  @test isa(sca3,CellValueFromCellArrayReduce{Float64,typeof(sum),typeof(sca)})
-#  @test length(sca3) == l
-#  for vi in sca3
-#    @assert vi == sum(sa)
-#  end
-#
-#  sca3 = cellmean(sca)
-#  @test isa(sca3,CellValueFromCellArrayReduce{Float64,typeof(Numa.CellValues.mean),typeof(sca)})
-#  @test length(sca3) == l
-#  for vi in sca3
-#    @assert vi == Numa.CellValues.mean(sa)
-#  end
-#
-#  sca3 = cellnewaxis(sca2,dim=2)
-#  @test isa(sca3,CellArrayFromCellNewAxis{2,typeof(sca2),Float64,3})
-#  @test length(sca3) == l
-#  @test cellsize(sca3) == (3,1,2)
-#  for vi in sca3
-#    @assert vi == reshape(sa2,(3,1,2))
-#  end
-#
-#end
-#
-#@testset "FlattedCellArray" begin
-#
-#  scv3 = flatten(sca)
-#
-#  c = collect(scv3)
-#
-#  i = 1
-#  for a in sca
-#    for ai in a
-#      @assert c[i] == ai
-#      i += 1
-#    end
-#  end
-#
-#end
+for scai in [sca, sca_v, sca_t]
+  sai = scai.a
+  sca3 = cellsum(scai,dim=1)
+  @test isa(sca3,CellValueFromCellArrayReduce)
+  test_iter_cell_value(sca3,fill(sum(sai),l))
+end
+
+for scai in [sca, sca_v, sca_t]
+  sai = scai.a
+  sca3 = cellmean(scai)
+  @test isa(sca3,CellValueFromCellArrayReduce)
+  test_iter_cell_value(sca3,fill(mean(sai),l))
+end
+
+for scai in [sca2, sca2_v, sca2_t]
+  sai = scai.a
+  sca3 = cellnewaxis(scai,dim=2)
+  @test isa(sca3,CellArrayFromCellNewAxis{2})
+  test_iter_cell_array(sca3,fill(reshape(sai,(3,1,2)),l))
+end
+
+function test_flatten()
+  scv3 = flatten(sca)
+  #test_iter_cell_value(scv3,fill(sv,3*l))
+  c = collect(scv3)
+  i = 1
+  for a in sca
+    for ai in a
+      @assert c[i] == ai
+      i += 1
+    end
+  end
+end
+test_flatten()
+
+end # module OperationsTests
 

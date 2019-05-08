@@ -469,3 +469,5 @@ end
 IteratorSize(::Type{FlattedCellArray{T,N,A}} where {T,N,A}) = Base.SizeUnknown()
 
 length(::FlattedCellArray)::Int = @notimplemented
+
+
