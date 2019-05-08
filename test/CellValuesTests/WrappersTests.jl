@@ -6,6 +6,7 @@ using Numa.FieldValues
 using Numa.CellValues
 
 include("Helpers.jl")
+include("CartesianArray.jl")
 
 v = [ Point{2}(i,i) for i in 1:10 ]
 cv = CellValueFromArray(v)
@@ -42,6 +43,16 @@ ca = CellVectorFromLocalToGlobal(lid_to_gid,gid_to_val)
 a = [ gid_to_val[gids] for gids in lid_to_gid ]
 test_index_cell_array( ca, a )
 
+b = fill([2,4],(3,4))
+c = CartesianArray(b)
+lid_to_gid = CellValueFromArray(c)
+test_index_cell_array( lid_to_gid, c )
+gid_to_val = [1, 2, 3, -1, 2]
+ca = CellVectorFromLocalToGlobal(lid_to_gid,gid_to_val)
+aa = fill([2,-1],(3,4))
+a = CartesianArray(aa)
+test_index_cell_array( ca, a )
+
 data = [-2,3,-1,3,4,-4,-3,2,5,4,3,-4]
 ptrs = [1,4,4,7,13]
 p = 1
@@ -51,6 +62,18 @@ lid_to_gid = CellVectorFromDataAndPtrs(data,ptrs)
 ca = CellVectorFromLocalToGlobalPosAndNeg(
   lid_to_gid,gid_to_val_pos,gid_to_val_neg)
 a = [ [1, 3, 2], Int64[], [3, -1, 3], [5, 2, 1, -1, 3, 3] ]
+test_index_cell_array( ca, a )
+
+b = fill([2,-4],(3,4))
+c = CartesianArray(b)
+lid_to_gid = CellValueFromArray(c)
+test_index_cell_array( lid_to_gid, c )
+gid_to_val_pos = [1, 2, 3, -1, 2]
+gid_to_val_neg = [-1, -3, -3, 1, -4]
+ca = CellVectorFromLocalToGlobalPosAndNeg(
+  lid_to_gid,gid_to_val_pos,gid_to_val_neg)
+aa = fill([2,1],(3,4))
+a = CartesianArray(aa)
 test_index_cell_array( ca, a )
 
 cell_to_x_l = [2,3,1,3,4,4,3,2,5,4,3,4]

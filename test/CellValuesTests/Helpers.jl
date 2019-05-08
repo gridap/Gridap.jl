@@ -23,7 +23,7 @@ end
 
 function test_index_cell_array(
   index_cell_array::IndexCellArray{T,N},
-  arrays::Array{Array{T,N}}) where {T,N}
+  arrays::AbstractArray{Array{T,N}}) where {T,N}
 
   _test_index_cell_value(index_cell_array,arrays)
 

@@ -133,7 +133,7 @@ end
 
 size(self::CellVectorFromLocalToGlobal) = size(self.lid_to_gid)
 
-IndexStyle(::Type{CellVectorFromLocalToGlobal{T,L,V}}) where {T,L,V} = IndexStyle(L)
+IndexStyle(::Type{CellVectorFromLocalToGlobal{T,D,L,V}}) where {T,D,L,V} = IndexStyle(L)
 
 cellsize(self::CellVectorFromLocalToGlobal) = cellsize(self.lid_to_gid)
 
@@ -166,7 +166,7 @@ function CellVectorFromLocalToGlobalPosAndNeg(
   CellVectorFromLocalToGlobalPosAndNeg(lid_to_gid,_gid_to_val_pos,_gid_to_val_neg)
 end
 
-IndexStyle(::Type{CellVectorFromLocalToGlobalPosAndNeg{T,L}}) where {T,L} = IndexStyle(L)
+IndexStyle(::Type{CellVectorFromLocalToGlobalPosAndNeg{T,D,L,V,W}}) where {T,D,L,V,W} = IndexStyle(L)
 
 @propagate_inbounds function getindex(
   self::CellVectorFromLocalToGlobalPosAndNeg,cell::Vararg{Int,N} where N)
