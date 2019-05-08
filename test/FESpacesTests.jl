@@ -131,8 +131,10 @@ is_fixed_vef = zeros(Bool, length(vefcells))
 # sys_mat = assemble(assembler,kmat)
 
 
-#############################################33
+####################
+#########################33
 
+##
 D = 2
 model = CartesianDiscreteModel(domain=(0.0,1.0,-1.0,2.0),
         partition=(2,2))
@@ -152,7 +154,8 @@ dofs
 @test nfixed == 8
 ##
 
-offset = tuple(length.(dofs[1:end])...)
+offset = tuple(length.(fesp.dof_eqclass[1:end])...)
+fesp.dof_eqclass
 
 dofs[1]
 dofs[2]
@@ -163,8 +166,12 @@ cellvefs[1]
 cellvefs[2]
 
 
-dofs_all = IndexCellValueByGlobalAppend(dofs...)
+
 using Numa.CellValues: IndexCellValueByLocalAppendWithOffset
-cellvefs_all = IndexCellValueByLocalAppendWithOffset(offset, cellvefs...)
+offset = tuple(length.(fesp.dof_eqclass)...)
+cellvefs_dim = [connections(gridgr,D,i) for i in 0:1]
+cellvefs = IndexCellValueByLocalAppendWithOffset(offset, cellvefs_dim...)
+dofs_all = IndexCellValueByGlobalAppend(dofs...)
+dof_eqclass = CellVectorByComposition(cellvefs, dofs_all)
 
 ##

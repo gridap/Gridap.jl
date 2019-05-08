@@ -58,6 +58,7 @@ struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T,Float64}
 	trian::Triangulation{D,Z}
 	graph::FullGridGraph
 	dof_eqclass #::CellVector{Int}
+	cell_eqclass #::CellVector{Int}
 	num_free_dofs::Int
 	num_fixed_dofs::Int
 	# dirichlet_tags::Array{Int} # Physical tags that describe strong dirichlet boundary
@@ -69,12 +70,12 @@ function ConformingFESpace(
 	graph::FullGridGraph,
 	labels::FaceLabels) where {D,Z,T}
 	gldofs, nfree, nfixed  = globaldofs(reffe, graph, labels)
-	# @santiagobadia : We are calling twice cell_to_vefs...
-	# dof_eqclass = CellVectorByComposition(cellvefs, gldofs)
-	# @santiagobadia : Here we want to have a new CellVectorByComposition with
-	# multiple cellvefs and multiple gldofs (in this case, as many as dimensions)
-
-	ConformingFESpace{D,Z,T}(reffe, trian, graph, gldofs, nfree, nfixed)
+	offset = tuple(length.(gldofs)...)
+	cellvefs_dim = [connections(graph,D,i) for i in 0:1]
+	cellvefs = IndexCellValueByLocalAppendWithOffset(offset, cellvefs_dim...)
+	dofs_all = IndexCellValueByGlobalAppend(gldofs...)
+	cell_eqclass = CellVectorByComposition(cellvefs, dofs_all)
+	ConformingFESpace{D,Z,T}(reffe, trian, graph, gldofs, cell_eqclass, nfree, nfixed)
 end
 
 function applyconstraints(this::ConformingFESpace,
@@ -199,19 +200,19 @@ function globaldofs(reffe::RefFE{D,T}, gridgr::FullGridGraph, labels::FaceLabels
 	return [ dim_eqclass , c-1, -c_n-1 ]
 end
 
-function interpolate(fun::Function, fesp::FESpace)
+function interpolate(fun::Function, fesp::FESpace{D}) where {D}
 	reffe = fesp.reffe
 	dofb = reffe.dofbasis
 	trian = fesp.trian
 	phi = geomap(trian)
 	uphys = fun ∘ phi
-	# celldofs = fesp.dof_eqclass
-	celldofs = fesp.dof_eqclass[1]
-	# @santiagobadia : It only works for 1st order LagrangianRefFE
-	# Waiting for new implementation of cellvefs that aggregates all dims
+	celldofs = fesp.cell_eqclass
+	# dofs_eqclass = IndexCellValueByGlobalAppend(fesp.dof_eqclass...)
+	maxs = max(length(fesp.dof_eqclass[i]) for i=0:D-1)
 	free_dofs = zeros(Float64, fesp.num_free_dofs)
 	fixed_dofs = zeros(Float64, fesp.num_fixed_dofs)
-	aux = zeros(Float64,cellsize(fesp.dof_eqclass)...)
+	# aux = zeros(Float64,cellsize(fesp.dof_eqclass)...)
+	aux = zeros(Float64, maxs)
 	for (imap,l2g) in zip(uphys,celldofs)
 		evaluate!(dofb,imap,aux)
 		for (i,gdof) in enumerate(l2g)
