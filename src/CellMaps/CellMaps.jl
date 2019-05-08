@@ -34,7 +34,6 @@ export varinner
 export attachgeomap
 export compose
 
-
 import Base: +, -, *, /, ∘
 import Base: iterate
 import Base: length
@@ -48,8 +47,9 @@ import Numa.CellValues: cellsize
 import Numa.CellValues: inputcellarray, computesize, computevals!
 
 include("AbstractCellMaps.jl")
-include("ConcreteCellMaps.jl")
-include("Operators.jl")
-include("CellBasisWithGeomap.jl")
+include("ConstantCellMaps.jl")
+#include("ConcreteCellMaps.jl")
+#include("Operators.jl")
+#include("CellBasisWithGeomap.jl")
 
 end #module CellMaps

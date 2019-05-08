@@ -15,7 +15,7 @@ include("Polynomials.jl")
 include("Polytopes.jl")
 include("Quadratures.jl")
 include("CellValues/CellValues.jl")
-#include("CellMaps/CellMaps.jl")
+include("CellMaps/CellMaps.jl")
 
 #include("Meshes.jl")
 #include("FESpaces/RefFEs.jl")
