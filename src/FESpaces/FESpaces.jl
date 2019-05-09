@@ -143,12 +143,12 @@ struct ConformingAssembler{E} <: Assembler{E}
 end
 
 function ConformingAssembler(this::FESpace)
-	ConformingAssembler{Int}(this, this, this.num_free_dofs)
+	ConformingAssembler{Int}(this, this, num_free_dofs(this))
 end
 
 function ConformingAssembler(test::FESpace, trial::FESpace)
 	@assert trial.num_free_dofs == test.num_free_dofs
-	ConformingAssembler{Int}(trial, test, trial.num_free_dofs)
+	ConformingAssembler{Int}(trial, test, num_free_dofs(trial))
 end
 
 # Methods
