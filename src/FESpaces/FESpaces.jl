@@ -75,7 +75,7 @@ struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T,Float64}
 	cell_eqclass::IndexCellArray{Int}
 	num_free_dofs::Int
 	num_fixed_dofs::Int
-	# dirichlet_tags::Array{Int} # Physical tags that describe strong dirichlet boundary
+	dir_tags::NTuple{M,Int} where M
 end
 
 function ConformingFESpace(
@@ -83,17 +83,26 @@ function ConformingFESpace(
 	trian::Triangulation{D,Z},
 	graph::FullGridGraph,
 	labels::FaceLabels) where {D,Z,T}
-	gldofs, nfree, nfixed  = globaldofs(reffe, graph, labels)
+	return ConformingFESpace(reffe, trian, graph, labels, ())
+end
+
+function ConformingFESpace(
+	reffe::LagrangianRefFE{D,T},
+	trian::Triangulation{D,Z},
+	graph::FullGridGraph,
+	labels::FaceLabels,
+	dir_tags::NTuple{M,Int}) where {D,Z,T,M}
+	gldofs, nfree, nfixed  = globaldofs(reffe, graph, labels, dir_tags)
 	offset = tuple(length.(gldofs)...)
 	cellvefs_dim = [connections(graph,D,i) for i in 0:D]
 	cellvefs = IndexCellValueByLocalAppendWithOffset(offset, cellvefs_dim...)
 	dofs_all = IndexCellValueByGlobalAppend(gldofs...)
 	cell_eqclass = CellVectorByComposition(cellvefs, dofs_all)
-	ConformingFESpace{D,Z,T}(reffe, trian, gldofs, cell_eqclass, nfree, nfixed)
+	ConformingFESpace{D,Z,T}(reffe, trian, gldofs, cell_eqclass, nfree, nfixed, dir_tags)
 end
 
 for op in (:reffes, :triangulation, :nf_eqclass, :cell_eqclass,
-	:num_free_dofs, :num_fixed_dofs)
+	:num_free_dofs, :num_fixed_dofs, :dir_tags)
 	@eval begin
 		$op(this::ConformingFESpace) = this.$op
 	end
@@ -134,7 +143,7 @@ struct FESpaceWithDirichletData{D,Z,T,E,V<:FESpace{D,Z,T,E}} <: FESpace{D,Z,T,E}
 end
 
 for op in (:reffes, :triangulation, :gridgraph, :nf_eqclass, :cell_eqclass,
-	:num_free_dofs, :num_fixed_dofs)
+	:num_free_dofs, :num_fixed_dofs, :dir_tags)
 	@eval begin
 		$op(this::FESpaceWithDirichletData) = $op(this.fesp)
 	end
@@ -217,8 +226,11 @@ function assemble(this::Assembler, vals::CellMatrix{T}) where T
 	return sparse(aux_row, aux_col, aux_vals)
 end
 
-function globaldofs(reffe::RefFE{D,T}, gridgr::FullGridGraph, labels::FaceLabels) where {D,T}
-	in_tag = tag_from_name(labels,"interior")
+function globaldofs(reffe::RefFE{D,T},
+	gridgr::FullGridGraph,
+	labels::FaceLabels,
+	dirt::NTuple{N,Int}) where {D,T,N}
+	# in_tag = tag_from_name(labels,"interior")
 	# @santiagobadia : For the moment fixing everything on the boundary
 	dim_eqclass = Int[]
 	c=1
@@ -238,7 +250,7 @@ function globaldofs(reffe::RefFE{D,T}, gridgr::FullGridGraph, labels::FaceLabels
 			lid_vef = reffe.polytope.nf_dim[end][vef_dim+1][1]+lid_vef_dim-1
 			# @santiagobadia : Better a method for nfs of a particular type...
 			num_nf_dofs = length(reffe.nfacedofs[lid_vef])
-			if ( vef_labels[ignf] != in_tag)
+			if ( _is_fixed(vef_labels[ignf],dirt,labels) )
 				nfdofs_l = Int[nfdofs_l..., c_n:-1:c_n-num_nf_dofs+1... ]
 				c_n -= num_nf_dofs
 			else
@@ -280,6 +292,18 @@ function interpolate(fun::Function, fesp::FESpace{D}) where {D}
 	cdofs = CellVectorFromLocalToGlobalPosAndNeg(celldofs, free_dofs, fixed_dofs)
 	# cdofs = CellVectorFromLocalToGlobal(celldofs,free_dofs)
 	intu = CellFieldFromExpand(shb, cdofs)
+end
+
+@inline function _is_fixed(v,dt,labels)
+	for tag in dt
+		labs = labels_on_tag(labels,tag)
+		for label in labs
+			if (label == v)
+				return true
+			end
+		end
+	end
+	return false
 end
 
 end # module FESpaces

@@ -30,6 +30,7 @@ using Numa.CellIntegration
 using UnstructuredGrids
 ##
 ##
+# @testset ConformingFESpace
 D = 2
 model = CartesianDiscreteModel(domain=(0.0,1.0,-1.0,2.0),
         partition=(2,2))
@@ -43,20 +44,24 @@ order=1; orders=order*ones(Int64,D)
 polytope = Polytopes.Polytope(1,1)
 reffe = LagrangianRefFE{D,ScalarValue}(polytope,orders)
 fesp = ConformingFESpace(reffe,trian,gridgr,labels)
-dofs, nfree, nfixed = FESpaces.globaldofs(reffe, gridgr::FullGridGraph, labels)
-dofs
-@test nfree == 1
-@test nfixed == 8
+@test FESpaces.num_free_dofs(fesp) == 9
+@test FESpaces.num_fixed_dofs(fesp) == 0
+##
+fespwd = ConformingFESpace(reffe,trian,gridgr,labels,(1,2,3,4))
+@test FESpaces.num_free_dofs(fespwd) == 5
+@test FESpaces.num_fixed_dofs(fespwd) == 4
 
-FESpaces.reffes(fesp)
+fespwd = ConformingFESpace(reffe,trian,gridgr,labels,(10,))
+@test FESpaces.num_free_dofs(fespwd) == 1
+@test FESpaces.num_fixed_dofs(fespwd) == 8
 
 @test FESpaces.reffes(fesp) == reffe
 @test FESpaces.triangulation(fesp) == trian
-@test FESpaces.num_fixed_dofs(fesp) == nfixed
-@test FESpaces.num_free_dofs(fesp) == nfree
-@test FESpaces.nf_eqclass(fesp) == dofs
+@test FESpaces.num_fixed_dofs(fesp) == fesp.num_fixed_dofs
+@test FESpaces.num_free_dofs(fesp) == fesp.num_free_dofs
+@test FESpaces.nf_eqclass(fesp) == fesp.nf_eqclass
 @test FESpaces.cell_eqclass(fesp) == fesp.cell_eqclass
-
+##
 
 fun(x::Point{2}) = x[1]
 gradfun(x::Point{2}) = VectorValue(1.0, 0.0)
