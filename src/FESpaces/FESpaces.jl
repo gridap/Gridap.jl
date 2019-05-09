@@ -90,8 +90,12 @@ function ConformingFESpace(
 	labels::FaceLabels,
 	dir_tags::NTuple{M,Int}) where {D,Z,T,M}
 	gldofs, nfree, nfixed  = globaldofs(reffe, graph, labels, dir_tags)
-	offset = tuple(length.(gldofs)...)
 	cellvefs_dim = [connections(graph,D,i) for i in 0:D]
+	offset = length.(gldofs)
+	for i in 2:length(offset)
+		offset[i] += offset[i-1]
+	end
+	offset = tuple(offset...)
 	cellvefs = IndexCellValueByLocalAppendWithOffset(offset, cellvefs_dim...)
 	dofs_all = IndexCellValueByGlobalAppend(gldofs...)
 	cell_eqclass = CellVectorByComposition(cellvefs, dofs_all)
@@ -134,6 +138,11 @@ end
 
 function TestFESpace(this::FESpace)
   dv = zeros(Float64,num_fixed_dofs(this))
+  return FESpaceWithDirichletData(this, dv)
+end
+
+function TrialFESpace( this::FESpace{D}, fun::Vector{Function}, labels::FaceLabels) where {D}
+	dv = interpolate_dirichlet_data(fun, this, labels)
   return FESpaceWithDirichletData(this, dv)
 end
 
@@ -271,6 +280,33 @@ function interpolate(fun::Function, fesp::FESpace{D}) where {D}
 	cdofs = CellVectorFromLocalToGlobalPosAndNeg(celldofs, free_dofs, fixed_dofs)
 	intu = CellFieldFromExpand(shb, cdofs)
 end
+
+function interpolate_dirichlet_data(fun::Vector{Function}, fesp::FESpace{D}, labels::FaceLabels) where {D}
+	nf_labs_all = [ labels_on_dim(labels,idim) for idim in 0:D]
+	nf_dofs_all = nf_eqclass(fesp)
+	dtags = dir_tags(fesp)
+	fixed_dofs = zeros(Float64, num_fixed_dofs(fesp))
+	for (ifunc,f) in enumerate(fun)
+		fh = interpolate(f, fesp)
+		# Implement a new interpolate restricted to cells on the boundary for performance
+		for idim in 0:D
+			nf_labs = nf_labs_all[idim+1]
+			nf_dofs = nf_dofs_all[idim+1]
+			fh_fixed_dofs = fh.coeffs.gid_to_val_neg
+			# How to extract this part? Do it correctly, with a FEFunction
+			for (nf,nflab) in enumerate(nf_labs)
+				if (_is_fixed(nflab, (dtags[ifunc],), labels))
+					for dof in nf_dofs[nf]
+						dof *= -1
+						fixed_dofs[dof] = fh_fixed_dofs[dof]
+					end
+				end
+			end
+		end
+	end
+	return fixed_dofs
+end
+
 
 @inline function _is_fixed(v,dt,labels)
 	for tag in dt

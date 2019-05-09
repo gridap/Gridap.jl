@@ -29,6 +29,47 @@ import Numa: gradient, ∇
 using Numa.CellIntegration
 using UnstructuredGrids
 ##
+D = 2
+model = CartesianDiscreteModel(domain=(0.0,1.0,-1.0,2.0),
+        partition=(2,2))
+
+grid = Grid(model,2)
+trian = triangulation(grid)
+gridgr = FullGridGraph(model)
+labels = FaceLabels(model)
+dir_tags = (1,2,3,4)
+
+order=1; orders=order*ones(Int64,D)
+polytope = Polytopes.Polytope(1,1)
+reffe = LagrangianRefFE{D,ScalarValue}(polytope,orders)
+fesp = ConformingFESpace(reffe,trian,gridgr,labels,dir_tags)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ##
 # @testset ConformingFESpace
 D = 2
@@ -80,16 +121,21 @@ fesphom = FESpaces.TestFESpace(fesp)
 # end
 ##
 
-
-fun(x::Point{2}) = x[1]
-gradfun(x::Point{2}) = VectorValue(1.0, 0.0)
-gradient(::typeof(fun)) = gradfun
-funh = interpolate(fun, fesp)
-
-dird = funh.coeffs.gid_to_val_neg.v
-funh.coeffs.gid_to_val_pos
+# TrialFESpace
 ##
+fun1(x::Point{2}) = x[1]
+fun2(x::Point{2}) = x[2]
+fun3(x::Point{2}) = 1.0
+func = [fun1, fun2, fun3, fun2]
 
+using Numa.FESpaces: reffes, cell_eqclass, nf_eqclass
+using Numa.FESpaces: num_free_dofs, num_fixed_dofs
+using Numa.FESpaces: interpolate_dirichlet_data
+fixed_dofs = interpolate_dirichlet_data(func, fesp, labels)
+
+fespwnhdd= FESpaces.TrialFESpace(fesp, func, labels)
+@test fespwnhdd.dir_data == fixed_dofs
+##
 
 
 
