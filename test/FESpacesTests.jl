@@ -79,9 +79,9 @@ FESpaces.reffes(fespwd)
 
 @test FESpaces.reffes(fespwd) == reffe
 @test FESpaces.triangulation(fespwd) == trian
-@test FESpaces.num_fixed_dofs(fespwd) == nfixed
-@test FESpaces.num_free_dofs(fespwd) == nfree
-@test FESpaces.nf_eqclass(fespwd) == dofs
+@test FESpaces.num_fixed_dofs(fespwd) == fesp.num_fixed_dofs
+@test FESpaces.num_free_dofs(fespwd) == fesp.num_free_dofs
+@test FESpaces.nf_eqclass(fespwd) == fesp.nf_eqclass
 @test FESpaces.cell_eqclass(fespwd) == fesp.cell_eqclass
 
 
