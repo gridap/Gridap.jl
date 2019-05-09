@@ -1,3 +1,33 @@
+module AbstractCellValues
+
+using Numa.Helpers
+using StaticArrays
+
+export CellValue
+export CellArray
+export CellMatrix
+export CellVector
+
+export IterCellValue
+export IterCellArray
+export IterCellMatrix
+export IterCellVector
+
+export IndexCellValue
+export IndexCellArray
+export IndexCellMatrix
+export IndexCellVector
+
+import Base: iterate
+import Base: length
+import Base: eltype
+import Base: size
+import Base: getindex
+import Base: IndexStyle
+
+export cellsize
+export celllength
+
 # Iterable cell Values
 
 abstract type IterCellValue{T} end
@@ -79,3 +109,4 @@ function Base.show(io::IO,self::CellValue)
   end
 end
 
+end # module AbstractCellValues

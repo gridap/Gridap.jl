@@ -1,3 +1,12 @@
+module Testers
+
+using Test
+using Numa.CellValues
+
+export test_iter_cell_value
+export test_index_cell_value
+export test_iter_cell_array
+export test_index_cell_array
 
 function test_iter_cell_value(
   iter_cell_value::IterCellValue{T}, values::AbstractArray{T}) where T
@@ -74,3 +83,5 @@ function _test_index_cell_value( index_cell_value, values)
   @test index_cell_value == index_cell_value
 
 end
+
+end # module Testers

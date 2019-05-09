@@ -4,6 +4,7 @@ using Numa.Helpers
 using Numa.Maps
 using Numa.CellValues
 using Numa.CellMaps
+using Numa.CellValues.ConstantCellValues
 
 import Numa: evaluate
 import Numa: gradient

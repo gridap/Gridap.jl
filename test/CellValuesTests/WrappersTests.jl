@@ -4,8 +4,9 @@ using Test
 using Numa
 using Numa.FieldValues
 using Numa.CellValues
+using Numa.CellValues.Testers
+using Numa.CellValues.Wrappers
 
-include("Helpers.jl")
 include("CartesianArray.jl")
 
 v = [ Point{2}(i,i) for i in 1:10 ]

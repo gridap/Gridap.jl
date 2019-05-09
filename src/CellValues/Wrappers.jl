@@ -1,3 +1,27 @@
+module Wrappers
+
+using Base: @propagate_inbounds
+using StaticArrays
+
+using Numa.Helpers
+using Numa.CellValues
+using Numa.CachedArrays
+
+export CellValueFromArray
+export CellArrayFromArrayOfArrays
+export CellVectorFromDataAndPtrs
+export CellVectorFromDataAndStride
+export CellVectorFromLocalToGlobal
+export CellVectorFromLocalToGlobalPosAndNeg
+export CellVectorByComposition
+
+import Base: iterate
+import Base: length
+import Base: eltype
+import Base: size
+import Base: getindex
+import Base: IndexStyle
+import Numa.CellValues: cellsize
 
 struct CellValueFromArray{T,N,V<:AbstractArray{T,N}} <: IndexCellValue{T,N}
   v::V
@@ -231,3 +255,5 @@ size(self::CellVectorByComposition) = (length(self.cell_to_x),)
 IndexStyle(::Type{CellVectorByComposition{T,L,V}}) where {T,L,V} = IndexLinear()
 
 cellsize(self::CellVectorByComposition) = (celllength(self.cell_to_x)*celllength(self.x_to_vals),)
+
+end # module Wrappers

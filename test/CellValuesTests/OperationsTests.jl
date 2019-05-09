@@ -7,10 +7,10 @@ using Numa.CellValues
 using Numa.FieldValues
 using LinearAlgebra: det, inv
 using StaticArrays
-using Numa.CellValues: _custom_broadcast!
-using Numa.CellValues: mean
+using Numa.CellValues.Operations: _custom_broadcast!
+using Numa.CellValues.Operations: mean
+using Numa.CellValues.Testers
 
-include("Helpers.jl")
 include("Mocks.jl")
 
 l = 10
@@ -79,13 +79,13 @@ s0 = """
 @test cellsize(sca2,2) == 2
 @test celllength(sca2) == 6
 
-using Numa.CellValues: CellValueFromUnaryOp
-using Numa.CellValues: CellValueFromBinaryOp
-using Numa.CellValues: CellArrayFromBroadcastUnaryOp
-using Numa.CellValues: CellArrayFromCellSum
-using Numa.CellValues: CellArrayFromCellNewAxis
-using Numa.CellValues: CellValueFromCellArrayReduce
-using Numa.CellValues: CellArrayFromBroadcastBinaryOp
+using Numa.CellValues.Operations: CellValueFromUnaryOp
+using Numa.CellValues.Operations: CellValueFromBinaryOp
+using Numa.CellValues.Operations: CellArrayFromBroadcastUnaryOp
+using Numa.CellValues.Operations: CellArrayFromCellSum
+using Numa.CellValues.Operations: CellArrayFromCellNewAxis
+using Numa.CellValues.Operations: CellValueFromCellArrayReduce
+using Numa.CellValues.Operations: CellArrayFromBroadcastBinaryOp
 
 for op in (:+,:-,:(inv),:(det))
   @eval begin

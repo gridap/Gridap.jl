@@ -15,52 +15,23 @@ export IndexCellArray
 export IndexCellMatrix
 export IndexCellVector
 
-export ConstantCellValue
-export ConstantCellArray
-export ConstantCellVector
-export ConstantCellMatrix
-
-export CellValueFromArray
-export CellArrayFromArrayOfArrays
-export CellVectorFromDataAndPtrs
-export CellVectorFromDataAndStride
-export CellVectorFromLocalToGlobal
-export CellVectorFromLocalToGlobalPosAndNeg
-export CellVectorByComposition
-
 export apply
-export celldata
 export cellsize
 export celllength
 export cellsum
 export cellnewaxis
 export cellmean
 
-using Base: @propagate_inbounds
-using Base.Cartesian: @nloops, @nexprs, @nref
+include("AbstractCellValues.jl")
+using Numa.CellValues.AbstractCellValues
 
-using StaticArrays
-
-using Numa.Helpers
-using Numa.CachedArrays
-using Numa.Maps: newaxis_kernel!, newaxis_size
-
-import Base: iterate
-import Base: length
-import Base: eltype
-import Base: size
-import Base: getindex, setindex!
-import Base: IndexStyle, IteratorSize
-import Base: +, -, *, /
-import Base: ==
-import LinearAlgebra: inv, det
-
-import Numa.FieldValues: inner, outer, meas
-
-include("Helpers.jl")
-include("Interfaces.jl")
 include("Operations.jl")
+using Numa.CellValues.Operations
+
 include("ConstantCellValues.jl")
+
 include("Wrappers.jl")
+
+include("Testers.jl")
 
 end # module CellValues

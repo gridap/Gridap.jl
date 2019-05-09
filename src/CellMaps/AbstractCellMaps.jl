@@ -1,3 +1,31 @@
+module AbstractCellMaps
+
+using Numa.Helpers
+using Numa.FieldValues
+using Numa.Maps
+using Numa.CellValues
+
+export IterCellMap
+export IndexCellMap
+export CellMap
+
+export IterCellField
+export IndexCellField
+export CellField
+
+export IterCellBasis
+export IndexCellBasis
+export CellBasis
+
+export CellGeomap
+
+export CellFieldValues
+export CellBasisValues
+export CellPoints
+
+import Numa: evaluate, gradient
+import Numa: evaluate!, return_size
+
 """
 Abstract object that traverses a set of cells and at every cell returns a
 `Map{S,M,T,N}`
@@ -75,3 +103,4 @@ evaluated at a collection of points in each cell
 """
 const CellBasisValues{T} = CellArray{T,2} where T <: FieldValue
 
+end # module AbstractCellMaps

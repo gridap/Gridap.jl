@@ -1,3 +1,27 @@
+module ConstantCellValues
+
+using Numa.CellValues
+using Numa.CellValues.Operations: cellsumsize
+
+export ConstantCellValue
+export ConstantCellArray
+export ConstantCellVector
+export ConstantCellMatrix
+
+export celldata
+
+import Numa.CellValues: cellsum
+import Numa.CellValues: cellnewaxis
+import Numa.CellValues: cellmean #TODO
+import Numa.CellValues: apply #TODO
+import Base: +, -, *, /
+import Base: ==
+import LinearAlgebra: inv, det
+import Numa.FieldValues: inner, outer, meas
+
+import Base: size
+import Base: getindex
+import Numa.CellValues: cellsize
 
 struct ConstantCellValue{T} <: IndexCellValue{T,1}
   value::T
@@ -7,8 +31,6 @@ end
 celldata(self::ConstantCellValue) = self.value
 
 size(self::ConstantCellValue) = (self.length,)
-
-length(self::ConstantCellValue) = self.length
 
 const ConstantCellArray{T,N} = ConstantCellValue{Array{T,N}}
 
@@ -105,3 +127,4 @@ function _unary_op_kernel(op,a::AbstractArray)
   broadcast(op,a)
 end
 
+end # module ConstantCellValues

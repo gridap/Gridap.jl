@@ -1,3 +1,30 @@
+module Operations
+
+using Numa.Helpers
+using Numa.CellValues
+
+using StaticArrays
+using Base: @propagate_inbounds
+using Base.Cartesian: @nloops, @nexprs, @nref
+using Numa.CachedArrays
+using Numa.Maps: newaxis_kernel!, newaxis_size
+
+export cellsum
+export cellnewaxis
+export cellmean
+export apply
+import Base: +, -, *, /
+import Base: ==
+import LinearAlgebra: inv, det
+import Numa.FieldValues: inner, outer, meas
+
+import Base: iterate
+import Base: length
+import Base: eltype
+import Base: size
+import Base: getindex
+import Base: IndexStyle
+import Numa.CellValues: cellsize
 
 # Unary operations on CellValue
 
@@ -427,3 +454,25 @@ function _custom_broadcast!(op,v::AbstractArray,a::AbstractArray,b::SArray)
   end
 end
 
+@generated function cellsumsize(asize::NTuple{N,Int},::Val{D}) where {N,D}
+  @assert N > 0
+  @assert D <= N
+  str = join([ "asize[$i]," for i in 1:N if i !=D ])
+  Meta.parse("($str)")
+end
+
+@generated function cellsumvals!(A::AbstractArray{T,N},B,::Val{D}) where {T,N,D}
+  @assert N > 0
+  @assert D <= N
+  quote
+    @nloops $(N-1) b B begin
+      (@nref $(N-1) B b) = zero(T)
+    end
+    @nloops $N a A begin
+      @nexprs $(N-1) j->(b_j = a_{ j < $D ? j : j+1  } )
+      (@nref $(N-1) B b) += @nref $N A a 
+    end
+  end    
+end
+
+end # module Operations
