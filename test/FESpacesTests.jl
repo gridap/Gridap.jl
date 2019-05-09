@@ -62,16 +62,7 @@ fespwd = ConformingFESpace(reffe,trian,gridgr,labels,(10,))
 @test FESpaces.nf_eqclass(fesp) == fesp.nf_eqclass
 @test FESpaces.cell_eqclass(fesp) == fesp.cell_eqclass
 ##
-
-fun(x::Point{2}) = x[1]
-gradfun(x::Point{2}) = VectorValue(1.0, 0.0)
-gradient(::typeof(fun)) = gradfun
-funh = interpolate(fun, fesp)
-
-dird = funh.coeffs.gid_to_val_neg.v
-funh.coeffs.gid_to_val_pos
-##
-
+# @testset FESpaceWithDirichletData
 using Numa.FESpaces: FESpaceWithDirichletData
 fespwd = FESpaceWithDirichletData(fesp, dird)
 dird
@@ -84,14 +75,20 @@ FESpaces.reffes(fespwd)
 @test FESpaces.nf_eqclass(fespwd) == fesp.nf_eqclass
 @test FESpaces.cell_eqclass(fespwd) == fesp.cell_eqclass
 
-
-##
 fesphom = FESpaces.TestFESpace(fesp)
 @test sum(fesphom.dir_data .== 0.0) == length(fesphom.dir_data)
+# end
 ##
 
-labels
 
+fun(x::Point{2}) = x[1]
+gradfun(x::Point{2}) = VectorValue(1.0, 0.0)
+gradient(::typeof(fun)) = gradfun
+funh = interpolate(fun, fesp)
+
+dird = funh.coeffs.gid_to_val_neg.v
+funh.coeffs.gid_to_val_pos
+##
 
 
 
