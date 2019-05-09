@@ -34,8 +34,6 @@ reffes(::FESpace) = @abstractmethod
 
 triangulation(::FESpace) = @abstractmethod
 
-# gridgraph(::FESpace) = @abstractmethod
-
 nf_eqclass(::FESpace) = @abstractmethod
 
 cell_eqclass(::FESpace) = @abstractmethod
@@ -70,7 +68,6 @@ struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T,Float64}
 	# For the moment, I am not considering E (to think)
 	reffes::LagrangianRefFE{D,T}
 	triangulation::Triangulation{D,Z}
-	# gridgraph::FullGridGraph
 	nf_eqclass::Vector{<:IndexCellArray{Int}}
 	cell_eqclass::IndexCellArray{Int}
 	num_free_dofs::Int
@@ -107,20 +104,6 @@ for op in (:reffes, :triangulation, :nf_eqclass, :cell_eqclass,
 		$op(this::ConformingFESpace) = this.$op
 	end
 end
-
-# reffes(this::ConformingFESpace) = this.reffe
-#
-# triangulation(this::ConformingFESpace) = this.trian
-#
-# # gridgraph(this::ConformingFESpace) = this.gridgraph
-#
-# nf_eqclass(this::ConformingFESpace) = this.nf_eqclass
-#
-# cell_eqclass(this::ConformingFESpace) = this.cell_eqclass
-#
-# num_free_dofs(this::ConformingFESpace) = this.num_free_dofs
-#
-# num_fixed_dofs(this::ConformingFESpace) = this.num_fixed_dofs
 
 function applyconstraints(this::ConformingFESpace,
 	cellvec::CellVector)
@@ -230,8 +213,6 @@ function globaldofs(reffe::RefFE{D,T},
 	gridgr::FullGridGraph,
 	labels::FaceLabels,
 	dirt::NTuple{N,Int}) where {D,T,N}
-	# in_tag = tag_from_name(labels,"interior")
-	# @santiagobadia : For the moment fixing everything on the boundary
 	dim_eqclass = Int[]
 	c=1
 	c_n = -1
@@ -272,11 +253,9 @@ function interpolate(fun::Function, fesp::FESpace{D}) where {D}
 	uphys = fun ∘ phi
 	celldofs = cell_eqclass(fesp)
 	nfdofs = nf_eqclass(fesp)
-	# dofs_eqclass = IndexCellValueByGlobalAppend(fesp.nf_eqclass...)
 	maxs = max([length(nfdofs[i]) for i=1:D+1]...)
 	free_dofs = zeros(Float64, num_free_dofs(fesp))
 	fixed_dofs = zeros(Float64, num_fixed_dofs(fesp))
-	# aux = zeros(Float64,cellsize(fesp.nf_eqclass)...)
 	aux = zeros(Float64, maxs)
 	for (imap,l2g) in zip(uphys,celldofs)
 		evaluate!(dofb,imap,aux)
@@ -290,7 +269,6 @@ function interpolate(fun::Function, fesp::FESpace{D}) where {D}
 	end
 	shb = ConstantCellValue(reffe.shfbasis, ncells(trian))
 	cdofs = CellVectorFromLocalToGlobalPosAndNeg(celldofs, free_dofs, fixed_dofs)
-	# cdofs = CellVectorFromLocalToGlobal(celldofs,free_dofs)
 	intu = CellFieldFromExpand(shb, cdofs)
 end
 
