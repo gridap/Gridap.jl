@@ -85,7 +85,7 @@ function ConformingFESpace(
 	labels::FaceLabels) where {D,Z,T}
 	gldofs, nfree, nfixed  = globaldofs(reffe, graph, labels)
 	offset = tuple(length.(gldofs)...)
-	cellvefs_dim = [connections(graph,D,i) for i in 0:1]
+	cellvefs_dim = [connections(graph,D,i) for i in 0:D]
 	cellvefs = IndexCellValueByLocalAppendWithOffset(offset, cellvefs_dim...)
 	dofs_all = IndexCellValueByGlobalAppend(gldofs...)
 	cell_eqclass = CellVectorByComposition(cellvefs, dofs_all)
@@ -223,7 +223,7 @@ function globaldofs(reffe::RefFE{D,T}, gridgr::FullGridGraph, labels::FaceLabels
 	dim_eqclass = Int[]
 	c=1
 	c_n = -1
-	for vef_dim in 0:D-1
+	for vef_dim in 0:D
 		vefcells= connections(gridgr,vef_dim,D)
 		cellvefs= connections(gridgr,D,vef_dim)
 		vef_labels = labels_on_dim(labels,vef_dim)
@@ -261,7 +261,7 @@ function interpolate(fun::Function, fesp::FESpace{D}) where {D}
 	celldofs = cell_eqclass(fesp)
 	nfdofs = nf_eqclass(fesp)
 	# dofs_eqclass = IndexCellValueByGlobalAppend(fesp.nf_eqclass...)
-	maxs = max([length(nfdofs[i]) for i=1:D]...)
+	maxs = max([length(nfdofs[i]) for i=1:D+1]...)
 	free_dofs = zeros(Float64, num_free_dofs(fesp))
 	fixed_dofs = zeros(Float64, num_fixed_dofs(fesp))
 	# aux = zeros(Float64,cellsize(fesp.nf_eqclass)...)
