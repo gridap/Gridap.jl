@@ -8,6 +8,7 @@ using Base.Cartesian: @nloops, @nexprs, @nref
 
 export Map
 export Field
+export AnalyticalMap
 export AnalyticalField
 export GeoMap
 export Basis
@@ -22,5 +23,6 @@ include("AbstractMaps.jl")
 include("Operations.jl")
 include("Composition.jl")
 include("AnalyticalField.jl")
+include("Testers.jl")
 
 end # module Maps

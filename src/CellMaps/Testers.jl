@@ -1,5 +1,10 @@
+module Testers
 
-include("../CellValuesTests/Helpers.jl")
+using Test
+
+using Numa.CellMaps
+using Numa.CellValues
+using Numa.CellValues.Testers
 
 function test_cell_map_without_gradient(
   m::CellMap{S,M,T,N},
@@ -32,3 +37,5 @@ function test_cell_map_with_gradient(
   test_cell_map_without_gradient(g,a,c)
 
 end
+
+end # module Testers

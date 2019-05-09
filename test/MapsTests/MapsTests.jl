@@ -3,6 +3,7 @@ module MapsTests
 using Numa
 using Test
 using Numa.Maps
+using Numa.Maps.Testers
 using Numa.FieldValues
 
 import Numa: evaluate, gradient
@@ -12,157 +13,85 @@ import Numa.FieldValues: inner, outer
 
 include("MockMap.jl")
 
-"""
-Check whether all the queries of the Map interface have been defined
-"""
-function is_a_map(m::Map{S,M,T,N}) where {S,M,T,N}
-  sa = tuple([0 for i in 1:M]...)
-  sb = return_size(m,sa)
-  a = zeros(S,sa)
-  b = Array{T,N}(undef,sb)
-  evaluate!(m,a,b)
-  #gm = gradient(m)
-  true
-end
-
 a = Point{2}(10,10)
 b = Point{2}(15,20)
 p1 = Point{2}(1,1)
 p2 = Point{2}(2,2)
 p3 = Point{2}(3,3)
 p = [p1,p2,p3]
-##
-@testset "MockMap" begin
-  length(p)
-  map = MockMap(a)
-  @test is_a_map(map)
-  res = evaluate(map,p)
-  for i in 1:length(p)
-    @test res[i] == a+p[i]
-  end
-  @test return_size(map,size(p)) == size(p)
-  gmap = gradient(map)
-  gres = evaluate(gmap,p)
-  for i in 1:length(p)
-    @test gres[i] == p[i]
+ao = [  a+pj for pj in p  ]
+map = MockMap(a)
+test_map_with_gradient(map,p,ao,p)
+
+res = evaluate(map,p)
+for op in (:+, :-)
+  @eval begin
+    umap = $op(map)
+    ao = [ $op(rj) for rj in res]
+    test_map_without_gradient(umap,p,ao)
   end
 end
 
-# Unary Operators
-mymap = MockMap(a)
-using Numa.Maps: MapFromUnaryOp
-res = evaluate(mymap,p)
-@testset "UnaryOp" begin
-  for op in (:+, :-)
-    @eval begin
-      umap = $op(mymap)
-      @test is_a_map(umap)
-      res2 = evaluate(umap,p)
-      for i in 1:length(p)
-        @test res2[i] == $op(res[i])
-      end
-    end
-  end
-end
-
-# Binary Operators
 map1 = MockMap(a)
 map2 = MockMap(b)
 res1 = evaluate(map1,p)
 res2 = evaluate(map2,p)
-using Numa.Maps: MapFromBinaryOp
-@testset "BinaryOp" begin
-  for op in (:+, :-, :inner, :outer)
-    @eval begin
-      umap = $op(map1,map2)
-      @test is_a_map(umap)
-      resu = evaluate(umap,p)
-      for i in 1:length(p)
-        @test resu[i] == $op(res1[i],res2[i])
-      end
-    end
+for op in (:+, :-, :inner, :outer)
+  @eval begin
+    umap = $op(map1,map2)
+    ao = [ $op(r1i,r2i) for (r1i,r2i) in zip(res1,res2) ]
+    test_map_without_gradient(umap,p,ao)
   end
 end
 
-# Compose
+using Numa.Maps: FieldFromCompose
+
 f(p::Point{2}) = 2*p
 gradf(p::Point{2}) = VectorValue(2.0,2.0)
 gradient(::typeof(f)) = gradf
-@testset "ComposeField" begin
-  using Numa.Maps: FieldFromCompose
-  @test MockMap <: Field
-  map = MockMap(a)
-  umap = FieldFromCompose(f,map)
-  @test is_a_map(umap)
-  res = evaluate(map,p)
-  resu = evaluate(umap,p)
-  for i in 1:length(p)
-    @test resu[i] == f(res[i])
-  end
-  gumap = gradient(umap)
-  gres = evaluate(gumap,p)
-  for i in 1:length(p)
-    @test gres[i] == gradf(p[i])
-  end
-end
+map = MockMap(a)
+umap = FieldFromCompose(f,map)
+res = evaluate(map,p)
+ao = [f(ri) for ri in res]
+go = [gradf(pj) for pj in p]
+test_map_with_gradient(umap,p,ao,go)
 
-# FieldFromComposeExtended
 using Numa.Maps: Geomap
-MockMap <: Geomap
+using Numa.Maps: FieldFromComposeExtended
+
 map = MockMap(a)
 geomap = MockMap(b)
 f(p::Point{2},u::Point{2}) = 2*p + 3*u
 gradf(p::Point{2},u::Point{2}) = VectorValue(2.0,2.0)
 gradient(::typeof(f)) = gradf
-@testset "ComposeExtended" begin
-  using Numa.Maps: FieldFromComposeExtended
-  cemap = FieldFromComposeExtended(f,geomap,map)
-  @test is_a_map(cemap)
-  res = evaluate(cemap,p)
-  for i in 1:length(p)
-    res[i] == f(evaluate(map,evaluate(geomap,[p[i]]))...)
-  end
-  gcemap = gradient(cemap)
-  gres = gradient(cemap)
-  gres = evaluate(gcemap,p)
-  for i in 1:length(p)
-    @test gres[i] == gradf(p[i])
-  end
-end
+cemap = FieldFromComposeExtended(f,geomap,map)
+x = evaluate(geomap,p)
+res = evaluate(map,x)
+ao = f.(x,res)
+go = gradf.(p)
+test_map_with_gradient(cemap,p,ao,go)
 
 include("MockBasis.jl")
 
 bas = MockBasis(a,3)
-@test is_a_map(bas)
-
-@testset "MockBasis" begin
-  res = evaluate(bas,p)
-  v_size = return_size(bas, size(p))
-  v = Array{Point{2},2}(undef, v_size)
-  for j = 1:3
-    for (i,pi) in enumerate(p)
-      @test res[j,i] == pi*j+a
-    end
-  end
-  gbas = gradient(bas)
-  gres = evaluate(gbas,p)
-  for j = 1:3
-    for (i,qi) in enumerate(p)
-      @test gres[j,i] == j*qi
-    end
-  end
-end
+ao = [  p[i]*j+a  for j in 1:3, i in 1:length(p)]
+go = [  p[i]*j  for j in 1:3, i in 1:length(p)]
+test_map_with_gradient(bas,p,ao,go)
 
 using Numa.Maps: FieldFromExpand
-@testset "FieldFromExpand" begin
-  coefs = [1.0,1.0,1.0]
-  ffe = FieldFromExpand(bas,coefs)
-  @test is_a_map(ffe)
-  res = evaluate(ffe,p)
-  r1 = evaluate(ffe.basis,p)
-  for i in 1:length(p)
-    @test res[i] == sum(r1[:,i])
-  end
-end
+
+coefs = [1.0,1.0,1.0]
+ffe = FieldFromExpand(bas,coefs)
+r1 = evaluate(ffe.basis,p)
+ao = [ sum(r1[:,i]) for i in 1:length(p)]
+test_map_without_gradient(ffe,p,ao)
+
+f(p::Point{2}) = 2*p
+gradf(p::Point{2}) = VectorValue(2.0,2.0)
+gradient(::typeof(f)) = gradf
+map = AnalyticalField(f,2)
+ao = f.(p)
+go = gradf.(p)
+test_map_with_gradient(map,p,ao,go)
 
 end # module Maps

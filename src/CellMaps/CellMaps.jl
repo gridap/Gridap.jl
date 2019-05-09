@@ -1,5 +1,17 @@
 module CellMaps
 
+using Reexport
+
+include("AbstractCellMaps.jl")
+
+@reexport using Numa.CellMaps.AbstractCellMaps
+
+include("ConstantCellMaps.jl")
+
+include("Testers.jl")
+
+end #module CellMaps
+
 #using Numa.Helpers
 #
 #using Numa.Maps
@@ -46,10 +58,6 @@ module CellMaps
 #import Numa.CellValues: cellsize
 #import Numa.CellValues: inputcellarray, computesize, computevals!
 
-include("AbstractCellMaps.jl")
-include("ConstantCellMaps.jl")
 #include("ConcreteCellMaps.jl")
 #include("Operators.jl")
 #include("CellBasisWithGeomap.jl")
-
-end #module CellMaps
