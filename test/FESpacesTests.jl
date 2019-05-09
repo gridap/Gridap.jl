@@ -1,5 +1,6 @@
 ##
-using Numa, Test
+using Numa
+using Test
 
 using Numa.Quadratures
 using Numa.Polytopes
@@ -152,6 +153,14 @@ dofs, nfree, nfixed = FESpaces.globaldofs(reffe, gridgr::FullGridGraph, labels)
 dofs
 @test nfree == 1
 @test nfixed == 8
+
+@test FESpaces.reffes(fesp) == reffe
+@test FESpaces.triangulation(fesp) == trian
+@test FESpaces.num_fixed_dofs(fesp) == nfixed
+@test FESpaces.num_free_dofs(fesp) == nfree
+@test FESpaces.nf_eqclass(fesp) == dofs
+@test FESpaces.cell_eqclass(fesp) == fesp.cell_eqclass
+
 
 fun(x::Point{2}) = x[1]
 gradfun(x::Point{2}) = VectorValue(1.0, 0.0)

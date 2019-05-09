@@ -30,6 +30,20 @@ the cell dimension `Z`, and the field type `T` (rank) and the number type `E`
 """
 abstract type FESpace{D,Z,T,E} end
 
+reffes(::FESpace) = @abstractmethod
+
+triangulation(::FESpace) = @abstractmethod
+
+gridgraph(::FESpace) = @abstractmethod
+
+nf_eqclass(::FESpace) = @abstractmethod
+
+cell_eqclass(::FESpace) = @abstractmethod
+
+num_free_dofs(::FESpace) = @abstractmethod
+
+num_fixed_dofs(::FESpace) = @abstractmethod
+
 function assemblycellgids(::FESpace)::CellVector{Int}
 	@abstractmethod
 end
@@ -56,9 +70,9 @@ struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T,Float64}
 	# For the moment, I am not considering E (to think)
 	reffe::LagrangianRefFE{D,T}
 	trian::Triangulation{D,Z}
-	graph::FullGridGraph
-	dof_eqclass #::CellVector{Int}
-	cell_eqclass #::CellVector{Int}
+	# gridgraph::FullGridGraph
+	nf_eqclass::Vector{<:IndexCellArray{Int}}
+	cell_eqclass::IndexCellArray{Int}
 	num_free_dofs::Int
 	num_fixed_dofs::Int
 	# dirichlet_tags::Array{Int} # Physical tags that describe strong dirichlet boundary
@@ -75,22 +89,36 @@ function ConformingFESpace(
 	cellvefs = IndexCellValueByLocalAppendWithOffset(offset, cellvefs_dim...)
 	dofs_all = IndexCellValueByGlobalAppend(gldofs...)
 	cell_eqclass = CellVectorByComposition(cellvefs, dofs_all)
-	ConformingFESpace{D,Z,T}(reffe, trian, graph, gldofs, cell_eqclass, nfree, nfixed)
+	ConformingFESpace{D,Z,T}(reffe, trian, gldofs, cell_eqclass, nfree, nfixed)
 end
+
+reffes(this::ConformingFESpace) = this.reffe
+
+triangulation(this::ConformingFESpace) = this.trian
+
+# gridgraph(this::ConformingFESpace) = this.gridgraph
+
+nf_eqclass(this::ConformingFESpace) = this.nf_eqclass
+
+cell_eqclass(this::ConformingFESpace) = this.cell_eqclass
+
+num_free_dofs(this::ConformingFESpace) = this.num_free_dofs
+
+num_fixed_dofs(this::ConformingFESpace) = this.num_fixed_dofs
 
 function applyconstraints(this::ConformingFESpace,
 	cellvec::CellVector)
-	return cellvec, this.dof_eqclass
+	return cellvec, this.nf_eqclass
 end
 
 function applyconstraintsrows(this::ConformingFESpace,
 	cellmat::CellMatrix)
-	return cellmat, this.dof_eqclass
+	return cellmat, this.nf_eqclass
 end
 
 function applyconstraintscols(this::ConformingFESpace,
 	cellmat::CellMatrix)
-	return cellmat, this.dof_eqclass
+	return cellmat, this.nf_eqclass
 end
 
 """
@@ -201,17 +229,18 @@ function globaldofs(reffe::RefFE{D,T}, gridgr::FullGridGraph, labels::FaceLabels
 end
 
 function interpolate(fun::Function, fesp::FESpace{D}) where {D}
-	reffe = fesp.reffe
+	reffe = reffes(fesp)
 	dofb = reffe.dofbasis
-	trian = fesp.trian
+	trian = triangulation(fesp)
 	phi = geomap(trian)
 	uphys = fun ∘ phi
-	celldofs = fesp.cell_eqclass
-	# dofs_eqclass = IndexCellValueByGlobalAppend(fesp.dof_eqclass...)
-	maxs = max([length(fesp.dof_eqclass[i]) for i=1:D]...)
-	free_dofs = zeros(Float64, fesp.num_free_dofs)
-	fixed_dofs = zeros(Float64, fesp.num_fixed_dofs)
-	# aux = zeros(Float64,cellsize(fesp.dof_eqclass)...)
+	celldofs = cell_eqclass(fesp)
+	nfdofs = nf_eqclass(fesp)
+	# dofs_eqclass = IndexCellValueByGlobalAppend(fesp.nf_eqclass...)
+	maxs = max([length(nfdofs[i]) for i=1:D]...)
+	free_dofs = zeros(Float64, num_free_dofs(fesp))
+	fixed_dofs = zeros(Float64, num_fixed_dofs(fesp))
+	# aux = zeros(Float64,cellsize(fesp.nf_eqclass)...)
 	aux = zeros(Float64, maxs)
 	for (imap,l2g) in zip(uphys,celldofs)
 		evaluate!(dofb,imap,aux)
