@@ -136,6 +136,8 @@ for op in (:reffes, :triangulation, :gridgraph, :nf_eqclass, :cell_eqclass,
 	end
 end
 
+dir_data(this::FESpaceWithDirichletData) = this.dir_data
+
 function TestFESpace(this::FESpace)
   dv = zeros(Float64,num_fixed_dofs(this))
   return FESpaceWithDirichletData(this, dv)
@@ -143,6 +145,7 @@ end
 
 function TrialFESpace( this::FESpace{D}, fun::Vector{Function}, labels::FaceLabels) where {D}
 	dv = interpolate_dirichlet_data(fun, this, labels)
+	# @santiagobadia : Put labels in FESPace
   return FESpaceWithDirichletData(this, dv)
 end
 
@@ -277,7 +280,11 @@ function interpolate(fun::Function, fesp::FESpace{D}) where {D}
 		end
 	end
 	shb = ConstantCellValue(reffe.shfbasis, ncells(trian))
-	cdofs = CellVectorFromLocalToGlobalPosAndNeg(celldofs, free_dofs, fixed_dofs)
+	if (typeof(fesp) <: FESpaceWithDirichletData)
+		cdofs = CellVectorFromLocalToGlobalPosAndNeg(celldofs, free_dofs, dir_data(fesp) )
+	else
+		cdofs = CellVectorFromLocalToGlobalPosAndNeg(celldofs, free_dofs, fixed_dofs)
+	end
 	intu = CellFieldFromExpand(shb, cdofs)
 end
 

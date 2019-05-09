@@ -37,39 +37,12 @@ grid = Grid(model,2)
 trian = triangulation(grid)
 gridgr = FullGridGraph(model)
 labels = FaceLabels(model)
-dir_tags = (1,2,3,4)
+dtags = (1,2,3,4)
 
 order=1; orders=order*ones(Int64,D)
 polytope = Polytopes.Polytope(1,1)
 reffe = LagrangianRefFE{D,ScalarValue}(polytope,orders)
-fesp = ConformingFESpace(reffe,trian,gridgr,labels,dir_tags)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+fesp = ConformingFESpace(reffe,trian,gridgr,labels,dtags)
 ##
 # @testset ConformingFESpace
 D = 2
@@ -88,13 +61,13 @@ fesp = ConformingFESpace(reffe,trian,gridgr,labels)
 @test FESpaces.num_free_dofs(fesp) == 9
 @test FESpaces.num_fixed_dofs(fesp) == 0
 ##
-fespwd = ConformingFESpace(reffe,trian,gridgr,labels,(1,2,3,4))
-@test FESpaces.num_free_dofs(fespwd) == 5
-@test FESpaces.num_fixed_dofs(fespwd) == 4
-
 fespwd = ConformingFESpace(reffe,trian,gridgr,labels,(10,))
 @test FESpaces.num_free_dofs(fespwd) == 1
 @test FESpaces.num_fixed_dofs(fespwd) == 8
+
+fespwd = ConformingFESpace(reffe,trian,gridgr,labels,(1,2,3,4))
+@test FESpaces.num_free_dofs(fespwd) == 5
+@test FESpaces.num_fixed_dofs(fespwd) == 4
 
 @test FESpaces.reffes(fesp) == reffe
 @test FESpaces.triangulation(fesp) == trian
@@ -105,8 +78,8 @@ fespwd = ConformingFESpace(reffe,trian,gridgr,labels,(10,))
 ##
 # @testset FESpaceWithDirichletData
 using Numa.FESpaces: FESpaceWithDirichletData
+dird = zeros(Float64, FESpaces.num_fixed_dofs(fesp))
 fespwd = FESpaceWithDirichletData(fesp, dird)
-dird
 FESpaces.reffes(fespwd)
 
 @test FESpaces.reffes(fespwd) == reffe
@@ -123,10 +96,17 @@ fesphom = FESpaces.TestFESpace(fesp)
 
 # TrialFESpace
 ##
-fun1(x::Point{2}) = x[1]
-fun2(x::Point{2}) = x[2]
-fun3(x::Point{2}) = 1.0
+fun1(x::Point{2}) = 5.0
+fun2(x::Point{2}) = 4.0
+fun3(x::Point{2}) = 3.0
 func = [fun1, fun2, fun3, fun2]
+fesp = ConformingFESpace(reffe,trian,gridgr,labels,dtags)
+
+# @santiagobadia :  Problem when no tags ()
+
+fesp.nf_eqclass
+nf_dofs_all = FESpaces.nf_eqclass(fesp)
+dtags = FESpaces.dir_tags(fesp)
 
 using Numa.FESpaces: reffes, cell_eqclass, nf_eqclass
 using Numa.FESpaces: num_free_dofs, num_fixed_dofs
@@ -135,6 +115,14 @@ fixed_dofs = interpolate_dirichlet_data(func, fesp, labels)
 
 fespwnhdd= FESpaces.TrialFESpace(fesp, func, labels)
 @test fespwnhdd.dir_data == fixed_dofs
+fh0 = FESpaces.interpolate(fun1, fesp)
+fh0.coeffs.gid_to_val_neg
+fh1 = FESpaces.interpolate(fun1, fespwnhdd)
+fh1.coeffs.gid_to_val_neg
+fh2 = FESpaces.interpolate(fun1, fesphom)
+sum(fh2.coeffs.gid_to_val_neg.== 0) == 4
+@test fh0.coeffs.gid_to_val_neg != fh1.coeffs.gid_to_val_neg
+@test fh0.coeffs.gid_to_val_pos == fh1.coeffs.gid_to_val_pos == fh2.coeffs.gid_to_val_pos
 ##
 
 
