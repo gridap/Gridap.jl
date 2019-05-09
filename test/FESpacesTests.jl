@@ -29,6 +29,88 @@ import Numa: gradient, ∇
 using Numa.CellIntegration
 using UnstructuredGrids
 ##
+##
+D = 2
+model = CartesianDiscreteModel(domain=(0.0,1.0,-1.0,2.0),
+        partition=(2,2))
+
+grid = Grid(model,2)
+trian = triangulation(grid)
+gridgr = FullGridGraph(model)
+labels = FaceLabels(model)
+
+order=1; orders=order*ones(Int64,D)
+polytope = Polytopes.Polytope(1,1)
+reffe = LagrangianRefFE{D,ScalarValue}(polytope,orders)
+fesp = ConformingFESpace(reffe,trian,gridgr,labels)
+dofs, nfree, nfixed = FESpaces.globaldofs(reffe, gridgr::FullGridGraph, labels)
+dofs
+@test nfree == 1
+@test nfixed == 8
+
+FESpaces.reffes(fesp)
+
+@test FESpaces.reffes(fesp) == reffe
+@test FESpaces.triangulation(fesp) == trian
+@test FESpaces.num_fixed_dofs(fesp) == nfixed
+@test FESpaces.num_free_dofs(fesp) == nfree
+@test FESpaces.nf_eqclass(fesp) == dofs
+@test FESpaces.cell_eqclass(fesp) == fesp.cell_eqclass
+
+
+fun(x::Point{2}) = x[1]
+gradfun(x::Point{2}) = VectorValue(1.0, 0.0)
+gradient(::typeof(fun)) = gradfun
+funh = interpolate(fun, fesp)
+
+dird = funh.coeffs.gid_to_val_neg.v
+funh.coeffs.gid_to_val_pos
+##
+
+using Numa.FESpaces: FESpaceWithDirichletData
+fespwd = FESpaceWithDirichletData(fesp, dird)
+dird
+FESpaces.reffes(fespwd)
+
+@test FESpaces.reffes(fespwd) == reffe
+@test FESpaces.triangulation(fespwd) == trian
+@test FESpaces.num_fixed_dofs(fespwd) == nfixed
+@test FESpaces.num_free_dofs(fespwd) == nfree
+@test FESpaces.nf_eqclass(fespwd) == dofs
+@test FESpaces.cell_eqclass(fespwd) == fesp.cell_eqclass
+
+
+##
+fesphom = FESpaces.TestFESpace(fesp)
+@test sum(fesphom.dir_data .== 0.0) == length(fesphom.dir_data)
+##
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##################3
+
 
 D=2
 nparts1d = 2
@@ -134,42 +216,3 @@ is_fixed_vef = zeros(Bool, length(vefcells))
 
 ####################
 #########################33
-
-##
-D = 2
-model = CartesianDiscreteModel(domain=(0.0,1.0,-1.0,2.0),
-        partition=(2,2))
-
-grid = Grid(model,2)
-trian = triangulation(grid)
-gridgr = FullGridGraph(model)
-labels = FaceLabels(model)
-
-order=1; orders=order*ones(Int64,D)
-polytope = Polytopes.Polytope(1,1)
-reffe = LagrangianRefFE{D,ScalarValue}(polytope,orders)
-fesp = ConformingFESpace(reffe,trian,gridgr,labels)
-dofs, nfree, nfixed = FESpaces.globaldofs(reffe, gridgr::FullGridGraph, labels)
-dofs
-@test nfree == 1
-@test nfixed == 8
-
-@test FESpaces.reffes(fesp) == reffe
-@test FESpaces.triangulation(fesp) == trian
-@test FESpaces.num_fixed_dofs(fesp) == nfixed
-@test FESpaces.num_free_dofs(fesp) == nfree
-@test FESpaces.nf_eqclass(fesp) == dofs
-@test FESpaces.cell_eqclass(fesp) == fesp.cell_eqclass
-
-
-fun(x::Point{2}) = x[1]
-gradfun(x::Point{2}) = VectorValue(1.0, 0.0)
-gradient(::typeof(fun)) = gradfun
-funh = interpolate(fun, fesp)
-
-funh.coeffs.gid_to_val_neg
-funh.coeffs.gid_to_val_pos
-
-# Now check interpolation
-
-##

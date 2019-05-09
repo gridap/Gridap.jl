@@ -34,7 +34,7 @@ reffes(::FESpace) = @abstractmethod
 
 triangulation(::FESpace) = @abstractmethod
 
-gridgraph(::FESpace) = @abstractmethod
+# gridgraph(::FESpace) = @abstractmethod
 
 nf_eqclass(::FESpace) = @abstractmethod
 
@@ -68,8 +68,8 @@ Conforming FE Space, where only one RefFE is possible in the whole mesh
 """
 struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T,Float64}
 	# For the moment, I am not considering E (to think)
-	reffe::LagrangianRefFE{D,T}
-	trian::Triangulation{D,Z}
+	reffes::LagrangianRefFE{D,T}
+	triangulation::Triangulation{D,Z}
 	# gridgraph::FullGridGraph
 	nf_eqclass::Vector{<:IndexCellArray{Int}}
 	cell_eqclass::IndexCellArray{Int}
@@ -92,19 +92,26 @@ function ConformingFESpace(
 	ConformingFESpace{D,Z,T}(reffe, trian, gldofs, cell_eqclass, nfree, nfixed)
 end
 
-reffes(this::ConformingFESpace) = this.reffe
+for op in (:reffes, :triangulation, :nf_eqclass, :cell_eqclass,
+	:num_free_dofs, :num_fixed_dofs)
+	@eval begin
+		$op(this::ConformingFESpace) = this.$op
+	end
+end
 
-triangulation(this::ConformingFESpace) = this.trian
-
-# gridgraph(this::ConformingFESpace) = this.gridgraph
-
-nf_eqclass(this::ConformingFESpace) = this.nf_eqclass
-
-cell_eqclass(this::ConformingFESpace) = this.cell_eqclass
-
-num_free_dofs(this::ConformingFESpace) = this.num_free_dofs
-
-num_fixed_dofs(this::ConformingFESpace) = this.num_fixed_dofs
+# reffes(this::ConformingFESpace) = this.reffe
+#
+# triangulation(this::ConformingFESpace) = this.trian
+#
+# # gridgraph(this::ConformingFESpace) = this.gridgraph
+#
+# nf_eqclass(this::ConformingFESpace) = this.nf_eqclass
+#
+# cell_eqclass(this::ConformingFESpace) = this.cell_eqclass
+#
+# num_free_dofs(this::ConformingFESpace) = this.num_free_dofs
+#
+# num_fixed_dofs(this::ConformingFESpace) = this.num_fixed_dofs
 
 function applyconstraints(this::ConformingFESpace,
 	cellvec::CellVector)
@@ -119,6 +126,23 @@ end
 function applyconstraintscols(this::ConformingFESpace,
 	cellmat::CellMatrix)
 	return cellmat, this.nf_eqclass
+end
+
+struct FESpaceWithDirichletData{D,Z,T,E,V<:FESpace{D,Z,T,E}} <: FESpace{D,Z,T,E}
+	fesp::V
+	dir_data::Vector{Float64}
+end
+
+for op in (:reffes, :triangulation, :gridgraph, :nf_eqclass, :cell_eqclass,
+	:num_free_dofs, :num_fixed_dofs)
+	@eval begin
+		$op(this::FESpaceWithDirichletData) = $op(this.fesp)
+	end
+end
+
+function TestFESpace(this::FESpace)
+  dv = zeros(Float64,num_fixed_dofs(this))
+  return FESpaceWithDirichletData(FESpace, dv)
 end
 
 """
