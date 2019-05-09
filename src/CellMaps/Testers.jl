@@ -2,9 +2,14 @@ module Testers
 
 using Test
 
+using Numa
+using Numa.Maps
 using Numa.CellMaps
 using Numa.CellValues
 using Numa.CellValues.Testers
+
+export test_cell_map_without_gradient
+export test_cell_map_with_gradient
 
 function test_cell_map_without_gradient(
   m::CellMap{S,M,T,N},
@@ -21,6 +26,9 @@ function test_cell_map_without_gradient(
     @assert isa(mi,Map{S,M,T,N})
     @assert evaluate(mi,ai) == bi
   end
+
+  rs = maximum([size(bi) for bi in b])
+  @test rs == return_size(m,cellsize(a))
 
 end
 

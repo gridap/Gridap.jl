@@ -6,6 +6,8 @@ include("AbstractCellMaps.jl")
 
 @reexport using Numa.CellMaps.AbstractCellMaps
 
+include("CellMapValues.jl")
+
 include("ConstantCellMaps.jl")
 
 include("Testers.jl")

@@ -6,9 +6,6 @@ using Numa.Maps
 using Numa.Maps.Testers
 using Numa.FieldValues
 
-import Numa: evaluate, gradient
-import Numa: evaluate!, return_size
-import Base: +, -, *, /, ∘
 import Numa.FieldValues: inner, outer
 
 include("MockMap.jl")

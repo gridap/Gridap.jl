@@ -58,6 +58,14 @@ function gradient(::CellMap{S,M,T,N})::CellMap{S,M,TG,N} where {S,M,T<:FieldValu
 end
 
 """
+Given the maximum size of imput, returns the maximum size of output
+"""
+function return_size(
+  ::CellMap{S,M,T,N},::NTuple{M,Int})::NTuple{N,Int} where {S,M,T,N}
+  @abstractmethod
+end
+
+"""
 Abstract type that represents a cell-wise field, where
 `T` stands for the type that represents the field at a point
 (e.g., scalar, vector, tensor) and `D` stands for the space

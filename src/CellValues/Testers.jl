@@ -9,7 +9,7 @@ export test_iter_cell_array
 export test_index_cell_array
 
 function test_iter_cell_value(
-  iter_cell_value::IterCellValue{T}, values::AbstractArray{T}) where T
+  iter_cell_value::CellValue{T}, values::AbstractArray{T}) where T
 
   _test_iter_cell_value(iter_cell_value, values)
 
@@ -25,7 +25,7 @@ function test_index_cell_value(
 end
 
 function test_iter_cell_array(
-  iter_cell_array::IterCellArray{T,N},
+  iter_cell_array::CellArray{T,N},
   arrays::AbstractArray{Array{T,N}}) where {T,N}
 
   _test_iter_cell_value(iter_cell_array,arrays)
