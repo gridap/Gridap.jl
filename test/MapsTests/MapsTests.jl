@@ -75,6 +75,20 @@ ao = [  p[i]*j+a  for j in 1:3, i in 1:length(p)]
 go = [  p[i]*j  for j in 1:3, i in 1:length(p)]
 test_map_with_gradient(bas,p,ao,go)
 
+fie = MockMap(a)
+scal = varinner(fie,fie)
+ao = [  inner(a+pj,a+pj) for pj in p  ]
+test_map_without_gradient(scal,p,ao)
+
+bas = MockBasis(a,3)
+vec = varinner(bas,fie)
+ao = [  inner(p[i]*j+a,a+p[i])  for j in 1:3, i in 1:length(p)]
+test_map_without_gradient(vec,p,ao)
+
+mat = varinner(bas,bas)
+ao = [ inner(p[i]*k+a,p[i]*j+a) for k in 1:3, j in 1:3, i in 1:length(p) ]
+test_map_without_gradient(mat,p,ao)
+
 using Numa.Maps: FieldFromExpand
 
 coefs = [1.0,1.0,1.0]

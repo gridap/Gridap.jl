@@ -12,6 +12,7 @@ export AnalyticalMap
 export AnalyticalField
 export GeoMap
 export Basis
+export varinner
 
 import Numa: evaluate, gradient, ∇
 import Numa: evaluate!, return_size
