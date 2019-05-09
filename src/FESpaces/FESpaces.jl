@@ -142,7 +142,7 @@ end
 
 function TestFESpace(this::FESpace)
   dv = zeros(Float64,num_fixed_dofs(this))
-  return FESpaceWithDirichletData(FESpace, dv)
+  return FESpaceWithDirichletData(this, dv)
 end
 
 """

@@ -213,7 +213,7 @@ struct FullGridGraph
 end
 
 function connections(g::FullGridGraph,from::Integer,to::Integer)
-  @assert from != to || (from == 0 && to == 0)
+  # @assert from != to || (from == 0 && to == 0)
   g.data[from+1,to+1]
 end
 

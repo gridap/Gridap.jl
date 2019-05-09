@@ -85,6 +85,7 @@ fesphom = FESpaces.TestFESpace(fesp)
 @test sum(fesphom.dir_data .== 0.0) == length(fesphom.dir_data)
 ##
 
+labels
 
 
 
