@@ -1,5 +1,7 @@
 # Composition
 
+(∘)(f::Function,g::Field) = compose(f,g)
+
 function compose(f::Function,g::Field{D,S}) where {D,S}
   FieldFromCompose(f,g)
 end
@@ -8,7 +10,74 @@ function compose(f::Function,g::Geomap{D,Z},u::Field{Z,S}) where {D,Z,S}
   FieldFromComposeExtended(f,g,u)
 end
 
-(∘)(f::Function,g::Field) = compose(f,g)
+function attachgeomap(a::Basis{D,T},b::Geomap{D,D}) where {D,T}
+  BasisWithGeoMap(a,b)
+end
+
+# Helpers
+
+struct BasisWithGeoMap{
+  O,D,T,
+  DD,A<:Basis{D,T},B<:Field{D,TensorValue{D,DD}}} <: MapFromBinaryOp{Point{D},1,T,2}
+  map::A
+  jaco::B
+  acache::CachedMatrix{T,Matrix{T}}
+  bcache::CachedVector{TensorValue{D,DD},Vector{TensorValue{D,DD}}}
+end
+
+function BasisWithGeoMap(
+  a::Basis{D,T},
+  b::Geomap{D,D}) where {D,T}
+  jaco = gradient(b)
+  BasisWithGeoMap(a,jaco,0)
+end
+
+function BasisWithGeoMap(
+  a::Basis{D,T},
+  jaco::Field{D,<:TensorValue{D}},
+  order::Int) where {D,T}
+
+  O = order
+  DD = D*D
+  A = typeof(a)
+  B = typeof(jaco)
+  acache = CachedMatrix(T)
+  bcache = CachedVector(TensorValue{D,DD})
+  BasisWithGeoMap{O,D,T,DD,A,B}(a,jaco,acache,bcache)
+end
+
+leftmap(self::BasisWithGeoMap) = self.map
+
+rightmap(self::BasisWithGeoMap) = self.jaco
+
+computesize(self::BasisWithGeoMap, sa, sb) = sa
+
+function computevals!(self::BasisWithGeoMap, a, b, v)
+  ndofs, npoints = size(a)
+  for j in 1:npoints
+    for i in 1:ndofs
+    v[i,j] = inv(b[j])*a[i,j]
+    end
+  end
+end
+
+leftcachedarray(self::BasisWithGeoMap) = self.acache
+
+rightcachedarray(self::BasisWithGeoMap) = self.bcache
+
+gradient(self::BasisWithGeoMap) = @notimplemented
+
+function gradient(self::BasisWithGeoMap{0})
+  g = gradient(self.map)
+  BasisWithGeoMap(g,self.jaco,1)
+end
+
+function evaluate!(
+  self::BasisWithGeoMap{0,D,T},
+  points::AbstractVector{Point{D}},
+  v::AbstractMatrix{T}) where {D,T}
+  evaluate!(self.map,points,v)
+end
 
 const FieldFromCompose{D,O,T,U,A} =  MapFromBroadcastUnaryOp{O,Point{D},1,T,1,U,A}
 
@@ -24,37 +93,6 @@ function gradient(self::FieldFromCompose)
   gradop = gradient(self.op)
   FieldFromCompose(gradop,inputmap(self))
 end
-
-#struct FieldFromCompose{D,O,C<:Field{D},T} <: Field{D,T}
-#  a::C
-#  op::O
-#  cache::CachedVector{T,Vector{T}}
-#end
-#
-#function FieldFromCompose(f::Function,g::Field{D,S}) where {D,S}
-#  O = typeof(f)
-#  C = typeof(g)
-#  T = Base._return_type(f,Tuple{S})
-#  cache = CachedArray(S,1)
-#  FieldFromCompose{D,O,C,T}(g,f,cache)
-#end
-#
-#function evaluate!(
-#  self::FieldFromCompose{D,O,C,T},
-#  points::AbstractVector{Point{D}},
-#  v::AbstractVector{T}) where {D,O,C,T}
-#  setsize!(self.cache,size(points))
-#  evaluate!(self.a,points,self.cache)
-#  broadcast!(self.op,v,self.cache)
-#end
-#
-#return_size(self::FieldFromCompose, s::NTuple{1,Int}) = s
-#
-#function gradient(self::FieldFromCompose)
-#  gradop = gradient(self.op)
-#  FieldFromCompose(gradop,self.a)
-#  # @santiagobadia : THIS IS WRONG
-#end
 
 struct FieldFromComposeExtended{
   D,T,O,Z,S,G<:Geomap{D,Z},U<:Field{Z,S}} <: Field{D,T}
@@ -92,7 +130,6 @@ return_size(self::FieldFromComposeExtended,s::Tuple{Int}) = s
 function gradient(self::FieldFromComposeExtended)
   gradf = gradient(self.f)
   FieldFromComposeExtended(gradf,self.g,self.u)
-  # @santiagobadia : THIS IS WRONG
 end
 
 # @santiagobadia : I think the following struct would be useful

@@ -8,6 +8,8 @@ using Numa.FieldValues
 
 import Numa.FieldValues: inner, outer
 
+# Unary ops
+
 include("MockMap.jl")
 
 a = Point{2}(10,10)
@@ -29,6 +31,8 @@ for op in (:+, :-)
   end
 end
 
+# Binary ops
+
 map1 = MockMap(a)
 map2 = MockMap(b)
 res1 = evaluate(map1,p)
@@ -40,6 +44,8 @@ for op in (:+, :-, :inner, :outer)
     test_map_without_gradient(umap,p,ao)
   end
 end
+
+# Compose
 
 f(p::Point{2}) = 2*p
 gradf(p::Point{2}) = VectorValue(2.0,2.0)
@@ -63,6 +69,8 @@ ao = f.(x,res)
 go = gradf.(p)
 test_map_with_gradient(cemap,p,ao,go)
 
+# varinner
+
 include("MockBasis.jl")
 
 bas = MockBasis(a,3)
@@ -84,11 +92,15 @@ mat = varinner(bas,bas)
 ao = [ inner(p[i]*k+a,p[i]*j+a) for k in 1:3, j in 1:3, i in 1:length(p) ]
 test_map_without_gradient(mat,p,ao)
 
+# lincomb
+
 coefs = [1.0,1.0,1.0]
 ffe = lincomb(bas,coefs)
 r1 = evaluate(ffe.basis,p)
 ao = [ sum(r1[:,i]) for i in 1:length(p)]
 test_map_without_gradient(ffe,p,ao)
+
+# AnalyticalField
 
 f(p::Point{2}) = 2*p
 gradf(p::Point{2}) = VectorValue(2.0,2.0)
@@ -97,6 +109,32 @@ map = AnalyticalField(f,2)
 ao = f.(p)
 go = gradf.(p)
 test_map_with_gradient(map,p,ao,go)
+
+# attachgeomap
+
+geomap = MockGeoMap(2)
+ao = 2*p
+go = [ TensorValue(2.0,0.0,0.0,2.0) for i in 1:length(p) ]
+test_map_with_gradient(geomap,p,ao,go)
+
+bas = MockBasis(a,3)
+geomap = MockGeoMap(2)
+map = attachgeomap(bas,geomap)
+gradbas = gradient(bas)
+jaco = gradient(geomap)
+rs = evaluate(bas,p)
+grs = evaluate(gradient(bas),p)
+js = evaluate(jaco,p)
+gs = Matrix{Point{2}}(undef,(3,length(p)))
+ndofs, npoints = size(grs)
+for j in 1:npoints
+  for i in 1:ndofs
+  gs[i,j] = inv(js[j])*grs[i,j]
+  end
+end
+test_map_with_gradient(map,p,rs,gs)
+
+# More tests with scalar, vector, and tensor values
 
 s_s = 5.0
 s_v = VectorValue(1.1,2.3)

@@ -43,3 +43,40 @@ function gradient(this::TestMap)
   @notimplemented
 end
 
+struct MockGeoMapJaco{D,DD} <: Field{D,TensorValue{D,DD}} end
+
+return_size(this::MockGeoMapJaco, psize::Tuple{Int}) = psize
+
+function evaluate!(
+  this::MockGeoMapJaco{D,DD},
+  a::AbstractVector{Point{D}},
+  v::AbstractVector{TensorValue{D,DD}}) where {D,DD}
+  t = TensorValue(2.0,0.0,0.0,2.0)
+  for i in eachindex(v)
+    v[i] = t
+  end
+end
+
+function gradient(this::MockGeoMapJaco)
+  @notimplemented
+end
+
+struct MockGeoMap{D} <: Geomap{D,D} end
+
+function MockGeoMap(D)
+  MockGeoMap{D}()
+end
+
+return_size(this::MockGeoMap, psize::Tuple{Int}) = psize
+
+function evaluate!(
+  this::MockGeoMap{D},
+  a::AbstractVector{Point{D}},
+  v::AbstractVector{Point{D}}) where D
+  v .= 2*a
+end
+
+function gradient(this::MockGeoMap{D}) where D
+  MockGeoMapJaco{D,D*D}()
+end
+

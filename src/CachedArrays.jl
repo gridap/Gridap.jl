@@ -31,6 +31,14 @@ function CachedArray(T,N)
   CachedArray(a)
 end
 
+function CachedVector(T)
+  CachedArray(T,1)
+end
+
+function CachedMatrix(T)
+  CachedArray(T,2)
+end
+
 size(self::CachedArray) = self.size
 
 function setsize!(self::CachedArray{T,N},s::NTuple{N,Int}) where {T,N}
