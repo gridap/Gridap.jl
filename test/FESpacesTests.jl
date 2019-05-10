@@ -23,6 +23,46 @@ import Numa: gradient, ∇
 using Numa.CellIntegration
 using UnstructuredGrids
 ##
+abstract type mystyle end
+struct style1 <: mystyle end
+struct style2 <: mystyle end
+
+abstract type str{T} end
+mystyle(::str)::mystyle = error("Not defined")
+
+struct str1{T} <: str{T}
+	a::T
+end
+mystyle(::Type{str1{T}}) where {T}= style1
+
+struct str2{T} <: str{T}
+	a::T
+end
+mystyle(::Type{str2{T}}) where {T} = style2
+
+struct strc{T,S<:str{T}}
+	a::T
+	s::S
+end
+mystyle(::Type{strc{T,S}}) where {T,S<:str1{T}} = style1
+mystyle(::Type{strc{T,S}}) where {T,S<:str2{T}} = style2
+
+s1 = str1(10)
+s2 = str2(10)
+s1c = strc(20,s1)
+s2c = strc(20,s2)
+
+
+
+mystyle(typeof(s1))
+mystyle(typeof(s2))
+mystyle(typeof(s1c))
+mystyle(typeof(s2c))
+
+
+
+
+##
 D = 2
 model = CartesianDiscreteModel(domain=(0.0,1.0,-1.0,2.0),
         partition=(2,2))
@@ -54,6 +94,8 @@ reffe = LagrangianRefFE{D,ScalarValue}(polytope,orders)
 fesp = ConformingFESpace(reffe,trian,gridgr,labels)
 @test FESpaces.num_free_dofs(fesp) == 9
 @test FESpaces.num_fixed_dofs(fesp) == 0
+@test FESpaces.MeshConformity(fesp) == FESpaces.ConformingMesh()
+
 ##
 fesp = ConformingFESpace(reffe,trian,gridgr,labels,(10,))
 @test FESpaces.num_free_dofs(fesp) == 1
@@ -109,7 +151,9 @@ fixed_dofs = FESpaces.interpolate_dirichlet_data(func, fesp)
 ##
 # FEFunction and Interpolate
 fesphom = FESpaces.TestFESpace(fesp)
+@test FESpaces.MeshConformity(typeof(fesphom)) == FESpaces.ConformingMesh()
 fespwnhdd= FESpaces.TrialFESpace(fesp, func, labels)
+@test FESpaces.MeshConformity(typeof(fespwnhdd)) == FESpaces.ConformingMesh()
 @test fespwnhdd.dir_data == fixed_dofs
 fh0 = FESpaces.interpolate(fun1, fesp)
 fh1 = FESpaces.interpolate(fun1, fespwnhdd)
@@ -118,6 +162,7 @@ sum(FESpaces.fixed_dofs(fh2).== 0) == 4
 @test FESpaces.fixed_dofs(fh0) != FESpaces.fixed_dofs(fh1)
 @test FESpaces.free_dofs(fh0) == FESpaces.free_dofs(fh1) == FESpaces.free_dofs(fh2)
 ##
+
 
 
 

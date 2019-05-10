@@ -23,6 +23,12 @@ using Numa.CellMaps: CellFieldFromExpand
 
 import Numa: evaluate!
 
+
+
+abstract type MeshConformity end
+struct ConformingMesh <: MeshConformity end
+struct NonConformingMesh <: MeshConformity end
+
 # Abstract types and interfaces
 
 """
@@ -38,6 +44,9 @@ cell_eqclass(::FESpace) = @abstractmethod
 num_free_dofs(::FESpace) = @abstractmethod
 
 num_fixed_dofs(::FESpace) = @abstractmethod
+
+MeshConformity(::Type{FESpace})::MeshConformity = @abstractmethod
+MeshConformity(this::FESpace) = MeshConformity(typeof(this))
 
 function applyconstraints(::FESpace,
 	cellvec::CellVector)::Tuple{CellVector,CellVector{Int}}
@@ -70,6 +79,9 @@ struct FESpaceWithDirichletData{D,Z,T,E,V<:FESpace{D,Z,T,E}} <: FESpace{D,Z,T,E}
 	fesp::V
 	dir_data::Vector{Float64}
 end
+
+MeshConformity(::Type{FESpaceWithDirichletData})  = NonConformingMesh()
+# MeshConformity(::Type{FESpaceWithDirichletData{D,Z,T,E,S}}) where {D,Z,T,E,S<:NonConformingFESpace{D,Z,T,E}} = NonConformingMesh
 
 for op in (:nf_dofs, :cell_eqclass, :num_free_dofs, :num_fixed_dofs, :dir_tags,
 	:_reffes, :_triangulation, :_gridgraph, :_labels)

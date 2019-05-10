@@ -65,3 +65,6 @@ function applyconstraintscols(this::ConformingFESpace,
 end
 
 ConformingFESpaces{D,Z,T,E} = Union{ConformingFESpace{D,Z,T,E}, FESpaceWithDirichletData{D,Z,T,E,ConformingFESpace{D,Z,T,E}}}
+
+MeshConformity(::Type{ConformingFESpace{D,Z,T,E}}) where {D,Z,T,E}= ConformingMesh()
+MeshConformity(::Type{FESpaceWithDirichletData{D,Z,T,E,S}}) where {D,Z,T,E,S<:ConformingFESpace{D,Z,T,E}} = ConformingMesh()
