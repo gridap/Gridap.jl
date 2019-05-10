@@ -19,8 +19,8 @@ struct FESpaceWithDirichletData{D,Z,T,E,S<:FESpace{D,Z,T,E}}
 	a::D,Z,T,E
 	s::S
 end
-MeshConformity(::Type{FESpaceWithDirichletData{D,Z,T,E,S}}) where {D,Z,T,E,S<:ConformingFESpace{D,Z,T,E}} = ConformingMesh()
-MeshConformity(::Type{FESpaceWithDirichletData{D,Z,T,E,S}}) where {D,Z,T,E,S<:NonConformingFESpace{D,Z,T,E}} = NonConformingMesh()
+
+MeshConformity(::Type{FESpaceWithDirichletData{D,Z,T,E,S}}) where {D,Z,T,E,S} = MeshConformity(S)
 
 s1 = ConformingFESpace(10)
 s2 = NonConformingFESpace(10)

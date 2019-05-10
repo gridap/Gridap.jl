@@ -80,7 +80,7 @@ struct FESpaceWithDirichletData{D,Z,T,E,V<:FESpace{D,Z,T,E}} <: FESpace{D,Z,T,E}
 	dir_data::Vector{Float64}
 end
 
-MeshConformity(::Type{FESpaceWithDirichletData})  = NonConformingMesh()
+MeshConformity(::Type{FESpaceWithDirichletData{D,Z,T,E,S}})  where {D,Z,T,E,S} = MeshConformity(S)
 # MeshConformity(::Type{FESpaceWithDirichletData{D,Z,T,E,S}}) where {D,Z,T,E,S<:NonConformingFESpace{D,Z,T,E}} = NonConformingMesh
 
 for op in (:nf_dofs, :cell_eqclass, :num_free_dofs, :num_fixed_dofs, :dir_tags,
