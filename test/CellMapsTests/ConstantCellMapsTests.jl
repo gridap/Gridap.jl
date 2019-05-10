@@ -28,15 +28,17 @@ p2 = Point(1.1,2.0)
 p3 = Point(1.1,2.3)
 ps = [p1,p2,p3]
 rs = evaluate(m,ps)
+grs = evaluate(gradient(m),ps)
 crs = [ rs for i in 1:l]
+gcrs = [ grs for i in 1:l]
 
 cv = ConstantCellVector(ps,l)
-test_cell_map_without_gradient(cm,cv,crs)
+test_cell_map_with_gradient(cm,cv,crs,gcrs)
 ca = evaluate(cm,cv)
 @test isa(ca,ConstantCellArray)
 
 cv = TestCellArray(ps,l)
-test_cell_map_without_gradient(cm,cv,crs)
+test_cell_map_with_gradient(cm,cv,crs,gcrs)
 ca = evaluate(cm,cv)
 @test isa(ca,CellMapValue)
 
