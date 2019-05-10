@@ -36,9 +36,9 @@ dtags = (1,2,3,4)
 order=1; orders=order*ones(Int64,D)
 polytope = Polytopes.Polytope(1,1)
 reffe = LagrangianRefFE{D,ScalarValue}(polytope,orders)
-fesp = ConformingFESpace(reffe,trian,gridgr,labels,dtags)
 ##
 # @testset ConformingFESpace
+fesp = ConformingFESpace(reffe,trian,gridgr,labels,dtags)
 D = 2
 model = CartesianDiscreteModel(domain=(0.0,1.0,-1.0,2.0),
         partition=(2,2))
@@ -67,7 +67,7 @@ fesp = ConformingFESpace(reffe,trian,gridgr,labels,(1,2,3,4))
 @test FESpaces.triangulation(fesp) == trian
 @test FESpaces.num_fixed_dofs(fesp) == fesp.num_fixed_dofs
 @test FESpaces.num_free_dofs(fesp) == fesp.num_free_dofs
-@test FESpaces.nf_eqclass(fesp) == fesp.nf_eqclass
+@test FESpaces.nf_dofs(fesp) == fesp.nf_dofs
 @test FESpaces.cell_eqclass(fesp) == fesp.cell_eqclass
 ##
 # @testset FESpaceWithDirichletData
@@ -80,7 +80,7 @@ FESpaces.reffes(fespwd)
 @test FESpaces.triangulation(fespwd) == trian
 @test FESpaces.num_fixed_dofs(fespwd) == fesp.num_fixed_dofs
 @test FESpaces.num_free_dofs(fespwd) == fesp.num_free_dofs
-@test FESpaces.nf_eqclass(fespwd) == fesp.nf_eqclass
+@test FESpaces.nf_dofs(fespwd) == fesp.nf_dofs
 @test FESpaces.cell_eqclass(fespwd) == fesp.cell_eqclass
 
 fesphom = FESpaces.TestFESpace(fesp)
@@ -98,16 +98,17 @@ fesp = ConformingFESpace(reffe,trian,gridgr,labels,dtags)
 
 # @santiagobadia :  Problem when no tags ()
 
-fesp.nf_eqclass
-nf_dofs_all = FESpaces.nf_eqclass(fesp)
+fesp.nf_dofs
+nf_dofs_all = FESpaces.nf_dofs(fesp)
 dtags = FESpaces.dir_tags(fesp)
 
-using Numa.FESpaces: reffes, cell_eqclass, nf_eqclass
+using Numa.FESpaces: reffes, cell_eqclass, nf_dofs
 using Numa.FESpaces: num_free_dofs, num_fixed_dofs
 using Numa.FESpaces: interpolate_dirichlet_data
 fixed_dofs = interpolate_dirichlet_data(func, fesp, labels)
 ##
 # FEFunction and Interpolate
+fesphom = FESpaces.TestFESpace(fesp)
 fespwnhdd= FESpaces.TrialFESpace(fesp, func, labels)
 @test fespwnhdd.dir_data == fixed_dofs
 fh0 = FESpaces.interpolate(fun1, fesp)
@@ -119,33 +120,6 @@ sum(FESpaces.fixed_dofs(fh2).== 0) == 4
 
 using Numa.FESpaces: ConformingFESpace
 using Numa.FESpaces: FESpaceWithDirichletData
-
-ConformingFESpaces2{D,Z,T,E} = Union{ConformingFESpace{D,Z,T,E},FESpaceWithDirichletData{D,Z,T,E,ConformingFESpace{D,Z,T,E}}} where {D,Z,T,E}
-
-
-ConformingFESpace <: ConformingFESpaces
-FESpaceWithDirichletData <: ConformingFESpace
-FESpaceWithDirichletData{D,Z,T,E,ConformingFESpace{D,Z,T,E}} <: ConformingFESpaces2{D,Z,T,E} where{D,Z,T,E}
-
-abstract type str{T} end
-
-struct str1{T} <: str{T}
-	a::T
-end
-
-struct str2{T,S<:str{T}}
-	a::T
-	s::S
-end
-
-strX{T} = Union{str1{T},str2{T,str1{T}}}
-
-a1 = str1(10)
-a2 = str2(10,a1)
-
-
-isa(a1,strX)
-isa(a2,strX)
 
 ##
 
