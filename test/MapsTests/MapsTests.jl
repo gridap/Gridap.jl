@@ -143,14 +143,14 @@ end
 
 using Numa.CellValues.Operations: _custom_broadcast
 
-combinations = [
+pairs = [
   (m_vs,m2_vs), (m_vs,m2_vv), (m_vs,m2_vt),
   (m2_vs,m_vs), (m2_vv,m_vs), (m2_vt,m_vs),
   (m_vt,m2_vs), (m_vt,m2_vt)]
 
 for op in (:+,:-,:*)
   @eval begin
-    for (mi,mj) in combinations
+    for (mi,mj) in pairs
       umap = $op(mi,mj)
       r = _custom_broadcast($op,mi.val,mj.val)
       test_map_without_gradient(umap,p,r)
@@ -158,11 +158,11 @@ for op in (:+,:-,:*)
   end
 end
 
-combinations = [(m_vs,m2_vs),(m_vv,m2_vv),(m_vt,m2_vt)]
+pairs = [(m_vs,m2_vs),(m_vv,m2_vv),(m_vt,m2_vt)]
 
 for op in (:(inner),)
   @eval begin
-    for (mi,mj) in combinations
+    for (mi,mj) in pairs
       umap = $op(mi,mj)
       r = _custom_broadcast($op,mi.val,mj.val)
       test_map_without_gradient(umap,p,r)
@@ -182,11 +182,11 @@ function _lincomb(a::Matrix{T},b::Vector{S}) where{T,S}
   v
 end
 
-combinations = [
+pairs = [
   (m_as,v2_s),(m_as,v2_v),(m_as,v2_t),
   (m_av,v2_s),(m_at,v2_s)]
 
-for (mi,mj) in combinations
+for (mi,mj) in pairs
   umap = lincomb(mi,mj)
   r = _lincomb(mi.val,mj)
   test_map_without_gradient(umap,p,r)

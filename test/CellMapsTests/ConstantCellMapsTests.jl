@@ -11,6 +11,8 @@ using Numa.CellMaps.Testers
 using Numa.CellMaps.CellMapValues
 using Numa.FieldValues
 
+import Numa: gradient
+
 include("../CellValuesTests/Mocks.jl")
 include("../MapsTests/MockMap.jl")
 include("../MapsTests/MockBasis.jl")
@@ -18,6 +20,7 @@ include("../MapsTests/MockBasis.jl")
 l = 10
 p0 = Point(1.4,2.0)
 m = MockMap(p0)
+@test isa(m,Field)
 cm = ConstantCellMap(m,l)
 
 p1 = Point(1.0,2.0)
@@ -62,5 +65,75 @@ for op in (:+, :-, :(inner), :(outer))
     @test isa(ucm,ConstantCellMap)
   end
 end
+
+# compose
+
+f(p::Point{2}) = 2*p
+gradf(p::Point{2}) = VectorValue(2.0,2.0)
+gradient(::typeof(f)) = gradf
+
+ucm = compose(f,cm)
+@test isa(ucm,ConstantCellMap)
+@test isa(ucm,ConstantCellField)
+rs = evaluate(m,ps)
+crs = [ f.(rs) for i in 1:l]
+gcrs = [ gradf.(rs) for i in 1:l]
+cv = TestCellArray(ps,l)
+test_cell_map_with_gradient(ucm,cv,crs,gcrs)
+
+# compose (extended)
+
+geomap = MockMap(p2)
+cgeomap = ConstantCellField(geomap,l)
+f(p::Point{2},u::Point{2}) = 2*p + 3*u
+gradf(p::Point{2},u::Point{2}) = VectorValue(2.0,2.0)
+gradient(::typeof(f)) = gradf
+ucm = compose(f,cgeomap,cm)
+@test isa(ucm,ConstantCellMap)
+@test isa(ucm,ConstantCellField)
+xs = evaluate(geomap,ps)
+rs = evaluate(m,xs)
+crs = [ f.(xs,rs) for i in 1:l]
+gcrs = [ gradf.(xs,rs) for i in 1:l]
+cv = TestCellArray(ps,l)
+test_cell_map_with_gradient(ucm,cv,crs,gcrs)
+
+# varinner
+
+bas = MockBasis(p1,3)
+fie = MockMap(p2)
+cbas = ConstantCellBasis(bas,l)
+cfie = ConstantCellField(fie,l)
+
+ucm = varinner(cfie,cfie)
+@test isa(ucm,ConstantCellMap)
+rs = evaluate(varinner(fie,fie),ps)
+crs = [rs for i in 1:l]
+test_cell_map_without_gradient(ucm,cv,crs)
+
+ucm = varinner(cbas,cfie)
+@test isa(ucm,ConstantCellMap)
+rs = evaluate(varinner(bas,fie),ps)
+crs = [rs for i in 1:l]
+test_cell_map_without_gradient(ucm,cv,crs)
+
+ucm = varinner(cbas,cbas)
+@test isa(ucm,ConstantCellMap)
+rs = evaluate(varinner(bas,bas),ps)
+crs = [rs for i in 1:l]
+test_cell_map_without_gradient(ucm,cv,crs)
+
+# lincomb
+
+coefs = [1.0,1.0,1.0]
+ccoefs = ConstantCellVector(coefs,l)
+ucm = lincomb(cbas,ccoefs)
+@test isa(ucm,ConstantCellField)
+ffe = lincomb(bas,coefs)
+rs  = evaluate(ffe,ps)
+grs  = evaluate(gradient(ffe),ps)
+crs = [rs for i in 1:l]
+cgrs = [grs for i in 1:l]
+test_cell_map_with_gradient(ucm,cv,crs,cgrs)
 
 end # module ConstantCellMapsTests
