@@ -4,21 +4,15 @@ using Test
 
 using Numa.Quadratures
 using Numa.Polytopes
+using Numa.Polytopes: PointInt
 using Numa.RefFEs
-# using Numa.Meshes
 using Numa.FESpaces
 using Numa.FESpaces: ConformingFESpace
 
-using Numa.Polytopes: PointInt
-using Numa.CellValues
-
-using Numa.Maps
 using Numa.FieldValues
-
-using Numa.Meshes
-
+using Numa.Maps
+using Numa.CellValues
 using Numa.CellValues: CellVectorByComposition
-
 using Numa.CellMaps
 
 using Numa.Geometry
@@ -61,13 +55,13 @@ fesp = ConformingFESpace(reffe,trian,gridgr,labels)
 @test FESpaces.num_free_dofs(fesp) == 9
 @test FESpaces.num_fixed_dofs(fesp) == 0
 ##
-fespwd = ConformingFESpace(reffe,trian,gridgr,labels,(10,))
-@test FESpaces.num_free_dofs(fespwd) == 1
-@test FESpaces.num_fixed_dofs(fespwd) == 8
+fesp = ConformingFESpace(reffe,trian,gridgr,labels,(10,))
+@test FESpaces.num_free_dofs(fesp) == 1
+@test FESpaces.num_fixed_dofs(fesp) == 8
 
-fespwd = ConformingFESpace(reffe,trian,gridgr,labels,(1,2,3,4))
-@test FESpaces.num_free_dofs(fespwd) == 5
-@test FESpaces.num_fixed_dofs(fespwd) == 4
+fesp = ConformingFESpace(reffe,trian,gridgr,labels,(1,2,3,4))
+@test FESpaces.num_free_dofs(fesp) == 5
+@test FESpaces.num_fixed_dofs(fesp) == 4
 
 @test FESpaces.reffes(fesp) == reffe
 @test FESpaces.triangulation(fesp) == trian
@@ -112,17 +106,47 @@ using Numa.FESpaces: reffes, cell_eqclass, nf_eqclass
 using Numa.FESpaces: num_free_dofs, num_fixed_dofs
 using Numa.FESpaces: interpolate_dirichlet_data
 fixed_dofs = interpolate_dirichlet_data(func, fesp, labels)
-
+##
+# FEFunction and Interpolate
 fespwnhdd= FESpaces.TrialFESpace(fesp, func, labels)
 @test fespwnhdd.dir_data == fixed_dofs
 fh0 = FESpaces.interpolate(fun1, fesp)
-fh0.coeffs.gid_to_val_neg
 fh1 = FESpaces.interpolate(fun1, fespwnhdd)
-fh1.coeffs.gid_to_val_neg
 fh2 = FESpaces.interpolate(fun1, fesphom)
-sum(fh2.coeffs.gid_to_val_neg.== 0) == 4
-@test fh0.coeffs.gid_to_val_neg != fh1.coeffs.gid_to_val_neg
-@test fh0.coeffs.gid_to_val_pos == fh1.coeffs.gid_to_val_pos == fh2.coeffs.gid_to_val_pos
+sum(FESpaces.fixed_dofs(fh2).== 0) == 4
+@test FESpaces.fixed_dofs(fh0) != FESpaces.fixed_dofs(fh1)
+@test FESpaces.free_dofs(fh0) == FESpaces.free_dofs(fh1) == FESpaces.free_dofs(fh2)
+
+using Numa.FESpaces: ConformingFESpace
+using Numa.FESpaces: FESpaceWithDirichletData
+
+ConformingFESpaces2{D,Z,T,E} = Union{ConformingFESpace{D,Z,T,E},FESpaceWithDirichletData{D,Z,T,E,ConformingFESpace{D,Z,T,E}}} where {D,Z,T,E}
+
+
+ConformingFESpace <: ConformingFESpaces
+FESpaceWithDirichletData <: ConformingFESpace
+FESpaceWithDirichletData{D,Z,T,E,ConformingFESpace{D,Z,T,E}} <: ConformingFESpaces2{D,Z,T,E} where{D,Z,T,E}
+
+abstract type str{T} end
+
+struct str1{T} <: str{T}
+	a::T
+end
+
+struct str2{T,S<:str{T}}
+	a::T
+	s::S
+end
+
+strX{T} = Union{str1{T},str2{T,str1{T}}}
+
+a1 = str1(10)
+a2 = str2(10,a1)
+
+
+isa(a1,strX)
+isa(a2,strX)
+
 ##
 
 

@@ -13,6 +13,7 @@ using Numa.RefFEs
 using Numa.Polytopes
 using Numa.CellValues
 using Numa.Geometry
+using Numa.FieldValues
 
 using SparseArrays
 
@@ -64,7 +65,7 @@ end
 """
 Conforming FE Space, where only one RefFE is possible in the whole mesh
 """
-struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T,Float64}
+struct ConformingFESpace{D,Z,T,E} <: FESpace{D,Z,T,E}
 	# For the moment, I am not considering E (to think)
 	reffes::LagrangianRefFE{D,T}
 	triangulation::Triangulation{D,Z}
@@ -99,7 +100,7 @@ function ConformingFESpace(
 	cellvefs = IndexCellValueByLocalAppendWithOffset(offset, cellvefs_dim...)
 	dofs_all = IndexCellValueByGlobalAppend(gldofs...)
 	cell_eqclass = CellVectorByComposition(cellvefs, dofs_all)
-	ConformingFESpace{D,Z,T}(reffe, trian, gldofs, cell_eqclass, nfree, nfixed, dir_tags)
+	ConformingFESpace{D,Z,T,Float64}(reffe, trian, gldofs, cell_eqclass, nfree, nfixed, dir_tags)
 end
 
 for op in (:reffes, :triangulation, :nf_eqclass, :cell_eqclass,
@@ -129,6 +130,8 @@ struct FESpaceWithDirichletData{D,Z,T,E,V<:FESpace{D,Z,T,E}} <: FESpace{D,Z,T,E}
 	dir_data::Vector{Float64}
 end
 
+ConformingFESpaces{D,Z,T,E} = Union{ConformingFESpace{D,Z,T,E}, FESpaceWithDirichletData{D,Z,T,E,ConformingFESpace{D,Z,T,E}}}
+
 for op in (:reffes, :triangulation, :gridgraph, :nf_eqclass, :cell_eqclass,
 	:num_free_dofs, :num_fixed_dofs, :dir_tags)
 	@eval begin
@@ -148,6 +151,23 @@ function TrialFESpace( this::FESpace{D}, fun::Vector{Function}, labels::FaceLabe
 	# @santiagobadia : Put labels in FESPace
   return FESpaceWithDirichletData(this, dv)
 end
+
+"""
+FE Function
+"""
+abstract type FEFunction{D,Z,T,E} end
+
+free_dofs(::FEFunction) = @abstractmethod
+fixed_dofs(::FEFunction) = @abstractmethod
+# @santiagobadia : Do we want to make a difference between Dirichlet and constrained ?
+
+struct ConformingFEFunction{D,Z,T,E} <: FEFunction{D,Z,T,E}
+	fesp::FESpace{D,Z,T,E}
+	dof_values::CellFieldFromExpand{D,T,E,T}
+end
+
+free_dofs(this::ConformingFEFunction) = this.dof_values.coeffs.gid_to_val_pos
+fixed_dofs(this::ConformingFEFunction) = this.dof_values.coeffs.gid_to_val_neg
 
 """
 Abstract assembly operator
@@ -257,7 +277,7 @@ function globaldofs(reffe::RefFE{D,T},
 	return [ dim_eqclass , c-1, -c_n-1 ]
 end
 
-function interpolate(fun::Function, fesp::FESpace{D}) where {D}
+function interpolate(fun::Function, fesp::ConformingFESpaces{D}) where {D}
 	reffe = reffes(fesp)
 	dofb = reffe.dofbasis
 	trian = triangulation(fesp)
@@ -286,32 +306,35 @@ function interpolate(fun::Function, fesp::FESpace{D}) where {D}
 		cdofs = CellVectorFromLocalToGlobalPosAndNeg(celldofs, free_dofs, fixed_dofs)
 	end
 	intu = CellFieldFromExpand(shb, cdofs)
+	return ConformingFEFunction(fesp, intu)
+	# @santiagobadia : Not acceptable ? I think that this interpolate is for ConformingFESpace
+	# anyway. But there is a problem for
 end
 
 function interpolate_dirichlet_data(fun::Vector{Function}, fesp::FESpace{D}, labels::FaceLabels) where {D}
 	nf_labs_all = [ labels_on_dim(labels,idim) for idim in 0:D]
 	nf_dofs_all = nf_eqclass(fesp)
 	dtags = dir_tags(fesp)
-	fixed_dofs = zeros(Float64, num_fixed_dofs(fesp))
+	fixed_dofs_all = zeros(Float64, num_fixed_dofs(fesp))
 	for (ifunc,f) in enumerate(fun)
 		fh = interpolate(f, fesp)
 		# Implement a new interpolate restricted to cells on the boundary for performance
 		for idim in 0:D
 			nf_labs = nf_labs_all[idim+1]
 			nf_dofs = nf_dofs_all[idim+1]
-			fh_fixed_dofs = fh.coeffs.gid_to_val_neg
+			fh_fixed_dofs = fixed_dofs(fh)
 			# How to extract this part? Do it correctly, with a FEFunction
 			for (nf,nflab) in enumerate(nf_labs)
 				if (_is_fixed(nflab, (dtags[ifunc],), labels))
 					for dof in nf_dofs[nf]
 						dof *= -1
-						fixed_dofs[dof] = fh_fixed_dofs[dof]
+						fixed_dofs_all[dof] = fh_fixed_dofs[dof]
 					end
 				end
 			end
 		end
 	end
-	return fixed_dofs
+	return fixed_dofs_all
 end
 
 
