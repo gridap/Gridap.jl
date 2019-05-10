@@ -1,7 +1,7 @@
 function interpolate(fun::Function, fesp::ConformingFESpaces{D}) where {D}
-	reffe = reffes(fesp)
+	reffe = _reffes(fesp)
 	dofb = reffe.dofbasis
-	trian = triangulation(fesp)
+	trian = _triangulation(fesp)
 	phi = geomap(trian)
 	uphys = fun ∘ phi
 	celldofs = cell_eqclass(fesp)
@@ -29,10 +29,11 @@ function interpolate(fun::Function, fesp::ConformingFESpaces{D}) where {D}
 	intu = CellFieldFromExpand(shb, cdofs)
 	return ConformingFEFunction(fesp, intu)
 	# @santiagobadia : Not acceptable ? I think that this interpolate is for ConformingFESpace
-	# anyway. But there is a problem for
+	# anyway.
 end
 
-function interpolate_dirichlet_data(fun::Vector{Function}, fesp::FESpace{D}, labels::FaceLabels) where {D}
+function interpolate_dirichlet_data(fun::Vector{Function}, fesp::FESpace{D}) where {D}
+	labels = _labels(fesp)
 	nf_labs_all = [ labels_on_dim(labels,idim) for idim in 0:D]
 	nf_dofs_all = nf_dofs(fesp)
 	dtags = dir_tags(fesp)

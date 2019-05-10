@@ -63,8 +63,10 @@ fesp = ConformingFESpace(reffe,trian,gridgr,labels,(1,2,3,4))
 @test FESpaces.num_free_dofs(fesp) == 5
 @test FESpaces.num_fixed_dofs(fesp) == 4
 
-@test FESpaces.reffes(fesp) == reffe
-@test FESpaces.triangulation(fesp) == trian
+@test FESpaces._reffes(fesp) == reffe
+@test FESpaces._triangulation(fesp) == trian
+@test FESpaces._gridgraph(fesp) == fesp._gridgraph
+@test FESpaces._labels(fesp) == fesp._labels
 @test FESpaces.num_fixed_dofs(fesp) == fesp.num_fixed_dofs
 @test FESpaces.num_free_dofs(fesp) == fesp.num_free_dofs
 @test FESpaces.nf_dofs(fesp) == fesp.nf_dofs
@@ -74,10 +76,11 @@ fesp = ConformingFESpace(reffe,trian,gridgr,labels,(1,2,3,4))
 using Numa.FESpaces: FESpaceWithDirichletData
 dird = zeros(Float64, FESpaces.num_fixed_dofs(fesp))
 fespwd = FESpaceWithDirichletData(fesp, dird)
-FESpaces.reffes(fespwd)
 
-@test FESpaces.reffes(fespwd) == reffe
-@test FESpaces.triangulation(fespwd) == trian
+@test FESpaces._reffes(fespwd) == reffe
+@test FESpaces._gridgraph(fespwd) == fesp._gridgraph
+@test FESpaces._labels(fespwd) == fesp._labels
+@test FESpaces._triangulation(fespwd) == trian
 @test FESpaces.num_fixed_dofs(fespwd) == fesp.num_fixed_dofs
 @test FESpaces.num_free_dofs(fespwd) == fesp.num_free_dofs
 @test FESpaces.nf_dofs(fespwd) == fesp.nf_dofs
@@ -102,10 +105,7 @@ fesp.nf_dofs
 nf_dofs_all = FESpaces.nf_dofs(fesp)
 dtags = FESpaces.dir_tags(fesp)
 
-using Numa.FESpaces: reffes, cell_eqclass, nf_dofs
-using Numa.FESpaces: num_free_dofs, num_fixed_dofs
-using Numa.FESpaces: interpolate_dirichlet_data
-fixed_dofs = interpolate_dirichlet_data(func, fesp, labels)
+fixed_dofs = FESpaces.interpolate_dirichlet_data(func, fesp)
 ##
 # FEFunction and Interpolate
 fesphom = FESpaces.TestFESpace(fesp)
@@ -117,10 +117,6 @@ fh2 = FESpaces.interpolate(fun1, fesphom)
 sum(FESpaces.fixed_dofs(fh2).== 0) == 4
 @test FESpaces.fixed_dofs(fh0) != FESpaces.fixed_dofs(fh1)
 @test FESpaces.free_dofs(fh0) == FESpaces.free_dofs(fh1) == FESpaces.free_dofs(fh2)
-
-using Numa.FESpaces: ConformingFESpace
-using Numa.FESpaces: FESpaceWithDirichletData
-
 ##
 
 
