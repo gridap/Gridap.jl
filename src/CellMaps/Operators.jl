@@ -11,6 +11,10 @@ using Numa.CellMaps
 
 import Numa: evaluate, gradient
 import Numa: return_size
+import Numa.Maps: compose
+import Numa.Maps: lincomb
+import Numa.Maps: varinner
+import Numa.Maps: attachgeomap
 
 # Unary operations
 
@@ -80,6 +84,54 @@ for op in (:+, :-, :*, :/, :(outer), :(inner))
       Base.Broadcast.broadcast_shape(sa,sb)
     end
   end
+end
+
+function _combine_sizes(::typeof(varinner),sa::NTuple{1,Int},sb::NTuple{1,Int})
+  @assert sa == sb
+  sa
+end
+
+function _combine_sizes(::typeof(varinner),sa::NTuple{2,Int},sb::NTuple{1,Int})
+  ndofsa, npointsa = sa
+  npointsb, = sb
+  @assert npointsa == npointsb
+  (ndofsa, npointsa)
+end
+
+function _combine_sizes(::typeof(varinner),sa::NTuple{2,Int},sb::NTuple{2,Int})
+  ndofsa, npointsa = sa
+  ndofsb, npointsb = sb
+  @assert npointsa == npointsb
+  (ndofsa, ndofsb, npointsa)
+end
+
+function varinner( a::CellField{D,T}, b::CellField{D,T}) where {D,T}
+  _varinner(a,b)
+end
+
+function varinner( a::CellBasis{D,T}, b::CellField{D,T}) where {D,T}
+  _varinner(a,b)
+end
+
+function varinner( a::CellBasis{D,T}, b::CellBasis{D,T}) where {D,T}
+  _varinner(a,b)
+end
+
+function varinner(a::CellVector{T},b::CellVector{T}) where T
+  inner(a,b)
+end
+
+function varinner(a::CellMatrix{T},b::CellVector{T}) where T
+  inner(a,cellnewaxis(b,dim=1))
+end
+
+function varinner(a::CellMatrix{T},b::CellMatrix{T}) where T
+  inner(cellnewaxis(a,dim=2),cellnewaxis(b,dim=1))
+end
+
+function _varinner(a,b)
+  @assert length(a) == length(b)
+  CellMapFromBinaryOp(varinner,a,b)
 end
 
 end # module Operations

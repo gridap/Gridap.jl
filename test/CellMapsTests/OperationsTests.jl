@@ -61,4 +61,26 @@ for op in (:+, :-, :(inner), :(outer))
   end
 end
 
+# varinner
+
+bas = MockBasis(p1,3)
+fie = MockMap(p2)
+cbas = TestCellMap(bas,l)
+cfie = TestCellMap(fie,l)
+
+ucm = varinner(cfie,cfie)
+rs = evaluate(varinner(fie,fie),ps)
+crs = [rs for i in 1:l]
+test_cell_map_without_gradient(ucm,cv,crs)
+
+ucm = varinner(cbas,cfie)
+rs = evaluate(varinner(bas,fie),ps)
+crs = [rs for i in 1:l]
+test_cell_map_without_gradient(ucm,cv,crs)
+
+ucm = varinner(cbas,cbas)
+rs = evaluate(varinner(bas,bas),ps)
+crs = [rs for i in 1:l]
+test_cell_map_without_gradient(ucm,cv,crs)
+
 end # module OperationsTests
