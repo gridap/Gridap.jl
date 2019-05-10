@@ -148,6 +148,7 @@ dtags = FESpaces.dir_tags(fesp)
 FESpaces._is_fixed(2,(),labels)
 
 fixed_dofs = FESpaces.interpolate_dirichlet_data(func, fesp)
+FESpaces.MeshConformity(fesp)
 ##
 # FEFunction and Interpolate
 fesphom = FESpaces.TestFESpace(fesp)

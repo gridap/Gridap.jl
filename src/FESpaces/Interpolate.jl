@@ -1,4 +1,9 @@
 function interpolate(fun::Function, fesp::ConformingFESpaces{D}) where {D}
+	@assert MeshConformity(fesp) == ConformingMesh() # Not implemented
+	_interpolate(fun,fesp, MeshConformity(fesp))
+end
+
+function _interpolate(fun::Function, fesp::ConformingFESpaces{D}, ::ConformingMesh) where {D}
 # function interpolate(fun::Function, fesp::FESpace{D}, ::ConformingMesh) where {D}
 	reffe = _reffes(fesp)
 	dofb = reffe.dofbasis
