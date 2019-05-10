@@ -66,8 +66,6 @@ _gridgraph(::FESpace) = @abstractmethod
 
 _labels(::FESpace) = @abstractmethod
 
-
-
 struct FESpaceWithDirichletData{D,Z,T,E,V<:FESpace{D,Z,T,E}} <: FESpace{D,Z,T,E}
 	fesp::V
 	dir_data::Vector{Float64}

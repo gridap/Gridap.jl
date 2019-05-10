@@ -99,11 +99,11 @@ fun3(x::Point{2}) = 3.0
 func = [fun1, fun2, fun3, fun2]
 fesp = ConformingFESpace(reffe,trian,gridgr,labels,dtags)
 
-# @santiagobadia :  Problem when no tags ()
-
 fesp.nf_dofs
 nf_dofs_all = FESpaces.nf_dofs(fesp)
 dtags = FESpaces.dir_tags(fesp)
+
+FESpaces._is_fixed(2,(),labels)
 
 fixed_dofs = FESpaces.interpolate_dirichlet_data(func, fesp)
 ##

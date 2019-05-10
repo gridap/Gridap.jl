@@ -28,8 +28,6 @@ function interpolate(fun::Function, fesp::ConformingFESpaces{D}) where {D}
 	end
 	intu = CellFieldFromExpand(shb, cdofs)
 	return ConformingFEFunction(fesp, intu)
-	# @santiagobadia : Not acceptable ? I think that this interpolate is for ConformingFESpace
-	# anyway.
 end
 
 function interpolate_dirichlet_data(fun::Vector{Function}, fesp::FESpace{D}) where {D}
@@ -37,6 +35,7 @@ function interpolate_dirichlet_data(fun::Vector{Function}, fesp::FESpace{D}) whe
 	nf_labs_all = [ labels_on_dim(labels,idim) for idim in 0:D]
 	nf_dofs_all = nf_dofs(fesp)
 	dtags = dir_tags(fesp)
+	@assert length(dtags) == length(fun)
 	fixed_dofs_all = zeros(Float64, num_fixed_dofs(fesp))
 	for (ifunc,f) in enumerate(fun)
 		fh = interpolate(f, fesp)
