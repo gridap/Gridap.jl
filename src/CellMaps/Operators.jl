@@ -6,13 +6,27 @@ using Numa.Maps
 using Numa.CellValues
 using Numa.FieldValues
 using Numa.CellValues.Operations: CellValueFromUnaryOp
+using Numa.CellValues.Operations: CellValueFromBinaryOp
 using Numa.CellMaps
 
 import Numa: evaluate, gradient
 import Numa: return_size
 
+# Unary operations
+
+# (Remark) This implementation reuses the code from CellValueFromUnaryOp
+# which is a nice thing, but, when iterating over CellMapFromUnaryOp, new 
+# objects of type MapFromUnaryOp will create at each iteration ...
+# The workaround would be to make MapFromUnaryOp mutable, and reimplement
+# CellMapFromUnaryOp so that only a MapFromUnaryOp is created at the beginning
+# and then at each iteration we reset the internal Map in MapFromUnaryOp
+
 const CellMapFromUnaryOp{
   S,M,T,N,O,R,C} = CellValueFromUnaryOp{R,O,C} where {R<:Map{S,M,T,N},O<:Function}
+
+function CellMapFromUnaryOp(op::Function,cellmap::CellMap)
+  CellValueFromUnaryOp(op,cellmap)
+end
 
 function evaluate(self::CellMapFromUnaryOp{S,M,T,N},a::CellArray{S,M}) where {S,M,T,N}
   v = self.values
@@ -20,7 +34,7 @@ function evaluate(self::CellMapFromUnaryOp{S,M,T,N},a::CellArray{S,M}) where {S,
   self.op(x)
 end
 
-function gradient(::CellMapFromUnaryOp{S,M,T,N})::CellMap{S,M,TG,N} where {S,M,T<:FieldValue,N,TG}
+function gradient(::CellMapFromUnaryOp{S,M,T,N}) where {S,M,T<:FieldValue,N}
   @notimplemented
 end
 
@@ -30,8 +44,45 @@ function return_size(
   return_size(v,s)
 end
 
-end # module Operations
+# Binary operations
 
+# (remark) This implementation has the same pros and cons as CellMapFromUnaryOp
+
+const CellMapFromBinaryOp{
+  S,M,T,N,O,R,A,B} = CellValueFromBinaryOp{R,O,A,B} where {O<:Function,R<:Map{S,M,T,N}}
+
+function CellMapFromBinaryOp(op::Function,a::CellMap{S,M},b::CellMap{S,M}) where {S,M}
+  CellValueFromBinaryOp(op,a,b)
+end
+
+function evaluate(self::CellMapFromBinaryOp{S,M,T,N},q::CellArray{S,M}) where {S,M,T,N}
+  a = self.a
+  b = self.b
+  xa = evaluate(a,q)
+  xb = evaluate(b,q)
+  self.op(xa,xb)
+end
+
+function gradient(::CellMapFromBinaryOp{S,M,T,N}) where {S,M,T<:FieldValue,N}
+  @notimplemented
+end
+
+function return_size(
+  self::CellMapFromBinaryOp{S,M,T,N},s::NTuple{M,Int}) where {S,M,T,N}
+  sa = return_size(self.a,s)
+  sb = return_size(self.b,s)
+  _combine_sizes(self.op,sa,sb)
+end
+
+for op in (:+, :-, :*, :/, :(outer), :(inner))
+  @eval begin
+    function _combine_sizes(::typeof($op),sa,sb)
+      Base.Broadcast.broadcast_shape(sa,sb)
+    end
+  end
+end
+
+end # module Operations
 
 
 ## Unary operations

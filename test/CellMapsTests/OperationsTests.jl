@@ -44,4 +44,21 @@ for op in (:+, :-)
   end
 end
 
+m1 = MockMap(p1)
+m2 = MockMap(p2)
+cm1 = TestCellMap(m1,l)
+cm2 = TestCellMap(m2,l)
+rs1 = evaluate(m1,ps)
+rs2 = evaluate(m2,ps)
+crs1 = [ rs1 for i in 1:l]
+crs2 = [ rs2 for i in 1:l]
+
+for op in (:+, :-, :(inner), :(outer))
+  @eval begin
+    ucm = $op(cm1,cm2)
+    ucrs = [ $op.(rs1,rs2)  for i in 1:l ]
+    test_cell_map_without_gradient(ucm,cv,ucrs)
+  end
+end
+
 end # module OperationsTests
