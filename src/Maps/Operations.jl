@@ -119,6 +119,10 @@ end
   end
 end
 
+function lincomb(basis::Basis{D,S},coeffs::AbstractVector{R}) where {D,S,R}
+  FieldFromExpand(basis,coeffs)
+end
+
 """
 Field resulting from the linear combination of a Basis and a coefficient vector
 """
@@ -146,6 +150,8 @@ end
 
 function lin_comb_kernel!(a,b,v::AbstractArray{T}) where T
   ndofs, npoints = size(a)
+  @assert length(b) == ndofs
+  @assert length(v) == npoints
   for i in eachindex(v)
     v[i] = zero(T)
   end

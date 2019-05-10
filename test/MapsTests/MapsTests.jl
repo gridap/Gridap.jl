@@ -41,27 +41,22 @@ for op in (:+, :-, :inner, :outer)
   end
 end
 
-using Numa.Maps: FieldFromCompose
-
 f(p::Point{2}) = 2*p
 gradf(p::Point{2}) = VectorValue(2.0,2.0)
 gradient(::typeof(f)) = gradf
 map = MockMap(a)
-umap = FieldFromCompose(f,map)
+umap = compose(f,map)
 res = evaluate(map,p)
 ao = [f(ri) for ri in res]
 go = [gradf(pj) for pj in p]
 test_map_with_gradient(umap,p,ao,go)
-
-using Numa.Maps: Geomap
-using Numa.Maps: FieldFromComposeExtended
 
 map = MockMap(a)
 geomap = MockMap(b)
 f(p::Point{2},u::Point{2}) = 2*p + 3*u
 gradf(p::Point{2},u::Point{2}) = VectorValue(2.0,2.0)
 gradient(::typeof(f)) = gradf
-cemap = FieldFromComposeExtended(f,geomap,map)
+cemap = compose(f,geomap,map)
 x = evaluate(geomap,p)
 res = evaluate(map,x)
 ao = f.(x,res)
@@ -89,10 +84,8 @@ mat = varinner(bas,bas)
 ao = [ inner(p[i]*k+a,p[i]*j+a) for k in 1:3, j in 1:3, i in 1:length(p) ]
 test_map_without_gradient(mat,p,ao)
 
-using Numa.Maps: FieldFromExpand
-
 coefs = [1.0,1.0,1.0]
-ffe = FieldFromExpand(bas,coefs)
+ffe = lincomb(bas,coefs)
 r1 = evaluate(ffe.basis,p)
 ao = [ sum(r1[:,i]) for i in 1:length(p)]
 test_map_without_gradient(ffe,p,ao)
@@ -105,7 +98,7 @@ ao = f.(p)
 go = gradf.(p)
 test_map_with_gradient(map,p,ao,go)
 
-s_s = 1.0
+s_s = 5.0
 s_v = VectorValue(1.1,2.3)
 s_t = TensorValue(1.0,2.0,0.0,1.0)
 v_s = fill(s_s,3)
@@ -121,7 +114,7 @@ m_as = TestMap(a_s,2)
 m_av = TestMap(a_v,2)
 m_at = TestMap(a_t,2)
 
-s2_s = 4.0
+s2_s = 1.0
 s2_v = VectorValue(5.1,2.6)
 s2_t = TensorValue(1.0,2.1,0.0,2.0)
 v2_s = fill(s2_s,3)
@@ -175,6 +168,28 @@ for op in (:(inner),)
       test_map_without_gradient(umap,p,r)
     end
   end
+end
+
+function _lincomb(a::Matrix{T},b::Vector{S}) where{T,S}
+  R = Base._return_type(outer,Tuple{T,S})
+  ndofs, npoints = size(a)
+  v = zeros(R,npoints)
+  for j in 1:npoints
+    for i in 1:ndofs
+      v[j] += outer(a[i,j],b[i])
+    end
+  end
+  v
+end
+
+combinations = [
+  (m_as,v2_s),(m_as,v2_v),(m_as,v2_t),
+  (m_av,v2_s),(m_at,v2_s)]
+
+for (mi,mj) in combinations
+  umap = lincomb(mi,mj)
+  r = _lincomb(mi.val,mj)
+  test_map_without_gradient(umap,p,r)
 end
 
 end # module Maps
