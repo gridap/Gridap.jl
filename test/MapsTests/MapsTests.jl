@@ -105,4 +105,76 @@ ao = f.(p)
 go = gradf.(p)
 test_map_with_gradient(map,p,ao,go)
 
+s_s = 1.0
+s_v = VectorValue(1.1,2.3)
+s_t = TensorValue(1.0,2.0,0.0,1.0)
+v_s = fill(s_s,3)
+v_v = fill(s_v,3)
+v_t = fill(s_t,3)
+a_s = fill(s_s,(3,5))
+a_v = fill(s_v,(3,5))
+a_t = fill(s_t,(3,5))
+m_vs = TestMap(v_s,2)
+m_vv = TestMap(v_v,2)
+m_vt = TestMap(v_t,2)
+m_as = TestMap(a_s,2)
+m_av = TestMap(a_v,2)
+m_at = TestMap(a_t,2)
+
+s2_s = 4.0
+s2_v = VectorValue(5.1,2.6)
+s2_t = TensorValue(1.0,2.1,0.0,2.0)
+v2_s = fill(s2_s,3)
+v2_v = fill(s2_v,3)
+v2_t = fill(s2_t,3)
+a2_s = fill(s2_s,(3,5))
+a2_v = fill(s2_v,(3,5))
+a2_t = fill(s2_t,(3,5))
+m2_vs = TestMap(v2_s,2)
+m2_vv = TestMap(v2_v,2)
+m2_vt = TestMap(v2_t,2)
+m2_as = TestMap(a2_s,2)
+m2_av = TestMap(a2_v,2)
+m2_at = TestMap(a2_t,2)
+
+test_map_without_gradient(m_av,p,a_v)
+
+for op in (:+, :-)
+  @eval begin
+    for mi in [m_vs, m_vv, m_vt]
+      umap = $op(mi)
+      test_map_without_gradient(umap,p,$op.(mi.val))
+    end
+  end
+end
+
+using Numa.CellValues.Operations: _custom_broadcast
+
+combinations = [
+  (m_vs,m2_vs), (m_vs,m2_vv), (m_vs,m2_vt),
+  (m2_vs,m_vs), (m2_vv,m_vs), (m2_vt,m_vs),
+  (m_vt,m2_vs), (m_vt,m2_vt)]
+
+for op in (:+,:-,:*)
+  @eval begin
+    for (mi,mj) in combinations
+      umap = $op(mi,mj)
+      r = _custom_broadcast($op,mi.val,mj.val)
+      test_map_without_gradient(umap,p,r)
+    end
+  end
+end
+
+combinations = [(m_vs,m2_vs),(m_vv,m2_vv),(m_vt,m2_vt)]
+
+for op in (:(inner),)
+  @eval begin
+    for (mi,mj) in combinations
+      umap = $op(mi,mj)
+      r = _custom_broadcast($op,mi.val,mj.val)
+      test_map_without_gradient(umap,p,r)
+    end
+  end
+end
+
 end # module Maps

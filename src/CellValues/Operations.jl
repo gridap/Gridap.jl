@@ -454,6 +454,26 @@ function _custom_broadcast!(op,v::AbstractArray,a::AbstractArray,b::SArray)
   end
 end
 
+function _custom_broadcast(op,a,b)
+  broadcast(op,a,b)
+end
+
+function _custom_broadcast(
+  op, a::SArray{Size,T}, b::AbstractArray{S,M}) where {Size,T,S,M}
+  R = Base._return_type(op,Tuple{typeof(a),S})
+  v = Array{R,M}(undef,size(b))
+  _custom_broadcast!(op,v,a,b)
+  v
+end
+
+function _custom_broadcast(
+  op, a::AbstractArray{S,M}, b::SArray{Size,T}) where {Size,T,S,M}
+  R = Base._return_type(op,Tuple{S,typeof(b)})
+  v = Array{R,M}(undef,size(a))
+  _custom_broadcast!(op,v,a,b)
+  v
+end
+
 @generated function cellsumsize(asize::NTuple{N,Int},::Val{D}) where {N,D}
   @assert N > 0
   @assert D <= N

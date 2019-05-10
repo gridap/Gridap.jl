@@ -7,7 +7,7 @@ using Numa.CellValues
 using Numa.FieldValues
 using LinearAlgebra: det, inv
 using StaticArrays
-using Numa.CellValues.Operations: _custom_broadcast!
+using Numa.CellValues.Operations: _custom_broadcast
 using Numa.CellValues.Operations: mean
 using Numa.CellValues.Testers
 
@@ -138,26 +138,6 @@ for op in (:+,:-,:*,:/,:(outer),:(inner))
       end
     end
   end
-end
-
-function _custom_broadcast(op,a,b)
-  broadcast(op,a,b)
-end
-
-function _custom_broadcast(
-  op, a::SArray{Size,T}, b::AbstractArray{S,M}) where {Size,T,S,M}
-  R = Base._return_type(op,Tuple{typeof(a),S})
-  v = Array{R,M}(undef,size(b))
-  _custom_broadcast!(op,v,a,b)
-  v
-end
-
-function _custom_broadcast(
-  op, a::AbstractArray{S,M}, b::SArray{Size,T}) where {Size,T,S,M}
-  R = Base._return_type(op,Tuple{S,typeof(b)})
-  v = Array{R,M}(undef,size(a))
-  _custom_broadcast!(op,v,a,b)
-  v
 end
 
 for op in (:+,:-,:*,:/,:(inner))
