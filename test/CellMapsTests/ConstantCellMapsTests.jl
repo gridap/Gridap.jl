@@ -136,4 +136,19 @@ crs = [rs for i in 1:l]
 cgrs = [grs for i in 1:l]
 test_cell_map_with_gradient(ucm,cv,crs,cgrs)
 
+# attachgeomap
+
+bas = MockBasis(p1,3)
+geomap = MockGeoMap(2)
+bas2 = attachgeomap(bas,geomap)
+cbas = ConstantCellBasis(bas,l)
+cgeomap = ConstantCellField(geomap,l)
+rs  = evaluate(bas2,ps)
+grs  = evaluate(gradient(bas2),ps)
+crs = [rs for i in 1:l]
+cgrs = [grs for i in 1:l]
+ucm = attachgeomap(cbas,cgeomap)
+@test isa(ucm,ConstantCellMap)
+test_cell_map_with_gradient(ucm,cv,crs,cgrs)
+
 end # module ConstantCellMapsTests

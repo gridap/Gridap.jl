@@ -14,6 +14,7 @@ import Numa: return_size
 import Numa.Maps: compose
 import Numa.Maps: lincomb
 import Numa.Maps: varinner
+import Numa.Maps: attachgeomap
 export ConstantCellMap
 export ConstantCellField
 export ConstantCellBasis
@@ -110,6 +111,13 @@ end
 function lincomb(a::ConstantCellBasis,b::ConstantCellVector)
   @assert a.length == b.length
   m = lincomb(a.value,b.value)
+  ConstantCellMap(m,a.length)
+end
+
+function attachgeomap(
+  a::ConstantCellBasis{D}, b::ConstantCellField{D,Point{D}}) where D
+  @assert a.length == b.length
+  m = attachgeomap(a.value,b.value)
   ConstantCellMap(m,a.length)
 end
 
