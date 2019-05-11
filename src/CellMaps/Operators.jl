@@ -44,7 +44,7 @@ end
 
 function return_size(
   self::CellMapFromUnaryOp{S,M,T,N},s::NTuple{M,Int}) where {S,M,T,N}
-  v = self.values
+  v, vnext = iterate(self)
   return_size(v,s)
 end
 
@@ -73,36 +73,8 @@ end
 
 function return_size(
   self::CellMapFromBinaryOp{S,M,T,N},s::NTuple{M,Int}) where {S,M,T,N}
-  sa = return_size(self.a,s)
-  sb = return_size(self.b,s)
-  _combine_sizes(self.op,sa,sb)
-end
-
-for op in (:+, :-, :*, :/, :(outer), :(inner))
-  @eval begin
-    function _combine_sizes(::typeof($op),sa,sb)
-      Base.Broadcast.broadcast_shape(sa,sb)
-    end
-  end
-end
-
-function _combine_sizes(::typeof(varinner),sa::NTuple{1,Int},sb::NTuple{1,Int})
-  @assert sa == sb
-  sa
-end
-
-function _combine_sizes(::typeof(varinner),sa::NTuple{2,Int},sb::NTuple{1,Int})
-  ndofsa, npointsa = sa
-  npointsb, = sb
-  @assert npointsa == npointsb
-  (ndofsa, npointsa)
-end
-
-function _combine_sizes(::typeof(varinner),sa::NTuple{2,Int},sb::NTuple{2,Int})
-  ndofsa, npointsa = sa
-  ndofsb, npointsb = sb
-  @assert npointsa == npointsb
-  (ndofsa, ndofsb, npointsa)
+  v, vnext = iterate(self)
+  return_size(v,s)
 end
 
 function varinner( a::CellField{D,T}, b::CellField{D,T}) where {D,T}
