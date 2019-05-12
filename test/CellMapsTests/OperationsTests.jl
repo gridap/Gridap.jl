@@ -74,6 +74,21 @@ gcrs = [ gradf.(rs) for i in 1:l]
 cv = TestCellArray(ps,l)
 test_cell_map_with_gradient(ucm,cv,crs,gcrs)
 
+# compose (extended)
+
+geomap = MockMap(p2)
+cgeomap = TestCellMap(geomap,l)
+f(p::Point{2},u::Point{2}) = 2*p + 3*u
+gradf(p::Point{2},u::Point{2}) = VectorValue(2.0,2.0)
+gradient(::typeof(f)) = gradf
+ucm = compose(f,cgeomap,cm)
+xs = evaluate(geomap,ps)
+rs = evaluate(m,xs)
+crs = [ f.(xs,rs) for i in 1:l]
+gcrs = [ gradf.(xs,rs) for i in 1:l]
+cv = TestCellArray(ps,l)
+test_cell_map_with_gradient(ucm,cv,crs,gcrs)
+
 # varinner
 
 bas = MockBasis(p1,3)

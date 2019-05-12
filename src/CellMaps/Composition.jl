@@ -6,9 +6,11 @@ using Numa.Maps
 using Numa.CellValues
 using Numa.CellValues.ConstantCellValues
 using Numa.CellValues.Operations: CellArrayFromBroadcastUnaryOp
+using Numa.CellValues.Operations: CellArrayFromBroadcastBinaryOp
 using Numa.FieldValues
 using Numa.CellMaps
 using Numa.Maps: FieldFromCompose
+using Numa.Maps: FieldFromComposeExtended
 
 import Numa: evaluate, gradient
 import Numa: return_size
@@ -75,7 +77,7 @@ end
 
 function composekernel(self::CellFieldFromCompose,avals::ConstantCellArray)
   b = broadcast(self.op,celldata(avals))
-  ConstantCellValue(b,length(avals))
+  ConstantCellArray(b,length(avals))
 end
 
 function gradient(self::CellFieldFromCompose)
@@ -84,5 +86,81 @@ function gradient(self::CellFieldFromCompose)
 end
 
 return_size(self::CellFieldFromCompose,s::Tuple{Int}) = s
+
+struct CellFieldFromComposeExtended{
+  D,T,O,G<:CellGeomap{D},U<:CellField,R<:FieldFromComposeExtended} <: IterCellField{D,T,R}
+  f::O
+  g::G
+  u::U
+end
+
+function CellFieldFromComposeExtended(
+  f::Function,g::CellGeomap{D,Z},u::CellField{Z,S}) where {D,Z,S}
+  @assert length(g) == length(u)
+  O = typeof(f)
+  G = typeof(g)
+  U = typeof(u)
+  T = Base._return_type(f,Tuple{Point{Z},S})
+  R = FieldFromComposeExtended{D,T,O,Z,S,eltype(g),eltype(u)}
+  CellFieldFromComposeExtended{D,T,O,G,U,R}(f,g,u)
+end
+
+length(this::CellFieldFromComposeExtended) = length(this.u)
+
+@inline function Base.iterate(this::CellFieldFromComposeExtended)
+  gnext = iterate(this.g)
+  unext = iterate(this.u)
+  iteratekernel(this,gnext,unext)
+end
+
+@inline function Base.iterate(this::CellFieldFromComposeExtended,state)
+  v, gstate, ustate = state
+  gnext = iterate(this.g,gstate)
+  unext = iterate(this.u,ustate)
+  iteratekernel(this,gnext,unext)
+end
+
+function iteratekernel(this::CellFieldFromComposeExtended,gnext,unext)
+  if gnext === nothing; return nothing end
+  if unext === nothing; return nothing end
+  g, gstate = gnext
+  u, ustate = unext
+  v = FieldFromComposeExtended(this.f,g,u) # TODO this allocates a new object
+  state = (v, gstate, ustate)
+  (v, state)
+end
+
+function evaluate(self::CellFieldFromComposeExtended{D},points::CellPoints{D}) where D
+  gvals = evaluate(self.g,points)
+  uvals = evaluate(self.u,gvals)
+  composekernel(self,gvals,uvals)
+end
+
+function composekernel(
+  self::CellFieldFromComposeExtended,gvals::CellArray,uvals::CellArray)
+  CellArrayFromBroadcastBinaryOp(self.f,gvals,uvals)
+end
+
+function composekernel(
+  self::CellFieldFromComposeExtended,
+  gvals::ConstantCellArray,
+  uvals::ConstantCellArray)
+  b = broadcast(self.f,celldata(gvals),celldata(uvals))
+  ConstantCellArray(b,length(gvals))
+end
+
+function gradient(self::CellFieldFromComposeExtended)
+  gradf = gradient(self.f)
+  CellFieldFromComposeExtended(gradf,self.g,self.u)
+end
+
+return_size(self::CellFieldFromComposeExtended,s::Tuple{Int}) = s
+
+# @santiagobadia: With the following structure + unary/binary operators we can
+# express CellFieldFromComposeExtended (after CellMapFromCompose)
+# struct CellMapFromComposition{Q,O,A<:CellMap{S,M,Q,O},B<:CellMap{Q,O,T,N}) <: IterCellMap{S,M,T,N}
+#   a::A
+#   b::B
+# end
 
 end # module Composition
