@@ -61,6 +61,19 @@ for op in (:+, :-, :(inner), :(outer))
   end
 end
 
+# compose
+
+f(p::Point{2}) = 2*p
+gradf(p::Point{2}) = VectorValue(2.0,2.0)
+gradient(::typeof(f)) = gradf
+
+ucm = compose(f,cm)
+rs = evaluate(m,ps)
+crs = [ f.(rs) for i in 1:l]
+gcrs = [ gradf.(rs) for i in 1:l]
+cv = TestCellArray(ps,l)
+test_cell_map_with_gradient(ucm,cv,crs,gcrs)
+
 # varinner
 
 bas = MockBasis(p1,3)

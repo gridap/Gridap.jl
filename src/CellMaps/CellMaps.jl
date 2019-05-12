@@ -10,7 +10,7 @@ include("CellMapValues.jl")
 
 include("Operators.jl")
 
-@reexport using Numa.CellMaps.Operations
+include("Composition.jl")
 
 include("ConstantCellMaps.jl")
 
