@@ -7,6 +7,7 @@ using Numa.CellValues
 using Numa.FieldValues
 using Numa.CellValues.Operations: CellValueFromUnaryOp
 using Numa.CellValues.Operations: CellValueFromBinaryOp
+using Numa.Maps: FieldFromExpand
 using Numa.CellMaps
 
 import Numa: evaluate, gradient
@@ -15,10 +16,11 @@ import Numa.Maps: compose
 import Numa.Maps: lincomb
 import Numa.Maps: varinner
 import Numa.Maps: attachgeomap
+import Base: iterate, length
 
 # Unary operations
 
-# (Remark) This implementation reuses the code from CellValueFromUnaryOp
+# (TODO Remark) This implementation reuses the code from CellValueFromUnaryOp
 # which is a nice thing, but, when iterating over CellMapFromUnaryOp, new 
 # objects of type MapFromUnaryOp will create at each iteration ...
 # The workaround would be to make MapFromUnaryOp mutable, and reimplement
@@ -50,7 +52,7 @@ end
 
 # Binary operations
 
-# (remark) This implementation has the same pros and cons as CellMapFromUnaryOp
+# (TODO remark) This implementation has the same pros and cons as CellMapFromUnaryOp
 
 const CellMapFromBinaryOp{
   S,M,T,N,O,R,A,B} = CellValueFromBinaryOp{R,O,A,B} where {O<:Function,R<:Map{S,M,T,N}}
@@ -105,6 +107,72 @@ function _varinner(a,b)
   @assert length(a) == length(b)
   CellMapFromBinaryOp(varinner,a,b)
 end
+
+# lincomb
+
+function lincomb(basis::CellBasis,coeffs::CellVector)
+  CellFieldFromExpand(basis,coeffs)
+end
+
+struct CellFieldFromExpand{
+  D,T,A<:CellBasis{D},B<:CellVector,R<:FieldFromExpand} <: IterCellField{D,T,R}
+  basis::A
+  coeffs::B
+end
+
+function CellFieldFromExpand(
+  basis::CellBasis{D,S},coeffs::CellVector{C}) where {D,S,C}
+  @assert length(basis) == length(coeffs)
+  T = Base._return_type(outer,Tuple{S,C})
+  A = typeof(basis)
+  B = typeof(coeffs)
+  R = FieldFromExpand{D,S,C,T,eltype(basis),eltype(coeffs)}
+  CellFieldFromExpand{D,T,A,B,R}(basis,coeffs)
+end
+
+function length(this::CellFieldFromExpand)
+  @assert length(this.basis) == length(this.coeffs)
+  length(this.basis)
+end
+
+@inline function iterate(this::CellFieldFromExpand)
+  bnext = iterate(this.basis)
+  cnext = iterate(this.coeffs)
+  iteratekernel(this,bnext,cnext)
+end
+
+@inline function iterate(this::CellFieldFromExpand,state)
+  v, bstate, cstate = state
+  bnext = iterate(this.basis,bstate)
+  cnext = iterate(this.coeffs,cstate)
+  iteratekernel(this,bnext,cnext)
+end
+
+function iteratekernel(this::CellFieldFromExpand,bnext,cnext)
+  if bnext === nothing; return nothing end
+  if cnext === nothing; return nothing end
+  b, bstate = bnext
+  c, cstate = cnext
+  v = FieldFromExpand(b,c) #TODO This allocates a new object
+  state = (v, bstate, cstate)
+  (v, state)
+end
+
+function evaluate(self::CellFieldFromExpand{D},points::CellPoints{D}) where D
+  basisvals = evaluate(self.basis,points)
+  lincomb(basisvals,self.coeffs)
+end
+
+function lincomb(a::CellBasisValues,b::CellFieldValues)
+  cellsum(outer(a,cellnewaxis(b,dim=2)),dim=1)
+end
+
+function gradient(self::CellFieldFromExpand)
+  gradbasis = gradient(self.basis)
+  CellFieldFromExpand(gradbasis,self.coeffs)
+end
+
+return_size(self::CellFieldFromExpand,s::Tuple{Int}) = s
 
 end # module Operations
 

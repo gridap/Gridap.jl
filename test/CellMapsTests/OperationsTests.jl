@@ -83,4 +83,16 @@ rs = evaluate(varinner(bas,bas),ps)
 crs = [rs for i in 1:l]
 test_cell_map_without_gradient(ucm,cv,crs)
 
+# lincomb
+
+coefs = [1.0,1.0,1.0]
+ccoefs = TestCellArray(coefs,l)
+ucm = lincomb(cbas,ccoefs)
+ffe = lincomb(bas,coefs)
+rs  = evaluate(ffe,ps)
+grs  = evaluate(gradient(ffe),ps)
+crs = [rs for i in 1:l]
+cgrs = [grs for i in 1:l]
+test_cell_map_with_gradient(ucm,cv,crs,cgrs)
+
 end # module OperationsTests
