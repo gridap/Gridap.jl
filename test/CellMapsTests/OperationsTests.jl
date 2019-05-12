@@ -22,7 +22,9 @@ l = 10
 p1 = Point(1.0,2.0)
 p2 = Point(1.1,2.0)
 p3 = Point(1.1,2.3)
-ps = [p1,p2,p3]
+p4 = Point(1.1,0.3)
+p5 = Point(0.1,0.3)
+ps = [p1,p2,p3,p4,p5]
 cv = TestCellArray(ps,l)
 
 p0 = Point(1.4,2.0)
@@ -121,6 +123,20 @@ rs  = evaluate(ffe,ps)
 grs  = evaluate(gradient(ffe),ps)
 crs = [rs for i in 1:l]
 cgrs = [grs for i in 1:l]
+test_cell_map_with_gradient(ucm,cv,crs,cgrs)
+
+# attachgeomap
+
+bas = MockBasis(p1,3)
+geomap = MockGeoMap(2)
+bas2 = attachgeomap(bas,geomap)
+cbas = TestCellMap(bas,l)
+cgeomap = TestCellMap(geomap,l)
+rs  = evaluate(bas2,ps)
+grs  = evaluate(gradient(bas2),ps)
+crs = [rs for i in 1:l]
+cgrs = [grs for i in 1:l]
+ucm = attachgeomap(cbas,cgeomap)
 test_cell_map_with_gradient(ucm,cv,crs,cgrs)
 
 end # module OperationsTests
