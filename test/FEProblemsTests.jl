@@ -9,6 +9,7 @@ using Numa.CellQuadratures
 using Numa.CellMaps
 import Numa.CellIntegration: cellcoordinates, cellbasis
 
+using Numa.CellValues.ConstantCellValues
 using Numa.CellValues: IndexCellArray
 import Numa.CellValues: cellsize
 using Numa.Polytopes
@@ -17,7 +18,6 @@ using Numa.RefFEs
 using Numa.FieldValues
 
 import Numa: gradient
-using Numa.CellValues: ConstantCellValue
 
 using Numa.Meshes
 using Numa.FESpaces: ConformingFESpace

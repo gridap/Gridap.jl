@@ -12,7 +12,8 @@ using Numa.FESpaces: ConformingFESpace
 using Numa.FieldValues
 using Numa.Maps
 using Numa.CellValues
-using Numa.CellValues: CellVectorByComposition
+using Numa.CellValues.ConstantCellValues
+using Numa.CellValues.Wrappers
 using Numa.CellMaps
 
 using Numa.Geometry
@@ -185,7 +186,6 @@ sum(FESpaces.fixed_dofs(fh2).== 0) == 4
 
 
 
-
 ##################3
 
 
@@ -197,6 +197,7 @@ grid = CartesianGrid(partition=nparts_t,domain=(0,1,0,1),order=1) # domain, and 
 trian = triangulation(grid) # Generates the Triangulation associated with this grid
 graph = gridgraph(grid) # Generates the GridGraph associated with this grid.
 phi = geomap(trian)
+
 
 order=1
 orders=order*ones(Int64,D)
@@ -249,8 +250,8 @@ is_fixed_vef = zeros(Bool, length(vefcells))
 # we want the whole integral over the whole domain ... 1.0
 
 # physbasis = attachgeomap(cellb,phi);
-# ab(v,u) = inner(∇(v),∇(u)) #+ inner(v,u)
-# am(v,u) = inner(v,u)
+# ab(v,u) = varinner(∇(v),∇(u)) #+ varinner(v,u)
+# am(v,u) = varinner(v,u)
 # V = physbasis;
 # U = physbasis;
 #

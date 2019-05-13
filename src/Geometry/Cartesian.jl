@@ -10,6 +10,7 @@ using Numa.Meshes
 using Numa.Geometry
 using Numa.Geometry.Unstructured
 using Numa.CellValues
+using Numa.CellValues.ConstantCellValues
 
 # Functionality provided
 

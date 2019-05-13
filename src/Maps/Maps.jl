@@ -13,14 +13,10 @@ export AnalyticalMap
 export AnalyticalField
 export Geomap
 export Basis
-export varinner
-export lincomb
-export compose
-export attachgeomap
 
 import Numa: evaluate, gradient, ∇
 import Numa: evaluate!, return_size
-import Numa: inner, outer
+import Numa: inner, outer, varinner, compose, lincomb, attachgeomap
 
 import Base: +, -, *, /, ∘
 

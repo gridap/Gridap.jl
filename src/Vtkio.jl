@@ -3,6 +3,7 @@ module Vtkio
 using Numa
 using Numa.Helpers
 using Numa.CellValues
+using Numa.CellValues.ConstantCellValues
 using Numa.CellMaps
 using Numa.FieldValues
 using Numa.Polytopes
@@ -251,6 +252,8 @@ end
 
 _prepare_data(v) = v
 
+const IterData{T} = Union{CellValue{T},AbstractArray{T}}
+
 function _prepare_data(v::IterData{<:VectorValue{D}}) where D
   a = collect(v)
   reshape(reinterpret(Float64,a),(D,length(a)))
@@ -268,22 +271,22 @@ function _prepare_data(v::IterData{<:TensorValue{D}}) where D
   reshape(reinterpret(Float64,a),(D*D,length(a)))
 end
 
-_prepare_data(v::CellArray{<:Number}) = collect(flatten(v))
+_prepare_data(v::CellArray{<:Number}) = _flatten(v)
 
 function _prepare_data(v::CellArray{<:VectorValue{D}}) where D
-  a = collect(flatten(v))
+  a = _flatten(v)
   reshape(reinterpret(Float64,a),(D,length(a)))
 end
 
 function _prepare_data(v::CellArray{<:VectorValue{2}})
-  a = collect(flatten(v))
+  a = _flatten(v)
   b = reshape(reinterpret(Float64,a),(2,length(a)))
   z = zeros((1,size(b,2)))
   vcat(b,z)
 end
 
 function _prepare_data(v::CellArray{<:TensorValue{D}}) where D
-  a = collect(flatten(v))
+  a = _flatten(v)
   reshape(reinterpret(Float64,a),(D*D,length(a)))
 end
 
@@ -330,7 +333,7 @@ end
 function _prepare_pdata(cellfields,samplingpoints)
   pdata = Dict()
   for (k,v) in cellfields
-    pdata[k] = collect(flatten(evaluate(v,samplingpoints)))
+    pdata[k] = _flatten(evaluate(v,samplingpoints))
   end
   pdata
 end
@@ -447,6 +450,20 @@ end
 
 function _prepare_cellorders(ncells,refcelltypes::ConstantCellValue)
   ConstantCellValue(1,ncells*length(refcelltypes) )
+end
+
+function _flatten(ca::CellArray{T}) where T
+  f = Vector{T}(undef,0)
+  _flatten_kernel!(f,ca)
+  f
+end
+
+function _flatten_kernel!(f,ca)
+  for a in ca
+    for ai in a
+      push!(f,ai)
+    end
+  end
 end
 
 end # module Vtkio

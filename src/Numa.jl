@@ -15,16 +15,16 @@ include("CellMaps/CellMaps.jl")
 
 include("Geometry/Polytopes.jl")
 include("Quadratures.jl")
-#include("Meshes.jl")
+include("Meshes.jl")
 include("Polynomials.jl")
-#include("FESpaces/RefFEs.jl")
-#
-#include("Geometry/Geometry.jl")
-#
-#include("FESpaces/FESpaces.jl")
-#
-#include("CellQuadratures.jl")
-#include("CellIntegration.jl")
-#include("Vtkio.jl")
+include("FESpaces/RefFEs.jl")
+
+include("Geometry/Geometry.jl")
+
+include("FESpaces/FESpaces.jl")
+
+include("CellQuadratures.jl")
+include("CellIntegration.jl")
+include("Vtkio.jl")
 
 end #module Numa

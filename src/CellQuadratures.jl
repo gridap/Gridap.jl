@@ -6,6 +6,7 @@ using Numa.Helpers
 using Numa.FieldValues
 using Numa.Quadratures
 using Numa.CellValues
+using Numa.CellValues.ConstantCellValues
 using Numa.CellMaps
 using Numa.Geometry
 

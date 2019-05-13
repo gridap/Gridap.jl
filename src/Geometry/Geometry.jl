@@ -2,12 +2,16 @@ module Geometry
 
 # Dependencies of this module
 
+using Numa
 using Numa.Helpers
 using Numa.FieldValues
 using Numa.Polytopes
 using Numa.RefFEs
 using Numa.CellValues
+using Numa.CellValues.ConstantCellValues
+using Numa.CellValues.Wrappers
 using Numa.CellMaps
+using Numa.CellMaps.ConstantCellMaps
 
 # Functionality provided by this module
 
@@ -97,7 +101,7 @@ end
 function geomap(self::Triangulation)
   coords = cellcoordinates(self)
   basis = cellbasis(self)
-  expand(basis,coords)
+  lincomb(basis,coords)
 end
 
 function ncells(self::Triangulation)

@@ -5,6 +5,8 @@ module Unstructured
 using Numa.Helpers
 using Numa.FieldValues
 using Numa.CellValues
+using Numa.CellValues.ConstantCellValues
+using Numa.CellValues.Wrappers
 using Numa.Geometry
 using Numa.Polytopes
 using UnstructuredGrids
@@ -94,7 +96,7 @@ end
 
 points(self::FlexibleUnstructuredGrid) = CellValueFromArray(self.points)
 
-cells(self::FlexibleUnstructuredGrid) = CellArrayFromArrayOfArrays(self.cells)
+cells(self::FlexibleUnstructuredGrid) = CellValueFromArray(self.cells)
 
 celltypes(self::FlexibleUnstructuredGrid) = self.ctypes
 

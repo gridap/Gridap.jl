@@ -28,12 +28,11 @@ end
 
  quad = quadrature(trian,order=2)
 
- m = inner(basis,basis)
+ m = varinner(basis,basis)
 
  mmat = integrate(m,trian,quad)
 
- # TODO Not passing
- #@test isa(mmat,CellArray{Float64,2})
+ @test isa(mmat,CellArray{Float64,2})
 
  ufun(x::Point{2}) = 1.0
 

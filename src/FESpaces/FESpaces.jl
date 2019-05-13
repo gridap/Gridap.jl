@@ -12,18 +12,19 @@ using Numa.Helpers
 using Numa.RefFEs
 using Numa.Polytopes
 using Numa.CellValues
+using Numa.CellValues.ConstantCellValues
+using Numa.CellValues.Wrappers
+using Numa.CellValues.Append
 using Numa.Geometry
 using Numa.FieldValues
 
 using SparseArrays
 
-using Numa.CellValues: CellVectorByComposition
+using Numa.CellValues.Wrappers: CellVectorByComposition
 using Numa.CellMaps
-using Numa.CellMaps: CellFieldFromExpand
+using Numa.CellMaps.Operations: CellFieldFromExpand
 
 import Numa: evaluate!
-
-
 
 abstract type MeshConformity end
 struct ConformingMesh <: MeshConformity end

@@ -43,6 +43,10 @@ function apply(op::Function,a::CellValue)
   CellValueFromUnaryOp(op,a)
 end
 
+function apply(op::Function,a::CellValue{<:SArray})
+  CellValueFromUnaryOp(op,a)
+end
+
 struct CellValueFromUnaryOp{T,O<:Function,C<:CellValue} <: IterCellValue{T}
   op::O
   values::C

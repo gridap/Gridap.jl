@@ -14,8 +14,8 @@ using Numa.Maps: FieldFromComposeExtended
 
 import Numa: evaluate, gradient
 import Numa: return_size
-import Numa.Maps: compose
-import Base: iterate, length
+import Numa: compose
+import Base: iterate, length, ∘
 
 function compose(f::Function,g::CellField)
   CellFieldFromCompose(f,g)
