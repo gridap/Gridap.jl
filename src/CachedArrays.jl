@@ -16,14 +16,27 @@ mutable struct CachedArray{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
 end
 
 const CachedMatrix{T,A} = CachedArray{T,2,A}
+
 const CachedVector{T,A} = CachedArray{T,1,A}
 
 CachedArray(a::AbstractArray) = CachedArray(a,size(a))
+
+CachedVector(a::AbstractVector) = CachedArray(a,size(a))
+
+CachedMatrix(a::AbstractMatrix) = CachedArray(a,size(a))
 
 function CachedArray(T,N)
   s = tuple([0 for i in 1:N]...)
   a = Array{T,N}(undef,s)
   CachedArray(a)
+end
+
+function CachedVector(T)
+  CachedArray(T,1)
+end
+
+function CachedMatrix(T)
+  CachedArray(T,2)
 end
 
 size(self::CachedArray) = self.size

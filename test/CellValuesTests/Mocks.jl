@@ -2,6 +2,7 @@
 using Numa.CellValues: IndexCellValue, IndexCellArray
 import Base: size, getindex, IndexStyle, length
 import Numa.CellValues: cellsize
+using StaticArrays
 
 struct TestCellValue{T} <: IndexCellValue{T,1}
   a::T

@@ -14,8 +14,7 @@ end
   include("OperationsTests.jl")
 end
 
-@testset "AppendTests" begin
-  include("AppendTests.jl")
-end
+#include("OperationsTests.jl")
+#include("WrappersTests.jl")
 
 end # module CellValuesTests

@@ -3,6 +3,7 @@ module CellQuadraturesTests
 using Test
 using Numa.FieldValues
 using Numa.CellValues
+using Numa.CellValues.ConstantCellValues
 using Numa.Quadratures
 using Numa.CellQuadratures
 using Numa.Geometry

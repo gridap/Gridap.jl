@@ -10,6 +10,7 @@ using Numa.Meshes
 using Numa.Geometry
 using Numa.Geometry.Unstructured
 using Numa.CellValues
+using Numa.CellValues.ConstantCellValues
 
 # Functionality provided
 
@@ -110,11 +111,7 @@ function Grid(model::CartesianDiscreteModel{D},::Val{Z}) where {D,Z}
   _corders = ConstantCellValue(order,nfaces)
 
   UnstructuredGrid(
-    _points,
-    _cells_data,
-    _cells_ptrs,
-    _ctypes,
-    _corders)
+    _points, _cells_data, _cells_ptrs, _ctypes, _corders)
 end
 
 FullGridGraph(model::CartesianDiscreteModel) = model.gridgraph

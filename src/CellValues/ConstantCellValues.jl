@@ -1,5 +1,27 @@
+module ConstantCellValues
 
-# ConstantCellValue
+using Numa.CellValues
+using Numa.CellValues.Operations: cellsumsize
+
+export ConstantCellValue
+export ConstantCellArray
+export ConstantCellVector
+export ConstantCellMatrix
+
+export celldata
+
+import Numa.CellValues: cellsum
+import Numa.CellValues: cellnewaxis
+import Numa.CellValues: cellmean #TODO
+import Numa.CellValues: apply #TODO
+import Base: +, -, *, /
+import Base: ==
+import LinearAlgebra: inv, det
+import Numa.FieldValues: inner, outer, meas
+
+import Base: size
+import Base: getindex
+import Numa.CellValues: cellsize
 
 struct ConstantCellValue{T} <: IndexCellValue{T,1}
   value::T
@@ -10,17 +32,25 @@ celldata(self::ConstantCellValue) = self.value
 
 size(self::ConstantCellValue) = (self.length,)
 
-length(self::ConstantCellValue) = self.length
-
-IndexStyle(::Type{ConstantCellValue{T}} where T) = IndexLinear()
-
 const ConstantCellArray{T,N} = ConstantCellValue{Array{T,N}}
 
 const ConstantCellVector{T} = ConstantCellArray{T,1}
 
 const ConstantCellMatrix{T} = ConstantCellArray{T,2}
 
-cellsize(self::ConstantCellValue) = size(self.value)
+function ConstantCellArray(v::AbstractArray{T,N},l::Integer) where {T,N}
+  ConstantCellArray{T,N}(v,l)
+end
+
+function ConstantCellVector(v::AbstractVector{T},l::Integer) where T
+  ConstantCellVector{T}(v,l)
+end
+
+function ConstantCellMatrix(v::AbstractMatrix{T},l::Integer) where T
+  ConstantCellMatrix{T}(v,l)
+end
+
+cellsize(self::ConstantCellArray) = size(self.value)
 
 function cellsum(self::ConstantCellArray{T,N};dim::Int) where {T,N}
   b = sum(self.value,dims=dim)
@@ -41,8 +71,6 @@ function cellnewaxis(self::ConstantCellArray;dim::Int)
   c = copy(reshape(self.value,shape))
   ConstantCellValue(c,self.length)
 end
-
-# ConstantCellValue
 
 getindex(self::ConstantCellValue,cell::Int) = celldata(self)
 
@@ -99,3 +127,4 @@ function _unary_op_kernel(op,a::AbstractArray)
   broadcast(op,a)
 end
 
+end # module ConstantCellValues

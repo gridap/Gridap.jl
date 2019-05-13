@@ -8,13 +8,13 @@ abstract type Map{S,M,T,N} end
 Abstract field of rank `T` (e.g., scalar, vector, tensor) on a manifold of
 dimension `D`
 """
-const Field{D,T} = Map{Point{D},1,T,1} where {D,T<:FieldValue}
+const Field{D,T<:FieldValue} = Map{Point{D},1,T,1}
 
 """
 Abstract basis for a space of fields of rank `T` (e.g., scalar, vector, tensor)
 on a manifold of dimension `D`
 """
-const Basis{D,T} = Map{Point{D},1,T,2} where {D,T<:FieldValue}
+const Basis{D,T<:FieldValue} = Map{Point{D},1,T,2}
 
 """
 Abstract geometry map

@@ -7,15 +7,14 @@ using Base.Cartesian
 include("Methods.jl")
 include("Helpers.jl")
 
-
 include("FieldValues.jl")
 include("CachedArrays.jl")
-include("Geometry/Polytopes.jl")
 include("Maps/Maps.jl")
-include("Quadratures.jl")
 include("CellValues/CellValues.jl")
 include("CellMaps/CellMaps.jl")
 
+include("Geometry/Polytopes.jl")
+include("Quadratures.jl")
 include("Meshes.jl")
 include("Polynomials.jl")
 include("FESpaces/RefFEs.jl")

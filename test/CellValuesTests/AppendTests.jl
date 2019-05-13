@@ -1,4 +1,14 @@
-@testset "IndexCellValueByGlobalAppend" begin
+module AppendTests
+
+using Test
+using Numa
+using Numa.FieldValues
+using Numa.CellValues
+using Numa.CellValues.Testers
+using Numa.CellValues.Wrappers
+using Numa.CellValues.Append
+
+#@testset "IndexCellValueByGlobalAppend" begin
 
   vc1_l = [1, 1, 2, 2, 1, 1, 2, 2]
   vc1_p = [1, 2, 4, 5, 6, 8, 9]
@@ -19,7 +29,6 @@
   vc3_p = [1, 2, 6]
   vc_3 = CellVectorFromDataAndPtrs(vc3_l, vc3_p)
 
-  using Numa.CellValues: IndexCellValueByGlobalAppend
   vc12 = IndexCellValueByGlobalAppend(vc_1,vc_2)
 
   @test size(vc12) == (length(vc_1)+length(vc_2),)
@@ -49,10 +58,10 @@
     @test nvc123[i+length(vc12)] == vc_3[i]
   end
 
-end
+#end
 
 
-@testset "IndexCellValueByLocalAppend" begin
+#@testset "IndexCellValueByLocalAppend" begin
   ##
   cv1_1 = [1, 2, 4, 5]
   cv2_1 = [2, 3, 5, 6]
@@ -74,7 +83,6 @@ end
   cv_3 = CellValueFromArray(_cv_3)
   @test isa(cv_3, IndexCellValue{<:AbstractArray{Int64,1},1})
 
-  using Numa.CellValues: IndexCellValueByLocalAppend
   cv12 = IndexCellValueByLocalAppend(cv_1,cv_2)
   @test isa(cv12, IndexCellValue{<:AbstractArray{Int64,1},1})
 
@@ -93,7 +101,6 @@ end
     @test ncv123[i] == [cv_1[i]..., cv_2[i]..., cv_3[i]...]
   end
 
-  using Numa.CellValues: IndexCellValueByLocalAppendWithOffset
   cv12 = IndexCellValueByLocalAppendWithOffset(cv_1,cv_2)
   @test isa(cv12, IndexCellValue{<:AbstractArray{Int64,1},1})
 
@@ -118,4 +125,6 @@ end
   nncv123 = IndexCellValueByLocalAppendWithOffset( (6,13), cv_1, cv_2, cv_3)
   nncv123 == ncv123
   ##
-end
+#end
+
+end # module AppendTests

@@ -1,3 +1,30 @@
+module Operations
+
+using Numa.Helpers
+using Numa.CellValues
+
+using StaticArrays
+using Base: @propagate_inbounds
+using Base.Cartesian: @nloops, @nexprs, @nref
+using Numa.CachedArrays
+using Numa.Maps: newaxis_kernel!, newaxis_size
+
+export cellsum
+export cellnewaxis
+export cellmean
+export apply
+import Base: +, -, *, /
+import Base: ==
+import LinearAlgebra: inv, det
+import Numa.FieldValues: inner, outer, meas
+
+import Base: iterate
+import Base: length
+import Base: eltype
+import Base: size
+import Base: getindex
+import Base: IndexStyle
+import Numa.CellValues: cellsize
 
 # Unary operations on CellValue
 
@@ -6,10 +33,17 @@ for op in (:+, :-, :(inv), :(det), :(meas))
     function ($op)(a::CellValue)
       CellValueFromUnaryOp($op,a)
     end
+    function ($op)(a::CellValue{<:SArray})
+      CellValueFromUnaryOp($op,a)
+    end
   end
 end
 
 function apply(op::Function,a::CellValue)
+  CellValueFromUnaryOp(op,a)
+end
+
+function apply(op::Function,a::CellValue{<:SArray})
   CellValueFromUnaryOp(op,a)
 end
 
@@ -44,6 +78,14 @@ end
 # Binary operations on CellValue
 
 function (==)(a::CellValue{T},b::CellValue{T}) where T
+  _cell_value_eq_kernel(a,b)
+end
+
+function (==)(a::CellValue{T},b::CellValue{T}) where T<:SArray
+  _cell_value_eq_kernel(a,b)
+end
+
+function _cell_value_eq_kernel(a,b)
   length(a) != length(b) && return false
   for (ai,bi) in zip(a,b)
     ai != bi && return false
@@ -54,6 +96,9 @@ end
 for op in (:+, :-, :*, :/, :(outer), :(inner))
   @eval begin
     function ($op)(a::CellValue,b::CellValue)
+      CellValueFromBinaryOp($op,a,b)
+    end
+    function ($op)(a::CellValue{<:SArray},b::CellValue{<:SArray})
       CellValueFromBinaryOp($op,a,b)
     end
   end
@@ -138,7 +183,8 @@ end
 
 # Ancillary types
 
-abstract type CellArrayFromUnaryOp{C<:CellArray,T,N} <: IterCellArray{T,N} end
+abstract type CellArrayFromUnaryOp{
+  C<:CellArray,T,N} <: IterCellArray{T,N,CachedArray{T,N,Array{T,N}}} end
 
 function inputcellarray(::CellArrayFromUnaryOp{C,T,N})::C  where {C,T,N}
   @abstractmethod
@@ -178,7 +224,8 @@ function iteratekernel(self::CellArrayFromUnaryOp,anext,v)
   (v,state)
 end
 
-struct CellArrayFromBroadcastUnaryOp{O<:Function,C<:CellArray,T,N} <: CellArrayFromUnaryOp{C,T,N}
+struct CellArrayFromBroadcastUnaryOp{
+  O<:Function,C<:CellArray,T,N} <: CellArrayFromUnaryOp{C,T,N}
   op::O
   a::C
 end
@@ -281,7 +328,8 @@ end
 
 # Ancillary types
 
-abstract type CellArrayFromBinaryOp{A<:CellValue,B<:CellValue,T,N} <: IterCellArray{T,N} end
+abstract type CellArrayFromBinaryOp{
+  A<:CellValue,B<:CellValue,T,N} <: IterCellArray{T,N,CachedArray{T,N,Array{T,N}}} end
 
 function leftcellarray(::CellArrayFromBinaryOp{A,B,T,N})::A where {A,B,T,N}
   @abstractmethod
@@ -324,12 +372,16 @@ end
 function iteratekernel(self::CellArrayFromBinaryOp,anext,bnext,v)
   a, astate = anext
   b, bstate = bnext
-  vsize = computesize(self,size(a),size(b))
+  vsize = computesize(self,_custom_size(a),_custom_size(b))
   setsize!(v,vsize)
   computevals!(self,a,b,v)
   state = (v, astate, bstate)
   (v,state)
 end
+
+_custom_size(a) = size(a)
+
+_custom_size(a::SArray) = ()
 
 struct CellArrayFromBroadcastBinaryOp{O<:Function,T,N,A,B} <: CellArrayFromBinaryOp{A,B,T,N}
   op::O
@@ -362,6 +414,22 @@ function CellArrayFromBroadcastBinaryOp(op::Function,a::CellValue{T},b::CellArra
   CellArrayFromBroadcastBinaryOp{O,R,N,A,B}(op,a,b)
 end
 
+function CellArrayFromBroadcastBinaryOp(op::Function,a::CellArray{T,N},b::CellValue{S}) where {T,S<:SArray,N}
+  O = typeof(op)
+  A = typeof(a)
+  B = typeof(b)
+  R = Base._return_type(op,Tuple{T,S})
+  CellArrayFromBroadcastBinaryOp{O,R,N,A,B}(op,a,b)
+end
+
+function CellArrayFromBroadcastBinaryOp(op::Function,a::CellValue{T},b::CellArray{S,N}) where {T<:SArray,S,N}
+  O = typeof(op)
+  A = typeof(a)
+  B = typeof(b)
+  R = Base._return_type(op,Tuple{T,S})
+  CellArrayFromBroadcastBinaryOp{O,R,N,A,B}(op,a,b)
+end
+
 leftcellarray(self::CellArrayFromBroadcastBinaryOp) = self.a
 
 rightcellarray(self::CellArrayFromBroadcastBinaryOp) = self.b
@@ -371,48 +439,64 @@ function computesize(::CellArrayFromBroadcastBinaryOp, asize, bsize)
 end
 
 function computevals!(self::CellArrayFromBroadcastBinaryOp, a, b, v)
-  broadcast!(self.op,v,a,b)
+  _custom_broadcast!(self.op,v,a,b)
 end
 
-# Miscellaneous operations
-
-function flatten(a::CellArray)
-  FlattedCellArray(a)
+function _custom_broadcast!(op,v,a,b)
+  broadcast!(op,v,a,b)
 end
 
-struct FlattedCellArray{T,N,A<:CellArray{T,N}} <: IterCellValue{T}
-  a::A
-end
-
-@inline function iterate(self::FlattedCellArray)
-  anext = iterate(self.a)
-  firststep(anext)
-end
-
-@inline function iterate(self::FlattedCellArray,state)
-  anext, aistate = state
-  a, astate = anext
-  ainext = iterate(a,aistate)
-  if ainext === nothing
-    anext2 = iterate(self.a,astate)
-    return firststep(anext2)
-  else
-    ai, aistate = ainext
-    state = (anext,aistate)
-    return (ai,state)
+function _custom_broadcast!(op,v::AbstractArray,a::SArray,b::AbstractArray)
+  @inbounds for i in eachindex(b)
+    v[i] = op(a,b[i])
   end
 end
 
-@inline function firststep(anext)
-  if anext === nothing; return nothing end
-  a, astate = anext
-  ainext = iterate(a)
-  if ainext === nothing; return nothing end
-  ai, aistate = ainext
-  state = (anext,aistate)
-  (ai,state)
+function _custom_broadcast!(op,v::AbstractArray,a::AbstractArray,b::SArray)
+  @inbounds for i in eachindex(a)
+    v[i] = op(a[i],b)
+  end
 end
 
-IteratorSize(::Type{FlattedCellArray{T,N,A}} where {T,N,A}) = Base.SizeUnknown()
+function _custom_broadcast(op,a,b)
+  broadcast(op,a,b)
+end
 
-length(::FlattedCellArray)::Int = @notimplemented
+function _custom_broadcast(
+  op, a::SArray{Size,T}, b::AbstractArray{S,M}) where {Size,T,S,M}
+  R = Base._return_type(op,Tuple{typeof(a),S})
+  v = Array{R,M}(undef,size(b))
+  _custom_broadcast!(op,v,a,b)
+  v
+end
+
+function _custom_broadcast(
+  op, a::AbstractArray{S,M}, b::SArray{Size,T}) where {Size,T,S,M}
+  R = Base._return_type(op,Tuple{S,typeof(b)})
+  v = Array{R,M}(undef,size(a))
+  _custom_broadcast!(op,v,a,b)
+  v
+end
+
+@generated function cellsumsize(asize::NTuple{N,Int},::Val{D}) where {N,D}
+  @assert N > 0
+  @assert D <= N
+  str = join([ "asize[$i]," for i in 1:N if i !=D ])
+  Meta.parse("($str)")
+end
+
+@generated function cellsumvals!(A::AbstractArray{T,N},B,::Val{D}) where {T,N,D}
+  @assert N > 0
+  @assert D <= N
+  quote
+    @nloops $(N-1) b B begin
+      (@nref $(N-1) B b) = zero(T)
+    end
+    @nloops $N a A begin
+      @nexprs $(N-1) j->(b_j = a_{ j < $D ? j : j+1  } )
+      (@nref $(N-1) B b) += @nref $N A a 
+    end
+  end    
+end
+
+end # module Operations

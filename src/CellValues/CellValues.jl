@@ -1,71 +1,21 @@
 module CellValues
 
-export CellValue
-export CellArray
-export CellMatrix
-export CellVector
+using Reexport
 
-export IterCellValue
-export IterCellArray
-export IterCellMatrix
-export IterCellVector
+include("AbstractCellValues.jl")
 
-export IndexCellValue
-export IndexCellArray
-export IndexCellMatrix
-# export IndexCellVector
+@reexport using Numa.CellValues.AbstractCellValues
 
-export IterData
-
-export ConstantCellValue
-export ConstantCellArray
-export ConstantCellVector
-export ConstantCellMatrix
-
-export CellValueFromArray
-export CellArrayFromArrayOfArrays
-export CellVectorFromDataAndPtrs
-export CellVectorFromDataAndStride
-export CellVectorFromLocalToGlobal
-export CellVectorFromLocalToGlobalPosAndNeg
-export IndexCellValueByGlobalAppend
-export IndexCellValueByLocalAppend
-export IndexCellValueByLocalAppendWithOffset
-
-
-export apply
-export celldata
-export cellsize
-export celllength
-export cellsum
-export cellnewaxis
-export cellmean
-
-using Base: @propagate_inbounds
-using Base.Cartesian: @nloops, @nexprs, @nref
-
-using Numa.Helpers
-using Numa.CachedArrays
-using Numa.Maps: newaxis_kernel!, newaxis_size
-
-import Base: iterate
-import Base: length
-import Base: eltype
-import Base: size
-import Base: getindex, setindex!
-import Base: IndexStyle, IteratorSize
-import Base: +, -, *, /
-import Base: ==
-import LinearAlgebra: inv, det
-
-import Numa: flatten
-import Numa.FieldValues: inner, outer, meas
-
-include("Helpers.jl")
-include("Interfaces.jl")
-include("Append.jl")
 include("Operations.jl")
+
+@reexport using Numa.CellValues.Operations
+
 include("ConstantCellValues.jl")
+
 include("Wrappers.jl")
+
+include("Append.jl")
+
+include("Testers.jl")
 
 end # module CellValues

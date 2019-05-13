@@ -1,3 +1,24 @@
+module Append
+
+using Base: @propagate_inbounds
+using StaticArrays
+
+using Numa.Helpers
+using Numa.CellValues
+using Numa.CachedArrays
+
+export IndexCellValueByGlobalAppend
+export IndexCellValueByLocalAppend
+export IndexCellValueByLocalAppendWithOffset
+
+import Base: iterate
+import Base: length
+import Base: eltype
+import Base: size
+import Base: getindex
+import Base: IndexStyle
+import Numa.CellValues: cellsize
+
 struct IndexCellValueByGlobalAppend{T,V<:IndexCellValue{T,1},W<:IndexCellValue{T,1}} <: IndexCellValue{T,1}
   cvs1::V
   cvs2::W
@@ -29,6 +50,11 @@ function IndexCellValueByGlobalAppend(cvs::Vararg{IndexCellValue{T,1},N}) where 
   return aux
 end
 
+function cellsize(self::IndexCellValueByGlobalAppend)
+  max( cellsize(self.cvs1), cellsize(self.cvs2))
+end
+
+# TODO I think we need to inherit from IndexCellArray
 struct IndexCellValueByLocalAppend{T,V<:IndexCellValue{T,1},W<:IndexCellValue{T,1}} <: IndexCellValue{T,1}
   offset::Int
   cvs1::V
@@ -48,10 +74,17 @@ function IndexCellValueByLocalAppendWithOffset(cvs1::IndexCellValue{T,1}, cvs2::
 end
 
 @propagate_inbounds function getindex(self::IndexCellValueByLocalAppend,cell::Int)
-  return [ self.cvs1[cell]..., (self.cvs2[cell].+self.offset)...]
+  #TODO not sure if this implementation is general, it only returns Vectors, right?
+  return [ self.cvs1[cell]..., (self.cvs2[cell].+self.offset)...] #TODO this creates a new object. Use CachedVector instead
 end
 
 size(self::IndexCellValueByLocalAppend) = size(self.cvs1)
+
+function cellsize(self::IndexCellValueByLocalAppend)
+  cs1 = cellsize(self.cvs1)
+  cs2 = cellsize(self.cvs2)
+  tuple(  (s1+s2 for (s1,s2) in zip(cs1,cs2))... )
+end
 
 # IndexStyle(::Type{IndexCellValueByLocalAppend{T,N,V}}) where {T,N,V} =  IndexLinear()
 
@@ -79,3 +112,5 @@ function IndexCellValueByLocalAppendWithOffset(cvs::Vararg{IndexCellValue{T,1},N
   end
   return aux
 end
+
+end # module Append

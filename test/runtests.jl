@@ -1,3 +1,5 @@
+module RunTests
+
 using Numa
 using Test
 
@@ -9,8 +11,8 @@ using Test
 @time @testset "Quadratures" begin include("QuadraturesTests.jl") end
 @time @testset "Polynomials" begin include("PolynomialsTests.jl") end
 @time @testset "CellValues" begin include("CellValuesTests/CellValuesTests.jl") end
+@time @testset "CellMaps" begin include("CellMapsTests/runtests.jl") end
 @time @testset "CellQuadratures" begin include("CellQuadraturesTests.jl") end
-@time @testset "CellMaps" begin include("CellMapsTests/CellMapsTests.jl") end
 @time @testset "CellIntegration" begin include("CellIntegrationTests.jl") end
 @time @testset "Polytopes" begin include("PolytopesTests.jl") end
 @time @testset "Geometry" begin include("GeometryTests.jl") end
@@ -19,3 +21,5 @@ using Test
 @time @testset "Vtkio" begin include("VtkioTests.jl") end
 # @time @testset "FESpaces" begin include("FEProblemsTests.jl") end
 # end
+
+end # module RunTests

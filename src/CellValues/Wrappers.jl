@@ -1,13 +1,34 @@
+module Wrappers
+
+using Base: @propagate_inbounds
+using StaticArrays
+
+using Numa.Helpers
+using Numa.CellValues
+using Numa.CachedArrays
+
+export CellValueFromArray
+export CellArrayFromArrayOfArrays
+export CellVectorFromDataAndPtrs
+export CellVectorFromDataAndStride
+export CellVectorFromLocalToGlobal
+export CellVectorFromLocalToGlobalPosAndNeg
+export CellVectorByComposition
+
+import Base: iterate
+import Base: length
+import Base: eltype
+import Base: size
+import Base: getindex
+import Base: IndexStyle
+import Numa.CellValues: cellsize
 
 struct CellValueFromArray{T,N,V<:AbstractArray{T,N}} <: IndexCellValue{T,N}
   v::V
 end
 
-@propagate_inbounds function getindex(self::CellValueFromArray,cell::Int)
-  @inbounds self.v[cell]
-end
-
-@propagate_inbounds function getindex(self::CellValueFromArray{T,N},I::Vararg{Int,N}) where {T,N}
+@propagate_inbounds function getindex(
+  self::CellValueFromArray{T,N},I::Vararg{Int,N}) where {T,N}
   @inbounds self.v[I...]
 end
 
@@ -15,36 +36,15 @@ size(self::CellValueFromArray) = size(self.v)
 
 IndexStyle(::Type{CellValueFromArray{T,N,V}}) where {T,N,V} = IndexStyle(V)
 
-struct CellArrayFromArrayOfArrays{T,N,D,A,C<:AbstractArray{A,D}} <: IndexCellArray{T,N,A,D}
-  c::C
-end
+cellsize(self::CellValueFromArray{<:SArray}) = ()
 
-function CellArrayFromArrayOfArrays(c::AbstractArray{A,D}) where {A<:AbstractArray,D}
-  T = eltype(A)
-  N = ndims(A)
-  C = typeof(c)
-  CellArrayFromArrayOfArrays{T,N,D,A,C}(c)
-end
-
-@propagate_inbounds function getindex(self::CellArrayFromArrayOfArrays,cell::Int)
-  @inbounds self.c[cell]
-end
-
-@propagate_inbounds function getindex(self::CellArrayFromArrayOfArrays{T,N,D},I::Vararg{Int,D}) where {T,N,D}
-  @inbounds self.c[I...]
-end
-
-function cellsize(self::CellArrayFromArrayOfArrays{T,N}) where {T,N}
-  s = tuple(zeros(Int,N)...)
-  for ci in self.c
-    s = max(s,size(ci))
+function cellsize(self::CellValueFromArray{<:AbstractArray{S,M}}) where {S,M}
+  s = tuple(fill(0,M)...)
+  for v in self
+    s = max(s,size(v))
   end
   s
 end
-
-size(self::CellArrayFromArrayOfArrays) = size(self.c)
-
-IndexStyle(::Type{CellArrayFromArrayOfArrays{T,N,D,A,C}}) where {T,N,D,A,C} = IndexStyle(C)
 
 mutable struct CachedSubVector{T,V<:AbstractArray{T,1}} <: AbstractArray{T,1}
   vector::V
@@ -159,7 +159,7 @@ end
 
 size(self::CellVectorFromLocalToGlobal) = size(self.lid_to_gid)
 
-IndexStyle(::Type{CellVectorFromLocalToGlobal{T,L,V}}) where {T,L,V} = IndexStyle(L)
+IndexStyle(::Type{CellVectorFromLocalToGlobal{T,D,L,V}}) where {T,D,L,V} = IndexStyle(L)
 
 cellsize(self::CellVectorFromLocalToGlobal) = cellsize(self.lid_to_gid)
 
@@ -192,7 +192,7 @@ function CellVectorFromLocalToGlobalPosAndNeg(
   CellVectorFromLocalToGlobalPosAndNeg(lid_to_gid,_gid_to_val_pos,_gid_to_val_neg)
 end
 
-IndexStyle(::Type{CellVectorFromLocalToGlobalPosAndNeg{T,L}}) where {T,L} = IndexStyle(L)
+IndexStyle(::Type{CellVectorFromLocalToGlobalPosAndNeg{T,D,L,V,W}}) where {T,D,L,V,W} = IndexStyle(L)
 
 @propagate_inbounds function getindex(
   self::CellVectorFromLocalToGlobalPosAndNeg,cell::Vararg{Int,N} where N)
@@ -214,18 +214,20 @@ size(self::CellVectorFromLocalToGlobalPosAndNeg) = size(self.lid_to_gid)
 
 cellsize(self::CellVectorFromLocalToGlobalPosAndNeg) = cellsize(self.lid_to_gid)
 
-struct CellVectorByComposition{T,L<:IndexCellArray{Int,1},V<:IndexCellArray{T,1}} <: IndexCellArray{T,1,CachedArray{T,1,Array{T,1}},1}
+struct CellVectorByComposition{
+  T,L<:IndexCellVector{Int},V<:IndexCellVector{T}} <: IndexCellVector{T,CachedVector{T,Vector{T}},1}
+
   cell_to_x::L
   x_to_vals::V
   cv::CachedVector{T,Vector{T}}
 end
-# @santiagobadia : For some reason, IndexCellVector{Int} not working
 
-function CellVectorByComposition(cell_to_x::IndexCellArray{Int,1}, x_to_vals::IndexCellArray{T,1}) where T
+function CellVectorByComposition(
+  cell_to_x::IndexCellVector{Int}, x_to_vals::IndexCellVector{T}) where T
   L = typeof(cell_to_x)
   V = typeof(x_to_vals)
   a = Vector{T}(undef,(celllength(cell_to_x)*celllength(x_to_vals),))
-  cv = CachedArray(a)
+  cv = CachedVector(a)
   CellVectorByComposition{T,L,V}(cell_to_x, x_to_vals, cv)
 end
 
@@ -253,3 +255,5 @@ size(self::CellVectorByComposition) = (length(self.cell_to_x),)
 IndexStyle(::Type{CellVectorByComposition{T,L,V}}) where {T,L,V} = IndexLinear()
 
 cellsize(self::CellVectorByComposition) = (celllength(self.cell_to_x)*celllength(self.x_to_vals),)
+
+end # module Wrappers

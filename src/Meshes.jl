@@ -4,6 +4,7 @@ using Numa # @santiagobadia : to be eliminated
 using Numa.Polytopes
 using Base.Cartesian
 using Numa.CellValues
+using Numa.CellValues.Wrappers
 using Numa.FieldValues
 using Numa.Helpers
 

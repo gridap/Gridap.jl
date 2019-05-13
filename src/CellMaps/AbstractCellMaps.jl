@@ -1,20 +1,46 @@
+module AbstractCellMaps
+
+using Numa.Helpers
+using Numa.FieldValues
+using Numa.Maps
+using Numa.CellValues
+
+export IterCellMap
+export IndexCellMap
+export CellMap
+
+export IterCellField
+export IndexCellField
+export CellField
+
+export IterCellBasis
+export IndexCellBasis
+export CellBasis
+
+export CellGeomap
+
+export CellFieldValues
+export CellBasisValues
+export CellPoints
+
+import Numa: evaluate, gradient
+import Numa: evaluate!, return_size
+
 """
 Abstract object that traverses a set of cells and at every cell returns a
 `Map{S,M,T,N}`
 """
-const IterCellMap{S,M,T,N} = IterCellValue{Map{S,M,T,N}}
+const IterCellMap{S,M,T,N,R<:Map{S,M,T,N}} = IterCellValue{R}
 
 """
 Abstract array indexed by cells that returns a `Map{S,M,T,N}`
 """
-const IndexCellMap{S,M,T,N,R<:Map{S,M,T,N}} = IndexCellValue{R}
+const IndexCellMap{S,M,T,N,C,R<:Map{S,M,T,N}} = IndexCellValue{R,C}
 
 """
 Abstract object that for a given cell index returns a `Map{S,M,T,N}`
 """
 const CellMap{S,M,T,N} = Union{IterCellMap{S,M,T,N},IndexCellMap{S,M,T,N}}
-# santiagobadia : Problem if IterCellMap and IndexCellMap not same template types?
-# Is this correct? IndexCellMap{S,M,T,N} when IndexCellMap{S,M,T,N,R}?
 
 """
 Return the cellwise maps of a `CellMap` on a cellwise set of points
@@ -32,21 +58,33 @@ function gradient(::CellMap{S,M,T,N})::CellMap{S,M,TG,N} where {S,M,T<:FieldValu
 end
 
 """
+Given the maximum size of imput, returns the maximum size of output
+"""
+function return_size(
+  ::CellMap{S,M,T,N},::NTuple{M,Int})::NTuple{N,Int} where {S,M,T,N}
+  @abstractmethod
+end
+
+"""
 Abstract type that represents a cell-wise field, where
 `T` stands for the type that represents the field at a point
 (e.g., scalar, vector, tensor) and `D` stands for the space
 dimension
 """
-const IterCellField{D,T} = IterCellMap{Point{D},1,T,1} where {D,T<:FieldValue}
-const IndexCellField{D,T,R} = IndexCellMap{Point{D},1,T,1,R} where {D,T<:FieldValue,R}
+const IterCellField{D,T,R<:Field{D,T}} = IterCellMap{Point{D},1,T,1,R} where T <:FieldValue
+
+const IndexCellField{D,T,C,R<:Field{D,T}} = IndexCellMap{Point{D},1,T,1,C,R} where T<:FieldValue
+
 const CellField{D,T} = Union{IterCellField{D,T},IndexCellField{D,T}}
 
 """
 Abstract type that represents a cell-wise basis for a field space,
 where T is the type of value and D the dimension of the domain
 """
-const IterCellBasis{D,T} = IterCellMap{Point{D},1,T,2} where {D,T<:FieldValue}
-const IndexCellBasis{D,T} = IndexCellMap{Point{D},1,T,2} where {D,T<:FieldValue}
+const IterCellBasis{D,T,R<:Basis{D,T}} = IterCellMap{Point{D},1,T,2,R} where T<:FieldValue
+
+const IndexCellBasis{D,T,C,R<:Basis{D,T}} = IndexCellMap{Point{D},1,T,2,C,R} where T<:FieldValue
+
 const CellBasis{D,T} = Union{IterCellBasis{D,T},IndexCellBasis{D,T}}
 
 """
@@ -72,3 +110,5 @@ Abstract type that represents a function basis with value of type T
 evaluated at a collection of points in each cell
 """
 const CellBasisValues{T} = CellArray{T,2} where T <: FieldValue
+
+end # module AbstractCellMaps

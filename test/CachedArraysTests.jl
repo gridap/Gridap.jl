@@ -41,4 +41,8 @@ setsize!(y,(15,30))
 
 @test size(y) == (15,30)
 
+@test isa(CachedVector(Int),CachedVector{Int,Vector{Int}})
+
+@test isa(CachedMatrix(Int),CachedMatrix{Int,Matrix{Int}})
+
 end # module CachedArraysTests
