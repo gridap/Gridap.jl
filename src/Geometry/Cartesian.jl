@@ -11,7 +11,7 @@ using Numa.Geometry
 using Numa.Geometry.Unstructured
 using Numa.CellValues
 
-# Functionality provided 
+# Functionality provided
 
 export CartesianGrid
 export CartesianDiscreteModel
@@ -148,7 +148,8 @@ function FaceLabels(model::CartesianDiscreteModel{D}) where D
   dim_to_face_to_geolabel[end] = ConstantCellValue(interior_id,_ncells)
   phys_labels = [ [i] for i in 1:interior_id ]
   push!(phys_labels,[i for i in 1:(interior_id-1)])
-  tag_to_name = ["physical_tag_$i" for i in 1:interior_id]
+  tag_to_name = ["physical_tag_$i" for i in 1:interior_id-1]
+  push!(tag_to_name,"interior")
   push!(tag_to_name,"boundary")
   FaceLabels(dim_to_face_to_geolabel, phys_labels, tag_to_name)
 end

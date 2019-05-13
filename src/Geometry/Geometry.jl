@@ -190,7 +190,7 @@ each nface of dimension dim
 labels_on_dim(l::FaceLabels,dim::Integer) = l.dim_to_nface_to_label[dim+1]
 
 """
-Returns a Vector{Int} with the goelabels associated with a given phystag
+Returns a Vector{Int} with the labels associated with a given phystag
 """
 labels_on_tag(l::FaceLabels,tag::Integer) = l.tag_to_labels[tag]
 
@@ -212,7 +212,7 @@ struct FullGridGraph
 end
 
 function connections(g::FullGridGraph,from::Integer,to::Integer)
-  @assert from != to || (from == 0 && to == 0)
+  # @assert from != to || (from == 0 && to == 0)
   g.data[from+1,to+1]
 end
 
@@ -241,7 +241,7 @@ function FaceLabels(::DiscreteModel{D})::FaceLabels{D} where D
   @abstractmethod
 end
 
-Grid(m::DiscreteModel,dim::Integer) = Grid(m,Val(dim)) 
+Grid(m::DiscreteModel,dim::Integer) = Grid(m,Val(dim))
 
 GridGraph(m::DiscreteModel,dim::Integer) = GridGraph(m,Val(dim))
 

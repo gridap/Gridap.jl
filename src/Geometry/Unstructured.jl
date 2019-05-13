@@ -73,10 +73,10 @@ function FullGridGraph(grid::UnstructuredGrid)
   data = Array{IndexCellArray,2}(undef,size(g))
   for j in 1:size(g,2)
     for i in 1:size(g,1)
-      if i != j || (i==1 && j==1)
-        x = g[i,j]
-        data[i,j] = CellVectorFromDataAndPtrs(x.list,x.ptrs)
-      end
+      # if i != j || (i==1 && j==1)
+      x = g[i,j]
+      data[i,j] = CellVectorFromDataAndPtrs(x.list,x.ptrs)
+      # end
     end
   end
   FullGridGraph(data)

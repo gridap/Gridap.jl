@@ -7,26 +7,24 @@ using Base.Cartesian
 include("Methods.jl")
 include("Helpers.jl")
 
-# CellArrays tools
 include("FieldValues.jl")
 include("CachedArrays.jl")
 include("Maps/Maps.jl")
-include("Polynomials.jl")
-include("Polytopes.jl")
-include("Quadratures.jl")
 include("CellValues/CellValues.jl")
 include("CellMaps/CellMaps.jl")
 
+include("Geometry/Polytopes.jl")
+include("Quadratures.jl")
 #include("Meshes.jl")
+include("Polynomials.jl")
 #include("FESpaces/RefFEs.jl")
+#
 #include("Geometry/Geometry.jl")
+#
+#include("FESpaces/FESpaces.jl")
 #
 #include("CellQuadratures.jl")
 #include("CellIntegration.jl")
 #include("Vtkio.jl")
-
-
-# FESpaces tools
-#include("FESpaces/FESpaces.jl")
 
 end #module Numa

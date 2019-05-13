@@ -14,6 +14,8 @@ include("ConstantCellValues.jl")
 
 include("Wrappers.jl")
 
+include("Append.jl")
+
 include("Testers.jl")
 
 end # module CellValues

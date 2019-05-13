@@ -1,13 +1,21 @@
-module CellMapsTests
+module CellValuesTests
 
 using Test
 
-@testset "Operations" begin
+@testset "ConstantCellValues" begin
+  include("ConstantCellValuesTests.jl")
+end
+
+@testset "WrappersTests" begin
+  include("WrappersTests.jl")
+end
+
+@testset "OperationsTests" begin
   include("OperationsTests.jl")
 end
 
-@testset "ConstantCellMaps" begin
-  include("ConstantCellMapsTests.jl")
+@testset "AppendTests" begin
+  include("AppendTests.jl")
 end
 
-end # module CellMapsTests
+end # module CellValuesTests
