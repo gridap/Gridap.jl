@@ -19,6 +19,9 @@ import Base: getindex
 import Base: IndexStyle
 import Numa.CellValues: cellsize
 
+#TODO test the structs in this module with the tester function `test_index_cell_value` and `test_index_cell_array`
+# depending of the case
+
 struct IndexCellValueByGlobalAppend{T,V<:IndexCellValue{T,1},W<:IndexCellValue{T,1}} <: IndexCellValue{T,1}
   cvs1::V
   cvs2::W
@@ -54,7 +57,7 @@ function cellsize(self::IndexCellValueByGlobalAppend)
   max( cellsize(self.cvs1), cellsize(self.cvs2))
 end
 
-# TODO I think we need to inherit from IndexCellArray
+# TODO I think we need to inherit from IndexCellVector (see below)
 struct IndexCellValueByLocalAppend{T,V<:IndexCellValue{T,1},W<:IndexCellValue{T,1}} <: IndexCellValue{T,1}
   offset::Int
   cvs1::V
@@ -74,8 +77,8 @@ function IndexCellValueByLocalAppendWithOffset(cvs1::IndexCellValue{T,1}, cvs2::
 end
 
 @propagate_inbounds function getindex(self::IndexCellValueByLocalAppend,cell::Int)
-  #TODO not sure if this implementation is general, it only returns Vectors, right?
   return [ self.cvs1[cell]..., (self.cvs2[cell].+self.offset)...] #TODO this creates a new object. Use CachedVector instead
+  #TODO We are returning a vector, thus we need to inherit from IndexCellVector
 end
 
 size(self::IndexCellValueByLocalAppend) = size(self.cvs1)

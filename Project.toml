@@ -13,6 +13,10 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 UnstructuredGrids = "9cd2e232-b78e-5341-8154-33bf4eafe965"
 WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 
+[compat]
+UnstructuredGrids = "0.2.0"
+julia = "1.1"
+
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
