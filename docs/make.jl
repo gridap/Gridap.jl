@@ -1,13 +1,13 @@
 push!(LOAD_PATH,"../src/")
 using Documenter 
-using Numa
+using Gridap
 makedocs(
-         sitename = "Numa",
+         sitename = "Gridap",
          format = Documenter.HTML(),
-         modules = [Numa]
+         modules = [Gridap]
         )
 
 deploydocs(
-           repo = "github.com/lssc-team/Numa.jl.git"
+           repo = "github.com/gridap/Gridap.jl.git"
           )
 
