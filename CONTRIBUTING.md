@@ -1,4 +1,4 @@
-# Notes for Numa contributors
+# Notes for Gridap contributors
 
 * 2 spaces for indentation level
 * No trailing white spaces

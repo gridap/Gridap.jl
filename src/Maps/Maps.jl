@@ -1,8 +1,8 @@
 module Maps
 
-using Numa.Helpers
-using Numa.FieldValues
-using Numa.CachedArrays
+using Gridap.Helpers
+using Gridap.FieldValues
+using Gridap.CachedArrays
 using LinearAlgebra: inv
 
 using Base.Cartesian: @nloops, @nexprs, @nref
@@ -14,9 +14,9 @@ export AnalyticalField
 export Geomap
 export Basis
 
-import Numa: evaluate, gradient, ∇
-import Numa: evaluate!, return_size
-import Numa: inner, outer, varinner, compose, lincomb, attachgeomap
+import Gridap: evaluate, gradient, ∇
+import Gridap: evaluate!, return_size
+import Gridap: inner, outer, varinner, compose, lincomb, attachgeomap
 
 import Base: +, -, *, /, ∘
 

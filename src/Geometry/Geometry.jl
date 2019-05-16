@@ -2,16 +2,16 @@ module Geometry
 
 # Dependencies of this module
 
-using Numa
-using Numa.Helpers
-using Numa.FieldValues
-using Numa.Polytopes
-using Numa.RefFEs
-using Numa.CellValues
-using Numa.CellValues.ConstantCellValues
-using Numa.CellValues.Wrappers
-using Numa.CellMaps
-using Numa.CellMaps.ConstantCellMaps
+using Gridap
+using Gridap.Helpers
+using Gridap.FieldValues
+using Gridap.Polytopes
+using Gridap.RefFEs
+using Gridap.CellValues
+using Gridap.CellValues.ConstantCellValues
+using Gridap.CellValues.Wrappers
+using Gridap.CellMaps
+using Gridap.CellMaps.ConstantCellMaps
 
 # Functionality provided by this module
 

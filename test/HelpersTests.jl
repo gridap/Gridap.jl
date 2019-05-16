@@ -1,7 +1,7 @@
 module HelpersTests
 
 using Test
-using Numa.Helpers
+using Gridap.Helpers
 
 @testset "PtrsUtils" begin
 

@@ -2,17 +2,17 @@ module VtkioTests
 
 ##
 using Test
-using Numa
-using Numa.FieldValues
-using Numa.Quadratures
-using Numa.CellQuadratures
-using Numa.CellMaps
-using Numa.CellValues
-using Numa.CellIntegration
-using Numa.Geometry
-using Numa.Geometry.Cartesian
-using Numa.Polytopes
-using Numa.Vtkio
+using Gridap
+using Gridap.FieldValues
+using Gridap.Quadratures
+using Gridap.CellQuadratures
+using Gridap.CellMaps
+using Gridap.CellValues
+using Gridap.CellIntegration
+using Gridap.Geometry
+using Gridap.Geometry.Cartesian
+using Gridap.Polytopes
+using Gridap.Vtkio
 ##
 
 @testset "VTKioGrid" begin

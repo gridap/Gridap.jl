@@ -1,21 +1,21 @@
 module Operations
 
-using Numa
-using Numa.Helpers
-using Numa.Maps
-using Numa.CellValues
-using Numa.FieldValues
-using Numa.CellValues.Operations: CellValueFromUnaryOp
-using Numa.CellValues.Operations: CellValueFromBinaryOp
-using Numa.Maps: FieldFromExpand
-using Numa.CellMaps
+using Gridap
+using Gridap.Helpers
+using Gridap.Maps
+using Gridap.CellValues
+using Gridap.FieldValues
+using Gridap.CellValues.Operations: CellValueFromUnaryOp
+using Gridap.CellValues.Operations: CellValueFromBinaryOp
+using Gridap.Maps: FieldFromExpand
+using Gridap.CellMaps
 
-import Numa: evaluate, gradient
-import Numa: return_size
-import Numa.Maps: compose
-import Numa.Maps: lincomb
-import Numa.Maps: varinner
-import Numa.Maps: attachgeomap
+import Gridap: evaluate, gradient
+import Gridap: return_size
+import Gridap.Maps: compose
+import Gridap.Maps: lincomb
+import Gridap.Maps: varinner
+import Gridap.Maps: attachgeomap
 import Base: iterate, length
 
 # Unary operations

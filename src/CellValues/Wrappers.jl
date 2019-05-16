@@ -3,9 +3,9 @@ module Wrappers
 using Base: @propagate_inbounds
 using StaticArrays
 
-using Numa.Helpers
-using Numa.CellValues
-using Numa.CachedArrays
+using Gridap.Helpers
+using Gridap.CellValues
+using Gridap.CachedArrays
 
 export CellValueFromArray
 export CellArrayFromArrayOfArrays
@@ -21,7 +21,7 @@ import Base: eltype
 import Base: size
 import Base: getindex
 import Base: IndexStyle
-import Numa.CellValues: cellsize
+import Gridap.CellValues: cellsize
 
 struct CellValueFromArray{T,N,V<:AbstractArray{T,N}} <: IndexCellValue{T,N}
   v::V

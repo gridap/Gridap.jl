@@ -1,13 +1,13 @@
 module Operations
 
-using Numa.Helpers
-using Numa.CellValues
+using Gridap.Helpers
+using Gridap.CellValues
 
 using StaticArrays
 using Base: @propagate_inbounds
 using Base.Cartesian: @nloops, @nexprs, @nref
-using Numa.CachedArrays
-using Numa.Maps: newaxis_kernel!, newaxis_size
+using Gridap.CachedArrays
+using Gridap.Maps: newaxis_kernel!, newaxis_size
 
 export cellsum
 export cellnewaxis
@@ -16,7 +16,7 @@ export apply
 import Base: +, -, *, /
 import Base: ==
 import LinearAlgebra: inv, det
-import Numa.FieldValues: inner, outer, meas
+import Gridap.FieldValues: inner, outer, meas
 
 import Base: iterate
 import Base: length
@@ -24,7 +24,7 @@ import Base: eltype
 import Base: size
 import Base: getindex
 import Base: IndexStyle
-import Numa.CellValues: cellsize
+import Gridap.CellValues: cellsize
 
 # Unary operations on CellValue
 

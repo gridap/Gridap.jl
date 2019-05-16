@@ -1,12 +1,12 @@
 module AppendTests
 
 using Test
-using Numa
-using Numa.FieldValues
-using Numa.CellValues
-using Numa.CellValues.Testers
-using Numa.CellValues.Wrappers
-using Numa.CellValues.Append
+using Gridap
+using Gridap.FieldValues
+using Gridap.CellValues
+using Gridap.CellValues.Testers
+using Gridap.CellValues.Wrappers
+using Gridap.CellValues.Append
 
 #@testset "IndexCellValueByGlobalAppend" begin
 

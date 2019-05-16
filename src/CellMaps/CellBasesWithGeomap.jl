@@ -1,17 +1,17 @@
 module CellBasesWithGeomap
 
-using Numa
-using Numa.Helpers
-using Numa.Maps
-using Numa.FieldValues
-using Numa.Maps: BasisWithGeoMap
-using Numa.CellMaps
-using Numa.CellValues
+using Gridap
+using Gridap.Helpers
+using Gridap.Maps
+using Gridap.FieldValues
+using Gridap.Maps: BasisWithGeoMap
+using Gridap.CellMaps
+using Gridap.CellValues
 
-import Numa.Maps: attachgeomap
+import Gridap.Maps: attachgeomap
 import Base: iterate, length
-import Numa: evaluate, gradient
-import Numa: return_size
+import Gridap: evaluate, gradient
+import Gridap: return_size
 
 function attachgeomap(a::CellBasis{D},b::CellGeomap{D,D}) where D
   CellBasisWithGeomap(a,b)

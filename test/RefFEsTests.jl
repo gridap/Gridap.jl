@@ -1,14 +1,14 @@
 ##
-using Numa, Test
+using Gridap, Test
 
-using Numa.Quadratures
-using Numa.Helpers
-using Numa.Polytopes
-using Numa.Polynomials
-using Numa.Polytopes: PointInt
-using Numa.FieldValues
-using Numa.Maps
-using Numa.RefFEs
+using Gridap.Quadratures
+using Gridap.Helpers
+using Gridap.Polytopes
+using Gridap.Polynomials
+using Gridap.Polytopes: PointInt
+using Gridap.FieldValues
+using Gridap.Maps
+using Gridap.RefFEs
 
 using Base.Cartesian
 ##
@@ -28,7 +28,7 @@ orders=[2]
 extrusion = PointInt{D}(1)
 polytope = Polytope(extrusion)
 nodes = NodesArray(polytope,orders)
-using Numa.RefFEs: LagrangianDOFBasis
+using Gridap.RefFEs: LagrangianDOFBasis
 dofsb = LagrangianDOFBasis{D,ScalarValue}(nodes.coordinates)
 prebasis = TensorProductMonomialBasis{D,ScalarValue}(orders)
 vals = Polynomials.evaluate(prebasis,dofsb.nodes)
@@ -42,7 +42,7 @@ orders=[1,1]
 extrusion = PointInt{D}(1,1)
 polytope = Polytope(extrusion)
 nodes = NodesArray(polytope, orders)
-using Numa.RefFEs: LagrangianDOFBasis
+using Gridap.RefFEs: LagrangianDOFBasis
 dofsb = LagrangianDOFBasis{D,VectorValue{D}}(nodes.coordinates)
 prebasis = TensorProductMonomialBasis{D,VectorValue{D}}(orders)
 # res = RefFEs.evaluate!(dofsb,prebasis,aux)
@@ -61,7 +61,7 @@ orders=[1,1]
 extrusion = PointInt{D}(1,1)
 polytope = Polytope(extrusion)
 reffe = LagrangianRefFE{D,VectorValue{D}}(polytope,orders)
-using Numa.Polynomials: evaluate
+using Gridap.Polynomials: evaluate
 nodes = NodesArray(polytope, orders)
 val1 = evaluate(reffe.shfbasis,nodes.coordinates)
 id = zeros(VectorValue{D},size(val1))

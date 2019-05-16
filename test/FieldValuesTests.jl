@@ -1,8 +1,8 @@
 module FieldValuesTests
 
 using Test
-using Numa
-using Numa.FieldValues
+using Gridap
+using Gridap.FieldValues
 
 
 

@@ -1,8 +1,8 @@
 ##
-using Numa, Test
-using Numa.FieldValues
-using Numa.Polytopes
-using Numa.Polytopes: PointInt
+using Gridap, Test
+using Gridap.FieldValues
+using Gridap.Polytopes
+using Gridap.Polytopes: PointInt
 
 # Checking all topologies
 ##
@@ -76,7 +76,7 @@ fco = i -> coords[i][1]
 # 	end
 # end
 ##
-# using Numa.Vtkio
+# using Gridap.Vtkio
 # D = 3
 # wedge = Polytope(1,2,1)
 # @show wedge.nf_nfs

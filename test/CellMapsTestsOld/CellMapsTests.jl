@@ -1,36 +1,36 @@
 module CellMapsTests
 ##
-using Numa
+using Gridap
 using Test
 
-using Numa.Quadratures
-using Numa.CellQuadratures
-import Numa.CellIntegration: cellcoordinates, cellbasis
+using Gridap.Quadratures
+using Gridap.CellQuadratures
+import Gridap.CellIntegration: cellcoordinates, cellbasis
 
-using Numa.CellValues
-using Numa.CellValues: IndexCellArray
-import Numa.CellValues: cellsize
+using Gridap.CellValues
+using Gridap.CellValues: IndexCellArray
+import Gridap.CellValues: cellsize
 
-using Numa.Polytopes
-using Numa.Polytopes: PointInt
+using Gridap.Polytopes
+using Gridap.Polytopes: PointInt
 
-using Numa.RefFEs
-using Numa.FieldValues
+using Gridap.RefFEs
+using Gridap.FieldValues
 
-import Numa: gradient
-using Numa.CellValues: ConstantCellValue
+import Gridap: gradient
+using Gridap.CellValues: ConstantCellValue
 
-using Numa.FESpaces: ConformingFESpace
+using Gridap.FESpaces: ConformingFESpace
 
-using Numa.Maps
-using Numa.Maps: AnalyticalField
+using Gridap.Maps
+using Gridap.Maps: AnalyticalField
 
-using Numa.Geometry
-using Numa.Geometry.Cartesian
-using Numa.Geometry.Unstructured
+using Gridap.Geometry
+using Gridap.Geometry.Cartesian
+using Gridap.Geometry.Unstructured
 
-using Numa.CellMaps
-using Numa.CellMaps: ConstantCellMapValues
+using Gridap.CellMaps
+using Gridap.CellMaps: ConstantCellMapValues
 
 
 l = 10

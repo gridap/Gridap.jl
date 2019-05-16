@@ -3,16 +3,16 @@ module Quadratures
 # Dependencies of this module
 
 using QuadGK: gauss
-using Numa: flatten
-using Numa.Helpers
-using Numa.FieldValues
-using Numa.Polytopes
+using Gridap: flatten
+using Gridap.Helpers
+using Gridap.FieldValues
+using Gridap.Polytopes
 
 # Functionality provided by this module
 
 export Quadrature
 export TensorProductQuadrature
-import Numa: coordinates, weights, quadrature
+import Gridap: coordinates, weights, quadrature
 
 # Abstract types and interfaces
 

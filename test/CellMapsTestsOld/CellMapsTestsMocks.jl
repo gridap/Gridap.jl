@@ -1,5 +1,5 @@
-import Numa.CellValues: cellsize
-using Numa.CellValues: IndexCellArray
+import Gridap.CellValues: cellsize
+using Gridap.CellValues: IndexCellArray
 
 import Base: IndexStyle, size, getindex
 
@@ -53,8 +53,8 @@ end
 tfv = CellFieldValuesMockup{TensorValue{2,4}}(tfva,l)
 tbv = CellBasisValuesMockup{TensorValue{2,4}}(tbva,l)
 
-import Numa: evaluate
-using Numa.CellMaps: IterCellField, IterCellBasis
+import Gridap: evaluate
+using Gridap.CellMaps: IterCellField, IterCellBasis
 
 struct ScalarFieldMock <: IterCellField{2,Float64} end
 

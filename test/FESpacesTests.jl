@@ -1,27 +1,27 @@
 ##
-using Numa
+using Gridap
 using Test
 
-using Numa.Quadratures
-using Numa.Polytopes
-using Numa.Polytopes: PointInt
-using Numa.RefFEs
-using Numa.FESpaces
-using Numa.FESpaces: ConformingFESpace
+using Gridap.Quadratures
+using Gridap.Polytopes
+using Gridap.Polytopes: PointInt
+using Gridap.RefFEs
+using Gridap.FESpaces
+using Gridap.FESpaces: ConformingFESpace
 
-using Numa.FieldValues
-using Numa.Maps
-using Numa.CellValues
-using Numa.CellValues.ConstantCellValues
-using Numa.CellValues.Wrappers
-using Numa.CellMaps
+using Gridap.FieldValues
+using Gridap.Maps
+using Gridap.CellValues
+using Gridap.CellValues.ConstantCellValues
+using Gridap.CellValues.Wrappers
+using Gridap.CellMaps
 
-using Numa.Geometry
-using Numa.Geometry.Cartesian
+using Gridap.Geometry
+using Gridap.Geometry.Cartesian
 
-import Numa: gradient, ∇
+import Gridap: gradient, ∇
 
-using Numa.CellIntegration
+using Gridap.CellIntegration
 using UnstructuredGrids
 ##
 abstract type mystyle end
@@ -116,7 +116,7 @@ fesp = ConformingFESpace(reffe,trian,gridgr,labels,(1,2,3,4))
 @test FESpaces.cell_eqclass(fesp) == fesp.cell_eqclass
 ##
 # @testset FESpaceWithDirichletData
-using Numa.FESpaces: FESpaceWithDirichletData
+using Gridap.FESpaces: FESpaceWithDirichletData
 dird = zeros(Float64, FESpaces.num_fixed_dofs(fesp))
 fespwd = FESpaceWithDirichletData(fesp, dird)
 
@@ -287,7 +287,7 @@ is_fixed_vef = zeros(Bool, length(vefcells))
 # funh.coeffs.gid_to_val_neg
 ##
 
-# using Numa.FESpaces: assemble
+# using Gridap.FESpaces: assemble
 # sys_vec = assemble(assembler,kvec)
 # sys_mat = assemble(assembler,kmat)
 

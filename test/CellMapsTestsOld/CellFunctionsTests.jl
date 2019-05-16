@@ -1,17 +1,17 @@
 module CellFieldsTests
 
 using Test
-using Numa.FieldValues
-using Numa.CellValues
-using Numa.CellFunctions
-using Numa.Quadratures
-using Numa.CellQuadratures
-using Numa.Polytopes
-using Numa.RefFEs
-using Numa.Geometry
-using Numa.Geometry.Cartesian
+using Gridap.FieldValues
+using Gridap.CellValues
+using Gridap.CellFunctions
+using Gridap.Quadratures
+using Gridap.CellQuadratures
+using Gridap.Polytopes
+using Gridap.RefFEs
+using Gridap.Geometry
+using Gridap.Geometry.Cartesian
 
-import Numa: gradient
+import Gridap: gradient
 
 l = 10
 
@@ -206,7 +206,7 @@ end
 
   # include("PolynomialsTestsMocks.jl")
 
-  using Numa.CellFunctions: CellBasisValuesFromSingleInterpolation
+  using Gridap.CellFunctions: CellBasisValuesFromSingleInterpolation
 
   l = 10
 

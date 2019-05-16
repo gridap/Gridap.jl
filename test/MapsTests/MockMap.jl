@@ -1,7 +1,7 @@
-using Numa.Helpers
-using Numa.FieldValues
-using Numa.Maps
-import Numa: evaluate!, return_size, gradient
+using Gridap.Helpers
+using Gridap.FieldValues
+using Gridap.Maps
+import Gridap: evaluate!, return_size, gradient
 
 struct MockMap{D} <: Map{Point{D},1,Point{D},1}
   val::Point{D}

@@ -3,26 +3,26 @@ module Cartesian
 # Dependencies of this module
 
 using StaticArrays: SVector, MVector, @SVector
-using Numa.Helpers
-using Numa.FieldValues
-using Numa.Polytopes
-using Numa.Meshes
-using Numa.Geometry
-using Numa.Geometry.Unstructured
-using Numa.CellValues
-using Numa.CellValues.ConstantCellValues
+using Gridap.Helpers
+using Gridap.FieldValues
+using Gridap.Polytopes
+using Gridap.Meshes
+using Gridap.Geometry
+using Gridap.Geometry.Unstructured
+using Gridap.CellValues
+using Gridap.CellValues.ConstantCellValues
 
 # Functionality provided
 
 export CartesianGrid
 export CartesianDiscreteModel
 import Base: size, getindex, IndexStyle
-import Numa.CellValues: cellsize
-import Numa.Geometry: points, cells, celltypes, cellorders, gridgraph
-import Numa.Geometry: Grid, GridGraph, FaceLabels
-import Numa.Geometry.Unstructured: UnstructuredGrid
-import Numa.Geometry.Unstructured: FlexibleUnstructuredGrid
-import Numa.Geometry: FullGridGraph
+import Gridap.CellValues: cellsize
+import Gridap.Geometry: points, cells, celltypes, cellorders, gridgraph
+import Gridap.Geometry: Grid, GridGraph, FaceLabels
+import Gridap.Geometry.Unstructured: UnstructuredGrid
+import Gridap.Geometry.Unstructured: FlexibleUnstructuredGrid
+import Gridap.Geometry: FullGridGraph
 
 struct CartesianGrid{D} <: Grid{D,D}
   dim_to_limits::NTuple{D,NTuple{2,Float64}}

@@ -3,9 +3,9 @@ module Append
 using Base: @propagate_inbounds
 using StaticArrays
 
-using Numa.Helpers
-using Numa.CellValues
-using Numa.CachedArrays
+using Gridap.Helpers
+using Gridap.CellValues
+using Gridap.CachedArrays
 
 export IndexCellValueByGlobalAppend
 export IndexCellValueByLocalAppend
@@ -17,7 +17,7 @@ import Base: eltype
 import Base: size
 import Base: getindex
 import Base: IndexStyle
-import Numa.CellValues: cellsize
+import Gridap.CellValues: cellsize
 
 #TODO test the structs in this module with the tester function `test_index_cell_value` and `test_index_cell_array`
 # depending of the case

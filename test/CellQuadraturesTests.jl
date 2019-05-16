@@ -1,15 +1,15 @@
 module CellQuadraturesTests
 ##
 using Test
-using Numa.FieldValues
-using Numa.CellValues
-using Numa.CellValues.ConstantCellValues
-using Numa.Quadratures
-using Numa.CellQuadratures
-using Numa.Geometry
-using Numa.Geometry.Cartesian
+using Gridap.FieldValues
+using Gridap.CellValues
+using Gridap.CellValues.ConstantCellValues
+using Gridap.Quadratures
+using Gridap.CellQuadratures
+using Gridap.Geometry
+using Gridap.Geometry.Cartesian
 
-using Numa: coordinates, weights, quadrature
+using Gridap: coordinates, weights, quadrature
 D = 2
 
 p = Point{D}(1.0,1.1)

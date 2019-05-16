@@ -1,11 +1,11 @@
 module CellFieldsBench
 
-using Numa
-using Numa.FieldValues
-using Numa.CellValues
-using Numa.CellFunctions
-using Numa.Geometry
-using Numa.Geometry.Cartesian
+using Gridap
+using Gridap.FieldValues
+using Gridap.CellValues
+using Gridap.CellFunctions
+using Gridap.Geometry
+using Gridap.Geometry.Cartesian
 
 l = 1000000
 
@@ -28,10 +28,10 @@ vexpand = expand(vbv,sfv2)
 print("VectorScalarExpand ->"); @time doloop(vexpand)
 print("VectorScalarExpand ->"); @time doloop(vexpand)
 
-using Numa.Geometry
-using Numa.Quadratures
-using Numa.CellQuadratures
-using Numa.CellIntegration
+using Gridap.Geometry
+using Gridap.Quadratures
+using Gridap.CellQuadratures
+using Gridap.CellIntegration
 
 grid = CartesianGrid(partition=(1000,1000))
 trian = triangulation(grid)

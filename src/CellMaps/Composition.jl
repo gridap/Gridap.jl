@@ -1,20 +1,20 @@
 module Composition
 
-using Numa
-using Numa.Helpers
-using Numa.Maps
-using Numa.CellValues
-using Numa.CellValues.ConstantCellValues
-using Numa.CellValues.Operations: CellArrayFromBroadcastUnaryOp
-using Numa.CellValues.Operations: CellArrayFromBroadcastBinaryOp
-using Numa.FieldValues
-using Numa.CellMaps
-using Numa.Maps: FieldFromCompose
-using Numa.Maps: FieldFromComposeExtended
+using Gridap
+using Gridap.Helpers
+using Gridap.Maps
+using Gridap.CellValues
+using Gridap.CellValues.ConstantCellValues
+using Gridap.CellValues.Operations: CellArrayFromBroadcastUnaryOp
+using Gridap.CellValues.Operations: CellArrayFromBroadcastBinaryOp
+using Gridap.FieldValues
+using Gridap.CellMaps
+using Gridap.Maps: FieldFromCompose
+using Gridap.Maps: FieldFromComposeExtended
 
-import Numa: evaluate, gradient
-import Numa: return_size
-import Numa: compose
+import Gridap: evaluate, gradient
+import Gridap: return_size
+import Gridap: compose
 import Base: iterate, length, ∘
 
 function compose(f::Function,g::CellField)

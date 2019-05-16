@@ -1,9 +1,9 @@
 module RunTests
 
-using Numa
+using Gridap
 using Test
 
-# @testset "Numa.jl" begin
+# @testset "Gridap.jl" begin
 @time @testset "Helpers" begin include("HelpersTests.jl") end
 @time @testset "FieldValues" begin include("FieldValuesTests.jl") end
 @time @testset "CachedArrays" begin include("CachedArraysTests.jl") end

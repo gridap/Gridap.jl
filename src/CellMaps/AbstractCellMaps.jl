@@ -1,9 +1,9 @@
 module AbstractCellMaps
 
-using Numa.Helpers
-using Numa.FieldValues
-using Numa.Maps
-using Numa.CellValues
+using Gridap.Helpers
+using Gridap.FieldValues
+using Gridap.Maps
+using Gridap.CellValues
 
 export IterCellMap
 export IndexCellMap
@@ -23,8 +23,8 @@ export CellFieldValues
 export CellBasisValues
 export CellPoints
 
-import Numa: evaluate, gradient
-import Numa: evaluate!, return_size
+import Gridap: evaluate, gradient
+import Gridap: evaluate!, return_size
 
 """
 Abstract object that traverses a set of cells and at every cell returns a

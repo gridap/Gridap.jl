@@ -1,7 +1,7 @@
 module CellValuesBench
 
-using Numa.FieldValues
-using Numa.CellValues
+using Gridap.FieldValues
+using Gridap.CellValues
 
 include("../test/CellValuesTests/Mocks.jl")
 

@@ -2,11 +2,11 @@ module Testers
 
 using Test
 
-using Numa
-using Numa.Maps
-using Numa.CellMaps
-using Numa.CellValues
-using Numa.CellValues.Testers
+using Gridap
+using Gridap.Maps
+using Gridap.CellMaps
+using Gridap.CellValues
+using Gridap.CellValues.Testers
 
 export test_cell_map_without_gradient
 export test_cell_map_with_gradient

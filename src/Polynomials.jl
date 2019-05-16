@@ -1,12 +1,12 @@
 module Polynomials
 
-using Numa #@fverdugo to be eliminated
-using Numa.Helpers
-using Numa.FieldValues
-using Numa.Maps: Basis
-using Numa.FieldValues: mutable
+using Gridap #@fverdugo to be eliminated
+using Gridap.Helpers
+using Gridap.FieldValues
+using Gridap.Maps: Basis
+using Gridap.FieldValues: mutable
 using StaticArrays: MVector
-# using Numa.Quadratures
+# using Gridap.Quadratures
 # using Base.Cartesian
 
 export PolynomialBasis
@@ -15,10 +15,10 @@ export PolynomialBasisWithChangeOfBasis
 # export UnivariatePolynomialBasis
 # export UnivariateMonomialBasis
 
-import Numa: evaluate
-import Numa: gradient, ∇
-import Numa.Maps: evaluate!
-import Numa.Maps: return_size
+import Gridap: evaluate
+import Gridap: gradient, ∇
+import Gridap.Maps: evaluate!
+import Gridap.Maps: return_size
 
 """
 Abstract type representing a multivariate polynomial basis

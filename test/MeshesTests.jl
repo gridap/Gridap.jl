@@ -1,8 +1,8 @@
-using Numa, Test
+using Gridap, Test
 
-using Numa.Polytopes
-using Numa.Polytopes: PointInt
-using Numa.Meshes
+using Gridap.Polytopes
+using Gridap.Polytopes: PointInt
+using Gridap.Meshes
 using Base.Cartesian
 
 ##

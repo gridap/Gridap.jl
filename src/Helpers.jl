@@ -8,7 +8,7 @@ export viewtosize
 export rewind_ptrs!
 export length_to_ptrs!
 
-import Numa: flatten
+import Gridap: flatten
 
 macro abstractmethod()
   quote

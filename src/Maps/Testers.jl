@@ -1,8 +1,8 @@
 module Testers
 
 using Test
-using Numa
-using Numa.Maps
+using Gridap
+using Gridap.Maps
 
 export test_map_without_gradient
 export test_map_with_gradient

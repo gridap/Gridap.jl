@@ -2,10 +2,10 @@ module QuadraturesTests
 
 using Test
 
-using Numa.FieldValues
-using Numa.Quadratures
-using Numa.Polytopes
-using Numa: coordinates, weights, quadrature
+using Gridap.FieldValues
+using Gridap.Quadratures
+using Gridap.Polytopes
+using Gridap: coordinates, weights, quadrature
 
 const D = 2
 quad = TensorProductQuadrature(orders=(2,4))

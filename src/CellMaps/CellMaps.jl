@@ -4,7 +4,7 @@ using Reexport
 
 include("AbstractCellMaps.jl")
 
-@reexport using Numa.CellMaps.AbstractCellMaps
+@reexport using Gridap.CellMaps.AbstractCellMaps
 
 include("CellMapValues.jl")
 

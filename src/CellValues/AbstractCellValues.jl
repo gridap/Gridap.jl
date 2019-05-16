@@ -1,6 +1,6 @@
 module AbstractCellValues
 
-using Numa.Helpers
+using Gridap.Helpers
 using StaticArrays
 
 export CellValue

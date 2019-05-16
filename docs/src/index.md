@@ -1,8 +1,8 @@
-# Numa.jl
+# Gridap.jl
 
-Documentation for the Numa library
+Documentation for the Gridap library
 
 ```@autodocs
-Modules = [Numa,]
+Modules = [Gridap,]
 Order   = [:function, :type]
 ```

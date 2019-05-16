@@ -6,7 +6,7 @@ export ScalarValue, VectorValue, TensorValue
 export MVectorValue, MTensorValue
 export mutable
 
-import Numa: inner, outer, meas
+import Gridap: inner, outer, meas
 
 using StaticArrays: SVector, MVector, SMatrix, MMatrix
 using LinearAlgebra: det

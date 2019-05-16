@@ -2,22 +2,22 @@ module CellQuadratures
 
 # Dependencies of this module
 
-using Numa.Helpers
-using Numa.FieldValues
-using Numa.Quadratures
-using Numa.CellValues
-using Numa.CellValues.ConstantCellValues
-using Numa.CellMaps
-using Numa.Geometry
+using Gridap.Helpers
+using Gridap.FieldValues
+using Gridap.Quadratures
+using Gridap.CellValues
+using Gridap.CellValues.ConstantCellValues
+using Gridap.CellMaps
+using Gridap.Geometry
 
 # Functionality provided by this module
 
 export CellQuadrature
 export ConstantCellQuadrature
 import Base.Iterators: zip
-import Numa: coordinates
-import Numa: weights
-import Numa: quadrature
+import Gridap: coordinates
+import Gridap: weights
+import Gridap: quadrature
 
 # Abstract types and interfaces
 

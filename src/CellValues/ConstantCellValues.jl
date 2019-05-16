@@ -1,7 +1,7 @@
 module ConstantCellValues
 
-using Numa.CellValues
-using Numa.CellValues.Operations: cellsumsize
+using Gridap.CellValues
+using Gridap.CellValues.Operations: cellsumsize
 
 export ConstantCellValue
 export ConstantCellArray
@@ -10,18 +10,18 @@ export ConstantCellMatrix
 
 export celldata
 
-import Numa.CellValues: cellsum
-import Numa.CellValues: cellnewaxis
-import Numa.CellValues: cellmean #TODO
-import Numa.CellValues: apply #TODO
+import Gridap.CellValues: cellsum
+import Gridap.CellValues: cellnewaxis
+import Gridap.CellValues: cellmean #TODO
+import Gridap.CellValues: apply #TODO
 import Base: +, -, *, /
 import Base: ==
 import LinearAlgebra: inv, det
-import Numa.FieldValues: inner, outer, meas
+import Gridap.FieldValues: inner, outer, meas
 
 import Base: size
 import Base: getindex
-import Numa.CellValues: cellsize
+import Gridap.CellValues: cellsize
 
 struct ConstantCellValue{T} <: IndexCellValue{T,1}
   value::T

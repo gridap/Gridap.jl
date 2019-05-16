@@ -1,12 +1,12 @@
 module MapsTests
 ##
-using Numa
+using Gridap
 using Test
-using Numa.Maps
-using Numa.Maps.Testers
-using Numa.FieldValues
+using Gridap.Maps
+using Gridap.Maps.Testers
+using Gridap.FieldValues
 
-import Numa.FieldValues: inner, outer
+import Gridap.FieldValues: inner, outer
 
 # Unary ops
 
@@ -179,7 +179,7 @@ for op in (:+, :-)
   end
 end
 
-using Numa.CellValues.Operations: _custom_broadcast
+using Gridap.CellValues.Operations: _custom_broadcast
 
 pairs = [
   (m_vs,m2_vs), (m_vs,m2_vv), (m_vs,m2_vt),

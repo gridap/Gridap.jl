@@ -1,19 +1,19 @@
 module RefFEs
 
-using Numa.Helpers
-using Numa.FieldValues
-using Numa.Maps
-using Numa.Polytopes
-using Numa.Polynomials
-using Numa.Maps: Basis
-using Numa.Maps: return_size
+using Gridap.Helpers
+using Gridap.FieldValues
+using Gridap.Maps
+using Gridap.Polytopes
+using Gridap.Polynomials
+using Gridap.Maps: Basis
+using Gridap.Maps: return_size
 
 export DOFBasis
 export RefFE
 export LagrangianRefFE
 export shfbasis
 
-import Numa: evaluate, evaluate!
+import Gridap: evaluate, evaluate!
 
 # Abstract types and interfaces
 
@@ -99,7 +99,7 @@ end
 function evaluate!(this::LagrangianDOFBasis{D,T},
 	field::Field{D,T}, b::AbstractVector{Float64}) where {D,T}
 	vals = Maps.evaluate(field,this.nodes)
-	# I would like to use evaluate everywhere, putting evaluate in Numa and
+	# I would like to use evaluate everywhere, putting evaluate in Gridap and
 	# importing it in all submodules
 	# This way we could use the same evaluate for bases and fields...
 	# @santiagobadia : TO BE DONE

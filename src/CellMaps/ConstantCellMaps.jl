@@ -1,20 +1,20 @@
 module ConstantCellMaps
 
-using Numa.Helpers
-using Numa.FieldValues
-using Numa.Maps
-using Numa.CellValues
-using Numa.CellMaps
-using Numa.CellValues.ConstantCellValues
-using Numa.CellMaps.CellMapValues
+using Gridap.Helpers
+using Gridap.FieldValues
+using Gridap.Maps
+using Gridap.CellValues
+using Gridap.CellMaps
+using Gridap.CellValues.ConstantCellValues
+using Gridap.CellMaps.CellMapValues
 
-import Numa: evaluate
-import Numa: gradient
-import Numa: return_size
-import Numa.Maps: compose
-import Numa.Maps: lincomb
-import Numa.Maps: varinner
-import Numa.Maps: attachgeomap
+import Gridap: evaluate
+import Gridap: gradient
+import Gridap: return_size
+import Gridap.Maps: compose
+import Gridap.Maps: lincomb
+import Gridap.Maps: varinner
+import Gridap.Maps: attachgeomap
 export ConstantCellMap
 export ConstantCellField
 export ConstantCellBasis

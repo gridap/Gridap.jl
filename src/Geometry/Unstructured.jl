@@ -2,21 +2,21 @@ module Unstructured
 
 # Dependencies of this module
 
-using Numa.Helpers
-using Numa.FieldValues
-using Numa.CellValues
-using Numa.CellValues.ConstantCellValues
-using Numa.CellValues.Wrappers
-using Numa.Geometry
-using Numa.Polytopes
+using Gridap.Helpers
+using Gridap.FieldValues
+using Gridap.CellValues
+using Gridap.CellValues.ConstantCellValues
+using Gridap.CellValues.Wrappers
+using Gridap.Geometry
+using Gridap.Polytopes
 using UnstructuredGrids
 
 # Functionality provided by this module
 
 export UnstructuredGrid
 export FlexibleUnstructuredGrid
-import Numa.Geometry: points, cells, celltypes, cellorders
-import Numa.Geometry: FullGridGraph
+import Gridap.Geometry: points, cells, celltypes, cellorders
+import Gridap.Geometry: FullGridGraph
 export cellsdata, cellsptrs
 export UGrid
 import UnstructuredGrids: UGrid

@@ -1,7 +1,7 @@
 module CachedArraysTests
 
 using Test
-using Numa.CachedArrays
+using Gridap.CachedArrays
 
 x = rand(10,5)
 

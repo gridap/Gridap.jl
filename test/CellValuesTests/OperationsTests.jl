@@ -1,15 +1,15 @@
 module OperationsTests
 
 using Test
-using Numa
-using Numa.FieldValues
-using Numa.CellValues
-using Numa.FieldValues
+using Gridap
+using Gridap.FieldValues
+using Gridap.CellValues
+using Gridap.FieldValues
 using LinearAlgebra: det, inv
 using StaticArrays
-using Numa.CellValues.Operations: _custom_broadcast
-using Numa.CellValues.Operations: mean
-using Numa.CellValues.Testers
+using Gridap.CellValues.Operations: _custom_broadcast
+using Gridap.CellValues.Operations: mean
+using Gridap.CellValues.Testers
 
 include("Mocks.jl")
 
@@ -79,13 +79,13 @@ s0 = """
 @test cellsize(sca2,2) == 2
 @test celllength(sca2) == 6
 
-using Numa.CellValues.Operations: CellValueFromUnaryOp
-using Numa.CellValues.Operations: CellValueFromBinaryOp
-using Numa.CellValues.Operations: CellArrayFromBroadcastUnaryOp
-using Numa.CellValues.Operations: CellArrayFromCellSum
-using Numa.CellValues.Operations: CellArrayFromCellNewAxis
-using Numa.CellValues.Operations: CellValueFromCellArrayReduce
-using Numa.CellValues.Operations: CellArrayFromBroadcastBinaryOp
+using Gridap.CellValues.Operations: CellValueFromUnaryOp
+using Gridap.CellValues.Operations: CellValueFromBinaryOp
+using Gridap.CellValues.Operations: CellArrayFromBroadcastUnaryOp
+using Gridap.CellValues.Operations: CellArrayFromCellSum
+using Gridap.CellValues.Operations: CellArrayFromCellNewAxis
+using Gridap.CellValues.Operations: CellValueFromCellArrayReduce
+using Gridap.CellValues.Operations: CellArrayFromBroadcastBinaryOp
 
 for op in (:+,:-,:(inv),:(det))
   @eval begin

@@ -7,24 +7,24 @@ export interpolate
 export Assembler
 export ConformingAssembler
 
-using Numa: evaluate
-using Numa.Helpers
-using Numa.RefFEs
-using Numa.Polytopes
-using Numa.CellValues
-using Numa.CellValues.ConstantCellValues
-using Numa.CellValues.Wrappers
-using Numa.CellValues.Append
-using Numa.Geometry
-using Numa.FieldValues
+using Gridap: evaluate
+using Gridap.Helpers
+using Gridap.RefFEs
+using Gridap.Polytopes
+using Gridap.CellValues
+using Gridap.CellValues.ConstantCellValues
+using Gridap.CellValues.Wrappers
+using Gridap.CellValues.Append
+using Gridap.Geometry
+using Gridap.FieldValues
 
 using SparseArrays
 
-using Numa.CellValues.Wrappers: CellVectorByComposition
-using Numa.CellMaps
-using Numa.CellMaps.Operations: CellFieldFromExpand
+using Gridap.CellValues.Wrappers: CellVectorByComposition
+using Gridap.CellMaps
+using Gridap.CellMaps.Operations: CellFieldFromExpand
 
-import Numa: evaluate!
+import Gridap: evaluate!
 
 abstract type MeshConformity end
 struct ConformingMesh <: MeshConformity end

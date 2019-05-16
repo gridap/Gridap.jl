@@ -1,17 +1,17 @@
 module OperationsTests
 
 using Test
-using Numa
-using Numa.CellValues
-using Numa.CellValues.ConstantCellValues
-using Numa.Maps
-using Numa.CellMaps
-using Numa.CellMaps.ConstantCellMaps
-using Numa.CellMaps.Testers
-using Numa.CellMaps.CellMapValues
-using Numa.FieldValues
+using Gridap
+using Gridap.CellValues
+using Gridap.CellValues.ConstantCellValues
+using Gridap.Maps
+using Gridap.CellMaps
+using Gridap.CellMaps.ConstantCellMaps
+using Gridap.CellMaps.Testers
+using Gridap.CellMaps.CellMapValues
+using Gridap.FieldValues
 
-import Numa: gradient
+import Gridap: gradient
 
 include("../MapsTests/MockMap.jl")
 include("../MapsTests/MockBasis.jl")

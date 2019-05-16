@@ -1,18 +1,18 @@
 module Vtkio
 
-using Numa
-using Numa.Helpers
-using Numa.CellValues
-using Numa.CellValues.ConstantCellValues
-using Numa.CellMaps
-using Numa.FieldValues
-using Numa.Polytopes
-using Numa.Geometry
-using Numa.Geometry.Unstructured
-using Numa.Geometry.Cartesian
-using Numa.Geometry.Wrappers
-using Numa.Polytopes
-using Numa.CellIntegration
+using Gridap
+using Gridap.Helpers
+using Gridap.CellValues
+using Gridap.CellValues.ConstantCellValues
+using Gridap.CellMaps
+using Gridap.FieldValues
+using Gridap.Polytopes
+using Gridap.Geometry
+using Gridap.Geometry.Unstructured
+using Gridap.Geometry.Cartesian
+using Gridap.Geometry.Wrappers
+using Gridap.Polytopes
+using Gridap.CellIntegration
 
 using WriteVTK
 using WriteVTK.VTKCellTypes: VTK_VERTEX
@@ -25,7 +25,7 @@ using WriteVTK.VTKCellTypes: VTK_HEXAHEDRON
 # Functionality given by this module
 
 export writevtk
-import Numa.Geometry: cells, points, celltypes
+import Gridap.Geometry: cells, points, celltypes
 import UnstructuredGrids: writevtk
 
 """
@@ -164,7 +164,7 @@ end
 # @fverdugo This can also be done by dispatching on value
 """
 Generates the lookup table (as a Dict) in order to convert between
-Numa Polytope identifiers into VTK cell type identifiers
+Gridap Polytope identifiers into VTK cell type identifiers
 """
 function _vtkcelltypedict()
   d = Dict{Int,WriteVTK.VTKCellTypes.VTKCellType}()
@@ -183,7 +183,7 @@ end
 # @fverdugo This can also be done by dispatching on value
 """
 Generates the lookup table (as a Dict) in order to convert between
-Numa Polytope corner numbering into VTK corner numbering
+Gridap Polytope corner numbering into VTK corner numbering
 """
 function _vtkcellnodesdict()
   d = Dict{Int,Vector{Int}}()

@@ -2,10 +2,10 @@ module ConstantCellValuesTests
 
 using Test
 using LinearAlgebra: inv, det
-using Numa
-using Numa.CellValues
-using Numa.CellValues.ConstantCellValues
-using Numa.CellValues.Testers
+using Gridap
+using Gridap.CellValues
+using Gridap.CellValues.ConstantCellValues
+using Gridap.CellValues.Testers
 
 l = 10
 sv = 1.0

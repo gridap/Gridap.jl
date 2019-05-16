@@ -1,12 +1,12 @@
 module Meshes
 
-using Numa # @santiagobadia : to be eliminated
-using Numa.Polytopes
+using Gridap # @santiagobadia : to be eliminated
+using Gridap.Polytopes
 using Base.Cartesian
-using Numa.CellValues
-using Numa.CellValues.Wrappers
-using Numa.FieldValues
-using Numa.Helpers
+using Gridap.CellValues
+using Gridap.CellValues.Wrappers
+using Gridap.FieldValues
+using Gridap.Helpers
 
 export gidscellxtype, gidscellxtypefast
 export flip

@@ -2,9 +2,9 @@ module Wrappers #@fverdugo rename as RefCells ??
 
 # Dependencies of this module
 
-using Numa.Helpers
-using Numa.Polytopes
-using Numa.CellValues
+using Gridap.Helpers
+using Gridap.Polytopes
+using Gridap.CellValues
 using UnstructuredGrids.Core: VERTEX
 using UnstructuredGrids.Kernels: UNSET
 

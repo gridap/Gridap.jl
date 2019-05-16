@@ -1,7 +1,7 @@
 
-using Numa.CellMaps.CellMapValues: CellMapValue
+using Gridap.CellMaps.CellMapValues: CellMapValue
 
-import Numa: gradient, evaluate, return_size
+import Gridap: gradient, evaluate, return_size
 
 include("../CellValuesTests/Mocks.jl")
 

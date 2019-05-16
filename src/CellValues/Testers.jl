@@ -1,7 +1,7 @@
 module Testers
 
 using Test
-using Numa.CellValues
+using Gridap.CellValues
 
 export test_iter_cell_value
 export test_index_cell_value

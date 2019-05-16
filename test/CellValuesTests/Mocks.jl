@@ -1,7 +1,7 @@
 
-using Numa.CellValues: IndexCellValue, IndexCellArray
+using Gridap.CellValues: IndexCellValue, IndexCellArray
 import Base: size, getindex, IndexStyle, length
-import Numa.CellValues: cellsize
+import Gridap.CellValues: cellsize
 using StaticArrays
 
 struct TestCellValue{T} <: IndexCellValue{T,1}

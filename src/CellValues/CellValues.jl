@@ -4,11 +4,11 @@ using Reexport
 
 include("AbstractCellValues.jl")
 
-@reexport using Numa.CellValues.AbstractCellValues
+@reexport using Gridap.CellValues.AbstractCellValues
 
 include("Operations.jl")
 
-@reexport using Numa.CellValues.Operations
+@reexport using Gridap.CellValues.Operations
 
 include("ConstantCellValues.jl")
 

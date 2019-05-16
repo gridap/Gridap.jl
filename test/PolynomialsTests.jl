@@ -2,14 +2,14 @@ module PolynomialsTests
 
 ##
 using Test
-using Numa
-using Numa.Polynomials
-using Numa.FieldValues
+using Gridap
+using Gridap.Polynomials
+using Gridap.FieldValues
 
-using Numa.Polynomials: Basis
-using Numa.Polynomials: UnivariatePolynomialBasis
-using Numa.Polynomials: UnivariateMonomialBasis
-using Numa.Polynomials: evaluate
+using Gridap.Polynomials: Basis
+using Gridap.Polynomials: UnivariatePolynomialBasis
+using Gridap.Polynomials: UnivariateMonomialBasis
+using Gridap.Polynomials: evaluate
 ##
 
 @testset "UnivariatePolynomialBasis" begin
@@ -25,10 +25,10 @@ using Numa.Polynomials: evaluate
   ##
 
   ##
-  using Numa.Polynomials: gradient
+  using Gridap.Polynomials: gradient
   grad = gradient(a)
   length(grad)
-  using Numa.Polynomials: evaluate
+  using Gridap.Polynomials: evaluate
   gval = evaluate(grad, points)
   @test gval[3,3][1] == 6.0
   ##

@@ -1,35 +1,35 @@
 ##
 using Test
 
-using Numa
-using Numa.Quadratures
-using Numa.CellQuadratures
-# using Numa.CellIntegration
-# using Numa.CellValues
-using Numa.CellMaps
-import Numa.CellIntegration: cellcoordinates, cellbasis
+using Gridap
+using Gridap.Quadratures
+using Gridap.CellQuadratures
+# using Gridap.CellIntegration
+# using Gridap.CellValues
+using Gridap.CellMaps
+import Gridap.CellIntegration: cellcoordinates, cellbasis
 
-using Numa.CellValues.ConstantCellValues
-using Numa.CellValues: IndexCellArray
-import Numa.CellValues: cellsize
-using Numa.Polytopes
-using Numa.Polytopes: PointInt
-using Numa.RefFEs
-using Numa.FieldValues
+using Gridap.CellValues.ConstantCellValues
+using Gridap.CellValues: IndexCellArray
+import Gridap.CellValues: cellsize
+using Gridap.Polytopes
+using Gridap.Polytopes: PointInt
+using Gridap.RefFEs
+using Gridap.FieldValues
 
-import Numa: gradient
+import Gridap: gradient
 
-using Numa.Meshes
-using Numa.FESpaces: ConformingFESpace
+using Gridap.Meshes
+using Gridap.FESpaces: ConformingFESpace
 
-using Numa.CellIntegration
+using Gridap.CellIntegration
 
-using Numa.FESpaces: ConformingAssembler
+using Gridap.FESpaces: ConformingAssembler
 using SparseArrays
-using Numa.FESpaces: Assembler
+using Gridap.FESpaces: Assembler
 
-using Numa.Geometry
-using Numa.Geometry.Cartesian
+using Gridap.Geometry
+using Gridap.Geometry.Cartesian
 
 ##
 D=2
@@ -64,8 +64,8 @@ evaluate(phi,cnods)
 evaluate(uphys,cnods)
 ##
 
-using Numa.FESpaces
-using Numa.FESpaces: interpolate
+using Gridap.FESpaces
+using Gridap.FESpaces: interpolate
 fesp = ConformingFESpace(reffe,trian,graph)
 assembler = ConformingAssembler(fesp)
 funh = interpolate(fun, fesp)
@@ -102,7 +102,7 @@ Interpolator(fesp, fun, phi)
 
 isa(uphys, CellField)
 isa(dofb, CellValue)
-using Numa.CellValues
+using Gridap.CellValues
 struct Interpolator{M<:CellField,V<:DOFBasis}
   u::M
   dofb::V
@@ -110,7 +110,7 @@ struct Interpolator{M<:CellField,V<:DOFBasis}
   # Probably better just CellValue{<:RefFE} from FESpace
   # How to make it efficient ?
 end
-using Numa.FESpaces
+using Gridap.FESpaces
 function Interpolator(this::FESpace, fun::Function, ass::Assembler)
   reffe = this.reffe
   dofb = reffe.dofbasis
@@ -164,6 +164,6 @@ end
 
 
 # @santiagobadia : Not tested yet
-using Numa.FESpaces: assemble
+using Gridap.FESpaces: assemble
 sys_vec = assemble(assembler,kvec)
 sys_mat = assemble(assembler,kmat)

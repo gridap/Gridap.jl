@@ -1,6 +1,6 @@
 __precompile__()
 
-module Numa
+module Gridap
 
 using Base.Cartesian
 
@@ -27,4 +27,4 @@ include("CellQuadratures.jl")
 include("CellIntegration.jl")
 include("Vtkio.jl")
 
-end #module Numa
+end #module Gridap

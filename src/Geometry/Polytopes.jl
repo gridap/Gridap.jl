@@ -2,8 +2,8 @@ module Polytopes
 
 using StaticArrays
 using Base.Cartesian
-using Numa #@fverdugo to be eliminated
-using Numa.FieldValues
+using Gridap #@fverdugo to be eliminated
+using Gridap.FieldValues
 
 export Polytope
 export NodesArray

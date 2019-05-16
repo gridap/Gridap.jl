@@ -1,14 +1,14 @@
 module CellMapValues
 
-using Numa
-using Numa.CellMaps
-using Numa.CellValues
-using Numa.CachedArrays
+using Gridap
+using Gridap.CellMaps
+using Gridap.CellValues
+using Gridap.CachedArrays
 
 export CellMapValue
 
 import Base: iterate, length
-import Numa.CellValues: cellsize
+import Gridap.CellValues: cellsize
 
 struct CellMapValue{
   S,M,T,N,A<:CellMap{S,M,T,N},B<:CellArray{S,M}} <: IterCellArray{T,N,CachedArray{T,N,Array{T,N}}}

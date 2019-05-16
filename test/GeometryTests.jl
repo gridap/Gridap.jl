@@ -1,17 +1,17 @@
 module GeometryTests
 
 using Test
-using Numa
-using Numa.FieldValues
-using Numa.CellValues
-using Numa.CellValues.ConstantCellValues
-using Numa.CellMaps
-using Numa.Geometry
-using Numa.Geometry.Cartesian
-using Numa.Geometry.Unstructured
-using Numa.Geometry.Wrappers
-using Numa.Polytopes
-using Numa.Vtkio
+using Gridap
+using Gridap.FieldValues
+using Gridap.CellValues
+using Gridap.CellValues.ConstantCellValues
+using Gridap.CellMaps
+using Gridap.Geometry
+using Gridap.Geometry.Cartesian
+using Gridap.Geometry.Unstructured
+using Gridap.Geometry.Wrappers
+using Gridap.Polytopes
+using Gridap.Vtkio
 
 @testset "CartesianGrid" begin
 

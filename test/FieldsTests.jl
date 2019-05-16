@@ -2,10 +2,10 @@
 
 ##
 using Test
-using Numa.Maps
-using Numa.FieldValues
+using Gridap.Maps
+using Gridap.FieldValues
 
-import Numa: evaluate, gradient
+import Gridap: evaluate, gradient
 ##
 fun(x::Point{2}) = x[1]*x[2] + x[1]
 typeof(fun)
@@ -57,9 +57,9 @@ g = inner(gradf,gradf)
 @test evaluate(g,p) == broadcast(inner,valgf,valgf)
 ##
 # Now tests with basis
-using Numa.Polytopes
-using Numa.RefFEs
-using Numa.Polytopes: PointInt
+using Gridap.Polytopes
+using Gridap.RefFEs
+using Gridap.Polytopes: PointInt
 D = 2
 orders=[1,1]
 extrusion = PointInt{D}(1,1)
@@ -72,20 +72,20 @@ gradb = gradient(reffe.shfbasis)
 @test isa(gradb,Basis)
 #
 vals = [1.0,2.0,3.0,4.0]
-using Numa.Maps: FieldFromExpand
+using Gridap.Maps: FieldFromExpand
 fef = FieldFromExpand(bas,vals)
 @test evaluate(fef,p) ≈ evaluate(bas,p)'*vals
 #
 fun(x::Float64) = 2*x
-using Numa.Maps: FieldFromCompose
+using Gridap.Maps: FieldFromCompose
 ff = FieldFromCompose(fun,f)
 @test evaluate(ff,p) == evaluate(f,p)*2
 #
 gfun(x::Point{2}) = 2*x
 g = AnalyticalField(gfun,2)
-using Numa.Maps: Geomap
+using Gridap.Maps: Geomap
 isa(g,Geomap)
-using Numa.Maps: FieldFromComposeExtended
+using Gridap.Maps: FieldFromComposeExtended
 fce = FieldFromComposeExtended(fun,g,f)
 pp = evaluate(g,p)
 a1 = evaluate(f,pp)
@@ -96,7 +96,7 @@ a2 = broadcast(fun,a1)
 
 ##
 using StaticArrays
-using Numa.FieldValues
+using Gridap.FieldValues
 function foo_mvector_point(a::Vector{T},p::Vector{Point{D}}) where {D,T}
 	MT = FieldValues.mutable(eltype(a))
 	z = zero(MT)

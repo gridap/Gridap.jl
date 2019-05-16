@@ -1,15 +1,15 @@
 module CellIntegrationTests
 
 using Test
-using Numa
-using Numa.FieldValues
-using Numa.CellValues
-using Numa.CellMaps
-using Numa.CellQuadratures
-using Numa.CellIntegration
-using Numa.Quadratures
-using Numa.Geometry
-using Numa.Geometry.Cartesian
+using Gridap
+using Gridap.FieldValues
+using Gridap.CellValues
+using Gridap.CellMaps
+using Gridap.CellQuadratures
+using Gridap.CellIntegration
+using Gridap.Quadratures
+using Gridap.Geometry
+using Gridap.Geometry.Cartesian
 
 grid = CartesianGrid(partition=(3,3))
 trian = triangulation(grid)

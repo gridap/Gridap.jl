@@ -1,14 +1,14 @@
 module CellIntegration
 
-using Numa
-using Numa.Helpers
-using Numa.FieldValues
-using Numa.Polynomials
-using Numa.CellValues
-using Numa.CellMaps
-using Numa.CellQuadratures
-using Numa.Quadratures
-using Numa.Geometry
+using Gridap
+using Gridap.Helpers
+using Gridap.FieldValues
+using Gridap.Polynomials
+using Gridap.CellValues
+using Gridap.CellMaps
+using Gridap.CellQuadratures
+using Gridap.Quadratures
+using Gridap.Geometry
 
 export integrate
 export cellfield
