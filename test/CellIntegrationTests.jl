@@ -54,10 +54,13 @@ end
 
   νfun(x::Point{2},u::Float64) = TensorValue(x[1], u*x[2], 0.0, u)
 
-  ν(u) = cellfield(trian,νfun,u)
+  ν = cellfield(trian,νfun,u)
 
   @test isa(u,CellField{2,Float64})
-  @test isa(ν(u),CellField{2,TensorValue{2,4}})
+  @test isa(ν,CellField{2,TensorValue{2,4}})
+
+  ν(u) = cellfield(trian,νfun,u)
+  #w = ν(u) # julia nightly builds get stuck here
 
 end
 
