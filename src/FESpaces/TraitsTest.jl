@@ -6,18 +6,18 @@ abstract type str{D,Z,T,E} end
 MeshConformity(::FESpace)::MeshConformity = error("Not defined")
 
 struct ConformingFESpace{D,Z,T,E} <: FESpace{D,Z,T,E}
-	a::D,Z,T,E
+  a::D,Z,T,E
 end
 MeshConformity(::Type{ConformingFESpace{D,Z,T,E}}) where {D,Z,T,E}= ConformingMesh
 
 struct NonConformingFESpace{D,Z,T,E} <: FESpace{D,Z,T,E}
-	a::D,Z,T,E
+  a::D,Z,T,E
 end
 MeshConformity(::Type{NonConformingFESpace{D,Z,T,E}}) where {D,Z,T,E} = NonConformingMesh
 
 struct FESpaceWithDirichletData{D,Z,T,E,S<:FESpace{D,Z,T,E}}
-	a::D,Z,T,E
-	s::S
+  a::D,Z,T,E
+  s::S
 end
 
 MeshConformity(::Type{FESpaceWithDirichletData{D,Z,T,E,S}}) where {D,Z,T,E,S} = MeshConformity(S)

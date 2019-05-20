@@ -11,8 +11,8 @@ struct ConformingFEFunction{
         D,Z,T,E,
         A<:FESpace{D,Z,T,E},
         B<:CellFieldFromExpand{D,T,<:CellBasis{D},<:CellVectorFromLocalToGlobalPosAndNeg}} <: FEFunction{D,Z,T,E}
-	fesp::A
-	dof_values::B
+  fesp::A
+  dof_values::B
 end
 
 free_dofs(this::ConformingFEFunction) = this.dof_values.coeffs.gid_to_val_pos

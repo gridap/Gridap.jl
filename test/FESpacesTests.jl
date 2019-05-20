@@ -32,18 +32,18 @@ abstract type str{T} end
 mystyle(::str)::mystyle = error("Not defined")
 
 struct str1{T} <: str{T}
-	a::T
+  a::T
 end
 mystyle(::Type{str1{T}}) where {T}= style1
 
 struct str2{T} <: str{T}
-	a::T
+  a::T
 end
 mystyle(::Type{str2{T}}) where {T} = style2
 
 struct strc{T,S<:str{T}}
-	a::T
-	s::S
+  a::T
+  s::S
 end
 mystyle(::Type{strc{T,S}}) where {T,S<:str1{T}} = style1
 mystyle(::Type{strc{T,S}}) where {T,S<:str2{T}} = style2

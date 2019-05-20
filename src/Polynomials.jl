@@ -54,7 +54,7 @@ end
 evaluate! overwritten for gradients of bases
 """
 function evaluate!(self::GradPolynomialBasis{D,T},
-	points::AbstractArray{Point{D},1}, v::AbstractArray{T,2}) where {D,T}
+  points::AbstractArray{Point{D},1}, v::AbstractArray{T,2}) where {D,T}
   evaluategradients!(self.basis,points,v)
 end
 
@@ -108,18 +108,18 @@ end
 function evaluategradients!(this::UnivariateMonomialBasis,
   points::AbstractVector{Point{1}},v::AbstractArray{VectorValue{1},2})
   # numd = 1 # Changing this number, we get higher order derivatives, to be used
-	# for Hessians, etc.
+  # for Hessians, etc.
   for (j,p) ∈ enumerate(points)
-		v[1,j] = VectorValue{1}(0.0)
+    v[1,j] = VectorValue{1}(0.0)
     for i in 2:length(this)
       # val = (i<=numd) ? 0.0 : prod([i-k-1 for k=0:numd-1])p[1]^(i-numd-1)
-			v[i,j] = VectorValue{1}((i-1)*p[1]^(i-2))
+      v[i,j] = VectorValue{1}((i-1)*p[1]^(i-2))
     end
   end
 end
 
 function evaluategradients(self::UnivariateMonomialBasis,
-	points::AbstractVector{Point{1}})
+  points::AbstractVector{Point{1}})
   vals = Array{VectorValue{1},2}(undef,(length(self),length(points)))
   evaluategradients!(self,points,vals)
   vals
@@ -144,10 +144,10 @@ function TensorProductMonomialBasis{D,T}(order::Vector{Int64}) where {D,T}
 end
 
 function Base.length(this::TensorProductMonomialBasis{D,T})::Int where {D,T}
-	p = 1
-	for i in 1:D
-		p *= length(this.univariatebases[i])
-	end
+  p = 1
+  for i in 1:D
+    p *= length(this.univariatebases[i])
+  end
   length(T)*p
 end
 
@@ -156,34 +156,34 @@ function evaluate!(this::TensorProductMonomialBasis{D,T},
   tpcoor = i -> [ Point{1}(p[i]) for p in points]
   cooruv = [tpcoor(i) for i in 1:D]
   univals = [evaluate(this.univariatebases[i],cooruv[i]) for i in 1:D]
-	# @santiagobadia : In the future, we can create a new evaluate! interface with
-	# an additional scratch data with univals. To be used in unfitted FEM
-	# @santiagobadia : Strided array of points foer every dim instead of cooruv
-	cid = ntuple(i -> 1:length(this.univariatebases[i]), D)
-	lent = length(T)
-	cid = (cid..., 1:lent)
-	cid = CartesianIndices(cid)
-	E = eltype(T)
-	MT = mutable(T)
-	aux = zero(MT)
-	for (i,j) in enumerate(cid)
-		d = j[D+1]
-		for k in 1:length(points)
-			val = 1.0
-			for l in 1:D
-				val *= univals[l][j[l],k]
-			end
-			v[i,k] = insertentry!(val,aux,d)
-			insertentry!(zero(E),aux,d)
-		end
-	end
+  # @santiagobadia : In the future, we can create a new evaluate! interface with
+  # an additional scratch data with univals. To be used in unfitted FEM
+  # @santiagobadia : Strided array of points foer every dim instead of cooruv
+  cid = ntuple(i -> 1:length(this.univariatebases[i]), D)
+  lent = length(T)
+  cid = (cid..., 1:lent)
+  cid = CartesianIndices(cid)
+  E = eltype(T)
+  MT = mutable(T)
+  aux = zero(MT)
+  for (i,j) in enumerate(cid)
+    d = j[D+1]
+    for k in 1:length(points)
+      val = 1.0
+      for l in 1:D
+        val *= univals[l][j[l],k]
+      end
+      v[i,k] = insertentry!(val,aux,d)
+      insertentry!(zero(E),aux,d)
+    end
+  end
 end
 
 insertentry!(a::Float64, b, d::Int) = a
 
 function insertentry!(a::Float64, b::AbstractArray, d::Int)
-	b[d] = a
-	b
+  b[d] = a
+  b
 end
 
 function evaluategradients!(this::TensorProductMonomialBasis{D,T},
@@ -191,44 +191,44 @@ function evaluategradients!(this::TensorProductMonomialBasis{D,T},
   tpcoor = i -> [ Point{1}(p[i]) for p in points]#@fverdugo [...] allocates a temporary array
   cooruv = [tpcoor(i) for i in 1:D]#@fverdugo [...] allocates a temporary array
   univals = [evaluate(this.univariatebases[i],cooruv[i]) for i in 1:D]#@fverdugo [...] allocates a temporary array
-	dervals = [evaluategradients(this.univariatebases[i],cooruv[i]) for i in 1:D]#@fverdugo [...] allocates a temporary array
+  dervals = [evaluategradients(this.univariatebases[i],cooruv[i]) for i in 1:D]#@fverdugo [...] allocates a temporary array
   cid = ntuple(i -> 1:length(this.univariatebases[i]), D)
   lent = length(T)
   cid = (cid..., 1:lent)
   cid = CartesianIndices(cid)
-	E = eltype(T)
-	aux = zero(MVector{D,E})
-	eb = zero(mutable(T))
+  E = eltype(T)
+  aux = zero(MVector{D,E})
+  eb = zero(mutable(T))
   for (i,I) in enumerate(cid)
     d = I[D+1]
     for (p,P) in enumerate(points)
-			tpder!(aux, I, p, univals, dervals)
-			# @santiagobadia : Any better solution?
-			eb = insertentry!(one(E),eb,d)
-			v[i,p] = outer(aux,eb)
-			insertentry!(zero(E),aux,d)
-			insertentry!(zero(E),eb,d)
+      tpder!(aux, I, p, univals, dervals)
+      # @santiagobadia : Any better solution?
+      eb = insertentry!(one(E),eb,d)
+      v[i,p] = outer(aux,eb)
+      insertentry!(zero(E),aux,d)
+      insertentry!(zero(E),eb,d)
     end
   end
 end
 
 function tpder!(aux::MVector{D,E}, I::CartesianIndex{L}, p::Int, univals, dervals) where {D,E,L}
-	for α in 1:D
-		val = one(E)
-		for β in 1:L-1
-			if β != α
-				val = val*univals[β][I[β],p][1]
-			else
-				val = val*dervals[β][I[β],p][1]
-			end
-		end
-		aux[α] = val
-	end
+  for α in 1:D
+    val = one(E)
+    for β in 1:L-1
+      if β != α
+        val = val*univals[β][I[β],p][1]
+      else
+        val = val*dervals[β][I[β],p][1]
+      end
+    end
+    aux[α] = val
+  end
 end
 
 struct PolynomialBasisWithChangeOfBasis{D,T} <: PolynomialBasis{D,T}
   basis::PolynomialBasis{D,T}
-	changeofbasis::Array{Float64,2}
+  changeofbasis::Array{Float64,2}
 end
 
 function Base.length(this::PolynomialBasisWithChangeOfBasis{D,T})::Int where {D,T}
@@ -237,14 +237,14 @@ end
 
 function evaluate!(this::PolynomialBasisWithChangeOfBasis{D,T},
   points::AbstractVector{Point{D}}, v::AbstractArray{T,2}) where {D,T}
-	evaluate!(this.basis,points,v)
-	v .= this.changeofbasis*v
+  evaluate!(this.basis,points,v)
+  v .= this.changeofbasis*v
 end
 
 function evaluategradients!(this::PolynomialBasisWithChangeOfBasis{D,T},
   points::AbstractVector{Point{D}}, v::AbstractArray{TG,2}) where {D,T,TG}
-	evaluategradients!(this.basis,points,v)
-	v .= this.changeofbasis*v
+  evaluategradients!(this.basis,points,v)
+  v .= this.changeofbasis*v
 end
 
 end # module Polynomials

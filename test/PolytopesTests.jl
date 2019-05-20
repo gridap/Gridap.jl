@@ -71,9 +71,9 @@ fco = i -> coords[i][1]
 # extrusion = PointInt{D}(1,1,1)
 # polytope = Polytope(extrusion)
 # for j=1:length(polytope.extrusion)+1
-# 	for i=1:length(polytope.nfaces[polytope.dimnfs[j]])
-# 		@test (sum(polytope.nfaces[polytope.dimnfs[j]][i].extrusion)==j-1)
-# 	end
+#   for i=1:length(polytope.nfaces[polytope.dimnfs[j]])
+#     @test (sum(polytope.nfaces[polytope.dimnfs[j]][i].extrusion)==j-1)
+#   end
 # end
 ##
 # using Gridap.Vtkio

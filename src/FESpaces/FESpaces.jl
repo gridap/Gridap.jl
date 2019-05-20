@@ -50,18 +50,18 @@ MeshConformity(::Type{FESpace})::MeshConformity = @abstractmethod
 MeshConformity(this::FESpace) = MeshConformity(typeof(this))
 
 function applyconstraints(::FESpace,
-	cellvec::CellVector)::Tuple{CellVector,CellVector{Int}}
-	@abstractmethod
+  cellvec::CellVector)::Tuple{CellVector,CellVector{Int}}
+  @abstractmethod
 end
 
 function applyconstraintsrows(::FESpace,
-	cellmat::CellMatrix)::Tuple{CellMatrix,CellVector{Int}}
-	@abstractmethod
+  cellmat::CellMatrix)::Tuple{CellMatrix,CellVector{Int}}
+  @abstractmethod
 end
 
 function applyconstraintscols(::FESpace,
-	cellmat::CellMatrix)::Tuple{CellMatrix,CellVector{Int}}
-	@abstractmethod
+  cellmat::CellMatrix)::Tuple{CellMatrix,CellVector{Int}}
+  @abstractmethod
 end
 
 assemblycellgids(::FESpace)::CellVector{Int} = @abstractmethod
@@ -77,18 +77,18 @@ _gridgraph(::FESpace) = @abstractmethod
 _labels(::FESpace) = @abstractmethod
 
 struct FESpaceWithDirichletData{D,Z,T,E,V<:FESpace{D,Z,T,E}} <: FESpace{D,Z,T,E}
-	fesp::V
-	dir_data::Vector{Float64}
+  fesp::V
+  dir_data::Vector{Float64}
 end
 
 MeshConformity(::Type{FESpaceWithDirichletData{D,Z,T,E,S}})  where {D,Z,T,E,S} = MeshConformity(S)
 # MeshConformity(::Type{FESpaceWithDirichletData{D,Z,T,E,S}}) where {D,Z,T,E,S<:NonConformingFESpace{D,Z,T,E}} = NonConformingMesh
 
 for op in (:nf_dofs, :cell_eqclass, :num_free_dofs, :num_fixed_dofs, :dir_tags,
-	:_reffes, :_triangulation, :_gridgraph, :_labels)
-	@eval begin
-		$op(this::FESpaceWithDirichletData) = $op(this.fesp)
-	end
+  :_reffes, :_triangulation, :_gridgraph, :_labels)
+  @eval begin
+    $op(this::FESpaceWithDirichletData) = $op(this.fesp)
+  end
 end
 
 dir_data(this::FESpaceWithDirichletData) = this.dir_data
@@ -99,8 +99,8 @@ function TestFESpace(this::FESpace)
 end
 
 function TrialFESpace( this::FESpace{D}, fun::Vector{Function}, labels::FaceLabels) where {D}
-	dv = interpolate_dirichlet_data(fun, this)
-	# @santiagobadia : Put labels in FESPace
+  dv = interpolate_dirichlet_data(fun, this)
+  # @santiagobadia : Put labels in FESPace
   return FESpaceWithDirichletData(this, dv)
 end
 

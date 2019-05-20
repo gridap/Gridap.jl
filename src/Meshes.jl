@@ -27,16 +27,16 @@ vefcells(::Mesh)::CellVector{Int} = @abstractmethod
 # Concrete structs
 
 struct StructHexMesh{D} <: Mesh{D}
-	# Here I am computing the cell vefs, and store the result in a big array,
-	# probably better to compute it on the fly on demand. Analogously for the
-	# dual mesh, for any relation of nface dim against nface dim. For the moment,
-	# I am creating a mesh using the same structures as unstructured meshes.
-	# A very light weight structured mesh in which arrays are replaced by
-	# functions, probably using an AbstractArray would be possible.
-	polytope::Polytope{D}
-	cellvefs::CellVector{Int}
-	vefcells::CellVector{Int}
-	# coordinates::Array{Point{D}}
+  # Here I am computing the cell vefs, and store the result in a big array,
+  # probably better to compute it on the fly on demand. Analogously for the
+  # dual mesh, for any relation of nface dim against nface dim. For the moment,
+  # I am creating a mesh using the same structures as unstructured meshes.
+  # A very light weight structured mesh in which arrays are replaced by
+  # functions, probably using an AbstractArray would be possible.
+  polytope::Polytope{D}
+  cellvefs::CellVector{Int}
+  vefcells::CellVector{Int}
+  # coordinates::Array{Point{D}}
 end
 
 cellvefs(this::StructHexMesh)::CellVector{Int} = this.cellvefs
@@ -48,8 +48,8 @@ struct LexIndexSet
     offset::Vector{Int64}
     function LexIndexSet(range::Vector{Int64})
         offset = [ prod(range[1:i-1]) for i=1:length(range)]
-		return new(range,offset)
-	end
+    return new(range,offset)
+  end
 end
 
 # Methods
