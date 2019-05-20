@@ -11,7 +11,11 @@ using Gridap.CellValues.Wrappers
 using Gridap.CellValues.Append
 using Gridap.Geometry
 using Gridap.FieldValues
+using Gridap.CellMaps.Operations: CellFieldFromExpand
 
+export FEFunction
+export free_dofs
+export diri_dofs
 export FESpace
 export num_free_dofs
 export num_diri_dofs
@@ -20,17 +24,20 @@ export apply_constraints_rows
 export apply_constraints_cols
 export interpolated_values
 
+import Gridap: evaluate, gradient, return_size
+
 export ConformingFESpace
+export ConformingFEFunction
 
 """
 Abstract type representing a FE Function
-A FE function is a member of a FESpace
-since a FE space is the direct sum of free + dirichlet spaces
+A FE function is a member of a FESpace.
+Since a FE space is the direct sum of free + dirichlet spaces
 a FE function is uniquely represented by two vectors of components aka
-`free_dofs` and `diri_dofs`
+`free_dofs` and `diri_dofs` which are Vectors{E} with
 E = eltype(T)
 """
-abstract type FEFunction{Z,T,C,R} <: IndexCellField{Z,T,C,R} end
+abstract type FEFunction{Z,T,R} <: IterCellField{Z,T,R} end
 
 function free_dofs(::FEFunction)::Vector{E} where E
   @abstractmethod
@@ -82,8 +89,9 @@ function FEFunction(::FESpace,free_dofs::Vector{E},diri_dofs::Vector{E})::FEFunc
   @abstractmethod
 end
 
-function interpolate(::FESpace{D,Z,T},::Function)::CellField{Z,T} where {D,Z,T}
-  @abstractmethod
+function interpolate(this::FESpace,fun::Function)
+  free_vals, diri_vals = interpolated_values(this,fun)
+  FEFunction(this,free_vals,diri_vals)
 end
 
 """
@@ -142,19 +150,53 @@ function interpolated_values(this::ConformingFESpace,f::Function)
   _interpolated_values(this,f)
 end
 
+function FEFunction(
+  this::ConformingFESpace,free_dofs::Vector{E},diri_dofs::Vector{E}) where E
+  ConformingFEFunction(this,free_dofs,diri_dofs)
+end
+
 function interpolate(this::ConformingFESpace,f::Function)
   _interpolate(this,f)
 end
 
-# Helpers
-
-function _interpolate(this::ConformingFESpace,fun::Function)
-  free_dofs, diri_dofs = interpolated_values(this,fun)
-  cdofs = CellVectorFromLocalToGlobalPosAndNeg(celldofs, free_dofs, diri_dofs)
-  shb = ConstantCellValue(reffe.shfbasis, ncells(trian))
-  intu = CellFieldFromExpand(shb, cdofs)
-  return ConformingFEFunction(fesp, intu)
+struct ConformingFEFunction{
+   Z,T,R,
+   F<:CellFieldFromExpand{
+    Z,T,<:CellBasis{Z},<:CellVectorFromLocalToGlobalPosAndNeg,R
+   }} <: FEFunction{Z,T,R}
+  cfield::F
 end
+
+function ConformingFEFunction(
+  fespace::ConformingFESpace{D,Z,T},
+  free_dofs::Vector{E},
+  diri_dofs::Vector{E}) where {D,Z,T,E}
+
+  @assert E == eltype(T)
+  @assert num_free_dofs(fespace) == length(free_dofs)
+  @assert num_diri_dofs(fespace) == length(diri_dofs)
+  reffe = fespace._reffes
+  trian = fespace._triangulation
+  celldofs = fespace.cell_eqclass
+  shb = ConstantCellValue(reffe.shfbasis, ncells(trian))
+  cdofs = CellVectorFromLocalToGlobalPosAndNeg(celldofs, free_dofs, diri_dofs)
+  cfield = CellFieldFromExpand(shb, cdofs)
+  ConformingFEFunction(cfield)
+end
+
+function free_dofs(this::ConformingFEFunction)
+  this.cfield.coeffs.gid_to_val_pos.v
+end
+
+function diri_dofs(this::ConformingFEFunction)
+  this.cfield.coeffs.gid_to_val_neg.v
+end
+
+function evaluate(this::ConformingFEFunction{Z},q::CellPoints{Z}) where Z
+  evaluate(this.cfield,q)
+end
+
+# Helpers
 
 function _interpolated_values(fesp::ConformingFESpace{D,Z,T},fun::Function) where {D,Z,T}
   reffe = fesp._reffes

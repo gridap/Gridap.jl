@@ -67,4 +67,9 @@ rd = [0.0, 0.259035, 0.368291, 0.420735, 0.73846, 0.151174,
 @test isapprox(free_vals,rf,rtol=1.0e-5)
 @test isapprox(diri_vals,rd,rtol=1.0e-5)
 
+uh = FEFunction(fespace,free_vals,diri_vals)
+
+@test free_dofs(uh) === free_vals
+@test diri_dofs(uh) === diri_vals
+
 end # module FESpacesTests
