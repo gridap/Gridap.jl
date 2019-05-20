@@ -21,6 +21,11 @@ v = [ [i,i,i] for i in 1:10 ]
 cv = CellValueFromArray(v)
 test_index_cell_array( cv, v )
 
+r = [[2, 2, 2], [4, 4, 4], [6, 6, 6], [8, 8, 8],
+     [10, 10, 10], [12, 12, 12], [14, 14, 14],
+     [16, 16, 16], [18, 18, 18], [20, 20, 20]]
+@test r == collect(cv+cv)
+
 a = [ [i+1,i+2,i+3] for i in 1:10 ]
 ca = CellValueFromArray(a)
 test_index_cell_array( ca, a )

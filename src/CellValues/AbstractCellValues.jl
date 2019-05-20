@@ -24,6 +24,8 @@ import Base: eltype
 import Base: size
 import Base: getindex
 import Base: IndexStyle
+import Base: show
+import Base: collect
 
 export cellsize
 export celllength
@@ -103,10 +105,12 @@ cellsize(self::CellArray,i::Int) = (s = cellsize(self); s[i])
 
 celllength(self::CellArray) = prod(cellsize(self))
 
-function Base.show(io::IO,self::CellValue)
+function show(io::IO,self::CellValue)
   for (i, a) in enumerate(self)
     println(io,"$i -> $a")
   end
 end
+
+collect(a::CellArray) = [ copy(ai) for ai in a ]
 
 end # module AbstractCellValues

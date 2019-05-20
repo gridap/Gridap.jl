@@ -249,6 +249,8 @@ Grid(m::DiscreteModel,dim::Integer) = Grid(m,Val(dim))
 
 GridGraph(m::DiscreteModel,dim::Integer) = GridGraph(m,Val(dim))
 
+pointdim(::DiscreteModel{D}) where D = D
+
 #@fverdugo to be deleted together with (old) GridGraph
 struct GridGraphFromData{C<:IndexCellArray{Int,1},V<:IndexCellArray{Int,1}} <: GridGraph
   celltovefs::C
