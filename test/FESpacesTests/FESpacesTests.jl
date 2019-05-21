@@ -12,6 +12,7 @@ using Gridap.Polytopes
 using Gridap.Geometry
 using Gridap.Geometry.Cartesian
 using Gridap.CellMaps.Testers
+using Gridap.CellIntegration
 
 using ..FESpaces
 
@@ -77,10 +78,38 @@ uh = FEFunction(fespace,free_vals,diri_vals)
 
 cellbasis = CellBasis(fespace)
 
+quad = quadrature(trian,order=2)
+
+a(v,u) = varinner(v,u)
+
+bfun(x) = x[2] 
+
+b(v) = varinner(v,cellfield(trian,bfun))
+
+mmat = integrate(a(cellbasis,cellbasis),trian,quad)
+
+bvec = integrate(b(cellbasis),trian,quad)
+
+bvec2, dofs = apply_constraints(fespace,bvec)
+
+@test bvec2 === bvec
+
+@test dofs == fespace.cell_eqclass
+
+mmat2, dofs = apply_constraints_rows(fespace,mmat)
+
+@test mmat2 === mmat
+
+@test dofs == fespace.cell_eqclass
+
+mmat3, dofs = apply_constraints_cols(fespace,mmat)
+
+@test mmat3 === mmat
+
+@test dofs == fespace.cell_eqclass
+
 uh = interpolate(fespace,fun)
 @test isa(uh,FEFunction)
-
-quad = quadrature(trian,order=2)
 
 q = coordinates(quad)
 uhq = evaluate(uh,q)
