@@ -23,11 +23,15 @@ export apply_constraints
 export apply_constraints_rows
 export apply_constraints_cols
 export interpolated_values
+export interpolate
 
 export ConformingFESpace
-export ConformingFEFunction
 
 import Gridap.CellMaps: CellField, CellBasis
+
+import Gridap: evaluate, gradient, return_size
+import Base: iterate
+import Base: length
 
 """
 Abstract FE Space parameterized with respec to the environment dimension `D`,
@@ -124,6 +128,18 @@ function FEFunction(
   C = typeof(cellfield)
   FEFunction{D,Z,T,E,R,C}(free_dofs,diri_dofs,fespace,cellfield)
 end
+
+evaluate(f::FEFunction{D,Z},q::CellPoints{Z}) where {D,Z} = evaluate(f.cellfield,q)
+
+gradient(f::FEFunction) = gradient(f.cellfield)
+
+return_size(f::FEFunction,s::Tuple{Int}) = return_size(f.cellfield,s)
+
+@inline iterate(f::FEFunction) = iterate(f.cellfield)
+
+@inline iterate(f::FEFunction,state) = iterate(f.cellfield,state)
+
+length(f::FEFunction) = length(f.cellfield)
 
 """
 Conforming FE Space, where only one RefFE is possible in the whole mesh

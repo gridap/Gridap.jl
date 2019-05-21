@@ -7,9 +7,11 @@ using Test
 
 using Gridap
 using Gridap.RefFEs
+using Gridap.CellMaps
 using Gridap.Polytopes
 using Gridap.Geometry
 using Gridap.Geometry.Cartesian
+using Gridap.CellMaps.Testers
 
 using ..FESpaces
 
@@ -72,5 +74,23 @@ uh = FEFunction(fespace,free_vals,diri_vals)
 @test free_dofs(uh) === free_vals
 @test diri_dofs(uh) === diri_vals
 @test FESpace(uh) === fespace
+
+cellbasis = CellBasis(fespace)
+
+uh = interpolate(fespace,fun)
+@test isa(uh,FEFunction)
+
+quad = quadrature(trian,order=2)
+
+q = coordinates(quad)
+uhq = evaluate(uh,q)
+
+grad_uh = gradient(uh)
+grad_uhq = evaluate(grad_uh,q)
+
+v = collect(uhq)
+g = collect(grad_uhq)
+
+test_cell_map_with_gradient(uh,q,v,g)
 
 end # module FESpacesTests
