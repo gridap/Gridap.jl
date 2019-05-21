@@ -93,4 +93,6 @@ g = collect(grad_uhq)
 
 test_cell_map_with_gradient(uh,q,v,g)
 
+fespace = ConformingFESpace(Float64,model,order,tags)
+
 end # module FESpacesTests

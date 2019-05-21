@@ -161,18 +161,29 @@ function ConformingFESpace(
   reffe::LagrangianRefFE{D,T},
   trian::Triangulation{D,Z},
   graph::FullGridGraph,
-  labels::FaceLabels) where {D,Z,T}
-  return ConformingFESpace(reffe, trian, graph, labels, ())
+  labels::FaceLabels,
+  diri_tags::Vector{Int}) where {D,Z,T}
+  args = _setup_conforming_fe_fields(reffe,trian,graph,labels,diri_tags,D)
+  ConformingFESpace{D,Z,T}(args...)
 end
 
 function ConformingFESpace(
   reffe::LagrangianRefFE{D,T},
   trian::Triangulation{D,Z},
   graph::FullGridGraph,
-  labels::FaceLabels,
-  diri_tags::Vector{Int}) where {D,Z,T}
-  args = _setup_conforming_fe_fields(reffe,trian,graph,labels,diri_tags,D)
-  ConformingFESpace{D,Z,T}(args...)
+  labels::FaceLabels) where {D,Z,T}
+  return ConformingFESpace(reffe, trian, graph, labels, ())
+end
+
+function ConformingFESpace(::Type{T},model::DiscreteModel{D},order,diri_tags) where {D,T}
+  grid = Grid(model,D)
+  trian = triangulation(grid)
+  graph = FullGridGraph(model)
+  labels = FaceLabels(model)
+  orders = fill(order,D)
+  polytope = _polytope(celltypes(grid))
+  fe = LagrangianRefFE{D,T}(polytope, orders)
+  ConformingFESpace(fe,trian,graph,labels,diri_tags)
 end
 
 num_free_dofs(this::ConformingFESpace) = this.num_free_dofs
@@ -217,6 +228,13 @@ end
 CellBasis(this::ConformingFESpace) = this._basis
 
 # Helpers
+
+_polytope(celltypes) = @notimplemented
+
+function _polytope(celltypes::ConstantCellValue)
+  code = celldata(celltypes)
+  Polytope(code)
+end
 
 function _interpolated_values(fesp::ConformingFESpace{D,Z,T},fun::Function) where {D,Z,T}
   reffe = fesp._reffes
