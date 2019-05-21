@@ -17,8 +17,11 @@ export FEFunction
 export free_dofs
 export diri_dofs
 export FESpace
+export TestFESpace
+export TrialFESpace
 export num_free_dofs
 export num_diri_dofs
+export diri_tags
 export apply_constraints
 export apply_constraints_rows
 export apply_constraints_cols
@@ -43,6 +46,8 @@ abstract type FESpace{D,Z,T} end
 num_free_dofs(::FESpace)::Int = @abstractmethod
 
 num_diri_dofs(::FESpace)::Int = @abstractmethod
+
+diri_tags(::FESpace)::Vector{Int} = @abstractmethod
 
 function apply_constraints(
   ::FESpace, cellvec::CellVector)::Tuple{CellVector,CellVector{Int}}
@@ -84,6 +89,18 @@ function interpolate(this::FESpace,fun::Function)
   free_vals, diri_vals = interpolated_values(this,fun)
   FEFunction(this,free_vals,diri_vals)
 end
+
+function TestFESpace(this::FESpace{D,Z,T}) where {D,Z,T}
+  E = eltype(T)
+  dv = zeros(T,num_fixed_dofs(this))
+  return FESpaceWithDirichletData(this, dv)
+end
+
+#function TrialFESpace( this::FESpace, fun::Vector{<:Function}) where {D}
+#  dv = interpolate_dirichlet_data(fun, this)
+#  # @santiagobadia : Put labels in FESPace
+#  return FESpaceWithDirichletData(this, dv)
+#end
 
 """
 Abstract type representing a FE Function
@@ -142,6 +159,51 @@ return_size(f::FEFunction,s::Tuple{Int}) = return_size(f.cellfield,s)
 length(f::FEFunction) = length(f.cellfield)
 
 """
+FE whose Dirichlet component has been constrained
+"""
+struct FESpaceWithDirichletData{D,Z,T,E,V<:FESpace{D,Z,T}} <: FESpace{D,Z,T}
+  fespace::V
+  diri_dofs::Vector{E}
+end
+
+diri_dofs(f::FESpaceWithDirichletData) = f.diri_dofs
+
+num_free_dofs(f::FESpaceWithDirichletData) = num_free_dofs(f.fespace)
+
+num_diri_dofs(f::FESpaceWithDirichletData) = num_diri_dofs(f.fespace)
+
+diri_tags(f::FESpaceWithDirichletData) = diri_tags(f.fespace)
+
+function apply_constraints(
+  f::FESpaceWithDirichletData, cellvec::CellVector)
+  apply_constraints(f.fespace,cellvec)
+end
+
+function apply_constraints_rows(
+  f::FESpaceWithDirichletData, cellmat::CellMatrix)
+  apply_constraints_rows(f.fespace,cellmat)
+end
+
+function apply_constraints_cols(
+  f::FESpaceWithDirichletData, cellmat::CellMatrix)
+  apply_constraints_cols(f.fespace,cellmat)
+end
+
+function interpolated_values(f::FESpaceWithDirichletData,fun::Function)
+  free_vals, _ = interpolated_values(f.fespace,fun)
+  free_vals, f.diri_dofs
+end
+
+function CellField(
+  f::FESpaceWithDirichletData{D,Z,T},free_dofs::Vector{E},diri_dofs::Vector{E})where {D,Z,T,E}
+  CellField(f.fespace,free_dofs,f.diri_dofs)
+end
+
+function CellBasis(f::FESpaceWithDirichletData)
+  CellBasis(f.fespace)
+end
+
+"""
 Conforming FE Space, where only one RefFE is possible in the whole mesh
 """
 struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T}
@@ -189,6 +251,8 @@ end
 num_free_dofs(this::ConformingFESpace) = this.num_free_dofs
 
 num_diri_dofs(this::ConformingFESpace) = this.num_diri_dofs
+
+diri_tags(f::ConformingFESpace) = f.diri_tags
 
 function apply_constraints(
   this::ConformingFESpace, cellvec::CellVector)

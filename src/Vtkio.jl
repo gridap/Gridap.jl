@@ -3,6 +3,7 @@ module Vtkio
 using Gridap
 using Gridap.Helpers
 using Gridap.CellValues
+using Gridap.CellValues.Wrappers
 using Gridap.CellValues.ConstantCellValues
 using Gridap.CellMaps
 using Gridap.FieldValues

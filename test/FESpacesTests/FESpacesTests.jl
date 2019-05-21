@@ -13,6 +13,7 @@ using Gridap.Geometry
 using Gridap.Geometry.Cartesian
 using Gridap.CellMaps.Testers
 using Gridap.CellIntegration
+using Gridap.Vtkio
 
 using ..FESpaces
 
@@ -35,6 +36,8 @@ fespace = ConformingFESpace(fe,trian,graph,labels,tags)
 
 @test num_free_dofs(fespace) == 5
 @test num_diri_dofs(fespace) == 4
+
+@test diri_tags(fespace) === tags
 
 r = [[-1, 1, 2, 3], [1, -2, 3, 4], [2, 3, -3, 5], [3, 4, 5, -4]]
 
@@ -123,5 +126,9 @@ g = collect(grad_uhq)
 test_cell_map_with_gradient(uh,q,v,g)
 
 fespace = ConformingFESpace(Float64,model,order,tags)
+
+writevtk(trian,"trian",nref=3,cellfields=["uh"=>uh])
+
+
 
 end # module FESpacesTests
