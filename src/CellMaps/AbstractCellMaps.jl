@@ -89,11 +89,15 @@ const IndexCellBasis{D,T,C,R<:Basis{D,T}} = IndexCellMap{Point{D},1,T,2,C,R} whe
 
 const CellBasis{D,T} = Union{IterCellBasis{D,T},IndexCellBasis{D,T}}
 
+function CellBasis end
+
 """
 Abstract type representing a cellwise transformation between two geometrical
 domains
 """
 const CellGeomap{D,Z} = CellField{D,Point{Z}}
+
+function CellGeomap end
 
 """
 An array of points for each cell.

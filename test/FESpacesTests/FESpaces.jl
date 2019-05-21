@@ -27,7 +27,7 @@ export interpolated_values
 export ConformingFESpace
 export ConformingFEFunction
 
-import Gridap.CellMaps: CellField
+import Gridap.CellMaps: CellField, CellBasis
 
 """
 Abstract FE Space parameterized with respec to the environment dimension `D`,
@@ -69,6 +69,10 @@ E = eltype(T)
 """
 function CellField(
   ::FESpace{D,Z,T},free_dofs::Vector{E},diri_dofs::Vector{E})::CellField{Z,T} where {D,Z,T,E}
+  @abstractmethod
+end
+
+function CellBasis(::FESpace{D,Z,T})::CellBasis{Z,T} where {D,Z,T}
   @abstractmethod
 end
 
@@ -134,6 +138,7 @@ struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T}
   _triangulation::Triangulation{D,Z}
   _gridgraph::FullGridGraph
   _labels::FaceLabels
+  _basis::CellBasis{Z,T}
 end
 
 function ConformingFESpace(
@@ -188,10 +193,12 @@ function CellField(
   reffe = fespace._reffes
   trian = fespace._triangulation
   celldofs = fespace.cell_eqclass
-  shb = ConstantCellValue(reffe.shfbasis, ncells(trian))
+  shb = CellBasis(fespace)
   cdofs = CellVectorFromLocalToGlobalPosAndNeg(celldofs, free_dofs, diri_dofs)
-  CellFieldFromExpand(shb, cdofs)
+  lincomb(shb,cdofs)
 end
+
+CellBasis(this::ConformingFESpace) = this._basis
 
 # Helpers
 
@@ -233,8 +240,11 @@ function _setup_conforming_fe_fields(reffe,trian,graph,labels,diri_tags,D)
   cellvefs = IndexCellValueByLocalAppendWithOffset(offset, cellvefs_dim...)
   dofs_all = IndexCellValueByGlobalAppend(dim_to_nface_eqclass...)
   cell_eqclass = CellVectorByComposition(cellvefs, dofs_all)
+  shb = ConstantCellValue(reffe.shfbasis, ncells(trian))
+  phi = geomap(trian)
+  basis = attachgeomap(shb,phi)
   return dim_to_nface_eqclass, cell_eqclass, nfree, ndiri, diri_tags,
-    reffe, trian, graph, labels
+    reffe, trian, graph, labels, basis
 end
 
 function _generate_dim_to_nface_eqclass(
