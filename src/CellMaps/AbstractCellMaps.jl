@@ -77,6 +77,8 @@ const IndexCellField{D,T,C,R<:Field{D,T}} = IndexCellMap{Point{D},1,T,1,C,R} whe
 
 const CellField{D,T} = Union{IterCellField{D,T},IndexCellField{D,T}}
 
+function CellField end
+
 """
 Abstract type that represents a cell-wise basis for a field space,
 where T is the type of value and D the dimension of the domain

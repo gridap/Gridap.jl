@@ -24,28 +24,10 @@ export apply_constraints_rows
 export apply_constraints_cols
 export interpolated_values
 
-import Gridap: evaluate, gradient, return_size
-
 export ConformingFESpace
 export ConformingFEFunction
 
-"""
-Abstract type representing a FE Function
-A FE function is a member of a FESpace.
-Since a FE space is the direct sum of free + dirichlet spaces
-a FE function is uniquely represented by two vectors of components aka
-`free_dofs` and `diri_dofs` which are Vectors{E} with
-E = eltype(T)
-"""
-abstract type FEFunction{Z,T,R} <: IterCellField{Z,T,R} end
-
-function free_dofs(::FEFunction)::Vector{E} where E
-  @abstractmethod
-end
-
-function diri_dofs(::FEFunction)::Vector{E} where E
-  @abstractmethod
-end
+import Gridap.CellMaps: CellField
 
 """
 Abstract FE Space parameterized with respec to the environment dimension `D`,
@@ -82,16 +64,61 @@ function interpolated_values(::FESpace,::Function)::Tuple{Vector{E},Vector{E}} w
 end
 
 """
-Returns the FE function represented be the  free and dirichlet values
+Returns the CellField represented be the  free and dirichlet values
 E = eltype(T)
 """
-function FEFunction(::FESpace,free_dofs::Vector{E},diri_dofs::Vector{E})::FEFunction where E
+function CellField(
+  ::FESpace{D,Z,T},free_dofs::Vector{E},diri_dofs::Vector{E})::CellField{Z,T} where {D,Z,T,E}
   @abstractmethod
 end
 
 function interpolate(this::FESpace,fun::Function)
   free_vals, diri_vals = interpolated_values(this,fun)
   FEFunction(this,free_vals,diri_vals)
+end
+
+"""
+Abstract type representing a FE Function
+A FE function is a member of a FESpace.
+Since a FE space is the direct sum of free + dirichlet spaces
+a FE function is uniquely represented by two vectors of components aka
+`free_dofs` and `diri_dofs` which are Vectors{E} with
+E = eltype(T) and its fe space
+"""
+struct FEFunction{
+  D,Z,T,E,R,
+  C <: CellField{Z,T}} <: IterCellField{Z,T,R}
+  free_dofs::AbstractVector{E}
+  diri_dofs::AbstractVector{E}
+  fespace::FESpace{D,Z,T}
+  cellfield::C
+end
+
+free_dofs(f::FEFunction) = f.free_dofs
+
+diri_dofs(f::FEFunction) = f.diri_dofs
+
+FESpace(f::FEFunction) = f.fespace
+
+"""
+Returns the FE function represented be the  free and dirichlet values
+E = eltype(T)
+"""
+function FEFunction(
+  fespace::FESpace,free_dofs::AbstractVector,diri_dofs::AbstractVector)
+  cfield = CellField(fespace,free_dofs,diri_dofs)
+  FEFunction(free_dofs,diri_dofs,fespace,cfield)
+end
+
+function FEFunction(
+  free_dofs::AbstractVector{E},
+  diri_dofs::AbstractVector{E},
+  fespace::FESpace{D,Z,T},
+  cellfield::CellField{Z,T}) where {D,Z,T,E}
+  @assert E == eltype(T)
+  R = eltype(cellfield)
+  C = typeof(cellfield)
+  FEFunction{D,Z,T,E,R,C}(free_dofs,diri_dofs,fespace,cellfield)
 end
 
 """
@@ -150,24 +177,7 @@ function interpolated_values(this::ConformingFESpace,f::Function)
   _interpolated_values(this,f)
 end
 
-function FEFunction(
-  this::ConformingFESpace,free_dofs::Vector{E},diri_dofs::Vector{E}) where E
-  ConformingFEFunction(this,free_dofs,diri_dofs)
-end
-
-function interpolate(this::ConformingFESpace,f::Function)
-  _interpolate(this,f)
-end
-
-struct ConformingFEFunction{
-   Z,T,R,
-   F<:CellFieldFromExpand{
-    Z,T,<:CellBasis{Z},<:CellVectorFromLocalToGlobalPosAndNeg,R
-   }} <: FEFunction{Z,T,R}
-  cfield::F
-end
-
-function ConformingFEFunction(
+function CellField(
   fespace::ConformingFESpace{D,Z,T},
   free_dofs::Vector{E},
   diri_dofs::Vector{E}) where {D,Z,T,E}
@@ -180,20 +190,7 @@ function ConformingFEFunction(
   celldofs = fespace.cell_eqclass
   shb = ConstantCellValue(reffe.shfbasis, ncells(trian))
   cdofs = CellVectorFromLocalToGlobalPosAndNeg(celldofs, free_dofs, diri_dofs)
-  cfield = CellFieldFromExpand(shb, cdofs)
-  ConformingFEFunction(cfield)
-end
-
-function free_dofs(this::ConformingFEFunction)
-  this.cfield.coeffs.gid_to_val_pos.v
-end
-
-function diri_dofs(this::ConformingFEFunction)
-  this.cfield.coeffs.gid_to_val_neg.v
-end
-
-function evaluate(this::ConformingFEFunction{Z},q::CellPoints{Z}) where Z
-  evaluate(this.cfield,q)
+  CellFieldFromExpand(shb, cdofs)
 end
 
 # Helpers

@@ -71,5 +71,6 @@ uh = FEFunction(fespace,free_vals,diri_vals)
 
 @test free_dofs(uh) === free_vals
 @test diri_dofs(uh) === diri_vals
+@test FESpace(uh) === fespace
 
 end # module FESpacesTests
