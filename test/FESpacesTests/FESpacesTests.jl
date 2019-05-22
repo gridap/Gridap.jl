@@ -156,8 +156,18 @@ uhq = evaluate(uh1,q)
 #writevtk(trian,"trian",nref=3,
 #  cellfields=["uh1"=>uh1,"uh2"=>uh2,"uh3"=>uh3])
 
-#@show uhq
 
+# NOT WORKING for order == 2
 
+model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(2,2))
+
+order = 2
+tags = [1,2,3,4,6,5]
+fespace = ConformingFESpace(Float64,model,order,tags)
+
+fun(x) = x[1] + x[2]
+uh = interpolate(fespace,fun)
+
+#writevtk(trian,"trian", nref=4, cellfields=["uh"=>uh])
 
 end # module FESpacesTests
