@@ -55,7 +55,7 @@ assem = SparseMatrixAssembler(V,U)
 op = LinearFEOperator(a,b,V,U,assem,trian,quad)
 
 # Define the FESolver
-solver = LinearFESolver(U)
+solver = LinearFESolver()
 
 # Solve!
 uh = solve(solver,op)

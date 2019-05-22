@@ -31,9 +31,13 @@ function solve(::FESolver,::FEOperator)::FEFunction
   @abstractmethod
 end
 
+"""
+Struct representing a linear FE Operator
+"""
 struct LinearFEOperator{M,V} <:FEOperator
   mat::M
   vec::V
+  trialfesp::FESpaceWithDirichletData
 end
 
 function LinearFEOperator(
@@ -61,7 +65,7 @@ function LinearFEOperator(
 
   vec = assemble(assem,cellvec)
 
-  LinearFEOperator(mat,vec)
+  LinearFEOperator(mat,vec,trialfesp)
 
 end
 
@@ -72,9 +76,7 @@ end
 
 jacobian(o::LinearFEOperator,::FEFunction) = o.mat
 
-struct LinearFESolver <: FESolver
-  trialfesp::FESpaceWithDirichletData
-end
+struct LinearFESolver <: FESolver end
 
 function solve(::LinearFESolver,::FEOperator)
   @unreachable
@@ -82,8 +84,8 @@ end
 
 function solve(s::LinearFESolver,o::LinearFEOperator)
   x = o.mat \ o.vec
-  diri_vals = diri_dofs(s.trialfesp)
-  FEFunction(s.trialfesp,x,diri_vals)
+  diri_vals = diri_dofs(o.trialfesp)
+  FEFunction(o.trialfesp,x,diri_vals)
 end
 
 end # module FEOperators
