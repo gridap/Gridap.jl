@@ -134,7 +134,7 @@ fespace = ConformingFESpace(Float64,model,order,tags)
 
 model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(2,2))
 
-order = 2
+order = 1
 fespace = ConformingFESpace(Float64,model,order,tags)
 
 grid = Grid(model,D)

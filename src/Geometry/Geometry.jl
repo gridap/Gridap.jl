@@ -251,6 +251,15 @@ GridGraph(m::DiscreteModel,dim::Integer) = GridGraph(m,Val(dim))
 
 pointdim(::DiscreteModel{D}) where D = D
 
+function triangulation(m::DiscreteModel,dim::Integer)
+  grid = Grid(m,dim)
+  triangulation(grid)
+end
+
+function triangulation(m::DiscreteModel{D}) where D
+  triangulation(m,D)
+end
+
 #@fverdugo to be deleted together with (old) GridGraph
 struct GridGraphFromData{C<:IndexCellArray{Int,1},V<:IndexCellArray{Int,1}} <: GridGraph
   celltovefs::C
