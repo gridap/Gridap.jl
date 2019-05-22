@@ -30,6 +30,7 @@ export interpolated_diri_values
 export interpolate
 
 export ConformingFESpace
+export FESpaceWithDirichletData
 
 import Gridap.CellMaps: CellField, CellBasis
 
@@ -102,7 +103,7 @@ end
 
 function TestFESpace(this::FESpace{D,Z,T}) where {D,Z,T}
   E = eltype(T)
-  dv = zeros(T,num_fixed_dofs(this))
+  dv = zeros(E,num_diri_dofs(this))
   return FESpaceWithDirichletData(this, dv)
 end
 
