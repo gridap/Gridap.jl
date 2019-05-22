@@ -73,6 +73,18 @@ function gradient(::CellMapFromBinaryOp{S,M,T,N}) where {S,M,T<:FieldValue,N}
   @notimplemented
 end
 
+function gradient(v::CellValueFromBinaryOp{<:Map,typeof(+)})
+  ga = gradient(v.a)
+  gb = gradient(v.b)
+  ga + gb
+end
+
+function gradient(v::CellValueFromBinaryOp{<:Map,typeof(-)})
+  ga = gradient(v.a)
+  gb = gradient(v.b)
+  ga - gb
+end
+
 function return_size(
   self::CellMapFromBinaryOp{S,M,T,N},s::NTuple{M,Int}) where {S,M,T,N}
   v, vnext = iterate(self)

@@ -66,15 +66,15 @@ e = u - uh
 
 # Define norms to measure the error
 l2(u) = varinner(u,u)
-#h1(u) = a(u,u) + l2(u)
+h1(u) = a(u,u) + l2(u)
 
 # Compute errors
 el2 = sqrt(sum( integrate(l2(e),trian,quad) ))
-#eh1 = sqrt(sum( integrate(h1(e),trian,quad) ))
+eh1 = sqrt(sum( integrate(h1(e),trian,quad) ))
 
-#@test el2 < 1.e-8
-#@test eh1 < 1.e-8
+@test el2 < 1.e-8
+@test eh1 < 1.e-8
 
-writevtk(trian,"trian",nref=4,cellfields=["uh"=>uh,"u"=>u,"e"=>e])
+#writevtk(trian,"trian",nref=4,cellfields=["uh"=>uh,"u"=>u,"e"=>e])
 
 end
