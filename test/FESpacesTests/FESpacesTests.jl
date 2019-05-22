@@ -90,7 +90,7 @@ a(v,u) = varinner(v,u)
 
 bfun(x) = x[2] 
 
-b(v) = varinner(v,cellfield(trian,bfun))
+b(v) = varinner(v,CellField(trian,bfun))
 
 mmat = integrate(a(cellbasis,cellbasis),trian,quad)
 

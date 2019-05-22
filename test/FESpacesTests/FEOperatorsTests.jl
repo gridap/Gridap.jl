@@ -7,6 +7,7 @@ using Gridap.FEOperators
 using Test
 using Gridap
 using Gridap.Geometry
+using Gridap.CellMaps
 using Gridap.Geometry.Cartesian
 using Gridap.FieldValues
 using Gridap.CellQuadratures
@@ -39,7 +40,7 @@ trian = Triangulation(model)
 quad = CellQuadrature(trian,order=2)
 
 # Define cell field describing the source term
-bfield = cellfield(trian,bfun)
+bfield = CellField(trian,bfun)
 
 # Define forms
 a(v,u) = varinner(∇(v), ∇(u))
@@ -58,7 +59,7 @@ solver = LinearFESolver()
 uh = solve(solver,op)
 
 # Define exact solution and error
-u = cellfield(trian,ufun)
+u = CellField(trian,ufun)
 e = u - uh
 
 # Define norms to measure the error

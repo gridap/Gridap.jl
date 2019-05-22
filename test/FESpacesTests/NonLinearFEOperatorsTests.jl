@@ -6,6 +6,7 @@ using Gridap.FEOperators
 
 using Test
 using Gridap
+using Gridap.CellMaps
 using Gridap.Geometry
 using Gridap.Geometry.Cartesian
 using Gridap.FieldValues
@@ -39,7 +40,7 @@ trian = Triangulation(model)
 quad = CellQuadrature(trian,order=2)
 
 # Define cell field describing the source term
-bfield = cellfield(trian,bfun)
+bfield = CellField(trian,bfun)
 
 # Define residual and jacobian
 a(v,u) = varinner(∇(v), ∇(u))
@@ -62,7 +63,7 @@ solver = NonLinearFESolver(tol,maxiters)
 uh = solve(solver,op)
 
 # Define exact solution and error
-u = cellfield(trian,ufun)
+u = CellField(trian,ufun)
 e = u - uh
 
 # Define norms to measure the error

@@ -57,13 +57,13 @@ end
   x = evaluate(phi,q)
 
   ufun(x) = 2*x[1] + x[2]
-  u = cellfield(trian,ufun)
+  u = CellField(trian,ufun)
 
   vfun(x) = VectorValue(x[1],1.0)
-  v = cellfield(trian,vfun)
+  v = CellField(trian,vfun)
 
   tfun(x) = TensorValue(x[1],1.0,x[2],0.1)
-  t = cellfield(trian,tfun)
+  t = CellField(trian,tfun)
 
   pdata =["u"=>evaluate(u,q),"v"=>evaluate(v,q),"t"=>evaluate(t,q),"t2"=>apply(tfun,x)]
 
@@ -131,10 +131,10 @@ grid = CartesianGrid(partition=(3,3))
 trian = Triangulation(grid)
 
 ufun(x) = 3*x[2]*x[1]
-u = cellfield(trian,ufun)
+u = CellField(trian,ufun)
 
 vfun(x) = VectorValue(3*x[2]*x[1],2*x[2])
-v = cellfield(trian,vfun)
+v = CellField(trian,vfun)
 
 d = mktempdir()
 f = joinpath(d,"trian")

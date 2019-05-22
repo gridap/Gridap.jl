@@ -11,7 +11,7 @@ using Gridap.Quadratures
 using Gridap.Geometry
 
 export integrate
-export cellfield
+import Gridap.CellMaps: CellField
 
 function integrate(cellfun::CellMap{Point{D},1,T,N},phi::CellGeomap{D,Z},quad::CellQuadrature{D}) where {D,Z,T,N}
   z = coordinates(quad)
@@ -32,12 +32,12 @@ function integrate(fun::Function,trian::Triangulation{D,Z},quad::CellQuadrature{
   integrate(cellfun,phi,quad)
 end
 
-function cellfield(trian::Triangulation,fun::Function)
+function CellField(trian::Triangulation,fun::Function)
   phi = geomap(trian)
   compose(fun,phi)
 end
 
-function cellfield(trian::Triangulation{D,Z},fun::Function,u::CellField{Z}) where {D,Z}
+function CellField(trian::Triangulation{D,Z},fun::Function,u::CellField{Z}) where {D,Z}
   phi = geomap(trian)
   compose(fun,phi,u)
 end
