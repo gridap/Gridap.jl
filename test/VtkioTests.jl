@@ -47,7 +47,7 @@ end
   f = joinpath(d,"x")
 
   grid = CartesianGrid(partition=(3,3))
-  trian = triangulation(grid)
+  trian = Triangulation(grid)
   quad = quadrature(trian,order=2)
 
   phi = geomap(trian)
@@ -80,7 +80,7 @@ end
   f = joinpath(d,"x")
 
   grid = CartesianGrid(partition=(3,3))
-  trian = triangulation(grid)
+  trian = Triangulation(grid)
 
   xe = cellcoordinates(trian)
 
@@ -125,29 +125,28 @@ end
 
 end
 
-# TODO Not passing
-# @testset "WritevtkForIntegrationMesh" begin
+@testset "WritevtkForIntegrationMesh" begin
 
-# grid = CartesianGrid(partition=(3,3))
-# trian = triangulation(grid)
-#
-# ufun(x) = 3*x[2]*x[1]
-# u = cellfield(trian,ufun)
-#
-# vfun(x) = VectorValue(3*x[2]*x[1],2*x[2])
-# v = cellfield(trian,vfun)
-#
-# d = mktempdir()
-# f = joinpath(d,"trian")
-#
-# writevtk(trian,f)
-# writevtk(trian,f,nref=2,)
-# writevtk(trian,f,nref=2,celldata=["r"=>rand(9)])
-# writevtk(trian,f,nref=2,cellfields=["u"=>u,"v"=>v])
-# writevtk(trian,f,nref=2,celldata=["r"=>rand(9)],cellfields=["u"=>u,"v"=>v])
-#
-# rm(d,recursive=true)
+grid = CartesianGrid(partition=(3,3))
+trian = Triangulation(grid)
 
-# end
+ufun(x) = 3*x[2]*x[1]
+u = cellfield(trian,ufun)
+
+vfun(x) = VectorValue(3*x[2]*x[1],2*x[2])
+v = cellfield(trian,vfun)
+
+d = mktempdir()
+f = joinpath(d,"trian")
+
+writevtk(trian,f)
+writevtk(trian,f,nref=2,)
+writevtk(trian,f,nref=2,celldata=["r"=>rand(9)])
+writevtk(trian,f,nref=2,cellfields=["u"=>u,"v"=>v])
+writevtk(trian,f,nref=2,celldata=["r"=>rand(9)],cellfields=["u"=>u,"v"=>v])
+
+rm(d,recursive=true)
+
+end
 
 end # module VtkioTests

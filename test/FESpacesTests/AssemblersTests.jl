@@ -20,7 +20,7 @@ fespace = ConformingFESpace(Float64,model,order,tags)
 
 assem = SparseMatrixAssembler(fespace,fespace)
 
-trian = triangulation(model)
+trian = Triangulation(model)
 
 quad = quadrature(trian,order=2)
 

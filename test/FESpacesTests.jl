@@ -69,7 +69,7 @@ model = CartesianDiscreteModel(domain=(0.0,1.0,-1.0,2.0),
         partition=(2,2))
 
 grid = Grid(model,2)
-trian = triangulation(grid)
+trian = Triangulation(grid)
 gridgr = FullGridGraph(model)
 labels = FaceLabels(model)
 dtags = (1,2,3,4)
@@ -85,7 +85,7 @@ model = CartesianDiscreteModel(domain=(0.0,1.0,-1.0,2.0),
         partition=(2,2))
 
 grid = Grid(model,2)
-trian = triangulation(grid)
+trian = Triangulation(grid)
 gridgr = FullGridGraph(model)
 labels = FaceLabels(model)
 
@@ -194,7 +194,7 @@ nparts1d = 2
 nparts = nparts1d*ones(Int64,D)
 nparts_t = tuple(nparts...)
 grid = CartesianGrid(partition=nparts_t,domain=(0,1,0,1),order=1) # domain, and order are optional
-trian = triangulation(grid) # Generates the Triangulation associated with this grid
+trian = Triangulation(grid) # Generates the Triangulation associated with this grid
 graph = gridgraph(grid) # Generates the GridGraph associated with this grid.
 phi = geomap(trian)
 
@@ -239,7 +239,7 @@ is_fixed_vef = zeros(Bool, length(vefcells))
 # nparts = nparts1d*ones(Int64,D)
 # nparts_t = tuple(nparts...)
 # grid = CartesianGrid(partition=nparts_t,domain=(0,1,0,1),order=1) # domain, and order are optional
-# trian = triangulation(grid) # Generates the Triangulation associated with this grid
+# trian = Triangulation(grid) # Generates the Triangulation associated with this grid
 # quad = quadrature(trian,order=2)
 # fun(x::Point{2}) = 1.0
 # ksca = integrate(fun, trian, quad)

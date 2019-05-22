@@ -265,7 +265,7 @@ end
 
 function ConformingFESpace(::Type{T},model::DiscreteModel{D},order,diri_tags) where {D,T}
   grid = Grid(model,D)
-  trian = triangulation(grid)
+  trian = Triangulation(grid)
   graph = FullGridGraph(model)
   labels = FaceLabels(model)
   orders = fill(order,D)

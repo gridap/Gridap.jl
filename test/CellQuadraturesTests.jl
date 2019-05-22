@@ -64,7 +64,7 @@ end
 @test isa(quad2,CellQuadrature)
 
 grid = CartesianGrid(partition=(2,3))
-trian = triangulation(grid)
+trian = Triangulation(grid)
 ##
 
 order=2

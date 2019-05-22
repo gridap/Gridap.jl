@@ -12,7 +12,7 @@ using Gridap.Geometry
 using Gridap.Geometry.Cartesian
 
 grid = CartesianGrid(partition=(3,3))
-trian = triangulation(grid)
+trian = Triangulation(grid)
 
 @testset "Geomap" begin
 

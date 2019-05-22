@@ -20,7 +20,7 @@ model = CartesianDiscreteModel(domain=(0.0,1.0,-1.0,2.0), partition=(2,2))
 D = pointdim(model)
 
 grid = Grid(model,D)
-trian = triangulation(grid)
+trian = Triangulation(grid)
 graph = FullGridGraph(model)
 labels = FaceLabels(model)
 tags = [1,2,3,4]
@@ -135,7 +135,7 @@ order = 1
 fespace = ConformingFESpace(Float64,model,order,tags)
 
 grid = Grid(model,D)
-trian = triangulation(grid)
+trian = Triangulation(grid)
 
 fun1(x) = x[1]
 uh1 = interpolate(fespace,fun1)

@@ -34,7 +34,7 @@ using Gridap.CellQuadratures
 using Gridap.CellIntegration
 
 grid = CartesianGrid(partition=(1000,1000))
-trian = triangulation(grid)
+trian = Triangulation(grid)
 
 meshcoords = cellcoordinates(trian)
 quad = quadrature(trian,order=2)

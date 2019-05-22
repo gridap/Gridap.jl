@@ -21,7 +21,6 @@ export GridGraph
 export GridGraphFromData
 export points
 export cells
-export triangulation
 export celltypes
 export cellorders
 export celltovefs
@@ -147,7 +146,7 @@ ncells(g::Grid) = length(celltypes(g))
 
 npoints(g::Grid) = length(points(g))
 
-triangulation(grid::Grid) = TriangulationFromGrid(grid) #@fverdugo replace by Triangulation
+Triangulation(grid::Grid) = TriangulationFromGrid(grid) #@fverdugo replace by Triangulation
 
 """
 Abstract type that provides extended connectivity information associated with a grid.
@@ -251,13 +250,13 @@ GridGraph(m::DiscreteModel,dim::Integer) = GridGraph(m,Val(dim))
 
 pointdim(::DiscreteModel{D}) where D = D
 
-function triangulation(m::DiscreteModel,dim::Integer)
+function Triangulation(m::DiscreteModel,dim::Integer)
   grid = Grid(m,dim)
-  triangulation(grid)
+  Triangulation(grid)
 end
 
-function triangulation(m::DiscreteModel{D}) where D
-  triangulation(m,D)
+function Triangulation(m::DiscreteModel{D}) where D
+  Triangulation(m,D)
 end
 
 function tag_from_name(m::DiscreteModel,name::String)

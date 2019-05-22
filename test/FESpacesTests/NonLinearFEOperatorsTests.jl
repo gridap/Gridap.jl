@@ -34,7 +34,7 @@ V = TestFESpace(fespace)
 U = TrialFESpace(fespace,ufun)
 
 # Define integration mesh and quadrature
-trian = triangulation(model)
+trian = Triangulation(model)
 quad = quadrature(trian,order=2)
 
 # Define cell field describing the source term

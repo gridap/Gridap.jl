@@ -59,7 +59,7 @@ using Gridap.Vtkio
 
   @test isa(veftocells(graph), IndexCellArray{Int,1})
 
-  trian = triangulation(grid)
+  trian = Triangulation(grid)
 
   xe = cellcoordinates(trian)
   @test isa(xe,CellPoints{2})
