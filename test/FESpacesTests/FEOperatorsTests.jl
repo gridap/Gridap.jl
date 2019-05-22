@@ -1,12 +1,8 @@
-include("FESpaces.jl")
-include("Assemblers.jl")
-include("FEOperators.jl")
-
 module FEOperatorsTests
 
-using ..FESpaces
-using ..Assemblers
-using ..FEOperators
+using Gridap.FESpaces
+using Gridap.Assemblers
+using Gridap.FEOperators
 
 using Test
 using Gridap
@@ -25,7 +21,7 @@ gradient(::typeof(ufun)) = ufun_grad
 bfun(x) = 0.0
 
 # Construct the discrete model
-model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(2,2))
+model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(4,4))
 
 # Construct the FEspace
 order = 1

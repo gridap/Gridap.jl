@@ -1,8 +1,3 @@
-
-include("FESpaces.jl")
-
-include("Assemblers.jl")
-
 module AssemblersTests
 
 using Test
@@ -13,8 +8,8 @@ using Gridap.Geometry.Cartesian
 using Gridap.CellQuadratures
 using Gridap.CellIntegration
 
-using ..FESpaces
-using ..Assemblers
+using Gridap.FESpaces
+using Gridap.Assemblers
 
 model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(2,2))
 

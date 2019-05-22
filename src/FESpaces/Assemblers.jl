@@ -1,37 +1,49 @@
+module Assemblers
+
+using Gridap.FESpaces
+
+using Gridap.Helpers
+using Gridap.CellValues
+
+using SparseArrays
+
+export Assembler
+export SparseMatrixAssembler
+export assemble
+
+#@fverdugo for the moment the abstract interface of Assembler
+# (and therefore its concrete implementations)
+# assumes single field, and single term
+
 """
 Abstract assembly operator
+Parametrized by the type of returned matrix and vector
 """
-abstract type Assembler{E} end
+abstract type Assembler{M<:AbstractMatrix,V<:AbstractVector} end
 
-ndofs(::FESpace) = @abstractmethod
-
-function assemblevector(::CellVector{E})::Vector{E} where {E}
+function assemble(::Assembler{M,V},::CellVector)::V where {M,V}
   @abstractmethod
 end
 
-function assemblematrix(::CellMatrix{E})::Matrix{E} where {E}
+function assemble(::Assembler{M,V},::CellMatrix)::M where {M,V}
   @abstractmethod
 end
 
-struct ConformingAssembler{E} <: Assembler{E}
+"""
+Assembler that produces SparseMatrices from the SparseArrays package
+"""
+struct SparseMatrixAssembler{E} <: Assembler{SparseMatrixCSC{E,Int},Vector{E}}
   testfesp::FESpace
   trialfesp::FESpace
-  num_dofs::Int
 end
 
-function ConformingAssembler(this::FESpace)
-  ConformingAssembler{Int}(this, this, num_free_dofs(this))
+function SparseMatrixAssembler(test::FESpace{D,Z,T}, trial::FESpace{D,Z,T}) where {D,Z,T}
+  E = eltype(T)
+  SparseMatrixAssembler{E}(trial,test)
 end
 
-function ConformingAssembler(test::FESpace, trial::FESpace)
-  @assert trial.num_free_dofs == test.num_free_dofs
-  ConformingAssembler{Int}(trial, test, num_free_dofs(trial))
-end
-
-# Methods
-
-function assemble(this::Assembler, vals::CellVector{T}) where T
-  _vals, rows_m = applyconstraints(this.testfesp, vals)
+function assemble(this::SparseMatrixAssembler, vals::CellVector)
+  _vals, rows_m = apply_constraints(this.testfesp, vals)
   # @santiagobadia : Evaluate efficiency, best way to do it in Julia
   # without pre-allocate loop?
   aux_row = Int[]; aux_vals = Int[]
@@ -46,9 +58,9 @@ function assemble(this::Assembler, vals::CellVector{T}) where T
   return Array(sparsevec(aux_row, aux_vals))
 end
 
-function assemble(this::Assembler, vals::CellMatrix{T}) where T
-  _vals, rows_m = applyconstraintsrows(this.testfesp, vals)
-  _vals, cols_m = applyconstraintscols(this.trialfesp, _vals, )
+function assemble(this::SparseMatrixAssembler, vals::CellMatrix)
+  _vals, rows_m = apply_constraints_rows(this.testfesp, vals)
+  _vals, cols_m = apply_constraints_cols(this.trialfesp, _vals, )
   # @santiagobadia : Evaluate efficiency, best way to do it in Julia
   # without pre-allocate loop?
   aux_row = Int[]; aux_col = Int[]; aux_vals = Int[]
@@ -69,3 +81,5 @@ function assemble(this::Assembler, vals::CellMatrix{T}) where T
   end
   return sparse(aux_row, aux_col, aux_vals)
 end
+
+end # module Assemblers

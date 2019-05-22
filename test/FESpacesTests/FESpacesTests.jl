@@ -1,6 +1,3 @@
-
-include("FESpaces.jl")
-
 module FESpacesTests
 
 using Test
@@ -16,7 +13,7 @@ using Gridap.CellMaps.Testers
 using Gridap.CellIntegration
 using Gridap.Vtkio
 
-using ..FESpaces
+using Gridap.FESpaces
 
 model = CartesianDiscreteModel(domain=(0.0,1.0,-1.0,2.0), partition=(2,2))
 

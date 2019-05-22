@@ -7,8 +7,8 @@ using Gridap.CellMaps
 using Gridap.CellQuadratures
 using Gridap.CellIntegration
 
-using ..FESpaces
-using ..Assemblers
+using Gridap.FESpaces
+using Gridap.Assemblers
 
 export FEOperator
 export FESolver
@@ -156,7 +156,7 @@ struct NonLinearFESolver <: FESolver
   maxiters::Int
 end
 
-function solve(::LinearFESolver,::FEOperator)
+function solve(::NonLinearFESolver,::FEOperator)
   @unreachable
 end
 
