@@ -47,9 +47,4 @@ mat = assemble(assem, mmat)
 
 x = mat \ vec
 
-@show vec
-@show mat
-@show x
-
-
 end # module AssemblersTests
