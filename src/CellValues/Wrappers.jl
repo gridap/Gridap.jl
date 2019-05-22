@@ -254,6 +254,16 @@ size(self::CellVectorByComposition) = (length(self.cell_to_x),)
 
 IndexStyle(::Type{CellVectorByComposition{T,L,V}}) where {T,L,V} = IndexLinear()
 
-cellsize(self::CellVectorByComposition) = (celllength(self.cell_to_x)*celllength(self.x_to_vals),)
+function cellsize(self::CellVectorByComposition)
+  m = 0
+  for cell_to_x in self.cell_to_x
+    l = 0
+    for x in cell_to_x
+      l += length(self.x_to_vals[x])
+    end
+    m = max(m,l)
+  end
+  (m,)
+end
 
 end # module Wrappers

@@ -147,7 +147,11 @@ uh2 = interpolate(fespace,fun2)
 fun3(x) = sin(x[1])*cos(x[2])
 uh3 = interpolate(fespace,fun3)
 
-cellsize(uhq.a)
+quad = CellQuadrature(trian,order=2)
+q = coordinates(quad)
+uhq = evaluate(uh1,q)
+
+@test cellsize(uhq.a) == (4,4)
 
 #writevtk(trian,"trian",nref=3,
 #  cellfields=["uh1"=>uh1,"uh2"=>uh2,"uh3"=>uh3])
