@@ -7,6 +7,7 @@ using Test
 
 using Gridap
 using Gridap.RefFEs
+using Gridap.CellValues
 using Gridap.CellMaps
 using Gridap.Polytopes
 using Gridap.Geometry
@@ -127,7 +128,30 @@ test_cell_map_with_gradient(uh,q,v,g)
 
 fespace = ConformingFESpace(Float64,model,order,tags)
 
-writevtk(trian,"trian",nref=3,cellfields=["uh"=>uh])
+
+model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(2,2))
+
+order = 2
+fespace = ConformingFESpace(Float64,model,order,tags)
+
+grid = Grid(model,D)
+trian = triangulation(grid)
+
+fun1(x) = x[1]
+uh1 = interpolate(fespace,fun1)
+
+fun2(x) = x[1]*x[2]
+uh2 = interpolate(fespace,fun2)
+
+fun3(x) = sin(x[1])*cos(x[2])
+uh3 = interpolate(fespace,fun3)
+
+cellsize(uhq.a)
+
+#writevtk(trian,"trian",nref=3,
+#  cellfields=["uh1"=>uh1,"uh2"=>uh2,"uh3"=>uh3])
+
+#@show uhq
 
 
 

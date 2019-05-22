@@ -435,7 +435,15 @@ leftcellarray(self::CellArrayFromBroadcastBinaryOp) = self.a
 rightcellarray(self::CellArrayFromBroadcastBinaryOp) = self.b
 
 function computesize(::CellArrayFromBroadcastBinaryOp, asize, bsize)
-  Base.Broadcast.broadcast_shape(asize,bsize)
+  a,b = _fix_sizes(asize,bsize)
+  Base.Broadcast.broadcast_shape(a,b)
+end
+
+_fix_sizes(asize,bsize) = (asize, bsize)
+
+function _fix_sizes(asize::NTuple{N,Int}, bsize::NTuple{N,Int}) where N
+  t = tuple( ( max(a,b) for (a,b) in zip(asize,bsize) )...)
+  (t, t)
 end
 
 function computevals!(self::CellArrayFromBroadcastBinaryOp, a, b, v)
