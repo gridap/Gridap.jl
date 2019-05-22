@@ -42,8 +42,7 @@ U = TrialFESpace(fespace,ufun)
 trian = Triangulation(model)
 quad = CellQuadrature(trian,order=2)
 
-# Define cell field describing
-# a solution dependent source term
+# Define cell field describing the source term
 bfield = CellField(trian,bfun)
 
 # Define a solution dependent material parameter
