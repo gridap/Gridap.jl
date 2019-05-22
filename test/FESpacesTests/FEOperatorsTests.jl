@@ -14,6 +14,7 @@ using Gridap.Geometry
 using Gridap.Geometry.Cartesian
 using Gridap.FieldValues
 using Gridap.CellIntegration
+using Gridap.Vtkio
 
 import Gridap: gradient
 
@@ -28,7 +29,8 @@ model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(2,2))
 
 # Construct the FEspace
 order = 1
-tags = [1,2,3,4,6,5]
+tag = tag_from_name(model,"boundary")
+tags = [tag,]
 fespace = ConformingFESpace(Float64,model,order,tags)
 
 # Define test and trial
@@ -72,5 +74,7 @@ el2 = sqrt(sum( integrate(l2(e),trian,quad) ))
 
 #@test el2 < 1.e-8
 #@test eh1 < 1.e-8
+
+writevtk(trian,"trian",nref=4,cellfields=["uh"=>uh,"u"=>u,"e"=>e])
 
 end

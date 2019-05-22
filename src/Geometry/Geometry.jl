@@ -260,6 +260,11 @@ function triangulation(m::DiscreteModel{D}) where D
   triangulation(m,D)
 end
 
+function tag_from_name(m::DiscreteModel,name::String)
+  labels = FaceLabels(m)
+  tag_from_name(labels,name)
+end
+
 #@fverdugo to be deleted together with (old) GridGraph
 struct GridGraphFromData{C<:IndexCellArray{Int,1},V<:IndexCellArray{Int,1}} <: GridGraph
   celltovefs::C
