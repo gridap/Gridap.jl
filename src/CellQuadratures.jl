@@ -17,7 +17,6 @@ export ConstantCellQuadrature
 import Base.Iterators: zip
 import Gridap: coordinates
 import Gridap: weights
-import Gridap: quadrature
 
 # Abstract types and interfaces
 
@@ -35,7 +34,7 @@ weights(::CellQuadrature)::CellValues{Float64} = @abstractmethod
 """
 Factory function to create CellQuadrature objects in a convenient way
 """
-function quadrature(trian::Triangulation;order::Int)
+function CellQuadrature(trian::Triangulation;order::Int)
   _quadrature(celltypes(trian),order)
 end
 
@@ -59,7 +58,7 @@ _quadrature(ct,order) = @notimplemented
 
 function _quadrature(ct::ConstantCellValue{NTuple{Z,Int}},order) where Z
   t = celldata(ct)
-  q = quadrature(t,order=order)
+  q = Quadrature(t,order=order)
   ConstantCellValue(q,length(ct))
   ConstantCellQuadrature(q,length(ct))
 end

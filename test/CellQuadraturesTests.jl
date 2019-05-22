@@ -9,7 +9,7 @@ using Gridap.CellQuadratures
 using Gridap.Geometry
 using Gridap.Geometry.Cartesian
 
-using Gridap: coordinates, weights, quadrature
+using Gridap: coordinates, weights
 D = 2
 
 p = Point{D}(1.0,1.1)
@@ -72,10 +72,10 @@ order=2
 # function _quadrature(ct::ConstantCellValue{NTuple{Z,Int}},order) where Z
 ct = celltypes(trian)
 t = celldata(ct)
-q = quadrature(t,order=order)
+q = Quadrature(t,order=order)
 ConstantCellQuadrature(q,length(ct))
 
-quad = quadrature(trian,order=2)
+quad = CellQuadrature(trian,order=2)
 quad
 typeof(t)
 

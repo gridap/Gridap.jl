@@ -24,9 +24,9 @@ end
 
  @testset "Integrate" begin
 
- basis = cellbasis(trian)
+ basis = CellBasis(trian)
 
- quad = quadrature(trian,order=2)
+ quad = CellQuadrature(trian,order=2)
 
  m = varinner(basis,basis)
 

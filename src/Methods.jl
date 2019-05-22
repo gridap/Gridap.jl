@@ -6,7 +6,6 @@ export gradient, ∇
 export inner
 export meas
 export outer
-export quadrature
 export return_size
 export weights
 export varinner
@@ -23,7 +22,6 @@ function inner end
 function varinner end
 function meas end
 function outer end
-function quadrature end
 function return_size end
 function weights end
 function compose end

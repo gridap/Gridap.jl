@@ -28,7 +28,6 @@ export veftocells
 export gridgraph
 export geomap
 export cellcoordinates
-export cellbasis
 export ncells
 export npoints
 export FaceLabels
@@ -42,6 +41,7 @@ export celldim
 export pointdim
 export FullGridGraph
 export connections
+import Gridap.CellMaps: CellBasis
 
 """
 Minimal interface for a mesh used for numerical integration
@@ -93,13 +93,13 @@ end
 
 cellorders(::Triangulation)::CellValue{Int} = @abstractmethod
 
-function cellbasis(trian::Triangulation{Z,D}) where {Z,D}
+function CellBasis(trian::Triangulation{Z,D}) where {Z,D}
   _cellbasis(trian,celltypes(trian),cellorders(trian))
 end
 
 function geomap(self::Triangulation)
   coords = cellcoordinates(self)
-  basis = cellbasis(self)
+  basis = CellBasis(self)
   lincomb(basis,coords)
 end
 

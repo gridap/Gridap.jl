@@ -207,7 +207,7 @@ polytope = Polytopes.Polytope(extrusion)
 reffe = LagrangianRefFE{D,ScalarValue}(polytope,orders)
 basis = reffe.shfbasis
 cellb = ConstantCellValue(basis, ncells(trian))
-quad = quadrature(trian,order=2)
+quad = CellQuadrature(trian,order=2)
 gps = Quadratures.coordinates(quad)
 
 fun(x::Point{2}) = x[1]
@@ -240,7 +240,7 @@ is_fixed_vef = zeros(Bool, length(vefcells))
 # nparts_t = tuple(nparts...)
 # grid = CartesianGrid(partition=nparts_t,domain=(0,1,0,1),order=1) # domain, and order are optional
 # trian = Triangulation(grid) # Generates the Triangulation associated with this grid
-# quad = quadrature(trian,order=2)
+# quad = CellQuadrature(trian,order=2)
 # fun(x::Point{2}) = 1.0
 # ksca = integrate(fun, trian, quad)
 # int = sum(ksca)

@@ -48,7 +48,7 @@ end
 
   grid = CartesianGrid(partition=(3,3))
   trian = Triangulation(grid)
-  quad = quadrature(trian,order=2)
+  quad = CellQuadrature(trian,order=2)
 
   phi = geomap(trian)
 

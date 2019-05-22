@@ -7,7 +7,7 @@ using Gridap.CellQuadratures
 # using Gridap.CellIntegration
 # using Gridap.CellValues
 using Gridap.CellMaps
-import Gridap.CellIntegration: cellcoordinates, cellbasis
+import Gridap.CellIntegration: cellcoordinates, CellBasis
 
 using Gridap.CellValues.ConstantCellValues
 using Gridap.CellValues: IndexCellArray
@@ -49,7 +49,7 @@ polytope = Polytopes.Polytope(extrusion)
 reffe = LagrangianRefFE{D,ScalarValue}(polytope,orders)
 basis = reffe.shfbasis
 cellb = ConstantCellValue(basis, ncells(trian))
-quad = quadrature(trian,order=2)
+quad = CellQuadrature(trian,order=2)
 
 fun(x::Point{2}) = x[1]^2
 gradfun(x::Point{2}) = VectorValue(1.0, 0.0)
@@ -139,7 +139,7 @@ end
 
 
 
-basis = cellbasis(trian)
+basis = CellBasis(trian)
 physbasis = attachgeomap(basis,phi)
 points = (trian)
 ab(v,u) = inner(∇(v),∇(u)) #+ inner(v,u)

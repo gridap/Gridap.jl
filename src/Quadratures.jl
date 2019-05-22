@@ -12,7 +12,7 @@ using Gridap.Polytopes
 
 export Quadrature
 export TensorProductQuadrature
-import Gridap: coordinates, weights, quadrature
+import Gridap: coordinates, weights
 
 # Abstract types and interfaces
 
@@ -30,7 +30,7 @@ weights(::Quadrature)::Array{Float64,1} = @abstractmethod
 """
 Factory function to create Quadrature objects in a convenient way
 """
-function quadrature(extrusion::NTuple{D,Int};order::Int) where D
+function Quadrature(extrusion::NTuple{D,Int};order::Int) where D
   _quadrature(extrusion,order)
 end
 

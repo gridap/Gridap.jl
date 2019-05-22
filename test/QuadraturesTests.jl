@@ -5,7 +5,7 @@ using Test
 using Gridap.FieldValues
 using Gridap.Quadratures
 using Gridap.Polytopes
-using Gridap: coordinates, weights, quadrature
+using Gridap: coordinates, weights
 
 const D = 2
 quad = TensorProductQuadrature(orders=(2,4))
@@ -29,7 +29,7 @@ weigs_ref = [0.555556, 0.555556, 0.888889, 0.888889, 0.555556, 0.555556]
 
 @test isapprox(weigs,weigs_ref,rtol=10-3)
 
-quad = quadrature((HEX_AXIS,HEX_AXIS,HEX_AXIS),order=2)
+quad = Quadrature((HEX_AXIS,HEX_AXIS,HEX_AXIS),order=2)
 
 @test isa(quad,TensorProductQuadrature{3})
 

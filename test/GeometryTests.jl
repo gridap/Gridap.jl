@@ -64,7 +64,7 @@ using Gridap.Vtkio
   xe = cellcoordinates(trian)
   @test isa(xe,CellPoints{2})
 
-  cb = cellbasis(trian)
+  cb = CellBasis(trian)
   @test isa(cb,CellBasis{2,ScalarValue})
 
 end

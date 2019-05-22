@@ -9,6 +9,7 @@ using Gridap
 using Gridap.Geometry
 using Gridap.Geometry.Cartesian
 using Gridap.FieldValues
+using Gridap.CellQuadratures
 using Gridap.CellIntegration
 using Gridap.Vtkio
 
@@ -35,7 +36,7 @@ U = TrialFESpace(fespace,ufun)
 
 # Define integration mesh and quadrature
 trian = Triangulation(model)
-quad = quadrature(trian,order=2)
+quad = CellQuadrature(trian,order=2)
 
 # Define cell field describing the source term
 bfield = cellfield(trian,bfun)

@@ -10,6 +10,7 @@ using Gridap.Polytopes
 using Gridap.Geometry
 using Gridap.Geometry.Cartesian
 using Gridap.CellMaps.Testers
+using Gridap.CellQuadratures
 using Gridap.CellIntegration
 using Gridap.Vtkio
 
@@ -83,7 +84,7 @@ uh = FEFunction(fespace,free_vals,diri_vals)
 
 cellbasis = CellBasis(fespace)
 
-quad = quadrature(trian,order=2)
+quad = CellQuadrature(trian,order=2)
 
 a(v,u) = varinner(v,u)
 
