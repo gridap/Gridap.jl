@@ -28,6 +28,7 @@ export apply_constraints_cols
 export interpolated_values
 export interpolated_diri_values
 export interpolate
+export value_type
 
 export ConformingFESpace
 export FESpaceWithDirichletData
@@ -96,6 +97,8 @@ function interpolate(this::FESpace,fun::Function)
   FEFunction(this,free_vals,diri_vals)
 end
 
+value_type(::FESpace{D,Z,T}) where {D,Z,T} = T
+
 function interpolated_diri_values(this::FESpace, fun::Function)
   tags = diri_tags(this)
   interpolated_diri_values(this,fill(fun,length(tags)))
@@ -141,6 +144,8 @@ free_dofs(f::FEFunction) = f.free_dofs
 diri_dofs(f::FEFunction) = f.diri_dofs
 
 FESpace(f::FEFunction) = f.fespace
+
+value_type(::FEFunction{D,Z,T}) where {D,Z,T} = T
 
 """
 Returns the FE function represented be the  free and dirichlet values
