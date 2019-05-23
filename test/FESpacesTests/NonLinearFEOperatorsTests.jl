@@ -30,9 +30,8 @@ model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(4,4))
 
 # Construct the FEspace
 order = 1
-tag = tag_from_name(model,"boundary")
-tags = [tag,]
-fespace = ConformingFESpace(Float64,model,order,tags)
+diritag = "boundary"
+fespace = ConformingFESpace(Float64,model,order,diritag)
 
 # Define test and trial
 V = TestFESpace(fespace)

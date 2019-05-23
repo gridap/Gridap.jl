@@ -181,7 +181,7 @@ return_size(f::FEFunction,s::Tuple{Int}) = return_size(f.cellfield,s)
 length(f::FEFunction) = length(f.cellfield)
 
 """
-FE whose Dirichlet component has been constrained
+FESpace whose Dirichlet component has been constrained
 """
 struct FESpaceWithDirichletData{D,Z,T,E,V<:FESpace{D,Z,T}} <: FESpace{D,Z,T}
   fespace::V
@@ -271,7 +271,8 @@ function ConformingFESpace(::Type{T},model::DiscreteModel{D},order,diri_tags) wh
   orders = fill(order,D)
   polytope = _polytope(celltypes(grid))
   fe = LagrangianRefFE{D,T}(polytope, orders)
-  ConformingFESpace(fe,trian,graph,labels,diri_tags)
+  _diri_tags = _setup_diri_tags(model,diri_tags)
+  ConformingFESpace(fe,trian,graph,labels,_diri_tags)
 end
 
 num_free_dofs(this::ConformingFESpace) = this.num_free_dofs
@@ -322,6 +323,16 @@ end
 CellBasis(this::ConformingFESpace) = this._basis
 
 # Helpers
+
+_setup_diri_tags(model,tags) = tags
+
+function _setup_diri_tags(model,name::String)
+  _setup_diri_tags(model,[name,])
+end
+
+function _setup_diri_tags(model,names::Vector{String})
+  [ tag_from_name(model,s) for s in names ]
+end
 
 _polytope(celltypes) = @notimplemented
 
