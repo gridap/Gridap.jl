@@ -46,6 +46,9 @@ for op in (:+, :-)
   end
 end
 
+ucm = apply(-,cm)
+test_cell_map_without_gradient(ucm,cv,-(crs))
+
 m1 = MockMap(p1)
 m2 = MockMap(p2)
 cm1 = TestCellMap(m1,l)
@@ -62,6 +65,10 @@ for op in (:+, :-, :(inner), :(outer))
     test_cell_map_without_gradient(ucm,cv,ucrs)
   end
 end
+
+ucm = apply(-,cm1,cm2)
+ucrs = [ (-).(rs1,rs2)  for i in 1:l ]
+test_cell_map_without_gradient(ucm,cv,ucrs)
 
 # compose
 
@@ -85,7 +92,7 @@ gradf(p::Point{2},u::Point{2}) = VectorValue(2.0,2.0)
 gradient(::typeof(f)) = gradf
 ucm = compose(f,cgeomap,cm)
 xs = evaluate(geomap,ps)
-rs = evaluate(m,xs)
+rs = evaluate(m,ps)
 crs = [ f.(xs,rs) for i in 1:l]
 gcrs = [ gradf.(xs,rs) for i in 1:l]
 cv = TestCellArray(ps,l)

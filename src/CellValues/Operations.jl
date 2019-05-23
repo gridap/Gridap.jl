@@ -12,7 +12,6 @@ using Gridap.Maps: newaxis_kernel!, newaxis_size
 export cellsum
 export cellnewaxis
 export cellmean
-export apply
 import Base: +, -, *, /
 import Base: ==
 import LinearAlgebra: inv, det
@@ -25,6 +24,7 @@ import Base: size
 import Base: getindex
 import Base: IndexStyle
 import Gridap.CellValues: cellsize
+import Gridap: apply
 
 # Unary operations on CellValue
 
@@ -102,6 +102,10 @@ for op in (:+, :-, :*, :/, :(outer), :(inner))
       CellValueFromBinaryOp($op,a,b)
     end
   end
+end
+
+function apply(op::Function,a::CellValue,b::CellValue)
+  CellValueFromBinaryOp(op,a,b)
 end
 
 # Ancillary types

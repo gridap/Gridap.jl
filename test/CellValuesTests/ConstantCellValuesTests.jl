@@ -42,6 +42,10 @@ for op in (:+,:-,:*,:/,:(outer),:(inner))
   end
 end
 
+scv3 = apply(-,scv,scv2)
+@test isa(scv3,ConstantCellValue{Float64})
+test_index_cell_value( scv3, fill(-(sv,sv2),l) )
+
 for op in (:+,:-,:*,:/,:(outer),:(inner))
   @eval begin
     sca3 = $op(sca,sca2)
@@ -65,6 +69,10 @@ for op in (:+,:-,:(det),:(inv))
     test_index_cell_array( sca3, fill(broadcast($op,sa2),l) )
   end
 end
+
+sca3 = apply(-,sca2)
+@test isa(sca3,ConstantCellArray{Float64,2})
+test_index_cell_array( sca3, fill(broadcast(-,sa2),l) )
 
 sca3 = cellsum(sca2,dim=2)
 @test isa(sca3,ConstantCellArray{Float64,1})

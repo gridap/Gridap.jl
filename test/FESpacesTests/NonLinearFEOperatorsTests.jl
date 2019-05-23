@@ -20,10 +20,8 @@ import Gridap: gradient
 ufun(x) = x[1] + x[2]
 ufun_grad(x) = VectorValue(1.0,1.0)
 gradient(::typeof(ufun)) = ufun_grad
-#bfun(x) = -3.0
-#νfun(x,u) = (u+1.0)+x[1]
-bfun(x) = -1.0
-νfun(x,u) = x[1]
+bfun(x) = -(3.0*x[1]+x[2]+1.0)
+νfun(x,u) = (u+1.0)*x[1]
 
 # Construct the discrete model
 model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(4,4))

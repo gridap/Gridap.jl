@@ -13,7 +13,7 @@ export celldata
 import Gridap.CellValues: cellsum
 import Gridap.CellValues: cellnewaxis
 import Gridap.CellValues: cellmean #TODO
-import Gridap.CellValues: apply #TODO
+import Gridap: apply
 import Base: +, -, *, /
 import Base: ==
 import LinearAlgebra: inv, det
@@ -125,6 +125,17 @@ end
 
 function _unary_op_kernel(op,a::AbstractArray)
   broadcast(op,a)
+end
+
+function apply(op::Function,a::ConstantCellValue)
+  c = _unary_op_kernel(op,celldata(a))
+  ConstantCellValue(c,length(a))
+end
+
+function apply(op::Function,a::ConstantCellValue,b::ConstantCellValue)
+  @assert length(a) == length(b)
+  c = _bin_op_kernel(op,celldata(a),celldata(b))
+  ConstantCellValue(c,length(a))
 end
 
 end # module ConstantCellValues

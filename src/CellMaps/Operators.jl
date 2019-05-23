@@ -17,6 +17,7 @@ import Gridap.Maps: lincomb
 import Gridap.Maps: varinner
 import Gridap.Maps: attachgeomap
 import Base: iterate, length
+import Gridap: apply
 
 # Unary operations
 

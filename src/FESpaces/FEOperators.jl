@@ -17,6 +17,8 @@ export LinearFESolver
 export NonLinearFEOperator
 export NonLinearFESolver
 export solve
+export jacobian
+import Gridap: apply
 
 abstract type FEOperator end
 

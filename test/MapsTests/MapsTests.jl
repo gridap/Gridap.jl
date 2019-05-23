@@ -64,7 +64,7 @@ gradf(p::Point{2},u::Point{2}) = VectorValue(2.0,2.0)
 gradient(::typeof(f)) = gradf
 cemap = compose(f,geomap,map)
 x = evaluate(geomap,p)
-res = evaluate(map,x)
+res = evaluate(map,p)
 ao = f.(x,res)
 go = gradf.(p)
 test_map_with_gradient(cemap,p,ao,go)

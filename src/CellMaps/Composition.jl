@@ -130,7 +130,7 @@ end
 
 function evaluate(self::CellFieldFromComposeExtended{D},points::CellPoints{D}) where D
   gvals = evaluate(self.g,points)
-  uvals = evaluate(self.u,gvals)
+  uvals = evaluate(self.u,points)
   composekernel(self,gvals,uvals)
 end
 

@@ -12,6 +12,7 @@ export varinner
 export compose
 export lincomb
 export attachgeomap
+export apply
 
 function coordinates end
 function evaluate end
@@ -27,5 +28,6 @@ function weights end
 function compose end
 function lincomb end
 function attachgeomap end
+function apply end
 
 const ∇ = gradient

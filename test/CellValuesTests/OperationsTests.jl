@@ -110,6 +110,9 @@ for op in (:+,:-,:*,:/,:(inner))
   end
 end
 
+scv3 = apply(+,scv,scv2)
+test_iter_cell_value(scv3, fill(+(scv.a,scv2.a),l))
+
 for op in (:+,:-,:(inv),:(det))
   @eval begin
     for scai in [ sca, sca_t ]

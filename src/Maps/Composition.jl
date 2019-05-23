@@ -121,7 +121,7 @@ function evaluate!(
   setsize!(self.gcache,size(points))
   setsize!(self.ucache,size(points))
   evaluate!(self.g,points,self.gcache)
-  evaluate!(self.u,self.gcache,self.ucache)
+  evaluate!(self.u,points,self.ucache)
   broadcast!(self.f,v,self.gcache,self.ucache)
 end
 
