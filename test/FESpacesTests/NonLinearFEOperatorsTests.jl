@@ -20,8 +20,8 @@ import Gridap: gradient
 ufun(x) = x[1] + x[2]
 ufun_grad(x) = VectorValue(1.0,1.0)
 gradient(::typeof(ufun)) = ufun_grad
-#bfun(x) = -(3*x[1]+x[2]+1.0)
-#νfun(x,u) = (u+1.0)*x[1]
+#bfun(x) = -3.0
+#νfun(x,u) = (u+1.0)+x[1]
 bfun(x) = -1.0
 νfun(x,u) = x[1]
 
@@ -50,7 +50,7 @@ bfield = CellField(trian,bfun)
 # Define residual and jacobian
 a(u,v,du) = varinner( ∇(v), ν(u)*∇(du))
 res(u,v) = a(u,v,u) - varinner(v,bfield)
-jac(u,v,du) = a(u,v,du)
+jac(u,v,du) = a(u,v,du)  # + varinner(v,ν(du)*grad(u))
 
 # Define Assembler
 assem = SparseMatrixAssembler(V,U)
