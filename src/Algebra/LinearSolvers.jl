@@ -8,6 +8,9 @@ using Test
 export LinearSolver
 export SymbolicSetup
 export NumericalSetup
+export symbolic_setup
+export numerical_setup
+export numerical_setup!
 export test_linear_solver
 export LUSolver
 import Gridap: solve
@@ -19,18 +22,17 @@ abstract type SymbolicSetup end
 
 abstract type NumericalSetup end
 
-SymbolicSetup(
-  ::LinearSolver,mat::AbstractMatrix)::SymbolicSetup = @abstractmethod
+symbolic_setup(::LinearSolver,mat::AbstractMatrix)::SymbolicSetup = @abstractmethod
 
-NumericalSetup(
-  ::SymbolicSetup,mat::AbstractMatrix)::NumericalSetup = @abstractmethod
+numerical_setup(::SymbolicSetup,mat::AbstractMatrix)::NumericalSetup = @abstractmethod
 
-solve!(
-  x::AbstractVector,::NumericalSetup,A::AbstractMatrix,b::AbstractVector) = @abstractmethod
+numerical_setup!(::NumericalSetup,::SymbolicSetup,mat::AbstractMatrix) = @abstractmethod
+
+solve!(x::AbstractVector,::NumericalSetup,A::AbstractMatrix,b::AbstractVector) = @abstractmethod
 
 function solve(ls::LinearSolver,A::AbstractMatrix,b::AbstractVector)
-  ss = SymbolicSetup(ls,A)
-  ns = NumericalSetup(ss,A)
+  ss = symbolic_setup(ls,A)
+  ns = numerical_setup(ss,A)
   x = similar(b)
   solve!(x,ns,A,b)
   x
@@ -42,8 +44,13 @@ function test_linear_solver(
   y = solve(ls,A,b)
   @test x ≈ y
 
-end
+  ss = symbolic_setup(ls,A)
+  ns = numerical_setup(ss,A)
+  numerical_setup!(ns,ss,A)
+  solve!(y,ns,A,b)
+  @test x ≈ y
 
+end
 
 """
 Wrapper of the LU solver available in julia
@@ -52,13 +59,18 @@ struct LUSolver <: LinearSolver end
 
 struct LUSymbolicSetup <: SymbolicSetup end
 
-struct LUNumericalSetup{F} <: NumericalSetup
+mutable struct LUNumericalSetup{F} <: NumericalSetup
   factors::F
 end
 
-SymbolicSetup(::LUSolver,mat::AbstractMatrix) = LUSymbolicSetup()
+symbolic_setup(::LUSolver,mat::AbstractMatrix) = LUSymbolicSetup()
 
-NumericalSetup(::LUSymbolicSetup,mat::AbstractMatrix) = LUNumericalSetup(lu(mat))
+numerical_setup(::LUSymbolicSetup,mat::AbstractMatrix) = LUNumericalSetup(lu(mat))
+
+function numerical_setup!(ns::LUNumericalSetup, ::LUSymbolicSetup, mat::AbstractMatrix)
+  fac = lu(mat)
+  ns.factors = fac
+end
 
 function solve!(
   x::AbstractVector,ns::LUNumericalSetup,A::AbstractMatrix,b::AbstractVector)

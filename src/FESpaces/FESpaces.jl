@@ -38,6 +38,7 @@ import Gridap.CellMaps: CellField, CellBasis
 import Gridap: evaluate, gradient, return_size
 import Base: iterate
 import Base: length
+import Base: zero
 
 """
 Abstract FE Space parameterized with respec to the environment dimension `D`,
@@ -122,6 +123,15 @@ function TrialFESpace( this::FESpace, fun::Function) where {D}
   return FESpaceWithDirichletData(this, dv)
 end
 
+function zero(fespace::FESpace{D,Z,T}) where {D,Z,T}
+  E = eltype(T)
+  nf = num_free_dofs(fespace)
+  nd = num_diri_dofs(fespace)
+  free_vals = zeros(E,nf)
+  diri_vals = zeros(E,nd)
+  FEFunction(fespace,free_vals,diri_vals)
+end
+
 """
 Abstract type representing a FE Function
 A FE function is a member of a FESpace.
@@ -152,6 +162,11 @@ Returns the FE function represented be the  free and dirichlet values
 E = eltype(T)
 """
 function FEFunction(
+  fespace::FESpace,free_dofs::AbstractVector,diri_dofs::AbstractVector)
+  _FEFunction(fespace,free_dofs,diri_dofs)
+end
+
+function _FEFunction(
   fespace::FESpace,free_dofs::AbstractVector,diri_dofs::AbstractVector)
   cfield = CellField(fespace,free_dofs,diri_dofs)
   FEFunction(free_dofs,diri_dofs,fespace,cfield)
@@ -223,6 +238,11 @@ end
 
 function CellBasis(f::FESpaceWithDirichletData)
   CellBasis(f.fespace)
+end
+
+function FEFunction(
+  f::FESpaceWithDirichletData,free_vals::Vector{E},diri_dofs::Vector{E}) where E
+  _FEFunction(f,free_vals,f.diri_dofs)
 end
 
 function interpolated_diri_values(this::FESpaceWithDirichletData, funs::Vector{<:Function})

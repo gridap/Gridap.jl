@@ -40,10 +40,6 @@ vec = assemble(assem, bvec)
 
 mat = assemble(assem, mmat)
 
-@show vec
-@show mat
-
-
 x = mat \ vec
 
 assemble!(vec,assem, bvec)
@@ -53,5 +49,15 @@ assemble!(mat,assem, mmat)
 x2 = mat \ vec
 
 @test x ≈ x2
+
+@test vec ≈ [0.0625, 0.125, 0.0625]
+
+@test mat[1, 1]  ≈  1.333333333333333
+@test mat[2, 1]  ≈ -0.33333333333333
+@test mat[1, 2]  ≈ -0.33333333333333
+@test mat[2, 2]  ≈ 2.666666666666666
+@test mat[3, 2]  ≈ -0.33333333333333
+@test mat[2, 3]  ≈ -0.33333333333333
+@test mat[3, 3]  ≈ 1.333333333333333
 
 end # module AssemblersTests

@@ -115,6 +115,7 @@ end
 function assemble!(
   mat::SparseMatrixCSC{E}, this::SparseMatrixAssembler{E}, vals::CellMatrix) where E
   # This routine can be optimized a lot taking into a count the sparsity graph of mat
+  # For the moment we create an intermediate matrix and then transfer the nz values
   m = assemble(this,vals)
   mat.nzval .= m.nzval
 end

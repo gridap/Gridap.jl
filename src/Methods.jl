@@ -13,6 +13,7 @@ export compose
 export lincomb
 export attachgeomap
 export apply
+export apply!
 export solve
 export solve!
 
@@ -31,6 +32,7 @@ function compose end
 function lincomb end
 function attachgeomap end
 function apply end
+function apply! end
 function solve end
 function solve! end
 
