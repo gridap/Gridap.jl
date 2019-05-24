@@ -203,6 +203,26 @@ function nfaceboundary!(
   return list
 end
 
+"""
+It provides for every df-face in the polytope all its dt-faces
+"""
+# @santiagobadia : New method required by @fverdugo
+function _dimfrom_fs_dimto_fs(p::Polytope, dim_from::Int, dim_to::Int)
+  @assert dim_to <= dim_from
+  dim_from +=1; dim_to +=1
+  dffs_r = p.nf_dim[end][dim_from]
+  dffs_dtfs = Vector{Vector{Int}}(undef, dffs_r[end]-dffs_r[1]+1)
+  offs = p.nf_dim[end][dim_to][1]-1
+  for (i_dff, dff) in enumerate(dffs_r)
+    dff_nfs = p.nf_nfs[dff]
+    dff_dtfs_r = p.nf_dim[dff][dim_to]
+    dff_dtfs = dff_nfs[dff_dtfs_r]
+    dffs_dtfs[i_dff] = dff_dtfs .- offs
+    # @santiagobadia : With or without offset ?
+  end
+  return dffs_dtfs
+end
+
 # @santiagobadia : The rest is waiting for a geomap
 
 # Create list of nface nodes with polytope indexing

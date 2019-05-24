@@ -4,12 +4,27 @@ using Gridap.FieldValues
 using Gridap.Polytopes
 using Gridap.Polytopes: PointInt
 
+# Developing the change of basis for all n-faces of a polytope
+# 1. Given an n-face, determine all rigid-body permutations
+# 2. Method that identifies the change of basis required to glue
+# together two different orientations
+# input: [gn1, ..., gnk] global vertex labels in the base n-face order
+# input: [gn1', ..., gnk'] in the cell-based order of the n-face
+# output: required change of basis
+# Case 1: edges in 2D
+# gid = [10,11]
+# l2g = [10, 11]
+# acceptable permutations = [ [1,2], [2,1] ]
+# my_perm = 1
+# gid = [11, 10]
+# my_perm = 2
+
+
 # Checking all topologies
 ##
 D=3
 # Cube
-extrusion = PointInt{D}(1,1,1)
-polytope = Polytope(extrusion)
+polytope = Polytope(1,1,1)
 @test length(polytope.nfaces) == 27
 @test num_nfaces(polytope,0) == 8
 @test num_nfaces(polytope,1) == 12
@@ -64,6 +79,17 @@ coords = nodes.coordinates[nfacenodes,:]
 fco = i -> coords[i][1]
 @test (prod(fco(i) for i=1:length(coords))==1)
 ##
+
+# Checking _dimfrom_fs_dimto_fs
+D = 3
+p = Polytope(1,1,1)
+nf_vs = Gridap.Polytopes._dimfrom_fs_dimto_fs(p,2,0)
+@test length(nf_vs) == 6
+@test nf_vs[end] == [2,4,6,8]
+p = Polytope(1,2,2)
+nf_vs = Gridap.Polytopes._dimfrom_fs_dimto_fs(p,2,0)
+@test length(nf_vs) == 4
+@test nf_vs[end] == [2,3,4]
 
 # Test to check the views of n-face set for a given n
 ##
