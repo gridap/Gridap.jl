@@ -13,6 +13,8 @@ export compose
 export lincomb
 export attachgeomap
 export apply
+export solve
+export solve!
 
 function coordinates end
 function evaluate end
@@ -29,5 +31,7 @@ function compose end
 function lincomb end
 function attachgeomap end
 function apply end
+function solve end
+function solve! end
 
 const ∇ = gradient

@@ -1,9 +1,6 @@
-
-include("LinearSolvers.jl")
-
 module LinearSolversTests
 
-using ..LinearSolvers
+using Gridap.LinearSolvers
 
 using LinearAlgebra
 using SparseArrays

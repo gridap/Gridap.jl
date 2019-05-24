@@ -23,6 +23,8 @@ include("Geometry/Geometry.jl")
 include("CellQuadratures.jl")
 include("CellIntegration.jl")
 
+include("Algebra/LinearSolvers.jl")
+
 include("FESpaces/FESpaces.jl")
 include("FESpaces/Assemblers.jl")
 include("FESpaces/FEOperators.jl")

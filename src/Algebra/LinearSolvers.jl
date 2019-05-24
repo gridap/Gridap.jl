@@ -8,10 +8,10 @@ using Test
 export LinearSolver
 export SymbolicSetup
 export NumericalSetup
-export solve
-export solve!
 export test_linear_solver
 export LUSolver
+import Gridap: solve
+import Gridap: solve!
 
 abstract type LinearSolver end
 

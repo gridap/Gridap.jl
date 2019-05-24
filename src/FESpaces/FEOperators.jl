@@ -16,7 +16,7 @@ export LinearFEOperator
 export LinearFESolver
 export NonLinearFEOperator
 export NonLinearFESolver
-export solve
+import Gridap: solve
 export jacobian
 import Gridap: apply
 
