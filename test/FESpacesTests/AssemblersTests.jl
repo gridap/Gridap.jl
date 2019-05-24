@@ -40,6 +40,18 @@ vec = assemble(assem, bvec)
 
 mat = assemble(assem, mmat)
 
+@show vec
+@show mat
+
+
 x = mat \ vec
+
+assemble!(vec,assem, bvec)
+
+assemble!(mat,assem, mmat)
+
+x2 = mat \ vec
+
+@test x ≈ x2
 
 end # module AssemblersTests
