@@ -3,6 +3,7 @@ module NonLinearFEOperatorsTests
 using Gridap.FESpaces
 using Gridap.Assemblers
 using Gridap.FEOperators
+using Gridap.LinearSolvers
 
 using Test
 using Gridap
@@ -57,9 +58,10 @@ assem = SparseMatrixAssembler(V,U)
 op = NonLinearFEOperator(res,jac,V,U,assem,trian,quad)
 
 # Define the FESolver
+ls = LUSolver()
 tol = 1.e-10
 maxiters = 20
-solver = NonLinearFESolver(tol,maxiters)
+solver = NonLinearFESolver(ls,tol,maxiters)
 
 # Solve!
 uh = solve(solver,op)

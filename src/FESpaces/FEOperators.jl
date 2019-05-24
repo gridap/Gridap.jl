@@ -152,175 +152,118 @@ function solve!(uh::FEFunction,s::LinearFESolver,o::LinearFEOperator)
   FEFunction(o.trialfesp,x,diri_vals)
 end
 
-#"""
-#Struct representing a non-linear FE Operator
-#"""
-#struct NonLinearFEOperator{M,V,E} <:FEOperator
-#  uh::FEFunction
-#  cellvec::CellVector{E}
-#  cellmat::CellMatrix{E}
-#  assem::Assembler{M,V}
-#end
-#
-#function NonLinearFEOperator(
-#  res::Function,
-#  jac::Function,
-#  testfesp::FESpace{D,Z,T},
-#  trialfesp::FESpaceWithDirichletData,
-#  assem::Assembler{M,V},
-#  trian::Triangulation{Z},
-#  quad::CellQuadrature{Z}) where {M,V,D,Z,T}
-#
-#  # Construction of the initial guess
-#  E = eltype(T)
-#  free_values = zeros(E,num_free_dofs(trialfesp))
-#  diri_values = diri_dofs(trialfesp)
-#  uh = FEFunction(trialfesp,free_values,diri_values)
-#
-#  # This will not be a CellBasis in the future
-#  v = CellBasis(testfesp)
-#  du = CellBasis(trialfesp)
-#
-#  cellmat = integrate(jac(uh,v,du), trian, quad)
-#  cellvec = integrate(res(uh,v), trian, quad)
-#
-#  NonLinearFEOperator(uh,cellvec,cellmat,assem)
-#
-#end
-#
-#function apply(op::NonLinearFEOperator,uh::FEFunction)
-#  _update_free_values(op,uh)
-#  assemble(op.assem, op.cellvec)
-#end
-#
-#function jacobian(op::NonLinearFEOperator,uh::FEFunction)
-#  _update_free_values(op,uh)
-#  assemble(op.assem, op.cellmat)
-#end
-#
-#function _update_free_values(op,uh)
-#  op_free_values = free_dofs(op.uh)
-#  free_values = free_dofs(uh)
-#  if !(op_free_values === free_values)
-#    op_free_values .= free_values
-#  end
-#end
-#
-#"""
-#The solver that solves a NonLinearFEOperator
-#"""
-#struct NonLinearFESolver <: FESolver
-#  tol::Float64
-#  maxiters::Int
-#end
-#
-#function solve(::NonLinearFESolver,::FEOperator)
-#  @unreachable
-#end
-#
-## For the moment it can only solve a NonLinearFEOperator
-#function solve(s::NonLinearFESolver,o::NonLinearFEOperator)
-#
-#  # Get the solution vector
-#  uh = o.uh
-#  x = free_dofs(uh)
-#
-#  # Prepare initial guess
-#  T = value_type(uh)
-#  E = eltype(T)
-#  x .= zero(E)
-#
-#  # For, efficiency we can introduce in place variants apply! and jacobian!
-#  
-#  b = apply(o,uh)
-#  m0 = maximum(abs.(b))
-#
-#  max_nliters = s.maxiters
-#  tol = s.tol
-#
-#  for nliter in 1:max_nliters
-#
-#    A = jacobian(o,uh)
-#    b *= -1
-#    dx = A \ b
-#    broadcast!(+,x,x,dx)
-#
-#    b .= apply(o,uh)
-#
-#    m = maximum(abs.(b))
-#    if  m < tol * m0
-#      break
-#    end
-#
-#    if nliter == max_nliters
-#      @unreachable
-#    end
-#
-#  end
-#
-#  uh
-#
-#end
+"""
+Struct representing a non-linear FE Operator
+"""
+struct NonLinearFEOperator{D,Z,T} <:FEOperator
+  res::Function
+  jac::Function
+  testfesp::FESpaceWithDirichletData{D,Z,T}
+  trialfesp::FESpaceWithDirichletData{D,Z,T}
+  assem::Assembler
+  trian::Triangulation{Z}
+  quad::CellQuadrature{Z}
+end
 
+TrialFESpace(op::NonLinearFEOperator) = op.trialfesp
 
-#function solve!(uh::FEFunction,nls::NonLinearFEFESolver,op::FEOperator)
-#
-#  # Prepare raw initial guess and correction
-#  x = free_dofs(uh)
-#  dx = similar(x)
-#
-#  # Check convergence for the initial residual
-#  b = apply(op, uh)
-#  isconv, conv0 = _check_convergenge(nls, b)
-#  if isconv; return; end
-#
-#  # Assemble Jacobian and prepare solver
-#  A = jacobian(op, uh)
-#  ss = symbolic_setup(nls.linsolver, A)
-#  ns = numerical_setup(ss,A)
-#
-#  # Newton-like iterations
-#  for nliter in 1:nls.max_nliters
-#
-#    # Solve linearized problem
-#    broadcast!(*,b,b,-1)
-#    solve!(dx,ns,A,b)
-#    broadcast!(+,x,x,dx)
-#
-#    # Check convergence for the current residual
-#    apply!(b, op, uh)
-#    isconv = _check_convergenge(nls, b, conv0)
-#    if isconv; return; end
-#
-#    if nliter == nls.max_nliters
-#      @unreachable
-#    end
-#
-#    # Assemble jacobian (fast in-place version)
-#    # and prepare solver
-#    jacobian!(A, op, uh)
-#    numerical_setup!(ns,ss,A)
-#
-#  end
-#
-#end
-#
-#function _check_convergenge(nls::NonLinearFESolver,b)
-#  m0 = _inf_norm(b)
-#  (false, m0)
-#end
-#
-#function _check_convergenge(nls::NonLinearFESolver,b,m0)
-#  m = _inf_norm(b)
-#  m < nls.tol * m0
-#end
-#
-#function _inf_norm(b)
-#  m = 0
-#  for bi in b
-#    m = max(m,abs(bi))
-#  end
-#  m
-#end
+TestFESpace(op::NonLinearFEOperator) = op.testfesp
+
+function apply(op::NonLinearFEOperator,uh::FEFunction)
+  cellvec = _cellvec(op,uh)
+  assemble(op.assem, cellvec)
+end
+
+function apply!(b::AbstractVector,op::NonLinearFEOperator,uh::FEFunction)
+  cellvec = _cellvec(op,uh)
+  assemble!(b,op.assem, cellvec)
+end
+
+function jacobian(op::NonLinearFEOperator,uh::FEFunction)
+  cellmat = _cellmat(op,uh)
+  assemble(op.assem, cellmat)
+end
+
+function jacobian!(mat::AbstractMatrix,op::NonLinearFEOperator,uh::FEFunction)
+  cellmat = _cellmat(op,uh)
+  assemble!(mat,op.assem, cellmat)
+end
+
+function _cellvec(op,uh)
+  v = CellBasis(op.testfesp)
+  integrate(op.res(uh,v), op.trian, op.quad)
+end
+
+function _cellmat(op,uh)
+  v = CellBasis(op.testfesp)
+  du = CellBasis(op.trialfesp)
+  integrate(op.jac(uh,v,du), op.trian, op.quad)
+end
+
+struct NonLinearFESolver <: FESolver
+  ls::LinearSolver
+  tol::Float64
+  max_nliters::Int
+end
+
+function solve!(uh::FEFunction,nls::NonLinearFESolver,op::FEOperator)
+
+  # Prepare raw initial guess and correction
+  x = free_dofs(uh)
+  dx = similar(x)
+
+  # Check convergence for the initial residual
+  b = apply(op, uh)
+  isconv, conv0 = _check_convergence(nls, b)
+  if isconv; return; end
+
+  # Assemble Jacobian and prepare solver
+  A = jacobian(op, uh)
+  ss = symbolic_setup(nls.ls, A)
+  ns = numerical_setup(ss,A)
+
+  # Newton-like iterations
+  for nliter in 1:nls.max_nliters
+
+    # Solve linearized problem
+    broadcast!(*,b,b,-1)
+    solve!(dx,ns,A,b)
+    broadcast!(+,x,x,dx)
+
+    # Check convergence for the current residual
+    apply!(b, op, uh)
+    isconv = _check_convergence(nls, b, conv0)
+    if isconv; return; end
+
+    if nliter == nls.max_nliters
+      @unreachable
+    end
+
+    # Assemble jacobian (fast in-place version)
+    # and prepare solver
+    jacobian!(A, op, uh)
+    numerical_setup!(ns,ss,A)
+
+  end
+
+end
+
+function _check_convergence(nls::NonLinearFESolver,b)
+  m0 = _inf_norm(b)
+  (false, m0)
+end
+
+function _check_convergence(nls::NonLinearFESolver,b,m0)
+  m = _inf_norm(b)
+  m < nls.tol * m0
+end
+
+function _inf_norm(b)
+  m = 0
+  for bi in b
+    m = max(m,abs(bi))
+  end
+  m
+end
 
 end # module FEOperators
