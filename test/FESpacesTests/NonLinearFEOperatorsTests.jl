@@ -86,4 +86,8 @@ uh1 = sqrt(sum( integrate(h1(u),trian,quad) ))
 
 #writevtk(trian,"trian",nref=4,cellfields=["uh"=>uh,"u"=>u,"e"=>e])
 
+# Further tests
+@test TrialFESpace(op) === U
+@test TestFESpace(op) === V
+
 end # module NonLinearFEOperatorsTests

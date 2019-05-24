@@ -26,9 +26,11 @@ symbolic_setup(::LinearSolver,mat::AbstractMatrix)::SymbolicSetup = @abstractmet
 
 numerical_setup(::SymbolicSetup,mat::AbstractMatrix)::NumericalSetup = @abstractmethod
 
-numerical_setup!(::NumericalSetup,::SymbolicSetup,mat::AbstractMatrix) = @abstractmethod
+numerical_setup!(::NumericalSetup,mat::AbstractMatrix) = @abstractmethod
 
 solve!(x::AbstractVector,::NumericalSetup,A::AbstractMatrix,b::AbstractVector) = @abstractmethod
+
+function LinearSolver end
 
 function solve(ls::LinearSolver,A::AbstractMatrix,b::AbstractVector)
   ss = symbolic_setup(ls,A)
@@ -46,7 +48,7 @@ function test_linear_solver(
 
   ss = symbolic_setup(ls,A)
   ns = numerical_setup(ss,A)
-  numerical_setup!(ns,ss,A)
+  numerical_setup!(ns,A)
   solve!(y,ns,A,b)
   @test x ≈ y
 
@@ -67,7 +69,7 @@ symbolic_setup(::LUSolver,mat::AbstractMatrix) = LUSymbolicSetup()
 
 numerical_setup(::LUSymbolicSetup,mat::AbstractMatrix) = LUNumericalSetup(lu(mat))
 
-function numerical_setup!(ns::LUNumericalSetup, ::LUSymbolicSetup, mat::AbstractMatrix)
+function numerical_setup!(ns::LUNumericalSetup, mat::AbstractMatrix)
   fac = lu(mat)
   ns.factors = fac
 end
