@@ -22,16 +22,19 @@ import Gridap: apply
 
 abstract type FEOperator end
 
+# @santiagobadia : Public method
 function apply(::FEOperator,::FEFunction)::AbstractVector
   @abstractmethod
 end
 
+# @santiagobadia : Not sure it has to be public
 function jacobian(::FEOperator,::FEFunction)::AbstractMatrix
   @abstractmethod
 end
 
 abstract type FESolver end
 
+# @santiagobadia : Public method
 function solve(::FESolver,::FEOperator)::FEFunction
   @abstractmethod
 end
@@ -55,6 +58,7 @@ function LinearFEOperator(
   quad::CellQuadrature{Z}) where {M,V,D,Z,T}
 
   # This will not be a CellBasis in the future
+  # @santiagobadia : CellBases + block-data for multifield problems
   v = CellBasis(testfesp)
   u = CellBasis(trialfesp)
 
@@ -66,12 +70,13 @@ function LinearFEOperator(
 
   cellmat = integrate(biform(v,u),trian,quad)
   cellvec = integrate( liform(v)-biform(v,uhd), trian, quad)
+  # @santiagobadia : Where is the problem with the RHS computation?
+  # It is nice and I don't see any efficiency issue
 
   mat = assemble(assem,cellmat)
   vec = assemble(assem,cellvec)
 
   LinearFEOperator(mat,vec,trialfesp)
-
 end
 
 function apply(o::LinearFEOperator,uh::FEFunction)
@@ -87,7 +92,7 @@ The solver that solves a LinearFEOperator
 struct LinearFESolver <: FESolver end
 
 function solve(::LinearFESolver,::FEOperator)
-  @unreachable
+  @unreachable # @santiagobadia : Why unreachable? Not implemented?
 end
 
 function solve(s::LinearFESolver,o::LinearFEOperator)
@@ -97,10 +102,12 @@ function solve(s::LinearFESolver,o::LinearFEOperator)
 end
 
 """
-Struct representing a non-linear FE Operator
+Struct representing a nonlinear FE Operator
 """
 struct NonLinearFEOperator{M,V,E} <:FEOperator
   uh::FEFunction
+  # @santiagobadia : The cellvec and cellmat are needed just as scratch data
+  # for efficiency
   cellvec::CellVector{E}
   cellmat::CellMatrix{E}
   assem::Assembler{M,V}
@@ -173,9 +180,17 @@ function solve(s::NonLinearFESolver,o::NonLinearFEOperator)
   T = value_type(uh)
   E = eltype(T)
   x .= zero(E)
+  # @santiagobadia : Why are we putting to zero x, probably we can use uh as
+  # initial guess
 
   # For, efficiency we can introduce in place variants apply! and jacobian!
-  
+
+  # @santiagobadia:
+  # I would say that all the lines below should go the NonlinearFESolver
+  # since different implementations are needed (relaxation, Anderson acc,
+  # nonlinear GMRES, etc), different norms, etc. In any case, we can probably
+  # define an API for for nonlinear solvers such that we can work a
+  # generic nonlinear loop...
   b = apply(o,uh)
   m0 = maximum(abs.(b))
 
@@ -197,7 +212,7 @@ function solve(s::NonLinearFESolver,o::NonLinearFEOperator)
     end
 
     if nliter == max_nliters
-      @unreachable
+      @unreachable # @santiagobadia : @notconverged better?
     end
 
   end

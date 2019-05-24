@@ -41,8 +41,10 @@ import Base: length
 
 """
 Abstract FE Space parameterized with respec to the environment dimension `D`,
-the cell dimension `Z`, and the field type `T` (rank)
-A FE space has to be understood as the direct sum of two spaces free + dirichlet
+the cell dimension `Z`, and the field type `T` (rank and entry type).
+A FE space has to be understood as the direct sum of two spaces, the one with
+arbitrary free values and zero Dirichlet data and the one with zero free values
+and a given Dirichlet data
 """
 abstract type FESpace{D,Z,T} end
 
@@ -68,41 +70,59 @@ function apply_constraints_cols(
 end
 
 """
-Interpolates a function and returns a vector of free values and another of dirichlet ones
-E = eltype(T)
+Interpolates a function and returns a vector of free values and another vector
+of dirichlet ones. It is templatized with respect to E, the type of field
+value in the `FESpace{D,Z,T}` at hand, i.e.,  `E = eltype(T)`
 """
 function interpolated_values(::FESpace,::Function)::Tuple{Vector{E},Vector{E}} where E
   @abstractmethod
 end
+# @santiagobadia : Private method
+# @santiagobadia : interpolated -> interpolate
 
+"""
+Given a FESpace and its array of labels that represent the Dirichlet boundary
+in the geometrical model and an array of functions for every Dirichlet
+boundary label, this method interpolates all these functions on their
+boundaries, and provides the global vector of Dirichlet DOFs
+"""
 function interpolated_diri_values(::FESpace, funs::Vector{<:Function})::Vector{E} where E
   @abstractmethod
 end
-
-"""
-Returns the CellField represented be the  free and dirichlet values
-E = eltype(T)
-"""
-function CellField(
-  ::FESpace{D,Z,T},free_dofs::Vector{E},diri_dofs::Vector{E})::CellField{Z,T} where {D,Z,T,E}
-  @abstractmethod
-end
-
-function CellBasis(::FESpace{D,Z,T})::CellBasis{Z,T} where {D,Z,T}
-  @abstractmethod
-end
-
-function interpolate(this::FESpace,fun::Function)
-  free_vals, diri_vals = interpolated_values(this,fun)
-  FEFunction(this,free_vals,diri_vals)
-end
-
-value_type(::FESpace{D,Z,T}) where {D,Z,T} = T
+# @santiagobadia : Private method
+# @santiagobadia : interpolated -> interpolate
 
 function interpolated_diri_values(this::FESpace, fun::Function)
   tags = diri_tags(this)
   interpolated_diri_values(this,fill(fun,length(tags)))
 end
+# @santiagobadia : Private method
+# @santiagobadia : interpolated -> interpolate
+
+function interpolate(this::FESpace,fun::Function)
+  free_vals, diri_vals = interpolated_values(this,fun)
+  FEFunction(this,free_vals,diri_vals)
+end
+# @santiagobadia : Using this, it always overwrites the FESpace Dirichlet
+# values, if they exist. Is this what we want?
+
+"""
+Returns the CellField that represents the FEFunction thorough its free and
+dirichlet values. E = eltype(T)
+"""
+function CellField(
+  ::FESpace{D,Z,T},free_dofs::Vector{E},diri_dofs::Vector{E})::CellField{Z,T} where {D,Z,T,E}
+  @abstractmethod
+end
+# @santiagobadia : Private method (?), the user will use FEFunction constructor
+
+function CellBasis(::FESpace{D,Z,T})::CellBasis{Z,T} where {D,Z,T}
+  @abstractmethod
+end
+# @santiagobadia : Private method
+
+value_type(::FESpace{D,Z,T}) where {D,Z,T} = T
+# @santiagobadia : Private method
 
 function TestFESpace(this::FESpace{D,Z,T}) where {D,Z,T}
   E = eltype(T)
@@ -156,6 +176,8 @@ function FEFunction(
   cfield = CellField(fespace,free_dofs,diri_dofs)
   FEFunction(free_dofs,diri_dofs,fespace,cfield)
 end
+# @santiagobadia : I would define another method without diri_dofs and
+# FESpaceWithDirichletData
 
 function FEFunction(
   free_dofs::AbstractVector{E},
@@ -377,7 +399,8 @@ function _interpolated_diri_values(fesp::ConformingFESpace{D,Z,T},funs) where {D
   diri_dofs_all = zeros(E, num_diri_dofs(fesp))
   for (ifunc,f) in enumerate(funs)
     _ , fh_diri_dofs = interpolated_values(fesp,f)
-    # Implement a new interpolate restricted to cells on the boundary for performance
+    # @santiagobadia: For performance issues, implement a new interpolate
+    # restricted to cells on the boundary for performance
     for idim in 0:D
       nf_labs = nf_labs_all[idim+1]
       nf_dofs = nf_dofs_all[idim+1]
