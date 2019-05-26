@@ -16,6 +16,10 @@ export apply
 export apply!
 export solve
 export solve!
+export residual
+export residual!
+export jacobian
+export jacobian!
 
 function coordinates end
 function evaluate end
@@ -35,5 +39,9 @@ function apply end
 function apply! end
 function solve end
 function solve! end
+function residual end
+function residual! end
+function jacobian end
+function jacobian! end
 
 const ∇ = gradient

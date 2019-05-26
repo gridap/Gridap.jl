@@ -1,12 +1,10 @@
 
-include("../../src/Algebra/NonLinearSolvers.jl")
-
 module NonLinearSolversTests
 
 using Test
 using Gridap
 using Gridap.LinearSolvers
-using ..NonLinearSolvers
+using Gridap.NonLinearSolvers
 
 include("Mocks.jl")
 

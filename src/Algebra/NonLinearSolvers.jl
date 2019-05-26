@@ -4,10 +4,10 @@ using Gridap.Helpers
 using Gridap.LinearSolvers
 
 export NonLinearOperator
-export residual
-export jacobian
-export residual!
-export jacobian!
+import Gridap: residual
+import Gridap: jacobian
+import Gridap: residual!
+import Gridap: jacobian!
 export create_in_domain
 
 export NonLinearSolver

@@ -1,5 +1,6 @@
 
-import ..NonLinearSolvers: residual!, jacobian, jacobian!, create_in_domain
+import Gridap: residual!, jacobian, jacobian!
+import Gridap.NonLinearSolvers: create_in_domain
 
 struct NonLinearOperatorMock <: NonLinearOperator end
 
