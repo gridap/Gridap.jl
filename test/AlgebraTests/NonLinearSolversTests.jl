@@ -25,11 +25,11 @@ x = solve(nls,op)
 @test x ≈ [1.0, 3.0]
 
 x = [2.1,2.9]
-nnls = solve!(x,nls,op)
+cache = solve!(x,nls,op)
 @test x ≈ [2.0, 3.0]
 
 x = [2.1,2.9]
-solve!(x,nnls,op)
+solve!(x,nls,op,cache)
 @test x ≈ [2.0, 3.0]
 
 end

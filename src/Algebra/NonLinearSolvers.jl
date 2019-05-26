@@ -43,18 +43,11 @@ end
 
 abstract type NonLinearSolver end
 
-"""
-Nonlinear solver that can take advantage of the data
-generated in a previous run
-"""
-abstract type NextNonLinearSolver end
-
-
-function solve!(x::AbstractVector,::NonLinearSolver,::NonLinearOperator)::NextNonLinearSolver
+function solve!(x::AbstractVector,::NonLinearSolver,::NonLinearOperator)::Any
   @abstractmethod
 end
 
-function solve!(x::AbstractVector,::NextNonLinearSolver,::NonLinearOperator)::NextNonLinearSolver
+function solve!(x::AbstractVector,::NonLinearSolver,::NonLinearOperator,cache::Any)
   @abstractmethod
 end
 
@@ -75,8 +68,7 @@ struct NewtonRaphsonSolver <:NonLinearSolver
   max_nliters::Int
 end
 
-struct NextNewtonRaphsonSolver <: NextNonLinearSolver
-  nr::NewtonRaphsonSolver
+struct NewtonRaphsonCache
   A::AbstractMatrix
   b::AbstractVector
   dx::AbstractVector
@@ -93,24 +85,23 @@ function solve!(x::AbstractVector,nls::NewtonRaphsonSolver,op::NonLinearOperator
 
   _solve_nr!(x,A,b,dx,ns,nls,op)
 
-  NextNewtonRaphsonSolver(nls,A,b,dx,ns)
+  NewtonRaphsonCache(A,b,dx,ns)
 
 end
 
-function solve!(x::AbstractVector,nls::NextNewtonRaphsonSolver,op::NonLinearOperator)
+function solve!(
+  x::AbstractVector,nls::NewtonRaphsonSolver,op::NonLinearOperator,cache::NewtonRaphsonCache)
 
-  b = nls.b
-  A = nls.A
-  dx = nls.dx
-  ns = nls.ns
+  b = cache.b
+  A = cache.A
+  dx = cache.dx
+  ns = cache.ns
 
   residual!(b, op, x)
   jacobian!(A, op, x)
   numerical_setup!(ns,A)
 
-  _solve_nr!(x,A,b,dx,ns,nls.nr,op)
-
-  nls
+  _solve_nr!(x,A,b,dx,ns,nls,op)
 
 end
 
