@@ -9,6 +9,7 @@ using Gridap.CellIntegration
 
 using Gridap.FESpaces
 using Gridap.Assemblers
+using Gridap.NonLinearSolvers
 using Gridap.LinearSolvers
 using LinearAlgebra
 
@@ -24,6 +25,9 @@ import Gridap: jacobian
 import Gridap: jacobian!
 import Gridap: apply
 import Gridap: apply!
+import Gridap: residual
+import Gridap: residual!
+import Gridap.NonLinearSolvers: create_in_domain
 import Gridap.FESpaces: TrialFESpace
 import Gridap.FESpaces: TestFESpace
 import Gridap.LinearSolvers: LinearSolver
@@ -73,6 +77,40 @@ function solve(nls::FESolver,op::FEOperator)
   uh = zero(U)
   solve!(uh,nls,op)
   uh
+end
+
+"""
+Struct representing the non-linear algebraic problem
+associated with a FEOperator
+"""
+struct NonLinearOpFromFEOp <: NonLinearOperator
+  feop::FEOperator
+end
+
+function residual!(b::AbstractVector,op::NonLinearOpFromFEOp,x::AbstractVector)
+  U = TrialFESpace(op.feop)
+  uh = FEFunction(U,x)
+  apply!(b,op.feop,uh)
+end
+
+function jacobian!(A::AbstractMatrix,op::NonLinearOpFromFEOp,x::AbstractVector)
+  U = TrialFESpace(op.feop)
+  uh = FEFunction(U,x)
+  jacobian!(A,op.feop,uh)
+end
+
+function jacobian(op::NonLinearOpFromFEOp,x::AbstractVector)
+  U = TrialFESpace(op.feop)
+  uh = FEFunction(U,x)
+  jacobian(op.feop,uh)
+end
+
+function create_in_domain(op::NonLinearOpFromFEOp)
+  U = TrialFESpace(op.feop)
+  T = value_type(U)
+  E = eltype(T)
+  n = length(free_dofs(U))
+  x = zeros(E,n)
 end
 
 """
@@ -167,117 +205,72 @@ function solve!(uh::FEFunction,s::LinearFESolver,o::LinearFEOperator,ns::Numeric
   solve!(x,ns,A,b)
 end
 
-#"""
-#Struct representing a non-linear FE Operator
-#"""
-#struct NonLinearFEOperator{D,Z,T} <:FEOperator
-#  res::Function
-#  jac::Function
-#  testfesp::FESpaceWithDirichletData{D,Z,T}
-#  trialfesp::FESpaceWithDirichletData{D,Z,T}
-#  assem::Assembler
-#  trian::Triangulation{Z}
-#  quad::CellQuadrature{Z}
-#end
-#
-#TrialFESpace(op::NonLinearFEOperator) = op.trialfesp
-#
-#TestFESpace(op::NonLinearFEOperator) = op.testfesp
-#
-#function apply(op::NonLinearFEOperator,uh::FEFunction)
-#  cellvec = _cellvec(op,uh)
-#  assemble(op.assem, cellvec)
-#end
-#
-#function apply!(b::AbstractVector,op::NonLinearFEOperator,uh::FEFunction)
-#  cellvec = _cellvec(op,uh)
-#  assemble!(b,op.assem, cellvec)
-#end
-#
-#function jacobian(op::NonLinearFEOperator,uh::FEFunction)
-#  cellmat = _cellmat(op,uh)
-#  assemble(op.assem, cellmat)
-#end
-#
-#function jacobian!(mat::AbstractMatrix,op::NonLinearFEOperator,uh::FEFunction)
-#  cellmat = _cellmat(op,uh)
-#  assemble!(mat,op.assem, cellmat)
-#end
-#
-#function _cellvec(op,uh)
-#  v = CellBasis(op.testfesp)
-#  integrate(op.res(uh,v), op.trian, op.quad)
-#end
-#
-#function _cellmat(op,uh)
-#  v = CellBasis(op.testfesp)
-#  du = CellBasis(op.trialfesp)
-#  integrate(op.jac(uh,v,du), op.trian, op.quad)
-#end
-#
-#struct NonLinearFESolver <: FESolver
-#  nls::NonLinearSolver
-#  tol::Float64
-#  max_nliters::Int
-#end
-#
-#LinearSolver(s::NonLinearFESolver) = s.ls
-#
-#function solve!(uh::FEFunction, nls::NonLinearFESolver,op::FEOperator)
-#
-#  # Get raw solution
-#  x = free_dofs(uh)
-#
-#
-#  # Check for convergence on the initial residual
-#  b = apply(op,uh)
-#  isconv, conv0 = _check_convergence(nls, b)
-#  if isconv; return; end
-#
-#  A = jacobian()
-#
-#  # Newton-like iterations
-#  for nliter in 1:nls.max_nliters
-#
-#    # Solve linearized problem
-#    broadcast!(*,b,b,-1)
-#    solve!(dx,ns,A,b)
-#    broadcast!(+,x,x,dx)
-#
-#    # Check convergence for the current residual
-#    apply!(b, op, uh)
-#    isconv = _check_convergence(nls, b, conv0)
-#    if isconv; return; end
-#
-#    if nliter == nls.max_nliters
-#      @unreachable
-#    end
-#
-#    # Assemble jacobian (fast in-place version)
-#    # and prepare solver
-#    jacobian!(A, op, uh)
-#    numerical_setup!(ns,A)
-#
-#  end
-#
-#end
-#
-#function _check_convergence(nls::NonLinearFESolver,b)
-#  m0 = _inf_norm(b)
-#  (false, m0)
-#end
-#
-#function _check_convergence(nls::NonLinearFESolver,b,m0)
-#  m = _inf_norm(b)
-#  m < nls.tol * m0
-#end
-#
-#function _inf_norm(b)
-#  m = 0
-#  for bi in b
-#    m = max(m,abs(bi))
-#  end
-#  m
-#end
+"""
+Struct representing a non-linear FE Operator
+"""
+struct NonLinearFEOperator{D,Z,T} <:FEOperator
+  res::Function
+  jac::Function
+  testfesp::FESpaceWithDirichletData{D,Z,T}
+  trialfesp::FESpaceWithDirichletData{D,Z,T}
+  assem::Assembler
+  trian::Triangulation{Z}
+  quad::CellQuadrature{Z}
+end
+
+TrialFESpace(op::NonLinearFEOperator) = op.trialfesp
+
+TestFESpace(op::NonLinearFEOperator) = op.testfesp
+
+function apply(op::NonLinearFEOperator,uh::FEFunction)
+  cellvec = _cellvec(op,uh)
+  assemble(op.assem, cellvec)
+end
+
+function apply!(b::AbstractVector,op::NonLinearFEOperator,uh::FEFunction)
+  cellvec = _cellvec(op,uh)
+  assemble!(b,op.assem, cellvec)
+end
+
+function jacobian(op::NonLinearFEOperator,uh::FEFunction)
+  cellmat = _cellmat(op,uh)
+  assemble(op.assem, cellmat)
+end
+
+function jacobian!(mat::AbstractMatrix,op::NonLinearFEOperator,uh::FEFunction)
+  cellmat = _cellmat(op,uh)
+  assemble!(mat,op.assem, cellmat)
+end
+
+function _cellvec(op,uh)
+  v = CellBasis(op.testfesp)
+  integrate(op.res(uh,v), op.trian, op.quad)
+end
+
+function _cellmat(op,uh)
+  v = CellBasis(op.testfesp)
+  du = CellBasis(op.trialfesp)
+  integrate(op.jac(uh,v,du), op.trian, op.quad)
+end
+
+
+"""
+A general NonLinearFESolver
+"""
+struct NonLinearFESolver <: FESolver
+  nls::NonLinearSolver
+end
+
+function solve!(uh::FEFunction,nls::NonLinearFESolver,op::FEOperator)
+  nlop = NonLinearOpFromFEOp(op)
+  x = free_dofs(uh)
+  solve!(x,nls.nls,nlop)
+end
+
+function solve!(uh::FEFunction,nls::NonLinearFESolver,op::FEOperator,cache::Any)
+  nlop = NonLinearOpFromFEOp(op)
+  x = free_dofs(uh)
+  solve!(x,nls.nls,nlop,cache)
+end
 
 end # module FEOperators

@@ -245,6 +245,10 @@ function FEFunction(
   _FEFunction(f,free_vals,f.diri_dofs)
 end
 
+function FEFunction(f::FESpaceWithDirichletData,free_vals::Vector)
+  _FEFunction(f,free_vals,f.diri_dofs)
+end
+
 function interpolated_diri_values(this::FESpaceWithDirichletData, funs::Vector{<:Function})
   f.diri_dofs
 end

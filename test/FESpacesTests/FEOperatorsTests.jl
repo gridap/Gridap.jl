@@ -1,13 +1,8 @@
-
-
-
-include("../../src/FESpaces/FEOperators.jl")
-
 module FEOperatorsTests
 
 using Gridap.FESpaces
 using Gridap.Assemblers
-using ..FEOperators
+using Gridap.FEOperators
 using Gridap.LinearSolvers
 
 using Test

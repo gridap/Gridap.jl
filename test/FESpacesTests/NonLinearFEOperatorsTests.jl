@@ -4,6 +4,7 @@ using Gridap.FESpaces
 using Gridap.Assemblers
 using Gridap.FEOperators
 using Gridap.LinearSolvers
+using Gridap.NonLinearSolvers
 
 using Test
 using Gridap
@@ -61,7 +62,8 @@ op = NonLinearFEOperator(res,jac,V,U,assem,trian,quad)
 ls = LUSolver()
 tol = 1.e-10
 maxiters = 20
-solver = NonLinearFESolver(ls,tol,maxiters)
+nls = NewtonRaphsonSolver(ls,tol,maxiters)
+solver = NonLinearFESolver(nls)
 
 # Solve!
 uh = solve(solver,op)
@@ -89,5 +91,13 @@ uh1 = sqrt(sum( integrate(h1(u),trian,quad) ))
 # Further tests
 @test TrialFESpace(op) === U
 @test TestFESpace(op) === V
+
+zh = zero(U)
+cache = solve!(zh,solver,op)
+@test free_dofs(zh) ≈ free_dofs(uh)
+
+zh = zero(U)
+solve!(zh,solver,op,cache)
+@test free_dofs(zh) ≈ free_dofs(uh)
 
 end # module NonLinearFEOperatorsTests
