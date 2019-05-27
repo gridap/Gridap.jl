@@ -28,7 +28,7 @@ include("Algebra/NonLinearSolvers.jl")
 
 include("FESpaces/FESpaces.jl")
 include("FESpaces/Assemblers.jl")
-include("FESpaces/FEOperators.jl")
+#include("FESpaces/FEOperators.jl")
 
 include("Vtkio.jl")
 
