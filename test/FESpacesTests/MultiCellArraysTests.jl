@@ -30,14 +30,15 @@ mca = MultiCellArray([sca,scb],[(1,),(3,)])
 
 @test length(mca) == l
 
+i_to_field = mca.fieldids
+
 for ma in mca
-  @assert length(ma) == 2
-  for (a, (ifield,)) in eachblock(ma)
+  for (i,a) in enumerate(ma)
+    ifield, = i_to_field[i]
     @show a
     @show ifield
   end
-  @show ma[1]
-  @show ma[2]
+  @assert length(ma) == 2
 end
 
 end # module MultiCellArraysTests

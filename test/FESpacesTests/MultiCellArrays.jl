@@ -27,33 +27,18 @@ length(mca::MultiCellArray) = length(mca.cellarrays[1])
   znext = iterate(zipped)
   if znext === nothing; return nothing end
   arrays, zstate = znext
-  ma = MultiCachedArray(arrays,mca.fieldids)
-  state = (ma, zstate, zipped)
-  (ma, state)
+  state = (zstate, zipped)
+  (arrays, state)
 end
 
 @inline function iterate(mca::MultiCellArray,state)
-  ma, zstate, zipped = state
+  zstate, zipped = state
   znext = iterate(zipped, zstate)
   if znext === nothing; return nothing end
   arrays, zstate = znext
-  ma.arrays = arrays
-  state = (ma, zstate, zipped)
-  (ma, state)
+  state = (zstate, zipped)
+  (arrays, state)
 end
-
-mutable struct MultiCachedArray{L,T,N}
-  arrays::NTuple{L,CachedArray{T,N,Array{T,N}}}
-  fieldids::Vector{NTuple{N,Int}}
-end
-
-#Check that the length of arrays and fieldids is the same
-length(ma::MultiCachedArray{L}) where L = L
-
-getindex(ma::MultiCachedArray,i::Integer) = ma.arrays[i]
-
-# TODO check if this allocates a new object
-eachblock(ma::MultiCachedArray) = zip(ma.arrays,ma.fieldids)
 
 end # module MultiCellArrays
 
