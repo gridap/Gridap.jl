@@ -1,11 +1,9 @@
-include("MultiCellArrays.jl")
-
 module MultiCellArraysTests
 
 using Test
 
-using ..MultiCellArrays
 using Gridap
+using Gridap.MultiCellArrays
 using Gridap.CellValues
 using Gridap.CachedArrays
 using Gridap.CellValues.ConstantCellValues
