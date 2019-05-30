@@ -78,4 +78,8 @@ _mat = apply_constraints_cols(U,mat)
 @test _mat.blocks[2] === mat12
 @test _mat.blocks[3] === mat22
 
+dofs = celldofids(U)
+@test dofs.blocks[1] === celldofids(U1)
+@test dofs.blocks[2] === celldofids(U2)
+
 end # module MultiFESpacesTests

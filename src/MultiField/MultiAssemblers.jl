@@ -71,17 +71,46 @@ function MultiSparseMatrixAssembler(
   MultiSparseMatrixAssembler{E}(testfesps,trialfesps)
 end
 
-function assemble(this::MultiSparseMatrixAssembler{E},::MultiCellVector) where E
+function assemble(this::MultiSparseMatrixAssembler{E},vals::MultiCellVector) where E
   n = num_free_dofs(this.testfesps)
   vec = zeros(E,n)
   assemble!(vec,this,vals)
   vec
 end
 
-#function assemble!(::Vector{E},::MultiSparseMatrixAssembler{E},::MultiCellVector) where E
-#  vec .= zero(E)
-#
-#
-#end
+function assemble!(vec::Vector{E},this::MultiSparseMatrixAssembler{E},mcv::MultiCellVector) where E
+  vec .= zero(E)
+  V = this.testfesps
+  mf_vals = apply_constraints(V,mcv)
+  mf_rows = celldofids(V)
+  offsets = _compute_offsets(V)
+  i_to_fieldid = mf_vals.fieldids
+  _assemble_vec!(vec,mf_rows,mf_vals,i_to_fieldid,offsets)
+end
+
+function _assemble_vec!(vec,mf_rows,mf_vals,i_to_fieldid,offsets)
+  for (mf_rows_c,mf_vals_c) in zip(mf_rows,mf_vals)
+    for (i,vals_c) in enumerate(mf_vals_c)
+      ifield, = i_to_fieldid[i]
+      rows_c = mf_rows_c[ifield]
+      offset = offsets[ifield]
+      for (lid,gid) in enumerate(rows_c)
+        if gid > 0
+          vec[gid+offset] += vals_c[lid]
+        end
+      end
+    end
+  end
+end
+
+function _compute_offsets(U)
+  n = length(U)
+  offsets = zeros(Int,n)
+  for i in 1:(n-1)
+    Ui = U[i]
+    offsets[i+1] = offsets[i] + num_free_dofs(Ui)
+  end
+  offsets
+end
 
 end # module MultiAssemblers

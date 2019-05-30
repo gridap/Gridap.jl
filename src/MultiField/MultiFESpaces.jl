@@ -82,4 +82,15 @@ function apply_constraints_cols(self::MultiFESpace, mcm::MultiCellMatrix{T}) whe
   MultiCellMatrix(newblocks,i_to_fieldid)
 end
 
+function celldofids(self::MultiFESpace)
+  n = length(self)
+  blocks = Vector{CellVector{Int}}(undef,n)
+  fielids = Vector{Tuple{Int}}(undef,n)
+  for (i,Ui) in enumerate(self)
+    blocks[i] = celldofids(Ui)
+    fielids[i] = (i,)
+  end
+  MultiCellVector(blocks,fielids)
+end
+
 end # module MultiFESpaces
