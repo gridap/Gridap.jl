@@ -90,7 +90,7 @@ Returns the CellField represented be the  free and dirichlet values
 E = eltype(T)
 """
 function CellField(
-  ::FESpace{D,Z,T},free_dofs::Vector{E},diri_dofs::Vector{E})::CellField{Z,T} where {D,Z,T,E}
+  ::FESpace{D,Z,T},free_dofs::AbstractVector{E},diri_dofs::AbstractVector{E})::CellField{Z,T} where {D,Z,T,E}
   @abstractmethod
 end
 
@@ -241,7 +241,7 @@ function interpolated_values(f::FESpaceWithDirichletData,fun::Function)
 end
 
 function CellField(
-  f::FESpaceWithDirichletData{D,Z,T},free_dofs::Vector{E},diri_dofs::Vector{E})where {D,Z,T,E}
+  f::FESpaceWithDirichletData{D,Z,T},free_dofs::AbstractVector{E},diri_dofs::AbstractVector{E})where {D,Z,T,E}
   CellField(f.fespace,free_dofs,f.diri_dofs)
 end
 
@@ -250,11 +250,11 @@ function CellBasis(f::FESpaceWithDirichletData)
 end
 
 function FEFunction(
-  f::FESpaceWithDirichletData,free_vals::Vector{E},diri_dofs::Vector{E}) where E
+  f::FESpaceWithDirichletData,free_vals::AbstractVector{E},diri_dofs::AbstractVector{E}) where E
   _FEFunction(f,free_vals,f.diri_dofs)
 end
 
-function FEFunction(f::FESpaceWithDirichletData,free_vals::Vector)
+function FEFunction(f::FESpaceWithDirichletData,free_vals::AbstractVector)
   _FEFunction(f,free_vals,f.diri_dofs)
 end
 
@@ -343,8 +343,8 @@ end
 
 function CellField(
   fespace::ConformingFESpace{D,Z,T},
-  free_dofs::Vector{E},
-  diri_dofs::Vector{E}) where {D,Z,T,E}
+  free_dofs::AbstractVector{E},
+  diri_dofs::AbstractVector{E}) where {D,Z,T,E}
 
   @assert E == eltype(T)
   @assert num_free_dofs(fespace) == length(free_dofs)
