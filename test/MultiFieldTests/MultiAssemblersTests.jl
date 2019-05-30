@@ -18,7 +18,7 @@ using ..MultiAssemblers
 
 order = 1
 diritag = "boundary"
-model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(4,4))
+model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(2,3))
 fespace = ConformingFESpace(Float64,model,order,diritag)
 
 ufun1(x) = x[1] + x[2]
@@ -68,6 +68,10 @@ vec2 = integrate(b2(v2),trian,quad)
 vec = MultiCellVector([vec1,vec2],[(1,),(2,)])
 
 v = assemble(assem,vec)
-@show v
+@test v ≈ [0.166666666666, 0.166666666666, 0.3333333333333, 0.333333333333]
+
+mm = assemble(assem,mat)
+
+assemble!(mm,assem,mat)
 
 end # module MultiAssemblersTests

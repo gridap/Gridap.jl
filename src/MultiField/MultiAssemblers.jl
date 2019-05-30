@@ -88,6 +88,31 @@ function assemble!(vec::Vector{E},this::MultiSparseMatrixAssembler{E},mcv::Multi
   _assemble_vec!(vec,mf_rows,mf_vals,i_to_fieldid,offsets)
 end
 
+function assemble(this::MultiSparseMatrixAssembler{E},mcm::MultiCellMatrix) where {E}
+  V = this.testfesps
+  U = this.trialfesps
+  mf_vals = apply_constraints_rows(V, mcm)
+  mf_rows = celldofids(V)
+  mf_vals = apply_constraints_cols(U,mf_vals)
+  mf_cols = celldofids(U)
+  offsets_row = _compute_offsets(V)
+  offsets_col = _compute_offsets(U)
+  i_to_fieldid = mf_vals.fieldids
+  aux_row = Int[]; aux_col = Int[]; aux_val = E[]
+  _assemble_mat!(
+    aux_row,aux_col,aux_val,mf_rows,mf_cols,mf_vals,
+    i_to_fieldid,offsets_row,offsets_col)
+  sparse(aux_row, aux_col, aux_val)
+end
+
+function assemble!(
+  mat::SparseMatrixCSC{E}, this::MultiSparseMatrixAssembler{E}, vals::MultiCellMatrix) where E
+  # This routine can be optimized a lot taking into a count the sparsity graph of mat
+  # For the moment we create an intermediate matrix and then transfer the nz values
+  m = assemble(this,vals)
+  mat.nzval .= m.nzval
+end
+
 function _assemble_vec!(vec,mf_rows,mf_vals,i_to_fieldid,offsets)
   for (mf_rows_c,mf_vals_c) in zip(mf_rows,mf_vals)
     for (i,vals_c) in enumerate(mf_vals_c)
@@ -101,6 +126,33 @@ function _assemble_vec!(vec,mf_rows,mf_vals,i_to_fieldid,offsets)
       end
     end
   end
+end
+
+function _assemble_mat!(
+  aux_row,aux_col,aux_val,mf_rows,mf_cols,mf_vals,
+  i_to_fieldid,offsets_row,offsets_col)
+
+  for (mf_rows_c,mf_cols_c,mf_vals_c) in zip(mf_rows,mf_cols,mf_vals)
+    for (i,vals_c) in enumerate(mf_vals_c)
+      ifield,jfield = i_to_fieldid[i]
+      rows_c = mf_rows_c[ifield]
+      cols_c = mf_cols_c[jfield]
+      offset_row = offsets_row[ifield]
+      offset_col = offsets_col[jfield]
+      for (lidcol,gidcol) in enumerate(cols_c)
+        if gidcol > 0
+          for (lidrow,gidrow) in enumerate(rows_c)
+            if gidrow > 0
+              push!(aux_row, gidrow+offset_row)
+              push!(aux_col, gidcol+offset_col)
+              push!(aux_val, vals_c[lidrow,lidcol])
+            end
+          end
+        end
+      end
+    end
+  end
+
 end
 
 function _compute_offsets(U)
