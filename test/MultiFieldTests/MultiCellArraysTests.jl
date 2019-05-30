@@ -32,4 +32,14 @@ for ma in mca
   @assert isa(ma[2],CachedArray)
 end
 
+mca2 = MultiCellVector([sca,scb],[(1,),(3,)])
+
+sa = [sv sv; sv sv]
+sca = ConstantCellArray(sa,l)
+
+sb = [2*sv sv; 3*sv sv]
+scb = ConstantCellArray(sb,l)
+
+mca2 = MultiCellMatrix([sca,scb],[(1,5),(3,2)])
+
 end # module MultiCellArraysTests
