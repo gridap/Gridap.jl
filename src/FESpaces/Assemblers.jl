@@ -72,7 +72,8 @@ end
 
 function assemble!(
   vec::Vector{E},this::SparseMatrixAssembler{E}, vals::CellVector) where E
-  _vals, _rows = apply_constraints(this.testfesp, vals)
+  _vals = apply_constraints(this.testfesp, vals)
+  _rows = celldofids(this.testfesp)
   vec .= zero(E)
   _assemble_vector!(vec, _vals, _rows)
 end
@@ -88,8 +89,10 @@ function _assemble_vector!(vec,vals,rows)
 end
 
 function assemble(this::SparseMatrixAssembler{E}, vals::CellMatrix) where E
-  _vals, rows_m = apply_constraints_rows(this.testfesp, vals)
-  _vals, cols_m = apply_constraints_cols(this.trialfesp, _vals)
+  _vals = apply_constraints_rows(this.testfesp, vals)
+  rows_m = celldofids(this.testfesp)
+  _vals = apply_constraints_cols(this.trialfesp, _vals)
+  cols_m = celldofids(this.trialfesp)
   args = _assemble_sparse_matrix_values(_vals,rows_m,cols_m,Int,E)
   sparse(args...)
 end
