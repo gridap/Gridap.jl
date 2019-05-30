@@ -6,7 +6,11 @@ using Test
 using Gridap
 using Gridap.FESpaces
 using Gridap.Geometry
+using Gridap.CellMaps
 using Gridap.Geometry.Cartesian
+using Gridap.CellQuadratures
+using Gridap.CellIntegration
+using Gridap.MultiCellArrays
 using ..MultiFESpaces
 
 model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(4,4))
@@ -34,5 +38,44 @@ V2, state = iterate(U,state)
 @test V2 === U2
 
 @test num_free_dofs(U) == num_free_dofs(U1) + num_free_dofs(U2)
+
+a(v,u) = varinner(v,u)
+
+bfun(x) = x[2] 
+b(v) = varinner(v,CellField(trian,bfun))
+
+trian = Triangulation(model)
+quad = CellQuadrature(trian,order=2)
+
+v1 = CellBasis(V1)
+v2 = CellBasis(V2)
+
+u1 = CellBasis(U1)
+u2 = CellBasis(U2)
+
+mat11 = integrate(a(v1,u1),trian,quad)
+mat12 = integrate(a(v1,u2),trian,quad)
+mat22 = integrate(a(v2,u2),trian,quad)
+
+mat = MultiCellMatrix([mat11,mat12,mat22],[(1,1),(1,2),(2,2)])
+
+vec1 = integrate(b(v1),trian,quad)
+vec2 = integrate(b(v2),trian,quad)
+
+vec = MultiCellVector([vec1,vec2],[(1,),(2,)])
+
+_vec = apply_constraints(U,vec)
+@test _vec.blocks[1] === vec1
+@test _vec.blocks[2] === vec2
+
+_mat = apply_constraints_rows(U,mat)
+@test _mat.blocks[1] === mat11
+@test _mat.blocks[2] === mat12
+@test _mat.blocks[3] === mat22
+
+_mat = apply_constraints_cols(U,mat)
+@test _mat.blocks[1] === mat11
+@test _mat.blocks[2] === mat12
+@test _mat.blocks[3] === mat22
 
 end # module MultiFESpacesTests

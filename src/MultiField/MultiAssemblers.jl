@@ -78,4 +78,10 @@ function assemble(this::MultiSparseMatrixAssembler{E},::MultiCellVector) where E
   vec
 end
 
+#function assemble!(::Vector{E},::MultiSparseMatrixAssembler{E},::MultiCellVector) where E
+#  vec .= zero(E)
+#
+#
+#end
+
 end # module MultiAssemblers

@@ -10,11 +10,10 @@ export MultiCellArray
 export MultiCellMatrix
 export MultiCellVector
 import Base: iterate
-import Base: getindex
 import Base: length
 
 struct MultiCellArray{T,N}
-  cellarrays::Vector{<:CellValue{CachedArray{T,N,Array{T,N}}}}
+  blocks::Vector{<:CellValue{CachedArray{T,N,Array{T,N}}}}
   fieldids::Vector{NTuple{N,Int}}
 end
 
@@ -50,10 +49,10 @@ function _prepare(ca::ConstantCellArray{T,N}) where {T,N}
   ConstantCellValue(_ca,length(ca))
 end
 
-length(mca::MultiCellArray) = length(mca.cellarrays[1])
+length(mca::MultiCellArray) = length(mca.blocks[1])
 
 @inline function iterate(mca::MultiCellArray)
-  zipped = zip(mca.cellarrays...)
+  zipped = zip(mca.blocks...)
   znext = iterate(zipped)
   if znext === nothing; return nothing end
   arrays, zstate = znext
