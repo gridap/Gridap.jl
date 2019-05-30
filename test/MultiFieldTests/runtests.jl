@@ -1,0 +1,2 @@
+
+include("MultiCellArraysTests.jl")
