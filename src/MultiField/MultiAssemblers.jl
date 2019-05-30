@@ -6,18 +6,19 @@ using Gridap
 using Gridap.Helpers
 using Gridap.FESpaces
 using Gridap.MultiCellArrays
+using Gridap.CellValues.Wrappers: CachedSubVector
 using ..MultiFESpaces
 
 using SparseArrays
 
 export MultiAssembler
-export restrict_to_field
+export restrict_cols_to_field
+export restrict_rows_to_field
 export MultiSparseMatrixAssembler
 
 import Gridap.Assemblers: assemble
 import Gridap.Assemblers: assemble!
 import Gridap.Assemblers: SparseMatrixAssembler
-import Base: length
 
 abstract type MultiAssembler{M<:AbstractMatrix,V<:AbstractVector} end
 
@@ -37,9 +38,11 @@ function assemble!(::M,::MultiAssembler{M,V},::MultiCellMatrix)::M where {M,V}
   @abstractmethod
 end
 
-length(::MultiAssembler) = @abstractmethod
+function restrict_rows_to_field(::MultiAssembler{M,V},::V,field::Integer)::AbstractVector where {M,V}
+  @abstractmethod
+end
 
-function restrict_to_field(::MultiAssembler{M,V},::V,field::Integer)::AbstractVector where {M,V}
+function restrict_cols_to_field(::MultiAssembler{M,V},::V,field::Integer)::AbstractVector where {M,V}
   @abstractmethod
 end
 
@@ -67,7 +70,6 @@ end
 
 function MultiSparseMatrixAssembler(
   testfesps::MultiFESpace{E}, trialfesps::MultiFESpace{E}) where E
-  @assert length(testfesps) == length(trialfesps)
   MultiSparseMatrixAssembler{E}(testfesps,trialfesps)
 end
 
@@ -111,6 +113,25 @@ function assemble!(
   # For the moment we create an intermediate matrix and then transfer the nz values
   m = assemble(this,vals)
   mat.nzval .= m.nzval
+end
+
+function restrict_rows_to_field(
+  this::MultiSparseMatrixAssembler{E},v::AbstractVector{E},field::Integer) where E
+  V = this.testfesps
+  _restrict_to_field(V,v,field)
+end
+
+function restrict_cols_to_field(
+  this::MultiSparseMatrixAssembler{E},v::AbstractVector{E},field::Integer) where E
+  U = this.trialfesps
+  _restrict_to_field(U,v,field)
+end
+
+function _restrict_to_field(U,v,field)
+  offsets = _compute_offsets(U)
+  pini = offsets[field] + 1
+  pend = offsets[field] + num_free_dofs(U[field])
+  CachedSubVector(v,pini,pend)
 end
 
 function _assemble_vec!(vec,mf_rows,mf_vals,i_to_fieldid,offsets)
