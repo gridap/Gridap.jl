@@ -4,10 +4,31 @@ module MultiFEOperators
 
 using Gridap
 using Gridap.Helpers
+using Gridap.Geometry
+using Gridap.CellMaps
+using Gridap.CellQuadratures
+using Gridap.CellIntegration
+using Gridap.LinearSolvers
 using Gridap.FESpaces
+using Gridap.FEOperators: LinearFEOperator
+using Gridap.FEOperators: LinearFESolver
+using Gridap.MultiCellArrays
+using Gridap.Assemblers
 using ..MultiFESpaces
 using ..MultiAssemblers
 using ..MultiFEFunctions
+import Gridap: solve
+import Gridap: solve!
+import Gridap: jacobian
+import Gridap: jacobian!
+import Gridap: apply
+import Gridap: apply!
+import Gridap: residual
+import Gridap: residual!
+import Gridap.NonLinearSolvers: create_in_domain
+import Gridap.FESpaces: TrialFESpace
+import Gridap.FESpaces: TestFESpace
+import Gridap.LinearSolvers: LinearSolver
 
 abstract type MultiFEOperator end
 
@@ -67,72 +88,96 @@ struct LinearMultiFEOperator{M,V} <:MultiFEOperator
   testfesp::MultiFESpace
 end
 
+function LinearFEOperator(
+  biform::Function,
+  liform::Function,
+  testfesp::Vector{<:FESpaceWithDirichletData},
+  trialfesp::Vector{<:FESpaceWithDirichletData},
+  assem::MultiAssembler,
+  trian::Triangulation{Z},
+  quad::CellQuadrature{Z}) where Z
+  V = MultiFESpace(testfesp)
+  U = MultiFESpace(trialfesp)
+  LinearMultiFEOperator(biform,liform,V,U,assem,trian,quad)
+end
+
 function LinearMultiFEOperator(
   biform::Function,
   liform::Function,
   testfesp::MultiFESpace,
   trialfesp::MultiFESpace,
-  assem::Assembler{M,V},
+  assem::MultiAssembler,
   trian::Triangulation{Z},
-  quad::CellQuadrature{Z}) where {M,V,Z}
+  quad::CellQuadrature{Z}) where Z
 
   # This will not be a CellBasis in the future
-  v = CellBasis(testfesp)
-  u = CellBasis(trialfesp)
+  v = [ CellBasis(V) for V in testfesp  ]
+  u = [ CellBasis(U) for U in trialfesp ]
+
+  preblocks, fieldids = biform(v,u)
+
+  blocks = [ integrate(bi,trian,quad) for bi in preblocks ]
+
+  cellmat = MultiCellMatrix(blocks,fieldids)
 
   # The way we modify the rhs can be improved
-  E = eltype(T)
-  free_values = zeros(E,num_free_dofs(trialfesp))
-  diri_values = diri_dofs(trialfesp)
-  uhd = FEFunction(trialfesp,free_values,diri_values)
+  uhd = zero(trialfesp)
+  preblocks, prefieldids = biform(v,uhd)
 
-  cellmat = integrate(biform(v,u),trian,quad)
-  cellvec = integrate( liform(v)-biform(v,uhd), trian, quad)
+  blocks1 = [ integrate(-bi,trian,quad) for bi in preblocks ]
+  fieldids1 = [ (fi[1],) for fi in prefieldids ]
+
+  preblocks, fieldids2 = liform(v)
+
+  blocks2 = [ integrate(bi,trian,quad) for bi in preblocks ]
+
+  blocks = vcat(blocks1,blocks2)
+  fieldids = vcat(fieldids1,fieldids2)
+
+  cellvec = MultiCellVector(blocks,fieldids)
 
   mat = assemble(assem,cellmat)
   vec = assemble(assem,cellvec)
 
-  LinearFEOperator(mat,vec,trialfesp,testfesp)
+  LinearMultiFEOperator(mat,vec,trialfesp,testfesp)
 
 end
 
-TrialFESpace(op::LinearFEOperator) = op.trialfesp
+TrialFESpace(op::LinearMultiFEOperator) = op.trialfesp
 
-TestFESpace(op::LinearFEOperator) = op.testfesp
+TestFESpace(op::LinearMultiFEOperator) = op.testfesp
 
-function apply(o::LinearFEOperator,uh::FEFunction)
+function apply(o::LinearMultiFEOperator,uh::MultiFEFunction)
   vals = free_dofs(uh)
   o.mat * vals - o.vec
 end
 
-function apply!(b::Vector,o::LinearFEOperator,uh::FEFunction)
+function apply!(b::Vector,o::LinearMultiFEOperator,uh::MultiFEFunction)
   vals = free_dofs(uh)
   mul!(b,o.mat,vals)
   broadcast!(-,b,b,o.vec)
 end
 
-jacobian(o::LinearFEOperator,::FEFunction) = o.mat
+jacobian(o::LinearMultiFEOperator,::MultiFEFunction) = o.mat
 
-function jacobian!(mat::AbstractMatrix, o::LinearFEOperator, ::FEFunction)
+function jacobian!(
+  mat::AbstractMatrix, o::LinearMultiFEOperator, ::MultiFEFunction)
   @assert mat === o.mat
 end
 
-"""
-The solver that solves a LinearFEOperator
-"""
-struct LinearFESolver <: FESolver
+struct LinearMultiFESolver <: MultiFESolver
   ls::LinearSolver
 end
 
-function solve!(::FEFunction,::LinearFESolver,::FEOperator)
+function solve!(::MultiFEFunction,::LinearMultiFESolver,::MultiFEOperator)
   @unreachable
 end
 
-function solve!(::FEFunction,::LinearFESolver,::FEOperator,::Any)
+function solve!(::MultiFEFunction,::LinearMultiFESolver,::MultiFEOperator,::Any)
   @unreachable
 end
 
-function solve!(uh::FEFunction,s::LinearFESolver,o::LinearFEOperator)
+function solve!(uh::MultiFEFunction,s::LinearMultiFESolver,o::LinearMultiFEOperator)
   x = free_dofs(uh)
   A = o.mat
   b = o.vec
@@ -142,7 +187,7 @@ function solve!(uh::FEFunction,s::LinearFESolver,o::LinearFEOperator)
   ns
 end
 
-function solve!(uh::FEFunction,s::LinearFESolver,o::LinearFEOperator,ns::NumericalSetup)
+function solve!(uh::MultiFEFunction,s::LinearMultiFESolver,o::LinearMultiFEOperator,ns::NumericalSetup)
   x = free_dofs(uh)
   A = o.mat
   b = o.vec

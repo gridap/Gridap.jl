@@ -145,10 +145,7 @@ function LinearFEOperator(
   u = CellBasis(trialfesp)
 
   # The way we modify the rhs can be improved
-  E = eltype(T)
-  free_values = zeros(E,num_free_dofs(trialfesp))
-  diri_values = diri_dofs(trialfesp)
-  uhd = FEFunction(trialfesp,free_values,diri_values)
+  uhd = zero(trialfesp)
 
   cellmat = integrate(biform(v,u),trian,quad)
   cellvec = integrate( liform(v)-biform(v,uhd), trian, quad)
