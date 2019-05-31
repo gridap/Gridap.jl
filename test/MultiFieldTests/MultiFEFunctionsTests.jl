@@ -29,19 +29,13 @@ U1 = TrialFESpace(fespace,ufun1)
 ufun2(x) = x[1] + x[2]
 U2 = TrialFESpace(fespace,ufun2)
 
-V1 = TestFESpace(fespace)
-V2 = V1
-
-V = MultiFESpace([V1,V2])
 U = MultiFESpace([U1,U2])
-
-assem = MultiSparseMatrixAssembler(V,U)
 
 n = num_free_dofs(U)
 
 x = rand(n)
 
-uh = MultiFEFunction(x,U,assem)
+uh = MultiFEFunction(x,U)
 
 @test length(uh) == 2
 @test free_dofs(uh[1]) == x[1:2]
@@ -52,5 +46,9 @@ uh1, state = iterate(uh)
 
 uh2, state = iterate(uh,state)
 @test free_dofs(uh2) == x[3:4]
+
+zh = zero(U)
+@test isa(zh,MultiFEFunction)
+@test free_dofs(zh) == zeros(num_free_dofs(U))
 
 end # module MultiFEFunctionsTests

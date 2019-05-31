@@ -82,4 +82,15 @@ dofs = celldofids(U)
 @test dofs.blocks[1] === celldofids(U1)
 @test dofs.blocks[2] === celldofids(U2)
 
+n = num_free_dofs(U)
+n1 = num_free_dofs(U[1])
+n2 = num_free_dofs(U[2])
+v = rand(n)
+
+f1 = restrict_to_field(U,v,1)
+@test f1 == v[1:n1]
+
+f2 = restrict_to_field(U,v,2)
+@test f2 == v[1+n1:n]
+
 end # module MultiFESpacesTests

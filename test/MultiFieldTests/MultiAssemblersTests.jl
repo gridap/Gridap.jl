@@ -74,16 +74,4 @@ mm = assemble(assem,mat)
 
 assemble!(mm,assem,mat)
 
-f1 = restrict_cols_to_field(assem,v,1)
-@test f1 == v[1:2]
-
-f2 = restrict_cols_to_field(assem,v,2)
-@test f2 == v[3:4]
-
-f1 = restrict_rows_to_field(assem,v,1)
-@test f1 == v[1:2]
-
-f2 = restrict_rows_to_field(assem,v,2)
-@test f2 == v[3:4]
-
 end # module MultiAssemblersTests

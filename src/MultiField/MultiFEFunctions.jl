@@ -6,13 +6,13 @@ using Gridap
 using Gridap.Helpers
 using Gridap.FESpaces
 using ..MultiFESpaces
-using ..MultiAssemblers
 
 export MultiFEFunction
 
 import Base: length
 import Base: getindex
 import Base: iterate
+import Base: zero
 import Gridap.FESpaces: free_dofs
 
 struct MultiFEFunction
@@ -21,11 +21,9 @@ struct MultiFEFunction
 end
 
 function MultiFEFunction(
-  free_dofs_all_fields::AbstractVector,
-  fespaces::MultiFESpace,
-  assem::MultiAssembler)
+  free_dofs_all_fields::AbstractVector, fespaces::MultiFESpace)
   fields = [
-    FEFunction(U,restrict_cols_to_field(assem,free_dofs_all_fields,i))
+    FEFunction(U,restrict_to_field(fespaces,free_dofs_all_fields,i))
     for (i,U) in enumerate(fespaces) ]
   MultiFEFunction(fields,free_dofs_all_fields)
 end
@@ -39,5 +37,11 @@ getindex(self::MultiFEFunction,field::Integer) = self.fields[field]
 iterate(self::MultiFEFunction) = iterate(self.fields)
 
 iterate(self::MultiFEFunction,state) = iterate(self.fields,state)
+
+function zero(U::MultiFESpace{E}) where E
+  n = num_free_dofs(U)
+  x = zeros(E,n)
+  MultiFEFunction(x,U)
+end
 
 end # module MultiFEFunctions

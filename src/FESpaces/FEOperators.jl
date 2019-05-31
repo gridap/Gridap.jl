@@ -58,6 +58,14 @@ function TestFESpace(::FEOperator)::FESpaceWithDirichletData
   @abstractmethod
 end
 
+function residual(op::FEOperator,uh::FEFunction)
+  apply(op,uh)
+end
+
+function residual!(b::AbstractVector,op::FEOperator,uh::FEFunction)
+  apply!(b,op,uh)
+end
+
 abstract type FESolver end
 
 function solve!(uh::FEFunction,::FESolver,::FEOperator)::Any

@@ -6,14 +6,12 @@ using Gridap
 using Gridap.Helpers
 using Gridap.FESpaces
 using Gridap.MultiCellArrays
-using Gridap.CellValues.Wrappers: CachedSubVector
 using ..MultiFESpaces
+using ..MultiFESpaces: _compute_offsets
 
 using SparseArrays
 
 export MultiAssembler
-export restrict_cols_to_field
-export restrict_rows_to_field
 export MultiSparseMatrixAssembler
 
 import Gridap.Assemblers: assemble
@@ -35,14 +33,6 @@ function assemble!(::V,::MultiAssembler{M,V},::MultiCellVector)::V where {M,V}
 end
 
 function assemble!(::M,::MultiAssembler{M,V},::MultiCellMatrix)::M where {M,V}
-  @abstractmethod
-end
-
-function restrict_rows_to_field(::MultiAssembler{M,V},::V,field::Integer)::AbstractVector where {M,V}
-  @abstractmethod
-end
-
-function restrict_cols_to_field(::MultiAssembler{M,V},::V,field::Integer)::AbstractVector where {M,V}
   @abstractmethod
 end
 
@@ -69,7 +59,8 @@ function SparseMatrixAssembler(
 end
 
 function MultiSparseMatrixAssembler(
-  testfesps::MultiFESpace{E}, trialfesps::MultiFESpace{E}) where E
+  testfesps::MultiFESpace{E,S}, trialfesps::MultiFESpace{E,S}) where {E,S}
+  @notimplementedif S != ConsequtiveMultiFieldStyle
   MultiSparseMatrixAssembler{E}(testfesps,trialfesps)
 end
 
@@ -115,25 +106,6 @@ function assemble!(
   mat.nzval .= m.nzval
 end
 
-function restrict_rows_to_field(
-  this::MultiSparseMatrixAssembler{E},v::AbstractVector{E},field::Integer) where E
-  V = this.testfesps
-  _restrict_to_field(V,v,field)
-end
-
-function restrict_cols_to_field(
-  this::MultiSparseMatrixAssembler{E},v::AbstractVector{E},field::Integer) where E
-  U = this.trialfesps
-  _restrict_to_field(U,v,field)
-end
-
-function _restrict_to_field(U,v,field)
-  offsets = _compute_offsets(U)
-  pini = offsets[field] + 1
-  pend = offsets[field] + num_free_dofs(U[field])
-  CachedSubVector(v,pini,pend)
-end
-
 function _assemble_vec!(vec,mf_rows,mf_vals,i_to_fieldid,offsets)
   for (mf_rows_c,mf_vals_c) in zip(mf_rows,mf_vals)
     for (i,vals_c) in enumerate(mf_vals_c)
@@ -174,16 +146,6 @@ function _assemble_mat!(
     end
   end
 
-end
-
-function _compute_offsets(U)
-  n = length(U)
-  offsets = zeros(Int,n)
-  for i in 1:(n-1)
-    Ui = U[i]
-    offsets[i+1] = offsets[i] + num_free_dofs(Ui)
-  end
-  offsets
 end
 
 end # module MultiAssemblers
