@@ -1,12 +1,10 @@
-include("MultiCellArrays.jl")
-
 module MultiCellMaps
 
 using Gridap
 using Gridap.CellMaps
 using Gridap.Geometry
 using Gridap.CellQuadratures
-using ..MultiCellArrays
+using Gridap.MultiCellArrays
 
 export MultiCellMap
 import Gridap.CellIntegration: integrate

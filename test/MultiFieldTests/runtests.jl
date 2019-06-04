@@ -7,6 +7,7 @@ using Test
 @testset "MultiAssemblers" begin include("MultiAssemblersTests.jl") end
 @testset "MultiFESpaces" begin include("MultiFESpacesTests.jl") end
 @testset "MultiFEFunctions" begin include("MultiFEFunctionsTests.jl") end
+@testset "MultiFEBases" begin include("MultiFEBasesTests.jl") end
 @testset "MultiFEOperators" begin include("MultiFEOperatorsTests.jl") end
 
 end # module MultiFieldTests

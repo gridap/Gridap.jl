@@ -11,7 +11,7 @@ using Gridap.Geometry.Cartesian
 using Gridap.FESpaces
 using Gridap.CellIntegration
 using Gridap.CellQuadratures
-using ..MultiCellArrays
+using Gridap.MultiCellArrays
 using ..MultiCellMaps
 import Gridap: gradient
 
