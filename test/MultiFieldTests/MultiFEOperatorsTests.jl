@@ -60,18 +60,9 @@ b1field = CellField(trian,b1fun)
 b2field = CellField(trian,b2fun)
 
 # Define forms
-function a(v,u)
-  a11 = varinner(∇(v[1]), ∇(u[1]))
-  a12 = varinner(v[1],u[2])
-  a22 = varinner(∇(v[2]), ∇(u[2]))
-  return [a11,a12,a22], [(1,1),(1,2),(2,2)] # TODO
-end
+a(v,u) = inner(∇(v[1]),∇(u[1])) + inner(v[1],u[2]) + inner(∇(v[2]),∇(u[2]))
 
-function b(v)
-  b1 = varinner(v[1],b1field)
-  b2 = varinner(v[2],b2field)
-  return [b1,b2], [(1,),(2,)] # TODO
-end
+b(v) = inner(v[1],b1field) + inner(v[2],b2field)
 
 # Define Assembler
 assem = SparseMatrixAssembler(V,U)

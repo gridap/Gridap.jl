@@ -1,4 +1,4 @@
-include("MultiFEFunctions.jl")
+include("MultiFEBases.jl")
 
 module MultiFEOperators
 
@@ -17,6 +17,7 @@ using Gridap.Assemblers
 using ..MultiFESpaces
 using ..MultiAssemblers
 using ..MultiFEFunctions
+using ..MultiFEBases
 import Gridap: solve
 import Gridap: solve!
 import Gridap: jacobian
@@ -110,31 +111,13 @@ function LinearMultiFEOperator(
   trian::Triangulation{Z},
   quad::CellQuadrature{Z}) where Z
 
-  # This will not be a CellBasis in the future
-  v = [ CellBasis(V) for V in testfesp  ]
-  u = [ CellBasis(U) for U in trialfesp ]
+  v = FEBasis(testfesp)
+  u = FEBasis(trialfesp)
 
-  preblocks, fieldids = biform(v,u)
-
-  blocks = [ integrate(bi,trian,quad) for bi in preblocks ]
-
-  cellmat = MultiCellMatrix(blocks,fieldids)
-
-  # The way we modify the rhs can be improved
   uhd = zero(trialfesp)
-  preblocks, prefieldids = biform(v,uhd)
 
-  blocks1 = [ integrate(-bi,trian,quad) for bi in preblocks ]
-  fieldids1 = [ (fi[1],) for fi in prefieldids ]
-
-  preblocks, fieldids2 = liform(v)
-
-  blocks2 = [ integrate(bi,trian,quad) for bi in preblocks ]
-
-  blocks = vcat(blocks1,blocks2)
-  fieldids = vcat(fieldids1,fieldids2)
-
-  cellvec = MultiCellVector(blocks,fieldids)
+  cellmat = integrate(biform(v,u),trian,quad)
+  cellvec = integrate( liform(v)-biform(v,uhd), trian, quad)
 
   mat = assemble(assem,cellmat)
   vec = assemble(assem,cellvec)
