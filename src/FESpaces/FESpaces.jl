@@ -14,6 +14,7 @@ using Gridap.FieldValues
 using Gridap.CellMaps.Operations: CellFieldFromExpand
 
 export FEFunction
+export FEBasis
 export free_dofs
 export diri_dofs
 export FESpace
@@ -37,9 +38,11 @@ export FESpaceWithDirichletData
 import Gridap.CellMaps: CellField, CellBasis
 
 import Gridap: evaluate, gradient, return_size
+import Gridap: inner
 import Base: iterate
 import Base: length
 import Base: zero
+import Base: +, -, *
 
 """
 Abstract FE Space parameterized with respec to the environment dimension `D`,
@@ -221,6 +224,42 @@ return_size(f::FEFunction,s::Tuple{Int}) = return_size(f.cellfield,s)
 @inline iterate(f::FEFunction,state) = iterate(f.cellfield,state)
 
 length(f::FEFunction) = length(f.cellfield)
+
+struct FEBasis{B<:CellBasis}
+  cellbasis::B
+end
+
+function FEBasis(fespace::FESpace)
+  b = CellBasis(fespace)
+  FEBasis(b)
+end
+
+for op in (:+, :-, :(gradient))
+  @eval begin
+    function ($op)(a::FEBasis)
+      FEBasis($op(a.cellbasis))
+    end
+  end
+end
+
+for op in (:+, :-, :*)
+  @eval begin
+    function ($op)(a::FEBasis,b::CellMap)
+      FEBasis($op(a.cellbasis,b))
+    end
+    function ($op)(a::CellMap,b::FEBasis)
+      FEBasis($op(a,b.cellbasis))
+    end
+  end
+end
+
+function inner(a::FEBasis,b::CellField)
+  varinner(a.cellbasis,b)
+end
+
+function inner(a::FEBasis,b::FEBasis)
+  varinner(a.cellbasis,b.cellbasis)
+end
 
 """
 FESpace whose Dirichlet component has been constrained

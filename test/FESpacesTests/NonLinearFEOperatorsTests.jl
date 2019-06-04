@@ -48,9 +48,9 @@ bfield = CellField(trian,bfun)
 ν(u) = CellField(trian,νfun,u)
 
 # Define residual and jacobian
-a(u,v,du) = varinner( ∇(v), ν(u)*∇(du))
-res(u,v) = a(u,v,u) - varinner(v,bfield)
-jac(u,v,du) = a(u,v,du)  # + varinner(v,ν(du)*grad(u))
+a(u,v,du) = inner( ∇(v), ν(u)*∇(du))
+res(u,v) = a(u,v,u) - inner(v,bfield)
+jac(u,v,du) = a(u,v,du)  # + inner(v,ν(du)*grad(u))
 
 # Define Assembler
 assem = SparseMatrixAssembler(V,U)
@@ -73,8 +73,8 @@ u = CellField(trian,ufun)
 e = u - uh
 
 # Define norms to measure the error
-l2(u) = varinner(u,u)
-sh1(u) = varinner(∇(u),∇(u))
+l2(u) = inner(u,u)
+sh1(u) = inner(∇(u),∇(u))
 h1(u) = sh1(u) + l2(u)
 
 # Compute errors

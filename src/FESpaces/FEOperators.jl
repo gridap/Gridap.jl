@@ -142,18 +142,13 @@ function LinearFEOperator(
   trian::Triangulation{Z},
   quad::CellQuadrature{Z}) where {M,V,D,Z,T}
 
-  # This will not be a CellBasis in the future
-  # @santiagobadia : CellBases + block-data for multifield problems
-  v = CellBasis(testfesp)
-  u = CellBasis(trialfesp)
+  v = FEBasis(testfesp)
+  u = FEBasis(trialfesp)
 
-  # The way we modify the rhs can be improved
   uhd = zero(trialfesp)
 
   cellmat = integrate(biform(v,u),trian,quad)
   cellvec = integrate( liform(v)-biform(v,uhd), trian, quad)
-  # @santiagobadia : Where is the problem with the RHS computation?
-  # It is nice and I don't see any efficiency issue
 
   mat = assemble(assem,cellmat)
   vec = assemble(assem,cellvec)
@@ -253,13 +248,13 @@ function jacobian!(mat::AbstractMatrix,op::NonLinearFEOperator,uh::FEFunction)
 end
 
 function _cellvec(op,uh)
-  v = CellBasis(op.testfesp)
+  v = FEBasis(op.testfesp)
   integrate(op.res(uh,v), op.trian, op.quad)
 end
 
 function _cellmat(op,uh)
-  v = CellBasis(op.testfesp)
-  du = CellBasis(op.trialfesp)
+  v = FEBasis(op.testfesp)
+  du = FEBasis(op.trialfesp)
   integrate(op.jac(uh,v,du), op.trian, op.quad)
 end
 
