@@ -13,8 +13,13 @@ export compose
 export lincomb
 export attachgeomap
 export apply
+export apply!
 export solve
 export solve!
+export residual
+export residual!
+export jacobian
+export jacobian!
 
 function coordinates end
 function evaluate end
@@ -31,7 +36,12 @@ function compose end
 function lincomb end
 function attachgeomap end
 function apply end
+function apply! end
 function solve end
 function solve! end
+function residual end
+function residual! end
+function jacobian end
+function jacobian! end
 
 const ∇ = gradient

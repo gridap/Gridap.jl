@@ -9,6 +9,9 @@ using Gridap.CellIntegration
 
 using Gridap.FESpaces
 using Gridap.Assemblers
+using Gridap.NonLinearSolvers
+using Gridap.LinearSolvers
+using LinearAlgebra
 
 export FEOperator
 export FESolver
@@ -17,8 +20,17 @@ export LinearFESolver
 export NonLinearFEOperator
 export NonLinearFESolver
 import Gridap: solve
-export jacobian
+import Gridap: solve!
+import Gridap: jacobian
+import Gridap: jacobian!
 import Gridap: apply
+import Gridap: apply!
+import Gridap: residual
+import Gridap: residual!
+import Gridap.NonLinearSolvers: create_in_domain
+import Gridap.FESpaces: TrialFESpace
+import Gridap.FESpaces: TestFESpace
+import Gridap.LinearSolvers: LinearSolver
 
 abstract type FEOperator end
 
@@ -32,11 +44,83 @@ function jacobian(::FEOperator,::FEFunction)::AbstractMatrix
   @abstractmethod
 end
 
+function apply!(::AbstractVector,::FEOperator,::FEFunction)
+  @abstractmethod
+end
+
+function jacobian!(::AbstractMatrix,::FEOperator,::FEFunction)
+  @abstractmethod
+end
+
+function TrialFESpace(::FEOperator)::FESpaceWithDirichletData
+  @abstractmethod
+end
+
+function TestFESpace(::FEOperator)::FESpaceWithDirichletData
+  @abstractmethod
+end
+
+function residual(op::FEOperator,uh::FEFunction)
+  apply(op,uh)
+end
+
+function residual!(b::AbstractVector,op::FEOperator,uh::FEFunction)
+  apply!(b,op,uh)
+end
+
 abstract type FESolver end
 
-# @santiagobadia : Public method
-function solve(::FESolver,::FEOperator)::FEFunction
+function solve!(uh::FEFunction,::FESolver,::FEOperator)::Any
   @abstractmethod
+end
+
+function solve!(uh::FEFunction,::FESolver,::FEOperator,::Any)
+  @abstractmethod
+end
+
+"""
+Solve that allocates, and sets initial guess to zero
+and returns the solution
+"""
+function solve(nls::FESolver,op::FEOperator)
+  U = TrialFESpace(op)
+  uh = zero(U)
+  solve!(uh,nls,op)
+  uh
+end
+
+"""
+Struct representing the non-linear algebraic problem
+associated with a FEOperator
+"""
+struct NonLinearOpFromFEOp <: NonLinearOperator
+  feop::FEOperator
+end
+
+function residual!(b::AbstractVector,op::NonLinearOpFromFEOp,x::AbstractVector)
+  U = TrialFESpace(op.feop)
+  uh = FEFunction(U,x)
+  apply!(b,op.feop,uh)
+end
+
+function jacobian!(A::AbstractMatrix,op::NonLinearOpFromFEOp,x::AbstractVector)
+  U = TrialFESpace(op.feop)
+  uh = FEFunction(U,x)
+  jacobian!(A,op.feop,uh)
+end
+
+function jacobian(op::NonLinearOpFromFEOp,x::AbstractVector)
+  U = TrialFESpace(op.feop)
+  uh = FEFunction(U,x)
+  jacobian(op.feop,uh)
+end
+
+function create_in_domain(op::NonLinearOpFromFEOp)
+  U = TrialFESpace(op.feop)
+  T = value_type(U)
+  E = eltype(T)
+  n = length(free_dofs(U))
+  x = zeros(E,n)
 end
 
 """
@@ -46,6 +130,7 @@ struct LinearFEOperator{M,V} <:FEOperator
   mat::M
   vec::V
   trialfesp::FESpaceWithDirichletData
+  testfesp::FESpaceWithDirichletData
 end
 
 function LinearFEOperator(
@@ -63,10 +148,7 @@ function LinearFEOperator(
   u = CellBasis(trialfesp)
 
   # The way we modify the rhs can be improved
-  E = eltype(T)
-  free_values = zeros(E,num_free_dofs(trialfesp))
-  diri_values = diri_dofs(trialfesp)
-  uhd = FEFunction(trialfesp,free_values,diri_values)
+  uhd = zero(trialfesp)
 
   cellmat = integrate(biform(v,u),trian,quad)
   cellvec = integrate( liform(v)-biform(v,uhd), trian, quad)
@@ -76,149 +158,129 @@ function LinearFEOperator(
   mat = assemble(assem,cellmat)
   vec = assemble(assem,cellvec)
 
-  LinearFEOperator(mat,vec,trialfesp)
+  LinearFEOperator(mat,vec,trialfesp,testfesp)
+
 end
+
+TrialFESpace(op::LinearFEOperator) = op.trialfesp
+
+TestFESpace(op::LinearFEOperator) = op.testfesp
 
 function apply(o::LinearFEOperator,uh::FEFunction)
   vals = free_dofs(uh)
   o.mat * vals - o.vec
 end
 
+function apply!(b::Vector,o::LinearFEOperator,uh::FEFunction)
+  vals = free_dofs(uh)
+  mul!(b,o.mat,vals)
+  broadcast!(-,b,b,o.vec)
+end
+
 jacobian(o::LinearFEOperator,::FEFunction) = o.mat
+
+function jacobian!(mat::AbstractMatrix, o::LinearFEOperator, ::FEFunction)
+  @assert mat === o.mat
+end
 
 """
 The solver that solves a LinearFEOperator
 """
-struct LinearFESolver <: FESolver end
-
-function solve(::LinearFESolver,::FEOperator)
-  @unreachable # @santiagobadia : Why unreachable? Not implemented?
+struct LinearFESolver <: FESolver
+  ls::LinearSolver
 end
 
-function solve(s::LinearFESolver,o::LinearFEOperator)
-  x = o.mat \ o.vec
-  diri_vals = diri_dofs(o.trialfesp)
-  FEFunction(o.trialfesp,x,diri_vals)
+function solve!(::FEFunction,::LinearFESolver,::FEOperator)
+  @unreachable
+end
+
+function solve!(::FEFunction,::LinearFESolver,::FEOperator,::Any)
+  @unreachable
+end
+
+function solve!(uh::FEFunction,s::LinearFESolver,o::LinearFEOperator)
+  x = free_dofs(uh)
+  A = o.mat
+  b = o.vec
+  ss = symbolic_setup(s.ls,A)
+  ns = numerical_setup(ss,A)
+  solve!(x,ns,A,b)
+  ns
+end
+
+function solve!(uh::FEFunction,s::LinearFESolver,o::LinearFEOperator,ns::NumericalSetup)
+  x = free_dofs(uh)
+  A = o.mat
+  b = o.vec
+  solve!(x,ns,A,b)
 end
 
 """
 Struct representing a nonlinear FE Operator
 """
-struct NonLinearFEOperator{M,V,E} <:FEOperator
-  uh::FEFunction
-  # @santiagobadia : The cellvec and cellmat are needed just as scratch data
-  # for efficiency
-  cellvec::CellVector{E}
-  cellmat::CellMatrix{E}
-  assem::Assembler{M,V}
+struct NonLinearFEOperator{D,Z,T} <:FEOperator
+  res::Function
+  jac::Function
+  testfesp::FESpaceWithDirichletData{D,Z,T}
+  trialfesp::FESpaceWithDirichletData{D,Z,T}
+  assem::Assembler
+  trian::Triangulation{Z}
+  quad::CellQuadrature{Z}
 end
 
-function NonLinearFEOperator(
-  res::Function,
-  jac::Function,
-  testfesp::FESpace{D,Z,T},
-  trialfesp::FESpaceWithDirichletData,
-  assem::Assembler{M,V},
-  trian::Triangulation{Z},
-  quad::CellQuadrature{Z}) where {M,V,D,Z,T}
+TrialFESpace(op::NonLinearFEOperator) = op.trialfesp
 
-  # Construction of the initial guess
-  E = eltype(T)
-  free_values = zeros(E,num_free_dofs(trialfesp))
-  diri_values = diri_dofs(trialfesp)
-  uh = FEFunction(trialfesp,free_values,diri_values)
-
-  # This will not be a CellBasis in the future
-  v = CellBasis(testfesp)
-  du = CellBasis(trialfesp)
-
-  cellmat = integrate(jac(uh,v,du), trian, quad)
-  cellvec = integrate(res(uh,v), trian, quad)
-
-  NonLinearFEOperator(uh,cellvec,cellmat,assem)
-
-end
+TestFESpace(op::NonLinearFEOperator) = op.testfesp
 
 function apply(op::NonLinearFEOperator,uh::FEFunction)
-  _update_free_values(op,uh)
-  assemble(op.assem, op.cellvec)
+  cellvec = _cellvec(op,uh)
+  assemble(op.assem, cellvec)
+end
+
+function apply!(b::AbstractVector,op::NonLinearFEOperator,uh::FEFunction)
+  cellvec = _cellvec(op,uh)
+  assemble!(b,op.assem, cellvec)
 end
 
 function jacobian(op::NonLinearFEOperator,uh::FEFunction)
-  _update_free_values(op,uh)
-  assemble(op.assem, op.cellmat)
+  cellmat = _cellmat(op,uh)
+  assemble(op.assem, cellmat)
 end
 
-function _update_free_values(op,uh)
-  op_free_values = free_dofs(op.uh)
-  free_values = free_dofs(uh)
-  if !(op_free_values === free_values)
-    op_free_values .= free_values
-  end
+function jacobian!(mat::AbstractMatrix,op::NonLinearFEOperator,uh::FEFunction)
+  cellmat = _cellmat(op,uh)
+  assemble!(mat,op.assem, cellmat)
 end
+
+function _cellvec(op,uh)
+  v = CellBasis(op.testfesp)
+  integrate(op.res(uh,v), op.trian, op.quad)
+end
+
+function _cellmat(op,uh)
+  v = CellBasis(op.testfesp)
+  du = CellBasis(op.trialfesp)
+  integrate(op.jac(uh,v,du), op.trian, op.quad)
+end
+
 
 """
-The solver that solves a NonLinearFEOperator
+A general NonLinearFESolver
 """
 struct NonLinearFESolver <: FESolver
-  tol::Float64
-  maxiters::Int
+  nls::NonLinearSolver
 end
 
-function solve(::NonLinearFESolver,::FEOperator)
-  @unreachable
-end
-
-# For the moment it can only solve a NonLinearFEOperator
-function solve(s::NonLinearFESolver,o::NonLinearFEOperator)
-
-  # Get the solution vector
-  uh = o.uh
+function solve!(uh::FEFunction,nls::NonLinearFESolver,op::FEOperator)
+  nlop = NonLinearOpFromFEOp(op)
   x = free_dofs(uh)
+  solve!(x,nls.nls,nlop)
+end
 
-  # Prepare initial guess
-  T = value_type(uh)
-  E = eltype(T)
-  x .= zero(E)
-  # @santiagobadia : Why are we putting to zero x, probably we can use uh as
-  # initial guess
-
-  # For, efficiency we can introduce in place variants apply! and jacobian!
-
-  # @santiagobadia:
-  # I would say that all the lines below should go the NonlinearFESolver
-  # since different implementations are needed (relaxation, Anderson acc,
-  # nonlinear GMRES, etc), different norms, etc. In any case, we can probably
-  # define an API for for nonlinear solvers such that we can work a
-  # generic nonlinear loop...
-  b = apply(o,uh)
-  m0 = maximum(abs.(b))
-
-  max_nliters = s.maxiters
-  tol = s.tol
-
-  for nliter in 1:max_nliters
-
-    A = jacobian(o,uh)
-    b *= -1
-    dx = A \ b
-    broadcast!(+,x,x,dx)
-
-    b .= apply(o,uh)
-
-    m = maximum(abs.(b))
-    if  m < tol * m0
-      break
-    end
-
-    if nliter == max_nliters
-      @unreachable # @santiagobadia : @notconverged better?
-    end
-
-  end
-
-  uh
-
+function solve!(uh::FEFunction,nls::NonLinearFESolver,op::FEOperator,cache::Any)
+  nlop = NonLinearOpFromFEOp(op)
+  x = free_dofs(uh)
+  solve!(x,nls.nls,nlop,cache)
 end
 
 end # module FEOperators

@@ -4,6 +4,7 @@ module FEOperatorsTests
 using Gridap.FESpaces
 using Gridap.Assemblers
 using Gridap.FEOperators
+using Gridap.LinearSolvers
 
 using Test
 using Gridap
@@ -54,7 +55,8 @@ assem = SparseMatrixAssembler(V,U)
 op = LinearFEOperator(a,b,V,U,assem,trian,quad)
 
 # Define the FESolver
-solver = LinearFESolver()
+ls = LUSolver()
+solver = LinearFESolver(ls)
 
 # Solve!
 uh = solve(solver,op)
@@ -75,5 +77,23 @@ eh1 = sqrt(sum( integrate(h1(e),trian,quad) ))
 @test eh1 < 1.e-8
 
 #writevtk(trian,"trian",nref=4,cellfields=["uh"=>uh,"u"=>u,"e"=>e])
+
+# Further tests
+
+@test TrialFESpace(op) === U
+@test TestFESpace(op) === V
+
+zh = zero(U)
+r = apply(op,zh)
+r2 = similar(r)
+apply!(r2,op,zh)
+@test r ≈ r2
+
+cache = solve!(zh,solver,op)
+@test free_dofs(zh) ≈ free_dofs(uh)
+
+zh = zero(U)
+solve!(zh,solver,op,cache)
+@test free_dofs(zh) ≈ free_dofs(uh)
 
 end

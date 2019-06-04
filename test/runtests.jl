@@ -19,5 +19,6 @@ using Test
 @time @testset "Vtkio" begin include("VtkioTests.jl") end
 @time @testset "Algebra" begin include("AlgebraTests/runtests.jl") end
 @time @testset "FESpaces" begin include("FESpacesTests/runtests.jl") end
+@time @testset "MutliField" begin include("MultiFieldTests/runtests.jl") end
 
 end # module RunTests

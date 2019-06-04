@@ -82,6 +82,19 @@ uh = FEFunction(fespace,free_vals,diri_vals)
 @test diri_dofs(uh) === diri_vals
 @test FESpace(uh) === fespace
 
+zh = zero(fespace)
+
+@test free_dofs(zh) == zeros(Float64,num_free_dofs(fespace))
+@test diri_dofs(zh) == zeros(Float64,num_diri_dofs(fespace))
+@test FESpace(zh) === fespace
+
+U = TrialFESpace(fespace,fun)
+
+zh = zero(U)
+@test free_dofs(zh) == zeros(Float64,num_free_dofs(U))
+@test diri_dofs(zh) === U.diri_dofs
+@test FESpace(zh) === U
+
 cellbasis = CellBasis(fespace)
 
 quad = CellQuadrature(trian,order=2)
@@ -96,19 +109,22 @@ mmat = integrate(a(cellbasis,cellbasis),trian,quad)
 
 bvec = integrate(b(cellbasis),trian,quad)
 
-bvec2, dofs = apply_constraints(fespace,bvec)
+bvec2 = apply_constraints(fespace,bvec)
+dofs = celldofids(fespace)
 
 @test bvec2 === bvec
 
 @test dofs == fespace.cell_eqclass
 
-mmat2, dofs = apply_constraints_rows(fespace,mmat)
+mmat2 = apply_constraints_rows(fespace,mmat)
+dofs = celldofids(fespace)
 
 @test mmat2 === mmat
 
 @test dofs == fespace.cell_eqclass
 
-mmat3, dofs = apply_constraints_cols(fespace,mmat)
+mmat3 = apply_constraints_cols(fespace,mmat)
+dofs = celldofids(fespace)
 
 @test mmat3 === mmat
 

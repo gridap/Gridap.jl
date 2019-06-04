@@ -10,6 +10,7 @@ using SparseArrays
 export Assembler
 export SparseMatrixAssembler
 export assemble
+export assemble!
 
 #@fverdugo for the moment the abstract interface of Assembler
 # (and therefore its concrete implementations)
@@ -21,11 +22,31 @@ Parametrized by the type of returned matrix and vector
 """
 abstract type Assembler{M<:AbstractMatrix,V<:AbstractVector} end
 
+"""
+Assembly of a vector allocating output
+"""
 function assemble(::Assembler{M,V},::CellVector)::V where {M,V}
   @abstractmethod
 end
 
+"""
+Assembly of a matrix allocating output
+"""
 function assemble(::Assembler{M,V},::CellMatrix)::M where {M,V}
+  @abstractmethod
+end
+
+"""
+In-place assembly of a vector (allows optimizations)
+"""
+function assemble!(::V,::Assembler{M,V},::CellVector)::V where {M,V}
+  @abstractmethod
+end
+
+"""
+In-place assembly of a matrix (allows a LOT of optimizations)
+"""
+function assemble!(::M,::Assembler{M,V},::CellMatrix)::M where {M,V}
   @abstractmethod
 end
 
@@ -42,44 +63,93 @@ function SparseMatrixAssembler(test::FESpace{D,Z,T}, trial::FESpace{D,Z,T}) wher
   SparseMatrixAssembler{E}(trial,test)
 end
 
-function assemble(this::SparseMatrixAssembler, vals::CellVector)
-  _vals, rows_m = apply_constraints(this.testfesp, vals)
-  # @santiagobadia : Evaluate efficiency, best way to do it in Julia
-  # without pre-allocate loop?
-  aux_row = Int[]; aux_vals = Int[]
-  for (rows_c,vals_c) in zip(rows_m,_vals)
+function assemble(this::SparseMatrixAssembler{E}, vals::CellVector) where E
+  n = num_free_dofs(this.testfesp)
+  vec = zeros(E,n)
+  assemble!(vec,this,vals)
+  vec
+end
+
+function assemble!(
+  vec::Vector{E},this::SparseMatrixAssembler{E}, vals::CellVector) where E
+  _vals = apply_constraints(this.testfesp, vals)
+  _rows = celldofids(this.testfesp)
+  vec .= zero(E)
+  _assemble_vector!(vec, _vals, _rows)
+end
+
+function _assemble_vector!(vec,vals,rows)
+  for (rows_c,vals_c) in zip(rows,vals)
     for (i,gid) in enumerate(rows_c)
       if gid > 0
-        aux_vals = [aux_vals..., vals_c[i]]
-        aux_row = [ aux_row..., rows_c[i]...]
+        vec[gid] += vals_c[i]
       end
     end
   end
-  return Array(sparsevec(aux_row, aux_vals))
 end
 
-function assemble(this::SparseMatrixAssembler, vals::CellMatrix)
-  _vals, rows_m = apply_constraints_rows(this.testfesp, vals)
-  _vals, cols_m = apply_constraints_cols(this.trialfesp, _vals, )
-  # @santiagobadia : Evaluate efficiency, best way to do it in Julia
-  # without pre-allocate loop?
-  aux_row = Int[]; aux_col = Int[]; aux_vals = Int[]
-  for vals_c in _vals
-  end
-  for (rows_c, cols_c, vals_c) in zip(rows_m,cols_m,_vals)
-    for (i,gidrow) in enumerate(rows_c)
-      if gidrow > 0
-        for (j,gidcol) in enumerate(cols_c)
-          if gidcol > 0
-            aux_row = [aux_row..., rows_c[i]]
-            aux_col = [aux_col..., cols_c[j]]
-            aux_vals = [aux_vals..., vals_c[i,j]]
+function assemble(this::SparseMatrixAssembler{E}, vals::CellMatrix) where E
+  _vals = apply_constraints_rows(this.testfesp, vals)
+  rows_m = celldofids(this.testfesp)
+  _vals = apply_constraints_cols(this.trialfesp, _vals)
+  cols_m = celldofids(this.trialfesp)
+  args = _assemble_sparse_matrix_values(_vals,rows_m,cols_m,Int,E)
+  sparse(args...)
+end
+
+function _assemble_sparse_matrix_values(vals,rows,cols,I,E)
+  aux_row = I[]; aux_col = I[]; aux_val = E[]
+  for (rows_c, cols_c, vals_c) in zip(rows,cols,vals)
+     for (j,gidcol) in enumerate(cols_c)
+       if gidcol > 0
+        for (i,gidrow) in enumerate(rows_c)
+          if gidrow > 0
+            push!(aux_row, gidrow)
+            push!(aux_col, gidcol)
+            push!(aux_val, vals_c[i,j])
           end
         end
       end
     end
   end
-  return sparse(aux_row, aux_col, aux_vals)
+  (aux_row, aux_col, aux_val)
 end
+
+function assemble!(
+  mat::SparseMatrixCSC{E}, this::SparseMatrixAssembler{E}, vals::CellMatrix) where E
+  # This routine can be optimized a lot taking into a count the sparsity graph of mat
+  # For the moment we create an intermediate matrix and then transfer the nz values
+  m = assemble(this,vals)
+  mat.nzval .= m.nzval
+end
+
+# Draft of multi field assembler
+#function _assemble_sparse_matrix_values(mf_vals,mf_rows,mf_cols,I,E)
+#  aux_row = I[]; aux_col = I[]; aux_val = E[]
+#  for (mf_rows_c, mf_cols_c, mf_vals_c) in zip(mf_rows,mf_cols,mf_vals)
+#    for (vals_c, (ifield, jfield)) in eachblock(mf_vals_c)
+#      rows_c = mf_rows_c[ifield]
+#      cols_c = mf_cols_c[jfield]
+#      row_offset = row_offsets[ifield]
+#      col_offset = col_offsets[jfield]
+#      _asseble_cell_values!(aux_row,aux_col,aux_val,rows_c,cols_c,vals_c,col_offset,row_offset)
+#    end
+#  end
+#  (aux_row, aux_col, aux_val)
+#end
+#
+#function _asseble_cell_values!(aux_row,aux_col,aux_val,rows_c,cols_c,vals_c,col_offset,row_offset)
+# for (j,gidcol) in enumerate(cols_c)
+#   if gidcol > 0
+#     for (i,gidrow) in enumerate(rows_c)
+#       if gidrow > 0
+#         push!(aux_row, gidrow+row_offset)
+#         push!(aux_col, gidcol+col_offset)
+#         push!(aux_val, vals_c[i,j])
+#       end
+#     end
+#   end
+# end
+#end
 
 end # module Assemblers

@@ -25,6 +25,7 @@ export diri_tags
 export apply_constraints
 export apply_constraints_rows
 export apply_constraints_cols
+export celldofids
 export interpolated_values
 export interpolated_diri_values
 export interpolate
@@ -38,6 +39,7 @@ import Gridap.CellMaps: CellField, CellBasis
 import Gridap: evaluate, gradient, return_size
 import Base: iterate
 import Base: length
+import Base: zero
 
 """
 Abstract FE Space parameterized with respec to the environment dimension `D`,
@@ -54,18 +56,22 @@ num_diri_dofs(::FESpace)::Int = @abstractmethod
 
 diri_tags(::FESpace)::Vector{Int} = @abstractmethod
 
-function apply_constraints(
-  ::FESpace, cellvec::CellVector)::Tuple{CellVector,CellVector{Int}}
+function apply_constraints(::FESpace, cellvec::CellVector)::CellVector
   @abstractmethod
 end
 
-function apply_constraints_rows(
-  ::FESpace, cellmat::CellMatrix)::Tuple{CellMatrix,CellVector{Int}}
+function apply_constraints_rows(::FESpace, cellmat::CellMatrix)::CellMatrix
   @abstractmethod
 end
 
-function apply_constraints_cols(
-  ::FESpace, cellmat::CellMatrix)::Tuple{CellMatrix,CellVector{Int}}
+function apply_constraints_cols(::FESpace, cellmat::CellMatrix)::CellMatrix
+  @abstractmethod
+end
+
+"""
+Cell DOFs ids after applying constraints
+"""
+function celldofids(::FESpace)::CellVector{Int}
   @abstractmethod
 end
 
@@ -111,7 +117,7 @@ Returns the CellField that represents the FEFunction thorough its free and
 dirichlet values. E = eltype(T)
 """
 function CellField(
-  ::FESpace{D,Z,T},free_dofs::Vector{E},diri_dofs::Vector{E})::CellField{Z,T} where {D,Z,T,E}
+  ::FESpace{D,Z,T},free_dofs::AbstractVector{E},diri_dofs::AbstractVector{E})::CellField{Z,T} where {D,Z,T,E}
   @abstractmethod
 end
 # @santiagobadia : Private method (?), the user will use FEFunction constructor
@@ -140,6 +146,15 @@ end
 function TrialFESpace( this::FESpace, fun::Function) where {D}
   dv = interpolated_diri_values(this,fun)
   return FESpaceWithDirichletData(this, dv)
+end
+
+function zero(fespace::FESpace{D,Z,T}) where {D,Z,T}
+  E = eltype(T)
+  nf = num_free_dofs(fespace)
+  nd = num_diri_dofs(fespace)
+  free_vals = zeros(E,nf)
+  diri_vals = zeros(E,nd)
+  FEFunction(fespace,free_vals,diri_vals)
 end
 
 """
@@ -172,6 +187,11 @@ Returns the FE function represented be the  free and dirichlet values
 E = eltype(T)
 """
 function FEFunction(
+  fespace::FESpace,free_dofs::AbstractVector,diri_dofs::AbstractVector)
+  _FEFunction(fespace,free_dofs,diri_dofs)
+end
+
+function _FEFunction(
   fespace::FESpace,free_dofs::AbstractVector,diri_dofs::AbstractVector)
   cfield = CellField(fespace,free_dofs,diri_dofs)
   FEFunction(free_dofs,diri_dofs,fespace,cfield)
@@ -233,18 +253,31 @@ function apply_constraints_cols(
   apply_constraints_cols(f.fespace,cellmat)
 end
 
+function celldofids(f::FESpaceWithDirichletData)
+  celldofids(f.fespace)
+end
+
 function interpolated_values(f::FESpaceWithDirichletData,fun::Function)
   free_vals, _ = interpolated_values(f.fespace,fun)
   free_vals, f.diri_dofs
 end
 
 function CellField(
-  f::FESpaceWithDirichletData{D,Z,T},free_dofs::Vector{E},diri_dofs::Vector{E})where {D,Z,T,E}
+  f::FESpaceWithDirichletData{D,Z,T},free_dofs::AbstractVector{E},diri_dofs::AbstractVector{E})where {D,Z,T,E}
   CellField(f.fespace,free_dofs,f.diri_dofs)
 end
 
 function CellBasis(f::FESpaceWithDirichletData)
   CellBasis(f.fespace)
+end
+
+function FEFunction(
+  f::FESpaceWithDirichletData,free_vals::AbstractVector{E},diri_dofs::AbstractVector{E}) where E
+  _FEFunction(f,free_vals,f.diri_dofs)
+end
+
+function FEFunction(f::FESpaceWithDirichletData,free_vals::AbstractVector)
+  _FEFunction(f,free_vals,f.diri_dofs)
 end
 
 function interpolated_diri_values(this::FESpaceWithDirichletData, funs::Vector{<:Function})
@@ -305,17 +338,21 @@ diri_tags(f::ConformingFESpace) = f.diri_tags
 
 function apply_constraints(
   this::ConformingFESpace, cellvec::CellVector)
-  return cellvec, this.cell_eqclass
+  cellvec
 end
 
 function apply_constraints_rows(
   this::ConformingFESpace, cellmat::CellMatrix)
-  return cellmat, this.cell_eqclass
+  cellmat
 end
 
 function apply_constraints_cols(
   this::ConformingFESpace, cellmat::CellMatrix)
-  return cellmat, this.cell_eqclass
+  cellmat
+end
+
+function celldofids(this::ConformingFESpace)
+  this.cell_eqclass
 end
 
 function interpolated_values(this::ConformingFESpace,f::Function)
@@ -328,8 +365,8 @@ end
 
 function CellField(
   fespace::ConformingFESpace{D,Z,T},
-  free_dofs::Vector{E},
-  diri_dofs::Vector{E}) where {D,Z,T,E}
+  free_dofs::AbstractVector{E},
+  diri_dofs::AbstractVector{E}) where {D,Z,T,E}
 
   @assert E == eltype(T)
   @assert num_free_dofs(fespace) == length(free_dofs)
