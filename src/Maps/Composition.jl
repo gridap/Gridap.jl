@@ -55,8 +55,9 @@ computesize(self::BasisWithGeoMap, sa, sb) = sa
 function computevals!(self::BasisWithGeoMap, a, b, v)
   ndofs, npoints = size(a)
   for j in 1:npoints
+    invbj = inv(b[j])
     for i in 1:ndofs
-    v[i,j] = inv(b[j])*a[i,j]
+    v[i,j] = invbj*a[i,j]
     end
   end
 end
