@@ -1,6 +1,4 @@
-include("../../src/MultiField/MultiFEOperators.jl")
-
-module MultiFEOperatorsTests
+module MultiNonLinearFEOperatorsTests
 
 using Gridap.FESpaces
 using Gridap.Assemblers

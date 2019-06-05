@@ -1,11 +1,9 @@
-include("MultiAssemblers.jl")
-
 module MultiFEFunctions
 
 using Gridap
 using Gridap.Helpers
 using Gridap.FESpaces
-using ..MultiFESpaces
+using Gridap.MultiFESpaces
 
 export MultiFEFunction
 

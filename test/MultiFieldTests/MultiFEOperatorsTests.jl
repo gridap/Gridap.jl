@@ -1,5 +1,3 @@
-include("../../src/MultiField/MultiFEOperators.jl")
-
 module MultiFEOperatorsTests
 
 using Gridap.FESpaces

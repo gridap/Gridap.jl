@@ -1,13 +1,11 @@
-include("MultiFESpaces.jl")
-
 module MultiAssemblers
 
 using Gridap
 using Gridap.Helpers
 using Gridap.FESpaces
 using Gridap.MultiCellArrays
-using ..MultiFESpaces
-using ..MultiFESpaces: _compute_offsets
+using Gridap.MultiFESpaces
+using Gridap.MultiFESpaces: _compute_offsets
 
 using SparseArrays
 

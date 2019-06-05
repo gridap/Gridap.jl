@@ -1,5 +1,3 @@
-include("../../src/MultiField/MultiFEFunctions.jl")
-
 module MultiFEFunctionsTests
 
 using Test
@@ -14,9 +12,9 @@ using Gridap.MultiCellArrays
 using Gridap.CellQuadratures
 using Gridap.CellIntegration
 
-using ..MultiFESpaces
-using ..MultiAssemblers
-using ..MultiFEFunctions
+using Gridap.MultiFESpaces
+using Gridap.MultiAssemblers
+using Gridap.MultiFEFunctions
 
 order = 1
 diritag = "boundary"

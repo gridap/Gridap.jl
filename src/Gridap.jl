@@ -31,6 +31,12 @@ include("FESpaces/Assemblers.jl")
 include("FESpaces/FEOperators.jl")
 
 include("MultiField/MultiCellArrays.jl")
+include("MultiField/MultiCellMaps.jl")
+include("MultiField/MultiFESpaces.jl")
+include("MultiField/MultiAssemblers.jl")
+include("MultiField/MultiFEFunctions.jl")
+include("MultiField/MultiFEBases.jl")
+include("MultiField/MultiFEOperators.jl")
 
 include("Vtkio.jl")
 

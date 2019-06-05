@@ -1,5 +1,3 @@
-include("../../src/MultiField/MultiAssemblers.jl")
-
 module MultiAssemblersTests
 
 using Test
@@ -14,7 +12,7 @@ using Gridap.MultiCellArrays
 using Gridap.CellQuadratures
 using Gridap.CellIntegration
 
-using ..MultiAssemblers
+using Gridap.MultiAssemblers
 
 order = 1
 diritag = "boundary"

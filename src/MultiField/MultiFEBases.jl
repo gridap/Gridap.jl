@@ -1,12 +1,9 @@
-include("MultiCellMaps.jl")
-include("MultiFEFunctions.jl")
-
 module MultiFEBases
 
 using Gridap
 using Gridap.CellMaps
-using ..MultiFESpaces
-using ..MultiCellMaps
+using Gridap.MultiFESpaces
+using Gridap.MultiCellMaps
 
 import Gridap: gradient
 import Gridap: inner

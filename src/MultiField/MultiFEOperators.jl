@@ -1,5 +1,3 @@
-include("MultiFEBases.jl")
-
 module MultiFEOperators
 
 using Gridap
@@ -8,10 +6,10 @@ using Gridap.CellQuadratures
 using Gridap.FESpaces
 using Gridap.FEOperators: LinearFEOperator
 using Gridap.FEOperators: NonLinearFEOperator
-using ..MultiFESpaces
-using ..MultiAssemblers
-using ..MultiFEFunctions
-using ..MultiFEBases
+using Gridap.MultiFESpaces
+using Gridap.MultiAssemblers
+using Gridap.MultiFEFunctions
+using Gridap.MultiFEBases
 
 function LinearFEOperator(
   biform::Function,

@@ -1,5 +1,3 @@
-include("../../src/MultiField/MultiFEBases.jl")
-
 module MultiFEBasesTests
 
 using Test
@@ -12,8 +10,8 @@ using Gridap.Geometry.Cartesian
 using Gridap.CellQuadratures
 using Gridap.CellIntegration
 using Gridap.MultiCellArrays
-using ..MultiFESpaces
-using ..MultiFEFunctions
+using Gridap.MultiFESpaces
+using Gridap.MultiFEFunctions
 
 import Gridap: gradient
 
