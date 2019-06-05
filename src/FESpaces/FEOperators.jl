@@ -32,7 +32,7 @@ import Gridap.FESpaces: TrialFESpace
 import Gridap.FESpaces: TestFESpace
 import Gridap.LinearSolvers: LinearSolver
 
-# We use duck typing in this module
+# We use duck typing in this module for the following types:
 
 """
 Arguments annotated with this type have to implement the following queries:

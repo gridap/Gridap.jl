@@ -9,5 +9,6 @@ using Test
 @testset "MultiFEFunctions" begin include("MultiFEFunctionsTests.jl") end
 @testset "MultiFEBases" begin include("MultiFEBasesTests.jl") end
 @testset "MultiFEOperators" begin include("MultiFEOperatorsTests.jl") end
+@testset "MultiNonLinearFEOperators" begin include("MultiNonLinearFEOperatorsTests.jl") end
 
 end # module MultiFieldTests
