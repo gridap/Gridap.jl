@@ -32,49 +32,83 @@ import Gridap.FESpaces: TrialFESpace
 import Gridap.FESpaces: TestFESpace
 import Gridap.LinearSolvers: LinearSolver
 
+# We use duck typing in this module
+
+"""
+Arguments annotated with this type have to implement the following queries:
+
+free_dofs(::FEFunctionLike)
+
+"""
+const FEFunctionLike = Any
+
+"""
+Arguments annotated with this type have to implement the following queries:
+
+FEFunction(::FESpaceLike, free_vals)
+
+FEBasis(::FESpaceLike)
+
+zero(::FESpaceLike)
+
+"""
+const FESpaceLike = Any
+
+"""
+Arguments annotated with this type have to implement the following queries:
+
+assemble(::AssemblerLike, cellmat)
+
+assemble(::AssemblerLike, cellvec)
+
+assemble!(A,::AssemblerLike, cellmat)
+
+assemble!(b,::AssemblerLike, cellvec)
+
+"""
+const AssemblerLike = Any
+
 abstract type FEOperator end
 
-# @santiagobadia : Public method
-function apply(::FEOperator,::FEFunction)::AbstractVector
+function apply(::FEOperator,::FEFunctionLike)::AbstractVector
   @abstractmethod
 end
 
-# @santiagobadia : Not sure it has to be public
-function jacobian(::FEOperator,::FEFunction)::AbstractMatrix
+function jacobian(::FEOperator,::FEFunctionLike)::AbstractMatrix
   @abstractmethod
 end
 
-function apply!(::AbstractVector,::FEOperator,::FEFunction)
+function apply!(::AbstractVector,::FEOperator,::FEFunctionLike)
   @abstractmethod
 end
 
-function jacobian!(::AbstractMatrix,::FEOperator,::FEFunction)
+function jacobian!(::AbstractMatrix,::FEOperator,::FEFunctionLike)
   @abstractmethod
 end
 
-function TrialFESpace(::FEOperator)::FESpaceWithDirichletData
+function TrialFESpace(::FEOperator)::FESpaceLike
   @abstractmethod
 end
 
-function TestFESpace(::FEOperator)::FESpaceWithDirichletData
+function TestFESpace(::FEOperator)::FESpaceLike
   @abstractmethod
 end
 
-function residual(op::FEOperator,uh::FEFunction)
+function residual(op::FEOperator,uh::FEFunctionLike)
   apply(op,uh)
 end
 
-function residual!(b::AbstractVector,op::FEOperator,uh::FEFunction)
+function residual!(b::AbstractVector,op::FEOperator,uh::FEFunctionLike)
   apply!(b,op,uh)
 end
 
 abstract type FESolver end
 
-function solve!(uh::FEFunction,::FESolver,::FEOperator)::Any
+function solve!(uh::FEFunctionLike,::FESolver,::FEOperator)::Any
   @abstractmethod
 end
 
-function solve!(uh::FEFunction,::FESolver,::FEOperator,::Any)
+function solve!(uh::FEFunctionLike,::FESolver,::FEOperator,::Any)
   @abstractmethod
 end
 
@@ -117,10 +151,8 @@ end
 
 function create_in_domain(op::NonLinearOpFromFEOp)
   U = TrialFESpace(op.feop)
-  T = value_type(U)
-  E = eltype(T)
-  n = length(free_dofs(U))
-  x = zeros(E,n)
+  zh = zero(U)
+  free_dofs(zh)
 end
 
 """
@@ -129,18 +161,18 @@ Struct representing a linear FE Operator
 struct LinearFEOperator{M,V} <:FEOperator
   mat::M
   vec::V
-  trialfesp::FESpaceWithDirichletData
-  testfesp::FESpaceWithDirichletData
+  trialfesp::FESpaceLike
+  testfesp::FESpaceLike
 end
 
 function LinearFEOperator(
   biform::Function,
   liform::Function,
-  testfesp::FESpace{D,Z,T},
-  trialfesp::FESpaceWithDirichletData,
-  assem::Assembler{M,V},
+  testfesp::FESpaceLike,
+  trialfesp::FESpaceLike,
+  assem::AssemblerLike,
   trian::Triangulation{Z},
-  quad::CellQuadrature{Z}) where {M,V,D,Z,T}
+  quad::CellQuadrature{Z}) where Z
 
   v = FEBasis(testfesp)
   u = FEBasis(trialfesp)
@@ -161,20 +193,20 @@ TrialFESpace(op::LinearFEOperator) = op.trialfesp
 
 TestFESpace(op::LinearFEOperator) = op.testfesp
 
-function apply(o::LinearFEOperator,uh::FEFunction)
+function apply(o::LinearFEOperator,uh::FEFunctionLike)
   vals = free_dofs(uh)
   o.mat * vals - o.vec
 end
 
-function apply!(b::Vector,o::LinearFEOperator,uh::FEFunction)
+function apply!(b::Vector,o::LinearFEOperator,uh::FEFunctionLike)
   vals = free_dofs(uh)
   mul!(b,o.mat,vals)
   broadcast!(-,b,b,o.vec)
 end
 
-jacobian(o::LinearFEOperator,::FEFunction) = o.mat
+jacobian(o::LinearFEOperator,::FEFunctionLike) = o.mat
 
-function jacobian!(mat::AbstractMatrix, o::LinearFEOperator, ::FEFunction)
+function jacobian!(mat::AbstractMatrix, o::LinearFEOperator, ::FEFunctionLike)
   @assert mat === o.mat
 end
 
@@ -185,15 +217,15 @@ struct LinearFESolver <: FESolver
   ls::LinearSolver
 end
 
-function solve!(::FEFunction,::LinearFESolver,::FEOperator)
+function solve!(::FEFunctionLike,::LinearFESolver,::FEOperator)
   @unreachable
 end
 
-function solve!(::FEFunction,::LinearFESolver,::FEOperator,::Any)
+function solve!(::FEFunctionLike,::LinearFESolver,::FEOperator,::Any)
   @unreachable
 end
 
-function solve!(uh::FEFunction,s::LinearFESolver,o::LinearFEOperator)
+function solve!(uh::FEFunctionLike,s::LinearFESolver,o::LinearFEOperator)
   x = free_dofs(uh)
   A = o.mat
   b = o.vec
@@ -203,7 +235,7 @@ function solve!(uh::FEFunction,s::LinearFESolver,o::LinearFEOperator)
   ns
 end
 
-function solve!(uh::FEFunction,s::LinearFESolver,o::LinearFEOperator,ns::NumericalSetup)
+function solve!(uh::FEFunctionLike,s::LinearFESolver,o::LinearFEOperator,ns::NumericalSetup)
   x = free_dofs(uh)
   A = o.mat
   b = o.vec
@@ -213,12 +245,12 @@ end
 """
 Struct representing a nonlinear FE Operator
 """
-struct NonLinearFEOperator{D,Z,T} <:FEOperator
+struct NonLinearFEOperator{Z} <:FEOperator
   res::Function
   jac::Function
-  testfesp::FESpaceWithDirichletData{D,Z,T}
-  trialfesp::FESpaceWithDirichletData{D,Z,T}
-  assem::Assembler
+  testfesp::FESpaceLike
+  trialfesp::FESpaceLike
+  assem::AssemblerLike
   trian::Triangulation{Z}
   quad::CellQuadrature{Z}
 end
@@ -227,22 +259,22 @@ TrialFESpace(op::NonLinearFEOperator) = op.trialfesp
 
 TestFESpace(op::NonLinearFEOperator) = op.testfesp
 
-function apply(op::NonLinearFEOperator,uh::FEFunction)
+function apply(op::NonLinearFEOperator,uh::FEFunctionLike)
   cellvec = _cellvec(op,uh)
   assemble(op.assem, cellvec)
 end
 
-function apply!(b::AbstractVector,op::NonLinearFEOperator,uh::FEFunction)
+function apply!(b::AbstractVector,op::NonLinearFEOperator,uh::FEFunctionLike)
   cellvec = _cellvec(op,uh)
   assemble!(b,op.assem, cellvec)
 end
 
-function jacobian(op::NonLinearFEOperator,uh::FEFunction)
+function jacobian(op::NonLinearFEOperator,uh::FEFunctionLike)
   cellmat = _cellmat(op,uh)
   assemble(op.assem, cellmat)
 end
 
-function jacobian!(mat::AbstractMatrix,op::NonLinearFEOperator,uh::FEFunction)
+function jacobian!(mat::AbstractMatrix,op::NonLinearFEOperator,uh::FEFunctionLike)
   cellmat = _cellmat(op,uh)
   assemble!(mat,op.assem, cellmat)
 end
@@ -258,7 +290,6 @@ function _cellmat(op,uh)
   integrate(op.jac(uh,v,du), op.trian, op.quad)
 end
 
-
 """
 A general NonLinearFESolver
 """
@@ -266,13 +297,13 @@ struct NonLinearFESolver <: FESolver
   nls::NonLinearSolver
 end
 
-function solve!(uh::FEFunction,nls::NonLinearFESolver,op::FEOperator)
+function solve!(uh::FEFunctionLike,nls::NonLinearFESolver,op::FEOperator)
   nlop = NonLinearOpFromFEOp(op)
   x = free_dofs(uh)
   solve!(x,nls.nls,nlop)
 end
 
-function solve!(uh::FEFunction,nls::NonLinearFESolver,op::FEOperator,cache::Any)
+function solve!(uh::FEFunctionLike,nls::NonLinearFESolver,op::FEOperator,cache::Any)
   nlop = NonLinearOpFromFEOp(op)
   x = free_dofs(uh)
   solve!(x,nls.nls,nlop,cache)
