@@ -17,8 +17,6 @@ using Gridap.CellQuadratures
 using Gridap.CellIntegration
 using Gridap.Vtkio
 
-using ..MultiFEOperators: LinearMultiFESolver # TODO
-
 import Gridap: gradient
 
 # Define manufactured functions
@@ -72,7 +70,7 @@ op = LinearFEOperator(a,b,V,U,assem,trian,quad)
 
 # Define the FESolver
 ls = LUSolver()
-solver = LinearMultiFESolver(ls) # TODO
+solver = LinearFESolver(ls)
 
 # Solve!
 uh = solve(solver,op)
