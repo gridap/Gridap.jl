@@ -43,7 +43,7 @@ function CellArrayFromKernel(k::ArrayKernel,v::Vararg{<:CellValue})
 end
 
 function _compute_T(k,v)
-  t = tuple([ _eltype(vi) for vi in v ]...)
+  t = [ _eltype(vi) for vi in v ]
   T = compute_type(k,t...)
   @assert T <: NumberLike
   T
