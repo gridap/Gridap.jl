@@ -1,4 +1,4 @@
-module Gallery
+module CellValuesGallery
 
 using Gridap
 using Gridap.Helpers
@@ -25,4 +25,4 @@ size(self::CellValueFromArray) = size(self.v)
 
 @pure IndexStyle(::Type{CellValueFromArray{T,N,V}}) where {T,N,V} = IndexStyle(V)
 
-end # module Gallery
+end # module

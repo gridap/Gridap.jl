@@ -14,8 +14,8 @@ include("Maps.jl")
 include("CellMaps.jl")
 @reexport using Gridap.CellMaps
 
-include("Gallery.jl")
-@reexport using Gridap.Gallery
+include("CellValuesGallery.jl")
+@reexport using Gridap.CellValuesGallery
 
 include("Kernels.jl")
 @reexport using Gridap.Kernels

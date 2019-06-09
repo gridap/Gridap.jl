@@ -1,4 +1,4 @@
-module GalleryTests
+module CellValuesGalleryTests
 
 using Test
 using Gridap

@@ -7,7 +7,7 @@ include("MapsMocks.jl")
 
 @testset "MapsMocks" begin include("MapsMocksTests.jl") end
 
-@testset "Gallery" begin include("GalleryTests.jl") end
+@testset "CellValuesGallery" begin include("CellValuesGalleryTests.jl") end
 
 @testset "Kernels" begin include("KernelsTests.jl") end
 
