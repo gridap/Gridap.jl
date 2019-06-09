@@ -1,6 +1,7 @@
 module GridapTests
 
 using Test
+using Gridap
 
 @time @testset "Utils" begin include("UtilsTests/files.jl") end
 

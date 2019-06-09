@@ -1,7 +1,3 @@
-module CellValuesTests
-
-using Gridap
-using Test
 
 include("CellValuesMocks.jl")
 
@@ -22,6 +18,4 @@ include("MapsMocks.jl")
 @testset "MapApply" begin include("MapApplyTests.jl") end
 
 @testset "CellMapApply" begin include("CellMapApplyTests.jl") end
-
-end # module
 
