@@ -4,6 +4,7 @@ using Test
 using Gridap
 using Gridap.Helpers
 using Base.Cartesian: @nloops, @nexprs, @nref
+using TensorValues
 
 export NumberKernel
 export ArrayKernel
@@ -153,4 +154,36 @@ end
   end    
 end
 
-end # module Kernels
+struct LinCombKernel <: ArrayKernel end
+
+function compute_type(::LinCombKernel,::Type{T},::Type{S}) where {T,S}
+  Base._return_type(outer,Tuple{T,S})
+end
+
+function compute_ndim(::LinCombKernel,n::Int,m::Int)
+  @assert n == 2
+  @assert m == 1
+  1
+end
+
+function compute_size(::LinCombKernel,sa::NTuple{2,Int},sb::NTuple{1,Int})
+  ndofs, npoints = sa
+  ndofsb, = sb
+  @assert ndofsb == ndofs
+  (npoints,)
+end
+
+function compute_value!(
+  v::AbstractArray{T},::LinCombKernel,a::AbstractArray,b::AbstractArray) where T
+  ndofs, npoints = size(a)
+  for i in eachindex(v)
+    @inbounds v[i] = zero(T)
+  end
+  for j in 1:npoints
+    for i in 1:ndofs
+      @inbounds v[j] += outer(a[i,j],b[i])
+    end
+  end
+end
+
+end # module

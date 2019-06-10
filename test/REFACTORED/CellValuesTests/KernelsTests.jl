@@ -3,6 +3,7 @@ module KernelsTests
 using Gridap
 using TensorValues
 using Gridap.Kernels: CellSumKernel
+using Gridap.Kernels: LinCombKernel
 
 # NumberKernelFromFunction
 
@@ -66,5 +67,27 @@ k = CellSumKernel{D}()
 a = rand(2,3,4)
 b = reshape(sum(a,dims=D),(2,3))
 test_array_kernel(k,b,a)
+
+# LinCombKernel
+
+k = LinCombKernel()
+a = rand(4,8)
+b = rand(4)
+r = reshape(sum(outer.(a,reshape(b,(4,1))),dims=1),(8,))
+test_array_kernel(k,r,a,b)
+
+k = LinCombKernel()
+ai = VectorValue(2.0,3.1,4.3)
+a = fill(ai,4,8)
+b = rand(4)
+r = reshape(sum(outer.(a,reshape(b,(4,1))),dims=1),(8,))
+test_array_kernel(k,r,a,b)
+
+k = LinCombKernel()
+ai = VectorValue(2.0,3.1,4.3)
+a = fill(ai,4,8)
+b = fill(ai,4)
+r = reshape(sum(outer.(a,reshape(b,(4,1))),dims=1),(8,))
+test_array_kernel(k,r,a,b)
 
 end # module
