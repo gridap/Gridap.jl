@@ -14,6 +14,9 @@ w = apply(-,v,broadcast=true)
 o = [ CachedArray(-vi) for vi in v ] 
 test_iter_cell_array(w,o)
 
+oo = collect(w)
+@test oo == o
+
 a = [1,2,3]
 b = [3,2,1]
 u = TestIterCellValue(a,l)

@@ -19,3 +19,5 @@ include("MapsMocks.jl")
 
 @testset "CellMapApply" begin include("CellMapApplyTests.jl") end
 
+@testset "CellValuesOperations" begin include("CellValuesOperationsTests.jl") end
+

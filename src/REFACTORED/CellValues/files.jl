@@ -31,3 +31,6 @@ include("MapApply.jl")
 
 include("CellMapApply.jl")
 @reexport using Gridap.CellMapApply
+
+include("CellValuesOperations.jl")
+@reexport using Gridap.CellValuesOperations
