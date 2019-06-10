@@ -1,10 +1,8 @@
-include("../../../src/REFACTORED/CellValues/ConstantCellValues.jl")
 module ConstantCellValuesTests
 
 using Test
 using Gridap
 using TensorValues
-using ..ConstantCellValues
 using ..MapsMocks
 
 # Constructors
