@@ -5,11 +5,11 @@ using Gridap.Helpers
 using Gridap.CachedArrays
 using Gridap.MapApply: _compute_S, _compute_M, setinputs!
 using Gridap.MapApply: MapFromKernel
-using Gridap.CellArrayApply: _compute_N, _compute_T
+using Gridap.Kernels: _compute_N, _compute_T
 
 import Gridap: evaluate
 import Gridap.MapApply: _stype, _m
-import Gridap.CellArrayApply: _nd, _eltype
+import Gridap.Kernels: _nd, _eltype
 import Gridap: apply
 import Base: iterate
 import Base: length

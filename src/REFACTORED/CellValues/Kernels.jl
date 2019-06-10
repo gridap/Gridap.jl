@@ -48,6 +48,56 @@ function compute_value!(::AbstractArray,::ArrayKernel,::Vararg)
   @abstractmethod
 end
 
+function compute_value(k::ArrayKernel,i::Vararg)
+  s = [ _size_for_broadcast(ii) for ii in i ]
+  T = _compute_T(k,i)
+  N = _compute_N(k,i)
+  si = compute_size(k,s...)
+  r = Array{T,N}(undef,si)
+  compute_value!(r,k,i...)
+  r
+end
+
+function _compute_T(k,v)
+  t = _compute_eltype(v...)
+  T = compute_type(k,t...)
+  @assert T <: NumberLike
+  T
+end
+
+function _compute_N(k,v)
+  d = _compute_ndims(v...)
+  compute_ndim(k,d...)
+end
+
+_nd(v::CellNumber) = 0
+
+_nd(v::CellArray{T,N}) where {T,N} = N
+
+# TODO use a generated function here
+_compute_ndims(v...) = @notimplemented
+_compute_ndims(v1) = (_nd(v1),)
+_compute_ndims(v1,v2) = (_nd(v1),_nd(v2))
+_compute_ndims(v1,v2,v3) = (_nd(v1),_nd(v2),_nd(v3))
+_compute_ndims(v1,v2,v3,v4) = (_nd(v1),_nd(v2),_nd(v3),_nd(v4))
+_compute_ndims(v1,v2,v3,v4,v5) = (_nd(v1),_nd(v2),_nd(v3),_nd(v4),_nd(v5))
+_compute_ndims(v1,v2,v3,v4,v5,v6) = (_nd(v1),_nd(v2),_nd(v3),_nd(v4),_nd(v5),_nd(v6))
+
+_eltype(v::CellNumber{T}) where T = T
+
+_eltype(v::CellArray{T}) where T = T
+
+const _et = _eltype
+
+# TODO use a generated function here
+_compute_eltype(v...) = @notimplemented
+_compute_eltype(v1) = (_et(v1),)
+_compute_eltype(v1,v2) = (_et(v1),_et(v2))
+_compute_eltype(v1,v2,v3) = (_et(v1),_et(v2),_et(v3))
+_compute_eltype(v1,v2,v3,v4) = (_et(v1),_et(v2),_et(v3),_et(v4))
+_compute_eltype(v1,v2,v3,v4,v5) = (_et(v1),_et(v2),_et(v3),_et(v4),_et(v5))
+_compute_eltype(v1,v2,v3,v4,v5,v6) = (_et(v1),_et(v2),_et(v3),_et(v4),_et(v5),_et(v6))
+
 # Testers
 
 function test_number_kernel(k::NumberKernel,o::T,i::Vararg) where T
@@ -71,6 +121,8 @@ function test_array_kernel(
   @test n == length(si)
   r = Array{T,N}(undef,si)
   compute_value!(r,k,i...)
+  @test r == o
+  r = compute_value(k,i...)
   @test r == o
 end
 

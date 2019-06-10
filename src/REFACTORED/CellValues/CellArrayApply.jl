@@ -3,6 +3,7 @@ module CellArrayApply
 using Gridap
 using Gridap.Helpers
 using Gridap.CachedArrays
+using Gridap.Kernels: _compute_T, _compute_N
 using Gridap.CellNumberApply: _checks
 using Gridap.CellNumberApply: _getvalues
 using Gridap.Kernels: _size_for_broadcast
@@ -41,46 +42,6 @@ function CellArrayFromKernel(k::ArrayKernel,v::Vararg{<:CellValue})
   V = typeof(v)
   CellArrayFromKernel{T,N,K,V}(k,v)
 end
-
-function _compute_T(k,v)
-  t = _compute_eltype(v...)
-  T = compute_type(k,t...)
-  @assert T <: NumberLike
-  T
-end
-
-function _compute_N(k,v)
-  d = _compute_ndims(v...)
-  compute_ndim(k,d...)
-end
-
-_nd(v::CellNumber) = 0
-
-_nd(v::CellArray{T,N}) where {T,N} = N
-
-# TODO use a generated function here
-_compute_ndims(v...) = @notimplemented
-_compute_ndims(v1) = (_nd(v1),)
-_compute_ndims(v1,v2) = (_nd(v1),_nd(v2))
-_compute_ndims(v1,v2,v3) = (_nd(v1),_nd(v2),_nd(v3))
-_compute_ndims(v1,v2,v3,v4) = (_nd(v1),_nd(v2),_nd(v3),_nd(v4))
-_compute_ndims(v1,v2,v3,v4,v5) = (_nd(v1),_nd(v2),_nd(v3),_nd(v4),_nd(v5))
-_compute_ndims(v1,v2,v3,v4,v5,v6) = (_nd(v1),_nd(v2),_nd(v3),_nd(v4),_nd(v5),_nd(v6))
-
-_eltype(v::CellNumber{T}) where T = T
-
-_eltype(v::CellArray{T}) where T = T
-
-const _et = _eltype
-
-# TODO use a generated function here
-_compute_eltype(v...) = @notimplemented
-_compute_eltype(v1) = (_et(v1),)
-_compute_eltype(v1,v2) = (_et(v1),_et(v2))
-_compute_eltype(v1,v2,v3) = (_et(v1),_et(v2),_et(v3))
-_compute_eltype(v1,v2,v3,v4) = (_et(v1),_et(v2),_et(v3),_et(v4))
-_compute_eltype(v1,v2,v3,v4,v5) = (_et(v1),_et(v2),_et(v3),_et(v4),_et(v5))
-_compute_eltype(v1,v2,v3,v4,v5,v6) = (_et(v1),_et(v2),_et(v3),_et(v4),_et(v5),_et(v6))
 
 function length(self::CellArrayFromKernel)
   vi, = self.cellvalues
