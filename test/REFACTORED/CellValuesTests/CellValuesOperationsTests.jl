@@ -133,6 +133,11 @@ for op in (:/,)
   end
 end
 
+u = TestIterCellValue(a,l)
+v = TestIterCellValue(a,l)
+@test u == v
+@test u ≈ v
+
 # CellArray Operations
 
 v1 = VectorValue(2,3)
@@ -220,6 +225,48 @@ for op in (:inner,:outer)
 
   end
 end
+
+# Eq
+
+u = TestIterCellValue(a,l)
+v = TestIterCellValue(a,l)
+@test u == v
+@test u ≈ v
+
+# cellsum
+
+D = 3
+a = rand(2,3,4)
+r = reshape(sum(a,dims=D),(2,3))
+o = [CachedArray(r) for i in 1:l]
+
+u = TestIterCellValue(a,l)
+w = cellsum(u,dim=D)
+test_iter_cell_array(w,o)
+
+u = TestIndexCellValue(a,l)
+w = cellsum(u,dim=D)
+test_index_cell_array(w,o)
+
+a = rand(4)
+r = sum(a)
+o = [r for i in 1:l]
+
+u = TestIterCellValue(a,l)
+w = cellsum(u,dim=1)
+@test isa(w,CellNumber)
+test_iter_cell_value(w,o)
+
+# cellmean
+
+a = rand(2,3,4)
+r = sum(a) / length(a)
+o = [r for i in 1:l]
+
+u = TestIterCellValue(a,l)
+w = cellmean(u)
+@test isa(w,CellNumber)
+test_iter_cell_value(w,o)
 
 # CellMaps Operations
 

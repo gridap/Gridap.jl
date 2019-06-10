@@ -2,6 +2,10 @@ module CellValuesOperations
 
 using Gridap
 
+using Gridap.Kernels: CellSumKernel
+
+export cellsum
+export cellmean
 import Base: +,-,*,/,\, ==, ≈
 import LinearAlgebra: inv, det
 import TensorValues: inner, outer, meas
@@ -78,6 +82,21 @@ end
     !(op(ai,bi)) && return false
   end
   return true
+end
+
+function cellsum(self::CellArray{T,N};dim::Int) where {T,N}
+  k = CellSumKernel{dim}()
+  apply(k,self)
+end
+
+function cellsum(self::CellArray{T,1};dim::Int) where T
+  apply(sum,self)
+end
+
+_mean(a) = sum(a)/length(a)
+
+function cellmean(self::CellArray)
+  apply(_mean,self)
 end
 
 end # module

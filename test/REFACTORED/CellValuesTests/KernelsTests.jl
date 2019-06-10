@@ -2,6 +2,9 @@ module KernelsTests
 
 using Gridap
 using TensorValues
+using Gridap.Kernels: CellSumKernel
+
+# NumberKernelFromFunction
 
 k = NumberKernelFromFunction(-)
 
@@ -12,6 +15,8 @@ test_number_kernel(k,-1.0,1.0)
 k = NumberKernelFromFunction(sum)
 
 test_number_kernel(k,7,[1,2,4])
+
+# ArrayKernelFromBroadcastedFunction
 
 k = ArrayKernelFromBroadcastedFunction(*)
 
@@ -42,5 +47,24 @@ test_array_kernel(k,w,u,v)
 w = broadcast(+,u,v,0)
 test_array_kernel(k,w,u,v,0)
 
+# CellSumKernel
+
+D = 1
+k = CellSumKernel{D}()
+a = rand(2,3,4)
+b = reshape(sum(a,dims=D),(3,4))
+test_array_kernel(k,b,a)
+
+D = 2
+k = CellSumKernel{D}()
+a = rand(2,3,4)
+b = reshape(sum(a,dims=D),(2,4))
+test_array_kernel(k,b,a)
+
+D = 3
+k = CellSumKernel{D}()
+a = rand(2,3,4)
+b = reshape(sum(a,dims=D),(2,3))
+test_array_kernel(k,b,a)
 
 end # module
