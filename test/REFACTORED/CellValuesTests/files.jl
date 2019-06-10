@@ -1,3 +1,6 @@
+module CellValuesTests
+
+using Test
 
 include("CellValuesMocks.jl")
 
@@ -22,4 +25,6 @@ include("MapsMocks.jl")
 @testset "CellValuesOperations" begin include("CellValuesOperationsTests.jl") end
 
 @testset "ConstantCellValues" begin include("ConstantCellValuesTests.jl") end
+
+end # module
 
