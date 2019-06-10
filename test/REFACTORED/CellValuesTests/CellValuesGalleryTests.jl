@@ -2,6 +2,7 @@ module CellValuesGalleryTests
 
 using Test
 using Gridap
+using Gridap.CellValuesGallery
 using TensorValues
 using StaticArrays
 

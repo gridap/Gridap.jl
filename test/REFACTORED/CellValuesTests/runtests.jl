@@ -24,7 +24,10 @@ include("MapsMocks.jl")
 
 @testset "CellValuesOperations" begin include("CellValuesOperationsTests.jl") end
 
+@testset "CellValuesAppend" begin include("CellValuesAppendTests.jl") end
+
 @testset "ConstantCellValues" begin include("ConstantCellValuesTests.jl") end
+
 
 end # module
 
