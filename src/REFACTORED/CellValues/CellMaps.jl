@@ -5,6 +5,7 @@ using Gridap
 using Gridap.Helpers
 using Gridap.CachedArrays
 using Gridap.CellValues: _test_iter_cell_value
+using Gridap.CellValues: _test_index_cell_value
 
 export CellMap
 export IterCellMap
@@ -13,6 +14,7 @@ import Gridap: evaluate
 export test_iter_cell_map
 export test_index_cell_map
 export test_index_cell_map_with_index_arg
+export test_iter_cell_map_with_index_result
 
 import Base: iterate
 import Base: length
@@ -183,6 +185,19 @@ function test_index_cell_map_with_index_arg(
     @assert evaluate(mi,ai) ≈ bi
     @assert typeof(mi) == eltype(m)
   end
+
+end
+
+function test_iter_cell_map_with_index_result(
+  m::CellMap{S,M,T,N},
+  a::CellArray{S,M},
+  b::AbstractArray{<:AbstractArray{T,N}}) where {S,M,T,N}
+
+  test_iter_cell_map(m,a,b)
+
+  c = evaluate(m,a)
+
+  _test_index_cell_value(c,b)
 
 end
 

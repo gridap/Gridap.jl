@@ -84,8 +84,12 @@ _eq(a,b) = a == b
 _eq(a::Real,b::Real) = a ≈ b
 
 function test_index_cell_value(icv::IndexCellValue{T},a::AbstractArray{T}) where T
+  _test_index_cell_value(icv,a)
+end
 
-  test_iter_cell_value(icv,a)
+function _test_index_cell_value(icv,a)
+
+  _test_iter_cell_value(icv,a)
 
   @test size(icv) == size(a)
 

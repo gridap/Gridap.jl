@@ -29,4 +29,9 @@ m3 = apply(-,m,p,broadcast=true)
 r3 = r .- p
 test_map(m3,p,r3)
 
+a = [1.0,2.0,3.0]
+m3 = apply(outer,m,a,broadcast=true)
+r3 = broadcast(outer,r,a)
+test_map(m3,p,r3)
+
 end # module

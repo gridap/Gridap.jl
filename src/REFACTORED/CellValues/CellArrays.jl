@@ -3,6 +3,7 @@ module CellArrays
 using Gridap
 using Gridap.Helpers
 using Gridap.CellValues: _test_iter_cell_value
+using Gridap.CellValues: _test_index_cell_value
 
 export CellArray
 export CellMatrix
@@ -58,7 +59,7 @@ end
 function test_index_cell_array(
   icv::IndexCellArray{T,N},
   a::AbstractArray{<:AbstractArray{T,N}}) where {T,N}
-  test_index_cell_value(icv,a)
+  _test_index_cell_value(icv,a)
 end
 
 end # module CellArrays

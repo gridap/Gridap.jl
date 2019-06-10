@@ -40,4 +40,16 @@ ca2 = evaluate(cm,cp)
 
 test_index_cell_array(ca2,rm)
 
+cm = TestIterCellValue(m,l)
+cp = TestIterCellValue(p,l)
+rm = [ CachedArray(r.-p) for i in 1:l]
+cm2 = apply(-,cm,cp,broadcast=true)
+test_iter_cell_map(cm2,cp,rm)
+
+cm = TestIndexCellValue(m,l)
+cp = TestIndexCellValue(p,l)
+rm = [ CachedArray(r.-p) for i in 1:l]
+cm2 = apply(-,cm,cp,broadcast=true)
+test_iter_cell_map_with_index_result(cm2,cp,rm)
+
 end # module
