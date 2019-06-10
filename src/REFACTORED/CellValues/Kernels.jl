@@ -186,4 +186,51 @@ function compute_value!(
   end
 end
 
+struct VarinnerKernel <: ArrayKernel end
+
+function compute_type(::VarinnerKernel,::Type{T},::Type{S}) where {T,S}
+  Base._return_type(inner,Tuple{T,S})
+end
+
+function compute_ndim(::VarinnerKernel,n::Int,m::Int)
+  (n-1) + (m-1) + 1
+end
+
+function compute_size(::VarinnerKernel,sa::NTuple{2,Int},sb::NTuple{1,Int})
+  ndofs, npoints = sa
+  npointsb, = sb
+  @assert npoints == npointsb
+  sa
+end
+
+function compute_size(::VarinnerKernel,sa::NTuple{2,Int},sb::NTuple{2,Int})
+  ndofs, npoints = sa
+  ndofsb, npointsb = sb
+  @assert npoints == npointsb
+  (ndofs,ndofsb,npoints)
+end
+
+function compute_value!(
+  v::AbstractArray,::VarinnerKernel,a::AbstractArray{T,2},b::AbstractArray{S,1}) where {T,S}
+  ndofs, npoints = size(a)
+  for j in 1:npoints
+    for i in 1:ndofs
+      @inbounds v[i,j] = inner(a[i,j],b[j])
+    end
+  end
+end
+
+function compute_value!(
+  v::AbstractArray,::VarinnerKernel,a::AbstractArray{T,2},b::AbstractArray{S,2}) where {T,S}
+  ndofsa, npoints = size(a)
+  ndofsb, _ = size(b)
+  for k in 1:npoints
+    for j in 1:ndofsb
+      for i in 1:ndofsa
+        @inbounds v[i,j,k] = inner(a[i,k],b[j,k])
+      end
+    end
+  end
+end
+
 end # module

@@ -4,6 +4,7 @@ using Gridap
 using TensorValues
 using Gridap.Kernels: CellSumKernel
 using Gridap.Kernels: LinCombKernel
+using Gridap.Kernels: VarinnerKernel
 
 # NumberKernelFromFunction
 
@@ -88,6 +89,33 @@ ai = VectorValue(2.0,3.1,4.3)
 a = fill(ai,4,8)
 b = fill(ai,4)
 r = reshape(sum(outer.(a,reshape(b,(4,1))),dims=1),(8,))
+test_array_kernel(k,r,a,b)
+
+# VarinnerKernel
+
+k = VarinnerKernel()
+a = rand(4,8)
+b = rand(8)
+r = inner.(a,reshape(b,(1,8)))
+test_array_kernel(k,r,a,b)
+
+k = VarinnerKernel()
+a = rand(4,8)
+b = rand(5,8)
+r = inner.(reshape(a,(4,1,8)),reshape(b,(1,5,8)))
+test_array_kernel(k,r,a,b)
+
+ai = VectorValue(2.0,3.1,4.3)
+bi = VectorValue(2.1,1.1,4.1)
+
+a = fill(ai,4,8)
+b = fill(bi,8)
+r = inner.(a,reshape(b,(1,8)))
+test_array_kernel(k,r,a,b)
+
+a = fill(ai,4,8)
+b = fill(bi,5,8)
+r = inner.(reshape(a,(4,1,8)),reshape(b,(1,5,8)))
 test_array_kernel(k,r,a,b)
 
 end # module
