@@ -43,7 +43,7 @@ function CellArrayFromKernel(k::ArrayKernel,v::Vararg{<:CellValue})
 end
 
 function _compute_T(k,v)
-  t = [ _eltype(vi) for vi in v ]
+  t = _compute_eltype(v...)
   T = compute_type(k,t...)
   @assert T <: NumberLike
   T
@@ -70,6 +70,17 @@ _compute_ndims(v1,v2,v3,v4,v5,v6) = (_nd(v1),_nd(v2),_nd(v3),_nd(v4),_nd(v5),_nd
 _eltype(v::CellNumber{T}) where T = T
 
 _eltype(v::CellArray{T}) where T = T
+
+const _et = _eltype
+
+# TODO use a generated function here
+_compute_eltype(v...) = @notimplemented
+_compute_eltype(v1) = (_et(v1),)
+_compute_eltype(v1,v2) = (_et(v1),_et(v2))
+_compute_eltype(v1,v2,v3) = (_et(v1),_et(v2),_et(v3))
+_compute_eltype(v1,v2,v3,v4) = (_et(v1),_et(v2),_et(v3),_et(v4))
+_compute_eltype(v1,v2,v3,v4,v5) = (_et(v1),_et(v2),_et(v3),_et(v4),_et(v5))
+_compute_eltype(v1,v2,v3,v4,v5,v6) = (_et(v1),_et(v2),_et(v3),_et(v4),_et(v5),_et(v6))
 
 function length(self::CellArrayFromKernel)
   vi, = self.cellvalues
