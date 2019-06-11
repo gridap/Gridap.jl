@@ -16,4 +16,13 @@ a = 1.0 - 3.0im
 a = VectorValue(1,2,3)
 @test isa(a,FieldValue)
 
+p = Point(1,2,3)
+
+@test isa(p,VectorValue{3,Int})
+
+p = Point{3,Float64}(1,2,3)
+
+@test isa(p,VectorValue{3,Float64})
+
+
 end # module
