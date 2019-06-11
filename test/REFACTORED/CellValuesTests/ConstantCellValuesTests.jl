@@ -92,4 +92,13 @@ cr = evaluate(cm2,cp)
 @test cp == cp
 @test cp ≈ cp
 
+ca = ConstantCellNumber(3,5)
+sv = 1.0
+scv = ConstantCellNumber(sv,l)
+cc = reindex(scv,ca)
+r = fill(sv,5)
+@assert isa(cc,ConstantCellValue)
+test_iter_cell_value(cc,r)
+
+
 end # module ConstantCellValuesTests

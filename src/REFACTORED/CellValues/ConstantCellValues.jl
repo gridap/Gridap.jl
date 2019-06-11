@@ -10,6 +10,7 @@ export ConstantCellMatrix
 export ConstantCellMap
 
 import Gridap: apply
+import Gridap: reindex
 import Gridap: evaluate
 import Base: size
 import Base: getindex
@@ -118,6 +119,14 @@ function _compute_l(v...)
   l1 = length(v1)
   @assert all([ length(vi) == l1 for vi in v ])
   l1
+end
+
+function reindex(values::ConstantCellValue, indices::CellValue{<:IndexLike})
+  ConstantCellValue(values.value,length(indices))
+end
+
+function reindex(values::ConstantCellValue, indices::IndexCellValue{<:IndexLike})
+  ConstantCellValue(values.value,length(indices))
 end
 
 end # module ConstantCellValues
