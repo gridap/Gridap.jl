@@ -35,6 +35,9 @@ include("CellValuesOperations.jl")
 include("CellValuesAppend.jl")
 @reexport using Gridap.CellValuesAppend
 
+include("CellValuesReindex.jl")
+@reexport using Gridap.CellValuesReindex
+
 include("ConstantCellValues.jl")
 @reexport using Gridap.ConstantCellValues
 
