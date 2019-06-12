@@ -1,4 +1,4 @@
-module Grida
+module GridapTests
 
 using Test
 using Gridap

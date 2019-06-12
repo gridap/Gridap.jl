@@ -10,4 +10,6 @@ include("FieldsMocks.jl")
 
 @testset "Fields" begin include("FieldsTests.jl") end
 
+@testset "FieldsOperations" begin include("FieldsOperationsTests.jl") end
+
 end # module

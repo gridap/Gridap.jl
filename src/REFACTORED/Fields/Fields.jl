@@ -4,7 +4,6 @@ using Test
 using Gridap
 using Gridap.Helpers
 
-import Gridap: return_size
 export FieldLike
 export Field
 export Basis
@@ -37,20 +36,19 @@ dimension `D`
 """
 const Field{D,T} = FieldLike{D,T,1}
 
-return_size(this::Field,s::Tuple{Int}) = s
-
 """
 Abstract basis for a space of fields of rank `T` (e.g., scalar, vector, tensor)
-on a manifold of dimension `D`
+on a manifold of dimension `D`.
+
+A Basis is evaluated at an array of Points and returns a matrix of values.
+The first dimension in the returned matrix corresponds to the dofs of the basis,
+whereas the second dimension corresponds to the evaluation points.
 """
 const Basis{D,T} = FieldLike{D,T,2}
 
-num_dofs(::Basis)::Int = @abstractmethod
-
-function return_size(this::Basis,s::Tuple{Int})
-  np, = s
-  nd = num_dofs(this)
-  (nd,np)
+function num_dofs(b::Basis)
+  n, = return_size(b,(1,))
+  n
 end
 
 """

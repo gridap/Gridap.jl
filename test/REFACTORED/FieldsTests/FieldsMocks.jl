@@ -9,7 +9,7 @@ export MockField
 export MockBasis
 
 import Gridap: evaluate!
-import Gridap: num_dofs
+import Gridap: return_size
 import Gridap: gradient
 
 struct GradMockField{D,X} <: Field{D,VectorValue{D,X}} end
@@ -34,6 +34,10 @@ function evaluate!(
 end
 
 gradient(f::MockField) = f.g
+
+return_size(::MockField,s::NTuple{N,Int} where N) = s
+
+return_size(::GradMockField,s::NTuple{N,Int} where N) = s
 
 function evaluate!(
   this::GradMockField{D,X},
@@ -85,9 +89,15 @@ function evaluate!(
   end
 end
 
-num_dofs(::MockBasis) = 3
+function return_size(::MockBasis,s::NTuple{N,Int} where N)
+  n, = s
+  (3,n)
+end
 
-num_dofs(::GradMockBasis) = 3
+function return_size(::GradMockBasis,s::NTuple{N,Int} where N)
+  n, = s
+  (3,n)
+end
 
 gradient(f::MockBasis) = f.g
 
