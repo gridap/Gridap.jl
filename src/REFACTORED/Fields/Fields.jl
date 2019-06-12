@@ -18,7 +18,7 @@ export test_basis
 """
 Umbrella type for Field and Basis
 """
-const FieldLike{D,T<:FieldValue,N} = Map{Point{D},1,T,N}
+const FieldLike = Map{Point{D},1,T,N} where {D,T<:FieldValue,N}
 
 """
 Create the gradient of a `Field` or `Basis`
@@ -34,7 +34,7 @@ const ∇ = gradient
 Abstract field of rank `T` (e.g., scalar, vector, tensor) on a manifold of
 dimension `D`
 """
-const Field{D,T} = FieldLike{D,T,1}
+const Field = FieldLike{D,T,1} where {D,T}
 
 """
 Abstract basis for a space of fields of rank `T` (e.g., scalar, vector, tensor)
@@ -44,7 +44,7 @@ A Basis is evaluated at an array of Points and returns a matrix of values.
 The first dimension in the returned matrix corresponds to the dofs of the basis,
 whereas the second dimension corresponds to the evaluation points.
 """
-const Basis{D,T} = FieldLike{D,T,2}
+const Basis = FieldLike{D,T,2} where {D,T}
 
 function num_dofs(b::Basis)
   n, = return_size(b,(1,))
@@ -54,7 +54,7 @@ end
 """
 Abstract geometry map
 """
-const Geomap{D,Z,X} = Field{D,Point{Z,X}}
+const Geomap = Field{D,Point{Z,X}} where {D,Z,X}
 
 # Testers
 
