@@ -7,6 +7,6 @@ using Gridap
 
 @time @testset "CellValues" begin include("CellValuesTests/runtests.jl") end
 
-#@time @testset "Fields" begin include("FieldsTests/runtests.jl") end
+@time @testset "Fields" begin include("FieldsTests/runtests.jl") end
 
 end # module
