@@ -89,8 +89,6 @@ end
 
 function _test_index_cell_value(icv,a)
 
-  _test_iter_cell_value(icv,a)
-
   @test size(icv) == size(a)
 
   for i in eachindex(icv)

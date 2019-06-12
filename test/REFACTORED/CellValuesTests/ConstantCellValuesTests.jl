@@ -63,11 +63,11 @@ for op in (:+,:-)
 end
 
 sca3 = apply(-,sca2,broadcast=true)
-@test isa(sca3,ConstantCellArray{Float64,2})
+@test isa(sca3,ConstantCellArray{Array{Float64,2}})
 test_index_cell_array( sca3, fill(broadcast(-,sa2),l) )
 
 sca3 = apply(-,sca,sca2,broadcast=true)
-@test isa(sca3,ConstantCellArray{Float64,2})
+@test isa(sca3,ConstantCellArray{Array{Float64,2}})
 test_index_cell_array( sca3, fill(broadcast(-,sa,sa2),l) )
 
 cm = ConstantCellMap(m,l)
@@ -81,7 +81,7 @@ cr = evaluate(cm2,cp)
 cm = ConstantCellMap(m,l)
 cp = ConstantCellVector(p,l)
 rm = [ r.-p for i in 1:l]
-cm2 = cm-cp
+cm2 = apply(-,cm,cp,broadcast=true)
 test_index_cell_map_with_index_arg(cm2,cp,rm)
 cr = evaluate(cm2,cp)
 @test isa(cr,ConstantCellArray)
@@ -99,6 +99,5 @@ cc = reindex(scv,ca)
 r = fill(sv,5)
 @assert isa(cc,ConstantCellValue)
 test_iter_cell_value(cc,r)
-
 
 end # module ConstantCellValuesTests

@@ -10,7 +10,11 @@ include("MapsMocks.jl")
 
 @testset "MapsMocks" begin include("MapsMocksTests.jl") end
 
-@testset "CellValuesGallery" begin include("CellValuesGalleryTests.jl") end
+@testset "CellNumbers" begin include("CellNumbersTests.jl") end
+
+@testset "CellArrays" begin include("CellArraysTests.jl") end
+
+@testset "CellMaps" begin include("CellMapsTests.jl") end
 
 @testset "Kernels" begin include("KernelsTests.jl") end
 
@@ -24,11 +28,15 @@ include("MapsMocks.jl")
 
 @testset "CellValuesOperations" begin include("CellValuesOperationsTests.jl") end
 
+@testset "CellValuesGallery" begin include("CellValuesGalleryTests.jl") end
+
 @testset "CellValuesAppend" begin include("CellValuesAppendTests.jl") end
 
 @testset "CellValuesReindex" begin include("CellValuesReindexTests.jl") end
 
 @testset "ConstantCellValues" begin include("ConstantCellValuesTests.jl") end
+
+
 
 
 end # module

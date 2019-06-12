@@ -84,12 +84,12 @@ end
   return true
 end
 
-function cellsum(self::CellArray{T,N};dim::Int) where {T,N}
+function cellsum(self::CellArray;dim::Int)
   k = CellSumKernel{dim}()
   apply(k,self)
 end
 
-function cellsum(self::CellArray{T,1};dim::Int) where T
+function cellsum(self::CellVector;dim::Int) where T
   apply(sum,self)
 end
 

@@ -2,8 +2,6 @@ module CellArrays
 
 using Gridap
 using Gridap.Helpers
-using Gridap.CellValues: _test_iter_cell_value
-using Gridap.CellValues: _test_index_cell_value
 
 export CellArray
 export CellMatrix
@@ -24,42 +22,42 @@ import Base: collect
 
 # Iterable cell Arrays
 
-const IterCellArray{T,N,A<:AbstractArray{T,N}} = IterCellValue{A}
+const IterCellArray = IterCellValue{A} where A<:AbstractArray
 
-const IterCellVector{T,A} = IterCellArray{T,1,A}
+const IterCellVector = IterCellValue{A} where A<:AbstractVector
 
-const IterCellMatrix{T,A} = IterCellArray{T,2,A}
+const IterCellMatrix = IterCellValue{A} where A<:AbstractMatrix
 
 # Indexable cell arrays
 
-const IndexCellArray{T,N,A<:AbstractArray{T,N},D} = IndexCellValue{A,D}
+const IndexCellArray = IndexCellValue{A,D} where {A<:AbstractArray,D}
 
-const IndexCellVector{T,A<:AbstractArray{T,1},D} = IndexCellArray{T,1,A,D}
+const IndexCellVector = IndexCellValue{A,D} where {A<:AbstractVector,D}
 
-const IndexCellMatrix{T,A<:AbstractArray{T,2},D} = IndexCellArray{T,2,A,D}
+const IndexCellMatrix = IndexCellValue{A,D} where {A<:AbstractMatrix,D}
 
 # Cell Arrays
 
-const CellArray{T,N} = Union{IterCellArray{T,N},IndexCellArray{T,N}}
+const CellArray = Union{IterCellArray{A},IndexCellArray{A,D}} where {A<:AbstractArray,D}
 
-const CellVector{T} = CellArray{T,1}
+const CellVector = CellArray{A,D} where {A<:AbstractVector,D}
 
-const CellMatrix{T} = CellArray{T,2}
+const CellMatrix = CellArray{A,D} where {A<:AbstractMatrix,D}
 
 collect(a::CellArray) = [ copy(ai) for ai in a ]
 
 # Testers
 
 function test_iter_cell_array(
-  icv::CellArray{T,N},
+  icv::CellArray{<:AbstractArray{T,N}},
   a::AbstractArray{<:AbstractArray{T,N}}) where {T,N}
-  _test_iter_cell_value(icv,a)
+  test_iter_cell_value(icv,a)
 end
 
 function test_index_cell_array(
-  icv::IndexCellArray{T,N},
+  icv::IndexCellArray{<:AbstractArray{T,N}},
   a::AbstractArray{<:AbstractArray{T,N}}) where {T,N}
-  _test_index_cell_value(icv,a)
+  test_index_cell_value(icv,a)
 end
 
 end # module CellArrays

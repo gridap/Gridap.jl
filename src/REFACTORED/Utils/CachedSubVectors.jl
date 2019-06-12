@@ -14,6 +14,10 @@ mutable struct CachedSubVector{T,V<:AbstractArray{T,1}} <: AbstractArray{T,1}
   pend::Int
 end
 
+function CachedSubVector(v::AbstractVector)
+  CachedSubVector(v,1,length(v))
+end
+
 size(self::CachedSubVector) = (1+self.pend-self.pini,)
 
 @propagate_inbounds function getindex(self::CachedSubVector, i::Int)

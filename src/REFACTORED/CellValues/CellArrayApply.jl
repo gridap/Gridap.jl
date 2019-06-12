@@ -29,7 +29,7 @@ function _apply(f,v,::Val{true})
   apply(k,v...)
 end
 
-struct CellArrayFromKernel{T,N,K,V} <: IterCellArray{T,N,CachedArray{T,N,Array{T,N}}}
+struct CellArrayFromKernel{T,N,K,V} <: IterCellArray{CachedArray{T,N,Array{T,N}}}
   kernel::K
   cellvalues::V
 end
@@ -83,7 +83,7 @@ _compute_sizes(a1,a2,a3,a4) = (_bs(a1),_bs(a2),_bs(a3),_bs(a4))
 _compute_sizes(a1,a2,a3,a4,a5) = (_bs(a1),_bs(a2),_bs(a3),_bs(a4),_bs(a5))
 _compute_sizes(a1,a2,a3,a4,a5,a6) = (_bs(a1),_bs(a2),_bs(a3),_bs(a4),_bs(a5),_bs(a6))
 
-struct IndexCellArrayFromKernel{T,N,K,V} <: IndexCellArray{T,N,CachedArray{T,N,Array{T,N}},1}
+struct IndexCellArrayFromKernel{T,N,K,V} <: IndexCellArray{CachedArray{T,N,Array{T,N}},1}
   kernel::K
   cellvalues::V
   cache::CachedArray{T,N,Array{T,N}}
@@ -116,4 +116,4 @@ function getindex(self::IndexCellArrayFromKernel,i::Integer)
   v
 end
   
-end # module CellArrayApply
+end # module

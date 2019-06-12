@@ -59,7 +59,7 @@ end
 size(self::IndexCellValueByGlobalAppend) = (length(self.cvs1) + length(self.cvs2),)
 
 struct IndexCellVectorByLocalAppend{
-  T,V<:IndexCellVector{T},W<:IndexCellVector{T}} <: IndexCellVector{T,CachedArray{T,1,Array{T,1}},1}
+  T,V<:IndexCellVector,W<:IndexCellVector} <: IndexCellVector{CachedArray{T,1,Array{T,1}},1}
   offset::Int
   cvs1::V
   cvs2::W
@@ -67,14 +67,16 @@ struct IndexCellVectorByLocalAppend{
 end
 
 function IndexCellVectorByLocalAppend(
-  offset::Int,cvs1::IndexCellVector{T}, cvs2::IndexCellVector{T}) where T
+  offset::Int,
+  cvs1::IndexCellVector{<:AbstractVector{T}},
+  cvs2::IndexCellVector{<:AbstractVector{T}}) where T
   @assert length(cvs1) == length(cvs2)
   cache = CachedArray(T,1)
   IndexCellVectorByLocalAppend(offset, cvs1, cvs2, cache)
 end
 
 function IndexCellVectorByLocalAppend(
-  offset_vec::NTuple{M,Int}, cvs::Vararg{<:IndexCellVector{T},N}) where {T,N,M}
+  offset_vec::NTuple{M,Int}, cvs::Vararg{<:IndexCellVector,N}) where {N,M}
   @assert M == N-1
   aux = cvs[1]
   for i in 2:N

@@ -72,7 +72,20 @@ end
 
 _nd(v::CellNumber) = 0
 
-_nd(v::CellArray{T,N}) where {T,N} = N
+_nd(v::CellArray{<:AbstractArray{T,N}}) where {T,N} = N
+
+_nd(v::CellMap{<:Map{S,M,T,N}}) where {S,M,T,N} = N
+
+_nd(v::Type{<:Map{S,M,T,N}}) where {S,M,T,N} = N
+
+_nd(v::Type{<:AbstractArray{T,N}}) where {T,N} = N
+
+_nd(v::Map{S,M,T,N}) where {S,M,T,N} = N
+
+_nd(v::AbstractArray{T,N}) where {T,N} = N
+
+_nd(v::T) where T<:NumberLike = 0
+
 
 # TODO use a generated function here
 _compute_ndims(v...) = @notimplemented
@@ -83,9 +96,21 @@ _compute_ndims(v1,v2,v3,v4) = (_nd(v1),_nd(v2),_nd(v3),_nd(v4))
 _compute_ndims(v1,v2,v3,v4,v5) = (_nd(v1),_nd(v2),_nd(v3),_nd(v4),_nd(v5))
 _compute_ndims(v1,v2,v3,v4,v5,v6) = (_nd(v1),_nd(v2),_nd(v3),_nd(v4),_nd(v5),_nd(v6))
 
+_eltype(v::Map{S,M,T}) where {S,M,T} = T
+
+_eltype(v::AbstractArray{T}) where T = T
+
+_eltype(v::T) where T<:NumberLike = T
+
 _eltype(v::CellNumber{T}) where T = T
 
-_eltype(v::CellArray{T}) where T = T
+_eltype(v::CellArray{<:AbstractArray{T}}) where T = T
+
+_eltype(v::CellMap{<:Map{S,M,T}}) where {S,M,T} = T
+
+_eltype(v::Type{<:Map{S,M,T}}) where {S,M,T} = T
+
+_eltype(v::Type{<:AbstractArray{T}}) where T = T
 
 const _et = _eltype
 

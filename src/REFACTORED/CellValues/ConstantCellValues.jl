@@ -29,24 +29,24 @@ end
 
 const ConstantCellNumber = ConstantCellValue{<:NumberLike}
 
-const ConstantCellArray{T,N} = ConstantCellValue{Array{T,N}}
+const ConstantCellArray = ConstantCellValue{A} where A<:AbstractArray
 
-const ConstantCellVector{T} = ConstantCellArray{T,1}
+const ConstantCellVector = ConstantCellValue{A} where A<:AbstractVector
 
-const ConstantCellMatrix{T} = ConstantCellArray{T,2}
+const ConstantCellMatrix = ConstantCellValue{A} where A<:AbstractMatrix
 
-const ConstantCellMap{S,M,T,N} = ConstantCellValue{<:Map{S,M,T,N}}
+const ConstantCellMap = ConstantCellValue{R} where R<:Map
 
 function ConstantCellArray(v::AbstractArray{T,N},l::Integer) where {T,N}
-  ConstantCellArray{T,N}(v,l)
+  ConstantCellValue(v,l)
 end
 
 function ConstantCellVector(v::AbstractVector{T},l::Integer) where T
-  ConstantCellVector{T}(v,l)
+  ConstantCellValue(v,l)
 end
 
 function ConstantCellMatrix(v::AbstractMatrix{T},l::Integer) where T
-  ConstantCellMatrix{T}(v,l)
+  ConstantCellValue(v,l)
 end
 
 function ConstantCellMap(v::Map,l::Integer)
@@ -105,7 +105,8 @@ function apply(k::ArrayKernel,m::ConstantCellMap,v::Vararg{<:ConstantCellValue})
   ConstantCellMap(w,l)
 end
 
-function evaluate(cm::ConstantCellMap{S,M},ca::ConstantCellArray{<:S,M}) where {S,M}
+function evaluate(cm::ConstantCellMap{<:Map{S,M}},
+  ca::ConstantCellArray{<:AbstractArray{<:S,M}}) where {S,M}
   @assert length(cm) == length(ca)
   m = cm.value
   a = ca.value

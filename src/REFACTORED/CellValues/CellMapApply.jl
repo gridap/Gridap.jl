@@ -9,7 +9,6 @@ using Gridap.Kernels: _compute_N, _compute_T
 
 import Gridap: evaluate
 import Gridap.MapApply: _stype, _m
-import Gridap.Kernels: _nd, _eltype
 import Gridap: apply
 import Base: iterate
 import Base: length
@@ -18,7 +17,7 @@ function apply(k::ArrayKernel,m::CellMap,v::Vararg{<:CellValue})
   CellMapFromKernel(k,m,v...)
 end
 
-struct CellMapFromKernel{S,M,T,N,R,K,V} <: IterCellMap{S,M,T,N,R}
+struct CellMapFromKernel{S,M,T,N,R<:Map{S,M,T,N},K,V} <: IterCellMap{R}
   kernel::K
   cellvalues::V
 end
@@ -63,7 +62,8 @@ end
 end
 
 function evaluate(
-  m::CellMapFromKernel{S,M,T,N},a::CellArray{<:S,M}) where {S,M,T,N}
+  m::CellMapFromKernel{S,M,T,N},
+  a::CellArray{<:AbstractArray{<:S,M}}) where {S,M,T,N}
   v = [ _eval(mi,a) for mi in m.cellvalues ]
   apply(m.kernel,v...)
 end
@@ -88,17 +88,13 @@ _cache_type(::Type{<:Map{S,M,T,N}}) where {S,M,T,N} = CachedArray{T,N,Array{T,N}
 
 _cache_type(::Type{<:AbstractArray{T,N}}) where {T,N} = CachedArray{T,N,Array{T,N}}
 
-_stype(v::CellMap{S}) where S = S
+_stype(v::CellMap{<:Map{S}}) where S = S
 
 _stype(v::CellArray) = nothing
 
-_m(v::CellMap{S,M}) where {S,M} = M
+_m(v::CellMap{<:Map{S,M}}) where {S,M} = M
 
 _m(v::CellArray) = nothing
-
-_eltype(v::CellMap{S,M,T}) where {S,M,T} = T
-
-_nd(v::CellMap{S,M,T,N}) where {S,M,T,N} = N
 
 _stype(v::Type{<:Map{S}}) where S = S
 
@@ -108,12 +104,4 @@ _m(v::Type{<:Map{S,M}}) where {S,M} = M
 
 _m(v::Type{<:AbstractArray}) = nothing
 
-_eltype(v::Type{<:Map{S,M,T}}) where {S,M,T} = T
-
-_eltype(v::Type{<:AbstractArray{T}}) where T = T
-
-_nd(v::Type{<:Map{S,M,T,N}}) where {S,M,T,N} = N
-
-_nd(v::Type{<:AbstractArray{T,N}}) where {T,N} = N
-
-end # module CellMapApply
+end # module

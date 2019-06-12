@@ -5,7 +5,6 @@ using Gridap.Helpers
 using Gridap.CachedArrays
 using Gridap.Kernels: _compute_N, _compute_T
 
-import Gridap.Kernels: _nd, _eltype
 import Gridap: apply
 import Gridap: evaluate!
 import Gridap: return_size
@@ -82,18 +81,6 @@ _stype(v::AbstractArray) = nothing
 _m(v::Map{S,M}) where {S,M} = M
 
 _m(v::AbstractArray) = nothing
-
-_eltype(v::Map{S,M,T}) where {S,M,T} = T
-
-_eltype(v::AbstractArray{T}) where T = T
-
-_eltype(v::T) where T<:NumberLike = T
-
-_nd(v::Map{S,M,T,N}) where {S,M,T,N} = N
-
-_nd(v::AbstractArray{T,N}) where {T,N} = N
-
-_nd(v::T) where T<:NumberLike = 0
 
 _rz(s,i) = @unreachable
 
