@@ -9,13 +9,12 @@ export MockField
 export MockBasis
 
 import Gridap: evaluate!
-import Gridap: return_size
 import Gridap: num_dofs
 import Gridap: gradient
 
-struct GradMockField{D,X} <: Field{D,VectorValue{D,X},X} end
+struct GradMockField{D,X} <: Field{D,VectorValue{D,X}} end
 
-struct MockField{D,X} <: Field{D,X,X}
+struct MockField{D,X} <: Field{D,X}
   g::GradMockField{D,X}
 end
 
@@ -26,7 +25,7 @@ end
 
 function evaluate!(
   this::MockField{D,X},
-  points::AbstractVector{Point{D,X}},
+  points::AbstractVector{<:Point{D}},
   v::AbstractVector{X}) where {D,X}
   for i in eachindex(points)
     p = points[i]
@@ -38,7 +37,7 @@ gradient(f::MockField) = f.g
 
 function evaluate!(
   this::GradMockField{D,X},
-  points::AbstractVector{Point{D,X}},
+  points::AbstractVector{<:Point{D}},
   v::AbstractVector{VectorValue{D,X}}) where {D,X}
   z = zero(MVector{D,X})
   z[1] = one(X)
@@ -49,9 +48,9 @@ end
 
 gradient(f::GradMockField) = @notimplemented
 
-struct GradMockBasis{D,X} <: Basis{D,VectorValue{D,X},X} end
+struct GradMockBasis{D,X} <: Basis{D,VectorValue{D,X}} end
 
-struct MockBasis{D,X} <: Basis{D,X,X}
+struct MockBasis{D,X} <: Basis{D,X}
   g::GradMockBasis{D,X}
 end
 
@@ -62,7 +61,7 @@ end
 
 function evaluate!(
   this::MockBasis{D,X},
-  points::AbstractVector{Point{D,X}},
+  points::AbstractVector{<:Point{D}},
   v::AbstractMatrix{X}) where {D,X}
   for j in eachindex(points)
     p = points[j]
@@ -74,7 +73,7 @@ end
 
 function evaluate!(
   this::GradMockBasis{D,X},
-  points::AbstractVector{Point{D,X}},
+  points::AbstractVector{<:Point{D}},
   v::AbstractMatrix{VectorValue{D,X}}) where {D,X}
   z = zero(MVector{D,X})
   z[1] = one(X)

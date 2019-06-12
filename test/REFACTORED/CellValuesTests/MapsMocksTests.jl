@@ -20,4 +20,14 @@ ao = [p[i]*j+a  for j in 1:3, i in 1:length(p)]
 m = TestMap(a,3)
 test_map(m,p,ao)
 
+a = VectorValue(10.1,10.3)
+b = VectorValue(15.3,20.5)
+ao = [  a+pj for pj in p  ]
+m = MockMap(a)
+test_map(m,p,ao)
+
+ao = [p[i]*j+a  for j in 1:3, i in 1:length(p)]
+m = TestMap(a,3)
+test_map(m,p,ao)
+
 end # module

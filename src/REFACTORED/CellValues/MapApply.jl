@@ -34,7 +34,7 @@ end
 
 function evaluate!(
   m::MapFromKernel{S,M,T,N},
-  points::AbstractArray{S,M},
+  points::AbstractArray{<:S,M},
   v::AbstractArray{T,N}) where {S,M,T,N}
   _evaluate_inputs!(points,m.caches...,m.inputs...)
   compute_value!(v,m.kernel,m.caches...)

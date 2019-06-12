@@ -105,7 +105,7 @@ function apply(k::ArrayKernel,m::ConstantCellMap,v::Vararg{<:ConstantCellValue})
   ConstantCellMap(w,l)
 end
 
-function evaluate(cm::ConstantCellMap{S,M},ca::ConstantCellArray{S,M}) where {S,M}
+function evaluate(cm::ConstantCellMap{S,M},ca::ConstantCellArray{<:S,M}) where {S,M}
   @assert length(cm) == length(ca)
   m = cm.value
   a = ca.value

@@ -1,6 +1,7 @@
 module MapsMocks
 
 using Gridap
+using TensorValues
 
 export MockMap
 export TestMap
@@ -8,12 +9,12 @@ export TestMap
 import Gridap: evaluate!
 import Gridap: return_size
 
-struct MockMap{P} <: Map{P,1,P,1}
+struct MockMap{P} <: Map{VectorValue,1,P,1}
   val::P
 end
 
 function evaluate!(
-  this::MockMap{P}, points::AbstractVector{P}, v::AbstractVector{P}) where P
+  this::MockMap{P}, points::AbstractVector{<:VectorValue}, v::AbstractVector{P}) where P
   for (i,qi) in enumerate(points)
     v[i] = qi+this.val
   end
@@ -21,13 +22,13 @@ end
 
 return_size(::MockMap, psize::Tuple{Int}) = psize
 
-struct TestMap{P} <: Map{P,1,P,2}
+struct TestMap{P<:VectorValue} <: Map{VectorValue,1,P,2}
   val::P
   dim::Int
 end
 
 function evaluate!(
-  this::TestMap{P}, points::AbstractVector{P}, v::AbstractMatrix{P}) where P
+  this::TestMap{P}, points::AbstractVector{<:VectorValue}, v::AbstractMatrix{P}) where P
   for j in 1:this.dim
     for (i,qi) in enumerate(points)
       v[j,i] = j*qi+this.val

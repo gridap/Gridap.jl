@@ -19,7 +19,7 @@ export test_basis
 """
 Umbrella type for Field and Basis
 """
-const FieldLike{D,T<:FieldValue,N,X} = Map{Point{D,X},1,T,N}
+const FieldLike{D,T<:FieldValue,N} = Map{Point{D},1,T,N}
 
 """
 Create the gradient of a `Field` or `Basis`
@@ -35,7 +35,7 @@ const ∇ = gradient
 Abstract field of rank `T` (e.g., scalar, vector, tensor) on a manifold of
 dimension `D`
 """
-const Field{D,T,X} = FieldLike{D,T,1,X}
+const Field{D,T} = FieldLike{D,T,1}
 
 return_size(this::Field,s::Tuple{Int}) = s
 
@@ -43,7 +43,7 @@ return_size(this::Field,s::Tuple{Int}) = s
 Abstract basis for a space of fields of rank `T` (e.g., scalar, vector, tensor)
 on a manifold of dimension `D`
 """
-const Basis{D,T,X} = FieldLike{D,T,2,X}
+const Basis{D,T} = FieldLike{D,T,2}
 
 num_dofs(::Basis)::Int = @abstractmethod
 
@@ -56,15 +56,15 @@ end
 """
 Abstract geometry map
 """
-const Geomap{D,Z,X} = Field{D,Point{Z,X},X}
+const Geomap{D,Z,X} = Field{D,Point{Z,X}}
 
 # Testers
 
 function test_fieldlike(
-  m::FieldLike{D,T,N,X},
-  x::AbstractVector{Point{D,X}},
+  m::FieldLike{D,T,N},
+  x::AbstractVector{<:Point{D}},
   v::AbstractArray{T,N},
-  g::AbstractArray{G,N}) where {D,T,N,G,X}
+  g::AbstractArray{G,N}) where {D,T,N,G}
   test_map(m,x,v)
   mg = gradient(m)
   test_map(mg,x,g)
@@ -73,18 +73,18 @@ function test_fieldlike(
 end
 
 function test_field(
-  m::Field{D,T,X},
-  x::AbstractVector{Point{D,X}},
+  m::Field{D,T},
+  x::AbstractVector{<:Point{D}},
   v::AbstractVector{T},
-  g::AbstractVector{G}) where {D,T,G,X}
+  g::AbstractVector{G}) where {D,T,G}
   test_fieldlike(m,x,v,g)
 end
 
 function test_basis(
-  m::Basis{D,T,X},
-  x::AbstractVector{Point{D,X}},
+  m::Basis{D,T},
+  x::AbstractVector{<:Point{D}},
   v::AbstractMatrix{T},
-  g::AbstractMatrix{G}) where {D,T,G,X}
+  g::AbstractMatrix{G}) where {D,T,G}
   nd = num_dofs(m)
   @test nd == size(v,1)
   @test nd == size(g,1)

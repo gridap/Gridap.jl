@@ -63,7 +63,7 @@ end
 end
 
 function evaluate(
-  m::CellMapFromKernel{S,M,T,N},a::CellArray{S,M}) where {S,M,T,N}
+  m::CellMapFromKernel{S,M,T,N},a::CellArray{<:S,M}) where {S,M,T,N}
   v = [ _eval(mi,a) for mi in m.cellvalues ]
   apply(m.kernel,v...)
 end

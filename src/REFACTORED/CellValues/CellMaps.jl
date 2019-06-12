@@ -42,11 +42,11 @@ const CellMap{S,M,T,N} = Union{IterCellMap{S,M,T,N},IndexCellMap{S,M,T,N}}
 """
 Return the cellwise maps of a `CellMap` on a cellwise set of points
 """
-function evaluate(cm::CellMap{S,M,T,N},ca::CellArray{S,M}) where {S,M,T,N}
+function evaluate(cm::CellMap{S,M,T,N},ca::CellArray{<:S,M}) where {S,M,T,N}
   IterCellMapValue(cm,ca)
 end
 
-function evaluate(cm::IndexCellMap{S,M,T,N},ca::IndexCellArray{S,M}) where {S,M,T,N}
+function evaluate(cm::IndexCellMap{S,M,T,N},ca::IndexCellArray{<:S,M}) where {S,M,T,N}
   IndexCellMapValue(cm,ca)
 end
 
@@ -55,7 +55,7 @@ struct IterCellMapValue{T,N,V,A} <: IterCellArray{T,N,CachedArray{T,N,Array{T,N}
   ca::A
 end
 
-function IterCellMapValue(cm::CellMap{S,M,T,N},ca::CellArray{S,M}) where {S,M,T,N}
+function IterCellMapValue(cm::CellMap{S,M,T,N},ca::CellArray{<:S,M}) where {S,M,T,N}
   V = typeof(cm)
   A = typeof(ca)
   IterCellMapValue{T,N,V,A}(cm,ca)
@@ -95,7 +95,7 @@ struct IndexCellMapValue{T,N,V,A} <: IndexCellArray{T,N,CachedArray{T,N,Array{T,
   r::CachedArray{T,N,Array{T,N}}
 end
 
-function IndexCellMapValue(cm::IndexCellMap{S,M,T,N},ca::IndexCellArray{S,M}) where {S,M,T,N}
+function IndexCellMapValue(cm::IndexCellMap{S,M,T,N},ca::IndexCellArray{<:S,M}) where {S,M,T,N}
   V = typeof(cm)
   A = typeof(ca)
   r = CachedArray(T,N)
@@ -119,7 +119,7 @@ end
 
 function test_iter_cell_map(
   m::CellMap{S,M,T,N},
-  a::CellArray{S,M},
+  a::CellArray{<:S,M},
   b::AbstractArray{<:AbstractArray{T,N}}) where {S,M,T,N}
 
   @test length(m) == length(b)
@@ -138,7 +138,7 @@ end
 
 function test_index_cell_map(
   m::IndexCellMap{S,M,T,N},
-  a::CellArray{S,M},
+  a::CellArray{<:S,M},
   b::AbstractArray{<:AbstractArray{T,N}}) where {S,M,T,N}
 
   @test size(m) == size(b)
@@ -159,7 +159,7 @@ end
 
 function test_index_cell_map_with_index_arg(
   m::IndexCellMap{S,M,T,N},
-  a::IndexCellArray{S,M},
+  a::IndexCellArray{<:S,M},
   b::AbstractArray{<:AbstractArray{T,N}}) where {S,M,T,N}
 
   test_index_cell_map(m,a,b)
@@ -190,7 +190,7 @@ end
 
 function test_iter_cell_map_with_index_result(
   m::CellMap{S,M,T,N},
-  a::CellArray{S,M},
+  a::CellArray{<:S,M},
   b::AbstractArray{<:AbstractArray{T,N}}) where {S,M,T,N}
 
   test_iter_cell_map(m,a,b)
