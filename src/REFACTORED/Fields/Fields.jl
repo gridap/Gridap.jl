@@ -1,14 +1,15 @@
 module Fields
 
+using Test
 using Gridap
 using Gridap.Helpers
 
-import Gridap: evaluate!
 import Gridap: return_size
 export FieldLike
 export Field
 export Basis
 export Geomap
+export num_dofs
 export gradient
 export ∇
 export test_fieldlike
@@ -22,6 +23,7 @@ const FieldLike{D,T<:FieldValue,N,X} = Map{Point{D,X},1,T,N}
 
 """
 Create the gradient of a `Field` or `Basis`
+For efficiency reasons, different calls to this function should return the same object
 """
 function gradient(this::FieldLike{D,T,N})::FieldLike{D,G,N} where {D,T,G,N}
   @abstractmethod
@@ -35,11 +37,21 @@ dimension `D`
 """
 const Field{D,T,X} = FieldLike{D,T,1,X}
 
+return_size(this::Field,s::Tuple{Int}) = s
+
 """
 Abstract basis for a space of fields of rank `T` (e.g., scalar, vector, tensor)
 on a manifold of dimension `D`
 """
 const Basis{D,T,X} = FieldLike{D,T,2,X}
+
+num_dofs(::Basis)::Int = @abstractmethod
+
+function return_size(this::Basis,s::Tuple{Int})
+  np, = s
+  nd = num_dofs(this)
+  (nd,np)
+end
 
 """
 Abstract geometry map
@@ -56,6 +68,8 @@ function test_fieldlike(
   test_map(m,x,v)
   mg = gradient(m)
   test_map(mg,x,g)
+  mg2 = gradient(m)
+  @test mg === mg2
 end
 
 function test_field(
@@ -71,7 +85,13 @@ function test_basis(
   x::AbstractVector{Point{D,X}},
   v::AbstractMatrix{T},
   g::AbstractMatrix{G}) where {D,T,G,X}
+  nd = num_dofs(m)
+  @test nd == size(v,1)
+  @test nd == size(g,1)
   test_fieldlike(m,x,v,g)
+  mg = gradient(m)
+  nd = num_dofs(mg)
+  @test nd == size(g,1)
 end
 
 end # module

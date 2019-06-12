@@ -4,6 +4,8 @@ using TensorValues
 
 export FieldValue
 export Point
+export VectorValue
+export TensorValue
 
 """
 Type representing all possible field value types
