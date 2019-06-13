@@ -2,6 +2,7 @@ module CellFieldsOperations
 
 using Gridap
 using Gridap.Kernels: VarinnerKernel
+using Gridap.Kernels: LinCombKernel
 using Base: @pure
 using Base: @propagate_inbounds
 

@@ -100,5 +100,23 @@ cv = evaluate(cs,cp)
 test_iter_cell_array(cv,v)
 @test isa(cv,CellArray{T,3} where T)
 
+# lincomb
+
+u = rand(eltype(r),ndofs)
+cu = TestIterCellValue(u,l)
+
+rv = zeros(eltype(r),npoins)
+for j in 1:npoins
+  for i in 1:ndofs
+    rv[j] += rb[i,j]*u[i]
+  end
+end
+v = [ rv for i in 1:l ]
+
+cs = lincomb(cb,cu)
+cv = evaluate(cs,cp)
+test_iter_cell_array(cv,v)
+@test isa(cv,CellVector)
+
 end # module
 
