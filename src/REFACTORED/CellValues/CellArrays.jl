@@ -2,6 +2,8 @@ module CellArrays
 
 using Gridap
 using Gridap.Helpers
+using Gridap.CellValues: _test_iter_cell_value
+using Gridap.CellValues: _test_index_cell_value
 
 export CellArray
 export CellMatrix
@@ -22,43 +24,43 @@ import Base: collect
 
 # Iterable cell Arrays
 
-const IterCellArray = IterCellValue{A} where A<:AbstractArray
+const IterCellArray{T,N,A<:AbstractArray{T,N}} = IterCellValue{A}
 
-const IterCellVector = IterCellValue{A} where A<:AbstractVector
+const IterCellVector{T} = IterCellArray{T,1}
 
-const IterCellMatrix = IterCellValue{A} where A<:AbstractMatrix
+const IterCellMatrix{T} = IterCellArray{T,2}
 
 # Indexable cell arrays
 
-const IndexCellArray = IndexCellValue{A,D} where {A<:AbstractArray,D}
+const IndexCellArray{T,N,A<:AbstractArray{T,N},D} = IndexCellValue{A,D}
 
-const IndexCellVector = IndexCellValue{A,D} where {A<:AbstractVector,D}
+const IndexCellVector{T,A<:AbstractArray{T,1},D} = IndexCellArray{T,1,A,D}
 
-const IndexCellMatrix = IndexCellValue{A,D} where {A<:AbstractMatrix,D}
+const IndexCellMatrix{T,A<:AbstractArray{T,2},D} = IndexCellArray{T,2,A,D}
 
 # Cell Arrays
 
-const CellArray = Union{IterCellArray{A},IndexCellArray{A,D}} where {A<:AbstractArray,D}
+const CellArray{T,N} = Union{IterCellArray{T,N},IndexCellArray{T,N}}
 
-const CellVector = CellArray{A,D} where {A<:AbstractVector,D}
+const CellVector{T} = CellArray{T,1}
 
-const CellMatrix = CellArray{A,D} where {A<:AbstractMatrix,D}
+const CellMatrix{T} = CellArray{T,2}
 
 collect(a::CellArray) = [ copy(ai) for ai in a ]
 
 # Testers
 
 function test_iter_cell_array(
-  icv::CellArray{<:AbstractArray{T,N}},
+  icv::CellArray{T,N},
   a::AbstractArray{<:AbstractArray{T,N}}) where {T,N}
-  test_iter_cell_value(icv,a)
+  _test_iter_cell_value(icv,a)
 end
 
 function test_index_cell_array(
-  icv::IndexCellArray{<:AbstractArray{T,N}},
+  icv::IndexCellArray{T,N},
   a::AbstractArray{<:AbstractArray{T,N}}) where {T,N}
-  test_index_cell_value(icv,a)
+  _test_index_cell_value(icv,a)
 end
 
-end # module CellArrays
+end # module
 

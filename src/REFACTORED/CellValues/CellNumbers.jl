@@ -17,15 +17,15 @@ const NumberLike = Union{Number,SArray}
 
 # Iterable cell Numbers
 
-const IterCellNumber = IterCellValue{A} where A<:NumberLike
+const IterCellNumber{A<:NumberLike} = IterCellValue{A}
 
 # Indexable cell arrays
 
-const IndexCellNumber = IndexCellValue{A,D} where {A<:NumberLike,D}
+const IndexCellNumber{A<:NumberLike,D} = IndexCellValue{A,D}
 
 # Cell Numbers
 
-const CellNumber = Union{IterCellNumber{A},IndexCellNumber{A,D}} where {A<:NumberLike,D}
+const CellNumber{A<:NumberLike} = Union{IterCellNumber{A},IndexCellNumber{A}}
 
 # Testers
 

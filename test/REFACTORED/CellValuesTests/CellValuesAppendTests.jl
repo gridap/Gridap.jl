@@ -2,8 +2,6 @@ module CellValuesAppendTests
 
 using Test
 using Gridap
-using Gridap.CachedArrays
-using Gridap.CachedSubVectors
 using Gridap.CellValuesGallery
 
 # append
@@ -25,8 +23,8 @@ vc = append(vc1,vc2,vc3)
 a1 = collect(vc1)
 a2 = collect(vc2)
 a3 = collect(vc3)
-_a = vcat(a1,a2,a3)
-a = [ CachedSubVector(ai) for ai in _a]
+a = vcat(a1,a2,a3)
+
 test_index_cell_array(vc,a)
 
 # local_append
@@ -48,13 +46,13 @@ vc = local_append(o,vc1,vc2)
 a1 = collect(vc1)
 a2 = collect(vc2)
 a3 = collect(vc3)
-a = [ CachedArray(vcat(a1i,a2i.+o)) for (a1i,a2i) in zip(a1,a2) ]
+a = [ vcat(a1i,a2i.+o) for (a1i,a2i) in zip(a1,a2) ]
 test_index_cell_array(vc,a)
 
 o2 = 24 
 o3 = 14
 vc = local_append((o2,o3),vc1,vc2,vc3)
-a = [ CachedArray(vcat(a1i,a2i.+o2,a3i.+o3)) for (a1i,a2i,a3i) in zip(a1,a2,a3) ]
+a = [ vcat(a1i,a2i.+o2,a3i.+o3) for (a1i,a2i,a3i) in zip(a1,a2,a3) ]
 test_index_cell_array(vc,a)
 
 end # module
