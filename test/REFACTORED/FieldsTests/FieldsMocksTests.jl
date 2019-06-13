@@ -33,4 +33,12 @@ g[3,:] = 3*g1
 
 test_basis(b,p,v,g)
 
+f = MockGeomap(2,Int)
+v= 3 .* p
+
+g1 = 3*TensorValue(1,0,0,1)
+g = fill(g1,4)
+
+test_field(f,p,v,g)
+
 end # module
