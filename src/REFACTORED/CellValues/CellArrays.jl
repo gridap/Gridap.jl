@@ -34,9 +34,9 @@ const IterCellMatrix{T} = IterCellArray{T,2}
 
 const IndexCellArray{T,N,A<:AbstractArray{T,N},D} = IndexCellValue{A,D}
 
-const IndexCellVector{T,A<:AbstractArray{T,1},D} = IndexCellArray{T,1,A,D}
+const IndexCellVector{T} = IndexCellArray{T,1}
 
-const IndexCellMatrix{T,A<:AbstractArray{T,2},D} = IndexCellArray{T,2,A,D}
+const IndexCellMatrix{T} = IndexCellArray{T,2}
 
 # Cell Arrays
 
