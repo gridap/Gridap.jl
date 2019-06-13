@@ -7,3 +7,9 @@ include("Fields.jl")
 
 include("FieldsOperations.jl")
 @reexport using Gridap.FieldsOperations
+
+include("CellFields.jl")
+@reexport using Gridap.CellFields
+
+include("CellFieldsOperations.jl")
+@reexport using Gridap.FieldsOperations

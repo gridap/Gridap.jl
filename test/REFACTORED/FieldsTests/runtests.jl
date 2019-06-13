@@ -4,6 +4,10 @@ using Test
 
 include("FieldsMocks.jl")
 
+include("../CellValuesTests/CellValuesMocks.jl")
+
+include("CellFieldsMocks.jl")
+
 @testset "FieldValues" begin include("FieldValuesTests.jl") end
 
 @testset "FieldsMocks" begin include("FieldsMocksTests.jl") end
@@ -11,5 +15,7 @@ include("FieldsMocks.jl")
 @testset "Fields" begin include("FieldsTests.jl") end
 
 @testset "FieldsOperations" begin include("FieldsOperationsTests.jl") end
+
+@testset "CellFieldsMocks" begin include("CellFieldsMocksTests.jl") end
 
 end # module

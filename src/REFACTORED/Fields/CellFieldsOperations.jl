@@ -43,16 +43,15 @@ for op in (:+,:-)
   end
 end
 
-struct IterCellFieldLikeAndGradient{D,T,N,R,V,G} <: IterCellFieldLike{D,T,N,R}
+struct IterCellFieldLikeAndGradient{D,T,N,R<:FieldLike{D,T,N},V,G} <: IterCellValue{R}
   val::V
   grad::G
 end
 
 function IterCellFieldLikeAndGradient(
-  val::IterCellFieldLike{D,T,N,R},
-  grad::CellFieldLike{D,TG,N}) where {D,T,TG,N,R}
-  @show T
+  val::IterCellFieldLike{D,T,N}, grad::CellFieldLike{D,TG,N}) where {D,T,TG,N}
   @assert length(val) == length(grad)
+  R = eltype(val)
   V = typeof(val)
   G = typeof(grad)
   IterCellFieldLikeAndGradient{D,T,N,R,V,G}(val,grad)
@@ -70,15 +69,17 @@ end
 
 length(f::IterCellFieldLikeAndGradient) = length(f.val)
 
-struct IndexCellFieldLikeAndGradient{D,T,N,C,R,V,G} <: IndexCellFieldLike{D,T,N,C,R}
+struct IndexCellFieldLikeAndGradient{
+  D,T,N,C,R<:FieldLike{D,T,N},V,G} <: IndexCellValue{R,C}
   val::V
   grad::G
 end
 
 function IndexCellFieldLikeAndGradient(
-  val::IndexCellFieldLike{D,T,N,C,R},
-  grad::IndexCellFieldLike{D,TG,N}) where {D,T,TG,N,C,R}
+  val::IndexCellFieldLike{D,T,N,C},
+  grad::IndexCellFieldLike{D,TG,N}) where {D,T,TG,N,C}
   @assert length(val) == length(grad)
+  R = eltype(val)
   V = typeof(val)
   G = typeof(grad)
   IndexCellFieldLikeAndGradient{D,T,N,C,R,V,G}(val,grad)
@@ -86,7 +87,8 @@ end
 
 gradient(f::IndexCellFieldLikeAndGradient) = f.grad
 
-function evaluate(cm::IndexCellFieldLikeAndGradient{D},ca::CellPoints{D}) where D
+function evaluate(
+  cm::IndexCellFieldLikeAndGradient{D},ca::CellPoints{D}) where D
   evaluate(cm.val,ca)
 end
 

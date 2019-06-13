@@ -29,26 +29,26 @@ export test_index_cell_basis
 
 import Gridap: gradient
 
-const IterCellFieldLike = IterCellMap{R} where R<:FieldLike
+const IterCellFieldLike{D,T<:FieldValue,N,R<:FieldLike{D,T,N}} = IterCellValue{R}
 
-const IndexCellFieldLike = IndexCellMap{R,D} where {R<:FieldLike,D}
+const IndexCellFieldLike{D,T<:FieldValue,N,C,R<:FieldLike{D,T,N}} = IndexCellValue{R,C}
 
 """
 Umbrella type for CellField and CellBasis
 """
-const CellFieldLike = Union{IterCellFieldLike{R},IndexCellFieldLike{R,D}} where {R<:FieldLike,D}
+const CellFieldLike{D,T<:FieldValue,N} = Union{IterCellFieldLike{D,T,N},IndexCellFieldLike{D,T,N}}
 
 """
 Returns another CellField or CellBasis object representing the gradient of the given one.
 For efficiency reasons, different cells to this methods should return the same object
 """
-function gradient(::CellFieldLike)::CellFieldLike
+function gradient(::CellFieldLike{D,T,N})::CellFieldLike{D,G,N} where {D,T,G,N}
   @abstractmethod
 end
 
-const IterCellField = IterCellMap{R} where R<:Field
+const IterCellField{D,T<:FieldValue,R<:Field{D,T}} = IterCellValue{R}
 
-const IndexCellField = IndexCellMap{R,D} where {R<:Field,D}
+const IndexCellField{D,T<:FieldValue,C,R<:Field{D,T}} = IndexCellValue{R,C}
 
 """
 Abstract type that represents a cell-wise field, where
@@ -56,19 +56,19 @@ Abstract type that represents a cell-wise field, where
 (e.g., scalar, vector, tensor) and `D` stands for the space
 dimension
 """
-const CellField = Union{IterCellField{R},IndexCellField{R,D}} where {R<:Field,D}
+const CellField{D,T<:FieldValue} = Union{IterCellField{D,T},IndexCellField{D,T}}
 
 function CellField end
 
-const IterCellBasis = IterCellMap{R} where R<:Basis
+const IterCellBasis{D,T<:FieldValue,R<:Basis{D,T}} = IterCellValue{R}
 
-const IndexCellBasis = IndexCellMap{R,D} where {R<:Basis,D}
+const IndexCellBasis{D,T<:FieldValue,C,R<:Basis{D,T}} = IndexCellValue{R,C}
 
 """
 Abstract type that represents a cell-wise basis for a field space,
 where T is the type of value and D the dimension of the domain
 """
-const CellBasis = Union{IterCellBasis{R},IndexCellBasis{R,D}} where {R<:Field,D}
+const CellBasis{D,T<:FieldValue} = Union{IterCellBasis{D,T},IndexCellBasis{D,T}}
 
 function CellBasis end
 
@@ -76,27 +76,27 @@ function CellBasis end
 Abstract type representing a cellwise transformation between two geometrical
 domains
 """
-const CellGeomap = CellField{R,C} where {R<:Geomap,C}
+const CellGeomap{D,Z,X,T<:Point{Z,X}} = CellField{D,T}
 
 function CellGeomap end
 
 """
 An array of points for each cell.
-This type represent the objects where CellField and CellBasis are evaluated
+This type represents the objects where CellField and CellBasis are evaluated
 """
-const CellPoints{D,X} = CellVector{Point{D,X}} where D
+const CellPoints{D,X} = CellVector{Point{D,X}}
 
 """
 Abstract type that represents a field with value of type T
 evaluated at a collection of points in each cell
 """
-const CellFieldValues{T} = CellVector{T} where T <: FieldValue
+const CellFieldValues{T<:FieldValue} = CellVector{T}
 
 """
 Abstract type that represents a function basis with value of type T
 evaluated at a collection of points in each cell
 """
-const CellBasisValues{T} = CellArray{T,2} where T <: FieldValue
+const CellBasisValues{T<:FieldValue} = CellMatrix{T}
 
 # Testers
 
