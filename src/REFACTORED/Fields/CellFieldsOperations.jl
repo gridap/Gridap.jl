@@ -3,11 +3,13 @@ module CellFieldsOperations
 using Gridap
 using Gridap.Kernels: VarinnerKernel
 using Gridap.Kernels: LinCombKernel
+using Gridap.Kernels: PhysGradKernel
 using Base: @pure
 using Base: @propagate_inbounds
 
 export varinner
 export lincomb
+export attachgeomap
 import Gridap: evaluate
 import Gridap: gradient
 import Base: iterate
@@ -47,6 +49,14 @@ end
 function lincomb(a::CellBasis,b::CellVector)
   k = LinCombKernel()
   apply(k,a,b)
+end
+
+function attachgeomap(a::CellBasis{D},b::CellGeomap{D,D}) where D
+  refg = gradient(a)
+  jac = gradient(b)
+  k = PhysGradKernel()
+  physg = apply(k,jac,refg)
+  _merge_val_and_grad(a,physg)
 end
 
 function _merge_val_and_grad(v::CellFieldLike,g::CellFieldLike)
