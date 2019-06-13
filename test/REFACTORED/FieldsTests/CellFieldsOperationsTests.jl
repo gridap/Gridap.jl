@@ -1,5 +1,6 @@
 module CellFieldsOperationsTests
 
+using Test
 using Gridap
 using ..CellFieldsMocks
 using ..CellValuesMocks
@@ -53,6 +54,51 @@ v = [r+r for i in 1:l]
 g = [rg+rg for i in 1:l]
 cf2 = cf+cf
 test_iter_cell_basis(cf2,cp,v,g)
+
+# varinner
+
+cf = IterCellFieldMock(2,Int,l)
+cb = IterCellBasisMock(2,Int,l)
+
+f,_ = iterate(cf)
+r = evaluate(f,p)
+b,_ = iterate(cb)
+rb = evaluate(b,p)
+
+v = [ r.*r for i in 1:l ]
+cs = varinner(cf,cf)
+cv = evaluate(cs,cp)
+test_iter_cell_array(cv,v)
+@test isa(cv,CellVector)
+
+ndofs, npoins = size(rb)
+rv = zeros(eltype(r),ndofs,npoins)
+for j in 1:npoins
+  for i in 1:ndofs
+    rv[i,j] = rb[i,j]*r[j]
+  end
+end
+v = [ rv for i in 1:l ]
+
+cs = varinner(cb,cf)
+cv = evaluate(cs,cp)
+test_iter_cell_array(cv,v)
+@test isa(cv,CellMatrix)
+
+rv = zeros(eltype(r),ndofs,ndofs,npoins)
+for k in 1:npoins
+  for j in 1:ndofs
+    for i in 1:ndofs
+      rv[i,j,k] = rb[i,k]*rb[j,k]
+    end
+  end
+end
+v = [ rv for i in 1:l ]
+
+cs = varinner(cb,cb)
+cv = evaluate(cs,cp)
+test_iter_cell_array(cv,v)
+@test isa(cv,CellArray{T,3} where T)
 
 end # module
 

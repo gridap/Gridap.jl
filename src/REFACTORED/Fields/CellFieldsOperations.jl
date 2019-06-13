@@ -1,9 +1,12 @@
 module CellFieldsOperations
 
 using Gridap
+using Gridap.Kernels: VarinnerKernel
 using Base: @pure
 using Base: @propagate_inbounds
 
+export varinner
+export lincomb
 import Gridap: evaluate
 import Gridap: gradient
 import Base: iterate
@@ -29,6 +32,20 @@ for op in (:+,:-)
     end
 
   end
+end
+
+function varinner(a::CellField,b::CellField)
+  inner(a,b)
+end
+
+function varinner(a::CellBasis,b::CellFieldLike)
+  k = VarinnerKernel()
+  apply(k,a,b)
+end
+
+function lincomb(a::CellBasis,b::CellVector)
+  k = LinCombKernel()
+  apply(k,a,b)
 end
 
 function _merge_val_and_grad(v::CellFieldLike,g::CellFieldLike)

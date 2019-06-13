@@ -12,4 +12,4 @@ include("CellFields.jl")
 @reexport using Gridap.CellFields
 
 include("CellFieldsOperations.jl")
-@reexport using Gridap.FieldsOperations
+@reexport using Gridap.CellFieldsOperations

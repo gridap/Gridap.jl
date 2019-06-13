@@ -6,6 +6,9 @@ export FieldValue
 export Point
 export VectorValue
 export TensorValue
+export inner
+export outer
+export meas
 
 """
 Type representing all possible field value types
