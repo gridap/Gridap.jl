@@ -18,4 +18,6 @@ include("CellFieldsMocks.jl")
 
 @testset "CellFieldsMocks" begin include("CellFieldsMocksTests.jl") end
 
+@testset "CellFieldsOperations" begin include("CellFieldsOperationsTests.jl") end
+
 end # module

@@ -19,28 +19,24 @@ for op in (:+,:-)
     function ($op)(f::CellFieldLike)
       v = apply($op,f,broadcast=true)
       g = apply($op,gradient(f),broadcast=true)
-      IterCellFieldLikeAndGradient(v,g)
-    end
-
-    function ($op)(f::IndexCellFieldLike)
-      v = apply($op,f,broadcast=true)
-      g = apply($op,gradient(f),broadcast=true)
-      IndexCellFieldLikeAndGradient(v,g)
+      _merge_val_and_grad(v,g)
     end
 
     function ($op)(a::CellFieldLike,b::CellFieldLike)
       v = apply($op,a,b,broadcast=true)
       g = apply($op,gradient(a),gradient(b),broadcast=true)
-      IterCellFieldLikeAndGradient(v,g)
-    end
-
-    function ($op)(a::IndexCellFieldLike,b::IndexCellFieldLike)
-      v = apply($op,a,b,broadcast=true)
-      g = apply($op,gradient(a),gradient(b),broadcast=true)
-      IndexCellFieldLikeAndGradient(v,g)
+      _merge_val_and_grad(v,g)
     end
 
   end
+end
+
+function _merge_val_and_grad(v::CellFieldLike,g::CellFieldLike)
+  IterCellFieldLikeAndGradient(v,g)
+end
+
+function _merge_val_and_grad(v::IndexCellFieldLike,g::IndexCellFieldLike)
+  IndexCellFieldLikeAndGradient(v,g)
 end
 
 struct IterCellFieldLikeAndGradient{D,T,N,R<:FieldLike{D,T,N},V,G} <: IterCellValue{R}
