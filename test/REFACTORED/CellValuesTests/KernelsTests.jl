@@ -5,6 +5,7 @@ using TensorValues
 using Gridap.Kernels: CellSumKernel
 using Gridap.Kernels: LinCombKernel
 using Gridap.Kernels: VarinnerKernel
+using Gridap.Kernels: PhysGradKernel
 
 # NumberKernelFromFunction
 
@@ -116,6 +117,22 @@ test_array_kernel(k,r,a,b)
 a = fill(ai,4,8)
 b = fill(bi,5,8)
 r = inner.(reshape(a,(4,1,8)),reshape(b,(1,5,8)))
+test_array_kernel(k,r,a,b)
+
+# PhysGradKernel
+
+k = PhysGradKernel()
+
+ai = TensorValue(1.0,2.0,0.0,2.0)
+bi = 3.0
+a = fill(ai,8)
+b = fill(bi,5,8)
+r = outer.(reshape(inv.(a),1,8),b)
+test_array_kernel(k,r,a,b)
+
+bi = VectorValue(3.4,2.5)
+b = fill(bi,5,8)
+r = reshape(inv.(a),1,8) .* b
 test_array_kernel(k,r,a,b)
 
 end # module

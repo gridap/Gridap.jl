@@ -310,4 +310,34 @@ function compute_value!(
   end
 end
 
+struct PhysGradKernel <: ArrayKernel end
+
+function compute_type(::PhysGradKernel,::Type{T},::Type{S}) where {T,S}
+  Base._return_type(*,Tuple{T,S})
+end
+
+function compute_ndim(::PhysGradKernel,n::Int,m::Int)
+  @assert n == 1
+  @assert m == 2
+  2
+end
+
+function compute_size(::PhysGradKernel,sa::NTuple{1,Int},sb::NTuple{2,Int})
+  npointsa, = sa
+  ndofs, npoints = sb
+  @assert npoints == npointsa
+  sb
+end
+
+function compute_value!(
+  v::AbstractArray,::PhysGradKernel,a::AbstractArray,b::AbstractArray)
+  ndofs, npoints = size(b)
+  for j in 1:npoints
+    @inbounds invJ = inv(a[j])
+    for i in 1:ndofs
+      @inbounds v[i,j] = invJ*b[i,j]
+    end
+  end
+end
+
 end # module
