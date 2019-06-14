@@ -1,11 +1,11 @@
-module CachedStructFieldsTest
+module CachedValuesTest
 
 using Test
-using Gridap.CachedStructFields
+using Gridap.CachedValues
 
 a = 10
 
-cache = CachedStructField(a)
+cache = CachedValue(a)
 
 @test cache.value == 10
 

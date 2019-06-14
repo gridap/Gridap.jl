@@ -5,4 +5,4 @@ include("CachedArrays.jl")
 
 include("CachedSubVectors.jl")
 
-include("CachedStructFields.jl")
+include("CachedValues.jl")

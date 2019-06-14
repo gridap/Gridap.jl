@@ -1,7 +1,7 @@
 module CellFieldsOperations
 
 using Gridap
-using Gridap.CachedStructFields
+using Gridap.CachedValues
 using Gridap.Kernels: VarinnerKernel
 using Gridap.Kernels: LinCombKernel
 using Gridap.Kernels: PhysGradKernel
@@ -185,7 +185,7 @@ struct IndexCellFieldLikeAndGradient{
   D,T,N,C,R<:FieldLike{D,T,N},V,G,F} <: IndexCellValue{R,C}
   val::V
   grad::G
-  cache::CachedStructField{F}
+  cache::CachedValue{F}
 end
 
 function IndexCellFieldLikeAndGradient(
@@ -196,7 +196,7 @@ function IndexCellFieldLikeAndGradient(
   F = Union{Nothing,R}
   V = typeof(val)
   G = typeof(grad)
-  cache = CachedStructField{F}(nothing)
+  cache = CachedValue{F}(nothing)
   IndexCellFieldLikeAndGradient{D,T,N,C,R,V,G,F}(val,grad,cache)
 end
 
