@@ -69,9 +69,7 @@ rb = evaluate(b,p)
 
 v = [ r.*r for i in 1:l ]
 cs = varinner(cf,cf)
-cv = evaluate(cs,cp)
-test_iter_cell_array(cv,v)
-@test isa(cv,CellVector)
+test_iter_cell_map(cs,cp,v)
 
 ndofs, npoins = size(rb)
 rv = zeros(eltype(r),ndofs,npoins)
@@ -83,9 +81,7 @@ end
 v = [ rv for i in 1:l ]
 
 cs = varinner(cb,cf)
-cv = evaluate(cs,cp)
-test_iter_cell_array(cv,v)
-@test isa(cv,CellMatrix)
+test_iter_cell_map(cs,cp,v)
 
 rv = zeros(eltype(r),ndofs,ndofs,npoins)
 for k in 1:npoins
@@ -98,15 +94,22 @@ end
 v = [ rv for i in 1:l ]
 
 cs = varinner(cb,cb)
-cv = evaluate(cs,cp)
-test_iter_cell_array(cv,v)
-@test isa(cv,CellArray{T,3} where T)
+test_iter_cell_map(cs,cp,v)
 
 # lincomb
+
+cf = IterCellFieldMock(2,Float64,l)
+cb = IterCellBasisMock(2,Float64,l)
+
+f,_ = iterate(cf)
+r = evaluate(f,p)
+b,_ = iterate(cb)
+rb = evaluate(b,p)
 
 u = rand(eltype(r),ndofs)
 cu = TestIterCellValue(u,l)
 
+ndofs, npoins = size(rb)
 rv = zeros(eltype(r),npoins)
 for j in 1:npoins
   for i in 1:ndofs
@@ -115,24 +118,17 @@ for j in 1:npoins
 end
 v = [ rv for i in 1:l ]
 
-cs = lincomb(cb,cu)
-cv = evaluate(cs,cp)
-test_iter_cell_array(cv,v)
-@test isa(cv,CellVector)
-
-rb = evaluate(∇(b),p)
-rv = zeros(eltype(rb),npoins)
+rbg = evaluate(∇(b),p)
+rv = zeros(eltype(rbg),npoins)
 for j in 1:npoins
   for i in 1:ndofs
-    rv[j] += rb[i,j]*u[i]
+    rv[j] += rbg[i,j]*u[i]
   end
 end
-v = [ rv for i in 1:l ]
+g = [ rv for i in 1:l ]
 
-@test HasGradientStyle(cs) == GradientYesStyle()
-cv = evaluate(∇(cs),cp)
-test_iter_cell_array(cv,v)
-@test isa(cv,CellVector)
+cs = lincomb(cb,cu)
+test_iter_cell_field(cs,cp,v,g)
 
 # compose
 
@@ -145,8 +141,7 @@ v = [ ufun.(r) for i in 1:l ]
 
 cr = compose(ufun,cf)
 @test HasGradientStyle(cr) == GradientNotStyle()
-cv = evaluate(cr,cp)
-test_iter_cell_array(cv,v)
+test_iter_cell_field_without_grad(cr,cp,v)
 
 ufungrad(x) = VectorValue(2,0)
 ∇(::typeof(ufun)) = ufungrad
@@ -154,11 +149,7 @@ ufungrad(x) = VectorValue(2,0)
 vg = [ ufungrad.(r) for i in 1:l ]
 
 cr = compose(ufun,cf)
-@test HasGradientStyle(cr) == GradientYesStyle()
-cv = evaluate(cr,cp)
-test_iter_cell_array(cv,v)
-cv = evaluate(∇(cr),cp)
-test_iter_cell_array(cv,vg)
+test_iter_cell_field(cr,cp,v,vg)
 
 # attachgeomap
 
