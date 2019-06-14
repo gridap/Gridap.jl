@@ -5,6 +5,8 @@ using Gridap
 using ..CellFieldsMocks
 using ..CellValuesMocks
 
+import Gridap: ∇
+
 l = 10
 cf = IterCellFieldMock(2,Int,l)
 
@@ -117,6 +119,46 @@ cs = lincomb(cb,cu)
 cv = evaluate(cs,cp)
 test_iter_cell_array(cv,v)
 @test isa(cv,CellVector)
+
+rb = evaluate(∇(b),p)
+rv = zeros(eltype(rb),npoins)
+for j in 1:npoins
+  for i in 1:ndofs
+    rv[j] += rb[i,j]*u[i]
+  end
+end
+v = [ rv for i in 1:l ]
+
+@test HasGradientStyle(cs) == GradientYesStyle()
+cv = evaluate(∇(cs),cp)
+test_iter_cell_array(cv,v)
+@test isa(cv,CellVector)
+
+# compose
+
+cf = IterCellFieldMock(2,Int,l)
+ufun(x) = 2*x[1]
+
+f,_ = iterate(cf)
+r = evaluate(f,p)
+v = [ ufun.(r) for i in 1:l ]
+
+cr = compose(ufun,cf)
+@test HasGradientStyle(cr) == GradientNotStyle()
+cv = evaluate(cr,cp)
+test_iter_cell_array(cv,v)
+
+ufungrad(x) = VectorValue(2,0)
+∇(::typeof(ufun)) = ufungrad
+
+vg = [ ufungrad.(r) for i in 1:l ]
+
+cr = compose(ufun,cf)
+@test HasGradientStyle(cr) == GradientYesStyle()
+cv = evaluate(cr,cp)
+test_iter_cell_array(cv,v)
+cv = evaluate(∇(cr),cp)
+test_iter_cell_array(cv,vg)
 
 end # module
 

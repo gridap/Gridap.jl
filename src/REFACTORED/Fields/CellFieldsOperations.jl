@@ -10,6 +10,7 @@ using Base: @propagate_inbounds
 export varinner
 export lincomb
 export attachgeomap
+export compose
 import Gridap: evaluate
 import Gridap: gradient
 import Gridap: HasGradientStyle
@@ -19,6 +20,7 @@ import Base: size
 import Base: getindex
 import Base: IndexStyle
 import Base: +, -
+import Base: ∘
 
 for op in (:+,:-)
   @eval begin
@@ -60,6 +62,18 @@ function attachgeomap(a::CellBasis{D},b::CellGeomap{D,D}) where D
   _merge_val_and_grad(a,physg)
 end
 
+function compose(f::Function,g::CellFieldLike)
+  h = hasmethod(gradient,(typeof(f),) )
+  _compose(Val(h),f,g)
+end
+
+(∘)(f::Function,g::CellFieldLike) = compose(f,g)
+
+function compose(f::Function,w::Vararg{<:CellFieldLike})
+  h = hasmethod(gradient,(typeof(f),) )
+  _compose(Val(h),f,w...)
+end
+
 function _lincomb(a,b,sa::GradientYesStyle)
   k = LinCombKernel()
   v = apply(k,a,b)
@@ -71,6 +85,18 @@ end
 function _lincomb(a,b,sa)
   k = LinCombKernel()
   apply(k,a,b)
+end
+
+function _compose(::Val{true},f,u...)
+  fgrad = gradient(f)
+  v = apply(f,u...,broadcast=true)
+  g = apply(fgrad,u...,broadcast=true)
+  _merge_val_and_grad(v,g)
+end
+
+function _compose(::Val{false},f,u...)
+  v = apply(f,u...,broadcast=true)
+  v
 end
 
 function _compute_sum_or_sub(op,a,::GradientYesStyle)
