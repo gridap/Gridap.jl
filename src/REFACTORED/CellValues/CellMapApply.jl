@@ -3,6 +3,8 @@ module CellMapApply
 using Gridap
 using Gridap.Helpers
 using Gridap.CachedArrays
+using Gridap.CachedValues
+using Gridap.CellNumberApply: _getvalues
 using Gridap.MapApply: _compute_S, _compute_M, setinputs!
 using Gridap.MapApply: MapFromKernel
 using Gridap.Kernels: _compute_N, _compute_T
@@ -12,9 +14,15 @@ import Gridap.MapApply: _stype, _m
 import Gridap: apply
 import Base: iterate
 import Base: length
+import Base: size
+import Base: getindex
 
 function apply(k::ArrayKernel,m::CellMap,v::Vararg{<:CellValue})
   CellMapFromKernel(k,m,v...)
+end
+
+function apply(k::ArrayKernel,m::IndexCellMap,v::Vararg{<:IndexCellValue})
+  IndexCellMapFromKernel(k,m,v...)
 end
 
 struct CellMapFromKernel{S,M,T,N,R,K,V} <: IterCellMap{S,M,T,N,R}
@@ -102,5 +110,53 @@ _stype(v::Type{<:AbstractArray}) = nothing
 _m(v::Type{<:Map{S,M}}) where {S,M} = M
 
 _m(v::Type{<:AbstractArray}) = nothing
+
+struct IndexCellMapFromKernel{S,M,T,N,R<:Map{S,M,T,N},K,V,F} <: IndexCellValue{R,1}
+  kernel::K
+  cellvalues::V
+  cache::CachedValue{F}
+end
+
+function IndexCellMapFromKernel(k::ArrayKernel,v::Vararg{<:CellValue})
+  S = _compute_S(v)
+  M = _compute_M(v)
+  T = _compute_T(k,v)
+  N = _compute_N(k,v)
+  R = _compute_R(k,v)
+  K = typeof(k)
+  V = typeof(v)
+  F = Union{Nothing,R}
+  cache = CachedValue{F}(nothing)
+  IndexCellMapFromKernel{S,M,T,N,R,K,V,F}(k,v,cache)
+end
+
+function length(self::IndexCellMapFromKernel)
+  vi, = self.cellvalues
+  length(vi)
+end
+
+size(self::IndexCellMapFromKernel) = (length(self),)
+
+function getindex(self::IndexCellMapFromKernel,i::Integer)
+  vals = _getvalues(i,self.cellvalues...)
+  if self.cache.value === nothing
+    self.cache.value = MapFromKernel(self.kernel,vals...)
+  else
+  setinputs!(self.cache.value,vals...)
+  end
+  self.cache.value
+end
+
+function evaluate(
+  m::IndexCellMapFromKernel{S,M,T,N},a::IndexCellArray{<:S,M}) where {S,M,T,N}
+  v = [ _eval(mi,a) for mi in m.cellvalues ]
+  apply(m.kernel,v...)
+end
+
+function evaluate(
+  m::IndexCellMapFromKernel{S,M,T,N},a::CellArray{<:S,M}) where {S,M,T,N}
+  v = [ _eval(mi,a) for mi in m.cellvalues ]
+  apply(m.kernel,v...)
+end
 
 end # module

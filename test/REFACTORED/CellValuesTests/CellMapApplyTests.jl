@@ -50,7 +50,7 @@ cm = TestIndexCellValue(m,l)
 cp = TestIndexCellValue(p,l)
 rm = [ CachedArray(r.-p) for i in 1:l]
 cm2 = apply(-,cm,cp,broadcast=true)
-test_iter_cell_map_with_index_result(cm2,cp,rm)
+test_index_cell_map_with_index_arg(cm2,cp,rm)
 
 a = VectorValue(10.1,10.3)
 m = MockMap(a)
@@ -72,6 +72,6 @@ test_index_cell_map(cm,cp,rm)
 
 cm2 = apply(-,cm,broadcast=true)
 rm = [ CachedArray(-r) for i in 1:l]
-test_iter_cell_map_with_index_result(cm2,cp,rm)
+test_index_cell_map_with_index_arg(cm2,cp,rm)
 
 end # module

@@ -30,8 +30,7 @@ test_iter_cell_field(cf2,cp,v,g)
 cf = IndexCellFieldMock(2,Int,l)
 cp = TestIndexCellValue(p,l)
 cf2 = -cf
-#TODO index
-test_iter_cell_field(cf2,cp,v,g)
+test_index_cell_field(cf2,cp,v,g)
 
 cf = IterCellFieldMock(2,Int,l)
 cf2 = cf+cf
@@ -42,8 +41,7 @@ test_iter_cell_field(cf2,cp,v,g)
 cf = IndexCellFieldMock(2,Int,l)
 cp = TestIndexCellValue(p,l)
 cf2 = cf+cf
-#TODO index
-test_iter_cell_field(cf2,cp,v,g)
+test_index_cell_field(cf2,cp,v,g)
 
 cf = IterCellBasisMock(2,Int,l)
 cp = TestIterCellValue(p,l)
