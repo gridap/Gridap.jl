@@ -43,8 +43,9 @@ function CellNumberFromKernel(k::NumberKernel,v::Vararg{<:CellValue})
   _checks(v)
   T = _compute_type(k,v)
   K = typeof(k)
-  V = typeof(v)
-  CellNumberFromKernel{T,K,V}(k,v)
+  _v = Container(v...)
+  V = typeof(_v)
+  CellNumberFromKernel{T,K,V}(k,_v)
 end
 
 function _checks(v)
@@ -62,12 +63,12 @@ function _compute_type(k,v)
 end
 
 function length(self::CellNumberFromKernel)
-  vi, = self.cellvalues
+  vi, = _cv(self.cellvalues)
   length(vi)
 end
 
 @inline function iterate(self::CellNumberFromKernel)
-  zipped = zip(self.cellvalues...)
+  zipped = zip(_cv(self.cellvalues)...)
   znext = iterate(zipped)
   _iterate(self,znext,zipped)
 end
@@ -95,19 +96,20 @@ function IndexCellNumberFromKernel(k::NumberKernel,v::Vararg{<:IndexCellValue})
   _checks(v)
   T = _compute_type(k,v)
   K = typeof(k)
-  V = typeof(v)
-  IndexCellNumberFromKernel{T,K,V}(k,v)
+  _v = Container(v...)
+  V = typeof(_v)
+  IndexCellNumberFromKernel{T,K,V}(k,_v)
 end
 
 function length(self::IndexCellNumberFromKernel)
-  vi, = self.cellvalues
+  vi, = _cv(self.cellvalues)
   length(vi)
 end
 
 size(self::IndexCellNumberFromKernel) = (length(self),)
 
 function getindex(self::IndexCellNumberFromKernel,i::Integer)
-  vals = _getvalues(i,self.cellvalues...)
+  vals = _getvalues(i,_cv(self.cellvalues)...)
   compute_value(self.kernel,vals...)
 end
 
@@ -119,5 +121,56 @@ _getvalues(i,v1,v2,v3) = (v1[i],v2[i],v3[i])
 _getvalues(i,v1,v2,v3,v4) = (v1[i],v2[i],v3[i],v4[i])
 _getvalues(i,v1,v2,v3,v4,v5) = (v1[i],v2[i],v3[i],v4[i],v5[i])
 _getvalues(i,v1,v2,v3,v4,v5,v6) = (v1[i],v2[i],v3[i],v4[i],v5[i],v6[i])
+
+# TODO
+
+mutable struct Container1{V1}
+  v1::V1
+end
+
+mutable struct Container2{V1,V2}
+  v1::V1
+  v2::V2
+end
+
+mutable struct Container3{V1,V2,V3}
+  v1::V1
+  v2::V2
+  v3::V3
+end
+
+Container(v1) = Container1(v1)
+
+Container(v1,v2) = Container2(v1,v2)
+
+Container(v1,v2,v3) = Container3(v1,v2,v3)
+
+_cv(s::Container1) = (s.v1,)
+
+_cv(s::Container2) = (s.v1,s.v2)
+
+_cv(s::Container3) = (s.v1,s.v2,s.v3)
+
+function _cv!(s::Container1,v1)
+  s.v1 = v1
+end
+
+function _cv!(s::Container2,v1,v2)
+  s.v1 = v1
+  s.v2 = v2
+end
+
+function _cv!(s::Container3,v1,v2,v3)
+  s.v1 = v1
+  s.v2 = v2
+  s.v3 = v3
+end
+
+_container_type(V1) = Container1{V1}
+
+_container_type(V1,V2) = Container2{V1,V2}
+
+_container_type(V1,V2,V3) = Container3{V1,V2,V3}
+
 
 end # module CellNumberApply

@@ -7,6 +7,7 @@ using Gridap.Kernels: _compute_T, _compute_N
 using Gridap.CellNumberApply: _checks
 using Gridap.CellNumberApply: _getvalues
 using Gridap.Kernels: _size_for_broadcast
+using Gridap.CellNumberApply: Container, _cv
 
 import Gridap: apply
 import Base: iterate
@@ -39,17 +40,18 @@ function CellArrayFromKernel(k::ArrayKernel,v::Vararg{<:CellValue})
   T = _compute_T(k,v)
   N = _compute_N(k,v)
   K = typeof(k)
-  V = typeof(v)
-  CellArrayFromKernel{T,N,K,V}(k,v)
+  _v = Container(v...)
+  V = typeof(_v)
+  CellArrayFromKernel{T,N,K,V}(k,_v)
 end
 
 function length(self::CellArrayFromKernel)
-  vi, = self.cellvalues
+  vi, = _cv(self.cellvalues)
   length(vi)
 end
 
 @inline function iterate(self::CellArrayFromKernel{T,N}) where {T,N}
-  zipped = zip(self.cellvalues...)
+  zipped = zip(_cv(self.cellvalues)...)
   znext = iterate(zipped)
   v = CachedArray(T,N)
   _iterate(self,znext,zipped,v)
@@ -94,20 +96,21 @@ function IndexCellArrayFromKernel(k::ArrayKernel,v::Vararg{<:CellValue})
   T = _compute_T(k,v)
   N = _compute_N(k,v)
   K = typeof(k)
-  V = typeof(v)
+  _v = Container(v...)
+  V = typeof(_v)
   cache = CachedArray(T,N)
-  IndexCellArrayFromKernel{T,N,K,V}(k,v,cache)
+  IndexCellArrayFromKernel{T,N,K,V}(k,_v,cache)
 end
 
 function length(self::IndexCellArrayFromKernel)
-  vi, = self.cellvalues
+  vi, = _cv(self.cellvalues)
   length(vi)
 end
 
 size(self::IndexCellArrayFromKernel) = (length(self),)
 
 function getindex(self::IndexCellArrayFromKernel,i::Integer)
-  a = _getvalues(i,self.cellvalues...)
+  a = _getvalues(i,_cv(self.cellvalues)...)
   s = _compute_sizes(a...)
   z = compute_size(self.kernel,s...)
   v = self.cache

@@ -132,7 +132,7 @@ function test_iter_cell_map(
   for (mi,ai,bi) in zip(m,a,b)
     @assert isa(mi,Map{S,M,T,N})
     @assert _eq(evaluate(mi,ai),bi)
-    @assert typeof(mi) == eltype(m)
+    @test typeof(mi) == eltype(m)
   end
 
 end

@@ -4,6 +4,7 @@ using Gridap
 using Gridap.Helpers
 using Gridap.CachedArrays
 using Gridap.Kernels: _compute_N, _compute_T
+using Gridap.CellNumberApply: Container, _cv, _cv!
 
 import Gridap: apply
 import Gridap: evaluate!
@@ -13,7 +14,7 @@ function apply(k::ArrayKernel,m::Map,v::Vararg)
   MapFromKernel(k,m,v...)
 end
 
-mutable struct MapFromKernel{S,M,T,N,K,V,C} <: Map{S,M,T,N}
+struct MapFromKernel{S,M,T,N,K,V,C} <: Map{S,M,T,N}
   kernel::K
   inputs::V
   caches::C
@@ -25,27 +26,29 @@ function MapFromKernel(k::ArrayKernel,v::Vararg)
   T = _compute_T(k,v)
   N = _compute_N(k,v)
   K = typeof(k)
-  V = typeof(v)
+  _v = Container(v...)
+  V = typeof(_v)
   c = _create_caches(v)
-  C = typeof(c)
-  MapFromKernel{S,M,T,N,K,V,C}(k,v,c)
+  _c = Container(c...)
+  C = typeof(_c)
+  MapFromKernel{S,M,T,N,K,V,C}(k,_v,_c)
 end
 
 function evaluate!(
   m::MapFromKernel{S,M,T,N},
   points::AbstractArray{<:S,M},
   v::AbstractArray{T,N}) where {S,M,T,N}
-  _evaluate_inputs!(points,m.caches...,m.inputs...)
-  compute_value!(v,m.kernel,m.caches...)
+  _evaluate_inputs!(points,_cv(m.caches)...,_cv(m.inputs)...)
+  compute_value!(v,m.kernel,_cv(m.caches)...)
 end
 
 function return_size(m::MapFromKernel{S,M},s::NTuple{M,Int}) where {S,M}
-  z = _return_sizes(s,m.inputs...)
+  z = _return_sizes(s,_cv(m.inputs)...)
   compute_size(m.kernel,z...)
 end
 
 function setinputs!(m::MapFromKernel,a::Vararg)
-  m.inputs = a
+  _cv!(m.inputs,a...)
 end
 
 function _create_caches(v)

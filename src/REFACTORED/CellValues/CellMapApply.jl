@@ -8,6 +8,7 @@ using Gridap.CellNumberApply: _getvalues
 using Gridap.MapApply: _compute_S, _compute_M, setinputs!
 using Gridap.MapApply: MapFromKernel
 using Gridap.Kernels: _compute_N, _compute_T
+using Gridap.CellNumberApply: Container, _cv, _container_type
 
 import Gridap: evaluate
 import Gridap.MapApply: _stype, _m
@@ -37,17 +38,18 @@ function CellMapFromKernel(k::ArrayKernel,v::Vararg{<:CellValue})
   N = _compute_N(k,v)
   R = _compute_R(k,v)
   K = typeof(k)
-  V = typeof(v)
-  CellMapFromKernel{S,M,T,N,R,K,V}(k,v)
+  _v = Container(v...)
+  V = typeof(_v)
+  CellMapFromKernel{S,M,T,N,R,K,V}(k,_v)
 end
 
 function length(self::CellMapFromKernel)
-  vi, = self.cellvalues
+  vi, = _cv(self.cellvalues)
   length(vi)
 end
 
 @inline function iterate(self::CellMapFromKernel{T,N}) where {T,N}
-  zipped = zip(self.cellvalues...)
+  zipped = zip(_cv(self.cellvalues)...)
   znext = iterate(zipped)
   if znext === nothing; return nothing end
   a, zstate = znext
@@ -71,7 +73,7 @@ end
 
 function evaluate(
   m::CellMapFromKernel{S,M,T,N},a::CellArray{<:S,M}) where {S,M,T,N}
-  v = [ _eval(mi,a) for mi in m.cellvalues ]
+  v = [ _eval(mi,a) for mi in _cv(m.cellvalues) ]
   apply(m.kernel,v...)
 end
 
@@ -86,8 +88,8 @@ function _compute_R(k,v)
   T = _compute_T(k,m)
   N = _compute_N(k,m)
   K = typeof(k)
-  V = Tuple{m...}
-  C = Tuple{[ _cache_type(mi) for mi in m]...}
+  V = _container_type(m...)
+  C = _container_type([ _cache_type(mi) for mi in m]...)
   MapFromKernel{S,M,T,N,K,V,C}
 end
 
@@ -124,21 +126,22 @@ function IndexCellMapFromKernel(k::ArrayKernel,v::Vararg{<:CellValue})
   N = _compute_N(k,v)
   R = _compute_R(k,v)
   K = typeof(k)
-  V = typeof(v)
+  _v = Container(v...)
+  V = typeof(_v)
   F = Union{Nothing,R}
   cache = CachedValue{F}(nothing)
-  IndexCellMapFromKernel{S,M,T,N,R,K,V,F}(k,v,cache)
+  IndexCellMapFromKernel{S,M,T,N,R,K,V,F}(k,_v,cache)
 end
 
 function length(self::IndexCellMapFromKernel)
-  vi, = self.cellvalues
+  vi, = _cv(self.cellvalues)
   length(vi)
 end
 
 size(self::IndexCellMapFromKernel) = (length(self),)
 
 function getindex(self::IndexCellMapFromKernel,i::Integer)
-  vals = _getvalues(i,self.cellvalues...)
+  vals = _getvalues(i,_cv(self.cellvalues)...)
   if self.cache.value === nothing
     self.cache.value = MapFromKernel(self.kernel,vals...)
   else
@@ -149,13 +152,13 @@ end
 
 function evaluate(
   m::IndexCellMapFromKernel{S,M,T,N},a::IndexCellArray{<:S,M}) where {S,M,T,N}
-  v = [ _eval(mi,a) for mi in m.cellvalues ]
+  v = [ _eval(mi,a) for mi in _cv(m.cellvalues) ]
   apply(m.kernel,v...)
 end
 
 function evaluate(
   m::IndexCellMapFromKernel{S,M,T,N},a::CellArray{<:S,M}) where {S,M,T,N}
-  v = [ _eval(mi,a) for mi in m.cellvalues ]
+  v = [ _eval(mi,a) for mi in _cv(m.cellvalues) ]
   apply(m.kernel,v...)
 end
 
