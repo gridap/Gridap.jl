@@ -4,6 +4,10 @@ using Test
 using Gridap
 using Gridap.Helpers
 
+export HasGradientStyle
+export GradientYesStyle
+export GradientNotStyle
+
 export IterCellFieldLike
 export IndexCellFieldLike
 export CellFieldLike
@@ -29,6 +33,16 @@ export test_index_cell_basis
 
 import Gridap: gradient
 
+"""
+Trait used to determine if a `CellField` and `CellBasis` type has gradient.
+This trait is used to precompute gradients and store them for efficiency
+"""
+abstract type HasGradientStyle end
+
+struct GradientYesStyle <: HasGradientStyle end
+
+struct GradientNotStyle <: HasGradientStyle end
+
 const IterCellFieldLike{D,T<:FieldValue,N,R<:FieldLike{D,T,N}} = IterCellValue{R}
 
 const IndexCellFieldLike{D,T<:FieldValue,N,C,R<:FieldLike{D,T,N}} = IndexCellValue{R,C}
@@ -37,6 +51,12 @@ const IndexCellFieldLike{D,T<:FieldValue,N,C,R<:FieldLike{D,T,N}} = IndexCellVal
 Umbrella type for CellField and CellBasis
 """
 const CellFieldLike{D,T<:FieldValue,N} = Union{IterCellFieldLike{D,T,N},IndexCellFieldLike{D,T,N}}
+
+HasGradientStyle(::Type{<:CellFieldLike}) = GradientNotStyle()
+
+function HasGradientStyle(::T) where T <:CellFieldLike
+  HasGradientStyle(T)
+end
 
 """
 Returns another CellField or CellBasis object representing the gradient of the given one.
@@ -107,6 +127,7 @@ function test_iter_cell_field_like(
   g::AbstractArray{<:AbstractArray{G,N}}) where {D,T,G,N}
 
   test_iter_cell_map(f,x,v)
+  @test HasGradientStyle(f) == GradientYesStyle()
   fg = gradient(f)
   test_iter_cell_map(fg,x,g)
   fg2 = gradient(f)
@@ -120,6 +141,7 @@ function test_index_cell_field_like(
   g::AbstractArray{<:AbstractArray{G,N}}) where {D,T,G,N}
 
   test_index_cell_map(f,x,v)
+  @test HasGradientStyle(f) == GradientYesStyle()
   fg = gradient(f)
   test_index_cell_map(fg,x,g)
   fg2 = gradient(f)

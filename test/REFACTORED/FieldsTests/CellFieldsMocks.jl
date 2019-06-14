@@ -1,8 +1,7 @@
 module CellFieldsMocks
 
 using Gridap
-using Gridap.CellFieldsOperations: IterCellFieldLikeAndGradient
-using Gridap.CellFieldsOperations: IndexCellFieldLikeAndGradient
+using Gridap.CellFieldsOperations: _merge_val_and_grad
 
 using ..CellValuesMocks
 using ..FieldsMocks
@@ -17,7 +16,7 @@ function IterCellFieldMock(D::Int,X::Type,l::Int)
   g = gradient(f)
   cf = TestIterCellValue(f,l)
   cg = TestIterCellValue(g,l)
-  IterCellFieldLikeAndGradient(cf,cg)
+  _merge_val_and_grad(cf,cg)
 end
 
 function IndexCellFieldMock(D::Int,X::Type,l::Int)
@@ -25,7 +24,7 @@ function IndexCellFieldMock(D::Int,X::Type,l::Int)
   g = gradient(f)
   cf = TestIndexCellValue(f,l)
   cg = TestIndexCellValue(g,l)
-  IndexCellFieldLikeAndGradient(cf,cg)
+  _merge_val_and_grad(cf,cg)
 end
 
 function IterCellBasisMock(D::Int,X::Type,l::Int)
@@ -33,7 +32,7 @@ function IterCellBasisMock(D::Int,X::Type,l::Int)
   g = gradient(f)
   cf = TestIterCellValue(f,l)
   cg = TestIterCellValue(g,l)
-  IterCellFieldLikeAndGradient(cf,cg)
+  _merge_val_and_grad(cf,cg)
 end
 
 function IndexCellBasisMock(D::Int,X::Type,l::Int)
@@ -41,7 +40,7 @@ function IndexCellBasisMock(D::Int,X::Type,l::Int)
   g = gradient(f)
   cf = TestIndexCellValue(f,l)
   cg = TestIndexCellValue(g,l)
-  IndexCellFieldLikeAndGradient(cf,cg)
+  _merge_val_and_grad(cf,cg)
 end
 
 end # module
