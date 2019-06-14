@@ -25,7 +25,7 @@ for op in (:+,:-)
   end
 end
 
-struct FieldLikeAndGradient{D,T,N,V,G} <: FieldLike{D,T,N}
+mutable struct FieldLikeAndGradient{D,T,N,V,G} <: FieldLike{D,T,N}
   val::V
   grad::G
 end

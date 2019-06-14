@@ -1,9 +1,11 @@
 module CellFieldsOperations
 
 using Gridap
+using Gridap.CachedStructFields
 using Gridap.Kernels: VarinnerKernel
 using Gridap.Kernels: LinCombKernel
 using Gridap.Kernels: PhysGradKernel
+using Gridap.FieldsOperations: FieldLikeAndGradient
 using Base: @pure
 using Base: @propagate_inbounds
 
@@ -137,7 +139,7 @@ end
 function IterCellFieldLikeAndGradient(
   val::IterCellFieldLike{D,T,N}, grad::CellFieldLike{D,TG,N}) where {D,T,TG,N}
   @assert length(val) == length(grad)
-  R = eltype(val)
+  R = FieldLikeAndGradient{D,T,N,eltype(val),eltype(grad)}
   V = typeof(val)
   G = typeof(grad)
   IterCellFieldLikeAndGradient{D,T,N,R,V,G}(val,grad)
@@ -151,26 +153,51 @@ function evaluate(cm::IterCellFieldLikeAndGradient{D},ca::CellPoints{D}) where D
   evaluate(cm.val,ca)
 end
 
-@inline iterate(f::IterCellFieldLikeAndGradient) = iterate(f.val)
+@inline function iterate(f::IterCellFieldLikeAndGradient)
+  fnext = iterate(f.val)
+  gnext = iterate(f.grad)
+  if fnext === nothing; return nothing; end
+  if gnext === nothing; return nothing; end
+  fi, fstate = fnext
+  gi, gstate = gnext
+  v = FieldLikeAndGradient(fi,gi)
+  state = (v,fstate,gstate)
+  (v,state)
+end
 
-@inline iterate(f::IterCellFieldLikeAndGradient,state) = iterate(f.val,state)
+@inline function iterate(f::IterCellFieldLikeAndGradient,state)
+  v, fstate, gstate = state
+  fnext = iterate(f.val,fstate)
+  gnext = iterate(f.grad,gstate)
+  if fnext === nothing; return nothing; end
+  if gnext === nothing; return nothing; end
+  fi, fstate = fnext
+  gi, gstate = gnext
+  v.val = fi
+  v.grad = gi
+  state = (v,fstate,gstate)
+  (v,state)
+end
 
 length(f::IterCellFieldLikeAndGradient) = length(f.val)
 
 struct IndexCellFieldLikeAndGradient{
-  D,T,N,C,R<:FieldLike{D,T,N},V,G} <: IndexCellValue{R,C}
+  D,T,N,C,R<:FieldLike{D,T,N},V,G,F} <: IndexCellValue{R,C}
   val::V
   grad::G
+  cache::CachedStructField{F}
 end
 
 function IndexCellFieldLikeAndGradient(
   val::IndexCellFieldLike{D,T,N,C},
   grad::IndexCellFieldLike{D,TG,N}) where {D,T,TG,N,C}
   @assert length(val) == length(grad)
-  R = eltype(val)
+  R = FieldLikeAndGradient{D,T,N,eltype(val),eltype(grad)}
+  F = Union{Nothing,R}
   V = typeof(val)
   G = typeof(grad)
-  IndexCellFieldLikeAndGradient{D,T,N,C,R,V,G}(val,grad)
+  cache = CachedStructField{F}(nothing)
+  IndexCellFieldLikeAndGradient{D,T,N,C,R,V,G,F}(val,grad,cache)
 end
 
 HasGradientStyle(::Type{<:IndexCellFieldLikeAndGradient}) = GradientYesStyle()
@@ -191,7 +218,15 @@ end
 
 @propagate_inbounds function getindex(
   f::IndexCellFieldLikeAndGradient,i::Vararg{<:Integer})
-  f.val[i...]
+  fi = f.val[i...]
+  gi = f.grad[i...]
+  if f.cache.value === nothing
+    f.cache.value = FieldLikeAndGradient(fi,gi)
+  else
+    f.cache.value.val = fi
+    f.cache.value.grad = gi
+  end
+  f.cache.value
 end
 
 end # module

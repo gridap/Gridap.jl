@@ -131,12 +131,18 @@ function test_iter_cell_field_like(
   v::AbstractArray{<:AbstractArray{T,N}},
   g::AbstractArray{<:AbstractArray{G,N}}) where {D,T,G,N}
 
+  _test_iter_cell_field_like(f,x,v,g)
+
+end
+
+function _test_iter_cell_field_like(f,x,v,g)
   test_iter_cell_map(f,x,v)
   @test HasGradientStyle(f) == GradientYesStyle()
   fg = gradient(f)
   test_iter_cell_map(fg,x,g)
   fg2 = gradient(f)
   @test fg === fg2
+  _test_field_like_iteration(f,x,v,g)
 end
 
 function test_index_cell_field_like(
@@ -151,18 +157,16 @@ function test_index_cell_field_like(
   test_index_cell_map(fg,x,g)
   fg2 = gradient(f)
   @test fg === fg2
+  _test_field_like_iteration(f,x,v,g)
 end
 
-#function _test_field_like_iteration(m,x,v,g)
-#
-#  for (mi,xi,vi,gi) in zip(m,x,v,g)
-#    @assert isa(mi,FieldLike)
-#    @assert _eq(evaluate(mi,xi),vi)
-#    @assert _eq(evaluate(gradient(mi),xi),vi)
-#    @assert typeof(mi) == eltype(m)
-#  end
-#
-#end
+function _test_field_like_iteration(m,x,v,g)
+  for (mi,xi,vi,gi) in zip(m,x,v,g)
+  #  @assert _eq(evaluate(mi,xi),vi)
+    @assert _eq(evaluate(gradient(mi),xi),gi)
+    @assert typeof(mi) == eltype(m)
+  end
+end
 
 function test_iter_cell_field(
   f::IterCellField{D,T},
@@ -170,7 +174,7 @@ function test_iter_cell_field(
   v::AbstractArray{<:AbstractVector{T}},
   g::AbstractArray{<:AbstractVector{G}}) where {D,T,G}
 
-  test_iter_cell_field_like(f,x,v,g)
+  _test_iter_cell_field_like(f,x,v,g)
 end
 
 function test_iter_cell_field_without_grad(
@@ -204,7 +208,7 @@ function test_iter_cell_basis(
   v::AbstractArray{<:AbstractMatrix{T}},
   g::AbstractArray{<:AbstractMatrix{G}}) where {D,T,G}
 
-  test_iter_cell_field_like(f,x,v,g)
+  _test_iter_cell_field_like(f,x,v,g)
 end
 
 function test_iter_cell_basis_without_grad(

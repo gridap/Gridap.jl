@@ -24,7 +24,7 @@ const FieldLike{D,T<:FieldValue,N} = Map{Point{D},1,T,N}
 Create the gradient of a `Field` or `Basis`
 For efficiency reasons, different calls to this function should return the same object
 """
-function gradient(this::FieldLike{D,T,N})::FieldLike{D,G,N} where {D,T,G,N}
+function gradient(this::FieldLike)
   @abstractmethod
 end
 

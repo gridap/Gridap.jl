@@ -8,5 +8,7 @@ using Test
 
 @testset "CachedSubVectors" begin include("CachedSubVectorsTests.jl") end
 
+@testset "CachedStructFields" begin include("CachedStructFieldsTests.jl") end
+
 end # module
 
