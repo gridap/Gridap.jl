@@ -6,6 +6,7 @@ using Gridap.Helpers
 using Gridap.CachedArrays
 using Gridap.CellValues: _test_iter_cell_value
 using Gridap.CellValues: _test_index_cell_value
+using Gridap.CellValues: _eq
 
 export CellMap
 export IterCellMap
@@ -174,7 +175,7 @@ function test_index_cell_map_with_index_arg(
     mi = m[i]
     bi = b[i]
     ci = c[i]
-    @assert bi ≈ ci
+    @assert _eq(bi,ci)
   end
 
   for i in 1:length(m)
@@ -182,7 +183,7 @@ function test_index_cell_map_with_index_arg(
     ai = a[i]
     bi = b[i]
     @assert isa(mi,Map{S,M,T,N})
-    @assert evaluate(mi,ai) ≈ bi
+    @assert _eq(evaluate(mi,ai),bi)
     @assert typeof(mi) == eltype(m)
   end
 

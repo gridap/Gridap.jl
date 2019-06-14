@@ -3,6 +3,7 @@ module CellFields
 using Test
 using Gridap
 using Gridap.Helpers
+using Gridap.CellValues: _eq
 
 export HasGradientStyle
 export GradientYesStyle
@@ -151,6 +152,17 @@ function test_index_cell_field_like(
   fg2 = gradient(f)
   @test fg === fg2
 end
+
+#function _test_field_like_iteration(m,x,v,g)
+#
+#  for (mi,xi,vi,gi) in zip(m,x,v,g)
+#    @assert isa(mi,FieldLike)
+#    @assert _eq(evaluate(mi,xi),vi)
+#    @assert _eq(evaluate(gradient(mi),xi),vi)
+#    @assert typeof(mi) == eltype(m)
+#  end
+#
+#end
 
 function test_iter_cell_field(
   f::IterCellField{D,T},
