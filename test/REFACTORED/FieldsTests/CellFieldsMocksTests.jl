@@ -47,4 +47,19 @@ cp = TestIndexCellValue(p,l)
 test_index_cell_basis(cf,cp,v,g)
 test_index_cell_basis_without_grad(cf,cp,v)
 
+cf = IterCellGeomapMock(2,Int,l)
+cp = TestIndexCellValue(p,l)
+
+f,_ = iterate(cf)
+fg = gradient(f)
+r = evaluate(f,p)
+rg = evaluate(fg,p)
+v = [r for i in 1:l]
+g = [rg for i in 1:l]
+
+test_iter_cell_field(cf,cp,v,g)
+
+cf = IndexCellGeomapMock(2,Int,l)
+test_index_cell_field(cf,cp,v,g)
+
 end # module

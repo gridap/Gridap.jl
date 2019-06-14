@@ -160,5 +160,25 @@ test_iter_cell_array(cv,v)
 cv = evaluate(∇(cr),cp)
 test_iter_cell_array(cv,vg)
 
+# attachgeomap
+
+cf = IterCellGeomapMock(2,Float64,l)
+cb = IterCellBasisMock(2,Float64,l)
+
+b,_ = iterate(cb)
+rb = evaluate(b,p)
+rbg = evaluate(∇(b),p)
+
+f,_ = iterate(cf)
+r = evaluate(∇(f),p)
+
+ndofs, npoins = size(rb)
+v = [ rb for i in 1:l ]
+g = [ reshape(inv.(r),1,npoins) .* rbg for i in 1:l ]
+
+cb2 = attachgeomap(cb,cf)
+
+test_iter_cell_basis(cb2,cp,v,g)
+
 end # module
 
