@@ -30,6 +30,10 @@ export test_iter_cell_field
 export test_index_cell_field
 export test_iter_cell_basis
 export test_index_cell_basis
+export test_iter_cell_field_without_grad
+export test_index_cell_field_without_grad
+export test_iter_cell_basis_without_grad
+export test_index_cell_basis_without_grad
 
 import Gridap: gradient
 
@@ -157,6 +161,14 @@ function test_iter_cell_field(
   test_iter_cell_field_like(f,x,v,g)
 end
 
+function test_iter_cell_field_without_grad(
+  f::IterCellField{D,T},
+  x::CellPoints{D},
+  v::AbstractArray{<:AbstractVector{T}}) where {D,T}
+
+  test_iter_cell_map(f,x,v)
+end
+
 function test_index_cell_field(
   f::IndexCellField{D,T},
   x::CellPoints{D},
@@ -164,6 +176,14 @@ function test_index_cell_field(
   g::AbstractArray{<:AbstractVector{G}}) where {D,T,G}
 
   test_index_cell_field_like(f,x,v,g)
+end
+
+function test_index_cell_field_without_grad(
+  f::IndexCellField{D,T},
+  x::CellPoints{D},
+  v::AbstractArray{<:AbstractVector{T}}) where {D,T}
+
+  test_index_cell_map(f,x,v)
 end
 
 function test_iter_cell_basis(
@@ -175,6 +195,14 @@ function test_iter_cell_basis(
   test_iter_cell_field_like(f,x,v,g)
 end
 
+function test_iter_cell_basis_without_grad(
+  f::IterCellBasis{D,T},
+  x::CellPoints{D},
+  v::AbstractArray{<:AbstractMatrix{T}}) where {D,T}
+
+  test_iter_cell_map(f,x,v)
+end
+
 function test_index_cell_basis(
   f::IndexCellBasis{D,T},
   x::CellPoints{D},
@@ -182,6 +210,14 @@ function test_index_cell_basis(
   g::AbstractArray{<:AbstractMatrix{G}}) where {D,T,G}
 
   test_index_cell_field_like(f,x,v,g)
+end
+
+function test_index_cell_basis_without_grad(
+  f::IndexCellBasis{D,T},
+  x::CellPoints{D},
+  v::AbstractArray{<:AbstractMatrix{T}}) where {D,T}
+
+  test_index_cell_map(f,x,v)
 end
 
 end # module

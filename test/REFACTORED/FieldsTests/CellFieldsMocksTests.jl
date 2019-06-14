@@ -22,10 +22,12 @@ v = [r for i in 1:l]
 g = [rg for i in 1:l]
 
 test_iter_cell_field(cf,cp,v,g)
+test_iter_cell_field_without_grad(cf,cp,v)
 
 cf = IndexCellFieldMock(2,Int,l)
 cp = TestIndexCellValue(p,l)
 test_index_cell_field(cf,cp,v,g)
+test_index_cell_field_without_grad(cf,cp,v)
 
 cf = IterCellBasisMock(2,Int,l)
 cp = TestIterCellValue(p,l)
@@ -38,9 +40,11 @@ v = [r for i in 1:l]
 g = [rg for i in 1:l]
 
 test_iter_cell_basis(cf,cp,v,g)
+test_iter_cell_basis_without_grad(cf,cp,v)
 
 cf = IndexCellBasisMock(2,Int,l)
 cp = TestIndexCellValue(p,l)
 test_index_cell_basis(cf,cp,v,g)
+test_index_cell_basis_without_grad(cf,cp,v)
 
 end # module
