@@ -6,6 +6,7 @@ export FieldValue
 export Point
 export VectorValue
 export TensorValue
+export MultiValue
 export inner
 export outer
 export meas

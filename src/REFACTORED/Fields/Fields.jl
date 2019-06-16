@@ -14,6 +14,7 @@ export ∇
 export test_fieldlike
 export test_field
 export test_basis
+import Base: length
 
 """
 Umbrella type for Field and Basis
@@ -46,10 +47,12 @@ whereas the second dimension corresponds to the evaluation points.
 """
 const Basis{D,T<:FieldValue} = FieldLike{D,T,2}
 
-function num_dofs(b::Basis)
+@inline function num_dofs(b::Basis)
   n, = return_size(b,(1,))
   n
 end
+
+@inline length(b::Basis) = num_dofs(b)
 
 """
 Abstract geometry map
@@ -89,6 +92,8 @@ function test_basis(
   test_fieldlike(m,x,v,g)
   mg = gradient(m)
   nd = num_dofs(mg)
+  @test nd == size(g,1)
+  nd = length(mg)
   @test nd == size(g,1)
 end
 
