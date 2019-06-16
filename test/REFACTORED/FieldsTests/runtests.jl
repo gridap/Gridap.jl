@@ -1,4 +1,4 @@
-module FieldsTests
+module FieldsTestsAll
 
 using Test
 
