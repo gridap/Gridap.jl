@@ -33,4 +33,12 @@ rg = r .+ r
 
 test_basis(v,p,rv,rg)
 
+change = ones(Int,3,3)
+basis = MockBasis(2,Int)
+v = change_basis(basis,change)
+
+rv = change*evaluate(basis,p)
+rg = change*evaluate(∇(basis),p)
+test_basis(v,p,rv,rg)
+
 end # module
