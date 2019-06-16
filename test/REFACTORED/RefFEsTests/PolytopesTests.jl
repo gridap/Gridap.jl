@@ -1,7 +1,7 @@
+module PolytopesTests
+
 ##
 using Gridap, Test
-using Gridap.FieldValues
-using Gridap.Polytopes
 using Gridap.Polytopes: PointInt
 
 # Developing the change of basis for all n-faces of a polytope
@@ -73,7 +73,7 @@ extrusion = PointInt{D}(1,1,1)
 polytope = Polytope(extrusion)
 nodes = NodesArray(polytope,orders)
 @test length(nodes.coordinates)==60
-@test nodes.coordinates[33] ≈ [1.0, 1.0/3.0, 0.0]
+@test nodes.coordinates[33] ≈ Point(1.0, 1.0/3.0, 0.0)
 nfacenodes = nodes.closurenfacenodes[end-1]
 coords = nodes.coordinates[nfacenodes,:]
 fco = i -> coords[i][1]
@@ -113,3 +113,6 @@ nf_vs = Gridap.Polytopes._dimfrom_fs_dimto_fs(p,2,0)
 # writevtk(hex,"hex")
 # tet = Polytope(1,2,2)
 # writevtk(tet,"tet")
+
+
+end # module

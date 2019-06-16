@@ -1,14 +1,12 @@
 module Polytopes
 
+using Gridap
 using StaticArrays
 using Base.Cartesian
-using Gridap #@fverdugo to be eliminated
-using Gridap.FieldValues
 
 export Polytope
 export NodesArray
 export NFace
-export dim, numnftypes #@fverdugo really needed?
 export HEX_AXIS, TET_AXIS
 export num_nfaces
 
@@ -20,7 +18,7 @@ const TET_AXIS = 2
 # Concrete structs and their pubic API
 
 const PointInt{D} = SVector{D,Int64} where D
-# @santiagobadia : Probably add Type of coordinates in Point{D}
+# @santiagobadia : Probably add Type of coordinates in Point{D} (@fverdugo: Now we have Point{D,T})
 # @santiagobadia : I will re-think the NodeArray when I have at my disposal
 # the geomap on n-faces, etc. And a clearer definition of the mesh object
 # to discuss with @fverdugo
@@ -90,7 +88,7 @@ end
 Array of nodes for a given polytope and order
 """
 struct NodesArray{D}
-  coordinates::Vector{Point{D}}
+  coordinates::Vector{Point{D,Float64}}
   nfacenodes::Array{Array{Int64,1},1}
   closurenfacenodes::Array{Array{Int64,1},1}
   # @santiagobadia : To be changed to points
@@ -111,7 +109,7 @@ function NodesArray(polytope::Polytope, orders::Array{Int64,1})
   coords = [
   nodescoordinates(orders[i], nodestype="Equispaced") for i=1:D]
   npoints =  prod(ntuple(i -> length(coords[i]), D))
-  points = Vector{Point{D}}(undef,npoints)
+  points = Vector{Point{D,Float64}}(undef,npoints)
   cid = ntuple(i -> 1:length(coords[i]), D)
   cid = CartesianIndices(cid)
   tpcoor = j -> [ coords[i][j[i]] for i ∈ 1:D]
