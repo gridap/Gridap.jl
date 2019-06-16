@@ -9,4 +9,6 @@ using Gridap
 
 @time @testset "Fields" begin include("FieldsTests/runtests.jl") end
 
+@time @testset "RefFEs" begin include("RefFEsTests/runtests.jl") end
+
 end # module
