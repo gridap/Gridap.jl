@@ -23,6 +23,8 @@ coordinates(::CellQuadrature{D} where D )::CellPoints{D} = @abstractmethod
 
 weights(::CellQuadrature)::CellValues{Float64} = @abstractmethod
 
+function CellQuadrature end
+
 # Concrete structs
 
 """
@@ -42,24 +44,5 @@ end
 function weights(self::ConstantCellQuadrature)
   ConstantCellValue(weights(self.value), self.length)
 end
-
-# TODO move to triangulations
-## Helpers
-#
-#"""
-#Factory function to create CellQuadrature objects in a convenient way
-#"""
-#function CellQuadrature(trian::Triangulation;order::Int)
-#  _quadrature(celltypes(trian),order)
-#end
-#
-#_quadrature(ct,order) = @notimplemented
-#
-#function _quadrature(ct::ConstantCellValue{NTuple{Z,Int}},order) where Z
-#  t = celldata(ct)
-#  q = Quadrature(t,order=order)
-#  ConstantCellValue(q,length(ct))
-#  ConstantCellQuadrature(q,length(ct))
-#end
 
 end # module CellQuadratures

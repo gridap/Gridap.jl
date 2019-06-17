@@ -7,6 +7,7 @@ using Gridap.DOFBases: LagrangianDOFBasis
 export RefFE
 export LagrangianRefFE
 export shfbasis
+export polytope
 
 import Gridap: evaluate, evaluate!
 

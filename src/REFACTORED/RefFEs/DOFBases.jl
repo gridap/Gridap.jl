@@ -55,11 +55,11 @@ basis
 function evaluate!(this::LagrangianDOFBasis{D,T},
   prebasis::Basis{D,T}, b::AbstractMatrix{Float64}) where {D,T}
   vals = evaluate(prebasis,this.nodes)
-  l = length(prebasis); lt = length(T)
+  l = length(prebasis); lt = _length(T)
   # E = eltype(T)
   # b = Array{E,2}(undef,l, l)
   nnd = length(this.nodes)
-  @assert nnd*length(T) == length(prebasis)
+  @assert nnd*_length(T) == length(prebasis)
   function computeb!(a,b,lt,nnd)
     for k in 1:lt
       off = nnd*(k-1)
@@ -79,7 +79,7 @@ Evaluate the Lagrangian DOFs basis (i.e., nodal values) for a given field in
 the reference space
 """
 function numlocaldofs(this::LagrangianDOFBasis{D,T}) where {D,T}
-  lt = length(T)
+  lt = _length(T)
   # E = eltype(T)
   nnd = length(this.nodes)
   # return b = Vector{E}(undef,lt*nnd)
@@ -95,7 +95,7 @@ function evaluate!(this::LagrangianDOFBasis{D,T},
   # importing it in all submodules
   # This way we could use the same evaluate for bases and fields...
   # @santiagobadia : TO BE DONE
-  lt = length(T)
+  lt = _length(T)
   # E = eltype(T)
   nnd = length(this.nodes)
   # b = Vector{E}(undef,lt*nnd)
@@ -110,5 +110,9 @@ function evaluate!(this::LagrangianDOFBasis{D,T},
   computeb!(vals,b,lt,nnd)
   return b
 end
+
+_length(::Type{<:Real}) = 1
+
+_length(::Type{T}) where T = length(T)
 
 end # module
