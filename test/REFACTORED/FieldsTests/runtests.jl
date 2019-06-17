@@ -16,6 +16,8 @@ include("CellFieldsMocks.jl")
 
 @testset "FieldsOperations" begin include("FieldsOperationsTests.jl") end
 
+@testset "AnalyticalFields" begin include("AnalyticalFieldsTests.jl") end
+
 @testset "CellFieldsMocks" begin include("CellFieldsMocksTests.jl") end
 
 @testset "CellFieldsOperations" begin include("CellFieldsOperationsTests.jl") end
