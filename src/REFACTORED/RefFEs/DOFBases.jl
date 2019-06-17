@@ -3,6 +3,7 @@ module DOFBases
 using Gridap
 using Gridap.Helpers
 
+using ..Polytopes
 export DOFBasis
 
 import Gridap: evaluate, evaluate!

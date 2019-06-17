@@ -42,6 +42,10 @@ function MonomialBasis(T::Type,orders::NTuple{D,Int}) where D
   PolynomialBasis(basis)
 end
 
+function MonomialBasis(T::Type,orders::Vector{Int})
+  MonomialBasis(T,tuple(orders...))
+end
+
 """
 Construct a PolynomialBasis from a given TensorPolynomialBasis of the
 TensorPolynomialBases package.

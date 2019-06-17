@@ -2,6 +2,9 @@ module RefFEs
 
 using Gridap
 using Gridap.Helpers
+using ..Polytopes
+using ..DOFBases
+using ..DOFBases: LagrangianDOFBasis
 
 export RefFE
 export LagrangianRefFE
@@ -40,8 +43,9 @@ the shape functions.
 struct LagrangianRefFE{D,T} <: RefFE{D,T}
   polytope::Polytope{D}
   dofbasis::LagrangianDOFBasis{D,T}
-  shfbasis::PolynomialBasisWithChangeOfBasis{D,T}
+  shfbasis::Basis{D,T}
   nfacedofs::Vector{Vector{Int}}
+  # this type is unstable
 end
 
 function LagrangianRefFE{D,T}(polytope::Polytope{D},
@@ -52,7 +56,7 @@ function LagrangianRefFE{D,T}(polytope::Polytope{D},
   aux = zeros(Float64,numlocaldofs(dofsb),numlocaldofs(dofsb))
   @assert numlocaldofs(dofsb) == length(prebasis)
   changeofbasis=inv(evaluate!(dofsb,prebasis,aux))
-  basis = PolynomialBasisWithChangeOfBasis{D,T}(prebasis, changeofbasis)
+  basis = change_basis(prebasis, changeofbasis)
   nfacedofs=nodes.nfacenodes
   LagrangianRefFE{D,T}(polytope, dofsb, basis, nfacedofs)
 end
