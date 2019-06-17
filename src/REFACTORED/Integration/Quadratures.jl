@@ -3,16 +3,16 @@ module Quadratures
 # Dependencies of this module
 
 using QuadGK: gauss
-using Gridap: flatten
+using Gridap
 using Gridap.Helpers
-using Gridap.FieldValues
-using Gridap.Polytopes
+using StaticArrays
 
 # Functionality provided by this module
 
 export Quadrature
 export TensorProductQuadrature
-import Gridap: coordinates, weights
+export coordinates
+export weights
 
 # Abstract types and interfaces
 
@@ -21,7 +21,7 @@ Abstract type representing a quadrature rule on a Polytope in a space of D dimen
 """
 abstract type Quadrature{D} end
 
-coordinates(::Quadrature{D} where D)::Array{Point{D},1} = @abstractmethod
+coordinates(::Quadrature{D} where D)::Array{Point{D,Float64},1} = @abstractmethod
 
 weights(::Quadrature)::Array{Float64,1} = @abstractmethod
 
@@ -40,14 +40,14 @@ end
 Tensor product quadrature rule (nodes and weights) on a hyper cube [-1,1]^D
 """
 struct TensorProductQuadrature{D} <: Quadrature{D}
-  coords::Array{Point{D},1}
+  coords::Array{Point{D,Float64},1}
   weights::Array{Float64,1}
 end
 
 function TensorProductQuadrature(;orders::NTuple{D,Int}) where D
     @assert D == length(orders)
     npoints = [ ceil(Int,(orders[i]+1.0)/2.0) for i in 1:D ]
-    quads = [ gauss( eltype(Point{D}), npoints[i] ) for i in 1:D ]
+    quads = [ gauss( eltype(Point{D,Float64}), npoints[i] ) for i in 1:D ]
     (coords, weights) = _tensor_product(quads,npoints,Val(D))
     TensorProductQuadrature{D}(coords,weights)
 end
@@ -66,15 +66,18 @@ end
 function _tensor_product(quads,npoints,::Val{D}) where D
   @assert length(quads) == D
   @assert length(npoints) == D
-  coords = Array{Point{D},D}(undef,tuple(npoints...))
-  weights = Array{Float64,D}(undef,tuple(npoints...))
-  _tensor_product!(quads,coords,weights)
-  (flatten(coords), flatten(weights))
+  cis = CartesianIndices(tuple(npoints...))
+  n = prod(npoints)
+  coords = Vector{Point{D,Float64}}(undef,n)
+  weights = Vector{Float64}(undef,n)
+  _tensor_product!(quads,coords,weights,cis,D)
+  (coords, weights)
 end
 
-function _tensor_product!(quads,coords::Array{Point{D},D},weights) where D
-  p = MPoint{D}(zeros(D))
-  for ci in CartesianIndices(coords)
+function _tensor_product!(quads,coords,weights,cis,D)
+  p = zero(MVector{D,Float64})
+  lis = LinearIndices(cis)
+  for ci in cis
     p[:] = 0.0
     w = 1.0
     for d in 1:D
@@ -83,8 +86,9 @@ function _tensor_product!(quads,coords::Array{Point{D},D},weights) where D
       p[d] = xi
       w *= wi
     end
-    coords[ci] = p
-    weights[ci] = w
+    li = lis[ci]
+    coords[li] = p
+    weights[li] = w
   end
 end
 

@@ -11,4 +11,6 @@ using Gridap
 
 @time @testset "RefFEs" begin include("RefFEsTests/runtests.jl") end
 
+@time @testset "Integration" begin include("IntegrationTests/runtests.jl") end
+
 end # module

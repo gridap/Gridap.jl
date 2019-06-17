@@ -1,11 +1,7 @@
 module QuadraturesTests
 
 using Test
-
-using Gridap.FieldValues
-using Gridap.Quadratures
-using Gridap.Polytopes
-using Gridap: coordinates, weights
+using Gridap
 
 const D = 2
 quad = TensorProductQuadrature(orders=(2,4))
@@ -14,7 +10,7 @@ coords_ref = [
   -0.57735 0.57735 -0.57735 0.57735 -0.57735 0.57735;
   -0.774597 -0.774597 0.0 0.0 0.774597 0.774597]
 
-@test isa(coordinates(quad),Array{Point{D},1})
+@test isa(coordinates(quad),Array{Point{D,Float64},1})
 @test isa(weights(quad),Array{Float64,1})
 
 coords = coordinates(quad)
