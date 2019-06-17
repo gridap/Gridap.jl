@@ -2,9 +2,7 @@ module RefFEs
 
 using Gridap
 using Gridap.Helpers
-using ..Polytopes
-using ..DOFBases
-using ..DOFBases: LagrangianDOFBasis
+using Gridap.DOFBases: LagrangianDOFBasis
 
 export RefFE
 export LagrangianRefFE
@@ -52,7 +50,7 @@ function LagrangianRefFE{D,T}(polytope::Polytope{D},
   orders::Array{Int64,1}) where {D,T}
   nodes=NodesArray(polytope,orders)
   dofsb = LagrangianDOFBasis{D,T}(nodes.coordinates)
-  prebasis = TensorProductMonomialBasis{D,T}(orders)
+  prebasis = MonomialBasis(T,orders)
   aux = zeros(Float64,numlocaldofs(dofsb),numlocaldofs(dofsb))
   @assert numlocaldofs(dofsb) == length(prebasis)
   changeofbasis=inv(evaluate!(dofsb,prebasis,aux))

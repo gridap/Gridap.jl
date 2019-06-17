@@ -5,10 +5,6 @@ using Gridap
 using Gridap.Helpers
 using Gridap.CellValues: _eq
 
-export HasGradientStyle
-export GradientYesStyle
-export GradientNotStyle
-
 export IterCellFieldLike
 export IndexCellFieldLike
 export CellFieldLike
@@ -37,16 +33,7 @@ export test_iter_cell_basis_without_grad
 export test_index_cell_basis_without_grad
 
 import Gridap: gradient
-
-"""
-Trait used to determine if a `CellField` and `CellBasis` type has gradient.
-This trait is used to precompute gradients and store them for efficiency
-"""
-abstract type HasGradientStyle end
-
-struct GradientYesStyle <: HasGradientStyle end
-
-struct GradientNotStyle <: HasGradientStyle end
+import Gridap: HasGradientStyle
 
 const IterCellFieldLike{D,T<:FieldValue,N,R<:FieldLike{D,T,N}} = IterCellValue{R}
 

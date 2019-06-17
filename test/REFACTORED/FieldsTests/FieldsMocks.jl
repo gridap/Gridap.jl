@@ -12,6 +12,7 @@ export MockBasis
 import Gridap: evaluate!
 import Gridap: return_size
 import Gridap: gradient
+import Gridap: HasGradientStyle
 
 struct GradMockField{D,X} <: Field{D,VectorValue{D,X}} end
 
@@ -33,6 +34,8 @@ function evaluate!(
     v[i] = p[1]
   end
 end
+
+HasGradientStyle(::Type{<:MockField}) = GradientYesStyle()
 
 gradient(f::MockField) = f.g
 
@@ -124,6 +127,8 @@ function evaluate!(
     v[i] = 3*p
   end
 end
+
+HasGradientStyle(::Type{<:MockGeomap}) = GradientYesStyle()
 
 gradient(f::MockGeomap) = f.g
 

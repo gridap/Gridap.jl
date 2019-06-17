@@ -8,23 +8,53 @@ import Gridap: evaluate!
 import Gridap: return_size
 import Gridap: gradient
 import Base: +, -
+import Gridap: HasGradientStyle
 
 for op in (:+,:-)
   @eval begin
 
     function ($op)(f::FieldLike)
-      v = apply($op,f,broadcast=true)
-      g = apply($op,gradient(f),broadcast=true)
-      FieldLikeAndGradient(v,g)
+      gs = HasGradientStyle(f)
+      _apply_sum_or_sub($op,f,gs)
     end
 
     function ($op)(a::FieldLike,b::FieldLike)
-      v = apply($op,a,b,broadcast=true)
-      g = apply($op,gradient(a),gradient(b),broadcast=true)
-      FieldLikeAndGradient(v,g)
+      ga = HasGradientStyle(a)
+      gb = HasGradientStyle(b)
+      _apply_sum_or_sub($op,a,b,ga,gb)
     end
 
   end
+end
+
+function AnalyticalField(D::Int,T::Type,fun::Function)
+  h = hasmethod(gradient,(typeof(fun),) )
+  _afield(Val(h),D,T,fun)
+end
+
+function _afield(::Type{true},D,T)
+end
+
+function _apply_sum_or_sub(op,f,::GradientNotStyle)
+  v = apply(op,f,broadcast=true)
+  v
+end
+
+function _apply_sum_or_sub(op,f,::GradientYesStyle)
+  v = apply(op,f,broadcast=true)
+  g = apply(op,gradient(f),broadcast=true)
+  FieldLikeAndGradient(v,g)
+end
+
+function _apply_sum_or_sub(op,a,b,ga,gb)
+  v = apply(op,a,b,broadcast=true)
+  v
+end
+
+function _apply_sum_or_sub(op,a,b,::GradientYesStyle,::GradientYesStyle)
+  v = apply(op,a,b,broadcast=true)
+  g = apply(op,gradient(a),gradient(b),broadcast=true)
+  FieldLikeAndGradient(v,g)
 end
 
 function change_basis(basis::Basis,changeofbasis::Matrix)
@@ -43,6 +73,8 @@ function FieldLikeAndGradient(
   G = typeof(grad)
   FieldLikeAndGradient{D,T,N,V,G}(val,grad)
 end
+
+HasGradientStyle(::Type{<:FieldLikeAndGradient}) = GradientYesStyle()
 
 function evaluate!(
   this::FieldLikeAndGradient{D,T,N},

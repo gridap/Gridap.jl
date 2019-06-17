@@ -5,6 +5,7 @@ using Gridap.Helpers
 
 using ..Polytopes
 export DOFBasis
+export numlocaldofs
 
 import Gridap: evaluate, evaluate!
 
@@ -53,7 +54,7 @@ basis
 """
 function evaluate!(this::LagrangianDOFBasis{D,T},
   prebasis::Basis{D,T}, b::AbstractMatrix{Float64}) where {D,T}
-  vals = Polynomials.evaluate(prebasis,this.nodes)
+  vals = evaluate(prebasis,this.nodes)
   l = length(prebasis); lt = length(T)
   # E = eltype(T)
   # b = Array{E,2}(undef,l, l)
