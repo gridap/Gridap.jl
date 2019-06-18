@@ -8,5 +8,5 @@ include("CellQuadratures.jl")
 include("Triangulations.jl")
 @reexport using Gridap.Triangulations
 
-#include("CellIntegration.jl")
-#@reexport using Gridap.CellIntegration
+include("CellIntegration.jl")
+@reexport using Gridap.CellIntegration

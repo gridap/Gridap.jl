@@ -8,6 +8,6 @@ using Test
 
 @testset "Triangulations" begin include("TriangulationsTests.jl") end
 
-#@testset "CellIntegration" begin include("CellIntegrationTests.jl") end
+@testset "CellIntegration" begin include("CellIntegrationTests.jl") end
 
 end # module

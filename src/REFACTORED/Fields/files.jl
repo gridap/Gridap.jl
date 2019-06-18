@@ -16,3 +16,6 @@ include("CellFields.jl")
 
 include("CellFieldsOperations.jl")
 @reexport using Gridap.CellFieldsOperations
+
+include("ConstantCellFields.jl")
+@reexport using Gridap.ConstantCellFields

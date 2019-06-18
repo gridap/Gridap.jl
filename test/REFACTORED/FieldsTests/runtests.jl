@@ -22,4 +22,6 @@ include("CellFieldsMocks.jl")
 
 @testset "CellFieldsOperations" begin include("CellFieldsOperationsTests.jl") end
 
+@testset "ConstantCellFields" begin include("ConstantCellFieldsTests.jl") end
+
 end # module
