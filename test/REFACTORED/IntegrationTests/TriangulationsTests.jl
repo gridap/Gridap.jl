@@ -11,7 +11,7 @@ trian = CartesianTriangulation(partition)
 
 test_triangulation(trian)
 
-@test num_cells(trian) == 8
+@test ncells(trian) == 8
 
 coords = CellPoints(trian)
 

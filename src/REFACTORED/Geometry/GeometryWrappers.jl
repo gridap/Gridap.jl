@@ -1,10 +1,9 @@
-module Wrappers #@fverdugo rename as RefCells ??
+module GeometryWrappers #@fverdugo rename as RefCells ??
 
 # Dependencies of this module
 
+using Gridap
 using Gridap.Helpers
-using Gridap.Polytopes
-using Gridap.CellValues
 using UnstructuredGrids.Core: VERTEX
 using UnstructuredGrids.Kernels: UNSET
 
@@ -191,4 +190,4 @@ function _remove_nothing(a)
   b .= a
 end
 
-end # module Wrappers
+end # module

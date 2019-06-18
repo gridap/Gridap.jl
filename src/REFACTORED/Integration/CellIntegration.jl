@@ -12,6 +12,7 @@ function integrate(
   w = weights(quad)
   f = evaluate(cellfun,z)
   j = evaluate(gradient(phi),z)
+  # TODO this can be optimized wiht a Kernel
   cellsum( f*(meas(j)*w), dim=N )
 end
 

@@ -1,22 +1,19 @@
-module Unstructured
+module UnstructuredGeometry
+
+using ..Geometry
 
 # Dependencies of this module
 
+using Gridap
 using Gridap.Helpers
-using Gridap.FieldValues
-using Gridap.CellValues
-using Gridap.CellValues.ConstantCellValues
-using Gridap.CellValues.Wrappers
-using Gridap.Geometry
-using Gridap.Polytopes
 using UnstructuredGrids
 
 # Functionality provided by this module
 
 export UnstructuredGrid
 export FlexibleUnstructuredGrid
-import Gridap.Geometry: points, cells, celltypes, cellorders
-import Gridap.Geometry: FullGridGraph
+import ..Geometry: points, cells, celltypes, cellorders
+import ..Geometry: FullGridGraph
 export cellsdata, cellsptrs
 export UGrid
 import UnstructuredGrids: UGrid
@@ -25,7 +22,7 @@ import UnstructuredGrids: UGrid
 Struct representing an unstructured grid with efficient memory layout
 """
 struct UnstructuredGrid{
-  D,Z,P<:AbstractVector{Point{D}},A<:IndexCellValue{NTuple{Z,Int}},B<:IndexCellValue{Int}} <: Grid{D,Z}
+  D,Z,P<:AbstractVector{Point{D,Float64}},A<:IndexCellValue{NTuple{Z,Int}},B<:IndexCellValue{Int}} <: Grid{D,Z}
   points::P
   cells_data::Vector{Int}
   cells_ptrs::Vector{Int}
@@ -42,7 +39,7 @@ function UnstructuredGrid(
 
   dim, npoints = size(points)
   k = reshape(points,(dim*npoints,))
-  _points = reinterpret(Point{dim},k)
+  _points = reinterpret(Point{dim,Float64},k)
 
   UnstructuredGrid(
     _points,
@@ -88,7 +85,7 @@ end
 Struct representing an unstructured grid with efficient memory layout
 """
 struct FlexibleUnstructuredGrid{D,Z,A<:IndexCellValue{NTuple{Z,Int}},B<:IndexCellValue{Int}} <: Grid{D,Z}
-  points::Vector{Point{D}}
+  points::Vector{Point{D,Float64}}
   cells::Vector{Vector{Int}}
   ctypes::A
   corders::B

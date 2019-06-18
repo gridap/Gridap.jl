@@ -1,17 +1,9 @@
 module GeometryTests
 
+include("../../../src/REFACTORED/Geometry/files.jl")
+
 using Test
 using Gridap
-using Gridap.FieldValues
-using Gridap.CellValues
-using Gridap.CellValues.ConstantCellValues
-using Gridap.CellMaps
-using Gridap.Geometry
-using Gridap.Geometry.Cartesian
-using Gridap.Geometry.Unstructured
-using Gridap.Geometry.Wrappers
-using Gridap.Polytopes
-using Gridap.Vtkio
 
 @testset "CartesianGrid" begin
 
@@ -24,13 +16,13 @@ using Gridap.Vtkio
 
   x = points(grid)
 
-  @test isa(x,CellValue{Point{2}})
+  @test isa(x,CellValue{Point{2,Float64}})
 
   @test length(x) == 20
-  @test x[13] == [0.0,1.25]
-  @test x[4] == [1.0,-1.0]
-  @test x[1] == [0.0,-1.0]
-  @test x[end] == [1.0,2.0]
+  @test x[13] == Point(0.0,1.25)
+  @test x[4] == Point(1.0,-1.0)
+  @test x[1] == Point(0.0,-1.0)
+  @test x[end] == Point(1.0,2.0)
 
   t = cells(grid)
 
@@ -43,29 +35,29 @@ using Gridap.Vtkio
 
   c = celltypes(grid)
   @test isa(c,ConstantCellValue{NTuple{2,Int}})
-  @test celldata(c) == (HEX_AXIS,HEX_AXIS)
+  @test c.value == (HEX_AXIS,HEX_AXIS)
   @test length(c) == 12
 
   o = cellorders(grid)
   @test isa(o,ConstantCellValue{Int})
-  @test celldata(o) == 1
+  @test o.value == 1
   @test length(o) == 12
 
-  graph = gridgraph(grid)
+  #graph = gridgraph(grid)
 
-  @test isa(graph,GridGraph)
+  #@test isa(graph,GridGraph)
 
-  @test isa(celltovefs(graph), IndexCellArray{Int,1})
+  #@test isa(celltovefs(graph), IndexCellArray{Int,1})
 
-  @test isa(veftocells(graph), IndexCellArray{Int,1})
+  #@test isa(veftocells(graph), IndexCellArray{Int,1})
 
   trian = Triangulation(grid)
 
-  xe = cellcoordinates(trian)
-  @test isa(xe,CellPoints{2})
+  xe = CellPoints(trian)
+  @test isa(xe,CellPoints{2,Float64})
 
   cb = CellBasis(trian)
-  @test isa(cb,CellBasis{2,ScalarValue})
+  @test isa(cb,CellBasis{2,Float64})
 
 end
 

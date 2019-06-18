@@ -9,7 +9,7 @@ export Triangulation
 export CellRefFEs
 export CartesianTriangulation
 export test_triangulation
-export num_cells
+export ncells
 import Gridap: CellQuadrature
 import Gridap: CellPoints
 import Gridap: CellBasis
@@ -47,7 +47,7 @@ function CellGeomap(self::Triangulation)
   lincomb(basis,coords)
 end
 
-function num_cells(self::Triangulation)
+function ncells(self::Triangulation)
   coords = CellPoints(self)
   length(coords)
 end
@@ -60,8 +60,8 @@ function test_triangulation(trian::Triangulation{Z,D}) where {Z,D}
   @test HasGradientStyle(basis) == GradientYesStyle()
   coords = CellPoints(trian)
   @test isa(coords,CellPoints{D,Float64})
-  @test num_cells(trian) == length(coords)
-  @test num_cells(trian) == length(basis)
+  @test ncells(trian) == length(coords)
+  @test ncells(trian) == length(basis)
   phi = CellGeomap(trian)
   @test isa(phi,CellGeomap{Z,D,Float64})
   @test HasGradientStyle(phi) == GradientYesStyle()
