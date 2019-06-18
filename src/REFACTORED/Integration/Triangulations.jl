@@ -14,6 +14,7 @@ import Gridap: CellQuadrature
 import Gridap: CellPoints
 import Gridap: CellBasis
 import Gridap: CellGeomap
+import Gridap: CellField
 import Base: IndexStyle
 import Base: size
 import Base: getindex
@@ -67,6 +68,17 @@ function test_triangulation(trian::Triangulation{Z,D}) where {Z,D}
 end
 
 # Factories
+
+function CellField(trian::Triangulation,fun::Function)
+  phi = CellGeomap(trian)
+  compose(fun,phi)
+end
+
+function CellField(
+  trian::Triangulation{D,Z}, fun::Function, u::Vararg{<:CellFieldLike{Z}}) where {D,Z}
+  phi = CellGeomap(trian)
+  compose(fun,phi,u...)
+end
 
 """
 Factory function to create CellQuadrature objects in a convenient way
