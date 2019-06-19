@@ -9,6 +9,7 @@ import Gridap: return_size
 import Gridap: gradient
 import Base: +, -
 import Gridap: HasGradientStyle
+import Gridap.MapApply: MapFromKernel
 
 for op in (:+,:-)
   @eval begin
@@ -25,14 +26,6 @@ for op in (:+,:-)
     end
 
   end
-end
-
-function AnalyticalField(D::Int,T::Type,fun::Function)
-  h = hasmethod(gradient,(typeof(fun),) )
-  _afield(Val(h),D,T,fun)
-end
-
-function _afield(::Type{true},D,T)
 end
 
 function _apply_sum_or_sub(op,f,::GradientNotStyle)
@@ -152,5 +145,20 @@ end
 gradient(f::BasisFromChangeOfBasis) = f.g
 
 gradient(f::BasisFromChangeOfBasisGrad) = @notimplemented
+
+function gradient(m::MapFromKernel)
+  _gradient(m.kernel,cm.inputs...)
+end
+
+_gradient(k,ms...) = @notimplemented
+
+for op in (:+, :-)
+  @eval begin
+    function _gradient(k::ArrayKernelFromBroadcastedFunction{typeof($op)},ms...)
+      g = [ gradient(m) for m in ms  ]
+      apply(k,g...)
+    end
+  end
+end
 
 end # module

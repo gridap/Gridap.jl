@@ -9,6 +9,9 @@ using Gridap.FieldsOperations: FieldLikeAndGradient
 using Base: @pure
 using Base: @propagate_inbounds
 
+using Gridap.FieldsOperations: _gradient
+using Gridap.CellMapApply: CellMapFromKernel, IndexCellMapFromKernel
+
 export varinner
 export lincomb
 export attachgeomap
@@ -227,6 +230,14 @@ end
     f.cache.value.grad = gi
   end
   f.cache.value
+end
+
+function gradient(cm::CellMapFromKernel)
+  _gradient(cm.kernel,cm.cellvalues...)
+end
+
+function gradient(cm::IndexCellMapFromKernel)
+  _gradient(cm.kernel,cm.cellvalues...)
 end
 
 end # module
