@@ -3,19 +3,6 @@ module FESpacesTests
 using Test
 
 using Gridap
-using Gridap.FieldValues
-using Gridap.RefFEs
-using Gridap.CellValues
-using Gridap.CellMaps
-using Gridap.Polytopes
-using Gridap.Geometry
-using Gridap.Geometry.Cartesian
-using Gridap.CellMaps.Testers
-using Gridap.CellQuadratures
-using Gridap.CellIntegration
-using Gridap.Vtkio
-
-using Gridap.FESpaces
 
 model = CartesianDiscreteModel(domain=(0.0,1.0,-1.0,2.0), partition=(2,2))
 
@@ -154,7 +141,7 @@ grad_uhq = evaluate(grad_uh,q)
 v = collect(uhq)
 g = collect(grad_uhq)
 
-test_cell_map_with_gradient(uh,q,v,g)
+test_iter_cell_field(uh,q,v,g)
 
 fespace = ConformingFESpace(Float64,model,order,tags)
 
@@ -178,8 +165,6 @@ uh3 = interpolate(fespace,fun3)
 quad = CellQuadrature(trian,order=2)
 q = coordinates(quad)
 uhq = evaluate(uh1,q)
-
-@test cellsize(uhq.a) == (4,4)
 
 #writevtk(trian,"trian",nref=3,
 #  cellfields=["uh1"=>uh1,"uh2"=>uh2,"uh3"=>uh3])

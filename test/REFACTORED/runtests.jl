@@ -1,7 +1,6 @@
 module GridapTests
 
 using Test
-using Gridap
 
 @time @testset "Utils" begin include("UtilsTests/runtests.jl") end
 
@@ -16,5 +15,7 @@ using Gridap
 @time @testset "Geometry" begin include("GeometryTests/runtests.jl") end
 
 @time @testset "Algebra" begin include("AlgebraTests/runtests.jl") end
+
+@time @testset "FESpaces" begin include("FESpacesTests/runtests.jl") end
 
 end # module

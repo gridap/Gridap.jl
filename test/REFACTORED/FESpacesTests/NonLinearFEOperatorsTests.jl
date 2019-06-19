@@ -1,27 +1,14 @@
 module NonLinearFEOperatorsTests
 
-using Gridap.FESpaces
-using Gridap.Assemblers
-using Gridap.FEOperators
-using Gridap.LinearSolvers
-using Gridap.NonLinearSolvers
-
 using Test
 using Gridap
-using Gridap.CellMaps
-using Gridap.Geometry
-using Gridap.Geometry.Cartesian
-using Gridap.FieldValues
-using Gridap.CellQuadratures
-using Gridap.CellIntegration
-using Gridap.Vtkio
 
-import Gridap: gradient
+import Gridap: ∇
 
 # Define manufactured functions
 ufun(x) = x[1] + x[2]
 ufun_grad(x) = VectorValue(1.0,1.0)
-gradient(::typeof(ufun)) = ufun_grad
+∇(::typeof(ufun)) = ufun_grad
 bfun(x) = -(3.0*x[1]+x[2]+1.0)
 νfun(x,u) = (u+1.0)*x[1]
 

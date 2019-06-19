@@ -1,18 +1,12 @@
 module FEOperators
 
+using Gridap
 using Gridap.Helpers
-using Gridap.Geometry
-using Gridap.CellValues
-using Gridap.CellMaps
-using Gridap.CellQuadratures
-using Gridap.CellIntegration
 
-using Gridap.FESpaces
-using Gridap.Assemblers
-using Gridap.NonLinearSolvers
-using Gridap.LinearSolvers
 using LinearAlgebra
 
+import Gridap: apply
+export apply!
 export FEOperator
 export FESolver
 export LinearFEOperator
@@ -23,8 +17,6 @@ import Gridap: solve
 import Gridap: solve!
 import Gridap: jacobian
 import Gridap: jacobian!
-import Gridap: apply
-import Gridap: apply!
 import Gridap: residual
 import Gridap: residual!
 import Gridap.NonLinearSolvers: create_in_domain

@@ -2,16 +2,7 @@ module FESpaces
 
 using Gridap
 using Gridap.Helpers
-using Gridap.RefFEs
-using Gridap.Polytopes
-using Gridap.CellValues
-using Gridap.CellMaps
-using Gridap.CellValues.ConstantCellValues
-using Gridap.CellValues.Wrappers
-using Gridap.CellValues.Append
-using Gridap.Geometry
-using Gridap.FieldValues
-using Gridap.CellMaps.Operations: CellFieldFromExpand
+using Gridap.CellValuesGallery
 
 export FEFunction
 export FEBasis
@@ -35,7 +26,9 @@ export value_type
 export ConformingFESpace
 export FESpaceWithDirichletData
 
-import Gridap.CellMaps: CellField, CellBasis
+import Gridap: CellField
+import Gridap: CellBasis
+import Gridap: HasGradientStyle
 
 import Gridap: evaluate, gradient, return_size
 import Gridap: inner
@@ -176,6 +169,8 @@ struct FEFunction{
   fespace::FESpace{D,Z,T}
   cellfield::C
 end
+
+HasGradientStyle(::Type{<:FEFunction}) = GradientYesStyle()
 
 free_dofs(f::FEFunction) = f.free_dofs
 
@@ -435,7 +430,7 @@ end
 _polytope(celltypes) = @notimplemented
 
 function _polytope(celltypes::ConstantCellValue)
-  code = celldata(celltypes)
+  code = celltypes.value
   Polytope(code)
 end
 
@@ -443,7 +438,7 @@ function _interpolated_values(fesp::ConformingFESpace{D,Z,T},fun::Function) wher
   reffe = fesp._reffes
   dofb = reffe.dofbasis
   trian = fesp._triangulation
-  phi = geomap(trian)
+  phi = CellGeomap(trian)
   uphys = fun ∘ phi
   celldofs = fesp.cell_eqclass
   nfdofs = fesp.dim_to_nface_eqclass
@@ -502,12 +497,12 @@ function _setup_conforming_fe_fields(reffe,trian,graph,labels,diri_tags,D)
   for i in 2:length(offset)
     offset[i] += offset[i-1]
   end
-  offset = tuple(offset...)
-  cellvefs = IndexCellValueByLocalAppendWithOffset(offset, cellvefs_dim...)
-  dofs_all = IndexCellValueByGlobalAppend(dim_to_nface_eqclass...)
+  offset = tuple(offset[1:(end-1)]...)
+  cellvefs = local_append(offset, cellvefs_dim...)
+  dofs_all = append(dim_to_nface_eqclass...)
   cell_eqclass = CellVectorByComposition(cellvefs, dofs_all)
   shb = ConstantCellValue(reffe.shfbasis, ncells(trian))
-  phi = geomap(trian)
+  phi = CellGeomap(trian)
   basis = attachgeomap(shb,phi)
   return dim_to_nface_eqclass, cell_eqclass, nfree, ndiri, diri_tags,
     reffe, trian, graph, labels, basis
