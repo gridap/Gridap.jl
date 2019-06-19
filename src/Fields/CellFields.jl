@@ -124,11 +124,8 @@ end
 
 function _test_iter_cell_field_like(f,x,v,g)
   test_iter_cell_map(f,x,v)
-  @test HasGradientStyle(f) == GradientYesStyle()
   fg = gradient(f)
   test_iter_cell_map(fg,x,g)
-  fg2 = gradient(f)
-  @test fg === fg2
   _test_field_like_iteration(f,x,v,g)
 end
 
@@ -139,11 +136,8 @@ function test_index_cell_field_like(
   g::AbstractArray{<:AbstractArray{G,N}}) where {D,T,G,N}
 
   test_index_cell_map(f,x,v)
-  @test HasGradientStyle(f) == GradientYesStyle()
   fg = gradient(f)
   test_index_cell_map(fg,x,g)
-  fg2 = gradient(f)
-  @test fg === fg2
   _test_field_like_iteration(f,x,v,g)
 end
 

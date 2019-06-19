@@ -42,7 +42,6 @@ end
 
 """
 Create the gradient of a `Field` or `Basis`
-For efficiency reasons, different calls to this function should return the same object
 """
 function gradient(this::FieldLike)
   @abstractmethod
@@ -90,11 +89,8 @@ function test_fieldlike(
   v::AbstractArray{T,N},
   g::AbstractArray{G,N}) where {D,T,N,G}
   test_map(m,x,v)
-  @test HasGradientStyle(m) == GradientYesStyle()
   mg = gradient(m)
   test_map(mg,x,g)
-  mg2 = gradient(m)
-  @test mg === mg2
 end
 
 function test_field(

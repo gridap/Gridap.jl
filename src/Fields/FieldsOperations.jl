@@ -7,48 +7,8 @@ export change_basis
 import Gridap: evaluate!
 import Gridap: return_size
 import Gridap: gradient
-import Base: +, -
 import Gridap: HasGradientStyle
 import Gridap.MapApply: MapFromKernel
-
-for op in (:+,:-)
-  @eval begin
-
-    function ($op)(f::FieldLike)
-      gs = HasGradientStyle(f)
-      _apply_sum_or_sub($op,f,gs)
-    end
-
-    function ($op)(a::FieldLike,b::FieldLike)
-      ga = HasGradientStyle(a)
-      gb = HasGradientStyle(b)
-      _apply_sum_or_sub($op,a,b,ga,gb)
-    end
-
-  end
-end
-
-function _apply_sum_or_sub(op,f,::GradientNotStyle)
-  v = apply(op,f,broadcast=true)
-  v
-end
-
-function _apply_sum_or_sub(op,f,::GradientYesStyle)
-  v = apply(op,f,broadcast=true)
-  g = apply(op,gradient(f),broadcast=true)
-  FieldLikeAndGradient(v,g)
-end
-
-function _apply_sum_or_sub(op,a,b,ga,gb)
-  v = apply(op,a,b,broadcast=true)
-  v
-end
-
-function _apply_sum_or_sub(op,a,b,::GradientYesStyle,::GradientYesStyle)
-  v = apply(op,a,b,broadcast=true)
-  g = apply(op,gradient(a),gradient(b),broadcast=true)
-  FieldLikeAndGradient(v,g)
-end
 
 function change_basis(basis::Basis,changeofbasis::Matrix)
   BasisFromChangeOfBasis(basis,changeofbasis)
@@ -147,7 +107,7 @@ gradient(f::BasisFromChangeOfBasis) = f.g
 gradient(f::BasisFromChangeOfBasisGrad) = @notimplemented
 
 function gradient(m::MapFromKernel)
-  _gradient(m.kernel,cm.inputs...)
+  _gradient(m.kernel,m.inputs...)
 end
 
 _gradient(k,ms...) = @notimplemented

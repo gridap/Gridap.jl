@@ -24,25 +24,7 @@ import Base: length
 import Base: size
 import Base: getindex
 import Base: IndexStyle
-import Base: +, -
 import Base: ∘
-
-for op in (:+,:-)
-  @eval begin
-
-    function ($op)(a::CellFieldLike)
-      sa = HasGradientStyle(a)
-      _compute_sum_or_sub($op,a,sa)
-    end
-
-    function ($op)(a::CellFieldLike,b::CellFieldLike)
-      sa = HasGradientStyle(a)
-      sb = HasGradientStyle(b)
-      _compute_sum_or_sub($op,a,b,sa,sb)
-    end
-
-  end
-end
 
 function varinner(a::CellField,b::CellField)
   inner(a,b)
@@ -101,28 +83,6 @@ end
 
 function _compose(::Val{false},f,u...)
   v = apply(f,u...,broadcast=true)
-  v
-end
-
-function _compute_sum_or_sub(op,a,::GradientYesStyle)
-  v = apply(op,a,broadcast=true)
-  g = apply(op,gradient(a),broadcast=true)
-  _merge_val_and_grad(v,g)
-end
-
-function _compute_sum_or_sub(op,a,sa)
-  v = apply(op,a,broadcast=true)
-  v
-end
-
-function _compute_sum_or_sub(op,a,b,::GradientYesStyle,::GradientYesStyle)
-  v = apply(op,a,b,broadcast=true)
-  g = apply(op,gradient(a),gradient(b),broadcast=true)
-  _merge_val_and_grad(v,g)
-end
-
-function _compute_sum_or_sub(op,a,b,sa,sb)
-  v = apply(op,a,b,broadcast=true)
   v
 end
 
@@ -241,4 +201,3 @@ function gradient(cm::IndexCellMapFromKernel)
 end
 
 end # module
-
