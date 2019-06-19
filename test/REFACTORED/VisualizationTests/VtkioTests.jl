@@ -1,19 +1,7 @@
 module VtkioTests
 
-##
 using Test
 using Gridap
-using Gridap.FieldValues
-using Gridap.Quadratures
-using Gridap.CellQuadratures
-using Gridap.CellMaps
-using Gridap.CellValues
-using Gridap.CellIntegration
-using Gridap.Geometry
-using Gridap.Geometry.Cartesian
-using Gridap.Polytopes
-using Gridap.Vtkio
-##
 
 @testset "VTKioGrid" begin
 
@@ -50,7 +38,7 @@ end
   trian = Triangulation(grid)
   quad = CellQuadrature(trian,order=2)
 
-  phi = geomap(trian)
+  phi = CellGeomap(trian)
 
   q = coordinates(quad)
 
@@ -65,7 +53,9 @@ end
   tfun(x) = TensorValue(x[1],1.0,x[2],0.1)
   t = CellField(trian,tfun)
 
-  pdata =["u"=>evaluate(u,q),"v"=>evaluate(v,q),"t"=>evaluate(t,q),"t2"=>apply(tfun,x)]
+  pdata =[
+    "u"=>evaluate(u,q),"v"=>evaluate(v,q),
+    "t"=>evaluate(t,q),"t2"=>apply(tfun,x,broadcast=true)]
 
   writevtk(x,f)
   writevtk(x,f,pointdata=pdata)
@@ -82,7 +72,7 @@ end
   grid = CartesianGrid(partition=(3,3))
   trian = Triangulation(grid)
 
-  xe = cellcoordinates(trian)
+  xe = CellPoints(trian)
 
   x = cellmean(xe)
 

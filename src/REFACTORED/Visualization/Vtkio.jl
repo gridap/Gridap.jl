@@ -2,18 +2,7 @@ module Vtkio
 
 using Gridap
 using Gridap.Helpers
-using Gridap.CellValues
-using Gridap.CellValues.Wrappers
-using Gridap.CellValues.ConstantCellValues
-using Gridap.CellMaps
-using Gridap.FieldValues
-using Gridap.Polytopes
-using Gridap.Geometry
-using Gridap.Geometry.Unstructured
-using Gridap.Geometry.Cartesian
-using Gridap.Geometry.Wrappers
-using Gridap.Polytopes
-using Gridap.CellIntegration
+using Gridap.CellValuesGallery
 
 using WriteVTK
 using WriteVTK.VTKCellTypes: VTK_VERTEX
@@ -46,7 +35,7 @@ end
 """
 Write a CellValue{Point{D}} object into vtk file
 """
-function writevtk(points::CellValue{Point{D}} where D,filebase;celldata=Dict(),pointdata=Dict())
+function writevtk(points::CellValue{Point{D,Float64}} where D,filebase;celldata=Dict(),pointdata=Dict())
   _writevtk(points,filebase,celldata,pointdata)
 end
 
@@ -139,7 +128,7 @@ end
 _check_order(co) = @notimplemented
 
 function _check_order(co::ConstantCellValue{Int})
-  o = celldata(co)
+  o = co.value
   @notimplementedif o != 1
 end
 
@@ -209,14 +198,14 @@ function _writevtk(points::CellPoints,filebase,celldata,pointdata)
   writevtk(grid,filebase,pointdata=pdat)
 end
 
-function _writevtk(points::CellValue{Point{D}} where D,filebase,celldata,pointdata)
+function _writevtk(points::CellValue{Point{D,Float64}} where D,filebase,celldata,pointdata)
   grid = _cellpoint_to_grid(points)
   pdat = _prepare_pointdata(pointdata)
   writevtk(grid,filebase,pointdata=pdat)
 end
 
 function _cellpoints_to_grid(points::CellPoints{D}) where D
-  ps = Array{Point{D},1}(undef,(0,))
+  ps = Array{Point{D,Float64},1}(undef,(0,))
   p_to_cell = Array{Int,1}(undef,(0,))
   for (cell,p) in enumerate(points)
     for pj in p
@@ -229,7 +218,7 @@ function _cellpoints_to_grid(points::CellPoints{D}) where D
   (grid, p_to_cell)
 end
 
-function _cellpoint_to_grid(points::CellValue{Point{D}}) where D
+function _cellpoint_to_grid(points::CellValue{Point{D,Float64}}) where D
   ps = collect(points)
   data, ptrs, ts, os = _prepare_cells(ps)
   UnstructuredGrid(ps,data,ptrs,ts,os)
@@ -345,7 +334,7 @@ function _writevtk(trian::Triangulation,filebase,nref,celldata,cellfields)
 end
 
 function _visgrid(self::Triangulation,nref)
-  grid, coarsecells, samplingpoints = _prepare_grid(celltypes(self),geomap(self),nref)
+  grid, coarsecells, samplingpoints = _prepare_grid(CellRefFEs(self),CellGeomap(self),nref)
   VisualizationGrid(grid,coarsecells,samplingpoints)
 end
 
@@ -366,35 +355,37 @@ function _refgrid(::Val{(HEX_AXIS,HEX_AXIS,HEX_AXIS)},nref::Int)
   CartesianGrid(domain=(-1.0,1.0,-1.0,1.0,-1.0,1.0),partition=(n,n,n))
 end
 
-function _prepare_grid(celltypes::CellValue{NTuple{Z,Int}},phi::CellGeomap{Z,D},nref) where {Z,D}
+function _prepare_grid(reffes::CellValue{<:RefFE},phi::CellGeomap{Z,D},nref) where {Z,D}
   @notimplemented
 end
 
-function _prepare_grid(ctypes::ConstantCellValue{NTuple{Z,Int}},phi::CellGeomap{Z,D},nref) where {Z,D}
-  refgrid = _prepare_refgrid(ctypes,nref)
-  samplingpoints = _prepare_samplingpoints(refgrid,ctypes)
+function _prepare_grid(reffes::ConstantCellValue{<:RefFE},phi::CellGeomap{Z,D},nref) where {Z,D}
+  refgrid = _prepare_refgrid(reffes,nref)
+  samplingpoints = _prepare_samplingpoints(refgrid,reffes)
   ps, offsets = _prepare_points(samplingpoints,points(refgrid),phi)
   data, ptrs, coarsecells = _prepare_cells(refgrid,offsets)
-  ts = _prepare_celltypes(length(ctypes),celltypes(refgrid))
-  os = _prepare_cellorders(length(ctypes),celltypes(refgrid))
+  ts = _prepare_celltypes(length(reffes),celltypes(refgrid))
+  os = _prepare_cellorders(length(reffes),celltypes(refgrid))
   grid = UnstructuredGrid(ps,data,ptrs,ts,os)
   (grid, coarsecells, samplingpoints)
 end
 
-function _prepare_refgrid(ctypes,nref)
-  extrusion = celldata(ctypes)
-  _refgrid(Val(extrusion),nref)
+function _prepare_refgrid(reffes,nref)
+  reffe = reffes.value
+  poly = polytope(reffe)
+  extrusion = poly.extrusion
+  _refgrid(Val(Tuple(extrusion)),nref)
 end
 
-function _prepare_samplingpoints(refgrid,ctypes)
-  refpoints = flatten(collect(points(refgrid)))
-  ConstantCellValue(refpoints,length(ctypes))
+function _prepare_samplingpoints(refgrid,reffes)
+  refpoints = collect(points(refgrid))
+  ConstantCellValue(refpoints[:],length(reffes))
 end
 
 function _prepare_points(samplingpoints,refpoints,phi::CellGeomap{Z,D}) where {Z,D}
   xe = evaluate(phi,samplingpoints)
   offsets = Array{Int,1}(undef,(length(xe),))
-  ps = Array{Point{D},1}(undef,(length(xe)*length(refpoints)))
+  ps = Array{Point{D,Float64},1}(undef,(length(xe)*length(refpoints)))
   _fill_ps_and_offsets!(ps,offsets,xe)
   (ps, offsets)
 end
@@ -445,7 +436,7 @@ function _fill_data!(data,offsets,refcells)
 end
 
 function _prepare_celltypes(ncells,refcelltypes::ConstantCellValue)
-  refextrusion = celldata(refcelltypes)
+  refextrusion = refcelltypes.value
   ConstantCellValue(refextrusion,ncells*length(refcelltypes) )
 end
 

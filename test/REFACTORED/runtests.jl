@@ -20,4 +20,6 @@ using Test
 
 @time @testset "MultiField" begin include("MultiFieldTests/runtests.jl") end
 
+@time @testset "Visualization" begin include("VisualizationTests/runtests.jl") end
+
 end # module
