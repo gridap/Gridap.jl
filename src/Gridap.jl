@@ -1,51 +1,36 @@
+__precompile__()
+
 module Gridap
 
 using Reexport
 
-include("REFACTORED/Gridap.jl")
+# TODO to be moved to Tensor Values (begin)
+
+using TensorValues
+import Base: conj
+
+conj(a::MultiValue) = MultiValue(conj(a.array))
+
+# (end)
+
+include("Utils/files.jl")
+
+include("CellValues/files.jl")
+
+include("Fields/files.jl")
+
+include("RefFEs/files.jl")
+
+include("Integration/files.jl")
+
+include("Geometry/files.jl")
+
+include("Algebra/files.jl")
+
+include("FESpaces/files.jl")
+
+include("MultiField/files.jl")
+
+include("Visualization/files.jl")
 
 end # module
-
-#__precompile__()
-#
-#module Gridap
-#
-#using Base.Cartesian
-#
-#include("Methods.jl")
-#include("Helpers.jl")
-#
-#include("FieldValues.jl")
-#include("CachedArrays.jl")
-#include("Maps/Maps.jl")
-#include("CellValues/CellValues.jl")
-#include("CellMaps/CellMaps.jl")
-#
-#include("Geometry/Polytopes.jl")
-#include("Quadratures.jl")
-#include("Meshes.jl")
-#include("Polynomials.jl")
-#include("FESpaces/RefFEs.jl")
-#
-#include("Geometry/Geometry.jl")
-#include("CellQuadratures.jl")
-#include("CellIntegration.jl")
-#
-#include("Algebra/LinearSolvers.jl")
-#include("Algebra/NonLinearSolvers.jl")
-#
-#include("FESpaces/FESpaces.jl")
-#include("FESpaces/Assemblers.jl")
-#include("FESpaces/FEOperators.jl")
-#
-#include("MultiField/MultiCellArrays.jl")
-#include("MultiField/MultiCellMaps.jl")
-#include("MultiField/MultiFESpaces.jl")
-#include("MultiField/MultiAssemblers.jl")
-#include("MultiField/MultiFEFunctions.jl")
-#include("MultiField/MultiFEBases.jl")
-#include("MultiField/MultiFEOperators.jl")
-#
-#include("Vtkio.jl")
-#
-#end #module Gridap
