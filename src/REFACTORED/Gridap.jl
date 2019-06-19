@@ -19,3 +19,5 @@ include("Integration/files.jl")
 
 include("Geometry/files.jl")
 
+include("Algebra/files.jl")
+

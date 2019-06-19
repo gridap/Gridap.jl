@@ -1,6 +1,10 @@
+module NonLinearOperatorMocks
 
+export NonLinearOperatorMock
+
+using Gridap
 import Gridap: residual!, jacobian, jacobian!
-import Gridap.NonLinearSolvers: create_in_domain
+import Gridap: create_in_domain
 
 struct NonLinearOperatorMock <: NonLinearOperator end
 
@@ -26,3 +30,4 @@ function create_in_domain(::NonLinearOperatorMock)
   zeros(2)
 end
 
+end # module

@@ -1,13 +1,13 @@
 module NonLinearSolvers
 
-using Gridap.Helpers
 using Gridap.LinearSolvers
+using Gridap.Helpers
 
 export NonLinearOperator
-import Gridap: residual
-import Gridap: jacobian
-import Gridap: residual!
-import Gridap: jacobian!
+export residual
+export jacobian
+export residual!
+export jacobian!
 export create_in_domain
 
 export NonLinearSolver
