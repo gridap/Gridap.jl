@@ -4,15 +4,6 @@ module Gridap
 
 using Reexport
 
-# TODO to be moved to Tensor Values (begin)
-
-using TensorValues
-import Base: conj
-
-conj(a::MultiValue) = MultiValue(conj(a.array))
-
-# (end)
-
 include("Utils/files.jl")
 
 include("CellValues/files.jl")
