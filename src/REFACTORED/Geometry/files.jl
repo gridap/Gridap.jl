@@ -1,12 +1,12 @@
 
 include("Geometry.jl")
-using .Geometry
+@reexport using Gridap.Geometry
 
 include("GeometryWrappers.jl")
-using .GeometryWrappers
+@reexport using Gridap.GeometryWrappers
 
 include("UnstructuredGeometry.jl")
-using .UnstructuredGeometry
+@reexport using Gridap.UnstructuredGeometry
 
 include("CartesianGeometry.jl")
-using .CartesianGeometry
+@reexport using Gridap.CartesianGeometry

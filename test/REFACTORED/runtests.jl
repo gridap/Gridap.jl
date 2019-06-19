@@ -13,4 +13,6 @@ using Gridap
 
 @time @testset "Integration" begin include("IntegrationTests/runtests.jl") end
 
+@time @testset "Geometry" begin include("GeometryTests/runtests.jl") end
+
 end # module

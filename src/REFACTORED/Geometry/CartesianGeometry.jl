@@ -8,16 +8,14 @@ using Gridap.Helpers
 
 # Functionality provided
 
-using ..Geometry
-
 export CartesianGrid
 export CartesianDiscreteModel
 import Base: size, getindex, IndexStyle
-import ..Geometry: points, cells, celltypes, cellorders, gridgraph
-import ..Geometry: Grid, GridGraph, FaceLabels
-import ..UnstructuredGeometry: UnstructuredGrid
-import ..UnstructuredGeometry: FlexibleUnstructuredGrid
-import ..Geometry: FullGridGraph
+import Gridap: points, cells, celltypes, cellorders, gridgraph
+import Gridap: Grid, GridGraph, FaceLabels
+import Gridap: UnstructuredGrid
+import Gridap: FlexibleUnstructuredGrid
+import Gridap: FullGridGraph
 
 struct CartesianGrid{D} <: Grid{D,D}
   dim_to_limits::NTuple{D,NTuple{2,Float64}}
@@ -97,7 +95,7 @@ function Grid(model::CartesianDiscreteModel{D},::Val{Z}) where {D,Z}
   fcode = tuple([HEX_AXIS for i in 1:Z]...)
 
   order = 1
-  @notimplementedif order != celldata(cellorders(model.cgrid))
+  @notimplementedif order != (cellorders(model.cgrid)).value
 
   _points = points(ugrid)
   _cells_data = face_to_vertices.data
@@ -297,7 +295,7 @@ function getindex(self::CartesianGridCells{D,L}, I::Vararg{Int, D}) where {D,L}
 end
 
 function _compute_points(grid::CartesianGrid{D}) where D
-  ps = Array{Point{D},1}(undef,(length(points(grid)),))
+  ps = Array{Point{D,Float64},1}(undef,(length(points(grid)),))
   for (i,xi) in enumerate(points(grid))
     ps[i] = xi
   end

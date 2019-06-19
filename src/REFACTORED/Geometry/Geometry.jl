@@ -5,6 +5,7 @@ module Geometry
 using Gridap
 using Gridap.Helpers
 using Gridap.CellValuesGallery: CellVectorFromLocalToGlobal
+using Gridap.CellValuesGallery: CellValueFromArray
 
 # Functionality provided by this module
 

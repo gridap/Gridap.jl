@@ -1,7 +1,5 @@
 module GeometryTests
 
-include("../../../src/REFACTORED/Geometry/files.jl")
-
 using Test
 using Gridap
 
@@ -70,20 +68,20 @@ end
   c = celltypes(grid)
 
   @test isa(c,ConstantCellValue{NTuple{2,Int}})
-  @test celldata(c) == (HEX_AXIS,HEX_AXIS)
+  @test c.value == (HEX_AXIS,HEX_AXIS)
   @test length(c) == 12
 
   o = cellorders(grid)
   @test isa(o,ConstantCellValue{Int})
-  @test celldata(o) == 1
+  @test o.value == 1
   @test length(o) == 12
 
-  d = mktempdir()
-  f = joinpath(d,"grid")
+  #d = mktempdir()
+  #f = joinpath(d,"grid")
 
-  writevtk(grid,f)
+  #writevtk(grid,f)
 
-  rm(d,recursive=true)
+  #rm(d,recursive=true)
 
 end
 
@@ -95,20 +93,20 @@ end
 
   c = celltypes(grid)
   @test isa(c,ConstantCellValue{NTuple{2,Int}})
-  @test celldata(c) == (HEX_AXIS,HEX_AXIS)
+  @test c.value == (HEX_AXIS,HEX_AXIS)
   @test length(c) == 12
 
   o = cellorders(grid)
   @test isa(o,ConstantCellValue{Int})
-  @test celldata(o) == 1
+  @test o.value == 1
   @test length(o) == 12
 
-  d = mktempdir()
-  f = joinpath(d,"grid")
+  #d = mktempdir()
+  #f = joinpath(d,"grid")
 
-  writevtk(grid,f)
+  #writevtk(grid,f)
 
-  rm(d,recursive=true)
+  #rm(d,recursive=true)
 
 end
 

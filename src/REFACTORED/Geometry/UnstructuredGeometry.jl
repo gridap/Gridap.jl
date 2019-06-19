@@ -1,19 +1,22 @@
 module UnstructuredGeometry
 
-using ..Geometry
-
 # Dependencies of this module
 
 using Gridap
 using Gridap.Helpers
+using Gridap.CellValuesGallery
 using UnstructuredGrids
+using UnstructuredGrids.Kernels: rewind_ptrs!
+using UnstructuredGrids.Kernels: length_to_ptrs!
 
 # Functionality provided by this module
 
+export rewind_ptrs!
+export length_to_ptrs!
 export UnstructuredGrid
 export FlexibleUnstructuredGrid
-import ..Geometry: points, cells, celltypes, cellorders
-import ..Geometry: FullGridGraph
+import Gridap: points, cells, celltypes, cellorders
+import Gridap: FullGridGraph
 export cellsdata, cellsptrs
 export UGrid
 import UnstructuredGrids: UGrid
@@ -126,9 +129,9 @@ end
 function _setup_ctypes_and_refcells(
   cell_to_code::ConstantCellValue,
   cell_to_order::ConstantCellValue)
-  order = celldata(cell_to_order)
+  order = cell_to_order.value
   @notimplementedif order != 1
-  code = celldata(cell_to_code)
+  code = cell_to_code.value
   polytope = Polytope(code)
   refcell = RefCell(polytope)
   ncells = length(cell_to_code)
