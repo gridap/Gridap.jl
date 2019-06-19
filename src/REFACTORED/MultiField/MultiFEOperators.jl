@@ -1,15 +1,8 @@
 module MultiFEOperators
 
 using Gridap
-using Gridap.Geometry
-using Gridap.CellQuadratures
-using Gridap.FESpaces
-using Gridap.FEOperators: LinearFEOperator
-using Gridap.FEOperators: NonLinearFEOperator
-using Gridap.MultiFESpaces
-using Gridap.MultiAssemblers
-using Gridap.MultiFEFunctions
-using Gridap.MultiFEBases
+import Gridap.FEOperators: LinearFEOperator
+import Gridap.FEOperators: NonLinearFEOperator
 
 function LinearFEOperator(
   biform::Function,

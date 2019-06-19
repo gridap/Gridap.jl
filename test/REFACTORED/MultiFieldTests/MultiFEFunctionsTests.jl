@@ -3,18 +3,6 @@ module MultiFEFunctionsTests
 using Test
 
 using Gridap
-using Gridap.Geometry
-using Gridap.FESpaces
-using Gridap.Assemblers
-using Gridap.Geometry.Cartesian
-using Gridap.CellMaps
-using Gridap.MultiCellArrays
-using Gridap.CellQuadratures
-using Gridap.CellIntegration
-
-using Gridap.MultiFESpaces
-using Gridap.MultiAssemblers
-using Gridap.MultiFEFunctions
 
 order = 1
 diritag = "boundary"

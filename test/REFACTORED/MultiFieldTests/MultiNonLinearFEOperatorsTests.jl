@@ -1,21 +1,8 @@
-module MultiFEOperatorsTests
-
-using Gridap.FESpaces
-using Gridap.Assemblers
-using Gridap.FEOperators
-using Gridap.LinearSolvers
+module MultiNonLinearFEOperatorsTests
 
 using Test
 using Gridap
-using Gridap.Geometry
-using Gridap.CellMaps
-using Gridap.Geometry.Cartesian
-using Gridap.FieldValues
-using Gridap.CellQuadratures
-using Gridap.CellIntegration
-using Gridap.Vtkio
-
-import Gridap: gradient
+import Gridap: ∇
 
 # Define manufactured functions
 u1fun(x) = x[1] + x[2]
@@ -24,11 +11,13 @@ u2fun(x) = x[1] - x[2]
 u1fun_grad(x) = VectorValue(1.0,1.0)
 u2fun_grad(x) = VectorValue(1.0,-1.0)
 
-gradient(::typeof(u1fun)) = u1fun_grad
-gradient(::typeof(u2fun)) = u2fun_grad
+∇(::typeof(u1fun)) = u1fun_grad
+∇(::typeof(u2fun)) = u2fun_grad
 
-b1fun(x) = u2fun(x)
+b1fun(x) = u2fun(x) -(3.0*x[1]+x[2]+1.0)
 b2fun(x) = 0.0
+
+νfun(x,u1) = (u1+1.0)*x[1]
 
 # Construct the discrete model
 model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(4,4))
@@ -55,20 +44,28 @@ quad = CellQuadrature(trian,order=2)
 b1field = CellField(trian,b1fun)
 b2field = CellField(trian,b2fun)
 
-# Define forms
-a(v,u) = inner(∇(v[1]),∇(u[1])) + inner(v[1],u[2]) + inner(∇(v[2]),∇(u[2]))
+# Define a solution dependent material parameter
+ν(u1) = CellField(trian,νfun,u1)
 
+# Define residual and jacobian
+a(u,v,du) = inner(∇(v[1]),ν(u[1])*∇(du[1])) + inner(v[1],du[2]) + inner(∇(v[2]),∇(du[2]))
 b(v) = inner(v[1],b1field) + inner(v[2],b2field)
+
+res(u,v) = a(u,v,u) - b(v)
+jac(u,v,du) = a(u,v,du) # + inner(∇(v[1]),ν(du[1])*∇(u[1]))
 
 # Define Assembler
 assem = SparseMatrixAssembler(V,U)
 
 # Define the FEOperator
-op = LinearFEOperator(a,b,V,U,assem,trian,quad)
+op = NonLinearFEOperator(res,jac,V,U,assem,trian,quad)
 
 # Define the FESolver
 ls = LUSolver()
-solver = LinearFESolver(ls)
+tol = 1.e-10
+maxiters = 20
+nls = NewtonRaphsonSolver(ls,tol,maxiters)
+solver = NonLinearFESolver(nls)
 
 # Solve!
 uh = solve(solver,op)

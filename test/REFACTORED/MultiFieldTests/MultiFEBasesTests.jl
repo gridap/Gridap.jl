@@ -2,18 +2,8 @@ module MultiFEBasesTests
 
 using Test
 using Gridap
-using Gridap.FieldValues
-using Gridap.FESpaces
-using Gridap.Geometry
-using Gridap.CellMaps
-using Gridap.Geometry.Cartesian
-using Gridap.CellQuadratures
-using Gridap.CellIntegration
-using Gridap.MultiCellArrays
-using Gridap.MultiFESpaces
-using Gridap.MultiFEFunctions
 
-import Gridap: gradient
+import Gridap: ∇
 
 u1fun(x) = x[1] + x[2]
 u2fun(x) = x[1] - x[2]
@@ -21,8 +11,8 @@ u2fun(x) = x[1] - x[2]
 u1fun_grad(x) = VectorValue(1.0,1.0)
 u2fun_grad(x) = VectorValue(1.0,-1.0)
 
-gradient(::typeof(u1fun)) = u1fun_grad
-gradient(::typeof(u2fun)) = u2fun_grad
+∇(::typeof(u1fun)) = u1fun_grad
+∇(::typeof(u2fun)) = u2fun_grad
 
 b1fun(x) = u2fun(x)
 b2fun(x) = 0.0
