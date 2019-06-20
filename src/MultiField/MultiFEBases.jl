@@ -1,9 +1,6 @@
 module MultiFEBases
 
 using Gridap
-using Gridap.CellMaps
-using Gridap.MultiFESpaces
-using Gridap.MultiCellMaps
 
 import Gridap: gradient
 import Gridap: inner

@@ -1,10 +1,6 @@
 module MultiCellMaps
 
 using Gridap
-using Gridap.CellMaps
-using Gridap.Geometry
-using Gridap.CellQuadratures
-using Gridap.MultiCellArrays
 
 export MultiCellMap
 import Gridap.CellIntegration: integrate
@@ -46,4 +42,4 @@ function (-)(a::MultiCellMap{N},b::MultiCellMap{N}) where N
   MultiCellMap(blocks,fieldids)
 end
 
-end # module MultiCellMaps
+end # module

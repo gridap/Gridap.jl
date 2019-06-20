@@ -5,6 +5,8 @@ using SparseArrays
 using LinearAlgebra
 using Test
 
+export solve
+export solve!
 export LinearSolver
 export SymbolicSetup
 export NumericalSetup
@@ -13,8 +15,6 @@ export numerical_setup
 export numerical_setup!
 export test_linear_solver
 export LUSolver
-import Gridap: solve
-import Gridap: solve!
 
 abstract type LinearSolver end
 

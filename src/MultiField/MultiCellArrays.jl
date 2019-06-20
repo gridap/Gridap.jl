@@ -2,9 +2,7 @@ module MultiCellArrays
 
 using Gridap
 using Gridap.CachedArrays
-using Gridap.CellValues
-using Gridap.CellValues.Operations: CellArrayFromBroadcastUnaryOp
-using Gridap.CellValues.ConstantCellValues
+using Gridap.CellArrayApply: CellArrayFromKernel
 
 export MultiCellArray
 export MultiCellMatrix
@@ -41,11 +39,12 @@ function _prepare(ca::CellValue{CachedArray{T,N,Array{T,N}}}) where {T,N}
 end
 
 function _prepare(ca::CellArray{T,N}) where {T,N}
-  CellArrayFromBroadcastUnaryOp(+,ca)
+  k = ArrayKernelFromBroadcastedFunction(+)
+  CellArrayFromKernel(k,ca)
 end
 
 function _prepare(ca::ConstantCellArray{T,N}) where {T,N}
-  _ca = CachedArray(celldata(ca))
+  _ca = CachedArray(ca.value)
   ConstantCellValue(_ca,length(ca))
 end
 
@@ -69,5 +68,4 @@ end
   (arrays, state)
 end
 
-end # module MultiCellArrays
-
+end # module

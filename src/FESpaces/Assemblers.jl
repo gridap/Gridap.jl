@@ -1,9 +1,8 @@
 module Assemblers
 
-using Gridap.FESpaces
+using Gridap
 
 using Gridap.Helpers
-using Gridap.CellValues
 
 using SparseArrays
 

@@ -1,42 +1,41 @@
 module ConstantCellValues
 
-using Gridap.CellValues
-using Gridap.CellValues.Operations: cellsumsize
+using Gridap
 
 export ConstantCellValue
+export ConstantCellNumber
 export ConstantCellArray
 export ConstantCellVector
 export ConstantCellMatrix
+export ConstantCellMap
 
-export celldata
-
-import Gridap.CellValues: cellsum
-import Gridap.CellValues: cellnewaxis
-import Gridap.CellValues: cellmean #TODO
 import Gridap: apply
-import Base: +, -, *, /
-import Base: ==
-import LinearAlgebra: inv, det
-import Gridap.FieldValues: inner, outer, meas
-
+import Gridap: reindex
+import Gridap: evaluate
 import Base: size
 import Base: getindex
-import Gridap.CellValues: cellsize
+import Base: ==, ≈
 
 struct ConstantCellValue{T} <: IndexCellValue{T,1}
   value::T
   length::Int
 end
 
-celldata(self::ConstantCellValue) = self.value
-
 size(self::ConstantCellValue) = (self.length,)
+
+function getindex(c::ConstantCellValue,i::Integer)
+  c.value
+end
+
+const ConstantCellNumber = ConstantCellValue{<:NumberLike}
 
 const ConstantCellArray{T,N} = ConstantCellValue{Array{T,N}}
 
 const ConstantCellVector{T} = ConstantCellArray{T,1}
 
 const ConstantCellMatrix{T} = ConstantCellArray{T,2}
+
+const ConstantCellMap{S,M,T,N} = ConstantCellValue{<:Map{S,M,T,N}}
 
 function ConstantCellArray(v::AbstractArray{T,N},l::Integer) where {T,N}
   ConstantCellArray{T,N}(v,l)
@@ -50,92 +49,84 @@ function ConstantCellMatrix(v::AbstractMatrix{T},l::Integer) where T
   ConstantCellMatrix{T}(v,l)
 end
 
-cellsize(self::ConstantCellArray) = size(self.value)
-
-function cellsum(self::ConstantCellArray{T,N};dim::Int) where {T,N}
-  b = sum(self.value,dims=dim)
-  s = cellsumsize(size(b),Val(dim))
-  c = copy(reshape(b,s))
-  ConstantCellValue(c,self.length)
+function ConstantCellMap(v::Map,l::Integer)
+  ConstantCellValue(v,l)
 end
 
-function cellsum(self::ConstantCellArray{T,1};dim::Int) where T
-  b = sum(self.value)
-  ConstantCellValue(b,self.length)
+function ConstantCellNumber(v::NumberLike,l::Integer)
+  ConstantCellValue(v,l)
 end
 
-function cellnewaxis(self::ConstantCellArray;dim::Int)
-  s = [ v for v in size(self.value)]
-  insert!(s,dim,1)
-  shape = tuple(s...)
-  c = copy(reshape(self.value,shape))
-  ConstantCellValue(c,self.length)
+function (==)(a::ConstantCellNumber,b::ConstantCellNumber)
+  _eq_kernel(==,a,b)
 end
 
-getindex(self::ConstantCellValue,cell::Int) = celldata(self)
+function (≈)(a::ConstantCellNumber,b::ConstantCellNumber)
+  _eq_kernel(≈,a,b)
+end
 
-function (==)(a::ConstantCellValue,b::ConstantCellValue)
-  celldata(a) != celldata(b) && return false
+function (==)(a::ConstantCellArray,b::ConstantCellArray)
+   _eq_kernel(==,a,b)
+end
+
+function (≈)(a::ConstantCellArray,b::ConstantCellArray)
+  _eq_kernel(≈,a,b)
+end
+
+function _eq_kernel(op,a,b)
+  !(op(a.value,b.value)) && return false
   length(a) != length(b) && return false
   return true
 end
 
-for op in (:+,:-,:*,:/,:(outer),:(inner))
-
-  @eval begin
-    function ($op)(a::ConstantCellValue,b::ConstantCellValue)
-      @assert length(a) == length(b)
-      c = _bin_op_kernel($op,celldata(a),celldata(b))
-      ConstantCellValue(c,length(a))
-    end
-  end
-
+function apply(k::NumberKernel,v::Vararg{<:ConstantCellValue})
+  vals = [vi.value for vi in v]
+  l = _compute_l(v...)
+  val = compute_value(k,vals...)
+  ConstantCellNumber(val,l)
 end
 
-function _bin_op_kernel(op,a,b)
-  op(a,b)
+function apply(k::ArrayKernel,v::Vararg{<:ConstantCellValue})
+  vals = [vi.value for vi in v]
+  l = _compute_l(v...)
+  val = compute_value(k,vals...)
+  ConstantCellArray(val,l)
 end
 
-function _bin_op_kernel(op,a::AbstractArray,b::AbstractArray)
-  broadcast(op,a,b)
+function apply(k::ArrayKernel,m::ConstantCellMap)
+  w = apply(k,m.value)
+  ConstantCellMap(w,m.length)
 end
 
-function _bin_op_kernel(op,a,b::AbstractArray)
-  broadcast(op,a,b)
+function apply(k::ArrayKernel,m::ConstantCellMap,v::Vararg{<:ConstantCellValue})
+  vals = [vi.value for vi in v]
+  l = _compute_l(m,v...)
+  w = apply(k,m.value,vals...)
+  ConstantCellMap(w,l)
 end
 
-function _bin_op_kernel(op,a::AbstractArray,b)
-  broadcast(op,a,b)
+function evaluate(cm::ConstantCellMap{S,M},ca::ConstantCellArray{<:S,M}) where {S,M}
+  @assert length(cm) == length(ca)
+  m = cm.value
+  a = ca.value
+  r = evaluate(m,a)
+  ConstantCellArray(r,length(cm))
 end
 
-for op in (:+,:-,:(det),:(inv),:(meas))
-
-  @eval begin
-    function ($op)(a::ConstantCellValue)
-      c = _unary_op_kernel($op,celldata(a))
-      ConstantCellValue(c,length(a))
-    end
-  end
-
+function _compute_l(v...)
+  @assert length(v) > 0
+  v1, = v
+  l1 = length(v1)
+  @assert all([ length(vi) == l1 for vi in v ])
+  l1
 end
 
-function _unary_op_kernel(op,a)
-  op(a)
+function reindex(values::ConstantCellValue, indices::CellValue{<:IndexLike})
+  ConstantCellValue(values.value,length(indices))
 end
 
-function _unary_op_kernel(op,a::AbstractArray)
-  broadcast(op,a)
-end
-
-function apply(op::Function,a::ConstantCellValue)
-  c = _unary_op_kernel(op,celldata(a))
-  ConstantCellValue(c,length(a))
-end
-
-function apply(op::Function,a::ConstantCellValue,b::ConstantCellValue)
-  @assert length(a) == length(b)
-  c = _bin_op_kernel(op,celldata(a),celldata(b))
-  ConstantCellValue(c,length(a))
+function reindex(values::ConstantCellValue, indices::IndexCellValue{<:IndexLike})
+  ConstantCellValue(values.value,length(indices))
 end
 
 end # module ConstantCellValues

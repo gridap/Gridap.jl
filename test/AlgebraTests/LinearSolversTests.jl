@@ -1,6 +1,6 @@
 module LinearSolversTests
 
-using Gridap.LinearSolvers
+using Gridap
 
 using LinearAlgebra
 using SparseArrays
@@ -27,6 +27,5 @@ x = rand(n^2)
 b = A*x
 
 test_linear_solver(ls,A,b,x)
-
 
 end # module LinearSolversTests

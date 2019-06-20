@@ -2,14 +2,6 @@ module MultiFESpacesTests
 
 using Test
 using Gridap
-using Gridap.FESpaces
-using Gridap.Geometry
-using Gridap.CellMaps
-using Gridap.Geometry.Cartesian
-using Gridap.CellQuadratures
-using Gridap.CellIntegration
-using Gridap.MultiCellArrays
-using Gridap.MultiFESpaces
 
 model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(4,4))
 

@@ -2,9 +2,6 @@ module MultiAssemblers
 
 using Gridap
 using Gridap.Helpers
-using Gridap.FESpaces
-using Gridap.MultiCellArrays
-using Gridap.MultiFESpaces
 using Gridap.MultiFESpaces: _compute_offsets
 
 using SparseArrays

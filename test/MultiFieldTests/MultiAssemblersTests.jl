@@ -1,18 +1,7 @@
 module MultiAssemblersTests
 
 using Test
-
 using Gridap
-using Gridap.Geometry
-using Gridap.FESpaces
-using Gridap.Assemblers
-using Gridap.Geometry.Cartesian
-using Gridap.CellMaps
-using Gridap.MultiCellArrays
-using Gridap.CellQuadratures
-using Gridap.CellIntegration
-
-using Gridap.MultiAssemblers
 
 order = 1
 diritag = "boundary"

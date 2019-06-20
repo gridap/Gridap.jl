@@ -2,10 +2,7 @@ module MultiFESpaces
 
 using Gridap
 using Gridap.Helpers
-using Gridap.CellValues
-using Gridap.FESpaces
-using Gridap.MultiCellArrays
-using Gridap.CellValues.Wrappers: CachedSubVector
+using Gridap.CachedSubVectors
 
 export MultiFESpace
 

@@ -2,42 +2,26 @@ __precompile__()
 
 module Gridap
 
-using Base.Cartesian
+using Reexport
 
-include("Methods.jl")
-include("Helpers.jl")
+include("Utils/files.jl")
 
-include("FieldValues.jl")
-include("CachedArrays.jl")
-include("Maps/Maps.jl")
-include("CellValues/CellValues.jl")
-include("CellMaps/CellMaps.jl")
+include("CellValues/files.jl")
 
-include("Geometry/Polytopes.jl")
-include("Quadratures.jl")
-include("Meshes.jl")
-include("Polynomials.jl")
-include("FESpaces/RefFEs.jl")
+include("Fields/files.jl")
 
-include("Geometry/Geometry.jl")
-include("CellQuadratures.jl")
-include("CellIntegration.jl")
+include("RefFEs/files.jl")
 
-include("Algebra/LinearSolvers.jl")
-include("Algebra/NonLinearSolvers.jl")
+include("Integration/files.jl")
 
-include("FESpaces/FESpaces.jl")
-include("FESpaces/Assemblers.jl")
-include("FESpaces/FEOperators.jl")
+include("Geometry/files.jl")
 
-include("MultiField/MultiCellArrays.jl")
-include("MultiField/MultiCellMaps.jl")
-include("MultiField/MultiFESpaces.jl")
-include("MultiField/MultiAssemblers.jl")
-include("MultiField/MultiFEFunctions.jl")
-include("MultiField/MultiFEBases.jl")
-include("MultiField/MultiFEOperators.jl")
+include("Algebra/files.jl")
 
-include("Vtkio.jl")
+include("FESpaces/files.jl")
 
-end #module Gridap
+include("MultiField/files.jl")
+
+include("Visualization/files.jl")
+
+end # module

@@ -1,12 +1,8 @@
-
 module NonLinearSolversTests
 
 using Test
 using Gridap
-using Gridap.LinearSolvers
-using Gridap.NonLinearSolvers
-
-include("Mocks.jl")
+using ..NonLinearOperatorMocks
 
 op = NonLinearOperatorMock()
 

@@ -2,8 +2,6 @@ module MultiFEFunctions
 
 using Gridap
 using Gridap.Helpers
-using Gridap.FESpaces
-using Gridap.MultiFESpaces
 
 export MultiFEFunction
 
