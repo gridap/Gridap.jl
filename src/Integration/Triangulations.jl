@@ -74,13 +74,20 @@ function CellField(trian::Triangulation,fun::Function)
   compose(fun,phi)
 end
 
-function CellField(trian::Triangulation, fun::Function, u...)
-  v = [ CellField(ui) for ui in u ]
+function CellField(
+  trian::Triangulation{D,Z}, fun::Function, u::Vararg{<:CellField{Z}}) where {D,Z}
   phi = CellGeomap(trian)
-  compose(fun,phi,v...)
+  compose(fun,phi,u...)
 end
 
-CellField(cf::CellFieldLike) = cf
+function CellBasis(
+  trian::Triangulation{D,Z},
+  fun::Function,
+  b::CellBasis{Z},
+  u::Vararg{<:CellField{Z}}) where {D,Z}
+  phi = CellGeomap(trian)
+  compose(fun,phi,b,u...)
+end
 
 """
 Factory function to create CellQuadrature objects in a convenient way

@@ -175,8 +175,6 @@ diri_dofs(f::FEFunction) = f.diri_dofs
 
 FESpace(f::FEFunction) = f.fespace
 
-CellField(f::FEFunction{D,Z,T,E,R,C}) where {D,Z,T<:FieldValue,E,R<:Field{Z,T},C} = f.cellfield
-
 value_type(::FEFunction{D,Z,T}) where {D,Z,T} = T
 
 """
@@ -228,8 +226,6 @@ function FEBasis(fespace::FESpace)
   FEBasis(b)
 end
 
-CellField(b::FEBasis) = b.cellbasis
-
 for op in (:+, :-, :(gradient))
   @eval begin
     function ($op)(a::FEBasis)
@@ -249,12 +245,21 @@ for op in (:+, :-, :*)
   end
 end
 
-function inner(a::FEBasis,b::CellFieldLike)
+function inner(a::FEBasis,b::CellField)
   varinner(a.cellbasis,b)
 end
 
 function inner(a::FEBasis,b::FEBasis)
   varinner(a.cellbasis,b.cellbasis)
+end
+
+function CellBasis(
+  trian::Triangulation{D,Z},
+  fun::Function,
+  b::FEBasis,
+  u::Vararg{<:CellField{Z}}) where {D,Z}
+  basis = CellBasis(trian,fun,b.cellbasis,u...)
+  FEBasis(basis)
 end
 
 """
