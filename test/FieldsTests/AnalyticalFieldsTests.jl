@@ -15,7 +15,6 @@ fun(x) = 3*x[1]
 f = AnalyticalField(fun,2)
 v = fun.(p)
 test_field_without_gradient(f,p,v)
-@test HasGradientStyle(f) == GradientNotStyle()
 
 fungrad(x) = VectorValue(3.0,0.0)
 

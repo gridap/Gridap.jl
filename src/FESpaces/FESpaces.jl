@@ -28,7 +28,6 @@ export FESpaceWithDirichletData
 
 import Gridap: CellField
 import Gridap: CellBasis
-import Gridap: HasGradientStyle
 
 import Gridap: evaluate, gradient, return_size
 import Gridap: inner
@@ -169,8 +168,6 @@ struct FEFunction{
   fespace::FESpace{D,Z,T}
   cellfield::C
 end
-
-HasGradientStyle(::Type{<:FEFunction}) = GradientYesStyle()
 
 free_dofs(f::FEFunction) = f.free_dofs
 

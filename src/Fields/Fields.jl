@@ -4,10 +4,6 @@ using Test
 using Gridap
 using Gridap.Helpers
 
-export HasGradientStyle
-export GradientYesStyle
-export GradientNotStyle
-
 export FieldLike
 export Field
 export Basis
@@ -22,23 +18,9 @@ export test_basis
 import Base: length
 
 """
-Trait used to determine if a `CellField` and `CellBasis` type has gradient.
-This trait is used to precompute gradients and store them for efficiency
-"""
-abstract type HasGradientStyle end
-
-struct GradientYesStyle <: HasGradientStyle end
-
-struct GradientNotStyle <: HasGradientStyle end
-
-"""
 Umbrella type for Field and Basis
 """
 const FieldLike{D,T<:FieldValue,N} = Map{Point{D},1,T,N}
-
-function HasGradientStyle(::T) where T <:FieldLike
-  HasGradientStyle(T)
-end
 
 """
 Create the gradient of a `Field` or `Basis`
@@ -55,8 +37,6 @@ dimension `D`
 """
 const Field{D,T<:FieldValue} = FieldLike{D,T,1}
 
-HasGradientStyle(::Type{<:Field}) = GradientNotStyle()
-
 """
 Abstract basis for a space of fields of rank `T` (e.g., scalar, vector, tensor)
 on a manifold of dimension `D`.
@@ -66,8 +46,6 @@ The first dimension in the returned matrix corresponds to the dofs of the basis,
 whereas the second dimension corresponds to the evaluation points.
 """
 const Basis{D,T<:FieldValue} = FieldLike{D,T,2}
-
-HasGradientStyle(::Type{<:Basis}) = GradientYesStyle()
 
 @inline function num_dofs(b::Basis)
   n, = return_size(b,(1,))

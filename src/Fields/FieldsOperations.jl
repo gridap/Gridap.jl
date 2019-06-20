@@ -7,7 +7,6 @@ export change_basis
 import Gridap: evaluate!
 import Gridap: return_size
 import Gridap: gradient
-import Gridap: HasGradientStyle
 import Gridap.MapApply: MapFromKernel
 
 function change_basis(basis::Basis,changeofbasis::Matrix)
@@ -26,8 +25,6 @@ function FieldLikeAndGradient(
   G = typeof(grad)
   FieldLikeAndGradient{D,T,N,V,G}(val,grad)
 end
-
-HasGradientStyle(::Type{<:FieldLikeAndGradient}) = GradientYesStyle()
 
 function evaluate!(
   this::FieldLikeAndGradient{D,T,N},

@@ -18,7 +18,6 @@ export attachgeomap
 export compose
 import Gridap: evaluate
 import Gridap: gradient
-import Gridap: HasGradientStyle
 import Base: iterate
 import Base: length
 import Base: size
@@ -36,12 +35,14 @@ function varinner(a::CellBasis,b::CellFieldLike)
 end
 
 function lincomb(a::CellBasis,b::CellVector)
-  sa = HasGradientStyle(a)
-  _lincomb(a,b,sa)
+  k = LinCombKernel()
+  v = apply(k,a,b)
+  ag = gradient(a)
+  g = apply(k,ag,b)
+  _merge_val_and_grad(v,g)
 end
 
 function attachgeomap(a::CellBasis{D},b::CellGeomap{D,D}) where D
-  @assert HasGradientStyle(a) == GradientYesStyle()
   refg = gradient(a)
   jac = gradient(b)
   k = PhysGradKernel()
@@ -59,19 +60,6 @@ end
 function compose(f::Function,w::Vararg{<:CellFieldLike})
   h = hasmethod(gradient,(typeof(f),) )
   _compose(Val(h),f,w...)
-end
-
-function _lincomb(a,b,sa::GradientYesStyle)
-  k = LinCombKernel()
-  v = apply(k,a,b)
-  ag = gradient(a)
-  g = apply(k,ag,b)
-  _merge_val_and_grad(v,g)
-end
-
-function _lincomb(a,b,sa)
-  k = LinCombKernel()
-  apply(k,a,b)
 end
 
 function _compose(::Val{true},f,u...)
@@ -107,8 +95,6 @@ function IterCellFieldLikeAndGradient(
   G = typeof(grad)
   IterCellFieldLikeAndGradient{D,T,N,R,V,G}(val,grad)
 end
-
-HasGradientStyle(::Type{<:IterCellFieldLikeAndGradient}) = GradientYesStyle()
 
 gradient(f::IterCellFieldLikeAndGradient) = f.grad
 
@@ -162,8 +148,6 @@ function IndexCellFieldLikeAndGradient(
   cache = CachedValue{F}(nothing)
   IndexCellFieldLikeAndGradient{D,T,N,C,R,V,G,F}(val,grad,cache)
 end
-
-HasGradientStyle(::Type{<:IndexCellFieldLikeAndGradient}) = GradientYesStyle()
 
 gradient(f::IndexCellFieldLikeAndGradient) = f.grad
 

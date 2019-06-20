@@ -31,14 +31,12 @@ ufun(x::Point{2}) = 2*x[1]+x[2]
 
 u = CellField(trian,ufun)
 @test isa(u,CellField{2,Float64})
-@test HasGradientStyle(u) == GradientNotStyle()
 
 ufun_grad(x) = VectorValue(2.0,1.0)
 ∇(::typeof(ufun)) = ufun_grad
 
 u = CellField(trian,ufun)
 @test isa(u,CellField{2,Float64})
-@test HasGradientStyle(u) == GradientYesStyle()
 
 νfun(x::Point{2},u::Float64) = TensorValue(x[1], u*x[2], 0.0, u)
 

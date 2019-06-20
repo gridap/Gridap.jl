@@ -138,7 +138,6 @@ r = evaluate(f,p)
 v = [ ufun.(r) for i in 1:l ]
 
 cr = compose(ufun,cf)
-@test HasGradientStyle(cr) == GradientNotStyle()
 test_iter_cell_field_without_grad(cr,cp,v)
 
 ufungrad(x) = VectorValue(2,0)

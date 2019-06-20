@@ -33,7 +33,6 @@ export test_iter_cell_basis_without_grad
 export test_index_cell_basis_without_grad
 
 import Gridap: gradient
-import Gridap: HasGradientStyle
 
 const IterCellFieldLike{D,T<:FieldValue,N,R<:FieldLike{D,T,N}} = IterCellValue{R}
 
@@ -44,15 +43,8 @@ Umbrella type for CellField and CellBasis
 """
 const CellFieldLike{D,T<:FieldValue,N} = Union{IterCellFieldLike{D,T,N},IndexCellFieldLike{D,T,N}}
 
-HasGradientStyle(::Type{<:CellFieldLike}) = GradientNotStyle()
-
-function HasGradientStyle(::T) where T <:CellFieldLike
-  HasGradientStyle(T)
-end
-
 """
 Returns another CellField or CellBasis object representing the gradient of the given one.
-For efficiency reasons, different cells to this methods should return the same object
 """
 function gradient(::CellFieldLike{D,T,N})::CellFieldLike{D,G,N} where {D,T,G,N}
   @abstractmethod
