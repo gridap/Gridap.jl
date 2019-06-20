@@ -1,6 +1,10 @@
-[Getting Started](@id getting-started)
+# Getting Started
 
-## Requirements
+## Getting started with julia
+
+* Official julia documentation [docs.julialang.org](https://docs.julialang.org/)
+
+## Installation requirements
 
 At the moment, Gridap requires at least Julia version 1.1.
 

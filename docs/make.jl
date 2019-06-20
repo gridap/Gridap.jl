@@ -10,7 +10,7 @@ makedocs(
     "Getting Started" => "pages/getting-started.md",
     "Manual" => "pages/manual.md",
     "API"=>"pages/api.md",
-    "Developer's guide" => "pages/dev.md"]
+    "Developer's Guide" => "pages/dev.md"]
  )
 
 deploydocs(repo = "github.com/gridap/Gridap.jl.git")
