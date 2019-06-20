@@ -18,6 +18,7 @@ b1fun(x) = u2fun(x) -(3.0*x[1]+x[2]+1.0)
 b2fun(x) = 0.0
 
 νfun(x,u1) = (u1+1.0)*x[1]
+dνfun(x,u1,du1) = du1*x[1]
 
 # Construct the discrete model
 model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(4,4))
@@ -52,7 +53,7 @@ a(u,v,du) = inner(∇(v[1]),ν(u[1])*∇(du[1])) + inner(v[1],du[2]) + inner(∇
 b(v) = inner(v[1],b1field) + inner(v[2],b2field)
 
 res(u,v) = a(u,v,u) - b(v)
-jac(u,v,du) = a(u,v,du) # + inner(∇(v[1]),ν(du[1])*∇(u[1]))
+jac(u,v,du) = a(u,v,du) # + inner(∇(v[1]),dν(u[1],du[1])*∇(u[1]))
 
 # Define Assembler
 assem = SparseMatrixAssembler(V,U)

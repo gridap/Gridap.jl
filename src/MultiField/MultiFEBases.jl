@@ -7,11 +7,14 @@ import Gridap: inner
 import Base: +, -, *
 import Base: length, getindex
 import Gridap.FESpaces: FEBasis
+import Gridap: CellField
 
 struct FEBasisWithFieldId{B<:CellBasis}
   cellbasis::B
   fieldid::Int
 end
+
+CellField(b::FEBasisWithFieldId) = b.cellbasis
 
 for op in (:+, :-, :(gradient))
   @eval begin

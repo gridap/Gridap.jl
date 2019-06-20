@@ -162,7 +162,7 @@ E = eltype(T) and its fe space
 """
 struct FEFunction{
   D,Z,T,E,R,
-  C <: CellField{Z,T}} <: IterCellField{Z,T,R}
+  C <: CellField{Z,T}} <: IterCellValue{R}
   free_dofs::AbstractVector{E}
   diri_dofs::AbstractVector{E}
   fespace::FESpace{D,Z,T}
@@ -174,6 +174,8 @@ free_dofs(f::FEFunction) = f.free_dofs
 diri_dofs(f::FEFunction) = f.diri_dofs
 
 FESpace(f::FEFunction) = f.fespace
+
+CellField(f::FEFunction{D,Z,T,E,R,C}) where {D,Z,T<:FieldValue,E,R<:Field{Z,T},C} = f.cellfield
 
 value_type(::FEFunction{D,Z,T}) where {D,Z,T} = T
 
@@ -226,6 +228,8 @@ function FEBasis(fespace::FESpace)
   FEBasis(b)
 end
 
+CellField(b::FEBasis) = b.cellbasis
+
 for op in (:+, :-, :(gradient))
   @eval begin
     function ($op)(a::FEBasis)
@@ -245,7 +249,7 @@ for op in (:+, :-, :*)
   end
 end
 
-function inner(a::FEBasis,b::CellField)
+function inner(a::FEBasis,b::CellFieldLike)
   varinner(a.cellbasis,b)
 end
 

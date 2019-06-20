@@ -11,6 +11,7 @@ ufun_grad(x) = VectorValue(1.0,1.0)
 ∇(::typeof(ufun)) = ufun_grad
 bfun(x) = -(3.0*x[1]+x[2]+1.0)
 νfun(x,u) = (u+1.0)*x[1]
+dνfun(x,u,du) = x[1]*du
 
 # Construct the discrete model
 model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(4,4))
@@ -33,11 +34,12 @@ bfield = CellField(trian,bfun)
 
 # Define a solution dependent material parameter
 ν(u) = CellField(trian,νfun,u)
+dν(u,du) = CellField(trian,dνfun,u,du)
 
 # Define residual and jacobian
 a(u,v,du) = inner( ∇(v), ν(u)*∇(du))
 res(u,v) = a(u,v,u) - inner(v,bfield)
-jac(u,v,du) = a(u,v,du)  # + inner(v,ν(du)*grad(u))
+jac(u,v,du) = a(u,v,du) + inner(∇(v),dν(u,du)*∇(u))
 
 # Define Assembler
 assem = SparseMatrixAssembler(V,U)

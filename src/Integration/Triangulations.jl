@@ -39,8 +39,6 @@ function CellBasis(trian::Triangulation{Z})::CellBasis{Z,Float64} where Z
  @abstractmethod
 end
 
-# TODO this creates a new object each time. Can be problematic when needed to
-# cache things
 function CellGeomap(self::Triangulation)
   coords = CellPoints(self)
   basis = CellBasis(self)
@@ -76,11 +74,13 @@ function CellField(trian::Triangulation,fun::Function)
   compose(fun,phi)
 end
 
-function CellField(
-  trian::Triangulation{D,Z}, fun::Function, u::Vararg{<:CellFieldLike{Z}}) where {D,Z}
+function CellField(trian::Triangulation, fun::Function, u...)
+  v = [ CellField(ui) for ui in u ]
   phi = CellGeomap(trian)
-  compose(fun,phi,u...)
+  compose(fun,phi,v...)
 end
+
+CellField(cf::CellFieldLike) = cf
 
 """
 Factory function to create CellQuadrature objects in a convenient way
