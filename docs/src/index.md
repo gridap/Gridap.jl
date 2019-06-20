@@ -26,3 +26,13 @@ embedded domain techniques, and adaptive mesh refinement.
 
 In addition to this documentation pages, a set of tutorials written in jupyter notebooks will be available.
 
+## Julia educational resources
+
+A basic knowledge of the Julia programming language is needed to use the Gridap package.
+Here, a list of resources to get started with this programming language.
+
+* Official webpage [docs.julialang.org](https://docs.julialang.org/)
+* Official list of learning resources [julialang.org/learning](https://julialang.org/learning/)
+
+
+
