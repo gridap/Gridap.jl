@@ -2,14 +2,6 @@ module AssemblersTests
 
 using Test
 using Gridap
-using Gridap.Geometry
-using Gridap.CellMaps
-using Gridap.Geometry.Cartesian
-using Gridap.CellQuadratures
-using Gridap.CellIntegration
-
-using Gridap.FESpaces
-using Gridap.Assemblers
 
 model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(2,2))
 

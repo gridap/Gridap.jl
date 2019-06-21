@@ -1,25 +1,8 @@
-include("../../src/MultiField/MultiFEOperators.jl")
-
 module MultiFEOperatorsTests
-
-using Gridap.FESpaces
-using Gridap.Assemblers
-using Gridap.FEOperators
-using Gridap.LinearSolvers
 
 using Test
 using Gridap
-using Gridap.Geometry
-using Gridap.CellMaps
-using Gridap.Geometry.Cartesian
-using Gridap.FieldValues
-using Gridap.CellQuadratures
-using Gridap.CellIntegration
-using Gridap.Vtkio
-
-using ..MultiFEOperators: LinearMultiFESolver # TODO
-
-import Gridap: gradient
+import Gridap: ∇
 
 # Define manufactured functions
 u1fun(x) = x[1] + x[2]
@@ -28,8 +11,8 @@ u2fun(x) = x[1] - x[2]
 u1fun_grad(x) = VectorValue(1.0,1.0)
 u2fun_grad(x) = VectorValue(1.0,-1.0)
 
-gradient(::typeof(u1fun)) = u1fun_grad
-gradient(::typeof(u2fun)) = u2fun_grad
+∇(::typeof(u1fun)) = u1fun_grad
+∇(::typeof(u2fun)) = u2fun_grad
 
 b1fun(x) = u2fun(x)
 b2fun(x) = 0.0
@@ -60,18 +43,9 @@ b1field = CellField(trian,b1fun)
 b2field = CellField(trian,b2fun)
 
 # Define forms
-function a(v,u)
-  a11 = varinner(∇(v[1]), ∇(u[1]))
-  a12 = varinner(v[1],u[2])
-  a22 = varinner(∇(v[2]), ∇(u[2]))
-  return [a11,a12,a22], [(1,1),(1,2),(2,2)] # TODO
-end
+a(v,u) = inner(∇(v[1]),∇(u[1])) + inner(v[1],u[2]) + inner(∇(v[2]),∇(u[2]))
 
-function b(v)
-  b1 = varinner(v[1],b1field)
-  b2 = varinner(v[2],b2field)
-  return [b1,b2], [(1,),(2,)] # TODO
-end
+b(v) = inner(v[1],b1field) + inner(v[2],b2field)
 
 # Define Assembler
 assem = SparseMatrixAssembler(V,U)
@@ -81,7 +55,7 @@ op = LinearFEOperator(a,b,V,U,assem,trian,quad)
 
 # Define the FESolver
 ls = LUSolver()
-solver = LinearMultiFESolver(ls) # TODO
+solver = LinearFESolver(ls)
 
 # Solve!
 uh = solve(solver,op)

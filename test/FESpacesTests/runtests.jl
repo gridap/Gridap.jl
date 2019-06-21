@@ -1,5 +1,13 @@
+module FESpacesTestsAll
 
-include("FESpacesTests.jl")
-include("AssemblersTests.jl")
-include("FEOperatorsTests.jl")
-include("NonLinearFEOperatorsTests.jl")
+using Test
+
+@testset "FESpaces" begin include("FESpacesTests.jl") end
+
+@testset "Assemblers" begin include("AssemblersTests.jl") end
+
+@testset "FEOperators" begin include("FEOperatorsTests.jl") end
+
+@testset "NonLinearFEOperators" begin include("NonLinearFEOperatorsTests.jl") end
+
+end # module

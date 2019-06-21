@@ -1,12 +1,8 @@
 module MultiCellArraysTests
 
 using Test
-
 using Gridap
-using Gridap.MultiCellArrays
-using Gridap.CellValues
 using Gridap.CachedArrays
-using Gridap.CellValues.ConstantCellValues
 
 l = 10
 sv = 1.0

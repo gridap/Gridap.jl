@@ -2,18 +2,10 @@ module FESpaces
 
 using Gridap
 using Gridap.Helpers
-using Gridap.RefFEs
-using Gridap.Polytopes
-using Gridap.CellValues
-using Gridap.CellMaps
-using Gridap.CellValues.ConstantCellValues
-using Gridap.CellValues.Wrappers
-using Gridap.CellValues.Append
-using Gridap.Geometry
-using Gridap.FieldValues
-using Gridap.CellMaps.Operations: CellFieldFromExpand
+using Gridap.CellValuesGallery
 
 export FEFunction
+export FEBasis
 export free_dofs
 export diri_dofs
 export FESpace
@@ -34,12 +26,15 @@ export value_type
 export ConformingFESpace
 export FESpaceWithDirichletData
 
-import Gridap.CellMaps: CellField, CellBasis
+import Gridap: CellField
+import Gridap: CellBasis
 
 import Gridap: evaluate, gradient, return_size
+import Gridap: inner
 import Base: iterate
 import Base: length
 import Base: zero
+import Base: +, -, *
 
 """
 Abstract FE Space parameterized with respec to the environment dimension `D`,
@@ -167,7 +162,7 @@ E = eltype(T) and its fe space
 """
 struct FEFunction{
   D,Z,T,E,R,
-  C <: CellField{Z,T}} <: IterCellField{Z,T,R}
+  C <: CellField{Z,T}} <: IterCellValue{R}
   free_dofs::AbstractVector{E}
   diri_dofs::AbstractVector{E}
   fespace::FESpace{D,Z,T}
@@ -221,6 +216,51 @@ return_size(f::FEFunction,s::Tuple{Int}) = return_size(f.cellfield,s)
 @inline iterate(f::FEFunction,state) = iterate(f.cellfield,state)
 
 length(f::FEFunction) = length(f.cellfield)
+
+struct FEBasis{B<:CellBasis}
+  cellbasis::B
+end
+
+function FEBasis(fespace::FESpace)
+  b = CellBasis(fespace)
+  FEBasis(b)
+end
+
+for op in (:+, :-, :(gradient))
+  @eval begin
+    function ($op)(a::FEBasis)
+      FEBasis($op(a.cellbasis))
+    end
+  end
+end
+
+for op in (:+, :-, :*)
+  @eval begin
+    function ($op)(a::FEBasis,b::CellMap)
+      FEBasis($op(a.cellbasis,b))
+    end
+    function ($op)(a::CellMap,b::FEBasis)
+      FEBasis($op(a,b.cellbasis))
+    end
+  end
+end
+
+function inner(a::FEBasis,b::CellField)
+  varinner(a.cellbasis,b)
+end
+
+function inner(a::FEBasis,b::FEBasis)
+  varinner(a.cellbasis,b.cellbasis)
+end
+
+function CellBasis(
+  trian::Triangulation{D,Z},
+  fun::Function,
+  b::FEBasis,
+  u::Vararg{<:CellField{Z}}) where {D,Z}
+  basis = CellBasis(trian,fun,b.cellbasis,u...)
+  FEBasis(basis)
+end
 
 """
 FESpace whose Dirichlet component has been constrained
@@ -396,7 +436,7 @@ end
 _polytope(celltypes) = @notimplemented
 
 function _polytope(celltypes::ConstantCellValue)
-  code = celldata(celltypes)
+  code = celltypes.value
   Polytope(code)
 end
 
@@ -404,7 +444,7 @@ function _interpolated_values(fesp::ConformingFESpace{D,Z,T},fun::Function) wher
   reffe = fesp._reffes
   dofb = reffe.dofbasis
   trian = fesp._triangulation
-  phi = geomap(trian)
+  phi = CellGeomap(trian)
   uphys = fun ∘ phi
   celldofs = fesp.cell_eqclass
   nfdofs = fesp.dim_to_nface_eqclass
@@ -463,12 +503,12 @@ function _setup_conforming_fe_fields(reffe,trian,graph,labels,diri_tags,D)
   for i in 2:length(offset)
     offset[i] += offset[i-1]
   end
-  offset = tuple(offset...)
-  cellvefs = IndexCellValueByLocalAppendWithOffset(offset, cellvefs_dim...)
-  dofs_all = IndexCellValueByGlobalAppend(dim_to_nface_eqclass...)
+  offset = tuple(offset[1:(end-1)]...)
+  cellvefs = local_append(offset, cellvefs_dim...)
+  dofs_all = append(dim_to_nface_eqclass...)
   cell_eqclass = CellVectorByComposition(cellvefs, dofs_all)
   shb = ConstantCellValue(reffe.shfbasis, ncells(trian))
-  phi = geomap(trian)
+  phi = CellGeomap(trian)
   basis = attachgeomap(shb,phi)
   return dim_to_nface_eqclass, cell_eqclass, nfree, ndiri, diri_tags,
     reffe, trian, graph, labels, basis

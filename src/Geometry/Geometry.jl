@@ -4,18 +4,11 @@ module Geometry
 
 using Gridap
 using Gridap.Helpers
-using Gridap.FieldValues
-using Gridap.Polytopes
-using Gridap.RefFEs
-using Gridap.CellValues
-using Gridap.CellValues.ConstantCellValues
-using Gridap.CellValues.Wrappers
-using Gridap.CellMaps
-using Gridap.CellMaps.ConstantCellMaps
+using Gridap.CellValuesGallery: CellVectorFromLocalToGlobal
+using Gridap.CellValuesGallery: CellValueFromArray
 
 # Functionality provided by this module
 
-export Triangulation
 export Grid
 export GridGraph
 export GridGraphFromData
@@ -27,8 +20,6 @@ export celltovefs
 export veftocells
 export gridgraph
 export geomap
-export cellcoordinates
-export ncells
 export npoints
 export FaceLabels
 export labels_on_dim
@@ -41,72 +32,11 @@ export celldim
 export pointdim
 export FullGridGraph
 export connections
-import Gridap.CellMaps: CellBasis
-
-"""
-Minimal interface for a mesh used for numerical integration
-"""
-abstract type Triangulation{Z,D} end
-
-function cellcoordinates(::Triangulation{Z,D})::CellPoints{D} where {Z,D}
- @abstractmethod
-end
-
-# @fverdugo Return the encoded extrusion instead?
-# If we restrict to polytopes that can be build form
-# extrusion tuples, then we cannot accommodate polygonal elements, etc.
-# This is a strong limitation IMHO that has to be worked out
-
-# @santiagobadia : For sure, you can create your own polytope and fill all the
-# info needed. It is a "static" polytope. We could express the current polytope
-# as PolytopeByExtrusion and define the abstract polytope.
-# In any case, I don't see what is the practical point for generating something
-# like this. You will need to put a functional space on top of it and it does
-# not work for a general polytope (in fact, it is even hard for pyramids, etc)
-# I find it quite impractical.
-# In any case, you could replace NTuple{Z} by e.g. P
-# and in the implementation of a constructor, P = typeof(polytope), or an array
-# of these values for a hybrid mesh... See also below (l.145).
-# @fverdugo I also was thinking in something in this direction.
-# However, this has to be done with care in order to ensure a type stable design.
-# That is, CellValue{AbstractPolytope} has to furnish the objects of THE SAME TYPE
-# at each iteration. The way to solve it is to have a tuple of Polytope instances
-# and then a CellValue{Int} that of indexes into this tuple
-#
-"""
-Returns the tuple uniquely identifying the Polytope of each cell
-"""
-function celltypes(::Triangulation{Z,D})::CellValue{NTuple{Z}} where {Z,D}
-  @abstractmethod
-end
-# @santiagobadia : I think that the celltypes should be in the grid. The grid
-# relies on it. E.g., the numbering being used in the cell vertices is a
-# particular one, the one of the corresponding polytope numbering for its
-# vertices. E.g., the Grid numbering being used in Fempar, Deal.ii, and Gid
-# is different for quads.
-# @fverdugo Yes, sure. Its a typo. celltypes is already implemented for all Grid types
-# in the code, but I have deleted it from the interface unconsciously.
-# Moreover, celltypes and cellorders can be deleted from the Triangulation interface
-# (since they are already in Grid) and make cellbasis(::Triangulation) abstract,
-# which will be implemented by TriangulationFromGrid using the result of celltypes and
-# cellorders provided by the underlying grid
-
-cellorders(::Triangulation)::CellValue{Int} = @abstractmethod
-
-function CellBasis(trian::Triangulation{Z,D}) where {Z,D}
-  _cellbasis(trian,celltypes(trian),cellorders(trian))
-end
-
-function geomap(self::Triangulation)
-  coords = cellcoordinates(self)
-  basis = CellBasis(self)
-  lincomb(basis,coords)
-end
-
-function ncells(self::Triangulation)
-  coords = cellcoordinates(self)
-  length(coords)
-end
+import Gridap: ncells
+import Gridap: CellPoints
+import Gridap: CellRefFEs
+import Gridap: CellBasis
+import Gridap: Triangulation
 
 #@fverdugo make Z,D and D,Z consistent
 """
@@ -146,7 +76,7 @@ ncells(g::Grid) = length(celltypes(g))
 
 npoints(g::Grid) = length(points(g))
 
-Triangulation(grid::Grid) = TriangulationFromGrid(grid) #@fverdugo replace by Triangulation
+Triangulation(grid::Grid) = TriangulationFromGrid(grid)
 
 """
 Abstract type that provides extended connectivity information associated with a grid.
@@ -291,12 +221,6 @@ celltovefs(self::GridGraphFromData) = self.celltovefs
 
 veftocells(self::GridGraphFromData) = self.veftocells
 
-# Submodules
-
-include("Unstructured.jl")
-include("Wrappers.jl")
-include("Cartesian.jl")
-
 # Helpers
 
 _cellbasis( trian, ctypes, corders ) = @notimplemented
@@ -325,12 +249,43 @@ end
 # generation algorithms (untangling etc). Probably a too advanced topic yet...
 # @fverdugo yes, sure. It will be just a factory function that returns objects
 # that fit in the current interface. So the code is prepared for this extension.
-function cellcoordinates(self::TriangulationFromGrid)
+function CellPoints(self::TriangulationFromGrid)
   CellVectorFromLocalToGlobal(cells(self.grid),points(self.grid))
 end
 
-celltypes(self::TriangulationFromGrid) = celltypes(self.grid)
+function CellRefFEs(trian::TriangulationFromGrid)
+  grid = trian.grid
+  _build_cell_ref_fes(celltypes(grid),cellorders(grid))
+end
 
-cellorders(self::TriangulationFromGrid) = cellorders(self.grid)
+function CellBasis(trian::TriangulationFromGrid)
+  reffes = CellRefFEs(trian)
+  _setup_cell_basis(reffes)
+end
+
+function _build_cell_ref_fes(codes,orders)
+  @notimplemented
+end
+
+function _build_cell_ref_fes(
+  codes::ConstantCellValue, orders::ConstantCellValue)
+  code = codes.value
+  D = length(code)
+  order = orders.value
+  polytope = Polytope(code)
+  _orders = fill(order,D)
+  reffe = LagrangianRefFE{D,Float64}(polytope,_orders)
+  ConstantCellValue(reffe,length(codes))
+end
+
+function _setup_cell_basis(reffes)
+  @notimplemented
+end
+
+function _setup_cell_basis(reffes::ConstantCellValue)
+  reffe = reffes.value
+  basis = shfbasis(reffe)
+  ConstantCellMap(basis,reffes.length)
+end
 
 end # module Geometry

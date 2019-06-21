@@ -1,11 +1,7 @@
-include("MultiAssemblers.jl")
-
 module MultiFEFunctions
 
 using Gridap
 using Gridap.Helpers
-using Gridap.FESpaces
-using ..MultiFESpaces
 
 export MultiFEFunction
 
@@ -14,6 +10,7 @@ import Base: getindex
 import Base: iterate
 import Base: zero
 import Gridap.FESpaces: free_dofs
+import Gridap.FESpaces: FEFunction
 
 struct MultiFEFunction
   fields::Vector{<:FEFunction}
@@ -26,6 +23,11 @@ function MultiFEFunction(
     FEFunction(U,restrict_to_field(fespaces,free_dofs_all_fields,i))
     for (i,U) in enumerate(fespaces) ]
   MultiFEFunction(fields,free_dofs_all_fields)
+end
+
+function FEFunction(
+  fespaces::MultiFESpace, free_dofs_all_fields::AbstractVector)
+  MultiFEFunction(free_dofs_all_fields,fespaces)
 end
 
 free_dofs(self::MultiFEFunction) = self.free_dofs_all_fields

@@ -1,29 +1,17 @@
 module NonLinearFEOperatorsTests
 
-using Gridap.FESpaces
-using Gridap.Assemblers
-using Gridap.FEOperators
-using Gridap.LinearSolvers
-using Gridap.NonLinearSolvers
-
 using Test
 using Gridap
-using Gridap.CellMaps
-using Gridap.Geometry
-using Gridap.Geometry.Cartesian
-using Gridap.FieldValues
-using Gridap.CellQuadratures
-using Gridap.CellIntegration
-using Gridap.Vtkio
 
-import Gridap: gradient
+import Gridap: ∇
 
 # Define manufactured functions
 ufun(x) = x[1] + x[2]
 ufun_grad(x) = VectorValue(1.0,1.0)
-gradient(::typeof(ufun)) = ufun_grad
+∇(::typeof(ufun)) = ufun_grad
 bfun(x) = -(3.0*x[1]+x[2]+1.0)
 νfun(x,u) = (u+1.0)*x[1]
+dνfun(x,du) = x[1]*du
 
 # Construct the discrete model
 model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(4,4))
@@ -46,11 +34,12 @@ bfield = CellField(trian,bfun)
 
 # Define a solution dependent material parameter
 ν(u) = CellField(trian,νfun,u)
+dν(du) = CellBasis(trian,dνfun,du)
 
 # Define residual and jacobian
-a(u,v,du) = varinner( ∇(v), ν(u)*∇(du))
-res(u,v) = a(u,v,u) - varinner(v,bfield)
-jac(u,v,du) = a(u,v,du)  # + varinner(v,ν(du)*grad(u))
+a(u,v,du) = inner( ∇(v), ν(u)*∇(du))
+res(u,v) = a(u,v,u) - inner(v,bfield)
+jac(u,v,du) = a(u,v,du) + inner(∇(v),dν(du)*∇(u))
 
 # Define Assembler
 assem = SparseMatrixAssembler(V,U)
@@ -73,8 +62,8 @@ u = CellField(trian,ufun)
 e = u - uh
 
 # Define norms to measure the error
-l2(u) = varinner(u,u)
-sh1(u) = varinner(∇(u),∇(u))
+l2(u) = inner(u,u)
+sh1(u) = inner(∇(u),∇(u))
 h1(u) = sh1(u) + l2(u)
 
 # Compute errors
