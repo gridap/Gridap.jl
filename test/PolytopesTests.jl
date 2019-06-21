@@ -91,6 +91,82 @@ nf_vs = Gridap.Polytopes._dimfrom_fs_dimto_fs(p,2,0)
 @test length(nf_vs) == 4
 @test nf_vs[end] == [2,3,4]
 
+
+# Edge
+##
+D = 3
+p = Polytope(1,1,1)
+anc = p.nfaces[end].anchor
+ext = p.nfaces[end].extrusion
+
+p.nfaces
+# vertices coordinates
+vs_r = p.nf_dim[end][1]
+vs = p.nfaces[vs_r]
+num_vs = length(vs)
+vs_cs = Vector{Vector{Int}}(undef, num_vs)
+for (i_v,v) in enumerate(vs)
+  vs_cs[i_v] = v.anchor
+end
+perm = zeros(Int64, D*num_vs, D)
+c = 1
+for (i_v,v) in enumerate(vs)
+  global(c)
+  v_cs = vs_cs[i_v]
+  for idim = 1:D
+    perm[c, 1] = i_v
+    auxv = copy(v_cs)
+    v_cs[idim] == 0 ? auxv[idim] = 1 : auxv[idim] = 0
+    for k = 1:num_vs
+      if vs_cs[k] == auxv
+        perm[c, idim+1] = k
+        c += 1
+        exit
+      end
+    end
+  end
+end
+perm
+##
+
+
+
+1 2
+2 1
+
+1 -> 2 first axis
+1 -> 3 second axis
+
+if placed in 2
+2 -> 1 ok
+2 -> 3 not possible
+2 -> 4 ok
+
+we must do it with i,j !
+
+1 = (0,0)
+2 = (1,0)
+3 = (0,1)
+4 = (1,1)
+
+Thus, at 2
+we can choose the first axis to be e1 or e2
+If e1, since x2(1) = 1, +(-1,0) -> (0,0)
+Next e2, since x2(2) = 0, +(0,1) -> (1,1)
+It provides 2,1 and 2,4 all what is needed to determine orientations
+t
+
+
+1 2 3 4
+1 3 2 4
+2 4 1 3
+2 1 4 3
+3 4 1 2
+3 1 4 2
+4 3 2 1
+4 2 3 1
+
+
 # Test to check the views of n-face set for a given n
 ##
 # D=3
