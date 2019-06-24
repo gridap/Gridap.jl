@@ -24,7 +24,7 @@ embedded domain techniques, and adaptive mesh refinement.
 
 ## Tutorials
 
-In addition to this documentation pages, a set of tutorials written in jupyter notebooks will be available.
+In addition to these documentation pages, a set of tutorials written in jupyter notebooks will be available.
 
 ## Julia educational resources
 

@@ -34,6 +34,8 @@ include("MapsMocks.jl")
 
 @testset "CellValuesReindex" begin include("CellValuesReindexTests.jl") end
 
+@testset "FindLocalIndex" begin include("FindLocalIndexTests.jl") end
+
 @testset "ConstantCellValues" begin include("ConstantCellValuesTests.jl") end
 
 
