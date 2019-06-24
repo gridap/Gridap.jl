@@ -10,3 +10,9 @@ include("UnstructuredGeometry.jl")
 
 include("CartesianGeometry.jl")
 @reexport using Gridap.CartesianGeometry
+
+include("GridPortions.jl")
+@reexport using Gridap.GridPortions
+
+include("BoundaryGrids.jl")
+@reexport using Gridap.BoundaryGrids

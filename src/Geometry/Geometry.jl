@@ -2,6 +2,7 @@ module Geometry
 
 # Dependencies of this module
 
+using Test
 using Gridap
 using Gridap.Helpers
 using Gridap.CellValuesGallery: CellVectorFromLocalToGlobal
@@ -10,6 +11,7 @@ using Gridap.CellValuesGallery: CellValueFromArray
 # Functionality provided by this module
 
 export Grid
+export test_grid
 export GridGraph
 export GridGraphFromData
 export points
@@ -56,13 +58,13 @@ abstract type Grid{D,Z} end
 # with polytope info but without cell order info), but
 # I am not sure if it is needed since it is just a particular case of the current Grid...
 # Moreover, for pure integer-based info, we have GridGraph
-function points(::Grid{D})::IndexCellValue{Point{D}} where D
+function points(::Grid{D})::IndexCellValue{<:Point{D}} where D
   @abstractmethod
 end
 
 cells(::Grid)::IndexCellArray{Int,1} = @abstractmethod
 
-function celltypes(::Grid{D,Z})::CellValue{NTuple{Z}} where {D,Z}
+function celltypes(::Grid{D,Z})::CellValue{NTuple{Z,Int}} where {D,Z}
   @abstractmethod
 end
 
@@ -77,6 +79,17 @@ ncells(g::Grid) = length(celltypes(g))
 npoints(g::Grid) = length(points(g))
 
 Triangulation(grid::Grid) = TriangulationFromGrid(grid)
+
+function test_grid(grid::Grid{D,Z},np,nc) where {D,Z}
+  @test isa(points(grid),IndexCellValue{<:Point{D}})
+  @test isa(cells(grid),IndexCellVector{<:Integer})
+  @test isa(celltypes(grid),CellValue{NTuple{Z,Int}})
+  @test isa(cellorders(grid),IndexCellValue{Int})
+  @test np == length(points(grid))
+  @test nc == length(cells(grid))
+  @test nc == length(celltypes(grid))
+  @test nc == length(cellorders(grid))
+end
 
 """
 Abstract type that provides extended connectivity information associated with a grid.
@@ -174,11 +187,18 @@ function FaceLabels(::DiscreteModel{D})::FaceLabels{D} where D
   @abstractmethod
 end
 
+function FaceLabels(model::DiscreteModel,dim::Integer)
+  labels = FaceLabels(model)
+  labels_on_dim(labels,dim)
+end
+
 Grid(m::DiscreteModel,dim::Integer) = Grid(m,Val(dim))
 
 GridGraph(m::DiscreteModel,dim::Integer) = GridGraph(m,Val(dim))
 
 pointdim(::DiscreteModel{D}) where D = D
+
+celldim(::DiscreteModel{D}) where D = D
 
 function Triangulation(m::DiscreteModel,dim::Integer)
   grid = Grid(m,dim)
