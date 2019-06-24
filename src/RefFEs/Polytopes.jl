@@ -4,6 +4,8 @@ using Gridap
 using StaticArrays
 using Base.Cartesian
 
+using Combinatorics
+
 export Polytope
 export NodesArray
 export NFace
@@ -220,6 +222,69 @@ function _dimfrom_fs_dimto_fs(p::Polytope, dim_from::Int, dim_to::Int)
   end
   return dffs_dtfs
 end
+
+"""
+It generates all the admissible permutations of nodes that lead to an
+admissible polytope
+"""
+function generate_admissible_permutations(p::Polytope)
+  p_dims = length(p.extrusion)
+  p_vs = Gridap.Polytopes._dimfrom_fs_dimto_fs(p,p_dims,0)
+  vs = p.nfaces[p_vs...]
+  num_vs = length(vs)
+  ext = p.extrusion
+  l = [i  for i in 1:num_vs]
+  # @santiagobadia : Here we have to decide how we want this info stored
+  permuted_polytopes = Vector{Int}[]
+  for c in Combinatorics.permutations(l,p_dims+1)
+    admissible_polytope = true
+    c1 = vs[c[1]].anchor
+    for j in 2:p_dims+1
+      c2 = vs[c[j]].anchor
+      if ( !_are_nodes_connected(c1,c2,ext) )
+        admissible_polytope = false
+      end
+    end
+    if (admissible_polytope)
+      push!(permuted_polytopes,c)
+    end
+  end
+  return permuted_polytopes
+end
+
+"""
+Auxiliary function that determines whether two nodes are connected
+"""
+function _are_nodes_connected(c1, c2, ext)
+  sp_dims = length(c1)
+  d = zeros(length(c1))
+  for i in 1:length(d)
+    d[i] = c2[i]-c1[i]
+  end
+  dn = sum(d.*d)
+  connected = false
+  if (dn == 1)
+    connected = true
+  else
+    k = 0
+    for j in 1:sp_dims
+      if (ext[j] == 2)
+        if (c1[j] == 1 || c2[j] == 1)
+          k = j
+        end
+      end
+    end
+    for l in 1:k
+      d[l] = 0
+    end
+    dn = sum(d.*d)
+    if (dn == 0)
+      connected = true
+    end
+  end
+  return connected
+end
+
 
 # @santiagobadia : The rest is waiting for a geomap
 

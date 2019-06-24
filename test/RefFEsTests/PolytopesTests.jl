@@ -3,7 +3,7 @@ module PolytopesTests
 ##
 using Gridap, Test
 using Gridap.Polytopes: PointInt
-
+using Gridap.Polytopes
 # Developing the change of basis for all n-faces of a polytope
 # 1. Given an n-face, determine all rigid-body permutations
 # 2. Method that identifies the change of basis required to glue
@@ -93,6 +93,15 @@ nf_vs = Gridap.Polytopes._dimfrom_fs_dimto_fs(p,2,0)
 
 # Edge
 ##
+p = Polytope(1,1,2)
+perm_p = Gridap.Polytopes.generate_admissible_permutations(p)
+@test length(perm_p) == 48
+# @show perm_p
+p = Polytope(1,2,2)
+perm_p = Gridap.Polytopes.generate_admissible_permutations(p)
+@test length(perm_p) == 24
+##
+
 
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
