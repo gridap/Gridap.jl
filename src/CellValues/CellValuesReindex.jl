@@ -1,6 +1,7 @@
 module CellValuesReindex
 
 using Gridap
+using Gridap.CellValuesGallery
 using Base: @pure
 
 export reindex
@@ -13,6 +14,11 @@ import Base: getindex
 import Base: IndexStyle
 
 const IndexLike = Union{Integer,CartesianIndex}
+
+function reindex(values::IndexCellValue, indices::Vector{<:IndexLike})
+  i = CellValueFromArray(indices)
+  reindex(values,i)
+end
 
 function reindex(values::IndexCellValue, indices::CellValue{<:IndexLike})
   IterCellValueFromReindex(values,indices)

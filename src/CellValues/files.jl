@@ -29,6 +29,9 @@ include("MapApply.jl")
 include("CellMapApply.jl")
 @reexport using Gridap.CellMapApply
 
+include("CellValuesGallery.jl")
+#@reexport using Gridap.CellValuesGallery
+
 include("CellValuesOperations.jl")
 @reexport using Gridap.CellValuesOperations
 
@@ -44,7 +47,5 @@ include("FindLocalIndex.jl")
 include("ConstantCellValues.jl")
 @reexport using Gridap.ConstantCellValues
 
-include("CellValuesGallery.jl")
-#@reexport using Gridap.CellValuesGallery
 
 

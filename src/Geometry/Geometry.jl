@@ -198,6 +198,8 @@ GridGraph(m::DiscreteModel,dim::Integer) = GridGraph(m,Val(dim))
 
 pointdim(::DiscreteModel{D}) where D = D
 
+celldim(::DiscreteModel{D}) where D = D
+
 function Triangulation(m::DiscreteModel,dim::Integer)
   grid = Grid(m,dim)
   Triangulation(grid)
