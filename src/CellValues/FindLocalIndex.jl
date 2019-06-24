@@ -1,4 +1,4 @@
-module FindLocalIndices
+module FindLocalIndex
 
 using Gridap
 
@@ -16,7 +16,8 @@ struct LocalIndices{T,A,B} <: IndexCellNumber{T,1}
   lids_to_gids::B
 end
 
-function LocalIndices(T::Type,gids::CellNumber,lids_to_gids::CellArray)
+function LocalIndices(
+  T::Type,gids::IndexCellNumber,lids_to_gids::IndexCellArray)
   @assert T <: Integer
   @assert length(gids) == length(lids_to_gids)
   A = typeof(gids)
@@ -38,24 +39,5 @@ function getindex(l::LocalIndices{T},i::Integer) where T
   end
   return zero(T)
 end
-
-end # module
-
-module FindLocalIndicesTests
-
-using ..FindLocalIndices
-using Gridap
-using Gridap.CellValuesGallery
-
-c = [[2,3,4,8],[1,8,4,4,30],[3,5]]
-cv = CellValueFromArray(c)
-
-g = [4,30,3]
-cn = CellValueFromArray(g)
-
-r = [3,5,1]
-
-li = find_local_index(cn,cv)
-test_index_cell_value(li,r)
 
 end # module
