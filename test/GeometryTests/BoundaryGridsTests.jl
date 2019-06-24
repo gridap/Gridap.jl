@@ -1,10 +1,7 @@
-include("../../src/Geometry/BoundaryGrids.jl")
-
 module BoundaryGridsTests
 
 using Test
 using Gridap
-using ..BoundaryGrids
 
 model = CartesianDiscreteModel(partition=(3,4,2))
 
