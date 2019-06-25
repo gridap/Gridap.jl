@@ -84,23 +84,15 @@ function _ftypes(dim_to_jface_to_code)
   (dim_to_jface_to_ftype, dim_to_ftype_to_code)
 end
 
-function _coordinates(polytope)
-  num_nfaces = length(polytope.nf_dim)
-  nvertices = 0
-  for nface in 1:num_nfaces
-    d = length(polytope.nf_dim[nface])-1
-    if d == 0
-      nvertices += 1
-    end
-  end
-  dim = length(polytope.extrusion)
-  coords = Array{Float64,2}(undef,(dim,nvertices))
-  x = Vector{Float64}(undef,dim)
-  for nface in 1:num_nfaces
-    d = length(polytope.nf_dim[nface])-1
-    if d == 0
-      x .= polytope.nfaces[nface].anchor
-      coords[:,nface] .= x
+function _coordinates(polytope::Polytope{D}) where D
+  orders = fill(1,D)
+  na = NodesArray(polytope,orders)
+  x = na.coordinates
+  nnodes = length(x)
+  coords = Array{Float64,2}(undef,(D,nnodes))
+  for i in 1:nnodes
+    for d in 1:D
+      coords[d,i] = x[i][d]
     end
   end
   coords
