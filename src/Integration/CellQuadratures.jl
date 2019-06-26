@@ -17,7 +17,7 @@ import Gridap: weights
 """
 Abstract type representing a collection of quadratures, one for each cell
 """
-const CellQuadrature{D} = CellValue{Quadrature{D}}
+const CellQuadrature{D} = CellValue{<:Quadrature{D}}
 
 coordinates(::CellQuadrature{D} where D )::CellPoints{D} = @abstractmethod
 
