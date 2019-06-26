@@ -19,7 +19,7 @@ const TET_AXIS = 2
 
 # Concrete structs and their pubic API
 
-const PointInt{D} = SVector{D,Int64} where D
+# const Point{D,Int} = SVector{D,Int64} where D
 # @santiagobadia : Probably add Type of coordinates in Point{D} (@fverdugo: Now we have Point{D,T})
 # @santiagobadia : I will re-think the NodeArray when I have at my disposal
 # the geomap on n-faces, etc. And a clearer definition of the mesh object
@@ -30,8 +30,8 @@ n-face of the polytope, i.e., any polytope of lower dimension `N` representing
 its boundary and the polytope itself (for `N` equal to the space dimension `D`)
 """
 struct NFace{D}
-  anchor::PointInt{D}
-  extrusion::PointInt{D}
+  anchor::Point{D,Int}
+  extrusion::Point{D,Int}
 end
 
 """
@@ -39,7 +39,7 @@ Aggregation of all n-faces that compose the polytope boundary and the polytope
 itself, the classification of n-faces with respect to their dimension and type
 """
 struct Polytope{D}
-  extrusion::PointInt{D}
+  extrusion::Point{D,Int}
   nfaces::Vector{NFace}
   nf_nfs::Vector{Vector{Int64}}
   nf_dim::Vector{Vector{UnitRange{Int64}}}
@@ -49,22 +49,22 @@ end
 Constructs a `Polytope` given the type of extrusion, i.e., HEX_AXIS (=1) for "hex" extrusion
 and TET_AXIS (=2) for "tet" extrusion
 """
-function Polytope(extrusion::PointInt{D}) where D
-  zerop = PointInt{D}(zeros(Int64,D))
+function Polytope(extrusion::Vararg{Int,N}) where N
+  return Polytope(Point{N,Int}(extrusion))
+end
+
+function Polytope(extrusion::NTuple{N,Int}) where N
+  return Polytope(extrusion...)
+end
+
+function Polytope(extrusion::Point{D,Int}) where D
+  zerop = Point{D,Int}(zeros(Int64,D))
   pol_nfs_dim = polytopenfaces(zerop, extrusion)
   pol_nfs = pol_nfs_dim[1]; pol_dim = pol_nfs_dim[2]
   nfs_id = Dict(nf => i for (i,nf) in enumerate(pol_nfs))
   nf_nfs_dim = polytopemesh(pol_nfs, nfs_id)
   nf_nfs = nf_nfs_dim[1]; nf_dim = nf_nfs_dim[2]
   Polytope{D}(extrusion, pol_nfs, nf_nfs, nf_dim)
-end
-
-function Polytope(extrusion::NTuple{D,Int}) where D
-  Polytope(SVector(extrusion...))
-end
-
-function Polytope(extrusion::Vararg{Int,D}) where D
-  Polytope(extrusion)
 end
 
 #@fverdugo add here a public API to access the polytope info instead
@@ -127,14 +127,14 @@ end
 # @fverdugo Following the style in julia.Base, I would name with a leading
 # underscore all helper functions that are not exposed to the public API
 
-nfdim(a::PointInt{D}) where D = sum([a[i] > 0 ? 1 : 0 for i =1:D ])
+nfdim(a::Point{D,Int}) where D = sum([a[i] > 0 ? 1 : 0 for i =1:D ])
 
 """
 Generates the array of n-faces of a polytope
 """
-function polytopenfaces(anchor::PointInt{D}, extrusion::PointInt{D}) where D
+function polytopenfaces(anchor::Point{D,Int}, extrusion::Point{D,Int}) where D
   dnf = nfdim(extrusion)
-  zerop = PointInt{D}(zeros(Int64,D))
+  zerop = Point{D,Int}(zeros(Int64,D))
   nf_nfs = []
   nf_nfs = nfaceboundary!(anchor, zerop, extrusion, true, nf_nfs)
   [sort!(nf_nfs, by = x -> x.anchor[i]) for i=1:length(extrusion)]
@@ -179,19 +179,19 @@ Generates the list of n-face of a polytope the d-faces for 0 <= d <n on its
 boundary
 """
 function nfaceboundary!(
-  anchor::PointInt{D}, extrusion::PointInt{D},
-  extend::PointInt{D}, isanchor::Bool, list) where D
+  anchor::Point{D,Int}, extrusion::Point{D,Int},
+  extend::Point{D,Int}, isanchor::Bool, list) where D
   newext = extend
   list = [list..., NFace{D}(anchor, extrusion)]
   for i = 1:D
     curex = newext[i]
     if (curex > 0) # Perform extension
       func1 = (j -> j==i ? 0 : newext[j])
-      newext = PointInt{D}([func1(i) for i=1:D])
+      newext = Point{D,Int}([func1(i) for i=1:D])
       func2 = (j -> j==i ? 1 : 0)
-      edim = PointInt{D}([func2(i) for i=1:D])
+      edim = Point{D,Int}([func2(i) for i=1:D])
       func3 = (j -> j >= i ? anchor[j] : 0 )
-      tetp = PointInt{D}([func3(i) for i=1:D]) + edim
+      tetp = Point{D,Int}([func3(i) for i=1:D]) + edim
       if (curex == 1) # Quad extension
         list = nfaceboundary!(anchor+edim, extrusion, newext, false, list)
       elseif (isanchor)

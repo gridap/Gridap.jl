@@ -254,7 +254,7 @@ function _cellbasis(
   # @fverdugo yes. It will be refactorized accordingly
   ct = celldata(ctypes)
   co = celldata(corders)
-  polytope = Polytope(Polytopes.PointInt{Z}(ct...))
+  polytope = Polytope(ct...)
   reffe = LagrangianRefFE{Z,ScalarValue}(polytope,fill(co,Z))
   basis = shfbasis(reffe)
   ConstantCellMap(basis, length(ctypes)...)

@@ -101,7 +101,7 @@ _quadrature(reffes,order) = @notimplemented
 function _quadrature(reffes::ConstantCellValue,order)
   reffe = reffes.value
   poly = polytope(reffe)
-  t = poly.extrusion.data
+  t = poly.extrusion.array.data
   q = Quadrature(t,order=order)
   ncells = length(reffes)
   ConstantCellValue(q,ncells)
@@ -149,7 +149,8 @@ _setup_domain(D,domain::Vector{Float64}) = tuple(domain...)
 _setup_domain(D,domain::NTuple{D,Int} where D) = domain
 
 function _setup_basis(D,ncells)
-  code = @SVector fill(HEX_AXIS,D)
+  # code = @SVector fill(HEX_AXIS,D)
+  code = tuple(fill(HEX_AXIS,D)...)
   polytope = Polytope(code)
   order = 1
   orders = fill(order,D)

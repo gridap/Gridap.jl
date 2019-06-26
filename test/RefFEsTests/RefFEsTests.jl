@@ -6,7 +6,6 @@ using Gridap.DOFBases: LagrangianDOFBasis
 using Gridap, Test
 
 using Gridap.Helpers
-using Gridap.Polytopes: PointInt
 
 using Base.Cartesian
 ##
@@ -23,7 +22,7 @@ using Base.Cartesian
 # 1D reffe
 D = 1
 orders=[2]
-extrusion = PointInt{D}(1)
+extrusion = Point{D,Int}(1)
 polytope = Polytope(extrusion)
 nodes = NodesArray(polytope,orders)
 dofsb = LagrangianDOFBasis{D,Float64}(nodes.coordinates)
@@ -36,7 +35,7 @@ vals = evaluate(prebasis,dofsb.nodes)
 # 1D reffe
 D = 2
 orders=[1,1]
-extrusion = PointInt{D}(1,1)
+extrusion = Point{D,Int}(1,1)
 polytope = Polytope(extrusion)
 nodes = NodesArray(polytope, orders)
 dofsb = LagrangianDOFBasis{D,VectorValue{D,Float64}}(nodes.coordinates)
@@ -54,7 +53,7 @@ res2 = evaluate(dofsb,anfield)
 ##
 D=2
 orders=[1,1]
-extrusion = PointInt{D}(1,1)
+extrusion = Point{D,Int}(1,1)
 polytope = Polytope(extrusion)
 reffe = LagrangianRefFE{D,VectorValue{D,Float64}}(polytope,orders)
 nodes = NodesArray(polytope, orders)
@@ -77,7 +76,7 @@ dofv
 # 1D reffe
 D = 1
 orders=[2]
-extrusion = PointInt{D}(1)
+extrusion = Point{D,Int}(1)
 polytope = Polytope(extrusion)
 reffe = LagrangianRefFE{D,VectorValue{D,Float64}}(polytope,orders)
 @test reffe.shfbasis.changeofbasis==[0.0  -0.5   0.5; 1.0   0.0  -1.0; 0.0   0.5   0.5]
@@ -87,7 +86,7 @@ reffe = LagrangianRefFE{D,VectorValue{D,Float64}}(polytope,orders)
 # Integration
 D = 2
 orders=[1,1]
-extrusion = PointInt{D}(1,1)
+extrusion = Point{D,Int}(1,1)
 polytope = Polytope(extrusion)
 gps=(2,2)
 quad=TensorProductQuadrature(orders=gps)
@@ -103,7 +102,7 @@ reffe.shfbasis
 ##
 D = 1
 orders=[1]
-extrusion = PointInt{D}(1)
+extrusion = Point{D,Int}(1)
 polytope = Polytope(extrusion)
 #orders/2=gps
 gps=(2,)
@@ -118,7 +117,7 @@ elmat = sum(quad.weights.*elmatgp)
 ##
 D=2
 orders=[1,1]
-extrusion = PointInt{D}(1,1)
+extrusion = Point{D,Int}(1,1)
 polytope = Polytope(extrusion)
 #orders/2=gps
 gps=(2,2)
@@ -133,7 +132,7 @@ elmat = sum(quad.weights.*elmatgp)
 ##
 D=2
 orders=[2,2]
-extrusion = PointInt{D}(1,1)
+extrusion = Point{D,Int}(1,1)
 polytope = Polytope(extrusion)
 #orders/2=gps
 # gps=(3,3)
@@ -151,7 +150,7 @@ elmat = sum(quad.weights.*elmatgp)
 ##
 D=3
 orders=[2,2,2]
-extrusion = PointInt{D}(1,1,1)
+extrusion = Point{D,Int}(1,1,1)
 polytope = Polytope(extrusion)
 #orders/2=gps
 quad=TensorProductQuadrature(orders=tuple(2*orders...))
@@ -168,7 +167,7 @@ elmat = sum(quad.weights.*elmatgp)
 ##
 D=1
 orders=[1]
-extrusion = PointInt{D}(1)
+extrusion = Point{D,Int}(1)
 polytope = Polytope(extrusion)
 #orders/2=gps
 quad=TensorProductQuadrature(orders=tuple(2*orders...))
@@ -184,7 +183,7 @@ elmat = sum(quad.weights.*elmatgp)
 ##
 D=2
 orders=[1,1]
-extrusion = PointInt{D}(1,1)
+extrusion = Point{D,Int}(1,1)
 polytope = Polytope(extrusion)
 quad=TensorProductQuadrature(orders=tuple(2*orders...))
 reffe = LagrangianRefFE{D,Float64}(polytope,orders)
@@ -202,7 +201,7 @@ elmat = sum(quad.weights.*elmatgp)
 ##
 D=2
 orders=[2,2]
-extrusion = PointInt{D}(1,1)
+extrusion = Point{D,Int}(1,1)
 polytope = Polytope(extrusion)
 quad=TensorProductQuadrature(orders=tuple(2*orders...))
 reffe = LagrangianRefFE{D,Float64}(polytope,orders)
@@ -220,7 +219,7 @@ elmat = sum(quad.weights.*elmatgp)
 ##
 D=3
 orders=[3,3,3]
-extrusion = PointInt{D}(1,1,1)
+extrusion = Point{D,Int}(1,1,1)
 polytope = Polytope(extrusion)
 quad=TensorProductQuadrature(orders=tuple(2*orders...))
 reffe = LagrangianRefFE{D,Float64}(polytope,orders)
@@ -242,7 +241,7 @@ nparts1d = 2
 nparts = nparts1d*ones(Int64,D)
 order=2
 orders=order*ones(Int64,D)
-extrusion = PointInt{D}(ones(Int64,D))
+extrusion = Point{D,Int}(ones(Int64,D))
 polytope = Polytope(extrusion)
 quad=TensorProductQuadrature(orders=tuple(2*orders...))
 #
