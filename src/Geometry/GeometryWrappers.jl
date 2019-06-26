@@ -106,6 +106,22 @@ function _coordinates(polytope)
   coords
 end
 
+
+# TODO use this once NodesArray works for general polytopes
+#function _coordinates(polytope::Polytope{D}) where D
+#  orders = fill(1,D)
+#  na = NodesArray(polytope,orders)
+#  x = na.coordinates
+#  nnodes = length(x)
+#  coords = Array{Float64,2}(undef,(D,nnodes))
+#  for i in 1:nnodes
+#    for d in 1:D
+#      coords[d,i] = x[i][d]
+#    end
+#  end
+#  coords
+#end
+
 function _vtknodes(code)
   h = HEX_AXIS
   t = TET_AXIS
