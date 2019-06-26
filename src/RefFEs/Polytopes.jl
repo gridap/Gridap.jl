@@ -1,6 +1,7 @@
 module Polytopes
 
 using Gridap
+using Gridap.Helpers
 using StaticArrays
 using Base.Cartesian
 
@@ -101,6 +102,7 @@ Creates an array of nodes `NodesArray` for a given polytope and the order per
 dimension
 """
 function NodesArray(polytope::Polytope, orders::Array{Int64,1})
+  @notimplementedif any([ t != HEX_AXIS for t in polytope.extrusion])
   closurenfacenodes = [
   createnodes(polytope.nfaces[i],
   orders) for i=1:length(polytope.nfaces)]
