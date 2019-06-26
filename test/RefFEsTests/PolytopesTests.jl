@@ -4,15 +4,6 @@ module PolytopesTests
 using Gridap, Test
 using Gridap.Polytopes
 
-const t = TET_AXIS
-polytope = Polytope((t,t)) # This is a triangle
-orders=[1,1]
-na = NodesArray(polytope,orders)
-length(na.coordinates) == 4 # Wrong? Should be 3, right?
-
-na
-
-
 # Developing the change of basis for all n-faces of a polytope
 # 1. Given an n-face, determine all rigid-body permutations
 # 2. Method that identifies the change of basis required to glue
