@@ -6,17 +6,48 @@ using Gridap
 using Gridap.Helpers
 using UnstructuredGrids.Core: VERTEX
 using UnstructuredGrids.Kernels: UNSET
+using UnstructuredGrids.Kernels: generate_data_and_ptrs
 
 # Functionality provided by this module
 
 export RefCell
 import UnstructuredGrids.Core: RefCell
+import Gridap: Grid
 
 """
 Construct a RefCell from a Polytope
 """
 RefCell(polytope::Polytope) = _ref_cell_from_polytope(polytope)
 
+"""
+Construct a Grid from a polytope
+"""
+function Grid(polytope::Polytope{D},dim::Int) where D
+  @assert dim < D
+
+  orders = fill(1,D)
+  na = NodesArray(polytope,orders)
+
+  dim_to_jface_to_vertices, dim_to_jface_to_code = _faces(polytope)
+  jface_to_vertices = dim_to_jface_to_vertices[dim+1]
+  jface_to_code = dim_to_jface_to_code[dim+1]
+
+  njfaces = length(jface_to_code)
+  @assert njfaces > 0
+  code1 = jface_to_code[1]
+  # TODO
+  @notimplementedif any([ code1 != code for code in jface_to_code ])
+
+  points = na.coordinates
+  cells_data, cells_ptrs = generate_data_and_ptrs(jface_to_vertices)
+  code = (code1...,)
+  ctypes = ConstantCellValue(code,njfaces)
+  order = 1
+  orders = ConstantCellValue(order,njfaces)
+
+  UnstructuredGrid(points,cells_data,cells_ptrs,ctypes,orders)
+
+end
 
 # Helpers
 
