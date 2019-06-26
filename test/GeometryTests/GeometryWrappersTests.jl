@@ -48,17 +48,16 @@ t = HEX_AXIS
 polytope = Polytope((t,t,t))
 
 grid = Grid(polytope,2)
-writevtk(grid,"grid")
+#writevtk(grid,"grid")
 
-#trian = Triangulation(grid)
-#quad = CellQuadrature(trian,order=5)
-#
-#q = coordinates(quad)
-#phi = CellGeomap(trian)
-#x = evaluate(phi,q)
+trian = Triangulation(grid)
+quad = CellQuadrature(trian,order=2)
+
+q = coordinates(quad)
+phi = CellGeomap(trian)
+x = evaluate(phi,q)
 
 #writevtk(x,"x")
-
 
 # Polytope to RefCell
 
