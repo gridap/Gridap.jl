@@ -130,7 +130,7 @@ function _coordinates(polytope)
   for nface in 1:num_nfaces
     d = length(polytope.nf_dim[nface])-1
     if d == 0
-      x .= polytope.nfaces[nface].anchor
+      x .= polytope.nfaces[nface].anchor.array
       coords[:,nface] .= x
     end
   end
@@ -180,7 +180,7 @@ function _vtkid(code)
 end
 
 function _vtkinfo(polytope)
-  code = [i for i in polytope.extrusion]
+  code = [i for i in polytope.extrusion.array]
   (_vtkid(code), _vtknodes(code))
 end
 

@@ -373,7 +373,7 @@ end
 function _prepare_refgrid(reffes,nref)
   reffe = reffes.value
   poly = polytope(reffe)
-  extrusion = poly.extrusion
+  extrusion = poly.extrusion.array
   _refgrid(Val(Tuple(extrusion)),nref)
 end
 
