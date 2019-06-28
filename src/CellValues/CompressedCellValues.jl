@@ -55,6 +55,12 @@ struct IndexCompressedCellValue{T,A} <: IndexCellValue{T,1}
 
 end
 
+function IndexCompressedCellValue(cv::ConstantCellValue)
+  values = [cv.value,]
+  ptrs = ConstantCellValue(1,length(cv))
+  IndexCompressedCellValue(values,ptrs)
+end
+
 function getindex(
   cv::IndexCompressedCellValue{T,A}, i::Integer) where {T,A}
   j = cv.ptrs[i]

@@ -15,4 +15,11 @@ test_iter_cell_value(cv,r)
 cv = IndexCompressedCellValue(values,ptrs)
 test_index_cell_value(cv,r)
 
+l = 10
+v = 3
+ccv = ConstantCellValue(v,l)
+cv = IndexCompressedCellValue(ccv)
+test_index_cell_value(cv,fill(v,l))
+
+
 end # module
