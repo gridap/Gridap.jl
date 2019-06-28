@@ -43,7 +43,7 @@ order = Tuple(_order*i)
 nf = p.nfaces[end]
 vs = Gridap.Polytopes.generate_interior_nodes(nf,order)
 @test length(vs) == a[dim,i]
-@show vs
+# @show vs
 ##
 p = Polytope(HEX_AXIS, HEX_AXIS, TET_AXIS)
 _order = ones(Int,3)

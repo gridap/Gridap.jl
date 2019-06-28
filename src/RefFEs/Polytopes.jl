@@ -295,7 +295,7 @@ direction
 function generate_interior_nodes(p::NFace{D}, order) where D
   ext = p.extrusion
   _ord = [order...]
-  verts = NTuple{D,Int}[]
+  verts = Point{D,Int}[]
   coor = zeros(Int,D)
   _generate_nodes!(D, p.extrusion, _ord, coor, verts)
   return verts
@@ -318,7 +318,7 @@ function _generate_nodes!(dim, ext, order, coor, verts)
       # println("***PRINT***")
       # @show dim
       # @show ncoo
-      push!(verts,Tuple(ncoo))
+      push!(verts,Point(ncoo...))
     end
   end
 end
