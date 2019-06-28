@@ -4,11 +4,17 @@ using Gridap
 
 export IterCompressedCellValue
 export IndexCompressedCellValue
+export CompressedCellValue
 
 import Base: iterate
 import Base: length
 import Base: size
 import Base: getindex
+
+import Gridap: apply
+import Gridap: reindex
+import Gridap: evaluate
+import Base: ==, ≈
 
 struct IterCompressedCellValue{T,A} <: IterCellValue{T}
   values::Vector{T}
@@ -68,5 +74,23 @@ function getindex(
 end
 
 size(cv::IndexCompressedCellValue) = (length(cv.ptrs),)
+
+const CompressedCellValue{T} = Union{
+  IterCompressedCellValue{T},IndexCompressedCellValue{T}}
+
+function (==)(a::CompressedCellValue,b::CompressedCellValue)
+  _eq_kernel(==,a,b)
+end
+
+function (≈)(a::CompressedCellValue,b::CompressedCellValue)
+  _eq_kernel(≈,a,b)
+end
+
+function _eq_kernel(op,a,b)
+  !(op(a.values,b.values)) && return false
+  !( a.ptrs == b.ptrs ) && return false
+  length(a) != length(b) && return false
+  return true
+end
 
 end # module

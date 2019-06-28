@@ -21,5 +21,7 @@ ccv = ConstantCellValue(v,l)
 cv = IndexCompressedCellValue(ccv)
 test_index_cell_value(cv,fill(v,l))
 
+@test cv == cv
+@test cv ≈ cv
 
 end # module
