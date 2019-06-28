@@ -3,6 +3,7 @@ module CompressedCellValues
 using Gridap
 
 export IterCompressedCellValue
+export IndexCompressedCellValue
 
 import Base: iterate
 import Base: length
@@ -41,5 +42,25 @@ end
 end
 
 length(cv::IterCompressedCellValue) = length(cv.ptrs)
+
+struct IndexCompressedCellValue{T,A} <: IndexCellValue{T,1}
+  values::Vector{T}
+  ptrs::A
+
+  function IndexCompressedCellValue(
+    values::Vector{T}, ptrs::AbstractArray) where T
+    A = typeof(ptrs)
+    new{T,A}(values,ptrs)
+  end
+
+end
+
+function getindex(
+  cv::IndexCompressedCellValue{T,A}, i::Integer) where {T,A}
+  j = cv.ptrs[i]
+  cv.values[j]
+end
+
+size(cv::IndexCompressedCellValue) = (length(cv.ptrs),)
 
 end # module

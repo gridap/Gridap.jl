@@ -12,4 +12,7 @@ r = values[ptrs]
 cv = IterCompressedCellValue(values,ptrs)
 test_iter_cell_value(cv,r)
 
+cv = IndexCompressedCellValue(values,ptrs)
+test_index_cell_value(cv,r)
+
 end # module
