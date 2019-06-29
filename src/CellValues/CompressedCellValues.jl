@@ -1,6 +1,7 @@
 module CompressedCellValues
 
 using Gridap
+using Gridap.CellNumberApply: IndexCellNumberFromKernel
 
 export IterCompressedCellValue
 export IndexCompressedCellValue
@@ -78,6 +79,14 @@ size(cv::IndexCompressedCellValue) = (length(cv.ptrs),)
 const CompressedCellValue{T} = Union{
   IterCompressedCellValue{T},IndexCompressedCellValue{T}}
 
+function CompressedCellValue(values::Vector{T},ptrs::AbstractArray) where T
+  IndexCompressedCellValue(values,ptrs)
+end
+
+function CompressedCellValue(values::Vector{T},ptrs) where T
+  IterCompressedCellValue(values,ptrs)
+end
+
 function (==)(a::CompressedCellValue,b::CompressedCellValue)
   _eq_kernel(==,a,b)
 end
@@ -91,6 +100,43 @@ function _eq_kernel(op,a,b)
   !( a.ptrs == b.ptrs ) && return false
   length(a) != length(b) && return false
   return true
+end
+
+function apply(k::NumberKernel,v::Vararg{<:CompressedCellValue})
+  optim = _check_if_optimizable(v...)
+  _apply(Val(optim),k,v...)
+end
+
+function _check_if_optimizable(v...)
+  @assert length(v) > 0
+  v1, = v
+  all( [ _same_ptrs(vi.ptrs,v1.ptrs) for vi in v] )
+end
+
+function _same_ptrs(a,b)
+  if a === b 
+    return true
+  end
+  if a == b
+    return true
+  end
+  false
+end
+
+function _apply(::Val{true},k::NumberKernel,v...)
+  v1, = v
+  n = length(v1.values)
+  input_values = [ [ vi.values[i] for vi in v] for i in 1:n]
+  values = [ compute_value(k,vals...) for vals in input_values ]
+  CompressedCellValue(values,v1.ptrs)
+end
+
+function _apply(::Val{false},k::NumberKernel,v::Vararg{<:IndexCompressedCellValue})
+    IndexCellNumberFromKernel(k,v...)
+end
+
+function _apply(::Val{false},k::NumberKernel,v::Vararg{<:CompressedCellValue})
+    IterCellNumberFromKernel(k,v...)
 end
 
 end # module
