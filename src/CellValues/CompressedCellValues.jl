@@ -1,7 +1,8 @@
 module CompressedCellValues
 
 using Gridap
-using Gridap.CellNumberApply: IndexCellNumberFromKernel
+using Gridap.CellNumberApply: IndexCellNumberFromKernel, CellNumberFromKernel
+using Gridap.CellArrayApply: IndexCellArrayFromKernel, CellArrayFromKernel
 
 export IterCompressedCellValue
 export IndexCompressedCellValue
@@ -107,6 +108,11 @@ function apply(k::NumberKernel,v::Vararg{<:CompressedCellValue})
   _apply(Val(optim),k,v...)
 end
 
+function apply(k::ArrayKernel,v::Vararg{<:CompressedCellValue})
+  optim = _check_if_optimizable(v...)
+  _apply(Val(optim),k,v...)
+end
+
 function _check_if_optimizable(v...)
   @assert length(v) > 0
   v1, = v
@@ -123,7 +129,7 @@ function _same_ptrs(a,b)
   false
 end
 
-function _apply(::Val{true},k::NumberKernel,v...)
+function _apply(::Val{true},k,v...)
   v1, = v
   n = length(v1.values)
   input_values = [ [ vi.values[i] for vi in v] for i in 1:n]
@@ -136,7 +142,15 @@ function _apply(::Val{false},k::NumberKernel,v::Vararg{<:IndexCompressedCellValu
 end
 
 function _apply(::Val{false},k::NumberKernel,v::Vararg{<:CompressedCellValue})
-    IterCellNumberFromKernel(k,v...)
+    CellNumberFromKernel(k,v...)
+end
+
+function _apply(::Val{false},k::ArrayKernel,v::Vararg{<:IndexCompressedCellValue})
+    IndexCellArrayFromKernel(k,v...)
+end
+
+function _apply(::Val{false},k::ArrayKernel,v::Vararg{<:CompressedCellValue})
+    CellArrayFromKernel(k,v...)
 end
 
 end # module
