@@ -2,7 +2,65 @@ module PolytopesTests
 
 ##
 using Gridap, Test
-using Gridap.Polytopes
+# using Gridap.Polytopes
+p = Polytope(HEX_AXIS,HEX_AXIS)
+dim = 3
+for dim = 1:4
+  p = Polytope(ones(Int,dim)...)
+  _order = ones(Int,dim)
+  for i in 1:5
+    order = Tuple(_order*i)
+    nf = p.nfaces[end]
+    vs = Gridap.Polytopes.generate_interior_nodes(nf,order)
+    @test length(vs) == max(0,(i-1)^dim)
+  end
+end
+##
+a = zeros(Int,4,4)
+a[1,2] = 1
+a[1,3] = 2
+a[1,4] = 3
+a[2,3] = 1
+a[2,4] = 3
+a[3,4] = 1
+##
+for dim = 1:4
+  p = Polytope(2*ones(Int,dim)...)
+  _order = ones(Int,dim)
+  for i in 1:4
+    order = Tuple(_order*i)
+    nf = p.nfaces[end]
+    vs = Gridap.Polytopes.generate_interior_nodes(nf,order)
+    @test length(vs) == a[dim,i]
+  end
+end
+##
+dim = 2
+p = Polytope(2*ones(Int,dim)...)
+_order = ones(Int,dim)
+i = 3
+order = Tuple(_order*i)
+nf = p.nfaces[end]
+vs = Gridap.Polytopes.generate_interior_nodes(nf,order)
+@test length(vs) == a[dim,i]
+# @show vs
+##
+p = Polytope(HEX_AXIS, HEX_AXIS, TET_AXIS)
+_order = ones(Int,3)
+order = Tuple(_order*3)
+nf = p.nfaces[end]
+vs = Gridap.Polytopes.generate_interior_nodes(nf,order)
+@test length(vs) == 1
+##
+pl = Polytope(HEX_AXIS, TET_AXIS, HEX_AXIS)
+_order = ones(Int,3)
+order = Tuple(_order*3)
+p = pl.nfaces[end]
+vs = Gridap.Polytopes.generate_interior_nodes(p,order)
+length(vs)
+@test length(vs) == 2
+##
+
 
 # Developing the change of basis for all n-faces of a polytope
 # 1. Given an n-face, determine all rigid-body permutations

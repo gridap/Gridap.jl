@@ -287,6 +287,54 @@ function _are_nodes_connected(c1, c2, ext)
   return connected
 end
 
+"""
+It generates the set of nodes (its coordinates) in the interior of an n-face,
+for a given order. The node coordinates are `Int` and from 0 to `order` per
+direction
+"""
+function generate_interior_nodes(p::NFace{D}, order) where D
+  ext = p.extrusion
+  _ord = [order...]
+  verts = Point{D,Int}[]
+  coor = zeros(Int,D)
+  _generate_nodes!(D, p.extrusion, _ord, coor, verts)
+  return verts
+end
+
+# Auxiliary private recursive function to implement generate_interior_nodes
+function _generate_nodes!(dim, ext, order, coor, verts)
+  # println("***NEW EXTRUSION***")
+  ncoo = copy(coor)
+  # @show dim
+  # @show ncoo
+  # @show order
+  nord = copy(order)
+  for i in 1:order[dim]-1
+    ncoo[dim] = i
+    if dim > 1
+      if (ext[dim] == TET_AXIS ) nord.-= 1 end
+      _generate_nodes!(dim-1, ext, nord, ncoo, verts)
+    else
+      # println("***PRINT***")
+      # @show dim
+      # @show ncoo
+      push!(verts,Point(ncoo...))
+    end
+  end
+end
+# function _generate_nodes!(dim, ext, order, coor, verts)
+#   ncoo = coor
+#   for i in 1:order[dim]-1
+#     ncoo[dim] = i
+#     if dim > 1
+#       nord = copy(order)
+#       if (ext[dim] == TET_AXIS ) nord.-= 1 end
+#       _generate_nodes!(dim-1, ext, nord, ncoo, verts)
+#     else
+#       push!(verts,Tuple(ncoo))
+#     end
+#   end
+# end
 
 # @santiagobadia : The rest is waiting for a geomap
 
