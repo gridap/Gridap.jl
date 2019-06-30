@@ -323,6 +323,21 @@ function _generate_nodes!(dim, ext, order, coor, verts)
   end
 end
 
+function _equidistant_nodes_coordinates(nodes, order)
+  cs_float = Vector{Float64}[]
+  if length(nodes) > 0
+    dim = length(nodes[1])
+    cs = zeros(Float64,dim)
+    for cs_int in nodes
+      for i in 1:dim
+        cs[i] = cs_int[i]/order[i]
+      end
+      push!(cs_float,copy(cs))
+    end
+  end
+  return cs_float
+end
+
 """
 It generates the list of coordinates of all vertices in the polytope. It is
 assumed that the polytope has the bounding box [0,1]**dim
