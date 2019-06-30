@@ -3,10 +3,13 @@ module CompressedCellValues
 using Gridap
 using Gridap.CellNumberApply: IndexCellNumberFromKernel, CellNumberFromKernel
 using Gridap.CellArrayApply: IndexCellArrayFromKernel, CellArrayFromKernel
+using Gridap.CellMaps: IterCellMapValue, IndexCellMapValue
 
 export IterCompressedCellValue
 export IndexCompressedCellValue
 export CompressedCellValue
+export CompressedCellArray
+export CompressedCellMap
 
 import Base: iterate
 import Base: length
@@ -154,6 +157,38 @@ end
 
 function _apply(::Val{false},k::ArrayKernel,v::Vararg{<:CompressedCellValue})
     CellArrayFromKernel(k,v...)
+end
+
+const CompressedCellArray{T,N} = CompressedCellValue{<:AbstractArray{T,N}}
+
+const CompressedCellMap{S,M,T,N} = CompressedCellValue{<:Map{S,M,T,N}}
+
+function evaluate(cm::ConstantCellMap{S,M},ca::CompressedCellArray{<:S,M}) where {S,M}
+  @assert length(cm) == length(ca)
+  m = cm.value
+  rs = [ evaluate(m,a) for a in ca.values]
+  CompressedCellValue(rs,a.ptrs)
+end
+
+function evaluate(cm::CompressedCellMap{S,M},ca::CompressedCellArray{<:S,M}) where {S,M}
+  @assert length(cm) == length(ca)
+  optim = _is_optimizable(cm,ca)
+  _evaluate(Val(optim),ca,cm)
+end
+
+function _evaluate(::Val{true},cm::CompressedCellMap,ca::CompressedCellValue)
+  n = length(cm.values)
+  input_values = [ ( cm.values[i], ca.values[i] ) for i in 1:n]
+  values = [ evaluate(mi,ai) for (mi,ai) in input_values ]
+  CompressedCellValue(values,cm.ptrs)
+end
+
+function _evaluate(::Val{false},cm::CellMap,ca::CellArray)
+  IterCellMapValue(cm,ca)
+end
+
+function _evaluate(::Val{false},cm::IndexCellMap,ca::IndexCellArray)
+  IndexCellMapValue(cm,ca)
 end
 
 end # module
