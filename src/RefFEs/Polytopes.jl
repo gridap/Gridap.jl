@@ -322,19 +322,20 @@ function _generate_nodes!(dim, ext, order, coor, verts)
     end
   end
 end
-# function _generate_nodes!(dim, ext, order, coor, verts)
-#   ncoo = coor
-#   for i in 1:order[dim]-1
-#     ncoo[dim] = i
-#     if dim > 1
-#       nord = copy(order)
-#       if (ext[dim] == TET_AXIS ) nord.-= 1 end
-#       _generate_nodes!(dim-1, ext, nord, ncoo, verts)
-#     else
-#       push!(verts,Tuple(ncoo))
-#     end
-#   end
-# end
+
+"""
+It generates the list of coordinates of all vertices in the polytope. It is
+assumed that the polytope has the bounding box [0,1]**dim
+"""
+function vertices_coordinates(p::Polytope{D}) where D
+  vs = Gridap.Polytopes._dimfrom_fs_dimto_fs(p, D, 0)[1]
+  vcs = Point{D,Float64}[]
+  for i in 1:length(vs)
+    cs = convert(Vector{Float64}, [p.nfaces[vs[i]].anchor...])
+    push!(vcs,cs)
+  end
+  return vcs
+end
 
 # @santiagobadia : The rest is waiting for a geomap
 
