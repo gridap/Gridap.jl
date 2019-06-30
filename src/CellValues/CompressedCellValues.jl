@@ -104,26 +104,29 @@ function _eq_kernel(op,a,b)
 end
 
 function apply(k::NumberKernel,v::Vararg{<:CompressedCellValue})
-  optim = _check_if_optimizable(v...)
+  optim = _is_optimizable(v...)
   _apply(Val(optim),k,v...)
 end
 
 function apply(k::ArrayKernel,v::Vararg{<:CompressedCellValue})
-  optim = _check_if_optimizable(v...)
+  optim = _is_optimizable(v...)
   _apply(Val(optim),k,v...)
 end
 
-function _check_if_optimizable(v...)
+function _is_optimizable(v...)
   @assert length(v) > 0
   v1, = v
-  all( [ _same_ptrs(vi.ptrs,v1.ptrs) for vi in v] )
+  all( [ _is_compatible_data(vi,v1) for vi in v] )
 end
 
-function _same_ptrs(a,b)
-  if a === b 
+function _is_compatible_data(a,b)
+  if length(a.values) != length(b.values)
+    return false
+  end
+  if a.ptrs === b.ptrs
     return true
   end
-  if a == b
+  if a.ptrs == b.ptrs
     return true
   end
   false
