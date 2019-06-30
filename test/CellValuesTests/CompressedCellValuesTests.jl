@@ -74,4 +74,25 @@ cv2 = apply(-,cv,broadcast=true)
 r = -values[ptrs]
 test_index_cell_array(cv2,r)
 
+values1 = [[10,33],[20,12,40],[71,]]
+values2 = [[10,30],[20,10,40],[31,]]
+ptrs = [1,2,3,3,2,2]
+cv1 = CompressedCellValue(values1,ptrs)
+cv2 = CompressedCellValue(values2,ptrs)
+cv3 = apply(-,cv1,cv2,broadcast=true)
+@test isa(cv3,IndexCompressedCellValue)
+r = values1[ptrs] - values2[ptrs]
+test_index_cell_array(cv3,r)
+
+values1 = [[10,33,2],[20,12,40],[71,1,4]]
+values2 = [[10,30,3],[20,10,40],[31,3,5]]
+ptrs1 = [1,3,2,3,2,2]
+ptrs2 = [1,2,3,3,2,2]
+cv1 = CompressedCellValue(values1,ptrs1)
+cv2 = CompressedCellValue(values2,ptrs2)
+cv3 = apply(-,cv1,cv2,broadcast=true)
+r = values1[ptrs1] - values2[ptrs2]
+@test ! isa(cv3,IndexCompressedCellValue)
+test_index_cell_array(cv3,r)
+
 end # module
