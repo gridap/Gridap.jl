@@ -50,4 +50,7 @@ include("ConstantCellValues.jl")
 include("CompressedCellValues.jl")
 @reexport using Gridap.CompressedCellValues
 
+include("NonIterableCellMaps.jl")
+@reexport using Gridap.NonIterableCellMaps
+
 
