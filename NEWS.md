@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - `NEWS.md` file (a changelog file)
+- `CompressedCellValue`, `CompressedCellArray`, and `CompressedCellMap`, as well as efficient version of `apply`, `evaluate`, and `reindex` for these types. See PR [#41](https://github.com/gridap/Gridap.jl/pull/41) for more details.
 
 ### Changed
 ### Removed
