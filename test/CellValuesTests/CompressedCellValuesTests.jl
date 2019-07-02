@@ -4,6 +4,8 @@ module CompressedCellValuesTests
 
 using Test
 using Gridap
+using ..MapsMocks
+
 using ..CompressedCellValues
 
 values = [10,20,31]
@@ -94,5 +96,38 @@ cv3 = apply(-,cv1,cv2,broadcast=true)
 r = values1[ptrs1] - values2[ptrs2]
 @test ! isa(cv3,IndexCompressedCellValue)
 test_index_cell_array(cv3,r)
+
+
+a = VectorValue(10,10)
+b = VectorValue(15,20)
+p1 = VectorValue(1,1)
+p2 = VectorValue(2,2)
+p3 = VectorValue(3,3)
+p = [p1,p2,p3]
+m = MockMap(a)
+
+l = 5
+cm = ConstantCellMap(m,l)
+vals = [[p1,p3], [p1,p3,p2], ]
+ptrs = [1,2,1,1,2]
+ca = CompressedCellValue(vals,ptrs)
+cv = evaluate(cm,ca)
+@test isa(cv,CompressedCellValue)
+rvals = [ evaluate(m,pj) for pj in vals  ]
+cr = rvals[ptrs]
+test_index_cell_map_with_index_arg(cm,ca,cr)
+
+m1 = MockMap(a)
+m2 = MockMap(b)
+mvals = [m1,m2]
+pvals = [[p1,p3], [p1,p3,p2], ]
+ptrs = [1,2,1,1,2]
+cm = CompressedCellValue(mvals,ptrs)
+ca = CompressedCellValue(pvals,ptrs)
+cv = evaluate(cm,ca)
+@test isa(cv,CompressedCellValue)
+rvals = [ evaluate(mi,ai) for (mi,ai) in zip(mvals,pvals) ]
+cr = CompressedCellValue(rvals,ptrs)
+test_index_cell_map_with_index_arg(cm,ca,cr)
 
 end # module

@@ -167,13 +167,13 @@ function evaluate(cm::ConstantCellMap{S,M},ca::CompressedCellArray{<:S,M}) where
   @assert length(cm) == length(ca)
   m = cm.value
   rs = [ evaluate(m,a) for a in ca.values]
-  CompressedCellValue(rs,a.ptrs)
+  CompressedCellValue(rs,ca.ptrs)
 end
 
 function evaluate(cm::CompressedCellMap{S,M},ca::CompressedCellArray{<:S,M}) where {S,M}
   @assert length(cm) == length(ca)
   optim = _is_optimizable(cm,ca)
-  _evaluate(Val(optim),ca,cm)
+  _evaluate(Val(optim),cm,ca)
 end
 
 function _evaluate(::Val{true},cm::CompressedCellMap,ca::CompressedCellValue)
