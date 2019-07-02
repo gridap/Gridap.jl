@@ -4,6 +4,7 @@ module CompressedCellValuesTests
 
 using Test
 using Gridap
+using Gridap.CellValuesGallery
 using ..MapsMocks
 
 using ..CompressedCellValues
@@ -129,5 +130,15 @@ cv = evaluate(cm,ca)
 rvals = [ evaluate(mi,ai) for (mi,ai) in zip(mvals,pvals) ]
 cr = CompressedCellValue(rvals,ptrs)
 test_index_cell_map_with_index_arg(cm,ca,cr)
+
+values = [10,20,31]
+ptrs = [1,2,3,3,2,2]
+inds = [2,1,4]
+cv = CompressedCellValue(values,ptrs)
+indices = CellValueFromArray(inds)
+cv2 = reindex(cv,indices)
+@test isa(cv2,CompressedCellValue)
+r = values[ptrs[inds]]
+test_index_cell_value(cv2,r)
 
 end # module

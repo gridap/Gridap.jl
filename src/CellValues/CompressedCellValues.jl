@@ -1,6 +1,7 @@
 module CompressedCellValues
 
 using Gridap
+using Gridap.CellValuesGallery
 using Gridap.CellNumberApply: IndexCellNumberFromKernel, CellNumberFromKernel
 using Gridap.CellArrayApply: IndexCellArrayFromKernel, CellArrayFromKernel
 using Gridap.CellMaps: IterCellMapValue, IndexCellMapValue
@@ -199,5 +200,20 @@ end
 function _evaluate(::Val{false},cm::IndexCellMap,ca::IndexCellArray)
   IndexCellMapValue(cm,ca)
 end
+
+function reindex(values::CompressedCellValue, indices::CellValue{<:IndexLike})
+  vals = values.values
+  ptrs = reindex(_ptrs(values.ptrs),indices)
+  CompressedCellValue(vals,ptrs)
+end
+
+function reindex(values::CompressedCellValue, indices::IndexCellValue{<:IndexLike})
+  vals = values.values
+  ptrs = reindex(_ptrs(values.ptrs),indices)
+  CompressedCellValue(vals,ptrs)
+end
+
+_ptrs(p::CellValue) = p
+_ptrs(p::AbstractArray) = CellValueFromArray(p)
 
 end # module
