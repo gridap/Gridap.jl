@@ -62,7 +62,7 @@ function test_triangulation(trian::Triangulation{Z,D}) where {Z,D}
   phi = CellGeomap(trian)
   @test isa(phi,CellGeomap{Z,D,Float64})
   jac = gradient(phi)
-  @test isa(jac,CellField{D,TensorValue{D,Float64,D*D}})
+  @test isa(jac,CellField{Z,MultiValue{Tuple{Z,D},Float64,2,Z*D}})
   reffes = CellRefFEs(trian)
   @test isa(reffes,CellValue{LagrangianRefFE{Z,Float64}})
 end
