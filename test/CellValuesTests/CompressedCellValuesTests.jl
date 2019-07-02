@@ -1,13 +1,9 @@
-include("../../src/CellValues/CompressedCellValues.jl")
-
 module CompressedCellValuesTests
 
 using Test
 using Gridap
 using Gridap.CellValuesGallery
 using ..MapsMocks
-
-using ..CompressedCellValues
 
 values = [10,20,31]
 ptrs = [1,2,3,3,2,2]
