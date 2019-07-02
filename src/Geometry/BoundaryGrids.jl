@@ -5,6 +5,7 @@ using Gridap.Helpers
 
 export BoundaryGrid
 import Gridap: Triangulation
+import Gridap: BoundaryTriangulation
 import Gridap: points
 import Gridap: cells
 import Gridap: celltypes
@@ -56,6 +57,11 @@ function BoundaryGrid(model::DiscreteModel,tags::Vector{Int},icell::Int=1)
   cell_to_polytope = _cell_to_polytope(cell_to_extrussion)
   descriptor = BoundaryDescriptor(facet_to_cell,facet_to_lfacet,cell_to_polytope)
   BoundaryGrid(grid,descriptor)
+end
+
+function BoundaryTriangulation(model::DiscreteModel,tags::Vector{Int},icell::Int=1)
+  grid = BoundaryGrid(model,tags,icell)
+  Triangulation(grid)
 end
 
 function _setup_mask!(facet_to_mask,facet_to_label,tag_to_labels,tags)
