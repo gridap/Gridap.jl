@@ -10,4 +10,6 @@ using Test
 
 @testset "CellIntegration" begin include("CellIntegrationTests.jl") end
 
+@testset "BoundaryTriangulations" begin include("BoundaryTriangulationsTests.jl") end
+
 end # module

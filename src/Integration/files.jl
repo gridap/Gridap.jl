@@ -13,3 +13,6 @@ include("CellIntegration.jl")
 
 include("BoundaryDescriptors.jl")
 @reexport using Gridap.BoundaryDescriptors
+
+include("BoundaryTriangulations.jl")
+@reexport using Gridap.BoundaryTriangulations

@@ -1,9 +1,6 @@
-include("../../src/Integration/BoundaryTriangulations.jl")
-
 module BoundaryTriangulationsTests
 
 using Gridap
-using ..BoundaryTriangulations
 
 model = CartesianDiscreteModel(partition=(3,4,2))
 

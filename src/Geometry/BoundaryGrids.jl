@@ -4,6 +4,7 @@ using Gridap
 using Gridap.Helpers
 
 export BoundaryGrid
+import Gridap: Triangulation
 import Gridap: points
 import Gridap: cells
 import Gridap: celltypes
@@ -25,6 +26,11 @@ for op in (:points,:cells,:celltypes,:cellorders)
   @eval begin
     $op(g::BoundaryGrid) = $op(g.grid)
   end
+end
+
+function Triangulation(grid::BoundaryGrid)
+  trian = Triangulation(grid.grid)
+  BoundaryTriangulation(trian,grid.descriptor)
 end
 
 function BoundaryGrid(model::DiscreteModel,tags::Vector{Int},icell::Int=1)
