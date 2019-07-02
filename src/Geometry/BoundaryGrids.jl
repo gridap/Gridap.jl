@@ -1,6 +1,7 @@
 module BoundaryGrids
 
 using Gridap
+using Gridap.Helpers
 
 export BoundaryGrid
 import Gridap: points
@@ -10,17 +11,12 @@ import Gridap: cellorders
 
 struct BoundaryGrid{D,Z} <: Grid{D,Z}
   grid::Grid{D,Z}
-  facet_to_cell::IndexCellNumber
-  facet_to_lfacet::IndexCellNumber
-  #TODO
-  #facet_to_perm::IndexCellNumber
+  descriptor::BoundaryDescriptor
   
   function BoundaryGrid(
-    grid::Grid{D,Z},
-    facet_to_cell::IndexCellNumber,
-    facet_to_lfacet::IndexCellNumber) where {D,Z}
+    grid::Grid{D,Z}, descriptor::BoundaryDescriptor) where {D,Z}
     @assert D == Z + 1
-    new{D,Z}(grid,facet_to_cell,facet_to_lfacet)
+    new{D,Z}(grid,descriptor)
   end
 
 end
@@ -49,7 +45,11 @@ function BoundaryGrid(model::DiscreteModel,tags::Vector{Int},icell::Int=1)
   oldfacet_to_lfacet = find_local_index(oldfacet_to_cell, cell_to_oldfacets)
   facet_to_cell = reindex(oldfacet_to_cell, facet_to_oldfacet)
   facet_to_lfacet = reindex(oldfacet_to_lfacet,facet_to_oldfacet)
-  BoundaryGrid(grid,facet_to_cell,facet_to_lfacet)
+  cellgrid = Grid(model,d)
+  cell_to_extrussion = celltypes(cellgrid)
+  cell_to_polytope = _cell_to_polytope(cell_to_extrussion)
+  descriptor = BoundaryDescriptor(facet_to_cell,facet_to_lfacet,cell_to_polytope)
+  BoundaryGrid(grid,descriptor)
 end
 
 function _setup_mask!(facet_to_mask,facet_to_label,tag_to_labels,tags)
@@ -63,6 +63,17 @@ function _setup_mask!(facet_to_mask,facet_to_label,tag_to_labels,tags)
       end
     end
   end
+end
+
+function _cell_to_polytope(cell_to_extrussion)
+  @notimplemented
+end
+
+function _cell_to_polytope(cell_to_extrussion::ConstantCellValue)
+  extrussion = cell_to_extrussion.value
+  l = cell_to_extrussion.length
+  poly = Polytope(extrussion)
+  ConstantCellValue(poly,l)
 end
 
 end # module
