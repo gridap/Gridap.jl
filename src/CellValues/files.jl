@@ -47,5 +47,7 @@ include("FindLocalIndex.jl")
 include("ConstantCellValues.jl")
 @reexport using Gridap.ConstantCellValues
 
+include("CompressedCellValues.jl")
+@reexport using Gridap.CompressedCellValues
 
 
