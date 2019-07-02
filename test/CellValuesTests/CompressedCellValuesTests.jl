@@ -122,8 +122,8 @@ m2 = MockMap(b)
 mvals = [m1,m2]
 pvals = [[p1,p3], [p1,p3,p2], ]
 ptrs = [1,2,1,1,2]
-cm = CompressedCellValue(mvals,ptrs)
-ca = CompressedCellValue(pvals,ptrs)
+cm = CompressedCellMap(mvals,ptrs)
+ca = CompressedCellArray(pvals,ptrs)
 cv = evaluate(cm,ca)
 @test isa(cv,CompressedCellValue)
 rvals = [ evaluate(mi,ai) for (mi,ai) in zip(mvals,pvals) ]

@@ -161,7 +161,16 @@ end
 
 const CompressedCellArray{T,N} = CompressedCellValue{<:AbstractArray{T,N}}
 
+function CompressedCellArray(values::Vector{<:AbstractArray},ptrs)
+  CompressedCellValue(values,ptrs)
+end
+
 const CompressedCellMap{S,M,T,N} = CompressedCellValue{<:Map{S,M,T,N}}
+
+function CompressedCellMap(values::Vector{<:Map},ptrs)
+  CompressedCellValue(values,ptrs)
+end
+
 
 function evaluate(cm::ConstantCellMap{S,M},ca::CompressedCellArray{<:S,M}) where {S,M}
   @assert length(cm) == length(ca)
