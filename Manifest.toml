@@ -84,9 +84,9 @@ uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
 [[QuadGK]]
 deps = ["DataStructures", "LinearAlgebra"]
-git-tree-sha1 = "389fd27b958a33df5234772cc464b663b208273d"
+git-tree-sha1 = "438630b843c210b375b2a246329200c113acc61b"
 uuid = "1fd47b50-473d-5c70-9696-f719f8f3bcdc"
-version = "2.0.4"
+version = "2.1.0"
 
 [[REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets"]
@@ -133,9 +133,9 @@ version = "0.1.1"
 
 [[TensorValues]]
 deps = ["LinearAlgebra", "StaticArrays"]
-git-tree-sha1 = "10f02ee3a74a4e2ec1cea133575fbd7bd21ebdd7"
+git-tree-sha1 = "9d192922681bdc4f3294b5d565d2d4b37d21fa18"
 uuid = "31c64edf-cdeb-50e4-845d-ed2334360c20"
-version = "0.3.2"
+version = "0.3.3"
 
 [[Test]]
 deps = ["Distributed", "InteractiveUtils", "Logging", "Random"]
