@@ -1,10 +1,7 @@
-include("../../src/Integration/BoundaryCellFields.jl")
-
 module BoundaryCellFieldsTests
 
 using Test
 using Gridap
-using ..BoundaryCellFields
 
 tags = [23,24,25]
 model = CartesianDiscreteModel(partition=(3,4,2))

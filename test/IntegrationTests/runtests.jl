@@ -12,4 +12,6 @@ using Test
 
 @testset "BoundaryTriangulations" begin include("BoundaryTriangulationsTests.jl") end
 
+@testset "BoundaryCellFields" begin include("BoundaryCellFieldsTests.jl") end
+
 end # module

@@ -8,7 +8,7 @@ export restrict
 import Base: length
 import Gridap: evaluate
 
-function restrict(cf::CellFieldLike{D},trian::BoundaryTriangulation{Z}) where {D,Z}
+function restrict(cf::IndexCellFieldLike{D},trian::BoundaryTriangulation{Z}) where {D,Z}
   @assert D == Z + 1
   BoundaryCellFieldLike(cf,trian.descriptor)
 end
@@ -19,7 +19,7 @@ struct BoundaryCellFieldLike{Z,T,N,D} <: NonIterableCellFieldLike{Z,T,N}
 end
 
 function BoundaryCellFieldLike(
-  cellfield::CellFieldLike{D,T,N}, descriptor::BoundaryDescriptor) where {D,T,N}
+  cellfield::IndexCellFieldLike{D,T,N}, descriptor::BoundaryDescriptor) where {D,T,N}
   Z = D - 1
   BoundaryCellFieldLike{Z,T,N,D}(cellfield,descriptor)
 end
