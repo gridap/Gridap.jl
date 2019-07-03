@@ -21,6 +21,7 @@ import Base: iterate
 import Base: length
 import Base: size
 import Base: getindex
+import Base: show
 
 """
 Abstract object that traverses a set of cells and at every cell returns a
@@ -200,6 +201,16 @@ function test_iter_cell_map_with_index_result(
 
   _test_index_cell_value(c,b)
 
+end
+
+function show(io::IO,self::CellMap)
+  s = "CellMap object with object id $(objectid(self)) and concrete type:"
+  println(io,s)
+  print(io,typeof(self))
+end
+
+function show(io::IO,::MIME"text/plain",self::CellMap)
+  show(io,self)
 end
 
 end # module CellMaps
