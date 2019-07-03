@@ -39,8 +39,6 @@ function evaluate(bcf::BoundaryCellFieldLike{Z}, q::CellPoints{Z}) where Z
     cell_to_polytope,
     facet_to_cell)
 
-  # TODO we need to efficiently implement reindex for cell fields 
-  # arising from applyting kernels
   cf = reindex(bcf.cellfield,facet_to_cell)
 
   evaluate(cf,r)
