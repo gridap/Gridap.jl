@@ -42,5 +42,7 @@ include("MapsMocks.jl")
 
 @testset "NonIterableCellMaps" begin include("NonIterableCellMapsTests.jl") end
 
+@testset "IdentityCellNumbers" begin include("IdentityCellNumbersTests.jl") end
+
 end # module
 
