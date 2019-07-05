@@ -16,9 +16,9 @@ using Test
 
 @time @testset "Algebra" begin include("AlgebraTests/runtests.jl") end
 
-@time @testset "FESpaces" begin include("FESpacesTests/runtests.jl") end
+#@time @testset "FESpaces" begin include("FESpacesTests/runtests.jl") end
 
-@time @testset "MultiField" begin include("MultiFieldTests/runtests.jl") end
+#@time @testset "MultiField" begin include("MultiFieldTests/runtests.jl") end
 
 @time @testset "Visualization" begin include("VisualizationTests/runtests.jl") end
 

@@ -108,21 +108,22 @@ mmat = integrate(a(cellbasis,cellbasis),trian,quad)
 
 bvec = integrate(b(cellbasis),trian,quad)
 
-bvec2 = apply_constraints(fespace,bvec)
+cellids = IdentityCellNumber(Int,length(bvec))
+bvec2 = apply_constraints(fespace,bvec,cellids)
 dofs = celldofids(fespace)
 
 @test bvec2 === bvec
 
 @test dofs == fespace.cell_eqclass
 
-mmat2 = apply_constraints_rows(fespace,mmat)
+mmat2 = apply_constraints_rows(fespace,mmat,cellids)
 dofs = celldofids(fespace)
 
 @test mmat2 === mmat
 
 @test dofs == fespace.cell_eqclass
 
-mmat3 = apply_constraints_cols(fespace,mmat)
+mmat3 = apply_constraints_cols(fespace,mmat,cellids)
 dofs = celldofids(fespace)
 
 @test mmat3 === mmat

@@ -54,16 +54,17 @@ vec2 = integrate(b(v2),trian,quad)
 
 vec = MultiCellVector([vec1,vec2],[(1,),(2,)])
 
-_vec = apply_constraints(U,vec)
+cellids = IdentityCellNumber(Int,length(vec1))
+_vec = apply_constraints(U,vec,cellids)
 @test _vec.blocks[1] === vec1
 @test _vec.blocks[2] === vec2
 
-_mat = apply_constraints_rows(U,mat)
+_mat = apply_constraints_rows(U,mat,cellids)
 @test _mat.blocks[1] === mat11
 @test _mat.blocks[2] === mat12
 @test _mat.blocks[3] === mat22
 
-_mat = apply_constraints_cols(U,mat)
+_mat = apply_constraints_cols(U,mat,cellids)
 @test _mat.blocks[1] === mat11
 @test _mat.blocks[2] === mat12
 @test _mat.blocks[3] === mat22
