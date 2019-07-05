@@ -18,7 +18,7 @@ include("Geometry/files.jl")
 
 include("Algebra/files.jl")
 
-#include("FESpaces/files.jl")
+include("FESpaces/files.jl")
 
 #include("MultiField/files.jl")
 

@@ -52,4 +52,26 @@ x2 = mat \ vec
 @test mat[2, 3]  ≈ -0.33333333333333
 @test mat[3, 3]  ≈ 1.333333333333333
 
+cellids = IdentityCellNumber(Int,length(bvec))
+
+vec2 = assemble(assem, (bvec,cellids))
+
+@test vec2 == vec
+
+vec3 = assemble(assem, (bvec,cellids), (bvec,cellids))
+@test vec3 ≈ 2*vec
+
+assemble!(vec3, assem, (bvec,cellids), (bvec,cellids))
+@test vec3 ≈ 2*vec
+
+mat2 = assemble(assem, (mmat,cellids) )
+
+@test mat2 == mat
+
+mat3 = assemble(assem, (mmat,cellids), (mmat,cellids))
+@test mat3 ≈ 2*mat
+
+assemble!(mat3, assem, (mmat,cellids), (mmat,cellids))
+@test mat3 ≈ 2*mat
+
 end # module AssemblersTests
