@@ -9,6 +9,7 @@ export MultiCellMatrix
 export MultiCellVector
 import Base: iterate
 import Base: length
+import Gridap: reindex
 
 struct MultiCellArray{T,N}
   blocks::Vector{<:CellValue{CachedArray{T,N,Array{T,N}}}}
@@ -66,6 +67,11 @@ end
   arrays, zstate = znext
   state = (zstate, zipped)
   (arrays, state)
+end
+
+function reindex(mca::MultiCellArray,cn::CellNumber)
+  blocks = [ reindex(block,cn)  for block in mca.blocks ]
+  MultiCellArray(blocks,mca.fieldids)
 end
 
 end # module
