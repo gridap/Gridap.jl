@@ -51,15 +51,15 @@ num_diri_dofs(::FESpace)::Int = @abstractmethod
 
 diri_tags(::FESpace)::Vector{Int} = @abstractmethod
 
-function apply_constraints(::FESpace, cellvec::CellVector)::CellVector
+function apply_constraints(::FESpace, cellvec::CellVector, cellids::CellNumber)::CellVector
   @abstractmethod
 end
 
-function apply_constraints_rows(::FESpace, cellmat::CellMatrix)::CellMatrix
+function apply_constraints_rows(::FESpace, cellmat::CellMatrix, cellids::CellNumber)::CellMatrix
   @abstractmethod
 end
 
-function apply_constraints_cols(::FESpace, cellmat::CellMatrix)::CellMatrix
+function apply_constraints_cols(::FESpace, cellmat::CellMatrix, cellids::CellNumber)::CellMatrix
   @abstractmethod
 end
 
@@ -279,18 +279,18 @@ num_diri_dofs(f::FESpaceWithDirichletData) = num_diri_dofs(f.fespace)
 diri_tags(f::FESpaceWithDirichletData) = diri_tags(f.fespace)
 
 function apply_constraints(
-  f::FESpaceWithDirichletData, cellvec::CellVector)
-  apply_constraints(f.fespace,cellvec)
+  f::FESpaceWithDirichletData, cellvec::CellVector, cellids::CellNumber)
+  apply_constraints(f.fespace,cellvec,cellids)
 end
 
 function apply_constraints_rows(
-  f::FESpaceWithDirichletData, cellmat::CellMatrix)
-  apply_constraints_rows(f.fespace,cellmat)
+  f::FESpaceWithDirichletData, cellmat::CellMatrix, cellids::CellNumber)
+  apply_constraints_rows(f.fespace,cellmat,cellids)
 end
 
 function apply_constraints_cols(
-  f::FESpaceWithDirichletData, cellmat::CellMatrix)
-  apply_constraints_cols(f.fespace,cellmat)
+  f::FESpaceWithDirichletData, cellmat::CellMatrix, cellids::CellNumber)
+  apply_constraints_cols(f.fespace,cellmat,cellids)
 end
 
 function celldofids(f::FESpaceWithDirichletData)
@@ -377,17 +377,17 @@ num_diri_dofs(this::ConformingFESpace) = this.num_diri_dofs
 diri_tags(f::ConformingFESpace) = f.diri_tags
 
 function apply_constraints(
-  this::ConformingFESpace, cellvec::CellVector)
+  this::ConformingFESpace, cellvec::CellVector, cellids::CellNumber)
   cellvec
 end
 
 function apply_constraints_rows(
-  this::ConformingFESpace, cellmat::CellMatrix)
+  this::ConformingFESpace, cellmat::CellMatrix, cellids::CellNumber)
   cellmat
 end
 
 function apply_constraints_cols(
-  this::ConformingFESpace, cellmat::CellMatrix)
+  this::ConformingFESpace, cellmat::CellMatrix, cellids::CellNumber)
   cellmat
 end
 

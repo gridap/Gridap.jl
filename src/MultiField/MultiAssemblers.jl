@@ -15,24 +15,47 @@ import Gridap.Assemblers: SparseMatrixAssembler
 
 abstract type MultiAssembler{M<:AbstractMatrix,V<:AbstractVector} end
 
-function assemble(::MultiAssembler{M,V},::MultiCellVector)::V where {M,V}
+function assemble(
+  ::MultiAssembler{M,V},
+  ::Vararg{Tuple{<:MultiCellVector,<:CellNumber}})::V where {M,V}
   @abstractmethod
 end
 
-function assemble(::MultiAssembler{M,V},::MultiCellMatrix)::M where {M,V}
+function assemble(
+  ::MultiAssembler{M,V},
+  ::Vararg{Tuple{<:MultiCellMatrix,<:CellNumber}})::M where {M,V}
   @abstractmethod
 end
 
-function assemble!(::V,::MultiAssembler{M,V},::MultiCellVector)::V where {M,V}
+function assemble!(
+  ::V,
+  ::MultiAssembler{M,V},
+  ::Vararg{Tuple{<:MultiCellVector,<:CellNumber}}) where {M,V}
   @abstractmethod
 end
 
-function assemble!(::M,::MultiAssembler{M,V},::MultiCellMatrix)::M where {M,V}
+function assemble!(
+  ::M,
+  ::MultiAssembler{M,V},
+  ::Vararg{Tuple{<:MultiCellMatrix,<:CellNumber}}) where {M,V}
   @abstractmethod
+end
+
+function assemble(
+  a::MultiAssembler,cv::MultiCellArray)
+  l = length(cv)
+  ide = IdentityCellNumber(Int,l)
+  assemble(a,(cv,ide))
+end
+
+function assemble!(r,a::MultiAssembler,cv::MultiCellArray)
+  l = length(cv)
+  ide = IdentityCellNumber(Int,l)
+  assemble!(r,a,(cv,ide))
 end
 
 """
-Assembler that produces SparseMatrices from the SparseArrays package
+MultiAssembler that produces SparseMatrices from the SparseArrays package
 """
 struct MultiSparseMatrixAssembler{E} <: MultiAssembler{SparseMatrixCSC{E,Int},Vector{E}}
   testfesps::MultiFESpace{E}
@@ -59,45 +82,65 @@ function MultiSparseMatrixAssembler(
   MultiSparseMatrixAssembler{E}(testfesps,trialfesps)
 end
 
-function assemble(this::MultiSparseMatrixAssembler{E},vals::MultiCellVector) where E
+function assemble(
+  this::MultiSparseMatrixAssembler{E},
+  allvals::Vararg{Tuple{<:MultiCellVector,<:CellNumber}}) where E
+
   n = num_free_dofs(this.testfesps)
   vec = zeros(E,n)
-  assemble!(vec,this,vals)
+  assemble!(vec,this,allvals...)
   vec
 end
 
-function assemble!(vec::Vector{E},this::MultiSparseMatrixAssembler{E},mcv::MultiCellVector) where E
+function assemble!(
+  vec::Vector{E},
+  this::MultiSparseMatrixAssembler{E},
+  allmcv::Vararg{Tuple{<:MultiCellVector,<:CellNumber}}) where E
+
   vec .= zero(E)
   V = this.testfesps
-  mf_vals = apply_constraints(V,mcv)
-  mf_rows = celldofids(V)
   offsets = _compute_offsets(V)
-  i_to_fieldid = mf_vals.fieldids
-  _assemble_vec!(vec,mf_rows,mf_vals,i_to_fieldid,offsets)
+  _mf_rows = celldofids(V)
+  for (mcv,cellids) in allmcv
+    mf_vals = apply_constraints(V,mcv,cellids)
+    i_to_fieldid = mf_vals.fieldids
+    mf_rows = reindex(_mf_rows,cellids)
+    _assemble_vec!(vec,mf_rows,mf_vals,i_to_fieldid,offsets)
+  end
 end
 
-function assemble(this::MultiSparseMatrixAssembler{E},mcm::MultiCellMatrix) where {E}
+function assemble(
+  this::MultiSparseMatrixAssembler{E},
+  allmcm::Vararg{Tuple{<:MultiCellMatrix,<:CellNumber}}) where {E}
+
   V = this.testfesps
   U = this.trialfesps
-  mf_vals = apply_constraints_rows(V, mcm)
-  mf_rows = celldofids(V)
-  mf_vals = apply_constraints_cols(U,mf_vals)
-  mf_cols = celldofids(U)
   offsets_row = _compute_offsets(V)
   offsets_col = _compute_offsets(U)
-  i_to_fieldid = mf_vals.fieldids
+  _mf_rows = celldofids(V)
+  _mf_cols = celldofids(U)
   aux_row = Int[]; aux_col = Int[]; aux_val = E[]
-  _assemble_mat!(
-    aux_row,aux_col,aux_val,mf_rows,mf_cols,mf_vals,
-    i_to_fieldid,offsets_row,offsets_col)
+
+  for (mcm,cellids) in allmcm
+    mf_vals = apply_constraints_rows(V, mcm, cellids)
+    mf_rows = reindex(_mf_rows, cellids)
+    mf_vals = apply_constraints_cols(U,mf_vals,cellids)
+    mf_cols = reindex(_mf_cols, cellids)
+    i_to_fieldid = mf_vals.fieldids
+    _assemble_mat!(
+      aux_row,aux_col,aux_val,mf_rows,mf_cols,mf_vals,
+      i_to_fieldid,offsets_row,offsets_col)
+  end
   sparse(aux_row, aux_col, aux_val)
 end
 
 function assemble!(
-  mat::SparseMatrixCSC{E}, this::MultiSparseMatrixAssembler{E}, vals::MultiCellMatrix) where E
+  mat::SparseMatrixCSC{E},
+  this::MultiSparseMatrixAssembler{E},
+  allvals::Vararg{Tuple{<:MultiCellMatrix,<:CellNumber}}) where E
   # This routine can be optimized a lot taking into a count the sparsity graph of mat
   # For the moment we create an intermediate matrix and then transfer the nz values
-  m = assemble(this,vals)
+  m = assemble(this,allvals...)
   mat.nzval .= m.nzval
 end
 

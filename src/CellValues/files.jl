@@ -53,4 +53,7 @@ include("CompressedCellValues.jl")
 include("NonIterableCellMaps.jl")
 @reexport using Gridap.NonIterableCellMaps
 
+include("IdentityCellNumbers.jl")
+@reexport using Gridap.IdentityCellNumbers
+
 
