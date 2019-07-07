@@ -76,16 +76,6 @@ zh = zero(fespace)
 @test diri_dofs(zh) == zeros(Float64,num_diri_dofs(fespace))
 @test FESpace(zh) === fespace
 
-bh = FEBasis(fespace)
-
-@test isa(bh,FEBasis)
-@test isa(+bh,FEBasis)
-@test isa(-bh,FEBasis)
-@test isa(∇(bh),FEBasis)
-@test isa(bh+uh,FEBasis)
-@test isa(uh-bh,FEBasis)
-@test isa(inner(bh,bh),CellMap{Point{2},1,Float64,3})
-@test isa(inner(bh,uh),CellMap{Point{2},1,Float64,2})
 
 U = TrialFESpace(fespace,fun)
 

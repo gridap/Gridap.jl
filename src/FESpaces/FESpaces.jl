@@ -5,7 +5,6 @@ using Gridap.Helpers
 using Gridap.CellValuesGallery
 
 export FEFunction
-export FEBasis
 export free_dofs
 export diri_dofs
 export FESpace
@@ -216,51 +215,6 @@ return_size(f::FEFunction,s::Tuple{Int}) = return_size(f.cellfield,s)
 @inline iterate(f::FEFunction,state) = iterate(f.cellfield,state)
 
 length(f::FEFunction) = length(f.cellfield)
-
-struct FEBasis{B<:CellBasis}
-  cellbasis::B
-end
-
-function FEBasis(fespace::FESpace)
-  b = CellBasis(fespace)
-  FEBasis(b)
-end
-
-for op in (:+, :-, :(gradient))
-  @eval begin
-    function ($op)(a::FEBasis)
-      FEBasis($op(a.cellbasis))
-    end
-  end
-end
-
-for op in (:+, :-, :*)
-  @eval begin
-    function ($op)(a::FEBasis,b::CellMap)
-      FEBasis($op(a.cellbasis,b))
-    end
-    function ($op)(a::CellMap,b::FEBasis)
-      FEBasis($op(a,b.cellbasis))
-    end
-  end
-end
-
-function inner(a::FEBasis,b::CellField)
-  varinner(a.cellbasis,b)
-end
-
-function inner(a::FEBasis,b::FEBasis)
-  varinner(a.cellbasis,b.cellbasis)
-end
-
-function CellBasis(
-  trian::Triangulation{D,Z},
-  fun::Function,
-  b::FEBasis,
-  u::Vararg{<:CellField{Z}}) where {D,Z}
-  basis = CellBasis(trian,fun,b.cellbasis,u...)
-  FEBasis(basis)
-end
 
 """
 FESpace whose Dirichlet component has been constrained
