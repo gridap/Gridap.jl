@@ -8,6 +8,7 @@ import Gridap: CellBasis
 import Gridap: gradient
 import Gridap: inner
 import Base: +, -, *
+import Gridap: restrict
 
 struct FEBasis{B<:CellBasis}
   cellbasis::B
@@ -52,6 +53,11 @@ function CellBasis(
   u::Vararg{<:CellField{Z}}) where {D,Z}
   basis = CellBasis(trian,fun,b.cellbasis,u...)
   FEBasis(basis)
+end
+
+function restrict(feb::FEBasis,trian::BoundaryTriangulation)
+  cb = restrict(feb.cellbasis,trian)
+  FEBasis(cb)
 end
 
 end # module

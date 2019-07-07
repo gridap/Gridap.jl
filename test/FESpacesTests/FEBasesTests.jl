@@ -23,4 +23,15 @@ uh = interpolate(fespace,ufun)
 @test isa(inner(bh,bh),CellMap{Point{2},1,Float64,3})
 @test isa(inner(bh,uh),CellMap{Point{2},1,Float64,2})
 
+tags = [7,6]
+btrian = BoundaryTriangulation(model,tags)
+quad = CellQuadrature(btrian,order=0)
+
+bbh = restrict(bh,btrian)
+cm = inner(bbh,bbh)
+
+ca = integrate(cm,btrian,quad)
+@test isa(ca,CellArray{Float64,2})
+_ = collect(ca)
+
 end # module
