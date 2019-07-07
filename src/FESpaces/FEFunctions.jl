@@ -10,26 +10,12 @@ import Gridap: FESpace
 import Gridap: value_type
 
 import Gridap: evaluate, gradient, return_size
-import Base: iterate
-import Base: length
+import Gridap: reindex
+import Gridap: restrict
+import Base: size
+import Base: getindex
 
 import Base: zero
-
-function interpolate(this::FESpace,fun::Function)
-  free_vals, diri_vals = interpolated_values(this,fun)
-  FEFunction(this,free_vals,diri_vals)
-end
-# @santiagobadia : Using this, it always overwrites the FESpace Dirichlet
-# values, if they exist. Is this what we want?
-
-function zero(fespace::FESpace{D,Z,T}) where {D,Z,T}
-  E = eltype(T)
-  nf = num_free_dofs(fespace)
-  nd = num_diri_dofs(fespace)
-  free_vals = zeros(E,nf)
-  diri_vals = zeros(E,nd)
-  FEFunction(fespace,free_vals,diri_vals)
-end
 
 """
 Abstract type representing a FE Function
@@ -41,7 +27,7 @@ E = eltype(T) and its fe space
 """
 struct FEFunction{
   D,Z,T,E,R,
-  C <: CellField{Z,T}} <: IterCellValue{R}
+  C <: IndexCellField{Z,T}} <: IndexCellValue{R,1}
   free_dofs::AbstractVector{E}
   diri_dofs::AbstractVector{E}
   fespace::FESpace{D,Z,T}
@@ -97,10 +83,28 @@ gradient(f::FEFunction) = gradient(f.cellfield)
 
 return_size(f::FEFunction,s::Tuple{Int}) = return_size(f.cellfield,s)
 
-@inline iterate(f::FEFunction) = iterate(f.cellfield)
+getindex(f::FEFunction,i::Integer) = f.cellfield[i]
 
-@inline iterate(f::FEFunction,state) = iterate(f.cellfield,state)
+size(f::FEFunction) = (length(f.cellfield),)
 
-length(f::FEFunction) = length(f.cellfield)
+function interpolate(this::FESpace,fun::Function)
+  free_vals, diri_vals = interpolated_values(this,fun)
+  FEFunction(this,free_vals,diri_vals)
+end
+# @santiagobadia : Using this, it always overwrites the FESpace Dirichlet
+# values, if they exist. Is this what we want?
+
+function zero(fespace::FESpace{D,Z,T}) where {D,Z,T}
+  E = eltype(T)
+  nf = num_free_dofs(fespace)
+  nd = num_diri_dofs(fespace)
+  free_vals = zeros(E,nf)
+  diri_vals = zeros(E,nd)
+  FEFunction(fespace,free_vals,diri_vals)
+end
+
+reindex(uh::FEFunction, indices) = reindex(uh.cellfield,indices)
+
+restrict(uh::FEFunction,trian::BoundaryTriangulation) = restrict(uh.cellfield,trian)
 
 end # module

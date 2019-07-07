@@ -132,7 +132,7 @@ grad_uhq = evaluate(grad_uh,q)
 v = collect(uhq)
 g = collect(grad_uhq)
 
-test_iter_cell_field(uh,q,v,g)
+test_index_cell_field(uh,q,v,g)
 
 fespace = ConformingFESpace(Float64,model,order,tags)
 

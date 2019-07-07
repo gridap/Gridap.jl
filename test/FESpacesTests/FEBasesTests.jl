@@ -34,4 +34,10 @@ ca = integrate(cm,btrian,quad)
 @test isa(ca,CellArray{Float64,2})
 _ = collect(ca)
 
+buh = restrict(uh,btrian)
+cm = inner(bbh,buh)
+ca = integrate(cm,btrian,quad)
+@test isa(ca,CellArray{Float64,1})
+_ = collect(ca)
+
 end # module
