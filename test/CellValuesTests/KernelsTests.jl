@@ -1,11 +1,15 @@
 module KernelsTests
 
+using Test
 using Gridap
 using TensorValues
 using Gridap.Kernels: CellSumKernel
 using Gridap.Kernels: LinCombKernel
 using Gridap.Kernels: VarinnerKernel
 using Gridap.Kernels: PhysGradKernel
+using Gridap.Kernels: IntegrateNumberKernel
+using Gridap.Kernels: IntegrateArrayKernel
+using Gridap.Kernels: IntegrateKernel
 
 # NumberKernelFromFunction
 
@@ -134,5 +138,32 @@ bi = VectorValue(3.4,2.5)
 b = fill(bi,5,8)
 r = reshape(inv.(a),1,8) .* b
 test_array_kernel(k,r,a,b)
+
+# IntegrateNumberKernel
+
+k = IntegrateNumberKernel()
+
+f = [1,3,4,3]
+j = [1,2,4,1]
+w = [2,4,5,9]
+r = sum( f .* j .* w )
+test_number_kernel(k,r,f,j,w)
+
+# IntegrateArrayKernel
+
+k = IntegrateArrayKernel()
+f = rand(3,2,4)
+j = rand(4)
+w = rand(4)
+
+r =  reshape( sum(f .* reshape(j,(1,1,4)) .* reshape(w,(1,1,4)), dims=3), (3,2))
+
+test_array_kernel(k,r,f,j,w)
+
+k = IntegrateKernel(1)
+@test isa(k,IntegrateNumberKernel)
+
+k = IntegrateKernel(2)
+@test isa(k,IntegrateArrayKernel)
 
 end # module
