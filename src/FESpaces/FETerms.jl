@@ -3,52 +3,142 @@ module FETerms
 using Gridap
 using Gridap.Helpers
 
+export FETerm
+export AffineFETerm
+export FESource
+export LinearFETerm
+export NonLinearFETerm
+
+# Interfaces
+
 abstract type FETerm end
 
-setup_cell_jacobian(t::FETerm,uh,v,du)::CellMatrix = @abstractmethod
+"""
+Returns an object (e.g. a CellMatrix for single field problems) representing
+the contribution to the Jacobian of the given term. Returns nothing if the term
+has not contribution to the Jacobian (typically for source terms)
+"""
+setup_cell_jacobian(t::FETerm,uh,v,du) = @abstractmethod
 
-setup_cell_residual(t::FETerm,uh,v)::CellVector = @abstractmethod
+"""
+Returns an object (e.g. a CellVector) representing the contribution to the
+residual of the given term. Returns always something.
+"""
+setup_cell_residual(t::FETerm,uh,v) = @abstractmethod
 
 setup_cell_ids(t::FETerm)::CellNumber = @abstractmethod
 
-abstract type FESource <: FETerm end
+abstract type AffineFETerm <: FETerm end
 
-setup_cell_vector(t::FESource,v,uhd)::CellVector = @abstractmethod
+"""
+Returns an object (e.g. a CellMatrix) representing the contribution to the
+system matrix of the given term. Returns nothing if the term has not
+contribution (typically for source terms)
+"""
+setup_cell_matrix(t::AffineFETerm,v,u) = @abstractmethod
 
-setup_cell_jacobian(t::FESource,uh,v,du) = nothing
+"""
+Returns an object (e.g. a CellVector) representing the contribution to the
+system rhs of the given term. Returns nothing if the term has not
+contribution (typically for linear terms)
+"""
+setup_cell_vector(t::AffineFETerm,v,uhd) = @abstractmethod
 
-setup_cell_residual(t::FESource,uh,v) = - setup_cell_vector(t,v)
+function setup_cell_jacobian(t::AffineFETerm,uh,v,du)
+  setup_cell_matrix(t,v,du)
+end
 
-struct LinearFETerm <: FETerm
+# Concrete implementations
+
+struct AffineFETermFromIntegration <: AffineFETerm
   biform::Function
   liform::Function
   trian::Triangulation
   quad::CellQuadrature
 end
 
-function setup_cell_matrix(t::LinearFETerm,v,u)
+function AffineFETerm(
+  biform::Function,liform::Function,trian::Triangulation,quad::CellQuadrature)
+  AffineFETermFromIntegration(biform,liform,trian,quad)
+end
+
+function setup_cell_matrix(t::AffineFETermFromIntegration,v,u)
   _v = _restrict_if_needed(v,t.trian)
   _u = _restrict_if_needed(u,t.trian)
   integrate(t.biform(_v,_u),t.trian,t.quad)
 end
 
-function setup_cell_vector(t::LinearFETerm,v,uhd)
+function setup_cell_vector(t::AffineFETermFromIntegration,v,uhd)
   _v = _restrict_if_needed(v,t.trian)
   _uhd = _restrict_if_needed(uhd,t.trian)
   integrate(t.liform(_v)-t.biform(_v,_uhd),t.trian,t.quad)
 end
 
-function setup_cell_jacobian(t::LinearFETerm,uh,v,du)
-  setup_cell_matrix(t,v,du)
-end
-
-function setup_cell_residual(t::LinearFETerm,uh,v)
+function setup_cell_residual(t::AffineFETermFromIntegration,uh,v)
   _v = _restrict_if_needed(v,t.trian)
   _uh = _restrict_if_needed(uh,t.trian)
   integrate(t.biform(_v,_uh)-t.liform(_v),t.trian,t.quad)
 end
 
-setup_cell_ids(t::LinearFETerm) = _setup_cell_ids(t.trian)
+setup_cell_ids(t::AffineFETermFromIntegration) = _setup_cell_ids(t.trian)
+
+struct FESourceFromIntegration <: AffineFETerm
+  liform::Function
+  trian::Triangulation
+  quad::CellQuadrature
+end
+
+function FESource(
+  liform::Function,
+  trian::Triangulation,
+  quad::CellQuadrature)
+  FESourceFromIntegration(liform,trian,quad)
+end
+
+setup_cell_matrix(t::FESourceFromIntegration,v,u) = nothing
+
+function setup_cell_vector(t::FESourceFromIntegration,v,uhd)
+  _v = _restrict_if_needed(v,t.trian)
+  integrate(t.liform(_v),t.trian,t.quad)
+end
+
+function setup_cell_residual(t::FESourceFromIntegration,uh,v)
+  _v = _restrict_if_needed(v,t.trian)
+  integrate(-t.liform(_v),t.trian,t.quad)
+end
+
+setup_cell_ids(t::FESourceFromIntegration) = _setup_cell_ids(t.trian)
+
+struct LinearFETermFromIntegration <: AffineFETerm
+  biform::Function
+  trian::Triangulation
+  quad::CellQuadrature
+end
+
+function LinearFETerm(
+  biform::Function,trian::Triangulation,quad::CellQuadrature)
+  LinearFETermFromIntegration(biform,trian,quad)
+end
+
+function setup_cell_matrix(t::LinearFETermFromIntegration,v,u)
+  _v = _restrict_if_needed(v,t.trian)
+  _u = _restrict_if_needed(u,t.trian)
+  integrate(t.biform(_v,_u),t.trian,t.quad)
+end
+
+function setup_cell_vector(t::LinearFETermFromIntegration,v,uhd)
+  _v = _restrict_if_needed(v,t.trian)
+  _uhd = _restrict_if_needed(uhd,t.trian)
+  integrate(-t.biform(_v,_uhd),t.trian,t.quad)
+end
+
+function setup_cell_residual(t::LinearFETermFromIntegration,uh,v)
+  _v = _restrict_if_needed(v,t.trian)
+  _uh = _restrict_if_needed(uh,t.trian)
+  integrate(t.biform(_v,_uh),t.trian,t.quad)
+end
+
+setup_cell_ids(t::LinearFETermFromIntegration) = _setup_cell_ids(t.trian)
 
 struct NonLinearFETerm <: FETerm
   jac::Function
@@ -72,23 +162,36 @@ end
 
 setup_cell_ids(t::NonLinearFETerm) = _setup_cell_ids(t.trian)
 
-struct WeakFESource <: FESource
-  liform::Function
-  trian::Triangulation
-  quad::CellQuadrature
+# Dealing with several FETerms
+
+function setup_cell_jacobian(uh,v,du,terms::Vararg{<:FETerm})
+  [ ( _jac(term,uh,v,du), _cellids(term) )
+    for term in terms if _jac(term,uh,v,du) != nothing ]
 end
 
-function FESource(
-  liform::Function,trian::Triangulation,quad::CellQuadrature)
-  WeakFESource(liform,trian,quad)
+function setup_cell_residual(uh,v,terms::Vararg{<:FETerm})
+  [ setup_cell_residual(term,uh,v) for term in terms ]
 end
 
-function setup_cell_vector(t::WeakFESource,v,uhd)
-  _v = _restrict_if_needed(v,t.trian)
-  integrate(t.liform(_v),t.trian,t.quad)
+function setup_cell_matrix(v,u,terms::Vararg{<:FETerm})
+  [ ( _mat(term,v,u), _cellids(term) )
+    for term in terms if _mat(term,v,u) != nothing ]
 end
 
-setup_cell_ids(t::WeakFESource) = _setup_cell_ids(t.trian)
+function setup_cell_vector(v,uhd,terms::Vararg{<:FETerm})
+  [ ( _vec(term,v,uhd), _cellids(term) )
+    for term in terms if _vec(term,v,uhd) != nothing ]
+end
+
+# Helpers
+
+const _jac = setup_cell_jacobian
+
+const _mat = setup_cell_matrix
+
+const _vec = setup_cell_vector
+
+const _cellids = setup_cell_ids
 
 _restrict_if_needed(u,trian) = u
 
