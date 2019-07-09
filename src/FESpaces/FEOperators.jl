@@ -158,6 +158,27 @@ struct LinearFEOperator{M,V} <:FEOperator
 end
 
 function LinearFEOperator(
+  testfesp::FESpaceLike,
+  trialfesp::FESpaceLike,
+  assem::AssemblerLike,
+  terms::Vararg{<:AffineFETerm})
+
+  v = FEBasis(testfesp)
+  u = FEBasis(trialfesp)
+
+  uhd = zero(trialfesp)
+
+  cms = setup_cell_matrix(v,u,terms...)
+  cvs = setup_cell_vector(v,uhd,terms...)
+
+  mat = assemble(assem,cms...)
+  vec = assemble(assem,cvs...)
+
+  LinearFEOperator(mat,vec,trialfesp,testfesp)
+
+end
+
+function LinearFEOperator(
   biform::Function,
   liform::Function,
   testfesp::FESpaceLike,
@@ -166,18 +187,9 @@ function LinearFEOperator(
   trian::Triangulation{Z},
   quad::CellQuadrature{Z}) where Z
 
-  v = FEBasis(testfesp)
-  u = FEBasis(trialfesp)
+  term = AffineFETerm(biform,liform,trian,quad)
 
-  uhd = zero(trialfesp)
-
-  cellmat = integrate(biform(v,u),trian,quad)
-  cellvec = integrate( liform(v)-biform(v,uhd), trian, quad)
-
-  mat = assemble(assem,cellmat)
-  vec = assemble(assem,cellvec)
-
-  LinearFEOperator(mat,vec,trialfesp,testfesp)
+  LinearFEOperator(testfesp,trialfesp,assem,term)
 
 end
 
