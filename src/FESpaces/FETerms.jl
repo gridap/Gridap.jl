@@ -9,6 +9,12 @@ export FESource
 export LinearFETerm
 export NonLinearFETerm
 
+export setup_cell_jacobian
+export setup_cell_residual
+export setup_cell_matrix
+export setup_cell_vector
+export setup_cell_ids
+
 # Interfaces
 
 abstract type FETerm end
