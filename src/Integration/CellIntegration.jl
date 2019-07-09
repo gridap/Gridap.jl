@@ -1,6 +1,7 @@
 module CellIntegration
 
 using Gridap
+using Gridap.Kernels: IntegrateKernel
 
 export integrate
 
@@ -12,8 +13,12 @@ function integrate(
   w = weights(quad)
   f = evaluate(cellfun,z)
   j = evaluate(gradient(phi),z)
-  # TODO this can be optimized wiht a Kernel
-  cellsum( f*(meas(j)*w), dim=N )
+  k = _prepare_kernel(f)
+  apply(k,f,meas(j),w)
+end
+
+function _prepare_kernel(f::CellArray{T,N}) where {T,N}
+  IntegrateKernel(Val(N))
 end
 
 function integrate(
