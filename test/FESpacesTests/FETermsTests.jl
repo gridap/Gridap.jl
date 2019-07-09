@@ -1,11 +1,7 @@
-include("../../src/FESpaces/FETerms.jl")
 module FETermsTests
 
 using Test
 using Gridap
-using ..FETerms
-
-using ..FETerms: _restrict_if_needed
 
 ufun(x) = x[1] + x[2]
 bfun(x) = x[1]
@@ -45,7 +41,15 @@ cm = setup_cell_matrix(t1,v,du)
 @test isa(cm,CellMatrix)
 @test length(cm) == ncells(trian)
 
+cm = setup_cell_jacobian(t1,uh,v,du)
+@test isa(cm,CellMatrix)
+@test length(cm) == ncells(trian)
+
 cv = setup_cell_vector(t1,v,uhd)
+@test isa(cv,CellVector)
+@test length(cv) == ncells(trian)
+
+cv = setup_cell_residual(t1,uh,v)
 @test isa(cv,CellVector)
 @test length(cv) == ncells(trian)
 
@@ -56,28 +60,83 @@ cn = setup_cell_ids(t1)
 t2 = AffineFETerm(a,g,btrian,bquad)
 
 cm = setup_cell_matrix(t2,v,du)
+@test isa(cm,CellMatrix)
+@test length(cm) == ncells(btrian)
 
-#_v = _restrict_if_needed(v,btrian)
-#_u = _restrict_if_needed(du,btrian)
-#
-#@show isa(_v,FEBasis)
-#@show isa(_u,FEBasis)
-#cm =  integrate(a(_v,_u),btrian,bquad)
-#
-#q = coordinates(bquad)
-#w = weights(bquad)
-#
-#cmap = a(_v,_u)
-#cmq = evaluate(cmap,q)
-#
-##@show cmq
-#
-#phi = CellGeomap(btrian)
-#j = evaluate(∇(phi),q)
-#@show size(cmq[1])
-#
-#@show size(meas(j)[1])
-#
-#cmq[1] .* meas(j)[1]
+cv = setup_cell_vector(t2,v,uhd)
+@test isa(cv,CellVector)
+@test length(cv) == ncells(btrian)
+
+cn = setup_cell_ids(t2)
+@test isa(cn,CellNumber)
+@test length(cn) == ncells(btrian)
+
+t3 = FESource(g,btrian,bquad)
+
+cv = setup_cell_vector(t3,v,uhd)
+@test isa(cv,CellVector)
+@test length(cv) == ncells(btrian)
+
+cv = setup_cell_residual(t3,uh,v)
+@test isa(cv,CellVector)
+@test length(cv) == ncells(btrian)
+
+cn = setup_cell_ids(t3)
+@test isa(cn,CellNumber)
+@test length(cn) == ncells(btrian)
+
+cm = setup_cell_matrix(t3,v,du)
+@test cm === nothing
+
+t4 = LinearFETerm(a,trian,quad)
+
+cm = setup_cell_matrix(t4,v,du)
+@test isa(cm,CellMatrix)
+@test length(cm) == ncells(trian)
+
+cv = setup_cell_vector(t4,v,uhd)
+@test isa(cv,CellVector)
+@test length(cv) == ncells(trian)
+
+cn = setup_cell_ids(t4)
+@test isa(cn,CellNumber)
+@test length(cn) == ncells(trian)
+
+jac(uh,v,du) = a(v,du)
+res(uh,v) = a(v,uh) - l(v)
+
+t5 = NonLinearFETerm(res,jac,trian,quad)
+
+cm = setup_cell_jacobian(t5,uh,v,du)
+@test isa(cm,CellMatrix)
+@test length(cm) == ncells(trian)
+
+cv = setup_cell_residual(t5,uh,v)
+@test isa(cv,CellVector)
+@test length(cv) == ncells(trian)
+
+cn = setup_cell_ids(t5)
+@test isa(cn,CellNumber)
+@test length(cn) == ncells(trian)
+
+assem = SparseMatrixAssembler(V,U)
+
+cms = setup_cell_jacobian(uh,v,du,t1)
+
+cms = setup_cell_jacobian(uh,v,du,t1,t2)
+
+mat = assemble(assem,cms...)
+
+cvs = setup_cell_residual(uh,v,t1,t2)
+
+vec = assemble(assem,cvs...)
+
+cvs = setup_cell_vector(v,uhd,t1,t2)
+
+vec = assemble(assem,cvs...)
+
+cms = setup_cell_matrix(v,du,t1,t2)
+
+mat = assemble(assem,cms...)
 
 end #module

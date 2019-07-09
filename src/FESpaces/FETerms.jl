@@ -147,8 +147,8 @@ end
 setup_cell_ids(t::LinearFETermFromIntegration) = _setup_cell_ids(t.trian)
 
 struct NonLinearFETerm <: FETerm
-  jac::Function
   res::Function
+  jac::Function
   trian::Triangulation
   quad::CellQuadrature
 end
@@ -176,15 +176,15 @@ function setup_cell_jacobian(uh,v,du,terms::Vararg{<:FETerm})
 end
 
 function setup_cell_residual(uh,v,terms::Vararg{<:FETerm})
-  [ setup_cell_residual(term,uh,v) for term in terms ]
+  [ (setup_cell_residual(term,uh,v), _cellids(term)) for term in terms ]
 end
 
-function setup_cell_matrix(v,u,terms::Vararg{<:FETerm})
+function setup_cell_matrix(v,u,terms::Vararg{<:AffineFETerm})
   [ ( _mat(term,v,u), _cellids(term) )
     for term in terms if _mat(term,v,u) != nothing ]
 end
 
-function setup_cell_vector(v,uhd,terms::Vararg{<:FETerm})
+function setup_cell_vector(v,uhd,terms::Vararg{<:AffineFETerm})
   [ ( _vec(term,v,uhd), _cellids(term) )
     for term in terms if _vec(term,v,uhd) != nothing ]
 end

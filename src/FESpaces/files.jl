@@ -12,5 +12,8 @@ include("FEBases.jl")
 include("Assemblers.jl")
 @reexport using Gridap.Assemblers
 
+include("FETerms.jl")
+@reexport using Gridap.FETerms
+
 include("FEOperators.jl")
 @reexport using Gridap.FEOperators

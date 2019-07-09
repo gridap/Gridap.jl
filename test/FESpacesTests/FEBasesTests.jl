@@ -25,7 +25,7 @@ uh = interpolate(fespace,ufun)
 
 tags = [7,6]
 btrian = BoundaryTriangulation(model,tags)
-quad = CellQuadrature(btrian,order=0)
+quad = CellQuadrature(btrian,order=2)
 
 bbh = restrict(bh,btrian)
 cm = inner(bbh,bbh)
