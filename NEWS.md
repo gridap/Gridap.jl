@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Deprecated
 ### Fixed
+- Bug in numerical integration. There was a bug for computations where the number of cell DOFs was different from the number of integration points. Fixed in via commit [0b3d4bf](https://github.com/gridap/Gridap.jl/commit/0b3d4bfadea48707c748fca0de65a51a598b6ca6)
 
 ## [0.2.0] - 2019-06-29
 
