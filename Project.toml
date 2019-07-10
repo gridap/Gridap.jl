@@ -18,13 +18,13 @@ WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 
 [compat]
 Combinatorics = "0.7.0"
-QuadGK = "2"
-Reexport = "0.2"
-StaticArrays = "0.10"
+QuadGK = "2.1.0"
+Reexport = "0.2.0"
+StaticArrays = "0.10.3"
 TensorPolynomialBases = "0.1.1"
-TensorValues = "0.3.2"
-UnstructuredGrids = "0.2"
-WriteVTK = "1"
+TensorValues = "0.3.3"
+UnstructuredGrids = "0.2.0"
+WriteVTK = "1.0.3"
 julia = "1.1"
 
 [extras]
