@@ -84,4 +84,54 @@ zh = zero(U)
 solve!(zh,solver,op,cache)
 @test free_dofs(zh) ≈ free_dofs(uh)
 
-end
+# With Neumann BCs
+
+# Manufactured Neumann function
+gfun(x) = 1.0
+
+# Construct the FEspace
+order = 1
+diritags = [1,2,3,4,5,6,7]
+fespace = ConformingFESpace(Float64,model,order,diritags)
+
+# Define test and trial
+V = TestFESpace(fespace)
+U = TrialFESpace(fespace,ufun)
+
+# Setup integration on Neumann boundary
+neumanntags = [8,]
+btrian = BoundaryTriangulation(model,neumanntags)
+bquad = CellQuadrature(btrian,order=2)
+
+# Object describing Neumann function
+gfield = CellField(btrian,gfun)
+
+# Integrand of the Neumann BC
+g(v) = inner(v,gfield)
+
+# Define weak form terms
+t_Ω = AffineFETerm(a,b,trian,quad)
+t_Γ = FESource(g,btrian,bquad)
+
+# Define Assembler
+assem = SparseMatrixAssembler(V,U)
+
+# Define FE problem
+op = LinearFEOperator(V,U,assem,t_Ω,t_Γ)
+
+# Solve!
+uh = solve(solver,op)
+
+# Define exact solution and error
+e = u - uh
+
+# Compute errors
+el2 = sqrt(sum( integrate(l2(e),trian,quad) ))
+eh1 = sqrt(sum( integrate(h1(e),trian,quad) ))
+
+#writevtk(trian,"trian",nref=4,cellfields=["uh"=>uh,"u"=>u,"e"=>e])
+
+@test el2 < 1.e-8
+@test eh1 < 1.e-8
+
+end # module
