@@ -17,5 +17,8 @@ include("BoundaryDescriptors.jl")
 include("BoundaryTriangulations.jl")
 @reexport using Gridap.BoundaryTriangulations
 
+include("SkeletonTriangulations.jl")
+@reexport using Gridap.SkeletonTriangulations
+
 include("BoundaryCellFields.jl")
 @reexport using Gridap.BoundaryCellFields

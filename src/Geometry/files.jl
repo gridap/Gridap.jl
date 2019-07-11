@@ -16,3 +16,6 @@ include("GridPortions.jl")
 
 include("BoundaryGrids.jl")
 @reexport using Gridap.BoundaryGrids
+
+include("SkeletonGrids.jl")
+@reexport using Gridap.SkeletonGrids
