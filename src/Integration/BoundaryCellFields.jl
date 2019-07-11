@@ -7,10 +7,15 @@ using Gridap.CellFields: NonIterableCellFieldLike
 export restrict
 import Base: length
 import Gridap: evaluate
+import Gridap: gradient
+
+function restrict(cf::IndexCellFieldLike,desc::BoundaryDescriptor)
+  BoundaryCellFieldLike(cf,desc)
+end
 
 function restrict(cf::IndexCellFieldLike{D},trian::BoundaryTriangulation{Z}) where {D,Z}
   @assert D == Z + 1
-  BoundaryCellFieldLike(cf,trian.descriptor)
+  restrict(cf,trian.descriptor)
 end
 
 struct BoundaryCellFieldLike{Z,T,N,D} <: NonIterableCellFieldLike{Z,T,N}
@@ -22,6 +27,11 @@ function BoundaryCellFieldLike(
   cellfield::IndexCellFieldLike{D,T,N}, descriptor::BoundaryDescriptor) where {D,T,N}
   Z = D - 1
   BoundaryCellFieldLike{Z,T,N,D}(cellfield,descriptor)
+end
+
+function gradient(cf::BoundaryCellFieldLike)
+  cfg = gradient(cf.cellfield)
+  BoundaryCellFieldLike(cfg,cf.descriptor)
 end
 
 length(bcf::BoundaryCellFieldLike) = length(bcf.descriptor.facet_to_cell)
