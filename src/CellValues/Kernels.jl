@@ -86,6 +86,8 @@ _nd(v::AbstractArray{T,N}) where {T,N} = N
 
 _nd(v::T) where T<:NumberLike = 0
 
+_nd(v::Type{T}) where T<:NumberLike = 0
+
 
 # TODO use a generated function here
 _compute_ndims(v...) = @notimplemented
@@ -111,6 +113,8 @@ _eltype(v::CellMap{S,M,T}) where {S,M,T} = T
 _eltype(v::Type{<:Map{S,M,T}}) where {S,M,T} = T
 
 _eltype(v::Type{<:AbstractArray{T}}) where T = T
+
+_eltype(v::Type{T}) where T<:NumberLike = T
 
 const _et = _eltype
 
