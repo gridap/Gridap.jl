@@ -43,8 +43,8 @@ jsu_grad_s = evaluate(jsu_grad,s)
 jsuh_grad = jump(∇(suh))
 jsuh_grad_s = evaluate(jsuh_grad,s)
 
-#writevtk(strian,"strian",cellfields=[
-# "jumpu"=>jsu,"jumpu_grad"=>jsu_grad,
-# "jumph"=>jsuh,"jumpuh_grad"=>jsuh_grad ])
+writevtk(strian,"strian",cellfields=[
+ "jumpu"=>jsu,"jumpu_grad"=>jsu_grad,
+ "jumph"=>jsuh,"jumpuh_grad"=>jsuh_grad ])
 
 end # module
