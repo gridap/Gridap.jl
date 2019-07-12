@@ -203,8 +203,16 @@ _restrict_if_needed(u,trian) = u
 
 _restrict_if_needed(u,trian::BoundaryTriangulation) = restrict(u,trian)
 
+_restrict_if_needed(u,trian::SkeletonTriangulation) = restrict(u,trian)
+
 _setup_cell_ids(trian) = IdentityCellNumber(Int,ncells(trian))
 
 _setup_cell_ids(trian::BoundaryTriangulation) = trian.descriptor.facet_to_cell
+
+function _setup_cell_ids(trian::SkeletonTriangulation)
+  n1 = trian.descriptor1.facet_to_cell
+  n2 = trian.descriptor2.facet_to_cell
+  (n1, n2)
+end
 
 end # module

@@ -7,6 +7,7 @@ import Gridap: restrict
 import Gridap: gradient
 import Gridap: inner
 import Gridap: integrate
+import Base: -
 
 function restrict(
   cf::IndexCellFieldLike,desc1::BoundaryDescriptor,desc2::BoundaryDescriptor)
@@ -72,6 +73,18 @@ end
 struct SkeletonVarinnerVector{D,T}
   cellmap1::CellMap{Point{D},1,T,2}
   cellmap2::CellMap{Point{D},1,T,2}
+end
+
+function (-)(a::SkeletonVarinnerVector,b::SkeletonVarinnerVector)
+  c1 = a.cellmap1 - b.cellmap1
+  c2 = a.cellmap2 - b.cellmap2
+  SkeletonVarinnerVector(c1,c2)
+end
+
+function (-)(a::SkeletonVarinnerVector)
+  c1 = - a.cellmap1
+  c2 = - a.cellmap2
+  SkeletonVarinnerVector(c1,c2)
 end
 
 struct SkeletonCellVector
