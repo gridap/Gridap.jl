@@ -16,4 +16,6 @@ using Test
 
 @testset "BoundaryCellFields" begin include("BoundaryCellFieldsTests.jl") end
 
+@testset "SkeletonCellFields" begin include("SkeletonCellFieldsTests.jl") end
+
 end # module

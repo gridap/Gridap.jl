@@ -5,7 +5,7 @@ using Gridap
 export jump
 import Gridap: restrict
 import Gridap: gradient
-import Gridap: varinner
+import Gridap: inner
 import Gridap: integrate
 
 function restrict(
@@ -49,15 +49,15 @@ struct SkeletonCellBasis{Z,T}
   cellbasis2::CellBasis{Z,T}
 end
 
-function varinner(a::SkeletonCellBasis{Z},b::CellField{Z}) where Z
+function inner(a::SkeletonCellBasis{Z},b::CellField{Z}) where Z
   cb1 = a.cellbasis1
   cb2 = a.cellbasis2
   cm1 = varinner(cb1,b)
   cm2 = varinner(cb2,b)
-  VarinnerSkeletonVector(cm1,cm2)
+  SkeletonVarinnerVector(cm1,cm2)
 end
 
-function varinner(a::SkeletonCellBasis{Z},b::SkeletonCellBasis{Z}) where Z
+function inner(a::SkeletonCellBasis{Z},b::SkeletonCellBasis{Z}) where Z
   a1 = a.cellbasis1
   a2 = a.cellbasis2
   b1 = b.cellbasis1
@@ -66,31 +66,53 @@ function varinner(a::SkeletonCellBasis{Z},b::SkeletonCellBasis{Z}) where Z
   cm12 = varinner(a1,b2)
   cm21 = varinner(a2,b1)
   cm22 = varinner(a2,b2)
-  VarinnerSkeletonMatrix(cm11,cm12,cm21,cm22)
+  SkeletonVarinnerMatrix(cm11,cm12,cm21,cm22)
 end
 
-struct VarinnerSkeletonVector{D,T}
+struct SkeletonVarinnerVector{D,T}
   cellmap1::CellMap{Point{D},1,T,2}
   cellmap2::CellMap{Point{D},1,T,2}
 end
 
-struct VarinnerSkeletonMatrix{D,T}
+struct SkeletonCellVector
+  cellvector1::CellVector
+  cellvector2::CellVector
+end
+
+struct SkeletonVarinnerMatrix{D,T}
   cellmap11::CellMap{Point{D},1,T,3}
   cellmap12::CellMap{Point{D},1,T,3}
   cellmap21::CellMap{Point{D},1,T,3}
   cellmap22::CellMap{Point{D},1,T,3}
 end
 
+struct SkeletonCellMatrix
+  cellmatrix11::CellMatrix
+  cellmatrix12::CellMatrix
+  cellmatrix21::CellMatrix
+  cellmatrix22::CellMatrix
+end
+
 function integrate(
-  v::VarinnerSkeletonVector{Z},
+  v::SkeletonVarinnerVector{Z},
   trian::Triangulation{Z},
   quad::CellQuadrature{Z}) where Z
 
   v1 = integrate(v.cellmap1,trian,quad)
   v2 = integrate(v.cellmap2,trian,quad)
-  VarinnerSkeletonVectorValue(v1,v2)
+  SkeletonCellVector(v1,v2)
 end
 
+function integrate(
+  v::SkeletonVarinnerMatrix{Z},
+  trian::Triangulation{Z},
+  quad::CellQuadrature{Z}) where Z
 
+  m11 = integrate(v.cellmap11,trian,quad)
+  m12 = integrate(v.cellmap12,trian,quad)
+  m21 = integrate(v.cellmap21,trian,quad)
+  m22 = integrate(v.cellmap22,trian,quad)
+  SkeletonCellMatrix(m11,m12,m21,m22)
+end
 
 end # module

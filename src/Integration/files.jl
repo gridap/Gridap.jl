@@ -22,3 +22,6 @@ include("SkeletonTriangulations.jl")
 
 include("BoundaryCellFields.jl")
 @reexport using Gridap.BoundaryCellFields
+
+include("SkeletonCellFields.jl")
+@reexport using Gridap.SkeletonCellFields

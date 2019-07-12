@@ -1,10 +1,8 @@
-include("../../src/Integration/SkeletonCellFields.jl")
 module SkeletonCellFieldsTests
 
 using Test
 using Gridap
 import Gridap: ∇
-using ..SkeletonCellFields
 
 model = CartesianDiscreteModel(partition=(3,4,2))
 
@@ -43,8 +41,33 @@ jsu_grad_s = evaluate(jsu_grad,s)
 jsuh_grad = jump(∇(suh))
 jsuh_grad_s = evaluate(jsuh_grad,s)
 
-writevtk(strian,"strian",cellfields=[
- "jumpu"=>jsu,"jumpu_grad"=>jsu_grad,
- "jumph"=>jsuh,"jumpuh_grad"=>jsuh_grad ])
+#writevtk(strian,"strian",cellfields=[
+# "jumpu"=>jsu,"jumpu_grad"=>jsu_grad,
+# "jumph"=>jsuh,"jumpuh_grad"=>jsuh_grad ])
+
+v = CellBasis(trian)
+du = v
+
+u_Γ = restrict(u,strian)
+du_Γ = restrict(v,strian)
+v_Γ = restrict(v,strian)
+
+cm = inner(jump(v_Γ),jump(u_Γ))
+
+cv = integrate(cm,strian,squad)
+_ = collect(cv.cellvector1)
+_ = collect(cv.cellvector2)
+
+cm = inner(jump(v_Γ),jump(du_Γ))
+
+cv = integrate(cm,strian,squad)
+_ = collect(cv.cellmatrix11)
+_ = collect(cv.cellmatrix12)
+_ = collect(cv.cellmatrix21)
+_ = collect(cv.cellmatrix22)
+
+cm = inner(jump(u_Γ),jump(u_Γ))
+cv = integrate(cm,strian,squad)
+_ = collect(cv)
 
 end # module
