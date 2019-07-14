@@ -152,19 +152,19 @@ assem = SparseMatrixAssembler(V,U)
 
 cms = setup_cell_jacobian(uh,v,du,t1)
 
-cms = setup_cell_jacobian(uh,v,du,t1,t2)
+cms = setup_cell_jacobian(uh,v,du,t1,t2,t6)
 
 mat = assemble(assem,cms...)
 
-cvs = setup_cell_residual(uh,v,t1,t2)
+cvs = setup_cell_residual(uh,v,t1,t2,t6)
 
 vec = assemble(assem,cvs...)
 
-cvs = setup_cell_vector(v,uhd,t1,t2)
+cvs = setup_cell_vector(v,uhd,t1,t2,t6)
 
 vec = assemble(assem,cvs...)
 
-cms = setup_cell_matrix(v,du,t1,t2)
+cms = setup_cell_matrix(v,du,t1,t2,t6)
 
 mat = assemble(assem,cms...)
 

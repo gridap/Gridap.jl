@@ -31,7 +31,7 @@ Assembly of a matrix allocating output
 """
 function assemble(
   ::Assembler{M,V},
-  ::Vararg{Tuple{<:CellMatrix,<:CellNumber}})::M where {M,V}
+  ::Vararg{Tuple{<:CellMatrix,<:CellNumber,<:CellNumber}})::M where {M,V}
   @abstractmethod
 end
 
@@ -51,20 +51,32 @@ In-place assembly of a matrix (allows a LOT of optimizations)
 function assemble!(
   ::M,
   ::Assembler{M,V},
-  ::Vararg{Tuple{<:CellMatrix,<:CellNumber}})::M where {M,V}
+  ::Vararg{Tuple{<:CellMatrix,<:CellNumber,<:CellNumber}})::M where {M,V}
   @abstractmethod
 end
 
-function assemble(a::Assembler,cv::CellArray)
+function assemble(a::Assembler,cv::CellVector)
   l = length(cv)
   ide = IdentityCellNumber(Int,l)
   assemble(a,(cv,ide))
 end
 
-function assemble!(r,a::Assembler,cv::CellArray)
+function assemble(a::Assembler,cv::CellMatrix)
+  l = length(cv)
+  ide = IdentityCellNumber(Int,l)
+  assemble(a,(cv,ide,ide))
+end
+
+function assemble!(r,a::Assembler,cv::CellVector)
   l = length(cv)
   ide = IdentityCellNumber(Int,l)
   assemble!(r,a,(cv,ide))
+end
+
+function assemble!(r,a::Assembler,cv::CellMatrix)
+  l = length(cv)
+  ide = IdentityCellNumber(Int,l)
+  assemble!(r,a,(cv,ide,ide))
 end
 
 """
@@ -116,7 +128,7 @@ end
 
 function assemble(
   this::SparseMatrixAssembler{E},
-  allvals::Vararg{Tuple{<:CellMatrix,<:CellNumber}}) where E
+  allvals::Vararg{Tuple{<:CellMatrix,<:CellNumber,<:CellNumber}}) where E
 
   I = Int
   aux_row = I[]; aux_col = I[]; aux_val = E[]
@@ -124,11 +136,11 @@ function assemble(
   _rows_m = celldofids(this.testfesp)
   _cols_m = celldofids(this.trialfesp)
 
-  for (vals,cellids) in allvals
-    _vals = apply_constraints_rows(this.testfesp, vals, cellids)
-    rows_m = reindex(_rows_m, cellids)
-    vals_m = apply_constraints_cols(this.trialfesp, _vals, cellids)
-    cols_m = reindex(_cols_m, cellids)
+  for (vals, cellids_row, cellids_col) in allvals
+    _vals = apply_constraints_rows(this.testfesp, vals, cellids_row)
+    rows_m = reindex(_rows_m, cellids_row)
+    vals_m = apply_constraints_cols(this.trialfesp, _vals, cellids_col)
+    cols_m = reindex(_cols_m, cellids_col)
     _assemble_sparse_matrix_values!(
       aux_row,aux_col,aux_val,vals_m,rows_m,cols_m)
   end
@@ -154,7 +166,7 @@ end
 function assemble!(
   mat::SparseMatrixCSC{E},
   this::SparseMatrixAssembler{E},
-  vals::Vararg{Tuple{<:CellMatrix,<:CellNumber}}) where E
+  vals::Vararg{Tuple{<:CellMatrix,<:CellNumber,<:CellNumber}}) where E
   # This routine can be optimized a lot taking into a count the sparsity graph of mat
   # For the moment we create an intermediate matrix and then transfer the nz values
   m = assemble(this,vals...)

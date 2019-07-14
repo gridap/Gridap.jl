@@ -2,6 +2,11 @@ module SkeletonCellFields
 
 using Gridap
 
+export SkeletonPair
+export SkeletonCellBasis
+export SkeletonCellVector
+export SkeletonCellMatrix
+
 export jump
 import Gridap: restrict
 import Gridap: gradient

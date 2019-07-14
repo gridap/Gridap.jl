@@ -222,19 +222,21 @@ function _append_vector_contribution!(m,r,c)
   push!(m,(r,c))
 end
 
-#function _append_vector_contribution!(m,r::SkeletonCellVector,c)
-#  push!(m,(r.cellvector1,c[1]))
-#  push!(m,(r.cellvector2,c[2]))
-#end
-
-function _append_matrix_contribution!(m,r,c)
-  push!(m,(r,c))
+function _append_vector_contribution!(m,r::SkeletonCellVector,c)
+  push!(m,(r.cellvector1,c[1]))
+  push!(m,(r.cellvector2,c[2]))
 end
 
-#function _append_matrix_contribution!(m,r::SkeletonCellMatrix,c)
-#  push!(m,(r.cellmatrix11,c[1]))
-#  push!(m,(r.cellmatrix12,c[2]))
-#end
+function _append_matrix_contribution!(m,r,c)
+  push!(m,(r,c,c))
+end
+
+function _append_matrix_contribution!(m,r::SkeletonCellMatrix,c)
+  push!(m,(r.cellmatrix11,c[1],c[1]))
+  push!(m,(r.cellmatrix12,c[1],c[2]))
+  push!(m,(r.cellmatrix21,c[2],c[1]))
+  push!(m,(r.cellmatrix22,c[2],c[2]))
+end
 
 const _jac = setup_cell_jacobian
 

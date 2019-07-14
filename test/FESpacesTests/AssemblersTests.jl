@@ -64,14 +64,14 @@ vec3 = assemble(assem, (bvec,cellids), (bvec,cellids))
 assemble!(vec3, assem, (bvec,cellids), (bvec,cellids))
 @test vec3 ≈ 2*vec
 
-mat2 = assemble(assem, (mmat,cellids) )
+mat2 = assemble(assem, (mmat,cellids,cellids) )
 
 @test mat2 == mat
 
-mat3 = assemble(assem, (mmat,cellids), (mmat,cellids))
+mat3 = assemble(assem, (mmat,cellids,cellids), (mmat,cellids,cellids))
 @test mat3 ≈ 2*mat
 
-assemble!(mat3, assem, (mmat,cellids), (mmat,cellids))
+assemble!(mat3, assem, (mmat,cellids,cellids), (mmat,cellids,cellids))
 @test mat3 ≈ 2*mat
 
 end # module AssemblersTests
