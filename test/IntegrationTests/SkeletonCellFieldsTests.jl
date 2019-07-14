@@ -70,4 +70,12 @@ cm = inner(jump(u_Γ),jump(u_Γ))
 cv = integrate(cm,strian,squad)
 _ = collect(cv)
 
+phi = CellGeomap(trian)
+phi_Γ = restrict(phi,strian)
+
+x = evaluate(jump(phi_Γ),s)
+z = Point(0.0,0.0,0.0)
+zs = fill(z,4)
+@test all([ xi .+ 1 ≈ zs .+ 1 for xi in x ])
+
 end # module
