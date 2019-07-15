@@ -69,10 +69,10 @@ v2 = assemble(assem,(vec,cellids),(vec,cellids))
 assemble!(v2,assem,(vec,cellids),(vec,cellids))
 @test v2 ≈ 2*v
 
-mm2 = assemble(assem,(mat,cellids),(mat,cellids))
+mm2 = assemble(assem,(mat,cellids,cellids),(mat,cellids,cellids))
 @test mm2 ≈ 2*mm
 
-assemble!(mm2,assem,(mat,cellids),(mat,cellids))
+assemble!(mm2,assem,(mat,cellids,cellids),(mat,cellids,cellids))
 @test mm2 ≈ 2*mm
 
 end # module MultiAssemblersTests

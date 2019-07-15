@@ -23,7 +23,7 @@ end
 
 function assemble(
   ::MultiAssembler{M,V},
-  ::Vararg{Tuple{<:MultiCellMatrix,<:CellNumber}})::M where {M,V}
+  ::Vararg{Tuple{<:MultiCellMatrix,<:CellNumber,<:CellNumber}})::M where {M,V}
   @abstractmethod
 end
 
@@ -37,21 +37,34 @@ end
 function assemble!(
   ::M,
   ::MultiAssembler{M,V},
-  ::Vararg{Tuple{<:MultiCellMatrix,<:CellNumber}}) where {M,V}
+  ::Vararg{Tuple{<:MultiCellMatrix,<:CellNumber,<:CellNumber}}) where {M,V}
   @abstractmethod
 end
 
 function assemble(
-  a::MultiAssembler,cv::MultiCellArray)
+  a::MultiAssembler,cv::MultiCellVector)
   l = length(cv)
   ide = IdentityCellNumber(Int,l)
   assemble(a,(cv,ide))
 end
 
-function assemble!(r,a::MultiAssembler,cv::MultiCellArray)
+function assemble(
+  a::MultiAssembler,cv::MultiCellMatrix)
+  l = length(cv)
+  ide = IdentityCellNumber(Int,l)
+  assemble(a,(cv,ide,ide))
+end
+
+function assemble!(r,a::MultiAssembler,cv::MultiCellVector)
   l = length(cv)
   ide = IdentityCellNumber(Int,l)
   assemble!(r,a,(cv,ide))
+end
+
+function assemble!(r,a::MultiAssembler,cv::MultiCellMatrix)
+  l = length(cv)
+  ide = IdentityCellNumber(Int,l)
+  assemble!(r,a,(cv,ide,ide))
 end
 
 """
@@ -111,7 +124,7 @@ end
 
 function assemble(
   this::MultiSparseMatrixAssembler{E},
-  allmcm::Vararg{Tuple{<:MultiCellMatrix,<:CellNumber}}) where {E}
+  allmcm::Vararg{Tuple{<:MultiCellMatrix,<:CellNumber,<:CellNumber}}) where {E}
 
   V = this.testfesps
   U = this.trialfesps
@@ -121,11 +134,11 @@ function assemble(
   _mf_cols = celldofids(U)
   aux_row = Int[]; aux_col = Int[]; aux_val = E[]
 
-  for (mcm,cellids) in allmcm
-    mf_vals = apply_constraints_rows(V, mcm, cellids)
-    mf_rows = reindex(_mf_rows, cellids)
-    mf_vals = apply_constraints_cols(U,mf_vals,cellids)
-    mf_cols = reindex(_mf_cols, cellids)
+  for (mcm,cellids_row,cellids_col) in allmcm
+    mf_vals = apply_constraints_rows(V, mcm, cellids_row)
+    mf_rows = reindex(_mf_rows, cellids_row)
+    mf_vals = apply_constraints_cols(U,mf_vals,cellids_col)
+    mf_cols = reindex(_mf_cols, cellids_col)
     i_to_fieldid = mf_vals.fieldids
     _assemble_mat!(
       aux_row,aux_col,aux_val,mf_rows,mf_cols,mf_vals,
@@ -137,7 +150,7 @@ end
 function assemble!(
   mat::SparseMatrixCSC{E},
   this::MultiSparseMatrixAssembler{E},
-  allvals::Vararg{Tuple{<:MultiCellMatrix,<:CellNumber}}) where E
+  allvals::Vararg{Tuple{<:MultiCellMatrix,<:CellNumber,<:CellNumber}}) where E
   # This routine can be optimized a lot taking into a count the sparsity graph of mat
   # For the moment we create an intermediate matrix and then transfer the nz values
   m = assemble(this,allvals...)
