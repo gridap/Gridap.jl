@@ -1,4 +1,4 @@
-module CellValuesReindexTests
+module CellNumberReindexTests
 
 using Test
 using Gridap

@@ -41,6 +41,12 @@ include("CellValuesAppend.jl")
 include("CellValuesReindex.jl")
 @reexport using Gridap.CellValuesReindex
 
+include("CellNumberReindex.jl")
+@reexport using Gridap.CellNumberReindex
+
+include("CellArrayReindex.jl")
+@reexport using Gridap.CellArrayReindex
+
 include("FindLocalIndex.jl")
 @reexport using Gridap.FindLocalIndex
 
