@@ -24,7 +24,17 @@ end
 
 size(c::IdentityCellNumber) = (c.length,)
 
-function reindex(values::IndexCellValue, indices::IdentityCellNumber)
+function reindex(values::IndexCellValue, indices::IdentityCellNumber{T}) where T
+  @assert length(values) == length(indices)
+  values
+end
+
+function reindex(values::IndexCellNumber, indices::IdentityCellNumber{T}) where T
+  @assert length(values) == length(indices)
+  values
+end
+
+function reindex(values::IndexCellArray, indices::IdentityCellNumber{T}) where T
   @assert length(values) == length(indices)
   values
 end
