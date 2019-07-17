@@ -103,8 +103,12 @@ function zero(fespace::FESpace{D,Z,T}) where {D,Z,T}
   FEFunction(fespace,free_vals,diri_vals)
 end
 
-reindex(uh::FEFunction, indices) = reindex(uh.cellfield,indices)
+reindex(uh::FEFunction, indices::CellNumber{<:IndexLike}) = reindex(uh.cellfield,indices)
+
+reindex(uh::FEFunction, indices::IndexCellNumber{<:IndexLike}) = reindex(uh.cellfield,indices)
 
 restrict(uh::FEFunction,trian::BoundaryTriangulation) = restrict(uh.cellfield,trian)
+
+restrict(uh::FEFunction,trian::SkeletonTriangulation) = restrict(uh.cellfield,trian)
 
 end # module

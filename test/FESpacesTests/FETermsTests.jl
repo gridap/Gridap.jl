@@ -2,10 +2,13 @@ module FETermsTests
 
 using Test
 using Gridap
+using Gridap.SkeletonCellFields: SkeletonCellMatrix
+using Gridap.SkeletonCellFields: SkeletonCellVector
 
 ufun(x) = x[1] + x[2]
 bfun(x) = x[1]
 gfun(x) = x[2]
+sfun(x) = x[1]
 
 model = CartesianDiscreteModel(partition=(4,4))
 
@@ -23,6 +26,10 @@ tags = [7,6]
 btrian = BoundaryTriangulation(model,tags)
 bquad = CellQuadrature(btrian,order=2)
 
+tags = [9,]
+strian = SkeletonTriangulation(model,tags)
+squad = CellQuadrature(strian,order=2)
+
 v = FEBasis(V)
 du = FEBasis(U)
 uhd = zero(U)
@@ -30,10 +37,12 @@ uh = interpolate(U,ufun)
 
 bfield = CellField(trian,bfun)
 gfield = CellField(btrian,gfun)
+sfield = CellField(strian,sfun)
 
 a(v,u) = inner(v,u)
 l(v) = inner(v,bfield)
 g(v) = inner(v,gfield)
+
 
 t1 = AffineFETerm(a,l,trian,quad)
 
@@ -70,6 +79,26 @@ cv = setup_cell_vector(t2,v,uhd)
 cn = setup_cell_ids(t2)
 @test isa(cn,CellNumber)
 @test length(cn) == ncells(btrian)
+
+sa(v,u) = inner(jump(v),jump(u))
+s(v) = inner(jump(v),sfield)
+
+t6 = AffineFETerm(sa,s,strian,squad)
+
+cm = setup_cell_matrix(t6,v,du)
+@test isa(cm,SkeletonCellMatrix)
+
+cv = setup_cell_vector(t6,v,uhd)
+@test isa(cv,SkeletonCellVector)
+
+cm = setup_cell_jacobian(t6,uh,v,du)
+@test isa(cm,SkeletonCellMatrix)
+
+cv = setup_cell_residual(t6,uh,v)
+@test isa(cv,SkeletonCellVector)
+
+cn = setup_cell_ids(t6)
+@test isa(cn,Tuple{<:CellNumber,<:CellNumber})
 
 t3 = FESource(g,btrian,bquad)
 
@@ -123,19 +152,19 @@ assem = SparseMatrixAssembler(V,U)
 
 cms = setup_cell_jacobian(uh,v,du,t1)
 
-cms = setup_cell_jacobian(uh,v,du,t1,t2)
+cms = setup_cell_jacobian(uh,v,du,t1,t2,t6)
 
 mat = assemble(assem,cms...)
 
-cvs = setup_cell_residual(uh,v,t1,t2)
+cvs = setup_cell_residual(uh,v,t1,t2,t6)
 
 vec = assemble(assem,cvs...)
 
-cvs = setup_cell_vector(v,uhd,t1,t2)
+cvs = setup_cell_vector(v,uhd,t1,t2,t6)
 
 vec = assemble(assem,cvs...)
 
-cms = setup_cell_matrix(v,du,t1,t2)
+cms = setup_cell_matrix(v,du,t1,t2,t6)
 
 mat = assemble(assem,cms...)
 

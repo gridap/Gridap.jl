@@ -76,7 +76,7 @@ function _prepare_cdata_model(labels,d)
   for tag in 1:ntags(labels)
     dface_to_isontag = zeros(Int,ndfaces)
     for label in labels_on_tag(labels,tag)
-      _set_label!(dface_to_isontag,dface_to_label,label)
+      _set_label!(dface_to_isontag,dface_to_label,label,tag)
     end
     name = name_from_tag(labels,tag)
     push!(cdat, name => dface_to_isontag )
@@ -85,10 +85,10 @@ function _prepare_cdata_model(labels,d)
   cdat
 end
 
-function _set_label!(dface_to_isontag,dface_to_label,label)
+function _set_label!(dface_to_isontag,dface_to_label,label,tag)
   for i in 1:length(dface_to_label)
     if dface_to_label[i] == label
-      dface_to_isontag[i] = 1
+      dface_to_isontag[i] = tag
     end
   end
 end

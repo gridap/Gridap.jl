@@ -60,4 +60,8 @@ function restrict(feb::FEBasis,trian::BoundaryTriangulation)
   FEBasis(cb)
 end
 
+function restrict(feb::FEBasis,trian::SkeletonTriangulation)
+  restrict(feb.cellbasis,trian)
+end
+
 end # module

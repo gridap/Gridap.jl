@@ -171,25 +171,72 @@ setup_cell_ids(t::NonLinearFETerm) = _setup_cell_ids(t.trian)
 # Dealing with several FETerms
 
 function setup_cell_jacobian(uh,v,du,terms::Vararg{<:FETerm})
-  [ ( _jac(term,uh,v,du), _cellids(term) )
-    for term in terms if _jac(term,uh,v,du) != nothing ]
+  m = []
+  for term in terms
+    r = _jac(term,uh,v,du)
+    if r != nothing
+      c = _cellids(term)
+      _append_matrix_contribution!(m,r,c)
+    end
+  end
+  m
 end
 
 function setup_cell_residual(uh,v,terms::Vararg{<:FETerm})
-  [ (setup_cell_residual(term,uh,v), _cellids(term)) for term in terms ]
+  m = []
+  for term in terms
+    r = setup_cell_residual(term,uh,v)
+    c = _cellids(term)
+    _append_vector_contribution!(m,r,c)
+  end
+  m
 end
 
 function setup_cell_matrix(v,u,terms::Vararg{<:AffineFETerm})
-  [ ( _mat(term,v,u), _cellids(term) )
-    for term in terms if _mat(term,v,u) != nothing ]
+  m = []
+  for term in terms
+    r = _mat(term,v,u)
+    if r != nothing
+      c = _cellids(term)
+      _append_matrix_contribution!(m,r,c)
+    end
+  end
+  m
 end
 
 function setup_cell_vector(v,uhd,terms::Vararg{<:AffineFETerm})
-  [ ( _vec(term,v,uhd), _cellids(term) )
-    for term in terms if _vec(term,v,uhd) != nothing ]
+  m = []
+  for term in terms
+    r = _vec(term,v,uhd)
+    if r != nothing
+      c = _cellids(term)
+      _append_vector_contribution!(m,r,c)
+    end
+  end
+  m
 end
 
 # Helpers
+
+function _append_vector_contribution!(m,r,c)
+  push!(m,(r,c))
+end
+
+function _append_vector_contribution!(m,r::SkeletonCellVector,c)
+  push!(m,(r.cellvector1,c[1]))
+  push!(m,(r.cellvector2,c[2]))
+end
+
+function _append_matrix_contribution!(m,r,c)
+  push!(m,(r,c,c))
+end
+
+function _append_matrix_contribution!(m,r::SkeletonCellMatrix,c)
+  push!(m,(r.cellmatrix11,c[1],c[1]))
+  push!(m,(r.cellmatrix12,c[1],c[2]))
+  push!(m,(r.cellmatrix21,c[2],c[1]))
+  push!(m,(r.cellmatrix22,c[2],c[2]))
+end
 
 const _jac = setup_cell_jacobian
 
@@ -203,8 +250,16 @@ _restrict_if_needed(u,trian) = u
 
 _restrict_if_needed(u,trian::BoundaryTriangulation) = restrict(u,trian)
 
+_restrict_if_needed(u,trian::SkeletonTriangulation) = restrict(u,trian)
+
 _setup_cell_ids(trian) = IdentityCellNumber(Int,ncells(trian))
 
 _setup_cell_ids(trian::BoundaryTriangulation) = trian.descriptor.facet_to_cell
+
+function _setup_cell_ids(trian::SkeletonTriangulation)
+  n1 = trian.descriptor1.facet_to_cell
+  n2 = trian.descriptor2.facet_to_cell
+  (n1, n2)
+end
 
 end # module
