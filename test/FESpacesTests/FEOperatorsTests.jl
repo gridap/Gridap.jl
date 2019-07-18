@@ -165,8 +165,8 @@ t_ΓR = AffineFETerm(m,r,rtrian,rquad)
 
 # Dummy term that includes jumps.
 # Only for testing purposes since the shape
-# functions are continuous. Thus, including this term
-# should not change the solution
+# functions are continuous in this example.
+# Thus, including this term should not change the solution
 tags = [9,]
 strian = SkeletonTriangulation(model,tags)
 squad = CellQuadrature(strian,order=2)
@@ -177,7 +177,7 @@ t_ΓS = LinearFETerm(j,strian,squad)
 assem = SparseMatrixAssembler(V,U)
 
 # Define FE problem
-op = LinearFEOperator(V,U,assem,t_Ω,t_ΓN,t_ΓR)#,t_ΓS)
+op = LinearFEOperator(V,U,assem,t_Ω,t_ΓN,t_ΓR,t_ΓS)
 
 # Solve!
 uh = solve(solver,op)
