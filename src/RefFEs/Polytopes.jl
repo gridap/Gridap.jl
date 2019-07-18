@@ -158,6 +158,40 @@ function polytopenfaces(anchor::Point{D,Int}, extrusion::Point{D,Int}) where D
   return [nf_nfs,dimnfs]
 end
 
+# Generates the reference polytopes for all n-faces (undef for vertices)
+function _nface_ref_polytopes(p::Polytope)
+  function _eliminate_zeros(a)
+    b = Int[]
+    for m in a
+      if (m !=0)
+        push!(b,m)
+      end
+    end
+    return Tuple(b)
+  end
+  nf_ref_p = Vector{Polytope}(undef,length(p.nfaces))
+  ref_nf_ps = Polytope[]
+  for (i_nf,nf) in enumerate(p.nfaces)
+    r_ext = _eliminate_zeros(nf.extrusion)
+    if r_ext != ()
+      k = 0
+      for (i_p,ref_p) in enumerate(ref_nf_ps)
+        if r_ext == ref_p.extrusion
+          k = i_p
+          nf_ref_p[i_nf] = ref_p
+        end
+      end
+      if k == 0
+        ref_p = Polytope(r_ext)
+        push!(ref_nf_ps,ref_p)
+        k = length(ref_nf_ps)+1
+        nf_ref_p[i_nf] = ref_p
+      end
+    end
+  end
+  return nf_ref_p
+end
+
 """
 Provides for all n-faces of a polytope the d-faces for 0 <= d <n on its
 boundary (e.g., given a face, it provides the set of edges and corners on its
@@ -292,7 +326,7 @@ It generates the set of nodes (its coordinates) in the interior of an n-face,
 for a given order. The node coordinates are `Int` and from 0 to `order` per
 direction
 """
-function generate_interior_nodes(p::NFace{D}, order) where D
+function generate_interior_nodes(p::Polytope{D}, order) where D
   ext = p.extrusion
   _ord = [order...]
   verts = Point{D,Int}[]
@@ -324,16 +358,18 @@ function _generate_nodes!(dim, ext, order, coor, verts)
 end
 
 function _equidistant_nodes_coordinates(nodes, order)
-  cs_float = Vector{Float64}[]
   if length(nodes) > 0
     dim = length(nodes[1])
+    cs_float = Point{dim,Float64}[]
     cs = zeros(Float64,dim)
     for cs_int in nodes
       for i in 1:dim
         cs[i] = cs_int[i]/order[i]
       end
-      push!(cs_float,copy(cs))
+      push!(cs_float,Point{dim,Float64}(cs))
     end
+  else
+    cs_float = Point{0,Float64}[]
   end
   return cs_float
 end
@@ -343,7 +379,7 @@ It generates the list of coordinates of all vertices in the polytope. It is
 assumed that the polytope has the bounding box [0,1]**dim
 """
 function vertices_coordinates(p::Polytope{D}) where D
-  vs = Gridap.Polytopes._dimfrom_fs_dimto_fs(p, D, 0)[1]
+  vs = _dimfrom_fs_dimto_fs(p, D, 0)[1]
   vcs = Point{D,Float64}[]
   for i in 1:length(vs)
     cs = convert(Vector{Float64}, [p.nfaces[vs[i]].anchor...])

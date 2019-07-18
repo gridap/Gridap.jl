@@ -100,7 +100,7 @@ quad = CellQuadrature(trian,order=2)
 
 a(v,u) = varinner(v,u)
 
-bfun(x) = x[2] 
+bfun(x) = x[2]
 
 b(v) = varinner(v,CellField(trian,bfun))
 
