@@ -39,7 +39,7 @@ function Grid(polytope::Polytope{D},dim::Int) where D
   @assert njfaces > 0
   code1 = jface_to_code[1]
   # TODO
-  # @notimplementedif any([ code1 != code for code in jface_to_code ])
+  @notimplementedif any([ code1 != code for code in jface_to_code ])
 
   # points = na.coordinates
   cells_data, cells_ptrs = generate_data_and_ptrs(jface_to_vertices)
