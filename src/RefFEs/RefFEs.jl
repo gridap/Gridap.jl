@@ -61,7 +61,11 @@ function LagrangianRefFE{D,T}(polytope::Polytope{D},
 end
 
 function _high_order_lagrangian_reffe(p::Polytope{D}, T, order) where {D}
-  nodes, nfacedofs = _high_order_lagrangian_nodes_polytope(p,order)
+  if (order == 1)
+    nodes, nfacedofs = _linear_lagrangian_nodes_polytope(p)
+  else
+    nodes, nfacedofs = _high_order_lagrangian_nodes_polytope(p,order)
+  end
   dofsb = Gridap.RefFEs.LagrangianDOFBasis{D,T}(nodes)
   prebasis = Gridap.RefFEs._monomial_basis(p,T,order)
   aux = zeros(Float64,numlocaldofs(dofsb),numlocaldofs(dofsb))
@@ -71,36 +75,43 @@ function _high_order_lagrangian_reffe(p::Polytope{D}, T, order) where {D}
   return LagrangianRefFE{D,T}(p, dofsb, basis, nfacedofs)
 end
 
-function _linear_lagrangian_reffe(polytope::Polytope{D},T) where {D}
-  function _linear_nfacedofs(p)
-    nfacedofs = Vector{Int}[]
-    for (inf,nf) in enumerate(p.nfaces[p.nf_dim[end][1]])
-      push!(nfacedofs, [inf])
-    end
-    for id in 2:length(p.nf_dim[end])
-      for (inf,nf) in enumerate(p.nfaces[p.nf_dim[end][id]])
-        push!(nfacedofs, Int[])
-      end
-    end
-    return nfacedofs
+function _linear_nfacedofs(p)
+  nfacedofs = Vector{Int}[]
+  for (inf,nf) in enumerate(p.nfaces[p.nf_dim[end][1]])
+    push!(nfacedofs, [inf])
   end
-  nodes = Gridap.Polytopes.vertices_coordinates(polytope)
-  dofsb = LagrangianDOFBasis{D,T}(nodes)
+  for id in 2:length(p.nf_dim[end])
+    for (inf,nf) in enumerate(p.nfaces[p.nf_dim[end][id]])
+      push!(nfacedofs, Int[])
+    end
+  end
+  return nfacedofs
+end
+
+function _linear_lagrangian_reffe(p::Polytope{D},T) where {D}
   order = 1
-  prebasis = _monomial_basis(polytope,T,order)
+  nodes, nfacedofs = _linear_lagrangian_nodes_polytope(p)
+  dofsb = Gridap.RefFEs.LagrangianDOFBasis{D,T}(nodes)
+  prebasis = Gridap.RefFEs._monomial_basis(p,T,order)
   aux = zeros(Float64,numlocaldofs(dofsb),numlocaldofs(dofsb))
   @assert numlocaldofs(dofsb) == length(prebasis)
   changeofbasis=inv(evaluate!(dofsb,prebasis,aux))
   basis = change_basis(prebasis, changeofbasis)
-  nfacedofs=_linear_nfacedofs(polytope)
-  return LagrangianRefFE{D,T}(polytope, dofsb, basis, nfacedofs)
+  return LagrangianRefFE{D,T}(p, dofsb, basis, nfacedofs)
+end
+
+function _linear_lagrangian_nodes_polytope(p::Polytope)
+  nodes = Gridap.Polytopes.vertices_coordinates(p)
+  nfacedofs = _linear_nfacedofs(p)
+  return nodes, nfacedofs
 end
 
 function _high_order_lagrangian_nodes_polytope(p::Polytope, order)
   vs_p = Gridap.Polytopes.vertices_coordinates(p)
   ns_float_p = [i.array for i in vs_p]
   ref_ps = Gridap.Polytopes._nface_ref_polytopes(p)
-  rfe_p = Gridap.RefFEs._linear_lagrangian_reffe(p,Float64)
+  # rfe_p = Gridap.RefFEs._linear_lagrangian_reffe(p,Float64)
+  rfe_p = Gridap.RefFEs._high_order_lagrangian_reffe(p,Float64,1)
   nfacedofs = copy(rfe_p.nfacedofs)
   k = length(vs_p)
   for nf_dim = 1:length(p.nf_dim[end])-1
