@@ -1,8 +1,11 @@
 module BoundaryGrids
 
 using Gridap
+using Gridap.Helpers
 
 export BoundaryGrid
+import Gridap: Triangulation
+import Gridap: BoundaryTriangulation
 import Gridap: points
 import Gridap: cells
 import Gridap: celltypes
@@ -10,17 +13,12 @@ import Gridap: cellorders
 
 struct BoundaryGrid{D,Z} <: Grid{D,Z}
   grid::Grid{D,Z}
-  facet_to_cell::IndexCellNumber
-  facet_to_lfacet::IndexCellNumber
-  #TODO
-  #facet_to_perm::IndexCellNumber
+  descriptor::BoundaryDescriptor
   
   function BoundaryGrid(
-    grid::Grid{D,Z},
-    facet_to_cell::IndexCellNumber,
-    facet_to_lfacet::IndexCellNumber) where {D,Z}
+    grid::Grid{D,Z}, descriptor::BoundaryDescriptor) where {D,Z}
     @assert D == Z + 1
-    new{D,Z}(grid,facet_to_cell,facet_to_lfacet)
+    new{D,Z}(grid,descriptor)
   end
 
 end
@@ -29,6 +27,11 @@ for op in (:points,:cells,:celltypes,:cellorders)
   @eval begin
     $op(g::BoundaryGrid) = $op(g.grid)
   end
+end
+
+function Triangulation(grid::BoundaryGrid)
+  trian = Triangulation(grid.grid)
+  BoundaryTriangulation(trian,grid.descriptor)
 end
 
 function BoundaryGrid(model::DiscreteModel,tags::Vector{Int},icell::Int=1)
@@ -42,14 +45,23 @@ function BoundaryGrid(model::DiscreteModel,tags::Vector{Int},icell::Int=1)
   fgrid = Grid(model,d-1)
   facet_to_oldfacet = findall(oldfacet_to_mask)
   grid = GridPortion(fgrid,facet_to_oldfacet)
-  graph = FullGridGraph(model) # TODO FullGridGraph not strictly needed
+  graph = FullGridGraph(model)
   oldfacet_to_cells = connections(graph,d-1,d)
   cell_to_oldfacets = connections(graph,d,d-1)
   oldfacet_to_cell = get_local_item(oldfacet_to_cells,icell)
   oldfacet_to_lfacet = find_local_index(oldfacet_to_cell, cell_to_oldfacets)
   facet_to_cell = reindex(oldfacet_to_cell, facet_to_oldfacet)
   facet_to_lfacet = reindex(oldfacet_to_lfacet,facet_to_oldfacet)
-  BoundaryGrid(grid,facet_to_cell,facet_to_lfacet)
+  cellgrid = Grid(model,d)
+  cell_to_extrussion = celltypes(cellgrid)
+  cell_to_polytope = _cell_to_polytope(cell_to_extrussion)
+  descriptor = BoundaryDescriptor(facet_to_cell,facet_to_lfacet,cell_to_polytope)
+  BoundaryGrid(grid,descriptor)
+end
+
+function BoundaryTriangulation(model::DiscreteModel,tags::Vector{Int},icell::Int=1)
+  grid = BoundaryGrid(model,tags,icell)
+  Triangulation(grid)
 end
 
 function _setup_mask!(facet_to_mask,facet_to_label,tag_to_labels,tags)
@@ -63,6 +75,17 @@ function _setup_mask!(facet_to_mask,facet_to_label,tag_to_labels,tags)
       end
     end
   end
+end
+
+function _cell_to_polytope(cell_to_extrussion)
+  @notimplemented
+end
+
+function _cell_to_polytope(cell_to_extrussion::ConstantCellValue)
+  extrussion = cell_to_extrussion.value
+  l = cell_to_extrussion.length
+  poly = Polytope(extrussion)
+  ConstantCellValue(poly,l)
 end
 
 end # module

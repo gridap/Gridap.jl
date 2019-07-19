@@ -1,7 +1,7 @@
 name = "Gridap"
 uuid = "56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e"
-authors = ["sbadia <sbadia@cimne.upc.edu>", "fverdugo <fverdugo@cimne.upc.edu>"]
-version = "0.1.0"
+authors = ["Santiago Badia <sbadia@cimne.upc.edu>", "Francesc Verdugo <fverdugo@cimne.upc.edu>"]
+version = "0.2.0"
 
 [deps]
 Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
@@ -17,13 +17,14 @@ UnstructuredGrids = "9cd2e232-b78e-5341-8154-33bf4eafe965"
 WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 
 [compat]
-QuadGK = "2"
-Reexport = "0.2"
-StaticArrays = "0.10"
+Combinatorics = "0.7.0"
+QuadGK = "2.1.0"
+Reexport = "0.2.0"
+StaticArrays = "0.10.3"
 TensorPolynomialBases = "0.1.1"
-TensorValues = "0.3.2"
-UnstructuredGrids = "0.2"
-WriteVTK = "1"
+TensorValues = "0.3.3"
+UnstructuredGrids = "0.2.0"
+WriteVTK = "1.0.3"
 julia = "1.1"
 
 [extras]

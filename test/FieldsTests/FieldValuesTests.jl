@@ -24,5 +24,19 @@ p = Point{3,Float64}(1,2,3)
 
 @test isa(p,VectorValue{3,Float64})
 
+v = MultiValue{Tuple{1,2}}(10,20)
+n = normalvec(v)
+@test n == VectorValue(20,-10)
+@test meas(v) == sqrt(500)
+
+v = MultiValue{Tuple{2,3}}(1,0,0,1,0,0)
+n = normalvec(v)
+@test n == VectorValue(0,0,1)
+@test meas(v) ≈ 1.0
+
+v = MultiValue{Tuple{2,3}}(1,0,0,1,1,0)
+n = normalvec(v)
+@test n == VectorValue(-1,0,1)
+@test meas(v) ≈ sqrt(2)
 
 end # module

@@ -76,16 +76,6 @@ zh = zero(fespace)
 @test diri_dofs(zh) == zeros(Float64,num_diri_dofs(fespace))
 @test FESpace(zh) === fespace
 
-bh = FEBasis(fespace)
-
-@test isa(bh,FEBasis)
-@test isa(+bh,FEBasis)
-@test isa(-bh,FEBasis)
-@test isa(∇(bh),FEBasis)
-@test isa(bh+uh,FEBasis)
-@test isa(uh-bh,FEBasis)
-@test isa(inner(bh,bh),CellMap{Point{2},1,Float64,3})
-@test isa(inner(bh,uh),CellMap{Point{2},1,Float64,2})
 
 U = TrialFESpace(fespace,fun)
 
@@ -108,21 +98,22 @@ mmat = integrate(a(cellbasis,cellbasis),trian,quad)
 
 bvec = integrate(b(cellbasis),trian,quad)
 
-bvec2 = apply_constraints(fespace,bvec)
+cellids = IdentityCellNumber(Int,length(bvec))
+bvec2 = apply_constraints(fespace,bvec,cellids)
 dofs = celldofids(fespace)
 
 @test bvec2 === bvec
 
 @test dofs == fespace.cell_eqclass
 
-mmat2 = apply_constraints_rows(fespace,mmat)
+mmat2 = apply_constraints_rows(fespace,mmat,cellids)
 dofs = celldofids(fespace)
 
 @test mmat2 === mmat
 
 @test dofs == fespace.cell_eqclass
 
-mmat3 = apply_constraints_cols(fespace,mmat)
+mmat3 = apply_constraints_cols(fespace,mmat,cellids)
 dofs = celldofids(fespace)
 
 @test mmat3 === mmat
@@ -141,7 +132,7 @@ grad_uhq = evaluate(grad_uh,q)
 v = collect(uhq)
 g = collect(grad_uhq)
 
-test_iter_cell_field(uh,q,v,g)
+test_index_cell_field(uh,q,v,g)
 
 fespace = ConformingFESpace(Float64,model,order,tags)
 

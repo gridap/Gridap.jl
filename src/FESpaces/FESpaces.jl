@@ -4,8 +4,6 @@ using Gridap
 using Gridap.Helpers
 using Gridap.CellValuesGallery
 
-export FEFunction
-export FEBasis
 export free_dofs
 export diri_dofs
 export FESpace
@@ -20,7 +18,6 @@ export apply_constraints_cols
 export celldofids
 export interpolated_values
 export interpolated_diri_values
-export interpolate
 export value_type
 
 export ConformingFESpace
@@ -28,13 +25,6 @@ export FESpaceWithDirichletData
 
 import Gridap: CellField
 import Gridap: CellBasis
-
-import Gridap: evaluate, gradient, return_size
-import Gridap: inner
-import Base: iterate
-import Base: length
-import Base: zero
-import Base: +, -, *
 
 """
 Abstract FE Space parameterized with respec to the environment dimension `D`,
@@ -51,15 +41,15 @@ num_diri_dofs(::FESpace)::Int = @abstractmethod
 
 diri_tags(::FESpace)::Vector{Int} = @abstractmethod
 
-function apply_constraints(::FESpace, cellvec::CellVector)::CellVector
+function apply_constraints(::FESpace, cellvec::CellVector, cellids::CellNumber)::CellVector
   @abstractmethod
 end
 
-function apply_constraints_rows(::FESpace, cellmat::CellMatrix)::CellMatrix
+function apply_constraints_rows(::FESpace, cellmat::CellMatrix, cellids::CellNumber)::CellMatrix
   @abstractmethod
 end
 
-function apply_constraints_cols(::FESpace, cellmat::CellMatrix)::CellMatrix
+function apply_constraints_cols(::FESpace, cellmat::CellMatrix, cellids::CellNumber)::CellMatrix
   @abstractmethod
 end
 
@@ -100,15 +90,8 @@ end
 # @santiagobadia : Private method
 # @santiagobadia : interpolated -> interpolate
 
-function interpolate(this::FESpace,fun::Function)
-  free_vals, diri_vals = interpolated_values(this,fun)
-  FEFunction(this,free_vals,diri_vals)
-end
-# @santiagobadia : Using this, it always overwrites the FESpace Dirichlet
-# values, if they exist. Is this what we want?
-
 """
-Returns the CellField that represents the FEFunction thorough its free and
+Returns the CellField that represents the FE function thorough its free and
 dirichlet values. E = eltype(T)
 """
 function CellField(
@@ -143,125 +126,6 @@ function TrialFESpace( this::FESpace, fun::Function) where {D}
   return FESpaceWithDirichletData(this, dv)
 end
 
-function zero(fespace::FESpace{D,Z,T}) where {D,Z,T}
-  E = eltype(T)
-  nf = num_free_dofs(fespace)
-  nd = num_diri_dofs(fespace)
-  free_vals = zeros(E,nf)
-  diri_vals = zeros(E,nd)
-  FEFunction(fespace,free_vals,diri_vals)
-end
-
-"""
-Abstract type representing a FE Function
-A FE function is a member of a FESpace.
-Since a FE space is the direct sum of free + dirichlet spaces
-a FE function is uniquely represented by two vectors of components aka
-`free_dofs` and `diri_dofs` which are Vectors{E} with
-E = eltype(T) and its fe space
-"""
-struct FEFunction{
-  D,Z,T,E,R,
-  C <: CellField{Z,T}} <: IterCellValue{R}
-  free_dofs::AbstractVector{E}
-  diri_dofs::AbstractVector{E}
-  fespace::FESpace{D,Z,T}
-  cellfield::C
-end
-
-free_dofs(f::FEFunction) = f.free_dofs
-
-diri_dofs(f::FEFunction) = f.diri_dofs
-
-FESpace(f::FEFunction) = f.fespace
-
-value_type(::FEFunction{D,Z,T}) where {D,Z,T} = T
-
-"""
-Returns the FE function represented be the  free and dirichlet values
-E = eltype(T)
-"""
-function FEFunction(
-  fespace::FESpace,free_dofs::AbstractVector,diri_dofs::AbstractVector)
-  _FEFunction(fespace,free_dofs,diri_dofs)
-end
-
-function _FEFunction(
-  fespace::FESpace,free_dofs::AbstractVector,diri_dofs::AbstractVector)
-  cfield = CellField(fespace,free_dofs,diri_dofs)
-  FEFunction(free_dofs,diri_dofs,fespace,cfield)
-end
-# @santiagobadia : I would define another method without diri_dofs and
-# FESpaceWithDirichletData
-
-function FEFunction(
-  free_dofs::AbstractVector{E},
-  diri_dofs::AbstractVector{E},
-  fespace::FESpace{D,Z,T},
-  cellfield::CellField{Z,T}) where {D,Z,T,E}
-  @assert E == eltype(T)
-  R = eltype(cellfield)
-  C = typeof(cellfield)
-  FEFunction{D,Z,T,E,R,C}(free_dofs,diri_dofs,fespace,cellfield)
-end
-
-evaluate(f::FEFunction{D,Z},q::CellPoints{Z}) where {D,Z} = evaluate(f.cellfield,q)
-
-gradient(f::FEFunction) = gradient(f.cellfield)
-
-return_size(f::FEFunction,s::Tuple{Int}) = return_size(f.cellfield,s)
-
-@inline iterate(f::FEFunction) = iterate(f.cellfield)
-
-@inline iterate(f::FEFunction,state) = iterate(f.cellfield,state)
-
-length(f::FEFunction) = length(f.cellfield)
-
-struct FEBasis{B<:CellBasis}
-  cellbasis::B
-end
-
-function FEBasis(fespace::FESpace)
-  b = CellBasis(fespace)
-  FEBasis(b)
-end
-
-for op in (:+, :-, :(gradient))
-  @eval begin
-    function ($op)(a::FEBasis)
-      FEBasis($op(a.cellbasis))
-    end
-  end
-end
-
-for op in (:+, :-, :*)
-  @eval begin
-    function ($op)(a::FEBasis,b::CellMap)
-      FEBasis($op(a.cellbasis,b))
-    end
-    function ($op)(a::CellMap,b::FEBasis)
-      FEBasis($op(a,b.cellbasis))
-    end
-  end
-end
-
-function inner(a::FEBasis,b::CellField)
-  varinner(a.cellbasis,b)
-end
-
-function inner(a::FEBasis,b::FEBasis)
-  varinner(a.cellbasis,b.cellbasis)
-end
-
-function CellBasis(
-  trian::Triangulation{D,Z},
-  fun::Function,
-  b::FEBasis,
-  u::Vararg{<:CellField{Z}}) where {D,Z}
-  basis = CellBasis(trian,fun,b.cellbasis,u...)
-  FEBasis(basis)
-end
-
 """
 FESpace whose Dirichlet component has been constrained
 """
@@ -269,6 +133,8 @@ struct FESpaceWithDirichletData{D,Z,T,E,V<:FESpace{D,Z,T}} <: FESpace{D,Z,T}
   fespace::V
   diri_dofs::Vector{E}
 end
+
+function free_dofs end
 
 diri_dofs(f::FESpaceWithDirichletData) = f.diri_dofs
 
@@ -279,18 +145,18 @@ num_diri_dofs(f::FESpaceWithDirichletData) = num_diri_dofs(f.fespace)
 diri_tags(f::FESpaceWithDirichletData) = diri_tags(f.fespace)
 
 function apply_constraints(
-  f::FESpaceWithDirichletData, cellvec::CellVector)
-  apply_constraints(f.fespace,cellvec)
+  f::FESpaceWithDirichletData, cellvec::CellVector, cellids::CellNumber)
+  apply_constraints(f.fespace,cellvec,cellids)
 end
 
 function apply_constraints_rows(
-  f::FESpaceWithDirichletData, cellmat::CellMatrix)
-  apply_constraints_rows(f.fespace,cellmat)
+  f::FESpaceWithDirichletData, cellmat::CellMatrix, cellids::CellNumber)
+  apply_constraints_rows(f.fespace,cellmat,cellids)
 end
 
 function apply_constraints_cols(
-  f::FESpaceWithDirichletData, cellmat::CellMatrix)
-  apply_constraints_cols(f.fespace,cellmat)
+  f::FESpaceWithDirichletData, cellmat::CellMatrix, cellids::CellNumber)
+  apply_constraints_cols(f.fespace,cellmat,cellids)
 end
 
 function celldofids(f::FESpaceWithDirichletData)
@@ -309,15 +175,6 @@ end
 
 function CellBasis(f::FESpaceWithDirichletData)
   CellBasis(f.fespace)
-end
-
-function FEFunction(
-  f::FESpaceWithDirichletData,free_vals::AbstractVector{E},diri_dofs::AbstractVector{E}) where E
-  _FEFunction(f,free_vals,f.diri_dofs)
-end
-
-function FEFunction(f::FESpaceWithDirichletData,free_vals::AbstractVector)
-  _FEFunction(f,free_vals,f.diri_dofs)
 end
 
 function interpolated_diri_values(this::FESpaceWithDirichletData, funs::Vector{<:Function})
@@ -377,17 +234,17 @@ num_diri_dofs(this::ConformingFESpace) = this.num_diri_dofs
 diri_tags(f::ConformingFESpace) = f.diri_tags
 
 function apply_constraints(
-  this::ConformingFESpace, cellvec::CellVector)
+  this::ConformingFESpace, cellvec::CellVector, cellids::CellNumber)
   cellvec
 end
 
 function apply_constraints_rows(
-  this::ConformingFESpace, cellmat::CellMatrix)
+  this::ConformingFESpace, cellmat::CellMatrix, cellids::CellNumber)
   cellmat
 end
 
 function apply_constraints_cols(
-  this::ConformingFESpace, cellmat::CellMatrix)
+  this::ConformingFESpace, cellmat::CellMatrix, cellids::CellNumber)
   cellmat
 end
 

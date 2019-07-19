@@ -18,6 +18,7 @@ export attachgeomap
 export compose
 import Gridap: evaluate
 import Gridap: gradient
+import Gridap: reindex
 import Base: iterate
 import Base: length
 import Base: size
@@ -182,6 +183,24 @@ end
 
 function gradient(cm::IndexCellMapFromKernel)
   _gradient(cm.kernel,cm.cellvalues...)
+end
+
+function reindex(cm::IterCellFieldLikeAndGradient,indices::CellValue{<:IndexLike})
+  _reindex(cm,indices)
+end
+
+function reindex(cm::IndexCellFieldLikeAndGradient,indices::CellValue{<:IndexLike})
+  _reindex(cm,indices)
+end
+
+function reindex(cm::IndexCellFieldLikeAndGradient,indices::IndexCellValue{<:IndexLike})
+  _reindex(cm,indices)
+end
+
+function _reindex(cm,indices)
+  v = reindex(cm.val,indices)
+  g = reindex(cm.grad,indices)
+  _merge_val_and_grad(v,g)
 end
 
 end # module

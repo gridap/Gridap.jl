@@ -10,3 +10,18 @@ include("Triangulations.jl")
 
 include("CellIntegration.jl")
 @reexport using Gridap.CellIntegration
+
+include("BoundaryDescriptors.jl")
+@reexport using Gridap.BoundaryDescriptors
+
+include("BoundaryTriangulations.jl")
+@reexport using Gridap.BoundaryTriangulations
+
+include("SkeletonTriangulations.jl")
+@reexport using Gridap.SkeletonTriangulations
+
+include("BoundaryCellFields.jl")
+@reexport using Gridap.BoundaryCellFields
+
+include("SkeletonCellFields.jl")
+@reexport using Gridap.SkeletonCellFields

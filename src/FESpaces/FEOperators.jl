@@ -158,6 +158,27 @@ struct LinearFEOperator{M,V} <:FEOperator
 end
 
 function LinearFEOperator(
+  testfesp::FESpaceLike,
+  trialfesp::FESpaceLike,
+  assem::AssemblerLike,
+  terms::Vararg{<:AffineFETerm})
+
+  v = FEBasis(testfesp)
+  u = FEBasis(trialfesp)
+
+  uhd = zero(trialfesp)
+
+  cms = setup_cell_matrix(v,u,terms...)
+  cvs = setup_cell_vector(v,uhd,terms...)
+
+  mat = assemble(assem,cms...)
+  vec = assemble(assem,cvs...)
+
+  LinearFEOperator(mat,vec,trialfesp,testfesp)
+
+end
+
+function LinearFEOperator(
   biform::Function,
   liform::Function,
   testfesp::FESpaceLike,
@@ -166,18 +187,9 @@ function LinearFEOperator(
   trian::Triangulation{Z},
   quad::CellQuadrature{Z}) where Z
 
-  v = FEBasis(testfesp)
-  u = FEBasis(trialfesp)
+  term = AffineFETerm(biform,liform,trian,quad)
 
-  uhd = zero(trialfesp)
-
-  cellmat = integrate(biform(v,u),trian,quad)
-  cellvec = integrate( liform(v)-biform(v,uhd), trian, quad)
-
-  mat = assemble(assem,cellmat)
-  vec = assemble(assem,cellvec)
-
-  LinearFEOperator(mat,vec,trialfesp,testfesp)
+  LinearFEOperator(testfesp,trialfesp,assem,term)
 
 end
 
@@ -237,14 +249,34 @@ end
 """
 Struct representing a nonlinear FE Operator
 """
-struct NonLinearFEOperator{Z} <:FEOperator
-  res::Function
-  jac::Function
+struct NonLinearFEOperator <:FEOperator
   testfesp::FESpaceLike
   trialfesp::FESpaceLike
   assem::AssemblerLike
-  trian::Triangulation{Z}
-  quad::CellQuadrature{Z}
+  terms::Tuple{<:FETerm}
+end
+
+function NonLinearFEOperator(
+  testfesp::FESpaceLike,
+  trialfesp::FESpaceLike,
+  assem::AssemblerLike,
+  terms::Vararg{<:FETerm})
+  NonLinearFEOperator(testfesp,trialfesp,assem,terms)
+end
+
+function NonLinearFEOperator(
+  res::Function,
+  jac::Function,
+  testfesp::FESpaceLike,
+  trialfesp::FESpaceLike,
+  assem::AssemblerLike,
+  trian::Triangulation,
+  quad::CellQuadrature)
+
+  term = NonLinearFETerm(res,jac,trian,quad)
+
+  NonLinearFEOperator(testfesp,trialfesp,assem,term)
+
 end
 
 TrialFESpace(op::NonLinearFEOperator) = op.trialfesp
@@ -253,33 +285,33 @@ TestFESpace(op::NonLinearFEOperator) = op.testfesp
 
 function apply(op::NonLinearFEOperator,uh::FEFunctionLike)
   cellvec = _cellvec(op,uh)
-  assemble(op.assem, cellvec)
+  assemble(op.assem, cellvec...)
 end
 
 function apply!(b::AbstractVector,op::NonLinearFEOperator,uh::FEFunctionLike)
   cellvec = _cellvec(op,uh)
-  assemble!(b,op.assem, cellvec)
+  assemble!(b,op.assem, cellvec...)
 end
 
 function jacobian(op::NonLinearFEOperator,uh::FEFunctionLike)
   cellmat = _cellmat(op,uh)
-  assemble(op.assem, cellmat)
+  assemble(op.assem, cellmat...)
 end
 
 function jacobian!(mat::AbstractMatrix,op::NonLinearFEOperator,uh::FEFunctionLike)
   cellmat = _cellmat(op,uh)
-  assemble!(mat,op.assem, cellmat)
+  assemble!(mat,op.assem, cellmat...)
 end
 
 function _cellvec(op,uh)
   v = FEBasis(op.testfesp)
-  integrate(op.res(uh,v), op.trian, op.quad)
+  setup_cell_residual(uh,v,op.terms...)
 end
 
 function _cellmat(op,uh)
   v = FEBasis(op.testfesp)
   du = FEBasis(op.trialfesp)
-  integrate(op.jac(uh,v,du), op.trian, op.quad)
+  setup_cell_jacobian(uh,v,du,op.terms...)
 end
 
 """
