@@ -2,6 +2,7 @@ module MultiCellArraysTests
 
 using Test
 using Gridap
+using Gridap.CellValuesGallery
 using Gridap.CachedArrays
 
 l = 10
@@ -37,5 +38,13 @@ sb = [2*sv sv; 3*sv sv]
 scb = ConstantCellArray(sb,l)
 
 mca2 = MultiCellMatrix([sca,scb],[(1,5),(3,2)])
+
+ids = [1,3,4,2]
+cellids = CellValueFromArray(ids)
+mca3 = reindex(mca,cellids)
+
+for (ca3,ca) in zip(mca3.blocks,mca.blocks)
+  @test ca3 == reindex(ca,cellids)
+end
 
 end # module MultiCellArraysTests

@@ -78,15 +78,21 @@ _stype(v::Map{S}) where S = S
 
 _stype(v::AbstractArray) = nothing
 
+_stype(v::NumberLike) = nothing
+
 _m(v::Map{S,M}) where {S,M} = M
 
 _m(v::AbstractArray) = nothing
+
+_m(v::NumberLike) = nothing
 
 _rz(s,i) = @unreachable
 
 _rz(s,i::Map) = return_size(i,s)
 
 _rz(s,i::AbstractArray) = size(i)
+
+_rz(s,i::Number) = ()
 
 # TODO also with a generated function
 _return_sizes(s,i...) = @notimplemented

@@ -60,40 +60,40 @@ iterate(self::MultiFESpace) = iterate(self.fespaces)
 
 iterate(self::MultiFESpace,state) = iterate(self.fespaces,state)
 
-function apply_constraints(self::MultiFESpace, mcv::MultiCellVector{T}) where T
+function apply_constraints(self::MultiFESpace, mcv::MultiCellVector{T}, cellids::CellNumber) where T
   blocks = mcv.blocks
   i_to_fieldid = mcv.fieldids
   newblocks = CellVector{T}[]
   for (i,block) in enumerate(blocks)
     ifield, = i_to_fieldid[i]
     Ui = self[ifield]
-    newblock = apply_constraints(Ui,block)
+    newblock = apply_constraints(Ui,block,cellids)
     push!(newblocks,newblock)
   end
   MultiCellVector(newblocks,i_to_fieldid)
 end
 
-function apply_constraints_rows(self::MultiFESpace, mcm::MultiCellMatrix{T}) where T
+function apply_constraints_rows(self::MultiFESpace, mcm::MultiCellMatrix{T}, cellids::CellNumber) where T
   blocks = mcm.blocks
   i_to_fieldid = mcm.fieldids
   newblocks = CellMatrix{T}[]
   for (i,block) in enumerate(blocks)
     ifield, = i_to_fieldid[i]
     Ui = self[ifield]
-    newblock = apply_constraints_rows(Ui,block)
+    newblock = apply_constraints_rows(Ui,block,cellids)
     push!(newblocks,newblock)
   end
   MultiCellMatrix(newblocks,i_to_fieldid)
 end
 
-function apply_constraints_cols(self::MultiFESpace, mcm::MultiCellMatrix{T}) where T
+function apply_constraints_cols(self::MultiFESpace, mcm::MultiCellMatrix{T}, cellids::CellNumber) where T
   blocks = mcm.blocks
   i_to_fieldid = mcm.fieldids
   newblocks = CellMatrix{T}[]
   for (i,block) in enumerate(blocks)
     _, jfield = i_to_fieldid[i]
     Ui = self[jfield]
-    newblock = apply_constraints_cols(Ui,block)
+    newblock = apply_constraints_cols(Ui,block,cellids)
     push!(newblocks,newblock)
   end
   MultiCellMatrix(newblocks,i_to_fieldid)

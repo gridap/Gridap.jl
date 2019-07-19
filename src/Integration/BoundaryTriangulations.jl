@@ -2,6 +2,8 @@ module BoundaryTriangulations
 
 using Gridap
 
+export BoundaryTriangulation
+
 import Gridap: CellPoints
 import Gridap: CellBasis
 import Gridap: CellGeomap
@@ -9,17 +11,12 @@ import Gridap: CellRefFEs
 
 struct BoundaryTriangulation{Z,D} <: Triangulation{Z,D}
   trian::Triangulation{Z,D}
-  facet_to_cell::IndexCellNumber
-  facet_to_lfacet::IndexCellNumber
-  #TODO
-  #facet_to_perm::IndexCellNumber
+  descriptor::BoundaryDescriptor
   
   function BoundaryTriangulation(
-    trian::Triangulation{Z,D},
-    facet_to_cell::IndexCellNumber,
-    facet_to_lfacet::IndexCellNumber) where {Z,D}
+    trian::Triangulation{Z,D}, descriptor::BoundaryDescriptor) where {Z,D}
     @assert D == Z + 1
-    new{Z,D}(trian,facet_to_cell,facet_to_lfacet)
+    new{Z,D}(trian,descriptor)
   end
 
 end

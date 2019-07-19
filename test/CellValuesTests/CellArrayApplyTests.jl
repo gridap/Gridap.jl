@@ -5,6 +5,8 @@ using Gridap
 using Gridap.CachedArrays
 using ..CellValuesMocks
 using TensorValues
+using Gridap.Kernels: IntegrateNumberKernel
+using Gridap.Kernels: IntegrateArrayKernel
 
 l = 10
 
@@ -68,5 +70,28 @@ for (a,b) in zip(ax,bx)
   w = apply(-,u,v,broadcast=true)
   test_index_cell_array(w,o)
 end
+
+a = [1,2,3]
+b = [3,2,1]
+c = [3,2,4]
+u = TestIndexCellValue(a,l)
+v = TestIndexCellValue(b,l)
+w = TestIndexCellValue(c,l)
+k = IntegrateNumberKernel()
+z = apply(k,u,v,w)
+r = fill(sum(a.*b.*c),l)
+test_index_cell_number(z,r)
+
+a = rand(3,2,4)
+b = rand(4)
+c = rand(4)
+u = TestIndexCellValue(a,l)
+v = TestIndexCellValue(b,l)
+w = TestIndexCellValue(c,l)
+k = IntegrateArrayKernel()
+z = apply(k,u,v,w)
+ri =  reshape( sum(a .* reshape(b,(1,1,4)) .* reshape(c,(1,1,4)), dims=3), (3,2))
+r = fill(collect(ri),l)
+test_index_cell_array(z,r)
 
 end # module

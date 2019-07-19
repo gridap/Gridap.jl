@@ -34,10 +34,19 @@ include("MapsMocks.jl")
 
 @testset "CellValuesReindex" begin include("CellValuesReindexTests.jl") end
 
+@testset "CellNumberReindex" begin include("CellNumberReindexTests.jl") end
+
+@testset "CellArrayReindex" begin include("CellArrayReindexTests.jl") end
+
 @testset "FindLocalIndex" begin include("FindLocalIndexTests.jl") end
 
 @testset "ConstantCellValues" begin include("ConstantCellValuesTests.jl") end
 
+@testset "CompressedCellValues" begin include("CompressedCellValuesTests.jl") end
+
+@testset "NonIterableCellMaps" begin include("NonIterableCellMapsTests.jl") end
+
+@testset "IdentityCellNumbers" begin include("IdentityCellNumbersTests.jl") end
 
 end # module
 

@@ -86,6 +86,8 @@ _nd(v::AbstractArray{T,N}) where {T,N} = N
 
 _nd(v::T) where T<:NumberLike = 0
 
+_nd(v::Type{T}) where T<:NumberLike = 0
+
 
 # TODO use a generated function here
 _compute_ndims(v...) = @notimplemented
@@ -111,6 +113,8 @@ _eltype(v::CellMap{S,M,T}) where {S,M,T} = T
 _eltype(v::Type{<:Map{S,M,T}}) where {S,M,T} = T
 
 _eltype(v::Type{<:AbstractArray{T}}) where T = T
+
+_eltype(v::Type{T}) where T<:NumberLike = T
 
 const _et = _eltype
 
@@ -339,5 +343,81 @@ function compute_value!(
     end
   end
 end
+
+struct IntegrateNumberKernel <: NumberKernel end
+
+function compute_type(
+  ::IntegrateNumberKernel,
+  ::Type{<:AbstractVector{F}},
+  ::Type{<:AbstractVector{J}},
+  ::Type{<:AbstractVector{W}}) where {F,J,W}
+  _compute_type_ink(F,J,W)
+end
+
+function compute_value(k::NumberKernel,f,j,w)::NumberLike
+  T = _compute_type_ink(f,j,w)
+  _compute_value_ink(f,j,w,T)
+end
+
+@inline function _compute_type_ink(::Type{F},::Type{J},::Type{W}) where {F,J,W}
+  Base._return_type(*,(F,J,W))
+end
+
+@inline function _compute_type_ink(
+  ::AbstractVector{F},
+  ::AbstractVector{J},
+  ::AbstractVector{W}) where {F,J,W}
+  _compute_type_ink(F,J,W)
+end
+
+function _compute_value_ink(f,j,w,::Type{T}) where T
+  r = zero(T)
+  for i in 1:length(f)
+    r += f[i]*j[i]*w[i]
+  end
+  r
+end
+
+struct IntegrateArrayKernel <: ArrayKernel end
+
+function compute_type(
+  ::IntegrateArrayKernel, ::Type{F}, ::Type{J}, ::Type{W}) where {F,J,W}
+  _compute_type_ink(F,J,W)
+end
+
+function compute_ndim(::IntegrateArrayKernel,nf::Int,nj::Int,nw::Int)
+  @assert nf > 1
+  @assert nj == 1
+  @assert nw == 1
+  nf-1
+end
+
+@generated function compute_size(
+  ::IntegrateArrayKernel,sf::NTuple{N,Int},sj::NTuple,sw::NTuple) where N
+  M = N-1
+  str = join([ "sf[$i]," for i in 1:M ])
+  Meta.parse("($str)")
+end
+
+@generated function compute_value!(
+  B::AbstractArray{T,N},::IntegrateArrayKernel,F,J,W) where {T,N}
+  quote
+    z = zero(T)
+    for i in eachindex(B)
+      B[i] = z
+    end
+    @nloops $(N+1) f F begin
+      @nexprs $N k->(b_k = f_{ k } )
+      @nexprs 1 k->(w_k = f_{$(N+1)} )
+      (@nref $N B b) += (@nref $(N+1) F f) * ( @nref 1 J w ) * ( @nref 1 W w )  
+    end
+  end
+end
+
+IntegrateKernel(::Val{N}) where N = IntegrateArrayKernel()
+
+IntegrateKernel(::Val{1}) = IntegrateNumberKernel()
+
+IntegrateKernel(i::Int) = IntegrateKernel(Val(i))
 
 end # module

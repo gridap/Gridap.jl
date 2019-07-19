@@ -38,6 +38,8 @@ const IterCellFieldLike{D,T<:FieldValue,N,R<:FieldLike{D,T,N}} = IterCellValue{R
 
 const IndexCellFieldLike{D,T<:FieldValue,N,C,R<:FieldLike{D,T,N}} = IndexCellValue{R,C}
 
+const NonIterableCellFieldLike{D,T<:FieldValue,N} = NonIterableCellMap{Point{D},1,T,N}
+
 """
 Umbrella type for CellField and CellBasis
 """

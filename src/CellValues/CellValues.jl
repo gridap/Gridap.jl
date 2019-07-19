@@ -55,6 +55,10 @@ function show(io::IO,self::CellValue)
   end
 end
 
+function show(io::IO,::MIME"text/plain",self::CellValue)
+  show(io,self)
+end
+
 # Testers
 
 function test_iter_cell_value(icv::CellValue{T},a::AbstractArray{T}) where T

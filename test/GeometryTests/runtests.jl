@@ -8,4 +8,6 @@ using Test
 
 @testset "BoundaryGrids" begin include("BoundaryGridsTests.jl") end
 
+@testset "SkeletonGrids" begin include("SkeletonGridsTests.jl") end
+
 end # module
