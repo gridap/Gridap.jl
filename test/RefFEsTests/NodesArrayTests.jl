@@ -27,6 +27,12 @@ horeffe = Gridap.RefFEs._high_order_lagrangian_reffe(p, T, 2)
 horeffe = Gridap.RefFEs._high_order_lagrangian_reffe(p, T, 3)
 @test length(horeffe.shfbasis) == 20
 
+# Problems with grid for new machinery
+p = Polytope(HEX_AXIS,TET_AXIS,TET_AXIS)
+LagrangianRefFE{3,Float64}(p,3)
+grid = Grid(p,2)
+# writevtk(grid,"grid")
+
 function _high_order_test_scalar(p,T,order)
   horeffe = Gridap.RefFEs._high_order_lagrangian_reffe(p, T, order)
   if (Gridap.RefFEs._is_hex(p)) @test length(horeffe.shfbasis) == (order+1)^(length(p.extrusion)) end
