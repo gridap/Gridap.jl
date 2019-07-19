@@ -11,7 +11,6 @@ test_hex_polytopes(p)
 p = Polytope(HEX_AXIS, HEX_AXIS, HEX_AXIS)
 test_hex_polytopes(p)
 
-
 p = Polytope(HEX_AXIS,TET_AXIS)
 # _high_order_test(p,Float64,1)
 T = Float64
