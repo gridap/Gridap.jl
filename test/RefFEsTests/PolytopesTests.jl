@@ -10,7 +10,7 @@ for dim = 1:4
   for i in 1:5
     order = Tuple(_order*i)
     # nf = p.nfaces[end]
-    vs = Gridap.Polytopes.generate_interior_nodes(p,order)
+    vs = Gridap.Polytopes._interior_nodes_int_coords(p,order)
     @test length(vs) == max(0,(i-1)^dim)
   end
   vcs = Gridap.Polytopes.vertices_coordinates(p)
@@ -31,7 +31,7 @@ for dim = 1:4
   for i in 1:4
     order = Tuple(_order*i)
     # nf = p.nfaces[end]
-    vs = Gridap.Polytopes.generate_interior_nodes(p,order)
+    vs = Gridap.Polytopes._interior_nodes_int_coords(p,order)
     @test length(vs) == a[dim,i]
   end
   vcs = Gridap.Polytopes.vertices_coordinates(p)
@@ -42,7 +42,7 @@ p = Polytope(HEX_AXIS, HEX_AXIS, TET_AXIS)
 _order = ones(Int,3)
 order = Tuple(_order*3)
 # nf = p.nfaces[end]
-vs = Gridap.Polytopes.generate_interior_nodes(p,order)
+vs = Gridap.Polytopes._interior_nodes_int_coords(p,order)
 @test length(vs) == 1
 vcs = Gridap.Polytopes.vertices_coordinates(p)
 @test length(vcs) == 5
@@ -51,7 +51,7 @@ pl = Polytope(HEX_AXIS, TET_AXIS, HEX_AXIS)
 _order = ones(Int,3)
 order = Tuple(_order*3)
 # p = pl.nfaces[end]
-vs = Gridap.Polytopes.generate_interior_nodes(pl,order)
+vs = Gridap.Polytopes._interior_nodes_int_coords(pl,order)
 length(vs)
 @test length(vs) == 2
 vcs = Gridap.Polytopes.vertices_coordinates(pl)

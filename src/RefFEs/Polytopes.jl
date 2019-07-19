@@ -99,8 +99,9 @@ end
 
 """
 Creates an array of nodes `NodesArray` for a given polytope and the order per
-dimension
+dimension.
 """
+# @santiagobadia : TO BE REMOVED
 function NodesArray(polytope::Polytope, orders::Array{Int64,1})
   @notimplementedif any([ t != HEX_AXIS for t in polytope.extrusion.array])
   closurenfacenodes = [
@@ -323,10 +324,17 @@ end
 
 """
 It generates the set of nodes (its coordinates) in the interior of an n-face,
-for a given order. The node coordinates are `Int` and from 0 to `order` per
-direction
+for a given order. The node coordinates are the ones for a equispace case.
 """
-function generate_interior_nodes(p::Polytope{D}, order) where D
+function equidistant_interior_nodes_coordinates(p::Polytope{D}, order) where D
+  ns = _interior_nodes_int_coords(p, _order)
+  return ns_float = _interior_nodes_int_to_real_coords(ns,_order)
+end
+
+# It generates the set of nodes (its coordinates) in the interior of an n-face,
+# for a given order. The node coordinates are `Int` and from 0 to `order` per
+# direction
+function _interior_nodes_int_coords(p::Polytope{D}, order) where D
   ext = p.extrusion
   _ord = [order...]
   verts = Point{D,Int}[]
@@ -335,13 +343,9 @@ function generate_interior_nodes(p::Polytope{D}, order) where D
   return verts
 end
 
-# Auxiliary private recursive function to implement generate_interior_nodes
+# Auxiliary private recursive function to implement _interior_nodes_int_coords
 function _generate_nodes!(dim, ext, order, coor, verts)
-  # println("***NEW EXTRUSION***")
   ncoo = copy(coor)
-  # @show dim
-  # @show ncoo
-  # @show order
   nord = copy(order)
   for i in 1:order[dim]-1
     ncoo[dim] = i
@@ -349,15 +353,13 @@ function _generate_nodes!(dim, ext, order, coor, verts)
       if (ext[dim] == TET_AXIS ) nord.-= 1 end
       _generate_nodes!(dim-1, ext, nord, ncoo, verts)
     else
-      # println("***PRINT***")
-      # @show dim
-      # @show ncoo
       push!(verts,Point(ncoo...))
     end
   end
 end
 
-function _equidistant_nodes_coordinates(nodes, order)
+# Transforms the int coordinates to float coordinates
+function _interior_nodes_int_to_real_coords(nodes, order)
   if length(nodes) > 0
     dim = length(nodes[1])
     cs_float = Point{dim,Float64}[]
