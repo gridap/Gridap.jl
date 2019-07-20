@@ -1,4 +1,4 @@
-wmodule PolytopesTests
+module PolytopesTests
 
 ##
 using Gridap, Test
