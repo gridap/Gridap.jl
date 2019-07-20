@@ -395,7 +395,7 @@ end
 It generates the outwards normals of the facets of a polytope
 """
 function facet_normals(p::Polytope{D}) where D
-  nf_vs = _dimfrom_fs_dimto_fs(p,2,0)
+  nf_vs = _dimfrom_fs_dimto_fs(p,D-1,0)
   vs = vertices_coordinates(p)
   f_ns = Point{D,Float64}[]
   for i_f in 1:length(p.nf_dim[end][end-1])
@@ -407,11 +407,17 @@ function facet_normals(p::Polytope{D}) where D
   return f_ns
 end
 
-function _facet_normal(p,nf_vs,vs,i_f)
+function _facet_normal(p::Polytope{D},nf_vs,vs,i_f) where D
   if (length(p.extrusion) > 1)
-    v1 = vs[nf_vs[i_f][2]] - vs[nf_vs[i_f][1]]
-    v2 = vs[nf_vs[i_f][3]] - vs[nf_vs[i_f][1]]
-    n = LinearAlgebra.cross([v1...],[v2...])
+    v = Float64[]
+    for i = 2:length(nf_vs[i_f])
+      vi = vs[nf_vs[i_f][i]] - vs[nf_vs[i_f][1]]
+      push!(v,vi...)
+    end
+    n = nullspace(transpose(reshape(v,D,length(nf_vs[i_f])-1)))
+    # v1 = vs[nf_vs[i_f][2]] - vs[nf_vs[i_f][1]]
+    # v2 = vs[nf_vs[i_f][3]] - vs[nf_vs[i_f][1]]
+    # n = LinearAlgebra.cross([v1...],[v2...])
     n = n.*1/sqrt(dot(n,n))
     ext_v = _vertex_not_in_facet(p,i_f,nf_vs)
     v3 = vs[nf_vs[i_f][1]] - vs[ext_v]

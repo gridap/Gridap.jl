@@ -1,7 +1,8 @@
-module PolytopesTests
+wmodule PolytopesTests
 
 ##
 using Gridap, Test
+
 
 ##
 # Adding outwards normals
@@ -13,7 +14,23 @@ p = Polytope(1,2,2)
 ns = Gridap.Polytopes.facet_normals(p)
 @test ns[1].array ≈ [0, 0 ,-1]
 ##
-
+# Adding outwards normals
+D = 2
+p = Polytope(1,1)
+ns = Gridap.Polytopes.facet_normals(p)
+@test ns[1].array ≈ [0,-1]
+p = Polytope(1,2)
+ns = Gridap.Polytopes.facet_normals(p)
+@test ns[1].array ≈ [0,-1]
+##
+# Adding outwards normals
+D = 4
+p = Polytope(1,1,1,1)
+ns = Gridap.Polytopes.facet_normals(p)
+@test ns[1].array ≈ [0,0,0,-1]
+p = Polytope(1,2,2,2)
+ns = Gridap.Polytopes.facet_normals(p)
+@test ns[1].array ≈ [0,0,0,-1]
 ##
 D = 3
 p = Polytope(1,1,1)
