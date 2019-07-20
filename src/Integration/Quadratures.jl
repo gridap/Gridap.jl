@@ -48,6 +48,10 @@ function TensorProductQuadrature(;orders::NTuple{D,Int}) where D
     @assert D == length(orders)
     npoints = [ ceil(Int,(orders[i]+1.0)/2.0) for i in 1:D ]
     quads = [ gauss( eltype(Point{D,Float64}), npoints[i] ) for i in 1:D ]
+    for i in 1:D
+      quads[i][1] .+= 1; quads[i][1] .*= 1.0/2.0
+      quads[i][2] .*= 1.0/2.0
+    end
     (coords, weights) = _tensor_product(quads,npoints,Val(D))
     TensorProductQuadrature{D}(coords,weights)
 end

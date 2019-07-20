@@ -434,7 +434,7 @@ function nodescoordinates(order::Int; nodestype::String="Equispaced")
   if nodestype == "Chebyshev"
     nodescoordinates = [ cos((i-1)*pi/order) for i=1:ordp1]
   elseif nodestype == "Equispaced"
-    (order != 0) ? nodescoordinates = (2/order)*[ i-1 for i=1:ordp1].-1 : nodescoordinates = [0.0]
+    (order != 0) ? nodescoordinates = (1/order)*[ i-1 for i=1:ordp1] : nodescoordinates = [0.0]
   end
   return nodescoordinates
 end
