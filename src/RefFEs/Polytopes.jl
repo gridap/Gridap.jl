@@ -398,13 +398,15 @@ function facet_normals(p::Polytope{D}) where D
   nf_vs = _dimfrom_fs_dimto_fs(p,D-1,0)
   vs = vertices_coordinates(p)
   f_ns = Point{D,Float64}[]
+  f_os = Int[]
   for i_f in 1:length(p.nf_dim[end][end-1])
     # @santiagobadia : we are allocating memory here but this
     # part of the code is not a computationally intensive one
-    n = _facet_normal(p,nf_vs,vs,i_f)
+    n, f_o = _facet_normal(p,nf_vs,vs,i_f)
     push!(f_ns,Point{D,Float64}(n))
+    push!(f_os,f_o)
   end
-  return f_ns
+  return f_ns, f_os
 end
 
 function _facet_normal(p::Polytope{D},nf_vs,vs,i_f) where D
@@ -421,17 +423,20 @@ function _facet_normal(p::Polytope{D},nf_vs,vs,i_f) where D
     n = n.*1/sqrt(dot(n,n))
     ext_v = _vertex_not_in_facet(p,i_f,nf_vs)
     v3 = vs[nf_vs[i_f][1]] - vs[ext_v]
+    f_or = 1
     if dot(v3,n) < 0.0
       n *= -1
+      f_or = -1
     end
   elseif (length(p.extrusion) == 1)
     ext_v = _vertex_not_in_facet(p,i_f,nf_vs)
     n = vs[nf_vs[i_f][1]] - vs[ext_v]
     n = n.*1/dot(n,n)
+    f_or = 1
   else
     error("O-dim polytopes do not have properly define outward facet normals")
   end
-  return n
+  return n, f_or
 end
 
 function _vertex_not_in_facet(p,i_f,nf_vs)
