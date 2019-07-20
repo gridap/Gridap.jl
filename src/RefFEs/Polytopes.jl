@@ -4,6 +4,7 @@ using Gridap
 using Gridap.Helpers
 using StaticArrays
 using Base.Cartesian
+using LinearAlgebra
 
 using Combinatorics
 
@@ -388,6 +389,58 @@ function vertices_coordinates(p::Polytope{D}) where D
     push!(vcs,cs)
   end
   return vcs
+end
+
+"""
+It generates the outwards normals of the facets of a polytope
+"""
+function facet_normals(p::Polytope{D}) where D
+  nf_vs = _dimfrom_fs_dimto_fs(p,2,0)
+  vs = vertices_coordinates(p)
+  f_ns = Point{D,Float64}[]
+  for i_f in 1:length(p.nf_dim[end][end-1])
+    # @santiagobadia : we are allocating memory here but this
+    # part of the code is not a computationally intensive one
+    n = _facet_normal(p,nf_vs,vs,i_f)
+    push!(f_ns,Point{D,Float64}(n))
+  end
+  return f_ns
+end
+
+function _facet_normal(p,nf_vs,vs,i_f)
+  if (length(p.extrusion) > 1)
+    v1 = vs[nf_vs[i_f][2]] - vs[nf_vs[i_f][1]]
+    v2 = vs[nf_vs[i_f][3]] - vs[nf_vs[i_f][1]]
+    n = LinearAlgebra.cross([v1...],[v2...])
+    n = n.*1/sqrt(dot(n,n))
+    ext_v = _vertex_not_in_facet(p,i_f,nf_vs)
+    v3 = vs[nf_vs[i_f][1]] - vs[ext_v]
+    if dot(v3,n) < 0.0
+      n *= -1
+    end
+  elseif (length(p.extrusion) == 1)
+    ext_v = _vertex_not_in_facet(p,i_f,nf_vs)
+    n = vs[nf_vs[i_f][1]] - vs[ext_v]
+    n = n.*1/dot(n,n)
+  else
+    error("O-dim polytopes do not have properly define outward facet normals")
+  end
+  return n
+end
+
+function _vertex_not_in_facet(p,i_f,nf_vs)
+  for i in p.nf_dim[end][1]
+    is_in_f = false
+    for j in nf_vs[i_f]
+      if i == j
+        is_in_f = true
+        break
+      end
+    end
+    if !is_in_f
+      return i; break
+    end
+  end
 end
 
 # @santiagobadia : The rest is waiting for a geomap
