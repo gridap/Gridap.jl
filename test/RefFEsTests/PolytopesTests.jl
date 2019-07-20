@@ -3,88 +3,29 @@ module PolytopesTests
 ##
 using Gridap, Test
 
-
-# using QuadGK: gauss
-# orders = [3,3]
-# D = length(orders)
-# np = [ ceil(Int,(orders[i]+1.0)/2.0) for i in 1:D ]
-# quads = [ gauss( eltype(Point{D,Float64}), np[i] ) for i in 1:D ]
-# for i in 1:D
-#   quads[i][1] .+= 1; quads[i][1] .*= 1.0/2.0
-# end
-# quads
-
+##
 # Adding outwards normals
+D = 3
+p = Polytope(1,1,1)
+ns = Gridap.Polytopes.facet_normals(p)
+@test ns[1].array ≈ [0, 0 ,-1]
+p = Polytope(1,2,2)
+ns = Gridap.Polytopes.facet_normals(p)
+@test ns[1].array ≈ [0, 0 ,-1]
+##
+
+##
 D = 3
 p = Polytope(1,1,1)
 nf_vs = Gridap.Polytopes._dimfrom_fs_dimto_fs(p,2,0)
 vs = Gridap.Polytopes.vertices_coordinates(p)
-
-p.nf_dim[end][1]
-
-p.nf_dim[end][end-1]
-
-
-nf_vs[3]
-
-using LinearAlgebra
-
-function facet_normal(p,nf_vs,vs,i_f)
-  if (length(p.extrusion) > 1)
-    v1 = vs[nf_vs[i_f][2]] - vs[nf_vs[i_f][1]]
-    v2 = vs[nf_vs[i_f][3]] - vs[nf_vs[i_f][1]]
-    n = LinearAlgebra.cross([v1...],[v2...])
-    n = n.*1/dot(n,n)
-    ext_v = vertex_not_in_facet(p,i_f)
-    v3 = vs[nf_vs[i_f][1]] - vs[ext_v]
-    if dot(v3,n) < 0.0
-      n *= -1
-    end
-  elseif (length(p.extrusion) == 1)
-    ext_v = vertex_not_in_facet(p,i_f)
-    n = vs[nf_vs[i_f][1]] - vs[ext_v]
-    n = n.*1/dot(n,n)
-  else
-    error("O-dim polytopes do not have properly define outward facet normals")
-  end
-  return n
-end
-
-function vertex_not_in_facet(p,i_f)
-  for i in p.nf_dim[end][1]
-    is_in_f = false
-    for j in nf_vs[i_f]
-      if i == j
-        is_in_f = true
-        break
-      end
-    end
-    if !is_in_f
-      return i; break
-    end
-  end
-end
-
-
-
-length(p.extrusion)
-for i_f in 1:length(p.nf_dim[end][end-1])
-  @show i_f
-  n = facet_normal(p,nf_vs,vs,i_f)
-  @show n
-end
-length(p.nf_dim[end][end-1])
-
-
-
-
 @test length(nf_vs) == 6
 @test nf_vs[end] == [2,4,6,8]
 p = Polytope(Point(1,2,2))
 nf_vs = Gridap.Polytopes._dimfrom_fs_dimto_fs(p,2,0)
 @test length(nf_vs) == 4
 @test nf_vs[end] == [2,3,4]
-
+##
 
 
 
