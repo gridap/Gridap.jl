@@ -55,5 +55,10 @@ graph = FullGridGraph(grid)
 @test isa(connections(graph,0,2), CellArray)
 @test isa(connections(graph,0,3), CellArray)
 
+t = TET_AXIS
+polytope = Polytope((t,t,t))
+
+grid = Grid(polytope,2)
+
 end # module
 

@@ -25,8 +25,8 @@ Construct a Grid from a polytope
 function Grid(polytope::Polytope{D},dim::Int) where D
   @assert dim < D
 
-  orders = fill(1,D)
-  na = NodesArray(polytope,orders)
+  reffe = LagrangianRefFE{D,Float64}(polytope, 1)
+  points = reffe.dofbasis.nodes
 
   dim_to_jface_to_vertices, dim_to_jface_to_code = _faces(polytope)
   jface_to_vertices = dim_to_jface_to_vertices[dim+1]
@@ -35,10 +35,10 @@ function Grid(polytope::Polytope{D},dim::Int) where D
   njfaces = length(jface_to_code)
   @assert njfaces > 0
   code1 = jface_to_code[1]
-  # TODO
+  # TODO for the moment, we assume all faces of the polytope have the same
+  # extrusion code
   @notimplementedif any([ code1 != code for code in jface_to_code ])
 
-  points = na.coordinates
   cells_data, cells_ptrs = generate_data_and_ptrs(jface_to_vertices)
   code = (code1...,)
   ctypes = ConstantCellValue(code,njfaces)
