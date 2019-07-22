@@ -5,6 +5,7 @@ using Gridap.Helpers
 import TensorPolynomialBases; const tp = TensorPolynomialBases
 
 export MonomialBasis
+export GradMonomialBasis
 export PolynomialBasis
 import Gridap: evaluate!
 import Gridap: return_size
@@ -44,6 +45,17 @@ end
 
 function MonomialBasis(T::Type,orders::Vector{Int})
   MonomialBasis(T,tuple(orders...))
+end
+
+"""
+Construct a PolynomialBasis formed my the (independent) monomials 
+resulting from applying the gradient operator to the monomials of
+an isotropic Q-space. Needed for RT and Nedelec finite elements on n-cubes
+"""
+function GradMonomialBasis(V::Type{<:VectorValue{D}},order::Int) where D
+  P = Point{D}
+  basis = tp.QGradMonomialBasis{P,V}(order)
+  PolynomialBasis(basis)
 end
 
 """

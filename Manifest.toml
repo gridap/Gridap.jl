@@ -127,15 +127,19 @@ uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [[TensorPolynomialBases]]
 deps = ["StaticArrays", "TensorValues", "Test"]
-git-tree-sha1 = "5f589d360aad3e1b8caf8b77b9e5c6e20db693e0"
+git-tree-sha1 = "c52fe5782e5b8edb686793cf536fb010bb449402"
+repo-rev = "master"
+repo-url = "https://github.com/gridap/TensorPolynomialBases.jl.git"
 uuid = "f77b161d-e03a-5d68-b365-d5306aabeaa6"
 version = "0.1.1"
 
 [[TensorValues]]
 deps = ["LinearAlgebra", "StaticArrays"]
-git-tree-sha1 = "9d192922681bdc4f3294b5d565d2d4b37d21fa18"
+git-tree-sha1 = "a998c534421283d1ad7cec699964600223be5357"
+repo-rev = "master"
+repo-url = "https://github.com/gridap/TensorValues.jl.git"
 uuid = "31c64edf-cdeb-50e4-845d-ed2334360c20"
-version = "0.3.3"
+version = "0.3.4"
 
 [[Test]]
 deps = ["Distributed", "InteractiveUtils", "Logging", "Random"]

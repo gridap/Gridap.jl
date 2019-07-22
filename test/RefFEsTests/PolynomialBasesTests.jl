@@ -32,4 +32,11 @@ basis = MonomialBasis(2,T,filter,order)
 
 @test length(basis) == 6
 
+T = VectorValue{2,Float64}
+basis = GradMonomialBasis(T,2)
+v = evaluate(basis,p)
+g = evaluate(∇(basis),p)
+
+@test length(basis) == 12
+
 end # module
