@@ -2,6 +2,9 @@
 include("GridGraphs.jl")
 @reexport using Gridap.GridGraphs
 
+include("Grids.jl")
+@reexport using Gridap.Grids
+
 #include("Geometry.jl")
 #@reexport using Gridap.Geometry
 #

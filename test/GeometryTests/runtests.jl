@@ -4,6 +4,8 @@ using Test
 
 @testset "GridGraphs" begin include("GridGraphsTests.jl") end
 
+@testset "Grids" begin include("GridsTests.jl") end
+
 #@testset "Geometry" begin include("GeometryTests.jl") end
 #
 #@testset "GridPortions" begin include("GridPortionsTests.jl") end
