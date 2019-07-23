@@ -11,8 +11,8 @@ using Gridap.Helpers
 export CartesianGrid
 export CartesianDiscreteModel
 import Base: size, getindex, IndexStyle
-import Gridap: points, cells, celltypes, cellorders, gridgraph
-import Gridap: Grid, GridGraph, FaceLabels
+import Gridap: points, cells, celltypes, cellorders
+import Gridap: Grid, FaceLabels
 import Gridap: UnstructuredGrid
 import Gridap: FlexibleUnstructuredGrid
 import Gridap: FullGridGraph
@@ -38,13 +38,6 @@ cells(self::CartesianGrid) = CartesianGridCells(self.dim_to_ncells)
 celltypes(self::CartesianGrid) = ConstantCellValue(self.extrusion,prod(self.dim_to_ncells))
 
 cellorders(self::CartesianGrid) = ConstantCellValue(self.order,prod(self.dim_to_ncells))
-
-#function gridgraph(self::CartesianGrid)
-#  #fverdugo this is a temporary implementation
-#  nparts = [i for i in self.dim_to_ncells]
-#  mesh = StructHexMesh(nparts)
-#  GridGraphFromData(mesh.cellvefs,mesh.vefcells)
-#end
 
 """
 Construct an `UnstructuredGrid` from a `CartesianGrid`
