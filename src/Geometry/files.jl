@@ -1,4 +1,7 @@
 
+include("GridGraphs.jl")
+@reexport using Gridap.GridGraphs
+
 #include("Geometry.jl")
 #@reexport using Gridap.Geometry
 #
