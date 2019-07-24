@@ -1,4 +1,4 @@
-module GeometryTestsAll
+module GeometryTests
 
 using Test
 
