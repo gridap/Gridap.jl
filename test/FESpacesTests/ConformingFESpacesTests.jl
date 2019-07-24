@@ -169,6 +169,7 @@ uhq = evaluate(uh1,q)
 # NOT WORKING for order == 2
 
 model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(2,2))
+trian = Triangulation(model)
 
 order = 2
 tags = [1,2,3,4,6,5]

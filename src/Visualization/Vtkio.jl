@@ -342,17 +342,17 @@ function _refgrid end
 
 function _refgrid(::Val{(HEX_AXIS,)},nref::Int)
   n = 2^nref
-  CartesianGrid(domain=(-1.0,1.0),partition=(n,))
+  CartesianGrid(domain=(0.0,1.0),partition=(n,))
 end
 
 function _refgrid(::Val{(HEX_AXIS,HEX_AXIS)},nref::Int)
   n = 2^nref
-  CartesianGrid(domain=(-1.0,1.0,-1.0,1.0),partition=(n,n))
+  CartesianGrid(domain=(0.0,1.0,0.0,1.0),partition=(n,n))
 end
 
 function _refgrid(::Val{(HEX_AXIS,HEX_AXIS,HEX_AXIS)},nref::Int)
   n = 2^nref
-  CartesianGrid(domain=(-1.0,1.0,-1.0,1.0,-1.0,1.0),partition=(n,n,n))
+  CartesianGrid(domain=(0.0,1.0,0.0,1.0,0.0,1.0),partition=(n,n,n))
 end
 
 function _prepare_grid(reffes::CellValue{<:RefFE},phi::CellGeomap{Z,D},nref) where {Z,D}
