@@ -10,12 +10,16 @@ using Test
 
 @testset "DiscreteModels" begin include("DiscreteModelsTests.jl") end
 
-#@testset "Geometry" begin include("GeometryTests.jl") end
-#
-#@testset "GridPortions" begin include("GridPortionsTests.jl") end
-#
-#@testset "BoundaryGrids" begin include("BoundaryGridsTests.jl") end
-#
-#@testset "SkeletonGrids" begin include("SkeletonGridsTests.jl") end
+@testset "UnstructuredGeometry" begin include("UnstructuredGeometryTests.jl") end
+
+@testset "GeometryWrappers" begin include("GeometryWrappersTests.jl") end
+
+@testset "CartesianGeometry" begin include("CartesianGeometryTests.jl") end
+
+@testset "GridPortions" begin include("GridPortionsTests.jl") end
+
+@testset "BoundaryGrids" begin include("BoundaryGridsTests.jl") end
+
+@testset "SkeletonGrids" begin include("SkeletonGridsTests.jl") end
 
 end # module

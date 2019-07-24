@@ -15,6 +15,7 @@ import Gridap: points, cells, celltypes, cellorders
 import Gridap: Grid, FaceLabels
 import Gridap: UnstructuredGrid
 import Gridap: FlexibleUnstructuredGrid
+import Gridap: GridGraph
 import Gridap: FullGridGraph
 
 struct CartesianGrid{D} <: Grid{D,D}
@@ -99,6 +100,8 @@ function Grid(model::CartesianDiscreteModel{D},::Val{Z}) where {D,Z}
   UnstructuredGrid(
     _points, _cells_data, _cells_ptrs, _ctypes, _corders)
 end
+
+GridGraph(model::CartesianDiscreteModel) = model.gridgraph
 
 FullGridGraph(model::CartesianDiscreteModel) = model.gridgraph
 
