@@ -257,6 +257,14 @@ function _interpolate_values(fesp::ConformingFESpace{D,Z,T},fun::Function) where
   free_dofs = zeros(E, num_free_dofs(fesp))
   diri_dofs = zeros(E, num_diri_dofs(fesp))
   aux = zeros(E, maxs)
+  _interpolate_values_kernel!(
+    free_dofs,diri_dofs,uphys,celldofs,dofb,aux)
+  return free_dofs, diri_dofs
+end
+
+function _interpolate_values_kernel!(
+  free_dofs,diri_dofs,uphys,celldofs,dofb,aux)
+
   for (imap,l2g) in zip(uphys,celldofs)
     evaluate!(dofb,imap,aux)
     for (i,gdof) in enumerate(l2g)
@@ -267,7 +275,6 @@ function _interpolate_values(fesp::ConformingFESpace{D,Z,T},fun::Function) where
       end
     end
   end
-  return free_dofs, diri_dofs
 end
 
 function _interpolate_diri_values(fesp::ConformingFESpace{D,Z,T},funs) where {D,Z,T}
