@@ -164,16 +164,20 @@ function _generate_dim_to_nface_to_dofs(
     nface_to_dofs_ptrs = zeros(Int, num_nfaces+1)
     nface_to_dofs_data = Int[]
 
-    i_free_dof, i_diri_dof = _generate_nface_to_dofs!(
-      nface_to_dofs_data,
-      nface_to_dofs_ptrs,
-      nface_to_lnface,
-      lnface_to_nldofs,
-      nface_to_label,
-      diri_tags,
-      tag_to_labels,
-      i_free_dof,
-      i_diri_dof)
+    if any(lnface_to_nldofs != 0)
+
+      i_free_dof, i_diri_dof = _generate_nface_to_dofs!(
+        nface_to_dofs_data,
+        nface_to_dofs_ptrs,
+        nface_to_lnface,
+        lnface_to_nldofs,
+        nface_to_label,
+        diri_tags,
+        tag_to_labels,
+        i_free_dof,
+        i_diri_dof)
+
+    end
 
     length_to_ptrs!(nface_to_dofs_ptrs)
 
@@ -222,45 +226,6 @@ function _generate_nface_to_dofs!(
 
   (i_free_dof, i_diri_dof)
 end
-
-#function _generate_dim_to_nface_eqclass(
-#  reffe::RefFE{D,T},
-#  graph::GridGraph,
-#  labels::FaceLabels,
-#  diri_tags::Vector{Int}) where {D,T}
-#
-#  dim_to_nface_eqclass = Int[]
-#  c=1
-#  c_n = -1
-#  for vef_dim in 0:D
-#    vefcells= connections(graph,vef_dim,D)
-#    cellvefs= connections(graph,D,vef_dim)
-#    vef_labels = labels_on_dim(labels,vef_dim)
-#    num_vefs = length(vefcells)
-#    nfdofs=Array{Array{Int64},1}(undef,num_vefs)
-#    nfdofs_l = Int[]
-#    nfdofs_g = zeros(Int, num_vefs+1)
-#    nfdofs_g[1] = 1
-#    for (ignf,nf) in enumerate(vefcells)
-#      owner_cell = nf[1]
-#      lid_vef_dim = findfirst(i->i==ignf,cellvefs[owner_cell])
-#      lid_vef = reffe.polytope.nf_dim[end][vef_dim+1][1]+lid_vef_dim-1
-#      # @santiagobadia : Better a method for nfs of a particular type...
-#      num_nf_dofs = length(reffe.nfacedofs[lid_vef])
-#      if ( _is_diri(vef_labels[ignf],diri_tags,labels.tag_to_labels) )
-#        nfdofs_l = Int[nfdofs_l..., c_n:-1:c_n-num_nf_dofs+1... ]
-#        c_n -= num_nf_dofs
-#      else
-#        nfdofs_l = Int[nfdofs_l..., c:c+num_nf_dofs-1... ]
-#        c += num_nf_dofs
-#      end
-#      nfdofs_g[ignf+1] += num_nf_dofs + nfdofs_g[ignf]
-#    end
-#    dim_to_nface_eqclass = [
-#      dim_to_nface_eqclass..., CellVectorFromDataAndPtrs(nfdofs_l, nfdofs_g) ]
-#  end
-#  return [ dim_to_nface_eqclass , c-1, -c_n-1 ]
-#end
 
 _setup_diri_tags(model,tags) = tags
 
