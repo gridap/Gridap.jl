@@ -14,6 +14,7 @@ import Gridap: FaceLabels
 import Gridap: pointdim
 import Gridap: celldim
 import Gridap: Triangulation
+import Gridap: labels_on_dim
 import Gridap: tag_from_name
 
 # Interfaces
@@ -47,7 +48,7 @@ function FaceLabels(::DiscreteModel{D})::FaceLabels{D} where D
   @abstractmethod
 end
 
-function FaceLabels(model::DiscreteModel,dim::Integer)
+function labels_on_dim(model::DiscreteModel,dim::Integer)
   labels = FaceLabels(model)
   labels_on_dim(labels,dim)
 end
@@ -81,7 +82,10 @@ function test_discrete_model(model::DiscreteModel{D},dim::Integer) where D
   for d in 0:D
     grid = Grid(model,d)
     @test isa(grid,Grid)
-    labels = FaceLabels(model,)
+    labels = FaceLabels(model)
+    lab1 = labels_on_dim(model,d)
+    lab2 = labels_on_dim(labels,d)
+    @test lab1 == lab2
   end
   graph = GridGraph(model)
   fullgraph = FullGridGraph(model)
