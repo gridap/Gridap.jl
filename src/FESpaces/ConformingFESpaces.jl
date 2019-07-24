@@ -26,11 +26,11 @@ struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T}
   num_free_dofs::Int
   num_diri_dofs::Int
   diri_tags::Vector{Int}
-  _reffes::LagrangianRefFE{D,T}
-  _triangulation::Triangulation{D,Z}
-  _gridgraph::GridGraph
-  _labels::FaceLabels
-  _basis::CellBasis{Z,T}
+  reffe::LagrangianRefFE{D,T}
+  triangulation::Triangulation{D,Z}
+  gridgraph::GridGraph
+  facelabels::FaceLabels
+  cellbasis::CellBasis{Z,T}
 end
 
 function ConformingFESpace(
@@ -104,15 +104,15 @@ function CellField(
   @assert E == eltype(T)
   @assert num_free_dofs(fespace) == length(free_dofs)
   @assert num_diri_dofs(fespace) == length(diri_dofs)
-  reffe = fespace._reffes
-  trian = fespace._triangulation
+  reffe = fespace.reffe
+  trian = fespace.triangulation
   celldofs = fespace.cell_eqclass
   shb = CellBasis(fespace)
   cdofs = CellVectorFromLocalToGlobalPosAndNeg(celldofs, free_dofs, diri_dofs)
   lincomb(shb,cdofs)
 end
 
-CellBasis(this::ConformingFESpace) = this._basis
+CellBasis(this::ConformingFESpace) = this.cellbasis
 
 # Helpers
 
@@ -245,9 +245,9 @@ function _polytope(celltypes::ConstantCellValue)
 end
 
 function _interpolate_values(fesp::ConformingFESpace{D,Z,T},fun::Function) where {D,Z,T}
-  reffe = fesp._reffes
+  reffe = fesp.reffe
   dofb = reffe.dofbasis
-  trian = fesp._triangulation
+  trian = fesp.triangulation
   phi = CellGeomap(trian)
   uphys = fun ∘ phi
   celldofs = fesp.cell_eqclass
@@ -279,7 +279,7 @@ end
 
 function _interpolate_diri_values(fesp::ConformingFESpace{D,Z,T},funs) where {D,Z,T}
 
-  labels = fesp._labels
+  labels = fesp.facelabels
   dim_to_nface_to_label = labels.dim_to_nface_to_label
   dim_to_nface_to_dofs = fesp.dim_to_nface_eqclass
   diri_tags = fesp.diri_tags
