@@ -293,6 +293,10 @@ function _interpolate_diri_values(fesp::ConformingFESpace{D,Z,T},funs) where {D,
     tag_f = diri_tags[ifunc]
     _ , diri_dof_to_fval = interpolate_values(fesp,f)
 
+    if length(funs) == 1
+      return diri_dof_to_fval
+    end
+
     for idim in 0:D
       nface_to_label = dim_to_nface_to_label[idim+1]
       nface_to_dofs  = dim_to_nface_to_dofs[idim+1]
@@ -306,7 +310,7 @@ function _interpolate_diri_values(fesp::ConformingFESpace{D,Z,T},funs) where {D,
     end
   end
 
-  diri_dof_to_val
+  return diri_dof_to_val
 
 end
 
@@ -328,35 +332,6 @@ function _interpolate_diri_values_kernel!(
     end
   end
 end
-
-#function _interpolate_diri_values(fesp::ConformingFESpace{D,Z,T},funs) where {D,Z,T}
-#  labels = fesp._labels
-#  nf_labs_all = [ labels_on_dim(labels,idim) for idim in 0:D]
-#  nf_dofs_all = fesp.dim_to_nface_eqclass
-#  dtags = fesp.diri_tags
-#  @assert length(dtags) == length(funs)
-#  E = eltype(T)
-#  diri_dofs_all = zeros(E, num_diri_dofs(fesp))
-#  for (ifunc,f) in enumerate(funs)
-#    _ , fh_diri_dofs = interpolate_values(fesp,f)
-#    # @santiagobadia: For performance issues, implement a new interpolate
-#    # restricted to cells on the boundary for performance
-#    for idim in 0:D
-#      nf_labs = nf_labs_all[idim+1]
-#      nf_dofs = nf_dofs_all[idim+1]
-#      # How to extract this part? Do it correctly, with a FEFunction
-#      for (nf,nflab) in enumerate(nf_labs)
-#        if (_is_diri(nflab, (dtags[ifunc],), labels.tag_to_labels))
-#          for dof in nf_dofs[nf]
-#            dof *= -1
-#            diri_dofs_all[dof] = fh_diri_dofs[dof]
-#          end
-#        end
-#      end
-#    end
-#  end
-#  return diri_dofs_all
-#end
 
 @inline function _is_diri(label,diritags,tag_to_labels)
   for tag in diritags
