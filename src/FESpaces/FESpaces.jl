@@ -192,7 +192,7 @@ struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T}
   diri_tags::Vector{Int}
   _reffes::LagrangianRefFE{D,T}
   _triangulation::Triangulation{D,Z}
-  _gridgraph::FullGridGraph
+  _gridgraph::GridGraph
   _labels::FaceLabels
   _basis::CellBasis{Z,T}
 end
@@ -200,7 +200,7 @@ end
 function ConformingFESpace(
   reffe::LagrangianRefFE{D,T},
   trian::Triangulation{D,Z},
-  graph::FullGridGraph,
+  graph::GridGraph,
   labels::FaceLabels,
   diri_tags::Vector{Int}) where {D,Z,T}
   args = _setup_conforming_fe_fields(reffe,trian,graph,labels,diri_tags,D)
@@ -210,7 +210,7 @@ end
 function ConformingFESpace(
   reffe::LagrangianRefFE{D,T},
   trian::Triangulation{D,Z},
-  graph::FullGridGraph,
+  graph::GridGraph,
   labels::FaceLabels) where {D,Z,T}
   return ConformingFESpace(reffe, trian, graph, labels, ())
 end
@@ -218,7 +218,7 @@ end
 function ConformingFESpace(::Type{T},model::DiscreteModel{D},order,diri_tags) where {D,T}
   grid = Grid(model,D)
   trian = Triangulation(grid)
-  graph = FullGridGraph(model)
+  graph = GridGraph(model)
   labels = FaceLabels(model)
   orders = fill(order,D)
   polytope = _polytope(celltypes(grid))
@@ -373,7 +373,7 @@ end
 
 function _generate_dim_to_nface_eqclass(
   reffe::RefFE{D,T},
-  graph::FullGridGraph,
+  graph::GridGraph,
   labels::FaceLabels,
   diri_tags::Vector{Int}) where {D,T}
 
