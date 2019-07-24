@@ -15,7 +15,7 @@ using WriteVTK.VTKCellTypes: VTK_HEXAHEDRON
 # Functionality given by this module
 
 export writevtk
-import Gridap.Geometry: cells, points, celltypes
+import Gridap: cells, points, celltypes
 import UnstructuredGrids: writevtk
 
 """

@@ -41,14 +41,6 @@ using Gridap
   @test o.value == 1
   @test length(o) == 12
 
-  #graph = gridgraph(grid)
-
-  #@test isa(graph,GridGraph)
-
-  #@test isa(celltovefs(graph), IndexCellArray{Int,1})
-
-  #@test isa(veftocells(graph), IndexCellArray{Int,1})
-
   trian = Triangulation(grid)
 
   xe = CellPoints(trian)
@@ -163,4 +155,4 @@ end
 
 end
 
-end # module GeometryTests
+end # module

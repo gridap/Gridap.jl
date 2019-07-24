@@ -28,32 +28,22 @@ polytope = Polytope((t,t,t))
 
 refcell = RefCell(polytope)
 
-# CartesianGrid to UnstructuredGrid
-
-cgrid = CartesianGrid(
-  domain=(0.0,1.0,-1.0,2.0,0.0,1.0),
-  partition=(3,4,2))
-
 # UnstructuredGrid to UGrid
 
-grid = UnstructuredGrid(cgrid)
+c2v = [[1,2,4,5],[2,3,5,6]]
+v2x = Point{2,Float64}[(0.,0.),(0.,1.),(0.,2.),(1.,0.),(1.,1.),(1.,2.)]
+l = length(c2v)
+order = 1
+t = (HEX_AXIS,HEX_AXIS)
+c2t = ConstantCellValue(t,l)
+c2o = ConstantCellValue(order,l)
+c2v_data, c2v_ptrs = generate_data_and_ptrs(c2v)
 
+grid = UnstructuredGrid(v2x,c2v_data,c2v_ptrs,c2t,c2o)
 ugrid = UGrid(grid)
 
 graph = FullGridGraph(grid)
-@test isa(connections(graph,3,0), CellArray)
-@test isa(connections(graph,3,1), CellArray)
-@test isa(connections(graph,3,2), CellArray)
-@test isa(connections(graph,2,0), CellArray)
-@test isa(connections(graph,2,1), CellArray)
-@test isa(connections(graph,2,3), CellArray)
-@test isa(connections(graph,1,0), CellArray)
-@test isa(connections(graph,1,2), CellArray)
-@test isa(connections(graph,1,3), CellArray)
-@test isa(connections(graph,0,0), CellArray)
-@test isa(connections(graph,0,1), CellArray)
-@test isa(connections(graph,0,2), CellArray)
-@test isa(connections(graph,0,3), CellArray)
+test_full_grid_graph(graph,2)
 
 t = TET_AXIS
 polytope = Polytope((t,t,t))

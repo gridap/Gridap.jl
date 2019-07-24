@@ -16,7 +16,7 @@ test_grid(grid,16,7)
 
 model = CartesianDiscreteModel(partition=(3,4,2))
 
-labels = FaceLabels(model,2)
+labels = labels_on_dim(model,2)
 oldgrid = Grid(model,2)
 
 mask = [ (label == 23 || label == 24 || label == 25) for label in labels ]

@@ -10,7 +10,7 @@ D = pointdim(model)
 
 grid = Grid(model,D)
 trian = Triangulation(grid)
-graph = FullGridGraph(model)
+graph = GridGraph(model)
 labels = FaceLabels(model)
 tags = [1,2,3,4]
 

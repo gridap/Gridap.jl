@@ -12,15 +12,12 @@ using Gridap.CellValuesGallery: CellValueFromArray
 
 export Grid
 export test_grid
-export GridGraph
-export GridGraphFromData
 export points
 export cells
 export celltypes
 export cellorders
 export celltovefs
 export veftocells
-export gridgraph
 export geomap
 export npoints
 export FaceLabels
@@ -40,24 +37,14 @@ import Gridap: CellRefFEs
 import Gridap: CellBasis
 import Gridap: Triangulation
 
-#@fverdugo make Z,D and D,Z consistent
 """
-Abstract type representing a FE mesh a.k.a. grid
-D is the dimension of the coordinates and Z is the dimension of the cells
+Abstract type representing a FE mesh a.k.a. grid (i.e., there is a 1 to 1
+correspondence between a grid and a conforming Lagrangian FE space with no
+Dirichlet boundary conditions).
+D is the dimension of the coordinates and Z is the dimension of the cells.
 """
 abstract type Grid{D,Z} end
 
-# @santiagobadia : Do we want to call it vertices? I think it is much more
-# meaningful than points... It is a point but it is more than that. It is the
-# set of points that define the polytope as its convex hull...
-# @fverdugo Just to clarify since (I don't know why) I removed the queries
-# celltypes and cellorders from the Grid interface (I have added them again).
-# Grid can have high order cells in the current design. Thus, vertices would not be a meaningful name...
-# but of course we can change the name points (and also cells) if we find better names.
-# At the beginning, I was thinking on an abstract type that represents only a linear Grid (i.e.,
-# with polytope info but without cell order info), but
-# I am not sure if it is needed since it is just a particular case of the current Grid...
-# Moreover, for pure integer-based info, we have GridGraph
 function points(::Grid{D})::IndexCellValue{<:Point{D}} where D
   @abstractmethod
 end
@@ -90,26 +77,6 @@ function test_grid(grid::Grid{D,Z},np,nc) where {D,Z}
   @test nc == length(celltypes(grid))
   @test nc == length(cellorders(grid))
 end
-
-"""
-Abstract type that provides extended connectivity information associated with a grid.
-This is the basic interface needed to distribute dof ids in
-the construction of FE spaces.
-"""
-abstract type GridGraph end
-
-celltovefs(::GridGraph)::IndexCellArray{Int,1} = @abstractmethod
-
-veftocells(::GridGraph)::IndexCellArray{Int,1} = @abstractmethod
-
-# @santiagobadia : I would put this method in the interface of Grid...
-# @fverdugo this would require define GridGraph before grid (which I find
-# quite wird.) Anyway I find the current solution acceptable
-# since this is julia and gridgraph is not a TBP of Grid...
-"""
-Extracts the grid graph of the given grid
-"""
-gridgraph(::Grid)::GridGraph = @notimplemented #@fverdugo Replace by GridGraph
 
 """
 Classification of nfaces into geometrical and physical labels
@@ -194,8 +161,6 @@ end
 
 Grid(m::DiscreteModel,dim::Integer) = Grid(m,Val(dim))
 
-GridGraph(m::DiscreteModel,dim::Integer) = GridGraph(m,Val(dim))
-
 pointdim(::DiscreteModel{D}) where D = D
 
 celldim(::DiscreteModel{D}) where D = D
@@ -213,33 +178,6 @@ function tag_from_name(m::DiscreteModel,name::String)
   labels = FaceLabels(m)
   tag_from_name(labels,name)
 end
-
-#@fverdugo to be deleted together with (old) GridGraph
-struct GridGraphFromData{C<:IndexCellArray{Int,1},V<:IndexCellArray{Int,1}} <: GridGraph
-  celltovefs::C
-  veftocells::V
-end
-
-# @santiagobadia : I need to know whether the vef is a vertex, edge, or face, i.e., its dim.
-# Do we want to provide a richer interface here? Or do we extract the polytope
-# from the cell and use it.
-# @fverdugo yes sure. In fact I don't like to mix all vefs.
-# I was thinking of an API like, e.g. for 3D,
-# cell_to_faces = connections(graph,from=3,to=2)
-# edge_to_cells = connections(graph,from=1,to=3).
-# Once available, I would even delete celltovefs and veftocells since I don't like to mix things
-# and I don't want to have duplicated data in some concrete implementations.
-# (do you think it would be useful to keep them??)
-# If we decide to keep them, I would propose an API like
-# this one in order to be consistent.
-# cell_to_vefs = connections(graph,from=3)
-# vef_to_cells = connections(graph,to=3)
-# moreover, we can also add
-# face_to_mask = isonboundary(graph,dim=2)
-# cell_to_mask = isonboundary(graph,dim=3)
-celltovefs(self::GridGraphFromData) = self.celltovefs
-
-veftocells(self::GridGraphFromData) = self.veftocells
 
 # Helpers
 

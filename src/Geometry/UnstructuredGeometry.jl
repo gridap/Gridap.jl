@@ -5,14 +5,17 @@ module UnstructuredGeometry
 using Gridap
 using Gridap.Helpers
 using Gridap.CellValuesGallery
+using Gridap.GridGraphs: FullGridGraphFromData
 using UnstructuredGrids
 using UnstructuredGrids.Kernels: rewind_ptrs!
 using UnstructuredGrids.Kernels: length_to_ptrs!
+using UnstructuredGrids.Kernels: generate_data_and_ptrs
 
 # Functionality provided by this module
 
 export rewind_ptrs!
 export length_to_ptrs!
+export generate_data_and_ptrs
 export UnstructuredGrid
 export FlexibleUnstructuredGrid
 import Gridap: points, cells, celltypes, cellorders
@@ -81,11 +84,11 @@ function FullGridGraph(grid::UnstructuredGrid)
       # end
     end
   end
-  FullGridGraph(data)
+  FullGridGraphFromData(data)
 end
 
 """
-Struct representing an unstructured grid with efficient memory layout
+Struct representing an unstructured grid with inefficient memory layout
 """
 struct FlexibleUnstructuredGrid{D,Z,A<:IndexCellValue{NTuple{Z,Int}},B<:IndexCellValue{Int}} <: Grid{D,Z}
   points::Vector{Point{D,Float64}}
