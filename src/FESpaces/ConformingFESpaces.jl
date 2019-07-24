@@ -117,7 +117,7 @@ CellBasis(this::ConformingFESpace) = this._basis
 # Helpers
 
 function _setup_conforming_fe_fields(reffe,trian,graph,labels,diri_tags,D)
-  dim_to_nface_eqclass, nfree, ndiri  = _generate_dim_to_nface_eqclass(
+  dim_to_nface_eqclass, nfree, ndiri  = _generate_dim_to_nface_to_dofs(
     reffe, graph, labels, diri_tags)
   cellvefs_dim = [connections(graph,D,i) for i in 0:D]
   offset = length.(dim_to_nface_eqclass)
@@ -135,44 +135,132 @@ function _setup_conforming_fe_fields(reffe,trian,graph,labels,diri_tags,D)
     reffe, trian, graph, labels, basis
 end
 
-function _generate_dim_to_nface_eqclass(
-  reffe::RefFE{D,T},
+function _generate_dim_to_nface_to_dofs(
+  reffe::RefFE{D},
   graph::GridGraph,
   labels::FaceLabels,
-  diri_tags::Vector{Int}) where {D,T}
+  diri_tags::Vector{Int}) where D
 
-  dim_to_nface_eqclass = Int[]
-  c=1
-  c_n = -1
-  for vef_dim in 0:D
-    vefcells= connections(graph,vef_dim,D)
-    cellvefs= connections(graph,D,vef_dim)
-    vef_labels = labels_on_dim(labels,vef_dim)
-    num_vefs = length(vefcells)
-    nfdofs=Array{Array{Int64},1}(undef,num_vefs)
-    nfdofs_l = Int[]
-    nfdofs_g = zeros(Int, num_vefs+1)
-    nfdofs_g[1] = 1
-    for (ignf,nf) in enumerate(vefcells)
-      owner_cell = nf[1]
-      lid_vef_dim = findfirst(i->i==ignf,cellvefs[owner_cell])
-      lid_vef = reffe.polytope.nf_dim[end][vef_dim+1][1]+lid_vef_dim-1
-      # @santiagobadia : Better a method for nfs of a particular type...
-      num_nf_dofs = length(reffe.nfacedofs[lid_vef])
-      if ( _is_diri(vef_labels[ignf],diri_tags,labels) )
-        nfdofs_l = Int[nfdofs_l..., c_n:-1:c_n-num_nf_dofs+1... ]
-        c_n -= num_nf_dofs
-      else
-        nfdofs_l = Int[nfdofs_l..., c:c+num_nf_dofs-1... ]
-        c += num_nf_dofs
-      end
-      nfdofs_g[ignf+1] += num_nf_dofs + nfdofs_g[ignf]
-    end
-    dim_to_nface_eqclass = [
-      dim_to_nface_eqclass..., CellVectorFromDataAndPtrs(nfdofs_l, nfdofs_g) ]
+  i_free_dof = 1
+  i_diri_dof = -1
+
+  dim_to_nface_to_dofs = IndexCellVector{Int}[]
+  tag_to_labels = labels.tag_to_labels
+
+  for d in 0:D
+
+    nface_to_label = labels_on_dim(labels,d)
+    cell_to_nfaces = connections(graph,D,d)
+    nface_to_cells = connections(graph,d,D)
+    icell = 1
+    nface_to_cellowner = get_local_item(nface_to_cells,icell)
+    nface_to_lnface = find_local_index(nface_to_cellowner, cell_to_nfaces)
+
+    lnface_to_ldofs = nfacedofs(reffe,d)
+    lnface_to_nldofs = length.(lnface_to_ldofs)
+
+    num_nfaces = length(nface_to_cells)
+
+    nface_to_dofs_ptrs = zeros(Int, num_nfaces+1)
+    nface_to_dofs_data = Int[]
+
+    i_free_dof, i_diri_dof = _generate_nface_to_dofs!(
+      nface_to_dofs_data,
+      nface_to_dofs_ptrs,
+      nface_to_lnface,
+      lnface_to_nldofs,
+      nface_to_label,
+      diri_tags,
+      tag_to_labels,
+      i_free_dof,
+      i_diri_dof)
+
+    length_to_ptrs!(nface_to_dofs_ptrs)
+
+    nface_to_dofs = CellVectorFromDataAndPtrs(
+      nface_to_dofs_data, nface_to_dofs_ptrs)
+
+    push!(dim_to_nface_to_dofs, nface_to_dofs)
+
   end
-  return [ dim_to_nface_eqclass , c-1, -c_n-1 ]
+
+  return (dim_to_nface_to_dofs, i_free_dof-1, -i_diri_dof-1)
+
 end
+
+function _generate_nface_to_dofs!(
+  nface_to_dofs_data,
+  nface_to_dofs_ptrs,
+  nface_to_lnface,
+  lnface_to_nldofs,
+  nface_to_label,
+  diri_tags,
+  tag_to_labels,
+  i_free_dof,
+  i_diri_dof)
+
+  for (nface, lnface) in enumerate(nface_to_lnface)
+
+    nldofs = lnface_to_nldofs[lnface]
+    label = nface_to_label[nface]
+    isdiri = _is_diri(label,diri_tags,tag_to_labels)
+
+    if isdiri
+      for i in 1:nldofs
+        push!(nface_to_dofs_data,i_diri_dof)
+        i_diri_dof += -1
+      end
+    else
+      for i in 1:nldofs
+        push!(nface_to_dofs_data,i_free_dof)
+        i_free_dof += 1
+      end
+    end
+
+    nface_to_dofs_ptrs[nface+1] = nldofs
+  end
+
+  (i_free_dof, i_diri_dof)
+end
+
+#function _generate_dim_to_nface_eqclass(
+#  reffe::RefFE{D,T},
+#  graph::GridGraph,
+#  labels::FaceLabels,
+#  diri_tags::Vector{Int}) where {D,T}
+#
+#  dim_to_nface_eqclass = Int[]
+#  c=1
+#  c_n = -1
+#  for vef_dim in 0:D
+#    vefcells= connections(graph,vef_dim,D)
+#    cellvefs= connections(graph,D,vef_dim)
+#    vef_labels = labels_on_dim(labels,vef_dim)
+#    num_vefs = length(vefcells)
+#    nfdofs=Array{Array{Int64},1}(undef,num_vefs)
+#    nfdofs_l = Int[]
+#    nfdofs_g = zeros(Int, num_vefs+1)
+#    nfdofs_g[1] = 1
+#    for (ignf,nf) in enumerate(vefcells)
+#      owner_cell = nf[1]
+#      lid_vef_dim = findfirst(i->i==ignf,cellvefs[owner_cell])
+#      lid_vef = reffe.polytope.nf_dim[end][vef_dim+1][1]+lid_vef_dim-1
+#      # @santiagobadia : Better a method for nfs of a particular type...
+#      num_nf_dofs = length(reffe.nfacedofs[lid_vef])
+#      if ( _is_diri(vef_labels[ignf],diri_tags,labels.tag_to_labels) )
+#        nfdofs_l = Int[nfdofs_l..., c_n:-1:c_n-num_nf_dofs+1... ]
+#        c_n -= num_nf_dofs
+#      else
+#        nfdofs_l = Int[nfdofs_l..., c:c+num_nf_dofs-1... ]
+#        c += num_nf_dofs
+#      end
+#      nfdofs_g[ignf+1] += num_nf_dofs + nfdofs_g[ignf]
+#    end
+#    dim_to_nface_eqclass = [
+#      dim_to_nface_eqclass..., CellVectorFromDataAndPtrs(nfdofs_l, nfdofs_g) ]
+#  end
+#  return [ dim_to_nface_eqclass , c-1, -c_n-1 ]
+#end
 
 _setup_diri_tags(model,tags) = tags
 
@@ -234,7 +322,7 @@ function _interpolate_diri_values(fesp::ConformingFESpace{D,Z,T},funs) where {D,
       nf_dofs = nf_dofs_all[idim+1]
       # How to extract this part? Do it correctly, with a FEFunction
       for (nf,nflab) in enumerate(nf_labs)
-        if (_is_diri(nflab, (dtags[ifunc],), labels))
+        if (_is_diri(nflab, (dtags[ifunc],), labels.tag_to_labels))
           for dof in nf_dofs[nf]
             dof *= -1
             diri_dofs_all[dof] = fh_diri_dofs[dof]
@@ -246,11 +334,10 @@ function _interpolate_diri_values(fesp::ConformingFESpace{D,Z,T},funs) where {D,
   return diri_dofs_all
 end
 
-@inline function _is_diri(v,dt,labels)
-  for tag in dt
-    labs = labels_on_tag(labels,tag)
-    for label in labs
-      if (label == v)
+@inline function _is_diri(label,diritags,tag_to_labels)
+  for tag in diritags
+    for dirilabel in tag_to_labels[tag]
+      if (label == dirilabel)
         return true
       end
     end

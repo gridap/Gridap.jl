@@ -27,6 +27,7 @@ fespace = ConformingFESpace(fe,trian,graph,labels,tags)
 
 r = [[-1, 1, 2, 3], [1, -2, 3, 4], [2, 3, -3, 5], [3, 4, 5, -4]]
 
+
 @test r == collect(fespace.cell_eqclass)
 
 order = 2

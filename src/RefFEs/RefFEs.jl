@@ -8,6 +8,7 @@ export RefFE
 export LagrangianRefFE
 export shfbasis
 export polytope
+export nfacedofs
 
 import Gridap: evaluate, evaluate!
 
@@ -30,6 +31,17 @@ polytope(this::RefFE{D,T} where {D,T})::Polytope{D} = @abstractmethod
 shfbasis(this::RefFE{D,T} where {D,T})::Basis{D,T} = @abstractmethod
 
 nfacedofs(this::RefFE{D,T} where {D,T})::Vector{Vector{Int}} = @abstractmethod
+
+"""
+Extract the lists of dofs, but only for the nfaces of dimension dim
+"""
+function nfacedofs(reffe::RefFE{D},dim::Integer) where D
+  @assert 0 <= dim
+  @assert dim <= D
+  nface_to_dofs = nfacedofs(reffe)
+  p = reffe.polytope
+  nface_to_dofs[p.nf_dim[end][dim+1]]
+end
 
 """
 Reference Finite Element a la Ciarlet, i.e., it relies on a local function
