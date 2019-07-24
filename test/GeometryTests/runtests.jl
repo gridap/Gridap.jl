@@ -6,6 +6,10 @@ using Test
 
 @testset "Grids" begin include("GridsTests.jl") end
 
+@testset "FaceLabels" begin include("FaceLabelsTests.jl") end
+
+@testset "DiscreteModels" begin include("DiscreteModelsTests.jl") end
+
 #@testset "Geometry" begin include("GeometryTests.jl") end
 #
 #@testset "GridPortions" begin include("GridPortionsTests.jl") end
