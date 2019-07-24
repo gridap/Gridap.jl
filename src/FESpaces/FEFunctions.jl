@@ -88,7 +88,7 @@ getindex(f::FEFunction,i::Integer) = f.cellfield[i]
 size(f::FEFunction) = (length(f.cellfield),)
 
 function interpolate(this::FESpace,fun::Function)
-  free_vals, diri_vals = interpolated_values(this,fun)
+  free_vals, diri_vals = interpolate_values(this,fun)
   FEFunction(this,free_vals,diri_vals)
 end
 # @santiagobadia : Using this, it always overwrites the FESpace Dirichlet

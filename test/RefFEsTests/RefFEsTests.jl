@@ -269,4 +269,9 @@ elmatscal = sum(quad.weights.*elmatgp)
 @test elmatvec[l+1:2l,l+1:2l] == elmatscal
 ##
 
+reffe = LagrangianRefFE{D,Float64}(polytope,orders)
+@test nfacedofs(reffe, 0) == [[1], [3], [7], [9]]
+@test nfacedofs(reffe, 1) == [[2], [8], [4], [6]]
+@test nfacedofs(reffe, 2) == [[5]]
+
 end # module
