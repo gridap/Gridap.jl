@@ -16,8 +16,8 @@ export apply_constraints
 export apply_constraints_rows
 export apply_constraints_cols
 export celldofids
-export interpolated_values
-export interpolated_diri_values
+export interpolate_values
+export interpolate_diri_values
 export value_type
 
 export ConformingFESpace
@@ -65,11 +65,9 @@ Interpolates a function and returns a vector of free values and another vector
 of dirichlet ones. It is templatized with respect to E, the type of field
 value in the `FESpace{D,Z,T}` at hand, i.e.,  `E = eltype(T)`
 """
-function interpolated_values(::FESpace,::Function)::Tuple{Vector{E},Vector{E}} where E
+function interpolate_values(::FESpace,::Function)::Tuple{Vector{E},Vector{E}} where E
   @abstractmethod
 end
-# @santiagobadia : Private method
-# @santiagobadia : interpolated -> interpolate
 
 """
 Given a FESpace and its array of labels that represent the Dirichlet boundary
@@ -77,18 +75,14 @@ in the geometrical model and an array of functions for every Dirichlet
 boundary label, this method interpolates all these functions on their
 boundaries, and provides the global vector of Dirichlet DOFs
 """
-function interpolated_diri_values(::FESpace, funs::Vector{<:Function})::Vector{E} where E
+function interpolate_diri_values(::FESpace, funs::Vector{<:Function})::Vector{E} where E
   @abstractmethod
 end
-# @santiagobadia : Private method
-# @santiagobadia : interpolated -> interpolate
 
-function interpolated_diri_values(this::FESpace, fun::Function)
+function interpolate_diri_values(this::FESpace, fun::Function)
   tags = diri_tags(this)
-  interpolated_diri_values(this,fill(fun,length(tags)))
+  interpolate_diri_values(this,fill(fun,length(tags)))
 end
-# @santiagobadia : Private method
-# @santiagobadia : interpolated -> interpolate
 
 """
 Returns the CellField that represents the FE function thorough its free and
@@ -117,12 +111,12 @@ end
 function TrialFESpace( this::FESpace, funs::Vector{<:Function}) where {D}
   tags = diri_tags(this)
   @assert length(tags) == length(funs)
-  dv = interpolated_diri_values(this,funs)
+  dv = interpolate_diri_values(this,funs)
   return FESpaceWithDirichletData(this, dv)
 end
 
 function TrialFESpace( this::FESpace, fun::Function) where {D}
-  dv = interpolated_diri_values(this,fun)
+  dv = interpolate_diri_values(this,fun)
   return FESpaceWithDirichletData(this, dv)
 end
 
@@ -163,8 +157,8 @@ function celldofids(f::FESpaceWithDirichletData)
   celldofids(f.fespace)
 end
 
-function interpolated_values(f::FESpaceWithDirichletData,fun::Function)
-  free_vals, _ = interpolated_values(f.fespace,fun)
+function interpolate_values(f::FESpaceWithDirichletData,fun::Function)
+  free_vals, _ = interpolate_values(f.fespace,fun)
   free_vals, f.diri_dofs
 end
 
@@ -177,7 +171,7 @@ function CellBasis(f::FESpaceWithDirichletData)
   CellBasis(f.fespace)
 end
 
-function interpolated_diri_values(this::FESpaceWithDirichletData, funs::Vector{<:Function})
+function interpolate_diri_values(this::FESpaceWithDirichletData, funs::Vector{<:Function})
   f.diri_dofs
 end
 
@@ -252,12 +246,12 @@ function celldofids(this::ConformingFESpace)
   this.cell_eqclass
 end
 
-function interpolated_values(this::ConformingFESpace,f::Function)
-  _interpolated_values(this,f)
+function interpolate_values(this::ConformingFESpace,f::Function)
+  _interpolate_values(this,f)
 end
 
-function interpolated_diri_values(this::ConformingFESpace, funs::Vector{<:Function})
-  _interpolated_diri_values(this,funs)
+function interpolate_diri_values(this::ConformingFESpace, funs::Vector{<:Function})
+  _interpolate_diri_values(this,funs)
 end
 
 function CellField(
@@ -297,7 +291,7 @@ function _polytope(celltypes::ConstantCellValue)
   Polytope(code)
 end
 
-function _interpolated_values(fesp::ConformingFESpace{D,Z,T},fun::Function) where {D,Z,T}
+function _interpolate_values(fesp::ConformingFESpace{D,Z,T},fun::Function) where {D,Z,T}
   reffe = fesp._reffes
   dofb = reffe.dofbasis
   trian = fesp._triangulation
@@ -323,7 +317,7 @@ function _interpolated_values(fesp::ConformingFESpace{D,Z,T},fun::Function) wher
   return free_dofs, diri_dofs
 end
 
-function _interpolated_diri_values(fesp::ConformingFESpace{D,Z,T},funs) where {D,Z,T}
+function _interpolate_diri_values(fesp::ConformingFESpace{D,Z,T},funs) where {D,Z,T}
   labels = fesp._labels
   nf_labs_all = [ labels_on_dim(labels,idim) for idim in 0:D]
   nf_dofs_all = fesp.dim_to_nface_eqclass
@@ -332,7 +326,7 @@ function _interpolated_diri_values(fesp::ConformingFESpace{D,Z,T},funs) where {D
   E = eltype(T)
   diri_dofs_all = zeros(E, num_diri_dofs(fesp))
   for (ifunc,f) in enumerate(funs)
-    _ , fh_diri_dofs = interpolated_values(fesp,f)
+    _ , fh_diri_dofs = interpolate_values(fesp,f)
     # @santiagobadia: For performance issues, implement a new interpolate
     # restricted to cells on the boundary for performance
     for idim in 0:D

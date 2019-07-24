@@ -48,7 +48,7 @@ r = [[-1, -2, 1, 2, -7, 4, 5, 6, 12], [-2, -3, 2, 3, -8, 7, 6, 8, 13],
 
 fun(x) = sin(x[1])*cos(x[2])
 
-free_vals, diri_vals = interpolated_values(fespace,fun)
+free_vals, diri_vals = interpolate_values(fespace,fun)
 
 rf = [0.0, 0.420735, 0.598194, 0.078012, 0.0, 0.420735,
       0.214936, 0.598194, -0.0, -0.199511, -0.283662,
@@ -60,7 +60,7 @@ rd = [0.0, 0.259035, 0.368291, 0.420735, 0.73846, 0.151174,
 @test isapprox(free_vals,rf,rtol=1.0e-5)
 @test isapprox(diri_vals,rd,rtol=1.0e-5)
 
-diri_vals = interpolated_diri_values(fespace,fun)
+diri_vals = interpolate_diri_values(fespace,fun)
 
 @test isapprox(diri_vals,rd,rtol=1.0e-5)
 
