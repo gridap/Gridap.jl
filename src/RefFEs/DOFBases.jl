@@ -44,7 +44,7 @@ Compute the DOF values of the given basis. The results in written in place
 in the last argument.
 E is a subtype of Real (typically Float64). E can be computed as 
 E = dof_type(T). The result is a matrix. The rows correspond to
-the DOFBasis and the cols to the Basis.
+the Basis and the cols to the DOFBasis.
 """
 function evaluate!(
   ::DOFBasis{D,T},::Basis{D,T},::AbstractMatrix{E}) where {D,T,E}
