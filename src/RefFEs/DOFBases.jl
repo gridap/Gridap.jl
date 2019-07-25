@@ -167,7 +167,7 @@ end
 #    for j in 1:size(cache,2)
 #      v = cache[i,j]
 #      for vk in v
-#        dofs[k,i] = vk
+#        dofs[i,k] = vk
 #        k += 1
 #      end
 #    end
@@ -185,7 +185,7 @@ function evaluate!(
       v = cache[i,j]
       for (c,vk) in enumerate(v)
         o = nnodes*(c-1)
-        dofs[j+o,i] = vk
+        dofs[i,j+o] = vk
       end
     end
   end

@@ -12,16 +12,16 @@ include("Fields/files.jl")
 
 include("RefFEs/files.jl")
 
-#include("Integration/files.jl")
-#
-#include("Geometry/files.jl")
-#
-#include("Algebra/files.jl")
-#
-#include("FESpaces/files.jl")
-#
-#include("MultiField/files.jl")
-#
-#include("Visualization/files.jl")
+include("Integration/files.jl")
+
+include("Geometry/files.jl")
+
+include("Algebra/files.jl")
+
+include("FESpaces/files.jl")
+
+include("MultiField/files.jl")
+
+include("Visualization/files.jl")
 
 end # module
