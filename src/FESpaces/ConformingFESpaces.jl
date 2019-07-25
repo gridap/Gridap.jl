@@ -252,11 +252,10 @@ function _interpolate_values(fesp::ConformingFESpace{D,Z,T},fun::Function) where
   uphys = fun ∘ phi
   celldofs = fesp.cell_eqclass
   nfdofs = fesp.dim_to_nface_eqclass
-  maxs = max([length(nfdofs[i]) for i=1:D+1]...)
-  E = eltype(T)
+  E = dof_type(T)
   free_dofs = zeros(E, num_free_dofs(fesp))
   diri_dofs = zeros(E, num_diri_dofs(fesp))
-  aux = zeros(E, maxs)
+  aux = zeros(E, length(dofb))
   _interpolate_values_kernel!(
     free_dofs,diri_dofs,uphys,celldofs,dofb,aux)
   return free_dofs, diri_dofs

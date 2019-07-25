@@ -69,7 +69,8 @@ function LagrangianRefFE{D,T}(polytope::Polytope{D},
   prebasis = MonomialBasis(T,orders)
   aux = zeros(Float64,numlocaldofs(dofsb),numlocaldofs(dofsb))
   @assert numlocaldofs(dofsb) == length(prebasis)
-  changeofbasis=inv(evaluate!(dofsb,prebasis,aux))
+  evaluate!(dofsb,prebasis,aux)
+  changeofbasis=inv(aux)
   basis = change_basis(prebasis, changeofbasis)
   nfacedofs=nodes.nfacenodes
   LagrangianRefFE{D,T}(polytope, dofsb, basis, nfacedofs)
@@ -87,7 +88,8 @@ function LagrangianRefFE{D,T}(p::Polytope{D}, order::Int) where {D,T}
   prebasis = Gridap.RefFEs._monomial_basis(p,T,order)
   aux = zeros(Float64,numlocaldofs(dofsb),numlocaldofs(dofsb))
   @assert numlocaldofs(dofsb) == length(prebasis)
-  changeofbasis=inv(evaluate!(dofsb,prebasis,aux))
+  evaluate!(dofsb,prebasis,aux)
+  changeofbasis=inv(aux)
   basis = change_basis(prebasis, changeofbasis)
   return LagrangianRefFE{D,T}(p, dofsb, basis, nfacedofs)
 end
