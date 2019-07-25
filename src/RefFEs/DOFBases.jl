@@ -180,8 +180,8 @@ function evaluate!(
   cache = b._cache_basis
   evaluate!(f,b.nodes,cache)
   nnodes = length(b.nodes)
-  for i in 1:size(cache,1)
-    for j in 1:size(cache,2)
+  for j in 1:size(cache,2)
+    for i in 1:size(cache,1)
       v = cache[i,j]
       for (c,vk) in enumerate(v)
         o = nnodes*(c-1)
