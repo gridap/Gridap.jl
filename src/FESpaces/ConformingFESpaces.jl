@@ -256,6 +256,7 @@ function _interpolate_values(fesp::ConformingFESpace{D,Z,T},fun::Function) where
   E = eltype(T)
   free_dofs = zeros(E, num_free_dofs(fesp))
   diri_dofs = zeros(E, num_diri_dofs(fesp))
+  error("maxs is computed to a wrong value!")
   aux = zeros(E, maxs)
   _interpolate_values_kernel!(
     free_dofs,diri_dofs,uphys,celldofs,dofb,aux)
