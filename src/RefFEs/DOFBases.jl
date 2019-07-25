@@ -129,30 +129,63 @@ function length(b::LagrangianDOFBasis{D,T}) where {D,T}
   _num_dofs(T,b.nodes)
 end
 
+# # Component major implementation
+#function evaluate!(
+#  b::LagrangianDOFBasis{D,T},f::Field{D,T},dofs::AbstractVector{E}) where {D,T,E}
+#  cache = b._cache_field
+#  evaluate!(f,b.nodes,cache)
+#  i = 1
+#  for v in cache
+#    for vi in v
+#      dofs[i] = vi
+#      i += 1
+#    end
+#  end
+#end
+
+# Node major implementation
 function evaluate!(
   b::LagrangianDOFBasis{D,T},f::Field{D,T},dofs::AbstractVector{E}) where {D,T,E}
   cache = b._cache_field
   evaluate!(f,b.nodes,cache)
-  i = 1
-  for v in cache
-    for vi in v
-      dofs[i] = vi
-      i += 1
+  nnodes = length(b.nodes)
+  for (p,v) in enumerate(cache)
+    for (c,vi) in enumerate(v)
+      o = nnodes*(c-1)
+      dofs[p+o] = vi
     end
   end
 end
 
+# # Component major implementation
+#function evaluate!(
+#  b::LagrangianDOFBasis{D,T},f::Basis{D,T},dofs::AbstractMatrix{E}) where {D,T,E}
+#  cache = b._cache_basis
+#  evaluate!(f,b.nodes,cache)
+#  for i in 1:size(cache,1)
+#    k = 1
+#    for j in 1:size(cache,2)
+#      v = cache[i,j]
+#      for vk in v
+#        dofs[k,i] = vk
+#        k += 1
+#      end
+#    end
+#  end
+#end
+
+# Node major implementation
 function evaluate!(
   b::LagrangianDOFBasis{D,T},f::Basis{D,T},dofs::AbstractMatrix{E}) where {D,T,E}
   cache = b._cache_basis
   evaluate!(f,b.nodes,cache)
+  nnodes = length(b.nodes)
   for i in 1:size(cache,1)
-    k = 1
     for j in 1:size(cache,2)
       v = cache[i,j]
-      for vk in v
-        dofs[k,i] = vk
-        k += 1
+      for (c,vk) in enumerate(v)
+        o = nnodes*(c-1)
+        dofs[j+o,i] = vk
       end
     end
   end
