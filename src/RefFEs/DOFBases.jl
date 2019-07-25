@@ -1,113 +1,169 @@
 module DOFBases
 
+using Test
 using Gridap
 using Gridap.Helpers
 
 export DOFBasis
+export test_dof_basis
 export numlocaldofs
+export dof_type
+export LagrangianDOFBasis
 
-import Gridap: evaluate, evaluate!
+import Gridap: evaluate
+import Gridap: evaluate!
+import Base: length
+
+# Interfaces
 
 """
-Abstract DOF cell basis
+Abstract DOF basis
 """
 abstract type DOFBasis{D,T} end
 
 """
-Evaluate the DOFs for a given polynomial basis
+Returns the dimension of the DOF basis.
 """
-function evaluate(this::DOFBasis{D,T},
-  fields::Map{Point{D},N,T,M})::Array{Float64,M} where {D,T,N,M}
-  size_arr = return_size(fields, (numlocaldofs(this),))
-  aux = zeros(Float64, size_arr...)
-  evaluate!(this,fields,aux)
-  return aux
-end
-
-function evaluate!(this::DOFBasis{D,T},
-  fields::Map{Point{D},N,T,N}, auxv::AbstractArray)::Array{Float64,N} where {D,T,N}
-  @abstractmethod
-end
-# @santiagobadia : To replace the following ones
-
-function evaluate!(this::DOFBasis{D,T},
-  prebasis::Basis{D,T}, auxv::AbstractMatrix)::Array{Float64,2} where {D,T}
+function length(::DOFBasis)::Int
   @abstractmethod
 end
 
-function evaluate!(this::DOFBasis{D,T},
-  prebasis::Field{D,T}, auxv::AbstractVector)::Vector{Float64} where {D,T}
-  @abstractmethod end
+"""
+Compute the DOF values of the given field. The results in written in place
+in the last argument.
+E is a subtype of Real (typically Float64). E can be computed as 
+E = dof_type(T)
+"""
+function evaluate!(
+  ::DOFBasis{D,T},::Field{D,T},::AbstractVector{E}) where {D,T,E}
+  @abstractmethod
+end
+
+"""
+Compute the DOF values of the given basis. The results in written in place
+in the last argument.
+E is a subtype of Real (typically Float64). E can be computed as 
+E = dof_type(T). The result is a matrix. The rows correspond to
+the DOFBasis and the cols to the Basis.
+"""
+function evaluate!(
+  ::DOFBasis{D,T},::Basis{D,T},::AbstractMatrix{E}) where {D,T,E}
+  @abstractmethod
+end
+
+"""
+Returns the type representing a DOF value. Typically Float64,
+but can be other types depending on the input T.
+"""
+function dof_type(::Type{T}) where T
+  E = eltype(T)
+  @notimplementedif !(E<:Real)
+  E
+end
+
+"""
+Returns the dimension of the DOF basis.
+"""
+numlocaldofs(b::DOFBasis) = length(b)
+
+function evaluate(b::DOFBasis{D,T},f::Field{D,T}) where {D,T}
+  E = dof_type(T)
+  n = length(b)
+  v = zeros(E,n)
+  evaluate!(b,f,v)
+  v
+end
+
+function evaluate(b::DOFBasis{D,T},f::Basis{D,T}) where {D,T}
+  E = dof_type(T)
+  n = length(b)
+  m = length(f)
+  @assert n == m
+  v = zeros(E,n,m)
+  evaluate!(b,f,v)
+  v
+end
+
+# Testers
+
+function test_dof_basis(
+  dofbasis::DOFBasis{D,T},
+  field::Field{D,T},
+  basis::Basis{D,T},
+  field_dofs::AbstractVector{E},
+  basis_dofs::AbstractMatrix{E}) where {D,T,E}
+
+  @test dof_type(T) == E
+  @test length(dofbasis) == length(basis)
+  @test numlocaldofs(dofbasis) == length(basis)
+
+  a = evaluate(dofbasis,field)
+  @test a ≈ field_dofs
+
+  b = evaluate(dofbasis,basis)
+  @test b ≈ basis_dofs
+
+end
+
+# Concrete implementations
 
 """
 Lagrangian DOF basis, which consists on evaluating the polynomial basis
 (prebasis) in a set of points (nodes)
 """
 struct LagrangianDOFBasis{D,T} <: DOFBasis{D,T}
-  nodes::Array{Point{D,Float64}}
+  nodes::Vector{Point{D,Float64}}
+  _cache_field::Vector{T}
+  _cache_basis::Matrix{T}
 end
 
-"""
-Evaluate the Lagrangian DOFs basis (i.e., nodal values) for a given polynomial
-basis
-"""
-function evaluate!(this::LagrangianDOFBasis{D,T},
-  prebasis::Basis{D,T}, b::AbstractMatrix{Float64}) where {D,T}
-  vals = evaluate(prebasis,this.nodes)
-  l = length(prebasis); lt = _length(T)
-  # E = eltype(T)
-  # b = Array{E,2}(undef,l, l)
-  nnd = length(this.nodes)
-  @assert nnd*_length(T) == length(prebasis)
-  function computeb!(a,b,lt,nnd)
-    for k in 1:lt
-      off = nnd*(k-1)
-      for j in 1:size(a,2)
-        for i in 1:size(a,1)
-          b[i,j+off] = a[i,j][k]
-        end
+function LagrangianDOFBasis{D,T}(nodes::Vector{Point{D,Float64}}) where {D,T}
+  nnodes = length(nodes)
+  ndofs = _num_dofs(T,nodes)
+  cache_field = zeros(T,nnodes)
+  cache_basis = zeros(T,ndofs,nnodes)
+  LagrangianDOFBasis{D,T}(nodes,cache_field,cache_basis)
+end
+
+function length(b::LagrangianDOFBasis{D,T}) where {D,T}
+  _num_dofs(T,b.nodes)
+end
+
+function evaluate!(
+  b::LagrangianDOFBasis{D,T},f::Field{D,T},dofs::AbstractVector{E}) where {D,T,E}
+  cache = b._cache_field
+  evaluate!(f,b.nodes,cache)
+  i = 1
+  for v in cache
+    for vi in v
+      dofs[i] = vi
+      i += 1
+    end
+  end
+end
+
+function evaluate!(
+  b::LagrangianDOFBasis{D,T},f::Basis{D,T},dofs::AbstractMatrix{E}) where {D,T,E}
+  cache = b._cache_basis
+  evaluate!(f,b.nodes,cache)
+  for i in 1:size(cache,1)
+    k = 1
+    for j in 1:size(cache,2)
+      v = cache[i,j]
+      for vk in v
+        dofs[k,i] = vk
+        k += 1
       end
     end
   end
-  computeb!(vals,b,lt,nnd)
-  return b
 end
 
-"""
-Evaluate the Lagrangian DOFs basis (i.e., nodal values) for a given field in
-the reference space
-"""
-function numlocaldofs(this::LagrangianDOFBasis{D,T}) where {D,T}
-  lt = _length(T)
-  # E = eltype(T)
-  nnd = length(this.nodes)
-  # return b = Vector{E}(undef,lt*nnd)
-  return lt*nnd
-end
+# Helpers
 
-# @santiagobadia : Be careful, a physical field must be composed with geomap
-# before being used here. Is this what we want?
-function evaluate!(this::LagrangianDOFBasis{D,T},
-  field::Field{D,T}, b::AbstractVector{Float64}) where {D,T}
-  vals = Maps.evaluate(field,this.nodes)
-  # I would like to use evaluate everywhere, putting evaluate in Gridap and
-  # importing it in all submodules
-  # This way we could use the same evaluate for bases and fields...
-  # @santiagobadia : TO BE DONE
-  lt = _length(T)
-  # E = eltype(T)
-  nnd = length(this.nodes)
-  # b = Vector{E}(undef,lt*nnd)
-  function computeb!(a,b,lt,nnd)
-    for k in 1:lt
-      off = nnd*(k-1)
-      for j in 1:nnd
-        b[j+off] = a[j][k]
-      end
-    end
-  end
-  computeb!(vals,b,lt,nnd)
-  return b
+function _num_dofs(::Type{T}, nodes::Vector) where T
+  ncomps = _length(T)
+  nnodes = length(nodes)
+  ncomps*nnodes
 end
 
 _length(::Type{<:Real}) = 1

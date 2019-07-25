@@ -6,8 +6,8 @@ using Test
 
 @testset "Polytopes" begin include("PolytopesTests.jl") end
 
-#@testset "DOFBases" begin include("DOFBasesTests.jl") end
+@testset "DOFBases" begin include("DOFBasesTests.jl") end
 
-#@testset "RefFEs" begin include("RefFEsTests.jl") end
+@testset "RefFEs" begin include("RefFEsTests.jl") end
 
 end # module
