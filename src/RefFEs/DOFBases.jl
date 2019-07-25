@@ -3,7 +3,6 @@ module DOFBases
 using Gridap
 using Gridap.Helpers
 
-using ..Polytopes
 export DOFBasis
 export numlocaldofs
 
