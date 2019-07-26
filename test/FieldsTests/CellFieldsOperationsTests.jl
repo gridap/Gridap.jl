@@ -168,5 +168,26 @@ cb2 = attachgeomap(cb,cf)
 
 test_iter_cell_basis(cb2,cp,v,g)
 
+l = 10
+cf = IterCellGeomapMock(2,Float64,l)
+
+p1 = Point(1,2)
+p2 = Point(0,3)
+p3 = Point(7,4)
+p4 = Point(8,1)
+p = [p1,p2,p3,p4]
+cp = TestIterCellValue(p,l)
+
+sg = ε(cf)
+
+ri = TensorValue{2,Float64,4}[
+  (3.0, 0.0, 0.0, 3.0), (3.0, 0.0, 0.0, 3.0),
+  (3.0, 0.0, 0.0, 3.0), (3.0, 0.0, 0.0, 3.0)]
+r = fill(ri,l)
+
+test_iter_cell_field_without_grad(sg,cp,r)
+
+@test ε == symmetric_gradient
+
 end # module
 

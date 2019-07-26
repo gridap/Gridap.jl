@@ -16,6 +16,8 @@ export varinner
 export lincomb
 export attachgeomap
 export compose
+export symmetric_gradient
+export ε
 import Gridap: evaluate
 import Gridap: gradient
 import Gridap: reindex
@@ -62,6 +64,13 @@ function compose(f::Function,w::Vararg{<:CellFieldLike})
   h = hasmethod(gradient,(typeof(f),) )
   _compose(Val(h),f,w...)
 end
+
+function symmetric_gradient(f::CellFieldLike{D,T}) where {D,T<:VectorValue}
+  g = gradient(f)
+  apply(symmetic_part,g,broadcast=true)
+end
+
+const ε = symmetric_gradient
 
 function _compose(::Val{true},f,u...)
   fgrad = gradient(f)
