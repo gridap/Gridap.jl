@@ -54,4 +54,8 @@ basis_dofs = [
 
 test_dof_basis(dofbasis,field,basis,field_dofs,basis_dofs)
 
+@test dofbasis.dof_to_node == [1, 2, 3, 4, 1, 2, 3, 4]
+@test dofbasis.dof_to_comp == [1, 1, 1, 1, 2, 2, 2, 2]
+@test dofbasis.node_and_comp_to_dof == [1 5; 2 6; 3 7; 4 8]
+
 end # module

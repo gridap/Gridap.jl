@@ -113,85 +113,83 @@ Lagrangian DOF basis, which consists on evaluating the polynomial basis
 """
 struct LagrangianDOFBasis{D,T} <: DOFBasis{D,T}
   nodes::Vector{Point{D,Float64}}
+  dof_to_node::Vector{Int}
+  dof_to_comp::Vector{Int}
+  node_and_comp_to_dof::Matrix{Int}
   _cache_field::Vector{T}
   _cache_basis::Matrix{T}
 end
 
 function LagrangianDOFBasis{D,T}(nodes::Vector{Point{D,Float64}}) where {D,T}
+
   nnodes = length(nodes)
   ndofs = _num_dofs(T,nodes)
+  dof_to_node, dof_to_comp, node_and_comp_to_dof =
+    _generate_dof_layout(T,nnodes)
   cache_field = zeros(T,nnodes)
   cache_basis = zeros(T,ndofs,nnodes)
-  LagrangianDOFBasis{D,T}(nodes,cache_field,cache_basis)
+
+  LagrangianDOFBasis{D,T}(
+    nodes,
+    dof_to_node,
+    dof_to_comp,
+    node_and_comp_to_dof,
+    cache_field,
+    cache_basis)
 end
 
 function length(b::LagrangianDOFBasis{D,T}) where {D,T}
   _num_dofs(T,b.nodes)
 end
 
-# # Component major implementation
-#function evaluate!(
-#  b::LagrangianDOFBasis{D,T},f::Field{D,T},dofs::AbstractVector{E}) where {D,T,E}
-#  cache = b._cache_field
-#  evaluate!(f,b.nodes,cache)
-#  i = 1
-#  for v in cache
-#    for vi in v
-#      dofs[i] = vi
-#      i += 1
-#    end
-#  end
-#end
-
-# Node major implementation
 function evaluate!(
   b::LagrangianDOFBasis{D,T},f::Field{D,T},dofs::AbstractVector{E}) where {D,T,E}
   cache = b._cache_field
   evaluate!(f,b.nodes,cache)
-  nnodes = length(b.nodes)
-  for (p,v) in enumerate(cache)
-    for (c,vi) in enumerate(v)
-      o = nnodes*(c-1)
-      dofs[p+o] = vi
+  for (node,v) in enumerate(cache)
+    for (comp,vi) in enumerate(v)
+      dof = b.node_and_comp_to_dof[node,comp]
+      dofs[dof] = vi
     end
   end
 end
 
-# # Component major implementation
-#function evaluate!(
-#  b::LagrangianDOFBasis{D,T},f::Basis{D,T},dofs::AbstractMatrix{E}) where {D,T,E}
-#  cache = b._cache_basis
-#  evaluate!(f,b.nodes,cache)
-#  for i in 1:size(cache,1)
-#    k = 1
-#    for j in 1:size(cache,2)
-#      v = cache[i,j]
-#      for vk in v
-#        dofs[i,k] = vk
-#        k += 1
-#      end
-#    end
-#  end
-#end
-
-# Node major implementation
 function evaluate!(
   b::LagrangianDOFBasis{D,T},f::Basis{D,T},dofs::AbstractMatrix{E}) where {D,T,E}
   cache = b._cache_basis
   evaluate!(f,b.nodes,cache)
-  nnodes = length(b.nodes)
-  for j in 1:size(cache,2)
+  for node in 1:size(cache,2)
     for i in 1:size(cache,1)
-      v = cache[i,j]
-      for (c,vk) in enumerate(v)
-        o = nnodes*(c-1)
-        dofs[i,j+o] = vk
+      v = cache[i,node]
+      for (comp,vk) in enumerate(v)
+        dof = b.node_and_comp_to_dof[node,comp]
+        dofs[i,dof] = vk
       end
     end
   end
 end
 
 # Helpers
+
+# Node major implementation
+function _generate_dof_layout(::Type{T},nnodes::Integer) where T
+  ncomps = _length(T)
+  ndofs = ncomps*nnodes
+  dof_to_comp = zeros(Int,ndofs)
+  dof_to_node = zeros(Int,ndofs)
+  node_and_comp_to_dof = zeros(Int,nnodes,ncomps)
+  v = zero(T)
+  for node in 1:nnodes
+    for comp in 1:ncomps
+      o = nnodes*(comp-1)
+      dof = node+o
+      dof_to_comp[dof] = comp
+      dof_to_node[dof] = node
+      node_and_comp_to_dof[node,comp] = dof
+    end
+  end
+  (dof_to_node, dof_to_comp, node_and_comp_to_dof)
+end
 
 function _num_dofs(::Type{T}, nodes::Vector) where T
   ncomps = _length(T)

@@ -57,6 +57,7 @@ struct LagrangianRefFE{D,T} <: RefFE{D,T}
   dofbasis::LagrangianDOFBasis{D,T}
   shfbasis::Basis{D,T}
   nfacedofs::Vector{Vector{Int}}
+  nfacenodes::Vector{Vector{Int}}
   # this type is unstable
 end
 
@@ -73,17 +74,18 @@ function LagrangianRefFE{D,T}(polytope::Polytope{D},
   evaluate!(dofsb,prebasis,aux)
   changeofbasis=inv(aux)
   basis = change_basis(prebasis, changeofbasis)
-  nfacedofs=nodes.nfacenodes
-  LagrangianRefFE{D,T}(polytope, dofsb, basis, nfacedofs)
+  nfacenodes=nodes.nfacenodes
+  nfacedofs = _genereate_nface_to_dofs(nfacenodes,dofsb.node_and_comp_to_dof)
+  LagrangianRefFE{D,T}(polytope, dofsb, basis, nfacedofs, nfacenodes)
 end
 
 # Constructor that given an scalar order, generates (possibly)
 # high-order n-cubes or n-tets.
 function LagrangianRefFE{D,T}(p::Polytope{D}, order::Int) where {D,T}
   if (order == 1)
-    nodes, nfacedofs = _linear_lagrangian_nodes_polytope(p)
+    nodes, nfacenodes = _linear_lagrangian_nodes_polytope(p)
   else
-    nodes, nfacedofs = _high_order_lagrangian_nodes_polytope(p,order)
+    nodes, nfacenodes = _high_order_lagrangian_nodes_polytope(p,order)
   end
   dofsb = Gridap.RefFEs.LagrangianDOFBasis{D,T}(nodes)
   prebasis = Gridap.RefFEs._monomial_basis(p,T,order)
@@ -92,7 +94,8 @@ function LagrangianRefFE{D,T}(p::Polytope{D}, order::Int) where {D,T}
   evaluate!(dofsb,prebasis,aux)
   changeofbasis=inv(aux)
   basis = change_basis(prebasis, changeofbasis)
-  return LagrangianRefFE{D,T}(p, dofsb, basis, nfacedofs)
+  nfacedofs = _genereate_nface_to_dofs(nfacenodes,dofsb.node_and_comp_to_dof)
+  return LagrangianRefFE{D,T}(p, dofsb, basis, nfacedofs, nfacenodes)
 end
 
 dofbasis(this::LagrangianRefFE{D,T} where {D,T}) = this.dofbasis
@@ -206,6 +209,24 @@ function _is_tet(p)
     if p.extrusion[i] != 2 return false && break end
   end
   return true
+end
+
+function _genereate_nface_to_dofs(nface_to_nodes,node_and_comp_to_dof)
+  nnode, ncomp = size(node_and_comp_to_dof)
+  nface_to_dofs = [zeros(Int,length(nodes)*ncomp) for nodes in nface_to_nodes]
+  nnface = length(nface_to_nodes)
+  nface_to_i = ones(Int,nnface)
+  for (nface,nodes) in enumerate(nface_to_nodes)
+    for comp in 1:ncomp
+      for node in nodes
+        dof = node_and_comp_to_dof[node,comp]
+        i = nface_to_i[nface]
+        nface_to_dofs[nface][i] = dof
+        nface_to_i[nface] += 1
+      end
+    end
+  end
+  nface_to_dofs
 end
 
 end # module RefFEs
