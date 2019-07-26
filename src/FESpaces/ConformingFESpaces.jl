@@ -3,6 +3,7 @@ module ConformingFESpaces
 using Gridap
 using Gridap.Helpers
 using Gridap.CellValuesGallery
+using Gridap.CachedArrays
 using Base: @propagate_inbounds
 
 export ConformingFESpace
@@ -350,12 +351,12 @@ end
 Type encoding the cellwise local to global dof map.
 For the moment, for the case of a single RefFE and for oriented nfaces.
 """
-struct CellEqClass{T,A,B} <: IndexCellValue{Vector{T},1}
+struct CellEqClass{T,A,B} <: IndexCellValue{CachedVector{T,Vector{T}},1}
   cell_to_nfaces::A
   nface_to_dofs::B
   lnface_to_ldofs::Vector{Vector{Int}}
   nldofs::Int
-  v::Vector{T}
+  cv::CachedVector{T,Vector{T}}
 end
 
 function CellEqClass(
@@ -368,7 +369,8 @@ function CellEqClass(
   B = typeof(nface_to_dofs)
   nldofs = length(dofbasis(reffe))
   v = zeros(T,nldofs)
-  CellEqClass{T,A,B}(cell_to_nfaces,nface_to_dofs,lnface_to_ldofs,nldofs,v)
+  cv = CachedVector(v)
+  CellEqClass{T,A,B}(cell_to_nfaces,nface_to_dofs,lnface_to_ldofs,nldofs,cv)
 end
 
 size(self::CellEqClass) = (length(self.cell_to_nfaces),)
@@ -381,10 +383,10 @@ size(self::CellEqClass) = (length(self.cell_to_nfaces),)
     for i in 1:length(dofs)
       dof = dofs[i]
       ldof = ldofs[i]
-      self.v[ldof] = dof
+      self.cv[ldof] = dof
     end
   end
-  self.v
+  self.cv
 end
 
 end # module
