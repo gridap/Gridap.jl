@@ -2,6 +2,30 @@ module ConformingFESpacesTests
 
 using Test
 using Gridap
+using Gridap.CellValuesGallery
+using Gridap.ConformingFESpaces: CellEqClass
+
+model = CartesianDiscreteModel(domain=(0.0,1.0,-1.0,2.0), partition=(2,2))
+
+cell_to_nfaces = [[1,2,4,5,7,8,9,10,14],[2,3,5,6,11,12,10,13,15]]
+nface_to_dofs = [[i*10,] for i in 1:15]
+
+cell_to_nfaces = CellValueFromArray(cell_to_nfaces)
+nface_to_dofs = CellValueFromArray(nface_to_dofs)
+
+D = 2
+order = 2
+orders = fill(order,D)
+polytope = Polytope(fill(HEX_AXIS,D)...)
+fe = LagrangianRefFE{D,Float64}(polytope, orders)
+
+cell_to_dofs = CellEqClass(cell_to_nfaces,nface_to_dofs,fe)
+
+r = [
+  [10, 70, 20, 90, 140, 100, 40, 80, 50],
+  [20, 110, 30, 100, 150, 130, 50, 120, 60]]
+test_index_cell_array(cell_to_dofs,r)
+
 
 model = CartesianDiscreteModel(domain=(0.0,1.0,-1.0,2.0), partition=(2,2))
 
@@ -27,7 +51,6 @@ fespace = ConformingFESpace(fe,trian,graph,labels,tags)
 
 r = [[-1, 1, 2, 3], [1, -2, 3, 4], [2, 3, -3, 5], [3, 4, 5, -4]]
 
-
 @test r == collect(fespace.cell_eqclass)
 
 order = 2
@@ -41,8 +64,10 @@ fespace = ConformingFESpace(fe,trian,graph,labels,tags)
 @test num_free_dofs(fespace) == 15
 @test num_diri_dofs(fespace) == 10
 
-r = [[-1, -2, 1, 2, -7, 4, 5, 6, 12], [-2, -3, 2, 3, -8, 7, 6, 8, 13],
-     [1, 2, -4, -5, 4, -9, 9, 10, 14], [2, 3, -5, -6, 7, -10, 10, 11, 15]]
+r = [[-1, -7, -2, 5, 12, 6, 1, 4, 2],
+  [-2, -8, -3, 6, 13, 8, 2, 7, 3],
+  [1, 4, 2, 9, 14, 10, -4, -9, -5],
+  [2, 7, 3, 10, 15, 11, -5, -10, -6]]
 
 @test r == collect(fespace.cell_eqclass)
 
@@ -50,12 +75,14 @@ fun(x) = sin(x[1])*cos(x[2])
 
 free_vals, diri_vals = interpolate_values(fespace,fun)
 
-rf = [0.0, 0.420735, 0.598194, 0.078012, 0.0, 0.420735,
-      0.214936, 0.598194, -0.0, -0.199511, -0.283662,
-      0.420735, 0.73846, -0.199511, -0.350175]
+rf = [
+  0.0, 0.420735, 0.73846, 0.217117, 0.0, 0.464521,
+  0.598194, 0.815312, 0.0, 0.151174, 0.265335,
+  0.239713, 0.660448, 0.078012, 0.214936]
 
-rd = [0.0, 0.259035, 0.368291, 0.420735, 0.73846, 0.151174,
-      0.239713, 0.660448, 0.151174, 0.265335]
+rd = [
+  0.0, 0.259035, 0.454649, -0.0, -0.199511,
+  -0.350175, 0.133673, 0.368291, -0.102956, -0.283662]
 
 @test isapprox(free_vals,rf,rtol=1.0e-5)
 @test isapprox(diri_vals,rd,rtol=1.0e-5)

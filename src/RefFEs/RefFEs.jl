@@ -9,6 +9,7 @@ export LagrangianRefFE
 export shfbasis
 export polytope
 export nfacedofs
+export dofbasis
 
 import Gridap: evaluate, evaluate!
 
@@ -19,7 +20,7 @@ Abstract Reference Finite Element
 """
 abstract type RefFE{D,T} end
 
-dofs(this::RefFE{D,T} where {D,T})::DOFBasis{D,T} = @abstractmethod
+dofbasis(this::RefFE{D,T} where {D,T})::DOFBasis{D,T} = @abstractmethod
 
 # permutation(this::RefFE, nf::Int, cell_vertex_gids::AbstractVector{Int},
 # nface_vertex_gids::AbstractVector{Int}, nface_order::Int)::Vector{Int}
@@ -94,7 +95,7 @@ function LagrangianRefFE{D,T}(p::Polytope{D}, order::Int) where {D,T}
   return LagrangianRefFE{D,T}(p, dofsb, basis, nfacedofs)
 end
 
-dofs(this::LagrangianRefFE{D,T} where {D,T}) = this.dofbasis
+dofbasis(this::LagrangianRefFE{D,T} where {D,T}) = this.dofbasis
 
 polytope(this::LagrangianRefFE{D,T} where {D,T}) = this.polytope
 

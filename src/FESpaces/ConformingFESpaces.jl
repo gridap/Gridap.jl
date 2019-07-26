@@ -3,6 +3,8 @@ module ConformingFESpaces
 using Gridap
 using Gridap.Helpers
 using Gridap.CellValuesGallery
+using Gridap.CachedArrays
+using Base: @propagate_inbounds
 
 export ConformingFESpace
 import Gridap: num_free_dofs
@@ -16,6 +18,8 @@ import Gridap: interpolate_values
 import Gridap: interpolate_diri_values
 import Gridap: CellField
 import Gridap: CellBasis
+import Base: size
+import Base: getindex
 
 """
 Conforming FE Space, where only one RefFE is possible in the whole mesh
@@ -127,7 +131,7 @@ function _setup_conforming_fe_fields(reffe,trian,graph,labels,diri_tags,D)
   offset = tuple(offset[1:(end-1)]...)
   cellvefs = local_append(offset, cellvefs_dim...)
   dofs_all = append(dim_to_nface_eqclass...)
-  cell_eqclass = CellVectorByComposition(cellvefs, dofs_all)
+  cell_eqclass = CellEqClass(cellvefs, dofs_all, reffe)
   shb = ConstantCellValue(reffe.shfbasis, ncells(trian))
   phi = CellGeomap(trian)
   basis = attachgeomap(shb,phi)
@@ -341,6 +345,48 @@ end
     end
   end
   return false
+end
+
+"""
+Type encoding the cellwise local to global dof map.
+For the moment, for the case of a single RefFE and for oriented nfaces.
+"""
+struct CellEqClass{T,A,B} <: IndexCellValue{CachedVector{T,Vector{T}},1}
+  cell_to_nfaces::A
+  nface_to_dofs::B
+  lnface_to_ldofs::Vector{Vector{Int}}
+  nldofs::Int
+  cv::CachedVector{T,Vector{T}}
+end
+
+function CellEqClass(
+  cell_to_nfaces::IndexCellVector{<:Integer},
+  nface_to_dofs::IndexCellVector{T},
+  reffe::RefFE) where T<:Integer
+
+  lnface_to_ldofs = nfacedofs(reffe)
+  A = typeof(cell_to_nfaces)
+  B = typeof(nface_to_dofs)
+  nldofs = length(dofbasis(reffe))
+  v = zeros(T,nldofs)
+  cv = CachedVector(v)
+  CellEqClass{T,A,B}(cell_to_nfaces,nface_to_dofs,lnface_to_ldofs,nldofs,cv)
+end
+
+size(self::CellEqClass) = (length(self.cell_to_nfaces),)
+
+@propagate_inbounds function getindex(self::CellEqClass,cell::Int)
+  nfaces = self.cell_to_nfaces[cell]
+  for (lnface,nface) in enumerate(nfaces)
+    dofs = self.nface_to_dofs[nface]
+    ldofs = self.lnface_to_ldofs[lnface]
+    for i in 1:length(dofs)
+      dof = dofs[i]
+      ldof = ldofs[i]
+      self.cv[ldof] = dof
+    end
+  end
+  self.cv
 end
 
 end # module
