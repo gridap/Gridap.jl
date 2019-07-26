@@ -73,6 +73,7 @@ for i in 1:length(reffe.shfbasis)
 end
 dofv
 @test dofv == id
+
 ##
 ##
 # 1D reffe
@@ -273,5 +274,23 @@ reffe = LagrangianRefFE{D,Float64}(polytope,orders)
 @test nfacedofs(reffe, 0) == [[1], [3], [7], [9]]
 @test nfacedofs(reffe, 1) == [[2], [8], [4], [6]]
 @test nfacedofs(reffe, 2) == [[5]]
+
+D=2
+orders=[2,2]
+extrusion = Point{D,Int}(1,1)
+polytope = Polytope(extrusion)
+reffe = LagrangianRefFE{D,VectorValue{D,Float64}}(polytope,orders)
+
+@test reffe.nfacenodes == [[1], [3], [7], [9], [2], [8], [4], [6], [5]]
+@test nfacedofs(reffe) == [[1, 10], [3, 12], [7, 16], [9, 18], [2, 11], [8, 17], [4, 13], [6, 15], [5, 14]]
+
+D=2
+orders=[1,1]
+extrusion = Point{D,Int}(1,1)
+polytope = Polytope(extrusion)
+reffe = LagrangianRefFE{D,VectorValue{D,Float64}}(polytope,orders)
+
+@test reffe.nfacenodes == [[1], [2], [3], [4], [], [], [], [], []] 
+@test nfacedofs(reffe) == [[1, 5], [2, 6], [3, 7], [4, 8], [], [], [], [], []] 
 
 end # module
