@@ -6,6 +6,7 @@ export FEBasis
 
 import Gridap: CellBasis
 import Gridap: gradient
+import Gridap: symmetric_gradient
 import Gridap: inner
 import Base: +, -, *
 import Gridap: restrict
@@ -19,7 +20,7 @@ function FEBasis(fespace::FESpace)
   FEBasis(b)
 end
 
-for op in (:+, :-, :(gradient))
+for op in (:+, :-, :(gradient),:(symmetric_gradient))
   @eval begin
     function ($op)(a::FEBasis)
       FEBasis($op(a.cellbasis))

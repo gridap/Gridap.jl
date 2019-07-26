@@ -10,6 +10,7 @@ import Gridap: FESpace
 import Gridap: value_type
 
 import Gridap: evaluate, gradient, return_size
+import Gridap: symmetric_gradient
 import Gridap: reindex
 import Gridap: restrict
 import Base: size
@@ -80,6 +81,8 @@ end
 evaluate(f::FEFunction{D,Z},q::CellPoints{Z}) where {D,Z} = evaluate(f.cellfield,q)
 
 gradient(f::FEFunction) = gradient(f.cellfield)
+
+symmetric_gradient(f::FEFunction) = symmetric_gradient(f.cellfield)
 
 return_size(f::FEFunction,s::Tuple{Int}) = return_size(f.cellfield,s)
 

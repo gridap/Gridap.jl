@@ -89,6 +89,14 @@ function CellBasis(
   compose(fun,phi,b,u...)
 end
 
+function CellBasis(
+  trian::Triangulation{D,Z},
+  fun::Function,
+  b::CellField{Z},
+  u::Vararg{<:CellField{Z}}) where {D,Z}
+  CellField(trian,fun,b,u...)
+end
+
 """
 Factory function to create CellQuadrature objects in a convenient way
 """

@@ -40,4 +40,16 @@ ca = integrate(cm,btrian,quad)
 @test isa(ca,CellArray{Float64,1})
 _ = collect(ca)
 
+model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(4,4))
+order = 2
+diritag = "boundary"
+T = VectorValue{2,Float64}
+fespace = ConformingFESpace(T,model,order,diritag)
+ufun(x) = VectorValue(x[2],x[1])
+uh = interpolate(fespace,ufun)
+bh = FEBasis(fespace)
+@test isa(ε(bh),FEBasis)
+@test isa(inner(ε(bh),ε(bh)),CellMap{Point{2},1,Float64,3})
+@test isa(inner(ε(bh),ε(uh)),CellMap{Point{2},1,Float64,2})
+
 end # module
