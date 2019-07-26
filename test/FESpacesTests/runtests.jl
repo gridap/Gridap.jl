@@ -16,6 +16,8 @@ using Test
 
 @testset "FEOperators" begin include("FEOperatorsTests.jl") end
 
+@testset "VectorValuedFEOperators" begin include("VectorValuedFEOperatorsTests.jl") end
+
 @testset "NonLinearFEOperators" begin include("NonLinearFEOperatorsTests.jl") end
 
 end # module

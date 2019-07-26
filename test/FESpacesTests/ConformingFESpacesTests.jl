@@ -188,24 +188,19 @@ quad = CellQuadrature(trian,order=2)
 q = coordinates(quad)
 uhq = evaluate(uh1,q)
 
+# Vector valued
 
-#writevtk(trian,"trian",nref=3,
-#  cellfields=["uh1"=>uh1,"uh2"=>uh2,"uh3"=>uh3])
-
-
-# NOT WORKING for order == 2
-
+order = 1
+T = VectorValue{2,Float64}
+tags = [1,2,3,4]
 model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(2,2))
-trian = Triangulation(model)
+fespace = ConformingFESpace(T,model,order,tags)
 
-order = 2
-tags = [1,2,3,4,6,5]
-fespace = ConformingFESpace(Float64,model,order,tags)
+ufun(x) = VectorValue(x[2],x[1])
+uh = interpolate(fespace,ufun)
 
-fun(x) = x[1] + x[2]
-uh = interpolate(fespace,fun)
-
-#writevtk(trian,"trian", nref=4, cellfields=["uh"=>uh])
+@test free_dofs(uh) == [0.0, 0.5, 0.5, 0.0, 0.5, 0.5, 0.5, 1.0, 1.0, 0.5]
+@test diri_dofs(uh) == [0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0] 
 
 end # module
 
