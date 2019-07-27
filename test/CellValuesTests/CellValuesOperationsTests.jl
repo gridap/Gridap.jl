@@ -257,6 +257,20 @@ w = cellsum(u,dim=1)
 @test isa(w,CellNumber)
 test_iter_cell_value(w,o)
 
+# cellnewaxis
+
+a = rand(2,3,4)
+r = collect(reshape(a,(1,2,3,4)))
+o = [CachedArray(r) for i in 1:l]
+
+u = TestIterCellValue(a,l)
+w = cellnewaxis(u,dim=1)
+test_iter_cell_array(w,o)
+
+u = TestIndexCellValue(a,l)
+w = cellnewaxis(u,dim=1)
+test_index_cell_array(w,o)
+
 # cellmean
 
 a = rand(2,3,4)
@@ -316,5 +330,12 @@ for op in (:inner,:outer)
 
   end
 end
+
+cm = TestIterCellValue(m,l)
+cp = TestIterCellValue(p,l)
+rc = collect(reshape(r,(1,3)))
+rm = [ CachedArray(rc) for i in 1:l]
+cm2 = cellnewaxis(cm,dim=1)
+test_iter_cell_map(cm2,cp,rm)
 
 end # module
