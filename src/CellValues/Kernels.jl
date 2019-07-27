@@ -420,4 +420,41 @@ IntegrateKernel(::Val{1}) = IntegrateNumberKernel()
 
 IntegrateKernel(i::Int) = IntegrateKernel(Val(i))
 
+# CellNewAxisKernel
+
+struct CellNewAxisKernel{D} <: ArrayKernel end
+
+compute_type(k::CellNewAxisKernel,T::Type) = T
+
+compute_ndim(k::CellNewAxisKernel,nd::Int) = nd+1
+
+function compute_size(k::CellNewAxisKernel{D},asize::NTuple{N,Int}) where {D,N}
+  newaxis_size(Val(D),asize)
+end
+
+function compute_value!(
+  v::AbstractArray,
+  ::CellNewAxisKernel{D},
+  a::AbstractArray{T,N}) where {T,N,D}
+  newaxis_kernel!(Val(D),a,v)
+end
+
+@generated function newaxis_size(::Val{A},asize::NTuple{M,Int}) where {A,M}
+  @assert A <= M+1
+  str = ["asize[$i]," for i in 1:M]
+  insert!(str,A,"1,")
+  Meta.parse("($(join(str)))")
+end
+
+@generated function newaxis_kernel!(::Val{D}, A::AbstractArray{T,M}, B::AbstractArray{T,N}) where {D,T,M,N}
+  @assert N == M + 1
+  @assert D <= N
+  quote
+    @nloops $M a A begin
+      @nexprs $N j->(b_j = j == $D ? 1 : a_{ j < $D ? j : j-1 } )
+      (@nref $N B b) = @nref $M A a
+    end
+  end
+end
+
 end # module

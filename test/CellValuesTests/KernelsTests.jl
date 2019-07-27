@@ -10,6 +10,7 @@ using Gridap.Kernels: PhysGradKernel
 using Gridap.Kernels: IntegrateNumberKernel
 using Gridap.Kernels: IntegrateArrayKernel
 using Gridap.Kernels: IntegrateKernel
+using Gridap.Kernels: CellNewAxisKernel
 
 # NumberKernelFromFunction
 
@@ -165,5 +166,21 @@ k = IntegrateKernel(1)
 
 k = IntegrateKernel(2)
 @test isa(k,IntegrateArrayKernel)
+
+# CellNewAxisKernel
+
+a = rand(Int,3,2)
+
+k = CellNewAxisKernel{1}()
+b = collect(reshape(a,(1,3,2)))
+test_array_kernel(k,b,a)
+
+k = CellNewAxisKernel{2}()
+b = collect(reshape(a,(3,1,2)))
+test_array_kernel(k,b,a)
+
+k = CellNewAxisKernel{3}()
+b = collect(reshape(a,(3,2,1)))
+test_array_kernel(k,b,a)
 
 end # module
