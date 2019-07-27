@@ -3,9 +3,11 @@ module CellValuesOperations
 using Gridap
 
 using Gridap.Kernels: CellSumKernel
+using Gridap.Kernels: CellNewAxisKernel
 
 export cellsum
 export cellmean
+export cellnewaxis
 import Base: +,-,*,/,\, ==, ≈
 import LinearAlgebra: inv, det
 import TensorValues: inner, outer, meas
@@ -97,6 +99,16 @@ _mean(a) = sum(a)/length(a)
 
 function cellmean(self::CellArray)
   apply(_mean,self)
+end
+
+function cellnewaxis(ca::CellArray;dim::Int)
+  k = CellNewAxisKernel{dim}()
+  apply(k,ca)
+end
+
+function cellnewaxis(ca::CellMap;dim::Int)
+  k = CellNewAxisKernel{dim}()
+  apply(k,ca)
 end
 
 end # module

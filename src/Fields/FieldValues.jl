@@ -11,6 +11,9 @@ export inner
 export outer
 export meas
 export normalvec
+export trace
+export tr
+export symmetic_part
 
 import TensorValues: meas
 
@@ -46,6 +49,24 @@ end
 function meas(v::MultiValue{Tuple{2,3}})
   n = normalvec(v)
   sqrt(n*n)
+end
+
+@generated function trace(v::TensorValue{D}) where D
+  str = join([" v.array.data[$i+$((i-1)*D)] +" for i in 1:D ])
+  Meta.parse(str[1:(end-1)])
+end
+
+const tr = trace
+
+@generated function symmetic_part(v::TensorValue{D}) where D
+  str = "("
+  for j in 1:D
+    for i in 1:D
+      str *= "0.5*v.array.data[$i+$((j-1)*D)] + 0.5*v.array.data[$j+$((i-1)*D)], "
+    end
+  end
+  str *= ")"
+  Meta.parse("TensorValue($str)")
 end
 
 end # module

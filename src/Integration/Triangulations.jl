@@ -86,8 +86,20 @@ function CellBasis(
   b::CellBasis{Z},
   u::Vararg{<:CellField{Z}}) where {D,Z}
   phi = CellGeomap(trian)
-  compose(fun,phi,b,u...)
+  _phi = _setup_cell_field(phi)
+  _u = [_setup_cell_field(ui) for ui in u]
+  compose(fun,_phi,b,_u...)
 end
+
+function CellBasis(
+  trian::Triangulation{D,Z},
+  fun::Function,
+  b::CellField{Z},
+  u::Vararg{<:CellField{Z}}) where {D,Z}
+  CellField(trian,fun,b,u...)
+end
+
+_setup_cell_field(f) = cellnewaxis(f,dim=1)
 
 """
 Factory function to create CellQuadrature objects in a convenient way
