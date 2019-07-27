@@ -16,6 +16,7 @@ export tr
 export symmetic_part
 
 import TensorValues: meas
+import Base: adjoint
 
 
 """
@@ -67,6 +68,11 @@ const tr = trace
   end
   str *= ")"
   Meta.parse("TensorValue($str)")
+end
+
+function adjoint(v::TensorValue)
+  t = adjoint(v.array)
+  TensorValue(t)
 end
 
 end # module
