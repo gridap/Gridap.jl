@@ -73,4 +73,6 @@ model = DiscreteModelFromData(grids,graph,facelabels)
 
 test_discrete_model(model,2)
 
+vgrid = Grid(model)
+
 end # module
