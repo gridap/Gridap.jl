@@ -21,4 +21,9 @@ grid = GridFromData(v2x,c2v,c2t,c2o)
 
 test_grid(grid,6,2)
 
+polys = CellPolytopes(grid)
+
+@test length(polys) == 2
+@test isa(polys,ConstantCellValue{Polytope{2}})
+
 end # module

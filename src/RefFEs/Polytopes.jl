@@ -13,6 +13,7 @@ export NodesArray
 export NFace
 export HEX_AXIS, TET_AXIS
 export num_nfaces
+export facet_normals
 
 # Module constants
 
