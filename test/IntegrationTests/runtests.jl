@@ -12,6 +12,8 @@ using Test
 
 @testset "BoundaryTriangulations" begin include("BoundaryTriangulationsTests.jl") end
 
+@testset "NormalVectors" begin include("NormalVectorsTests.jl") end
+
 @testset "SkeletonTriangulations" begin include("SkeletonTriangulationsTests.jl") end
 
 @testset "BoundaryCellFields" begin include("BoundaryCellFieldsTests.jl") end

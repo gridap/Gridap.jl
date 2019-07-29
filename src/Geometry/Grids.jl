@@ -15,6 +15,7 @@ export celldim
 export pointdim
 import Gridap: ncells
 export npoints
+export CellPolytopes
 import Gridap: Triangulation
 import Gridap: CellPoints
 import Gridap: CellRefFEs
@@ -49,6 +50,8 @@ pointdim(::Grid{D,Z}) where {D,Z} = D
 ncells(g::Grid) = length(celltypes(g))
 
 npoints(g::Grid) = length(points(g))
+
+CellPolytopes(g::Grid) = _cell_polytopes(celltypes(g))
 
 Triangulation(grid::Grid) = TriangulationFromGrid(grid)
 
@@ -127,6 +130,17 @@ function _setup_cell_basis(reffes::ConstantCellValue)
   reffe = reffes.value
   basis = shfbasis(reffe)
   ConstantCellMap(basis,reffes.length)
+end
+
+function _cell_polytopes(ct)
+  @notimplemented
+end
+
+function _cell_polytopes(ct::ConstantCellValue)
+  extr = ct.value
+  l = ct.length
+  p = Polytope(extr)
+  ConstantCellValue(p,l)
 end
 
 end # module

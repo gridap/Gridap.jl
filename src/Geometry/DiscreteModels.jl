@@ -73,6 +73,8 @@ function tag_from_name(m::DiscreteModel,name::String)
   tag_from_name(labels,name)
 end
 
+Grid(model::DiscreteModel{D}) where D = Grid(model,D)
+
 # Testers
 
 function test_discrete_model(model::DiscreteModel{D},dim::Integer) where D

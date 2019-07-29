@@ -55,7 +55,10 @@ function BoundaryGrid(model::DiscreteModel,tags::Vector{Int},icell::Int=1)
   cellgrid = Grid(model,d)
   cell_to_extrussion = celltypes(cellgrid)
   cell_to_polytope = _cell_to_polytope(cell_to_extrussion)
-  descriptor = BoundaryDescriptor(facet_to_cell,facet_to_lfacet,cell_to_polytope)
+  trian = Triangulation(cellgrid)
+  phi = CellGeomap(trian)
+  descriptor = BoundaryDescriptor(
+    facet_to_cell,facet_to_lfacet,cell_to_polytope,phi)
   BoundaryGrid(grid,descriptor)
 end
 
