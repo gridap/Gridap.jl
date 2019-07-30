@@ -2,6 +2,9 @@
 include("Quadratures.jl")
 @reexport using Gridap.Quadratures
 
+include("DuffyQuadratures.jl")
+@reexport using Gridap.DuffyQuadratures
+
 include("CellQuadratures.jl")
 @reexport using Gridap.CellQuadratures
 
