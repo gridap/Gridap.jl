@@ -25,15 +25,6 @@ coordinates(::Quadrature{D} where D)::Array{Point{D,Float64},1} = @abstractmetho
 
 weights(::Quadrature)::Array{Float64,1} = @abstractmethod
 
-# Factories
-
-"""
-Factory function to create Quadrature objects in a convenient way
-"""
-function Quadrature(extrusion::NTuple{D,Int};order::Int) where D
-  _quadrature(extrusion,order)
-end
-
 # Concrete structs
 
 """
@@ -61,11 +52,6 @@ coordinates(self::TensorProductQuadrature) = self.coords
 weights(self::TensorProductQuadrature) = self.weights
 
 # Helpers
-
-function _quadrature(extrusion::NTuple{D,Int},order) where D
-  @notimplementedif any(extrusion == TET_AXIS)
-  TensorProductQuadrature(orders=tuple(fill(order,D)...))
-end
 
 function _tensor_product(quads,npoints,::Val{D}) where D
   @assert length(quads) == D
