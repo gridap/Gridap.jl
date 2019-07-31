@@ -21,8 +21,6 @@ jobs:
       os: linux
       script:
         - julia --project=docs/ -e 'using Pkg;
-                                    Pkg.add(PackageSpec(name="UnstructuredGrids", rev="master"))'
-        - julia --project=docs/ -e 'using Pkg;
                                     Pkg.develop(PackageSpec(path=pwd()));
                                     Pkg.instantiate()'
         - julia --project=docs/ docs/make.jl

@@ -197,11 +197,9 @@ uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
 [[UnstructuredGrids]]
 deps = ["WriteVTK"]
-git-tree-sha1 = "e780e3e9a2895f689cd68465221b866a6820112e"
-repo-rev = "master"
-repo-url = "https://github.com/gridap/UnstructuredGrids.jl.git"
+git-tree-sha1 = "1b934799b9100629601b05556375e72e8d437064"
 uuid = "9cd2e232-b78e-5341-8154-33bf4eafe965"
-version = "0.2.0"
+version = "0.2.1"
 
 [[WriteVTK]]
 deps = ["Base64", "CodecZlib", "LightXML", "Printf", "TranscodingStreams"]
