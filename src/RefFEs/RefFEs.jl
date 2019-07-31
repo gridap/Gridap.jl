@@ -61,10 +61,26 @@ struct LagrangianRefFE{D,T} <: RefFE{D,T}
   # this type is unstable
 end
 
+#@fverdugo. This is only a temporary hack to make work the interface of
+#anisotropic order also for n-simplices. Not that an @notimplemented error
+# will be raised for simplices if all orders are not the same.
+function LagrangianRefFE{D,T}(polytope::Polytope{D}, orders::Vector{Int64}) where {D,T}
+  @assert length(orders) == D
+  @assert D > 0
+  if all(polytope.extrusion.array .== HEX_AXIS)
+    return _LagrangianRefFE(T, polytope, orders)
+  elseif all( orders .== orders[1] )
+    order = orders[1]
+    return LagrangianRefFE{D,T}(polytope,order)
+  else
+    @notimplemented
+  end
+end
+
 # @santiagobadia: Temporary constructor that uses the old NodeArray.
 # I keep it because I am not considering anisotropic order
 # in the new method. Future development.
-function LagrangianRefFE{D,T}(polytope::Polytope{D},
+function _LagrangianRefFE(::Type{T},polytope::Polytope{D},
   orders::Vector{Int64}) where {D,T}
   nodes=NodesArray(polytope,orders)
   dofsb = LagrangianDOFBasis{D,T}(nodes.coordinates)

@@ -340,6 +340,12 @@ end
 
 function _refgrid end
 
+function _refgrid(::Val{V},nref::Int) where V
+  @notimplementedif nref != 0
+  polytope = Polytope(V)
+  Grid(polytope,length(V))
+end
+
 function _refgrid(::Val{(HEX_AXIS,)},nref::Int)
   n = 2^nref
   CartesianGrid(domain=(0.0,1.0),partition=(n,))

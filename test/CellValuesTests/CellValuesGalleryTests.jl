@@ -32,6 +32,10 @@ ca = CellVectorFromDataAndPtrs(data,ptrs)
 a = [ data[ptrs[i]:ptrs[i+1]-1] for i in 1:length(ptrs)-1]
 test_index_cell_array( ca, a )
 
+d,p = compress(ca)
+@test d === ca.data
+@test p === ca.ptrs
+
 a = [ data[3*(i-1)+1:3*i] for i in 1:4]
 ca = CellVectorFromDataAndStride(data,3)
 test_index_cell_array( ca, a )

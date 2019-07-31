@@ -23,9 +23,41 @@ RefCell(polytope::Polytope) = _ref_cell_from_polytope(polytope)
 Construct a Grid from a polytope
 """
 function Grid(polytope::Polytope{D},dim::Int) where D
+  if dim < D
+    _grid_d(polytope,dim)
+  elseif dim==D
+    _grid_D(polytope)
+  else
+    @unreachable
+  end
+end
+
+# Helpers
+
+function _grid_D(polytope::Polytope{D}) where D
+
+  order = 1
+  reffe = LagrangianRefFE{D,Float64}(polytope,order)
+  points = reffe.dofbasis.nodes
+
+  cell_to_nodes = [ [i for i in 1:length(points)], ]
+
+  cells_data,cells_ptrs = generate_data_and_ptrs(cell_to_nodes)
+  extrusion = polytope.extrusion.array.data
+
+  l = 1
+  co = ConstantCellValue(order,l)
+  ct = ConstantCellValue(extrusion,l)
+
+  UnstructuredGrid(points,cells_data,cells_ptrs,ct,co)
+
+end
+
+function _grid_d(polytope::Polytope{D},dim::Int) where D
   @assert dim < D
 
-  reffe = LagrangianRefFE{D,Float64}(polytope, 1)
+  order = 1
+  reffe = LagrangianRefFE{D,Float64}(polytope,order)
   points = reffe.dofbasis.nodes
 
   dim_to_jface_to_vertices, dim_to_jface_to_code = _faces(polytope)
@@ -49,7 +81,7 @@ function Grid(polytope::Polytope{D},dim::Int) where D
 
 end
 
-# Helpers
+
 
 function _ref_cell_from_polytope(polytope::Polytope{D}) where D
 

@@ -55,6 +55,12 @@ function UnstructuredGrid(
     corders)
 end
 
+function UnstructuredGrid(grid::Grid)
+  @notimplemented
+end
+
+UnstructuredGrid(grid::UnstructuredGrid) = grid
+
 points(self::UnstructuredGrid) = CellValueFromArray(self.points)
 
 cells(self::UnstructuredGrid) = CellVectorFromDataAndPtrs(self.cells_data,self.cells_ptrs)

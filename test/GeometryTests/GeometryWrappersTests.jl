@@ -6,10 +6,20 @@ using Test
 
 # Polytope to UnstructuredGrid
 
+t = TET_AXIS
+polytope = Polytope((t,t,t))
+
+grid = Grid(polytope,1)
+grid = Grid(polytope,2)
+grid = Grid(polytope,3)
+#writevtk(grid,"grid")
+
 t = HEX_AXIS
 polytope = Polytope((t,t,t))
 
+grid = Grid(polytope,1)
 grid = Grid(polytope,2)
+grid = Grid(polytope,3)
 #writevtk(grid,"grid")
 
 trian = Triangulation(grid)
