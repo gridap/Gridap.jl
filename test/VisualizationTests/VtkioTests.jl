@@ -135,6 +135,11 @@ writevtk(trian,f,nref=2,celldata=["r"=>rand(9)])
 writevtk(trian,f,nref=2,cellfields=["u"=>u,"v"=>v])
 writevtk(trian,f,nref=2,celldata=["r"=>rand(9)],cellfields=["u"=>u,"v"=>v])
 
+grid = CartesianGrid(partition=(3,3))
+grid = simplexify(grid)
+trian = Triangulation(grid)
+writevtk(trian,f)
+
 rm(d,recursive=true)
 
 end
