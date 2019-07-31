@@ -28,3 +28,6 @@ include("BoundaryGrids.jl")
 
 include("SkeletonGrids.jl")
 @reexport using Gridap.SkeletonGrids
+
+include("Simplexify.jl")
+@reexport using Gridap.Simplexify

@@ -29,11 +29,11 @@ include("MapApply.jl")
 include("CellMapApply.jl")
 @reexport using Gridap.CellMapApply
 
-include("CellValuesGallery.jl")
-#@reexport using Gridap.CellValuesGallery
-
 include("CellValuesOperations.jl")
 @reexport using Gridap.CellValuesOperations
+
+include("CellValuesGallery.jl")
+#@reexport using Gridap.CellValuesGallery
 
 include("CellValuesAppend.jl")
 @reexport using Gridap.CellValuesAppend

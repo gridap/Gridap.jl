@@ -1,6 +1,7 @@
 module CellValuesOperations
 
 using Gridap
+using Gridap.Helpers
 
 using Gridap.Kernels: CellSumKernel
 using Gridap.Kernels: CellNewAxisKernel
@@ -8,6 +9,7 @@ using Gridap.Kernels: CellNewAxisKernel
 export cellsum
 export cellmean
 export cellnewaxis
+export compress
 import Base: +,-,*,/,\, ==, ≈
 import LinearAlgebra: inv, det
 import TensorValues: inner, outer, meas
@@ -109,6 +111,10 @@ end
 function cellnewaxis(ca::CellMap;dim::Int)
   k = CellNewAxisKernel{dim}()
   apply(k,ca)
+end
+
+function compress(cv::CellVector)
+  @notimplemented
 end
 
 end # module

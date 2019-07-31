@@ -22,4 +22,6 @@ using Test
 
 @testset "SkeletonGrids" begin include("SkeletonGridsTests.jl") end
 
+@testset "SimplexifyTests" begin include("SimplexifyTests.jl") end
+
 end # module

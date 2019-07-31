@@ -20,6 +20,7 @@ import Base: eltype
 import Base: size
 import Base: getindex
 import Base: IndexStyle
+import Gridap: compress
 
 struct CellValueFromArray{T,N,V<:AbstractArray{T,N}} <: IndexCellValue{T,N}
   v::V
@@ -57,6 +58,10 @@ end
 size(self::CellVectorFromDataAndPtrs) = (length(self.ptrs)-1,)
 
 IndexStyle(::Type{CellVectorFromDataAndPtrs{T,V,P}}) where {T,V,P} = IndexLinear()
+
+function compress(cv::CellVectorFromDataAndPtrs)
+  (cv.data, cv.ptrs)
+end
 
 struct CellVectorFromDataAndStride{T,V} <: IndexCellArray{T,1,CachedSubVector{T,V},1}
   data::V
