@@ -16,7 +16,7 @@ mmat = integrate(m,trian,quad)
 
 @test isa(mmat,CellArray{Float64,2})
 
-ufun(x::Point{2}) = 1.0
+ufun(x) = 1.0
 
 cellvol = integrate(ufun,trian,quad)
 
@@ -25,5 +25,24 @@ cellvol = integrate(ufun,trian,quad)
 for vi in cellvol
   @assert vi ≈ (2.0/3)^2
 end
+
+
+# Test for simplices
+
+model = CartesianDiscreteModel(domain=(0,2,0,2),partition=(2,2))
+model = simplexify(model)
+trian = Triangulation(model)
+quad = CellQuadrature(trian,order=2)
+cellvol = integrate(ufun,trian,quad)
+vol = sum(cellvol)
+@test vol ≈ 4
+
+model = CartesianDiscreteModel(domain=(0,2,0,2,0,2),partition=(2,2,3))
+model = simplexify(model)
+trian = Triangulation(model)
+quad = CellQuadrature(trian,order=2)
+cellvol = integrate(ufun,trian,quad)
+vol = sum(cellvol)
+@test vol ≈ 8
 
 end # module
