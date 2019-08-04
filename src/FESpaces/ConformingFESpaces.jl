@@ -30,7 +30,7 @@ struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T}
   num_free_dofs::Int
   num_diri_dofs::Int
   diri_tags::Vector{Int}
-  reffe::LagrangianRefFE{D,T}
+  reffe::LagrangianRefFE{Z,T}
   triangulation::Triangulation{D,Z}
   gridgraph::GridGraph
   facelabels::FaceLabels
@@ -139,7 +139,7 @@ function _setup_conforming_fe_fields(reffe,trian,graph,labels,diri_tags,D)
   cellvefs = local_append(offset, cellvefs_dim...)
   dofs_all = append(dim_to_nface_eqclass...)
   cell_eqclass = CellEqClass(cellvefs, dofs_all, reffe)
-  shb = ConstantCellValue(reffe.shfbasis, ncells(trian))
+  shb = ConstantCellValue(shfbasis(reffe), ncells(trian))
   phi = CellGeomap(trian)
   basis = attachgeomap(shb,phi)
   return dim_to_nface_eqclass, cell_eqclass, nfree, ndiri, diri_tags,
