@@ -30,7 +30,7 @@ struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T}
   num_free_dofs::Int
   num_diri_dofs::Int
   diri_tags::Vector{Int}
-  reffe::LagrangianRefFE{D,T}
+  reffe::LagrangianRefFE{Z,T}
   triangulation::Triangulation{D,Z}
   gridgraph::GridGraph
   facelabels::FaceLabels
@@ -105,20 +105,27 @@ function CellField(
   free_dofs::AbstractVector{E},
   diri_dofs::AbstractVector{E}) where {D,Z,T,E}
 
-  @assert E == eltype(T)
-  @assert num_free_dofs(fespace) == length(free_dofs)
-  @assert num_diri_dofs(fespace) == length(diri_dofs)
-  reffe = fespace.reffe
-  trian = fespace.triangulation
-  celldofs = fespace.cell_eqclass
-  shb = CellBasis(fespace)
-  cdofs = CellVectorFromLocalToGlobalPosAndNeg(celldofs, free_dofs, diri_dofs)
-  lincomb(shb,cdofs)
+  _CellField(fespace, free_dofs, diri_dofs,T,E)
 end
 
 CellBasis(this::ConformingFESpace) = this.cellbasis
 
 # Helpers
+
+function _CellField(
+  fespace, free_dofs, diri_dofs, ::Type{T}, ::Type{E}) where {T,E}
+
+  @assert E == eltype(T)
+  @assert num_free_dofs(fespace) == length(free_dofs)
+  @assert num_diri_dofs(fespace) == length(diri_dofs)
+  reffe = fespace.reffe
+  celldofs = celldofids(fespace)
+  shb = CellBasis(fespace)
+  cdofs = CellVectorFromLocalToGlobalPosAndNeg(
+    celldofs, free_dofs, diri_dofs)
+  lincomb(shb,cdofs)
+
+end
 
 function _setup_conforming_fe_fields(reffe,trian,graph,labels,diri_tags,D)
   dim_to_nface_eqclass, nfree, ndiri  = _generate_dim_to_nface_to_dofs(
@@ -132,7 +139,7 @@ function _setup_conforming_fe_fields(reffe,trian,graph,labels,diri_tags,D)
   cellvefs = local_append(offset, cellvefs_dim...)
   dofs_all = append(dim_to_nface_eqclass...)
   cell_eqclass = CellEqClass(cellvefs, dofs_all, reffe)
-  shb = ConstantCellValue(reffe.shfbasis, ncells(trian))
+  shb = ConstantCellValue(shfbasis(reffe), ncells(trian))
   phi = CellGeomap(trian)
   basis = attachgeomap(shb,phi)
   return dim_to_nface_eqclass, cell_eqclass, nfree, ndiri, diri_tags,
