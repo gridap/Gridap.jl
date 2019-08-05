@@ -102,4 +102,8 @@ ndiri = 4
 
 test_fe_space(fespace, nfree, ndiri, cellmat, cellvec, ufun)
 
+order = 1
+fespace = CLagrangianFESpace(T,model,order,diritags,dirimasks)
+test_fe_space(fespace, nfree, ndiri, cellmat, cellvec, ufun)
+
 end # module

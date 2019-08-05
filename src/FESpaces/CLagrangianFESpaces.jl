@@ -82,6 +82,21 @@ function CLagrangianFESpace(
 
 end
 
+function CLagrangianFESpace(
+  ::Type{T},model::DiscreteModel,order,diritags,dirimasks) where T
+
+  grid = Grid(model)
+  _check_order(order,cellorders(grid))
+  facelabels = FaceLabels(model)
+  node_dim = 0
+  node_to_label = labels_on_dim(facelabels,node_dim)
+  tag_to_labels = facelabels.tag_to_labels
+
+  CLagrangianFESpace(
+    T,grid,node_to_label,tag_to_labels,diritags,dirimasks)
+
+end
+
 num_free_dofs(fesp::CLagrangianFESpace) = fesp.nfreedofs
 
 num_diri_dofs(fesp::CLagrangianFESpace) = fesp.ndiridofs
@@ -411,5 +426,12 @@ function    _fill_diri_values!(
 
 end
 
+function _check_order(order,co)
+  @notimplemented
+end
+
+function _check_order(order,co::ConstantCellValue)
+  @notimplementedif order != co.value
+end
 
 end # module
