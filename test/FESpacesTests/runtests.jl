@@ -8,6 +8,8 @@ using Test
 
 @testset "CLagrangianFESpaces" begin include("CLagrangianFESpacesTests.jl") end
 
+@testset "DLagrangianFESpaces" begin include("DLagrangianFESpacesTests.jl") end
+
 @testset "FEFunctions" begin include("FEFunctionsTests.jl") end
 
 @testset "FEBases" begin include("FEBasesTests.jl") end

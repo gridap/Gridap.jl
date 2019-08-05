@@ -1,9 +1,7 @@
-include("../../src/FESpaces/DLagrangianFESpaces.jl")
 module DLagrangianFESpacesTests
 
 using Test
 using Gridap
-using ..DLagrangianFESpaces
 
 model = CartesianDiscreteModel(partition=(2,2))
 
