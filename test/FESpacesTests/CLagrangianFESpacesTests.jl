@@ -1,9 +1,7 @@
-include("../../src/FESpaces/CLagrangianFESpaces.jl")
 module CLagrangianFESpacesTests
 
 using Test
 using Gridap
-using ..CLagrangianFESpaces
 
 # CLagrangianFESpace for scalar values
 

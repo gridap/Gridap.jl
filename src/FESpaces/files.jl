@@ -5,6 +5,9 @@ include("FESpaces.jl")
 include("ConformingFESpaces.jl")
 @reexport using Gridap.ConformingFESpaces
 
+include("CLagrangianFESpaces.jl")
+@reexport using Gridap.CLagrangianFESpaces
+
 include("FEFunctions.jl")
 @reexport using Gridap.FEFunctions
 
