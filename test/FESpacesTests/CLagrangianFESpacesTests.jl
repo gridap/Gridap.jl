@@ -63,4 +63,43 @@ tol = 1.0e-8
 
 #writevtk(trian,"trian",nref=4,cellfields=["uh"=>uh])
 
+
+# CLagrangianFESpace for vector values
+
+T = VectorValue{2,Float64}
+
+diritags = [1,2,5]
+dirimasks = [(true,false),(false,true),(true,true)]
+
+fespace = CLagrangianFESpace(
+  T,grid,node_to_label,tag_to_labels,diritags,dirimasks)
+
+ufun1(x) = VectorValue(1.0,-1.0)
+ufun2(x) = VectorValue(2.0,-2.0)
+ufun5(x) = VectorValue(5.0,-5.0)
+
+dv = interpolate_diri_values(fespace,[ufun1,ufun2,ufun5])
+
+@test dv == [1.0, 5.0, -5.0, -2.0]
+
+ufun(x) = x
+
+uh = interpolate(fespace,ufun)
+u = CellField(trian,ufun)
+e = u - uh
+
+@test sum(integrate(inner(e,e),trian,quad)) < tol
+
+bh = FEBasis(fespace)
+
+uh = zero(fespace)
+
+cellmat = integrate(inner(bh,bh),trian,quad)
+cellvec = integrate(inner(bh,uh),trian,quad)
+
+nfree = 14
+ndiri = 4
+
+test_fe_space(fespace, nfree, ndiri, cellmat, cellvec, ufun)
+
 end # module

@@ -1,5 +1,10 @@
 module CLagrangianFESpaces
 
+# TODO move to TensorValues
+using StaticArrays
+using TensorValues
+mutable(::Type{MultiValue{S,T,N,L}}) where {S,T,N,L} = MArray{S,T,N,L}
+
 using Gridap
 using Gridap.Helpers
 using Gridap.CellValuesGallery
@@ -191,7 +196,7 @@ end
 function _compute_comp_to_dof(
   ::Type{S}, label, tag_to_labels, diritags, dirimasks, fdof, ddof) where S <: MultiValue
 
-  comp_to_mask = mutable(S)
+  comp_to_dof = zero(mutable(S))
   comps = eachindex(comp_to_dof)
 
   isdirinode = false
@@ -251,9 +256,6 @@ _S(::Type{<:Real}) = Int
 
 _S(::Type{MultiValue{S,T,N,L}}) where {S,T,N,L} = MultiValue{S,Int,N,L}
 
-# TODO move to TensorValues
-mutable(::Type{MultiValue{S,T,N,L}}) where {S,T,N,L} = MArray{S,T,N,L}
-
 function _setup_reffe(ct,co)
   @notimplemented
 end
@@ -312,6 +314,7 @@ function  _fill_cell_to_dofs!(
   k = 0
   
   nlnodes, ncomps = size(lnode_and_comp_to_ldof)
+  nldofs = nlnodes * ncomps
 
   for nodes in cell_to_nodes
 
@@ -323,7 +326,7 @@ function  _fill_cell_to_dofs!(
       end
     end
 
-    k += nlnodes
+    k += nldofs
 
   end
 
