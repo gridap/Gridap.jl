@@ -57,4 +57,47 @@ dv = interpolate_diri_values(fespace,[ufun1,ufun2,ufun5])
 
 @test dv == [1.0, 5.0, 5.0, 2.0]
 
+# DLagrangianFESpace for vector values
+
+T = VectorValue{2,Float64}
+
+diritags = [1,2,5]
+dirimasks = [(true,false),(false,true),(true,true)]
+
+fespace = DLagrangianFESpace(
+  T,grid,node_to_label,tag_to_labels,diritags,dirimasks)
+
+bh = FEBasis(fespace)
+
+uh = zero(fespace)
+
+cellmat = integrate(inner(bh,bh),trian,quad)
+cellvec = integrate(inner(bh,uh),trian,quad)
+
+ufun(x) = x
+
+nfree = 26
+ndiri = 6
+
+test_fe_space(fespace, nfree, ndiri, cellmat, cellvec, ufun)
+
+uh = interpolate(fespace,ufun)
+u = CellField(trian,ufun)
+e = u - uh
+
+tol = 1.0e-8
+@test sum(integrate(inner(e,e),trian,quad)) < tol
+
+ufun1(x) = VectorValue(1.0,-1.0)
+ufun2(x) = VectorValue(2.0,-2.0)
+ufun5(x) = VectorValue(5.0,-5.0)
+
+dv = interpolate_diri_values(fespace,[ufun1,ufun2,ufun5])
+
+@test dv == [1.0, 5.0, -5.0, 5.0, -5.0, -2.0]
+
+order = 1
+fespace = DLagrangianFESpace(T,model,order,diritags,dirimasks)
+test_fe_space(fespace, nfree, ndiri, cellmat, cellvec, ufun)
+
 end # module

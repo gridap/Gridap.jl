@@ -7,6 +7,7 @@ using Gridap.CLagrangianFESpaces: _setup_reffe
 using Gridap.CLagrangianFESpaces: _setup_cellbasis
 using Gridap.CLagrangianFESpaces: _S
 using Gridap.CLagrangianFESpaces: _compute_comp_to_dof
+using Gridap.CLagrangianFESpaces: _check_order
 using Gridap.ConformingFESpaces: _CellField
 
 export DLagrangianFESpace
@@ -72,6 +73,21 @@ function DLagrangianFESpace(
     reffe,
     cellbasis,
     diricells)
+
+end
+
+function DLagrangianFESpace(
+  ::Type{T},model::DiscreteModel,order,diritags,dirimasks) where T
+
+  grid = Grid(model)
+  _check_order(order,cellorders(grid))
+  facelabels = FaceLabels(model)
+  node_dim = 0
+  node_to_label = labels_on_dim(facelabels,node_dim)
+  tag_to_labels = facelabels.tag_to_labels
+
+  DLagrangianFESpace(
+    T,grid,node_to_label,tag_to_labels,diritags,dirimasks)
 
 end
 
