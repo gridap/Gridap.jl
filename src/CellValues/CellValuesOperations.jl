@@ -113,8 +113,28 @@ function cellnewaxis(ca::CellMap;dim::Int)
   apply(k,ca)
 end
 
-function compress(cv::CellVector)
-  @notimplemented
+function compress(cell_to_vector::CellVector{T}) where T
+  n = length(cell_to_vector)
+  cell_to_vector_ptrs = zeros(Int,n+1)
+  cell_to_vector_data = T[]
+  _compress_kernel!(
+    cell_to_vector_data,
+    cell_to_vector_ptrs,
+    cell_to_vector)
+  (cell_to_vector_data, cell_to_vector_ptrs)
+end
+
+function  _compress_kernel!(
+  cell_to_vector_data,
+  cell_to_vector_ptrs,
+  cell_to_vector)
+  for (cell,vector) in enumerate(cell_to_vector)
+    cell_to_vector_ptrs[cell+1] = length(vector)
+    for v in vector
+      push!(cell_to_vector_data,v)
+    end
+  end
+  length_to_ptrs!(cell_to_vector_ptrs)
 end
 
 end # module
