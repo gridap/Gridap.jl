@@ -282,6 +282,14 @@ w = cellmean(u)
 @test isa(w,CellNumber)
 test_iter_cell_value(w,o)
 
+# compress
+
+a = [1,3,2]
+u = TestIterCellValue(a,5)
+u_data, u_ptrs = compress(u)
+@test u_data == [1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 3, 2]
+@test u_ptrs == [1, 4, 7, 10, 13, 16]
+
 # CellMaps Operations
 
 a = VectorValue(10,10)
