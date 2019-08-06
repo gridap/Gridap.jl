@@ -10,6 +10,7 @@ using Gridap.Helpers
 using Gridap.CellValuesGallery
 using Gridap.DOFBases: _length
 using Gridap.ConformingFESpaces: _CellField
+using Gridap.ConformingFESpaces: CellEqClass
 
 import Gridap: num_free_dofs
 import Gridap: num_diri_dofs
@@ -85,12 +86,7 @@ end
 function CLagrangianFESpace(
   ::Type{T},model::DiscreteModel,order,diritags,dirimasks) where T
 
-  grid = Grid(model)
-  _check_order(order,cellorders(grid))
-  facelabels = FaceLabels(model)
-  node_dim = 0
-  node_to_label = labels_on_dim(facelabels,node_dim)
-  tag_to_labels = facelabels.tag_to_labels
+  grid, node_to_label, tag_to_labels = _setup_grid(model,order)
 
   CLagrangianFESpace(
     T,grid,node_to_label,tag_to_labels,diritags,dirimasks)
@@ -393,7 +389,7 @@ function  _fill_interpolated_vals_kernel!(
 
 end
 
-function    _fill_diri_values!(
+function _fill_diri_values!(
   ddof_to_val,
   fun,
   diritag,
@@ -426,12 +422,168 @@ function    _fill_diri_values!(
 
 end
 
-function _check_order(order,co)
+function _same_order(order,co)
   @notimplemented
 end
 
-function _check_order(order,co::ConstantCellValue)
-  @notimplementedif order != co.value
+function _same_order(order,co::ConstantCellValue)
+  order == co.value
+end
+
+function _setup_grid(model,order)
+
+  facelabels = FaceLabels(model)
+  _grid = Grid(model)
+
+  if _same_order(order,cellorders(_grid))
+    @notimplementedif order !=1
+    grid = _grid
+    node_dim = 0
+    node_to_label = labels_on_dim(facelabels,node_dim)
+  else
+    grid, node_to_label = grid_from_model_and_order(model,order)
+  end
+
+  tag_to_labels = facelabels.tag_to_labels
+
+  (grid, node_to_label, tag_to_labels)
+
+end
+
+function grid_from_model_and_order(
+  model::DiscreteModel{D}, order::Integer) where D
+
+  node_to_coords, dim_to_nface_to_nodes, node_to_label =
+    _setup_nodes_to_coords(model,D,order)
+
+  graph = GridGraph(model)
+
+  dim_to_cell_to_nface = [connections(graph,D,i) for i in 0:D]
+
+  offset = length.(dim_to_nface_to_nodes)
+  for i in 2:length(offset)
+    offset[i] += offset[i-1]
+  end
+  offset = tuple(offset[1:(end-1)]...)
+
+  cell_to_faces = local_append(offset, dim_to_cell_to_nface...)
+
+  face_to_nodes = append(dim_to_nface_to_nodes...)
+
+  grid = Grid(model,D)
+  reffe = _setup_reffe(order,celltypes(grid))
+
+  cell_to_nodes = CellEqClass(cell_to_faces, face_to_nodes, reffe)
+
+  cell_to_nodes_data, cell_to_nodes_ptrs = compress(cell_to_nodes)
+
+  cell_to_extrusion = celltypes(grid)
+
+  n = ncells(grid)
+  cell_to_order = ConstantCellValue(order,n)
+
+  grid = UnstructuredGrid(
+    node_to_coords,
+    cell_to_nodes_data,
+    cell_to_nodes_ptrs,
+    cell_to_extrusion,
+    cell_to_order)
+
+  (grid, node_to_label)
+  
+end
+
+function _setup_nodes_to_coords(model,D,order)
+
+  node_to_coords = Point{D,Float64}[]
+  node_to_label = Int[]
+
+  facelabels = FaceLabels(model)
+  
+  vertex_to_label = labels_on_dim(facelabels,0)
+
+  grid = Grid(model,0)
+  _push_nodes!(node_to_coords,points(grid))
+  _push_nodes!(node_to_label,vertex_to_label)
+  node_to_nodes = cells(grid)
+
+  dim_to_nface_to_nodes = []
+  push!(dim_to_nface_to_nodes,node_to_nodes)
+
+  for d in 1:D
+
+    grid = Grid(model,d)
+    trian = Triangulation(grid)
+    reffe = _setup_reffe(order,celltypes(grid))
+
+    ilnodes = reffe.nfacenodes[end]
+    linode_to_qcoords = reffe.dofbasis.nodes[ilnodes]
+    n = ncells(grid)
+    q = ConstantCellValue(linode_to_qcoords,n)
+    phi = CellGeomap(trian)
+    nface_ilnode_to_coords = evaluate(phi,q)
+
+    nface_to_nodes_data = Int[]
+    nface_to_nodes_ptrs = zeros(Int,n+1)
+
+    nface_to_label = labels_on_dim(facelabels,d)
+
+    _push_nface_nodes!(
+      node_to_coords,
+      node_to_label,
+      nface_to_nodes_data,
+      nface_to_nodes_ptrs,
+      nface_ilnode_to_coords,
+      nface_to_label)
+
+    nface_to_nodes = CellVectorFromDataAndPtrs(
+      nface_to_nodes_data, nface_to_nodes_ptrs)
+
+    push!(dim_to_nface_to_nodes,nface_to_nodes)
+
+  end
+
+  (node_to_coords, dim_to_nface_to_nodes, node_to_label)
+
+end
+
+function _setup_reffe(order,ct::ConstantCellValue)
+  e = ct.value
+  p = Polytope(e)
+  D = length(e)
+  LagrangianRefFE{D,Float64}(p,fill(order,D))
+end
+
+function _push_nodes!(node_to_coords,coords)
+  for x in coords
+    push!(node_to_coords,x)
+  end
+end
+
+function _push_nface_nodes!(
+  node_to_coords,
+  node_to_label,
+  nface_to_nodes_data,
+  nface_to_nodes_ptrs,
+  nface_ilnode_to_coords,
+  nface_to_label)
+
+  node = length(node_to_coords)+1
+  for (nface,ilnode_to_coords) in enumerate(nface_ilnode_to_coords)
+
+    label = nface_to_label[nface]
+    nface_to_nodes_ptrs[nface+1] = length(ilnode_to_coords)
+
+    for coords in ilnode_to_coords
+      push!(node_to_coords,coords)
+      push!(node_to_label,label)
+      push!(nface_to_nodes_data,node)
+      node += 1
+    end
+  end
+
+  length_to_ptrs!(nface_to_nodes_ptrs)
+
 end
 
 end # module
