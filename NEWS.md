@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `CurlGradMonomialBasis` spanning the polynomial space needed for RT elements on n-cubes
+
 ### Changed
 ### Removed
 ### Deprecated
