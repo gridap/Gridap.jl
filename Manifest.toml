@@ -162,7 +162,9 @@ uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [[TensorPolynomialBases]]
 deps = ["StaticArrays", "TensorValues", "Test"]
-git-tree-sha1 = "736bc770673f45a82782865a06ebdda851e0af45"
+git-tree-sha1 = "f6c0a076358fd80e283bf71fbacaa2ebf9fe0bce"
+repo-rev = "master"
+repo-url = "https://github.com/gridap/TensorPolynomialBases.jl.git"
 uuid = "f77b161d-e03a-5d68-b365-d5306aabeaa6"
 version = "0.1.2"
 
@@ -178,9 +180,9 @@ uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [[TranscodingStreams]]
 deps = ["Random", "Test"]
-git-tree-sha1 = "a25d8e5a28c3b1b06d3859f30757d43106791919"
+git-tree-sha1 = "7c53c35547de1c5b9d46a4797cf6d8253807108c"
 uuid = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
-version = "0.9.4"
+version = "0.9.5"
 
 [[URIParser]]
 deps = ["Test", "Unicode"]
