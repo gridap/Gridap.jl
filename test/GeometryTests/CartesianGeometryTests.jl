@@ -88,14 +88,4 @@ test_grid(grid,20,12)
 grid = UnstructuredGrid(cgrid)
 test_grid(grid,20,12)
 
-model = CartesianDiscreteModel(partition=(2,2))
-
-grid = grid_from_model_and_order(model,3)
-
-@show points(grid)
-@show cells(grid)
-@show celltypes(grid)
-@show cellorders(grid)
-
-
 end # module
