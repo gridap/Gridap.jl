@@ -39,4 +39,14 @@ g = evaluate(∇(basis),p)
 
 @test length(basis) == 12
 
+p = Point{3,Int}[(1,2,3),(3,2,4)]
+
+T = VectorValue{3,Float64}
+order = 1
+basis = CurlGradMonomialBasis(T,order)
+v = evaluate(basis,p)
+g = evaluate(∇(basis),p)
+
+@test length(basis) == 6
+
 end # module
