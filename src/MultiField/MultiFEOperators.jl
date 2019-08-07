@@ -17,6 +17,17 @@ function LinearFEOperator(
   LinearFEOperator(biform,liform,V,U,assem,trian,quad)
 end
 
+function LinearFEOperator(
+  testfesp::Vector{<:FESpaceWithDirichletData},
+  trialfesp::Vector{<:FESpaceWithDirichletData},
+  assem::MultiAssembler,
+  terms::Vararg{<:AffineFETerm})
+
+  V = MultiFESpace(testfesp)
+  U = MultiFESpace(trialfesp)
+  LinearFEOperator(V,U,assem,terms...)
+end
+
 function NonLinearFEOperator(
   res::Function,
   jac::Function,
@@ -28,6 +39,17 @@ function NonLinearFEOperator(
   V = MultiFESpace(testfesp)
   U = MultiFESpace(trialfesp)
   NonLinearFEOperator(res,jac,V,U,assem,trian,quad)
+end
+
+function NonLinearFEOperator(
+  testfesp::Vector{<:FESpaceWithDirichletData},
+  trialfesp::Vector{<:FESpaceWithDirichletData},
+  assem::MultiAssembler,
+  terms::Vararg{<:FETerm})
+
+  V = MultiFESpace(testfesp)
+  U = MultiFESpace(trialfesp)
+  NonLinearFEOperator(V,U,assem,terms...)
 end
 
 end # module MultiFEOperators
