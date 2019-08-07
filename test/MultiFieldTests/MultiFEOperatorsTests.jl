@@ -17,41 +17,56 @@ u2fun_grad(x) = VectorValue(1.0,-1.0)
 b1fun(x) = u2fun(x)
 b2fun(x) = 0.0
 
+g1fun(x) = 1.0
+
 # Construct the discrete model
 model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(4,4))
 
-# Construct the FEspace
+# Construct the FEspace.
+# We allow each one of the fields to have different boundary conditions
 order = 1
+diritags = [1,2,3,4,5,6,7]
+fespace1 = ConformingFESpace(Float64,model,order,diritags)
+
 diritag = "boundary"
-fespace = ConformingFESpace(Float64,model,order,diritag)
+fespace2 = ConformingFESpace(Float64,model,order,diritag)
 
 # Define test and trial
-V1 = TestFESpace(fespace)
-V2 = V1
+V1 = TestFESpace(fespace1)
+V2 = TestFESpace(fespace2)
 V = [V1, V2]
 
-U1 = TrialFESpace(fespace,u1fun)
-U2 = TrialFESpace(fespace,u2fun)
+U1 = TrialFESpace(fespace1,u1fun)
+U2 = TrialFESpace(fespace2,u2fun)
 U = [U1, U2]
 
-# Define integration mesh and quadrature
+# Define integration mesh and quadrature for volume
 trian = Triangulation(model)
 quad = CellQuadrature(trian,order=2)
 
-# Define cell field describing the source term
+# Setup integration on Neumann boundary
+neumanntags = [8,]
+btrian = BoundaryTriangulation(model,neumanntags)
+bquad = CellQuadrature(btrian,order=2)
+
+# Terms in the volume
 b1field = CellField(trian,b1fun)
 b2field = CellField(trian,b2fun)
-
-# Define forms
 a(v,u) = inner(∇(v[1]),∇(u[1])) + inner(v[1],u[2]) + inner(∇(v[2]),∇(u[2]))
-
 b(v) = inner(v[1],b1field) + inner(v[2],b2field)
+t_Ω = AffineFETerm(a,b,trian,quad)
+
+# Terms on Neumann boundary
+# Note that the Neumann BC only applies on the first field
+g1field = CellField(btrian,g1fun)
+g(v) = inner(v[1],g1field)
+t_Γ = FESource(g,btrian,bquad)
 
 # Define Assembler
 assem = SparseMatrixAssembler(V,U)
 
 # Define the FEOperator
-op = LinearFEOperator(a,b,V,U,assem,trian,quad)
+op = LinearFEOperator(V,U,assem,t_Ω,t_Γ)
 
 # Define the FESolver
 ls = LUSolver()
@@ -83,5 +98,11 @@ e2h1 = sqrt(sum( integrate(h1(e2),trian,quad) ))
 
 @test e2l2 < 1.e-8
 @test e2h1 < 1.e-8
+
+
+# Further tests
+
+# This is only to stress the single term API
+op = LinearFEOperator(a,b,V,U,assem,trian,quad)
 
 end

@@ -11,6 +11,7 @@ import Base: iterate
 import Base: zero
 import Gridap.FESpaces: free_dofs
 import Gridap.FESpaces: FEFunction
+import Gridap: restrict
 
 struct MultiFEFunction
   fields::Vector{<:FEFunction}
@@ -45,5 +46,15 @@ function zero(U::MultiFESpace{E}) where E
   x = zeros(E,n)
   MultiFEFunction(x,U)
 end
+
+function restrict(uh::MultiFEFunction,trian::BoundaryTriangulation)
+  [ restrict(ui.cellfield,trian) for ui in uh.fields ]
+end
+
+function restrict(uh::MultiFEFunction,trian::SkeletonTriangulation)
+  @notimplemented
+  # We still need to implement a MultiSkeletonPair
+end
+
 
 end # module MultiFEFunctions

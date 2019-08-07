@@ -1,6 +1,7 @@
 module MultiFEBases
 
 using Gridap
+using Gridap.Helpers
 
 import Gridap: gradient
 import Gridap: inner
@@ -8,6 +9,7 @@ import Base: +, -, *
 import Base: length, getindex
 import Gridap.FESpaces: FEBasis
 import Gridap: CellBasis
+import Gridap: restrict
 
 struct FEBasisWithFieldId{B<:CellBasis}
   cellbasis::B
@@ -68,5 +70,18 @@ end
 length(mfb::MultiFEBasis) = length(mfb.blocks)
 
 getindex(mfb::MultiFEBasis,i::Integer) = mfb.blocks[i]
+
+function restrict(mfeb::MultiFEBasis,trian::BoundaryTriangulation)
+  blocks = [
+    FEBasisWithFieldId(restrict(feb.cellbasis,trian),feb.fieldid)
+    for feb in mfeb.blocks ]
+  MultiFEBasis(blocks)
+end
+
+function restrict(feb::MultiFEBasis,trian::SkeletonTriangulation)
+  @notimplemented
+  # We still need to create a MultiSkeletonPair
+end
+
 
 end # module MultiFEBases
