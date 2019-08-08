@@ -3,6 +3,8 @@ module GeometryWrappersTests
 using Gridap
 using UnstructuredGrids: RefCell, UGrid
 using Test
+using UnstructuredGrids: generate_dual_connections
+using UnstructuredGrids: find_cell_to_faces
 
 # Polytope to UnstructuredGrid
 
@@ -59,6 +61,22 @@ t = TET_AXIS
 polytope = Polytope((t,t,t))
 
 grid = Grid(polytope,2)
+
+# Others
+
+model = CartesianDiscreteModel(partition=(4,4,3))
+graph = FullGridGraph(model)
+edge_to_vertices = connections(graph,1,0)
+vertex_to_edges = connections(graph,0,1)
+r = generate_dual_connections(edge_to_vertices)
+@test r == vertex_to_edges
+
+grid2 = Grid(model,2)
+vertex_to_edges = connections(graph,0,1)
+face_to_edges = connections(graph,2,1)
+r = find_cell_to_faces(grid2,vertex_to_edges,1)
+@test r == face_to_edges
+
 
 end # module
 

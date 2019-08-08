@@ -2,6 +2,7 @@ module CartesianGeometryTests
 
 using Test
 using Gridap
+using Gridap.DiscreteModels: dict_to_model
 using JSON
 
 grid = CartesianGrid(domain=(0.0,1.0,-1.0,2.0),partition=(3,4))
@@ -89,8 +90,23 @@ test_grid(grid,20,12)
 grid = UnstructuredGrid(cgrid)
 test_grid(grid,20,12)
 
-model = CartesianDiscreteModel(partition=(2,2))
+# Serialization
+
+model = CartesianDiscreteModel(partition=(2,2,2))
 s = json(model)
 
+dict = JSON.parse(s)
+model = dict_to_model(dict)
+test_discrete_model(model,3)
+
+d = mktempdir()
+filename = joinpath(d,"model.json")
+
+open(filename,"w") do f
+  JSON.print(f,model)
+end
+
+model = DiscreteModelFromFile(filename)
+test_discrete_model(model,3)
 
 end # module
