@@ -1,10 +1,5 @@
 module CLagrangianFESpaces
 
-# TODO move to TensorValues
-using StaticArrays
-using TensorValues
-mutable(::Type{MultiValue{S,T,N,L}}) where {S,T,N,L} = MArray{S,T,N,L}
-
 using Gridap
 using Gridap.Helpers
 using Gridap.CellValuesGallery

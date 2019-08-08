@@ -4,6 +4,7 @@ module GeometryWrappers #@fverdugo rename as RefCells ??
 
 using Gridap
 using Gridap.Helpers
+using Gridap.CellValuesGallery
 using UnstructuredGrids.Core: VERTEX
 using UnstructuredGrids.Kernels: UNSET
 using UnstructuredGrids.Kernels: generate_data_and_ptrs
@@ -12,6 +13,9 @@ using UnstructuredGrids.Kernels: generate_data_and_ptrs
 
 export RefCell
 import UnstructuredGrids.Core: RefCell
+import UnstructuredGrids.Core: Connections
+import UnstructuredGrids: generate_dual_connections
+import UnstructuredGrids: find_cell_to_faces
 import Gridap: Grid
 
 """
@@ -30,6 +34,21 @@ function Grid(polytope::Polytope{D},dim::Int) where D
   else
     @unreachable
   end
+end
+
+function generate_dual_connections(face_to_nodes::CellVector)
+ face_to_nodes_data, face_to_nodes_ptrs = compress(face_to_nodes)
+ node_to_faces_data, node_to_faces_ptrs = 
+   generate_dual_connections(face_to_nodes_data, face_to_nodes_ptrs)
+ CellVectorFromDataAndPtrs(node_to_faces_data, node_to_faces_ptrs)
+end
+
+function find_cell_to_faces(fgrid::Grid, vertex_to_jfaces::IndexCellArray, j)
+  _fgrid = UGrid(fgrid)
+  data, ptrs = compress(vertex_to_jfaces)
+  _vertex_to_jfaces = Connections(data,ptrs)
+  face_to_jfaces = find_cell_to_faces(_fgrid, _vertex_to_jfaces, j)
+  CellVectorFromDataAndPtrs(face_to_jfaces.list,face_to_jfaces.ptrs)
 end
 
 # Helpers
