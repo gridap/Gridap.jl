@@ -16,6 +16,7 @@ import Gridap: celldim
 import Gridap: Triangulation
 import Gridap: labels_on_dim
 import Gridap: tag_from_name
+import JSON: lower
 
 # Interfaces
 
@@ -130,5 +131,101 @@ end
 function FaceLabels(model::DiscreteModelFromData{D}) where D
   model.facelabels
 end
+
+# Serialization of discrete models
+
+lower(model::DiscreteModel) = model_to_dict(model)
+
+function model_to_dict(model::DiscreteModel{D}) where D
+
+  dict = Dict{String,Any}()
+
+  _add_dims!(dict,model)
+
+  _add_nodes!(dict,model)
+
+  for d in 1:D
+    _add_grid!(dict,model,d)
+  end
+
+  facelabels = FaceLabels(model)
+
+  _add_tags!(dict,facelabels)
+
+  for d in 0:D
+    _add_labels!(dict,facelabels,d)
+  end
+
+  dict
+
+end
+
+function _add_dims!(dict,model)
+  D = celldim(model)
+  Z = pointdim(model)
+  dict["pointdim"] = Z
+  dict["celldim"] = D
+end
+
+function _add_nodes!(dict,model)
+  Z = pointdim(model)
+  grid = Grid(model)
+  node_to_coord = points(grid)
+  nnodes = length(node_to_coord)
+  node_to_coord_data = zeros(Float64,nnodes*Z)
+  _fill_node_to_coord_data!(node_to_coord_data,node_to_coord)
+  dict["nodes"] = node_to_coord_data
+end
+
+function _fill_node_to_coord_data!(node_to_coord_data,node_to_coord)
+  i = 1
+  for x in node_to_coord
+    for xi in x
+      node_to_coord_data[i] = xi
+      i +=1
+    end
+  end
+end
+
+function _add_grid!(dict,model,d)
+
+  grid = Grid(model,d)
+
+  data, ptrs = compress(cells(grid))
+
+  dict["face$(d)_data"] = data
+
+  dict["face$(d)_ptrs"] = ptrs
+
+  face_types, orders, extrusions =
+    _setup_face_types(celltypes(grid),cellorders(grid))
+
+  dict["face$(d)_types"] = face_types
+
+  dict["orders$(d)"] = orders
+
+  dict["extrusions$(d)"] = extrusions
+
+end
+
+function _setup_face_types(ct,co)
+  @notimplemented
+end
+
+function _setup_face_types(ct::ConstantCellValue,co::ConstantCellValue)
+  face_types = ones(Int,ct.length)
+  (face_types, [co.value], [ct.value])
+end
+
+function _add_tags!(dict,facelabels)
+  dict["tag_to_name"] = facelabels.tag_to_name
+  dict["tag_to_labels"] = facelabels.tag_to_labels
+end
+
+function _add_labels!(dict,facelabels,d)
+  face_to_label = labels_on_dim(facelabels,d)
+  dict["labels$(d)"] = collect(face_to_label)
+end
+
 
 end # module

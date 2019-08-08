@@ -2,6 +2,7 @@ module CartesianGeometryTests
 
 using Test
 using Gridap
+using JSON
 
 grid = CartesianGrid(domain=(0.0,1.0,-1.0,2.0),partition=(3,4))
 test_grid(grid,20,12)
@@ -87,5 +88,9 @@ test_grid(grid,20,12)
 
 grid = UnstructuredGrid(cgrid)
 test_grid(grid,20,12)
+
+model = CartesianDiscreteModel(partition=(2,2))
+s = json(model)
+
 
 end # module
