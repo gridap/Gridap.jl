@@ -11,8 +11,8 @@ import Gridap.FESpaces: FEBasis
 import Gridap: CellBasis
 import Gridap: restrict
 
-struct FEBasisWithFieldId{B<:CellBasis}
-  cellbasis::B
+struct FEBasisWithFieldId{B<:FEBasis}
+  febasis::B
   fieldid::Int
 end
 
@@ -21,14 +21,15 @@ function CellBasis(
   fun::Function,
   b::FEBasisWithFieldId,
   u::Vararg{<:CellField{Z}}) where {D,Z}
-  basis = CellBasis(trian,fun,b.cellbasis,u...)
-  FEBasisWithFieldId(basis,b.fieldid)
+
+  febasis = CellBasis(trian,fun,b.febasis,u...)
+  FEBasisWithFieldId(febasis,b.fieldid)
 end
 
 for op in (:+, :-, :(gradient))
   @eval begin
     function ($op)(a::FEBasisWithFieldId)
-      FEBasisWithFieldId($op(a.cellbasis),a.fieldid)
+      FEBasisWithFieldId($op(a.febasis),a.fieldid)
     end
   end
 end
@@ -36,23 +37,23 @@ end
 for op in (:+, :-, :*)
   @eval begin
     function ($op)(a::FEBasisWithFieldId,b::CellMap)
-      FEBasisWithFieldId($op(a.cellbasis,b),a.fieldid)
+      FEBasisWithFieldId($op(a.febasis,b),a.fieldid)
     end
     function ($op)(a::CellMap,b::FEBasisWithFieldId)
-      FEBasisWithFieldId($op(a,b.cellbasis),b.fieldid)
+      FEBasisWithFieldId($op(a,b.febasis),b.fieldid)
     end
   end
 end
 
 function inner(a::FEBasisWithFieldId,b::CellField)
-  block = varinner(a.cellbasis,b)
+  block = inner(a.febasis,b)
   blocks = [block,]
   fieldids = [(a.fieldid,),]
   MultiCellMap(blocks,fieldids)
 end
 
 function inner(a::FEBasisWithFieldId,b::FEBasisWithFieldId)
-  block = varinner(a.cellbasis,b.cellbasis)
+  block = inner(a.febasis,b.febasis)
   blocks = [block,]
   fieldids = [(a.fieldid,b.fieldid),]
   MultiCellMap(blocks,fieldids)
@@ -63,7 +64,7 @@ struct MultiFEBasis
 end
 
 function FEBasis(mfes::MultiFESpace)
-  blocks = [ FEBasisWithFieldId(CellBasis(v),i) for (i,v) in enumerate(mfes) ]
+  blocks = [ FEBasisWithFieldId(FEBasis(v),i) for (i,v) in enumerate(mfes) ]
   MultiFEBasis(blocks)
 end
 
@@ -73,7 +74,7 @@ getindex(mfb::MultiFEBasis,i::Integer) = mfb.blocks[i]
 
 function restrict(mfeb::MultiFEBasis,trian::BoundaryTriangulation)
   blocks = [
-    FEBasisWithFieldId(restrict(feb.cellbasis,trian),feb.fieldid)
+    FEBasisWithFieldId(restrict(feb.febasis,trian),feb.fieldid)
     for feb in mfeb.blocks ]
   MultiFEBasis(blocks)
 end
@@ -82,6 +83,5 @@ function restrict(feb::MultiFEBasis,trian::SkeletonTriangulation)
   @notimplemented
   # We still need to create a MultiSkeletonPair
 end
-
 
 end # module MultiFEBases
