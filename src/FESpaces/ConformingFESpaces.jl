@@ -6,6 +6,8 @@ using Gridap.CellValuesGallery
 using Gridap.CachedArrays
 using Base: @propagate_inbounds
 
+using Gridap.BoundaryGrids: _setup_tags
+
 export ConformingFESpace
 import Gridap: num_free_dofs
 import Gridap: num_diri_dofs
@@ -63,7 +65,7 @@ function ConformingFESpace(::Type{T},model::DiscreteModel{D},order,diri_tags) wh
   orders = fill(order,D)
   polytope = _polytope(celltypes(grid))
   fe = LagrangianRefFE{D,T}(polytope, orders)
-  _diri_tags = _setup_diri_tags(model,diri_tags)
+  _diri_tags = _setup_tags(model,diri_tags)
   ConformingFESpace(fe,trian,graph,labels,_diri_tags)
 end
 
@@ -236,16 +238,6 @@ function _generate_nface_to_dofs!(
   end
 
   (i_free_dof, i_diri_dof)
-end
-
-_setup_diri_tags(model,tags) = tags
-
-function _setup_diri_tags(model,name::String)
-  _setup_diri_tags(model,[name,])
-end
-
-function _setup_diri_tags(model,names::Vector{String})
-  [ tag_from_name(model,s) for s in names ]
 end
 
 _polytope(celltypes) = @notimplemented

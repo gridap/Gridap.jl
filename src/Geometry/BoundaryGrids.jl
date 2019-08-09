@@ -34,6 +34,11 @@ function Triangulation(grid::BoundaryGrid)
   BoundaryTriangulation(trian,grid.descriptor)
 end
 
+function BoundaryGrid(model::DiscreteModel,tags,icell::Int=1)
+  _tags = _setup_tags(model,tags)
+  BoundaryGrid(model,_tags,icell)
+end
+
 function BoundaryGrid(model::DiscreteModel,tags::Vector{Int},icell::Int=1)
   d = celldim(model)
   labels = FaceLabels(model)
@@ -62,7 +67,7 @@ function BoundaryGrid(model::DiscreteModel,tags::Vector{Int},icell::Int=1)
   BoundaryGrid(grid,descriptor)
 end
 
-function BoundaryTriangulation(model::DiscreteModel,tags::Vector{Int},icell::Int=1)
+function BoundaryTriangulation(model::DiscreteModel,tags,icell::Int=1)
   grid = BoundaryGrid(model,tags,icell)
   Triangulation(grid)
 end
@@ -89,6 +94,16 @@ function _cell_to_polytope(cell_to_extrussion::ConstantCellValue)
   l = cell_to_extrussion.length
   poly = Polytope(extrussion)
   ConstantCellValue(poly,l)
+end
+
+_setup_tags(model,tags) = tags
+
+function _setup_tags(model,name::String)
+  _setup_tags(model,[name,])
+end
+
+function _setup_tags(model,names::Vector{String})
+  [ tag_from_name(model,s) for s in names ]
 end
 
 end # module
