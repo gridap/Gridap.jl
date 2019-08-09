@@ -11,12 +11,9 @@ U = TrialFESpace(fespace,ufun)
 trian = Triangulation(model)
 quad = CellQuadrature(trian,order=2)
 
-# Define cell field describing the source term
-bfield = CellField(trian,bfun)
-
 # Define forms
 a(v,u) = inner(∇(v), ∇(u))
-b(v) = inner(v,bfield)
+b(v) = inner(v,bfun)
 
 # Define Assembler
 assem = SparseMatrixAssembler(V,U)
@@ -85,11 +82,8 @@ neumanntags = [8,]
 btrian = BoundaryTriangulation(model,neumanntags)
 bquad = CellQuadrature(btrian,order=2)
 
-# Object describing Neumann function
-gfield = CellField(btrian,gfun)
-
 # Integrand of the Neumann BC
-g(v) = inner(v,gfield)
+g(v) = inner(v,gfun)
 
 # Define weak form terms
 t_Ω = AffineFETerm(a,b,trian,quad)

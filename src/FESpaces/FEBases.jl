@@ -45,6 +45,11 @@ function inner(a::FEBasis,b::CellField)
   varinner(a.cellbasis,b)
 end
 
+function inner(a::FEBasis,f::Function)
+  b = CellField(a.trian,f)
+  inner(a,b)
+end
+
 function inner(a::FEBasis,b::FEBasis)
   varinner(a.cellbasis,b.cellbasis)
 end

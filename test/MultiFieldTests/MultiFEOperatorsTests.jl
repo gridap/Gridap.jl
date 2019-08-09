@@ -50,16 +50,13 @@ btrian = BoundaryTriangulation(model,neumanntags)
 bquad = CellQuadrature(btrian,order=2)
 
 # Terms in the volume
-b1field = CellField(trian,b1fun)
-b2field = CellField(trian,b2fun)
 a(v,u) = inner(∇(v[1]),∇(u[1])) + inner(v[1],u[2]) + inner(∇(v[2]),∇(u[2]))
-b(v) = inner(v[1],b1field) + inner(v[2],b2field)
+b(v) = inner(v[1],b1fun) + inner(v[2],b2fun)
 t_Ω = AffineFETerm(a,b,trian,quad)
 
 # Terms on Neumann boundary
 # Note that the Neumann BC only applies on the first field
-g1field = CellField(btrian,g1fun)
-g(v) = inner(v[1],g1field)
+g(v) = inner(v[1],g1fun)
 t_Γ = FESource(g,btrian,bquad)
 
 # Define Assembler

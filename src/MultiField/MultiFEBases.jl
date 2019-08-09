@@ -52,6 +52,11 @@ function inner(a::FEBasisWithFieldId,b::CellField)
   MultiCellMap(blocks,fieldids)
 end
 
+function inner(a::FEBasisWithFieldId,f::Function)
+  b = CellField(a.febasis.trian,f)
+  inner(a,b)
+end
+
 function inner(a::FEBasisWithFieldId,b::FEBasisWithFieldId)
   block = inner(a.febasis,b.febasis)
   blocks = [block,]
