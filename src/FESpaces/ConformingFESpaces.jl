@@ -20,6 +20,7 @@ import Gridap: interpolate_values
 import Gridap: interpolate_diri_values
 import Gridap: CellField
 import Gridap: CellBasis
+import Gridap: Triangulation
 import Base: size
 import Base: getindex
 
@@ -111,6 +112,8 @@ function CellField(
 end
 
 CellBasis(this::ConformingFESpace) = this.cellbasis
+
+Triangulation(this::ConformingFESpace) = this.triangulation
 
 # Helpers
 

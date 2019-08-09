@@ -24,6 +24,7 @@ export value_type
 export FESpaceWithDirichletData
 import Gridap: CellField
 import Gridap: CellBasis
+import Gridap: Triangulation
 
 # Interfaces
 
@@ -98,6 +99,10 @@ function CellBasis(::FESpace{D,Z,T})::CellBasis{Z,T} where {D,Z,T}
   @abstractmethod
 end
 
+function Triangulation(::FESpace{D,Z})::Triangulation{Z,D} where {Z,D}
+  @abstractmethod
+end
+
 value_type(::FESpace{D,Z,T}) where {D,Z,T} = T
 
 function TestFESpace(this::FESpace{D,Z,T}) where {D,Z,T}
@@ -121,12 +126,12 @@ end
 # Testers
 
 function test_fe_space(
-  fespace::FESpace,
+  fespace::FESpace{D,Z},
   nfree::Integer,
   ndiri::Integer,
   cellmat::CellMatrix,
   cellvec::CellVector,
-  ufun::Function)
+  ufun::Function) where {D,Z}
 
   @test num_free_dofs(fespace) == nfree
   @test num_diri_dofs(fespace) == ndiri
@@ -161,6 +166,9 @@ function test_fe_space(
 
   cf = CellField(fespace,freevals,dirivals)
   @test isa(cf,CellField)
+
+  trian = Triangulation(fespace)
+  @test isa(trian,Triangulation{Z,D})
 
 end
 
@@ -216,6 +224,8 @@ end
 function CellBasis(f::FESpaceWithDirichletData)
   CellBasis(f.fespace)
 end
+
+Triangulation(f::FESpaceWithDirichletData) = Triangulation(f.fespace)
 
 function interpolate_diri_values(f::FESpaceWithDirichletData, funs::Vector{<:Function})
   f.diri_dofs

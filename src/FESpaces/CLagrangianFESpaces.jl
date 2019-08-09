@@ -18,6 +18,7 @@ import Gridap: interpolate_values
 import Gridap: interpolate_diri_values
 import Gridap: CellField
 import Gridap: CellBasis
+import Gridap: Triangulation
 
 export CLagrangianFESpace
 
@@ -150,6 +151,8 @@ function CellField(
 end
 
 CellBasis(fesp::CLagrangianFESpace{D,Z,T}) where {D,Z,T} = fesp.cellbasis
+
+Triangulation(fesp::CLagrangianFESpace) = Triangulation(fesp.grid)
 
 # Helpers
 

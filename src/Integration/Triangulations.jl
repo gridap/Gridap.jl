@@ -23,6 +23,8 @@ import Base: getindex
 Minimal interface for a mesh used for numerical integration
 I.e., cellwise nodal coordinates and notion about interpolation of these
 cell coordinates within the cells.
+Z is the dimension of the parametric space and D the dimension of
+the physical space
 """
 abstract type Triangulation{Z,D} end
 

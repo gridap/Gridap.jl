@@ -23,6 +23,7 @@ import Gridap: interpolate_values
 import Gridap: interpolate_diri_values
 import Gridap: CellField
 import Gridap: CellBasis
+import Gridap: Triangulation
 
 struct DLagrangianFESpace{D,Z,T,B} <: FESpace{D,Z,T}
   grid::Grid{D,Z}
@@ -167,6 +168,8 @@ function interpolate_diri_values(fesp::DLagrangianFESpace, funs::Vector{<:Functi
 end
 
 CellBasis(fesp::DLagrangianFESpace{D,Z,T}) where {D,Z,T} = fesp.cellbasis
+
+Triangulation(fesp::DLagrangianFESpace) = Triangulation(fesp.grid)
 
 # Helpers
 
