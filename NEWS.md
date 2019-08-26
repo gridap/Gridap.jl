@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Deprecated
 ### Fixed
 
+- Bug in binary operations between FEFunction and FEBasis. Via commit [aa49689](https://github.com/gridap/Gridap.jl/commit/aa49689be2a8dc14e052a6409c8348f492b52b3e).
+
 ## [0.3.0] - 2019-08-06
 ### Added
 - `CurlGradMonomialBasis` spanning the polynomial space needed for RT elements on n-cubes
