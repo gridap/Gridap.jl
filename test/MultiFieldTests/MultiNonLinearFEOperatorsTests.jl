@@ -17,8 +17,8 @@ u2fun_grad(x) = VectorValue(1.0,-1.0)
 b1fun(x) = u2fun(x) -(3.0*x[1]+x[2]+1.0)
 b2fun(x) = 0.0
 
-νfun(x,u1) = (u1+1.0)*x[1]
-dνfun(x,du1) = du1*x[1]
+@law ν(x,u1) = (u1+1.0)*x[1]
+@law dν(x,du1) = du1*x[1]
 
 # Construct the discrete model
 model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(4,4))
@@ -44,10 +44,6 @@ quad = CellQuadrature(trian,order=3*order-1)
 # Define cell field describing the source term
 b1field = CellField(trian,b1fun)
 b2field = CellField(trian,b2fun)
-
-# Define a solution dependent material parameter
-ν(u1) = CellField(trian,νfun,u1)
-dν(du1) = CellBasis(trian,dνfun,du1)
 
 # Define residual and jacobian
 a(u,v,du) = inner(∇(v[1]),ν(u[1])*∇(du[1])) + inner(v[1],du[2]) + inner(∇(v[2]),∇(du[2]))

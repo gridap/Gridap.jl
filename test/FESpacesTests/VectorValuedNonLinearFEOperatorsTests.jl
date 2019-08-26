@@ -16,8 +16,8 @@ E(F) = 0.5*( F'*F - one(F) )
 dE(F,dF) = 0.5*( dF'*F + F'*dF)
 
 # Operations to be performed at integration points
-σfun(x,∇u) = ∇u * S(E(∇u))
-dσfun(x,∇du,∇u) = ∇du * S(E(∇u)) + ∇u * S(dE(∇u,∇du))
+@law σ(x,∇u) = ∇u * S(E(∇u))
+@law dσ(x,∇du,∇u) = ∇du * S(E(∇u)) + ∇u * S(dE(∇u,∇du))
 
 # Define manufactured functions
 ufun(x) = VectorValue(x[1] + x[2],x[1])
@@ -43,13 +43,11 @@ trian = Triangulation(model)
 quad = CellQuadrature(trian,order=2)
 
 # Transform shape function according to the model
-σ(u) = CellBasis(trian,σfun,∇(u))
-dσ(u,du) = CellBasis(trian,dσfun,∇(du),∇(u))
 
 # Terms in the volume
 bfield = CellField(trian,bfun)
-res(u,v) = inner( ∇(v), σ(u) ) - inner(v,bfield)
-jac(u,v,du) = inner(∇(v), dσ(u,du) )
+res(u,v) = inner( ∇(v), σ(∇(u)) ) - inner(v,bfield)
+jac(u,v,du) = inner(∇(v), dσ(∇(du),∇(u)) )
 t_Ω = NonLinearFETerm(res,jac,trian,quad)
 
 # Define Assembler
