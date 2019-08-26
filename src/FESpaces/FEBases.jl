@@ -32,11 +32,11 @@ end
 
 for op in (:+, :-, :*)
   @eval begin
-    function ($op)(a::FEBasis,b::CellMap)
-      FEBasis($op(a.cellbasis,b),a.trian)
+    function ($op)(a::FEBasis,b::CellField)
+      FEBasis($op(a.cellbasis,cellnewaxis(b,dim=1)),a.trian)
     end
-    function ($op)(a::CellMap,b::FEBasis)
-      FEBasis($op(a,b.cellbasis),b.trian)
+    function ($op)(a::CellField,b::FEBasis)
+      FEBasis($op(cellnewaxis(a,dim=1),b.cellbasis),b.trian)
     end
   end
 end

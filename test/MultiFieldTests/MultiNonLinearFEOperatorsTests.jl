@@ -24,7 +24,7 @@ dνfun(x,du1) = du1*x[1]
 model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(4,4))
 
 # Construct the FEspace
-order = 1
+order = 2
 diritag = "boundary"
 fespace = ConformingFESpace(Float64,model,order,diritag)
 
@@ -39,7 +39,7 @@ U = [U1, U2]
 
 # Define integration mesh and quadrature
 trian = Triangulation(model)
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,order=3*order-1)
 
 # Define cell field describing the source term
 b1field = CellField(trian,b1fun)

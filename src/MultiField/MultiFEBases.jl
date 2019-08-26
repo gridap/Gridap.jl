@@ -36,10 +36,10 @@ end
 
 for op in (:+, :-, :*)
   @eval begin
-    function ($op)(a::FEBasisWithFieldId,b::CellMap)
+    function ($op)(a::FEBasisWithFieldId,b::CellField)
       FEBasisWithFieldId($op(a.febasis,b),a.fieldid)
     end
-    function ($op)(a::CellMap,b::FEBasisWithFieldId)
+    function ($op)(a::CellField,b::FEBasisWithFieldId)
       FEBasisWithFieldId($op(a,b.febasis),b.fieldid)
     end
   end
