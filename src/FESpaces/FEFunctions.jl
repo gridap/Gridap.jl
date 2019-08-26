@@ -13,8 +13,10 @@ import Gridap: evaluate, gradient, return_size
 import Gridap: symmetric_gradient
 import Gridap: reindex
 import Gridap: restrict
+import Gridap: Triangulation
 import Base: size
 import Base: getindex
+import Base: +, -, *
 
 import Base: zero
 
@@ -40,6 +42,8 @@ free_dofs(f::FEFunction) = f.free_dofs
 diri_dofs(f::FEFunction) = f.diri_dofs
 
 FESpace(f::FEFunction) = f.fespace
+
+Triangulation(f::FEFunction) = Triangulation(f.fespace)
 
 value_type(::FEFunction{D,Z,T}) where {D,Z,T} = T
 
@@ -80,9 +84,26 @@ end
 
 evaluate(f::FEFunction{D,Z},q::CellPoints{Z}) where {D,Z} = evaluate(f.cellfield,q)
 
-gradient(f::FEFunction) = gradient(f.cellfield)
+function gradient(f::FEFunction)
+  g = gradient(f.cellfield)
+  IndexCellFieldWithFEFunction(g,f)
+end
 
-symmetric_gradient(f::FEFunction) = symmetric_gradient(f.cellfield)
+function symmetric_gradient(f::FEFunction)
+  g = symmetric_gradient(f.cellfield)
+  IndexCellFieldWithFEFunction(g,f)
+end
+
+for op in (:+, :-, :*)
+  @eval begin
+    function ($op)(a::FEFunction,b::CellField)
+      IndexCellFieldWithFEFunction($op(a.cellfield,b),a)
+    end
+    function ($op)(a::CellField,b::FEFunction)
+      IndexCellFieldWithFEFunction($op(a,b.cellfield),b)
+    end
+  end
+end
 
 return_size(f::FEFunction,s::Tuple{Int}) = return_size(f.cellfield,s)
 
@@ -113,5 +134,47 @@ reindex(uh::FEFunction, indices::IndexCellNumber{<:IndexLike}) = reindex(uh.cell
 restrict(uh::FEFunction,trian::BoundaryTriangulation) = restrict(uh.cellfield,trian)
 
 restrict(uh::FEFunction,trian::SkeletonTriangulation) = restrict(uh.cellfield,trian)
+
+"""
+Type used to represent the result of operations involving FEfunction objects.
+It keeps track of the corresponding FEFunction.
+"""
+struct IndexCellFieldWithFEFunction{
+  Z,C<:IndexCellField,F<:FEFunction,R} <: IndexCellValue{R,1}
+  cellfield::C
+  fefunction::F
+end
+
+function IndexCellFieldWithFEFunction(
+  cellfield::IndexCellField,
+  fefunction::FEFunction{D,Z}) where {D,Z}
+
+  C = typeof(cellfield)
+  F = typeof(fefunction)
+  R = eltype(cellfield)
+  IndexCellFieldWithFEFunction{Z,C,F,R}(cellfield,fefunction)
+end
+
+function evaluate(f::IndexCellFieldWithFEFunction{Z},q::CellPoints{Z}) where Z
+  evaluate(f.cellfield,q)
+end
+
+function gradient(f::IndexCellFieldWithFEFunction)
+  g = gradient(f.cellfield)
+  IndexCellFieldWithFEFunction(g,f.fefunction)
+end
+
+function symmetric_gradient(f::IndexCellFieldWithFEFunction)
+  g = symmetric_gradient(f.cellfield)
+  IndexCellFieldWithFEFunction(g,f.fefunction)
+end
+
+return_size(f::IndexCellFieldWithFEFunction,s::Tuple{Int}) = return_size(f.cellfield,s)
+
+getindex(f::IndexCellFieldWithFEFunction,i::Integer) = f.cellfield[i]
+
+size(f::IndexCellFieldWithFEFunction) = (length(f.cellfield),)
+
+Triangulation(f::IndexCellFieldWithFEFunction) = Triangulation(f.fefunction)
 
 end # module

@@ -10,6 +10,7 @@ import Gridap: symmetric_gradient
 import Gridap: inner
 import Base: +, -, *
 import Gridap: restrict
+import Gridap: Triangulation
 
 struct FEBasis{B<:CellBasis,T<:Triangulation}
   cellbasis::B
@@ -53,6 +54,8 @@ end
 function inner(a::FEBasis,b::FEBasis)
   varinner(a.cellbasis,b.cellbasis)
 end
+
+Triangulation(a::FEBasis) = a.trian
 
 function CellBasis(
   trian::Triangulation{D,Z},

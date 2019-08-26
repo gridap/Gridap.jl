@@ -10,6 +10,7 @@ export CellRefFEs
 export CartesianTriangulation
 export test_triangulation
 export ncells
+export @law
 import Gridap: CellQuadrature
 import Gridap: CellPoints
 import Gridap: CellBasis
@@ -102,6 +103,29 @@ function CellBasis(
 end
 
 _setup_cell_field(f) = cellnewaxis(f,dim=1)
+
+macro law(fundef)
+  s = "The @law macro is only allowed in function definitions"
+  @assert isa(fundef,Expr) s
+  @assert fundef.head in (:(=), :function) s
+  funname = fundef.args[1].args[1]
+  nargs = length(fundef.args[1].args)-1
+  if nargs == 0
+    x =  Symbol[]
+  else
+    x = fundef.args[1].args[3:end]
+  end
+  fundef2 = quote
+    function $(funname)($(x...))
+      trian = Triangulation($(x[1]))
+      CellBasis(trian,$(funname),$(x...))
+    end
+  end
+  quote
+    $(esc(fundef))
+    $(esc(fundef2))
+  end
+end
 
 """
 Factory function to create CellQuadrature objects in a convenient way

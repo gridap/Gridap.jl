@@ -10,6 +10,8 @@ fespace = ConformingFESpace(Float64,model,order,diritag)
 
 bh = FEBasis(fespace)
 
+@test isa(Triangulation(bh),Triangulation)
+
 ufun(x) = x[1]
 
 uh = interpolate(fespace,ufun)
