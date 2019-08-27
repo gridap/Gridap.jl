@@ -18,10 +18,14 @@ import Gridap: CellGeomap
 import Gridap: CellField
 import Gridap: evaluate, gradient, return_size
 import Gridap: symmetric_gradient
+import Base: div
+import Gridap: trace
+import Gridap: curl
 import Gridap: reindex
 import Base: IndexStyle
 import Base: size
 import Base: getindex
+import Base: +, -, *
 
 """
 Minimal interface for a mesh used for numerical integration
@@ -275,14 +279,13 @@ function evaluate(f::IndexCellFieldWithTriangulation{Z},q::CellPoints{Z}) where 
   evaluate(f.cellfield,q)
 end
 
-function gradient(f::IndexCellFieldWithTriangulation)
-  g = gradient(f.cellfield)
-  IndexCellFieldWithTriangulation(g,f.trian)
-end
-
-function symmetric_gradient(f::IndexCellFieldWithTriangulation)
-  g = symmetric_gradient(f.cellfield)
-  IndexCellFieldWithTriangulation(g,f.trian)
+for op in (:+,:-,:(gradient),:(symmetric_gradient),:(div),:(trace),:(curl))
+  @eval begin
+    function ($op)(a::IndexCellFieldWithTriangulation)
+      g = $op(a.cellfield)
+      IndexCellFieldWithTriangulation(g,a.trian)
+    end
+  end
 end
 
 return_size(f::IndexCellFieldWithTriangulation,s::Tuple{Int}) = return_size(f.cellfield,s)

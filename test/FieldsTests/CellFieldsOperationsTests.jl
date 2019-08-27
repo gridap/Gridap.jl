@@ -189,5 +189,23 @@ test_iter_cell_field_without_grad(sg,cp,r)
 
 @test ε == symmetric_gradient
 
+gr = ∇(cf)
+sg = trace(gr)
+
+ri = fill(6.0,4)
+r = fill(ri,l)
+
+test_iter_cell_field_without_grad(sg,cp,r)
+
+sg = div(cf)
+
+test_iter_cell_field_without_grad(sg,cp,r)
+
+sg = curl(cf)
+
+ri = fill(0.0,4)
+r = fill(ri,l)
+test_iter_cell_field_without_grad(sg,cp,r)
+
 end # module
 

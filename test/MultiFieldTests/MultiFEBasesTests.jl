@@ -2,6 +2,7 @@ module MultiFEBasesTests
 
 using Test
 using Gridap
+using Gridap.MultiFEBases: FEBasisWithFieldId
 
 import Gridap: ∇
 
@@ -77,5 +78,22 @@ mcm = a(v,zh)
 mca = integrate(mcm,trian,quad)
 
 @test isa(mca,MultiCellArray{Float64,1})
+
+T = VectorValue{2,Float64}
+order = 1
+diritag = "boundary"
+fespace = ConformingFESpace(T,model,order,diritag)
+
+V1 = TestFESpace(fespace)
+V2 = V1
+
+V = MultiFESpace([V1,V2])
+
+bh = FEBasis(V)
+
+@test isa(∇(bh[1]),FEBasisWithFieldId)
+@test isa(ε(bh[1]),FEBasisWithFieldId)
+@test isa(div(bh[1]),FEBasisWithFieldId)
+@test isa(curl(bh[1]),FEBasisWithFieldId)
 
 end # module MultiFEBasesTests

@@ -17,7 +17,10 @@ export lincomb
 export attachgeomap
 export compose
 export symmetric_gradient
+export curl
 export ε
+import Base: div
+import Gridap: trace
 import Gridap: evaluate
 import Gridap: gradient
 import Gridap: reindex
@@ -71,6 +74,31 @@ function symmetric_gradient(f::CellFieldLike{D,T}) where {D,T<:VectorValue}
 end
 
 const ε = symmetric_gradient
+
+function trace(f::CellFieldLike{D,T}) where {D,T<:TensorValue}
+  apply(trace,f,broadcast=true)
+end
+
+function div(f::CellFieldLike{D,T}) where {D,T<:VectorValue}
+  g = gradient(f)
+  trace(g)
+end
+
+function curl(f::CellFieldLike{D,T}) where {D,T<:VectorValue}
+  g = gradient(f)
+  apply(_curl_kernel,g,broadcast=true)
+end
+
+function _curl_kernel(∇u::TensorValue{2})
+  ∇u[1,2] - ∇u[2,1]
+end
+
+function _curl_kernel(∇u::TensorValue{3})
+  c1 = ∇u[2,3] - ∇u[3,2]
+  c2 = ∇u[3,1] - ∇u[1,3]
+  c3 = ∇u[1,2] - ∇u[2,1]
+  VectorValue(c1,c2,c3)
+end
 
 function _compose(::Val{true},f,u...)
   fgrad = gradient(f)

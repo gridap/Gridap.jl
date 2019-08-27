@@ -4,6 +4,10 @@ using Gridap
 using Gridap.Helpers
 
 import Gridap: gradient
+import Gridap: symmetric_gradient
+import Base: div
+import Gridap: trace
+import Gridap: curl
 import Gridap: inner
 import Base: +, -, *
 import Base: length, getindex
@@ -29,7 +33,7 @@ function CellBasis(
   FEBasisWithFieldId(febasis,b.fieldid)
 end
 
-for op in (:+, :-, :(gradient))
+for op in (:+,:-,:(gradient),:(symmetric_gradient),:(div),:(trace),:(curl))
   @eval begin
     function ($op)(a::FEBasisWithFieldId)
       FEBasisWithFieldId($op(a.febasis),a.fieldid)

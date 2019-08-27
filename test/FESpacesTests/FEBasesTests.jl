@@ -60,6 +60,8 @@ ufun(x) = VectorValue(x[2],x[1])
 uh = interpolate(fespace,ufun)
 bh = FEBasis(fespace)
 @test isa(ε(bh),FEBasis)
+@test isa(div(bh),FEBasis)
+@test isa(curl(bh),FEBasis)
 @test isa(inner(ε(bh),ε(bh)),CellMap{Point{2},1,Float64,3})
 @test isa(inner(ε(bh),ε(uh)),CellMap{Point{2},1,Float64,2})
 

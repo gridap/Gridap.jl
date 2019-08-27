@@ -12,6 +12,9 @@ import Gridap: value_type
 
 import Gridap: evaluate, gradient, return_size
 import Gridap: symmetric_gradient
+import Base: div
+import Gridap: trace
+import Gridap: curl
 import Gridap: reindex
 import Gridap: restrict
 import Gridap: Triangulation
@@ -85,16 +88,14 @@ end
 
 evaluate(f::FEFunction{D,Z},q::CellPoints{Z}) where {D,Z} = evaluate(f.cellfield,q)
 
-function gradient(f::FEFunction)
-  g = gradient(f.cellfield)
-  trian = Triangulation(f)
-  _attach_triangulation(g,trian)
-end
-
-function symmetric_gradient(f::FEFunction)
-  g = symmetric_gradient(f.cellfield)
-  trian = Triangulation(f)
-  _attach_triangulation(g,trian)
+for op in (:+,:-,:(gradient),:(symmetric_gradient),:(div),:(trace),:(curl))
+  @eval begin
+    function ($op)(a::FEFunction)
+      g = $op(a.cellfield)
+      trian = Triangulation(a)
+      _attach_triangulation(g,trian)
+    end
+  end
 end
 
 for op in (:+, :-, :*)
