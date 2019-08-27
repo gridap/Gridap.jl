@@ -5,12 +5,14 @@ using Gridap
 using Test
 using Gridap
 
-using Gridap.FEFunctions: IndexCellFieldWithFEFunction
+using Gridap.Triangulations: IndexCellFieldWithTriangulation
 
 model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(4,4))
 order = 1
 diritag = "boundary"
 fespace = ConformingFESpace(Float64,model,order,diritag)
+
+trian = Triangulation(model)
 
 ufun(x) = x[1]
 
@@ -28,24 +30,25 @@ cn = integrate(buh,btrian,bquad)
 @test isa(cn,CellNumber)
 _ = collect(cn)
 
-cf = IndexCellFieldWithFEFunction(uh.cellfield,uh)
+cf = IndexCellFieldWithTriangulation(uh.cellfield,trian)
 
-trian = Triangulation(model)
 quad = CellQuadrature(trian,order=2)
 q = coordinates(quad)
 v = collect(evaluate(cf,q))
 g = collect(evaluate(gradient(cf),q))
 
-@test isa(∇(cf),IndexCellFieldWithFEFunction)
+@test isa(∇(cf),IndexCellFieldWithTriangulation)
 
 test_index_cell_field(cf,q,v,g)
 
-@test isa(∇(uh),IndexCellFieldWithFEFunction)
+@test isa(∇(uh),IndexCellFieldWithTriangulation)
 @test isa(Triangulation(∇(uh)),Triangulation)
 
 u = CellField(trian,ufun)
 
+@test isa(u,IndexCellFieldWithTriangulation)
+
 e = u - uh
-@test isa(e,IndexCellFieldWithFEFunction)
+@test isa(e,IndexCellFieldWithTriangulation)
 
 end # module

@@ -138,4 +138,6 @@ eener = sqrt(sum( integrate(a_elast(e,e),trian,quad) ))
 @test eh1 < 1.e-8
 @test eener < 1.e-8
 
+uener = sqrt(sum( integrate(a_elast(u,u),trian,quad) ))
+
 end # module

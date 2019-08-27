@@ -16,6 +16,9 @@ import Gridap: CellPoints
 import Gridap: CellBasis
 import Gridap: CellGeomap
 import Gridap: CellField
+import Gridap: evaluate, gradient, return_size
+import Gridap: symmetric_gradient
+import Gridap: reindex
 import Base: IndexStyle
 import Base: size
 import Base: getindex
@@ -74,13 +77,15 @@ end
 
 function CellField(trian::Triangulation,fun::Function)
   phi = CellGeomap(trian)
-  compose(fun,phi)
+  cf = compose(fun,phi)
+  _attach_triangulation(cf,trian)
 end
 
 function CellField(
   trian::Triangulation{D,Z}, fun::Function, u::Vararg{<:CellField{Z}}) where {D,Z}
   phi = CellGeomap(trian)
-  compose(fun,phi,u...)
+  cf = compose(fun,phi,u...)
+  _attach_triangulation(cf,trian)
 end
 
 function CellBasis(
@@ -237,6 +242,65 @@ function getindex(self::CartesianCellPoints{D}, cell::Vararg{<:Integer,D}) where
     self.v[k] = p
   end
   self.v
+end
+
+# Helpers
+
+_attach_triangulation(cf,trian) = cf
+
+function _attach_triangulation(cf::IndexCellField,trian)
+  IndexCellFieldWithTriangulation(cf,trian)
+end
+
+"""
+Type used to represent a CellField with a Triangulation as metadata.
+"""
+struct IndexCellFieldWithTriangulation{
+  Z,C<:IndexCellField,F<:Triangulation,R} <: IndexCellValue{R,1}
+  cellfield::C
+  trian::F
+end
+
+function IndexCellFieldWithTriangulation(
+  cellfield::IndexCellField,
+  trian::Triangulation{D,Z}) where {D,Z}
+
+  C = typeof(cellfield)
+  F = typeof(trian)
+  R = eltype(cellfield)
+  IndexCellFieldWithTriangulation{Z,C,F,R}(cellfield,trian)
+end
+
+function evaluate(f::IndexCellFieldWithTriangulation{Z},q::CellPoints{Z}) where Z
+  evaluate(f.cellfield,q)
+end
+
+function gradient(f::IndexCellFieldWithTriangulation)
+  g = gradient(f.cellfield)
+  IndexCellFieldWithTriangulation(g,f.trian)
+end
+
+function symmetric_gradient(f::IndexCellFieldWithTriangulation)
+  g = symmetric_gradient(f.cellfield)
+  IndexCellFieldWithTriangulation(g,f.trian)
+end
+
+return_size(f::IndexCellFieldWithTriangulation,s::Tuple{Int}) = return_size(f.cellfield,s)
+
+getindex(f::IndexCellFieldWithTriangulation,i::Integer) = f.cellfield[i]
+
+size(f::IndexCellFieldWithTriangulation) = (length(f.cellfield),)
+
+Triangulation(f::IndexCellFieldWithTriangulation) = f.trian
+
+function reindex(
+  values::IndexCellFieldWithTriangulation, indices::CellValue{<:IndexLike})
+  reindex(values.cellfield,indices)
+end
+
+function reindex(
+  values::IndexCellFieldWithTriangulation, indices::IndexCellValue{<:IndexLike})
+  reindex(values.cellfield,indices)
 end
 
 end # module
