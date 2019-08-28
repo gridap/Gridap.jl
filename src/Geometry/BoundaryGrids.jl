@@ -98,6 +98,8 @@ end
 
 _setup_tags(model,tags) = tags
 
+_setup_tags(model,tag::Integer) = [tag,]
+
 function _setup_tags(model,name::String)
   _setup_tags(model,[name,])
 end
