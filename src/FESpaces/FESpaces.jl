@@ -111,7 +111,7 @@ function TestFESpace(this::FESpace{D,Z,T}) where {D,Z,T}
   return FESpaceWithDirichletData(this, dv)
 end
 
-function TrialFESpace( this::FESpace, funs::Vector{<:Function}) where {D}
+function TrialFESpace( this::FESpace, funs::Vector{<:Function}=Function[]) where {D}
   tags = diri_tags(this)
   @assert length(tags) == length(funs)
   dv = interpolate_diri_values(this,funs)
