@@ -8,7 +8,9 @@ using Gridap.CLagrangianFESpaces: _setup_cellbasis
 using Gridap.CLagrangianFESpaces: _S
 using Gridap.CLagrangianFESpaces: _compute_comp_to_dof
 using Gridap.CLagrangianFESpaces: _setup_grid
+using Gridap.CLagrangianFESpaces: _setup_masks
 using Gridap.ConformingFESpaces: _CellField
+using Gridap.BoundaryGrids: _setup_tags
 
 export DLagrangianFESpace
 
@@ -78,12 +80,15 @@ function DLagrangianFESpace(
 end
 
 function DLagrangianFESpace(
-  ::Type{T},model::DiscreteModel,order,diritags,dirimasks) where T
+  ::Type{T},model::DiscreteModel,order,diritags,dirimasks=nothing) where T
+
+  _diri_tags = _setup_tags(model,diritags)
+  _diri_masks = _setup_masks(T,_diri_tags,dirimasks)
 
   grid, node_to_label, tag_to_labels = _setup_grid(model,order)
 
   DLagrangianFESpace(
-    T,grid,node_to_label,tag_to_labels,diritags,dirimasks)
+    T,grid,node_to_label,tag_to_labels,_diri_tags,_diri_masks)
 
 end
 

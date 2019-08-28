@@ -98,4 +98,28 @@ order = 1
 fespace = DLagrangianFESpace(T,model,order,diritags,dirimasks)
 test_fe_space(fespace, nfree, ndiri, cellmat, cellvec, ufun)
 
+order = 2
+T = VectorValue{2,Float64}
+diritags = [1,2,5]
+dirimasks = [(true,false),(false,true),(true,true)]
+
+fespace = DLagrangianFESpace(T,model,order,diritags,dirimasks)
+
+@test fespace.dirimasks === dirimasks
+
+fespace = DLagrangianFESpace(T,model,order,diritags)
+
+@test fespace.dirimasks == [(true, true), (true, true), (true, true)]
+
+order = 2
+T = Float64
+diritags = ["physical_tag_1","physical_tag_2","physical_tag_5"]
+dirimasks = [false,false,true]
+fespace = DLagrangianFESpace(T,model,order,diritags,dirimasks)
+@test fespace.dirimasks === dirimasks
+@test fespace.diritags == [1,2,5]
+
+fespace = DLagrangianFESpace(T,model,order,diritags)
+@test fespace.dirimasks == [(true,), (true,), (true,)]
+
 end # module

@@ -6,6 +6,7 @@ using Gridap.CellValuesGallery
 using Gridap.DOFBases: _length
 using Gridap.ConformingFESpaces: _CellField
 using Gridap.ConformingFESpaces: CellEqClass
+using Gridap.BoundaryGrids: _setup_tags
 
 import Gridap: num_free_dofs
 import Gridap: num_diri_dofs
@@ -80,12 +81,15 @@ function CLagrangianFESpace(
 end
 
 function CLagrangianFESpace(
-  ::Type{T},model::DiscreteModel,order,diritags,dirimasks) where T
+  ::Type{T},model::DiscreteModel,order,diritags,dirimasks=nothing) where T
+
+  _diri_tags = _setup_tags(model,diritags)
+  _diri_masks = _setup_masks(T,_diri_tags,dirimasks)
 
   grid, node_to_label, tag_to_labels = _setup_grid(model,order)
 
   CLagrangianFESpace(
-    T,grid,node_to_label,tag_to_labels,diritags,dirimasks)
+    T,grid,node_to_label,tag_to_labels,_diri_tags,_diri_masks)
 
 end
 
@@ -156,6 +160,17 @@ Triangulation(fesp::CLagrangianFESpace) = Triangulation(fesp.grid)
 
 # Helpers
 
+function _setup_masks(T,diritags,dirimasks)
+  if dirimasks === nothing
+    ncomps = _length(T)
+    ntags = length(diritags)
+    t = tuple(fill(true,ncomps)...)
+    return fill(t,ntags)
+  else
+    @assert length(diritags) == length(dirimasks)
+    return dirimasks
+  end
+end
 
 function _setup_node_and_comp_to_dof(
   ::Type{T}, node_to_label, tag_to_labels, diritags, dirimasks) where T
