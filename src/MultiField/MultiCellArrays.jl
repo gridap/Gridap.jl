@@ -41,7 +41,7 @@ end
 
 function _prepare(ca::CellArray{T,N}) where {T,N}
   k = ArrayKernelFromBroadcastedFunction(+)
-  CellArrayFromKernel(k,ca)
+  apply(k,ca)
 end
 
 function _prepare(ca::ConstantCellArray{T,N}) where {T,N}
