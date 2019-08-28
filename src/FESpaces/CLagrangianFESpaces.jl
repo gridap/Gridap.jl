@@ -81,7 +81,7 @@ function CLagrangianFESpace(
 end
 
 function CLagrangianFESpace(
-  ::Type{T},model::DiscreteModel,order,diritags,dirimasks=nothing) where T
+  ::Type{T},model::DiscreteModel,order,diritags=Int[],dirimasks=nothing) where T
 
   _diri_tags = _setup_tags(model,diritags)
   _diri_masks = _setup_masks(T,_diri_tags,dirimasks)

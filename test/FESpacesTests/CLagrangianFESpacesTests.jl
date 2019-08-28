@@ -152,4 +152,10 @@ fespace = CLagrangianFESpace(T,model,order,diritags,dirimasks)
 fespace = CLagrangianFESpace(T,model,order,diritags)
 @test fespace.dirimasks == [(true,), (true,), (true,)]
 
+fespace = CLagrangianFESpace(T,model,order)
+@test fespace.diritags == Int[]
+@test fespace.dirimasks == Tuple{Bool}[]
+@test all(fespace.node_and_comp_to_dof .> 0)
+@test fespace.ndiridofs == 0
+
 end # module
