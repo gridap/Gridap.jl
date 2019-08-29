@@ -82,4 +82,9 @@ eh1 = sqrt(sum( integrate(h1(e),trian,quad) ))
 @test el2 < 1.e-8
 @test eh1 < 1.e-8
 
+
+# Further tests
+op = NonLinearFEOperator(V,U,t_Ω)
+op = NonLinearFEOperator(V,U,t_Ω,t_Ω)
+
 end # module

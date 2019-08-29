@@ -101,5 +101,6 @@ e2h1 = sqrt(sum( integrate(h1(e2),trian,quad) ))
 
 op = LinearFEOperator(a,b,V,U,assem,trian,quad)
 op = LinearFEOperator(V,U,t_Ω,t_Γ)
+op = LinearFEOperator(V,U,t_Ω)
 
 end

@@ -262,7 +262,7 @@ struct NonLinearFEOperator <:FEOperator
   testfesp::FESpaceLike
   trialfesp::FESpaceLike
   assem::AssemblerLike
-  terms::Tuple{<:FETerm}
+  terms::NTuple{N,<:FETerm} where N
 end
 
 function NonLinearFEOperator(
@@ -278,7 +278,7 @@ function NonLinearFEOperator(
   trialfesp::FESpaceLike,
   terms::Vararg{<:FETerm})
   assem = SparseMatrixAssembler(testfesp,trialfesp)
-  NonLinearFEOperator(testfesp,trialfesp,assem,terms...)
+  NonLinearFEOperator(testfesp,trialfesp,assem,terms)
 end
 
 function NonLinearFEOperator(
