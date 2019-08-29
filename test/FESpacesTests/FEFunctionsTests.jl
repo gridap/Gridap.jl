@@ -51,6 +51,12 @@ u = CellField(trian,ufun)
 e = u - uh
 @test isa(e,IndexCellFieldWithTriangulation)
 
+e = ufun - uh
+@test isa(e,IndexCellFieldWithTriangulation)
+
+e = uh - ufun
+@test isa(e,IndexCellFieldWithTriangulation)
+
 T = VectorValue{2,Float64}
 fespace = ConformingFESpace(T,model,order,diritag)
 ufun(x) = VectorValue(x[2],x[1])
