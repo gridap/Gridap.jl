@@ -255,6 +255,12 @@ function solve!(uh::FEFunctionLike,s::LinearFESolver,o::LinearFEOperator,ns::Num
   solve!(x,ns,A,b)
 end
 
+function solve(op::LinearFEOperator)
+  ls = LUSolver()
+  solver = LinearFESolver(ls)
+  solve(solver,op)
+end
+
 """
 Struct representing a nonlinear FE Operator
 """

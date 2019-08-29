@@ -112,18 +112,11 @@ a_elast(v,u) = inner( ε(v), σ(ε(u)) )
 b(v) = inner(v,bfield)
 t_Ω = AffineFETerm(a_elast,b,trian,quad)
 
-# Define Assembler
-assem = SparseMatrixAssembler(V,U)
-
 # Define the FEOperator
-op = LinearFEOperator(V,U,assem,t_Ω)
-
-# Define the FESolver
-ls = LUSolver()
-solver = LinearFESolver(ls)
+op = LinearFEOperator(V,U,t_Ω)
 
 # Solve!
-uh = solve(solver,op)
+uh = solve(op)
 
 # Define exact solution and error
 u = CellField(trian,ufun)
