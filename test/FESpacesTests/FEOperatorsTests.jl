@@ -84,6 +84,10 @@ eh1 = sqrt(sum( integrate(h1(e),trian,quad) ))
 @test el2 < 1.e-8
 @test eh1 < 1.e-8
 
+# Further tests
+op = LinearFEOperator(V,U,t_Ω,t_ΓN,t_ΓR,t_ΓS)
+op = LinearFEOperator(V,U,t_Ω)
+
 # For triangles
 
 model = simplexify(model)

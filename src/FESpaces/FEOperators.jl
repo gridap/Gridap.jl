@@ -179,6 +179,15 @@ function LinearFEOperator(
 end
 
 function LinearFEOperator(
+  testfesp::FESpaceLike,
+  trialfesp::FESpaceLike,
+  terms::Vararg{<:AffineFETerm})
+
+  assem = SparseMatrixAssembler(testfesp,trialfesp)
+  LinearFEOperator(testfesp,trialfesp,assem,terms...)
+end
+
+function LinearFEOperator(
   biform::Function,
   liform::Function,
   testfesp::FESpaceLike,
@@ -262,6 +271,14 @@ function NonLinearFEOperator(
   assem::AssemblerLike,
   terms::Vararg{<:FETerm})
   NonLinearFEOperator(testfesp,trialfesp,assem,terms)
+end
+
+function NonLinearFEOperator(
+  testfesp::FESpaceLike,
+  trialfesp::FESpaceLike,
+  terms::Vararg{<:FETerm})
+  assem = SparseMatrixAssembler(testfesp,trialfesp)
+  NonLinearFEOperator(testfesp,trialfesp,assem,terms...)
 end
 
 function NonLinearFEOperator(
