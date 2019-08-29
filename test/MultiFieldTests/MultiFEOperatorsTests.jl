@@ -99,7 +99,8 @@ e2h1 = sqrt(sum( integrate(h1(e2),trian,quad) ))
 
 # Further tests
 
-# This is only to stress the single term API
 op = LinearFEOperator(a,b,V,U,assem,trian,quad)
+op = LinearFEOperator(V,U,t_Ω,t_Γ)
+op = LinearFEOperator(V,U,t_Ω)
 
 end

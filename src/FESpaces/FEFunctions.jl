@@ -100,16 +100,31 @@ end
 
 for op in (:+, :-, :*)
   @eval begin
+
     function ($op)(a::FEFunction,b::CellField)
       trian = Triangulation(a)
       g = $op(a.cellfield,b)
       _attach_triangulation(g,trian)
     end
+
     function ($op)(a::CellField,b::FEFunction)
       trian = Triangulation(b)
       g = $op(a,b.cellfield)
       _attach_triangulation(g,trian)
     end
+
+    function ($op)(a::FEFunction,b::Function)
+      trian = Triangulation(a)
+      cf = CellField(trian,b)
+      $op(a,cf)
+    end
+
+    function ($op)(a::Function,b::FEFunction)
+      trian = Triangulation(b)
+      cf = CellField(trian,a)
+      $op(cf,b)
+    end
+
   end
 end
 

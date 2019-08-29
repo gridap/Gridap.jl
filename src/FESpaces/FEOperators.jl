@@ -179,6 +179,15 @@ function LinearFEOperator(
 end
 
 function LinearFEOperator(
+  testfesp::FESpaceLike,
+  trialfesp::FESpaceLike,
+  terms::Vararg{<:AffineFETerm})
+
+  assem = SparseMatrixAssembler(testfesp,trialfesp)
+  LinearFEOperator(testfesp,trialfesp,assem,terms...)
+end
+
+function LinearFEOperator(
   biform::Function,
   liform::Function,
   testfesp::FESpaceLike,
@@ -246,6 +255,12 @@ function solve!(uh::FEFunctionLike,s::LinearFESolver,o::LinearFEOperator,ns::Num
   solve!(x,ns,A,b)
 end
 
+function solve(op::LinearFEOperator)
+  ls = LUSolver()
+  solver = LinearFESolver(ls)
+  solve(solver,op)
+end
+
 """
 Struct representing a nonlinear FE Operator
 """
@@ -253,7 +268,7 @@ struct NonLinearFEOperator <:FEOperator
   testfesp::FESpaceLike
   trialfesp::FESpaceLike
   assem::AssemblerLike
-  terms::Tuple{<:FETerm}
+  terms::NTuple{N,<:FETerm} where N
 end
 
 function NonLinearFEOperator(
@@ -261,6 +276,14 @@ function NonLinearFEOperator(
   trialfesp::FESpaceLike,
   assem::AssemblerLike,
   terms::Vararg{<:FETerm})
+  NonLinearFEOperator(testfesp,trialfesp,assem,terms)
+end
+
+function NonLinearFEOperator(
+  testfesp::FESpaceLike,
+  trialfesp::FESpaceLike,
+  terms::Vararg{<:FETerm})
+  assem = SparseMatrixAssembler(testfesp,trialfesp)
   NonLinearFEOperator(testfesp,trialfesp,assem,terms)
 end
 
