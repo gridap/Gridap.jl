@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `LinearFESolver` is now optional for solving a `LinearFEOperator`. Since commit [5c1caa8](https://github.com/gridap/Gridap.jl/commit/5c1caa8c92b260db72f5902e778ec5c0eb88728b).
+- `Assembler` is now optional to build `FEOperator` objects. Since commit [b1bf517](https://github.com/gridap/Gridap.jl/commit/b1bf5172955b940f6b3c9d027bd4a839c6486199).
+- Binary operations between `Function` and `FEFunction`. Since commit [a7f22f5](https://github.com/gridap/Gridap.jl/commit/a7f22f5ac1f45d9e8f53906472257aa582726e87).
 - Extended constructions of `CLagrangianFESpace` and `DLagrangianFESpace`. `diritags` and `dirimasks` are now optional. `diritags` can now be also a vector of `String`. Since commit [776b402](https://github.com/gridap/Gridap.jl/commit/776b40238365f145037fc5e490600bf5b45434ef).   
 - Added `div`, `curl`, and `trace` operators. Since commit [5a0f322](https://github.com/gridap/Gridap.jl/commit/5a0f322c5b938f12e26e9c0a7c9361aa649e014f). 
 - Macro `@law` to facilitate the definition of constitutive laws. Since commit [30b67f2](https://github.com/gridap/Gridap.jl/commit/30b67f29009b872944be94486dc4a1b0134a0a60). 
