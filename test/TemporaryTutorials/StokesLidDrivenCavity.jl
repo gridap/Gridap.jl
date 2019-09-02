@@ -5,8 +5,9 @@ using Test
 using Gridap
 import Gridap: ∇
 
+##
 # Construct the discrete model
-model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(4,4))
+model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(100,100))
 
 # Construct the FEspace.
 # We allow each one of the fields to have different boundary conditions
@@ -21,7 +22,7 @@ dirimasks2 = [(true,)]
 # fespace1 = ConformingFESpace(VectorValue{2,Float64},model,order,diritags1)
 # fespace2 = ConformingFESpace(Float64,model,order-1,diritags2)
 fespace1 = CLagrangianFESpace(VectorValue{2,Float64},model,order,diritags1,dirimasks1)
-fespace2 = DLagrangianFESpace(Float64,model,order-1,diritags2,dirimasks2)
+fespace2 = CLagrangianFESpace(Float64,model,order-1,diritags2,dirimasks2)
 # Define test and trial
 V1 = TestFESpace(fespace1)
 V2 = TestFESpace(fespace2)
@@ -46,8 +47,8 @@ div(u) = CellBasis(trian,divfun,∇(u))
 # Terms in the volume
 a(v,u) = inner(∇(v[1]),∇(u[1])) - inner(div(v[1]),u[2]) + inner(v[2],div(u[1]))
 t_Ω = LinearFETerm(a,trian,quad)
-assem = SparseMatrixAssembler(V,U)
-op = LinearFEOperator(V,U,assem,t_Ω)
+# assem = SparseMatrixAssembler(V,U)
+# op = LinearFEOperator(V,U,assem,t_Ω)
 # @fverdugo : Do you understand with there is an error when using LinearFEOperator?
 
 # To circumvent the previous error I create a zero forcing term
