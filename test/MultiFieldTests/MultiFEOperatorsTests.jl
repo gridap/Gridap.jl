@@ -52,7 +52,8 @@ bquad = CellQuadrature(btrian,order=2)
 # Terms in the volume
 a(v,u) = inner(∇(v[1]),∇(u[1])) + inner(v[1],u[2]) + inner(∇(v[2]),∇(u[2]))
 b(v) = inner(v[1],b1fun) + inner(v[2],b2fun)
-t_Ω = AffineFETerm(a,b,trian,quad)
+t_Ωa = LinearFETerm(a,trian,quad)
+t_Ωb = FESource(b,trian,quad)
 
 # Terms on Neumann boundary
 # Note that the Neumann BC only applies on the first field
@@ -63,7 +64,7 @@ t_Γ = FESource(g,btrian,bquad)
 assem = SparseMatrixAssembler(V,U)
 
 # Define the FEOperator
-op = LinearFEOperator(V,U,assem,t_Ω,t_Γ)
+op = LinearFEOperator(V,U,assem,t_Ωa,t_Ωb,t_Γ)
 
 # Define the FESolver
 ls = LUSolver()
@@ -99,6 +100,7 @@ e2h1 = sqrt(sum( integrate(h1(e2),trian,quad) ))
 
 # Further tests
 
+t_Ω = AffineFETerm(a,b,trian,quad)
 op = LinearFEOperator(a,b,V,U,assem,trian,quad)
 op = LinearFEOperator(V,U,t_Ω,t_Γ)
 op = LinearFEOperator(V,U,t_Ω)
