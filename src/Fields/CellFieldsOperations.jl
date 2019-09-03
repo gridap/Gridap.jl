@@ -2,6 +2,7 @@ module CellFieldsOperations
 
 using Gridap
 using Gridap.CachedValues
+using Gridap.CellValuesGallery
 using Gridap.Kernels: VarinnerKernel
 using Gridap.Kernels: LinCombKernel
 using Gridap.Kernels: PhysGradKernel
@@ -63,9 +64,10 @@ end
 
 (∘)(f::Function,g::CellFieldLike) = compose(f,g)
 
-function compose(f::Function,w::Vararg{<:CellFieldLike})
+function compose(f::Function,w::CellFieldLike,v...)
   h = hasmethod(gradient,(typeof(f),) )
-  _compose(Val(h),f,w...)
+  _v = [_prepare_extra_input(vi) for vi in v]
+  _compose(Val(h),f,w,_v...)
 end
 
 function symmetric_gradient(f::CellFieldLike{D,T}) where {D,T<:VectorValue}
@@ -111,6 +113,10 @@ function _compose(::Val{false},f,u...)
   v = apply(f,u...,broadcast=true)
   v
 end
+
+_prepare_extra_input(vi) = vi
+
+_prepare_extra_input(vi::Array) = CellValueFromArray(vi)
 
 function _merge_val_and_grad(v::CellFieldLike,g::CellFieldLike)
   IterCellFieldLikeAndGradient(v,g)

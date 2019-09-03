@@ -28,9 +28,10 @@ uh = interpolate(fespace,ufun)
 trian = Triangulation(model)
 quad = CellQuadrature(trian,order=2)
 
-σfun(x,u) = x[1] + u
-σ(u) = CellBasis(trian,σfun,u)
-cm = inner(bh,σ(bh))
+σfun(x,u,i) = x[1] + u
+σ(u,i) = CellBasis(trian,σfun,u,i)
+ids = ones(Int,ncells(trian))
+cm = inner(bh,σ(bh,ids))
 m = integrate(cm,trian,quad)
 _ = collect(m)
 

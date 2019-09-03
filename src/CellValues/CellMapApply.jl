@@ -79,6 +79,8 @@ _eval(m::CellMap,a) = evaluate(m,a)
 
 _eval(m::CellArray,a) = m
 
+_eval(m::CellNumber,a) = m
+
 function _compute_R(k,v)
   m = tuple([eltype(vi) for vi in v]...)
   S = _compute_S(m)
@@ -95,21 +97,31 @@ _cache_type(::Type{<:Map{S,M,T,N}}) where {S,M,T,N} = CachedArray{T,N,Array{T,N}
 
 _cache_type(::Type{<:AbstractArray{T,N}}) where {T,N} = CachedArray{T,N,Array{T,N}}
 
+_cache_type(::Type{T}) where T<:Number = Vector{T}
+
 _stype(v::CellMap{S}) where S = S
 
 _stype(v::CellArray) = nothing
+
+_stype(v::CellNumber) = nothing
 
 _m(v::CellMap{S,M}) where {S,M} = M
 
 _m(v::CellArray) = nothing
 
+_m(v::CellNumber) = nothing
+
 _stype(v::Type{<:Map{S}}) where S = S
 
 _stype(v::Type{<:AbstractArray}) = nothing
 
+_stype(v::Type{<:Number}) = nothing
+
 _m(v::Type{<:Map{S,M}}) where {S,M} = M
 
 _m(v::Type{<:AbstractArray}) = nothing
+
+_m(v::Type{<:Number}) = nothing
 
 struct IndexCellMapFromKernel{S,M,T,N,R<:Map{S,M,T,N},K,V,F} <: IndexCellValue{R,1}
   kernel::K

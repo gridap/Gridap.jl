@@ -46,10 +46,24 @@ rm = [ CachedArray(r.-p) for i in 1:l]
 cm2 = apply(-,cm,cp,broadcast=true)
 test_iter_cell_map(cm2,cp,rm)
 
+a = 2
+cm = TestIterCellValue(m,l)
+ca = TestIterCellValue(a,l)
+rm = [ CachedArray(r.-a) for i in 1:l]
+cm2 = apply(-,cm,ca,broadcast=true)
+test_iter_cell_map(cm2,cp,rm)
+
 cm = TestIndexCellValue(m,l)
 cp = TestIndexCellValue(p,l)
 rm = [ CachedArray(r.-p) for i in 1:l]
 cm2 = apply(-,cm,cp,broadcast=true)
+test_index_cell_map_with_index_arg(cm2,cp,rm)
+
+a = 2
+cm = TestIndexCellValue(m,l)
+ca = TestIndexCellValue(a,l)
+rm = [ CachedArray(r.-a) for i in 1:l]
+cm2 = apply(-,cm,ca,broadcast=true)
 test_index_cell_map_with_index_arg(cm2,cp,rm)
 
 a = VectorValue(10.1,10.3)

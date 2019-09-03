@@ -56,6 +56,8 @@ _cache(v::Map{S,M,T,N}) where {S,M,T,N} = CachedArray(T,N)
 
 _cache(v::AbstractArray{T,N}) where {T,N} = CachedArray(T,N)
 
+_cache(v::Number) = fill(v,1)
+
 function _compute_S(v)
   @assert length(v) > 0
   v1, = v
@@ -117,6 +119,10 @@ function _ev!(p,c,i::AbstractArray)
   for k in eachindex(i)
     @inbounds c[k] = i[k]
   end
+end
+
+function _ev!(p,c,i::Number)
+  c[1] = i
 end
 
 # TODO also with a generated function
