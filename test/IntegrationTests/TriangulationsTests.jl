@@ -48,4 +48,27 @@ u = CellField(trian,ufun)
 #ν(u) = CellField(trian,νfun,u)
 #w = ν(u) # julia nightly builds get stuck here
 
+function μfun(x,u,v,i)
+  if i == 4
+    return TensorValue(x[1], u*x[2], 0.0, u)
+  else
+    return TensorValue(0.1, x[2], 0.0, u)
+  end
+end
+
+i = zeros(Int,length(u))
+i[1:2] .= 4
+
+cf = CellField(trian,μfun,u,u,i)
+
+_ = collect(evaluate(cf,q))
+
+cf = CellBasis(trian,μfun,u,u,i)
+
+b = CellBasis(trian)
+
+cb = CellBasis(trian,μfun,b,u,i)
+
+_ = collect(evaluate(cb,q))
+
 end # module
