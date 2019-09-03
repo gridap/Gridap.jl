@@ -3,7 +3,19 @@ module PolytopesTests
 ##
 using Gridap, Test
 
-
+##
+# Checking Polytope and NFace APIs
+D = 3
+p = Polytope(1,1,1)
+@test dim(p) == 3
+@test extrusion(p).array == [1,1,1]
+@test length(nfaces(p)) == 27
+@test nf_nfs(p)[end] == [i for i in 1:27]
+@test nf_dim(p)[end][1] == 1:8
+nf = nfaces(p)[9]
+@test dim(nf) == 1
+@test space_dim(nf) == 3
+@test anchor(nf).array == [0,0,0]
 ##
 # Adding outwards normals
 D = 3

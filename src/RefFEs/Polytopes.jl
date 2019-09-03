@@ -15,6 +15,18 @@ export HEX_AXIS, TET_AXIS
 export num_nfaces
 export facet_normals
 
+export space_dim
+export dim
+export anchor
+export extrusion
+export nfaces
+export nf_nfs
+export nf_dim
+
+
+
+
+
 # Module constants
 
 const HEX_AXIS = 1
@@ -74,9 +86,11 @@ end
 
 # Helpers
 
-dim(::NFace{D}) where {D} = D
+space_dim(::NFace{D}) where {D} = D
 
 anchor(nf::NFace) = nf.anchor
+
+dim(nf::NFace) = _nfdim(nf.extrusion)
 
 extrusion(nf::NFace) = nf.extrusion
 
@@ -145,16 +159,17 @@ end
 
 # Helpers
 
+_nfdim(a::Point{D,Int}) where D = sum([a[i] > 0 ? 1 : 0 for i =1:D ])
+
 # @fverdugo Following the style in julia.Base, I would name with a leading
 # underscore all helper functions that are not exposed to the public API
 
-nfdim(a::Point{D,Int}) where D = sum([a[i] > 0 ? 1 : 0 for i =1:D ])
 
 """
 Generates the array of n-faces of a polytope
 """
 function polytopenfaces(anchor::Point{D,Int}, extrusion::Point{D,Int}) where D
-  dnf = nfdim(extrusion)
+  dnf = _nfdim(extrusion)
   zerop = Point{D,Int}(zeros(Int64,D))
   nf_nfs = []
   nf_nfs = nfaceboundary!(anchor, zerop, extrusion, true, nf_nfs)
@@ -162,7 +177,7 @@ function polytopenfaces(anchor::Point{D,Int}, extrusion::Point{D,Int}) where D
   [sort!(nf_nfs, by = x -> x.extrusion[i]) for i=1:length(extrusion)]
   [sort!(nf_nfs, by = x -> sum(x.extrusion))]
   numnfs = length(nf_nfs)
-  nfsdim = [nfdim(nf_nfs[i].extrusion) for i=1:numnfs]
+  nfsdim = [_nfdim(nf_nfs[i].extrusion) for i=1:numnfs]
   dimnfs = Array{UnitRange{Int64},1}(undef,dnf+1)
   dim=0; i=1
   for iface=1:numnfs
