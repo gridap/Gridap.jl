@@ -4,6 +4,17 @@ module PolytopesTests
 using Gridap, Test
 
 ##
+# Eliminating the NodeArray struct
+
+# Part 1: Create an anisotropic equidistant_interior_nodes_coordinates
+D = 3
+p = Polytope(1,1,1)
+order = [2,4,3]
+nodes = equidistant_interior_nodes_coordinates(p, order)
+@test nodes[3].array ≈ [0.5,0.75,1.0/3.0]
+
+
+##
 # Checking Polytope and NFace APIs
 D = 3
 p = Polytope(1,1,1)
@@ -12,6 +23,8 @@ nf = nfaces(p)[9]
 @test extrusion(p).array == [1,1,1]
 @test length(nfaces(p)) == 27
 @test nf_nfs(p)[end] == [i for i in 1:27]
+nf_nfs(p)
+nf_dim(p)
 @test nf_dim(p)[end][1] == 1:8
 @test dim(nf) == 1
 @test space_dim(nf) == 3

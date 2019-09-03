@@ -213,8 +213,12 @@ function equidistant_interior_nodes_coordinates(p::Polytope{D}, order::Int) wher
 end
 
 function equidistant_interior_nodes_coordinates(p::Polytope{D}, order::Vector{Int}) where D
-  ns = _interior_nodes_int_coords(p, order)
-  return ns_float = _interior_nodes_int_to_real_coords(ns, order)
+  if ( (extrusion(p).array == ones(dim(p))) || (sum(order) == order[1]*length(order)))
+    ns = _interior_nodes_int_coords(p, order)
+    return ns_float = _interior_nodes_int_to_real_coords(ns, order)
+  else
+    error("One can consider anisotropic orders on n-cubes only")
+  end
 end
 
 """
