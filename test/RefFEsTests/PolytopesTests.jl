@@ -16,6 +16,14 @@ nf = nfaces(p)[9]
 @test dim(nf) == 1
 @test space_dim(nf) == 3
 @test anchor(nf).array == [0,0,0]
+
+
+num_nfaces(p,1)
+Gridap.Polytopes._dimfrom_fs_dimto_fs(p,2,2)
+
+
+
+
 ##
 # Adding outwards normals
 D = 3
