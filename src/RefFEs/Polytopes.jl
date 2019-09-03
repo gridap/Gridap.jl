@@ -110,9 +110,17 @@ extrusion(p::Polytope) = p.extrusion
 nfaces(p::Polytope) = p.nfaces
 
 # @santiagobadia : I would prefer not to make public the following ones
-
+"""
+Provides the label of the n-faces that are a subset (on the boundary) or
+equal to a given n-face. We use a global numbering for n-faces in the returned
+array. n-faces are sorted by increasing dimension.
+"""
 nf_nfs(p::Polytope) = p.nf_nfs
 
+"""
+Provides for the result of the `nf_nfs` method, i.e., n-faces in an n-face,
+the range of n-faces for every dimension lower or equal than the n-face dimension.
+"""
 nf_dim(p::Polytope) = p.nf_dim
 
 """
