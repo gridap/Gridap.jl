@@ -28,6 +28,8 @@ const TET_AXIS = 2
 # the geomap on n-faces, etc. And a clearer definition of the mesh object
 # to discuss with @fverdugo
 
+# Concrete implementations
+
 """
 n-face of the polytope, i.e., any polytope of lower dimension `N` representing
 its boundary and the polytope itself (for `N` equal to the space dimension `D`)
@@ -70,9 +72,23 @@ function Polytope(extrusion::Point{D,Int}) where D
   Polytope{D}(extrusion, pol_nfs, nf_nfs, nf_dim)
 end
 
-#@fverdugo add here a public API to access the polytope info instead
-# of using the struct fields directly as it is currently done
-# in some places of the code.
+# Helpers
+
+dim(::NFace{D}) where {D} = D
+
+anchor(nf::NFace) = nf.anchor
+
+extrusion(nf::NFace) = nf.extrusion
+
+dim(::Polytope{D}) where {D} = D
+
+extrusion(p::Polytope) = p.extrusion
+
+nfaces(p::Polytope) = p.nfaces
+
+nf_nfs(p::Polytope) = p.nf_nfs
+
+nf_dim(p::Polytope) = p.nf_dim
 
 """
 Returns number of nfaces of dimension dim
