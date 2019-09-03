@@ -34,6 +34,11 @@ m3 = apply(outer,m,a,broadcast=true)
 r3 = broadcast(outer,r,a)
 test_map(m3,p,r3)
 
+a = 2.0
+m3 = apply(outer,m,a,broadcast=true)
+r3 = broadcast(outer,r,a)
+test_map(m3,p,r3)
+
 a = VectorValue(10.1,10.3)
 m = MockMap(a)
 r = evaluate(m,p)
