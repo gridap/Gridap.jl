@@ -96,4 +96,9 @@ bh = FEBasis(V)
 @test isa(div(bh[1]),FEBasisWithFieldId)
 @test isa(curl(bh[1]),FEBasisWithFieldId)
 
+σfun(x,u,i) = i*u
+ids = ones(Int,ncells(trian))
+cb = CellBasis(trian,σfun,bh[1],ids)
+@test isa(cb,FEBasisWithFieldId)
+
 end # module MultiFEBasesTests

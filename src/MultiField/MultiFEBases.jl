@@ -27,7 +27,7 @@ function CellBasis(
   trian::Triangulation{D,Z},
   fun::Function,
   b::FEBasisWithFieldId,
-  u::Vararg{<:CellField{Z}}) where {D,Z}
+  u...) where {D,Z}
 
   febasis = CellBasis(trian,fun,b.febasis,u...)
   FEBasisWithFieldId(febasis,b.fieldid)

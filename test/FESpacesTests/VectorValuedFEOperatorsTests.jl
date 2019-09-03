@@ -81,7 +81,7 @@ const λ = (E*ν)/((1+ν)*(1-2*ν))
 const μ = E/(2*(1+ν))
 
 # Constitutive law
-@law σ(x,ε) = λ*tr(ε)*one(ε) + 2*μ*ε
+@law σ(x,ε,id) = λ*tr(ε)*one(ε) + 2*μ*ε
 
 # Define manufactured functions
 ufun(x) = VectorValue(x[1] + x[2],x[1])
@@ -108,7 +108,8 @@ quad = CellQuadrature(trian,order=2)
 
 # Terms in the volume
 bfield = CellField(trian,bfun)
-a_elast(v,u) = inner( ε(v), σ(ε(u)) )
+ids = ones(Int,ncells(trian))
+a_elast(v,u) = inner( ε(v), σ(ε(u),ids) )
 b(v) = inner(v,bfield)
 t_Ω = AffineFETerm(a_elast,b,trian,quad)
 

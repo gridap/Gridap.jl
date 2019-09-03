@@ -64,7 +64,7 @@ function CellBasis(
   trian::Triangulation{D,Z},
   fun::Function,
   b::FEBasis,
-  u::Vararg{<:CellField{Z}}) where {D,Z}
+  u...) where {D,Z}
   basis = CellBasis(trian,fun,b.cellbasis,u...)
   FEBasis(basis,trian)
 end
