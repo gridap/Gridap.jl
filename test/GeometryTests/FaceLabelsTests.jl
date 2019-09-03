@@ -21,4 +21,7 @@ labels = FaceLabels(
 @test labels_on_tag(labels,2) == physlabel_2
 @test tag_from_name(labels,"label1")==1
 
+r = [1, 1, 2, 2, 2, 2, 2, 2, 1]
+@test collect(first_tag_on_face(labels,1)) == r
+
 end # module

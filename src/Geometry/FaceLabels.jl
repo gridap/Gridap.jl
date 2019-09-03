@@ -9,6 +9,7 @@ export labels_on_tag
 export ntags
 export tag_from_name
 export name_from_tag
+export first_tag_on_face
 
 """
 Classification of nfaces into geometrical and physical labels
@@ -51,5 +52,25 @@ function tag_from_name(l::FaceLabels,name::String)
 end
 
 name_from_tag(l::FaceLabels,tag::Integer) = l.tag_to_name[tag]
+
+function first_tag_on_face(labels::FaceLabels,dim::Integer)
+  face_to_label = labels_on_dim(labels,dim)
+  nfaces = length(face_to_label)
+  face_to_tag = zeros(Int,nfaces)
+  _first_tag_on_face!(face_to_tag,face_to_label,labels.tag_to_labels)
+  CellValueFromArray(face_to_tag)
+end
+
+function _first_tag_on_face!(face_to_tag,face_to_label,tag_to_labels)
+  nfaces = length(face_to_tag)
+  for face in 1:nfaces
+    label = face_to_label[face]
+    for (tag,labels) in enumerate(tag_to_labels)
+      if label in labels
+        face_to_tag[face] = tag
+      end
+    end
+  end
+end
 
 end #module
