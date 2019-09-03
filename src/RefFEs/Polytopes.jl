@@ -130,9 +130,9 @@ function num_nfaces(polytope::Polytope, dim::Integer)
   k
 end
 
-# """
+"""
 # Returns an array with the reference polytopes for all n-faces (undef for vertices)
-# """
+"""
 function nface_ref_polytopes(p::Polytope)
   function _eliminate_zeros(a)
     b = Int[]
@@ -199,9 +199,14 @@ end
 It generates the set of nodes (its coordinates) in the interior of an n-face,
 for a given order. The node coordinates are the ones for a equispace case.
 """
-function equidistant_interior_nodes_coordinates(p::Polytope{D}, order) where D
-  ns = _interior_nodes_int_coords(p, _order)
-  return ns_float = _interior_nodes_int_to_real_coords(ns, _order)
+function equidistant_interior_nodes_coordinates(p::Polytope{D}, order::Int) where D
+  _order = order*ones(Int64,dim(p))
+  equidistant_interior_nodes_coordinates(p, _order)
+end
+
+function equidistant_interior_nodes_coordinates(p::Polytope{D}, order::Vector{Int}) where D
+  ns = _interior_nodes_int_coords(p, order)
+  return ns_float = _interior_nodes_int_to_real_coords(ns, order)
 end
 
 """
@@ -219,7 +224,8 @@ function vertices_coordinates(p::Polytope{D}) where D
 end
 
 """
-It generates the outwards normals of the facets of a polytope
+It generates the outwards normals of the facets of a polytope. It returns two
+arrays, the first one being the outward normal and the second one the orientation.
 """
 function facet_normals(p::Polytope{D}) where D
   nf_vs = _dimfrom_fs_dimto_fs(p, D - 1, 0)

@@ -7,23 +7,23 @@ using Gridap, Test
 # Checking Polytope and NFace APIs
 D = 3
 p = Polytope(1,1,1)
+nf = nfaces(p)[9]
 @test dim(p) == 3
 @test extrusion(p).array == [1,1,1]
 @test length(nfaces(p)) == 27
 @test nf_nfs(p)[end] == [i for i in 1:27]
 @test nf_dim(p)[end][1] == 1:8
-nf = nfaces(p)[9]
 @test dim(nf) == 1
 @test space_dim(nf) == 3
 @test anchor(nf).array == [0,0,0]
-
-
-num_nfaces(p,1)
-Gridap.Polytopes._dimfrom_fs_dimto_fs(p,2,2)
-
-
-
-
+@test vertices_coordinates(p)[8].array == [1.0,1.0,1.0]
+@test num_nfaces(p,1) == 12
+@test extrusion(nface_ref_polytopes(p)[end]) == extrusion(p)
+@test generate_admissible_permutations(p)[end] == [8,7,6,4]
+@test length(equidistant_interior_nodes_coordinates(p,4)) == 27
+@test equidistant_interior_nodes_coordinates(p,[2,2,2])[1].array == [0.5, 0.5, 0.5]
+@test vertices_coordinates(p)[8].array == [1.0,1.0,1.0]
+@test facet_normals(p)[1][1].array ≈ [0.0,0.0,-1.0]
 ##
 # Adding outwards normals
 D = 3
