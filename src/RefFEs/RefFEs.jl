@@ -40,7 +40,7 @@ function nfacedofs(reffe::RefFE{D},dim::Integer) where D
   @assert 0 <= dim
   @assert dim <= D
   nface_to_dofs = nfacedofs(reffe)
-  p = reffe.polytope
+  p = polytope(reffe)
   nface_to_dofs[p.nf_dim[end][dim+1]]
 end
 
