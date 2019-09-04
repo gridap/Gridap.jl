@@ -113,6 +113,18 @@ for op in (:+, :-, :*)
       _attach_triangulation(g,trian)
     end
 
+    function ($op)(a::FEFunction,b::Number)
+      trian = Triangulation(a)
+      g = $op(a.cellfield,b)
+      _attach_triangulation(g,trian)
+    end
+
+    function ($op)(a::Number,b::FEFunction)
+      trian = Triangulation(b)
+      g = $op(a,b.cellfield)
+      _attach_triangulation(g,trian)
+    end
+
     function ($op)(a::FEFunction,b::Function)
       trian = Triangulation(a)
       cf = CellField(trian,b)

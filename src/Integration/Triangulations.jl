@@ -290,6 +290,24 @@ for op in (:+,:-,:(gradient),:(symmetric_gradient),:(div),:(trace),:(curl))
   end
 end
 
+for op in (:+, :-, :*)
+  @eval begin
+
+    function ($op)(a::IndexCellFieldWithTriangulation,b::Function)
+      trian = Triangulation(a)
+      cf = CellField(trian,b)
+      $op(a,cf)
+    end
+
+    function ($op)(a::Function,b::IndexCellFieldWithTriangulation)
+      trian = Triangulation(b)
+      cf = CellField(trian,a)
+      $op(cf,b)
+    end
+
+  end
+end
+
 return_size(f::IndexCellFieldWithTriangulation,s::Tuple{Int}) = return_size(f.cellfield,s)
 
 getindex(f::IndexCellFieldWithTriangulation,i::Integer) = f.cellfield[i]
