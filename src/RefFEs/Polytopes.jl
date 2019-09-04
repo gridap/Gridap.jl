@@ -213,7 +213,8 @@ function equidistant_interior_nodes_coordinates(p::Polytope{D}, order::Int) wher
 end
 
 function equidistant_interior_nodes_coordinates(p::Polytope{D}, order::Vector{Int}) where D
-  if ( (extrusion(p).array == ones(dim(p))) || (sum(order) == order[1]*length(order)))
+
+  if (all(extrusion(p).array .== HEX_AXIS) || all(order .== order[1]))
     ns = _interior_nodes_int_coords(p, order)
     return ns_float = _interior_nodes_int_to_real_coords(ns, order)
   else
@@ -245,8 +246,6 @@ function facet_normals(p::Polytope{D}) where D
   f_ns = Point{D,Float64}[]
   f_os = Int[]
   for i_f = 1:length(p.nf_dim[end][end-1])
-    # @santiagobadia : we are allocating memory here but this
-    # part of the code is not a computationally intensive one
     n, f_o = _facet_normal(p, nf_vs, vs, i_f)
     push!(f_ns, Point{D,Float64}(n))
     push!(f_os, f_o)

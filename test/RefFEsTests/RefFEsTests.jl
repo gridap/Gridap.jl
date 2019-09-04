@@ -10,12 +10,26 @@ using Gridap.Helpers
 using Base.Cartesian
 ##
 
+# 1) Clean constructors without D or T
+
 # Create dofbasis using node array for Lagrangian FEs
 
 # Create BasisWithChangeOfBasis
 # i.e., CanonicalBasis given DOFs
 
 # nfacetoowndofs
+
+# D = 1
+#
+#
+# D = 2
+# orders=[2,2]
+# p = Polytope(1,1)
+# reffe = LagrangianRefFE{2,Float64}(p,orders)
+# reffe = LagrangianRefFE(Float64,p,2)
+#
+# p = Polytope(1,2)
+# reffe = LagrangianRefFE{2,Float64}(p,orders)
 
 
 ##
@@ -290,7 +304,7 @@ extrusion = Point{D,Int}(1,1)
 polytope = Polytope(extrusion)
 reffe = LagrangianRefFE{D,VectorValue{D,Float64}}(polytope,orders)
 
-@test reffe.nfacenodes == [[1], [2], [3], [4], [], [], [], [], []] 
-@test nfacedofs(reffe) == [[1, 5], [2, 6], [3, 7], [4, 8], [], [], [], [], []] 
+@test reffe.nfacenodes == [[1], [2], [3], [4], [], [], [], [], []]
+@test nfacedofs(reffe) == [[1, 5], [2, 6], [3, 7], [4, 8], [], [], [], [], []]
 
 end # module

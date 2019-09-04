@@ -149,7 +149,8 @@ function _high_order_lagrangian_nodes_polytope(p::Polytope, order)
   vs_p = Gridap.Polytopes.vertices_coordinates(p)
   ns_float_p = [i.array for i in vs_p]
   ref_ps = Gridap.Polytopes.nface_ref_polytopes(p)
-  rfe_p = Gridap.RefFEs._high_order_lagrangian_reffe(p,Float64,1)
+  # rfe_p = Gridap.RefFEs._high_order_lagrangian_reffe(p,Float64,1)
+  rfe_p = LagrangianRefFE{dim(p),Float64}(p,1)
   nfacedofs = copy(rfe_p.nfacedofs)
   k = length(vs_p)
   for nf_dim = 1:length(p.nf_dim[end])-1
