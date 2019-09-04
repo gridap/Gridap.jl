@@ -21,7 +21,7 @@ b1fun(x) = VectorValue(1.0,-1.0)
 b2fun(x) = 2.0
 
 # Construct the discrete model
-model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(4,4))
+model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(2,2))
 
 # Construct the FEspace 1
 order = 2
@@ -29,8 +29,11 @@ diritag = "boundary"
 fespace1 = CLagrangianFESpace(T,model,order,diritag)
 
 # Construct the FEspace 2
-diritag = 1
-fespace2 = CLagrangianFESpace(Float64,model,order-1,diritag)
+D = 2
+reffe = PDiscRefFE(Float64,D,order-1)
+_fespace2 = DiscFESpace(reffe,model)
+fixeddofs = [1,]
+fespace2 = ConstrainedFESpace(_fespace2,fixeddofs)
 
 # Define test and trial
 V1 = TestFESpace(fespace1)
@@ -38,7 +41,7 @@ V2 = TestFESpace(fespace2)
 V = [V1, V2]
 
 U1 = TrialFESpace(fespace1,u1fun)
-U2 = TrialFESpace(fespace2,u2fun)
+U2 = TrialFESpace(fespace2)
 U = [U1, U2]
 
 # Define integration mesh and quadrature for volume
@@ -63,12 +66,20 @@ solver = LinearFESolver(ls)
 # Solve!
 uh = solve(solver,op)
 
+# Correct the pressure
+A = sum(integrate(u2fun-uh[2],trian,quad))
+V = sum(integrate((x)->1.0,trian,quad))
+C = A/V
+p = apply(+,uh[2],ConstantCellValue(C,length(uh[2])),broadcast=true)
+
 # Define exact solution and error
 u1 = CellField(trian,u1fun)
 e1 = u1 - uh[1]
 
 u2 = CellField(trian,u2fun)
-e2 = u2 - uh[2]
+e2 = u2 - p
+
+#writevtk(trian,"trian",cellfields=["uh2"=>uh[2],"p"=>p,"u2"=>u2])
 
 # Define norms to measure the error
 l2(u) = inner(u,u)

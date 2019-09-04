@@ -19,6 +19,11 @@ import Gridap: CellField
 import Gridap: CellBasis
 import Gridap: Triangulation
 
+using Base: @propagate_inbounds
+import Base: size
+import Base: IndexStyle
+import Base: getindex
+
 """
 A FESpace that it is constructed from another one plus some constraints
 on the free values.
@@ -33,6 +38,7 @@ struct ConstrainedFESpace{D,Z,T,E} <: FESpace{D,Z,T}
   celldofs::IndexCellVector{Int}
   is_fixed::Vector{Bool}
   is_free::Vector{Bool}
+  dof_to_new_dof::Vector{Int}
 end
 
 function ConstrainedFESpace(
@@ -42,9 +48,11 @@ function ConstrainedFESpace(
 
   @assert E == dof_type(T)
 
-  celldofs, nfree, is_fixed, is_free = _setup_celldofs(fespace,fixeddofs)
+  celldofs, nfree, is_fixed, is_free, dof_to_new_dof =
+    _setup_celldofs(fespace,fixeddofs)
   ConstrainedFESpace{D,Z,T,E}(
-    fespace,fixeddofs,fixedvals,nfree,celldofs,is_fixed,is_free)
+    fespace,fixeddofs,fixedvals,nfree,celldofs,
+    is_fixed,is_free,dof_to_new_dof)
 end
 
 num_free_dofs(this::ConstrainedFESpace) = this.nfree
@@ -56,17 +64,17 @@ diri_tags(this::ConstrainedFESpace) = diri_tags(this.fespace)
 apply_constraints(
   this::ConstrainedFESpace,
   cellvec::CellVector,
-  cellids::CellNumber) = cellvec
+  cellids::CellNumber) = apply_constraints(this.fespace,cellvec,cellids)
 
 apply_constraints_rows(
   this::ConstrainedFESpace,
   cellmat::CellMatrix,
-  cellids::CellNumber) = cellmat
+  cellids::CellNumber) = apply_constraints_rows(this.fespace,cellmat,cellids)
 
 apply_constraints_cols(
   this::ConstrainedFESpace,
   cellmat::CellMatrix,
-  cellids::CellNumber) = cellmat
+  cellids::CellNumber) = apply_constraints_cols(this.fespace,cellmat,cellids)
 
 function celldofids(this::ConstrainedFESpace)
   this.celldofs
@@ -86,13 +94,10 @@ function CellField(
   free_dofs::AbstractVector{E},
   diri_dofs::AbstractVector{E}) where {D,Z,T,E}
 
-  nfree_old = num_free_dofs(this.fespace)
+  ndiri = length(diri_dofs)
+  v = VectorOfTwoParts(this.dof_to_new_dof,free_dofs,this.fixedvals,ndiri)
 
-  free_dofs_old = zeros(E,nfree_old)
-  free_dofs_old[this.is_free] .= free_dofs
-  free_dofs_old[this.is_fixed] .= this.fixedvals
-
-  CellField(this.fespace,free_dofs_old,diri_dofs)
+  CellField(this.fespace,v,diri_dofs)
 end
 
 function CellBasis(this::ConstrainedFESpace{D,Z,T}) where {D,Z,T}
@@ -104,6 +109,26 @@ function Triangulation(this::ConstrainedFESpace{D,Z}) where {Z,D}
 end
 
 # Helpers
+
+struct VectorOfTwoParts{T,VT1<:AbstractVector{T},VT2<:AbstractVector{T},I} <: AbstractVector{T}
+  dof_to_xdof::Vector{I}
+  pdof_to_val::VT1
+  ndof_to_val::VT2
+  offset::I
+end
+
+size(v::VectorOfTwoParts) = (length(v.dof_to_xdof),)
+
+IndexStyle(::Type{VectorOfTwoParts{T,I}}) where {T,I} = IndexLinear()
+
+@propagate_inbounds function getindex(v::VectorOfTwoParts,i::Integer)
+  @inbounds xdof = v.dof_to_xdof[i]
+  if xdof > 0
+    @inbounds return v.pdof_to_val[xdof]
+  elseif xdof< 0
+    @inbounds return v.ndof_to_val[-xdof-v.offset]
+  end
+end
 
 function _setup_celldofs(fespace,fixeddofs)
 
@@ -126,7 +151,7 @@ function _setup_celldofs(fespace,fixeddofs)
   celldofs_new = CellVectorFromLocalToGlobalPosAndNeg(
     celldofs,dof_to_new_dof,collect(-1:-1:-ndiri))
 
-  (celldofs_new, nfree_new, is_fixed, is_free)
+  (celldofs_new, nfree_new, is_fixed, is_free, dof_to_new_dof)
 end
 
 end # module
