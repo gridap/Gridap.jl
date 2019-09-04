@@ -43,6 +43,9 @@ V = MultiFESpace([V1,V2])
 u = FEBasis(U)
 v = FEBasis(V)
 
+@test isa(u[1]+1,FEBasisWithFieldId)
+@test isa(1-u[1],FEBasisWithFieldId)
+
 @test isa(Triangulation(u[1]),Triangulation)
 
 a(v,u) = inner(∇(v[1]),∇(u[1])) + inner(v[1],u[2]) + inner(∇(v[2]),∇(u[2]))
