@@ -14,6 +14,9 @@ include("DLagrangianFESpaces.jl")
 include("DiscFESpaces.jl")
 @reexport using Gridap.DiscFESpaces
 
+include("ConstrainedFESpaces.jl")
+@reexport using Gridap.ConstrainedFESpaces
+
 include("FEFunctions.jl")
 @reexport using Gridap.FEFunctions
 
