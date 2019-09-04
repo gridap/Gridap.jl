@@ -33,6 +33,8 @@ shfbasis(this::RefFE{D,T} where {D,T})::Basis{D,T} = @abstractmethod
 
 nfacedofs(this::RefFE{D,T} where {D,T})::Vector{Vector{Int}} = @abstractmethod
 
+# @fverdugo this abstract interface needs a tester
+
 """
 Extract the lists of dofs, but only for the nfaces of dimension dim
 """

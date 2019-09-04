@@ -252,7 +252,7 @@ end
 
 function _interpolate_values(fesp::ConformingFESpace{D,Z,T},fun::Function) where {D,Z,T}
   reffe = fesp.reffe
-  dofb = reffe.dofbasis
+  dofb = dofbasis(reffe)
   trian = fesp.triangulation
   phi = CellGeomap(trian)
   uphys = fun ∘ phi

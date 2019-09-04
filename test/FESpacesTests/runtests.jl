@@ -10,6 +10,10 @@ using Test
 
 @testset "DLagrangianFESpaces" begin include("DLagrangianFESpacesTests.jl") end
 
+@testset "DiscFESpaces" begin include("DiscFESpacesTests.jl") end
+
+@testset "ConstrainedFESpaces" begin include("ConstrainedFESpacesTests.jl") end
+
 @testset "FEFunctions" begin include("FEFunctionsTests.jl") end
 
 @testset "FEBases" begin include("FEBasesTests.jl") end

@@ -22,6 +22,8 @@ uh = interpolate(fespace,ufun)
 @test isa(∇(bh),FEBasis)
 @test isa(bh+uh,FEBasis)
 @test isa(uh-bh,FEBasis)
+@test isa(bh-1.0,FEBasis)
+@test isa(1.0+bh,FEBasis)
 @test isa(inner(bh,bh),CellMap{Point{2},1,Float64,3})
 @test isa(inner(bh,uh),CellMap{Point{2},1,Float64,2})
 

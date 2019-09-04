@@ -10,3 +10,6 @@ include("DOFBases.jl")
 
 include("RefFEs.jl")
 @reexport using Gridap.RefFEs
+
+include("PDiscRefFEs.jl")
+@reexport using Gridap.PDiscRefFEs
