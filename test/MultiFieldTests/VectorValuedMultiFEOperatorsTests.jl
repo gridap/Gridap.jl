@@ -69,8 +69,7 @@ uh = solve(solver,op)
 # Correct the pressure
 A = sum(integrate(u2fun-uh[2],trian,quad))
 V = sum(integrate((x)->1.0,trian,quad))
-C = A/V
-p = apply(+,uh[2],ConstantCellValue(C,length(uh[2])),broadcast=true)
+p = uh[2] + A/V
 
 # Define exact solution and error
 u1 = CellField(trian,u1fun)

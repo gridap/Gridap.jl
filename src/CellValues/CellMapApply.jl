@@ -21,8 +21,24 @@ function apply(k::ArrayKernel,m::CellMap,v::Vararg{<:CellValue})
   CellMapFromKernel(k,m,v...)
 end
 
+function apply(k::ArrayKernel,m::CellValue,v::CellMap)
+  CellMapFromKernel(k,m,v)
+end
+
+function apply(k::ArrayKernel,m::CellMap,v::CellMap)
+  CellMapFromKernel(k,m,v)
+end
+
 function apply(k::ArrayKernel,m::IndexCellMap,v::Vararg{<:IndexCellValue})
   IndexCellMapFromKernel(k,m,v...)
+end
+
+function apply(k::ArrayKernel,m::IndexCellValue,v::IndexCellMap)
+  IndexCellMapFromKernel(k,m,v)
+end
+
+function apply(k::ArrayKernel,m::IndexCellMap,v::IndexCellMap)
+  IndexCellMapFromKernel(k,m,v)
 end
 
 struct CellMapFromKernel{S,M,T,N,R,K,V} <: IterCellMap{S,M,T,N,R}

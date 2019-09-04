@@ -59,6 +59,16 @@ for op in (:+,:-,:*,:/,:\,:inner,:outer)
       apply($op,a,b,broadcast=true)
     end
 
+    function ($op)(a::CellMap,b::Number)
+      l = length(a)
+      apply($op,a,ConstantCellValue(b,l),broadcast=true)
+    end
+
+    function ($op)(a::Number,b::CellMap)
+      l = length(b)
+      apply($op,ConstantCellValue(a,l),b,broadcast=true)
+    end
+
     function ($op)(a::Map,b::Map)
       apply($op,a,b,broadcast=true)
     end

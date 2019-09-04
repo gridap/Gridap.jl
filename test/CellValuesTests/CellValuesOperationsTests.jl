@@ -317,6 +317,22 @@ for op in (:+,:-)
     ca = evaluate(cm2,cp)
     test_index_cell_array(ca,rm)
 
+    z = 2.0
+    cm = TestIndexCellValue(m,l)
+    cp = TestIndexCellValue(p,l)
+    rm = [ CachedArray(broadcast($op,z,r)) for i in 1:l]
+    cm2 = $op(z,cm)
+    ca = evaluate(cm2,cp)
+    test_index_cell_array(ca,rm)
+
+    z = 2.0
+    cm = TestIndexCellValue(m,l)
+    cp = TestIndexCellValue(p,l)
+    rm = [ CachedArray(broadcast($op,r,z)) for i in 1:l]
+    cm2 = $op(cm,z)
+    ca = evaluate(cm2,cp)
+    test_index_cell_array(ca,rm)
+
   end
 end
 
