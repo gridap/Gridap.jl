@@ -20,6 +20,13 @@ function PDiscRefFE(::Type{T},D::Integer,order::Integer) where T
   extrusion = fill(HEX_AXIS,D)
   polytope = Polytope(extrusion...)
 
+  PDiscRefFE(T,polytope,order)
+
+end
+
+function PDiscRefFE(
+  ::Type{T}, polytope::Polytope{D}, order::Integer) where {T,D}
+
   extrusion_tet = fill(TET_AXIS,D)
   polytope_tet = Polytope(extrusion_tet...)
 

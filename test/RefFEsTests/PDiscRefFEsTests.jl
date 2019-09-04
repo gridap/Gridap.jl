@@ -1,12 +1,7 @@
-
-include("../../src/RefFEs/PDiscRefFEs.jl")
-
 module PDiscRefFEsTests
 
 using Test
 using Gridap
-
-using ..PDiscRefFEs
 
 D = 2
 order = 1
