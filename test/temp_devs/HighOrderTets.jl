@@ -16,14 +16,22 @@ using Gridap, Test
 
 
 D = 2
-orders=[1,1]
-orders=[2,3]
+orders=[3,3]
 p = Gridap.Polytope(1,1)
 reffe = LagrangianRefFE{2,Float64}(p,orders)
+length(orders) == 2
 #
 p = Polytope(1,2)
 
+orders=[2,3]
 
+nodes, nfacenodes = Gridap.RefFEs._high_order_lagrangian_nodes_polytope(p,orders)
 
+orders = [1,1,1]
+
+if !( all(orders.==1))
+    b=10
+end
+b
 
 end # module

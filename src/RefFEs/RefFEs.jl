@@ -61,47 +61,24 @@ struct LagrangianRefFE{D,T} <: RefFE{D,T}
   # this type is unstable
 end
 
-function LagrangianRefFE{D,T}(polytope::Polytope{D}, orders::Vector{Int64}) where {D,T}
+"""
+Constructor that given a vector of orders, generates high-order Lagrangian
+RefFEs on n-cubes or n-tets.
+"""
+function LagrangianRefFE{D,T}(p::Polytope{D}, orders::Vector{Int}) where {D,T}
   @assert length(orders) == D
   @assert D > 0
-  if all(polytope.extrusion.array .== HEX_AXIS)
-    return _LagrangianRefFE(T, polytope, orders)
-  elseif all( orders .== orders[1] )
-    order = orders[1]
-    return LagrangianRefFE{D,T}(polytope,order)
-  else
+  if !(all(p.extrusion.array.== HEX_AXIS) || all(orders.==orders[1]))
     error("One can consider anisotropic orders on n-cubes only")
   end
-end
-
-# @santiagobadia: Temporary constructor that uses the old NodeArray.
-# I keep it because I am not considering anisotropic order
-# in the new method. Future development.
-function _LagrangianRefFE(::Type{T},polytope::Polytope{D},
-  orders::Vector{Int64}) where {D,T}
-  nodes=NodesArray(polytope,orders)
-  dofsb = LagrangianDOFBasis{D,T}(nodes.coordinates)
-  prebasis = MonomialBasis(T,orders)
-  aux = zeros(Float64,numlocaldofs(dofsb),numlocaldofs(dofsb))
-  @assert numlocaldofs(dofsb) == length(prebasis)
-  evaluate!(dofsb,prebasis,aux)
-  changeofbasis=inv(aux)
-  basis = change_basis(prebasis, changeofbasis)
-  nfacenodes=nodes.nfacenodes
-  nfacedofs = _genereate_nface_to_dofs(nfacenodes,dofsb.node_and_comp_to_dof)
-  LagrangianRefFE{D,T}(polytope, dofsb, basis, nfacedofs, nfacenodes)
-end
-
-# Constructor that given an scalar order, generates (possibly)
-# high-order n-cubes or n-tets.
-function LagrangianRefFE{D,T}(p::Polytope{D}, order::Int) where {D,T}
-  if (order == 1)
+  if (all(orders.==1))
     nodes, nfacenodes = _linear_lagrangian_nodes_polytope(p)
   else
-    nodes, nfacenodes = _high_order_lagrangian_nodes_polytope(p,order)
+    nodes, nfacenodes = _high_order_lagrangian_nodes_polytope(p,orders)
   end
   dofsb = Gridap.RefFEs.LagrangianDOFBasis{D,T}(nodes)
-  prebasis = Gridap.RefFEs._monomial_basis(p,T,order)
+  # @santiagobadia : This part is missing for anisotropic orders !
+  prebasis = Gridap.RefFEs._monomial_basis(p,T,orders[1])
   aux = zeros(Float64,numlocaldofs(dofsb),numlocaldofs(dofsb))
   @assert numlocaldofs(dofsb) == length(prebasis)
   evaluate!(dofsb,prebasis,aux)
@@ -110,6 +87,15 @@ function LagrangianRefFE{D,T}(p::Polytope{D}, order::Int) where {D,T}
   nfacedofs = _genereate_nface_to_dofs(nfacenodes,dofsb.node_and_comp_to_dof)
   return LagrangianRefFE{D,T}(p, dofsb, basis, nfacedofs, nfacenodes)
 end
+
+"""
+Version of the constructor for a scalar order
+"""
+function LagrangianRefFE{D,T}(p::Polytope{D}, order::Int) where {D,T}
+  _order = order*ones(Int,D)
+  return LagrangianRefFE{D,T}(p,_order)
+end
+
 
 dofbasis(this::LagrangianRefFE{D,T} where {D,T}) = this.dofbasis
 
@@ -143,7 +129,6 @@ end
 # and generate their open nodes using a reference polytope of the n-face and
 # a linear reference FE on top of it
 function _high_order_lagrangian_nodes_polytope(p::Polytope, order)
-  order = order*ones(Int,length(order))
   vs_p = Gridap.Polytopes.vertices_coordinates(p)
   ns_float_p = [i for i in vs_p]
   ref_ps = Gridap.Polytopes.nface_ref_polytopes(p)
