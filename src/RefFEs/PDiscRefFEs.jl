@@ -30,7 +30,7 @@ function PDiscRefFE(
   extrusion_tet = fill(TET_AXIS,D)
   polytope_tet = Polytope(extrusion_tet...)
 
-  reffe_tet = LagrangianRefFE{D,T}(polytope_tet,order)
+  reffe_tet = LagrangianRefFE(T,polytope_tet,order)
 
   # We assign all DOFs to the interior of the cell.
   # It is not possible to construct continuous spaces
