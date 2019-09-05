@@ -1,4 +1,7 @@
+module HighOrderTets
 
+##
+using Gridap, Test
 # 1) Clean constructors without D or T
 
 # Create dofbasis using node array for Lagrangian FEs
@@ -15,8 +18,12 @@
 D = 2
 orders=[1,1]
 orders=[2,3]
-p = Polytope(1,1)
+p = Gridap.Polytope(1,1)
 reffe = LagrangianRefFE{2,Float64}(p,orders)
 #
 p = Polytope(1,2)
-# end
+
+
+
+
+end # module

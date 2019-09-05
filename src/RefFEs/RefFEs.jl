@@ -61,9 +61,6 @@ struct LagrangianRefFE{D,T} <: RefFE{D,T}
   # this type is unstable
 end
 
-#@fverdugo. This is only a temporary hack to make work the interface of
-#anisotropic order also for n-simplices. Note that an @notimplemented error
-# will be raised for simplices if all orders are not the same.
 function LagrangianRefFE{D,T}(polytope::Polytope{D}, orders::Vector{Int64}) where {D,T}
   @assert length(orders) == D
   @assert D > 0
@@ -73,7 +70,7 @@ function LagrangianRefFE{D,T}(polytope::Polytope{D}, orders::Vector{Int64}) wher
     order = orders[1]
     return LagrangianRefFE{D,T}(polytope,order)
   else
-    @notimplemented
+    error("One can consider anisotropic orders on n-cubes only")
   end
 end
 
@@ -146,19 +143,22 @@ end
 # and generate their open nodes using a reference polytope of the n-face and
 # a linear reference FE on top of it
 function _high_order_lagrangian_nodes_polytope(p::Polytope, order)
+  order = order*ones(Int,length(order))
   vs_p = Gridap.Polytopes.vertices_coordinates(p)
   ns_float_p = [i for i in vs_p]
   ref_ps = Gridap.Polytopes.nface_ref_polytopes(p)
   # rfe_p = Gridap.RefFEs._high_order_lagrangian_reffe(p,Float64,1)
   rfe_p = LagrangianRefFE{dim(p),Float64}(p,1)
   nfacedofs = copy(rfe_p.nfacedofs)
+  nfs = nfaces(p)
   k = length(vs_p)
   for nf_dim = 1:length(p.nf_dim[end])-1
     nfs_dim = p.nf_dim[end][nf_dim+1]
     nfs_vs = Gridap.Polytopes._dimfrom_fs_dimto_fs(p,nf_dim,0)
     for (i_nf_dim,i_nf) in enumerate(p.nf_dim[end][nf_dim+1])
       ref_p = ref_ps[i_nf]
-      _order = Tuple(order*ones(Int,length(ref_p.extrusion)))
+      # _order = Tuple(order*ones(Int,length(ref_p.extrusion)))
+      _order = _extract_nonzeros(nfs[i_nf].extrusion,order)
       ns = Gridap.Polytopes._interior_nodes_int_coords(ref_p, _order)
       ns_float = Gridap.Polytopes._interior_nodes_int_to_real_coords(ns,_order)
       rfe = LagrangianRefFE{dim(ref_p),Float64}(ref_p,1)
@@ -245,6 +245,16 @@ function _genereate_nface_to_dofs(nface_to_nodes,node_and_comp_to_dof)
     end
   end
   nface_to_dofs
+end
+
+function _extract_nonzeros(mask,values)
+  b = Int[]
+  for (m,n) in zip(mask,values)
+    if (m != 0)
+      push!(b, n)
+    end
+  end
+  return Tuple(b)
 end
 
 end # module RefFEs
