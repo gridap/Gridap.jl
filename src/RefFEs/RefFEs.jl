@@ -105,6 +105,12 @@ shfbasis(this::LagrangianRefFE{D,T} where {D,T}) = this.shfbasis
 
 nfacedofs(this::LagrangianRefFE{D,T} where {D,T}) = this.nfacedofs
 
+function closurenfacedofs(this::LagrangianRefFE{D,T} where {D,T})
+  cv1 = CellValueFromArray(this.polytope.nf_nfs) # cell to index
+  cv2 = CellValueFromArray(this.nfacedofs)
+  return CellVectorByComposition(cv1,cv2)
+end
+
 # Generate the linear nodes by computing the polytope vertices. Only the
 # vertices have nodes.
 function _linear_lagrangian_nodes_polytope(p::Polytope)
