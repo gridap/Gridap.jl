@@ -9,7 +9,6 @@ using LinearAlgebra
 using Combinatorics
 
 export Polytope
-export NodesArray
 export NFace
 export HEX_AXIS, TET_AXIS
 export num_nfaces
@@ -34,14 +33,6 @@ export facet_normals
 
 const HEX_AXIS = 1
 const TET_AXIS = 2
-
-# Concrete structs and their pubic API
-
-# const Point{D,Int} = SVector{D,Int64} where D
-# @santiagobadia : Probably add Type of coordinates in Point{D} (@fverdugo: Now we have Point{D,T})
-# @santiagobadia : I will re-think the NodeArray when I have at my disposal
-# the geomap on n-faces, etc. And a clearer definition of the mesh object
-# to discuss with @fverdugo
 
 # Concrete implementations
 
@@ -477,103 +468,103 @@ function _vertex_not_in_facet(p, i_f, nf_vs)
     end
   end
 end
-
-# @santiagobadia : The rest is to be eliminated when NodeArray eliminated
-
-"""
-Array of nodes for a given polytope and order
-"""
-struct NodesArray{D}
-  coordinates::Vector{Point{D,Float64}}
-  nfacenodes::Array{Array{Int64,1},1}
-  closurenfacenodes::Array{Array{Int64,1},1}
-  # @santiagobadia : To be changed to points
-end
-
-"""
-Creates an array of nodes `NodesArray` for a given polytope and the order per
-dimension.
-"""
-# @santiagobadia : TO BE REMOVED
-function NodesArray(polytope::Polytope, orders::Array{Int64,1})
-  @notimplementedif any([t != HEX_AXIS for t in polytope.extrusion.array])
-  closurenfacenodes = [createnodes(polytope.nfaces[i], orders) for i = 1:length(polytope.nfaces)]
-  nfacenodes = [createnodes(polytope.nfaces[i], orders, isopen = true) for i = 1:length(polytope.nfaces)]
-  D = length(orders)
-  coords = [nodescoordinates(orders[i], nodestype = "Equispaced") for i = 1:D]
-  npoints = prod(ntuple(i -> length(coords[i]), D))
-  points = Vector{Point{D,Float64}}(undef, npoints)
-  cid = ntuple(i -> 1:length(coords[i]), D)
-  cid = CartesianIndices(cid)
-  tpcoor = j -> [coords[i][j[i]] for i ∈ 1:D]
-  for (i, j) ∈ enumerate(cid)
-    points[i] = tpcoor(Tuple(j))
-  end
-  NodesArray(points, nfacenodes, closurenfacenodes)
-end
-# Create list of nface nodes with polytope indexing
-function createnodes(nface::NFace, orders; isopen::Bool = false)
-  spdims = length(nface.extrusion)
-  @assert spdims == length(orders) "nface and orders dim must be identical"
-  perms = nfaceperms(nface)
-  p = perms[1]
-  pinv = perms[2]
-  ordnf = orders[pinv]
-  ordp1 = ordnf .+ ((isopen) ? d = -1 : d = 1)
-  A = Array{Array{Int64,1}}(undef, ordp1...)
-  cartesianindexmatrix!(A)
-  A = hcat(reshape(A, length(A))...)'
-  if (isopen)
-    A .+= 1
-  end
-  B = Array{Int64,2}(undef, prod(ordp1), spdims)
-  for i = 1:spdims
-    if (p[i] == 0)
-      B[:, i] .= nface.anchor[i] * orders[i]
-    end
-  end
-  B[:, pinv] = copy(A)
-  offst = orders .+ 1
-  offst = [prod(offst[1:i-1]) for i = 1:length(offst)]
-  return B * offst .+ 1
-end
-
-# nface to polytope cartesian index change of basis and inverse
-function nfaceperms(nface)
-  pd = length(nface.extrusion)
-  e = nface.extrusion
-  c = 0
-  p = []
-  for i = 1:pd
-    (e[i] != 0) ? (c += 1; p = [p..., c]) : p = [p..., 0]
-  end
-  c = 0
-  pinv = []
-  for i = 1:pd
-    (p[i] != 0) ? (c += 1; pinv = [pinv..., i]) : 0
-  end
-  return [p, pinv]
-end
-
-# 1-dim node coordinates
-function nodescoordinates(order::Int; nodestype::String = "Equispaced")
-  @assert ((nodestype == "Equispaced") | (nodestype == "Chebyshev")) "Node type not implemented"
-  ordp1 = order + 1
-  if nodestype == "Chebyshev"
-    nodescoordinates = [cos((i - 1) * pi / order) for i = 1:ordp1]
-  elseif nodestype == "Equispaced"
-    (order != 0) ? nodescoordinates = (1 / order) * [i - 1 for i = 1:ordp1] :
-    nodescoordinates = [0.0]
-  end
-  return nodescoordinates
-end
-
-@generated function cartesianindexmatrix!(A::Array{Array{T,M},N}) where {T,M,N}
-  quote
-    @nloops $N i A begin
-      (@nref $N A i) = [((@ntuple $N i) .- 1)...]
-    end
-  end
-end
+#
+# # @santiagobadia : The rest is to be eliminated when NodeArray eliminated
+#
+# """
+# Array of nodes for a given polytope and order
+# """
+# struct NodesArray{D}
+#   coordinates::Vector{Point{D,Float64}}
+#   nfacenodes::Array{Array{Int64,1},1}
+#   closurenfacenodes::Array{Array{Int64,1},1}
+#   # @santiagobadia : To be changed to points
+# end
+#
+# """
+# Creates an array of nodes `NodesArray` for a given polytope and the order per
+# dimension.
+# """
+# # @santiagobadia : TO BE REMOVED
+# function NodesArray(polytope::Polytope, orders::Array{Int64,1})
+#   @notimplementedif any([t != HEX_AXIS for t in polytope.extrusion.array])
+#   closurenfacenodes = [createnodes(polytope.nfaces[i], orders) for i = 1:length(polytope.nfaces)]
+#   nfacenodes = [createnodes(polytope.nfaces[i], orders, isopen = true) for i = 1:length(polytope.nfaces)]
+#   D = length(orders)
+#   coords = [nodescoordinates(orders[i], nodestype = "Equispaced") for i = 1:D]
+#   npoints = prod(ntuple(i -> length(coords[i]), D))
+#   points = Vector{Point{D,Float64}}(undef, npoints)
+#   cid = ntuple(i -> 1:length(coords[i]), D)
+#   cid = CartesianIndices(cid)
+#   tpcoor = j -> [coords[i][j[i]] for i ∈ 1:D]
+#   for (i, j) ∈ enumerate(cid)
+#     points[i] = tpcoor(Tuple(j))
+#   end
+#   NodesArray(points, nfacenodes, closurenfacenodes)
+# end
+# # Create list of nface nodes with polytope indexing
+# function createnodes(nface::NFace, orders; isopen::Bool = false)
+#   spdims = length(nface.extrusion)
+#   @assert spdims == length(orders) "nface and orders dim must be identical"
+#   perms = nfaceperms(nface)
+#   p = perms[1]
+#   pinv = perms[2]
+#   ordnf = orders[pinv]
+#   ordp1 = ordnf .+ ((isopen) ? d = -1 : d = 1)
+#   A = Array{Array{Int64,1}}(undef, ordp1...)
+#   cartesianindexmatrix!(A)
+#   A = hcat(reshape(A, length(A))...)'
+#   if (isopen)
+#     A .+= 1
+#   end
+#   B = Array{Int64,2}(undef, prod(ordp1), spdims)
+#   for i = 1:spdims
+#     if (p[i] == 0)
+#       B[:, i] .= nface.anchor[i] * orders[i]
+#     end
+#   end
+#   B[:, pinv] = copy(A)
+#   offst = orders .+ 1
+#   offst = [prod(offst[1:i-1]) for i = 1:length(offst)]
+#   return B * offst .+ 1
+# end
+#
+# # nface to polytope cartesian index change of basis and inverse
+# function nfaceperms(nface)
+#   pd = length(nface.extrusion)
+#   e = nface.extrusion
+#   c = 0
+#   p = []
+#   for i = 1:pd
+#     (e[i] != 0) ? (c += 1; p = [p..., c]) : p = [p..., 0]
+#   end
+#   c = 0
+#   pinv = []
+#   for i = 1:pd
+#     (p[i] != 0) ? (c += 1; pinv = [pinv..., i]) : 0
+#   end
+#   return [p, pinv]
+# end
+#
+# # 1-dim node coordinates
+# function nodescoordinates(order::Int; nodestype::String = "Equispaced")
+#   @assert ((nodestype == "Equispaced") | (nodestype == "Chebyshev")) "Node type not implemented"
+#   ordp1 = order + 1
+#   if nodestype == "Chebyshev"
+#     nodescoordinates = [cos((i - 1) * pi / order) for i = 1:ordp1]
+#   elseif nodestype == "Equispaced"
+#     (order != 0) ? nodescoordinates = (1 / order) * [i - 1 for i = 1:ordp1] :
+#     nodescoordinates = [0.0]
+#   end
+#   return nodescoordinates
+# end
+#
+# @generated function cartesianindexmatrix!(A::Array{Array{T,M},N}) where {T,M,N}
+#   quote
+#     @nloops $N i A begin
+#       (@nref $N A i) = [((@ntuple $N i) .- 1)...]
+#     end
+#   end
+# end
 
 end # module Polytopes
