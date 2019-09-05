@@ -17,13 +17,13 @@ D = 2
 order = 2
 orders = fill(order,D)
 polytope = Polytope(fill(HEX_AXIS,D)...)
-fe = LagrangianRefFE{D,Float64}(polytope, orders)
+fe = LagrangianRefFE(Float64,polytope, orders)
 
 cell_to_dofs = CellEqClass(cell_to_nfaces,nface_to_dofs,fe)
 
 r = [
-  [10, 70, 20, 90, 140, 100, 40, 80, 50],
-  [20, 110, 30, 100, 150, 130, 50, 120, 60]]
+  [10, 20, 40, 50, 70, 80, 90, 100, 140],
+  [20, 30, 50, 60, 110, 120, 100, 130, 150]]
 test_index_cell_array(cell_to_dofs,r)
 
 
@@ -40,7 +40,7 @@ tags = [1,2,3,4]
 order = 1
 orders = fill(order,D)
 polytope = Polytope(fill(HEX_AXIS,D)...)
-fe = LagrangianRefFE{D,Float64}(polytope, orders)
+fe = LagrangianRefFE(Float64,polytope, orders)
 
 fespace = ConformingFESpace(fe,trian,graph,labels,tags)
 
@@ -56,7 +56,7 @@ r = [[-1, 1, 2, 3], [1, -2, 3, 4], [2, 3, -3, 5], [3, 4, 5, -4]]
 order = 2
 orders = fill(order,D)
 polytope = Polytope(fill(HEX_AXIS,D)...)
-fe = LagrangianRefFE{D,Float64}(polytope, orders)
+fe = LagrangianRefFE(Float64,polytope, orders)
 
 tags = [1,2,3,4,6,5]
 fespace = ConformingFESpace(fe,trian,graph,labels,tags)
@@ -64,10 +64,10 @@ fespace = ConformingFESpace(fe,trian,graph,labels,tags)
 @test num_free_dofs(fespace) == 15
 @test num_diri_dofs(fespace) == 10
 
-r = [[-1, -7, -2, 5, 12, 6, 1, 4, 2],
-  [-2, -8, -3, 6, 13, 8, 2, 7, 3],
-  [1, 4, 2, 9, 14, 10, -4, -9, -5],
-  [2, 7, 3, 10, 15, 11, -5, -10, -6]]
+r = [[-1, -2, 1, 2, -7, 4, 5, 6, 12],
+  [-2, -3, 2, 3, -8, 7, 6, 8, 13],
+  [1, 2, -4, -5, 4, -9, 9, 10, 14],
+  [2, 3, -5, -6, 7, -10, 10, 11, 15]]
 
 @test r == collect(fespace.cell_eqclass)
 
@@ -200,7 +200,6 @@ ufun(x) = VectorValue(x[2],x[1])
 uh = interpolate(fespace,ufun)
 
 @test free_dofs(uh) == [0.0, 0.5, 0.5, 0.0, 0.5, 0.5, 0.5, 1.0, 1.0, 0.5]
-@test diri_dofs(uh) == [0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0] 
+@test diri_dofs(uh) == [0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0]
 
 end # module
-

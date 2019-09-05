@@ -119,7 +119,7 @@ function interpolate_values(fesp::CLagrangianFESpace,fun::Function)
 end
 
 function interpolate_diri_values(fesp::CLagrangianFESpace, funs::Vector{<:Function})
-  
+
   T = value_type(fesp)
   E = eltype(T)
   ndiri = num_diri_dofs(fesp)
@@ -202,7 +202,7 @@ function _fill_node_and_comp_to_dof!(
   for node in 1:nnodes
     label = node_to_label[node]
 
-    comp_to_dof, fdof, ddof, isdirinode = 
+    comp_to_dof, fdof, ddof, isdirinode =
       _compute_comp_to_dof(S,label,tag_to_labels,diritags,dirimasks,fdof,ddof)
 
     if isdirinode
@@ -291,7 +291,7 @@ function _setup_reffe(
   t = ct.value
   o = co.value
   p = Polytope(t)
-  LagrangianRefFE{Z,T}(p,fill(o,Z))
+  LagrangianRefFE(T,p,fill(o,Z))
 end
 
 function _setup_cellbasis(reffe,grid)
@@ -336,7 +336,7 @@ function  _fill_cell_to_dofs!(
   lnode_and_comp_to_ldof)
 
   k = 0
-  
+
   nlnodes, ncomps = size(lnode_and_comp_to_ldof)
   nldofs = nlnodes * ncomps
 
@@ -503,7 +503,7 @@ function grid_from_model_and_order(
     cell_to_order)
 
   (grid, node_to_label)
-  
+
 end
 
 function _setup_nodes_to_coords(model,D,order)
@@ -512,7 +512,7 @@ function _setup_nodes_to_coords(model,D,order)
   node_to_label = Int[]
 
   facelabels = FaceLabels(model)
-  
+
   vertex_to_label = labels_on_dim(facelabels,0)
 
   grid = Grid(model,0)
@@ -564,7 +564,7 @@ function _setup_reffe(order,ct::ConstantCellValue)
   e = ct.value
   p = Polytope(e)
   D = length(e)
-  LagrangianRefFE{D,Float64}(p,fill(order,D))
+  LagrangianRefFE(Float64,p,fill(order,D))
 end
 
 function _push_nodes!(node_to_coords,coords)

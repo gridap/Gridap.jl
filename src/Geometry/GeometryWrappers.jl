@@ -38,7 +38,7 @@ end
 
 function generate_dual_connections(face_to_nodes::CellVector)
  face_to_nodes_data, face_to_nodes_ptrs = compress(face_to_nodes)
- node_to_faces_data, node_to_faces_ptrs = 
+ node_to_faces_data, node_to_faces_ptrs =
    generate_dual_connections(face_to_nodes_data, face_to_nodes_ptrs)
  CellVectorFromDataAndPtrs(node_to_faces_data, node_to_faces_ptrs)
 end
@@ -56,7 +56,7 @@ end
 function _grid_D(polytope::Polytope{D}) where D
 
   order = 1
-  reffe = LagrangianRefFE{D,Float64}(polytope,order)
+  reffe = LagrangianRefFE(Float64,polytope,order)
   points = reffe.dofbasis.nodes
 
   cell_to_nodes = [ [i for i in 1:length(points)], ]
@@ -76,7 +76,7 @@ function _grid_d(polytope::Polytope{D},dim::Int) where D
   @assert dim < D
 
   order = 1
-  reffe = LagrangianRefFE{D,Float64}(polytope,order)
+  reffe = LagrangianRefFE(Float64,polytope,order)
   points = reffe.dofbasis.nodes
 
   dim_to_jface_to_vertices, dim_to_jface_to_code = _faces(polytope)

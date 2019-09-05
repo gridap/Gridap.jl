@@ -29,7 +29,7 @@ horeffe = Gridap.RefFEs._high_order_lagrangian_reffe(p, T, 3)
 
 # Problems with grid for new machinery
 p = Polytope(HEX_AXIS,TET_AXIS,TET_AXIS)
-LagrangianRefFE{3,Float64}(p,3)
+LagrangianRefFE(Float64,p,3)
 grid = Grid(p,2)
 # writevtk(grid,"grid")
 
