@@ -205,9 +205,12 @@ D=3
 orders=[2,3,2]
 ext = Point(1,1,1)
 polytope = Polytope(ext)
-nodes = NodesArray(polytope,orders)
-@test length(nodes.closurenfacenodes[end-1])==12
-@test nodes.closurenfacenodes[end-1][end-1]==33
+nodes, nfacenodes = Gridap.RefFEs._high_order_lagrangian_nodes_polytope(polytope,orders)
+cv1 = Gridap.CellValuesGallery.CellValueFromArray(polytope.nf_nfs) # cell to index
+cv2 = Gridap.CellValuesGallery.CellValueFromArray(nfacenodes)
+closurenfacenodes =  Gridap.CellValuesGallery.CellVectorByComposition(cv1,cv2)
+@test length(closurenfacenodes[end-1])==12
+@test closurenfacenodes[end-1][end-1]==33
 ##
 
 # Similar test on the (open for dim > 0) nface
@@ -216,9 +219,10 @@ D=3
 orders=[2,3,2]
 ext = Point(1,1,1)
 polytope = Polytope(ext)
-nodes = NodesArray(polytope,orders)
-@test length(nodes.nfacenodes[end-1])==2
-@test nodes.nfacenodes[end-1][end-1]==18
+nodes, nfacenodes = Gridap.RefFEs._high_order_lagrangian_nodes_polytope(polytope,orders)
+nfacenodes
+@test length(nfacenodes[end-1])==2
+@test nfacenodes[end-1][end-1]==33
 ##
 
 # Test to check the node coordinates
@@ -227,11 +231,14 @@ D=3
 orders=[2,3,4]
 ext = Point(1,1,1)
 polytope = Polytope(ext)
-nodes = NodesArray(polytope,orders)
-@test length(nodes.coordinates)==60
-@test nodes.coordinates[33] ≈ Point(1.0, 2.0/3.0, 0.5)
-nfacenodes = nodes.closurenfacenodes[end-1]
-coords = nodes.coordinates[nfacenodes,:]
+nodes, nfacenodes = Gridap.RefFEs._high_order_lagrangian_nodes_polytope(polytope,orders)
+@test length(nodes)==60
+@test nodes[33] ≈ Point(0.5, 1.0/3.0, 0.0)
+cv1 = Gridap.CellValuesGallery.CellValueFromArray(polytope.nf_nfs) # cell to index
+cv2 = Gridap.CellValuesGallery.CellValueFromArray(nfacenodes)
+closurenfacenodes =  Gridap.CellValuesGallery.CellVectorByComposition(cv1,cv2)
+nfacenodes = closurenfacenodes[end-1]
+coords = nodes[nfacenodes,:]
 fco = i -> coords[i][1]
 @test (prod(fco(i) for i=1:length(coords))==1)
 ##

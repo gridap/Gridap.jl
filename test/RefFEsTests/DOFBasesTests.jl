@@ -12,8 +12,9 @@ field = AnalyticalField(fun,D)
 basis = MonomialBasis(T,(1,1))
 
 polytope = Polytope(HEX_AXIS,HEX_AXIS)
-nodes = NodesArray(polytope,[1,1])
-dofbasis = LagrangianDOFBasis{D,T}(nodes.coordinates)
+nodes, nfacenodes = Gridap.RefFEs._high_order_lagrangian_nodes_polytope(polytope,[1,1])
+nodes
+dofbasis = LagrangianDOFBasis{D,T}(nodes)
 
 field_dofs = [0.0, 1.0, 1.0, 2.0]
 
@@ -32,8 +33,8 @@ fun(x) = VectorValue(x[1]+x[2],x[1])
 field = AnalyticalField(fun,D)
 basis = MonomialBasis(T,(1,1))
 
-nodes = NodesArray(polytope,[1,1])
-dofbasis = LagrangianDOFBasis{D,T}(nodes.coordinates)
+nodes, nfacenodes = Gridap.RefFEs._high_order_lagrangian_nodes_polytope(polytope,[1,1])
+dofbasis = LagrangianDOFBasis{D,T}(nodes)
 
 # # Component major
 #field_dofs = [0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 2.0, 1.0]

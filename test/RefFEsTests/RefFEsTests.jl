@@ -16,13 +16,13 @@ D = 1
 orders=[2]
 extrusion = Point{D,Int}(1)
 polytope = Polytope(extrusion)
-nodes = NodesArray(polytope,orders)
-dofsb = LagrangianDOFBasis{D,Float64}(nodes.coordinates)
+nodes, nfacenodes = Gridap.RefFEs._high_order_lagrangian_nodes_polytope(polytope,orders)
+dofsb = LagrangianDOFBasis{D,Float64}(nodes)
 prebasis = MonomialBasis(Float64,orders)
 vals = evaluate(prebasis,dofsb.nodes)
 nodes
 vals
-@test vals == [1.0 1.0 1.0; 0.0 0.5 1.0; 0.0 0.25 1.0]
+@test vals == [1.0 1.0 1.0; 0.0 1.0 0.5; 0.0 1.0 0.25]
 ##
 
 ##
@@ -31,8 +31,8 @@ D = 2
 orders=[1,1]
 extrusion = Point{D,Int}(1,1)
 polytope = Polytope(extrusion)
-nodes = NodesArray(polytope, orders)
-dofsb = LagrangianDOFBasis{D,VectorValue{D,Float64}}(nodes.coordinates)
+nodes, nfacenodes = Gridap.RefFEs._high_order_lagrangian_nodes_polytope(polytope,orders)
+dofsb = LagrangianDOFBasis{D,VectorValue{D,Float64}}(nodes)
 prebasis = MonomialBasis(VectorValue{D,Float64},orders)
 # res = RefFEs.evaluate!(dofsb,prebasis,aux)
 res = evaluate(dofsb,prebasis)
@@ -41,7 +41,7 @@ res = evaluate(dofsb,prebasis)
 @test res[8,8] == 1.0
 fun(x::Point{D}) = VectorValue(x[2]+1.0,x[1])
 anfield = AnalyticalField(fun,D)
-Maps.evaluate(anfield,nodes.coordinates)
+Maps.evaluate(anfield,nodes)
 res2 = evaluate(dofsb,anfield)
 @test res2[8] == 1.0
 ##
@@ -49,9 +49,9 @@ D=2
 orders=[1,1]
 extrusion = Point{D,Int}(1,1)
 polytope = Polytope(extrusion)
+nodes, nfacenodes = Gridap.RefFEs._high_order_lagrangian_nodes_polytope(polytope,orders)
 reffe = LagrangianRefFE{D,VectorValue{D,Float64}}(polytope,orders)
-nodes = NodesArray(polytope, orders)
-val1 = evaluate(reffe.shfbasis,nodes.coordinates)
+val1 = evaluate(reffe.shfbasis,nodes)
 id = zeros(VectorValue{D,Float64},size(val1))
 for i in 1:4
   id[i,i] = VectorValue{D}(1.0, 0.0)
@@ -75,8 +75,7 @@ extrusion = Point{D,Int}(1)
 polytope = Polytope(extrusion)
 reffe = LagrangianRefFE{D,VectorValue{D,Float64}}(polytope,orders)
 reffe.shfbasis.changeofbasis
-# @test reffe.shfbasis.changeofbasis==[0.0  -0.5   0.5; 1.0   0.0  -1.0; 0.0   0.5   0.5]
-@test reffe.shfbasis.changeofbasis==[1.0  -3.0   2.0; 0.0   4.0  -4.0; 0.0  -1.0   2.0]
+@test reffe.shfbasis.changeofbasis==[1.0 -3.0 2.0; 0.0 -1.0 2.0; 0.0 4.0 -4.0]
 ##
 
 ##
@@ -141,7 +140,7 @@ elmatgp=[ shfs[:,igp]*shfs[:,igp]' for igp=1:numgps]
 elmat = sum(quad.weights.*elmatgp)
 @test sum(elmat)≈1
 @test elmat[1,1] ≈ 4/225
-@test elmat[1,2] ≈ 2/225
+@test elmat[1,2] ≈ -1/225
 ##
 
 ##
@@ -158,7 +157,7 @@ elmatgp=[ shfs[:,igp]*shfs[:,igp]' for igp=1:prod(numgps)]
 elmat = sum(quad.weights.*elmatgp)
 @test sum(elmat)≈1
 @test elmat[1,1] ≈ 8/3375
-@test elmat[1,2] ≈ 4/3375
+@test elmat[1,2] ≈ -2/3375
 ##
 
 ##
@@ -263,9 +262,9 @@ elmatscal = sum(quad.weights.*elmatgp)
 ##
 
 reffe = LagrangianRefFE{D,Float64}(polytope,orders)
-@test nfacedofs(reffe, 0) == [[1], [3], [7], [9]]
-@test nfacedofs(reffe, 1) == [[2], [8], [4], [6]]
-@test nfacedofs(reffe, 2) == [[5]]
+@test nfacedofs(reffe, 0) == [[1], [2], [3], [4]]
+@test nfacedofs(reffe, 1) == [[5], [6], [7], [8]]
+@test nfacedofs(reffe, 2) == [[9]]
 
 D=2
 orders=[2,2]
@@ -273,8 +272,8 @@ extrusion = Point{D,Int}(1,1)
 polytope = Polytope(extrusion)
 reffe = LagrangianRefFE{D,VectorValue{D,Float64}}(polytope,orders)
 
-@test reffe.nfacenodes == [[1], [3], [7], [9], [2], [8], [4], [6], [5]]
-@test nfacedofs(reffe) == [[1, 10], [3, 12], [7, 16], [9, 18], [2, 11], [8, 17], [4, 13], [6, 15], [5, 14]]
+@test reffe.nfacenodes == [[1], [2], [3], [4], [5], [6], [7], [8], [9]]
+@test nfacedofs(reffe) == [[1, 10], [2, 11], [3, 12], [4, 13], [5, 14], [6, 15], [7, 16], [8, 17], [9, 18]]
 
 D=2
 orders=[1,1]
