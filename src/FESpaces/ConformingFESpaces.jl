@@ -65,7 +65,7 @@ function ConformingFESpace(::Type{T},model::DiscreteModel{D},order,diri_tags) wh
   labels = FaceLabels(model)
   orders = fill(order,D)
   polytope = _polytope(celltypes(grid))
-  fe = LagrangianRefFE{D,T}(polytope, orders)
+  fe = LagrangianRefFE(T,polytope, orders)
   _diri_tags = _setup_tags(model,diri_tags)
   ConformingFESpace(fe,trian,graph,labels,_diri_tags)
 end

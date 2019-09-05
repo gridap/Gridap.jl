@@ -203,7 +203,7 @@ function _setup_basis(D,ncells)
   polytope = Polytope(code)
   order = 1
   orders = fill(order,D)
-  reffe = LagrangianRefFE{D,Float64}(polytope,orders)
+  reffe = LagrangianRefFE(Float64,polytope,orders)
   basis = shfbasis(reffe)
   b = ConstantCellMap(basis, ncells)
   r = ConstantCellValue(reffe,ncells)

@@ -37,7 +37,7 @@ cell_to_vals
 D = 2
 orders=[3,3]
 p = Gridap.Polytope(1,1)
-reffe = LagrangianRefFE{2,Float64}(p,orders)
+reffe = LagrangianRefFE(Float64,p,orders)
 
 reffe.nfacedofs
 p.nf_nfs

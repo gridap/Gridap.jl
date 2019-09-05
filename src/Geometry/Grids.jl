@@ -118,7 +118,7 @@ function _build_cell_ref_fes(
   order = orders.value
   polytope = Polytope(code)
   _orders = fill(order,D)
-  reffe = LagrangianRefFE{D,Float64}(polytope,_orders)
+  reffe = LagrangianRefFE(Float64,polytope,_orders)
   ConstantCellValue(reffe,length(codes))
 end
 

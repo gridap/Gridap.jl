@@ -17,7 +17,7 @@ D = 2
 order = 2
 orders = fill(order,D)
 polytope = Polytope(fill(HEX_AXIS,D)...)
-fe = LagrangianRefFE{D,Float64}(polytope, orders)
+fe = LagrangianRefFE(Float64,polytope, orders)
 
 cell_to_dofs = CellEqClass(cell_to_nfaces,nface_to_dofs,fe)
 
@@ -40,7 +40,7 @@ tags = [1,2,3,4]
 order = 1
 orders = fill(order,D)
 polytope = Polytope(fill(HEX_AXIS,D)...)
-fe = LagrangianRefFE{D,Float64}(polytope, orders)
+fe = LagrangianRefFE(Float64,polytope, orders)
 
 fespace = ConformingFESpace(fe,trian,graph,labels,tags)
 
@@ -56,7 +56,7 @@ r = [[-1, 1, 2, 3], [1, -2, 3, 4], [2, 3, -3, 5], [3, 4, 5, -4]]
 order = 2
 orders = fill(order,D)
 polytope = Polytope(fill(HEX_AXIS,D)...)
-fe = LagrangianRefFE{D,Float64}(polytope, orders)
+fe = LagrangianRefFE(Float64,polytope, orders)
 
 tags = [1,2,3,4,6,5]
 fespace = ConformingFESpace(fe,trian,graph,labels,tags)

@@ -65,7 +65,7 @@ end
 Constructor that given a vector of orders, generates high-order Lagrangian
 RefFEs on n-cubes or n-tets.
 """
-function LagrangianRefFE{D,T}(p::Polytope{D}, orders::Vector{Int}) where {D,T}
+function LagrangianRefFE(::Type{T}, p::Polytope{D}, orders::Vector{Int}) where {D,T}
   @assert length(orders) == D
   @assert D > 0
   if !(all(p.extrusion.array.== HEX_AXIS) || all(orders.==orders[1]))
@@ -91,9 +91,9 @@ end
 """
 Version of the constructor for a scalar order
 """
-function LagrangianRefFE{D,T}(p::Polytope{D}, order::Int) where {D,T}
+function LagrangianRefFE(::Type{T}, p::Polytope{D}, order::Int) where {D,T}
   _order = order*ones(Int,D)
-  return LagrangianRefFE{D,T}(p,_order)
+  return LagrangianRefFE(T,p,_order)
 end
 
 
@@ -139,7 +139,7 @@ function _high_order_lagrangian_nodes_polytope(p::Polytope, order)
   ns_float_p = [i for i in vs_p]
   ref_ps = Gridap.Polytopes.nface_ref_polytopes(p)
   # rfe_p = Gridap.RefFEs._high_order_lagrangian_reffe(p,Float64,1)
-  rfe_p = LagrangianRefFE{dim(p),Float64}(p,1)
+  rfe_p = LagrangianRefFE(Float64,p,1)
   nfacedofs = copy(rfe_p.nfacedofs)
   nfs = nfaces(p)
   k = length(vs_p)
@@ -152,7 +152,7 @@ function _high_order_lagrangian_nodes_polytope(p::Polytope, order)
       _order = _extract_nonzeros(nfs[i_nf].extrusion,order)
       ns = Gridap.Polytopes._interior_nodes_int_coords(ref_p, _order)
       ns_float = Gridap.Polytopes._interior_nodes_int_to_real_coords(ns,_order)
-      rfe = LagrangianRefFE{dim(ref_p),Float64}(ref_p,1)
+      rfe = LagrangianRefFE(Float64,ref_p,1)
       nf_vs = nfs_vs[i_nf_dim]
       vs = vs_p[nf_vs]
       if ( length(ns_float) > 0 )
