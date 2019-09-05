@@ -8,7 +8,7 @@ order = 1
 
 reffe = PDiscRefFE(Float64,D,order)
 
-@test reffe.nfacedofs[end] == [1,2,3]
+# @test reffe.nfacedofs[end] == [1,2,3]
 
 dofbasis(reffe)
 polytope(reffe)
