@@ -62,7 +62,7 @@ struct LagrangianRefFE{D,T} <: RefFE{D,T}
 end
 
 #@fverdugo. This is only a temporary hack to make work the interface of
-#anisotropic order also for n-simplices. Not that an @notimplemented error
+#anisotropic order also for n-simplices. Note that an @notimplemented error
 # will be raised for simplices if all orders are not the same.
 function LagrangianRefFE{D,T}(polytope::Polytope{D}, orders::Vector{Int64}) where {D,T}
   @assert length(orders) == D

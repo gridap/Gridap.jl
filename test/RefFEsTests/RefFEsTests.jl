@@ -24,16 +24,13 @@ using Base.Cartesian
 #
 D = 2
 orders=[1,1]
-orders=[2,2]
+orders=[2,3]
 p = Polytope(1,1)
+reffe = LagrangianRefFE{2,Float64}(p,orders)
 #
 p = Polytope(1,2)
-reffe = LagrangianRefFE{2,Float64}(p,orders)
 # end
 
-
-
-reffe = LagrangianRefFE{2,Float64}(p,2)
 
 
 
