@@ -110,7 +110,7 @@ nfacedofs(this::LagrangianRefFE{D,T} where {D,T}) = this.nfacedofs
 function closurenfacedofs(this::LagrangianRefFE{D,T} where {D,T})
   cv1 = CellValueFromArray(this.polytope.nf_nfs) # cell to index
   cv2 = CellValueFromArray(this.nfacedofs)
-  return CellVectorByComposition(cv1,cv2)
+  return collect(CellVectorByComposition(cv1,cv2))
 end
 
 # Generate the linear nodes by computing the polytope vertices. Only the
