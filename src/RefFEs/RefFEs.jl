@@ -147,7 +147,7 @@ end
 # a linear reference FE on top of it
 function _high_order_lagrangian_nodes_polytope(p::Polytope, order)
   vs_p = Gridap.Polytopes.vertices_coordinates(p)
-  ns_float_p = [i.array for i in vs_p]
+  ns_float_p = [i for i in vs_p]
   ref_ps = Gridap.Polytopes.nface_ref_polytopes(p)
   # rfe_p = Gridap.RefFEs._high_order_lagrangian_reffe(p,Float64,1)
   rfe_p = LagrangianRefFE{dim(p),Float64}(p,1)
@@ -161,7 +161,7 @@ function _high_order_lagrangian_nodes_polytope(p::Polytope, order)
       _order = Tuple(order*ones(Int,length(ref_p.extrusion)))
       ns = Gridap.Polytopes._interior_nodes_int_coords(ref_p, _order)
       ns_float = Gridap.Polytopes._interior_nodes_int_to_real_coords(ns,_order)
-      rfe = Gridap.RefFEs._linear_lagrangian_reffe(ref_p,Float64)
+      rfe = LagrangianRefFE{dim(ref_p),Float64}(ref_p,1)
       nf_vs = nfs_vs[i_nf_dim]
       vs = vs_p[nf_vs]
       if ( length(ns_float) > 0 )
@@ -188,13 +188,14 @@ function _map_high_order_lagrangian_nodes(shfs_ns, vs)
   a = shfs_ns
   T = typeof(vs[1].array)
   ndofs, npoints = size(a)
-  v = Vector{T}(undef,npoints)
+  v = Point{length(vs[1]),Float64}[]
   for j in 1:npoints
     aux = zero(T)
     for i in 1:ndofs
       aux += outer(a[i,j],vs[i]).array
     end
-    v[j] = aux
+    cs = convert(Vector{Float64}, [aux...])
+    push!(v, aux)
   end
   return v
 end
