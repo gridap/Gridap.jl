@@ -1,5 +1,4 @@
 # Construct the FEspace
-order = 1
 diritag = "boundary"
 fespace = ConformingFESpace(Float64,model,order,diritag)
 
@@ -9,7 +8,7 @@ U = TrialFESpace(fespace,ufun)
 
 # Define integration mesh and quadrature
 trian = Triangulation(model)
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,order=order*2)
 
 # Define forms
 a(v,u) = inner(∇(v), ∇(u))
@@ -80,7 +79,7 @@ U = TrialFESpace(fespace,ufun)
 # Setup integration on Neumann boundary
 neumanntags = [8,]
 btrian = BoundaryTriangulation(model,neumanntags)
-bquad = CellQuadrature(btrian,order=2)
+bquad = CellQuadrature(btrian,order=order*2)
 
 # Integrand of the Neumann BC
 g(v) = inner(v,gfun)
@@ -105,5 +104,7 @@ e = u - uh
 el2 = sqrt(sum( integrate(l2(e),trian,quad) ))
 eh1 = sqrt(sum( integrate(h1(e),trian,quad) ))
 
-#writevtk(trian,"trian",nref=4,cellfields=["uh"=>uh,"u"=>u,"e"=>e])
+@test el2 < 1.e-8
+@test eh1 < 1.e-8
 
+#writevtk(trian,"trian",nref=4,cellfields=["uh"=>uh,"u"=>u,"e"=>e])
