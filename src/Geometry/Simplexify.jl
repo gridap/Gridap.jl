@@ -241,14 +241,23 @@ end
 function _generate_ltcell_to_lpoints(ct::ConstantCellValue)
   extrusion = ct.value
   if extrusion == (HEX_AXIS, HEX_AXIS)
-    ltcell_to_lpoints = [[1,2,3],[4,3,2]]
+    ltcell_to_lpoints = [[1,2,3],[2,3,4]]
     return ltcell_to_lpoints
   elseif extrusion == (HEX_AXIS, HEX_AXIS, HEX_AXIS)
     ltcell_to_lpoints = [
-      [7,3,2,1], [7,5,2,1], [7,4,3,2], [7,4,8,2], [7,6,5,2], [7,6,8,2]]
+      [1,2,3,7], [1,2,5,7], [2,3,4,7], [2,4,7,8], [2,5,6,7], [2,6,7,8]]
   else
     @notimplemented
   end
+end
+
+function _orient_simplex_connectivities(cell_to_nodes_data, cell_to_nodes_ptrs)
+  cell_nodes = Gridap.CellValuesGallery.CellVectorFromDataAndPtrs(cell_to_nodes_data,cell_to_nodes_ptrs)
+  oriented = Int64[]
+  for i in cell_nodes
+    push!(oriented,sort(i)...)
+  end
+  return oriented
 end
 
 end # module

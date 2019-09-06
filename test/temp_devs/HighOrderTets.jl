@@ -4,16 +4,27 @@ module HighOrderTets
 using Gridap, Test
 using Gridap.CellValuesGallery
 
+import Gridap: ∇
+
+using Gridap.Helpers
+using UnstructuredGrids.Kernels: refine_grid_connectivity
+using UnstructuredGrids.Kernels: generate_tface_to_face
+using Gridap.DiscreteModels: DiscreteModelFromData
+##
+
+##
 ufun(x) = x[1] + x[2]
-ufun_grad(x) = VectorValue(1.0,1.0)
+ufun_grad(x) = VectorValue(1.0,1.0,0.0)
 ∇(::typeof(ufun)) = ufun_grad
 bfun(x) = 0.0
 
 # Construct the discrete model
-model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(2,2))
+model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0,0.0,1.0), partition=(4,4,4))
 model = simplexify(model)
 
-order = 2
+
+order = 4
+# diritag = [1,2,3,4]
 diritag = "boundary"
 fespace = ConformingFESpace(Float64,model,order,diritag)
 
@@ -28,6 +39,9 @@ quad = CellQuadrature(trian,order=6)
 # Define forms
 a(v,u) = inner(∇(v), ∇(u))
 b(v) = inner(v,bfun)
+
+uh = interpolate(U,ufun)
+sum(integrate(a(uh,uh),trian,quad))
 
 # Define Assembler
 assem = SparseMatrixAssembler(V,U)
@@ -56,6 +70,10 @@ eh1 = sqrt(sum( integrate(h1(e),trian,quad) ))
 
 @test el2 < 1.e-8
 @test eh1 < 1.e-8
+##
+uhno = uh
+uho = uh
+writevtk(trian,"trian",cellfields=["uh"=>uh])
 
 # 1) Clean constructors without D or T
 
