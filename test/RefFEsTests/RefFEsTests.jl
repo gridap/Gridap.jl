@@ -21,7 +21,7 @@ reffe = LagrangianRefFE(Float64,polytope,orders)
 
 
 nodes, nfacenodes = Gridap.RefFEs._high_order_lagrangian_nodes_polytope(polytope,orders)
-dofsb = LagrangianDOFBasis{D,Float64}(nodes)
+dofsb = LagrangianDOFBasis(Float64,nodes)
 prebasis = MonomialBasis(Float64,orders)
 vals = evaluate(prebasis,dofsb.nodes)
 nodes
@@ -36,7 +36,7 @@ orders=[1,1]
 extrusion = Point{D,Int}(1,1)
 polytope = Polytope(extrusion)
 nodes, nfacenodes = Gridap.RefFEs._high_order_lagrangian_nodes_polytope(polytope,orders)
-dofsb = LagrangianDOFBasis{D,VectorValue{D,Float64}}(nodes)
+dofsb = LagrangianDOFBasis(VectorValue{D,Float64},nodes)
 prebasis = MonomialBasis(VectorValue{D,Float64},orders)
 # res = RefFEs.evaluate!(dofsb,prebasis,aux)
 res = evaluate(dofsb,prebasis)

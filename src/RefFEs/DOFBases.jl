@@ -31,7 +31,7 @@ end
 """
 Compute the DOF values of the given field. The results in written in place
 in the last argument.
-E is a subtype of Real (typically Float64). E can be computed as 
+E is a subtype of Real (typically Float64). E can be computed as
 E = dof_type(T)
 """
 function evaluate!(
@@ -42,7 +42,7 @@ end
 """
 Compute the DOF values of the given basis. The results in written in place
 in the last argument.
-E is a subtype of Real (typically Float64). E can be computed as 
+E is a subtype of Real (typically Float64). E can be computed as
 E = dof_type(T). The result is a matrix. The rows correspond to
 the Basis and the cols to the DOFBasis.
 """
@@ -120,7 +120,7 @@ struct LagrangianDOFBasis{D,T} <: DOFBasis{D,T}
   _cache_basis::Matrix{T}
 end
 
-function LagrangianDOFBasis{D,T}(nodes::Vector{Point{D,Float64}}) where {D,T}
+function LagrangianDOFBasis(::Type{T}, nodes::Vector{Point{D,Float64}}) where {D,T}
 
   nnodes = length(nodes)
   ndofs = _num_dofs(T,nodes)

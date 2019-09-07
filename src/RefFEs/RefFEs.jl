@@ -73,7 +73,7 @@ function LagrangianRefFE(::Type{T}, p::Polytope{D}, orders::Vector{Int}) where {
   else
     nodes, nfacenodes = _high_order_lagrangian_nodes_polytope(p,orders)
   end
-  dofsb = Gridap.RefFEs.LagrangianDOFBasis{D,T}(nodes)
+  dofsb = Gridap.RefFEs.LagrangianDOFBasis(T,nodes)
   # @santiagobadia : This part is missing for anisotropic orders !
   prebasis = Gridap.RefFEs._monomial_basis(p,T,orders[1])
   aux = zeros(Float64,numlocaldofs(dofsb),numlocaldofs(dofsb))
