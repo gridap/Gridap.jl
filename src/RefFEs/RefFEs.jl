@@ -22,11 +22,6 @@ abstract type RefFE{D,T} end
 
 dofbasis(this::RefFE{D,T} where {D,T})::DOFBasis{D,T} = @abstractmethod
 
-# permutation(this::RefFE, nf::Int, cell_vertex_gids::AbstractVector{Int},
-# nface_vertex_gids::AbstractVector{Int}, nface_order::Int)::Vector{Int}
-# = @abstractmethod
-# @santiagobadia : To do in the future, not needed for the moment
-
 polytope(this::RefFE{D,T} where {D,T})::Polytope{D} = @abstractmethod
 
 shfbasis(this::RefFE{D,T} where {D,T})::Basis{D,T} = @abstractmethod
@@ -43,7 +38,7 @@ function nfacedofs(reffe::RefFE{D},dim::Integer) where D
   @assert dim <= D
   nface_to_dofs = nfacedofs(reffe)
   p = polytope(reffe)
-  nface_to_dofs[p.nf_dim[end][dim+1]]
+  nface_to_dofs[nf_dim(p)[end][dim+1]]
 end
 
 """
@@ -70,7 +65,7 @@ RefFEs on n-cubes or n-tets.
 function LagrangianRefFE(::Type{T}, p::Polytope{D}, orders::Vector{Int}) where {D,T}
   @assert length(orders) == D
   @assert D > 0
-  if !(all(p.extrusion.array.== HEX_AXIS) || all(orders.==orders[1]))
+  if !(all(extrusion(p).array.== HEX_AXIS) || all(orders.==orders[1]))
     error("One can consider anisotropic orders on n-cubes only")
   end
   if (all(orders.==1))
@@ -118,11 +113,11 @@ end
 function _linear_lagrangian_nodes_polytope(p::Polytope)
   function _linear_nfacedofs(p)
     nfacedofs = Vector{Int}[]
-    for (inf,nf) in enumerate(p.nfaces[p.nf_dim[end][1]])
+    for (inf,nf) in enumerate(nfaces(p)[nf_dim(p)[end][1]])
       push!(nfacedofs, [inf])
     end
-    for id in 2:length(p.nf_dim[end])
-      for (inf,nf) in enumerate(p.nfaces[p.nf_dim[end][id]])
+    for id in 2:length(nf_dim(p)[end])
+      for (inf,nf) in enumerate(nfaces(p)[nf_dim(p)[end][id]])
         push!(nfacedofs, Int[])
       end
     end
@@ -145,10 +140,10 @@ function _high_order_lagrangian_nodes_polytope(p::Polytope, order)
   nfacedofs = copy(rfe_p.nfacedofs)
   nfs = nfaces(p)
   k = length(vs_p)
-  for nf_dim = 1:length(p.nf_dim[end])-1
-    nfs_dim = p.nf_dim[end][nf_dim+1]
-    nfs_vs = Gridap.Polytopes._dimfrom_fs_dimto_fs(p,nf_dim,0)
-    for (i_nf_dim,i_nf) in enumerate(p.nf_dim[end][nf_dim+1])
+  for inf_dim = 1:length(nf_dim(p)[end])-1
+    nfs_dim = nf_dim(p)[end][inf_dim+1]
+    nfs_vs = Gridap.Polytopes._dimfrom_fs_dimto_fs(p,inf_dim,0)
+    for (i_nf_dim,i_nf) in enumerate(nf_dim(p)[end][inf_dim+1])
       ref_p = ref_ps[i_nf]
       # _order = Tuple(order*ones(Int,length(ref_p.extrusion)))
       _order = _extract_nonzeros(nfs[i_nf].extrusion,order)
@@ -209,15 +204,15 @@ function _monomial_basis(p::Polytope{D}, T, order) where D
 end
 
 function _is_hex(p)
-  for i in 2:length(p.extrusion)
-    if p.extrusion[i] != 1 return false && break end
+  for i in 2:length(extrusion(p))
+    if extrusion(p)[i] != 1 return false && break end
   end
   return true
 end
 
 function _is_tet(p)
-  for i in 2:length(p.extrusion)
-    if p.extrusion[i] != 2 return false && break end
+  for i in 2:length(extrusion(p))
+    if extrusion(p)[i] != 2 return false && break end
   end
   return true
 end
