@@ -32,8 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for boundary integration (e.g., Neumann BCs) for multi-field computations. Since PR [#75](https://github.com/gridap/Gridap.jl/pull/75).
 
 ### Changed
-### Removed
-### Deprecated
+
+- Signature of `LagrangianRefFE` constructor. Since commit [529c764](https://github.com/gridap/Gridap.jl/commit/529c7646a531db6910a00f04a925dadec3a50b7c).
+
 ### Fixed
 
 - Bug in `LinearFETerm` for multi-field computations. Fixed via commit [2b957d1](https://github.com/gridap/Gridap.jl/commit/2b957d1b3a9a9a4396075801d8c837f6aff921c8).
