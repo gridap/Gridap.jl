@@ -7,8 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Added support to high order simplicial Lagrangian finite elements. Since commit [cbefe9b]
-- Now the built-in simplicial grids are oriented. Since commit [cbefe9b]
+
+- Added support to high order simplicial Lagrangian finite elements. Since commit [cbefe9b](https://github.com/gridap/Gridap.jl/commit/cbefe9bbea83d00e7f6ccbef50396ddc7dc49b80).
+- Now the built-in simplicial grids are oriented. Since commit [cbefe9b](https://github.com/gridap/Gridap.jl/commit/cbefe9bbea83d00e7f6ccbef50396ddc7dc49b80).
 - Added binary operations between `FEFuntion` and `Number`, and `FEBasis` and `Number`.  Since PR [#88](https://github.com/gridap/Gridap.jl/pull/88).
 - Added `PDiscRefFE`, `DiscFESpace`, and `ConstrainedFESpace`. Since PR [#88](https://github.com/gridap/Gridap.jl/pull/88).
 - Now its possible to pass a `CellNumer` or an `Array` of numbers into a constitutive law. Usefull to identify which is the material of the current Gauss point in multi-material problems. Since commit [62cb2c3](https://github.com/gridap/Gridap.jl/commit/62cb2c354e2a09c556324a4fe9861329989299f4).
