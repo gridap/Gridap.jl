@@ -268,7 +268,7 @@ struct NonLinearFEOperator <:FEOperator
   testfesp::FESpaceLike
   trialfesp::FESpaceLike
   assem::AssemblerLike
-  terms::NTuple{N,<:FETerm} where N
+  terms::NTuple{N,FETerm} where N
 end
 
 function NonLinearFEOperator(

@@ -86,4 +86,13 @@ zh = zero(U)
 solve!(zh,solver,op,cache)
 @test free_dofs(zh) ≈ free_dofs(uh)
 
+t_Ω = NonLinearFETerm(res,jac,trian,quad)
+
+b0fun(x) = 0.0
+b0(v) = inner(v,b0fun)
+t_source = FESource(b0,trian,quad)
+
+op = NonLinearFEOperator(V,U,assem,t_Ω,t_source)
+op = NonLinearFEOperator(V,U,t_Ω,t_source)
+
 end # module NonLinearFEOperatorsTests
