@@ -19,6 +19,8 @@ export dim
 export anchor
 export extrusion
 export nfaces
+export nfaces_dim
+export nface_connections
 export nf_nfs
 export nf_dim
 
@@ -99,6 +101,14 @@ dim(::Polytope{D}) where {D} = D
 extrusion(p::Polytope) = p.extrusion
 
 nfaces(p::Polytope) = p.nfaces
+
+nfaces_dim(p::Polytope, d) = p.nf_dim[end][d+1]
+
+"""
+# It provides for every df-face in the polytope all its dt-faces
+# We use dim-wise numbering, i.e., we start numbering from 1 at every dim
+"""
+nface_connections(p::Polytope, dfrom, dto) = _dimfrom_fs_dimto_fs(p, dfrom, dto)
 
 # @santiagobadia : I would prefer not to make public the following ones
 """
@@ -329,8 +339,6 @@ function _nfaceboundary!(
   return list
 end
 
-# It provides for every df-face in the polytope all its dt-faces
-# We use dim-wise numbering, i.e., we start numbering from 1 at every dim
 function _dimfrom_fs_dimto_fs(p::Polytope, dim_from::Int, dim_to::Int)
   @assert dim_to <= dim_from
   dim_from += 1
