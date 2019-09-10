@@ -80,12 +80,26 @@ function DLagrangianFESpace(
 end
 
 function DLagrangianFESpace(
-  ::Type{T},model::DiscreteModel,order,diritags=Int[],dirimasks=nothing) where T
+  ::Type{T},
+  model::DiscreteModel,
+  order::Integer,
+  diritags=Int[],
+  dirimasks=nothing) where T
+  DLagrangianFESpace(T,model,FaceLabels(model),order,diritags,dirimasks)
+end
 
-  _diri_tags = _setup_tags(model,diritags)
+function DLagrangianFESpace(
+  ::Type{T},
+  model::DiscreteModel,
+  facelabels::FaceLabels,
+  order::Integer,
+  diritags=Int[],
+  dirimasks=nothing) where T
+
+  _diri_tags = _setup_tags(facelabels,diritags)
   _diri_masks = _setup_masks(T,_diri_tags,dirimasks)
 
-  grid, node_to_label, tag_to_labels = _setup_grid(model,order)
+  grid, node_to_label, tag_to_labels = _setup_grid(model,facelabels,order)
 
   DLagrangianFESpace(
     T,grid,node_to_label,tag_to_labels,_diri_tags,_diri_masks)

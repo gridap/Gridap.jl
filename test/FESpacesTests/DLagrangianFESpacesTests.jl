@@ -127,4 +127,12 @@ fespace = DLagrangianFESpace(T,model,order)
 @test fespace.dirimasks == Tuple{Bool}[]
 @test fespace.ndiridofs == 0
 
+labels = FaceLabels(model)
+labels = FaceLabels(
+  labels.dim_to_nface_to_label,copy(labels.tag_to_labels),copy(labels.tag_to_name))
+diritag = "diri_boundary"
+add_tag_from_tags!(labels,diritag,diritags)
+dirimask = [true,]
+fespace = DLagrangianFESpace(T,model,labels,order,diritag,dirimask)
+
 end # module

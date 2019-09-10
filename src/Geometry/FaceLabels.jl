@@ -1,6 +1,7 @@
 module FaceLabelsModule
 
 using Gridap
+using Gridap.Helpers
 using Gridap.CellValuesGallery
 
 export FaceLabels
@@ -49,6 +50,7 @@ function tag_from_name(l::FaceLabels,name::String)
       return tag
     end
   end
+  @unreachable
   0
 end
 
@@ -75,6 +77,7 @@ function _first_tag_on_face!(face_to_tag,face_to_label,tag_to_labels)
 end
 
 function add_tag_from_tags!(facelabels::FaceLabels, name::String, tags::Vector{Int})
+  @assert ! (name in facelabels.tag_to_name)
   labels = Int[]
   for tag in tags
      for label in labels_on_tag(facelabels,tag)

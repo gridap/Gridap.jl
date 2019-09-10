@@ -58,15 +58,27 @@ function ConformingFESpace(
   return ConformingFESpace(reffe, trian, graph, labels, ())
 end
 
-function ConformingFESpace(::Type{T},model::DiscreteModel{D},order,diri_tags) where {D,T}
+function ConformingFESpace(
+  ::Type{T}, model::DiscreteModel{D}, order::Integer, diri_tags) where {D,T}
+
+  labels = FaceLabels(model)
+  ConformingFESpace(T,model,labels,order,diri_tags)
+end
+
+function ConformingFESpace(
+  ::Type{T},
+  model::DiscreteModel{D},
+  labels::FaceLabels,
+  order::Integer,
+  diri_tags) where {D,T}
+
   grid = Grid(model,D)
   trian = Triangulation(grid)
   graph = GridGraph(model)
-  labels = FaceLabels(model)
   orders = fill(order,D)
   polytope = _polytope(celltypes(grid))
   fe = LagrangianRefFE(T,polytope, orders)
-  _diri_tags = _setup_tags(model,diri_tags)
+  _diri_tags = _setup_tags(labels,diri_tags)
   ConformingFESpace(fe,trian,graph,labels,_diri_tags)
 end
 

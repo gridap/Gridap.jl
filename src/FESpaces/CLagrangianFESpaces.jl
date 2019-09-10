@@ -81,12 +81,26 @@ function CLagrangianFESpace(
 end
 
 function CLagrangianFESpace(
-  ::Type{T},model::DiscreteModel,order,diritags=Int[],dirimasks=nothing) where T
+  ::Type{T},
+  model::DiscreteModel,
+  order::Integer,
+  diritags=Int[],
+  dirimasks=nothing) where T
+  CLagrangianFESpace(T,model,FaceLabels(model),order,diritags,dirimasks)
+end
 
-  _diri_tags = _setup_tags(model,diritags)
+function CLagrangianFESpace(
+  ::Type{T},
+  model::DiscreteModel,
+  facelabels::FaceLabels,
+  order::Integer,
+  diritags=Int[],
+  dirimasks=nothing) where T
+
+  _diri_tags = _setup_tags(facelabels,diritags)
   _diri_masks = _setup_masks(T,_diri_tags,dirimasks)
 
-  grid, node_to_label, tag_to_labels = _setup_grid(model,order)
+  grid, node_to_label, tag_to_labels = _setup_grid(model,facelabels,order)
 
   CLagrangianFESpace(
     T,grid,node_to_label,tag_to_labels,_diri_tags,_diri_masks)
@@ -443,9 +457,8 @@ function _same_order(order,co::ConstantCellValue)
   order == co.value
 end
 
-function _setup_grid(model,order)
+function _setup_grid(model,facelabels,order)
 
-  facelabels = FaceLabels(model)
   _grid = Grid(model)
 
   if _same_order(order,cellorders(_grid))
