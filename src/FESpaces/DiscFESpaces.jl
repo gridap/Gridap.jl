@@ -71,7 +71,20 @@ function interpolate_values(this::DiscFESpace,fun::Function)
   _setup_interpolate_values(this, fun)
 end
 
+function interpolate_values(this::DiscFESpace{D,Z,T},val::T) where {D,Z,T}
+  fun(x) = val
+  _setup_interpolate_values(this, fun)
+end
+
 function interpolate_diri_values(this::DiscFESpace, funs::Vector{<:Function})
+  _interpolate_diri_values(this::DiscFESpace, funs)
+end
+
+function interpolate_diri_values(this::DiscFESpace{D,Z,T}, vals::Vector{T}) where {D,Z,T}
+  _interpolate_diri_values(this::DiscFESpace, vals)
+end
+
+function _interpolate_diri_values(this::DiscFESpace, funs)
   @assert length(funs) == 0
   T = value_type(this)
   E = dof_type(T)

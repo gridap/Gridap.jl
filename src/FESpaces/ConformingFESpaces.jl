@@ -111,8 +111,17 @@ function interpolate_values(this::ConformingFESpace,f::Function)
   _interpolate_values(this,f)
 end
 
+function interpolate_values(this::ConformingFESpace{D,Z,T},val::T) where {D,Z,T}
+  fun(x) = val
+  interpolate_values(this,fun)
+end
+
 function interpolate_diri_values(this::ConformingFESpace, funs::Vector{<:Function})
   _interpolate_diri_values(this,funs)
+end
+
+function interpolate_diri_values(this::ConformingFESpace{D,Z,T}, vals::Vector{T}) where {D,Z,T}
+  _interpolate_diri_values(this,vals)
 end
 
 function CellField(

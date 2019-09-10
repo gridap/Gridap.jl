@@ -71,6 +71,10 @@ function interpolate_values(::FESpace,::Function)::Tuple{Vector{E},Vector{E}} wh
   @abstractmethod
 end
 
+function interpolate_values(::FESpace{D,Z,T},::T) where {D,Z,T}
+  @abstractmethod
+end
+
 """
 Given a FESpace and its array of labels that represent the Dirichlet boundary
 in the geometrical model and an array of functions for every Dirichlet
@@ -81,9 +85,18 @@ function interpolate_diri_values(::FESpace, funs::Vector{<:Function})::Vector{E}
   @abstractmethod
 end
 
+function interpolate_diri_values( ::FESpace{D,Z,T}, ::Vector{T}) where {D,Z,T}
+  @abstractmethod
+end
+
 function interpolate_diri_values(this::FESpace, fun::Function)
   tags = diri_tags(this)
   interpolate_diri_values(this,fill(fun,length(tags)))
+end
+
+function interpolate_diri_values(this::FESpace{D,Z,T}, val::T) where {D,Z,T}
+  tags = diri_tags(this)
+  interpolate_diri_values(this,fill(val,length(tags)))
 end
 
 """
@@ -111,27 +124,40 @@ function TestFESpace(this::FESpace{D,Z,T}) where {D,Z,T}
   return FESpaceWithDirichletData(this, dv)
 end
 
-function TrialFESpace( this::FESpace, funs::Vector{<:Function}=Function[]) where {D}
+function TrialFESpace( this::FESpace, funs::Vector{<:Function}=Function[])
+  _TrialFESpace(this,funs)
+end
+
+function TrialFESpace( this::FESpace{D,Z,T}, vals::Vector{T}) where {D,Z,T}
+  _TrialFESpace(this,vals)
+end
+
+function _TrialFESpace( this, funs)
   tags = diri_tags(this)
   @assert length(tags) == length(funs)
   dv = interpolate_diri_values(this,funs)
   return FESpaceWithDirichletData(this, dv)
 end
 
-function TrialFESpace( this::FESpace, fun::Function) where {D}
+function TrialFESpace( this::FESpace, fun::Function)
   dv = interpolate_diri_values(this,fun)
+  return FESpaceWithDirichletData(this, dv)
+end
+
+function TrialFESpace( this::FESpace{D,Z,T}, val::T) where {D,Z,T}
+  dv = interpolate_diri_values(this,val)
   return FESpaceWithDirichletData(this, dv)
 end
 
 # Testers
 
 function test_fe_space(
-  fespace::FESpace{D,Z},
+  fespace::FESpace{D,Z,T},
   nfree::Integer,
   ndiri::Integer,
   cellmat::CellMatrix,
   cellvec::CellVector,
-  ufun::Function) where {D,Z}
+  ufun::Function) where {D,Z,T}
 
   @test num_free_dofs(fespace) == nfree
   @test num_diri_dofs(fespace) == ndiri
@@ -160,6 +186,13 @@ function test_fe_space(
   @test length(freevals) == nfree
   @test length(dirivals) == ndiri
 
+  z = zero(T)
+  freevals, dirivals = interpolate_values(fespace,z)
+  @test isa(freevals,AbstractVector)
+  @test isa(dirivals,AbstractVector)
+  @test length(freevals) == nfree
+  @test length(dirivals) == ndiri
+
   dirivals = interpolate_diri_values(fespace,ufun)
   @test isa(dirivals,AbstractVector)
   @test length(dirivals) == ndiri
@@ -169,6 +202,10 @@ function test_fe_space(
 
   trian = Triangulation(fespace)
   @test isa(trian,Triangulation{Z,D})
+
+  dirivals = interpolate_diri_values(fespace,z)
+  @test isa(dirivals,AbstractVector)
+  @test length(dirivals) == ndiri
 
 end
 
@@ -216,6 +253,11 @@ function interpolate_values(f::FESpaceWithDirichletData,fun::Function)
   free_vals, f.diri_dofs
 end
 
+function interpolate_values(f::FESpaceWithDirichletData{D,Z,T},val::T) where {D,Z,T}
+  free_vals, _ = interpolate_values(f.fespace,val)
+  free_vals, f.diri_dofs
+end
+
 function CellField(
   f::FESpaceWithDirichletData{D,Z,T},free_dofs::AbstractVector{E},diri_dofs::AbstractVector{E})where {D,Z,T,E}
   CellField(f.fespace,free_dofs,f.diri_dofs)
@@ -228,6 +270,10 @@ end
 Triangulation(f::FESpaceWithDirichletData) = Triangulation(f.fespace)
 
 function interpolate_diri_values(f::FESpaceWithDirichletData, funs::Vector{<:Function})
+  f.diri_dofs
+end
+
+function interpolate_diri_values(f::FESpaceWithDirichletData{D,Z,T}, vals::Vector{T}) where {D,Z,T}
   f.diri_dofs
 end
 

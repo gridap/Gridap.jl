@@ -125,6 +125,14 @@ apply_constraints_cols(
 celldofids(fesp::CLagrangianFESpace) = fesp.cell_to_dofs
 
 function interpolate_values(fesp::CLagrangianFESpace,fun::Function)
+  _interpolate_values(fesp,fun)
+end
+
+function interpolate_values(fesp::CLagrangianFESpace{D,Z,T},val::T) where {D,Z,T}
+  _interpolate_values(fesp,val)
+end
+
+function _interpolate_values(fesp,fun)
   zh = zero(fesp)
   fdof_to_val = free_dofs(zh)
   ddof_to_val = diri_dofs(zh)
@@ -133,6 +141,14 @@ function interpolate_values(fesp::CLagrangianFESpace,fun::Function)
 end
 
 function interpolate_diri_values(fesp::CLagrangianFESpace, funs::Vector{<:Function})
+  _interpolate_diri_values(fesp, funs)
+end
+
+function interpolate_diri_values(fesp::CLagrangianFESpace{D,Z,T},vals::Vector{T}) where {D,Z,T}
+  _interpolate_diri_values(fesp, vals)
+end
+
+function _interpolate_diri_values(fesp, funs)
 
   T = value_type(fesp)
   E = eltype(T)
@@ -373,7 +389,7 @@ end
 function _fill_interpolated_vals!(fdof_to_val,ddof_to_val,fesp,fun)
 
   x = points(fesp.grid)
-  fx = fun.(x)
+  fx = _eval_bc(fun,x)
   T = value_type(fesp)
   @assert eltype(fx) == T
   z = zero(T)
@@ -387,6 +403,10 @@ function _fill_interpolated_vals!(fdof_to_val,ddof_to_val,fesp,fun)
     comps)
 
 end
+
+_eval_bc(fun::Function,x) = fun.(x)
+
+_eval_bc(val,x) = fill(val,length(x))
 
 function  _fill_interpolated_vals_kernel!(
   fdof_to_val,
@@ -432,7 +452,7 @@ function _fill_diri_values!(
     label = node_to_label[node]
     if label in tag_to_labels[diritag]
       x = node_to_coords[node]
-      fx = fun(x)
+      fx = _eval(fun,x)
       comp_to_dof = node_and_comp_to_dof[node]
       for comp in eachindex(fx)
         mask = dirimask[comp]
@@ -448,6 +468,10 @@ function _fill_diri_values!(
   end
 
 end
+
+@inline _eval(fun::Function,x) = fun(x)
+
+@inline _eval(val,x) = val
 
 function _same_order(order,co)
   @notimplemented

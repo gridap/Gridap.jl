@@ -29,5 +29,13 @@ test_fe_space(V,5,4,mmat,bvec,fun)
 U = TrialFESpace(fespace,fun)
 test_fe_space(U,5,4,mmat,bvec,fun)
 
+fun(x) = x[1] + x[2]
+z = 2.0
+U = TrialFESpace(fespace,z)
+test_fe_space(U,5,4,mmat,bvec,fun)
+
+U = TrialFESpace(fespace,[z,z,z,z])
+test_fe_space(U,5,4,mmat,bvec,fun)
+
 end # module
 

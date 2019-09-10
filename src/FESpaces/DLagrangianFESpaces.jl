@@ -9,6 +9,8 @@ using Gridap.CLagrangianFESpaces: _S
 using Gridap.CLagrangianFESpaces: _compute_comp_to_dof
 using Gridap.CLagrangianFESpaces: _setup_grid
 using Gridap.CLagrangianFESpaces: _setup_masks
+using Gridap.CLagrangianFESpaces: _eval
+using Gridap.CLagrangianFESpaces: _eval_bc
 using Gridap.ConformingFESpaces: _CellField
 using Gridap.BoundaryGrids: _setup_tags
 
@@ -132,6 +134,14 @@ function CellField(
 end
 
 function interpolate_values(fesp::DLagrangianFESpace,fun::Function)
+  _interpolate_values(fesp,fun)
+end
+
+function interpolate_values(fesp::DLagrangianFESpace{D,Z,T},val::T) where {D,Z,T}
+  _interpolate_values(fesp,val)
+end
+
+function _interpolate_values(fesp::DLagrangianFESpace,fun)
 
   zh = zero(fesp)
   fdof_to_val = free_dofs(zh)
@@ -140,7 +150,7 @@ function interpolate_values(fesp::DLagrangianFESpace,fun::Function)
   lnode_and_comp_to_ldof = fesp.reffe.dofbasis.node_and_comp_to_dof
   cell_to_dofs = fesp.cell_to_dofs
   cell_to_nodes = cells(fesp.grid)
-  node_comp_to_val = fun.(node_to_coords)
+  node_comp_to_val = _eval_bc(fun,node_to_coords)
 
   _fill_interpolated_vals!(
     fdof_to_val,
@@ -154,6 +164,14 @@ function interpolate_values(fesp::DLagrangianFESpace,fun::Function)
 end
 
 function interpolate_diri_values(fesp::DLagrangianFESpace, funs::Vector{<:Function})
+  _interpolate_diri_values(fesp, funs)
+end
+
+function interpolate_diri_values(fesp::DLagrangianFESpace{D,Z,T}, vals::Vector{T}) where {D,Z,T}
+  _interpolate_diri_values(fesp, vals)
+end
+
+function _interpolate_diri_values(fesp::DLagrangianFESpace, funs)
 
   T = value_type(fesp)
   E = eltype(T)
@@ -216,7 +234,7 @@ function _fill_diri_values!(
       if label in tag_to_labels[diritag]
 
         coords = node_to_coords[node]
-        comp_to_val = fun(coords)
+        comp_to_val = _eval(fun,coords)
 
         for comp in eachindex(dirimask)
           mask = dirimask[comp]
