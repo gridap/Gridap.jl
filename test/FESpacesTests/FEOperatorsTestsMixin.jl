@@ -21,7 +21,7 @@ assem = SparseMatrixAssembler(V,U)
 op = LinearFEOperator(a,b,V,U,assem,trian,quad)
 
 # Define the FESolver
-ls = LUSolver()
+ls = BackslashSolver()
 solver = LinearFESolver(ls)
 
 # Solve!
