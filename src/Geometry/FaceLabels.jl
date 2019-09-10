@@ -10,6 +10,7 @@ export ntags
 export tag_from_name
 export name_from_tag
 export first_tag_on_face
+export add_tag_from_tags!
 
 """
 Classification of nfaces into geometrical and physical labels
@@ -71,6 +72,23 @@ function _first_tag_on_face!(face_to_tag,face_to_label,tag_to_labels)
       end
     end
   end
+end
+
+function add_tag_from_tags!(facelabels::FaceLabels, name::String, tags::Vector{Int})
+  labels = Int[]
+  for tag in tags
+     for label in labels_on_tag(facelabels,tag)
+       push!(labels,label)
+     end
+  end
+  push!(facelabels.tag_to_labels,sort(collect(Set(labels))))
+  push!(facelabels.tag_to_name,name)
+end
+
+function add_tag_from_tags!(
+  facelabels::FaceLabels, name::String, names::Vector{String})
+  tags = [tag_from_name(facelabels,name) for name in names ]
+  add_tag_from_tags!(facelabels,name,tags)
 end
 
 end #module

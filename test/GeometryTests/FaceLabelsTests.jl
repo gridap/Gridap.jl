@@ -24,4 +24,14 @@ labels = FaceLabels(
 r = [1, 1, 2, 2, 2, 2, 2, 2, 1]
 @test collect(first_tag_on_face(labels,1)) == r
 
+add_tag_from_tags!(labels,"label3",[1,2])
+
+@test labels_on_tag(labels,3) == [1, 2, 3, 4, 5, 6]
+@test tag_from_name(labels,"label3") == 3
+
+add_tag_from_tags!(labels,"label4",["label1","label2"])
+
+@test labels_on_tag(labels,4) == [1, 2, 3, 4, 5, 6]
+@test tag_from_name(labels,"label4") == 4
+
 end # module
