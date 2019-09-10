@@ -15,6 +15,7 @@ export numerical_setup
 export numerical_setup!
 export test_linear_solver
 export LUSolver
+export BackslashSolver
 
 abstract type LinearSolver end
 
@@ -78,6 +79,28 @@ function solve!(
   x::AbstractVector,ns::LUNumericalSetup,A::AbstractMatrix,b::AbstractVector)
   y = ns.factors\b # the allocation of y can be avoided
   x .= y
+end
+
+"""
+Wrapper of the backslash solver available in julia
+This is typically faster than LU for a single solve
+"""
+struct BackslashSolver <: LinearSolver end
+
+struct BackslashSymbolicSetup <: SymbolicSetup end
+
+struct BackslashNumericalSetup <: NumericalSetup end
+
+symbolic_setup(::BackslashSolver,mat::AbstractMatrix) = BackslashSymbolicSetup()
+
+numerical_setup(::BackslashSymbolicSetup,mat::AbstractMatrix) = BackslashNumericalSetup()
+
+function numerical_setup!(ns::BackslashNumericalSetup, mat::AbstractMatrix)
+end
+
+function solve!(
+  x::AbstractVector,ns::BackslashNumericalSetup,A::AbstractMatrix,b::AbstractVector)
+   copyto!(x, A\b)
 end
 
 end

@@ -28,4 +28,13 @@ b = A*x
 
 test_linear_solver(ls,A,b,x)
 
+n = 10
+A = Laplacian(n,n,1,1)
+x = rand(n^2)
+b = A*x
+
+ls = BackslashSolver()
+
+test_linear_solver(ls,A,b,x)
+
 end # module LinearSolversTests
