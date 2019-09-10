@@ -35,7 +35,7 @@ function Triangulation(grid::BoundaryGrid)
 end
 
 function BoundaryGrid(model::DiscreteModel,tags,icell::Int=1)
-  _tags = _setup_tags(Facelabels(model),tags)
+  _tags = _setup_tags(FaceLabels(model),tags)
   BoundaryGrid(model,_tags,icell)
 end
 
