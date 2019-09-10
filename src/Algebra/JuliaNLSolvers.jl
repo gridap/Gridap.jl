@@ -18,7 +18,7 @@ function JuliaNLSolver(ls::LinearSolver;kwargs...)
 end
 
 function JuliaNLSolver(;kwargs...)
-  ls = LUSolver()
+  ls = BackslashSolver()
   JuliaNLSolver(ls;kwargs...)
 end
 
