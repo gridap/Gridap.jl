@@ -17,6 +17,7 @@ export symmetic_part
 
 import TensorValues: meas
 import Base: adjoint
+import LinearAlgebra: tr
 
 
 """
@@ -57,7 +58,7 @@ end
   Meta.parse(str[1:(end-1)])
 end
 
-const tr = trace
+@inline tr(v::TensorValue) = trace(v)
 
 @generated function symmetic_part(v::TensorValue{D}) where D
   str = "("
