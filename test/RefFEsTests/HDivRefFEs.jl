@@ -63,6 +63,7 @@ fshfs_fips = collect(cvals)
 cquad = ConstantCellQuadrature(fquad,nc)
 # Integration points at ref facet
 xquad = coordinates(cquad)
+wquad = weights(cquad)
 # Integration points mapped at the polytope facets
 pquad = evaluate(fgeomap,xquad)
 
@@ -72,7 +73,6 @@ pquad = evaluate(fgeomap,xquad)
 # cbasis = ConstantCellValue(basis, nc)
 # cvals = evaluate(cbasis,pquad)
 
-order
 fshfs = Gridap.RefFEs._monomial_basis(fp,Float64,order-1)
 cfshfs = ConstantCellValue(fshfs, nc)
 cvals = evaluate(cfshfs,cfips)
@@ -107,10 +107,13 @@ function mybroadcast(n,b)
         return c
         # end
 end
+shfs_fips
 nxshfs_fips = [ mybroadcast(n,b) for (n,b) in zip(fns,shfs_fips)]
 # CellValueFromArray(nxshfs_fips)
-##
-_fmoments = [nxshfs_fips[i]*fshfs_fips[i]' for i in 1:nc]
+
+# missing weights!
+
+_fmoments = [nxshfs_fips[i]*(wquad[i]'.*fshfs_fips[i])' for i in 1:nc]
 _size = [size(_fmoments[1])...]
 _size[end] = _size[end]*length(_fmoments)
 nsize = Tuple(_size)
@@ -122,22 +125,24 @@ for i in 1:length(_fmoments)
 end
 fmoments
 
-if (order>0)
+if (order>1)
         # Now the same for interior DOFs
         ibasis = GradMonomialBasis(VectorValue{d,Float64},order-1)
         iquad = Quadrature(p,order*2)
         iips = coordinates(iquad)
+        iwei = weights(iquad)
         # Interior DOFs-related basis evaluated at interior integration points
         ishfs_iips = evaluate(ibasis,iips)
         # Prebasis evaluated at interior integration points
         shfs_iips = evaluate(basis,iips)
-        imoments = shfs_iips*ishfs_iips'
+        imoments = shfs_iips*(iwei'.*ishfs_iips)'
         # Matrix of all moments (columns) for all prebasis elements (rows)
         moments = hcat(fmoments,imoments)
 else
         moments = fmoments
 end
 moments
+det(moments)
 
 ##
 
