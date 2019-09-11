@@ -3,6 +3,8 @@ module FieldValuesTests
 using Test
 using Gridap
 using TensorValues
+using LinearAlgebra: dot
+using LinearAlgebra: norm
 
 a = 1
 @test isa(a,FieldValue)
@@ -53,5 +55,10 @@ a = TensorValue(1,2,3,4)
 b = a'
 @test b == TensorValue(1,3,2,4)
 @test a*b == TensorValue(10,14,14,20)
+
+u = VectorValue(1.0,2.0)
+v = VectorValue(2.0,3.0)
+@test dot(u,v) ≈ inner(u,v)
+@test norm(u) ≈ sqrt(inner(u,u))
 
 end # module

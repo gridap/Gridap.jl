@@ -18,6 +18,8 @@ export symmetic_part
 import TensorValues: meas
 import Base: adjoint
 import LinearAlgebra: tr
+import LinearAlgebra: dot
+import LinearAlgebra: norm
 
 
 """
@@ -75,5 +77,9 @@ function adjoint(v::TensorValue)
   t = adjoint(v.array)
   TensorValue(t)
 end
+
+@inline dot(u::VectorValue,v::VectorValue) = inner(u,v)
+
+@inline norm(u::VectorValue) = sqrt(inner(u,u))
 
 end # module
