@@ -140,6 +140,11 @@ function num_nfaces(polytope::Polytope, dim::Integer)
 end
 
 """
+Returns number of nfaces
+"""
+num_nfaces(polytope::Polytope) = length(polytope.nfaces)
+
+"""
 # Returns an array with the reference polytopes for all n-faces (undef for vertices)
 """
 function nface_ref_polytopes(p::Polytope)
