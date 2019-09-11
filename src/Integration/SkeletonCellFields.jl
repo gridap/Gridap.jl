@@ -8,6 +8,7 @@ export SkeletonCellVector
 export SkeletonCellMatrix
 
 export jump
+export mean
 import Gridap: restrict
 import Gridap: gradient
 import Gridap: inner
@@ -49,6 +50,19 @@ function jump(sp::SkeletonPair{Z,T,2}) where {Z,T}
   cf2 = sp.cellfield2
   SkeletonCellBasis(cf1, -cf2)
 end
+
+function mean(sp::SkeletonPair{Z,T,1}) where {Z,T}
+  cf1 = sp.cellfield1
+  cf2 = sp.cellfield2
+  0.5*(cf1 + cf2)
+end
+
+function mean(sp::SkeletonPair{Z,T,2}) where {Z,T}
+  cf1 = sp.cellfield1
+  cf2 = sp.cellfield2
+  SkeletonCellBasis(0.5*cf1, 0.5*cf2)
+end
+
 
 struct SkeletonCellBasis{Z,T}
   cellbasis1::CellBasis{Z,T}
