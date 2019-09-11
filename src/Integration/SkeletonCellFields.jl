@@ -10,10 +10,14 @@ export SkeletonCellMatrix
 export jump
 export mean
 import Gridap: restrict
-import Gridap: gradient
 import Gridap: inner
 import Gridap: integrate
-import Base: -
+import Base: +, -, *
+import Gridap: gradient
+import Gridap: symmetric_gradient
+import Base: div
+import Gridap: trace
+import Gridap: curl
 
 function restrict(
   cf::IndexCellFieldLike,desc1::BoundaryDescriptor,desc2::BoundaryDescriptor)
@@ -33,10 +37,32 @@ struct SkeletonPair{Z,T,N}
   cellfield2::CellFieldLike{Z,T,N}
 end
 
-function gradient(sp::SkeletonPair)
-  cf1 = sp.cellfield1
-  cf2 = sp.cellfield2
-  SkeletonPair(gradient(cf1),gradient(cf2))
+for op in (:+,:-,:(gradient),:(symmetric_gradient),:(div),:(trace),:(curl))
+  @eval begin
+    function ($op)(a::SkeletonPair)
+      cf1 = a.cellfield1
+      cf2 = a.cellfield2
+      SkeletonPair($op(cf1),$op(cf2))
+    end
+  end
+end
+
+for op in (:+, :-, :*)
+  @eval begin
+
+    function ($op)(a::SkeletonPair,b::CellField)
+      cf1 = a.cellfield1
+      cf2 = a.cellfield2
+      SkeletonPair($op(cf1,b),$op(cf2,b))
+    end
+
+    function ($op)(a::CellField,b::SkeletonPair)
+      cf1 = b.cellfield1
+      cf2 = b.cellfield2
+      SkeletonPair($op(a,cf1),$op(a,cf2))
+    end
+
+  end
 end
 
 function jump(sp::SkeletonPair{Z,T,1}) where {Z,T}
@@ -94,15 +120,27 @@ struct SkeletonVarinnerVector{D,T}
   cellmap2::CellMap{Point{D},1,T,2}
 end
 
-function (-)(a::SkeletonVarinnerVector,b::SkeletonVarinnerVector)
-  c1 = a.cellmap1 - b.cellmap1
-  c2 = a.cellmap2 - b.cellmap2
-  SkeletonVarinnerVector(c1,c2)
+for op in (:+, :-)
+  @eval begin
+
+    function ($op)(a::SkeletonVarinnerVector,b::SkeletonVarinnerVector)
+      c1 = $op(a.cellmap1,b.cellmap1)
+      c2 = $op(a.cellmap2,b.cellmap2)
+      SkeletonVarinnerVector(c1,c2)
+    end
+    
+    function ($op)(a::SkeletonVarinnerVector)
+      c1 = $op(a.cellmap1)
+      c2 = $op(a.cellmap2)
+      SkeletonVarinnerVector(c1,c2)
+    end
+
+  end
 end
 
-function (-)(a::SkeletonVarinnerVector)
-  c1 = - a.cellmap1
-  c2 = - a.cellmap2
+function (*)(a::Real,b::SkeletonVarinnerVector)
+  c1 = a*b.cellmap1
+  c2 = a*b.cellmap2
   SkeletonVarinnerVector(c1,c2)
 end
 
@@ -116,6 +154,36 @@ struct SkeletonVarinnerMatrix{D,T}
   cellmap12::CellMap{Point{D},1,T,3}
   cellmap21::CellMap{Point{D},1,T,3}
   cellmap22::CellMap{Point{D},1,T,3}
+end
+
+for op in (:+, :-)
+  @eval begin
+
+    function ($op)(a::SkeletonVarinnerMatrix,b::SkeletonVarinnerMatrix)
+      cellmap11 = $op(a.cellmap11, b.cellmap11)
+      cellmap12 = $op(a.cellmap12, b.cellmap12)
+      cellmap21 = $op(a.cellmap21, b.cellmap21)
+      cellmap22 = $op(a.cellmap22, b.cellmap22)
+      SkeletonVarinnerMatrix(
+        cellmap11,
+        cellmap12,
+        cellmap21,
+        cellmap22)
+    end
+
+  end
+end
+
+function (*)(a::Real,b::SkeletonVarinnerMatrix)
+      cellmap11 = a*b.cellmap11
+      cellmap12 = a*b.cellmap12
+      cellmap21 = a*b.cellmap21
+      cellmap22 = a*b.cellmap22
+      SkeletonVarinnerMatrix(
+        cellmap11,
+        cellmap12,
+        cellmap21,
+        cellmap22)
 end
 
 struct SkeletonCellMatrix
