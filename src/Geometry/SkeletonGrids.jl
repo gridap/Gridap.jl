@@ -36,7 +36,7 @@ function Triangulation(grid::SkeletonGrid)
   SkeletonTriangulation(trian,grid.descriptor1,grid.descriptor2)
 end
 
-function SkeletonGrid(model::DiscreteModel, tags::Vector{Int})
+function SkeletonGrid(model::DiscreteModel, tags)
   cell1 = 1
   cell2 = 2
   bgrid1 = BoundaryGrid(model,tags,cell1)
@@ -47,7 +47,7 @@ function SkeletonGrid(model::DiscreteModel, tags::Vector{Int})
   SkeletonGrid(grid,descriptor1,descriptor2)
 end
 
-function SkeletonTriangulation(model::DiscreteModel,tags::Vector{Int})
+function SkeletonTriangulation(model::DiscreteModel,tags)
   grid = SkeletonGrid(model,tags)
   Triangulation(grid)
 end
