@@ -8,17 +8,25 @@ export SkeletonCellVector
 export SkeletonCellMatrix
 
 export jump
+export mean
 import Gridap: restrict
-import Gridap: gradient
 import Gridap: inner
 import Gridap: integrate
-import Base: -
+import Base: +, -, *
+import Gridap: gradient
+import Gridap: symmetric_gradient
+import Base: div
+import Gridap: trace
+import Gridap: curl
 
 function restrict(
-  cf::IndexCellFieldLike,desc1::BoundaryDescriptor,desc2::BoundaryDescriptor)
+  cf::IndexCellFieldLike{Z,T,N},
+  desc1::BoundaryDescriptor,
+  desc2::BoundaryDescriptor) where {Z,T,N}
+
   cf1 = restrict(cf,desc1)
   cf2 = restrict(cf,desc2)
-  SkeletonPair(cf1,cf2)
+  SkeletonPair{Z-1,T,N}(cf1,cf2)
 end
 
 function restrict(
@@ -28,14 +36,36 @@ function restrict(
 end
 
 struct SkeletonPair{Z,T,N}
-  cellfield1::CellFieldLike{Z,T,N}
-  cellfield2::CellFieldLike{Z,T,N}
+  cellfield1
+  cellfield2
 end
 
-function gradient(sp::SkeletonPair)
-  cf1 = sp.cellfield1
-  cf2 = sp.cellfield2
-  SkeletonPair(gradient(cf1),gradient(cf2))
+for op in (:+,:-,:(gradient),:(symmetric_gradient),:(div),:(trace),:(curl))
+  @eval begin
+    function ($op)(a::SkeletonPair{Z,T,N}) where {Z,T,N}
+      cf1 = a.cellfield1
+      cf2 = a.cellfield2
+      SkeletonPair{Z,T,N}($op(cf1),$op(cf2))
+    end
+  end
+end
+
+for op in (:+, :-, :*)
+  @eval begin
+
+    function ($op)(a::SkeletonPair{Z,T,N},b::CellField) where {Z,T,N}
+      cf1 = a.cellfield1
+      cf2 = a.cellfield2
+      SkeletonPair{Z,T,N}($op(cf1,b),$op(cf2,b))
+    end
+
+    function ($op)(a::CellField,b::SkeletonPair{Z,T,N}) where {Z,T,N}
+      cf1 = b.cellfield1
+      cf2 = b.cellfield2
+      SkeletonPair{Z,T,N}($op(a,cf1),$op(a,cf2))
+    end
+
+  end
 end
 
 function jump(sp::SkeletonPair{Z,T,1}) where {Z,T}
@@ -47,12 +77,24 @@ end
 function jump(sp::SkeletonPair{Z,T,2}) where {Z,T}
   cf1 = sp.cellfield1
   cf2 = sp.cellfield2
-  SkeletonCellBasis(cf1, -cf2)
+  SkeletonCellBasis{Z,T}(cf1, -cf2)
+end
+
+function mean(sp::SkeletonPair{Z,T,1}) where {Z,T}
+  cf1 = sp.cellfield1
+  cf2 = sp.cellfield2
+  0.5*(cf1 + cf2)
+end
+
+function mean(sp::SkeletonPair{Z,T,2}) where {Z,T}
+  cf1 = sp.cellfield1
+  cf2 = sp.cellfield2
+  SkeletonCellBasis{Z,T}(0.5*cf1, 0.5*cf2)
 end
 
 struct SkeletonCellBasis{Z,T}
-  cellbasis1::CellBasis{Z,T}
-  cellbasis2::CellBasis{Z,T}
+  cellbasis1
+  cellbasis2
 end
 
 function inner(a::SkeletonCellBasis{Z},b::CellField{Z}) where Z
@@ -60,7 +102,7 @@ function inner(a::SkeletonCellBasis{Z},b::CellField{Z}) where Z
   cb2 = a.cellbasis2
   cm1 = varinner(cb1,b)
   cm2 = varinner(cb2,b)
-  SkeletonVarinnerVector(cm1,cm2)
+  SkeletonVarinnerVector{Z}(cm1,cm2)
 end
 
 function inner(a::SkeletonCellBasis{Z},b::SkeletonCellBasis{Z}) where Z
@@ -72,43 +114,85 @@ function inner(a::SkeletonCellBasis{Z},b::SkeletonCellBasis{Z}) where Z
   cm12 = varinner(a1,b2)
   cm21 = varinner(a2,b1)
   cm22 = varinner(a2,b2)
-  SkeletonVarinnerMatrix(cm11,cm12,cm21,cm22)
+  SkeletonVarinnerMatrix{Z}(cm11,cm12,cm21,cm22)
 end
 
-struct SkeletonVarinnerVector{D,T}
-  cellmap1::CellMap{Point{D},1,T,2}
-  cellmap2::CellMap{Point{D},1,T,2}
+struct SkeletonVarinnerVector{D}
+  cellmap1
+  cellmap2
 end
 
-function (-)(a::SkeletonVarinnerVector,b::SkeletonVarinnerVector)
-  c1 = a.cellmap1 - b.cellmap1
-  c2 = a.cellmap2 - b.cellmap2
-  SkeletonVarinnerVector(c1,c2)
+for op in (:+, :-)
+  @eval begin
+
+    function ($op)(a::SkeletonVarinnerVector{Z},b::SkeletonVarinnerVector{Z}) where Z
+      c1 = $op(a.cellmap1,b.cellmap1)
+      c2 = $op(a.cellmap2,b.cellmap2)
+      SkeletonVarinnerVector{Z}(c1,c2)
+    end
+    
+    function ($op)(a::SkeletonVarinnerVector{Z}) where Z
+      c1 = $op(a.cellmap1)
+      c2 = $op(a.cellmap2)
+      SkeletonVarinnerVector{Z}(c1,c2)
+    end
+
+  end
 end
 
-function (-)(a::SkeletonVarinnerVector)
-  c1 = - a.cellmap1
-  c2 = - a.cellmap2
-  SkeletonVarinnerVector(c1,c2)
+function (*)(a::Real,b::SkeletonVarinnerVector{Z}) where Z
+  c1 = a*b.cellmap1
+  c2 = a*b.cellmap2
+  SkeletonVarinnerVector{Z}(c1,c2)
 end
 
 struct SkeletonCellVector
-  cellvector1::CellVector
-  cellvector2::CellVector
+  cellvector1
+  cellvector2
 end
 
-struct SkeletonVarinnerMatrix{D,T}
-  cellmap11::CellMap{Point{D},1,T,3}
-  cellmap12::CellMap{Point{D},1,T,3}
-  cellmap21::CellMap{Point{D},1,T,3}
-  cellmap22::CellMap{Point{D},1,T,3}
+struct SkeletonVarinnerMatrix{D}
+  cellmap11
+  cellmap12
+  cellmap21
+  cellmap22
+end
+
+for op in (:+, :-)
+  @eval begin
+
+    function ($op)(a::SkeletonVarinnerMatrix{Z},b::SkeletonVarinnerMatrix{Z}) where Z
+      cellmap11 = $op(a.cellmap11, b.cellmap11)
+      cellmap12 = $op(a.cellmap12, b.cellmap12)
+      cellmap21 = $op(a.cellmap21, b.cellmap21)
+      cellmap22 = $op(a.cellmap22, b.cellmap22)
+      SkeletonVarinnerMatrix{Z}(
+        cellmap11,
+        cellmap12,
+        cellmap21,
+        cellmap22)
+    end
+
+  end
+end
+
+function (*)(a::Real,b::SkeletonVarinnerMatrix{Z}) where Z
+      cellmap11 = a*b.cellmap11
+      cellmap12 = a*b.cellmap12
+      cellmap21 = a*b.cellmap21
+      cellmap22 = a*b.cellmap22
+      SkeletonVarinnerMatrix{Z}(
+        cellmap11,
+        cellmap12,
+        cellmap21,
+        cellmap22)
 end
 
 struct SkeletonCellMatrix
-  cellmatrix11::CellMatrix
-  cellmatrix12::CellMatrix
-  cellmatrix21::CellMatrix
-  cellmatrix22::CellMatrix
+  cellmatrix11
+  cellmatrix12
+  cellmatrix21
+  cellmatrix22
 end
 
 function integrate(

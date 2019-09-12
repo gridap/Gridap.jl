@@ -19,6 +19,11 @@ function NormalVector(trian::BoundaryTriangulation)
   NormalVector(desc)
 end
 
+function NormalVector(trian::SkeletonTriangulation)
+  desc = trian.descriptor1
+  NormalVector(desc)
+end
+
 function NormalVector(desc::BoundaryDescriptor)
   phi = desc.cell_phi
   jac = gradient(phi)

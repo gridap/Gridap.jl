@@ -26,4 +26,19 @@ x = evaluate(bphi,q)
 #writevtk(btrian,"btrian")
 #writevtk(x,"x",pointdata=["n"=>n_q])
 
+strian = SkeletonTriangulation(model,"interior")
+squad = CellQuadrature(strian,order=2)
+qs = coordinates(squad)
+
+sphi = CellGeomap(strian)
+
+n = NormalVector(strian)
+x = evaluate(sphi,qs)
+n_q = evaluate(n,qs)
+
+#writevtk(strian,"strian")
+#writevtk(x,"x",pointdata=["n"=>n_q])
+
+
+
 end # module

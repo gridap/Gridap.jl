@@ -11,6 +11,7 @@ import Base: div
 import Gridap: trace
 import Gridap: curl
 import Gridap: inner
+import Gridap: varinner
 import Base: +, -, *
 import Gridap: restrict
 import Gridap: Triangulation
@@ -60,12 +61,20 @@ function inner(a::FEBasis,b::CellField)
   varinner(a.cellbasis,b)
 end
 
+function varinner(a::FEBasis,b::CellField)
+  varinner(a.cellbasis,b)
+end
+
 function inner(a::FEBasis,f::Function)
   b = CellField(a.trian,f)
   inner(a,b)
 end
 
 function inner(a::FEBasis,b::FEBasis)
+  varinner(a.cellbasis,b.cellbasis)
+end
+
+function varinner(a::FEBasis,b::FEBasis)
   varinner(a.cellbasis,b.cellbasis)
 end
 
@@ -86,7 +95,14 @@ function restrict(feb::FEBasis,trian::BoundaryTriangulation)
 end
 
 function restrict(feb::FEBasis,trian::SkeletonTriangulation)
-  restrict(feb.cellbasis,trian)
+  sp = restrict(feb.cellbasis,trian)
+  _new_sp(sp,trian)
+end
+
+function _new_sp(sp::SkeletonPair{Z,T,N},trian) where {Z,T,N}
+  b1 = FEBasis(sp.cellfield1,trian)
+  b2 = FEBasis(sp.cellfield2,trian)
+  SkeletonPair{Z,T,N}(b1,b2)
 end
 
 end # module
