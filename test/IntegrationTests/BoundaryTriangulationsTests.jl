@@ -22,4 +22,7 @@ btrian = BoundaryTriangulation(model,tags)
 tags = ["physical_tag_23","physical_tag_24","physical_tag_25"]
 btrian = BoundaryTriangulation(model,tags)
 
+btrian = BoundaryTriangulation(model)
+
+
 end # module

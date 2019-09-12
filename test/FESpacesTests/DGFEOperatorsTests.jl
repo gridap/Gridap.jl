@@ -28,11 +28,11 @@ U = TrialFESpace(fespace)
 trian = Triangulation(model)
 quad = CellQuadrature(trian,order=2*order)
 
-btrian = BoundaryTriangulation(model,"boundary")
+btrian = BoundaryTriangulation(model)
 bquad = CellQuadrature(btrian,order=2*order)
 nb = NormalVector(btrian)
 
-strian = SkeletonTriangulation(model,"interior") # TODO
+strian = SkeletonTriangulation(model)
 squad = CellQuadrature(strian,order=2*order)
 ns = NormalVector(strian)
 
@@ -53,16 +53,13 @@ uh = solve(op)
 
 e = u - uh
 
-writevtk(trian,"trian",cellfields=["uh"=>uh,"e"=>e])
+#writevtk(trian,"trian",cellfields=["uh"=>uh,"e"=>e])
 
 l2(u) = inner(u,u)
 h1(u) = a_Ω(u,u) + l2(u)
 
 el2 = sqrt(sum( integrate(l2(e),trian,quad) ))
 eh1 = sqrt(sum( integrate(h1(e),trian,quad) ))
-
-@show el2
-@show eh1
 
 @test el2 < 1.e-8
 @test eh1 < 1.e-8

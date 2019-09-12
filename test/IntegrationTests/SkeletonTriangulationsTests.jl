@@ -15,4 +15,7 @@ strian = SkeletonTriangulation(trian,descr1,descr2)
 
 test_triangulation(strian)
 
+strian = SkeletonTriangulation(model)
+#writevtk(strian,"strian")
+
 end # module
