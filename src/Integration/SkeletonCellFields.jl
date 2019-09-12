@@ -20,10 +20,13 @@ import Gridap: trace
 import Gridap: curl
 
 function restrict(
-  cf::IndexCellFieldLike,desc1::BoundaryDescriptor,desc2::BoundaryDescriptor)
+  cf::IndexCellFieldLike{Z,T,N},
+  desc1::BoundaryDescriptor,
+  desc2::BoundaryDescriptor) where {Z,T,N}
+
   cf1 = restrict(cf,desc1)
   cf2 = restrict(cf,desc2)
-  SkeletonPair(cf1,cf2)
+  SkeletonPair{Z-1,T,N}(cf1,cf2)
 end
 
 function restrict(
@@ -33,16 +36,16 @@ function restrict(
 end
 
 struct SkeletonPair{Z,T,N}
-  cellfield1::CellFieldLike{Z,T,N}
-  cellfield2::CellFieldLike{Z,T,N}
+  cellfield1
+  cellfield2
 end
 
 for op in (:+,:-,:(gradient),:(symmetric_gradient),:(div),:(trace),:(curl))
   @eval begin
-    function ($op)(a::SkeletonPair)
+    function ($op)(a::SkeletonPair{Z,T,N}) where {Z,T,N}
       cf1 = a.cellfield1
       cf2 = a.cellfield2
-      SkeletonPair($op(cf1),$op(cf2))
+      SkeletonPair{Z,T,N}($op(cf1),$op(cf2))
     end
   end
 end
@@ -50,16 +53,16 @@ end
 for op in (:+, :-, :*)
   @eval begin
 
-    function ($op)(a::SkeletonPair,b::CellField)
+    function ($op)(a::SkeletonPair{Z,T,N},b::CellField) where {Z,T,N}
       cf1 = a.cellfield1
       cf2 = a.cellfield2
-      SkeletonPair($op(cf1,b),$op(cf2,b))
+      SkeletonPair{Z,T,N}($op(cf1,b),$op(cf2,b))
     end
 
-    function ($op)(a::CellField,b::SkeletonPair)
+    function ($op)(a::CellField,b::SkeletonPair{Z,T,N}) where {Z,T,N}
       cf1 = b.cellfield1
       cf2 = b.cellfield2
-      SkeletonPair($op(a,cf1),$op(a,cf2))
+      SkeletonPair{Z,T,N}($op(a,cf1),$op(a,cf2))
     end
 
   end
@@ -74,7 +77,7 @@ end
 function jump(sp::SkeletonPair{Z,T,2}) where {Z,T}
   cf1 = sp.cellfield1
   cf2 = sp.cellfield2
-  SkeletonCellBasis(cf1, -cf2)
+  SkeletonCellBasis{Z,T}(cf1, -cf2)
 end
 
 function mean(sp::SkeletonPair{Z,T,1}) where {Z,T}
@@ -86,13 +89,12 @@ end
 function mean(sp::SkeletonPair{Z,T,2}) where {Z,T}
   cf1 = sp.cellfield1
   cf2 = sp.cellfield2
-  SkeletonCellBasis(0.5*cf1, 0.5*cf2)
+  SkeletonCellBasis{Z,T}(0.5*cf1, 0.5*cf2)
 end
 
-
 struct SkeletonCellBasis{Z,T}
-  cellbasis1::CellBasis{Z,T}
-  cellbasis2::CellBasis{Z,T}
+  cellbasis1
+  cellbasis2
 end
 
 function inner(a::SkeletonCellBasis{Z},b::CellField{Z}) where Z
