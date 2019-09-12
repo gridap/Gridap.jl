@@ -102,7 +102,7 @@ function inner(a::SkeletonCellBasis{Z},b::CellField{Z}) where Z
   cb2 = a.cellbasis2
   cm1 = varinner(cb1,b)
   cm2 = varinner(cb2,b)
-  SkeletonVarinnerVector(cm1,cm2)
+  SkeletonVarinnerVector{Z}(cm1,cm2)
 end
 
 function inner(a::SkeletonCellBasis{Z},b::SkeletonCellBasis{Z}) where Z
@@ -114,59 +114,59 @@ function inner(a::SkeletonCellBasis{Z},b::SkeletonCellBasis{Z}) where Z
   cm12 = varinner(a1,b2)
   cm21 = varinner(a2,b1)
   cm22 = varinner(a2,b2)
-  SkeletonVarinnerMatrix(cm11,cm12,cm21,cm22)
+  SkeletonVarinnerMatrix{Z}(cm11,cm12,cm21,cm22)
 end
 
-struct SkeletonVarinnerVector{D,T}
-  cellmap1::CellMap{Point{D},1,T,2}
-  cellmap2::CellMap{Point{D},1,T,2}
+struct SkeletonVarinnerVector{D}
+  cellmap1
+  cellmap2
 end
 
 for op in (:+, :-)
   @eval begin
 
-    function ($op)(a::SkeletonVarinnerVector,b::SkeletonVarinnerVector)
+    function ($op)(a::SkeletonVarinnerVector{Z},b::SkeletonVarinnerVector{Z}) where Z
       c1 = $op(a.cellmap1,b.cellmap1)
       c2 = $op(a.cellmap2,b.cellmap2)
-      SkeletonVarinnerVector(c1,c2)
+      SkeletonVarinnerVector{Z}(c1,c2)
     end
     
-    function ($op)(a::SkeletonVarinnerVector)
+    function ($op)(a::SkeletonVarinnerVector{Z}) where Z
       c1 = $op(a.cellmap1)
       c2 = $op(a.cellmap2)
-      SkeletonVarinnerVector(c1,c2)
+      SkeletonVarinnerVector{Z}(c1,c2)
     end
 
   end
 end
 
-function (*)(a::Real,b::SkeletonVarinnerVector)
+function (*)(a::Real,b::SkeletonVarinnerVector{Z}) where Z
   c1 = a*b.cellmap1
   c2 = a*b.cellmap2
-  SkeletonVarinnerVector(c1,c2)
+  SkeletonVarinnerVector{Z}(c1,c2)
 end
 
 struct SkeletonCellVector
-  cellvector1::CellVector
-  cellvector2::CellVector
+  cellvector1
+  cellvector2
 end
 
-struct SkeletonVarinnerMatrix{D,T}
-  cellmap11::CellMap{Point{D},1,T,3}
-  cellmap12::CellMap{Point{D},1,T,3}
-  cellmap21::CellMap{Point{D},1,T,3}
-  cellmap22::CellMap{Point{D},1,T,3}
+struct SkeletonVarinnerMatrix{D}
+  cellmap11
+  cellmap12
+  cellmap21
+  cellmap22
 end
 
 for op in (:+, :-)
   @eval begin
 
-    function ($op)(a::SkeletonVarinnerMatrix,b::SkeletonVarinnerMatrix)
+    function ($op)(a::SkeletonVarinnerMatrix{Z},b::SkeletonVarinnerMatrix{Z}) where Z
       cellmap11 = $op(a.cellmap11, b.cellmap11)
       cellmap12 = $op(a.cellmap12, b.cellmap12)
       cellmap21 = $op(a.cellmap21, b.cellmap21)
       cellmap22 = $op(a.cellmap22, b.cellmap22)
-      SkeletonVarinnerMatrix(
+      SkeletonVarinnerMatrix{Z}(
         cellmap11,
         cellmap12,
         cellmap21,
@@ -176,12 +176,12 @@ for op in (:+, :-)
   end
 end
 
-function (*)(a::Real,b::SkeletonVarinnerMatrix)
+function (*)(a::Real,b::SkeletonVarinnerMatrix{Z}) where Z
       cellmap11 = a*b.cellmap11
       cellmap12 = a*b.cellmap12
       cellmap21 = a*b.cellmap21
       cellmap22 = a*b.cellmap22
-      SkeletonVarinnerMatrix(
+      SkeletonVarinnerMatrix{Z}(
         cellmap11,
         cellmap12,
         cellmap21,
@@ -189,10 +189,10 @@ function (*)(a::Real,b::SkeletonVarinnerMatrix)
 end
 
 struct SkeletonCellMatrix
-  cellmatrix11::CellMatrix
-  cellmatrix12::CellMatrix
-  cellmatrix21::CellMatrix
-  cellmatrix22::CellMatrix
+  cellmatrix11
+  cellmatrix12
+  cellmatrix21
+  cellmatrix22
 end
 
 function integrate(

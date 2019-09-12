@@ -52,8 +52,7 @@ function restrict(uh::MultiFEFunction,trian::BoundaryTriangulation)
 end
 
 function restrict(uh::MultiFEFunction,trian::SkeletonTriangulation)
-  @notimplemented
-  # We still need to implement a MultiSkeletonPair
+  [ restrict(ui.cellfield,trian) for ui in uh.fields ]
 end
 
 
