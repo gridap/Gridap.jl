@@ -13,3 +13,6 @@ include("RefFEs.jl")
 
 include("PDiscRefFEs.jl")
 @reexport using Gridap.PDiscRefFEs
+
+include("RaviartThomasRefFEs.jl")
+@reexport using Gridap.RaviartThomasRefFEs

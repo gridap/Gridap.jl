@@ -5,6 +5,8 @@ using Gridap
 p = Polytope(1,1)
 order = 2
 
+RaviartThomasRefFE(p,order)
+
 # function RaviartThomasRefFE(p:: Polytope, order::Int)
 #
 # if !(all(extrusion(p) .== HEX_AXIS))
