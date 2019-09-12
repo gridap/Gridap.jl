@@ -66,47 +66,102 @@ function _mybroadcast(::Type{T},n,b) where T
   return c
 end
 
-function _ref_facet_polytope(p)
+# Check all facets are of the same typefps = nface_ref_polytopes(p)[facets]
+function _ref_face_polytope(p)
+  faces = nfaces_dim(p,dim(p)-1)
+  fps = nface_ref_polytopes(p)[faces]
+  @assert(all(extrusion.(fps) .== extrusion(fps[1])), "All facet must be of the same type")
+  return fps[1]
+end
+
+function _nfaces_array(fmoments,cmoments)
+  T = eltype(eltype(fmoments))
+  SNF = Vector{Array{T}}(undef,num_nfaces(p))
+  zeromat = eltype(eltype(fmoments))[]
+  for idim in 0:dim(p)-2
+    for inf in nfaces_dim(p,idim)
+      SNF[inf] = zeromat
+    end
+  end
+  faces = nfaces_dim(p,dim(p)-1)
+  SNF[faces] = fmoments
+  SNF[end] = cmoments
+  return SNF
+end
+  # Facet ref polytope
 ################################################################################
 p = Polytope(1,1)
-order = 1
+order = 2
 
-# Check all facets are of the same typefps = nface_ref_polytopes(p)[facets]
-fp = _ref_facet_polytope(p)
+fp = _ref_face_polytope(p)
 
-faces = nfaces_dim(p,dim(p)-1)
-
-fps = nface_ref_polytopes(p)[faces]
-@assert(all(extrusion.(fps) .== extrusion(fps[1])), "All facet must be of the same type")
 c_fvs = _face_vertices(p)
-# Facet ref polytope
-fp = fps[1]
+
 fgeomap = _ref_face_to_faces_geomap(p,fp,c_fvs)
+
 # Compute integration points at all polynomial faces
 c_fips, fcips, fwips = _faces_quadrature_points_weights(p, fp, fgeomap, order)
+
 # Compute integration points at interior
 ccips, cwips = _cell_quadrature_points_weights(p, order)
-# Face moments
+
+# Face moments, i.e., M(Fi)_{ab} = q_RF^a(xgp_RFi^b) w_Fi^b n_Fi ⋅ ()
 fmoments = _face_moments(p, fp, order, c_fips, fwips, c_fvs )
-# b
-nfmoments = _face_moments(p, fp, order, c_fips, fwips, c_fvs )
-# Cell moments
+
+# Cell moments, i.e., M(C)_{ab} = q_C^a(xgp_C^b) w_C^b ⋅ ()
 if(order>1) cmoments = _cell_moments(p, order, ccips, cwips ) end
+
 # Prebasis
 prebasis = CurlGradMonomialBasis(VectorValue{dim(p),Float64},order)
-# Evaluate basis in faces points
+
+# Evaluate basis in faces points, i.e., S(Fi)_{ab} = ϕ^a(xgp_Fi^b)
 nc = num_nfaces(p,dim(p)-1)
 c_prebasis = ConstantCellValue(prebasis, nc)
 pbasis_fcips = evaluate(c_prebasis,fcips)
+
+# Evaluate basis in cell points, i.e., S(C)_{ab} = ϕ^a(xgp_C^b)
 if(order>1) pbasis_ccips = evaluate(prebasis,ccips) end
-# Face moments evaluated for basis
+
+# Face moments evaluated for basis, i.e., DF = [S(F1)*M(F1)^T, …, S(Fn)*M(Fn)^T]
 fms_preb = [pbasis_fcips[i]*fmoments[i]' for i in 1:nc]
-# Cell moments evaluated for basis
-if (order > 1)
-  cms_preb = pbasis_ccips*cmoments'
-  cob = inv(hcat(fms_preb...,cms_preb))
-else
-  cob = inv(hcat(fms_preb...))
+
+# Cell moments evaluated for basis, i.e., DC = S(C)*M(C)^T
+if (order > 1) cms_preb = pbasis_ccips*cmoments' end
+
+# Change of basis matrix, inv([DF,DC])
+order > 1 ? cob = inv(hcat(fms_preb...,cms_preb)) : cob = inv(hcat(fms_preb...))
+
+# Store S(NF) and M(NF) for all NFs of polytope
+SNF = _nfaces_array(fmoments,cmoments)
+
+# I want to store [Xgp_NF] for all NFS of polytope "Nodes per n-face"
+IPNF = _nfaces_array(fcips,ccips)
+isa(SNF,Vector{Array{Point{dim(p),Float64}}})
+typeof(SNF)
+
+# Compute nfacedofs (prev version)
+# Build DOFBasis and RefFE with all this
+
+##
+
+struct DivConformingRefFE{D,T} <: RefFE{D,T}
+  polytope::Polytope{D}
+  dof_basis::DivComformingDOFBasis{D,T}
+  # dof basis TO BE DONE, everything is already in the implementation...
+  # Instead of evaluating in nodes, we should evaluate somewhere else,
+  # i.e., the facet/interior integration points
+  shfbasis::Basis{D,T}
+  nfacedofs::Vector{Vector{Int}}
 end
-# Evaluate basis in cell points
+
+struct DivConformingDOFBasis{D,T} <: DOFBasis{D,T}
+  nodes::Vector{Array{Point{dim(p),T}}})
+  moments::Vector{Array{Point{dim(p),T}}})
+  # dof_to_node::Vector{Int} # Non-sense anymore
+  # dof_to_comp::Vector{Int} # Non-sense anymore
+  # node_and_comp_to_dof::Matrix{Int} # Non-sense anymore
+  _cache_field::Vector{T}
+  _cache_basis::Matrix{T}
+  # Missing part weights
+end
 ##
