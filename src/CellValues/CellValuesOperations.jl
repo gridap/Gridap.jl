@@ -14,7 +14,7 @@ import Base: +,-,*,/,\, ==, ≈
 import LinearAlgebra: inv, det
 import TensorValues: inner, outer, meas
 
-for op in (:+,:-,:inv,:det,:meas)
+for op in (:+,:-,:inv,:det,:meas,:transpose)
   @eval begin
 
     function ($op)(m::CellNumber)
