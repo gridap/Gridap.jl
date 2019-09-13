@@ -20,5 +20,17 @@ shb = shfbasis(reffe)
 
 nfdofs = nfacedofs(reffe)
 
+order = 2
+
+reffe = RaviartThomasRefFE(p,order)
+
+dofs = dofbasis(reffe)
+
+p = polytope(reffe)
+
+shb = shfbasis(reffe)
+
+nfdofs = nfacedofs(reffe)
+
 ##
 end # module
