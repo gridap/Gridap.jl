@@ -24,9 +24,14 @@ abstract type DOFBasis{D,T} end
 """
 Returns the dimension of the DOF basis.
 """
-function length(::DOFBasis)::Int
-  @abstractmethod
-end
+num_dofs(::DOFBasis)::Int =  @abstractmethod
+# @santiagobadia : length should be deprecated
+length(b::DOFBasis)::Int =  num_dofs(b)
+
+"""
+Returns the number of evaluation points required to compute the DOF basis
+"""
+num_nodes(::DOFBasis)::Int =  @abstractmethod
 
 """
 Compute the DOF values of the given field. The results in written in place
@@ -138,9 +143,11 @@ function LagrangianDOFBasis(::Type{T}, nodes::Vector{Point{D,Float64}}) where {D
     cache_basis)
 end
 
-function length(b::LagrangianDOFBasis{D,T}) where {D,T}
+function num_dofs(b::LagrangianDOFBasis{D,T}) where {D,T}
   _num_dofs(T,b.nodes)
 end
+
+num_nodes(b::LagrangianDOFBasis{D,T} where {D,T}) = num_dofs(b)
 
 function evaluate!(
   b::LagrangianDOFBasis{D,T},f::Field{D,T},dofs::AbstractVector{E}) where {D,T,E}

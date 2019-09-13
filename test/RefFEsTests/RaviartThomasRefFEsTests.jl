@@ -6,31 +6,39 @@ using Gridap.Helpers
 
 using Gridap.RefFEs.RaviartThomasRefFEs
 
+using LinearAlgebra
+
+using Test
+
 p = Polytope(1,1)
 
-order = 1
+for order in 1:3
 
-reffe = RaviartThomasRefFE(p,order)
+  reffe = RaviartThomasRefFE(p,order)
 
-dofs = dofbasis(reffe)
+  dofsb = dofbasis(reffe)
 
-p = polytope(reffe)
+  p = polytope(reffe)
 
-shb = shfbasis(reffe)
+  shb = shfbasis(reffe)
 
-nfdofs = nfacedofs(reffe)
+  nfdofs = nfacedofs(reffe)
 
-order = 2
 
-reffe = RaviartThomasRefFE(p,order)
+  b = dofsb
+  shfs = reffe.shfbasis
+  kk = evaluate(b,shfs)
+  @test kk ≈ Matrix(1.0I, size(kk))
 
-dofs = dofbasis(reffe)
+  fun(x) = VectorValue(x[1],2*x[1])
+  D = 2
+  T = VectorValue{2,Float64}
+  field = AnalyticalField(fun,D)
 
-p = polytope(reffe)
+  isa(dofsb,DOFBasis{2,T})
+  isa(field,Field{2,T})
 
-shb = shfbasis(reffe)
-
-nfdofs = nfacedofs(reffe)
-
+  evaluate(b,field)
+end
 ##
 end # module

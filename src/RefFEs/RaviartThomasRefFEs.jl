@@ -4,18 +4,26 @@ using Gridap
 using Gridap.Helpers
 
 export RaviartThomasRefFE
+export RaviartThomasDOFBasis
 
 import Gridap: shfbasis
 import Gridap: polytope
 import Gridap: nfacedofs
 import Gridap: dofbasis
+import Gridap: evaluate!
+
+import Base:length
 
 struct RaviartThomasDOFBasis{D,T,S} <: DOFBasis{D,T}
   nodes::Vector{Array{Point{D,S}}}
   moments::Vector{Array{T}}
-  _cache_field::Vector{S}
-  _cache_basis::Matrix{S}
+  _cache_field#::Vector{T}
+  _cache_basis#::Matrix{T}
 end
+
+num_dofs(b::RaviartThomasDOFBasis{D,T} where {D,T}) = sum([size(i,1) for i in b.moments])
+num_nodes(b::RaviartThomasDOFBasis{D,T} where {D,T}) = sum([size(i,1) for i in b.nodes])
+length(b::RaviartThomasDOFBasis{D,T} where {D,T}) = num_dofs(b)
 
 struct RaviartThomasRefFE{D,T} <: RefFE{D,T}
   polytope::Polytope{D}
@@ -107,9 +115,10 @@ end
 
 # function RaviartThomasDOFBasis(nodes::Vector{Array{Point{D,T}}}, moments::Vector{Array{Point{D,T}}}) where {D,T}
 function RaviartThomasDOFBasis(nodes::Vector{Array{Point{D,S}}}, moments::Vector{Array{T}}) where {D,T,S}
-  ndofs = sum(size(moments[i],1) for i in 1:length(moments))
-  cache_field = zeros(S,ndofs)
-  cache_basis = zeros(S,ndofs,ndofs) # TO CHECK !!!
+  ndofs = sum([size(i,1) for i in moments])
+  nnodes = [length(i) for i in nodes]
+  cache_field = [ zeros(T,i) for i in nnodes]
+  cache_basis = [ zeros(T,ndofs,i) for i in nnodes]
 
   RaviartThomasDOFBasis{D,T,S}(
   nodes,
@@ -118,6 +127,37 @@ function RaviartThomasDOFBasis(nodes::Vector{Array{Point{D,S}}}, moments::Vector
   cache_basis)
 end
 
+function evaluate!(
+  b::RaviartThomasDOFBasis{D,T},f::Field{D,T},dofs::AbstractVector{E}) where {D,T,E}
+  for (n,v) in zip(b.nodes,b._cache_field)
+    evaluate!(f,n,v)
+  end
+  k = 0
+  for (m,v) in zip(b.moments,b._cache_field)
+    l = size(m,1)
+    if length(m) > 0
+      dofs[k+1:k+l] = m*v
+      k += l
+    end
+  end
+  return dofs
+end
+
+function evaluate!(
+  b::RaviartThomasDOFBasis{D,T},f::Basis{D,T},dofs::AbstractMatrix{E}) where {D,T,E}
+  for (n,v) in zip(b.nodes,b._cache_basis)
+    evaluate!(f,n,v)
+  end
+  k = 0
+  for (m,v) in zip(b.moments,b._cache_basis)
+    l = size(m,1)
+    if length(m) > 0
+      dofs[:,k+1:k+l] = v*m'
+      k += l
+    end
+  end
+  dofs
+end
 
 function _cell_moments(p, order, ccips, cwips)
   cbasis = GradMonomialBasis(VectorValue{dim(p),Float64},order-1)
