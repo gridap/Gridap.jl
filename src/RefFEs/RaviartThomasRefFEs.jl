@@ -1,6 +1,7 @@
-module RaviartThomasRefFE
+module RaviartThomasRefFEs
 
 using Gridap
+using Gridap.Helpers
 
 export RaviartThomasRefFE
 
@@ -25,69 +26,69 @@ end
 
 function RaviartThomasRefFE(p:: Polytope, order::Int)
 
-if !(all(extrusion(p) .== HEX_AXIS))
-  @notimplemented
+  if !(all(extrusion(p).array .== HEX_AXIS))
+    @notimplemented
+  end
+
+  # Reference facet
+  fp = _ref_face_polytope(p)
+
+  c_fvs = _face_vertices(p)
+
+  # geomap from ref face to polytope faces
+  fgeomap = _ref_face_to_faces_geomap(p,fp,c_fvs)
+
+  # Compute integration points at all polynomial faces
+  c_fips, fcips, fwips = _faces_quadrature_points_weights(p, fp, fgeomap, order)
+
+  # Compute integration points at interior
+  ccips, cwips = _cell_quadrature_points_weights(p, order)
+
+  # Face moments, i.e., M(Fi)_{ab} = q_RF^a(xgp_RFi^b) w_Fi^b n_Fi ⋅ ()
+  fmoments = _face_moments(p, fp, order, c_fips, fwips, c_fvs )
+
+  # Cell moments, i.e., M(C)_{ab} = q_C^a(xgp_C^b) w_C^b ⋅ ()
+  if(order>1) cmoments = _cell_moments(p, order, ccips, cwips ) end
+
+  # Prebasis
+  prebasis = CurlGradMonomialBasis(VectorValue{dim(p),Float64},order)
+
+  # Evaluate basis in faces points, i.e., S(Fi)_{ab} = ϕ^a(xgp_Fi^b)
+  nc = num_nfaces(p,dim(p)-1)
+  c_prebasis = ConstantCellValue(prebasis, nc)
+  pbasis_fcips = evaluate(c_prebasis,fcips)
+
+  # Evaluate basis in cell points, i.e., S(C)_{ab} = ϕ^a(xgp_C^b)
+  if(order>1) pbasis_ccips = evaluate(prebasis,ccips) end
+
+  # Face moments evaluated for basis, i.e., DF = [S(F1)*M(F1)^T, …, S(Fn)*M(Fn)^T]
+  fms_preb = [pbasis_fcips[i]*fmoments[i]' for i in 1:nc]
+
+  # Cell moments evaluated for basis, i.e., DC = S(C)*M(C)^T
+  if (order > 1) cms_preb = pbasis_ccips*cmoments' end
+
+  # Change of basis matrix, inv([DF,DC])
+  order > 1 ? cob = inv(hcat(fms_preb...,cms_preb)) : cob = inv(hcat(fms_preb...))
+  basis = change_basis(prebasis,cob)
+  prebasis
+  # test moments = Id
+
+  # Store S(NF) and M(NF) for all NFs of polytope
+  moments = _nfaces_array(p,fmoments,cmoments)
+
+  # I want to store [Xgp_NF] for all NFS of polytope "Nodes per n-face"
+  int_points = _nfaces_array(p,fcips,ccips)
+
+  mynfacedofs = _nfacedofs_basis(p,moments)
+
+  # Build DOFBasis and RefFE with all this
+  dof_basis = RaviartThomasDOFBasis(int_points, moments)
+
+  divreffe = _RaviartThomasRefFE(p,dof_basis,basis,mynfacedofs)
 end
 
-# Reference facet
-fp = _ref_face_polytope(p)
-
-c_fvs = _face_vertices(p)
-
-# geomap from ref face to polytope faces
-fgeomap = _ref_face_to_faces_geomap(p,fp,c_fvs)
-
-# Compute integration points at all polynomial faces
-c_fips, fcips, fwips = _faces_quadrature_points_weights(p, fp, fgeomap, order)
-
-# Compute integration points at interior
-ccips, cwips = _cell_quadrature_points_weights(p, order)
-
-# Face moments, i.e., M(Fi)_{ab} = q_RF^a(xgp_RFi^b) w_Fi^b n_Fi ⋅ ()
-fmoments = _face_moments(p, fp, order, c_fips, fwips, c_fvs )
-
-# Cell moments, i.e., M(C)_{ab} = q_C^a(xgp_C^b) w_C^b ⋅ ()
-if(order>1) cmoments = _cell_moments(p, order, ccips, cwips ) end
-
-# Prebasis
-prebasis = CurlGradMonomialBasis(VectorValue{dim(p),Float64},order)
-
-# Evaluate basis in faces points, i.e., S(Fi)_{ab} = ϕ^a(xgp_Fi^b)
-nc = num_nfaces(p,dim(p)-1)
-c_prebasis = ConstantCellValue(prebasis, nc)
-pbasis_fcips = evaluate(c_prebasis,fcips)
-
-# Evaluate basis in cell points, i.e., S(C)_{ab} = ϕ^a(xgp_C^b)
-if(order>1) pbasis_ccips = evaluate(prebasis,ccips) end
-
-# Face moments evaluated for basis, i.e., DF = [S(F1)*M(F1)^T, …, S(Fn)*M(Fn)^T]
-fms_preb = [pbasis_fcips[i]*fmoments[i]' for i in 1:nc]
-
-# Cell moments evaluated for basis, i.e., DC = S(C)*M(C)^T
-if (order > 1) cms_preb = pbasis_ccips*cmoments' end
-
-# Change of basis matrix, inv([DF,DC])
-order > 1 ? cob = inv(hcat(fms_preb...,cms_preb)) : cob = inv(hcat(fms_preb...))
-basis = change_basis(prebasis,cob)
-prebasis
-# test moments = Id
-
-# Store S(NF) and M(NF) for all NFs of polytope
-moments = _nfaces_array(fmoments,cmoments)
-
-# I want to store [Xgp_NF] for all NFS of polytope "Nodes per n-face"
-int_points = _nfaces_array(fcips,ccips)
-
-mynfacedofs = _nfacedofs_basis(p,moments)
-
-# Build DOFBasis and RefFE with all this
-dof_basis = RaviartThomasDOFBasis(int_points, moments)
-
-divreffe = _RaviartThomasRefFE(p,dof_basis,basis,mynfacedofs)
-end
-
-function _RaviartThomasRefFE(p::Polytope{D}, dof_basis::RaviartThomasDOFBasis{D,T,S}, shfbasis::Basis{D,S}, nfacedofs) where {D,T,S}
-  RaviartThomasRefFE{D,S}(p,dof_basis,shfbasis,nfacedofs)
+function _RaviartThomasRefFE(p::Polytope{D}, dof_basis::RaviartThomasDOFBasis{D,T,S}, shfbasis::Basis{D,T}, nfacedofs) where {D,T,S}
+  RaviartThomasRefFE{D,T}(p,dof_basis,shfbasis,nfacedofs)
 end
 
 # function RaviartThomasDOFBasis(nodes::Vector{Array{Point{D,T}}}, moments::Vector{Array{Point{D,T}}}) where {D,T}
@@ -176,7 +177,7 @@ function _ref_face_polytope(p)
   return fps[1]
 end
 
-function _nfaces_array(fmoments,cmoments)
+function _nfaces_array(p,fmoments,cmoments)
   T = eltype(eltype(fmoments))
   SNF = Vector{Array{T}}(undef,num_nfaces(p))
   zeromat = eltype(eltype(fmoments))[]

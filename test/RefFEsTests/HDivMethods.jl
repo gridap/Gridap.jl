@@ -1,6 +1,7 @@
 ##
 
 using Gridap
+using Gridap.Helpers
 
 p = Polytope(1,1)
 order = 2
