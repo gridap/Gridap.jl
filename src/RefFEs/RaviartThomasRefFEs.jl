@@ -24,6 +24,14 @@ struct RaviartThomasRefFE{D,T} <: RefFE{D,T}
   nfacedofs::Vector{Vector{Int}}
 end
 
+dofbasis(this::RaviartThomasRefFE{D,T} where {D,T})::DOFBasis{D,T} = this.dof_basis
+
+polytope(this::RaviartThomasRefFE{D,T} where {D,T})::Polytope{D} = this.polytope
+
+shfbasis(this::RaviartThomasRefFE{D,T} where {D,T})::Basis{D,T} = this.shfbasis
+
+nfacedofs(this::RaviartThomasRefFE{D,T} where {D,T})::Vector{Vector{Int}} = this.nfacedofs
+
 function RaviartThomasRefFE(p:: Polytope, order::Int)
 
   if !(all(extrusion(p).array .== HEX_AXIS))
@@ -48,7 +56,11 @@ function RaviartThomasRefFE(p:: Polytope, order::Int)
   fmoments = _face_moments(p, fp, order, c_fips, fwips, c_fvs )
 
   # Cell moments, i.e., M(C)_{ab} = q_C^a(xgp_C^b) w_C^b ⋅ ()
-  if(order>1) cmoments = _cell_moments(p, order, ccips, cwips ) end
+  if (order > 1)
+    cmoments = _cell_moments(p, order, ccips, cwips )
+  else
+    cmoments = eltype(eltype(fmoments))[]
+  end
 
   # Prebasis
   prebasis = CurlGradMonomialBasis(VectorValue{dim(p),Float64},order)
@@ -65,13 +77,15 @@ function RaviartThomasRefFE(p:: Polytope, order::Int)
   fms_preb = [pbasis_fcips[i]*fmoments[i]' for i in 1:nc]
 
   # Cell moments evaluated for basis, i.e., DC = S(C)*M(C)^T
-  if (order > 1) cms_preb = pbasis_ccips*cmoments' end
+  if (order > 1)
+    cms_preb = pbasis_ccips*cmoments'
+  else
+    cms_preb = eltype(eltype(fms_preb))[]
+  end
 
   # Change of basis matrix, inv([DF,DC])
   order > 1 ? cob = inv(hcat(fms_preb...,cms_preb)) : cob = inv(hcat(fms_preb...))
   basis = change_basis(prebasis,cob)
-  prebasis
-  # test moments = Id
 
   # Store S(NF) and M(NF) for all NFs of polytope
   moments = _nfaces_array(p,fmoments,cmoments)
@@ -79,12 +93,12 @@ function RaviartThomasRefFE(p:: Polytope, order::Int)
   # I want to store [Xgp_NF] for all NFS of polytope "Nodes per n-face"
   int_points = _nfaces_array(p,fcips,ccips)
 
-  mynfacedofs = _nfacedofs_basis(p,moments)
+  nfacedofs = _nfacedofs_basis(p,moments)
 
   # Build DOFBasis and RefFE with all this
   dof_basis = RaviartThomasDOFBasis(int_points, moments)
 
-  divreffe = _RaviartThomasRefFE(p,dof_basis,basis,mynfacedofs)
+  divreffe = _RaviartThomasRefFE(p,dof_basis,basis,nfacedofs)
 end
 
 function _RaviartThomasRefFE(p::Polytope{D}, dof_basis::RaviartThomasDOFBasis{D,T,S}, shfbasis::Basis{D,T}, nfacedofs) where {D,T,S}
