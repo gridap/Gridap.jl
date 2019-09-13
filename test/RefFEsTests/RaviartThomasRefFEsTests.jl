@@ -10,9 +10,10 @@ using LinearAlgebra
 
 using Test
 
-p = Polytope(1,1)
 
 for order in 1:3
+
+  p = Polytope(1,1)
 
   reffe = RaviartThomasRefFE(p,order)
 

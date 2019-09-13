@@ -21,9 +21,10 @@ struct RaviartThomasDOFBasis{D,T,S} <: DOFBasis{D,T}
   _cache_basis#::Matrix{T}
 end
 
-num_dofs(b::RaviartThomasDOFBasis{D,T} where {D,T}) = sum([size(i,1) for i in b.moments])
-num_nodes(b::RaviartThomasDOFBasis{D,T} where {D,T}) = sum([size(i,1) for i in b.nodes])
-length(b::RaviartThomasDOFBasis{D,T} where {D,T}) = num_dofs(b)
+# num_dofs(b::RaviartThomasDOFBasis{D,T} where {D,T}) = sum([size(i,1) for i in b.moments])
+# num_nodes(b::RaviartThomasDOFBasis{D,T} where {D,T}) = sum([size(i,1) for i in b.nodes])
+# length(b::RaviartThomasDOFBasis{D,T} where {D,T}) = num_dofs(b)
+length(b::RaviartThomasDOFBasis{D,T} where {D,T}) = sum([size(i,1) for i in b.moments])
 
 struct RaviartThomasRefFE{D,T} <: RefFE{D,T}
   polytope::Polytope{D}
