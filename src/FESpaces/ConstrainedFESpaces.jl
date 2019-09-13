@@ -85,8 +85,17 @@ function interpolate_values(this::ConstrainedFESpace,fun::Function)
   (freevals[this.is_free], dirivals)
 end
 
+function interpolate_values(this::ConstrainedFESpace{D,Z,T},val::T) where {D,Z,T}
+  freevals, dirivals = interpolate_values(this.fespace,val)
+  (freevals[this.is_free], dirivals)
+end
+
 function interpolate_diri_values(this::ConstrainedFESpace, funs::Vector{<:Function})
   interpolate_diri_values(this.fespace,funs)
+end
+
+function interpolate_diri_values(this::ConstrainedFESpace{D,Z,T}, vals::Vector{T}) where {D,Z,T}
+  interpolate_diri_values(this.fespace,vals)
 end
 
 function CellField(

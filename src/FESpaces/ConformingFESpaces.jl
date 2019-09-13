@@ -58,15 +58,27 @@ function ConformingFESpace(
   return ConformingFESpace(reffe, trian, graph, labels, ())
 end
 
-function ConformingFESpace(::Type{T},model::DiscreteModel{D},order,diri_tags) where {D,T}
+function ConformingFESpace(
+  ::Type{T}, model::DiscreteModel{D}, order::Integer, diri_tags) where {D,T}
+
+  labels = FaceLabels(model)
+  ConformingFESpace(T,model,labels,order,diri_tags)
+end
+
+function ConformingFESpace(
+  ::Type{T},
+  model::DiscreteModel{D},
+  labels::FaceLabels,
+  order::Integer,
+  diri_tags) where {D,T}
+
   grid = Grid(model,D)
   trian = Triangulation(grid)
   graph = GridGraph(model)
-  labels = FaceLabels(model)
   orders = fill(order,D)
   polytope = _polytope(celltypes(grid))
   fe = LagrangianRefFE(T,polytope, orders)
-  _diri_tags = _setup_tags(model,diri_tags)
+  _diri_tags = _setup_tags(labels,diri_tags)
   ConformingFESpace(fe,trian,graph,labels,_diri_tags)
 end
 
@@ -99,8 +111,17 @@ function interpolate_values(this::ConformingFESpace,f::Function)
   _interpolate_values(this,f)
 end
 
+function interpolate_values(this::ConformingFESpace{D,Z,T},val::T) where {D,Z,T}
+  fun(x) = val
+  interpolate_values(this,fun)
+end
+
 function interpolate_diri_values(this::ConformingFESpace, funs::Vector{<:Function})
   _interpolate_diri_values(this,funs)
+end
+
+function interpolate_diri_values(this::ConformingFESpace{D,Z,T}, vals::Vector{T}) where {D,Z,T}
+  _interpolate_diri_values(this,vals)
 end
 
 function CellField(

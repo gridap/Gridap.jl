@@ -4,7 +4,7 @@ using Gridap
 
 export MultiCellMap
 import Gridap.CellIntegration: integrate
-import Base: +, -
+import Base: +, -, *
 
 struct MultiCellMap{N}
   blocks::Vector{<:CellMap}
@@ -42,9 +42,19 @@ function (-)(a::MultiCellMap{N},b::MultiCellMap{N}) where N
   MultiCellMap(blocks,fieldids)
 end
 
+function (+)(b::MultiCellMap{N}) where N
+  b
+end
+
 function (-)(b::MultiCellMap{N}) where N
   blocks = CellMap[]
   append!(blocks,[ -k for k in b.blocks])
+  MultiCellMap(blocks,b.fieldids)
+end
+
+function (*)(a::Real,b::MultiCellMap{N}) where N
+  blocks = CellMap[]
+  append!(blocks,[ a*k for k in b.blocks])
   MultiCellMap(blocks,b.fieldids)
 end
 

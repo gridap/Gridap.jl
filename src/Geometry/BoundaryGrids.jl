@@ -34,8 +34,26 @@ function Triangulation(grid::BoundaryGrid)
   BoundaryTriangulation(trian,grid.descriptor)
 end
 
+function BoundaryGrid(model::DiscreteModel)
+  d = celldim(model)
+  graph = GridGraph(model)
+  facet_to_cells = connections(graph,d-1,d)
+  nfacets = length(facet_to_cells)
+  mask = fill(false,nfacets)
+  _find_on_boundary!(mask,facet_to_cells)
+  BoundaryGrid(model,mask)
+end
+
+function _find_on_boundary!(mask,facet_to_cells)
+  for (facet,cells) in enumerate(facet_to_cells)
+    if length(cells) == 1
+      mask[facet] = true
+    end
+  end
+end
+
 function BoundaryGrid(model::DiscreteModel,tags,icell::Int=1)
-  _tags = _setup_tags(model,tags)
+  _tags = _setup_tags(FaceLabels(model),tags)
   BoundaryGrid(model,_tags,icell)
 end
 
@@ -47,6 +65,12 @@ function BoundaryGrid(model::DiscreteModel,tags::Vector{Int},icell::Int=1)
   nfacets = length(oldfacet_to_label)
   oldfacet_to_mask = fill(false,nfacets)
   _setup_mask!(oldfacet_to_mask,oldfacet_to_label,tag_to_labels,tags)
+  BoundaryGrid(model,oldfacet_to_mask,icell)
+end
+
+function BoundaryGrid(model::DiscreteModel,mask::AbstractVector{Bool},icell::Int=1)
+  d = celldim(model)
+  oldfacet_to_mask = mask
   fgrid = Grid(model,d-1)
   facet_to_oldfacet = findall(oldfacet_to_mask)
   grid = GridPortion(fgrid,facet_to_oldfacet)
@@ -69,6 +93,11 @@ end
 
 function BoundaryTriangulation(model::DiscreteModel,tags,icell::Int=1)
   grid = BoundaryGrid(model,tags,icell)
+  Triangulation(grid)
+end
+
+function BoundaryTriangulation(model::DiscreteModel)
+  grid = BoundaryGrid(model)
   Triangulation(grid)
 end
 
@@ -96,16 +125,16 @@ function _cell_to_polytope(cell_to_extrussion::ConstantCellValue)
   ConstantCellValue(poly,l)
 end
 
-_setup_tags(model,tags) = tags
+_setup_tags(facelabels,tags) = tags
 
-_setup_tags(model,tag::Integer) = [tag,]
+_setup_tags(facelabels,tag::Integer) = [tag,]
 
-function _setup_tags(model,name::String)
-  _setup_tags(model,[name,])
+function _setup_tags(facelabels,name::String)
+  _setup_tags(facelabels,[name,])
 end
 
-function _setup_tags(model,names::Vector{String})
-  [ tag_from_name(model,s) for s in names ]
+function _setup_tags(facelabels,names::Vector{String})
+  [ tag_from_name(facelabels,s) for s in names ]
 end
 
 end # module

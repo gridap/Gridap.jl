@@ -17,6 +17,9 @@ export symmetic_part
 
 import TensorValues: meas
 import Base: adjoint
+import LinearAlgebra: tr
+import LinearAlgebra: dot
+import LinearAlgebra: norm
 
 
 """
@@ -57,7 +60,7 @@ end
   Meta.parse(str[1:(end-1)])
 end
 
-const tr = trace
+@inline tr(v::TensorValue) = trace(v)
 
 @generated function symmetic_part(v::TensorValue{D}) where D
   str = "("
@@ -74,5 +77,9 @@ function adjoint(v::TensorValue)
   t = adjoint(v.array)
   TensorValue(t)
 end
+
+@inline dot(u::VectorValue,v::VectorValue) = inner(u,v)
+
+@inline norm(u::VectorValue) = sqrt(inner(u,u))
 
 end # module

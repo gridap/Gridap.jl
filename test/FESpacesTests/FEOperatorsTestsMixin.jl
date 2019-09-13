@@ -21,7 +21,7 @@ assem = SparseMatrixAssembler(V,U)
 op = LinearFEOperator(a,b,V,U,assem,trian,quad)
 
 # Define the FESolver
-ls = LUSolver()
+ls = BackslashSolver()
 solver = LinearFESolver(ls)
 
 # Solve!
@@ -70,7 +70,13 @@ gfun(x) = 1.0
 # Construct the FEspace
 order = 1
 diritags = [1,2,3,4,5,6,7]
-fespace = ConformingFESpace(Float64,model,order,diritags)
+labels = FaceLabels(model)
+# This next line is only for testing purposes
+labels = FaceLabels(
+  labels.dim_to_nface_to_label,copy(labels.tag_to_labels),copy(labels.tag_to_name))
+diritag = "diri_boundary"
+add_tag_from_tags!(labels,diritag,diritags)
+fespace = ConformingFESpace(Float64,model,labels,order,diritag)
 
 # Define test and trial
 V = TestFESpace(fespace)

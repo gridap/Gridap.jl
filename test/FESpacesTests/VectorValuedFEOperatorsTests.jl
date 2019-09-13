@@ -3,6 +3,7 @@ module VectorValuedFEOperatorsTests
 using Test
 using Gridap
 import Gridap: ∇
+using LinearAlgebra
 
 # Define manufactured functions
 ufun(x) = VectorValue(x[1] + x[2],x[1])

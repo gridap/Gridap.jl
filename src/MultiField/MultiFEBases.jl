@@ -9,6 +9,7 @@ import Base: div
 import Gridap: trace
 import Gridap: curl
 import Gridap: inner
+import Gridap: varinner
 import Base: +, -, *
 import Base: length, getindex
 import Gridap.FESpaces: FEBasis
@@ -70,6 +71,10 @@ function inner(a::FEBasisWithFieldId,b::CellField)
   MultiCellMap(blocks,fieldids)
 end
 
+function varinner(a::FEBasisWithFieldId,b::CellField)
+  inner(a,b)
+end
+
 function inner(a::FEBasisWithFieldId,f::Function)
   b = CellField(a.febasis.trian,f)
   inner(a,b)
@@ -80,6 +85,21 @@ function inner(a::FEBasisWithFieldId,b::FEBasisWithFieldId)
   blocks = [block,]
   fieldids = [(a.fieldid,b.fieldid),]
   MultiCellMap(blocks,fieldids)
+end
+
+function varinner(a::FEBasisWithFieldId,b::FEBasisWithFieldId)
+  inner(a,b)
+end
+
+function restrict(feb::FEBasisWithFieldId,trian::SkeletonTriangulation)
+  sp = restrict(feb.febasis,trian)
+  _new_sp(sp,feb.fieldid)
+end
+
+function _new_sp(sp::SkeletonPair{Z,T,N},fieldid) where {Z,T,N}
+  b1 = FEBasisWithFieldId(sp.cellfield1,fieldid)
+  b2 = FEBasisWithFieldId(sp.cellfield2,fieldid)
+  SkeletonPair{Z,T,N}(b1,b2)
 end
 
 struct MultiFEBasis
@@ -102,9 +122,8 @@ function restrict(mfeb::MultiFEBasis,trian::BoundaryTriangulation)
   MultiFEBasis(blocks)
 end
 
-function restrict(feb::MultiFEBasis,trian::SkeletonTriangulation)
-  @notimplemented
-  # We still need to create a MultiSkeletonPair
+function restrict(mfeb::MultiFEBasis,trian::SkeletonTriangulation)
+  [ restrict(feb,trian) for feb in mfeb.blocks ]
 end
 
 end # module MultiFEBases

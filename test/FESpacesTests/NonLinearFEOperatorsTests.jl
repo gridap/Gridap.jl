@@ -46,9 +46,8 @@ op = NonLinearFEOperator(res,jac,V,U,assem,trian,quad)
 
 # Define the FESolver
 ls = LUSolver()
-tol = 1.e-10
-maxiters = 20
-nls = NewtonRaphsonSolver(ls,tol,maxiters)
+nls = JuliaNLSolver(
+  ls,method=:newton,show_trace=false,ftol=1.e-10,iterations=20)
 solver = NonLinearFESolver(nls)
 
 # Solve!
