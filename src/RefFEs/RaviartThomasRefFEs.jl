@@ -24,11 +24,11 @@ struct RaviartThomasRefFE{D,T} <: RefFE{D,T}
   nfacedofs::Vector{Vector{Int}}
 end
 
-dofbasis(this::RaviartThomasRefFE{D,T} where {D,T})::DOFBasis{D,T} = this.dof_basis
+dofbasis(this::RaviartThomasRefFE{D,T} where {D,T})::DOFBasis = this.dof_basis
 
-polytope(this::RaviartThomasRefFE{D,T} where {D,T})::Polytope{D} = this.polytope
+polytope(this::RaviartThomasRefFE{D,T} where {D,T})::Polytope = this.polytope
 
-shfbasis(this::RaviartThomasRefFE{D,T} where {D,T})::Basis{D,T} = this.shfbasis
+shfbasis(this::RaviartThomasRefFE{D,T} where {D,T})::Basis = this.shfbasis
 
 nfacedofs(this::RaviartThomasRefFE{D,T} where {D,T})::Vector{Vector{Int}} = this.nfacedofs
 
