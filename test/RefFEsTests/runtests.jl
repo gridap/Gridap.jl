@@ -12,4 +12,6 @@ using Test
 
 @testset "PDiscRefFEs" begin include("PDiscRefFEsTests.jl") end
 
+@testset "RaviartThomasRefFEsTests" begin include("RaviartThomasRefFEsTests.jl") end
+
 end # module
