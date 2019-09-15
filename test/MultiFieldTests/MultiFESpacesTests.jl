@@ -7,7 +7,7 @@ model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(4,4))
 
 order = 1
 diritag = "boundary"
-fespace = ConformingFESpace(Float64,model,order,diritag)
+fespace = H1ConformingFESpace(Float64,model,order,diritag)
 
 ufun1(x) = x[1] + x[2]
 U1 = TrialFESpace(fespace,ufun1)
@@ -31,7 +31,7 @@ V2, state = iterate(U,state)
 
 a(v,u) = varinner(v,u)
 
-bfun(x) = x[2] 
+bfun(x) = x[2]
 b(v) = varinner(v,CellField(trian,bfun))
 
 trian = Triangulation(model)

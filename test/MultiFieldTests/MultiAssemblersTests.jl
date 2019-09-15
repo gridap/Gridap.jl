@@ -6,7 +6,7 @@ using Gridap
 order = 1
 diritag = "boundary"
 model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(2,3))
-fespace = ConformingFESpace(Float64,model,order,diritag)
+fespace = H1ConformingFESpace(Float64,model,order,diritag)
 
 ufun1(x) = x[1] + x[2]
 U1 = TrialFESpace(fespace,ufun1)

@@ -26,7 +26,7 @@ model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(4,4))
 # Construct the FEspace
 order = 2
 diritag = "boundary"
-fespace = ConformingFESpace(Float64,model,order,diritag)
+fespace = H1ConformingFESpace(Float64,model,order,diritag)
 
 # Define test and trial
 V1 = TestFESpace(fespace)

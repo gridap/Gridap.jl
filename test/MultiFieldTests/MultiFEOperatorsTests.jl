@@ -26,10 +26,10 @@ model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(4,4))
 # We allow each one of the fields to have different boundary conditions
 order = 1
 diritags = [1,2,3,4,5,6,7]
-fespace1 = ConformingFESpace(Float64,model,order,diritags)
+fespace1 = H1ConformingFESpace(Float64,model,order,diritags)
 
 diritag = "boundary"
-fespace2 = ConformingFESpace(Float64,model,order,diritag)
+fespace2 = H1ConformingFESpace(Float64,model,order,diritag)
 
 # Define test and trial
 V1 = TestFESpace(fespace1)

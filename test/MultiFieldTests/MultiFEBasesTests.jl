@@ -28,7 +28,7 @@ b2field = CellField(trian,b2fun)
 
 order = 1
 diritag = "boundary"
-fespace = ConformingFESpace(Float64,model,order,diritag)
+fespace = H1ConformingFESpace(Float64,model,order,diritag)
 
 U1 = TrialFESpace(fespace,u1fun)
 
@@ -85,7 +85,7 @@ mca = integrate(mcm,trian,quad)
 T = VectorValue{2,Float64}
 order = 1
 diritag = "boundary"
-fespace = ConformingFESpace(T,model,order,diritag)
+fespace = H1ConformingFESpace(T,model,order,diritag)
 
 V1 = TestFESpace(fespace)
 V2 = V1
