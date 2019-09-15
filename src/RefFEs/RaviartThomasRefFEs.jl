@@ -174,8 +174,9 @@ function _face_moments(p, fp, order, c_fips, fwips, c_fvs)
   cfshfs = ConstantCellValue(fshfs, nc)
   cvals = evaluate(cfshfs,c_fips)
   cvals = [fwips[i]'.*cvals[i] for i in 1:nc]
-  fns, o = facet_normals(p)
-  cvals = [ _mybroadcast(typeof(n),n,b) for (n,b) in zip(fns,cvals)]
+  fns, os = facet_normals(p)
+  # @santiagobadia : Temporary hack for making it work for structured hex meshes
+  cvals = [ _mybroadcast(typeof(n),n*o,b) for (n,o,b) in zip(fns,os,cvals)]
   return cvals
 end
 

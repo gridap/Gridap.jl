@@ -33,7 +33,7 @@ struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T}
   num_free_dofs::Int
   num_diri_dofs::Int
   diri_tags::Vector{Int}
-  reffe::LagrangianRefFE{Z,T}
+  reffe::RefFE{Z,T}
   triangulation::Triangulation{D,Z}
   gridgraph::GridGraph
   facelabels::FaceLabels
@@ -41,7 +41,7 @@ struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T}
 end
 
 function ConformingFESpace(
-  reffe::LagrangianRefFE{D,T},
+  reffe::RefFE{D,T},
   trian::Triangulation{D,Z},
   graph::GridGraph,
   labels::FaceLabels,
@@ -51,7 +51,7 @@ function ConformingFESpace(
 end
 
 function ConformingFESpace(
-  reffe::LagrangianRefFE{D,T},
+  reffe::RefFE{D,T},
   trian::Triangulation{D,Z},
   graph::GridGraph,
   labels::FaceLabels) where {D,Z,T}
@@ -77,7 +77,7 @@ function ConformingFESpace(
   graph = GridGraph(model)
   orders = fill(order,D)
   polytope = _polytope(celltypes(grid))
-  fe = LagrangianRefFE(T,polytope, orders)
+  fe = RefFE(T,polytope, orders)
   _diri_tags = _setup_tags(labels,diri_tags)
   ConformingFESpace(fe,trian,graph,labels,_diri_tags)
 end
@@ -150,6 +150,8 @@ function _CellField(
   cdofs = CellVectorFromLocalToGlobalPosAndNeg(
     celldofs, free_dofs, diri_dofs)
   lincomb(shb,cdofs)
+  # @santiagobadia: For RT methods, we must add here a local_to_global_dofs
+  # or global_to_local_dofs
 
 end
 
@@ -293,6 +295,9 @@ function _interpolate_values_kernel!(
 
   for (imap,l2g) in zip(uphys,celldofs)
     evaluate!(dofb,imap,aux)
+    # @santiagobadia : Here we should add a method for RT that multiplies by -1
+    # if the face has this cell as the second one in the grid graph
+    # local_to_global_dofs, global_to_local_dofs CellArray
     for (i,gdof) in enumerate(l2g)
       if (gdof > 0)
         free_dofs[gdof] = aux[i]
