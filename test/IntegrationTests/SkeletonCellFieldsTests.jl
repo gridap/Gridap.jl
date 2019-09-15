@@ -8,7 +8,7 @@ model = CartesianDiscreteModel(partition=(3,4,2))
 
 order = 1
 diritag = "boundary"
-fespace = ConformingFESpace(Float64,model,order,diritag)
+fespace = H1ConformingFESpace(Float64,model,order,diritag)
 
 trian = Triangulation(model)
 

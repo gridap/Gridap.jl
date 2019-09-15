@@ -165,12 +165,12 @@ test_index_cell_field(uh,q,v,g)
 
 test_fe_space(fespace,15,10,mmat,bvec,fun)
 
-fespace = ConformingFESpace(Float64,model,order,tags)
+fespace = H1ConformingFESpace(Float64,model,order,tags)
 
 model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(2,2))
 
 order = 1
-fespace = ConformingFESpace(Float64,model,order,tags)
+fespace = H1ConformingFESpace(Float64,model,order,tags)
 
 grid = Grid(model,D)
 trian = Triangulation(grid)
@@ -194,7 +194,7 @@ order = 1
 T = VectorValue{2,Float64}
 tags = [1,2,3,4]
 model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(2,2))
-fespace = ConformingFESpace(T,model,order,tags)
+fespace = H1ConformingFESpace(T,model,order,tags)
 
 ufun(x) = VectorValue(x[2],x[1])
 uh = interpolate(fespace,ufun)

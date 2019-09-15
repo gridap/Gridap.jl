@@ -10,7 +10,7 @@ using Gridap.Triangulations: IndexCellFieldWithTriangulation
 model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(4,4))
 order = 1
 diritag = "boundary"
-fespace = ConformingFESpace(Float64,model,order,diritag)
+fespace = H1ConformingFESpace(Float64,model,order,diritag)
 
 trian = Triangulation(model)
 
@@ -58,7 +58,7 @@ e = uh - ufun
 @test isa(e,IndexCellFieldWithTriangulation)
 
 T = VectorValue{2,Float64}
-fespace = ConformingFESpace(T,model,order,diritag)
+fespace = H1ConformingFESpace(T,model,order,diritag)
 ufun(x) = VectorValue(x[2],x[1])
 uh = interpolate(fespace,ufun)
 

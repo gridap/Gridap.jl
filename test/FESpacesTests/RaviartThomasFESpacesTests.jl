@@ -43,47 +43,4 @@ el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
 
 ##
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-cellvec = integrate(inner(bh,uh),trian,quad)
-
-bh = FEBasis(fespace)
-uh = zero(fespace)
-
-
-nfree = 48
-ndiri = 0
-
-
-
-cellmat = integrate(inner(bh,bh),trian,quad)
-
-test_fe_space(fespace, nfree, ndiri, cellmat, cellvec, ufun)
-
-@test celldofids(fespace).data == 1:nfree
-
-
-
-
-#ufun(x) = sin(x[1]) * cos(x[2])
-#
-#uh = interpolate(fespace,ufun)
-#
-#writevtk(trian,"trian",nref=4,cellfields=["uh"=>uh])
-
-
 end # module

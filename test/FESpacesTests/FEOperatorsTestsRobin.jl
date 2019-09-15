@@ -5,7 +5,7 @@ rfun(x) = 1.0 + ufun(x)
 
 # Construct the FEspace
 diritags = [1,2,3,4,5,7]
-fespace = ConformingFESpace(Float64,model,order,diritags)
+fespace = H1ConformingFESpace(Float64,model,order,diritags)
 
 # Define test and trial
 V = TestFESpace(fespace)

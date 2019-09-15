@@ -7,7 +7,7 @@ model = CartesianDiscreteModel(partition=(2,2))
 
 order = 1
 tags = [1,2,3,4]
-fespace = ConformingFESpace(Float64,model,order,tags)
+fespace = H1ConformingFESpace(Float64,model,order,tags)
 
 trian = Triangulation(model)
 quad = CellQuadrature(trian,order=2)
@@ -38,4 +38,3 @@ U = TrialFESpace(fespace,[z,z,z,z])
 test_fe_space(U,5,4,mmat,bvec,fun)
 
 end # module
-

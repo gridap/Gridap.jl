@@ -8,7 +8,7 @@ model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(2,2))
 tags = [1,2,3,4,6,5]
 
 order = 1
-fespace = ConformingFESpace(Float64,model,order,tags)
+fespace = H1ConformingFESpace(Float64,model,order,tags)
 
 assem = SparseMatrixAssembler(fespace,fespace)
 
@@ -20,7 +20,7 @@ basis = CellBasis(fespace)
 
 a(v,u) = varinner(∇(v), ∇(u))
 
-bfun(x) = x[2] 
+bfun(x) = x[2]
 
 b(v) = varinner(v,CellField(trian,bfun))
 

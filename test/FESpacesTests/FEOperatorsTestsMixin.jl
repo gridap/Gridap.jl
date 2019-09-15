@@ -1,6 +1,6 @@
 # Construct the FEspace
 diritag = "boundary"
-fespace = ConformingFESpace(Float64,model,order,diritag)
+fespace = H1ConformingFESpace(Float64,model,order,diritag)
 
 # Define test and trial
 V = TestFESpace(fespace)
@@ -76,7 +76,7 @@ labels = FaceLabels(
   labels.dim_to_nface_to_label,copy(labels.tag_to_labels),copy(labels.tag_to_name))
 diritag = "diri_boundary"
 add_tag_from_tags!(labels,diritag,diritags)
-fespace = ConformingFESpace(Float64,model,labels,order,diritag)
+fespace = H1ConformingFESpace(Float64,model,labels,order,diritag)
 
 # Define test and trial
 V = TestFESpace(fespace)

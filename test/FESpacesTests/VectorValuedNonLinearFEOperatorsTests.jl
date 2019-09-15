@@ -32,7 +32,7 @@ model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(4,4))
 order = 2
 diritag = "boundary"
 T = VectorValue{2,Float64}
-fespace = ConformingFESpace(T,model,order,diritag)
+fespace = H1ConformingFESpace(T,model,order,diritag)
 
 # Define test and trial
 V = TestFESpace(fespace)

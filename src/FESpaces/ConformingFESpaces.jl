@@ -9,6 +9,7 @@ using Base: @propagate_inbounds
 using Gridap.BoundaryGrids: _setup_tags
 
 export ConformingFESpace
+export H1ConformingFESpace
 import Gridap: num_free_dofs
 import Gridap: num_diri_dofs
 import Gridap: diri_tags
@@ -58,14 +59,14 @@ function ConformingFESpace(
   return ConformingFESpace(reffe, trian, graph, labels, ())
 end
 
-function ConformingFESpace(
+function H1ConformingFESpace(
   ::Type{T}, model::DiscreteModel{D}, order::Integer, diri_tags) where {D,T}
 
   labels = FaceLabels(model)
-  ConformingFESpace(T,model,labels,order,diri_tags)
+  H1ConformingFESpace(T,model,labels,order,diri_tags)
 end
 
-function ConformingFESpace(
+function H1ConformingFESpace(
   ::Type{T},
   model::DiscreteModel{D},
   labels::FaceLabels,
@@ -77,7 +78,7 @@ function ConformingFESpace(
   graph = GridGraph(model)
   orders = fill(order,D)
   polytope = _polytope(celltypes(grid))
-  fe = RefFE(T,polytope, orders)
+  fe = LagrangianRefFE(T,polytope, orders)
   _diri_tags = _setup_tags(labels,diri_tags)
   ConformingFESpace(fe,trian,graph,labels,_diri_tags)
 end
