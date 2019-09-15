@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added Hdiv FE space using Raviart-Thomas reference FEs in [34bfa34](https://github.com/gridap/Gridap.jl/commit/34bfa344efd1bc6a5d3c5993d9639259ed21671a)
 - Added the corresponding DOF basis for Raviart-Thomas reference FEs for interpolation of fields [60b9021](https://github.com/gridap/Gridap.jl/commit/60b9021b6d4b5e66a9ec4fe2067aa8278f8ccb52)
 - Added an arbitrary order div-conforming Raviart-Thomas reference FE of arbitrary order on quads in commit
 [60b9021](https://github.com/gridap/Gridap.jl/commit/60b9021b6d4b5e66a9ec4fe2067aa8278f8ccb52)
@@ -20,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `JuliaNLSolver` to facilitat the usage in Gridap of the non-linear solvers available in the official Julia package `NLsolve`. Since commit [e5a933f](https://github.com/gridap/Gridap.jl/commit/e5a933f3093faea221a50bdd796d7f02113ed52c).
 
 ### Changed
+
+- Previous ConformingFESpace constructor is H1ConformingFESpace since [34bfa34](https://github.com/gridap/Gridap.jl/commit/34bfa344efd1bc6a5d3c5993d9639259ed21671a)
+
 ### Removed
 ### Deprecated
 ### Fixed
