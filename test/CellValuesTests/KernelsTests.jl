@@ -142,7 +142,7 @@ test_array_kernel(k,r,a,b)
 
 # IntegrateNumberKernel
 
-k = IntegrateNumberKernel()
+k = IntegrateNumberKernel{Int}()
 
 f = [1,3,4,3]
 j = [1,2,4,1]
@@ -161,10 +161,10 @@ r =  reshape( sum(f .* reshape(j,(1,1,4)) .* reshape(w,(1,1,4)), dims=3), (3,2))
 
 test_array_kernel(k,r,f,j,w)
 
-k = IntegrateKernel(1)
+k = IntegrateKernel(1,Float64)
 @test isa(k,IntegrateNumberKernel)
 
-k = IntegrateKernel(2)
+k = IntegrateKernel(2,Float64)
 @test isa(k,IntegrateArrayKernel)
 
 # CellNewAxisKernel

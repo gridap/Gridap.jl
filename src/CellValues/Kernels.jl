@@ -344,18 +344,19 @@ function compute_value!(
   end
 end
 
-struct IntegrateNumberKernel <: NumberKernel end
+struct IntegrateNumberKernel{T} <: NumberKernel end
 
 function compute_type(
-  ::IntegrateNumberKernel,
+  ::IntegrateNumberKernel{T},
   ::Type{<:AbstractVector{F}},
   ::Type{<:AbstractVector{J}},
-  ::Type{<:AbstractVector{W}}) where {F,J,W}
-  _compute_type_ink(F,J,W)
+  ::Type{<:AbstractVector{W}}) where {T,F,J,W}
+  S = _compute_type_ink(F,J,W)
+  @assert S == T
+  T
 end
 
-function compute_value(k::NumberKernel,f,j,w)::NumberLike
-  T = _compute_type_ink(f,j,w)
+function compute_value(k::IntegrateNumberKernel{T},f,j,w) where T
   _compute_value_ink(f,j,w,T)
 end
 
@@ -414,11 +415,11 @@ end
   end
 end
 
-IntegrateKernel(::Val{N}) where N = IntegrateArrayKernel()
+IntegrateKernel(::Val{N},::Type{T}) where {N,T} = IntegrateArrayKernel()
 
-IntegrateKernel(::Val{1}) = IntegrateNumberKernel()
+IntegrateKernel(::Val{1},::Type{T}) where T = IntegrateNumberKernel{T}()
 
-IntegrateKernel(i::Int) = IntegrateKernel(Val(i))
+IntegrateKernel(i::Int,T) = IntegrateKernel(Val(i),T)
 
 # CellNewAxisKernel
 
