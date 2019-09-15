@@ -21,17 +21,20 @@ graph = GridGraph(model)
 graph.data[2,1]
 
 labels = FaceLabels(model)
-# tags = [1,2,3,4]
-tags = Int[]
-fesp = ConformingFESpace(reffe,trian,graph,labels,tags)
-
+tags = [1,2,3,4]
 fun(x) = VectorValue(x[1],x[2])
+# tags = Int[]
+
+fesp = ConformingFESpace(reffe,trian,graph,labels,tags)
+dfesp = TrialFESpace(fesp)
+
 
 trian = Triangulation(model)
 quad = CellQuadrature(trian,order=2)
 
 uh = interpolate(fesp,fun)
 uh.free_dofs
+uh.diri_dofs
 
 e = fun - uh
 
