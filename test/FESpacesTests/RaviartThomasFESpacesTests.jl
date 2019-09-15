@@ -9,7 +9,7 @@ using LinearAlgebra
 D = 2
 order = 1
 
-dom = fill(2,D)
+dom = fill(4,D)
 model = CartesianDiscreteModel(partition=tuple(dom...))
 
 p = Polytope(fill(HEX_AXIS,D)...)
@@ -25,7 +25,7 @@ labels = FaceLabels(model)
 tags = Int[]
 fesp = ConformingFESpace(reffe,trian,graph,labels,tags)
 
-fun(x) = VectorValue(1.0,0.0)
+fun(x) = VectorValue(x[1],x[2])
 
 trian = Triangulation(model)
 quad = CellQuadrature(trian,order=2)
@@ -33,23 +33,10 @@ quad = CellQuadrature(trian,order=2)
 uh = interpolate(fesp,fun)
 uh.free_dofs
 
-a = [1;2;3;4]
-b = Matrix(1.0I,4,4)
-b[2,2] = -1.0
-b = [1;-1;1;1]
-
-ca = ConstantCellValue(a,4)
-cb = ConstantCellValue(b,4)
-cb*ca
-
-# So, we must create a cell values with +1,-1
-# @santiagobadia : Create the local_to_global_dofs and global_to_local_dofs
-
 e = fun - uh
 
 el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
 @test el2 < 1.0e-10
-el2
 
 ##
 
