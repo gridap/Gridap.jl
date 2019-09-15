@@ -20,6 +20,9 @@ using Test
 
 @testset "VectorValuedMultiFEOperators" begin include("VectorValuedMultiFEOperatorsTests.jl") end
 
+@testset "DarcyFEOperators" begin include("DarcyFEOperatorsTests.jl") end
+
 @testset "MultiNonLinearFEOperators" begin include("MultiNonLinearFEOperatorsTests.jl") end
+
 
 end # module
