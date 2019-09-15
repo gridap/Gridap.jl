@@ -77,7 +77,7 @@ c = [3,2,4]
 u = TestIndexCellValue(a,l)
 v = TestIndexCellValue(b,l)
 w = TestIndexCellValue(c,l)
-k = IntegrateNumberKernel()
+k = IntegrateNumberKernel{Int}()
 z = apply(k,u,v,w)
 r = fill(sum(a.*b.*c),l)
 test_index_cell_number(z,r)
