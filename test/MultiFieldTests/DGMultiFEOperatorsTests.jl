@@ -10,72 +10,109 @@ import Gridap: ∇
 const T = VectorValue{2,Float64}
 
 # Define manufactured functions
-u1(x) = VectorValue(x[1], x[2])
-u2(x) = x[1] - x[2]
+u(x) = VectorValue(x[1], x[2])
+p(x) = x[1] - x[2]
 
-∇u1(x) = TensorValue(1.0,0.0,0.0,1.0)
+∇u(x) = TensorValue(1.0,0.0,0.0,1.0)
 
-∇(::typeof(u1)) = ∇u1
+∇(::typeof(u)) = ∇u
 
-b1(x) = VectorValue(1.0,-1.0)
-b2(x) = 2.0
+f(x) = VectorValue(1.0,-1.0)
+g(x) = 2.0
 
-# Construct the discrete model
-model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(2,2))
+# Discrete model
+L = 1.0
+limits = (0.0, L, 0.0, L)
+ncellx = 4
+model = CartesianDiscreteModel(domain=limits, partition=(ncellx,ncellx))
+
+h = L / ncellx
+
+γ = 10
+γ0 = 10
 
 # Construct the FEspace 1
 order = 2
-diritag = "boundary"
-fespace1 = CLagrangianFESpace(T,model,order,diritag)
+fespace1 = DLagrangianFESpace(T,model,order)
 
 # Construct the FEspace 2
-D = 2
-reffe = PDiscRefFE(Float64,D,order-1)
-_fespace2 = DiscFESpace(reffe,model)
+fespace2 = DLagrangianFESpace(Float64,model,order)
 fixeddofs = [1,]
-fespace2 = ConstrainedFESpace(_fespace2,fixeddofs)
+fespace2 = ConstrainedFESpace(fespace2,fixeddofs)
 
 # Define test and trial
-V1 = TestFESpace(fespace1)
-V2 = TestFESpace(fespace2)
-V = [V1, V2]
+Vh = TestFESpace(fespace1)
+Qh = TestFESpace(fespace2)
+Yh = [Vh, Qh]
 
-U1 = TrialFESpace(fespace1,u1)
-U2 = TrialFESpace(fespace2)
-U = [U1, U2]
+Uh = TrialFESpace(fespace1)
+Ph = TrialFESpace(fespace2)
+Xh = [Uh, Ph]
 
 # Define integration mesh and quadrature for volume
 trian = Triangulation(model)
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,order=2*order)
+
+btrian = BoundaryTriangulation(model)
+bquad = CellQuadrature(btrian,order=2*order)
+nb = NormalVector(btrian)
 
 strian = SkeletonTriangulation(model)
-squad = CellQuadrature(strian,order=2)
+squad = CellQuadrature(strian,order=2*order)
+ns = NormalVector(strian)
 
-a(v,u) = 
-  inner(∇(v[1]),∇(u[1])) - inner(div(v[1]),u[2]) + inner(v[2],div(u[1]))
-b(v) = inner(v[1],b1) + inner(v[2],b2)
-t_Ω = AffineFETerm(a,b,trian,quad)
+# Weak form
 
-# This is a dummy term only for testing purposes. It should not affect the
-# result sine the shape functions for the velocity are continuous (at the moment)
-a_Γ(v,u) = inner(jump(v[1]),jump(u[1]))
-t_Γ = LinearFETerm(a_Γ,strian,squad)
+function A_Ω(y,x)
+  u, p = x
+  v, q = y
+  inner(∇(v), ∇(u)) - inner(∇(q), u) + inner(v, ∇(p))
+end
+
+function B_Ω(y)
+  v, q = y
+  inner(v,f) + inner(q, g)
+end
+
+function A_∂Ω(y,x)
+  u, p = x
+  v, q = y
+  (γ/h) * inner(v,u) - inner(v, ∇(u)*nb ) - inner(∇(v)*nb, u)
+
+end
+
+function A_Γ(y,x)
+  u, p = x
+  v, q = y
+  (γ/h) * inner( jump(v*ns), jump(u*ns)) - 
+    inner( jump(outer(v,ns)), mean(∇(u)) ) -
+    inner( mean(∇(v)), jump(outer(u,ns)) ) +
+    (γ0*h) * inner( jump(q*ns), jump(p*ns)  ) -
+    inner( jump(q*ns), mean(u) ) +
+    inner( mean(v), jump(p*ns) )
+end
+
+t_Ω = AffineFETerm(A_Ω,B_Ω,trian,quad)
+
+t_Γ = LinearFETerm(A_Γ,strian,squad)
 
 # Define the FEOperator
-op = LinearFEOperator(V,U,t_Ω,t_Γ)
+op = LinearFEOperator(Yh,Xh,t_Ω,t_Γ)
 
 # Solve!
-uh = solve(op)
+xh = solve(op)
+uh = xh[1]
+ph = xh[2]
 
 # Correct the pressure
-A = sum(integrate(u2-uh[2],trian,quad))
+A = sum(integrate(p-ph,trian,quad))
 V = sum(integrate((x)->1.0,trian,quad))
-p = uh[2] + A/V
+ph = ph + A/V
 
 # Define exact solution and error
-e1 = u1 - uh[1]
+eu = u - uh
 
-e2 = u2 - p
+ep = p - ph
 
 #writevtk(trian,"trian",cellfields=["uh2"=>uh[2],"p"=>p])
 
@@ -84,15 +121,15 @@ l2(u) = inner(u,u)
 h1(u) = inner(∇(u),∇(u)) + l2(u)
 
 # Compute errors
-e1l2 = sqrt(sum( integrate(l2(e1),trian,quad) ))
-e1h1 = sqrt(sum( integrate(h1(e1),trian,quad) ))
+eul2 = sqrt(sum( integrate(l2(eu),trian,quad) ))
+euh1 = sqrt(sum( integrate(h1(eu),trian,quad) ))
 
-e2l2 = sqrt(sum( integrate(l2(e2),trian,quad) ))
+epl2 = sqrt(sum( integrate(l2(ep),trian,quad) ))
 
-@test e1l2 < 1.e-8
-@test e1h1 < 1.e-8
+@test eul2 < 1.e-8
+@test euh1 < 1.e-8
 
-@test e2l2 < 1.e-8
+@test epl2 < 1.e-8
 
 
 end # module

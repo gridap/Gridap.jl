@@ -11,6 +11,7 @@ import Base: div
 import Gridap: trace
 import Gridap: curl
 import Gridap: inner
+import Gridap: outer
 import Gridap: varinner
 import Base: +, -, *
 import Gridap: restrict
@@ -35,7 +36,7 @@ for op in (:+,:-,:(gradient),:(symmetric_gradient),:(div),:(trace),:(curl))
   end
 end
 
-for op in (:+, :-, :*)
+for op in (:+, :-, :*, :outer)
   @eval begin
 
     function ($op)(a::FEBasis,b::CellField)

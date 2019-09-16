@@ -18,6 +18,7 @@ import Gridap: symmetric_gradient
 import Base: div
 import Gridap: trace
 import Gridap: curl
+import Gridap: outer
 
 function restrict(
   cf::IndexCellFieldLike{Z,T,N},
@@ -50,7 +51,7 @@ for op in (:+,:-,:(gradient),:(symmetric_gradient),:(div),:(trace),:(curl))
   end
 end
 
-for op in (:+, :-, :*)
+for op in (:+, :-, :*, :outer)
   @eval begin
 
     function ($op)(a::SkeletonPair{Z,T,N},b::CellField) where {Z,T,N}
@@ -166,6 +167,18 @@ for op in (:+, :-)
       cellmap12 = $op(a.cellmap12, b.cellmap12)
       cellmap21 = $op(a.cellmap21, b.cellmap21)
       cellmap22 = $op(a.cellmap22, b.cellmap22)
+      SkeletonVarinnerMatrix{Z}(
+        cellmap11,
+        cellmap12,
+        cellmap21,
+        cellmap22)
+    end
+
+    function ($op)(a::SkeletonVarinnerMatrix{Z}) where Z
+      cellmap11 = $op(a.cellmap11)
+      cellmap12 = $op(a.cellmap12)
+      cellmap21 = $op(a.cellmap21)
+      cellmap22 = $op(a.cellmap22)
       SkeletonVarinnerMatrix{Z}(
         cellmap11,
         cellmap12,
