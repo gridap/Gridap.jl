@@ -173,9 +173,9 @@ version = "1.1.0"
 
 [[Parameters]]
 deps = ["OrderedCollections"]
-git-tree-sha1 = "1dfd7cd50a8eb06ef693a4c2bbe945943cd000c5"
+git-tree-sha1 = "b62b2558efb1eef1fa44e4be5ff58a515c287e38"
 uuid = "d96e819e-fc66-5662-9728-84c9c7592b0a"
-version = "0.11.0"
+version = "0.12.0"
 
 [[Parsers]]
 deps = ["Dates", "Test"]
@@ -258,9 +258,9 @@ uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [[TensorPolynomialBases]]
 deps = ["StaticArrays", "TensorValues", "Test"]
-git-tree-sha1 = "895ecafdb83f1d691c3afa20be839a61ff7236d2"
+git-tree-sha1 = "6d4be394d34a493ecd28a009246e68eba46cf36c"
 uuid = "f77b161d-e03a-5d68-b365-d5306aabeaa6"
-version = "0.1.3"
+version = "0.1.4"
 
 [[TensorValues]]
 deps = ["LinearAlgebra", "StaticArrays"]
