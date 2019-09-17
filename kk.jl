@@ -11,7 +11,7 @@ import LinearAlgebra: tr
 const T = VectorValue{2,Float64}
 
 #u(x) = x[1]*x[2]*(x[1]-1)*(x[2]-1)*VectorValue(1.0,1.0)
-u(x) = VectorValue(x[1], x[2])
+u(x) = VectorValue(x[1]*x[1], x[2])
 
 
 #function ∇u(x)
@@ -19,7 +19,7 @@ u(x) = VectorValue(x[1], x[2])
 #  b = x[1]*(x[1]-1)*(2*x[2]-1)
 #  TensorValue(a,b,a,b)
 #end
-∇u(x) = TensorValue(1.0,0.0,0.0,1.0)
+∇u(x) = TensorValue(2*x[1],0.0,0.0,1.0)
 
 ∇(::typeof(u)) = ∇u
 
@@ -29,7 +29,7 @@ u(x) = VectorValue(x[1], x[2])
 #  VectorValue(a,b)
 #end
 
-Δu(x) = VectorValue(0.0,0.0)
+Δu(x) = VectorValue(2.0,0.0)
 
 p(x) = x[1] - x[2]
 
