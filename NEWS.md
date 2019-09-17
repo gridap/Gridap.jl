@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Deprecated
 ### Fixed
 
+- Bug in `NormalVector` for non-Cartesian grids. Solved via PR [#98](https://github.com/gridap/Gridap.jl/pull/98).
+
 ## [0.4.0] - 2019-09-07
 
 ### Added
