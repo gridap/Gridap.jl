@@ -10,21 +10,13 @@ import LinearAlgebra: tr
 
 const T = VectorValue{2,Float64}
 
-u(x) = x[1]*x[2]*(x[1]-1)*(x[2]-1)*VectorValue(1.0,1.0)
+u(x) = VectorValue(x[1]*x[1], x[2])
 
-function ∇u(x)
-  a = x[2]*(x[2]-1)*(2*x[1]-1)
-  b = x[1]*(x[1]-1)*(2*x[2]-1)
-  TensorValue(a,b,a,b)
-end
+∇u(x) = TensorValue(2*x[1],0.0,0.0,1.0)
 
 ∇(::typeof(u)) = ∇u
 
-function Δu(x)
-  a = 2*x[2]*(x[2]-1) + (2*x[1]-1)*(2*x[2]-1)
-  b = 2*x[1]*(x[1]-1) + (2*x[2]-1)*(2*x[1]-1)
-  VectorValue(a,b)
-end
+Δu(x) = VectorValue(2.0,0.0)
 
 p(x) = x[1] - x[2]
 
@@ -34,10 +26,12 @@ f(x) = - Δu(x) + ∇p(x)
 
 g(x) = tr(∇u(x))
 
+ud(x) = u(x)
+
 # Discrete model
 L = 1.0
 limits = (0.0, L, 0.0, L)
-ncellx = 20
+ncellx = 4
 model = CartesianDiscreteModel(domain=limits, partition=(ncellx,ncellx))
 model = simplexify(model)
 
@@ -92,18 +86,23 @@ end
 function A_∂Ω(y,x)
   u, p = x
   v, q = y
-  (γ/h) * inner(v,u) - inner(v, ∇(u)*nb ) - inner(∇(v)*nb, u) + inner(q*nb, u) - inner(v, p*nb)
+  (γ/h) * inner(v,u) - inner(v, ∇(u)*nb )  - inner(∇(v)*nb, u) + 2*inner(q*nb,u) # - inner(v, p*nb) + inner(v,p*nb)
+end
+
+function B_∂Ω(y)
+  v, q = y
+  (γ/h) * inner(v,ud) - inner(∇(v)*nb, ud) + inner(q*nb, ud)
 end
 
 function A_Γ(y,x)
   u, p = x
   v, q = y
-  (γ/h) * inner( jump(v*ns), jump(u*ns)) - inner( jump(outer(v,ns)), mean(∇(u)) ) - inner( mean(∇(v)), jump(outer(u,ns)) ) + (γ0*h) * inner( jump(q*ns), jump(p*ns)  ) + inner( jump(q*ns), mean(u) ) - inner( mean(v), jump(p*ns) )
+  (γ/h) * inner( jump(outer(v,ns)), jump(outer(u,ns))) - inner( jump(outer(v,ns)), mean(∇(u)) ) - inner( mean(∇(v)), jump(outer(u,ns)) ) + (γ0*h) * inner( jump(q*ns), jump(p*ns)  ) + inner( jump(q*ns), mean(u) ) - inner( mean(v), jump(p*ns) )
 end
 
 t_Ω = AffineFETerm(A_Ω,B_Ω,trian,quad)
 
-t_∂Ω = LinearFETerm(A_∂Ω,btrian,bquad)
+t_∂Ω = AffineFETerm(A_∂Ω,B_∂Ω,btrian,bquad)
 
 t_Γ = LinearFETerm(A_Γ,strian,squad)
 
@@ -112,8 +111,7 @@ op = LinearFEOperator(Yh,Xh,t_Ω,t_∂Ω,t_Γ)
 
 # Solve!
 xh = solve(op)
-uh = xh[1]
-ph = xh[2]
+uh, ph = xh
 
 # Correct the pressure
 A = sum(integrate(p-ph,trian,quad))
@@ -125,7 +123,7 @@ eu = u - uh
 
 ep = p - ph
 
-writevtk(trian,"trian",cellfields=["uh"=>uh,"ph"=>ph, "eu"=>eu, "ep"=>ep])
+#writevtk(trian,"trian",cellfields=["uh"=>uh,"ph"=>ph, "eu"=>eu, "ep"=>ep])
 
 # Define norms to measure the error
 l2(u) = inner(u,u)
@@ -137,15 +135,10 @@ euh1 = sqrt(sum( integrate(h1(eu),trian,quad) ))
 
 epl2 = sqrt(sum( integrate(l2(ep),trian,quad) ))
 
-#@test eul2 < 1.e-8
-#@test euh1 < 1.e-8
-#
-#@test epl2 < 1.e-8
+@test eul2 < 1.e-8
+@test euh1 < 1.e-8
 
-@show eul2
-@show euh1
-
-@show epl2
+@test epl2 < 1.e-8
 
 
 end # module
