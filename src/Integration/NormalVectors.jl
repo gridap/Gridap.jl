@@ -41,7 +41,7 @@ function evaluate(nv::NormalVector{Z}, q::CellPoints{Z}) where Z
 end
 
 function _map_normal(J,n)
-  v = inv(J')*n
+  v = inv(J)*n
   m = sqrt(inner(v,v))
   if m < eps()
     return zero(n)
