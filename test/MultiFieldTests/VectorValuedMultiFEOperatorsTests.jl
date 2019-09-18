@@ -25,13 +25,22 @@ model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(2,2))
 
 # Construct the FEspace 1
 order = 2
-diritag = "boundary"
-fespace1 = CLagrangianFESpace(T,model,order,diritag)
+fespace1 = FESpace(
+  reffe = :QLagrangian,
+  conformity = :H1,
+  valuetype = T,
+  model = model,
+  order = order,
+  diritags = "boundary")
 
 # Construct the FEspace 2
-D = 2
-reffe = PDiscRefFE(Float64,D,order-1)
-_fespace2 = DiscFESpace(reffe,model)
+_fespace2 = FESpace(
+  reffe = :PLagrangian,
+  conformity = :L2,
+  valuetype = Float64,
+  model = model,
+  order = order-1)
+
 fixeddofs = [1,]
 fespace2 = ConstrainedFESpace(_fespace2,fixeddofs)
 
