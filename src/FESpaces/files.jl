@@ -17,6 +17,9 @@ include("DiscFESpaces.jl")
 include("ConstrainedFESpaces.jl")
 @reexport using Gridap.ConstrainedFESpaces
 
+include("ZeroMeanFESpaces.jl")
+@reexport using Gridap.ZeroMeanFESpaces
+
 include("FEFunctions.jl")
 @reexport using Gridap.FEFunctions
 
