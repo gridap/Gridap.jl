@@ -5,6 +5,7 @@ module DarcyFEOperatorsTests
 ##
 using Test
 using Gridap
+import Gridap: ∇
 
 const T = VectorValue{2,Float64}
 

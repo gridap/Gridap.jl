@@ -24,5 +24,4 @@ using Test
 
 @testset "MultiNonLinearFEOperators" begin include("MultiNonLinearFEOperatorsTests.jl") end
 
-
 end # module
