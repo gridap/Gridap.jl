@@ -4,6 +4,8 @@ using Test
 
 @testset "FESpaces" begin include("FESpacesTests.jl") end
 
+@testset "FESpaceConstructors" begin include("FESpaceConstructorsTests.jl") end
+
 @testset "ConformingFESpaces" begin include("ConformingFESpacesTests.jl") end
 
 @testset "CLagrangianFESpaces" begin include("CLagrangianFESpacesTests.jl") end

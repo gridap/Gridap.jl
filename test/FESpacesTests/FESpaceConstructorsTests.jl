@@ -1,6 +1,3 @@
-
-include("../../src/FESpaces/FESpaceConstructors.jl")
-
 module FESpaceConstructorsTests
 
 using Test

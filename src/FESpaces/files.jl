@@ -31,3 +31,6 @@ include("FETerms.jl")
 
 include("FEOperators.jl")
 @reexport using Gridap.FEOperators
+
+include("FESpaceConstructors.jl")
+@reexport using Gridap.FESpaceConstructors
