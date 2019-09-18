@@ -22,6 +22,8 @@ function FESpace(;kwargs...)
 
   polytope = _get_polytope(model)
 
+  constraint = _get_kwarg(:constraint,kwargs,nothing)
+
   dim = celldim(model)
 
   fespace = nothing
@@ -114,8 +116,17 @@ function FESpace(;kwargs...)
   end
 
   @assert fespace != nothing
-  return fespace
-  
+
+  if constraint == nothing
+    return fespace
+
+  elseif constraint == :zeromean
+    return ZeroMeanFESpace(fespace,order)
+
+  else
+    error("Unknown constraint value $constraint")
+
+  end
 
 end
 

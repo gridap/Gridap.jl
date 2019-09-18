@@ -76,4 +76,14 @@ V = FESpace(
 
 @test isa(V,DiscFESpace)
 
+V = FESpace(
+  reffe=:PLagrangian,
+  conformity=:L2,
+  valuetype = Float64,
+  order = 2,
+  model = model,
+  constraint = :zeromean)
+
+@test isa(V,ZeroMeanFESpace)
+
 end # module
