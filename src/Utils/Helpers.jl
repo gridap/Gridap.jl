@@ -13,7 +13,7 @@ end
 
 macro notimplemented()
   quote
-    error("This function in not yet implemented")
+    error("This function is not yet implemented")
   end
 end
 

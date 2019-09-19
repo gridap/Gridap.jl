@@ -25,15 +25,22 @@ model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(2,2))
 
 # Construct the FEspace 1
 order = 2
-diritag = "boundary"
-fespace1 = CLagrangianFESpace(T,model,order,diritag)
+fespace1 = FESpace(
+  reffe = :QLagrangian,
+  conformity = :H1,
+  valuetype = T,
+  model = model,
+  order = order,
+  diritags = "boundary")
 
 # Construct the FEspace 2
-D = 2
-reffe = PDiscRefFE(Float64,D,order-1)
-_fespace2 = DiscFESpace(reffe,model)
-fixeddofs = [1,]
-fespace2 = ConstrainedFESpace(_fespace2,fixeddofs)
+fespace2 = FESpace(
+  reffe = :PLagrangian,
+  conformity = :L2,
+  valuetype = Float64,
+  model = model,
+  order = order-1,
+  constraint = :zeromean)
 
 # Define test and trial
 V1 = TestFESpace(fespace1)
@@ -59,15 +66,10 @@ op = LinearFEOperator(V,U,t_Ω)
 # Solve!
 uh = solve(op)
 
-# Correct the pressure
-A = sum(integrate(u2-uh[2],trian,quad))
-V = sum(integrate((x)->1.0,trian,quad))
-p = uh[2] + A/V
-
 # Define exact solution and error
 e1 = u1 - uh[1]
 
-e2 = u2 - p
+e2 = u2 - uh[2]
 
 #writevtk(trian,"trian",cellfields=["uh2"=>uh[2],"p"=>p])
 

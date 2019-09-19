@@ -55,11 +55,11 @@ r2 = similar(res)
 apply!(r2,op,zh)
 @test res ≈ r2
 
-cache = solve!(zh,solver,op)
+zh, cache = solve!(zh,solver,op)
 @test free_dofs(zh) ≈ free_dofs(uh)
 
 zh = zero(U)
-solve!(zh,solver,op,cache)
+zh = solve!(zh,solver,op,cache)
 @test free_dofs(zh) ≈ free_dofs(uh)
 
 # With Neumann BCs

@@ -4,6 +4,8 @@ using Test
 
 @testset "FESpaces" begin include("FESpacesTests.jl") end
 
+@testset "FESpaceConstructors" begin include("FESpaceConstructorsTests.jl") end
+
 @testset "ConformingFESpaces" begin include("ConformingFESpacesTests.jl") end
 
 @testset "CLagrangianFESpaces" begin include("CLagrangianFESpacesTests.jl") end
@@ -16,13 +18,15 @@ using Test
 
 @testset "ConstrainedFESpaces" begin include("ConstrainedFESpacesTests.jl") end
 
+@testset "ZeroMeanFESpaces" begin include("ZeroMeanFESpacesTests.jl") end
+
 @testset "FEFunctions" begin include("FEFunctionsTests.jl") end
 
 @testset "FEBases" begin include("FEBasesTests.jl") end
 
 @testset "Assemblers" begin include("AssemblersTests.jl") end
 
-@testset "FEterms" begin include("FETermsTests.jl") end
+@testset "FETerms" begin include("FETermsTests.jl") end
 
 @testset "FEOperators" begin include("FEOperatorsTests.jl") end
 

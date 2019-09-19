@@ -14,4 +14,7 @@ c = CachedSubVector(v,1,10)
 locate!(c,3,7)
 @test v[3:7] == c
 
+c[1] = -1
+@test c[1] == -1
+
 end # module
