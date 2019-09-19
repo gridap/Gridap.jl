@@ -52,4 +52,16 @@ function NonLinearFEOperator(
   NonLinearFEOperator(V,U,assem,terms...)
 end
 
+function NonLinearFEOperator(
+  testfesp::Vector{<:FESpaceWithDirichletData},
+  trialfesp::Vector{<:FESpaceWithDirichletData},
+  terms::Vararg{<:FETerm})
+
+  assem = SparseMatrixAssembler(testfesp,trialfesp)
+
+  V = MultiFESpace(testfesp)
+  U = MultiFESpace(trialfesp)
+  NonLinearFEOperator(V,U,assem,terms...)
+end
+
 end # module MultiFEOperators

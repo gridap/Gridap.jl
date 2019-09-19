@@ -32,9 +32,15 @@ function CellBasis(
   b::FEBasisWithFieldId,
   u...) where {D,Z}
 
-  febasis = CellBasis(trian,fun,b.febasis,u...)
+  _u = [_prepare_febasis(ui) for ui in u]
+
+  febasis = CellBasis(trian,fun,b.febasis,_u...)
   FEBasisWithFieldId(febasis,b.fieldid)
 end
+
+_prepare_febasis(ui) = ui
+
+_prepare_febasis(ui::FEBasisWithFieldId) = ui.febasis
 
 for op in (:+,:-,:(gradient),:(symmetric_gradient),:(div),:(trace),:(curl))
   @eval begin

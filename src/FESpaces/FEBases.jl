@@ -86,9 +86,14 @@ function CellBasis(
   fun::Function,
   b::FEBasis,
   u...) where {D,Z}
-  basis = CellBasis(trian,fun,b.cellbasis,u...)
+  _u = [_prepare_cellbasis(ui) for ui in u]
+  basis = CellBasis(trian,fun,b.cellbasis,_u...)
   FEBasis(basis,trian)
 end
+
+_prepare_cellbasis(ui) = ui
+
+_prepare_cellbasis(ui::FEBasis) = ui.cellbasis
 
 function restrict(feb::FEBasis,trian::BoundaryTriangulation)
   cb = restrict(feb.cellbasis,trian)
