@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Deprecated
 ### Fixed
 
+- Bug in `@law` macro for more than one `FEBasis` arguments. Solved via PR [#104](https://github.com/gridap/Gridap.jl/pull/104).
+- Bug in `NonLinearFEOperator` constructor with default assembler in multi-field computations. Solved via PR [#104](https://github.com/gridap/Gridap.jl/pull/104).
 - Bug in `NormalVector` for non-Cartesian grids. Solved via PR [#98](https://github.com/gridap/Gridap.jl/pull/98).
 
 ## [0.4.0] - 2019-09-07
