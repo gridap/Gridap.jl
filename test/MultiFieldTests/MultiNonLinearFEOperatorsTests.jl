@@ -92,4 +92,12 @@ e2h1 = sqrt(sum( integrate(h1(e2),trian,quad) ))
 @test e2l2 < 1.e-8
 @test e2h1 < 1.e-8
 
+# Further tests
+
+t_Ω = NonLinearFETerm(res,jac,trian,quad)
+op = NonLinearFEOperator(V,U,t_Ω)
+
+uh = solve(solver,op)
+
+
 end
