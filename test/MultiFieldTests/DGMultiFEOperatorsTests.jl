@@ -46,8 +46,7 @@ fespace1 = DLagrangianFESpace(T,model,order)
 
 # Construct the FEspace 2
 fespace2 = DLagrangianFESpace(Float64,model,order)
-fixeddofs = [1,]
-fespace2 = ConstrainedFESpace(fespace2,fixeddofs)
+fespace2 = ZeroMeanFESpace(fespace2,order)
 
 # Define test and trial
 Vh = TestFESpace(fespace1)
@@ -97,7 +96,12 @@ end
 function A_Γ(y,x)
   u, p = x
   v, q = y
-  (γ/h) * inner( jump(outer(v,ns)), jump(outer(u,ns))) - inner( jump(outer(v,ns)), mean(∇(u)) ) - inner( mean(∇(v)), jump(outer(u,ns)) ) + (γ0*h) * inner( jump(q*ns), jump(p*ns)  ) + inner( jump(q*ns), mean(u) ) - inner( mean(v), jump(p*ns) )
+  (γ/h) * inner( jump(outer(v,ns)), jump(outer(u,ns))) -
+    inner( jump(outer(v,ns)), mean(∇(u)) ) -
+    inner( mean(∇(v)), jump(outer(u,ns)) ) +
+    (γ0*h) * inner( jump(q*ns), jump(p*ns)  ) +
+    inner( jump(q*ns), mean(u) ) -
+    inner( mean(v), jump(p*ns) )
 end
 
 t_Ω = AffineFETerm(A_Ω,B_Ω,trian,quad)
@@ -112,11 +116,6 @@ op = LinearFEOperator(Yh,Xh,t_Ω,t_∂Ω,t_Γ)
 # Solve!
 xh = solve(op)
 uh, ph = xh
-
-# Correct the pressure
-A = sum(integrate(p-ph,trian,quad))
-V = sum(integrate((x)->1.0,trian,quad))
-ph = ph + A/V
 
 # Define exact solution and error
 eu = u - uh

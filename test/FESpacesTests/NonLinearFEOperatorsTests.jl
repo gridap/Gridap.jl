@@ -78,11 +78,11 @@ uh1 = sqrt(sum( integrate(h1(u),trian,quad) ))
 @test TestFESpace(op) === V
 
 zh = zero(U)
-cache = solve!(zh,solver,op)
+zh, cache = solve!(zh,solver,op)
 @test free_dofs(zh) ≈ free_dofs(uh)
 
 zh = zero(U)
-solve!(zh,solver,op,cache)
+zh, solve!(zh,solver,op,cache)
 @test free_dofs(zh) ≈ free_dofs(uh)
 
 t_Ω = NonLinearFETerm(res,jac,trian,quad)

@@ -34,15 +34,13 @@ fespace1 = FESpace(
   diritags = "boundary")
 
 # Construct the FEspace 2
-_fespace2 = FESpace(
+fespace2 = FESpace(
   reffe = :PLagrangian,
   conformity = :L2,
   valuetype = Float64,
   model = model,
-  order = order-1)
-
-fixeddofs = [1,]
-fespace2 = ConstrainedFESpace(_fespace2,fixeddofs)
+  order = order-1,
+  constraint = :zeromean)
 
 # Define test and trial
 V1 = TestFESpace(fespace1)
@@ -68,15 +66,10 @@ op = LinearFEOperator(V,U,t_Ω)
 # Solve!
 uh = solve(op)
 
-# Correct the pressure
-A = sum(integrate(u2-uh[2],trian,quad))
-V = sum(integrate((x)->1.0,trian,quad))
-p = uh[2] + A/V
-
 # Define exact solution and error
 e1 = u1 - uh[1]
 
-e2 = u2 - p
+e2 = u2 - uh[2]
 
 #writevtk(trian,"trian",cellfields=["uh2"=>uh[2],"p"=>p])
 

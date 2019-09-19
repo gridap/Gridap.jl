@@ -96,11 +96,11 @@ end
 
 abstract type FESolver end
 
-function solve!(uh::FEFunctionLike,::FESolver,::FEOperator)::Any
+function solve!(uh::FEFunctionLike,::FESolver,::FEOperator)::Tuple{FEFunctionLike,Any}
   @abstractmethod
 end
 
-function solve!(uh::FEFunctionLike,::FESolver,::FEOperator,::Any)
+function solve!(uh::FEFunctionLike,::FESolver,::FEOperator,::Any)::FEFunction
   @abstractmethod
 end
 
@@ -111,8 +111,8 @@ and returns the solution
 function solve(nls::FESolver,op::FEOperator)
   U = TrialFESpace(op)
   uh = zero(U)
-  solve!(uh,nls,op)
-  uh
+  vh, cache = solve!(uh,nls,op)
+  vh
 end
 
 """
@@ -245,7 +245,8 @@ function solve!(uh::FEFunctionLike,s::LinearFESolver,o::LinearFEOperator)
   ss = symbolic_setup(s.ls,A)
   ns = numerical_setup(ss,A)
   solve!(x,ns,A,b)
-  ns
+  U = TrialFESpace(o)
+  FEFunction(U,x), ns
 end
 
 function solve!(uh::FEFunctionLike,s::LinearFESolver,o::LinearFEOperator,ns::NumericalSetup)
@@ -253,6 +254,8 @@ function solve!(uh::FEFunctionLike,s::LinearFESolver,o::LinearFEOperator,ns::Num
   A = o.mat
   b = o.vec
   solve!(x,ns,A,b)
+  U = TrialFESpace(o)
+  FEFunction(U,x)
 end
 
 function solve(op::LinearFEOperator)
@@ -347,13 +350,18 @@ end
 function solve!(uh::FEFunctionLike,nls::NonLinearFESolver,op::FEOperator)
   nlop = NonLinearOpFromFEOp(op)
   x = free_dofs(uh)
-  solve!(x,nls.nls,nlop)
+  cache = solve!(x,nls.nls,nlop)
+  U = TrialFESpace(op)
+  vh = FEFunction(U,x)
+  vh, cache
 end
 
 function solve!(uh::FEFunctionLike,nls::NonLinearFESolver,op::FEOperator,cache::Any)
   nlop = NonLinearOpFromFEOp(op)
   x = free_dofs(uh)
   solve!(x,nls.nls,nlop,cache)
+  U = TrialFESpace(op)
+  FEFunction(U,x)
 end
 
 end # module FEOperators
