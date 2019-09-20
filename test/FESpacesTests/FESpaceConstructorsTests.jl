@@ -20,6 +20,32 @@ V = FESpace(
   valuetype = Float64,
   order = 2,
   model = model,
+  diritags = 1)
+
+@test num_diri_dofs(V) == 1
+@test isa(V,CLagrangianFESpace)
+
+labels = FaceLabels(model)
+add_tag_from_tags!(labels,"diri0",[1,2])
+
+V = FESpace(
+  reffe=:Lagrangian,
+  conformity=:H1,
+  valuetype = Float64,
+  order = 1,
+  model = model,
+  labels = labels,
+  diritags = "diri0")
+
+@test num_diri_dofs(V) == 2
+@test isa(V,CLagrangianFESpace)
+
+V = FESpace(
+  reffe=:Lagrangian,
+  conformity=:H1,
+  valuetype = Float64,
+  order = 2,
+  model = model,
   diritags = [1,2])
 
 @test isa(V,CLagrangianFESpace)
