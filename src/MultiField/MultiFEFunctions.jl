@@ -47,6 +47,8 @@ function zero(U::MultiFESpace{E}) where E
   MultiFEFunction(x,U)
 end
 
+zero(U::Vector{<:FESpace}) = zero(MultiFESpace(U))
+
 function restrict(uh::MultiFEFunction,trian::BoundaryTriangulation)
   [ restrict(ui.cellfield,trian) for ui in uh.fields ]
 end

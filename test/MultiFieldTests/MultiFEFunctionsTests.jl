@@ -37,6 +37,10 @@ zh = zero(U)
 @test isa(zh,MultiFEFunction)
 @test free_dofs(zh) == zeros(num_free_dofs(U))
 
+zh = zero([U1,U2])
+@test isa(zh,MultiFEFunction)
+@test free_dofs(zh) == zeros(num_free_dofs(U))
+
 zh = FEFunction(U,free_dofs(zh))
 @test isa(zh,MultiFEFunction)
 @test free_dofs(zh) == zeros(num_free_dofs(U))
