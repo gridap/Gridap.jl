@@ -244,7 +244,7 @@ function solve!(uh::FEFunctionLike,s::LinearFESolver,o::LinearFEOperator)
   b = o.vec
   ss = symbolic_setup(s.ls,A)
   ns = numerical_setup(ss,A)
-  solve!(x,ns,A,b)
+  solve!(x,ns,b)
   U = TrialFESpace(o)
   FEFunction(U,x), ns
 end
@@ -253,7 +253,7 @@ function solve!(uh::FEFunctionLike,s::LinearFESolver,o::LinearFEOperator,ns::Num
   x = free_dofs(uh)
   A = o.mat
   b = o.vec
-  solve!(x,ns,A,b)
+  solve!(x,ns,b)
   U = TrialFESpace(o)
   FEFunction(U,x)
 end

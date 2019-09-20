@@ -116,7 +116,7 @@ function _solve_nr!(x,A,b,dx,ns,nls,op)
 
     # Solve linearized problem
     broadcast!(*,b,b,-1)
-    solve!(dx,ns,A,b)
+    solve!(dx,ns,b)
     broadcast!(+,x,x,dx)
 
     # Check convergence for the current residual

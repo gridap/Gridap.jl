@@ -41,7 +41,7 @@ function solve!(
   kwargs = nls.kwargs
   function linsolve!(x,A,b)
     ns = numerical_setup(ss,A)
-    solve!(x,ns,A,b)
+    solve!(x,ns,b)
   end
   r = nlsolve(df,x;linsolve=linsolve!,kwargs...)
   cache.result = r

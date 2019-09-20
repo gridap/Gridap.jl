@@ -29,7 +29,7 @@ numerical_setup(::SymbolicSetup,mat::AbstractMatrix)::NumericalSetup = @abstract
 
 numerical_setup!(::NumericalSetup,mat::AbstractMatrix) = @abstractmethod
 
-solve!(x::AbstractVector,::NumericalSetup,A::AbstractMatrix,b::AbstractVector) = @abstractmethod
+solve!(x::AbstractVector,::NumericalSetup,b::AbstractVector) = @abstractmethod
 
 function LinearSolver end
 
@@ -37,7 +37,7 @@ function solve(ls::LinearSolver,A::AbstractMatrix,b::AbstractVector)
   ss = symbolic_setup(ls,A)
   ns = numerical_setup(ss,A)
   x = similar(b)
-  solve!(x,ns,A,b)
+  solve!(x,ns,b)
   x
 end
 
@@ -50,7 +50,7 @@ function test_linear_solver(
   ss = symbolic_setup(ls,A)
   ns = numerical_setup(ss,A)
   numerical_setup!(ns,A)
-  solve!(y,ns,A,b)
+  solve!(y,ns,b)
   @test x ≈ y
 
 end
@@ -76,7 +76,7 @@ function numerical_setup!(ns::LUNumericalSetup, mat::AbstractMatrix)
 end
 
 function solve!(
-  x::AbstractVector,ns::LUNumericalSetup,A::AbstractMatrix,b::AbstractVector)
+  x::AbstractVector,ns::LUNumericalSetup,b::AbstractVector)
   y = ns.factors\b # the allocation of y can be avoided
   x .= y
 end
@@ -89,18 +89,21 @@ struct BackslashSolver <: LinearSolver end
 
 struct BackslashSymbolicSetup <: SymbolicSetup end
 
-struct BackslashNumericalSetup <: NumericalSetup end
+mutable struct BackslashNumericalSetup{T<:AbstractMatrix} <: NumericalSetup
+  A::T
+end
 
 symbolic_setup(::BackslashSolver,mat::AbstractMatrix) = BackslashSymbolicSetup()
 
-numerical_setup(::BackslashSymbolicSetup,mat::AbstractMatrix) = BackslashNumericalSetup()
+numerical_setup(::BackslashSymbolicSetup,mat::AbstractMatrix) = BackslashNumericalSetup(mat)
 
 function numerical_setup!(ns::BackslashNumericalSetup, mat::AbstractMatrix)
+  ns.A = mat
 end
 
 function solve!(
-  x::AbstractVector,ns::BackslashNumericalSetup,A::AbstractMatrix,b::AbstractVector)
-   copyto!(x, A\b)
+  x::AbstractVector,ns::BackslashNumericalSetup,b::AbstractVector)
+   copyto!(x, ns.A\b)
 end
 
 end
