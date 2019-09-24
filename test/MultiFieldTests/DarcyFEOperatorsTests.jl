@@ -105,7 +105,7 @@ e2l2 = sqrt(sum( integrate(l2(e2),trian,quad) ))
 # @test e1h1 < 1.e-8
 
 @test e2l2 < 1.e-8
-writevtk(trian,"/home/santiago/github-repos/Gridap/tmp/darcyresults",
-        cellfields=["uh"=>uh[1],"ph"=>uh[2], "pe"=>pi, "eh"=> e2])
+# writevtk(trian,"/home/santiago/github-repos/Gridap/tmp/darcyresults",
+        # cellfields=["uh"=>uh[1],"ph"=>uh[2], "pe"=>pi, "eh"=> e2])
 ##
 end # module
