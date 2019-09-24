@@ -10,50 +10,37 @@ import Gridap: ∇
 const T = VectorValue{2,Float64}
 
 # Define manufactured functions
-u1(x) = VectorValue(x[1], -1*x[2])
-u2(x) = x[1] - x[2]
-# u2(x) = 0.0
+u(x) = VectorValue(x[1], -1*x[2])
+∇u(x) = TensorValue(1.0,0.0,0.0,1.0)
+∇(::typeof(u)) = ∇u
 
-∇u1(x) = TensorValue(1.0,0.0,0.0,1.0)
 
-∇(::typeof(u1)) = ∇u1
+# @santiagobadia :  Bug, if p(x) is equal to zero on the Neumann boundary
+# everything works. When it is different from zero, it does not work
+p(x) = x[1] # It works
+# p(x) = x[1] - 0.5 # It does not work
+∇p(x) = VectorValue(1.0,0.0)
+∇(::typeof(p)) = ∇p
 
-b1(x) = VectorValue(x[1]+1, -1*x[2]-1)
-# b1(x) = u1(x)
-b2(x) = 0.0
 
 # Construct the discrete model
-model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(2,2))
+model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(3,3))
 
 # Construct the FEspace 1
 order = 2
-# diritag = "boundary"
-# fespace1 = CLagrangianFESpace(T,model,order,diritag)
-
-D = 2
-p = Polytope(fill(HEX_AXIS,D)...)
-reffe = RaviartThomasRefFE(p,order)
-
-grid = Grid(model,D)
-trian = Triangulation(grid)
-graph = GridGraph(model)
-labels = FaceLabels(model)
-tags = [5,6,7,8]
-fespace1 = ConformingFESpace(reffe,trian,graph,labels,tags)
-
-# Construct the FEspace 2
-D = 2
-reffe = PDiscRefFE(Float64,D,order-1)
-_fespace2 = DiscFESpace(reffe,model)
-fixeddofs = [1,]
-fespace2 = ConstrainedFESpace(_fespace2,fixeddofs)
+fespace1 = FESpace( reffe=:RaviartThomas, conformity=:HDiv, order=2, model=model, diritags = [5,6,8])
+# If all faces of the domain are zero values, we must fix zero mean value
+# fespace2 = FESpace( reffe=:PLagrangian, conformity=:L2, valuetype = Float64, order = 1,
+                    # model = model, constraint = :zeromean)
+fespace2 = FESpace( reffe=:PLagrangian, conformity=:L2, valuetype = Float64, order = 1,
+                    model = model)
 
 # Define test and trial
 V1 = TestFESpace(fespace1)
 V2 = TestFESpace(fespace2)
 V = [V1, V2]
 
-U1 = TrialFESpace(fespace1,u1)
+U1 = TrialFESpace(fespace1,u)
 U2 = TrialFESpace(fespace2)
 U = [U1, U2]
 
@@ -61,28 +48,48 @@ U = [U1, U2]
 trian = Triangulation(model)
 quad = CellQuadrature(trian,order=2)
 
-a(v,u) =
-  inner(v[1],u[1]) - inner(div(v[1]),u[2]) + inner(v[2],div(u[1]))
-b(v) = inner(v[1],b1) + inner(v[2],b2)
-t_Ω = AffineFETerm(a,b,trian,quad)
+const kinv_1 = TensorValue(1.0,0.0,0.0,1.0)
+@law σ(x,u) = kinv_1*u
 
-# Define the FEOperator
-op = LinearFEOperator(V,U,t_Ω)
+function a(y,x)
+  v, q = y
+  u, p = x
+  inner(v,σ(u)) - inner(div(v),p) + inner(q,div(u))
+end
+
+function b_Ω(y)
+  v, q = y
+  inner(v,u) + inner(v,∇(p))
+end
+
+t_Ω = AffineFETerm(a,b_Ω,trian,quad)
+
+neumanntags = [7]
+btrian = BoundaryTriangulation(model,neumanntags)
+bquad = CellQuadrature(btrian,order=order*2)
+nb = NormalVector(btrian)
+
+function b_Γ(y)
+  v, q = y
+  inner(v*nb,p)
+end
+
+t_Γ = FESource(b_Γ,btrian,bquad)
+
+# op = LinearFEOperator(V,U,t_Ω)
+op = LinearFEOperator(V,U,t_Ω,t_Γ)
 
 # Solve!
 uh = solve(op)
 
-# Correct the pressure
-A = sum(integrate(u2-uh[2],trian,quad))
-V = sum(integrate((x)->1.0,trian,quad))
-p = uh[2] + A/V
-
 # Define exact solution and error
-e1 = u1 - uh[1]
+e1 = u - uh[1]
 
-e2 = u2 - p
+e2 = p - uh[2]
 
-#writevtk(trian,"trian",cellfields=["uh2"=>uh[2],"p"=>p])
+pi = interpolate(fespace2,p)
+m(p) = inner(p,1.0)
+sum(integrate(m(pi),trian,quad))
 
 # Define norms to measure the error
 l2(u) = inner(u,u)
@@ -98,5 +105,7 @@ e2l2 = sqrt(sum( integrate(l2(e2),trian,quad) ))
 # @test e1h1 < 1.e-8
 
 @test e2l2 < 1.e-8
+writevtk(trian,"/home/santiago/github-repos/Gridap/tmp/darcyresults",
+        cellfields=["uh"=>uh[1],"ph"=>uh[2], "pe"=>pi, "eh"=> e2])
 ##
 end # module
