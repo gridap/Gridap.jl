@@ -11,17 +11,22 @@ const T = VectorValue{2,Float64}
 
 # Define manufactured functions
 u(x) = VectorValue(x[1], -1*x[2])
-∇u(x) = TensorValue(1.0,0.0,0.0,1.0)
+∇u(x) = TensorValue(1.0,0.0,0.0,-1.0)
+divu(x) = 0.0
 ∇(::typeof(u)) = ∇u
+f(x) = divu(x)
 
 
 # @santiagobadia :  Bug, if p(x) is equal to zero on the Neumann boundary
 # everything works. When it is different from zero, it does not work
-p(x) = x[1] # It works
-# p(x) = x[1] - 0.5 # It does not work
+#p(x) = x[1] # It works
+p(x) = x[1] - 0.5 # It also works
 ∇p(x) = VectorValue(1.0,0.0)
 ∇(::typeof(p)) = ∇p
+g(x) = p(x)
 
+const kinv_1 = TensorValue(1.0,0.0,0.0,1.0)
+r(x) = kinv_1*u(x) + ∇p(x)
 
 # Construct the discrete model
 model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(3,3))
@@ -40,6 +45,8 @@ V1 = TestFESpace(fespace1)
 V2 = TestFESpace(fespace2)
 V = [V1, V2]
 
+#@fverdugo Perhaps more natural to provide a Dirichlet funciton h
+# that represents u*n ?
 U1 = TrialFESpace(fespace1,u)
 U2 = TrialFESpace(fespace2)
 U = [U1, U2]
@@ -48,7 +55,6 @@ U = [U1, U2]
 trian = Triangulation(model)
 quad = CellQuadrature(trian,order=2)
 
-const kinv_1 = TensorValue(1.0,0.0,0.0,1.0)
 @law σ(x,u) = kinv_1*u
 
 function a(y,x)
@@ -59,7 +65,7 @@ end
 
 function b_Ω(y)
   v, q = y
-  inner(v,u) + inner(v,∇(p))
+  inner(v,r) + inner(q,f)
 end
 
 t_Ω = AffineFETerm(a,b_Ω,trian,quad)
@@ -71,7 +77,7 @@ nb = NormalVector(btrian)
 
 function b_Γ(y)
   v, q = y
-  inner(v*nb,p)
+  - inner(v*nb,g)
 end
 
 t_Γ = FESource(b_Γ,btrian,bquad)
@@ -87,9 +93,9 @@ e1 = u - uh[1]
 
 e2 = p - uh[2]
 
-pi = interpolate(fespace2,p)
-m(p) = inner(p,1.0)
-sum(integrate(m(pi),trian,quad))
+#pi = interpolate(fespace2,p)
+#m(p) = inner(p,1.0)
+#sum(integrate(m(pi),trian,quad))
 
 # Define norms to measure the error
 l2(u) = inner(u,u)
