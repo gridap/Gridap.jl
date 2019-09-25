@@ -1,41 +1,47 @@
-module JuliaNLSolvers
+module NLSolvers
 
 using Gridap
 using NLsolve
 
-export JuliaNLSolver
+export NLSolver
 
 import Gridap: solve!
 
-mutable struct JuliaNLSolver <: NonLinearSolver
+mutable struct NLSolver <: NonLinearSolver
   ls::LinearSolver
   kwargs::Dict
 end
 
-function JuliaNLSolver(ls::LinearSolver;kwargs...)
+function NLSolver(ls::LinearSolver;kwargs...)
   @assert ! haskey(kwargs,:linsolve) "linsolve cannot be used here. It is managed internally"
-  JuliaNLSolver(ls,kwargs)
+  NLSolver(ls,kwargs)
 end
 
-function JuliaNLSolver(;kwargs...)
+function NLSolver(;kwargs...)
   ls = BackslashSolver()
-  JuliaNLSolver(ls;kwargs...)
+  NLSolver(ls;kwargs...)
 end
 
-mutable struct JuliaNLSolversCache
+export JuliaNLSolver
+
+@deprecate JuliaNLSolver(;kwargs...) NLSolver(;kwargs...)
+
+@deprecate JuliaNLSolver(ls;kwargs...) NLSolver(ls;kwargs...)
+
+mutable struct NLSolversCache
   df::OnceDifferentiable
   ss::SymbolicSetup
   result
 end
 
-function solve!(x::AbstractVector,nls::JuliaNLSolver,op::NonLinearOperator)
+function solve!(x::AbstractVector,nls::NLSolver,op::NonLinearOperator)
   cache = _setup_cache(x,nls,op)
   solve!(x,nls,op,cache)
   cache
 end
 
 function solve!(
-  x::AbstractVector,nls::JuliaNLSolver,op::NonLinearOperator,cache::JuliaNLSolversCache)
+  x::AbstractVector,nls::NLSolver,op::NonLinearOperator,cache::NLSolversCache)
   df = cache.df
   ss = cache.ss
   kwargs = nls.kwargs
@@ -60,7 +66,7 @@ function _setup_cache(x0,nls,op)
 
   ss = symbolic_setup(nls.ls,j0)
 
-  JuliaNLSolversCache(df,ss,nothing)
+  NLSolversCache(df,ss,nothing)
 end
 
 end # module

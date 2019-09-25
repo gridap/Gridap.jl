@@ -8,6 +8,6 @@ include("NonLinearOperatorMocks.jl")
 
 @testset "NonLinearSolvers" begin include("NonLinearSolversTests.jl") end
 
-@testset "JuliaNLSolvers" begin include("JuliaNLSolversTests.jl") end
+@testset "NLSolvers" begin include("NLSolversTests.jl") end
 
 end # module AlgebraTests
