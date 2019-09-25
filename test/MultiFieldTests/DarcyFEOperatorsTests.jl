@@ -6,13 +6,19 @@ using Gridap
 import Gridap: ∇
 
 u(x) = VectorValue(x[1]*x[2], -0.5*x[2]^2)
-∇u(x) = TensorValue(x[2],0.0∇(::typeof(u)) = ∇u
+∇u(x) = TensorValue(x[2],0.0,x[1],-x[2])
+divu(x) = 0.0
+∇(::typeof(u)) = ∇u
 
-p(x) = x[1]+ x[2]
-∇p(x) = VectorValue(1.0,1.0::typeof(p)) = ∇p
+p(x) = x[1] + x[2]
+∇p(x) = VectorValue(1.0,1.0)
+∇(::typeof(p)) = ∇p
 
+f(x) = divu(x)
 g(x) = p(x)
-r(x) = u(x) + ∇p(x)
+
+const kinv_1 = TensorValue(1.0,0.0,0.0,1.0)
+r(x) = kinv_1*u(x) + ∇p(x)
 
 model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(50,50))
 order = 2
