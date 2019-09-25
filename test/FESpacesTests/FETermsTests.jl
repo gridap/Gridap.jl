@@ -20,15 +20,15 @@ V = TestFESpace(fespace)
 U = TrialFESpace(fespace,ufun)
 
 trian = Triangulation(model)
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 
 tags = [7,6]
 btrian = BoundaryTriangulation(model,tags)
-bquad = CellQuadrature(btrian,order=2)
+bquad = CellQuadrature(btrian,degree=2)
 
 tags = [9,]
 strian = SkeletonTriangulation(model,tags)
-squad = CellQuadrature(strian,order=2)
+squad = CellQuadrature(strian,degree=2)
 
 v = FEBasis(V)
 du = FEBasis(U)

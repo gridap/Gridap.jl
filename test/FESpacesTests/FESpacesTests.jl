@@ -10,7 +10,7 @@ tags = [1,2,3,4]
 fespace = H1ConformingFESpace(Float64,model,order,tags)
 
 trian = Triangulation(model)
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 
 cellbasis = CellBasis(fespace)
 a(v,u) = varinner(v,u)

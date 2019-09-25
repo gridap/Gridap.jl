@@ -38,7 +38,7 @@ function main(n)
   @time trian = Triangulation(model)
 
   println("quad")
-  @time quad = CellQuadrature(trian,order=2)
+  @time quad = CellQuadrature(trian,degree=2)
   
   # Define the source term
   println("bfield")

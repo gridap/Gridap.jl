@@ -29,7 +29,7 @@ V = [V1,V2]
 U = V
 
 trian = Triangulation(model)
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 
 b1field = CellField(trian,b1fun)
 b2field = CellField(trian,b2fun)

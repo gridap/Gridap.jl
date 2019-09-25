@@ -24,7 +24,7 @@ r = [[-1, -2, 1, 2], [-3, -4, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]]
 @test collect(fespace.cell_to_dofs) == r
 
 trian = Triangulation(grid)
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 
 bh = FEBasis(fespace)
 

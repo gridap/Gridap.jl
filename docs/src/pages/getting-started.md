@@ -47,7 +47,7 @@ U = TrialFESpace(fespace,ufun)
 
 # Define integration mesh and quadrature
 trian = Triangulation(model)
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 
 # Define the source term
 bfield = CellField(trian,bfun)

@@ -21,7 +21,7 @@ b2fun(x) = 0.0
 model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(4,4))
 
 trian = Triangulation(model)
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 
 b1field = CellField(trian,b1fun)
 b2field = CellField(trian,b2fun)
@@ -105,7 +105,7 @@ cb = CellBasis(trian,σfun,bh[1],ids)
 @test isa(cb,FEBasisWithFieldId)
 
 strian = SkeletonTriangulation(model)
-squad = CellQuadrature(strian,order=2)
+squad = CellQuadrature(strian,degree=2)
 
 sbh = restrict(bh,strian)
 @test isa(sbh[1].cellfield1,FEBasisWithFieldId)

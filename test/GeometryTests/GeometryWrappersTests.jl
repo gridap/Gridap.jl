@@ -25,7 +25,7 @@ grid = Grid(polytope,3)
 #writevtk(grid,"grid")
 
 trian = Triangulation(grid)
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 
 q = coordinates(quad)
 phi = CellGeomap(trian)

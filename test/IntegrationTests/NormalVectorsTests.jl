@@ -10,7 +10,7 @@ btrian = BoundaryTriangulation(model,tags)
 
 n = NormalVector(btrian)
 
-bquad = CellQuadrature(btrian,order=2)
+bquad = CellQuadrature(btrian,degree=2)
 q = coordinates(bquad)
 
 n_q = evaluate(n,q)
@@ -27,7 +27,7 @@ x = evaluate(bphi,q)
 #writevtk(x,"x",pointdata=["n"=>n_q])
 
 strian = SkeletonTriangulation(model,"interior")
-squad = CellQuadrature(strian,order=2)
+squad = CellQuadrature(strian,degree=2)
 qs = coordinates(squad)
 
 sphi = CellGeomap(strian)

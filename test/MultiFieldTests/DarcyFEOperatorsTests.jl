@@ -53,7 +53,7 @@ U = [U1, U2]
 
 # Define integration mesh and quadrature for volume
 trian = Triangulation(model)
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 
 @law σ(x,u) = kinv_1*u
 
@@ -72,7 +72,7 @@ t_Ω = AffineFETerm(a,b_Ω,trian,quad)
 
 neumanntags = [7]
 btrian = BoundaryTriangulation(model,neumanntags)
-bquad = CellQuadrature(btrian,order=order*2)
+bquad = CellQuadrature(btrian,degree=order*2)
 nb = NormalVector(btrian)
 
 function b_Γ(y)

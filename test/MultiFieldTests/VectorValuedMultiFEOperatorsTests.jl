@@ -53,7 +53,7 @@ U = [U1, U2]
 
 # Define integration mesh and quadrature for volume
 trian = Triangulation(model)
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 
 a(v,u) = 
   inner(∇(v[1]),∇(u[1])) - inner(div(v[1]),u[2]) + inner(v[2],div(u[1]))

@@ -35,7 +35,7 @@ bfun(x) = x[2]
 b(v) = varinner(v,CellField(trian,bfun))
 
 trian = Triangulation(model)
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 
 v1 = CellBasis(V1)
 v2 = CellBasis(V2)

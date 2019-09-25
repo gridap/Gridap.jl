@@ -30,7 +30,7 @@ dfesp = TrialFESpace(fesp,fun)
 
 
 trian = Triangulation(model)
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 
 uh = interpolate(dfesp,fun)
 uh.free_dofs

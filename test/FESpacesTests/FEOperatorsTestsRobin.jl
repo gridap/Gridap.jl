@@ -14,7 +14,7 @@ U = TrialFESpace(fespace,ufun)
 # Setup integration on Robin boundary
 robintags = [6,]
 rtrian = BoundaryTriangulation(model,robintags)
-rquad = CellQuadrature(rtrian,order=2)
+rquad = CellQuadrature(rtrian,degree=2)
 
 # Object describing Robin function
 rfield = CellField(rtrian,rfun)
@@ -32,7 +32,7 @@ t_ΓR = AffineFETerm(m,r,rtrian,rquad)
 # Thus, including this term should not change the solution
 tags = [9,]
 strian = SkeletonTriangulation(model,tags)
-squad = CellQuadrature(strian,order=2)
+squad = CellQuadrature(strian,degree=2)
 j(v,u) = inner(jump(v),jump(u))
 t_ΓS = LinearFETerm(j,strian,squad)
 

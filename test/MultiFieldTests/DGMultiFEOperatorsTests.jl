@@ -59,14 +59,14 @@ Xh = [Uh, Ph]
 
 # Define integration mesh and quadrature for volume
 trian = Triangulation(model)
-quad = CellQuadrature(trian,order=2*order)
+quad = CellQuadrature(trian,degree=2*order)
 
 btrian = BoundaryTriangulation(model)
-bquad = CellQuadrature(btrian,order=2*order)
+bquad = CellQuadrature(btrian,degree=2*order)
 nb = NormalVector(btrian)
 
 strian = SkeletonTriangulation(model)
-squad = CellQuadrature(strian,order=2*order)
+squad = CellQuadrature(strian,degree=2*order)
 ns = NormalVector(strian)
 
 # Weak form

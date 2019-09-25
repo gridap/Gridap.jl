@@ -39,7 +39,7 @@ U = [U1, U2]
 
 # Define integration mesh and quadrature
 trian = Triangulation(model)
-quad = CellQuadrature(trian,order=3*order-1)
+quad = CellQuadrature(trian,degree=3*order-1)
 
 # Define cell field describing the source term
 b1field = CellField(trian,b1fun)

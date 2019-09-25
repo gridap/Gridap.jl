@@ -14,7 +14,7 @@ assem = SparseMatrixAssembler(fespace,fespace)
 
 trian = Triangulation(model)
 
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 
 basis = CellBasis(fespace)
 
