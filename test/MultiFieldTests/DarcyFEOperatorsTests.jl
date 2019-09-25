@@ -6,15 +6,15 @@ using Gridap
 import Gridap: ∇
 
 u(x) = VectorValue(x[1]*x[2], -0.5*x[2]^2)
-∇u(x) = TensorValue(x[2],0.0,x[1],-x[2])
-∇(::typeof(u)) = ∇u
+∇u(x) = TensorValue(x[2],0.0∇(::typeof(u)) = ∇u
 
 p(x) = x[1]+ x[2]
-∇p(x) = VectorValue(1.0,1.0)
-∇(::typeof(p)) = ∇p
+∇p(x) = VectorValue(1.0,1.0::typeof(p)) = ∇p
+
+g(x) = p(x)
+r(x) = u(x) + ∇p(x)
 
 model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(50,50))
-
 order = 2
 V = FESpace( reffe=:RaviartThomas, conformity=:HDiv, order=2, model=model, diritags = [5,6])
 _Q = FESpace( reffe=:QLagrangian, conformity=:L2, valuetype = Float64, order = 1,
@@ -33,7 +33,6 @@ X = [V_g, Q]
 trian = Triangulation(model)
 quad = CellQuadrature(trian,order=2)
 
-const kinv_1 = TensorValue(1.0,0.0,0.0,1.0)
 @law σ(x,u) = kinv_1*u
 
 function a(y,x)
@@ -44,7 +43,7 @@ end
 
 function b_Ω(y)
   v, q = y
-  inner(v,u) + inner(v,∇p)
+  inner(v,r) + inner(q,f)
 end
 
 t_Ω = AffineFETerm(a,b_Ω,trian,quad)
@@ -56,19 +55,19 @@ nb = NormalVector(btrian)
 
 function b_Γ(y)
   v, q = y
-  -inner(v*nb,p)
+  - inner(v*nb,g)
 end
 
 t_Γ = FESource(b_Γ,btrian,bquad)
 
 op = LinearFEOperator(Y,X,t_Ω,t_Γ)
-# op = LinearFEOperator(Y,X,t_Ω)
 
 uh, ph = solve(op)
 
 e1 = u - uh
 e2 = p - ph
 
+# Define norms to measure the error
 l2(u) = inner(u,u)
 hdiv(u) = inner(div(u),div(u)) + l2(u)
 
