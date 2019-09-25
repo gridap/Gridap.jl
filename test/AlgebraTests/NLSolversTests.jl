@@ -1,4 +1,4 @@
-module JuliaNLSolversTests
+module NLSolversTests
 
 using Test
 using Gridap
@@ -7,7 +7,7 @@ using ..NonLinearOperatorMocks
 
 op = NonLinearOperatorMock()
 
-nls = JuliaNLSolver(show_trace=false,method=:newton)
+nls = NLSolver(show_trace=false,method=:newton)
 
 x = solve(nls,op)
 @test x ≈ [1.0, 3.0]

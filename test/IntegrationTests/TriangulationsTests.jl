@@ -21,7 +21,7 @@ x4 = Point{2,Float64}[[0.0, -0.5], [1.0, -0.5], [0.0, 0.0], [1.0, 0.0]]
 
 # CellQuadrature
 
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 q = coordinates(quad)
 w = weights(quad)
 

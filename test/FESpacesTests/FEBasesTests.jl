@@ -28,7 +28,7 @@ uh = interpolate(fespace,ufun)
 @test isa(inner(bh,uh),CellMap{Point{2},1,Float64,2})
 
 trian = Triangulation(model)
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 
 σfun(x,u,i) = x[1] + u
 σ(u,i) = CellBasis(trian,σfun,u,i)
@@ -39,7 +39,7 @@ _ = collect(m)
 
 tags = [7,6]
 btrian = BoundaryTriangulation(model,tags)
-bquad = CellQuadrature(btrian,order=2)
+bquad = CellQuadrature(btrian,degree=2)
 
 bbh = restrict(bh,btrian)
 cm = inner(bbh,bbh)
@@ -55,7 +55,7 @@ ca = integrate(cm,btrian,bquad)
 _ = collect(ca)
 
 strian = SkeletonTriangulation(model,"interior")
-squad = CellQuadrature(strian,order=2)
+squad = CellQuadrature(strian,degree=2)
 
 sbh = restrict(bh,strian)
 cm = inner(jump(sbh),mean(sbh))

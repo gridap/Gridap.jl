@@ -37,7 +37,7 @@ grid = CartesianGrid(partition=(1000,1000))
 trian = Triangulation(grid)
 
 meshcoords = cellcoordinates(trian)
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 points = coordinates(quad)
 phi = geomap(trian)
 basis = CellBasis(trian)

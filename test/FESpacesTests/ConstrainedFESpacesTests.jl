@@ -18,7 +18,7 @@ fespace = ConstrainedFESpace(_fespace,fixeddofs)
 ufun(x) = x[1] + x[2] + 2.0
 
 trian = Triangulation(model)
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 
 bh = FEBasis(fespace)
 uh = zero(fespace)

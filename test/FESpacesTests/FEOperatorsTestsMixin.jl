@@ -8,7 +8,7 @@ U = TrialFESpace(fespace,ufun)
 
 # Define integration mesh and quadrature
 trian = Triangulation(model)
-quad = CellQuadrature(trian,order=order*2)
+quad = CellQuadrature(trian,degree=order*2)
 
 # Define forms
 a(v,u) = inner(∇(v), ∇(u))
@@ -85,7 +85,7 @@ U = TrialFESpace(fespace,ufun)
 # Setup integration on Neumann boundary
 neumanntags = [8,]
 btrian = BoundaryTriangulation(model,neumanntags)
-bquad = CellQuadrature(btrian,order=order*2)
+bquad = CellQuadrature(btrian,degree=order*2)
 
 # Integrand of the Neumann BC
 g(v) = inner(v,gfun)

@@ -22,7 +22,7 @@ fespace = ZeroMeanFESpace(fespace,quadorder)
 ufun(x) = x[1] + x[2] + 2.0
 
 trian = Triangulation(model)
-quad = CellQuadrature(trian,order=order)
+quad = CellQuadrature(trian,degree=order)
 
 bh = FEBasis(fespace)
 uh = zero(fespace)

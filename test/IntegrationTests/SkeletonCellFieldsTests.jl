@@ -14,7 +14,7 @@ trian = Triangulation(model)
 
 tags = [27,]
 strian = SkeletonTriangulation(model,tags)
-squad = CellQuadrature(strian,order=2)
+squad = CellQuadrature(strian,degree=2)
 s = coordinates(squad)
 
 ufun(x) = 2.0*x[1]^2 * x[2]^2

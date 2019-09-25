@@ -141,8 +141,17 @@ end
 """
 Factory function to create CellQuadrature objects in a convenient way
 """
-function CellQuadrature(trian::Triangulation;order::Int)
-  _quadrature(CellRefFEs(trian),order)
+function CellQuadrature(trian::Triangulation;degree::Int=-1,order::Int=-1)
+  if order != -1
+    s = "`order` key-word argument in CellQuadrature constructor has been deprecated. Use `degree` instead"
+    @warn s
+    _deg = order
+  elseif degree != -1
+    _deg = degree
+  else
+    error("Key-word argument `degree` not assigned in CellQuadrature")
+  end
+  _quadrature(CellRefFEs(trian),_deg)
 end
 
 _quadrature(reffes,order) = @notimplemented

@@ -27,12 +27,12 @@ U = TrialFESpace(fespace,ufun)
 
 # Setup integration on the volume
 trian = Triangulation(model)
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 
 # Setup integration on Neumann boundary
 neumanntags = [8,]
 btrian = BoundaryTriangulation(model,neumanntags)
-bquad = CellQuadrature(btrian,order=2)
+bquad = CellQuadrature(btrian,degree=2)
 
 # Terms in the volume
 bfield = CellField(trian,bfun)
@@ -105,7 +105,7 @@ U = TrialFESpace(fespace,ufun)
 
 # Setup integration on the volume
 trian = Triangulation(model)
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 
 # Terms in the volume
 bfield = CellField(trian,bfun)

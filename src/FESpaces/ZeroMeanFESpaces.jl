@@ -119,7 +119,7 @@ function _setup_vols(fespace,quadorder)
   assem = SparseMatrixAssembler(V,U)
 
   trian = Triangulation(fespace)
-  quad = CellQuadrature(trian,order=quadorder)
+  quad = CellQuadrature(trian,degree=quadorder)
 
   bh = FEBasis(V)
 

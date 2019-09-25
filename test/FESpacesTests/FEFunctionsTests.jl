@@ -22,7 +22,7 @@ uh = interpolate(fespace,ufun)
 
 tags = [7,6]
 btrian = BoundaryTriangulation(model,tags)
-bquad = CellQuadrature(btrian,order=0)
+bquad = CellQuadrature(btrian,degree=0)
 
 buh = restrict(uh,btrian)
 
@@ -32,7 +32,7 @@ _ = collect(cn)
 
 cf = IndexCellFieldWithTriangulation(uh.cellfield,trian)
 
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 q = coordinates(quad)
 v = collect(evaluate(cf,q))
 g = collect(evaluate(gradient(cf),q))

@@ -5,5 +5,5 @@ include("LinearSolvers.jl")
 include("NonLinearSolvers.jl")
 @reexport using Gridap.NonLinearSolvers
 
-include("JuliaNLSolvers.jl")
-@reexport using Gridap.JuliaNLSolvers
+include("NLSolvers.jl")
+@reexport using Gridap.NLSolvers

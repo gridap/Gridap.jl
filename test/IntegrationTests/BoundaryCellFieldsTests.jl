@@ -20,10 +20,10 @@ u = CellField(trian,ufun)
 bu = restrict(u,btrian)
 bu_grad = ∇(bu)
 
-bquad = CellQuadrature(btrian,order=0)
+bquad = CellQuadrature(btrian,degree=0)
 q = coordinates(bquad)
 
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 s = coordinates(quad)
 
 bphi = CellGeomap(btrian)

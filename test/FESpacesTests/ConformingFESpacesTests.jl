@@ -115,7 +115,7 @@ zh = zero(U)
 
 cellbasis = CellBasis(fespace)
 
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 
 a(v,u) = varinner(v,u)
 
@@ -184,7 +184,7 @@ uh2 = interpolate(fespace,fun2)
 fun3(x) = sin(x[1])*cos(x[2])
 uh3 = interpolate(fespace,fun3)
 
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 q = coordinates(quad)
 uhq = evaluate(uh1,q)
 

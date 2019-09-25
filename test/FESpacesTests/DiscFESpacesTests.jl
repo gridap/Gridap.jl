@@ -20,7 +20,7 @@ nfree = 48
 ndiri = 0
 
 trian = Triangulation(model)
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 
 bh = FEBasis(fespace)
 uh = zero(fespace)

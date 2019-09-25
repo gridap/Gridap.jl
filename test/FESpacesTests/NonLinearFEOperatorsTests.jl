@@ -28,7 +28,7 @@ U = TrialFESpace(fespace,ufun)
 
 # Define integration mesh and quadrature
 trian = Triangulation(model)
-quad = CellQuadrature(trian,order=3*order-1)
+quad = CellQuadrature(trian,degree=3*order-1)
 
 # Define cell field describing the source term
 bfield = CellField(trian,bfun)
@@ -46,7 +46,7 @@ op = NonLinearFEOperator(res,jac,V,U,assem,trian,quad)
 
 # Define the FESolver
 ls = LUSolver()
-nls = JuliaNLSolver(
+nls = NLSolver(
   ls,method=:newton,show_trace=false,ftol=1.e-10,iterations=20)
 solver = NonLinearFESolver(nls)
 

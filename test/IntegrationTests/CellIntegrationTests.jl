@@ -8,7 +8,7 @@ trian = CartesianTriangulation(partition)
 
 basis = CellBasis(trian)
 
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 
 m = varinner(basis,basis)
 
@@ -32,7 +32,7 @@ end
 model = CartesianDiscreteModel(domain=(0,2,0,2),partition=(2,2))
 model = simplexify(model)
 trian = Triangulation(model)
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 cellvol = integrate(ufun,trian,quad)
 vol = sum(cellvol)
 @test vol ≈ 4
@@ -40,7 +40,7 @@ vol = sum(cellvol)
 model = CartesianDiscreteModel(domain=(0,2,0,2,0,2),partition=(2,2,3))
 model = simplexify(model)
 trian = Triangulation(model)
-quad = CellQuadrature(trian,order=2)
+quad = CellQuadrature(trian,degree=2)
 cellvol = integrate(ufun,trian,quad)
 vol = sum(cellvol)
 @test vol ≈ 8
