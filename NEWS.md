@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+### Changed
+### Removed
+### Deprecated
+### Fixed
+
+## [0.5.0] - 2019-09-27
 
 ### Added
 - Added a high level constructor, namely `FESpace`, to create different types of FE spaces. See issue [#100](https://github.com/gridap/Gridap.jl/issues/100) for more details. Since PR [#102](https://github.com/gridap/Gridap.jl/pull/102).
@@ -26,13 +33,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The signature of `solve!(::FEFunction,::FESolver,::FEOperator)`. Before it was used as `cache = solve!(uh,solver,op)`, now it is used as `uh, cache = solve!(uh,solver,op)`. Since PR [#102](https://github.com/gridap/Gridap.jl/pull/102).
 - Previous ConformingFESpace constructor is H1ConformingFESpace since [34bfa34](https://github.com/gridap/Gridap.jl/commit/34bfa344efd1bc6a5d3c5993d9639259ed21671a)
 
-### Removed
 ### Deprecated
 - `JuliaNLSolver`. Renamed to  `NLSolver`. Since PR [#108](https://github.com/gridap/Gridap.jl/pull/108).
 - Key-word argument `order` in `CellQuadrature` constructor.  Renamed to `degree`. Since PR [#108](https://github.com/gridap/Gridap.jl/pull/108).
 
 ### Fixed
-
 - Bug in `@law` macro for more than one `FEBasis` arguments. Solved via PR [#104](https://github.com/gridap/Gridap.jl/pull/104).
 - Bug in `NonLinearFEOperator` constructor with default assembler in multi-field computations. Solved via PR [#104](https://github.com/gridap/Gridap.jl/pull/104).
 - Bug in `NormalVector` for non-Cartesian grids. Solved via PR [#98](https://github.com/gridap/Gridap.jl/pull/98).
