@@ -22,4 +22,8 @@ end
 
 @test isa(quad2,CellQuadrature)
 
+@test string(quad2) == "CellQuadrature{2} object"
+s = "CellQuadrature{2} object:\n dim: 2\n ncells: 10"
+@test sprint(show,"text/plain",quad2) == s
+
 end # module CellQuadraturesTests

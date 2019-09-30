@@ -3,12 +3,18 @@ module NormalVectorsTests
 using Test
 using Gridap
 
+
 tags = [23,24,25]
 model = CartesianDiscreteModel(partition=(3,4,2))
 
 btrian = BoundaryTriangulation(model,tags)
 
 n = NormalVector(btrian)
+
+#sr = "NormalVector{2,3} object:\n physdim: 3\n refdim: 2\n ncells: 20"
+#@test sprint(show,"text/plain",n) == sr
+#
+#@test string(n) == "NormalVector{2,3} object"
 
 bquad = CellQuadrature(btrian,degree=2)
 q = coordinates(bquad)

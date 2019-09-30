@@ -139,4 +139,36 @@ function _compute_offsets(U)
   offsets
 end
 
+# Pretty printing
+
+import Base: show
+
+function show(io::IO,self::Vector{<:FESpace})
+  s = "Vector of FESpace objects with $(length(self)) fields"
+  print(io,s)
+end
+
+function show(io::IO,::MIME"text/plain",self::Vector{<:FESpace})
+  show(io,self)
+  print(io,":")
+  for (i,U) in enumerate(self)
+    print(io,"\nfield $i:\n")
+    show(io,"text/plain",U)
+  end
+end
+
+function show(io::IO,self::MultiFESpace)
+  s = "MultiFESpace object with $(length(self)) fields"
+  print(io,s)
+end
+
+function show(io::IO,::MIME"text/plain",self::MultiFESpace)
+  show(io,self)
+  print(io,":")
+  for (i,U) in enumerate(self.fespaces)
+    print(io,"\nfield $i:\n")
+    show(io,"text/plain",U)
+  end
+end
+
 end # module MultiFESpaces
