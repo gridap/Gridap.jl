@@ -12,7 +12,6 @@ export tag_from_name
 export name_from_tag
 export first_tag_on_face
 export add_tag_from_tags!
-import Base: show
 
 """
 Classification of nfaces into geometrical and physical labels
@@ -94,6 +93,10 @@ function add_tag_from_tags!(
   tags = [tag_from_name(facelabels,name) for name in names ]
   add_tag_from_tags!(facelabels,name,tags)
 end
+
+# Pretty printing
+
+import Base: show
 
 function show(io::IO,self::FaceLabels)
   print(io,"FaceLabels object")

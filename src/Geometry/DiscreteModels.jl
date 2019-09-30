@@ -109,12 +109,13 @@ end
 import Base: show
 
 function show(io::IO,self::DiscreteModel{D}) where D
-  print(io,"DiscreteModel{$D} object")
+  print(io,"$(nameof(typeof(self))) object")
 end
 
 function show(io::IO,::MIME"text/plain",self::DiscreteModel{D}) where D
   show(io,self)
   print(io,":")
+  print(io,"\n celldim: $D")
   labels = FaceLabels(self)
   for d = 0:D
     print(io,"\n $d-faces: $(length(labels_on_dim(labels,d)))")

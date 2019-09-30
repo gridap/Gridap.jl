@@ -204,7 +204,7 @@ function test_iter_cell_map_with_index_result(
 end
 
 function show(io::IO,self::CellMap)
-  s = "CellMap object"
+  s = "$(nameof(typeof(self))) object"
   print(io,s)
 end
 

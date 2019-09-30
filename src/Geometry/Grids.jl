@@ -75,7 +75,7 @@ end
 import Base: show
 
 function show(io::IO,self::Grid{D,Z}) where {D,Z}
-  print(io,"Grid{$D,$Z} object")
+  print(io,"$(nameof(typeof(self))) object")
 end
 
 function show(io::IO,::MIME"text/plain",grid::Grid)

@@ -214,7 +214,7 @@ end
 import Base: show
 
 function show(io::IO,self::FESpace{D,Z,T}) where {D,Z,T}
-  print(io,"FESpace{$D,$Z,$T} object")
+  print(io,"$(nameof(typeof(self))) object")
 end
 
 function show(io::IO,::MIME"text/plain",self::FESpace{D,Z,T}) where {D,Z,T}

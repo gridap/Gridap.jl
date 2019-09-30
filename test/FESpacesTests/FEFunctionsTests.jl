@@ -18,8 +18,8 @@ ufun(x) = x[1]
 
 uh = interpolate(fespace,ufun)
 
-@test string(uh) == "FEFunction{2,2,Float64,Float64} object"
-sr = "FEFunction{2,2,Float64,Float64} object:\n physdim: 2\n refdim: 2\n valuetype: Float64\n doftype: Float64\n nfree: 9\n ndiri: 16\n ncells: 16"
+@test string(uh) == "FEFunction object"
+sr = "FEFunction object:\n physdim: 2\n refdim: 2\n valuetype: Float64\n doftype: Float64\n nfree: 9\n ndiri: 16\n ncells: 16"
 @test sprint(show,"text/plain",uh) == sr
 
 @test isa(Triangulation(uh),Triangulation)

@@ -30,7 +30,7 @@ function CellQuadrature end
 import Base: show
 
 function show(io::IO,self::CellQuadrature{D}) where {D}
-  print(io,"CellQuadrature{$D} object")
+  print(io,"CellQuadrature object")
 end
 
 function show(io::IO,::MIME"text/plain",quad::CellQuadrature{D}) where {D}

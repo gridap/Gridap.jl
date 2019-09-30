@@ -11,10 +11,10 @@ btrian = BoundaryTriangulation(model,tags)
 
 n = NormalVector(btrian)
 
-#sr = "NormalVector{2,3} object:\n physdim: 3\n refdim: 2\n ncells: 20"
-#@test sprint(show,"text/plain",n) == sr
-#
-#@test string(n) == "NormalVector{2,3} object"
+sr = "NormalVector object:\n length: 20"
+@test sprint(show,"text/plain",n) == sr
+
+@test string(n) == "NormalVector object"
 
 bquad = CellQuadrature(btrian,degree=2)
 q = coordinates(bquad)

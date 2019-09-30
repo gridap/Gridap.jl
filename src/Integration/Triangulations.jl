@@ -82,7 +82,7 @@ end
 import Base: show
 
 function show(io::IO,self::Triangulation{Z,D}) where {Z,D}
-  print(io,"Triangulation{$Z,$D} object")
+  print(io,"$(nameof(typeof(self))) object")
 end
 
 function show(io::IO,::MIME"text/plain",trian::Triangulation{Z,D}) where {Z,D}

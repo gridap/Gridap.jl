@@ -175,7 +175,7 @@ restrict(uh::FEFunction,trian::SkeletonTriangulation) = restrict(uh.cellfield,tr
 import Base: show
 
 function show(io::IO,self::FEFunction{D,Z,T,E}) where {D,Z,T,E}
-  print(io,"$(nameof(typeof(self))){$D,$Z,$T,$E} object")
+  print(io,"$(nameof(typeof(self))) object")
 end
 
 function show(io::IO,::MIME"text/plain",self::FEFunction{D,Z,T,E}) where {D,Z,T,E}
