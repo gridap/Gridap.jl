@@ -23,6 +23,8 @@ x = rand(n)
 
 uh = MultiFEFunction(x,U)
 
+@test string(uh) == "MultiFEFunction object with 2 fields" 
+
 @test length(uh) == 2
 @test free_dofs(uh[1]) == x[1:2]
 @test free_dofs(uh[2]) == x[3:4]

@@ -34,4 +34,8 @@ add_tag_from_tags!(labels,"label4",["label1","label2"])
 @test labels_on_tag(labels,4) == [1, 2, 3, 4, 5, 6]
 @test tag_from_name(labels,"label4") == 4
 
+@test string(labels) == "FaceLabels object"
+s = "FaceLabels object:\n 0-faces: 9\n 1-faces: 9\n tags: 4"
+@test sprint(show,"text/plain",labels) == s
+
 end # module

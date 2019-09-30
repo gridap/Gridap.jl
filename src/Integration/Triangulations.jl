@@ -77,6 +77,22 @@ function test_triangulation(trian::Triangulation{Z,D}) where {Z,D}
   @test isa(reffes,CellValue{LagrangianRefFE{Z,Float64}})
 end
 
+# Pretty printing
+
+import Base: show
+
+function show(io::IO,self::Triangulation{Z,D}) where {Z,D}
+  print(io,"$(nameof(typeof(self))) object")
+end
+
+function show(io::IO,::MIME"text/plain",trian::Triangulation{Z,D}) where {Z,D}
+  show(io,trian)
+  print(io,":")
+  print(io,"\n physdim: $D")
+  print(io,"\n refdim: $Z")
+  print(io,"\n ncells: $(ncells(trian))")
+end
+
 # Factories
 
 function CellField(trian::Triangulation,fun::Function)

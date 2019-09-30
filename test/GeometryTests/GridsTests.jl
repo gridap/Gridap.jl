@@ -26,4 +26,9 @@ polys = CellPolytopes(grid)
 @test length(polys) == 2
 @test isa(polys,ConstantCellValue{Polytope{2}})
 
+@test string(grid) == "GridFromData object"
+
+s = "GridFromData object:\n pointdim: 2\n celldim: 2\n npoints: 6\n ncells: 2"
+@test sprint(show,"text/plain",grid) == s
+
 end # module

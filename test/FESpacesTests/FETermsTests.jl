@@ -46,6 +46,10 @@ g(v) = inner(v,gfield)
 
 t1 = AffineFETerm(a,l,trian,quad)
 
+sr = "AffineFETermFromIntegration object"
+@test string(t1) == sr
+@test sprint(show,"text/plain",t1) == sr
+
 cm = setup_cell_matrix(t1,v,du)
 @test isa(cm,CellMatrix)
 @test length(cm) == ncells(trian)

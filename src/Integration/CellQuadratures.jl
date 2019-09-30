@@ -25,6 +25,21 @@ weights(::CellQuadrature)::CellValues{Float64} = @abstractmethod
 
 function CellQuadrature end
 
+# Pretty printing
+
+import Base: show
+
+function show(io::IO,self::CellQuadrature{D}) where {D}
+  print(io,"CellQuadrature object")
+end
+
+function show(io::IO,::MIME"text/plain",quad::CellQuadrature{D}) where {D}
+  show(io,quad)
+  print(io,":")
+  print(io,"\n dim: $D")
+  print(io,"\n ncells: $(length(quad))")
+end
+
 # Concrete structs
 
 """

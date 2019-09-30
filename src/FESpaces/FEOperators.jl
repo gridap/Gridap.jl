@@ -364,4 +364,25 @@ function solve!(uh::FEFunctionLike,nls::NonLinearFESolver,op::FEOperator,cache::
   FEFunction(U,x)
 end
 
+# Pretty printing
+
+import Base: show
+
+function show(io::IO,self::FEOperator)
+  print(io,"$(nameof(typeof(self))) object")
+end
+
+function show(io::IO,::MIME"text/plain",self::FEOperator)
+  show(io,self)
+end
+
+function show(io::IO,self::FESolver)
+  print(io,"$(nameof(typeof(self))) object")
+end
+
+function show(io::IO,::MIME"text/plain",self::FESolver)
+  show(io,self)
+end
+
+
 end # module FEOperators

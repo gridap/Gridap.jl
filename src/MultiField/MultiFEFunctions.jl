@@ -57,5 +57,23 @@ function restrict(uh::MultiFEFunction,trian::SkeletonTriangulation)
   [ restrict(ui.cellfield,trian) for ui in uh.fields ]
 end
 
+# Pretty printing
+
+import Base: show
+
+function show(io::IO,self::MultiFEFunction)
+  s = "MultiFEFunction object with $(length(self)) fields"
+  print(io,s)
+end
+
+function show(io::IO,::MIME"text/plain",self::MultiFEFunction)
+  show(io,self)
+  print(io,":")
+  print(io,"\n nfree (all fields): $(length(self.free_dofs_all_fields))")
+  for (i,U) in enumerate(self.fields)
+    print(io,"\nfield $i:\n")
+    show(io,"text/plain",U)
+  end
+end
 
 end # module MultiFEFunctions

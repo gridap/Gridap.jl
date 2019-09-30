@@ -11,6 +11,11 @@ trian = CartesianTriangulation(partition)
 
 test_triangulation(trian)
 
+@test string(trian) == "CartesianTriangulation object"
+
+s = "CartesianTriangulation object:\n physdim: 2\n refdim: 2\n ncells: 8"
+@test sprint(show,"text/plain",trian) == s
+
 @test ncells(trian) == 8
 
 coords = CellPoints(trian)

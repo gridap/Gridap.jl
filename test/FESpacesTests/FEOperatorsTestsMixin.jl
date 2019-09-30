@@ -20,9 +20,17 @@ assem = SparseMatrixAssembler(V,U)
 # Define the FEOperator
 op = LinearFEOperator(a,b,V,U,assem,trian,quad)
 
+sr = "LinearFEOperator object"
+@test string(op) == sr
+@test sprint(show,"text/plain",op) == sr
+
 # Define the FESolver
 ls = BackslashSolver()
 solver = LinearFESolver(ls)
+
+sr = "LinearFESolver object"
+@test string(solver) == sr
+@test sprint(show,"text/plain",solver) == sr
 
 # Solve!
 uh = solve(solver,op)

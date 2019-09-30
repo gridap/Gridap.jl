@@ -71,6 +71,12 @@ grids = Grid[grid0,grid1,grid2]
 
 model = DiscreteModelFromData(grids,graph,facelabels)
 
+@test string(model) == "DiscreteModelFromData object"
+
+s = "DiscreteModelFromData object:\n celldim: 2\n 0-faces: 6\n 1-faces: 7\n 2-faces: 2\n tags: 2"
+
+@test sprint(show,"text/plain",model) == s
+
 test_discrete_model(model,2)
 
 vgrid = Grid(model)

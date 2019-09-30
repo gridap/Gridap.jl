@@ -209,6 +209,22 @@ function test_fe_space(
 
 end
 
+# Pretty printing
+
+import Base: show
+
+function show(io::IO,self::FESpace{D,Z,T}) where {D,Z,T}
+  print(io,"$(nameof(typeof(self))) object")
+end
+
+function show(io::IO,::MIME"text/plain",self::FESpace{D,Z,T}) where {D,Z,T}
+  show(io,self)
+  print(io,":")
+  print(io,"\n physdim: $D")
+  print(io,"\n refdim: $Z")
+  print(io,"\n valuetype: $T")
+end
+
 # Helpers
 
 """

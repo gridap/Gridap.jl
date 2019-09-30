@@ -170,4 +170,24 @@ restrict(uh::FEFunction,trian::BoundaryTriangulation) = restrict(uh.cellfield,tr
 
 restrict(uh::FEFunction,trian::SkeletonTriangulation) = restrict(uh.cellfield,trian)
 
+# Pretty printing
+
+import Base: show
+
+function show(io::IO,self::FEFunction{D,Z,T,E}) where {D,Z,T,E}
+  print(io,"$(nameof(typeof(self))) object")
+end
+
+function show(io::IO,::MIME"text/plain",self::FEFunction{D,Z,T,E}) where {D,Z,T,E}
+  show(io,self)
+  print(io,":")
+  print(io,"\n physdim: $D")
+  print(io,"\n refdim: $Z")
+  print(io,"\n valuetype: $T")
+  print(io,"\n doftype: $E")
+  print(io,"\n nfree: $(length(free_dofs(self)))")
+  print(io,"\n ndiri: $(length(diri_dofs(self)))")
+  print(io,"\n ncells: $(length(self))")
+end
+
 end # module

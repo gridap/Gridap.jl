@@ -54,6 +54,18 @@ function setup_cell_jacobian(t::AffineFETerm,uh,v,du)
   setup_cell_matrix(t,v,du)
 end
 
+# Pretty printing
+
+import Base: show
+
+function show(io::IO,self::FETerm)
+  print(io,"$(nameof(typeof(self))) object")
+end
+
+function show(io::IO,::MIME"text/plain",self::FETerm)
+  show(io,self)
+end
+
 # Concrete implementations
 
 struct AffineFETermFromIntegration <: AffineFETerm

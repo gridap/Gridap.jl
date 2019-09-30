@@ -15,7 +15,13 @@ U1 = TrialFESpace(fespace,ufun1)
 ufun2(x) = x[1] + x[2]
 U2 = TrialFESpace(fespace,ufun2)
 
+U = [U1,U2]
+
+@test string(U) == "Vector of FESpace objects with 2 fields"
+
 U = MultiFESpace([U1,U2])
+
+@test string(U) == "MultiFESpace object with 2 fields"
 
 @test length(U) == 2
 @test U[1] === U1

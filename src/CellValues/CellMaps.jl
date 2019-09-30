@@ -204,13 +204,14 @@ function test_iter_cell_map_with_index_result(
 end
 
 function show(io::IO,self::CellMap)
-  s = "CellMap object with object id $(objectid(self)) and concrete type:"
-  println(io,s)
-  print(io,typeof(self))
+  s = "$(nameof(typeof(self))) object"
+  print(io,s)
 end
 
 function show(io::IO,::MIME"text/plain",self::CellMap)
   show(io,self)
+  print(io,":")
+  print(io,"\n length: $(length(self))")
 end
 
 end # module CellMaps

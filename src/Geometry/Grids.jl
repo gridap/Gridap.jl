@@ -70,6 +70,23 @@ function test_grid(grid::Grid{D,Z},np,nc) where {D,Z}
   test_triangulation(trian)
 end
 
+# Pretty printing
+
+import Base: show
+
+function show(io::IO,self::Grid{D,Z}) where {D,Z}
+  print(io,"$(nameof(typeof(self))) object")
+end
+
+function show(io::IO,::MIME"text/plain",grid::Grid)
+  show(io,grid)
+  print(io,":")
+  print(io,"\n pointdim: $(pointdim(grid))")
+  print(io,"\n celldim: $(celldim(grid))")
+  print(io,"\n npoints: $(npoints(grid))")
+  print(io,"\n ncells: $(ncells(grid))")
+end
+
 # Concrete implementation
 
 struct GridFromData{D,Z} <: Grid{D,Z}

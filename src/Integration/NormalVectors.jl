@@ -33,7 +33,7 @@ function NormalVector(desc::BoundaryDescriptor)
   _normal_vector(jac_surf,polytopes,facet_to_lfacet)
 end
 
-length(nv::NormalVector) = length(jac_surf)
+length(nv::NormalVector) = length(nv.jac_surf)
 
 function evaluate(nv::NormalVector{Z}, q::CellPoints{Z}) where Z
   jac_surf_q = evaluate(nv.jac_surf,q)
@@ -76,5 +76,22 @@ function _normal_vector(
   NormalVector{Z,D,J,R}(jac_surf,nvec_ref)
 
 end
+
+#@fverdugo this code works does not work here, but works when placed
+# in the tests
+import Base: show
+
+function show(io::IO,self::NormalVector{Z,D,J,R}) where {Z,D,J,R}
+  print(io,"$(nameof(typeof(self))){$Z,$D} object")
+end
+
+function show(io::IO,::MIME"text/plain",self::NormalVector{Z,D,J,R}) where {Z,D,J,R}
+  show(io,self)
+  print(io,":")
+  print(io,"\n physdim: $D")
+  print(io,"\n refdim: $Z")
+  print(io,"\n ncells: $(length(self))")
+end
+
 
 end # module
