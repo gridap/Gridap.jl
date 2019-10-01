@@ -14,6 +14,8 @@ x = solve(nls,op)
 
 cache = solve!(x,nls,op)
 
+@test string(cache) == "NLSolversCache object"
+
 solve!(x,nls,op,cache)
 
 cache.result

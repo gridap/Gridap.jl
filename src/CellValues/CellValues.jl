@@ -56,7 +56,17 @@ function show(io::IO,self::CellValue)
 end
 
 function show(io::IO,::MIME"text/plain",self::CellValue)
-  show(io,self)
+  if length(self) < 15
+    show(io,self)
+  else
+    for (i, a) in enumerate(self)
+      if i >= 15
+        print(io,"... (total length $(length(self)))")
+        break
+      end
+      println(io,"$i -> $a")
+    end
+  end
 end
 
 # Testers

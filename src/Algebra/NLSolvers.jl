@@ -69,4 +69,10 @@ function _setup_cache(x0,nls,op)
   NLSolversCache(df,ss,nothing)
 end
 
+import Base: show
+
+function show(io::IO,self::NLSolversCache)
+  print(io,"$(nameof(typeof(self))) object")
+end
+
 end # module
