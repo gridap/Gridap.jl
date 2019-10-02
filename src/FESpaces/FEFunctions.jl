@@ -4,6 +4,7 @@ using Gridap
 using Gridap.Triangulations: _attach_triangulation
 
 export FEFunction
+export FEFunctionForEval
 export interpolate
 import Gridap: free_dofs
 import Gridap: diri_dofs
@@ -73,6 +74,14 @@ end
 
 function FEFunction(f::FESpaceWithDirichletData,free_vals::AbstractVector)
   _FEFunction(f,free_vals,f.diri_dofs)
+end
+
+function FEFunctionForEval(
+  fespace::FESpaceWithDirichletData,
+  free_vals::AbstractVector)
+
+  cfield = CellFieldForEval(fespace,free_vals,fespace.diri_dofs)
+  FEFunction(free_vals,fespace.diri_dofs,fespace,cfield)
 end
 
 function FEFunction(

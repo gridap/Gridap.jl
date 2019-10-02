@@ -24,4 +24,6 @@ using Test
 
 @testset "MultiNonLinearFEOperators" begin include("MultiNonLinearFEOperatorsTests.jl") end
 
+@testset "NSCavityTests" begin include("NSCavityTests.jl") end
+
 end # module
