@@ -10,7 +10,7 @@ tags = [1,2,3,4]
 fespace = H1ConformingFESpace(Float64,model,order,tags)
 
 @test string(fespace) == "ConformingFESpace object"
-s = "ConformingFESpace object:\n physdim: 2\n refdim: 2\n valuetype: Float64"
+s = "ConformingFESpace object:\n physdim: 2\n refdim: 2\n valuetype: Float64\n nfree: 5\n ndiri: 4"
 @test sprint(show,"text/plain",fespace) == s
 
 trian = Triangulation(model)

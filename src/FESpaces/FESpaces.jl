@@ -231,6 +231,8 @@ function show(io::IO,::MIME"text/plain",self::FESpace{D,Z,T}) where {D,Z,T}
   print(io,"\n physdim: $D")
   print(io,"\n refdim: $Z")
   print(io,"\n valuetype: $T")
+  print(io,"\n nfree: $(num_free_dofs(self))")
+  print(io,"\n ndiri: $(num_diri_dofs(self))")
 end
 
 # Helpers
