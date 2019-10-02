@@ -151,6 +151,11 @@ end
 function show(io::IO,::MIME"text/plain",self::Vector{<:FESpace})
   show(io,self)
   print(io,":")
+  dofs = 0
+  for U in self
+    dofs += num_free_dofs(U)
+  end
+  print(io,"\nnfree (all fields): $dofs")
   for (i,U) in enumerate(self)
     print(io,"\nfield $i:\n")
     show(io,"text/plain",U)

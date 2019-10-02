@@ -16,6 +16,7 @@ import Gridap: celldofids
 import Gridap: interpolate_values
 import Gridap: interpolate_diri_values
 import Gridap: CellField
+import Gridap: CellFieldForEval
 import Gridap: CellBasis
 import Gridap: Triangulation
 
@@ -107,6 +108,17 @@ function CellField(
   v = VectorOfTwoParts(this.dof_to_new_dof,free_dofs,this.fixedvals,ndiri)
 
   CellField(this.fespace,v,diri_dofs)
+end
+
+function CellFieldForEval(
+  this::ConstrainedFESpace{D,Z,T},
+  free_dofs::AbstractVector{E},
+  diri_dofs::AbstractVector{E}) where {D,Z,T,E}
+
+  ndiri = length(diri_dofs)
+  v = VectorOfTwoParts(this.dof_to_new_dof,free_dofs,this.fixedvals,ndiri)
+
+  CellFieldForEval(this.fespace,v,diri_dofs)
 end
 
 function CellBasis(this::ConstrainedFESpace{D,Z,T}) where {D,Z,T}

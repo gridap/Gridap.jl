@@ -22,6 +22,7 @@ export interpolate_values
 export interpolate_diri_values
 export value_type
 export FESpaceWithDirichletData
+export CellFieldForEval
 import Gridap: CellField
 import Gridap: CellBasis
 import Gridap: Triangulation
@@ -114,6 +115,13 @@ end
 
 function Triangulation(::FESpace{D,Z})::Triangulation{Z,D} where {Z,D}
   @abstractmethod
+end
+
+function CellFieldForEval(
+  fespace::FESpace{D,Z,T},
+  free_dofs::AbstractVector{E},
+  diri_dofs::AbstractVector{E}) where {D,Z,T,E}
+  CellField(fespace,free_dofs,diri_dofs)
 end
 
 value_type(::FESpace{D,Z,T}) where {D,Z,T} = T
@@ -223,6 +231,8 @@ function show(io::IO,::MIME"text/plain",self::FESpace{D,Z,T}) where {D,Z,T}
   print(io,"\n physdim: $D")
   print(io,"\n refdim: $Z")
   print(io,"\n valuetype: $T")
+  print(io,"\n nfree: $(num_free_dofs(self))")
+  print(io,"\n ndiri: $(num_diri_dofs(self))")
 end
 
 # Helpers
@@ -277,6 +287,11 @@ end
 function CellField(
   f::FESpaceWithDirichletData{D,Z,T},free_dofs::AbstractVector{E},diri_dofs::AbstractVector{E})where {D,Z,T,E}
   CellField(f.fespace,free_dofs,f.diri_dofs)
+end
+
+function CellFieldForEval(
+  f::FESpaceWithDirichletData{D,Z,T},free_dofs::AbstractVector{E},diri_dofs::AbstractVector{E})where {D,Z,T,E}
+  CellFieldForEval(f.fespace,free_dofs,f.diri_dofs)
 end
 
 function CellBasis(f::FESpaceWithDirichletData)

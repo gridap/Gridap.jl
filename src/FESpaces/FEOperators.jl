@@ -125,19 +125,19 @@ end
 
 function residual!(b::AbstractVector,op::NonLinearOpFromFEOp,x::AbstractVector)
   U = TrialFESpace(op.feop)
-  uh = FEFunction(U,x)
+  uh = FEFunctionForEval(U,x)
   apply!(b,op.feop,uh)
 end
 
 function jacobian!(A::AbstractMatrix,op::NonLinearOpFromFEOp,x::AbstractVector)
   U = TrialFESpace(op.feop)
-  uh = FEFunction(U,x)
+  uh = FEFunctionForEval(U,x)
   jacobian!(A,op.feop,uh)
 end
 
 function jacobian(op::NonLinearOpFromFEOp,x::AbstractVector)
   U = TrialFESpace(op.feop)
-  uh = FEFunction(U,x)
+  uh = FEFunctionForEval(U,x)
   jacobian(op.feop,uh)
 end
 
