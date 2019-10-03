@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Deprecated
 ### Fixed
+- Bug related to `ZeroMeanFESpace`. Via PR [#111](https://github.com/gridap/Gridap.jl/pull/111).
 
 ## [0.5.0] - 2019-09-27
 
