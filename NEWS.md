@@ -6,10 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- Pretty printing for the types most exposed to users. Since PR [#109](https://github.com/gridap/Gridap.jl/pull/109).
 ### Changed
 ### Removed
 ### Deprecated
+### Fixed
+
+## [0.5.1] - 2019-10-03
+### Added
+- Pretty printing for the types most exposed to users. Since PR [#109](https://github.com/gridap/Gridap.jl/pull/109).
 ### Fixed
 - Bug related to `ZeroMeanFESpace`. Via PR [#111](https://github.com/gridap/Gridap.jl/pull/111).
 

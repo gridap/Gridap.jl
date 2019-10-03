@@ -1,7 +1,7 @@
 name = "Gridap"
 uuid = "56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e"
 authors = ["Santiago Badia <sbadia@cimne.upc.edu>", "Francesc Verdugo <fverdugo@cimne.upc.edu>"]
-version = "0.5.0"
+version = "0.5.1"
 
 [deps]
 Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
