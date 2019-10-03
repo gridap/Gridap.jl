@@ -16,7 +16,7 @@ Gridap provides a set of tools for the grid-based approximation of partial diffe
 For further info, visit the project documentation:
 
 - [**STABLE**](https://gridap.github.io/Gridap.jl/stable) &mdash; **Documentation for the most recently tagged version of Gridap.jl.**
-- [**DEVEL**](https://gridap.github.io/Gridap.jl/dev) &mdash; *Documentation for the in-development version of Gridap.jl.*
+- [**DEVEL**](https://gridap.github.io/Gridap.jl/dev) &mdash; *Documentation for the in-development version of Gridap.*
 
 ## Installation
 
@@ -24,7 +24,10 @@ Gridap is a registered package in the official [Julia package registry](https://
 ```julia
 pkg> add Gridap
 ```
+## Plugins
 
+- [GridapGmsh](https://github.com/gridap/GridapGmsh.jl) Generate a FE mesh with [GMSH](www.gmsh.info) and use it in Gridap.
+- [GridapPardiso](https://github.com/gridap/GridapPardiso.jl) Pluging to use the Inter MKL pardiso sparse linear solver in Gridap.
 
 ## Examples
 
