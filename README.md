@@ -18,9 +18,17 @@ For further info, visit the project documentation:
 - [**STABLE**](https://gridap.github.io/Gridap.jl/stable) &mdash; **Documentation for the most recently tagged version of Gridap.jl.**
 - [**DEVEL**](https://gridap.github.io/Gridap.jl/dev) &mdash; *Documentation for the in-development version of Gridap.jl.*
 
+## Installation
+
+Gridap is a registered package in the official [Julia package registry](https://github.com/JuliaRegistries/General).  Thus, the installation of Gridap is straight forward using the [Julia's package manager](https://julialang.github.io/Pkg.jl/v1/). Open the Julia REPL, type `]` to enter package mode, and install as follows
+```julia
+pkg> add Gridap
+```
+
+
 ## Examples
 
-These are some popular PDE systems solved with the Gridap library. Examples taken from the [Gridap Tutorials](https://github.com/gridap/Tutorials).
+These are some popular PDEs solved with the Gridap library. Examples taken from the [Gridap Tutorials](https://github.com/gridap/Tutorials).
 
 | ![](https://gridap.github.io/Tutorials/dev/assets/t001_poisson/fig_uh.png)   |  ![](https://gridap.github.io/Tutorials/dev/assets/t003_elasticity/disp_ux_40.png) | ![](https://gridap.github.io/Tutorials/dev/assets/t004_hyperelasticity/neo_hook_3d.png)  | ![](https://gridap.github.io/Tutorials/dev/assets/t0041_p_laplacian/sol-plap.png)  |
 |:-------------:|:-------------:|:-----:|:----:|
