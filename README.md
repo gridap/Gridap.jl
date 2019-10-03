@@ -12,7 +12,6 @@ Gridap provides a set of tools for the grid-based approximation of partial diffe
 [Julia programming language](https://julialang.org/). The main motivation behind the development of this library is to provide an easy-to-use framework for the development of complex PDE solvers in a dynamically typed style without sacrificing the performance of statically typed languages. The library currently supports linear and nonlinear PDE systems for scalar and vector fields, single and multi-field problems, conforming and nonconforming finite element discretizations, on structured and unstructured meshes of simplices and hexahedra.
 
 ## Documentation
-Visit the project documentation at:
 
 - [**STABLE**](https://gridap.github.io/Gridap.jl/stable) &mdash; **Documentation for the most recently tagged version of Gridap.jl.**
 - [**DEVEL**](https://gridap.github.io/Gridap.jl/dev) &mdash; *Documentation for the in-development version of Gridap.*
@@ -23,10 +22,15 @@ Gridap is a registered package in the official [Julia package registry](https://
 ```julia
 pkg> add Gridap
 ```
+
+## Tutorials
+
+A hands-on user-guide to the library is available as a set of [tutorials](https://github.com/gridap/Tutorials). They are available as Jupyther notebooks and html pages.
+
 ## Plugins
 
 - [GridapGmsh](https://github.com/gridap/GridapGmsh.jl) Generate a FE mesh with [GMSH](www.gmsh.info) and use it in Gridap.
-- [GridapPardiso](https://github.com/gridap/GridapPardiso.jl) Pluging to use the Inter MKL pardiso sparse linear solver in Gridap.
+- [GridapPardiso](https://github.com/gridap/GridapPardiso.jl) Pluging to use the [Intel Pardiso MKL direct sparse solver](https://software.intel.com/en-us/mkl-developer-reference-fortran-intel-mkl-pardiso-parallel-direct-sparse-solver-interface) in Gridap.
 
 ## Examples
 
