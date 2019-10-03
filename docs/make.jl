@@ -8,9 +8,7 @@ makedocs(
   pages = [
     "Home" => "index.md",
     "Getting Started" => "pages/getting-started.md",
-    "Manual" => "pages/manual.md",
-    "API"=>"pages/api.md",
-    "Developer's Guide" => "pages/dev.md"]
+    "Manual" => "pages/manual.md"]
  )
 
 deploydocs(repo = "github.com/gridap/Gridap.jl.git")
