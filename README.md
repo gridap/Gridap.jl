@@ -11,6 +11,7 @@ Gridap provides a set of tools for the grid-based approximation of partial diffe
 
 - [**STABLE**](https://gridap.github.io/Gridap.jl/stable) &mdash; **Documentation for the most recently tagged version of Gridap.jl.**
 - [**DEVEL**](https://gridap.github.io/Gridap.jl/dev) &mdash; *Documentation for the in-development version of Gridap.*
+- [**ARTICLE**](https://arxiv.org/abs/1910.01412) &mdash; F. Verdugo, S. Badia. A user-guide to Gridap -- grid-based approximation of partial differential equations in Julia. *arXiv*. 2019. [arXiv:1910.01412](https://arxiv.org/abs/1910.01412)
 
 ## Installation
 
@@ -37,3 +38,20 @@ These are some popular PDEs solved with the Gridap library. Examples taken from 
 | [Poisson equation](https://gridap.github.io/Tutorials/dev/pages/t001_poisson/) |  [Linear elasticity](https://gridap.github.io/Tutorials/dev/pages/t003_elasticity/) |  [Hyper-elasticity](https://gridap.github.io/Tutorials/dev/pages/t004_hyperelasticity/)  | [p-Laplacian](https://gridap.github.io/Tutorials/dev/pages/t0041_p_laplacian/)   |
 | ![](https://gridap.github.io/Tutorials/dev/assets/t006_poisson_dg/jump_u.png) | ![](https://gridap.github.io/Tutorials/dev/assets/t007_darcy/darcy_results.png) |![](https://gridap.github.io/Tutorials/dev/assets/t008_inc_navier_stokes/ins_solution.png) | |
 | [Poisson eq. with DG](https://gridap.github.io/Tutorials/dev/pages/t005_dg_discretization/)  |  [Darcy eq. with RT](https://gridap.github.io/Tutorials/dev/pages/t007_darcy/)  |  [Incompressible Navier-Stokes](https://gridap.github.io/Tutorials/dev/pages/t008_inc_navier_stokes/)  |  |
+
+
+## How to cite Gridap
+
+If you have used the Gridap library in a scientific work, please cite the project as follows:
+
+```
+@article{gridap_guide_2019,
+    author={Francesc Verdugo and Santiago Badia},
+    journal = {{arXiv}},
+    title = {{A user-guide to Gridap -- grid-based approximation of partial differential equations in Julia}},
+    year = {2019},
+    eprint={1910.01412},
+    archivePrefix={arXiv},
+    primaryClass={cs.MS},
+}
+```
