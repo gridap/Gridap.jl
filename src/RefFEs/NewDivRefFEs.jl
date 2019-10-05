@@ -51,12 +51,28 @@ function NewDivRefFE(p:: Polytope, order::Int)
   end
 
   # Prebasis
-  prebasis = CurlGradMonomialBasis(VectorValue{dim(p),Float64},order)
-  ft = VectorValue{dim(p),Float64}
-  pt = Point{dim(p),Float64}
-  et = eltype(ft)
+  et = Float64
+  prebasis = CurlGradMonomialBasis(VectorValue{dim(p),et},order)
 
   nshfs = length(prebasis)
+
+  # Field, point, and entry types
+  ft = VectorValue{dim(p),Float64}
+  pt = Point{dim(p),Float64}
+
+  # Arrays of moments (as its evaluation for all prebasis shape functions)
+  # and evaluation points per n-face
+  nface_moments = Vector{Array{ft}}(undef,num_nfaces(p))
+  nface_evaluation_points = Vector{Array{pt}}(undef,num_nfaces(p))
+  preb_eval = zeros(et,nshfs,0)
+
+  if (order == 1)
+    dims = [collect(0:dim(p)-2)...,dim(p)]
+  else
+    dims = [collect(0:dim(p)-2)...]
+  end
+
+  _my_null_nface_dim!(p,dims,et,nface_moments,nface_evaluation_points)
 
   # Face moments
 
@@ -86,6 +102,10 @@ function NewDivRefFE(p:: Polytope, order::Int)
   # Face moments evaluated for basis, i.e., DF = [S(F1)*M(F1)^T, …, S(Fn)*M(Fn)^T]
   fms_preb = [pbasis_fcips[i]*fmoments[i]' for i in 1:nc]
 
+  _nfaces_array_dim!(p,dim(p)-1,nface_moments,fmoments)
+  _nfaces_array_dim!(p,dim(p)-1,nface_evaluation_points,fcips)
+  preb_eval = hcat(preb_eval,fms_preb...)
+
   # Cell moments
 
   if (order > 1)
@@ -106,31 +126,20 @@ function NewDivRefFE(p:: Polytope, order::Int)
     # Cell moments evaluated for basis, i.e., DC = S(C)*M(C)^T
     cms_preb = pbasis_ccips*cmoments'
 
-  else
-
-    cmoments = zeros(ft,0,0)
-
-    cms_preb = zeros(et,nshfs,0)
-
-    ccips = zeros(pt,0)
+    _nfaces_array_dim!(p,dim(p),nface_moments,[cmoments])
+    _nfaces_array_dim!(p,dim(p),nface_evaluation_points,[ccips])
+    preb_eval = hcat(preb_eval,cms_preb)
 
   end
 
   # Change of basis matrix, inv([DF,DC])
-  # order > 1 ? cob = inv(hcat(fms_preb...,cms_preb)) : cob = inv(hcat(fms_preb...))
-  cob = inv(hcat(fms_preb...,cms_preb))
+  cob = inv(hcat(preb_eval))
   basis = change_basis(prebasis,cob)
 
-  # Store S(NF) and M(NF) for all NFs of polytope
-  moments = _nfaces_array(p,fmoments,cmoments,ft)
-
-  # I want to store [Xgp_NF] for all NFS of polytope "Nodes per n-face"
-  int_points = _nfaces_array(p,fcips,ccips,pt)
-
-  nfacedofs = _nfacedofs_basis(p,moments)
+  nfacedofs = _nfacedofs_basis(p,nface_moments)
 
   # Build DOFBasis and RefFE with all this
-  dof_basis = NewDivDOFBasis(int_points, moments)
+  dof_basis = NewDivDOFBasis(nface_evaluation_points, nface_moments)
 
   divreffe = _NewDivRefFE(p,dof_basis,basis,nfacedofs)
 end
@@ -255,15 +264,24 @@ function _nfacedofs_basis(p,moments)
   return _nfacedofs
 end
 
-function _null_nface_dim!(p,dim,array,zeros)
-  for inf in nfaces_dim(p,dim)
-    array[inf] = zeros
-  end
-end
-
 function _nfaces_array_dim!(p,dim,array,nf_vals)
   nfs = nfaces_dim(p,dim)
   array[nfs] = nf_vals
+end
+
+function _null_nface_dim!(p,dims,et,nface_moments,nface_evaluation_points)
+
+  ft = VectorValue{dim(p),Float64}
+  pt = Point{dim(p),Float64}
+  zero_moments = zeros(ft,0,0)
+  zero_ips = zeros(pt,0)
+  for dim in dims
+    for inf in nfaces_dim(p,dim)
+      nface_moments[inf] = zero_moments
+      nface_evaluation_points[inf] = zero_ips
+    end
+  end
+
 end
 
 end # module

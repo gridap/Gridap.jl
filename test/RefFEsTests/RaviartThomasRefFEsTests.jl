@@ -19,50 +19,43 @@ using Gridap.RefFEs.NewDivRefFEs
 #####
 ##
 p = Polytope(1,1)
-ref_fe = NewDivRefFE(p,1)
-ref_fe = RaviartThomasRefFE(p,1)
+ref_fe = NewDivRefFE(p,3)
+ref_fe2 = RaviartThomasRefFE(p,3)
+
+ref_fe.shfbasis.changeofbasis == ref_fe2.shfbasis.changeofbasis
+
 order = 3
-
-# ft = field_type(ref_fe)
-# et = eltype(ft)
-# no_moments = zeros(ft,0,0)
-
-
-# method for nface
-# nface_moments
-
 
 if !(all(extrusion(p).array .== HEX_AXIS))
   @notimplemented
 end
 
 # Prebasis
-prebasis = CurlGradMonomialBasis(VectorValue{dim(p),Float64},order)
+et = Float64
+prebasis = CurlGradMonomialBasis(VectorValue{dim(p),et},order)
 nshfs = length(prebasis)
 
 # Field, point, and entry types
 ft = VectorValue{dim(p),Float64}
 pt = Point{dim(p),Float64}
-et = eltype(ft)
 
 # SNF
 nface_moments = Vector{Array{ft}}(undef,num_nfaces(p))
 # int_points
 nface_evaluation_points = Vector{Array{pt}}(undef,num_nfaces(p))
+# moments evaluated for prebasis
+preb_eval = zeros(et,nshfs,0)
 
-# zero values
-zero_moments = zeros(ft,0,0)
-
-zero_ips = zeros(pt,0)
-
-zero_preb_eval = zeros(et,nshfs,0)
-
-# Vertices and edges
-for dim in 1:dim(p)-1
-  Gridap.RefFEs.NewDivRefFEs._null_nface_dim!(p,0,nface_moments,zero_moments)
-  Gridap.RefFEs.NewDivRefFEs._null_nface_dim!(p,0,nface_evaluation_points,zero_ips)
+if (order == 1)
+  dims = [collect(0:dim(p)-2)...,dim(p)]
+else
+  dims = [collect(0:dim(p)-2)...]
 end
 
+Gridap.RefFEs.NewDivRefFEs._null_nface_dim!(p,dims,et,nface_moments,nface_evaluation_points)
+
+
+##
 # Faces
 
 # Reference facet
@@ -94,6 +87,7 @@ fms_preb = [pbasis_fcips[i]*fmoments[i]' for i in 1:nc]
 ##
 Gridap.RefFEs.NewDivRefFEs._nfaces_array_dim!(p,dim(p)-1,nface_moments,fmoments)
 Gridap.RefFEs.NewDivRefFEs._nfaces_array_dim!(p,dim(p)-1,nface_evaluation_points,fcips)
+preb_eval = hcat(preb_eval,fms_preb...)
 
 
 # Cell moments
@@ -118,20 +112,20 @@ if (order > 1)
 
   Gridap.RefFEs.NewDivRefFEs._nfaces_array_dim!(p,dim(p),nface_moments,[cmoments])
   Gridap.RefFEs.NewDivRefFEs._nfaces_array_dim!(p,dim(p),nface_evaluation_points,[ccips])
+  preb_eval = hcat(preb_eval,cms_preb)
 
 else
 
-  _null_nface_dim!(p,dim(p),nface_moments,zero_moments)
-  _null_nface_dim!(p,dim(p),nface_evaluation_points,zero_ips)
-
-  cms_preb = zeros(et,nshfs,0)
+  Gridap.RefFEs.NewDivRefFEs._null_nface_dim!(p,dim(p),nface_moments,zero_moments)
+  Gridap.RefFEs.NewDivRefFEs._null_nface_dim!(p,dim(p),nface_evaluation_points,zero_ips)
 
 end
 
 
 # Change of basis matrix, inv([DF,DC])
-cob = inv(hcat(fms_preb...,cms_preb))
+cob = inv(hcat(preb_eval))
 basis = change_basis(prebasis,cob)
+
 
 # Store S(NF) and M(NF) for all NFs of polytope
 # moments = Gridap.RefFEs.NewDivRefFEs._nfaces_array(p,fmoments,cmoments,ft)
