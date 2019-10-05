@@ -16,3 +16,6 @@ include("PDiscRefFEs.jl")
 
 include("RaviartThomasRefFEs.jl")
 @reexport using Gridap.RaviartThomasRefFEs
+
+include("NewDivRefFEs.jl")
+@reexport using Gridap.NewDivRefFEs

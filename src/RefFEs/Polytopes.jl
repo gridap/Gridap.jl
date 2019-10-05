@@ -30,6 +30,8 @@ export generate_admissible_permutations
 export equidistant_interior_nodes_coordinates
 export vertices_coordinates
 export facet_normals
+export ref_nface_polytope
+export nfaces_vertices
 
 # Module constants
 
@@ -159,6 +161,7 @@ function nface_ref_polytopes(p::Polytope)
   end
   nf_ref_p = Vector{Polytope}(undef, length(p.nfaces))
   ref_nf_ps = Polytope[]
+  v = _vertex()
   for (i_nf, nf) in enumerate(p.nfaces)
     r_ext = _eliminate_zeros(nf.extrusion)
     if r_ext != ()
@@ -175,6 +178,8 @@ function nface_ref_polytopes(p::Polytope)
         k = length(ref_nf_ps) + 1
         nf_ref_p[i_nf] = ref_p
       end
+    else
+        nf_ref_p[i_nf] = v
     end
   end
   return nf_ref_p
@@ -257,6 +262,28 @@ function facet_normals(p::Polytope{D}) where D
     push!(f_os, f_o)
   end
   return f_ns, f_os
+end
+
+"""
+# Returns the reference polytope for n-faces of a given dimension.
+"""
+function ref_nface_polytope(p,nf_dim)
+  nfs = nfaces_dim(p,nf_dim)
+  fps = nface_ref_polytopes(p)[nfs]
+  @assert(all(extrusion.(fps) .== extrusion(fps[1])), "All n-faces must be of the same type")
+  return fps[1]
+end
+
+"""
+# Return the n-faces vertices coordinates array for a given n-face dimension
+"""
+function nfaces_vertices(p,d)
+  nc = num_nfaces(p,d)
+  verts = vertices_coordinates(p)
+  faces_vs = nface_connections(p,d,0)
+  fvs = Gridap.CellValuesGallery.CellValueFromArray(faces_vs)
+  vs = Gridap.CellValuesGallery.CellValueFromArray(verts)
+  cfvs = Gridap.CellValuesGallery.CellVectorFromLocalToGlobal(fvs,vs)
 end
 
 # Helpers
@@ -480,6 +507,17 @@ function _vertex_not_in_facet(p, i_f, nf_vs)
       break
     end
   end
+end
+
+# Generates a zero-dim polytope (vertex)
+function _vertex()
+  ext = ()
+  nfdim = [[1:1]]
+  nfnfs = [[1]]
+  nfanc = Point{0,Int}()
+  nf = NFace{0}(nfanc,nfanc)
+  nfs = [nf]
+  return Polytope{0}(ext, nfs, nfnfs, nfdim)
 end
 
 end # module Polytopes
