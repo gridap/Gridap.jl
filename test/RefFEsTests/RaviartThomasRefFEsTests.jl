@@ -19,12 +19,10 @@ using Gridap.RefFEs.NewDivRefFEs
 #####
 ##
 p = Polytope(1,1)
+order = 3
 ref_fe = NewDivRefFE(p,3)
 ref_fe2 = RaviartThomasRefFE(p,3)
-
 ref_fe.shfbasis.changeofbasis == ref_fe2.shfbasis.changeofbasis
-
-order = 3
 
 if !(all(extrusion(p).array .== HEX_AXIS))
   @notimplemented
@@ -60,10 +58,11 @@ Gridap.RefFEs.NewDivRefFEs._null_nface_dim!(p,dims,et,nface_moments,nface_evalua
 
 # Reference facet
 fp = ref_nface_polytope(p,dim(p)-1)
-c_fvs = nfaces_vertices(p,dim(p)-1)
 
+dim(fp)
+dim(p)
 # geomap from ref face to polytope faces
-fgeomap = Gridap.RefFEs.NewDivRefFEs._ref_face_to_faces_geomap(p,fp,c_fvs)
+fgeomap = Gridap.RefFEs.NewDivRefFEs._ref_face_to_faces_geomap(p,fp)
 
 # Compute integration points at all polynomial faces
 degree = order*2
@@ -77,10 +76,11 @@ fshfs = Gridap.RefFEs._monomial_basis(fp,Float64,order-1)
 fmoments = Gridap.RefFEs.NewDivRefFEs._nface_moments(p, fshfs, c_fips, fcips, fwips)
 
 # Evaluate basis in faces points, i.e., S(Fi)_{ab} = ϕ^a(xgp_Fi^b)
-nc = length(fcips)
-c_prebasis = ConstantCellValue(prebasis, nc)
-pbasis_fcips = evaluate(c_prebasis,fcips)
-
+# nc = length(fcips)
+# c_prebasis = ConstantCellValue(prebasis, nc)
+# pbasis_fcips = evaluate(c_prebasis,fcips)
+# pbasis_fcips[1]
+pbasis_fcips = [evaluate(prebasis,ps) for ps in fcips]
 # Face moments evaluated for basis, i.e., DF = [S(F1)*M(F1)^T, …, S(Fn)*M(Fn)^T]
 fms_preb = [pbasis_fcips[i]*fmoments[i]' for i in 1:nc]
 

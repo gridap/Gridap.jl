@@ -54,7 +54,6 @@ function NewDivRefFE(p:: Polytope, order::Int)
   et = Float64
   prebasis = CurlGradMonomialBasis(VectorValue{dim(p),et},order)
 
-  nshfs = length(prebasis)
 
   # Field, point, and entry types
   ft = VectorValue{dim(p),Float64}
@@ -64,6 +63,7 @@ function NewDivRefFE(p:: Polytope, order::Int)
   # and evaluation points per n-face
   nface_moments = Vector{Array{ft}}(undef,num_nfaces(p))
   nface_evaluation_points = Vector{Array{pt}}(undef,num_nfaces(p))
+  nshfs = length(prebasis)
   preb_eval = zeros(et,nshfs,0)
 
   if (order == 1)
@@ -72,16 +72,15 @@ function NewDivRefFE(p:: Polytope, order::Int)
     dims = [collect(0:dim(p)-2)...]
   end
 
-  _my_null_nface_dim!(p,dims,et,nface_moments,nface_evaluation_points)
+  _null_nface_dim!(p,dims,et,nface_moments,nface_evaluation_points)
 
   # Face moments
 
   # Reference facet
   fp = ref_nface_polytope(p,dim(p)-1)
-  c_fvs = nfaces_vertices(p,dim(p)-1)
 
   # geomap from ref face to polytope faces
-  fgeomap = _ref_face_to_faces_geomap(p,fp,c_fvs)
+  fgeomap = _ref_face_to_faces_geomap(p,fp)
 
   # Compute integration points at all polynomial faces
   degree = order*2
@@ -95,12 +94,10 @@ function NewDivRefFE(p:: Polytope, order::Int)
   fmoments = _nface_moments(p, fshfs, c_fips, fcips, fwips)
 
   # Evaluate basis in faces points, i.e., S(Fi)_{ab} = ϕ^a(xgp_Fi^b)
-  nc = length(fcips)
-  c_prebasis = ConstantCellValue(prebasis, nc)
-  pbasis_fcips = evaluate(c_prebasis,fcips)
+  pbasis_fcips = [evaluate(prebasis,ps) for ps in fcips]
 
   # Face moments evaluated for basis, i.e., DF = [S(F1)*M(F1)^T, …, S(Fn)*M(Fn)^T]
-  fms_preb = [pbasis_fcips[i]*fmoments[i]' for i in 1:nc]
+  fms_preb = [bps*ms' for (bps,ms) in zip(pbasis_fcips,fmoments)]
 
   _nfaces_array_dim!(p,dim(p)-1,nface_moments,fmoments)
   _nfaces_array_dim!(p,dim(p)-1,nface_evaluation_points,fcips)
@@ -221,7 +218,8 @@ function _nfaces_evaluation_points_weights(p, fgeomap, fips, wips)
 end
 
 # Ref FE to faces geomaps
-function _ref_face_to_faces_geomap(p,fp,cfvs)
+function _ref_face_to_faces_geomap(p,fp)
+  cfvs = nfaces_vertices(p,dim(fp))
   nc = length(cfvs)
   freffe = LagrangianRefFE(Float64,fp,1)
   fshfs = shfbasis(freffe)
