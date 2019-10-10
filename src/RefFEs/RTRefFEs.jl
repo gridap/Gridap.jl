@@ -1,10 +1,10 @@
-module NewDivRefFEs
+module RTRefFEs
 
 using Gridap
 using Gridap.Helpers
 
-export NewDivRefFE
-export NewDivDOFBasis
+export RTRefFE
+export RTDOFBasis
 
 export field_type
 
@@ -16,35 +16,35 @@ import Gridap: evaluate!
 
 import Base:length
 
-struct NewDivDOFBasis{D,T,S} <: DOFBasis{D,T}
+struct RTDOFBasis{D,T,S} <: DOFBasis{D,T}
   nodes::Vector{Array{Point{D,S}}}
   moments::Vector{Array{T}}
   _cache_field#::Vector{T}
   _cache_basis#::Matrix{T}
 end
 
-length(b::NewDivDOFBasis{D,T} where {D,T}) = sum([size(i,1) for i in b.moments])
+length(b::RTDOFBasis{D,T} where {D,T}) = sum([size(i,1) for i in b.moments])
 
-struct NewDivRefFE{D,T} <: RefFE{D,T}
+struct RTRefFE{D,T} <: RefFE{D,T}
   polytope::Polytope{D}
-  dof_basis::NewDivDOFBasis{D,T}
+  dof_basis::RTDOFBasis{D,T}
   shfbasis::Basis{D,T}
   nfacedofs::Vector{Vector{Int}}
 end
 
-dofbasis(this::NewDivRefFE{D,T} where {D,T})::DOFBasis = this.dof_basis
+dofbasis(this::RTRefFE{D,T} where {D,T})::DOFBasis = this.dof_basis
 
-polytope(this::NewDivRefFE{D,T} where {D,T})::Polytope = this.polytope
+polytope(this::RTRefFE{D,T} where {D,T})::Polytope = this.polytope
 
-shfbasis(this::NewDivRefFE{D,T} where {D,T})::Basis = this.shfbasis
+shfbasis(this::RTRefFE{D,T} where {D,T})::Basis = this.shfbasis
 
-nfacedofs(this::NewDivRefFE{D,T} where {D,T})::Vector{Vector{Int}} = this.nfacedofs
+nfacedofs(this::RTRefFE{D,T} where {D,T})::Vector{Vector{Int}} = this.nfacedofs
 
-function field_type(this::NewDivRefFE{D,T}) where {D,T}
+function field_type(this::RTRefFE{D,T}) where {D,T}
   return T
 end
 
-function NewDivRefFE(p:: Polytope, order::Int)
+function RTRefFE(p:: Polytope, order::Int)
 
   if !(all(extrusion(p).array .== HEX_AXIS))
     @notimplemented
@@ -136,23 +136,121 @@ function NewDivRefFE(p:: Polytope, order::Int)
   nfacedofs = _nfacedofs_basis(p,nface_moments)
 
   # Build DOFBasis and RefFE with all this
-  dof_basis = NewDivDOFBasis(nface_evaluation_points, nface_moments)
+  dof_basis = RTDOFBasis(nface_evaluation_points, nface_moments)
 
-  divreffe = _NewDivRefFE(p,dof_basis,basis,nfacedofs)
+  divreffe = _RTRefFE(p,dof_basis,basis,nfacedofs)
 end
 
-function _NewDivRefFE(p::Polytope{D}, dof_basis::NewDivDOFBasis{D,T,S}, shfbasis::Basis{D,T}, nfacedofs) where {D,T,S}
-  NewDivRefFE{D,T}(p,dof_basis,shfbasis,nfacedofs)
+# function NedelecRefFE
+#   (p:: Polytope, order::Int)
+#
+#   if !(all(extrusion(p).array .== HEX_AXIS))
+#     @notimplemented
+#   end
+#
+#   # Prebasis
+#   et = Float64
+#   prebasis = GradMonomialBasis(VectorValue{dim(p),et},order)
+#
+#
+#   # Field, point, and entry types
+#   ft = VectorValue{dim(p),Float64}
+#   pt = Point{dim(p),Float64}
+#
+#   # Arrays of moments (as its evaluation for all prebasis shape functions)
+#   # and evaluation points per n-face
+#   nface_moments = Vector{Array{ft}}(undef,num_nfaces(p))
+#   nface_evaluation_points = Vector{Array{pt}}(undef,num_nfaces(p))
+#   nshfs = length(prebasis)
+#   preb_eval = zeros(et,nshfs,0)
+#
+#   if (order == 1)
+#     dims = [collect(0:dim(p)-3),dim(p)-1,dim(p)]
+#   else
+#     dims = [collect(0:dim(p)-3)...]
+#   end
+#
+#   _null_nface_dim!(p,dims,et,nface_moments,nface_evaluation_points)
+#
+#   # Edge moments (dim(p)-2)
+#
+#   # Reference facet
+#   fp = ref_nface_polytope(p,dim(p)-2)
+#
+#   # geomap from ref face to polytope faces
+#   fgeomap = _ref_face_to_faces_geomap(p,fp)
+#
+#   # Compute integration points at all polynomial faces
+#   degree = order*2
+#   fquad = Quadrature(fp,degree)
+#   fips = coordinates(fquad)
+#   wips = weights(fquad)
+#   c_fips, fcips, fwips = _nfaces_evaluation_points_weights(p, fgeomap, fips, wips)
+#
+#   # Face moments, i.e., M(Fi)_{ab} = q_RF^a(xgp_RFi^b) w_Fi^b n_Fi ⋅ ()
+#   fshfs = Gridap.RefFEs._monomial_basis(fp,Float64,order-1)
+#   fmoments = _nface_moments(p, fshfs, c_fips, fcips, fwips)
+#
+#   # Evaluate basis in faces points, i.e., S(Fi)_{ab} = ϕ^a(xgp_Fi^b)
+#   pbasis_fcips = [evaluate(prebasis,ps) for ps in fcips]
+#
+#   # Face moments evaluated for basis, i.e., DF = [S(F1)*M(F1)^T, …, S(Fn)*M(Fn)^T]
+#   fms_preb = [bps*ms' for (bps,ms) in zip(pbasis_fcips,fmoments)]
+#
+#   _nfaces_array_dim!(p,dim(p)-1,nface_moments,fmoments)
+#   _nfaces_array_dim!(p,dim(p)-1,nface_evaluation_points,fcips)
+#   preb_eval = hcat(preb_eval,fms_preb...)
+#
+#   # Cell moments
+#
+#   if (order > 1)
+#
+#     # Compute integration points at interior
+#     degree = 2*order
+#     iquad = Quadrature(p,degree)
+#     ccips = coordinates(iquad)
+#     cwips = weights(iquad)
+#
+#     # Cell moments, i.e., M(C)_{ab} = q_C^a(xgp_C^b) w_C^b ⋅ ()
+#     cbasis = GradMonomialBasis(VectorValue{dim(p),Float64},order-1)
+#     cmoments = _cell_moments(p, cbasis, ccips, cwips )
+#
+#     # Evaluate basis in cell points, i.e., S(C)_{ab} = ϕ^a(xgp_C^b)
+#     pbasis_ccips = evaluate(prebasis,ccips)
+#
+#     # Cell moments evaluated for basis, i.e., DC = S(C)*M(C)^T
+#     cms_preb = pbasis_ccips*cmoments'
+#
+#     _nfaces_array_dim!(p,dim(p),nface_moments,[cmoments])
+#     _nfaces_array_dim!(p,dim(p),nface_evaluation_points,[ccips])
+#     preb_eval = hcat(preb_eval,cms_preb)
+#
+#   end
+#
+#   # Change of basis matrix, inv([DF,DC])
+#   cob = inv(hcat(preb_eval))
+#   basis = change_basis(prebasis,cob)
+#
+#   nfacedofs = _nfacedofs_basis(p,nface_moments)
+#
+#   # Build DOFBasis and RefFE with all this
+#   dof_basis = RTDOFBasis(nface_evaluation_points, nface_moments)
+#
+#   divreffe = _RTRefFE(p,dof_basis,basis,nfacedofs)
+# end
+
+function _RTRefFE(p::Polytope{D}, dof_basis::RTDOFBasis{D,T,S}, shfbasis::Basis{D,T}, nfacedofs) where {D,T,S}
+  RTRefFE{D,T}(p,dof_basis,shfbasis,nfacedofs)
 end
 
-# function NewDivDOFBasis(nodes::Vector{Array{Point{D,T}}}, moments::Vector{Array{Point{D,T}}}) where {D,T}
-function NewDivDOFBasis(nodes::Vector{Array{Point{D,S}}}, moments::Vector{Array{T}}) where {D,T,S}
+# function RTDOFBasis(nodes::Vector{Array{Point{D,T}}}, moments::Vector{Array{Point{D,T}}}) where {D,T}
+function RTDOFBasis(nodes::Vector{Array{Point{D,S}}}, moments::Vector{Array{T}}) where {D,T,S}
   ndofs = sum([size(i,1) for i in moments])
   nnodes = [length(i) for i in nodes]
   cache_field = [ zeros(T,i) for i in nnodes]
   cache_basis = [ zeros(T,ndofs,i) for i in nnodes]
 
-  NewDivDOFBasis{D,T,S}(
+  RTDOFBasis{D,T,S}(
   nodes,
   moments,
   cache_field,
@@ -160,7 +258,7 @@ function NewDivDOFBasis(nodes::Vector{Array{Point{D,S}}}, moments::Vector{Array{
 end
 
 function evaluate!(
-  b::NewDivDOFBasis{D,T},f::Field{D,T},dofs::AbstractVector{E}) where {D,T,E}
+  b::RTDOFBasis{D,T},f::Field{D,T},dofs::AbstractVector{E}) where {D,T,E}
   for (n,v) in zip(b.nodes,b._cache_field)
     evaluate!(f,n,v)
   end
@@ -176,7 +274,7 @@ function evaluate!(
 end
 
 function evaluate!(
-  b::NewDivDOFBasis{D,T},f::Basis{D,T},dofs::AbstractMatrix{E}) where {D,T,E}
+  b::RTDOFBasis{D,T},f::Basis{D,T},dofs::AbstractMatrix{E}) where {D,T,E}
   for (n,v) in zip(b.nodes,b._cache_basis)
     evaluate!(f,n,v)
   end
