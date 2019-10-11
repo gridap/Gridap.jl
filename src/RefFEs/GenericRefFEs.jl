@@ -172,7 +172,6 @@ function NedelecRefFE(p:: Polytope, order::Int)
     dims = [0]
   end
 
-  println(dims)
   _null_nface_dim!(p,dims,et,nface_moments,nface_evaluation_points)
 
   # Edge moments (dim = 1)
@@ -356,7 +355,7 @@ function _Nedelec_face_moments(p, fshfs, c_fips, fcips, fwips)
   # @santiagobadia : Temporary hack for making it work for structured hex meshes
   ft = eltype(fns)
   cvals = [ Gridap.RefFEs.GenericRefFEs._broadcast_extend(ft,Tm,b) for (Tm,b) in zip(fts,cvals)]
-  cvals = [ Gridap.RefFEs.GenericRefFEs._broadcast_cross(ft,n,b) for (n,b) in zip(fns,cvals)]
+  cvals = [ Gridap.RefFEs.GenericRefFEs._broadcast_cross(ft,n*o,b) for (n,o,b) in zip(fns,os,cvals)]
   return cvals
 end
 

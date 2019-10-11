@@ -1,4 +1,4 @@
-module RaviartThomasRefFEsTests
+module GenericRefFEsTests
 ##
 
 using Gridap
@@ -17,19 +17,6 @@ using Gridap.RefFEs.GenericRefFEs
 # * A method that generates the geomap from ref n-face to n-face in polytope
 # * A functor to be provided by the user (optionally) for every n-face dimension
 #####
-##
-p = Polytope(1,1)
-
-for order in 1:4
-  reffe = NedelecRefFE(p,order)
-  test_reffe(reffe,order)
-end
-
-for order in 1:4
-  reffe = RTRefFE(p,order)
-  test_reffe(reffe,order)
-end
-
 function test_reffe(reffe,order)
 
   dofsb = dofbasis(reffe)
@@ -56,5 +43,18 @@ function test_reffe(reffe,order)
 
   evaluate(b,field)
 end
+##
+p = Polytope(1,1)
+
+for order in 1:4
+  reffe = NedelecRefFE(p,order)
+  test_reffe(reffe,order)
+end
+
+for order in 1:4
+  reffe = RTRefFE(p,order)
+  test_reffe(reffe,order)
+end
+
 ##
 end # module

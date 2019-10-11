@@ -33,8 +33,6 @@ trian = Triangulation(model)
 quad = CellQuadrature(trian,degree=2)
 
 uh = interpolate(dfesp,fun)
-uh.free_dofs
-uh.diri_dofs
 
 e = fun - uh
 
