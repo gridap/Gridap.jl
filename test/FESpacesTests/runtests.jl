@@ -14,7 +14,9 @@ using Test
 
 @testset "DiscFESpaces" begin include("DiscFESpacesTests.jl") end
 
-@testset "RaviartThomasFESpacesTests" begin include("RaviartThomasFESpacesTests.jl") end
+@testset "RTFESpacesTests" begin include("RTFESpacesTests.jl") end
+
+@testset "NedelecFESpacesTests" begin include("NedelecFESpacesTests.jl") end
 
 @testset "ConstrainedFESpaces" begin include("ConstrainedFESpacesTests.jl") end
 
