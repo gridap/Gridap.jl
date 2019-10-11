@@ -12,7 +12,7 @@ export Polytope
 export NFace
 export HEX_AXIS, TET_AXIS
 export num_nfaces
-export facet_normals
+export face_normals
 
 export space_dim
 export dim
@@ -29,7 +29,7 @@ export nface_ref_polytopes
 export generate_admissible_permutations
 export equidistant_interior_nodes_coordinates
 export vertices_coordinates
-export facet_normals
+export face_normals
 export ref_nface_polytope
 export nfaces_vertices
 
@@ -251,7 +251,7 @@ end
 It generates the outwards normals of the facets of a polytope. It returns two
 arrays, the first one being the outward normal and the second one the orientation.
 """
-function facet_normals(p::Polytope{D}) where D
+function face_normals(p::Polytope{D}) where D
   nf_vs = _dimfrom_fs_dimto_fs(p, D - 1, 0)
   vs = vertices_coordinates(p)
   f_ns = Point{D,Float64}[]
@@ -262,6 +262,14 @@ function facet_normals(p::Polytope{D}) where D
     push!(f_os, f_o)
   end
   return f_ns, f_os
+end
+
+"""
+It generates the tangent vectors for polytope edges.
+"""
+function edge_tangents(p::Polytope{D}) where D
+  ed_vs = nfaces_vertices(p,1)
+  return ts = [(t = vs[2]-vs[1])/norm(t) for vs in ed_vs ]
 end
 
 """

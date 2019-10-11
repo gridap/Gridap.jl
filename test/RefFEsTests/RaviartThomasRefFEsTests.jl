@@ -19,8 +19,16 @@ using Gridap.RefFEs.RTRefFEs
 #####
 ##
 p = Polytope(1,1)
-order = 3
-ref_fe = RTRefFE(p,3)
+order = 1
+ref_fe = RTRefFE(p,order)
+
+# edge tangents
+ed_vs = nfaces_vertices(p,1)
+ts = [(t = vs[2]-vs[1])/norm(t) for vs in ed_vs ]
+
+
+outer(ts[1],ts[2])
+
 # ref_fe2 = RTRefFE(p,3)
 # ref_fe.shfbasis.changeofbasis == ref_fe2.shfbasis.changeofbasis
 

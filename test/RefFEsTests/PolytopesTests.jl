@@ -43,7 +43,7 @@ nf = nfaces(p)[9]
 
 @test vertices_coordinates(p)[8].array == [1.0,1.0,1.0]
 
-@test facet_normals(p)[1][1].array ≈ [0.0,0.0,-1.0]
+@test face_normals(p)[1][1].array ≈ [0.0,0.0,-1.0]
 
 ## Checking anisotropic order for n-cubes
 
@@ -61,28 +61,28 @@ nodes = equidistant_interior_nodes_coordinates(p, order)
 # Adding outwards normals
 D = 3
 p = Polytope(1,1,1)
-ns, f_os = Gridap.Polytopes.facet_normals(p)
+ns, f_os = Gridap.Polytopes.face_normals(p)
 @test ns[1].array ≈ [0, 0 ,-1]
 p = Polytope(1,2,2)
-ns, f_os = Gridap.Polytopes.facet_normals(p)
+ns, f_os = Gridap.Polytopes.face_normals(p)
 @test ns[1].array ≈ [0, 0 ,-1]
 ##
 # Adding outwards normals
 D = 2
 p = Polytope(1,1)
-ns, f_os = Gridap.Polytopes.facet_normals(p)
+ns, f_os = Gridap.Polytopes.face_normals(p)
 @test ns[1].array ≈ [0,-1]
 p = Polytope(1,2)
-ns, f_os = Gridap.Polytopes.facet_normals(p)
+ns, f_os = Gridap.Polytopes.face_normals(p)
 @test ns[1].array ≈ [0,-1]
 ##
 # Adding outwards normals
 D = 4
 p = Polytope(1,1,1,1)
-ns, f_os = Gridap.Polytopes.facet_normals(p)
+ns, f_os = Gridap.Polytopes.face_normals(p)
 @test ns[1].array ≈ [0,0,0,-1]
 p = Polytope(1,2,2,2)
-ns, f_os = Gridap.Polytopes.facet_normals(p)
+ns, f_os = Gridap.Polytopes.face_normals(p)
 @test ns[1].array ≈ [0,0,0,-1]
 ##
 D = 3

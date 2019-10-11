@@ -63,7 +63,7 @@ function _normal_vector(
   facet_to_lfacet) where D
 
   p = polytopes.value
-  n, _ = facet_normals(p)
+  n, _ = face_normals(p)
 
   _n = [ [ni,] for ni in n  ]
 
