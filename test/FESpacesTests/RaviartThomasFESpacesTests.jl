@@ -13,7 +13,7 @@ dom = fill(4,D)
 model = CartesianDiscreteModel(partition=tuple(dom...))
 
 p = Polytope(fill(HEX_AXIS,D)...)
-reffe = RTRefFE(p,order)
+reffe = GenericRefFE(p,order)
 
 grid = Grid(model,D)
 trian = Triangulation(grid)

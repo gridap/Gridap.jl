@@ -10,7 +10,7 @@ using LinearAlgebra
 
 using Test
 
-using Gridap.RefFEs.RTRefFEs
+using Gridap.RefFEs.GenericRefFEs
 #####
 # Create a general Ref FE constructor, which generalizes the current implementations
 # for nodal (Lagrangian) and non-nodal (RaviartThomas) RefFEs.
@@ -21,13 +21,16 @@ using Gridap.RefFEs.RTRefFEs
 p = Polytope(1,1)
 order =   1
 ref_fe = RTRefFE(p,order)
-ref_fe = Gridap.RefFEs.RTRefFEs.NedelecRefFE(p,5)
-length(ref_fe.shfbasis)
+ref_fe = NedelecRefFE(p,5)
 ##
 
-p = Polytope(1,1)
 for order in 1:4
-  reffe = Gridap.RefFEs.RTRefFEs.NedelecRefFE(p,order)
+  reffe = NedelecRefFE(p,order)
+  test_reffe(reffe,order)
+end
+
+for order in 1:4
+  reffe = RTRefFE(p,order)
   test_reffe(reffe,order)
 end
 

@@ -1,12 +1,14 @@
-module RTRefFEs
+module GenericRefFEs
 
 using Gridap
 using Gridap.Helpers
 
 using LinearAlgebra
 
+export GenericRefFE
 export RTRefFE
-export RTDOFBasis
+export NedelecRefFE
+export GenericDOFBasis
 
 export field_type
 
@@ -18,31 +20,31 @@ import Gridap: evaluate!
 
 import Base:length
 
-struct RTDOFBasis{D,T,S} <: DOFBasis{D,T}
+struct GenericDOFBasis{D,T,S} <: DOFBasis{D,T}
   nodes::Vector{Array{Point{D,S}}}
   moments::Vector{Array{T}}
   _cache_field#::Vector{T}
   _cache_basis#::Matrix{T}
 end
 
-length(b::RTDOFBasis{D,T} where {D,T}) = sum([size(i,1) for i in b.moments])
+length(b::GenericDOFBasis{D,T} where {D,T}) = sum([size(i,1) for i in b.moments])
 
-struct RTRefFE{D,T} <: RefFE{D,T}
+struct GenericRefFE{D,T} <: RefFE{D,T}
   polytope::Polytope{D}
-  dof_basis::RTDOFBasis{D,T}
+  dof_basis::GenericDOFBasis{D,T}
   shfbasis::Basis{D,T}
   nfacedofs::Vector{Vector{Int}}
 end
 
-dofbasis(this::RTRefFE{D,T} where {D,T})::DOFBasis = this.dof_basis
+dofbasis(this::GenericRefFE{D,T} where {D,T})::DOFBasis = this.dof_basis
 
-polytope(this::RTRefFE{D,T} where {D,T})::Polytope = this.polytope
+polytope(this::GenericRefFE{D,T} where {D,T})::Polytope = this.polytope
 
-shfbasis(this::RTRefFE{D,T} where {D,T})::Basis = this.shfbasis
+shfbasis(this::GenericRefFE{D,T} where {D,T})::Basis = this.shfbasis
 
-nfacedofs(this::RTRefFE{D,T} where {D,T})::Vector{Vector{Int}} = this.nfacedofs
+nfacedofs(this::GenericRefFE{D,T} where {D,T})::Vector{Vector{Int}} = this.nfacedofs
 
-function field_type(this::RTRefFE{D,T}) where {D,T}
+function field_type(this::GenericRefFE{D,T}) where {D,T}
   return T
 end
 
@@ -138,9 +140,9 @@ function RTRefFE(p:: Polytope, order::Int)
   nfacedofs = _nfacedofs_basis(p,nface_moments)
 
   # Build DOFBasis and RefFE with all this
-  dof_basis = RTDOFBasis(nface_evaluation_points, nface_moments)
+  dof_basis = GenericDOFBasis(nface_evaluation_points, nface_moments)
 
-  divreffe = _RTRefFE(p,dof_basis,basis,nfacedofs)
+  divreffe = _GenericRefFE(p,dof_basis,basis,nfacedofs)
 end
 
 function NedelecRefFE(p:: Polytope, order::Int)
@@ -267,23 +269,23 @@ function NedelecRefFE(p:: Polytope, order::Int)
   nfacedofs = _nfacedofs_basis(p,nface_moments)
 
   # Build DOFBasis and RefFE with all this
-  dof_basis = RTDOFBasis(nface_evaluation_points, nface_moments)
+  dof_basis = GenericDOFBasis(nface_evaluation_points, nface_moments)
 
-  divreffe = _RTRefFE(p,dof_basis,basis,nfacedofs)
+  divreffe = _GenericRefFE(p,dof_basis,basis,nfacedofs)
 end
 
-function _RTRefFE(p::Polytope{D}, dof_basis::RTDOFBasis{D,T,S}, shfbasis::Basis{D,T}, nfacedofs) where {D,T,S}
-  RTRefFE{D,T}(p,dof_basis,shfbasis,nfacedofs)
+function _GenericRefFE(p::Polytope{D}, dof_basis::GenericDOFBasis{D,T,S}, shfbasis::Basis{D,T}, nfacedofs) where {D,T,S}
+  GenericRefFE{D,T}(p,dof_basis,shfbasis,nfacedofs)
 end
 
-# function RTDOFBasis(nodes::Vector{Array{Point{D,T}}}, moments::Vector{Array{Point{D,T}}}) where {D,T}
-function RTDOFBasis(nodes::Vector{Array{Point{D,S}}}, moments::Vector{Array{T}}) where {D,T,S}
+# function GenericDOFBasis(nodes::Vector{Array{Point{D,T}}}, moments::Vector{Array{Point{D,T}}}) where {D,T}
+function GenericDOFBasis(nodes::Vector{Array{Point{D,S}}}, moments::Vector{Array{T}}) where {D,T,S}
   ndofs = sum([size(i,1) for i in moments])
   nnodes = [length(i) for i in nodes]
   cache_field = [ zeros(T,i) for i in nnodes]
   cache_basis = [ zeros(T,ndofs,i) for i in nnodes]
 
-  RTDOFBasis{D,T,S}(
+  GenericDOFBasis{D,T,S}(
   nodes,
   moments,
   cache_field,
@@ -291,7 +293,7 @@ function RTDOFBasis(nodes::Vector{Array{Point{D,S}}}, moments::Vector{Array{T}})
 end
 
 function evaluate!(
-  b::RTDOFBasis{D,T},f::Field{D,T},dofs::AbstractVector{E}) where {D,T,E}
+  b::GenericDOFBasis{D,T},f::Field{D,T},dofs::AbstractVector{E}) where {D,T,E}
   for (n,v) in zip(b.nodes,b._cache_field)
     evaluate!(f,n,v)
   end
@@ -307,7 +309,7 @@ function evaluate!(
 end
 
 function evaluate!(
-  b::RTDOFBasis{D,T},f::Basis{D,T},dofs::AbstractMatrix{E}) where {D,T,E}
+  b::GenericDOFBasis{D,T},f::Basis{D,T},dofs::AbstractMatrix{E}) where {D,T,E}
   for (n,v) in zip(b.nodes,b._cache_basis)
     evaluate!(f,n,v)
   end
@@ -353,8 +355,8 @@ function _Nedelec_face_moments(p, fshfs, c_fips, fcips, fwips)
   fns, os = face_normals(p)
   # @santiagobadia : Temporary hack for making it work for structured hex meshes
   ft = eltype(fns)
-  cvals = [ Gridap.RefFEs.RTRefFEs._broadcast_extend(ft,Tm,b) for (Tm,b) in zip(fts,cvals)]
-  cvals = [ Gridap.RefFEs.RTRefFEs._broadcast_cross(ft,n,b) for (n,b) in zip(fns,cvals)]
+  cvals = [ Gridap.RefFEs.GenericRefFEs._broadcast_extend(ft,Tm,b) for (Tm,b) in zip(fts,cvals)]
+  cvals = [ Gridap.RefFEs.GenericRefFEs._broadcast_cross(ft,n,b) for (n,b) in zip(fns,cvals)]
   return cvals
 end
 
