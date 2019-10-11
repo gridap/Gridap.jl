@@ -30,6 +30,7 @@ export generate_admissible_permutations
 export equidistant_interior_nodes_coordinates
 export vertices_coordinates
 export face_normals
+export edge_tangents
 export ref_nface_polytope
 export nfaces_vertices
 

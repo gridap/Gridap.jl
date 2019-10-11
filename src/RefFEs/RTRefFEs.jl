@@ -3,6 +3,8 @@ module RTRefFEs
 using Gridap
 using Gridap.Helpers
 
+using LinearAlgebra
+
 export RTRefFE
 export RTDOFBasis
 
@@ -163,17 +165,18 @@ function NedelecRefFE(p:: Polytope, order::Int)
   preb_eval = zeros(et,nshfs,0)
 
   if (order == 1)
-    dims = [0,dim(p)]
+    dims = [0,collect(2:dim(p))...]
   else
     dims = [0]
   end
 
+  println(dims)
   _null_nface_dim!(p,dims,et,nface_moments,nface_evaluation_points)
 
   # Edge moments (dim = 1)
 
   # Reference facet
-  const dim1 = 1
+  dim1 = 1
   fp = ref_nface_polytope(p,dim1) # dim 1
 
   # geomap from ref face to polytope faces
@@ -196,40 +199,41 @@ function NedelecRefFE(p:: Polytope, order::Int)
   # Edge moments evaluated for basis, i.e., DF = [S(F1)*M(F1)^T, …, S(Fn)*M(Fn)^T]
   fms_preb = [bps*ms' for (bps,ms) in zip(pbasis_fcips,fmoments)]
 
-  _nfaces_array_dim!(p,dim(p)-1,nface_moments,fmoments)
-  _nfaces_array_dim!(p,dim(p)-1,nface_evaluation_points,fcips)
+  _nfaces_array_dim!(p,1,nface_moments,fmoments)
+  _nfaces_array_dim!(p,1,nface_evaluation_points,fcips)
   preb_eval = hcat(preb_eval,fms_preb...)
 
   # Nedelec Face moments (dim = 1)
 
-  # Reference facet
-  dimf = dim(p)-1
-  fp = ref_nface_polytope(p,dimf) # dim 1
+  if ( dim(p) == 3 && order > 1)
+    # Reference facet
+    dimf = dim(p)-1
+    fp = ref_nface_polytope(p,dimf) # dim 1
 
-  # geomap from ref face to polytope faces
-  fgeomap = _ref_face_to_faces_geomap(p,fp)
+    # geomap from ref face to polytope faces
+    fgeomap = _ref_face_to_faces_geomap(p,fp)
 
-  # Compute integration points at all polynomial edges
-  degree = order*2
-  fquad = Quadrature(fp,degree)
-  fips = coordinates(fquad)
-  wips = weights(fquad)
-  c_fips, fcips, fwips = _nfaces_evaluation_points_weights(p, fgeomap, fips, wips)
+    # Compute integration points at all polynomial edges
+    degree = order*2
+    fquad = Quadrature(fp,degree)
+    fips = coordinates(fquad)
+    wips = weights(fquad)
+    c_fips, fcips, fwips = _nfaces_evaluation_points_weights(p, fgeomap, fips, wips)
 
-  # Face moments, i.e., M(Fi)_{ab} = w_Fi^b q_RF^a(xgp_RFi^b) (n_Fi × ())
-  fshfs = GradMonomialBasis(VectorValue{dim(fp),et},order-1)
-  fmoments = _Nedelec_face_moments(p, fshfs, c_fips, fcips, fwips)
+    # Face moments, i.e., M(Fi)_{ab} = w_Fi^b q_RF^a(xgp_RFi^b) (n_Fi × ())
+    fshfs = GradMonomialBasis(VectorValue{dim(fp),et},order-1)
+    fmoments = _Nedelec_face_moments(p, fshfs, c_fips, fcips, fwips)
 
-  # Evaluate basis in edges points, i.e., S(Ei)_{ab} = ϕ^a(xgp_Ei^b)
-  pbasis_fcips = [evaluate(prebasis,ps) for ps in fcips]
+    # Evaluate basis in edges points, i.e., S(Ei)_{ab} = ϕ^a(xgp_Ei^b)
+    pbasis_fcips = [evaluate(prebasis,ps) for ps in fcips]
 
-  # Edge moments evaluated for basis, i.e., DF = [S(F1)*M(F1)^T, …, S(Fn)*M(Fn)^T]
-  fms_preb = [bps*ms' for (bps,ms) in zip(pbasis_fcips,fmoments)]
+    # Edge moments evaluated for basis, i.e., DF = [S(F1)*M(F1)^T, …, S(Fn)*M(Fn)^T]
+    fms_preb = [bps*ms' for (bps,ms) in zip(pbasis_fcips,fmoments)]
 
-  _nfaces_array_dim!(p,dim(p)-1,nface_moments,fmoments)
-  _nfaces_array_dim!(p,dim(p)-1,nface_evaluation_points,fcips)
-  preb_eval = hcat(preb_eval,fms_preb...)
-
+    _nfaces_array_dim!(p,dim(p)-1,nface_moments,fmoments)
+    _nfaces_array_dim!(p,dim(p)-1,nface_evaluation_points,fcips)
+    preb_eval = hcat(preb_eval,fms_preb...)
+  end
   # Cell moments
 
   if (order > 1)
@@ -341,12 +345,16 @@ end
 # Ref facet FE functions evaluated at the facet integration points (in ref facet)
 function _Nedelec_face_moments(p, fshfs, c_fips, fcips, fwips)
   nc = length(c_fips)
+  fvs = nfaces_vertices(p,dim(p)-1)
+  fts = [hcat([vs[2]-vs[1]...],[vs[3]-vs[1]...]) for vs in fvs]
   cfshfs = ConstantCellValue(fshfs, nc)
   cvals = evaluate(cfshfs,c_fips)
   cvals = [fwips[i]'.*cvals[i] for i in 1:nc]
   fns, os = face_normals(p)
   # @santiagobadia : Temporary hack for making it work for structured hex meshes
-  cvals = [ _broadcast_cross(typeof(n),n*o,b) for (n,o,b) in zip(fns,os,cvals)]
+  ft = eltype(fns)
+  cvals = [ Gridap.RefFEs.RTRefFEs._broadcast_extend(ft,Tm,b) for (Tm,b) in zip(fts,cvals)]
+  cvals = [ Gridap.RefFEs.RTRefFEs._broadcast_cross(ft,n,b) for (n,b) in zip(fns,cvals)]
   return cvals
 end
 
@@ -379,6 +387,16 @@ function _ref_face_to_faces_geomap(p,fp)
   fgeomap = lincomb(cfshfs,cfvs)
 end
 
+# Ref FE to faces geomaps
+function _geomap_jacobian(p,fp)
+  cfvs = nfaces_vertices(p,dim(fp))
+  nc = length(cfvs)
+  freffe = LagrangianRefFE(Float64,fp,1)
+  fshfs = shfbasis(freffe)
+  cfshfs = ConstantCellValue(fshfs, nc)
+  fgeomap = lincomb(cfshfs,cfvs)
+end
+
 function _broadcast(::Type{T},n,b) where T
   c = Array{T}(undef,size(b))
   for (ii, i) in enumerate(b)
@@ -390,11 +408,18 @@ end
 function _broadcast_cross(::Type{T},n,b) where T
   c = Array{T}(undef,size(b))
   for (ii, i) in enumerate(b)
-    c[ii] = cross(i,n) # cross product
+    c[ii] = T(cross(i.array,n.array))# cross product
   end
   return c
 end
 
+function _broadcast_extend(::Type{T},Tm,b) where T
+  c = Array{T}(undef,size(b))
+  for (ii,i) in enumerate(b)
+    c[ii] = T(Tm*[i...])
+  end
+  return c
+end
 
 function _nfaces_array(p,fmoments,cmoments,T)
   SNF = Vector{Array{T}}(undef,num_nfaces(p))

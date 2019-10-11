@@ -19,27 +19,19 @@ using Gridap.RefFEs.RTRefFEs
 #####
 ##
 p = Polytope(1,1)
-order = 1
+order =   1
 ref_fe = RTRefFE(p,order)
+ref_fe = Gridap.RefFEs.RTRefFEs.NedelecRefFE(p,5)
+length(ref_fe.shfbasis)
+##
 
-# edge tangents
-ed_vs = nfaces_vertices(p,1)
-ts = [(t = vs[2]-vs[1])/norm(t) for vs in ed_vs ]
+p = Polytope(1,1)
+for order in 1:4
+  reffe = Gridap.RefFEs.RTRefFEs.NedelecRefFE(p,order)
+  test_reffe(reffe,order)
+end
 
-
-outer(ts[1],ts[2])
-
-# ref_fe2 = RTRefFE(p,3)
-# ref_fe.shfbasis.changeofbasis == ref_fe2.shfbasis.changeofbasis
-
-# Cell moments
-
-
-for order in 1:3
-
-  p = Polytope(1,1)
-
-  reffe = RTRefFE(p,order)
+function test_reffe(reffe,order)
 
   dofsb = dofbasis(reffe)
 
