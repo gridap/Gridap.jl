@@ -19,10 +19,6 @@ using Gridap.RefFEs.GenericRefFEs
 #####
 ##
 p = Polytope(1,1)
-order =   1
-ref_fe = RTRefFE(p,order)
-ref_fe = NedelecRefFE(p,5)
-##
 
 for order in 1:4
   reffe = NedelecRefFE(p,order)

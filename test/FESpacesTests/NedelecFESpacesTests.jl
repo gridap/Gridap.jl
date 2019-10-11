@@ -1,4 +1,4 @@
-module RaviartThomasFESpacesTests
+module NedelecFESpacesTests
 ##
 using Test
 using Gridap
@@ -13,7 +13,7 @@ dom = fill(4,D)
 model = CartesianDiscreteModel(partition=tuple(dom...))
 
 p = Polytope(fill(HEX_AXIS,D)...)
-reffe = GenericRefFE(p,order)
+reffe = NedelecRefFE(p,order)
 
 grid = Grid(model,D)
 trian = Triangulation(grid)
