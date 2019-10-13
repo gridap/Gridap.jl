@@ -1,10 +1,30 @@
-# module DivRefFEs
-#
-# using Gridap
-# using Gridap.Helpers
-#
-# export _initialize_arrays
+function RTRefFE(p:: Polytope, order::Int)
 
+  if !(all(extrusion(p).array .== HEX_AXIS))
+    @notimplemented
+  end
+
+  # 1. Prebasis
+  prebasis = CurlGradMonomialBasis(VectorValue{dim(p),Float64},order)
+
+  # Nface nodes, moments, and prebasis evaluated at nodes
+  nf_nodes, nf_moments, pb_moments = _initialize_arrays(prebasis,p)
+
+  # Face values
+  fcips, fmoments = _RT_face_values(p,order)
+  nf_nodes,nf_moments,pb_moments = _insert_nface_values!(nf_nodes,nf_moments,pb_moments,prebasis,fcips,fmoments,p,dim(p)-1)
+
+  # Cell values
+  if (order > 1)
+
+    ccips, cmoments = _RT_cell_values(p,order)
+    nf_nodes,nf_moments,pb_moments = _insert_nface_values!(nf_nodes,nf_moments,pb_moments,prebasis,ccips,cmoments,p,dim(p))
+
+  end
+
+  _GenericRefFE(p,prebasis,nf_nodes,nf_moments,pb_moments)
+
+end
 
 # We must provide for every n-face, the nodes, the moments, and the evaluation
 # of the moments for the elements of the prebasis
@@ -74,35 +94,3 @@ function _RT_cell_moments(p, cbasis, ccips, cwips)
   ishfs_iips = evaluate(cbasis,ccips)
   return cwips'.*ishfs_iips
 end
-
-
-function RTRefFE(p:: Polytope, order::Int)
-
-  if !(all(extrusion(p).array .== HEX_AXIS))
-    @notimplemented
-  end
-
-  # 1. Prebasis
-  prebasis = CurlGradMonomialBasis(VectorValue{dim(p),Float64},order)
-
-  # Nface nodes, moments, and prebasis evaluated at nodes
-  nf_nodes, nf_moments, pb_moments = _initialize_arrays(prebasis,p)
-
-  # Face values
-  fcips, fmoments = _RT_face_values(p,order)
-  nf_nodes,nf_moments,pb_moments = _insert_nface_values!(nf_nodes,nf_moments,pb_moments,prebasis,fcips,fmoments,p,dim(p)-1)
-
-  # Cell values
-  if (order > 1)
-
-    ccips, cmoments = _RT_cell_values(p,order)
-    nf_nodes,nf_moments,pb_moments = _insert_nface_values!(nf_nodes,nf_moments,pb_moments,prebasis,ccips,cmoments,p,dim(p))
-
-  end
-
-  _GenericRefFE(p,prebasis,nf_nodes,nf_moments,pb_moments)
-
-end
-
-
-# end # module

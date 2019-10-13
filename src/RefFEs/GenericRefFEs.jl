@@ -356,13 +356,13 @@ function evaluate!(
   dofs
 end
 
-# function _RT_cell_moments(p, cbasis, ccips, cwips)
-#   # Interior DOFs-related basis evaluated at interior integration points
-#   ishfs_iips = evaluate(cbasis,ccips)
-#   return cwips'.*ishfs_iips
-# end
+function _Nedelec_cell_moments(p, cbasis, ccips, cwips)
+  # Interior DOFs-related basis evaluated at interior integration points
+  ishfs_iips = evaluate(cbasis,ccips)
+  return cwips'.*ishfs_iips
+end
 
-const _Nedelec_cell_moments = _RT_cell_moments
+# const _Nedelec_cell_moments = Old_RT_cell_moments
 
 # Ref facet FE functions evaluated at the facet integration points (in ref facet)
 # function _RT_face_moments(p, fshfs, c_fips, fcips, fwips)

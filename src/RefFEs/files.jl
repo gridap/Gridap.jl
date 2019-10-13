@@ -16,6 +16,3 @@ include("PDiscRefFEs.jl")
 
 include("GenericRefFEs.jl")
 @reexport using Gridap.GenericRefFEs
-
-include("DivRefFEs.jl")
-@reexport using Gridap.DivRefFEs
