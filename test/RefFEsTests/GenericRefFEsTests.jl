@@ -24,7 +24,7 @@ p = Polytope(1,1,1)
 
 order = 4
 
-ref1 = NedelecRefFE(p,3)
+ref1 = RTRefFE(p,Float64,3)
 ref2 = F.MyNedelecRefFE(p,3)
 ref1.shfbasis.changeofbasis == ref2.shfbasis.changeofbasis
 

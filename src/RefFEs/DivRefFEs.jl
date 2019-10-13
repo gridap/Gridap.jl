@@ -11,13 +11,13 @@ function RTRefFE(p:: Polytope, et, order::Int)
   nf_nodes, nf_moments, pb_moments = _initialize_arrays(prebasis,p)
 
   # Face values
-  fcips, fmoments = _RT_face_values(p,order)
+  fcips, fmoments = _RT_face_values(p,et,order)
   nf_nodes,nf_moments,pb_moments = _insert_nface_values!(nf_nodes,nf_moments,pb_moments,prebasis,fcips,fmoments,p,dim(p)-1)
 
   # Cell values
   if (order > 1)
 
-    ccips, cmoments = _RT_cell_values(p,order)
+    ccips, cmoments = _RT_cell_values(p,et,order)
     nf_nodes,nf_moments,pb_moments = _insert_nface_values!(nf_nodes,nf_moments,pb_moments,prebasis,ccips,cmoments,p,dim(p))
 
   end
