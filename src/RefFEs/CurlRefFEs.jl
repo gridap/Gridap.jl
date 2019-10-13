@@ -1,23 +1,23 @@
-function NedelecRefFE(p:: Polytope, order::Int)
+function NedelecRefFE(p:: Polytope, et, order::Int)
 
   if !(all(extrusion(p).array .== HEX_AXIS))
     @notimplemented
   end
 
   # 1. Prebasis
-  prebasis = GradMonomialBasis(VectorValue{dim(p),Float64},order)
+  prebasis = GradMonomialBasis(VectorValue{dim(p),et},order)
 
   # Nface nodes, moments, and prebasis evaluated at nodes
   nf_nodes, nf_moments, pb_moments = _initialize_arrays(prebasis,p)
 
   # Face values
-  fcips, fmoments = _Nedelec_edge_values(p,order)
+  fcips, fmoments = _Nedelec_edge_values(p,et,order)
   nf_nodes,nf_moments,pb_moments = _insert_nface_values!(nf_nodes,nf_moments,pb_moments,prebasis,fcips,fmoments,p,1)
 
   # Face values
   if ( dim(p) == 3 && order > 1)
 
-    fcips, fmoments = _Nedelec_face_values(p,order)
+    fcips, fmoments = _Nedelec_face_values(p,et,order)
     nf_nodes,nf_moments,pb_moments = _insert_nface_values!(nf_nodes,nf_moments,pb_moments,prebasis,fcips,fmoments,p,dim(p)-1)
 
   end
@@ -25,7 +25,7 @@ function NedelecRefFE(p:: Polytope, order::Int)
   # Cell values
   if (order > 1)
 
-    ccips, cmoments = _Nedelec_cell_values(p,order)
+    ccips, cmoments = _Nedelec_cell_values(p,et,order)
     nf_nodes,nf_moments,pb_moments = _insert_nface_values!(nf_nodes,nf_moments,pb_moments,prebasis,ccips,cmoments,p,dim(p))
 
   end
@@ -36,7 +36,7 @@ end
 
 # We must provide for every n-face, the nodes, the moments, and the evaluation
 # of the moments for the elements of the prebasis
-function _Nedelec_edge_values(p,order)
+function _Nedelec_edge_values(p,et,order)
 
   # Reference facet
   dim1 = 1
@@ -54,7 +54,7 @@ function _Nedelec_edge_values(p,order)
   c_fips, fcips, fwips = _nfaces_evaluation_points_weights(p, fgeomap, fips, wips)
 
   # Edge moments, i.e., M(Ei)_{ab} = q_RE^a(xgp_REi^b) w_Fi^b t_Ei ⋅ ()
-  fshfs = Gridap.RefFEs._monomial_basis(fp,Float64,order-1)
+  fshfs = Gridap.RefFEs._monomial_basis(fp,et,order-1)
   fmoments = _Nedelec_edge_moments(p, fshfs, c_fips, fcips, fwips)
 
   return fcips, fmoments
@@ -72,7 +72,7 @@ function _Nedelec_edge_moments(p, fshfs, c_fips, fcips, fwips)
   return cvals
 end
 
-function _Nedelec_face_values(p,order)
+function _Nedelec_face_values(p,et,order)
 
   # Reference facet
   dimf = dim(p)-1
@@ -90,7 +90,7 @@ function _Nedelec_face_values(p,order)
   c_fips, fcips, fwips = _nfaces_evaluation_points_weights(p, fgeomap, fips, wips)
 
   # Face moments, i.e., M(Fi)_{ab} = w_Fi^b q_RF^a(xgp_RFi^b) (n_Fi × ())
-  fshfs = GradMonomialBasis(VectorValue{dim(fp),Float64},order-1)
+  fshfs = GradMonomialBasis(VectorValue{dim(fp),et},order-1)
   fmoments = _Nedelec_face_moments(p, fshfs, c_fips, fcips, fwips)
 
   return fcips, fmoments
@@ -113,7 +113,7 @@ function _Nedelec_face_moments(p, fshfs, c_fips, fcips, fwips)
   return cvals
 end
 
-function _Nedelec_cell_values(p,order)
+function _Nedelec_cell_values(p,et,order)
   # Compute integration points at interior
   degree = 2*order
   iquad = Quadrature(p,degree)
@@ -121,7 +121,7 @@ function _Nedelec_cell_values(p,order)
   cwips = weights(iquad)
 
   # Cell moments, i.e., M(C)_{ab} = q_C^a(xgp_C^b) w_C^b ⋅ ()
-  cbasis = CurlGradMonomialBasis(VectorValue{dim(p),Float64},order-1)
+  cbasis = CurlGradMonomialBasis(VectorValue{dim(p),et},order-1)
   cmoments = _Nedelec_cell_moments(p, cbasis, ccips, cwips )
 
   return [ccips], [cmoments]

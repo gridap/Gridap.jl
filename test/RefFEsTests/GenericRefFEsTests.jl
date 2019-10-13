@@ -24,9 +24,9 @@ p = Polytope(1,1,1)
 
 order = 4
 
-ref2 = NedelecRefFE(p,3)
+ref1 = NedelecRefFE(p,3)
 ref2 = F.MyNedelecRefFE(p,3)
-# ref1.shfbasis.changeofbasis == ref2.shfbasis.changeofbasis
+ref1.shfbasis.changeofbasis == ref2.shfbasis.changeofbasis
 
 
 
@@ -84,7 +84,7 @@ for order in 1:4
 end
 
 for order in 1:4
-  reffe = RTRefFE(p,order)
+  reffe = RTRefFE(p,Float64,order)
   test_reffe(reffe,order)
 end
 

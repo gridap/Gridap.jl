@@ -83,7 +83,7 @@ function FESpace(;kwargs...)
       error("RaviartThomas reference FEs can only be constructed on top of a ncube. Check your model.")
     end
 
-    _reffe = RTRefFE(polytope,order)
+    _reffe = RTRefFE(polytope,Float64,order)
 
     if conformity in [false, :L2]
 

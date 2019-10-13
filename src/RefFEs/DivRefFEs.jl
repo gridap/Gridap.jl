@@ -1,11 +1,11 @@
-function RTRefFE(p:: Polytope, order::Int)
+function RTRefFE(p:: Polytope, et, order::Int)
 
   if !(all(extrusion(p).array .== HEX_AXIS))
     @notimplemented
   end
 
   # 1. Prebasis
-  prebasis = CurlGradMonomialBasis(VectorValue{dim(p),Float64},order)
+  prebasis = CurlGradMonomialBasis(VectorValue{dim(p),et},order)
 
   # Nface nodes, moments, and prebasis evaluated at nodes
   nf_nodes, nf_moments, pb_moments = _initialize_arrays(prebasis,p)
@@ -28,7 +28,7 @@ end
 
 # We must provide for every n-face, the nodes, the moments, and the evaluation
 # of the moments for the elements of the prebasis
-function _RT_face_values(p,order)
+function _RT_face_values(p,et,order)
 
   # Reference facet
   fp = ref_nface_polytope(p,dim(p)-1)
@@ -52,7 +52,7 @@ function _RT_face_values(p,order)
 
   # Moments (fmoments)
   # The RT prebasis is expressed in terms of shape function
-  fshfs = Gridap.RefFEs._monomial_basis(fp,Float64,order-1)
+  fshfs = Gridap.RefFEs._monomial_basis(fp,et,order-1)
 
   # Face moments, i.e., M(Fi)_{ab} = q_RF^a(xgp_RFi^b) w_Fi^b n_Fi ⋅ ()
   fmoments = _RT_face_moments(p, fshfs, c_fips, fcips, fwips)
@@ -72,7 +72,7 @@ function _RT_face_moments(p, fshfs, c_fips, fcips, fwips)
   return cvals
 end
 
-function _RT_cell_values(p,order)
+function _RT_cell_values(p,et,order)
     # Compute integration points at interior
     degree = 2*order
     iquad = Quadrature(p,degree)
@@ -80,7 +80,7 @@ function _RT_cell_values(p,order)
     cwips = weights(iquad)
 
     # Cell moments, i.e., M(C)_{ab} = q_C^a(xgp_C^b) w_C^b ⋅ ()
-    cbasis = GradMonomialBasis(VectorValue{dim(p),Float64},order-1)
+    cbasis = GradMonomialBasis(VectorValue{dim(p),et},order-1)
     cmoments = _RT_cell_moments(p, cbasis, ccips, cwips )
 
     return [ccips], [cmoments]
