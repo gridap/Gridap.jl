@@ -43,12 +43,10 @@ function _RT_face_values(p,order)
   # the one of the points in the polytope after applying the geopmap
   # (fcips), and the weights for these nodes (fwips, a constant cell array)
   # Nodes (fcips)
-  fp = ref_nface_polytope(p,dim(p)-1)
   degree = order*2
   fquad = Quadrature(fp,degree)
   fips = coordinates(fquad)
   wips = weights(fquad)
-  fshfs = Gridap.RefFEs._monomial_basis(fp,Float64,order-1)
 
   c_fips, fcips, fwips = _nfaces_evaluation_points_weights(p, fgeomap, fips, wips)
 

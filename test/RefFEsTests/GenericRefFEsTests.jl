@@ -12,8 +12,6 @@ using Test
 
 using Gridap.GenericRefFEs
 
-using Gridap.DivRefFEs
-# using
 #####
 # Create a general Ref FE constructor, which generalizes the current implementations
 # for nodal (Lagrangian) and non-nodal (RaviartThomas) RefFEs.
@@ -21,14 +19,14 @@ using Gridap.DivRefFEs
 # * A functor to be provided by the user (optionally) for every n-face dimension
 #####
 F = Gridap.RefFEs.GenericRefFEs
-# G = Gridap.RefFEs.DivRefFEs
 
 p = Polytope(1,1,1)
 
 order = 4
 
-ref2 = RTRefFE(p,3)
-ref1.shfbasis.changeofbasis == ref2.shfbasis.changeofbasis
+ref2 = NedelecRefFE(p,3)
+ref2 = F.MyNedelecRefFE(p,3)
+# ref1.shfbasis.changeofbasis == ref2.shfbasis.changeofbasis
 
 
 
