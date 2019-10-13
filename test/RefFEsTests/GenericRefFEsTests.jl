@@ -28,25 +28,6 @@ ref1 = RTRefFE(p,Float64,3)
 ref2 = F.MyNedelecRefFE(p,3)
 ref1.shfbasis.changeofbasis == ref2.shfbasis.changeofbasis
 
-
-
-# 1. Prebasis
-prebasis = CurlGradMonomialBasis(VectorValue{dim(p),Float64},order)
-
-# Nface nodes, moments, and prebasis evaluated at nodes
-nf_nodes, nf_moments, pb_moments = _initialize_arrays(prebasis,p)
-
-ccips, cmoments = G._RT_cell_values(p,order)
-
-pbasis_ccips = [evaluate(prebasis,ps) for ps in ccips]
-
-cms_preb = [bps*ms' for (bps,ms) in zip(pbasis_ccips,cmoments)]
-F._nfaces_array_dim!(p,dim(p),nf_moments,cmoments)
-F._nfaces_array_dim!(p,dim(p),nf_nodes,ccips)
-pb_moments = hcat(pb_moments,cms_preb)
-pb_moments
-cms_preb
-
 ############################
 
 function test_reffe(reffe,order)

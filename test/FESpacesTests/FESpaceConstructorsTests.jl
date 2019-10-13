@@ -103,6 +103,22 @@ V = FESpace(
 @test isa(V,DiscFESpace)
 
 V = FESpace(
+  reffe=:Nedelec,
+  conformity=:HCurl,
+  order = 2,
+  model = model)
+
+@test isa(V,ConformingFESpace)
+
+V = FESpace(
+  reffe=:Nedelec,
+  conformity=:L2,
+  order = 2,
+  model = model)
+
+@test isa(V,DiscFESpace)
+
+V = FESpace(
   reffe=:PLagrangian,
   conformity=:L2,
   valuetype = Float64,

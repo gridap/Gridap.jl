@@ -110,6 +110,38 @@ function FESpace(;kwargs...)
 
     end
 
+  elseif reffe == :Nedelec
+
+    if ! _is_cube(polytope)
+      error("Nedelec reference FEs can only be constructed on top of a ncube. Check your model.")
+    end
+
+    _reffe = NedelecRefFE(polytope,Float64,order)
+
+    if conformity in [false, :L2]
+
+      fespace = DiscFESpace(_reffe,model)
+
+    elseif conformity in [true, :default, :HCurl]
+
+      if labels == nothing
+        _labels = FaceLabels(model)
+      else
+        _labels = labels
+      end
+
+      grid = Grid(model)
+      trian = Triangulation(grid)
+      graph = GridGraph(model)
+
+      fespace = ConformingFESpace(_reffe,trian,graph,_labels,diritags)
+
+    else
+
+      s = "Conformity $conformity not possible for a $reffe reference FE"
+      error(s)
+
+    end
 
   else
     error("Reference element $reffe not implemented")
