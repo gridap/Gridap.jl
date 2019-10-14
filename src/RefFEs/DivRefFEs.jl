@@ -1,3 +1,8 @@
+"""
+It return the `GenericRefFE` type for a Raviart-Thomas reference FE with order `order`
+on the reference polytope `p`, using as scalar value `et`, i.e., `et` can be
+`Float64` or `Float32`.
+"""
 function RTRefFE(p:: Polytope, et, order::Int)
 
   if !(all(extrusion(p).array .== HEX_AXIS))
@@ -26,8 +31,7 @@ function RTRefFE(p:: Polytope, et, order::Int)
 
 end
 
-# We must provide for every n-face, the nodes, the moments, and the evaluation
-# of the moments for the elements of the prebasis
+# It provides for every face the nodes and the moments arrays
 function _RT_face_values(p,et,order)
 
   # Reference facet
@@ -72,6 +76,7 @@ function _RT_face_moments(p, fshfs, c_fips, fcips, fwips)
   return cvals
 end
 
+# It provides for every cell the nodes and the moments arrays
 function _RT_cell_values(p,et,order)
     # Compute integration points at interior
     degree = 2*order

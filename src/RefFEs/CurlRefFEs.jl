@@ -1,3 +1,9 @@
+"""
+It return the `GenericRefFE` type for a Nedelec reference FE with order `order`
+on the reference polytope `p`, using as scalar value `et`, i.e., `et` can be
+`Float64` or `Float32`.
+"""
+# @santiagobadia : Project, go to complex numbers
 function NedelecRefFE(p:: Polytope, et, order::Int)
 
   if !(all(extrusion(p).array .== HEX_AXIS))
@@ -10,11 +16,14 @@ function NedelecRefFE(p:: Polytope, et, order::Int)
   # Nface nodes, moments, and prebasis evaluated at nodes
   nf_nodes, nf_moments, pb_moments = _initialize_arrays(prebasis,p)
 
-  # Face values
+  # Face nodes and moments
   fcips, fmoments = _Nedelec_edge_values(p,et,order)
+
+  # Insert nodes and moments in the nface arrays, together with the
+  # prebasis evaluated at this nodes, for all edges
   nf_nodes,nf_moments,pb_moments = _insert_nface_values!(nf_nodes,nf_moments,pb_moments,prebasis,fcips,fmoments,p,1)
 
-  # Face values
+  # Idem for face values
   if ( dim(p) == 3 && order > 1)
 
     fcips, fmoments = _Nedelec_face_values(p,et,order)
@@ -22,7 +31,7 @@ function NedelecRefFE(p:: Polytope, et, order::Int)
 
   end
 
-  # Cell values
+  # Idem for cell values
   if (order > 1)
 
     ccips, cmoments = _Nedelec_cell_values(p,et,order)
@@ -34,8 +43,7 @@ function NedelecRefFE(p:: Polytope, et, order::Int)
 
 end
 
-# We must provide for every n-face, the nodes, the moments, and the evaluation
-# of the moments for the elements of the prebasis
+# It provides for every edge the nodes and the moments arrays
 function _Nedelec_edge_values(p,et,order)
 
   # Reference facet
@@ -72,6 +80,7 @@ function _Nedelec_edge_moments(p, fshfs, c_fips, fcips, fwips)
   return cvals
 end
 
+# It provides for every face the nodes and the moments arrays
 function _Nedelec_face_values(p,et,order)
 
   # Reference facet
@@ -97,12 +106,12 @@ function _Nedelec_face_values(p,et,order)
 
 end
 
-# Ref facet FE functions evaluated at the facet integration points (in ref facet)
 function _Nedelec_face_moments(p, fshfs, c_fips, fcips, fwips)
   nc = length(c_fips)
   fvs = nfaces_vertices(p,dim(p)-1)
   fts = [hcat([vs[2]-vs[1]...],[vs[3]-vs[1]...]) for vs in fvs]
   cfshfs = ConstantCellValue(fshfs, nc)
+  # Ref facet FE functions evaluated at the facet integration points (in ref facet)
   cvals = evaluate(cfshfs,c_fips)
   cvals = [fwips[i]'.*cvals[i] for i in 1:nc]
   fns, os = face_normals(p)
@@ -113,6 +122,7 @@ function _Nedelec_face_moments(p, fshfs, c_fips, fcips, fwips)
   return cvals
 end
 
+# It provides for every cell the nodes and the moments arrays
 function _Nedelec_cell_values(p,et,order)
   # Compute integration points at interior
   degree = 2*order
