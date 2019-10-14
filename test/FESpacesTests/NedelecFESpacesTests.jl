@@ -15,7 +15,7 @@ model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0,0.0,1.0), partition=part)
 # model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=part)
 
 p = Polytope(fill(HEX_AXIS,D)...)
-reffe = NedelecRefFE(p,order)
+reffe = NedelecRefFE(p,Float64,order)
 
 grid = Grid(model,D)
 trian = Triangulation(grid)
