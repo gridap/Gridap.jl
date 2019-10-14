@@ -10,13 +10,26 @@ using LinearAlgebra
 
 using Test
 
-using Gridap.RefFEs.GenericRefFEs
+using Gridap.GenericRefFEs
+
 #####
 # Create a general Ref FE constructor, which generalizes the current implementations
 # for nodal (Lagrangian) and non-nodal (RaviartThomas) RefFEs.
 # * A method that generates the geomap from ref n-face to n-face in polytope
 # * A functor to be provided by the user (optionally) for every n-face dimension
 #####
+# F = Gridap.RefFEs.GenericRefFEs
+#
+# p = Polytope(1,1,1)
+#
+# order = 4
+#
+# ref1 = RTRefFE(p,Float64,3)
+# ref2 = F.MyNedelecRefFE(p,3)
+# ref1.shfbasis.changeofbasis == ref2.shfbasis.changeofbasis
+
+############################
+
 function test_reffe(reffe,order)
 
   dofsb = dofbasis(reffe)
@@ -47,12 +60,12 @@ end
 p = Polytope(1,1)
 
 for order in 1:4
-  reffe = NedelecRefFE(p,order)
+  reffe = NedelecRefFE(p,Float64,order)
   test_reffe(reffe,order)
 end
 
 for order in 1:4
-  reffe = RTRefFE(p,order)
+  reffe = RTRefFE(p,Float64,order)
   test_reffe(reffe,order)
 end
 

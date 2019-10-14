@@ -16,11 +16,16 @@ export test_field
 export test_field_without_gradient
 export test_basis
 import Base: length
+import Base: eltype
 
 """
 Umbrella type for Field and Basis
 """
 const FieldLike{D,T<:FieldValue,N} = Map{Point{D},1,T,N}
+
+function eltype(::FieldLike{D,T}) where {D,T}
+  return T
+end
 
 """
 Create the gradient of a `Field` or `Basis`
