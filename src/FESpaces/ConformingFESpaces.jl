@@ -5,11 +5,15 @@ using Gridap.Helpers
 using Gridap.CellValuesGallery
 using Gridap.CachedArrays
 using Base: @propagate_inbounds
+using LinearAlgebra: det
+using Base: transpose
 
 using Gridap.BoundaryGrids: _setup_tags
 
 export ConformingFESpace
 export H1ConformingFESpace
+export DivConformingFESpace
+export CurlConformingFESpace
 import Gridap: num_free_dofs
 import Gridap: num_diri_dofs
 import Gridap: diri_tags
@@ -418,6 +422,78 @@ size(self::CellEqClass) = (length(self.cell_to_nfaces),)
     end
   end
   self.cv
+end
+
+function DivConformingFESpace(
+  reffe::RefFE{D,T},
+  trian::Triangulation{D,Z},
+  graph::GridGraph,
+  labels::FaceLabels,
+  diri_tags::Vector{Int}) where {D,Z,T}
+
+  dim_to_nface_eqclass,
+    cell_eqclass,
+    nfree,
+    ndiri, diri_tags,
+    reffe,
+    trian,
+    graph,
+    labels,
+    basis = _setup_conforming_fe_fields(reffe,trian,graph,labels,diri_tags,D)
+
+  phi = CellGeomap(trian)
+  jac = gradient(phi)
+  detjac = det(jac)
+
+  piola_map = (1.0/detjac)*jac
+
+  physbasis = piola_map*basis
+
+  ConformingFESpace{D,Z,T}( dim_to_nface_eqclass,
+                            cell_eqclass,
+                            nfree,
+                            ndiri, diri_tags,
+                            reffe,
+                            trian,
+                            graph,
+                            labels,
+                            physbasis )
+end
+
+function CurlConformingFESpace(
+  reffe::RefFE{D,T},
+  trian::Triangulation{D,Z},
+  graph::GridGraph,
+  labels::FaceLabels,
+  diri_tags::Vector{Int}) where {D,Z,T}
+
+  dim_to_nface_eqclass,
+    cell_eqclass,
+    nfree,
+    ndiri, diri_tags,
+    reffe,
+    trian,
+    graph,
+    labels,
+    basis = _setup_conforming_fe_fields(reffe,trian,graph,labels,diri_tags,D)
+
+  phi = CellGeomap(trian)
+  jac = gradient(phi)
+  jact = transpose(jac)
+
+  piola_map = inv(jact)
+
+  physbasis = piola_map*basis
+
+  ConformingFESpace{D,Z,T}( dim_to_nface_eqclass,
+                            cell_eqclass,
+                            nfree,
+                            ndiri, diri_tags,
+                            reffe,
+                            trian,
+                            graph,
+                            labels,
+                            physbasis )
 end
 
 end # module

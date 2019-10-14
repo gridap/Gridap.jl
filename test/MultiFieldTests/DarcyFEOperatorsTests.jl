@@ -5,6 +5,41 @@ using Test
 using Gridap
 import Gridap: ∇
 
+import LinearAlgebra: det
+##
+
+model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(2,2))
+trian = Triangulation(model)
+
+
+phi = CellGeomap(trian)
+jac = gradient(phi)
+jact = transpose(jac)
+isa(jac,CellMap)
+
+function transpose(m::CellMap)
+  apply(transpose,m,broadcast=true)
+end
+
+kk = rand(3,3)
+transpose(kk)
+
+piola_map = inv(jact)
+
+
+graph = GridGraph(model)
+pols = CellPolytopes(Grid(model))
+pt = pols.value
+
+order = 1
+_reffe = RTRefFE(pt,Float64,order)
+
+_labels = FaceLabels(model)
+
+# V = ConformingFESpace(_reffe,trian,graph,_labels,[5,6])
+V = DivConformingFESpace(_reffe,trian,graph,_labels,[5,6])
+##
+
 u(x) = VectorValue(x[1]*x[2], -0.5*x[2]^2)
 ∇u(x) = TensorValue(x[2],0.0,x[1],-x[2])
 divu(x) = 0.0

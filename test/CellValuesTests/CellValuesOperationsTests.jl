@@ -22,14 +22,14 @@ for op in (:+,:-)
     for a in ax
       v = TestIterCellValue(a,l)
       w = $op(v)
-      o = [ $op(vi) for vi in v ] 
+      o = [ $op(vi) for vi in v ]
       test_iter_cell_value(w,o)
     end
 
     for a in ax
       v = TestIndexCellValue(a,l)
       w = $op(v)
-      o = [ $op(vi) for vi in v ] 
+      o = [ $op(vi) for vi in v ]
       test_index_cell_value(w,o)
     end
 
@@ -37,7 +37,7 @@ for op in (:+,:-)
       u = TestIterCellValue(a,l)
       v = TestIterCellValue(b,l)
       w = $op(u,v)
-      o = [ $op(ui,vi) for (ui,vi) in zip(u,v) ] 
+      o = [ $op(ui,vi) for (ui,vi) in zip(u,v) ]
       test_iter_cell_value(w,o)
     end
 
@@ -45,7 +45,7 @@ for op in (:+,:-)
       u = TestIndexCellValue(a,l)
       v = TestIndexCellValue(b,l)
       w = $op(u,v)
-      o = [ $op(ui,vi) for (ui,vi) in zip(u,v) ] 
+      o = [ $op(ui,vi) for (ui,vi) in zip(u,v) ]
       test_index_cell_value(w,o)
     end
 
@@ -54,17 +54,17 @@ end
 
 a = TensorValue(1.0,0.0,1.0,2.0)
 
-for op in (:inv,:det,:meas)
+for op in (:inv,:det,:meas,:transpose)
   @eval begin
 
     v = TestIterCellValue(a,l)
     w = $op(v)
-    o = [ $op(vi) for vi in v ] 
+    o = [ $op(vi) for vi in v ]
     test_iter_cell_value(w,o)
 
     v = TestIndexCellValue(a,l)
     w = $op(v)
-    o = [ $op(vi) for vi in v ] 
+    o = [ $op(vi) for vi in v ]
     test_index_cell_value(w,o)
 
   end
@@ -79,13 +79,13 @@ for op in (:inner,:outer)
     u = TestIterCellValue(a,l)
     v = TestIterCellValue(b,l)
     w = $op(u,v)
-    o = [ $op(ui,vi) for (ui,vi) in zip(u,v) ] 
+    o = [ $op(ui,vi) for (ui,vi) in zip(u,v) ]
     test_iter_cell_value(w,o)
 
     u = TestIndexCellValue(a,l)
     v = TestIndexCellValue(b,l)
     w = $op(u,v)
-    o = [ $op(ui,vi) for (ui,vi) in zip(u,v) ] 
+    o = [ $op(ui,vi) for (ui,vi) in zip(u,v) ]
     test_index_cell_value(w,o)
 
   end
@@ -100,13 +100,13 @@ for op in (:*,:\)
     u = TestIterCellValue(a,l)
     v = TestIterCellValue(b,l)
     w = $op(u,v)
-    o = [ $op(ui,vi) for (ui,vi) in zip(u,v) ] 
+    o = [ $op(ui,vi) for (ui,vi) in zip(u,v) ]
     test_iter_cell_value(w,o)
 
     u = TestIndexCellValue(a,l)
     v = TestIndexCellValue(b,l)
     w = $op(u,v)
-    o = [ $op(ui,vi) for (ui,vi) in zip(u,v) ] 
+    o = [ $op(ui,vi) for (ui,vi) in zip(u,v) ]
     test_index_cell_value(w,o)
 
   end
@@ -121,13 +121,13 @@ for op in (:/,)
     u = TestIterCellValue(a,l)
     v = TestIterCellValue(b,l)
     w = $op(u,v)
-    o = [ $op(ui,vi) for (ui,vi) in zip(u,v) ] 
+    o = [ $op(ui,vi) for (ui,vi) in zip(u,v) ]
     test_iter_cell_value(w,o)
 
     u = TestIndexCellValue(a,l)
     v = TestIndexCellValue(b,l)
     w = $op(u,v)
-    o = [ $op(ui,vi) for (ui,vi) in zip(u,v) ] 
+    o = [ $op(ui,vi) for (ui,vi) in zip(u,v) ]
     test_index_cell_value(w,o)
 
   end
@@ -155,12 +155,12 @@ for op in (:+,:-)
 
       v = TestIterCellValue(a,l)
       w = $op(v)
-      o = [ CachedArray(broadcast($op,vi)) for vi in v ] 
+      o = [ CachedArray(broadcast($op,vi)) for vi in v ]
       test_iter_cell_array(w,o)
 
       v = TestIndexCellValue(a,l)
       w = $op(v)
-      o = [ CachedArray(broadcast($op,vi)) for vi in v ] 
+      o = [ CachedArray(broadcast($op,vi)) for vi in v ]
       test_index_cell_array(w,o)
 
     end
@@ -169,13 +169,13 @@ for op in (:+,:-)
 
       u = TestIterCellValue(a,l)
       v = TestIterCellValue(b,l)
-      o = [ CachedArray(broadcast($op,ui,vi)) for (ui,vi) in zip(u,v) ] 
+      o = [ CachedArray(broadcast($op,ui,vi)) for (ui,vi) in zip(u,v) ]
       w = $op(u,v)
       test_iter_cell_array(w,o)
 
       u = TestIndexCellValue(a,l)
       v = TestIndexCellValue(b,l)
-      o = [ CachedArray(broadcast($op,ui,vi)) for (ui,vi) in zip(u,v) ] 
+      o = [ CachedArray(broadcast($op,ui,vi)) for (ui,vi) in zip(u,v) ]
       w = $op(u,v)
       test_index_cell_array(w,o)
 
@@ -187,17 +187,17 @@ end
 ai = TensorValue(1.0,0.0,1.0,2.0)
 a = fill(ai,2,3)
 
-for op in (:inv,:det,:meas)
+for op in (:inv,:det,:meas,:transpose)
   @eval begin
 
   v = TestIterCellValue(a,l)
   w = $op(v)
-  o = [ CachedArray(broadcast($op,vi)) for vi in v ] 
+  o = [ CachedArray(broadcast($op,vi)) for vi in v ]
   test_iter_cell_array(w,o)
 
   v = TestIndexCellValue(a,l)
   w = $op(v)
-  o = [ CachedArray(broadcast($op,vi)) for vi in v ] 
+  o = [ CachedArray(broadcast($op,vi)) for vi in v ]
   test_index_cell_array(w,o)
 
   end
@@ -213,13 +213,13 @@ for op in (:inner,:outer)
 
     u = TestIterCellValue(a,l)
     v = TestIterCellValue(b,l)
-    o = [ CachedArray(broadcast($op,ui,vi)) for (ui,vi) in zip(u,v) ] 
+    o = [ CachedArray(broadcast($op,ui,vi)) for (ui,vi) in zip(u,v) ]
     w = $op(u,v)
     test_iter_cell_array(w,o)
 
     u = TestIndexCellValue(a,l)
     v = TestIndexCellValue(b,l)
-    o = [ CachedArray(broadcast($op,ui,vi)) for (ui,vi) in zip(u,v) ] 
+    o = [ CachedArray(broadcast($op,ui,vi)) for (ui,vi) in zip(u,v) ]
     w = $op(u,v)
     test_index_cell_array(w,o)
 
