@@ -23,15 +23,19 @@ struct CartesianGrid{D} <: Grid{D,D}
   dim_to_ncells::NTuple{D,Int}
   extrusion::NTuple{D,Int}
   order:: Int
+  map
 end
 
-function CartesianGrid(;partition::NTuple{D,Int},domain=nothing,order::Int=1) where D
-  _cartesiangrid(partition,domain,order)
+const identity = (x -> x)
+
+function CartesianGrid(;partition::NTuple{D,Int},domain=nothing,
+                        order::Int=1,map=identity) where D
+  _cartesiangrid(partition,domain,order,map)
 end
 
 function points(self::CartesianGrid)
   dim_to_npoint = tuple([ i+1 for i in self.dim_to_ncells ]...)
-  CartesianGridPoints(self.dim_to_limits,dim_to_npoint)
+  CartesianGridPoints(self.map,self.dim_to_limits,dim_to_npoint)
 end
 
 cells(self::CartesianGrid) = CartesianGridCells(self.dim_to_ncells)
@@ -231,9 +235,10 @@ function _fix_dface_geolabels!(
 
 end
 
-function _cartesiangrid(partition::NTuple{D,Int},domain,order) where D
+function _cartesiangrid(partition::NTuple{D,Int},domain,order,map) where D
   if domain === nothing
-    _domain = [ i*(-1)^j for i in ones(D) for j in 1:2 ]
+    _domain = [ i*j for i in ones(D) for j in 0:1 ]
+    # _domain = [ i*(-1)^j for i in ones(D) for j in 1:2 ]
   else
     _domain = domain
   end
@@ -241,10 +246,11 @@ function _cartesiangrid(partition::NTuple{D,Int},domain,order) where D
   extrusion = tuple(fill(HEX_AXIS,D)...)
   dim_to_ncells = partition
   @notimplementedif order != 1
-  CartesianGrid{D}(dim_to_limits,dim_to_ncells,extrusion,order)
+  CartesianGrid{D}(dim_to_limits,dim_to_ncells,extrusion,order,map)
 end
 
 struct CartesianGridPoints{D} <: IndexCellValue{Point{D,Float64},D}
+  map
   dim_to_limits::NTuple{D,NTuple{2,Float64}}
   dim_to_npoint::NTuple{D,Int}
 end
@@ -260,7 +266,9 @@ function getindex(self::CartesianGridPoints{D}, I::Vararg{Int, D}) where D
     xb = self.dim_to_limits[d][2]
     p[d] =  xa + (I[d]-1)*(xb-xa)/(self.dim_to_npoint[d]-1)
   end
-  Point(p)
+  # map(Point(p)
+  # self.map != identity ? self.map(Point(p)) : Point(p)
+  self.map(Point(p))
 end
 
 struct CartesianGridCells{D,L} <: IndexCellArray{Int,1,SVector{L,Int},D}

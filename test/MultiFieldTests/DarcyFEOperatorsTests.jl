@@ -20,7 +20,8 @@ g(x) = p(x)
 const kinv_1 = TensorValue(1.0,0.0,0.0,1.0)
 r(x) = kinv_1*u(x) + ∇p(x)
 
-model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(50,50))
+gmap(x) = 2*x
+model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(50,50), map = gmap)
 order = 2
 V = FESpace( reffe=:RaviartThomas, conformity=:HDiv, order=2, model=model, diritags = [5,6])
 _Q = FESpace( reffe=:QLagrangian, conformity=:L2, valuetype = Float64, order = 1,
