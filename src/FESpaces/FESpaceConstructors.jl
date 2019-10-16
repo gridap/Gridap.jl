@@ -102,6 +102,7 @@ function FESpace(;kwargs...)
       graph = GridGraph(model)
 
       fespace = ConformingFESpace(_reffe,trian,graph,_labels,diritags)
+      # fespace = DivConformingFESpace(_reffe,trian,graph,_labels,diritags)
 
     else
 
