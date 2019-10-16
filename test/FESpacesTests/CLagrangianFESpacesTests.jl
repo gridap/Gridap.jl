@@ -1,5 +1,6 @@
 module CLagrangianFESpacesTests
 
+
 using Test
 using Gridap
 using Gridap.CLagrangianFESpaces: grid_from_model_and_order
@@ -116,6 +117,8 @@ r = Point{2,Float64}[
   (-1.0, 1.0), (1.0, 1.0), (0.0, -1.0), (0.0, 0.0),
   (-1.0, -0.5), (1.0, -0.5), (0.0, 1.0), (-1.0, 0.5),
   (1.0, 0.5), (0.0, -0.5), (0.0, 0.5)]
+r .= r.+1
+r = 0.5*r
 
 @test collect(points(grid)) ≈ r
 

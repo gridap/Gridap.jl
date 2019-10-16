@@ -17,7 +17,7 @@ fespace = FESpace(
 quadorder = order
 fespace = ZeroMeanFESpace(fespace,quadorder)
 
-@test fespace.vol ≈ 4.0
+@test fespace.vol ≈ 1.0
 
 ufun(x) = x[1] + x[2] + 2.0
 

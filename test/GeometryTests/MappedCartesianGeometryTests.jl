@@ -2,7 +2,70 @@ module MappedCartesianGeometryTests
 
 using Test
 using Gridap
+import Gridap: ∇
 
+###
+
+ufun(x) = x[1]
+ufun_grad(x) = VectorValue(1.0,)
+∇(::typeof(ufun)) = ufun_grad
+bfun(x) = 0.0
+
+n = 10
+ℓ = 1.0
+h = 1.0 / n
+β = 5
+geomap = ( x -> x[1] <= (ℓ-h) ? x[1] : (x[1]-ℓ+h)*β+ℓ-h)
+# Construct the discrete model
+model = CartesianDiscreteModel(partition=(n,),map=geomap)
+# model = CartesianDiscreteModel(partition=(n,))
+
+order = 1
+# Construct the FEspace
+diritag = "boundary"
+fespace = H1ConformingFESpace(Float64,model,order,diritag)
+
+# Define test and trial
+V = TestFESpace(fespace)
+U = TrialFESpace(fespace,ufun)
+
+# Define integration mesh and quadrature
+trian = Triangulation(model)
+points(Grid(model))
+quad = CellQuadrature(trian,degree=order*2)
+# Define forms
+a(v,u) = inner(∇(v), ∇(u))
+b(v) = inner(v,bfun)
+
+# Define Assembler
+assem = SparseMatrixAssembler(V,U)
+
+# Define the FEOperator
+op = LinearFEOperator(a,b,V,U,assem,trian,quad)
+
+# Define the FESolver
+ls = BackslashSolver()
+solver = LinearFESolver(ls)
+
+
+# Solve!
+uh = solve(solver,op)
+
+# Define exact solution and error
+u = CellField(trian,ufun)
+e = u - uh
+
+# Define norms to measure the error
+l2(u) = inner(u,u)
+h1(u) = a(u,u) + l2(u)
+
+# Compute errors
+el2 = sqrt(sum( integrate(l2(e),trian,quad) ))
+eh1 = sqrt(sum( integrate(h1(e),trian,quad) ))
+
+@test el2 < 1.e-8
+
+writevtk(trian,"onedres",cellfields=["uh"=>uh])
 
 ###
 F = Gridap.CartesianGeometry
