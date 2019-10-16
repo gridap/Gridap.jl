@@ -4,12 +4,15 @@ using Test
 using Gridap
 import Gridap: ∇
 
+# using LinearAlgebra
+# LinearAlgebra.cond(ka)
 ###
 
 ufun(x) = x[1]
 ufun_grad(x) = VectorValue(1.0,)
 ∇(::typeof(ufun)) = ufun_grad
 bfun(x) = 0.0
+
 
 n = 10
 ℓ = 1.0
