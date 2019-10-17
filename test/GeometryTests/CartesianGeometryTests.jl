@@ -70,9 +70,7 @@ model = CartesianDiscreteModel(
 grid4 = Grid(model)
 x = points(grid4)
 D = 2
-_domain = [ i*j for i in ones(D) for j in 0:1 ]
-
-@test isa(x,CellValue{Point{2,Float64}})
+@test isa(x,CellValue{Point{3,Float64}})
 
 gridgraph = FullGridGraph(model)
 
