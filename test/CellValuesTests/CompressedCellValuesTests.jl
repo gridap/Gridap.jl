@@ -137,4 +137,8 @@ cv2 = reindex(cv,indices)
 r = values[ptrs[inds]]
 test_index_cell_value(cv2,r)
 
+f = ( x -> 3*x )
+fca = broadcast(f,cv)
+@test all(fca .== cv*3)
+
 end # module

@@ -14,6 +14,7 @@ import Gridap: reindex
 import Gridap: evaluate
 import Base: size
 import Base: getindex
+import Base: broadcast
 import Base: ==, ≈
 
 struct ConstantCellValue{T} <: IndexCellValue{T,1}
@@ -128,5 +129,7 @@ end
 function reindex(values::ConstantCellValue, indices::IndexCellValue{<:IndexLike})
   ConstantCellValue(values.value,length(indices))
 end
+
+broadcast(f,cvs::ConstantCellValue) = ConstantCellValue(f(cvs.value),cvs.length)
 
 end # module ConstantCellValues

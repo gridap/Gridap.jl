@@ -10,8 +10,6 @@ export RTRefFE
 export NedelecRefFE
 export GenericDOFBasis
 
-export field_type
-
 import Gridap: shfbasis
 import Gridap: polytope
 import Gridap: nfacedofs
@@ -76,10 +74,6 @@ polytope(this::GenericRefFE{D,T} where {D,T})::Polytope = this.polytope
 shfbasis(this::GenericRefFE{D,T} where {D,T})::Basis = this.shfbasis
 
 nfacedofs(this::GenericRefFE{D,T} where {D,T})::Vector{Vector{Int}} = this.nfacedofs
-
-function field_type(this::GenericRefFE{D,T}) where {D,T}
-  return T
-end
 
 function _GenericRefFE(p::Polytope{D}, dof_basis::GenericDOFBasis{D,T,S}, shfbasis::Basis{D,T}, nfacedofs) where {D,T,S}
   GenericRefFE{D,T}(p,dof_basis,shfbasis,nfacedofs)
