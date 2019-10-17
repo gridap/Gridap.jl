@@ -10,6 +10,7 @@ export shfbasis
 export polytope
 export nfacedofs
 export dofbasis
+export field_type
 
 import Gridap: evaluate, evaluate!
 
@@ -27,6 +28,10 @@ polytope(this::RefFE{D,T} where {D,T})::Polytope{D} = @abstractmethod
 shfbasis(this::RefFE{D,T} where {D,T})::Basis{D,T} = @abstractmethod
 
 nfacedofs(this::RefFE{D,T} where {D,T})::Vector{Vector{Int}} = @abstractmethod
+
+function field_type(this::RefFE{D,T} ) where {D,T}
+  return T
+end
 
 # @fverdugo this abstract interface needs a tester
 
