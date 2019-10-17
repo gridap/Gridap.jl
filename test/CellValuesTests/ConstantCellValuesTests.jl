@@ -100,5 +100,8 @@ r = fill(sv,5)
 @assert isa(cc,ConstantCellValue)
 test_iter_cell_value(cc,r)
 
+f = ( x -> 3*x )
+fca = broadcast(f,ca)
+@test all(fca .== ca*3)
 
 end # module ConstantCellValuesTests

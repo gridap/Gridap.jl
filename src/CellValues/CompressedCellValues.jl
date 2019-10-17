@@ -21,6 +21,7 @@ import Gridap: apply
 import Gridap: reindex
 import Gridap: evaluate
 import Base: ==, ≈
+import Base: broadcast
 
 struct IterCompressedCellValue{T,A} <: IterCellValue{T}
   values::Vector{T}
@@ -215,5 +216,7 @@ end
 
 _ptrs(p::CellValue) = p
 _ptrs(p::AbstractArray) = CellValueFromArray(p)
+
+broadcast(f,cv::CompressedCellValue) = CompressedCellValue(broadcast(f,cv.values),cv.ptrs)
 
 end # module
