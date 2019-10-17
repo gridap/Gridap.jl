@@ -14,12 +14,9 @@ export normalvec
 export trace
 export tr
 export symmetic_part
+export mutable
 
 import TensorValues: meas
-import Base: adjoint
-import LinearAlgebra: tr
-import LinearAlgebra: dot
-import LinearAlgebra: norm
 
 
 """
@@ -54,32 +51,5 @@ function meas(v::MultiValue{Tuple{2,3}})
   n = normalvec(v)
   sqrt(n*n)
 end
-
-@generated function trace(v::TensorValue{D}) where D
-  str = join([" v.array.data[$i+$((i-1)*D)] +" for i in 1:D ])
-  Meta.parse(str[1:(end-1)])
-end
-
-@inline tr(v::TensorValue) = trace(v)
-
-@generated function symmetic_part(v::TensorValue{D}) where D
-  str = "("
-  for j in 1:D
-    for i in 1:D
-      str *= "0.5*v.array.data[$i+$((j-1)*D)] + 0.5*v.array.data[$j+$((i-1)*D)], "
-    end
-  end
-  str *= ")"
-  Meta.parse("TensorValue($str)")
-end
-
-function adjoint(v::TensorValue)
-  t = adjoint(v.array)
-  TensorValue(t)
-end
-
-@inline dot(u::VectorValue,v::VectorValue) = inner(u,v)
-
-@inline norm(u::VectorValue) = sqrt(inner(u,u))
 
 end # module

@@ -2,12 +2,6 @@ __precompile__()
 
 module Gridap
 
-# TODO move to TensorValues
-using StaticArrays
-using TensorValues
-export mutable
-mutable(::Type{MultiValue{S,T,N,L}}) where {S,T,N,L} = MArray{S,T,N,L}
-
 using Reexport
 
 include("Utils/files.jl")
