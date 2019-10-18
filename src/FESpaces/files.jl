@@ -37,6 +37,3 @@ include("FEOperators.jl")
 
 include("FESpaceConstructors.jl")
 @reexport using Gridap.FESpaceConstructors
-
-include("NewConformingFESpaces.jl")
-@reexport using Gridap.NewConformingFESpaces

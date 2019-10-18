@@ -1,4 +1,4 @@
-module NewConformingFESpaces
+module ConformingFESpaces
 
 using Gridap
 using Gridap.Helpers
@@ -8,8 +8,8 @@ using Base: @propagate_inbounds
 
 using Gridap.BoundaryGrids: _setup_tags
 
-export NewConformingFESpace
-export H1NewConformingFESpace
+export ConformingFESpace
+export H1ConformingFESpace
 import Gridap: num_free_dofs
 import Gridap: num_diri_dofs
 import Gridap: diri_tags
@@ -25,121 +25,102 @@ import Gridap: Triangulation
 import Base: size
 import Base: getindex
 
-const CellRefFE{D,T} = Union{IterCellValue{<:RefFE{D,T}},IndexCellValue{<:RefFE{D,T}}}
-
-struct NewConformingFESpace{D,Z,T} <: FESpace{D,Z,T}
+"""
+Conforming FE Space, where only one RefFE is possible in the whole mesh
+"""
+struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T}
   dim_to_nface_eqclass::Vector{<:IndexCellArray{Int}}
   cell_eqclass::IndexCellArray{Int}
   num_free_dofs::Int
   num_diri_dofs::Int
   diri_tags::Vector{Int}
-  reffe::CellRefFE{Z,T}
+  reffe::RefFE{Z,T}
   triangulation::Triangulation{D,Z}
   gridgraph::GridGraph
   facelabels::FaceLabels
   cellbasis::CellBasis{Z,T}
 end
 
-function NewConformingFESpace(
+function ConformingFESpace(
   reffe::RefFE{D,T},
   trian::Triangulation{D,Z},
   graph::GridGraph,
   labels::FaceLabels,
   diri_tags::Vector{Int}) where {D,Z,T}
-  args = _new_setup_conforming_fe_fields(reffe,trian,graph,labels,diri_tags,D)
-  NewConformingFESpace{D,Z,T}(args...)
+  args = _setup_conforming_fe_fields(reffe,trian,graph,labels,diri_tags,D)
+  ConformingFESpace{D,Z,T}(args...)
 end
 
-function _new_setup_conforming_fe_fields(reffe,trian,graph,labels,diri_tags,D)
-  dim_to_nface_eqclass, nfree, ndiri  = _generate_dim_to_nface_to_dofs(
-    reffe, graph, labels, diri_tags)
-  cellvefs_dim = [connections(graph,D,i) for i in 0:D]
-  offset = length.(dim_to_nface_eqclass)
-  for i in 2:length(offset)
-    offset[i] += offset[i-1]
-  end
-  offset = tuple(offset[1:(end-1)]...)
-  cellvefs = local_append(offset, cellvefs_dim...)
-  dofs_all = append(dim_to_nface_eqclass...)
-  cell_eqclass = CellEqClass(cellvefs, dofs_all, reffe)
-  reffes = ConstantCellValue(reffe,ncells(trian))
-  shb = broadcast(shfbasis,reffes)
-  phi = CellGeomap(trian)
-  basis = attachgeomap(shb,phi)
-  return dim_to_nface_eqclass, cell_eqclass, nfree, ndiri, diri_tags,
-    reffes, trian, graph, labels, basis
-end
-
-function NewConformingFESpace(
+function ConformingFESpace(
   reffe::RefFE{D,T},
   trian::Triangulation{D,Z},
   graph::GridGraph,
   labels::FaceLabels) where {D,Z,T}
-  return NewConformingFESpace(reffe, trian, graph, labels, ())
+  return ConformingFESpace(reffe, trian, graph, labels, ())
 end
 
-num_free_dofs(this::NewConformingFESpace) = this.num_free_dofs
+num_free_dofs(this::ConformingFESpace) = this.num_free_dofs
 
-num_diri_dofs(this::NewConformingFESpace) = this.num_diri_dofs
+num_diri_dofs(this::ConformingFESpace) = this.num_diri_dofs
 
-diri_tags(f::NewConformingFESpace) = f.diri_tags
+diri_tags(f::ConformingFESpace) = f.diri_tags
 
 function apply_constraints(
-  this::NewConformingFESpace, cellvec::CellVector, cellids::CellNumber)
+  this::ConformingFESpace, cellvec::CellVector, cellids::CellNumber)
   cellvec
 end
 
 function apply_constraints_rows(
-  this::NewConformingFESpace, cellmat::CellMatrix, cellids::CellNumber)
+  this::ConformingFESpace, cellmat::CellMatrix, cellids::CellNumber)
   cellmat
 end
 
 function apply_constraints_cols(
-  this::NewConformingFESpace, cellmat::CellMatrix, cellids::CellNumber)
+  this::ConformingFESpace, cellmat::CellMatrix, cellids::CellNumber)
   cellmat
 end
 
-function celldofids(this::NewConformingFESpace)
+function celldofids(this::ConformingFESpace)
   this.cell_eqclass
 end
 
-function interpolate_values(this::NewConformingFESpace,f::Function)
+function interpolate_values(this::ConformingFESpace,f::Function)
   _interpolate_values(this,f)
 end
 
-function interpolate_values(this::NewConformingFESpace{D,Z,T},val::T) where {D,Z,T}
+function interpolate_values(this::ConformingFESpace{D,Z,T},val::T) where {D,Z,T}
   fun(x) = val
   interpolate_values(this,fun)
 end
 
-function interpolate_diri_values(this::NewConformingFESpace, funs::Vector{<:Function})
+function interpolate_diri_values(this::ConformingFESpace, funs::Vector{<:Function})
   _interpolate_diri_values(this,funs)
 end
 
-function interpolate_diri_values(this::NewConformingFESpace{D,Z,T}, vals::Vector{T}) where {D,Z,T}
+function interpolate_diri_values(this::ConformingFESpace{D,Z,T}, vals::Vector{T}) where {D,Z,T}
   _interpolate_diri_values(this,vals)
 end
 
 function CellField(
-  fespace::NewConformingFESpace{D,Z,T},
+  fespace::ConformingFESpace{D,Z,T},
   free_dofs::AbstractVector{E},
   diri_dofs::AbstractVector{E}) where {D,Z,T,E}
 
   _CellField(fespace, free_dofs, diri_dofs,T,E)
 end
 
-CellBasis(this::NewConformingFESpace) = this.cellbasis
+CellBasis(this::ConformingFESpace) = this.cellbasis
 
-Triangulation(this::NewConformingFESpace) = this.triangulation
+Triangulation(this::ConformingFESpace) = this.triangulation
 
-function H1NewConformingFESpace(
+function H1ConformingFESpace(
   ::Type{T}, model::DiscreteModel{D}, order::Integer, diri_tags) where {D,T}
 
   labels = FaceLabels(model)
-  H1NewConformingFESpace(T,model,labels,order,diri_tags)
+  H1ConformingFESpace(T,model,labels,order,diri_tags)
 end
 
-function H1NewConformingFESpace(
+function H1ConformingFESpace(
   ::Type{T},
   model::DiscreteModel{D},
   labels::FaceLabels,
@@ -153,7 +134,7 @@ function H1NewConformingFESpace(
   polytope = _polytope(celltypes(grid))
   fe = LagrangianRefFE(T,polytope, orders)
   _diri_tags = _setup_tags(labels,diri_tags)
-  NewConformingFESpace(fe,trian,graph,labels,_diri_tags)
+  ConformingFESpace(fe,trian,graph,labels,_diri_tags)
 end
 
 # @santiagobadia : Create a HDiv conforming constructor
@@ -166,6 +147,7 @@ function _CellField(
   @assert E == eltype(T)
   @assert num_free_dofs(fespace) == length(free_dofs)
   @assert num_diri_dofs(fespace) == length(diri_dofs)
+  reffe = fespace.reffe
   celldofs = celldofids(fespace)
   shb = CellBasis(fespace)
   cdofs = CellVectorFromLocalToGlobalPosAndNeg(
@@ -174,6 +156,25 @@ function _CellField(
   # @santiagobadia: For RT methods, we must add here a local_to_global_dofs
   # or global_to_local_dofs
 
+end
+
+function _setup_conforming_fe_fields(reffe,trian,graph,labels,diri_tags,D)
+  dim_to_nface_eqclass, nfree, ndiri  = _generate_dim_to_nface_to_dofs(
+    reffe, graph, labels, diri_tags)
+  cellvefs_dim = [connections(graph,D,i) for i in 0:D]
+  offset = length.(dim_to_nface_eqclass)
+  for i in 2:length(offset)
+    offset[i] += offset[i-1]
+  end
+  offset = tuple(offset[1:(end-1)]...)
+  cellvefs = local_append(offset, cellvefs_dim...)
+  dofs_all = append(dim_to_nface_eqclass...)
+  cell_eqclass = CellEqClass(cellvefs, dofs_all, reffe)
+  shb = ConstantCellValue(shfbasis(reffe), ncells(trian))
+  phi = CellGeomap(trian)
+  basis = attachgeomap(shb,phi)
+  return dim_to_nface_eqclass, cell_eqclass, nfree, ndiri, diri_tags,
+    reffe, trian, graph, labels, basis
 end
 
 function _generate_dim_to_nface_to_dofs(
@@ -275,9 +276,9 @@ function _polytope(celltypes::ConstantCellValue)
   Polytope(code)
 end
 
-function _interpolate_values(fesp::NewConformingFESpace{D,Z,T},fun::Function) where {D,Z,T}
+function _interpolate_values(fesp::ConformingFESpace{D,Z,T},fun::Function) where {D,Z,T}
   reffe = fesp.reffe
-  dofb = broadcast(dofbasis,reffe)
+  dofb = dofbasis(reffe)
   trian = fesp.triangulation
   phi = CellGeomap(trian)
   uphys = fun ∘ phi
@@ -286,8 +287,7 @@ function _interpolate_values(fesp::NewConformingFESpace{D,Z,T},fun::Function) wh
   E = dof_type(T)
   free_dofs = zeros(E, num_free_dofs(fesp))
   diri_dofs = zeros(E, num_diri_dofs(fesp))
-  maxl = max(collect(broadcast(length,dofb))...)
-  aux = zeros(E, maxl)
+  aux = zeros(E, length(dofb))
   _interpolate_values_kernel!(
     free_dofs,diri_dofs,uphys,celldofs,dofb,aux)
   return free_dofs, diri_dofs
@@ -296,8 +296,8 @@ end
 function _interpolate_values_kernel!(
   free_dofs,diri_dofs,uphys,celldofs,dofb,aux)
 
-  for (dof,imap,l2g) in zip(dofb,uphys,celldofs)
-    evaluate!(dof,imap,aux)
+  for (imap,l2g) in zip(uphys,celldofs)
+    evaluate!(dofb,imap,aux)
     # @santiagobadia : Here we should add a method for RT that multiplies by -1
     # if the face has this cell as the second one in the grid graph
     # local_to_global_dofs, global_to_local_dofs CellArray
@@ -311,7 +311,7 @@ function _interpolate_values_kernel!(
   end
 end
 
-function _interpolate_diri_values(fesp::NewConformingFESpace{D,Z,T},funs) where {D,Z,T}
+function _interpolate_diri_values(fesp::ConformingFESpace{D,Z,T},funs) where {D,Z,T}
 
   labels = fesp.facelabels
   dim_to_nface_to_label = labels.dim_to_nface_to_label
