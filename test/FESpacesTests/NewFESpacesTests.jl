@@ -9,28 +9,15 @@ using Gridap.Helpers
 using Base.Cartesian
 
 import Gridap: ∇
-# 1D reffe
 
-F = Gridap.NewConformingFESpaces
-
-# Construct the discrete model
 n = 2
 model = CartesianDiscreteModel(partition=(n,))
-
-diri = [1]
-p = Polytope(1,)
+diritag = [1]
 order = 2
+fespace = H1ConformingFESpace(Float64,model,order,diritag)
 
-trian = Triangulation(model)
-reffe = LagrangianRefFE(Float64,p,order)
-
-graph = GridGraph(model)
-labels = FaceLabels(model)
-mydiri_tags = Gridap.BoundaryGrids._setup_tags(labels,diri)
-
-fespace = ConformingFESpace(reffe,trian,graph,labels,mydiri_tags)
-# Define manufactured functions
-ufun(x) = x[1]*(x[1]-2.0)
+l = 1.0
+ufun(x) = x[1]*(x[1]-2.0*l)
 ufun_grad(x) = VectorValue(2*x[1]-2.0,)
 bfun(x) = -2.0
 ∇(::typeof(ufun)) = ufun_grad
@@ -38,7 +25,6 @@ bfun(x) = -2.0
 V = TestFESpace(fespace)
 U = TrialFESpace(fespace,ufun)
 
-##
 # Define integration mesh and quadrature
 trian = Triangulation(model)
 quad = CellQuadrature(trian,degree=order*2)
