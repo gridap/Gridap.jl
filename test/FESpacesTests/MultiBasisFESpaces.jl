@@ -32,5 +32,5 @@ function _setup_multishape_conforming_fe_fields(reffes,trian,graph,labels,diri_t
   phi = CellGeomap(trian)
   basis = attachgeomap(shb,phi)
   return dim_to_nface_eqclass, cell_eqclass, nfree, ndiri, diri_tags,
-    reffe, trian, graph, labels, basis
+    reffes, trian, graph, labels, basis
 end

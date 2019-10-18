@@ -25,16 +25,15 @@ import Gridap: Triangulation
 import Base: size
 import Base: getindex
 
-"""
-Conforming FE Space, where only one RefFE is possible in the whole mesh
-"""
+const CellRefFE{D,T} = Union{IterCellValue{<:RefFE{D,T}},IndexCellValue{<:RefFE{D,T}}}
+
 struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T}
   dim_to_nface_eqclass::Vector{<:IndexCellArray{Int}}
   cell_eqclass::IndexCellArray{Int}
   num_free_dofs::Int
   num_diri_dofs::Int
   diri_tags::Vector{Int}
-  reffe::RefFE{Z,T}
+  reffe::CellRefFE{Z,T}
   triangulation::Triangulation{D,Z}
   gridgraph::GridGraph
   facelabels::FaceLabels
@@ -49,6 +48,26 @@ function ConformingFESpace(
   diri_tags::Vector{Int}) where {D,Z,T}
   args = _setup_conforming_fe_fields(reffe,trian,graph,labels,diri_tags,D)
   ConformingFESpace{D,Z,T}(args...)
+end
+
+function _setup_conforming_fe_fields(reffe,trian,graph,labels,diri_tags,D)
+  dim_to_nface_eqclass, nfree, ndiri  = _generate_dim_to_nface_to_dofs(
+    reffe, graph, labels, diri_tags)
+  cellvefs_dim = [connections(graph,D,i) for i in 0:D]
+  offset = length.(dim_to_nface_eqclass)
+  for i in 2:length(offset)
+    offset[i] += offset[i-1]
+  end
+  offset = tuple(offset[1:(end-1)]...)
+  cellvefs = local_append(offset, cellvefs_dim...)
+  dofs_all = append(dim_to_nface_eqclass...)
+  cell_eqclass = CellEqClass(cellvefs, dofs_all, reffe)
+  reffes = ConstantCellValue(reffe,ncells(trian))
+  shb = broadcast(shfbasis,reffes)
+  phi = CellGeomap(trian)
+  basis = attachgeomap(shb,phi)
+  return dim_to_nface_eqclass, cell_eqclass, nfree, ndiri, diri_tags,
+    reffes, trian, graph, labels, basis
 end
 
 function ConformingFESpace(
@@ -147,7 +166,6 @@ function _CellField(
   @assert E == eltype(T)
   @assert num_free_dofs(fespace) == length(free_dofs)
   @assert num_diri_dofs(fespace) == length(diri_dofs)
-  reffe = fespace.reffe
   celldofs = celldofids(fespace)
   shb = CellBasis(fespace)
   cdofs = CellVectorFromLocalToGlobalPosAndNeg(
@@ -156,25 +174,6 @@ function _CellField(
   # @santiagobadia: For RT methods, we must add here a local_to_global_dofs
   # or global_to_local_dofs
 
-end
-
-function _setup_conforming_fe_fields(reffe,trian,graph,labels,diri_tags,D)
-  dim_to_nface_eqclass, nfree, ndiri  = _generate_dim_to_nface_to_dofs(
-    reffe, graph, labels, diri_tags)
-  cellvefs_dim = [connections(graph,D,i) for i in 0:D]
-  offset = length.(dim_to_nface_eqclass)
-  for i in 2:length(offset)
-    offset[i] += offset[i-1]
-  end
-  offset = tuple(offset[1:(end-1)]...)
-  cellvefs = local_append(offset, cellvefs_dim...)
-  dofs_all = append(dim_to_nface_eqclass...)
-  cell_eqclass = CellEqClass(cellvefs, dofs_all, reffe)
-  shb = ConstantCellValue(shfbasis(reffe), ncells(trian))
-  phi = CellGeomap(trian)
-  basis = attachgeomap(shb,phi)
-  return dim_to_nface_eqclass, cell_eqclass, nfree, ndiri, diri_tags,
-    reffe, trian, graph, labels, basis
 end
 
 function _generate_dim_to_nface_to_dofs(
@@ -278,7 +277,7 @@ end
 
 function _interpolate_values(fesp::ConformingFESpace{D,Z,T},fun::Function) where {D,Z,T}
   reffe = fesp.reffe
-  dofb = dofbasis(reffe)
+  dofb = broadcast(dofbasis,reffe)
   trian = fesp.triangulation
   phi = CellGeomap(trian)
   uphys = fun ∘ phi
@@ -287,7 +286,8 @@ function _interpolate_values(fesp::ConformingFESpace{D,Z,T},fun::Function) where
   E = dof_type(T)
   free_dofs = zeros(E, num_free_dofs(fesp))
   diri_dofs = zeros(E, num_diri_dofs(fesp))
-  aux = zeros(E, length(dofb))
+  maxl = max(collect(broadcast(length,dofb))...)
+  aux = zeros(E, maxl)
   _interpolate_values_kernel!(
     free_dofs,diri_dofs,uphys,celldofs,dofb,aux)
   return free_dofs, diri_dofs
@@ -296,8 +296,8 @@ end
 function _interpolate_values_kernel!(
   free_dofs,diri_dofs,uphys,celldofs,dofb,aux)
 
-  for (imap,l2g) in zip(uphys,celldofs)
-    evaluate!(dofb,imap,aux)
+  for (dof,imap,l2g) in zip(dofb,uphys,celldofs)
+    evaluate!(dof,imap,aux)
     # @santiagobadia : Here we should add a method for RT that multiplies by -1
     # if the face has this cell as the second one in the grid graph
     # local_to_global_dofs, global_to_local_dofs CellArray

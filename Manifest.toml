@@ -304,6 +304,6 @@ version = "0.2.2"
 
 [[WriteVTK]]
 deps = ["Base64", "CodecZlib", "LightXML", "Random", "TranscodingStreams"]
-git-tree-sha1 = "1a2b0723c5db05c511e2f06093079a2833081674"
+git-tree-sha1 = "3ecc73f1c3175218b7ab37fe487dbe4cb1148e40"
 uuid = "64499a7a-5c06-52f2-abe2-ccb03c286192"
-version = "1.2.0"
+version = "1.2.2"
