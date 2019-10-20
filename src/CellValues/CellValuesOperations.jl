@@ -10,7 +10,7 @@ export cellsum
 export cellmean
 export cellnewaxis
 export compress
-import Base: +,-,*,/,\, ==, ≈
+import Base: +,-,*,/,\, ==, ≈, transpose
 import LinearAlgebra: inv, det
 import TensorValues: inner, outer, meas
 

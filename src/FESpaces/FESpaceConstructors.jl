@@ -101,7 +101,8 @@ function FESpace(;kwargs...)
       trian = Triangulation(grid)
       graph = GridGraph(model)
 
-      fespace = ConformingFESpace(_reffe,trian,graph,_labels,diritags)
+      # fespace = ConformingFESpace(_reffe,trian,graph,_labels,diritags)
+      fespace = DivConformingFESpace(_reffe,trian,graph,_labels,diritags)
 
     else
 
