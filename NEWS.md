@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Deprecated
 ### Fixed
 
+## [0.5.2] - 2019-10-21
+### Fixed
+- Incompatibility problem with `TensorValues` version 0.3.5.
+
 ## [0.5.1] - 2019-10-03
 ### Added
 - Pretty printing for the types most exposed to users. Since PR [#109](https://github.com/gridap/Gridap.jl/pull/109).
