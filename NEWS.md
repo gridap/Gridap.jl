@@ -8,8 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - New `GenericRefFE`. Since commit [876ef1e](https://github.com/gridap/Gridap.jl/commit/c3c9010177432b8f07aaecf4a0baa4b93876ef1e)
 - New `NedelecRefFE` constructor that generates Nedelec FEs of arbitrary order in 2D and 3D on hex. Since commit [876ef1e](https://github.com/gridap/Gridap.jl/commit/c3c9010177432b8f07aaecf4a0baa4b93876ef1e)
-- New keyring argument `map` in the constructor of `CartesianModel`, which allows one to transform the original domain, by defaut [0,1]^d to a new domain through a homeomorphic map. Since commit [30cc4bc](https://github.com/gridap/Gridap.jl/commit/1c51b18f7e21c4915c0b379585dc5d98130cc4bc)
-- New keyring argument `map` in the constructor of `CartesianGrid` and a new `map` attribute in this structure, since commit [30cc4bc](https://github.com/gridap/Gridap.jl/commit/1c51b18f7e21c4915c0b379585dc5d98130cc4bc)
+- New keyword argument `map` in the constructor of `CartesianModel`, which allows one to transform the original domain, by defaut [0,1]^d to a new domain through a homeomorphic map. Since commit [30cc4bc](https://github.com/gridap/Gridap.jl/commit/1c51b18f7e21c4915c0b379585dc5d98130cc4bc)
+- New keyword argument `map` in the constructor of `CartesianGrid` and a new `map` attribute in this structure, since commit [30cc4bc](https://github.com/gridap/Gridap.jl/commit/1c51b18f7e21c4915c0b379585dc5d98130cc4bc)
 - `CartesianGridPoints` has new attribute `map` since commit [30cc4bc](https://github.com/gridap/Gridap.jl/commit/1c51b18f7e21c4915c0b379585dc5d98130cc4bc)
 
 ### Changed
@@ -21,6 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 ### Deprecated
 ### Fixed
+
+
+## [0.5.2] - 2019-10-22
+### Fixed
+- Incompatibility problem with `TensorValues` version 0.3.5. Via commit [3c0682a](https://github.com/gridap/Gridap.jl/commit/3c0682a84250e17086457ca3a90a49d9bce133d0).
+
 
 ## [0.5.1] - 2019-10-03
 ### Added
