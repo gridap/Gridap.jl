@@ -5,6 +5,7 @@ using Gridap.Helpers
 using Gridap.MultiFESpaces: _compute_offsets
 
 using SparseArrays
+using SparseMatricesCSR
 
 export MultiAssembler
 export MultiSparseMatrixAssembler
@@ -13,8 +14,7 @@ import Gridap.Assemblers: assemble
 import Gridap.Assemblers: assemble!
 import Gridap.Assemblers: SparseMatrixAssembler
 import Gridap.Assemblers: SparseMatrixAssembler
-import Gridap.Assemblers: push_coo!
-import Gridap.Assemblers: sparse_from_coo
+using  Gridap.Assemblers: sparse_from_coo
 
 abstract type MultiAssembler{M<:AbstractMatrix,V<:AbstractVector} end
 
@@ -73,7 +73,7 @@ end
 """
 MultiAssembler that produces SparseMatrices from the SparseArrays package
 """
-struct MultiSparseMatrixAssembler{E,M} <: MultiAssembler{AbstractSparseMatrix{E,Int},Vector{E}}
+struct MultiSparseMatrixAssembler{E,M} <: MultiAssembler{M,Vector{E}}
   testfesps::MultiFESpace{E}
   trialfesps::MultiFESpace{E}
 
@@ -135,8 +135,8 @@ function MultiSparseMatrixAssembler(
 end
 
 function assemble(
-  this::MultiSparseMatrixAssembler{E,M},
-  allvals::Vararg{Tuple{<:MultiCellVector,<:CellNumber}}) where {E,M}
+  this::MultiSparseMatrixAssembler{E},
+  allvals::Vararg{Tuple{<:MultiCellVector,<:CellNumber}}) where {E}
 
   n = num_free_dofs(this.testfesps)
   vec = zeros(E,n)
@@ -146,8 +146,8 @@ end
 
 function assemble!(
   vec::Vector{E},
-  this::MultiSparseMatrixAssembler{E,M},
-  allmcv::Vararg{Tuple{<:MultiCellVector,<:CellNumber}}) where {E,M}
+  this::MultiSparseMatrixAssembler{E},
+  allmcv::Vararg{Tuple{<:MultiCellVector,<:CellNumber}}) where {E}
 
   vec .= zero(E)
   V = this.testfesps

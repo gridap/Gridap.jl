@@ -11,7 +11,6 @@ export Assembler
 export SparseMatrixAssembler
 export assemble
 export assemble!
-export push_coo!
 export sparse_from_coo
 
 """
@@ -85,7 +84,7 @@ end
 """
 Assembler that produces SparseMatrices from the SparseArrays and SparseMatricesCSR packages
 """
-struct SparseMatrixAssembler{E,M} <: Assembler{AbstractSparseMatrix{E,Int},Vector{E}}
+struct SparseMatrixAssembler{E,M} <: Assembler{M,Vector{E}}
   testfesp::FESpace
   trialfesp::FESpace
 
@@ -103,8 +102,8 @@ function SparseMatrixAssembler(test::FESpace{D,Z,T}, trial::FESpace{D,Z,T}) wher
 end
 
 function assemble(
-  this::SparseMatrixAssembler{E,M},
-  vals::Vararg{Tuple{<:CellVector,<:CellNumber}}) where {E,M}
+  this::SparseMatrixAssembler{E},
+  vals::Vararg{Tuple{<:CellVector,<:CellNumber}}) where {E}
 
   n = num_free_dofs(this.testfesp)
   vec = zeros(E,n)
@@ -114,8 +113,8 @@ end
 
 function assemble!(
   vec::Vector{E},
-  this::SparseMatrixAssembler{E,M},
-  allvals::Vararg{Tuple{<:CellVector,<:CellNumber}}) where {E,M}
+  this::SparseMatrixAssembler{E},
+  allvals::Vararg{Tuple{<:CellVector,<:CellNumber}}) where {E}
 
   vec .= zero(E)
   rows = celldofids(this.testfesp)
