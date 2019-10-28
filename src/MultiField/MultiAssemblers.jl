@@ -183,6 +183,9 @@ function assemble(
       aux_row,aux_col,aux_val,mf_rows,mf_cols,mf_vals,
       i_to_fieldid,offsets_row,offsets_col)
   end
+  num_rows = num_free_dofs(this.testfesps)
+  num_cols = num_free_dofs(this.trialfesps)
+  finalize_coo!(M,aux_row,aux_col,aux_val,num_rows,num_cols)
   sparse_from_coo(M,aux_row, aux_col, aux_val)
 end
 

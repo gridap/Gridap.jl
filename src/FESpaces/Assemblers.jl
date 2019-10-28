@@ -152,6 +152,9 @@ function assemble(
     _assemble_sparse_matrix_values!(M,
       aux_row,aux_col,aux_val,vals_m,rows_m,cols_m)
   end
+  num_rows = num_free_dofs(this.testfesp)
+  num_cols = num_free_dofs(this.trialfesp)
+  finalize_coo!(M,aux_row,aux_col,aux_val,num_rows,num_cols)
   sparse_from_coo(M,aux_row,aux_col,aux_val)
 end
 
