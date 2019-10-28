@@ -143,7 +143,7 @@ function assemble(
 
   _rows_m = celldofids(this.testfesp)
   _cols_m = celldofids(this.trialfesp)
-
+@show allvals
   for (vals, cellids_row, cellids_col) in allvals
     _vals = apply_constraints_rows(this.testfesp, vals, cellids_row)
     rows_m = reindex(_rows_m, cellids_row)
@@ -152,7 +152,7 @@ function assemble(
     _assemble_sparse_matrix_values!(M,
       aux_row,aux_col,aux_val,vals_m,rows_m,cols_m)
   end
-  sparse(aux_row,aux_col,aux_val)
+  sparse_from_coo(M,aux_row,aux_col,aux_val)
 end
 
 function _assemble_sparse_matrix_values!(::Type{M},aux_row,aux_col,aux_val,vals,rows,cols) where {M}
@@ -170,13 +170,13 @@ function _assemble_sparse_matrix_values!(::Type{M},aux_row,aux_col,aux_val,vals,
 end
 
 function assemble!(
-  mat::SparseMatrixCSC{E},
+  mat::AbstractSparseMatrix{E,Int},
   this::SparseMatrixAssembler{E,M},
   vals::Vararg{Tuple{<:CellMatrix,<:CellNumber,<:CellNumber}}) where {E,M}
   # This routine can be optimized a lot taking into a count the sparsity graph of mat
   # For the moment we create an intermediate matrix and then transfer the nz values
   m = assemble(this,vals...)
-  mat.nzval .= nonzeros(m)
+  nonzeros(mat) .= nonzeros(m)
 end
 
 function sparse_from_coo(::Type{<:SparseMatrixCSC}, args...)
