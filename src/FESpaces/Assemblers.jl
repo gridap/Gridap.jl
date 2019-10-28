@@ -11,6 +11,8 @@ export Assembler
 export SparseMatrixAssembler
 export assemble
 export assemble!
+export push_coo!
+export sparse_from_coo
 
 """
 Abstract assembly operator
@@ -143,7 +145,6 @@ function assemble(
 
   _rows_m = celldofids(this.testfesp)
   _cols_m = celldofids(this.trialfesp)
-@show allvals
   for (vals, cellids_row, cellids_col) in allvals
     _vals = apply_constraints_rows(this.testfesp, vals, cellids_row)
     rows_m = reindex(_rows_m, cellids_row)
