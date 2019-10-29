@@ -4,6 +4,7 @@ using Gridap
 using Gridap.Helpers
 
 using LinearAlgebra
+using SparseArrays
 
 import Gridap: apply
 export apply!
@@ -188,6 +189,16 @@ function LinearFEOperator(
 end
 
 function LinearFEOperator(
+  ::Type{M},
+  testfesp::FESpaceLike,
+  trialfesp::FESpaceLike,
+  terms::Vararg{<:AffineFETerm}) where {M}
+
+  assem = SparseMatrixAssembler(M,testfesp,trialfesp)
+  LinearFEOperator(testfesp,trialfesp,assem,terms...)
+end
+
+function LinearFEOperator(
   biform::Function,
   liform::Function,
   testfesp::FESpaceLike,
@@ -289,6 +300,17 @@ function NonLinearFEOperator(
   assem = SparseMatrixAssembler(testfesp,trialfesp)
   NonLinearFEOperator(testfesp,trialfesp,assem,terms)
 end
+
+function NonLinearFEOperator(
+  ::Type{M},
+  testfesp::FESpaceLike,
+  trialfesp::FESpaceLike,
+  terms::Vararg{<:FETerm}) where {M}
+
+  assem = SparseMatrixAssembler(M,testfesp,trialfesp)
+  NonLinearFEOperator(testfesp,trialfesp,assem,terms...)
+end
+
 
 function NonLinearFEOperator(
   res::Function,
