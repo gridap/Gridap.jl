@@ -18,7 +18,7 @@ The library currently supports linear and nonlinear PDE systems for scalar and v
 
 * The first step for new users is to visit the [Getting Started](@ref) page.
 
-* A detailed description of the software components is available in the [Manual](@ref) page.
+* The detailed documentation is in the [Manual](@ref) section.
 
 * Guidelines for developers of the Gridap project is found in the [Gridap wiki](https://github.com/gridap/Gridap.jl/wiki) page.
 
@@ -35,5 +35,18 @@ Here, a list of resources to get started with this programming language.
 * Official webpage [docs.julialang.org](https://docs.julialang.org/)
 * Official list of learning resources [julialang.org/learning](https://julialang.org/learning/)
 
+## Manual
 
+```@contents
+Pages = [
+  "Gridap.md",
+  "Helpers.md",
+  "Inference.md",
+  "TensorValues.md",
+  "Arrays.md",
+  "Fields.md",
+  "Polynomials.md",
+  "ReferenceFEs.md",
+  ]
+```
 
