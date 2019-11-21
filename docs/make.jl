@@ -13,6 +13,7 @@ pages = [
   "Gridap.Fields" => "Fields.md",
   "Gridap.Polynomials" => "Polynomials.md",
   "Gridap.ReferenceFEs" => "ReferenceFEs.md",
+  "Gridap.Geometry" => "Geometry.md",
  ]
 
 makedocs(
@@ -26,18 +27,3 @@ deploydocs(
     repo = "github.com/gridap/Gridap.jl.git",
 )
 
-#using Documenter 
-#using Gridap
-#
-#makedocs(
-#  sitename = "Gridap.jl",
-#  format = Documenter.HTML(),
-#  modules = [Gridap],
-#  pages = [
-#    "Home" => "index.md",
-#    "Getting Started" => "pages/getting-started.md",
-#    "Manual" => "pages/manual.md"]
-# )
-#
-#deploydocs(repo = "github.com/gridap/Gridap.jl.git")
-#
