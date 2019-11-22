@@ -43,13 +43,14 @@ end
   np, nf = size(a)
   setsize!(r,(np,))
   z = zero(eltype(r))
+  _r = r.array
   for i in 1:np
-    @inbounds r[i] = z
+    @inbounds _r[i] = z
     for j in 1:nf
-      @inbounds r[i] += outer(a[i,j],b[j])
+      @inbounds _r[i] += outer(a[i,j],b[j])
     end
   end
-  r
+  _r
 end
 
 mutable struct LinComField{A,B} <: Field

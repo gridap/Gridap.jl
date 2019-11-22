@@ -139,6 +139,7 @@ compute_face_orders(p::Polytope,face::Polytope,iface::Int,orders)
 compute_nodes(p::Polytope,orders)
 compute_own_nodes_permutations(p::Polytope, interior_nodes)
 compute_lagrangian_reffaces(::Type{T},p::Polytope,orders) where T
+num_nodes(reffe::LagrangianRefFE)
 get_node_coordinates(reffe::LagrangianRefFE)
 get_dof_to_node(reffe::LagrangianRefFE)
 get_dof_to_comp(reffe::LagrangianRefFE)

@@ -96,6 +96,13 @@ Returns the field `node_and_comp_to_dof` of the underlying `LagrangianDofBasis`.
 """
 get_node_and_comp_to_dof(reffe::LagrangianRefFE) = reffe.data.dofs.node_and_comp_to_dof
 
+"""
+    num_nodes(reffe::LagrangianRefFE) -> Int
+
+Get the number of nodes in the Lagrangian reference FE
+"""
+num_nodes(reffe::LagrangianRefFE) = length(get_node_coordinates(reffe))
+
 function ReferenceFE{N}(reffe::LagrangianRefFE,iface::Integer) where N
   ReferenceFE{N}(reffe.data,iface)
 end

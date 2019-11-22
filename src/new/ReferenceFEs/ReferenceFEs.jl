@@ -88,6 +88,7 @@ export get_node_coordinates
 export get_dof_to_node
 export get_dof_to_comp
 export get_node_and_comp_to_dof
+export num_nodes
 
 export SerendipityRefFE
 
