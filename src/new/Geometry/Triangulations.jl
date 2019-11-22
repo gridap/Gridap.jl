@@ -96,33 +96,3 @@ function _get_cell_data(type_to_data, cell_to_type::Fill)
   Fill(data,ncells)
 end
 
-# ConformingTrian interface
-
-"""
-"""
-abstract type ConformingTrian{Dc,Dp} <: Triangulation{Dc,Dp} end
-
-"""
-"""
-function get_node_coordinates(trian::ConformingTrian)
-  @abstractmethod
-end
-
-"""
-"""
-function get_cell_nodes(trian::ConformingTrian)
-  @abstractmethod
-end
-
-# Methods from triangulation
-
-function get_cell_coordinates(trian::ConformingTrian)
-  node_to_coords = get_node_coordinates(trian)
-  cell_to_nodes = get_cell_nodes(trian)
-  LocalToGlobalArray(cell_to_nodes,node_to_coords)
-end
-
-# Some API
-
-num_nodes(trian::ConformingTrian) = length(get_node_coordinates(trian))
-

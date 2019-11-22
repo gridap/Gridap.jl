@@ -10,6 +10,7 @@ using DocStringExtensions
 using FillArrays
 
 using Gridap.Helpers
+using Gridap.Arrays
 using Gridap.Fields
 using Gridap.ReferenceFEs
 
@@ -28,6 +29,12 @@ export get_cell_shapefuns
 export get_cell_map
 export test_triangulation
 
+export ConformingTriangulation
+export get_cell_nodes
+export test_conforming_triangulation
+
 include("Triangulations.jl")
+
+include("ConformingTriangulations.jl")
 
 end # module
