@@ -17,4 +17,16 @@ c = apply(*,a,b)
 test_array(c,r.*(-r))
 @test isa(c,CompressedArray)
 
+k = CompressedArray([zero,+,-],copy(ptrs))
+r = collect(CompressedArray([0,20,-31],ptrs))
+c = apply(k,a)
+test_array(c,r)
+@test isa(c,CompressedArray)
+
+k = CompressedArray([zero,+,-],ptrs)
+r = collect(CompressedArray([0,20,-31],ptrs))
+c = apply(k,a)
+test_array(c,r)
+@test isa(c,CompressedArray)
+
 end # module

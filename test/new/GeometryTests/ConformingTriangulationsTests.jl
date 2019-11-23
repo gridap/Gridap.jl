@@ -46,12 +46,15 @@ q = CompressedArray([q1,q2],get_cell_types(trian))
 cell_map = get_cell_map(trian)
 x = evaluate(cell_map,q)
 
-#display(x)
-
-
-#q = Fill(qe,ncells)
-#
-#
-#display(get_cell_shapefuns(trian))
+x1i = Point(0.5, 0.75)
+x2i = Point(1.5, 0.5)
+x3i = Point(1.0, 0.75)
+x4i = Point(1.5, 1.0)
+x1 = fill(x1i,np2)
+x2 = fill(x2i,np2)
+x3 = fill(x3i,np1)
+x4 = fill(x4i,np1)
+x = [x1,x2,x3,x4]
+test_array_of_fields(cell_map,q,x)
 
 end # module
