@@ -99,6 +99,11 @@ CompressedArray(::AbstractArray,::AbstractArray)
 ```@docs
 Table
 Table(data::AbstractVector,ptrs::AbstractVector)
+Table(a::AbstractVector{<:AbstractVector})
+rewind_ptrs!(ptrs::AbstractVector{<:Integer})
+generate_data_and_ptrs(vv::AbstractVector{<:AbstractVector{T}}) where T
+length_to_ptrs!(ptrs::AbstractArray{<:Integer})
+append_ptrs(pa::AbstractVector{T},pb::AbstractVector{T}) where T
 ```
 
 ### LocalToGlobalArray
