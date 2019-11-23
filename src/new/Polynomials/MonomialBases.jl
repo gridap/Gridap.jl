@@ -1,11 +1,10 @@
 
 """
-    struct MonomialBasis{...} <: Field
+    struct MonomialBasis{D,T} <: Field
 
 Type representing a basis of multivariate scalar-valued, vector-valued, or
-tensor-valued, iso- or aniso-tropic monomials. The type parameters and fields
-of this `struct` are not public, they are 
-private implementation details.  
+tensor-valued, iso- or aniso-tropic monomials. The fields
+of this `struct` are not public  
 This type fully implements the [`Field`](@ref) interface, with up to second order
 derivatives.
 """
@@ -63,6 +62,36 @@ function MonomialBasis{D}(
   orders = tfill(order,Val{D}())
   MonomialBasis{D}(T,orders,filter)
 end
+
+# API
+
+"""
+    get_exponents(b::MonomialBasis)
+
+Get a vector of tuples with the exponents of all the terms in the
+monomial basis.
+
+# Examples
+
+```jldoctest
+using Gridap.Polynomials
+
+b = MonomialBasis{2}(Float64,2)
+
+exponents = get_exponents(b)
+
+println(exponents)
+
+# output
+Tuple{Int64,Int64}[(0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1), (0, 2), (1, 2), (2, 2)]
+```
+"""
+function get_exponents(b::MonomialBasis)
+  indexbase = 1
+  [Tuple(t) .- indexbase for t in b.terms]
+end
+
+# Field implementation
 
 function field_cache(f::MonomialBasis{D,T},x) where {D,T}
   @assert D == length(eltype(x)) "Incorrect number of point components"

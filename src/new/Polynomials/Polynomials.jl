@@ -26,6 +26,7 @@ export MonomialBasis
 export QGradMonomialBasis
 export QCurlGradMonomialBasis
 export change_basis
+export get_exponents
 
 include("MonomialBases.jl")
 
