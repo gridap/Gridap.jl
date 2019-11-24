@@ -19,12 +19,6 @@ For this type
 -  `get_prebasis(reffe)` returns a `MonomialBasis`
 -  `ReferenceFE{N}(reffe,faceid) where N` returns a `LagrangianRefFE{N}`
 
-The following methods need to be overwritten in order to use the resulting reference FE in
-a grid that is eventually written to vtk
-
-- [`get_vtkid(p::Polytope,basis::MonomialBasis)`](@ref)
-- [`get_vtknodes(p::Polytope,basis::MonomialBasis)`](@ref)
-
 """
 struct LagrangianRefFE{D} <: ReferenceFE{D}
   data::GenericRefFE{D}
@@ -117,32 +111,6 @@ end
 function ReferenceFE{D}(reffe::LagrangianRefFE{D},iface::Integer) where D
   @assert iface==1 "Only one D-face"
   reffe
-end
-
-# VTK related
-
-"""
-    get_vtkid(p::Polytope,basis::MonomialBasis) -> Int
-
-Given a polytope `p` and a monomial basis, returns an integer with its vtk identifier.
-Overloading of this function is needed only in order to visualize the underlying polytope
-with Paraview.
-"""
-function get_vtkid(p::Polytope,basis::MonomialBasis)
-  @abstractmethod
-end
-
-"""
-    get_vtknodes(p::Polytope,basis::MonomialBasis) -> Vector{Int}
-
-Given a polytope `p` and monomial basis, returns a vector of integers representing a permutation of the
-polytope vertices required to relabel the vertices according the criterion adopted in
-Paraview.
-Overloading of this function is needed only in order to visualize the underlying polytope
-with Paraview.
-"""
-function get_vtknodes(p::Polytope,basis::MonomialBasis)
-  @abstractmethod
 end
 
 # Helpers for LagrangianRefFE
@@ -507,18 +475,6 @@ function compute_nodes(p::ExtrusionPolytope{D},orders) where D
   (nodes, facenodes)
 end
 
-function get_vtkid(p::ExtrusionPolytope, basis::MonomialBasis)
-  exponents = get_exponents(basis)
-  vtkid, _ = _vtkinfo_extrusion_polytope(p,exponents)
-  vtkid
-end
-
-function get_vtknodes(p::ExtrusionPolytope, basis::MonomialBasis)
-  exponents = get_exponents(basis)
-  _, vtknodes = _vtkinfo_extrusion_polytope(p,exponents)
-  vtknodes
-end
-
 # Helpers for the ExtrusionPolytope-related implementation
 
 function _monomial_terms(extrusion::NTuple{D,Int},orders) where D
@@ -621,56 +577,5 @@ function _extract_nonzeros(mask,values)
     end
   end
   return Tuple(b)
-end
-
-function _vtkinfo_extrusion_polytope(p,exponents)
-
-  n_nodes = length(exponents)
-
-  if p == SEGMENT
-    if n_nodes == 2
-      vtkid = 3
-      vtknodes = [1,2]
-    else
-      @notimplemented
-    end
-
-  elseif p == TRIANGLE
-    if n_nodes == 3
-      vtkid = 5
-      vtknodes = [1,2,3]
-    else
-      @notimplemented
-    end
-
-  elseif p == QUAD
-    if n_nodes == 4
-      vtkid = 9
-      vtknodes = [1,2,4,3]
-    else
-      @notimplemented
-    end
-
-  elseif p == TET
-    if n_nodes == 4
-      vtkid = 10
-      vtknodes = [1,2,3,4]
-    else
-      @notimplemented
-    end
-
-  elseif p == HEX
-    if n_nodes == 8
-      vtkid = 12
-      vtknodes = [1,2,4,3,5,6,8,7]
-    else
-      @notimplemented
-    end
-
-  else
-    @notimplemented "vtkid not implemented for given ExtrusionPolytope"
-  end
-
-  (vtkid, vtknodes)
 end
 

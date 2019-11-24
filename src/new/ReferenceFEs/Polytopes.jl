@@ -29,8 +29,6 @@ And optionally these ones:
 - [`get_facet_normals(p::Polytope)`](@ref)
 - [`get_facet_orientations(p::Polytope)`](@ref)
 - [`get_vertex_permutations(p::Polytope)`](@ref)
-- [`get_vtkid(p::Polytope)`](@ref)
-- [`get_vtknodes(p::Polytope)`](@ref)
 
 The interface can be tested with the function
 
@@ -204,30 +202,6 @@ second vertex is relabeled as `1`.
 
 """
 function get_vertex_permutations(p::Polytope)
-  @abstractmethod
-end
-
-"""
-    get_vtkid(p::Polytope) -> Int
-
-Given a polytope `p`, returns an integer with its vtk identifier.
-Overloading of this function is needed only in order to visualize the underlying polytope
-with Paraview.
-"""
-function get_vtkid(p::Polytope)
-  @abstractmethod
-end
-
-"""
-    get_vtknodes(p::Polytope) -> Vector{Int}
-
-Given a polytope `p`, returns a vector of integers representing a permutation of the
-polytope vertices required to relabel the vertices according the criterion adopted in
-Paraview.
-Overloading of this function is needed only in order to visualize the underlying polytope
-with Paraview.
-"""
-function get_vtknodes(p::Polytope)
   @abstractmethod
 end
 
@@ -447,8 +421,7 @@ Function that stresses out the functions in the `Polytope` interface.
 It tests whether the function in the polytope interface are defined
 for the given object, and whether they return objects of the expected type.
 With `optional=false` (the default), only the mandatory functions are checked.
-With `optional=true`, the optional functions are also tested except
-`get_vtkid`  and `get_vtknodes`.
+With `optional=true`, the optional functions are also tested.
 """
 function test_polytope(p::Polytope{D};optional::Bool=false) where D
   @test D == num_dims(p)

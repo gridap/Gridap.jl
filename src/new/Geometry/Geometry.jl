@@ -33,8 +33,12 @@ export ConformingTriangulation
 export get_cell_nodes
 export test_conforming_triangulation
 
+export UnstructuredGrid
+
 include("Triangulations.jl")
 
 include("ConformingTriangulations.jl")
+
+include("UnstructuredGrids.jl")
 
 end # module
