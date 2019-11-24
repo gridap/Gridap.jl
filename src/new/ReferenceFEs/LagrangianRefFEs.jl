@@ -1,6 +1,6 @@
 
 """
-    struct LagrangianRefFE{D} <: ReferenceFE{D}
+    struct LagrangianRefFE{D} <: NodalReferenceFE{D}
       data::GenericRefFE{D}
       face_own_nodeids::Vector{Vector{Int}}
       own_nodes_permutations::Vector{Vector{Int}},
@@ -20,7 +20,7 @@ For this type
 -  `ReferenceFE{N}(reffe,faceid) where N` returns a `LagrangianRefFE{N}`
 
 """
-struct LagrangianRefFE{D} <: ReferenceFE{D}
+struct LagrangianRefFE{D} <: NodalReferenceFE{D}
   data::GenericRefFE{D}
   face_own_nodeids::Vector{Vector{Int}}
   own_nodes_permutations::Vector{Vector{Int}}
@@ -68,6 +68,10 @@ get_face_own_dofids(reffe::LagrangianRefFE) = reffe.data.face_own_dofids
 get_own_dofs_permutations(reffe::LagrangianRefFE) = reffe.data.own_dofs_permutations
 
 get_shapefuns(reffe::LagrangianRefFE) = reffe.data.shapefuns
+
+get_face_own_nodeids(reffe::LagrangianRefFE) = reffe.face_own_nodeids
+
+get_own_nodes_permutations(reffe::LagrangianRefFE) = reffe.own_nodes_permutations
 
 """
     get_node_coordinates(reffe::LagrangianRefFE) -> Vector{Point{D,Float64}}

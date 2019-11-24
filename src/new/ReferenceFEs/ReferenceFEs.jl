@@ -74,6 +74,16 @@ export compute_shapefuns
 export test_reference_fe
 export num_dofs
 
+export NodalReferenceFE
+export get_face_own_nodeids
+export get_own_nodes_permutations
+export get_node_coordinates
+export get_dof_to_node
+export get_dof_to_comp
+export get_node_and_comp_to_dof
+export num_nodes
+export test_nodal_reference_fe
+
 export LagrangianRefFE
 export LagrangianDofBasis
 export compute_monomial_basis
@@ -82,11 +92,6 @@ export compute_face_orders
 export compute_nodes
 export compute_own_nodes_permutations
 export compute_lagrangian_reffaces
-export get_node_coordinates
-export get_dof_to_node
-export get_dof_to_comp
-export get_node_and_comp_to_dof
-export num_nodes
 
 export SerendipityRefFE
 

@@ -22,4 +22,24 @@ writevtk_file(trian,f,nodaldata=["nodeid"=>node_ids],celldata=["cellid"=>cell_id
 
 rm(d,recursive=true)
 
+#reffe = LagrangianRefFE(Float64,QUAD,2)
+#
+#"""
+#"""
+#function writevtk(reffe::NodalReferenceFE, filebase)
+#
+#  grid = UnstructuredGrid(reffe)
+#
+#  face_to_own_nodes = get_face_own_nodeids(reffe)
+#  node_to_owner = zeros(Int,num_nodes(reffe))
+#  for (face, nodeids) in enumerate(face_to_own_nodes)
+#    node_to_owner[nodeids] .= face
+#  end
+#
+#  writevtk_file(grid,filebase;nodaldata=["face_owner"=>node_to_owner])
+#
+#end
+#
+#writevtk(reffe,"reffe")
+
 end # module

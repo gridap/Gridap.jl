@@ -31,7 +31,7 @@ function test_triangulation(trian::Triangulation{Dc,Dp}) where {Dc,Dp}
   cell_coords = get_cell_coordinates(trian)
   @test isa(cell_coords,AbstractArray{<:AbstractVector{<:Point}})
   reffes = get_reffes(trian)
-  @test isa(reffes,AbstractVector{<:LagrangianRefFE})
+  @test isa(reffes,AbstractVector{<:NodalReferenceFE})
   cell_types = get_cell_types(trian)
   @test isa(cell_types,AbstractArray{<:Integer})
   ncells = num_cells(trian)
@@ -58,8 +58,7 @@ num_point_dims(::Type{<:Triangulation{Dc,Dp}}) where {Dc,Dp} = Dp
 """
 
 It is not desirable to iterate over the resulting array
-for large number of cells. (The `LagrangianRefFE` type is
-unstable deliberately to simplify its type signature)
+for large number of cells.
 """
 function get_cell_reffes(trian::Triangulation)
   type_to_reffe = get_reffes(trian)

@@ -51,22 +51,22 @@ b = MonomialBasis(VectorValue{2,Int},VERTEX,())
 reffe = LagrangianRefFE(VectorValue{2,Int},VERTEX,())
 @test reffe.face_own_nodeids == [[1]]
 @test reffe.data.face_own_dofids == [[1,2]]
-test_reference_fe(reffe,optional=true)
+test_nodal_reference_fe(reffe,optional=true)
 @test ReferenceFE{0}(reffe,1) === reffe
 
 reffe = LagrangianRefFE(VectorValue{2,Float64},SEGMENT,(2,))
 @test get_face_own_dofids(reffe) == [[1, 4], [2, 5], [3, 6]]
-test_reference_fe(reffe,optional=true)
+test_nodal_reference_fe(reffe,optional=true)
 
 reffe = LagrangianRefFE(VectorValue{2,Float64},TRI,3)
 @test get_face_own_dofids(reffe) == [[1, 11], [2, 12], [3, 13], [4, 5, 14, 15], [6, 7, 16, 17], [8, 9, 18, 19], [10, 20]]
-test_reference_fe(reffe,optional=true)
+test_nodal_reference_fe(reffe,optional=true)
 
 reffe = LagrangianRefFE(Float64,HEX,2)
-test_reference_fe(reffe,optional=true)
+test_nodal_reference_fe(reffe,optional=true)
 
 reffe = LagrangianRefFE(Float64,WEDGE,(1,1,2))
-test_reference_fe(reffe,optional=true)
+test_nodal_reference_fe(reffe,optional=true)
 refface = ReferenceFE{1}(reffe,3)
 @test get_face_own_dofids(refface) == [[1], [2], [3]]
 refface = ReferenceFE{1}(reffe,4)

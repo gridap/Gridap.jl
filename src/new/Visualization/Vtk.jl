@@ -1,12 +1,13 @@
 
+
 """
 
 Low level entry point to vtk. Other, vtk-related routines in Gridap eventually call this one.
 
 The reference FEs in the triangulation need to implement the following queries
 
-- [`get_vtkid(reffe::ReferenceFE)`](@ref)
-- [`get_vtknodes(reffe::ReferenceFE)`](@ref)
+- [`get_vtkid(reffe::NodalReferenceFE)`](@ref)
+- [`get_vtknodes(reffe::NodalReferenceFE)`](@ref)
 
 A default implementation is available for `LagrangianRefFE`. It is based on the following
 queries on the underlying polytope
@@ -109,13 +110,13 @@ end
 
 """
 """
-function get_vtkid(reffe::ReferenceFE)
+function get_vtkid(reffe::NodalReferenceFE)
   @abstractmethod
 end
 
 """
 """
-function get_vtknodes(reffe::ReferenceFE)
+function get_vtknodes(reffe::NodalReferenceFE)
   @abstractmethod
 end
 
@@ -167,6 +168,14 @@ function get_vtknodes(p::ExtrusionPolytope, basis::MonomialBasis)
   vtknodes
 end
 
+function get_vtkid(p::SerendipityPolytope,basis::MonomialBasis)
+  get_vtkid(p.hex,basis)
+end
+
+function get_vtknodes(p::SerendipityPolytope,basis::MonomialBasis)
+  get_vtknodes(p.hex,basis)
+end
+
 function _vtkinfo_extrusion_polytope(p,exponents)
 
   n_nodes = length(exponents)
@@ -191,6 +200,12 @@ function _vtkinfo_extrusion_polytope(p,exponents)
     if n_nodes == 4
       vtkid = 9
       vtknodes = [1,2,4,3]
+    elseif n_nodes == 8
+      vtkid = 23
+      vtknodes = [1,2,4,3,5,8,6,7]
+    elseif n_nodes == 9
+      vtkid = 28
+      vtknodes = [1,2,4,3,5,8,6,7,9]
     else
       @notimplemented
     end
@@ -227,5 +242,12 @@ function _vtkcelltypedict()
   d[VTK_QUAD.vtk_id] = VTK_QUAD
   d[VTK_TETRA.vtk_id] = VTK_TETRA
   d[VTK_HEXAHEDRON.vtk_id] = VTK_HEXAHEDRON
+  d[VTK_QUADRATIC_QUAD.vtk_id] = VTK_QUADRATIC_QUAD
+  d[VTK_BIQUADRATIC_QUAD.vtk_id] = VTK_BIQUADRATIC_QUAD
   d
 end
+
+# Visualization of a LagrangianRefFE
+
+
+

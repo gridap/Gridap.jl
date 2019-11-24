@@ -331,3 +331,70 @@ function ReferenceFE{D}(reffe::GenericRefFE{D},iface::Integer) where D
   reffe
 end
 
+"""
+"""
+abstract type NodalReferenceFE{D} <: ReferenceFE{D} end
+
+"""
+"""
+function get_node_coordinates(reffe::NodalReferenceFE)
+  @abstractmethod
+end
+
+"""
+"""
+function get_face_own_nodeids(reffe::NodalReferenceFE)
+  @abstractmethod
+end
+
+"""
+"""
+function get_own_nodes_permutations(reffe::NodalReferenceFE)
+  @abstractmethod
+end
+
+"""
+"""
+function get_dof_to_node(reffe::NodalReferenceFE)
+  @abstractmethod
+end
+
+"""
+"""
+function get_dof_to_comp(reffe::NodalReferenceFE)
+  @abstractmethod
+end
+
+"""
+"""
+function get_node_and_comp_to_dof(reffe::NodalReferenceFE)
+  @abstractmethod
+end
+
+"""
+"""
+function num_nodes(reffe::NodalReferenceFE)
+  length(get_node_coordinates(reffe))
+end
+
+"""
+"""
+function test_nodal_reference_fe(reffe::NodalReferenceFE; optional::Bool=false)
+  test_reference_fe(reffe,optional=optional)
+  node_coordinates = get_node_coordinates(reffe)
+  @test length(node_coordinates) == num_nodes(reffe)
+  D = num_dims(reffe)
+  @test isa(node_coordinates,Vector{<:Point{D}})
+  face_own_nodeids = get_face_own_nodeids(reffe)
+  @test isa(face_own_nodeids,Vector{Vector{Int}})
+  own_nodes_permutations = get_own_nodes_permutations(reffe)
+  @test isa(own_nodes_permutations,Vector{Vector{Int}})
+  dof_to_node = get_dof_to_node(reffe)
+  @test isa(dof_to_node,Vector{Int})
+  dof_to_comp = get_dof_to_comp(reffe)
+  @test isa(dof_to_comp,Vector{Int})
+  node_and_comp_to_dof = get_node_and_comp_to_dof(reffe)
+  @test isa(node_and_comp_to_dof,Vector)
+end
+
+

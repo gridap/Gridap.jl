@@ -51,4 +51,9 @@ test_conforming_triangulation(trian)
 
 @test grid === UnstructuredGrid(grid)
 
+quad8 = LagrangianRefFE(Float64,QUAD,2)
+
+grid = UnstructuredGrid(quad8)
+@test num_nodes(grid) == num_nodes(quad8)
+
 end # module

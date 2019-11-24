@@ -6,4 +6,6 @@ using Test
 
 @testset "ConformingTriangulations" begin include("ConformingTriangulationsTests.jl") end
 
+@testset "UnstructuredGrids" begin include("UnstructuredGridsTests.jl") end
+
 end # module
