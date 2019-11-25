@@ -19,7 +19,6 @@ reffes = [tri3, quad4]
 cell_types = [2,2,1,1]
 
 trian = UnstructuredGrid(node_coordinates,cell_nodes,reffes,cell_types)
-
 test_conforming_triangulation(trian)
 
 q1i = Point(0.25,0.25)

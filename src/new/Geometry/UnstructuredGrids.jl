@@ -1,12 +1,20 @@
 
-# TODO use shorter integer types when possible
 """
 """
 struct UnstructuredGrid{Dc,Dp,Tp,Ti} <: ConformingTriangulation{Dc,Dp}
   node_coordinates::Vector{Point{Dp,Tp}}
-  cell_nodes::Table{Ti,Ti}
+  cell_nodes::Table{Ti,Int32}
   reffes::Vector{<:NodalReferenceFE{Dc}}
-  cell_types::Vector{Ti}
+  cell_types::Vector{Int8}
+  @doc """
+  """
+  function UnstructuredGrid(
+    node_coordinates::Vector{Point{Dp,Tp}},
+    cell_nodes::Table{Ti},
+    reffes::Vector{<:NodalReferenceFE{Dc}},
+    cell_types::Vector) where {Dc,Dp,Tp,Ti}
+    new{Dc,Dp,Tp,Ti}(node_coordinates,cell_nodes,reffes,cell_types)
+  end
 end
 
 """

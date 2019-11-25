@@ -30,6 +30,16 @@ function Table(a::AbstractVector{<:AbstractVector})
   Table(data,ptrs)
 end
 
+function Base.convert(::Type{Table{T,P}},table::Table{Ta,Pa}) where {T,P,Ta,Pa}
+  data = convert(Vector{T},table.data)
+  ptrs = convert(Vector{P},table.ptrs)
+  Table(data,ptrs)
+end
+
+function Base.convert(::Type{Table{T,P}},table::Table{T,P}) where {T,P}
+  table
+end
+
 size(a::Table) = (length(a.ptrs)-1,)
 
 IndexStyle(::Type{<:Table}) = IndexLinear()
