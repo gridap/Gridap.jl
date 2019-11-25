@@ -17,6 +17,10 @@ setsize!(y,(5,3))
 y .= 0
 @test y == y.array
 
+setsize!(y,(Int32(5),Int32(3)))
+y .= 0
+@test y == y.array
+
 
 setsize!(y,(10,5))
 @test y == y.array

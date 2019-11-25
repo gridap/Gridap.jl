@@ -104,6 +104,11 @@ function setsize!(a::CachedArray{T,N},s::NTuple{N,Int}) where {T,N}
   end
 end
 
+@inline function setsize!(a::CachedArray{T,N},s::NTuple{N,<:Integer}) where {T,N}
+  _s::NTuple{N,Int} = s
+  setsize!(a,_s)
+end
+
 @propagate_inbounds function getindex(self::CachedArray, kj::Integer)
     self.array[kj]
 end

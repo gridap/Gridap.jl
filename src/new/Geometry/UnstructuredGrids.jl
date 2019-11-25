@@ -4,7 +4,7 @@
 """
 struct UnstructuredGrid{Dc,Dp,Tp,Ti} <: ConformingTriangulation{Dc,Dp}
   node_coordinates::Vector{Point{Dp,Tp}}
-  cell_nodes::Table{Ti,Vector{Ti},Vector{Ti}}
+  cell_nodes::Table{Ti,Ti}
   reffes::Vector{<:NodalReferenceFE{Dc}}
   cell_types::Vector{Ti}
 end

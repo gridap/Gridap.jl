@@ -9,18 +9,18 @@
 Type representing a list of lists (i.e., a table) in 
 compressed format.
 """
-struct Table{T,D,P} <: AbstractVector{Vector{T}}
-  data::D
-  ptrs::P
-
+struct Table{T,P} <: AbstractVector{Vector{T}}
+  data::Vector{T}
+  ptrs::Vector{P}
   @doc """
   """
-  function Table(data::AbstractVector,ptrs::AbstractVector)
-    T = eltype(data)
-    D = typeof(data)
-    P = typeof(ptrs)
-    new{T,D,P}(data,ptrs)
+  function Table(data::Vector{T},ptrs::Vector{P}) where {T,P}
+    new{T,P}(data,ptrs)
   end
+end
+
+function Table(data::AbstractVector{T},ptrs::AbstractVector{P}) where {T,P}
+  Table{Vector{T}(data),Vector{P}(ptrs)}
 end
 
 """
