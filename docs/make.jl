@@ -14,6 +14,7 @@ pages = [
   "Gridap.Polynomials" => "Polynomials.md",
   "Gridap.ReferenceFEs" => "ReferenceFEs.md",
   "Gridap.Geometry" => "Geometry.md",
+  "Gridap.Visualization" => "Visualization.md",
  ]
 
 makedocs(

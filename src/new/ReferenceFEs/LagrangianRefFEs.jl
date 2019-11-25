@@ -6,8 +6,7 @@
       own_nodes_permutations::Vector{Vector{Int}},
     end
 
-Type representing a Lagrangian finite element. In addition to all the information
-provided by a `ReferenceFE`, this type also provides "node-based" information in the following
+Type representing a Lagrangian finite element. This type provides "node-based" information in the following
 fields:
 
 - `face_own_nodeids::Vector{Vector{Int}}`: nodes owned by each face
@@ -73,39 +72,14 @@ get_face_own_nodeids(reffe::LagrangianRefFE) = reffe.face_own_nodeids
 
 get_own_nodes_permutations(reffe::LagrangianRefFE) = reffe.own_nodes_permutations
 
-"""
-    get_node_coordinates(reffe::LagrangianRefFE) -> Vector{Point{D,Float64}}
-
-Returns the nodal coordinates of the underlying `LagrangianDofBasis`.
-"""
 get_node_coordinates(reffe::LagrangianRefFE) = reffe.data.dofs.nodes
 
-"""
-    get_dof_to_node(reffe::LagrangianRefFE) -> Vector{Int}
-
-Returns the field `dof_to_node` of the underlying `LagrangianDofBasis`.
-"""
 get_dof_to_node(reffe::LagrangianRefFE) = reffe.data.dofs.dof_to_node
 
-"""
-    get_dof_to_comp(reffe::LagrangianRefFE) -> Vector{Int}
-
-Returns the field `dof_to_comp` of the underlying `LagrangianDofBasis`.
-"""
 get_dof_to_comp(reffe::LagrangianRefFE) = reffe.data.dofs.dof_to_comp
 
-"""
-    get_node_and_comp_to_dof(reffe::LagrangianRefFE) -> Vector
-
-Returns the field `node_and_comp_to_dof` of the underlying `LagrangianDofBasis`.
-"""
 get_node_and_comp_to_dof(reffe::LagrangianRefFE) = reffe.data.dofs.node_and_comp_to_dof
 
-"""
-    num_nodes(reffe::LagrangianRefFE) -> Int
-
-Get the number of nodes in the Lagrangian reference FE
-"""
 num_nodes(reffe::LagrangianRefFE) = length(get_node_coordinates(reffe))
 
 function ReferenceFE{N}(reffe::LagrangianRefFE,iface::Integer) where N

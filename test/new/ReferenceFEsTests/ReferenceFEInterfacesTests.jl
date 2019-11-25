@@ -23,4 +23,14 @@ shapefuns = get_shapefuns(reffe)
 
 @test evaluate(shapefuns,x) == [1.0 0.0 0.0 0.0; 0.0 1.0 0.0 0.0; 0.0 0.0 1.0 0.0; 0.0 0.0 0.0 1.0]
 
+reffe = LagrangianRefFE(Float64,TRI,3)
+
+face_to_dofs = get_face_dofids(reffe)
+
+@test face_to_dofs == [
+  [1], [2], [3], [1, 2, 4, 5], [1, 3, 6, 7], [2, 3, 8, 9], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]]
+
+face_to_nodes = get_face_nodeids(reffe)
+@test face_to_nodes == face_to_dofs
+
 end # module

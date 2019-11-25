@@ -95,6 +95,7 @@ get_polytope(reffe::ReferenceFE)
 get_prebasis(reffe::ReferenceFE)
 get_dofs(reffe::ReferenceFE)
 get_face_own_dofids(reffe::ReferenceFE)
+get_face_dofids(reffe::ReferenceFE)
 ReferenceFE{N}(reffe::ReferenceFE,nfaceid::Integer) where N
 get_own_dofs_permutations(reffe::ReferenceFE)
 INVALID_PERM
@@ -119,6 +120,23 @@ GenericRefFE(
   reffaces) where D
 ```
 
+## Node-based reference Finite Elements
+
+### Interface
+
+```@docs
+NodalReferenceFE
+get_node_coordinates(reffe::NodalReferenceFE)
+get_face_own_nodeids(reffe::NodalReferenceFE)
+get_face_nodeids(reffe::NodalReferenceFE)
+get_own_nodes_permutations(reffe::NodalReferenceFE)
+get_dof_to_node(reffe::NodalReferenceFE)
+get_dof_to_comp(reffe::NodalReferenceFE)
+get_node_and_comp_to_dof(reffe::NodalReferenceFE)
+num_nodes(reffe::NodalReferenceFE)
+test_nodal_reference_fe
+```
+
 ### Lagrangian reference elements
 
 ```@docs
@@ -137,11 +155,6 @@ compute_face_orders(p::Polytope,face::Polytope,iface::Int,orders)
 compute_nodes(p::Polytope,orders)
 compute_own_nodes_permutations(p::Polytope, interior_nodes)
 compute_lagrangian_reffaces(::Type{T},p::Polytope,orders) where T
-num_nodes(reffe::LagrangianRefFE)
-get_node_coordinates(reffe::LagrangianRefFE)
-get_dof_to_node(reffe::LagrangianRefFE)
-get_dof_to_comp(reffe::LagrangianRefFE)
-get_node_and_comp_to_dof(reffe::LagrangianRefFE)
 ```
 ### Serendipity reference elements
 

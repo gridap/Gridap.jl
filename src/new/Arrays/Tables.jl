@@ -1,9 +1,9 @@
 
 
 """
-    struct Table{T,D,P} <: AbstractVector{Vector{T}}
-      data::D
-      ptrs::P
+    struct Table{T,P} <: AbstractVector{Vector{T}}
+      data::Vector{T}
+      ptrs::Vector{P}
     end
 
 Type representing a list of lists (i.e., a table) in 
@@ -12,18 +12,25 @@ compressed format.
 struct Table{T,P} <: AbstractVector{Vector{T}}
   data::Vector{T}
   ptrs::Vector{P}
-  @doc """
-  """
   function Table(data::Vector{T},ptrs::Vector{P}) where {T,P}
     new{T,P}(data,ptrs)
   end
 end
 
+@doc """
+    Table(data::AbstractVector{T},ptrs::AbstractVector{P}) where {T,P}
+
+Build a table from the given data and pointers. If the arguments are not of
+type `Vector`, they will be converted.
+"""
 function Table(data::AbstractVector{T},ptrs::AbstractVector{P}) where {T,P}
   Table{Vector{T}(data),Vector{P}(ptrs)}
 end
 
 """
+    Table(a::AbstractVector{<:AbstractVector})
+
+Build a table from a vector of vectors.
 """
 function Table(a::AbstractVector{<:AbstractVector})
   data, ptrs = generate_data_and_ptrs(a)
@@ -78,7 +85,9 @@ end
 # Helper functions related with Tables
 
 """
-Rewind the given vector.
+    rewind_ptrs!(ptrs)
+
+Rewind the given vector of pointers.
 """
 function rewind_ptrs!(ptrs::AbstractVector{<:Integer})
   @inbounds for i in (length(ptrs)-1):-1:1
@@ -88,6 +97,8 @@ function rewind_ptrs!(ptrs::AbstractVector{<:Integer})
 end
 
 """
+    length_to_ptrs!(ptrs)
+
 Given a vector of integers, mutate it from length state to pointer state.
 """
 function length_to_ptrs!(ptrs::AbstractArray{<:Integer})
@@ -98,7 +109,9 @@ function length_to_ptrs!(ptrs::AbstractArray{<:Integer})
 end
 
 """
-Given a vector of vectors compute the corresponding data and and ptrs
+    data, ptrs = generate_data_and_ptrs(vv)
+
+Given a vector of vectors, compress it and return the corresponding data and and ptrs
 """
 function generate_data_and_ptrs(vv::AbstractVector{<:AbstractVector{T}}) where T
   ptrs = Vector{T}(undef,length(vv)+1)
@@ -127,6 +140,9 @@ function _generate_data_and_ptrs_fill_data!(data,vv)
 end
 
 """
+    append_ptrs(pa,pb)
+
+Append two vectors of pointers.
 """
 function append_ptrs(pa::AbstractVector{T},pb::AbstractVector{T}) where T
   na = length(pa)-1

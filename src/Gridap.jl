@@ -13,6 +13,8 @@ The module is structured in the following sub-modules:
 - [`Gridap.Fields`](@ref)
 - [`Gridap.Polynomials`](@ref)
 - [`Gridap.ReferenceFEs`](@ref)
+- [`Gridap.Geometry`](@ref)
+- [`Gridap.Visualization`](@ref)
 
 The exported names are:
 $(EXPORTS)

@@ -205,6 +205,47 @@ Returns `D`.
 """
 num_dims(reffe::ReferenceFE) = num_dims(typeof(reffe))
 
+"""
+    get_face_dofids(reffe::ReferenceFE) -> Vector{Vector{Int}}
+
+Returns a vector of vector that, for each face, stores the
+dofids in the closure of the face.
+"""
+function get_face_dofids(reffe::ReferenceFE)
+  polytope = get_polytope(reffe)
+  D = num_dims(polytope)
+  nfaces = num_faces(polytope)
+  face_dofids = [Int[] for i in 1:nfaces]
+  for d in 0:(D-1)
+    _get_face_dofids_d!(face_dofids,Val{d}(),reffe,polytope)
+  end
+  face_dofids[end] = collect(1:num_dofs(reffe))
+  face_dofids
+end
+
+function _get_face_dofids_d!(face_to_dofs,::Val{d},reffe,polytope) where d
+
+  nface_to_own_dofs = get_face_own_dofids(reffe)
+  nface_mface_to_nface = get_faces(polytope)
+  offset = get_offset(polytope,d)
+
+  for iface in 1:num_faces(polytope,d)
+    face_reffe = ReferenceFE{d}(reffe,iface)
+    face_polytope = get_polytope(face_reffe)
+    mface_to_own_ldofs = get_face_own_dofids(face_reffe)
+    dofs = zeros(Int,num_dofs(face_reffe))
+    mface_to_nface = nface_mface_to_nface[iface+offset]
+    for mface in 1:num_faces(face_polytope)
+      nface = mface_to_nface[mface]
+      own_dofs = nface_to_own_dofs[nface]
+      own_ldofs = mface_to_own_ldofs[mface]
+      dofs[own_ldofs] = own_dofs
+    end
+    face_to_dofs[iface+offset] = dofs
+  end
+
+end
+
 # Test
 
 """
@@ -332,52 +373,117 @@ function ReferenceFE{D}(reffe::GenericRefFE{D},iface::Integer) where D
 end
 
 """
+    abstract type NodalReferenceFE{D} <: ReferenceFE{D}
+
+Abstract type representing a node-based reference FE. In addition
+to all the information provided by a `ReferenceFE`, a nodal-based one
+has information about the underlying nodes and relation between nodes
+and DOFs.
+
+The interface for this type is defined with the following methods
+
+- [`get_node_coordinates(reffe::NodalReferenceFE)`](@ref)
+- [`get_face_own_nodeids(reffe::NodalReferenceFE)`](@ref)
+- [`get_own_nodes_permutations(reffe::NodalReferenceFE)`](@ref)
+- [`get_dof_to_node(reffe::NodalReferenceFE)`](@ref)
+- [`get_dof_to_node(reffe::NodalReferenceFE)`](@ref)
+- [`get_dof_to_comp(reffe::NodalReferenceFE)`](@ref)
+- [`get_node_and_comp_to_dof(reffe::NodalReferenceFE)`](@ref)
 """
 abstract type NodalReferenceFE{D} <: ReferenceFE{D} end
 
 """
+    get_node_coordinates(reffe::NodalReferenceFE)
 """
 function get_node_coordinates(reffe::NodalReferenceFE)
   @abstractmethod
 end
 
 """
+    get_face_own_nodeids(reffe::NodalReferenceFE)
 """
 function get_face_own_nodeids(reffe::NodalReferenceFE)
   @abstractmethod
 end
 
 """
+    get_own_nodes_permutations(reffe::NodalReferenceFE)
 """
 function get_own_nodes_permutations(reffe::NodalReferenceFE)
   @abstractmethod
 end
 
 """
+    get_dof_to_node(reffe::NodalReferenceFE)
 """
 function get_dof_to_node(reffe::NodalReferenceFE)
   @abstractmethod
 end
 
 """
+    get_dof_to_comp(reffe::NodalReferenceFE)
 """
 function get_dof_to_comp(reffe::NodalReferenceFE)
   @abstractmethod
 end
 
 """
+    get_node_and_comp_to_dof(reffe::NodalReferenceFE)
 """
 function get_node_and_comp_to_dof(reffe::NodalReferenceFE)
   @abstractmethod
 end
 
 """
+    num_nodes(reffe::NodalReferenceFE)
 """
 function num_nodes(reffe::NodalReferenceFE)
   length(get_node_coordinates(reffe))
 end
 
 """
+    get_face_nodeids(reffe::NodalReferenceFE) -> Vector{Vector{Int}}
+
+Returns a vector of vector that, for each face, stores the
+nodeids in the closure of the face.
+"""
+function get_face_nodeids(reffe::NodalReferenceFE)
+  polytope = get_polytope(reffe)
+  D = num_dims(polytope)
+  nfaces = num_faces(polytope)
+  face_nodeids = [Int[] for i in 1:nfaces]
+  for d in 0:(D-1)
+    _get_face_nodeids_d!(face_nodeids,Val{d}(),reffe,polytope)
+  end
+  face_nodeids[end] = collect(1:num_nodes(reffe))
+  face_nodeids
+end
+
+function _get_face_nodeids_d!(face_to_nodes,::Val{d},reffe,polytope) where d
+
+  nface_to_own_nodes = get_face_own_nodeids(reffe)
+  nface_mface_to_nface = get_faces(polytope)
+  offset = get_offset(polytope,d)
+
+  for iface in 1:num_faces(polytope,d)
+    face_reffe = ReferenceFE{d}(reffe,iface)
+    face_polytope = get_polytope(face_reffe)
+    mface_to_own_lnodes = get_face_own_nodeids(face_reffe)
+    nodes = zeros(Int,num_nodes(face_reffe))
+    mface_to_nface = nface_mface_to_nface[iface+offset]
+    for mface in 1:num_faces(face_polytope)
+      nface = mface_to_nface[mface]
+      own_nodes = nface_to_own_nodes[nface]
+      own_lnodes = mface_to_own_lnodes[mface]
+      nodes[own_lnodes] = own_nodes
+    end
+    face_to_nodes[iface+offset] = nodes
+  end
+
+end
+
+"""
+    test_nodal_reference_fe(reffe::NodalReferenceFE; optional::Bool=false)
 """
 function test_nodal_reference_fe(reffe::NodalReferenceFE; optional::Bool=false)
   test_reference_fe(reffe,optional=optional)
@@ -396,5 +502,4 @@ function test_nodal_reference_fe(reffe::NodalReferenceFE; optional::Bool=false)
   node_and_comp_to_dof = get_node_and_comp_to_dof(reffe)
   @test isa(node_and_comp_to_dof,Vector)
 end
-
 
