@@ -72,6 +72,11 @@ _cell_to_vertices, vertex_to_node = _generate_cell_to_vertices(
 
 @test isa(_cell_to_vertices,Table{Int,Int32})
 
+_cell_to_faces = generate_cell_to_faces(1,grid,cell_to_vertices,vertex_to_cells)
+@test _cell_to_faces == cell_to_faces
+@test isa(_cell_to_faces,Table{Int,Int32})
+
+
 @test vertex_to_node == [1, 2, 4, 5, 3, 6, 7, 8, 9]
 @test _cell_to_vertices == [[1, 2, 3, 4], [2, 5, 4], [5, 6, 4], [3, 4, 7, 8], [4, 6, 8, 9]]
 
@@ -79,6 +84,5 @@ _cell_to_vertices, vertex_to_node = generate_cell_to_vertices(grid)
 
 @test _cell_to_vertices == cell_to_vertices
 @test isa(_cell_to_vertices,Table{Int,Int32})
-
 
 end # module

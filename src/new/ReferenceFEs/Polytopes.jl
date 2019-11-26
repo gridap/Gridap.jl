@@ -249,6 +249,10 @@ end
 Returns the number of faces of dimension `dim` in polytope `p`.
 """
 function num_faces(p::Polytope,dim::Integer)
+  _num_faces(p,dim)
+end
+
+@inline function _num_faces(p,dim)
   length(get_dimranges(p)[dim+1])
 end
 
@@ -258,6 +262,10 @@ end
 Returns the number of facets in the polytope `p`.
 """
 function num_facets(p::Polytope)
+  _num_facets(p)
+end
+
+@inline function _num_facets(p)
   D = num_dims(p)
   if D > 0
     num_faces(p,D-1)
@@ -272,6 +280,10 @@ end
 Returns the number of edges in the polytope `p`.
 """
 function num_edges(p::Polytope)
+  _num_edges(p)
+end
+
+@inline function _num_edges(p)
   D = num_dims(p)
   if D > 0
     num_faces(p,1)
@@ -280,12 +292,17 @@ function num_edges(p::Polytope)
   end
 end
 
+
 """
     num_vertices(p::Polytope)
 
 Returns the number of vertices in the polytope `p`.
 """
 function num_vertices(p::Polytope)
+  _num_vertices(p)
+end
+
+@inline function _num_vertices(p)
   num_faces(p,0)
 end
 
@@ -313,6 +330,10 @@ third face (the segment itself) has dimension 1
 
 """
 function get_facedims(p::Polytope)
+  _get_facedims(p)
+end
+
+@inline function _get_facedims(p)
   n = num_faces(p)
   facedims = zeros(Int,n)
   dimrange = get_dimranges(p)
@@ -345,6 +366,10 @@ println(offsets)
 ```
 """
 function get_offsets(p::Polytope)
+  _get_offsets(p)
+end
+
+@inline function _get_offsets(p)
   D = num_dims(p)
   dimrange = get_dimranges(p)
   offsets = zeros(Int,D+1)
@@ -364,6 +389,10 @@ end
 Equivalent to `get_offsets(p)[d+1]`.
 """
 function get_offset(p::Polytope,d::Integer)
+  _get_offset(p,d)
+end
+
+@inline function _get_offset(p,d)
   get_offsets(p)[d+1]
 end
 

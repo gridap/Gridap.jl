@@ -51,13 +51,13 @@ function get_cell_nodes(::ConformingTrianMock)
 end
 
 function get_reffes(::ConformingTrianMock)
-  order = 1
-  tri3 = LagrangianRefFE(Float64,TRI,order)
-  quad4 = LagrangianRefFE(Float64,QUAD,order)
-  [tri3, quad4]
+  [TRI3, QUAD4]
 end
 
 function get_cell_types(::ConformingTrianMock)
   [2,2,1,1]
 end
+
+# Grid graph
+
 

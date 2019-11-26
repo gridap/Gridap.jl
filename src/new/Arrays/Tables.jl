@@ -47,6 +47,14 @@ function Base.convert(::Type{Table{T,P}},table::Table{T,P}) where {T,P}
   table
 end
 
+"""
+"""
+function identity_table(::Type{T},::Type{P},l::Integer) where {T,P}
+  data = Vector{T}(1:l)
+  ptrs = Vector{P}(1:l+1)
+  Table(data,ptrs)
+end
+
 size(a::Table) = (length(a.ptrs)-1,)
 
 IndexStyle(::Type{<:Table}) = IndexLinear()

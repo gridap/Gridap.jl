@@ -55,4 +55,64 @@ quad8 = LagrangianRefFE(Float64,QUAD,2)
 grid = UnstructuredGrid(quad8)
 @test num_nodes(grid) == num_nodes(quad8)
 
+# UnstructuredGridGraph
+
+using Gridap.Helpers
+using Gridap.Arrays
+include("../../../src/new/Geometry/GridOperations.jl")
+
+struct UnstructuredGridGraph <: GridGraph
+  d_to_cell_to_dfaces::Vector{Table{Int,Int32}}
+  d_to_dface_to_cells::Vector{Table{Int,Int32}}
+  vertex_to_node::Vector{Int}
+end
+
+function UnstructuredGridGraph(trian::ConformingTriangulation)
+  grid = UnstructuredGrid(trian)
+  UnstructuredGridGraph(grid)
+end
+
+"""
+"""
+function UnstructuredGridGraph(grid::UnstructuredGrid)
+
+  primal, dual, vertex_to_node = _generate_grid_graph(grid)
+  UnstructuredGridGraph(primal, dual, vertex_to_node)
+end
+
+function _generate_grid_graph(grid)
+
+  D = num_cell_dims(grid)
+  cell_to_vertices, vertex_to_node = generate_cell_to_vertices(grid)
+  vertex_to_cells = generate_cells_around(cell_to_vertices)
+
+  T = typeof(cell_to_vertices)
+  primal = Vector{T}(undef,D+1)
+  dual = Vector{T}(undef,D)
+
+  d = 0
+  primal[d+1] = cell_to_vertices
+  dual[d+1] = vertex_to_cells
+
+  for d in 1:(D-1)
+    cell_to_dfaces = generate_cell_to_faces( d, grid, cell_to_vertices, vertex_to_cells)
+    dfaces_to_cells = generate_cells_around(cell_to_dfaces)
+    primal[d+1] = cell_to_dfaces
+    dual[d+1] = dfaces_to_cells
+  end
+
+  ncells = length(cell_to_vertices)
+  primal[D+1] = identity_table(Int,Int32,ncells)
+
+
+  (primal, dual, vertex_to_node)
+end
+
+graph = UnstructuredGridGraph(grid)
+#display(graph.d_to_cell_to_dfaces)
+#display(graph.d_to_dface_to_cells)
+#display(graph.vertex_to_node)
+
+#test_grid_graph(graph)
+
 end # module

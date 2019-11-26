@@ -52,6 +52,7 @@ export apply
 export apply_all
 
 export Table
+export identity_table
 export rewind_ptrs!
 export length_to_ptrs!
 export append_ptrs

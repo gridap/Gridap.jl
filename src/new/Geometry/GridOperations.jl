@@ -1,7 +1,4 @@
 
-"""
-    generate_cell_to_vertices(grid::UnstructuredGrid)
-"""
 function generate_cell_to_vertices(grid::UnstructuredGrid)
   if has_straight_faces(grid)
     cell_to_vertices = get_cell_nodes(grid)
@@ -10,17 +7,13 @@ function generate_cell_to_vertices(grid::UnstructuredGrid)
     cell_to_nodes = get_cell_nodes(grid)
     cell_to_cell_type = get_cell_types(grid)
     reffes = get_reffes(grid)
-    cell_type_to_vertex_to_node = map(get_vertex_node, reffes)
+    cell_type_to_lvertex_to_lnode = map(get_vertex_node, reffes)
     cell_to_vertices, vertex_to_node = _generate_cell_to_vertices(
       cell_to_nodes,cell_to_cell_type,cell_type_to_lvertex_to_lnode)
   end
   (cell_to_vertices, vertex_to_node)
 end
 
-"""
-    generate_cells_around(cell_to_faces::Table)
-    generate_cells_around(cell_to_faces::Table, nfaces::Int)
-"""
 function generate_cells_around(
   cell_to_faces::Table,
   nfaces::Int = maximum(cell_to_faces.data))
@@ -29,13 +22,20 @@ function generate_cells_around(
   Table(data,ptrs)
 end
 
-"""
-    generate_cell_to_faces(
-      cell_to_vertices::Table,
-      cell_type_to_lface_to_lvertices::Vector{Vector{Vector{Int}}},
-      cell_to_cell_type::AbstractVector{<:Integer},
-      vertex_to_cells::Table) -> Table
-"""
+function generate_cell_to_faces(d, grid::UnstructuredGrid, cell_to_vertices, vertex_to_cells)
+  reffes = get_reffes(grid)
+  polytopes = map(get_polytope,reffes)
+  cell_type_to_lface_to_lvertices = map( (p)->get_faces(p,d,0), polytopes )
+  cell_to_cell_type = get_cell_types(grid)
+
+  generate_cell_to_faces(
+    cell_to_vertices,
+    cell_type_to_lface_to_lvertices,
+    cell_to_cell_type,
+    vertex_to_cells)
+
+end
+
 function generate_cell_to_faces(
   cell_to_vertices::Table,
   cell_type_to_lface_to_lvertices::Vector{Vector{Vector{Int}}},
@@ -53,13 +53,6 @@ function generate_cell_to_faces(
   Table(data,ptrs)
 end
 
-"""
-    generate_face_to_face_type(
-      cell_to_faces::Table,
-      cell_to_cell_type::AbstractVector{<:Integer},
-      cell_type_to_lface_to_face_type::Vector{Vector{T}} [,
-      nfaces::Int ]) where T<:Integer -> Vector{T}
-"""
 function generate_face_to_face_type(
   cell_to_faces::Table,
   cell_to_cell_type::AbstractVector{<:Integer},
@@ -75,14 +68,6 @@ function generate_face_to_face_type(
 
 end
 
-"""
-    generate_face_to_vertices(
-      cell_to_vertices::Table,
-      cell_to_faces::Table,
-      cell_to_cell_type::AbstractVector{<:Integer},
-      cell_type_to_lface_to_lvertices::Vector{Vector{Vector{Int}}} [,
-      nfaces::Int ])
-"""
 function generate_face_to_vertices(
   cell_to_vertices::Table,
   cell_to_faces::Table,
@@ -102,14 +87,6 @@ function generate_face_to_vertices(
   Table(data,ptrs)
 end
 
-
-"""
-    find_cell_to_faces(
-      cell_to_vertices::Table,
-      cell_type_to_lface_to_lvertices::Vector{Vector{Vector{Int}}},
-      cell_to_cell_type::AbstractVector{<:Integer},
-      vertex_to_faces::Table)
-"""
 function find_cell_to_faces(
   cell_to_vertices::Table,
   cell_type_to_lface_to_lvertices::Vector{Vector{Vector{Int}}},
@@ -127,18 +104,10 @@ function find_cell_to_faces(
   Table(data,ptrs)
 end
 
-"""
-    generate_facet_to_isboundary(facet_to_cells::Table)
-"""
 function generate_facet_to_isboundary(face_to_cells::Table)
   _generate_facet_to_isboundary(face_to_cells.ptrs)
 end
 
-"""
-    generate_face_to_isboundary(
-      facet_to_isboundary::AbstractVector{Bool},
-      face_to_facets::Table)
-"""
 function generate_face_to_isboundary(
   facet_to_isboundary::AbstractVector{Bool},
   face_to_facets::Table)
