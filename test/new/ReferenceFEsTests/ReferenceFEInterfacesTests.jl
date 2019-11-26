@@ -33,4 +33,12 @@ face_to_dofs = get_face_dofids(reffe)
 face_to_nodes = get_face_nodeids(reffe)
 @test face_to_nodes == face_to_dofs
 
+@test has_straight_faces(reffe) == false
+
+@test has_straight_faces(TRI3) == true
+
+@test is_affine(TRI3) == true
+
+@test is_affine(QUAD4) == false
+
 end # module

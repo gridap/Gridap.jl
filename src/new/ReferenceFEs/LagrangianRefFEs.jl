@@ -557,3 +557,25 @@ function _extract_nonzeros(mask,values)
   return Tuple(b)
 end
 
+# Precomputed instances
+
+"""
+"""
+const SEG2 = LagrangianRefFE(Float64,SEGMENT,1)
+
+"""
+"""
+const QUAD4 = LagrangianRefFE(Float64,QUAD,1)
+
+"""
+"""
+const TRI3 = LagrangianRefFE(Float64,TRI,1)
+
+"""
+"""
+const TET4 = LagrangianRefFE(Float64,TET,1)
+
+"""
+"""
+const HEX8 = LagrangianRefFE(Float64,HEX,1)
+

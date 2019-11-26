@@ -10,7 +10,7 @@ using Gridap.ReferenceFEs
 
 import Gridap.ReferenceFEs: Polytope
 import Gridap.ReferenceFEs: get_faces
-import Gridap.ReferenceFEs: get_dimrange
+import Gridap.ReferenceFEs: get_dimranges
 import Gridap.ReferenceFEs: get_vertex_coordinates
 import Base: ==
 
@@ -18,7 +18,7 @@ struct MockVertex <: Polytope{0} end
 
 get_faces(p::MockVertex) = [[1]]
 
-get_dimrange(p::MockVertex) = [1:1]
+get_dimranges(p::MockVertex) = [1:1]
 
 function Polytope{0}(p::MockVertex,faceid::Integer)
   @assert faceid == 1
@@ -35,7 +35,7 @@ struct MockSegment <: Polytope{1} end
 
 get_faces(p::MockSegment) = [[1],[2],[1,2,3]]
 
-get_dimrange(p::MockSegment) = [1:2,3:3]
+get_dimranges(p::MockSegment) = [1:2,3:3]
 
 function Polytope{0}(p::MockSegment,faceid::Integer)
   @assert faceid in 1:2
@@ -63,7 +63,7 @@ function get_faces(p::MockQuad)
   ]
 end
 
-function get_dimrange(p::MockQuad)
+function get_dimranges(p::MockQuad)
   [1:4,5:8,9:9]
 end
 
@@ -122,5 +122,8 @@ test_polytope(q)
 @test get_offsets(q) == [0,4,8]
 @test num_facets(q) == 4
 @test num_edges(q) == 4
+
+@test get_face_vertices(q,1) == [[1, 2], [3, 4], [1, 3], [2, 4]]
+@test get_face_vertices(q) == [[1], [2], [3], [4], [1, 2], [3, 4], [1, 3], [2, 4], [1, 2, 3, 4]]
 
 end # module

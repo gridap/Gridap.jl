@@ -18,7 +18,7 @@ use *face*. In addition, we say
 The `Polytope` interface is defined by overloading the following functions
 
 - [`get_faces(p::Polytope)`](@ref)
-- [`get_dimrange(p::Polytope)`](@ref)
+- [`get_dimranges(p::Polytope)`](@ref)
 - [`Polytope{N}(p::Polytope,faceid::Integer) where N`](@ref)
 - [`get_vertex_coordinates(p::Polytope)`](@ref)
 - [`(==)(a::Polytope{D},b::Polytope{D}) where D`](@ref)
@@ -29,6 +29,8 @@ And optionally these ones:
 - [`get_facet_normals(p::Polytope)`](@ref)
 - [`get_facet_orientations(p::Polytope)`](@ref)
 - [`get_vertex_permutations(p::Polytope)`](@ref)
+- [`is_n_cube(p::Polytope)`](@ref)
+- [`is_simplex(p::Polytope)`](@ref)
 
 The interface can be tested with the function
 
@@ -80,7 +82,7 @@ function get_faces(p::Polytope)
 end
 
 """
-    get_dimrange(p::Polytope) -> Vector{UnitRange{Int}}
+    get_dimranges(p::Polytope) -> Vector{UnitRange{Int}}
 
 Given a polytope `p` it returns a vector of ranges. The entry `d+1` in this vector
 contains the range of face ids for the faces of dimension `d`.
@@ -90,7 +92,7 @@ contains the range of face ids for the faces of dimension `d`.
 ```jldoctest
 using Gridap.ReferenceFEs
 
-ranges = get_dimrange(SEGMENT)
+ranges = get_dimranges(SEGMENT)
 println(ranges)
 
 # output
@@ -100,7 +102,7 @@ Face ids for the vertices in the segment range from 1 to 2 (2 vertices),
 the face ids for edges in the segment range from 3 to 3 (only one edge with id 3).
 
 """
-function get_dimrange(p::Polytope)
+function get_dimranges(p::Polytope)
   @abstractmethod
 end
 
@@ -205,6 +207,21 @@ function get_vertex_permutations(p::Polytope)
   @abstractmethod
 end
 
+
+"""
+    is_simplex(p::Polytope) -> Bool
+"""
+function is_simplex(p::Polytope)
+  @abstractmethod
+end
+
+"""
+    is_n_cube(p::Polytope) -> Bool
+"""
+function is_n_cube(p::Polytope)
+  @abstractmethod
+end
+
 # Some generic API
 
 num_dims(::Type{<:Polytope{D}}) where D = D
@@ -232,7 +249,7 @@ end
 Returns the number of faces of dimension `dim` in polytope `p`.
 """
 function num_faces(p::Polytope,dim::Integer)
-  length(get_dimrange(p)[dim+1])
+  length(get_dimranges(p)[dim+1])
 end
 
 """
@@ -298,7 +315,7 @@ third face (the segment itself) has dimension 1
 function get_facedims(p::Polytope)
   n = num_faces(p)
   facedims = zeros(Int,n)
-  dimrange = get_dimrange(p)
+  dimrange = get_dimranges(p)
   for (i,r) in enumerate(dimrange)
     d = i-1
     facedims[r] .= d
@@ -329,7 +346,7 @@ println(offsets)
 """
 function get_offsets(p::Polytope)
   D = num_dims(p)
-  dimrange = get_dimrange(p)
+  dimrange = get_dimranges(p)
   offsets = zeros(Int,D+1)
   k = 0
   for i in 0:D
@@ -385,7 +402,7 @@ function get_faces(p::Polytope,dimfrom::Integer,dimto::Integer)
 end
 
 function _get_faces_primal(p,dimfrom,dimto)
-  dimrange = get_dimrange(p)
+  dimrange = get_dimranges(p)
   r = dimrange[dimfrom+1]
   faces = get_faces(p)
   faces_dimfrom = faces[r]
@@ -394,7 +411,7 @@ function _get_faces_primal(p,dimfrom,dimto)
   offset = get_offset(p,dimto)
   for i in 1:n
     f = Polytope{dimfrom}(p,i)
-    rto = get_dimrange(f)[dimto+1]
+    rto = get_dimranges(f)[dimto+1]
     faces_dimfrom_dimto[i] = faces_dimfrom[i][rto].-offset
   end
   faces_dimfrom_dimto
@@ -410,6 +427,27 @@ function _get_faces_dual(p,dimfrom,dimto)
     end
   end
   fface_to_tfaces
+end
+
+"""
+    get_face_vertices(p::Polytope,dim::Integer) -> Vector{Vector{Int}}
+"""
+function get_face_vertices(p::Polytope,dim::Integer)
+  get_faces(p,dim,0)
+end
+
+"""
+    get_face_vertices(p::Polytope) -> Vector{Vector{Int}}
+"""
+function get_face_vertices(p::Polytope)
+  face_vertices = Vector{Int}[]
+  for d in 0:num_dims(p)
+    dface_to_vertices = get_faces(p,d,0)
+    for vertices in dface_to_vertices
+      push!(face_vertices,vertices)
+    end
+  end
+  face_vertices
 end
 
 # Testers
@@ -431,7 +469,7 @@ function test_polytope(p::Polytope{D};optional::Bool=false) where D
   offsets = get_offsets(p)
   @test isa(offsets,Vector{Int})
   @test length(offsets) == D+1
-  dimrange = get_dimrange(p)
+  dimrange = get_dimranges(p)
   @test isa(dimrange,Vector{UnitRange{Int}})
   @test length(dimrange) == D+1
   @test p == p
@@ -462,6 +500,8 @@ function test_polytope(p::Polytope{D};optional::Bool=false) where D
     @test length(et) == num_edges(p)
     perm = get_vertex_permutations(p)
     @test isa(perm,Vector{Vector{Int}})
+    @test isa(is_simplex(p),Bool)
+    @test isa(is_n_cube(p),Bool)
   end
 end
 

@@ -1,5 +1,23 @@
 
 """
+    generate_cell_to_vertices(grid::UnstructuredGrid)
+"""
+function generate_cell_to_vertices(grid::UnstructuredGrid)
+  if has_straight_faces(grid)
+    cell_to_vertices = get_cell_nodes(grid)
+    vertex_to_node = collect(1:num_nodes(grid))
+  else
+    cell_to_nodes = get_cell_nodes(grid)
+    cell_to_cell_type = get_cell_types(grid)
+    reffes = get_reffes(grid)
+    cell_type_to_vertex_to_node = map(get_vertex_node, reffes)
+    cell_to_vertices, vertex_to_node = _generate_cell_to_vertices(
+      cell_to_nodes,cell_to_cell_type,cell_type_to_lvertex_to_lnode)
+  end
+  (cell_to_vertices, vertex_to_node)
+end
+
+"""
     generate_cells_around(cell_to_faces::Table)
     generate_cells_around(cell_to_faces::Table, nfaces::Int)
 """
@@ -57,61 +75,78 @@ function generate_face_to_face_type(
 
 end
 
-
-
-function find_cell_to_faces(
-  cell_to_vertices_data::AbstractVector{<:Integer},
-  cell_to_vertices_ptrs::AbstractVector{<:Integer},
-  ctype_to_lface_to_lvertices,
-  cell_to_ctype,
-  vertex_to_faces_data::AbstractVector{<:Integer},
-  vertex_to_faces_ptrs::AbstractVector{<:Integer})
-  _cell_to_faces_from_vertex_to_faces(
-    cell_to_vertices_data,
-    cell_to_vertices_ptrs,
-    ctype_to_lface_to_lvertices,
-    cell_to_ctype,
-    vertex_to_faces_data,
-    vertex_to_faces_ptrs)
-end
-
-function generate_facet_to_isboundary(face_to_cells_ptrs::AbstractVector{<:Integer})
-  nfaces = length(face_to_cells_ptrs)-1
-  face_to_isboundary = fill(false,nfaces)
-  _generate_face_to_isboundary_fill!(face_to_isboundary,face_to_cells_ptrs)
-  face_to_isboundary
-end
-
-function generate_face_to_isboundary(
-  facet_to_isboundary::AbstractVector{Bool},
-  face_to_facets_data::AbstractVector{<:Integer},
-  face_to_facets_ptrs::AbstractVector{<:Integer})
-  nobjects = length(face_to_facets_ptrs)-1
-  object_to_isboundary = fill(false,nobjects)
-  _generate_object_to_isboundary_fill!(
-    object_to_isboundary,
-    facet_to_isboundary,
-    face_to_facets_data,
-    face_to_facets_ptrs)
-  object_to_isboundary
-end
-
+"""
+    generate_face_to_vertices(
+      cell_to_vertices::Table,
+      cell_to_faces::Table,
+      cell_to_cell_type::AbstractVector{<:Integer},
+      cell_type_to_lface_to_lvertices::Vector{Vector{Vector{Int}}} [,
+      nfaces::Int ])
+"""
 function generate_face_to_vertices(
-  cell_to_vertices_data::AbstractVector{<:Integer},
-  cell_to_vertices_ptrs::AbstractVector{<:Integer},
-  cell_to_faces_data::AbstractVector{<:Integer},
-  cell_to_faces_ptrs::AbstractVector{<:Integer},
+  cell_to_vertices::Table,
+  cell_to_faces::Table,
   cell_to_ctype::AbstractVector{<:Integer},
   ctype_to_lface_to_lvertices::Vector{Vector{Vector{Int}}},
-  nfaces::Int=maximum(cell_to_faces_data))
-  _face_to_vertices(
-    cell_to_vertices_data,
-    cell_to_vertices_ptrs,
-    cell_to_faces_data,
-    cell_to_faces_ptrs,
+  nfaces::Int=maximum(cell_to_faces.data))
+
+  data, ptrs = _generate_face_to_vertices(
+    cell_to_vertices.data,
+    cell_to_vertices.ptrs,
+    cell_to_faces.data,
+    cell_to_faces.ptrs,
     cell_to_ctype,
     ctype_to_lface_to_lvertices,
     nfaces)
+
+  Table(data,ptrs)
+end
+
+
+"""
+    find_cell_to_faces(
+      cell_to_vertices::Table,
+      cell_type_to_lface_to_lvertices::Vector{Vector{Vector{Int}}},
+      cell_to_cell_type::AbstractVector{<:Integer},
+      vertex_to_faces::Table)
+"""
+function find_cell_to_faces(
+  cell_to_vertices::Table,
+  cell_type_to_lface_to_lvertices::Vector{Vector{Vector{Int}}},
+  cell_to_cell_type::AbstractVector{<:Integer},
+  vertex_to_faces::Table)
+
+  data, ptrs = _cell_to_faces_from_vertex_to_faces(
+    cell_to_vertices.data,
+    cell_to_vertices.ptrs,
+    cell_type_to_lface_to_lvertices,
+    cell_to_cell_type,
+    vertex_to_faces.data,
+    vertex_to_faces.ptrs)
+
+  Table(data,ptrs)
+end
+
+"""
+    generate_facet_to_isboundary(facet_to_cells::Table)
+"""
+function generate_facet_to_isboundary(face_to_cells::Table)
+  _generate_facet_to_isboundary(face_to_cells.ptrs)
+end
+
+"""
+    generate_face_to_isboundary(
+      facet_to_isboundary::AbstractVector{Bool},
+      face_to_facets::Table)
+"""
+function generate_face_to_isboundary(
+  facet_to_isboundary::AbstractVector{Bool},
+  face_to_facets::Table)
+
+  _generate_face_to_isboundary(
+    facet_to_isboundary,
+    face_to_facets.data,
+    face_to_facets.ptrs)
 end
 
 function refine_grid_connectivity(
@@ -202,7 +237,127 @@ end
 
 # Helpers
 
-const UNSET = 0
+function _generate_cell_to_vertices(
+  cell_to_nodes::Table,
+  cell_to_cell_type::AbstractVector{<:Integer},
+  cell_type_to_lvertex_to_lnode::Vector{Vector{Int}},
+  nnodes::Int=maximum(cell_to_nodes.data))
+
+  data, ptrs, vertex_to_node = _generate_cell_to_vertices(
+    cell_to_nodes.data,
+    cell_to_nodes.ptrs,
+    cell_to_cell_type,
+    cell_type_to_lvertex_to_lnode,
+    nnodes)
+
+  (Table(data,ptrs), vertex_to_node)
+end
+
+function _generate_cell_to_vertices(
+  cell_to_nodes_data,
+  cell_to_nodes_ptrs,
+  cell_to_cell_type,
+  cell_type_to_lvertex_to_lnode,
+  nnodes)
+
+  cell_to_vertices_ptrs = similar(cell_to_nodes_ptrs)
+
+  cell_type_to_nlvertices = map(length,cell_type_to_lvertex_to_lnode)
+
+  _generate_cell_to_vertices_count!(
+    cell_to_vertices_ptrs,
+    cell_to_cell_type,
+    cell_type_to_nlvertices)
+
+  T = eltype(cell_to_nodes_data)
+
+  node_to_vertex = fill(T(UNSET),nnodes)
+
+  length_to_ptrs!(cell_to_vertices_ptrs)
+
+  ndata = cell_to_vertices_ptrs[end]-1
+  cell_to_vertices_data = zeros(T,ndata)
+
+  _generate_cell_to_vertices_fill!(
+    cell_to_vertices_data,
+    cell_to_vertices_ptrs,
+    cell_to_nodes_data,
+    cell_to_nodes_ptrs,
+    node_to_vertex,
+    cell_to_cell_type,
+    cell_type_to_lvertex_to_lnode)
+
+  vertex_to_node = find_inverse_index_map(node_to_vertex)
+
+  (cell_to_vertices_data, cell_to_vertices_ptrs, vertex_to_node)
+
+end
+
+function  _generate_cell_to_vertices_count!(
+    cell_to_vertices_ptrs,
+    cell_to_cell_type,
+    cell_type_to_nlvertices)
+
+  cells = 1:length(cell_to_cell_type)
+  for cell in cells
+    cell_type = cell_to_cell_type[cell]
+    nlvertices = cell_type_to_nlvertices[cell_type]
+    cell_to_vertices_ptrs[1+cell] = nlvertices
+  end
+end
+
+function  _generate_cell_to_vertices_fill!(
+    cell_to_vertices_data,
+    cell_to_vertices_ptrs,
+    cell_to_nodes_data,
+    cell_to_nodes_ptrs,
+    node_to_vertex,
+    cell_to_cell_type,
+    cell_type_to_lvertex_to_lnode)
+
+  cells = 1:length(cell_to_cell_type)
+
+  vertex = 1
+
+  for cell in cells
+    cell_type = cell_to_cell_type[cell]
+    a = cell_to_nodes_ptrs[cell]-1
+    b = cell_to_vertices_ptrs[cell]-1
+
+    lvertex_to_lnode = cell_type_to_lvertex_to_lnode[cell_type]
+    for (lvertex, lnode) in enumerate(lvertex_to_lnode)
+      node = cell_to_nodes_data[a+lnode]
+      if node_to_vertex[node] == UNSET
+        node_to_vertex[node] = vertex
+        vertex += 1
+      end
+      cell_to_vertices_data[b+lvertex] = node_to_vertex[node]
+    end
+
+  end
+end
+
+function _generate_face_to_isboundary(
+  facet_to_isboundary::AbstractVector{Bool},
+  face_to_facets_data::AbstractVector{<:Integer},
+  face_to_facets_ptrs::AbstractVector{<:Integer})
+
+  nobjects = length(face_to_facets_ptrs)-1
+  object_to_isboundary = fill(false,nobjects)
+  _generate_object_to_isboundary_fill!(
+    object_to_isboundary,
+    facet_to_isboundary,
+    face_to_facets_data,
+    face_to_facets_ptrs)
+  object_to_isboundary
+end
+
+function _generate_facet_to_isboundary(face_to_cells_ptrs::AbstractVector{<:Integer})
+  nfaces = length(face_to_cells_ptrs)-1
+  face_to_isboundary = fill(false,nfaces)
+  _generate_face_to_isboundary_fill!(face_to_isboundary,face_to_cells_ptrs)
+  face_to_isboundary
+end
 
 function _generate_face_to_isboundary_fill!(
   face_to_isboundary, face_to_cells_ptrs)
@@ -830,7 +985,7 @@ function _face_to_ftype_fill!(
 
 end
 
-function _face_to_vertices(
+function _generate_face_to_vertices(
   cell_to_vertices_data::AbstractVector{L},
   cell_to_vertices_ptrs::AbstractVector{P},
   cell_to_faces_data,

@@ -15,7 +15,7 @@ ReferenceFEs
 ```@docs
 Polytope
 get_faces(p::Polytope)
-get_dimrange(p::Polytope)
+get_dimranges(p::Polytope)
 Polytope{D}(p::Polytope,Dfaceid::Integer) where D
 get_vertex_coordinates(p::Polytope)
 (==)(a::Polytope{D},b::Polytope{D}) where D
@@ -23,6 +23,8 @@ get_edge_tangents(p::Polytope)
 get_facet_normals(p::Polytope)
 get_facet_orientations(p::Polytope)
 get_vertex_permutations(p::Polytope)
+is_simplex(p::Polytope)
+is_n_cube(p::Polytope)
 test_polytope(p::Polytope{D};optional::Bool) where D
 num_dims(::Polytope)
 num_faces(p::Polytope)
@@ -133,6 +135,7 @@ get_own_nodes_permutations(reffe::NodalReferenceFE)
 get_dof_to_node(reffe::NodalReferenceFE)
 get_dof_to_comp(reffe::NodalReferenceFE)
 get_node_and_comp_to_dof(reffe::NodalReferenceFE)
+get_vertex_node(reffe::NodalReferenceFE)
 num_nodes(reffe::NodalReferenceFE)
 test_nodal_reference_fe
 ```
@@ -160,6 +163,5 @@ compute_lagrangian_reffaces(::Type{T},p::Polytope,orders) where T
 
 ```@docs
 SerendipityRefFE
-is_serendipity_compatible(p::Polytope)
 ```
 

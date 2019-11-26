@@ -27,9 +27,7 @@ function get_cell_types(::MockTriangulation)
 end
 
 function get_reffes(::MockTriangulation)
-  order = 1
-  tri3 = LagrangianRefFE(Float64,TRI,order)
-  [tri3,]
+  [TRI3,]
 end
 
 trian = MockTriangulation()
@@ -62,5 +60,8 @@ j3 = fill(ji3,np)
 j = [j1,j2,j3]
 
 test_array_of_fields(cell_map,q,x,grad=j)
+
+@test is_affine(trian) == true
+@test has_straight_faces(trian) == true
 
 end # module

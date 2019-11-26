@@ -163,3 +163,27 @@ function _append_count!(p,pa,pb)
     p[cb+1+na] = pb[cb+1] - pb[cb]
   end
 end
+
+"""
+"""
+const UNSET = 0
+
+"""
+"""
+function find_inverse_index_map(a_to_b, nb=maximum(a_to_b))
+  T = eltype(a_to_b)
+  b_to_a = fill(T(UNSET),nb)
+  find_inverse_index_map!(b_to_a, a_to_b)
+  b_to_a
+end
+
+"""
+"""
+function find_inverse_index_map!(b_to_a, a_to_b)
+  for (a,b) in enumerate(a_to_b)
+    if b != UNSET
+      @inbounds b_to_a[b] = a
+    end
+  end
+end
+

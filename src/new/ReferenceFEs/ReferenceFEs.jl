@@ -27,12 +27,14 @@ import Base: ==
 export Polytope
 export ExtrusionPolytope
 export get_faces
-export get_dimrange
+export get_dimranges
 export get_vertex_coordinates
 export get_facet_normals
 export get_facet_orientations
 export get_edge_tangents
 export get_vertex_permutations
+export is_simplex
+export is_n_cube
 export num_dims
 export num_vertices
 export num_faces
@@ -41,6 +43,7 @@ export num_edges
 export get_facedims
 export get_offsets
 export get_offset
+export get_face_vertices
 export test_polytope
 export VERTEX
 export SEGMENT
@@ -83,7 +86,10 @@ export get_node_coordinates
 export get_dof_to_node
 export get_dof_to_comp
 export get_node_and_comp_to_dof
+export get_vertex_node
 export num_nodes
+export has_straight_faces
+export is_affine
 export test_nodal_reference_fe
 
 export LagrangianRefFE
@@ -94,6 +100,12 @@ export compute_face_orders
 export compute_nodes
 export compute_own_nodes_permutations
 export compute_lagrangian_reffaces
+
+export SEG2
+export TRI3
+export QUAD4
+export TET4
+export HEX8
 
 export SerendipityRefFE
 

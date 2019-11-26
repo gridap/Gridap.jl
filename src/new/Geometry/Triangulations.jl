@@ -56,6 +56,20 @@ num_point_dims(::Triangulation{Dc,Dp}) where {Dc,Dp} = Dp
 num_point_dims(::Type{<:Triangulation{Dc,Dp}}) where {Dc,Dp} = Dp
 
 """
+"""
+function is_affine(trian::Triangulation)
+  reffes = get_reffes(trian)
+  all(map(is_affine,reffes))
+end
+
+"""
+"""
+function has_straight_faces(trian::Triangulation)
+  reffes = get_reffes(trian)
+  all(map(has_straight_faces,reffes))
+end
+
+"""
 
 It is not desirable to iterate over the resulting array
 for large number of cells.

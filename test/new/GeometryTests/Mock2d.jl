@@ -61,3 +61,13 @@ face_to_vertices = Table(face_to_vertices_data, face_to_vertices_ptrs)
 face_to_isboundary = Bool[true, false, true, false, true, false, true, false, true, true, false, true, true]
 vertex_to_isboundary = Bool[true, true, true, true, false, true, true, true, true]
 
+vertex_to_coords = Point{2,Float64}[(0,0),(1,0),(2,0),(0,1),(1,1),(2,1),(0,2),(1,2),(2,2)]
+
+reffes = [QUAD4,TRI3]
+
+grid = UnstructuredGrid(
+  vertex_to_coords,
+  cell_to_vertices,
+  reffes,
+  cell_to_ctype)
+

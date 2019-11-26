@@ -5,10 +5,7 @@
 Returns an instance of `LagrangianRefFE`, whose underlying approximation space
 is the serendipity space of order `order`. Implemented for order from 1 to 4.
 The type of the polytope `p` has to implement all the queries detailed in the
-constructor [`LagrangianRefFE(::Type{T},p::Polytope{D},orders) where {T,D}`](@ref)
-plus this additional method:
-
-- [`is_serendipity_compatible(p::Polytope)`](@ref)
+constructor [`LagrangianRefFE(::Type{T},p::Polytope{D},orders) where {T,D}`](@ref).
 
 # Examples
 
@@ -26,7 +23,7 @@ println( num_dofs(reffe) )
 ```
 """
 function SerendipityRefFE(::Type{T},p::Polytope,order::Int) where T
-  @assert is_serendipity_compatible(p) "Polytope not compatible with serendipity elements"
+  @assert is_n_cube(p) "Polytope not compatible with serendipity elements"
   if order > 0
     sp = SerendipityPolytope(p) 
   else
@@ -34,25 +31,6 @@ function SerendipityRefFE(::Type{T},p::Polytope,order::Int) where T
   end
   LagrangianRefFE(T,sp,order)
 end
-
-"""
-    is_serendipity_compatible(p::Polytope) -> Bool
-
-Returns `true` if the polytope `p` is compatible with the
-serendipity space (i.e., it is a n-cube). This method is implemented
-for `ExtrusionPolytope`, and should be implemented by new
-polytope types if they are to be used to build serendipity spaces.
-"""
-function is_serendipity_compatible(p::Polytope)
-  @abstractmethod
-end
-
-# Concrete implementation for ExtrusionPolytope
-
-function is_serendipity_compatible(p::ExtrusionPolytope)
-  all(p.extrusion.array .== HEX_AXIS)
-end
-
 
 # Helper private type
 struct SerendipityPolytope{D,P} <: Polytope{D}
@@ -66,8 +44,8 @@ function get_faces(p::SerendipityPolytope)
   get_faces(p.hex)
 end
 
-function get_dimrange(p::SerendipityPolytope)
-  get_dimrange(p.hex)
+function get_dimranges(p::SerendipityPolytope)
+  get_dimranges(p.hex)
 end
 
 function Polytope{N}(p::SerendipityPolytope,Nfaceid::Integer) where N

@@ -16,6 +16,8 @@ using Gridap.ReferenceFEs
 
 import Gridap.ReferenceFEs: get_node_coordinates
 import Gridap.ReferenceFEs: num_nodes
+import Gridap.ReferenceFEs: is_affine
+import Gridap.ReferenceFEs: has_straight_faces
 
 export Triangulation
 export get_cell_coordinates

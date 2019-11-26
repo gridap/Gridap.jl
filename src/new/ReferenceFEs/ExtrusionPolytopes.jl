@@ -96,7 +96,7 @@ const TET_AXIS = 2
 
 get_faces(p::ExtrusionPolytope) = p.nf_nfs
 
-get_dimrange(p::ExtrusionPolytope) = p.nfacesdim
+get_dimranges(p::ExtrusionPolytope) = p.nfacesdim
 
 function Polytope{0}(p::ExtrusionPolytope,Dfaceid::Integer)
   @assert Dfaceid in 1:num_vertices(p)
@@ -139,6 +139,22 @@ end
 
 function get_vertex_permutations(p::ExtrusionPolytope)
   _admissible_permutations(p)
+end
+
+function is_simplex(p::ExtrusionPolytope)
+  all(p.extrusion.array .== TET_AXIS)
+end
+
+function is_n_cube(p::ExtrusionPolytope)
+  all(p.extrusion.array .== HEX_AXIS)
+end
+
+function is_simplex(p::ExtrusionPolytope{0})
+  true
+end
+
+function is_n_cube(p::ExtrusionPolytope{0})
+  true
 end
 
 # Helpers

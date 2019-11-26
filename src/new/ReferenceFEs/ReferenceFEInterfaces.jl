@@ -483,6 +483,38 @@ function _get_face_nodeids_d!(face_to_nodes,::Val{d},reffe,polytope) where d
 end
 
 """
+    get_vertex_node(reffe::NodalReferenceFE) -> Vector{Int}
+"""
+function get_vertex_node(reffe::NodalReferenceFE)
+  d = 0
+  p = get_polytope(reffe)
+  range = get_dimranges(p)[d+1]
+  vertex_to_nodes = get_face_own_nodeids(reffe)[range]
+  map(first, vertex_to_nodes)
+end
+
+"""
+    has_straight_faces(::NodalReferenceFE)
+
+In the following sense:
+vertices == nodes
+"""
+function has_straight_faces(reffe::NodalReferenceFE)
+  p = get_polytope(reffe)
+  r = true
+  r = r && num_vertices(p) == num_nodes(reffe)
+  r = r && get_vertex_node(reffe) == collect(1:num_nodes(reffe))
+  r
+end
+
+"""
+"""
+function is_affine(reffe::NodalReferenceFE)
+  p = get_polytope(reffe)
+  has_straight_faces(reffe) && is_simplex(p)
+end
+
+"""
     test_nodal_reference_fe(reffe::NodalReferenceFE; optional::Bool=false)
 """
 function test_nodal_reference_fe(reffe::NodalReferenceFE; optional::Bool=false)

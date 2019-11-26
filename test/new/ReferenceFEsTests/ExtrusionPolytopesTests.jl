@@ -78,4 +78,16 @@ test_polytope(HEX,optional=true)
 #@test num_edges(PYRAMID) == 8
 #@test num_facets(PYRAMID) == 5
 
+@test is_simplex(TRI) == true
+@test is_n_cube(TRI) == false
+
+@test is_simplex(WEDGE) == false
+@test is_n_cube(WEDGE) == false
+
+@test is_simplex(QUAD) == false
+@test is_n_cube(QUAD) == true
+
+@test is_simplex(VERTEX) == true
+@test is_n_cube(VERTEX) == true
+
 end # module

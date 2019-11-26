@@ -56,6 +56,9 @@ export rewind_ptrs!
 export length_to_ptrs!
 export append_ptrs
 export generate_data_and_ptrs
+export find_inverse_index_map
+export find_inverse_index_map!
+export UNSET
 
 import Base: size
 import Base: getindex, setindex!
