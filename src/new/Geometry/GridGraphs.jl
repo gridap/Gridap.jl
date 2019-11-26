@@ -3,12 +3,6 @@ abstract type GridGraph end
 
 """
 """
-function num_dims(g::GridGraph)
-  @abstractmethod
-end
-
-"""
-"""
 function get_dimranges(g::GridGraph)
   @abstractmethod
 end
@@ -72,6 +66,10 @@ end
 
 """
 """
+num_dims(g::GridGraph) = length(get_dimranges)-1
+
+"""
+"""
 num_cells(g::GridGraph) = length(get_cell_faces(g,0))
 
 """
@@ -80,29 +78,29 @@ num_faces(g::GridGraph) = length(get_face_cells(g))
 
 """
 """
-num_faces(g::GridGraph,dim::Integer) = GridGraph.ReferenceFEs._num_faces(g,dim)
+num_faces(g::GridGraph,dim::Integer) = _num_faces(g,dim)
 
 """
 """
-num_facets(g::GridGraph) = Gridap.ReferenceFEs._num_facets(g)
+num_facets(g::GridGraph) = _num_facets(g)
 
 """
 """
-num_edges(g::GridGraph) = Gridap.ReferenceFEs._num_edges(g)
+num_edges(g::GridGraph) = _num_edges(g)
 
 """
 """
-num_vertices(g::GridGraph) = Gridap.ReferenceFEs._num_vertices(g)
+num_vertices(g::GridGraph) = _num_vertices(g)
 
 """
 """
-get_facedims(g::GridGraph) = Gridap.ReferenceFEs._get_facedims(g)
+get_facedims(g::GridGraph) = _get_facedims(g)
 
 """
 """
-get_offsets(g::GridGraph) = Gridap.ReferenceFEs._get_offsets(g)
+get_offsets(g::GridGraph) = _get_offsets(g)
 
 """
 """
-get_offset(g::GridGraph,d::Integer) = Gridap.ReferenceFEs._get_offset(g,d)
+get_offset(g::GridGraph,d::Integer) = _get_offset(g,d)
 

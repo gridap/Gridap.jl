@@ -14,6 +14,16 @@ using Gridap.Arrays
 using Gridap.Fields
 using Gridap.ReferenceFEs
 
+using Gridap.ReferenceFEs
+
+using Gridap.ReferenceFEs: _num_faces
+using Gridap.ReferenceFEs: _num_facets
+using Gridap.ReferenceFEs: _num_vertices
+using Gridap.ReferenceFEs: _num_edges
+using Gridap.ReferenceFEs: _get_facedims
+using Gridap.ReferenceFEs: _get_offsets
+using Gridap.ReferenceFEs: _get_offset
+
 import Gridap.ReferenceFEs: get_node_coordinates
 import Gridap.ReferenceFEs: num_nodes
 import Gridap.ReferenceFEs: is_affine
@@ -60,5 +70,7 @@ include("ConformingTriangulations.jl")
 include("GridGraphs.jl")
 
 include("UnstructuredGrids.jl")
+
+include("ConformingTrianMocks.jl")
 
 end # module
