@@ -8,6 +8,7 @@ using Gridap.Geometry
 
 using Gridap.Helpers
 using Gridap.Arrays
+using Gridap.ReferenceFEs: _find_unique_with_indices
 include("../../../src/new/Geometry/GridOperations.jl")
 
 include("Mock2d.jl")
@@ -84,5 +85,15 @@ _cell_to_vertices, vertex_to_node = generate_cell_to_vertices(grid)
 
 @test _cell_to_vertices == cell_to_vertices
 @test isa(_cell_to_vertices,Table{Int,Int32})
+
+ctype_to_reffe = get_reffes(grid)
+ftype_to_refface, ctype_to_lface_to_ftype = _generate_ftype_to_refface(Val{1}(),ctype_to_reffe)
+
+@test length(ftype_to_refface) == 1
+@test ctype_to_lface_to_ftype == [[1, 1, 1, 1], [1, 1, 1]]
+
+face_to_ftype =  generate_face_to_face_type(cell_to_faces, cell_to_ctype, ctype_to_lface_to_ftype)
+@test length(face_to_ftype) == length(face_to_vertices)
+@test face_to_ftype == [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 
 end # module

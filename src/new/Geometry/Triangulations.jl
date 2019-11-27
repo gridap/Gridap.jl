@@ -97,6 +97,7 @@ function get_cell_map(trian::Triangulation)
   lincomb(cell_to_shapefuns, cell_to_coords)
 end
 
+
 # Helpers for Triangulation
 
 function _get_cell_data(type_to_data, cell_to_type)

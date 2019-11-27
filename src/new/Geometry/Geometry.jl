@@ -23,6 +23,7 @@ using Gridap.ReferenceFEs: _num_edges
 using Gridap.ReferenceFEs: _get_facedims
 using Gridap.ReferenceFEs: _get_offsets
 using Gridap.ReferenceFEs: _get_offset
+using Gridap.ReferenceFEs: _find_unique_with_indices
 
 import Gridap.ReferenceFEs: get_node_coordinates
 import Gridap.ReferenceFEs: num_nodes

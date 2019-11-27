@@ -53,6 +53,47 @@ function generate_cell_to_faces(
   Table(data,ptrs)
 end
 
+function _generate_ftype_to_refface(::Val{d},ctype_to_reffe) where d
+
+  ctype_to_lftype_to_refface = [ get_reffes(ReferenceFE{d},reffe) for reffe in ctype_to_reffe]
+  ctype_to_lface_to_lftype = [ get_face_types(ReferenceFE{d},reffe) for reffe in ctype_to_reffe]
+
+  i_to_refface = vcat( ctype_to_lftype_to_refface... )
+
+  i = 1
+  ctype_to_lftype_to_i = Vector{Int}[]
+  for ctype in 1:length(ctype_to_lftype_to_refface)
+    lftype_to_i = Int[]
+    for lftype in length(ctype_to_lftype_to_refface[ctype])
+      push!(lftype_to_i, i)
+      i +=1
+    end
+    push!(ctype_to_lftype_to_i, lftype_to_i)
+  end
+
+  ftype_to_refface, i_to_ftype = _find_unique_with_indices(i_to_refface)
+
+  ctype_to_lftype_to_ftype = copy(ctype_to_lftype_to_i)
+  for ctype in 1:length(ctype_to_lftype_to_i)
+    for lftype in 1:length(ctype_to_lftype_to_i[ctype])
+      i = ctype_to_lftype_to_i[ctype][lftype]
+      ftype = i_to_ftype[i]
+      ctype_to_lftype_to_ftype[ctype][lftype] = ftype
+    end
+  end
+
+  ctype_to_lface_to_ftype = Vector{Int}[]
+  for ctype in 1:length(ctype_to_lftype_to_ftype)
+    lface_to_lftype = ctype_to_lface_to_lftype[ctype]
+    lftype_to_ftype = ctype_to_lftype_to_ftype[ctype]
+    lface_to_ftype = lftype_to_ftype[lface_to_lftype]
+    push!(ctype_to_lface_to_ftype,lface_to_ftype)
+  end
+
+  (ftype_to_refface, ctype_to_lface_to_ftype)
+
+end
+
 function generate_face_to_face_type(
   cell_to_faces::Table,
   cell_to_cell_type::AbstractVector{<:Integer},
