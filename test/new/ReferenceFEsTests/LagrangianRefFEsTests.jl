@@ -116,4 +116,13 @@ reffe = LagrangianRefFE(VectorValue{2,Float64},QUAD,orders)
 own_nodes = compute_own_nodes(TRI,orders)
 @test own_nodes == Point{2,Float64}[(1.0/3,1.0/3)]
 
+reffe = LagrangianRefFE(Float64,WEDGE,1)
+
+reffes = get_reffes(ReferenceFE{2}, reffe)
+
+iface_to_ftype = get_face_types(ReferenceFE{2}, reffe)
+
+@test length(reffes) == 2
+@test iface_to_ftype == [1, 1, 1, 2, 2]
+
 end # module

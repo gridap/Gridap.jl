@@ -91,6 +91,26 @@ function ReferenceFE{D}(reffe::LagrangianRefFE{D},iface::Integer) where D
   reffe
 end
 
+function (==)(a::LagrangianRefFE{D}, b::LagrangianRefFE{D}) where D
+  t = true
+  pa = get_polytope(a)
+  pb = get_polytope(b)
+  t = t && (pa == pb)
+  xa = get_node_coordinates(a)
+  xb = get_node_coordinates(b)
+  t = t && (xa ≈ xb)
+  expsa = get_exponents(get_prebasis(a))
+  expsb = get_exponents(get_prebasis(b))
+  t = t && (expsa == expsb)
+  facedofsa = get_face_own_dofids(a)
+  facedofsb = get_face_own_dofids(b)
+  t = t && (facedofsa == facedofsb)
+  ia = get_node_and_comp_to_dof(a)
+  ib = get_node_and_comp_to_dof(b)
+  t = t && (ia == ib)
+  t
+end
+
 # Helpers for LagrangianRefFE
 
 function _generate_nfacedofs(nfacenodes,node_and_comp_to_dof)

@@ -74,6 +74,8 @@ export get_face_own_dofids
 export get_face_dofids
 export get_own_dofs_permutations
 export get_shapefuns
+export get_reffes
+export get_face_types
 export compute_shapefuns
 export test_reference_fe
 export num_dofs

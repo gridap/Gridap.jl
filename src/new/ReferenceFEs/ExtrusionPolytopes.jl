@@ -116,7 +116,18 @@ function Polytope{D}(p::ExtrusionPolytope{D},Dfaceid::Integer) where D
 end
 
 function (==)(a::ExtrusionPolytope{D},b::ExtrusionPolytope{D}) where D
-  a.extrusion == b.extrusion
+  #The first axis is irrelevant here
+  ea = Point(a.extrusion.array.data[2:end])
+  eb = Point(b.extrusion.array.data[2:end])
+  ea == eb
+end
+
+function (==)(a::ExtrusionPolytope{1},b::ExtrusionPolytope{1})
+  true
+end
+
+function (==)(a::ExtrusionPolytope{0},b::ExtrusionPolytope{0})
+  true
 end
 
 function get_vertex_coordinates(p::ExtrusionPolytope)

@@ -28,6 +28,7 @@ import Gridap.ReferenceFEs: get_node_coordinates
 import Gridap.ReferenceFEs: num_nodes
 import Gridap.ReferenceFEs: is_affine
 import Gridap.ReferenceFEs: has_straight_faces
+import Gridap.ReferenceFEs: get_reffes
 
 import Gridap.ReferenceFEs: get_faces
 import Gridap.ReferenceFEs: num_dims
@@ -43,7 +44,6 @@ import Gridap.ReferenceFEs: get_vertex_coordinates
 
 export Triangulation
 export get_cell_coordinates
-export get_reffes
 export get_cell_types
 export num_cells
 export num_cell_dims
