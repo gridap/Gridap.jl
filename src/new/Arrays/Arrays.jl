@@ -56,9 +56,14 @@ export identity_table
 export rewind_ptrs!
 export length_to_ptrs!
 export append_ptrs
+export append_ptrs!
+export get_ptrs_type
+export get_data_type
 export generate_data_and_ptrs
 export find_inverse_index_map
 export find_inverse_index_map!
+export append_tables_globally
+export append_tables_locally
 export UNSET
 
 import Base: size

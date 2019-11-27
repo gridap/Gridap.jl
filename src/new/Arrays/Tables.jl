@@ -153,22 +153,34 @@ end
 Append two vectors of pointers.
 """
 function append_ptrs(pa::AbstractVector{T},pb::AbstractVector{T}) where T
-  na = length(pa)-1
-  nb = length(pb)-1
-  p = zeros(T,(na+nb+1))
-  _append_count!(p,pa,pb)
-  length_to_ptrs!(p)
-  p
+  p = copy(pa)
+  append_ptrs!(p,pb)
 end
 
-function _append_count!(p,pa,pb)
+"""
+"""
+function append_ptrs!(pa::AbstractVector{T},pb::AbstractVector{T}) where T
   na = length(pa)-1
-  for ca in 1:na
-    p[ca+1] = pa[ca+1] - pa[ca]
-  end
   nb = length(pb)-1
+  _append_grow!(pa,nb,zero(T))
+  _append_count!(pa,pb,na,nb)
+  rewind_ptrs!(pa)
+  length_to_ptrs!(pa)
+  pa
+end
+
+function _append_grow!(pa,nb,z)
+  for i in 1:nb
+    push!(pa,z)
+  end
+end
+
+function _append_count!(pa,pb,na,nb)
+  for ca in 1:na
+    pa[ca] = pa[ca+1] - pa[ca]
+  end
   for cb in 1:nb
-    p[cb+1+na] = pb[cb+1] - pb[cb]
+    pa[cb+na] = pb[cb+1] - pb[cb]
   end
 end
 
@@ -191,6 +203,91 @@ function find_inverse_index_map!(b_to_a, a_to_b)
   for (a,b) in enumerate(a_to_b)
     if b != UNSET
       @inbounds b_to_a[b] = a
+    end
+  end
+end
+
+"""
+"""
+function append_tables_globally(tables::Table{T,P}...) where {T,P}
+  first_table, = tables
+  data = copy(first_table.data)
+  ptrs = copy(first_table.ptrs)
+  for (i,table) in enumerate(tables)
+    if  i != 1
+      append!(data,table.data)
+      append_ptrs!(ptrs,table.ptrs)
+    end
+  end
+  Table(data,ptrs)
+end
+
+function append_tables_globally()
+  @unreachable "At least one table has to be provided"
+end
+
+"""
+"""
+get_ptrs_type(::Table{T,P}) where {T,P} = P
+get_ptrs_type(::Type{Table{T,P}}) where {T,P} = P
+
+"""
+"""
+get_data_type(::Table{T,P}) where {T,P} = T
+get_data_type(::Type{Table{T,P}}) where {T,P} = T
+
+
+"""
+"""
+function append_tables_locally(offsets, tables)
+
+  first_table, = tables
+
+  @assert all( map(length,tables) .== length(first_table) ) "All tables must have the same length"
+  ndata = sum( (length(table.data) for table in tables) )
+
+  T = get_data_type(first_table)
+  P = get_ptrs_type(first_table)
+
+  ptrs = zeros(P,length(first_table.ptrs))
+  data = zeros(T,ndata)
+
+  for table in tables
+    _append_tables_locally_count!(ptrs,table)
+  end
+
+  length_to_ptrs!(ptrs)
+
+  for (offset,table) in zip(offsets,tables)
+    _append_tables_locally_fill!(data,ptrs,offset,table)
+  end
+
+  rewind_ptrs!(ptrs)
+
+  Table(data,ptrs)
+
+end
+
+function append_tables_locally(offsets::Tuple{}, tables::Tuple{})
+  @unreachable "At least one table has to be provided"
+end
+
+function  _append_tables_locally_count!(ptrs,table)
+  table_ptrs = table.ptrs
+  n = length(table_ptrs)-1
+  for i in 1:n
+    ptrs[i+1] += table_ptrs[i+1]- table_ptrs[i]
+  end
+end
+
+function _append_tables_locally_fill!(data,ptrs,offset,table)
+  table_data = table.data
+  table_ptrs = table.ptrs
+  n = length(table_ptrs)-1
+  for i in 1:n
+    for j in table_ptrs[i]:(table_ptrs[i+1]-1)
+      data[ptrs[i]] = table_data[j] + offset
+      ptrs[i] += 1
     end
   end
 end

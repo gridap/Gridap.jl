@@ -53,6 +53,19 @@ pb = [1,3,5,7]
 
 pc = append_ptrs(pa,pb)
 
+@test pa == [1,3,5,7,9]
+@test pb == [1,3,5,7]
 @test pc == [1, 3, 5, 7, 9, 11, 13, 15]
+
+vv1 = [[1,2,3],[2,3],[5,8],Int[],[1,2,4]]
+table1 = Table(vv1)
+vv2 = [[1,3],[4,2,3],Int[],Int[],[1,2,4]]
+table2 = Table(vv2)
+
+table3 = append_tables_globally(table1,table2)
+@test table3 == vcat(table1,table2)
+
+table4 = append_tables_locally((0,5),(table1,table2))
+@test table4 == [[1, 2, 3, 6, 8], [2, 3, 9, 7, 8], [5, 8], Int[], [1, 2, 4, 6, 7, 9]]
 
 end # module
