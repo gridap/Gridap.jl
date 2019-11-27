@@ -26,7 +26,7 @@
 struct ConformingTrianMock <: ConformingTriangulation{2,2} end
 
 function get_node_coordinates(::ConformingTrianMock)
-  Point{2,Float64}[(0,0),(1,0),(2,0),(1,1),(2,1),(0,2),(2,2)]
+  Point{2,Float64}[(0,0),(1,0),(2,0),(0,1),(1,1),(2,1),(0,2),(1,2),(2,2)]
 end
 
 function get_cell_nodes(::ConformingTrianMock)
