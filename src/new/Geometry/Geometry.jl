@@ -29,6 +29,7 @@ import Gridap.ReferenceFEs: num_nodes
 import Gridap.ReferenceFEs: is_affine
 import Gridap.ReferenceFEs: has_straight_faces
 
+import Gridap.ReferenceFEs: get_faces
 import Gridap.ReferenceFEs: num_dims
 import Gridap.ReferenceFEs: get_dimranges
 import Gridap.ReferenceFEs: num_faces
@@ -38,7 +39,7 @@ import Gridap.ReferenceFEs: num_vertices
 import Gridap.ReferenceFEs: get_facedims
 import Gridap.ReferenceFEs: get_offsets
 import Gridap.ReferenceFEs: get_offset
-import Gridap.ReferenceFEs: get_vertex_node
+import Gridap.ReferenceFEs: get_vertex_coordinates
 
 export Triangulation
 export get_cell_coordinates
@@ -58,7 +59,7 @@ export test_conforming_triangulation
 
 export GridGraph
 export get_cell_faces
-export get_face_cells
+export get_refcells
 export test_grid_graph
 
 export UnstructuredGrid

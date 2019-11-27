@@ -54,8 +54,6 @@ _cell_to_faces = find_cell_to_faces(
 @test _cell_to_faces == cell_to_faces
 
 face_to_cells = generate_cells_around(cell_to_faces)
-@show face_to_cells.data
-@show face_to_cells.ptrs
 
 _face_to_isboundary = generate_facet_to_isboundary(face_to_cells)
 @test _face_to_isboundary == face_to_isboundary

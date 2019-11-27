@@ -7,7 +7,7 @@ using Gridap.Geometry
 using Gridap.Geometry: GridGraphMock
 
 g = GridGraphMock()
-test_grid_graph(g)
+test_grid_graph(g,optional=true)
 
 @test num_dims(g) == 2
 @test num_cells(g) == 5
