@@ -479,6 +479,61 @@ function get_face_vertices(p::Polytope)
   face_vertices
 end
 
+"""
+"""
+function get_reffaces(::Type{<:Polytope{d}},p::Polytope) where d
+  ftype_to_refface, _ = _compute_reffaces_and_face_types(p,Val{d}())
+  ftype_to_refface
+end
+
+"""
+"""
+function get_face_types(::Type{<:Polytope{d}},p::Polytope) where d
+  _, iface_to_ftype = _compute_reffaces_and_face_types(p,Val{d}())
+  iface_to_ftype
+end
+
+function _compute_reffaces_and_face_types(p::Polytope,::Val{d}) where d
+  iface_to_refface = [ Polytope{d}(p,iface) for iface in 1:num_faces(p,d) ]
+  _find_unique_with_indices(iface_to_refface)
+end
+
+function _find_unique_with_indices(a_to_b)
+  T = eltype(a_to_b)
+  u_to_b = T[]
+  _find_unique!(u_to_b,a_to_b)
+  a_to_u = zeros(Int,length(a_to_b))
+  _find_indexin!(a_to_u,a_to_b,u_to_b)
+  (u_to_b, a_to_u)
+end
+
+function _find_unique!(f::Vector,itr,pred::Function=(==))
+  for i in itr
+    found = false
+    for fi in f
+      if pred(i,fi)
+        found = true
+      end
+    end
+    if !found
+      push!(f,i)
+    end
+  end
+  f
+end
+
+function _find_indexin!(a_to_index, a_to_b, index_to_b,pred::Function=(==))
+  for (a,b) in enumerate(a_to_b)
+    for (index,_b) in enumerate(index_to_b)
+      if pred(b,_b)
+        a_to_index[a] = index
+        break
+      end
+    end
+  end
+  a_to_index
+end
+
 # Testers
 
 """

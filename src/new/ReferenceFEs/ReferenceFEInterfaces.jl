@@ -18,12 +18,12 @@ The `ReferenceFE` interface is defined by overloading these methods:
 - [`get_prebasis(reffe::ReferenceFE)`](@ref)
 - [`get_dofs(reffe::ReferenceFE)`](@ref)
 - [`get_face_own_dofids(reffe::ReferenceFE)`](@ref)
-- [`(==)(a::ReferenceFE{D},b::ReferenceFE{D}) where D`](@ref)
 
 and optionally these ones:
 
 - [`ReferenceFE{N}(reffe::ReferenceFE,nfaceid::Integer) where N`](@ref)
 - [`get_own_dofs_permutations(reffe::ReferenceFE)`](@ref)
+- [`(==)(a::ReferenceFE{D},b::ReferenceFE{D}) where D`](@ref)
 
 """
 abstract type ReferenceFE{D} end
@@ -71,6 +71,8 @@ function get_face_own_dofids(reffe::ReferenceFE)
   @abstractmethod
 end
 
+# optional
+
 """
     (==)(a::ReferenceFE{D},b::ReferenceFE{D}) where D
 
@@ -84,8 +86,6 @@ end
 function (==)(a::ReferenceFE,b::ReferenceFE)
   false
 end
-
-# optional
 
 """
     ReferenceFE{N}(reffe::ReferenceFE,nfaceid::Integer) where N
@@ -281,42 +281,6 @@ function _compute_reffes_and_face_types(reffe::ReferenceFE,::Val{d}) where d
   _find_unique_with_indices(iface_to_reffe)
 end
 
-function _find_unique_with_indices(a_to_b)
-  T = eltype(a_to_b)
-  u_to_b = T[]
-  _find_unique!(u_to_b,a_to_b)
-  a_to_u = zeros(Int,length(a_to_b))
-  _find_indexin!(a_to_u,a_to_b,u_to_b)
-  (u_to_b, a_to_u)
-end
-
-function _find_unique!(f::Vector,itr,pred::Function=(==))
-  for i in itr
-    found = false
-    for fi in f
-      if pred(i,fi)
-        found = true
-      end
-    end
-    if !found
-      push!(f,i)
-    end
-  end
-  f
-end
-
-function _find_indexin!(a_to_index, a_to_b, index_to_b,pred::Function=(==))
-  for (a,b) in enumerate(a_to_b)
-    for (index,_b) in enumerate(index_to_b)
-      if pred(b,_b)
-        a_to_index[a] = index
-        break
-      end
-    end
-  end
-  a_to_index
-end
-
 # Test
 
 """
@@ -343,8 +307,8 @@ function test_reference_fe(reffe::ReferenceFE{D};optional::Bool=false) where D
   m = evaluate(dofs,basis)
   @test ndofs == size(m,1)
   @test ndofs == size(m,2)
-  @test reffe == reffe
   if optional
+    @test reffe == reffe
     dofperms = get_own_dofs_permutations(reffe)
     @test isa(dofperms,Vector{Vector{Int}})
     vertexperms = get_vertex_permutations(p)

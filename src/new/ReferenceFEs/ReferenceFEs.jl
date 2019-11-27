@@ -44,6 +44,7 @@ export get_facedims
 export get_offsets
 export get_offset
 export get_face_vertices
+export get_reffaces
 export test_polytope
 export VERTEX
 export SEGMENT

@@ -90,4 +90,10 @@ test_polytope(HEX,optional=true)
 @test is_simplex(VERTEX) == true
 @test is_n_cube(VERTEX) == true
 
+d = 1
+reffaces = get_reffaces(Polytope{d},WEDGE)
+iface_to_ftype = get_face_types(Polytope{d},WEDGE)
+@test length(reffaces) == 1
+@test iface_to_ftype == [1, 1, 1, 1, 1, 1, 1, 1, 1]
+
 end # module
