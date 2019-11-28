@@ -68,7 +68,7 @@ type_to_reffes = get_reffes(grid)
 
 type_to_vertex_to_node = map(get_vertex_node, type_to_reffes)
 
-_cell_to_vertices, vertex_to_node = _generate_cell_to_vertices(
+_cell_to_vertices, vertex_to_node, node_to_vertex = _generate_cell_to_vertices(
   cell_to_nodes, cell_to_ctype, type_to_vertex_to_node)
 
 @test isa(_cell_to_vertices,Table{Int,Int32})

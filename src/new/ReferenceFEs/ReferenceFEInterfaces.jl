@@ -571,3 +571,9 @@ function test_nodal_reference_fe(reffe::NodalReferenceFE; optional::Bool=false)
   @test isa(node_and_comp_to_dof,Vector)
 end
 
+# IO
+
+function Base.show(io::IO,p::ReferenceFE)
+  print(io,nameof(typeof(p)))
+end
+

@@ -3,15 +3,16 @@ function generate_cell_to_vertices(grid::UnstructuredGrid)
   if has_straight_faces(grid)
     cell_to_vertices = get_cell_nodes(grid)
     vertex_to_node = collect(1:num_nodes(grid))
+    node_to_vertex = vertex_to_node
   else
     cell_to_nodes = get_cell_nodes(grid)
     cell_to_cell_type = get_cell_type(grid)
     reffes = get_reffes(grid)
     cell_type_to_lvertex_to_lnode = map(get_vertex_node, reffes)
-    cell_to_vertices, vertex_to_node = _generate_cell_to_vertices(
+    cell_to_vertices, vertex_to_node, node_to_vertex = _generate_cell_to_vertices(
       cell_to_nodes,cell_to_cell_type,cell_type_to_lvertex_to_lnode)
   end
-  (cell_to_vertices, vertex_to_node)
+  (cell_to_vertices, vertex_to_node, node_to_vertex)
 end
 
 function generate_cells_around(
@@ -101,8 +102,8 @@ function generate_face_to_face_type(
   nfaces::Int=maximum(cell_to_faces.data)) where T<:Integer
 
   _generate_face_to_ftype(
-    cell_to_faces_data,
-    cell_to_faces_ptrs,
+    cell_to_faces.data,
+    cell_to_faces.ptrs,
     cell_to_cell_type,
     cell_type_to_lface_to_face_type,
     nfaces)
@@ -253,7 +254,7 @@ function _generate_cell_to_vertices(
   cell_type_to_lvertex_to_lnode::Vector{Vector{Int}},
   nnodes::Int=maximum(cell_to_nodes.data))
 
-  data, ptrs, vertex_to_node = _generate_cell_to_vertices(
+  data, ptrs, vertex_to_node, node_to_vertex = _generate_cell_to_vertices(
     cell_to_nodes.data,
     cell_to_nodes.ptrs,
     cell_to_cell_type,
@@ -299,7 +300,7 @@ function _generate_cell_to_vertices(
 
   vertex_to_node = find_inverse_index_map(node_to_vertex)
 
-  (cell_to_vertices_data, cell_to_vertices_ptrs, vertex_to_node)
+  (cell_to_vertices_data, cell_to_vertices_ptrs, vertex_to_node, node_to_vertex)
 
 end
 

@@ -589,3 +589,9 @@ function test_polytope(p::Polytope{D};optional::Bool=false) where D
   end
 end
 
+# IO
+
+function Base.show(io::IO,p::Polytope)
+  print(io,nameof(typeof(p)))
+end
+

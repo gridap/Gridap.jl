@@ -30,7 +30,6 @@ import Gridap.ReferenceFEs: num_nodes
 import Gridap.ReferenceFEs: is_affine
 import Gridap.ReferenceFEs: has_straight_faces
 import Gridap.ReferenceFEs: get_reffes
-
 import Gridap.ReferenceFEs: get_faces
 import Gridap.ReferenceFEs: num_dims
 import Gridap.ReferenceFEs: get_dimranges
@@ -58,18 +57,11 @@ export ConformingTriangulation
 export get_cell_nodes
 export test_conforming_triangulation
 
-export GridGraph
-export get_cell_faces
-export get_refcells
-export test_grid_graph
-
 export UnstructuredGrid
 
 include("Triangulations.jl")
 
 include("ConformingTriangulations.jl")
-
-include("GridGraphs.jl")
 
 include("UnstructuredGrids.jl")
 

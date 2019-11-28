@@ -45,7 +45,7 @@ end
 function _vtkcells(trian)
 
   type_to_reffe = get_reffes(trian)
-  cell_to_type = get_cell_types(trian)
+  cell_to_type = get_cell_type(trian)
   type_to_vtkid = map(get_vtkid, type_to_reffe)
   type_to_vtknodes = map(get_vtknodes, type_to_reffe)
   cell_to_nodes = get_cell_nodes(trian)
