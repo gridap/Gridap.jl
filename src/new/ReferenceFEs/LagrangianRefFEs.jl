@@ -2,33 +2,33 @@
 """
     struct LagrangianRefFE{D} <: NodalReferenceFE{D}
       data::GenericRefFE{D}
-      face_own_nodeids::Vector{Vector{Int}}
+      face_own_nodes::Vector{Vector{Int}}
       own_nodes_permutations::Vector{Vector{Int}},
     end
 
 Type representing a Lagrangian finite element. This type provides "node-based" information in the following
 fields:
 
-- `face_own_nodeids::Vector{Vector{Int}}`: nodes owned by each face
+- `face_own_nodes::Vector{Vector{Int}}`: nodes owned by each face
 - `own_nodes_permutations::Vector{Vector{Int}}`: permutations of the nodes when the vertices are permuted
 
 For this type
 
--  `get_dofs(reffe)` returns a `LagrangianDofBasis`
+-  `get_dof_basis(reffe)` returns a `LagrangianDofBasis`
 -  `get_prebasis(reffe)` returns a `MonomialBasis`
 -  `ReferenceFE{N}(reffe,faceid) where N` returns a `LagrangianRefFE{N}`
 
 """
 struct LagrangianRefFE{D} <: NodalReferenceFE{D}
   data::GenericRefFE{D}
-  face_own_nodeids::Vector{Vector{Int}}
+  face_own_nodes::Vector{Vector{Int}}
   own_nodes_permutations::Vector{Vector{Int}}
   @doc """
       LagrangianRefFE(
         polytope::Polytope{D},
         prebasis::MonomialBasis,
         dofs::LagrangianDofBasis,
-        face_own_nodeids::Vector{Vector{Int}},
+        face_own_nodes::Vector{Vector{Int}},
         own_nodes_permutations::Vector{Vector{Int}},
         reffaces...) where D
 
@@ -38,19 +38,19 @@ struct LagrangianRefFE{D} <: NodalReferenceFE{D}
     polytope::Polytope{D},
     prebasis::MonomialBasis,
     dofs::LagrangianDofBasis,
-    face_own_nodeids::Vector{Vector{Int}},
+    face_own_nodes::Vector{Vector{Int}},
     own_nodes_permutations::Vector{Vector{Int}},
     reffaces...) where D
 
-    face_own_dofids = _generate_nfacedofs(face_own_nodeids,dofs.node_and_comp_to_dof)
-    own_dofs_permutations = _find_own_dof_permutaions(own_nodes_permutations,dofs.node_and_comp_to_dof,face_own_nodeids,face_own_dofids)
+    face_own_dofs = _generate_nfacedofs(face_own_nodes,dofs.node_and_comp_to_dof)
+    own_dofs_permutations = _find_own_dof_permutaions(own_nodes_permutations,dofs.node_and_comp_to_dof,face_own_nodes,face_own_dofs)
 
     data = GenericRefFE(
-      polytope,prebasis,dofs,face_own_dofids;
+      polytope,prebasis,dofs,face_own_dofs;
       own_dofs_permutations = own_dofs_permutations,
       reffaces = reffaces)
 
-    new{D}(data,face_own_nodeids,own_nodes_permutations)
+    new{D}(data,face_own_nodes,own_nodes_permutations)
   end
 end
 
@@ -60,15 +60,15 @@ get_polytope(reffe::LagrangianRefFE) = reffe.data.polytope
 
 get_prebasis(reffe::LagrangianRefFE) = reffe.data.prebasis
 
-get_dofs(reffe::LagrangianRefFE) = reffe.data.dofs
+get_dof_basis(reffe::LagrangianRefFE) = reffe.data.dofs
 
-get_face_own_dofids(reffe::LagrangianRefFE) = reffe.data.face_own_dofids
+get_face_own_dofs(reffe::LagrangianRefFE) = reffe.data.face_own_dofs
 
 get_own_dofs_permutations(reffe::LagrangianRefFE) = reffe.data.own_dofs_permutations
 
 get_shapefuns(reffe::LagrangianRefFE) = reffe.data.shapefuns
 
-get_face_own_nodeids(reffe::LagrangianRefFE) = reffe.face_own_nodeids
+get_face_own_nodes(reffe::LagrangianRefFE) = reffe.face_own_nodes
 
 get_own_nodes_permutations(reffe::LagrangianRefFE) = reffe.own_nodes_permutations
 
@@ -102,8 +102,8 @@ function (==)(a::LagrangianRefFE{D}, b::LagrangianRefFE{D}) where D
   expsa = get_exponents(get_prebasis(a))
   expsb = get_exponents(get_prebasis(b))
   t = t && (expsa == expsb)
-  facedofsa = get_face_own_dofids(a)
-  facedofsb = get_face_own_dofids(b)
+  facedofsa = get_face_own_dofs(a)
+  facedofsb = get_face_own_dofs(b)
   t = t && (facedofsa == facedofsb)
   ia = get_node_and_comp_to_dof(a)
   ib = get_node_and_comp_to_dof(b)
@@ -194,12 +194,12 @@ new polytope types increasing customization possibilities.
 """
 function LagrangianRefFE(::Type{T},p::Polytope{D},orders) where {T,D}
   prebasis = compute_monomial_basis(T,p,orders)
-  nodes, face_own_nodeids = compute_nodes(p,orders)
+  nodes, face_own_nodes = compute_nodes(p,orders)
   dofs = LagrangianDofBasis(T,nodes)
-  interior_nodes = dofs.nodes[face_own_nodeids[end]]
+  interior_nodes = dofs.nodes[face_own_nodes[end]]
   own_nodes_permutations = compute_own_nodes_permutations(p, interior_nodes)
   reffaces = compute_lagrangian_reffaces(T,p,orders)
-  LagrangianRefFE(p,prebasis,dofs,face_own_nodeids,own_nodes_permutations,reffaces...)
+  LagrangianRefFE(p,prebasis,dofs,face_own_nodes,own_nodes_permutations,reffaces...)
 end
 
 function MonomialBasis(::Type{T},p::Polytope,orders) where T
@@ -267,10 +267,10 @@ end
 
 When called
 
-    node_coords, face_own_nodeids = compute_nodes(p,orders)
+    node_coords, face_own_nodes = compute_nodes(p,orders)
 
 Returns `node_coords`, the nodal coordinates of all the Lagrangian nodes associated with the order per direction
-`orders`, and `face_own_nodeids`, being a vector of vectors indicating which nodes are owned by each of
+`orders`, and `face_own_nodes`, being a vector of vectors indicating which nodes are owned by each of
 the faces of the polytope `p`.
 """
 function compute_nodes(p::Polytope,orders)

@@ -16,8 +16,8 @@ The `ReferenceFE` interface is defined by overloading these methods:
 - [`num_dofs(reffe::ReferenceFE)`](@ref)
 - [`get_polytope(reffe::ReferenceFE)`](@ref)
 - [`get_prebasis(reffe::ReferenceFE)`](@ref)
-- [`get_dofs(reffe::ReferenceFE)`](@ref)
-- [`get_face_own_dofids(reffe::ReferenceFE)`](@ref)
+- [`get_dof_basis(reffe::ReferenceFE)`](@ref)
+- [`get_face_own_dofs(reffe::ReferenceFE)`](@ref)
 
 and optionally these ones:
 
@@ -56,18 +56,18 @@ function get_prebasis(reffe::ReferenceFE)
 end
 
 """
-    get_dofs(reffe::ReferenceFE) -> Dof
+    get_dof_basis(reffe::ReferenceFE) -> Dof
 
 Returns the underlying dof basis encoded in a `Dof` object. 
 """
-function get_dofs(reffe::ReferenceFE)
+function get_dof_basis(reffe::ReferenceFE)
   @abstractmethod
 end
 
 """
-    get_face_own_dofids(reffe::ReferenceFE) -> Vector{Vector{Int}}
+    get_face_own_dofs(reffe::ReferenceFE) -> Vector{Vector{Int}}
 """
-function get_face_own_dofids(reffe::ReferenceFE)
+function get_face_own_dofs(reffe::ReferenceFE)
   @abstractmethod
 end
 
@@ -189,7 +189,7 @@ Returns the basis of shape functions (i.e. the canonical basis)
 associated with the reference FE. The result is encoded as a `Field` object.
 """
 function get_shapefuns(reffe::ReferenceFE)
-  dofs = get_dofs(reffe)
+  dofs = get_dof_basis(reffe)
   prebasis = get_prebasis(reffe)
   compute_shapefuns(dofs,prebasis)
 end
@@ -221,12 +221,12 @@ Returns `D`.
 num_dims(reffe::ReferenceFE) = num_dims(typeof(reffe))
 
 """
-    get_face_dofids(reffe::ReferenceFE) -> Vector{Vector{Int}}
+    get_face_dofs(reffe::ReferenceFE) -> Vector{Vector{Int}}
 
 Returns a vector of vector that, for each face, stores the
 dofids in the closure of the face.
 """
-function get_face_dofids(reffe::ReferenceFE)
+function get_face_dofs(reffe::ReferenceFE)
   polytope = get_polytope(reffe)
   D = num_dims(polytope)
   nfaces = num_faces(polytope)
@@ -240,14 +240,14 @@ end
 
 function _get_face_dofids_d!(face_to_dofs,::Val{d},reffe,polytope) where d
 
-  nface_to_own_dofs = get_face_own_dofids(reffe)
+  nface_to_own_dofs = get_face_own_dofs(reffe)
   nface_mface_to_nface = get_faces(polytope)
   offset = get_offset(polytope,d)
 
   for iface in 1:num_faces(polytope,d)
     face_reffe = ReferenceFE{d}(reffe,iface)
     face_polytope = get_polytope(face_reffe)
-    mface_to_own_ldofs = get_face_own_dofids(face_reffe)
+    mface_to_own_ldofs = get_face_own_dofs(face_reffe)
     dofs = zeros(Int,num_dofs(face_reffe))
     mface_to_nface = nface_mface_to_nface[iface+offset]
     for mface in 1:num_faces(face_polytope)
@@ -296,9 +296,9 @@ function test_reference_fe(reffe::ReferenceFE{D};optional::Bool=false) where D
   @test isa(p,Polytope{D})
   basis = get_prebasis(reffe)
   @test isa(basis,Field)
-  dofs = get_dofs(reffe)
+  dofs = get_dof_basis(reffe)
   @test isa(dofs,Dof)
-  facedofs = get_face_own_dofids(reffe)
+  facedofs = get_face_own_dofs(reffe)
   @test isa(facedofs,Vector{Vector{Int}})
   @test length(facedofs) == num_faces(p)
   shapefuns = get_shapefuns(reffe)
@@ -331,7 +331,7 @@ end
       polytope::Polytope{D}
       prebasis::Field
       dofs::Dof
-      face_own_dofids::Vector{Vector{Int}}
+      face_own_dofs::Vector{Vector{Int}}
       shapefuns::Field
       ndofs::Int
       own_dofs_permutations::Vector{Vector{Int}}
@@ -352,7 +352,7 @@ struct GenericRefFE{D} <: ReferenceFE{D}
     polytope::Polytope{D}
     prebasis::Field
     dofs::Dof
-    face_own_dofids::Vector{Vector{Int}}
+    face_own_dofs::Vector{Vector{Int}}
     own_dofs_permutations::Vector{Vector{Int}}
     shapefuns::Field
     reffaces
@@ -361,7 +361,7 @@ struct GenericRefFE{D} <: ReferenceFE{D}
         polytope::Polytope{D},
         prebasis::Field,
         dofs::Dof,
-        face_own_dofids::Vector{Vector{Int}};
+        face_own_dofs::Vector{Vector{Int}};
         shapefuns::Field,
         ndofs::Int,
         own_dofs_permutations::Vector{Vector{Int}},
@@ -374,13 +374,13 @@ struct GenericRefFE{D} <: ReferenceFE{D}
     polytope::Polytope{D},
     prebasis::Field,
     dofs::Dof,
-    face_own_dofids::Vector{Vector{Int}};
+    face_own_dofs::Vector{Vector{Int}};
     shapefuns::Field = compute_shapefuns(dofs,prebasis),
     ndofs::Int = size(evaluate(dofs,prebasis),1),
-    own_dofs_permutations::Vector{Vector{Int}} = [ fill(INVALID_PERM,length(fi)) for fi in face_own_dofids],
+    own_dofs_permutations::Vector{Vector{Int}} = [ fill(INVALID_PERM,length(fi)) for fi in face_own_dofs],
     reffaces = nothing) where D
 
-    new{D}(ndofs,polytope,prebasis,dofs,face_own_dofids,own_dofs_permutations,shapefuns,reffaces)
+    new{D}(ndofs,polytope,prebasis,dofs,face_own_dofs,own_dofs_permutations,shapefuns,reffaces)
   end
 end
 
@@ -390,9 +390,9 @@ get_polytope(reffe::GenericRefFE) = reffe.polytope
 
 get_prebasis(reffe::GenericRefFE) = reffe.prebasis
 
-get_dofs(reffe::GenericRefFE) = reffe.dofs
+get_dof_basis(reffe::GenericRefFE) = reffe.dofs
 
-get_face_own_dofids(reffe::GenericRefFE) = reffe.face_own_dofids
+get_face_own_dofs(reffe::GenericRefFE) = reffe.face_own_dofs
 
 get_own_dofs_permutations(reffe::GenericRefFE) = reffe.own_dofs_permutations
 
@@ -419,7 +419,7 @@ and DOFs.
 The interface for this type is defined with the following methods
 
 - [`get_node_coordinates(reffe::NodalReferenceFE)`](@ref)
-- [`get_face_own_nodeids(reffe::NodalReferenceFE)`](@ref)
+- [`get_face_own_nodes(reffe::NodalReferenceFE)`](@ref)
 - [`get_own_nodes_permutations(reffe::NodalReferenceFE)`](@ref)
 - [`get_dof_to_node(reffe::NodalReferenceFE)`](@ref)
 - [`get_dof_to_node(reffe::NodalReferenceFE)`](@ref)
@@ -436,9 +436,9 @@ function get_node_coordinates(reffe::NodalReferenceFE)
 end
 
 """
-    get_face_own_nodeids(reffe::NodalReferenceFE)
+    get_face_own_nodes(reffe::NodalReferenceFE)
 """
-function get_face_own_nodeids(reffe::NodalReferenceFE)
+function get_face_own_nodes(reffe::NodalReferenceFE)
   @abstractmethod
 end
 
@@ -478,12 +478,12 @@ function num_nodes(reffe::NodalReferenceFE)
 end
 
 """
-    get_face_nodeids(reffe::NodalReferenceFE) -> Vector{Vector{Int}}
+    get_face_nodes(reffe::NodalReferenceFE) -> Vector{Vector{Int}}
 
 Returns a vector of vector that, for each face, stores the
 nodeids in the closure of the face.
 """
-function get_face_nodeids(reffe::NodalReferenceFE)
+function get_face_nodes(reffe::NodalReferenceFE)
   polytope = get_polytope(reffe)
   D = num_dims(polytope)
   nfaces = num_faces(polytope)
@@ -497,14 +497,14 @@ end
 
 function _get_face_nodeids_d!(face_to_nodes,::Val{d},reffe,polytope) where d
 
-  nface_to_own_nodes = get_face_own_nodeids(reffe)
+  nface_to_own_nodes = get_face_own_nodes(reffe)
   nface_mface_to_nface = get_faces(polytope)
   offset = get_offset(polytope,d)
 
   for iface in 1:num_faces(polytope,d)
     face_reffe = ReferenceFE{d}(reffe,iface)
     face_polytope = get_polytope(face_reffe)
-    mface_to_own_lnodes = get_face_own_nodeids(face_reffe)
+    mface_to_own_lnodes = get_face_own_nodes(face_reffe)
     nodes = zeros(Int,num_nodes(face_reffe))
     mface_to_nface = nface_mface_to_nface[iface+offset]
     for mface in 1:num_faces(face_polytope)
@@ -525,7 +525,7 @@ function get_vertex_node(reffe::NodalReferenceFE)
   d = 0
   p = get_polytope(reffe)
   range = get_dimranges(p)[d+1]
-  vertex_to_nodes = get_face_own_nodeids(reffe)[range]
+  vertex_to_nodes = get_face_own_nodes(reffe)[range]
   map(first, vertex_to_nodes)
 end
 
@@ -559,8 +559,8 @@ function test_nodal_reference_fe(reffe::NodalReferenceFE; optional::Bool=false)
   @test length(node_coordinates) == num_nodes(reffe)
   D = num_dims(reffe)
   @test isa(node_coordinates,Vector{<:Point{D}})
-  face_own_nodeids = get_face_own_nodeids(reffe)
-  @test isa(face_own_nodeids,Vector{Vector{Int}})
+  face_own_nodes = get_face_own_nodes(reffe)
+  @test isa(face_own_nodes,Vector{Vector{Int}})
   own_nodes_permutations = get_own_nodes_permutations(reffe)
   @test isa(own_nodes_permutations,Vector{Vector{Int}})
   dof_to_node = get_dof_to_node(reffe)

@@ -70,9 +70,9 @@ export ReferenceFE
 export GenericRefFE
 export get_polytope
 export get_prebasis
-export get_dofs
-export get_face_own_dofids
-export get_face_dofids
+export get_dof_basis
+export get_face_own_dofs
+export get_face_dofs
 export get_own_dofs_permutations
 export get_shapefuns
 export get_reffes
@@ -82,8 +82,8 @@ export test_reference_fe
 export num_dofs
 
 export NodalReferenceFE
-export get_face_own_nodeids
-export get_face_nodeids
+export get_face_own_nodes
+export get_face_nodes
 export get_own_nodes_permutations
 export get_node_coordinates
 export get_dof_to_node
