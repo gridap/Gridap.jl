@@ -63,7 +63,7 @@ _vertex_to_isboundary = generate_face_to_isboundary(face_to_isboundary,vertex_to
 @test _vertex_to_isboundary == _vertex_to_isboundary
 
 cell_to_nodes = get_cell_nodes(grid)
-cell_to_type = get_cell_types(grid)
+cell_to_type = get_cell_type(grid)
 type_to_reffes = get_reffes(grid)
 
 type_to_vertex_to_node = map(get_vertex_node, type_to_reffes)

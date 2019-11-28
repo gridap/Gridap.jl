@@ -3,6 +3,50 @@
 """
 abstract type GridGraph{D} end
 
+## Discrete model
+#
+## DiscreteModel{Dc,Dp}
+#
+#num_faces(g,d)
+#num_nodes(g)
+#
+#get_faces(g,dimfrom,dimto)
+#
+#get_vertex_node(g)
+#get_node_vertex(g)
+#
+#get_face_nodes(g,d)#TODO harmonize with reffe
+#get_faces_around_node(g,d)
+#
+#get_isboundary_face(g,d)
+#get_isboundary_node(g)
+#
+#get_face_reffe_type(g,d) #TODO harmonize with grid
+#get_face_polytope_type(g,d)
+#
+#get_reffes(ReferenceFE{d},g)
+#get_polytopes(Polytope{d},g)
+#
+#get_vertex_coordinates(g)
+#
+#get_node_coordinates(g)
+#
+## Default implementations
+#get_dface_to_faces(g,d)
+#get_faces_around_dface(g,d)
+#
+#get_dimranges(g)
+#get_offsets(g)
+#get_offset(g,d)
+#
+#num_dims(g)
+#num_dims(::Type)
+#num_faces(g)
+#num_cells(g)
+#num_facets(g)
+#num_edges(g)
+#num_vertices(g)
+
 """
 """
 function get_dimranges(g::GridGraph)
@@ -17,7 +61,7 @@ end
 
 """
 """
-function get_cell_types(g::GridGraph)
+function get_cell_type(g::GridGraph)
   @abstractmethod
 end
 
@@ -52,7 +96,7 @@ function test_grid_graph(g::GridGraph;optional::Bool=false)
   ncells = num_cells(g)
   @test length(cell_to_faces) == ncells
   nfaces = num_faces(g)
-  cell_to_type = get_cell_types(g)
+  cell_to_type = get_cell_type(g)
   @test isa(cell_to_type,AbstractVector{<:Integer})
   refcells = get_refcells(g)
   @test isa(refcells,AbstractVector{<:Polytope{D}})

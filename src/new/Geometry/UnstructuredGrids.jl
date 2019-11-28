@@ -23,7 +23,7 @@ function UnstructuredGrid(trian::ConformingTriangulation)
   node_coordinates = collect(get_node_coordinates(trian))
   cell_nodes = Table(get_cell_nodes(trian))
   reffes = get_reffes(trian)
-  cell_types = collect(get_cell_types(trian))
+  cell_types = collect(get_cell_type(trian))
   UnstructuredGrid(node_coordinates,cell_nodes,reffes,cell_types)
 end
 
@@ -33,7 +33,7 @@ end
 
 get_reffes(g::UnstructuredGrid) = g.reffes
 
-get_cell_types(g::UnstructuredGrid) = g.cell_types
+get_cell_type(g::UnstructuredGrid) = g.cell_types
 
 get_node_coordinates(g::UnstructuredGrid) = g.node_coordinates
 

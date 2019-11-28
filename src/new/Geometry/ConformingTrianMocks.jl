@@ -40,7 +40,7 @@ function get_reffes(::ConformingTrianMock)
   [QUAD4, TRI3]
 end
 
-function get_cell_types(::ConformingTrianMock)
+function get_cell_type(::ConformingTrianMock)
   quad = Int8(1)
   tri = Int8(2)
   [quad, tri, tri, quad, quad]
@@ -58,9 +58,9 @@ function get_refcells(g::GridGraphMock)
   map(get_polytope,reffes)
 end
 
-function get_cell_types(g::GridGraphMock)
+function get_cell_type(g::GridGraphMock)
   t = ConformingTrianMock()
-  get_cell_types(t)
+  get_cell_type(t)
 end
 
 function get_cell_faces(g::GridGraphMock)

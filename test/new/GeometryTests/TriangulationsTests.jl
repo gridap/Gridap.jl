@@ -8,7 +8,7 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.ReferenceFEs
 
-import Gridap.Geometry: get_cell_types
+import Gridap.Geometry: get_cell_type
 import Gridap.Geometry: get_reffes
 import Gridap.Geometry: get_cell_coordinates
 
@@ -21,7 +21,7 @@ function get_cell_coordinates(::MockTriangulation)
   [c1,c2,c3]
 end
 
-function get_cell_types(::MockTriangulation)
+function get_cell_type(::MockTriangulation)
   ncells = 3
   Fill(1,ncells)
 end

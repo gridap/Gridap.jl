@@ -14,7 +14,7 @@ trian = ConformingTrianMock()
 node_coordinates = get_node_coordinates(trian)
 cell_nodes = get_cell_nodes(trian)
 reffes = get_reffes(trian)
-cell_types = get_cell_types(trian)
+cell_types = get_cell_type(trian)
 
 grid = UnstructuredGrid(node_coordinates,cell_nodes,reffes,cell_types)
 test_conforming_triangulation(grid)
@@ -27,7 +27,7 @@ q2i = Point(0.25,0.25)
 np2 = 3
 q2 = fill(q2i,np2)
 
-q = CompressedArray([q1,q2],get_cell_types(grid))
+q = CompressedArray([q1,q2],get_cell_type(grid))
 
 cell_map = get_cell_map(grid)
 x = evaluate(cell_map,q)
@@ -67,7 +67,7 @@ function UnstructuredGrid(
   cell_to_faces::Table) where d
 
   ctype_to_reffe = get_reffes(grid)
-  cell_to_cell_type = get_cell_types(grid)
+  cell_to_cell_type = get_cell_type(grid)
 
   t = _generate_ftype_to_refface(Val{d}(),ctype_to_reffe)
   ftype_to_refface, ctype_to_lface_to_ftype = t

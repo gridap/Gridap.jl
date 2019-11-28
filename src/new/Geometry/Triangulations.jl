@@ -17,7 +17,7 @@ end
 
 """
 """
-function get_cell_types(trian::Triangulation)
+function get_cell_type(trian::Triangulation)
   @abstractmethod
 end
 
@@ -32,7 +32,7 @@ function test_triangulation(trian::Triangulation{Dc,Dp}) where {Dc,Dp}
   @test isa(cell_coords,AbstractArray{<:AbstractVector{<:Point}})
   reffes = get_reffes(trian)
   @test isa(reffes,AbstractVector{<:NodalReferenceFE})
-  cell_types = get_cell_types(trian)
+  cell_types = get_cell_type(trian)
   @test isa(cell_types,AbstractArray{<:Integer})
   ncells = num_cells(trian)
   @test ncells == length(cell_coords)
@@ -43,7 +43,7 @@ end
 
 """
 """
-num_cells(trian::Triangulation) = length(get_cell_types(trian))
+num_cells(trian::Triangulation) = length(get_cell_type(trian))
 
 """
 """
@@ -76,7 +76,7 @@ for large number of cells.
 """
 function get_cell_reffes(trian::Triangulation)
   type_to_reffe = get_reffes(trian)
-  cell_to_type = get_cell_types(trian)
+  cell_to_type = get_cell_type(trian)
   _get_cell_data(type_to_reffe,cell_to_type)
 end
 
@@ -84,7 +84,7 @@ end
 """
 function get_cell_shapefuns(trian::Triangulation)
   type_to_reffes = get_reffes(trian)
-  cell_to_type = get_cell_types(trian)
+  cell_to_type = get_cell_type(trian)
   type_to_shapefuns = map(get_shapefuns, type_to_reffes)
   _get_cell_data(type_to_shapefuns,cell_to_type)
 end

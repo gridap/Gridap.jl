@@ -19,7 +19,7 @@ q2i = Point(0.25,0.25)
 np2 = 3
 q2 = fill(q2i,np2)
 
-q = CompressedArray([q1,q2],get_cell_types(trian))
+q = CompressedArray([q1,q2],get_cell_type(trian))
 
 cell_map = get_cell_map(trian)
 x = evaluate(cell_map,q)

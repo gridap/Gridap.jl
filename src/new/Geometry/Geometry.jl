@@ -45,7 +45,7 @@ import Gridap.ReferenceFEs: get_vertex_coordinates
 
 export Triangulation
 export get_cell_coordinates
-export get_cell_types
+export get_cell_type
 export num_cells
 export num_cell_dims
 export num_point_dims
