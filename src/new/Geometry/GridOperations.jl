@@ -54,10 +54,8 @@ function generate_cell_to_faces(
   Table(data,ptrs)
 end
 
-function _generate_ftype_to_refface(::Val{d},ctype_to_reffe) where d
+function _generate_ftype_to_refface(::Val{d},ctype_to_lftype_to_refface,ctype_to_lface_to_lftype) where d
 
-  ctype_to_lftype_to_refface = [ get_reffes(ReferenceFE{d},reffe) for reffe in ctype_to_reffe]
-  ctype_to_lface_to_lftype = [ get_face_types(ReferenceFE{d},reffe) for reffe in ctype_to_reffe]
 
   i_to_refface = vcat( ctype_to_lftype_to_refface... )
 

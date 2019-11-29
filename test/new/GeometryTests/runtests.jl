@@ -6,7 +6,8 @@ using Test
 
 @testset "ConformingTriangulations" begin include("ConformingTriangulationsTests.jl") end
 
-@testset "UnstructuredGrids" begin include("UnstructuredGridsTests.jl") end
+@testset "DiscreteModels" begin include("DiscreteModelsTests.jl") end
 
+@testset "UnstructuredGrids" begin include("UnstructuredGridsTests.jl") end
 
 end # module

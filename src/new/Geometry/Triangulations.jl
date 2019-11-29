@@ -57,6 +57,12 @@ num_point_dims(::Type{<:Triangulation{Dc,Dp}}) where {Dc,Dp} = Dp
 
 """
 """
+num_dims(g::Triangulation{Dc}) where Dc = Dc
+
+num_dims(::Type{<:Triangulation{Dc}}) where Dc = Dc
+
+"""
+"""
 function is_affine(trian::Triangulation)
   reffes = get_reffes(trian)
   all(map(is_affine,reffes))

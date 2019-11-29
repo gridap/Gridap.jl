@@ -330,12 +330,12 @@ third face (the segment itself) has dimension 1
 
 """
 function get_facedims(p::Polytope)
-  _get_facedims(p)
+  _get_facedims(Int,p)
 end
 
-@inline function _get_facedims(p)
+@inline function _get_facedims(::Type{T},p) where T
   n = num_faces(p)
-  facedims = zeros(Int,n)
+  facedims = zeros(T,n)
   dimrange = get_dimranges(p)
   for (i,r) in enumerate(dimrange)
     d = i-1

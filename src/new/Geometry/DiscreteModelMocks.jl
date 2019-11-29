@@ -25,22 +25,6 @@
 
 struct DiscreteModelMock <: DiscreteModel{2,2} end
 
-function num_faces(g::DiscreteModelMock,d::Integer)
-  if d == 0
-    return 9
-  elseif d == 1
-    return 13
-  elseif d == 2
-    return 5
-  else
-    @unreachable
-  end
-end
-
-function num_nodes(g::DiscreteModelMock)
-  num_faces(g,0)
-end
-
 function get_faces(g::DiscreteModelMock,dimfrom::Integer,dimto::Integer)
   if dimfrom == 0
     if dimto == 0
@@ -99,16 +83,12 @@ function get_vertex_node(g::DiscreteModelMock)
   collect(1:9)
 end
 
-function get_node_vertex(g::DiscreteModelMock)
+function get_node_face_owner(g::DiscreteModelMock)
   collect(1:9)
 end
 
 function get_face_nodes(g::DiscreteModelMock,d::Integer)
   get_faces(g,d,0)
-end
-
-function get_faces_around_node(g::DiscreteModelMock,d::Integer)
-  get_faces(g,0,d)
 end
 
 function get_isboundary_face(g::DiscreteModelMock,d::Integer)
@@ -123,10 +103,6 @@ function get_isboundary_face(g::DiscreteModelMock,d::Integer)
     @unreachable
   end
   mask
-end
-
-function get_isboundary_node(g::DiscreteModelMock)
-  get_isboundary_face(g,0)
 end
 
 function get_face_reffe_type(g::DiscreteModelMock,d::Integer)
@@ -144,7 +120,7 @@ function get_face_polytope_type(g::DiscreteModelMock,d::Integer)
 end
 
 function get_reffes(::Type{<:ReferenceFE{d}},g::DiscreteModelMock) where d
-  [ LagrangianRefFE(Float64,p,1) for p in get_polytopes(g) ]
+  [ LagrangianRefFE(Float64,p,1) for p in get_polytopes(Polytope{d},g) ]
 end
 
 function get_polytopes(::Type{<:Polytope{d}},g::DiscreteModelMock) where d
@@ -159,12 +135,8 @@ function get_polytopes(::Type{<:Polytope{d}},g::DiscreteModelMock) where d
   end
 end
 
-function get_vertex_coordinates(g::DiscreteModelMock)
-  Point{2,Float64}[(0,0),(1,0),(2,0),(0,1),(1,1),(2,1),(0,2),(1,2),(2,2)]
-end
-
 function get_node_coordinates(g::DiscreteModelMock)
-  get_vertex_coordinates(g)
+  Point{2,Float64}[(0,0),(1,0),(2,0),(0,1),(1,1),(2,1),(0,2),(1,2),(2,2)]
 end
 
 

@@ -37,6 +37,10 @@ function Table(a::AbstractVector{<:AbstractVector})
   Table(data,ptrs)
 end
 
+function Table(a::Table)
+  a
+end
+
 function Base.convert(::Type{Table{T,P}},table::Table{Ta,Pa}) where {T,P,Ta,Pa}
   data = convert(Vector{T},table.data)
   ptrs = convert(Vector{P},table.ptrs)
