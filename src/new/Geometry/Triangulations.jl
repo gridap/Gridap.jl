@@ -1,27 +1,56 @@
 
 """
+    abstract type Triangulation{Dc,Dp}
+
+Abstract type representing an arbitrary tiling, tessellation,
+or triangulation of a domain of parametric dimension `Dc` and
+physical dimension `Dp`.
+
+We define a triangulation from two basic ingredients: 
+
+- the cell-wise nodal coordinates of the cells in the triangulation, plus
+- an interpolation of this cell-wise coordinates into the cells interior.
+
+Note that this type represents general triangulations (not necessarily conforming),
+which is the minimum geometrical information needed to perform cell-wise numerical integration.
+
+The `Triangulation` interface is defined by overloading these methods:
+
+
+- [`get_cell_coordinates(trian::Triangulation)`](@ref)
+- [`get_reffes(trian::Triangulation)`](@ref)
+- [`get_cell_type(trian::Triangulation)`](@ref)
+
+and it can be tested with
+
+- [`test_triangulation`](@ref)
+
 """
 abstract type Triangulation{Dc,Dp} end
 
 """
+    get_cell_coordinates(trian::Triangulation) -> AbstractArray{Vector{<:Point{Dp}}}
 """
 function get_cell_coordinates(trian::Triangulation)
   @abstractmethod
 end
 
 """
+    get_reffes(trian::Triangulation) -> Vector{<:NodalReferenceFE}
 """
 function get_reffes(trian::Triangulation)
   @abstractmethod
 end
 
 """
+    get_cell_type(trian::Triangulation) -> AbstractVector{<:Integer}
 """
 function get_cell_type(trian::Triangulation)
   @abstractmethod
 end
 
 """
+    test_triangulation(trian::Triangulation)
 """
 function test_triangulation(trian::Triangulation{Dc,Dp}) where {Dc,Dp}
   @test num_cell_dims(trian) == Dc
@@ -42,26 +71,35 @@ end
 # Some API
 
 """
+    num_cells(trian::Triangulation) -> Int
 """
 num_cells(trian::Triangulation) = length(get_cell_type(trian))
 
 """
+    num_cell_dims(::Triangulation) -> Int
+    num_cell_dims(::Type{<:Triangulation}) -> Int
 """
 num_cell_dims(::Triangulation{Dc,Dp}) where {Dc,Dp} = Dc
 num_cell_dims(::Type{<:Triangulation{Dc,Dp}}) where {Dc,Dp} = Dc
 
 """
+    num_point_dims(::Triangulation) -> Int
+    num_point_dims(::Type{<:Triangulation}) -> Int
 """
 num_point_dims(::Triangulation{Dc,Dp}) where {Dc,Dp} = Dp
 num_point_dims(::Type{<:Triangulation{Dc,Dp}}) where {Dc,Dp} = Dp
 
 """
+    num_dims(::Triangulation) -> Int
+    num_dims(::Type{<:Triangulation}) -> Int
+
+Equivalent to `num_cell_dims`.
 """
 num_dims(g::Triangulation{Dc}) where Dc = Dc
-
 num_dims(::Type{<:Triangulation{Dc}}) where Dc = Dc
 
 """
+    is_affine(trian::Triangulation) -> Bool
 """
 function is_affine(trian::Triangulation)
   reffes = get_reffes(trian)
@@ -69,6 +107,7 @@ function is_affine(trian::Triangulation)
 end
 
 """
+    has_straight_faces(trian::Triangulation) -> Bool
 """
 function has_straight_faces(trian::Triangulation)
   reffes = get_reffes(trian)
@@ -76,9 +115,11 @@ function has_straight_faces(trian::Triangulation)
 end
 
 """
+    get_cell_reffes(trian::Triangulation) -> Vector{<:NodalReferenceFEs}
 
 It is not desirable to iterate over the resulting array
-for large number of cells.
+for large number of cells if the underlying reference FEs
+are of different Julia type.
 """
 function get_cell_reffes(trian::Triangulation)
   type_to_reffe = get_reffes(trian)
@@ -87,6 +128,7 @@ function get_cell_reffes(trian::Triangulation)
 end
 
 """
+    get_cell_shapefuns(trian::Triangulation) -> Vector{<:Field}
 """
 function get_cell_shapefuns(trian::Triangulation)
   type_to_reffes = get_reffes(trian)
@@ -96,6 +138,7 @@ function get_cell_shapefuns(trian::Triangulation)
 end
 
 """
+    get_cell_map(trian::Triangulation) -> Vector{<:Field}
 """
 function get_cell_map(trian::Triangulation)
   cell_to_coords = get_cell_coordinates(trian)

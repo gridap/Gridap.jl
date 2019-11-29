@@ -1,21 +1,43 @@
 
 """
+    abstract type ConformingTriangulation{Dc,Dp} <: Triangulation{Dc,Dp}
+
+Abstract type that represents conforming triangulations, whose cell-wise
+nodal coordinates are defined with a vector of nodal coordinates, plus
+a cell-wise vector of node ids.
+
+The interface of `ConformingTriangulation` is defined by overloading the
+methods in `Triangulation` plus the following ones:
+
+- [`get_node_coordinates(trian::ConformingTriangulation)`](@ref)
+- [`get_cell_nodes(trian::ConformingTriangulation)`](@ref)
+
+From these two methods a default implementation of [`get_cell_coordinates(trian::Triangulation)`](@ref)
+is available.
+
+The interface of `ConformingTriangulation` is tested with
+
+- [`test_conforming_triangulation`](@ref)
+
 """
 abstract type ConformingTriangulation{Dc,Dp} <: Triangulation{Dc,Dp} end
 
 """
+    get_node_coordinates(trian::ConformingTriangulation) -> AbstractArray{<:Point{Dp}}
 """
 function get_node_coordinates(trian::ConformingTriangulation)
   @abstractmethod
 end
 
 """
+    get_cell_nodes(trian::ConformingTriangulation)
 """
 function get_cell_nodes(trian::ConformingTriangulation)
   @abstractmethod
 end
 
 """
+    test_conforming_triangulation(trian::ConformingTriangulation)
 """
 function test_conforming_triangulation(trian::ConformingTriangulation)
   test_triangulation(trian)
@@ -36,9 +58,9 @@ end
 
 # Some API
 
+"""
+    num_nodes(trian::ConformingTriangulation) -> Int
+"""
 num_nodes(trian::ConformingTriangulation) = length(get_node_coordinates(trian))
-
-
-# Grid graph
 
 

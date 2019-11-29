@@ -1,38 +1,73 @@
 """
+    abstract type DiscreteModel{Dc,Dp} <: ConformingTriangulation{Dc,Dp}
+
+Abstract type representing a conforming triangulation which
+has information about the underlying geometical objects (i.e., the underlying
+n-faces).
+
+The `DiscreteModel` interfacy is defined by overloading the methods:
+
+- [`get_faces(g::DiscreteModel,dimfrom::Integer,dimto::Integer)`](@ref)
+- [`get_vertex_node(g::DiscreteModel)`](@ref)
+- [`get_node_face_owner(g::DiscreteModel)`](@ref)
+- [`get_face_nodes(g::DiscreteModel,d::Integer)`](@ref)
+- [`get_isboundary_face(g::DiscreteModel,d::Integer)`](@ref)
+- [`get_face_reffe_type(g::DiscreteModel,d::Integer)`](@ref)
+- [`get_face_polytope_type(g::DiscreteModel,d::Integer)`](@ref)
+- [`get_reffes(::Type{<:ReferenceFE{d}},g::DiscreteModel) where d`](@ref)
+- [`get_polytopes(::Type{<:Polytope{d}},g::DiscreteModel) where d`](@ref)
+
+and tested with this function:
+
+- [`test_discrete_model`](@ref)
+
+!!! warning
+    Not sure if this abstract type is needed.
+    We could include all the abstract methods here as optional abstract methods
+    in the conforming triangulation interface. However, we have already
+    introduced the concept of discrete model in the tutorials.
+    This is a good argument to keep this type.
+
 """
 abstract type DiscreteModel{Dc,Dp} <: ConformingTriangulation{Dc,Dp} end
 
 """
+    get_faces(g::DiscreteModel,dimfrom::Integer,dimto::Integer)
 """
 function get_faces(g::DiscreteModel,dimfrom::Integer,dimto::Integer)
   @abstractmethod
 end
 
 """
+    get_vertex_node(g::DiscreteModel)
 """
 function get_vertex_node(g::DiscreteModel)
   @abstractmethod
 end
 
 """
+    get_node_face_owner(g::DiscreteModel)
 """
 function get_node_face_owner(g::DiscreteModel)
   @abstractmethod
 end
 
 """
+    get_face_nodes(g::DiscreteModel,d::Integer)
 """
 function get_face_nodes(g::DiscreteModel,d::Integer)
   @abstractmethod
 end
 
 """
+    get_isboundary_face(g::DiscreteModel,d::Integer)
 """
 function get_isboundary_face(g::DiscreteModel,d::Integer)
   @abstractmethod
 end
 
 """
+    get_face_reffe_type(g::DiscreteModel,d::Integer)
 
 Index to the vector get_reffes(g,d)
 """
@@ -41,18 +76,22 @@ function get_face_reffe_type(g::DiscreteModel,d::Integer)
 end
 
 """
+    get_face_polytope_type(g::DiscreteModel,d::Integer)
 """
 function get_face_polytope_type(g::DiscreteModel,d::Integer)
   @abstractmethod
 end
 
 """
+    get_reffes(::Type{<:ReferenceFE{d}},g::DiscreteModel) where d
 """
 function get_reffes(::Type{<:ReferenceFE{d}},g::DiscreteModel) where d
   @abstractmethod
 end
 
 """
+    get_polytopes(::Type{<:Polytope{d}},g::DiscreteModel) where d
+
 Index to the vector get_polytopes(g,d)
 """
 function get_polytopes(::Type{<:Polytope{d}},g::DiscreteModel) where d
@@ -79,6 +118,8 @@ end
 # Default API
 
 """
+    num_faces(g::DiscreteModel,d::Integer)
+    num_faces(g::DiscreteModel)
 """
 function num_faces(g::DiscreteModel,d::Integer)
   D = num_cell_dims(g)
@@ -91,18 +132,22 @@ function num_faces(g::DiscreteModel)
 end
 
 """
+    num_facets(g::DiscreteModel)
 """
 num_facets(g::DiscreteModel) = _num_facets(g)
 
 """
+    num_edges(g::DiscreteModel)
 """
 num_edges(g::DiscreteModel) = _num_edges(g)
 
 """
+    num_vertices(g::DiscreteModel)
 """
 num_vertices(g::DiscreteModel) = _num_vertices(g)
 
 """
+    get_vertex_coordinates(g::DiscreteModel)
 """
 function get_vertex_coordinates(g::DiscreteModel)
   vertex_to_node = get_vertex_node(g)
@@ -111,6 +156,7 @@ function get_vertex_coordinates(g::DiscreteModel)
 end
 
 """
+    get_dimranges(g::DiscreteModel)
 """
 function get_dimranges(g::DiscreteModel)
   ranges = UnitRange{Int}[]
@@ -125,18 +171,22 @@ function get_dimranges(g::DiscreteModel)
 end
 
 """
+    get_offsets(g::DiscreteModel)
 """
 get_offsets(g::DiscreteModel) = _get_offsets(g)
 
 """
+    get_offset(g::DiscreteModel,d::Integer)
 """
 get_offset(g::DiscreteModel,d::Integer) = _get_offset(g,d)
 
 """
+    get_facedims(g::DiscreteModel)
 """
 get_facedims(g::DiscreteModel) =  _get_facedims(Int8,g)
 
 """
+    get_cell_to_faces(g::DiscreteModel)
 """
 function get_cell_to_faces(g::DiscreteModel)
   D = num_cell_dims(g)
@@ -146,6 +196,7 @@ function get_cell_to_faces(g::DiscreteModel)
 end
 
 """
+    get_isboundary_face(g::DiscreteModel)
 """
 function get_isboundary_face(g::DiscreteModel)
   D = num_cell_dims(g)
@@ -154,6 +205,7 @@ function get_isboundary_face(g::DiscreteModel)
 end
 
 """
+    get_isboundary_node(g::DiscreteModel)
 """
 function get_isboundary_node(g::DiscreteModel)
   face_to_isboundary = get_isboundary_face(g)
@@ -176,6 +228,7 @@ function _get_isboundary_node(face_to_isboundary,node_to_face_owner)
 end
 
 """
+    test_discrete_model(model::DiscreteModel)
 """
 function test_discrete_model(model::DiscreteModel{Dc,Dp}) where {Dc,Dp}
   test_conforming_triangulation(model)
