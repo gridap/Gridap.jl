@@ -85,9 +85,7 @@ setsize!
 CachedMatrix
 CachedVector
 ```
-
 ### CompressedArray
-
 
 ```@docs
 CompressedArray
@@ -100,17 +98,24 @@ CompressedArray(::AbstractArray,::AbstractArray)
 Table
 Table(data::AbstractVector,ptrs::AbstractVector)
 Table(a::AbstractVector{<:AbstractVector})
+identity_table(::Type{T},::Type{P},l::Integer) where {T,P}
+get_ptrs_eltype(::Table{T,P}) where {T,P}
+get_data_eltype(::Table{T,P}) where {T,P}
+append_tables_globally(tables::Table{T,P}...) where {T,P}
+append_tables_locally(offsets::NTuple, tables::NTuple)
 rewind_ptrs!(ptrs::AbstractVector{<:Integer})
 generate_data_and_ptrs(vv::AbstractVector{<:AbstractVector{T}}) where T
 length_to_ptrs!(ptrs::AbstractArray{<:Integer})
 append_ptrs(pa::AbstractVector{T},pb::AbstractVector{T}) where T
+append_ptrs!(pa::AbstractVector{T},pb::AbstractVector{T}) where T
+find_inverse_index_map(a_to_b, nb)
+find_inverse_index_map!(a_to_b, b_to_a)
+UNSET
 ```
-
 ### LocalToGlobalArray
 
 ```@docs
 LocalToGlobalArray
 LocalToGlobalArray(::AbstractArray{<:AbstractArray},::AbstractArray)
 ```
-
 

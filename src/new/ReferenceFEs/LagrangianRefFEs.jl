@@ -1,9 +1,7 @@
 
 """
     struct LagrangianRefFE{D} <: NodalReferenceFE{D}
-      data::GenericRefFE{D}
-      face_own_nodes::Vector{Vector{Int}}
-      own_nodes_permutations::Vector{Vector{Int}},
+      # private fields
     end
 
 Type representing a Lagrangian finite element. This type provides "node-based" information in the following
@@ -580,22 +578,27 @@ end
 # Precomputed instances
 
 """
+    const SEG2 = LagrangianRefFE(Float64,SEGMENT,1)
 """
 const SEG2 = LagrangianRefFE(Float64,SEGMENT,1)
 
 """
+    const QUAD4 = LagrangianRefFE(Float64,QUAD,1)
 """
 const QUAD4 = LagrangianRefFE(Float64,QUAD,1)
 
 """
+    const TRI3 = LagrangianRefFE(Float64,TRI,1)
 """
 const TRI3 = LagrangianRefFE(Float64,TRI,1)
 
 """
+    const TET4 = LagrangianRefFE(Float64,TET,1)
 """
 const TET4 = LagrangianRefFE(Float64,TET,1)
 
 """
+    const HEX8 = LagrangianRefFE(Float64,HEX,1)
 """
 const HEX8 = LagrangianRefFE(Float64,HEX,1)
 

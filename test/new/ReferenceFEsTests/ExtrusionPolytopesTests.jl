@@ -92,7 +92,7 @@ test_polytope(HEX,optional=true)
 
 d = 1
 reffaces = get_reffaces(Polytope{d},WEDGE)
-iface_to_ftype = get_face_types(Polytope{d},WEDGE)
+iface_to_ftype = get_face_types(WEDGE,d)
 @test length(reffaces) == 1
 @test iface_to_ftype == [1, 1, 1, 1, 1, 1, 1, 1, 1]
 

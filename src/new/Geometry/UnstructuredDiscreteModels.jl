@@ -348,7 +348,7 @@ function _generate_face_reffes!(model,d)
   ctype_to_reffe = model.d_to_reffes[D+1]
 
   ctype_to_lftype_to_refface = [ get_reffes(ReferenceFE{d},reffe) for reffe in ctype_to_reffe]
-  ctype_to_lface_to_lftype = [ get_face_types(ReferenceFE{d},reffe) for reffe in ctype_to_reffe]
+  ctype_to_lface_to_lftype = [ get_face_types(reffe,d) for reffe in ctype_to_reffe]
 
   t = _generate_ftype_to_refface(Val{d}(),ctype_to_lftype_to_refface,ctype_to_lface_to_lftype)
   ftype_to_refface, ctype_to_lface_to_ftype = t
@@ -379,7 +379,7 @@ function _generate_face_polytopes!(model,d)
   ctype_to_polytope = model.d_to_polytopes[D+1]
 
   ctype_to_lftype_to_refface = [ get_reffaces(Polytope{d},polytope) for polytope in ctype_to_polytope]
-  ctype_to_lface_to_lftype = [ get_face_types(Polytope{d},polytope) for polytope in ctype_to_polytope]
+  ctype_to_lface_to_lftype = [ get_face_types(polytope,d) for polytope in ctype_to_polytope]
 
   t = _generate_ftype_to_refface(Val{d}(),ctype_to_lftype_to_refface,ctype_to_lface_to_lftype)
   ftype_to_refface, ctype_to_lface_to_ftype = t

@@ -459,15 +459,13 @@ function _get_faces_dual(p,dimfrom,dimto)
 end
 
 """
+    get_face_vertices(p::Polytope) -> Vector{Vector{Int}}
     get_face_vertices(p::Polytope,dim::Integer) -> Vector{Vector{Int}}
 """
 function get_face_vertices(p::Polytope,dim::Integer)
   get_faces(p,dim,0)
 end
 
-"""
-    get_face_vertices(p::Polytope) -> Vector{Vector{Int}}
-"""
 function get_face_vertices(p::Polytope)
   face_vertices = Vector{Int}[]
   for d in 0:num_dims(p)
@@ -480,15 +478,63 @@ function get_face_vertices(p::Polytope)
 end
 
 """
+    get_reffaces(::Type{<:Polytope{d}},p::Polytope) where d -> Vector{Polytope{d}}
+
+Get a vector of the unique polytopes for the faces of dimension `d`.
+
+# Examples
+
+Get the unique polytopes for the facets of a wedge.
+
+```jldoctest
+using Gridap.ReferenceFEs
+
+reffaces = get_reffaces(Polytope{2},WEDGE)
+
+println(reffaces)
+
+# output
+Gridap.ReferenceFEs.Polytope{2}[QUAD, TRI]
+
+```
+
 """
-function get_reffaces(::Type{<:Polytope{d}},p::Polytope) where d
-  ftype_to_refface, _ = _compute_reffaces_and_face_types(p,Val{d}())
+function get_reffaces(T::Type{<:Polytope{d}},p::Polytope) where d
+  ftype_to_refface::Vector{T}, _ = _compute_reffaces_and_face_types(p,Val{d}())
   ftype_to_refface
 end
 
 """
+    get_face_types(p::Polytope,d::Integer) -> Vector{Int}
+
+Return a vector of integers denoting, for each face of dimension `d`, an index to the
+vector `get_reffaces(Polytope{d},p)` 
+
+# Examples
+
+Get the unique polytopes for the facets of a wedge and identify of which
+type each face is.
+
+```jldoctest
+using Gridap.ReferenceFEs
+
+reffaces = get_reffaces(Polytope{2},WEDGE)
+
+face_types = get_face_types(WEDGE,2)
+
+println(reffaces)
+println(face_types)
+
+# output
+Gridap.ReferenceFEs.Polytope{2}[QUAD, TRI]
+[1, 1, 1, 2, 2]
+
+```
+
+The three first facets are of type `1`, i.e, `QUAD`, and the last ones of type `2`, i.e., `TRI`.
+
 """
-function get_face_types(::Type{<:Polytope{d}},p::Polytope) where d
+function get_face_types(p::Polytope,d::Integer)
   _, iface_to_ftype = _compute_reffaces_and_face_types(p,Val{d}())
   iface_to_ftype
 end

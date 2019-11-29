@@ -36,6 +36,9 @@ get_facedims(p::Polytope)
 get_offsets(p::Polytope)
 get_offset(p::Polytope,d::Integer)
 get_faces(p::Polytope,dimfrom::Integer,dimto::Integer)
+get_face_vertices(p::Polytope,dim::Integer)
+get_reffaces(::Type{<:Polytope{d}},p::Polytope) where d
+get_face_types(p::Polytope,d::Integer)
 ```
 ### Extrusion polytopes
 
@@ -101,10 +104,13 @@ get_face_dofs(reffe::ReferenceFE)
 ReferenceFE{N}(reffe::ReferenceFE,nfaceid::Integer) where N
 get_own_dofs_permutations(reffe::ReferenceFE)
 INVALID_PERM
+(==)(a::ReferenceFE{D},b::ReferenceFE{D}) where D
 get_shapefuns(reffe::ReferenceFE)
 compute_shapefuns(dofs,prebasis)
 num_dims(::ReferenceFE)
 test_reference_fe(reffe::ReferenceFE{D}) where D
+get_reffes(T::Type{<:ReferenceFE{d}},reffe::ReferenceFE) where d
+get_face_types(reffe::ReferenceFE, d::Integer)
 ```
 
 ### Generic reference elements
@@ -138,6 +144,8 @@ get_node_and_comp_to_dof(reffe::NodalReferenceFE)
 get_vertex_node(reffe::NodalReferenceFE)
 num_nodes(reffe::NodalReferenceFE)
 test_nodal_reference_fe
+is_affine(reffe::NodalReferenceFE)
+has_straight_faces(reffe::NodalReferenceFE)
 ```
 
 ### Lagrangian reference elements
@@ -165,3 +173,12 @@ compute_lagrangian_reffaces(::Type{T},p::Polytope,orders) where T
 SerendipityRefFE
 ```
 
+### Pre-defined ReferenceFE instances
+
+```@docs
+SEG2
+TRI3
+QUAD4
+TET4
+HEX8
+```

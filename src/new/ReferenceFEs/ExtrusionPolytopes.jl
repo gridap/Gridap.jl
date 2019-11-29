@@ -168,6 +168,29 @@ function is_n_cube(p::ExtrusionPolytope{0})
   true
 end
 
+function Base.show(io::IO,p::ExtrusionPolytope)
+  if p == VERTEX
+    s = "VERTEX"
+  elseif p==SEGMENT
+    s = "SEGMENT"
+  elseif p==QUAD
+    s = "QUAD"
+  elseif p==TRI
+    s = "TRI"
+  elseif p==TET
+    s = "TET"
+  elseif p== HEX
+    s = "HEX"
+  elseif p==WEDGE
+    s = "WEDGE"
+  elseif p==PYRAMID
+    s = "PYRAMID"
+  else
+    s = nameof(typeof(p))
+  end
+  print(io,s)
+end
+
 # Helpers
 
 function ExtrusionPolytope(extrusion::Point{D,Int}) where D

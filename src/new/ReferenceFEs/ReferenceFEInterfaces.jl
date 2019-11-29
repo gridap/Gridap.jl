@@ -262,15 +262,19 @@ function _get_face_dofids_d!(face_to_dofs,::Val{d},reffe,polytope) where d
 end
 
 """
+    get_reffes(
+      T::Type{<:ReferenceFE{d}},
+      reffe::ReferenceFE) where d -> Vector{ReferenceFE{d}}
 """
-function get_reffes(::Type{<:ReferenceFE{d}},reffe::ReferenceFE) where d
-  ftype_to_reffe, _ = _compute_reffes_and_face_types(reffe,Val{d}())
+function get_reffes(T::Type{<:ReferenceFE{d}},reffe::ReferenceFE) where d
+  ftype_to_reffe::Vector{T}, _ = _compute_reffes_and_face_types(reffe,Val{d}())
   ftype_to_reffe
 end
 
 """
+    get_face_types(reffe::ReferenceFE, d::Integer) -> Vector{Int}
 """
-function get_face_types(::Type{<:ReferenceFE{d}},reffe::ReferenceFE) where d
+function get_face_types(reffe::ReferenceFE, d::Integer)
   _, iface_to_ftype = _compute_reffes_and_face_types(reffe,Val{d}())
   iface_to_ftype
 end
@@ -422,7 +426,6 @@ The interface for this type is defined with the following methods
 - [`get_face_own_nodes(reffe::NodalReferenceFE)`](@ref)
 - [`get_own_nodes_permutations(reffe::NodalReferenceFE)`](@ref)
 - [`get_dof_to_node(reffe::NodalReferenceFE)`](@ref)
-- [`get_dof_to_node(reffe::NodalReferenceFE)`](@ref)
 - [`get_dof_to_comp(reffe::NodalReferenceFE)`](@ref)
 - [`get_node_and_comp_to_dof(reffe::NodalReferenceFE)`](@ref)
 """
@@ -530,10 +533,10 @@ function get_vertex_node(reffe::NodalReferenceFE)
 end
 
 """
-    has_straight_faces(::NodalReferenceFE)
+    has_straight_faces(reffe::NodalReferenceFE) -> Bool
 
-In the following sense:
-vertices == nodes
+Query if the `reffe` has straight faces (i.e., if the
+nodes are equivalent to the vertices)
 """
 function has_straight_faces(reffe::NodalReferenceFE)
   p = get_polytope(reffe)
@@ -544,6 +547,10 @@ function has_straight_faces(reffe::NodalReferenceFE)
 end
 
 """
+    is_affine(reffe::NodalReferenceFE) -> Bool
+
+Query if the `reffe` leads to an afine map
+(true only for first order spaces on top of simplices)
 """
 function is_affine(reffe::NodalReferenceFE)
   p = get_polytope(reffe)

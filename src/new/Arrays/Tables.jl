@@ -232,26 +232,26 @@ end
 
 """
 """
-get_ptrs_type(::Table{T,P}) where {T,P} = P
-get_ptrs_type(::Type{Table{T,P}}) where {T,P} = P
+get_ptrs_eltype(::Table{T,P}) where {T,P} = P
+get_ptrs_eltype(::Type{Table{T,P}}) where {T,P} = P
 
 """
 """
-get_data_type(::Table{T,P}) where {T,P} = T
-get_data_type(::Type{Table{T,P}}) where {T,P} = T
+get_data_eltype(::Table{T,P}) where {T,P} = T
+get_data_eltype(::Type{Table{T,P}}) where {T,P} = T
 
 
 """
 """
-function append_tables_locally(offsets, tables)
+function append_tables_locally(offsets::NTuple, tables::NTuple)
 
   first_table, = tables
 
   @assert all( map(length,tables) .== length(first_table) ) "All tables must have the same length"
   ndata = sum( (length(table.data) for table in tables) )
 
-  T = get_data_type(first_table)
-  P = get_ptrs_type(first_table)
+  T = get_data_eltype(first_table)
+  P = get_ptrs_eltype(first_table)
 
   ptrs = zeros(P,length(first_table.ptrs))
   data = zeros(T,ndata)
