@@ -85,6 +85,9 @@ end
 # Cartesian Grid
 
 """
+    struct CartesianGrid{D,T,F} <: ConformingTriangulation{D,D}
+      # private fields
+    end
 """
 struct CartesianGrid{D,T,F} <: ConformingTriangulation{D,D}
   node_coords::CartesianCoordinates{D,T,F}
@@ -112,6 +115,7 @@ function get_reffes(g::CartesianGrid{D}) where D
 end
 
 """
+    CartesianGrid(domain,partition,map=identity)
 """
 function CartesianGrid(domain,partition,map=identity)
   desc = CartesianDescriptor(domain,partition,map)

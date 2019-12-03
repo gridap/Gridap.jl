@@ -53,6 +53,13 @@ UnstructuredGrid(trian::ConformingTriangulation)
 UnstructuredGrid(reffe::NodalReferenceFE)
 ```
 
+### CartesianGrids
+
+```@docs
+CartesianGrid
+CartesianGrid(domain,partition,map)
+```
+
 ## DiscreteModels
 
 ### Interface
