@@ -27,6 +27,8 @@ using Gridap.ReferenceFEs: _find_unique_with_indices
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
 
+using Gridap.Fields: HomothecyGrad
+
 import Gridap.ReferenceFEs: get_node_coordinates
 import Gridap.ReferenceFEs: num_nodes
 import Gridap.ReferenceFEs: is_affine
@@ -44,6 +46,8 @@ import Gridap.ReferenceFEs: get_offsets
 import Gridap.ReferenceFEs: get_offset
 import Gridap.ReferenceFEs: get_vertex_coordinates
 import Gridap.ReferenceFEs: get_face_nodes
+
+import Gridap.Fields: field_array_gradient
 
 export Triangulation
 export get_cell_coordinates

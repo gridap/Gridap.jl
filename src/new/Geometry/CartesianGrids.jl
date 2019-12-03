@@ -118,4 +118,34 @@ function CartesianGrid(domain,partition,map=identity)
   CartesianGrid(desc)
 end
 
+# Cell map
+
+struct CartesianMap{D,T} <: AbstractArray{Homothecy{D,T},D}
+  data::CartesianDescriptor{D,T,typeof(identity)}
+end
+
+Base.size(a::CartesianMap) = Tuple(a.data.partition)
+
+Base.IndexStyle(::Type{<:CartesianMap}) = IndexCartesian()
+
+function Base.getindex(a::CartesianMap{D,T},I::Vararg{Int,D}) where {D,T}
+  p = zero(mutable(Point{D,T}))
+  x0 = a.data.origin
+  dx = a.data.sizes
+  @inbounds for d in 1:D
+    p[d] =  x0[d] + (I[d]-1)*dx[d]
+  end
+  origin =  Point(p)
+  scaling = dx
+  Homothecy(origin,scaling)
+end
+
+function field_array_gradient(a::CartesianMap)
+  j = HomothecyGrad(a.data.sizes)
+  Fill(j,length(a))
+end
+
+function get_cell_map(grid::CartesianGrid{D,T,typeof(identity)} where {D,T})
+  CartesianMap(grid.node_coords.data)
+end
 
