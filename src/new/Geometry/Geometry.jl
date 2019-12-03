@@ -77,6 +77,7 @@ export get_isboundary_node
 export test_discrete_model
 
 export UnstructuredGrid
+export UnstructuredDiscreteModel
 
 export CartesianGrid
 export CartesianDescriptor
@@ -95,5 +96,7 @@ include("DiscreteModelMocks.jl")
 include("UnstructuredGrids.jl")
 
 include("CartesianGrids.jl")
+
+include("UnstructuredDiscreteModels.jl")
 
 end # module

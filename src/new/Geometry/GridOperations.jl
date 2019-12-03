@@ -158,6 +158,62 @@ function generate_face_to_isboundary(
     face_to_facets.ptrs)
 end
 
+function generate_face_to_isboundary_from_cells(
+  facet_to_isboundary,
+  cell_to_faces::Table,
+  cell_to_facets::Table,
+  cell_to_ctype,
+  ctype_to_lface_to_lfacets,
+  nfaces = maximum(cell_to_faces.data))
+
+  face_to_isboundary = fill(false,nfaces)
+
+  _generate_face_to_isboundary_from_cells_fill!(
+    face_to_isboundary,
+    facet_to_isboundary,
+    cell_to_faces.data,
+    cell_to_faces.ptrs,
+    cell_to_facets.data,
+    cell_to_facets.ptrs,
+    cell_to_ctype,
+    ctype_to_lface_to_lfacets)
+
+  face_to_isboundary
+
+end
+
+function  _generate_face_to_isboundary_from_cells_fill!(
+    face_to_isboundary,
+    facet_to_isboundary,
+    cell_to_faces_data,
+    cell_to_faces_ptrs,
+    cell_to_facets_data,
+    cell_to_facets_ptrs,
+    cell_to_ctype,
+    ctype_to_lface_to_lfacets)
+
+  cells = 1:length(cell_to_faces_ptrs)-1
+
+  for cell in cells
+    a = cell_to_faces_ptrs[cell]-1
+    b = cell_to_facets_ptrs[cell]-1
+    ctype = cell_to_ctype[cell]
+    lface_to_lfacets = ctype_to_lface_to_lfacets[ctype]
+    for (lface, lfacets) in enumerate(lface_to_lfacets)
+      face = cell_to_faces_data[a+lface]
+      for lfacet in lfacets
+        facet = cell_to_facets_data[b+lfacet]
+        isboundary = facet_to_isboundary[facet]
+        if isboundary
+          face_to_isboundary[face] = isboundary
+          continue
+        end
+      end
+    end
+  end
+
+end
+
 function refine_grid_connectivity(
   cell_to_points_data::AbstractVector{T},
   cell_to_points_ptrs::AbstractVector{P},

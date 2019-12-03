@@ -1,4 +1,4 @@
-module DiscreteModelsTests
+module UnstructuredDiscreteModelsTests
 
 using Test
 using Gridap.Fields
@@ -6,30 +6,6 @@ using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.Geometry: ConformingTrianMock
 using Gridap.Geometry: DiscreteModelMock
-
-import Gridap.ReferenceFEs
-import Gridap.ReferenceFEs: num_faces
-import Gridap.ReferenceFEs: num_nodes
-import Gridap.ReferenceFEs: get_faces
-import Gridap.ReferenceFEs: get_face_nodes
-
-import Gridap.Geometry: get_vertex_node
-import Gridap.Geometry: get_node_face_owner
-import Gridap.Geometry: get_face_nodes
-import Gridap.Geometry: get_cell_nodes
-import Gridap.Geometry: get_isboundary_face
-import Gridap.Geometry: get_face_reffe_type
-import Gridap.Geometry: get_face_polytope_type
-import Gridap.Geometry: get_reffes
-import Gridap.Geometry: get_polytopes
-import Gridap.Geometry: get_node_coordinates
-
-using Gridap.Helpers
-using Gridap.Arrays
-using Gridap.ReferenceFEs: _find_unique_with_indices
-include("../../../src/new/Geometry/GridOperations.jl")
-
-include("../../../src/new/Geometry/UnstructuredDiscreteModels.jl")
 
 grid = ConformingTrianMock()
 
@@ -66,5 +42,28 @@ m = DiscreteModelMock()
 @test get_faces(model,1,1) == get_faces(m,1,1)
 @test get_node_coordinates(model) == get_node_coordinates(m)
 @test get_vertex_coordinates(model) == get_vertex_coordinates(m)           
+
+domain = (0,1,0,1,0,1)
+partition = (2,2,2)
+grid = CartesianGrid(domain,partition)
+model = UnstructuredDiscreteModel(grid)
+
+edge_to_isboundary = get_isboundary_face(model,1)
+@test length(edge_to_isboundary) == num_edges(model)
+
+edge_to_faces = get_faces(model,1,2)
+@test length(edge_to_faces) == num_edges(model)
+@test maximum(edge_to_faces.data) == num_facets(model)
+face_to_edges = get_faces(model,2,1)
+@test length(face_to_edges) == num_facets(model)
+@test maximum(face_to_edges.data) == num_edges(model)
+
+test_discrete_model(model)
+
+domain = (0,1,0,1,0,1)
+partition = (2,3,2)
+grid = CartesianGrid(domain,partition)
+model = UnstructuredDiscreteModel(grid)
+test_discrete_model(model)
 
 end # module

@@ -84,8 +84,8 @@ end
 
 
 function num_faces(g::UnstructuredDiscreteModel,d::Integer)
-  _generate_cell_to_faces!(model,d)
-  model.d_to_num_dfaces[d+1]
+  _generate_cell_to_faces!(g,d)
+  g.d_to_num_dfaces[d+1]
 end
 
 function num_nodes(g::UnstructuredDiscreteModel)
@@ -99,26 +99,28 @@ function get_faces(g::UnstructuredDiscreteModel,dimfrom::Integer,dimto::Integer)
     if dimto==0 || dimto==D
       nothing
     else
-      _generate_face_to_vertices!(model,dimto)
+      _generate_face_to_vertices!(g,dimto)
     end
 
   elseif dimfrom == D
     if dimto==0 || dimto==D
       nothing
     else
-      _generate_cell_to_faces!(model,dimto)
+      _generate_cell_to_faces!(g,dimto)
     end
 
   else
 
     if dimto==0
-      _generate_face_to_vertices!(model,dimfrom)
+      _generate_face_to_vertices!(g,dimfrom)
     elseif dimto==D
-      _generate_cell_to_faces!(model,dimfrom)
+      _generate_cell_to_faces!(g,dimfrom)
     elseif dimto==dimfrom
-      _generate_face_to_face!(model,dimfrom)
+      _generate_face_to_face!(g,dimfrom)
+    elseif dimfrom > dimto
+      _generate_nface_to_mface!(g,dimfrom,dimto)
     else
-      @notimplemented
+      _generate_nface_to_mface!(g,dimto,dimfrom)
     end
 
   end
@@ -135,27 +137,29 @@ function _generate_cell_to_faces!(model,dimto)
   end
   if isassigned(model.n_m_to_nface_to_mfaces,dimto+1,0+1)
     @notimplemented
+
+  else
+
+    cell_to_vertices = model.n_m_to_nface_to_mfaces[D+1,0+1]
+    vertex_to_cells = model.n_m_to_nface_to_mfaces[0+1,D+1]
+    cell_to_cell_type = model.d_to_dface_to_polytope_type[D+1]
+    polytopes = model.d_to_polytopes[D+1]
+    cell_type_to_lface_to_lvertices = map( (p)->get_faces(p,dimto,0), polytopes )
+
+    cell_to_faces = generate_cell_to_faces(
+        cell_to_vertices,
+        cell_type_to_lface_to_lvertices,
+        cell_to_cell_type,
+        vertex_to_cells)
+
+    faces_to_cells = generate_cells_around(cell_to_faces)
+    nfaces = length(faces_to_cells)
+
+    model.n_m_to_nface_to_mfaces[D+1,dimto+1] = cell_to_faces
+    model.n_m_to_nface_to_mfaces[dimto+1,D+1] = faces_to_cells
+    model.d_to_num_dfaces[dimto+1] = nfaces
+
   end
-
-  cell_to_vertices = model.n_m_to_nface_to_mfaces[D+1,0+1]
-  vertex_to_cells = model.n_m_to_nface_to_mfaces[0+1,D+1]
-  cell_to_cell_type = model.d_to_dface_to_polytope_type[D+1]
-  polytopes = model.d_to_polytopes[D+1]
-  cell_type_to_lface_to_lvertices = map( (p)->get_faces(p,dimto,0), polytopes )
-
-  cell_to_faces = generate_cell_to_faces(
-      cell_to_vertices,
-      cell_type_to_lface_to_lvertices,
-      cell_to_cell_type,
-      vertex_to_cells)
-
-  faces_to_cells = generate_cells_around(cell_to_faces)
-
-  nfaces = length(faces_to_cells)
-
-  model.n_m_to_nface_to_mfaces[D+1,dimto+1] = cell_to_faces
-  model.n_m_to_nface_to_mfaces[dimto+1,D+1] = faces_to_cells
-  model.d_to_num_dfaces[dimto+1] = nfaces
 
   nothing
 
@@ -209,6 +213,36 @@ function _generate_face_to_face!(model,d)
 
 end
 
+function _generate_nface_to_mface!(model,n,m)
+  @assert n > m
+
+  if isassigned(model.n_m_to_nface_to_mfaces,n+1,m+1)
+    return
+  end
+
+  nface_to_vertices = get_faces(model,n,0)
+  vertex_to_mfaces = get_faces(model,0,m)
+  nface_to_nftype = get_face_polytope_type(model,n)
+
+  polytopes = get_polytopes(Polytope{n},model)
+  nftype_to_lmface_to_lvertices = map( (p)->get_faces(p,m,0), polytopes)
+
+  nface_to_mfaces = find_cell_to_faces(
+    nface_to_vertices,
+    nftype_to_lmface_to_lvertices,
+    nface_to_nftype,
+    vertex_to_mfaces)
+
+  num_mfaces = num_faces(model,m)
+  mface_to_nfaces = generate_cells_around(nface_to_mfaces,num_mfaces)
+
+  model.n_m_to_nface_to_mfaces[n+1,m+1] = nface_to_mfaces
+  model.n_m_to_nface_to_mfaces[m+1,n+1] = mface_to_nfaces
+
+  nothing
+
+end
+
 function get_vertex_node(g::UnstructuredDiscreteModel)
   g.vertex_to_node
 end
@@ -218,7 +252,7 @@ function get_node_face_owner(g::UnstructuredDiscreteModel)
 end
 
 function get_face_nodes(g::UnstructuredDiscreteModel,d::Integer)
-  _generate_face_to_nodes!(model,d)
+  _generate_face_to_nodes!(g,d)
   g.d_to_dface_to_nodes[d+1]
 end
 
@@ -297,7 +331,23 @@ function _generate_isboundary_face!(model,d)
   end
 
   if !isassigned(model.n_m_to_nface_to_mfaces,d+1,D-1+1)
-    @notimplemented
+
+    cell_to_faces = get_faces(model,D,d)
+    cell_to_facets = get_faces(model,D,D-1)
+    cell_to_ctype = get_face_polytope_type(model,D)
+    polytopes = get_polytopes(Polytope{D},model)
+    ctype_to_lface_to_lfacets = map( (p)->get_faces(p,d,D-1), polytopes)
+    facet_to_isboundary = get_isboundary_face(model,D-1)
+    nfaces = num_faces(model,d)
+
+    face_to_isboundary = generate_face_to_isboundary_from_cells(
+      facet_to_isboundary,
+      cell_to_faces,
+      cell_to_facets,
+      cell_to_ctype,
+      ctype_to_lface_to_lfacets,
+      nfaces)
+
   else
     facet_to_isboundary = get_isboundary_face(model,D-1)
     face_to_facets = get_faces(model,d,D-1)
@@ -313,23 +363,23 @@ end
 
 function get_face_reffe_type(g::UnstructuredDiscreteModel,d::Integer)
   _generate_face_reffes!(g,d)
-  model.d_to_dface_to_reffe_type[d+1]
+  g.d_to_dface_to_reffe_type[d+1]
 end
 
 function get_face_polytope_type(g::UnstructuredDiscreteModel,d::Integer)
   _generate_face_polytopes!(g,d)
-  model.d_to_dface_to_polytope_type[d+1]
+  g.d_to_dface_to_polytope_type[d+1]
 end
 
 function get_reffes(T::Type{<:ReferenceFE{d}},g::UnstructuredDiscreteModel) where d
   _generate_face_reffes!(g,d)
-  reffes::Vector{T} = model.d_to_reffes[d+1]
+  reffes::Vector{T} = g.d_to_reffes[d+1]
   reffes
 end
 
 function get_polytopes(T::Type{<:Polytope{d}},g::UnstructuredDiscreteModel) where d
   _generate_face_polytopes!(g,d)
-  polytopes::Vector{T} = model.d_to_polytopes[d+1]
+  polytopes::Vector{T} = g.d_to_polytopes[d+1]
   polytopes
 end
 
@@ -398,3 +448,8 @@ function _generate_face_polytopes!(model,d)
   nothing
 
 end
+
+# Low level helpers
+
+include("GridOperations.jl")
+
