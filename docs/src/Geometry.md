@@ -95,9 +95,10 @@ get_isboundary_node(g::DiscreteModel)
 test_discrete_model
 ```
 
+### UnstructuredDiscreteModels
 
-### UnstructuredDiscreteModel
-
-!!! note
-    Work-in-progress
+```@docs
+UnstructuredDiscreteModel
+UnstructuredDiscreteModel(trian::ConformingTriangulation)
+```
 

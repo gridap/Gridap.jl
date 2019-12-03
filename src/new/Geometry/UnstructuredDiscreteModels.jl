@@ -1,6 +1,10 @@
 
 """
-All fields are private
+    struct UnstructuredDiscreteModel{Dc,Dp} <: DiscreteModel{Dc,Dp}
+      # private fields
+    end
+
+Discrete model for any type of unstructured discretization
 """
 struct UnstructuredDiscreteModel{Dc,Dp} <: DiscreteModel{Dc,Dp}
   num_nodes::Int
@@ -16,8 +20,6 @@ struct UnstructuredDiscreteModel{Dc,Dp} <: DiscreteModel{Dc,Dp}
   d_to_polytopes::Vector{Vector{Polytope}}
   node_coordinates::Vector{Point{Dp,Float64}}
 
-  @doc """
-  """
   function UnstructuredDiscreteModel(grid::UnstructuredGrid)
     Dc = num_cell_dims(grid)
     Dp = num_point_dims(grid)
@@ -26,6 +28,9 @@ struct UnstructuredDiscreteModel{Dc,Dp} <: DiscreteModel{Dc,Dp}
   end
 end
 
+"""
+    UnstructuredDiscreteModel(trian::ConformingTriangulation)
+"""
 function UnstructuredDiscreteModel(trian::ConformingTriangulation)
   grid = UnstructuredGrid(trian)
   UnstructuredDiscreteModel(grid)
