@@ -13,6 +13,7 @@ using Gridap.Helpers
 using Gridap.Arrays
 using Gridap.Fields
 using Gridap.ReferenceFEs
+using Gridap.TensorValues
 
 using Gridap.ReferenceFEs: _num_faces
 using Gridap.ReferenceFEs: _num_facets
@@ -22,6 +23,9 @@ using Gridap.ReferenceFEs: _get_facedims
 using Gridap.ReferenceFEs: _get_offsets
 using Gridap.ReferenceFEs: _get_offset
 using Gridap.ReferenceFEs: _find_unique_with_indices
+
+import Gridap.Arrays: array_cache
+import Gridap.Arrays: getindex!
 
 import Gridap.ReferenceFEs: get_node_coordinates
 import Gridap.ReferenceFEs: num_nodes
@@ -70,6 +74,8 @@ export test_discrete_model
 
 export UnstructuredGrid
 
+export CartesianGrid
+
 include("Triangulations.jl")
 
 include("ConformingTriangulations.jl")
@@ -81,5 +87,7 @@ include("DiscreteModels.jl")
 include("DiscreteModelMocks.jl")
 
 include("UnstructuredGrids.jl")
+
+include("CartesianGrids.jl")
 
 end # module

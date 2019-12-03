@@ -265,20 +265,14 @@ function Base.size(a::AppliedArray)
   size(f)
 end
 
-#function _prepare_shape(a...)
-#  s = common_size(a...)
-#  N = length(s)
-#  (N,s)
-#end
-
 function common_size(a::AbstractArray...)
   a1, = a
-  c = all([size(a1) == size(ai) for ai in a])
+  c = all([length(a1) == length(ai) for ai in a])
   if !c
     error("Array sizes $(map(size,a)) are not compatible.")
   end
-  s = size(a1)
-  s
+  l = length(a1)
+  (l,)
 end
 
 #TODO not sure what to do with shape and index-style

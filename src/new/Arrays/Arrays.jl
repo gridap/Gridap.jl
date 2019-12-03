@@ -64,6 +64,7 @@ export find_inverse_index_map
 export find_inverse_index_map!
 export append_tables_globally
 export append_tables_locally
+export collect1d
 export UNSET
 
 import Base: size

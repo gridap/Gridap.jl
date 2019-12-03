@@ -28,11 +28,12 @@ function Table(data::AbstractVector{T},ptrs::AbstractVector{P}) where {T,P}
 end
 
 """
-    Table(a::AbstractVector{<:AbstractVector})
+    Table(a::AbstractArray{<:AbstractArray})
 
-Build a table from a vector of vectors.
+Build a table from a vector of vectors. If the inputs are
+multidimensional arrays instead of vectors, they are flattened.
 """
-function Table(a::AbstractVector{<:AbstractVector})
+function Table(a::AbstractArray{<:AbstractArray})
   data, ptrs = generate_data_and_ptrs(a)
   Table(data,ptrs)
 end
@@ -125,8 +126,8 @@ end
 
 Given a vector of vectors, compress it and return the corresponding data and and ptrs
 """
-function generate_data_and_ptrs(vv::AbstractVector{<:AbstractVector{T}}) where T
-  ptrs = Vector{T}(undef,length(vv)+1)
+function generate_data_and_ptrs(vv::AbstractArray{<:AbstractArray{T}}) where T
+  ptrs = Vector{Int32}(undef,length(vv)+1)
   _generate_data_and_ptrs_fill_ptrs!(ptrs,vv)
   length_to_ptrs!(ptrs)
   ndata = ptrs[end]-1
@@ -136,14 +137,20 @@ function generate_data_and_ptrs(vv::AbstractVector{<:AbstractVector{T}}) where T
 end
 
 function _generate_data_and_ptrs_fill_ptrs!(ptrs,vv)
-  for (i,v) in enumerate(vv)
-    ptrs[i+1] = length(v)
+  c = array_cache(vv)
+  k = 1
+  for i in eachindex(vv)
+    v = getindex!(c,vv,i)
+    ptrs[k+1] = length(v)
+    k += 1
   end
 end
 
 function _generate_data_and_ptrs_fill_data!(data,vv)
+  c = array_cache(vv)
   k = 1
-  for v in vv
+  for i in eachindex(vv)
+    v = getindex!(c,vv,i)
     for vi in v
       data[k] = vi
       k += 1
@@ -295,4 +302,14 @@ function _append_tables_locally_fill!(data,ptrs,offset,table)
     end
   end
 end
+
+"""
+    collect1d(a)
+
+Equivalent to 
+
+    [a[i] for in 1:length(a)]
+"""
+collect1d(a) = [a[i] for i in 1:length(a)]
+
 

@@ -268,4 +268,9 @@ a = TensorValue(1,2,3,4)
 
 @test change_eltype(1,Float64) == Float64
 
+a = TensorValue(1,2,3,4)
+@test isa(Tuple(a),Tuple)
+@test Tuple(a) == a.array.data
+
+
 end # module TypesTests

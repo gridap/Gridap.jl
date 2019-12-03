@@ -73,6 +73,12 @@ bcast
 elem
 contract
 ```
+## Helper functions
+
+```@docs
+collect1d
+```
+
 ## Concrete array implementations
 
 ### CachedArray

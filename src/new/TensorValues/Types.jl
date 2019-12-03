@@ -241,3 +241,5 @@ change_eltype(::Type{<:Real},::Type{E}) where E = E
 
 change_eltype(a::T,::Type{E}) where {T<:Real,E} = change_eltype(T,E)
 
+@inline Tuple(a::MultiValue) = a.array.data
+

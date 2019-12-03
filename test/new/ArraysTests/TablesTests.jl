@@ -12,6 +12,15 @@ test_array(a,b)
 c = convert(Table{Float64,Int32},a)
 test_array(c,b)
 
+vv = Array{Array{Int,2},2}(undef,2,2)
+vv[1,1] = rand(1:10,2,2)
+vv[2,1] = rand(1:10,2,2)
+vv[2,2] = rand(1:10,2,2)
+vv[1,2] = rand(1:10,2,2)
+b = [[ vv[i][j] for j in 1:length(vv[i]) ] for i in 1:length(vv)]
+a = Table(vv)
+test_array(a,b)
+
 data = Float64[2,3,1,3,6,7,3,2,5,6,3,4]
 ptrs = Int32[1,4,4,7,13]
 a = Table(data,ptrs)

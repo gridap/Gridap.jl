@@ -10,4 +10,6 @@ using Test
 
 @testset "UnstructuredGrids" begin include("UnstructuredGridsTests.jl") end
 
+@testset "CartesianGrids" begin include("CartesianGridsTests.jl") end
+
 end # module
