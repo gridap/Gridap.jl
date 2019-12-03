@@ -1,11 +1,24 @@
 
 # Descriptor of a cartesian grid
 
+"""
+    struct CartesianDescriptor{D,T,F<:Function}
+      origin::Point{D,T}
+      sizes::Point{D,T}
+      partition::Point{D,Int}
+      map::F
+    end
+
+Struct that stores the data defining a Cartesian grid.
+"""
 struct CartesianDescriptor{D,T,F<:Function}
   origin::Point{D,T}
   sizes::Point{D,T}
   partition::Point{D,Int}
   map::F
+  @doc """
+      CartesianDescriptor(origin,sizes,partition,map::Function=identity)
+  """
   function CartesianDescriptor(origin,sizes,partition,map::Function=identity)
     D = length(partition)
     T = eltype(sizes)
@@ -14,6 +27,9 @@ struct CartesianDescriptor{D,T,F<:Function}
   end
 end
 
+"""
+    CartesianDescriptor(domain,partition,map::Function=identity)
+"""
 function CartesianDescriptor(domain,partition,map::Function=identity)
   D = length(partition)
   limits = [(domain[2*d-1],domain[2*d]) for d in 1:D]
@@ -93,12 +109,24 @@ struct CartesianGrid{D,T,F} <: ConformingTriangulation{D,D}
   node_coords::CartesianCoordinates{D,T,F}
   cell_nodes::CartesianCellNodes{D}
   cell_type::Fill{Int8,1,Tuple{Base.OneTo{Int}}}
+  @doc """
+      CartesianGrid(desc::CartesianDescriptor)
+  """
   function CartesianGrid(desc::CartesianDescriptor{D,T,F}) where {D,T,F}
     node_coords = CartesianCoordinates(desc)
     cell_nodes = CartesianCellNodes(desc.partition)
     cell_type = Fill(Int8(1),length(cell_nodes))
     new{D,T,F}(node_coords,cell_nodes,cell_type)
   end
+end
+
+"""
+    get_cartesian_descriptor(grid::CartesianGrid)
+
+Get the descriptor of the Cartesian grid
+"""
+function get_cartesian_descriptor(a::CartesianGrid)
+  a.node_coords.data
 end
 
 get_node_coordinates(g::CartesianGrid) = g.node_coords
@@ -115,9 +143,9 @@ function get_reffes(g::CartesianGrid{D}) where D
 end
 
 """
-    CartesianGrid(domain,partition,map=identity)
+    CartesianGrid(domain,partition,map::Function=identity)
 """
-function CartesianGrid(domain,partition,map=identity)
+function CartesianGrid(domain,partition,map::Function=identity)
   desc = CartesianDescriptor(domain,partition,map)
   CartesianGrid(desc)
 end

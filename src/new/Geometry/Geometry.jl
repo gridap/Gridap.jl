@@ -79,6 +79,8 @@ export test_discrete_model
 export UnstructuredGrid
 
 export CartesianGrid
+export CartesianDescriptor
+export get_cartesian_descriptor
 
 include("Triangulations.jl")
 

@@ -57,7 +57,12 @@ UnstructuredGrid(reffe::NodalReferenceFE)
 
 ```@docs
 CartesianGrid
-CartesianGrid(domain,partition,map)
+CartesianGrid(desc::CartesianDescriptor{D,T,F}) where {D,T,F}
+CartesianGrid(domain,partition,map::Function)
+get_cartesian_descriptor(a::CartesianGrid)
+CartesianDescriptor
+CartesianDescriptor(origin,sizes,partition,map::Function)
+CartesianDescriptor(domain,partition,map::Function=identity)
 ```
 
 ## DiscreteModels
