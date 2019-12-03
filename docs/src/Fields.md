@@ -117,3 +117,9 @@ outer(f,::typeof(∇))
 cross(::typeof(∇),f)
 ```
 
+## Concrete Field implementations
+
+```@docs
+Homothecy
+```
+

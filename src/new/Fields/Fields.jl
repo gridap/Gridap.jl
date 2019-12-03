@@ -60,6 +60,8 @@ export divergence
 export Δ
 export ε
 
+export Homothecy
+
 import Gridap.Arrays: kernel_cache
 import Gridap.Arrays: apply_kernel!
 import Gridap.Arrays: kernel_return_type
@@ -77,6 +79,8 @@ include("FieldInterface.jl")
 include("MockFields.jl")
 
 include("ConstantFields.jl")
+
+include("Homothecies.jl")
 
 include("FieldApply.jl")
 

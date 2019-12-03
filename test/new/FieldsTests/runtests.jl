@@ -10,6 +10,8 @@ using Test
 
 @testset "ConstantFields" begin include("ConstantFieldsTests.jl") end
 
+@testset "Homothecies" begin include("HomotheciesTests.jl") end
+
 @testset "FieldArrays" begin include("FieldArraysTests.jl") end
 
 @testset "Compose" begin include("ComposeTests.jl") end

@@ -157,7 +157,7 @@ end
 """
 $(SIGNATURES)
 """
-function gradient_cache(cache,x)
+function gradient_cache(f,x)
   @abstractmethod
 end
 
