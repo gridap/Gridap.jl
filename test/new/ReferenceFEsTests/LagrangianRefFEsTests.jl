@@ -120,7 +120,7 @@ reffe = LagrangianRefFE(Float64,WEDGE,1)
 
 reffes = get_reffes(ReferenceFE{2}, reffe)
 
-iface_to_ftype = get_face_types(reffe,2)
+iface_to_ftype = get_face_type(reffe,2)
 
 @test length(reffes) == 2
 @test iface_to_ftype == [1, 1, 1, 2, 2]

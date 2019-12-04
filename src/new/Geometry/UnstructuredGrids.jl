@@ -84,7 +84,7 @@ function UnstructuredGrid(::Type{<:ReferenceFE{d}},p::Polytope) where d
   node_coordinates = get_vertex_coordinates(p)
   cell_nodes = Table(get_faces(p,d,0))
   reffaces = get_reffaces(Polytope{d},p)
-  cell_type = get_face_types(p,d)
+  cell_type = get_face_type(p,d)
   reffes = map(NodalReferenceFE,reffaces)
   UnstructuredGrid(
     node_coordinates,

@@ -38,7 +38,7 @@ get_offset(p::Polytope,d::Integer)
 get_faces(p::Polytope,dimfrom::Integer,dimto::Integer)
 get_face_vertices(p::Polytope,dim::Integer)
 get_reffaces(::Type{<:Polytope{d}},p::Polytope) where d
-get_face_types(p::Polytope,d::Integer)
+get_face_type(p::Polytope,d::Integer)
 ```
 ### Extrusion polytopes
 
@@ -110,7 +110,7 @@ compute_shapefuns(dofs,prebasis)
 num_dims(::ReferenceFE)
 test_reference_fe(reffe::ReferenceFE{D}) where D
 get_reffes(T::Type{<:ReferenceFE{d}},reffe::ReferenceFE) where d
-get_face_types(reffe::ReferenceFE, d::Integer)
+get_face_type(reffe::ReferenceFE, d::Integer)
 ```
 
 ### Generic reference elements

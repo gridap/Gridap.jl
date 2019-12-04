@@ -505,7 +505,7 @@ function get_reffaces(T::Type{<:Polytope{d}},p::Polytope) where d
 end
 
 """
-    get_face_types(p::Polytope,d::Integer) -> Vector{Int}
+    get_face_type(p::Polytope,d::Integer) -> Vector{Int}
 
 Return a vector of integers denoting, for each face of dimension `d`, an index to the
 vector `get_reffaces(Polytope{d},p)` 
@@ -520,7 +520,7 @@ using Gridap.ReferenceFEs
 
 reffaces = get_reffaces(Polytope{2},WEDGE)
 
-face_types = get_face_types(WEDGE,2)
+face_types = get_face_type(WEDGE,2)
 
 println(reffaces)
 println(face_types)
@@ -534,7 +534,7 @@ Gridap.ReferenceFEs.Polytope{2}[QUAD, TRI]
 The three first facets are of type `1`, i.e, `QUAD`, and the last ones of type `2`, i.e., `TRI`.
 
 """
-function get_face_types(p::Polytope,d::Integer)
+function get_face_type(p::Polytope,d::Integer)
   _, iface_to_ftype = _compute_reffaces_and_face_types(p,Val{d}())
   iface_to_ftype
 end

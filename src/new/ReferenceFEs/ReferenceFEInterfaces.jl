@@ -272,9 +272,9 @@ function get_reffes(T::Type{<:ReferenceFE{d}},reffe::ReferenceFE) where d
 end
 
 """
-    get_face_types(reffe::ReferenceFE, d::Integer) -> Vector{Int}
+    get_face_type(reffe::ReferenceFE, d::Integer) -> Vector{Int}
 """
-function get_face_types(reffe::ReferenceFE, d::Integer)
+function get_face_type(reffe::ReferenceFE, d::Integer)
   _, iface_to_ftype = _compute_reffes_and_face_types(reffe,Val{d}())
   iface_to_ftype
 end
