@@ -180,7 +180,15 @@ function _vtkinfo_extrusion_polytope(p,exponents)
 
   n_nodes = length(exponents)
 
-  if p == SEGMENT
+  if p == VERTEX
+    if n_nodes == 1
+      vtkid = 1
+      vtknodes = [1,]
+    else
+      @notimplemented
+    end
+
+  elseif p == SEGMENT
     if n_nodes == 2
       vtkid = 3
       vtknodes = [1,2]

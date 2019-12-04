@@ -38,6 +38,9 @@ get_node_coordinates(trian::ConformingTriangulation)
 get_cell_nodes(trian::ConformingTriangulation)
 test_conforming_triangulation
 num_nodes(trian::ConformingTriangulation)
+ConformingTriangulation(reffe::NodalReferenceFE)
+ConformingTriangulation(T::Type{<:ReferenceFE{d}},p::Polytope) where d
+ConformingTriangulation(T::Type{<:ReferenceFE},trian::ConformingTriangulation)
 ```
 
 ### UnstructuredGrids
@@ -52,6 +55,7 @@ UnstructuredGrid(
 UnstructuredGrid(trian::ConformingTriangulation)
 UnstructuredGrid(reffe::NodalReferenceFE)
 UnstructuredGrid(::Type{<:ReferenceFE{d}},p::Polytope) where d
+UnstructuredGrid(::Type{<:ReferenceFE{d}},trian::ConformingTriangulation) where d
 ```
 
 ### CartesianGrids
@@ -94,6 +98,8 @@ get_cell_to_faces(g::DiscreteModel)
 get_isboundary_face(g::DiscreteModel)
 get_isboundary_node(g::DiscreteModel)
 test_discrete_model
+ConformingTriangulation(T::Type{<:ReferenceFE{d}},model::DiscreteModel) where d
+UnstructuredGrid(T::Type{<:ReferenceFE{d}},model::DiscreteModel) where d
 ```
 
 ### UnstructuredDiscreteModels

@@ -34,4 +34,13 @@ test_discrete_model(model)
   [1,2,4,5,10,11,12,13,23], [2,3,5,14,13,15,24], [3,6,5,16,15,17,25],
   [4,5,7,8,11,18,19,20,26], [5,6,8,9,17,21,20,22,27]]
 
+grid = UnstructuredGrid(ReferenceFE{0},model)
+@test num_cells(grid) == num_vertices(model)
+
+grid = ConformingTriangulation(ReferenceFE{1},model)
+@test num_cells(grid) == num_edges(model)
+
+grid = ConformingTriangulation(ReferenceFE{2},model)
+@test num_cells(grid) == num_cells(model)
+
 end # module

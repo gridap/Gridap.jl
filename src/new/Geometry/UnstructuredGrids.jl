@@ -93,3 +93,13 @@ function UnstructuredGrid(::Type{<:ReferenceFE{d}},p::Polytope) where d
     cell_type)
 end
 
+# Low dim grids
+
+"""
+    UnstructuredGrid(::Type{<:ReferenceFE{d}},trian::ConformingTriangulation) where d
+"""
+function UnstructuredGrid(::Type{<:ReferenceFE{d}},trian::ConformingTriangulation) where d
+  model = UnstructuredDiscreteModel(trian)
+  UnstructuredGrid(NodalReferenceFE{d},model)
+end
+

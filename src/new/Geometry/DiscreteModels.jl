@@ -267,3 +267,28 @@ function test_discrete_model(model::DiscreteModel{Dc,Dp}) where {Dc,Dp}
   end
 end
 
+# Low dim grids
+
+
+"""
+    ConformingTriangulation(T::Type{<:ReferenceFE{d}},model::DiscreteModel) where d
+"""
+function ConformingTriangulation(T::Type{<:ReferenceFE{d}},model::DiscreteModel) where d
+  UnstructuredGrid(T,model)
+end
+
+"""
+    UnstructuredGrid(T::Type{<:ReferenceFE{d}},model::DiscreteModel) where d
+"""
+function UnstructuredGrid(T::Type{<:ReferenceFE{d}},model::DiscreteModel) where d
+  reffes = get_reffes(T,model)
+  cell_type = get_face_reffe_type(model,d)
+  cell_nodes = Table(get_face_nodes(model,d))
+  node_coordinates = get_node_coordinates(model)
+  UnstructuredGrid(
+    node_coordinates,
+    cell_nodes,
+    reffes,
+    cell_type)
+end
+

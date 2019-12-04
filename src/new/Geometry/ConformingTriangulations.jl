@@ -64,3 +64,24 @@ end
 num_nodes(trian::ConformingTriangulation) = length(get_node_coordinates(trian))
 
 
+"""
+    ConformingTriangulation(reffe::NodalReferenceFE)
+"""
+function ConformingTriangulation(reffe::NodalReferenceFE)
+  UnstructuredGrid(reffe)
+end
+
+"""
+    ConformingTriangulation(::Type{<:ReferenceFE{d}},p::Polytope) where d
+"""
+function ConformingTriangulation(::Type{<:ReferenceFE{d}},p::Polytope) where d
+  UnstructuredGrid(NodalReferenceFE{d},p)
+end
+
+"""
+    ConformingTriangulation(::Type{<:ReferenceFE{d}},trian::ConformingTriangulation) where d
+"""
+function ConformingTriangulation(::Type{<:ReferenceFE{d}},trian::ConformingTriangulation) where d
+  UnstructuredGrid(NodalReferenceFE{d},trian)
+end
+
