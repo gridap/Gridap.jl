@@ -56,6 +56,7 @@ UnstructuredGrid(trian::ConformingTriangulation)
 UnstructuredGrid(reffe::NodalReferenceFE)
 UnstructuredGrid(::Type{<:ReferenceFE{d}},p::Polytope) where d
 UnstructuredGrid(::Type{<:ReferenceFE{d}},trian::ConformingTriangulation) where d
+UnstructuredGrid(x::AbstractArray{<:Point})
 ```
 
 ### CartesianGrids

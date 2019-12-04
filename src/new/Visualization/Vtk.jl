@@ -1,4 +1,38 @@
 
+"""
+    writevtk(reffe::NodalReferenceFE,filebase)
+"""
+function writevtk(reffe::NodalReferenceFE,filebase)
+
+  p = get_polytope(reffe)
+  writevtk(p,filebase)
+
+  node_coords = get_node_coordinates(reffe)
+  node_comp_to_dof = get_node_and_comp_to_dof(reffe)
+  nodaldata = [
+    "dof" => node_comp_to_dof,
+    "node" => collect(1:num_nodes(reffe))]
+  writevtk(node_coords, "$(filebase)_nodes"; nodaldata = nodaldata)
+
+end
+
+"""
+    writevtk(x::AbstractVector{<:Point}, filebase; kwargs...)
+"""
+function writevtk(x::AbstractVector{<:Point}, filebase; kwargs...)
+  grid = UnstructuredGrid(x)
+  write_vtk_file(grid,filebase; kwargs...)
+end
+
+"""
+    writevtk(p::Polytope,filebase)
+"""
+function writevtk(p::Polytope,filebase)
+  for d in 0:(num_dims(p)-1)
+    grid = ConformingTriangulation(ReferenceFE{d},p)
+    write_vtk_file(grid,"$(filebase)_$d")
+  end
+end
 
 """
 
@@ -91,21 +125,21 @@ end
 
 _prepare_data(v) = v
 
-function _prepare_data(v::AbstractArray{<:VectorValue{D}}) where D
+function _prepare_data(v::AbstractArray{<:VectorValue{D,T}}) where {D,T}
   a = collect(v)
-  reshape(reinterpret(Float64,a),(D,length(a)))
+  reshape(reinterpret(T,a),(D,length(a)))
 end
 
-function _prepare_data(v::AbstractArray{<:VectorValue{2}})
+function _prepare_data(v::AbstractArray{<:VectorValue{2,T}}) where T
   a = collect(v)
-  b = reshape(reinterpret(Float64,a),(2,length(a)))
+  b = reshape(reinterpret(T,a),(2,length(a)))
   z = zeros((1,size(b,2)))
   vcat(b,z)
 end
 
-function _prepare_data(v::AbstractArray{<:TensorValue{D}}) where D
+function _prepare_data(v::AbstractArray{<:TensorValue{D,T}}) where {D,T}
   a = collect(v)
-  reshape(reinterpret(Float64,a),(D*D,length(a)))
+  reshape(reinterpret(T,a),(D*D,length(a)))
 end
 
 """
@@ -178,6 +212,9 @@ end
 
 function _vtkinfo_extrusion_polytope(p,exponents)
 
+  # Taken from the vtk specification
+  # https://vtk.org/wp-content/uploads/2015/04/file-formats.pdf
+
   n_nodes = length(exponents)
 
   if p == VERTEX
@@ -200,6 +237,9 @@ function _vtkinfo_extrusion_polytope(p,exponents)
     if n_nodes == 3
       vtkid = 5
       vtknodes = [1,2,3]
+    elseif n_nodes == 6
+      vtkid = 22
+      vtknodes = [1,2,3,4,6,5]
     else
       @notimplemented
     end
@@ -222,6 +262,10 @@ function _vtkinfo_extrusion_polytope(p,exponents)
     if n_nodes == 4
       vtkid = 10
       vtknodes = [1,2,3,4]
+    elseif n_nodes == 10
+      vtkid = 24
+                 #0,1,2,3,4,5,6,7,8,9
+      vtknodes = [1,2,3,4,5,7,6,8,9,10]
     else
       @notimplemented
     end
@@ -230,6 +274,22 @@ function _vtkinfo_extrusion_polytope(p,exponents)
     if n_nodes == 8
       vtkid = 12
       vtknodes = [1,2,4,3,5,6,8,7]
+    else
+      @notimplemented
+    end
+
+  elseif p == WEDGE
+    if n_nodes == 6
+      vtkid = 13
+      vtknodes = [1,3,2,4,6,5]
+    else
+      @notimplemented
+    end
+
+  elseif p == PYRAMID
+    if n_nodes == 5
+      vtkid = 14
+      vtknodes = [1,2,4,3,5]
     else
       @notimplemented
     end
@@ -250,8 +310,15 @@ function _vtkcelltypedict()
   d[VTK_QUAD.vtk_id] = VTK_QUAD
   d[VTK_TETRA.vtk_id] = VTK_TETRA
   d[VTK_HEXAHEDRON.vtk_id] = VTK_HEXAHEDRON
+  d[VTK_WEDGE.vtk_id] = VTK_WEDGE
   d[VTK_QUADRATIC_QUAD.vtk_id] = VTK_QUADRATIC_QUAD
   d[VTK_BIQUADRATIC_QUAD.vtk_id] = VTK_BIQUADRATIC_QUAD
+  d[VTK_QUADRATIC_TRIANGLE.vtk_id] = VTK_QUADRATIC_TRIANGLE
+  d[VTK_QUADRATIC_TETRA.vtk_id] = VTK_QUADRATIC_TETRA
+  d[VTK_QUADRATIC_EDGE.vtk_id] = VTK_QUADRATIC_EDGE
+  d[VTK_QUADRATIC_HEXAHEDRON.vtk_id] = VTK_QUADRATIC_HEXAHEDRON
+  d[VTK_PYRAMID.vtk_id] = VTK_PYRAMID
+  #d[VTK_BIQUADRATIC_HEXAHEDRON.vtk_id] = VTK_BIQUADRATIC_HEXAHEDRON
   d
 end
 

@@ -84,6 +84,9 @@ reffe = LagrangianRefFE(VectorValue{2,Float64},QUAD,orders)
   [1, 2, 3, 4], [0, 0, 0, 0], [1, 2, 3, 4], [0, 0, 0, 0],
   [0, 0, 0, 0], [2, 1, 4, 3], [0, 0, 0, 0], [2, 1, 4, 3]]
 
+reffe = LagrangianRefFE(VectorValue{2,Float64},QUAD,2)
+@test get_node_and_comp_to_dof(reffe) == VectorValue{2,Int}[
+  (1, 10), (2, 11), (3, 12), (4, 13), (5, 14), (6, 15), (7, 16), (8, 17), (9, 18)]
 
 # 0-order degenerated case
 

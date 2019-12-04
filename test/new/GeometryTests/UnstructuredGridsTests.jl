@@ -74,4 +74,12 @@ grid = UnstructuredGrid(ReferenceFE{3},WEDGE)
 @test num_cell_dims(grid) == 3
 @test num_point_dims(grid) == 3
 
+#UnstructuredGrid from coordinate vector
+
+grid = UnstructuredGrid(get_node_coordinates(quad8))
+@test num_nodes(grid) == num_nodes(quad8)
+@test num_cells(grid) == num_nodes(quad8)
+@test num_cell_dims(grid) == 0
+@test num_point_dims(grid) == 2
+
 end # module

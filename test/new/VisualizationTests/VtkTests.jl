@@ -1,7 +1,9 @@
 module VtkTests
 
 using Gridap.Geometry: ConformingTrianMock
+using Gridap.TensorValues
 using Gridap.Arrays
+using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.Visualization
@@ -20,26 +22,13 @@ cell_center = apply(mean, get_cell_coordinates(trian) )
 
 write_vtk_file(trian,f,nodaldata=["nodeid"=>node_ids],celldata=["cellid"=>cell_ids,"centers"=>cell_center])
 
-rm(d,recursive=true)
+reffe = LagrangianRefFE(VectorValue{3,Float64},WEDGE,(3,3,4))
+f = joinpath(d,"reffe")
+writevtk(reffe,f)
 
-#reffe = LagrangianRefFE(Float64,QUAD,2)
-#
-#"""
-#"""
-#function writevtk(reffe::NodalReferenceFE, filebase)
-#
-#  grid = UnstructuredGrid(reffe)
-#
-#  face_to_own_nodes = get_face_own_nodeids(reffe)
-#  node_to_owner = zeros(Int,num_nodes(reffe))
-#  for (face, nodeids) in enumerate(face_to_own_nodes)
-#    node_to_owner[nodeids] .= face
-#  end
-#
-#  write_vtk_file(grid,filebase;nodaldata=["face_owner"=>node_to_owner])
-#
-#end
-#
-#writevtk(reffe,"reffe")
+f = joinpath(d,"poly")
+writevtk(HEX,f)
+
+rm(d,recursive=true)
 
 end # module

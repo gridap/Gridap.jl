@@ -93,6 +93,25 @@ function UnstructuredGrid(::Type{<:ReferenceFE{d}},p::Polytope) where d
     cell_type)
 end
 
+# From coordinates
+
+"""
+    UnstructuredGrid(x::AbstractArray{<:Point})
+"""
+function UnstructuredGrid(x::AbstractArray{<:Point})
+  np = length(x)
+  node_coords = collect1d(x)
+  cell_nodes = identity_table(Int,Int32,np)
+  cell_type = fill(1,np)
+  reffes = [NodalReferenceFE(VERTEX),]
+  UnstructuredGrid(
+    node_coords,
+    cell_nodes,
+    reffes,
+    cell_type)
+end
+
+
 # Low dim grids
 
 """
