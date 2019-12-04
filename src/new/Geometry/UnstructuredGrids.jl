@@ -70,3 +70,26 @@ function UnstructuredGrid(reffe::NodalReferenceFE)
   UnstructuredGrid(node_coordinates,cell_nodes,reffes,cell_types)
 end
 
+# From Polytope
+
+function UnstructuredGrid(::Type{<:ReferenceFE{D}},p::Polytope{D}) where D
+  reffe = NodalReferenceFE(p)
+  UnstructuredGrid(reffe)
+end
+
+"""
+    UnstructuredGrid(::Type{<:ReferenceFE{d}},p::Polytope) where d
+"""
+function UnstructuredGrid(::Type{<:ReferenceFE{d}},p::Polytope) where d
+  node_coordinates = get_vertex_coordinates(p)
+  cell_nodes = Table(get_faces(p,d,0))
+  reffaces = get_reffaces(Polytope{d},p)
+  cell_type = get_face_types(p,d)
+  reffes = map(NodalReferenceFE,reffaces)
+  UnstructuredGrid(
+    node_coordinates,
+    cell_nodes,
+    reffes,
+    cell_type)
+end
+

@@ -428,6 +428,11 @@ The interface for this type is defined with the following methods
 - [`get_dof_to_node(reffe::NodalReferenceFE)`](@ref)
 - [`get_dof_to_comp(reffe::NodalReferenceFE)`](@ref)
 - [`get_node_and_comp_to_dof(reffe::NodalReferenceFE)`](@ref)
+
+A generic way of building a `NodalReferenceFE` from a `Polytope`
+is to use the constructor [`NodalReferenceFE(::Polytope)`](@ref), which
+needs to be overloaded for polytope concrete types. A built-in implementation
+of this constructor is available for `ExtrusionPolytope`.
 """
 abstract type NodalReferenceFE{D} <: ReferenceFE{D} end
 
@@ -470,6 +475,17 @@ end
     get_node_and_comp_to_dof(reffe::NodalReferenceFE)
 """
 function get_node_and_comp_to_dof(reffe::NodalReferenceFE)
+  @abstractmethod
+end
+
+"""
+    NodalReferenceFE(p::Polytope)
+
+Built an instance of `NodalReferenceFE` corresponding to
+the scalar-valued nodal reference FE, whose nodes correspond with the
+vertices of the given polytope.
+"""
+function NodalReferenceFE(p::Polytope)
   @abstractmethod
 end
 

@@ -57,38 +57,47 @@ quad8 = LagrangianRefFE(Float64,QUAD,2)
 grid = UnstructuredGrid(quad8)
 @test num_nodes(grid) == num_nodes(quad8)
 
+grid = UnstructuredGrid(ReferenceFE{2},WEDGE)
+@test num_cells(grid) == 5
+@test num_cell_dims(grid) == 2
+@test num_point_dims(grid) == 3
 
-import Gridap.Geometry: UnstructuredGrid
+grid = UnstructuredGrid(ReferenceFE{3},WEDGE)
+@test num_cells(grid) == 1
+@test num_cell_dims(grid) == 3
+@test num_point_dims(grid) == 3
 
-function UnstructuredGrid(
-  ::Type{ReferenceFE{d}},
-  grid::UnstructuredGrid,
-  cell_to_nodes::Table,
-  cell_to_faces::Table) where d
-
-  ctype_to_reffe = get_reffes(grid)
-  cell_to_cell_type = get_cell_type(grid)
-
-  t = _generate_ftype_to_refface(Val{d}(),ctype_to_reffe)
-  ftype_to_refface, ctype_to_lface_to_ftype = t
-
-  face_to_ftype = generate_face_to_face_type(
-    cell_to_faces, cell_to_ctype, ctype_to_lface_to_ftype)
-
-  ctype_to_lface_to_lnodes = map(
-    (r) -> get_face_nodeids(r)[d+1] ,ctype_to_reffe)
-
-  face_to_nodes = generate_face_to_vertices(
-    cell_to_nodes,
-    cell_to_faces,
-    cell_to_ctype,
-    ctype_to_lface_to_lnodes)
-
-  node_to_coord = get_node_coordinates(grid)
-
-  UnstructuredGrid(node_to_coord,face_to_nodes,ftype_to_refface,face_to_ftype)
-
-end
+#import Gridap.Geometry: UnstructuredGrid
+#
+#function UnstructuredGrid(
+#  ::Type{ReferenceFE{d}},
+#  grid::UnstructuredGrid,
+#  cell_to_nodes::Table,
+#  cell_to_faces::Table) where d
+#
+#  ctype_to_reffe = get_reffes(grid)
+#  cell_to_cell_type = get_cell_type(grid)
+#
+#  t = _generate_ftype_to_refface(Val{d}(),ctype_to_reffe)
+#  ftype_to_refface, ctype_to_lface_to_ftype = t
+#
+#  face_to_ftype = generate_face_to_face_type(
+#    cell_to_faces, cell_to_ctype, ctype_to_lface_to_ftype)
+#
+#  ctype_to_lface_to_lnodes = map(
+#    (r) -> get_face_nodeids(r)[d+1] ,ctype_to_reffe)
+#
+#  face_to_nodes = generate_face_to_vertices(
+#    cell_to_nodes,
+#    cell_to_faces,
+#    cell_to_ctype,
+#    ctype_to_lface_to_lnodes)
+#
+#  node_to_coord = get_node_coordinates(grid)
+#
+#  UnstructuredGrid(node_to_coord,face_to_nodes,ftype_to_refface,face_to_ftype)
+#
+#end
 
 ## UnstructuredGridGraph
 #

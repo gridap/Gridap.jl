@@ -134,6 +134,7 @@ GenericRefFE(
 
 ```@docs
 NodalReferenceFE
+NodalReferenceFE(p::Polytope)
 get_node_coordinates(reffe::NodalReferenceFE)
 get_face_own_nodes(reffe::NodalReferenceFE)
 get_face_nodes(reffe::NodalReferenceFE)

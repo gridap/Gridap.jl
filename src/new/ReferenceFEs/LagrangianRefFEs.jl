@@ -432,6 +432,11 @@ end
 
 # Particular implementation for ExtrusionPolytope
 
+function NodalReferenceFE(p::ExtrusionPolytope)
+  order = 1
+  LagrangianRefFE(Float64,p,order)
+end
+
 function compute_monomial_basis(::Type{T},p::ExtrusionPolytope{D},orders) where {D,T}
   extrusion = Tuple(p.extrusion.array)
   terms = _monomial_terms(extrusion,orders)

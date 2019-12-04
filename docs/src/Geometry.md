@@ -51,6 +51,7 @@ UnstructuredGrid(
   cell_types::Vector) where {Dc,Dp,Tp,Ti}
 UnstructuredGrid(trian::ConformingTriangulation)
 UnstructuredGrid(reffe::NodalReferenceFE)
+UnstructuredGrid(::Type{<:ReferenceFE{d}},p::Polytope) where d
 ```
 
 ### CartesianGrids
