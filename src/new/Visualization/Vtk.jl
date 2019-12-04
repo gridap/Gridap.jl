@@ -18,7 +18,7 @@ queries on the underlying polytope
 They are implemented for `ExtrusionPolytope`.
 
 """
-function writevtk_file(
+function write_vtk_file(
   trian::ConformingTriangulation, filebase; celldata=Dict(), nodaldata=Dict())
 
   points = _vtkpoints(trian)

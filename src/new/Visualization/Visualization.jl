@@ -26,7 +26,7 @@ using Gridap.Geometry
 
 using Gridap.ReferenceFEs: SerendipityPolytope
 
-export writevtk_file
+export write_vtk_file
 
 include("Vtk.jl")
 

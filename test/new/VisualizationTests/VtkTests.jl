@@ -18,7 +18,7 @@ mean(x) = sum(x)/length(x)
 
 cell_center = apply(mean, get_cell_coordinates(trian) )
 
-writevtk_file(trian,f,nodaldata=["nodeid"=>node_ids],celldata=["cellid"=>cell_ids,"centers"=>cell_center])
+write_vtk_file(trian,f,nodaldata=["nodeid"=>node_ids],celldata=["cellid"=>cell_ids,"centers"=>cell_center])
 
 rm(d,recursive=true)
 
@@ -36,7 +36,7 @@ rm(d,recursive=true)
 #    node_to_owner[nodeids] .= face
 #  end
 #
-#  writevtk_file(grid,filebase;nodaldata=["face_owner"=>node_to_owner])
+#  write_vtk_file(grid,filebase;nodaldata=["face_owner"=>node_to_owner])
 #
 #end
 #
