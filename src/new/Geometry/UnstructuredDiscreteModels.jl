@@ -24,7 +24,33 @@ struct UnstructuredDiscreteModel{Dc,Dp} <: DiscreteModel{Dc,Dp}
     Dc = num_cell_dims(grid)
     Dp = num_point_dims(grid)
     fields = _init_fields(grid)
-    new{Dc,Dp}(fields...)
+
+    ( nnodes,
+      vertex_to_node,
+      node_to_face_owner,
+      d_to_num_dfaces,
+      d_to_dface_to_nodes,
+      d_to_dface_to_isboundary,
+      d_to_dface_to_reffe_type,
+      d_to_dface_to_polytope_type,
+      n_m_to_nface_to_mfaces,
+      d_to_reffes,
+      d_to_polytopes,
+      node_coordinates) = fields
+
+    new{Dc,Dp}(
+     nnodes,
+     vertex_to_node,
+     node_to_face_owner,
+     d_to_num_dfaces,
+     d_to_dface_to_nodes,
+     d_to_dface_to_isboundary,
+     d_to_dface_to_reffe_type,
+     d_to_dface_to_polytope_type,
+     n_m_to_nface_to_mfaces,
+     d_to_reffes,
+     d_to_polytopes,
+     node_coordinates)
   end
 end
 
