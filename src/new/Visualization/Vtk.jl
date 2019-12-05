@@ -35,8 +35,24 @@ function writevtk(p::Polytope,filebase)
 end
 
 """
+    writevtk(model::DiscreteModel,filebase)
+"""
+function writevtk(model::DiscreteModel,filebase)
+  for d in 0:num_cell_dims(model)
+    grid = ConformingTriangulation(ReferenceFE{d},model)
+    write_vtk_file(grid,"$(filebase)_$d")
+  end
+end
 
-Low level entry point to vtk. Other, vtk-related routines in Gridap eventually call this one.
+"""
+
+    write_vtk_file(
+      trian::ConformingTriangulation,
+      filebase;
+      celldata=Dict(),
+      nodaldata=Dict())
+
+Low level entry point to vtk. Other vtk-related routines in Gridap eventually call this one.
 
 The reference FEs in the triangulation need to implement the following queries
 

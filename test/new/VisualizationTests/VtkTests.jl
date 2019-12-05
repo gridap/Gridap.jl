@@ -20,7 +20,10 @@ mean(x) = sum(x)/length(x)
 
 cell_center = apply(mean, get_cell_coordinates(trian) )
 
-write_vtk_file(trian,f,nodaldata=["nodeid"=>node_ids],celldata=["cellid"=>cell_ids,"centers"=>cell_center])
+write_vtk_file(
+  trian,f,
+  nodaldata=["nodeid"=>node_ids],
+  celldata=["cellid"=>cell_ids,"centers"=>cell_center])
 
 reffe = LagrangianRefFE(VectorValue{3,Float64},WEDGE,(3,3,4))
 f = joinpath(d,"reffe")
@@ -28,6 +31,14 @@ writevtk(reffe,f)
 
 f = joinpath(d,"poly")
 writevtk(HEX,f)
+
+domain = (0,1,0,1,0,1)
+partition = (3,4,2)
+grid = CartesianGrid(domain,partition)
+model = UnstructuredDiscreteModel(grid)
+
+f = joinpath(d,"model")
+writevtk(model,f)
 
 rm(d,recursive=true)
 

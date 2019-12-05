@@ -271,17 +271,17 @@ end
 
 
 """
-    ConformingTriangulation(T::Type{<:ReferenceFE{d}},model::DiscreteModel) where d
+    ConformingTriangulation(::Type{<:ReferenceFE{d}},model::DiscreteModel) where d
 """
-function ConformingTriangulation(T::Type{<:ReferenceFE{d}},model::DiscreteModel) where d
-  UnstructuredGrid(T,model)
+function ConformingTriangulation(::Type{<:ReferenceFE{d}},model::DiscreteModel) where d
+  UnstructuredGrid(NodalReferenceFE{d},model)
 end
 
 """
-    UnstructuredGrid(T::Type{<:ReferenceFE{d}},model::DiscreteModel) where d
+    UnstructuredGrid(::Type{<:ReferenceFE{d}},model::DiscreteModel) where d
 """
-function UnstructuredGrid(T::Type{<:ReferenceFE{d}},model::DiscreteModel) where d
-  reffes = get_reffes(T,model)
+function UnstructuredGrid(::Type{<:ReferenceFE{d}},model::DiscreteModel) where d
+  reffes = get_reffes(NodalReferenceFE{d},model)
   cell_type = get_face_reffe_type(model,d)
   cell_nodes = Table(get_face_nodes(model,d))
   node_coordinates = get_node_coordinates(model)
