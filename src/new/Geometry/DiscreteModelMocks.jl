@@ -139,4 +139,15 @@ function get_node_coordinates(g::DiscreteModelMock)
   Point{2,Float64}[(0,0),(1,0),(2,0),(0,1),(1,1),(2,1),(0,2),(1,2),(2,2)]
 end
 
+function get_face_labeling(model::DiscreteModelMock)
+  d_to_num_dfaces = [ num_faces(model,d) for d in 0:num_dims(model)]
+  labels = FaceLabeling(d_to_num_dfaces)
+  get_face_entity(labels,0) .= get_isboundary_face(model,0) .+ 1
+  get_face_entity(labels,1) .= get_isboundary_face(model,1) .+ 1
+  get_face_entity(labels,2) .= get_isboundary_face(model,2) .+ 1
+  add_tag!(labels,"interior",[1,])
+  add_tag!(labels,"boundary",[2,])
+  add_tag_from_tags!(labels,"all",["interior","boundary"])
+  labels
+end
 

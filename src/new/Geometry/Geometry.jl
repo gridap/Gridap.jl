@@ -74,6 +74,7 @@ export get_polytopes
 export get_vertex_coordinates
 export get_cell_to_faces
 export get_isboundary_node
+export get_face_labeling
 export test_discrete_model
 
 export UnstructuredGrid
@@ -105,10 +106,10 @@ include("CartesianGrids.jl")
 
 include("DiscreteModels.jl")
 
+include("FaceLabelings.jl")
+
 include("DiscreteModelMocks.jl")
 
 include("UnstructuredDiscreteModels.jl")
-
-include("FaceLabelings.jl")
 
 end # module

@@ -19,6 +19,7 @@ struct UnstructuredDiscreteModel{Dc,Dp} <: DiscreteModel{Dc,Dp}
   d_to_reffes::Vector{Vector{NodalReferenceFE}}
   d_to_polytopes::Vector{Vector{Polytope}}
   node_coordinates::Vector{Point{Dp,Float64}}
+  labels::FaceLabeling
 
   function UnstructuredDiscreteModel(grid::UnstructuredGrid)
     Dc = num_cell_dims(grid)
@@ -36,7 +37,8 @@ struct UnstructuredDiscreteModel{Dc,Dp} <: DiscreteModel{Dc,Dp}
       n_m_to_nface_to_mfaces,
       d_to_reffes,
       d_to_polytopes,
-      node_coordinates) = fields
+      node_coordinates,
+      labels) = fields
 
     new{Dc,Dp}(
      nnodes,
@@ -50,7 +52,8 @@ struct UnstructuredDiscreteModel{Dc,Dp} <: DiscreteModel{Dc,Dp}
      n_m_to_nface_to_mfaces,
      d_to_reffes,
      d_to_polytopes,
-     node_coordinates)
+     node_coordinates,
+     labels)
   end
 end
 
@@ -83,6 +86,10 @@ function _init_fields(grid)
   n_m_to_nface_to_mfaces = Matrix{Table{Int,Int32}}(undef,n,n)
   d_to_reffes = Vector{Vector{NodalReferenceFE}}(undef,n)
   d_to_polytopes = Vector{Vector{Polytope}}(undef,n)
+  d_to_dface_to_entity = Vector{Vector{Int32}}(undef,n)
+  tag_to_entities = Vector{Int32}[]
+  tag_to_name = String[]
+  labels = FaceLabeling(d_to_dface_to_entity,tag_to_entities,tag_to_name)
 
   n_m_to_nface_to_mfaces[0+1,0+1] = identity_table(Int,Int32,nvertices)
   n_m_to_nface_to_mfaces[0+1,d+1] = vertex_to_cells
@@ -108,7 +115,8 @@ function _init_fields(grid)
     n_m_to_nface_to_mfaces,
     d_to_reffes,
     d_to_polytopes,
-    node_coordinates)
+    node_coordinates,
+    labels)
 
   fields
 end
@@ -414,6 +422,11 @@ function get_polytopes(T::Type{<:Polytope{d}},g::UnstructuredDiscreteModel) wher
   polytopes
 end
 
+function get_face_labeling(g::UnstructuredDiscreteModel)
+  _generate_face_labeling!(g)
+  g.labels
+end
+
 function get_node_coordinates(g::UnstructuredDiscreteModel)
   g.node_coordinates
 end
@@ -479,6 +492,20 @@ function _generate_face_polytopes!(model,d)
   nothing
 
 end
+
+function _generate_face_labeling!(model)
+
+  if isassigned(model.labels.d_to_dface_to_entity,0+1)
+    return
+  end
+
+  for d in 0:num_cell_dims(model)
+    model.labels.d_to_dface_to_entity[d+1] = fill(Int32(UNSET),num_faces(model,d))
+  end
+
+  nothing
+end
+
 
 # Low level helpers
 

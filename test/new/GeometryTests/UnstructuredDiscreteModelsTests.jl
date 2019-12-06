@@ -43,6 +43,12 @@ m = DiscreteModelMock()
 @test get_node_coordinates(model) == get_node_coordinates(m)
 @test get_vertex_coordinates(model) == get_vertex_coordinates(m)           
 
+labels = get_face_labeling(model)
+@test num_entities(labels) == 0
+@test num_tags(labels) == 0
+@test get_face_labeling(model) === labels
+@test get_face_entity(get_face_labeling(model),0) === get_face_entity(labels,0)
+
 domain = (0,1,0,1,0,1)
 partition = (2,2,2)
 grid = CartesianGrid(domain,partition)

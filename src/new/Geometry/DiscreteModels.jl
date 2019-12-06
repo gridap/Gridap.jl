@@ -16,6 +16,7 @@ The `DiscreteModel` interfacy is defined by overloading the methods:
 - [`get_face_polytope_type(g::DiscreteModel,d::Integer)`](@ref)
 - [`get_reffes(::Type{<:ReferenceFE{d}},g::DiscreteModel) where d`](@ref)
 - [`get_polytopes(::Type{<:Polytope{d}},g::DiscreteModel) where d`](@ref)
+- [`get_face_labeling(g::DiscreteModel)`](@ref)
 
 and tested with this function:
 
@@ -95,6 +96,13 @@ end
 Index to the vector get_polytopes(g,d)
 """
 function get_polytopes(::Type{<:Polytope{d}},g::DiscreteModel) where d
+  @abstractmethod
+end
+
+"""
+    get_face_labeling(g::DiscreteModel)
+"""
+function get_face_labeling(g::DiscreteModel)
   @abstractmethod
 end
 
@@ -242,6 +250,8 @@ function test_discrete_model(model::DiscreteModel{Dc,Dp}) where {Dc,Dp}
   node_to_face_owner = get_node_face_owner(model)
   @test isa(node_to_face_owner,AbstractArray{<:Integer})
   @test length(node_to_face_owner) == num_nodes(model)
+  labels = get_face_labeling(model)
+  @test isa(labels,FaceLabeling)
   for n in 0:D
     nface_to_nodes = get_face_nodes(model,n)
     @test isa(nface_to_nodes,AbstractArray{<:Vector{<:Integer}})
