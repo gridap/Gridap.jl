@@ -83,6 +83,16 @@ export CartesianGrid
 export CartesianDescriptor
 export get_cartesian_descriptor
 
+export FaceLabeling
+export num_tags
+export num_entities
+export get_face_entity
+export get_tag_entities
+export get_tag_name
+export get_tag_from_name
+export add_tag!
+export add_tag_from_tags!
+
 include("Triangulations.jl")
 
 include("ConformingTriangulations.jl")
@@ -98,5 +108,7 @@ include("DiscreteModels.jl")
 include("DiscreteModelMocks.jl")
 
 include("UnstructuredDiscreteModels.jl")
+
+include("FaceLabelings.jl")
 
 end # module
