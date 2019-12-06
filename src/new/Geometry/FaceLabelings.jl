@@ -24,48 +24,57 @@ function FaceLabeling(d_to_num_dfaces::Vector{Int})
 end
 
 """
+    num_dims(lab::FaceLabeling)
 """
 function num_dims(lab::FaceLabeling)
   length(lab.d_to_dface_to_entity)-1
 end
 
 """
+    num_cell_dims(lab::FaceLabeling)
 """
 function num_cell_dims(lab::FaceLabeling)
   num_dims(lab)
 end
 
 """
+    num_tags(lab::FaceLabeling)
 """
 num_tags(lab::FaceLabeling) = length(lab.tag_to_name)
 
 """
+    num_entities(lab::FaceLabeling)
 """
 function num_entities(lab::FaceLabeling)
   maximum(map(maximum,lab.d_to_dface_to_entity))
 end
 
 """
+    num_faces(lab::FaceLabeling,d::Integer)
 """
 function num_faces(lab::FaceLabeling,d::Integer)
   length(lab.d_to_dface_to_entity[d+1])
 end
 
 """
+    num_faces(lab::FaceLabeling)
 """
 function num_faces(lab::FaceLabeling)
   sum(map(length,lab.d_to_dface_to_entity))
 end
 
 """
+    num_vertices(lab::FaceLabeling)
 """
 num_vertices(lab::FaceLabeling) = num_faces(lab,0)
 
 """
+    num_edges(lab::FaceLabeling)
 """
 num_edges(lab::FaceLabeling) = num_faces(lab,1)
 
 """
+    num_facets(lab::FaceLabeling)
 """
 function num_facets(lab::FaceLabeling)
   D = num_dims(lab)
@@ -77,46 +86,61 @@ function num_facets(lab::FaceLabeling)
 end
 
 """
+    num_cells(lab::FaceLabeling)
 """
 num_cells(lab::FaceLabeling) = num_faces(lab,num_dims(lab))
 
 """
+    get_face_entity(lab::FaceLabeling,d::Integer)
 """
 function get_face_entity(lab::FaceLabeling,d::Integer)
   lab.d_to_dface_to_entity[d+1]
 end
 
 """
+    get_face_entity(lab::FaceLabeling)
 """
 function get_face_entity(lab::FaceLabeling)
+  # TODO return a view
   vcat(lab.d_to_dface_to_entity...)
 end
 
 """
+    get_tag_entities(lab::FaceLabeling,tag::Integer)
+    get_tag_entities(lab::FaceLabeling,tag::String)
 """
 function get_tag_entities(lab::FaceLabeling,tag::Integer)
   lab.tag_to_entities[tag]
 end
 
+function get_tag_entities(lab::FaceLabeling,tag::String)
+  i = get_tag_from_name(lab,tag)
+  get_tag_entities(lab,i)
+end
+
 """
+    get_tag_entities(lab::FaceLabeling)
 """
 function get_tag_entities(lab::FaceLabeling)
   lab.tag_to_entities
 end
 
 """
+    get_tag_name(lab::FaceLabeling,tag::Integer)
 """
 function get_tag_name(lab::FaceLabeling,tag::Integer)
   lab.tag_to_name[tag]
 end
 
 """
+    get_tag_name(lab::FaceLabeling)
 """
 function get_tag_name(lab::FaceLabeling)
   lab.tag_to_name
 end
 
 """
+    get_tag_from_name(lab::FaceLabeling,name::String)
 """
 function get_tag_from_name(lab::FaceLabeling,name::String)
   for tag in 1:num_tags(lab)
@@ -129,6 +153,7 @@ function get_tag_from_name(lab::FaceLabeling,name::String)
 end
 
 """
+    get_tag_from_name(lab::FaceLabeling)
 """
 function get_tag_from_name(lab::FaceLabeling)
   dict = Dict{String,Int}()
@@ -139,6 +164,7 @@ function get_tag_from_name(lab::FaceLabeling)
 end
 
 """
+    add_tag!(lab::FaceLabeling,name::String,entities::Vector{<:Integer})
 """
 function add_tag!(lab::FaceLabeling,name::String,entities::Vector{<:Integer})
   @assert ! (name in lab.tag_to_name) "Tag name $(name) already present in this FaceLabeling object"
@@ -147,6 +173,8 @@ function add_tag!(lab::FaceLabeling,name::String,entities::Vector{<:Integer})
 end
 
 """
+    add_tag_from_tags!(lab::FaceLabeling, name::String, tags::Vector{Int})
+    add_tag_from_tags!(lab::FaceLabeling, name::String, tags::Vector{String})
 """
 function add_tag_from_tags!(lab::FaceLabeling, name::String, tags::Vector{Int})
   entities = Int32[]

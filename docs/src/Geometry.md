@@ -40,7 +40,7 @@ test_conforming_triangulation
 num_nodes(trian::ConformingTriangulation)
 ConformingTriangulation(reffe::NodalReferenceFE)
 ConformingTriangulation(T::Type{<:ReferenceFE{d}},p::Polytope) where d
-ConformingTriangulation(T::Type{<:ReferenceFE},trian::ConformingTriangulation)
+ConformingTriangulation(T::Type{<:ReferenceFE{d}},trian::ConformingTriangulation) where d
 ```
 
 ### UnstructuredGrids
@@ -86,6 +86,7 @@ get_face_reffe_type(g::DiscreteModel,d::Integer)
 get_face_polytope_type(g::DiscreteModel,d::Integer)
 get_reffes(::Type{<:ReferenceFE{d}},g::DiscreteModel) where d
 get_polytopes(::Type{<:Polytope{d}},g::DiscreteModel) where d
+get_face_labeling(g::DiscreteModel)
 num_faces(g::DiscreteModel,d::Integer)
 num_facets(g::DiscreteModel)
 num_edges(g::DiscreteModel)
@@ -101,6 +102,33 @@ get_isboundary_node(g::DiscreteModel)
 test_discrete_model
 ConformingTriangulation(T::Type{<:ReferenceFE{d}},model::DiscreteModel) where d
 UnstructuredGrid(T::Type{<:ReferenceFE{d}},model::DiscreteModel) where d
+```
+
+### FaceLabeling
+
+```@docs
+FaceLabeling
+FaceLabeling(d_to_num_dfaces::Vector{Int})
+num_dims(lab::FaceLabeling)
+num_cell_dims(lab::FaceLabeling)
+num_tags(lab::FaceLabeling)
+num_entities(lab::FaceLabeling)
+num_faces(lab::FaceLabeling,d::Integer)
+num_faces(lab::FaceLabeling)
+num_vertices(lab::FaceLabeling)
+num_edges(lab::FaceLabeling)
+num_facets(lab::FaceLabeling)
+num_cells(lab::FaceLabeling)
+get_face_entity(lab::FaceLabeling,d::Integer)
+get_face_entity(lab::FaceLabeling)
+get_tag_entities(lab::FaceLabeling,tag::Integer)
+get_tag_entities(lab::FaceLabeling)
+get_tag_name(lab::FaceLabeling,tag::Integer)
+get_tag_name(lab::FaceLabeling)
+get_tag_from_name(lab::FaceLabeling,name::String)
+get_tag_from_name(lab::FaceLabeling)
+add_tag!(lab::FaceLabeling,name::String,entities::Vector{<:Integer})
+add_tag_from_tags!(lab::FaceLabeling, name::String, tags::Vector{Int})
 ```
 
 ### UnstructuredDiscreteModels
