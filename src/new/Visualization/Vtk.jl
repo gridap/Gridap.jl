@@ -36,11 +36,41 @@ end
 
 """
     writevtk(model::DiscreteModel,filebase)
+    writevtk(model::DiscreteModel, labels::FaceLabeling, filebase)
 """
 function writevtk(model::DiscreteModel,filebase)
+  labels = get_face_labeling(model)
+  writevtk(model,labels,filebase)
+end
+
+function writevtk(model::DiscreteModel, labels::FaceLabeling, filebase)
   for d in 0:num_cell_dims(model)
     grid = ConformingTriangulation(ReferenceFE{d},model)
-    write_vtk_file(grid,"$(filebase)_$d")
+    cdat = _prepare_cdata_model(labels,d)
+    write_vtk_file(grid,"$(filebase)_$d";celldata=cdat)
+  end
+end
+
+function _prepare_cdata_model(labels,d)
+  dface_to_entity = get_face_entity(labels,d)
+  cdat = []
+  for tag in 1:num_tags(labels)
+    dface_to_isontag = zeros(Int,num_faces(labels,d))
+    for entity in get_tag_entities(labels,tag)
+      _set_entity!(dface_to_isontag,dface_to_entity,entity,tag)
+    end
+    name = get_tag_name(labels,tag)
+    push!(cdat, name => dface_to_isontag )
+  end
+  push!(cdat,"entity" => dface_to_entity)
+  cdat
+end
+
+function _set_entity!(dface_to_isontag,dface_to_entity,entity,tag)
+  for i in 1:length(dface_to_entity)
+    if dface_to_entity[i] == entity
+      dface_to_isontag[i] = tag
+    end
   end
 end
 

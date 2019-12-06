@@ -1,6 +1,7 @@
 module VtkTests
 
 using Gridap.Geometry: ConformingTrianMock
+using Gridap.Geometry: DiscreteModelMock
 using Gridap.TensorValues
 using Gridap.Arrays
 using Gridap.Fields
@@ -39,6 +40,11 @@ model = UnstructuredDiscreteModel(grid)
 
 f = joinpath(d,"model")
 writevtk(model,f)
+
+
+f = joinpath(d,"model")
+model = DiscreteModelMock()
+writevtk(model,get_face_labeling(model),f)
 
 rm(d,recursive=true)
 
