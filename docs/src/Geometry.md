@@ -137,4 +137,14 @@ add_tag_from_tags!(lab::FaceLabeling, name::String, tags::Vector{Int})
 UnstructuredDiscreteModel
 UnstructuredDiscreteModel(trian::ConformingTriangulation)
 ```
+### CartesianDiscreteModels
+
+```@docs
+CartesianDiscreteModel
+CartesianDiscreteModel(desc::CartesianDescriptor{D,T,F}) where {D,T,F}
+CartesianDiscreteModel(args...)
+get_cartesian_descriptor(a::CartesianDiscreteModel)
+get_polytope(::Type{<:Polytope{d}},model::CartesianDiscreteModel) where d
+get_polytope(model::CartesianDiscreteModel)
+```
 

@@ -16,4 +16,6 @@ using Test
 
 @testset "UnstructuredDiscreteModels" begin include("UnstructuredDiscreteModelsTests.jl") end
 
+@testset "CartesianDiscreteModels" begin include("CartesianDiscreteModelsTests.jl") end
+
 end # module

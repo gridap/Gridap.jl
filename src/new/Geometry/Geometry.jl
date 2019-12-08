@@ -46,6 +46,7 @@ import Gridap.ReferenceFEs: get_offsets
 import Gridap.ReferenceFEs: get_offset
 import Gridap.ReferenceFEs: get_vertex_coordinates
 import Gridap.ReferenceFEs: get_face_nodes
+import Gridap.ReferenceFEs: get_polytope
 
 import Gridap.Fields: field_array_gradient
 
@@ -94,6 +95,8 @@ export get_tag_from_name
 export add_tag!
 export add_tag_from_tags!
 
+export CartesianDiscreteModel
+
 include("Triangulations.jl")
 
 include("ConformingTriangulations.jl")
@@ -111,5 +114,7 @@ include("FaceLabelings.jl")
 include("DiscreteModelMocks.jl")
 
 include("UnstructuredDiscreteModels.jl")
+
+include("CartesianDiscreteModels.jl")
 
 end # module
