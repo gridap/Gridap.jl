@@ -15,6 +15,7 @@ partition = (3,4)
 
 grid = CartesianGrid(domain,partition)
 test_conforming_triangulation(grid)
+@test is_oriented(grid) == true
 
 @test num_cell_dims(grid) == 2
 @test num_point_dims(grid) == 2
@@ -41,6 +42,7 @@ reffes = get_reffes(grid)
 
 ugrid = UnstructuredGrid(grid)
 test_conforming_triangulation(ugrid)
+@test is_oriented(ugrid) == true
 
 domain = (0,1,0,1)
 partition = (2,2)

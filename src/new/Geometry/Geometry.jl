@@ -64,6 +64,13 @@ export test_triangulation
 export ConformingTriangulation
 export get_cell_nodes
 export test_conforming_triangulation
+export OrientationStyle
+export is_oriented
+export ConformityStyle
+export RegularConformity
+export IrregularHConformity
+export IrregularPConformity
+export IrregularHPConformity
 
 export DiscreteModel
 export get_vertex_node

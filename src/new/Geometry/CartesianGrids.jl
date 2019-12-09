@@ -120,6 +120,8 @@ struct CartesianGrid{D,T,F} <: ConformingTriangulation{D,D}
   end
 end
 
+OrientationStyle(::Type{<:CartesianGrid}) = Val{true}()
+
 """
     get_cartesian_descriptor(grid::CartesianGrid)
 

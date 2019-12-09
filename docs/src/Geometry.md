@@ -34,6 +34,14 @@ get_cell_map(trian::Triangulation)
 
 ```@docs
 ConformingTriangulation
+OrientationStyle(::Type{<:ConformingTriangulation})
+is_oriented(a::ConformingTriangulation)
+ConformityStyle
+RegularConformity
+IrregularHConformity
+IrregularPConformity
+IrregularHPConformity
+ConformityStyle(::Type{<:ConformingTriangulation})
 get_node_coordinates(trian::ConformingTriangulation)
 get_cell_nodes(trian::ConformingTriangulation)
 test_conforming_triangulation

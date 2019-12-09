@@ -15,12 +15,71 @@ methods in `Triangulation` plus the following ones:
 From these two methods a default implementation of [`get_cell_coordinates(trian::Triangulation)`](@ref)
 is available.
 
+The `ConformingTriangulation`  interface has the following traits
+
+- [`OrientationStyle(::Type{<:ConformingTriangulation})`](@ref)
+- [`ConformityStyle(::Type{<:ConformingTriangulation})`](@ref)
+
 The interface of `ConformingTriangulation` is tested with
 
 - [`test_conforming_triangulation`](@ref)
 
 """
 abstract type ConformingTriangulation{Dc,Dp} <: Triangulation{Dc,Dp} end
+
+# Traits
+
+"""
+    OrientationStyle(::Type{<:ConformingTriangulation}) -> Val{Bool}
+    OrientationStyle(::ConformingTriangulation) -> Val{Bool}
+
+`Val{true}()` if has oriented faces, `Val{false}()` otherwise (default).
+"""
+OrientationStyle(::Type{<:ConformingTriangulation}) = Val{false}()
+OrientationStyle(a::ConformingTriangulation) = OrientationStyle(typeof(a))
+
+"""
+    is_oriented(::Type{<:ConformingTriangulation}) -> Bool
+    is_oriented(a::ConformingTriangulation) -> Bool
+"""
+is_oriented(a::ConformingTriangulation) = _is_oriented(OrientationStyle(a))
+is_oriented(a::Type{<:ConformingTriangulation}) = _is_oriented(OrientationStyle(a))
+_is_oriented(::Val{true}) = true
+_is_oriented(::Val{false}) = false
+
+"""
+    abstract type ConformityStyle end
+"""
+abstract type ConformityStyle end
+
+"""
+    struct RegularConformity <: ConformityStyle end
+"""
+struct RegularConformity <: ConformityStyle end
+
+"""
+    struct IrregularHConformity <: ConformityStyle end
+"""
+struct IrregularHConformity <: ConformityStyle end
+
+"""
+    struct IrregularPConformity <: ConformityStyle end
+"""
+struct IrregularPConformity <: ConformityStyle end
+
+"""
+    struct IrregularHPConformity <: ConformityStyle end
+"""
+struct IrregularHPConformity <: ConformityStyle end
+
+"""
+    ConformityStyle(::Type{<:ConformingTriangulation})
+    ConformityStyle(a::ConformingTriangulation)
+"""
+ConformityStyle(::Type{<:ConformingTriangulation}) = RegularConformity()
+ConformityStyle(a::ConformingTriangulation) = ConformityStyle(typeof(a))
+
+# Interface
 
 """
     get_node_coordinates(trian::ConformingTriangulation) -> AbstractArray{<:Point{Dp}}
@@ -46,6 +105,9 @@ function test_conforming_triangulation(trian::ConformingTriangulation)
   cell_nodes = get_cell_nodes(trian)
   @test isa(cell_nodes,AbstractArray{<:AbstractArray{<:Integer}})
   @test num_nodes(trian) == length(nodes_coords)
+  @test isa(is_oriented(trian),Bool)
+  @test OrientationStyle(trian) in (Val{false}(), Val{true}())
+  @test isa(ConformityStyle(trian),ConformityStyle)
 end
 
 # Methods from triangulation

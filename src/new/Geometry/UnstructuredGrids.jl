@@ -7,7 +7,7 @@
       cell_types::Vector{Int8}
     end
 """
-struct UnstructuredGrid{Dc,Dp,Tp,Ti} <: ConformingTriangulation{Dc,Dp}
+struct UnstructuredGrid{Dc,Dp,Tp,Ti,B} <: ConformingTriangulation{Dc,Dp}
   node_coordinates::Vector{Point{Dp,Tp}}
   cell_nodes::Table{Ti,Int32}
   reffes::Vector{<:NodalReferenceFE{Dc}}
@@ -26,8 +26,9 @@ struct UnstructuredGrid{Dc,Dp,Tp,Ti} <: ConformingTriangulation{Dc,Dp}
     node_coordinates::Vector{Point{Dp,Tp}},
     cell_nodes::Table{Ti},
     reffes::Vector{<:NodalReferenceFE{Dc}},
-    cell_types::Vector) where {Dc,Dp,Tp,Ti}
-    new{Dc,Dp,Tp,Ti}(node_coordinates,cell_nodes,reffes,cell_types)
+    cell_types::Vector,
+    ::Val{B}=Val{false}()) where {Dc,Dp,Tp,Ti,B}
+    new{Dc,Dp,Tp,Ti,B}(node_coordinates,cell_nodes,reffes,cell_types)
   end
 end
 
@@ -35,16 +36,21 @@ end
     UnstructuredGrid(trian::ConformingTriangulation)
 """
 function UnstructuredGrid(trian::ConformingTriangulation)
+  @assert ConformityStyle(trian) == RegularConformity() "UnstructuredGrid constructor only for regular grids"
   node_coordinates = collect1d(get_node_coordinates(trian))
   cell_nodes = Table(get_cell_nodes(trian))
   reffes = get_reffes(trian)
   cell_types = collect1d(get_cell_type(trian))
-  UnstructuredGrid(node_coordinates,cell_nodes,reffes,cell_types)
+  orien = OrientationStyle(trian)
+  UnstructuredGrid(node_coordinates,cell_nodes,reffes,cell_types,orien)
 end
 
 function UnstructuredGrid(trian::UnstructuredGrid)
   trian
 end
+
+OrientationStyle(
+  ::Type{UnstructuredGrid{Dc,Dp,Tp,Ti,B}}) where {Dc,Dp,Tp,Ti,B} = Val{B}()
 
 get_reffes(g::UnstructuredGrid) = g.reffes
 

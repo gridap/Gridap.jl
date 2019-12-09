@@ -6,7 +6,7 @@
 
 Discrete model for any type of unstructured discretization
 """
-struct UnstructuredDiscreteModel{Dc,Dp} <: DiscreteModel{Dc,Dp}
+struct UnstructuredDiscreteModel{Dc,Dp,B} <: DiscreteModel{Dc,Dp}
   num_nodes::Int
   vertex_to_node::Vector{Int}
   node_to_face_owner::Vector{Int}
@@ -25,6 +25,7 @@ struct UnstructuredDiscreteModel{Dc,Dp} <: DiscreteModel{Dc,Dp}
     Dc = num_cell_dims(grid)
     Dp = num_point_dims(grid)
     fields = _init_fields(grid)
+    B = is_oriented(grid)
 
     ( nnodes,
       vertex_to_node,
@@ -40,7 +41,7 @@ struct UnstructuredDiscreteModel{Dc,Dp} <: DiscreteModel{Dc,Dp}
       node_coordinates,
       labels) = fields
 
-    new{Dc,Dp}(
+    new{Dc,Dp,B}(
      nnodes,
      vertex_to_node,
      node_to_face_owner,
@@ -64,6 +65,9 @@ function UnstructuredDiscreteModel(trian::ConformingTriangulation)
   grid = UnstructuredGrid(trian)
   UnstructuredDiscreteModel(grid)
 end
+
+OrientationStyle(
+  ::Type{UnstructuredDiscreteModel{Dc,Dp,B}}) where {Dc,Dp,B} = Val{B}()
 
 function _init_fields(grid)
 

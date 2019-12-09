@@ -8,6 +8,7 @@ using Gridap.Geometry: DiscreteModelMock
 
 model = DiscreteModelMock()
 test_discrete_model(model)
+@test is_oriented(model) == false
 
 @test num_dims(model) == 2
 @test num_cell_dims(model) == 2

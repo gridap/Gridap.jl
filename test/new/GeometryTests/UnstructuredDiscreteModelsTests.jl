@@ -71,5 +71,7 @@ partition = (2,3,2)
 grid = CartesianGrid(domain,partition)
 model = UnstructuredDiscreteModel(grid)
 test_discrete_model(model)
+@test is_oriented(model) == true
+
 
 end # module

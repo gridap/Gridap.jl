@@ -18,6 +18,10 @@ struct CartesianDiscreteModel{D,T,F} <: DiscreteModel{D,D}
   end
 end
 
+# non-default traits
+
+OrientationStyle(::Type{<:CartesianDiscreteModel}) = Val{true}()
+
 """
     CartesianDiscreteModel(args...)
 
