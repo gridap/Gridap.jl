@@ -116,6 +116,8 @@ append_ptrs(pa::AbstractVector{T},pb::AbstractVector{T}) where T
 append_ptrs!(pa::AbstractVector{T},pb::AbstractVector{T}) where T
 find_inverse_index_map(a_to_b, nb)
 find_inverse_index_map!(a_to_b, b_to_a)
+find_local_index(a_to_b, b_to_la_to_a)
+get_local_item(a_to_lb_to_b, lb::Integer)
 UNSET
 ```
 ### LocalToGlobalArray

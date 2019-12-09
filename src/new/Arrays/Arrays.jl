@@ -66,6 +66,8 @@ export append_tables_globally
 export append_tables_locally
 export collect1d
 export UNSET
+export get_local_item
+export find_local_index
 
 import Base: size
 import Base: getindex, setindex!

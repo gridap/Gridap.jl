@@ -312,4 +312,63 @@ Equivalent to
 """
 collect1d(a) = [a[i] for i in 1:length(a)]
 
+"""
+    get_local_item(a_to_lb_to_b, lb::Integer)
+"""
+function get_local_item(a_to_lb_to_b, lb::Integer)
+  @notimplemented "get_local_item, only implemented for Table"
+end
+
+function get_local_item(a_to_lb_to_b::Table, lb::Integer)
+  a_to_b = LocalItemFromTable(a_to_lb_to_b,Int(lb))
+  a_to_b
+end
+
+struct LocalItemFromTable{T,P} <: AbstractVector{T}
+  a_to_lb_to_b::Table{T,P}
+  lb::Int
+end
+
+Base.size(m::LocalItemFromTable) = size(m.a_to_lb_to_b)
+
+Base.IndexStyle(::Type{<:LocalItemFromTable}) = IndexStyle(Table)
+
+@propagate_inbounds function Base.getindex(m::LocalItemFromTable, a::Integer)
+  p = m.a_to_lb_to_b.ptrs[a]-1
+  m.a_to_lb_to_b.data[p+m.lb]
+end
+
+"""
+    find_local_index(a_to_b, b_to_la_to_a)
+"""
+function find_local_index(a_to_b, b_to_la_to_a)
+  @notimplemented "find_local_index only implemented for table"
+end
+
+function find_local_index(a_to_b, b_to_la_to_a::Table)
+  a_to_la = LocalIndexFromTable(a_to_b, b_to_la_to_a)
+  a_to_la
+end
+
+struct LocalIndexFromTable{T,P} <: AbstractVector{T}
+  a_to_b::Vector{T}
+  b_to_la_to_a::Table{T,P}
+end
+
+Base.size(m::LocalIndexFromTable) = size(m.a_to_b)
+
+Base.IndexStyle(::Type{<:LocalIndexFromTable}) = IndexStyle(Table)
+
+@propagate_inbounds function Base.getindex(m::LocalIndexFromTable{T}, a::Integer) where T
+  b = m.a_to_b[a]
+  pini = m.b_to_la_to_a.ptrs[b]
+  pend = m.b_to_la_to_a.ptrs[b+1]-1
+  la = zero(T)
+  for (la,p) in enumerate(pini:pend)
+    if a == m.b_to_la_to_a.data[p]
+      return T(la)
+    end
+  end
+  return T(UNSET)
+end
 

@@ -77,4 +77,19 @@ table3 = append_tables_globally(table1,table2)
 table4 = append_tables_locally((0,5),(table1,table2))
 @test table4 == [[1, 2, 3, 6, 8], [2, 3, 9, 7, 8], [5, 8], Int[], [1, 2, 4, 6, 7, 9]]
 
+a_to_lb_to_b = [[1,2,3],[2,3],[5,8],[2],[1,2,4]]
+a_to_lb_to_b = Table(a_to_lb_to_b)
+lb = 1
+a_to_b = get_local_item(a_to_lb_to_b,lb)
+r = [ lb_to_b[lb] for lb_to_b in a_to_lb_to_b ]
+test_array(a_to_b,r)
+
+b_to_la_to_a = [[5,1,4,2,3],[1,2,3],[5,4],[2,4,5,3],[5,1,2,4]]
+b_to_la_to_a = Table(b_to_la_to_a)
+         #1,2,3,4,5
+a_to_b = [2,5,4,3,1]
+a_to_la = find_local_index(a_to_b,b_to_la_to_a)
+r = [1,3,4,2,1]
+test_array(a_to_la,r)
+
 end # module
