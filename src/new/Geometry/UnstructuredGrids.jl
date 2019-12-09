@@ -1,6 +1,6 @@
 
 """
-    struct UnstructuredGrid{Dc,Dp,Tp,Ti} <: ConformingTriangulation{Dc,Dp}
+    struct UnstructuredGrid{Dc,Dp,Tp,Ti,B} <: ConformingTriangulation{Dc,Dp}
       node_coordinates::Vector{Point{Dp,Tp}}
       cell_nodes::Table{Ti,Int32}
       reffes::Vector{<:NodalReferenceFE{Dc}}
@@ -17,7 +17,8 @@ struct UnstructuredGrid{Dc,Dp,Tp,Ti,B} <: ConformingTriangulation{Dc,Dp}
         node_coordinates::Vector{Point{Dp,Tp}},
         cell_nodes::Table{Ti},
         reffes::Vector{<:NodalReferenceFE{Dc}},
-        cell_types::Vector) where {Dc,Dp,Tp,Ti}
+        cell_types::Vector,
+        ::Val{B}=Val{false}()) where {Dc,Dp,Tp,Ti,B}
       end
 
   Low-level inner constructor.

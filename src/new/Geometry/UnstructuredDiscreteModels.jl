@@ -1,6 +1,6 @@
 
 """
-    struct UnstructuredDiscreteModel{Dc,Dp} <: DiscreteModel{Dc,Dp}
+    struct UnstructuredDiscreteModel{Dc,Dp,B} <: DiscreteModel{Dc,Dp}
       # private fields
     end
 

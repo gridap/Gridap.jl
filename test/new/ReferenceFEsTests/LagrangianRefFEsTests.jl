@@ -88,6 +88,11 @@ reffe = LagrangianRefFE(VectorValue{2,Float64},QUAD,2)
 @test get_node_and_comp_to_dof(reffe) == VectorValue{2,Int}[
   (1, 10), (2, 11), (3, 12), (4, 13), (5, 14), (6, 15), (7, 16), (8, 17), (9, 18)]
 
+reffe = LagrangianRefFE(VectorValue{2,Float64},QUAD,2)
+d = 1
+@test get_face_own_dofs(reffe,d) == [[5, 14], [6, 15], [7, 16], [8, 17]]
+@test get_face_own_nodes(reffe,d) == [[5], [6], [7], [8]]
+
 # 0-order degenerated case
 
 orders = (0,0)

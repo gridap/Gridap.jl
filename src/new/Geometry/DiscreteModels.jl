@@ -194,9 +194,9 @@ get_offset(g::DiscreteModel,d::Integer) = _get_offset(g,d)
 get_facedims(g::DiscreteModel) =  _get_facedims(Int8,g)
 
 """
-    get_cell_to_faces(g::DiscreteModel)
+    get_cell_faces(g::DiscreteModel)
 """
-function get_cell_to_faces(g::DiscreteModel)
+function get_cell_faces(g::DiscreteModel)
   D = num_cell_dims(g)
   d_to_cell_to_dface = Tuple((Table(get_faces(g,D,d)) for d in 0:D))
   offsets = Tuple(get_offsets(g))

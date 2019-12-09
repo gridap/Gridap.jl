@@ -104,7 +104,7 @@ get_dimranges(g::DiscreteModel)
 get_offsets(g::DiscreteModel)
 get_offset(g::DiscreteModel,d::Integer)
 get_facedims(g::DiscreteModel)
-get_cell_to_faces(g::DiscreteModel)
+get_cell_faces(g::DiscreteModel)
 get_isboundary_face(g::DiscreteModel)
 get_isboundary_node(g::DiscreteModel)
 test_discrete_model

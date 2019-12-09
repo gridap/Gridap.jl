@@ -126,4 +126,7 @@ test_polytope(q)
 @test get_face_vertices(q,1) == [[1, 2], [3, 4], [1, 3], [2, 4]]
 @test get_face_vertices(q) == [[1], [2], [3], [4], [1, 2], [3, 4], [1, 3], [2, 4], [1, 2, 3, 4]]
 
+d = 1
+@test get_dimrange(q,d) == get_dimranges(q)[d+1]
+
 end # module

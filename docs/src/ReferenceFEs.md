@@ -16,6 +16,7 @@ ReferenceFEs
 Polytope
 get_faces(p::Polytope)
 get_dimranges(p::Polytope)
+get_dimrange(p::Polytope,d::Integer)
 Polytope{D}(p::Polytope,Dfaceid::Integer) where D
 get_vertex_coordinates(p::Polytope)
 (==)(a::Polytope{D},b::Polytope{D}) where D
@@ -100,6 +101,7 @@ get_polytope(reffe::ReferenceFE)
 get_prebasis(reffe::ReferenceFE)
 get_dof_basis(reffe::ReferenceFE)
 get_face_own_dofs(reffe::ReferenceFE)
+get_face_own_dofs(reffe::ReferenceFE,d::Integer)
 get_face_dofs(reffe::ReferenceFE)
 ReferenceFE{N}(reffe::ReferenceFE,nfaceid::Integer) where N
 get_own_dofs_permutations(reffe::ReferenceFE)
@@ -137,6 +139,7 @@ NodalReferenceFE
 NodalReferenceFE(p::Polytope)
 get_node_coordinates(reffe::NodalReferenceFE)
 get_face_own_nodes(reffe::NodalReferenceFE)
+get_face_own_nodes(reffe::NodalReferenceFE,d::Integer)
 get_face_nodes(reffe::NodalReferenceFE)
 get_own_nodes_permutations(reffe::NodalReferenceFE)
 get_dof_to_node(reffe::NodalReferenceFE)

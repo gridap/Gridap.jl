@@ -350,8 +350,8 @@ function find_local_index(a_to_b, b_to_la_to_a::Table)
   a_to_la
 end
 
-struct LocalIndexFromTable{T,P} <: AbstractVector{T}
-  a_to_b::Vector{T}
+struct LocalIndexFromTable{T,P,V<:AbstractVector} <: AbstractVector{T}
+  a_to_b::V
   b_to_la_to_a::Table{T,P}
 end
 

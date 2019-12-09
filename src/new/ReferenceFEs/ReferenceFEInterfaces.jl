@@ -71,6 +71,15 @@ function get_face_own_dofs(reffe::ReferenceFE)
   @abstractmethod
 end
 
+"""
+    get_face_own_dofs(reffe::ReferenceFE,d::Integer)
+"""
+function get_face_own_dofs(reffe::ReferenceFE,d::Integer)
+  p = get_polytope(reffe)
+  range = get_dimrange(p,d)
+  get_face_own_dofs(reffe)[range]
+end
+
 # optional
 
 """
@@ -448,6 +457,15 @@ end
 """
 function get_face_own_nodes(reffe::NodalReferenceFE)
   @abstractmethod
+end
+
+"""
+    get_face_own_nodes(reffe::NodalReferenceFE,d::Integer)
+"""
+function get_face_own_nodes(reffe::NodalReferenceFE,d::Integer)
+  p = get_polytope(reffe)
+  range = get_dimrange(p,d)
+  get_face_own_nodes(reffe)[range]
 end
 
 """

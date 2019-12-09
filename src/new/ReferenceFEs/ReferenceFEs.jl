@@ -28,6 +28,7 @@ export Polytope
 export ExtrusionPolytope
 export get_faces
 export get_dimranges
+export get_dimrange
 export get_vertex_coordinates
 export get_facet_normals
 export get_facet_orientations

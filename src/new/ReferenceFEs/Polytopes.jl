@@ -107,6 +107,17 @@ function get_dimranges(p::Polytope)
 end
 
 """
+    get_dimrange(p::Polytope,d::Integer)
+
+Equivalent to
+
+    get_dimranges(p)[d+1]
+"""
+function get_dimrange(p::Polytope,d::Integer)
+  get_dimranges(p)[d+1]
+end
+
+"""
     Polytope{N}(p::Polytope,faceid::Integer) where N
 
 Returns a `Polytope{N}` object representing the "reference" polytope of the `N`-face with id `faceid`.

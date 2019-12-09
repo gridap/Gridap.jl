@@ -80,7 +80,7 @@ export get_face_reffe_type
 export get_face_polytope_type
 export get_polytopes
 export get_vertex_coordinates
-export get_cell_to_faces
+export get_cell_faces
 export get_isboundary_node
 export get_face_labeling
 export test_discrete_model
