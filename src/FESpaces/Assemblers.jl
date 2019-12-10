@@ -186,12 +186,12 @@ function sparse_from_coo(::Type{<:SparseMatrixCSC}, args...)
   sparse(args...)
 end
 
-function sparse_from_coo(::Type{<:SparseMatrixCSR}, args...)
-  sparsecsr(args...)
+function sparse_from_coo(M::Type{<:SparseMatrixCSR}, args...)
+  sparsecsr(M, args...)
 end
 
-function sparse_from_coo(::Type{<:SymSparseMatrixCSR}, args...)
-  symsparsecsr(args...)
+function sparse_from_coo(M::Type{<:SymSparseMatrixCSR}, args...)
+  symsparsecsr(M, args...)
 end
 
 
