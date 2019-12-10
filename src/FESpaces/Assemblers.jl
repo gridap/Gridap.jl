@@ -137,10 +137,9 @@ end
 
 function assemble(
   this::SparseMatrixAssembler{E,M},
-  allvals::Vararg{Tuple{<:CellMatrix,<:CellNumber,<:CellNumber}}) where {E,M}
+  allvals::Vararg{Tuple{<:CellMatrix,<:CellNumber,<:CellNumber}}) where {E,Tv,Ti,M<:AbstractSparseMatrix{Tv,Ti}}
 
-  I = Int
-  aux_row = I[]; aux_col = I[]; aux_val = E[]
+  aux_row = Ti[]; aux_col = Ti[]; aux_val = Tv[]
 
   _rows_m = celldofids(this.testfesp)
   _cols_m = celldofids(this.trialfesp)
