@@ -137,9 +137,9 @@ end
 
 function assemble(
   this::SparseMatrixAssembler{E,M},
-  allvals::Vararg{Tuple{<:CellMatrix,<:CellNumber,<:CellNumber}}) where {E,Tv,Ti,M<:AbstractSparseMatrix{Tv,Ti}}
+  allvals::Vararg{Tuple{<:CellMatrix,<:CellNumber,<:CellNumber}}) where {E,M}
 
-  aux_row = Ti[]; aux_col = Ti[]; aux_val = Tv[]
+  aux_row, aux_col, aux_val = _create_coo_vectors(this)
 
   _rows_m = celldofids(this.testfesp)
   _cols_m = celldofids(this.trialfesp)
@@ -155,6 +155,14 @@ function assemble(
   num_cols = num_free_dofs(this.trialfesp)
   finalize_coo!(M,aux_row,aux_col,aux_val,num_rows,num_cols)
   sparse_from_coo(M,aux_row,aux_col,aux_val)
+end
+
+function _create_coo_vectors(this::SparseMatrixAssembler{E,M}) where {E,M}
+  return (Int[], Int[], E[])
+end
+
+function _create_coo_vectors(this::SparseMatrixAssembler{E,M}) where {E,Tv,Ti,M<:AbstractSparseMatrix{Tv,Ti}}
+  return (Ti[], Ti[], Tv[])
 end
 
 function _assemble_sparse_matrix_values!(::Type{M},aux_row,aux_col,aux_val,vals,rows,cols) where {M}
