@@ -12,6 +12,7 @@ export SparseMatrixAssembler
 export assemble
 export assemble!
 export sparse_from_coo
+export _create_coo_vectors
 
 """
 Abstract assembly operator
@@ -139,7 +140,7 @@ function assemble(
   this::SparseMatrixAssembler{E,M},
   allvals::Vararg{Tuple{<:CellMatrix,<:CellNumber,<:CellNumber}}) where {E,M}
 
-  aux_row, aux_col, aux_val = _create_coo_vectors(this)
+  aux_row, aux_col, aux_val = _create_coo_vectors(M)
 
   _rows_m = celldofids(this.testfesp)
   _cols_m = celldofids(this.trialfesp)
@@ -157,11 +158,11 @@ function assemble(
   sparse_from_coo(M,aux_row,aux_col,aux_val)
 end
 
-function _create_coo_vectors(this::SparseMatrixAssembler{E,M}) where {E,M}
-  return (Int[], Int[], E[])
+function _create_coo_vectors(::Type{M}) where {M}
+  return (Int[], Int[], Float64[])
 end
 
-function _create_coo_vectors(this::SparseMatrixAssembler{E,M}) where {E,Tv,Ti,M<:AbstractSparseMatrix{Tv,Ti}}
+function _create_coo_vectors(::Type{M}) where {Tv,Ti,M<:AbstractSparseMatrix{Tv,Ti}}
   return (Ti[], Ti[], Tv[])
 end
 
@@ -180,9 +181,9 @@ function _assemble_sparse_matrix_values!(::Type{M},aux_row,aux_col,aux_val,vals,
 end
 
 function assemble!(
-  mat::AbstractSparseMatrix{E,Int},
+  mat::AbstractSparseMatrix{E,I},
   this::SparseMatrixAssembler{E,M},
-  vals::Vararg{Tuple{<:CellMatrix,<:CellNumber,<:CellNumber}}) where {E,M}
+  vals::Vararg{Tuple{<:CellMatrix,<:CellNumber,<:CellNumber}}) where {E,I,M}
   # This routine can be optimized a lot taking into a count the sparsity graph of mat
   # For the moment we create an intermediate matrix and then transfer the nz values
   m = assemble(this,vals...)
