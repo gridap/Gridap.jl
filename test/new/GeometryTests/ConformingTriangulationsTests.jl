@@ -60,4 +60,10 @@ grid = ConformingTriangulation(ReferenceFE{3},WEDGE)
 @test num_cell_dims(grid) == 3
 @test num_point_dims(grid) == 3
 
+# TODO for the moment only implemented for the aligned case
+#grid = ConformingTrianMock()
+#order = 2
+#reffes = [ LagrangianRefFE(Float64,get_polytope(reffe),order) for reffe in get_reffes(grid)]
+#grid2 = replace_reffes(grid,reffes)
+
 end # module

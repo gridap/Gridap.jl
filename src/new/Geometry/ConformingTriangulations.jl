@@ -125,7 +125,6 @@ end
 """
 num_nodes(trian::ConformingTriangulation) = length(get_node_coordinates(trian))
 
-
 """
     ConformingTriangulation(reffe::NodalReferenceFE)
 """
@@ -145,5 +144,14 @@ end
 """
 function ConformingTriangulation(::Type{<:ReferenceFE{d}},trian::ConformingTriangulation) where d
   UnstructuredGrid(NodalReferenceFE{d},trian)
+end
+
+"""
+"""
+function replace_reffes(grid::ConformingTriangulation,reffes::Vector{<:NodalReferenceFE})
+  model = UnstructuredDiscreteModel(grid)
+  model2 = replace_reffes(model,reffes)
+  D = num_cell_dims(grid)
+  ConformingTriangulation(ReferenceFE{D},model2)
 end
 
