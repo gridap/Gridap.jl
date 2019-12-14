@@ -61,6 +61,13 @@ function get_face_nodes(g::DiscreteModel,d::Integer)
 end
 
 """
+    get_face_own_nodes(g::DiscreteModel,d::Integer)
+"""
+function get_face_own_nodes(g::DiscreteModel,d::Integer)
+  @abstractmethod
+end
+
+"""
     get_isboundary_face(g::DiscreteModel,d::Integer)
 """
 function get_isboundary_face(g::DiscreteModel,d::Integer)
@@ -226,9 +233,6 @@ function _get_isboundary_node(face_to_isboundary,node_to_face_owner)
   node_to_isboundary = fill(false,nnodes)
   for node in 1:nnodes
     face_owner = node_to_face_owner[node]
-    if face_owner == UNSET
-      @notimplemented
-    end
     isboundary = face_to_isboundary[face_owner]
     node_to_isboundary[node] = isboundary
   end
@@ -256,6 +260,9 @@ function test_discrete_model(model::DiscreteModel{Dc,Dp}) where {Dc,Dp}
     nface_to_nodes = get_face_nodes(model,n)
     @test isa(nface_to_nodes,AbstractArray{<:Vector{<:Integer}})
     @test length(nface_to_nodes) == num_faces(model,n)
+    nface_to_own_nodes = get_face_own_nodes(model,n)
+    @test isa(nface_to_own_nodes,AbstractArray{<:Vector{<:Integer}})
+    @test length(nface_to_own_nodes) == num_faces(model,n)
     nface_to_isboundary = get_isboundary_face(model,n)
     @test isa(nface_to_isboundary,AbstractArray{Bool})
     @test length(nface_to_isboundary) == num_faces(model,n)
@@ -301,4 +308,11 @@ function UnstructuredGrid(::Type{<:ReferenceFE{d}},model::DiscreteModel) where d
     reffes,
     cell_type)
 end
+
+"""
+"""
+function replace_reffes(model::DiscreteModel,reffes::Vector{<:NodalReferenceFE})
+  replace_reffes(UnstructuredDiscreteModel(model),reffes)
+end
+
 

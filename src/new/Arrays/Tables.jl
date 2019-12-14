@@ -60,6 +60,19 @@ function identity_table(::Type{T},::Type{P},l::Integer) where {T,P}
   Table(data,ptrs)
 end
 
+"""
+    empty_table(::Type{T},::Type{P}, l::Integer) where {T,P}
+    empty_table(l::Integer)
+"""
+function empty_table(::Type{T},::Type{P}, l::Integer) where {T,P}
+  data = T[]
+  ptrs = ones(P,l+1)
+  Table(data,ptrs)
+end
+
+empty_table(l::Integer) = empty_table(Int,Int32,l)
+
+
 size(a::Table) = (length(a.ptrs)-1,)
 
 IndexStyle(::Type{<:Table}) = IndexLinear()
@@ -93,6 +106,16 @@ end
 function getindex(a::Table,i::Integer)
   cache = array_cache(a)
   getindex!(cache,a,i)
+end
+
+function Base.getindex(a::Table,i::UnitRange)
+  r = a.ptrs[i.start]:(a.ptrs[i.stop+1]-1)
+  data = a.data[r]
+  r = i.start:(i.stop+1)
+  ptrs = a.ptrs[r]
+  o = ptrs[1]-1
+  ptrs .-= o
+  Table(data,ptrs)
 end
 
 # Helper functions related with Tables
@@ -370,5 +393,25 @@ Base.IndexStyle(::Type{<:LocalIndexFromTable}) = IndexStyle(Table)
     end
   end
   return T(UNSET)
+end
+
+"""
+"""
+function flatten_partition(a_to_bs::Table,nb::Integer=maximum(a_to_bs.data))
+  T = eltype(eltype(a_to_bs))
+  b_to_a = zeros(T,nb)
+  flatten_partition!(b_to_a,a_to_bs)
+  b_to_a
+end
+
+function  flatten_partition!(b_to_a,a_to_bs::Table)
+  for a in 1:length(a_to_bs)
+    pini = a_to_bs.ptrs[a]
+    pend = a_to_bs.ptrs[a+1]-1
+    for p in pini:pend
+      b = a_to_bs.data[p]
+      b_to_a[b] = a
+    end
+  end
 end
 

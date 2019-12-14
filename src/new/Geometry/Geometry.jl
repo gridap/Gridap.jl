@@ -46,7 +46,9 @@ import Gridap.ReferenceFEs: get_offsets
 import Gridap.ReferenceFEs: get_offset
 import Gridap.ReferenceFEs: get_vertex_coordinates
 import Gridap.ReferenceFEs: get_face_nodes
+import Gridap.ReferenceFEs: get_face_own_nodes
 import Gridap.ReferenceFEs: get_polytope
+import Gridap.ReferenceFEs: get_vertex_node
 
 import Gridap.Fields: field_array_gradient
 
@@ -73,7 +75,6 @@ export IrregularPConformity
 export IrregularHPConformity
 
 export DiscreteModel
-export get_vertex_node
 export get_node_face_owner
 export get_isboundary_face
 export get_face_reffe_type
@@ -83,6 +84,7 @@ export get_vertex_coordinates
 export get_cell_faces
 export get_isboundary_node
 export get_face_labeling
+export replace_reffes
 export test_discrete_model
 
 export UnstructuredGrid

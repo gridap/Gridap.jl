@@ -12,6 +12,7 @@ struct UnstructuredDiscreteModel{Dc,Dp,B} <: DiscreteModel{Dc,Dp}
   node_to_face_owner::Vector{Int}
   d_to_num_dfaces::Vector{Int}
   d_to_dface_to_nodes::Vector{Table{Int,Int32}}
+  d_to_dface_to_own_nodes::Vector{Table{Int,Int32}}
   d_to_dface_to_isboundary::Vector{Vector{Bool}}
   d_to_dface_to_reffe_type::Vector{Vector{Int8}}
   d_to_dface_to_polytope_type::Vector{Vector{Int8}}
@@ -20,42 +21,44 @@ struct UnstructuredDiscreteModel{Dc,Dp,B} <: DiscreteModel{Dc,Dp}
   d_to_polytopes::Vector{Vector{Polytope}}
   node_coordinates::Vector{Point{Dp,Float64}}
   labels::FaceLabeling
+end
 
-  function UnstructuredDiscreteModel(grid::UnstructuredGrid)
-    Dc = num_cell_dims(grid)
-    Dp = num_point_dims(grid)
-    fields = _init_fields(grid)
-    B = is_oriented(grid)
+function UnstructuredDiscreteModel(grid::UnstructuredGrid)
+  Dc = num_cell_dims(grid)
+  Dp = num_point_dims(grid)
+  fields = _init_fields(grid)
+  B = is_oriented(grid)
 
-    ( nnodes,
-      vertex_to_node,
-      node_to_face_owner,
-      d_to_num_dfaces,
-      d_to_dface_to_nodes,
-      d_to_dface_to_isboundary,
-      d_to_dface_to_reffe_type,
-      d_to_dface_to_polytope_type,
-      n_m_to_nface_to_mfaces,
-      d_to_reffes,
-      d_to_polytopes,
-      node_coordinates,
-      labels) = fields
+  ( nnodes,
+    vertex_to_node,
+    node_to_face_owner,
+    d_to_num_dfaces,
+    d_to_dface_to_nodes,
+    d_to_dface_to_own_nodes,
+    d_to_dface_to_isboundary,
+    d_to_dface_to_reffe_type,
+    d_to_dface_to_polytope_type,
+    n_m_to_nface_to_mfaces,
+    d_to_reffes,
+    d_to_polytopes,
+    node_coordinates,
+    labels) = fields
 
-    new{Dc,Dp,B}(
-     nnodes,
-     vertex_to_node,
-     node_to_face_owner,
-     d_to_num_dfaces,
-     d_to_dface_to_nodes,
-     d_to_dface_to_isboundary,
-     d_to_dface_to_reffe_type,
-     d_to_dface_to_polytope_type,
-     n_m_to_nface_to_mfaces,
-     d_to_reffes,
-     d_to_polytopes,
-     node_coordinates,
-     labels)
-  end
+  UnstructuredDiscreteModel{Dc,Dp,B}(
+   nnodes,
+   vertex_to_node,
+   node_to_face_owner,
+   d_to_num_dfaces,
+   d_to_dface_to_nodes,
+   d_to_dface_to_own_nodes,
+   d_to_dface_to_isboundary,
+   d_to_dface_to_reffe_type,
+   d_to_dface_to_polytope_type,
+   n_m_to_nface_to_mfaces,
+   d_to_reffes,
+   d_to_polytopes,
+   node_coordinates,
+   labels)
 end
 
 """
@@ -84,6 +87,7 @@ function _init_fields(grid)
 
   d_to_num_dfaces = fill(UNSET,n)
   d_to_dface_to_nodes = Vector{Table{Int,Int32}}(undef,n)
+  d_to_dface_to_own_nodes = Vector{Table{Int,Int32}}(undef,n)
   d_to_dface_to_isboundary = Vector{Vector{Bool}}(undef,n)
   d_to_dface_to_reffe_type = Vector{Vector{Int8}}(undef,n)
   d_to_dface_to_polytope_type = Vector{Vector{Int8}}(undef,n)
@@ -102,6 +106,7 @@ function _init_fields(grid)
   d_to_num_dfaces[0+1] = length(vertex_to_node)
   d_to_num_dfaces[d+1] = length(cell_to_vertices)
   d_to_dface_to_nodes[d+1] = get_cell_nodes(grid)
+  d_to_dface_to_own_nodes[0+1] = Table(vertex_to_node,collect(Int32,1:(nvertices+1)))
   d_to_dface_to_reffe_type[d+1] = cell_to_type
   d_to_dface_to_polytope_type[d+1] = cell_to_type
   d_to_reffes[d+1] = get_reffes(grid)
@@ -113,6 +118,7 @@ function _init_fields(grid)
     node_to_face_owner,
     d_to_num_dfaces,
     d_to_dface_to_nodes,
+    d_to_dface_to_own_nodes,
     d_to_dface_to_isboundary,
     d_to_dface_to_reffe_type,
     d_to_dface_to_polytope_type,
@@ -125,6 +131,47 @@ function _init_fields(grid)
   fields
 end
 
+"""
+"""
+function UnstructuredDiscreteModel(g::DiscreteModel)
+
+  Dc = num_cell_dims(g)
+  Dp = num_point_dims(g)
+  B = is_oriented(g)
+  D = Dc
+
+  nnodes = num_nodes(g)
+  vertex_to_node = get_vertex_node(g)
+  node_to_face_owner = get_node_face_owner(g)
+  d_to_num_dfaces = [ num_faces(g,d) for d in 0:D ]
+  d_to_dface_to_nodes = [ Table(get_face_nodes(g,d)) for d in 0:D ]
+  d_to_dface_to_own_nodes = [ Table(get_face_own_nodes(g,d)) for d in 0:D ]
+  d_to_dface_to_isboundary = [ get_isboundary_face(g,d) for d in 0:D ]
+  d_to_dface_to_reffe_type = [ get_face_reffe_type(g,d) for d in 0:D ]
+  d_to_dface_to_polytope_type = [ get_face_polytope_type(g,d) for d in 0:D ]
+  n_m_to_nface_to_mfaces = [ get_faces(g,i,j) for i in 0:D, j in 0:D ]
+  d_to_reffes = [get_reffes(NodalReferenceFE{d},g) for d in 0:D]
+  d_to_polytopes = [get_polytopes(Polytope{d},g) for d in 0:D]
+  node_coordinates = get_node_coordinates(g)
+  labels = get_face_labeling(g)
+
+  UnstructuredDiscreteModel{Dc,Dp,B}(
+   nnodes,
+   vertex_to_node,
+   node_to_face_owner,
+   d_to_num_dfaces,
+   d_to_dface_to_nodes,
+   d_to_dface_to_own_nodes,
+   d_to_dface_to_isboundary,
+   d_to_dface_to_reffe_type,
+   d_to_dface_to_polytope_type,
+   n_m_to_nface_to_mfaces,
+   d_to_reffes,
+   d_to_polytopes,
+   node_coordinates,
+   labels)
+
+end
 
 function num_faces(g::UnstructuredDiscreteModel,d::Integer)
   _generate_cell_to_faces!(g,d)
@@ -299,6 +346,11 @@ function get_face_nodes(g::UnstructuredDiscreteModel,d::Integer)
   g.d_to_dface_to_nodes[d+1]
 end
 
+function get_face_own_nodes(g::UnstructuredDiscreteModel,d::Integer)
+  _generate_face_to_own_nodes!(g,d)
+  g.d_to_dface_to_own_nodes[d+1]
+end
+
 function get_cell_nodes(g::UnstructuredDiscreteModel)
   D = num_cell_dims(g)
   g.d_to_dface_to_nodes[D+1]
@@ -328,6 +380,35 @@ function _generate_face_to_nodes!(model,dimfrom)
     nfaces)
 
   model.d_to_dface_to_nodes[dimfrom+1] = face_to_nodes
+
+  nothing
+
+end
+
+function _generate_face_to_own_nodes!(model,dimfrom)
+
+  if isassigned(model.d_to_dface_to_own_nodes,dimfrom+1)
+    return
+  end
+
+  D = num_cell_dims(model)
+
+  cell_to_nodes = get_cell_nodes(model)
+  cell_to_faces = get_faces(model,D,dimfrom)
+  cell_to_ctype = model.d_to_dface_to_reffe_type[D+1]
+  reffes = model.d_to_reffes[D+1]
+  ctype_to_lface_to_lnodes = map( (p)->get_face_own_nodes(p)[get_dimranges(get_polytope(p))[dimfrom+1]], reffes )
+
+  nfaces = num_faces(model,dimfrom)
+
+  face_to_nodes = generate_face_to_vertices(
+    cell_to_nodes,
+    cell_to_faces,
+    cell_to_ctype,
+    ctype_to_lface_to_lnodes,
+    nfaces)
+
+  model.d_to_dface_to_own_nodes[dimfrom+1] = face_to_nodes
 
   nothing
 
@@ -510,6 +591,258 @@ function _generate_face_labeling!(model)
   nothing
 end
 
+function replace_reffes(
+  model::UnstructuredDiscreteModel{Dc,Dp,B},
+  reffes::Vector{<:NodalReferenceFE}) where {Dc,Dp,B}
+
+  # TODO It assumes that p-conformity is mantained. Check it?
+
+  face_to_own_nodes, n_nodes = _generate_face_to_own_nodes(
+    model,reffes,ConformityStyle(model))
+
+  node_to_face_owner  = flatten_partition(face_to_own_nodes,n_nodes)
+
+  cell_to_nodes = _generate_cell_to_nodes(
+    face_to_own_nodes, model, reffes, OrientationStyle(model), ConformityStyle(model))
+
+  node_to_coords = _generate_node_to_coords(
+    n_nodes, cell_to_nodes, model, reffes, ConformityStyle(model))
+
+  d = num_cell_dims(model)
+  n = d+1
+  d_to_num_dfaces = model.d_to_num_dfaces
+  d_to_dface_to_nodes = Vector{Table{Int,Int32}}(undef,n)
+  d_to_dface_to_nodes[d+1] = cell_to_nodes
+  d_to_dface_to_own_nodes = [ face_to_own_nodes[range] for range in get_dimranges(model)]
+  vertex_to_node = d_to_dface_to_own_nodes[0+1].data
+  d_to_dface_to_isboundary = model.d_to_dface_to_isboundary
+  d_to_dface_to_reffe_type = Vector{Vector{Int8}}(undef,n)
+  d_to_dface_to_reffe_type[d+1] = get_cell_type(model)
+  d_to_dface_to_polytope_type = model.d_to_dface_to_polytope_type
+  n_m_to_nface_to_mfaces =  model.n_m_to_nface_to_mfaces
+  d_to_reffes = Vector{Vector{NodalReferenceFE}}(undef,n)
+  d_to_reffes[d+1] = reffes
+  d_to_polytopes = model.d_to_polytopes
+  node_coordinates = node_to_coords
+  labels = model.labels
+
+  UnstructuredDiscreteModel{Dc,Dp,B}(
+    n_nodes,
+    vertex_to_node,
+    node_to_face_owner,
+    d_to_num_dfaces,
+    d_to_dface_to_nodes,
+    d_to_dface_to_own_nodes,
+    d_to_dface_to_isboundary,
+    d_to_dface_to_reffe_type,
+    d_to_dface_to_polytope_type,
+    n_m_to_nface_to_mfaces,
+    d_to_reffes,
+    d_to_polytopes,
+    node_coordinates,
+    labels)
+
+end
+
+function _generate_face_to_own_nodes(model,reffes,conf)
+  @notimplemented
+end
+
+function _generate_face_to_own_nodes(model,reffes,conf::RegularConformity)
+
+  D = num_cell_dims(model)
+  cell_to_ctype = get_cell_type(model)
+
+  d_to_ctype_to_ldface_to_own_lnodes = [
+    [ get_face_own_nodes(reffe,d) for reffe in reffes] for d in 0:D]
+
+  d_to_dface_to_cells = [ get_faces(model,d,D) for d in 0:D]
+  d_to_cell_to_dfaces = [ get_faces(model,D,d) for d in 0:D]
+
+  d_to_offset = get_offsets(model)
+
+  n_faces = num_faces(model)
+
+  face_to_own_nodes, n_nodes =  _generate_face_to_own_dofs(
+    n_faces,
+    cell_to_ctype,
+    d_to_cell_to_dfaces,
+    d_to_dface_to_cells,
+    d_to_offset,
+    d_to_ctype_to_ldface_to_own_lnodes)
+
+  (face_to_own_nodes, n_nodes)
+
+end
+
+function _generate_face_to_own_dofs(
+  n_faces,
+  cell_to_ctype,
+  d_to_cell_to_dfaces::Vector{Table{T,P}},
+  d_to_dface_to_cells::Vector{Table{T,P}},
+  d_to_offset,
+  d_to_ctype_to_ldface_to_own_ldofs) where {T,P}
+
+  face_to_own_dofs_ptrs = zeros(P,n_faces+1)
+
+  D = length(d_to_offset)-1
+
+  for d in 0:D
+    cell_to_dfaces = d_to_cell_to_dfaces[d+1]
+    dface_to_cells = d_to_dface_to_cells[d+1]
+    offset = d_to_offset[d+1]
+    ctype_to_ldface_to_own_ldofs = d_to_ctype_to_ldface_to_own_ldofs[d+1]
+    ctype_to_ldface_to_num_own_ldofs = map( (x) -> length.(x) ,ctype_to_ldface_to_own_ldofs)
+    icell = 1
+    dface_to_cell_owner = get_local_item(dface_to_cells,icell)
+    dface_to_ldface = find_local_index(dface_to_cell_owner,cell_to_dfaces)
+
+    if any( ctype_to_ldface_to_num_own_ldofs .!= 0)
+      _generate_face_to_own_dofs_count_d!(
+        face_to_own_dofs_ptrs,
+        offset,
+        cell_to_ctype,
+        dface_to_cell_owner,
+        dface_to_ldface,
+        ctype_to_ldface_to_num_own_ldofs)
+    end
+  end
+
+  length_to_ptrs!(face_to_own_dofs_ptrs)
+  n_dofs = face_to_own_dofs_ptrs[end]-1
+  face_to_own_dofs_data = collect(T(1):T(n_dofs))
+
+  face_to_own_dofs = Table(face_to_own_dofs_data,face_to_own_dofs_ptrs)
+  (face_to_own_dofs, n_dofs)
+end
+
+function  _generate_face_to_own_dofs_count_d!(
+  face_to_own_dofs_ptrs,
+  offset,
+  cell_to_ctype,
+  dface_to_cell_owner,
+  dface_to_ldface,
+  ctype_to_ldface_to_num_own_ldofs)
+
+  n_dfaces = length(dface_to_ldface)
+  for dface in 1:n_dfaces
+    cell = dface_to_cell_owner[dface]
+    ldface = dface_to_ldface[dface]
+    ctype = cell_to_ctype[cell]
+    n_own_ldofs = ctype_to_ldface_to_num_own_ldofs[ctype][ldface]
+    face = dface + offset
+    face_to_own_dofs_ptrs[face+1] = n_own_ldofs
+  end
+end
+
+function _generate_cell_to_nodes(
+  face_to_own_nodes, model, reffes, orientation, conformity)
+  @notimplemented
+end
+
+function _generate_cell_to_nodes(
+  face_to_own_nodes, model, reffes, orientation::Val{true}, ::RegularConformity)
+
+  cell_to_faces = get_cell_faces(model)
+  cell_to_ctype = get_cell_type(model)
+  ctype_lface_to_own_lnodes = [get_face_own_nodes(reffe) for reffe in reffes]
+  ctype_to_num_dofs = map(num_dofs,reffes)
+
+  cell_to_nodes = CellDofsOriented(
+    cell_to_faces,
+    cell_to_ctype,
+    ctype_lface_to_own_lnodes,
+    ctype_to_num_dofs,
+    face_to_own_nodes)
+
+  Table(cell_to_nodes)
+
+end
+
+struct CellDofsOriented{T,P,V<:AbstractVector} <: AbstractVector{Vector{T}}
+  cell_to_faces::Table{T,P}
+  cell_to_ctype::V
+  ctype_to_lface_to_own_ldofs::Vector{Vector{Vector{Int}}}
+  ctype_to_num_dofs::Vector{Int}
+  face_to_own_dofs::Table{T,P}
+end
+
+Base.size(a::CellDofsOriented) = size(a.cell_to_faces)
+
+Base.IndexStyle(::Type{<:CellDofsOriented}) = IndexStyle(Table)
+
+function array_cache(a::CellDofsOriented)
+  n_dofs = testitem(a.ctype_to_num_dofs)
+  T = eltype(eltype(a))
+  v = zeros(T,n_dofs)
+  CachedArray(v)
+end
+
+function getindex!(cache,a::CellDofsOriented,cell::Integer)
+  ctype = a.cell_to_ctype[cell]
+  n_dofs = a.ctype_to_num_dofs[ctype]
+  setsize!(cache,(n_dofs,))
+  dofs = cache.array
+  lface_to_own_ldofs = a.ctype_to_lface_to_own_ldofs[ctype]
+  p = a.cell_to_faces.ptrs[cell]-1
+  for (lface, own_ldofs) in enumerate(lface_to_own_ldofs)
+    face = a.cell_to_faces.data[p+lface]
+    q = a.face_to_own_dofs.ptrs[face]-1
+    for (i,ldof) in enumerate(own_ldofs)
+      dof = a.face_to_own_dofs.data[q+i]
+      dofs[ldof] = dof
+    end
+  end
+  dofs
+end
+
+function Base.getindex(a::CellDofsOriented,cell::Integer)
+  cache = array_cache(a)
+  getindex!(cache,a,cell)
+end
+
+function _generate_node_to_coords(n_nodes, cell_to_lnode_to_node, model,reffes,conformity)
+  @notimplemented
+end
+
+function _generate_node_to_coords(n_nodes, cell_to_lnode_to_node, model, reffes, ::RegularConformity)
+
+  cell_to_map = get_cell_map(model)
+  ctype_to_lnode_to_lcoords = map(get_node_coordinates,reffes)
+  cell_to_ctype = get_cell_type(model)
+  cell_to_lnode_to_lcoords = _get_cell_data(ctype_to_lnode_to_lcoords, cell_to_ctype)
+  cell_to_lnode_to_coords = evaluate(cell_to_map,cell_to_lnode_to_lcoords)
+
+  T = eltype(eltype(get_node_coordinates(model)))
+  D = num_point_dims(model)
+  node_to_coords = zeros(Point{D,T},n_nodes)
+
+  cache = array_cache(cell_to_lnode_to_coords)
+
+  _fill_node_to_coords!(
+    node_to_coords,
+    cell_to_lnode_to_node,
+    cell_to_lnode_to_coords,
+    cache)
+
+  node_to_coords
+
+end
+
+function  _fill_node_to_coords!(
+  node_to_coords,
+  cell_to_lnode_to_node::Table,
+  cell_to_lnode_to_coords,
+  cache)
+  for cell in 1:length(cell_to_lnode_to_node)
+    p = cell_to_lnode_to_node.ptrs[cell]-1
+    lnode_to_coords = getindex!(cache,cell_to_lnode_to_coords,cell)
+    for (lnode, coords) in enumerate(lnode_to_coords)
+      node = cell_to_lnode_to_node.data[p+lnode]
+      node_to_coords[node] = coords
+    end
+  end
+end
 
 # Low level helpers
 

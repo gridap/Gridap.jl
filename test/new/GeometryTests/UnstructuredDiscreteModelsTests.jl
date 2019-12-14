@@ -32,6 +32,9 @@ m = DiscreteModelMock()
 @test get_face_nodes(model,1) == get_face_nodes(m,1)
 @test get_face_nodes(model,0) == get_face_nodes(m,0)
 @test get_face_nodes(model,2) == get_face_nodes(m,2)
+@test get_face_own_nodes(model,1) == get_face_own_nodes(m,1)
+@test get_face_own_nodes(model,0) == get_face_own_nodes(m,0)
+@test get_face_own_nodes(model,2) == get_face_own_nodes(m,2)
 @test get_isboundary_node(model) == get_isboundary_node(m)
 @test get_faces(model,2,0) == get_faces(m,2,0)
 @test get_faces(model,2,1) == get_faces(m,2,1)
@@ -73,5 +76,18 @@ model = UnstructuredDiscreteModel(grid)
 test_discrete_model(model)
 @test is_oriented(model) == true
 
+domain = (0,1,0,1)
+partition = (2,2)
+grid = CartesianGrid(domain,partition)
+model = UnstructuredDiscreteModel(grid)
+order = 2
+
+reffes = [ LagrangianRefFE(Float64,get_polytope(reffe),order) for reffe in get_reffes(model)]
+model2 = replace_reffes(model,reffes)
+test_discrete_model(model2)
+
+m = DiscreteModelMock()
+model = UnstructuredDiscreteModel(m)
+test_discrete_model(model)
 
 end # module

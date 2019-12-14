@@ -92,4 +92,23 @@ a_to_la = find_local_index(a_to_b,b_to_la_to_a)
 r = [1,3,4,2,1]
 test_array(a_to_la,r)
 
+a = [[5,1,4,2,3],[1,2,3],[5,4],[2,4,5,3],[5,1,2,4]]
+t = Table(a)
+r = 2:4
+u = t[r]
+b = a[r]
+@test isa(u,Table)
+test_array(u,b)
+
+t = empty_table(3)
+r = Vector{Int}[[], [], []]
+test_array(t,r)
+
+a_to_bs = Table([[1,2,3],[7,8],[4,5,6]])
+b_to_a = flatten_partition(a_to_bs)
+r = [1, 1, 1, 3, 3, 3, 2, 2]
+test_array(b_to_a,r)
+
+
+
 end # module

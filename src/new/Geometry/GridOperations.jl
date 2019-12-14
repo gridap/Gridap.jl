@@ -1131,11 +1131,11 @@ function _face_to_vertices_fill!(
     for lface in 1:nlfaces
       face = cell_to_faces_data[a+lface]
       v = face_to_vertices_ptrs[face]-1
-      if face_to_vertices_data[v+1] != UNSET
-        continue
-      end
       lvertices = lface_to_lvertices[lface]
       nfvertices = length(lvertices)
+      if nfvertices==0 || face_to_vertices_data[v+1] != UNSET
+        continue
+      end
       for lfvertex in 1:nfvertices
         lvertex = lvertices[lfvertex]
         vertex = cell_to_vertices_data[c+lvertex]

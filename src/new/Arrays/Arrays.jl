@@ -53,6 +53,7 @@ export apply_all
 
 export Table
 export identity_table
+export empty_table
 export rewind_ptrs!
 export length_to_ptrs!
 export append_ptrs
@@ -64,6 +65,7 @@ export find_inverse_index_map
 export find_inverse_index_map!
 export append_tables_globally
 export append_tables_locally
+export flatten_partition
 export collect1d
 export UNSET
 export get_local_item

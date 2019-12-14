@@ -60,6 +60,8 @@ get_node_face_owner(g::CartesianDiscreteModel) = get_node_face_owner(g.model)
 
 get_face_nodes(g::CartesianDiscreteModel,d::Integer) = get_face_nodes(g.model,d)
 
+get_face_own_nodes(g::CartesianDiscreteModel,d::Integer) = get_face_own_nodes(g.model,d)
+
 get_cell_nodes(g::CartesianDiscreteModel) = get_cell_nodes(g.model)
 
 get_isboundary_face(g::CartesianDiscreteModel,d::Integer) = get_isboundary_face(g.model,d)

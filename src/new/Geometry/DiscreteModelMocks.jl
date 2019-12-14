@@ -91,6 +91,14 @@ function get_face_nodes(g::DiscreteModelMock,d::Integer)
   get_faces(g,d,0)
 end
 
+function get_face_own_nodes(g::DiscreteModelMock,d::Integer)
+  if d==0
+    get_faces(g,d,0)
+  else
+    empty_table(num_faces(g,d))
+  end
+end
+
 function get_isboundary_face(g::DiscreteModelMock,d::Integer)
   mask = fill(false, num_faces(g,d))
   if d == 0

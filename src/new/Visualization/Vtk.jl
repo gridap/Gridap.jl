@@ -275,6 +275,9 @@ function _vtkinfo_extrusion_polytope(p,exponents)
     if n_nodes == 2
       vtkid = 3
       vtknodes = [1,2]
+    elseif n_nodes == 3
+      vtkid = 21
+      vtknodes = [1,2,3]
     else
       @notimplemented
     end
