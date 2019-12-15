@@ -49,6 +49,7 @@ num_nodes(trian::ConformingTriangulation)
 ConformingTriangulation(reffe::NodalReferenceFE)
 ConformingTriangulation(T::Type{<:ReferenceFE{d}},p::Polytope) where d
 ConformingTriangulation(T::Type{<:ReferenceFE{d}},trian::ConformingTriangulation) where d
+replace_reffes(grid::ConformingTriangulation,reffes::Vector{<:NodalReferenceFE})
 ```
 
 ### UnstructuredGrids
@@ -110,6 +111,7 @@ get_isboundary_node(g::DiscreteModel)
 test_discrete_model
 ConformingTriangulation(T::Type{<:ReferenceFE{d}},model::DiscreteModel) where d
 UnstructuredGrid(T::Type{<:ReferenceFE{d}},model::DiscreteModel) where d
+replace_reffes(model::DiscreteModel,reffes::Vector{<:NodalReferenceFE})
 ```
 
 ### FaceLabeling

@@ -396,6 +396,8 @@ Base.IndexStyle(::Type{<:LocalIndexFromTable}) = IndexStyle(Table)
 end
 
 """
+    flatten_partition(a_to_bs::Table,nb::Integer)
+    flatten_partition(a_to_bs::Table)
 """
 function flatten_partition(a_to_bs::Table,nb::Integer=maximum(a_to_bs.data))
   T = eltype(eltype(a_to_bs))

@@ -310,6 +310,7 @@ function UnstructuredGrid(::Type{<:ReferenceFE{d}},model::DiscreteModel) where d
 end
 
 """
+    replace_reffes(model::DiscreteModel,reffes::Vector{<:NodalReferenceFE})
 """
 function replace_reffes(model::DiscreteModel,reffes::Vector{<:NodalReferenceFE})
   replace_reffes(UnstructuredDiscreteModel(model),reffes)

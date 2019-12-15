@@ -147,6 +147,7 @@ function ConformingTriangulation(::Type{<:ReferenceFE{d}},trian::ConformingTrian
 end
 
 """
+    replace_reffes(grid::ConformingTriangulation,reffes::Vector{<:NodalReferenceFE})
 """
 function replace_reffes(grid::ConformingTriangulation,reffes::Vector{<:NodalReferenceFE})
   model = UnstructuredDiscreteModel(grid)
