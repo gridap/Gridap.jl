@@ -1,5 +1,12 @@
 
 """
+"""
+function writevtk(
+  trian::ConformingTriangulation, filebase; celldata=Dict(), nodaldata=Dict())
+  write_vtk_file(trian,filebase,celldata=celldata,nodaldata=nodaldata)
+end
+
+"""
     writevtk(reffe::NodalReferenceFE,filebase)
 """
 function writevtk(reffe::NodalReferenceFE,filebase)

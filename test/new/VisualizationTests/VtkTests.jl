@@ -26,6 +26,13 @@ write_vtk_file(
   nodaldata=["nodeid"=>node_ids],
   celldata=["cellid"=>cell_ids,"centers"=>cell_center])
 
+writevtk(trian,f)
+
+writevtk(
+  trian,f,
+  nodaldata=["nodeid"=>node_ids],
+  celldata=["cellid"=>cell_ids,"centers"=>cell_center])
+
 reffe = LagrangianRefFE(VectorValue{3,Float64},WEDGE,(3,3,4))
 f = joinpath(d,"reffe")
 writevtk(reffe,f)
