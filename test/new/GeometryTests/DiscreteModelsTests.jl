@@ -44,6 +44,18 @@ grid = ConformingTriangulation(ReferenceFE{1},model)
 grid = ConformingTriangulation(ReferenceFE{2},model)
 @test num_cells(grid) == num_cells(model)
 
+"""
+"""
+function get_cell_perm_indices(model::DiscreteModel,d::Integer)
+  D = num_cell_dims(model)
+  face_to_fvertex_to_vertex = get_faces(model,d,0)
+  cell_to_cvertex_to_vertex = get_faces(model,D,0)
+  cell_to_ctype = get_cell_type(model)
+  ctype_to_lface_to_cvertices = map()
+end
+
+
+
 # TODO for the moment only implemented for the aligned case
 #order = 2
 #reffes = [ LagrangianRefFE(Float64,get_polytope(reffe),order) for reffe in get_reffes(model)]

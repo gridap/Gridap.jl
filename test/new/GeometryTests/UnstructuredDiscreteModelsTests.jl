@@ -90,4 +90,54 @@ m = DiscreteModelMock()
 model = UnstructuredDiscreteModel(m)
 test_discrete_model(model)
 
+struct CellDofsNonOriented{T,P,C<:AbstractVector,F<:AbstractVector} <:AbstractVector{Vector{T}}
+  cell_to_faces::Table{T,P}
+  cell_to_lface_to_pindex::Table{T,P}
+  cell_to_ctype::C
+  ctype_to_lface_to_own_ldofs::Vector{Vector{Vector{Int}}}
+  ctype_to_num_dofs::Vector{Int}
+  face_to_own_dofs::Table{T,P}
+  face_to_ftype::F
+  ftype_to_pindex_to_pdofs::Vector{Vector{Vector{Int}}}
+end
+
+Base.size(a::CellDofsNonOriented) = size(a.cell_to_faces)
+
+Base.IndexStyle(::Type{<:CellDofsNonOriented}) = IndexStyle(Table)
+
+function array_cache(a::CellDofsNonOriented)
+  n_dofs = testitem(a.ctype_to_num_dofs)
+  T = eltype(eltype(a))
+  v = zeros(T,n_dofs)
+  CachedArray(v)
+end
+
+function getindex!(cache,a::CellDofsNonOriented,cell::Integer)
+  ctype = a.cell_to_ctype[cell]
+  n_dofs = a.ctype_to_num_dofs[ctype]
+  setsize!(cache,(n_dofs,))
+  dofs = cache.array
+  lface_to_own_ldofs = a.ctype_to_lface_to_own_ldofs[ctype]
+  p = a.cell_to_faces.ptrs[cell]-1
+  for (lface, own_ldofs) in enumerate(lface_to_own_ldofs)
+    face = a.cell_to_faces.data[p+lface]
+    ftype = a.face_to_ftype[face]
+    pindex = a.cell_to_lface_to_pindex.data[p+lface]
+    pdofs = ftype_to_pindex_to_pdofs[ftype][pindex]
+    q = a.face_to_own_dofs.ptrs[face]-1
+    for (i,ldof) in enumerate(own_ldofs)
+      j = pdofs[i]
+      dof = a.face_to_own_dofs.data[q+j]
+      dofs[ldof] = dof
+    end
+  end
+  dofs
+end
+
+function Base.getindex(a::CellDofsNonOriented,cell::Integer)
+  cache = array_cache(a)
+  getindex!(cache,a,cell)
+end
+
+
 end # module
