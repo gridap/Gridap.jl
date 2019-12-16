@@ -70,6 +70,8 @@ function get_vertex_permutations(p::SerendipityPolytope)
   get_vertex_permutations(p.hex)
 end
 
+NodalReferenceFE(p::SerendipityPolytope) = NodalReferenceFE(p.hex)
+
 # Implemented polytope interface for LagrangianRefFEs
 
 function _s_filter(e,order)

@@ -19,4 +19,8 @@ reffe = SerendipityRefFE(Float64,HEX,2)
   [9], [10], [11], [12], [13], [14], [15], [16],
   [17], [18], [19], [20], Int[], Int[], Int[], Int[], Int[], Int[], Int[]]
 
+p = get_polytope(reffe)
+test_polytope(p)
+@test NodalReferenceFE(p) == HEX8
+
 end # module
