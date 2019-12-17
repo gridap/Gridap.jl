@@ -240,6 +240,7 @@ function _get_isboundary_node(face_to_isboundary,node_to_face_owner)
 end
 
 """
+    get_reffes_offsets(model::DiscreteModel)
 """
 function get_reffes_offsets(model::DiscreteModel)
   D = num_cell_dims(model)
@@ -252,6 +253,7 @@ function get_reffes_offsets(model::DiscreteModel)
 end
 
 """
+    get_reffes_alldims(model::DiscreteModel)
 """
 function get_reffes_alldims(model::DiscreteModel)
   D = num_cell_dims(model)
@@ -259,6 +261,7 @@ function get_reffes_alldims(model::DiscreteModel)
 end
 
 """
+    get_face_reffe_type(model::DiscreteModel)
 """
 function get_face_reffe_type(model::DiscreteModel)
   D = num_cell_dims(model)
@@ -271,13 +274,13 @@ function get_face_reffe_type(model::DiscreteModel)
 end
 
 """
+    get_cell_perm_indices(model::DiscreteModel,d::Integer)
+    get_cell_perm_indices(model::DiscreteModel)
 """
 function get_cell_perm_indices(model::DiscreteModel)
   compute_cell_perm_indices(model)
 end
 
-"""
-"""
 function get_cell_perm_indices(model::DiscreteModel,d::Integer)
   compute_cell_perm_indices(model,d)
 end
@@ -365,8 +368,6 @@ function  _compute_cell_perm_indices!(
 
 end
 
-"""
-"""
 function extract_face_reffes(
   ::Type{<:ReferenceFE{d}},
   model::DiscreteModel,
@@ -391,6 +392,15 @@ function extract_face_reffes(
   (ftype_to_refface, face_to_ftype)
 end
 
+"""
+    extract_face_reffes(
+      ::Type{<:ReferenceFE{d}},
+      model::DiscreteModel,
+      reffes::Vector{<:NodalReferenceFE}) where d
+
+    extract_face_reffes(
+      model::DiscreteModel,reffes::Vector{<:NodalReferenceFE})
+"""
 function extract_face_reffes(
   model::DiscreteModel,reffes::Vector{<:NodalReferenceFE})
   D = num_cell_dims(model)

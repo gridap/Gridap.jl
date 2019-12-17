@@ -108,6 +108,11 @@ get_facedims(g::DiscreteModel)
 get_cell_faces(g::DiscreteModel)
 get_isboundary_face(g::DiscreteModel)
 get_isboundary_node(g::DiscreteModel)
+get_reffes_offsets(model::DiscreteModel)
+get_reffes_alldims(model::DiscreteModel)
+get_face_reffe_type(model::DiscreteModel)
+get_cell_perm_indices(model::DiscreteModel)
+extract_face_reffes(model::DiscreteModel,reffes::Vector{<:NodalReferenceFE})
 test_discrete_model
 ConformingTriangulation(T::Type{<:ReferenceFE{d}},model::DiscreteModel) where d
 UnstructuredGrid(T::Type{<:ReferenceFE{d}},model::DiscreteModel) where d
