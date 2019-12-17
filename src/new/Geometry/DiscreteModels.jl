@@ -240,6 +240,177 @@ function _get_isboundary_node(face_to_isboundary,node_to_face_owner)
 end
 
 """
+"""
+function get_reffes_offsets(model::DiscreteModel)
+  D = num_cell_dims(model)
+  d_to_offset = zeros(Int,D+1)
+  for d in 1:D
+    reffes = get_reffes(NodalReferenceFE{d-1},model)
+    d_to_offset[d+1] = d_to_offset[d] + length(reffes)
+  end
+  d_to_offset
+end
+
+"""
+"""
+function get_reffes_alldims(model::DiscreteModel)
+  D = num_cell_dims(model)
+  vcat([get_reffes(NodalReferenceFE{d},model) for d in 0:D]...)
+end
+
+"""
+"""
+function get_face_reffe_type(model::DiscreteModel)
+  D = num_cell_dims(model)
+  data = [ get_face_reffe_type(model,d) for d in 0:D]
+  offsets = get_reffes_offsets(model)
+  for d in 1:D
+    data[d+1] .+= offsets[d+1]
+  end
+  vcat(data...)
+end
+
+"""
+"""
+function get_cell_perm_indices(model::DiscreteModel)
+  compute_cell_perm_indices(model)
+end
+
+"""
+"""
+function get_cell_perm_indices(model::DiscreteModel,d::Integer)
+  compute_cell_perm_indices(model,d)
+end
+
+function compute_cell_perm_indices(model::DiscreteModel)
+  D = num_cell_dims(model)
+  data = [compute_cell_perm_indices(model,d) for d in 0:D]
+  offsets = tfill(0,Val{D+1}()) 
+  append_tables_locally(offsets,tuple(data...))
+end
+
+function compute_cell_perm_indices(model::DiscreteModel,d::Integer)
+
+  D = num_cell_dims(model)
+  face_to_fvertex_to_vertex = Table(get_faces(model,d,0))
+  face_to_ftype = get_face_reffe_type(model,d)
+  reffaces = get_reffes(NodalReferenceFE{d},model)
+  facepolytopes = map(get_polytope,reffaces)
+  ftype_to_pindex_to_cfvertex_to_fvertex = map(get_vertex_permutations,facepolytopes)
+  cell_to_cvertex_to_vertex = Table(get_faces(model,D,0))
+  cell_to_lface_to_face = Table(get_faces(model,D,d))
+  cell_to_ctype = get_cell_type(model)
+  reffes = get_reffes(model)
+  polytopes = map(get_polytope,reffes)
+  ctype_to_lface_to_cvertices = map( (p)->get_faces(p,d,0), polytopes )
+  data = similar(cell_to_lface_to_face.data)
+  ptrs = cell_to_lface_to_face.ptrs
+  cell_to_lface_to_pindex = Table(data,ptrs)
+
+  _compute_cell_perm_indices!(
+    cell_to_lface_to_pindex,
+    cell_to_lface_to_face,
+    cell_to_cvertex_to_vertex,
+    cell_to_ctype,
+    ctype_to_lface_to_cvertices,
+    face_to_fvertex_to_vertex,
+    face_to_ftype,
+    ftype_to_pindex_to_cfvertex_to_fvertex)
+
+  cell_to_lface_to_pindex
+end
+
+function  _compute_cell_perm_indices!(
+  cell_to_lface_to_pindex,
+  cell_to_lface_to_face,
+  cell_to_cvertex_to_vertex,
+  cell_to_ctype,
+  ctype_to_lface_to_cvertices,
+  face_to_fvertex_to_vertex,
+  face_to_ftype,
+  ftype_to_pindex_to_cfvertex_to_fvertex)
+
+  ncells = length(cell_to_lface_to_face)
+  for cell in 1:ncells
+    ctype = cell_to_ctype[cell]
+    lface_to_cvertices = ctype_to_lface_to_cvertices[ctype]
+    a = cell_to_lface_to_face.ptrs[cell]-1
+    c = cell_to_cvertex_to_vertex.ptrs[cell]-1
+    for (lface,cfvertex_to_cvertex) in enumerate(lface_to_cvertices)
+      face = cell_to_lface_to_face.data[a+lface]
+      ftype = face_to_ftype[face]
+      b = face_to_fvertex_to_vertex.ptrs[face]-1
+      pindex_to_cfvertex_to_fvertex = ftype_to_pindex_to_cfvertex_to_fvertex[ftype]
+      pindexfound = false
+      for (pindex, cfvertex_to_fvertex) in enumerate(pindex_to_cfvertex_to_fvertex)
+        found = true
+        for (cfvertex,fvertex) in enumerate(cfvertex_to_fvertex)
+          vertex1 = face_to_fvertex_to_vertex.data[b+fvertex]
+          cvertex = cfvertex_to_cvertex[cfvertex]
+          vertex2 = cell_to_cvertex_to_vertex.data[c+cvertex]
+          if vertex1 != vertex2
+            found = false
+            break
+          end
+        end
+        if found
+          cell_to_lface_to_pindex.data[a+lface] = pindex
+          pindexfound = true
+          break
+        end
+      end
+      @assert pindexfound "Valid pindex not found"
+    end
+  end
+
+end
+
+"""
+"""
+function extract_face_reffes(
+  ::Type{<:ReferenceFE{d}},
+  model::DiscreteModel,
+  reffes::Vector{<:NodalReferenceFE}) where d
+
+  D = num_cell_dims(model)
+  ctype_to_reffe = reffes
+  ctype_to_lftype_to_refface = [
+    get_reffes(NodalReferenceFE{d},reffe) for reffe in ctype_to_reffe]
+  ctype_to_lface_to_lftype = [
+    get_face_type(reffe,d) for reffe in ctype_to_reffe]
+  t = _generate_ftype_to_refface(
+    Val{d}(),ctype_to_lftype_to_refface,ctype_to_lface_to_lftype)
+  ftype_to_refface, ctype_to_lface_to_ftype = t
+  cell_to_faces = get_faces(model,D,d)
+  cell_to_ctype = get_cell_type(model)
+  nfaces = num_faces(model,d)
+
+  face_to_ftype = generate_face_to_face_type(
+    cell_to_faces, cell_to_ctype, ctype_to_lface_to_ftype, nfaces)
+
+  (ftype_to_refface, face_to_ftype)
+end
+
+function extract_face_reffes(
+  model::DiscreteModel,reffes::Vector{<:NodalReferenceFE})
+  D = num_cell_dims(model)
+  facereffes = Vector{NodalReferenceFE}[]
+  facetypes = Vector{Int8}[]
+  for d in 0:D
+    ftype_to_refface, face_to_ftype = extract_face_reffes(
+      ReferenceFE{d},model,reffes)
+    push!(facereffes,ftype_to_refface)
+    push!(facetypes,face_to_ftype)
+  end
+  offsets = zeros(Int,D+1)
+  for d in 1:D
+    offsets[d+1] = offsets[d] + length(facereffes[d])
+    facetypes[d+1] .+= offsets[d+1]
+  end
+  vcat(facereffes...), vcat(facetypes...)
+end
+
+"""
     test_discrete_model(model::DiscreteModel)
 """
 function test_discrete_model(model::DiscreteModel{Dc,Dp}) where {Dc,Dp}

@@ -1,6 +1,7 @@
 module DiscreteModelsTests
 
 using Test
+using Gridap.Arrays
 using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry
@@ -44,22 +45,30 @@ grid = ConformingTriangulation(ReferenceFE{1},model)
 grid = ConformingTriangulation(ReferenceFE{2},model)
 @test num_cells(grid) == num_cells(model)
 
-"""
-"""
-function get_cell_perm_indices(model::DiscreteModel,d::Integer)
-  D = num_cell_dims(model)
-  face_to_fvertex_to_vertex = get_faces(model,d,0)
-  cell_to_cvertex_to_vertex = get_faces(model,D,0)
-  cell_to_ctype = get_cell_type(model)
-  ctype_to_lface_to_cvertices = map()
-end
+d = 1
+model = DiscreteModelMock()
+cell_to_lface_to_pindex = get_cell_perm_indices(model,d)
+r = [[1, 1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1], [2, 1, 1, 1]]
+test_array(cell_to_lface_to_pindex,r)
 
+@test get_reffes_offsets(model) == [0,1,2]
+@test get_face_reffe_type(model) == [
+  1, 1, 1, 1, 1, 1, 1, 1, 1,
+  2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+  3, 4, 4, 3, 3]
 
+order = 1
+reffes = [
+  LagrangianRefFE(Float64,get_polytope(reffe),order)
+  for reffe in get_reffes(model)]
 
-# TODO for the moment only implemented for the aligned case
-#order = 2
-#reffes = [ LagrangianRefFE(Float64,get_polytope(reffe),order) for reffe in get_reffes(model)]
-#model2 = replace_reffes(model,reffes)
-#test_discrete_model(model2)
+d = 1
+ftype_to_refface, face_to_ftype = extract_face_reffes(ReferenceFE{1},model,reffes)
+ftype_to_refface, face_to_ftype = extract_face_reffes(model,reffes)
+
+order = 2
+reffes = [ LagrangianRefFE(Float64,get_polytope(reffe),order) for reffe in get_reffes(model)]
+model2 = replace_reffes(model,reffes)
+test_discrete_model(model2)
 
 end # module

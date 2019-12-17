@@ -84,6 +84,10 @@ export get_vertex_coordinates
 export get_cell_faces
 export get_isboundary_node
 export get_face_labeling
+export get_cell_perm_indices
+export get_reffes_offsets
+export get_reffes_alldims
+export extract_face_reffes
 export replace_reffes
 export test_discrete_model
 
