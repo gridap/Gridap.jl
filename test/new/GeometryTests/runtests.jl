@@ -2,6 +2,8 @@ module GeometryTests
 
 using Test
 
+@testset "GridTopologies" begin include("GridTopologiesTests.jl") end
+
 @testset "Triangulations" begin include("TriangulationsTests.jl") end
 
 @testset "ConformingTriangulations" begin include("ConformingTriangulationsTests.jl") end

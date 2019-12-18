@@ -59,6 +59,7 @@ import Gridap.ReferenceFEs: get_face_type
 import Gridap.Fields: field_array_gradient
 
 export GridTopology
+export get_cell_vertices
 export compute_reffaces
 export compute_cell_faces
 export compute_face_vertices

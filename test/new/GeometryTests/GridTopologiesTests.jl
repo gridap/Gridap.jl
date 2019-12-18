@@ -8,8 +8,6 @@ using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.Geometry: GridTopologyMock
 
-using Gridap.Geometry: _compute_cell_perm_indices!
-
 top = GridTopologyMock()
 test_grid_topology(top)
 
@@ -42,6 +40,7 @@ cell_to_faces = get_cell_faces(top)
 @test get_face_vertices(top,0) == get_faces(top,0,0)
 @test get_face_vertices(top,1) == get_faces(top,1,0)
 @test get_face_vertices(top,2) == get_faces(top,2,0)
+@test get_cell_vertices(top) == get_faces(top,2,0)
 
 face_to_vertices = get_face_vertices(top)
 @test face_to_vertices == vcat( [ get_face_vertices(top,d) for d in 0:2]... )
