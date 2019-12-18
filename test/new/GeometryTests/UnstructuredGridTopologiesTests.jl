@@ -16,6 +16,7 @@ import Gridap.Geometry: get_vertex_coordinates
 
 using Gridap.Geometry: generate_cells_around
 using Gridap.Geometry: generate_cell_to_faces
+using Gridap.Geometry: find_cell_to_faces
 using Gridap.Geometry: generate_face_to_vertices
 
 struct UnstructuredGridTopology{Dc,Dp,T} <: GridTopology{Dc,Dp}
@@ -39,6 +40,35 @@ function UnstructuredGridTopology(
   n_m_to_nface_to_mfaces[D+1,0+1] = cell_vertices
   vertex_cells = generate_cells_around(cell_vertices,length(vertex_coordinates))
   n_m_to_nface_to_mfaces[0+1,D+1] = vertex_cells
+
+  P = eltype(vertex_coordinates)
+  Dp = length(P)
+  T = eltype(P)
+
+  UnstructuredGridTopology{D,Dp,T}(
+    vertex_coordinates,
+    n_m_to_nface_to_mfaces,
+    cell_type,
+    polytopes)
+
+end
+
+function UnstructuredGridTopology(
+  vertex_coordinates::Vector{<:Point},
+  d_to_dface_vertices::Vector{<:Table},
+  cell_type::Vector{<:Integer},
+  polytopes::Vector{<:Polytope})
+
+  D = num_dims(first(polytopes))
+  n = D+1
+  n_m_to_nface_to_mfaces = Matrix{Table{Int,Int32}}(undef,n,n)
+  nvertices = length(vertex_coordinates)
+  for d in 0:D
+    dface_to_vertices = d_to_dface_vertices[d+1]
+    n_m_to_nface_to_mfaces[d+1,0+1] = dface_to_vertices
+    vertex_to_dfaces = generate_cells_around(dface_to_vertices,nvertices)
+    n_m_to_nface_to_mfaces[0+1,d+1] = vertex_to_dfaces
+  end
 
   P = eltype(vertex_coordinates)
   Dp = length(P)
@@ -122,8 +152,20 @@ function _setup_cell_to_faces!(model,dimto)
   if isassigned(model.n_m_to_nface_to_mfaces,D+1,dimto+1)
     return
   end
+
   if isassigned(model.n_m_to_nface_to_mfaces,dimto+1,0+1)
-    @notimplemented
+
+    cell_to_vertices = get_faces(model,D,0)
+    vertex_to_faces = get_faces(model,0,dimto)
+    cell_to_cell_type = get_cell_type(model)
+    polytopes = get_polytopes(model)
+    cell_type_to_lface_to_lvertices = map( (p)->get_faces(p,dimto,0), polytopes )
+
+    cell_to_faces = find_cell_to_faces(
+      cell_to_vertices,
+      cell_type_to_lface_to_lvertices,
+      cell_to_cell_type,
+      vertex_to_faces)
 
   else
 
@@ -139,12 +181,12 @@ function _setup_cell_to_faces!(model,dimto)
         cell_to_cell_type,
         vertex_to_cells)
 
-    faces_to_cells = generate_cells_around(cell_to_faces)
-
-    model.n_m_to_nface_to_mfaces[D+1,dimto+1] = cell_to_faces
-    model.n_m_to_nface_to_mfaces[dimto+1,D+1] = faces_to_cells
-
   end
+
+  faces_to_cells = generate_cells_around(cell_to_faces)
+
+  model.n_m_to_nface_to_mfaces[D+1,dimto+1] = cell_to_faces
+  model.n_m_to_nface_to_mfaces[dimto+1,D+1] = faces_to_cells
 
   nothing
 
@@ -256,5 +298,23 @@ test_grid_topology(g)
 @test get_faces(g,1,0) == get_faces(m,1,0)
 @test get_faces(g,1,1) == get_faces(m,1,1)
 @test get_vertex_coordinates(g) == get_vertex_coordinates(m)           
+
+
+g = UnstructuredGridTopology(
+  get_vertex_coordinates(m),
+  [get_face_vertices(m,d) for d in 0:num_cell_dims(m)],
+  get_cell_type(m),
+  get_polytopes(m))
+
+@test get_faces(g,2,0) == get_faces(m,2,0)
+@test get_faces(g,2,1) == get_faces(m,2,1)
+@test get_faces(g,1,2) == get_faces(m,1,2)
+@test get_faces(g,2,1) == get_faces(m,2,1)
+@test get_faces(g,0,1) == get_faces(m,0,1)
+@test get_faces(g,1,0) == get_faces(m,1,0)
+@test get_faces(g,1,1) == get_faces(m,1,1)
+
+test_grid_topology(g)
+
 
 end # module
