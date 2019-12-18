@@ -63,6 +63,8 @@ export compute_reffaces
 export compute_cell_faces
 export compute_face_vertices
 export compute_isboundary_face
+export get_cell_permutations
+export compute_cell_permutations
 export test_grid_topology
 
 export Triangulation

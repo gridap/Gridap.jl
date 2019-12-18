@@ -8,36 +8,7 @@ using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.Geometry: GridTopologyMock
 
-function compute_cell_perm_indices(top::GridTopology,d::Integer)
-
-  D = num_cell_dims(top)
-  face_to_fvertex_to_vertex = Table(get_faces(top,d,0))
-  face_to_ftype = get_face_reffe_type(top,d)
-  reffaces = get_reffes(NodalReferenceFE{d},top)
-  facepolytopes = map(get_polytope,reffaces)
-  ftype_to_pindex_to_cfvertex_to_fvertex = map(get_vertex_permutations,facepolytopes)
-  cell_to_cvertex_to_vertex = Table(get_faces(top,D,0))
-  cell_to_lface_to_face = Table(get_faces(top,D,d))
-  cell_to_ctype = get_cell_type(top)
-  reffes = get_reffes(top)
-  polytopes = map(get_polytope,reffes)
-  ctype_to_lface_to_cvertices = map( (p)->get_faces(p,d,0), polytopes )
-  data = similar(cell_to_lface_to_face.data)
-  ptrs = cell_to_lface_to_face.ptrs
-  cell_to_lface_to_pindex = Table(data,ptrs)
-
-  _compute_cell_perm_indices!(
-    cell_to_lface_to_pindex,
-    cell_to_lface_to_face,
-    cell_to_cvertex_to_vertex,
-    cell_to_ctype,
-    ctype_to_lface_to_cvertices,
-    face_to_fvertex_to_vertex,
-    face_to_ftype,
-    ftype_to_pindex_to_cfvertex_to_fvertex)
-
-  cell_to_lface_to_pindex
-end
+using Gridap.Geometry: _compute_cell_perm_indices!
 
 top = GridTopologyMock()
 test_grid_topology(top)
@@ -95,5 +66,16 @@ reffaces, face_to_ftype = compute_reffaces(Polytope{1},top)
 
 @test compute_isboundary_face(top) == Bool[1,1,1,1,0,1,1,1,1,1,0,1,0,1,0,1,0,1,1,0,1,1,1,1,1,1,1]
 @test compute_isboundary_face(top) == get_isboundary_face(top)
+
+@test compute_cell_permutations(top,0) == [[1, 1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]]
+@test compute_cell_permutations(top,1) == [[1, 1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1], [2, 1, 1, 1]]
+@test compute_cell_permutations(top,2) == [[1], [1], [1], [1], [1]]
+@test compute_cell_permutations(top) == [
+  [1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1],[1,1,1,1,2,1,1,1,1]]
+
+@test get_cell_permutations(top,0) == compute_cell_permutations(top,0)
+@test get_cell_permutations(top,1) == compute_cell_permutations(top,1)
+@test get_cell_permutations(top,2) == compute_cell_permutations(top,2)
+@test get_cell_permutations(top) == compute_cell_permutations(top)
 
 end # module

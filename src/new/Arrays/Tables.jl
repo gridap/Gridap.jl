@@ -270,6 +270,13 @@ get_ptrs_eltype(::Type{Table{T,P}}) where {T,P} = P
 get_data_eltype(::Table{T,P}) where {T,P} = T
 get_data_eltype(::Type{Table{T,P}}) where {T,P} = T
 
+"""
+"""
+function append_tables_locally(tables::Table...)
+  n = length(tables)
+  offsets = tfill(0,Val{n}())
+  append_tables_locally(offsets,tables)
+end
 
 """
 """
