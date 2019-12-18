@@ -323,51 +323,6 @@ function compute_cell_perm_indices(model::DiscreteModel,d::Integer)
   cell_to_lface_to_pindex
 end
 
-function  _compute_cell_perm_indices!(
-  cell_to_lface_to_pindex,
-  cell_to_lface_to_face,
-  cell_to_cvertex_to_vertex,
-  cell_to_ctype,
-  ctype_to_lface_to_cvertices,
-  face_to_fvertex_to_vertex,
-  face_to_ftype,
-  ftype_to_pindex_to_cfvertex_to_fvertex)
-
-  ncells = length(cell_to_lface_to_face)
-  for cell in 1:ncells
-    ctype = cell_to_ctype[cell]
-    lface_to_cvertices = ctype_to_lface_to_cvertices[ctype]
-    a = cell_to_lface_to_face.ptrs[cell]-1
-    c = cell_to_cvertex_to_vertex.ptrs[cell]-1
-    for (lface,cfvertex_to_cvertex) in enumerate(lface_to_cvertices)
-      face = cell_to_lface_to_face.data[a+lface]
-      ftype = face_to_ftype[face]
-      b = face_to_fvertex_to_vertex.ptrs[face]-1
-      pindex_to_cfvertex_to_fvertex = ftype_to_pindex_to_cfvertex_to_fvertex[ftype]
-      pindexfound = false
-      for (pindex, cfvertex_to_fvertex) in enumerate(pindex_to_cfvertex_to_fvertex)
-        found = true
-        for (cfvertex,fvertex) in enumerate(cfvertex_to_fvertex)
-          vertex1 = face_to_fvertex_to_vertex.data[b+fvertex]
-          cvertex = cfvertex_to_cvertex[cfvertex]
-          vertex2 = cell_to_cvertex_to_vertex.data[c+cvertex]
-          if vertex1 != vertex2
-            found = false
-            break
-          end
-        end
-        if found
-          cell_to_lface_to_pindex.data[a+lface] = pindex
-          pindexfound = true
-          break
-        end
-      end
-      @assert pindexfound "Valid pindex not found"
-    end
-  end
-
-end
-
 function extract_face_reffes(
   ::Type{<:ReferenceFE{d}},
   model::DiscreteModel,

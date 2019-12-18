@@ -35,8 +35,10 @@ import Gridap.ReferenceFEs: is_affine
 import Gridap.ReferenceFEs: has_straight_faces
 import Gridap.ReferenceFEs: get_reffes
 import Gridap.ReferenceFEs: get_faces
+import Gridap.ReferenceFEs: get_face_vertices
 import Gridap.ReferenceFEs: num_dims
 import Gridap.ReferenceFEs: get_dimranges
+import Gridap.ReferenceFEs: get_dimrange
 import Gridap.ReferenceFEs: num_faces
 import Gridap.ReferenceFEs: num_facets
 import Gridap.ReferenceFEs: num_edges
@@ -49,8 +51,19 @@ import Gridap.ReferenceFEs: get_face_nodes
 import Gridap.ReferenceFEs: get_face_own_nodes
 import Gridap.ReferenceFEs: get_polytope
 import Gridap.ReferenceFEs: get_vertex_node
+import Gridap.ReferenceFEs: is_simplex
+import Gridap.ReferenceFEs: is_n_cube
+import Gridap.ReferenceFEs: get_reffaces
+import Gridap.ReferenceFEs: get_face_type
 
 import Gridap.Fields: field_array_gradient
+
+export GridTopology
+export compute_reffaces
+export compute_cell_faces
+export compute_face_vertices
+export compute_isboundary_face
+export test_grid_topology
 
 export Triangulation
 export get_cell_coordinates
@@ -109,6 +122,10 @@ export add_tag!
 export add_tag_from_tags!
 
 export CartesianDiscreteModel
+
+include("GridTopologies.jl")
+
+include("GridTopologyMocks.jl")
 
 include("Triangulations.jl")
 
