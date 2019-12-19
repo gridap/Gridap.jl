@@ -68,6 +68,8 @@ export get_cell_permutations
 export compute_cell_permutations
 export test_grid_topology
 
+export UnstructuredGridTopology
+
 export Triangulation
 export get_cell_coordinates
 export get_cell_type
@@ -129,6 +131,8 @@ export CartesianDiscreteModel
 include("GridTopologies.jl")
 
 include("GridTopologyMocks.jl")
+
+include("UnstructuredGridTopologies.jl")
 
 include("Triangulations.jl")
 
