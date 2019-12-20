@@ -1,49 +1,39 @@
 
 """
-    abstract type ConformingTriangulation{Dc,Dp} <: Triangulation{Dc,Dp}
+    abstract type Grid{Dc,Dp} <: Triangulation{Dc,Dp}
 
 Abstract type that represents conforming triangulations, whose cell-wise
 nodal coordinates are defined with a vector of nodal coordinates, plus
 a cell-wise vector of node ids.
 
-The interface of `ConformingTriangulation` is defined by overloading the
+The interface of `Grid` is defined by overloading the
 methods in `Triangulation` plus the following ones:
 
-- [`get_node_coordinates(trian::ConformingTriangulation)`](@ref)
-- [`get_cell_nodes(trian::ConformingTriangulation)`](@ref)
+- [`get_node_coordinates(trian::Grid)`](@ref)
+- [`get_cell_nodes(trian::Grid)`](@ref)
 
 From these two methods a default implementation of [`get_cell_coordinates(trian::Triangulation)`](@ref)
 is available.
 
-The `ConformingTriangulation`  interface has the following traits
+The `Grid`  interface has the following traits
 
-- [`OrientationStyle(::Type{<:ConformingTriangulation})`](@ref)
-- [`ConformityStyle(::Type{<:ConformingTriangulation})`](@ref)
+- [`OrientationStyle(::Type{<:Grid})`](@ref)
+- [`ConformityStyle(::Type{<:Grid})`](@ref)
 
-The interface of `ConformingTriangulation` is tested with
+The interface of `Grid` is tested with
 
 - [`test_conforming_triangulation`](@ref)
 
 """
-abstract type ConformingTriangulation{Dc,Dp} <: Triangulation{Dc,Dp} end
+abstract type Grid{Dc,Dp} <: Triangulation{Dc,Dp} end
 
-# Traits
-
-"""
-    OrientationStyle(::Type{<:ConformingTriangulation}) -> Val{Bool}
-    OrientationStyle(::ConformingTriangulation) -> Val{Bool}
-
-`Val{true}()` if has oriented faces, `Val{false}()` otherwise (default).
-"""
-OrientationStyle(::Type{<:ConformingTriangulation}) = Val{false}()
-OrientationStyle(a::ConformingTriangulation) = OrientationStyle(typeof(a))
 
 """
-    is_oriented(::Type{<:ConformingTriangulation}) -> Bool
-    is_oriented(a::ConformingTriangulation) -> Bool
+    is_oriented(::Type{<:Grid}) -> Bool
+    is_oriented(a::Grid) -> Bool
 """
-is_oriented(a::ConformingTriangulation) = _is_oriented(OrientationStyle(a))
-is_oriented(a::Type{<:ConformingTriangulation}) = _is_oriented(OrientationStyle(a))
+is_oriented(a::Grid) = _is_oriented(OrientationStyle(a))
+is_oriented(a::Type{<:Grid}) = _is_oriented(OrientationStyle(a))
 _is_oriented(::Val{true}) = true
 _is_oriented(::Val{false}) = false
 
@@ -73,32 +63,32 @@ struct IrregularPConformity <: ConformityStyle end
 struct IrregularHPConformity <: ConformityStyle end
 
 """
-    ConformityStyle(::Type{<:ConformingTriangulation})
-    ConformityStyle(a::ConformingTriangulation)
+    ConformityStyle(::Type{<:Grid})
+    ConformityStyle(a::Grid)
 """
-ConformityStyle(::Type{<:ConformingTriangulation}) = RegularConformity()
-ConformityStyle(a::ConformingTriangulation) = ConformityStyle(typeof(a))
+ConformityStyle(::Type{<:Grid}) = RegularConformity()
+ConformityStyle(a::Grid) = ConformityStyle(typeof(a))
 
 # Interface
 
 """
-    get_node_coordinates(trian::ConformingTriangulation) -> AbstractArray{<:Point{Dp}}
+    get_node_coordinates(trian::Grid) -> AbstractArray{<:Point{Dp}}
 """
-function get_node_coordinates(trian::ConformingTriangulation)
+function get_node_coordinates(trian::Grid)
   @abstractmethod
 end
 
 """
-    get_cell_nodes(trian::ConformingTriangulation)
+    get_cell_nodes(trian::Grid)
 """
-function get_cell_nodes(trian::ConformingTriangulation)
+function get_cell_nodes(trian::Grid)
   @abstractmethod
 end
 
 """
-    test_conforming_triangulation(trian::ConformingTriangulation)
+    test_conforming_triangulation(trian::Grid)
 """
-function test_conforming_triangulation(trian::ConformingTriangulation)
+function test_conforming_triangulation(trian::Grid)
   test_triangulation(trian)
   nodes_coords = get_node_coordinates(trian)
   @test isa(nodes_coords,AbstractArray{<:Point})
@@ -112,7 +102,7 @@ end
 
 # Methods from triangulation
 
-function get_cell_coordinates(trian::ConformingTriangulation)
+function get_cell_coordinates(trian::Grid)
   node_to_coords = get_node_coordinates(trian)
   cell_to_nodes = get_cell_nodes(trian)
   LocalToGlobalArray(cell_to_nodes,node_to_coords)
@@ -121,38 +111,38 @@ end
 # Some API
 
 """
-    num_nodes(trian::ConformingTriangulation) -> Int
+    num_nodes(trian::Grid) -> Int
 """
-num_nodes(trian::ConformingTriangulation) = length(get_node_coordinates(trian))
+num_nodes(trian::Grid) = length(get_node_coordinates(trian))
 
 """
-    ConformingTriangulation(reffe::NodalReferenceFE)
+    Grid(reffe::NodalReferenceFE)
 """
-function ConformingTriangulation(reffe::NodalReferenceFE)
+function Grid(reffe::NodalReferenceFE)
   UnstructuredGrid(reffe)
 end
 
 """
-    ConformingTriangulation(::Type{<:ReferenceFE{d}},p::Polytope) where d
+    Grid(::Type{<:ReferenceFE{d}},p::Polytope) where d
 """
-function ConformingTriangulation(::Type{<:ReferenceFE{d}},p::Polytope) where d
+function Grid(::Type{<:ReferenceFE{d}},p::Polytope) where d
   UnstructuredGrid(NodalReferenceFE{d},p)
 end
 
 """
-    ConformingTriangulation(::Type{<:ReferenceFE{d}},trian::ConformingTriangulation) where d
+    Grid(::Type{<:ReferenceFE{d}},trian::Grid) where d
 """
-function ConformingTriangulation(::Type{<:ReferenceFE{d}},trian::ConformingTriangulation) where d
+function Grid(::Type{<:ReferenceFE{d}},trian::Grid) where d
   UnstructuredGrid(NodalReferenceFE{d},trian)
 end
 
 """
-    replace_reffes(grid::ConformingTriangulation,reffes::Vector{<:NodalReferenceFE})
+    replace_reffes(grid::Grid,reffes::Vector{<:NodalReferenceFE})
 """
-function replace_reffes(grid::ConformingTriangulation,reffes::Vector{<:NodalReferenceFE})
+function replace_reffes(grid::Grid,reffes::Vector{<:NodalReferenceFE})
   model = UnstructuredDiscreteModel(grid)
   model2 = replace_reffes(model,reffes)
   D = num_cell_dims(grid)
-  ConformingTriangulation(ReferenceFE{D},model2)
+  Grid(ReferenceFE{D},model2)
 end
 

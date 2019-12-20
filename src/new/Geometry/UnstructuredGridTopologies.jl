@@ -1,7 +1,7 @@
 
 """
 """
-struct UnstructuredGridTopology{Dc,Dp,T} <: GridTopology{Dc,Dp}
+struct UnstructuredGridTopology{Dc,Dp,T,O} <: GridTopology{Dc,Dp}
   vertex_coordinates::Vector{Point{Dp,T}}
   n_m_to_nface_to_mfaces::Matrix{Table{Int,Int32}}
   cell_type::Vector{Int8}
@@ -16,7 +16,8 @@ function UnstructuredGridTopology(
   vertex_coordinates::Vector{<:Point},
   cell_vertices::Table,
   cell_type::Vector{<:Integer},
-  polytopes::Vector{<:Polytope})
+  polytopes::Vector{<:Polytope},
+  orientation::Val{O}=Val{false}()) where O
 
   D = num_dims(first(polytopes))
   n = D+1
@@ -29,7 +30,7 @@ function UnstructuredGridTopology(
   Dp = length(P)
   T = eltype(P)
 
-  UnstructuredGridTopology{D,Dp,T}(
+  UnstructuredGridTopology{D,Dp,T,O}(
     vertex_coordinates,
     n_m_to_nface_to_mfaces,
     cell_type,
@@ -43,7 +44,8 @@ function UnstructuredGridTopology(
   vertex_coordinates::Vector{<:Point},
   d_to_dface_vertices::Vector{<:Table},
   cell_type::Vector{<:Integer},
-  polytopes::Vector{<:Polytope})
+  polytopes::Vector{<:Polytope},
+  orientation::Val{O}=Val{false}()) where O
 
   D = num_dims(first(polytopes))
   n = D+1
@@ -60,7 +62,7 @@ function UnstructuredGridTopology(
   Dp = length(P)
   T = eltype(P)
 
-  UnstructuredGridTopology{D,Dp,T}(
+  UnstructuredGridTopology{D,Dp,T,O}(
     vertex_coordinates,
     n_m_to_nface_to_mfaces,
     cell_type,
@@ -82,6 +84,8 @@ function num_faces(g::UnstructuredGridTopology,d::Integer)
 end
 
 # Implementation of abstract API
+
+OrientationStyle(::Type{UnstructuredGridTopology{Dc,Dp,T,O}}) where {Dc,Dp,T,O} = Val{O}()
 
 get_vertex_coordinates(g::UnstructuredGridTopology) = g.vertex_coordinates
 

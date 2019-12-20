@@ -48,6 +48,8 @@ face_to_vertices = get_face_vertices(top)
 
 @test is_simplex(top) == false
 @test is_n_cube(top) == false
+@test is_oriented(top) == false
+@test is_regular(top) == true
 
 reffaces, face_to_ftype = compute_reffaces(Polytope{1},top)
 @test reffaces == [SEGMENT,]

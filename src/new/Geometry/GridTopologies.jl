@@ -12,12 +12,39 @@ The `GridTopology` interface is defined by overloading the methods:
 - [`get_cell_type(g::GridTopology)`](@ref)
 - [`get_vertex_coordinates(g::GridTopology)`](@ref)
 
+The `GridTopology` interface has the following traits
+
+- [`OrientationStyle(::Type{<:GridTopology})`](@ref)
+- [`RegularityStyle(::Type{<:GridTopology})`](@ref)
+
 and tested with this function:
 
 - [`test_grid_topology`](@ref)
 
 """
 abstract type GridTopology{Dc,Dp} end
+
+# Traits
+
+"""
+    OrientationStyle(::Type{<:Grid}) -> Val{Bool}
+    OrientationStyle(::Grid) -> Val{Bool}
+
+`Val{true}()` if has oriented faces, `Val{false}()` otherwise (default).
+"""
+OrientationStyle(::Type{<:GridTopology}) = Val{false}()
+OrientationStyle(a::GridTopology) = OrientationStyle(typeof(a))
+
+"""
+    RegularityStyle(::Type{<:Grid}) -> Val{Bool}
+    RegularityStyle(::Grid) -> Val{Bool}
+
+`Val{true}()` if no hanging-nodes (refault), `Val{false}()` otherwise.
+"""
+RegularityStyle(::Type{<:GridTopology}) = Val{true}()
+RegularityStyle(a::GridTopology) = RegularityStyle(typeof(a))
+
+# Abstract methods
 
 """
     get_faces(g::GridTopology,dimfrom::Integer,dimto::Integer)
@@ -64,6 +91,8 @@ function test_grid_topology(top::GridTopology{Dc,Dp}) where {Dc,Dp}
   get_isboundary_face(top)
   get_cell_faces(top)
   get_face_vertices(top)
+  @test OrientationStyle(top) in (Val{false}(), Val{true}())
+  @test RegularityStyle(top) in (Val{false}(), Val{true}())
   for n in 0:D
     compute_reffaces(Polytope{n},top)
     for m in 0:D
@@ -238,6 +267,24 @@ end
 function is_n_cube(p::GridTopology)
   all(map(is_n_cube, get_polytopes(p)))
 end
+
+"""
+    is_oriented(::Type{<:GridTopology}) -> Bool
+    is_oriented(a::GridTopology) -> Bool
+"""
+is_oriented(a::GridTopology) = _is_oriented(OrientationStyle(a))
+is_oriented(a::Type{<:GridTopology}) = _is_oriented(OrientationStyle(a))
+_is_oriented(::Val{true}) = true
+_is_oriented(::Val{false}) = false
+
+"""
+    is_regular(::Type{<:GridTopology}) -> Bool
+    is_regular(a::GridTopology) -> Bool
+"""
+is_regular(a::GridTopology) = _is_regular(RegularityStyle(a))
+is_regular(a::Type{<:GridTopology}) = _is_regular(RegularityStyle(a))
+_is_regular(::Val{true}) = true
+_is_regular(::Val{false}) = false
 
 """
     get_reffaces(::Type{<:Polytope{d}}, g::GridTopology) where d

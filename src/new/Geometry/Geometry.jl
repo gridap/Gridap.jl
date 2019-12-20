@@ -73,6 +73,10 @@ export compute_cell_permutations
 export test_grid_topology
 export get_cell_faces
 export get_isboundary_face
+export OrientationStyle
+export RegularityStyle
+export is_oriented
+export is_regular
 
 export UnstructuredGridTopology
 
@@ -84,11 +88,9 @@ export get_cell_shapefuns
 export get_cell_map
 export test_triangulation
 
-#export ConformingTriangulation
+#export Grid
 #export get_cell_nodes
 #export test_conforming_triangulation
-#export OrientationStyle
-#export is_oriented
 #export ConformityStyle
 #export RegularConformity
 #export IrregularHConformity
@@ -136,7 +138,7 @@ include("UnstructuredGridTopologies.jl")
 
 include("Triangulations.jl")
 
-#include("ConformingTriangulations.jl")
+#include("Grids.jl")
 #
 #include("ConformingTrianMocks.jl")
 #

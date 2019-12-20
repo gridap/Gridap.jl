@@ -18,6 +18,7 @@ g = UnstructuredGridTopology(
 
 test_grid_topology(g)
 test_grid_topology(g)
+
 @test num_faces(g,0) == num_faces(m,0)
 @test num_faces(g,1) == num_faces(m,1)
 @test num_faces(g,2) == num_faces(m,2)
@@ -36,6 +37,16 @@ test_grid_topology(g)
 @test get_faces(g,1,0) == get_faces(m,1,0)
 @test get_faces(g,1,1) == get_faces(m,1,1)
 @test get_vertex_coordinates(g) == get_vertex_coordinates(m)           
+@test is_oriented(g) == false
+
+g = UnstructuredGridTopology(
+  get_vertex_coordinates(m),
+  get_cell_vertices(m),
+  get_cell_type(m),
+  get_polytopes(m),
+  Val{true}())
+
+@test is_oriented(g) == true
 
 g = UnstructuredGridTopology(
   get_vertex_coordinates(m),
@@ -50,8 +61,18 @@ g = UnstructuredGridTopology(
 @test get_faces(g,0,1) == get_faces(m,0,1)
 @test get_faces(g,1,0) == get_faces(m,1,0)
 @test get_faces(g,1,1) == get_faces(m,1,1)
+@test is_oriented(g) == false
 
 test_grid_topology(g)
 test_grid_topology(g)
+
+g = UnstructuredGridTopology(
+  get_vertex_coordinates(m),
+  [get_face_vertices(m,d) for d in 0:num_cell_dims(m)],
+  get_cell_type(m),
+  get_polytopes(m),
+  Val{true}())
+
+@test is_oriented(g) == true
 
 end # module
