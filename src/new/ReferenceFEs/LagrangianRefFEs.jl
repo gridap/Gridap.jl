@@ -1,3 +1,214 @@
+#"""
+#    get_face_own_nodes(reffe::NodalReferenceFE,d::Integer)
+#"""
+#function get_face_own_nodes(reffe::NodalReferenceFE,d::Integer)
+#  p = get_polytope(reffe)
+#  range = get_dimrange(p,d)
+#  get_face_own_nodes(reffe)[range]
+#end
+#
+#
+#"""
+#    num_nodes(reffe::NodalReferenceFE)
+#"""
+#function num_nodes(reffe::NodalReferenceFE)
+#  length(get_node_coordinates(reffe))
+#end
+#
+#"""
+#    get_face_nodes(reffe::NodalReferenceFE) -> Vector{Vector{Int}}
+#
+#Returns a vector of vector that, for each face, stores the
+#nodeids in the closure of the face.
+#"""
+#function get_face_nodes(reffe::NodalReferenceFE)
+#  polytope = get_polytope(reffe)
+#  D = num_dims(polytope)
+#  nfaces = num_faces(polytope)
+#  face_nodeids = [Int[] for i in 1:nfaces]
+#  for d in 0:(D-1)
+#    _get_face_nodeids_d!(face_nodeids,Val{d}(),reffe,polytope)
+#  end
+#  face_nodeids[end] = collect(1:num_nodes(reffe))
+#  face_nodeids
+#end
+#
+#function _get_face_nodeids_d!(face_to_nodes,::Val{d},reffe,polytope) where d
+#
+#  nface_to_own_nodes = get_face_own_nodes(reffe)
+#  nface_mface_to_nface = get_faces(polytope)
+#  offset = get_offset(polytope,d)
+#
+#  for iface in 1:num_faces(polytope,d)
+#    face_reffe = ReferenceFE{d}(reffe,iface)
+#    face_polytope = get_polytope(face_reffe)
+#    mface_to_own_lnodes = get_face_own_nodes(face_reffe)
+#    nodes = zeros(Int,num_nodes(face_reffe))
+#    mface_to_nface = nface_mface_to_nface[iface+offset]
+#    for mface in 1:num_faces(face_polytope)
+#      nface = mface_to_nface[mface]
+#      own_nodes = nface_to_own_nodes[nface]
+#      own_lnodes = mface_to_own_lnodes[mface]
+#      nodes[own_lnodes] = own_nodes
+#    end
+#    face_to_nodes[iface+offset] = nodes
+#  end
+#
+#end
+#
+#"""
+#    get_vertex_node(reffe::NodalReferenceFE) -> Vector{Int}
+#"""
+#function get_vertex_node(reffe::NodalReferenceFE)
+#  d = 0
+#  p = get_polytope(reffe)
+#  range = get_dimranges(p)[d+1]
+#  vertex_to_nodes = get_face_own_nodes(reffe)[range]
+#  map(first, vertex_to_nodes)
+#end
+#
+#"""
+#    has_straight_faces(reffe::NodalReferenceFE) -> Bool
+#
+#Query if the `reffe` has straight faces (i.e., if the
+#nodes are equivalent to the vertices)
+#"""
+#function has_straight_faces(reffe::NodalReferenceFE)
+#  p = get_polytope(reffe)
+#  r = true
+#  r = r && num_vertices(p) == num_nodes(reffe)
+#  r = r && get_vertex_node(reffe) == collect(1:num_nodes(reffe))
+#  r
+#end
+#
+#"""
+#    is_affine(reffe::NodalReferenceFE) -> Bool
+#
+#Query if the `reffe` leads to an afine map
+#(true only for first order spaces on top of simplices)
+#"""
+#function is_affine(reffe::NodalReferenceFE)
+#  p = get_polytope(reffe)
+#  has_straight_faces(reffe) && is_simplex(p)
+#end
+#- [`get_face_own_nodes(reffe::NodalReferenceFE)`](@ref)
+#- [`get_face_own_nodes_permutations(reffe::NodalReferenceFE)`](@ref)
+#- [`get_face_nodes(reffe::NodalReferenceFE)`](@ref)
+#"""
+#    NodalReferenceFE(p::Polytope)
+#
+#Built an instance of `NodalReferenceFE` corresponding to
+#the scalar-valued nodal reference FE, whose nodes correspond with the
+#vertices of the given polytope.
+#"""
+#function NodalReferenceFE(p::Polytope)
+#  @abstractmethod
+#end
+
+#"""
+#    get_dof_to_comp(reffe::NodalReferenceFE)
+#"""
+#function get_dof_to_comp(reffe::NodalReferenceFE)
+#  @abstractmethod
+#end
+
+#- [`get_dof_to_comp(reffe::NodalReferenceFE)`](@ref)
+#and optionally these ones:
+#
+#- [`ReferenceFE{N}(reffe::ReferenceFE,nfaceid::Integer) where N`](@ref)
+#- [`(==)(a::ReferenceFE{D},b::ReferenceFE{D}) where D`](@ref)
+## optional
+#
+#"""
+#    (==)(a::ReferenceFE{D},b::ReferenceFE{D}) where D
+#
+#Returns `true` if the polytopes `a` and `b` are equivalent. Otherwise, it 
+#returns `false`.
+#"""
+#function (==)(a::ReferenceFE{D},b::ReferenceFE{D}) where D
+#  @abstractmethod
+#end
+#
+#function (==)(a::ReferenceFE,b::ReferenceFE)
+#  false
+#end
+#
+#"""
+#    ReferenceFE{N}(reffe::ReferenceFE,nfaceid::Integer) where N
+#
+#Returns a reference FE obtained by the restriction of the given one
+#to the face with `nfaceid` within dimension `N`.
+#"""
+#function ReferenceFE{N}(reffe::ReferenceFE,nfaceid::Integer) where N
+#  @abstractmethod
+#end
+
+#"""
+#    get_face_dofs(reffe::ReferenceFE) -> Vector{Vector{Int}}
+#
+#Returns a vector of vector that, for each face, stores the
+#dofids in the closure of the face.
+#"""
+#function get_face_dofs(reffe::ReferenceFE)
+#  polytope = get_polytope(reffe)
+#  D = num_dims(polytope)
+#  nfaces = num_faces(polytope)
+#  face_dofids = [Int[] for i in 1:nfaces]
+#  for d in 0:(D-1)
+#    _get_face_dofids_d!(face_dofids,Val{d}(),reffe,polytope)
+#  end
+#  face_dofids[end] = collect(1:num_dofs(reffe))
+#  face_dofids
+#end
+#
+#function _get_face_dofids_d!(face_to_dofs,::Val{d},reffe,polytope) where d
+#
+#  nface_to_own_dofs = get_face_own_dofs(reffe)
+#  nface_mface_to_nface = get_faces(polytope)
+#  offset = get_offset(polytope,d)
+#
+#  for iface in 1:num_faces(polytope,d)
+#    face_reffe = ReferenceFE{d}(reffe,iface)
+#    face_polytope = get_polytope(face_reffe)
+#    mface_to_own_ldofs = get_face_own_dofs(face_reffe)
+#    dofs = zeros(Int,num_dofs(face_reffe))
+#    mface_to_nface = nface_mface_to_nface[iface+offset]
+#    for mface in 1:num_faces(face_polytope)
+#      nface = mface_to_nface[mface]
+#      own_dofs = nface_to_own_dofs[nface]
+#      own_ldofs = mface_to_own_ldofs[mface]
+#      dofs[own_ldofs] = own_dofs
+#    end
+#    face_to_dofs[iface+offset] = dofs
+#  end
+#
+#end
+
+#"""
+#    get_reffes(
+#      T::Type{<:ReferenceFE{d}},
+#      reffe::ReferenceFE) where d -> Vector{ReferenceFE{d}}
+#"""
+#function get_reffes(T::Type{<:ReferenceFE{d}},reffe::ReferenceFE) where d
+#  ftype_to_reffe::Vector{T}, _ = _compute_reffes_and_face_types(reffe,Val{d}())
+#  ftype_to_reffe
+#end
+#
+#"""
+#    get_face_type(reffe::ReferenceFE, d::Integer) -> Vector{Int}
+#"""
+#function get_face_type(reffe::ReferenceFE, d::Integer)
+#  _, iface_to_ftype = _compute_reffes_and_face_types(reffe,Val{d}())
+#  iface_to_ftype
+#end
+#
+#function _compute_reffes_and_face_types(reffe::ReferenceFE,::Val{d}) where d
+#  p = get_polytope(reffe)
+#  iface_to_reffe = [ ReferenceFE{d}(reffe,iface) for iface in 1:num_faces(p,d) ]
+#  _find_unique_with_indices(iface_to_reffe)
+#end
+
+
 
 """
     struct LagrangianRefFE{D} <: NodalReferenceFE{D}

@@ -73,6 +73,7 @@ export get_polytope
 export get_prebasis
 export get_dof_basis
 export get_face_own_dofs
+export get_face_own_dofs_permutations
 export get_face_dofs
 export get_own_dofs_permutations
 export get_shapefuns
@@ -83,6 +84,7 @@ export test_reference_fe
 export num_dofs
 
 export NodalReferenceFE
+export GenericNodalRefFE
 export get_face_own_nodes
 export get_face_nodes
 export get_own_nodes_permutations
@@ -125,8 +127,10 @@ include("LagrangianDofBases.jl")
 
 include("ReferenceFEInterfaces.jl")
 
-include("LagrangianRefFEs.jl")
+include("NodalReferenceFEs.jl")
 
-include("SerendipityRefFEs.jl")
+#include("LagrangianRefFEs.jl")
+#
+#include("SerendipityRefFEs.jl")
 
 end # module

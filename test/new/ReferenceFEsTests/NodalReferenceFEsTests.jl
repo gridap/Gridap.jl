@@ -1,9 +1,9 @@
-module ReferenceFEInterfacesTests
+module NodalReferenceFEsTests
 
 using Test
-using Gridap.Fields
-using Gridap.Polynomials
 using Gridap.ReferenceFEs
+using Gridap.Polynomials
+using Gridap.Fields
 
 D = 2
 T = Float64
@@ -26,10 +26,13 @@ reffe = GenericRefFE(
   ndofs, polytope, prebasis, dofs,
   face_own_dofs, face_own_dofs_permutations, face_dofs)
 
-test_reference_fe(reffe)
+node_coordinates = Point{2,Float64}[(0,0),(1,0),(0,1),(1,1)]
+node_and_comp_to_dof = [1,2,3,4]
 
-shapefuns = get_shapefuns(reffe)
+reffe = GenericNodalRefFE(reffe,node_coordinates,node_and_comp_to_dof)
+test_nodal_reference_fe(reffe)
 
-@test evaluate(shapefuns,x) == [1.0 0.0 0.0 0.0; 0.0 1.0 0.0 0.0; 0.0 0.0 1.0 0.0; 0.0 0.0 0.0 1.0]
+@test get_dof_to_node(reffe) == [1, 2, 3, 4]
+
 
 end # module
