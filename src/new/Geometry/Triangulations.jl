@@ -36,7 +36,7 @@ function get_cell_coordinates(trian::Triangulation)
 end
 
 """
-    get_reffes(trian::Triangulation) -> Vector{<:NodalReferenceFE}
+    get_reffes(trian::Triangulation) -> Vector{LagrangianRefFE}
 """
 function get_reffes(trian::Triangulation)
   @abstractmethod
@@ -60,7 +60,7 @@ function test_triangulation(trian::Triangulation{Dc,Dp}) where {Dc,Dp}
   cell_coords = get_cell_coordinates(trian)
   @test isa(cell_coords,AbstractArray{<:AbstractVector{<:Point}})
   reffes = get_reffes(trian)
-  @test isa(reffes,AbstractVector{<:NodalReferenceFE})
+  @test isa(reffes,AbstractVector{LagrangianRefFE{Dc}})
   cell_types = get_cell_type(trian)
   @test isa(cell_types,AbstractArray{<:Integer})
   ncells = num_cells(trian)
@@ -107,11 +107,11 @@ function is_affine(trian::Triangulation)
 end
 
 """
-    has_straight_faces(trian::Triangulation) -> Bool
+    is_first_order(trian::Triangulation) -> Bool
 """
-function has_straight_faces(trian::Triangulation)
+function is_first_order(trian::Triangulation)
   reffes = get_reffes(trian)
-  all(map(has_straight_faces,reffes))
+  all(map(is_first_order,reffes))
 end
 
 """

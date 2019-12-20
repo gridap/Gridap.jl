@@ -62,6 +62,6 @@ j = [j1,j2,j3]
 test_array_of_fields(cell_map,q,x,grad=j)
 
 @test is_affine(trian) == true
-@test has_straight_faces(trian) == true
+@test is_first_order(trian) == true
 
 end # module

@@ -76,14 +76,14 @@ export get_isboundary_face
 
 export UnstructuredGridTopology
 
-#export Triangulation
-#export get_reffes
-#export get_cell_coordinates
-#export get_cell_reffes
-#export get_cell_shapefuns
-#export get_cell_map
-#export test_triangulation
-#
+export Triangulation
+export get_reffes
+export get_cell_coordinates
+export get_cell_reffes
+export get_cell_shapefuns
+export get_cell_map
+export test_triangulation
+
 #export ConformingTriangulation
 #export get_cell_nodes
 #export test_conforming_triangulation
@@ -134,8 +134,8 @@ include("GridTopologyMocks.jl")
 
 include("UnstructuredGridTopologies.jl")
 
-#include("Triangulations.jl")
-#
+include("Triangulations.jl")
+
 #include("ConformingTriangulations.jl")
 #
 #include("ConformingTrianMocks.jl")
