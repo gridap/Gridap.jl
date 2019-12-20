@@ -15,7 +15,7 @@ include("Polynomials/Polynomials.jl")
 
 include("ReferenceFEs/ReferenceFEs.jl")
 
-#include("Geometry/Geometry.jl")
-#
+include("Geometry/Geometry.jl")
+
 #include("Visualization/Visualization.jl")
 

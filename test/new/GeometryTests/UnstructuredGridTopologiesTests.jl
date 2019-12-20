@@ -18,7 +18,6 @@ g = UnstructuredGridTopology(
 
 test_grid_topology(g)
 test_grid_topology(g)
-
 @test num_faces(g,0) == num_faces(m,0)
 @test num_faces(g,1) == num_faces(m,1)
 @test num_faces(g,2) == num_faces(m,2)
@@ -38,7 +37,6 @@ test_grid_topology(g)
 @test get_faces(g,1,1) == get_faces(m,1,1)
 @test get_vertex_coordinates(g) == get_vertex_coordinates(m)           
 
-
 g = UnstructuredGridTopology(
   get_vertex_coordinates(m),
   [get_face_vertices(m,d) for d in 0:num_cell_dims(m)],
@@ -55,6 +53,5 @@ g = UnstructuredGridTopology(
 
 test_grid_topology(g)
 test_grid_topology(g)
-
 
 end # module

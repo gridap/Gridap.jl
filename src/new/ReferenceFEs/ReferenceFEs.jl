@@ -37,6 +37,8 @@ export get_vertex_permutations
 export is_simplex
 export is_n_cube
 export num_dims
+export num_cell_dims
+export num_point_dims
 export num_vertices
 export num_faces
 export num_facets

@@ -129,3 +129,33 @@ function UnstructuredGrid(::Type{<:ReferenceFE{d}},trian::ConformingTriangulatio
   UnstructuredGrid(NodalReferenceFE{d},model)
 end
 
+function generate_cell_to_faces(d, grid::UnstructuredGrid, cell_to_vertices, vertex_to_cells)
+  reffes = get_reffes(grid)
+  polytopes = map(get_polytope,reffes)
+  cell_type_to_lface_to_lvertices = map( (p)->get_faces(p,d,0), polytopes )
+  cell_to_cell_type = get_cell_type(grid)
+
+  generate_cell_to_faces(
+    cell_to_vertices,
+    cell_type_to_lface_to_lvertices,
+    cell_to_cell_type,
+    vertex_to_cells)
+
+end
+
+function generate_cell_to_vertices(grid::UnstructuredGrid)
+  if has_straight_faces(grid)
+    cell_to_vertices = get_cell_nodes(grid)
+    vertex_to_node = collect(1:num_nodes(grid))
+    node_to_vertex = vertex_to_node
+  else
+    cell_to_nodes = get_cell_nodes(grid)
+    cell_to_cell_type = get_cell_type(grid)
+    reffes = get_reffes(grid)
+    cell_type_to_lvertex_to_lnode = map(get_vertex_node, reffes)
+    cell_to_vertices, vertex_to_node, node_to_vertex = _generate_cell_to_vertices(
+      cell_to_nodes,cell_to_cell_type,cell_type_to_lvertex_to_lnode)
+  end
+  (cell_to_vertices, vertex_to_node, node_to_vertex)
+end
+
