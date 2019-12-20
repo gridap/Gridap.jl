@@ -56,6 +56,26 @@ function get_face_nodes(reffe::NodalReferenceFE)
   @abstractmethod
 end
 
+# Tester
+
+"""
+    test_nodal_reference_fe(reffe::NodalReferenceFE)
+"""
+function test_nodal_reference_fe(reffe::NodalReferenceFE)
+  test_reference_fe(reffe)
+  D = num_dims(reffe)
+  node_coordinates = get_node_coordinates(reffe)
+  @test isa(node_coordinates,Vector{<:Point{D}})
+  @test length(node_coordinates) == num_nodes(reffe)
+  node_and_comp_to_dof = get_node_and_comp_to_dof(reffe)
+  @test isa(node_and_comp_to_dof,Vector)
+  dof_to_node = get_dof_to_node(reffe)
+  @test isa(dof_to_node,Vector{Int})
+  @test isa(get_face_own_nodes(reffe),Vector{Vector{Int}})
+  @test isa(get_face_own_nodes_permutations(reffe),Vector{Vector{Vector{Int}}})
+  @test isa(get_face_nodes(reffe),Vector{Vector{Int}})
+end
+
 # Dafault API
 
 """
@@ -88,7 +108,6 @@ function get_own_nodes_permutations(reffe::NodalReferenceFE)
   get_face_own_nodes_permutations(reffe)[n]
 end
 
-
 """
     get_vertex_node(reffe::NodalReferenceFE) -> Vector{Int}
 """
@@ -110,6 +129,15 @@ function get_face_own_nodes(reffe::NodalReferenceFE,d::Integer)
 end
 
 """
+    get_face_own_nodes_permutations(reffe::NodalReferenceFE,d::Integer)
+"""
+function get_face_own_nodes_permutations(reffe::NodalReferenceFE,d::Integer)
+  p = get_polytope(reffe)
+  range = get_dimrange(p,d)
+  get_face_own_nodes_permutations(reffe)[range]
+end
+
+"""
     get_face_nodes(reffe::NodalReferenceFE,d::Integer)
 """
 function get_face_nodes(reffe::NodalReferenceFE,d::Integer)
@@ -117,28 +145,6 @@ function get_face_nodes(reffe::NodalReferenceFE,d::Integer)
   range = get_dimrange(p,d)
   get_face_nodes(reffe)[range]
 end
-
-
-# Tester
-
-"""
-    test_nodal_reference_fe(reffe::NodalReferenceFE)
-"""
-function test_nodal_reference_fe(reffe::NodalReferenceFE)
-  test_reference_fe(reffe)
-  D = num_dims(reffe)
-  node_coordinates = get_node_coordinates(reffe)
-  @test isa(node_coordinates,Vector{<:Point{D}})
-  @test length(node_coordinates) == num_nodes(reffe)
-  node_and_comp_to_dof = get_node_and_comp_to_dof(reffe)
-  @test isa(node_and_comp_to_dof,Vector)
-  dof_to_node = get_dof_to_node(reffe)
-  @test isa(dof_to_node,Vector{Int})
-  @test isa(get_face_own_nodes(reffe),Vector{Vector{Int}})
-  @test isa(get_face_own_nodes_permutations(reffe),Vector{Vector{Vector{Int}}})
-  @test isa(get_face_nodes(reffe),Vector{Vector{Int}})
-end
-
 
 # Generic implementation
 

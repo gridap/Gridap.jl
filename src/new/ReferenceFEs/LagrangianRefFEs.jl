@@ -189,7 +189,7 @@ end
       T::Type{<:ReferenceFE{d}},
       reffe::LagrangianRefFE) where d -> Vector{LagrangianRefFE{d}}
 """
-function get_reffaces(::Type{<:ReferenceFE{d}},reffe::ReferenceFE) where d
+function get_reffaces(::Type{<:ReferenceFE{d}},reffe::LagrangianRefFE) where d
   ftype_to_reffe::Vector{LagrangianRefFE{d}}, _ = _compute_reffes_and_face_types(reffe,Val{d}())
   ftype_to_reffe
 end

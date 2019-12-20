@@ -110,6 +110,7 @@ get_ptrs_eltype(::Table{T,P}) where {T,P}
 get_data_eltype(::Table{T,P}) where {T,P}
 append_tables_globally(tables::Table{T,P}...) where {T,P}
 append_tables_locally(offsets::NTuple, tables::NTuple)
+append_tables_locally(tables::Table...)
 rewind_ptrs!(ptrs::AbstractVector{<:Integer})
 generate_data_and_ptrs(vv::AbstractVector{<:AbstractVector{T}}) where T
 length_to_ptrs!(ptrs::AbstractArray{<:Integer})

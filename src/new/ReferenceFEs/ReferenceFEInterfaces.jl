@@ -87,6 +87,39 @@ function get_face_dofs(reffe::ReferenceFE)
   @abstractmethod
 end
 
+# Test
+
+"""
+    test_reference_fe(reffe::ReferenceFE{D}) where D
+
+Test if the methods in the `ReferenceFE` interface are defined for the object `reffe`.
+"""
+function test_reference_fe(reffe::ReferenceFE{D}) where D
+  @test D == num_dims(reffe)
+  p = get_polytope(reffe)
+  @test isa(p,Polytope{D})
+  basis = get_prebasis(reffe)
+  @test isa(basis,Field)
+  dofs = get_dof_basis(reffe)
+  @test isa(dofs,Dof)
+  facedofs = get_face_own_dofs(reffe)
+  @test isa(facedofs,Vector{Vector{Int}})
+  @test length(facedofs) == num_faces(p)
+  facedofs_perms = get_face_own_dofs_permutations(reffe)
+  @test isa(facedofs_perms,Vector{Vector{Vector{Int}}})
+  @test length(facedofs_perms) == num_faces(p)
+  facedofs = get_face_dofs(reffe)
+  @test isa(facedofs,Vector{Vector{Int}})
+  @test length(facedofs) == num_faces(p)
+  shapefuns = get_shapefuns(reffe)
+  @test isa(shapefuns,Field)
+  ndofs = num_dofs(reffe)
+  m = evaluate(dofs,basis)
+  @test ndofs == size(m,1)
+  @test ndofs == size(m,2)
+end
+
+
 """
 Constant of type `Int`  used to signal that a permutation is not valid.
 """
@@ -156,6 +189,15 @@ function get_face_own_dofs(reffe::ReferenceFE,d::Integer)
 end
 
 """
+    get_face_dofs(reffe::ReferenceFE,d::Integer)
+"""
+function get_face_dofs(reffe::ReferenceFE,d::Integer)
+  p = get_polytope(reffe)
+  range = get_dimrange(p,d)
+  get_face_dofs(reffe)[range]
+end
+
+"""
     get_face_own_dofs_permutations(reffe::ReferenceFE,d::Integer)
 """
 function get_face_own_dofs_permutations(reffe::ReferenceFE,d::Integer)
@@ -198,38 +240,6 @@ It is equivalent to
 function compute_shapefuns(dofs,prebasis)
   change = inv(evaluate(dofs,prebasis))
   change_basis(prebasis,change)
-end
-
-# Test
-
-"""
-    test_reference_fe(reffe::ReferenceFE{D}) where D
-
-Test if the methods in the `ReferenceFE` interface are defined for the object `reffe`.
-"""
-function test_reference_fe(reffe::ReferenceFE{D};optional::Bool=false) where D
-  @test D == num_dims(reffe)
-  p = get_polytope(reffe)
-  @test isa(p,Polytope{D})
-  basis = get_prebasis(reffe)
-  @test isa(basis,Field)
-  dofs = get_dof_basis(reffe)
-  @test isa(dofs,Dof)
-  facedofs = get_face_own_dofs(reffe)
-  @test isa(facedofs,Vector{Vector{Int}})
-  @test length(facedofs) == num_faces(p)
-  facedofs_perms = get_face_own_dofs_permutations(reffe)
-  @test isa(facedofs_perms,Vector{Vector{Vector{Int}}})
-  @test length(facedofs_perms) == num_faces(p)
-  facedofs = get_face_dofs(reffe)
-  @test isa(facedofs,Vector{Vector{Int}})
-  @test length(facedofs) == num_faces(p)
-  shapefuns = get_shapefuns(reffe)
-  @test isa(shapefuns,Field)
-  ndofs = num_dofs(reffe)
-  m = evaluate(dofs,basis)
-  @test ndofs == size(m,1)
-  @test ndofs == size(m,2)
 end
 
 # IO

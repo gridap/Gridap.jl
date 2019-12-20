@@ -101,18 +101,23 @@ get_polytope(reffe::ReferenceFE)
 get_prebasis(reffe::ReferenceFE)
 get_dof_basis(reffe::ReferenceFE)
 get_face_own_dofs(reffe::ReferenceFE)
-get_face_own_dofs(reffe::ReferenceFE,d::Integer)
+get_face_own_dofs_permutations(reffe::ReferenceFE)
 get_face_dofs(reffe::ReferenceFE)
-ReferenceFE{N}(reffe::ReferenceFE,nfaceid::Integer) where N
-get_own_dofs_permutations(reffe::ReferenceFE)
 INVALID_PERM
-(==)(a::ReferenceFE{D},b::ReferenceFE{D}) where D
+test_reference_fe(reffe::ReferenceFE{D}) where D
+num_dims(reffe::ReferenceFE)
+num_cell_dims(reffe::ReferenceFE)
+num_point_dims(reffe::ReferenceFE)
+num_faces(reffe::ReferenceFE)
+num_vertices(reffe::ReferenceFE)
+num_edges(reffe::ReferenceFE)
+num_facets(reffe::ReferenceFE)
+get_face_own_dofs(reffe::ReferenceFE,d::Integer)
+get_face_own_dofs_permutations(reffe::ReferenceFE,d::Integer)
+get_own_dofs_permutations(reffe::ReferenceFE)
+get_face_dofs(reffe::ReferenceFE,d::Integer)
 get_shapefuns(reffe::ReferenceFE)
 compute_shapefuns(dofs,prebasis)
-num_dims(::ReferenceFE)
-test_reference_fe(reffe::ReferenceFE{D}) where D
-get_reffes(T::Type{<:ReferenceFE{d}},reffe::ReferenceFE) where d
-get_face_type(reffe::ReferenceFE, d::Integer)
 ```
 
 ### Generic reference elements
@@ -120,14 +125,14 @@ get_face_type(reffe::ReferenceFE, d::Integer)
 ```@docs
 GenericRefFE
 GenericRefFE(
+  ndofs::Int,
   polytope::Polytope{D},
   prebasis::Field,
   dofs::Dof,
-  facedofids::Vector{Vector{Int}};
-  shapefuns::Field,
-  ndofs::Int,
-  dofperms::Vector{Vector{Int}},
-  reffaces) where D
+  face_own_dofs::Vector{Vector{Int}},
+  face_own_dofs_permutations::Vector{Vector{Vector{Int}}},
+  face_dofs::Vector{Vector{Int}},
+  shapefuns::Field=compute_shapefuns(dofs,prebasis)) where D
 ```
 
 ## Node-based reference Finite Elements
@@ -136,20 +141,25 @@ GenericRefFE(
 
 ```@docs
 NodalReferenceFE
-NodalReferenceFE(p::Polytope)
 get_node_coordinates(reffe::NodalReferenceFE)
-get_face_own_nodes(reffe::NodalReferenceFE)
-get_face_own_nodes(reffe::NodalReferenceFE,d::Integer)
-get_face_nodes(reffe::NodalReferenceFE)
-get_own_nodes_permutations(reffe::NodalReferenceFE)
-get_dof_to_node(reffe::NodalReferenceFE)
-get_dof_to_comp(reffe::NodalReferenceFE)
 get_node_and_comp_to_dof(reffe::NodalReferenceFE)
-get_vertex_node(reffe::NodalReferenceFE)
-num_nodes(reffe::NodalReferenceFE)
+get_face_own_nodes(reffe::NodalReferenceFE)
+get_face_own_nodes_permutations(reffe::NodalReferenceFE)
+get_face_nodes(reffe::NodalReferenceFE)
 test_nodal_reference_fe
-is_affine(reffe::NodalReferenceFE)
-has_straight_faces(reffe::NodalReferenceFE)
+num_nodes(reffe::NodalReferenceFE)
+get_dof_to_node(reffe::NodalReferenceFE)
+get_own_nodes_permutations(reffe::NodalReferenceFE)
+get_vertex_node(reffe::NodalReferenceFE)
+get_face_own_nodes(reffe::NodalReferenceFE,d::Integer)
+get_face_own_nodes_permutations(reffe::NodalReferenceFE,d::Integer)
+get_face_nodes(reffe::NodalReferenceFE,d::Integer)
+```
+
+### GenericNodalRefFE
+
+```@docs
+GenericNodalRefFE
 ```
 
 ### Lagrangian reference elements
@@ -160,9 +170,9 @@ LagrangianRefFE(
   polytope::Polytope{D},
   prebasis::MonomialBasis,
   dofs::LagrangianDofBasis,
-  face_own_nodeids::Vector{Vector{Int}},
+  face_own_nodes::Vector{Vector{Int}},
   own_nodes_permutations::Vector{Vector{Int}},
-  reffaces...) where D
+  reffaces) where D
 LagrangianRefFE(::Type{T},p::Polytope{D},orders) where {T,D}
 compute_monomial_basis(::Type{T},p::Polytope,orders) where T
 compute_own_nodes(p::Polytope,orders)
@@ -170,6 +180,13 @@ compute_face_orders(p::Polytope,face::Polytope,iface::Int,orders)
 compute_nodes(p::Polytope,orders)
 compute_own_nodes_permutations(p::Polytope, interior_nodes)
 compute_lagrangian_reffaces(::Type{T},p::Polytope,orders) where T
+get_dof_to_comp(reffe::LagrangianRefFE)
+ReferenceFE{N}(reffe::LagrangianRefFE,nfaceid::Integer) where N
+(==)(a::LagrangianRefFE{D},b::LagrangianRefFE{D}) where D
+get_reffaces(T::Type{<:ReferenceFE{d}},reffe::LagrangianRefFE) where d
+get_face_type(reffe::LagrangianRefFE, d::Integer)
+is_first_order(reffe::LagrangianRefFE)
+is_affine(reffe::LagrangianRefFE)
 ```
 ### Serendipity reference elements
 

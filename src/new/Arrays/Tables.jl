@@ -271,6 +271,7 @@ get_data_eltype(::Table{T,P}) where {T,P} = T
 get_data_eltype(::Type{Table{T,P}}) where {T,P} = T
 
 """
+    append_tables_locally(tables::Table...)
 """
 function append_tables_locally(tables::Table...)
   n = length(tables)
