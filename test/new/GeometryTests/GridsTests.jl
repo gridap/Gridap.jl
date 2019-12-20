@@ -1,4 +1,4 @@
-module ConformingTriangulationsTests
+module GridsTests
 
 using Test
 using Gridap.Arrays
@@ -6,10 +6,10 @@ using Gridap.Geometry
 using Gridap.Fields
 using Gridap.ReferenceFEs
 
-using Gridap.Geometry: ConformingTrianMock
+using Gridap.Geometry: GridMock
 
-trian = ConformingTrianMock()
-test_conforming_triangulation(trian)
+trian = GridMock()
+test_grid(trian)
 
 q1i = Point(0.5,0.5)
 np1 = 4
@@ -38,32 +38,26 @@ x = [x1,x2,x3,x4,x5]
 
 test_array_of_fields(cell_map,q,x)
 
-# get low dim grid
-
-grid = ConformingTriangulation(ReferenceFE{1},trian)
-
-# from NodalReferenceFE
+# from LagrangianRefFE
 
 quad8 = LagrangianRefFE(Float64,QUAD,2)
-grid = ConformingTriangulation(quad8)
+grid = Grid(quad8)
 @test num_nodes(grid) == num_nodes(quad8)
 
 # from Polytope
 
-grid = ConformingTriangulation(ReferenceFE{2},WEDGE)
+grid = Grid(ReferenceFE{2},WEDGE)
 @test num_cells(grid) == 5
 @test num_cell_dims(grid) == 2
 @test num_point_dims(grid) == 3
 
-grid = ConformingTriangulation(ReferenceFE{3},WEDGE)
+grid = Grid(ReferenceFE{3},WEDGE)
 @test num_cells(grid) == 1
 @test num_cell_dims(grid) == 3
 @test num_point_dims(grid) == 3
 
-# TODO for the moment only implemented for the aligned case
-#grid = ConformingTrianMock()
-#order = 2
-#reffes = [ LagrangianRefFE(Float64,get_polytope(reffe),order) for reffe in get_reffes(grid)]
-#grid2 = replace_reffes(grid,reffes)
+## get low dim grid
+#
+#grid = Grid(ReferenceFE{1},trian)
 
 end # module

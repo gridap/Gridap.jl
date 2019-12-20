@@ -5,19 +5,23 @@ using Gridap.Arrays
 using Gridap.Geometry
 using Gridap.Fields
 using Gridap.ReferenceFEs
-using Gridap.Geometry: ConformingTrianMock
+using Gridap.Geometry: GridMock
 
 # Unstructured grid from raw data
 
-trian = ConformingTrianMock()
+trian = GridMock()
 
 node_coordinates = get_node_coordinates(trian)
 cell_nodes = get_cell_nodes(trian)
 reffes = get_reffes(trian)
 cell_types = get_cell_type(trian)
 
+grid = UnstructuredGrid(node_coordinates,cell_nodes,reffes,cell_types,Val{true}())
+test_grid(grid)
+@test is_oriented(grid) == true
+
 grid = UnstructuredGrid(node_coordinates,cell_nodes,reffes,cell_types)
-test_conforming_triangulation(grid)
+test_grid(grid)
 
 q1i = Point(0.5,0.5)
 np1 = 4
@@ -44,17 +48,11 @@ x4 = fill(x4i,np1)
 x5 = fill(x5i,np1)
 x = [x1,x2,x3,x4,x5]
 
-
-# UnstructuredGrid from ConformingTriangulation
+# UnstructuredGrid from Grid
 
 grid = UnstructuredGrid(trian)
-test_conforming_triangulation(grid)
+test_grid(grid)
 @test grid === UnstructuredGrid(grid)
-
-# get low dim grid
-
-grid1 = UnstructuredGrid(ReferenceFE{1},trian)
-@test num_cell_dims(grid1) == 1
 
 # UnstructuredGrid from NodalReferenceFE
 
@@ -81,5 +79,10 @@ grid = UnstructuredGrid(get_node_coordinates(quad8))
 @test num_cells(grid) == num_nodes(quad8)
 @test num_cell_dims(grid) == 0
 @test num_point_dims(grid) == 2
+
+## get low dim grid
+#
+#grid1 = UnstructuredGrid(ReferenceFE{1},trian)
+#@test num_cell_dims(grid1) == 1
 
 end # module

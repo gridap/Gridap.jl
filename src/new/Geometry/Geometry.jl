@@ -88,14 +88,13 @@ export get_cell_shapefuns
 export get_cell_map
 export test_triangulation
 
-#export Grid
-#export get_cell_nodes
-#export test_conforming_triangulation
-#export ConformityStyle
-#export RegularConformity
-#export IrregularHConformity
-#export IrregularPConformity
-#export IrregularHPConformity
+export Grid
+export get_cell_nodes
+export test_grid
+
+export UnstructuredGrid
+
+#
 #
 #export DiscreteModel
 #export get_node_face_owner
@@ -111,7 +110,6 @@ export test_triangulation
 #export replace_reffes
 #export test_discrete_model
 #
-#export UnstructuredGrid
 #export UnstructuredDiscreteModel
 #
 #export CartesianGrid
@@ -138,12 +136,12 @@ include("UnstructuredGridTopologies.jl")
 
 include("Triangulations.jl")
 
-#include("Grids.jl")
-#
-#include("ConformingTrianMocks.jl")
-#
-#include("UnstructuredGrids.jl")
-#
+include("Grids.jl")
+
+include("GridMocks.jl")
+
+include("UnstructuredGrids.jl")
+
 #include("CartesianGrids.jl")
 #
 #include("DiscreteModels.jl")

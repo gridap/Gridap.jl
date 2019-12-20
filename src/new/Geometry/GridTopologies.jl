@@ -27,8 +27,8 @@ abstract type GridTopology{Dc,Dp} end
 # Traits
 
 """
-    OrientationStyle(::Type{<:Grid}) -> Val{Bool}
-    OrientationStyle(::Grid) -> Val{Bool}
+    OrientationStyle(::Type{<:GridTopology}) -> Val{Bool}
+    OrientationStyle(::GridTopology) -> Val{Bool}
 
 `Val{true}()` if has oriented faces, `Val{false}()` otherwise (default).
 """
@@ -36,10 +36,10 @@ OrientationStyle(::Type{<:GridTopology}) = Val{false}()
 OrientationStyle(a::GridTopology) = OrientationStyle(typeof(a))
 
 """
-    RegularityStyle(::Type{<:Grid}) -> Val{Bool}
-    RegularityStyle(::Grid) -> Val{Bool}
+    RegularityStyle(::Type{<:GridTopology}) -> Val{Bool}
+    RegularityStyle(::GridTopology) -> Val{Bool}
 
-`Val{true}()` if no hanging-nodes (refault), `Val{false}()` otherwise.
+`Val{true}()` if no hanging-faces (refault), `Val{false}()` otherwise.
 """
 RegularityStyle(::Type{<:GridTopology}) = Val{true}()
 RegularityStyle(a::GridTopology) = RegularityStyle(typeof(a))
