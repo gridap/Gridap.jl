@@ -51,22 +51,23 @@ b = MonomialBasis(VectorValue{2,Int},VERTEX,())
 reffe = LagrangianRefFE(VectorValue{2,Int},VERTEX,())
 @test reffe.face_own_nodes == [[1]]
 @test reffe.data.face_own_dofs == [[1,2]]
-test_nodal_reference_fe(reffe,optional=true)
+@test get_face_own_dofs_permutations(reffe) == [[[1, 2]]] 
+test_nodal_reference_fe(reffe)
 @test ReferenceFE{0}(reffe,1) === reffe
 
 reffe = LagrangianRefFE(VectorValue{2,Float64},SEGMENT,(2,))
 @test get_face_own_dofs(reffe) == [[1, 4], [2, 5], [3, 6]]
-test_nodal_reference_fe(reffe,optional=true)
+test_nodal_reference_fe(reffe)
 
 reffe = LagrangianRefFE(VectorValue{2,Float64},TRI,3)
 @test get_face_own_dofs(reffe) == [[1, 11], [2, 12], [3, 13], [4, 5, 14, 15], [6, 7, 16, 17], [8, 9, 18, 19], [10, 20]]
-test_nodal_reference_fe(reffe,optional=true)
+test_nodal_reference_fe(reffe)
 
 reffe = LagrangianRefFE(Float64,HEX,2)
-test_nodal_reference_fe(reffe,optional=true)
+test_nodal_reference_fe(reffe)
 
 reffe = LagrangianRefFE(Float64,WEDGE,(1,1,2))
-test_nodal_reference_fe(reffe,optional=true)
+test_nodal_reference_fe(reffe)
 refface = ReferenceFE{1}(reffe,3)
 @test get_face_own_dofs(refface) == [[1], [2], [3]]
 refface = ReferenceFE{1}(reffe,4)
@@ -117,16 +118,31 @@ reffaces = compute_lagrangian_reffaces(Float64,QUAD,orders)
 
 reffe = LagrangianRefFE(Float64,QUAD,orders)
 @test num_dofs(reffe) == 1
+@test num_nodes(reffe) == 1
+test_nodal_reference_fe(reffe)
+
+@test get_face_own_nodes(reffe) == Vector{Int}[[], [], [], [], [], [], [], [], [1]]
+@test get_face_own_nodes_permutations(reffe) == Vector{Vector{Int}}[
+  [[]],[[]],[[]],[[]],[[],[]],[[],[]],[[],[]],[[],[]],[[1],[1],[1],[1],[1],[1],[1],[1]] ]
+@test get_own_nodes_permutations(reffe) == [[1], [1], [1], [1], [1], [1], [1], [1]]
 
 reffe = LagrangianRefFE(VectorValue{2,Float64},QUAD,orders)
 @test num_dofs(reffe) == 2
+@test num_nodes(reffe) == 1
+test_nodal_reference_fe(reffe)
+
+@test get_face_own_dofs(reffe) == Array{Int64,1}[[], [], [], [], [], [], [], [], [1, 2]] 
+@test get_face_own_dofs_permutations(reffe) == [
+  [[]],[[]],[[]],[[]],[[],[]],[[],[]],[[],[]],[[],[]],[[1,2],[1,2],[1,2],[1,2],[1,2],[1,2],[1,2],[1,2]]]
 
 own_nodes = compute_own_nodes(TRI,orders)
 @test own_nodes == Point{2,Float64}[(1.0/3,1.0/3)]
 
+# More API
+
 reffe = LagrangianRefFE(Float64,WEDGE,1)
 
-reffes = get_reffes(ReferenceFE{2}, reffe)
+reffes = get_reffaces(ReferenceFE{2}, reffe)
 
 iface_to_ftype = get_face_type(reffe,2)
 

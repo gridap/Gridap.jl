@@ -1,237 +1,22 @@
-#"""
-#    get_face_own_nodes(reffe::NodalReferenceFE,d::Integer)
-#"""
-#function get_face_own_nodes(reffe::NodalReferenceFE,d::Integer)
-#  p = get_polytope(reffe)
-#  range = get_dimrange(p,d)
-#  get_face_own_nodes(reffe)[range]
-#end
-#
-#
-#"""
-#    num_nodes(reffe::NodalReferenceFE)
-#"""
-#function num_nodes(reffe::NodalReferenceFE)
-#  length(get_node_coordinates(reffe))
-#end
-#
-#"""
-#    get_face_nodes(reffe::NodalReferenceFE) -> Vector{Vector{Int}}
-#
-#Returns a vector of vector that, for each face, stores the
-#nodeids in the closure of the face.
-#"""
-#function get_face_nodes(reffe::NodalReferenceFE)
-#  polytope = get_polytope(reffe)
-#  D = num_dims(polytope)
-#  nfaces = num_faces(polytope)
-#  face_nodeids = [Int[] for i in 1:nfaces]
-#  for d in 0:(D-1)
-#    _get_face_nodeids_d!(face_nodeids,Val{d}(),reffe,polytope)
-#  end
-#  face_nodeids[end] = collect(1:num_nodes(reffe))
-#  face_nodeids
-#end
-#
-#function _get_face_nodeids_d!(face_to_nodes,::Val{d},reffe,polytope) where d
-#
-#  nface_to_own_nodes = get_face_own_nodes(reffe)
-#  nface_mface_to_nface = get_faces(polytope)
-#  offset = get_offset(polytope,d)
-#
-#  for iface in 1:num_faces(polytope,d)
-#    face_reffe = ReferenceFE{d}(reffe,iface)
-#    face_polytope = get_polytope(face_reffe)
-#    mface_to_own_lnodes = get_face_own_nodes(face_reffe)
-#    nodes = zeros(Int,num_nodes(face_reffe))
-#    mface_to_nface = nface_mface_to_nface[iface+offset]
-#    for mface in 1:num_faces(face_polytope)
-#      nface = mface_to_nface[mface]
-#      own_nodes = nface_to_own_nodes[nface]
-#      own_lnodes = mface_to_own_lnodes[mface]
-#      nodes[own_lnodes] = own_nodes
-#    end
-#    face_to_nodes[iface+offset] = nodes
-#  end
-#
-#end
-#
-#"""
-#    get_vertex_node(reffe::NodalReferenceFE) -> Vector{Int}
-#"""
-#function get_vertex_node(reffe::NodalReferenceFE)
-#  d = 0
-#  p = get_polytope(reffe)
-#  range = get_dimranges(p)[d+1]
-#  vertex_to_nodes = get_face_own_nodes(reffe)[range]
-#  map(first, vertex_to_nodes)
-#end
-#
-#"""
-#    has_straight_faces(reffe::NodalReferenceFE) -> Bool
-#
-#Query if the `reffe` has straight faces (i.e., if the
-#nodes are equivalent to the vertices)
-#"""
-#function has_straight_faces(reffe::NodalReferenceFE)
-#  p = get_polytope(reffe)
-#  r = true
-#  r = r && num_vertices(p) == num_nodes(reffe)
-#  r = r && get_vertex_node(reffe) == collect(1:num_nodes(reffe))
-#  r
-#end
-#
-#"""
-#    is_affine(reffe::NodalReferenceFE) -> Bool
-#
-#Query if the `reffe` leads to an afine map
-#(true only for first order spaces on top of simplices)
-#"""
-#function is_affine(reffe::NodalReferenceFE)
-#  p = get_polytope(reffe)
-#  has_straight_faces(reffe) && is_simplex(p)
-#end
-#- [`get_face_own_nodes(reffe::NodalReferenceFE)`](@ref)
-#- [`get_face_own_nodes_permutations(reffe::NodalReferenceFE)`](@ref)
-#- [`get_face_nodes(reffe::NodalReferenceFE)`](@ref)
-#"""
-#    NodalReferenceFE(p::Polytope)
-#
-#Built an instance of `NodalReferenceFE` corresponding to
-#the scalar-valued nodal reference FE, whose nodes correspond with the
-#vertices of the given polytope.
-#"""
-#function NodalReferenceFE(p::Polytope)
-#  @abstractmethod
-#end
-
-#"""
-#    get_dof_to_comp(reffe::NodalReferenceFE)
-#"""
-#function get_dof_to_comp(reffe::NodalReferenceFE)
-#  @abstractmethod
-#end
-
-#- [`get_dof_to_comp(reffe::NodalReferenceFE)`](@ref)
-#and optionally these ones:
-#
-#- [`ReferenceFE{N}(reffe::ReferenceFE,nfaceid::Integer) where N`](@ref)
-#- [`(==)(a::ReferenceFE{D},b::ReferenceFE{D}) where D`](@ref)
-## optional
-#
-#"""
-#    (==)(a::ReferenceFE{D},b::ReferenceFE{D}) where D
-#
-#Returns `true` if the polytopes `a` and `b` are equivalent. Otherwise, it 
-#returns `false`.
-#"""
-#function (==)(a::ReferenceFE{D},b::ReferenceFE{D}) where D
-#  @abstractmethod
-#end
-#
-#function (==)(a::ReferenceFE,b::ReferenceFE)
-#  false
-#end
-#
-#"""
-#    ReferenceFE{N}(reffe::ReferenceFE,nfaceid::Integer) where N
-#
-#Returns a reference FE obtained by the restriction of the given one
-#to the face with `nfaceid` within dimension `N`.
-#"""
-#function ReferenceFE{N}(reffe::ReferenceFE,nfaceid::Integer) where N
-#  @abstractmethod
-#end
-
-#"""
-#    get_face_dofs(reffe::ReferenceFE) -> Vector{Vector{Int}}
-#
-#Returns a vector of vector that, for each face, stores the
-#dofids in the closure of the face.
-#"""
-#function get_face_dofs(reffe::ReferenceFE)
-#  polytope = get_polytope(reffe)
-#  D = num_dims(polytope)
-#  nfaces = num_faces(polytope)
-#  face_dofids = [Int[] for i in 1:nfaces]
-#  for d in 0:(D-1)
-#    _get_face_dofids_d!(face_dofids,Val{d}(),reffe,polytope)
-#  end
-#  face_dofids[end] = collect(1:num_dofs(reffe))
-#  face_dofids
-#end
-#
-#function _get_face_dofids_d!(face_to_dofs,::Val{d},reffe,polytope) where d
-#
-#  nface_to_own_dofs = get_face_own_dofs(reffe)
-#  nface_mface_to_nface = get_faces(polytope)
-#  offset = get_offset(polytope,d)
-#
-#  for iface in 1:num_faces(polytope,d)
-#    face_reffe = ReferenceFE{d}(reffe,iface)
-#    face_polytope = get_polytope(face_reffe)
-#    mface_to_own_ldofs = get_face_own_dofs(face_reffe)
-#    dofs = zeros(Int,num_dofs(face_reffe))
-#    mface_to_nface = nface_mface_to_nface[iface+offset]
-#    for mface in 1:num_faces(face_polytope)
-#      nface = mface_to_nface[mface]
-#      own_dofs = nface_to_own_dofs[nface]
-#      own_ldofs = mface_to_own_ldofs[mface]
-#      dofs[own_ldofs] = own_dofs
-#    end
-#    face_to_dofs[iface+offset] = dofs
-#  end
-#
-#end
-
-#"""
-#    get_reffes(
-#      T::Type{<:ReferenceFE{d}},
-#      reffe::ReferenceFE) where d -> Vector{ReferenceFE{d}}
-#"""
-#function get_reffes(T::Type{<:ReferenceFE{d}},reffe::ReferenceFE) where d
-#  ftype_to_reffe::Vector{T}, _ = _compute_reffes_and_face_types(reffe,Val{d}())
-#  ftype_to_reffe
-#end
-#
-#"""
-#    get_face_type(reffe::ReferenceFE, d::Integer) -> Vector{Int}
-#"""
-#function get_face_type(reffe::ReferenceFE, d::Integer)
-#  _, iface_to_ftype = _compute_reffes_and_face_types(reffe,Val{d}())
-#  iface_to_ftype
-#end
-#
-#function _compute_reffes_and_face_types(reffe::ReferenceFE,::Val{d}) where d
-#  p = get_polytope(reffe)
-#  iface_to_reffe = [ ReferenceFE{d}(reffe,iface) for iface in 1:num_faces(p,d) ]
-#  _find_unique_with_indices(iface_to_reffe)
-#end
-
-
-
 """
     struct LagrangianRefFE{D} <: NodalReferenceFE{D}
       # private fields
     end
 
-Type representing a Lagrangian finite element. This type provides "node-based" information in the following
-fields:
-
-- `face_own_nodes::Vector{Vector{Int}}`: nodes owned by each face
-- `own_nodes_permutations::Vector{Vector{Int}}`: permutations of the nodes when the vertices are permuted
+Type representing a Lagrangian finite element.
 
 For this type
 
 -  `get_dof_basis(reffe)` returns a `LagrangianDofBasis`
 -  `get_prebasis(reffe)` returns a `MonomialBasis`
--  `ReferenceFE{N}(reffe,faceid) where N` returns a `LagrangianRefFE{N}`
 
 """
 struct LagrangianRefFE{D} <: NodalReferenceFE{D}
   data::GenericRefFE{D}
   face_own_nodes::Vector{Vector{Int}}
   own_nodes_permutations::Vector{Vector{Int}}
+  face_nodes::Vector{Vector{Int}}
+  reffaces
   @doc """
       LagrangianRefFE(
         polytope::Polytope{D},
@@ -239,7 +24,7 @@ struct LagrangianRefFE{D} <: NodalReferenceFE{D}
         dofs::LagrangianDofBasis,
         face_own_nodes::Vector{Vector{Int}},
         own_nodes_permutations::Vector{Vector{Int}},
-        reffaces...) where D
+        reffaces) where D
 
   Low level (inner) constructor of `LagrangianRefFE`.
   """
@@ -249,19 +34,45 @@ struct LagrangianRefFE{D} <: NodalReferenceFE{D}
     dofs::LagrangianDofBasis,
     face_own_nodes::Vector{Vector{Int}},
     own_nodes_permutations::Vector{Vector{Int}},
-    reffaces...) where D
+    reffaces) where D
 
-    face_own_dofs = _generate_nfacedofs(face_own_nodes,dofs.node_and_comp_to_dof)
-    own_dofs_permutations = _find_own_dof_permutaions(own_nodes_permutations,dofs.node_and_comp_to_dof,face_own_nodes,face_own_dofs)
+    nnodes = length(dofs.nodes)
+    ndofs = length(dofs.dof_to_node)
+
+    _reffaces = vcat(reffaces...)
+
+    face_nodes = _generate_face_nodes(nnodes,face_own_nodes,polytope,_reffaces)
+
+    face_own_dofs = _generate_face_own_dofs(face_own_nodes, dofs.node_and_comp_to_dof)
+
+    face_dofs = _generate_face_dofs(ndofs,face_own_dofs,polytope,_reffaces)
+
+    own_dofs_permutations = _find_own_dof_permutaions(
+      own_nodes_permutations,
+      dofs.node_and_comp_to_dof,
+      face_own_nodes,
+      face_own_dofs)
+
+    face_own_dofs_permutations = _compute_face_own_nodes_permutations(
+      ndofs,
+      face_own_dofs,
+      map(get_own_dofs_permutations,_reffaces),
+      own_dofs_permutations)
 
     data = GenericRefFE(
-      polytope,prebasis,dofs,face_own_dofs;
-      own_dofs_permutations = own_dofs_permutations,
-      reffaces = reffaces)
+      ndofs,
+      polytope,
+      prebasis,
+      dofs,
+      face_own_dofs,
+      face_own_dofs_permutations,
+      face_dofs)
 
-    new{D}(data,face_own_nodes,own_nodes_permutations)
+    new{D}(data,face_own_nodes,own_nodes_permutations,face_nodes,reffaces)
   end
 end
+
+# Reffe Inference
 
 num_dofs(reffe::LagrangianRefFE) = reffe.data.ndofs
 
@@ -273,26 +84,72 @@ get_dof_basis(reffe::LagrangianRefFE) = reffe.data.dofs
 
 get_face_own_dofs(reffe::LagrangianRefFE) = reffe.data.face_own_dofs
 
-get_own_dofs_permutations(reffe::LagrangianRefFE) = reffe.data.own_dofs_permutations
+get_face_own_dofs_permutations(reffe::LagrangianRefFE) = reffe.data.face_own_dofs_permutations
+
+get_face_dofs(reffe::LagrangianRefFE) = reffe.data.face_dofs
 
 get_shapefuns(reffe::LagrangianRefFE) = reffe.data.shapefuns
 
-get_face_own_nodes(reffe::LagrangianRefFE) = reffe.face_own_nodes
-
-get_own_nodes_permutations(reffe::LagrangianRefFE) = reffe.own_nodes_permutations
+# Nodal reffe
 
 get_node_coordinates(reffe::LagrangianRefFE) = reffe.data.dofs.nodes
 
-get_dof_to_node(reffe::LagrangianRefFE) = reffe.data.dofs.dof_to_node
-
-get_dof_to_comp(reffe::LagrangianRefFE) = reffe.data.dofs.dof_to_comp
-
 get_node_and_comp_to_dof(reffe::LagrangianRefFE) = reffe.data.dofs.node_and_comp_to_dof
 
-num_nodes(reffe::LagrangianRefFE) = length(get_node_coordinates(reffe))
+get_dof_to_node(reffe::LagrangianRefFE) = reffe.data.dofs.dof_to_node
 
+get_face_own_nodes(reffe::LagrangianRefFE) = reffe.face_own_nodes
+
+function get_face_own_nodes_permutations(reffe::LagrangianRefFE)
+  _reffaces = vcat(reffe.reffaces...)
+  face_own_nodes_permutations = map(get_own_nodes_permutations,_reffaces)
+
+  _compute_face_own_nodes_permutations(
+    num_nodes(reffe),
+    reffe.face_own_nodes,
+    face_own_nodes_permutations,
+    reffe.own_nodes_permutations)
+end
+
+function _compute_face_own_nodes_permutations(
+  nnodes,
+  face_own_nodes,
+  face_own_nodes_permutations,
+  own_nodes_permutations)
+
+  if length(face_own_nodes_permutations) == 0
+    # Vertex degenerated case
+    return [own_nodes_permutations,]
+  else
+    if nnodes == length(face_own_nodes[end])
+      # 0-order degenerated case
+      _face_own_nodes_permutations = map( (x) -> fill(Int[],length(x)) , face_own_nodes_permutations )
+    else
+      # Standard case
+      _face_own_nodes_permutations = copy(face_own_nodes_permutations)
+    end
+    push!(_face_own_nodes_permutations,own_nodes_permutations)
+    return _face_own_nodes_permutations
+  end
+end
+
+get_face_nodes(reffe::LagrangianRefFE) = reffe.face_nodes
+
+get_own_nodes_permutations(reffe::LagrangianRefFE) = reffe.own_nodes_permutations
+
+# API particular to LagrangianRefFE
+
+"""
+    get_dof_to_comp(reffe::LagrangianRefFE)
+"""
+get_dof_to_comp(reffe::LagrangianRefFE) = reffe.data.dofs.dof_to_comp
+
+"""
+    ReferenceFE{N}(reffe::LagrangianRefFE,iface::Integer) where N
+"""
 function ReferenceFE{N}(reffe::LagrangianRefFE,iface::Integer) where N
-  ReferenceFE{N}(reffe.data,iface)
+  refface::LagrangianRefFE{N} = reffe.reffaces[N+1][iface]
+  refface
 end
 
 function ReferenceFE{D}(reffe::LagrangianRefFE{D},iface::Integer) where D
@@ -300,6 +157,9 @@ function ReferenceFE{D}(reffe::LagrangianRefFE{D},iface::Integer) where D
   reffe
 end
 
+"""
+    (==)(a::LagrangianRefFE{D}, b::LagrangianRefFE{D}) where D
+"""
 function (==)(a::LagrangianRefFE{D}, b::LagrangianRefFE{D}) where D
   t = true
   pa = get_polytope(a)
@@ -320,25 +180,143 @@ function (==)(a::LagrangianRefFE{D}, b::LagrangianRefFE{D}) where D
   t
 end
 
+function (==)(a::LagrangianRefFE, b::LagrangianRefFE)
+  false
+end
+
+"""
+    get_reffaces(
+      T::Type{<:ReferenceFE{d}},
+      reffe::LagrangianRefFE) where d -> Vector{LagrangianRefFE{d}}
+"""
+function get_reffaces(::Type{<:ReferenceFE{d}},reffe::ReferenceFE) where d
+  ftype_to_reffe::Vector{LagrangianRefFE{d}}, _ = _compute_reffes_and_face_types(reffe,Val{d}())
+  ftype_to_reffe
+end
+
+"""
+    get_face_type(reffe::LagrangianRefFE, d::Integer) -> Vector{Int}
+"""
+function get_face_type(reffe::LagrangianRefFE, d::Integer)
+  _, iface_to_ftype = _compute_reffes_and_face_types(reffe,Val{d}())
+  iface_to_ftype
+end
+
+function _compute_reffes_and_face_types(reffe::LagrangianRefFE,::Val{d}) where d
+  p = get_polytope(reffe)
+  iface_to_reffe = [ ReferenceFE{d}(reffe,iface) for iface in 1:num_faces(p,d) ]
+  _find_unique_with_indices(iface_to_reffe)
+end
+
+"""
+    is_first_order(reffe::NodalReferenceFE) -> Bool
+"""
+function is_first_order(reffe::LagrangianRefFE)
+  p = get_polytope(reffe)
+  r = true
+  r = r && num_vertices(p) == num_nodes(reffe)
+  r = r && get_vertex_node(reffe) == collect(1:num_nodes(reffe))
+  r
+end
+
+"""
+    is_affine(reffe::NodalReferenceFE) -> Bool
+
+Query if the `reffe` leads to an afine map
+(true only for first order spaces on top of simplices)
+"""
+function is_affine(reffe::NodalReferenceFE)
+  p = get_polytope(reffe)
+  is_first_order(reffe) && is_simplex(p)
+end
+
 # Helpers for LagrangianRefFE
 
-function _generate_nfacedofs(nfacenodes,node_and_comp_to_dof)
-  faces = 1:length(nfacenodes)
+function _generate_face_nodes(nnodes,face_to_own_nodes,polytope,reffaces)
+
+    face_to_num_fnodes = map(num_nodes,reffaces)
+    push!(face_to_num_fnodes,nnodes)
+
+    face_to_lface_to_own_fnodes = map(get_face_own_nodes,reffaces)
+    push!(face_to_lface_to_own_fnodes,face_to_own_nodes)
+
+    face_to_lface_to_face = get_faces(polytope)
+
+  _generate_face_nodes_aux(
+    nnodes,
+    face_to_own_nodes,
+    face_to_num_fnodes,
+    face_to_lface_to_own_fnodes,
+    face_to_lface_to_face)
+end
+
+function _generate_face_dofs(ndofs,face_to_own_dofs,polytope,reffaces)
+
+    face_to_num_fdofs = map(num_dofs,reffaces)
+    push!(face_to_num_fdofs,ndofs)
+
+    face_to_lface_to_own_fdofs = map(get_face_own_dofs,reffaces)
+    push!(face_to_lface_to_own_fdofs,face_to_own_dofs)
+
+    face_to_lface_to_face = get_faces(polytope)
+
+  _generate_face_nodes_aux(
+    ndofs,
+    face_to_own_dofs,
+    face_to_num_fdofs,
+    face_to_lface_to_own_fdofs,
+    face_to_lface_to_face)
+end
+
+function _generate_face_nodes_aux(
+  nnodes,
+  face_to_own_nodes,
+  face_to_num_fnodes,
+  face_to_lface_to_own_fnodes,
+  face_to_lface_to_face)
+
+  if nnodes == length(face_to_own_nodes[end])
+    face_fnode_to_node = fill(Int[],length(face_to_own_nodes))
+    face_fnode_to_node[end] = collect(1:nnodes)
+    return face_fnode_to_node
+  end
+
+  face_fnode_to_node = Vector{Int}[]
+  for (face, nfnodes) in enumerate(face_to_num_fnodes)
+    fnode_to_node = zeros(Int,nfnodes)
+    lface_to_face = face_to_lface_to_face[face]
+    lface_to_own_fnodes = face_to_lface_to_own_fnodes[face]
+    for (lface, faceto) in enumerate(lface_to_face)
+      own_nodes = face_to_own_nodes[faceto]
+      own_fnodes = lface_to_own_fnodes[lface]
+      fnode_to_node[own_fnodes] = own_nodes
+    end
+    push!(face_fnode_to_node,fnode_to_node)
+  end
+
+  face_fnode_to_node
+end
+
+function _generate_face_own_dofs(face_own_nodes, node_and_comp_to_dof)
+
+  faces = 1:length(face_own_nodes)
   T = eltype(node_and_comp_to_dof)
   comps = 1:n_components(T)
-  nfacedofs = [Int[] for i in faces]
+  face_own_dofs = [Int[] for i in faces]
   for face in faces
-    nodes = nfacenodes[face]
+    nodes = face_own_nodes[face]
     # Node major
     for comp in comps
       for node in nodes
         comp_to_dofs = node_and_comp_to_dof[node]
         dof = comp_to_dofs[comp]
-        push!(nfacedofs[face],dof)
+        push!(face_own_dofs[face],dof)
       end
     end
   end
-  nfacedofs
+
+  face_own_dofs
+
 end
 
 function _find_own_dof_permutaions(node_perms,node_and_comp_to_dof,nfacenodeids,nfacedofsids)
@@ -408,7 +386,7 @@ function LagrangianRefFE(::Type{T},p::Polytope{D},orders) where {T,D}
   interior_nodes = dofs.nodes[face_own_nodes[end]]
   own_nodes_permutations = compute_own_nodes_permutations(p, interior_nodes)
   reffaces = compute_lagrangian_reffaces(T,p,orders)
-  LagrangianRefFE(p,prebasis,dofs,face_own_nodes,own_nodes_permutations,reffaces...)
+  LagrangianRefFE(p,prebasis,dofs,face_own_nodes,own_nodes_permutations,reffaces)
 end
 
 function MonomialBasis(::Type{T},p::Polytope,orders) where T

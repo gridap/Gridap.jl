@@ -46,6 +46,7 @@ export get_offsets
 export get_offset
 export get_face_vertices
 export get_reffaces
+export get_face_type
 export test_polytope
 export VERTEX
 export SEGMENT
@@ -77,8 +78,6 @@ export get_face_own_dofs_permutations
 export get_face_dofs
 export get_own_dofs_permutations
 export get_shapefuns
-export get_reffes
-export get_face_type
 export compute_shapefuns
 export test_reference_fe
 export num_dofs
@@ -87,6 +86,7 @@ export NodalReferenceFE
 export GenericNodalRefFE
 export get_face_own_nodes
 export get_face_nodes
+export get_face_own_nodes_permutations
 export get_own_nodes_permutations
 export get_node_coordinates
 export get_dof_to_node
@@ -94,8 +94,6 @@ export get_dof_to_comp
 export get_node_and_comp_to_dof
 export get_vertex_node
 export num_nodes
-export has_straight_faces
-export is_affine
 export test_nodal_reference_fe
 
 export LagrangianRefFE
@@ -106,6 +104,8 @@ export compute_face_orders
 export compute_nodes
 export compute_own_nodes_permutations
 export compute_lagrangian_reffaces
+export is_first_order
+export is_affine
 
 export SEG2
 export TRI3
@@ -129,8 +129,8 @@ include("ReferenceFEInterfaces.jl")
 
 include("NodalReferenceFEs.jl")
 
-#include("LagrangianRefFEs.jl")
-#
-#include("SerendipityRefFEs.jl")
+include("LagrangianRefFEs.jl")
+
+include("SerendipityRefFEs.jl")
 
 end # module

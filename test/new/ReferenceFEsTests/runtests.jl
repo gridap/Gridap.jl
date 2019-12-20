@@ -14,8 +14,10 @@ using Test
 
 @testset "ReferenceFEInterfaces" begin include("ReferenceFEInterfacesTests.jl") end
 
-#@testset "LagrangianRefFEs" begin include("LagrangianRefFEsTests.jl") end
-#
-#@testset "SerendipityRefFEs" begin include("SerendipityRefFEsTests.jl") end
+@testset "NodalReferenceFEs" begin include("NodalReferenceFEsTests.jl") end
+
+@testset "LagrangianRefFEs" begin include("LagrangianRefFEsTests.jl") end
+
+@testset "SerendipityRefFEs" begin include("SerendipityRefFEsTests.jl") end
 
 end # module

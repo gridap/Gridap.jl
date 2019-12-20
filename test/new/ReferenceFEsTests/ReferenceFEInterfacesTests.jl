@@ -32,4 +32,6 @@ shapefuns = get_shapefuns(reffe)
 
 @test evaluate(shapefuns,x) == [1.0 0.0 0.0 0.0; 0.0 1.0 0.0 0.0; 0.0 0.0 1.0 0.0; 0.0 0.0 0.0 1.0]
 
+@test get_own_dofs_permutations(reffe) == face_own_dofs_permutations[end]
+
 end # module

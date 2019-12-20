@@ -28,11 +28,22 @@ reffe = GenericRefFE(
 
 node_coordinates = Point{2,Float64}[(0,0),(1,0),(0,1),(1,1)]
 node_and_comp_to_dof = [1,2,3,4]
+face_own_nodes = face_own_dofs
+face_own_nodes_permutations = face_own_dofs_permutations
+face_nodes = face_dofs
 
-reffe = GenericNodalRefFE(reffe,node_coordinates,node_and_comp_to_dof)
+reffe = GenericNodalRefFE(
+  reffe,
+  node_coordinates,
+  node_and_comp_to_dof,
+  face_own_nodes,
+  face_own_nodes_permutations,
+  face_nodes)
+
 test_nodal_reference_fe(reffe)
 
 @test get_dof_to_node(reffe) == [1, 2, 3, 4]
+@test get_own_nodes_permutations(reffe) == get_face_own_nodes_permutations(reffe)[end]
 
 
 end # module

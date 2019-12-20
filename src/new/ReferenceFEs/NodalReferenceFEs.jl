@@ -14,6 +14,9 @@ plus the following ones
 
 - [`get_node_coordinates(reffe::NodalReferenceFE)`](@ref)
 - [`get_node_and_comp_to_dof(reffe::NodalReferenceFE)`](@ref)
+- [`get_face_own_nodes(reffe::NodalReferenceFE)`](@ref)
+- [`get_face_own_nodes_permutations(reffe::NodalReferenceFE)`](@ref)
+- [`get_face_nodes(reffe::NodalReferenceFE)`](@ref)
 
 """
 abstract type NodalReferenceFE{D} <: ReferenceFE{D} end
@@ -32,6 +35,26 @@ function get_node_and_comp_to_dof(reffe::NodalReferenceFE)
   @abstractmethod
 end
 
+"""
+    get_face_own_nodes(reffe::NodalReferenceFE)
+"""
+function get_face_own_nodes(reffe::NodalReferenceFE)
+  @abstractmethod
+end
+
+"""
+    get_face_own_nodes_permutations(reffe::NodalReferenceFE)
+"""
+function get_face_own_nodes_permutations(reffe::NodalReferenceFE)
+  @abstractmethod
+end
+
+"""
+    get_face_nodes(reffe::NodalReferenceFE)
+"""
+function get_face_nodes(reffe::NodalReferenceFE)
+  @abstractmethod
+end
 
 # Dafault API
 
@@ -57,6 +80,44 @@ function get_dof_to_node(reffe::NodalReferenceFE)
   dof_to_node
 end
 
+"""
+    get_own_nodes_permutations(reffe::NodalReferenceFE)
+"""
+function get_own_nodes_permutations(reffe::NodalReferenceFE)
+  n = num_faces(reffe)
+  get_face_own_nodes_permutations(reffe)[n]
+end
+
+
+"""
+    get_vertex_node(reffe::NodalReferenceFE) -> Vector{Int}
+"""
+function get_vertex_node(reffe::NodalReferenceFE)
+  d = 0
+  p = get_polytope(reffe)
+  range = get_dimranges(p)[d+1]
+  vertex_to_nodes = get_face_own_nodes(reffe)[range]
+  map(first, vertex_to_nodes)
+end
+
+"""
+    get_face_own_nodes(reffe::NodalReferenceFE,d::Integer)
+"""
+function get_face_own_nodes(reffe::NodalReferenceFE,d::Integer)
+  p = get_polytope(reffe)
+  range = get_dimrange(p,d)
+  get_face_own_nodes(reffe)[range]
+end
+
+"""
+    get_face_nodes(reffe::NodalReferenceFE,d::Integer)
+"""
+function get_face_nodes(reffe::NodalReferenceFE,d::Integer)
+  p = get_polytope(reffe)
+  range = get_dimrange(p,d)
+  get_face_nodes(reffe)[range]
+end
+
 
 # Tester
 
@@ -73,6 +134,9 @@ function test_nodal_reference_fe(reffe::NodalReferenceFE)
   @test isa(node_and_comp_to_dof,Vector)
   dof_to_node = get_dof_to_node(reffe)
   @test isa(dof_to_node,Vector{Int})
+  @test isa(get_face_own_nodes(reffe),Vector{Vector{Int}})
+  @test isa(get_face_own_nodes_permutations(reffe),Vector{Vector{Vector{Int}}})
+  @test isa(get_face_nodes(reffe),Vector{Vector{Int}})
 end
 
 
@@ -83,17 +147,33 @@ end
     reffe::GenericRefFE{D}
     node_coordinates::Vector{Point{D,T}}
     node_and_comp_to_dof::Vector{V}
+    face_own_nodes::Vector{Vector{Int}}
+    face_own_nodes_permutations::Vector{Vector{Vector{Int}}}
+    face_nodes::Vector{Vector{Int}}
   end
 """
 struct GenericNodalRefFE{D,T,V} <: NodalReferenceFE{D}
   reffe::GenericRefFE{D}
   node_coordinates::Vector{Point{D,T}}
   node_and_comp_to_dof::Vector{V}
+  face_own_nodes::Vector{Vector{Int}}
+  face_own_nodes_permutations::Vector{Vector{Vector{Int}}}
+  face_nodes::Vector{Vector{Int}}
 end
+
+# NodalReffe
 
 get_node_coordinates(reffe::GenericNodalRefFE) = reffe.node_coordinates
 
 get_node_and_comp_to_dof(reffe::GenericNodalRefFE) = reffe.node_and_comp_to_dof
+
+get_face_own_nodes(reffe::GenericNodalRefFE) = reffe.face_own_nodes
+
+get_face_own_nodes_permutations(reffe::GenericNodalRefFE) = reffe.face_own_nodes_permutations
+
+get_face_nodes(reffe::GenericNodalRefFE) = reffe.face_nodes
+
+# Reffe 
 
 num_dofs(reffe::GenericNodalRefFE) = reffe.reffe.ndofs
 

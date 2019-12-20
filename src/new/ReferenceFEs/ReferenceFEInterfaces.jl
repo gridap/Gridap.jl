@@ -317,7 +317,7 @@ get_face_own_dofs(reffe::GenericRefFE) = reffe.face_own_dofs
 
 get_face_own_dofs_permutations(reffe::GenericRefFE) = reffe.face_own_dofs_permutations
 
-get_face_dofs(reffe::GenericRefFE) = reffe.face_own_dofs
+get_face_dofs(reffe::GenericRefFE) = reffe.face_dofs
 
 get_shapefuns(reffe::GenericRefFE) = reffe.shapefuns
 
