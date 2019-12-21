@@ -93,8 +93,6 @@ export get_cell_nodes
 export test_grid
 
 export UnstructuredGrid
-export CartesianGrid
-
 #
 #
 #export DiscreteModel
@@ -112,21 +110,21 @@ export CartesianGrid
 #export test_discrete_model
 #
 #export UnstructuredDiscreteModel
-#
-#export CartesianGrid
-#export CartesianDescriptor
-#export get_cartesian_descriptor
-#
-#export FaceLabeling
-#export num_tags
-#export num_entities
-#export get_face_entity
-#export get_tag_entities
-#export get_tag_name
-#export get_tag_from_name
-#export add_tag!
-#export add_tag_from_tags!
-#
+
+export CartesianGrid
+export CartesianDescriptor
+export get_cartesian_descriptor
+
+export FaceLabeling
+export num_tags
+export num_entities
+export get_face_entity
+export get_tag_entities
+export get_tag_name
+export get_tag_from_name
+export add_tag!
+export add_tag_from_tags!
+
 #export CartesianDiscreteModel
 
 include("GridTopologies.jl")
@@ -145,9 +143,10 @@ include("UnstructuredGrids.jl")
 
 include("CartesianGrids.jl")
 
+include("FaceLabelings.jl")
+
 #include("DiscreteModels.jl")
-#
-#include("FaceLabelings.jl")
+
 #
 #include("DiscreteModelMocks.jl")
 #

@@ -5,9 +5,9 @@ using Gridap.Helpers
 using Gridap.Arrays
 using Gridap.ReferenceFEs
 using Gridap.Geometry
-using Gridap.Geometry: DiscreteModelMock
+using Gridap.Geometry: GridTopologyMock
 
-model = DiscreteModelMock()
+model = GridTopologyMock()
 
 d_to_num_dfaces = [num_vertices(model), num_edges(model), num_cells(model)]
 
