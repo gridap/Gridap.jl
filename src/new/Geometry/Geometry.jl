@@ -93,6 +93,7 @@ export get_cell_nodes
 export test_grid
 
 export UnstructuredGrid
+export CartesianGrid
 
 #
 #
@@ -142,8 +143,8 @@ include("GridMocks.jl")
 
 include("UnstructuredGrids.jl")
 
-#include("CartesianGrids.jl")
-#
+include("CartesianGrids.jl")
+
 #include("DiscreteModels.jl")
 #
 #include("FaceLabelings.jl")

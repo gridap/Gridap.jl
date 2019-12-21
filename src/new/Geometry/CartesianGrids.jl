@@ -101,11 +101,11 @@ end
 # Cartesian Grid
 
 """
-    struct CartesianGrid{D,T,F} <: ConformingTriangulation{D,D}
+    struct CartesianGrid{D,T,F} <: Grid{D,D}
       # private fields
     end
 """
-struct CartesianGrid{D,T,F} <: ConformingTriangulation{D,D}
+struct CartesianGrid{D,T,F} <: Grid{D,D}
   node_coords::CartesianCoordinates{D,T,F}
   cell_nodes::CartesianCellNodes{D}
   cell_type::Fill{Int8,1,Tuple{Base.OneTo{Int}}}
