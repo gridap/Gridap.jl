@@ -287,11 +287,11 @@ _is_regular(::Val{true}) = true
 _is_regular(::Val{false}) = false
 
 """
-    get_reffaces(::Type{<:Polytope{d}}, g::GridTopology) where d
+    get_reffaces(::Type{Polytope{d}}, g::GridTopology) where d
 
 By default, it calls to `compute_reffaces`.
 """
-function get_reffaces(::Type{<:Polytope{d}}, g::GridTopology) where d
+function get_reffaces(::Type{Polytope{d}}, g::GridTopology) where d
   reffaces, _ = compute_reffaces(Polytope{d},g)
   reffaces
 end
@@ -307,9 +307,9 @@ function get_face_type(g::GridTopology,d::Integer)
 end
 
 """
-function compute_reffaces(::Type{<:Polytope{d}}, g::GridTopology) where d
+function compute_reffaces(::Type{Polytope{d}}, g::GridTopology) where d
 """
-function compute_reffaces(::Type{<:Polytope{d}}, g::GridTopology) where d
+function compute_reffaces(::Type{Polytope{d}}, g::GridTopology) where d
   D = num_cell_dims(g)
   ctype_to_polytope = get_polytopes(g)
   ctype_to_lftype_to_refface = [ get_reffaces(Polytope{d},polytope) for polytope in ctype_to_polytope]
@@ -325,7 +325,7 @@ function compute_reffaces(::Type{<:Polytope{d}}, g::GridTopology) where d
   (collect1d(ftype_to_refface), face_to_ftype)
 end
 
-function compute_reffaces(::Type{<:Polytope{D}}, g::GridTopology{D}) where D
+function compute_reffaces(::Type{Polytope{D}}, g::GridTopology{D}) where D
   (get_polytopes(g), get_cell_type(g))
 end
 

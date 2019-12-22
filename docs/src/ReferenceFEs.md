@@ -38,7 +38,7 @@ get_offsets(p::Polytope)
 get_offset(p::Polytope,d::Integer)
 get_faces(p::Polytope,dimfrom::Integer,dimto::Integer)
 get_face_vertices(p::Polytope,dim::Integer)
-get_reffaces(::Type{<:Polytope{d}},p::Polytope) where d
+get_reffaces(::Type{Polytope{d}},p::Polytope) where d
 get_face_type(p::Polytope,d::Integer)
 ```
 ### Extrusion polytopes
@@ -183,7 +183,7 @@ compute_lagrangian_reffaces(::Type{T},p::Polytope,orders) where T
 get_dof_to_comp(reffe::LagrangianRefFE)
 ReferenceFE{N}(reffe::LagrangianRefFE,nfaceid::Integer) where N
 (==)(a::LagrangianRefFE{D},b::LagrangianRefFE{D}) where D
-get_reffaces(T::Type{<:ReferenceFE{d}},reffe::LagrangianRefFE) where d
+get_reffaces(::Type{ReferenceFE{d}},reffe::LagrangianRefFE) where d
 get_face_type(reffe::LagrangianRefFE, d::Integer)
 is_first_order(reffe::LagrangianRefFE)
 is_affine(reffe::LagrangianRefFE)

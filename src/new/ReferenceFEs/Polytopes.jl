@@ -489,7 +489,7 @@ function get_face_vertices(p::Polytope)
 end
 
 """
-    get_reffaces(::Type{<:Polytope{d}},p::Polytope) where d -> Vector{Polytope{d}}
+    get_reffaces(::Type{Polytope{d}},p::Polytope) where d -> Vector{Polytope{d}}
 
 Get a vector of the unique polytopes for the faces of dimension `d`.
 
@@ -510,9 +510,9 @@ Gridap.ReferenceFEs.Polytope{2}[QUAD, TRI]
 ```
 
 """
-function get_reffaces(T::Type{<:Polytope{d}},p::Polytope) where d
-  ftype_to_refface::Vector{T}, _ = _compute_reffaces_and_face_types(p,Val{d}())
-  ftype_to_refface
+function get_reffaces(::Type{Polytope{d}},p::Polytope) where d
+  ftype_to_refface, = _compute_reffaces_and_face_types(p,Val{d}())
+  collect(ftype_to_refface)
 end
 
 """
