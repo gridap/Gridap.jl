@@ -64,6 +64,7 @@ export num_cells
 export get_polytopes
 export get_cell_type
 export get_cell_vertices
+export get_reffaces_offsets
 export compute_reffaces
 export compute_cell_faces
 export compute_face_vertices
@@ -93,23 +94,6 @@ export get_cell_nodes
 export test_grid
 
 export UnstructuredGrid
-#
-#
-#export DiscreteModel
-#export get_node_face_owner
-#export get_face_reffe_type
-#export get_face_polytope_type
-#export get_vertex_coordinates
-#export get_isboundary_node
-#export get_face_labeling
-#export get_cell_perm_indices
-#export get_reffes_offsets
-#export get_reffes_alldims
-#export extract_face_reffes
-#export replace_reffes
-#export test_discrete_model
-#
-#export UnstructuredDiscreteModel
 
 export CartesianGrid
 export CartesianDescriptor
@@ -124,6 +108,19 @@ export get_tag_name
 export get_tag_from_name
 export add_tag!
 export add_tag_from_tags!
+
+export DiscreteModel
+export get_grid
+export get_grid_topology
+export get_face_labeling
+export test_discrete_model
+export compute_face_nodes
+export compute_face_own_nodes
+export compute_vertex_to_node
+export get_node_face_owner
+export compute_node_face_owner
+
+#export UnstructuredDiscreteModel
 
 #export CartesianDiscreteModel
 
@@ -145,10 +142,11 @@ include("CartesianGrids.jl")
 
 include("FaceLabelings.jl")
 
-#include("DiscreteModels.jl")
+include("DiscreteModels.jl")
+
+include("DiscreteModelMocks.jl")
 
 #
-#include("DiscreteModelMocks.jl")
 #
 #include("UnstructuredDiscreteModels.jl")
 #

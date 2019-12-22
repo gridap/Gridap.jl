@@ -79,4 +79,8 @@ reffaces, face_to_ftype = compute_reffaces(Polytope{1},top)
 @test get_cell_permutations(top,2) == compute_cell_permutations(top,2)
 @test get_cell_permutations(top) == compute_cell_permutations(top)
 
+@test get_reffaces(top) == Polytope[VERTEX, SEGMENT, QUAD, TRI]
+@test get_face_type(top) == Int8[1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,3,4,4,3,3]
+@test get_reffaces_offsets(top) == [0, 1, 2]
+
 end # module

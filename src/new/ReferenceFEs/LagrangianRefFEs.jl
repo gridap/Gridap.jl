@@ -772,6 +772,11 @@ end
 # Precomputed instances
 
 """
+    const VERTEX1 = LagrangianRefFE(Float64,VERTEX,1)
+"""
+const VERTEX1 = LagrangianRefFE(Float64,VERTEX,1)
+
+"""
     const SEG2 = LagrangianRefFE(Float64,SEGMENT,1)
 """
 const SEG2 = LagrangianRefFE(Float64,SEGMENT,1)

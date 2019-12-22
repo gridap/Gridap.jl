@@ -9,7 +9,10 @@ using Gridap.Geometry: DiscreteModelMock
 
 model = DiscreteModelMock()
 test_discrete_model(model)
-@test is_oriented(model) == false
+
+grid = get_grid(model)
+topo = get_grid_topology(model)
+labeling = get_face_labeling(model)
 
 @test num_dims(model) == 2
 @test num_cell_dims(model) == 2
@@ -23,52 +26,50 @@ test_discrete_model(model)
 @test num_edges(model) == 13
 @test num_facets(model) == 13
 @test num_nodes(model) == 9
-@test get_vertex_coordinates(model) == get_node_coordinates(model)
-@test get_isboundary_face(model) == Bool[1,1,1,1,0,1,1,1,1,1,0,1,0,1,0,1,0,1,1,0,1,1,1,1,1,1,1]
-@test get_isboundary_node(model) == Bool[1,1,1,1,0,1,1,1,1]
-@test get_dimranges(model) == [1:9, 10:22, 23:27]
-@test get_offsets(model) == [0, 9, 22]
-@test get_offset(model,0) == 0
-@test get_offset(model,1) == 9
-@test get_offset(model,2) == 22
-@test get_facedims(model) == Int8[0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2]
-@test get_cell_faces(model) == [
-  [1,2,4,5,10,11,12,13,23], [2,3,5,14,13,15,24], [3,6,5,16,15,17,25],
-  [4,5,7,8,11,18,19,20,26], [5,6,8,9,17,21,20,22,27]]
 
-grid = UnstructuredGrid(ReferenceFE{0},model)
-@test num_cells(grid) == num_vertices(model)
+@test get_cell_nodes(model) == get_cell_nodes(grid)
+@test get_node_coordinates(model) == get_node_coordinates(grid)
+@test get_cell_type(model) == get_cell_type(grid)
+@test get_reffes(model) == get_reffes(grid)
+@test get_face_nodes(model,0) == get_faces(topo,0,0)
+@test get_face_nodes(model,1) == get_faces(topo,1,0)
+@test get_face_nodes(model,2) == get_faces(topo,2,0)
+@test get_face_nodes(model) == get_face_vertices(topo)
+@test get_face_own_nodes(model,0) == get_faces(topo,0,0)
+@test get_face_own_nodes(model,1) == empty_table(num_faces(model,1))
+@test get_face_own_nodes(model,2) == empty_table(num_faces(model,2))
+r = vcat(get_face_own_nodes(model,0),get_face_own_nodes(model,1),get_face_own_nodes(model,2))
+@test get_face_own_nodes(model) == r
+@test get_vertex_node(model) == collect(1:num_vertices(model))
+@test get_node_face_owner(model) == collect(1:num_nodes(model))
+@test get_reffaces(ReferenceFE{0},model) == [VERTEX1]
+@test get_reffaces(ReferenceFE{1},model) == [SEG2]
+@test get_reffaces(ReferenceFE{2},model) == [QUAD4, TRI3]
+@test get_reffaces(model) == [VERTEX1, SEG2, QUAD4, TRI3]
+@test get_face_type(model,0) == get_face_type(topo,0)
+@test get_face_type(model,1) == get_face_type(topo,1)
+@test get_face_type(model,2) == get_face_type(topo,2)
+@test get_face_type(model) == get_face_type(topo)
+@test get_reffaces_offsets(model) == [0,1,2]
 
-grid = ConformingTriangulation(ReferenceFE{1},model)
-@test num_cells(grid) == num_edges(model)
+grid0 = Grid(ReferenceFE{0},model)
+grid1 = Grid(ReferenceFE{1},model)
+grid2 = Grid(ReferenceFE{2},model)
+test_grid(grid0)
+test_grid(grid1)
+test_grid(grid2)
+@test num_dims(grid0) == 0
+@test num_dims(grid1) == 1
+@test num_dims(grid2) == 2
 
-grid = ConformingTriangulation(ReferenceFE{2},model)
-@test num_cells(grid) == num_cells(model)
-
-d = 1
-model = DiscreteModelMock()
-cell_to_lface_to_pindex = get_cell_perm_indices(model,d)
-r = [[1, 1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1], [2, 1, 1, 1]]
-test_array(cell_to_lface_to_pindex,r)
-
-@test get_reffes_offsets(model) == [0,1,2]
-@test get_face_reffe_type(model) == [
-  1, 1, 1, 1, 1, 1, 1, 1, 1,
-  2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-  3, 4, 4, 3, 3]
-
-order = 1
-reffes = [
-  LagrangianRefFE(Float64,get_polytope(reffe),order)
-  for reffe in get_reffes(model)]
-
-d = 1
-ftype_to_refface, face_to_ftype = extract_face_reffes(ReferenceFE{1},model,reffes)
-ftype_to_refface, face_to_ftype = extract_face_reffes(model,reffes)
-
-order = 2
-reffes = [ LagrangianRefFE(Float64,get_polytope(reffe),order) for reffe in get_reffes(model)]
-model2 = replace_reffes(model,reffes)
-test_discrete_model(model2)
+grid0 = Triangulation(ReferenceFE{0},model)
+grid1 = Triangulation(ReferenceFE{1},model)
+grid2 = Triangulation(ReferenceFE{2},model)
+test_triangulation(grid0)
+test_triangulation(grid1)
+test_triangulation(grid2)
+@test num_dims(grid0) == 0
+@test num_dims(grid1) == 1
+@test num_dims(grid2) == 2
 
 end # module

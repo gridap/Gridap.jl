@@ -307,7 +307,7 @@ function get_face_type(g::GridTopology,d::Integer)
 end
 
 """
-function compute_reffaces(::Type{Polytope{d}}, g::GridTopology) where d
+    compute_reffaces(::Type{Polytope{d}}, g::GridTopology) where d
 """
 function compute_reffaces(::Type{Polytope{d}}, g::GridTopology) where d
   D = num_cell_dims(g)
@@ -328,6 +328,50 @@ end
 function compute_reffaces(::Type{Polytope{D}}, g::GridTopology{D}) where D
   (get_polytopes(g), get_cell_type(g))
 end
+
+"""
+    get_reffaces(topo::GridTopology)
+"""
+function get_reffaces(topo::GridTopology)
+  reffaces, _ , _ = compute_reffaces(topo)
+  reffaces
+end
+
+"""
+    get_face_type(topo::GridTopology)
+"""
+function get_face_type(topo::GridTopology)
+  _, face_to_ftype, _ = compute_reffaces(topo)
+  face_to_ftype
+end
+
+"""
+    get_reffaces_offsets(topo::GridTopology)
+"""
+function get_reffaces_offsets(topo::GridTopology)
+  _, _, offsets = compute_reffaces(topo)
+  offsets
+end
+
+"""
+    compute_reffaces(g::GridTopology)
+"""
+function compute_reffaces(g::GridTopology)
+  D = num_cell_dims(g)
+  d_to_refdfaces = Vector{Polytope}[]
+  d_to_dface_to_ftype = Vector{Int8}[]
+  for d in 0:D
+    push!(d_to_refdfaces,get_reffaces(Polytope{d},g))
+    push!(d_to_dface_to_ftype,get_face_type(g,d))
+  end
+  d_to_offset = zeros(Int,D+1)
+  for d in 1:D
+    d_to_offset[d+1] = d_to_offset[d] + length(d_to_refdfaces[d])
+    d_to_dface_to_ftype[d+1] .+= d_to_offset[d+1]
+  end
+  (collect(vcat(d_to_refdfaces...)), vcat(d_to_dface_to_ftype...), d_to_offset)
+end
+
 
 """
     get_isboundary_face(g::GridTopology)

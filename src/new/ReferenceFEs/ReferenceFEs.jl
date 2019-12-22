@@ -109,6 +109,7 @@ export compute_lagrangian_reffaces
 export is_first_order
 export is_affine
 
+export VERTEX1
 export SEG2
 export TRI3
 export QUAD4
