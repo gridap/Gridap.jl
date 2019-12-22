@@ -18,7 +18,7 @@ using Test
 
 @time @testset "Geometry" begin include("GeometryTests/runtests.jl") end
 
-#@time @testset "Visualization" begin include("VisualizationTests/runtests.jl") end
+@time @testset "Visualization" begin include("VisualizationTests/runtests.jl") end
 
 include("../../bench/runbenchs.jl")
 

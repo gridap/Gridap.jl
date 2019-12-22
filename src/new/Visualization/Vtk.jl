@@ -2,7 +2,7 @@
 """
 """
 function writevtk(
-  trian::ConformingTriangulation, filebase; celldata=Dict(), nodaldata=Dict())
+  trian::Grid, filebase; celldata=Dict(), nodaldata=Dict())
   write_vtk_file(trian,filebase,celldata=celldata,nodaldata=nodaldata)
 end
 
@@ -36,7 +36,7 @@ end
 """
 function writevtk(p::Polytope,filebase)
   for d in 0:(num_dims(p)-1)
-    grid = ConformingTriangulation(ReferenceFE{d},p)
+    grid = Grid(ReferenceFE{d},p)
     write_vtk_file(grid,"$(filebase)_$d")
   end
 end
@@ -52,7 +52,7 @@ end
 
 function writevtk(model::DiscreteModel, labels::FaceLabeling, filebase)
   for d in 0:num_cell_dims(model)
-    grid = ConformingTriangulation(ReferenceFE{d},model)
+    grid = Grid(ReferenceFE{d},model)
     cdat = _prepare_cdata_model(labels,d)
     write_vtk_file(grid,"$(filebase)_$d";celldata=cdat)
   end
@@ -84,29 +84,16 @@ end
 """
 
     write_vtk_file(
-      trian::ConformingTriangulation,
+      trian::Grid,
       filebase;
       celldata=Dict(),
       nodaldata=Dict())
 
 Low level entry point to vtk. Other vtk-related routines in Gridap eventually call this one.
 
-The reference FEs in the triangulation need to implement the following queries
-
-- [`get_vtkid(reffe::NodalReferenceFE)`](@ref)
-- [`get_vtknodes(reffe::NodalReferenceFE)`](@ref)
-
-A default implementation is available for `LagrangianRefFE`. It is based on the following
-queries on the underlying polytope
-
-- [`get_vtkid(p::Polytope,basis::MonomialBasis)`](@ref)
-- [`get_vtknodes(p::Polytope,basis::MonomialBasis)`](@ref)
-
-They are implemented for `ExtrusionPolytope`.
-
 """
 function write_vtk_file(
-  trian::ConformingTriangulation, filebase; celldata=Dict(), nodaldata=Dict())
+  trian::Grid, filebase; celldata=Dict(), nodaldata=Dict())
 
   points = _vtkpoints(trian)
   cells = _vtkcells(trian)
@@ -197,50 +184,18 @@ end
 
 """
 """
-function get_vtkid(reffe::NodalReferenceFE)
-  @abstractmethod
-end
-
-"""
-"""
-function get_vtknodes(reffe::NodalReferenceFE)
-  @abstractmethod
-end
-
 function get_vtkid(reffe::LagrangianRefFE)
   basis = get_prebasis(reffe)
   p = get_polytope(reffe)
   get_vtkid(p,basis)
 end
 
+"""
+"""
 function get_vtknodes(reffe::LagrangianRefFE)
   basis = get_prebasis(reffe)
   p = get_polytope(reffe)
   get_vtknodes(p,basis)
-end
-
-"""
-    get_vtkid(p::Polytope,basis::MonomialBasis) -> Int
-
-Given a polytope `p` and a monomial basis, returns an integer with its vtk identifier.
-Overloading of this function is needed only in order to visualize the underlying polytope
-with Paraview.
-"""
-function get_vtkid(p::Polytope,basis::MonomialBasis)
-  @abstractmethod
-end
-
-"""
-    get_vtknodes(p::Polytope,basis::MonomialBasis) -> Vector{Int}
-
-Given a polytope `p` and monomial basis, returns a vector of integers representing a permutation of the
-polytope vertices required to relabel the vertices according the criterion adopted in
-Paraview.
-Overloading of this function is needed only in order to visualize the underlying polytope
-with Paraview.
-"""
-function get_vtknodes(p::Polytope,basis::MonomialBasis)
-  @abstractmethod
 end
 
 function get_vtkid(p::ExtrusionPolytope, basis::MonomialBasis)
@@ -377,8 +332,4 @@ function _vtkcelltypedict()
   #d[VTK_BIQUADRATIC_HEXAHEDRON.vtk_id] = VTK_BIQUADRATIC_HEXAHEDRON
   d
 end
-
-# Visualization of a LagrangianRefFE
-
-
 

@@ -1,6 +1,6 @@
 module VtkTests
 
-using Gridap.Geometry: ConformingTrianMock
+using Gridap.Geometry: GridMock
 using Gridap.Geometry: DiscreteModelMock
 using Gridap.TensorValues
 using Gridap.Arrays
@@ -12,7 +12,7 @@ using Gridap.Visualization
 d = mktempdir()
 f = joinpath(d,"trian")
 
-trian = ConformingTrianMock()
+trian = GridMock()
 
 node_ids = collect(1:num_nodes(trian))
 cell_ids = collect(1:num_cells(trian))
@@ -48,6 +48,12 @@ model = UnstructuredDiscreteModel(grid)
 f = joinpath(d,"model")
 writevtk(model,f)
 
+domain = (0,1,0,1,0,1)
+partition = (3,4,2)
+model = CartesianDiscreteModel(domain,partition)
+
+f = joinpath(d,"model")
+writevtk(model,f)
 
 f = joinpath(d,"model")
 model = DiscreteModelMock()

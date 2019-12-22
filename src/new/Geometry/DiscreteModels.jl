@@ -156,8 +156,8 @@ function compute_face_nodes(model::DiscreteModel,d::Integer)
 
   topo = get_grid_topology(model)
   D = num_cell_dims(topo)
-  cell_to_nodes = get_cell_nodes(model)
-  cell_to_faces = get_faces(topo,D,d)
+  cell_to_nodes = Table(get_cell_nodes(model))
+  cell_to_faces = Table(get_faces(topo,D,d))
   cell_to_ctype = get_cell_type(model)
   reffes = get_reffes(model)
   ctype_to_lface_to_lnodes = map( (reffe)-> get_face_nodes(reffe,d) , reffes )
@@ -205,8 +205,8 @@ function compute_face_own_nodes(model::DiscreteModel,d::Integer)
 
   topo = get_grid_topology(model)
   D = num_cell_dims(topo)
-  cell_to_nodes = get_cell_nodes(model)
-  cell_to_faces = get_faces(topo,D,d)
+  cell_to_nodes = Table(get_cell_nodes(model))
+  cell_to_faces = Table(get_faces(topo,D,d))
   cell_to_ctype = get_cell_type(model)
   reffes = get_reffes(model)
   ctype_to_lface_to_lnodes = map( (reffe)-> get_face_own_nodes(reffe,d) , reffes )
@@ -305,7 +305,7 @@ function compute_reffaces(::Type{ReferenceFE{d}}, g::DiscreteModel) where d
   ctype_to_lface_to_lftype = [ get_face_type(reffe,d) for reffe in ctype_to_reffe]
   t = _generate_ftype_to_refface(Val{d}(),ctype_to_lftype_to_refface,ctype_to_lface_to_lftype)
   ftype_to_refface, ctype_to_lface_to_ftype = t
-  cell_to_faces = get_faces(topo,D,d)
+  cell_to_faces = Table(get_faces(topo,D,d))
   cell_to_ctype = get_cell_type(g)
   nfaces = num_faces(g,d)
   face_to_ftype = generate_face_to_face_type(
@@ -381,5 +381,4 @@ end
 function Triangulation(::Type{ReferenceFE{d}},model::DiscreteModel) where d
   Grid(ReferenceFE{d},model)
 end
-
 
