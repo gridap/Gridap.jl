@@ -122,6 +122,21 @@ function Grid(::Type{<:ReferenceFE{d}},p::Polytope) where d
   UnstructuredGrid(NodalReferenceFE{d},p)
 end
 
+"""
+    GridTopology(grid::Grid)
+    GridTopology(grid::Grid, cell_to_vertices::Table, vertex_to_node::Vector)
+"""
+function GridTopology(grid::Grid)
+  _grid = UnstructuredGrid(grid)
+  GridTopology(_grid)
+end
+
+function GridTopology(grid::Grid, cell_to_vertices::Table, vertex_to_node::AbstractVector)
+  _grid = UnstructuredGrid(grid)
+  GridTopology(_grid,cell_to_vertices,vertex_to_node)
+end
+
+
 #"""
 #    Grid(::Type{<:ReferenceFE{d}},trian::Grid) where d
 #"""

@@ -56,6 +56,14 @@ grid = Grid(ReferenceFE{3},WEDGE)
 @test num_cell_dims(grid) == 3
 @test num_point_dims(grid) == 3
 
+
+# Extract grid topology
+
+grid = GridMock()
+topo = GridTopology(grid)
+test_grid_topology(topo)
+
+
 ## get low dim grid
 #
 #grid = Grid(ReferenceFE{1},trian)
