@@ -7,9 +7,9 @@
       cell_types::Vector{Int8}
     end
 """
-struct UnstructuredGrid{Dc,Dp,Tp,Ti,O} <: Grid{Dc,Dp}
+struct UnstructuredGrid{Dc,Dp,Tp,O} <: Grid{Dc,Dp}
   node_coordinates::Vector{Point{Dp,Tp}}
-  cell_nodes::Table{Ti,Int32}
+  cell_nodes::Table{Int,Int32}
   reffes::Vector{<:NodalReferenceFE{Dc}}
   cell_types::Vector{Int8}
   @doc """
@@ -29,7 +29,7 @@ struct UnstructuredGrid{Dc,Dp,Tp,Ti,O} <: Grid{Dc,Dp}
     reffes::Vector{<:NodalReferenceFE{Dc}},
     cell_types::Vector,
     ::Val{B}=Val{false}()) where {Dc,Dp,Tp,Ti,B}
-    new{Dc,Dp,Tp,Ti,B}(node_coordinates,cell_nodes,reffes,cell_types)
+    new{Dc,Dp,Tp,B}(node_coordinates,cell_nodes,reffes,cell_types)
   end
 end
 
@@ -51,7 +51,7 @@ function UnstructuredGrid(trian::UnstructuredGrid)
 end
 
 OrientationStyle(
-  ::Type{UnstructuredGrid{Dc,Dp,Tp,Ti,B}}) where {Dc,Dp,Tp,Ti,B} = Val{B}()
+  ::Type{UnstructuredGrid{Dc,Dp,Tp,B}}) where {Dc,Dp,Tp,B} = Val{B}()
 
 get_reffes(g::UnstructuredGrid) = g.reffes
 
@@ -79,16 +79,16 @@ end
 
 # From Polytope
 
-function UnstructuredGrid(::Type{<:ReferenceFE{D}},p::Polytope{D}) where D
+function UnstructuredGrid(::Type{ReferenceFE{D}},p::Polytope{D}) where D
   order = 1
   reffe = LagrangianRefFE(Float64,p,order)
   UnstructuredGrid(reffe)
 end
 
 """
-    UnstructuredGrid(::Type{<:ReferenceFE{d}},p::Polytope) where d
+    UnstructuredGrid(::Type{ReferenceFE{d}},p::Polytope) where d
 """
-function UnstructuredGrid(::Type{<:ReferenceFE{d}},p::Polytope) where d
+function UnstructuredGrid(::Type{ReferenceFE{d}},p::Polytope) where d
   node_coordinates = get_vertex_coordinates(p)
   cell_nodes = Table(get_faces(p,d,0))
   reffaces = get_reffaces(Polytope{d},p)
@@ -123,12 +123,12 @@ end
 
 # Extract grid topology
 
-function GridTopology(grid::UnstructuredGrid)
+function UnstructuredGridTopology(grid::UnstructuredGrid)
   cell_to_vertices, vertex_to_node, = _generate_cell_to_vertices_from_grid(grid)
   _generate_grid_topology_from_grid(grid,cell_to_vertices,vertex_to_node)
 end
 
-function GridTopology(grid::UnstructuredGrid, cell_to_vertices::Table, vertex_to_node::AbstractVector)
+function UnstructuredGridTopology(grid::UnstructuredGrid, cell_to_vertices::Table, vertex_to_node::AbstractVector)
   _generate_grid_topology_from_grid(grid,cell_to_vertices,vertex_to_node)
 end
 

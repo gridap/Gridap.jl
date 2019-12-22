@@ -120,9 +120,8 @@ export compute_vertex_to_node
 export get_node_face_owner
 export compute_node_face_owner
 
-#export UnstructuredDiscreteModel
-
-#export CartesianDiscreteModel
+export UnstructuredDiscreteModel
+export CartesianDiscreteModel
 
 include("GridTopologies.jl")
 
@@ -146,10 +145,8 @@ include("DiscreteModels.jl")
 
 include("DiscreteModelMocks.jl")
 
-#
-#
-#include("UnstructuredDiscreteModels.jl")
-#
-#include("CartesianDiscreteModels.jl")
+include("UnstructuredDiscreteModels.jl")
+
+include("CartesianDiscreteModels.jl")
 
 end # module

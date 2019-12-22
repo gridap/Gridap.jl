@@ -6,21 +6,23 @@
 """
 struct CartesianDiscreteModel{D,T,F} <: DiscreteModel{D,D}
   grid::CartesianGrid{D,T,F}
-  model::UnstructuredDiscreteModel{D,D}
+  grid_topology::UnstructuredGridTopology{D,D,T,true}
+  face_labeling::FaceLabeling
   @doc """
       CartesianDiscreteModel(desc::CartesianDescriptor)
+
+  Inner constructor
   """
   function CartesianDiscreteModel(desc::CartesianDescriptor{D,T,F}) where {D,T,F}
     grid = CartesianGrid(desc)
-    model = UnstructuredDiscreteModel(grid)
-    _fill_cartesian_face_labeling!(model)
-    new{D,T,F}(grid,model)
+    _grid = UnstructuredGrid(grid)
+    topo = UnstructuredGridTopology(_grid)
+    nfaces = [num_faces(topo,d) for d in 0:num_cell_dims(topo)]
+    labels = FaceLabeling(nfaces)
+    _fill_cartesian_face_labeling!(labels,topo)
+    new{D,T,F}(grid,topo,labels)
   end
 end
-
-# non-default traits
-
-OrientationStyle(::Type{<:CartesianDiscreteModel}) = Val{true}()
 
 """
     CartesianDiscreteModel(args...)
@@ -32,88 +34,38 @@ function CartesianDiscreteModel(args...)
   CartesianDiscreteModel(desc)
 end
 
-# Delegated to the grid
 """
-    get_cartesian_descriptor(grid::CartesianDiscreteModel)
-
-Get the descriptor of the Cartesian model
+    get_cartesian_descriptor(model::CartesianDiscreteModel)
 """
-get_cartesian_descriptor(a::CartesianDiscreteModel) = get_cartesian_descriptor(a.grid)
-
-get_cell_type(g::CartesianDiscreteModel) = get_cell_type(g.grid)
-
-get_cell_map(g::CartesianDiscreteModel) = get_cell_map(g.grid)
-
-num_nodes(g::CartesianDiscreteModel) = num_nodes(g.grid)
-
-# Delegated to the model
-
-get_node_coordinates(g::CartesianDiscreteModel) = get_node_coordinates(g.model)
-
-num_faces(g::CartesianDiscreteModel,d::Integer) = num_faces(g.model,d)
-
-get_faces(g::CartesianDiscreteModel,dimfrom::Integer,dimto::Integer) = get_faces(g.model,dimfrom,dimto)
-
-get_vertex_node(g::CartesianDiscreteModel) = get_vertex_node(g.model)
-
-get_node_face_owner(g::CartesianDiscreteModel) = get_node_face_owner(g.model)
-
-get_face_nodes(g::CartesianDiscreteModel,d::Integer) = get_face_nodes(g.model,d)
-
-get_face_own_nodes(g::CartesianDiscreteModel,d::Integer) = get_face_own_nodes(g.model,d)
-
-get_cell_nodes(g::CartesianDiscreteModel) = get_cell_nodes(g.model)
-
-get_isboundary_face(g::CartesianDiscreteModel,d::Integer) = get_isboundary_face(g.model,d)
-
-get_face_reffe_type(g::CartesianDiscreteModel,d::Integer) = get_face_reffe_type(g.model,d)
-
-get_face_polytope_type(g::CartesianDiscreteModel,d::Integer) = get_face_polytope_type(g.model,d)
-
-get_reffes(
- ::Type{<:ReferenceFE{d}},g::CartesianDiscreteModel) where d = get_reffes(NodalReferenceFE{d},g.model)
-
-get_polytopes(
- ::Type{<:Polytope{d}},g::CartesianDiscreteModel) where d = get_polytopes(Polytope{d},g.model)
-
-get_face_labeling(g::CartesianDiscreteModel) = get_face_labeling(g.model)
-
-"""
-    get_polytope(::Type{<:Polytope{d}},model::CartesianDiscreteModel) where d
-"""
-function get_polytope(::Type{<:Polytope{d}},model::CartesianDiscreteModel) where d
-  polytopes = get_polytopes(Polytope{d},model)
-  @assert length(polytopes) == 1
-  first(polytopes)
+function get_cartesian_descriptor(model::CartesianDiscreteModel)
+  get_cartesian_descriptor(model.grid)
 end
 
-"""
-    get_polytope(model::CartesianDiscreteModel)
-"""
-function get_polytope(model::CartesianDiscreteModel)
-  D = num_cell_dims(model)
-  get_polytope(Polytope{D},model)
-end
+# Interface
 
+get_grid(model::CartesianDiscreteModel) = model.grid
+
+get_grid_topology(model::CartesianDiscreteModel) = model.grid_topology
+
+get_face_labeling(model::CartesianDiscreteModel) = model.face_labeling
 
 # Helpers
 
-function _fill_cartesian_face_labeling!(model)
-  _fill_cartesian_entitties!(model)
-  _add_cartesian_tags!(model)
+function _fill_cartesian_face_labeling!(labels,topo)
+  _fill_cartesian_entitties!(labels,topo)
+  _add_cartesian_tags!(labels,topo)
 end
 
-function _fill_cartesian_entitties!(model)
-  D = num_cell_dims(model)
-  labels = get_face_labeling(model)
+function _fill_cartesian_entitties!(labels,topo)
+  D = num_cell_dims(topo)
   d_to_dface_to_entity = labels.d_to_dface_to_entity
-  polytope = first(get_polytopes(Polytope{D},model))
+  polytope = first(get_polytopes(topo))
   dim_to_offset = get_offsets(polytope)
   interior_id = num_faces(polytope)+1
   boundary_id = -1
   for d in 0:(D-1)
-    face_to_cells = get_faces(model,d,D)
-    cell_to_faces = get_faces(model,D,d)
+    face_to_cells = get_faces(topo,d,D)
+    cell_to_faces = get_faces(topo,D,d)
     offset = dim_to_offset[d+1]
     _generate_pre_geolabel!(
       d_to_dface_to_entity[d+1],
@@ -124,7 +76,7 @@ function _fill_cartesian_entitties!(model)
   end
   for d in 0:(D-2)
     for j in (d+1):(D-1)
-      dface_to_jfaces = get_faces(model,d,j)
+      dface_to_jfaces = get_faces(topo,d,j)
       dface_to_geolabel = d_to_dface_to_entity[d+1]
       jface_to_geolabel = d_to_dface_to_entity[j+1]
       _fix_dface_geolabels!(
@@ -138,10 +90,9 @@ function _fill_cartesian_entitties!(model)
   fill!(d_to_dface_to_entity[end],interior_id)
 end
 
-function _add_cartesian_tags!(model)
-  D = num_cell_dims(model)
-  labels = get_face_labeling(model)
-  polytope = first(get_polytopes(Polytope{D},model))
+function _add_cartesian_tags!(labels,topo)
+  D = num_cell_dims(topo)
+  polytope = first(get_polytopes(topo))
   interior_id = num_faces(polytope)+1
   boundary_ids = collect(1:(interior_id-1))
   for i in boundary_ids

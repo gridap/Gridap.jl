@@ -116,10 +116,10 @@ function Grid(reffe::LagrangianRefFE)
 end
 
 """
-    Grid(::Type{<:ReferenceFE{d}},p::Polytope) where d
+    Grid(::Type{ReferenceFE{d}},p::Polytope) where d
 """
-function Grid(::Type{<:ReferenceFE{d}},p::Polytope) where d
-  UnstructuredGrid(NodalReferenceFE{d},p)
+function Grid(::Type{ReferenceFE{d}},p::Polytope) where d
+  UnstructuredGrid(ReferenceFE{d},p)
 end
 
 """
@@ -128,29 +128,12 @@ end
 """
 function GridTopology(grid::Grid)
   _grid = UnstructuredGrid(grid)
-  GridTopology(_grid)
+  UnstructuredGridTopology(_grid)
 end
 
 function GridTopology(grid::Grid, cell_to_vertices::Table, vertex_to_node::AbstractVector)
   _grid = UnstructuredGrid(grid)
-  GridTopology(_grid,cell_to_vertices,vertex_to_node)
+  UnstructuredGridTopology(_grid,cell_to_vertices,vertex_to_node)
 end
 
-
-#"""
-#    Grid(::Type{<:ReferenceFE{d}},trian::Grid) where d
-#"""
-#function Grid(::Type{<:ReferenceFE{d}},trian::Grid) where d
-#  UnstructuredGrid(NodalReferenceFE{d},trian)
-#end
-
-#"""
-#    replace_reffes(grid::Grid,reffes::Vector{<:NodalReferenceFE})
-#"""
-#function replace_reffes(grid::Grid,reffes::Vector{<:NodalReferenceFE})
-#  model = UnstructuredDiscreteModel(grid)
-#  model2 = replace_reffes(model,reffes)
-#  D = num_cell_dims(grid)
-#  Grid(ReferenceFE{D},model2)
-#end
 
