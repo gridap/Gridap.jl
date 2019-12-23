@@ -65,7 +65,7 @@ get_cell_nodes(g::UnstructuredGrid) = g.cell_nodes
 # From ReferenceFE
 
 """
-    UnstructuredGrid(reffe::NodalReferenceFE)
+    UnstructuredGrid(reffe::LagrangianRefFE)
 
 Build a grid with a single cell that is the given reference FE itself
 """
@@ -123,6 +123,14 @@ end
 
 # Extract grid topology
 
+"""
+    UnstructuredGridTopology(grid::UnstructuredGrid)
+
+    UnstructuredGridTopology(
+      grid::UnstructuredGrid,
+      cell_to_vertices::Table,
+      vertex_to_node::AbstractVector)
+"""
 function UnstructuredGridTopology(grid::UnstructuredGrid)
   cell_to_vertices, vertex_to_node, = _generate_cell_to_vertices_from_grid(grid)
   _generate_grid_topology_from_grid(grid,cell_to_vertices,vertex_to_node)
@@ -274,29 +282,4 @@ function  _generate_cell_to_vertices_fill!(
   end
 end
 
-
-## Low dim grids
-#
-#"""
-#    UnstructuredGrid(::Type{<:ReferenceFE{d}},trian::Grid) where d
-#"""
-#function UnstructuredGrid(::Type{<:ReferenceFE{d}},trian::Grid) where d
-#  model = UnstructuredDiscreteModel(trian)
-#  UnstructuredGrid(NodalReferenceFE{d},model)
-#end
-#
-#function generate_cell_to_faces(d, grid::UnstructuredGrid, cell_to_vertices, vertex_to_cells)
-#  reffes = get_reffes(grid)
-#  polytopes = map(get_polytope,reffes)
-#  cell_type_to_lface_to_lvertices = map( (p)->get_faces(p,d,0), polytopes )
-#  cell_to_cell_type = get_cell_type(grid)
-#
-#  generate_cell_to_faces(
-#    cell_to_vertices,
-#    cell_type_to_lface_to_lvertices,
-#    cell_to_cell_type,
-#    vertex_to_cells)
-#
-#end
-#
 

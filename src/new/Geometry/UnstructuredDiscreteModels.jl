@@ -1,5 +1,10 @@
 
 """
+    struct UnstructuredDiscreteModel{Dc,Dp,Tp,B} <: DiscreteModel{Dc,Dp}
+      grid::UnstructuredGrid{Dc,Dp,Tp,B}
+      grid_topology::UnstructuredGridTopology{Dc,Dp,Tp,B}
+      face_labeling::FaceLabeling
+    end
 """
 struct UnstructuredDiscreteModel{Dc,Dp,Tp,B} <: DiscreteModel{Dc,Dp}
   grid::UnstructuredGrid{Dc,Dp,Tp,B}
@@ -8,6 +13,7 @@ struct UnstructuredDiscreteModel{Dc,Dp,Tp,B} <: DiscreteModel{Dc,Dp}
 end
 
 """
+    UnstructuredDiscreteModel(grid::Grid)
 """
 function UnstructuredDiscreteModel(grid::Grid)
   _grid = UnstructuredGrid(grid)

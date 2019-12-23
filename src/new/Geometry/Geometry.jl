@@ -116,7 +116,7 @@ export get_face_labeling
 export test_discrete_model
 export compute_face_nodes
 export compute_face_own_nodes
-export compute_vertex_to_node
+export compute_vertex_node
 export get_node_face_owner
 export compute_node_face_owner
 

@@ -197,6 +197,7 @@ SerendipityRefFE
 ### Pre-defined ReferenceFE instances
 
 ```@docs
+VERTEX1
 SEG2
 TRI3
 QUAD4

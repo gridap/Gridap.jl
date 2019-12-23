@@ -32,8 +32,9 @@ abstract type GridTopology{Dc,Dp} end
 
 `Val{true}()` if has oriented faces, `Val{false}()` otherwise (default).
 """
-OrientationStyle(::Type{<:GridTopology}) = Val{false}()
 OrientationStyle(a::GridTopology) = OrientationStyle(typeof(a))
+
+OrientationStyle(::Type{<:GridTopology}) = Val{false}()
 
 """
     RegularityStyle(::Type{<:GridTopology}) -> Val{Bool}
@@ -41,8 +42,9 @@ OrientationStyle(a::GridTopology) = OrientationStyle(typeof(a))
 
 `Val{true}()` if no hanging-faces (refault), `Val{false}()` otherwise.
 """
-RegularityStyle(::Type{<:GridTopology}) = Val{true}()
 RegularityStyle(a::GridTopology) = RegularityStyle(typeof(a))
+
+RegularityStyle(::Type{<:GridTopology}) = Val{true}()
 
 # Abstract methods
 
@@ -143,6 +145,7 @@ function num_faces(g::GridTopology)
 end
 
 """
+    num_cells(g::GridTopology)
 """
 num_cells(g::GridTopology) = num_faces(g,num_cell_dims(g))
 

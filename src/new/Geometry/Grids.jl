@@ -35,8 +35,8 @@ abstract type Grid{Dc,Dp} <: Triangulation{Dc,Dp} end
 
 `Val{true}()` if has oriented faces, `Val{false}()` otherwise (default).
 """
-OrientationStyle(::Type{<:Grid}) = Val{false}()
 OrientationStyle(a::Grid) = OrientationStyle(typeof(a))
+OrientationStyle(::Type{<:Grid}) = Val{false}()
 
 """
     RegularityStyle(::Type{<:Grid}) -> Val{Bool}
@@ -44,8 +44,8 @@ OrientationStyle(a::Grid) = OrientationStyle(typeof(a))
 
 `Val{true}()` if no hanging-nodes (refault), `Val{false}()` otherwise.
 """
-RegularityStyle(::Type{<:Grid}) = Val{true}()
 RegularityStyle(a::Grid) = RegularityStyle(typeof(a))
+RegularityStyle(::Type{<:Grid}) = Val{true}()
 
 # Interface
 

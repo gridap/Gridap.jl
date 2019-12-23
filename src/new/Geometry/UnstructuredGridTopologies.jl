@@ -1,5 +1,8 @@
 
 """
+    struct UnstructuredGridTopology{Dc,Dp,T,O} <: GridTopology{Dc,Dp}
+      # private fields
+    end
 """
 struct UnstructuredGridTopology{Dc,Dp,T,O} <: GridTopology{Dc,Dp}
   vertex_coordinates::Vector{Point{Dp,T}}
@@ -11,6 +14,12 @@ end
 # Constructors
 
 """
+    UnstructuredGridTopology(
+      vertex_coordinates::Vector{<:Point},
+      cell_vertices::Table,
+      cell_type::Vector{<:Integer},
+      polytopes::Vector{<:Polytope},
+      orientation::Val{O}=Val{false}()) where O
 """
 function UnstructuredGridTopology(
   vertex_coordinates::Vector{<:Point},
@@ -39,6 +48,12 @@ function UnstructuredGridTopology(
 end
 
 """
+    UnstructuredGridTopology(
+      vertex_coordinates::Vector{<:Point},
+      d_to_dface_vertices::Vector{<:Table},
+      cell_type::Vector{<:Integer},
+      polytopes::Vector{<:Polytope},
+      orientation::Val{O}=Val{false}()) where O
 """
 function UnstructuredGridTopology(
   vertex_coordinates::Vector{<:Point},

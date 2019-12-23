@@ -16,7 +16,6 @@ which is the minimum geometrical information needed to perform cell-wise numeric
 
 The `Triangulation` interface is defined by overloading these methods:
 
-
 - [`get_cell_coordinates(trian::Triangulation)`](@ref)
 - [`get_reffes(trian::Triangulation)`](@ref)
 - [`get_cell_type(trian::Triangulation)`](@ref)

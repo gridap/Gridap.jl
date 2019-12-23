@@ -62,24 +62,12 @@ end
 
 # Delegators to the underlying grid
 
-"""
-    get_cell_nodes(g::DiscreteModel)
-"""
 get_cell_nodes(g::DiscreteModel) = get_cell_nodes(get_grid(g))
 
-"""
-    get_node_coordinates(g::DiscreteModel)
-"""
 get_node_coordinates(g::DiscreteModel) = get_node_coordinates(get_grid(g))
 
-"""
-    get_cell_type(g::DiscreteModel)
-"""
 get_cell_type(g::DiscreteModel) = get_cell_type(get_grid(g))
 
-"""
-    get_cell_type(g::DiscreteModel)
-"""
 get_reffes(g::DiscreteModel) = get_reffes(get_grid(g))
 
 # Default API
