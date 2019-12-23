@@ -171,7 +171,7 @@ function assemble(
   offsets_col = _compute_offsets(U)
   _mf_rows = celldofids(V)
   _mf_cols = celldofids(U)
-  aux_row = Int[]; aux_col = Int[]; aux_val = E[]
+  aux_row, aux_col, aux_val = _create_coo_vectors(M)
 
   for (mcm,cellids_row,cellids_col) in allmcm
     mf_vals = apply_constraints_rows(V, mcm, cellids_row)

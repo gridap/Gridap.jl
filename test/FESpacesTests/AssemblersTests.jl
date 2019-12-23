@@ -5,7 +5,18 @@ using Gridap
 using SparseArrays
 using SparseMatricesCSR
 
-for T in [SparseMatrixCSC, SparseMatrixCSR, SymSparseMatrixCSR]
+for T in [  SparseMatrixCSC,
+            SparseMatrixCSR,
+            SparseMatrixCSR{0},
+            SparseMatrixCSR{1},
+            SparseMatrixCSR{0,Float64, Int},
+            SparseMatrixCSR{1,Float64, Int},
+            SymSparseMatrixCSR,
+            SymSparseMatrixCSR{0},
+            SymSparseMatrixCSR{1},
+            SymSparseMatrixCSR{0, Float64, Int},
+            SymSparseMatrixCSR{1, Float64, Int}]
+
     model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(2,2))
 
     tags = [1,2,3,4,6,5]
