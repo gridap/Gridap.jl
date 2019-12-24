@@ -28,6 +28,9 @@ export QCurlGradMonomialBasis
 export change_basis
 export get_exponents
 
+export get_order
+export get_orders
+
 include("MonomialBases.jl")
 
 include("QGradMonomialBases.jl")

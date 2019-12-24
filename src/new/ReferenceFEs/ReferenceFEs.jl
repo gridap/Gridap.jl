@@ -22,6 +22,9 @@ import Gridap.Arrays: kernel_return_type
 import Gridap.Fields: evaluate
 import Gridap.Polynomials: MonomialBasis
 
+import Gridap.Polynomials: get_order
+import Gridap.Polynomials: get_orders
+
 import Base: ==
 
 export Polytope
@@ -49,6 +52,7 @@ export get_offset
 export get_face_vertices
 export get_reffaces
 export get_face_type
+export get_bounding_box
 export test_polytope
 export VERTEX
 export SEGMENT
@@ -108,6 +112,9 @@ export compute_own_nodes_permutations
 export compute_lagrangian_reffaces
 export is_first_order
 export is_affine
+export is_Q
+export is_P
+export is_S
 
 export VERTEX1
 export SEG2

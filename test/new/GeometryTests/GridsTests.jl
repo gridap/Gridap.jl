@@ -44,6 +44,12 @@ quad8 = LagrangianRefFE(Float64,QUAD,2)
 grid = Grid(quad8)
 @test num_nodes(grid) == num_nodes(quad8)
 
+grid = compute_reference_grid(HEX8,4)
+test_grid(grid)
+
+grid = compute_linear_grid(HEX8)
+test_grid(grid)
+
 # from Polytope
 
 grid = Grid(ReferenceFE{2},WEDGE)
@@ -56,13 +62,11 @@ grid = Grid(ReferenceFE{3},WEDGE)
 @test num_cell_dims(grid) == 3
 @test num_point_dims(grid) == 3
 
-
 # Extract grid topology
 
 grid = GridMock()
 topo = GridTopology(grid)
 test_grid_topology(topo)
-
 
 ## get low dim grid
 #

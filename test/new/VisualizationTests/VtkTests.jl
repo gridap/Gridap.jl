@@ -1,5 +1,6 @@
 module VtkTests
 
+using Test
 using Gridap.Geometry: GridMock
 using Gridap.Geometry: DiscreteModelMock
 using Gridap.TensorValues

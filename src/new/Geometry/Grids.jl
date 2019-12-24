@@ -116,6 +116,31 @@ function Grid(reffe::LagrangianRefFE)
 end
 
 """
+    compute_linear_grid(reffe::LagrangianRefFE)
+"""
+function compute_linear_grid(reffe::LagrangianRefFE)
+  @notimplementedif ! is_n_cube(get_polytope(reffe)) "linear grid only implemented for n-cubes at the moment"
+  if get_order(reffe) == 0
+    D = num_cell_dims(reffe)
+    partition = tfill(1,Val{D}())
+  else
+    partition = get_orders(reffe)
+  end
+  pmin, pmax = get_bounding_box(get_polytope(reffe))
+  desc = CartesianDescriptor(pmin,pmax,partition)
+  CartesianGrid(desc)
+end
+
+"""
+    compute_reference_grid(p::LagrangianRefFE, nelems::Integer)
+"""
+function compute_reference_grid(reffe::LagrangianRefFE, nelems::Integer)
+  p = get_polytope(reffe)
+  r = LagrangianRefFE(Float64,p,nelems)
+  compute_linear_grid(r)
+end
+
+"""
     Grid(::Type{ReferenceFE{d}},p::Polytope) where d
 """
 function Grid(::Type{ReferenceFE{d}},p::Polytope) where d

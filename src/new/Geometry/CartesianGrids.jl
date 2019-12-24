@@ -38,6 +38,22 @@ function CartesianDescriptor(domain,partition,map::Function=identity)
   CartesianDescriptor(origin,sizes,partition,map)
 end
 
+"""
+    CartesianDescriptor(
+      pmin::Point{D},pmax::Point{D},partition,map::Function=identity) where D
+
+"""
+function CartesianDescriptor(
+  pmin::Point{D},pmax::Point{D},partition,map::Function=identity) where D
+  T = eltype(pmin)
+  domain = zeros(T,2*D)
+  for d in 1:D
+    domain[2*(d-1)+1] = pmin[d]
+    domain[2*(d-1)+2] = pmax[d]
+  end
+  CartesianDescriptor(domain,partition,map)
+end
+
 # Coordinates
 
 struct CartesianCoordinates{D,T,F} <: AbstractArray{Point{D,T},D}

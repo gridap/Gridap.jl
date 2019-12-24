@@ -12,6 +12,7 @@ using FillArrays
 using Gridap.Helpers
 using Gridap.Arrays
 using Gridap.Fields
+using Gridap.Polynomials
 using Gridap.ReferenceFEs
 using Gridap.TensorValues
 
@@ -95,6 +96,8 @@ export restrict
 export Grid
 export get_cell_nodes
 export test_grid
+export compute_linear_grid
+export compute_reference_grid
 
 export UnstructuredGrid
 

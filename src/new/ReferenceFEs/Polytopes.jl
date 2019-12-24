@@ -591,6 +591,26 @@ function _find_indexin!(a_to_index, a_to_b, index_to_b,pred::Function=(==))
   a_to_index
 end
 
+"""
+    get_bounding_box(p::Polytope{D}) where D
+"""
+function get_bounding_box(p::Polytope{D}) where D
+  vertex_to_coords = get_vertex_coordinates(p)
+  P = eltype(vertex_to_coords)
+  T = eltype(P)
+  pmin = Point(tfill(T(Inf),Val{D}()))
+  pmax = Point(tfill(T(-Inf),Val{D}()))
+  for coord in vertex_to_coords
+    if coord < pmin
+      pmin = coord
+    end
+    if coord > pmax
+      pmax = coord
+    end
+  end
+  (pmin,pmax)
+end
+
 # Testers
 
 """

@@ -91,6 +91,20 @@ function get_exponents(b::MonomialBasis)
   [Tuple(t) .- indexbase for t in b.terms]
 end
 
+"""
+    get_order(b::MonomialBasis)
+"""
+function get_order(b::MonomialBasis)
+  maximum(b.orders)
+end
+
+"""
+    get_orders(b::MonomialBasis)
+"""
+function get_orders(b::MonomialBasis)
+  b.orders
+end
+
 # Field implementation
 
 function field_cache(f::MonomialBasis{D,T},x) where {D,T}

@@ -22,6 +22,19 @@ function (≈)(
   true
 end
 
+function Base.isless(a::VectorValue{N},b::VectorValue{N}) where N
+  for d in N:-1:1
+    if a[d] < b[d]
+      return true
+    elseif a[d] > b[d]
+      return false
+    else
+      continue
+    end
+  end
+  false
+end
+
 # Addition / subtraction
 
 for op in (:+,:-)

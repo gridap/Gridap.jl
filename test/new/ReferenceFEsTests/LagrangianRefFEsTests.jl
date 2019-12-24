@@ -149,4 +149,28 @@ iface_to_ftype = get_face_type(reffe,2)
 @test length(reffes) == 2
 @test iface_to_ftype == [1, 1, 1, 2, 2]
 
+order = 4
+reffe = LagrangianRefFE(Float64,TET,order)
+@test get_order(reffe) == order
+@test get_orders(reffe) == (order,order,order)
+@test is_P(reffe) == true
+@test is_Q(reffe) == false
+@test is_S(reffe) == false
+
+orders = (1,2)
+reffe = LagrangianRefFE(Float64,QUAD,orders)
+@test get_order(reffe) == 2
+@test get_orders(reffe) == orders
+@test is_P(reffe) == false
+@test is_Q(reffe) == true
+@test is_S(reffe) == false
+
+order = 4
+reffe = SerendipityRefFE(Float64,HEX,order)
+@test get_order(reffe) == order
+@test get_orders(reffe) == (order,order,order)
+@test is_P(reffe) == false
+@test is_Q(reffe) == false
+@test is_S(reffe) == true
+
 end # module

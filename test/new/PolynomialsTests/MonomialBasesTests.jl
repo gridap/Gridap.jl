@@ -16,6 +16,8 @@ V = Float64
 G = gradient_type(V,xi)
 H = gradient_type(G,xi)
 b = MonomialBasis{2}(V,order)
+@test get_order(b) == 0
+@test get_orders(b) == (0,0)
 
 v = V[1.0,]
 g = G[(0.0, 0.0),]

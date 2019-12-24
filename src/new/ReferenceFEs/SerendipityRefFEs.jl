@@ -72,6 +72,10 @@ end
 
 NodalReferenceFE(p::SerendipityPolytope) = NodalReferenceFE(p.hex)
 
+is_simplex(p::SerendipityPolytope) = false
+
+is_n_cube(p::SerendipityPolytope) = true
+
 # Implemented polytope interface for LagrangianRefFEs
 
 function _s_filter(e,order)

@@ -4,10 +4,19 @@ using Test
 using Gridap.TensorValues
 using LinearAlgebra
 
+# Comparison
+
+a = VectorValue(1,2,3)
+b = VectorValue(1,3,3)
+
+@test (a < b) == true
+@test (a <= b) == true
+@test (a == b) == false
+@test (a >= b) == false
+@test (a > b) == false
+
 a = VectorValue(1,2,3)
 b = VectorValue(2,1,6)
-
-# Comparison
 
 @test a==a
 @test a ≈ a

@@ -230,6 +230,43 @@ function is_affine(reffe::NodalReferenceFE)
   is_first_order(reffe) && is_simplex(p)
 end
 
+"""
+    get_order(reffe::LagrangianRefFE)
+"""
+function get_order(reffe::LagrangianRefFE)
+  get_order(get_prebasis(reffe))
+end
+
+"""
+    get_orders(reffe::LagrangianRefFE)
+"""
+function get_orders(reffe::LagrangianRefFE)
+  get_orders(get_prebasis(reffe))
+end
+
+"""
+    is_P(reffe::LagrangianRefFE)
+"""
+function is_P(reffe::LagrangianRefFE)
+  is_simplex(get_polytope(reffe))
+end
+
+"""
+   is_Q(reffe::LagrangianRefFE)
+"""
+function is_Q(reffe::LagrangianRefFE)
+  monomials = get_prebasis(reffe)
+  n = length(get_exponents(monomials))
+  is_n_cube(get_polytope(reffe)) && (prod(get_orders(reffe).+1) == n)
+end
+
+"""
+   is_S(reffe::LagrangianRefFE)
+"""
+function is_S(reffe::LagrangianRefFE)
+  is_n_cube(get_polytope(reffe)) && ! is_Q(reffe)
+end
+
 # Helpers for LagrangianRefFE
 
 function _generate_face_nodes(nnodes,face_to_own_nodes,polytope,reffaces)

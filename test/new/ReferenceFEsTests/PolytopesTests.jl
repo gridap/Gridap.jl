@@ -129,4 +129,8 @@ test_polytope(q)
 d = 1
 @test get_dimrange(q,d) == get_dimranges(q)[d+1]
 
+pmin, pmax = get_bounding_box(HEX)
+@test pmin == Point(0,0,0)
+@test pmax == Point(1,1,1)
+
 end # module
