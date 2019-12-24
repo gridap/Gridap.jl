@@ -77,6 +77,7 @@ contract
 
 ```@docs
 collect1d
+reindex(i_to_v::AbstractArray, j_to_i::AbstractArray)
 ```
 
 ## Concrete array implementations

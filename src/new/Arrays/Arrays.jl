@@ -71,6 +71,8 @@ export UNSET
 export get_local_item
 export find_local_index
 
+export reindex
+
 import Base: size
 import Base: getindex, setindex!
 import Base: similar
@@ -89,5 +91,7 @@ include("CompressedArrays.jl")
 include("Tables.jl")
 
 include("LocalToGlobalArrays.jl")
+
+include("Reindex.jl")
 
 end # module
