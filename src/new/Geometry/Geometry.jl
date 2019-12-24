@@ -26,6 +26,7 @@ using Gridap.ReferenceFEs: _find_unique_with_indices
 
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
+import Gridap.Arrays: reindex
 
 using Gridap.Fields: HomothecyGrad
 
@@ -87,7 +88,9 @@ export get_cell_coordinates
 export get_cell_reffes
 export get_cell_shapefuns
 export get_cell_map
+export get_normal_vector
 export test_triangulation
+export restrict
 
 export Grid
 export get_cell_nodes

@@ -17,6 +17,9 @@ Triangulation
 get_cell_coordinates(trian::Triangulation)
 get_reffes(trian::Triangulation)
 get_cell_type(trian::Triangulation)
+get_normal_vector(trian::Triangulation)
+restrict(f::AbstractArray, trian::Triangulation)
+reindex(f::AbstractArray,trian::Triangulation)
 test_triangulation
 num_cells(trian::Triangulation)
 num_cell_dims(::Triangulation{Dc,Dp}) where {Dc,Dp}

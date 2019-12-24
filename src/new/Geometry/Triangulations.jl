@@ -20,9 +20,21 @@ The `Triangulation` interface is defined by overloading these methods:
 - [`get_reffes(trian::Triangulation)`](@ref)
 - [`get_cell_type(trian::Triangulation)`](@ref)
 
-and it can be tested with
+Optional interface:
+
+For triangulations living in a space of co-dimension 1, the following method can be defined:
+
+- [`get_normal_vector(trian::Triangulation)`]
+
+In some cases, concrete implementations want to override the default implementation of the following methods:
+
+- [`restrict(f::AbstractArray, trian::Triangulation)`]
+- [`reindex(f::AbstractArray, trian::Triangulation)`]
+
+The (mandatory) `Triangulation` interface can be tested with
 
 - [`test_triangulation`](@ref)
+
 
 """
 abstract type Triangulation{Dc,Dp} end
@@ -46,6 +58,17 @@ end
 """
 function get_cell_type(trian::Triangulation)
   @abstractmethod
+end
+
+"""
+    get_normal_vector(trian::Triangulation)
+"""
+function get_normal_vector(trian::Triangulation{Dc,Dp}) where {Dc,Dp}
+  if Dp == Dc + 1
+    @abstractmethod
+  else
+    @unreachable "get_normal_vector does not make sense for this triangulation"
+  end
 end
 
 """
@@ -111,6 +134,20 @@ end
 function is_first_order(trian::Triangulation)
   reffes = get_reffes(trian)
   all(map(is_first_order,reffes))
+end
+
+"""
+    reindex(a::AbstractArray, trian::Triangulation)
+"""
+function reindex(a::AbstractArray,trian::Triangulation)
+  a
+end
+
+"""
+    restrict(f::AbstractArray, trian::Triangulation)
+"""
+function restrict(f::AbstractArray,trian::Triangulation)
+  f
 end
 
 """
