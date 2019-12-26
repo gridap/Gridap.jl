@@ -272,5 +272,12 @@ a = TensorValue(1,2,3,4)
 @test isa(Tuple(a),Tuple)
 @test Tuple(a) == a.array.data
 
+p = VectorValue(2,3)
+t = diagonal_tensor(p)
+@test t == TensorValue(2,0,0,3)
+
+p = VectorValue(1,2,3)
+t = diagonal_tensor(p)
+@test t == TensorValue(1,0,0,0,2,0,0,0,3)
 
 end # module TypesTests

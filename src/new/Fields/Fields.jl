@@ -61,6 +61,7 @@ export Δ
 export ε
 
 export Homothecy
+export AffineMap
 
 import Gridap.Arrays: kernel_cache
 import Gridap.Arrays: apply_kernel!
@@ -81,6 +82,8 @@ include("MockFields.jl")
 include("ConstantFields.jl")
 
 include("Homothecies.jl")
+
+include("AffineMaps.jl")
 
 include("FieldApply.jl")
 

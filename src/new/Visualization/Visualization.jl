@@ -30,8 +30,14 @@ using Gridap.Arrays
 using Gridap.Polynomials
 using Gridap.ReferenceFEs
 using Gridap.Geometry
-
+using Gridap.ReferenceFEs: _find_unique_with_indices
 using Gridap.ReferenceFEs: SerendipityPolytope
+
+import Gridap.Geometry: get_reffes
+import Gridap.Geometry: get_cell_type
+import Gridap.Geometry: get_node_coordinates
+import Gridap.Geometry: get_cell_nodes
+
 
 export writevtk
 export write_vtk_file

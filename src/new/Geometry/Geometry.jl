@@ -29,7 +29,7 @@ import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
 import Gridap.Arrays: reindex
 
-using Gridap.Fields: HomothecyGrad
+using Gridap.Fields: AffineMapGrad
 
 import Gridap.ReferenceFEs: get_node_coordinates
 import Gridap.ReferenceFEs: num_nodes

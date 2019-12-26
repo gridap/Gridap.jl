@@ -27,13 +27,6 @@ write_vtk_file(
   nodaldata=["nodeid"=>node_ids],
   celldata=["cellid"=>cell_ids,"centers"=>cell_center])
 
-writevtk(trian,f)
-
-writevtk(
-  trian,f,
-  nodaldata=["nodeid"=>node_ids],
-  celldata=["cellid"=>cell_ids,"centers"=>cell_center])
-
 reffe = LagrangianRefFE(VectorValue{3,Float64},WEDGE,(3,3,4))
 f = joinpath(d,"reffe")
 writevtk(reffe,f)
@@ -59,6 +52,21 @@ writevtk(model,f)
 f = joinpath(d,"model")
 model = DiscreteModelMock()
 writevtk(model,get_face_labeling(model),f)
+
+f = joinpath(d,"trian")
+trian = GridMock()
+writevtk(trian,f,order=2)
+
+domain = (0,1,0,1)
+partition = (2,4)
+trian = CartesianGrid(domain,partition)
+
+writevtk(trian,f,nsubcells=5,celldata=["rnd"=>rand(num_cells(trian))])
+
+fun(x) = sin(4*x[1]*pi)*cos(5*x[2]*pi)
+cf = compose(fun, get_cell_map(trian))
+
+writevtk(trian,f,nsubcells=10, cellfields=["cf" => cf])
 
 rm(d,recursive=true)
 

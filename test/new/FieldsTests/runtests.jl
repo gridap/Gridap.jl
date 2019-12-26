@@ -12,6 +12,8 @@ using Test
 
 @testset "Homothecies" begin include("HomotheciesTests.jl") end
 
+@testset "AffineMapsTests" begin include("AffineMapsTests.jl") end
+
 @testset "FieldArrays" begin include("FieldArraysTests.jl") end
 
 @testset "Compose" begin include("ComposeTests.jl") end

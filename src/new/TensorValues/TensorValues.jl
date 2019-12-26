@@ -43,6 +43,7 @@ export mutable
 export symmetic_part
 export n_components
 export change_eltype
+export diagonal_tensor
 
 import Base: show
 import Base: zero, one

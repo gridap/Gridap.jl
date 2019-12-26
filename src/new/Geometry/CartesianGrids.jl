@@ -170,7 +170,7 @@ end
 
 # Cell map
 
-struct CartesianMap{D,T} <: AbstractArray{Homothecy{D,T},D}
+struct CartesianMap{D,T} <: AbstractArray{AffineMap{D,T},D}
   data::CartesianDescriptor{D,T,typeof(identity)}
 end
 
@@ -186,12 +186,14 @@ function Base.getindex(a::CartesianMap{D,T},I::Vararg{Int,D}) where {D,T}
     p[d] =  x0[d] + (I[d]-1)*dx[d]
   end
   origin =  Point(p)
-  scaling = dx
-  Homothecy(origin,scaling)
+  jacobian = diagonal_tensor(dx)
+  AffineMap(jacobian,origin)
 end
 
 function field_array_gradient(a::CartesianMap)
-  j = HomothecyGrad(a.data.sizes)
+  dx = a.data.sizes
+  jacobian = diagonal_tensor(dx)
+  j = AffineMapGrad(jacobian)
   Fill(j,length(a))
 end
 

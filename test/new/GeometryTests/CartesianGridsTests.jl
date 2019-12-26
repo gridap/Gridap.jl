@@ -53,7 +53,7 @@ map = get_cell_map(grid)
 
 x = [Point(0.5,0.5),]
 ax = Fill(x,prod(partition))
-r = Vector{Point{2,Float64}}[[(0.25, 0.25)], [(0.5, 0.25)], [(0.25, 0.5)], [(0.5, 0.5)]]
+r = Vector{Point{2,Float64}}[[(0.25, 0.25)], [(0.75, 0.25)], [(0.25, 0.75)], [(0.75, 0.75)]]
 ∇r = Vector{TensorValue{2,Float64,4}}[
   [(0.5, 0.0, 0.0, 0.5)], [(0.5, 0.0, 0.0, 0.5)],
   [(0.5, 0.0, 0.0, 0.5)], [(0.5, 0.0, 0.0, 0.5)]]
@@ -65,5 +65,6 @@ test_array_of_fields(map,ax,r,grad=∇r)
 grid = CartesianGrid(domain,partition)
 topo = GridTopology(grid)
 test_grid_topology(topo)
+
 
 end # module

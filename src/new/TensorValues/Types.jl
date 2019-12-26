@@ -100,6 +100,18 @@ function TensorValue(a::StaticArray)
   TensorValue(a.data)
 end
 
+"""
+"""
+@generated function diagonal_tensor(v::VectorValue{D,T}) where {D,T}
+  s = ["zero(T), " for i in 1:(D*D)]
+  for i in 1:D
+    d = D*(i-1)+i
+    s[d] = "v.array[$i],"
+  end
+  str = join(s)
+  Meta.parse("TensorValue(($str))")
+end
+
 # Constructors (VectorValue)
 
 function (::Type{VectorValue{D}})(x::Tuple) where D
