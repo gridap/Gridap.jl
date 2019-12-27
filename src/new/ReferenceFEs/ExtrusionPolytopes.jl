@@ -191,6 +191,13 @@ function Base.show(io::IO,p::ExtrusionPolytope)
   print(io,s)
 end
 
+"""
+    get_extrusion(p::ExtrusionPolytope)
+
+Equivalent to `p.extrusion`.
+"""
+get_extrusion(p::ExtrusionPolytope) = p.extrusion
+
 # Helpers
 
 function ExtrusionPolytope(extrusion::Point{D,Int}) where D

@@ -1,6 +1,6 @@
 
 """
-    abstract type Polytope{D}
+    abstract type Polytope{D} <: GridapType
 
 Abstract type representing a polytope (i.e., a polyhedron in arbitrary dimensions).
 `D` is the environment dimension (typically, 0, 1, 2, or 3).
@@ -37,7 +37,7 @@ The interface can be tested with the function
 - [`test_polytope`](@ref)
 
 """
-abstract type Polytope{D} end
+abstract type Polytope{D} <: GridapType end
 
 # Mandatory
 

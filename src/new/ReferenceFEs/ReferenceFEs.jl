@@ -25,10 +25,15 @@ import Gridap.Polynomials: MonomialBasis
 import Gridap.Polynomials: get_order
 import Gridap.Polynomials: get_orders
 
+import Gridap.Io: to_dict
+import Gridap.Io: from_dict
+import Gridap.Io: decode_json_dict
+
 import Base: ==
 
 export Polytope
 export ExtrusionPolytope
+export get_extrusion
 export get_faces
 export get_dimranges
 export get_dimrange

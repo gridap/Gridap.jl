@@ -8,6 +8,7 @@ The module is structured in the following sub-modules:
 
 - [`Gridap.Helpers`](@ref)
 - [`Gridap.Inference`](@ref)
+- [`Gridap.Io`](@ref)
 - [`Gridap.TensorValues`](@ref)
 - [`Gridap.Arrays`](@ref)
 - [`Gridap.Fields`](@ref)

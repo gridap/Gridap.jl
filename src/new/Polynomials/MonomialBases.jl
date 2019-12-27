@@ -105,6 +105,12 @@ function get_orders(b::MonomialBasis)
   b.orders
 end
 
+"""
+"""
+get_value_type(::MonomialBasis{D,T}) where {D,T} = T
+
+get_value_type(::Type{MonomialBasis{D,T}}) where {D,T} = T
+
 # Field implementation
 
 function field_cache(f::MonomialBasis{D,T},x) where {D,T}

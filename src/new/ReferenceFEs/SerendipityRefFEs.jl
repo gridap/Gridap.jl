@@ -1,6 +1,7 @@
 
 """
     SerendipityRefFE(::Type{T},p::Polytope,order::Int) where T
+    SerendipityRefFE(::Type{T},p::Polytope,orders::Tuple) where T
 
 Returns an instance of `LagrangianRefFE`, whose underlying approximation space
 is the serendipity space of order `order`. Implemented for order from 1 to 4.
@@ -30,6 +31,12 @@ function SerendipityRefFE(::Type{T},p::Polytope,order::Int) where T
     sp = p
   end
   LagrangianRefFE(T,sp,order)
+end
+
+function SerendipityRefFE(::Type{T},p::Polytope,orders::Tuple) where T
+  order = first(orders)
+  @assert all( orders .== order ) "Anisotropic serentopity FEs not allowed"
+  SerendipityRefFE(T,p,order)
 end
 
 # Helper private type
@@ -75,6 +82,8 @@ NodalReferenceFE(p::SerendipityPolytope) = NodalReferenceFE(p.hex)
 is_simplex(p::SerendipityPolytope) = false
 
 is_n_cube(p::SerendipityPolytope) = true
+
+get_extrusion(p::SerendipityPolytope{D}) where D = Point(tfill(HEX_AXIS,Val{D}()))
 
 # Implemented polytope interface for LagrangianRefFEs
 

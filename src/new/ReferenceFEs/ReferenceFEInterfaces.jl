@@ -1,5 +1,5 @@
 """
-    abstract type ReferenceFE{D}
+    abstract type ReferenceFE{D} <: GridapType
 
 Abstract type representing a Reference finite element. `D` is the underlying coordinate space dimension.
 We follow the Ciarlet definition. A reference finite element
@@ -25,7 +25,7 @@ The interface is tested with
 - [`test_reference_fe(reffe::ReferenceFE)`](@ref)
 
 """
-abstract type ReferenceFE{D} end
+abstract type ReferenceFE{D} <: GridapType end
 
 """
     num_dofs(reffe::ReferenceFE) -> Int

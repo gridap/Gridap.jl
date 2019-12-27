@@ -14,6 +14,7 @@ export @notimplemented
 export @notimplementedif
 export @unreachable
 export tfill
+export GridapType
 
 """
     @abstractmethod
@@ -80,5 +81,10 @@ tfill(v,::Val{1}) = (v,)
 tfill(v,::Val{2}) = (v,v)
 tfill(v,::Val{3}) = (v,v,v)
 
+
+"""
+    abstract type GridapType end
+"""
+abstract type GridapType end
 
 end # module Helpers

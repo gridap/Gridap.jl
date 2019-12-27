@@ -267,6 +267,56 @@ function is_S(reffe::LagrangianRefFE)
   is_n_cube(get_polytope(reffe)) && ! is_Q(reffe)
 end
 
+# Io
+
+function to_dict(reffe::LagrangianRefFE)
+  p = get_polytope(reffe)
+  b = get_prebasis(reffe)
+  dict = Dict{Symbol,Any}()
+  dict[:orders] = Tuple(get_orders(reffe))
+  dict[:extrusion] = Tuple(get_extrusion(p))
+  if is_S(reffe)
+    dict[:space] = :serendipity
+  else
+    dict[:space] = :default
+  end
+  dict[:value] = get_value_type(b)
+  dict
+end
+
+function from_dict(::Type{LagrangianRefFE},dict::Dict{Symbol,Any})
+  orders = dict[:orders]
+  extrusion = dict[:extrusion]
+  value = dict[:value]
+  space = dict[:space]
+  p = Polytope(extrusion...)
+  if space == :default
+    reffe = LagrangianRefFE(value,p,orders)
+  elseif space == :serendipity
+    reffe = SerendipityRefFE(value,p,orders)
+  else
+    @unreachable "unknown space type"
+  end
+  reffe
+end
+
+function decode_json_dict(::Type{LagrangianRefFE},json_dict::Dict{String,Any})
+  orders = json_dict["orders"]
+  extrusion = json_dict["extrusion"]
+  space = json_dict["space"]
+  value = json_dict["value"]
+  dict = Dict{Symbol,Any}()
+  dict[:orders] = Tuple(orders)
+  dict[:extrusion] = Tuple(extrusion)
+  dict[:space] = Symbol(space)
+  if value == "Float64"
+    dict[:value] = Float64
+  else
+    @notimplemented
+  end
+  dict
+end
+
 # Helpers for LagrangianRefFE
 
 function _generate_face_nodes(nnodes,face_to_own_nodes,polytope,reffaces)

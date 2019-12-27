@@ -1,10 +1,12 @@
 module LagrangianRefFEsTests
 
 using Test
+using Gridap.Io
 using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
 using Gridap.ReferenceFEs
+using JSON
 
 orders = (2,3)
 b = MonomialBasis(Float64,QUAD,orders)
@@ -172,5 +174,22 @@ reffe = SerendipityRefFE(Float64,HEX,order)
 @test is_P(reffe) == false
 @test is_Q(reffe) == false
 @test is_S(reffe) == true
+
+reffe = LagrangianRefFE(Float64,QUAD,(2,3))
+@test reffe == from_dict(LagrangianRefFE,to_dict(reffe))
+
+reffe = LagrangianRefFE(VectorValue{2,Float64},WEDGE,(2,2,3))
+@test reffe == from_dict(LagrangianRefFE,to_dict(reffe))
+
+reffe = SerendipityRefFE(Float64,QUAD,(3,3))
+@test reffe == from_dict(LagrangianRefFE,to_dict(reffe))
+
+reffe = LagrangianRefFE(Float64,QUAD,(2,3))
+
+s = to_json(reffe)
+@test reffe == from_json(LagrangianRefFE,s)
+
+s = JSON.json(reffe)
+@test reffe == from_json(LagrangianRefFE,s)
 
 end # module

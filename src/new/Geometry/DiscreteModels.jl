@@ -1,5 +1,5 @@
 """
-    abstract type DiscreteModel{Dc,Dp}
+    abstract type DiscreteModel{Dc,Dp} <: GridapType
 
 Abstract type holding information about a physical grid, 
 the underlying grid topology, and a labeling of
@@ -17,7 +17,7 @@ The interface is tested with this function:
 - [`test_discrete_model`](@ref)
 
 """
-abstract type DiscreteModel{Dc,Dp} end
+abstract type DiscreteModel{Dc,Dp} <: GridapType end
 
 """
     get_grid(model::DiscreteModel)
