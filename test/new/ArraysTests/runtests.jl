@@ -16,4 +16,6 @@ using Test
 
 @testset "Tables" begin include("TablesTests.jl") end
 
+@testset "Reindex" begin include("ReindexTests.jl") end
+
 end # module

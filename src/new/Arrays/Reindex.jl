@@ -6,6 +6,18 @@ function reindex(i_to_v::AbstractArray, j_to_i::AbstractArray)
   Reindexed(i_to_v,j_to_i)
 end
 
+function reindex(i_to_v::Fill, j_to_i::AbstractArray)
+  v = i_to_v.value
+  l = length(j_to_i)
+  Fill(v,l)
+end
+
+function reindex(i_to_v::CompressedArray, j_to_i::AbstractArray)
+  values = i_to_v.values
+  ptrs = i_to_v.ptrs[j_to_i]
+  CompressedArray(values,ptrs)
+end
+
 struct Reindexed{T,N,A,B} <: AbstractArray{T,N}
   i_to_v::A
   j_to_i::B
