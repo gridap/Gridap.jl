@@ -1,12 +1,12 @@
 
 """
-    struct FaceLabeling
+    struct FaceLabeling <: GridapType
       d_to_dface_to_entity::Vector{Vector{Int32}}
       tag_to_entities::Vector{Vector{Int32}}
       tag_to_name::Vector{String}
     end
 """
-struct FaceLabeling
+struct FaceLabeling <: GridapType
   d_to_dface_to_entity::Vector{Vector{Int32}}
   tag_to_entities::Vector{Vector{Int32}}
   tag_to_name::Vector{String}
@@ -206,4 +206,31 @@ function Base.show(io::IO,::MIME"text/plain",labels::FaceLabeling)
   print(io,"\n tags: $(num_tags(labels))")
   print(io,"\n entities: $(num_entities(labels))")
 end
+
+function to_dict(labels::FaceLabeling)
+  dict = Dict{Symbol,Any}()
+  D = num_dims(labels)
+  dict[:D] = D
+  for d in 0:D
+    k = Symbol("entities_$d")
+    dict[k] = get_face_entity(labels,d)
+  end
+  dict[:tags] = labels.tag_to_entities
+  dict[:names] = labels.tag_to_name
+  dict
+end
+
+function from_dict(::Type{FaceLabeling},dict::Dict{Symbol,Any})
+  D::Int = dict[:D]
+  d_to_dface_to_entity = Vector{Vector{Int32}}(undef,D+1)
+  for d in 0:D
+    k = Symbol("entities_$d")
+    dface_to_entity::Vector{Int32} = dict[k]
+    d_to_dface_to_entity[d+1] = dface_to_entity
+  end
+  tag_to_entities::Vector{Vector{Int32}} = dict[:tags]
+  tag_to_name::Vector{String} = dict[:names]
+  FaceLabeling(d_to_dface_to_entity,tag_to_entities,tag_to_name)
+end
+
 

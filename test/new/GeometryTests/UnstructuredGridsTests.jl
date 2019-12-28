@@ -6,6 +6,7 @@ using Gridap.Geometry
 using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry: GridMock
+using Gridap.Io
 
 # Unstructured grid from raw data
 
@@ -84,5 +85,14 @@ grid = UnstructuredGrid(get_node_coordinates(quad8))
 #
 #grid1 = UnstructuredGrid(ReferenceFE{1},trian)
 #@test num_cell_dims(grid1) == 1
+
+grid =  UnstructuredGrid(GridMock())
+dict = to_dict(grid)
+g = from_dict(UnstructuredGrid,dict)
+test_grid(g)
+
+s = to_json(grid)
+g = from_json(UnstructuredGrid,s)
+test_grid(g)
 
 end # module

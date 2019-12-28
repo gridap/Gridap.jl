@@ -273,48 +273,35 @@ function to_dict(reffe::LagrangianRefFE)
   p = get_polytope(reffe)
   b = get_prebasis(reffe)
   dict = Dict{Symbol,Any}()
-  dict[:orders] = Tuple(get_orders(reffe))
-  dict[:extrusion] = Tuple(get_extrusion(p))
+  dict[:orders] = collect(get_orders(reffe))
+  dict[:extrusion] = Array(get_extrusion(p).array)
   if is_S(reffe)
-    dict[:space] = :serendipity
+    dict[:space] = "serendipity"
   else
-    dict[:space] = :default
+    dict[:space] = "default"
   end
-  dict[:value] = get_value_type(b)
+  dict[:value] = string(get_value_type(b))
   dict
 end
 
 function from_dict(::Type{LagrangianRefFE},dict::Dict{Symbol,Any})
-  orders = dict[:orders]
-  extrusion = dict[:extrusion]
-  value = dict[:value]
+  orders = Tuple(dict[:orders])
+  extrusion = Tuple(dict[:extrusion])
+  if dict[:value] == "Float64"
+    value = Float64
+  else
+    @notimplemented
+  end
   space = dict[:space]
   p = Polytope(extrusion...)
-  if space == :default
+  if space == "default"
     reffe = LagrangianRefFE(value,p,orders)
-  elseif space == :serendipity
+  elseif space == "serendipity"
     reffe = SerendipityRefFE(value,p,orders)
   else
     @unreachable "unknown space type"
   end
   reffe
-end
-
-function decode_json_dict(::Type{LagrangianRefFE},json_dict::Dict{String,Any})
-  orders = json_dict["orders"]
-  extrusion = json_dict["extrusion"]
-  space = json_dict["space"]
-  value = json_dict["value"]
-  dict = Dict{Symbol,Any}()
-  dict[:orders] = Tuple(orders)
-  dict[:extrusion] = Tuple(extrusion)
-  dict[:space] = Symbol(space)
-  if value == "Float64"
-    dict[:value] = Float64
-  else
-    @notimplemented
-  end
-  dict
 end
 
 # Helpers for LagrangianRefFE

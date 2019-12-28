@@ -2,6 +2,8 @@ module TablesTests
 
 using Test
 using Gridap.Arrays
+using Gridap.Io
+using JSON
 
 data = Float64[2,3,1,3,6,7,3,2,5,6,3,4]
 ptrs = [1,4,4,7,13]
@@ -109,6 +111,16 @@ b_to_a = flatten_partition(a_to_bs)
 r = [1, 1, 1, 3, 3, 3, 2, 2]
 test_array(b_to_a,r)
 
+data = Float64[2,3,1,3,6,7,3,2,5,6,3,4]
+ptrs = [1,4,4,7,13]
+a = Table(data,ptrs)
 
+dict = to_dict(a)
+b = from_dict(Table{Float64,Int32},dict)
+@test a == b
+
+s = to_json(a)
+b = from_json(Table{Float64,Int32},s)
+@test a == b
 
 end # module

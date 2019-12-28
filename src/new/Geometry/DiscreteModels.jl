@@ -370,3 +370,14 @@ function Triangulation(::Type{ReferenceFE{d}},model::DiscreteModel) where d
   Grid(ReferenceFE{d},model)
 end
 
+# IO
+
+function to_dict(model::DiscreteModel)
+  umodel = UnstructuredDiscreteModel(model)
+  to_dict(umodel)
+end
+
+function from_dict(::Type{DiscreteModel},dict::Dict{Symbol,Any})
+  from_dict(UnstructuredDiscreteModel,dict)
+end
+

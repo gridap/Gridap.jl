@@ -425,3 +425,17 @@ function  flatten_partition!(b_to_a,a_to_bs::Table)
   end
 end
 
+function to_dict(table::Table)
+  dict = Dict{Symbol,Any}()
+  dict[:data] = table.data
+  dict[:ptrs] = table.ptrs
+  dict
+end
+
+function from_dict(::Type{Table{T,P}}, dict::Dict{Symbol,Any}) where {T,P}
+  data::Vector{T} = dict[:data]
+  ptrs::Vector{P} = dict[:ptrs]
+  Table(data,ptrs)
+end
+
+

@@ -75,4 +75,9 @@ g = UnstructuredGridTopology(
 
 @test is_oriented(g) == true
 
+m = GridTopologyMock()
+topo = UnstructuredGridTopology(m)
+test_grid_topology(topo)
+@test topo === UnstructuredGridTopology(topo)
+
 end # module

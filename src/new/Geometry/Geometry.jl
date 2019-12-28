@@ -29,6 +29,9 @@ import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
 import Gridap.Arrays: reindex
 
+import Gridap.Io: to_dict
+import Gridap.Io: from_dict
+
 using Gridap.Fields: AffineMapGrad
 
 import Gridap.ReferenceFEs: get_node_coordinates

@@ -78,6 +78,9 @@ import Base: getindex, setindex!
 import Base: similar
 import Base: IndexStyle
 
+import Gridap.Io: to_dict
+import Gridap.Io: from_dict
+
 include("Interface.jl")
 
 include("CachedArrays.jl")

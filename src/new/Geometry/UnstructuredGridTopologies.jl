@@ -85,6 +85,31 @@ function UnstructuredGridTopology(
 
 end
 
+"""
+    UnstructuredGridTopology(topo::GridTopology)
+"""
+function UnstructuredGridTopology(topo::GridTopology)
+
+  vertex_coordinates = collect1d(get_vertex_coordinates(topo))
+  cell_type = collect1d(get_cell_type(topo))
+  polytopes = get_polytopes(topo)
+  D = num_cell_dims(topo)
+  d_to_dface_vertices = [ Table(get_faces(topo,d,0)) for d in 0:D ]
+  orientation = OrientationStyle(topo)
+
+  UnstructuredGridTopology(
+    vertex_coordinates,
+    d_to_dface_vertices,
+    cell_type,
+    polytopes,
+    orientation)
+
+end
+
+function UnstructuredGridTopology(topo::UnstructuredGridTopology)
+  topo
+end
+
 # Needed, do not remove
 function num_faces(g::UnstructuredGridTopology,d::Integer)
   if d == 0

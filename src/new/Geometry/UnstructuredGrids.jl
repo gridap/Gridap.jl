@@ -121,6 +121,37 @@ function UnstructuredGrid(x::AbstractArray{<:Point})
     cell_type)
 end
 
+# IO
+
+function to_dict(grid::UnstructuredGrid)
+  dict = Dict{Symbol,Any}()
+  x = get_node_coordinates(grid)
+  dict[:node_coordinates] = reinterpret(eltype(eltype(x)),x)
+  dict[:Dp] = num_point_dims(grid)
+  dict[:cell_nodes] = to_dict(get_cell_nodes(grid))
+  dict[:reffes] = map(to_dict, get_reffes(grid))
+  dict[:cell_type] = get_cell_type(grid)
+  dict[:orientation] = is_oriented(grid)
+  dict
+end
+
+function from_dict(::Type{UnstructuredGrid},dict::Dict{Symbol,Any})
+  x = collect1d(dict[:node_coordinates])
+  T = eltype(x)
+  Dp = dict[:Dp]
+  node_coordinates::Vector{Point{Dp,T}} = reinterpret(Point{Dp,T},x)
+  cell_nodes = from_dict(Table{Int,Int32},dict[:cell_nodes])
+  reffes = [ from_dict(LagrangianRefFE,reffe) for reffe in dict[:reffes]]
+  cell_type::Vector{Int8} = dict[:cell_type]
+  O::Bool = dict[:orientation]
+  UnstructuredGrid(
+    node_coordinates,
+    cell_nodes,
+    reffes,
+    cell_type,
+    Val(O))
+end
+
 # Extract grid topology
 
 """

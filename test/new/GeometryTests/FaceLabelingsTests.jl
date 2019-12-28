@@ -6,6 +6,7 @@ using Gridap.Arrays
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.Geometry: GridTopologyMock
+using Gridap.Io
 
 model = GridTopologyMock()
 
@@ -42,5 +43,16 @@ add_tag_from_tags!(labels,"all",["interior","boundary"])
 @test get_tag_name(labels,3) == "all"
 @test get_tag_from_name(labels,"interior") == 1
 @test get_tag_from_name(labels,"all") == 3
+
+dict = to_dict(labels)
+labels2 = from_dict(FaceLabeling,dict)
+@test labels2.d_to_dface_to_entity == labels.d_to_dface_to_entity
+@test labels2.tag_to_entities == labels.tag_to_entities
+@test labels2.tag_to_name == labels.tag_to_name
+
+labels2 = from_json(FaceLabeling,to_json(labels))
+@test labels2.d_to_dface_to_entity == labels.d_to_dface_to_entity
+@test labels2.tag_to_entities == labels.tag_to_entities
+@test labels2.tag_to_name == labels.tag_to_name
 
 end # module

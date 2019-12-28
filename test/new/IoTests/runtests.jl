@@ -1,6 +1,6 @@
 module IoTests
 
-using Tests
+using Test
 
 @time @testset "Interfaces" begin include("IoInterfacesTests.jl") end
 

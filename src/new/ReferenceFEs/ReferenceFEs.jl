@@ -27,7 +27,6 @@ import Gridap.Polynomials: get_orders
 
 import Gridap.Io: to_dict
 import Gridap.Io: from_dict
-import Gridap.Io: decode_json_dict
 
 import Base: ==
 

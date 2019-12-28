@@ -178,9 +178,6 @@ reffe = SerendipityRefFE(Float64,HEX,order)
 reffe = LagrangianRefFE(Float64,QUAD,(2,3))
 @test reffe == from_dict(LagrangianRefFE,to_dict(reffe))
 
-reffe = LagrangianRefFE(VectorValue{2,Float64},WEDGE,(2,2,3))
-@test reffe == from_dict(LagrangianRefFE,to_dict(reffe))
-
 reffe = SerendipityRefFE(Float64,QUAD,(3,3))
 @test reffe == from_dict(LagrangianRefFE,to_dict(reffe))
 

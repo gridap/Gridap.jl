@@ -5,7 +5,6 @@ using Gridap.Helpers
 using Gridap.Io
 import Gridap.Io: to_dict
 import Gridap.Io: from_dict
-import Gridap.Io: decode_json_dict
 
 using JSON
 
@@ -22,12 +21,6 @@ end
 function from_dict(::Type{Foo},dict::Dict{Symbol,Any})
   bar = dict[:bar]
   Foo(bar)
-end
-
-function decode_json_dict(::Type{Foo},json_dict::Dict{String,Any})
-  dict = Dict{Symbol,Any}()
-  dict[:bar] = json_dict["bar"]
-  dict
 end
 
 bar = 3

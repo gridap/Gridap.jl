@@ -5,6 +5,7 @@ using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.Geometry: CartesianMap
+using Gridap.Io
 using Test
 
 domain = (0,1,0,1,0,1)
@@ -36,7 +37,10 @@ model = CartesianDiscreteModel(domain,partition,polar)
 test_discrete_model(model)
 @test is_oriented(get_grid(model)) == true
 
+model2 = from_dict(DiscreteModel,to_dict(model))
+test_discrete_model(model2)
+
 #using Gridap.Visualization
-#writevtk(model,"model")
+#writevtk(model2,"model2")
 
 end # module
