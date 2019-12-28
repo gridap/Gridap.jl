@@ -82,13 +82,16 @@ end
 """
     kernel_evaluate(k,x,f...)
 
-This function returns by default the array obtained with
+Function to control the evaluation of the field resulting from the operation `apply(k,f...)`, where `k`
+is a kernel and `f...` contains several arrays of fields.
 
-    g = apply_to_field_array(k,f...)
+By default, this function is implemented as
+
+    g = apply(k,f...)
     evaluate_field_array(g,x)
 
 However, it can be rewritten for specific kernels in order to improve performance and simplify
-the underlying operation tree associated in the returned object.
+the underlying operation tree.
 
 """
 function kernel_evaluate(k,x,f...)
@@ -126,13 +129,16 @@ end
 """
     apply_gradient(k,f...)
 
+Function to control the generation of the gradient the field resulting from the operation `apply(k,f...)`, where `k`
+is a kernel and `f...` contains several arrays of fields.
+
 By default, it returns the array obtained as
 
     a = apply(k,f...)
     field_array_gradient(a)
 
 However, it can be rewritten for specific kernels in order to improve performance and simplify
-the underlying operation tree associated in the returned object.
+the underlying operation tree.
 
 """
 function apply_gradient(k,f...)
@@ -239,10 +245,6 @@ Returns an array of fields numerically equivalent to
 
     map( (x...) -> apply_kernel_to_field(k,x...), f )
 
-The evaluation and the computation of the gradient of the resulting arrays
-can be optimized for particular kernels by
-adding new methods to the [`kernel_evaluate`](@ref) and  [`apply_gradient`](@ref) functions
-respectively.
 """
 function apply_to_field_array(
   k,f::AbstractArray...)
