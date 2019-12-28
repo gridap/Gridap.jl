@@ -121,5 +121,6 @@ cross(::typeof(∇),f)
 
 ```@docs
 Homothecy
+AffineMap
 ```
 

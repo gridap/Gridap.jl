@@ -46,6 +46,8 @@ num_nodes(trian::Grid)
 is_oriented(a::Grid)
 is_regular(a::Grid)
 Grid(reffe::LagrangianRefFE)
+compute_linear_grid(reffe::LagrangianRefFE)
+compute_reference_grid(reffe::LagrangianRefFE, nelems::Integer)
 Grid(::Type{ReferenceFE{d}},p::Polytope) where d
 GridTopology(grid::Grid)
 ```

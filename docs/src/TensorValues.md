@@ -20,6 +20,7 @@ TensorValue
 ```@docs
 mutable
 change_eltype
+diagonal_tensor
 ```
 ## Info getters
 

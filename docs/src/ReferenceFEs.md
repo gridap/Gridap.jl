@@ -40,6 +40,7 @@ get_faces(p::Polytope,dimfrom::Integer,dimto::Integer)
 get_face_vertices(p::Polytope,dim::Integer)
 get_reffaces(::Type{Polytope{d}},p::Polytope) where d
 get_face_type(p::Polytope,d::Integer)
+get_bounding_box(p::Polytope{D}) where D
 ```
 ### Extrusion polytopes
 
@@ -49,6 +50,7 @@ ExtrusionPolytope(extrusion::Int...)
 Polytope(extrusion::Int...)
 HEX_AXIS
 TET_AXIS
+get_extrusion(p::ExtrusionPolytope)
 ```
 
 ### Pre-defined polytope instances
@@ -187,6 +189,9 @@ get_reffaces(::Type{ReferenceFE{d}},reffe::LagrangianRefFE) where d
 get_face_type(reffe::LagrangianRefFE, d::Integer)
 is_first_order(reffe::LagrangianRefFE)
 is_affine(reffe::LagrangianRefFE)
+is_P(reffe::LagrangianRefFE)
+is_Q(reffe::LagrangianRefFE)
+is_S(reffe::LagrangianRefFE)
 ```
 ### Serendipity reference elements
 

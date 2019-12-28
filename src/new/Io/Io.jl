@@ -1,4 +1,11 @@
+"""
+The exported names in this module are:
+
+$(EXPORTS)
+"""
 module Io
+
+using DocStringExtensions
 
 using Gridap.Helpers
 import JSON
