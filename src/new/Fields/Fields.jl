@@ -40,6 +40,8 @@ export apply_kernel_to_field
 export apply_to_field_array
 export test_array_of_fields
 export compose
+export compose_fields
+export compose_field_arrays
 export lincomb
 export varinner
 export attachmap

@@ -475,7 +475,7 @@ function compute_cell_permutations(top::GridTopology,d::Integer)
   cell_to_ctype = get_cell_type(top)
   polytopes = get_polytopes(top)
   ctype_to_lface_to_cvertices = map( (p)->get_faces(p,d,0), polytopes )
-  data = similar(cell_to_lface_to_face.data)
+  data = similar(cell_to_lface_to_face.data,Int8)
   ptrs = cell_to_lface_to_face.ptrs
   cell_to_lface_to_pindex = Table(data,ptrs)
 

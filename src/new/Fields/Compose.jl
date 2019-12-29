@@ -53,3 +53,67 @@ function compose(g::Function,f::AbstractArray...)
   apply_to_field_array(k,f...)
 end
 
+
+"""
+    compose_fields(g,f)
+"""
+function compose_fields(g,f)
+  k = CompField(g)
+  apply_kernel_to_field(k,f)
+end
+
+"""
+    compose(g::Field,f::Field)
+"""
+function compose(g::Field,f::Field)
+  compose_fields(g,f)
+end
+
+struct CompField{G} <: Kernel
+  g::G
+end
+
+kernel_cache(k::CompField,fx) = field_cache(k.g,fx)
+
+@inline apply_kernel!(cache,k::CompField,fx) = evaluate_field!(cache,k.g,fx)
+
+kernel_return_type(k::CompField,fx) = field_return_type(k.g,fx)
+
+function apply_kernel_gradient(k::CompField,f)
+  g = field_gradient(k.g)
+  compose_fields(g,f)
+end
+
+"""
+    compose_field_arrays(g,f)
+"""
+function compose_field_arrays(g,f)
+  k = CompFieldArray()
+  apply(k,g,f)
+end
+
+"""
+    compose(g::AbstractArray{<:Field},f::AbstractArray{<:Field})
+"""
+function compose(g::AbstractArray{<:Field},f::AbstractArray{<:Field})
+  compose_field_arrays(g,f)
+end
+
+struct CompFieldArray <: Kernel end
+
+kernel_cache(k::CompFieldArray,gi,fi) = nothing
+
+@inline apply_kernel!(cache,k::CompFieldArray,gi,fi) = compose_fields(gi,fi)
+
+function kernel_evaluate(k::CompFieldArray,x,g,f)
+  fx = evaluate_field_array(f,x)
+  gx = evaluate_field_array(g,fx)
+  gx
+end
+
+function apply_gradient(k::CompFieldArray,g,f)
+  ∇g = field_array_gradient(g)
+  compose_field_arrays(∇g,f)
+end
+
+

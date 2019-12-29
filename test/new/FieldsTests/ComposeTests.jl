@@ -38,4 +38,40 @@ agx = fill(gx,l)
 a∇gx = fill(∇gx,l)
 test_array_of_fields(ag,ax,agx,grad=a∇gx)
 
+np = 4
+p = Point(1,2)
+x = fill(p,np)
+
+v = VectorValue(1,2,3)
+d = 2
+f = MockField{d}(v)
+w = 4
+d = 3
+g = MockField{d}(w)
+
+fx = evaluate(f,x)
+gx = evaluate(g,fx)
+∇gx = evaluate(∇(g),fx)
+
+h = compose_fields(g,f)
+test_field(h,x,gx,grad=∇gx)
+
+h = compose(g,f)
+test_field(h,x,gx,grad=∇gx)
+
+l = 10
+af = Fill(f,l)
+ag = Fill(g,l)
+ax = Fill(x,l)
+
+afx = evaluate(af,ax)
+agx = evaluate(ag,afx)
+∇agx = evaluate(∇(ag),afx)
+
+ah = compose_field_arrays(ag,af)
+test_array_of_fields(ah,ax,agx,grad=∇agx)
+
+ah = compose(ag,af)
+test_array_of_fields(ah,ax,agx,grad=∇agx)
+
 end # module
