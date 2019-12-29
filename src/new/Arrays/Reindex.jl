@@ -50,3 +50,13 @@ function getindex!(cache,a::Reindexed,j::Integer...)
   i = a.j_to_i[j...]
   getindex!(cache,a.i_to_v,i)
 end
+
+function reindex(i_to_v::AppliedArray, j_to_i::AbstractArray)
+  g = reindex(i_to_v.g, j_to_i)
+  f = ( reindex(fi, j_to_i) for fi in i_to_v.f )
+  T = eltype(i_to_v)
+  AppliedArray(T,g,f...)
+end
+
+Base.getindex(a::AppliedArray,i::AbstractArray) = reindex(a,i)
+
