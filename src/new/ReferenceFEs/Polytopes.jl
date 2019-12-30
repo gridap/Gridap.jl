@@ -611,6 +611,14 @@ function get_bounding_box(p::Polytope{D}) where D
   (pmin,pmax)
 end
 
+"""
+    get_face_vertex_permutations(p::Polytope,d::Integer)
+"""
+function get_face_vertex_permutations(p::Polytope,d::Integer)
+  reffaces = [ Polytope{d}(p, iface) for iface in 1:num_faces(p,d)]
+  map(get_vertex_permutations,reffaces)
+end
+
 # Testers
 
 """

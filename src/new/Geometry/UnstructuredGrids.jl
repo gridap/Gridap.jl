@@ -10,7 +10,7 @@
 struct UnstructuredGrid{Dc,Dp,Tp,O} <: Grid{Dc,Dp}
   node_coordinates::Vector{Point{Dp,Tp}}
   cell_nodes::Table{Int,Int32}
-  reffes::Vector{<:NodalReferenceFE{Dc}}
+  reffes::Vector{LagrangianRefFE{Dc}}
   cell_types::Vector{Int8}
   @doc """
       function UnstructuredGrid(

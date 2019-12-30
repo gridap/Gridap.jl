@@ -104,6 +104,18 @@ end
 
 function kernel_evaluate(k::LinComValued,x,a,b)
   ax = evaluate_field_array(a,x)
+  apply_lincomb(ax,b)
+end
+
+"""
+"""
+function apply_lincomb(ax,b)
+  apply_lincomb_default(ax,b)
+end
+
+"""
+"""
+function apply_lincomb_default(ax,b)
   k = LinCom()
   apply(k,ax,b)
 end

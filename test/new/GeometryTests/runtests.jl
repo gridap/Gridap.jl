@@ -10,6 +10,8 @@ using Test
 
 @testset "Grids" begin include("GridsTests.jl") end
 
+@testset "GridPortions" begin include("GridPortionsTests.jl") end
+
 @testset "DiscreteModels" begin include("DiscreteModelsTests.jl") end
 
 @testset "FaceLabelings" begin include("FaceLabelingsTests.jl") end

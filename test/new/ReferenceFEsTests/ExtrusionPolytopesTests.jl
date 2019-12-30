@@ -96,4 +96,6 @@ iface_to_ftype = get_face_type(WEDGE,d)
 @test length(reffaces) == 1
 @test iface_to_ftype == [1, 1, 1, 1, 1, 1, 1, 1, 1]
 
+@test get_face_vertex_permutations(QUAD,1) == [[[1,2],[2,1]],[[1,2],[2,1]],[[1,2],[2,1]],[[1,2],[2,1]]]
+
 end # module

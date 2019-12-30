@@ -131,7 +131,7 @@ get_vertex_coordinates(g::UnstructuredGridTopology) = g.vertex_coordinates
 
 get_cell_type(g::UnstructuredGridTopology) = g.cell_type
 
-get_polytopes(g::UnstructuredGridTopology) = g.polytopes
+get_polytopes(g::UnstructuredGridTopology) = collect1d(g.polytopes)
 
 function get_faces(g::UnstructuredGridTopology, dimfrom::Integer, dimto::Integer)
   _setup_faces!(g,dimfrom,dimto)

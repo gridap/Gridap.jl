@@ -170,8 +170,12 @@ end
 
 # Cell map
 
-struct CartesianMap{D,T} <: AbstractArray{AffineMap{D,T},D}
+struct CartesianMap{D,T,L} <: AbstractArray{AffineMap{D,T,L},D}
   data::CartesianDescriptor{D,T,typeof(identity)}
+  function CartesianMap(des::CartesianDescriptor{D,T}) where {D,T}
+    L = D*D
+    new{D,T,L}(des)
+  end
 end
 
 Base.size(a::CartesianMap) = Tuple(a.data.partition)
