@@ -63,6 +63,8 @@ import Gridap.ReferenceFEs: num_cell_dims
 import Gridap.ReferenceFEs: num_point_dims
 
 import Gridap.Fields: field_array_gradient
+import Gridap.Fields: apply_lincomb
+import Gridap.Fields: evaluate_field_array
 
 export GridTopology
 export num_cells
@@ -133,6 +135,14 @@ export compute_node_face_owner
 export UnstructuredDiscreteModel
 export CartesianDiscreteModel
 
+export BoundaryTriangulation
+export get_volume_triangulation
+export get_face_to_cell
+export get_face_to_cell_map
+export test_boundary_triangulation
+
+export GenericBoundaryTriangulation
+
 include("GridTopologies.jl")
 
 include("GridTopologyMocks.jl")
@@ -160,5 +170,9 @@ include("DiscreteModelMocks.jl")
 include("UnstructuredDiscreteModels.jl")
 
 include("CartesianDiscreteModels.jl")
+
+include("BoundaryTriangulations.jl")
+
+include("GenericBoundaryTriangulations.jl")
 
 end # module
