@@ -3,6 +3,7 @@ struct FaceToCellGlue{O} <: GridapType
   orientation::Val{O}
   face_to_cell::Vector{Int}
   face_to_lface::Vector{Int8}
+  cell_to_ctype::Vector{Int8}
   cell_to_lface_to_pindex::Table{Int8,Int32}
   ctype_to_lface_to_ftype::Vector{Vector{Int8}}
 end
@@ -57,7 +58,7 @@ function GenericBoundaryTriangulation(
   f = (p)->fill(Int8(UNSET),num_faces(p,D-1))
   ctype_to_lface_to_ftype = map( f, get_reffes(cell_trian) )
   face_to_ftype = get_cell_type(face_trian)
-  cell_to_ctype = get_cell_type(cell_trian)
+  cell_to_ctype = collect(Int8,get_cell_type(cell_trian))
   _fill_ctype_to_lface_to_ftype!(
     ctype_to_lface_to_ftype,
     face_to_cell,
@@ -69,6 +70,7 @@ function GenericBoundaryTriangulation(
     orientation,
     face_to_cell,
     face_to_lface,
+    cell_to_ctype,
     cell_to_lface_to_pindex,
     ctype_to_lface_to_ftype)
 
@@ -144,7 +146,7 @@ struct FaceCellCoordinates{D,T,O} <: AbstractVector{Vector{Point{D,T}}}
   
     d = num_cell_dims(trian)
     polytopes = map(get_polytope, get_reffes(trian.cell_trian))
-    cell_to_ctype = collect(Int8,get_cell_type(trian.cell_trian))
+    cell_to_ctype = trian.glue.cell_to_ctype
     ctype_to_lvertex_to_qcoords = map(get_vertex_coordinates, polytopes)
     ctype_to_lface_to_lvertices = map((p)->get_faces(p,d,0), polytopes)
     ctype_to_lface_to_pindex_to_perm = map( (p)->get_face_vertex_permutations(p,d), polytopes)
@@ -337,3 +339,69 @@ function Base.getindex(a::CellShapeFunsAtFaces,face::Integer)
   pindex = a.b.glue.cell_to_lface_to_pindex.data[p+lface]
   a.ctype_to_lface_to_pindex_to_shfnsvals[ctype][lface][pindex]
 end
+
+# Normal vector
+
+function get_normal_vector(trian::GenericBoundaryTriangulation)
+  k = NormalVectorValued()
+  refn = ReferenceNormal(trian)
+  cell_map = restrict(get_cell_map(trian.cell_trian),trian)
+  J = gradient(cell_map)
+  apply(k,J,refn)
+end
+
+struct ReferenceNormal{D,T} <: AbstractVector{Point{D,T}}
+  face_to_cell::Vector{Int}
+  face_to_lface::Vector{Int8}
+  cell_to_ctype::Vector{Int8}
+  ctype_to_lface_to_qnormal::Vector{Vector{Point{D,T}}}
+end
+
+function ReferenceNormal(trian::GenericBoundaryTriangulation)
+  face_to_cell = trian.glue.face_to_cell
+  face_to_lface = trian.glue.face_to_lface
+  cell_to_ctype = trian.glue.cell_to_ctype
+  f = (r) -> get_facet_normals(get_polytope(r))
+  ctype_to_lface_to_qnormal = map(f, get_reffes(trian.cell_trian))
+  ReferenceNormal(
+    face_to_cell,
+    face_to_lface,
+    cell_to_ctype,
+    ctype_to_lface_to_qnormal)
+end
+
+Base.size(a::ReferenceNormal) = (length(a.face_to_cell),)
+
+Base.IndexStyle(::Type{ReferenceNormal{D,T}}) where {D,T} = IndexLinear()
+
+function Base.getindex(a::ReferenceNormal,face::Integer)
+  cell = a.face_to_cell[face]
+  lface = a.face_to_lface[face]
+  ctype = a.cell_to_ctype[cell]
+  a.ctype_to_lface_to_qnormal[ctype][lface]
+end
+
+struct NormalField <: Field end
+
+struct NormalVectorValued <: Kernel end
+
+function apply_kernel!(cache,k::NormalVectorValued,J,nref)
+  NormalField()
+end
+
+function kernel_evaluate(k::NormalVectorValued,x,J,refn)
+  Jx = evaluate_field_array(J,x)
+  k = bcast(_map_normal)
+  apply(k,Jx,refn)
+end
+
+function _map_normal(J::TensorValue{D,T},n::VectorValue{D,T}) where {D,T}
+  v = inv(J)*n
+  m = sqrt(inner(v,v))
+  if m < eps()
+    return zero(n)
+  else
+    return v/m
+  end
+end
+

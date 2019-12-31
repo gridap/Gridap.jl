@@ -65,6 +65,9 @@ import Gridap.ReferenceFEs: num_point_dims
 import Gridap.Fields: field_array_gradient
 import Gridap.Fields: apply_lincomb
 import Gridap.Fields: evaluate_field_array
+import Gridap.Fields: kernel_evaluate
+
+import Gridap.Arrays: apply_kernel!
 
 export GridTopology
 export num_cells

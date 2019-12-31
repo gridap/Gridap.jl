@@ -22,6 +22,12 @@ function get_face_to_cell_map(trian::BoundaryTriangulation)
   @abstractmethod
 end
 
+"""
+"""
+function get_normal_vector(trian::BoundaryTriangulation)
+  @abstractmethod
+end
+
 # Tester
 
 function test_boundary_triangulation(trian::BoundaryTriangulation)
@@ -29,6 +35,7 @@ function test_boundary_triangulation(trian::BoundaryTriangulation)
   @test isa(get_volume_triangulation(trian),Triangulation)
   @test isa(get_face_to_cell(trian),AbstractArray{<:Integer})
   @test isa(get_face_to_cell_map(trian),AbstractArray{<:Field})
+  @test isa(get_normal_vector(trian),AbstractArray)
 end
 
 # Default API
@@ -40,12 +47,6 @@ end
 
 function restrict(f::AbstractArray, trian::BoundaryTriangulation)
   compose_field_arrays(reindex(f,trian), get_face_to_cell_map(trian))
-end
-
-"""
-"""
-function get_normal_vector(trian::BoundaryTriangulation)
-  @notimplemented
 end
 
 # Constructors

@@ -31,4 +31,5 @@ r = Vector{Point{2,Float64}}[
   [(2.5,4.0),(3.5,4.0)],[(4.0,2.5),(4.0,3.5)]]
 test_array(x,r)
 
+
 end # module

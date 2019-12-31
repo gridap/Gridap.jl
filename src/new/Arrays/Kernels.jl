@@ -212,24 +212,28 @@ end
 end
 
 function kernel_return_type(f::BCasted,x::NumberOrArray...)
-  typeof(kernel_cache(f,x...))
+  typeof(kernel_cache(f,x...).array)
 end
 
 function kernel_cache(f::BCasted,x::NumberOrArray...)
   s = _sizes(x...)
   bs = Base.Broadcast.broadcast_shape(s...)
-  Ts = map(typeof,x)
-  Te = map(eltype,Ts)
+  Te = map(numbertype,x)
   T = return_type(f.f,Te...)
   r = zeros(T,bs...)
   cache = CachedArray(r)
    _prepare_cache(cache,x...)
 end
 
+numbertype(a::AbstractArray) = eltype(a)
+
+numbertype(a::Number) = typeof(a)
+
 @inline function apply_kernel!(cache,f::BCasted,x::NumberOrArray...)
   r = _prepare_cache(cache,x...)
-  broadcast!(f.f,r,x...)
-  r
+  a = r.array
+  broadcast!(f.f,a,x...)
+  a
 end
 
 @inline function _prepare_cache(c,x...)
