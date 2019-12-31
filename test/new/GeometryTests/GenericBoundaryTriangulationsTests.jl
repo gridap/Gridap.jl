@@ -1,5 +1,6 @@
 module GenericBoundaryTriangulationsTests
 
+using Test
 using Gridap.Helpers
 using Gridap.Arrays
 using Gridap.Geometry
@@ -12,6 +13,7 @@ import Gridap.Geometry: get_cell_type
 import Gridap.Geometry: get_reffes
 import Gridap.Geometry: restrict
 import Gridap.Geometry: get_normal_vector
+import Gridap.Geometry: is_oriented
 import Gridap.Arrays: reindex
 
 import Gridap.Arrays: array_cache
@@ -181,6 +183,8 @@ function get_cell_type(trian::GenericBoundaryTriangulation)
   get_cell_type(trian.face_trian)
 end
 
+is_oriented(::FaceToCellGlue{O}) where O = O
+
 # Cell to face map
 
 function get_face_to_cell_map(trian::GenericBoundaryTriangulation)
@@ -198,97 +202,203 @@ struct FaceCellCoordinates{D,T,O} <: AbstractVector{Vector{Point{D,T}}}
   ctype_to_lvertex_to_qcoords::Vector{Vector{Point{D,T}}}
   ctype_to_lface_to_lvertices::Vector{Vector{Vector{Int}}}
   ctype_to_lface_to_pindex_to_perm::Vector{Vector{Vector{Vector{Int}}}}
-end
+  ctype_to_lface_to_pindex_to_qcoords::Vector{Vector{Vector{Vector{Point{D,T}}}}}
+  function FaceCellCoordinates(trian::GenericBoundaryTriangulation)
+  
+    d = num_cell_dims(trian)
+    polytopes = map(get_polytope, get_reffes(trian.cell_trian))
+    cell_to_ctype = collect(Int8,get_cell_type(trian.cell_trian))
+    ctype_to_lvertex_to_qcoords = map(get_vertex_coordinates, polytopes)
+    ctype_to_lface_to_lvertices = map((p)->get_faces(p,d,0), polytopes)
+    ctype_to_lface_to_pindex_to_perm = map( (p)->get_face_vertex_permutations(p,d), polytopes)
+  
+    P = eltype(eltype(ctype_to_lvertex_to_qcoords))
+    D = length(P)
+    T = eltype(P)
+    O = is_oriented(trian.glue)
+  
+    ctype_to_lface_to_pindex_to_qcoords = Vector{Vector{Vector{Point{D,T}}}}[]
+    for (ctype, lface_to_pindex_to_perm) in enumerate(ctype_to_lface_to_pindex_to_perm)
+      lvertex_to_qcoods = ctype_to_lvertex_to_qcoords[ctype]
+      lface_to_pindex_to_qcoords = Vector{Vector{Point{D,T}}}[]
+      for (lface, pindex_to_perm) in enumerate(lface_to_pindex_to_perm)
+        cfvertex_to_lvertex = ctype_to_lface_to_lvertices[ctype][lface]
+        nfvertices = length(cfvertex_to_lvertex)
+        pindex_to_qcoords = Vector{Vector{Point{D,T}}}(undef,length(pindex_to_perm))
+        for (pindex, cfvertex_to_ffvertex) in enumerate(pindex_to_perm)
+          ffvertex_to_qcoords = zeros(Point{D,T},nfvertices)
+          for (cfvertex, ffvertex) in enumerate(cfvertex_to_ffvertex)
+            lvertex = cfvertex_to_lvertex[cfvertex]
+            qcoords = lvertex_to_qcoods[lvertex]
+            ffvertex_to_qcoords[ffvertex] = qcoords
+          end
+          pindex_to_qcoords[pindex] = ffvertex_to_qcoords
+        end
+        push!(lface_to_pindex_to_qcoords,pindex_to_qcoords)
+      end
+      push!(ctype_to_lface_to_pindex_to_qcoords,lface_to_pindex_to_qcoords)
+    end
 
-function FaceCellCoordinates(trian::GenericBoundaryTriangulation)
-  d = num_cell_dims(trian)
-  polytopes = map(get_polytope, get_reffes(trian.cell_trian))
-  cell_to_ctype = collect(Int8,get_cell_type(trian.cell_trian))
-  ctype_to_lvertex_to_qcoords = map(get_vertex_coordinates, polytopes)
-  ctype_to_lface_to_lvertices = map((p)->get_faces(p,d,0), polytopes)
-  ctype_to_lface_to_pindex_to_perm = map( (p)->get_face_vertex_permutations(p,d), polytopes)
-  FaceCellCoordinates(
-    trian.glue,
-    cell_to_ctype,
-    ctype_to_lvertex_to_qcoords,
-    ctype_to_lface_to_lvertices,
-    ctype_to_lface_to_pindex_to_perm)
-end
-
-function array_cache(a::FaceCellCoordinates{D,T,O}) where {D,T,O}
-  if length(a.glue.face_to_cell) > 0
-    cell = first(a.glue.face_to_cell)
-    lface = first(a.glue.face_to_lface)
-    ctype = a.cell_to_ctype[cell]
-    lvertices = a.ctype_to_lface_to_lvertices[ctype][lface]
-    c = zeros(Point{D,T},length(lvertices))
-  else
-    c = Point{D,T}[]
+    new{D,T,O}(
+      trian.glue,
+      cell_to_ctype,
+      ctype_to_lvertex_to_qcoords,
+      ctype_to_lface_to_lvertices,
+      ctype_to_lface_to_pindex_to_perm,
+      ctype_to_lface_to_pindex_to_qcoords)
+  
   end
-  CachedArray(c)
-end
-
-function getindex!(cache,a::FaceCellCoordinates,face::Integer)
-  cell = a.glue.face_to_cell[face]
-  lface = a.glue.face_to_lface[face]
-  ctype = a.cell_to_ctype[cell]
-  cfvertex_to_lvertex = a.ctype_to_lface_to_lvertices[ctype][lface]
-  p = a.glue.cell_to_lface_to_pindex.ptrs[cell]-1
-  pindex = a.glue.cell_to_lface_to_pindex.data[p+lface]
-  cfvertex_to_ffvertex = a.ctype_to_lface_to_pindex_to_perm[ctype][lface][pindex]
-  lvertex_to_qcoods = a.ctype_to_lvertex_to_qcoords[ctype]
-  nfvertices = length(cfvertex_to_lvertex)
-  setsize!(cache,(nfvertices,))
-  ffvertex_to_qcoords = cache.array
-  for (cfvertex, ffvertex) in enumerate(cfvertex_to_ffvertex)
-    lvertex = cfvertex_to_lvertex[cfvertex]
-    qcoords = lvertex_to_qcoods[lvertex]
-    ffvertex_to_qcoords[ffvertex] = qcoords
-  end
-  ffvertex_to_qcoords
-end
-
-function Base.getindex(a::FaceCellCoordinates,face::Integer)
-  cache = array_cache(a)
-  getindex!(cache,a,face)
 end
 
 Base.IndexStyle(::Type{FaceCellCoordinates{D,T,O}}) where {D,T,O} = IndexLinear()
 
 Base.size(a::FaceCellCoordinates) = (length(a.glue.face_to_cell),)
 
-# Value of face to cell map
-# Not done for the moment, but the values can be precomputed, and only retrieved in the iteration
-
-struct FaceToCellMapValue{T,V} <: AbstractVector{T}
-  values::V
-  function FaceToCellMapValue(ax::CompressedArray,b::FaceCellCoordinates)
-    values = apply_lincomb_default(ax,b)
-    V = typeof(values)
-    T = eltype(V)
-    new{T,V}(values)
-  end
+function Base.getindex(a::FaceCellCoordinates,face::Integer)
+  cell = a.glue.face_to_cell[face]
+  lface = a.glue.face_to_lface[face]
+  ctype = a.cell_to_ctype[cell]
+  p = a.glue.cell_to_lface_to_pindex.ptrs[cell]-1
+  pindex = a.glue.cell_to_lface_to_pindex.data[p+lface]
+  a.ctype_to_lface_to_pindex_to_qcoords[ctype][lface][pindex]
 end
 
-Base.size(v::FaceToCellMapValue) = size(v.values)
-
-Base.IndexStyle(::Type{FaceToCellMapValue{T,V}}) where {T,V} = IndexStyle(V)
-
-Base.getindex(v::FaceToCellMapValue,i::Integer) = v.values[i]
-
-array_cache(v::FaceToCellMapValue) = array_cache(v.values)
-
-getindex!(cache,v::FaceToCellMapValue,i::Integer) = getindex!(cache,v.values,i)
+# Value of face to cell map
 
 function apply_lincomb(ax::CompressedArray,b::FaceCellCoordinates)
   FaceToCellMapValue(ax,b)
 end
 
-struct CellShapeFunsAtFaces{T} <: AbstractVector{T}
+struct FaceToCellMapValue{D,T,O} <: AbstractVector{Vector{Point{D,T}}}
+  b::FaceCellCoordinates{D,T,O}
+  ctype_to_lface_to_pindex_to_qpoints::Vector{Vector{Vector{Vector{Point{D,T}}}}}
+
+  function FaceToCellMapValue(ax::CompressedArray,b::FaceCellCoordinates{D,T,O}) where {D,T,O}
+
+    # Precompute the integration point coordinates for all possible cases
+
+    ctype_to_lface_to_ftype = b.glue.ctype_to_lface_to_ftype
+    ctype_to_lface_to_lvertices = b.ctype_to_lface_to_lvertices
+    ctype_to_lvertex_to_qcoords = b.ctype_to_lvertex_to_qcoords
+    ctype_to_lface_to_pindex_to_perm = b.ctype_to_lface_to_pindex_to_perm
+    ftype_to_shapefunsvals = ax.values
+
+    # Allocate
+    ctype_to_lface_to_pindex_to_qpoints = Vector{Vector{Vector{Point{D,T}}}}[]
+    for (ctype, lface_to_pindex_to_perm) in enumerate(ctype_to_lface_to_pindex_to_perm)
+      lface_to_pindex_to_qpoints = Vector{Vector{Point{D,T}}}[]
+      for (lface, pindex_to_perm) in enumerate(lface_to_pindex_to_perm)
+        pindex_to_qpoints = Vector{Vector{Point{D,T}}}(undef,length(pindex_to_perm))
+        push!(lface_to_pindex_to_qpoints,pindex_to_qpoints)
+      end
+      push!(ctype_to_lface_to_pindex_to_qpoints,lface_to_pindex_to_qpoints)
+    end
+
+    # Fill
+    for (ctype, lface_to_ftype) in enumerate(ctype_to_lface_to_ftype)
+      for (lface, ftype) in enumerate(lface_to_ftype)
+        if ftype == UNSET
+          continue
+        end
+
+        cfvertex_to_lvertex = ctype_to_lface_to_lvertices[ctype][lface]
+        pindex_to_perm = ctype_to_lface_to_pindex_to_perm[ctype][lface]
+        lvertex_to_qcoods = ctype_to_lvertex_to_qcoords[ctype]
+        nfvertices = length(cfvertex_to_lvertex)
+        ffvertex_to_qcoords = zeros(Point{D,T},nfvertices)
+        shapefunsvals = ftype_to_shapefunsvals[ftype]
+
+        for (pindex, cfvertex_to_ffvertex) in enumerate(pindex_to_perm)
+          for (cfvertex, ffvertex) in enumerate(cfvertex_to_ffvertex)
+            lvertex = cfvertex_to_lvertex[cfvertex]
+            qcoords = lvertex_to_qcoods[lvertex]
+            ffvertex_to_qcoords[ffvertex] = qcoords
+          end
+          qpoints = shapefunsvals*ffvertex_to_qcoords
+          ctype_to_lface_to_pindex_to_qpoints[ctype][lface][pindex] = qpoints
+        end
+      end
+    end
+
+    new{D,T,O}(b,ctype_to_lface_to_pindex_to_qpoints)
+
+  end
+end
+
+Base.size(v::FaceToCellMapValue) = (length(v.b.glue.face_to_cell),)
+
+Base.IndexStyle(::Type{FaceToCellMapValue{C,T,O}}) where {C,T,O} = IndexLinear()
+
+function Base.getindex(a::FaceToCellMapValue,face::Integer)
+  cell = a.b.glue.face_to_cell[face]
+  lface = a.b.glue.face_to_lface[face]
+  ctype = a.b.cell_to_ctype[cell]
+  p = a.b.glue.cell_to_lface_to_pindex.ptrs[cell]-1
+  pindex = a.b.glue.cell_to_lface_to_pindex.data[p+lface]
+  a.ctype_to_lface_to_pindex_to_qpoints[ctype][lface][pindex]
 end
 
 function evaluate_field_array(g::CompressedArray{<:Field},fx::FaceToCellMapValue)
-  apply(g,fx)
+  CellShapeFunsAtFaces(g,fx)
+end
+
+struct CellShapeFunsAtFaces{D,T,O,V} <: AbstractVector{V}
+  b::FaceCellCoordinates{D,T,O}
+  ctype_to_lface_to_pindex_to_shfnsvals::Vector{Vector{Vector{V}}}
+  function CellShapeFunsAtFaces(g::CompressedArray{<:Field},fx::FaceToCellMapValue{D,T,O}) where {D,T,O}
+
+    # Precompute shapefuns for all cases
+
+    ftype_to_shapefuns = g.values
+    ctype_to_lface_to_pindex_to_perm = fx.b.ctype_to_lface_to_pindex_to_perm
+    ctype_to_lface_to_ftype = fx.b.glue.ctype_to_lface_to_ftype
+    ctype_to_lface_to_pindex_to_qpoints = fx.ctype_to_lface_to_pindex_to_qpoints
+
+    # Allocate
+    sfuns = first(ftype_to_shapefuns)
+    V = field_return_type(sfuns,zeros(Point{D,T},1))
+    ctype_to_lface_to_pindex_to_shfnsvals = Vector{Vector{V}}[]
+    for (ctype, lface_to_pindex_to_perm) in enumerate(ctype_to_lface_to_pindex_to_perm)
+      lface_to_pindex_to_shfnsvals = Vector{V}[]
+      for (lface, pindex_to_perm) in enumerate(lface_to_pindex_to_perm)
+        pindex_to_shfnsvals = Vector{V}(undef,length(pindex_to_perm))
+        push!(lface_to_pindex_to_shfnsvals,pindex_to_shfnsvals)
+      end
+      push!(ctype_to_lface_to_pindex_to_shfnsvals,lface_to_pindex_to_shfnsvals)
+    end
+
+    # Fill
+    for (ctype, lface_to_ftype) in enumerate(ctype_to_lface_to_ftype)
+      for (lface, ftype) in enumerate(lface_to_ftype)
+        if ftype == UNSET
+          continue
+        end
+        pindex_to_perm = ctype_to_lface_to_pindex_to_perm[ctype][lface]
+        sfuns = ftype_to_shapefuns[ftype]
+        for (pindex, cfvertex_to_ffvertex) in enumerate(pindex_to_perm)
+          qpoints = ctype_to_lface_to_pindex_to_qpoints[ctype][lface][pindex]
+          shfnsvals = evaluate(sfuns,qpoints)
+          ctype_to_lface_to_pindex_to_shfnsvals[ctype][lface][pindex] = shfnsvals
+        end
+      end
+    end
+
+    new{D,T,O,V}(fx.b,ctype_to_lface_to_pindex_to_shfnsvals)
+
+  end
+end
+
+Base.size(v::CellShapeFunsAtFaces) = (length(v.b.glue.face_to_cell),)
+
+Base.IndexStyle(::Type{CellShapeFunsAtFaces{C,T,O,V}}) where {C,T,O,V} = IndexLinear()
+
+function Base.getindex(a::CellShapeFunsAtFaces,face::Integer)
+  cell = a.b.glue.face_to_cell[face]
+  lface = a.b.glue.face_to_lface[face]
+  ctype = a.b.cell_to_ctype[cell]
+  p = a.b.glue.cell_to_lface_to_pindex.ptrs[cell]-1
+  pindex = a.b.glue.cell_to_lface_to_pindex.data[p+lface]
+  a.ctype_to_lface_to_pindex_to_shfnsvals[ctype][lface][pindex]
 end
 
 # Tests
@@ -318,17 +428,28 @@ s2q = get_face_to_cell_map(btrian)
 s = CompressedArray([Point{1,Float64}[(0.25,),(0.75,)]],get_cell_type(btrian))
 
 q = evaluate(s2q,s)
+r = Vector{Point{2,Float64}}[
+  [(0.25,0.0),(0.75,0.0)],[(0.0,0.25),(0.0,0.75)],
+  [(0.25,0.0),(0.75,0.0)],[(1.0,0.25),(1.0,0.75)],
+  [(0.25,1.0),(0.75,1.0)],[(0.0,0.25),(0.0,0.75)],
+  [(0.25,1.0),(0.75,1.0)],[(1.0,0.25),(1.0,0.75)]]
+test_array(q,r)
+@test isa(q,FaceToCellMapValue)
 
 q2x = reindex(get_cell_map(get_grid(model)), btrian.glue.face_to_cell)
 
 s2x = compose(q2x,s2q)
 
 x = evaluate(s2x,s)
+r = Vector{Point{2,Float64}}[
+  [(0.5,0.0),(1.5,0.0)],[(0.0,0.5),(0.0,1.5)],
+  [(2.5,0.0),(3.5,0.0)],[(4.0,0.5),(4.0,1.5)],
+  [(0.5,4.0),(1.5,4.0)],[(0.0,2.5),(0.0,3.5)],
+  [(2.5,4.0),(3.5,4.0)],[(4.0,2.5),(4.0,3.5)]]
+test_array(x,r)
 
-display(s)
-display(q)
-display(x)
-display((eltype(get_cell_map(get_grid(model)))))
-
+cell_shapefuns_q = reindex(get_cell_shapefuns(get_grid(model)), btrian.glue.face_to_cell)
+cell_shapefuns_s = compose(cell_shapefuns_q,s2q) 
+@test isa(evaluate(cell_shapefuns_s,s), CellShapeFunsAtFaces)
 
 end # module
