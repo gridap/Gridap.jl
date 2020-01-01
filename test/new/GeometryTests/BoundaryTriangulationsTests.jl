@@ -31,5 +31,22 @@ r = Vector{Point{2,Float64}}[
   [(2.5,4.0),(3.5,4.0)],[(4.0,2.5),(4.0,3.5)]]
 test_array(x,r)
 
+nvec = get_normal_vector(btrian)
+nvec_x = evaluate(nvec,s)
+
+using Gridap.Visualization
+
+writevtk(x,"x",nodaldata=["nvec"=>nvec_x])
+writevtk(btrian,"btrian")
+writevtk(get_grid(model),"trian")
+
+import Gridap.Geometry: BoundaryTriangulation
+
+function BoundaryTriangulation(model::DiscreteModel,tags::Vector{Int})
+  labeling = get_face_labeling(model)
+  D = num_cell_dims(model)
+  face_to_mask = get_face_mask(labeling,tags,D)
+  BoundaryTriangulation(model,face_to_mask)
+end
 
 end # module

@@ -55,4 +55,10 @@ labels2 = from_json(FaceLabeling,to_json(labels))
 @test labels2.tag_to_entities == labels.tag_to_entities
 @test labels2.tag_to_name == labels.tag_to_name
 
+@test get_tags_from_names(labels,["interior","all"]) == [1,3]
+
+face_to_mask = get_face_mask(labels,"interior",1)
+@test face_to_mask == Bool[0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0]
+
+
 end # module

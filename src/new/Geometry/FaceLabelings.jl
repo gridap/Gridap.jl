@@ -153,6 +153,14 @@ function get_tag_from_name(lab::FaceLabeling,name::String)
 end
 
 """
+    get_tags_from_names(lab::FaceLabeling,names::Vector{String})
+"""
+function get_tags_from_names(lab::FaceLabeling,names::Vector{String})
+  f = (s) -> get_tag_from_name(lab,s)
+  map(f, names)
+end
+
+"""
     get_tag_from_name(lab::FaceLabeling)
 """
 function get_tag_from_name(lab::FaceLabeling)
@@ -191,6 +199,41 @@ function add_tag_from_tags!(
   labels::FaceLabeling, name::String, names::Vector{String})
   tags = [get_tag_from_name(labels,name) for name in names ]
   add_tag_from_tags!(labels,name,tags)
+end
+
+"""
+    get_face_mask(labeling::FaceLabeling,tags::Vector{Int},d::Integer)
+    get_face_mask(labeling::FaceLabeling,tags::Vector{String},d::Integer)
+    get_face_mask(labeling::FaceLabeling,tags::Int,d::Integer)
+    get_face_mask(labeling::FaceLabeling,tags::String,d::Integer)
+"""
+function get_face_mask(labeling::FaceLabeling,tags::Vector{Int},d::Integer)
+  face_to_entity = get_face_entity(labeling,d)
+  tag_to_entities = get_tag_entities(labeling)
+  nfaces = num_faces(labeling,d)
+  face_to_mask = fill(false,nfaces)
+  for (face, entity) in enumerate(face_to_entity)
+    for tag in tags
+      entities = tag_to_entities[tag]
+      if entity in entities
+        face_to_mask[face] = true
+      end
+    end
+  end
+  face_to_mask
+end
+
+function get_face_mask(labeling::FaceLabeling,names::Vector{String},d::Integer)
+  tags = get_tags_from_names(labeling,names)
+  get_face_mask(labeling,tags,d)
+end
+
+function get_face_mask(labeling::FaceLabeling,name::String,d::Integer)
+  get_face_mask(labeling,[name,],d)
+end
+
+function get_face_mask(labeling::FaceLabeling,tag::Int,d::Integer)
+  get_face_mask(labeling,[tag,],d)
 end
 
 function Base.show(io::IO,lab::FaceLabeling)

@@ -384,7 +384,7 @@ function _prepare_cdata(celldata,sub_cell_to_cell)
     cdata[k] = sub_cell_to_a
   end
   k2 = "cell"
-  @assert ! haskey(cdata,k2)
+  @assert ! haskey(cdata,k2) "cell is a reserved key"
   cdata[k2] = sub_cell_to_cell
   cdata
 end

@@ -121,8 +121,10 @@ export get_face_entity
 export get_tag_entities
 export get_tag_name
 export get_tag_from_name
+export get_tags_from_names
 export add_tag!
 export add_tag_from_tags!
+export get_face_mask
 
 export DiscreteModel
 export get_grid
