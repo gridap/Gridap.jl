@@ -61,7 +61,34 @@ end
 
 function BoundaryTriangulation(model::DiscreteModel)
   topo = get_grid_topology(model)
-  face_to_mask = collect(Bool,get_isboundary_face(topo))
+  D = num_cell_dims(model)
+  face_to_mask = collect(Bool,get_isboundary_face(topo,D-1))
   GenericBoundaryTriangulation(model,face_to_mask)
 end
+
+"""
+    BoundaryTriangulation(model::DiscreteModel,tags::Vector{Int})
+    BoundaryTriangulation(model::DiscreteModel,tags::Vector{String})
+    BoundaryTriangulation(model::DiscreteModel,tag::Int)
+    BoundaryTriangulation(model::DiscreteModel,tag::String)
+"""
+function BoundaryTriangulation(model::DiscreteModel,tags::Vector{Int})
+  labeling = get_face_labeling(model)
+  D = num_cell_dims(model)
+  face_to_mask = get_face_mask(labeling,tags,D-1)
+  BoundaryTriangulation(model,face_to_mask)
+end
+
+function BoundaryTriangulation(model::DiscreteModel,names::Vector{String})
+  labeling = get_face_labeling(model)
+  tags = get_tags_from_names(labeling,names)
+  BoundaryTriangulation(model,tags)
+end
+
+function BoundaryTriangulation(model::DiscreteModel,tag::Union{Int,String})
+  tags = [tag,]
+  BoundaryTriangulation(model,tags)
+end
+
+
 

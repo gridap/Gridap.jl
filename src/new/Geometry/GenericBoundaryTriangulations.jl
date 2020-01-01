@@ -83,7 +83,7 @@ function GenericBoundaryTriangulation(model::DiscreteModel,face_to_mask::Vector{
   topo = get_grid_topology(model)
   oldface_grid = Grid(ReferenceFE{D-1},model)
   cell_grid = Grid(ReferenceFE{D},model)
-  face_to_oldface = findall(get_isboundary_face(topo,1))
+  face_to_oldface = findall(face_to_mask)
   face_grid = GridPortion(oldface_grid,face_to_oldface)
   GenericBoundaryTriangulation(face_grid,cell_grid,topo,face_to_oldface)
 end

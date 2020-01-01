@@ -4,6 +4,7 @@ using Test
 using Gridap.Helpers
 using Gridap.Fields
 using Gridap.Arrays
+using Gridap.ReferenceFEs
 using Gridap.Geometry
 
 domain = (0,4,0,4)
@@ -34,19 +35,18 @@ test_array(x,r)
 nvec = get_normal_vector(btrian)
 nvec_x = evaluate(nvec,s)
 
-using Gridap.Visualization
+domain = (0,4,0,4)
+partition = (2,2)
+model = CartesianDiscreteModel(domain,partition)
 
-writevtk(x,"x",nodaldata=["nvec"=>nvec_x])
-writevtk(btrian,"btrian")
-writevtk(get_grid(model),"trian")
+btrian = BoundaryTriangulation(model,"tag_8")
+test_boundary_triangulation(btrian)
 
-import Gridap.Geometry: BoundaryTriangulation
+s = CompressedArray([Point{1,Float64}[(0.25,),(0.75,)]],get_cell_type(btrian))
+nvec = get_normal_vector(btrian)
+nvec_x = evaluate(nvec,s)
+s2x = get_cell_map(btrian)
+x = evaluate(s2x,s)
 
-function BoundaryTriangulation(model::DiscreteModel,tags::Vector{Int})
-  labeling = get_face_labeling(model)
-  D = num_cell_dims(model)
-  face_to_mask = get_face_mask(labeling,tags,D)
-  BoundaryTriangulation(model,face_to_mask)
-end
 
 end # module

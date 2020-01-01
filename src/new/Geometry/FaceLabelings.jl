@@ -204,8 +204,8 @@ end
 """
     get_face_mask(labeling::FaceLabeling,tags::Vector{Int},d::Integer)
     get_face_mask(labeling::FaceLabeling,tags::Vector{String},d::Integer)
-    get_face_mask(labeling::FaceLabeling,tags::Int,d::Integer)
-    get_face_mask(labeling::FaceLabeling,tags::String,d::Integer)
+    get_face_mask(labeling::FaceLabeling,tag::Int,d::Integer)
+    get_face_mask(labeling::FaceLabeling,tag::String,d::Integer)
 """
 function get_face_mask(labeling::FaceLabeling,tags::Vector{Int},d::Integer)
   face_to_entity = get_face_entity(labeling,d)
