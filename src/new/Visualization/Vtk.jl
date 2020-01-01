@@ -523,3 +523,62 @@ function _prepare_sub_cell_to_u(
   sub_cell_to_u
 
 end
+
+"""
+    writevtk(
+      cell_to_points::AbstractArray{<:AbstractArray{<:Point}},
+      filename;
+      celldata=Dict(),
+      nodaldata=Dict())
+"""
+function writevtk(
+  cell_to_points::AbstractArray{<:AbstractArray{<:Point}},
+  filename; celldata=Dict(), nodaldata=Dict())
+
+  node_to_point, cell_to_offset = _prepare_node_to_coords(cell_to_points)
+  nnodes = length(node_to_point)
+  cell_to_nodes = identity_table(Int,Int32,nnodes)
+  cell_to_ctype = fill(Int8(1),nnodes)
+  ctype_to_reffe = [VERTEX1,]
+
+  node_to_cell = _prepare_node_to_cell(cell_to_offset,nnodes)
+
+  grid = UnstructuredGrid(
+    node_to_point,
+    cell_to_nodes,
+    ctype_to_reffe,
+    cell_to_ctype,
+    Val{true}())
+
+  cdata = _prepare_cdata(celldata,node_to_cell)
+  pdata = _prepare_pdata_for_cell_points(nodaldata)
+
+  write_vtk_file(grid,filename,celldata=cdata,nodaldata=pdata)
+
+end
+
+function _prepare_node_to_cell(cell_to_offset,nnodes)
+  node_to_cell = zeros(Int,nnodes)
+  ncells = length(cell_to_offset)
+  for cell in 1:ncells
+    nini = cell_to_offset[cell]+1
+    if cell < ncells
+      nend = cell_to_offset[cell+1]
+    else
+      nend = nnodes
+    end
+    for node in nini:nend
+      node_to_cell[node] = cell
+    end
+  end
+  node_to_cell
+end
+
+function _prepare_pdata_for_cell_points(nodaldata)
+  pdata = Dict()
+  for (k,v) in nodaldata
+    pdata[k], = _prepare_node_to_coords(v)
+  end
+  pdata
+end
+

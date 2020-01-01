@@ -68,6 +68,20 @@ cf = compose(fun, get_cell_map(trian))
 
 writevtk(trian,f,nsubcells=10, cellfields=["cf" => cf])
 
+trian = GridMock()
+
+p1 = Point{2,Float64}[(0.25,0.25),(0.75,0.75)]
+p2 = Point{2,Float64}[(0.2,0.2),(0.4,0.4)]
+q = CompressedArray([p1,p2], get_cell_type(trian))
+q2x = get_cell_map(trian)
+x = evaluate(q2x,q)
+
+f = joinpath(d,"x")
+writevtk(x,f,celldata=["cellid" => collect(1:num_cells(trian))], nodaldata = ["x" => x])
+
+f = joinpath(d,"trian")
+writevtk(trian,f)
+
 rm(d,recursive=true)
 
 end # module
