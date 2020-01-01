@@ -31,6 +31,29 @@ get_cell_reffes(trian::Triangulation)
 get_cell_shapefuns(trian::Triangulation)
 get_cell_map(trian::Triangulation)
 ```
+
+## BoundaryTriangulations
+
+### Interface
+
+```@docs
+BoundaryTriangulation
+BoundaryTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
+BoundaryTriangulation(model::DiscreteModel,tags::Vector{Int})
+get_volume_triangulation(trian::BoundaryTriangulation)
+get_face_to_cell(trian::BoundaryTriangulation)
+get_face_to_cell_map(trian::BoundaryTriangulation)
+get_normal_vector(trian::BoundaryTriangulation)
+test_boundary_triangulation
+```
+
+### GenericBoundaryTriangulations
+
+```@docs
+GenericBoundaryTriangulation
+GenericBoundaryTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
+```
+
 ## Grids
 
 ### Interface
@@ -80,7 +103,15 @@ CartesianDescriptor
 CartesianDescriptor(origin,sizes,partition,map::Function)
 CartesianDescriptor(domain,partition,map::Function=identity)
 ```
-### FaceLabeling
+
+### GridPortion
+
+```@docs
+GridPortion
+GridPortion(oldgrid::Grid{Dc,Dp},cell_to_oldcell::Vector{Int}) where {Dc,Dp}
+```
+
+## FaceLabeling
 
 ```@docs
 FaceLabeling
@@ -103,6 +134,8 @@ get_tag_name(lab::FaceLabeling,tag::Integer)
 get_tag_name(lab::FaceLabeling)
 get_tag_from_name(lab::FaceLabeling,name::String)
 get_tag_from_name(lab::FaceLabeling)
+get_tags_from_names(lab::FaceLabeling,names::Vector{String})
+get_face_mask(labeling::FaceLabeling,tags::Vector{Int},d::Integer)
 add_tag!(lab::FaceLabeling,name::String,entities::Vector{<:Integer})
 add_tag_from_tags!(lab::FaceLabeling, name::String, tags::Vector{Int})
 ```

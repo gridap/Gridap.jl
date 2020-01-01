@@ -41,6 +41,7 @@ get_face_vertices(p::Polytope,dim::Integer)
 get_reffaces(::Type{Polytope{d}},p::Polytope) where d
 get_face_type(p::Polytope,d::Integer)
 get_bounding_box(p::Polytope{D}) where D
+get_face_vertex_permutations(p::Polytope,d::Integer)
 ```
 ### Extrusion polytopes
 

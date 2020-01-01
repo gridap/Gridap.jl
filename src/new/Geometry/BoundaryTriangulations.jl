@@ -5,6 +5,7 @@
 abstract type BoundaryTriangulation{Dc,Dp} <: Triangulation{Dc,Dp} end
 
 """
+    get_volume_triangulation(trian::BoundaryTriangulation)
 """
 function get_volume_triangulation(trian::BoundaryTriangulation)
   @abstractmethod
@@ -30,6 +31,9 @@ end
 
 # Tester
 
+"""
+    test_boundary_triangulation(trian::BoundaryTriangulation)
+"""
 function test_boundary_triangulation(trian::BoundaryTriangulation)
   test_triangulation(trian)
   @test isa(get_volume_triangulation(trian),Triangulation)

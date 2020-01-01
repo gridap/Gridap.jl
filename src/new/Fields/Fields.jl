@@ -44,7 +44,6 @@ export compose_fields
 export compose_field_arrays
 export lincomb
 export apply_lincomb
-export apply_lincomb_default
 export varinner
 export attachmap
 export integrate

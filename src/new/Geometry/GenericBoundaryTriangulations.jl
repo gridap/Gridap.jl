@@ -78,6 +78,9 @@ function GenericBoundaryTriangulation(
 
 end
 
+"""
+    GenericBoundaryTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
+"""
 function GenericBoundaryTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
   D = num_cell_dims(model)
   topo = get_grid_topology(model)

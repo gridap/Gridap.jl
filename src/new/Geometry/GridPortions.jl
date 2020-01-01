@@ -11,6 +11,7 @@ struct GridPortion{Dc,Dp,G} <: Grid{Dc,Dp}
   oldgrid::G
   cell_to_oldcell::Vector{Int}
   @doc """
+      GridPortion(oldgrid::Grid{Dc,Dp},cell_to_oldcell::Vector{Int}) where {Dc,Dp}
   """
   function GridPortion(oldgrid::Grid{Dc,Dp},cell_to_oldcell::Vector{Int}) where {Dc,Dp}
     new{Dc,Dp,typeof(oldgrid)}(oldgrid,cell_to_oldcell)
