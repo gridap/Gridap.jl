@@ -1,0 +1,3 @@
+module SkeletonPairsTests
+
+end # module

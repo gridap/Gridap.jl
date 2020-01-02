@@ -247,12 +247,15 @@ end
 
 # TODO use map
 @inline function _sizes(a,x...)
-  (size(a), _sizes(x...)...)
+  (_size(a), _sizes(x...)...)
 end
 
 @inline function _sizes(a)
-  (size(a),)
+  (_size(a),)
 end
+
+@inline _size(a) = size(a)
+@inline _size(a::Number) = (1,)
 
 """
     elem(f::Function)

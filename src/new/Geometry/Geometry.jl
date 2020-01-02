@@ -148,6 +148,10 @@ export test_boundary_triangulation
 
 export GenericBoundaryTriangulation
 
+export SkeletonPair
+export SkeletonTriangulation
+
+
 include("GridTopologies.jl")
 
 include("GridTopologyMocks.jl")
@@ -179,5 +183,9 @@ include("CartesianDiscreteModels.jl")
 include("BoundaryTriangulations.jl")
 
 include("GenericBoundaryTriangulations.jl")
+
+include("SkeletonPairs.jl")
+
+include("SkeletonTriangulations.jl")
 
 end # module

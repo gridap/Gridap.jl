@@ -81,14 +81,15 @@ end
 """
     GenericBoundaryTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
 """
-function GenericBoundaryTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
+function GenericBoundaryTriangulation(
+  model::DiscreteModel,face_to_mask::Vector{Bool},icell_arround::Integer=1)
   D = num_cell_dims(model)
   topo = get_grid_topology(model)
   oldface_grid = Grid(ReferenceFE{D-1},model)
   cell_grid = Grid(ReferenceFE{D},model)
   face_to_oldface = findall(face_to_mask)
   face_grid = GridPortion(oldface_grid,face_to_oldface)
-  GenericBoundaryTriangulation(face_grid,cell_grid,topo,face_to_oldface)
+  GenericBoundaryTriangulation(face_grid,cell_grid,topo,face_to_oldface,icell_arround)
 end
 
 function _fill_ctype_to_lface_to_ftype!(

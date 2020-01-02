@@ -28,4 +28,8 @@ using Test
 
 @testset "GenericBoundaryTriangulations" begin include("GenericBoundaryTriangulationsTests.jl") end
 
+@testset "SkeletonPairs" begin include("SkeletonPairsTests.jl") end
+
+@testset "SkeletonTriangulations" begin include("SkeletonTriangulationsTests.jl") end
+
 end # module
