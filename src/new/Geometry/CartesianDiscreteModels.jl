@@ -49,6 +49,23 @@ get_grid_topology(model::CartesianDiscreteModel) = model.grid_topology
 
 get_face_labeling(model::CartesianDiscreteModel) = model.face_labeling
 
+# These needed to be type stable
+
+function get_face_nodes(model::CartesianDiscreteModel,d::Integer)
+  face_nodes::Table{Int,Int32} = compute_face_nodes(model,d)
+  face_nodes
+end
+
+function get_face_type(model::CartesianDiscreteModel,d::Integer)
+  _, face_to_ftype::Vector{Int8} = compute_reffaces(ReferenceFE{d},model)
+  face_to_ftype
+end
+
+function get_reffaces(::Type{ReferenceFE{d}},model::CartesianDiscreteModel) where d
+  reffaces::Vector{LagrangianRefFE{d}},_ = compute_reffaces(ReferenceFE{d},model)
+  reffaces
+end
+
 # Helpers
 
 function _fill_cartesian_face_labeling!(labels,topo)
