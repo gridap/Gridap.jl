@@ -8,6 +8,8 @@ module Integration
 using DocStringExtensions
 using Test
 using QuadGK: gauss
+using FastGaussQuadrature: gaussjacobi
+using FastGaussQuadrature: gausslegendre
 using Gridap.Helpers
 using Gridap.Fields
 using Gridap.TensorValues
