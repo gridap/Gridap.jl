@@ -103,3 +103,153 @@ function from_dict(::Type{UnstructuredDiscreteModel},dict::Dict{Symbol,Any})
   UnstructuredDiscreteModel(grid,topo,labeling)
 end
 
+function simplexify(model::UnstructuredDiscreteModel)
+
+  grid = get_grid(model)
+  grid_topology = get_grid_topology(model)
+  labels = get_face_labeling(model)
+
+  tgrid = simplexify(grid)
+  tgrid_topology = GridTopology(tgrid)
+
+  reffes = get_reffes(grid)
+  tfacelabels = _generate_tfacelabels(grid_topology, tgrid_topology, reffes, labels)
+
+  UnstructuredDiscreteModel(tgrid,tgrid_topology,tfacelabels)
+
+end
+
+const UNSET_ID = Int32(0)
+
+function _generate_tfacelabels(grid_topology, tgrid_topology, reffes, facelabels)
+
+  @notimplementedif length(reffes) != 1
+  reffe = first(reffes)
+  p = get_polytope(reffe)
+  ltcell_to_lnodes, simplex = simplexify(p)
+
+  D = num_cell_dims(grid_topology)
+
+  dim_to_tface_to_label = [ fill(UNSET_ID,num_faces(tgrid_topology,d)) for d in 0:D ]
+  dim_to_face_to_label = facelabels.d_to_dface_to_entity
+
+  _fill_dim_to_tface_to_label!(
+    dim_to_tface_to_label,
+    dim_to_face_to_label,
+    tgrid_topology,
+    grid_topology,
+    ltcell_to_lnodes)
+
+  FaceLabeling(
+    dim_to_tface_to_label, facelabels.tag_to_entities, facelabels.tag_to_name)
+
+end
+
+function  _fill_dim_to_tface_to_label!(
+  dim_to_tface_to_label,
+  dim_to_face_to_label,
+  tgrid_topology,
+  grid_topology,
+  ltcell_to_lnodes)
+
+  tpolytope = first(get_polytopes(tgrid_topology))
+  polytope = first(get_polytopes(grid_topology))
+
+  D = length(dim_to_face_to_label)-1
+  d = 0
+  dim_to_tface_to_label[d+1] = dim_to_face_to_label[d+1]
+
+  for d in 1:(D-1)
+
+    cell_to_faces = get_faces(grid_topology,D,d)
+    tcell_to_tfaces = get_faces(tgrid_topology,D,d)
+
+    ntfaces = maximum(tcell_to_tfaces.data)
+
+    ltface_to_ltnodes = get_faces(tpolytope,d,0)
+    lface_to_lnodes = get_faces(polytope,d,0)
+
+    tface_to_face = _generate_tface_to_face(
+      cell_to_faces.data,
+      cell_to_faces.ptrs,
+      tcell_to_tfaces.data,
+      tcell_to_tfaces.ptrs,
+      ltcell_to_lnodes,
+      ltface_to_ltnodes,
+      lface_to_lnodes,
+      ntfaces)
+
+    _update_labels!(
+      dim_to_tface_to_label[d+1],dim_to_face_to_label[d+1],tface_to_face)
+
+  end
+
+  d = D
+  ncells = length(dim_to_face_to_label[d+1])
+  nltcells = length(ltcell_to_lnodes)
+  tcell_to_cell = _generate_tcell_to_cell(ncells,nltcells)
+  _update_labels!(
+    dim_to_tface_to_label[d+1],dim_to_face_to_label[d+1],tcell_to_cell)
+
+  for d = 1:(D-1)
+
+    for j in (d+1):D
+
+      dface_to_jfaces = get_faces(tgrid_topology,d,j)
+      dface_to_label = dim_to_tface_to_label[d+1]
+      jface_to_label = dim_to_tface_to_label[j+1]
+      _fix_dface_to_label!(dface_to_label,jface_to_label,dface_to_jfaces)
+
+    end
+
+  end
+
+end
+
+function _fix_dface_to_label!(dface_to_label,jface_to_label,dface_to_jfaces)
+
+  ndfaces = length(dface_to_label)
+  @assert ndfaces == length(dface_to_jfaces)
+
+  for dface in 1:ndfaces
+
+    dlabel = dface_to_label[dface]
+    if dlabel != UNSET_ID
+      continue
+    end
+
+    jfaces = dface_to_jfaces[dface]
+    for jface in jfaces
+      jlabel = jface_to_label[jface]
+      if jlabel != UNSET_ID
+        dface_to_label[dface] = jlabel
+        break
+      end
+    end
+
+  end
+
+end
+
+function _update_labels!(tface_to_label,face_to_label,tface_to_face)
+  for tface in 1:length(tface_to_label)
+    face = tface_to_face[tface]
+    if face != 0
+      tface_to_label[tface] = face_to_label[face]
+    end
+  end
+end
+
+function _generate_tcell_to_cell(ncells,nltcells)
+  ntcells = ncells * nltcells
+  tcell_to_cell = Vector{Int}(undef,ntcells)
+  tcell = 1
+  for cell in 1:ncells
+    for ltcell in 1:nltcells
+      tcell_to_cell[tcell] = cell
+      tcell += 1
+    end
+  end
+  tcell_to_cell
+end
+

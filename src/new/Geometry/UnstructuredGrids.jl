@@ -313,4 +313,32 @@ function  _generate_cell_to_vertices_fill!(
   end
 end
 
+function simplexify(grid::UnstructuredGrid)
+  reffes = get_reffes(grid)
+  @notimplementedif length(reffes) != 1
+  reffe = first(reffes)
+  order = 1
+  @notimplementedif get_order(reffe) != order
+  p = get_polytope(reffe)
+  ltcell_to_lpoints, simplex = simplexify(p)
+  cell_to_points = get_cell_nodes(grid)
+  tcell_to_points = _refine_grid_connectivity(cell_to_points, ltcell_to_lpoints)
+  ctype_to_reffe = [LagrangianRefFE(Float64,simplex,order),]
+  tcell_to_ctype = fill(Int8(1),length(tcell_to_points))
+  point_to_coords = get_node_coordinates(grid)
+  UnstructuredGrid(
+    point_to_coords,
+    tcell_to_points,
+    ctype_to_reffe,
+    tcell_to_ctype,
+    Val{true}())
+end
+
+function _refine_grid_connectivity(cell_to_points::Table, ltcell_to_lpoints)
+  data, ptrs = _refine_grid_connectivity(
+    cell_to_points.data,
+    cell_to_points.ptrs,
+    ltcell_to_lpoints)
+  Table(data,ptrs)
+end
 

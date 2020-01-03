@@ -161,4 +161,10 @@ function GridTopology(grid::Grid, cell_to_vertices::Table, vertex_to_node::Abstr
   UnstructuredGridTopology(_grid,cell_to_vertices,vertex_to_node)
 end
 
+"""
+    simplexify(grid::Grid)
+"""
+function simplexify(grid::Grid)
+  simplexify(UnstructuredGrid(grid))
+end
 

@@ -168,6 +168,34 @@ function is_n_cube(p::ExtrusionPolytope{0})
   true
 end
 
+function simplexify(p::ExtrusionPolytope)
+  @notimplemented
+end
+
+function simplexify(p::ExtrusionPolytope{2})
+  if p == QUAD
+    ([[1,2,3],[2,3,4]], TRI)
+  elseif p == TRI
+    ([[1,2,3],], TRI)
+  else
+     @notimplemented
+  end
+end
+
+function simplexify(p::ExtrusionPolytope{3})
+  if p == HEX
+    simplices = [
+      [1,2,3,7], [1,2,5,7], [2,3,4,7],
+      [2,4,7,8], [2,5,6,7], [2,6,7,8]]
+    (simplices, TET)
+  elseif p == TET
+    simplices = [[1,2,3,4],]
+    (simplices, TET)
+  else
+     @notimplemented
+  end
+end
+
 function Base.show(io::IO,p::ExtrusionPolytope)
   if p == VERTEX
     s = "VERTEX"

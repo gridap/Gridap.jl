@@ -370,6 +370,13 @@ function Triangulation(::Type{ReferenceFE{d}},model::DiscreteModel) where d
   Grid(ReferenceFE{d},model)
 end
 
+"""
+    simplexify(model::DiscreteModel)
+"""
+function simplexify(model::DiscreteModel)
+  simplexify(UnstructuredDiscreteModel(model))
+end
+
 # IO
 
 function to_dict(model::DiscreteModel)

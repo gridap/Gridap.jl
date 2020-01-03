@@ -724,7 +724,7 @@ function  _generate_face_to_isboundary_from_cells_fill!(
 
 end
 
-function refine_grid_connectivity(
+function _refine_grid_connectivity(
   cell_to_points_data::AbstractVector{T},
   cell_to_points_ptrs::AbstractVector{P},
   ltcell_to_lpoints) where {T,P}
@@ -756,7 +756,7 @@ function refine_grid_connectivity(
 
 end
 
-function generate_tface_to_face(
+function _generate_tface_to_face(
   cell_to_faces_data::AbstractVector{T},
   cell_to_faces_ptrs,
   tcell_to_tfaces_data,

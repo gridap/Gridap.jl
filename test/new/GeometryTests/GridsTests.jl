@@ -72,4 +72,10 @@ test_grid_topology(topo)
 #
 #grid = Grid(ReferenceFE{1},trian)
 
+domain = (0,1,0,1,0,1)
+partition = (2,2,2)
+grid = CartesianGrid(domain,partition)
+tgrid = simplexify(grid)
+test_grid(tgrid)
+
 end # module

@@ -43,6 +43,7 @@ export get_edge_tangents
 export get_vertex_permutations
 export is_simplex
 export is_n_cube
+export simplexify
 export num_dims
 export num_cell_dims
 export num_point_dims

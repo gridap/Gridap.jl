@@ -61,6 +61,7 @@ import Gridap.ReferenceFEs: get_face_type
 import Gridap.ReferenceFEs: num_dims
 import Gridap.ReferenceFEs: num_cell_dims
 import Gridap.ReferenceFEs: num_point_dims
+import Gridap.ReferenceFEs: simplexify
 
 import Gridap.Fields: field_array_gradient
 import Gridap.Fields: apply_lincomb

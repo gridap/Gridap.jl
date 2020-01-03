@@ -98,4 +98,10 @@ iface_to_ftype = get_face_type(WEDGE,d)
 
 @test get_face_vertex_permutations(QUAD,1) == [[[1,2],[2,1]],[[1,2],[2,1]],[[1,2],[2,1]],[[1,2],[2,1]]]
 
+v,p = simplexify(QUAD)
+@test p == TRI
+
+v,p = simplexify(HEX)
+@test p == TET
+
 end # module

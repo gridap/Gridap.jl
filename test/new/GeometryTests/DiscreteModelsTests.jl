@@ -78,4 +78,11 @@ dict = to_dict(model)
 model2 = from_dict(DiscreteModel,dict)
 test_discrete_model(model2)
 
+domain = (0,1,0,1,0,1)
+partition = (3,3,3)
+model = CartesianDiscreteModel(domain,partition)
+
+tmodel = simplexify(model)
+test_discrete_model(tmodel)
+
 end # module

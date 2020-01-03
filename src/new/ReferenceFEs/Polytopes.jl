@@ -31,6 +31,7 @@ And optionally these ones:
 - [`get_vertex_permutations(p::Polytope)`](@ref)
 - [`is_n_cube(p::Polytope)`](@ref)
 - [`is_simplex(p::Polytope)`](@ref)
+- [`simplexify(p::Polytope)`](@ref)
 
 The interface can be tested with the function
 
@@ -218,7 +219,6 @@ function get_vertex_permutations(p::Polytope)
   @abstractmethod
 end
 
-
 """
     is_simplex(p::Polytope) -> Bool
 """
@@ -230,6 +230,13 @@ end
     is_n_cube(p::Polytope) -> Bool
 """
 function is_n_cube(p::Polytope)
+  @abstractmethod
+end
+
+"""
+    simplexify(p::Polytope) -> Tuple{Vector{Vector{Int}},Polytope}
+"""
+function simplexify(p::Polytope)
   @abstractmethod
 end
 
