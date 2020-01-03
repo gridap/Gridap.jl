@@ -149,6 +149,8 @@ export test_boundary_triangulation
 export GenericBoundaryTriangulation
 
 export SkeletonPair
+export jump
+export mean
 export SkeletonTriangulation
 
 
