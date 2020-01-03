@@ -49,6 +49,7 @@ Pages = [
   "Polynomials.md",
   "ReferenceFEs.md",
   "Geometry.md",
+  "Integration.md",
   "Visualization.md",
   ]
 ```

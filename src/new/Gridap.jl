@@ -19,5 +19,7 @@ include("ReferenceFEs/ReferenceFEs.jl")
 
 include("Geometry/Geometry.jl")
 
+include("Integration/Integration.jl")
+
 include("Visualization/Visualization.jl")
 
