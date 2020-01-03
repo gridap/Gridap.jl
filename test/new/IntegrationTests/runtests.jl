@@ -8,4 +8,6 @@ using Test
 
 @testset "DuffyQuadratures" begin include("DuffyQuadraturesTests.jl") end
 
+@testset "CellQuadratures" begin include("CellQuadraturesTests.jl") end
+
 end # module
