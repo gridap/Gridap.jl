@@ -1,5 +1,9 @@
 
 """
+    struct SkeletonPair{L,R} <: GridapType
+      left::L
+      right::R
+    end
 """
 struct SkeletonPair{L,R} <: GridapType
   left::L
@@ -19,6 +23,7 @@ function apply_kernel!(cache,k::SkeletonReduction,left,right)
 end
 
 """
+    jump(a::SkeletonPair)
 """
 function jump(a::SkeletonPair)
   k = SkeletonReduction(identity,-,-)
@@ -26,6 +31,7 @@ function jump(a::SkeletonPair)
 end
 
 """
+    mean(a::SkeletonPair)
 """
 function mean(a::SkeletonPair)
   k = SkeletonReduction(_mean,_mean,_mean)

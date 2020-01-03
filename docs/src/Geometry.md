@@ -54,6 +54,23 @@ GenericBoundaryTriangulation
 GenericBoundaryTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
 ```
 
+## SkeletonTriangulations
+
+```@docs
+SkeletonTriangulation
+SkeletonTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
+get_volume_triangulation(trian::SkeletonTriangulation)
+get_normal_vector(trian::SkeletonTriangulation)
+```
+
+### SkeletonPairs
+
+```@docs
+SkeletonPair
+jump(a::SkeletonPair)
+mean(a::SkeletonPair)
+```
+
 ## Grids
 
 ### Interface
