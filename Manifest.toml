@@ -1,10 +1,13 @@
-# This file is machine-generated - editing it directly is not advised
-
 [[ArrayInterface]]
 deps = ["LinearAlgebra", "Requires", "SparseArrays"]
 git-tree-sha1 = "7b26f0015d9459082a16ebe3fe934c4abb8f1327"
 uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
 version = "2.2.0"
+
+[[BSON]]
+git-tree-sha1 = "4c4fdd4d9935fdd820f3f2a5a33d179f5aaea71e"
+uuid = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
+version = "0.2.4"
 
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
