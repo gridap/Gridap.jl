@@ -292,22 +292,14 @@ struct CellShapeFunsAtFaces{D,T,O,V} <: AbstractVector{V}
 
     # Precompute shapefuns for all cases
 
-    ftype_to_shapefuns = g.values
-    face_to_ftype = g.ptrs
+    ctype_to_shapefuns = g.values
+    face_to_ctype = g.ptrs
     ctype_to_lface_to_pindex_to_perm = fx.b.ctype_to_lface_to_pindex_to_perm
     ctype_to_lface_to_pindex_to_qpoints = fx.ctype_to_lface_to_pindex_to_qpoints
-
-    f = (p)->fill(Int8(UNSET),length(p))
-    ctype_to_lface_to_ftype = map(f,fx.b.glue.ctype_to_lface_to_ftype)
-    _fill_ctype_to_lface_to_ftype!(
-      ctype_to_lface_to_ftype,
-      fx.b.glue.face_to_cell,
-      fx.b.glue.face_to_lface,
-      face_to_ftype,
-      fx.b.cell_to_ctype)
+    ctype_to_lface_to_ftype = fx.b.glue.ctype_to_lface_to_ftype
 
     # Allocate
-    sfuns = first(ftype_to_shapefuns)
+    sfuns = first(ctype_to_shapefuns)
     V = field_return_type(sfuns,zeros(Point{D,T},1))
     ctype_to_lface_to_pindex_to_shfnsvals = Vector{Vector{V}}[]
     for (ctype, lface_to_pindex_to_perm) in enumerate(ctype_to_lface_to_pindex_to_perm)
@@ -326,7 +318,7 @@ struct CellShapeFunsAtFaces{D,T,O,V} <: AbstractVector{V}
           continue
         end
         pindex_to_perm = ctype_to_lface_to_pindex_to_perm[ctype][lface]
-        sfuns = ftype_to_shapefuns[ftype]
+        sfuns = ctype_to_shapefuns[ctype]
         for (pindex, cfvertex_to_ffvertex) in enumerate(pindex_to_perm)
           qpoints = ctype_to_lface_to_pindex_to_qpoints[ctype][lface][pindex]
           shfnsvals = evaluate(sfuns,qpoints)
