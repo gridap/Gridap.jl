@@ -6,4 +6,6 @@ using Test
 
 @testset "Json" begin include("JsonTests.jl") end
 
+@testset "JLD2" begin include("JLD2Tests.jl") end
+
 end # module
