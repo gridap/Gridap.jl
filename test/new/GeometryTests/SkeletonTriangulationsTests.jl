@@ -6,6 +6,30 @@ using Gridap.Arrays
 using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry
+using Gridap.Geometry: DiscreteModelMock
+
+model = DiscreteModelMock()
+
+strian = SkeletonTriangulation(model)
+
+trian = get_volume_triangulation(strian)
+
+fun(x) = sin(pi*x[1])*sin(pi*x[2])
+
+q2x = get_cell_map(trian)
+
+q2fun = compose(fun,q2x)
+
+s2fun = restrict(q2fun,strian)
+
+s = CompressedArray([Point{1,Float64}[(0.25,),(0.75,)]],get_cell_type(strian))
+
+fs = evaluate(jump(s2fun),s)
+
+r = fill(zeros(2),length(fs))
+
+test_array(fs,r)
+
 
 #function polar(q)
 #  r, t, z = q

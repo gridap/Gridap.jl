@@ -293,9 +293,18 @@ struct CellShapeFunsAtFaces{D,T,O,V} <: AbstractVector{V}
     # Precompute shapefuns for all cases
 
     ftype_to_shapefuns = g.values
+    face_to_ftype = g.ptrs
     ctype_to_lface_to_pindex_to_perm = fx.b.ctype_to_lface_to_pindex_to_perm
-    ctype_to_lface_to_ftype = fx.b.glue.ctype_to_lface_to_ftype
     ctype_to_lface_to_pindex_to_qpoints = fx.ctype_to_lface_to_pindex_to_qpoints
+
+    f = (p)->fill(Int8(UNSET),length(p))
+    ctype_to_lface_to_ftype = map(f,fx.b.glue.ctype_to_lface_to_ftype)
+    _fill_ctype_to_lface_to_ftype!(
+      ctype_to_lface_to_ftype,
+      fx.b.glue.face_to_cell,
+      fx.b.glue.face_to_lface,
+      face_to_ftype,
+      fx.b.cell_to_ctype)
 
     # Allocate
     sfuns = first(ftype_to_shapefuns)
