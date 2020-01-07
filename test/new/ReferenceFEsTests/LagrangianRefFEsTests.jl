@@ -189,4 +189,12 @@ s = to_json(reffe)
 s = JSON.json(reffe)
 @test reffe == from_json(LagrangianRefFE,s)
 
+d = mktempdir()
+f = joinpath(d,"reffe.jld2")
+
+to_jld2_file(reffe,f)
+@test reffe == from_jld2_file(f)
+
+rm(d,recursive=true)
+
 end # module

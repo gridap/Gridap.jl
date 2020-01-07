@@ -55,6 +55,17 @@ labels2 = from_json(FaceLabeling,to_json(labels))
 @test labels2.tag_to_entities == labels.tag_to_entities
 @test labels2.tag_to_name == labels.tag_to_name
 
+d = mktempdir()
+f = joinpath(d,"labels.jld2")
+
+to_jld2_file(labels,f)
+labels2 = from_jld2_file(f)
+@test labels2.d_to_dface_to_entity == labels.d_to_dface_to_entity
+@test labels2.tag_to_entities == labels.tag_to_entities
+@test labels2.tag_to_name == labels.tag_to_name
+
+rm(d,recursive=true)
+
 @test get_tags_from_names(labels,["interior","all"]) == [1,3]
 
 face_to_mask = get_face_mask(labels,"interior",1)
