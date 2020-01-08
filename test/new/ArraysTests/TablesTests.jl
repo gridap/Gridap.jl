@@ -123,4 +123,12 @@ s = to_json(a)
 b = from_json(Table{Float64,Int32},s)
 @test a == b
 
+d = mktempdir()
+f = joinpath(d,"a.jld2")
+
+to_jld2_file(a,f)
+@test a == from_jld2_file(typeof(a),f)
+
+rm(d,recursive=true)
+
 end # module

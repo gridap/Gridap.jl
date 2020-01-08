@@ -1,4 +1,6 @@
 
+const version = "v0.7"
+
 """
     struct UnstructuredDiscreteModel{Dc,Dp,Tp,B} <: DiscreteModel{Dc,Dp}
       grid::UnstructuredGrid{Dc,Dp,Tp,B}
@@ -53,7 +55,7 @@ function to_dict(model::UnstructuredDiscreteModel)
   dict[:grid] = to_dict(grid)
   dict[:labeling] = to_dict(labels)
   dict[:vertex_node] = get_vertex_node(model)
-  dict[:version] = "v0.7"
+  dict[:version] = version
   D = num_cell_dims(model)
   dict[:D] = D
   topo = get_grid_topology(model)
@@ -64,16 +66,22 @@ function to_dict(model::UnstructuredDiscreteModel)
   dict
 end
 
-function from_dict(::Type{UnstructuredDiscreteModel},dict::Dict{Symbol,Any})
+function check_dict(::Type{UnstructuredDiscreteModel},dict::Dict{Symbol,Any})
 
   if ! haskey(dict,:version)
     @unreachable "Cannot convert Dict to UnstructuredDiscreteModel for legacy format"
   end
 
   v = VersionNumber(dict[:version])
-  if v < VersionNumber("v0.7")
+  if v < VersionNumber(version)
     @unreachable "Cannot convert Dict to UnstructuredDiscreteModel for outdated format"
   end
+
+end
+
+function from_dict(T::Type{UnstructuredDiscreteModel},dict::Dict{Symbol,Any})
+
+  check_dict(T,dict)
 
   grid = from_dict(UnstructuredGrid,dict[:grid])
   labeling = from_dict(FaceLabeling,dict[:labeling])

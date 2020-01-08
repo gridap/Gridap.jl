@@ -4,10 +4,13 @@ authors = ["Santiago Badia <sbadia@cimne.upc.edu>", "Francesc Verdugo <fverdugo@
 version = "0.5.1"
 
 [deps]
+BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
 Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 FastGaussQuadrature = "442a2c76-b920-505d-bb47-c5924d526838"
+FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
 FillArrays = "1a297f60-69ca-5386-bcde-b61e274b549b"
+JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 LineSearches = "d3d80556-e9d4-5f37-9878-2ab0fcc64255"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
