@@ -26,6 +26,7 @@ get_facet_orientations(p::Polytope)
 get_vertex_permutations(p::Polytope)
 is_simplex(p::Polytope)
 is_n_cube(p::Polytope)
+simplexify(p::Polytope)
 test_polytope(p::Polytope{D};optional::Bool) where D
 num_dims(::Polytope)
 num_faces(p::Polytope)
