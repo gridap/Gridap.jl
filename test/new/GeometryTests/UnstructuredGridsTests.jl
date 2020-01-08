@@ -95,4 +95,17 @@ s = to_json(grid)
 g = from_json(UnstructuredGrid,s)
 test_grid(g)
 
+d = mktempdir()
+f = joinpath(d,"grid.jld2")
+
+to_jld2_file(grid,f)
+grid2 = from_jld2_file(typeof(grid),f)
+
+@test grid.cell_nodes == grid2.cell_nodes
+@test grid.cell_types == grid2.cell_types
+@test grid.node_coordinates == grid2.node_coordinates
+@test grid.reffes == grid2.reffes
+
+rm(d,recursive=true)
+
 end # module
