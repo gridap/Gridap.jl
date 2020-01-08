@@ -50,6 +50,7 @@ Pages = [
   "ReferenceFEs.md",
   "Geometry.md",
   "Integration.md",
+  "Algebra.md",
   "Visualization.md",
   ]
 ```

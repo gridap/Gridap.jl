@@ -21,5 +21,7 @@ include("Geometry/Geometry.jl")
 
 include("Integration/Integration.jl")
 
+include("Algebra/Algebra.jl")
+
 include("Visualization/Visualization.jl")
 

@@ -22,6 +22,8 @@ using Test
 
 @time @testset "Integration" begin include("IntegrationTests/runtests.jl") end
 
+@time @testset "Algebra" begin include("AlgebraTests/runtests.jl") end
+
 @time @testset "Visualization" begin include("VisualizationTests/runtests.jl") end
 
 include("../../bench/runbenchs.jl")
