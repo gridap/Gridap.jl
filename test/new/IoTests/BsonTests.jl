@@ -1,4 +1,4 @@
-module JsonTests
+module BsonTests
 
 using Test
 using Gridap.Helpers
