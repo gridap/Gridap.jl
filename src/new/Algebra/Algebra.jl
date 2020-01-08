@@ -5,6 +5,7 @@ $(EXPORTS)
 """
 module Algebra
 
+using NLsolve
 using DocStringExtensions
 using SparseArrays
 using LinearAlgebra
@@ -46,11 +47,14 @@ export NonLinearSolver
 export test_non_linear_solver
 
 export NewtonRaphsonSolver
+export NLSolver
 
 include("LinearSolvers.jl")
 
 include("NonLinearOperators.jl")
 
 include("NonLinearSolvers.jl")
+
+include("NLSolvers.jl")
 
 end # module

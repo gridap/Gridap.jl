@@ -8,4 +8,6 @@ using Test
 
 @testset "NonLinearSolvers" begin include("NonLinearSolversTests.jl") end
 
+@testset "NLSolvers" begin include("NLSolversTests.jl") end
+
 end # module
