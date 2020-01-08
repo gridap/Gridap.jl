@@ -99,7 +99,7 @@ d = mktempdir()
 f = joinpath(d,"grid.jld2")
 
 to_jld2_file(grid,f)
-grid2 = from_jld2_file(f)
+grid2 = from_jld2_file(typeof(grid),f)
 
 @test grid.cell_nodes == grid2.cell_nodes
 @test grid.cell_types == grid2.cell_types

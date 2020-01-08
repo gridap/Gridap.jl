@@ -1,5 +1,5 @@
 
-version = "v0.7"
+const version = "v0.7"
 
 """
     struct UnstructuredDiscreteModel{Dc,Dp,Tp,B} <: DiscreteModel{Dc,Dp}

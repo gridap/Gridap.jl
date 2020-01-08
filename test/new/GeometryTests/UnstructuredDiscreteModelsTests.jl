@@ -40,7 +40,7 @@ d = mktempdir()
 f = joinpath(d,"model.jld2")
 
 to_jld2_file(model,f)
-model2 == from_jld2_file(f)
+model2 == from_jld2_file(typeof(model),f)
 
 @test model.face_labeling.d_to_dface_to_entity == model2.face_labeling.d_to_dface_to_entity
 @test model.face_labeling.tag_to_entities == model2.face_labeling.tag_to_entities
