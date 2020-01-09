@@ -13,6 +13,10 @@ using Test
 
 using Gridap.Helpers
 
+export push_coo!
+export finalize_coo!
+export sparse_from_coo
+
 export LinearSolver
 export SymbolicSetup
 export NumericalSetup
@@ -46,6 +50,8 @@ export NewtonRaphsonSolver
 export NLSolver
 
 export AffineOperator
+
+include("SparseMatrices.jl")
 
 include("NonLinearOperators.jl")
 
