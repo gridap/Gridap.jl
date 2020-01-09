@@ -38,8 +38,7 @@ end
 Creates and uses a zero initial guess.
 """
 function solve(nls::NonLinearSolver,op::NonLinearOperator)
-  x = allocate_solution(op)
-  fill!(x,zero(eltype(x)))
+  x = zero_initial_guess(op)
   solve!(x,nls,op)
   x
 end

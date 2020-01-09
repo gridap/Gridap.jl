@@ -3,8 +3,9 @@
 
 - [`residual!(b::AbstractVector,op::NonLinearOperator,x::AbstractVector)`](@ref)
 - [`jacobian!(A::AbstractMatrix,op::NonLinearOperator,x::AbstractVector)`](@ref)
-- [`num_domain_dims(op::NonLinearOperator)`](@ref)
-- [`num_range_dims(op::NonLinearOperator)`](@ref)
+- [`zero_initial_guess(op::NonLinearOperator)`](@ref)
+- [`zero_initial_guess(op::NonLinearOperator,x::AbstractVector)`](@ref)
+- [`allocate_residual(op::NonLinearOperator,x::AbstractVector)`](@ref)
 - [`allocate_jacobian(op::NonLinearOperator,x::AbstractVector)`](@ref)
 
 """
@@ -64,66 +65,24 @@ function residual_and_jacobian(op::NonLinearOperator,x::AbstractVector)
 end
 
 """
-    num_domain_dims(op::NonLinearOperator)
-"""
-function num_domain_dims(op::NonLinearOperator)
-  @abstractmethod
-end
-
-"""
-    num_range_dims(op::NonLinearOperator)
-"""
-function num_range_dims(op::NonLinearOperator)
-  @abstractmethod
-end
-
-"""
-    allocate_solution(op::NonLinearOperator)
-
-"""
-function allocate_solution(op::NonLinearOperator)
-  Vector{Float64}(undef,num_domain_dims(op))
-end
-
-"""
-    allocate_solution(op::NonLinearOperator,x::AbstractVector)
-
-Allocate a solution with vector type equal to the given vector `x`.
-"""
-function allocate_solution(op::NonLinearOperator,x::AbstractVector)
-  similar(x,eltype(x),num_domain_dims(op))
-end
-
-"""
     zero_initial_guess(op::NonLinearOperator)
-
-Defaults to
-
-    zeros(num_domain_dims(op))
 """
 function zero_initial_guess(op::NonLinearOperator)
-  zeros(num_domain_dims(op))
+  @abstractmethod
 end
 
 """
     zero_initial_guess(op::NonLinearOperator,x::AbstractVector)
-
-The default implementation of this function is
-
-    similar(x,eltype(x),num_domain_dims(op))
-    fill!(x,zero(eltype(x)))
 """
 function zero_initial_guess(op::NonLinearOperator,x::AbstractVector)
-  similar(x,eltype(x),num_domain_dims(op))
-  fill!(x,zero(eltype(x)))
-  x
+  @abstractmethod
 end
 
 """
     allocate_residual(op::NonLinearOperator,x::AbstractVector)
 """
 function allocate_residual(op::NonLinearOperator,x::AbstractVector)
-  similar(x,eltype(x),num_range_dims(op))
+  @abstractmethod
 end
 
 """
@@ -157,28 +116,20 @@ function test_non_linear_operator(
   pred=isapprox;
   jac=nothing)
 
-  @test length(b) == num_range_dims(op)
-  @test length(x) == num_domain_dims(op)
   b1 = allocate_residual(op,x)
   residual!(b1,op,x)
   @test pred(b,b1)
 
+  x0 = zero_initial_guess(op)
+  x0 = zero_initial_guess(op,x)
+
   if jac != nothing
     nrows, ncols = size(jac)
-    @test nrows == num_range_dims(op)
-    @test ncols == num_domain_dims(op)
     A = allocate_jacobian(op,x)
     jacobian!(A,op,x)
     @test pred(A,jac)
   end
 
-end
-
-"""
-    is_square(op::NonLinearOperator)
-"""
-function is_square(op::NonLinearOperator)
-  num_range_dims(op) == num_domain_dims(op)
 end
 
 # Mock for testing purposes
@@ -197,14 +148,25 @@ function jacobian!(A::AbstractMatrix,::NonLinearOperatorMock,x::AbstractVector)
   A[2,2] = 1
 end
 
-num_range_dims(op::NonLinearOperatorMock) = 2
+function zero_initial_guess(op::NonLinearOperatorMock)
+  x = Float64[]
+  allocate_residual(op,x)
+end
 
-num_domain_dims(op::NonLinearOperatorMock) = num_range_dims(op)
+function zero_initial_guess(op::NonLinearOperatorMock,x::AbstractVector)
+  allocate_residual(op,x)
+end
+
+function allocate_residual(op::NonLinearOperatorMock,x::AbstractVector)
+  T = eltype(x)
+  n = 2
+  zeros(T,n)
+end
 
 function allocate_jacobian(op::NonLinearOperatorMock,x::AbstractVector)
   T = eltype(x)
-  n = num_range_dims(op)
-  m = num_domain_dims(op)
+  n = 2
+  m = 2
   zeros(T,n,m)
 end
 

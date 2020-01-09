@@ -27,12 +27,20 @@ function jacobian(op::AffineOperator,x::AbstractVector)
   op.matrix
 end
 
-function num_domain_dims(op::AffineOperator)
-  size(op.matrix,2)
+function zero_initial_guess(op::AffineOperator)
+  x = Float64[]
+  zero_initial_guess(op,x)
 end
 
-function num_range_dims(op::AffineOperator)
-  size(op.matrix,1)
+function zero_initial_guess(op::AffineOperator,x::AbstractVector)
+  n = size(op.matrix,2)
+  x0 = similar(x,eltype(x),n)
+  fill!(x0,zero(eltype(x)))
+  x0
+end
+
+function allocate_residual(op::AffineOperator,x::AbstractVector)
+  similar(x,eltype(x),length(op.vector))
 end
 
 function allocate_jacobian(op::AffineOperator,x::AbstractVector)
