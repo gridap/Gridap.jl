@@ -5,7 +5,6 @@ using Gridap.Algebra
 using LinearAlgebra
 using SparseArrays
 
-ls = LUSolver()
 
 diff1(M) = [ [1.0 zeros(1,M-1)]; diagm(1=>ones(M-1)) - Matrix(1.0I,M,M) ]
 
@@ -26,6 +25,10 @@ A = Laplacian(n,n,1,1)
 x = rand(n^2)
 b = A*x
 
+op = AffineOperator(A,b)
+test_non_linear_operator(op,x,zeros(size(x)),jac=A)
+
+ls = LUSolver()
 test_linear_solver(ls,A,b,x)
 
 n = 10
@@ -34,7 +37,6 @@ x = rand(n^2)
 b = A*x
 
 ls = BackslashSolver()
-
 test_linear_solver(ls,A,b,x)
 
 end # module

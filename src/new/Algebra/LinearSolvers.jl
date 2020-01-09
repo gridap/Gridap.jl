@@ -1,12 +1,52 @@
 
 """
-    abstract type LinearSolver <: GridapType end
+    struct AffineOperator{A<:AbstractMatrix,B<:AbstractVector} <: NonLinearOperator
+      matrix::A
+      vector::B
+    end
+"""
+struct AffineOperator{A<:AbstractMatrix,B<:AbstractVector} <: NonLinearOperator
+  matrix::A
+  vector::B
+end
+
+function residual!(b::AbstractVector,op::AffineOperator,x::AbstractVector)
+  mul!(b,op.matrix,x)
+  b .-=  op.vector
+  b
+end
+
+function jacobian!(A::AbstractMatrix,op::AffineOperator,x::AbstractVector)
+  if ! (A === op.matrix)
+    copy!(A, op.matrix)
+  end
+  A
+end
+
+function jacobian(op::AffineOperator,x::AbstractVector)
+  op.matrix
+end
+
+function num_domain_dims(op::AffineOperator)
+  size(op.matrix,2)
+end
+
+function num_range_dims(op::AffineOperator)
+  size(op.matrix,1)
+end
+
+function allocate_jacobian(op::AffineOperator,x::AbstractVector)
+  similar(op.matrix)
+end
+
+"""
+    abstract type LinearSolver <: NonLinearSolver end
 
 - [`symbolic_setup(::LinearSolver,mat::AbstractMatrix)`](@ref)
 - [`test_linear_solver`](@ref)
 
 """
-abstract type LinearSolver <: GridapType end
+abstract type LinearSolver <: NonLinearSolver end
 
 """
     symbolic_setup(::LinearSolver,mat::AbstractMatrix) -> SymbolicSetup
@@ -84,6 +124,55 @@ function test_linear_solver(
   solve!(y,ns,b)
   @test x ≈ y
 
+  op = AffineOperator(A,b)
+  x0 = copy(x)
+  test_non_linear_solver(ls,op,x0,x)
+
+end
+
+# Implementation of NonLinearSolver interface
+# A LinearSolver is only able to solve an AffineOperator
+
+function solve!(x::AbstractVector,ls::LinearSolver,op::NonLinearOperator)
+  @unreachable "A LinearSolver can only solve an AffineOperator"
+end
+
+function solve!(x::AbstractVector,ls::LinearSolver,op::NonLinearOperator,cache)
+  @unreachable "A LinearSolver can only solve an AffineOperator"
+end
+
+function solve!(x::AbstractVector,ls::LinearSolver,op::AffineOperator)
+  A = op.matrix
+  b = op.vector
+  ss = symbolic_setup(ls,A)
+  ns = numerical_setup(ss,A)
+  solve!(x,ns,b)
+  ns
+end
+
+function solve!(x::AbstractVector,ls::LinearSolver,op::AffineOperator,cache)
+  newmatrix = true
+  solve!(x,ls,op,cache,newmatrix)
+end
+
+"""
+    solve!(
+      x::AbstractVector,
+      ls::LinearSolver,
+      op::AffineOperator,
+      cache,
+      newmatrix::Bool)
+"""
+function solve!(
+  x::AbstractVector,ls::LinearSolver,op::AffineOperator,cache,newmatrix::Bool)
+  A = op.matrix
+  b = op.vector
+  ns = cache
+  if newmatrix
+    numerical_setup!(ns,A)
+  end
+  solve!(x,ns,b)
+  x
 end
 
 # Concrete implementations
@@ -142,3 +231,4 @@ function solve!(
   x::AbstractVector,ns::BackslashNumericalSetup,b::AbstractVector)
    copyto!(x, ns.A\b)
 end
+

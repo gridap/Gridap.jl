@@ -49,11 +49,13 @@ export test_non_linear_solver
 export NewtonRaphsonSolver
 export NLSolver
 
-include("LinearSolvers.jl")
+export AffineOperator
 
 include("NonLinearOperators.jl")
 
 include("NonLinearSolvers.jl")
+
+include("LinearSolvers.jl")
 
 include("NLSolvers.jl")
 
