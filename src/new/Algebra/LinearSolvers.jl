@@ -17,9 +17,7 @@ function residual!(b::AbstractVector,op::AffineOperator,x::AbstractVector)
 end
 
 function jacobian!(A::AbstractMatrix,op::AffineOperator,x::AbstractVector)
-  if ! (A === op.matrix)
-    copy!(A, op.matrix)
-  end
+  @assert A === op.matrix
   A
 end
 
@@ -44,7 +42,7 @@ function allocate_residual(op::AffineOperator,x::AbstractVector)
 end
 
 function allocate_jacobian(op::AffineOperator,x::AbstractVector)
-  similar(op.matrix)
+  op.matrix
 end
 
 """
