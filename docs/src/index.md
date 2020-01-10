@@ -51,6 +51,7 @@ Pages = [
   "Geometry.md",
   "Integration.md",
   "Algebra.md",
+  "FESpaces.md",
   "Visualization.md",
   ]
 ```

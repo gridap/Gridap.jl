@@ -26,6 +26,7 @@ export uses_hash
 export test_array
 export testitems
 export array_caches
+export get_array
 
 export CachedArray
 export CachedMatrix

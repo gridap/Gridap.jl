@@ -23,5 +23,7 @@ include("Integration/Integration.jl")
 
 include("Algebra/Algebra.jl")
 
+#include("FESpaces/FESpaces.jl")
+
 include("Visualization/Visualization.jl")
 
