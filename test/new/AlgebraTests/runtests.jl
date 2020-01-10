@@ -2,7 +2,7 @@ module AlgebraTests
 
 using Test
 
-@testset "SparseMatrices" begin include("SparseMatricesTests.jl") end
+@testset "SparseMatrices" begin include("SparseMatricesTests/runtests.jl") end
 
 @testset "NonLinearOperators" begin include("NonLinearOperatorsTests.jl") end
 

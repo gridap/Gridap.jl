@@ -16,6 +16,15 @@ using Gridap.Helpers
 export push_coo!
 export finalize_coo!
 export sparse_from_coo
+export sparsecsr
+export symsparsecsr
+export hasrowmajororder
+export hascolmajororder
+export colvals
+export getptr
+export getindices
+export SparseMatrixCSR
+export SymSparseMatrixCSR
 
 export LinearSolver
 export SymbolicSetup
