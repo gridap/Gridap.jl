@@ -62,6 +62,8 @@ export AffineOperator
 
 include("SparseMatrices.jl")
 
+include("CompressedSparseMatrices.jl")
+
 include("NonLinearOperators.jl")
 
 include("NonLinearSolvers.jl")
