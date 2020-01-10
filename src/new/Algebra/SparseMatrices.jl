@@ -77,8 +77,8 @@ function finalize_coo!(
   nothing
 end
 
-include("SparseMatrices/SparseMatrixCSC.jl")
-include("SparseMatrices/SparseMatrixCSR.jl")
-include("SparseMatrices/SymSparseMatrixCSR.jl")
+include("SparseMatrixCSC.jl")
+include("SparseMatrixCSR.jl")
+include("SymSparseMatrixCSR.jl")
 
 
