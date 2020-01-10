@@ -1,7 +1,5 @@
 module FESpacesTests
 
-include("../../../src/new/FESpaces/FESpaces.jl")
-
 using Test
 
 @testset "FEFunctions" begin include("FEFunctionsTests.jl") end
@@ -11,5 +9,7 @@ using Test
 @testset "Assemblers" begin include("AssemblersTests.jl") end
 
 @testset "SingleFieldFESpaces" begin include("SingleFieldFESpacesTests.jl") end
+
+@testset "ConformingFESpaces" begin include("ConformingFESpacesTests.jl") end
 
 end # module

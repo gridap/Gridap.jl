@@ -58,6 +58,7 @@ export scatter_free_and_dirichlet_values
 export get_dirichlet_values
 export gather_dirichlet_values
 export gather_free_values
+export get_dirichlet_dof_tag
 export compute_free_and_dirichlet_values
 export compute_dirichlet_values
 export compute_free_values
@@ -74,6 +75,8 @@ export test_single_field_cell_fe
 
 export RefFEsWithMap
 
+export ConformingFESpace
+
 include("FEFunctions.jl")
 
 include("FESpacesInterfaces.jl")
@@ -81,5 +84,7 @@ include("FESpacesInterfaces.jl")
 include("Assemblers.jl")
 
 include("SingleFieldFESpaces.jl")
+
+include("ConformingFESpaces.jl")
 
 end # module

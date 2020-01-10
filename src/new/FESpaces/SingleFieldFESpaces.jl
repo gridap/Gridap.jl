@@ -29,6 +29,12 @@ end
 
 """
 """
+function get_dirichlet_dof_tag(f::SingleFieldFESpace)
+  @abstractmethod
+end
+
+"""
+"""
 function gather_free_and_dirichlet_values(f::SingleFieldFESpace,cell_vals)
   @abstractmethod
 end
