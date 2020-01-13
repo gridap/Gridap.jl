@@ -148,7 +148,7 @@ function get_tag_from_name(lab::FaceLabeling,name::String)
       return tag
     end
   end
-  @unreachable
+  @unreachable "Unknown tag name $name"
   0
 end
 

@@ -49,7 +49,7 @@ end
 """
 function test_single_field_fe_space(f::SingleFieldFESpace,cellmat,cellvec,cellidsrows,cellidscols,pred=(==))
   fe_basis = get_cell_fe_basis(f)
-  @test isa(fe_basis,SingleFieldCellBasis)
+  @test isa(fe_basis,SingleFieldCellFEBasis)
   test_fe_space(f,cellmat,cellvec,cellidsrows,cellidscols)
   cell_dofs = get_cell_dofs(f)
   dirichlet_values = zero_dirichlet_values(f)
@@ -87,10 +87,10 @@ are the ones provided by `get_dirichlet_values(fs)`
 """
 function FEFunction(
   fs::SingleFieldFESpace, free_values::AbstractVector, dirichlet_values::AbstractVector)
-  cell_vals = scatter_free_and_dirichlet_values(fs,free_values,diri_values)
+  cell_vals = scatter_free_and_dirichlet_values(fs,free_values,dirichlet_values)
   cell_shapefuns = get_cell_shapefuns(fs)
   cell_field = lincomb(cell_shapefuns,cell_vals)
-  SingleFieldFEFunction(cell_field,free_values,fs)
+  SingleFieldFEFunction(cell_field,free_values,dirichlet_values,fs)
 end
 
 function FEFunction(fe::SingleFieldFESpace, free_values)
@@ -141,8 +141,7 @@ function compute_free_values(f::SingleFieldFESpace,cell_field)
 end
 
 function _compute_cell_vals(f,cell_field)
-  cell_fe = get_cell_fe(f)
-  cell_dof_basis = get_cell_dof_basis(cell_fe)
+  cell_dof_basis = get_cell_dof_basis(f)
   cell_dofs = get_cell_dofs(f)
   cell_vals = evaluate_dof_array(cell_dof_basis,cell_field)
   cell_vals
@@ -157,6 +156,27 @@ function interpolate(fs::SingleFieldFESpace,object)
   cell_field = _convert_to_interpolable(object,cell_map)
   free_values = compute_free_values(fs,cell_field)
   FEFunction(fs,free_values)
+end
+
+"""
+like interpolate, but also compute new degrees of freedom for the dirichlet component.
+The resulting FEFunction does not necessary belongs to the underlying space
+"""
+function interpolate_everywhere(fs::SingleFieldFESpace,object)
+  cell_map = get_cell_map(fs)
+  cell_field = _convert_to_interpolable(object,cell_map)
+  free_values, dirichlet_values = compute_free_and_dirichlet_values(fs,cell_field)
+  FEFunction(fs,free_values, dirichlet_values)
+end
+
+"""
+"""
+function interpolate_dirichlet(fs::SingleFieldFESpace,object)
+  cell_map = get_cell_map(fs)
+  cell_field = _convert_to_interpolable(object,cell_map)
+  dirichlet_values = compute_dirichlet_values(fs,cell_field)
+  free_values = zero_free_values(fs)
+  FEFunction(fs,free_values, dirichlet_values)
 end
 
 """
@@ -177,7 +197,7 @@ end
 function _fill_dirichlet_values_for_tag!(dirichlet_values,dv,tag,dirichlet_dof_to_tag)
   for (dof, v) in enumerate(dv)
     if dirichlet_dof_to_tag[dof] == tag
-      dirichlet_values[dof] == v
+      dirichlet_values[dof] = v
     end
   end
 end
@@ -214,24 +234,28 @@ end
 struct SingleFieldFEFunction{A,B,C} <: FEFunction
   cell_field::A
   free_values::B
+  dirichlet_values::B
   fe_space::C
   @doc """
   """
   function SingleFieldFEFunction(
     cell_field::AbstractArray{<:Field},
     free_values::AbstractVector,
+    dirichlet_values::AbstractVector,
     fe_space::SingleFieldFESpace)
 
     A = typeof(cell_field)
     B = typeof(free_values)
     C = typeof(fe_space)
-    new{A,B,C}(cell_field,free_values,fe_space)
+    new{A,B,C}(cell_field,free_values,dirichlet_values,fe_space)
   end
 end
 
 get_array(f::SingleFieldFEFunction) = f.cell_field
 
 get_free_values(f::SingleFieldFEFunction) = f.free_values
+
+get_dirichlet_values(f::SingleFieldFEFunction) = f.dirichlet_values
 
 get_fe_space(f::SingleFieldFEFunction) = f.fe_space
 

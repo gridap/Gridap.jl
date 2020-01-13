@@ -10,6 +10,8 @@ struct UnsconstrainedFESpace{T,A,B,C} <: SingleFieldFESpace
   cell_fe_basis::B
   cell_dof_basis::C
   dirichlet_dof_tag::Vector{Int8}
+  dirichlet_cells::Vector{Int}
+  ntags::Int
 
   @doc """
   """
@@ -21,7 +23,9 @@ struct UnsconstrainedFESpace{T,A,B,C} <: SingleFieldFESpace
     cell_shapefuns::AbstractArray,
     cell_dof_basis::AbstractArray,
     cell_map::AbstractArray,
-    dirichlet_dof_tag::Vector{Int8}) where T
+    dirichlet_dof_tag::Vector{Int8},
+    dirichlet_cells::Vector{Int},
+    ntags) where T
 
     cell_fe_basis = CellShapeFunsWithMap(cell_shapefuns,cell_map)
 
@@ -35,7 +39,9 @@ struct UnsconstrainedFESpace{T,A,B,C} <: SingleFieldFESpace
       cell_dofs,
       cell_fe_basis,
       cell_dof_basis,
-      dirichlet_dof_tag)
+      dirichlet_dof_tag,
+      dirichlet_cells,
+      ntags)
   end
 end
 
@@ -79,6 +85,10 @@ function num_dirichlet_dofs(f::UnsconstrainedFESpace)
   f.ndirichlet
 end
 
+function num_dirichlet_tags(f::UnsconstrainedFESpace)
+  f.ntags
+end
+
 function zero_dirichlet_values(f::UnsconstrainedFESpace{T}) where T
   zeros(T,num_dirichlet_dofs(f))
 end
@@ -89,7 +99,7 @@ end
 
 function scatter_free_and_dirichlet_values(f::UnsconstrainedFESpace,free_values,dirichlet_values)
   cell_dofs = get_cell_dofs(f)
-  LocalToGlobalPosNegArray(cell_dofs,free_vals,dirichlet_values)
+  LocalToGlobalPosNegArray(cell_dofs,free_values,dirichlet_values)
 end
 
 function gather_free_and_dirichlet_values(f::UnsconstrainedFESpace,cell_vals)
@@ -99,6 +109,7 @@ function gather_free_and_dirichlet_values(f::UnsconstrainedFESpace,cell_vals)
   cache_dofs = array_cache(cell_dofs)
   free_vals = zero_free_values(f)
   dirichlet_vals = zero_dirichlet_values(f)
+  cells = 1:length(cell_vals)
 
   _free_and_dirichlet_values_fill!(
     free_vals,
@@ -106,9 +117,31 @@ function gather_free_and_dirichlet_values(f::UnsconstrainedFESpace,cell_vals)
     cache_vals,
     cache_dofs,
     cell_vals,
-    cell_dofs)
+    cell_dofs,
+    cells)
 
   (free_vals, dirichlet_vals)
+end
+
+function gather_dirichlet_values(f::UnsconstrainedFESpace,cell_vals)
+
+  cell_dofs = get_cell_dofs(f)
+  cache_vals = array_cache(cell_vals)
+  cache_dofs = array_cache(cell_dofs)
+  free_vals = zero_free_values(f)
+  dirichlet_vals = zero_dirichlet_values(f)
+  cells = f.dirichlet_cells
+
+  _free_and_dirichlet_values_fill!(
+    free_vals,
+    dirichlet_vals,
+    cache_vals,
+    cache_dofs,
+    cell_vals,
+    cell_dofs,
+    cells)
+
+  dirichlet_vals
 end
 
 function  _free_and_dirichlet_values_fill!(
@@ -117,11 +150,12 @@ function  _free_and_dirichlet_values_fill!(
   cache_vals,
   cache_dofs,
   cell_vals,
-  cell_dofs)
+  cell_dofs,
+  cells)
 
-  for cell in 1:length(cell_vals)
-    vals = getindex!(cache_vals,cell_vals)
-    dofs = getindex!(cache_dofs,cell_dofs)
+  for cell in cells
+    vals = getindex!(cache_vals,cell_vals,cell)
+    dofs = getindex!(cache_dofs,cell_dofs,cell)
     for (i,dof) in enumerate(dofs)
       val = vals[i]
       if dof > 0

@@ -7,6 +7,7 @@ module FESpaces
 
 using DocStringExtensions
 using Test
+using FillArrays
 
 using Gridap.Helpers
 using Gridap.Arrays
@@ -15,6 +16,8 @@ using Gridap.Geometry
 using Gridap.Fields
 
 import Gridap.Arrays: get_array
+import Gridap.Arrays: array_cache
+import Gridap.Arrays: getindex!
 import Gridap.Geometry: get_cell_map
 import Gridap.Geometry: get_cell_shapefuns
 import Gridap.Geometry: get_reffes
@@ -67,6 +70,9 @@ export compute_free_values
 export inpterpolate
 export compute_dirichlet_values_for_tags
 export test_single_field_fe_space
+export interpolate
+export interpolate_everywhere
+export interpolate_dirichlet
 
 export SingleFieldFEFunction
 export SingleFieldCellBasis

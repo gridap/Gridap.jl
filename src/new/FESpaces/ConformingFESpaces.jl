@@ -1,21 +1,46 @@
 
 """
 """
-function GradConformingFESpace(reffes,grid,grid_topology,face_labeing,dirichlet_tags)
+function GradConformingFESpace(
+  reffes::Vector{<:ReferenceFE},
+  model::DiscreteModel,
+  dirichlet_tags,
+  dirichlet_components=nothing)
+
+  face_labeing = get_face_labeling(model)
+
+  GradConformingFESpace(
+    reffes,model,face_labeing,dirichlet_tags,dirichlet_components)
+
+end
+
+"""
+"""
+function GradConformingFESpace(
+  reffes::Vector{<:LagrangianRefFE},
+  model::DiscreteModel,
+  face_labeing::FaceLabeling,
+  dirichlet_tags,
+  dirichlet_components=nothing)
 
   T = Float64 # TODO re-think 
 
-  cell_dofs, nfree, ndirichlet, dirichlet_dof_tag = compute_conforming_cell_dofs(
-    reffes,grid_topology,face_labeing,dirichlet_tags)
+  grid_topology = get_grid_topology(model)
+
+  cell_dofs, nfree, ndirichlet, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
+    reffes,grid_topology,face_labeing,dirichlet_tags,dirichlet_components)
 
   cell_to_ctype = get_cell_type(grid_topology)
   dof_basis = map(get_dof_basis,reffes)
   cell_dof_basis = CompressedArray(dof_basis,cell_to_ctype)
 
   shapefuns =  map(get_shapefuns,reffes)
-  refshapefuns = CompressedArray(values,cell_to_ctype)
+  refshapefuns = CompressedArray(shapefuns,cell_to_ctype)
+  grid = get_grid(model)
   cell_map = get_cell_map(grid)
   cell_shapefuns = attachmap(refshapefuns,cell_map)
+
+  ntags = length(dirichlet_tags)
 
   UnsconstrainedFESpace(
     T,
@@ -25,7 +50,9 @@ function GradConformingFESpace(reffes,grid,grid_topology,face_labeing,dirichlet_
     cell_shapefuns,
     cell_dof_basis,
     cell_map,
-    dirichlet_dof_tag)
+    dirichlet_dof_tag,
+    dirichlet_cells,
+    ntags)
 
 end
 

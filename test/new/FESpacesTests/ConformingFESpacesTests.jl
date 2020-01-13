@@ -64,4 +64,12 @@ dirichlet_components = [(true,true), (false,true)]
 cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
   reffes, grid_topology, face_labeing, dirichlet_tags, dirichlet_components)
 
+
+V = GradConformingFESpace(reffes,model,dirichlet_tags)
+test_single_field_fe_space(V,[],[],[],[])
+
+V = GradConformingFESpace(reffes,model,dirichlet_tags,dirichlet_components)
+test_single_field_fe_space(V,[],[],[],[])
+
+
 end  # module
