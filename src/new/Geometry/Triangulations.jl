@@ -37,7 +37,7 @@ The (mandatory) `Triangulation` interface can be tested with
 
 
 """
-abstract type Triangulation{Dc,Dp} end
+abstract type Triangulation{Dc,Dp} <: GridapType end
 
 """
     get_cell_coordinates(trian::Triangulation) -> AbstractArray{Vector{<:Point{Dp}}}

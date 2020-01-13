@@ -2,7 +2,7 @@
 # Helper type
 # n-face of the polytope, i.e., any polytope of lower dimension `N` representing
 # its boundary and the polytope itself (for `N` equal to the space dimension `D`)
-struct NFace{D}
+struct NFace{D} <: GridapType
   anchor::Point{D,Int}
   extrusion::Point{D,Int}
 end

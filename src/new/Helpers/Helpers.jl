@@ -87,4 +87,8 @@ tfill(v,::Val{3}) = (v,v,v)
 """
 abstract type GridapType end
 
+function show(io::IO,object::GridapType)
+  print(io,"$(nameof(typeof(object)))()")
+end
+
 end # module Helpers
