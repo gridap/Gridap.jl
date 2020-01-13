@@ -7,9 +7,10 @@
         I = Vector{Int}()
         J = Vector{Int}()
         V = Vector{T}()
-        for (ik, jk, vk) in zip(rand(1:maxrows, maxnz), rand(1:maxcols, maxnz), rand(1:T(maxnz), maxnz))
+        for (ik, jk, vk) in zip(rand(1:maxrows, maxnz), rand(1:maxcols, maxnz), rand(1:T(maxnz), maxnz-1))
             push_coo!(I,J,V,ik,jk,vk)
         end
+        push_coo!(I,J,V,maxrows,maxcols,maxnz)
         finalize_coo!(I,J,V,maxcols,maxrows)
         CSC = sparse(I, J, V, maxcols,maxrows)
 
@@ -29,6 +30,10 @@
         @test size(CSC) == (maxrows,maxcols)
 
         @test nnz(CSC) == count(!iszero, CSC) <= maxnz
+
+        vold = getindex(CSC,maxrows,maxcols)
+        add_entry!(CSC,1,maxrows,maxcols,+)
+        @test getindex(CSC,maxrows,maxcols) == vold+1
 
     end
     

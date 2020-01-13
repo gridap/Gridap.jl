@@ -12,9 +12,10 @@
                 I = Vector{Ti}()
                 J = Vector{Ti}()
                 V = Vector{Tv}()
-                for (ik, jk, vk) in zip(rand(1:maxrows, maxnz), rand(1:maxcols, maxnz), rand(1:Tv(maxnz), maxnz))
+                for (ik, jk, vk) in zip(rand(1:maxrows, maxnz), rand(1:maxcols, maxnz), rand(1:Tv(maxnz), maxnz-1))
                     push_coo!(SparseMatrixCSR{Bi,Tv,Ti},I,J,V,ik,jk,vk)
                 end
+                push_coo!(SparseMatrixCSR{Bi,Tv,Ti},I,J,V,maxrows,maxcols,maxnz)
                 finalize_coo!(SparseMatrixCSR{Bi,Tv,Ti},I,J,V,maxrows,maxcols)
                 CSC = sparse(I, J, V, maxrows,maxcols)
                 CSR = sparsecsr(SparseMatrixCSR{Bi,Tv,Ti},I, J, V,maxrows,maxcols)
@@ -68,6 +69,9 @@
                         end
                     end
                 end
+                vold = getindex(CSR,maxrows,maxcols)
+                add_entry!(CSR,1,maxrows,maxcols,+)
+                @test getindex(CSR,maxrows,maxcols) == vold+1
 
             end
         end

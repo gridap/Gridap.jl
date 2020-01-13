@@ -13,9 +13,10 @@
                 I = Vector{Ti}()
                 J = Vector{Ti}()
                 V = Vector{Tv}()
-                for (ik, jk, vk) in zip(rand(1:maxrows, maxnz), rand(1:maxcols, maxnz), rand(1:Tv(maxnz), maxnz) )
+                for (ik, jk, vk) in zip(rand(1:maxrows, maxnz), rand(1:maxcols, maxnz), rand(1:Tv(maxnz), maxnz-1) )
                     push_coo!(SymSparseMatrixCSR{Bi,Tv,Ti},I,J,V,ik,jk,vk)
                 end
+                push_coo!(SymSparseMatrixCSR{Bi,Tv,Ti},I,J,V,maxrows,maxcols,maxnz)
                 finalize_coo!(SymSparseMatrixCSR{Bi,Tv,Ti},I,J,V,maxrows, maxcols)
                 SYMCSC = Symmetric(sparse(I, J, V, maxrows, maxcols),:U)
                 SYMCSR = symsparsecsr(SymSparseMatrixCSR{Bi,Tv,Ti},I, J, V, maxrows, maxcols)
@@ -62,6 +63,11 @@
                         end
                     end
                 end
+
+                vold = getindex(SYMCSR,maxrows,maxcols)
+                add_entry!(SYMCSR,1,maxrows,maxcols,+)
+                @test getindex(SYMCSR,maxrows,maxcols) == vold+1
+
             end
         end
     end
