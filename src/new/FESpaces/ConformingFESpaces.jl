@@ -30,11 +30,31 @@ function GradConformingFESpace(reffes,grid,grid_topology,face_labeing,dirichlet_
 end
 
 """
+  compute_conforming_cell_dofs(
+    reffes,
+    grid_topology,
+    face_labeing,
+    dirichlet_tags)
+
+  compute_conforming_cell_dofs(
+    reffes,
+    grid_topology,
+    face_labeing,
+    dirichlet_tags,
+    dirichlet_components)
+
+The result is the tuple
+
+    (cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells)
+
 Assumes that the reffes are aligned with the cell type in the grid_topology
 and that it is possible to build a conforming space without imposing constraints
+
+If `dirichlet_components`  is given, then `get_dof_to_comp` has to be defined
+for the reference elements in `reffes`.
 """
 function compute_conforming_cell_dofs(
-  reffes,grid_topology,face_labeing,dirichlet_tags)
+  reffes,grid_topology,face_labeing,dirichlet_tags,dirichlet_components=nothing)
 
   D = num_cell_dims(grid_topology)
   n_faces = num_faces(grid_topology)
@@ -45,7 +65,7 @@ function compute_conforming_cell_dofs(
   d_to_ctype_to_ldface_to_own_ldofs = [
     [ get_face_own_dofs(reffe,d) for reffe in reffes] for d in 0:D]
 
-  face_to_own_dofs, ntotal =  _generate_face_to_own_dofs(
+  face_to_own_dofs, ntotal, d_to_dface_to_cell, d_to_dface_to_ldface =  _generate_face_to_own_dofs(
      n_faces,
      cell_to_ctype,
      d_to_cell_to_dfaces,
@@ -54,11 +74,18 @@ function compute_conforming_cell_dofs(
      d_to_ctype_to_ldface_to_own_ldofs)
 
   d_to_dface_to_tag = [ get_face_tag_index(face_labeing,dirichlet_tags,d)  for d in 0:D]
+  cell_to_faces = Table(get_cell_faces(grid_topology))
 
   nfree, ndiri, diri_dof_tag = _split_face_own_dofs_into_free_and_dirichlet!(
-    face_to_own_dofs, d_to_offset, d_to_dface_to_tag)
+    face_to_own_dofs,
+    d_to_offset,
+    d_to_dface_to_tag,
+    d_to_dface_to_cell,
+    d_to_dface_to_ldface,
+    cell_to_ctype,
+    reffes,
+    dirichlet_components)
 
-  cell_to_faces = Table(get_cell_faces(grid_topology))
   cell_to_lface_to_pindex = Table(get_cell_permutations(grid_topology))
   ctype_to_lface_to_own_ldofs = [ get_face_own_dofs(reffe) for reffe in reffes]
   ctype_to_num_dofs = [num_dofs(reffe) for reffe in reffes]
@@ -92,15 +119,20 @@ function _generate_face_to_own_dofs(
 
   D = length(d_to_offset)-1
 
+  icell = 1
+  d_to_dface_to_cell = [ get_local_item(d_to_dface_to_cells[d+1],icell)  for d in 0:D ]
+
+  d_to_dface_to_ldface = [
+    find_local_index(d_to_dface_to_cell[d+1],d_to_cell_to_dfaces[d+1]) for d in 0:D ]
+
   for d in 0:D
     cell_to_dfaces = d_to_cell_to_dfaces[d+1]
     dface_to_cells = d_to_dface_to_cells[d+1]
     offset = d_to_offset[d+1]
     ctype_to_ldface_to_own_ldofs = d_to_ctype_to_ldface_to_own_ldofs[d+1]
     ctype_to_ldface_to_num_own_ldofs = map( (x) -> length.(x) ,ctype_to_ldface_to_own_ldofs)
-    icell = 1
-    dface_to_cell_owner = get_local_item(dface_to_cells,icell)
-    dface_to_ldface = find_local_index(dface_to_cell_owner,cell_to_dfaces)
+    dface_to_cell_owner = d_to_dface_to_cell[d+1]
+    dface_to_ldface = d_to_dface_to_ldface[d+1]
 
     if any( ctype_to_ldface_to_num_own_ldofs .!= 0)
       _generate_face_to_own_dofs_count_d!(
@@ -119,7 +151,7 @@ function _generate_face_to_own_dofs(
   face_to_own_dofs_data = collect(T(1):T(n_dofs))
 
   face_to_own_dofs = Table(face_to_own_dofs_data,face_to_own_dofs_ptrs)
-  (face_to_own_dofs, n_dofs)
+  (face_to_own_dofs, n_dofs, d_to_dface_to_cell, d_to_dface_to_ldface)
 end
 
 function  _generate_face_to_own_dofs_count_d!(
@@ -142,6 +174,52 @@ function  _generate_face_to_own_dofs_count_d!(
 end
 
 function _split_face_own_dofs_into_free_and_dirichlet!(
+  face_to_own_dofs,
+  d_to_offset,
+  d_to_dface_to_tag,
+  d_to_dface_to_cell,
+  d_to_dface_to_ldface,
+  cell_to_ctype,
+  reffes,
+  dirichlet_components::Nothing)
+
+  _split_face_own_dofs_into_free_and_dirichlet_generic!(
+    face_to_own_dofs,
+    d_to_offset,
+    d_to_dface_to_tag)
+
+end
+
+function _split_face_own_dofs_into_free_and_dirichlet!(
+  face_to_own_dofs,
+  d_to_offset,
+  d_to_dface_to_tag,
+  d_to_dface_to_cell,
+  d_to_dface_to_ldface,
+  cell_to_ctype,
+  reffes,
+  dirichlet_components)
+
+  D = length(d_to_dface_to_cell)-1
+
+  d_to_ctype_to_ldface_to_own_ldofs = [
+    [ get_face_own_dofs(reffe,d) for reffe in reffes] for d in 0:D]
+
+  ctype_to_ldof_to_comp = [get_dof_to_comp(reffe) for reffe in reffes]
+
+  _split_face_own_dofs_into_free_and_dirichlet_with_components!(
+    face_to_own_dofs,
+    d_to_offset,
+    d_to_dface_to_tag,
+    d_to_dface_to_cell,
+    d_to_dface_to_ldface,
+    cell_to_ctype,
+    ctype_to_ldof_to_comp,
+    d_to_ctype_to_ldface_to_own_ldofs,
+    dirichlet_components)
+end
+
+function _split_face_own_dofs_into_free_and_dirichlet_generic!(
   face_to_own_dofs,
   d_to_offset,
   d_to_dface_to_tag)
@@ -167,6 +245,67 @@ function _split_face_own_dofs_into_free_and_dirichlet!(
           ndiri += 1
           face_to_own_dofs.data[p] = -ndiri
           push!(dirichlet_dof_tag,tag)
+        end
+      end
+    end
+  end
+
+  (nfree, ndiri, dirichlet_dof_tag)
+end
+
+function _split_face_own_dofs_into_free_and_dirichlet_with_components!(
+  face_to_own_dofs,
+  d_to_offset,
+  d_to_dface_to_tag,
+  d_to_dface_to_cell,
+  d_to_dface_to_ldface,
+  cell_to_ctype,
+  ctype_to_ldof_to_comp,
+  d_to_ctype_to_ldface_to_own_ldofs,
+  dirichlet_components)
+
+  D = length(d_to_offset)-1
+  nfree = 0
+  ndiri = 0
+  dirichlet_dof_tag = Int8[]
+  for d in 0:D
+    dface_to_tag = d_to_dface_to_tag[d+1]
+    offset = d_to_offset[d+1]
+    dface_to_cell = d_to_dface_to_cell[d+1]
+    dface_to_ldface = d_to_dface_to_ldface[d+1]
+    ctype_to_ldface_to_own_ldofs = d_to_ctype_to_ldface_to_own_ldofs[d+1]
+    ctype_to_ldface_to_num_own_ldofs = map( (x) -> length.(x) ,ctype_to_ldface_to_own_ldofs)
+    if all(ctype_to_ldface_to_num_own_ldofs .== 0)
+      continue
+    end
+    for (dface, diritag) in enumerate(dface_to_tag)
+      face = dface + offset
+      pini = face_to_own_dofs.ptrs[face]
+      pend = face_to_own_dofs.ptrs[face+1]-1
+      if diritag == UNSET
+        for p in pini:pend
+          nfree += 1
+          face_to_own_dofs.data[p] = nfree
+        end
+      else
+        cell = dface_to_cell[dface]
+        ldface = dface_to_ldface[dface]
+        ctype = cell_to_ctype[cell]
+        ldof_to_comp = ctype_to_ldof_to_comp[ctype]
+        own_ldofs = ctype_to_ldface_to_own_ldofs[ctype][ldface]
+        comp_to_isdiri = dirichlet_components[diritag]
+        for (fldof, p) in enumerate(pini:pend)
+          ldof = own_ldofs[fldof]
+          comp = ldof_to_comp[ldof]
+          isdiri = comp_to_isdiri[comp]
+          if isdiri
+            ndiri += 1
+            face_to_own_dofs.data[p] = -ndiri
+            push!(dirichlet_dof_tag,diritag)
+          else
+            nfree += 1
+            face_to_own_dofs.data[p] = nfree
+          end
         end
       end
     end

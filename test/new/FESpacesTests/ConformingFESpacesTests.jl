@@ -2,12 +2,15 @@ module ConformingFESpacesTests
 
 using Test
 using Gridap.Arrays
+using Gridap.TensorValues
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 
 include("../../../src/new/FESpaces/FESpaces.jl")
 
 using .FESpaces
+
+# testing compute_conforming_cell_dofs
 
 domain =(0,1,0,1)
 partition = (3,3)
@@ -33,5 +36,32 @@ test_array(cell_dofs,r)
 @test ndiri == 6
 @test dirichlet_dof_tag == [1, 2, 2, 2, 2, 2]
 @test dirichlet_cells == [1, 7, 8, 9]
+
+order = 1
+reffes = [LagrangianRefFE(VectorValue{2,Float64},p,order) for p in polytopes]
+
+dirichlet_components = [(true,true), (false,true)]
+
+cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
+  reffes, grid_topology, face_labeing, dirichlet_tags, dirichlet_components)
+
+r = [
+  [-1,1,7,9,-2,2,8,10],[1,3,9,11,2,4,10,12],[3,5,11,13,4,6,12,14],
+  [7,9,15,17,8,10,16,18],[9,11,17,19,10,12,18,20],[11,13,19,21,12,14,20,22],
+  [15,17,23,25,16,18,24,-3],[17,19,25,26,18,20,-3,-4],[19,21,26,27,20,22,-4,28]]
+
+test_array(cell_dofs,r)
+@test nfree==28
+@test ndiri==4
+@test dirichlet_dof_tag == [1, 1, 2, 2,]
+@test dirichlet_cells == [1, 7, 8, 9]
+
+order = 3
+reffes = [LagrangianRefFE(VectorValue{2,Float64},p,order) for p in polytopes]
+
+dirichlet_components = [(true,true), (false,true)]
+
+cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
+  reffes, grid_topology, face_labeing, dirichlet_tags, dirichlet_components)
 
 end  # module
