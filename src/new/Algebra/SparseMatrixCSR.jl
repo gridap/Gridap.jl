@@ -159,15 +159,39 @@ function findnz(S::SparseMatrixCSR{Bi,Tv,Ti}) where {Bi,Tv,Ti}
 end
 
 
-
-
 function push_coo!(::Type{<:SparseMatrixCSR},
     I::Vector,J::Vector,V::Vector,ik::Integer,jk::Integer,vk::Number) where {Bi}
     (push!(I, ik), push!(J, jk), push!(V, vk))
 end
 
+
 function finalize_coo!(::Type{<:SparseMatrixCSR},
     I::Vector,J::Vector,V::Vector,m::Integer,n::Integer) 
+end
+
+
+function add_entry!(A::SparseMatrixCSR{Bi,Tv,Ti},v::Number,i::Integer,j::Integer,combine::Function=+) where {Bi,Tv,Ti<:Integer}
+    cv = convert(Tv, v)
+    ci = convert(Ti, i)
+    cj = convert(Ti, j+A.offset)
+    m,n = size(A)
+    if !((1 <= i <= m) & (1 <= j <= n))
+        throw(BoundsError(A, (i,j)))
+    end
+    rows = getptr(A)
+    indices = getindices(A)
+    vals = nonzeros(A)
+    rowifirstk = Int(rows[ci]-A.offset)
+    rowilastk = Int(rows[ci+1]-Bi)
+    searchk = searchsortedfirst(indices, cj, rowifirstk, rowilastk, Base.Order.Forward)
+    if searchk <= rowilastk-A.offset && indices[searchk] == cj
+        # Column j contains entry A[i,j]. Update
+        vold = vals[searchk]
+        vals[searchk] = combine(vold, cv)
+    else
+        throw(ArgumentError("Entry ($i,$j) does not exists in the sparsity pattern"))
+    end
+    return A
 end
 
 

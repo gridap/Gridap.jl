@@ -16,6 +16,7 @@ using Gridap.Helpers
 export push_coo!
 export finalize_coo!
 export sparse_from_coo
+export add_entry!
 export sparsecsr
 export symsparsecsr
 export hasrowmajororder

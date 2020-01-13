@@ -21,6 +21,30 @@ function finalize_coo!(I::Vector,J::Vector,V::Vector,m::Integer,n::Integer)
     finalize_coo!(SparseMatrixCSC,I,J,V,m,n)
 end
 
+function add_entry!(A::SparseMatrixCSC{Tv,Ti},v::Number,i::Integer,j::Integer,combine::Function=+) where {Tv,Ti<:Integer}
+    cv = convert(Tv, v)
+    ci = convert(Ti, i)
+    cj = convert(Ti, j)
+    m,n = size(A)
+    if !((1 <= ci <= m) & (1 <= cj <= n))
+        throw(BoundsError(A, (ci,cj)))
+    end
+    cols = getptr(A)
+    indices = getindices(A)
+    vals = nonzeros(A)
+    coljfirstk = Int(cols[cj])
+    coljlastk = Int(cols[cj+1] - 1)
+    searchk = searchsortedfirst(indices, ci, coljfirstk, coljlastk, Base.Order.Forward)
+    if searchk <= coljlastk && indices[searchk] == ci
+        # Column j contains entry A[i,j]. Update
+        vold = vals[searchk]
+        vals[searchk] = combine(vold, cv)
+    else
+        throw(ArgumentError("Entry ($i,$j) does not exists in the sparsity pattern"))
+    end
+    return A
+end
+
 hasrowmajororder(::Type{<:SparseMatrixCSC}) = false
 hasrowmajororder(a::SparseMatrixCSC) = hasrowmajororder(SparseMatrixCSC)
 
