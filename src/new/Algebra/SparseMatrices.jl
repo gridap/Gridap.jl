@@ -1,4 +1,16 @@
 
+# SparseMatrices implementation contains:
+# 
+#   - Data types:
+#     + `SparseMatrixCSR`:Compressed Sparse Row (CSR) sparse matrix implementation with Bi-based indexing.
+#     + `SymSparseMatrixCSR`: Symmetric Compressed Sparse Row sparse matrix implementation with Bi-based indexing.
+# 
+#   - Procedures:
+#     + `push_coo!`: Helper function to build COO arrays for further building a SparseMatrix
+#     + `finalize_coo!`: Finalization of COO arrays building.
+#     + `sparse_from_coo`: Return a SparseMatrix from COO data given.
+#     + `add_entry`: Add an entry given its position and the operation to perform.
+
 # Extended Sparse matrix interface
 
 """
@@ -7,6 +19,15 @@
 `args...` are the same as for function `sparse`
 """
 function sparse_from_coo(::Type{T} where T,args...)
+  @abstractmethod
+end
+
+"""
+    add_entry!(A,v::Number,i::Integer,j::Integer,,combine::Function=+)
+
+Add an entry given its position and the operation to perform.
+"""
+function add_entry!(A,v::Number,i::Integer,j::Integer,combine::Function=+)
   @abstractmethod
 end
 
@@ -29,19 +50,4 @@ function finalize_coo!(::Type{T} where T,I::Vector,J::Vector,V::Vector,m::Intege
   @abstractmethod
 end
 
-# Implementation for SparseMatrixCSC
-
-function sparse_from_coo(::Type{<:SparseMatrixCSC} where T,args...)
-  sparse(args...)
-end
-
-@inline function push_coo!(
-   ::Type{<:SparseMatrixCSC},I::Vector,J::Vector,V::Vector,ik::Integer,jk::Integer,vk::Number)
-   (push!(I, ik), push!(J, jk), push!(V, vk))
-end
-
-function finalize_coo!(
-  ::Type{<:SparseMatrixCSC},I::Vector,J::Vector,V::Vector,m::Integer,n::Integer)
-  nothing
-end
 

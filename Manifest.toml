@@ -1,3 +1,5 @@
+# This file is machine-generated - editing it directly is not advised
+
 [[ArrayInterface]]
 deps = ["LinearAlgebra", "Requires", "SparseArrays"]
 git-tree-sha1 = "7b26f0015d9459082a16ebe3fe934c4abb8f1327"
@@ -270,12 +272,6 @@ uuid = "6462fe0b-24de-5631-8697-dd941f90decc"
 [[SparseArrays]]
 deps = ["LinearAlgebra", "Random"]
 uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
-
-[[SparseMatricesCSR]]
-deps = ["LinearAlgebra", "SparseArrays"]
-git-tree-sha1 = "3a831d7d22736e3be2461dddb0fd6d05d556b945"
-uuid = "a0a7dd2c-ebf4-11e9-1f05-cf50bc540ca1"
-version = "0.5.1"
 
 [[SpecialFunctions]]
 deps = ["BinDeps", "BinaryProvider", "Libdl"]

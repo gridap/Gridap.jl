@@ -16,6 +16,16 @@ using Gridap.Helpers
 export push_coo!
 export finalize_coo!
 export sparse_from_coo
+export add_entry!
+export sparsecsr
+export symsparsecsr
+export hasrowmajororder
+export hascolmajororder
+export colvals
+export getptr
+export getindices
+export SparseMatrixCSR
+export SymSparseMatrixCSR
 
 export LinearSolver
 export SymbolicSetup
@@ -52,6 +62,8 @@ export NLSolver
 export AffineOperator
 
 include("SparseMatrices.jl")
+
+include("CompressedSparseMatrices.jl")
 
 include("NonLinearOperators.jl")
 
