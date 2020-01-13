@@ -126,6 +126,8 @@ export get_tags_from_names
 export add_tag!
 export add_tag_from_tags!
 export get_face_mask
+export get_face_tag
+export get_face_tag_index
 
 export DiscreteModel
 export get_grid

@@ -11,6 +11,7 @@ using Test
 using Gridap.Helpers
 using Gridap.Arrays
 using Gridap.ReferenceFEs
+using Gridap.Geometry
 using Gridap.Fields
 
 import Gridap.Arrays: get_array
@@ -57,6 +58,7 @@ export gather_free_and_dirichlet_values
 export scatter_free_and_dirichlet_values
 export get_dirichlet_values
 export gather_dirichlet_values
+export num_dirichlet_tags
 export gather_free_values
 export get_dirichlet_dof_tag
 export compute_free_and_dirichlet_values
@@ -70,12 +72,14 @@ export SingleFieldFEFunction
 export SingleFieldCellBasis
 
 export SingleFieldCellFE
+export CellShapeFunsWithMap
 export get_cell_dof_basis
 export test_single_field_cell_fe
 
-export RefFEsWithMap
+export UnsconstrainedFESpace
+export GradConformingFESpace
 
-export ConformingFESpace
+export compute_conforming_cell_dofs
 
 include("FEFunctions.jl")
 
@@ -84,6 +88,8 @@ include("FESpacesInterfaces.jl")
 include("Assemblers.jl")
 
 include("SingleFieldFESpaces.jl")
+
+include("UnconstrainedFESpaces.jl")
 
 include("ConformingFESpaces.jl")
 

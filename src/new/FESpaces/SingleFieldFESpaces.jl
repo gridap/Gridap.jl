@@ -5,19 +5,13 @@ abstract type SingleFieldFESpace <: FESpace end
 
 """
 """
-function num_dirichlet_dofs(f::SingleFieldFESpace)
-  @abstractmethod
-end
-
-"""
-"""
-function get_cell_fe(fs::SingleFieldFESpace)
-  @abstractmethod
-end
-
-"""
-"""
 function get_cell_dofs(f::SingleFieldFESpace)
+  @abstractmethod
+end
+
+"""
+"""
+function num_dirichlet_dofs(f::SingleFieldFESpace)
   @abstractmethod
 end
 
@@ -29,13 +23,13 @@ end
 
 """
 """
-function get_dirichlet_dof_tag(f::SingleFieldFESpace)
+function num_dirichlet_tags(f::SingleFieldFESpace)
   @abstractmethod
 end
 
 """
 """
-function gather_free_and_dirichlet_values(f::SingleFieldFESpace,cell_vals)
+function get_dirichlet_dof_tag(f::SingleFieldFESpace)
   @abstractmethod
 end
 
@@ -47,36 +41,41 @@ end
 
 """
 """
-function test_single_field_fe_space(f::SingleFieldFESpace,cellmat,cellvec,pred=(==))
-  test_fe_space(f,cellmat,cellvec)
-  dirichlet_values = zero_dirichlet_values(f)
-  @test length(dirichlet_values) == num_dirichlet_dofs(f)
-  cell_fe = get_cell_fe(f)
-  @test isa(cell_fe, SingleFieldCellFE)
+function gather_free_and_dirichlet_values(f::SingleFieldFESpace,cell_vals)
+  @abstractmethod
+end
+
+"""
+"""
+function test_single_field_fe_space(f::SingleFieldFESpace,cellmat,cellvec,cellidsrows,cellidscols,pred=(==))
   fe_basis = get_cell_fe_basis(f)
   @test isa(fe_basis,SingleFieldCellBasis)
+  test_fe_space(f,cellmat,cellvec,cellidsrows,cellidscols)
   cell_dofs = get_cell_dofs(f)
-  free_values = zero_free_values
+  dirichlet_values = zero_dirichlet_values(f)
+  @test length(dirichlet_values) == num_dirichlet_dofs(f)
+  free_values = zero_free_values(f)
   cell_vals = scatter_free_and_dirichlet_values(f,free_values,dirichlet_values)
   fv, dv = gather_free_and_dirichlet_values(f,cell_vals)
   @test pred(fv,free_values)
   @test pred(dv,dirichlet_values)
   fe_function = FEFunction(f,free_values,dirichlet_values)
   @test isa(fe_function, SingleFieldFEFunction)
+  @test maximum(get_dirichlet_dof_tag(f)) == num_dirichlet_tags(f)
 end
 
 """
 """
 function get_cell_map(fs::SingleFieldFESpace)
-  cell_fe = get_cell_fe(fs)
-  get_cell_map(cell_fe)
+  fe_basis = get_cell_fe_basis(fs)
+  get_cell_map(fe_basis)
 end
 
-function get_cell_fe_basis(f::SingleFieldFESpace)
-  cell_fe = get_cell_fe(f)
-  cell_basis = get_cell_shapefuns(cell_fe)
-  cell_map = get_cell_map(cell_fe)
-  SingleFieldCellBasis(cell_basis,cell_map)
+"""
+"""
+function get_cell_shapefuns(fs::SingleFieldFESpace)
+  fe_basis = get_cell_fe_basis(fs)
+  get_array(fe_basis)
 end
 
 """
@@ -89,9 +88,8 @@ are the ones provided by `get_dirichlet_values(fs)`
 function FEFunction(
   fs::SingleFieldFESpace, free_values::AbstractVector, dirichlet_values::AbstractVector)
   cell_vals = scatter_free_and_dirichlet_values(fs,free_values,diri_values)
-  cell_fe = get_cell_fe(s)
-  cell_basis = get_cell_shapefuns(cell_fe)
-  cell_field = lincomb(cell_basis,cell_vals)
+  cell_shapefuns = get_cell_shapefuns(fs)
+  cell_field = lincomb(cell_shapefuns,cell_vals)
   SingleFieldFEFunction(cell_field,free_values,fs)
 end
 
@@ -167,7 +165,8 @@ function compute_dirichlet_values_for_tags(f::SingleFieldFESpace,tag_to_object)
   dirichlet_dof_to_tag = get_dirichlet_dof_tag(f)
   cell_map = get_cell_map(f)
   dirichlet_values = zero_dirichlet_values(f)
-  for (tag, object) in enumerate(_convert_to_collectable(tag_to_object))
+  _tag_to_object = _convert_to_collectable(tag_to_object,num_dirichlet_tags(f))
+  for (tag, object) in enumerate(_tag_to_object)
     cell_field = _convert_to_interpolable(object,cell_map)
     dv = compute_dirichlet_values(f,cell_field)
     _fill_dirichlet_values_for_tag!(dirichlet_values,dv,tag,dirichlet_dof_to_tag)
@@ -195,12 +194,17 @@ function _convert_to_interpolable(object::Number,cell_map)
   Fill(object,length(cell_map))
 end
 
-function _convert_to_collectable(object)
+function _convert_to_collectable(object,ntags)
+  @assert ntags == length(object) "Incorrecto number of dirichlet tags provided"
   object
 end
 
-function _convert_to_collectable(object::Function)
-  [object,]
+function _convert_to_collectable(object::Function,ntags)
+  _convert_to_collectable(fill(object,ntags),ntags)
+end
+
+function _convert_to_collectable(object::Integer,ntags)
+  _convert_to_collectable(fill(object,ntags),ntags)
 end
 
 # Ancillary types: SingleFieldFEFunction
@@ -233,128 +237,40 @@ get_fe_space(f::SingleFieldFEFunction) = f.fe_space
 
 # Ancillary types: SingleFieldFEFunction
 
-struct SingleFieldCellBasis{A,B} <: GridapType
-  cell_basis::A
+abstract type SingleFieldCellFEBasis <: GridapType end
+
+"""
+"""
+function get_array(cb::SingleFieldCellFEBasis)
+  @abstractmethod
+end
+
+"""
+"""
+function get_cell_map(cb::SingleFieldCellFEBasis)
+  @abstractmethod
+end
+
+struct CellShapeFunsWithMap{A,B} <: SingleFieldCellFEBasis
+  cell_shapefuns::A
   cell_map::B
   @doc """
   """
-  function SingleFieldCellBasis(
-    cell_basis::AbstractArray{<:Field},
+  function CellShapeFunsWithMap(
+    cell_shapefuns::AbstractArray{<:Field},
     cell_map::AbstractArray{<:Field})
 
-    A = typeof(cell_basis)
+    A = typeof(cell_shapefuns)
     B = typeof(cell_map)
-    new{A,B}(cell_basis,cell_map)
+    new{A,B}(cell_shapefuns,cell_map)
   end
 end
 
-function get_array(cb::SingleFieldCellBasis)
-  cb.cell_basis
+function get_array(cb::CellShapeFunsWithMap)
+  cb.cell_shapefuns
 end
 
-function get_cell_map(cb::SingleFieldCellBasis)
+function get_cell_map(cb::CellShapeFunsWithMap)
   cb.cell_map
 end
-
-# Ancillary types: SingleFieldCellFE
-
-"""
-"""
-abstract type SingleFieldCellFE <: GridapType end
-
-"""
-"""
-function get_cell_shapefuns(cf::SingleFieldCellFE)
-  @abstractmethod
-end
-
-"""
-"""
-function get_cell_map(cf::SingleFieldCellFE)
-  @abstractmethod
-end
-
-"""
-"""
-function get_reffes(cf::SingleFieldCellFE)
-  @abstractmethod
-end
-
-"""
-"""
-function get_cell_type(cf::SingleFieldCellFE)
-  @abstractmethod
-end
-
-"""
-"""
-function get_cell_dof_basis(cell_fe::SingleFieldCellFE)
-  @abstractmethod
-end
-
-"""
-"""
-function test_single_field_cell_fe(f::SingleFieldCellFE)
-  _ = get_cell_shapefuns(f)
-  _ = get_reffes(f)
-  _ = get_cell_map(f)
-  _ = get_cell_type(f)
-  _ = get_cell_dof_basis(f)
-end
-
-# Concrete implementations of SingleFieldCellFE
-
-"""
-"""
-struct RefFEsWithMap{A,B,C,D} <: SingleFieldCellFE
-  ctype_to_reffe::A
-  cell_to_ctype::B
-  cell_map::C
-  cell_shapefuns::D
-  @doc """
-  """
-  function RefFEsWithMap(
-    ctype_to_reffe::Vector{<:ReferenceFE},
-    cell_to_ctype::AbstractArray{<:Integer},
-    cell_map::AbstractArray{<:Field})
-
-    values =  map(get_shapefuns,ctype_to_reffe)
-    ptrs = cell_to_ctype
-    refshapefuns = CompressedArray(values,ptrs)
-    cell_shapefuns = attachmap(refshapefuns,cell_map)
-
-    A = typeof(ctype_to_reffe)
-    B = typeof(cell_to_ctype)
-    C = typeof(cell_map)
-    D = typeof(cell_shapefuns)
-
-    new{A,B,C,D}(ctype_to_reffe,cell_to_ctype,cell_map,cell_shapefuns)
-
-  end
-end
-
-function get_cell_map(cf::RefFEsWithMap)
-  cf.cell_map
-end
-
-function get_cell_shapefuns(cf::RefFEsWithMap)
-  cf.cell_shapefuns
-end
-
-function get_reffes(cf::RefFEsWithMap)
-  cf.ctype_to_reffe
-end
-
-function get_cell_type(cf::RefFEsWithMap)
-  cf.cell_to_ctype
-end
-
-function get_cell_dof_basis(cf::RefFEsWithMap)
-  reffes = cf.ctype_to_reffe
-  values = map(get_dof_basis,reffes)
-  ptrs = cf.cell_to_ctype
-  #TODO in general we would need to attach a cell_map
-  CompressedArray(values,ptrs)
-end
-
 

@@ -207,13 +207,14 @@ end
     get_face_mask(labeling::FaceLabeling,tag::Int,d::Integer)
     get_face_mask(labeling::FaceLabeling,tag::String,d::Integer)
 """
-function get_face_mask(labeling::FaceLabeling,tags::Vector{Int},d::Integer)
+function get_face_mask(labeling::FaceLabeling,tags,d::Integer)
+  _tags = _prepare_tags(labeling,tags)
   face_to_entity = get_face_entity(labeling,d)
   tag_to_entities = get_tag_entities(labeling)
   nfaces = num_faces(labeling,d)
   face_to_mask = fill(false,nfaces)
   for (face, entity) in enumerate(face_to_entity)
-    for tag in tags
+    for tag in _tags
       entities = tag_to_entities[tag]
       if entity in entities
         face_to_mask[face] = true
@@ -223,17 +224,73 @@ function get_face_mask(labeling::FaceLabeling,tags::Vector{Int},d::Integer)
   face_to_mask
 end
 
-function get_face_mask(labeling::FaceLabeling,names::Vector{String},d::Integer)
-  tags = get_tags_from_names(labeling,names)
-  get_face_mask(labeling,tags,d)
+"""
+    get_face_tag(labeling::FaceLabeling,tags::Vector{Int},d::Integer)
+    get_face_tag(labeling::FaceLabeling,tags::Vector{String},d::Integer)
+    get_face_tag(labeling::FaceLabeling,tag::Int,d::Integer)
+    get_face_tag(labeling::FaceLabeling,tag::String,d::Integer)
+
+The first of the given tags appearing in the face is taken.
+If there is no tag on a face, this face will have a value equal to `UNSET`.
+"""
+function get_face_tag(labeling::FaceLabeling,tags,d::Integer)
+  _tags = _prepare_tags(labeling,tags)
+  face_to_entity = get_face_entity(labeling,d)
+  tag_to_entities = get_tag_entities(labeling)
+  nfaces = num_faces(labeling,d)
+  face_to_tag = fill(Int8(UNSET),nfaces)
+  for (face, entity) in enumerate(face_to_entity)
+    for tag in _tags
+      entities = tag_to_entities[tag]
+      if entity in entities
+        face_to_tag[face] = tag
+        break
+      end
+    end
+  end
+  face_to_tag
 end
 
-function get_face_mask(labeling::FaceLabeling,name::String,d::Integer)
-  get_face_mask(labeling,[name,],d)
+"""
+    get_face_tag_index(labeling::FaceLabeling,tags::Vector{Int},d::Integer)
+    get_face_tag_index(labeling::FaceLabeling,tags::Vector{String},d::Integer)
+    get_face_tag_index(labeling::FaceLabeling,tag::Int,d::Integer)
+    get_face_tag_index(labeling::FaceLabeling,tag::String,d::Integer)
+
+Like `get_face_tag` by provides the index into the array `tags` instead of the tag stored in `tags`.
+"""
+function get_face_tag_index(labeling::FaceLabeling,tags,d::Integer)
+  _tags = _prepare_tags(labeling,tags)
+  face_to_entity = get_face_entity(labeling,d)
+  tag_to_entities = get_tag_entities(labeling)
+  nfaces = num_faces(labeling,d)
+  face_to_tag = fill(Int8(UNSET),nfaces)
+  for (face, entity) in enumerate(face_to_entity)
+    for (i,tag) in enumerate(_tags)
+      entities = tag_to_entities[tag]
+      if entity in entities
+        face_to_tag[face] = i
+        break
+      end
+    end
+  end
+  face_to_tag
 end
 
-function get_face_mask(labeling::FaceLabeling,tag::Int,d::Integer)
-  get_face_mask(labeling,[tag,],d)
+function _prepare_tags(labeling,tags::Vector{<:Integer})
+  tags
+end
+
+function _prepare_tags(labeling,names::Vector{String})
+  get_tags_from_names(labeling,names)
+end
+
+function _prepare_tags(labeling,tag::Integer)
+  [tag,]
+end
+
+function _prepare_tags(labeling,name::String)
+  get_tags_from_names(labeling,[name,])
 end
 
 function Base.show(io::IO,lab::FaceLabeling)

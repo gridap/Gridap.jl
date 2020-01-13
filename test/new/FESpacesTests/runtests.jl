@@ -10,6 +10,8 @@ using Test
 
 @testset "SingleFieldFESpaces" begin include("SingleFieldFESpacesTests.jl") end
 
+@testset "UnsconstrainedFESpaces" begin include("UnsconstrainedFESpacesTests.jl") end
+
 @testset "ConformingFESpaces" begin include("ConformingFESpacesTests.jl") end
 
 end # module
