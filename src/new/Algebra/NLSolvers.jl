@@ -14,7 +14,7 @@ struct NewtonRaphsonSolver <:NonLinearSolver
   max_nliters::Int
 end
 
-struct NewtonRaphsonCache
+struct NewtonRaphsonCache <: GridapType
   A::AbstractMatrix
   b::AbstractVector
   dx::AbstractVector

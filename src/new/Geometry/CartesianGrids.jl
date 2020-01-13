@@ -11,7 +11,7 @@
 
 Struct that stores the data defining a Cartesian grid.
 """
-struct CartesianDescriptor{D,T,F<:Function}
+struct CartesianDescriptor{D,T,F<:Function} <: GridapType
   origin::Point{D,T}
   sizes::Point{D,T}
   partition::Point{D,Int}

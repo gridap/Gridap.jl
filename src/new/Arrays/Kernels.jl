@@ -22,7 +22,7 @@ that inherits from `Kernel`. For instance, a default implementation is available
 for `Function` objects.  However, we recommend that new types inherit from `Kernel`.
 
 """
-abstract type Kernel end
+abstract type Kernel <: GridapType end
 
 """
     kernel_return_type(f,x...)

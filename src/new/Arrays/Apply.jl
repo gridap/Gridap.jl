@@ -280,7 +280,7 @@ function common_index_style(::Type{<:Tuple})
   IndexLinear()
 end
 
-mutable struct Evaluation{X,F}
+mutable struct Evaluation{X,F} <: GridapType
   x::X
   fx::F
   function Evaluation(x::X,fx::F) where {X,F}
