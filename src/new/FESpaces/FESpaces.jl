@@ -15,6 +15,8 @@ using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.Fields
 
+using Gridap.Integration: _convert_to_integrable
+
 import Gridap.Arrays: get_array
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
@@ -22,6 +24,8 @@ import Gridap.Geometry: get_cell_map
 import Gridap.Geometry: get_cell_shapefuns
 import Gridap.Geometry: get_reffes
 import Gridap.Geometry: get_cell_type
+
+import Base: +, - , *
 
 export FEFunction
 export get_free_values
@@ -94,6 +98,10 @@ include("FESpacesInterfaces.jl")
 include("Assemblers.jl")
 
 include("SingleFieldFESpaces.jl")
+
+include("SingleFieldFEFunctions.jl")
+
+include("SingleFieldCellFEBases.jl")
 
 include("UnconstrainedFESpaces.jl")
 

@@ -153,7 +153,7 @@ even in the case that the given cell field does not fulfill them)
 """
 function interpolate(fs::SingleFieldFESpace,object)
   cell_map = get_cell_map(fs)
-  cell_field = _convert_to_interpolable(object,cell_map)
+  cell_field = _convert_to_integrable(object,cell_map)
   free_values = compute_free_values(fs,cell_field)
   FEFunction(fs,free_values)
 end
@@ -164,7 +164,7 @@ The resulting FEFunction does not necessary belongs to the underlying space
 """
 function interpolate_everywhere(fs::SingleFieldFESpace,object)
   cell_map = get_cell_map(fs)
-  cell_field = _convert_to_interpolable(object,cell_map)
+  cell_field = _convert_to_integrable(object,cell_map)
   free_values, dirichlet_values = compute_free_and_dirichlet_values(fs,cell_field)
   FEFunction(fs,free_values, dirichlet_values)
 end
@@ -173,7 +173,7 @@ end
 """
 function interpolate_dirichlet(fs::SingleFieldFESpace,object)
   cell_map = get_cell_map(fs)
-  cell_field = _convert_to_interpolable(object,cell_map)
+  cell_field = _convert_to_integrable(object,cell_map)
   dirichlet_values = compute_dirichlet_values(fs,cell_field)
   free_values = zero_free_values(fs)
   FEFunction(fs,free_values, dirichlet_values)
@@ -187,7 +187,7 @@ function compute_dirichlet_values_for_tags(f::SingleFieldFESpace,tag_to_object)
   dirichlet_values = zero_dirichlet_values(f)
   _tag_to_object = _convert_to_collectable(tag_to_object,num_dirichlet_tags(f))
   for (tag, object) in enumerate(_tag_to_object)
-    cell_field = _convert_to_interpolable(object,cell_map)
+    cell_field = _convert_to_integrable(object,cell_map)
     dv = compute_dirichlet_values(f,cell_field)
     _fill_dirichlet_values_for_tag!(dirichlet_values,dv,tag,dirichlet_dof_to_tag)
   end
@@ -202,18 +202,6 @@ function _fill_dirichlet_values_for_tag!(dirichlet_values,dv,tag,dirichlet_dof_t
   end
 end
 
-function _convert_to_interpolable(object,cell_map)
-  object
-end
-
-function _convert_to_interpolable(object::Function,cell_map)
-  compose(object,cell_map)
-end
-
-function _convert_to_interpolable(object::Number,cell_map)
-  Fill(object,length(cell_map))
-end
-
 function _convert_to_collectable(object,ntags)
   @assert ntags == length(object) "Incorrecto number of dirichlet tags provided"
   object
@@ -225,76 +213,5 @@ end
 
 function _convert_to_collectable(object::Integer,ntags)
   _convert_to_collectable(fill(object,ntags),ntags)
-end
-
-# Ancillary types: SingleFieldFEFunction
-
-"""
-"""
-struct SingleFieldFEFunction{A,B,C} <: FEFunction
-  cell_field::A
-  free_values::B
-  dirichlet_values::B
-  fe_space::C
-  @doc """
-  """
-  function SingleFieldFEFunction(
-    cell_field::AbstractArray{<:Field},
-    free_values::AbstractVector,
-    dirichlet_values::AbstractVector,
-    fe_space::SingleFieldFESpace)
-
-    A = typeof(cell_field)
-    B = typeof(free_values)
-    C = typeof(fe_space)
-    new{A,B,C}(cell_field,free_values,dirichlet_values,fe_space)
-  end
-end
-
-get_array(f::SingleFieldFEFunction) = f.cell_field
-
-get_free_values(f::SingleFieldFEFunction) = f.free_values
-
-get_dirichlet_values(f::SingleFieldFEFunction) = f.dirichlet_values
-
-get_fe_space(f::SingleFieldFEFunction) = f.fe_space
-
-# Ancillary types: SingleFieldFEFunction
-
-abstract type SingleFieldCellFEBasis <: GridapType end
-
-"""
-"""
-function get_array(cb::SingleFieldCellFEBasis)
-  @abstractmethod
-end
-
-"""
-"""
-function get_cell_map(cb::SingleFieldCellFEBasis)
-  @abstractmethod
-end
-
-struct CellShapeFunsWithMap{A,B} <: SingleFieldCellFEBasis
-  cell_shapefuns::A
-  cell_map::B
-  @doc """
-  """
-  function CellShapeFunsWithMap(
-    cell_shapefuns::AbstractArray{<:Field},
-    cell_map::AbstractArray{<:Field})
-
-    A = typeof(cell_shapefuns)
-    B = typeof(cell_map)
-    new{A,B}(cell_shapefuns,cell_map)
-  end
-end
-
-function get_array(cb::CellShapeFunsWithMap)
-  cb.cell_shapefuns
-end
-
-function get_cell_map(cb::CellShapeFunsWithMap)
-  cb.cell_map
 end
 

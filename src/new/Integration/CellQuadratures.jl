@@ -74,3 +74,27 @@ function get_weights(q::Fill{<:Quadrature})
   Fill(w,length(q))
 end
 
+"""
+the `cell_field` is aligned with the cells in `trian`
+"""
+function integrate(cell_field,trian::Triangulation,quad::AbstractArray{<:Quadrature})
+  cell_map = get_cell_map(trian)
+  q = get_coordinates(quad)
+  w = get_weights(quad)
+  j = gradient(cell_map)
+  f = _convert_to_integrable(cell_field,cell_map)
+  integrate(f,q,w,j)
+end
+
+function _convert_to_integrable(object,cell_map)
+  object
+end
+
+function _convert_to_integrable(object::Function,cell_map)
+  compose(object,cell_map)
+end
+
+function _convert_to_integrable(object::Number,cell_map)
+  Fill(object,length(cell_map))
+end
+
