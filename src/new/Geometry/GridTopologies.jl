@@ -22,7 +22,7 @@ and tested with this function:
 - [`test_grid_topology`](@ref)
 
 """
-abstract type GridTopology{Dc,Dp} end
+abstract type GridTopology{Dc,Dp} <: GridapType end
 
 # Traits
 
