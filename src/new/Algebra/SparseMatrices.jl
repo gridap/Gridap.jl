@@ -10,7 +10,7 @@
 #     + `finalize_coo!`: Finalization of COO arrays building.
 #     + `sparse_from_coo`: Return a SparseMatrix from COO data given.
 #     + `add_entry!`: Add an entry given its position and the operation to perform.
-#     + `fill_entry!`: Fills an existing sparse matrix with a given value.
+#     + `fill_entries!`: Fills an existing sparse matrix with a given value.
 
 # Extended Sparse matrix interface
 
@@ -37,7 +37,7 @@ end
 
 Fills an existing sparse matrix A with a given value v.
 """
-function fill_entry!(A,v::Number)
+function fill_entries!(A,v::Number)
   @abstractmethod
 end
 

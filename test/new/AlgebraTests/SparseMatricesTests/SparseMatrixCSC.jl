@@ -35,7 +35,7 @@
         add_entry!(CSC,1,maxrows,maxcols,+)
         @test getindex(CSC,maxrows,maxcols) == vold+1
 
-        fill_entry!(CSC,0)
+        fill_entries!(CSC,0)
         @test all(x->x==0, nonzeros(CSC))
     end
     

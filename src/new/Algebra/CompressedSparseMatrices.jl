@@ -153,7 +153,7 @@ function convert(::Type{AbstractSparseMatrix}, x::AbstractSparseMatrix)
   @abstractmethod
 end
 
-function fill_entry!(A::AbstractSparseMatrix{Tv,Ti},v::Number) where {Tv,Ti}
+function fill_entries!(A::AbstractSparseMatrix{Tv,Ti},v::Number) where {Tv,Ti}
   nonzeros(A) .= convert(Tv,v)
 end
 
