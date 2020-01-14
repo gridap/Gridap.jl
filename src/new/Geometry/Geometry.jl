@@ -85,9 +85,11 @@ import Gridap.Arrays: apply_kernel!
 
 export CellField
 export GenericCellField
+export SkeletonCellField
 export similar_cell_field
 export test_cell_field
 export convert_to_cell_field
+export operate_cell_field
 
 export GridTopology
 export num_cells
@@ -186,6 +188,8 @@ include("UnstructuredGridTopologies.jl")
 
 include("CellFields.jl")
 
+include("SkeletonPairs.jl")
+
 include("Triangulations.jl")
 
 include("Grids.jl")
@@ -211,8 +215,6 @@ include("CartesianDiscreteModels.jl")
 include("BoundaryTriangulations.jl")
 
 include("GenericBoundaryTriangulations.jl")
-
-include("SkeletonPairs.jl")
 
 include("SkeletonTriangulations.jl")
 

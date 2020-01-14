@@ -1,6 +1,7 @@
 module CellFieldsTests
 
 using Test
+using Gridap.Arrays
 using Gridap.Geometry
 using Gridap.Fields
 using Gridap.TensorValues
@@ -74,12 +75,27 @@ nvec = get_normal_vector(btrian)
 z = 2*bcf1 + nvec
 @test isa(z,CellField)
 
+strian = SkeletonTriangulation(model)
+
+scf1 = restrict(cf1,strian)
+@test isa(scf1,SkeletonCellField)
+
+j = jump(scf1)
+
+s = CompressedArray([Point{1,Float64}[(0.25,),(0.75,)]],get_cell_type(strian))
+r = fill([0.0,0.0],length(j))
+test_cell_field(j,s,r)
+
+m = mean(scf1)
+r = [[0.5, 1.5], [2.0, 2.0], [2.5, 3.5], [2.0, 2.0]]
+test_cell_field(m,s,r)
+
 #using Gridap.Visualization
 #
 #writevtk(btrian,"btrian",cellfields=["bcf1"=>bcf1,"nvec"=>nvec,"z"=>z])
 
-
-
-
+#using Gridap.Visualization
+#
+#writevtk(strian,"strian",cellfields=["j"=>j])
 
 end # module

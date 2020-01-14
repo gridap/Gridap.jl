@@ -92,10 +92,11 @@ function kernel_cache(
 end
 
 @inline function apply_kernel!(
-  r,k::FieldBinOp,a::AbstractVector,b::AbstractVector)
+  c,k::FieldBinOp,a::AbstractVector,b::AbstractVector)
   _field_bin_op_checks_vecvec(a,b)
   na = length(a)
-  setsize!(r,(na,))
+  setsize!(c,(na,))
+  r = c.array
   for p in eachindex(a)
     @inbounds r[p] = k.op(a[p],b[p])
   end
@@ -121,11 +122,12 @@ function kernel_cache(
 end
 
 @inline function apply_kernel!(
-  r,k::FieldBinOp,a::AbstractMatrix,b::AbstractVector)
+  c,k::FieldBinOp,a::AbstractMatrix,b::AbstractVector)
   _field_bin_op_checks_matvec(a,b)
   s = size(a)
-  setsize!(r,s)
+  setsize!(c,s)
   np, ni = s
+  r = c.array
   for i in 1:ni
     for p in 1:np
       @inbounds r[p,i] = k.op(a[p,i],b[p])
@@ -153,11 +155,12 @@ function kernel_cache(
 end
 
 @inline function apply_kernel!(
-  r,k::FieldBinOp,a::AbstractVector,b::AbstractMatrix)
+  c,k::FieldBinOp,a::AbstractVector,b::AbstractMatrix)
   _field_bin_op_checks_vecmat(a,b)
   s = size(b)
-  setsize!(r,s)
+  setsize!(c,s)
   np, ni = s
+  r = c.array
   for i in 1:ni
     for p in 1:np
       @inbounds r[p,i] = k.op(a[p],b[p,i])
@@ -187,11 +190,12 @@ function kernel_cache(
 end
 
 @inline function apply_kernel!(
-  r,k::FieldBinOp,a::AbstractMatrix,b::AbstractMatrix)
+  c,k::FieldBinOp,a::AbstractMatrix,b::AbstractMatrix)
   _field_bin_op_checks_matmat(a,b)
   np, ni = size(a)
   _, nj = size(b)
-  setsize!(r,(np,ni,nj))
+  setsize!(c,(np,ni,nj))
+  r = c.array
   for j in 1:nj
     for i in 1:ni
       for p in 1:np

@@ -218,3 +218,42 @@ function _get_cell_data(type_to_data, cell_to_type::Fill)
   Fill(data,ncells)
 end
 
+"""
+"""
+function restrict(cf::CellField,trian::Triangulation)
+  a = get_array(cf)
+  r = restrict(a,trian)
+  _restrict_cell_field(r,trian)
+end
+
+"""
+"""
+struct SkeletonCellField{L,R}
+  left::L
+  right::R
+end
+
+function jump(sf::SkeletonCellField)
+  sf.left - sf.right
+end
+
+function mean(sf::SkeletonCellField)
+  operate_cell_field(_mean,sf.left,sf.right)
+end
+
+_mean(x,y) = 0.5*x + 0.5*y
+
+function _restrict_cell_field(r::SkeletonPair,trian)
+  cm = get_cell_map(trian)
+  la = r.left
+  ra = r.right
+  l = GenericCellField(la,cm)
+  r = GenericCellField(ra,cm)
+  SkeletonCellField(l,r)
+end
+
+function _restrict_cell_field(r::AbstractArray,trian)
+  cm = get_cell_map(trian)
+  GenericCellField(r,cm)
+end
+

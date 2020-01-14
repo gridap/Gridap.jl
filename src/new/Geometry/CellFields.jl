@@ -44,23 +44,6 @@ end
 
 """
 """
-function restrict(cf::CellField,trian::Triangulation)
-  a = get_array(cf)
-  r = restrict(a,trian)
-  _restrict_cell_field(r,trian)
-end
-
-function _restrict_cell_field(r::SkeletonPair,trian)
-  @notimplemented
-end
-
-function _restrict_cell_field(r::AbstractArray,trian)
-  cm = get_cell_map(trian)
-  GenericCellField(r,cm)
-end
-
-"""
-"""
 function similar_cell_field(cf::CellField,array::AbstractArray)
   cm = get_cell_map(cf)
   GenericCellField(array,cm)
@@ -105,12 +88,26 @@ cross(::typeof(∇),f::CellField) = curl(f)
 
 struct UnimplementedField <: Field end
 
+"""
+"""
+function operate_cell_field(op,cf::CellField)
+  a = get_array(cf)
+  b = field_array_operation(UnimplementedField,op,a)
+  similar_cell_field(cf,b)
+end
+
+function operate_cell_field(op,cf1::CellField,cf2::CellField)
+  @assert length(cf1) == length(cf2)
+  a1 = get_array(cf1)
+  a2 = get_array(cf2)
+  b = field_array_operation(UnimplementedField,op,a1,a2)
+  similar_cell_field(cf1,b)
+end
+
 for op in (:+,:-,:tr, :transpose, :adjoint, :symmetic_part)
   @eval begin
     function ($op)(cf::CellField)
-      a = get_array(cf)
-      b = field_array_operation(UnimplementedField,$op,a)
-      similar_cell_field(cf,b)
+      operate_cell_field($op,cf)
     end
   end
 end
@@ -119,11 +116,7 @@ for op in (:+,:-,:*,:inner,:outer)
   @eval begin
 
     function ($op)(cf1::CellField,cf2::CellField)
-      @assert length(cf1) == length(cf2)
-      a1 = get_array(cf1)
-      a2 = get_array(cf2)
-      b = field_array_operation(UnimplementedField,$op,a1,a2)
-      similar_cell_field(cf1,b)
+      operate_cell_field($op,cf1,cf2)
     end
 
     function ($op)(cf1::CellField,object)
