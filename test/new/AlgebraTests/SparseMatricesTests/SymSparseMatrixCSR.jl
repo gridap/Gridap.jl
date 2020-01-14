@@ -68,6 +68,9 @@
                 add_entry!(SYMCSR,1,maxrows,maxcols,+)
                 @test getindex(SYMCSR,maxrows,maxcols) == vold+1
 
+                fill_entry!(SYMCSR,0)
+                @test all(x->x==0, nonzeros(SYMCSR))
+
             end
         end
     end

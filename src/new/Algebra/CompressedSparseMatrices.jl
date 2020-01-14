@@ -153,6 +153,11 @@ function convert(::Type{AbstractSparseMatrix}, x::AbstractSparseMatrix)
   @abstractmethod
 end
 
+function fill_entry!(A::AbstractSparseMatrix{Tv,Ti},v::Number) where {Tv,Ti}
+  nonzeros(A) .= convert(Tv,v)
+end
+
+
 include("SparseMatrixCSC.jl")
 include("SparseMatrixCSR.jl")
 include("SymSparseMatrixCSR.jl")
