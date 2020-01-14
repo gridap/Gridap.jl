@@ -1,5 +1,6 @@
 module CellFieldsTests
 
+using Test
 using Gridap.Geometry
 using Gridap.Fields
 using Gridap.TensorValues
@@ -61,5 +62,24 @@ collect(evaluate(curl_cfu,q))
 
 epsi_cfu = ε(cfu)
 collect(evaluate(epsi_cfu,q))
+
+btrian = BoundaryTriangulation(model)
+
+bcf1 = restrict(cf1,btrian)
+@test isa(bcf1,CellField)
+
+nvec = get_normal_vector(btrian)
+@test isa(nvec,CellField)
+
+z = 2*bcf1 + nvec
+@test isa(z,CellField)
+
+#using Gridap.Visualization
+#
+#writevtk(btrian,"btrian",cellfields=["bcf1"=>bcf1,"nvec"=>nvec,"z"=>z])
+
+
+
+
 
 end # module

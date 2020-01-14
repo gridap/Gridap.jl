@@ -44,6 +44,23 @@ end
 
 """
 """
+function restrict(cf::CellField,trian::Triangulation)
+  a = get_array(cf)
+  r = restrict(a,trian)
+  _restrict_cell_field(r,trian)
+end
+
+function _restrict_cell_field(r::SkeletonPair,trian)
+  @notimplemented
+end
+
+function _restrict_cell_field(r::AbstractArray,trian)
+  cm = get_cell_map(trian)
+  GenericCellField(r,cm)
+end
+
+"""
+"""
 function similar_cell_field(cf::CellField,array::AbstractArray)
   cm = get_cell_map(cf)
   GenericCellField(array,cm)
