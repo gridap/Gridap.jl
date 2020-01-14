@@ -15,6 +15,8 @@ end
 """
     field_array_operation(op::Function,a)
     field_array_operation(op::Function,a,b)
+    field_array_operation(::Type{T},op::Function,a) where T
+    field_array_operation(::Type{T},op::Function,a,b) where T
 """
 function field_array_operation(op::Function,a,b)
   k = FieldBinOp(op)
@@ -24,6 +26,16 @@ end
 function field_array_operation(op::Function,a)
   k = bcast(op)
   apply_to_field_array(k,a)
+end
+
+function field_array_operation(::Type{T},op::Function,a) where T
+  k = FieldBinOp(op)
+  apply_to_field_array(T,k,a)
+end
+
+function field_array_operation(::Type{T},op::Function,a,b) where T
+  k = FieldBinOp(op)
+  apply_to_field_array(T,k,a,b)
 end
 
 # Unary operations on fields and arrays of fields

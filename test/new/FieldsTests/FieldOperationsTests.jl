@@ -49,6 +49,11 @@ ag = field_array_operation(inner,afa,afb)
 agx = fill(gx,l)
 test_array_of_fields(ag,ax,agx)
 
+struct FieldPlaceHolder <: Field end
+
+ag = field_array_operation(FieldPlaceHolder,inner,fill(fa,l),afb)
+test_array(evaluate_field_array(ag,ax),agx)
+
 g = field_operation(inner,ba,fb)
 gx = zeros(size(bax))
 for p in 1:np

@@ -240,6 +240,7 @@ end
 
 """
     apply_to_field_array(k,f::AbstractArray...)
+    apply_to_field_array(::Type{T},k,f::AbstractArray...) where T
 
 Returns an array of fields numerically equivalent to
 
@@ -250,6 +251,12 @@ function apply_to_field_array(
   k,f::AbstractArray...)
   v = Valued(k)
   apply(v,f...)
+end
+
+function apply_to_field_array(
+  ::Type{T},k,f::AbstractArray...) where T
+  v = Valued(k)
+  apply(T,v,f...)
 end
 
 struct Valued{K} <: Kernel
