@@ -120,6 +120,7 @@ export get_cell_map
 export get_normal_vector
 export test_triangulation
 export restrict
+export get_physical_coordinate
 
 export Grid
 export get_cell_nodes

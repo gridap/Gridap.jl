@@ -189,6 +189,21 @@ function CellField(object,trian::Triangulation)
   convert_to_cell_field(object,cm)
 end
 
+"""
+In contrast to get_cell_map, the returned object:
+- is a CellField
+- its gradient is the identity tensor
+"""
+function get_physical_coordinate(trian::Triangulation)
+  CellField(_phys_coord,trian)
+end
+
+_phys_coord(x) = x
+
+_phys_coord_grad(x) = one(typeof(outer(x,x)))
+
+gradient(::typeof(_phys_coord)) = _phys_coord_grad
+
 # Helpers for Triangulation
 
 function _get_cell_data(type_to_data, cell_to_type)

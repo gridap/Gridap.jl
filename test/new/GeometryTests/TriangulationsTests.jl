@@ -67,7 +67,9 @@ test_array_of_fields(cell_map,q,x,grad=j)
 cf1 = CellField(3,trian)
 cf2 = CellField(identity,trian)
 
+x = get_physical_coordinate(trian)
+
 #using Gridap.Visualization
-#writevtk(trian,"trian",cellfields=["cf1"=>cf1,"cf2"=>cf2])
+#writevtk(trian,"trian",cellfields=["cf1"=>cf1,"cf2"=>cf2,"x"=>x, "gradx"=>∇(x)])
 
 end # module
