@@ -9,7 +9,8 @@
 #     + `push_coo!`: Helper function to build COO arrays for further building a SparseMatrix
 #     + `finalize_coo!`: Finalization of COO arrays building.
 #     + `sparse_from_coo`: Return a SparseMatrix from COO data given.
-#     + `add_entry`: Add an entry given its position and the operation to perform.
+#     + `add_entry!`: Add an entry given its position and the operation to perform.
+#     + `fill_entries!`: Fills an existing sparse matrix with a given value.
 
 # Extended Sparse matrix interface
 
@@ -28,6 +29,15 @@ end
 Add an entry given its position and the operation to perform.
 """
 function add_entry!(A,v::Number,i::Integer,j::Integer,combine::Function=+)
+  @abstractmethod
+end
+
+"""
+    fill_entry!(A,v::Number)
+
+Fills an existing sparse matrix A with a given value v.
+"""
+function fill_entries!(A,v::Number)
   @abstractmethod
 end
 
