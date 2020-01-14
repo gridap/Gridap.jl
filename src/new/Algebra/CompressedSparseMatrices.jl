@@ -30,7 +30,7 @@ import LinearAlgebra: mul!
 import SparseArrays: nnz, nonzeros, nzrange, findnz, rowvals
 
 """
-    function hasrowmajororder(::Type{AbstractSparseMatrix})
+    hasrowmajororder(::Type{AbstractSparseMatrix})
 
 Check if values are stored in row-major order.
 Return false.
@@ -44,7 +44,7 @@ function hasrowmajororder(S::AbstractSparseMatrix)
 end
 
 """
-    function hascolmajororder(::Type{AbstractSparseMatrix})
+    hascolmajororder(::Type{AbstractSparseMatrix})
 
 Check if values are stored in col-major order.
 Return true.
@@ -58,7 +58,7 @@ function hascolmajororder(S::AbstractSparseMatrix)
 end
 
 """
-    function getptr(S::AbstractSparseMatrix)
+    getptr(S::AbstractSparseMatrix)
 
 Return columns pointer.
 """
@@ -67,7 +67,7 @@ function getptr(S::AbstractSparseMatrix)
 end
 
 """
-    function getindices(S::AbstractSparseMatrix)
+    getindices(S::AbstractSparseMatrix)
 
 Return row indices.
 """
@@ -76,7 +76,7 @@ function getindices(S::AbstractSparseMatrix)
 end
 
 """
-    function rowvals(S::AbstractSparseMatrix)
+    rowvals(S::AbstractSparseMatrix)
 
 Return row indices or raises an error (Depending on the SparseMatrix type)
 """
@@ -85,7 +85,7 @@ function rowvals(S::AbstractSparseMatrix)
 end
 
 """
-    function colvals(S::AbstractSparseMatrix)
+    colvals(S::AbstractSparseMatrix)
 
 Return columns indices or raises an error (Depending on the SparseMatrix type)
 """
@@ -94,7 +94,7 @@ function colvals(S::AbstractSparseMatrix)
 end
 
 """
-    function nnz(S::AbstractSparseMatrix)
+    nnz(S::AbstractSparseMatrix)
 
 Returns the number of stored (filled) elements in a sparse array.
 """
@@ -103,7 +103,7 @@ function nnz(S::AbstractSparseMatrix)
 end
 
 """
-    function nonzeros(S::AbstractSparseMatrix)
+    nonzeros(S::AbstractSparseMatrix)
 
 Return a vector of the structural nonzero values in sparse array S. 
 This includes zeros that are explicitly stored in the sparse array. 
@@ -115,7 +115,7 @@ function nonzeros(S::AbstractSparseMatrix)
 end
 
 """
-    function count(pred, S::AbstractSparseMatrix) -> Integer
+    count(pred, S::AbstractSparseMatrix) -> Integer
 
 Count the number of elements in nonzeros(S) for which predicate pred returns true. 
 """
@@ -124,7 +124,7 @@ function count(pred, S::AbstractSparseMatrix)
 end
 
 """
-    function nzrange(S::AbstractSparseMatrix, index::Integer) where {Bi}
+    nzrange(S::AbstractSparseMatrix, index::Integer) where {Bi}
 
 Return the range of indices to the structural nonzero values of a 
 sparse matrix index (Row or column depending on the compression type). 
@@ -134,7 +134,7 @@ function nzrange(S::AbstractSparseMatrix, index::Integer)
 end
 
 """
-    function findnz(S::AbstractSparseMatrix)
+    findnz(S::AbstractSparseMatrix)
 
 Return a tuple (I, J, V) where I and J are the row and column indices 
 of the stored ("structurally non-zero") values in sparse matrix A, 
@@ -145,7 +145,7 @@ function findnz(S::AbstractSparseMatrix)
 end
 
 """
-    function convert(::Type{AbstractSparseMatrix}, x::AbstractSparseMatrix)
+    convert(::Type{AbstractSparseMatrix}, x::AbstractSparseMatrix)
 
 Convert x to a value of the first type given.
 """
