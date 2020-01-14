@@ -44,7 +44,6 @@ export compose_fields
 export compose_field_arrays
 export lincomb
 export apply_lincomb
-export varinner
 export attachmap
 export integrate
 export field_caches
@@ -65,6 +64,9 @@ export ε
 
 export Homothecy
 export AffineMap
+
+export field_operation
+export field_array_operation
 
 import Gridap.Arrays: kernel_cache
 import Gridap.Arrays: apply_kernel!
@@ -95,8 +97,6 @@ include("FieldArrays.jl")
 include("Lincomb.jl")
 
 include("Compose.jl")
-
-include("Varinner.jl")
 
 include("Attachmap.jl")
 

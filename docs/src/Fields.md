@@ -81,6 +81,8 @@ apply_gradient(k,f...)
 
 
 ```@docs
+field_operation(op::Function,a,b)
+field_array_operation(op::Function,a,b)
 compose_fields(g,f)
 compose_field_arrays(g,f)
 compose(g::Field,f::Field)
@@ -90,8 +92,6 @@ compose(g::Function,f::AbstractArray...)
 lincomb(a::Field,b::AbstractVector)
 lincomb(a::AbstractArray,b::AbstractArray)
 apply_lincomb(ax,b)
-varinner(a,b)
-varinner(a::AbstractArray,b::AbstractArray)
 attachmap(f,phi)
 attachmap(f::AbstractArray,phi::AbstractArray)
 integrate(f,x,w,j)

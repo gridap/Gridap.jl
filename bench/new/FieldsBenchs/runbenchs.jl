@@ -12,7 +12,7 @@ include("LincombBenchs.jl")
 
 include("ComposeBenchs.jl")
 
-include("VarinnerBenchs.jl")
+include("FieldOperationsBenchs.jl")
 
 include("AttachmapBenchs.jl")
 
