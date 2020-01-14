@@ -82,19 +82,7 @@ function integrate(cell_field,trian::Triangulation,quad::AbstractArray{<:Quadrat
   q = get_coordinates(quad)
   w = get_weights(quad)
   j = gradient(cell_map)
-  f = _convert_to_integrable(cell_field,cell_map)
-  integrate(f,q,w,j)
-end
-
-function _convert_to_integrable(object,cell_map)
-  object
-end
-
-function _convert_to_integrable(object::Function,cell_map)
-  compose(object,cell_map)
-end
-
-function _convert_to_integrable(object::Number,cell_map)
-  Fill(object,length(cell_map))
+  f = convert_to_cell_field(cell_field,cell_map)
+  integrate(get_array(f),q,w,j)
 end
 

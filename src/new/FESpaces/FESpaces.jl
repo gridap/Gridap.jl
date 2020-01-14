@@ -15,8 +15,6 @@ using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.Fields
 
-using Gridap.Integration: _convert_to_integrable
-
 import Gridap.Arrays: get_array
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!

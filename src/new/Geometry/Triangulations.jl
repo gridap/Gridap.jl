@@ -182,6 +182,12 @@ function get_cell_map(trian::Triangulation)
   lincomb(cell_to_shapefuns, cell_to_coords)
 end
 
+"""
+"""
+function CellField(object,trian::Triangulation)
+  cm = get_cell_map(trian)
+  convert_to_cell_field(object,cm)
+end
 
 # Helpers for Triangulation
 

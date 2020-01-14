@@ -370,7 +370,7 @@ function _prepare_pdata(cellfields,samplingpoints)
   pdata = Dict()
   for (k,v) in cellfields
     _v = get_array(v)
-    pdata[k], = _prepare_node_to_coords(evaluate(_v,samplingpoints))
+    pdata[k], = _prepare_node_to_coords(evaluate_field_array(_v,samplingpoints))
   end
   pdata
 end

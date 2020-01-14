@@ -29,7 +29,7 @@ function field_array_operation(op::Function,a)
 end
 
 function field_array_operation(::Type{T},op::Function,a) where T
-  k = FieldBinOp(op)
+  k = bcast(op)
   apply_to_field_array(T,k,a)
 end
 

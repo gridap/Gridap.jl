@@ -28,6 +28,18 @@ using Gridap.ReferenceFEs: _find_unique_with_indices
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
 import Gridap.Arrays: reindex
+import Gridap.Arrays: get_array
+
+import Gridap.TensorValues: outer
+import Gridap.TensorValues: inner
+import Gridap.TensorValues: symmetic_part
+import Gridap.Fields: gradient
+import Gridap.Fields: grad2curl
+import Base: +, - , *
+import LinearAlgebra: cross
+import LinearAlgebra: tr
+import Base: transpose
+import Base: adjoint
 
 import Gridap.Io: to_dict
 import Gridap.Io: from_dict
@@ -67,8 +79,15 @@ import Gridap.Fields: field_array_gradient
 import Gridap.Fields: apply_lincomb
 import Gridap.Fields: evaluate_field_array
 import Gridap.Fields: kernel_evaluate
+import Gridap.Fields: evaluate
 
 import Gridap.Arrays: apply_kernel!
+
+export CellField
+export GenericCellField
+export similar_cell_field
+export test_cell_field
+export convert_to_cell_field
 
 export GridTopology
 export num_cells
@@ -163,6 +182,8 @@ include("GridTopologies.jl")
 include("GridTopologyMocks.jl")
 
 include("UnstructuredGridTopologies.jl")
+
+include("CellFields.jl")
 
 include("Triangulations.jl")
 
