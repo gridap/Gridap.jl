@@ -69,9 +69,13 @@
                         end
                     end
                 end
+
                 vold = getindex(CSR,maxrows,maxcols)
                 add_entry!(CSR,1,maxrows,maxcols,+)
                 @test getindex(CSR,maxrows,maxcols) == vold+1
+
+                fill_entries!(CSR,0)
+                @test all(x->x==0, nonzeros(CSR))
 
             end
         end
