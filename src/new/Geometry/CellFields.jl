@@ -49,6 +49,11 @@ function similar_cell_field(cf::CellField,array::AbstractArray)
   GenericCellField(array,cm)
 end
 
+function similar_cell_field(cf1::CellField,cf2::CellField,array::AbstractArray)
+  cm = get_cell_map(cf1)
+  GenericCellField(array,cm)
+end
+
 """
 """
 struct GenericCellField{A<:AbstractArray,B<:AbstractArray} <: CellField
@@ -91,17 +96,27 @@ struct UnimplementedField <: Field end
 """
 """
 function operate_cell_field(op,cf::CellField)
+  operate_cell_field_default(op,cf)
+end
+
+function operate_cell_field(op,cf1::CellField,cf2::CellField)
+  operate_cell_field_default(op,cf1,cf2)
+end
+
+"""
+"""
+function operate_cell_field_default(op,cf::CellField)
   a = get_array(cf)
   b = field_array_operation(UnimplementedField,op,a)
   similar_cell_field(cf,b)
 end
 
-function operate_cell_field(op,cf1::CellField,cf2::CellField)
+function operate_cell_field_default(op,cf1::CellField,cf2::CellField)
   @assert length(cf1) == length(cf2)
   a1 = get_array(cf1)
   a2 = get_array(cf2)
   b = field_array_operation(UnimplementedField,op,a1,a2)
-  similar_cell_field(cf1,b)
+  similar_cell_field(cf1,cf2,b)
 end
 
 for op in (:+,:-,:tr, :transpose, :adjoint, :symmetic_part)

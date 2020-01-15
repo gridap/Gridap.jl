@@ -22,6 +22,8 @@ import Gridap.Geometry: get_cell_map
 import Gridap.Geometry: get_cell_shapefuns
 import Gridap.Geometry: get_reffes
 import Gridap.Geometry: get_cell_type
+import Gridap.Geometry: operate_cell_field
+import Gridap.Geometry: similar_cell_field
 
 import Base: +, - , *
 
@@ -32,7 +34,7 @@ export test_fe_function
 
 export FESpace
 export num_free_dofs
-export get_cell_fe_basis
+export get_cell_basis
 export zero_free_values
 export apply_constraints_matrix_cols
 export apply_constraints_matrix_rows
@@ -87,7 +89,19 @@ export test_single_field_cell_fe
 export UnsconstrainedFESpace
 export GradConformingFESpace
 
+export CellBasis
+export test_cell_basis
+export CellMatrixField
+export test_cell_matrix_field
+export GenericCellBasis
+export GenericCellMatrixField
+export TrialStyle
+export is_trial
+export is_test
+
 export compute_conforming_cell_dofs
+
+include("CellBases.jl")
 
 include("FEFunctions.jl")
 

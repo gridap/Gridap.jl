@@ -48,8 +48,8 @@ end
 """
 """
 function test_single_field_fe_space(f::SingleFieldFESpace,cellmat,cellvec,cellidsrows,cellidscols,pred=(==))
-  fe_basis = get_cell_fe_basis(f)
-  @test isa(fe_basis,SingleFieldCellFEBasis)
+  fe_basis = get_cell_basis(f)
+  @test isa(fe_basis,CellBasis)
   test_fe_space(f,cellmat,cellvec,cellidsrows,cellidscols)
   cell_dofs = get_cell_dofs(f)
   dirichlet_values = zero_dirichlet_values(f)
@@ -67,14 +67,14 @@ end
 """
 """
 function get_cell_map(fs::SingleFieldFESpace)
-  fe_basis = get_cell_fe_basis(fs)
+  fe_basis = get_cell_basis(fs)
   get_cell_map(fe_basis)
 end
 
 """
 """
 function get_cell_shapefuns(fs::SingleFieldFESpace)
-  fe_basis = get_cell_fe_basis(fs)
+  fe_basis = get_cell_basis(fs)
   get_array(fe_basis)
 end
 
@@ -121,21 +121,21 @@ end
 """
 cell_field defined in the reference space with derivatives in the physical one
 """
-function compute_free_and_dirichlet_values(f::SingleFieldFESpace, cell_field)
+function compute_free_and_dirichlet_values(f::SingleFieldFESpace, cell_field::CellField)
   cell_vals = _compute_cell_vals(f, cell_field)
   gather_free_and_dirichlet_values(f,cell_vals)
 end
 
 """
 """
-function compute_dirichlet_values(f::SingleFieldFESpace,cell_field)
+function compute_dirichlet_values(f::SingleFieldFESpace,cell_field::CellField)
   cell_vals = _compute_cell_vals(f, cell_field)
   gather_dirichlet_values(f,cell_vals)
 end
 
 """
 """
-function compute_free_values(f::SingleFieldFESpace,cell_field)
+function compute_free_values(f::SingleFieldFESpace,cell_field::CellField)
   cell_vals = _compute_cell_vals(f, cell_field)
   gather_free_values(f,cell_vals)
 end
