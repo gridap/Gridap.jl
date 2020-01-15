@@ -10,6 +10,8 @@ function TrialStyle(::Type{<:CellBasis})
   Val{false}()
 end
 
+TrialStyle(cb::CellBasis) = TrialStyle(typeof(cb))
+
 """
 """
 is_trial(cb::CellBasis) = is_trial(typeof(cb))
@@ -150,7 +152,7 @@ function _operate_cell_matrix_field(op,a,b)
   aa = get_array(a)
   ab = get_array(b)
   k = bcast(op)
-  c = apply_field_array(k,a,b)
+  c = apply_to_field_array(UnimplementedField,k,aa,ab)
   similar_cell_field(a,b,c)
 end
 

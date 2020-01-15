@@ -90,6 +90,7 @@ export similar_cell_field
 export test_cell_field
 export convert_to_cell_field
 export operate_cell_field
+export operate_cell_field_default
 
 export GridTopology
 export num_cells
