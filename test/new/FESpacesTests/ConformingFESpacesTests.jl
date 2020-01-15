@@ -5,10 +5,8 @@ using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.ReferenceFEs
 using Gridap.Geometry
+using Gridap.FESpaces
 
-include("../../../src/new/FESpaces/FESpaces.jl")
-
-using .FESpaces
 
 # testing compute_conforming_cell_dofs
 

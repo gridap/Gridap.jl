@@ -7,12 +7,9 @@ using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.Integration
 using Gridap.Fields
+using Gridap.FESpaces
 
 using Gridap.Fields: MockField, MockBasis
-
-include("../../../src/new/FESpaces/FESpaces.jl")
-
-using .FESpaces
 
 domain =(0,1,0,1)
 partition = (3,3)

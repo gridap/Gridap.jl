@@ -5,9 +5,7 @@ using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.ReferenceFEs
 using Gridap.Geometry
-
-include("../../../src/new/FESpaces/FESpaces.jl")
-using .FESpaces
+using Gridap.FESpaces
 
 domain =(0,1,0,1,0,1)
 partition = (3,3,3)
