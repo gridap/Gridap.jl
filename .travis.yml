@@ -1,4 +1,8 @@
 # Documentation: http://docs.travis-ci.com/user/languages/julia/
+stages:
+  - Test
+  - PluginsTest
+  - Documentation
 language: julia
 os:
   - linux
@@ -25,7 +29,7 @@ jobs:
                                     Pkg.instantiate()'
         - julia --project=docs/ docs/make.jl
       after_success: skip
-    - stage: "Test"
+    - stage: "PluginsTest"
       name: "GridapGmshTest"
       julia: 1.2
       os: linux
