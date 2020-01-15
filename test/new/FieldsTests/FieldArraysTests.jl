@@ -32,6 +32,12 @@ agx = fill(gx,l)
 a∇gx = fill(∇gx,l)
 test_array_of_fields(ag,ax,agx,grad=a∇gx)
 
+
+struct FieldPlaceHolder <: Field end
+
+ag = apply_to_field_array(FieldPlaceHolder,bcast(+),af,af)
+test_array(evaluate_field_array(ag,ax),agx)
+
 w = 2.0
 aw = fill(w,l)
 ag = apply_to_field_array(bcast(+),af,aw)
@@ -40,6 +46,9 @@ gx = fill(v+w,np)
 agx = fill(gx,l)
 a∇gx = fill(∇gx,l)
 test_array_of_fields(ag,ax,agx,grad=a∇gx)
+
+ag = apply_to_field_array(FieldPlaceHolder,bcast(+),af,aw)
+test_array(evaluate_field_array(ag,ax),agx)
 
 l = 10
 af = Fill(f,l)

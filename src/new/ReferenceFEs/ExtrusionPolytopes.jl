@@ -149,7 +149,13 @@ function get_facet_orientations(p::ExtrusionPolytope)
 end
 
 function get_vertex_permutations(p::ExtrusionPolytope)
-  _admissible_permutations(p)
+  perms = _admissible_permutations(p)
+  if p == HEX
+    #TODO temporary fix
+    identity_perm = [1,2,3,4,5,6,7,8]
+    return vcat([identity_perm,],perms)
+  end
+  perms
 end
 
 function is_simplex(p::ExtrusionPolytope)

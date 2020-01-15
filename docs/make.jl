@@ -17,6 +17,7 @@ pages = [
   "Gridap.Geometry" => "Geometry.md",
   "Gridap.Integration" => "Integration.md",
   "Gridap.Algebra" => "Algebra.md",
+  "Gridap.FESpaces" => "FESpaces.md",
   "Gridap.Visualization" => "Visualization.md",
  ]
 

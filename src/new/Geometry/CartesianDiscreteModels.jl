@@ -78,7 +78,7 @@ function _fill_cartesian_entitties!(labels,topo)
   d_to_dface_to_entity = labels.d_to_dface_to_entity
   polytope = first(get_polytopes(topo))
   dim_to_offset = get_offsets(polytope)
-  interior_id = num_faces(polytope)+1
+  interior_id = num_faces(polytope)
   boundary_id = -1
   for d in 0:(D-1)
     face_to_cells = get_faces(topo,d,D)
@@ -110,7 +110,7 @@ end
 function _add_cartesian_tags!(labels,topo)
   D = num_cell_dims(topo)
   polytope = first(get_polytopes(topo))
-  interior_id = num_faces(polytope)+1
+  interior_id = num_faces(polytope)
   boundary_ids = collect(1:(interior_id-1))
   for i in boundary_ids
     name = lpad(i,ceil(Int,log10(interior_id)),'0')

@@ -17,6 +17,7 @@ The module is structured in the following sub-modules:
 - [`Gridap.Geometry`](@ref)
 - [`Gridap.Integration`](@ref)
 - [`Gridap.Algebra`](@ref)
+- [`Gridap.FESpaces`](@ref)
 - [`Gridap.Visualization`](@ref)
 
 The exported names are:

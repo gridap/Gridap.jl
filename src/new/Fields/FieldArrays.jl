@@ -240,6 +240,7 @@ end
 
 """
     apply_to_field_array(k,f::AbstractArray...)
+    apply_to_field_array(::Type{T},k,f::AbstractArray...) where T
 
 Returns an array of fields numerically equivalent to
 
@@ -250,6 +251,12 @@ function apply_to_field_array(
   k,f::AbstractArray...)
   v = Valued(k)
   apply(v,f...)
+end
+
+function apply_to_field_array(
+  ::Type{T},k,f::AbstractArray...) where T
+  v = Valued(k)
+  apply(T,v,f...)
 end
 
 struct Valued{K} <: Kernel
@@ -266,5 +273,14 @@ end
 function kernel_evaluate(k::Valued,x,f...)
   fx = evaluate_field_arrays(f,x)
   a = apply(k.k,fx...)
+end
+
+for op in (:+,:-)
+  @eval begin
+    function apply_gradient(k::Valued{BCasted{typeof($op)}},f...)
+      g = field_array_gradients(f...)
+      apply(k,g...)
+    end
+  end
 end
 

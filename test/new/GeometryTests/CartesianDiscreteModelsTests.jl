@@ -15,9 +15,12 @@ test_discrete_model(model)
 @test is_oriented(get_grid(model)) == true
 @test is_oriented(get_grid_topology(model)) == true
 
+grid_topology = get_grid_topology(model)
+cell_to_pindices = get_cell_permutations(grid_topology)
+
 labels = get_face_labeling(model)
-@test num_tags(labels) == 29
-@test num_entities(labels) == 28
+@test num_tags(labels) == 28
+@test num_entities(labels) == 27
 
 map = get_cell_map(get_grid(model))
 @test isa(map,CartesianMap)

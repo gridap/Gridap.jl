@@ -352,7 +352,8 @@ function get_normal_vector(trian::GenericBoundaryTriangulation)
   refn = ReferenceNormal(trian)
   cell_map = restrict(get_cell_map(trian.cell_trian),trian)
   J = gradient(cell_map)
-  apply(k,J,refn)
+  a = apply(k,J,refn)
+  GenericCellField(a,cell_map)
 end
 
 struct ReferenceNormal{D,T} <: AbstractVector{Point{D,T}}

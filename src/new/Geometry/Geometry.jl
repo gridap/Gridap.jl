@@ -28,6 +28,18 @@ using Gridap.ReferenceFEs: _find_unique_with_indices
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
 import Gridap.Arrays: reindex
+import Gridap.Arrays: get_array
+
+import Gridap.TensorValues: outer
+import Gridap.TensorValues: inner
+import Gridap.TensorValues: symmetic_part
+import Gridap.Fields: gradient
+import Gridap.Fields: grad2curl
+import Base: +, - , *
+import LinearAlgebra: cross
+import LinearAlgebra: tr
+import Base: transpose
+import Base: adjoint
 
 import Gridap.Io: to_dict
 import Gridap.Io: from_dict
@@ -67,8 +79,18 @@ import Gridap.Fields: field_array_gradient
 import Gridap.Fields: apply_lincomb
 import Gridap.Fields: evaluate_field_array
 import Gridap.Fields: kernel_evaluate
+import Gridap.Fields: evaluate
 
 import Gridap.Arrays: apply_kernel!
+
+export CellField
+export GenericCellField
+export SkeletonCellField
+export similar_cell_field
+export test_cell_field
+export convert_to_cell_field
+export operate_cell_field
+export operate_cell_field_default
 
 export GridTopology
 export num_cells
@@ -101,6 +123,7 @@ export get_cell_map
 export get_normal_vector
 export test_triangulation
 export restrict
+export get_physical_coordinate
 
 export Grid
 export get_cell_nodes
@@ -126,6 +149,8 @@ export get_tags_from_names
 export add_tag!
 export add_tag_from_tags!
 export get_face_mask
+export get_face_tag
+export get_face_tag_index
 
 export DiscreteModel
 export get_grid
@@ -137,6 +162,7 @@ export compute_face_own_nodes
 export compute_vertex_node
 export get_node_face_owner
 export compute_node_face_owner
+export get_triangulation
 
 export UnstructuredDiscreteModel
 export CartesianDiscreteModel
@@ -160,6 +186,10 @@ include("GridTopologies.jl")
 include("GridTopologyMocks.jl")
 
 include("UnstructuredGridTopologies.jl")
+
+include("CellFields.jl")
+
+include("SkeletonPairs.jl")
 
 include("Triangulations.jl")
 
@@ -186,8 +216,6 @@ include("CartesianDiscreteModels.jl")
 include("BoundaryTriangulations.jl")
 
 include("GenericBoundaryTriangulations.jl")
-
-include("SkeletonPairs.jl")
 
 include("SkeletonTriangulations.jl")
 

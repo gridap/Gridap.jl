@@ -61,6 +61,22 @@ function apply(g1::CompressedArray,g::CompressedArray...)
   end
 end
 
+function apply(::Type{T},f::Fill,g1::CompressedArray,g::CompressedArray...) where T
+  if all( ( gi.ptrs === g1.ptrs for gi in g ) ) || all( ( gi.ptrs == g1.ptrs for gi in g ) )
+    _apply_fill_compressed(f,g1,g...)
+  else
+    return AppliedArray(T,f,g1,g...)
+  end
+end
+
+function apply(::Type{T},g1::CompressedArray,g::CompressedArray...) where T
+  if all( ( gi.ptrs === g1.ptrs for gi in g ) ) || all( ( gi.ptrs == g1.ptrs for gi in g ) )
+    _apply_compressed(g1,g...)
+  else
+    return AppliedArray(T,g1,g...)
+  end
+end
+
 function _apply_fill_compressed(f,g1,g...)
   k = f.value
   ptrs = g1.ptrs

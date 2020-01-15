@@ -6,6 +6,8 @@ using Test
 
 @testset "UnstructuredGridTopologies" begin include("UnstructuredGridTopologiesTests.jl") end
 
+@testset "CellFields" begin include("CellFieldsTests.jl") end
+
 @testset "Triangulations" begin include("TriangulationsTests.jl") end
 
 @testset "Grids" begin include("GridsTests.jl") end

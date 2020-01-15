@@ -52,31 +52,46 @@ c = t\a
 
 # Operations by a scalar
 
+t = TensorValue(1,2,3,4,5,6,7,8,9)
 a = VectorValue(1,2,3)
-r = VectorValue(2,4,6)
 
 c = 2 * a
 @test isa(c,VectorValue{3,Int})
+r = VectorValue(2,4,6)
 @test c == r
 
 c = a * 2
 @test isa(c,VectorValue{3,Int})
+r = VectorValue(2,4,6)
 @test c == r
-
-r = VectorValue(3,4,5)
 
 c = 2 + a
 @test isa(c,VectorValue{3,Int})
+r = VectorValue(3,4,5)
 @test c == r
 
 c = a + 2
 @test isa(c,VectorValue{3,Int})
 @test c == r
 
-r = VectorValue(1/2,1.0,3/2)
-
 c = a / 2
 @test isa(c,VectorValue{3,Float64})
+r = VectorValue(1/2,1.0,3/2)
+@test c == r
+
+c = 2 * t
+@test isa(c,TensorValue{3,Int})
+r = TensorValue(2, 4, 6, 8, 10, 12, 14, 16, 18)
+@test c == r
+
+c = t * 2
+@test isa(c,TensorValue{3,Int})
+r = TensorValue(2, 4, 6, 8, 10, 12, 14, 16, 18)
+@test c == r
+
+c = t + 2
+@test isa(c,TensorValue{3,Int})
+r = TensorValue(3, 4, 5, 6, 7, 8, 9, 10, 11)
 @test c == r
 
 # Dot product (simple contraction)
@@ -99,6 +114,11 @@ r = VectorValue(30,36,42)
 c = s * t
 @test isa(c,TensorValue{3,Int})
 r = TensorValue(38,24,18,98,69,48,158,114,78)
+@test c == r
+
+c = a * t
+@test isa(c,VectorValue{3,Int})
+r = VectorValue(14, 32, 50)
 @test c == r
 
 # Inner product (full contraction)
@@ -178,6 +198,15 @@ c = meas(a)
 t = TensorValue(10,2,30,4,5,6,70,8,9)
 c = meas(t)
 @test c ≈ 8802.0
+
+v = MultiValue{Tuple{1,2}}(10,20)
+@test meas(v) == sqrt(500)
+
+v = MultiValue{Tuple{2,3}}(1,0,0,1,0,0)
+@test meas(v) ≈ 1.0
+
+v = MultiValue{Tuple{2,3}}(1,0,0,1,1,0)
+@test meas(v) ≈ sqrt(2)
  
 # Broadcasted operations
 
