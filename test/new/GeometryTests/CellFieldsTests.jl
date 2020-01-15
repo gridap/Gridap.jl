@@ -66,6 +66,8 @@ collect(evaluate(epsi_cfu,q))
 
 btrian = BoundaryTriangulation(model)
 
+s = CompressedArray([Point{1,Float64}[(0.25,),(0.75,)]],get_cell_type(btrian))
+
 bcf1 = restrict(cf1,btrian)
 @test isa(bcf1,CellField)
 
@@ -74,6 +76,12 @@ nvec = get_normal_vector(btrian)
 
 z = 2*bcf1 + nvec
 @test isa(z,CellField)
+
+flux1 = nvec*∇u
+collect(evaluate(flux1,s))
+
+flux2 = ∇u*nvec
+collect(evaluate(flux2,s))
 
 strian = SkeletonTriangulation(model)
 
