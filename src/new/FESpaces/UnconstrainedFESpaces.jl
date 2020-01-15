@@ -7,7 +7,7 @@ struct UnsconstrainedFESpace{T,A,B,C} <: SingleFieldFESpace
   nfree::Int
   ndirichlet::Int
   cell_dofs::A
-  cell_fe_basis::B
+  cell_basis::B
   cell_dof_basis::C
   dirichlet_dof_tag::Vector{Int8}
   dirichlet_cells::Vector{Int}
@@ -27,17 +27,17 @@ struct UnsconstrainedFESpace{T,A,B,C} <: SingleFieldFESpace
     dirichlet_cells::Vector{Int},
     ntags) where T
 
-    cell_fe_basis = CellShapeFunsWithMap(cell_shapefuns,cell_map)
+    cell_basis = GenericCellBasis(cell_shapefuns,cell_map)
 
     A = typeof(cell_dofs)
-    B = typeof(cell_fe_basis)
+    B = typeof(cell_basis)
     C = typeof(cell_dof_basis)
 
     new{T,A,B,C}(
       nfree,
       ndirichlet,
       cell_dofs,
-      cell_fe_basis,
+      cell_basis,
       cell_dof_basis,
       dirichlet_dof_tag,
       dirichlet_cells,
@@ -51,8 +51,8 @@ function num_free_dofs(f::UnsconstrainedFESpace)
   f.nfree
 end
 
-function get_cell_fe_basis(f::UnsconstrainedFESpace)
-  f.cell_fe_basis
+function get_cell_basis(f::UnsconstrainedFESpace)
+  f.cell_basis
 end
 
 function zero_free_values(f::UnsconstrainedFESpace{T}) where T

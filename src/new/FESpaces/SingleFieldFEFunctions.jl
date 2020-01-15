@@ -21,6 +21,8 @@ struct SingleFieldFEFunction{A,B,C} <: CellField
   end
 end
 
+FEFunctionStyle(::Type{<:SingleFieldFEFunction}) = Val{true}()
+
 get_array(f::SingleFieldFEFunction) = f.array
 
 get_free_values(f::SingleFieldFEFunction) = f.free_values

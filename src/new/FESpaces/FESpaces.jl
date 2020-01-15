@@ -25,14 +25,14 @@ import Gridap.Geometry: get_cell_type
 import Gridap.Geometry: operate_cell_field
 import Gridap.Geometry: similar_cell_field
 
-import Base: +, - , *
-
-export FEFunction
+export FEFunctionStyle
+export is_a_fe_function
 export get_free_values
 export get_fe_space
 export test_fe_function
 
 export FESpace
+export FEFunction
 export num_free_dofs
 export get_cell_basis
 export zero_free_values
@@ -77,14 +77,9 @@ export test_single_field_fe_space
 export interpolate
 export interpolate_everywhere
 export interpolate_dirichlet
+export get_cell_dof_basis
 
 export SingleFieldFEFunction
-export SingleFieldCellBasis
-
-export SingleFieldCellFE
-export CellShapeFunsWithMap
-export get_cell_dof_basis
-export test_single_field_cell_fe
 
 export UnsconstrainedFESpace
 export GradConformingFESpace
@@ -112,8 +107,6 @@ include("Assemblers.jl")
 include("SingleFieldFESpaces.jl")
 
 include("SingleFieldFEFunctions.jl")
-
-include("SingleFieldCellFEBases.jl")
 
 include("UnconstrainedFESpaces.jl")
 

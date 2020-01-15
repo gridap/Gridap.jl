@@ -160,8 +160,15 @@ end
 """
 struct GenericCellBasis{T,A,B} <: CellBasis
   trial_style::Val{T}
-  array::A,
+  array::A
   cell_map::B
+end
+
+"""
+"""
+function GenericCellBasis(array::AbstractArray,cell_map::AbstractArray)
+  trial_style = Val{false}()
+  GenericCellBasis(trial_style,array,cell_map)
 end
 
 get_array(a::GenericCellBasis) = a.array

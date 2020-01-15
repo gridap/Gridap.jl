@@ -65,6 +65,7 @@ end
 function test_fe_space(f::FESpace,cellmat,cellvec,cellidsrows,cellidscols)
   free_values = zero_free_values(f)
   fe_function = FEFunction(f,free_values)
+  test_fe_function(fe_function)
   fe_basis = get_cell_basis(f)
   _ = apply_constraints_matrix_cols(f,cellmat,cellidscols)
   _ = apply_constraints_matrix_rows(f,cellmat,cellidsrows)

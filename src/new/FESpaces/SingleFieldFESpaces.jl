@@ -61,6 +61,7 @@ function test_single_field_fe_space(f::SingleFieldFESpace,cellmat,cellvec,cellid
   @test pred(dv,dirichlet_values)
   fe_function = FEFunction(f,free_values,dirichlet_values)
   @test isa(fe_function, SingleFieldFEFunction)
+  test_fe_function(fe_function)
   @test maximum(get_dirichlet_dof_tag(f)) == num_dirichlet_tags(f)
 end
 

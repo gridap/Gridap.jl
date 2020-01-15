@@ -15,6 +15,7 @@ export @notimplementedif
 export @unreachable
 export tfill
 export GridapType
+export get_val_parameter
 
 """
     @abstractmethod
