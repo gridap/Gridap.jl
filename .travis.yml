@@ -33,6 +33,15 @@ jobs:
       name: "GridapGmshTest"
       julia: 1.2
       os: linux
+      addons:
+        apt:
+          update: true
+          packages:
+            - libglu1-mesa
+            - libxrender1
+            - libxcursor1
+            - libxft2
+            - libxinerama1
       branches:
         only:
           - new_master
