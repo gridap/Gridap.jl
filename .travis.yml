@@ -83,3 +83,24 @@ jobs:
                                    Pkg.build("GridapPardiso");
                                    Pkg.test("GridapPardiso");'
       after_success: skip
+
+    - stage: "PluginsTest"
+      name: "GridapPETScTest"
+      julia: 1.2
+      os: linux
+      addons:
+        apt:
+          update: true
+          packages:
+            - openmpi-bin
+            - petsc-dev
+      script:
+        - mkdir -p tmp
+        - julia --project=tmp/ -e 'using Pkg;
+                                   Pkg.develop(PackageSpec(path=pwd()));
+                                   Pkg.instantiate();
+                                   Pkg.add(PackageSpec(name="GridapPETSc",rev="new_master"));
+                                   Pkg.build("GridapPETSc");
+                                   Pkg.test("GridapPETSc");'
+      after_success: skip
+
