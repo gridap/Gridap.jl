@@ -41,8 +41,6 @@ apply_constraints_matrix_rows(f::TrialFESpace,cm,cids) = apply_constraints_matri
 
 apply_constraints_vector(f::TrialFESpace,cm,cids) = apply_constraints_vector(f.space,cm,cids)
 
-zero_free_values(f::TrialFESpace) = zero_free_values(f.space)
-
 get_cell_dofs(f::TrialFESpace) = get_cell_dofs(f.space)
 
 num_dirichlet_dofs(f::TrialFESpace) = num_dirichlet_dofs(f.space)

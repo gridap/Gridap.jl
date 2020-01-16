@@ -120,7 +120,7 @@ include("SingleFieldFEFunctions.jl")
 
 include("TrialFESpaces.jl")
 
-include("SingleFieldAssemblers.jl")
+include("SparseMatrixAssemblers.jl")
 
 include("UnconstrainedFESpaces.jl")
 

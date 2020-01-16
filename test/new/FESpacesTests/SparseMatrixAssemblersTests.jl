@@ -1,4 +1,4 @@
-module SingleFieldAssemblersTests
+module SparseMatrixAssemblers
 
 using Test
 using Gridap.Arrays

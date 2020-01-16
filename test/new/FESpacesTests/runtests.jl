@@ -16,7 +16,7 @@ using Test
 
 @testset "TrialFESpaces" begin include("TrialFESpacesTests.jl") end
 
-@testset "SingleFieldAssemblers" begin include("SingleFieldAssemblersTests.jl") end
+@testset "SparseMatrixAssemblers" begin include("SparseMatrixAssemblersTests.jl") end
 
 @testset "UnconstrainedFESpaces" begin include("UnconstrainedFESpacesTests.jl") end
 
