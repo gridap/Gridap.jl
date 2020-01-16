@@ -15,6 +15,7 @@ export @notimplementedif
 export @unreachable
 export tfill
 export GridapType
+export get_val_parameter
 
 """
     @abstractmethod
@@ -89,6 +90,21 @@ abstract type GridapType end
 
 function show(io::IO,object::GridapType)
   print(io,"$(nameof(typeof(object)))()")
+end
+
+
+"""
+    get_val_parameter(::Val{T}) where T
+    get_val_parameter(::Type{Val{T}}) where T
+
+Returns `T`.
+"""
+function get_val_parameter(::Val{T}) where T
+  T
+end
+
+function get_val_parameter(::Type{Val{T}}) where T
+  T
 end
 
 end # module Helpers

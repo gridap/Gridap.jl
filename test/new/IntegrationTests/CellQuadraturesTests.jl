@@ -42,7 +42,7 @@ x = evaluate(q2x,q)
 #writevtk(trian,"trian")
 #writevtk(x,"x",nodaldata=["w"=>w])
 
-domain = (0,1,0,1,0,1)
+domain = (0,1,0,1)
 partition = (2,3)
 trian = CartesianGrid(domain,partition)
 quad = CellQuadrature(trian,degree)
@@ -50,5 +50,16 @@ q = get_coordinates(quad)
 @test isa(q,Fill)
 w = get_weights(quad)
 @test isa(w,Fill)
+
+vol = sum(integrate(1,trian,quad))
+@test vol ≈ 1
+
+domain = (0,2,0,2,0,2)
+partition = (2,3,2)
+trian = CartesianGrid(domain,partition)
+quad = CellQuadrature(trian,degree)
+
+vol = sum(integrate(1,trian,quad))
+@test vol ≈ 2^3
 
 end # module

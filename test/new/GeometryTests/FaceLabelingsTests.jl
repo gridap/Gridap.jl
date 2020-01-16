@@ -71,5 +71,10 @@ rm(d,recursive=true)
 face_to_mask = get_face_mask(labels,"interior",1)
 @test face_to_mask == Bool[0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0]
 
+face_to_tag = get_face_tag(labels,["boundary","interior"],1)
+@test face_to_tag == [2, 1, 2, 1, 2, 1, 2, 1, 2, 2, 1, 2, 2]
+
+face_to_tag = get_face_tag_index(labels,["boundary","interior"],1)
+@test face_to_tag == Int8[1, 2, 1, 2, 1, 2, 1, 2, 1, 1, 2, 1, 1]
 
 end # module

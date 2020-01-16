@@ -182,6 +182,27 @@ function get_cell_map(trian::Triangulation)
   lincomb(cell_to_shapefuns, cell_to_coords)
 end
 
+"""
+"""
+function CellField(object,trian::Triangulation)
+  cm = get_cell_map(trian)
+  convert_to_cell_field(object,cm)
+end
+
+"""
+In contrast to get_cell_map, the returned object:
+- is a CellField
+- its gradient is the identity tensor
+"""
+function get_physical_coordinate(trian::Triangulation)
+  CellField(_phys_coord,trian)
+end
+
+_phys_coord(x) = x
+
+_phys_coord_grad(x) = one(typeof(outer(x,x)))
+
+gradient(::typeof(_phys_coord)) = _phys_coord_grad
 
 # Helpers for Triangulation
 
@@ -195,5 +216,44 @@ function _get_cell_data(type_to_data, cell_to_type::Fill)
   @assert cell_to_type.value == 1 "Only one type of reference element expected"
   data = first(type_to_data)
   Fill(data,ncells)
+end
+
+"""
+"""
+function restrict(cf::CellField,trian::Triangulation)
+  a = get_array(cf)
+  r = restrict(a,trian)
+  _restrict_cell_field(r,trian)
+end
+
+"""
+"""
+struct SkeletonCellField{L,R}
+  left::L
+  right::R
+end
+
+function jump(sf::SkeletonCellField)
+  sf.left - sf.right
+end
+
+function mean(sf::SkeletonCellField)
+  operate_cell_field(_mean,sf.left,sf.right)
+end
+
+_mean(x,y) = 0.5*x + 0.5*y
+
+function _restrict_cell_field(r::SkeletonPair,trian)
+  cm = get_cell_map(trian)
+  la = r.left
+  ra = r.right
+  l = GenericCellField(la,cm)
+  r = GenericCellField(ra,cm)
+  SkeletonCellField(l,r)
+end
+
+function _restrict_cell_field(r::AbstractArray,trian)
+  cm = get_cell_map(trian)
+  GenericCellField(r,cm)
 end
 

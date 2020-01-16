@@ -145,6 +145,15 @@ function testitem(a::Fill)
   a.value
 end
 
+"""
+    get_array(a::AbstractArray)
+
+Returns `a`.
+"""
+function get_array(a::AbstractArray)
+  a
+end
+
 # Test the interface
 
 """

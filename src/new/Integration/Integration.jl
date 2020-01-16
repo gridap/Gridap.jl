@@ -11,6 +11,7 @@ using QuadGK: gauss
 using FastGaussQuadrature: gaussjacobi
 using FastGaussQuadrature: gausslegendre
 using FillArrays
+
 using Gridap.Helpers
 using Gridap.Fields
 using Gridap.TensorValues
@@ -20,6 +21,7 @@ using Gridap.Arrays
 
 import Gridap.ReferenceFEs: num_dims
 import Gridap.ReferenceFEs: num_point_dims
+import Gridap.Fields: integrate
 
 export Quadrature
 export GenericQuadrature

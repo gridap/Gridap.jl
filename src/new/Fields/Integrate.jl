@@ -51,16 +51,17 @@ end
   cis = CartesianIndices(s)
   setsize!(c,s)
   z = zero(eltype(c))
+  r = c.array
   for i in cis
-    @inbounds c[i] = z
+    @inbounds r[i] = z
   end
   for p in 1:np
     @inbounds dV = w[p]*meas(j[p])
     for i in cis
-      @inbounds c[i] += f[p,i]*dV
+      @inbounds r[i] += f[p,i]*dV
     end
   end
-  c
+  r
 end
 
 function _integrate_rt(f,w,j)

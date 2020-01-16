@@ -80,7 +80,21 @@ function (*)(a::MultiValue,b::MultiValue)
   MultiValue(r)
 end
 
+@generated function (*)(a::VectorValue{D}, b::TensorValue{D}) where D
+  ss = String[]
+  for j in 1:D
+    s = join([ "a.array[$i]*b.array[$i,$j]+" for i in 1:D])
+    push!(ss,s[1:(end-1)]*", ")
+  end
+  str = join(ss)
+  Meta.parse("VectorValue($str)")
+end
+
 @inline dot(u::VectorValue,v::VectorValue) = inner(u,v)
+
+@inline dot(u::TensorValue,v::VectorValue) = u*v
+
+@inline dot(u::VectorValue,v::TensorValue) = u*v
 
 # Inner product (full contraction)
 
@@ -134,6 +148,21 @@ inv(a::TensorValue) = MultiValue(inv(a.array))
 meas(a::VectorValue) = sqrt(inner(a,a))
 
 meas(a::TensorValue) = abs(det(a))
+
+function meas(v::MultiValue{Tuple{1,2}})
+  n1 = v[1,2]
+  n2 = -1*v[1,1]
+  n = VectorValue(n1,n2)
+  sqrt(n*n)
+end
+
+function meas(v::MultiValue{Tuple{2,3}})
+  n1 = v[1,2]*v[2,3] - v[1,3]*v[2,2]
+  n2 = v[1,3]*v[2,1] - v[1,1]*v[2,3]
+  n3 = v[1,1]*v[2,2] - v[1,2]*v[2,1]
+  n = VectorValue(n1,n2,n3)
+  sqrt(n*n)
+end
 
 @inline norm(u::VectorValue) = sqrt(inner(u,u))
 

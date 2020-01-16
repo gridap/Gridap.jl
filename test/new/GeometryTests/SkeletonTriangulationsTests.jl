@@ -24,7 +24,7 @@ s2fun = restrict(q2fun,strian)
 
 s = CompressedArray([Point{1,Float64}[(0.25,),(0.75,)]],get_cell_type(strian))
 
-fs = evaluate(jump(s2fun),s)
+fs = evaluate(s2fun.left-s2fun.right,s)
 
 r = fill(zeros(2),length(fs))
 

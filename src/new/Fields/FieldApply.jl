@@ -32,6 +32,12 @@ function apply_kernel_gradient(k,f...)
   @abstractmethod
 end
 
+@inline apply_kernel_gradient(k::BCasted{typeof(+)},a) = field_gradient(a)
+
+@inline apply_kernel_gradient(k::BCasted{typeof(-)},a...) = apply_kernel_to_field(k,field_gradients(a...)...)
+
+@inline apply_kernel_gradient(k::BCasted{typeof(+)},a...) = apply_kernel_to_field(k,field_gradients(a...)...)
+
 # Result of applying a kernel to the value of some fields
 
 struct AppliedField{K,F} <: Field

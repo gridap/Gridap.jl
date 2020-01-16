@@ -79,13 +79,13 @@ function bench3(n)
   ar = Fill(r,l)
   ab = attachmap(ar,aϕ)
 
-  fmass = varinner(ab,ab)
+  fmass = field_array_operation(inner,ab,ab)
   mmass = integrate(fmass,ax,aw,aj)
 
   cmmass = array_cache(mmass)
   @time loop(mmass,cmmass)
 
-  fstif = varinner(∇(ab),∇(ab))
+  fstif = field_array_operation(inner,∇(ab),∇(ab))
   mstif = integrate(fstif,ax,aw,aj)
 
   cmstif = array_cache(mstif)

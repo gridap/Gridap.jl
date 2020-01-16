@@ -371,6 +371,12 @@ function Triangulation(::Type{ReferenceFE{d}},model::DiscreteModel) where d
 end
 
 """
+"""
+function get_triangulation(model::DiscreteModel)
+  get_grid(model)
+end
+
+"""
     simplexify(model::DiscreteModel)
 """
 function simplexify(model::DiscreteModel)

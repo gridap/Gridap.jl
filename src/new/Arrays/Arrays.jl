@@ -26,6 +26,7 @@ export uses_hash
 export test_array
 export testitems
 export array_caches
+export get_array
 
 export CachedArray
 export CachedMatrix
@@ -34,6 +35,7 @@ export setsize!
 
 export CompressedArray
 export LocalToGlobalArray
+export LocalToGlobalPosNegArray
 
 export kernel_cache
 export kernel_caches
@@ -94,6 +96,8 @@ include("CompressedArrays.jl")
 include("Tables.jl")
 
 include("LocalToGlobalArrays.jl")
+
+include("LocalToGlobalPosNegArrays.jl")
 
 include("Reindex.jl")
 

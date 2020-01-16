@@ -23,7 +23,7 @@ end
 
 function get_cell_type(::MockTriangulation)
   ncells = 3
-  Fill(1,ncells)
+  Fill(Int8(1),ncells)
 end
 
 function get_reffes(::MockTriangulation)
@@ -63,5 +63,13 @@ test_array_of_fields(cell_map,q,x,grad=j)
 
 @test is_affine(trian) == true
 @test is_first_order(trian) == true
+
+cf1 = CellField(3,trian)
+cf2 = CellField(identity,trian)
+
+x = get_physical_coordinate(trian)
+
+#using Gridap.Visualization
+#writevtk(trian,"trian",cellfields=["cf1"=>cf1,"cf2"=>cf2,"x"=>x, "gradx"=>∇(x)])
 
 end # module
