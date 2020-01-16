@@ -1,8 +1,9 @@
 # Documentation: http://docs.travis-ci.com/user/languages/julia/
 stages:
-  - Test
-  - PluginsTest
-  - Documentation
+  - name: Test
+  - name: PluginsTest
+  - name: Documentation
+
 language: julia
 os:
   - linux
@@ -29,6 +30,7 @@ jobs:
                                     Pkg.instantiate()'
         - julia --project=docs/ docs/make.jl
       after_success: skip
+
     - stage: "PluginsTest"
       name: "GridapGmshTest"
       julia: 1.2
@@ -42,9 +44,6 @@ jobs:
             - libxcursor1
             - libxft2
             - libxinerama1
-      branches:
-        only:
-          - new_master
       before_script:
         - curl -OL http://gmsh.info/bin/Linux/gmsh-4.4.1-Linux64-sdk.tgz
         - tar xfv gmsh-4.4.1-Linux64-sdk.tgz
