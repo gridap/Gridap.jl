@@ -8,8 +8,15 @@ using Gridap.Geometry
 using Gridap.Integration
 using Gridap.Fields
 using Gridap.FESpaces
+using Gridap.FESpaces: SkeletonCellBasis
+using Gridap.FESpaces: ReducedSkeletonCellBasis
+using Gridap.FESpaces: SkeletonCellVector
+using Gridap.FESpaces: SkeletonCellMatrixField
+using Gridap.FESpaces: SkeletonCellMatrix
 
 using Gridap.Fields: MockField, MockBasis
+
+#include("../../../src/new/FESpaces/FESpaces.jl")
 
 domain =(0,1,0,1)
 partition = (3,3)
@@ -88,5 +95,92 @@ test_cell_matrix_field(s,q,2*wx,≈)
 
 s = (3*w)-w
 test_cell_matrix_field(s,q,2*wx,≈)
+
+mat = integrate(w,trian,quad)
+mat = collect(mat)
+
+vec = integrate(v,trian,quad)
+vec = collect(vec)
+
+mat2 = integrate(2*w,trian,quad)
+test_array(mat2,2*mat)
+
+vec2 = integrate(2*v,trian,quad)
+test_array(vec2,2*vec)
+
+# Testing boundary
+
+btrian = BoundaryTriangulation(model)
+bquad = CellQuadrature(btrian,degree)
+bq = get_coordinates(bquad)
+
+bv = restrict(v,btrian)
+@test isa(bv,CellBasis)
+@test is_test(bv)
+bvec = integrate(bv,btrian,bquad)
+bvec = collect(bvec)
+
+bvec2 = integrate(2*bv,btrian,bquad)
+test_array(bvec2,2*bvec)
+
+bu = restrict(u,btrian)
+@test isa(bv,CellBasis)
+@test is_trial(bu)
+
+bw = bv * bu
+@test isa(bw,CellMatrixField)
+bmat = integrate(bw,btrian,bquad)
+bmat = collect(bmat)
+
+bmat2 = integrate(bw*2,btrian,bquad)
+test_array(bmat2,2*bmat)
+
+# Testing Skeleton
+
+strian = SkeletonTriangulation(model)
+squad = CellQuadrature(strian,degree)
+sq = get_coordinates(squad)
+
+sv = restrict(v,strian)
+@test isa(sv,SkeletonCellBasis)
+@test is_test(sv)
+
+sv = jump(sv)
+@test isa(sv,ReducedSkeletonCellBasis)
+@test is_test(sv)
+
+su = restrict(u,strian)
+@test isa(su,SkeletonCellBasis)
+@test is_trial(su)
+
+su = jump(su)
+@test isa(su,ReducedSkeletonCellBasis)
+@test is_trial(su)
+
+svec = integrate(sv,strian,squad)
+@test isa(svec,SkeletonCellVector)
+svec_left = collect(svec.left)
+svec_right = collect(svec.right)
+
+svec2 = integrate(2*sv,strian,squad)
+test_array(svec2.left,2*svec_left)
+test_array(svec2.right,2*svec_right)
+
+sw = sv * su
+@test isa(sw,SkeletonCellMatrixField)
+
+smat = integrate(sw,strian,squad)
+@test isa(smat,SkeletonCellMatrix)
+
+smat_ll = collect(smat.ll)
+smat_lr = collect(smat.lr)
+smat_rl = collect(smat.rl)
+smat_rr = collect(smat.rr)
+
+smat2 = integrate(2*sw,strian,squad)
+test_array(smat2.ll,2*smat_ll)
+test_array(smat2.lr,2*smat_lr)
+test_array(smat2.rl,2*smat_rl)
+test_array(smat2.rr,2*smat_rr)
 
 end # module

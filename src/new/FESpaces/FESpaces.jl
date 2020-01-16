@@ -14,6 +14,7 @@ using Gridap.Arrays
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.Fields
+using Gridap.Integration
 
 using Gridap.Geometry: UnimplementedField
 
@@ -26,6 +27,10 @@ import Gridap.Geometry: get_reffes
 import Gridap.Geometry: get_cell_type
 import Gridap.Geometry: operate_cell_field
 import Gridap.Geometry: similar_cell_field
+import Gridap.Geometry: jump
+import Gridap.Geometry: mean
+import Gridap.Geometry: restrict
+import Gridap.Fields: integrate
 
 export FEFunctionStyle
 export is_a_fe_function
