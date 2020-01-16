@@ -18,6 +18,7 @@ export finalize_coo!
 export sparse_from_coo
 export add_entry!
 export fill_entries!
+export create_coo_vectors
 export sparsecsr
 export symsparsecsr
 export hasrowmajororder

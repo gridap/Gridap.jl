@@ -101,7 +101,9 @@ export TrialStyle
 export is_trial
 export is_test
 
+export TrialFESpace
 export compute_conforming_cell_dofs
+export SparseMatrixAssembler
 
 include("CellBases.jl")
 
@@ -114,6 +116,10 @@ include("Assemblers.jl")
 include("SingleFieldFESpaces.jl")
 
 include("SingleFieldFEFunctions.jl")
+
+include("TrialFESpaces.jl")
+
+include("SingleFieldAssemblers.jl")
 
 include("UnconstrainedFESpaces.jl")
 
