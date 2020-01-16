@@ -17,7 +17,8 @@ struct TrialFESpace <: SingleFieldFESpace
 end
 
 function TrialFESpace(space::SingleFieldFESpace)
-  TrialFESpace(space,[])
+  dirichlet_values = get_dirichlet_values(space)
+  TrialFESpace(space,dirichlet_values)
 end
 
 # Genuine functions

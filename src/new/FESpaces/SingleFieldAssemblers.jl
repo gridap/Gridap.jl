@@ -1,6 +1,6 @@
 
 struct SparseMatrixAssembler{E} <: Assembler
-  matrix_type::E
+  matrix_type::Type{E}
   test::SingleFieldFESpace
   trial::SingleFieldFESpace
 end
@@ -18,7 +18,7 @@ function assemble_vector!(b,a::SparseMatrixAssembler,term_to_cellvec,term_to_cel
   fill!(b,zero(eltype(b)))
   for (cellvec, cellids) in zip(term_to_cellvec,term_to_cellidsrows)
     rows = reindex(celldofs,cellids)
-    vals = apply_constraints(a.test,cellvec,cellids)
+    vals = apply_constraints_vector(a.test,cellvec,cellids)
     rows_cache = array_cache(rows)
     vals_cache = array_cache(vals)
     _assemble_vector!(b,vals_cache,rows_cache,vals,rows)
@@ -66,7 +66,7 @@ function _allocate_matrix!(M,I,J,V,rows_cache,cols_cache,cell_rows,cell_cols)
       if gidcol > 0
         for gidrow in rows
           if gidrow > 0
-           push_coo!(M, I, J, K, gidrow, gidcol, z)
+           push_coo!(M, I, J, V, gidrow, gidcol, z)
           end
         end
       end
@@ -105,7 +105,7 @@ function _assemble_matrix!(mat,vals_cache,rows_cache,cols_cache,cell_vals,cell_r
         for (i,gidrow) in enumerate(rows)
           if gidrow > 0
             v = vals[i,j]
-            add_entry!(mat,v,i,j)
+            add_entry!(mat,v,gidrow,gidcol)
           end
         end
       end

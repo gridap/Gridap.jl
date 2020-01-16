@@ -15,6 +15,7 @@ using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.Fields
 using Gridap.Integration
+using Gridap.Algebra
 
 using Gridap.Geometry: UnimplementedField
 
