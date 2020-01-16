@@ -71,7 +71,11 @@ function symsparsecsr(T::Type{<:SymSparseMatrixCSR{Bi,Tv,Ti}},I::Vector{Ti},J::V
 end
 
 symsparsecsr(I,J,V,args...) =
-    symsparsecsr(SymSparseMatrixCSR,I,J,V,args...)
+           SymSparseMatrixCSR(sparsecsr(I,J,V,args...))
+symsparsecsr(T::Type{<:SymSparseMatrixCSR},I::Vector{Ti},J::Vector{Ti},V::Vector{Tv},args...) where {Tv,Ti} =
+           symsparsecsr(SparseMatrixCSR{1,Tv,Ti},I,J,V,args...)
+symsparsecsr(T::Type{<:SymSparseMatrixCSR{Bi}},I::Vector{Ti},J::Vector{Ti},V::Vector{Tv},args...) where {Bi,Tv,Ti} =
+           symsparsecsr(SparseMatrixCSR{Bi,Tv,Ti},I,J,V,args...)
 
 
 function show(io::IO, ::MIME"text/plain", S::SymSparseMatrixCSR)
