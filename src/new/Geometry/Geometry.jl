@@ -124,6 +124,7 @@ export get_normal_vector
 export test_triangulation
 export restrict
 export get_physical_coordinate
+export get_cell_id
 
 export Grid
 export get_cell_nodes

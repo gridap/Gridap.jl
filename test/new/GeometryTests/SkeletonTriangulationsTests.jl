@@ -76,10 +76,16 @@ cellids_gamma = reindex(cellids,strian)
 @test cellids_gamma.left == get_face_to_cell(strian.left)
 @test cellids_gamma.right == get_face_to_cell(strian.right)
 
+ids = get_cell_id(strian)
+@test isa(ids,SkeletonPair)
+
 #using Gridap.Visualization
 #
 #writevtk(trian,"trian")
 #writevtk(strian,"strian")
 #writevtk(x,"x",nodaldata=["nvec" => nx])
+
+
+
 
 end # module

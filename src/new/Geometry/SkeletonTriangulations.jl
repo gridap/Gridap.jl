@@ -50,9 +50,9 @@ function get_cell_type(trian::SkeletonTriangulation)
   get_cell_type(trian.left)
 end
 
-function reindex(a::AbstractArray,trian::SkeletonTriangulation)
-  left = reindex(a,trian.left)
-  right = reindex(a,trian.right)
+function get_cell_id(trian::SkeletonTriangulation)
+  left = get_cell_id(trian.left)
+  right = get_cell_id(trian.right)
   SkeletonPair(left,right)
 end
 

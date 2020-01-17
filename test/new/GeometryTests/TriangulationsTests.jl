@@ -4,6 +4,7 @@ using Test
 using FillArrays
 
 using Gridap.Geometry
+using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.ReferenceFEs
@@ -68,6 +69,10 @@ cf1 = CellField(3,trian)
 cf2 = CellField(identity,trian)
 
 x = get_physical_coordinate(trian)
+
+@test get_cell_id(trian) == collect(1:num_cells(trian))
+r = rand(num_cells(trian))
+@test r === reindex(r,trian)
 
 #using Gridap.Visualization
 #writevtk(trian,"trian",cellfields=["cf1"=>cf1,"cf2"=>cf2,"x"=>x, "gradx"=>∇(x)])

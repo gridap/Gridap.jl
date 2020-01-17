@@ -29,7 +29,7 @@ For triangulations living in a space of co-dimension 1, the following method can
 In some cases, concrete implementations want to override the default implementation of the following methods:
 
 - [`restrict(f::AbstractArray, trian::Triangulation)`]
-- [`reindex(f::AbstractArray, trian::Triangulation)`]
+- [`get_cell_id(f::AbstractArray, trian::Triangulation)`]
 
 The (mandatory) `Triangulation` interface can be tested with
 
@@ -140,7 +140,14 @@ end
     reindex(a::AbstractArray, trian::Triangulation)
 """
 function reindex(a::AbstractArray,trian::Triangulation)
-  a
+  reindex(a,get_cell_id(trian))
+end
+
+"""
+    get_cell_id(trian::Triangulation)
+"""
+function get_cell_id(trian::Triangulation)
+  identity_vector(num_cells(trian))
 end
 
 """
