@@ -211,7 +211,7 @@ function _fill_dirichlet_values_for_tag!(dirichlet_values,dv,tag,dirichlet_dof_t
 end
 
 function _convert_to_collectable(object,ntags)
-  @assert ntags == length(object) "Incorrecto number of dirichlet tags provided"
+  @assert ntags == length(object) "Incorrect number of dirichlet tags provided"
   object
 end
 

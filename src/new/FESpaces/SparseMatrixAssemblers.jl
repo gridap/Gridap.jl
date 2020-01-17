@@ -5,6 +5,12 @@ struct SparseMatrixAssembler{E} <: Assembler
   trial::SingleFieldFESpace
 end
 
+"""
+"""
+function SparseMatrixAssembler(test::SingleFieldFESpace,trial::SingleFieldFESpace)
+  SparseMatrixAssembler(SparseMatrixCSC,test,trial)
+end
+
 get_test(a::SparseMatrixAssembler) = a.test
 
 get_trial(a::SparseMatrixAssembler) = a.trial

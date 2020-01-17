@@ -8,6 +8,7 @@ module FESpaces
 using DocStringExtensions
 using Test
 using FillArrays
+using SparseArrays
 
 using Gridap.Helpers
 using Gridap.Arrays
@@ -40,6 +41,8 @@ import Gridap.Algebra: jacobian!
 import Gridap.Algebra: residual
 import Gridap.Algebra: jacobian
 import Gridap.Algebra: zero_initial_guess
+import Gridap.Algebra: get_matrix
+import Gridap.Algebra: get_vector
 
 export FEFunctionStyle
 export is_a_fe_function
@@ -116,6 +119,7 @@ export SparseMatrixAssembler
 
 export FEOperator
 export test_fe_operator
+export AffineFEOperator
 
 include("CellBases.jl")
 
@@ -138,5 +142,7 @@ include("SparseMatrixAssemblers.jl")
 include("UnconstrainedFESpaces.jl")
 
 include("ConformingFESpaces.jl")
+
+include("AffineFEOperators.jl")
 
 end # module

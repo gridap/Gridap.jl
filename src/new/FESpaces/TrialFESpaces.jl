@@ -1,24 +1,32 @@
 
 struct TrialFESpace <: SingleFieldFESpace
-  space
-  dirichlet_values
-  cell_basis
-  @doc """
-  """
-  function TrialFESpace(space::SingleFieldFESpace,objects)
-    dirichlet_values = compute_dirichlet_values_for_tags(space,objects)
-    cb = get_cell_basis(space)
-    a = get_array(cb)
-    cm = get_cell_map(cb)
-    trial_style = Val{true}()
-    cell_basis = GenericCellBasis(trial_style,a,cm)
-    new(space,dirichlet_values,cell_basis)
-  end
+  space::SingleFieldFESpace
+  dirichlet_values::AbstractVector
+  cell_basis::CellBasis
 end
 
+"""
+"""
 function TrialFESpace(space::SingleFieldFESpace)
   dirichlet_values = get_dirichlet_values(space)
-  TrialFESpace(space,dirichlet_values)
+  cell_basis = _prepare_trial_cell_basis(space)
+  TrialFESpace(space,dirichlet_values,cell_basis)
+end
+
+"""
+"""
+function TrialFESpace(space::SingleFieldFESpace,objects)
+  dirichlet_values = compute_dirichlet_values_for_tags(space,objects)
+  cell_basis = _prepare_trial_cell_basis(space)
+  TrialFESpace(space,dirichlet_values,cell_basis)
+end
+
+function  _prepare_trial_cell_basis(space)
+  cb = get_cell_basis(space)
+  a = get_array(cb)
+  cm = get_cell_map(cb)
+  trial_style = Val{true}()
+  cell_basis = GenericCellBasis(trial_style,a,cm)
 end
 
 # Genuine functions

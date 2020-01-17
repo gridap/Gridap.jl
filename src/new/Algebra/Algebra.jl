@@ -62,6 +62,8 @@ export NewtonRaphsonSolver
 export NLSolver
 
 export AffineOperator
+export get_matrix
+export get_vector
 
 include("SparseMatrices.jl")
 

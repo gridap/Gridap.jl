@@ -24,6 +24,6 @@ include("Geometry/Geometry.jl")
 include("Integration/Integration.jl")
 
 #include("FESpaces/FESpaces.jl")
-#
-#include("Visualization/Visualization.jl")
+
+include("Visualization/Visualization.jl")
 

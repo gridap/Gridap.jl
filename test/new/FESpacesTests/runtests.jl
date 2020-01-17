@@ -24,4 +24,6 @@ using Test
 
 @testset "ConformingFESpaces" begin include("ConformingFESpacesTests.jl") end
 
+@testset "AffineFEOperators" begin include("AffineFEOperatorsTests.jl") end
+
 end # module

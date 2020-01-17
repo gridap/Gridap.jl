@@ -10,6 +10,14 @@ struct AffineOperator{A<:AbstractMatrix,B<:AbstractVector} <: NonLinearOperator
   vector::B
 end
 
+"""
+"""
+get_matrix(op::AffineOperator) = op.matrix
+
+"""
+"""
+get_vector(op::AffineOperator) = op.vector
+
 function residual!(b::AbstractVector,op::AffineOperator,x::AbstractVector)
   mul!(b,op.matrix,x)
   b .-=  op.vector
