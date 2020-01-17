@@ -43,6 +43,8 @@ import Gridap.Algebra: jacobian
 import Gridap.Algebra: zero_initial_guess
 import Gridap.Algebra: get_matrix
 import Gridap.Algebra: get_vector
+import Gridap.Algebra: solve!
+import Gridap.Algebra: solve
 
 export FEFunctionStyle
 export is_a_fe_function
@@ -121,6 +123,11 @@ export FEOperator
 export test_fe_operator
 export AffineFEOperator
 
+export FESolver
+export LinearFESolver
+export NonLinearFESolver
+export test_fe_solver
+
 include("CellBases.jl")
 
 include("FEFunctions.jl")
@@ -144,5 +151,7 @@ include("UnconstrainedFESpaces.jl")
 include("ConformingFESpaces.jl")
 
 include("AffineFEOperators.jl")
+
+include("FESolvers.jl")
 
 end # module

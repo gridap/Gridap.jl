@@ -25,7 +25,7 @@ function residual!(b::AbstractVector,op::AffineOperator,x::AbstractVector)
 end
 
 function jacobian!(A::AbstractMatrix,op::AffineOperator,x::AbstractVector)
-  @assert A === op.matrix
+  copy_entries!(A,op.matrix)
   A
 end
 

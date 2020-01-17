@@ -27,10 +27,10 @@ x = rand(n^2)
 b = A*x
 
 op = AffineOperator(A,b)
-#test_non_linear_operator(op,x,zeros(size(x)),jac=A)
+test_non_linear_operator(op,x,zeros(size(x)),jac=A)
 
 ls = LUSolver()
-#test_linear_solver(ls,A,b,x)
+test_linear_solver(ls,A,b,x)
 
 n = 10
 A = Laplacian(n,n,1,1)
@@ -38,16 +38,14 @@ x = rand(n^2)
 b = A*x
 
 ls = BackslashSolver()
-#test_linear_solver(ls,A,b,x)
+test_linear_solver(ls,A,b,x)
 
 nls = NLSolver(show_trace=false,method=:newton)
 x0 = zeros(length(x))
 op = AffineOperator(A,b)
-@show objectid(op.matrix)
 @test jacobian(op,x) === op.matrix
-@show objectid(op.matrix)
 
 solve!(x0,nls,op)
-#test_non_linear_solver(nls,op,x0,x)
+test_non_linear_solver(nls,op,x0,x)
 
 end # module

@@ -48,13 +48,13 @@ function residual!(b::AbstractVector,feop::AffineFEOperator,x::AbstractVector)
   residual!(b,feop.op,x)
 end
 
-function residual(feop::NonLinearOperator,u)
+function residual(feop::AffineFEOperator,u)
   @assert is_a_fe_function(u)
   x = get_free_values(u)
   residual(feop.op,x)
 end
 
-function residual(op::FEOperator,x::AbstractVector)
+function residual(feop::AffineFEOperator,x::AbstractVector)
   residual(feop.op,x)
 end
 
@@ -84,7 +84,7 @@ function jacobian(feop::AffineFEOperator,u)
   jacobian(feop.op,x)
 end
 
-function jacobian(op::FEOperator,x::AbstractVector)
+function jacobian(feop::AffineFEOperator,x::AbstractVector)
   jacobian(feop.op,x)
 end
 
