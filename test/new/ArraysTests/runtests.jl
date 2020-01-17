@@ -20,4 +20,6 @@ using Test
 
 @testset "Reindex" begin include("ReindexTests.jl") end
 
+@testset "IdentityVectors" begin include("IdentityVectorsTests.jl") end
+
 end # module

@@ -74,6 +74,7 @@ export get_local_item
 export find_local_index
 
 export reindex
+export identity_vector
 
 import Base: size
 import Base: getindex, setindex!
@@ -100,5 +101,7 @@ include("LocalToGlobalArrays.jl")
 include("LocalToGlobalPosNegArrays.jl")
 
 include("Reindex.jl")
+
+include("IdentityVectors.jl")
 
 end # module
