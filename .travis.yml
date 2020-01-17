@@ -1,8 +1,9 @@
 # Documentation: http://docs.travis-ci.com/user/languages/julia/
+
 stages:
   - name: Test
   - name: PluginsTest
-    if: branch = new_master
+    if: commit_message =~ ^\[full-ci\]
   - name: Documentation
 
 language: julia
