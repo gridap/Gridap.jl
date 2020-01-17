@@ -74,7 +74,15 @@ end
 """
 function copy_entries!(a::AbstractMatrix,b::AbstractMatrix)
   if a !== b
-    copy!(a,b)
+    _copy!(a,b)
+  end
+end
+
+# We define this, since its not in 1.0
+function _copy!(a,b)
+  @assert size(a) == size(b) "Array dimension mismatch when copying"
+  for i in eachindex(a)
+    a[i] = b[i]
   end
 end
 
