@@ -25,16 +25,9 @@ function jacobian(op::AffineOperator,x::AbstractVector)
   op.matrix
 end
 
-function zero_initial_guess(op::AffineOperator)
-  x = Float64[]
-  zero_initial_guess(op,x)
-end
-
-function zero_initial_guess(op::AffineOperator,x::AbstractVector)
+function zero_initial_guess(::Type{T},op::AffineOperator) where T
   n = size(op.matrix,2)
-  x0 = similar(x,eltype(x),n)
-  fill!(x0,zero(eltype(x)))
-  x0
+  zeros(T,n)
 end
 
 function allocate_residual(op::AffineOperator,x::AbstractVector)
