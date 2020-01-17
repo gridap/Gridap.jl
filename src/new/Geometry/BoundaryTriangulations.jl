@@ -44,13 +44,12 @@ end
 
 # Default API
 
-function reindex(a::AbstractArray,trian::BoundaryTriangulation)
-  face_to_cell = get_face_to_cell(trian)
-  reindex(a,face_to_cell)
-end
-
 function restrict(f::AbstractArray, trian::BoundaryTriangulation)
   compose_field_arrays(reindex(f,trian), get_face_to_cell_map(trian))
+end
+
+function get_cell_id(trian::BoundaryTriangulation)
+  get_face_to_cell(trian)
 end
 
 # Constructors

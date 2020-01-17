@@ -48,5 +48,8 @@ nvec_x = evaluate(nvec,s)
 s2x = get_cell_map(btrian)
 x = evaluate(s2x,s)
 
+@test get_cell_id(btrian) == get_face_to_cell(btrian)
+r = rand(num_cells(trian))
+@test reindex(r,btrian) == r[get_face_to_cell(btrian)]
 
 end # module

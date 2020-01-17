@@ -11,6 +11,10 @@ struct SymSparseMatrixCSR{Bi,T,Ti<:Integer} <: AbstractSparseMatrix{T,Ti}
     uppertrian :: SparseMatrixCSR{Bi,T,Ti}
 end
 
+function sparse_from_coo(M::Type{<:SymSparseMatrixCSR}, args...)
+  symsparsecsr(M, args...)
+end
+
 # SparseMatrix interface implementation
 function push_coo!(::Type{<:SymSparseMatrixCSR},
         I::Vector,J::Vector,V::Vector,ik::Integer,jk::Integer,vk::Number)
@@ -38,6 +42,10 @@ end
 
 add_entry!(A::SymSparseMatrixCSR{Bi,Tv,Ti},v::Number,i::Integer,j::Integer,combine::Function=+) where {Bi,Tv,Ti<:Integer} =
         return i>j ? A : add_entry!(A.uppertrian,v,i,j,combine)
+
+function copy_entries!(a::SymSparseMatrixCSR,b::SymSparseMatrixCSR)
+  _copy_entries_sparse!(a,b)
+end
 
 # CompressedSparseMatrix interface implementation
 

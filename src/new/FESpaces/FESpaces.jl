@@ -8,6 +8,7 @@ module FESpaces
 using DocStringExtensions
 using Test
 using FillArrays
+using SparseArrays
 
 using Gridap.Helpers
 using Gridap.Arrays
@@ -15,6 +16,7 @@ using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.Fields
 using Gridap.Integration
+using Gridap.Algebra
 
 using Gridap.Geometry: UnimplementedField
 
@@ -31,6 +33,18 @@ import Gridap.Geometry: jump
 import Gridap.Geometry: mean
 import Gridap.Geometry: restrict
 import Gridap.Fields: integrate
+
+import Gridap.Algebra: allocate_residual
+import Gridap.Algebra: allocate_jacobian
+import Gridap.Algebra: residual!
+import Gridap.Algebra: jacobian!
+import Gridap.Algebra: residual
+import Gridap.Algebra: jacobian
+import Gridap.Algebra: zero_initial_guess
+import Gridap.Algebra: get_matrix
+import Gridap.Algebra: get_vector
+import Gridap.Algebra: solve!
+import Gridap.Algebra: solve
 
 export FEFunctionStyle
 export is_a_fe_function
@@ -101,7 +115,18 @@ export TrialStyle
 export is_trial
 export is_test
 
+export TrialFESpace
 export compute_conforming_cell_dofs
+export SparseMatrixAssembler
+
+export FEOperator
+export test_fe_operator
+export AffineFEOperator
+
+export FESolver
+export LinearFESolver
+export NonLinearFESolver
+export test_fe_solver
 
 include("CellBases.jl")
 
@@ -111,12 +136,22 @@ include("FESpacesInterfaces.jl")
 
 include("Assemblers.jl")
 
+include("FEOperators.jl")
+
 include("SingleFieldFESpaces.jl")
 
 include("SingleFieldFEFunctions.jl")
 
+include("TrialFESpaces.jl")
+
+include("SparseMatrixAssemblers.jl")
+
 include("UnconstrainedFESpaces.jl")
 
 include("ConformingFESpaces.jl")
+
+include("AffineFEOperators.jl")
+
+include("FESolvers.jl")
 
 end # module

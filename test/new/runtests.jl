@@ -8,6 +8,8 @@ using Test
 
 @time @testset "Io" begin include("IoTests/runtests.jl") end
 
+@time @testset "Algebra" begin include("AlgebraTests/runtests.jl") end
+
 @time @testset "TensorValues" begin include("TensorValuesTests/runtests.jl") end
 
 @time @testset "Arrays" begin include("ArraysTests/runtests.jl") end
@@ -21,8 +23,6 @@ using Test
 @time @testset "Geometry" begin include("GeometryTests/runtests.jl") end
 
 @time @testset "Integration" begin include("IntegrationTests/runtests.jl") end
-
-@time @testset "Algebra" begin include("AlgebraTests/runtests.jl") end
 
 @time @testset "FESpaces" begin include("FESpacesTests/runtests.jl") end
 

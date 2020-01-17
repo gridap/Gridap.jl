@@ -18,6 +18,8 @@ export finalize_coo!
 export sparse_from_coo
 export add_entry!
 export fill_entries!
+export copy_entries!
+export create_coo_vectors
 export sparsecsr
 export symsparsecsr
 export hasrowmajororder
@@ -61,6 +63,8 @@ export NewtonRaphsonSolver
 export NLSolver
 
 export AffineOperator
+export get_matrix
+export get_vector
 
 include("SparseMatrices.jl")
 

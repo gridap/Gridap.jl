@@ -23,8 +23,12 @@ end
 
 """
 """
-function zero_free_values(fs::FESpace)
+function zero_free_values(::Type{T},fs::FESpace) where T
   @abstractmethod
+end
+
+function zero_free_values(fs::FESpace)
+  zero_free_values(Float64,fs)
 end
 
 """
@@ -64,6 +68,7 @@ end
 """
 function test_fe_space(f::FESpace,cellmat,cellvec,cellidsrows,cellidscols)
   free_values = zero_free_values(f)
+  @test eltype(zero_free_values(Int,f)) == Int
   fe_function = FEFunction(f,free_values)
   test_fe_function(fe_function)
   fe_basis = get_cell_basis(f)

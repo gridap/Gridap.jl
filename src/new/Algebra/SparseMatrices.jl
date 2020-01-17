@@ -24,7 +24,7 @@ function sparse_from_coo(::Type{T} where T,args...)
 end
 
 """
-    add_entry!(A,v::Number,i::Integer,j::Integer,,combine::Function=+)
+    add_entry!(A,v::Number,i::Integer,j::Integer,combine::Function=+)
 
 Add an entry given its position and the operation to perform.
 """
@@ -60,4 +60,29 @@ function finalize_coo!(::Type{T} where T,I::Vector,J::Vector,V::Vector,m::Intege
   @abstractmethod
 end
 
+"""
+"""
+function create_coo_vectors(::Type{M}) where {M}
+  return (Int[], Int[], Float64[])
+end
+
+function create_coo_vectors(::Type{M}) where {Tv,Ti,M<:AbstractSparseMatrix{Tv,Ti}}
+  return (Ti[], Ti[], Tv[])
+end
+
+"""
+"""
+function copy_entries!(a::AbstractMatrix,b::AbstractMatrix)
+  if a !== b
+    _copy!(a,b)
+  end
+end
+
+# We define this, since its not in 1.0
+function _copy!(a,b)
+  @assert size(a) == size(b) "Array dimension mismatch when copying"
+  for i in eachindex(a)
+    a[i] = b[i]
+  end
+end
 

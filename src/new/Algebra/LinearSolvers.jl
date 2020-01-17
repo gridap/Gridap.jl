@@ -10,6 +10,14 @@ struct AffineOperator{A<:AbstractMatrix,B<:AbstractVector} <: NonLinearOperator
   vector::B
 end
 
+"""
+"""
+get_matrix(op::AffineOperator) = op.matrix
+
+"""
+"""
+get_vector(op::AffineOperator) = op.vector
+
 function residual!(b::AbstractVector,op::AffineOperator,x::AbstractVector)
   mul!(b,op.matrix,x)
   b .-=  op.vector
@@ -17,7 +25,7 @@ function residual!(b::AbstractVector,op::AffineOperator,x::AbstractVector)
 end
 
 function jacobian!(A::AbstractMatrix,op::AffineOperator,x::AbstractVector)
-  @assert A === op.matrix
+  copy_entries!(A,op.matrix)
   A
 end
 
@@ -25,16 +33,9 @@ function jacobian(op::AffineOperator,x::AbstractVector)
   op.matrix
 end
 
-function zero_initial_guess(op::AffineOperator)
-  x = Float64[]
-  zero_initial_guess(op,x)
-end
-
-function zero_initial_guess(op::AffineOperator,x::AbstractVector)
+function zero_initial_guess(::Type{T},op::AffineOperator) where T
   n = size(op.matrix,2)
-  x0 = similar(x,eltype(x),n)
-  fill!(x0,zero(eltype(x)))
-  x0
+  zeros(T,n)
 end
 
 function allocate_residual(op::AffineOperator,x::AbstractVector)

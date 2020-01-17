@@ -1,5 +1,6 @@
 module LinearSolversTests
 
+using Test
 using Gridap.Algebra
 
 using LinearAlgebra
@@ -38,5 +39,13 @@ b = A*x
 
 ls = BackslashSolver()
 test_linear_solver(ls,A,b,x)
+
+nls = NLSolver(show_trace=false,method=:newton)
+x0 = zeros(length(x))
+op = AffineOperator(A,b)
+@test jacobian(op,x) === op.matrix
+
+solve!(x0,nls,op)
+test_non_linear_solver(nls,op,x0,x)
 
 end # module

@@ -7,6 +7,8 @@ include("Inference/Inference.jl")
 
 include("Io/Io.jl")
 
+include("Algebra/Algebra.jl")
+
 include("TensorValues/TensorValues.jl")
 
 include("Arrays/Arrays.jl")
@@ -20,8 +22,6 @@ include("ReferenceFEs/ReferenceFEs.jl")
 include("Geometry/Geometry.jl")
 
 include("Integration/Integration.jl")
-
-include("Algebra/Algebra.jl")
 
 include("FESpaces/FESpaces.jl")
 

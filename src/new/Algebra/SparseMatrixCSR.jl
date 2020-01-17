@@ -158,17 +158,18 @@ function findnz(S::SparseMatrixCSR{Bi,Tv,Ti}) where {Bi,Tv,Ti}
     return (I, J, V)
 end
 
+function sparse_from_coo(M::Type{<:SparseMatrixCSR}, args...)
+  sparsecsr(M, args...)
+end
 
 function push_coo!(::Type{<:SparseMatrixCSR},
     I::Vector,J::Vector,V::Vector,ik::Integer,jk::Integer,vk::Number) where {Bi}
     (push!(I, ik), push!(J, jk), push!(V, vk))
 end
 
-
 function finalize_coo!(::Type{<:SparseMatrixCSR},
     I::Vector,J::Vector,V::Vector,m::Integer,n::Integer) 
 end
-
 
 function add_entry!(A::SparseMatrixCSR{Bi,Tv,Ti},v::Number,i::Integer,j::Integer,combine::Function=+) where {Bi,Tv,Ti<:Integer}
     cv = convert(Tv, v)
@@ -194,6 +195,9 @@ function add_entry!(A::SparseMatrixCSR{Bi,Tv,Ti},v::Number,i::Integer,j::Integer
     return A
 end
 
+function copy_entries!(a::SparseMatrixCSR,b::SparseMatrixCSR)
+  _copy_entries_sparse!(a,b)
+end
 
 function mul!(y::AbstractVector,A::SparseMatrixCSR,v::AbstractVector{T}) where {T}
     A.n == size(v, 1) || throw(DimensionMismatch())

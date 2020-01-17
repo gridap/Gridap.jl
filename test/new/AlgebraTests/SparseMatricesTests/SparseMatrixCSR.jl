@@ -20,6 +20,14 @@
                 CSC = sparse(I, J, V, maxrows,maxcols)
                 CSR = sparsecsr(SparseMatrixCSR{Bi,Tv,Ti},I, J, V,maxrows,maxcols)
 
+                V2 = copy(V)
+                V2 .= 0
+                CSR2 = sparsecsr(SparseMatrixCSR{Bi,Tv,Ti},I, J, V2,maxrows,maxcols)
+                copy_entries!(CSR2,CSR)
+                @test CSR2 == CSR
+                copy_entries!(CSR2,CSR2)
+                @test CSR2 == CSR
+
                 show(devnull, CSR);
 
                 @test CSC == CSR

@@ -14,6 +14,15 @@
         finalize_coo!(I,J,V,maxcols,maxrows)
         CSC = sparse(I, J, V, maxcols,maxrows)
 
+        V2 = copy(V)
+        V2 .= 0
+        CSC2 = sparse(I, J, V2, maxcols,maxrows)
+
+        copy_entries!(CSC2,CSC)
+        @test CSC2 == CSC
+        copy_entries!(CSC2,CSC2)
+        @test CSC2 == CSC
+
         @test convert(SparseMatrixCSC, CSC) === CSC
 
         @test hasrowmajororder(CSC)  == false
@@ -37,6 +46,9 @@
 
         fill_entries!(CSC,0)
         @test all(x->x==0, nonzeros(CSC))
+
+
+
     end
     
 end

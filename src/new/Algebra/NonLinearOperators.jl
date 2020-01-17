@@ -3,8 +3,7 @@
 
 - [`residual!(b::AbstractVector,op::NonLinearOperator,x::AbstractVector)`](@ref)
 - [`jacobian!(A::AbstractMatrix,op::NonLinearOperator,x::AbstractVector)`](@ref)
-- [`zero_initial_guess(op::NonLinearOperator)`](@ref)
-- [`zero_initial_guess(op::NonLinearOperator,x::AbstractVector)`](@ref)
+- [`zero_initial_guess(::Type{T},op::NonLinearOperator) where T`](@ref)
 - [`allocate_residual(op::NonLinearOperator,x::AbstractVector)`](@ref)
 - [`allocate_jacobian(op::NonLinearOperator,x::AbstractVector)`](@ref)
 
@@ -65,17 +64,17 @@ function residual_and_jacobian(op::NonLinearOperator,x::AbstractVector)
 end
 
 """
-    zero_initial_guess(op::NonLinearOperator)
+    zero_initial_guess(::Type{T},op::NonLinearOperator) where T
 """
-function zero_initial_guess(op::NonLinearOperator)
+function zero_initial_guess(::Type{T},op::NonLinearOperator) where T
   @abstractmethod
 end
 
 """
-    zero_initial_guess(op::NonLinearOperator,x::AbstractVector)
+    zero_initial_guess(op::NonLinearOperator)
 """
-function zero_initial_guess(op::NonLinearOperator,x::AbstractVector)
-  @abstractmethod
+function zero_initial_guess(op::NonLinearOperator)
+  zero_initial_guess(Float64,op)
 end
 
 """
@@ -121,7 +120,8 @@ function test_non_linear_operator(
   @test pred(b,b1)
 
   x0 = zero_initial_guess(op)
-  x0 = zero_initial_guess(op,x)
+  x0 = zero_initial_guess(Int,op)
+  @assert eltype(x0) == Int
 
   if jac != nothing
     nrows, ncols = size(jac)
@@ -148,12 +148,8 @@ function jacobian!(A::AbstractMatrix,::NonLinearOperatorMock,x::AbstractVector)
   A[2,2] = 1
 end
 
-function zero_initial_guess(op::NonLinearOperatorMock)
-  x = Float64[]
-  allocate_residual(op,x)
-end
-
-function zero_initial_guess(op::NonLinearOperatorMock,x::AbstractVector)
+function zero_initial_guess(::Type{T},op::NonLinearOperatorMock) where T
+  x = T[]
   allocate_residual(op,x)
 end
 
