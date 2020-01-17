@@ -195,6 +195,9 @@ function add_entry!(A::SparseMatrixCSR{Bi,Tv,Ti},v::Number,i::Integer,j::Integer
     return A
 end
 
+function copy_entries!(a::SparseMatrixCSR,b::SparseMatrixCSR)
+  _copy_entries_sparse!(a,b)
+end
 
 function mul!(y::AbstractVector,A::SparseMatrixCSR,v::AbstractVector{T}) where {T}
     A.n == size(v, 1) || throw(DimensionMismatch())

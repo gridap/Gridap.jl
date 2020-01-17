@@ -70,3 +70,11 @@ function create_coo_vectors(::Type{M}) where {Tv,Ti,M<:AbstractSparseMatrix{Tv,T
   return (Ti[], Ti[], Tv[])
 end
 
+"""
+"""
+function copy_entries!(a::AbstractMatrix,b::AbstractMatrix)
+  if a !== b
+    copy!(a,b)
+  end
+end
+

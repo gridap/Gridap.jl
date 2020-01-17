@@ -21,6 +21,14 @@
                 SYMCSC = Symmetric(sparse(I, J, V, maxrows, maxcols),:U)
                 SYMCSR = symsparsecsr(SymSparseMatrixCSR{Bi,Tv,Ti},I, J, V, maxrows, maxcols)
 
+                V2 = copy(V)
+                V2 .= 0
+                SYMCSR2 = symsparsecsr(SymSparseMatrixCSR{Bi,Tv,Ti},I, J, V2, maxrows, maxcols)
+                copy_entries!(SYMCSR2,SYMCSR)
+                @test SYMCSR2 == SYMCSR
+                copy_entries!(SYMCSR2,SYMCSR2)
+                @test SYMCSR2 == SYMCSR
+
                 @test size(SYMCSC)==size(SYMCSR)
                 @test SYMCSC == SYMCSR
 

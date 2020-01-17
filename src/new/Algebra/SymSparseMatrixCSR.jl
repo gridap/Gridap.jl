@@ -43,6 +43,10 @@ end
 add_entry!(A::SymSparseMatrixCSR{Bi,Tv,Ti},v::Number,i::Integer,j::Integer,combine::Function=+) where {Bi,Tv,Ti<:Integer} =
         return i>j ? A : add_entry!(A.uppertrian,v,i,j,combine)
 
+function copy_entries!(a::SymSparseMatrixCSR,b::SymSparseMatrixCSR)
+  _copy_entries_sparse!(a,b)
+end
+
 # CompressedSparseMatrix interface implementation
 
 hasrowmajororder(::Type{<:SymSparseMatrixCSR}) = true

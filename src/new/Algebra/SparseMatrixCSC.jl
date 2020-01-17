@@ -45,6 +45,18 @@ function add_entry!(A::SparseMatrixCSC{Tv,Ti},v::Number,i::Integer,j::Integer,co
     return A
 end
 
+function copy_entries!(a::SparseMatrixCSC,b::SparseMatrixCSC)
+  _copy_entries_sparse!(a,b)
+end
+
+function _copy_entries_sparse!(a,b)
+  na = nonzeros(a)
+  nb = nonzeros(b)
+  if na !== nb
+    copy!(na,nb)
+  end
+end
+
 hasrowmajororder(::Type{<:SparseMatrixCSC}) = false
 hasrowmajororder(a::SparseMatrixCSC) = hasrowmajororder(SparseMatrixCSC)
 
