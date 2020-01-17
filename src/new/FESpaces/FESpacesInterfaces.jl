@@ -1,4 +1,21 @@
 
+# The object returned by get_cell_basis has to implement the following trait
+
+FECellBasisStyle(::Type{T}) where T = Val{false}()
+
+FECellBasisStyle(cell_basis) = FECellBasisStyle(typeof(cell_basis))
+
+"""
+"""
+function is_a_fe_cell_basis(cell_basis)
+  v = FECellBasisStyle(cell_basis)
+  get_val_parameter(v)
+end
+
+function is_a_fe_cell_basis(::Type)
+  @unreachable "is_a_fe_cell_basis cannot be called on types"
+end
+
 """
 """
 abstract type FESpace <: GridapType end

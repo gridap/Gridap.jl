@@ -28,4 +28,6 @@ using Test
 
 @testset "FESolvers" begin include("FESolversTests.jl") end
 
+@testset "FETerms" begin include("FETermsTests.jl") end
+
 end # module
