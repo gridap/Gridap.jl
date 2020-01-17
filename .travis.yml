@@ -1,10 +1,17 @@
 # Documentation: http://docs.travis-ci.com/user/languages/julia/
+
+stages:
+  - name: Test
+  - name: PluginsTest
+    if: commit_message =~ ^\[full-ci\]
+  - name: Documentation
+
 language: julia
 os:
   - linux
 julia:
   - 1.0
-  - 1.2
+  - 1.3
 matrix:
   fast_finish: true
 notifications:
@@ -17,7 +24,7 @@ after_success:
 jobs:
   include:
     - stage: "Documentation"
-      julia: 1.2
+      julia: 1.3
       os: linux
       script:
         - julia --project=docs/ -e 'using Pkg;
@@ -25,3 +32,77 @@ jobs:
                                     Pkg.instantiate()'
         - julia --project=docs/ docs/make.jl
       after_success: skip
+
+    - stage: "PluginsTest"
+      name: "GridapGmshTest"
+      julia: 1.3
+      os: linux
+      addons:
+        apt:
+          update: true
+          packages:
+            - libglu1-mesa
+            - libxrender1
+            - libxcursor1
+            - libxft2
+            - libxinerama1
+      before_script:
+        - curl -OL http://gmsh.info/bin/Linux/gmsh-4.4.1-Linux64-sdk.tgz
+        - tar xfv gmsh-4.4.1-Linux64-sdk.tgz
+        - GMSHROOT=`pwd`/gmsh-4.4.1-Linux64-sdk
+        - export PATH=$PATH:$GMSHROOT/bin
+      script:
+        - mkdir -p tmp
+        - julia --project=tmp/ -e 'using Pkg;
+                                   Pkg.develop(PackageSpec(path=pwd()));
+                                   Pkg.instantiate();
+                                   Pkg.add(PackageSpec(name="GridapGmsh",rev="new_master"));
+                                   Pkg.build("GridapGmsh");
+                                   Pkg.test("GridapGmsh");'
+      after_success: skip
+
+    - stage: "PluginsTest"
+      name: "GridapPardisoTest"
+      julia: 1.3
+      os: linux
+      addons:
+        apt:
+          sources:
+            - sourceline: 'deb [trusted=yes] https://apt.repos.intel.com/mkl all main'
+              key_url: 'https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB'
+          update: true
+          packages:
+            - gcc
+            - intel-mkl-64bit-2019.5-075
+      before_script:
+          - if [ `getconf LONG_BIT` = "64" ];then source /opt/intel/mkl/bin/mklvars.sh intel64; else source /opt/intel/mkl/bin/mklvars.sh ia32; fi
+      script:
+        - mkdir -p tmp
+        - julia --project=tmp/ -e 'using Pkg;
+                                   Pkg.develop(PackageSpec(path=pwd()));
+                                   Pkg.instantiate();
+                                   Pkg.add(PackageSpec(name="GridapPardiso",rev="new_master"));
+                                   Pkg.build("GridapPardiso");
+                                   Pkg.test("GridapPardiso");'
+      after_success: skip
+
+    - stage: "PluginsTest"
+      name: "GridapPETScTest"
+      julia: 1.3
+      os: linux
+      addons:
+        apt:
+          update: true
+          packages:
+            - openmpi-bin
+            - petsc-dev
+      script:
+        - mkdir -p tmp
+        - julia --project=tmp/ -e 'using Pkg;
+                                   Pkg.develop(PackageSpec(path=pwd()));
+                                   Pkg.instantiate();
+                                   Pkg.add(PackageSpec(name="GridapPETSc",rev="new_master"));
+                                   Pkg.build("GridapPETSc");
+                                   Pkg.test("GridapPETSc");'
+      after_success: skip
+
