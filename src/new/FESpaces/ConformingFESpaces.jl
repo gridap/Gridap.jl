@@ -23,8 +23,6 @@ function GradConformingFESpace(
   dirichlet_tags,
   dirichlet_components=nothing)
 
-  T = Float64 # TODO re-think 
-
   grid_topology = get_grid_topology(model)
 
   cell_dofs, nfree, ndirichlet, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
@@ -43,7 +41,6 @@ function GradConformingFESpace(
   ntags = length(dirichlet_tags)
 
   UnsconstrainedFESpace(
-    T,
     nfree,
     ndirichlet,
     cell_dofs,

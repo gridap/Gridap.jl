@@ -16,8 +16,6 @@ using Gridap.FESpaces: SkeletonCellMatrix
 
 using Gridap.Fields: MockField, MockBasis
 
-#include("../../../src/new/FESpaces/FESpaces.jl")
-
 domain =(0,1,0,1)
 partition = (3,3)
 model = CartesianDiscreteModel(domain,partition)

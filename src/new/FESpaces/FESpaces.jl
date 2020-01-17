@@ -33,6 +33,14 @@ import Gridap.Geometry: mean
 import Gridap.Geometry: restrict
 import Gridap.Fields: integrate
 
+import Gridap.Algebra: allocate_residual
+import Gridap.Algebra: allocate_jacobian
+import Gridap.Algebra: residual!
+import Gridap.Algebra: jacobian!
+import Gridap.Algebra: residual
+import Gridap.Algebra: jacobian
+import Gridap.Algebra: zero_initial_guess
+
 export FEFunctionStyle
 export is_a_fe_function
 export get_free_values
@@ -106,6 +114,9 @@ export TrialFESpace
 export compute_conforming_cell_dofs
 export SparseMatrixAssembler
 
+export FEOperator
+export test_fe_operator
+
 include("CellBases.jl")
 
 include("FEFunctions.jl")
@@ -113,6 +124,8 @@ include("FEFunctions.jl")
 include("FESpacesInterfaces.jl")
 
 include("Assemblers.jl")
+
+include("FEOperators.jl")
 
 include("SingleFieldFESpaces.jl")
 

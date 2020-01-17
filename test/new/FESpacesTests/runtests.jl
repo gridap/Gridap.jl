@@ -10,6 +10,8 @@ using Test
 
 @testset "Assemblers" begin include("AssemblersTests.jl") end
 
+@testset "FEOperators" begin include("FEOperatorsTests.jl") end
+
 @testset "SingleFieldFESpaces" begin include("SingleFieldFESpacesTests.jl") end
 
 @testset "SingleFieldFEFunctions" begin include("SingleFieldFEFunctionsTests.jl") end

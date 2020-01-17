@@ -3,7 +3,7 @@
 Generic implementation of an unconstrained single-field FE space
 Private fields and type parameters
 """
-struct UnsconstrainedFESpace{T,A,B,C} <: SingleFieldFESpace
+struct UnsconstrainedFESpace{A,B,C} <: SingleFieldFESpace
   nfree::Int
   ndirichlet::Int
   cell_dofs::A
@@ -16,7 +16,6 @@ struct UnsconstrainedFESpace{T,A,B,C} <: SingleFieldFESpace
   @doc """
   """
   function UnsconstrainedFESpace(
-    ::Type{T},
     nfree::Int,
     ndirichlet::Int,
     cell_dofs::AbstractArray,
@@ -55,7 +54,7 @@ function get_cell_basis(f::UnsconstrainedFESpace)
   f.cell_basis
 end
 
-function zero_free_values(f::UnsconstrainedFESpace{T}) where T
+function zero_free_values(::Type{T},f::UnsconstrainedFESpace) where T
   zeros(T,num_free_dofs(f))
 end
 

@@ -9,9 +9,6 @@ using Gridap.Integration
 using Gridap.Fields
 using Gridap.FESpaces
 
-#include("../../../src/new/FESpaces/FESpaces.jl")
-#using .FESpaces
-
 domain =(0,1,0,1,0,1)
 partition = (3,3,3)
 model = CartesianDiscreteModel(domain,partition)
