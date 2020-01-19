@@ -48,5 +48,6 @@ x = ones(length(b))
 r = A*x - b
 
 test_fe_operator(op,x,r,≈,jac=A)
+@test isa(get_algebraic_operator(op), AffineOperator)
 
 end # module
