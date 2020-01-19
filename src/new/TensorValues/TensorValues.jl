@@ -33,8 +33,6 @@ using DocStringExtensions
 using StaticArrays
 using Base: @propagate_inbounds, @pure
 
-using Gridap.Helpers
-
 export MultiValue
 export TensorValue
 export VectorValue
