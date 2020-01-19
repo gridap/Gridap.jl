@@ -56,6 +56,7 @@ Equivalent to
     divergence(f)
 """
 (*)(::typeof(∇),f) = divergence(f)
+(*)(::typeof(∇),f::GridapType) = divergence(f)
 
 """
     outer(∇,f)
@@ -65,6 +66,7 @@ Equivalent to
     gradient(f)
 """
 outer(::typeof(∇),f) = gradient(f)
+outer(::typeof(∇),f::GridapType) = gradient(f)
 
 """
     outer(f,∇)
@@ -74,6 +76,7 @@ Equivalent to
     transpose(gradient(f))
 """
 outer(f,::typeof(∇)) = transpose(gradient(f))
+outer(f::GridapType,::typeof(∇)) = transpose(gradient(f))
 
 """
     cross(∇,f)
@@ -83,6 +86,7 @@ Equivalent to
     curl(f)
 """
 cross(::typeof(∇),f) = curl(f)
+cross(::typeof(∇),f::GridapType) = curl(f)
 
 # Helpers
 

@@ -220,3 +220,37 @@ end
   Meta.parse("TensorValue($str)")
 end
 
+
+# Define new operations for Gridap types
+
+for op in (:symmetic_part,)
+  @eval begin
+    function ($op)(a::GridapType)
+      unary_operation($op,a)
+    end
+  end
+end
+
+for op in (:inner,:outer)
+  @eval begin
+
+    function ($op)(a::GridapType,b::GridapType)
+      binop = get_binary_operation(a)
+      binop($op,a,b)
+    end
+    
+    function ($op)(a,b::GridapType)
+      binop = get_binary_operation(b)
+      _a = convert_to_operable(b,a)
+      binop($op,_a,b)
+    end
+    
+    function ($op)(a::GridapType,b)
+      binop = get_binary_operation(a)
+      _b = convert_to_operable(a,b)
+      binop($op,a,_b)
+    end
+
+  end
+end
+

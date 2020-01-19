@@ -1,19 +1,12 @@
 module HelpersTests
 
 using Test
-using Gridap.Helpers
 
-for D = 0:5
-  @test tfill(2,Val(D)) == tuple(fill(2,D)...)
-end
+@testset "Macros" begin include("MacrosTests.jl") end
 
-struct Foo{A} <: GridapType
-  bar::A
-end
+@testset "HelperFunctions" begin include("HelperFunctionsTests.jl") end
 
-object = Foo(nothing)
-
-@test sprint(show,"text/plain",object) == "$(nameof(typeof(object)))()"
+@testset "GridapTypes" begin include("GridapTypesTests.jl") end
 
 end # module
 
