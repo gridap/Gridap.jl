@@ -1,7 +1,7 @@
 
 """
 """
-abstract type FEOperator <: NonLinearOperator end
+abstract type FEOperator <: GridapType end
 
 """
 """
@@ -22,23 +22,11 @@ function allocate_residual(op::FEOperator,u)
   @abstractmethod
 end
 
-function allocate_residual(op::FEOperator,x::AbstractVector)
-  trial = get_trial(op)
-  u = FEFunction(trial,x)
-  allocate_residual(op,u)
-end
-
 """
 """
 function residual!(b::AbstractVector,op::FEOperator,u)
   @assert is_a_fe_function(u)
   @abstractmethod
-end
-
-function residual!(b::AbstractVector,op::FEOperator,x::AbstractVector)
-  trial = get_trial(op)
-  u = FEFunction(trial,x)
-  residual!(b,op,u)
 end
 
 function residual(op::FEOperator,u)
@@ -48,23 +36,11 @@ function residual(op::FEOperator,u)
   b
 end
 
-function residual(op::FEOperator,x::AbstractVector)
-  trial = get_trial(op)
-  u = FEFunction(trial,x)
-  residual(op,u)
-end
-
 """
 """
 function allocate_jacobian(op::FEOperator,u)
   @assert is_a_fe_function(u)
   @abstractmethod
-end
-
-function allocate_jacobian(op::FEOperator,x::AbstractVector)
-  trial = get_trial(op)
-  u = FEFunction(trial,x)
-  allocate_jacobian(op,u)
 end
 
 """
@@ -74,28 +50,11 @@ function jacobian!(A::AbstractMatrix,op::FEOperator,u)
   @abstractmethod
 end
 
-function jacobian!(A::AbstractMatrix,op::FEOperator,x::AbstractVector)
-  trial = get_trial(op)
-  u = FEFunction(trial,x)
-  jacobian!(A,op,u)
-end
-
 function jacobian(op::FEOperator,u)
   @assert is_a_fe_function(u)
   A = allocate_jacobian(op,u)
   jacobian!(A,op,u)
   A
-end
-
-function jacobian(op::FEOperator,x::AbstractVector)
-  trial = get_trial(op)
-  u = FEFunction(trial,x)
-  jacobian(op,u)
-end
-
-function zero_initial_guess(::Type{T},op::FEOperator) where T
-  trial = get_trial(op)
-  x = zero_free_values(T,trial)
 end
 
 """
@@ -117,6 +76,60 @@ function test_fe_operator(op::FEOperator,args...;kwargs...)
   jacobian!(A,op,u)
   A2 = jacobian(op,u)
   @test isa(A2,AbstractMatrix)
-  test_non_linear_operator(op,args...;kwargs...)
+  _op = get_algebraic_operator(op)
+  test_non_linear_operator(_op,args...;kwargs...)
+end
+
+# FEOperator viewed as a NonLinearOperator
+
+"""
+"""
+function get_algebraic_operator(feop::FEOperator)
+  AlgebraicOpFromFEOp(feop)
+end
+
+struct AlgebraicOpFromFEOp <: NonLinearOperator
+  feop::FEOperator
+end
+
+function allocate_residual(op::AlgebraicOpFromFEOp,x::AbstractVector)
+  trial = get_trial(op.feop)
+  u = FEFunction(trial,x)
+  allocate_residual(op.feop,u)
+end
+
+function residual!(b::AbstractVector,op::AlgebraicOpFromFEOp,x::AbstractVector)
+  trial = get_trial(op.feop)
+  u = FEFunction(trial,x)
+  residual!(b,op.feop,u)
+end
+
+function residual(op::AlgebraicOpFromFEOp,x::AbstractVector)
+  trial = get_trial(op.feop)
+  u = FEFunction(trial,x)
+  residual(op.feop,u)
+end
+
+function allocate_jacobian(op::AlgebraicOpFromFEOp,x::AbstractVector)
+  trial = get_trial(op.feop)
+  u = FEFunction(trial,x)
+  allocate_jacobian(op.feop,u)
+end
+
+function jacobian!(A::AbstractMatrix,op::AlgebraicOpFromFEOp,x::AbstractVector)
+  trial = get_trial(op.feop)
+  u = FEFunction(trial,x)
+  jacobian!(A,op.feop,u)
+end
+
+function jacobian(op::AlgebraicOpFromFEOp,x::AbstractVector)
+  trial = get_trial(op.feop)
+  u = FEFunction(trial,x)
+  jacobian(op.feop,u)
+end
+
+function zero_initial_guess(::Type{T},op::AlgebraicOpFromFEOp) where T
+  trial = get_trial(op.feop)
+  x = zero_free_values(T,trial)
 end
 

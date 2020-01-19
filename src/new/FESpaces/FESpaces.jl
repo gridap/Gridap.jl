@@ -126,6 +126,7 @@ export SparseMatrixAssembler
 export FEOperator
 export test_fe_operator
 export AffineFEOperator
+export get_algebraic_operator
 
 export FESolver
 export LinearFESolver
