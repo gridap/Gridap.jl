@@ -1,11 +1,11 @@
 
 """
 """
-struct SingleFieldFEFunction{A,B,C} <: CellField
-  array::A
-  free_values::B
-  dirichlet_values::B
-  fe_space::C
+struct SingleFieldFEFunction <: CellField
+  array
+  free_values
+  dirichlet_values
+  fe_space
   @doc """
   """
   function SingleFieldFEFunction(
@@ -13,11 +13,7 @@ struct SingleFieldFEFunction{A,B,C} <: CellField
     free_values::AbstractVector,
     dirichlet_values::AbstractVector,
     fe_space::SingleFieldFESpace)
-
-    A = typeof(array)
-    B = typeof(free_values)
-    C = typeof(fe_space)
-    new{A,B,C}(array,free_values,dirichlet_values,fe_space)
+    new(array,free_values,dirichlet_values,fe_space)
   end
 end
 

@@ -62,4 +62,6 @@ quad = CellQuadrature(trian,degree)
 vol = sum(integrate(1,trian,quad))
 @test vol ≈ 2^3
 
+@test isa(get_array(quad),AbstractArray{<:Quadrature})
+
 end # module

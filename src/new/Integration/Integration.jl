@@ -22,6 +22,7 @@ using Gridap.Arrays
 import Gridap.ReferenceFEs: num_dims
 import Gridap.ReferenceFEs: num_point_dims
 import Gridap.Fields: integrate
+import Gridap.Arrays: get_array
 
 export Quadrature
 export GenericQuadrature

@@ -32,6 +32,7 @@ import Gridap.Geometry: similar_cell_field
 import Gridap.Geometry: jump
 import Gridap.Geometry: mean
 import Gridap.Geometry: restrict
+import Gridap.Geometry: get_cell_id
 import Gridap.Fields: integrate
 
 import Gridap.Algebra: allocate_residual
@@ -115,6 +116,9 @@ export TrialStyle
 export is_trial
 export is_test
 
+export FECellBasisStyle
+export is_a_fe_cell_basis
+
 export TrialFESpace
 export compute_conforming_cell_dofs
 export SparseMatrixAssembler
@@ -127,6 +131,19 @@ export FESolver
 export LinearFESolver
 export NonLinearFESolver
 export test_fe_solver
+
+export FETerm
+export AffineFETerm
+export LinearFETerm
+export FESource
+export get_cell_matrix
+export get_cell_vector
+export get_cell_jacobian
+export get_cell_residual
+export collect_cell_matrix
+export collect_cell_vector
+export collect_cell_jacobian
+export collect_cell_residual
 
 include("CellBases.jl")
 
@@ -153,5 +170,7 @@ include("ConformingFESpaces.jl")
 include("AffineFEOperators.jl")
 
 include("FESolvers.jl")
+
+include("FETerms.jl")
 
 end # module

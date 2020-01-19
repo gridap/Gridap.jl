@@ -4,6 +4,8 @@
 """
 abstract type CellBasis <: CellField end
 
+FECellBasisStyle(::Type{<:CellBasis}) = Val{true}()
+
 """
 """
 function TrialStyle(::Type{<:CellBasis})
@@ -29,6 +31,7 @@ end
 """
 """
 function test_cell_basis(cb::CellBasis,args...; kwargs...)
+  @test is_a_fe_cell_basis(cb)
   test_cell_field(cb,args...;kwargs...)
 end
 
@@ -88,7 +91,7 @@ function similar_cell_field(a::CellBasis,b::CellBasis,v::AbstractArray)
 end
 
 function _similar_cell_basis(v,a,b,a_trial::Val{T},b_trial::Val{T}) where T
-  @notimplemented
+  similar_cell_field(a,v)
 end
 
 function _similar_cell_basis(v,a,b,a_trial::Val{false},b_trial::Val{true})
@@ -119,9 +122,11 @@ function operate_cell_field(op,a::CellBasis,b::CellBasis)
 end
 
 function _operate_cell_basis(op,a,b,atrial::Val{T},btrial::Val{T}) where T
-  s = "Not implemented feature: it is unlikely that we need to operate between"
-  s *= " two test (resp. two trial) CellBasis objects"
-  @notimplemented s
+  aa = get_array(a)
+  ab = get_array(b)
+  k = bcast(op)
+  c = apply_to_field_array(UnimplementedField,k,aa,ab)
+  similar_cell_field(a,b,c)
 end
 
 function _operate_cell_basis(op,a,b,atrial::Val{false},btrial::Val{true})
@@ -160,10 +165,10 @@ end
 
 """
 """
-struct GenericCellBasis{T,A,B} <: CellBasis
+struct GenericCellBasis{T} <: CellBasis
   trial_style::Val{T}
-  array::A
-  cell_map::B
+  array
+  cell_map
 end
 
 """
@@ -462,7 +467,7 @@ struct SkeletonCellVector <: GridapType
 end
 
 function integrate(
-  a::SkeletonCellMatrixField,trian::Triangulation,quad::AbstractArray{<:Quadrature})
+  a::SkeletonCellMatrixField,trian::Triangulation,quad::CellQuadrature)
   ll = integrate(a.ll,trian,quad)
   lr = integrate(a.lr,trian,quad)
   rl = integrate(a.rl,trian,quad)
@@ -471,7 +476,7 @@ function integrate(
 end
 
 function integrate(
-  a::ReducedSkeletonCellBasis,trian::Triangulation,quad::AbstractArray{<:Quadrature})
+  a::ReducedSkeletonCellBasis,trian::Triangulation,quad::CellQuadrature)
   left = integrate(a.left,trian,quad)
   right = integrate(a.right,trian,quad)
   SkeletonCellVector(left,right)
