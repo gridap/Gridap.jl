@@ -233,23 +233,6 @@ function restrict(cf::CellField,trian::Triangulation)
   _restrict_cell_field(r,trian)
 end
 
-"""
-"""
-struct SkeletonCellField{L,R}
-  left::L
-  right::R
-end
-
-function jump(sf::SkeletonCellField)
-  sf.left - sf.right
-end
-
-function mean(sf::SkeletonCellField)
-  operate_cell_field(_mean,sf.left,sf.right)
-end
-
-_mean(x,y) = 0.5*x + 0.5*y
-
 function _restrict_cell_field(r::SkeletonPair,trian)
   cm = get_cell_map(trian)
   la = r.left

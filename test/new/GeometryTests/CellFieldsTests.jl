@@ -98,6 +98,27 @@ m = mean(scf1)
 r = [[0.5, 1.5], [2.0, 2.0], [2.5, 3.5], [2.0, 2.0]]
 test_cell_field(m,s,r)
 
+j = jump(∇(scf1))
+r = fill(VectorValue{2,Float64}[(0,0),(0,0)],length(j))
+test_cell_field(j,s,r)
+
+scfu = restrict(cfu,strian)
+
+grad_cfu = jump(outer(∇,scfu))
+collect(evaluate(grad_cfu,s))
+
+t_grad_cfu = jump(outer(scfu,∇))
+collect(evaluate(t_grad_cfu,s))
+
+div_cfu = mean(∇*scfu)
+collect(evaluate(div_cfu,s))
+
+curl_cfu = jump(cross(∇,scfu))
+collect(evaluate(curl_cfu,s))
+
+epsi_cfu = mean(ε(scfu))
+collect(evaluate(epsi_cfu,s))
+
 #using Gridap.Visualization
 #
 #writevtk(btrian,"btrian",cellfields=["bcf1"=>bcf1,"nvec"=>nvec,"z"=>z])
