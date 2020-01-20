@@ -220,4 +220,39 @@ end
   Meta.parse("TensorValue($str)")
 end
 
+# Define new operations for Gridap types
+
+for op in (:symmetic_part,)
+  @eval begin
+    function ($op)(a::GridapType)
+      operate($op,a)
+    end
+  end
+end
+
+for op in (:inner,:outer)
+  @eval begin
+
+    function ($op)(a::GridapType,b::GridapType)
+      operate($op,a,b)
+    end
+
+    function ($op)(a::GridapType,b::Number)
+      operate($op,a,b)
+    end
+
+    function ($op)(a::Number,b::GridapType)
+      operate($op,a,b)
+    end
+
+    function ($op)(a::GridapType,b::Function)
+      operate($op,a,b)
+    end
+
+    function ($op)(a::Function,b::GridapType)
+      operate($op,a,b)
+    end
+
+  end
+end
 
