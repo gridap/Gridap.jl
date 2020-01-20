@@ -1,8 +1,8 @@
-# Abstract types
+# CellBasis
 
 """
 """
-abstract type CellBasis <: CellField end
+abstract type CellBasis <: CellFieldLike end
 
 FECellBasisStyle(::Type{<:CellBasis}) = Val{true}()
 
@@ -30,68 +30,33 @@ end
 
 """
 """
-function test_cell_basis(cb::CellBasis,args...; kwargs...)
-  @test is_a_fe_cell_basis(cb)
-  test_cell_field(cb,args...;kwargs...)
-end
-
-"""
-"""
-abstract type CellMatrixField <: CellField end
-
-"""
-"""
-function test_cell_matrix_field(cb::CellMatrixField,args...; kwargs...)
-  test_cell_field(cb,args...;kwargs...)
+function test_cell_basis(cf::CellBasis,args...;kwargs...)
+  @test is_a_fe_cell_basis(cf)
+  test_cell_field_like(cf,args...;kwargs...)
 end
 
 # Define how the metadata is preserved
 
-function similar_cell_field(cf::CellBasis,a::AbstractArray)
+function similar_object(cf::CellBasis,array::AbstractArray)
   cm = get_cell_map(cf)
   trial_style = TrialStyle(cf)
-  GenericCellBasis(trial_style,a,cm)
+  GenericCellBasis(trial_style,array,cm)
 end
 
-function similar_cell_field(cf::CellMatrixField,a::AbstractArray)
-  cm = get_cell_map(cf)
-  GenericCellMatrixField(a,cm)
+function similar_object(a::CellBasis,b::CellField,v::AbstractArray)
+  similar_object(a,v)
 end
 
-function similar_cell_field(a::CellBasis,b::CellField,v::AbstractArray)
-  similar_cell_field(a,v)
+function similar_object(a::CellField,b::CellBasis,v::AbstractArray)
+  similar_object(b,v)
 end
 
-function similar_cell_field(a::CellField,b::CellBasis,v::AbstractArray)
-  similar_cell_field(b,v)
-end
-
-function similar_cell_field(::CellBasis,::CellMatrixField,::AbstractArray)
-  @notimplemented
-end
-
-function similar_cell_field(::CellMatrixField,::CellBasis,a::AbstractArray)
-  @notimplemented
-end
-
-function similar_cell_field(a::CellMatrixField,b::CellField,v::AbstractArray)
-  similar_cell_field(a,v)
-end
-
-function similar_cell_field(a::CellField,b::CellMatrixField,v::AbstractArray)
-  similar_cell_field(b,v)
-end
-
-function similar_cell_field(a::CellMatrixField,b::CellMatrixField,v::AbstractArray)
-  similar_cell_field(a,v)
-end
-
-function similar_cell_field(a::CellBasis,b::CellBasis,v::AbstractArray)
+function similar_object(a::CellBasis,b::CellBasis,v::AbstractArray)
   _similar_cell_basis(v,a,b,TrialStyle(a),TrialStyle(b))
 end
 
 function _similar_cell_basis(v,a,b,a_trial::Val{T},b_trial::Val{T}) where T
-  similar_cell_field(a,v)
+  similar_object(a,v)
 end
 
 function _similar_cell_basis(v,a,b,a_trial::Val{false},b_trial::Val{true})
@@ -107,17 +72,55 @@ function _similar_cell_basis_test_trial(v,a,b)
   GenericCellMatrixField(v,cm)
 end
 
-# Define operations
+# Operations
 
-function operate_cell_field(op,a::CellBasis,b::CellMatrixField)
-  @notimplemented
+function gradient(cf::CellBasis)
+  a = get_array(cf)
+  g = field_array_gradient(a)
+  similar_object(cf,g)
 end
 
-function operate_cell_field(op,a::CellMatrixField,b::CellBasis)
-  @notimplemented
+function grad2curl(cf::CellBasis)
+  a = get_array(cf)
+  g = grad2curl(UnimplementedField,a)
+  similar_object(cf,g)
 end
 
-function operate_cell_field(op,a::CellBasis,b::CellBasis)
+function operate(op,cf::CellBasis)
+  a = get_array(cf)
+  b = field_array_operation(UnimplementedField,op,a)
+  similar_object(cf,b)
+end
+
+function operate(op,cf1::CellBasis,cf2::CellField)
+  @assert length(cf1) == length(cf2)
+  a1 = get_array(cf1)
+  a2 = get_array(cf2)
+  b = field_array_operation(UnimplementedField,op,a1,a2)
+  similar_object(cf1,cf2,b)
+end
+
+function operate(op,cf1::CellField,cf2::CellBasis)
+  @assert length(cf1) == length(cf2)
+  a1 = get_array(cf1)
+  a2 = get_array(cf2)
+  b = field_array_operation(UnimplementedField,op,a1,a2)
+  similar_object(cf1,cf2,b)
+end
+
+function operate(op,cf1::CellBasis,object::Union{Function,Number})
+  cm = get_cell_map(cf1)
+  cf2 = convert_to_cell_field(object,cm)
+  operate(op,cf1,cf2)
+end
+
+function operate(op,object::Union{Function,Number},cf2::CellBasis)
+  cm = get_cell_map(cf2)
+  cf1 = convert_to_cell_field(object,cm)
+  operate(op,cf1,cf2)
+end
+
+function operate(op,a::CellBasis,b::CellBasis)
   _operate_cell_basis(op,a,b,TrialStyle(a),TrialStyle(b))
 end
 
@@ -126,7 +129,7 @@ function _operate_cell_basis(op,a,b,atrial::Val{T},btrial::Val{T}) where T
   ab = get_array(b)
   k = bcast(op)
   c = apply_to_field_array(UnimplementedField,k,aa,ab)
-  similar_cell_field(a,b,c)
+  similar_object(a,b,c)
 end
 
 function _operate_cell_basis(op,a,b,atrial::Val{false},btrial::Val{true})
@@ -137,31 +140,15 @@ function _operate_cell_basis(op,a,b,atrial::Val{true},btrial::Val{false})
   _operate_cell_basis_test_trial(op,b,a)
 end
 
-function _operate_cell_basis_test_trial(op,a,b)
-  operate_cell_field_default(op,a,b)
+function _operate_cell_basis_test_trial(op,cf1,cf2)
+  @assert length(cf1) == length(cf2)
+  a1 = get_array(cf1)
+  a2 = get_array(cf2)
+  b = field_array_operation(UnimplementedField,op,a1,a2)
+  similar_object(cf1,cf2,b)
 end
 
-function operate_cell_field(op,a::CellMatrixField,b::CellMatrixField)
-  _operate_cell_matrix_field(op,a,b)
-end
-
-function operate_cell_field(op,a::CellMatrixField,b::CellField)
-  _operate_cell_matrix_field(op,a,b)
-end
-
-function operate_cell_field(op,a::CellField,b::CellMatrixField)
-  _operate_cell_matrix_field(op,a,b)
-end
-
-function _operate_cell_matrix_field(op,a,b)
-  aa = get_array(a)
-  ab = get_array(b)
-  k = bcast(op)
-  c = apply_to_field_array(UnimplementedField,k,aa,ab)
-  similar_cell_field(a,b,c)
-end
-
-# Concrete types
+# Concrete CellBases
 
 """
 """
@@ -186,6 +173,80 @@ function TrialStyle(::Type{<:GenericCellBasis{T}}) where T
   Val{T}()
 end
 
+# CellMatrixField
+
+"""
+"""
+abstract type CellMatrixField <: CellFieldLike end
+
+"""
+"""
+function test_cell_matrix_field(cb::CellMatrixField,args...; kwargs...)
+  test_cell_field_like(cb,args...;kwargs...)
+end
+
+# Define how the metadata is preserved
+
+function similar_object(cf::CellMatrixField,a::AbstractArray)
+  cm = get_cell_map(cf)
+  GenericCellMatrixField(a,cm)
+end
+
+function similar_object(a::CellMatrixField,b::CellField,v::AbstractArray)
+  similar_object(a,v)
+end
+
+function similar_object(a::CellField,b::CellMatrixField,v::AbstractArray)
+  similar_object(b,v)
+end
+
+function similar_object(a::CellMatrixField,b::CellMatrixField,v::AbstractArray)
+  similar_object(a,v)
+end
+
+# Define operations
+
+function operate(op,a::CellMatrixField)
+  aa = get_array(a)
+  k = bcast(op)
+  c = apply_to_field_array(UnimplementedField,k,aa)
+  similar_object(a,c)
+end
+
+function operate(op,a::CellMatrixField,b::CellMatrixField)
+  _operate_cell_matrix_field(op,a,b)
+end
+
+function operate(op,a::CellMatrixField,b::CellField)
+  _operate_cell_matrix_field(op,a,b)
+end
+
+function operate(op,a::CellField,b::CellMatrixField)
+  _operate_cell_matrix_field(op,a,b)
+end
+
+function _operate_cell_matrix_field(op,a,b)
+  aa = get_array(a)
+  ab = get_array(b)
+  k = bcast(op)
+  c = apply_to_field_array(UnimplementedField,k,aa,ab)
+  similar_object(a,b,c)
+end
+
+function operate(op,a::CellMatrixField,b::Union{Function,Number})
+  cm = get_cell_map(a)
+  _b = convert_to_cell_field(b,cm)
+  operate(op,a,_b)
+end
+
+function operate(op,a::Union{Function,Number},b::CellMatrixField)
+  cm = get_cell_map(b)
+  _a = convert_to_cell_field(a,cm)
+  operate(op,_a,b)
+end
+
+# Concrete CellMatrixField
+
 """
 """
 struct GenericCellMatrixField{A,B} <: CellMatrixField
@@ -197,7 +258,7 @@ get_array(a::GenericCellMatrixField) = a.array
 
 get_cell_map(a::GenericCellMatrixField) = a.cell_map
 
-# Skeleton-related stuff
+# Restrictions
 
 function restrict(cf::CellBasis,trian::Triangulation)
   a = get_array(cf)
@@ -220,13 +281,79 @@ function _restrict_cell_basis(trial_style,r::AbstractArray,trian)
   GenericCellBasis(trial_style,r,cm)
 end
 
-struct SkeletonCellBasis{T,A,B} <: GridapType
+# Integration of CellBasis and CellMatrixField
+
+function integrate(cell_basis::CellBasis,trian::Triangulation,quad::CellQuadrature)
+  cell_map = get_cell_map(trian)
+  q = get_coordinates(quad)
+  w = get_weights(quad)
+  j = gradient(cell_map)
+  integrate(get_array(cell_basis),q,w,j)
+end
+
+function integrate(cell_basis::CellMatrixField,trian::Triangulation,quad::CellQuadrature)
+  cell_map = get_cell_map(trian)
+  q = get_coordinates(quad)
+  w = get_weights(quad)
+  j = gradient(cell_map)
+  integrate(get_array(cell_basis),q,w,j)
+end
+
+# Skeleton-related stuff
+
+struct SkeletonCellBasis{T} <: GridapType
   trial_style::Val{T}
-  left::A
-  right::B
+  left::CellBasis
+  right::CellBasis
 end
 
 TrialStyle(::Type{<:SkeletonCellBasis{T}}) where T = Val{T}()
+
+function get_cell_map(a::SkeletonCellBasis)
+  get_cell_map(a.left)
+end
+
+function gradient(cf::SkeletonCellBasis)
+  left = gradient(cf.left)
+  right = gradient(cf.right)
+  SkeletonCellBasis(cf.trial_style,left,right)
+end
+
+function grad2curl(cf::SkeletonCellBasis)
+  left = grad2curl(cf.left)
+  right = grad2curl(cf.right)
+  SkeletonCellBasis(cf.trial_style,left,right)
+end
+
+function operate(op,cf::SkeletonCellBasis)
+  left = operate(op,cf.left)
+  right = operate(op,cf.right)
+  SkeletonCellBasis(cf.trial_style,left,right)
+end
+
+function operate(op,cf1::SkeletonCellBasis,cf2::CellField)
+  left = operate(op,cf1.left,cf2)
+  right = operate(op,cf1.right,cf2)
+  SkeletonCellBasis(cf1.trial_style,left,right)
+end
+
+function operate(op,cf1::CellField,cf2::SkeletonCellBasis)
+  left = operate(op,cf1,cf2.left)
+  right = operate(op,cf1,cf2.right)
+  SkeletonCellBasis(cf2.trial_style,left,right)
+end
+
+function operate(op,cf1::SkeletonCellBasis,object::Union{Function,Number})
+  cm = get_cell_map(cf1)
+  cf2 = convert_to_cell_field(object,cm)
+  operate(op,cf1,cf2)
+end
+
+function operate(op,object::Union{Function,Number},cf2::SkeletonCellBasis)
+  cm = get_cell_map(cf2)
+  cf1 = convert_to_cell_field(object,cm)
+  operate(op,cf1,cf2)
+end
 
 function jump(a::SkeletonCellBasis)
   ReducedSkeletonCellBasis(a.trial_style,a.left,-a.right)
@@ -236,10 +363,12 @@ function mean(a::SkeletonCellBasis)
   ReducedSkeletonCellBasis(a.trial_style,0.5*a.left,0.5*a.right)
 end
 
-struct ReducedSkeletonCellBasis{T,A,B} <: CellBasis
+# Result of reducing a SkeletonCellBasis
+
+struct ReducedSkeletonCellBasis{T} <: GridapType
   trial_style::Val{T}
-  left::A
-  right::B
+  left::CellBasis
+  right::CellBasis
 end
 
 TrialStyle(::Type{<:ReducedSkeletonCellBasis{T}}) where T = Val{T}()
@@ -248,83 +377,46 @@ function get_cell_map(a::ReducedSkeletonCellBasis)
   get_cell_map(a.left)
 end
 
-function get_array(a::ReducedSkeletonCellBasis)
-  @unreachable
+function operate(op,cf::ReducedSkeletonCellBasis)
+  left = operate(op,cf.left)
+  right = operate(op,cf.right)
+  ReducedSkeletonCellBasis(cf.trial_style,left,right)
 end
 
-function similar_cell_field(cf::ReducedSkeletonCellBasis,a::AbstractArray)
-  @unreachable
+function operate(op,cf1::ReducedSkeletonCellBasis,cf2::CellField)
+  left = operate(op,cf1.left,cf2)
+  right = operate(op,cf1.right,cf2)
+  ReducedSkeletonCellBasis(cf1.trial_style,left,right)
 end
 
-function similar_cell_field(a::ReducedSkeletonCellBasis,b::CellField,v::AbstractArray)
-  @unreachable
+function operate(op,cf1::CellField,cf2::ReducedSkeletonCellBasis)
+  left = operate(op,cf1,cf2.left)
+  right = operate(op,cf1,cf2.right)
+  ReducedSkeletonCellBasis(cf2.trial_style,left,right)
 end
 
-function similar_cell_field(a::CellField,b::ReducedSkeletonCellBasis,v::AbstractArray)
-  @unreachable
+function operate(op,cf1::ReducedSkeletonCellBasis,object::Union{Function,Number})
+  cm = get_cell_map(cf1)
+  cf2 = convert_to_cell_field(object,cm)
+  operate(op,cf1,cf2)
 end
 
-function similar_cell_field(a::ReducedSkeletonCellBasis,b::CellBasis,v::AbstractArray)
-  @unreachable
+function operate(op,object::Union{Function,Number},cf2::ReducedSkeletonCellBasis)
+  cm = get_cell_map(cf2)
+  cf1 = convert_to_cell_field(object,cm)
+  operate(op,cf1,cf2)
 end
 
-function similar_cell_field(a::CellBasis,b::ReducedSkeletonCellBasis,v::AbstractArray)
-  @unreachable
-end
-
-function similar_cell_field(a::ReducedSkeletonCellBasis,b::CellMatrixField,v::AbstractArray)
-  @unreachable
-end
-
-function similar_cell_field(a::CellMatrixField,b::ReducedSkeletonCellBasis,v::AbstractArray)
-  @unreachable
-end
-
-function similar_cell_field(a::ReducedSkeletonCellBasis,b::ReducedSkeletonCellBasis,v::AbstractArray)
-  @unreachable
-end
-
-function operate_cell_field(op,a::ReducedSkeletonCellBasis)
-  left = operate_cell_field(op,a.left)
-  right = operate_cell_field(op,a.right)
-  ReducedSkeletonCellBasis(a.trial_style,left,right)
-end
-
-function operate_cell_field(op,a::ReducedSkeletonCellBasis,b::CellField)
-  left = operate_cell_field(op,a.left,b)
-  right = operate_cell_field(op,a.right,b)
-  ReducedSkeletonCellBasis(a.trial_style,left,right)
-end
-
-function operate_cell_field(op,a::CellField,b::ReducedSkeletonCellBasis)
-  left = operate_cell_field(op,a,b.left)
-  right = operate_cell_field(op,a,b.right)
-  ReducedSkeletonCellBasis(b.trial_style,left,right)
-end
-
-function operate_cell_field(op,a::ReducedSkeletonCellBasis,b::CellBasis)
-  @unreachable
-end
-
-function operate_cell_field(op,a::CellBasis,b::ReducedSkeletonCellBasis)
-  @unreachable
-end
-
-function operate_cell_field(op,a::ReducedSkeletonCellBasis,b::CellMatrixField)
-  @unreachable
-end
-
-function operate_cell_field(op,a::CellMatrixField,b::ReducedSkeletonCellBasis)
-  @unreachable
-end
-
-function operate_cell_field(op,a::ReducedSkeletonCellBasis,b::ReducedSkeletonCellBasis)
+function operate(op,a::ReducedSkeletonCellBasis,b::ReducedSkeletonCellBasis)
   _operate_reduced_skeleton_cell_basis(op,a,b,a.trial_style,b.trial_style)
 end
 
 function  _operate_reduced_skeleton_cell_basis(
   op,a,b,a_trial::Val{T},b_trial::Val{T}) where T
-  @notimplemented
+  left = operate(op,a.left,b.left)
+  right = operate(op,a.right,b.right)
+  trial_style = Val{T}()
+  ReducedSkeletonCellBasis(trial_style,left,right)
 end
 
 function  _operate_reduced_skeleton_cell_basis(
@@ -338,121 +430,67 @@ function  _operate_reduced_skeleton_cell_basis(
 end
 
 function _operate_skeleton_test_trial(op,a,b)
-  ll = operate_cell_field(op,a.left,b.left)
-  lr = operate_cell_field(op,a.left,b.right)
-  rl = operate_cell_field(op,a.right,b.left)
-  rr = operate_cell_field(op,a.right,b.right)
+  ll = operate(op,a.left,b.left)
+  lr = operate(op,a.left,b.right)
+  rl = operate(op,a.right,b.left)
+  rr = operate(op,a.right,b.right)
   SkeletonCellMatrixField(ll,lr,rl,rr)
 end
 
-struct SkeletonCellMatrixField <: CellMatrixField
-  ll
-  lr
-  rl
-  rr
+struct SkeletonCellMatrixField <: GridapType
+  ll::CellMatrixField
+  lr::CellMatrixField
+  rl::CellMatrixField
+  rr::CellMatrixField
 end
 
 get_cell_map(a::SkeletonCellMatrixField) = get_cell_map(a.ll)
 
-function get_array(a::SkeletonCellMatrixField)
-  @notimplemented
-end
-
-function similar_cell_field(cf::SkeletonCellMatrixField,a::AbstractArray)
-  @unreachable
-end
-
-function similar_cell_field(a::SkeletonCellMatrixField,b::CellField,v::AbstractArray)
-  @unreachable
-end
-
-function similar_cell_field(a::CellField,b::SkeletonCellMatrixField,v::AbstractArray)
-  @unreachable
-end
-
-function similar_cell_field(a::SkeletonCellMatrixField,b::CellBasis,v::AbstractArray)
-  @unreachable
-end
-
-function similar_cell_field(a::CellBasis,b::SkeletonCellMatrixField,v::AbstractArray)
-  @unreachable
-end
-
-function similar_cell_field(a::SkeletonCellMatrixField,b::CellMatrixField,v::AbstractArray)
-  @unreachable
-end
-
-function similar_cell_field(a::CellMatrixField,b::SkeletonCellMatrixField,v::AbstractArray)
-  @unreachable
-end
-
-function similar_cell_field(a::SkeletonCellMatrixField,b::ReducedSkeletonCellBasis,v::AbstractArray)
-  @unreachable
-end
-
-function similar_cell_field(a::ReducedSkeletonCellBasis,b::SkeletonCellMatrixField,v::AbstractArray)
-  @unreachable
-end
-
-function similar_cell_field(a::SkeletonCellMatrixField,b::SkeletonCellMatrixField,v::AbstractArray)
-  @unreachable
-end
-
-function operate_cell_field(op,cf::SkeletonCellMatrixField)
-  ll = operate_cell_field(op,cf.ll)
-  lr = operate_cell_field(op,cf.lr)
-  rl = operate_cell_field(op,cf.rl)
-  rr = operate_cell_field(op,cf.rr)
+function operate(op,cf::SkeletonCellMatrixField)
+  ll = operate(op,cf.ll)
+  lr = operate(op,cf.lr)
+  rl = operate(op,cf.rl)
+  rr = operate(op,cf.rr)
   SkeletonCellMatrixField(ll,lr,rl,rr)
 end
 
-function operate_cell_field(op,a::SkeletonCellMatrixField,b::CellField)
-  ll = operate_cell_field(op,a.ll,b)
-  lr = operate_cell_field(op,a.lr,b)
-  rl = operate_cell_field(op,a.rl,b)
-  rr = operate_cell_field(op,a.rr,b)
+function operate(op,a::SkeletonCellMatrixField,b::SkeletonCellMatrixField)
+  ll = operate(op,a.ll,b.ll)
+  lr = operate(op,a.lr,b.lr)
+  rl = operate(op,a.rl,b.rl)
+  rr = operate(op,a.rr,b.rr)
   SkeletonCellMatrixField(ll,lr,rl,rr)
 end
 
-function operate_cell_field(op,a::CellField,b::SkeletonCellMatrixField)
-  ll = operate_cell_field(op,a,b.ll)
-  lr = operate_cell_field(op,a,b.lr)
-  rl = operate_cell_field(op,a,b.rl)
-  rr = operate_cell_field(op,a,b.rr)
+function operate(op,a::SkeletonCellMatrixField,b::CellField)
+  ll = operate(op,a.ll,b)
+  lr = operate(op,a.lr,b)
+  rl = operate(op,a.rl,b)
+  rr = operate(op,a.rr,b)
   SkeletonCellMatrixField(ll,lr,rl,rr)
 end
 
-function operate_cell_field(op,a::SkeletonCellMatrixField,b::CellBasis)
-  @unreachable
-end
-
-function operate_cell_field(op,a::CellBasis,b::SkeletonCellMatrixField)
-  @unreachable
-end
-
-function operate_cell_field(op,a::SkeletonCellMatrixField,b::CellMatrixField)
-  @unreachable
-end
-
-function operate_cell_field(op,a::CellMatrixField,b::SkeletonCellMatrixField)
-  @unreachable
-end
-
-function operate_cell_field(op,a::SkeletonCellMatrixField,b::ReducedSkeletonCellBasis)
-  @unreachable
-end
-
-function operate_cell_field(op,a::ReducedSkeletonCellBasis,b::SkeletonCellMatrixField)
-  @unreachable
-end
-
-function operate_cell_field(op,a::SkeletonCellMatrixField,b::SkeletonCellMatrixField)
-  ll = operate_cell_field(op,a.ll,b.ll)
-  lr = operate_cell_field(op,a.lr,b.lr)
-  rl = operate_cell_field(op,a.rl,b.rl)
-  rr = operate_cell_field(op,a.rr,b.rr)
+function operate(op,a::CellField,b::SkeletonCellMatrixField)
+  ll = operate(op,a,b.ll)
+  lr = operate(op,a,b.lr)
+  rl = operate(op,a,b.rl)
+  rr = operate(op,a,b.rr)
   SkeletonCellMatrixField(ll,lr,rl,rr)
 end
+
+function operate(op,object::Union{Function,Number},cf2::SkeletonCellMatrixField)
+  cm = get_cell_map(cf2)
+  cf1 = convert_to_cell_field(object,cm)
+  operate(op,cf1,cf2)
+end
+
+function operate(op,cf1::SkeletonCellMatrixField,object::Union{Function,Number})
+  cm = get_cell_map(cf1)
+  cf2 = convert_to_cell_field(object,cm)
+  operate(op,cf1,cf2)
+end
+
+# Integration of Skeleton quantities
 
 struct SkeletonCellMatrix <: GridapType
   ll
@@ -481,5 +519,4 @@ function integrate(
   right = integrate(a.right,trian,quad)
   SkeletonCellVector(left,right)
 end
-
 

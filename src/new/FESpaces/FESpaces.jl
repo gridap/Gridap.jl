@@ -18,7 +18,9 @@ using Gridap.Fields
 using Gridap.Integration
 using Gridap.Algebra
 
+using Gridap.Geometry: CellFieldLike
 using Gridap.Geometry: UnimplementedField
+using Gridap.Geometry: test_cell_field_like
 
 import Gridap.Arrays: get_array
 import Gridap.Arrays: array_cache
@@ -27,13 +29,16 @@ import Gridap.Geometry: get_cell_map
 import Gridap.Geometry: get_cell_shapefuns
 import Gridap.Geometry: get_reffes
 import Gridap.Geometry: get_cell_type
-import Gridap.Geometry: operate_cell_field
-import Gridap.Geometry: similar_cell_field
+import Gridap.Helpers: operate
+import Gridap.Geometry: similar_object
 import Gridap.Geometry: jump
 import Gridap.Geometry: mean
 import Gridap.Geometry: restrict
 import Gridap.Geometry: get_cell_id
 import Gridap.Fields: integrate
+import Gridap.Fields: evaluate
+import Gridap.Fields: gradient
+import Gridap.Fields: grad2curl
 
 import Gridap.Algebra: allocate_residual
 import Gridap.Algebra: allocate_jacobian

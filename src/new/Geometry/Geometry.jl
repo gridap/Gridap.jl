@@ -79,7 +79,7 @@ import Gridap.Arrays: apply_kernel!
 export CellField
 export GenericCellField
 export SkeletonCellField
-export similar_cell_field
+export similar_object
 export test_cell_field
 export convert_to_cell_field
 

@@ -1,23 +1,35 @@
 
 """
 """
-abstract type CellField <: GridapType end
+abstract type CellFieldLike <: GridapType end
 
 """
 """
-function get_array(cf::CellField)
+function get_array(cf::CellFieldLike)
   @abstractmethod
 end
 
 """
 """
-function get_cell_map(cf::CellField)
+function get_cell_map(cf::CellFieldLike)
   @abstractmethod
 end
 
 """
 """
-function test_cell_field(cf::CellField,x::AbstractArray,b::AbstractArray,pred=(==);grad=nothing)
+function gradient(cf::CellFieldLike)
+  @abstractmethod
+end
+
+"""
+"""
+function grad2curl(cf::CellFieldLike)
+  @abstractmethod
+end
+
+"""
+"""
+function test_cell_field_like(cf::CellFieldLike,x::AbstractArray,b::AbstractArray,pred=(==);grad=nothing)
   cell_map = get_cell_map(cf)
   @test isa(cell_map,AbstractArray)
   a = evaluate(cf,x)
@@ -30,67 +42,62 @@ end
 
 """
 """
-function evaluate(cf::CellField,x)
+function evaluate(cf::CellFieldLike,x)
   a = get_array(cf)
   evaluate_field_array(a,x)
 end
 
 """
 """
-function Base.length(cf::CellField)
+function Base.length(cf::CellFieldLike)
   a = get_array(cf)
   length(a)
 end
 
 """
 """
-function similar_cell_field(cf::CellField,array::AbstractArray)
+abstract type CellField <: CellFieldLike end
+
+"""
+"""
+function test_cell_field(cf::CellField,args...;kwargs...)
+  test_cell_field_like(cf,args...;kwargs...)
+end
+
+"""
+"""
+function similar_object(cf::CellField,array::AbstractArray)
   cm = get_cell_map(cf)
   GenericCellField(array,cm)
 end
 
-function similar_cell_field(cf1::CellField,cf2::CellField,array::AbstractArray)
+function similar_object(cf1::CellField,cf2::CellField,array::AbstractArray)
   cm = get_cell_map(cf1)
   GenericCellField(array,cm)
 end
 
-"""
-"""
-struct GenericCellField{A<:AbstractArray,B<:AbstractArray} <: CellField
-  array::A
-  cell_map::B
-end
-
-function get_array(cf::GenericCellField)
-  cf.array
-end
-
-function get_cell_map(cf::GenericCellField)
-  cf.cell_map
-end
-
-# Operations
+# Diff operations
 
 struct UnimplementedField <: Field end
 
 function gradient(cf::CellField)
   a = get_array(cf)
   g = field_array_gradient(a)
-  similar_cell_field(cf,g)
+  similar_object(cf,g)
 end
 
 function grad2curl(cf::CellField)
   a = get_array(cf)
   g = grad2curl(UnimplementedField,a)
-  similar_cell_field(cf,g)
+  similar_object(cf,g)
 end
 
-"""
-"""
+# Operations
+
 function operate(op,cf::CellField)
   a = get_array(cf)
   b = field_array_operation(UnimplementedField,op,a)
-  similar_cell_field(cf,b)
+  similar_object(cf,b)
 end
 
 function operate(op,cf1::CellField,cf2::CellField)
@@ -98,7 +105,7 @@ function operate(op,cf1::CellField,cf2::CellField)
   a1 = get_array(cf1)
   a2 = get_array(cf2)
   b = field_array_operation(UnimplementedField,op,a1,a2)
-  similar_cell_field(cf1,cf2,b)
+  similar_object(cf1,cf2,b)
 end
 
 function operate(op,cf1::CellField,object::Union{Function,Number})
@@ -112,6 +119,8 @@ function operate(op,object::Union{Function,Number},cf2::CellField)
   cf1 = convert_to_cell_field(object,cm)
   operate(op,cf1,cf2)
 end
+
+# Conversions
 
 """
 """
@@ -133,6 +142,24 @@ function convert_to_cell_field(object::Number,cell_map)
   a = Fill(object,length(cell_map))
   GenericCellField(a,cell_map)
 end
+
+# Concrete implementation
+
+"""
+"""
+struct GenericCellField{A<:AbstractArray,B<:AbstractArray} <: CellField
+  array::A
+  cell_map::B
+end
+
+function get_array(cf::GenericCellField)
+  cf.array
+end
+
+function get_cell_map(cf::GenericCellField)
+  cf.cell_map
+end
+
 
 # Skeleton related
 
