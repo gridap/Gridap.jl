@@ -108,13 +108,13 @@ function operate(op,cf1::CellField,cf2::CellField)
   similar_object(cf1,cf2,b)
 end
 
-function operate(op,cf1::CellField,object::Union{Function,Number})
+function operate(op,cf1::CellField,object)
   cm = get_cell_map(cf1)
   cf2 = convert_to_cell_field(object,cm)
   operate(op,cf1,cf2)
 end
 
-function operate(op,object::Union{Function,Number},cf2::CellField)
+function operate(op,object,cf2::CellField)
   cm = get_cell_map(cf2)
   cf1 = convert_to_cell_field(object,cm)
   operate(op,cf1,cf2)
@@ -228,13 +228,13 @@ function operate(op,cf1::CellField,cf2::SkeletonCellField)
   SkeletonCellField(left,right)
 end
 
-function operate(op,cf1::SkeletonCellField,object::Union{Function,Number})
+function operate(op,cf1::SkeletonCellField,object)
   cm = get_cell_map(cf1)
   cf2 = convert_to_cell_field(object,cm)
   operate(op,cf1,cf2)
 end
 
-function operate(op,object::Union{Function,Number},cf2::SkeletonCellField)
+function operate(op,object,cf2::SkeletonCellField)
   cm = get_cell_map(cf2)
   cf1 = convert_to_cell_field(object,cm)
   operate(op,cf1,cf2)

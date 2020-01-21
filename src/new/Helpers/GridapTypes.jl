@@ -41,19 +41,11 @@ for op in (:+,:-,:*,:cross,:dot)
       operate($op,a,b)
     end
 
-    function ($op)(a::GridapType,b::Number)
+    function ($op)(a::GridapType,b)
       operate($op,a,b)
     end
 
-    function ($op)(a::Number,b::GridapType)
-      operate($op,a,b)
-    end
-
-    function ($op)(a::GridapType,b::Function)
-      operate($op,a,b)
-    end
-
-    function ($op)(a::Function,b::GridapType)
+    function ($op)(a,b::GridapType)
       operate($op,a,b)
     end
 

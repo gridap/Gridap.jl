@@ -108,13 +108,13 @@ function operate(op,cf1::CellField,cf2::CellBasis)
   similar_object(cf1,cf2,b)
 end
 
-function operate(op,cf1::CellBasis,object::Union{Function,Number})
+function operate(op,cf1::CellBasis,object)
   cm = get_cell_map(cf1)
   cf2 = convert_to_cell_field(object,cm)
   operate(op,cf1,cf2)
 end
 
-function operate(op,object::Union{Function,Number},cf2::CellBasis)
+function operate(op,object,cf2::CellBasis)
   cm = get_cell_map(cf2)
   cf1 = convert_to_cell_field(object,cm)
   operate(op,cf1,cf2)
@@ -233,13 +233,13 @@ function _operate_cell_matrix_field(op,a,b)
   similar_object(a,b,c)
 end
 
-function operate(op,a::CellMatrixField,b::Union{Function,Number})
+function operate(op,a::CellMatrixField,b)
   cm = get_cell_map(a)
   _b = convert_to_cell_field(b,cm)
   operate(op,a,_b)
 end
 
-function operate(op,a::Union{Function,Number},b::CellMatrixField)
+function operate(op,a,b::CellMatrixField)
   cm = get_cell_map(b)
   _a = convert_to_cell_field(a,cm)
   operate(op,_a,b)
@@ -343,13 +343,13 @@ function operate(op,cf1::CellField,cf2::SkeletonCellBasis)
   SkeletonCellBasis(cf2.trial_style,left,right)
 end
 
-function operate(op,cf1::SkeletonCellBasis,object::Union{Function,Number})
+function operate(op,cf1::SkeletonCellBasis,object)
   cm = get_cell_map(cf1)
   cf2 = convert_to_cell_field(object,cm)
   operate(op,cf1,cf2)
 end
 
-function operate(op,object::Union{Function,Number},cf2::SkeletonCellBasis)
+function operate(op,object,cf2::SkeletonCellBasis)
   cm = get_cell_map(cf2)
   cf1 = convert_to_cell_field(object,cm)
   operate(op,cf1,cf2)
@@ -395,13 +395,13 @@ function operate(op,cf1::CellField,cf2::ReducedSkeletonCellBasis)
   ReducedSkeletonCellBasis(cf2.trial_style,left,right)
 end
 
-function operate(op,cf1::ReducedSkeletonCellBasis,object::Union{Function,Number})
+function operate(op,cf1::ReducedSkeletonCellBasis,object)
   cm = get_cell_map(cf1)
   cf2 = convert_to_cell_field(object,cm)
   operate(op,cf1,cf2)
 end
 
-function operate(op,object::Union{Function,Number},cf2::ReducedSkeletonCellBasis)
+function operate(op,object,cf2::ReducedSkeletonCellBasis)
   cm = get_cell_map(cf2)
   cf1 = convert_to_cell_field(object,cm)
   operate(op,cf1,cf2)
@@ -478,13 +478,13 @@ function operate(op,a::CellField,b::SkeletonCellMatrixField)
   SkeletonCellMatrixField(ll,lr,rl,rr)
 end
 
-function operate(op,object::Union{Function,Number},cf2::SkeletonCellMatrixField)
+function operate(op,object,cf2::SkeletonCellMatrixField)
   cm = get_cell_map(cf2)
   cf1 = convert_to_cell_field(object,cm)
   operate(op,cf1,cf2)
 end
 
-function operate(op,cf1::SkeletonCellMatrixField,object::Union{Function,Number})
+function operate(op,cf1::SkeletonCellMatrixField,object)
   cm = get_cell_map(cf1)
   cf2 = convert_to_cell_field(object,cm)
   operate(op,cf1,cf2)
