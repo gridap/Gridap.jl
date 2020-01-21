@@ -12,6 +12,8 @@ using Test
 
 @testset "Grids" begin include("GridsTests.jl") end
 
+@testset "TriangulationPortions" begin include("TriangulationPortionsTests.jl") end
+
 @testset "GridPortions" begin include("GridPortionsTests.jl") end
 
 @testset "DiscreteModels" begin include("DiscreteModelsTests.jl") end
