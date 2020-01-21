@@ -173,10 +173,11 @@ include("UnconstrainedFESpaces.jl")
 
 include("ConformingFESpaces.jl")
 
+include("FETerms.jl")
+
 include("AffineFEOperators.jl")
 
 include("FESolvers.jl")
 
-include("FETerms.jl")
 
 end # module

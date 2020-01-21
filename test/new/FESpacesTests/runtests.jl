@@ -24,10 +24,10 @@ using Test
 
 @testset "ConformingFESpaces" begin include("ConformingFESpacesTests.jl") end
 
+@testset "FETerms" begin include("FETermsTests.jl") end
+
 @testset "AffineFEOperators" begin include("AffineFEOperatorsTests.jl") end
 
 @testset "FESolvers" begin include("FESolversTests.jl") end
-
-@testset "FETerms" begin include("FETermsTests.jl") end
 
 end # module
