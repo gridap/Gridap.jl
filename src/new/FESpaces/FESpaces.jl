@@ -151,7 +151,13 @@ export collect_cell_vector
 export collect_cell_jacobian
 export collect_cell_residual
 
+export @law
+export operate
+export GridapType
+
 include("CellBases.jl")
+
+include("Law.jl")
 
 include("FEFunctions.jl")
 

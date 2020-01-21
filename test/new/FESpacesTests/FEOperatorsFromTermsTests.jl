@@ -18,16 +18,8 @@ ufun_grad(x) = VectorValue(1.0,1.0)
 ∇(::typeof(u)) = ufun_grad
 f(x) = -(3.0*x[1]+x[2]+1.0)
 
-ν(u,x) = (u+1.0)*x[1]
-dν(du,x) = x[1]*du
-
-function ν(u::CellField,x::CellField)
-  operate(ν,u,x)
-end
-
-function dν(du::CellBasis,x::CellField)
-  operate(dν,du,x)
-end
+@law ν(u,x) = (u+1.0)*x[1]
+@law dν(du,x) = x[1]*du
 
 domain = (0,1,0,1)
 partition = (4,4)
@@ -43,7 +35,7 @@ trian = get_triangulation(model)
 degree = 3*order-1
 quad = CellQuadrature(trian,degree)
 
-x = get_physical_coordinate(trian)
+const x = get_physical_coordinate(trian) # its safer to mark as constant objects that are captured
 
 a(u,v,du) = inner( ∇(v), ν(u,x)*∇(du))
 res(u,v) = a(u,v,u) - inner(v,f)
@@ -68,10 +60,10 @@ uh1 = sqrt(sum( integrate(h1(uh),trian,quad) ))
 @test el2/ul2 < 1.e-8
 @test eh1/uh1 < 1.e-7
 
-x = ones(num_free_dofs(U))
-uh = FEFunction(U,x)
+y = ones(num_free_dofs(U))
+uh = FEFunction(U,y)
 r = residual(op,uh)
 A = jacobian(op,uh)
-test_fe_operator(op,x,r,≈,jac=A)
+test_fe_operator(op,y,r,≈,jac=A)
 
 end # module
