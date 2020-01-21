@@ -1,4 +1,10 @@
-@testset "SparseMatrixCSR" begin
+module SparseMatrixCSRTests
+
+    using SparseArrays
+    using LinearAlgebra
+    using Gridap.Algebra
+    using Test
+
     maxnz=5
     maxrows=5
     maxcols=5

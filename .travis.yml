@@ -12,8 +12,6 @@ os:
 julia:
   - 1.0
   - 1.3
-matrix:
-  fast_finish: true
 notifications:
   email:
     on_success: never
