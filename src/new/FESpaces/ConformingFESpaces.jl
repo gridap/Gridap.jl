@@ -14,6 +14,37 @@ function GradConformingFESpace(
 
 end
 
+function GradConformingFESpace(
+  ::Type{T},
+  model::DiscreteModel,
+  order::Integer,
+  dirichlet_tags,
+  dirichlet_components=nothing) where T
+
+  face_labeing = get_face_labeling(model)
+
+  GradConformingFESpace(T,model,order,face_labeing,dirichlet_tags,dirichlet_components)
+
+end
+
+function GradConformingFESpace(
+  ::Type{T},
+  model::DiscreteModel,
+  order::Integer,
+  face_labeing::FaceLabeling,
+  dirichlet_tags,
+  dirichlet_components=nothing) where T
+
+  grid_topology = get_grid_topology(model)
+  polytopes = get_polytopes(grid_topology)
+
+  reffes = [ LagrangianRefFE(T,p,order) for p in polytopes ]
+
+  GradConformingFESpace(
+    reffes,model,face_labeing,dirichlet_tags,dirichlet_components)
+
+end
+
 """
 """
 function GradConformingFESpace(

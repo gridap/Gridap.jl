@@ -177,7 +177,8 @@ include("FETerms.jl")
 
 include("AffineFEOperators.jl")
 
-include("FESolvers.jl")
+include("FEOperatorsFromTerms.jl")
 
+include("FESolvers.jl")
 
 end # module

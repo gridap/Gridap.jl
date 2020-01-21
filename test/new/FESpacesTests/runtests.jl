@@ -28,6 +28,8 @@ using Test
 
 @testset "AffineFEOperators" begin include("AffineFEOperatorsTests.jl") end
 
+@testset "FEOperatorsFromTerms" begin include("FEOperatorsFromTermsTests.jl") end
+
 @testset "FESolvers" begin include("FESolversTests.jl") end
 
 end # module

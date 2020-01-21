@@ -147,9 +147,9 @@ end
 
 """
 """
-struct GenericCellField{A<:AbstractArray,B<:AbstractArray} <: CellField
-  array::A
-  cell_map::B
+struct GenericCellField <: CellField
+  array::AbstractArray
+  cell_map::AbstractArray
 end
 
 function get_array(cf::GenericCellField)
