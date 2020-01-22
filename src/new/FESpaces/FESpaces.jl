@@ -110,6 +110,7 @@ export SingleFieldFEFunction
 
 export UnsconstrainedFESpace
 export GradConformingFESpace
+export DiscontinuousFESpace
 
 export CellBasis
 export test_cell_basis
@@ -179,6 +180,8 @@ include("UnconstrainedFESpaces.jl")
 
 include("ConformingFESpaces.jl")
 
+include("DiscontinuousFESpaces.jl")
+
 include("FETerms.jl")
 
 include("AffineFEOperators.jl")
@@ -186,5 +189,7 @@ include("AffineFEOperators.jl")
 include("FEOperatorsFromTerms.jl")
 
 include("FESolvers.jl")
+
+include("FESpaceFactories.jl")
 
 end # module

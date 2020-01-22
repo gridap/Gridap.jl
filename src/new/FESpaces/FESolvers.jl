@@ -124,6 +124,16 @@ end
 
 """
 """
+function FESolver(nls::NonLinearSolver)
+  NonLinearFESolver(nls)
+end
+
+function FESolver()
+  NonLinearFESolver()
+end
+
+"""
+"""
 function NonLinearFESolver()
   nls = NLSolver(show_trace=false,method=:newton)
   NonLinearFESolver(nls)

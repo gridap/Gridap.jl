@@ -56,20 +56,18 @@ function GradConformingFESpace(
 
   grid_topology = get_grid_topology(model)
 
+  _dirichlet_components = _convert_dirichlet_components(dirichlet_tags,dirichlet_components)
+
   cell_dofs, nfree, ndirichlet, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
-    reffes,grid_topology,face_labeing,dirichlet_tags,dirichlet_components)
-
-  cell_to_ctype = get_cell_type(grid_topology)
-  dof_basis = map(get_dof_basis,reffes)
-  cell_dof_basis = CompressedArray(dof_basis,cell_to_ctype)
-
-  shapefuns =  map(get_shapefuns,reffes)
-  refshapefuns = CompressedArray(shapefuns,cell_to_ctype)
-  grid = get_grid(model)
-  cell_map = get_cell_map(grid)
-  cell_shapefuns = attachmap(refshapefuns,cell_map)
+    reffes,grid_topology,face_labeing,dirichlet_tags,_dirichlet_components)
 
   ntags = length(dirichlet_tags)
+
+  grid = get_grid(model)
+  cell_to_ctype = get_cell_type(grid_topology)
+  cell_map = get_cell_map(grid)
+
+  cell_shapefuns, cell_dof_basis = compute_cell_space(reffes, cell_to_ctype, cell_map)
 
   UnsconstrainedFESpace(
     nfree,
@@ -82,6 +80,20 @@ function GradConformingFESpace(
     dirichlet_cells,
     ntags)
 
+end
+
+"""
+"""
+function compute_cell_space(reffes, cell_to_ctype, cell_map)
+
+  dof_basis = map(get_dof_basis,reffes)
+  cell_dof_basis = CompressedArray(dof_basis,cell_to_ctype)
+
+  shapefuns =  map(get_shapefuns,reffes)
+  refshapefuns = CompressedArray(shapefuns,cell_to_ctype)
+  cell_shapefuns = attachmap(refshapefuns,cell_map)
+
+  (cell_shapefuns, cell_dof_basis)
 end
 
 """
@@ -402,6 +414,26 @@ function _generate_diri_cells(
 
   diri_cells
 
+end
+
+function _convert_dirichlet_components(dirichlet_tags,dirichlet_components)
+  dirichlet_components
+end
+
+function _convert_dirichlet_components(dirichlet_tags::Integer,dirichlet_components)
+  [dirichlet_components,]
+end
+
+function _convert_dirichlet_components(dirichlet_tags::Integer,dirichlet_components::Nothing)
+  nothing
+end
+
+function _convert_dirichlet_components(dirichlet_tags::String,dirichlet_components)
+  [dirichlet_components,]
+end
+
+function _convert_dirichlet_components(dirichlet_tags::String,dirichlet_components::Nothing)
+  nothing
 end
 
 struct CellDofsNonOriented <:AbstractVector{Vector{Int}}

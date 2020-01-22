@@ -26,6 +26,8 @@ using Test
 
 @testset "ConformingFESpaces" begin include("ConformingFESpacesTests.jl") end
 
+@testset "DiscontinuousFESpaces" begin include("DiscontinuousFESpacesTests.jl") end
+
 @testset "FETerms" begin include("FETermsTests.jl") end
 
 @testset "AffineFEOperators" begin include("AffineFEOperatorsTests.jl") end
@@ -33,5 +35,7 @@ using Test
 @testset "FEOperatorsFromTerms" begin include("FEOperatorsFromTermsTests.jl") end
 
 @testset "FESolvers" begin include("FESolversTests.jl") end
+
+@testset "FESpaceFactories" begin include("FESpaceFactoriesTests.jl") end
 
 end # module

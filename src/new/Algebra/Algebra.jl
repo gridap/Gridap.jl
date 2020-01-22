@@ -66,6 +66,9 @@ export AffineOperator
 export get_matrix
 export get_vector
 
+export SparseMatrixCSR
+export SymSparseMatrixCSR
+
 include("SparseMatrices.jl")
 
 include("CompressedSparseMatrices.jl")
