@@ -50,4 +50,32 @@ r = A*x - b
 test_fe_operator(op,x,r,≈,jac=A)
 @test isa(get_algebraic_operator(op), AffineOperator)
 
+#
+
+tol = 1.0e-9
+
+u_sol(x) = x[1]+x[2]
+f_fun(x) = 0
+
+dirichlet_tags = "boundary"
+V = GradConformingFESpace(reffes,model,dirichlet_tags)
+U = TrialFESpace(V,u_sol)
+
+a(v,u) = ∇(v)*∇(u)
+l(v) = v*f_fun
+
+t_Ω = AffineFETerm(a,l,trian,quad)
+
+assem = SparseMatrixAssembler(V,U)
+
+op = AffineFEOperator(V,U,assem,t_Ω)
+uh = solve(op)
+e = u_sol - uh
+@test sum(integrate(e*e,trian,quad)) < tol
+
+op = AffineFEOperator(V,U,t_Ω)
+uh = solve(op)
+e = u_sol - uh
+@test sum(integrate(e*e,trian,quad)) < tol
+
 end # module

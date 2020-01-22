@@ -88,8 +88,8 @@ function GenericBoundaryTriangulation(
   oldface_grid = Grid(ReferenceFE{D-1},model)
   cell_grid = Grid(ReferenceFE{D},model)
   face_to_oldface = findall(face_to_mask)
-  face_grid = GridPortion(oldface_grid,face_to_oldface)
-  GenericBoundaryTriangulation(face_grid,cell_grid,topo,face_to_oldface,icell_arround)
+  face_trian = TriangulationPortion(oldface_grid,face_to_oldface)
+  GenericBoundaryTriangulation(face_trian,cell_grid,topo,face_to_oldface,icell_arround)
 end
 
 function _fill_ctype_to_lface_to_ftype!(

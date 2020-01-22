@@ -149,8 +149,8 @@ function _push_matrix_contribution!(w,r,c,cellvals::SkeletonCellMatrix,cellids::
   push!(w,cellvals.rr)
   push!(r,cellids.left); push!(c,cellids.left)
   push!(r,cellids.left); push!(c,cellids.right)
-  push!(r,cellids.rigth); push!(c,cellids.left)
-  push!(r,cellids.rigth); push!(c,cellids.right)
+  push!(r,cellids.right); push!(c,cellids.left)
+  push!(r,cellids.right); push!(c,cellids.right)
 end
 
 function _push_vector_contribution!(v,r,cellvals,cellids)

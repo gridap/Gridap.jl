@@ -30,6 +30,10 @@ trian = get_triangulation(model)
 degree = 2
 quad = CellQuadrature(trian,degree)
 
+strian = SkeletonTriangulation(model)
+degree = 2
+squad = CellQuadrature(strian,degree)
+
 assem = SparseMatrixAssembler(V,U)
 
 uhd = zero(U)
@@ -43,12 +47,20 @@ l(v) = f*v
 j(u,v,du) = a(v,du)
 r(u,v) = a(v,u) - l(v)
 
+z(v,u) = jump(v)*jump(u)
+
+t_linear = LinearFETerm(z,strian,squad)
+
+w(v) = jump(v)*f
+t_source = FESource(w,strian,squad)
+
+
 # AffineFETerm
 
 t_affine = AffineFETerm(a,l,trian,quad)
 
-matdata = collect_cell_matrix(v,u,[t_affine])
-vecdata = collect_cell_vector(v,uhd,[t_affine])
+matdata = collect_cell_matrix(v,u,[t_affine, t_linear])
+vecdata = collect_cell_vector(v,uhd,[t_affine, t_linear, t_source])
 A = assemble_matrix(assem,matdata...)
 b = assemble_vector(assem,vecdata...)
 x = A \ b

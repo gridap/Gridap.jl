@@ -56,6 +56,7 @@ Equivalent to
     divergence(f)
 """
 (*)(::typeof(∇),f) = divergence(f)
+(*)(::typeof(∇),f::GridapType) = divergence(f)
 
 """
     outer(∇,f)
@@ -65,6 +66,7 @@ Equivalent to
     gradient(f)
 """
 outer(::typeof(∇),f) = gradient(f)
+outer(::typeof(∇),f::GridapType) = gradient(f)
 
 """
     outer(f,∇)
@@ -74,6 +76,7 @@ Equivalent to
     transpose(gradient(f))
 """
 outer(f,::typeof(∇)) = transpose(gradient(f))
+outer(f::GridapType,::typeof(∇)) = transpose(gradient(f))
 
 """
     cross(∇,f)
@@ -83,12 +86,15 @@ Equivalent to
     curl(f)
 """
 cross(::typeof(∇),f) = curl(f)
+cross(::typeof(∇),f::GridapType) = curl(f)
 
 # Helpers
 
 grad2curl(f::Field) = apply_kernel_to_field(bcast(_curl_kernel),f)
 
 grad2curl(f::AbstractArray{<:Field}) = apply_to_field_array(bcast(_curl_kernel),f)
+
+grad2curl(::Type{T}, f::AbstractArray{<:Field}) where T = apply_to_field_array(T,bcast(_curl_kernel),f)
 
 function _curl_kernel(∇u::TensorValue{2})
   ∇u[1,2] - ∇u[2,1]

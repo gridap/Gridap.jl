@@ -4,6 +4,8 @@ using Test
 
 @testset "CellBases" begin include("CellBasesTests.jl") end
 
+@testset "Law" begin include("LawTests.jl") end
+
 @testset "FEFunctions" begin include("FEFunctionsTests.jl") end
 
 @testset "FESpacesInterfaces" begin include("FESpacesInterfacesTests.jl") end
@@ -24,10 +26,12 @@ using Test
 
 @testset "ConformingFESpaces" begin include("ConformingFESpacesTests.jl") end
 
+@testset "FETerms" begin include("FETermsTests.jl") end
+
 @testset "AffineFEOperators" begin include("AffineFEOperatorsTests.jl") end
 
-@testset "FESolvers" begin include("FESolversTests.jl") end
+@testset "FEOperatorsFromTerms" begin include("FEOperatorsFromTermsTests.jl") end
 
-@testset "FETerms" begin include("FETermsTests.jl") end
+@testset "FESolvers" begin include("FESolversTests.jl") end
 
 end # module

@@ -30,16 +30,9 @@ import Gridap.Arrays: getindex!
 import Gridap.Arrays: reindex
 import Gridap.Arrays: get_array
 
-import Gridap.TensorValues: outer
-import Gridap.TensorValues: inner
-import Gridap.TensorValues: symmetic_part
 import Gridap.Fields: gradient
 import Gridap.Fields: grad2curl
-import Base: +, - , *
-import LinearAlgebra: cross
-import LinearAlgebra: tr
-import Base: transpose
-import Base: adjoint
+import Gridap.Helpers: operate
 
 import Gridap.Io: to_dict
 import Gridap.Io: from_dict
@@ -86,11 +79,9 @@ import Gridap.Arrays: apply_kernel!
 export CellField
 export GenericCellField
 export SkeletonCellField
-export similar_cell_field
+export similar_object
 export test_cell_field
 export convert_to_cell_field
-export operate_cell_field
-export operate_cell_field_default
 
 export GridTopology
 export num_cells
@@ -132,6 +123,7 @@ export test_grid
 export compute_linear_grid
 export compute_reference_grid
 
+export TriangulationPortion
 export GridPortion
 export UnstructuredGrid
 
@@ -197,6 +189,8 @@ include("Triangulations.jl")
 include("Grids.jl")
 
 include("GridMocks.jl")
+
+include("TriangulationPortions.jl")
 
 include("GridPortions.jl")
 

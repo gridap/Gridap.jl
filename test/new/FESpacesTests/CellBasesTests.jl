@@ -143,6 +143,14 @@ sv = restrict(v,strian)
 @test isa(sv,SkeletonCellBasis)
 @test is_test(sv)
 
+_sv = jump(2*∇(sv))
+@test isa(_sv,ReducedSkeletonCellBasis)
+@test is_test(_sv)
+
+_sv = jump(∇(sv)*f)
+@test isa(_sv,ReducedSkeletonCellBasis)
+@test is_test(_sv)
+
 sv = jump(sv)
 @test isa(sv,ReducedSkeletonCellBasis)
 @test is_test(sv)

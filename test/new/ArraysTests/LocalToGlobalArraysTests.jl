@@ -1,5 +1,6 @@
 module LocalToGlobalArraysTests
 
+using Test
 using Gridap.TensorValues
 using Gridap.Arrays
 
@@ -11,5 +12,10 @@ lid_to_gid = Table(data,ptrs)
 ca = LocalToGlobalArray(lid_to_gid,gid_to_val)
 a = [ gid_to_val[gids] for gids in lid_to_gid ]
 test_array( ca, a )
+
+ids = [3,1,2]
+r = reindex(ca,ids)
+@test isa(r,LocalToGlobalArray)
+test_array(r,ca[ids])
 
 end # module
