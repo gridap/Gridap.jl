@@ -110,6 +110,7 @@ export SingleFieldFEFunction
 
 export UnsconstrainedFESpace
 export GradConformingFESpace
+export DiscontinuousFESpace
 
 export CellBasis
 export test_cell_basis
@@ -178,6 +179,8 @@ include("SparseMatrixAssemblers.jl")
 include("UnconstrainedFESpaces.jl")
 
 include("ConformingFESpaces.jl")
+
+include("DiscontinuousFESpaces.jl")
 
 include("FETerms.jl")
 

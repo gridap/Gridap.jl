@@ -26,6 +26,8 @@ using Test
 
 @testset "ConformingFESpaces" begin include("ConformingFESpacesTests.jl") end
 
+@testset "DiscontinuousFESpaces" begin include("DiscontinuousFESpacesTests.jl") end
+
 @testset "FETerms" begin include("FETermsTests.jl") end
 
 @testset "AffineFEOperators" begin include("AffineFEOperatorsTests.jl") end
