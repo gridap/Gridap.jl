@@ -56,8 +56,10 @@ function GradConformingFESpace(
 
   grid_topology = get_grid_topology(model)
 
+  _dirichlet_components = _convert_dirichlet_components(dirichlet_tags,dirichlet_components)
+
   cell_dofs, nfree, ndirichlet, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
-    reffes,grid_topology,face_labeing,dirichlet_tags,dirichlet_components)
+    reffes,grid_topology,face_labeing,dirichlet_tags,_dirichlet_components)
 
   ntags = length(dirichlet_tags)
 
@@ -412,6 +414,26 @@ function _generate_diri_cells(
 
   diri_cells
 
+end
+
+function _convert_dirichlet_components(dirichlet_tags,dirichlet_components)
+  dirichlet_components
+end
+
+function _convert_dirichlet_components(dirichlet_tags::Integer,dirichlet_components)
+  [dirichlet_components,]
+end
+
+function _convert_dirichlet_components(dirichlet_tags::Integer,dirichlet_components::Nothing)
+  nothing
+end
+
+function _convert_dirichlet_components(dirichlet_tags::String,dirichlet_components)
+  [dirichlet_components,]
+end
+
+function _convert_dirichlet_components(dirichlet_tags::String,dirichlet_components::Nothing)
+  nothing
 end
 
 struct CellDofsNonOriented <:AbstractVector{Vector{Int}}

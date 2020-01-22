@@ -36,4 +36,6 @@ using Test
 
 @testset "FESolvers" begin include("FESolversTests.jl") end
 
+@testset "FESpaceFactories" begin include("FESpaceFactoriesTests.jl") end
+
 end # module

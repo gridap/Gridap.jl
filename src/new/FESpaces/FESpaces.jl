@@ -190,4 +190,6 @@ include("FEOperatorsFromTerms.jl")
 
 include("FESolvers.jl")
 
+include("FESpaceFactories.jl")
+
 end # module

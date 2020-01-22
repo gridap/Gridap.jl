@@ -120,6 +120,14 @@ num_vertices(g::DiscreteModel) = num_vertices(get_grid_topology(g))
 num_nodes(g::DiscreteModel) = num_nodes(get_grid(g))
 
 """
+    get_polytopes(model::DiscreteModel)
+"""
+function get_polytopes(model::DiscreteModel)
+  topo = get_grid_topology(model)
+  get_polytopes(topo)
+end
+
+"""
     get_face_nodes(g::DiscreteModel,d::Integer)
 """
 function get_face_nodes(g::DiscreteModel,d::Integer)
