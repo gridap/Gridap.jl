@@ -61,6 +61,7 @@ export laplacian
 export divergence
 export Δ
 export ε
+export symmetric_gradient
 
 export Homothecy
 export AffineMap

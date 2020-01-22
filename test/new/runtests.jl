@@ -28,6 +28,8 @@ using Test
 
 @time @testset "Visualization" begin include("VisualizationTests/runtests.jl") end
 
+@time @testset "Gridaps" begin include("GridapTests/runtests.jl") end
+
 include("../../bench/runbenchs.jl")
 
 end # module

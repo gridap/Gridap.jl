@@ -173,7 +173,6 @@ export jump
 export mean
 export SkeletonTriangulation
 
-
 include("GridTopologies.jl")
 
 include("GridTopologyMocks.jl")
