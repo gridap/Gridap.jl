@@ -9,7 +9,6 @@ partition = (4,4)
 model = CartesianDiscreteModel(domain,partition)
 order = 2
 T = Float64
-diritags = "boundary"
 
 const h = (domain[2]-domain[1]) / partition[1]
 const γ = 10
@@ -44,8 +43,9 @@ V = FESpace(
  model=model,
  order=order,
  reffe=:Lagrangian,
+ labels=labels,
  valuetype=T,
- dirichlet_tags=diritags)
+ dirichlet_tags="dirichlet")
 
 U = TrialFESpace(V,u)
 
