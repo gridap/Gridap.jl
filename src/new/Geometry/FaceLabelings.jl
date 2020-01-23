@@ -183,6 +183,8 @@ end
 """
     add_tag_from_tags!(lab::FaceLabeling, name::String, tags::Vector{Int})
     add_tag_from_tags!(lab::FaceLabeling, name::String, tags::Vector{String})
+    add_tag_from_tags!(lab::FaceLabeling, name::String, tag::Int)
+    add_tag_from_tags!(lab::FaceLabeling, name::String, tag::String)
 """
 function add_tag_from_tags!(lab::FaceLabeling, name::String, tags::Vector{Int})
   entities = Int32[]
@@ -198,6 +200,16 @@ end
 function add_tag_from_tags!(
   labels::FaceLabeling, name::String, names::Vector{String})
   tags = [get_tag_from_name(labels,name) for name in names ]
+  add_tag_from_tags!(labels,name,tags)
+end
+
+function add_tag_from_tags!(labels::FaceLabeling, name::String, tag::Int)
+  tags = [tag, ]
+  add_tag_from_tags!(labels,name,tags)
+end
+
+function add_tag_from_tags!(labels::FaceLabeling, name::String, tag::String)
+  tags = [tag, ]
   add_tag_from_tags!(labels,name,tags)
 end
 
