@@ -11,6 +11,10 @@ order = 2
 T = Float64
 diritags = "boundary"
 
+labels = get_face_labeling(model)
+add_tag_from_tags!(labels,"dirichlet",[1,2,5,6])
+add_tag_from_tags!(labels,"neumann",[7,8])
+
 u(x) = x[1]^2 + x[2]
 ∇u(x) = VectorValue( 2*x[1], one(x[2]) )
 Δu(x) = 2
@@ -21,6 +25,11 @@ f(x) = - Δu(x)
 trian = get_triangulation(model)
 degree = order
 quad = CellQuadrature(trian,degree)
+
+ntrian = BoundaryTriangulation(model,labels,"neumann")
+ndegree = order
+nquad = CellQuadrature(ntrian,ndegree)
+nn = get_normal_vector(ntrian)
 
 V = FESpace(
  model=model,
@@ -35,7 +44,10 @@ a(v,u) = inner(∇(v),∇(u))
 l(v) = v*f
 t_Ω = AffineFETerm(a,l,trian,quad)
 
-op = AffineFEOperator(V,U,t_Ω)
+ln(v) = v*∇u*nn
+l_Γn = FESource(ln,ntrian,nquad)
+
+op = AffineFEOperator(V,U,t_Ω,l_Γn)
 
 uh = solve(op)
 

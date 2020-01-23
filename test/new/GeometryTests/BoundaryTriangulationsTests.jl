@@ -42,6 +42,9 @@ model = CartesianDiscreteModel(domain,partition)
 btrian = BoundaryTriangulation(model,"tag_8")
 test_boundary_triangulation(btrian)
 
+btrian = BoundaryTriangulation(model,get_face_labeling(model),"tag_8")
+test_boundary_triangulation(btrian)
+
 s = CompressedArray([Point{1,Float64}[(0.25,),(0.75,)]],get_cell_type(btrian))
 nvec = get_normal_vector(btrian)
 nvec_x = evaluate(nvec,s)
