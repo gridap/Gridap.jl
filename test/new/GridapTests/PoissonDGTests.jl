@@ -4,13 +4,18 @@ using Test
 using Gridap
 import Gridap: ∇
 
-domain = (0,1,0,1)
-partition = (4,4)
-model = CartesianDiscreteModel(domain,partition)
-order = 2
+#domain = (0,1,0,1)
+#partition = (4,4)
+#model = CartesianDiscreteModel(domain,partition)
+#const h = (domain[2]-domain[1]) / partition[1]
 
-const h = (domain[2]-domain[1]) / partition[1]
+using Gridap.Geometry: DiscreteModelMock
+model = DiscreteModelMock()
+const h = 1
+
+order = 2
 const γ = 10
+
 
 trian = get_triangulation(model)
 degree = order
