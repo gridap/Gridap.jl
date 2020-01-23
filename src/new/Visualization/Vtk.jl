@@ -251,6 +251,15 @@ function _vtkinfo_extrusion_polytope(p,exponents)
     elseif n_nodes == 6
       vtkid = 22
       vtknodes = [1,2,3,4,6,5]
+    elseif n_nodes == 10
+      vtkid = 69
+      vtknodes = [1,2,3,4,5,8,9,7,6,10]
+    elseif n_nodes == 15
+      vtkid = 69
+      vtknodes = [1,2,3,4,5,6,10,11,12,9,8,7,13,14,15]
+    elseif n_nodes == 21
+      vtkid = 69
+      vtknodes = [1,2,3,4,5,6,7,12,13,14,15,11,10,9,8,16,18,21,17,20,19]
     else
       @notimplemented
     end
@@ -265,6 +274,12 @@ function _vtkinfo_extrusion_polytope(p,exponents)
     elseif n_nodes == 9
       vtkid = 28
       vtknodes = [1,2,4,3,5,8,6,7,9]
+    elseif n_nodes == 16
+      vtkid = 70
+      vtknodes = [1,2,4,3,5,6,11,12,7,8,9,10,13,14,15,16]
+    elseif n_nodes == 25
+      vtkid = 70
+      vtknodes = [1,2,4,3,5,6,7,14,15,16,8,9,10,11,12,13,17,18,19,20,21,22,23,24,25]
     else
       @notimplemented
     end
@@ -329,6 +344,8 @@ function _vtkcelltypedict()
   d[VTK_QUADRATIC_EDGE.vtk_id] = VTK_QUADRATIC_EDGE
   d[VTK_QUADRATIC_HEXAHEDRON.vtk_id] = VTK_QUADRATIC_HEXAHEDRON
   d[VTK_PYRAMID.vtk_id] = VTK_PYRAMID
+  d[VTK_LAGRANGE_TRIANGLE.vtk_id] = VTK_LAGRANGE_TRIANGLE
+  d[VTK_LAGRANGE_QUADRILATERAL.vtk_id] = VTK_LAGRANGE_QUADRILATERAL
   #d[VTK_BIQUADRATIC_HEXAHEDRON.vtk_id] = VTK_BIQUADRATIC_HEXAHEDRON
   d
 end

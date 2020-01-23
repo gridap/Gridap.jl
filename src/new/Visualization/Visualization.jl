@@ -22,6 +22,8 @@ using WriteVTK.VTKCellTypes: VTK_QUADRATIC_QUAD
 using WriteVTK.VTKCellTypes: VTK_BIQUADRATIC_QUAD
 using WriteVTK.VTKCellTypes: VTK_WEDGE
 using WriteVTK.VTKCellTypes: VTK_PYRAMID
+using WriteVTK.VTKCellTypes: VTK_LAGRANGE_QUADRILATERAL
+using WriteVTK.VTKCellTypes: VTK_LAGRANGE_TRIANGLE
 
 using Gridap.Helpers
 using Gridap.TensorValues
