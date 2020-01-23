@@ -59,7 +59,7 @@ for data in [ vector_data, scalar_data ]
   u = data[:u]
   f = data[:f]
   
-  V = FESpace(
+  V = TestFESpace(
    model=model,
    order=order,
    reffe=:Lagrangian,

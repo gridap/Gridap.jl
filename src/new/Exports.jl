@@ -95,6 +95,7 @@ end
 
 @publish FESpaces FESpace
 @publish FESpaces TrialFESpace
+@publish FESpaces TestFESpace
 @publish FESpaces FETerm
 @publish FESpaces AffineFETerm
 @publish FESpaces LinearFETerm
