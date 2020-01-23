@@ -5,6 +5,9 @@ macro publish(mod,name)
   end
 end
 
+@publish Helpers operate
+@publish Helpers GridapType
+
 @publish Algebra solve
 @publish Algebra solve!
 @publish Algebra symbolic_setup

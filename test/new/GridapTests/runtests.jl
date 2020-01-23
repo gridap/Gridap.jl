@@ -6,4 +6,6 @@ using Test
 
 @testset "PoissonDG" begin include("PoissonDGTests.jl") end
 
+@testset "PLaplacian" begin include("PLaplacianTests.jl") end
+
 end # module
