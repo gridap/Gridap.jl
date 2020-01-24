@@ -30,6 +30,6 @@ using Test
 
 @time @testset "Gridaps" begin include("GridapTests/runtests.jl") end
 
-include("../../bench/runbenchs.jl")
+include("../bench/runbenchs.jl")
 
 end # module

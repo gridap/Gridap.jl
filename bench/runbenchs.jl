@@ -1,9 +1,9 @@
+module GridapBenchs
 
-include("new/runbenchs.jl")
+include("ArraysBenchs/runbenchs.jl")
 
-#using Gridap
-#using Test
-#
-#include("CellValuesBench.jl")
-#include("CellFunctionsBench.jl")
-#include("GeometryBenchs.jl")
+include("FieldsBenchs/runbenchs.jl")
+
+include("PolynomialsBenchs/runbenchs.jl")
+
+end # module
