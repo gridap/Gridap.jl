@@ -1,163 +1,170 @@
-module Grids
-
-using Test
-using Gridap
-using Gridap.Helpers
-using Gridap.CellValuesGallery
-
-export Grid
-export points
-export cells
-export celltypes
-export cellorders
-export test_grid
-export celldim
-export pointdim
-import Gridap: ncells
-export npoints
-export CellPolytopes
-import Gridap: Triangulation
-import Gridap: CellPoints
-import Gridap: CellRefFEs
-import Gridap: CellBasis
-
-# Interfaces
 
 """
-Abstract type representing a FE mesh a.k.a. grid (i.e., there is a 1 to 1
-correspondence between a grid and a conforming Lagrangian FE space with no
-Dirichlet boundary conditions).
-D is the dimension of the coordinates and Z is the dimension of the cells.
-"""
-abstract type Grid{D,Z} end
+    abstract type Grid{Dc,Dp} <: Triangulation{Dc,Dp}
 
-function points(::Grid{D})::IndexCellValue{<:Point{D}} where D
+Abstract type that represents conforming triangulations, whose cell-wise
+nodal coordinates are defined with a vector of nodal coordinates, plus
+a cell-wise vector of node ids.
+
+The interface of `Grid` is defined by overloading the
+methods in `Triangulation` plus the following ones:
+
+- [`get_node_coordinates(trian::Grid)`](@ref)
+- [`get_cell_nodes(trian::Grid)`](@ref)
+
+From these two methods a default implementation of [`get_cell_coordinates(trian::Triangulation)`](@ref)
+is available.
+
+The `Grid`  interface has the following traits
+
+- [`OrientationStyle(::Type{<:Grid})`](@ref)
+- [`RegularityStyle(::Type{<:Grid})`](@ref)
+
+The interface of `Grid` is tested with
+
+- [`test_grid`](@ref)
+
+"""
+abstract type Grid{Dc,Dp} <: Triangulation{Dc,Dp} end
+
+# Traits
+
+"""
+    OrientationStyle(::Type{<:Grid}) -> Val{Bool}
+    OrientationStyle(::Grid) -> Val{Bool}
+
+`Val{true}()` if has oriented faces, `Val{false}()` otherwise (default).
+"""
+OrientationStyle(a::Grid) = OrientationStyle(typeof(a))
+OrientationStyle(::Type{<:Grid}) = Val{false}()
+
+"""
+    RegularityStyle(::Type{<:Grid}) -> Val{Bool}
+    RegularityStyle(::Grid) -> Val{Bool}
+
+`Val{true}()` if no hanging-nodes (refault), `Val{false}()` otherwise.
+"""
+RegularityStyle(a::Grid) = RegularityStyle(typeof(a))
+RegularityStyle(::Type{<:Grid}) = Val{true}()
+
+# Interface
+
+"""
+    get_node_coordinates(trian::Grid) -> AbstractArray{<:Point{Dp}}
+"""
+function get_node_coordinates(trian::Grid)
   @abstractmethod
 end
 
-cells(::Grid)::IndexCellArray{Int,1} = @abstractmethod
-
-function celltypes(::Grid{D,Z})::CellValue{NTuple{Z,Int}} where {D,Z}
+"""
+    get_cell_nodes(trian::Grid)
+"""
+function get_cell_nodes(trian::Grid)
   @abstractmethod
 end
 
-cellorders(::Grid)::CellValue{Int} = @abstractmethod
-
-celldim(::Grid{D,Z}) where {D,Z} = Z
-
-pointdim(::Grid{D,Z}) where {D,Z} = D
-
-ncells(g::Grid) = length(celltypes(g))
-
-npoints(g::Grid) = length(points(g))
-
-CellPolytopes(g::Grid) = _cell_polytopes(celltypes(g))
-
-Triangulation(grid::Grid) = TriangulationFromGrid(grid)
-
-# Testers
-
-function test_grid(grid::Grid{D,Z},np,nc) where {D,Z}
-  @test isa(points(grid),IndexCellValue{<:Point{D}})
-  @test isa(cells(grid),IndexCellVector{<:Integer})
-  @test isa(celltypes(grid),CellValue{NTuple{Z,Int}})
-  @test isa(cellorders(grid),IndexCellValue{Int})
-  @test np == length(points(grid))
-  @test nc == length(cells(grid))
-  @test nc == length(celltypes(grid))
-  @test nc == length(cellorders(grid))
-  trian = Triangulation(grid)
+"""
+    test_grid(trian::Grid)
+"""
+function test_grid(trian::Grid)
   test_triangulation(trian)
+  nodes_coords = get_node_coordinates(trian)
+  @test isa(nodes_coords,AbstractArray{<:Point})
+  cell_nodes = get_cell_nodes(trian)
+  @test isa(cell_nodes,AbstractArray{<:AbstractArray{<:Integer}})
+  @test num_nodes(trian) == length(nodes_coords)
+  @test isa(is_oriented(trian),Bool)
+  @test isa(is_regular(trian),Bool)
+  @test OrientationStyle(trian) in (Val{false}(), Val{true}())
+  @test RegularityStyle(trian) in (Val{false}(), Val{true}())
 end
 
-# Pretty printing
+# Methods from triangulation
 
-import Base: show
-
-function show(io::IO,self::Grid{D,Z}) where {D,Z}
-  print(io,"$(nameof(typeof(self))) object")
+function get_cell_coordinates(trian::Grid)
+  node_to_coords = get_node_coordinates(trian)
+  cell_to_nodes = get_cell_nodes(trian)
+  LocalToGlobalArray(cell_to_nodes,node_to_coords)
 end
 
-function show(io::IO,::MIME"text/plain",grid::Grid)
-  show(io,grid)
-  print(io,":")
-  print(io,"\n pointdim: $(pointdim(grid))")
-  print(io,"\n celldim: $(celldim(grid))")
-  print(io,"\n npoints: $(npoints(grid))")
-  print(io,"\n ncells: $(ncells(grid))")
+# Some API
+
+"""
+    num_nodes(trian::Grid) -> Int
+"""
+num_nodes(trian::Grid) = length(get_node_coordinates(trian))
+
+"""
+    is_oriented(::Type{<:Grid}) -> Bool
+    is_oriented(a::Grid) -> Bool
+"""
+is_oriented(a::Grid) = _is_oriented(OrientationStyle(a))
+is_oriented(a::Type{<:Grid}) = _is_oriented(OrientationStyle(a))
+
+"""
+    is_regular(::Type{<:Grid}) -> Bool
+    is_regular(a::Grid) -> Bool
+"""
+is_regular(a::Grid) = _is_regular(RegularityStyle(a))
+is_regular(a::Type{<:Grid}) = _is_regular(RegularityStyle(a))
+
+"""
+    Grid(reffe::LagrangianRefFE)
+"""
+function Grid(reffe::LagrangianRefFE)
+  UnstructuredGrid(reffe)
 end
 
-# Concrete implementation
-
-struct GridFromData{D,Z} <: Grid{D,Z}
-  _points::IndexCellValue{<:Point{D}}
-  _cells::IndexCellVector
-  _celltypes::IndexCellValue{NTuple{Z,Int}}
-  _cellorders::IndexCellValue{Int}
+"""
+    compute_linear_grid(reffe::LagrangianRefFE)
+"""
+function compute_linear_grid(reffe::LagrangianRefFE)
+  @notimplementedif ! is_n_cube(get_polytope(reffe)) "linear grid only implemented for n-cubes at the moment"
+  if get_order(reffe) == 0
+    D = num_cell_dims(reffe)
+    partition = tfill(1,Val{D}())
+  else
+    partition = get_orders(reffe)
+  end
+  pmin, pmax = get_bounding_box(get_polytope(reffe))
+  desc = CartesianDescriptor(pmin,pmax,partition)
+  CartesianGrid(desc)
 end
 
-points(g::GridFromData) = g._points
-
-cells(g::GridFromData) = g._cells
-
-celltypes(g::GridFromData) = g._celltypes
-
-cellorders(g::GridFromData) = g._cellorders
-
-# Helpers
-
-struct TriangulationFromGrid{D,Z,G<:Grid{D,Z}} <: Triangulation{Z,D}
-  grid::G
+"""
+    compute_reference_grid(p::LagrangianRefFE, nelems::Integer)
+"""
+function compute_reference_grid(reffe::LagrangianRefFE, nelems::Integer)
+  p = get_polytope(reffe)
+  r = LagrangianRefFE(Float64,p,nelems)
+  compute_linear_grid(r)
 end
 
-function CellPoints(self::TriangulationFromGrid)
-  CellVectorFromLocalToGlobal(cells(self.grid),points(self.grid))
+"""
+    Grid(::Type{ReferenceFE{d}},p::Polytope) where d
+"""
+function Grid(::Type{ReferenceFE{d}},p::Polytope) where d
+  UnstructuredGrid(ReferenceFE{d},p)
 end
 
-function CellRefFEs(trian::TriangulationFromGrid)
-  grid = trian.grid
-  _build_cell_ref_fes(celltypes(grid),cellorders(grid))
+"""
+    GridTopology(grid::Grid)
+    GridTopology(grid::Grid, cell_to_vertices::Table, vertex_to_node::Vector)
+"""
+function GridTopology(grid::Grid)
+  _grid = UnstructuredGrid(grid)
+  UnstructuredGridTopology(_grid)
 end
 
-function CellBasis(trian::TriangulationFromGrid)
-  reffes = CellRefFEs(trian)
-  _setup_cell_basis(reffes)
+function GridTopology(grid::Grid, cell_to_vertices::Table, vertex_to_node::AbstractVector)
+  _grid = UnstructuredGrid(grid)
+  UnstructuredGridTopology(_grid,cell_to_vertices,vertex_to_node)
 end
 
-function _build_cell_ref_fes(codes,orders)
-  @notimplemented
+"""
+    simplexify(grid::Grid)
+"""
+function simplexify(grid::Grid)
+  simplexify(UnstructuredGrid(grid))
 end
 
-function _build_cell_ref_fes(
-  codes::ConstantCellValue, orders::ConstantCellValue)
-  code = codes.value
-  D = length(code)
-  order = orders.value
-  polytope = Polytope(code)
-  _orders = fill(order,D)
-  reffe = LagrangianRefFE(Float64,polytope,_orders)
-  ConstantCellValue(reffe,length(codes))
-end
-
-function _setup_cell_basis(reffes)
-  @notimplemented
-end
-
-function _setup_cell_basis(reffes::ConstantCellValue)
-  reffe = reffes.value
-  basis = shfbasis(reffe)
-  ConstantCellMap(basis,reffes.length)
-end
-
-function _cell_polytopes(ct)
-  @notimplemented
-end
-
-function _cell_polytopes(ct::ConstantCellValue)
-  extr = ct.value
-  l = ct.length
-  p = Polytope(extr)
-  ConstantCellValue(p,l)
-end
-
-end # module

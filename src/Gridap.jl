@@ -1,27 +1,59 @@
-__precompile__()
+"""
+Gridap, grid-based approximation of PDEs in the Julia programming language
 
+This module provides rich set of tools for the numerical solution of PDE, mainly based
+on finite element methods.
+
+The module is structured in the following sub-modules:
+
+- [`Gridap.Helpers`](@ref)
+- [`Gridap.Inference`](@ref)
+- [`Gridap.Io`](@ref)
+- [`Gridap.TensorValues`](@ref)
+- [`Gridap.Arrays`](@ref)
+- [`Gridap.Fields`](@ref)
+- [`Gridap.Polynomials`](@ref)
+- [`Gridap.ReferenceFEs`](@ref)
+- [`Gridap.Geometry`](@ref)
+- [`Gridap.Integration`](@ref)
+- [`Gridap.Algebra`](@ref)
+- [`Gridap.FESpaces`](@ref)
+- [`Gridap.Visualization`](@ref)
+
+The exported names are:
+$(EXPORTS)
+"""
 module Gridap
 
-using Reexport
+using DocStringExtensions
 
-include("Utils/files.jl")
+include("Helpers/Helpers.jl")
 
-include("CellValues/files.jl")
+include("Inference/Inference.jl")
 
-include("Fields/files.jl")
+include("Io/Io.jl")
 
-include("RefFEs/files.jl")
+include("Algebra/Algebra.jl")
 
-include("Integration/files.jl")
+include("TensorValues/TensorValues.jl")
 
-include("Geometry/files.jl")
+include("Arrays/Arrays.jl")
 
-include("Algebra/files.jl")
+include("Fields/Fields.jl")
 
-include("FESpaces/files.jl")
+include("Polynomials/Polynomials.jl")
 
-include("MultiField/files.jl")
+include("ReferenceFEs/ReferenceFEs.jl")
 
-include("Visualization/files.jl")
+include("Geometry/Geometry.jl")
+
+include("Integration/Integration.jl")
+
+include("FESpaces/FESpaces.jl")
+
+include("Visualization/Visualization.jl")
+
+include("Exports.jl")
 
 end # module
+

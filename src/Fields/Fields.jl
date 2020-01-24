@@ -1,110 +1,110 @@
+"""
+This module provides:
+
+- An interface for physical fields, basis of physical fields and related objects.
+- Helpers functions to work with fields and arrays of fields.
+- Helpers functions to create lazy operation trees from fields and arrays of fields
+
+The exported names are:
+
+$(EXPORTS)
+"""
 module Fields
 
-using Test
-using Gridap
 using Gridap.Helpers
+using Gridap.Inference
+using Gridap.TensorValues
+using Gridap.Arrays
+using Gridap.Arrays: BCasted
+using Gridap.Arrays: NumberOrArray
+using Gridap.Arrays: AppliedArray
+using Gridap.Arrays: Contracted
 
-export FieldLike
-export Field
-export Basis
-export Geomap
-export num_dofs
+using Test
+using DocStringExtensions
+using FillArrays
+
+export Point
+export field_gradient
+export evaluate_field!
+export evaluate_field
+export field_cache
+export field_return_type
+export evaluate
+export evaluate!
 export gradient
 export ∇
-export test_fieldlike
+export Field
 export test_field
-export test_field_without_gradient
-export test_basis
-import Base: length
-import Base: eltype
+export apply_kernel_to_field
+export apply_to_field_array
+export test_array_of_fields
+export compose
+export compose_fields
+export compose_field_arrays
+export lincomb
+export apply_lincomb
+export attachmap
+export integrate
+export field_caches
+export field_return_types
+export evaluate_fields
+export evaluate_fields!
+export field_gradients
+export field_array_cache
+export evaluate_field_array
+export field_array_gradient
+export gradient_type
+export curl
+export grad2curl
+export laplacian
+export divergence
+export Δ
+export ε
+export symmetric_gradient
 
-"""
-Umbrella type for Field and Basis
-"""
-const FieldLike{D,T<:FieldValue,N} = Map{Point{D},1,T,N}
+export Homothecy
+export AffineMap
 
-function eltype(::FieldLike{D,T}) where {D,T}
-  return T
-end
+export field_operation
+export field_array_operation
 
-"""
-Create the gradient of a `Field` or `Basis`
-"""
-function gradient(this::FieldLike)
-  @abstractmethod
-end
+import Gridap.Arrays: kernel_cache
+import Gridap.Arrays: apply_kernel!
+import Gridap.Arrays: kernel_return_type
+import Gridap.TensorValues: outer
+import Gridap.TensorValues: inner
+import Gridap.TensorValues: symmetic_part
+import Base: +, - , *
+import LinearAlgebra: cross
+import LinearAlgebra: tr
+import Base: transpose
+import Base: adjoint
 
-const ∇ = gradient
+include("FieldInterface.jl")
 
-"""
-Abstract field of rank `T` (e.g., scalar, vector, tensor) on a manifold of
-dimension `D`
-"""
-const Field{D,T<:FieldValue} = FieldLike{D,T,1}
+include("MockFields.jl")
 
-"""
-Abstract basis for a space of fields of rank `T` (e.g., scalar, vector, tensor)
-on a manifold of dimension `D`.
+include("ConstantFields.jl")
 
-A Basis is evaluated at an array of Points and returns a matrix of values.
-The first dimension in the returned matrix corresponds to the dofs of the basis,
-whereas the second dimension corresponds to the evaluation points.
-"""
-const Basis{D,T<:FieldValue} = FieldLike{D,T,2}
+include("Homothecies.jl")
 
-@inline function num_dofs(b::Basis)
-  n, = return_size(b,(1,))
-  n
-end
+include("AffineMaps.jl")
 
-@inline length(b::Basis) = num_dofs(b)
+include("FieldApply.jl")
 
-"""
-Abstract geometry map
-"""
-const Geomap = Field{D,Point{Z,X}} where {D,Z,X}
+include("FieldArrays.jl")
 
-# Testers
+include("Lincomb.jl")
 
-function test_fieldlike(
-  m::FieldLike{D,T,N},
-  x::AbstractVector{<:Point{D}},
-  v::AbstractArray{T,N},
-  g::AbstractArray{G,N}) where {D,T,N,G}
-  test_map(m,x,v)
-  mg = gradient(m)
-  test_map(mg,x,g)
-end
+include("Compose.jl")
 
-function test_field(
-  m::Field{D,T},
-  x::AbstractVector{<:Point{D}},
-  v::AbstractVector{T},
-  g::AbstractVector{G}) where {D,T,G}
-  test_fieldlike(m,x,v,g)
-end
+include("Attachmap.jl")
 
-function test_field_without_gradient(
-  m::Field{D,T},
-  x::AbstractVector{<:Point{D}},
-  v::AbstractVector{T}) where {D,T}
-  test_map(m,x,v)
-end
+include("Integrate.jl")
 
-function test_basis(
-  m::Basis{D,T},
-  x::AbstractVector{<:Point{D}},
-  v::AbstractMatrix{T},
-  g::AbstractMatrix{G}) where {D,T,G}
-  nd = num_dofs(m)
-  @test nd == size(v,1)
-  @test nd == size(g,1)
-  test_fieldlike(m,x,v,g)
-  mg = gradient(m)
-  nd = num_dofs(mg)
-  @test nd == size(g,1)
-  nd = length(mg)
-  @test nd == size(g,1)
-end
+include("FieldOperations.jl")
+
+include("DiffOperators.jl")
 
 end # module

@@ -1,63 +1,111 @@
-module CellQuadratures
-
-# Dependencies of this module
-
-using Gridap
-using Gridap.Helpers
-
-# Functionality provided by this module
-
-export CellQuadrature
-export ConstantCellQuadrature
-import Gridap: coordinates
-import Gridap: weights
-
-# Abstract types and interfaces
 
 """
-Abstract type representing a collection of quadratures, one for each cell
+    Quadrature(polytope::Polytope{D},degree) where D
 """
-const CellQuadrature{D} = CellValue{<:Quadrature{D}}
-
-coordinates(::CellQuadrature{D} where D )::CellPoints{D} = @abstractmethod
-
-weights(::CellQuadrature)::CellValues{Float64} = @abstractmethod
-
-function CellQuadrature end
-
-# Pretty printing
-
-import Base: show
-
-function show(io::IO,self::CellQuadrature{D}) where {D}
-  print(io,"CellQuadrature object")
+function Quadrature(p::Polytope{D},degree) where D
+  if is_n_cube(p)
+    q = TensorProductQuadrature{D}(degree)
+    quad = GenericQuadrature(q.coordinates,q.weights)
+  elseif is_simplex(p)
+    q = DuffyQuadrature{D}(degree)
+    quad = GenericQuadrature(q.coordinates,q.weights)
+  else
+    @notimplemented "Quadratures only implemented for n-cubes and simplices"
+  end
+  quad
 end
-
-function show(io::IO,::MIME"text/plain",quad::CellQuadrature{D}) where {D}
-  show(io,quad)
-  print(io,":")
-  print(io,"\n dim: $D")
-  print(io,"\n ncells: $(length(quad))")
-end
-
-# Concrete structs
 
 """
-A concrete implementation of CellQuadrature for the particular case
-that all cells have the same quadrature
 """
-const ConstantCellQuadrature{D} = ConstantCellValue{Quadrature{D}}
-
-function ConstantCellQuadrature(quad::Quadrature{D}, l::Int) where D
-  ConstantCellQuadrature{D}(quad, l)
+struct CellQuadrature <: GridapType
+  array
+  function CellQuadrature(array::AbstractArray{<:Quadrature})
+    new(array)
+  end
 end
 
-function coordinates(self::ConstantCellQuadrature)
-  ConstantCellValue(coordinates(self.value), self.length)
+"""
+    CellQuadrature(trian::Triangulation, degree)
+"""
+function CellQuadrature(trian::Triangulation, degree)
+  polytopes = map(get_polytope,get_reffes(trian))
+  cell_type = get_cell_type(trian)
+  CellQuadrature(degree,polytopes,cell_type)
 end
 
-function weights(self::ConstantCellQuadrature)
-  ConstantCellValue(weights(self.value), self.length)
+"""
+    CellQuadrature(polytopes::Vector{<:Polytope}, cell_types::AbstractVector)
+"""
+function CellQuadrature(degree,polytopes::Vector{<:Polytope}, cell_types::AbstractVector)
+  f = (p) -> Quadrature(p,degree)
+  quads = map(f,polytopes)
+  array = CompressedArray(quads,cell_types)
+  CellQuadrature(array)
 end
 
-end # module CellQuadratures
+function CellQuadrature(degree,polytopes::Vector{<:Polytope}, cell_types::Fill)
+  ctype = cell_types.value
+  p = polytopes[ctype]
+  quad = Quadrature(p,degree)
+  array = Fill(quad,length(cell_types))
+  CellQuadrature(array)
+end
+
+"""
+"""
+get_array(quad::CellQuadrature) = quad.array
+
+"""
+    get_coordinates(q::CellQuadrature)
+"""
+function get_coordinates(quad::CellQuadrature)
+  _get_coordinates(quad.array)
+end
+
+"""
+    get_weights(q::CellQuadrature)
+"""
+function get_weights(quad::CellQuadrature)
+  _get_weights(quad.array)
+end
+
+function _get_coordinates(q::AbstractArray{<:Quadrature})
+  @notimplemented "Not implemented, since we dont need it"
+end
+
+function _get_coordinates(q::CompressedArray{<:Quadrature})
+  coords = map(get_coordinates,q.values)
+  CompressedArray(coords,q.ptrs)
+end
+
+function _get_coordinates(q::Fill{<:Quadrature})
+  coords = get_coordinates(q.value)
+  Fill(coords,length(q))
+end
+
+function _get_weights(q::AbstractArray{<:Quadrature})
+  @notimplemented "Not implemented, since we dont need it"
+end
+
+function _get_weights(q::CompressedArray{<:Quadrature})
+  w = map(get_weights,q.values)
+  CompressedArray(w,q.ptrs)
+end
+
+function _get_weights(q::Fill{<:Quadrature})
+  w = get_weights(q.value)
+  Fill(w,length(q))
+end
+
+"""
+the `cell_field` is aligned with the cells in `trian`
+"""
+function integrate(cell_field,trian::Triangulation,quad::CellQuadrature)
+  cell_map = get_cell_map(trian)
+  q = get_coordinates(quad)
+  w = get_weights(quad)
+  j = gradient(cell_map)
+  f = convert_to_cell_field(cell_field,cell_map)
+  integrate(get_array(f),q,w,j)
+end
+

@@ -1,84 +1,88 @@
 module DiscreteModelsTests
 
 using Test
-using Gridap
-using Gridap.DiscreteModels: DiscreteModelFromData
-using Gridap.CellValuesGallery
-using Gridap.Grids: GridFromData
-using Gridap.GridGraphs: FullGridGraphFromData
+using Gridap.Arrays
+using Gridap.Fields
+using Gridap.ReferenceFEs
+using Gridap.Geometry
+using Gridap.Geometry: DiscreteModelMock
+using Gridap.Io
 
-c2v = [[1,2,4,5],[2,3,5,6]]
-v2c = [[1,],[1,2],[2,],[1,],[1,2],[2,]]
-c2e = [[1,2,3,4],[5,6,4,7]]
-e2c = [[1,],[1,],[1,],[1,2],[2,],[2,],[2,]]
-e2v = [[1,2],[4,5],[1,4],[2,5],[2,3],[5,6],[3,7]]
-v2e = [[1,3],[1,4,5],[5,7],[2,3],[2,4,6],[6,7]]
-v2v = [[1,],[2,],[3,],[4,],[5,],[6,]]
-e2e = [[1,],[2,],[3,],[4,],[5,],[6,],[7,]]
-c2c = [[1,],[2,]]
-v2x = Point{2,Float64}[(0.,0.),(0.,1.),(0.,2.),(1.,0.),(1.,1.),(1.,2.)]
+model = DiscreteModelMock()
+test_discrete_model(model)
 
-c2v = CellValueFromArray(c2v)
-v2c = CellValueFromArray(v2c)
-c2e = CellValueFromArray(c2e)
-e2c = CellValueFromArray(e2c)
-e2v = CellValueFromArray(e2v)
-v2e = CellValueFromArray(v2e)
-v2v = CellValueFromArray(v2v)
-e2e = CellValueFromArray(e2e)
-c2c = CellValueFromArray(c2c)
-v2x = CellValueFromArray(v2x)
+grid = get_grid(model)
+topo = get_grid_topology(model)
+labeling = get_face_labeling(model)
 
-data = Matrix{IndexCellVector}(undef,(3,3))
-data[1,:] = [v2v,v2e,v2c]
-data[2,:] = [e2v,e2e,e2c]
-data[3,:] = [c2v,c2e,c2c]
-graph = FullGridGraphFromData(data)
+@test num_dims(model) == 2
+@test num_cell_dims(model) == 2
+@test num_point_dims(model) == 2
+@test num_faces(model) == 9 + 13 + 5
+@test num_faces(model,0) == 9
+@test num_faces(model,1) == 13
+@test num_faces(model,2) == 5
+@test num_cells(model) == 5
+@test num_vertices(model) == 9
+@test num_edges(model) == 13
+@test num_facets(model) == 13
+@test num_nodes(model) == 9
 
-order = 1
+@test get_cell_nodes(model) == get_cell_nodes(grid)
+@test get_node_coordinates(model) == get_node_coordinates(grid)
+@test get_cell_type(model) == get_cell_type(grid)
+@test get_reffes(model) == get_reffes(grid)
+@test get_face_nodes(model,0) == get_faces(topo,0,0)
+@test get_face_nodes(model,1) == get_faces(topo,1,0)
+@test get_face_nodes(model,2) == get_faces(topo,2,0)
+@test get_face_nodes(model) == get_face_vertices(topo)
+@test get_face_own_nodes(model,0) == get_faces(topo,0,0)
+@test get_face_own_nodes(model,1) == empty_table(num_faces(model,1))
+@test get_face_own_nodes(model,2) == empty_table(num_faces(model,2))
+r = vcat(get_face_own_nodes(model,0),get_face_own_nodes(model,1),get_face_own_nodes(model,2))
+@test get_face_own_nodes(model) == r
+@test get_vertex_node(model) == collect(1:num_vertices(model))
+@test get_node_face_owner(model) == collect(1:num_nodes(model))
+@test get_reffaces(ReferenceFE{0},model) == [VERTEX1]
+@test get_reffaces(ReferenceFE{1},model) == [SEG2]
+@test get_reffaces(ReferenceFE{2},model) == [QUAD4, TRI3]
+@test get_reffaces(model) == [VERTEX1, SEG2, QUAD4, TRI3]
+@test get_face_type(model,0) == get_face_type(topo,0)
+@test get_face_type(model,1) == get_face_type(topo,1)
+@test get_face_type(model,2) == get_face_type(topo,2)
+@test get_face_type(model) == get_face_type(topo)
+@test get_reffaces_offsets(model) == [0,1,2]
 
-nc = length(c2v)
-t2 = (HEX_AXIS,HEX_AXIS)
-c2t = ConstantCellValue(t2,nc)
-c2o = ConstantCellValue(order,nc)
-grid2 = GridFromData(v2x,c2v,c2t,c2o)
+grid0 = Grid(ReferenceFE{0},model)
+grid1 = Grid(ReferenceFE{1},model)
+grid2 = Grid(ReferenceFE{2},model)
+test_grid(grid0)
+test_grid(grid1)
+test_grid(grid2)
+@test num_dims(grid0) == 0
+@test num_dims(grid1) == 1
+@test num_dims(grid2) == 2
 
-ne = length(e2v)
-t1 = (HEX_AXIS,)
-e2t = ConstantCellValue(t1,ne)
-e2o = ConstantCellValue(order,ne)
-grid1 = GridFromData(v2x,e2v,e2t,e2o)
+grid0 = Triangulation(ReferenceFE{0},model)
+grid1 = Triangulation(ReferenceFE{1},model)
+grid2 = Triangulation(ReferenceFE{2},model)
+test_triangulation(grid0)
+test_triangulation(grid1)
+test_triangulation(grid2)
+@test num_dims(grid0) == 0
+@test num_dims(grid1) == 1
+@test num_dims(grid2) == 2
 
-nv = length(v2v)
-t0 = ()
-v2t = ConstantCellValue(t0,nv)
-v2o = ConstantCellValue(order,nv)
-grid0 = GridFromData(v2x,v2v,v2t,v2o)
+model = DiscreteModelMock()
+dict = to_dict(model)
+model2 = from_dict(DiscreteModel,dict)
+test_discrete_model(model2)
 
-v2l = CellValueFromArray([1,1,1,2,2,1])
-e2l = CellValueFromArray([2,2,3,3,2,2,1])
-c2l = CellValueFromArray([5,5])
+domain = (0,1,0,1,0,1)
+partition = (3,3,3)
+model = CartesianDiscreteModel(domain,partition)
 
-dim_to_labels = [v2l, e2l, c2l]
-tag1 = [1,3]
-tag2 = [5,3,2]
-tags = [tag1,tag2]
-tag_to_name = ["tag1","tag2"]
-
-facelabels = FaceLabels(dim_to_labels,tags,tag_to_name)
-
-grids = Grid[grid0,grid1,grid2]
-
-model = DiscreteModelFromData(grids,graph,facelabels)
-
-@test string(model) == "DiscreteModelFromData object"
-
-s = "DiscreteModelFromData object:\n celldim: 2\n 0-faces: 6\n 1-faces: 7\n 2-faces: 2\n tags: 2"
-
-@test sprint(show,"text/plain",model) == s
-
-test_discrete_model(model,2)
-
-vgrid = Grid(model)
+tmodel = simplexify(model)
+test_discrete_model(tmodel)
 
 end # module

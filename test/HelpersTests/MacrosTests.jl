@@ -1,0 +1,3 @@
+module MacrosTests
+
+end # module

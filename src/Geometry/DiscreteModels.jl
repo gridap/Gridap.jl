@@ -1,423 +1,405 @@
-module DiscreteModels
+"""
+    abstract type DiscreteModel{Dc,Dp} <: GridapType
 
-using Test
-using Gridap
-using Gridap.Helpers
-using Gridap.CellValuesGallery
-using Gridap.GridGraphs: FullGridGraphFromData
-using UnstructuredGrids: generate_dual_connections
-using UnstructuredGrids: find_cell_to_faces
+Abstract type holding information about a physical grid, 
+the underlying grid topology, and a labeling of
+the grid faces. This is the information that typically provides a mesh
+generator, and it is what one needs to perform a simulation.
 
-export DiscreteModel
-export DiscreteModelFromFile
-export test_discrete_model
+The `DiscreteModel` interface is defined by overloading the methods:
 
-import Gridap: Grid
-import Gridap: GridGraph
-import Gridap: FullGridGraph
-import Gridap: FaceLabels
-import Gridap: pointdim
-import Gridap: celldim
-import Gridap: Triangulation
-import Gridap: labels_on_dim
-import Gridap: tag_from_name
-using JSON
-import JSON: lower
+- [`get_grid(model::DiscreteModel)`](@ref)
+- [`get_grid_topology(model::DiscreteModel)`](@ref)
+- [`get_face_labeling(g::DiscreteModel)`](@ref)
 
-# Interfaces
+The interface is tested with this function:
+
+- [`test_discrete_model`](@ref)
 
 """
-D is number of components of the points in the model
-"""
-abstract type DiscreteModel{D} end
+abstract type DiscreteModel{Dc,Dp} <: GridapType end
 
 """
-extracts the Grid{D,Z} from the Model
+    get_grid(model::DiscreteModel)
 """
-function Grid(::DiscreteModel{D},::Val{Z})::Grid{D,Z} where {D,Z}
-  @abstractmethod
-end
-
-function GridGraph(::DiscreteModel)::GridGraph
-  @abstractmethod
-end
-
-function FullGridGraph(::DiscreteModel)::FullGridGraph
+function get_grid(model::DiscreteModel)
   @abstractmethod
 end
 
 """
-Extracts the FaceLabels object providing information
-about the geometrical labels and physical tags of all the
-n-faces in the model for n=0,...,D
+    get_grid_topology(model::DiscreteModel)
 """
-function FaceLabels(::DiscreteModel{D})::FaceLabels{D} where D
+function get_grid_topology(model::DiscreteModel)
   @abstractmethod
 end
 
-function labels_on_dim(model::DiscreteModel,dim::Integer)
-  labels = FaceLabels(model)
-  labels_on_dim(labels,dim)
+"""
+    get_face_labeling(g::DiscreteModel)
+"""
+function get_face_labeling(g::DiscreteModel)
+  @abstractmethod
 end
-
-Grid(m::DiscreteModel,dim::Integer) = Grid(m,Val(dim))
-
-pointdim(::DiscreteModel{D}) where D = D
-
-celldim(::DiscreteModel{D}) where D = D
-
-function Triangulation(m::DiscreteModel,dim::Integer)
-  grid = Grid(m,dim)
-  Triangulation(grid)
-end
-
-function Triangulation(m::DiscreteModel{D}) where D
-  Triangulation(m,D)
-end
-
-function tag_from_name(m::DiscreteModel,name::String)
-  labels = FaceLabels(m)
-  tag_from_name(labels,name)
-end
-
-Grid(model::DiscreteModel{D}) where D = Grid(model,D)
 
 # Testers
 
-function test_discrete_model(model::DiscreteModel{D},dim::Integer) where D
-  @test dim == D
-  @test pointdim(model) == D
-  @test celldim(model) == D
+"""
+    test_discrete_model(model::DiscreteModel)
+"""
+function test_discrete_model(model::DiscreteModel{Dc,Dp}) where {Dc,Dp}
+  D = Dc
+  grid = get_grid(model)
+  test_grid(grid)
+  topo = get_grid_topology(model)
+  test_grid_topology(topo)
+  @test num_cell_dims(topo) == Dc
+  @test num_point_dims(topo) == Dp
+  labels = get_face_labeling(model)
+  @test num_faces(labels) == num_faces(topo)
   for d in 0:D
-    grid = Grid(model,d)
-    @test isa(grid,Grid)
-    labels = FaceLabels(model)
-    lab1 = labels_on_dim(model,d)
-    lab2 = labels_on_dim(labels,d)
-    @test lab1 == lab2
+    @test num_faces(labels,d) == num_faces(topo,d)
   end
-  graph = GridGraph(model)
-  fullgraph = FullGridGraph(model)
-  @test isa(graph,GridGraph)
-  @test isa(fullgraph,FullGridGraph)
-  trian = Triangulation(model)
-  @test isa(trian,Triangulation)
 end
 
-# Pretty printing
+# Delegators to the underlying grid
 
-import Base: show
+get_cell_nodes(g::DiscreteModel) = get_cell_nodes(get_grid(g))
 
-function show(io::IO,self::DiscreteModel{D}) where D
-  print(io,"$(nameof(typeof(self))) object")
+get_node_coordinates(g::DiscreteModel) = get_node_coordinates(get_grid(g))
+
+get_cell_type(g::DiscreteModel) = get_cell_type(get_grid(g))
+
+get_reffes(g::DiscreteModel) = get_reffes(get_grid(g))
+
+# Default API
+
+"""
+    num_dims(model::DiscreteModel)
+"""
+num_dims(model::DiscreteModel) = num_dims(get_grid_topology(model))
+
+"""
+    num_cell_dims(model::DiscreteModel)
+"""
+num_cell_dims(model::DiscreteModel) = num_cell_dims(get_grid_topology(model))
+
+"""
+    num_point_dims(model::DiscreteModel)
+"""
+num_point_dims(model::DiscreteModel) = num_point_dims(get_grid_topology(model))
+
+"""
+    num_faces(g::DiscreteModel,d::Integer)
+    num_faces(g::DiscreteModel)
+"""
+num_faces(g::DiscreteModel,d::Integer) = num_faces(get_grid_topology(g),d)
+num_faces(g::DiscreteModel) = num_faces(get_grid_topology(g))
+
+"""
+    num_cells(g::DiscreteModel)
+"""
+num_cells(g::DiscreteModel) = num_cells(get_grid_topology(g))
+
+"""
+    num_facets(g::DiscreteModel)
+"""
+num_facets(g::DiscreteModel) = num_facets(get_grid_topology(g))
+
+"""
+    num_edges(g::DiscreteModel)
+"""
+num_edges(g::DiscreteModel) = num_edges(get_grid_topology(g))
+
+"""
+    num_vertices(g::DiscreteModel)
+"""
+num_vertices(g::DiscreteModel) = num_vertices(get_grid_topology(g))
+
+"""
+    num_nodes(g::DiscreteModel)
+"""
+num_nodes(g::DiscreteModel) = num_nodes(get_grid(g))
+
+"""
+    get_polytopes(model::DiscreteModel)
+"""
+function get_polytopes(model::DiscreteModel)
+  topo = get_grid_topology(model)
+  get_polytopes(topo)
 end
 
-function show(io::IO,::MIME"text/plain",self::DiscreteModel{D}) where D
-  show(io,self)
-  print(io,":")
-  print(io,"\n celldim: $D")
-  labels = FaceLabels(self)
-  for d = 0:D
-    print(io,"\n $d-faces: $(length(labels_on_dim(labels,d)))")
+"""
+    get_face_nodes(g::DiscreteModel,d::Integer)
+"""
+function get_face_nodes(g::DiscreteModel,d::Integer)
+  compute_face_nodes(g,d)
+end
+
+"""
+    get_face_nodes(g::DiscreteModel)
+"""
+function get_face_nodes(g::DiscreteModel)
+  compute_face_nodes(g)
+end
+
+"""
+    compute_face_nodes(model::DiscreteModel,d::Integer)
+"""
+function compute_face_nodes(model::DiscreteModel,d::Integer)
+
+  if d == num_cell_dims(model)
+    return get_cell_nodes(model)
   end
-  print(io,"\n tags: $(ntags(labels))")
-end
 
-# Concrete implementations
+  topo = get_grid_topology(model)
+  D = num_cell_dims(topo)
+  cell_to_nodes = Table(get_cell_nodes(model))
+  cell_to_faces = Table(get_faces(topo,D,d))
+  cell_to_ctype = get_cell_type(model)
+  reffes = get_reffes(model)
+  ctype_to_lface_to_lnodes = map( (reffe)-> get_face_nodes(reffe,d) , reffes )
+  nfaces = num_faces(topo,d)
 
-struct DiscreteModelFromData{D} <: DiscreteModel{D}
-  grids::Vector{Grid}
-  graph::FullGridGraph
-  facelabels::FaceLabels
-end
+  face_to_nodes = generate_face_to_vertices(
+    cell_to_nodes,
+    cell_to_faces,
+    cell_to_ctype,
+    ctype_to_lface_to_lnodes,
+    nfaces)
 
-function DiscreteModelFromData(
-  grids::Vector{Grid},
-  graph::FullGridGraph,
-  facelabels::FaceLabels)
-
-  D = ndims(graph) 
-  @assert length(grids) == D + 1
-  DiscreteModelFromData{D}(grids,graph,facelabels)
-end
-
-function Grid(model::DiscreteModelFromData{D},::Val{Z}) where {D,Z}
-  model.grids[Z+1]
-end
-
-function GridGraph(model::DiscreteModelFromData)
-  model.graph
-end
-
-function FullGridGraph(model::DiscreteModelFromData)
-  model.graph
-end
-
-function FaceLabels(model::DiscreteModelFromData{D}) where D
-  model.facelabels
-end
-
-# Serialization of discrete models
-
-lower(model::DiscreteModel) = model_to_dict(model)
-
-function model_to_dict(model::DiscreteModel{D}) where D
-
-  dict = Dict{String,Any}()
-
-  _add_dims!(dict,model)
-
-  _add_nodes!(dict,model)
-
-  for d in 1:D
-    _add_grid!(dict,model,d)
-  end
-
-  facelabels = FaceLabels(model)
-
-  _add_tags!(dict,facelabels)
-
-  for d in 0:D
-    _add_labels!(dict,facelabels,d)
-  end
-
-  dict
+  face_to_nodes
 
 end
 
-function _add_dims!(dict,model)
-  D = celldim(model)
-  Z = pointdim(model)
-  dict["pointdim"] = Z
-  dict["celldim"] = D
+"""
+    compute_face_nodes(model::DiscreteModel)
+"""
+function compute_face_nodes(model::DiscreteModel)
+  D = num_cell_dims(model)
+  data = [compute_face_nodes(model,d) for d in 0:D]
+  append_tables_globally(data...)
 end
 
-function _add_nodes!(dict,model)
-  Z = pointdim(model)
-  grid = Grid(model)
-  node_to_coord = points(grid)
-  nnodes = length(node_to_coord)
-  node_to_coord_data = zeros(Float64,nnodes*Z)
-  _fill_node_to_coord_data!(node_to_coord_data,node_to_coord)
-  dict["nodes"] = node_to_coord_data
+
+"""
+    get_face_own_nodes(g::DiscreteModel,d::Integer)
+"""
+function get_face_own_nodes(g::DiscreteModel,d::Integer)
+  compute_face_own_nodes(g,d)
 end
 
-function _fill_node_to_coord_data!(node_to_coord_data,node_to_coord)
-  i = 1
-  for x in node_to_coord
-    for xi in x
-      node_to_coord_data[i] = xi
-      i +=1
+"""
+    get_face_own_nodes(g::DiscreteModel)
+"""
+function get_face_own_nodes(g::DiscreteModel)
+  compute_face_own_nodes(g)
+end
+
+"""
+    compute_face_own_nodes(model::DiscreteModel,d::Integer)
+"""
+function compute_face_own_nodes(model::DiscreteModel,d::Integer)
+
+  topo = get_grid_topology(model)
+  D = num_cell_dims(topo)
+  cell_to_nodes = Table(get_cell_nodes(model))
+  cell_to_faces = Table(get_faces(topo,D,d))
+  cell_to_ctype = get_cell_type(model)
+  reffes = get_reffes(model)
+  ctype_to_lface_to_lnodes = map( (reffe)-> get_face_own_nodes(reffe,d) , reffes )
+  nfaces = num_faces(topo,d)
+
+  face_to_own_nodes = generate_face_to_vertices(
+    cell_to_nodes,
+    cell_to_faces,
+    cell_to_ctype,
+    ctype_to_lface_to_lnodes,
+    nfaces)
+
+  face_to_own_nodes
+
+end
+
+"""
+    compute_face_own_nodes(model::DiscreteModel)
+"""
+function compute_face_own_nodes(model::DiscreteModel)
+  D = num_cell_dims(model)
+  data = [compute_face_own_nodes(model,d) for d in 0:D]
+  append_tables_globally(data...)
+end
+
+"""
+    get_vertex_node(g::DiscreteModel)
+"""
+function get_vertex_node(g::DiscreteModel)
+  compute_vertex_node(g)
+end
+
+"""
+    compute_vertex_node(g::DiscreteModel)
+"""
+function compute_vertex_node(g::DiscreteModel)
+  d=0
+  vertex_to_nodes = Table(get_face_own_nodes(g,d))
+  vertex_to_nodes.data
+end
+
+"""
+    get_node_face_owner(g::DiscreteModel)
+"""
+function get_node_face_owner(g::DiscreteModel)
+  compute_node_face_owner(g)
+end
+
+"""
+    compute_node_face_owner(g::DiscreteModel)
+"""
+function compute_node_face_owner(g::DiscreteModel)
+  face_to_own_nodes = Table(get_face_own_nodes(g))
+  node_to_face_owner = zeros(Int,num_nodes(g))
+  _compute_node_face_owner!(node_to_face_owner,face_to_own_nodes)
+  node_to_face_owner
+end
+
+function  _compute_node_face_owner!(node_to_face_owner,face_to_own_nodes)
+  for face in 1:length(face_to_own_nodes)
+    pini = face_to_own_nodes.ptrs[face]
+    pend = face_to_own_nodes.ptrs[face+1]-1
+    for p in pini:pend
+      node = face_to_own_nodes.data[p]
+      node_to_face_owner[node] = face
     end
   end
 end
 
-function _add_grid!(dict,model,d)
-
-  grid = Grid(model,d)
-
-  data, ptrs = compress(cells(grid))
-
-  dict["face$(d)_data"] = data
-
-  dict["face$(d)_ptrs"] = ptrs
-
-  face_types, orders, extrusions =
-    _setup_face_types(celltypes(grid),cellorders(grid))
-
-  dict["face$(d)_types"] = face_types
-
-  dict["orders$(d)"] = orders
-
-  dict["extrusions$(d)"] = extrusions
-
+"""
+    get_reffaces(::Type{ReferenceFE{d}},model::DiscreteModel) where d
+"""
+function get_reffaces(::Type{ReferenceFE{d}},model::DiscreteModel) where d
+  reffaces,_ = compute_reffaces(ReferenceFE{d},model)
+  reffaces
 end
 
-function _setup_face_types(ct,co)
-  @notimplemented
+"""
+    get_face_type(g::DiscreteModel,d::Integer)
+
+Index to the vector `get_reffaces(ReferenceFE{d},g)`
+"""
+function get_face_type(g::DiscreteModel,d::Integer)
+  _, face_to_ftype = compute_reffaces(ReferenceFE{d},g)
+  face_to_ftype
 end
 
-function _setup_face_types(ct::ConstantCellValue,co::ConstantCellValue)
-  face_types = ones(Int,ct.length)
-  (face_types, [co.value], [ct.value])
+"""
+    compute_reffaces(::Type{ReferenceFE{d}}, g::DiscreteModel) where d
+"""
+function compute_reffaces(::Type{ReferenceFE{d}}, g::DiscreteModel) where d
+  D = num_cell_dims(g)
+  topo = get_grid_topology(g)
+  ctype_to_reffe = get_reffes(g)
+  ctype_to_lftype_to_refface = [ get_reffaces(ReferenceFE{d},reffe) for reffe in ctype_to_reffe]
+  ctype_to_lface_to_lftype = [ get_face_type(reffe,d) for reffe in ctype_to_reffe]
+  t = _generate_ftype_to_refface(Val{d}(),ctype_to_lftype_to_refface,ctype_to_lface_to_lftype)
+  ftype_to_refface, ctype_to_lface_to_ftype = t
+  cell_to_faces = Table(get_faces(topo,D,d))
+  cell_to_ctype = get_cell_type(g)
+  nfaces = num_faces(g,d)
+  face_to_ftype = generate_face_to_face_type(
+    cell_to_faces, cell_to_ctype, ctype_to_lface_to_ftype, nfaces)
+  (collect1d(ftype_to_refface), face_to_ftype)
 end
 
-function _add_tags!(dict,facelabels)
-  dict["tag_to_name"] = facelabels.tag_to_name
-  dict["tag_to_labels"] = facelabels.tag_to_labels
+function compute_reffaces(::Type{ReferenceFE{D}}, g::DiscreteModel{D}) where D
+  (get_reffes(g), get_cell_type(g))
 end
 
-function _add_labels!(dict,facelabels,d)
-  face_to_label = labels_on_dim(facelabels,d)
-  dict["labels$(d)"] = collect(face_to_label)
+"""
+    get_reffaces(model::DiscreteModel)
+"""
+function get_reffaces(model::DiscreteModel)
+  reffaces, _ , _ = compute_reffaces(model)
+  reffaces
 end
 
-# Deserialization
-
-function DiscreteModelFromFile(filename::AbstractString)
-
-  base, extension = splitext(filename)
-  s = Symbol(extension[2:end])
-  DiscreteModelFromFile(filename,Val(s))
-
+"""
+    get_face_type(model::DiscreteModel)
+"""
+function get_face_type(model::DiscreteModel)
+  _, face_to_ftype, _ = compute_reffaces(model)
+  face_to_ftype
 end
 
-function DiscreteModelFromFile(filename::AbstractString,::Any)
-  @notimplemented
+"""
+    get_reffaces_offsets(model::DiscreteModel)
+"""
+function get_reffaces_offsets(model::DiscreteModel)
+  _, _, offsets = compute_reffaces(model)
+  offsets
 end
 
-function DiscreteModelFromFile(filename::AbstractString,::Val{:json})
-    dict = JSON.parsefile(filename)
-    model = dict_to_model(dict)
-    model
-end
-
-function dict_to_model(dict::AbstractDict)
-
-  facelabels = _setup_facelabels(dict)
-
-  node_to_coord = _setup_node_to_coord(dict)
-
-  grids = _setup_dim_to_grids(dict,node_to_coord)
-
-  graph = _setup_graph(grids)
-
-  DiscreteModelFromData(grids, graph, facelabels)
-
-end
-
-function _setup_facelabels(dict)
-
-  D = dict["celldim"]
-
-  dim_to_nface_to_label = Vector{Int}[]
-
+"""
+    compute_reffaces(g::DiscreteModel)
+"""
+function compute_reffaces(g::DiscreteModel)
+  D = num_cell_dims(g)
+  d_to_refdfaces = Vector{LagrangianRefFE}[]
+  d_to_dface_to_ftype = Vector{Int8}[]
   for d in 0:D
-    a = dict["labels$(d)"]
-    nnfaces = length(a)
-    nface_to_label = zeros(Int,nnfaces)
-    nface_to_label[:] = a
-    push!(dim_to_nface_to_label,nface_to_label)
+    push!(d_to_refdfaces,get_reffaces(ReferenceFE{d},g))
+    push!(d_to_dface_to_ftype,get_face_type(g,d))
   end
-
-  tag_to_name = convert(Vector{String},dict["tag_to_name"])
-
-  tag_to_labels = convert(Vector{Vector{Int}},dict["tag_to_labels"])
-
-  FaceLabels(
-    dim_to_nface_to_label, tag_to_labels, tag_to_name)
-
-end
-
-function _setup_node_to_coord(dict)
-  a = dict["nodes"]
-  Z = dict["pointdim"]
-  nnodes::Int = length(a)/Z
-  T = Point{Z,Float64}
-  node_to_coord = zeros(T,nnodes)
-  m = zero(mutable(T))
-  _fill_node_to_coord!(node_to_coord,a,m)
-  node_to_coord
-end
-
-function _fill_node_to_coord!(node_to_coord,a,m)
-  nnode = length(node_to_coord)
-  i = 1
-  for node in 1:nnode
-    for comp in eachindex(m)
-      m[comp] = a[i]
-      i += 1
-    end
-    node_to_coord[node] = m
-  end
-end
-
-function _setup_grid(dict,d,node_to_coord)
-  data::Vector{Int} = dict["face$(d)_data"]
-  ptrs::Vector{Int} = dict["face$(d)_ptrs"]
-  orders = dict["orders$(d)"]
-  extrusions = dict["extrusions$(d)"]
-  @notimplementedif length(orders) != 1
-  @notimplementedif length(extrusions) != 1
-  extrusion::NTuple{d,Int} = tuple(extrusions[1]...)
-  order::Int = orders[1]
-  @notimplementedif order != 1 # We assume nodes == vertices in grid graph
-  n = length(ptrs)-1
-  ct = ConstantCellValue(extrusion,n)
-  co = ConstantCellValue(order,n)
-  UnstructuredGrid(node_to_coord,data,ptrs,ct,co)
-end
-
-function _setup_grid0(node_to_coord)
-  n = length(node_to_coord)
-  data = collect(1:n)
-  ptrs = collect(1:(n+1))
-  order = 1
-  extrusion = ()
-  ct = ConstantCellValue(extrusion,n)
-  co = ConstantCellValue(order,n)
-  UnstructuredGrid(node_to_coord,data,ptrs,ct,co)
-end
-
-function _setup_dim_to_grids(dict,node_to_coord)
-
-  dim_to_grid = Grid[]
-
-  grid0 = _setup_grid0(node_to_coord)
-  push!(dim_to_grid,grid0)
-
-  D = dict["celldim"]
-
+  d_to_offset = zeros(Int,D+1)
   for d in 1:D
-
-    grid = _setup_grid(dict,d,node_to_coord)
-
-    push!(dim_to_grid,grid)
-
+    d_to_offset[d+1] = d_to_offset[d] + length(d_to_refdfaces[d])
+    d_to_dface_to_ftype[d+1] .+= d_to_offset[d+1]
   end
-
-  dim_to_grid
-  
+  (vcat(d_to_refdfaces...), vcat(d_to_dface_to_ftype...), d_to_offset)
 end
 
-function _setup_graph(dim_to_grid)
-
-  D = length(dim_to_grid)-1
-  data = Matrix{IndexCellArray}(undef,D+1,D+1)
-
-  for d in 0:D
-    grid = dim_to_grid[d+1]
-    nface_to_nodes = cells(grid)
-    data[d+1,0+1] = nface_to_nodes
-  end
-
-  for d in 1:D
-    nface_to_nodes = data[d+1,0+1]
-    nfaces = length(nface_to_nodes)
-    node_to_nfaces = generate_dual_connections(nface_to_nodes)
-    data[0+1,d+1] = node_to_nfaces
-    data[d+1,d+1] = _identity_cell_vector(nfaces)
-  end
-
-  for d in 1:D
-    fgrid = dim_to_grid[d+1]
-    for j in 1:(d-1)
-      vertex_to_jfaces = data[0+1,j+1]
-      face_to_jfaces = find_cell_to_faces(fgrid, vertex_to_jfaces, j)
-      jface_to_faces = generate_dual_connections(face_to_jfaces)
-      data[d+1,j+1] = face_to_jfaces
-      data[j+1,d+1] = jface_to_faces
-    end
-  end
-
-  FullGridGraphFromData(data)
-
+"""
+    Grid(::Type{ReferenceFE{d}},model::DiscreteModel) where d
+"""
+function Grid(::Type{ReferenceFE{d}},model::DiscreteModel) where d
+  node_coordinates = collect1d(get_node_coordinates(model))
+  cell_to_nodes = Table(get_face_nodes(model,d))
+  cell_to_type = collect1d(get_face_type(model,d))
+  reffes = get_reffaces(ReferenceFE{d},model)
+  UnstructuredGrid(node_coordinates, cell_to_nodes, reffes, cell_to_type)
 end
 
-function _identity_cell_vector(n)
-  data = collect(1:n)
-  ptrs = collect(1:(n+1))
-  CellVectorFromDataAndPtrs(data,ptrs)
+function Grid(::Type{ReferenceFE{d}},model::DiscreteModel{d}) where d
+  get_grid(model)
 end
 
-end # module
+"""
+    Triangulation(::Type{ReferenceFE{d}},model::DiscreteModel) where d
+"""
+function Triangulation(::Type{ReferenceFE{d}},model::DiscreteModel) where d
+  Grid(ReferenceFE{d},model)
+end
+
+"""
+    get_triangulation(model::DiscreteModel)
+"""
+function get_triangulation(model::DiscreteModel)
+  get_grid(model)
+end
+
+"""
+    simplexify(model::DiscreteModel)
+"""
+function simplexify(model::DiscreteModel)
+  simplexify(UnstructuredDiscreteModel(model))
+end
+
+# IO
+
+function to_dict(model::DiscreteModel)
+  umodel = UnstructuredDiscreteModel(model)
+  to_dict(umodel)
+end
+
+function from_dict(::Type{DiscreteModel},dict::Dict{Symbol,Any})
+  from_dict(UnstructuredDiscreteModel,dict)
+end
+

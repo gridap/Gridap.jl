@@ -1,29 +1,28 @@
-module DuffyQuadratures
+"""
+    struct DuffyQuadrature{D,T} <: Quadrature{D,T}
+      coordinates::Vector{Point{D,T}}
+      weights::Vector{T}
+    end
 
-using Gridap
-using FastGaussQuadrature: gaussjacobi
-using FastGaussQuadrature: gausslegendre
-using StaticArrays
-
-export DuffyQuadrature
-import Gridap: coordinates
-import Gridap: weights
-
-struct DuffyQuadrature{D} <: Quadrature{D}
-  x::Vector{Point{D,Float64}}
-  w::Vector{Float64}
+Duffy quadrature for simplices in [0,1]^D
+"""
+struct DuffyQuadrature{D,T} <: Quadrature{D,T}
+  coordinates::Vector{Point{D,T}}
+  weights::Vector{T}
 end
 
+get_coordinates(q::DuffyQuadrature) = q.coordinates
+
+get_weights(q::DuffyQuadrature) = q.weights
+
+
+"""
+    DuffyQuadrature{D}(degree::Integer) where D
+"""
 function DuffyQuadrature{D}(order::Integer) where D
   x,w = _duffy_quad_data(order,D)
-  DuffyQuadrature{D}(x,w)
+  DuffyQuadrature(x,w)
 end
-
-coordinates(q::DuffyQuadrature) = q.x
-
-weights(q::DuffyQuadrature) = q.w
-
-# Helpers
 
 function _duffy_quad_data(order::Integer,D::Int)
 
@@ -46,17 +45,15 @@ function _duffy_quad_data(order::Integer,D::Int)
     a *= 0.5
   end
 
-  x,w = _tensor_product(dim_to_xs_1d,dim_to_ws_1d)
+  x,w = _tensor_product_duffy(dim_to_xs_1d,dim_to_ws_1d)
 
   (_duffy_map.(x),w)
 
 end
 
-"""
-Duffy map from the n-cube in [0,1]^d to the n-simplex in [0,1]^d
-"""
+# Duffy map from the n-cube in [0,1]^d to the n-simplex in [0,1]^d
 function _duffy_map(q::Point{D,T}) where {D,T}
-  m = zero(MVector{D,T})
+  m = zero(mutable(Point{D,T}))
   m[1] = q[1]
   a = one(T)
   for i in 2:D
@@ -80,9 +77,7 @@ function _gauss_legendre_in_0_to_1(order)
   _map_to(0,1,x,w)
 end
 
-"""
-Transforms a 1-D quadrature from `[-1,1]` to `[a,b]`, with `a<b`.
-"""
+# Transforms a 1-D quadrature from `[-1,1]` to `[a,b]`, with `a<b`.
 function _map_to(a,b,points,weights)
   points_ab = 0.5*(b-a)*points .+ 0.5*(a+b)
   weights_ab = 0.5*(b-a)*weights
@@ -93,7 +88,7 @@ function _npoints_from_order(order)
   ceil(Int, (order + 1.0) / 2.0 )
 end
 
-function _tensor_product(
+function _tensor_product_duffy(
   dim_to_xs_1d::Vector{Vector{T}},
   dim_to_ws_1d::Vector{Vector{W}}) where {T,W}
 
@@ -104,12 +99,12 @@ function _tensor_product(
   xs = zeros(Point{D,T},n)
   ws = zeros(W,n)
   cis = CartesianIndices(tuple(dim_to_n...))
-  m = zero(MVector{D,T})
-  _tensor_product!(xs,ws,dim_to_xs_1d,dim_to_ws_1d,cis,m)
+  m = zero(mutable(Point{D,T}))
+  _tensor_product_duffy!(xs,ws,dim_to_xs_1d,dim_to_ws_1d,cis,m)
   (xs,ws)
 end
 
-function _tensor_product!(
+function _tensor_product_duffy!(
   xs,ws,dim_to_xs_1d,dim_to_ws_1d,cis::CartesianIndices{D},m) where D
   k = 1
   for ci in cis
@@ -128,5 +123,3 @@ function _tensor_product!(
     k += 1
   end
 end
-
-end # module

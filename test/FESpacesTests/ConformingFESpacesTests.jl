@@ -1,205 +1,73 @@
 module ConformingFESpacesTests
 
 using Test
-using Gridap
-using Gridap.CellValuesGallery
-using Gridap.ConformingFESpaces: CellEqClass
+using Gridap.Arrays
+using Gridap.TensorValues
+using Gridap.ReferenceFEs
+using Gridap.Geometry
+using Gridap.FESpaces
 
-model = CartesianDiscreteModel(domain=(0.0,1.0,-1.0,2.0), partition=(2,2))
 
-cell_to_nfaces = [[1,2,4,5,7,8,9,10,14],[2,3,5,6,11,12,10,13,15]]
-nface_to_dofs = [[i*10,] for i in 1:15]
+# testing compute_conforming_cell_dofs
 
-cell_to_nfaces = CellValueFromArray(cell_to_nfaces)
-nface_to_dofs = CellValueFromArray(nface_to_dofs)
+domain =(0,1,0,1)
+partition = (3,3)
+model = CartesianDiscreteModel(domain,partition)
 
-D = 2
 order = 2
-orders = fill(order,D)
-polytope = Polytope(fill(HEX_AXIS,D)...)
-fe = LagrangianRefFE(Float64,polytope, orders)
+grid_topology = get_grid_topology(model)
+polytopes = get_polytopes(grid_topology)
+reffes = [LagrangianRefFE(Float64,p,order) for p in polytopes]
 
-cell_to_dofs = CellEqClass(cell_to_nfaces,nface_to_dofs,fe)
+face_labeing = get_face_labeling(model)
+dirichlet_tags = ["tag_1","tag_6"]
+
+cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
+  reffes, grid_topology, face_labeing, dirichlet_tags)
 
 r = [
-  [10, 20, 40, 50, 70, 80, 90, 100, 140],
-  [20, 30, 50, 60, 110, 120, 100, 130, 150]]
-test_index_cell_array(cell_to_dofs,r)
-
-
-model = CartesianDiscreteModel(domain=(0.0,1.0,-1.0,2.0), partition=(2,2))
-
-D = pointdim(model)
-
-grid = Grid(model,D)
-trian = Triangulation(grid)
-graph = GridGraph(model)
-labels = FaceLabels(model)
-tags = [1,2,3,4]
+  [-1,1,4,5,14,15,16,17,35],[1,2,5,6,18,19,17,20,36],[2,3,6,7,21,22,20,23,37],
+  [4,5,8,9,15,24,25,26,38],[5,6,9,10,19,27,26,28,39],[6,7,10,11,22,29,28,30,40],
+  [8,9,12,-2,24,-4,31,32,41],[9,10,-2,-3,27,-5,32,33,42],[10,11,-3,13,29,-6,33,34,43]]
+test_array(cell_dofs,r)
+@test nfree == 43
+@test ndiri == 6
+@test dirichlet_dof_tag == [1, 2, 2, 2, 2, 2]
+@test dirichlet_cells == [1, 7, 8, 9]
 
 order = 1
-orders = fill(order,D)
-polytope = Polytope(fill(HEX_AXIS,D)...)
-fe = LagrangianRefFE(Float64,polytope, orders)
+reffes = [LagrangianRefFE(VectorValue{2,Float64},p,order) for p in polytopes]
 
-fespace = ConformingFESpace(fe,trian,graph,labels,tags)
+dirichlet_components = [(true,true), (false,true)]
 
-@test num_free_dofs(fespace) == 5
-@test num_diri_dofs(fespace) == 4
+cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
+  reffes, grid_topology, face_labeing, dirichlet_tags, dirichlet_components)
 
-@test diri_tags(fespace) === tags
+r = [
+  [-1,1,7,9,-2,2,8,10],[1,3,9,11,2,4,10,12],[3,5,11,13,4,6,12,14],
+  [7,9,15,17,8,10,16,18],[9,11,17,19,10,12,18,20],[11,13,19,21,12,14,20,22],
+  [15,17,23,25,16,18,24,-3],[17,19,25,26,18,20,-3,-4],[19,21,26,27,20,22,-4,28]]
 
-r = [[-1, 1, 2, 3], [1, -2, 3, 4], [2, 3, -3, 5], [3, 4, 5, -4]]
+test_array(cell_dofs,r)
+@test nfree==28
+@test ndiri==4
+@test dirichlet_dof_tag == [1, 1, 2, 2,]
+@test dirichlet_cells == [1, 7, 8, 9]
 
-@test r == collect(fespace.cell_eqclass)
+order = 3
+reffes = [LagrangianRefFE(VectorValue{2,Float64},p,order) for p in polytopes]
 
-order = 2
-orders = fill(order,D)
-polytope = Polytope(fill(HEX_AXIS,D)...)
-fe = LagrangianRefFE(Float64,polytope, orders)
+dirichlet_components = [(true,true), (false,true)]
 
-tags = [1,2,3,4,6,5]
-fespace = ConformingFESpace(fe,trian,graph,labels,tags)
-
-@test num_free_dofs(fespace) == 15
-@test num_diri_dofs(fespace) == 10
-
-r = [[-1, -2, 1, 2, -7, 4, 5, 6, 12],
-  [-2, -3, 2, 3, -8, 7, 6, 8, 13],
-  [1, 2, -4, -5, 4, -9, 9, 10, 14],
-  [2, 3, -5, -6, 7, -10, 10, 11, 15]]
-
-@test r == collect(fespace.cell_eqclass)
-
-fun(x) = sin(x[1])*cos(x[2])
-
-free_vals, diri_vals = interpolate_values(fespace,fun)
-
-rf = [
-  0.0, 0.420735, 0.73846, 0.217117, 0.0, 0.464521,
-  0.598194, 0.815312, 0.0, 0.151174, 0.265335,
-  0.239713, 0.660448, 0.078012, 0.214936]
-
-rd = [
-  0.0, 0.259035, 0.454649, -0.0, -0.199511,
-  -0.350175, 0.133673, 0.368291, -0.102956, -0.283662]
-
-@test isapprox(free_vals,rf,rtol=1.0e-5)
-@test isapprox(diri_vals,rd,rtol=1.0e-5)
-
-diri_vals = interpolate_diri_values(fespace,fun)
-@test isapprox(diri_vals,rd,rtol=1.0e-5)
-
-diri_vals = interpolate_diri_values(fespace,fill(fun,length(tags)))
-@test isapprox(diri_vals,rd,rtol=1.0e-5)
-
-uh = FEFunction(fespace,free_vals,diri_vals)
-
-@test free_dofs(uh) === free_vals
-@test diri_dofs(uh) === diri_vals
-@test FESpace(uh) === fespace
-
-zh = zero(fespace)
-
-@test free_dofs(zh) == zeros(Float64,num_free_dofs(fespace))
-@test diri_dofs(zh) == zeros(Float64,num_diri_dofs(fespace))
-@test FESpace(zh) === fespace
+cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
+  reffes, grid_topology, face_labeing, dirichlet_tags, dirichlet_components)
 
 
-U = TrialFESpace(fespace,fun)
+V = GradConformingFESpace(reffes,model,dirichlet_tags)
+test_single_field_fe_space(V,[],[],[],[])
 
-zh = zero(U)
-@test free_dofs(zh) == zeros(Float64,num_free_dofs(U))
-@test diri_dofs(zh) === U.diri_dofs
-@test FESpace(zh) === U
+V = GradConformingFESpace(reffes,model,dirichlet_tags,dirichlet_components)
+test_single_field_fe_space(V,[],[],[],[])
 
-cellbasis = CellBasis(fespace)
 
-quad = CellQuadrature(trian,degree=2)
-
-a(v,u) = varinner(v,u)
-
-bfun(x) = x[2]
-
-b(v) = varinner(v,CellField(trian,bfun))
-
-mmat = integrate(a(cellbasis,cellbasis),trian,quad)
-
-bvec = integrate(b(cellbasis),trian,quad)
-
-cellids = IdentityCellNumber(Int,length(bvec))
-bvec2 = apply_constraints(fespace,bvec,cellids)
-dofs = celldofids(fespace)
-
-@test bvec2 === bvec
-
-@test dofs == fespace.cell_eqclass
-
-mmat2 = apply_constraints_rows(fespace,mmat,cellids)
-dofs = celldofids(fespace)
-
-@test mmat2 === mmat
-
-@test dofs == fespace.cell_eqclass
-
-mmat3 = apply_constraints_cols(fespace,mmat,cellids)
-dofs = celldofids(fespace)
-
-@test mmat3 === mmat
-
-@test dofs == fespace.cell_eqclass
-
-uh = interpolate(fespace,fun)
-@test isa(uh,FEFunction)
-
-q = coordinates(quad)
-uhq = evaluate(uh,q)
-
-grad_uh = gradient(uh)
-grad_uhq = evaluate(grad_uh,q)
-
-v = collect(uhq)
-g = collect(grad_uhq)
-
-test_index_cell_field(uh,q,v,g)
-
-test_fe_space(fespace,15,10,mmat,bvec,fun)
-
-fespace = H1ConformingFESpace(Float64,model,order,tags)
-
-model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(2,2))
-
-order = 1
-fespace = H1ConformingFESpace(Float64,model,order,tags)
-
-grid = Grid(model,D)
-trian = Triangulation(grid)
-
-fun1(x) = x[1]
-uh1 = interpolate(fespace,fun1)
-
-fun2(x) = x[1]*x[2]
-uh2 = interpolate(fespace,fun2)
-
-fun3(x) = sin(x[1])*cos(x[2])
-uh3 = interpolate(fespace,fun3)
-
-quad = CellQuadrature(trian,degree=2)
-q = coordinates(quad)
-uhq = evaluate(uh1,q)
-
-# Vector valued
-
-order = 1
-T = VectorValue{2,Float64}
-tags = [1,2,3,4]
-model = CartesianDiscreteModel(domain=(0.0,1.0,0.0,1.0), partition=(2,2))
-fespace = H1ConformingFESpace(T,model,order,tags)
-
-ufun(x) = VectorValue(x[2],x[1])
-uh = interpolate(fespace,ufun)
-
-@test free_dofs(uh) == [0.0, 0.5, 0.5, 0.0, 0.5, 0.5, 0.5, 1.0, 1.0, 0.5]
-@test diri_dofs(uh) == [0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0]
-
-end # module
+end  # module
