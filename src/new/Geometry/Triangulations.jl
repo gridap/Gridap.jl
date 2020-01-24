@@ -63,7 +63,9 @@ end
 """
     get_normal_vector(trian::Triangulation)
 """
-function get_normal_vector(trian::Triangulation{Dc,Dp}) where {Dc,Dp}
+function get_normal_vector(trian::Triangulation)
+  Dp = num_point_dims(trian)
+  Dc = num_cell_dims(trian)
   if Dp == Dc + 1
     @abstractmethod
   else
@@ -197,8 +199,10 @@ function CellField(object,trian::Triangulation)
 end
 
 """
+    get_physical_coordinate(trian::Triangulation)
+
 In contrast to get_cell_map, the returned object:
-- is a CellField
+- is a [`CellField`](@ref)
 - its gradient is the identity tensor
 """
 function get_physical_coordinate(trian::Triangulation)
@@ -226,6 +230,7 @@ function _get_cell_data(type_to_data, cell_to_type::Fill)
 end
 
 """
+    restrict(cf::CellField,trian::Triangulation)
 """
 function restrict(cf::CellField,trian::Triangulation)
   a = get_array(cf)

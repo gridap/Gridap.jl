@@ -1,33 +1,58 @@
 
 """
+    abstract type CellFieldLike <: GridapType end
 """
 abstract type CellFieldLike <: GridapType end
 
 """
+    get_array(cf::CellFieldLike)
 """
 function get_array(cf::CellFieldLike)
   @abstractmethod
 end
 
 """
+    get_cell_map(cf::CellFieldLike)
 """
 function get_cell_map(cf::CellFieldLike)
   @abstractmethod
 end
 
 """
+    similar_object(cf::CellFieldLike,array::AbstractArray)
+"""
+function similar_object(cf::CellFieldLike,array::AbstractArray)
+  @abstractmethod
+end
+
+"""
+    similar_object(cf1::CellFieldLike,cf2::CellFieldLike,array::AbstractArray)
+"""
+function similar_object(cf1::CellFieldLike,cf2::CellFieldLike,array::AbstractArray)
+  @abstractmethod
+end
+
+"""
+    gradient(cf::CellFieldLike)
 """
 function gradient(cf::CellFieldLike)
   @abstractmethod
 end
 
 """
+    grad2curl(cf::CellFieldLike)
 """
 function grad2curl(cf::CellFieldLike)
   @abstractmethod
 end
 
 """
+    test_cell_field_like(
+      cf::CellFieldLike,
+      x::AbstractArray,
+      b::AbstractArray,
+      pred=(==);
+      grad=nothing)
 """
 function test_cell_field_like(cf::CellFieldLike,x::AbstractArray,b::AbstractArray,pred=(==);grad=nothing)
   cell_map = get_cell_map(cf)
@@ -41,6 +66,7 @@ function test_cell_field_like(cf::CellFieldLike,x::AbstractArray,b::AbstractArra
 end
 
 """
+    evaluate(cf::CellFieldLike,x)
 """
 function evaluate(cf::CellFieldLike,x)
   a = get_array(cf)
@@ -48,6 +74,7 @@ function evaluate(cf::CellFieldLike,x)
 end
 
 """
+    length(cf::CellFieldLike)
 """
 function Base.length(cf::CellFieldLike)
   a = get_array(cf)
@@ -55,17 +82,19 @@ function Base.length(cf::CellFieldLike)
 end
 
 """
+    abstract type CellField <: CellFieldLike end
 """
 abstract type CellField <: CellFieldLike end
 
 """
+    test_cell_field(cf::CellField,args...;kwargs...)
+
+Same arguments as [`test_cell_field_like`](@ref)
 """
 function test_cell_field(cf::CellField,args...;kwargs...)
   test_cell_field_like(cf,args...;kwargs...)
 end
 
-"""
-"""
 function similar_object(cf::CellField,array::AbstractArray)
   cm = get_cell_map(cf)
   GenericCellField(array,cm)
@@ -123,6 +152,7 @@ end
 # Conversions
 
 """
+    convert_to_cell_field(object::CellField,cell_map)
 """
 function convert_to_cell_field(object::CellField,cell_map)
   object
@@ -146,6 +176,10 @@ end
 # Concrete implementation
 
 """
+    struct GenericCellField <: CellField
+      array::AbstractArray
+      cell_map::AbstractArray
+    end
 """
 struct GenericCellField <: CellField
   array::AbstractArray
@@ -164,6 +198,12 @@ end
 # Skeleton related
 
 """
+    struct SkeletonCellField <: GridapType
+      left::CellField
+      right::CellField
+    end
+
+Supports the same differential and algebraic operations than [`CellField`](@ref)
 """
 struct SkeletonCellField <: GridapType
   left::CellField
@@ -171,18 +211,21 @@ struct SkeletonCellField <: GridapType
 end
 
 """
+    get_cell_map(a::SkeletonCellField)
 """
 function get_cell_map(a::SkeletonCellField)
   get_cell_map(a.left)
 end
 
 """
+    jump(sf::SkeletonCellField)
 """
 function jump(sf::SkeletonCellField)
   sf.left - sf.right
 end
 
 """
+    mean(sf::SkeletonCellField)
 """
 function mean(sf::SkeletonCellField)
   operate(_mean,sf.left,sf.right)
@@ -202,8 +245,6 @@ function grad2curl(cf::SkeletonCellField)
   SkeletonCellField(left,right)
 end
 
-"""
-"""
 function operate(op,cf::SkeletonCellField)
   left = operate(op,cf.left)
   right = operate(op,cf.right)
