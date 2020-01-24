@@ -52,6 +52,11 @@ nzrange(S::SparseMatrixCSR{Bi}, row::Integer) where {Bi} = S.rowptr[row]-S.offse
 rowvals(S::SparseMatrixCSR) = error("CSR sparse matrix does not contain raw row values")
 colvals(S::SparseMatrixCSR) = S.colval
 
+"""
+    sparsecsr(args...)
+
+Same args than `sparse`.
+"""
 sparsecsr(I,J,args...) = 
         SparseMatrixCSR(sparse(J,I,args...))
 sparsecsr(::Type{<:SparseMatrixCSR},I,J,args...) = 

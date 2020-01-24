@@ -379,6 +379,7 @@ function Triangulation(::Type{ReferenceFE{d}},model::DiscreteModel) where d
 end
 
 """
+    get_triangulation(model::DiscreteModel)
 """
 function get_triangulation(model::DiscreteModel)
   get_grid(model)

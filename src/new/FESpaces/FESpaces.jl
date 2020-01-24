@@ -85,7 +85,6 @@ export test_assembler
 
 export SingleFieldFESpace
 export num_dirichlet_dofs
-export get_cell_fe
 export get_cell_dofs
 export zero_dirichlet_values
 export gather_free_and_dirichlet_values
@@ -98,7 +97,6 @@ export get_dirichlet_dof_tag
 export compute_free_and_dirichlet_values
 export compute_dirichlet_values
 export compute_free_values
-export inpterpolate
 export compute_dirichlet_values_for_tags
 export test_single_field_fe_space
 export interpolate
