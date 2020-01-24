@@ -15,7 +15,7 @@ const γ = 10
 labels = get_face_labeling(model)
 add_tag_from_tags!(labels,"dirichlet",[1,2,5])
 add_tag_from_tags!(labels,"neumann",[7,8])
-add_tag_from_tags!(labels,"nietsche",6)
+add_tag_from_tags!(labels,"nitsche",6)
 
 trian = get_triangulation(model)
 degree = order
@@ -26,7 +26,7 @@ ndegree = order
 nquad = CellQuadrature(ntrian,ndegree)
 const nn = get_normal_vector(ntrian)
 
-dtrian = BoundaryTriangulation(model,labels,"nietsche")
+dtrian = BoundaryTriangulation(model,labels,"nitsche")
 ddegree = order
 dquad = CellQuadrature(dtrian,ddegree)
 const dn = get_normal_vector(dtrian)
@@ -68,16 +68,21 @@ for data in [ vector_data, scalar_data ]
    dirichlet_tags="dirichlet")
   
   U = TrialFESpace(V,u)
+
+  uh = interpolate(U,u)
   
   a(v,u) = inner(∇(v),∇(u))
   l(v) = v*f
   t_Ω = AffineFETerm(a,l,trian,quad)
+
+  uh_Γn = restrict(uh,ntrian)
+  uh_Γd = restrict(uh,dtrian)
   
-  l_Γn(v) = v*(nn*∇(u))
+  l_Γn(v) = v*(nn*∇(uh_Γn))
   t_Γn = FESource(l_Γn,ntrian,nquad)
   
   a_Γd(v,u) = (γ/h)*v*u  - v*(dn*∇(u)) - (dn*∇(v))*u
-  l_Γd(v) = (γ/h)*v*u - (dn*∇(v))*u
+  l_Γd(v) = (γ/h)*v*uh_Γd - (dn*∇(v))*u
   t_Γd = AffineFETerm(a_Γd,l_Γd,dtrian,dquad)
   
   op = AffineFEOperator(V,U,t_Ω,t_Γn,t_Γd)
