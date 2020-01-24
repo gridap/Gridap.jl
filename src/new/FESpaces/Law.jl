@@ -1,4 +1,6 @@
 
+"""
+"""
 macro law(fundef)
   s = "The @law macro is only allowed in function definitions"
   @assert isa(fundef,Expr) s

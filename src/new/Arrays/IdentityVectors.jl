@@ -1,5 +1,6 @@
 
 """
+    identity_vector(l::Integer)
 """
 function identity_vector(l::Integer)
   IdentityVector(l)

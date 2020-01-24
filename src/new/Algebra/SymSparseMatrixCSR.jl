@@ -78,6 +78,11 @@ function symsparsecsr(T::Type{<:SymSparseMatrixCSR{Bi,Tv,Ti}},I::Vector{Ti},J::V
     SymSparseMatrixCSR(sparsecsr(SparseMatrixCSR{Bi},I,J,V,m,n,c))
 end
 
+"""
+    symsparsecsr(args...)
+
+Same args than `sparse`.
+"""
 symsparsecsr(I,J,V,args...) =
            SymSparseMatrixCSR(sparsecsr(I,J,V,args...))
 symsparsecsr(T::Type{<:SymSparseMatrixCSR},I::Vector{Ti},J::Vector{Ti},V::Vector{Tv},args...) where {Tv,Ti} =

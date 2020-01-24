@@ -4,6 +4,8 @@
 """
 abstract type CellBasis <: CellFieldLike end
 
+"""
+"""
 FECellBasisStyle(::Type{<:CellBasis}) = Val{true}()
 
 """
@@ -18,6 +20,8 @@ TrialStyle(cb) = TrialStyle(typeof(cb))
 """
 is_trial(cb) = is_trial(typeof(cb))
 
+"""
+"""
 is_test(cb) = ! is_trial(cb)
 
 function is_trial(::Type{T}) where T

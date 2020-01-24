@@ -131,3 +131,15 @@ LocalToGlobalArray
 LocalToGlobalArray(::AbstractArray{<:AbstractArray},::AbstractArray)
 ```
 
+### LocalToGlobalPosNegArray
+
+```@docs
+LocalToGlobalPosNegArray
+LocalToGlobalPosNegArray(::AbstractArray{<:AbstractArray},::AbstractArray,::AbstractArray)
+```
+
+### Helpers
+
+```@docs
+identity_vector(::Integer)
+```

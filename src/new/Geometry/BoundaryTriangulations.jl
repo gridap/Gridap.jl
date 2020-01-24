@@ -75,23 +75,38 @@ end
     BoundaryTriangulation(model::DiscreteModel,tag::Int)
     BoundaryTriangulation(model::DiscreteModel,tag::String)
 """
-function BoundaryTriangulation(model::DiscreteModel,tags::Vector{Int})
+function BoundaryTriangulation(model::DiscreteModel,tags)
   labeling = get_face_labeling(model)
+  BoundaryTriangulation(model,labeling,tags)
+end
+
+"""
+    BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling,tags::Vector{Int})
+    BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling,tags::Vector{String})
+    BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling,tag::Int)
+    BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling,tag::String)
+"""
+function BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling,tags)
   D = num_cell_dims(model)
   face_to_mask = get_face_mask(labeling,tags,D-1)
   BoundaryTriangulation(model,face_to_mask)
 end
 
-function BoundaryTriangulation(model::DiscreteModel,names::Vector{String})
-  labeling = get_face_labeling(model)
-  tags = get_tags_from_names(labeling,names)
-  BoundaryTriangulation(model,tags)
-end
-
-function BoundaryTriangulation(model::DiscreteModel,tag::Union{Int,String})
-  tags = [tag,]
-  BoundaryTriangulation(model,tags)
-end
+#function BoundaryTriangulation(model::DiscreteModel,names::Vector{String})
+#  labeling = get_face_labeling(model)
+#  tags = get_tags_from_names(labeling,names)
+#  BoundaryTriangulation(model,tags)
+#end
+#
+#function BoundaryTriangulation(model::DiscreteModel,tag::Union{Int,String})
+#  tags = [tag,]
+#  BoundaryTriangulation(model,tags)
+#end
+#
+#function _convert_to_face_to_masks(labeling,tags)
+#  D = num_cell_dims(model)
+#  face_to_mask = get_face_mask(labeling,tags,D-1)
+#end
 
 
 

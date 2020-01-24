@@ -5,6 +5,9 @@ macro publish(mod,name)
   end
 end
 
+@publish Helpers operate
+@publish Helpers GridapType
+
 @publish Algebra solve
 @publish Algebra solve!
 @publish Algebra symbolic_setup
@@ -82,6 +85,8 @@ end
 @publish Geometry num_entities
 @publish Geometry get_grid
 @publish Geometry get_face_labeling
+@publish Geometry add_tag!
+@publish Geometry add_tag_from_tags!
 @publish Geometry BoundaryTriangulation
 @publish Geometry jump
 @publish Geometry mean
@@ -93,6 +98,7 @@ end
 
 @publish FESpaces FESpace
 @publish FESpaces TrialFESpace
+@publish FESpaces TestFESpace
 @publish FESpaces FETerm
 @publish FESpaces AffineFETerm
 @publish FESpaces LinearFETerm

@@ -31,6 +31,12 @@ function FESpace(;kwargs...)
 
 end
 
+"""
+"""
+function TestFESpace(;kwargs...)
+  FESpace(;kwargs...)
+end
+
 function _setup_lagrange_spaces(kwargs)
 
   reffe = _get_kwarg(:reffe,kwargs)

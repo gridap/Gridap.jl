@@ -1,4 +1,7 @@
 
+"""
+    DiscontinuousFESpace(reffes::Vector{<:ReferenceFE}, trian::Triangulation)
+"""
 function DiscontinuousFESpace(reffes::Vector{<:ReferenceFE}, trian::Triangulation)
 
   cell_to_ctype = get_cell_type(trian)

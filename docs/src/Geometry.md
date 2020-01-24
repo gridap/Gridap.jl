@@ -30,6 +30,14 @@ is_first_order(trian::Triangulation)
 get_cell_reffes(trian::Triangulation)
 get_cell_shapefuns(trian::Triangulation)
 get_cell_map(trian::Triangulation)
+get_physical_coordinate(trian::Triangulation)
+```
+
+### TriangulationPortion
+
+```@docs
+TriangulationPortion
+TriangulationPortion(oldtrian::Triangulation{Dc,Dp},cell_to_oldcell::Vector{Int}) where {Dc,Dp}
 ```
 
 ## BoundaryTriangulations
@@ -67,8 +75,6 @@ get_normal_vector(trian::SkeletonTriangulation)
 
 ```@docs
 SkeletonPair
-jump(a::SkeletonPair)
-mean(a::SkeletonPair)
 ```
 
 ## Grids
@@ -155,6 +161,8 @@ get_tags_from_names(lab::FaceLabeling,names::Vector{String})
 get_face_mask(labeling::FaceLabeling,tags::Vector{Int},d::Integer)
 add_tag!(lab::FaceLabeling,name::String,entities::Vector{<:Integer})
 add_tag_from_tags!(lab::FaceLabeling, name::String, tags::Vector{Int})
+get_face_tag(labeling::FaceLabeling,tags,d::Integer)
+get_face_tag_index(labeling::FaceLabeling,tags,d::Integer)
 ```
 
 ## GridTopology
@@ -267,6 +275,8 @@ get_reffaces_offsets(model::DiscreteModel)
 compute_reffaces(g::DiscreteModel)
 Grid(::Type{ReferenceFE{d}},model::DiscreteModel) where d
 Triangulation(::Type{ReferenceFE{d}},model::DiscreteModel) where d
+get_triangulation(model::DiscreteModel)
+get_polytopes(model::DiscreteModel)
 ```
 
 ### UnstructuredDiscreteModels
@@ -284,3 +294,35 @@ CartesianDiscreteModel(args...)
 get_cartesian_descriptor(a::CartesianDiscreteModel)
 ```
 
+## CellFields
+
+### CellFieldLike interface
+```@docs
+CellFieldLike
+get_array(cf::CellFieldLike)
+get_cell_map(cf::CellFieldLike)
+similar_object(cf::CellFieldLike,array::AbstractArray)
+similar_object(cf1::CellFieldLike,cf2::CellFieldLike,array::AbstractArray)
+gradient(cf::CellFieldLike)
+grad2curl(cf::CellFieldLike)
+test_cell_field_like
+evaluate(cf::CellFieldLike,x)
+length(cf::CellFieldLike)
+```
+### CellField interface
+
+```@docs
+CellField
+test_cell_field
+convert_to_cell_field(object::CellField,cell_map)
+restrict(cf::CellField,trian::Triangulation)
+```
+### Concrete implementations
+
+```@docs
+GenericCellField
+SkeletonCellField
+get_cell_map(a::SkeletonCellField)
+jump(sf::SkeletonCellField)
+mean(sf::SkeletonCellField)
+```
