@@ -24,6 +24,7 @@ using WriteVTK.VTKCellTypes: VTK_WEDGE
 using WriteVTK.VTKCellTypes: VTK_PYRAMID
 using WriteVTK.VTKCellTypes: VTK_LAGRANGE_QUADRILATERAL
 using WriteVTK.VTKCellTypes: VTK_LAGRANGE_TRIANGLE
+using WriteVTK.VTKCellTypes: VTK_LAGRANGE_HEXAHEDRON
 
 using Gridap.Helpers
 using Gridap.TensorValues
