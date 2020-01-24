@@ -1,3 +1,0 @@
-module CellFieldsTests
-
-end # module
