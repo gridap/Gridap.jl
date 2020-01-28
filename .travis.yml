@@ -5,7 +5,6 @@ stages:
   - name: PluginsTest
     if: commit_message =~ ^\[full-ci\]
   - name: Documentation
-
 language: julia
 os:
   - linux
