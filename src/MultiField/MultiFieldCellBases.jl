@@ -154,60 +154,32 @@ function integrate(cb::BlockTracker,trian::Triangulation,quad::CellQuadrature)
   MultiCellArray(blocks,block_ids)
 end
 
-#struct MultiCellBasis{S} <: GridapType
-#  blocks::Vector{CellBasisWithFieldID{S}}
-#  function MultiCellBasis(blocks::Vector{<:CellBasis})
-#    cb = first(blocks)
-#    S = is_trial(cb)
-#    new_blocks = CellBasisWithFieldID{S}[]
-#    for (field_id, cell_basis) in enumerate(blocks)
-#      @assert is_trial(cell_basis) == S "All the provided bases need to be either test or trial"
-#      block = CellBasisWithFieldID(cell_basis,field_id)
-#      push!(new_blocks,block)
-#    end
-#    new{S}(new_blocks)
-#  end
-#end
-#
-#num_fields(m::MultiCellBasis) = length(m.blocks)
-#
-#Base.iterate(m::MultiCellBasis) = iterate(m.blocks)
-#
-#Base.iterate(m::MultiCellBasis,state) = iterate(m.blocks,state)
-#
-#Base.getindex(m::MultiCellBasis,field_id::Integer) = m.blocks[field_id]
+struct MultiCellBasis{S} <: GridapType
+  blocks::Vector{CellBasisWithFieldID{S}}
+  function MultiCellBasis(blocks::Vector{<:CellBasis})
+    cb = first(blocks)
+    S = is_trial(cb)
+    new_blocks = CellBasisWithFieldID{S}[]
+    for (field_id, cell_basis) in enumerate(blocks)
+      @assert is_trial(cell_basis) == S "All the provided bases need to be either test or trial"
+      block = CellBasisWithFieldID(cell_basis,field_id)
+      push!(new_blocks,block)
+    end
+    new{S}(new_blocks)
+  end
+end
 
-#struct MultiCellArrayField{N} <: GridapType
-#  blocks::Tuple
-#  block_ids::Vector{NTuple{N,Int}}
-#end
-#
-#function operate(op,a::MultiCellMatrixField)
-#  f = (b)->operate(op,b)
-#  new_blocks = map(f,a.blocks)
-#  MultiCellMatrixField(new_blocks,a.block_ids)
-#end
-#
-#function operate(op,a::MultiCellMatrixField,b)
-#  f = (ai)->operate(op,ai,b)
-#  new_blocks = map(f,a.blocks)
-#  MultiCellMatrixField(new_blocks,a.block_ids)
-#end
-#
-#function operate(op,a,b::MultiCellMatrixField)
-#  f = (bi)->operate(op,a,bi)
-#  new_blocks = map(f,b.blocks)
-#  MultiCellMatrixField(new_blocks,b.block_ids)
-#end
-#
-#function operate(op,a::MultiCellMatrixField,b::MultiCellMatrixField)
-#  @assert op in (+,-)
-#  a.blocks
-#  f = (bi)->operate(op,bi)
-#  b_blocks = map(f,b.blocks)
-#  new_blocks = (a.blocks...,b_blocks...)
-#  new_block_ids = vcat(a.block_ids,b.block_ids)
-#  MultiCellMatrixField(new_blocks,new_block_ids)
-#end
+FECellBasisStyle(::Type{<:MultiCellBasis}) = Val{true}()
+
+TrialStyle(::Type{MultiCellBasis{S}}) where S = Val{S}()
+
+num_fields(m::MultiCellBasis) = length(m.blocks)
+
+Base.iterate(m::MultiCellBasis) = iterate(m.blocks)
+
+Base.iterate(m::MultiCellBasis,state) = iterate(m.blocks,state)
+
+Base.getindex(m::MultiCellBasis,field_id::Integer) = m.blocks[field_id]
+
 
 
