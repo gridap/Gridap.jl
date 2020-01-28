@@ -18,6 +18,7 @@ The module is structured in the following sub-modules:
 - [`Gridap.Integration`](@ref)
 - [`Gridap.Algebra`](@ref)
 - [`Gridap.FESpaces`](@ref)
+- [`Gridap.MultiField`](@ref)
 - [`Gridap.Visualization`](@ref)
 
 The exported names are:
@@ -50,6 +51,8 @@ include("Geometry/Geometry.jl")
 include("Integration/Integration.jl")
 
 include("FESpaces/FESpaces.jl")
+
+#include("MultiField/MultiField.jl")
 
 include("Visualization/Visualization.jl")
 

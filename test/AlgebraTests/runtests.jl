@@ -8,6 +8,8 @@ using Test
 
 @testset "SymSparseMatrixCSR.jl" begin include("SymSparseMatrixCSR.jl") end
 
+@testset "BlockArraysCOO.jl" begin include("BlockArraysCOO.jl") end
+
 @testset "NonLinearOperators" begin include("NonLinearOperatorsTests.jl") end
 
 @testset "NonLinearSolvers" begin include("NonLinearSolversTests.jl") end

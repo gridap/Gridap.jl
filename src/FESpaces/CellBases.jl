@@ -442,10 +442,10 @@ function _operate_skeleton_test_trial(op,a,b)
 end
 
 struct SkeletonCellMatrixField <: GridapType
-  ll::CellMatrixField
-  lr::CellMatrixField
-  rl::CellMatrixField
-  rr::CellMatrixField
+  ll
+  lr
+  rl
+  rr
 end
 
 get_cell_map(a::SkeletonCellMatrixField) = get_cell_map(a.ll)
