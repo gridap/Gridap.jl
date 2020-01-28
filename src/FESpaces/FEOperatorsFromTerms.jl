@@ -22,6 +22,11 @@ function FEOperator(test::FESpace,trial::FESpace,terms::FETerm...)
   FEOperator(test,trial,assem,terms...)
 end
 
+function FEOperator(mat::Type{<:AbstractSparseMatrix},test::FESpace,trial::FESpace,terms::FETerm...)
+  assem = SparseMatrixAssembler(mat,test,trial)
+  FEOperator(test,trial,assem,terms...)
+end
+
 function get_test(op::FEOperatorFromTerms)
   op.test
 end
