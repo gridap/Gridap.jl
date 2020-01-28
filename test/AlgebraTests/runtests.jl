@@ -6,9 +6,9 @@ using Test
 
 @testset "SparseMatrixCSR" begin include("SparseMatrixCSR.jl") end
 
-@testset "SymSparseMatrixCSR.jl" begin include("SymSparseMatrixCSR.jl") end
+@testset "SymSparseMatrixCSR" begin include("SymSparseMatrixCSR.jl") end
 
-@testset "BlockArraysCOO.jl" begin include("BlockArraysCOO.jl") end
+@testset "BlockArraysCOO" begin include("BlockArraysCOOTests.jl") end
 
 @testset "NonLinearOperators" begin include("NonLinearOperatorsTests.jl") end
 
