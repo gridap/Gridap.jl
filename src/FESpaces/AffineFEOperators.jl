@@ -41,6 +41,11 @@ function AffineFEOperator(test::FESpace,trial::FESpace,terms::AffineFETerm...)
   AffineFEOperator(test,trial,assem,terms...)
 end
 
+function AffineFEOperator(mat::Type{<:AbstractSparseMatrix},test::FESpace,trial::FESpace,terms::AffineFETerm...)
+  assem = SparseMatrixAssembler(mat,test,trial)
+  AffineFEOperator(test,trial,assem,terms...)
+end
+
 get_trial(feop::AffineFEOperator) = feop.trial
 
 get_test(feop::AffineFEOperator) = feop.test
