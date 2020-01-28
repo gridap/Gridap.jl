@@ -5,6 +5,7 @@ using Gridap.Algebra
 using Gridap.Arrays
 using Gridap.FESpaces
 using Gridap.Geometry
+using Gridap.Integration
 
 using Gridap.FESpaces: _operate_cell_basis
 using Gridap.FESpaces: _operate_cell_matrix_field

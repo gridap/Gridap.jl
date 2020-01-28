@@ -6,10 +6,10 @@ using Gridap.Fields
 using Gridap.Integration
 using Gridap.FESpaces
 
-include("../../src/MultiField/MultiField.jl")
-using .MultiField
-using .MultiField: CellBasisWithFieldID
-using .MultiField: CellMatrixFieldWithFieldIds
+using Gridap.MultiField
+using Gridap.MultiField: CellBasisWithFieldID
+using Gridap.MultiField: CellMatrixFieldWithFieldIds
+using Gridap.MultiField: MultiCellArray
 
 domain =(0,1,0,1)
 partition = (3,3)
@@ -95,6 +95,8 @@ z = r + s
 @test z.block_ids[1] == (field_id_v,field_id_u)
 @test z.block_ids[2] == (field_id_a,field_id_b)
 
+# Restrictions
+
 btrian = BoundaryTriangulation(model)
 bdegree = order
 bquad = CellQuadrature(btrian,bdegree)
@@ -134,5 +136,31 @@ s = jump(u_Γs)*jump(a_Γs)
 z = r + s
 @test z.ll.block_ids == [(field_id_v,field_id_u), (field_id_a,field_id_u)]
 
+# Integration
+
+vec = integrate(v,trian,quad)
+@test isa(vec,MultiCellArray{Float64,1})
+
+vec = integrate(v + a,trian,quad)
+@test isa(vec,MultiCellArray{Float64,1})
+
+mat = integrate(v*u,trian,quad)
+@test isa(mat,MultiCellArray{Float64,2})
+
+mat = integrate(v*u + a*b,trian,quad)
+@test isa(mat,MultiCellArray{Float64,2})
+
+vec = integrate(jump(v_Γs),strian,squad)
+@test isa(vec.left,MultiCellArray{Float64,1})
+
+vec = integrate(jump(v_Γs) + jump(a_Γs),strian,squad)
+@test isa(vec.left,MultiCellArray{Float64,1})
+@test vec.left.block_ids == [(field_id_v,), (field_id_a,)]
+
+mat = integrate(jump(v_Γs)*jump(u_Γs),strian,squad)
+@test isa(mat.ll,MultiCellArray{Float64,2})
+
+mat = integrate(jump(v_Γs)*jump(u_Γs) + jump(a_Γs)*jump(u_Γs),strian,squad)
+@test isa(mat.ll,MultiCellArray{Float64,2})
 
 end # module

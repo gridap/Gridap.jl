@@ -371,8 +371,8 @@ end
 
 struct ReducedSkeletonCellBasis{T} <: GridapType
   trial_style::Val{T}
-  left::CellBasis
-  right::CellBasis
+  left
+  right
 end
 
 TrialStyle(::Type{<:ReducedSkeletonCellBasis{T}}) where T = Val{T}()

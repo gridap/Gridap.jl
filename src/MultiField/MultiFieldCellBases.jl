@@ -56,10 +56,16 @@ function _operate_cell_basis_with_field_id(op,a,b,atrial::Val{T},btrial::Val{T})
   if a.field_id == b.field_id
     _operate_cell_basis(op,a,b,TrialStyle(a),TrialStyle(b))
   else
-    _a = BlockTracker((a,),[(a.field_id,)])
-    _b = BlockTracker((b,),[(b.field_id,)])
+    _a = BlockTracker(a)
+    _b = BlockTracker(b)
     op(_a,_b)
   end
+end
+
+function BlockTracker(a::CellBasisWithFieldID)
+  blocks = (a,)
+  block_ids = [(a.field_id,)]
+  BlockTracker(blocks,block_ids)
 end
 
 function _operate_cell_basis_with_field_id(op,a,b,atrial,btrial)
@@ -96,10 +102,16 @@ function operate(op,a::CellMatrixFieldWithFieldIds,b::CellMatrixFieldWithFieldId
   if _have_same_field_ids(a,b)
     _operate_cell_matrix_field(op,a,b)
   else
-    _a = BlockTracker((a,),[(a.field_id_rows,a.field_id_cols)])
-    _b = BlockTracker((b,),[(b.field_id_rows,b.field_id_cols)])
+    _a = BlockTracker(a)
+    _b = BlockTracker(b)
     op(_a,_b)
   end
+end
+
+function BlockTracker(a::CellMatrixFieldWithFieldIds)
+  blocks = (a,)
+  block_ids = [(a.field_id_rows,a.field_id_cols),]
+  BlockTracker(blocks,block_ids)
 end
 
 # Restrictions
@@ -121,13 +133,26 @@ end
 
 # Integration
 
+function integrate(cb::CellBasisWithFieldID,trian::Triangulation,quad::CellQuadrature)
+  r = integrate(cb.cell_basis,trian,quad)
+  bloks = (r,)
+  block_ids = [(cb.field_id,),]
+  MultiCellArray(bloks,block_ids)
+end
 
+function integrate(cm::CellMatrixFieldWithFieldIds,trian::Triangulation,quad::CellQuadrature)
+  r = integrate(cm.cell_matrix_field,trian,quad)
+  bloks = (r,)
+  block_ids = [(cm.field_id_rows, cm.field_id_cols),]
+  MultiCellArray(bloks,block_ids)
+end
 
-
-
-
-
-
+function integrate(cb::BlockTracker,trian::Triangulation,quad::CellQuadrature)
+  f = (b) -> integrate(get_array(b),trian,quad)
+  blocks = map(f,cb.blocks)
+  block_ids = cb.block_ids
+  MultiCellArray(blocks,block_ids)
+end
 
 #struct MultiCellBasis{S} <: GridapType
 #  blocks::Vector{CellBasisWithFieldID{S}}
