@@ -82,6 +82,15 @@ writevtk(x,f,celldata=["cellid" => collect(1:num_cells(trian))], nodaldata = ["x
 f = joinpath(d,"trian")
 writevtk(trian,f)
 
+# Write VTK_LAGRANGE_* FE elements
+writevtk(Grid(LagrangianRefFE(Float64,TRI,3)),joinpath(d,"tri_order3"))
+writevtk(Grid(LagrangianRefFE(Float64,TRI,4)),joinpath(d,"tri_order4"))
+writevtk(Grid(LagrangianRefFE(Float64,TRI,5)),joinpath(d,"tri_order5"))
+writevtk(Grid(LagrangianRefFE(Float64,QUAD,3)),joinpath(d,"quad_order3"))
+writevtk(Grid(LagrangianRefFE(Float64,QUAD,4)),joinpath(d,"quad_order4"))
+writevtk(Grid(LagrangianRefFE(Float64,TET,3)),joinpath(d,"tet_order1"))
+writevtk(Grid(LagrangianRefFE(Float64,HEX,3)),joinpath(d,"hex_order1"))
+
 rm(d,recursive=true)
 
 end # module
