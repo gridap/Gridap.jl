@@ -251,6 +251,15 @@ function _vtkinfo_extrusion_polytope(p,exponents)
     elseif n_nodes == 6
       vtkid = 22
       vtknodes = [1,2,3,4,6,5]
+    elseif n_nodes == 10
+      vtkid = 69
+      vtknodes = [1,2,3,4,5,8,9,7,6,10]
+    elseif n_nodes == 15
+      vtkid = 69
+      vtknodes = [1,2,3,4,5,6,10,11,12,9,8,7,13,14,15]
+    elseif n_nodes == 21
+      vtkid = 69
+      vtknodes = [1,2,3,4,5,6,7,12,13,14,15,11,10,9,8,16,18,21,17,20,19]
     else
       @notimplemented
     end
@@ -265,6 +274,12 @@ function _vtkinfo_extrusion_polytope(p,exponents)
     elseif n_nodes == 9
       vtkid = 28
       vtknodes = [1,2,4,3,5,8,6,7,9]
+    elseif n_nodes == 16
+      vtkid = 70
+      vtknodes = [1,2,4,3,5,6,11,12,7,8,9,10,13,14,15,16]
+    elseif n_nodes == 25
+      vtkid = 70
+      vtknodes = [1,2,4,3,5,6,7,14,15,16,8,9,10,11,12,13,17,18,19,20,21,22,23,24,25]
     else
       @notimplemented
     end
@@ -277,6 +292,9 @@ function _vtkinfo_extrusion_polytope(p,exponents)
       vtkid = 24
                  #0,1,2,3,4,5,6,7,8,9
       vtknodes = [1,2,3,4,5,7,6,8,9,10]
+    elseif n_nodes == 20
+      vtkid = 71
+      vtknodes = [1,2,3,4,5,6,9,10,7,8,11,12,13,14,15,16,18,20,19,17]
     else
       @notimplemented
     end
@@ -285,6 +303,14 @@ function _vtkinfo_extrusion_polytope(p,exponents)
     if n_nodes == 8
       vtkid = 12
       vtknodes = [1,2,4,3,5,6,8,7]
+    elseif n_nodes == 27
+      vtkid = 72
+      vtknodes = [1,2,4,3,5,6,8,7,9,14,10,13,11,16,12,15,17,18,19,20,25,26,23,24,21,22,27]
+    elseif n_nodes == 64
+      vtkid = 72
+      vtknodes = [1,2,4,3,5,6,8,7,9,10,19,20,11,12,17,18,13,14,23,24,15,16,21,22,25,26,27,
+                  28,29,30,31,32,49,50,51,52,53,54,55,56,41,42,43,44,45,46,47,48,33,34,35,
+                  36,37,38,39,40,57,58,59,60,61,62,63,64]
     else
       @notimplemented
     end
@@ -329,6 +355,10 @@ function _vtkcelltypedict()
   d[VTK_QUADRATIC_EDGE.vtk_id] = VTK_QUADRATIC_EDGE
   d[VTK_QUADRATIC_HEXAHEDRON.vtk_id] = VTK_QUADRATIC_HEXAHEDRON
   d[VTK_PYRAMID.vtk_id] = VTK_PYRAMID
+  d[VTK_LAGRANGE_TRIANGLE.vtk_id] = VTK_LAGRANGE_TRIANGLE
+  d[VTK_LAGRANGE_QUADRILATERAL.vtk_id] = VTK_LAGRANGE_QUADRILATERAL
+  d[VTK_LAGRANGE_TETRAHEDRON.vtk_id] = VTK_LAGRANGE_TETRAHEDRON
+  d[VTK_LAGRANGE_HEXAHEDRON.vtk_id] = VTK_LAGRANGE_HEXAHEDRON
   #d[VTK_BIQUADRATIC_HEXAHEDRON.vtk_id] = VTK_BIQUADRATIC_HEXAHEDRON
   d
 end
