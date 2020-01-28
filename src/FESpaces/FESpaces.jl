@@ -1,311 +1,194 @@
+"""
+
+The exported names are
+$(EXPORTS)
+"""
 module FESpaces
 
+using DocStringExtensions
 using Test
-using Gridap
+using FillArrays
+using SparseArrays
+
 using Gridap.Helpers
-using Gridap.CellValuesGallery
+using Gridap.Arrays
+using Gridap.ReferenceFEs
+using Gridap.Geometry
+using Gridap.Fields
+using Gridap.Integration
+using Gridap.Algebra
 
-export free_dofs
-export diri_dofs
+using Gridap.Geometry: CellFieldLike
+using Gridap.Geometry: UnimplementedField
+using Gridap.Geometry: test_cell_field_like
+
+import Gridap.Arrays: get_array
+import Gridap.Arrays: array_cache
+import Gridap.Arrays: getindex!
+import Gridap.Geometry: get_cell_map
+import Gridap.Geometry: get_cell_shapefuns
+import Gridap.Geometry: get_reffes
+import Gridap.Geometry: get_cell_type
+import Gridap.Helpers: operate
+import Gridap.Geometry: similar_object
+import Gridap.Geometry: jump
+import Gridap.Geometry: mean
+import Gridap.Geometry: restrict
+import Gridap.Geometry: get_cell_id
+import Gridap.Fields: integrate
+import Gridap.Fields: evaluate
+import Gridap.Fields: gradient
+import Gridap.Fields: grad2curl
+
+import Gridap.Algebra: allocate_residual
+import Gridap.Algebra: allocate_jacobian
+import Gridap.Algebra: residual!
+import Gridap.Algebra: jacobian!
+import Gridap.Algebra: residual
+import Gridap.Algebra: jacobian
+import Gridap.Algebra: zero_initial_guess
+import Gridap.Algebra: get_matrix
+import Gridap.Algebra: get_vector
+import Gridap.Algebra: solve!
+import Gridap.Algebra: solve
+
+export FEFunctionStyle
+export is_a_fe_function
+export get_free_values
+export get_fe_space
+export test_fe_function
+
 export FESpace
-export test_fe_space
-export TestFESpace
-export TrialFESpace
+export FEFunction
 export num_free_dofs
-export num_diri_dofs
-export diri_tags
-export apply_constraints
-export apply_constraints_rows
-export apply_constraints_cols
-export celldofids
-export interpolate_values
-export interpolate_diri_values
-export value_type
-export FESpaceWithDirichletData
-export CellFieldForEval
-import Gridap: CellField
-import Gridap: CellBasis
-import Gridap: Triangulation
-
-# Interfaces
-
-"""
-Abstract FE Space parameterized with respec to the environment dimension `D`,
-the cell dimension `Z`, and the field type `T` (rank and entry type).
-A FE space has to be understood as the direct sum of two spaces, the one with
-arbitrary free values and zero Dirichlet data and the one with zero free values
-and a given Dirichlet data
-"""
-abstract type FESpace{D,Z,T} end
-
-num_free_dofs(::FESpace)::Int = @abstractmethod
-
-num_diri_dofs(::FESpace)::Int = @abstractmethod
-
-diri_tags(::FESpace)::Vector{Int} = @abstractmethod
-
-function apply_constraints(::FESpace, cellvec::CellVector, cellids::CellNumber)::CellVector
-  @abstractmethod
-end
-
-function apply_constraints_rows(::FESpace, cellmat::CellMatrix, cellids::CellNumber)::CellMatrix
-  @abstractmethod
-end
-
-function apply_constraints_cols(::FESpace, cellmat::CellMatrix, cellids::CellNumber)::CellMatrix
-  @abstractmethod
-end
-
-"""
-Cell DOFs ids after applying constraints
-"""
-function celldofids(::FESpace)::CellVector{Int}
-  @abstractmethod
-end
-
-"""
-Interpolates a function and returns a vector of free values and another vector
-of dirichlet ones. It is templatized with respect to E, the type of field
-value in the `FESpace{D,Z,T}` at hand, i.e.,  `E = eltype(T)`
-"""
-function interpolate_values(::FESpace,::Function)::Tuple{Vector{E},Vector{E}} where E
-  @abstractmethod
-end
-
-function interpolate_values(::FESpace{D,Z,T},::T) where {D,Z,T}
-  @abstractmethod
-end
-
-"""
-Given a FESpace and its array of labels that represent the Dirichlet boundary
-in the geometrical model and an array of functions for every Dirichlet
-boundary label, this method interpolates all these functions on their
-boundaries, and provides the global vector of Dirichlet DOFs
-"""
-function interpolate_diri_values(::FESpace, funs::Vector{<:Function})::Vector{E} where E
-  @abstractmethod
-end
-
-function interpolate_diri_values( ::FESpace{D,Z,T}, ::Vector{T}) where {D,Z,T}
-  @abstractmethod
-end
-
-function interpolate_diri_values(this::FESpace, fun::Function)
-  tags = diri_tags(this)
-  interpolate_diri_values(this,fill(fun,length(tags)))
-end
-
-function interpolate_diri_values(this::FESpace{D,Z,T}, val::T) where {D,Z,T}
-  tags = diri_tags(this)
-  interpolate_diri_values(this,fill(val,length(tags)))
-end
-
-"""
-Returns the CellField that represents the FE function thorough its free and
-dirichlet values. E = eltype(T)
-"""
-function CellField(
-  ::FESpace{D,Z,T},free_dofs::AbstractVector{E},diri_dofs::AbstractVector{E})::CellField{Z,T} where {D,Z,T,E}
-  @abstractmethod
-end
-
-function CellBasis(::FESpace{D,Z,T})::CellBasis{Z,T} where {D,Z,T}
-  @abstractmethod
-end
-
-function Triangulation(::FESpace{D,Z})::Triangulation{Z,D} where {Z,D}
-  @abstractmethod
-end
-
-function CellFieldForEval(
-  fespace::FESpace{D,Z,T},
-  free_dofs::AbstractVector{E},
-  diri_dofs::AbstractVector{E}) where {D,Z,T,E}
-  CellField(fespace,free_dofs,diri_dofs)
-end
-
-value_type(::FESpace{D,Z,T}) where {D,Z,T} = T
-
-function TestFESpace(this::FESpace{D,Z,T}) where {D,Z,T}
-  E = eltype(T)
-  dv = zeros(E,num_diri_dofs(this))
-  return FESpaceWithDirichletData(this, dv)
-end
-
-function TrialFESpace( this::FESpace, funs::Vector{<:Function}=Function[])
-  _TrialFESpace(this,funs)
-end
-
-function TrialFESpace( this::FESpace{D,Z,T}, vals::Vector{T}) where {D,Z,T}
-  _TrialFESpace(this,vals)
-end
-
-function _TrialFESpace( this, funs)
-  tags = diri_tags(this)
-  @assert length(tags) == length(funs)
-  dv = interpolate_diri_values(this,funs)
-  return FESpaceWithDirichletData(this, dv)
-end
-
-function TrialFESpace( this::FESpace, fun::Function)
-  dv = interpolate_diri_values(this,fun)
-  return FESpaceWithDirichletData(this, dv)
-end
-
-function TrialFESpace( this::FESpace{D,Z,T}, val::T) where {D,Z,T}
-  dv = interpolate_diri_values(this,val)
-  return FESpaceWithDirichletData(this, dv)
-end
-
-# Testers
-
-function test_fe_space(
-  fespace::FESpace{D,Z,T},
-  nfree::Integer,
-  ndiri::Integer,
-  cellmat::CellMatrix,
-  cellvec::CellVector,
-  ufun::Function) where {D,Z,T}
-
-  @test num_free_dofs(fespace) == nfree
-  @test num_diri_dofs(fespace) == ndiri
-  tags = diri_tags(fespace)
-  @test isa(tags,Vector{Int})
-
-  basis = CellBasis(fespace)
-  @test isa(basis,CellBasis)
-
-  nc = length(basis)
-  cellids = IdentityCellNumber(Int,nc)
-
-  cv = apply_constraints(fespace,cellvec,cellids)
-  @test isa(cv,CellVector)
-  cm = apply_constraints_rows(fespace,cellmat,cellids)
-  @test isa(cm,CellMatrix)
-  cm = apply_constraints_cols(fespace,cellmat,cellids)
-  @test isa(cm,CellMatrix)
-
-  cell_to_dofs = celldofids(fespace)
-  @test isa(cell_to_dofs,CellVector{<:Integer})
-
-  freevals, dirivals = interpolate_values(fespace,ufun)
-  @test isa(freevals,AbstractVector)
-  @test isa(dirivals,AbstractVector)
-  @test length(freevals) == nfree
-  @test length(dirivals) == ndiri
-
-  z = zero(T)
-  freevals, dirivals = interpolate_values(fespace,z)
-  @test isa(freevals,AbstractVector)
-  @test isa(dirivals,AbstractVector)
-  @test length(freevals) == nfree
-  @test length(dirivals) == ndiri
-
-  dirivals = interpolate_diri_values(fespace,ufun)
-  @test isa(dirivals,AbstractVector)
-  @test length(dirivals) == ndiri
-
-  cf = CellField(fespace,freevals,dirivals)
-  @test isa(cf,CellField)
-
-  trian = Triangulation(fespace)
-  @test isa(trian,Triangulation{Z,D})
-
-  dirivals = interpolate_diri_values(fespace,z)
-  @test isa(dirivals,AbstractVector)
-  @test length(dirivals) == ndiri
-
-end
-
-# Pretty printing
-
-import Base: show
-
-function show(io::IO,self::FESpace{D,Z,T}) where {D,Z,T}
-  print(io,"$(nameof(typeof(self))) object")
-end
-
-function show(io::IO,::MIME"text/plain",self::FESpace{D,Z,T}) where {D,Z,T}
-  show(io,self)
-  print(io,":")
-  print(io,"\n physdim: $D")
-  print(io,"\n refdim: $Z")
-  print(io,"\n valuetype: $T")
-  print(io,"\n nfree: $(num_free_dofs(self))")
-  print(io,"\n ndiri: $(num_diri_dofs(self))")
-end
-
-# Helpers
-
-"""
-FESpace whose Dirichlet component has been constrained
-"""
-struct FESpaceWithDirichletData{D,Z,T,E,V<:FESpace{D,Z,T}} <: FESpace{D,Z,T}
-  fespace::V
-  diri_dofs::Vector{E}
-end
-
-function free_dofs end
-
-diri_dofs(f::FESpaceWithDirichletData) = f.diri_dofs
-
-num_free_dofs(f::FESpaceWithDirichletData) = num_free_dofs(f.fespace)
-
-num_diri_dofs(f::FESpaceWithDirichletData) = num_diri_dofs(f.fespace)
-
-diri_tags(f::FESpaceWithDirichletData) = diri_tags(f.fespace)
-
-function apply_constraints(
-  f::FESpaceWithDirichletData, cellvec::CellVector, cellids::CellNumber)
-  apply_constraints(f.fespace,cellvec,cellids)
-end
-
-function apply_constraints_rows(
-  f::FESpaceWithDirichletData, cellmat::CellMatrix, cellids::CellNumber)
-  apply_constraints_rows(f.fespace,cellmat,cellids)
-end
-
-function apply_constraints_cols(
-  f::FESpaceWithDirichletData, cellmat::CellMatrix, cellids::CellNumber)
-  apply_constraints_cols(f.fespace,cellmat,cellids)
-end
-
-function celldofids(f::FESpaceWithDirichletData)
-  celldofids(f.fespace)
-end
-
-function interpolate_values(f::FESpaceWithDirichletData,fun::Function)
-  free_vals, _ = interpolate_values(f.fespace,fun)
-  free_vals, f.diri_dofs
-end
-
-function interpolate_values(f::FESpaceWithDirichletData{D,Z,T},val::T) where {D,Z,T}
-  free_vals, _ = interpolate_values(f.fespace,val)
-  free_vals, f.diri_dofs
-end
-
-function CellField(
-  f::FESpaceWithDirichletData{D,Z,T},free_dofs::AbstractVector{E},diri_dofs::AbstractVector{E})where {D,Z,T,E}
-  CellField(f.fespace,free_dofs,f.diri_dofs)
-end
-
-function CellFieldForEval(
-  f::FESpaceWithDirichletData{D,Z,T},free_dofs::AbstractVector{E},diri_dofs::AbstractVector{E})where {D,Z,T,E}
-  CellFieldForEval(f.fespace,free_dofs,f.diri_dofs)
-end
-
-function CellBasis(f::FESpaceWithDirichletData)
-  CellBasis(f.fespace)
-end
-
-Triangulation(f::FESpaceWithDirichletData) = Triangulation(f.fespace)
-
-function interpolate_diri_values(f::FESpaceWithDirichletData, funs::Vector{<:Function})
-  f.diri_dofs
-end
-
-function interpolate_diri_values(f::FESpaceWithDirichletData{D,Z,T}, vals::Vector{T}) where {D,Z,T}
-  f.diri_dofs
-end
-
-end # module FESpaces
+export get_cell_basis
+export zero_free_values
+export apply_constraints_matrix_cols
+export apply_constraints_matrix_rows
+export apply_constraints_vector
+export apply_constraints_matrix_and_vector_rows
+export test_fe_space
+
+export Assembler
+export get_test
+export get_trial
+export allocate_matrix
+export assemble_matrix!
+export assemble_matrix
+export allocate_vector
+export assemble_vector!
+export assemble_vector
+export allocate_matrix_and_vector
+export assemble_matrix_and_vector!
+export assemble_matrix_and_vector
+export test_assembler
+
+export SingleFieldFESpace
+export num_dirichlet_dofs
+export get_cell_dofs
+export zero_dirichlet_values
+export gather_free_and_dirichlet_values
+export scatter_free_and_dirichlet_values
+export get_dirichlet_values
+export gather_dirichlet_values
+export num_dirichlet_tags
+export gather_free_values
+export get_dirichlet_dof_tag
+export compute_free_and_dirichlet_values
+export compute_dirichlet_values
+export compute_free_values
+export compute_dirichlet_values_for_tags
+export test_single_field_fe_space
+export interpolate
+export interpolate_everywhere
+export interpolate_dirichlet
+export get_cell_dof_basis
+
+export SingleFieldFEFunction
+
+export UnsconstrainedFESpace
+export GradConformingFESpace
+export DiscontinuousFESpace
+
+export CellBasis
+export test_cell_basis
+export CellMatrixField
+export test_cell_matrix_field
+export GenericCellBasis
+export GenericCellMatrixField
+export TrialStyle
+export is_trial
+export is_test
+
+export FECellBasisStyle
+export is_a_fe_cell_basis
+
+export TrialFESpace
+export TestFESpace
+export compute_conforming_cell_dofs
+export SparseMatrixAssembler
+
+export FEOperator
+export test_fe_operator
+export AffineFEOperator
+export get_algebraic_operator
+
+export FESolver
+export LinearFESolver
+export NonLinearFESolver
+export test_fe_solver
+
+export FETerm
+export AffineFETerm
+export LinearFETerm
+export FESource
+export get_cell_matrix
+export get_cell_vector
+export get_cell_jacobian
+export get_cell_residual
+export collect_cell_matrix
+export collect_cell_vector
+export collect_cell_jacobian
+export collect_cell_residual
+
+export @law
+export operate
+export GridapType
+
+include("CellBases.jl")
+
+include("Law.jl")
+
+include("FEFunctions.jl")
+
+include("FESpacesInterfaces.jl")
+
+include("Assemblers.jl")
+
+include("FEOperators.jl")
+
+include("SingleFieldFESpaces.jl")
+
+include("SingleFieldFEFunctions.jl")
+
+include("TrialFESpaces.jl")
+
+include("SparseMatrixAssemblers.jl")
+
+include("UnconstrainedFESpaces.jl")
+
+include("ConformingFESpaces.jl")
+
+include("DiscontinuousFESpaces.jl")
+
+include("FETerms.jl")
+
+include("AffineFEOperators.jl")
+
+include("FEOperatorsFromTerms.jl")
+
+include("FESolvers.jl")
+
+include("FESpaceFactories.jl")
+
+end # module

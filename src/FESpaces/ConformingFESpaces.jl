@@ -1,508 +1,529 @@
-module ConformingFESpaces
-
-using Gridap
-using Gridap.Helpers
-using Gridap.CellValuesGallery
-using Gridap.CachedArrays
-using Base: @propagate_inbounds
-using LinearAlgebra: det
-using Base: transpose
-
-using Gridap.BoundaryGrids: _setup_tags
-
-export ConformingFESpace
-export H1ConformingFESpace
-export DivConformingFESpace
-export CurlConformingFESpace
-import Gridap: num_free_dofs
-import Gridap: num_diri_dofs
-import Gridap: diri_tags
-import Gridap: apply_constraints
-import Gridap: apply_constraints_rows
-import Gridap: apply_constraints_cols
-import Gridap: celldofids
-import Gridap: interpolate_values
-import Gridap: interpolate_diri_values
-import Gridap: CellField
-import Gridap: CellBasis
-import Gridap: Triangulation
-import Base: size
-import Base: getindex
 
 """
-Conforming FE Space, where only one RefFE is possible in the whole mesh
 """
-struct ConformingFESpace{D,Z,T} <: FESpace{D,Z,T}
-  dim_to_nface_eqclass::Vector{<:IndexCellArray{Int}}
-  cell_eqclass::IndexCellArray{Int}
-  num_free_dofs::Int
-  num_diri_dofs::Int
-  diri_tags::Vector{Int}
-  reffe::RefFE{Z,T}
-  triangulation::Triangulation{D,Z}
-  gridgraph::GridGraph
-  facelabels::FaceLabels
-  cellbasis::CellBasis{Z,T}
+function GradConformingFESpace(
+  reffes::Vector{<:ReferenceFE},
+  model::DiscreteModel,
+  dirichlet_tags,
+  dirichlet_components=nothing)
+
+  face_labeing = get_face_labeling(model)
+
+  GradConformingFESpace(
+    reffes,model,face_labeing,dirichlet_tags,dirichlet_components)
+
 end
 
-function ConformingFESpace(
-  reffe::RefFE{D,T},
-  trian::Triangulation{D,Z},
-  graph::GridGraph,
-  labels::FaceLabels,
-  diri_tags::Vector{Int}) where {D,Z,T}
-  args = _setup_conforming_fe_fields(reffe,trian,graph,labels,diri_tags,D)
-  ConformingFESpace{D,Z,T}(args...)
-end
-
-function ConformingFESpace(
-  reffe::RefFE{D,T},
-  trian::Triangulation{D,Z},
-  graph::GridGraph,
-  labels::FaceLabels) where {D,Z,T}
-  return ConformingFESpace(reffe, trian, graph, labels, ())
-end
-
-num_free_dofs(this::ConformingFESpace) = this.num_free_dofs
-
-num_diri_dofs(this::ConformingFESpace) = this.num_diri_dofs
-
-diri_tags(f::ConformingFESpace) = f.diri_tags
-
-function apply_constraints(
-  this::ConformingFESpace, cellvec::CellVector, cellids::CellNumber)
-  cellvec
-end
-
-function apply_constraints_rows(
-  this::ConformingFESpace, cellmat::CellMatrix, cellids::CellNumber)
-  cellmat
-end
-
-function apply_constraints_cols(
-  this::ConformingFESpace, cellmat::CellMatrix, cellids::CellNumber)
-  cellmat
-end
-
-function celldofids(this::ConformingFESpace)
-  this.cell_eqclass
-end
-
-function interpolate_values(this::ConformingFESpace,f::Function)
-  _interpolate_values(this,f)
-end
-
-function interpolate_values(this::ConformingFESpace{D,Z,T},val::T) where {D,Z,T}
-  fun(x) = val
-  interpolate_values(this,fun)
-end
-
-function interpolate_diri_values(this::ConformingFESpace, funs::Vector{<:Function})
-  _interpolate_diri_values(this,funs)
-end
-
-function interpolate_diri_values(this::ConformingFESpace{D,Z,T}, vals::Vector{T}) where {D,Z,T}
-  _interpolate_diri_values(this,vals)
-end
-
-function CellField(
-  fespace::ConformingFESpace{D,Z,T},
-  free_dofs::AbstractVector{E},
-  diri_dofs::AbstractVector{E}) where {D,Z,T,E}
-
-  _CellField(fespace, free_dofs, diri_dofs,T,E)
-end
-
-CellBasis(this::ConformingFESpace) = this.cellbasis
-
-Triangulation(this::ConformingFESpace) = this.triangulation
-
-function H1ConformingFESpace(
-  ::Type{T}, model::DiscreteModel{D}, order::Integer, diri_tags) where {D,T}
-
-  labels = FaceLabels(model)
-  H1ConformingFESpace(T,model,labels,order,diri_tags)
-end
-
-function H1ConformingFESpace(
+function GradConformingFESpace(
   ::Type{T},
-  model::DiscreteModel{D},
-  labels::FaceLabels,
+  model::DiscreteModel,
   order::Integer,
-  diri_tags) where {D,T}
+  dirichlet_tags,
+  dirichlet_components=nothing) where T
 
-  grid = Grid(model,D)
-  trian = Triangulation(grid)
-  graph = GridGraph(model)
-  orders = fill(order,D)
-  polytope = _polytope(celltypes(grid))
-  fe = LagrangianRefFE(T,polytope, orders)
-  _diri_tags = _setup_tags(labels,diri_tags)
-  ConformingFESpace(fe,trian,graph,labels,_diri_tags)
-end
+  face_labeing = get_face_labeling(model)
 
-# @santiagobadia : Create a HDiv conforming constructor
-
-# Helpers
-
-function _CellField(
-  fespace, free_dofs, diri_dofs, ::Type{T}, ::Type{E}) where {T,E}
-
-  @assert E == eltype(T)
-  @assert num_free_dofs(fespace) == length(free_dofs)
-  @assert num_diri_dofs(fespace) == length(diri_dofs)
-  reffe = fespace.reffe
-  celldofs = celldofids(fespace)
-  shb = CellBasis(fespace)
-  cdofs = CellVectorFromLocalToGlobalPosAndNeg(
-  celldofs, free_dofs, diri_dofs)
-  lincomb(shb,cdofs)
-  # @santiagobadia: For RT methods, we must add here a local_to_global_dofs
-  # or global_to_local_dofs
+  GradConformingFESpace(T,model,order,face_labeing,dirichlet_tags,dirichlet_components)
 
 end
 
-function _setup_conforming_fe_fields(reffe,trian,graph,labels,diri_tags,D)
-  dim_to_nface_eqclass, nfree, ndiri  = _generate_dim_to_nface_to_dofs(
-  reffe, graph, labels, diri_tags)
-  cellvefs_dim = [connections(graph,D,i) for i in 0:D]
-  offset = length.(dim_to_nface_eqclass)
-  for i in 2:length(offset)
-    offset[i] += offset[i-1]
-  end
-  offset = tuple(offset[1:(end-1)]...)
-  cellvefs = local_append(offset, cellvefs_dim...)
-  dofs_all = append(dim_to_nface_eqclass...)
-  cell_eqclass = CellEqClass(cellvefs, dofs_all, reffe)
-  shb = ConstantCellValue(shfbasis(reffe), ncells(trian))
-  phi = CellGeomap(trian)
-  basis = attachgeomap(shb,phi)
-  return dim_to_nface_eqclass, cell_eqclass, nfree, ndiri, diri_tags,
-  reffe, trian, graph, labels, basis
+function GradConformingFESpace(
+  ::Type{T},
+  model::DiscreteModel,
+  order::Integer,
+  face_labeing::FaceLabeling,
+  dirichlet_tags,
+  dirichlet_components=nothing) where T
+
+  grid_topology = get_grid_topology(model)
+  polytopes = get_polytopes(grid_topology)
+
+  reffes = [ LagrangianRefFE(T,p,order) for p in polytopes ]
+
+  GradConformingFESpace(
+    reffes,model,face_labeing,dirichlet_tags,dirichlet_components)
+
 end
 
-function _generate_dim_to_nface_to_dofs(
-  reffe::RefFE{D},
-  graph::GridGraph,
-  labels::FaceLabels,
-  diri_tags::Vector{Int}) where D
+"""
+"""
+function GradConformingFESpace(
+  reffes::Vector{<:LagrangianRefFE},
+  model::DiscreteModel,
+  face_labeing::FaceLabeling,
+  dirichlet_tags,
+  dirichlet_components=nothing)
 
-  i_free_dof = 1
-  i_diri_dof = -1
+  grid_topology = get_grid_topology(model)
 
-  dim_to_nface_to_dofs = IndexCellVector{Int}[]
-  tag_to_labels = labels.tag_to_labels
+  _dirichlet_components = _convert_dirichlet_components(dirichlet_tags,dirichlet_components)
+
+  cell_dofs, nfree, ndirichlet, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
+    reffes,grid_topology,face_labeing,dirichlet_tags,_dirichlet_components)
+
+  ntags = length(dirichlet_tags)
+
+  grid = get_grid(model)
+  cell_to_ctype = get_cell_type(grid_topology)
+  cell_map = get_cell_map(grid)
+
+  cell_shapefuns, cell_dof_basis = compute_cell_space(reffes, cell_to_ctype, cell_map)
+
+  UnsconstrainedFESpace(
+    nfree,
+    ndirichlet,
+    cell_dofs,
+    cell_shapefuns,
+    cell_dof_basis,
+    cell_map,
+    dirichlet_dof_tag,
+    dirichlet_cells,
+    ntags)
+
+end
+
+"""
+"""
+function compute_cell_space(reffes, cell_to_ctype, cell_map)
+
+  dof_basis = map(get_dof_basis,reffes)
+  cell_dof_basis = CompressedArray(dof_basis,cell_to_ctype)
+
+  shapefuns =  map(get_shapefuns,reffes)
+  refshapefuns = CompressedArray(shapefuns,cell_to_ctype)
+  cell_shapefuns = attachmap(refshapefuns,cell_map)
+
+  (cell_shapefuns, cell_dof_basis)
+end
+
+"""
+  compute_conforming_cell_dofs(
+    reffes,
+    grid_topology,
+    face_labeing,
+    dirichlet_tags)
+
+  compute_conforming_cell_dofs(
+    reffes,
+    grid_topology,
+    face_labeing,
+    dirichlet_tags,
+    dirichlet_components)
+
+The result is the tuple
+
+    (cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells)
+
+Assumes that the reffes are aligned with the cell type in the grid_topology
+and that it is possible to build a conforming space without imposing constraints
+
+If `dirichlet_components`  is given, then `get_dof_to_comp` has to be defined
+for the reference elements in `reffes`.
+"""
+function compute_conforming_cell_dofs(
+  reffes,grid_topology,face_labeing,dirichlet_tags,dirichlet_components=nothing)
+
+  D = num_cell_dims(grid_topology)
+  n_faces = num_faces(grid_topology)
+  cell_to_ctype = get_cell_type(grid_topology)
+  d_to_cell_to_dfaces = [ Table(get_faces(grid_topology,D,d)) for d in 0:D]
+  d_to_dface_to_cells = [ Table(get_faces(grid_topology,d,D)) for d in 0:D]
+  d_to_offset = get_offsets(grid_topology)
+  d_to_ctype_to_ldface_to_own_ldofs = [
+    [ get_face_own_dofs(reffe,d) for reffe in reffes] for d in 0:D]
+
+  face_to_own_dofs, ntotal, d_to_dface_to_cell, d_to_dface_to_ldface =  _generate_face_to_own_dofs(
+     n_faces,
+     cell_to_ctype,
+     d_to_cell_to_dfaces,
+     d_to_dface_to_cells,
+     d_to_offset,
+     d_to_ctype_to_ldface_to_own_ldofs)
+
+  d_to_dface_to_tag = [ get_face_tag_index(face_labeing,dirichlet_tags,d)  for d in 0:D]
+  cell_to_faces = Table(get_cell_faces(grid_topology))
+
+  nfree, ndiri, diri_dof_tag = _split_face_own_dofs_into_free_and_dirichlet!(
+    face_to_own_dofs,
+    d_to_offset,
+    d_to_dface_to_tag,
+    d_to_dface_to_cell,
+    d_to_dface_to_ldface,
+    cell_to_ctype,
+    reffes,
+    dirichlet_components)
+
+  cell_to_lface_to_pindex = Table(get_cell_permutations(grid_topology))
+  ctype_to_lface_to_own_ldofs = [ get_face_own_dofs(reffe) for reffe in reffes]
+  ctype_to_num_dofs = [num_dofs(reffe) for reffe in reffes]
+  ctype_to_lface_to_pindex_to_pdofs = [get_face_own_dofs_permutations(reffe) for reffe in reffes]
+
+  cell_dofs = CellDofsNonOriented(
+    cell_to_faces,
+    cell_to_lface_to_pindex,
+    cell_to_ctype,
+    ctype_to_lface_to_own_ldofs,
+    ctype_to_num_dofs,
+    face_to_own_dofs,
+    ctype_to_lface_to_pindex_to_pdofs)
+
+  diri_cells = _generate_diri_cells(
+    d_to_dface_to_tag,
+    d_to_cell_to_dfaces)
+
+  (cell_dofs, nfree, ndiri, diri_dof_tag, diri_cells)
+end
+
+function _generate_face_to_own_dofs(
+  n_faces,
+  cell_to_ctype,
+  d_to_cell_to_dfaces::Vector{Table{T,P}},
+  d_to_dface_to_cells::Vector{Table{T,P}},
+  d_to_offset,
+  d_to_ctype_to_ldface_to_own_ldofs) where {T,P}
+
+  face_to_own_dofs_ptrs = zeros(P,n_faces+1)
+
+  D = length(d_to_offset)-1
+
+  icell = 1
+  d_to_dface_to_cell = [ get_local_item(d_to_dface_to_cells[d+1],icell)  for d in 0:D ]
+
+  d_to_dface_to_ldface = [
+    find_local_index(d_to_dface_to_cell[d+1],d_to_cell_to_dfaces[d+1]) for d in 0:D ]
 
   for d in 0:D
+    cell_to_dfaces = d_to_cell_to_dfaces[d+1]
+    dface_to_cells = d_to_dface_to_cells[d+1]
+    offset = d_to_offset[d+1]
+    ctype_to_ldface_to_own_ldofs = d_to_ctype_to_ldface_to_own_ldofs[d+1]
+    ctype_to_ldface_to_num_own_ldofs = map( (x) -> length.(x) ,ctype_to_ldface_to_own_ldofs)
+    dface_to_cell_owner = d_to_dface_to_cell[d+1]
+    dface_to_ldface = d_to_dface_to_ldface[d+1]
 
-    nface_to_label = labels_on_dim(labels,d)
-    cell_to_nfaces = connections(graph,D,d)
-    nface_to_cells = connections(graph,d,D)
-    icell = 1
-    nface_to_cellowner = get_local_item(nface_to_cells,icell)
-    nface_to_lnface = find_local_index(nface_to_cellowner, cell_to_nfaces)
-
-    lnface_to_ldofs = nfacedofs(reffe,d)
-    lnface_to_nldofs = length.(lnface_to_ldofs)
-
-    num_nfaces = length(nface_to_cells)
-
-    nface_to_dofs_ptrs = zeros(Int, num_nfaces+1)
-    nface_to_dofs_data = Int[]
-
-    if any(lnface_to_nldofs != 0)
-
-      i_free_dof, i_diri_dof = _generate_nface_to_dofs!(
-      nface_to_dofs_data,
-      nface_to_dofs_ptrs,
-      nface_to_lnface,
-      lnface_to_nldofs,
-      nface_to_label,
-      diri_tags,
-      tag_to_labels,
-      i_free_dof,
-      i_diri_dof)
-
+    if any( ctype_to_ldface_to_num_own_ldofs .!= 0)
+      _generate_face_to_own_dofs_count_d!(
+        face_to_own_dofs_ptrs,
+        offset,
+        cell_to_ctype,
+        dface_to_cell_owner,
+        dface_to_ldface,
+        ctype_to_ldface_to_num_own_ldofs)
     end
-
-    length_to_ptrs!(nface_to_dofs_ptrs)
-
-    nface_to_dofs = CellVectorFromDataAndPtrs(
-    nface_to_dofs_data, nface_to_dofs_ptrs)
-
-    push!(dim_to_nface_to_dofs, nface_to_dofs)
-
   end
 
-  return (dim_to_nface_to_dofs, i_free_dof-1, -i_diri_dof-1)
+  length_to_ptrs!(face_to_own_dofs_ptrs)
 
+  n_dofs = face_to_own_dofs_ptrs[end]-1
+  face_to_own_dofs_data = collect(T(1):T(n_dofs))
+
+  face_to_own_dofs = Table(face_to_own_dofs_data,face_to_own_dofs_ptrs)
+  (face_to_own_dofs, n_dofs, d_to_dface_to_cell, d_to_dface_to_ldface)
 end
 
-function _generate_nface_to_dofs!(
-  nface_to_dofs_data,
-  nface_to_dofs_ptrs,
-  nface_to_lnface,
-  lnface_to_nldofs,
-  nface_to_label,
-  diri_tags,
-  tag_to_labels,
-  i_free_dof,
-  i_diri_dof)
+function  _generate_face_to_own_dofs_count_d!(
+  face_to_own_dofs_ptrs,
+  offset,
+  cell_to_ctype,
+  dface_to_cell_owner,
+  dface_to_ldface,
+  ctype_to_ldface_to_num_own_ldofs)
 
-  for (nface, lnface) in enumerate(nface_to_lnface)
-
-    nldofs = lnface_to_nldofs[lnface]
-    label = nface_to_label[nface]
-    isdiri = _is_diri(label,diri_tags,tag_to_labels)
-
-    if isdiri
-      for i in 1:nldofs
-        push!(nface_to_dofs_data,i_diri_dof)
-        i_diri_dof += -1
-      end
-    else
-      for i in 1:nldofs
-        push!(nface_to_dofs_data,i_free_dof)
-        i_free_dof += 1
-      end
-    end
-
-    nface_to_dofs_ptrs[nface+1] = nldofs
+  n_dfaces = length(dface_to_ldface)
+  for dface in 1:n_dfaces
+    cell = dface_to_cell_owner[dface]
+    ldface = dface_to_ldface[dface]
+    ctype = cell_to_ctype[cell]
+    n_own_ldofs = ctype_to_ldface_to_num_own_ldofs[ctype][ldface]
+    face = dface + offset
+    face_to_own_dofs_ptrs[face+1] = n_own_ldofs
   end
-
-  (i_free_dof, i_diri_dof)
 end
 
-_polytope(celltypes) = @notimplemented
+function _split_face_own_dofs_into_free_and_dirichlet!(
+  face_to_own_dofs,
+  d_to_offset,
+  d_to_dface_to_tag,
+  d_to_dface_to_cell,
+  d_to_dface_to_ldface,
+  cell_to_ctype,
+  reffes,
+  dirichlet_components::Nothing)
 
-function _polytope(celltypes::ConstantCellValue)
-  code = celltypes.value
-  Polytope(code)
+  _split_face_own_dofs_into_free_and_dirichlet_generic!(
+    face_to_own_dofs,
+    d_to_offset,
+    d_to_dface_to_tag)
+
 end
 
-function _interpolate_values(fesp::ConformingFESpace{D,Z,T},fun::Function) where {D,Z,T}
-  reffe = fesp.reffe
-  dofb = dofbasis(reffe)
-  trian = fesp.triangulation
-  phi = CellGeomap(trian)
-  uphys = fun ∘ phi
-  celldofs = fesp.cell_eqclass
-  nfdofs = fesp.dim_to_nface_eqclass
-  E = dof_type(T)
-  free_dofs = zeros(E, num_free_dofs(fesp))
-  diri_dofs = zeros(E, num_diri_dofs(fesp))
-  aux = zeros(E, length(dofb))
-  _interpolate_values_kernel!(
-  free_dofs,diri_dofs,uphys,celldofs,dofb,aux)
-  return free_dofs, diri_dofs
+function _split_face_own_dofs_into_free_and_dirichlet!(
+  face_to_own_dofs,
+  d_to_offset,
+  d_to_dface_to_tag,
+  d_to_dface_to_cell,
+  d_to_dface_to_ldface,
+  cell_to_ctype,
+  reffes,
+  dirichlet_components)
+
+  D = length(d_to_dface_to_cell)-1
+
+  d_to_ctype_to_ldface_to_own_ldofs = [
+    [ get_face_own_dofs(reffe,d) for reffe in reffes] for d in 0:D]
+
+  ctype_to_ldof_to_comp = [get_dof_to_comp(reffe) for reffe in reffes]
+
+  _split_face_own_dofs_into_free_and_dirichlet_with_components!(
+    face_to_own_dofs,
+    d_to_offset,
+    d_to_dface_to_tag,
+    d_to_dface_to_cell,
+    d_to_dface_to_ldface,
+    cell_to_ctype,
+    ctype_to_ldof_to_comp,
+    d_to_ctype_to_ldface_to_own_ldofs,
+    dirichlet_components)
 end
 
-function _interpolate_values_kernel!(
-  free_dofs,diri_dofs,uphys,celldofs,dofb,aux)
+function _split_face_own_dofs_into_free_and_dirichlet_generic!(
+  face_to_own_dofs,
+  d_to_offset,
+  d_to_dface_to_tag)
 
-  for (imap,l2g) in zip(uphys,celldofs)
-    evaluate!(dofb,imap,aux)
-    # @santiagobadia : Here we should add a method for RT that multiplies by -1
-    # if the face has this cell as the second one in the grid graph
-    # local_to_global_dofs, global_to_local_dofs CellArray
-    for (i,gdof) in enumerate(l2g)
-      if (gdof > 0)
-        free_dofs[gdof] = aux[i]
+  D = length(d_to_offset)-1
+  nfree = 0
+  ndiri = 0
+  dirichlet_dof_tag = Int8[]
+  for d in 0:D
+    dface_to_tag = d_to_dface_to_tag[d+1]
+    offset = d_to_offset[d+1]
+    for (dface, tag) in enumerate(dface_to_tag)
+      face = dface + offset
+      pini = face_to_own_dofs.ptrs[face]
+      pend = face_to_own_dofs.ptrs[face+1]-1
+      if tag == UNSET
+        for p in pini:pend
+          nfree += 1
+          face_to_own_dofs.data[p] = nfree
+        end
       else
-        diri_dofs[-gdof] = aux[i]
+        for p in pini:pend
+          ndiri += 1
+          face_to_own_dofs.data[p] = -ndiri
+          push!(dirichlet_dof_tag,tag)
+        end
       end
     end
   end
+
+  (nfree, ndiri, dirichlet_dof_tag)
 end
 
-function _interpolate_diri_values(fesp::ConformingFESpace{D,Z,T},funs) where {D,Z,T}
+function _split_face_own_dofs_into_free_and_dirichlet_with_components!(
+  face_to_own_dofs,
+  d_to_offset,
+  d_to_dface_to_tag,
+  d_to_dface_to_cell,
+  d_to_dface_to_ldface,
+  cell_to_ctype,
+  ctype_to_ldof_to_comp,
+  d_to_ctype_to_ldface_to_own_ldofs,
+  dirichlet_components)
 
-  labels = fesp.facelabels
-  dim_to_nface_to_label = labels.dim_to_nface_to_label
-  dim_to_nface_to_dofs = fesp.dim_to_nface_eqclass
-  diri_tags = fesp.diri_tags
-  @assert length(diri_tags) == length(funs)
-  E = eltype(T)
-  diri_dof_to_val = zeros(E, num_diri_dofs(fesp))
-  tag_to_labels = labels.tag_to_labels
-
-  for (ifunc,f) in enumerate(funs)
-
-    tag_f = diri_tags[ifunc]
-    _ , diri_dof_to_fval = interpolate_values(fesp,f)
-
-    if length(funs) == 1
-      return diri_dof_to_fval
+  D = length(d_to_offset)-1
+  nfree = 0
+  ndiri = 0
+  dirichlet_dof_tag = Int8[]
+  for d in 0:D
+    dface_to_tag = d_to_dface_to_tag[d+1]
+    offset = d_to_offset[d+1]
+    dface_to_cell = d_to_dface_to_cell[d+1]
+    dface_to_ldface = d_to_dface_to_ldface[d+1]
+    ctype_to_ldface_to_own_ldofs = d_to_ctype_to_ldface_to_own_ldofs[d+1]
+    ctype_to_ldface_to_num_own_ldofs = map( (x) -> length.(x) ,ctype_to_ldface_to_own_ldofs)
+    if all(ctype_to_ldface_to_num_own_ldofs .== 0)
+      continue
     end
-
-    for idim in 0:D
-      nface_to_label = dim_to_nface_to_label[idim+1]
-      nface_to_dofs  = dim_to_nface_to_dofs[idim+1]
-      _interpolate_diri_values_kernel!(
-      diri_dof_to_val,
-      diri_dof_to_fval,
-      nface_to_label,
-      nface_to_dofs,
-      tag_f,
-      tag_to_labels)
-    end
-  end
-
-  return diri_dof_to_val
-
-end
-
-function _interpolate_diri_values_kernel!(
-  diri_dof_to_val,
-  diri_dof_to_fval,
-  nface_to_label,
-  nface_to_dofs,
-  tag_f,
-  tag_to_labels)
-
-  for (nface, label) in enumerate(nface_to_label)
-    dofs = nface_to_dofs[nface]
-    if _is_diri(label,tag_f,tag_to_labels)
-      for dof in dofs
-        i = -dof
-        diri_dof_to_val[i] = diri_dof_to_fval[i]
+    for (dface, diritag) in enumerate(dface_to_tag)
+      face = dface + offset
+      pini = face_to_own_dofs.ptrs[face]
+      pend = face_to_own_dofs.ptrs[face+1]-1
+      if diritag == UNSET
+        for p in pini:pend
+          nfree += 1
+          face_to_own_dofs.data[p] = nfree
+        end
+      else
+        cell = dface_to_cell[dface]
+        ldface = dface_to_ldface[dface]
+        ctype = cell_to_ctype[cell]
+        ldof_to_comp = ctype_to_ldof_to_comp[ctype]
+        own_ldofs = ctype_to_ldface_to_own_ldofs[ctype][ldface]
+        comp_to_isdiri = dirichlet_components[diritag]
+        for (fldof, p) in enumerate(pini:pend)
+          ldof = own_ldofs[fldof]
+          comp = ldof_to_comp[ldof]
+          isdiri = comp_to_isdiri[comp]
+          if isdiri
+            ndiri += 1
+            face_to_own_dofs.data[p] = -ndiri
+            push!(dirichlet_dof_tag,diritag)
+          else
+            nfree += 1
+            face_to_own_dofs.data[p] = nfree
+          end
+        end
       end
     end
   end
+
+  (nfree, ndiri, dirichlet_dof_tag)
 end
 
-@inline function _is_diri(label,diritags,tag_to_labels)
-  for tag in diritags
-    for dirilabel in tag_to_labels[tag]
-      if (label == dirilabel)
-        return true
+function _generate_diri_cells(
+  d_to_dface_to_tag,
+  d_to_cell_to_dfaces)
+
+  ncells = length(first(d_to_cell_to_dfaces))
+  cell_visited = fill(false,ncells)
+
+  diri_cells = Int[]
+
+  D = length(d_to_dface_to_tag)-1
+  for d in 0:D
+    dface_to_tag = d_to_dface_to_tag[d+1]
+    cell_to_dfaces = Table(d_to_cell_to_dfaces[d+1])
+    for cell in 1:length(cell_to_dfaces)
+      if cell_visited[cell]
+        continue
+      end
+      pini = cell_to_dfaces.ptrs[cell]
+      pend = cell_to_dfaces.ptrs[cell+1]-1
+      for p in pini:pend
+        dface = cell_to_dfaces.data[p]
+        tag = dface_to_tag[dface]
+        if tag != UNSET
+          push!(diri_cells,cell)
+          cell_visited[cell] = true
+          break
+        end
       end
     end
   end
-  return false
+
+  diri_cells
+
 end
 
-"""
-Type encoding the cellwise local to global dof map.
-For the moment, for the case of a single RefFE and for oriented nfaces.
-"""
-struct CellEqClass{T,A,B} <: IndexCellValue{CachedVector{T,Vector{T}},1}
-  cell_to_nfaces::A
-  nface_to_dofs::B
-  lnface_to_ldofs::Vector{Vector{Int}}
-  nldofs::Int
-  cv::CachedVector{T,Vector{T}}
+function _convert_dirichlet_components(dirichlet_tags,dirichlet_components)
+  dirichlet_components
 end
 
-function CellEqClass(
-  cell_to_nfaces::IndexCellVector{<:Integer},
-  nface_to_dofs::IndexCellVector{T},
-  reffe::RefFE) where T<:Integer
-
-  lnface_to_ldofs = nfacedofs(reffe)
-  A = typeof(cell_to_nfaces)
-  B = typeof(nface_to_dofs)
-  nldofs = length(dofbasis(reffe))
-  v = zeros(T,nldofs)
-  cv = CachedVector(v)
-  CellEqClass{T,A,B}(cell_to_nfaces,nface_to_dofs,lnface_to_ldofs,nldofs,cv)
+function _convert_dirichlet_components(dirichlet_tags::Integer,dirichlet_components)
+  [dirichlet_components,]
 end
 
-size(self::CellEqClass) = (length(self.cell_to_nfaces),)
+function _convert_dirichlet_components(dirichlet_tags::Integer,dirichlet_components::Nothing)
+  nothing
+end
 
-@propagate_inbounds function getindex(self::CellEqClass,cell::Int)
-  nfaces = self.cell_to_nfaces[cell]
-  for (lnface,nface) in enumerate(nfaces)
-    dofs = self.nface_to_dofs[nface]
-    ldofs = self.lnface_to_ldofs[lnface]
-    for i in 1:length(dofs)
-      dof = dofs[i]
-      ldof = ldofs[i]
-      self.cv[ldof] = dof
+function _convert_dirichlet_components(dirichlet_tags::String,dirichlet_components)
+  [dirichlet_components,]
+end
+
+function _convert_dirichlet_components(dirichlet_tags::String,dirichlet_components::Nothing)
+  nothing
+end
+
+struct CellDofsNonOriented <:AbstractVector{Vector{Int}}
+  cell_to_faces::Table{Int,Int32}
+  cell_to_lface_to_pindex::Table{Int8,Int32}
+  cell_to_ctype::Vector{Int8}
+  ctype_to_lface_to_own_ldofs::Vector{Vector{Vector{Int}}}
+  ctype_to_num_dofs::Vector{Int}
+  face_to_own_dofs::Table{Int,Int32}
+  ctype_to_lface_to_pindex_to_pdofs::Vector{Vector{Vector{Vector{Int}}}}
+end
+
+Base.size(a::CellDofsNonOriented) = size(a.cell_to_faces)
+
+Base.IndexStyle(::Type{<:CellDofsNonOriented}) = IndexStyle(Table)
+
+function array_cache(a::CellDofsNonOriented)
+  n_dofs = testitem(a.ctype_to_num_dofs)
+  T = eltype(eltype(a))
+  v = zeros(T,n_dofs)
+  CachedArray(v)
+end
+
+function getindex!(cache,a::CellDofsNonOriented,cell::Integer)
+  ctype = a.cell_to_ctype[cell]
+  n_dofs = a.ctype_to_num_dofs[ctype]
+  setsize!(cache,(n_dofs,))
+  dofs = cache.array
+  lface_to_own_ldofs = a.ctype_to_lface_to_own_ldofs[ctype]
+  p = a.cell_to_faces.ptrs[cell]-1
+  for (lface, own_ldofs) in enumerate(lface_to_own_ldofs)
+    face = a.cell_to_faces.data[p+lface]
+    pindex = a.cell_to_lface_to_pindex.data[p+lface]
+    pdofs = a.ctype_to_lface_to_pindex_to_pdofs[ctype][lface][pindex]
+
+    q = a.face_to_own_dofs.ptrs[face]-1
+    for (i,ldof) in enumerate(own_ldofs)
+      j = pdofs[i]
+      dof = a.face_to_own_dofs.data[q+j]
+      dofs[ldof] = dof
     end
   end
-  self.cv
+  dofs
 end
 
-function DivConformingFESpace(
-  reffe::RefFE{D,T},
-  trian::Triangulation{D,Z},
-  graph::GridGraph,
-  labels::FaceLabels,
-  diri_tags::Vector{Int}) where {D,Z,T}
-
-  dim_to_nface_eqclass,
-  cell_eqclass,
-  nfree,
-  ndiri, diri_tags,
-  reffe,
-  trian,
-  graph,
-  labels,
-  basis = _setup_conforming_fe_fields(reffe,trian,graph,labels,diri_tags,D)
-
-  phi = CellGeomap(trian)
-  jac = gradient(phi)
-  detjac = det(jac)
-
-  piola_map = (1.0/detjac)*jac
-
-  # physbasis = _attachpiola(basis,piola_map)
-  physbasis = basis
-
-  ConformingFESpace{D,Z,T}( dim_to_nface_eqclass,
-  cell_eqclass,
-  nfree,
-  ndiri, diri_tags,
-  reffe,
-  trian,
-  graph,
-  labels,
-  physbasis )
+function Base.getindex(a::CellDofsNonOriented,cell::Integer)
+  cache = array_cache(a)
+  getindex!(cache,a,cell)
 end
 
-function CurlConformingFESpace(
-  reffe::RefFE{D,T},
-  trian::Triangulation{D,Z},
-  graph::GridGraph,
-  labels::FaceLabels,
-  diri_tags::Vector{Int}) where {D,Z,T}
+###struct CellDofsOriented{T,P,V<:AbstractVector} <: AbstractVector{Vector{T}}
+###  cell_to_faces::Table{T,P}
+###  cell_to_ctype::V
+###  ctype_to_lface_to_own_ldofs::Vector{Vector{Vector{Int}}}
+###  ctype_to_num_dofs::Vector{Int}
+###  face_to_own_dofs::Table{T,P}
+###end
+###
+###Base.size(a::CellDofsOriented) = size(a.cell_to_faces)
+###
+###Base.IndexStyle(::Type{<:CellDofsOriented}) = IndexStyle(Table)
+###
+###function array_cache(a::CellDofsOriented)
+###  n_dofs = testitem(a.ctype_to_num_dofs)
+###  T = eltype(eltype(a))
+###  v = zeros(T,n_dofs)
+###  CachedArray(v)
+###end
+###
+###function getindex!(cache,a::CellDofsOriented,cell::Integer)
+###  ctype = a.cell_to_ctype[cell]
+###  n_dofs = a.ctype_to_num_dofs[ctype]
+###  setsize!(cache,(n_dofs,))
+###  dofs = cache.array
+###  lface_to_own_ldofs = a.ctype_to_lface_to_own_ldofs[ctype]
+###  p = a.cell_to_faces.ptrs[cell]-1
+###  for (lface, own_ldofs) in enumerate(lface_to_own_ldofs)
+###    face = a.cell_to_faces.data[p+lface]
+###    q = a.face_to_own_dofs.ptrs[face]-1
+###    for (i,ldof) in enumerate(own_ldofs)
+###      dof = a.face_to_own_dofs.data[q+i]
+###      dofs[ldof] = dof
+###    end
+###  end
+###  dofs
+###end
+###
+###function Base.getindex(a::CellDofsOriented,cell::Integer)
+###  cache = array_cache(a)
+###  getindex!(cache,a,cell)
+###end
+###
 
-  dim_to_nface_eqclass,
-  cell_eqclass,
-  nfree,
-  ndiri, diri_tags,
-  reffe,
-  trian,
-  graph,
-  labels,
-  basis = _setup_conforming_fe_fields(reffe,trian,graph,labels,diri_tags,D)
-
-  phi = CellGeomap(trian)
-  jac = gradient(phi)
-  jact = transpose(jac)
-
-  piola_map = inv(jact)
-
-  # physbasis = _attachpiola(basis,piola_map)
-  physbasis = piola_map
-
-  ConformingFESpace{D,Z,T}( dim_to_nface_eqclass,
-  cell_eqclass,
-  nfree,
-  ndiri, diri_tags,
-  reffe,
-  trian,
-  graph,
-  labels,
-  physbasis )
-end
-
-# @santiagobadia : It is not ready because I think that the product of a
-# integration point values times a
-function _attachpiola(a::CellBasis{D},piola::CellFieldLike) where D
-  Gridap.CellFieldsOperations._merge_val_and_grad(piola*a.val,piola*a.grad)
-  # Gridap.CellFieldsOperations._merge_val_and_grad(a,gradient(a))
-end
-
-end # module

@@ -1,3 +1,0 @@
-module FEFunctionsTests
-
-end # module

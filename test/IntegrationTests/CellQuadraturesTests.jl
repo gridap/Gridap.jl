@@ -1,29 +1,67 @@
 module CellQuadraturesTests
 
 using Test
-using Gridap
+using FillArrays
+using Gridap.Helpers
+using Gridap.Fields
+using Gridap.ReferenceFEs
+using Gridap.Geometry
+using Gridap.Arrays
+using Gridap.Integration
 
-p = Point(1.0,1.1)
-l = 10
+using Gridap.Geometry: GridMock
 
-ref_quad = TensorProductQuadrature(orders=(5,4))
-quad2 = ConstantCellQuadrature(ref_quad,l)
+degree = 3
+quad = Quadrature(HEX,degree)
+test_quadrature(quad)
+@test sum(get_weights(quad)) ≈ 1
 
-coo_cell = coordinates(quad2)
-wei_cell = weights(quad2)
+degree = (1,2,3)
+quad = Quadrature(HEX,degree)
+test_quadrature(quad)
+@test sum(get_weights(quad)) ≈ 1
 
-coo = coordinates(ref_quad)
-wei = weights(ref_quad)
+degree = 3
+quad = Quadrature(TET,degree)
+test_quadrature(quad)
+@test sum(get_weights(quad)) ≈ 0.5*1/3
 
-for i in 1:quad2.length
-  @test coo_cell[1] == coo
-  @test wei_cell[1] == wei
-end
+trian = GridMock()
 
-@test isa(quad2,CellQuadrature)
+degree = 3
+quad = CellQuadrature(trian,degree)
+q = get_coordinates(quad)
+@test isa(q,CompressedArray)
+w = get_weights(quad)
+@test isa(w,CompressedArray)
 
-@test string(quad2) == "CellQuadrature object"
-s = "CellQuadrature object:\n dim: 2\n ncells: 10"
-@test sprint(show,"text/plain",quad2) == s
+q2x = get_cell_map(trian)
+x = evaluate(q2x,q)
 
-end # module CellQuadraturesTests
+#using Gridap.Visualization
+#writevtk(trian,"trian")
+#writevtk(x,"x",nodaldata=["w"=>w])
+
+domain = (0,1,0,1)
+partition = (2,3)
+trian = CartesianGrid(domain,partition)
+quad = CellQuadrature(trian,degree)
+q = get_coordinates(quad)
+@test isa(q,Fill)
+w = get_weights(quad)
+@test isa(w,Fill)
+
+vol = sum(integrate(1,trian,quad))
+@test vol ≈ 1
+
+domain = (0,2,0,2,0,2)
+partition = (2,3,2)
+trian = CartesianGrid(domain,partition)
+quad = CellQuadrature(trian,degree)
+
+vol = sum(integrate(1,trian,quad))
+@test vol ≈ 2^3
+
+@test isa(get_array(quad),AbstractArray{<:Quadrature})
+
+end # module

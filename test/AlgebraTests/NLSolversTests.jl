@@ -1,23 +1,22 @@
 module NLSolversTests
 
-using Test
-using Gridap
-
-using ..NonLinearOperatorMocks
+using Gridap.Algebra
+using Gridap.Algebra: NonLinearOperatorMock
 
 op = NonLinearOperatorMock()
-
 nls = NLSolver(show_trace=false,method=:newton)
 
-x = solve(nls,op)
-@test x ≈ [1.0, 3.0]
+x0 = zero_initial_guess(op)
+x = [1.0, 3.0]
+test_non_linear_solver(nls,op,x0,x)
 
-cache = solve!(x,nls,op)
+x0 = [2.1,2.9]
+x = [2.0, 3.0]
+test_non_linear_solver(nls,op,x0,x)
 
-@test string(cache) == "NLSolversCache object"
+x0 = zero_initial_guess(op)
+cache = solve!(x0,nls,op)
 
-solve!(x,nls,op,cache)
-
-cache.result
+_ = cache.result
 
 end # module

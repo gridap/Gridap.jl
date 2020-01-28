@@ -1,45 +1,44 @@
-module GridPortions
 
-using Gridap
-using Gridap.CellValuesGallery
+"""
+    struct GridPortion{Dc,Dp,G} <: Grid{Dc,Dp}
+      oldgrid::G
+      cell_to_oldcell::Vector{Int}
+    end
 
-export GridPortion
-
-import Gridap: points
-import Gridap: cells
-import Gridap: celltypes
-import Gridap: cellorders
-
-struct GridPortion{D,Z} <: Grid{D,Z}
-  oldgrid::Grid{D,Z}
-  newcell_to_oldcell::IndexCellValue{Int}
-  _newcells
-  _newcelltypes
-  _newcellorders
+Renumeration for cells but not for nodes
+"""
+struct GridPortion{Dc,Dp,G} <: Grid{Dc,Dp}
+  oldgrid::G
+  cell_to_oldcell::Vector{Int}
+  @doc """
+      GridPortion(oldgrid::Grid{Dc,Dp},cell_to_oldcell::Vector{Int}) where {Dc,Dp}
+  """
+  function GridPortion(oldgrid::Grid{Dc,Dp},cell_to_oldcell::Vector{Int}) where {Dc,Dp}
+    new{Dc,Dp,typeof(oldgrid)}(oldgrid,cell_to_oldcell)
+  end
 end
 
-function GridPortion(oldgrid::Grid, newcell_to_oldcell)
-  _newcell_to_oldcell = _setup_newcell_to_oldcell(newcell_to_oldcell)
-  oldcells = cells(oldgrid)
-  oldcelltypes = celltypes(oldgrid)
-  oldcellorders = cellorders(oldgrid)
-  _newcells = reindex(oldcells, _newcell_to_oldcell)
-  _newcelltypes = reindex(oldcelltypes, _newcell_to_oldcell)
-  _newcellorders = reindex(oldcellorders, _newcell_to_oldcell)
-  GridPortion(
-    oldgrid,_newcell_to_oldcell,_newcells,_newcelltypes,_newcellorders)
+function OrientationStyle(::Type{GridPortion{Dc,Dp,G}}) where {Dc,Dp,G}
+  OrientationStyle(G)
 end
 
-points(g::GridPortion) = points(g.oldgrid)
+function RegularityStyle(::Type{GridPortion{Dc,Dp,G}}) where {Dc,Dp,G}
+  RegularityStyle(G)
+end
 
-cells(g::GridPortion) = g._newcells
+function get_node_coordinates(grid::GridPortion)
+  get_node_coordinates(grid.oldgrid)
+end
 
-celltypes(g::GridPortion) = g._newcelltypes
+function get_cell_nodes(grid::GridPortion)
+  reindex(get_cell_nodes(grid.oldgrid),grid.cell_to_oldcell)
+end
 
-cellorders(g::GridPortion) = g._newcellorders
+function get_reffes(grid::GridPortion)
+  get_reffes(grid.oldgrid)
+end
 
-_setup_newcell_to_oldcell(a::IndexCellValue) = a
+function get_cell_type(grid::GridPortion)
+  reindex(get_cell_type(grid.oldgrid),grid.cell_to_oldcell)
+end
 
-_setup_newcell_to_oldcell(a::AbstractVector) = CellValueFromArray(a)
-
-end # module

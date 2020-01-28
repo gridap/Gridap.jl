@@ -1,43 +1,41 @@
-module FESpacesTestsAll
+module FESpacesTests
 
 using Test
 
-@testset "FESpaces" begin include("FESpacesTests.jl") end
+@testset "CellBases" begin include("CellBasesTests.jl") end
 
-@testset "FESpaceConstructors" begin include("FESpaceConstructorsTests.jl") end
-
-@testset "ConformingFESpaces" begin include("ConformingFESpacesTests.jl") end
-
-@testset "CLagrangianFESpaces" begin include("CLagrangianFESpacesTests.jl") end
-
-@testset "DLagrangianFESpaces" begin include("DLagrangianFESpacesTests.jl") end
-
-@testset "DiscFESpaces" begin include("DiscFESpacesTests.jl") end
-
-@testset "RTFESpacesTests" begin include("RTFESpacesTests.jl") end
-
-@testset "NedelecFESpacesTests" begin include("NedelecFESpacesTests.jl") end
-
-@testset "ConstrainedFESpaces" begin include("ConstrainedFESpacesTests.jl") end
-
-@testset "ZeroMeanFESpaces" begin include("ZeroMeanFESpacesTests.jl") end
+@testset "Law" begin include("LawTests.jl") end
 
 @testset "FEFunctions" begin include("FEFunctionsTests.jl") end
 
-@testset "FEBases" begin include("FEBasesTests.jl") end
+@testset "FESpacesInterfaces" begin include("FESpacesInterfacesTests.jl") end
 
 @testset "Assemblers" begin include("AssemblersTests.jl") end
 
-@testset "FETerms" begin include("FETermsTests.jl") end
-
 @testset "FEOperators" begin include("FEOperatorsTests.jl") end
 
-@testset "DGFEOperators" begin include("DGFEOperatorsTests.jl") end
+@testset "SingleFieldFESpaces" begin include("SingleFieldFESpacesTests.jl") end
 
-@testset "VectorValuedFEOperators" begin include("VectorValuedFEOperatorsTests.jl") end
+@testset "SingleFieldFEFunctions" begin include("SingleFieldFEFunctionsTests.jl") end
 
-@testset "NonLinearFEOperators" begin include("NonLinearFEOperatorsTests.jl") end
+@testset "TrialFESpaces" begin include("TrialFESpacesTests.jl") end
 
-@testset "VectorValuedNonLinearFEOperators" begin include("VectorValuedNonLinearFEOperatorsTests.jl") end
+@testset "SparseMatrixAssemblers" begin include("SparseMatrixAssemblersTests.jl") end
+
+@testset "UnconstrainedFESpaces" begin include("UnconstrainedFESpacesTests.jl") end
+
+@testset "ConformingFESpaces" begin include("ConformingFESpacesTests.jl") end
+
+@testset "DiscontinuousFESpaces" begin include("DiscontinuousFESpacesTests.jl") end
+
+@testset "FETerms" begin include("FETermsTests.jl") end
+
+@testset "AffineFEOperators" begin include("AffineFEOperatorsTests.jl") end
+
+@testset "FEOperatorsFromTerms" begin include("FEOperatorsFromTermsTests.jl") end
+
+@testset "FESolvers" begin include("FESolversTests.jl") end
+
+@testset "FESpaceFactories" begin include("FESpaceFactoriesTests.jl") end
 
 end # module

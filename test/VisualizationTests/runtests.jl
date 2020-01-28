@@ -2,6 +2,6 @@ module VisualizationTests
 
 using Test
 
-@testset "Vtkio" begin include("VtkioTests.jl") end
+@testset "Vtk" begin include("VtkTests.jl") end
 
 end # module
