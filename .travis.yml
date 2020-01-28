@@ -5,7 +5,6 @@ stages:
   - name: PluginsTest
     if: commit_message =~ ^\[full-ci\]
   - name: Documentation
-
 language: julia
 os:
   - linux
@@ -54,7 +53,7 @@ jobs:
         - julia --project=tmp/ -e 'using Pkg;
                                    Pkg.develop(PackageSpec(path=pwd()));
                                    Pkg.instantiate();
-                                   Pkg.add(PackageSpec(name="GridapGmsh",rev="new_master"));
+                                   Pkg.add(PackageSpec(name="GridapGmsh",rev="master"));
                                    Pkg.build("GridapGmsh");
                                    Pkg.test("GridapGmsh");'
       after_success: skip
@@ -79,7 +78,7 @@ jobs:
         - julia --project=tmp/ -e 'using Pkg;
                                    Pkg.develop(PackageSpec(path=pwd()));
                                    Pkg.instantiate();
-                                   Pkg.add(PackageSpec(name="GridapPardiso",rev="new_master"));
+                                   Pkg.add(PackageSpec(name="GridapPardiso",rev="master"));
                                    Pkg.build("GridapPardiso");
                                    Pkg.test("GridapPardiso");'
       after_success: skip
@@ -99,7 +98,7 @@ jobs:
         - julia --project=tmp/ -e 'using Pkg;
                                    Pkg.develop(PackageSpec(path=pwd()));
                                    Pkg.instantiate();
-                                   Pkg.add(PackageSpec(name="GridapPETSc",rev="new_master"));
+                                   Pkg.add(PackageSpec(name="GridapPETSc",rev="master"));
                                    Pkg.build("GridapPETSc");
                                    Pkg.test("GridapPETSc");'
       after_success: skip
