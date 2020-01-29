@@ -292,6 +292,8 @@ function integrate(cell_basis::CellBasis,trian::Triangulation,quad::CellQuadratu
   q = get_coordinates(quad)
   w = get_weights(quad)
   j = gradient(cell_map)
+  @assert length(cell_basis) == length(cell_map) "Are you using the right triangulation to integrate?"
+  @assert length(cell_basis) == length(w) "Are you using the right quadrature to integrate?"
   integrate(get_array(cell_basis),q,w,j)
 end
 
@@ -300,6 +302,8 @@ function integrate(cell_basis::CellMatrixField,trian::Triangulation,quad::CellQu
   q = get_coordinates(quad)
   w = get_weights(quad)
   j = gradient(cell_map)
+  @assert length(cell_basis) == length(cell_map) "Are you using the right triangulation to integrate?"
+  @assert length(cell_basis) == length(w) "Are you using the right quadrature to integrate?"
   integrate(get_array(cell_basis),q,w,j)
 end
 
@@ -371,8 +375,8 @@ end
 
 struct ReducedSkeletonCellBasis{T} <: GridapType
   trial_style::Val{T}
-  left::CellBasis
-  right::CellBasis
+  left
+  right
 end
 
 TrialStyle(::Type{<:ReducedSkeletonCellBasis{T}}) where T = Val{T}()
@@ -442,10 +446,10 @@ function _operate_skeleton_test_trial(op,a,b)
 end
 
 struct SkeletonCellMatrixField <: GridapType
-  ll::CellMatrixField
-  lr::CellMatrixField
-  rl::CellMatrixField
-  rr::CellMatrixField
+  ll
+  lr
+  rl
+  rr
 end
 
 get_cell_map(a::SkeletonCellMatrixField) = get_cell_map(a.ll)

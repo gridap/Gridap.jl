@@ -26,9 +26,11 @@ using Test
 
 @time @testset "FESpaces" begin include("FESpacesTests/runtests.jl") end
 
+@time @testset "MultiField" begin include("MultiFieldTests/runtests.jl") end
+
 @time @testset "Visualization" begin include("VisualizationTests/runtests.jl") end
 
-@time @testset "Gridaps" begin include("GridapTests/runtests.jl") end
+@time @testset "Gridap" begin include("GridapTests/runtests.jl") end
 
 include("../bench/runbenchs.jl")
 

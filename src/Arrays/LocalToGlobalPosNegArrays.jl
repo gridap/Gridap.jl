@@ -1,10 +1,10 @@
 
 """
 """
-struct LocalToGlobalPosNegArray{T,M,N,L,V} <: AbstractArray{Array{T,M},N}
+struct LocalToGlobalPosNegArray{T,M,N,L,V,W} <: AbstractArray{Array{T,M},N}
   lid_to_gid::L
   gid_to_val_pos::V
-  gid_to_val_neg::V
+  gid_to_val_neg::W
 
   @doc """
   """
@@ -15,16 +15,17 @@ struct LocalToGlobalPosNegArray{T,M,N,L,V} <: AbstractArray{Array{T,M},N}
 
     L = typeof(lid_to_gid)
     V = typeof(gid_to_val_pos)
+    W = typeof(gid_to_val_neg)
     T = eltype(V)
     M = ndims(eltype(L))
     N = ndims(L)
-    new{T,M,N,L,V}(lid_to_gid,gid_to_val_pos,gid_to_val_neg)
+    new{T,M,N,L,V,W}(lid_to_gid,gid_to_val_pos,gid_to_val_neg)
   end
 end
 
 size(a::LocalToGlobalPosNegArray) = size(a.lid_to_gid)
 
-function IndexStyle(::Type{LocalToGlobalPosNegArray{T,M,N,L,V}}) where {T,M,N,L,V}
+function IndexStyle(::Type{<:LocalToGlobalPosNegArray{T,M,N,L}}) where {T,M,N,L}
   IndexStyle(L)
 end
 

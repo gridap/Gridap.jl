@@ -106,6 +106,8 @@ function integrate(cell_field,trian::Triangulation,quad::CellQuadrature)
   w = get_weights(quad)
   j = gradient(cell_map)
   f = convert_to_cell_field(cell_field,cell_map)
+  @assert length(f) == length(cell_map) "Are you using the right triangulation to integrate?"
+  @assert length(f) == length(w) "Are you using the right quadrature to integrate?"
   integrate(get_array(f),q,w,j)
 end
 

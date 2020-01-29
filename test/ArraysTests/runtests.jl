@@ -22,4 +22,6 @@ using Test
 
 @testset "IdentityVectors" begin include("IdentityVectorsTests.jl") end
 
+@testset "SubVectors" begin include("SubVectorsTests.jl") end
+
 end # module
