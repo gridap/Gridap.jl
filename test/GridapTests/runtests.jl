@@ -8,4 +8,6 @@ using Test
 
 @testset "PLaplacian" begin include("PLaplacianTests.jl") end
 
+@testset "StokesTaylorHood" begin include("StokesTaylorHoodTests.jl") end
+
 end # module
