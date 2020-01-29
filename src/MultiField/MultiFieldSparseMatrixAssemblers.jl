@@ -7,22 +7,39 @@ struct MultiFieldSparseMatrixAssembler{E} <: Assembler
   trial::MultiFieldFESpace
 end
 
-"""
-"""
-function SparseMatrixAssembler(
-  matrix_type::Type,
+function MultiFieldSparseMatrixAssembler(
+  matrix_type::Type{<:AbstractSparseMatrix},
   test::Vector{<:SingleFieldFESpace},
   trial::Vector{<:SingleFieldFESpace})
-
   _test = MultiFieldFESpace(test)
   _trial = MultiFieldFESpace(trial)
   MultiFieldSparseMatrixAssembler(matrix_type,_test,_trial)
 end
 
 function SparseMatrixAssembler(
+  matrix_type::Type{<:AbstractSparseMatrix},
+  test::MultiFieldFESpace,
+  trial::MultiFieldFESpace)
+  MultiFieldSparseMatrixAssembler(matrix_type,test,trial)
+end
+
+function SparseMatrixAssembler(
+  test::MultiFieldFESpace,
+  trial::MultiFieldFESpace)
+  matrix_type = SparseMatrixCSC
+  MultiFieldSparseMatrixAssembler(matrix_type,test,trial)
+end
+
+function SparseMatrixAssembler(
+  matrix_type::Type{<:AbstractSparseMatrix},
   test::Vector{<:SingleFieldFESpace},
   trial::Vector{<:SingleFieldFESpace})
+  MultiFieldSparseMatrixAssembler(matrix_type,test,trial)
+end
 
+function SparseMatrixAssembler(
+  test::Vector{<:SingleFieldFESpace},
+  trial::Vector{<:SingleFieldFESpace})
   matrix_type = SparseMatrixCSC
   SparseMatrixAssembler(matrix_type,test,trial)
 end

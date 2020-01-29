@@ -61,22 +61,22 @@ struct BlockTracker{N} <: GridapType
   block_ids::Vector{NTuple{N,Int}}
 end
 
-function Base.:+(a::BlockTracker)
+function operate(::typeof(+),a::BlockTracker)
   a
 end
 
-function Base.:-(a::BlockTracker)
+function operate(::typeof(-),a::BlockTracker)
   new_blocks = map(-,a.blocks)
   BlockTracker(new_blocks,a.block_ids)
 end
 
-function Base.:+(a::BlockTracker,b::BlockTracker)
+function operate(::typeof(+),a::BlockTracker,b::BlockTracker)
   new_blocks = (a.blocks...,b.blocks...)
   new_block_ids = vcat(a.block_ids,b.block_ids)
   BlockTracker(new_blocks,new_block_ids)
 end
 
-function Base.:-(a::BlockTracker,b::BlockTracker)
+function operate(::typeof(-),a::BlockTracker,b::BlockTracker)
   new_blocks = (a.blocks...,(-b).blocks...)
   new_block_ids = vcat(a.block_ids,b.block_ids)
   BlockTracker(new_blocks,new_block_ids)

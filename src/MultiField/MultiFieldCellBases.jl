@@ -68,6 +68,10 @@ function BlockTracker(a::CellBasisWithFieldID)
   BlockTracker(blocks,block_ids)
 end
 
+operate(op,a::BlockTracker,b::CellBasisWithFieldID) = operate(op,a,BlockTracker(b))
+
+operate(op,a::CellBasisWithFieldID,b::BlockTracker) = operate(op,BlockTracker(a),b)
+
 function _operate_cell_basis_with_field_id(op,a,b,atrial,btrial)
   _operate_cell_basis(op,a,b,TrialStyle(a),TrialStyle(b))
 end
@@ -113,6 +117,10 @@ function BlockTracker(a::CellMatrixFieldWithFieldIds)
   block_ids = [(a.field_id_rows,a.field_id_cols),]
   BlockTracker(blocks,block_ids)
 end
+
+operate(op,a::BlockTracker,b::CellMatrixFieldWithFieldIds) = operate(op,a,BlockTracker(b))
+
+operate(op,a::CellMatrixFieldWithFieldIds,b::BlockTracker) = operate(op,BlockTracker(a),b)
 
 # Restrictions
 
@@ -181,5 +189,9 @@ Base.iterate(m::MultiCellBasis,state) = iterate(m.blocks,state)
 
 Base.getindex(m::MultiCellBasis,field_id::Integer) = m.blocks[field_id]
 
-
+function restrict(a::MultiCellBasis,trian::Triangulation)
+  f = (ai) -> restrict(ai,trian)
+  blocks = map(f,a.blocks)
+  blocks
+end
 

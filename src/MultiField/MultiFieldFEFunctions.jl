@@ -19,3 +19,8 @@ Base.iterate(m::MultiFieldFEFunction,state) = iterate(m.blocks,state)
 
 Base.getindex(m::MultiFieldFEFunction,field_id::Integer) = m.blocks[field_id]
 
+function restrict(a::MultiFieldFEFunction,trian::Triangulation)
+  f = (ai) -> restrict(ai,trian)
+  blocks = map(f,a.blocks)
+  blocks
+end

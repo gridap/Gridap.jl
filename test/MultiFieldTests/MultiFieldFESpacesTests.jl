@@ -38,6 +38,7 @@ X = MultiFieldFESpace([U,P],multi_field_style)
 
 free_values = rand(num_free_dofs(X))
 xh = FEFunction(X,free_values)
+test_fe_function(xh)
 @test is_a_fe_function(xh)
 uh, ph = xh
 @test is_a_fe_function(uh)

@@ -12,4 +12,6 @@ using Test
 
 @testset "MultiFieldSparseMatrixAssemblers" begin include("MultiFieldSparseMatrixAssemblersTests.jl") end
 
+@testset "MultiFieldFEOperators" begin include("MultiFieldFEOperatorsTests.jl") end
+
 end # module

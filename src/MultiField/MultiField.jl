@@ -34,6 +34,8 @@ import Gridap.FESpaces: apply_constraints_matrix_cols
 import Gridap.FESpaces: apply_constraints_matrix_rows
 import Gridap.FESpaces: apply_constraints_vector
 import Gridap.FESpaces: get_cell_dofs
+import Gridap.FESpaces: get_fe_space
+import Gridap.FESpaces: get_free_values
 import Gridap.FESpaces: get_test
 import Gridap.FESpaces: get_trial
 import Gridap.FESpaces: allocate_vector
@@ -42,6 +44,10 @@ import Gridap.FESpaces: allocate_matrix
 import Gridap.FESpaces: assemble_matrix!
 import Gridap.FESpaces: assemble_matrix
 import Gridap.FESpaces: SparseMatrixAssembler
+import Gridap.FESpaces: AffineFEOperator
+import Gridap.FESpaces: FEOperator
+
+import Base: +, -
 
 export num_fields
 export compute_field_offsets
@@ -60,5 +66,7 @@ include("MultiFieldFESpaces.jl")
 include("MultiFieldFEFunctions.jl")
 
 include("MultiFieldSparseMatrixAssemblers.jl")
+
+include("MultiFieldFEOperators.jl")
 
 end # module
