@@ -20,4 +20,6 @@ using Test
 
 @testset "SerendipityRefFEs" begin include("SerendipityRefFEsTests.jl") end
 
+@testset "PDiscRefFEs" begin include("PDiscRefFEsTests.jl") end
+
 end # module

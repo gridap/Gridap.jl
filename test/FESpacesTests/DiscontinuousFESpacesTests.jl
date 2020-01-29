@@ -31,4 +31,8 @@ uh = FEFunction(V,rand(num_free_dofs(V)))
 #
 #writevtk(trian,"trian",nsubcells=40,cellfields=["fh"=>fh, "uh"=>uh])
 
+reffes = [PDiscRefFE(Float64,p,order) for p in polytopes]
+V = DiscontinuousFESpace(reffes,trian)
+test_single_field_fe_space(V,[],[],[],[])
+
 end # module

@@ -130,6 +130,7 @@ export TET4
 export HEX8
 
 export SerendipityRefFE
+export PDiscRefFE
 
 include("Polytopes.jl")
 
@@ -148,5 +149,7 @@ include("NodalReferenceFEs.jl")
 include("LagrangianRefFEs.jl")
 
 include("SerendipityRefFEs.jl")
+
+include("PDiscRefFEs.jl")
 
 end # module
