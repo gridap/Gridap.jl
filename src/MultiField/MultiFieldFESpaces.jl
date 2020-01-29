@@ -5,9 +5,15 @@ struct ConsequtiveMultiFieldStyle <: MultiFieldStyle end
 
 struct StridedMultiFieldStyle <: MultiFieldStyle end
 
+"""
+"""
 struct MultiFieldFESpace{S<:MultiFieldStyle} <: FESpace
   spaces::Vector{<:SingleFieldFESpace}
   multi_field_style::S
+end
+
+function MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace})
+  MultiFieldFESpace(spaces,ConsequtiveMultiFieldStyle())
 end
 
 MultiFieldStyle(::Type{MultiFieldFESpace{S}}) where S = S()
@@ -25,9 +31,19 @@ function num_free_dofs(f::MultiFieldFESpace)
   n
 end
 
+function num_free_dofs(spaces::Vector{<:SingleFieldFESpace})
+  f = MultiFieldFESpace(spaces)
+  num_free_dofs(f)
+end
+
 function get_cell_basis(f::MultiFieldFESpace)
   blocks = [ get_cell_basis(U) for U in f.spaces ]
   MultiCellBasis(blocks)
+end
+
+function get_cell_basis(spaces::Vector{<:SingleFieldFESpace})
+  f = MultiFieldFESpace(spaces)
+  get_cell_basis(f)
 end
 
 function FEFunction(fe::MultiFieldFESpace, free_values)
@@ -40,8 +56,18 @@ function FEFunction(fe::MultiFieldFESpace, free_values)
   MultiFieldFEFunction(free_values,fe,blocks)
 end
 
+function FEFunction(spaces::Vector{<:SingleFieldFESpace}, free_values)
+  f = MultiFieldFESpace(spaces)
+  FEFunction(f,free_values)
+end
+
 function zero_free_values(::Type{T},fs::MultiFieldFESpace) where T
   zeros(T,num_free_dofs(fs))
+end
+
+function zero_free_values(::Type{T},spaces::Vector{<:SingleFieldFESpace}) where T
+  f = MultiFieldFESpace(spaces)
+  zero_free_values(T,f)
 end
 
 function apply_constraints_matrix_cols(f::MultiFieldFESpace,cellmat::MultiCellArray,cellids::AbstractVector)
@@ -73,7 +99,7 @@ function apply_constraints_vector(f::MultiFieldFESpace,cellvec::MultiCellArray,c
   block_ids = cellvec.block_ids
   spaces = f.spaces
   function fun(i,block)
-   field_id = block_ids[i]
+   field_id, = block_ids[i]
    apply_constraints_vector(spaces[field_id],block,cellids)
   end
   new_blocks = (  fun(i,block) for (i,block) in enumerate(blocks) )
@@ -96,7 +122,7 @@ function restrict_to_field(f::MultiFieldFESpace,free_values::AbstractVector,fiel
   _restrict_to_field(f,MultiFieldStyle(f),free_values,field)
 end
 
-function  _restrict_to_field(f,mf_style,free_values,field)
+function  _restrict_to_field(f,::MultiFieldStyle,free_values,field)
   @notimplemented
 end
 
@@ -106,6 +132,31 @@ function  _restrict_to_field(f,::ConsequtiveMultiFieldStyle,free_values,field)
   pini = offsets[field] + 1
   pend = offsets[field] + num_free_dofs(U[field])
   SubVector(free_values,pini,pend)
+end
+
+function get_cell_dofs(f::MultiFieldFESpace)
+  _get_cell_dofs(f,MultiFieldStyle(f))
+end
+
+function _get_cell_dofs(f,::MultiFieldStyle)
+  @notimplemented
+end
+
+function _get_cell_dofs(f,::ConsequtiveMultiFieldStyle)
+  offsets = compute_field_offsets(f)
+  spaces = f.spaces
+  function fun(i,space)
+    cell_dofs = get_cell_dofs(space)
+    if i == 1
+      return cell_dofs
+    end
+    offset = offsets[i]
+    o = Fill(offset,length(cell_dofs))
+    apply(elem(+),cell_dofs,o)
+  end
+  blocks = [ fun(i,space) for (i,space) in enumerate(spaces) ]
+  block_ids = [ (i,) for i in 1:length(spaces)]
+  MultiCellArray(tuple(blocks...),block_ids)
 end
 
 # API for the ConsequtiveMultiFieldStyle

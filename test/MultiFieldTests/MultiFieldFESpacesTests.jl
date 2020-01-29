@@ -1,5 +1,6 @@
 module MultiFieldFESpacesTests
 
+using Gridap.Arrays
 using Gridap.Geometry
 using Gridap.FESpaces
 using Gridap.Fields
@@ -8,6 +9,7 @@ using Test
 
 using Gridap.MultiField
 using Gridap.MultiField: MultiFieldFESpace
+using Gridap.MultiField: MultiCellArray
 using Gridap.MultiField: ConsequtiveMultiFieldStyle
 
 order = 2
@@ -67,5 +69,13 @@ test_fe_space(U,cellmat,cellvec,cellids,cellids)
 #using Gridap.Visualization
 #writevtk(trian,"trian";nsubcells=30,cellfields=["uh" => uh, "ph"=> ph])
 
+cell_dofs = get_cell_dofs(X)
+@test isa(cell_dofs,MultiCellArray)
+
+cellids = [3,5,2]
+
+cell_dofs_new = reindex(cell_dofs,cellids)
+@test isa(cell_dofs_new,MultiCellArray)
+@test cell_dofs_new.block_ids === cell_dofs.block_ids
 
 end # module

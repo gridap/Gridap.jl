@@ -46,6 +46,16 @@ function Base.size(a::MultiCellArray)
   size(bi)
 end
 
+function reindex(a::MultiCellArray,b::AbstractArray)
+  f = (ai) -> reindex(ai,b)
+  blocks = map(f,a.blocks)
+  MultiCellArray(blocks,a.block_ids)
+end
+
+function reindex(a::MultiCellArray,b::IdentityVector)
+  a
+end
+
 struct BlockTracker{N} <: GridapType
   blocks::Tuple
   block_ids::Vector{NTuple{N,Int}}
@@ -71,4 +81,5 @@ function Base.:-(a::BlockTracker,b::BlockTracker)
   new_block_ids = vcat(a.block_ids,b.block_ids)
   BlockTracker(new_blocks,new_block_ids)
 end
+
 

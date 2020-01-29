@@ -264,9 +264,6 @@ Returns a kernel that represents the element-wise
 version of the operation `f`
 It does not broadcast in singleton axes. Thus, allows some
 performance optimizations with respect to broadcast.
-
-!!! warning
-    not needed any more, to be deleted
 """
 elem(f::Function) = Elem(f)
 
@@ -313,7 +310,7 @@ end
 # Array
 
 function kernel_return_type(k::Elem,a::AbstractArray)
-  typeof(kernel_cache(k,a))
+  typeof(kernel_cache(k,a).array)
 end
 
 function kernel_cache(k::Elem,a::AbstractArray)
@@ -323,16 +320,17 @@ end
 
 @inline function apply_kernel!(c,f::Elem,a::AbstractArray)
   setsize!(c,size(a))
+  r = c.array
   for i in eachindex(a)
-    @inbounds c[i] = f.f(a[i])
+    @inbounds r[i] = f.f(a[i])
   end
-  c
+  r
 end
 
 # Array vs Array
 
 function kernel_return_type(k::Elem,a::AbstractArray,b::AbstractArray)
-  typeof(kernel_cache(k,a,b))
+  typeof(kernel_cache(k,a,b).array)
 end
 
 function kernel_cache(k::Elem,a::AbstractArray,b::AbstractArray)
@@ -344,10 +342,11 @@ end
 @inline function apply_kernel!(c,f::Elem,a::AbstractArray,b::AbstractArray)
   _checks(a,b)
   setsize!(c,size(a))
+  r = c.array
   for i in eachindex(a)
-    @inbounds c[i] = f.f(a[i],b[i])
+    @inbounds r[i] = f.f(a[i],b[i])
   end
-  c
+  r
 end
 
 # Number vs Number
@@ -367,7 +366,7 @@ end
 # Array vs Number
 
 function kernel_return_type(k::Elem,a::AbstractArray,b::Number)
-  typeof(kernel_cache(k,a,b))
+  typeof(kernel_cache(k,a,b).array)
 end
 
 function kernel_cache(k::Elem,a::AbstractArray,b::Number)
@@ -377,16 +376,17 @@ end
 
 @inline function apply_kernel!(c,k::Elem,a::AbstractArray,b::Number)
   setsize!(c,size(a))
+  r = c.array
   for i in eachindex(a)
-    @inbounds c[i] = k.f(a[i],b)
+    @inbounds r[i] = k.f(a[i],b)
   end
-  c
+  r
 end
 
 # Number vs Array
 
 function kernel_return_type(k::Elem,a::Number,b::AbstractArray)
-  typeof(kernel_cache(k,a,b))
+  typeof(kernel_cache(k,a,b).array)
 end
 
 function kernel_cache(k::Elem,a::Number,b::AbstractArray)
@@ -396,10 +396,11 @@ end
 
 @inline function apply_kernel!(c,k::Elem,a::Number,b::AbstractArray)
   setsize!(c,size(b))
+  r = c.array
   for i in eachindex(b)
-    @inbounds c[i] = k.f(a,b[i])
+    @inbounds r[i] = k.f(a,b[i])
   end
-  c
+  r
 end
 
 function _checks(a,b)

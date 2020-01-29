@@ -34,9 +34,9 @@ end
 
 function _assemble_vector!(vec,vals_cache,rows_cache,cell_vals,cell_rows)
   @assert length(cell_vals) == length(cell_rows)
-  for i in 1:length(cell_rows)
-    rows = getindex!(rows_cache,cell_rows,i)
-    vals = getindex!(vals_cache,cell_vals,i)
+  for cell in 1:length(cell_rows)
+    rows = getindex!(rows_cache,cell_rows,cell)
+    vals = getindex!(vals_cache,cell_vals,cell)
     for (i,gid) in enumerate(rows)
       if gid > 0
         vec[gid] += vals[i]

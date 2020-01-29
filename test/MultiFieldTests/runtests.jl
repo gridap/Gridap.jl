@@ -10,4 +10,6 @@ using Test
 
 @testset "MultiFieldFEFunctions" begin include("MultiFieldFEFunctionsTests.jl") end
 
+@testset "MultiFieldSparseMatrixAssemblers" begin include("MultiFieldSparseMatrixAssemblersTests.jl") end
+
 end # module
