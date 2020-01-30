@@ -153,7 +153,6 @@ export collect_cell_residual
 
 export FESpaceWithLastDofRemoved
 export ZeroMeanFESpace
-export finalize_fe_function
 
 export @law
 export operate

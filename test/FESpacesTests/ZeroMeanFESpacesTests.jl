@@ -35,13 +35,9 @@ test_single_field_fe_space(U,[],[],[],[])
 fun(x) = sin(4*pi*(x[1]+x[2]^2)) + 3
 uh = interpolate(U,fun)
 
-uh0 = finalize_fe_function(U,uh)
-
 mean1 = sum(integrate(uh,trian,quad))
-mean0 = sum(integrate(uh0,trian,quad))
 
 tol = 1.0e-10
-@test abs(mean1) > tol
-@test abs(mean0) < tol
+@test abs(mean1) < tol
 
 end # module
