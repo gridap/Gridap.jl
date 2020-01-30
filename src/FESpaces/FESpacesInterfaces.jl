@@ -94,3 +94,9 @@ function test_fe_space(f::FESpace,cellmat,cellvec,cellidsrows,cellidscols)
   _ = apply_constraints_vector(f,cellvec,cellidsrows)
 end
 
+"""
+"""
+function finalize_fe_function(f::FESpace,uh)
+  uh
+end
+

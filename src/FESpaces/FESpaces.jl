@@ -151,6 +151,10 @@ export collect_cell_vector
 export collect_cell_jacobian
 export collect_cell_residual
 
+export FESpaceWithLastDofRemoved
+export ZeroMeanFESpace
+export finalize_fe_function
+
 export @law
 export operate
 export GridapType
@@ -188,6 +192,10 @@ include("AffineFEOperators.jl")
 include("FEOperatorsFromTerms.jl")
 
 include("FESolvers.jl")
+
+include("FESpacesWithLastDofRemoved.jl")
+
+include("ZeroMeanFESpaces.jl")
 
 include("FESpaceFactories.jl")
 

@@ -36,6 +36,10 @@ using Test
 
 @testset "FESolvers" begin include("FESolversTests.jl") end
 
+@testset "FESpacesWithLastDofRemoved" begin include("FESpacesWithLastDofRemovedTests.jl") end
+
+@testset "ZeroMeanFESpaces" begin include("ZeroMeanFESpacesTests.jl") end
+
 @testset "FESpaceFactories" begin include("FESpaceFactoriesTests.jl") end
 
 end # module

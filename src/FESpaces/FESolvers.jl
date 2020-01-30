@@ -101,7 +101,8 @@ function solve!(u,solver::LinearFESolver,feop::AffineFEOperator)
   op = get_algebraic_operator(feop)
   cache = solve!(x,solver.ls,op)
   trial = get_trial(feop)
-  u_new = FEFunction(trial,x)
+  _u_new = FEFunction(trial,x)
+  u_new = finalize_fe_function(trial,_u_new)
   (u_new, cache)
 end
 
@@ -112,7 +113,7 @@ function solve!(u,solver::LinearFESolver,feop::AffineFEOperator, cache)
   solve!(x,solver.ls,op,cache)
   trial = get_trial(feop)
   u_new = FEFunction(trial,x)
-  u_new
+  finalize_fe_function(trial,u_new)
 end
 
 """
@@ -145,7 +146,8 @@ function solve!(u,solver::NonLinearFESolver,feop::FEOperator)
   op = get_algebraic_operator(feop)
   cache = solve!(x,solver.nls,op)
   trial = get_trial(feop)
-  u_new = FEFunction(trial,x)
+  _u_new = FEFunction(trial,x)
+  u_new = finalize_fe_function(trial,_u_new)
   (u_new, cache)
 end
 
@@ -156,6 +158,6 @@ function solve!(u,solver::NonLinearFESolver,feop::FEOperator,cache)
   solve!(x,solver.nls,op,cache)
   trial = get_trial(feop)
   u_new = FEFunction(trial,x)
-  u_new
+  finalize_fe_function(trial,u_new)
 end
 
