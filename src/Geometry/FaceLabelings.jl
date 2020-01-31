@@ -14,6 +14,7 @@ end
 
 """
     FaceLabeling(d_to_num_dfaces::Vector{Int})
+    FaceLabeling(topo::GridTopology)
 """
 function FaceLabeling(d_to_num_dfaces::Vector{Int})
   d_to_dface_to_entity = [
@@ -21,6 +22,25 @@ function FaceLabeling(d_to_num_dfaces::Vector{Int})
   tag_to_entities = Vector{Int32}[]
   tag_to_name = String[]
   FaceLabeling(d_to_dface_to_entity,tag_to_entities,tag_to_name)
+end
+
+function FaceLabeling(topo::GridTopology)
+  D = num_cell_dims(topo)
+  d_to_ndfaces = [ num_faces(topo,d) for d in 0:D ]
+  labels = FaceLabeling(d_to_ndfaces)
+  for d in 0:D
+    dface_to_entity = get_face_entity(labels,d)
+    if d != D
+      dface_to_is_boundary = get_isboundary_face(topo,d)
+      dface_to_entity .= dface_to_is_boundary
+      dface_to_entity .+= 1 
+    else
+      dface_to_entity .= 1 
+    end
+  end
+  add_tag!(labels,"interior",[1])
+  add_tag!(labels,"boundary",[2])
+  labels
 end
 
 """

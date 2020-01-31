@@ -77,4 +77,8 @@ face_to_tag = get_face_tag(labels,["boundary","interior"],1)
 face_to_tag = get_face_tag_index(labels,["boundary","interior"],1)
 @test face_to_tag == Int8[1, 2, 1, 2, 1, 2, 1, 2, 1, 1, 2, 1, 1]
 
+labels = FaceLabeling(model)
+@test num_entities(labels) == 2
+@test num_tags(labels) == 2
+
 end # module

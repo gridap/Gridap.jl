@@ -85,4 +85,7 @@ model = CartesianDiscreteModel(domain,partition)
 tmodel = simplexify(model)
 test_discrete_model(tmodel)
 
+model2 = DiscreteModel(grid,topo,labeling)
+test_discrete_model(model2)
+
 end # module
