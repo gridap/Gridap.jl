@@ -94,37 +94,37 @@ end
 
 function allocate_residual(op::AlgebraicOpFromFEOp,x::AbstractVector)
   trial = get_trial(op.feop)
-  u = FEFunction(trial,x)
+  u = EvaluationFunction(trial,x)
   allocate_residual(op.feop,u)
 end
 
 function residual!(b::AbstractVector,op::AlgebraicOpFromFEOp,x::AbstractVector)
   trial = get_trial(op.feop)
-  u = FEFunction(trial,x)
+  u = EvaluationFunction(trial,x)
   residual!(b,op.feop,u)
 end
 
 function residual(op::AlgebraicOpFromFEOp,x::AbstractVector)
   trial = get_trial(op.feop)
-  u = FEFunction(trial,x)
+  u = EvaluationFunction(trial,x)
   residual(op.feop,u)
 end
 
 function allocate_jacobian(op::AlgebraicOpFromFEOp,x::AbstractVector)
   trial = get_trial(op.feop)
-  u = FEFunction(trial,x)
+  u = EvaluationFunction(trial,x)
   allocate_jacobian(op.feop,u)
 end
 
 function jacobian!(A::AbstractMatrix,op::AlgebraicOpFromFEOp,x::AbstractVector)
   trial = get_trial(op.feop)
-  u = FEFunction(trial,x)
+  u = EvaluationFunction(trial,x)
   jacobian!(A,op.feop,u)
 end
 
 function jacobian(op::AlgebraicOpFromFEOp,x::AbstractVector)
   trial = get_trial(op.feop)
-  u = FEFunction(trial,x)
+  u = EvaluationFunction(trial,x)
   jacobian(op.feop,u)
 end
 

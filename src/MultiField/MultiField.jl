@@ -46,6 +46,7 @@ import Gridap.FESpaces: assemble_matrix
 import Gridap.FESpaces: SparseMatrixAssembler
 import Gridap.FESpaces: AffineFEOperator
 import Gridap.FESpaces: FEOperator
+import Gridap.FESpaces: EvaluationFunction
 
 import Base: +, -
 
