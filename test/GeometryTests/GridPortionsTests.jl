@@ -25,7 +25,16 @@ cell_to_oldcell = findall(collect1d(apply(is_in,oldcell_to_coods)))
 grid = GridPortion(oldgrid,cell_to_oldcell)
 test_grid(grid)
 
+topo = GridTopology(grid)
+
+labels = FaceLabeling(topo)
+
+model = DiscreteModel(grid,topo,labels)
+
 #using Gridap.Visualization
+
+#writevtk(model,"model")
+
 #
 #write_vtk_file(
 #  grid,

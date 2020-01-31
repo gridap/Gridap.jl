@@ -30,9 +30,13 @@ function FaceLabeling(topo::GridTopology)
   labels = FaceLabeling(d_to_ndfaces)
   for d in 0:D
     dface_to_entity = get_face_entity(labels,d)
-    dface_to_is_boundary = get_isboundary_face(topo,d)
-    dface_to_entity .= dface_to_is_boundary
-    dface_to_entity .+= 1 
+    if d != D
+      dface_to_is_boundary = get_isboundary_face(topo,d)
+      dface_to_entity .= dface_to_is_boundary
+      dface_to_entity .+= 1 
+    else
+      dface_to_entity .= 1 
+    end
   end
   add_tag!(labels,"interior",[1])
   add_tag!(labels,"boundary",[2])
