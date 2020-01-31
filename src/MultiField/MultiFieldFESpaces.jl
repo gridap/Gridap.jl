@@ -157,6 +157,7 @@ function _get_cell_dofs(f,::MultiFieldStyle)
   @notimplemented
 end
 
+
 function _get_cell_dofs(f,::ConsequtiveMultiFieldStyle)
   offsets = compute_field_offsets(f)
   spaces = f.spaces
@@ -167,11 +168,19 @@ function _get_cell_dofs(f,::ConsequtiveMultiFieldStyle)
     end
     offset = offsets[i]
     o = Fill(offset,length(cell_dofs))
-    apply(elem(+),cell_dofs,o)
+    apply(elem(_sum_if_first_positive),cell_dofs,o)
   end
   blocks = [ fun(i,space) for (i,space) in enumerate(spaces) ]
   block_ids = [ (i,) for i in 1:length(spaces)]
   MultiCellArray(tuple(blocks...),block_ids)
+end
+
+function _sum_if_first_positive(a,b)
+  if a>0
+    return a+b
+  else
+    return a
+  end
 end
 
 # API for the ConsequtiveMultiFieldStyle

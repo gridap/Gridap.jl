@@ -119,8 +119,8 @@ eu_h1 = sqrt(sum(integrate(h1(eu),trian,quad)))
 ep_l2 = sqrt(sum(integrate(l2(ep),trian,quad)))
 
 tol = 1.0e-9
-#@test eu_l2 < tol
-#@test eu_h1 < tol
-#@test ep_l2 < tol
+@test eu_l2 < tol
+@test eu_h1 < tol
+@test ep_l2 < tol
 
 end # module
