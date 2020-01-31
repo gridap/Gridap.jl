@@ -38,6 +38,10 @@ function FEFunction(fe::FESpace, free_values)
   @abstractmethod
 end
 
+function EvaluationFunction(fe::FESpace, free_values)
+  FEFunction(fe,free_values)
+end
+
 """
 """
 function zero_free_values(::Type{T},fs::FESpace) where T

@@ -61,6 +61,21 @@ function FEFunction(spaces::Vector{<:SingleFieldFESpace}, free_values)
   FEFunction(f,free_values)
 end
 
+function EvaluationFunction(fe::MultiFieldFESpace, free_values)
+  blocks = SingleFieldFEFunction[]
+  for (field, U) in enumerate(fe.spaces)
+    free_values_i = restrict_to_field(fe,free_values,field)
+    uhi = EvaluationFunction(U,free_values_i)
+    push!(blocks,uhi)
+  end
+  MultiFieldFEFunction(free_values,fe,blocks)
+end
+
+function EvaluationFunction(spaces::Vector{<:SingleFieldFESpace}, free_values)
+  f = MultiFieldFESpace(spaces)
+  EvaluationFunction(f,free_values)
+end
+
 function zero_free_values(::Type{T},fs::MultiFieldFESpace) where T
   zeros(T,num_free_dofs(fs))
 end

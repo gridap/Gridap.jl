@@ -42,6 +42,10 @@ function FEFunction(
   FEFunction(f.space,fv,dv)
 end
 
+function EvaluationFunction(f::ZeroMeanFESpace,free_values)
+  FEFunction(f.space,free_values)
+end
+
 function _compute_new_fixedval(fv,dv,vol_i,vol)
   @assert length(fv) + 1 == length(vol_i)
   @assert length(dv) == 1

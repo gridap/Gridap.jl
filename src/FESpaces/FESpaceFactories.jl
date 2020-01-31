@@ -23,7 +23,11 @@ function FESpace(;kwargs...)
     return fespace
 
   elseif constraint == :zeromean
-    @notimplemented ":zeromean option not yet implemented"
+    model = _get_kwarg(:model,kwargs)
+    order = _get_kwarg(:order,kwargs)
+    trian = get_triangulation(model)
+    quad = CellQuadrature(trian,order)
+    return ZeroMeanFESpace(fespace,trian,quad)
 
   else
     @unreachable "Unknown constraint value $constraint"
