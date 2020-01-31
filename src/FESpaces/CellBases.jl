@@ -152,6 +152,41 @@ function _operate_cell_basis_test_trial(op,cf1,cf2)
   similar_object(cf1,cf2,b)
 end
 
+# Operations with extra arguments
+
+function operate(op,a::CellField,b,objects...)
+  arrays = map(get_array,(a,b,objects...))
+  v = apply_to_field_array(UnimplementedField,bcast(op),arrays...)
+  similar_object(a,v)
+end
+
+function operate(op,a::CellBasis,b::CellField,objects...)
+  arrays = map(get_array,(a,b,objects...))
+  v = apply_to_field_array(UnimplementedField,bcast(op),arrays...)
+  similar_object(a,v)
+end
+
+function operate(op,a::CellField,b::CellBasis,objects...)
+  arrays = map(get_array,(a,b,objects...))
+  v = apply_to_field_array(UnimplementedField,bcast(op),arrays...)
+  similar_object(b,v)
+end
+
+function operate(op,a::CellBasis,b::CellBasis,objects...)
+  arrays = map(get_array,(a,b,objects...))
+  v = apply_to_field_array(UnimplementedField,bcast(op),arrays...)
+  r = similar_object(a,b,v)
+  function fun(x)
+    if isa(x,CellBasis) && is_trial(x)
+      return true
+    else
+      return false
+    end
+  end
+  @notimplementedif isa(r,CellMatrixField) && any( map(fun,objects) )
+  r
+end
+
 # Concrete CellBases
 
 """
