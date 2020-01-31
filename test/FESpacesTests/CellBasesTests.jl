@@ -43,7 +43,32 @@ f(x) = sin(4*pi*(x[1]-x[2]^2))+1
 uh = interpolate_everywhere(V0,f)
 uhx = collect(evaluate(uh,q))
 
+v = GenericCellBasis(Val{false}(),get_array(cell_basis),get_cell_map(cell_basis))
 u = GenericCellBasis(Val{true}(),get_array(cell_basis),get_cell_map(cell_basis))
+
+dv = v
+du = u
+
+a = rand(length(v))
+
+r = operate(+,uh,2*uh,a)
+@test isa(r,CellField)
+rq = collect(evaluate(r,q))
+
+r = operate(+,du,uh,a)
+@test isa(r,CellBasis)
+@test is_trial(r)
+rq = collect(evaluate(r,q))
+
+r = operate(+,uh,du,a)
+@test isa(r,CellBasis)
+@test is_trial(r)
+rq = collect(evaluate(r,q))
+
+r = operate(+,du,du,uh,a)
+@test isa(r,CellBasis)
+@test is_trial(r)
+rq = collect(evaluate(r,q))
 
 r = u*2
 test_cell_basis(r,q,2*cbx)
@@ -58,8 +83,6 @@ r = u + uh
 rr = [ ai .+ bi for (ai,bi) in  zip(cbx,uhx)]
 test_cell_basis(r,q,rr)
 @test is_trial(r)
-
-v = GenericCellBasis(Val{false}(),get_array(cell_basis),get_cell_map(cell_basis))
 
 r = v*2
 test_cell_basis(r,q,2*cbx)
