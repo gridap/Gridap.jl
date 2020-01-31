@@ -390,17 +390,17 @@ function writevtk(trian::Triangulation, filebase; order=-1, nsubcells=-1, cellda
   visgrid = VisualizationGrid(trian,ref_grids)
 
   cdata = _prepare_cdata(celldata,visgrid.sub_cell_to_cell)
-  pdata = _prepare_pdata(cellfields,visgrid.cell_to_refpoints)
+  pdata = _prepare_pdata(trian,cellfields,visgrid.cell_to_refpoints)
 
   write_vtk_file(visgrid,filebase,celldata=cdata,nodaldata=pdata)
 
 end
 
-function _prepare_pdata(cellfields,samplingpoints)
+function _prepare_pdata(trian,cellfields,samplingpoints)
   pdata = Dict()
   for (k,v) in cellfields
-    _v = get_array(v)
-    pdata[k], = _prepare_node_to_coords(evaluate_field_array(_v,samplingpoints))
+    _v = convert_to_cell_field(v,get_cell_map(trian))
+    pdata[k], = _prepare_node_to_coords(evaluate_field_array(get_array(_v),samplingpoints))
   end
   pdata
 end
