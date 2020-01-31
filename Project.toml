@@ -22,6 +22,22 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 
+[compat]
+BSON = "0.2.5"
+Combinatorics = "1.0.0"
+DocStringExtensions = "0.8.1"
+FastGaussQuadrature = "0.4.2"
+FileIO = "1.2.1"
+FillArrays = "0.8.4"
+JLD2 = "0.1.11"
+JSON = "0.21.0"
+LineSearches = "7.0.1"
+NLsolve = "4.3.0"
+QuadGK = "2.3.1"
+Reexport = "0.2.0"
+StaticArrays = "0.12.1"
+WriteVTK = "1.4.0"
+
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
