@@ -64,8 +64,8 @@ end
 
 for op in (:+,:-,:*)
   @eval begin
-    ($op)(a::MultiValue,b::Number) = MultiValue($op(a.array,b))
-    ($op)(a::Number,b::MultiValue) = MultiValue($op(a,b.array))
+    ($op)(a::MultiValue,b::Number) = MultiValue($op.(a.array,b))
+    ($op)(a::Number,b::MultiValue) = MultiValue($op.(a,b.array))
   end
 end
 
