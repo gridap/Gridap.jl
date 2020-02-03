@@ -31,6 +31,7 @@ export get_exponents
 export get_order
 export get_orders
 export get_value_type
+export num_terms
 
 include("MonomialBases.jl")
 

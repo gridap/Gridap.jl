@@ -4,7 +4,7 @@
 
 This type implements a multivariate vector-valued polynomial basis
 spanning the space needed for Raviart-Thomas reference elements on n-cubes.
-The type parameters and fields of this `struct` are not public.  
+The type parameters and fields of this `struct` are not public.
 This type fully implements the [`Field`](@ref) interface, with up to first order
 derivatives.
 """
@@ -46,3 +46,7 @@ end
 @inline function evaluate_gradient!(cache,f::QCurlGradMonomialBasis,x)
   evaluate_gradient!(cache,f.qgrad,x)
 end
+
+get_value_type(::QCurlGradMonomialBasis{D,T}) where {D,T} = T
+
+num_terms(f::QCurlGradMonomialBasis{D,T}) where {D,T} = length(f.qgrad.terms)*D
