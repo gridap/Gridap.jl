@@ -23,7 +23,11 @@ function FESpace(;kwargs...)
     return fespace
 
   elseif constraint == :zeromean
-    @notimplemented ":zeromean option not yet implemented"
+    model = _get_kwarg(:model,kwargs)
+    order = _get_kwarg(:order,kwargs)
+    trian = get_triangulation(model)
+    quad = CellQuadrature(trian,order)
+    return ZeroMeanFESpace(fespace,trian,quad)
 
   else
     @unreachable "Unknown constraint value $constraint"
@@ -79,13 +83,28 @@ function _setup_lagrange_spaces(kwargs)
       end
 
     else
-      s = "Conformity $conformity not implemented for $reffe reference FE on polytopes $(polytopes)"
+      s = "Conformity $conformity not implemented for $reffe reference FE on polytopes $(polytopes...)"
       @unreachable s
 
     end
 
+  elseif reffe == :PLagrangian
+
+      if conformity in [false, :L2]
+
+        _reffes = [PDiscRefFE(T,p,order) for p in polytopes]
+        return  DiscontinuousFESpace(_reffes,trian)
+
+      else
+
+        @unreachable "Conformity $conformity not possible for $reffe reference FE on $(polytopes...)"
+
+      end
+
   else
-    @notimplemented "PDisc spaces not yet implemented"
+
+    @notimplemented "Reference element $reffe not implemented on $(polytopes...)"
+
   end
 
 end

@@ -152,6 +152,41 @@ function _operate_cell_basis_test_trial(op,cf1,cf2)
   similar_object(cf1,cf2,b)
 end
 
+# Operations with extra arguments
+
+function operate(op,a::CellField,b,objects...)
+  arrays = map(get_array,(a,b,objects...))
+  v = apply_to_field_array(UnimplementedField,bcast(op),arrays...)
+  similar_object(a,v)
+end
+
+function operate(op,a::CellBasis,b::CellField,objects...)
+  arrays = map(get_array,(a,b,objects...))
+  v = apply_to_field_array(UnimplementedField,bcast(op),arrays...)
+  similar_object(a,v)
+end
+
+function operate(op,a::CellField,b::CellBasis,objects...)
+  arrays = map(get_array,(a,b,objects...))
+  v = apply_to_field_array(UnimplementedField,bcast(op),arrays...)
+  similar_object(b,v)
+end
+
+function operate(op,a::CellBasis,b::CellBasis,objects...)
+  arrays = map(get_array,(a,b,objects...))
+  v = apply_to_field_array(UnimplementedField,bcast(op),arrays...)
+  r = similar_object(a,b,v)
+  function fun(x)
+    if isa(x,CellBasis) && is_trial(x)
+      return true
+    else
+      return false
+    end
+  end
+  @notimplementedif isa(r,CellMatrixField) && any( map(fun,objects) )
+  r
+end
+
 # Concrete CellBases
 
 """
@@ -292,6 +327,8 @@ function integrate(cell_basis::CellBasis,trian::Triangulation,quad::CellQuadratu
   q = get_coordinates(quad)
   w = get_weights(quad)
   j = gradient(cell_map)
+  @assert length(cell_basis) == length(cell_map) "Are you using the right triangulation to integrate?"
+  @assert length(cell_basis) == length(w) "Are you using the right quadrature to integrate?"
   integrate(get_array(cell_basis),q,w,j)
 end
 
@@ -300,6 +337,8 @@ function integrate(cell_basis::CellMatrixField,trian::Triangulation,quad::CellQu
   q = get_coordinates(quad)
   w = get_weights(quad)
   j = gradient(cell_map)
+  @assert length(cell_basis) == length(cell_map) "Are you using the right triangulation to integrate?"
+  @assert length(cell_basis) == length(w) "Are you using the right quadrature to integrate?"
   integrate(get_array(cell_basis),q,w,j)
 end
 
@@ -371,8 +410,8 @@ end
 
 struct ReducedSkeletonCellBasis{T} <: GridapType
   trial_style::Val{T}
-  left::CellBasis
-  right::CellBasis
+  left
+  right
 end
 
 TrialStyle(::Type{<:ReducedSkeletonCellBasis{T}}) where T = Val{T}()
@@ -442,10 +481,10 @@ function _operate_skeleton_test_trial(op,a,b)
 end
 
 struct SkeletonCellMatrixField <: GridapType
-  ll::CellMatrixField
-  lr::CellMatrixField
-  rl::CellMatrixField
-  rr::CellMatrixField
+  ll
+  lr
+  rl
+  rr
 end
 
 get_cell_map(a::SkeletonCellMatrixField) = get_cell_map(a.ll)

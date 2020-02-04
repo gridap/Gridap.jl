@@ -244,6 +244,10 @@ end
 
 num_dims(::Type{<:Polytope{D}}) where D = D
 
+num_cell_dims(::Type{<:Polytope{D}}) where D = D
+
+num_point_dims(::Type{<:Polytope{D}}) where D = D
+
 """
     num_dims(::Type{<:Polytope{D}}) where D
     num_dims(p::Polytope{D}) where D
@@ -251,6 +255,10 @@ num_dims(::Type{<:Polytope{D}}) where D = D
 Returns `D`. 
 """
 num_dims(p::Polytope) = num_dims(typeof(p))
+
+num_cell_dims(p::Polytope) = num_dims(p)
+
+num_point_dims(p::Polytope) = num_dims(p)
 
 """
     num_faces(p::Polytope)
@@ -619,11 +627,18 @@ function get_bounding_box(p::Polytope{D}) where D
 end
 
 """
+    get_face_vertex_permutations(p::Polytope)
     get_face_vertex_permutations(p::Polytope,d::Integer)
 """
 function get_face_vertex_permutations(p::Polytope,d::Integer)
   reffaces = [ Polytope{d}(p, iface) for iface in 1:num_faces(p,d)]
   map(get_vertex_permutations,reffaces)
+end
+
+function get_face_vertex_permutations(p::Polytope)
+  D = num_cell_dims(p)
+  p = [ get_face_vertex_permutations(p,d) for d in 0:D ]
+  vcat(p...)
 end
 
 # Testers

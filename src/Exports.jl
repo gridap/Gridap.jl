@@ -119,5 +119,7 @@ end
 
 using Gridap.FESpaces: @law; export @law
 
+@publish MultiField MultiFieldFESpace
+
 @publish Visualization writevtk
 

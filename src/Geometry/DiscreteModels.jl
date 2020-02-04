@@ -403,3 +403,24 @@ function from_dict(::Type{DiscreteModel},dict::Dict{Symbol,Any})
   from_dict(UnstructuredDiscreteModel,dict)
 end
 
+# GenericDiscreteModel
+
+struct GenericDiscreteModel{Dc,Dp} <: DiscreteModel{Dc,Dp}
+  grid::Grid
+  grid_topology::GridTopology
+  labels::FaceLabeling
+  function GenericDiscreteModel(grid::Grid{Dc,Dp},grid_topology::GridTopology,labels::FaceLabeling) where {Dc,Dp}
+    new{Dc,Dp}(grid,grid_topology,labels)
+  end
+end
+
+function DiscreteModel(grid::Grid,grid_topology::GridTopology,labels::FaceLabeling)
+  GenericDiscreteModel(grid,grid_topology,labels)
+end
+
+get_grid(model::GenericDiscreteModel) = model.grid
+
+get_grid_topology(model::GenericDiscreteModel) = model.grid_topology
+
+get_face_labeling(model::GenericDiscreteModel) = model.labels
+
