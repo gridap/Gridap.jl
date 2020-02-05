@@ -81,6 +81,7 @@ end
 @publish Geometry get_physical_coordinate
 @publish Geometry CartesianGrid
 @publish Geometry CartesianDiscreteModel
+@publish Geometry DiscreteModelFromFile
 @publish Geometry num_tags
 @publish Geometry num_entities
 @publish Geometry get_grid
