@@ -403,6 +403,23 @@ function from_dict(::Type{DiscreteModel},dict::Dict{Symbol,Any})
   from_dict(UnstructuredDiscreteModel,dict)
 end
 
+"""
+"""
+function DiscreteModelFromFile(filename::AbstractString)
+  base, extension = splitext(filename)
+  s = Symbol(extension[2:end])
+  DiscreteModelFromFile(filename,Val(s))
+end
+
+function DiscreteModelFromFile(filename::AbstractString,::Any)
+  @notimplemented
+end
+
+function DiscreteModelFromFile(filename::AbstractString,::Val{:json})
+  model = from_json_file(DiscreteModel,filename)
+  model
+end
+
 # GenericDiscreteModel
 
 struct GenericDiscreteModel{Dc,Dp} <: DiscreteModel{Dc,Dp}

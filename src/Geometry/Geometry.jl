@@ -15,6 +15,7 @@ using Gridap.Fields
 using Gridap.Polynomials
 using Gridap.ReferenceFEs
 using Gridap.TensorValues
+using Gridap.Io
 
 using Gridap.ReferenceFEs: _num_faces
 using Gridap.ReferenceFEs: _num_facets
@@ -146,6 +147,7 @@ export get_face_tag
 export get_face_tag_index
 
 export DiscreteModel
+export DiscreteModelFromFile
 export get_grid
 export get_grid_topology
 export get_face_labeling
