@@ -261,9 +261,11 @@ end
     get_face_tag(labeling::FaceLabeling,tags::Vector{String},d::Integer)
     get_face_tag(labeling::FaceLabeling,tag::Int,d::Integer)
     get_face_tag(labeling::FaceLabeling,tag::String,d::Integer)
+    get_face_tag(labeling::FaceLabeling,d::Integer)
 
 The first of the given tags appearing in the face is taken.
 If there is no tag on a face, this face will have a value equal to `UNSET`.
+If not tag or tags are provided, all the tags in the model are considered
 """
 function get_face_tag(labeling::FaceLabeling,tags,d::Integer)
   _tags = _prepare_tags(labeling,tags)
@@ -281,6 +283,11 @@ function get_face_tag(labeling::FaceLabeling,tags,d::Integer)
     end
   end
   face_to_tag
+end
+
+function get_face_tag(labeling::FaceLabeling,d::Integer)
+  tags = collect(1:num_tags(labeling))
+  get_face_tag(labeling,tags,d)
 end
 
 """

@@ -373,9 +373,14 @@ end
 
 """
     Triangulation(::Type{ReferenceFE{d}},model::DiscreteModel) where d
+    Triangulation(model::DiscreteModel)
 """
 function Triangulation(::Type{ReferenceFE{d}},model::DiscreteModel) where d
   Grid(ReferenceFE{d},model)
+end
+
+function Triangulation(model::DiscreteModel)
+  get_triangulation(model)
 end
 
 """
