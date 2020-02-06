@@ -596,12 +596,11 @@ const TET = Polytope(TET_AXIS,TET_AXIS,TET_AXIS)
 const HEX = Polytope(HEX_AXIS,HEX_AXIS,HEX_AXIS)
 
 """
-    const WEDGE = Polytope(TET_AXIS,TET_AXIS,HEX_AXIS) 
+    const WEDGE = Polytope(TET_AXIS,TET_AXIS,HEX_AXIS)
 """
-const WEDGE = Polytope(TET_AXIS,TET_AXIS,HEX_AXIS) 
+const WEDGE = Polytope(TET_AXIS,TET_AXIS,HEX_AXIS)
 
 """
-    const PYRAMID = Polytope(HEX_AXIS,HEX_AXIS,TET_AXIS) 
+    const PYRAMID = Polytope(HEX_AXIS,HEX_AXIS,TET_AXIS)
 """
-const PYRAMID = Polytope(HEX_AXIS,HEX_AXIS,TET_AXIS) 
-
+const PYRAMID = Polytope(HEX_AXIS,HEX_AXIS,TET_AXIS)
