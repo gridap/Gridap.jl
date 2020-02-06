@@ -36,4 +36,6 @@ using Test
 
 @testset "SkeletonTriangulations" begin include("SkeletonTriangulationsTests.jl") end
 
+@testset "CellQuadratures" begin include("CellQuadraturesTests.jl") end
+
 end # module

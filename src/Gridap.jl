@@ -13,9 +13,9 @@ The module is structured in the following sub-modules:
 - [`Gridap.Arrays`](@ref)
 - [`Gridap.Fields`](@ref)
 - [`Gridap.Polynomials`](@ref)
+- [`Gridap.Integration`](@ref)
 - [`Gridap.ReferenceFEs`](@ref)
 - [`Gridap.Geometry`](@ref)
-- [`Gridap.Integration`](@ref)
 - [`Gridap.Algebra`](@ref)
 - [`Gridap.FESpaces`](@ref)
 - [`Gridap.MultiField`](@ref)
@@ -44,11 +44,11 @@ include("Fields/Fields.jl")
 
 include("Polynomials/Polynomials.jl")
 
+include("Integration/Integration.jl")
+
 include("ReferenceFEs/ReferenceFEs.jl")
 
 include("Geometry/Geometry.jl")
-
-include("Integration/Integration.jl")
 
 include("FESpaces/FESpaces.jl")
 
