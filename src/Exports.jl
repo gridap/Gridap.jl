@@ -45,6 +45,9 @@ end
 @publish Fields ε
 @publish Fields symmetric_gradient
 
+@publish Integration get_coordinates
+@publish Integration get_weights
+
 @publish ReferenceFEs is_simplex
 @publish ReferenceFEs is_n_cube
 @publish ReferenceFEs simplexify
@@ -92,10 +95,7 @@ end
 @publish Geometry jump
 @publish Geometry mean
 @publish Geometry SkeletonTriangulation
-
-@publish Integration CellQuadrature
-@publish Integration get_coordinates
-@publish Integration get_weights
+@publish Geometry CellQuadrature
 
 @publish FESpaces FESpace
 @publish FESpaces TrialFESpace

@@ -15,6 +15,7 @@ using Gridap.TensorValues
 using Gridap.Arrays
 using Gridap.Fields
 using Gridap.Polynomials
+using Gridap.Integration
 
 import Gridap.Arrays: kernel_cache
 import Gridap.Arrays: apply_kernel!
@@ -24,6 +25,10 @@ import Gridap.Polynomials: MonomialBasis
 
 import Gridap.Polynomials: get_order
 import Gridap.Polynomials: get_orders
+
+import Gridap.Integration: Quadrature
+import Gridap.Integration: num_dims
+import Gridap.Integration: num_point_dims
 
 import Gridap.Io: to_dict
 import Gridap.Io: from_dict

@@ -242,12 +242,6 @@ function compute_shapefuns(dofs,prebasis)
   change_basis(prebasis,change)
 end
 
-# IO
-
-function Base.show(io::IO,p::ReferenceFE)
-  print(io,nameof(typeof(p)))
-end
-
 # Concrete implementation
 
 """

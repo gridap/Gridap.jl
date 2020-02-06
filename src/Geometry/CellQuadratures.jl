@@ -1,20 +1,3 @@
-
-"""
-    Quadrature(polytope::Polytope{D},degree) where D
-"""
-function Quadrature(p::Polytope{D},degree) where D
-  if is_n_cube(p)
-    q = TensorProductQuadrature{D}(degree)
-    quad = GenericQuadrature(q.coordinates,q.weights)
-  elseif is_simplex(p)
-    q = DuffyQuadrature{D}(degree)
-    quad = GenericQuadrature(q.coordinates,q.weights)
-  else
-    @notimplemented "Quadratures only implemented for n-cubes and simplices"
-  end
-  quad
-end
-
 """
 """
 struct CellQuadrature <: GridapType
