@@ -312,5 +312,19 @@ function getvalues(a::Fill)
   (ai,)
 end
 
+function Base.sum(a::AppliedArray)
+  cache = array_cache(a)
+  _sum_array_cache(cache,a)
+end
+
+function _sum_array_cache(cache,a)
+  r = zero(eltype(a))
+  for i in eachindex(a)
+    ai = getindex!(cache,a,i)
+    r += ai
+  end
+  r
+end
+
 # TODO Think about iteration and sub-iteration
 
