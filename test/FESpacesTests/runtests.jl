@@ -40,6 +40,8 @@ using Test
 
 @testset "ZeroMeanFESpaces" begin include("ZeroMeanFESpacesTests.jl") end
 
+@testset "CLagrangianFESpaces" begin include("CLagrangianFESpacesTests.jl") end
+
 @testset "FESpaceFactories" begin include("FESpaceFactoriesTests.jl") end
 
 end # module

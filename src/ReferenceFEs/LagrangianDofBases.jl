@@ -32,11 +32,11 @@ Creates a `LagrangianDofBasis` for fields of value type `T` associated
 with the vector of nodal coordinates `nodes`.
 """
 function LagrangianDofBasis(::Type{T},nodes::Vector{<:Point}) where T
-  r = _generate_dof_layout(T,length(nodes))
+  r = _generate_dof_layout_node_major(T,length(nodes))
   LagrangianDofBasis(nodes,r...)
 end
 
-function _generate_dof_layout(::Type{<:Real},nnodes::Integer)
+function _generate_dof_layout_node_major(::Type{<:Real},nnodes::Integer)
   ndofs = nnodes
   dof_to_comp = ones(Int,ndofs)
   dof_to_node = collect(1:nnodes)
@@ -45,7 +45,7 @@ function _generate_dof_layout(::Type{<:Real},nnodes::Integer)
 end
 
 # Node major implementation
-function _generate_dof_layout(::Type{T},nnodes::Integer) where T<:MultiValue
+function _generate_dof_layout_node_major(::Type{T},nnodes::Integer) where T<:MultiValue
   ncomps = n_components(T)
   V = change_eltype(T,Int)
   ndofs = ncomps*nnodes
