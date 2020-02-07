@@ -8,7 +8,7 @@ end
 """
 """
 function SparseMatrixAssembler(test::SingleFieldFESpace,trial::SingleFieldFESpace)
-  SparseMatrixAssembler(SparseMatrixCSC,test,trial)
+  SparseMatrixAssembler(SparseMatrixCSC{Float64,Int},test,trial)
 end
 
 get_test(a::SparseMatrixAssembler) = a.test
@@ -54,6 +54,7 @@ function allocate_matrix(a::SparseMatrixAssembler,term_to_cellidsrows, term_to_c
     cell_cols = reindex(celldofs_cols,cellidscols)
     rows_cache = array_cache(cell_rows)
     cols_cache = array_cache(cell_cols)
+    @assert length(cell_cols) == length(cell_rows)
     _allocate_matrix!(a.matrix_type,I,J,V,rows_cache,cols_cache,cell_rows,cell_cols)
   end
   num_rows = num_free_dofs(a.test)
@@ -62,8 +63,7 @@ function allocate_matrix(a::SparseMatrixAssembler,term_to_cellidsrows, term_to_c
   sparse_from_coo(a.matrix_type,I,J,V,num_rows,num_cols)
 end
 
-function _allocate_matrix!(M,I,J,V,rows_cache,cols_cache,cell_rows,cell_cols)
-  @assert length(cell_cols) == length(cell_rows)
+@noinline function _allocate_matrix!(a::Type{M},I,J,V,rows_cache,cols_cache,cell_rows,cell_cols) where M
   z = zero(eltype(V))
   for cell in 1:length(cell_cols)
     rows = getindex!(rows_cache,cell_rows,cell)

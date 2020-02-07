@@ -26,7 +26,7 @@ end
 function SparseMatrixAssembler(
   test::MultiFieldFESpace,
   trial::MultiFieldFESpace)
-  matrix_type = SparseMatrixCSC
+  matrix_type = SparseMatrixCSC{Float64,Int}
   MultiFieldSparseMatrixAssembler(matrix_type,test,trial)
 end
 
@@ -40,7 +40,7 @@ end
 function SparseMatrixAssembler(
   test::Vector{<:SingleFieldFESpace},
   trial::Vector{<:SingleFieldFESpace})
-  matrix_type = SparseMatrixCSC
+  matrix_type = SparseMatrixCSC{Float64,Int}
   SparseMatrixAssembler(matrix_type,test,trial)
 end
 
@@ -103,7 +103,7 @@ function allocate_matrix(a::MultiFieldSparseMatrixAssembler,term_to_cellidsrows,
   sparse_from_coo(a.matrix_type,I,J,V,num_rows,num_cols)
 end
 
-function _allocate_matrix!(M,I,J,V,rows_cache,cols_cache,cell_rows,cell_cols)
+function _allocate_matrix!(::Type{M},I,J,V,rows_cache,cols_cache,cell_rows,cell_cols) where M
   @assert length(cell_cols) == length(cell_rows)
   z = zero(eltype(V))
   for cell in 1:length(cell_cols)
@@ -196,7 +196,7 @@ function assemble_matrix(
   sparse_from_coo(a.matrix_type,I,J,V,num_rows,num_cols)
 end
 
-function _assemble_matrix_ijv!(M,I,J,V,vals_cache,rows_cache,cols_cache,cell_vals,cell_rows,cell_cols)
+function _assemble_matrix_ijv!(::Type{M},I,J,V,vals_cache,rows_cache,cols_cache,cell_vals,cell_rows,cell_cols) where M
   @assert length(cell_cols) == length(cell_rows)
   @assert length(cell_vals) == length(cell_rows)
   for cell in 1:length(cell_cols)
