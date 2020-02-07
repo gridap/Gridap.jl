@@ -27,6 +27,7 @@ struct ExtrusionPolytope{D} <: Polytope{D}
   nfacesdim::Vector{UnitRange{Int}}
   nf_nfs::Vector{Vector{Int}}
   nf_dim::Vector{Vector{UnitRange{Int}}}
+  vertex_perms::Vector{Vector{Int}}
 end
 
 # Constructors
@@ -149,13 +150,22 @@ function get_facet_orientations(p::ExtrusionPolytope)
 end
 
 function get_vertex_permutations(p::ExtrusionPolytope)
+  if length(p.vertex_perms) != 0
+    return p.vertex_perms
+  end
   perms = _admissible_permutations(p)
   if p == HEX
     #TODO temporary fix
     identity_perm = [1,2,3,4,5,6,7,8]
-    return vcat([identity_perm,],perms)
+    _perms = vcat([identity_perm,],perms)
+  else
+    _perms = perms
   end
-  perms
+  _perms
+  for perm in _perms
+    push!(p.vertex_perms,perm)
+  end
+  return p.vertex_perms
 end
 
 function is_simplex(p::ExtrusionPolytope)
@@ -243,7 +253,8 @@ function ExtrusionPolytope(extrusion::Point{D,Int}) where D
   nf_nfs_dim = _polytopemesh(pol_nfs, nfs_id)
   nf_nfs = nf_nfs_dim[1]
   nf_dim = nf_nfs_dim[2]
-  ExtrusionPolytope{D}(extrusion, pol_nfs, pol_dim, nf_nfs, nf_dim)
+  vertex_perms = Vector{Int}[]
+  ExtrusionPolytope{D}(extrusion, pol_nfs, pol_dim, nf_nfs, nf_dim,vertex_perms)
 end
 
 function ExtrusionPolytope(extrusion::Point{0,Int})
@@ -375,7 +386,8 @@ function _vertex()
   nfanc = Point{0,Int}()
   nf = NFace{0}(nfanc,nfanc)
   nfs = [nf]
-  return ExtrusionPolytope{0}(ext, nfs, [1:1], nfnfs, nfdim)
+  vertex_perms = [[1,],]
+  return ExtrusionPolytope{0}(ext, nfs, [1:1], nfnfs, nfdim, vertex_perms)
 end
 
 function _dimfrom_fs_dimto_fs(p::ExtrusionPolytope, dim_from::Int, dim_to::Int)
@@ -508,6 +520,9 @@ end
 # It generates all the admissible permutations of nodes that lead to an
 # admissible polytope
 function _admissible_permutations(p::ExtrusionPolytope)
+  if num_dims(p) > 3
+    @warn "Computing permutations for a polytope of dim > 3 is overkill"
+  end
   p_dims = length(p.extrusion)
   p_vs = _dimfrom_fs_dimto_fs(p, p_dims, 0)
   vs = p.nfaces[p_vs...]
