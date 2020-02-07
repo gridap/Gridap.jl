@@ -16,10 +16,18 @@ function sparse_from_coo(M::Type{<:SymSparseMatrixCSR}, args...)
 end
 
 # SparseMatrix interface implementation
-function push_coo!(::Type{<:SymSparseMatrixCSR},
+@inline function push_coo!(::Type{<:SymSparseMatrixCSR},
         I::Vector,J::Vector,V::Vector,ik::Integer,jk::Integer,vk::Number)
-    (ik>jk) && return
-    (push!(I, ik), push!(J, jk), push!(V, vk))
+    (ik>jk) && return nothing
+
+    push!(I, ik)
+    push!(J, jk)
+    push!(V, vk)
+    nothing
+end
+
+@inline function is_entry_stored(::Type{<:SymSparseMatrixCSR},i::Integer,j::Integer)
+  (i<=j)
 end
 
 function finalize_coo!(T::Type{<:SymSparseMatrixCSR},

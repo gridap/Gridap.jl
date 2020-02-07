@@ -50,6 +50,15 @@ function push_coo!(::Type{T} where T,I::Vector,J::Vector,V::Vector,ik::Integer,j
   @abstractmethod
 end
 
+"""
+    is_entry_stored(::Type{T} where T,i::Integer,j::Integer) -> Bool
+
+Tells if the entry with coordinates `[i,j]` will be stored when calling function push_coo!
+"""
+function is_entry_stored(::Type{T} where T,i::Integer,j::Integer)
+  @abstractmethod
+end
+
 
 """
     finalize_coo!(::Type{T} where T,I,J,V,m,n) 
@@ -68,6 +77,16 @@ end
 
 function create_coo_vectors(::Type{M}) where {Tv,Ti,M<:AbstractSparseMatrix{Tv,Ti}}
   return (Ti[], Ti[], Tv[])
+end
+
+"""
+"""
+function allocate_coo_vectors(::Type{M},n::Integer) where M
+  return (zeros(Int,n), zeros(Int,n), zeros(Float64,n))
+end
+
+function allocate_coo_vectors(::Type{M},n::Integer) where {Tv,Ti,M<:AbstractSparseMatrix{Tv,Ti}}
+  return (zeros(Ti,n), zeros(Ti,n), zeros(Tv,n))
 end
 
 """

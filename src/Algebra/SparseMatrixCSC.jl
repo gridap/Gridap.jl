@@ -5,11 +5,19 @@ end
 
 @inline function push_coo!(
    ::Type{<:SparseMatrixCSC},I::Vector,J::Vector,V::Vector,ik::Integer,jk::Integer,vk::Number)
-   (push!(I, ik), push!(J, jk), push!(V, vk))
+
+   push!(I, ik)
+   push!(J, jk)
+   push!(V, vk)
+   nothing
+end
+
+@inline function is_entry_stored(::Type{<:SparseMatrixCSC},i::Integer,j::Integer)
+  true
 end
 
 function push_coo!(I::Vector,J::Vector,V::Vector,ik::Integer,jk::Integer,vk::Number)
-    push_coo!(SparseMatrixCSC,I,J,V,ik,jk,vk)
+  push_coo!(SparseMatrixCSC{Float64,Int},I,J,V,ik,jk,vk)
 end
 
 function finalize_coo!(

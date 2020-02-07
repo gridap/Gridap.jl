@@ -26,6 +26,19 @@ module SparseMatrixCSRTests
                 CSC = sparse(I, J, V, maxrows,maxcols)
                 CSR = sparsecsr(SparseMatrixCSR{Bi,Tv,Ti},I, J, V,maxrows,maxcols)
 
+                @test is_entry_stored(SparseMatrixCSR{Bi,Tv,Ti},1,1)
+                @test is_entry_stored(SparseMatrixCSR{Bi,Tv,Ti},1,2)
+                @test is_entry_stored(SparseMatrixCSR{Bi,Tv,Ti},2,1)
+
+                _l = 10
+                _I, _J, _V = allocate_coo_vectors(SymSparseMatrixCSR{Bi,Tv,Ti},_l)
+                @test length(_I) == _l
+                @test length(_J) == _l
+                @test length(_V) == _l
+                @test eltype(_I) == Ti
+                @test eltype(_J) == Ti
+                @test eltype(_V) == Tv
+
                 V2 = copy(V)
                 V2 .= 0
                 CSR2 = sparsecsr(SparseMatrixCSR{Bi,Tv,Ti},I, J, V2,maxrows,maxcols)

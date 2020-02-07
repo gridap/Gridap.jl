@@ -160,6 +160,12 @@ function get_reffes(g::CartesianGrid{D}) where D
   [reffe,]
 end
 
+get_reffes(g::CartesianGrid{1}) = [SEG2,]
+
+get_reffes(g::CartesianGrid{2}) = [QUAD4,]
+
+get_reffes(g::CartesianGrid{3}) = [HEX8,]
+
 """
     CartesianGrid(domain,partition,map::Function=identity)
 """

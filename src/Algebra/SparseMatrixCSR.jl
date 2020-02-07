@@ -169,7 +169,15 @@ end
 
 function push_coo!(::Type{<:SparseMatrixCSR},
     I::Vector,J::Vector,V::Vector,ik::Integer,jk::Integer,vk::Number) where {Bi}
-    (push!(I, ik), push!(J, jk), push!(V, vk))
+
+    push!(I, ik)
+    push!(J, jk)
+    push!(V, vk)
+    nothing
+end
+
+@inline function is_entry_stored(::Type{<:SparseMatrixCSR},i::Integer,j::Integer)
+  true
 end
 
 function finalize_coo!(::Type{<:SparseMatrixCSR},
