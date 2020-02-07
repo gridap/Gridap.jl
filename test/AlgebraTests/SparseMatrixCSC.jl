@@ -20,6 +20,19 @@ module SparseMatrixCSCTests
         finalize_coo!(I,J,V,maxcols,maxrows)
         CSC = sparse(I, J, V, maxcols,maxrows)
 
+        @test is_entry_stored(SparseMatrixCSC,1,1)
+        @test is_entry_stored(SparseMatrixCSC,1,2)
+        @test is_entry_stored(SparseMatrixCSC,2,1)
+
+        _l = 10
+        _I, _J, _V = allocate_coo_vectors(SparseMatrixCSC{T,Int},_l)
+        @test length(_I) == _l
+        @test length(_J) == _l
+        @test length(_V) == _l
+        @test eltype(_I) == Int
+        @test eltype(_J) == Int
+        @test eltype(_V) == T
+
         V2 = copy(V)
         V2 .= 0
         CSC2 = sparse(I, J, V2, maxcols,maxrows)
