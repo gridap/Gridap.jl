@@ -2,7 +2,9 @@ module ReferenceFEsTests
 
 using Test
 
-@testset "ExtrusionPolytopes" begin include("ExtrusionPolytopesTestsNew.jl") end
+@testset "Polytopes" begin include("PolytopesTests.jl") end
+
+@testset "ExtrusionPolytopes" begin include("ExtrusionPolytopesTests.jl") end
 
 #@testset "Dofs" begin include("DofsTests.jl") end
 #
@@ -10,7 +12,6 @@ using Test
 #
 #@testset "LagrangianDofBases" begin include("LagrangianDofBasesTests.jl") end
 #
-#@testset "Polytopes" begin include("PolytopesTests.jl") end
 #
 #@testset "ReferenceFEInterfaces" begin include("ReferenceFEInterfacesTests.jl") end
 #

@@ -140,10 +140,8 @@ export PDiscRefFE
 
 include("Polytopes.jl")
 
-include("ExtrusionPolytopesNew.jl")
+include("ExtrusionPolytopes.jl")
 
-#include("ExtrusionPolytopes.jl")
-#
 #include("Dofs.jl")
 #
 #include("MockDofs.jl")
