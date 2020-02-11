@@ -542,7 +542,7 @@ reffaces = get_reffaces(Polytope{2},WEDGE)
 println(reffaces)
 
 # output
-Gridap.ReferenceFEs.ExtrusionPolytope{2}[QUAD, TRI]
+Gridap.ReferenceFEs.ExtrusionPolytope{2}[TRI, QUAD]
 
 ```
 
@@ -574,8 +574,8 @@ println(reffaces)
 println(face_types)
 
 # output
-Gridap.ReferenceFEs.ExtrusionPolytope{2}[QUAD, TRI]
-[1, 1, 1, 2, 2]
+Gridap.ReferenceFEs.ExtrusionPolytope{2}[TRI, QUAD]
+[1, 1, 2, 2, 2]
 
 ```
 

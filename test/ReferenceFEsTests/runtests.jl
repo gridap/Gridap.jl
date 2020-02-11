@@ -18,8 +18,8 @@ using Test
 
 @testset "LagrangianRefFEs" begin include("LagrangianRefFEsTests.jl") end
 
-#@testset "SerendipityRefFEs" begin include("SerendipityRefFEsTests.jl") end
-#
-#@testset "PDiscRefFEs" begin include("PDiscRefFEsTests.jl") end
+@testset "SerendipityRefFEs" begin include("SerendipityRefFEsTests.jl") end
+
+@testset "PDiscRefFEs" begin include("PDiscRefFEsTests.jl") end
 
 end # module

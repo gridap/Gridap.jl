@@ -5,11 +5,8 @@ using Gridap.Io
 using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
-#using Gridap.ReferenceFEs
+using Gridap.ReferenceFEs
 using JSON
-
-include("../../src/ReferenceFEs/ReferenceFEs.jl")
-using .ReferenceFEs
 
 orders = (2,3)
 b = MonomialBasis(Float64,QUAD,orders)

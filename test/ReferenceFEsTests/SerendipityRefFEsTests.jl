@@ -3,6 +3,7 @@ module SerendipityRefFEsTests
 using Test
 using Gridap.Fields
 using Gridap.ReferenceFEs
+using Gridap.Polynomials
 using Gridap.Io
 
 reffe = SerendipityRefFE(Float64,QUAD,2)

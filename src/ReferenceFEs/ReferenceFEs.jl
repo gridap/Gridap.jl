@@ -153,9 +153,9 @@ include("ReferenceFEInterfaces.jl")
 include("NodalReferenceFEs.jl")
 
 include("LagrangianRefFEs.jl")
-#
-#include("SerendipityRefFEs.jl")
-#
-#include("PDiscRefFEs.jl")
+
+include("SerendipityRefFEs.jl")
+
+include("PDiscRefFEs.jl")
 
 end # module
