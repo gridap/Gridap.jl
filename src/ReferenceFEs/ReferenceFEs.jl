@@ -47,6 +47,7 @@ export get_facet_orientations
 export get_edge_tangents
 export get_vertex_permutations
 export get_face_dimranges
+export get_face_coordinates
 export is_simplex
 export is_n_cube
 export simplexify

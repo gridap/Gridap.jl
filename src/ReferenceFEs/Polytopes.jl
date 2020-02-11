@@ -663,6 +663,14 @@ function get_face_vertex_permutations(p::Polytope)
   vcat(p...)
 end
 
+"""
+"""
+function get_face_coordinates(p::Polytope,d::Integer)
+  vert_to_coord = get_vertex_coordinates(p)
+  face_to_vertices = get_faces(p,d,0)
+  collect(LocalToGlobalArray(face_to_vertices,vert_to_coord))
+end
+
 # Testers
 
 """

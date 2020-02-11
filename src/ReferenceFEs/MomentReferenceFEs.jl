@@ -1,12 +1,10 @@
-dim(p) = num_dims(p)
-
-nfaces_dim(p,d) = collect(get_dimranges(p)[d+1])
 
 function _initialize_arrays(prebasis,p)
 
-  ft = VectorValue{num_dims(p),get_value_type(prebasis)}
-  et = eltype(ft)
-  pt = Point{num_dims(p),Float64}
+  D = num_dims(p)
+  et = get_value_type(prebasis)
+  ft = VectorValue{D,et}
+  pt = Point{D,Float64}
 
   # Arrays of moments (as its evaluation for all prebasis shape functions)
   # and evaluation points per n-face
@@ -20,9 +18,9 @@ function _initialize_arrays(prebasis,p)
   zero_nodes = zeros(pt,0)
 
   for dim in 0:num_dims(p)
-    for inf in nfaces_dim(p,dim)
-      nf_moments[inf] = zero_moments
-      nf_nodes[inf] = zero_nodes
+    for inf in get_dimrange(p,dim)
+      nf_moments[inf] = copy(zero_moments)
+      nf_nodes[inf] = copy(zero_nodes)
     end
   end
 
@@ -30,19 +28,9 @@ function _initialize_arrays(prebasis,p)
 
 end
 
-"""
-# Returns the reference polytope for n-faces of a given dimension.
-"""
-function ref_nface_polytope(p,nf_dim)
-  nfs = nfaces_dim(p,nf_dim)
-  fps = Gridap.ReferenceFEs._nface_ref_polytopes(p)[nfs]
-  @assert(all(get_extrusion.(fps) .== get_extrusion(fps[1])), "All n-faces must be of the same type")
-  return fps[1]
-end
-
 # Ref FE to faces geomaps
 function _ref_face_to_faces_geomap(p,fp)
-  cfvs = Gridap.ReferenceFEs._nfaces_vertices(p,dim(fp))
+  cfvs = get_face_coordinates(p,num_dims(fp))
   nc = length(cfvs)
   freffe = LagrangianRefFE(Float64,fp,1)
   fshfs = get_shapefuns(freffe)
@@ -56,25 +44,6 @@ function _nfaces_evaluation_points_weights(p, fgeomap, fips, wips)
   c_wips = fill(wips,nc)
   pquad = evaluate(fgeomap,c_fips)
   c_fips, pquad, c_wips
-end
-
-function _is_hex(p)
-  for i in 2:length(get_extrusion(p))
-    if get_extrusion(p)[i] != 1 return false && break end
-  end
-  return true
-end
-
-function _monomial_basis(p::Polytope{D}, T, order) where D
-  if (_is_hex(p))
-    # orders = order*ones(Int,D)
-    prebasis = MonomialBasis{D}(T,order)
-  elseif (_is_tet(p))
-    filter(e,order) = sum(e) <= order
-    prebasis = MonomialBasis{D}(T, filter, order)
-  else
-    @notimplemented
-  end
 end
 
 function _broadcast(::Type{T},n,b) where T
@@ -98,14 +67,13 @@ function _RT_face_moments(p, fshfs, c_fips, fcips, fwips)
   return cvals
 end
 
-
 # It provides for every face the nodes and the moments arrays
 function _RT_face_values(p,et,order)
 
   # Reference facet
 
-  fp = ref_nface_polytope(p,dim(p)-1)
-
+  @assert is_simplex(p) || is_n_cube(p) "We are assuming that all n-faces of the same n-dim are the same."
+  fp = Polytope{num_dims(p)-1}(p,1)
 
   # geomap from ref face to polytope faces
   fgeomap = _ref_face_to_faces_geomap(p,fp)
@@ -126,7 +94,7 @@ function _RT_face_values(p,et,order)
 
   # Moments (fmoments)
   # The RT prebasis is expressed in terms of shape function
-  fshfs = _monomial_basis(fp,et,order-1)
+  fshfs = MonomialBasis(et,fp,order-1)
 
 
   # Face moments, i.e., M(Fi)_{ab} = q_RF^a(xgp_RFi^b) w_Fi^b n_Fi ⋅ ()
@@ -136,23 +104,22 @@ function _RT_face_values(p,et,order)
 
 end
 
-function _nfaces_array_dim!(p,dim,array,nf_vals)
-  nfs = nfaces_dim(p,dim)
-  array[nfs] = nf_vals
-end
-
 function _insert_nface_values!(nf_nodes, nf_moments, pb_moments,
                                prebasis, fcips, fmoments, p, dim)
 
   # Evaluate basis in faces points, i.e., S(Fi)_{ab} = ϕ^a(xgp_Fi^b)
   pbasis_fcips = [evaluate(prebasis,ps) for ps in fcips]
 
+  nfs = get_dimrange(p,dim)
+  nf_moments[nfs] = fmoments
+  nf_nodes[nfs] = fcips
+
   # Face moments evaluated for basis, i.e., DF = [S(F1)*M(F1)^T, …, S(Fn)*M(Fn)^T]
   fms_preb = [bps'*ms for (bps,ms) in zip(pbasis_fcips,fmoments)]
 
-  _nfaces_array_dim!(p,dim,nf_moments,fmoments)
-  _nfaces_array_dim!(p,dim,nf_nodes,fcips)
-  pb_moments = hcat(pb_moments,fms_preb...)
+  for m in fms_preb
+    pb_moments = hcat(pb_moments,m)
+  end
 
   return nf_nodes, nf_moments, pb_moments
 
@@ -173,18 +140,16 @@ function _RT_cell_values(p,et,order)
   cwips = get_weights(iquad)
 
   # Cell moments, i.e., M(C)_{ab} = q_C^a(xgp_C^b) w_C^b ⋅ ()
-  cbasis = QGradMonomialBasis{dim(p)}(et,order-1)
+  cbasis = QGradMonomialBasis{num_dims(p)}(et,order-1)
   cmoments = _RT_cell_moments(p, cbasis, ccips, cwips )
 
   return [ccips], [cmoments]
 
 end
 
-_num_nfaces(p) = length(get_faces(p))
-
 function _nfacedofs_basis(p,moments)
   ndofs = [size(moments[i],1) for i in 1:length(moments)]
-  _nfacedofs = Vector{Vector{Int}}(undef,_num_nfaces(p))
+  _nfacedofs = Vector{Vector{Int}}(undef,num_faces(p))
   _nfacedofs[1] = Int[1:ndofs[1]...]
   k = ndofs[1]
   for i in 2:length(ndofs)
@@ -197,19 +162,27 @@ end
 struct GenericDofBasis{P,V} <: Dof
   nodes::Vector{P}
   face_moments::Vector{Array{V}}
-  face_nodes
-end
+  face_nodes::Vector{UnitRange{Int}}
 
-function _GenericDofBasis(f_nodes,f_moments)
-  _face_nodes = [length(i) for i in f_nodes]
-  prepend!(_face_nodes,1)
-  for i in 2:length(_face_nodes)
-    _face_nodes[i] += _face_nodes[i-1]
+  function GenericDofBasis(f_nodes,f_moments)
+    P = eltype(eltype(f_nodes))
+    V = eltype(eltype(f_moments))
+    nodes = P[]
+    face_nodes = UnitRange{Int}[]
+    nfaces = length(f_nodes)
+    n = 1
+    for fi in 1:nfaces
+      nodes_fi = f_nodes[fi]
+      nini = n
+      for node_fi in nodes_fi
+        push!(nodes,node_fi)
+        n += 1
+      end
+      nend = n-1
+      push!(face_nodes,nini:nend)
+    end
+    new{P,V}(nodes,f_moments,face_nodes)
   end
-  _face_nodes
-  face_nodes = [_face_nodes[i]:_face_nodes[i+1]-1 for i in 1:length(_face_nodes)-1]
-  nodes = vcat([i for i in f_nodes]...)
-  GenericDofBasis(nodes,f_moments,face_nodes)
 end
 
 function dof_cache(b::GenericDofBasis,field)
@@ -243,7 +216,7 @@ function evaluate_dof!(cache,b::GenericDofBasis,field)
       dofs[k+1:k+l] = m'*vals[b.face_nodes[i]]
       k += l
     end
-    println(i,m)
+    #println(i,m)
   end
   return dofs
 end
