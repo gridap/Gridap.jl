@@ -36,13 +36,14 @@ dofs = LagrangianDofBasis(VectorValue{3,Float64},TET,1)
 @test dofs.node_and_comp_to_dof == VectorValue{3,Int}[(1,5,9), (2,6,10), (3,7,11), (4,8,12)]
 
 dofs = LagrangianDofBasis(Float64,WEDGE,(2,2,2))
-@test dofs.nodes == Point{3,Float64}[
-  (0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0),
-  (0.0, 0.0, 1.0), (1.0, 0.0, 1.0), (0.0, 1.0, 1.0),
-  (0.0, 0.0, 0.5), (1.0, 0.0, 0.5), (0.0, 1.0, 0.5),
-  (0.5, 0.0, 0.0), (0.5, 0.0, 1.0), (0.0, 0.5, 0.0),
-  (0.5, 0.5, 0.0), (0.0, 0.5, 1.0), (0.5, 0.5, 1.0),
-  (0.5, 0.0, 0.5), (0.0, 0.5, 0.5), (0.5, 0.5, 0.5)]
+r = Point{3,Float64}[
+  (0.0,0.0,0.0),(1.0,0.0,0.0),(0.0,1.0,0.0),
+  (0.0,0.0,1.0),(1.0,0.0,1.0),(0.0,1.0,1.0),
+  (0.5,0.0,0.0),(0.5,0.0,1.0),(0.0,0.5,0.0),
+  (0.5,0.5,0.0),(0.0,0.5,1.0),(0.5,0.5,1.0),
+  (0.0,0.0,0.5),(1.0,0.0,0.5),(0.0,1.0,0.5),
+  (0.5,0.0,0.5),(0.0,0.5,0.5),(0.5,0.5,0.5)]
+@test dofs.nodes == r
 
 dofs = LagrangianDofBasis(VectorValue{2,Int},VERTEX,())
 @test dofs.node_and_comp_to_dof == VectorValue{2,Int}[(1,2)]
@@ -71,9 +72,9 @@ test_nodal_reference_fe(reffe)
 reffe = LagrangianRefFE(Float64,WEDGE,(1,1,2))
 test_nodal_reference_fe(reffe)
 refface = ReferenceFE{1}(reffe,3)
-@test get_face_own_dofs(refface) == [[1], [2], [3]]
-refface = ReferenceFE{1}(reffe,4)
 @test get_face_own_dofs(refface) == [[1], [2], []]
+refface = ReferenceFE{1}(reffe,8)
+@test get_face_own_dofs(refface) == [[1], [2], [3]]
 
 orders = (4,)
 reffe = LagrangianRefFE(VectorValue{2,Float64},SEGMENT,orders)
@@ -145,11 +146,10 @@ own_nodes = compute_own_nodes(TRI,orders)
 reffe = LagrangianRefFE(Float64,WEDGE,1)
 
 reffes = get_reffaces(ReferenceFE{2}, reffe)
-
 iface_to_ftype = get_face_type(reffe,2)
 
 @test length(reffes) == 2
-@test iface_to_ftype == [1, 1, 1, 2, 2]
+@test iface_to_ftype == [1, 1, 2, 2, 2]
 
 order = 4
 reffe = LagrangianRefFE(Float64,TET,order)
@@ -167,18 +167,7 @@ reffe = LagrangianRefFE(Float64,QUAD,orders)
 @test is_Q(reffe) == true
 @test is_S(reffe) == false
 
-order = 4
-reffe = SerendipityRefFE(Float64,HEX,order)
-@test get_order(reffe) == order
-@test get_orders(reffe) == (order,order,order)
-@test is_P(reffe) == false
-@test is_Q(reffe) == false
-@test is_S(reffe) == true
-
 reffe = LagrangianRefFE(Float64,QUAD,(2,3))
-@test reffe == from_dict(LagrangianRefFE,to_dict(reffe))
-
-reffe = SerendipityRefFE(Float64,QUAD,(3,3))
 @test reffe == from_dict(LagrangianRefFE,to_dict(reffe))
 
 reffe = LagrangianRefFE(Float64,QUAD,(2,3))

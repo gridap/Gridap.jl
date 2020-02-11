@@ -464,9 +464,9 @@ function _get_faces_primal(p,dimfrom,dimto)
   n = length(faces_dimfrom)
   faces_dimfrom_dimto = Vector{Vector{Int}}(undef,n)
   offset = get_offset(p,dimto)
+  facefrom_dimranges = get_face_dimranges(p,dimfrom)
   for i in 1:n
-    f = Polytope{dimfrom}(p,i)
-    rto = get_dimranges(f)[dimto+1]
+    rto = facefrom_dimranges[i][dimto+1]
     faces_dimfrom_dimto[i] = faces_dimfrom[i][rto].-offset
   end
   faces_dimfrom_dimto
@@ -482,6 +482,28 @@ function _get_faces_dual(p,dimfrom,dimto)
     end
   end
   fface_to_tfaces
+end
+
+"""
+"""
+function get_face_dimranges(p::Polytope,d::Integer)
+  n = num_faces(p,d)
+  rs = Vector{UnitRange{Int}}[]
+  for i in 1:n
+    f = Polytope{d}(p,i)
+    r = get_dimranges(f)
+    push!(rs,r)
+  end
+  rs
+end
+
+function get_face_dimranges(p::Polytope)
+  rs = Vector{UnitRange{Int}}[]
+  D = num_dims(p)
+  for b in 0:D
+    rs = vcat(rs,get_face_dimranges(p,d))
+  end
+  rs
 end
 
 """
@@ -520,7 +542,7 @@ reffaces = get_reffaces(Polytope{2},WEDGE)
 println(reffaces)
 
 # output
-Gridap.ReferenceFEs.ExtrusionPolytope{2}[QUAD, TRI]
+Gridap.ReferenceFEs.ExtrusionPolytope{2}[TRI, QUAD]
 
 ```
 
@@ -552,8 +574,8 @@ println(reffaces)
 println(face_types)
 
 # output
-Gridap.ReferenceFEs.ExtrusionPolytope{2}[QUAD, TRI]
-[1, 1, 1, 2, 2]
+Gridap.ReferenceFEs.ExtrusionPolytope{2}[TRI, QUAD]
+[1, 1, 2, 2, 2]
 
 ```
 
@@ -689,8 +711,6 @@ function test_polytope(p::Polytope{D};optional::Bool=false) where D
     et = get_edge_tangents(p)
     @test isa(et,Vector{VectorValue{D,Float64}})
     @test length(et) == num_edges(p)
-    perm = get_vertex_permutations(p)
-    @test isa(perm,Vector{Vector{Int}})
     @test isa(is_simplex(p),Bool)
     @test isa(is_n_cube(p),Bool)
   end

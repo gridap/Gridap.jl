@@ -30,8 +30,7 @@ mutable struct CachedArray{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
   
   Constructs a `CachedArray` from a given array.
   """
-  function CachedArray(array::AbstractArray{T,N}) where {T,N}
-    A = typeof(array)
+  function CachedArray(array::A) where {T,N,A<:AbstractArray{T,N}}
     buffer = Dict{NTuple{N,Int},A}()
     buffer[size(array)] = array
     new{T,N,A}(array,buffer)
