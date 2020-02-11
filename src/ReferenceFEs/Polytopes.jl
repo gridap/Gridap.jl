@@ -659,7 +659,7 @@ end
 
 function get_face_vertex_permutations(p::Polytope)
   D = num_cell_dims(p)
-  p = [ get_face_vertex_permutations(p,d) for d in 0:D ]
+  p = [ get_face_vertex_permutations(p,d) for d in 0:(D-1) ]
   vcat(p...)
 end
 

@@ -45,11 +45,18 @@ struct ExtrusionPolytope{D} <: Polytope{D}
   face_normals::Vector{Point{D,Float64}}
   face_orientations::Vector{Int}
   vertex_perms::Vector{Vector{Int}}
+  face_vertex_perms::Vector{Vector{Vector{Int}}}
+  m_n_to_mface_to_nface::Matrix{Vector{Vector{Int}}}
   function ExtrusionPolytope(dface::DFace{D}) where D
     vertex_coords = _vertices_coordinates(Float64,dface)
     face_normals, face_orientations = _face_normals(Float64,dface)
     vertex_perms = _precompute_vertex_perms_if_possible(dface)
-    new{D}(dface.extrusion,dface,vertex_coords,face_normals,face_orientations,vertex_perms)
+    face_vertex_perms = _precompute_face_vertex_perms_if_possible(dface)
+    m_n_to_mface_to_nface = _precompute_m_n_to_mface_to_nface(dface)
+    new{D}(
+      dface.extrusion,dface,vertex_coords,face_normals,
+      face_orientations,vertex_perms,face_vertex_perms,
+      m_n_to_mface_to_nface)
   end
 end
 
@@ -114,6 +121,10 @@ end
 # Implementation of the interface
 
 get_faces(p::ExtrusionPolytope) = p.dface.nf_nfs
+
+function get_faces(p::ExtrusionPolytope,dimfrom::Integer,dimto::Integer)
+  p.m_n_to_mface_to_nface[dimfrom+1,dimto+1]
+end
 
 get_dimranges(p::ExtrusionPolytope) = p.dface.dimranges
 
@@ -182,6 +193,21 @@ function get_vertex_permutations(p::ExtrusionPolytope)
     @unreachable  m
   end
   p.vertex_perms
+end
+
+function get_face_vertex_permutations(p::ExtrusionPolytope,d::Integer)
+  @assert d < num_dims(p)
+  r = get_dimrange(p,d)
+  perms = get_face_vertex_permutations(p)
+  perms[r]
+end
+
+function get_face_vertex_permutations(p::ExtrusionPolytope)
+  if length(p.face_vertex_perms) == 0
+    m = "Admissible face vertex permutations are not precomputed for given polytope $p"
+    @unreachable  m
+  end
+  p.face_vertex_perms
 end
 
 function is_simplex(p::ExtrusionPolytope)
@@ -430,6 +456,37 @@ function _dimfrom_fs_dimto_fs(p::DFace{D}, dim_from::Int, dim_to::Int) where D
   dffs_dtfs
 end
 
+function _precompute_m_n_to_mface_to_nface(p::DFace{D}) where D
+  m_n_to_mface_to_nface = Matrix{Vector{Vector{Int}}}(undef,D+1,D+1)
+
+  for m in 0:D
+    for n in 0:D
+      if n <= m
+       mface_to_nface = _dimfrom_fs_dimto_fs(p,m,n)
+      else
+       mface_to_nface = _dimfrom_fs_dimto_fs_dual(p,m,n)
+      end
+      m_n_to_mface_to_nface[m+1,n+1] = mface_to_nface
+    end
+  end
+
+  m_n_to_mface_to_nface
+  
+end
+
+function _dimfrom_fs_dimto_fs_dual(p::DFace,dimfrom,dimto)
+  @assert dimfrom < dimto
+  tface_to_ffaces = _dimfrom_fs_dimto_fs(p,dimto,dimfrom)
+  nffaces = _num_nfaces(p,dimfrom)
+  fface_to_tfaces = [Int[] for in in 1:nffaces]
+  for (tface,ffaces) in enumerate(tface_to_ffaces)
+    for fface in ffaces
+      push!(fface_to_tfaces[fface],tface)
+    end
+  end
+  fface_to_tfaces
+end
+
 # iface in global numeration 
 function DFace{d}(p::DFace{D},iface::Int) where {d,D}
   @assert d == p.dims[iface]
@@ -569,6 +626,39 @@ end
 
 function _edge_tangents(::Type{T},p::DFace{0}) where T
   VectorValue{0,T}[]
+end
+
+function _precompute_face_vertex_perms_if_possible(p::DFace{D}) where D
+  if D == 0
+    perms = _admissible_permutations(p)
+    face_perms = [perms,]
+  elseif D <= 3 && ( all(p.extrusion.array.data .== p.extrusion[1]) )
+    face_perms = _admissible_face_vertex_permutations(p)
+  else
+    face_perms = Vector{Vector{Int}}[]
+  end
+  face_perms
+end
+
+function _admissible_face_vertex_permutations(p::DFace{D}) where D
+  perms = Vector{Vector{Int}}[]
+  _admissible_face_vertex_permutations_fill!(perms,p,Val{0}())
+  perms
+end
+
+function  _admissible_face_vertex_permutations_fill!(perms,p::DFace{D},::Val{d}) where {D,d}
+  faceids = p.dimranges[d+1]
+  for faceid in faceids
+    f = DFace{d}(p,faceid)
+    f_perms = _admissible_permutations(f)
+    push!(perms,f_perms)
+  end
+  _admissible_face_vertex_permutations_fill!(perms,p,Val{d+1}())
+  nothing
+end
+
+function  _admissible_face_vertex_permutations_fill!(perms,p::DFace{D},::Val{D}) where D
+  nothing
 end
 
 function _precompute_vertex_perms_if_possible(p::DFace{D}) where D
