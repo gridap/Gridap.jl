@@ -51,7 +51,7 @@ struct ExtrusionPolytope{D} <: Polytope{D}
     vertex_coords = _vertices_coordinates(Float64,dface)
     face_normals, face_orientations = _face_normals(Float64,dface)
     vertex_perms = _precompute_vertex_perms_if_possible(dface)
-    face_vertex_perms = _precompute_face_vertex_perms_if_possible(dface)
+    face_vertex_perms = _admissible_face_vertex_permutations(dface)
     m_n_to_mface_to_nface = _precompute_m_n_to_mface_to_nface(dface)
     new{D}(
       dface.extrusion,dface,vertex_coords,face_normals,
@@ -188,25 +188,16 @@ function get_facet_orientations(p::ExtrusionPolytope)
 end
 
 function get_vertex_permutations(p::ExtrusionPolytope)
-  if length(p.vertex_perms) == 0
-    m = "Admissible vertex permutations are not precomputed for given polytope $p"
-    @unreachable  m
-  end
   p.vertex_perms
 end
 
 function get_face_vertex_permutations(p::ExtrusionPolytope,d::Integer)
-  @assert d < num_dims(p)
   r = get_dimrange(p,d)
   perms = get_face_vertex_permutations(p)
   perms[r]
 end
 
 function get_face_vertex_permutations(p::ExtrusionPolytope)
-  if length(p.face_vertex_perms) == 0
-    m = "Admissible face vertex permutations are not precomputed for given polytope $p"
-    @unreachable  m
-  end
   p.face_vertex_perms
 end
 
@@ -628,18 +619,6 @@ function _edge_tangents(::Type{T},p::DFace{0}) where T
   VectorValue{0,T}[]
 end
 
-function _precompute_face_vertex_perms_if_possible(p::DFace{D}) where D
-  if D == 0
-    perms = _admissible_permutations(p)
-    face_perms = [perms,]
-  elseif D <= 3 && ( all(p.extrusion.array.data .== p.extrusion[1]) )
-    face_perms = _admissible_face_vertex_permutations(p)
-  else
-    face_perms = Vector{Vector{Int}}[]
-  end
-  face_perms
-end
-
 function _admissible_face_vertex_permutations(p::DFace{D}) where D
   perms = Vector{Vector{Int}}[]
   _admissible_face_vertex_permutations_fill!(perms,p,Val{0}())
@@ -650,7 +629,7 @@ function  _admissible_face_vertex_permutations_fill!(perms,p::DFace{D},::Val{d})
   faceids = p.dimranges[d+1]
   for faceid in faceids
     f = DFace{d}(p,faceid)
-    f_perms = _admissible_permutations(f)
+    f_perms = _precompute_vertex_perms_if_possible(f)
     push!(perms,f_perms)
   end
   _admissible_face_vertex_permutations_fill!(perms,p,Val{d+1}())
@@ -658,16 +637,18 @@ function  _admissible_face_vertex_permutations_fill!(perms,p::DFace{D},::Val{d})
 end
 
 function  _admissible_face_vertex_permutations_fill!(perms,p::DFace{D},::Val{D}) where D
+  f_perms = _precompute_vertex_perms_if_possible(p)
+  push!(perms,f_perms)
   nothing
 end
 
 function _precompute_vertex_perms_if_possible(p::DFace{D}) where D
-  if D == 0
-    perms = _admissible_permutations(p)
-  elseif D <= 2 && ( all(p.extrusion.array.data .== p.extrusion[1]) )
+  if D in (0,1)
+    perms = _admissible_permutations_simplex(p)
+  elseif D == 2
     perms = _admissible_permutations(p)
   else
-    perms = Vector{Int}[]
+    perms = _admissible_permutations_identity(p)
   end
   perms
 end
@@ -678,13 +659,21 @@ function _admissible_permutations(p::DFace{D}) where D
   if D > 3
     @warn "Computing permutations for a polytope of dim > 3 is overkill"
   end
-  if D==0 || all( p.extrusion.array.data .== TET_AXIS )
+  if D in (0,1) || all( p.extrusion.array.data[2:end] .== TET_AXIS )
     perms = _admissible_permutations_simplex(p)
-  elseif all( p.extrusion.array.data .== HEX_AXIS)
+  elseif all( p.extrusion.array.data[2:end] .== HEX_AXIS)
     perms = _admissible_permutations_n_cube(p)
   else
     @notimplemented "admissible vertex permutations only implemented for simplices and n-cubes"
   end
+  perms
+end
+
+function _admissible_permutations_identity(p::DFace{D}) where D
+  vs = first(_dimfrom_fs_dimto_fs(p, D, 0))
+  num_vs = length(vs)
+  l = [i for i = 1:num_vs]
+  perms = [l,]
   perms
 end
 

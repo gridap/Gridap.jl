@@ -106,11 +106,19 @@ iface_to_ftype = get_face_type(WEDGE,d)
 @test iface_to_ftype == [1, 1, 1, 1, 1, 1, 1, 1, 1]
 
 @test get_face_vertex_permutations(QUAD,1) == [[[1,2],[2,1]],[[1,2],[2,1]],[[1,2],[2,1]],[[1,2],[2,1]]]
-r = [[[1]],[[1]],[[1]],[[1]],[[1,2],[2,1]],[[1,2],[2,1]],[[1,2],[2,1]],[[1,2],[2,1]]]
+@test get_face_vertex_permutations(QUAD,2) == [[[1,2,3,4],[1,3,2,4],[2,1,4,3],[2,4,1,3],[3,1,4,2],[3,4,1,2],[4,2,3,1],[4,3,2,1]]]
+
+r = [
+  [[1]],[[1]],[[1]],[[1]],
+  [[1,2],[2,1]],[[1,2],[2,1]],[[1,2],[2,1]],[[1,2],[2,1]],
+  [[1,2,3,4],[1,3,2,4],[2,1,4,3],[2,4,1,3],[3,1,4,2],[3,4,1,2],[4,2,3,1],[4,3,2,1]]]
 @test get_face_vertex_permutations(QUAD) == r
 
 r = [[[1,2],[2,1]],[[1,2],[2,1]],[[1,2],[2,1]]]
 @test get_face_vertex_permutations(TRI,1) == r
+
+@test get_face_vertex_permutations(HEX,3) == [[[1, 2, 3, 4, 5, 6, 7, 8]]]
+@test get_face_vertex_permutations(TET,3) == [[[1, 2, 3, 4]]]
 
 v,p = simplexify(QUAD)
 @test p == TRI
