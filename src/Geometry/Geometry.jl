@@ -15,6 +15,8 @@ using Gridap.Fields
 using Gridap.Polynomials
 using Gridap.ReferenceFEs
 using Gridap.TensorValues
+using Gridap.Io
+using Gridap.Integration
 
 using Gridap.ReferenceFEs: _num_faces
 using Gridap.ReferenceFEs: _num_facets
@@ -33,6 +35,9 @@ import Gridap.Arrays: get_array
 import Gridap.Fields: gradient
 import Gridap.Fields: grad2curl
 import Gridap.Helpers: operate
+
+import Gridap.Integration: get_coordinates
+import Gridap.Integration: get_weights
 
 import Gridap.Io: to_dict
 import Gridap.Io: from_dict
@@ -73,6 +78,7 @@ import Gridap.Fields: apply_lincomb
 import Gridap.Fields: evaluate_field_array
 import Gridap.Fields: kernel_evaluate
 import Gridap.Fields: evaluate
+import Gridap.Fields: integrate
 
 import Gridap.Arrays: apply_kernel!
 
@@ -146,6 +152,7 @@ export get_face_tag
 export get_face_tag_index
 
 export DiscreteModel
+export DiscreteModelFromFile
 export get_grid
 export get_grid_topology
 export get_face_labeling
@@ -172,6 +179,7 @@ export SkeletonPair
 export jump
 export mean
 export SkeletonTriangulation
+export CellQuadrature
 
 include("GridTopologies.jl")
 
@@ -212,5 +220,7 @@ include("BoundaryTriangulations.jl")
 include("GenericBoundaryTriangulations.jl")
 
 include("SkeletonTriangulations.jl")
+
+include("CellQuadratures.jl")
 
 end # module

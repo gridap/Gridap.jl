@@ -466,18 +466,24 @@ end
 function compute_cell_permutations(top::GridTopology,d::Integer)
 
   D = num_cell_dims(top)
+  cell_to_lface_to_face = Table(get_faces(top,D,d))
+  data = similar(cell_to_lface_to_face.data,Int8)
+  ptrs = cell_to_lface_to_face.ptrs
+  cell_to_lface_to_pindex = Table(data,ptrs)
+
+  if d == D || d == 0
+    fill!(cell_to_lface_to_pindex.data,Int8(1))
+    return cell_to_lface_to_pindex
+  end
+
   face_to_fvertex_to_vertex = Table(get_faces(top,d,0))
   face_to_ftype = get_face_type(top,d)
   reffaces = get_reffaces(Polytope{d},top)
   ftype_to_pindex_to_cfvertex_to_fvertex = map(get_vertex_permutations,reffaces)
   cell_to_cvertex_to_vertex = Table(get_faces(top,D,0))
-  cell_to_lface_to_face = Table(get_faces(top,D,d))
   cell_to_ctype = get_cell_type(top)
   polytopes = get_polytopes(top)
   ctype_to_lface_to_cvertices = map( (p)->get_faces(p,d,0), polytopes )
-  data = similar(cell_to_lface_to_face.data,Int8)
-  ptrs = cell_to_lface_to_face.ptrs
-  cell_to_lface_to_pindex = Table(data,ptrs)
 
   _compute_cell_perm_indices!(
     cell_to_lface_to_pindex,

@@ -8,7 +8,7 @@ end
 """
 """
 function SparseMatrixAssembler(test::SingleFieldFESpace,trial::SingleFieldFESpace)
-  SparseMatrixAssembler(SparseMatrixCSC,test,trial)
+  SparseMatrixAssembler(SparseMatrixCSC{Float64,Int},test,trial)
 end
 
 get_test(a::SparseMatrixAssembler) = a.test
@@ -48,13 +48,23 @@ end
 function allocate_matrix(a::SparseMatrixAssembler,term_to_cellidsrows, term_to_cellidscols)
   celldofs_rows = get_cell_dofs(a.test)
   celldofs_cols = get_cell_dofs(a.trial)
-  I, J, V = create_coo_vectors(a.matrix_type)
+  n = 0
   for (cellidsrows,cellidscols) in zip(term_to_cellidsrows,term_to_cellidscols)
     cell_rows = reindex(celldofs_rows,cellidsrows)
     cell_cols = reindex(celldofs_cols,cellidscols)
     rows_cache = array_cache(cell_rows)
     cols_cache = array_cache(cell_cols)
-    _allocate_matrix!(a.matrix_type,I,J,V,rows_cache,cols_cache,cell_rows,cell_cols)
+    @assert length(cell_cols) == length(cell_rows)
+    n += _count_matrix_entries(a.matrix_type,rows_cache,cols_cache,cell_rows,cell_cols)
+  end
+  I, J, V = allocate_coo_vectors(a.matrix_type,n)
+  nini = 0
+  for (cellidsrows,cellidscols) in zip(term_to_cellidsrows,term_to_cellidscols)
+    cell_rows = reindex(celldofs_rows,cellidsrows)
+    cell_cols = reindex(celldofs_cols,cellidscols)
+    rows_cache = array_cache(cell_rows)
+    cols_cache = array_cache(cell_cols)
+    nini = _allocate_matrix!(a.matrix_type,nini,I,J,rows_cache,cols_cache,cell_rows,cell_cols)
   end
   num_rows = num_free_dofs(a.test)
   num_cols = num_free_dofs(a.trial)
@@ -62,9 +72,8 @@ function allocate_matrix(a::SparseMatrixAssembler,term_to_cellidsrows, term_to_c
   sparse_from_coo(a.matrix_type,I,J,V,num_rows,num_cols)
 end
 
-function _allocate_matrix!(M,I,J,V,rows_cache,cols_cache,cell_rows,cell_cols)
-  @assert length(cell_cols) == length(cell_rows)
-  z = zero(eltype(V))
+@noinline function _count_matrix_entries(::Type{M},rows_cache,cols_cache,cell_rows,cell_cols) where M
+  n = 0
   for cell in 1:length(cell_cols)
     rows = getindex!(rows_cache,cell_rows,cell)
     cols = getindex!(cols_cache,cell_cols,cell)
@@ -72,12 +81,37 @@ function _allocate_matrix!(M,I,J,V,rows_cache,cols_cache,cell_rows,cell_cols)
       if gidcol > 0
         for gidrow in rows
           if gidrow > 0
-           push_coo!(M, I, J, V, gidrow, gidcol, z)
+            if is_entry_stored(M,gidrow,gidcol)
+              n += 1
+            end
           end
         end
       end
     end
   end
+  n
+end
+
+@noinline function _allocate_matrix!(a::Type{M},nini,I,J,rows_cache,cols_cache,cell_rows,cell_cols) where M
+  n = nini
+  for cell in 1:length(cell_cols)
+    rows = getindex!(rows_cache,cell_rows,cell)
+    cols = getindex!(cols_cache,cell_cols,cell)
+    for gidcol in cols
+      if gidcol > 0
+        for gidrow in rows
+          if gidrow > 0
+            if is_entry_stored(M,gidrow,gidcol)
+              n += 1
+              @inbounds I[n] = gidrow
+              @inbounds J[n] = gidcol
+            end
+          end
+        end
+      end
+    end
+  end
+  n
 end
 
 function assemble_matrix!(
@@ -119,4 +153,61 @@ function _assemble_matrix!(mat,vals_cache,rows_cache,cols_cache,cell_vals,cell_r
   end
 end
 
+function assemble_matrix(
+  a::SparseMatrixAssembler, term_to_cellmat, term_to_cellidsrows, term_to_cellidscols)
+  celldofs_rows = get_cell_dofs(a.test)
+  celldofs_cols = get_cell_dofs(a.trial)
+  n = 0
+  for (cellidsrows,cellidscols) in zip(term_to_cellidsrows,term_to_cellidscols)
+    cell_rows = reindex(celldofs_rows,cellidsrows)
+    cell_cols = reindex(celldofs_cols,cellidscols)
+    rows_cache = array_cache(cell_rows)
+    cols_cache = array_cache(cell_cols)
+    @assert length(cell_cols) == length(cell_rows)
+    n += _count_matrix_entries(a.matrix_type,rows_cache,cols_cache,cell_rows,cell_cols)
+  end
+  I, J, V = allocate_coo_vectors(a.matrix_type,n)
+  nini = 0
+  for (cellmat_rc,cellidsrows,cellidscols) in zip(term_to_cellmat,term_to_cellidsrows,term_to_cellidscols)
+    cell_rows = reindex(celldofs_rows,cellidsrows)
+    cell_cols = reindex(celldofs_cols,cellidscols)
+    cellmat_r = apply_constraints_matrix_cols(a.trial,cellmat_rc,cellidscols)
+    cellmat = apply_constraints_matrix_rows(a.test,cellmat_r,cellidsrows)
+    rows_cache = array_cache(cell_rows)
+    cols_cache = array_cache(cell_cols)
+    vals_cache = array_cache(cellmat)
+    @assert length(cell_cols) == length(cell_rows)
+    @assert length(cellmat) == length(cell_rows)
+    nini = _assemble_matrix_fill!(a.matrix_type,nini,I,J,V,vals_cache,rows_cache,cols_cache,cellmat,cell_rows,cell_cols)
+  end
+  num_rows = num_free_dofs(a.test)
+  num_cols = num_free_dofs(a.trial)
+  finalize_coo!(a.matrix_type,I,J,V,num_rows,num_cols)
+  sparse_from_coo(a.matrix_type,I,J,V,num_rows,num_cols)
+end
+
+@noinline function _assemble_matrix_fill!(::Type{M},nini,I,J,V,vals_cache,rows_cache,cols_cache,cell_vals,cell_rows,cell_cols) where M
+  n = nini
+  for cell in 1:length(cell_cols)
+    rows = getindex!(rows_cache,cell_rows,cell)
+    cols = getindex!(cols_cache,cell_cols,cell)
+    vals = getindex!(vals_cache,cell_vals,cell)
+    for (j,gidcol) in enumerate(cols)
+      if gidcol > 0
+        for (i,gidrow) in enumerate(rows)
+          if gidrow > 0
+            if is_entry_stored(M,gidrow,gidcol)
+              n += 1
+              @inbounds v = vals[i,j]
+              @inbounds I[n] = gidrow
+              @inbounds J[n] = gidcol
+              @inbounds V[n] = v
+            end
+          end
+        end
+      end
+    end
+  end
+  n
+end
 

@@ -373,9 +373,14 @@ end
 
 """
     Triangulation(::Type{ReferenceFE{d}},model::DiscreteModel) where d
+    Triangulation(model::DiscreteModel)
 """
 function Triangulation(::Type{ReferenceFE{d}},model::DiscreteModel) where d
   Grid(ReferenceFE{d},model)
+end
+
+function Triangulation(model::DiscreteModel)
+  get_triangulation(model)
 end
 
 """
@@ -401,6 +406,23 @@ end
 
 function from_dict(::Type{DiscreteModel},dict::Dict{Symbol,Any})
   from_dict(UnstructuredDiscreteModel,dict)
+end
+
+"""
+"""
+function DiscreteModelFromFile(filename::AbstractString)
+  base, extension = splitext(filename)
+  s = Symbol(extension[2:end])
+  DiscreteModelFromFile(filename,Val(s))
+end
+
+function DiscreteModelFromFile(filename::AbstractString,::Any)
+  @notimplemented
+end
+
+function DiscreteModelFromFile(filename::AbstractString,::Val{:json})
+  model = from_json_file(DiscreteModel,filename)
+  model
 end
 
 # GenericDiscreteModel

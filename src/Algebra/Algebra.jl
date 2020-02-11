@@ -14,12 +14,14 @@ using Test
 using Gridap.Helpers
 
 export push_coo!
+export is_entry_stored
 export finalize_coo!
 export sparse_from_coo
 export add_entry!
 export fill_entries!
 export copy_entries!
 export create_coo_vectors
+export allocate_coo_vectors
 export sparsecsr
 export symsparsecsr
 export hasrowmajororder

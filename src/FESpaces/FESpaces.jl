@@ -17,6 +17,8 @@ using Gridap.Geometry
 using Gridap.Fields
 using Gridap.Integration
 using Gridap.Algebra
+using Gridap.Polynomials
+using Gridap.TensorValues
 
 using Gridap.Geometry: CellFieldLike
 using Gridap.Geometry: UnimplementedField
@@ -153,6 +155,7 @@ export collect_cell_residual
 
 export FESpaceWithLastDofRemoved
 export ZeroMeanFESpace
+export CLagrangianFESpace
 
 export @law
 export operate
@@ -195,6 +198,8 @@ include("FESolvers.jl")
 include("FESpacesWithLastDofRemoved.jl")
 
 include("ZeroMeanFESpaces.jl")
+
+include("CLagrangianFESpaces.jl")
 
 include("FESpaceFactories.jl")
 

@@ -15,7 +15,7 @@ using Gridap.TensorValues
 using Gridap.Arrays
 using Gridap.Fields
 using Gridap.Polynomials
-# using Gridap.Integration
+using Gridap.Integration
 
 import Gridap.Arrays: kernel_cache
 import Gridap.Arrays: apply_kernel!
@@ -25,6 +25,10 @@ import Gridap.Polynomials: MonomialBasis
 
 import Gridap.Polynomials: get_order
 import Gridap.Polynomials: get_orders
+
+import Gridap.Integration: Quadrature
+import Gridap.Integration: num_dims
+import Gridap.Integration: num_point_dims
 
 import Gridap.Io: to_dict
 import Gridap.Io: from_dict
@@ -42,6 +46,7 @@ export get_facet_normals
 export get_facet_orientations
 export get_edge_tangents
 export get_vertex_permutations
+export get_face_dimranges
 export is_simplex
 export is_n_cube
 export simplexify

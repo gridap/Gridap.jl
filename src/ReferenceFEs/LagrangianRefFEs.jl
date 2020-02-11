@@ -135,7 +135,9 @@ end
 
 get_face_nodes(reffe::LagrangianRefFE) = reffe.face_nodes
 
-get_own_nodes_permutations(reffe::LagrangianRefFE) = reffe.own_nodes_permutations
+function get_own_nodes_permutations(reffe::LagrangianRefFE)
+  reffe.own_nodes_permutations
+end
 
 # API particular to LagrangianRefFE
 
@@ -546,7 +548,8 @@ Returns a vector of vectors with the permutations of the nodes owned by the inte
 polytope.
 """
 function compute_own_nodes_permutations(p::Polytope, interior_nodes)
-  _compute_node_permutations(p, interior_nodes)
+  perms = _compute_node_permutations(p, interior_nodes)
+  perms
 end
 
 """
@@ -724,9 +727,23 @@ end
 function compute_face_orders(p::ExtrusionPolytope,face::ExtrusionPolytope{D},iface::Int,orders) where D
   d = num_dims(face)
   offset = get_offset(p,d)
-  nface = p.nfaces[iface+offset]
-  face_orders = _extract_nonzeros(nface.extrusion,orders)
-  face_orders
+  nface = p.dface.nfaces[iface+offset]
+  face_orders = _eliminate_zeros(Val{D}(),nface.extrusion,orders)
+  face_orders.array.data
+end
+
+function _eliminate_zeros(::Val{d},a,o) where d
+  b = zero(mutable(Point{d,Int}))
+  D = n_components(a)
+  k = 1
+  for i in 1:D
+    m = a[i]
+    if (m != 0)
+      b[k] = o[i]
+      k += 1
+    end
+  end
+  Point(b)
 end
 
 function compute_nodes(p::ExtrusionPolytope{D},orders) where D

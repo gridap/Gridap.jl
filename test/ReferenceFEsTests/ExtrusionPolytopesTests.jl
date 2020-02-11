@@ -55,17 +55,27 @@ test_polytope(p,optional=true)
 @test get_vertex_coordinates(p) == VectorValue{1,Float64}[(0),(1)]
 @test get_edge_tangents(p) == VectorValue{1,Float64}[(1)]
 @test get_facet_normals(p) == VectorValue{1,Float64}[(-1),(1)]
+perm = get_vertex_permutations(p)
+@test perm == [[1, 2], [2, 1]]
 
 p = VERTEX
 test_polytope(p,optional=true)
 @test get_vertex_coordinates(p) == VectorValue{0,Float64}[()]
 @test get_edge_tangents(p) == VectorValue{0,Float64}[]
 @test get_facet_normals(p) == VectorValue{0,Float64}[]
+perm = get_vertex_permutations(p)
+@test perm == [[1]]
 
 test_polytope(TRI,optional=true)
 test_polytope(QUAD,optional=true)
 test_polytope(TET,optional=true)
 test_polytope(HEX,optional=true)
+
+perm = get_vertex_permutations(TRI)
+@test perm == [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]
+
+perm = get_vertex_permutations(QUAD)
+@test isa(perm,Vector{Vector{Int}})
 
 @test num_facets(SEGMENT) == 2
 @test num_facets(TRI) == 3
@@ -74,9 +84,8 @@ test_polytope(HEX,optional=true)
 @test num_facets(HEX) == 6
 
 @test num_vertices(PYRAMID) == 5
-# TODO There is a problem with PYRAMID
-#@test num_edges(PYRAMID) == 8
-#@test num_facets(PYRAMID) == 5
+@test num_edges(PYRAMID) == 8
+@test num_facets(PYRAMID) == 5
 
 @test is_simplex(TRI) == true
 @test is_n_cube(TRI) == false
@@ -97,11 +106,101 @@ iface_to_ftype = get_face_type(WEDGE,d)
 @test iface_to_ftype == [1, 1, 1, 1, 1, 1, 1, 1, 1]
 
 @test get_face_vertex_permutations(QUAD,1) == [[[1,2],[2,1]],[[1,2],[2,1]],[[1,2],[2,1]],[[1,2],[2,1]]]
+@test get_face_vertex_permutations(QUAD,2) == [[[1,2,3,4],[1,3,2,4],[2,1,4,3],[2,4,1,3],[3,1,4,2],[3,4,1,2],[4,2,3,1],[4,3,2,1]]]
+
+r = [
+  [[1]],[[1]],[[1]],[[1]],
+  [[1,2],[2,1]],[[1,2],[2,1]],[[1,2],[2,1]],[[1,2],[2,1]],
+  [[1,2,3,4],[1,3,2,4],[2,1,4,3],[2,4,1,3],[3,1,4,2],[3,4,1,2],[4,2,3,1],[4,3,2,1]]]
+@test get_face_vertex_permutations(QUAD) == r
+
+r = [[[1,2],[2,1]],[[1,2],[2,1]],[[1,2],[2,1]]]
+@test get_face_vertex_permutations(TRI,1) == r
+
+@test get_face_vertex_permutations(HEX,3) == [[[1, 2, 3, 4, 5, 6, 7, 8]]]
+@test get_face_vertex_permutations(TET,3) == [[[1, 2, 3, 4]]]
 
 v,p = simplexify(QUAD)
 @test p == TRI
 
 v,p = simplexify(HEX)
 @test p == TET
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#using Gridap.Fields
+#
+#using .ReferenceFEs: _polytopenfaces
+#using .ReferenceFEs: NFace
+#using .ReferenceFEs: DFace
+#using .ReferenceFEs: _polytopemesh
+#using .ReferenceFEs: _dimfrom_fs_dimto_fs
+#using .ReferenceFEs: _nface_to_nfacedim
+#using .ReferenceFEs: _nfaces_vertices
+#using .ReferenceFEs: _face_normals
+#using .ReferenceFEs: _edge_tangents
+#using .ReferenceFEs: _admissible_permutations
+#using .ReferenceFEs: _admissible_permutations_n_cube
+#
+#using Profile
+#using ProfileView
+#
+#
+#extrusion = Point{0,Int}()
+#p = DFace(extrusion)
+#perms = _admissible_permutations(p)
+#display(perms)
+#
+#extrusion = Point(HEX_AXIS)
+#p = DFace(extrusion)
+#perms = _admissible_permutations(p)
+#display(perms)
+#
+#extrusion = Point(TET_AXIS)
+#p = DFace(extrusion)
+#perms = _admissible_permutations(p)
+#display(perms)
+#
+#extrusion = Point(TET_AXIS,TET_AXIS)
+#p = DFace(extrusion)
+#perms = _admissible_permutations(p)
+#display(perms)
+#
+#extrusion = Point(HEX_AXIS,HEX_AXIS)
+#p = DFace(extrusion)
+#perms = _admissible_permutations(p)
+#display(perms)
+#
+#extrusion = Point(TET_AXIS, TET_AXIS, TET_AXIS)
+#p = DFace(extrusion)
+#perms = _admissible_permutations(p)
+#display(perms)
+#
+#extrusion = Point(HEX_AXIS, HEX_AXIS, HEX_AXIS)
+#p = DFace(extrusion)
+#perms = _admissible_permutations(p)
+#display(perms)
+#
+#
+#f = DFace{2}(p,21)
+#
+#f = DFace{3}(p,27)
+
 
 end # module

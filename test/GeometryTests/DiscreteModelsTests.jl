@@ -88,4 +88,13 @@ test_discrete_model(tmodel)
 model2 = DiscreteModel(grid,topo,labeling)
 test_discrete_model(model2)
 
+d = mktempdir()
+
+filename = joinpath(d,"model.json")
+to_json_file(model2,filename)
+model3 = DiscreteModelFromFile(filename)
+test_discrete_model(model3)
+
+rm(d,recursive=true)
+
 end # module
