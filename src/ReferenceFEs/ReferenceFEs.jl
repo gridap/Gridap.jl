@@ -47,6 +47,7 @@ export get_facet_orientations
 export get_edge_tangents
 export get_vertex_permutations
 export get_face_dimranges
+export get_face_coordinates
 export is_simplex
 export is_n_cube
 export simplexify
@@ -137,6 +138,7 @@ export HEX8
 
 export SerendipityRefFE
 export PDiscRefFE
+export RaviartThomasRefFE
 
 include("Polytopes.jl")
 
@@ -157,5 +159,7 @@ include("LagrangianRefFEs.jl")
 include("SerendipityRefFEs.jl")
 
 include("PDiscRefFEs.jl")
+
+include("RaviartThomasRefFEs.jl")
 
 end # module
