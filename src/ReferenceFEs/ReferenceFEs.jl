@@ -138,6 +138,7 @@ export HEX8
 
 export SerendipityRefFE
 export PDiscRefFE
+export RaviartThomasRefFE
 
 include("Polytopes.jl")
 
@@ -159,7 +160,6 @@ include("SerendipityRefFEs.jl")
 
 include("PDiscRefFEs.jl")
 
-# temporary name...
-# include("MomentReferenceFEs.jl")
+include("RaviartThomasRefFEs.jl")
 
 end # module

@@ -156,6 +156,7 @@ export collect_cell_residual
 export FESpaceWithLastDofRemoved
 export ZeroMeanFESpace
 export CLagrangianFESpace
+export DivConformingFESpace
 
 export @law
 export operate
@@ -184,6 +185,8 @@ include("SparseMatrixAssemblers.jl")
 include("UnconstrainedFESpaces.jl")
 
 include("ConformingFESpaces.jl")
+
+include("DivConformingFESpaces.jl")
 
 include("DiscontinuousFESpaces.jl")
 

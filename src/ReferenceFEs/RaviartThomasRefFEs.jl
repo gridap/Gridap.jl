@@ -1,4 +1,34 @@
 
+function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
+
+  D = num_dims(p)
+  
+  prebasis = QCurlGradMonomialBasis{D}(et,order)
+  
+  nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order)
+  
+  face_own_dofs = _face_own_dofs_from_moments(nf_moments)
+
+  face_own_dofs_permutations = _trivial_face_own_dofs_permutataions(face_own_dofs)
+
+  face_dofs = face_own_dofs
+  
+  dof_basis = MomentBasedDofBasis(nf_nodes, nf_moments)
+
+  ndofs = num_dofs(dof_basis)
+
+  reffe = GenericRefFE(
+    ndofs,
+    p,
+    prebasis,
+    dof_basis,
+    face_own_dofs,
+    face_own_dofs_permutations,
+    face_dofs)
+
+  reffe
+end
+
 function _RT_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) where et
 
   @notimplementedif ! is_n_cube(p)
@@ -11,21 +41,18 @@ function _RT_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) where et
   nf_moments = [ zeros(ft,0,0) for face in 1:num_faces(p)]
   
   fcips, fmoments = _RT_face_values(p,et,order)
-  
-  if (order > 1)
-    ccips, cmoments = _RT_cell_values(p,et,order)
-  end
-  
   frange = get_dimrange(p,D-1)
   nf_nodes[frange] = fcips
   nf_moments[frange] = fmoments
   
-  crange = get_dimrange(p,D)
-  nf_nodes[crange] = ccips
-  nf_moments[crange] = cmoments
+  if (order > 1)
+    ccips, cmoments = _RT_cell_values(p,et,order)
+    crange = get_dimrange(p,D)
+    nf_nodes[crange] = ccips
+    nf_moments[crange] = cmoments
+  end
 
   nf_nodes, nf_moments
-
 end
 
 # Ref FE to faces geomaps
@@ -134,6 +161,10 @@ function _face_own_dofs_from_moments(f_moments)
     o += ndofs
   end
   face_dofs
+end
+
+function _trivial_face_own_dofs_permutataions(face_own_dofs)
+  [ [collect(Int,1:length(dofs)),]  for dofs in face_own_dofs  ]
 end
 
 struct MomentBasedDofBasis{P,V} <: Dof
