@@ -328,3 +328,28 @@ end
 
 # TODO Think about iteration and sub-iteration
 
+# Helper type to test caching of intermediate results
+
+struct ArrayWithCounter{T,N,A,C} <: AbstractArray{T,N}
+  array::A
+  counter::C
+  function ArrayWithCounter(a::AbstractArray{T,N}) where {T,N}
+    c = zeros(Int,size(a))
+    c[:] .= 0
+    new{T,N,typeof(a),typeof(c)}(a,c)
+  end
+end
+
+Base.size(a::ArrayWithCounter) = size(a.array)
+
+function Base.getindex(a::ArrayWithCounter,i::Integer...)
+  a.counter[i...] += 1
+  a.array[i...]
+end
+
+Base.IndexStyle(::Type{<:ArrayWithCounter{T,N,A}}) where {T,A,N} = IndexStyle(A)
+
+function reset_counter!(a::ArrayWithCounter)
+  a.counter[:] .= 0
+end
+

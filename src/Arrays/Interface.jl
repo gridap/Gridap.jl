@@ -75,7 +75,7 @@ function array_cache(a::AbstractArray)
 end
 
 function array_cache(hash,a::T) where T
-  if uses_hash(T) == Val(true)
+  if uses_hash(T) == Val{true}()
     error("array_cache(::Dict,::$T) not defined")
   end
   array_cache(a)

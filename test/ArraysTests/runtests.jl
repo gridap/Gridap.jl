@@ -24,4 +24,6 @@ using Test
 
 @testset "SubVectors" begin include("SubVectorsTests.jl") end
 
+@testset "ArrayPairs" begin include("ArrayPairsTests.jl") end
+
 end # module

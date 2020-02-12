@@ -77,6 +77,7 @@ export reindex
 export identity_vector
 
 export SubVector
+export pair_arrays
 
 import Base: size
 import Base: getindex, setindex!
@@ -107,5 +108,7 @@ include("Reindex.jl")
 include("IdentityVectors.jl")
 
 include("SubVectors.jl")
+
+include("ArrayPairs.jl")
 
 end # module
