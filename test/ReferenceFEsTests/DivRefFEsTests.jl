@@ -49,7 +49,8 @@ end
 cob = inv(hcat(pb_moments))
 basis = change_basis(prebasis,cob)
 
-nfacedofs = _nfacedofs_basis(p,nf_moments)
+nfacedofs = _face_own_dofs_from_moments(nf_moments)
+display(nfacedofs)
 
 # Build DOFBasis and RefFE with all this
 dof_basis = GenericDofBasis(nf_nodes, nf_moments)

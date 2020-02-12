@@ -146,16 +146,16 @@ function _RT_cell_values(p,et,order)
 
 end
 
-function _nfacedofs_basis(p,moments)
-  ndofs = [size(moments[i],1) for i in 1:length(moments)]
-  _nfacedofs = Vector{Vector{Int}}(undef,num_faces(p))
-  _nfacedofs[1] = Int[1:ndofs[1]...]
-  k = ndofs[1]
-  for i in 2:length(ndofs)
-    _nfacedofs[i] = [k+1:k+ndofs[i]...]
-    k += ndofs[i]
+function _face_own_dofs_from_moments(f_moments)
+  face_dofs = Vector{Int}[]
+  o = 1
+  for moments in f_moments
+    ndofs = size(moments,2)
+    dofs = collect(o:(o+ndofs-1))
+    push!(face_dofs,dofs)
+    o += ndofs
   end
-  return _nfacedofs
+  face_dofs
 end
 
 struct GenericDofBasis{P,V} <: Dof
