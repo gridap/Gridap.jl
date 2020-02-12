@@ -15,68 +15,29 @@ using Gridap.Arrays
 # I cannot include it in ReferenceFEs because of a cycle...
 include("../../src/ReferenceFEs/MomentReferenceFEs.jl")
 
-
 p = QUAD
-D = num_dims(p)
+D = num_dims(QUAD)
 et = Float64
 order = 3
 
-
-# Given p, D, et, order, we must create the RT constructor, code below...
-
-@notimplementedif ! is_n_cube(p)
-
-# 1. Prebasis
 prebasis = QCurlGradMonomialBasis{D}(et,order)
 
-# Nface nodes, moments, and prebasis evaluated at nodes
-nf_nodes, nf_moments, pb_moments = _initialize_arrays(prebasis,p)
+nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order)
 
+face_own_dofs = _face_own_dofs_from_moments(nf_moments)
 
-# Face values
-fcips, fmoments = _RT_face_values(p,et,order)
-nf_nodes,nf_moments,pb_moments = _insert_nface_values!(nf_nodes,nf_moments,pb_moments,prebasis,fcips,fmoments,p,num_dims(p)-1)
-
-# Cell values
-if (order > 1)
-
-  ccips, cmoments = _RT_cell_values(p,et,order)
-  nf_nodes,nf_moments,pb_moments = _insert_nface_values!(nf_nodes,nf_moments,pb_moments,prebasis,ccips,cmoments,p,num_dims(p))
-
-end
-
-# Change of basis matrix, inv([DF,DC])
-cob = inv(hcat(pb_moments))
-basis = change_basis(prebasis,cob)
-
-nfacedofs = _face_own_dofs_from_moments(nf_moments)
-display(nfacedofs)
-
-# Build DOFBasis and RefFE with all this
-dof_basis = GenericDofBasis(nf_nodes, nf_moments)
-
-# This part is missing, it is just to create the struct and implement the API
-# divreffe = _GenericRefFE(p,dof_basis,basis,nfacedofs)
-# return divreffe
-
-# Here some tests I have been doing
-b = dof_basis
+dof_basis = MomentBasedDofBasis(nf_nodes, nf_moments)
 
 v = VectorValue(3.0,0.0)
-d = 2
-field = MockField{d}(v)
+field = MockField{D}(v)
 
 cache = dof_cache(dof_basis,field)
-r = evaluate_dof!(cache, b, field)
-
-ndof = 8
-w = fill(v,ndof)
-f = OtherMockBasis{d}(ndof)
-basis = MockBasis{d}(v,ndof)
+r = evaluate_dof!(cache, dof_basis, field)
 
 cache = dof_cache(dof_basis,prebasis)
-r = evaluate_dof!(cache, b, prebasis)
+r = evaluate_dof!(cache, dof_basis, prebasis)
+
 display(r)
-display(pb_moments)
+
 
 end # module

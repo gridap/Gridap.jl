@@ -1,30 +1,30 @@
 
-function _initialize_arrays(prebasis,p)
+function _RT_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) where et
+
+  @notimplementedif ! is_n_cube(p)
 
   D = num_dims(p)
-  et = get_value_type(prebasis)
   ft = VectorValue{D,et}
-  pt = Point{D,Float64}
+  pt = Point{D,et}
 
-  # Arrays of moments (as its evaluation for all prebasis shape functions)
-  # and evaluation points per n-face
-  nf_moments = Vector{Array{ft}}(undef,num_faces(p))
-  nf_nodes = Vector{Array{pt}}(undef,num_faces(p))
-  nshfs = num_terms(prebasis)
-  pb_moments = zeros(et,nshfs,0)
-
-  # Initialize to zero arrays
-  zero_moments = zeros(ft,0,0)
-  zero_nodes = zeros(pt,0)
-
-  for dim in 0:num_dims(p)
-    for inf in get_dimrange(p,dim)
-      nf_moments[inf] = copy(zero_moments)
-      nf_nodes[inf] = copy(zero_nodes)
-    end
+  nf_nodes = [ zeros(pt,0) for face in 1:num_faces(p)]
+  nf_moments = [ zeros(ft,0,0) for face in 1:num_faces(p)]
+  
+  fcips, fmoments = _RT_face_values(p,et,order)
+  
+  if (order > 1)
+    ccips, cmoments = _RT_cell_values(p,et,order)
   end
+  
+  frange = get_dimrange(p,D-1)
+  nf_nodes[frange] = fcips
+  nf_moments[frange] = fmoments
+  
+  crange = get_dimrange(p,D)
+  nf_nodes[crange] = ccips
+  nf_moments[crange] = cmoments
 
-  return nf_nodes, nf_moments, pb_moments
+  nf_nodes, nf_moments
 
 end
 
@@ -71,7 +71,6 @@ end
 function _RT_face_values(p,et,order)
 
   # Reference facet
-
   @assert is_simplex(p) || is_n_cube(p) "We are assuming that all n-faces of the same n-dim are the same."
   fp = Polytope{num_dims(p)-1}(p,1)
 
@@ -100,27 +99,6 @@ function _RT_face_values(p,et,order)
   fmoments = _RT_face_moments(p, fshfs, c_fips, fcips, fwips)
 
   return fcips, fmoments
-
-end
-
-function _insert_nface_values!(nf_nodes, nf_moments, pb_moments,
-                               prebasis, fcips, fmoments, p, dim)
-
-  # Evaluate basis in faces points, i.e., S(Fi)_{ab} = ϕ^a(xgp_Fi^b)
-  pbasis_fcips = [evaluate(prebasis,ps) for ps in fcips]
-
-  nfs = get_dimrange(p,dim)
-  nf_moments[nfs] = fmoments
-  nf_nodes[nfs] = fcips
-
-  # Face moments evaluated for basis, i.e., DF = [S(F1)*M(F1)^T, …, S(Fn)*M(Fn)^T]
-  fms_preb = [bps'*ms for (bps,ms) in zip(pbasis_fcips,fmoments)]
-
-  for m in fms_preb
-    pb_moments = hcat(pb_moments,m)
-  end
-
-  return nf_nodes, nf_moments, pb_moments
 
 end
 
@@ -158,12 +136,12 @@ function _face_own_dofs_from_moments(f_moments)
   face_dofs
 end
 
-struct GenericDofBasis{P,V} <: Dof
+struct MomentBasedDofBasis{P,V} <: Dof
   nodes::Vector{P}
   face_moments::Vector{Array{V}}
   face_nodes::Vector{UnitRange{Int}}
 
-  function GenericDofBasis(f_nodes,f_moments)
+  function MomentBasedDofBasis(f_nodes,f_moments)
     P = eltype(eltype(f_nodes))
     V = eltype(eltype(f_moments))
     nodes = P[]
@@ -184,7 +162,7 @@ struct GenericDofBasis{P,V} <: Dof
   end
 end
 
-function num_dofs(b::GenericDofBasis)
+function num_dofs(b::MomentBasedDofBasis)
   n = 0
   for m in b.face_moments
     n += size(m,2)
@@ -192,7 +170,7 @@ function num_dofs(b::GenericDofBasis)
   n
 end
 
-function dof_cache(b::GenericDofBasis,field)
+function dof_cache(b::MomentBasedDofBasis,field)
   cf = field_cache(field,b.nodes)
   vals = evaluate_field!(cf,field,b.nodes)
   ndofs = num_dofs(b)
@@ -212,7 +190,7 @@ function _moment_dof_basis_cache(vals::AbstractMatrix,ndofs)
   r = zeros(eltype(T),ndofs,npdofs)
 end
 
-function evaluate_dof!(cache,b::GenericDofBasis,field)
+function evaluate_dof!(cache,b::MomentBasedDofBasis,field)
   c, cf = cache
   vals = evaluate_field!(cf,field,b.nodes)
   dofs = c.array
