@@ -73,7 +73,9 @@ w = fill(v,ndof)
 f = OtherMockBasis{d}(ndof)
 basis = MockBasis{d}(v,ndof)
 
-cache = dof_cache(dof_basis,basis)
-r = evaluate_dof!(cache, b, basis)
+cache = dof_cache(dof_basis,prebasis)
+r = evaluate_dof!(cache, b, prebasis)
+display(r)
+display(pb_moments)
 
 end # module

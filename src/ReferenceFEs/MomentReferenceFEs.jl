@@ -96,7 +96,6 @@ function _RT_face_values(p,et,order)
   # The RT prebasis is expressed in terms of shape function
   fshfs = MonomialBasis(et,fp,order-1)
 
-
   # Face moments, i.e., M(Fi)_{ab} = q_RF^a(xgp_RFi^b) w_Fi^b n_Fi ⋅ ()
   fmoments = _RT_face_moments(p, fshfs, c_fips, fcips, fwips)
 
@@ -185,21 +184,29 @@ struct GenericDofBasis{P,V} <: Dof
   end
 end
 
+function num_dofs(b::GenericDofBasis)
+  n = 0
+  for m in b.face_moments
+    n += size(m,2)
+  end
+  n
+end
+
 function dof_cache(b::GenericDofBasis,field)
   cf = field_cache(field,b.nodes)
   vals = evaluate_field!(cf,field,b.nodes)
-  ndofs = length(b.nodes)
-  r = _generic_dof_cache(vals,ndofs)
+  ndofs = num_dofs(b)
+  r = _moment_dof_basis_cache(vals,ndofs)
   c = CachedArray(r)
   (c, cf)
 end
 
-function _generic_dof_cache(vals::AbstractVector,ndofs)
+function _moment_dof_basis_cache(vals::AbstractVector,ndofs)
   T = eltype(vals)
   r = zeros(eltype(T),ndofs)
 end
 
-function _generic_dof_cache(vals::AbstractMatrix,ndofs)
+function _moment_dof_basis_cache(vals::AbstractMatrix,ndofs)
   _, npdofs = size(vals)
   T = eltype(vals)
   r = zeros(eltype(T),ndofs,npdofs)
@@ -208,15 +215,53 @@ end
 function evaluate_dof!(cache,b::GenericDofBasis,field)
   c, cf = cache
   vals = evaluate_field!(cf,field,b.nodes)
-  k = 0
   dofs = c.array
-  for (i,m) in enumerate(b.face_moments)
-    l = size(m,2)
-    if length(m) > 0
-      dofs[k+1:k+l] = m'*vals[b.face_nodes[i]]
-      k += l
-    end
-    #println(i,m)
-  end
-  return dofs
+  _eval_moment_dof_basis!(dofs,vals,b)
+  dofs
 end
+
+function _eval_moment_dof_basis!(dofs,vals::AbstractVector,b)
+  o = 1
+  z = zero(eltype(dofs))
+  face_nodes = b.face_nodes
+  face_moments = b.face_moments
+  for face in 1:length(face_moments)
+    moments = face_moments[face]
+    if length(moments) != 0
+      nodes = face_nodes[face]
+      ni,nj = size(moments)
+      for j in 1:nj
+        dofs[o] = z
+        for i in 1:ni
+          dofs[o] += moments[i,j]*vals[nodes[i]]
+        end
+        o += 1
+      end
+    end
+  end
+end
+
+function _eval_moment_dof_basis!(dofs,vals::AbstractMatrix,b)
+  o = 1
+  na = size(vals,2)
+  z = zero(eltype(dofs))
+  face_nodes = b.face_nodes
+  face_moments = b.face_moments
+  for face in 1:length(face_moments)
+    moments = face_moments[face]
+    if length(moments) != 0
+      nodes = face_nodes[face]
+      ni,nj = size(moments)
+      for j in 1:nj
+        for a in 1:na
+          dofs[o,a] = z
+          for i in 1:ni
+            dofs[o,a] += moments[i,j]*vals[nodes[i],a]
+          end
+        end
+        o += 1
+      end
+    end
+  end
+end
+
