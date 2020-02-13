@@ -409,6 +409,7 @@ function from_dict(::Type{DiscreteModel},dict::Dict{Symbol,Any})
 end
 
 """
+    DiscreteModelFromFile(filename::AbstractString)
 """
 function DiscreteModelFromFile(filename::AbstractString)
   base, extension = splitext(filename)

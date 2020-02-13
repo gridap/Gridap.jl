@@ -1,4 +1,11 @@
 
+"""
+    struct SubVector{T,A<:AbstractVector{T}} <: AbstractVector{T}
+      vector::A
+      pini::Int
+      pend::Int
+    end
+"""
 struct SubVector{T,A<:AbstractVector{T}} <: AbstractVector{T}
   vector::A
   pini::Int

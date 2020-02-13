@@ -49,4 +49,7 @@ end
 
 get_value_type(::QCurlGradMonomialBasis{D,T}) where {D,T} = T
 
+"""
+    num_terms(f::QCurlGradMonomialBasis{D,T}) where {D,T}
+"""
 num_terms(f::QCurlGradMonomialBasis{D,T}) where {D,T} = length(f.qgrad.terms)*D

@@ -1,10 +1,21 @@
 
+"""
+    struct ZeroMeanFESpace <: SingleFieldFESpace
+      # private fields
+    end
+"""
 struct ZeroMeanFESpace <: SingleFieldFESpace
   space::FESpaceWithLastDofRemoved
   vol_i::Vector{Float64}
   vol::Float64
 end
 
+"""
+    ZeroMeanFESpace(
+      space::SingleFieldFESpace,
+      trian::Triangulation,
+      quad::CellQuadrature)
+"""
 function ZeroMeanFESpace(
   space::SingleFieldFESpace,trian::Triangulation,quad::CellQuadrature)
 

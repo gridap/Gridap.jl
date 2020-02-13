@@ -485,6 +485,7 @@ function _get_faces_dual(p,dimfrom,dimto)
 end
 
 """
+    get_face_dimranges(p::Polytope,d::Integer)
 """
 function get_face_dimranges(p::Polytope,d::Integer)
   n = num_faces(p,d)
@@ -664,6 +665,7 @@ function get_face_vertex_permutations(p::Polytope)
 end
 
 """
+    get_face_coordinates(p::Polytope,d::Integer)
 """
 function get_face_coordinates(p::Polytope,d::Integer)
   vert_to_coord = get_vertex_coordinates(p)

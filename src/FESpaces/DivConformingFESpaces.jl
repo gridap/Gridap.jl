@@ -1,4 +1,11 @@
 
+"""
+    DivConformingFESpace(
+      reffes::Vector{<:ReferenceFE},
+      model::DiscreteModel,
+      face_labeing::FaceLabeling,
+      dirichlet_tags)
+"""
 function DivConformingFESpace(
   reffes::Vector{<:ReferenceFE},
   model::DiscreteModel,
