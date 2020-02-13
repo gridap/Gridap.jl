@@ -68,7 +68,6 @@ export zero_free_values
 export apply_constraints_matrix_cols
 export apply_constraints_matrix_rows
 export apply_constraints_vector
-export apply_constraints_matrix_and_vector_rows
 export test_fe_space
 
 export Assembler
@@ -150,6 +149,7 @@ export get_cell_jacobian
 export get_cell_residual
 export collect_cell_matrix
 export collect_cell_vector
+export collect_cell_matrix_and_vector
 export collect_cell_jacobian
 export collect_cell_residual
 

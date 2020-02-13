@@ -57,6 +57,17 @@ end
 
 """
 """
+function get_cell_matrix_and_vector(t::AffineFETerm,v,u,uhd)
+  @assert is_a_fe_function(uhd)
+  @assert is_a_fe_cell_basis(v)
+  @assert is_a_fe_cell_basis(u)
+  cellmat = get_cell_matrix(t,v,u)
+  cellvec = get_cell_vector(t,v,uhd)
+  (cellmat, cellvec)
+end
+
+"""
+"""
 abstract type LinearFETerm <: AffineFETerm end
 
 """
@@ -132,10 +143,64 @@ function collect_cell_vector(v,uhd,terms)
   (w,r)
 end
 
+"""
+"""
+function collect_cell_matrix_and_vector(v,u,uhd,terms)
+  @assert is_a_fe_cell_basis(v)
+  @assert is_a_fe_cell_basis(u)
+  @assert is_a_fe_function(uhd)
+
+  matvecdata = ([],[],[],[])
+  matdata = ([],[],[])
+  vecdata = ([],[])
+
+  for term in terms
+    cellmat, cellvec = get_cell_matrix_and_vector(term,v,u,uhd)
+    cellids = get_cell_id(term)
+    _push_matrix_and_vector_contribution!(matvecdata,matdata,vecdata,cellmat,cellvec,cellids)
+  end
+
+  (matvecdata,matdata,vecdata)
+end
+
+function _push_matrix_and_vector_contribution!(matvecdata,matdata,vecdata,cellmat,cellvec,cellids)
+  a,b,r,c = matvecdata
+  _push_matrix_contribution!(a,r,c,cellmat,cellids)
+  _push_vector_contribution!(b,[],cellvec,cellids)
+  nothing
+end
+
+function _push_matrix_and_vector_contribution!(matvecdata,matdata,vecdata,cellmat::Nothing,cellvec,cellids)
+  b,r = vecdata
+  _push_vector_contribution!(b,r,cellvec,cellids)
+  nothing
+end
+
+function _push_matrix_and_vector_contribution!(matvecdata,matdata,vecdata,cellmat,cellvec::Nothing,cellids)
+  a,r,c = matdata
+  _push_matrix_contribution!(a,r,c,cellmat,cellids)
+  nothing
+end
+
+function _push_matrix_and_vector_contribution!(
+  matvecdata,matdata,vecdata,cellmat::Nothing,cellvec::Nothing,cellids)
+  nothing
+end
+
+function _push_matrix_and_vector_contribution!(
+  matvecdata,matdata,vecdata,cellmat::SkeletonCellMatrix,cellvec::SkeletonCellVector,cellids)
+  a,r,c = matdata
+  b, br = vecdata
+  _push_matrix_contribution!(a,r,c,cellmat,cellids)
+  _push_vector_contribution!(b,br,cellvec,cellids)
+  nothing
+end
+
 function _push_matrix_contribution!(w,r,c,cellvals,cellids)
   push!(w,cellvals)
   push!(r,cellids)
   push!(c,cellids)
+  nothing
 end
 
 function _push_matrix_contribution!(w,r,c,cellvals::Nothing,cellids)
@@ -151,11 +216,13 @@ function _push_matrix_contribution!(w,r,c,cellvals::SkeletonCellMatrix,cellids::
   push!(r,cellids.left); push!(c,cellids.right)
   push!(r,cellids.right); push!(c,cellids.left)
   push!(r,cellids.right); push!(c,cellids.right)
+  nothing
 end
 
 function _push_vector_contribution!(v,r,cellvals,cellids)
   push!(v,cellvals)
   push!(r,cellids)
+  nothing
 end
 
 function _push_vector_contribution!(v,r,cellvals::Nothing,cellids)
@@ -167,6 +234,7 @@ function _push_vector_contribution!(v,r,cellvals::SkeletonCellVector,cellids::Sk
   push!(v,cellvals.right)
   push!(r,cellids.left)
   push!(r,cellids.right)
+  nothing
 end
 
 # Concrete implementations

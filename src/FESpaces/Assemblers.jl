@@ -57,26 +57,45 @@ end
 
 """
 """
-function allocate_matrix_and_vector(a::Assembler,cellidsrows,cellidscols)
-  A = allocate_matrix(a,cellidsrows,cellidscols)
-  b = allocate_vector(a,cellidsrows)
+function allocate_matrix_and_vector(a::Assembler,matvecdata,matdata,vecdata)
+  (_, matrows, matcols), (_, vecrows) = _rearange_matvec_data(matvecdata,matdata,vecdata)
+  A = allocate_matrix(a,matrows,matcols)
+  b = allocate_vector(a,vecrows)
   (A,b)
 end
 
 """
 """
-function assemble_matrix_and_vector!(A,b,a::Assembler,cellmat,cellvec,cellidsrows,cellidscols)
-  assemble_matrix!(A,a,cellmat,cellidsrows,cellidscols)
-  assemble_vector!(b,a,cellvec,cellidsrows)
+function assemble_matrix_and_vector!(A,b,a::Assembler,matvecdata,matdata,vecdata)
+  _matdata, _vecdata = _rearange_matvec_data(matvecdata,matdata,vecdata)
+  assemble_matrix!(A,a,_matdata...)
+  assemble_vector!(b,a,_vecdata...)
   (A,b)
 end
 
 """
 """
-function assemble_matrix_and_vector(a::Assembler,cellmat,cellvec,cellidsrows,cellidscols)
-  A, b = allocate_matrix_and_vector(a,cellidsrows,cellidscols)
-  assemble_matrix_and_vector!(A,b,cellmat,cellvec,cellidsrows,cellidscols)
+function assemble_matrix_and_vector(a::Assembler,matvecdata,matdata,vecdata)
+  _matdata, _vecdata = _rearange_matvec_data(matvecdata,matdata,vecdata)
+  A = assemble_matrix(a,_matdata...)
+  b = assemble_vector(a,_vecdata...)
   (A,b)
+end
+
+function _rearange_matvec_data(matvecdata,matdata,vecdata)
+
+  mat1, vec1, rows1, cols1 = matvecdata
+  mat2, rows2, cols2 = matdata
+  vec3, rows3 = vecdata
+
+  mat = vcat(mat1,mat2)
+  matrows = vcat(rows1,rows2)
+  matcols = vcat(cols1,cols2)
+
+  vec = vcat(vec1,vec3)
+  vecrows = vcat(rows1,rows3)
+
+  ((mat,matrows,matcols), (vec,vecrows))
 end
 
 """

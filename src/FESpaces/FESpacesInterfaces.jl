@@ -79,14 +79,6 @@ end
 
 """
 """
-function apply_constraints_matrix_and_vector_rows(f::FESpace,cellmat,cellvec,cellids)
-  cm = apply_constraints_matrix_rows(f,cellmat,cellids)
-  cv = apply_constraints_vector(f,cellvec,cellids)
-  (cm, cv)
-end
-
-"""
-"""
 function test_fe_space(f::FESpace,cellmat,cellvec,cellidsrows,cellidscols)
   free_values = zero_free_values(f)
   @test eltype(zero_free_values(Int,f)) == Int

@@ -66,6 +66,15 @@ b = assemble_vector(assem,vecdata...)
 x = A \ b
 @test x ≈ get_free_values(uh)
 
+data = collect_cell_matrix_and_vector(v,u,uhd,[t_affine, t_linear, t_source])
+A, b = allocate_matrix_and_vector(assem,data...)
+assemble_matrix_and_vector!(A,b,assem,data...)
+x = A \ b
+@test x ≈ get_free_values(uh)
+A, b = assemble_matrix_and_vector(assem,data...)
+x = A \ b
+@test x ≈ get_free_values(uh)
+
 matdata = collect_cell_jacobian(uh,v,u,[t_affine])
 vecdata = collect_cell_residual(uh,v,[t_affine])
 A = assemble_matrix(assem,matdata...)
