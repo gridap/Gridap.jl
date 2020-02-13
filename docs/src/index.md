@@ -18,18 +18,16 @@ The library currently supports linear and nonlinear PDE systems for scalar and v
 
 * The first step for new users is to visit the [Getting Started](@ref) page.
 
+* A set of tutorials written as Jupyter notebooks and html pages are available [here](https://github.com/gridap/Tutorials).
+
 * The detailed documentation is in the [Manual](@ref) section.
 
 * Guidelines for developers of the Gridap project is found in the [Gridap wiki](https://github.com/gridap/Gridap.jl/wiki) page.
 
-## Tutorials
-
-In addition to these documentation pages, a set of tutorials written in Jupyter notebooks are available [here](https://github.com/gridap/Tutorials).
-
 ## Julia educational resources
 
 A basic knowledge of the Julia programming language is needed to use the Gridap package.
-Here, a list of resources to get started with this programming language.
+Here, one can find a list of resources to get started with this programming language.
 
 * First steps to learn Julia form the [Gridap wiki](https://github.com/gridap/Gridap.jl/wiki/Start-learning-Julia) page.
 * Official webpage [docs.julialang.org](https://docs.julialang.org/)
@@ -48,11 +46,11 @@ Pages = [
   "Arrays.md",
   "Fields.md",
   "Polynomials.md",
+  "Integration.md",
   "ReferenceFEs.md",
   "Geometry.md",
-  "Integration.md",
   "FESpaces.md",
-  "MutliField.md",
+  "MultiField.md",
   "Visualization.md",
   ]
 ```
