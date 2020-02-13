@@ -43,6 +43,7 @@ Pages = [
   "Helpers.md",
   "Inference.md",
   "Io.md",
+  "Algebra.md",
   "TensorValues.md",
   "Arrays.md",
   "Fields.md",
@@ -50,8 +51,8 @@ Pages = [
   "ReferenceFEs.md",
   "Geometry.md",
   "Integration.md",
-  "Algebra.md",
   "FESpaces.md",
+  "MutliField.md",
   "Visualization.md",
   ]
 ```

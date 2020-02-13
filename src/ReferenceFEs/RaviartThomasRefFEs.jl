@@ -1,4 +1,7 @@
 
+"""
+    RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
+"""
 function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
 
   D = num_dims(p)

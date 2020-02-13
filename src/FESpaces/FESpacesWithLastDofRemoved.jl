@@ -1,6 +1,14 @@
 
+"""
+    struct FESpaceWithLastDofRemoved <: SingleFieldFESpace
+      space::SingleFieldFESpace
+    end
+"""
 struct FESpaceWithLastDofRemoved <: SingleFieldFESpace
   space::SingleFieldFESpace
+  @doc """
+      FESpaceWithLastDofRemoved(space::SingleFieldFESpace)
+  """
   function FESpaceWithLastDofRemoved(space::SingleFieldFESpace)
     s = "FESpaceWithLastDofRemoved can only be constructed from spaces without dirichlet dofs."
     @notimplementedif num_dirichlet_dofs(space) != 0 s

@@ -6,12 +6,19 @@ struct ConsequtiveMultiFieldStyle <: MultiFieldStyle end
 struct StridedMultiFieldStyle <: MultiFieldStyle end
 
 """
+    struct MultiFieldFESpace{S<:MultiFieldStyle} <: FESpace
+      spaces::Vector{<:SingleFieldFESpace}
+      multi_field_style::S
+    end
 """
 struct MultiFieldFESpace{S<:MultiFieldStyle} <: FESpace
   spaces::Vector{<:SingleFieldFESpace}
   multi_field_style::S
 end
 
+"""
+    MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace})
+"""
 function MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace})
   MultiFieldFESpace(spaces,ConsequtiveMultiFieldStyle())
 end
@@ -123,6 +130,9 @@ end
 
 # API for multi field case
 
+"""
+    num_fields(f::MultiFieldFESpace)
+"""
 function num_fields(f::MultiFieldFESpace)
   length(f.spaces)
 end
@@ -133,6 +143,9 @@ Base.iterate(m::MultiFieldFESpace,state) = iterate(m.spaces,state)
 
 Base.getindex(m::MultiFieldFESpace,field_id::Integer) = m.spaces[field_id]
 
+"""
+    restrict_to_field(f::MultiFieldFESpace,free_values::AbstractVector,field::Integer)
+"""
 function restrict_to_field(f::MultiFieldFESpace,free_values::AbstractVector,field::Integer)
   _restrict_to_field(f,MultiFieldStyle(f),free_values,field)
 end
@@ -185,6 +198,9 @@ end
 
 # API for the ConsequtiveMultiFieldStyle
 
+"""
+    compute_field_offsets(f::MultiFieldFESpace)
+"""
 function compute_field_offsets(f::MultiFieldFESpace)
   @assert MultiFieldStyle(f) == ConsequtiveMultiFieldStyle()
   U = f.spaces

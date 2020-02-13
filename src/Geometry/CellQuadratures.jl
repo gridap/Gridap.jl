@@ -1,16 +1,22 @@
 """
+    struct CellQuadrature <: GridapType
+      array
+    end
 """
 struct CellQuadrature <: GridapType
   array
+  @doc """
+      CellQuadrature(array::AbstractArray{<:Quadrature})
+  """
   function CellQuadrature(array::AbstractArray{<:Quadrature})
     new(array)
   end
 end
 
 """
-    CellQuadrature(trian::Triangulation, degree)
+    CellQuadrature(trian::Triangulation, degree::Integer)
 """
-function CellQuadrature(trian::Triangulation, degree)
+function CellQuadrature(trian::Triangulation, degree::Integer)
   polytopes = map(get_polytope,get_reffes(trian))
   cell_type = get_cell_type(trian)
   CellQuadrature(degree,polytopes,cell_type)
@@ -35,6 +41,7 @@ function CellQuadrature(degree,polytopes::Vector{<:Polytope}, cell_types::Fill)
 end
 
 """
+    get_array(quad::CellQuadrature)
 """
 get_array(quad::CellQuadrature) = quad.array
 
@@ -81,7 +88,9 @@ function _get_weights(q::Fill{<:Quadrature})
 end
 
 """
-the `cell_field` is aligned with the cells in `trian`
+    integrate(cell_field,trian::Triangulation,quad::CellQuadrature)
+
+The `cell_field` is aligned with the cells in `trian`
 """
 function integrate(cell_field,trian::Triangulation,quad::CellQuadrature)
   cell_map = get_cell_map(trian)

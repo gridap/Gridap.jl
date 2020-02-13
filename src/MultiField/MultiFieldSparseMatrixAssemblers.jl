@@ -1,5 +1,10 @@
 
 """
+    struct MultiFieldSparseMatrixAssembler{E} <: Assembler
+      matrix_type::Type{E}
+      test::MultiFieldFESpace
+      trial::MultiFieldFESpace
+    end
 """
 struct MultiFieldSparseMatrixAssembler{E} <: Assembler
   matrix_type::Type{E}
@@ -7,6 +12,12 @@ struct MultiFieldSparseMatrixAssembler{E} <: Assembler
   trial::MultiFieldFESpace
 end
 
+"""
+    MultiFieldSparseMatrixAssembler(
+      matrix_type::Type{<:AbstractSparseMatrix},
+      test::Vector{<:SingleFieldFESpace},
+      trial::Vector{<:SingleFieldFESpace})
+"""
 function MultiFieldSparseMatrixAssembler(
   matrix_type::Type{<:AbstractSparseMatrix},
   test::Vector{<:SingleFieldFESpace},

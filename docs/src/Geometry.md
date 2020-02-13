@@ -32,6 +32,18 @@ get_cell_shapefuns(trian::Triangulation)
 get_cell_map(trian::Triangulation)
 get_physical_coordinate(trian::Triangulation)
 ```
+### Integrating on a triangulation
+
+```@docs
+CellQuadrature
+CellQuadrature(array::AbstractArray{<:Quadrature})
+CellQuadrature(trian::Triangulation, degree::Integer)
+CellQuadrature(degree,polytopes::Vector{<:Polytope}, cell_types::AbstractVector)
+get_coordinates(quad::CellQuadrature)
+get_weights(quad::CellQuadrature)
+get_array(quad::CellQuadrature)
+integrate(cell_field,trian::Triangulation,quad::CellQuadrature)
+```
 
 ### TriangulationPortion
 
@@ -39,7 +51,6 @@ get_physical_coordinate(trian::Triangulation)
 TriangulationPortion
 TriangulationPortion(oldtrian::Triangulation{Dc,Dp},cell_to_oldcell::Vector{Int}) where {Dc,Dp}
 ```
-
 ## BoundaryTriangulations
 
 ### Interface
@@ -96,6 +107,7 @@ compute_linear_grid(reffe::LagrangianRefFE)
 compute_reference_grid(reffe::LagrangianRefFE, nelems::Integer)
 Grid(::Type{ReferenceFE{d}},p::Polytope) where d
 GridTopology(grid::Grid)
+simplexify(grid::Grid)
 ```
 
 ### UnstructuredGrids
@@ -277,6 +289,13 @@ Grid(::Type{ReferenceFE{d}},model::DiscreteModel) where d
 Triangulation(::Type{ReferenceFE{d}},model::DiscreteModel) where d
 get_triangulation(model::DiscreteModel)
 get_polytopes(model::DiscreteModel)
+simplexify(model::DiscreteModel)
+```
+
+### DiscreteModelFromFile
+
+```@docs
+DiscreteModelFromFile(filename::AbstractString)
 ```
 
 ### UnstructuredDiscreteModels
