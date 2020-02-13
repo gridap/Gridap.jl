@@ -12,4 +12,6 @@ using Test
 
 @testset "StokesDG" begin include("StokesDGTests.jl") end
 
+@testset "Darcy" begin include("DarcyTests.jl") end
+
 end # module
