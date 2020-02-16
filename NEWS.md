@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.7.0] - 2020-02-13
 
-This version is a major refactoring of the project which is not summarized here for the sake of brevity. Most of the functionality of v0.6.0 is available in v0.7.0, but with a possibly slightly different API. See the changes in the sources of the Gridap Tutorials between versions 0.6.0 and 0.7.0 to effectively see the major changes in the API. 
+This version is a major refactoring of the project which is not summarized here for the sake of brevity. Most of the functionality of v0.6.0 is available in v0.7.0, but with a possibly slightly different API. See [here](https://github.com/gridap/Tutorials/compare/v0.6.0...v0.7.0) the changes in the sources of the Gridap Tutorials between versions 0.6.0 and 0.7.0 to effectively see the major changes in the API. 
 
 ## [0.6.0] - 2020-01-24
 ### Added
