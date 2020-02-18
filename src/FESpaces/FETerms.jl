@@ -63,7 +63,24 @@ function get_cell_matrix_and_vector(t::AffineFETerm,v,u,uhd)
   @assert is_a_fe_cell_basis(u)
   cellmat = get_cell_matrix(t,v,u)
   cellvec = get_cell_vector(t,v,uhd)
-  (cellmat, cellvec)
+  _setup_cell_matrix_and_vector(cellmat,cellvec)
+end
+
+function  _setup_cell_matrix_and_vector(cellmat,cellvec)
+  cellmatvec = pair_arrays(cellmat,cellvec)
+  (cellmatvec, nothing, nothing)
+end
+
+function _setup_cell_matrix_and_vector(cellmat,cellvec::Nothing)
+  (nothing, cellmat, nothing)
+end
+
+function _setup_cell_matrix_and_vector(cellmat::Nothing,cellvec)
+  (nothing, nothing, cellvec)
+end
+
+function _setup_cell_matrix_and_vector(cellmat::Nothing,cellvec::Nothing)
+  (nothing, nothing, nothing)
 end
 
 """
