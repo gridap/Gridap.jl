@@ -19,12 +19,12 @@ Vf = TestFESpace(
   conformity=:H1, model=model, labels=labels, dirichlet_tags="dirichlet")
 
 Vd = DirichletFESpace(Vf)
-test_single_field_fe_space(Vd,[],[],[],[])
+test_single_field_fe_space(Vd)
 
 Uf = TrialFESpace(Vf,1)
 
 Ud = TrialFESpace(Vd)
-test_single_field_fe_space(Ud,[],[],[],[])
+test_single_field_fe_space(Ud)
 
 trian = Triangulation(model)
 degree = 2*order

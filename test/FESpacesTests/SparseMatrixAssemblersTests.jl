@@ -9,9 +9,7 @@ using Gridap.Integration
 using Gridap.Fields
 using Gridap.Algebra
 using SparseArrays
-#using Gridap.FESpaces
-include("../../src/FESpaces/FESpaces.jl")
-using .FESpaces
+using Gridap.FESpaces
 
 domain =(0,1,0,1)
 partition = (2,2)

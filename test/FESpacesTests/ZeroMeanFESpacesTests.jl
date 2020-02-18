@@ -25,10 +25,10 @@ _V = TestFESpace(
   conformity=:L2)
 
 V = ZeroMeanFESpace(_V,trian,quad)
-test_single_field_fe_space(V,[],[],[],[])
+test_single_field_fe_space(V)
 
 U = TrialFESpace(V)
-test_single_field_fe_space(U,[],[],[],[])
+test_single_field_fe_space(U)
 @test isa(U,ZeroMeanFESpace)
 @test is_trial(get_cell_basis(U))
 

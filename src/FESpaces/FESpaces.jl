@@ -197,10 +197,10 @@ include("UnconstrainedFESpaces.jl")
 
 include("ConformingFESpaces.jl")
 
-#include("DivConformingFESpaces.jl")
-#
-#include("DiscontinuousFESpaces.jl")
-#
+include("DivConformingFESpaces.jl")
+
+include("DiscontinuousFESpaces.jl")
+
 #include("FETerms.jl")
 #
 #include("AffineFEOperators.jl")
@@ -208,15 +208,15 @@ include("ConformingFESpaces.jl")
 #include("FEOperatorsFromTerms.jl")
 #
 #include("FESolvers.jl")
-#
-#include("FESpacesWithLastDofRemoved.jl")
-#
-#include("ZeroMeanFESpaces.jl")
-#
-#include("CLagrangianFESpaces.jl")
-#
-#include("DirichletFESpaces.jl")
-#
-#include("FESpaceFactories.jl")
+
+include("FESpacesWithLastDofRemoved.jl")
+
+include("ZeroMeanFESpaces.jl")
+
+include("CLagrangianFESpaces.jl")
+
+include("DirichletFESpaces.jl")
+
+include("FESpaceFactories.jl")
 
 end # module
