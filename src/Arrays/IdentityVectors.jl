@@ -26,3 +26,6 @@ function reindex(values::AbstractArray, indices::IdentityVector)
   values
 end
 
+function reindex(a::AppliedArray,b::IdentityVector)
+  a
+end

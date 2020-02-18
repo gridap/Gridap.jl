@@ -157,6 +157,7 @@ export FESpaceWithLastDofRemoved
 export ZeroMeanFESpace
 export CLagrangianFESpace
 export DivConformingFESpace
+export DirichletFESpace
 
 export @law
 export operate
@@ -203,6 +204,8 @@ include("FESpacesWithLastDofRemoved.jl")
 include("ZeroMeanFESpaces.jl")
 
 include("CLagrangianFESpaces.jl")
+
+include("DirichletFESpaces.jl")
 
 include("FESpaceFactories.jl")
 
