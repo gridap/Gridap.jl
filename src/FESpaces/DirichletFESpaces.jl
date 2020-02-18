@@ -1,4 +1,9 @@
 
+"""
+    struct DirichletFESpace <: SingleFieldFESpace
+      space::SingleFieldFESpace
+    end
+"""
 struct DirichletFESpace <: SingleFieldFESpace
   space::SingleFieldFESpace
 end
