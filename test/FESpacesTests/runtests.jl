@@ -44,6 +44,8 @@ using Test
 
 @testset "CLagrangianFESpaces" begin include("CLagrangianFESpacesTests.jl") end
 
+@testset "DirichletFESpaces" begin include("DirichletFESpacesTests.jl") end
+
 @testset "FESpaceFactories" begin include("FESpaceFactoriesTests.jl") end
 
 end # module
