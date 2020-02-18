@@ -22,7 +22,12 @@ dirichlet_tags = ["tag_01","tag_10"]
 V = GradConformingFESpace(reffes,model,dirichlet_tags)
 
 U = TrialFESpace(V,[4,3])
-test_single_field_fe_space(U,[],[],[],[])
+test_single_field_fe_space(U)
+
+matvecdata = ([],[],[])
+matdata = ([],[],[])
+vecdata = ([],[])
+test_single_field_fe_space(U,matvecdata,matdata,vecdata)
 
 uh = interpolate(U,0)
 

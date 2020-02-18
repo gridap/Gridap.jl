@@ -535,6 +535,18 @@ end
 
 # Integration of Skeleton quantities
 
+struct SkeletonMatrix{A} <: GridapType
+  ll::A
+  lr::A
+  rl::A
+  rr::A
+end
+
+struct SkeletonVector{A} <: GridapType
+  left::A
+  right::A
+end
+
 struct SkeletonCellMatrix <: GridapType
   ll
   lr

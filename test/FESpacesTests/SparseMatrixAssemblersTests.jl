@@ -9,7 +9,9 @@ using Gridap.Integration
 using Gridap.Fields
 using Gridap.Algebra
 using SparseArrays
-using Gridap.FESpaces
+#using Gridap.FESpaces
+include("../../src/FESpaces/FESpaces.jl")
+using .FESpaces
 
 domain =(0,1,0,1)
 partition = (2,2)
@@ -42,15 +44,22 @@ bv = restrict(v,btrian)
 
 cellmat = integrate(∇(v)*∇(u),trian,quad)
 cellvec = integrate(v*b,trian,quad)
+cellmatvec = pair_arrays(cellmat,cellvec)
 cellids = collect(1:num_cells(trian))
 
 bcellmat = integrate(bv*bu,btrian,bquad)
 bcellvec = integrate(bv*3,btrian,bquad)
+bcellmatvec = pair_arrays(bcellmat,bcellvec)
 bcellids = get_face_to_cell(btrian)
 
 term_to_cellmat = [cellmat, bcellmat]
 term_to_cellvec = [cellvec, bcellvec]
 term_to_cellids = [cellids, bcellids]
+term_to_cellmatvec = [ cellmatvec, bcellmatvec ]
+
+matvecdata = ( term_to_cellmatvec , term_to_cellids, term_to_cellids)
+matdata = (term_to_cellmat,term_to_cellids,term_to_cellids)
+vecdata = (term_to_cellvec,term_to_cellids)
 
 mtypes = [
   SparseMatrixCSC,
@@ -68,7 +77,7 @@ mtypes = [
 for T in mtypes
 
   assem = SparseMatrixAssembler(T,V,U)
-  test_assembler(assem,term_to_cellmat,term_to_cellvec,term_to_cellids,term_to_cellids)
+  test_assembler(assem,matvecdata,matdata,vecdata)
   
   mat = assemble_matrix(assem,[cellmat],[cellids],[cellids])
   vec = assemble_vector(assem,[cellvec],[cellids])
@@ -79,11 +88,9 @@ for T in mtypes
   assemble_vector!(vec,assem,[cellvec],[cellids])
   
   x2 = mat \ vec
-  
   @test x ≈ x2
   
   @test vec ≈ [0.0625, 0.125, 0.0625]
-  
   @test mat[1, 1]  ≈  1.333333333333333
   @test mat[2, 1]  ≈ -0.33333333333333
   @test mat[1, 2]  ≈ -0.33333333333333
@@ -91,6 +98,26 @@ for T in mtypes
   @test mat[3, 2]  ≈ -0.33333333333333
   @test mat[2, 3]  ≈ -0.33333333333333
   @test mat[3, 3]  ≈ 1.333333333333333
+
+  mat, vec = allocate_matrix_and_vector(assem,([cellmatvec],[cellids],[cellids]))
+  assemble_matrix_and_vector!(mat,vec,assem,([cellmatvec],[cellids],[cellids]))
+  assemble_matrix_and_vector!(mat,vec,assem,([cellmatvec],[cellids],[cellids]))
+
+  @test vec ≈ [0.0625, 0.125, 0.0625]
+  @test mat[1, 1]  ≈  1.333333333333333
+  @test mat[2, 1]  ≈ -0.33333333333333
+
+  x3 = mat \ vec
+  @test x ≈ x3
+
+  mat, vec = assemble_matrix_and_vector(assem,([cellmatvec],[cellids],[cellids]))
+
+  x4 = mat \ vec
+  @test x ≈ x4
+
+  @test vec ≈ [0.0625, 0.125, 0.0625]
+  @test mat[1, 1]  ≈  1.333333333333333
+  @test mat[2, 1]  ≈ -0.33333333333333
 
 end
 

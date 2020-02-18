@@ -27,6 +27,9 @@ using Gridap.Geometry: test_cell_field_like
 import Gridap.Arrays: get_array
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
+import Gridap.Arrays: kernel_cache
+import Gridap.Arrays: apply_kernel!
+import Gridap.Arrays: kernel_return_type
 import Gridap.Geometry: get_cell_map
 import Gridap.Geometry: get_cell_shapefuns
 import Gridap.Geometry: get_reffes
@@ -65,9 +68,16 @@ export FEFunction
 export num_free_dofs
 export get_cell_basis
 export zero_free_values
+export constraint_style
+export has_constraints
+export get_constraint_kernel_matrix_cols
+export get_constraint_kernel_matrix_rows
+export get_constraint_kernel_vector
 export apply_constraints_matrix_cols
 export apply_constraints_matrix_rows
 export apply_constraints_vector
+export apply_constraints_matrix_and_vector_cols
+export apply_constraints_matrix_and_vector_rows
 export test_fe_space
 
 export Assembler
@@ -187,26 +197,26 @@ include("UnconstrainedFESpaces.jl")
 
 include("ConformingFESpaces.jl")
 
-include("DivConformingFESpaces.jl")
-
-include("DiscontinuousFESpaces.jl")
-
-include("FETerms.jl")
-
-include("AffineFEOperators.jl")
-
-include("FEOperatorsFromTerms.jl")
-
-include("FESolvers.jl")
-
-include("FESpacesWithLastDofRemoved.jl")
-
-include("ZeroMeanFESpaces.jl")
-
-include("CLagrangianFESpaces.jl")
-
-include("DirichletFESpaces.jl")
-
-include("FESpaceFactories.jl")
+#include("DivConformingFESpaces.jl")
+#
+#include("DiscontinuousFESpaces.jl")
+#
+#include("FETerms.jl")
+#
+#include("AffineFEOperators.jl")
+#
+#include("FEOperatorsFromTerms.jl")
+#
+#include("FESolvers.jl")
+#
+#include("FESpacesWithLastDofRemoved.jl")
+#
+#include("ZeroMeanFESpaces.jl")
+#
+#include("CLagrangianFESpaces.jl")
+#
+#include("DirichletFESpaces.jl")
+#
+#include("FESpaceFactories.jl")
 
 end # module

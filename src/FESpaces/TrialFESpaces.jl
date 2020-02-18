@@ -1,8 +1,9 @@
 
-struct TrialFESpace <: SingleFieldFESpace
+struct TrialFESpace{B} <: SingleFieldFESpace
   space::SingleFieldFESpace
   dirichlet_values::AbstractVector
   cell_basis::CellBasis
+  constraint_style::Val{B}
 end
 
 """
@@ -10,7 +11,7 @@ end
 function TrialFESpace(space::SingleFieldFESpace)
   dirichlet_values = get_dirichlet_values(space)
   cell_basis = _prepare_trial_cell_basis(space)
-  TrialFESpace(space,dirichlet_values,cell_basis)
+  TrialFESpace(space,dirichlet_values,cell_basis,constraint_style(space))
 end
 
 """
@@ -18,7 +19,7 @@ end
 function TrialFESpace(space::SingleFieldFESpace,objects)
   dirichlet_values = compute_dirichlet_values_for_tags(space,objects)
   cell_basis = _prepare_trial_cell_basis(space)
-  TrialFESpace(space,dirichlet_values,cell_basis)
+  TrialFESpace(space,dirichlet_values,cell_basis,constraint_style(space))
 end
 
 function  _prepare_trial_cell_basis(space)
@@ -37,17 +38,13 @@ get_cell_basis(f::TrialFESpace) = f.cell_basis
 
 # Delegated functions
 
+constraint_style(::Type{<:TrialFESpace{B}}) where B = Val{B}()
+
 get_cell_dof_basis(f::TrialFESpace) = get_cell_dof_basis(f.space)
 
 num_free_dofs(f::TrialFESpace) = num_free_dofs(f.space)
 
 zero_free_values(::Type{T},f::TrialFESpace) where T = zero_free_values(T,f.space)
-
-apply_constraints_matrix_cols(f::TrialFESpace,cm,cids) = apply_constraints_matrix_cols(f.space,cm,cids)
-
-apply_constraints_matrix_rows(f::TrialFESpace,cm,cids) = apply_constraints_matrix_rows(f.space,cm,cids)
-
-apply_constraints_vector(f::TrialFESpace,cm,cids) = apply_constraints_vector(f.space,cm,cids)
 
 get_cell_dofs(f::TrialFESpace) = get_cell_dofs(f.space)
 

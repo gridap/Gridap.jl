@@ -211,3 +211,70 @@ end
   n
 end
 
+function assemble_matrix_and_vector!(A,b,a::SparseMatrixAssembler, matvecdata, matdata, vecdata)
+  z = zero(eltype(A))
+  fill_entries!(A,z)
+  fill!(b,zero(eltype(b)))
+  celldofs_rows = get_cell_dofs(a.test)
+  celldofs_cols = get_cell_dofs(a.trial)
+
+  for (cellmatvec_rc,cellidsrows,cellidscols) in zip(matvecdata...)
+    cell_rows = reindex(celldofs_rows,cellidsrows)
+    cell_cols = reindex(celldofs_cols,cellidscols)
+    cellmatvec_r = apply_constraints_matrix_and_vector_cols(a.trial,cellmatvec_rc,cellidscols)
+    cellmatvec = apply_constraints_matrix_and_vector_rows(a.test,cellmatvec_r,cellidsrows)
+    rows_cache = array_cache(cell_rows)
+    cols_cache = array_cache(cell_cols)
+    vals_cache = array_cache(cellmatvec)
+    _assemble_matrix_and_vector!(A,b,vals_cache,rows_cache,cols_cache,cellmatvec,cell_rows,cell_cols)
+  end
+
+  for (cellmat_rc,cellidsrows,cellidscols) in zip(matdata...)
+    cell_rows = reindex(celldofs_rows,cellidsrows)
+    cell_cols = reindex(celldofs_cols,cellidscols)
+    cellmat_r = apply_constraints_matrix_cols(a.trial,cellmat_rc,cellidscols)
+    cellmat = apply_constraints_matrix_rows(a.test,cellmat_r,cellidsrows)
+    rows_cache = array_cache(cell_rows)
+    cols_cache = array_cache(cell_cols)
+    vals_cache = array_cache(cellmat)
+    _assemble_matrix!(A,vals_cache,rows_cache,cols_cache,cellmat,cell_rows,cell_cols)
+  end
+
+  for (cellvec, cellids) in zip(vecdata...)
+    rows = reindex(celldofs_rows,cellids)
+    vals = apply_constraints_vector(a.test,cellvec,cellids)
+    rows_cache = array_cache(rows)
+    vals_cache = array_cache(vals)
+    _assemble_vector!(b,vals_cache,rows_cache,vals,rows)
+  end
+
+  A, b
+end
+
+function _assemble_matrix_and_vector!(A,b,vals_cache,rows_cache,cols_cache,cell_vals,cell_rows,cell_cols)
+  @assert length(cell_cols) == length(cell_rows)
+  @assert length(cell_vals) == length(cell_rows)
+  for cell in 1:length(cell_cols)
+    rows = getindex!(rows_cache,cell_rows,cell)
+    cols = getindex!(cols_cache,cell_cols,cell)
+    vals = getindex!(vals_cache,cell_vals,cell)
+    matvals, vecvals = vals
+    for (j,gidcol) in enumerate(cols)
+      if gidcol > 0
+        for (i,gidrow) in enumerate(rows)
+          if gidrow > 0
+            v = matvals[i,j]
+            add_entry!(A,v,gidrow,gidcol)
+          end
+        end
+      end
+    end
+    for (i,gidrow) in enumerate(rows)
+      if gidrow > 0
+        bi = vecvals[i]
+        b[gidrow] += bi
+      end
+    end
+  end
+end
+
