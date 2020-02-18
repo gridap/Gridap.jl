@@ -1,5 +1,11 @@
+"""
+
+The exported names are
+$(EXPORTS)
+"""
 module MultiField
 
+using DocStringExtensions
 using Gridap.Helpers
 using Gridap.Algebra
 using Gridap.Arrays
@@ -55,7 +61,6 @@ export compute_field_offsets
 export restrict_to_field
 export MultiFieldFESpace
 export MultiFieldFEFunction
-export MultiFieldCellBasis
 export MultiFieldSparseMatrixAssembler
 
 include("MultiCellArrays.jl")

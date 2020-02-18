@@ -223,7 +223,7 @@ function _convert_to_collectable(object::Function,ntags)
   _convert_to_collectable(fill(object,ntags),ntags)
 end
 
-function _convert_to_collectable(object::Integer,ntags)
+function _convert_to_collectable(object::Number,ntags)
   _convert_to_collectable(fill(object,ntags),ntags)
 end
 

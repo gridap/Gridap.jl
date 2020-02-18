@@ -39,6 +39,8 @@ get_offsets(p::Polytope)
 get_offset(p::Polytope,d::Integer)
 get_faces(p::Polytope,dimfrom::Integer,dimto::Integer)
 get_face_vertices(p::Polytope,dim::Integer)
+get_face_coordinates(p::Polytope,d::Integer)
+get_face_dimranges(p::Polytope,d::Integer)
 get_reffaces(::Type{Polytope{d}},p::Polytope) where d
 get_face_type(p::Polytope,d::Integer)
 get_bounding_box(p::Polytope{D}) where D
@@ -199,6 +201,18 @@ is_S(reffe::LagrangianRefFE)
 
 ```@docs
 SerendipityRefFE
+```
+
+### PDiscRefFE
+
+```@docs
+PDiscRefFE
+```
+
+### RaviartThomasRefFE
+
+```@docs
+RaviartThomasRefFE
 ```
 
 ### Pre-defined ReferenceFE instances

@@ -1,4 +1,7 @@
 
+"""
+    RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
+"""
 function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
 
   D = num_dims(p)
@@ -88,9 +91,10 @@ function _RT_face_moments(p, fshfs, c_fips, fcips, fwips)
   cvals = [fwips[i].*cvals[i] for i in 1:nc]
   # fns, os = get_facet_normals(p)
   fns = get_facet_normals(p)
+  os = get_facet_orientations(p)
   # @santiagobadia : Temporary hack for making it work for structured hex meshes
-  # cvals = [ _broadcast(typeof(n),n*o,b) for (n,o,b) in zip(fns,os,cvals)]
-  cvals = [ _broadcast(typeof(n),n,b) for (n,b) in zip(fns,cvals)]
+  cvals = [ _broadcast(typeof(n),n*o,b) for (n,o,b) in zip(fns,os,cvals)]
+  #cvals = [ _broadcast(typeof(n),n,b) for (n,b) in zip(fns,cvals)]
   return cvals
 end
 

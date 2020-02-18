@@ -138,6 +138,12 @@ LocalToGlobalPosNegArray
 LocalToGlobalPosNegArray(::AbstractArray{<:AbstractArray},::AbstractArray,::AbstractArray)
 ```
 
+### SubVector
+
+```@docs
+SubVector
+```
+
 ### Helpers
 
 ```@docs

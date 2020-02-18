@@ -1,4 +1,9 @@
 
+"""
+    struct MultiFieldFEFunction
+      # private fields
+    end
+"""
 struct MultiFieldFEFunction
   free_values::AbstractVector
   space::MultiFieldFESpace
@@ -11,6 +16,9 @@ get_free_values(f::MultiFieldFEFunction) = f.free_values
 
 get_fe_space(f::MultiFieldFEFunction) = f.space
 
+"""
+    num_fields(m::MultiFieldFEFunction)
+"""
 num_fields(m::MultiFieldFEFunction) = length(m.blocks)
 
 Base.iterate(m::MultiFieldFEFunction) = iterate(m.blocks)

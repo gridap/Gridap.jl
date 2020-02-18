@@ -1,4 +1,13 @@
 
+"""
+    struct CLagrangianFESpace{S} <: SingleFieldFESpace
+      grid::Grid
+      dof_to_node::Vector{Int}
+      dof_to_comp::Vector{Int8}
+      node_and_comp_to_dof::Vector{S}
+      # + private fields
+    end
+"""
 struct CLagrangianFESpace{S} <: SingleFieldFESpace
   space::UnsconstrainedFESpace
   grid::Grid
@@ -6,6 +15,9 @@ struct CLagrangianFESpace{S} <: SingleFieldFESpace
   dof_to_comp::Vector{Int8}
   node_and_comp_to_dof::Vector{S}
 
+  @doc """
+      CLagrangianFESpace(::Type{T},grid::Grid) where T
+  """
   function CLagrangianFESpace(::Type{T},grid::Grid) where T
     space, dof_to_node, dof_to_comp, node_and_comp_to_dof = _generate_clargangian_fespace(T,grid)
     S = eltype(node_and_comp_to_dof)
