@@ -41,15 +41,21 @@ du, dp = dx
 cellmat = integrate(dv*du,trian,quad)
 cellvec = integrate(dv*2,trian,quad)
 cellids = get_cell_id(trian)
+cellmatvec = pair_arrays(cellmat,cellvec)
 
 assem = SparseMatrixAssembler(SparseMatrixCSR{0},Y,X)
-test_assembler(assem,[cellmat],[cellvec],[cellids],[cellids])
 
-A = assemble_matrix(assem,[cellmat],[cellids],[cellids])
+matvecdata = ([cellmatvec],[cellids],[cellids])
+matdata = ([cellmat],[cellids],[cellids])
+vecdata = ([cellvec],[cellids])
 
-A = allocate_matrix(assem,[cellids],[cellids])
+test_assembler(assem,matvecdata,matdata,vecdata)
+
+A = assemble_matrix(assem,matdata...)
+
+A = allocate_matrix(assem,matdata...)
 
 assem = SparseMatrixAssembler(Y,X)
-test_assembler(assem,[cellmat],[cellvec],[cellids],[cellids])
+test_assembler(assem,matvecdata,matdata,vecdata)
 
 end # module

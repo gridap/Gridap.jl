@@ -59,13 +59,16 @@ du, dp = dx
 @test is_a_fe_cell_basis(dp)
 
 cellmat = integrate(dv*du,trian,quad)
-
 cellvec = integrate(dv*2,trian,quad)
-
 cellids = get_cell_id(trian)
+cellmatvec = pair_arrays(cellmat,cellvec)
 
-test_fe_space(V,cellmat,cellvec,cellids,cellids)
-test_fe_space(U,cellmat,cellvec,cellids,cellids)
+matvecdata = (cellmatvec,cellids,cellids)
+matdata = (cellmat,cellids,cellids)
+vecdata = (cellvec,cellids)
+
+test_fe_space(V,matvecdata,matdata,vecdata)
+test_fe_space(U,matvecdata,matdata,vecdata)
 
 #using Gridap.Visualization
 #writevtk(trian,"trian";nsubcells=30,cellfields=["uh" => uh, "ph"=> ph])

@@ -36,9 +36,10 @@ import Gridap.FESpaces: num_free_dofs
 import Gridap.FESpaces: get_cell_basis
 import Gridap.FESpaces: FEFunction
 import Gridap.FESpaces: zero_free_values
-import Gridap.FESpaces: apply_constraints_matrix_cols
-import Gridap.FESpaces: apply_constraints_matrix_rows
-import Gridap.FESpaces: apply_constraints_vector
+import Gridap.FESpaces: constraint_style
+import Gridap.FESpaces: get_constraint_kernel_matrix_cols
+import Gridap.FESpaces: get_constraint_kernel_matrix_rows
+import Gridap.FESpaces: get_constraint_kernel_vector
 import Gridap.FESpaces: get_cell_dofs
 import Gridap.FESpaces: get_fe_space
 import Gridap.FESpaces: get_free_values
@@ -49,6 +50,9 @@ import Gridap.FESpaces: assemble_vector!
 import Gridap.FESpaces: allocate_matrix
 import Gridap.FESpaces: assemble_matrix!
 import Gridap.FESpaces: assemble_matrix
+import Gridap.FESpaces: allocate_matrix_and_vector
+import Gridap.FESpaces: assemble_matrix_and_vector!
+import Gridap.FESpaces: assemble_matrix_and_vector
 import Gridap.FESpaces: SparseMatrixAssembler
 import Gridap.FESpaces: AffineFEOperator
 import Gridap.FESpaces: FEOperator

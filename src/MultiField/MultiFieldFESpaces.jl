@@ -6,14 +6,24 @@ struct ConsequtiveMultiFieldStyle <: MultiFieldStyle end
 struct StridedMultiFieldStyle <: MultiFieldStyle end
 
 """
-    struct MultiFieldFESpace{S<:MultiFieldStyle} <: FESpace
+    struct MultiFieldFESpace{S<:MultiFieldStyle,B} <: FESpace
       spaces::Vector{<:SingleFieldFESpace}
       multi_field_style::S
+      constraint_style::Val{B}
     end
 """
-struct MultiFieldFESpace{S<:MultiFieldStyle} <: FESpace
+struct MultiFieldFESpace{S<:MultiFieldStyle,B} <: FESpace
   spaces::Vector{<:SingleFieldFESpace}
   multi_field_style::S
+  constraint_style::Val{B}
+  function MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace},mfs::MultiFieldStyle)
+    S = typeof(mfs)
+    msg = "MultiFieldFESpace only implemented when the underlying fields have no constraints."
+    @notimplementedif any( map(has_constraints,spaces) ) msg
+    B = false
+    cs = Val{B}()
+    new{S,B}(spaces,mfs,cs)
+  end
 end
 
 """
@@ -23,12 +33,13 @@ function MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace})
   MultiFieldFESpace(spaces,ConsequtiveMultiFieldStyle())
 end
 
-MultiFieldStyle(::Type{MultiFieldFESpace{S}}) where S = S()
+MultiFieldStyle(::Type{MultiFieldFESpace{S,B}}) where {S,B} = S()
 
 MultiFieldStyle(f::MultiFieldFESpace) = MultiFieldStyle(typeof(f))
 
-
 # Implementation of FESpace
+
+constraint_style(::Type{MultiFieldFESpace{S,B}}) where {S,B} = Val{B}()
 
 function num_free_dofs(f::MultiFieldFESpace)
   n = 0
@@ -90,42 +101,6 @@ end
 function zero_free_values(::Type{T},spaces::Vector{<:SingleFieldFESpace}) where T
   f = MultiFieldFESpace(spaces)
   zero_free_values(T,f)
-end
-
-function apply_constraints_matrix_cols(f::MultiFieldFESpace,cellmat::MultiCellArray,cellids::AbstractVector)
-  blocks = cellmat.blocks
-  block_ids = cellmat.block_ids
-  spaces = f.spaces
-  function fun(i,block)
-    field_id_rows, field_id_cols = block_ids[i]
-    apply_constraints_matrix_cols(spaces[field_id_cols],block,cellids)
-  end
-  new_blocks = (  fun(i,block) for (i,block) in enumerate(blocks) )
-  MultiCellArray(tuple(new_blocks...),block_ids)
-end
-
-function apply_constraints_matrix_rows(f::MultiFieldFESpace,cellmat::MultiCellArray,cellids::AbstractVector)
-  blocks = cellmat.blocks
-  block_ids = cellmat.block_ids
-  spaces = f.spaces
-  function fun(i,block)
-    field_id_rows, field_id_cols = block_ids[i]
-    apply_constraints_matrix_rows(spaces[field_id_rows],block,cellids)
-  end
-  new_blocks = (  fun(i,block) for (i,block) in enumerate(blocks) )
-  MultiCellArray(tuple(new_blocks...),block_ids)
-end
-
-function apply_constraints_vector(f::MultiFieldFESpace,cellvec::MultiCellArray,cellids::AbstractVector)
-  blocks = cellvec.blocks
-  block_ids = cellvec.block_ids
-  spaces = f.spaces
-  function fun(i,block)
-   field_id, = block_ids[i]
-   apply_constraints_vector(spaces[field_id],block,cellids)
-  end
-  new_blocks = (  fun(i,block) for (i,block) in enumerate(blocks) )
-  MultiCellArray(tuple(new_blocks...),block_ids)
 end
 
 # API for multi field case
