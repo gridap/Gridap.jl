@@ -201,13 +201,13 @@ include("DivConformingFESpaces.jl")
 
 include("DiscontinuousFESpaces.jl")
 
-#include("FETerms.jl")
-#
-#include("AffineFEOperators.jl")
-#
-#include("FEOperatorsFromTerms.jl")
-#
-#include("FESolvers.jl")
+include("FETerms.jl")
+
+include("AffineFEOperators.jl")
+
+include("FEOperatorsFromTerms.jl")
+
+include("FESolvers.jl")
 
 include("FESpacesWithLastDofRemoved.jl")
 

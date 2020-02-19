@@ -18,7 +18,10 @@ reffes = [LagrangianRefFE(Float64,p,order) for p in polytopes]
 
 dirichlet_tags = ["tag_24","tag_25"]
 V0 = GradConformingFESpace(reffes,model,dirichlet_tags)
-test_single_field_fe_space(V0,[],[],[],[])
+matvecdata = ([],[],[])
+matdata = ([],[],[])
+vecdata = ([],[])
+test_single_field_fe_space(V0,matvecdata,matdata,vecdata)
 
 cell_map = get_cell_map(V0)
 

@@ -71,6 +71,11 @@ function  _setup_cell_matrix_and_vector(cellmat,cellvec)
   (cellmatvec, nothing, nothing)
 end
 
+function  _setup_cell_matrix_and_vector(cellmat::SkeletonCellMatrix,cellvec::SkeletonCellVector)
+  # TODO for the moment do not pair quantities on the skeleton
+  (nothing, cellmat, cellvec)
+end
+
 function _setup_cell_matrix_and_vector(cellmat,cellvec::Nothing)
   (nothing, cellmat, nothing)
 end
@@ -167,50 +172,19 @@ function collect_cell_matrix_and_vector(v,u,uhd,terms)
   @assert is_a_fe_cell_basis(u)
   @assert is_a_fe_function(uhd)
 
-  matvecdata = ([],[],[],[])
+  matvecdata = ([],[],[])
   matdata = ([],[],[])
   vecdata = ([],[])
 
   for term in terms
-    cellmat, cellvec = get_cell_matrix_and_vector(term,v,u,uhd)
+    cellmatvec, cellmat, cellvec = get_cell_matrix_and_vector(term,v,u,uhd)
     cellids = get_cell_id(term)
-    _push_matrix_and_vector_contribution!(matvecdata,matdata,vecdata,cellmat,cellvec,cellids)
+    _push_matrix_contribution!(matvecdata...,cellmatvec,cellids)
+    _push_matrix_contribution!(matdata...,cellmat,cellids)
+    _push_vector_contribution!(vecdata...,cellvec,cellids)
   end
 
-  (matvecdata,matdata,vecdata)
-end
-
-function _push_matrix_and_vector_contribution!(matvecdata,matdata,vecdata,cellmat,cellvec,cellids)
-  a,b,r,c = matvecdata
-  _push_matrix_contribution!(a,r,c,cellmat,cellids)
-  _push_vector_contribution!(b,[],cellvec,cellids)
-  nothing
-end
-
-function _push_matrix_and_vector_contribution!(matvecdata,matdata,vecdata,cellmat::Nothing,cellvec,cellids)
-  b,r = vecdata
-  _push_vector_contribution!(b,r,cellvec,cellids)
-  nothing
-end
-
-function _push_matrix_and_vector_contribution!(matvecdata,matdata,vecdata,cellmat,cellvec::Nothing,cellids)
-  a,r,c = matdata
-  _push_matrix_contribution!(a,r,c,cellmat,cellids)
-  nothing
-end
-
-function _push_matrix_and_vector_contribution!(
-  matvecdata,matdata,vecdata,cellmat::Nothing,cellvec::Nothing,cellids)
-  nothing
-end
-
-function _push_matrix_and_vector_contribution!(
-  matvecdata,matdata,vecdata,cellmat::SkeletonCellMatrix,cellvec::SkeletonCellVector,cellids)
-  a,r,c = matdata
-  b, br = vecdata
-  _push_matrix_contribution!(a,r,c,cellmat,cellids)
-  _push_vector_contribution!(b,br,cellvec,cellids)
-  nothing
+  (matvecdata, matdata, vecdata)
 end
 
 function _push_matrix_contribution!(w,r,c,cellvals,cellids)

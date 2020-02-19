@@ -24,7 +24,7 @@ using Test
 
 @time @testset "Geometry" begin include("GeometryTests/runtests.jl") end
 
-#@time @testset "FESpaces" begin include("FESpacesTests/runtests.jl") end
+@time @testset "FESpaces" begin include("FESpacesTests/runtests.jl") end
 
 #@time @testset "MultiField" begin include("MultiFieldTests/runtests.jl") end
 
