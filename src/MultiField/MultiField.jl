@@ -43,6 +43,7 @@ import Gridap.FESpaces: get_constraint_kernel_vector
 import Gridap.FESpaces: get_cell_dofs
 import Gridap.FESpaces: get_fe_space
 import Gridap.FESpaces: get_free_values
+import Gridap.FESpaces: get_cell_values
 import Gridap.FESpaces: get_test
 import Gridap.FESpaces: get_trial
 import Gridap.FESpaces: allocate_vector

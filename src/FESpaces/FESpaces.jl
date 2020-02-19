@@ -61,6 +61,7 @@ export FEFunctionStyle
 export is_a_fe_function
 export get_free_values
 export get_fe_space
+export get_cell_values
 export test_fe_function
 
 export FESpace

@@ -29,6 +29,12 @@ end
 
 """
 """
+function get_cell_values(object)
+  @abstractmethod
+end
+
+"""
+"""
 function get_fe_space(object)
   @abstractmethod
 end
@@ -40,5 +46,6 @@ function test_fe_function(f)
   free_values = get_free_values(f)
   fe_space = get_fe_space(f)
   @test length(free_values) == num_free_dofs(fe_space)
+  cell_vals = get_cell_values(f)
 end
 

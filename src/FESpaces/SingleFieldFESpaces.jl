@@ -107,7 +107,7 @@ function FEFunction(
   cell_vals = scatter_free_and_dirichlet_values(fs,free_values,dirichlet_values)
   cell_shapefuns = get_cell_shapefuns(fs)
   cell_field = lincomb(cell_shapefuns,cell_vals)
-  SingleFieldFEFunction(cell_field,free_values,dirichlet_values,fs)
+  SingleFieldFEFunction(cell_field,cell_vals,free_values,dirichlet_values,fs)
 end
 
 function FEFunction(fe::SingleFieldFESpace, free_values)
