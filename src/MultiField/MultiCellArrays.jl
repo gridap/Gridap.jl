@@ -18,6 +18,19 @@ struct MultiCellArray{T,N,B<:Tuple} <: AbstractVector{BlockArrayCOO{T,N,Array{T,
   end
 end
 
+#TODO temporary hacks
+
+function _get_cell_vector_tmp_hack(cellmat::MultiCellArray,t,v,uhd) #TODO
+  cellvec = get_cell_vector(t,v,uhd)
+  cellvec
+end
+
+function  _setup_cell_matrix_and_vector(cellmat::MultiCellArray,cellvec::MultiCellArray,cellvals)
+  # TODO we assume that cellvec has dirichlet bcs
+  cellmatvec = pair_arrays(cellmat,cellvec)
+  (cellmatvec, nothing, nothing)
+end
+
 function array_cache(a::MultiCellArray{T,N}) where {T,N}
   coordinates = a.block_ids
   nblocks = length(coordinates)

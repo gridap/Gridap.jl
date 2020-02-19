@@ -59,6 +59,10 @@ import Gridap.FESpaces: AffineFEOperator
 import Gridap.FESpaces: FEOperator
 import Gridap.FESpaces: EvaluationFunction
 
+#TODO
+import Gridap.FESpaces: _get_cell_vector_tmp_hack
+import Gridap.FESpaces: _setup_cell_matrix_and_vector
+
 import Base: +, -
 
 export num_fields

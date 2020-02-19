@@ -45,6 +45,7 @@ dirichlet_values = compute_dirichlet_values_for_tags(V0,2)
 free_values = zero_free_values(V0)
 uh = FEFunction(V0,free_values,dirichlet_values)
 
+
 #using Gridap.Visualization
 #
 #trian = get_triangulation(model)

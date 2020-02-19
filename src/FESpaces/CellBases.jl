@@ -575,3 +575,66 @@ function integrate(
   SkeletonCellVector(left,right)
 end
 
+# Dirichlet related
+
+function compute_dirichlet_cell_vector(cellmat,cellvals)
+  k = DirichletVecKernel()
+  apply(k,cellmat,cellvals)
+end
+
+"""
+"""
+function attach_dirichlet_bcs(cellmatvec,cellvals)
+  k = DirichletMatVecKernel()
+  apply(k,cellmatvec,cellvals)
+end
+
+struct DirichletVecKernel <: Kernel end
+
+function kernel_cache(k::DirichletVecKernel,mat::AbstractMatrix,vals)
+  vec = mat*vals
+  CachedArray(vec)
+end
+
+@inline function apply_kernel!(cache,k::DirichletVecKernel,mat::AbstractMatrix,vals)
+  n = size(mat,1)
+  setsize!(cache,(n,))
+  vec = cache.array
+  mul!(vec,mat,vals)
+  @inbounds for i in eachindex(vec)
+    vec[i] = -vec[i]
+  end
+  vec
+end
+
+struct DirichletMatVecKernel <: Kernel
+  k::DirichletVecKernel
+  function DirichletMatVecKernel()
+    k = DirichletVecKernel()
+    new(k)
+  end
+end
+
+function kernel_cache(k::DirichletMatVecKernel,mat::AbstractMatrix,vals)
+  kernel_cache(k.k,mat,vals)
+end
+
+function kernel_cache(k::DirichletMatVecKernel,matvec::Tuple,vals)
+  mat, = matvec
+  kernel_cache(k.k,mat,vals)
+end
+
+@inline function apply_kernel!(cache,k::DirichletMatVecKernel,mat::AbstractMatrix,vals)
+  vec = apply_kernel!(cache,k.k,mat,vals)
+  (mat,vec)
+end
+
+@inline function apply_kernel!(cache,k::DirichletMatVecKernel,matvec::Tuple,vals)
+  mat, vec = matvec
+  vecd = apply_kernel!(cache,k.k,mat,vals)
+  @inbounds for i in eachindex(vec)
+    vecd[i] = vec[i] + vecd[i]
+  end
+  (mat, vecd)
+end
+

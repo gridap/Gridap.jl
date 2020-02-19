@@ -9,6 +9,7 @@ using DocStringExtensions
 using Test
 using FillArrays
 using SparseArrays
+using LinearAlgebra
 
 using Gridap.Helpers
 using Gridap.Arrays
@@ -131,6 +132,7 @@ export GenericCellMatrixField
 export TrialStyle
 export is_trial
 export is_test
+export attach_dirichlet_bcs
 
 export FECellBasisStyle
 export is_a_fe_cell_basis

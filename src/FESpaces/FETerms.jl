@@ -28,6 +28,12 @@ end
 
 """
 """
+function get_cell_values(t::FETerm,uhd)
+  @abstractmethod
+end
+
+"""
+"""
 abstract type AffineFETerm <: FETerm end
 
 """
@@ -48,6 +54,10 @@ function get_cell_vector(t::AffineFETerm,v,uhd)
   @abstractmethod
 end
 
+function get_cell_vector(t::AffineFETerm,v)
+  @abstractmethod
+end
+
 function get_cell_jacobian(t::AffineFETerm,uh,v,du)
   @assert is_a_fe_function(uh)
   @assert is_a_fe_cell_basis(v)
@@ -62,29 +72,42 @@ function get_cell_matrix_and_vector(t::AffineFETerm,v,u,uhd)
   @assert is_a_fe_cell_basis(v)
   @assert is_a_fe_cell_basis(u)
   cellmat = get_cell_matrix(t,v,u)
+  cellvec = _get_cell_vector_tmp_hack(cellmat,t,v,uhd) #TODO
+  cellvals = get_cell_values(t,uhd)
+  _setup_cell_matrix_and_vector(cellmat,cellvec,cellvals)
+end
+
+function _get_cell_vector_tmp_hack(cellmat,t,v,uhd) #TODO
+  cellvec = get_cell_vector(t,v)
+  cellvec
+end
+
+function _get_cell_vector_tmp_hack(cellmat::SkeletonCellMatrix,t,v,uhd) #TODO
   cellvec = get_cell_vector(t,v,uhd)
-  _setup_cell_matrix_and_vector(cellmat,cellvec)
+  cellvec
 end
 
-function  _setup_cell_matrix_and_vector(cellmat,cellvec)
+function  _setup_cell_matrix_and_vector(cellmat,cellvec,cellvals)
   cellmatvec = pair_arrays(cellmat,cellvec)
-  (cellmatvec, nothing, nothing)
+  cellmatvec_with_diri = attach_dirichlet_bcs(cellmatvec,cellvals)
+  (cellmatvec_with_diri, nothing, nothing)
 end
 
-function  _setup_cell_matrix_and_vector(cellmat::SkeletonCellMatrix,cellvec::SkeletonCellVector)
-  # TODO for the moment do not pair quantities on the skeleton
+function  _setup_cell_matrix_and_vector(cellmat::SkeletonCellMatrix,cellvec::SkeletonCellVector,cellvals)
+  # TODO for the moment do not pair quantities on the skeleton and assume that cellvec has dirichlet bcs
   (nothing, cellmat, cellvec)
 end
 
-function _setup_cell_matrix_and_vector(cellmat,cellvec::Nothing)
-  (nothing, cellmat, nothing)
+function _setup_cell_matrix_and_vector(cellmat,cellvec::Nothing,cellvals)
+  cellmatvec_with_diri = attach_dirichlet_bcs(cellmat,cellvals)
+  (cellmatvec_with_diri, nothing, nothing)
 end
 
-function _setup_cell_matrix_and_vector(cellmat::Nothing,cellvec)
+function _setup_cell_matrix_and_vector(cellmat::Nothing,cellvec,cellvals)
   (nothing, nothing, cellvec)
 end
 
-function _setup_cell_matrix_and_vector(cellmat::Nothing,cellvec::Nothing)
+function _setup_cell_matrix_and_vector(cellmat::Nothing,cellvec::Nothing,cellvals)
   (nothing, nothing, nothing)
 end
 
@@ -260,6 +283,12 @@ function get_cell_vector(t::AffineFETermFromIntegration,v,uhd)
   integrate(t.liform(_v)-t.biform(_v,_uhd),t.trian,t.quad)
 end
 
+function get_cell_vector(t::AffineFETermFromIntegration,v)
+  @assert is_a_fe_cell_basis(v)
+  _v = restrict(v,t.trian)
+  integrate(t.liform(_v),t.trian,t.quad)
+end
+
 function get_cell_residual(t::AffineFETermFromIntegration,uh,v)
   @assert is_a_fe_function(uh)
   @assert is_a_fe_cell_basis(v)
@@ -270,6 +299,12 @@ end
 
 function get_cell_id(t::AffineFETermFromIntegration)
   get_cell_id(t.trian)
+end
+
+function get_cell_values(t::AffineFETermFromIntegration,uhd)
+  @assert is_a_fe_function(uhd)
+  cellvals = get_cell_values(uhd)
+  reindex(cellvals,t.trian)
 end
 
 struct FESourceFromIntegration <: FESource
@@ -298,6 +333,12 @@ function get_cell_vector(t::FESourceFromIntegration,v,uhd)
   integrate(t.liform(_v),t.trian,t.quad)
 end
 
+function get_cell_vector(t::FESourceFromIntegration,v)
+  @assert is_a_fe_cell_basis(v)
+  _v = restrict(v,t.trian)
+  integrate(t.liform(_v),t.trian,t.quad)
+end
+
 function get_cell_residual(t::FESourceFromIntegration,uh,v)
   @assert is_a_fe_function(uh)
   @assert is_a_fe_cell_basis(v)
@@ -307,6 +348,12 @@ end
 
 function get_cell_id(t::FESourceFromIntegration)
   get_cell_id(t.trian)
+end
+
+function get_cell_values(t::FESourceFromIntegration,uhd)
+  @assert is_a_fe_function(uhd)
+  cellvals = get_cell_values(uhd)
+  reindex(cellvals,t.trian)
 end
 
 struct LinearFETermFromIntegration <: LinearFETerm
@@ -338,6 +385,11 @@ function get_cell_vector(t::LinearFETermFromIntegration,v,uhd)
   integrate(-t.biform(_v,_uhd),t.trian,t.quad)
 end
 
+function get_cell_vector(t::LinearFETermFromIntegration,v)
+  @assert is_a_fe_cell_basis(v)
+  nothing
+end
+
 function get_cell_residual(t::LinearFETermFromIntegration,uh,v)
   @assert is_a_fe_function(uh)
   @assert is_a_fe_cell_basis(v)
@@ -348,6 +400,12 @@ end
 
 function get_cell_id(t::LinearFETermFromIntegration) 
   get_cell_id(t.trian)
+end
+
+function get_cell_values(t::LinearFETermFromIntegration,uhd)
+  @assert is_a_fe_function(uhd)
+  cellvals = get_cell_values(uhd)
+  reindex(cellvals,t.trian)
 end
 
 struct NonLinearFETerm <: FETerm
@@ -384,5 +442,11 @@ end
 
 function get_cell_id(t::NonLinearFETerm)
   get_cell_id(t.trian)
+end
+
+function get_cell_values(t::NonLinearFETerm,uhd)
+  @assert is_a_fe_function(uhd)
+  cellvals = get_cell_values(uhd)
+  reindex(cellvals,t.trian)
 end
 

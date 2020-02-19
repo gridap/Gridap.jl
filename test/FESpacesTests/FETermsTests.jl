@@ -48,12 +48,11 @@ j(u,v,du) = a(v,du)
 r(u,v) = a(v,u) - l(v)
 
 z(v,u) = jump(v)*jump(u)
+w(v) = jump(v)*f
 
 t_linear = LinearFETerm(z,strian,squad)
 
-w(v) = jump(v)*f
 t_source = FESource(w,strian,squad)
-
 
 # AffineFETerm
 
