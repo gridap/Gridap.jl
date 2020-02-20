@@ -11,6 +11,7 @@ using FillArrays
 using SparseArrays
 using LinearAlgebra
 
+using Gridap.Inference
 using Gridap.Helpers
 using Gridap.Arrays
 using Gridap.ReferenceFEs
@@ -176,6 +177,10 @@ export @law
 export operate
 export GridapType
 
+export build_cellmatvec
+export build_cellmatrix
+export build_cellvector
+
 include("CellBases.jl")
 
 include("Law.jl")
@@ -205,6 +210,8 @@ include("DivConformingFESpaces.jl")
 include("DiscontinuousFESpaces.jl")
 
 include("FETerms.jl")
+
+include("CellKernels.jl")
 
 include("AffineFEOperators.jl")
 

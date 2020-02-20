@@ -32,6 +32,8 @@ using Test
 
 @testset "FETerms" begin include("FETermsTests.jl") end
 
+@testset "CellKernels" begin include("CellKernelsTests.jl") end
+
 @testset "AffineFEOperators" begin include("AffineFEOperatorsTests.jl") end
 
 @testset "FEOperatorsFromTerms" begin include("FEOperatorsFromTermsTests.jl") end
