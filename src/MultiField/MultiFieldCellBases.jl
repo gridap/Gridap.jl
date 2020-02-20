@@ -139,6 +139,15 @@ function _attach_field_id(r::SkeletonCellBasis,field_id)
   SkeletonCellBasis(r.trial_style,l,r)
 end
 
+# Evaluation
+
+function evaluate(bs::AbstractArray{<:CellBasisWithFieldID},q::AbstractArray)
+  f = b -> evaluate(b,q)
+  blocks = tuple(map(f,bs)...)
+  coordinates = [ (i,1) for i in 1:length(bs)]
+  MultiFieldCellArray(blocks,coordinates)
+end
+
 # Integration
 
 function integrate(cb::CellBasisWithFieldID,trian::Triangulation,quad::CellQuadrature)

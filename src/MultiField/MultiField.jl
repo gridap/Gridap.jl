@@ -12,6 +12,8 @@ using Gridap.Arrays
 using Gridap.FESpaces
 using Gridap.Geometry
 using Gridap.Integration
+using Gridap.Inference
+using Gridap.TensorValues
 using FillArrays
 using SparseArrays
 import LinearAlgebra: mul!
@@ -30,10 +32,14 @@ import Gridap.Arrays: add_to_array!
 import Gridap.Arrays: kernel_cache
 import Gridap.Arrays: apply_kernel!
 using Gridap.FESpaces: DirichletVecKernel
+using Gridap.FESpaces: CellMatVecKernel
+using Gridap.FESpaces: CellMatKernel
+using Gridap.FESpaces: CellVecKernel
 import Gridap.Geometry: get_cell_map
 import Gridap.Geometry: similar_object
 import Gridap.Geometry: restrict
 import Gridap.Fields: integrate
+import Gridap.Fields: evaluate
 import Gridap.FESpaces: TrialStyle
 import Gridap.FESpaces: FECellBasisStyle
 import Gridap.FESpaces: FEFunctionStyle
@@ -84,6 +90,8 @@ include("MultiFieldArrays.jl")
 include("MultiFieldCellArrays.jl")
 
 include("MultiFieldCellBases.jl")
+
+include("MultiFieldCellKernels.jl")
 
 include("MultiFieldFESpaces.jl")
 

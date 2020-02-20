@@ -136,6 +136,18 @@ function Base.:*(a::MultiFieldArray{Ta,2},b::MultiFieldArray{Tb,1}) where {Ta,Tb
   MultiFieldArray(data...)
 end
 
+function Base.fill!(a::MultiFieldArray,b)
+  for k in 1:length(a.blocks)
+    ak = a.blocks[k]
+    fill!(ak,b)
+  end
+  a
+end
+
+Base.eltype(::Type{<:MultiFieldArray{T}}) where T = T
+
+Base.eltype(a::MultiFieldArray{T}) where T = T
+
 function _merge_repeated_blocks(blocks,coordinates::Vector{NTuple{N,Int}}) where N
   @assert length(blocks) == length(coordinates)
   s = _get_block_size(coordinates)
@@ -201,6 +213,12 @@ end
 
 function Base.getindex(a::MultiFieldArray{T,N},I::Vararg{Int,N}) where {T,N}
   p = a.ptrs[I...]
+  @assert p > 0 "You are attempting to access a block that is not stored"
+  a.blocks[p]
+end
+
+function Base.getindex(a::MultiFieldArray,i::Integer)
+  p = a.ptrs[i]
   @assert p > 0 "You are attempting to access a block that is not stored"
   a.blocks[p]
 end
