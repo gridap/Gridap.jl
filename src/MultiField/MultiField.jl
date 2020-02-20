@@ -14,6 +14,7 @@ using Gridap.Geometry
 using Gridap.Integration
 using FillArrays
 using SparseArrays
+import LinearAlgebra: mul!
 
 using Gridap.Arrays: IdentityVector
 using Gridap.FESpaces: _operate_cell_basis
@@ -25,6 +26,7 @@ import Gridap.Arrays: get_array
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
 import Gridap.Arrays: reindex
+import Gridap.Arrays: add_to_array!
 import Gridap.Geometry: get_cell_map
 import Gridap.Geometry: similar_object
 import Gridap.Geometry: restrict
@@ -71,6 +73,14 @@ export restrict_to_field
 export MultiFieldFESpace
 export MultiFieldFEFunction
 export MultiFieldSparseMatrixAssembler
+
+export MultiFieldArray
+export get_block_size
+export num_blocks
+export num_stored_blocks
+export has_all_blocks
+
+include("MultiFieldArrays.jl")
 
 include("MultiCellArrays.jl")
 

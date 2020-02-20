@@ -1,8 +1,9 @@
 
-struct MultiCellArray{T,N,B<:Tuple} <: AbstractVector{BlockArrayCOO{T,N,Array{T,N}}}
+struct MultiCellArray{T,N,B<:Tuple} <: AbstractVector{MultiFieldArray{T,N,Array{T,N}}}
   blocks::B
   block_ids::Vector{NTuple{N,Int}}
-  function MultiCellArray(blocks::Tuple,block_ids::Vector{NTuple{N,Int}}) where N
+  function MultiCellArray(_blocks::Tuple,_block_ids::Vector{NTuple{N,Int}}) where N
+    blocks, block_ids = _merge_repeated_blocks_mca(_blocks,_block_ids)
     @assert length(blocks) > 0
     @assert length(blocks) == length(block_ids)
     bi, = blocks
@@ -31,11 +32,34 @@ function  _setup_cell_matrix_and_vector(cellmat::MultiCellArray,cellvec::MultiCe
   (cellmatvec, nothing, nothing)
 end
 
+function _merge_repeated_blocks_mca(blocks,coordinates::Vector{NTuple{N,Int}}) where N
+  @assert length(blocks) == length(coordinates)
+  s = _get_block_size(coordinates)
+  ptrs = zeros(Int,s)
+  _blocks = []
+  _coords = NTuple{N,Int}[]
+  q = 1
+  for b in 1:length(blocks)
+    c = coordinates[b]
+    block = blocks[b]
+    p = ptrs[c...]
+    if p == 0
+      push!(_blocks,block)
+      push!(_coords,c)
+      ptrs[c...] = q
+      q += 1
+    else
+      _blocks[p] = apply(elem(+),_blocks[p],block)
+    end
+  end
+  ( tuple(_blocks...), _coords)
+end
+
 function array_cache(a::MultiCellArray{T,N}) where {T,N}
   coordinates = a.block_ids
   nblocks = length(coordinates)
   blocks = Vector{Array{T,N}}(undef,nblocks)
-  b = BlockArrayCOO(blocks,coordinates)
+  b = MultiFieldArray(blocks,coordinates)
   caches = array_caches(a.blocks...)
   (b,caches)
 end
@@ -94,5 +118,4 @@ function operate(::typeof(-),a::BlockTracker,b::BlockTracker)
   new_block_ids = vcat(a.block_ids,b.block_ids)
   BlockTracker(new_blocks,new_block_ids)
 end
-
 

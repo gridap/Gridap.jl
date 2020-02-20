@@ -8,8 +8,6 @@ using Test
 
 @testset "SymSparseMatrixCSR" begin include("SymSparseMatrixCSR.jl") end
 
-@testset "BlockArraysCOO" begin include("BlockArraysCOOTests.jl") end
-
 @testset "NonLinearOperators" begin include("NonLinearOperatorsTests.jl") end
 
 @testset "NonLinearSolvers" begin include("NonLinearSolversTests.jl") end
@@ -17,6 +15,5 @@ using Test
 @testset "NLSolvers" begin include("NLSolversTests.jl") end
 
 @testset "LinearSolvers" begin include("LinearSolversTests.jl") end
-
 
 end # module

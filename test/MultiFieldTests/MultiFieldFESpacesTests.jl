@@ -80,6 +80,6 @@ cellids = [3,5,2]
 
 cell_dofs_new = reindex(cell_dofs,cellids)
 @test isa(cell_dofs_new,MultiCellArray)
-@test cell_dofs_new.block_ids === cell_dofs.block_ids
+@test cell_dofs_new.block_ids == cell_dofs.block_ids
 
 end # module

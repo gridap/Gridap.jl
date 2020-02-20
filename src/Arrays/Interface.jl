@@ -291,3 +291,21 @@ end
   ai = getindex!(ca,a,i...)
   (ai,)
 end
+
+"""
+"""
+function add_to_array!(a::AbstractArray{Ta,N},b::AbstractArray{Tb,N},combine=+) where {Ta,Tb,N}
+  @assert size(a) == size(b) "Arrays sizes mismatch"
+  @inbounds for i in eachindex(a)
+    a[i] = combine(a[i],b[i])
+  end
+end
+
+"""
+"""
+function add_to_array!(a::AbstractArray,b::Number,combine=+)
+  @inbounds for i in eachindex(a)
+    a[i] = combine(a[i],b)
+  end
+end
+

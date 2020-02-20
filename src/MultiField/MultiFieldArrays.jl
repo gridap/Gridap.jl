@@ -1,24 +1,18 @@
-module BlockArraysCOOTests
-
-
-using Gridap.Helpers
-import LinearAlgebra: mul!
-using Gridap.Arrays
 
 """
 """
-struct BlockArrayCOO{T,N,A<:AbstractArray{T,N}} <: GridapType
+struct MultiFieldArray{T,N,A<:AbstractArray{T,N}} <: GridapType
   blocks::Vector{A}
   coordinates::Vector{NTuple{N,Int}}
   ptrs::Array{Int,N}
   block_size::NTuple{N,Int}
 
-  function BlockArrayCOO(
+  function MultiFieldArray(
     blocks::Vector{A},
     coordinates::Vector{NTuple{N,Int}}) where {T,N,A<:AbstractArray{T,N}}
 
     @assert length(blocks) == length(coordinates)
-    msg = "Trying to build a BlockArrayCOO with repeated blocks"
+    msg = "Trying to build a MultiFieldArray with repeated blocks"
     @assert _no_has_repeaded_blocks(coordinates) msg
     ptrs = _prepare_ptrs(coordinates)
     block_size = _get_block_size(coordinates)
@@ -54,54 +48,49 @@ function _get_block_size(coordinates::Vector{NTuple{N,Int}}) where N
   NTuple{N,Int}(m)
 end
 
-function get_block_size(a::BlockArrayCOO)
+"""
+"""
+function get_block_size(a::MultiFieldArray)
   a.block_size
 end
 
-function num_blocks(a::BlockArrayCOO)
+"""
+"""
+function num_blocks(a::MultiFieldArray)
   s = get_block_size(a)
   prod(s)
 end
 
-function num_stored_blocks(a::BlockArrayCOO)
+"""
+"""
+function num_stored_blocks(a::MultiFieldArray)
   length(a.coordinates)
 end
 
-function has_all_blocks(a::BlockArrayCOO{T,N}) where {T,N}
+"""
+"""
+function has_all_blocks(a::MultiFieldArray{T,N}) where {T,N}
   num_blocks(a) == num_stored_blocks(a)
 end
 
-"""
-"""
-function add_to_array!(a::AbstractArray{Ta,N},b::AbstractArray{Tb,N},combine=+) where {Ta,Tb,N}
-  @assert size(a) == size(b) "Arrays sizes mismatch"
-  @inbounds for i in eachindex(a)
-    a[i] = combine(a[i],b[i])
-  end
-end
-
-"""
-"""
-function add_to_array!(a::AbstractArray,b::Number,combine=+)
-  @inbounds for i in eachindex(a)
-    a[i] = combine(a[i],b)
-  end
-end
-
-function Base.:*(a::BlockArrayCOO,b::Number)
+function Base.:*(a::MultiFieldArray,b::Number)
   blocks = [ block*b for block in a.blocks ]
   coordinates = a.coordinates
-  BlockArrayCOO(blocks,coordinates)
+  MultiFieldArray(blocks,coordinates)
 end
 
-function Base.:*(b::Number,a::BlockArrayCOO)
+function Base.:*(b::Number,a::MultiFieldArray)
   blocks = [ b*block for block in a.blocks ]
   coordinates = a.coordinates
-  BlockArrayCOO(blocks,coordinates)
+  MultiFieldArray(blocks,coordinates)
 end
 
-function Base.show(io::IO,::MIME"text/plain",a::BlockArrayCOO)
-  println(io,"BlockArrayCOO object:")
+function Base.show(io::IO,a::MultiFieldArray)
+  print(io,"MultiFieldArray($(a.blocks),$(a.coordinates))")
+end
+
+function Base.show(io::IO,::MIME"text/plain",a::MultiFieldArray)
+  println(io,"MultiFieldArray object:")
   cis = CartesianIndices(a.ptrs)
   for ci in cis
     p = a.ptrs[ci]
@@ -113,7 +102,7 @@ function Base.show(io::IO,::MIME"text/plain",a::BlockArrayCOO)
   end
 end
 
-function add_to_array!(a::BlockArrayCOO{Ta,N},b::BlockArrayCOO{Tb,N},combine=+) where {Ta,Tb,N}
+function add_to_array!(a::MultiFieldArray{Ta,N},b::MultiFieldArray{Tb,N},combine=+) where {Ta,Tb,N}
   for k in 1:length(a.blocks)
     ak = a.blocks[k]
     bk = b.blocks[k]
@@ -121,14 +110,14 @@ function add_to_array!(a::BlockArrayCOO{Ta,N},b::BlockArrayCOO{Tb,N},combine=+) 
   end
 end
 
-function add_to_array!(a::BlockArrayCOO,b::Number,combine=+)
+function add_to_array!(a::MultiFieldArray,b::Number,combine=+)
   for k in 1:length(a.blocks)
     ak = a.blocks[k]
     add_to_array!(ak,b,combine)
   end
 end
 
-function Base.:*(a::BlockArrayCOO{Ta,2},b::BlockArrayCOO{Tb,1}) where {Ta,Tb}
+function Base.:*(a::MultiFieldArray{Ta,2},b::MultiFieldArray{Tb,1}) where {Ta,Tb}
   @assert num_stored_blocks(a) != 0
   @notimplementedif ! has_all_blocks(b)
 
@@ -144,7 +133,7 @@ function Base.:*(a::BlockArrayCOO{Ta,2},b::BlockArrayCOO{Tb,1}) where {Ta,Tb}
   coordinates = [ (c[1],)  for c in a.coordinates]
 
   data = _merge_repeated_blocks(blocks,coordinates)
-  BlockArrayCOO(data...)
+  MultiFieldArray(data...)
 end
 
 function _merge_repeated_blocks(blocks,coordinates::Vector{NTuple{N,Int}}) where N
@@ -154,7 +143,7 @@ function _merge_repeated_blocks(blocks,coordinates::Vector{NTuple{N,Int}}) where
   A = eltype(blocks)
   _blocks = A[]
   _coords = NTuple{N,Int}[]
-  p = 1
+  q = 1
   for b in 1:length(blocks)
     c = coordinates[b]
     block = blocks[b]
@@ -162,8 +151,8 @@ function _merge_repeated_blocks(blocks,coordinates::Vector{NTuple{N,Int}}) where
     if p == 0
       push!(_blocks,block)
       push!(_coords,c)
-      p += 1
-      ptrs[c...] = p
+      ptrs[c...] = q
+      q += 1
     else
       add_to_array!(_blocks[p],block)
     end
@@ -171,7 +160,7 @@ function _merge_repeated_blocks(blocks,coordinates::Vector{NTuple{N,Int}}) where
   (_blocks,_coords)
 end
 
-function mul!(c::BlockArrayCOO{Tc,1},a::BlockArrayCOO{Ta,2},b::BlockArrayCOO{Tb,1}) where {Tc,Ta,Tb}
+function mul!(c::MultiFieldArray{Tc,1},a::MultiFieldArray{Ta,2},b::MultiFieldArray{Tb,1}) where {Tc,Ta,Tb}
   for ci in c.blocks
     fill!(ci,zero(Tc))
   end
@@ -186,15 +175,14 @@ function mul!(c::BlockArrayCOO{Tc,1},a::BlockArrayCOO{Ta,2},b::BlockArrayCOO{Tb,
   end
 end
 
-function CachedBlockArrayCOO(a::BlockArrayCOO)
+function CachedMultiFieldArray(a::MultiFieldArray)
   blocks = [ CachedArray(b) for b in a.blocks ]
   coordinates = a.coordinates
-  BlockArrayCOO(blocks,coordinates)
+  MultiFieldArray(blocks,coordinates)
 end
 
 function _resize_for_mul!(
-  c::BlockArrayCOO{Tc,1},a::BlockArrayCOO{Ta,2},b::BlockArrayCOO{Tb,1}) where {Tc,Ta,Tb}
-  
+  c::MultiFieldArray{Tc,1},a::MultiFieldArray{Ta,2},b::MultiFieldArray{Tb,1}) where {Tc,Ta,Tb}
   for k in 1:length(a.blocks)
     ak = a.blocks[k]
     ci, cj = a.coordinates[k]
@@ -202,89 +190,18 @@ function _resize_for_mul!(
     ck = c.blocks[q]
     setsize!(ck,(size(ak,1),))
   end
-
 end
 
-function _move_cached_arrays!(r::BlockArrayCOO,c::BlockArrayCOO)
+function _move_cached_arrays!(r::MultiFieldArray,c::MultiFieldArray)
   for  k in 1:length(c.blocks)
     ck = c.blocks[k]
     r.blocks[k] = ck.array
   end
 end
 
-function Base.getindex(a::BlockArrayCOO{T,N},I::Vararg{Int,N}) where {T,N}
+function Base.getindex(a::MultiFieldArray{T,N},I::Vararg{Int,N}) where {T,N}
   p = a.ptrs[I...]
   @assert p > 0 "You are attempting to access a block that is not stored"
   a.blocks[p]
 end
 
-using Test
-
-A11 = ones(Int,2,3)
-A21 = 2*ones(Int,4,3)
-A12 = 3*ones(Int,2,5)
-blocks = [A11,A21,A12]
-coordinates = [(1,1),(2,1),(1,2)]
-a = BlockArrayCOO(blocks,coordinates)
-
-@test a.blocks == blocks
-@test a.coordinates == coordinates
-@test a.ptrs == [1 3; 2 0]
-@test num_blocks(a) == 4
-@test num_stored_blocks(a) == 3
-@test get_block_size(a) == (2,2)
-@test has_all_blocks(a) == false
-@test a[1,1] == A11
-@test a[2,1] == A21
-
-B1 = 10*ones(Int,3)
-B2 = 20*ones(Int,5)
-blocks = [B1,B2]
-coordinates = [(1,),(2,)]
-b = BlockArrayCOO(blocks,coordinates)
-
-c = a*b
-
-@test c.blocks[1] == A11*B1 + A12*B2
-@test c.blocks[2] == A21*B1
-@test c.coordinates == [(1,),(2,)]
-
-mul!(c,a,b)
-
-@test c.blocks[1] == A11*B1 + A12*B2
-@test c.blocks[2] == A21*B1
-@test c.coordinates == [(1,),(2,)]
-
-c = a*b
-r = CachedBlockArrayCOO(c)
-
-_resize_for_mul!(r,a,b)
-_move_cached_arrays!(c,r)
-mul!(c,10*a,b)
-
-_resize_for_mul!(r,a,b)
-_move_cached_arrays!(c,r)
-mul!(c,a,b)
-
-A11 = ones(Int,7,3)
-A21 = 2*ones(Int,4,3)
-A12 = 3*ones(Int,7,5)
-blocks = [A11,A21,A12]
-coordinates = [(1,1),(2,1),(1,2)]
-_a = BlockArrayCOO(blocks,coordinates)
-
-_resize_for_mul!(r,_a,b)
-_move_cached_arrays!(c,r)
-mul!(c,_a,b)
-
-_resize_for_mul!(r,a,b)
-_move_cached_arrays!(c,r)
-mul!(c,a,b)
-
-add_to_array!(c,c)
-add_to_array!(c,10)
-
-@show c
-display(a)
-
-end # module
