@@ -27,6 +27,9 @@ import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
 import Gridap.Arrays: reindex
 import Gridap.Arrays: add_to_array!
+import Gridap.Arrays: kernel_cache
+import Gridap.Arrays: apply_kernel!
+using Gridap.FESpaces: DirichletVecKernel
 import Gridap.Geometry: get_cell_map
 import Gridap.Geometry: similar_object
 import Gridap.Geometry: restrict
@@ -60,10 +63,6 @@ import Gridap.FESpaces: SparseMatrixAssembler
 import Gridap.FESpaces: AffineFEOperator
 import Gridap.FESpaces: FEOperator
 import Gridap.FESpaces: EvaluationFunction
-
-#TODO
-import Gridap.FESpaces: _get_cell_vector_tmp_hack
-import Gridap.FESpaces: _setup_cell_matrix_and_vector
 
 import Base: +, -
 

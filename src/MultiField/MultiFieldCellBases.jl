@@ -195,3 +195,26 @@ function restrict(a::MultiCellBasis,trian::Triangulation)
   blocks
 end
 
+# Dirichlet related
+
+function kernel_cache(k::DirichletVecKernel,mat::MultiFieldArray,vals::MultiFieldArray)
+  vec = mat*vals
+  cvec = CachedMultiFieldArray(vec)
+  (vec, cvec)
+end
+
+@inline function apply_kernel!(cache,k::DirichletVecKernel,mat::MultiFieldArray,vals::MultiFieldArray)
+  vec, cvec = cache
+  _resize_for_mul!(cvec,mat,vals)
+  _move_cached_arrays!(vec,cvec)
+  mul!(vec,mat,vals)
+  for vk in vec.blocks
+    @inbounds for i in eachindex(vk)
+      vk[i] = -vk[i]
+    end
+  end
+  vec
+end
+
+
+

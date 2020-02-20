@@ -19,19 +19,6 @@ struct MultiFieldCellArray{T,N,B<:Tuple} <: AbstractVector{MultiFieldArray{T,N,A
   end
 end
 
-#TODO temporary hacks
-
-function _get_cell_vector_tmp_hack(cellmat::MultiFieldCellArray,t,v,uhd) #TODO
-  cellvec = get_cell_vector(t,v,uhd)
-  cellvec
-end
-
-function  _setup_cell_matrix_and_vector(cellmat::MultiFieldCellArray,cellvec::MultiFieldCellArray,cellvals)
-  # TODO we assume that cellvec has dirichlet bcs
-  cellmatvec = pair_arrays(cellmat,cellvec)
-  (cellmatvec, nothing, nothing)
-end
-
 function _merge_repeated_blocks_mca(blocks,coordinates::Vector{NTuple{N,Int}}) where N
   @assert length(blocks) == length(coordinates)
   s = _get_block_size(coordinates)

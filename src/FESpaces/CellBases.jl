@@ -615,7 +615,7 @@ struct DirichletMatVecKernel <: Kernel
   end
 end
 
-function kernel_cache(k::DirichletMatVecKernel,mat::AbstractMatrix,vals)
+function kernel_cache(k::DirichletMatVecKernel,mat,vals)
   kernel_cache(k.k,mat,vals)
 end
 
@@ -624,7 +624,7 @@ function kernel_cache(k::DirichletMatVecKernel,matvec::Tuple,vals)
   kernel_cache(k.k,mat,vals)
 end
 
-@inline function apply_kernel!(cache,k::DirichletMatVecKernel,mat::AbstractMatrix,vals)
+@inline function apply_kernel!(cache,k::DirichletMatVecKernel,mat,vals)
   vec = apply_kernel!(cache,k.k,mat,vals)
   (mat,vec)
 end
@@ -632,9 +632,7 @@ end
 @inline function apply_kernel!(cache,k::DirichletMatVecKernel,matvec::Tuple,vals)
   mat, vec = matvec
   vecd = apply_kernel!(cache,k.k,mat,vals)
-  @inbounds for i in eachindex(vec)
-    vecd[i] = vec[i] + vecd[i]
-  end
+  add_to_array!(vecd,vec)
   (mat, vecd)
 end
 
