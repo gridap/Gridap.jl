@@ -9,7 +9,7 @@ using Gridap.FESpaces
 using Gridap.MultiField
 using Gridap.MultiField: CellBasisWithFieldID
 using Gridap.MultiField: CellMatrixFieldWithFieldIds
-using Gridap.MultiField: MultiCellArray
+using Gridap.MultiField: MultiFieldCellArray
 
 domain =(0,1,0,1)
 partition = (3,3)
@@ -139,28 +139,28 @@ z = r + s
 # Integration
 
 vec = integrate(v,trian,quad)
-@test isa(vec,MultiCellArray{Float64,1})
+@test isa(vec,MultiFieldCellArray{Float64,1})
 
 vec = integrate(v + a,trian,quad)
-@test isa(vec,MultiCellArray{Float64,1})
+@test isa(vec,MultiFieldCellArray{Float64,1})
 
 mat = integrate(v*u,trian,quad)
-@test isa(mat,MultiCellArray{Float64,2})
+@test isa(mat,MultiFieldCellArray{Float64,2})
 
 mat = integrate(v*u + a*b,trian,quad)
-@test isa(mat,MultiCellArray{Float64,2})
+@test isa(mat,MultiFieldCellArray{Float64,2})
 
 vec = integrate(jump(v_Γs),strian,squad)
-@test isa(vec.left,MultiCellArray{Float64,1})
+@test isa(vec.left,MultiFieldCellArray{Float64,1})
 
 vec = integrate(jump(v_Γs) + jump(a_Γs),strian,squad)
-@test isa(vec.left,MultiCellArray{Float64,1})
+@test isa(vec.left,MultiFieldCellArray{Float64,1})
 @test vec.left.block_ids == [(field_id_v,), (field_id_a,)]
 
 mat = integrate(jump(v_Γs)*jump(u_Γs),strian,squad)
-@test isa(mat.ll,MultiCellArray{Float64,2})
+@test isa(mat.ll,MultiFieldCellArray{Float64,2})
 
 mat = integrate(jump(v_Γs)*jump(u_Γs) + jump(a_Γs)*jump(u_Γs),strian,squad)
-@test isa(mat.ll,MultiCellArray{Float64,2})
+@test isa(mat.ll,MultiFieldCellArray{Float64,2})
 
 end # module

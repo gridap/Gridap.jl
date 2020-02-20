@@ -82,7 +82,7 @@ export has_all_blocks
 
 include("MultiFieldArrays.jl")
 
-include("MultiCellArrays.jl")
+include("MultiFieldCellArrays.jl")
 
 include("MultiFieldCellBases.jl")
 

@@ -160,7 +160,7 @@ function _get_cell_dofs(f,::ConsequtiveMultiFieldStyle)
   end
   blocks = [ fun(i,space) for (i,space) in enumerate(spaces) ]
   block_ids = [ (i,) for i in 1:length(spaces)]
-  MultiCellArray(tuple(blocks...),block_ids)
+  MultiFieldCellArray(tuple(blocks...),block_ids)
 end
 
 function _sum_if_first_positive(a,b)

@@ -8,7 +8,7 @@ struct MultiFieldFEFunction
   free_values::AbstractVector
   space::MultiFieldFESpace
   blocks::Vector{<:SingleFieldFEFunction}
-  cell_vals::MultiCellArray
+  cell_vals::MultiFieldCellArray
 
   function MultiFieldFEFunction(
     free_values::AbstractVector,
@@ -17,7 +17,7 @@ struct MultiFieldFEFunction
 
     _blocks = tuple(map(get_cell_values,blocks)...)
     _block_ids = [ (i,) for i in 1:length(blocks) ]
-    cell_vals = MultiCellArray(_blocks,_block_ids)
+    cell_vals = MultiFieldCellArray(_blocks,_block_ids)
 
     new(free_values,space,blocks,cell_vals)
   end

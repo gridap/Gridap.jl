@@ -145,21 +145,21 @@ function integrate(cb::CellBasisWithFieldID,trian::Triangulation,quad::CellQuadr
   r = integrate(cb.cell_basis,trian,quad)
   bloks = (r,)
   block_ids = [(cb.field_id,),]
-  MultiCellArray(bloks,block_ids)
+  MultiFieldCellArray(bloks,block_ids)
 end
 
 function integrate(cm::CellMatrixFieldWithFieldIds,trian::Triangulation,quad::CellQuadrature)
   r = integrate(cm.cell_matrix_field,trian,quad)
   bloks = (r,)
   block_ids = [(cm.field_id_rows, cm.field_id_cols),]
-  MultiCellArray(bloks,block_ids)
+  MultiFieldCellArray(bloks,block_ids)
 end
 
 function integrate(cb::BlockTracker,trian::Triangulation,quad::CellQuadrature)
   f = (b) -> integrate(get_array(b),trian,quad)
   blocks = map(f,cb.blocks)
   block_ids = cb.block_ids
-  MultiCellArray(blocks,block_ids)
+  MultiFieldCellArray(blocks,block_ids)
 end
 
 struct MultiCellBasis{S} <: GridapType
