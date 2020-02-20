@@ -9,6 +9,7 @@ using Gridap.Geometry
 using Gridap.Integration
 using Gridap.Fields
 using Gridap.FESpaces
+using LinearAlgebra
 
 domain =(0,1,0,1)
 partition = (2,2)
@@ -110,5 +111,52 @@ A = assemble_matrix(assem,matdata...)
 b = assemble_vector(assem,vecdata...)
 x = A \ -b
 @test (x.+1) ≈ ones(length(x))
+
+# AffineFETermFromCellMatVec
+
+q = get_coordinates(quad)
+w_q = get_weights(quad)
+ϕ = get_cell_map(trian)
+jac = ∇(ϕ)
+jac_q = evaluate(jac,q)
+x_q = evaluate(ϕ,q)
+
+function poisson_matvec_kernel!(mat,vec,∇v,∇u,v,j,w,x)
+  Q = length(w)
+  M,N = size(mat)
+  for q in 1:Q
+    dV = det(j[q])*w[q]
+    f_q = f(x[q])
+    for n in 1:N
+      for m in 1:M
+        mat[m,n] += ∇v[q,m]*∇u[q,n]*dV
+      end
+    end
+    for m in 1:M
+      vec[m] += v[q,m]*f_q*dV
+    end
+  end
+end
+
+function matvecfun(v,u)
+  v_q = evaluate(v,q)
+  ∇v_q = evaluate(∇(v),q)
+  build_cellmatvec(poisson_matvec_kernel!, ∇v_q, ∇v_q, v_q, jac_q, w_q, x_q)
+end
+
+t_matvec_Ω = AffineFETermFromCellMatVec(matvecfun,trian)
+
+matdata = collect_cell_matrix(v,u,[t_matvec_Ω,])
+vecdata = collect_cell_vector(v,uhd,[t_matvec_Ω,])
+A = assemble_matrix(assem,matdata...)
+b = assemble_vector(assem,vecdata...)
+x = A \ b
+@test x ≈ get_free_values(uh)
+
+data = collect_cell_matrix_and_vector(v,u,uhd,[t_matvec_Ω,])
+A, b = allocate_matrix_and_vector(assem,data...)
+assemble_matrix_and_vector!(A,b,assem,data...)
+x = A \ b
+@test x ≈ get_free_values(uh)
 
 end # module

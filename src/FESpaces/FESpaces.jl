@@ -157,6 +157,7 @@ export FETerm
 export AffineFETerm
 export LinearFETerm
 export FESource
+export AffineFETermFromCellMatVec
 export get_cell_matrix
 export get_cell_vector
 export get_cell_jacobian

@@ -450,3 +450,61 @@ function get_cell_values(t::NonLinearFETerm,uhd)
   reindex(cellvals,t.trian)
 end
 
+"""
+"""
+struct AffineFETermFromCellMatVec <: AffineFETerm
+  matvecfun::Function
+  trian::Triangulation
+end
+
+function get_cell_matrix(t::AffineFETermFromCellMatVec,v,u)
+  @assert is_a_fe_cell_basis(v)
+  @assert is_a_fe_cell_basis(u)
+  _v = restrict(v,t.trian)
+  _u = restrict(u,t.trian)
+  cellmatvec = t.matvecfun(_v,_u)
+  cellmat, _ = unpair_arrays(cellmatvec)
+  cellmat
+end
+
+function get_cell_vector(t::AffineFETermFromCellMatVec,v,uhd)
+  @assert is_a_fe_function(uhd)
+  @assert is_a_fe_cell_basis(v)
+  trial = TrialFESpace(get_fe_space(uhd))
+  u = get_cell_basis(trial)
+  _v = restrict(v,t.trian)
+  _u = restrict(u,t.trian)
+  _cellvals = get_cell_values(t,uhd)
+  cellmatvec = t.matvecfun(_v,_u)
+  cellmatvec_with_diri = attach_dirichlet_bcs(cellmatvec,_cellvals)
+  _, cellvec_with_diri = unpair_arrays(cellmatvec_with_diri)
+  cellvec_with_diri
+end
+
+function get_cell_vector(t::AffineFETermFromCellMatVec,v)
+  @assert is_a_fe_cell_basis(v)
+  @unreachable "This function cannot be implemented for $(typeof(t)) objects."
+end
+
+function get_cell_id(t::AffineFETermFromCellMatVec)
+  get_cell_id(t.trian)
+end
+
+function get_cell_values(t::AffineFETermFromCellMatVec,uhd)
+  @assert is_a_fe_function(uhd)
+  cellvals = get_cell_values(uhd)
+  reindex(cellvals,t.trian)
+end
+
+function get_cell_matrix_and_vector(t::AffineFETermFromCellMatVec,v,u,uhd)
+  @assert is_a_fe_function(uhd)
+  @assert is_a_fe_cell_basis(v)
+  @assert is_a_fe_cell_basis(u)
+  _v = restrict(v,t.trian)
+  _u = restrict(u,t.trian)
+  _cellvals = get_cell_values(t,uhd)
+  cellmatvec = t.matvecfun(_v,_u)
+  cellmatvec_with_diri = attach_dirichlet_bcs(cellmatvec,_cellvals)
+  (cellmatvec_with_diri, nothing, nothing)
+end
+

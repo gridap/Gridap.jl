@@ -22,6 +22,10 @@ function TrialFESpace(space::SingleFieldFESpace,objects)
   TrialFESpace(space,dirichlet_values,cell_basis,constraint_style(space))
 end
 
+function TrialFESpace(space::TrialFESpace)
+  space
+end
+
 function  _prepare_trial_cell_basis(space)
   cb = get_cell_basis(space)
   a = get_array(cb)
