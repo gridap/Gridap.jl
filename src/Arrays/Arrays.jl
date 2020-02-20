@@ -79,6 +79,7 @@ export identity_vector
 
 export SubVector
 export pair_arrays
+export unpair_arrays
 
 import Base: size
 import Base: getindex, setindex!

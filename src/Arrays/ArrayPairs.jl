@@ -43,3 +43,60 @@ end
   (ai,bi)
 end
 
+"""
+"""
+function unpair_arrays(pair::AbstractArray{<:Tuple})
+  p = testitem(pair)
+  N = length(p)
+  @assert N > 0
+  _unpair_arrays(pair,Val{1}(),Val{N}())
+end
+
+function unpair_arrays(pair::ArrayPair)
+  pair.a, pair.b
+end
+
+function  _unpair_arrays(pair,::Val{n},::Val{N}) where {n,N}
+  pn = UnpairedArray(Val{n}(),pair)
+  ps = _unpair_arrays(pair,Val{n+1}(),Val{N}())
+  (pn, ps...)
+end
+
+function  _unpair_arrays(pair,::Val{N},::Val{N}) where N
+  pn = UnpairedArray(Val{N}(),pair)
+  (pn, )
+end
+
+struct UnpairedArray{I,T,N,P<:AbstractArray} <: AbstractArray{T,N}
+  pair::P
+  function UnpairedArray(::Val{I},pair::AbstractArray{<:Tuple,N}) where {I,N}
+    p = testitem(pair)
+    T = typeof(p[I])
+    P = typeof(pair)
+    new{I,T,N,P}(pair)
+  end
+end
+
+Base.size(a::UnpairedArray) = size(a.pair)
+
+Base.IndexStyle(::Type{UnpairedArray{I,T,N,P}}) where {T,N,I,P} = IndexStyle(P)
+
+@inline function Base.getindex(a::UnpairedArray{I},i::Integer) where I
+  a.pair[i][I]
+end
+
+@inline function Base.getindex(a::UnpairedArray{I,T,N},i::Vararg{Integer,N}) where {I,T,N}
+  a.pair[i...][I]
+end
+
+uses_hash(::Type{<:UnpairedArray}) = Val{true}()
+
+function array_cache(hash,p::UnpairedArray)
+  array_cache(hash,p.pair)
+end
+
+@inline function getindex!(cache,a::UnpairedArray{I},i) where I
+  p = getindex!(cache,a.pair,i)
+  p[I]
+end
+
