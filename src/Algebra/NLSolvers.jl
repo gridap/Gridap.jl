@@ -161,9 +161,9 @@ end
 function _new_nlsolve_cache(x0,nls,op)
   f!(r,x) = residual!(r,op,x)
   j!(j,x) = jacobian!(j,op,x)
-  f0 = residual(op,x0)
-  j0 = jacobian(op,x0)
-  df = OnceDifferentiable(f!,j!,x0,f0,j0)
+  fj!(r,j,x) = residual_and_jacobian!(r,j,op,x)
+  f0, j0 = residual_and_jacobian(op,x0)
+  df = OnceDifferentiable(f!,j!,fj!,x0,f0,j0)
   ss = symbolic_setup(nls.ls,j0)
   ns = numerical_setup(ss,j0)
   NLSolversCache(f0,j0,df,ns,nothing)
@@ -172,12 +172,12 @@ end
 function _update_nlsolve_cache!(cache,x0,op)
   f!(r,x) = residual!(r,op,x)
   j!(j,x) = jacobian!(j,op,x)
+  fj!(r,j,x) = residual_and_jacobian!(r,j,op,x)
   f0 = cache.f0
   j0 = cache.j0
   ns = cache.ns
-  residual!(f0,op,x0)
-  jacobian!(j0,op,x0)
-  df = OnceDifferentiable(f!,j!,x0,f0,j0)
+  residual_and_jacobian!(f0,j0,op,x0)
+  df = OnceDifferentiable(f!,j!,fj!,x0,f0,j0)
   numerical_setup!(ns,j0)
   NLSolversCache(f0,j0,df,ns,nothing)
 end
