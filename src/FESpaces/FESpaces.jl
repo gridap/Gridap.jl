@@ -158,14 +158,17 @@ export AffineFETerm
 export LinearFETerm
 export FESource
 export AffineFETermFromCellMatVec
+export FETermFromCellJacRes
 export get_cell_matrix
 export get_cell_vector
 export get_cell_jacobian
+export get_cell_jacobian_and_residual
 export get_cell_residual
 export collect_cell_matrix
 export collect_cell_vector
 export collect_cell_matrix_and_vector
 export collect_cell_jacobian
+export collect_cell_jacobian_and_residual
 export collect_cell_residual
 
 export FESpaceWithLastDofRemoved

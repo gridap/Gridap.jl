@@ -28,8 +28,35 @@ end
 
 """
 """
-function get_cell_values(t::FETerm,uhd)
-  @abstractmethod
+function get_cell_jacobian_and_residual(t::FETerm,uh,v,du)
+  @assert is_a_fe_function(uh)
+  @assert is_a_fe_cell_basis(v)
+  @assert is_a_fe_cell_basis(du)
+  celljac = get_cell_jacobian(t,uh,v,du)
+  cellres = get_cell_residual(t,uh,v)
+  _setup_jac_and_res(celljac,cellres)
+end
+
+function _setup_jac_and_res(celljac,cellres)
+  celljacres = pair_arrays(celljac,cellres)
+  (celljacres, nothing, nothing)
+end
+
+function _setup_jac_and_res(celljac::SkeletonCellMatrix,cellres::SkeletonCellVector)
+  #TODO for the moment do not pair on the skeleton
+  (nothing, celljac, cellres)
+end
+
+function _setup_jac_and_res(celljac::Nothing,cellres)
+  (nothing, nothing, cellres)
+end
+
+function _setup_jac_and_res(celljac,cellres::Nothing)
+  (nothing, celljac, nothing)
+end
+
+function _setup_jac_and_res(celljac::Nothing,cellres::Nothing)
+  (nothing, nothing, nothing)
 end
 
 """
@@ -55,6 +82,12 @@ function get_cell_vector(t::AffineFETerm,v,uhd)
 end
 
 function get_cell_vector(t::AffineFETerm,v)
+  @abstractmethod
+end
+
+"""
+"""
+function get_cell_values(t::FETerm,uhd)
   @abstractmethod
 end
 
@@ -201,6 +234,28 @@ function collect_cell_matrix_and_vector(v,u,uhd,terms)
 
   for term in terms
     cellmatvec, cellmat, cellvec = get_cell_matrix_and_vector(term,v,u,uhd)
+    cellids = get_cell_id(term)
+    _push_matrix_contribution!(matvecdata...,cellmatvec,cellids)
+    _push_matrix_contribution!(matdata...,cellmat,cellids)
+    _push_vector_contribution!(vecdata...,cellvec,cellids)
+  end
+
+  (matvecdata, matdata, vecdata)
+end
+
+"""
+"""
+function collect_cell_jacobian_and_residual(uh,v,du,terms)
+  @assert is_a_fe_function(uh)
+  @assert is_a_fe_cell_basis(v)
+  @assert is_a_fe_cell_basis(du)
+
+  matvecdata = ([],[],[])
+  matdata = ([],[],[])
+  vecdata = ([],[])
+
+  for term in terms
+    cellmatvec, cellmat, cellvec = get_cell_jacobian_and_residual(term,uh,v,du)
     cellids = get_cell_id(term)
     _push_matrix_contribution!(matvecdata...,cellmatvec,cellids)
     _push_matrix_contribution!(matdata...,cellmat,cellids)
@@ -444,12 +499,6 @@ function get_cell_id(t::NonLinearFETerm)
   get_cell_id(t.trian)
 end
 
-function get_cell_values(t::NonLinearFETerm,uhd)
-  @assert is_a_fe_function(uhd)
-  cellvals = get_cell_values(uhd)
-  reindex(cellvals,t.trian)
-end
-
 """
 """
 struct AffineFETermFromCellMatVec <: AffineFETerm
@@ -506,5 +555,50 @@ function get_cell_matrix_and_vector(t::AffineFETermFromCellMatVec,v,u,uhd)
   cellmatvec = t.matvecfun(_v,_u)
   cellmatvec_with_diri = attach_dirichlet_bcs(cellmatvec,_cellvals)
   (cellmatvec_with_diri, nothing, nothing)
+end
+
+struct FETermFromCellJacRes <: FETerm
+  jacresfun::Function
+  trian::Triangulation
+end
+
+function get_cell_jacobian(t::FETermFromCellJacRes,uh,v,du)
+  @assert is_a_fe_function(uh)
+  @assert is_a_fe_cell_basis(v)
+  @assert is_a_fe_cell_basis(du)
+  _v = restrict(v,t.trian)
+  _du = restrict(du,t.trian)
+  _uh = restrict(uh,t.trian)
+  celljacres = t.jacresfun(_uh,_v,_du)
+  celljac, _ = unpair_arrays(celljacres)
+  celljac
+end
+
+function get_cell_residual(t::FETermFromCellJacRes,uh,v)
+  @assert is_a_fe_function(uh)
+  @assert is_a_fe_cell_basis(v)
+  trial = TrialFESpace(get_fe_space(uh))
+  du = get_cell_basis(trial)
+  _v = restrict(v,t.trian)
+  _du = restrict(du,t.trian)
+  _uh = restrict(uh,t.trian)
+  celljacres = t.jacresfun(_uh,_v,_du)
+  _, cellres = unpair_arrays(celljacres)
+  cellres
+end
+
+function get_cell_id(t::FETermFromCellJacRes)
+  get_cell_id(t.trian)
+end
+
+function get_cell_jacobian_and_residual(t::FETermFromCellJacRes,uh,v,du)
+  @assert is_a_fe_function(uh)
+  @assert is_a_fe_cell_basis(v)
+  @assert is_a_fe_cell_basis(du)
+  _v = restrict(v,t.trian)
+  _du = restrict(du,t.trian)
+  _uh = restrict(uh,t.trian)
+  celljacres = t.jacresfun(_uh,_v,_du)
+  (celljacres, nothing, nothing)
 end
 

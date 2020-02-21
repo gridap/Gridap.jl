@@ -112,6 +112,12 @@ b = assemble_vector(assem,vecdata...)
 x = A \ -b
 @test (x.+1) ≈ ones(length(x))
 
+data = collect_cell_jacobian_and_residual(uh,v,u,[t_nonlinear])
+A, b = allocate_matrix_and_vector(assem,data...)
+assemble_matrix_and_vector!(A,b,assem,data...)
+x = A \ -b
+@test (x.+1) ≈ ones(length(x))
+
 # AffineFETermFromCellMatVec
 
 q = get_coordinates(quad)
@@ -158,5 +164,46 @@ A, b = allocate_matrix_and_vector(assem,data...)
 assemble_matrix_and_vector!(A,b,assem,data...)
 x = A \ b
 @test x ≈ get_free_values(uh)
+
+function poisson_jacres_kernel!(jac,res,∇v,∇du,v,∇uh,j,w,x)
+  Q = length(w)
+  M,N = size(jac)
+  for q in 1:Q
+    dV = det(j[q])*w[q]
+    f_q = f(x[q])
+    for m in 1:M
+      for n in 1:N
+        jac[m,n] += ∇v[q,m]*∇du[q,n]*dV
+      end
+      res[m] += ∇v[q,m]*∇uh[q]*dV
+    end
+    for m in 1:M
+      res[m] -= v[q,m]*f_q*dV
+    end
+  end
+end
+
+function jacresfun(uh,v,du)
+  v_q = evaluate(v,q)
+  ∇v_q = evaluate(∇(v),q)
+  ∇du_q = ∇v_q
+  ∇uh_q = evaluate(∇(uh),q)
+  build_cellmatvec(poisson_jacres_kernel!, ∇v_q, ∇du_q, v_q, ∇uh_q, jac_q, w_q, x_q)
+end
+
+t_jacres_Ω = FETermFromCellJacRes(jacresfun,trian)
+
+matdata = collect_cell_jacobian(uh,v,u,[t_jacres_Ω])
+vecdata = collect_cell_residual(uh,v,[t_jacres_Ω])
+A = assemble_matrix(assem,matdata...)
+b = assemble_vector(assem,vecdata...)
+x = A \ -b
+@test (x.+1) ≈ ones(length(x))
+
+data = collect_cell_jacobian_and_residual(uh,v,u,[t_jacres_Ω])
+A, b = allocate_matrix_and_vector(assem,data...)
+assemble_matrix_and_vector!(A,b,assem,data...)
+x = A \ -b
+@test (x.+1) ≈ ones(length(x))
 
 end # module
