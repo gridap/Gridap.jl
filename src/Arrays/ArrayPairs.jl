@@ -5,16 +5,6 @@ function pair_arrays(a::AbstractArray,b::AbstractArray)
   ArrayPair(a,b)
 end
 
-function pair_arrays(a::CompressedArray,b::CompressedArray)
-  if (a.ptrs === b.ptrs) || (a.ptrs == b.ptrs)
-    values = [ (ai,bi) for (ai,bi) in zip(a.values,b.values) ]
-    ptrs = a.ptrs
-    return CompressedArray(values,ptrs)
-  else
-    return ArrayPair(a,b)
-  end
-end
-
 struct ArrayPair{T,N,A,B} <:AbstractArray{T,N}
   a::A
   b::B

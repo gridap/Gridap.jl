@@ -32,6 +32,14 @@ function CellQuadrature(degree,polytopes::Vector{<:Polytope}, cell_types::Abstra
   CellQuadrature(array)
 end
 
+function CellQuadrature(degree,polytopes::Vector{<:Polytope}, cell_types::Fill)
+  ctype = cell_types.value
+  p = polytopes[ctype]
+  quad = Quadrature(p,degree)
+  array = Fill(quad,length(cell_types))
+  CellQuadrature(array)
+end
+
 """
     get_array(quad::CellQuadrature)
 """
