@@ -30,7 +30,7 @@ V = TestFESpace(
 
 U = TrialFESpace(V,u)
 
-degree = order
+degree = 2*order
 trian = get_triangulation(model)
 quad = CellQuadrature(trian,degree)
 
