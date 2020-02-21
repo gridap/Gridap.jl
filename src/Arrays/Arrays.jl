@@ -17,6 +17,7 @@ using DocStringExtensions
 using Test
 using FillArrays
 using Base: @propagate_inbounds
+using LinearAlgebra
 
 export array_cache
 export getindex!
@@ -80,6 +81,8 @@ export identity_vector
 export SubVector
 export pair_arrays
 export unpair_arrays
+
+export matvec_muladd!
 
 import Base: size
 import Base: getindex, setindex!

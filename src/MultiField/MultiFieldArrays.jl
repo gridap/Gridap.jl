@@ -183,7 +183,7 @@ function mul!(c::MultiFieldArray{Tc,1},a::MultiFieldArray{Ta,2},b::MultiFieldArr
     bk = b.blocks[p]
     q = c.ptrs[ci]
     ck = c.blocks[q]
-    mul!(ck,ak,bk,1,1)
+    matvec_muladd!(ck,ak,bk)
   end
 end
 
