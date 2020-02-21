@@ -47,9 +47,9 @@ partition = (2,3)
 trian = CartesianGrid(domain,partition)
 quad = CellQuadrature(trian,degree)
 q = get_coordinates(quad)
-@test isa(q,Fill)
+@test isa(q,Fill) || isa(q,CompressedArray)
 w = get_weights(quad)
-@test isa(w,Fill)
+@test isa(w,Fill) || isa(w,CompressedArray)
 
 vol = sum(integrate(1,trian,quad))
 @test vol ≈ 1

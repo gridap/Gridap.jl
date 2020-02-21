@@ -1,20 +1,20 @@
 """
 """
-function build_cellmatvec(op::Function,a,b,c...)
+function apply_cellmatvec(op::Function,a,b,c...)
   k = CellMatVecKernel(op)
   apply(k,a,b,c...)
 end
 
 """
 """
-function build_cellmatrix(op::Function,a,b,c...)
+function apply_cellmatrix(op::Function,a,b,c...)
   k = CellMatKernel(op)
   apply(k,a,b,c...)
 end
 
 """
 """
-function build_cellvector(op::Function,a,c...)
+function apply_cellvector(op::Function,a,c...)
   k = CellVecKernel(op)
   apply(k,a,c...)
 end

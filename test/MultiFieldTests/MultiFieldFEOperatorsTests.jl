@@ -118,7 +118,7 @@ end
 function cellmat_Ω(y,x)
   y_q = evaluate(y,q)
   x_q = evaluate(x,q)
-  build_cellmatvec(cell_kernel!,y_q,x_q,jac_q,w_q)
+  apply_cellmatvec(cell_kernel!,y_q,x_q,jac_q,w_q)
 end
 
 t2_Ω = AffineFETermFromCellMatVec(cellmat_Ω,trian)

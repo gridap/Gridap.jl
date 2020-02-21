@@ -106,7 +106,7 @@ end
 function cellmatvec_Ω(v,u)
   v_q = evaluate(v,q)
   ∇v_q = evaluate(∇(v),q)
-  build_cellmatvec(poisson_matvec_kernel!, ∇v_q, ∇v_q, v_q, jac_q, w_q, x_q)
+  apply_cellmatvec(poisson_matvec_kernel!, ∇v_q, ∇v_q, v_q, jac_q, w_q, x_q)
 end
 
 t_Ω = AffineFETermFromCellMatVec(cellmatvec_Ω,trian)

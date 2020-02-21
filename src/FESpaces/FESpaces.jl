@@ -183,9 +183,9 @@ export @law
 export operate
 export GridapType
 
-export build_cellmatvec
-export build_cellmatrix
-export build_cellvector
+export apply_cellmatvec
+export apply_cellmatrix
+export apply_cellvector
 
 include("CellBases.jl")
 

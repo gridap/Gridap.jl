@@ -80,9 +80,9 @@ v_q = evaluate(v,q)
 ∇v_q = evaluate(∇(v),q)
 j_q = evaluate(j,q)
 
-cellmatvec = build_cellmatvec(poisson_matvec_kernel!, ∇v_q, ∇v_q, v_q, j_q, w)
-cellmat = build_cellmatrix(poisson_mat_kernel!, ∇v_q, ∇v_q, j_q, w)
-cellvec = build_cellvector(poisson_vec_kernel!, v_q, j_q, w)
+cellmatvec = apply_cellmatvec(poisson_matvec_kernel!, ∇v_q, ∇v_q, v_q, j_q, w)
+cellmat = apply_cellmatrix(poisson_mat_kernel!, ∇v_q, ∇v_q, j_q, w)
+cellvec = apply_cellvector(poisson_vec_kernel!, v_q, j_q, w)
 
 a(v,u) = ∇(v)*∇(u)
 l(v) = v

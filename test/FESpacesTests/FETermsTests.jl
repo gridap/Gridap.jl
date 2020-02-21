@@ -147,7 +147,7 @@ end
 function matvecfun(v,u)
   v_q = evaluate(v,q)
   ∇v_q = evaluate(∇(v),q)
-  build_cellmatvec(poisson_matvec_kernel!, ∇v_q, ∇v_q, v_q, jac_q, w_q, x_q)
+  apply_cellmatvec(poisson_matvec_kernel!, ∇v_q, ∇v_q, v_q, jac_q, w_q, x_q)
 end
 
 t_matvec_Ω = AffineFETermFromCellMatVec(matvecfun,trian)
@@ -188,7 +188,7 @@ function jacresfun(uh,v,du)
   ∇v_q = evaluate(∇(v),q)
   ∇du_q = ∇v_q
   ∇uh_q = evaluate(∇(uh),q)
-  build_cellmatvec(poisson_jacres_kernel!, ∇v_q, ∇du_q, v_q, ∇uh_q, jac_q, w_q, x_q)
+  apply_cellmatvec(poisson_jacres_kernel!, ∇v_q, ∇du_q, v_q, ∇uh_q, jac_q, w_q, x_q)
 end
 
 t_jacres_Ω = FETermFromCellJacRes(jacresfun,trian)
