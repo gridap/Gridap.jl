@@ -41,7 +41,7 @@ t_Ω = FETerm(res,jac,trian,quad)
 
 op = FEOperator(V,U,t_Ω)
 
-nls = NLSolver(show_trace=true, method=:newton)
+nls = NLSolver(show_trace=false, method=:newton)
 solver = FESolver(nls)
 
 x = rand(T,num_free_dofs(U))

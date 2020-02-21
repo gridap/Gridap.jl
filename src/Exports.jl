@@ -82,6 +82,7 @@ end
 @publish Geometry get_normal_vector
 @publish Geometry restrict
 @publish Geometry get_physical_coordinate
+@publish Geometry get_cell_map
 @publish Geometry CartesianGrid
 @publish Geometry CartesianDiscreteModel
 @publish Geometry DiscreteModelFromFile
