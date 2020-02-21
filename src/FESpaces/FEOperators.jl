@@ -59,6 +59,22 @@ end
 
 """
 """
+function residual_and_jacobian!(b::AbstractVector,A::AbstractMatrix,op::FEOperator,u)
+  residual!(b,op,u)
+  jacobian!(A,op,u)
+  (b,A)
+end
+
+"""
+"""
+function residual_and_jacobian(op::FEOperator,u)
+  b = residual(op,u)
+  A = jacobian(op,u)
+  (b,A)
+end
+
+"""
+"""
 function test_fe_operator(op::FEOperator,args...;kwargs...)
   test = get_test(op)
   trial = get_trial(op)
@@ -76,6 +92,10 @@ function test_fe_operator(op::FEOperator,args...;kwargs...)
   jacobian!(A,op,u)
   A2 = jacobian(op,u)
   @test isa(A2,AbstractMatrix)
+  residual_and_jacobian!(b,A,op,u)
+  b, A = residual_and_jacobian(op,u)
+  @test isa(b,AbstractVector)
+  @test isa(A,AbstractMatrix)
   _op = get_algebraic_operator(op)
   test_non_linear_operator(_op,args...;kwargs...)
 end
@@ -126,6 +146,18 @@ function jacobian(op::AlgebraicOpFromFEOp,x::AbstractVector)
   trial = get_trial(op.feop)
   u = EvaluationFunction(trial,x)
   jacobian(op.feop,u)
+end
+
+function residual_and_jacobian!(b::AbstractVector,A::AbstractMatrix,op::AlgebraicOpFromFEOp,x::AbstractVector)
+  trial = get_trial(op.feop)
+  u = EvaluationFunction(trial,x)
+  residual_and_jacobian!(b,A,op.feop,u)
+end
+
+function residual_and_jacobian(op::AlgebraicOpFromFEOp,x::AbstractVector)
+  trial = get_trial(op.feop)
+  u = EvaluationFunction(trial,x)
+  residual_and_jacobian(op.feop,u)
 end
 
 function zero_initial_guess(::Type{T},op::AlgebraicOpFromFEOp) where T

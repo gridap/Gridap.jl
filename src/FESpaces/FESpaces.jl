@@ -53,6 +53,8 @@ import Gridap.Algebra: residual!
 import Gridap.Algebra: jacobian!
 import Gridap.Algebra: residual
 import Gridap.Algebra: jacobian
+import Gridap.Algebra: residual_and_jacobian!
+import Gridap.Algebra: residual_and_jacobian
 import Gridap.Algebra: zero_initial_guess
 import Gridap.Algebra: get_matrix
 import Gridap.Algebra: get_vector

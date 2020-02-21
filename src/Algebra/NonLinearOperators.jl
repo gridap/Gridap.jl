@@ -128,6 +128,14 @@ function test_non_linear_operator(
     A = allocate_jacobian(op,x)
     jacobian!(A,op,x)
     @test pred(A,jac)
+
+    residual_and_jacobian!(b1,A,op,x)
+    @test pred(A,jac)
+    @test pred(b,b1)
+
+    b1, A = residual_and_jacobian(op,x)
+    @test pred(A,jac)
+    @test pred(b,b1)
   end
 
 end
