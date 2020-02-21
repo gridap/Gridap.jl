@@ -4,10 +4,11 @@
       # private fields
     end
 """
-struct ZeroMeanFESpace <: SingleFieldFESpace
+struct ZeroMeanFESpace{B} <: SingleFieldFESpace
   space::FESpaceWithLastDofRemoved
   vol_i::Vector{Float64}
   vol::Float64
+  constraint_style::Val{B}
 end
 
 """
@@ -21,7 +22,7 @@ function ZeroMeanFESpace(
 
   _space = FESpaceWithLastDofRemoved(space)
   vol_i, vol = _setup_vols(space,trian,quad)
-  ZeroMeanFESpace(_space,vol_i,vol)
+  ZeroMeanFESpace(_space,vol_i,vol,constraint_style(_space))
 end
 
 function _setup_vols(V,trian,quad)
@@ -39,7 +40,7 @@ end
 
 function TrialFESpace(f::ZeroMeanFESpace)
   U = TrialFESpace(f.space)
-  ZeroMeanFESpace(U,f.vol_i,f.vol)
+  ZeroMeanFESpace(U,f.vol_i,f.vol,f.constraint_style)
 end
 
 function FEFunction(
@@ -71,6 +72,20 @@ end
 
 # Delegated functions
 
+constraint_style(::Type{ZeroMeanFESpace{B}}) where B = Val{B}()
+
+function get_constraint_kernel_matrix_cols(f::ZeroMeanFESpace)
+  get_constraint_kernel_matrix_cols(f.space)
+end
+
+function get_constraint_kernel_matrix_rows(f::ZeroMeanFESpace)
+  get_constraint_kernel_matrix_rows(f.space)
+end
+
+function get_constraint_kernel_vector(f::ZeroMeanFESpace)
+  get_constraint_kernel_vector(f.space)
+end
+
 get_dirichlet_values(f::ZeroMeanFESpace) = get_dirichlet_values(f.space)
 
 get_cell_basis(f::ZeroMeanFESpace) = get_cell_basis(f.space)
@@ -80,12 +95,6 @@ get_cell_dof_basis(f::ZeroMeanFESpace) = get_cell_dof_basis(f.space)
 num_free_dofs(f::ZeroMeanFESpace) = num_free_dofs(f.space)
 
 zero_free_values(::Type{T},f::ZeroMeanFESpace) where T = zero_free_values(T,f.space)
-
-apply_constraints_matrix_cols(f::ZeroMeanFESpace,cm,cids) = apply_constraints_matrix_cols(f.space,cm,cids)
-
-apply_constraints_matrix_rows(f::ZeroMeanFESpace,cm,cids) = apply_constraints_matrix_rows(f.space,cm,cids)
-
-apply_constraints_vector(f::ZeroMeanFESpace,cm,cids) = apply_constraints_vector(f.space,cm,cids)
 
 get_cell_dofs(f::ZeroMeanFESpace) = get_cell_dofs(f.space)
 

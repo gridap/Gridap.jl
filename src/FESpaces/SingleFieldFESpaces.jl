@@ -53,10 +53,10 @@ end
 
 """
 """
-function test_single_field_fe_space(f::SingleFieldFESpace,cellmat,cellvec,cellidsrows,cellidscols,pred=(==))
+function test_single_field_fe_space(f::SingleFieldFESpace,pred=(==))
   fe_basis = get_cell_basis(f)
   @test isa(fe_basis,CellBasis)
-  test_fe_space(f,cellmat,cellvec,cellidsrows,cellidscols)
+  test_fe_space(f)
   cell_dofs = get_cell_dofs(f)
   dirichlet_values = zero_dirichlet_values(f)
   @test length(dirichlet_values) == num_dirichlet_dofs(f)
@@ -74,6 +74,11 @@ function test_single_field_fe_space(f::SingleFieldFESpace,cellmat,cellvec,cellid
     @test maximum(get_dirichlet_dof_tag(f)) == num_dirichlet_tags(f)
   end
   cell_dof_basis = get_cell_dof_basis(f)
+end
+
+function test_single_field_fe_space(f,matvecdata,matdata,vecdata,pred=(==))
+  test_single_field_fe_space(f,pred)
+  test_fe_space(f,matvecdata,matdata,vecdata)
 end
 
 """
@@ -102,7 +107,7 @@ function FEFunction(
   cell_vals = scatter_free_and_dirichlet_values(fs,free_values,dirichlet_values)
   cell_shapefuns = get_cell_shapefuns(fs)
   cell_field = lincomb(cell_shapefuns,cell_vals)
-  SingleFieldFEFunction(cell_field,free_values,dirichlet_values,fs)
+  SingleFieldFEFunction(cell_field,cell_vals,free_values,dirichlet_values,fs)
 end
 
 function FEFunction(fe::SingleFieldFESpace, free_values)

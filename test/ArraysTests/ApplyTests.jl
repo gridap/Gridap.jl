@@ -2,6 +2,7 @@ module ApplyTests
 
 using Test
 using Gridap.Arrays
+using Gridap.Arrays: ArrayWithCounter, reset_counter!
 using FillArrays
 
 a = rand(3,2,4)
@@ -98,29 +99,6 @@ r = [(xi.+yi) for (xi,yi) in zip(x,y)]
 test_array(v,r)
 
 # Test the intermediate results caching mechanism
-
-struct ArrayWithCounter{T,N,A,C} <: AbstractArray{T,N}
-  array::A
-  counter::C
-  function ArrayWithCounter(a::AbstractArray{T,N}) where {T,N}
-    c = zeros(Int,size(a))
-    c[:] .= 0
-    new{T,N,typeof(a),typeof(c)}(a,c)
-  end
-end
-
-Base.size(a::ArrayWithCounter) = size(a.array)
-
-function Base.getindex(a::ArrayWithCounter,i::Integer...)
-  a.counter[i...] += 1
-  a.array[i...]
-end
-
-Base.IndexStyle(::Type{<:ArrayWithCounter{T,N,A}}) where {T,A,N} = IndexStyle(A)
-
-function reset_counter!(a::ArrayWithCounter)
-  a.counter[:] .= 0
-end
 
 a = ArrayWithCounter(fill(rand(2,3),12))
 b = ArrayWithCounter(rand(12))

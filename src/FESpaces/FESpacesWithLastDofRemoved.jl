@@ -4,15 +4,18 @@
       space::SingleFieldFESpace
     end
 """
-struct FESpaceWithLastDofRemoved <: SingleFieldFESpace
+struct FESpaceWithLastDofRemoved{B} <: SingleFieldFESpace
   space::SingleFieldFESpace
+  constraint_style::Val{B}
   @doc """
       FESpaceWithLastDofRemoved(space::SingleFieldFESpace)
   """
   function FESpaceWithLastDofRemoved(space::SingleFieldFESpace)
     s = "FESpaceWithLastDofRemoved can only be constructed from spaces without dirichlet dofs."
     @notimplementedif num_dirichlet_dofs(space) != 0 s
-    new(space)
+    cs = constraint_style(space)
+    B = get_val_parameter(cs)
+    new{B}(space,cs)
   end
 end
 
@@ -76,16 +79,18 @@ function get_cell_dof_basis(f::FESpaceWithLastDofRemoved)
   get_cell_dof_basis(f.space)
 end
 
-function apply_constraints_matrix_cols(f::FESpaceWithLastDofRemoved,cm,cids)
-  apply_constraints_matrix_cols(f.space,cm,cids)
+constraint_style(::Type{FESpaceWithLastDofRemoved{B}}) where B = Val{B}()
+
+function get_constraint_kernel_matrix_cols(f::FESpaceWithLastDofRemoved)
+  get_constraint_kernel_matrix_cols(f.space)
 end
 
-function apply_constraints_matrix_rows(f::FESpaceWithLastDofRemoved,cm,cids)
-  apply_constraints_matrix_rows(f.space,cm,cids)
+function get_constraint_kernel_matrix_rows(f::FESpaceWithLastDofRemoved)
+  get_constraint_kernel_matrix_rows(f.space)
 end
 
-function apply_constraints_vector(f::FESpaceWithLastDofRemoved,cm,cids)
-  apply_constraints_vector(f.space,cm,cids)
+function get_constraint_kernel_vector(f::FESpaceWithLastDofRemoved)
+  get_constraint_kernel_vector(f.space)
 end
 
 # Helpers

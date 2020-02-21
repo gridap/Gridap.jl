@@ -7,7 +7,6 @@ using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.FESpaces
 
-
 # testing compute_conforming_cell_dofs
 
 domain =(0,1,0,1)
@@ -62,12 +61,15 @@ dirichlet_components = [(true,true), (false,true)]
 cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
   reffes, grid_topology, face_labeing, dirichlet_tags, dirichlet_components)
 
-
 V = GradConformingFESpace(reffes,model,dirichlet_tags)
-test_single_field_fe_space(V,[],[],[],[])
+test_single_field_fe_space(V)
+
+matvecdata = ([],[],[])
+matdata = ([],[],[])
+vecdata = ([],[])
+test_single_field_fe_space(V,matvecdata,matdata,vecdata)
 
 V = GradConformingFESpace(reffes,model,dirichlet_tags,dirichlet_components)
-test_single_field_fe_space(V,[],[],[],[])
-
+test_single_field_fe_space(V)
 
 end  # module

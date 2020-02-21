@@ -71,11 +71,7 @@ export get_vector
 export SparseMatrixCSR
 export SymSparseMatrixCSR
 
-export BlockArrayCOO
-
 include("SparseMatrices.jl")
-
-include("BlockArraysCOO.jl")
 
 include("CompressedSparseMatrices.jl")
 

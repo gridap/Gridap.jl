@@ -3,6 +3,7 @@
 """
 struct SingleFieldFEFunction <: CellField
   array
+  cell_vals
   free_values
   dirichlet_values
   fe_space
@@ -10,10 +11,11 @@ struct SingleFieldFEFunction <: CellField
   """
   function SingleFieldFEFunction(
     array::AbstractArray{<:Field},
+    cell_vals::AbstractArray{<:AbstractArray},
     free_values::AbstractVector,
     dirichlet_values::AbstractVector,
     fe_space::SingleFieldFESpace)
-    new(array,free_values,dirichlet_values,fe_space)
+    new(array,cell_vals,free_values,dirichlet_values,fe_space)
   end
 end
 
@@ -28,4 +30,6 @@ get_dirichlet_values(f::SingleFieldFEFunction) = f.dirichlet_values
 get_fe_space(f::SingleFieldFEFunction) = f.fe_space
 
 get_cell_map(f::SingleFieldFEFunction) = get_cell_map(f.fe_space)
+
+get_cell_values(f::SingleFieldFEFunction) = f.cell_vals
 

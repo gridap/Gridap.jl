@@ -46,6 +46,8 @@ end
 
 # FESpace interface
 
+constraint_style(::Type{<:UnsconstrainedFESpace}) = Val{false}()
+
 function num_free_dofs(f::UnsconstrainedFESpace)
   f.nfree
 end
@@ -56,18 +58,6 @@ end
 
 function zero_free_values(::Type{T},f::UnsconstrainedFESpace) where T
   zeros(T,num_free_dofs(f))
-end
-
-function apply_constraints_matrix_cols(f::UnsconstrainedFESpace,cellmat,cellids)
-  cellmat
-end
-
-function apply_constraints_matrix_rows(f::UnsconstrainedFESpace,cellmat,cellids)
-  cellmat
-end
-
-function apply_constraints_vector(f::UnsconstrainedFESpace,cellvec,cellids)
-  cellvec
 end
 
 # SingleFieldFESpace interface

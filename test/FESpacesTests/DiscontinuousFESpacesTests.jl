@@ -17,7 +17,7 @@ reffes = [LagrangianRefFE(Float64,p,order) for p in polytopes]
 trian = get_triangulation(model)
 
 V = DiscontinuousFESpace(reffes,trian)
-test_single_field_fe_space(V,[],[],[],[])
+test_single_field_fe_space(V)
 
 U = TrialFESpace(V)
 
@@ -33,6 +33,6 @@ uh = FEFunction(V,rand(num_free_dofs(V)))
 
 reffes = [PDiscRefFE(Float64,p,order) for p in polytopes]
 V = DiscontinuousFESpace(reffes,trian)
-test_single_field_fe_space(V,[],[],[],[])
+test_single_field_fe_space(V)
 
 end # module

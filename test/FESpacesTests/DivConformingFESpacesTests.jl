@@ -1,8 +1,8 @@
 module DivConformingFESpacesTests
 
-using Gridap.FESpaces
 using Gridap.Geometry
 using Gridap.ReferenceFEs
+using Gridap.FESpaces
 
 domain =(0,1,0,1)
 partition = (3,3)
@@ -19,6 +19,7 @@ V = TestFESpace(
   order = order,
   model = model,
   dirichlet_tags = [1,6])
+test_single_field_fe_space(V)
 
 U = TrialFESpace(V,u)
 

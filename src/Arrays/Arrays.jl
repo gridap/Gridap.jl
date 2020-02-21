@@ -17,6 +17,7 @@ using DocStringExtensions
 using Test
 using FillArrays
 using Base: @propagate_inbounds
+using LinearAlgebra
 
 export array_cache
 export getindex!
@@ -27,6 +28,7 @@ export test_array
 export testitems
 export array_caches
 export get_array
+export add_to_array!
 
 export CachedArray
 export CachedMatrix
@@ -77,6 +79,10 @@ export reindex
 export identity_vector
 
 export SubVector
+export pair_arrays
+export unpair_arrays
+
+export matvec_muladd!
 
 import Base: size
 import Base: getindex, setindex!
@@ -107,5 +113,7 @@ include("Reindex.jl")
 include("IdentityVectors.jl")
 
 include("SubVectors.jl")
+
+include("ArrayPairs.jl")
 
 end # module

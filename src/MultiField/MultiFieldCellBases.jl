@@ -139,27 +139,36 @@ function _attach_field_id(r::SkeletonCellBasis,field_id)
   SkeletonCellBasis(r.trial_style,l,r)
 end
 
+# Evaluation
+
+function evaluate(bs::AbstractArray{<:CellBasisWithFieldID},q::AbstractArray)
+  f = b -> evaluate(b,q)
+  blocks = tuple(map(f,bs)...)
+  coordinates = [ (i,1) for i in 1:length(bs)]
+  MultiFieldCellArray(blocks,coordinates)
+end
+
 # Integration
 
 function integrate(cb::CellBasisWithFieldID,trian::Triangulation,quad::CellQuadrature)
   r = integrate(cb.cell_basis,trian,quad)
   bloks = (r,)
   block_ids = [(cb.field_id,),]
-  MultiCellArray(bloks,block_ids)
+  MultiFieldCellArray(bloks,block_ids)
 end
 
 function integrate(cm::CellMatrixFieldWithFieldIds,trian::Triangulation,quad::CellQuadrature)
   r = integrate(cm.cell_matrix_field,trian,quad)
   bloks = (r,)
   block_ids = [(cm.field_id_rows, cm.field_id_cols),]
-  MultiCellArray(bloks,block_ids)
+  MultiFieldCellArray(bloks,block_ids)
 end
 
 function integrate(cb::BlockTracker,trian::Triangulation,quad::CellQuadrature)
   f = (b) -> integrate(get_array(b),trian,quad)
   blocks = map(f,cb.blocks)
   block_ids = cb.block_ids
-  MultiCellArray(blocks,block_ids)
+  MultiFieldCellArray(blocks,block_ids)
 end
 
 struct MultiCellBasis{S} <: GridapType
@@ -194,4 +203,27 @@ function restrict(a::MultiCellBasis,trian::Triangulation)
   blocks = map(f,a.blocks)
   blocks
 end
+
+# Dirichlet related
+
+function kernel_cache(k::DirichletVecKernel,mat::MultiFieldArray,vals::MultiFieldArray)
+  vec = mat*vals
+  cvec = CachedMultiFieldArray(vec)
+  (vec, cvec)
+end
+
+@inline function apply_kernel!(cache,k::DirichletVecKernel,mat::MultiFieldArray,vals::MultiFieldArray)
+  vec, cvec = cache
+  _resize_for_mul!(cvec,mat,vals)
+  _move_cached_arrays!(vec,cvec)
+  mul!(vec,mat,vals)
+  for vk in vec.blocks
+    @inbounds for i in eachindex(vk)
+      vk[i] = -vk[i]
+    end
+  end
+  vec
+end
+
+
 

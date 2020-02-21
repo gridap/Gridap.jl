@@ -4,8 +4,28 @@
       space::SingleFieldFESpace
     end
 """
-struct DirichletFESpace <: SingleFieldFESpace
+struct DirichletFESpace{B} <: SingleFieldFESpace
   space::SingleFieldFESpace
+  constraint_style::Val{B}
+  function DirichletFESpace(space::SingleFieldFESpace)
+    cs = constraint_style(space)
+    B = get_val_parameter(cs)
+    new{B}(space,cs)
+  end
+end
+
+constraint_style(::Type{DirichletFESpace{B}}) where B = Val{B}()
+
+function get_constraint_kernel_matrix_cols(f::DirichletFESpace)
+  get_constraint_kernel_matrix_cols(f.space)
+end
+
+function get_constraint_kernel_matrix_rows(f::DirichletFESpace)
+  get_constraint_kernel_matrix_rows(f.space)
+end
+
+function get_constraint_kernel_vector(f::DirichletFESpace)
+  get_constraint_kernel_vector(f.space)
 end
 
 function num_free_dofs(f::DirichletFESpace)
@@ -57,17 +77,5 @@ end
 
 function get_cell_dof_basis(f::DirichletFESpace)
   get_cell_dof_basis(f.space)
-end
-
-function apply_constraints_matrix_cols(f::DirichletFESpace,cm,cids)
-  apply_constraints_matrix_cols(f.space,cm,cids)
-end
-
-function apply_constraints_matrix_rows(f::DirichletFESpace,cm,cids)
-  apply_constraints_matrix_rows(f.space,cm,cids)
-end
-
-function apply_constraints_vector(f::DirichletFESpace,cm,cids)
-  apply_constraints_vector(f.space,cm,cids)
 end
 

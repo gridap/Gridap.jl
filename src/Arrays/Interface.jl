@@ -75,7 +75,7 @@ function array_cache(a::AbstractArray)
 end
 
 function array_cache(hash,a::T) where T
-  if uses_hash(T) == Val(true)
+  if uses_hash(T) == Val{true}()
     error("array_cache(::Dict,::$T) not defined")
   end
   array_cache(a)
@@ -291,3 +291,44 @@ end
   ai = getindex!(ca,a,i...)
   (ai,)
 end
+
+"""
+"""
+function add_to_array!(a::AbstractArray{Ta,N},b::AbstractArray{Tb,N},combine=+) where {Ta,Tb,N}
+  @assert size(a) == size(b) "Arrays sizes mismatch"
+  @inbounds for i in eachindex(a)
+    a[i] = combine(a[i],b[i])
+  end
+end
+
+"""
+"""
+function add_to_array!(a::AbstractArray,b::Number,combine=+)
+  @inbounds for i in eachindex(a)
+    a[i] = combine(a[i],b)
+  end
+end
+
+"""
+"""
+function matvec_muladd!(c::AbstractVector,a::AbstractMatrix,b::AbstractVector)
+  _matvec_muladd!(c,a,b)
+end
+
+@static if VERSION >= v"1.3"
+  function _matvec_muladd!(c,a,b)
+    mul!(c,a,b,1,1)
+  end
+else
+  function _matvec_muladd!(c,a,b)
+    @assert length(c) == size(a,1)
+    @assert length(b) == size(a,2)
+    @inbounds for j in 1:size(a,2)
+      for i in 1:size(a,1)
+        c[i] += a[i,j]*b[j]
+      end
+    end
+  end
+end
+
+

@@ -18,7 +18,10 @@ reffes = [LagrangianRefFE(Float64,p,order) for p in polytopes]
 
 dirichlet_tags = ["tag_24","tag_25"]
 V0 = GradConformingFESpace(reffes,model,dirichlet_tags)
-test_single_field_fe_space(V0,[],[],[],[])
+matvecdata = ([],[],[])
+matdata = ([],[],[])
+vecdata = ([],[])
+test_single_field_fe_space(V0,matvecdata,matdata,vecdata)
 
 cell_map = get_cell_map(V0)
 
@@ -41,6 +44,7 @@ dirichlet_values = compute_dirichlet_values_for_tags(V0,2)
 
 free_values = zero_free_values(V0)
 uh = FEFunction(V0,free_values,dirichlet_values)
+
 
 #using Gridap.Visualization
 #

@@ -9,7 +9,7 @@ using Test
 
 using Gridap.MultiField
 using Gridap.MultiField: MultiFieldFESpace
-using Gridap.MultiField: MultiCellArray
+using Gridap.MultiField: MultiFieldCellArray
 using Gridap.MultiField: ConsequtiveMultiFieldStyle
 
 order = 2
@@ -59,24 +59,27 @@ du, dp = dx
 @test is_a_fe_cell_basis(dp)
 
 cellmat = integrate(dv*du,trian,quad)
-
 cellvec = integrate(dv*2,trian,quad)
-
 cellids = get_cell_id(trian)
+cellmatvec = pair_arrays(cellmat,cellvec)
 
-test_fe_space(V,cellmat,cellvec,cellids,cellids)
-test_fe_space(U,cellmat,cellvec,cellids,cellids)
+matvecdata = (cellmatvec,cellids,cellids)
+matdata = (cellmat,cellids,cellids)
+vecdata = (cellvec,cellids)
+
+test_fe_space(V,matvecdata,matdata,vecdata)
+test_fe_space(U,matvecdata,matdata,vecdata)
 
 #using Gridap.Visualization
 #writevtk(trian,"trian";nsubcells=30,cellfields=["uh" => uh, "ph"=> ph])
 
 cell_dofs = get_cell_dofs(X)
-@test isa(cell_dofs,MultiCellArray)
+@test isa(cell_dofs,MultiFieldCellArray)
 
 cellids = [3,5,2]
 
 cell_dofs_new = reindex(cell_dofs,cellids)
-@test isa(cell_dofs_new,MultiCellArray)
-@test cell_dofs_new.block_ids === cell_dofs.block_ids
+@test isa(cell_dofs_new,MultiFieldCellArray)
+@test cell_dofs_new.block_ids == cell_dofs.block_ids
 
 end # module

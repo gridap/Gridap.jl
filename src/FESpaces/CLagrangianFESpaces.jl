@@ -27,6 +27,8 @@ end
 
 # FESpace interface
 
+constraint_style(::Type{<:CLagrangianFESpace}) = Val{false}()
+
 function num_free_dofs(f::CLagrangianFESpace)
   num_free_dofs(f.space)
 end
@@ -37,18 +39,6 @@ end
 
 function zero_free_values(::Type{T},f::CLagrangianFESpace) where T
   zero_free_values(T,f.space)
-end
-
-function apply_constraints_matrix_cols(f::CLagrangianFESpace,cellmat,cellids)
-  apply_constraints_matrix_cols(f.space,cellmat,cellids)
-end
-
-function apply_constraints_matrix_rows(f::CLagrangianFESpace,cellmat,cellids)
-  apply_constraints_matrix_rows(f.space,cellmat,cellids)
-end
-
-function apply_constraints_vector(f::CLagrangianFESpace,cellvec,cellids)
-  apply_constraints_vector(f.space,cellvec,cellids)
 end
 
 # SingleFieldFESpace interface

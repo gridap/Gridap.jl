@@ -535,6 +535,18 @@ end
 
 # Integration of Skeleton quantities
 
+struct SkeletonMatrix{A} <: GridapType
+  ll::A
+  lr::A
+  rl::A
+  rr::A
+end
+
+struct SkeletonVector{A} <: GridapType
+  left::A
+  right::A
+end
+
 struct SkeletonCellMatrix <: GridapType
   ll
   lr
@@ -561,5 +573,66 @@ function integrate(
   left = integrate(a.left,trian,quad)
   right = integrate(a.right,trian,quad)
   SkeletonCellVector(left,right)
+end
+
+# Dirichlet related
+
+function compute_dirichlet_cell_vector(cellmat,cellvals)
+  k = DirichletVecKernel()
+  apply(k,cellmat,cellvals)
+end
+
+"""
+"""
+function attach_dirichlet_bcs(cellmatvec,cellvals)
+  k = DirichletMatVecKernel()
+  apply(k,cellmatvec,cellvals)
+end
+
+struct DirichletVecKernel <: Kernel end
+
+function kernel_cache(k::DirichletVecKernel,mat::AbstractMatrix,vals)
+  vec = mat*vals
+  CachedArray(vec)
+end
+
+@inline function apply_kernel!(cache,k::DirichletVecKernel,mat::AbstractMatrix,vals)
+  n = size(mat,1)
+  setsize!(cache,(n,))
+  vec = cache.array
+  mul!(vec,mat,vals)
+  @inbounds for i in eachindex(vec)
+    vec[i] = -vec[i]
+  end
+  vec
+end
+
+struct DirichletMatVecKernel <: Kernel
+  k::DirichletVecKernel
+  function DirichletMatVecKernel()
+    k = DirichletVecKernel()
+    new(k)
+  end
+end
+
+function kernel_cache(k::DirichletMatVecKernel,mat,vals)
+  kernel_cache(k.k,mat,vals)
+end
+
+function kernel_cache(k::DirichletMatVecKernel,matvec::Tuple,vals)
+  mat, = matvec
+  kernel_cache(k.k,mat,vals)
+end
+
+@inline function apply_kernel!(cache,k::DirichletMatVecKernel,mat,vals)
+  vec = apply_kernel!(cache,k.k,mat,vals)
+  (mat,vec)
+end
+
+@inline function apply_kernel!(cache,k::DirichletMatVecKernel,matvec::Tuple,vals)
+  mat, vec = matvec
+  vecd = apply_kernel!(cache,k.k,mat,vals)
+  add_to_array!(vecd,vec)
+  (mat, vecd)
 end
 

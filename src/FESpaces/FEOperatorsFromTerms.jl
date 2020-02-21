@@ -67,3 +67,21 @@ function jacobian!(A::AbstractMatrix,op::FEOperatorFromTerms,uh)
   A
 end
 
+function residual_and_jacobian!(b::AbstractVector,A::AbstractMatrix,op::FEOperatorFromTerms,uh)
+  @assert is_a_fe_function(uh)
+  v = get_cell_basis(op.test)
+  du = get_cell_basis(op.trial)
+  data = collect_cell_jacobian_and_residual(uh,v,du,op.terms)
+  assemble_matrix_and_vector!(A, b, op.assem,data...)
+  (b,A)
+end
+
+function residual_and_jacobian(op::FEOperatorFromTerms,uh)
+  @assert is_a_fe_function(uh)
+  v = get_cell_basis(op.test)
+  du = get_cell_basis(op.trial)
+  data = collect_cell_jacobian_and_residual(uh,v,du,op.terms)
+  A, b = assemble_matrix_and_vector(op.assem,data...)
+  (b, A)
+end
+

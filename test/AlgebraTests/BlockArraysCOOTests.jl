@@ -1,4 +1,0 @@
-module BlockArraysCOOTests
-
-
-end # module

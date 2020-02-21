@@ -9,7 +9,9 @@ using DocStringExtensions
 using Test
 using FillArrays
 using SparseArrays
+using LinearAlgebra
 
+using Gridap.Inference
 using Gridap.Helpers
 using Gridap.Arrays
 using Gridap.ReferenceFEs
@@ -27,6 +29,9 @@ using Gridap.Geometry: test_cell_field_like
 import Gridap.Arrays: get_array
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
+import Gridap.Arrays: kernel_cache
+import Gridap.Arrays: apply_kernel!
+import Gridap.Arrays: kernel_return_type
 import Gridap.Geometry: get_cell_map
 import Gridap.Geometry: get_cell_shapefuns
 import Gridap.Geometry: get_reffes
@@ -48,6 +53,8 @@ import Gridap.Algebra: residual!
 import Gridap.Algebra: jacobian!
 import Gridap.Algebra: residual
 import Gridap.Algebra: jacobian
+import Gridap.Algebra: residual_and_jacobian!
+import Gridap.Algebra: residual_and_jacobian
 import Gridap.Algebra: zero_initial_guess
 import Gridap.Algebra: get_matrix
 import Gridap.Algebra: get_vector
@@ -58,6 +65,7 @@ export FEFunctionStyle
 export is_a_fe_function
 export get_free_values
 export get_fe_space
+export get_cell_values
 export test_fe_function
 
 export FESpace
@@ -65,9 +73,15 @@ export FEFunction
 export num_free_dofs
 export get_cell_basis
 export zero_free_values
+export constraint_style
+export has_constraints
+export get_constraint_kernel_matrix_cols
+export get_constraint_kernel_matrix_rows
+export get_constraint_kernel_vector
 export apply_constraints_matrix_cols
 export apply_constraints_matrix_rows
 export apply_constraints_vector
+export apply_constraints_matrix_and_vector_cols
 export apply_constraints_matrix_and_vector_rows
 export test_fe_space
 
@@ -121,6 +135,7 @@ export GenericCellMatrixField
 export TrialStyle
 export is_trial
 export is_test
+export attach_dirichlet_bcs
 
 export FECellBasisStyle
 export is_a_fe_cell_basis
@@ -144,13 +159,18 @@ export FETerm
 export AffineFETerm
 export LinearFETerm
 export FESource
+export AffineFETermFromCellMatVec
+export FETermFromCellJacRes
 export get_cell_matrix
 export get_cell_vector
 export get_cell_jacobian
+export get_cell_jacobian_and_residual
 export get_cell_residual
 export collect_cell_matrix
 export collect_cell_vector
+export collect_cell_matrix_and_vector
 export collect_cell_jacobian
+export collect_cell_jacobian_and_residual
 export collect_cell_residual
 
 export FESpaceWithLastDofRemoved
@@ -162,6 +182,10 @@ export DirichletFESpace
 export @law
 export operate
 export GridapType
+
+export apply_cellmatvec
+export apply_cellmatrix
+export apply_cellvector
 
 include("CellBases.jl")
 
@@ -192,6 +216,8 @@ include("DivConformingFESpaces.jl")
 include("DiscontinuousFESpaces.jl")
 
 include("FETerms.jl")
+
+include("CellKernels.jl")
 
 include("AffineFEOperators.jl")
 

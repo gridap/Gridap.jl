@@ -2,9 +2,13 @@ module MultiFieldTests
 
 using Test
 
-@testset "MultiCellArrays" begin include("MultiCellArraysTests.jl") end
+@testset "MultiFieldArrays" begin include("MultiFieldArraysTests.jl") end
+
+@testset "MultiFieldCellArrays" begin include("MultiFieldCellArraysTests.jl") end
 
 @testset "MultiFieldCellBases" begin include("MultiFieldCellBasesTests.jl") end
+
+@testset "MultiFieldCellKernels" begin include("MultiFieldCellKernelsTests.jl") end
 
 @testset "MultiFieldFESpaces" begin include("MultiFieldFESpacesTests.jl") end
 
