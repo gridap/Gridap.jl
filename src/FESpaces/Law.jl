@@ -7,7 +7,7 @@ macro law(fundef)
   @assert fundef.head in (:(=), :function) s
   funname = fundef.args[1].args[1]
   nargs = length(fundef.args[1].args)-1
-  @assert nargs >= 1 "The @law macro is only allowed in functions with at leat one argument"
+  @assert nargs >= 1 "The @law macro is only allowed in functions with at leats one argument"
 
   y = fundef.args[1].args[2]
   x =  fundef.args[1].args[3:end]

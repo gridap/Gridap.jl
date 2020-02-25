@@ -8,6 +8,8 @@ using Test
 
 @testset "CellFields" begin include("CellFieldsTests.jl") end
 
+@testset "QPointCellFields" begin include("QPointCellFieldsTests.jl") end
+
 @testset "Triangulations" begin include("TriangulationsTests.jl") end
 
 @testset "Grids" begin include("GridsTests.jl") end

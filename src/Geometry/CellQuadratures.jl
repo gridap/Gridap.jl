@@ -5,11 +5,15 @@
 """
 struct CellQuadrature <: GridapType
   array
+  coords
+  weights
   @doc """
       CellQuadrature(array::AbstractArray{<:Quadrature})
   """
   function CellQuadrature(array::AbstractArray{<:Quadrature})
-    new(array)
+    coords = _get_coordinates(array)
+    weights = _get_weights(array)
+    new(array,coords,weights)
   end
 end
 
@@ -49,14 +53,14 @@ get_array(quad::CellQuadrature) = quad.array
     get_coordinates(q::CellQuadrature)
 """
 function get_coordinates(quad::CellQuadrature)
-  _get_coordinates(quad.array)
+  quad.coords
 end
 
 """
     get_weights(q::CellQuadrature)
 """
 function get_weights(quad::CellQuadrature)
-  _get_weights(quad.array)
+  quad.weights
 end
 
 function _get_coordinates(q::AbstractArray{<:Quadrature})

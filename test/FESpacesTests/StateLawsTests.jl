@@ -4,11 +4,17 @@ using Gridap.Arrays
 using Gridap.Arrays: _split
 using Gridap.Fields
 import Gridap.Fields: kernel_evaluate
+import Gridap.Fields: evaluate_field!
+import Gridap.Fields: field_cache
 using Gridap.Geometry
 using Gridap.Geometry: UnimplementedField
 import Gridap.Arrays: kernel_cache
 import Gridap.Arrays: apply_kernel!
 import Gridap.Arrays: kernel_return_type
+
+import Gridap.Arrays: array_cache
+import Gridap.Arrays: getindex!
+import Gridap.Fields: evaluate_field_array
 
 """
 """
@@ -19,7 +25,6 @@ end
 function get_arrays(a)
   (get_array(a),)
 end
-
 
 """
 """
@@ -40,8 +45,8 @@ end
 
 function apply_statelaw(op::Function,a::CellField,b...)
   T = UnimplementedField
-  k = EvalStateLaw(StateLawKernel(op))
-  r = apply(T,k,get_array(a),get_arrays(b...)...)
+  k = StateLawKernel(op)
+  r = apply_to_field_array(T,k,get_array(a),get_arrays(b...)...)
   similar_object(a,r)
 end
 
@@ -92,45 +97,76 @@ end
   nothing
 end
 
-struct EvalStateLaw{K<:StateLawKernel} <: Kernel
-  k::K
-end
+#struct EvalStateLaw{K<:StateLawKernel} <: Kernel
+#  k::K
+#end
+#
+#function kernel_evaluate(k::EvalStateLaw,q,a,b...)
+#  a_q = evaluate_field_array(a,q)
+#  apply(k.k,a_q,b...)
+#end
 
-function kernel_evaluate(k::EvalStateLaw,q,a,b...)
-  a_q = evaluate_field_array(a,q)
-  apply(k.k,a_q,b...)
+"""
+"""
+macro statelaw(fundef)
+  s = "The @statelaw macro is only allowed in function definitions"
+  @assert isa(fundef,Expr) s
+  @assert fundef.head in (:(=), :function) s
+  funname = fundef.args[1].args[1]
+  nargs = length(fundef.args[1].args)-1
+  @assert nargs >= 2 "The @statelaw macro is only allowed in functions with at leats two arguments"
+
+  y = fundef.args[1].args[2]
+  x =  fundef.args[1].args[3:end]
+  a = fundef.args[1].args[2:end]
+  q = quote
+    function $(funname)($(y)::CellField,$(x...))
+      apply_statelaw($(funname),$(a...))
+    end
+    $(fundef)
+  end
+  :($(esc(q)))
 end
 
 using Gridap
 using Gridap.Geometry: DiscreteModelMock
 using Gridap.FESpaces
 
-model = DiscreteModelMock()
+#model = DiscreteModelMock()
+domain = (0,1,0,1)
+n = 3
+partition = (n,n)
+model = CartesianDiscreteModel(domain,partition)
 
 order = 3
-V = TestFESpace(model=model,reffe=:Lagrangian,valuetype=Float64,order=order)
+V = TestFESpace(model=model,reffe=:Lagrangian,valuetype=Float64,order=order,conformity=:L2)
 U = TrialFESpace(V)
 
 v = get_cell_basis(V)
 du = get_cell_basis(V)
 uh = FEFunction(U,rand(num_free_dofs(U)))
 
-function foo(u,s,r)
+@statelaw function foo(u,s,r)
   w = u
   w, s, r+1
 end
 
 trian = Triangulation(model)
-degree = order
+degree = 2*order
 quad = CellQuadrature(trian,degree)
-
-ids = get_cell_id(trian)
 
 q = get_coordinates(quad)
 s_q = [i*ones(size(qi)) for (i,qi) in enumerate(q)]
-r_q = [zeros(size(qi)) for qi in q]
+a = ArrayOfEvaluatedFields(s_q,q)
+test_array_of_fields(a,q,s_q)
 
-wh = apply_statelaw(foo,uh,s_q,r_q)
+s = QPointCellField(0.0,trian,quad)
+r = QPointCellField(0.0,trian,quad)
+
+r_q = evaluate(r,q)
+@show r_q === r.array.array
+
+wh = foo(uh,s,r)
 
 wh_q = evaluate(wh,q)
 uh_q = evaluate(uh,q)
@@ -154,5 +190,11 @@ display(r_q)
 @show typeof(wh_q)
 
 
+t_Ω = AffineFETerm((v,u) -> v*u, (v)-> v*r, trian, quad)
+op = AffineFEOperator(V,U,t_Ω)
+
+rh = solve(op)
+
+writevtk(trian,"trian",nsubcells=order,cellfields=["r"=>rh])
 
 end # module
