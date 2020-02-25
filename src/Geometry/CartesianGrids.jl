@@ -98,6 +98,12 @@ end
   getindex!(cache,a,Tuple(ci)...)
 end
 
+@inline function getindex!(v,a::CartesianCellNodes{1},i::Integer)
+  v[1] = i
+  v[2] = i+1
+  v
+end
+
 @inline function getindex!(v,a::CartesianCellNodes{D},i::Integer...) where D
   nodes = LinearIndices(size(a).+1)
   lnodes = CartesianIndices(tfill(2,Val{D}()))

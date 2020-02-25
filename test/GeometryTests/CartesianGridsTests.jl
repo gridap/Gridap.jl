@@ -10,6 +10,12 @@ using Gridap.Fields
 using Gridap.Geometry
 using Gridap.ReferenceFEs
 
+domain = (0,1)
+partition = (1,)
+grid = CartesianGrid(domain,partition)
+test_grid(grid)
+test_grid(UnstructuredGrid(grid))
+
 domain = (0.0,1.0,-1.0,2.0)
 partition = (3,4)
 
