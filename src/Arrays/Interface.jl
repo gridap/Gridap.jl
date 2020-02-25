@@ -154,6 +154,17 @@ function get_array(a::AbstractArray)
   a
 end
 
+"""
+"""
+function get_arrays(a,b...)
+  (get_array(a),get_arrays(b...)...)
+end
+
+function get_arrays(a)
+  (get_array(a),)
+end
+
+
 # Test the interface
 
 """
@@ -289,6 +300,23 @@ end
 @inline function _getitems!(c,i,a)
   ca, = c
   ai = getindex!(ca,a,i...)
+  (ai,)
+end
+
+"""
+"""
+@inline function getitems(a::Tuple{Vararg{<:AbstractArray}},i...)
+  _getitems(i,a...)
+end
+
+@inline function _getitems(i,a,b...)
+  ai = a[i...]
+  bi = getitems(b,i...)
+  (ai,bi...)
+end
+
+@inline function _getitems(i,a)
+  ai = a[i...]
   (ai,)
 end
 

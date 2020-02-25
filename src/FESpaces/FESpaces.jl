@@ -25,6 +25,7 @@ using Gridap.TensorValues
 using Gridap.Geometry: CellFieldLike
 using Gridap.Geometry: UnimplementedField
 using Gridap.Geometry: test_cell_field_like
+using Gridap.Arrays: _split
 
 import Gridap.Arrays: get_array
 import Gridap.Arrays: array_cache
@@ -187,6 +188,10 @@ export apply_cellmatvec
 export apply_cellmatrix
 export apply_cellvector
 
+export @statelaw
+export apply_statelaw
+export CellField
+
 include("CellBases.jl")
 
 include("Law.jl")
@@ -234,5 +239,7 @@ include("CLagrangianFESpaces.jl")
 include("DirichletFESpaces.jl")
 
 include("FESpaceFactories.jl")
+
+include("StateLaws.jl")
 
 end # module

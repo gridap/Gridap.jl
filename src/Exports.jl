@@ -97,6 +97,8 @@ end
 @publish Geometry mean
 @publish Geometry SkeletonTriangulation
 @publish Geometry CellQuadrature
+@publish Geometry QPointCellField
+@publish Geometry CellField
 
 @publish FESpaces FESpace
 @publish FESpaces TrialFESpace
@@ -118,8 +120,10 @@ end
 @publish FESpaces interpolate_dirichlet
 @publish FESpaces FEOperator
 @publish FESpaces FESolver
+@publish FESpaces apply_statelaw
 
 using Gridap.FESpaces: @law; export @law
+using Gridap.FESpaces: @statelaw; export @statelaw
 
 @publish MultiField MultiFieldFESpace
 
