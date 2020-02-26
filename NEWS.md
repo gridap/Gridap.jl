@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Bug in 1d Cartesian grids. Since PR PR [#192](https://github.com/gridap/Gridap.jl/pull/192).
+- Bug in 1d Cartesian grids. Since PR [#192](https://github.com/gridap/Gridap.jl/pull/192).
 
 ## [0.7.1] - 2020-02-18
 
