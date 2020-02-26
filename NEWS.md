@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [unreleased]
+
+### Added
+
+- Macro `@statelaw` in order to deal with constitutive laws with state / historical variables. Since PR [#193](https://github.com/gridap/Gridap.jl/pull/193).
+- New constructors `AffineFETermFromCellMatVec` and `FETermFromCellJacRes` that provides full control in the definition of cell matrices and vectors. Since PR [#191](https://github.com/gridap/Gridap.jl/pull/191).
+
+### Changed
+
+- The part related with the application of constraints in the `FESpace` interface has changed. Since PR [#191](https://github.com/gridap/Gridap.jl/pull/191).
+
+### Fixed
+
+- Bug in 1d Cartesian grids. Since PR PR [#192](https://github.com/gridap/Gridap.jl/pull/192).
+
 ## [0.7.1] - 2020-02-18
 
 ### Added
