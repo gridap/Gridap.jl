@@ -80,4 +80,4 @@ By making a contribution to this project, I certify that:
 Contact
 ==
 
-Please, contact the project [administrators](./ADMINISTRATORS.md) for further questions about licenses and terms of use.
+Please, contact the project [administrators](./ADMINISTRATORS) for further questions about licenses and terms of use.
