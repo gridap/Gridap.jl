@@ -8,10 +8,11 @@ end
 function evaluate_field!(c,v::Number,x)
   nx = length(x)
   setsize!(c,(nx,))
+  r = c.array
   for i in eachindex(x)
-    @inbounds c[i] = v
+    @inbounds r[i] = v
   end
-  c
+  r
 end
 
 function field_gradient(v::Number)
@@ -34,12 +35,13 @@ function evaluate_field!(c,v::AbstractArray{<:Number},x)
   s = (nx,sv...)
   setsize!(c,s)
   cis = CartesianIndices(v)
+  r = c.array
   for i in eachindex(x)
     for ci in cis
-      @inbounds c[i,ci] = v[ci]
+      @inbounds r[i,ci] = v[ci]
     end
   end
-  c
+  r
 end
 
 function field_gradient(v::AbstractArray{<:Number})

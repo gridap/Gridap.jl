@@ -32,6 +32,9 @@ import Gridap.Arrays: getindex!
 import Gridap.Arrays: reindex
 import Gridap.Arrays: get_array
 
+import Gridap.Fields: field_cache
+import Gridap.Fields: evaluate_field!
+import Gridap.Fields: evaluate_field_array
 import Gridap.Fields: gradient
 import Gridap.Fields: grad2curl
 import Gridap.Helpers: operate
@@ -180,6 +183,7 @@ export jump
 export mean
 export SkeletonTriangulation
 export CellQuadrature
+export QPointCellField
 
 include("GridTopologies.jl")
 
@@ -222,5 +226,7 @@ include("GenericBoundaryTriangulations.jl")
 include("SkeletonTriangulations.jl")
 
 include("CellQuadratures.jl")
+
+include("QPointCellFields.jl")
 
 end # module

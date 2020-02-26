@@ -50,4 +50,6 @@ using Test
 
 @testset "FESpaceFactories" begin include("FESpaceFactoriesTests.jl") end
 
+@testset "StateLaws" begin include("StateLawsTests.jl") end
+
 end # module
