@@ -6,7 +6,7 @@ CurrentModule = Gridap.ReferenceFEs
 
 ```@docs
 ReferenceFEs
-``` 
+```
 
 ## Polytopes
 
@@ -213,6 +213,12 @@ PDiscRefFE
 
 ```@docs
 RaviartThomasRefFE
+```
+
+### NedelecRefFE
+
+```@docs
+NedelecRefFE
 ```
 
 ### Pre-defined ReferenceFE instances
