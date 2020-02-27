@@ -8,6 +8,16 @@ using Gridap.Geometry
 using Gridap.Geometry: DiscreteModelMock
 using Gridap.Io
 
+domain = (0,1,0,1,0,1)
+partition = (3,3,3)
+model = CartesianDiscreteModel(domain,partition)
+
+model_1d = DiscreteModel(Polytope{1},model)
+test_discrete_model(model_1d)
+
+model_2d = DiscreteModel(Polytope{2},model)
+test_discrete_model(model_2d)
+
 model = DiscreteModelMock()
 test_discrete_model(model)
 

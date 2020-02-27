@@ -107,7 +107,7 @@ function _setup_lagrange_spaces(kwargs)
 
       return  DiscontinuousFESpace(_reffes,trian)
 
-    elseif conformity in [true, :default, :H1]
+    elseif conformity in [true, :default, :H1, :C0]
       if labels == nothing
         return GradConformingFESpace(_reffes,model,diritags,dirimasks)
       else

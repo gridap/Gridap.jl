@@ -437,6 +437,8 @@ struct GenericDiscreteModel{Dc,Dp} <: DiscreteModel{Dc,Dp}
   end
 end
 
+"""
+"""
 function DiscreteModel(grid::Grid,grid_topology::GridTopology,labels::FaceLabeling)
   GenericDiscreteModel(grid,grid_topology,labels)
 end
@@ -446,4 +448,23 @@ get_grid(model::GenericDiscreteModel) = model.grid
 get_grid_topology(model::GenericDiscreteModel) = model.grid_topology
 
 get_face_labeling(model::GenericDiscreteModel) = model.labels
+
+function DiscreteModel(::Type{<:Polytope{D}},model::DiscreteModel{D}) where D
+  model
+end
+
+"""
+"""
+function DiscreteModel(::Type{<:Polytope{D}},model::DiscreteModel) where D
+  grid = Grid(ReferenceFE{D},model)
+  topo = GridTopology(Polytope{D},model)
+  labeling = FaceLabeling(get_face_labeling(model),D)
+  DiscreteModel(grid,topo,labeling)
+end
+
+"""
+"""
+function GridTopology(::Type{<:Polytope{D}},model::DiscreteModel) where D
+  GridTopology(Polytope{D},get_grid_topology(model))
+end
 

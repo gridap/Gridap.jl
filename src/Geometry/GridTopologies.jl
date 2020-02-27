@@ -848,10 +848,8 @@ function _generate_face_to_isboundary_fill!(
     ncells_around = face_to_cells_ptrs[face+1] - face_to_cells_ptrs[face]
     if ncells_around == 1
       face_to_isboundary[face] = true
-    elseif ncells_around == 2
-      face_to_isboundary[face] = false
     else
-      @unreachable
+      face_to_isboundary[face] = false
     end
   end
 end
