@@ -110,6 +110,33 @@ function UnstructuredGridTopology(topo::UnstructuredGridTopology)
   topo
 end
 
+function GridTopology(::Type{<:Polytope{D}},topo::GridTopology{D}) where D
+  topo
+end
+
+function GridTopology(::Type{<:Polytope{D}},topo::GridTopology) where D
+  _topo = UnstructuredGridTopology(topo)
+  GridTopology(Polytope{D},_topo)
+end
+
+function GridTopology(::Type{<:Polytope{D}},topo::UnstructuredGridTopology) where D
+
+  vertex_coordinates = get_vertex_coordinates(topo)
+  cell_type = get_face_type(topo,D)
+  polytopes = get_reffaces(Polytope{D},topo)
+
+  d_to_dface_vertices = [ get_faces(topo,d,0) for d in 0:D ]
+  orientation = OrientationStyle(topo)
+
+  topo_d = UnstructuredGridTopology(
+    vertex_coordinates,
+    d_to_dface_vertices,
+    cell_type,
+    polytopes,
+    orientation)
+
+end
+
 # Needed, do not remove
 function num_faces(g::UnstructuredGridTopology,d::Integer)
   if d == 0

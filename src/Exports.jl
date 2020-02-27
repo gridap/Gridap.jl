@@ -75,6 +75,7 @@ end
 @publish ReferenceFEs TET4
 @publish ReferenceFEs HEX8
 @publish ReferenceFEs SerendipityRefFE
+@publish ReferenceFEs Polytope
 
 @publish Geometry get_triangulation
 @publish Geometry num_cells
@@ -85,6 +86,7 @@ end
 @publish Geometry get_cell_map
 @publish Geometry CartesianGrid
 @publish Geometry CartesianDiscreteModel
+@publish Geometry DiscreteModel
 @publish Geometry DiscreteModelFromFile
 @publish Geometry num_tags
 @publish Geometry num_entities

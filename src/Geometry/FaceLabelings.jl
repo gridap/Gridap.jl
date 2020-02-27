@@ -44,6 +44,19 @@ function FaceLabeling(topo::GridTopology)
 end
 
 """
+"""
+function FaceLabeling(labeling::FaceLabeling,D::Integer)
+  if D == num_dims(labeling)
+    return labeling
+  else
+    d_to_dface_to_entity = labeling.d_to_dface_to_entity[1:(D+1)]
+    tag_to_entities = labeling.tag_to_entities
+    tag_to_name = labeling.tag_to_name
+    return FaceLabeling(d_to_dface_to_entity,tag_to_entities,tag_to_name)
+  end
+end
+
+"""
     num_dims(lab::FaceLabeling)
 """
 function num_dims(lab::FaceLabeling)
