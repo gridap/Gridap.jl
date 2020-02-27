@@ -28,6 +28,8 @@ module Gridap
 
 using DocStringExtensions
 
+using Revise
+
 include("Helpers/Helpers.jl")
 
 include("Inference/Inference.jl")
@@ -59,4 +61,3 @@ include("Visualization/Visualization.jl")
 include("Exports.jl")
 
 end # module
-
