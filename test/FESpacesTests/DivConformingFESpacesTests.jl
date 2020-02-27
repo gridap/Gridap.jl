@@ -1,5 +1,7 @@
 module DivConformingFESpacesTests
 
+using Test
+using Gridap
 using Gridap.Geometry
 using Gridap.ReferenceFEs
 using Gridap.FESpaces
@@ -24,6 +26,14 @@ test_single_field_fe_space(V)
 U = TrialFESpace(V,u)
 
 uh = interpolate(U,u)
+
+e = u - uh
+
+trian = Triangulation(model)
+quad = CellQuadrature(trian,order)
+
+el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
+@test el2 < 1.0e-10
 
 #using Gridap.Visualization
 #
