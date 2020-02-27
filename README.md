@@ -42,7 +42,7 @@ These are some popular PDEs solved with the Gridap library. Examples taken from 
 
 ## How to cite Gridap
 
-If you have used the Gridap library in a scientific work, please cite the project as follows:
+If you have used the Gridap library in a scientific publication, please cite the project as follows:
 
 ```
 @article{gridap_guide_2019,
