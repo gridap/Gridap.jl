@@ -1,4 +1,4 @@
-module PLaplacianTests
+# module PLaplacianTests
 
 using Test
 using Gridap
@@ -35,11 +35,11 @@ trian = get_triangulation(model)
 quad = CellQuadrature(trian,degree)
 
 res(u,v) = inner( ∇(v), flux(∇(u)) ) - inner(v,f)
-jac(u,v,du) = inner(  ∇(v) , dflux(∇(du),∇(u)) )
+jac(u,du,v) = inner(  ∇(v) , dflux(∇(du),∇(u)) )
 
 t_Ω = FETerm(res,jac,trian,quad)
 
-op = FEOperator(V,U,t_Ω)
+op = FEOperator(U,V,t_Ω)
 
 nls = NLSolver(show_trace=false, method=:newton)
 solver = FESolver(nls)
@@ -63,4 +63,4 @@ uh1 = sqrt(sum( integrate(h1(uh),trian,quad) ))
 @test eh1/uh1 < 1.e-7
 
 
-end # module
+# end # module
