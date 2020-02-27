@@ -35,9 +35,9 @@ P = TrialFESpace(Q)
 Y = MultiFieldFESpace([V,Q])
 X = MultiFieldFESpace([U,P])
 
-function a(y,x)
-  v,q = y
+function a(x,y)
   u,p = x
+  v,q = y
   v*u + v*p - q*p
 end
 
@@ -46,26 +46,26 @@ function l(y)
   v*4 + q
 end
 
-function a_Γ(y,x)
-  v,q = y
+function a_Γ(x,y)
   u,p = x
+  v,q = y
   jump(v)*mean(u) + jump(∇(q))*jump(∇(p)) - mean(v)*mean(p)
 end
 
 t_Ω = AffineFETerm(a,l,trian,quad)
 t_Γ = LinearFETerm(a_Γ,strian,squad)
 
-op = AffineFEOperator(Y,X,t_Ω,t_Γ)
+op = AffineFEOperator(X,Y,t_Ω,t_Γ)
 
-op = AffineFEOperator(SparseMatrixCSR,Y,X,t_Ω,t_Γ)
+op = AffineFEOperator(SparseMatrixCSR,X,Y,t_Ω,t_Γ)
 
-op = FEOperator(Y,X,t_Ω,t_Γ)
+op = FEOperator(X,Y,t_Ω,t_Γ)
 xh = zero(X)
 b = residual(op,xh)
 A = jacobian(op,xh)
 test_fe_operator(op,get_free_values(xh),b)
 
-op = FEOperator(SparseMatrixCSR,Y,X,t_Ω,t_Γ)
+op = FEOperator(SparseMatrixCSR,X,Y,t_Ω,t_Γ)
 
 q = get_coordinates(quad)
 w_q = get_weights(quad)
@@ -123,8 +123,8 @@ end
 
 t2_Ω = AffineFETermFromCellMatVec(cellmat_Ω,trian)
 
-op = AffineFEOperator(Y,X,t_Ω)
-op2 = AffineFEOperator(Y,X,t2_Ω)
+op = AffineFEOperator(X,Y,t_Ω)
+op2 = AffineFEOperator(X,Y,t2_Ω)
 
 @test get_matrix(op) == get_matrix(op2)
 @test get_vector(op) == get_vector(op2)
