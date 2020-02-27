@@ -67,7 +67,7 @@ sdegree = 2*order
 squad = CellQuadrature(strian,sdegree)
 const ns = get_normal_vector(strian)
 
-function A_Ω(y,x)
+function A_Ω(x,y)
   u, p = x
   v, q = y
   inner(∇(v), ∇(u)) - ∇(q)*u + v*∇(p)
@@ -78,7 +78,7 @@ function B_Ω(y)
   v*f + q*g
 end
 
-function A_∂Ω(y,x)
+function A_∂Ω(x,y)
   u, p = x
   v, q = y
   (γ/h)*v*u - v*(∇(u)*nb) - (∇(v)*nb)*u + 2*(q*nb)*u
@@ -89,7 +89,7 @@ function B_∂Ω(y)
   (γ/h)*v*u - (∇(v)*nb)*u + (q*nb)*u
 end
 
-function A_Γ(y,x)
+function A_Γ(x,y)
   u, p = x
   v, q = y
   (γ/h)*inner( jump(outer(v,ns)), jump(outer(u,ns))) -
@@ -104,7 +104,7 @@ t_Ω = AffineFETerm(A_Ω,B_Ω,trian,quad)
 t_∂Ω = AffineFETerm(A_∂Ω,B_∂Ω,btrian,bquad)
 t_Γ = LinearFETerm(A_Γ,strian,squad)
 
-op = AffineFEOperator(Y,X,t_Ω,t_∂Ω,t_Γ)
+op = AffineFEOperator(X,Y,t_Ω,t_∂Ω,t_Γ)
 
 uh, ph = solve(op)
 

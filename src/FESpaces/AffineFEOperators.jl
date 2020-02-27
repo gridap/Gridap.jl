@@ -2,28 +2,28 @@
 """
 """
 struct AffineFEOperator <: FEOperator
-  test::FESpace
   trial::FESpace
+  test::FESpace
   op::AffineOperator
 end
 
 """
 """
-function AffineFEOperator(test::FESpace,trial::FESpace,matrix::AbstractMatrix,vector::AbstractVector)
-  @assert num_free_dofs(test) == size(matrix,1) "Incompatible test space and matrix"
+function AffineFEOperator(trial::FESpace,test::FESpace,matrix::AbstractMatrix,vector::AbstractVector)
   @assert num_free_dofs(trial) == size(matrix,2) "Incompatible trial space and matrix"
+  @assert num_free_dofs(test) == size(matrix,1) "Incompatible test space and matrix"
   op = AffineOperator(matrix,vector)
-  AffineFEOperator(test,trial,op)
+  AffineFEOperator(trial,test,op)
 end
 
 """
    AffineFEOperator(test::FESpace,trial::FESpace,assem::Assembler,terms::AffineFETerm...)
    AffineFEOperator(test::FESpace,trial::FESpace,terms::AffineFETerm...)
 """
-function AffineFEOperator(test::FESpace,trial::FESpace,assem::Assembler,terms::AffineFETerm...)
+function AffineFEOperator(trial::FESpace,test::FESpace,assem::Assembler,terms::AffineFETerm...)
 
-  v = get_cell_basis(test)
   u = get_cell_basis(trial)
+  v = get_cell_basis(test)
   @assert is_trial(u)
 
   uhd = zero(trial)
@@ -36,22 +36,22 @@ function AffineFEOperator(test::FESpace,trial::FESpace,assem::Assembler,terms::A
   #A = assemble_matrix(assem,matdata...)
   #b = assemble_vector(assem,vecdata...)
 
-  AffineFEOperator(test,trial,A,b)
+  AffineFEOperator(trial,test,A,b)
 end
 
-function AffineFEOperator(test::FESpace,trial::FESpace,terms::AffineFETerm...)
+function AffineFEOperator(trial::FESpace,test::FESpace,terms::AffineFETerm...)
   assem = SparseMatrixAssembler(test,trial)
-  AffineFEOperator(test,trial,assem,terms...)
+  AffineFEOperator(trial,test,assem,terms...)
 end
 
-function AffineFEOperator(mat::Type{<:AbstractSparseMatrix},test::FESpace,trial::FESpace,terms::AffineFETerm...)
-  assem = SparseMatrixAssembler(mat,test,trial)
-  AffineFEOperator(test,trial,assem,terms...)
+function AffineFEOperator(mat::Type{<:AbstractSparseMatrix},trial::FESpace,test::FESpace,terms::AffineFETerm...)
+  assem = SparseMatrixAssembler(mat,trial,test)
+  AffineFEOperator(trial,test,assem,terms...)
 end
-
-get_trial(feop::AffineFEOperator) = feop.trial
 
 get_test(feop::AffineFEOperator) = feop.test
+
+get_trial(feop::AffineFEOperator) = feop.trial
 
 """
 """
@@ -98,4 +98,3 @@ function jacobian(feop::AffineFEOperator,u)
   x = get_free_values(u)
   jacobian(feop.op,x)
 end
-

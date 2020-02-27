@@ -33,13 +33,13 @@ trian = Triangulation(model)
 degree = 2*order
 quad = CellQuadrature(trian,degree)
 
-a(v,u) = v*u
+a(u,v) = u*v
 l(v) = v*0
 t_Ω = AffineFETerm(a,l,trian,quad)
 
-op_ff = AffineFEOperator(Vf,Uf,t_Ω)
-op_fd = AffineFEOperator(Vf,Ud,t_Ω)
-op_df = AffineFEOperator(Vd,Uf,t_Ω)
+op_ff = AffineFEOperator(Uf,Vf,t_Ω)
+op_fd = AffineFEOperator(Ud,Vf,t_Ω)
+op_df = AffineFEOperator(Uf,Vd,t_Ω)
 
 xd = get_dirichlet_values(Uf)
 

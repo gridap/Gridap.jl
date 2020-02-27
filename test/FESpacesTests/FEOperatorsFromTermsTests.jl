@@ -42,7 +42,7 @@ res(u,v) = a(u,v,u) - inner(v,f)
 jac(u,v,du) = a(u,v,du) + inner(∇(v),dν(du,x)*∇(u))
 
 t_Ω = FETerm(res,jac,trian,quad)
-op = FEOperator(V,U,t_Ω)
+op = FEOperator(U,V,t_Ω)
 
 uh = solve(op)
 

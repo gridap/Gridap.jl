@@ -8,7 +8,7 @@ using Gridap.Integration
 using Gridap.FESpaces
 using LinearAlgebra
 
-function poisson_matvec_kernel!(mat,vec,∇v,∇u,v,j,w)
+function poisson_matvec_kernel!(mat,vec,∇u,∇v,v,j,w)
   Q = length(w)
   M,N = size(mat)
   for q in 1:Q
@@ -28,7 +28,7 @@ function poisson_matvec_kernel!(mat,vec,∇v,∇u,v,j,w)
   end
 end
 
-function poisson_mat_kernel!(mat,∇v,∇u,j,w)
+function poisson_mat_kernel!(mat,∇u,∇v,j,w)
   Q = length(w)
   M,N = size(mat)
   for q in 1:Q

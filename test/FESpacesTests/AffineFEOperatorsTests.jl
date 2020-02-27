@@ -41,7 +41,7 @@ assem = SparseMatrixAssembler(V,U)
 A =  assemble_matrix(assem,[cellmat],[cellids],[cellids])
 b =  assemble_vector(assem,[cellvec],[cellids])
 
-op = AffineFEOperator(V,U,A,b)
+op = AffineFEOperator(U,V,A,b)
 @test A === get_matrix(op)
 @test b === get_vector(op)
 
@@ -69,12 +69,12 @@ t_Ω = AffineFETerm(a,l,trian,quad)
 
 assem = SparseMatrixAssembler(V,U)
 
-op = AffineFEOperator(V,U,assem,t_Ω)
+op = AffineFEOperator(U,V,assem,t_Ω)
 uh = solve(op)
 e = u_sol - uh
 @test sum(integrate(e*e,trian,quad)) < tol
 
-op = AffineFEOperator(V,U,t_Ω)
+op = AffineFEOperator(U,V,t_Ω)
 uh = solve(op)
 e = u_sol - uh
 @test sum(integrate(e*e,trian,quad)) < tol
@@ -111,7 +111,7 @@ end
 
 t_Ω = AffineFETermFromCellMatVec(cellmatvec_Ω,trian)
 
-op = AffineFEOperator(V,U,assem,t_Ω)
+op = AffineFEOperator(U,V,assem,t_Ω)
 uh = solve(op)
 e = u_sol - uh
 @test sum(integrate(e*e,trian,quad)) < tol

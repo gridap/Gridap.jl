@@ -10,7 +10,7 @@ u(x) = VectorValue( x[1]^2 + 2*x[2]^2, -x[1]^2 )
 ∇u(x) = TensorValue( 2*x[1], 4*x[2], -2*x[1], zero(x[1]) )
 Δu(x) = VectorValue( 6, -2 )
 
-p(x) = x[1] + 3*x[2] 
+p(x) = x[1] + 3*x[2]
 ∇p(x) = VectorValue(1,3)
 
 f(x) = -Δu(x) + ∇p(x)
@@ -60,9 +60,9 @@ bdegree = order
 bquad = CellQuadrature(btrian,bdegree)
 const n = get_normal_vector(btrian)
 
-function a(y,x)
-  v,q = y
+function a(x,y)
   u,p = x
+  v,q = y
   inner(∇(v),∇(u)) - (∇*v)*p + q*(∇*u)
 end
 
@@ -79,7 +79,7 @@ end
 t_Ω = AffineFETerm(a,l,trian,quad)
 t_Γb = FESource(l_Γb,btrian,bquad)
 
-op = AffineFEOperator(Y,X,t_Ω,t_Γb)
+op = AffineFEOperator(X,Y,t_Ω,t_Γb)
 
 uh, ph = solve(op)
 

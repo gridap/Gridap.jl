@@ -1,30 +1,30 @@
 
 struct FEOperatorFromTerms <: FEOperator
-  test::FESpace
   trial::FESpace
+  test::FESpace
   assem::Assembler
   terms
-  function FEOperatorFromTerms(test::FESpace,trial::FESpace,assem::Assembler,terms::FETerm...)
-    new(test,trial,assem,terms)
+  function FEOperatorFromTerms(trial::FESpace,test::FESpace,assem::Assembler,terms::FETerm...)
+    new(trial,test,assem,terms)
   end
 end
 
 """
 """
-function FEOperator(test::FESpace,trial::FESpace,assem::Assembler,terms::FETerm...)
-  FEOperatorFromTerms(test,trial,assem,terms...)
+function FEOperator(trial::FESpace,test::FESpace,assem::Assembler,terms::FETerm...)
+  FEOperatorFromTerms(trial,test,assem,terms...)
 end
 
 """
 """
-function FEOperator(test::FESpace,trial::FESpace,terms::FETerm...)
+function FEOperator(trial::FESpace,test::FESpace,terms::FETerm...)
   assem = SparseMatrixAssembler(test,trial)
-  FEOperator(test,trial,assem,terms...)
+  FEOperator(trial,test,assem,terms...)
 end
 
-function FEOperator(mat::Type{<:AbstractSparseMatrix},test::FESpace,trial::FESpace,terms::FETerm...)
+function FEOperator(mat::Type{<:AbstractSparseMatrix},trial::FESpace,test::FESpace,terms::FETerm...)
   assem = SparseMatrixAssembler(mat,test,trial)
-  FEOperator(test,trial,assem,terms...)
+  FEOperator(trial,test,assem,terms...)
 end
 
 function get_test(op::FEOperatorFromTerms)
@@ -52,16 +52,16 @@ end
 
 function allocate_jacobian(op::FEOperatorFromTerms,uh)
   @assert is_a_fe_function(uh)
-  v = get_cell_basis(op.test)
   du = get_cell_basis(op.trial)
+  v = get_cell_basis(op.test)
   _, cellidsrows, cellidscols = collect_cell_jacobian(uh,v,du,op.terms)
   allocate_matrix(op.assem, cellidsrows, cellidscols)
 end
 
 function jacobian!(A::AbstractMatrix,op::FEOperatorFromTerms,uh)
   @assert is_a_fe_function(uh)
-  v = get_cell_basis(op.test)
   du = get_cell_basis(op.trial)
+  v = get_cell_basis(op.test)
   cellmats, cellidsrows, cellidscols = collect_cell_jacobian(uh,v,du,op.terms)
   assemble_matrix!(A,op.assem, cellmats, cellidsrows, cellidscols)
   A
@@ -69,8 +69,8 @@ end
 
 function residual_and_jacobian!(b::AbstractVector,A::AbstractMatrix,op::FEOperatorFromTerms,uh)
   @assert is_a_fe_function(uh)
-  v = get_cell_basis(op.test)
   du = get_cell_basis(op.trial)
+  v = get_cell_basis(op.test)
   data = collect_cell_jacobian_and_residual(uh,v,du,op.terms)
   assemble_matrix_and_vector!(A, b, op.assem,data...)
   (b,A)
@@ -78,10 +78,9 @@ end
 
 function residual_and_jacobian(op::FEOperatorFromTerms,uh)
   @assert is_a_fe_function(uh)
-  v = get_cell_basis(op.test)
   du = get_cell_basis(op.trial)
+  v = get_cell_basis(op.test)
   data = collect_cell_jacobian_and_residual(uh,v,du,op.terms)
   A, b = assemble_matrix_and_vector(op.assem,data...)
   (b, A)
 end
-
