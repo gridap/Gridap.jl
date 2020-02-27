@@ -44,7 +44,7 @@ function _Nedelec_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) whe
   nf_moments = [ zeros(ft,0,0) for face in 1:num_faces(p)]
 
   ecips, emoments = _Nedelec_edge_values(p,et,order)
-  erange = get_dimrange(p,D-2)
+  erange = get_dimrange(p,1)
   nf_nodes[erange] = ecips
   nf_moments[erange] = emoments
 
