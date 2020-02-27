@@ -115,9 +115,9 @@ function cell_kernel!(A,B,y,x,j,w)
 
 end
 
-function cellmat_Ω(y,x)
-  y_q = evaluate(y,q)
+function cellmat_Ω(x,y)
   x_q = evaluate(x,q)
+  y_q = evaluate(y,q)
   apply_cellmatvec(cell_kernel!,y_q,x_q,jac_q,w_q)
 end
 
