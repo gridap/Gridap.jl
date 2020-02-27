@@ -5,17 +5,17 @@
 function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
 
   D = num_dims(p)
-  
+
   prebasis = QCurlGradMonomialBasis{D}(et,order)
-  
+
   nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order)
-  
+
   face_own_dofs = _face_own_dofs_from_moments(nf_moments)
 
-  face_own_dofs_permutations = _trivial_face_own_dofs_permutataions(face_own_dofs)
+  face_own_dofs_permutations = _trivial_face_own_dofs_permutations(face_own_dofs)
 
   face_dofs = face_own_dofs
-  
+
   dof_basis = MomentBasedDofBasis(nf_nodes, nf_moments)
 
   ndofs = num_dofs(dof_basis)
@@ -42,12 +42,12 @@ function _RT_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) where et
 
   nf_nodes = [ zeros(pt,0) for face in 1:num_faces(p)]
   nf_moments = [ zeros(ft,0,0) for face in 1:num_faces(p)]
-  
+
   fcips, fmoments = _RT_face_values(p,et,order)
   frange = get_dimrange(p,D-1)
   nf_nodes[frange] = fcips
   nf_moments[frange] = fmoments
-  
+
   if (order > 1)
     ccips, cmoments = _RT_cell_values(p,et,order)
     crange = get_dimrange(p,D)
@@ -167,7 +167,7 @@ function _face_own_dofs_from_moments(f_moments)
   face_dofs
 end
 
-function _trivial_face_own_dofs_permutataions(face_own_dofs)
+function _trivial_face_own_dofs_permutations(face_own_dofs)
   [ [collect(Int,1:length(dofs)),]  for dofs in face_own_dofs  ]
 end
 
@@ -277,4 +277,3 @@ function _eval_moment_dof_basis!(dofs,vals::AbstractMatrix,b)
     end
   end
 end
-
