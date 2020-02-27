@@ -95,7 +95,7 @@ function _setup_hcurl_space(kwargs)
   polytopes = get_polytopes(model)
   reffes = [NedelecRefFE(T,p,order) for p in polytopes]
 
-  if conformity in [true, :default, :HDiv, :Hdiv]
+  if conformity in [true, :default, :HCurl, :Hcurl]
       V =  CurlConformingFESpace(reffes,model,labels,diritags)
   else
     s = "Conformity $conformity not implemented for $reffe reference FE on polytopes $(polytopes...)"
