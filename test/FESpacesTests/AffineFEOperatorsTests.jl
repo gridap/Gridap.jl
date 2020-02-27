@@ -74,7 +74,7 @@ uh = solve(op)
 e = u_sol - uh
 @test sum(integrate(e*e,trian,quad)) < tol
 
-op = AffineFEOperator(V,U,t_Ω)
+op = AffineFEOperator(U,V,t_Ω)
 uh = solve(op)
 e = u_sol - uh
 @test sum(integrate(e*e,trian,quad)) < tol
@@ -111,7 +111,7 @@ end
 
 t_Ω = AffineFETermFromCellMatVec(cellmatvec_Ω,trian)
 
-op = AffineFEOperator(V,U,assem,t_Ω)
+op = AffineFEOperator(U,V,assem,t_Ω)
 uh = solve(op)
 e = u_sol - uh
 @test sum(integrate(e*e,trian,quad)) < tol
