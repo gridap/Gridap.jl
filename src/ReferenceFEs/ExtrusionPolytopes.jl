@@ -462,7 +462,7 @@ function _precompute_m_n_to_mface_to_nface(p::DFace{D}) where D
   end
 
   m_n_to_mface_to_nface
-  
+
 end
 
 function _dimfrom_fs_dimto_fs_dual(p::DFace,dimfrom,dimto)
@@ -478,7 +478,7 @@ function _dimfrom_fs_dimto_fs_dual(p::DFace,dimfrom,dimto)
   fface_to_tfaces
 end
 
-# iface in global numeration 
+# iface in global numeration
 function DFace{d}(p::DFace{D},iface::Int) where {d,D}
   @assert d == p.dims[iface]
   nf = p.nfaces[iface]
@@ -531,12 +531,17 @@ function _num_nfaces(polytope::DFace, dim::Integer)
   k
 end
 
-# Return the n-faces vertices coordinates array for a given n-face dimension
+
 function _nfaces_vertices(::Type{T},p::DFace,d::Integer) where T
   nc = _num_nfaces(p,d)
   verts = _vertices_coordinates(T,p)
   faces_vs = _dimfrom_fs_dimto_fs(p,d,0)
   cfvs = collect(LocalToGlobalArray(faces_vs,verts))
+end
+
+# Return the n-faces vertices coordinates array for a given n-face dimension
+function _nfaces_vertices(::Type{T},p::ExtrusionPolytope,d::Integer) where T
+  _nfaces_vertices(T,p.dface,d)
 end
 
 # It generates the outwards normals of the facets of a polytope. It returns two

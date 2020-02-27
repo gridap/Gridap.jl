@@ -1,5 +1,3 @@
-
-
 """
     NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
 """
@@ -50,7 +48,7 @@ function _Nedelec_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) whe
   nf_nodes[erange] = ecips
   nf_moments[erange] = emoments
 
-  if ( dim(p) == 3 && order > 1)
+  if ( num_dims(p) == 3 && order > 1)
 
     fcips, fmoments = _Nedelec_face_values(p,et,order)
     frange = get_dimrange(p,D-1)
@@ -62,7 +60,7 @@ function _Nedelec_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) whe
   if (order > 1)
 
     ccips, cmoments = _Nedelec_cell_values(p,et,order)
-    crange = get_dimrange(p,D-1)
+    crange = get_dimrange(p,D)
     nf_nodes[crange] = ccips
     nf_moments[crange] = cmoments
 
@@ -83,16 +81,17 @@ function _Nedelec_edge_values(p,et,order)
   # Compute integration points at all polynomial edges
   degree = order*2
   equad = Quadrature(ep,degree)
-  cips = coordinates(fquad)
-  wips = weights(fquad)
+  cips = get_coordinates(equad)
+  wips = get_weights(equad)
 
-  c_fips, ecips, ewips = _nfaces_evaluation_points_weights(p, egeomap, cips, wips)
+
+  c_eips, ecips, ewips = _nfaces_evaluation_points_weights(p, egeomap, cips, wips)
 
   # Edge moments, i.e., M(Ei)_{ab} = q_RE^a(xgp_REi^b) w_Fi^b t_Ei ⋅ ()
-  fshfs = MonomialBasis(et,fp,order-1)
-  fmoments = _Nedelec_edge_moments(p, fshfs, c_fips, fcips, fwips)
+  eshfs = MonomialBasis(et,ep,order-1)
+  emoments = _Nedelec_edge_moments(p, eshfs, c_eips, ecips, ewips)
 
-  return fcips, fmoments
+  return ecips, emoments
 
 end
 
@@ -119,8 +118,8 @@ function _Nedelec_face_values(p,et,order)
   # Compute integration points at all polynomial edges
   degree = order*2
   fquad = Quadrature(fp,degree)
-  fips = coordinates(fquad)
-  wips = weights(fquad)
+  fips = get_coordinates(fquad)
+  wips = get_weights(fquad)
 
   c_fips, fcips, fwips = _nfaces_evaluation_points_weights(p, fgeomap, fips, wips)
 
@@ -138,7 +137,7 @@ function _Nedelec_face_moments(p, fshfs, c_fips, fcips, fwips)
   cfshfs = fill(fshfs, nc)
   cvals = evaluate(cfshfs,c_fips)
 
-  fvs = nfaces_vertices(p,num_dims(p)-1)
+  fvs = _nfaces_vertices(Float64,p,num_dims(p)-1)
   fts = [hcat([vs[2]-vs[1]...],[vs[3]-vs[1]...]) for vs in fvs]
 
   # Ref facet FE functions evaluated at the facet integration points (in ref facet)
@@ -159,8 +158,8 @@ function _Nedelec_cell_values(p,et,order)
   # Compute integration points at interior
   degree = 2*order
   iquad = Quadrature(p,degree)
-  ccips = coordinates(iquad)
-  cwips = weights(iquad)
+  ccips = get_coordinates(iquad)
+  cwips = get_weights(iquad)
 
   # Cell moments, i.e., M(C)_{ab} = q_C^a(xgp_C^b) w_C^b ⋅ ()
   cbasis = QCurlGradMonomialBasis{num_dims(p)}(et,order-1)
@@ -171,3 +170,19 @@ function _Nedelec_cell_values(p,et,order)
 end
 
 const _Nedelec_cell_moments = _RT_cell_moments
+
+function _broadcast_cross(::Type{T},n,b) where T
+  c = Array{T}(undef,size(b))
+  for (ii, i) in enumerate(b)
+    c[ii] = T(cross(i.array,n.array))# cross product
+  end
+  return c
+end
+
+function _broadcast_extend(::Type{T},Tm,b) where T
+  c = Array{T}(undef,size(b))
+  for (ii,i) in enumerate(b)
+    c[ii] = T(Tm*[i...])
+  end
+  return c
+end
