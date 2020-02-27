@@ -74,7 +74,7 @@ jac = ∇(ϕ)
 jac_q = evaluate(jac,q)
 x_q = evaluate(ϕ,q)
 
-function cell_kernel!(A,B,y,x,j,w)
+function cell_kernel!(A,B,x,y,j,w)
 
   A_vu = A[1,1]
   A_vp = A[1,2]
@@ -118,7 +118,7 @@ end
 function cellmat_Ω(x,y)
   x_q = evaluate(x,q)
   y_q = evaluate(y,q)
-  apply_cellmatvec(cell_kernel!,y_q,x_q,jac_q,w_q)
+  apply_cellmatvec(cell_kernel!,x_q,y_q,jac_q,w_q)
 end
 
 t2_Ω = AffineFETermFromCellMatVec(cellmat_Ω,trian)
