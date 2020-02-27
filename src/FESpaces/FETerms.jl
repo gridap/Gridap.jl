@@ -484,7 +484,7 @@ function get_cell_jacobian(t::NonLinearFETerm,uh,v,du)
   _v = restrict(v,t.trian)
   _uh = restrict(uh,t.trian)
   _du = restrict(du,t.trian)
-  integrate(t.jac(_uh,_v,_du),t.trian,t.quad)
+  integrate(t.jac(_uh,_du,_v),t.trian,t.quad)
 end
 
 function get_cell_residual(t::NonLinearFETerm,uh,v)
@@ -569,7 +569,7 @@ function get_cell_jacobian(t::FETermFromCellJacRes,uh,v,du)
   _v = restrict(v,t.trian)
   _du = restrict(du,t.trian)
   _uh = restrict(uh,t.trian)
-  celljacres = t.jacresfun(_uh,_v,_du)
+  celljacres = t.jacresfun(_uh,_du,_v)
   celljac, _ = unpair_arrays(celljacres)
   celljac
 end
@@ -582,7 +582,7 @@ function get_cell_residual(t::FETermFromCellJacRes,uh,v)
   _v = restrict(v,t.trian)
   _du = restrict(du,t.trian)
   _uh = restrict(uh,t.trian)
-  celljacres = t.jacresfun(_uh,_v,_du)
+  celljacres = t.jacresfun(_uh,_du,_v)
   _, cellres = unpair_arrays(celljacres)
   cellres
 end
@@ -598,6 +598,6 @@ function get_cell_jacobian_and_residual(t::FETermFromCellJacRes,uh,v,du)
   _v = restrict(v,t.trian)
   _du = restrict(du,t.trian)
   _uh = restrict(uh,t.trian)
-  celljacres = t.jacresfun(_uh,_v,_du)
+  celljacres = t.jacresfun(_uh,_du,_v)
   (celljacres, nothing, nothing)
 end
