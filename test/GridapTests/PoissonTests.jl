@@ -58,7 +58,7 @@ for data in [ vector_data, scalar_data ]
   T = data[:valuetype]
   u = data[:u]
   f = data[:f]
-  
+
   V = TestFESpace(
    model=model,
    order=order,
@@ -66,40 +66,40 @@ for data in [ vector_data, scalar_data ]
    labels=labels,
    valuetype=T,
    dirichlet_tags="dirichlet")
-  
+
   U = TrialFESpace(V,u)
 
   uh = interpolate(U,u)
-  
-  a(v,u) = inner(∇(v),∇(u))
+
+  a(u,v) = inner(∇(v),∇(u))
   l(v) = v*f
   t_Ω = AffineFETerm(a,l,trian,quad)
 
   uh_Γn = restrict(uh,ntrian)
   uh_Γd = restrict(uh,dtrian)
-  
+
   l_Γn(v) = v*(nn*∇(uh_Γn))
   t_Γn = FESource(l_Γn,ntrian,nquad)
-  
+
   a_Γd(v,u) = (γ/h)*v*u  - v*(dn*∇(u)) - (dn*∇(v))*u
   l_Γd(v) = (γ/h)*v*uh_Γd - (dn*∇(v))*u
   t_Γd = AffineFETerm(a_Γd,l_Γd,dtrian,dquad)
-  
-  op = AffineFEOperator(V,U,t_Ω,t_Γn,t_Γd)
-  
+
+  op = AffineFEOperator(U,V,t_Ω,t_Γn,t_Γd)
+
   uh = solve(op)
-  
+
   e = u - uh
-  
+
   l2(u) = inner(u,u)
   sh1(u) = a(u,u)
   h1(u) = sh1(u) + l2(u)
-  
+
   el2 = sqrt(sum( integrate(l2(e),trian,quad) ))
   eh1 = sqrt(sum( integrate(h1(e),trian,quad) ))
   ul2 = sqrt(sum( integrate(l2(uh),trian,quad) ))
   uh1 = sqrt(sum( integrate(h1(uh),trian,quad) ))
-  
+
   @test el2/ul2 < 1.e-8
   @test eh1/uh1 < 1.e-7
 
