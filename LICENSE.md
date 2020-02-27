@@ -32,6 +32,18 @@ In order to give credit to the `Gridap` contributors, we simply ask you to cite 
 
 F. Verdugo and S. Badia. *A user-guide to Gridap -- grid-based approximation of partial differential equations in Julia*, 2019. [arXiv:1910.01412](https://arxiv.org/abs/1910.01412)
 
+```
+@article{gridap_guide_2019,
+    author={Francesc Verdugo and Santiago Badia},
+    journal = {{arXiv}},
+    title = {{A user-guide to Gridap -- grid-based approximation of partial differential equations in Julia}},
+    year = {2019},
+    eprint={1910.01412},
+    archivePrefix={arXiv},
+    primaryClass={cs.MS},
+}
+```
+
 Contributing to `Gridap`
 ==
 
