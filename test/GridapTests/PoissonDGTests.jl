@@ -50,18 +50,18 @@ V = TestFESpace(
 
 U = TrialFESpace(V,u)
 
-a(v,u) = inner(∇(v),∇(u))
+a(u,v) = inner(∇(v),∇(u))
 l(v) = v*f
 t_Ω = AffineFETerm(a,l,trian,quad)
 
-a_Γd(v,u) = (γ/h)*v*u  - v*(bn*∇(u)) - (bn*∇(v))*u
+a_Γd(u,v) = (γ/h)*v*u  - v*(bn*∇(u)) - (bn*∇(v))*u
 l_Γd(v) = (γ/h)*v*u - (bn*∇(v))*u
 t_Γd = AffineFETerm(a_Γd,l_Γd,btrian,bquad)
 
-a_Γ(v,u) = (γ/h)*jump(v*sn)*jump(u*sn) - jump(v*sn)*mean(∇(u)) -  mean(∇(v))*jump(u*sn)
+a_Γ(u,v) = (γ/h)*jump(v*sn)*jump(u*sn) - jump(v*sn)*mean(∇(u)) -  mean(∇(v))*jump(u*sn)
 t_Γ = LinearFETerm(a_Γ,strian,squad)
 
-op = AffineFEOperator(V,U,t_Ω,t_Γ,t_Γd)
+op = AffineFEOperator(U,V,t_Ω,t_Γ,t_Γd)
 
 uh = solve(op)
 
@@ -80,4 +80,3 @@ uh1 = sqrt(sum( integrate(h1(uh),trian,quad) ))
 @test eh1/uh1 < 1.e-7
 
 end # module
-
