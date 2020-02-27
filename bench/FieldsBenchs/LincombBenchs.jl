@@ -80,7 +80,7 @@ end
 
 for n in (1,1,10,1000,100000)
   @eval begin
-    println("+++ runing suite for n = $($n) +++")
+    println("+++ running suite for n = $($n) +++")
     bench1($n)
     bench2($n)
   end
