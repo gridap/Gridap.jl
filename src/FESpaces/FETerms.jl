@@ -327,7 +327,7 @@ function get_cell_matrix(t::AffineFETermFromIntegration,v,u)
   @assert is_a_fe_cell_basis(u)
   _v = restrict(v,t.trian)
   _u = restrict(u,t.trian)
-  integrate(t.biform(_v,_u),t.trian,t.quad)
+  integrate(t.biform(_u,_v),t.trian,t.quad)
 end
 
 function get_cell_vector(t::AffineFETermFromIntegration,v,uhd)
@@ -335,7 +335,7 @@ function get_cell_vector(t::AffineFETermFromIntegration,v,uhd)
   @assert is_a_fe_cell_basis(v)
   _v = restrict(v,t.trian)
   _uhd = restrict(uhd,t.trian)
-  integrate(t.liform(_v)-t.biform(_v,_uhd),t.trian,t.quad)
+  integrate(t.liform(_v)-t.biform(_uhd,_v),t.trian,t.quad)
 end
 
 function get_cell_vector(t::AffineFETermFromIntegration,v)
@@ -349,7 +349,7 @@ function get_cell_residual(t::AffineFETermFromIntegration,uh,v)
   @assert is_a_fe_cell_basis(v)
   _v = restrict(v,t.trian)
   _uh = restrict(uh,t.trian)
-  integrate(t.biform(_v,_uh)-t.liform(_v),t.trian,t.quad)
+  integrate(t.biform(_uh,_v)-t.liform(_v),t.trian,t.quad)
 end
 
 function get_cell_id(t::AffineFETermFromIntegration)
@@ -429,7 +429,7 @@ function get_cell_matrix(t::LinearFETermFromIntegration,v,u)
   @assert is_a_fe_cell_basis(u)
   _v = restrict(v,t.trian)
   _u = restrict(u,t.trian)
-  integrate(t.biform(_v,_u),t.trian,t.quad)
+  integrate(t.biform(_u,_v),t.trian,t.quad)
 end
 
 function get_cell_vector(t::LinearFETermFromIntegration,v,uhd)
@@ -437,7 +437,7 @@ function get_cell_vector(t::LinearFETermFromIntegration,v,uhd)
   @assert is_a_fe_cell_basis(v)
   _v = restrict(v,t.trian)
   _uhd = restrict(uhd,t.trian)
-  integrate(-t.biform(_v,_uhd),t.trian,t.quad)
+  integrate(-t.biform(_uhd,_v),t.trian,t.quad)
 end
 
 function get_cell_vector(t::LinearFETermFromIntegration,v)
@@ -450,10 +450,10 @@ function get_cell_residual(t::LinearFETermFromIntegration,uh,v)
   @assert is_a_fe_cell_basis(v)
   _v = restrict(v,t.trian)
   _uh = restrict(uh,t.trian)
-  integrate(t.biform(_v,_uh),t.trian,t.quad)
+  integrate(t.biform(_uh,_v),t.trian,t.quad)
 end
 
-function get_cell_id(t::LinearFETermFromIntegration) 
+function get_cell_id(t::LinearFETermFromIntegration)
   get_cell_id(t.trian)
 end
 
@@ -601,4 +601,3 @@ function get_cell_jacobian_and_residual(t::FETermFromCellJacRes,uh,v,du)
   celljacres = t.jacresfun(_uh,_v,_du)
   (celljacres, nothing, nothing)
 end
-
