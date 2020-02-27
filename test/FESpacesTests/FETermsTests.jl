@@ -42,13 +42,13 @@ v = get_cell_basis(V)
 u = get_cell_basis(U)
 uh = interpolate(U,u_sol)
 
-a(v,u) = ∇(v)*∇(u)
+a(u,v) = ∇(v)*∇(u)
 l(v) = f*v
 
-j(u,v,du) = a(v,du)
-r(u,v) = a(v,u) - l(v)
+j(u,du,v) = a(du,v)
+r(u,v) = a(u,v) - l(v)
 
-z(v,u) = jump(v)*jump(u)
+z(u,v) = jump(v)*jump(u)
 w(v) = jump(v)*f
 
 t_linear = LinearFETerm(z,strian,squad)
@@ -144,7 +144,7 @@ function poisson_matvec_kernel!(mat,vec,∇v,∇u,v,j,w,x)
   end
 end
 
-function matvecfun(v,u)
+function matvecfun(u,v)
   v_q = evaluate(v,q)
   ∇v_q = evaluate(∇(v),q)
   apply_cellmatvec(poisson_matvec_kernel!, ∇v_q, ∇v_q, v_q, jac_q, w_q, x_q)
@@ -183,7 +183,7 @@ function poisson_jacres_kernel!(jac,res,∇v,∇du,v,∇uh,j,w,x)
   end
 end
 
-function jacresfun(uh,v,du)
+function jacresfun(uh,du,v)
   v_q = evaluate(v,q)
   ∇v_q = evaluate(∇(v),q)
   ∇du_q = ∇v_q
