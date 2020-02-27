@@ -46,9 +46,9 @@ bquad = CellQuadrature(btrian,degree)
 nb = get_normal_vector(btrian)
 
 function a(y,x)
-   v, q = y
-   u, p = x
-   v*u - (∇*v)*p + q*(∇*u)
+  u, p = x
+  v, q = y
+  u*v - p*(∇*v) + q*(∇*u)
 end
 
 function l(y)
@@ -63,7 +63,7 @@ end
 
 t_Ω = AffineFETerm(a,l,trian,quad)
 t_Γ = FESource(l_Γ,btrian,bquad)
-op = AffineFEOperator(Y,X,t_Ω,t_Γ)
+op = AffineFEOperator(X,Y,t_Ω,t_Γ)
 xh = solve(op)
 uh, ph = xh
 
