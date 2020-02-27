@@ -10,8 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Macro `@statelaw` in order to deal with constitutive laws with state / historical variables. Since PR [#193](https://github.com/gridap/Gridap.jl/pull/193).
 - New constructors `AffineFETermFromCellMatVec` and `FETermFromCellJacRes` that provides full control in the definition of cell matrices and vectors. Since PR [#191](https://github.com/gridap/Gridap.jl/pull/191).
+- Support for simultaneous integration of matrices and vectors. Since PR [#191](https://github.com/gridap/Gridap.jl/pull/191).
 
 ### Changed
+
+- The order in which test and trial spaces are written in the code has changed and also the other in the arguments of functions defining bi-linear and linear forms, and weak residuals and Jacobians. **This affects everybody that is using Gridap, even the most basic users**. Now, we write the trial space before the test one in all methods taking two spaces in their arguments.  E.g., we have changed `AffineFEOperator(V,U,terms...)` to `AffineFEOperator(U,V,terms...)`, where `U` is the trial and `V` is the test space. For functions defining weak forms, now we have: The new signatures for bi-linear and a linear forms are `a(u,v)`, `l(v)`, where `u` is a trial function and `v` is a test one. For weak Jacobians and residuals `jac(u,du,v)` and `res(u,v)`, where `u` is the (trial) function in which we evaluate these quantities, `du` is the direction in which we evaluate the Jacobian and `v` is a test function. Since PR [#195](https://github.com/gridap/Gridap.jl/pull/195) and PR [#197](https://github.com/gridap/Gridap.jl/pull/197).
 
 - The part related with the application of constraints in the `FESpace` interface has changed. Since PR [#191](https://github.com/gridap/Gridap.jl/pull/191).
 
