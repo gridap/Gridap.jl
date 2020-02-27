@@ -42,7 +42,7 @@ b =  assemble_vector(assem,[cellvec],[cellids])
 x = A \ b
 x0 = zeros(length(x))
 
-op = AffineFEOperator(V,U,A,b)
+op = AffineFEOperator(U,V,A,b)
 solver = LinearFESolver()
 test_fe_solver(solver,op,x0,x)
 uh = solve(solver,op)

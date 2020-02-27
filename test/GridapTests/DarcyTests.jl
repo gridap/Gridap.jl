@@ -45,7 +45,7 @@ degree = 2*order
 bquad = CellQuadrature(btrian,degree)
 nb = get_normal_vector(btrian)
 
-function a(y,x)
+function a(x,y)
   u, p = x
   v, q = y
   u*v - p*(∇*v) + q*(∇*u)
