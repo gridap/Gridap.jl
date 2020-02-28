@@ -47,6 +47,7 @@ import Gridap.Fields: integrate
 import Gridap.Fields: evaluate
 import Gridap.Fields: gradient
 import Gridap.Fields: grad2curl
+import Gridap.Fields: evaluate_field_array
 
 import Gridap.Algebra: allocate_residual
 import Gridap.Algebra: allocate_jacobian
@@ -180,6 +181,7 @@ export CLagrangianFESpace
 export DivConformingFESpace
 export CurlConformingFESpace
 export DirichletFESpace
+export ExtendedFESpace
 
 export @law
 export operate
@@ -240,6 +242,8 @@ include("ZeroMeanFESpaces.jl")
 include("CLagrangianFESpaces.jl")
 
 include("DirichletFESpaces.jl")
+
+include("ExtendedFESpaces.jl")
 
 include("FESpaceFactories.jl")
 
