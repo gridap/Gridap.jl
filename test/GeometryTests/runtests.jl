@@ -14,6 +14,8 @@ using Test
 
 @testset "Grids" begin include("GridsTests.jl") end
 
+@testset "RestrictedTriangulations" begin include("RestrictedTriangulationsTests.jl") end
+
 @testset "TriangulationPortions" begin include("TriangulationPortionsTests.jl") end
 
 @testset "GridPortions" begin include("GridPortionsTests.jl") end

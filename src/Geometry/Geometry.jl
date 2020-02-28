@@ -133,6 +133,7 @@ export compute_linear_grid
 export compute_reference_grid
 
 export TriangulationPortion
+export RestrictedTriangulation
 export GridPortion
 export UnstructuredGrid
 
@@ -200,6 +201,8 @@ include("Triangulations.jl")
 include("Grids.jl")
 
 include("GridMocks.jl")
+
+include("RestrictedTriangulations.jl")
 
 include("TriangulationPortions.jl")
 
