@@ -47,7 +47,6 @@ import Gridap.Fields: integrate
 import Gridap.Fields: evaluate
 import Gridap.Fields: gradient
 import Gridap.Fields: grad2curl
-import Gridap.Fields: evaluate_field_array
 
 import Gridap.Algebra: allocate_residual
 import Gridap.Algebra: allocate_jacobian
