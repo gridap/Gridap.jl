@@ -64,12 +64,25 @@ function evaluate_field_array(a::ExtendedVector,x::AbstractArray)
   ExtendedVector(
       r_void,
       r_cell,
-      oldcell_to_cell_or_void,
-      void_to_oldcell,
-      cell_to_oldcell)
+      a.oldcell_to_cell_or_void,
+      a.void_to_oldcell,
+      a.cell_to_oldcell)
 end
 
-function reindex(a::ExtendedVector,ptrs)
+function reindex(a::ExtendedVector,ptrs::AbstractArray)
+  _extended_reindex(a,ptrs)
+end
+
+function reindex(a::ExtendedVector,ptrs::IdentityVector)
+  a
+end
+
+function reindex(a::ExtendedVector,trian::Triangulation)
+  ptrs = get_cell_id(trian)
+  _extended_reindex(a,ptrs)
+end
+
+function _extended_reindex(a,ptrs)
   if a.cell_to_oldcell === ptrs || a.cell_to_oldcell == ptrs
     return a.cell_to_val
   elseif a.void_to_oldcell === ptrs || a.void_to_oldcell == ptrs
@@ -97,11 +110,6 @@ function field_gradient(f::VoidBasis{T}) where T
   VoidBasis{eltype(T)}()
 end
 
-
-
-# TODO This is temporary
-using Gridap.Arrays: Reindexed
-
 """
 """
 struct ExtendedFESpace <: SingleFieldFESpace
@@ -112,32 +120,80 @@ end
 constraint_style(::Type{ExtendedFESpace}) = Val{false}()
 
 function get_cell_dofs(f::ExtendedFESpace)
-  Reindexed(get_cell_dofs(f.space),f.trian.oldcell_to_cell)
+
+  cell_to_val = get_cell_dofs(f.space)
+  vi = testitem(cell_to_val)
+  T = eltype(vi)
+  void_to_val = Fill(T[],length(f.trian.void_to_oldcell))
+
+  ExtendedVector(
+    void_to_val,
+    cell_to_val,
+    f.trian.oldcell_to_cell,
+    f.trian.void_to_oldcell,
+    f.trian.cell_to_oldcell)
+
 end
 
 function get_cell_basis(f::ExtendedFESpace)
   cell_basis = get_cell_basis(f.space)
-  a = get_array(cell_basis)
-  array = Reindexed(a,f.trian.oldcell_to_cell)
-  b = get_cell_map(cell_basis)
+  cell_to_val = get_array(cell_basis)
+
+  xi = testitem(get_cell_coordinates(f.trian))
+  vi = testitem(cell_to_val)
+  Tv = field_return_type(vi,xi)
+  T = eltype(Tv)
+  void_to_val = Fill(VoidBasis{T}(),length(f.trian.void_to_oldcell))
+
+  array = ExtendedVector(
+    void_to_val,
+    cell_to_val,
+    f.trian.oldcell_to_cell,
+    f.trian.void_to_oldcell,
+    f.trian.cell_to_oldcell)
+
   cm = get_cell_map(f.trian.oldtrian)
   trial_style = TrialStyle(cell_basis)
   GenericCellBasis(trial_style,array,cm)
 end
 
 function get_cell_dof_basis(f::ExtendedFESpace)
-  Reindexed(get_cell_dof_basis(f.space),f.trian.oldcell_to_cell)
+
+  cell_to_val = get_cell_dof_basis(f.space)
+
+  D = num_dims(f.trian)
+  T = Float64 # TODO
+  void_to_val = Fill(LagrangianDofBasis(T,Point{D,T}[]),length(f.trian.void_to_oldcell))
+
+  ExtendedVector(
+    void_to_val,
+    cell_to_val,
+    f.trian.oldcell_to_cell,
+    f.trian.void_to_oldcell,
+    f.trian.cell_to_oldcell)
+
 end
 
 function scatter_free_and_dirichlet_values(f::ExtendedFESpace,fv,dv)
-  a = scatter_free_and_dirichlet_values(f.space,fv,dv)
-  Reindexed(a,f.trian.oldcell_to_cell)
+
+  cell_to_val = scatter_free_and_dirichlet_values(f.space,fv,dv)
+  T = eltype(fv)
+  void_to_val = Fill(T[],length(f.trian.void_to_oldcell))
+
+  ExtendedVector(
+    void_to_val,
+    cell_to_val,
+    f.trian.oldcell_to_cell,
+    f.trian.void_to_oldcell,
+    f.trian.cell_to_oldcell)
 end
 
 function gather_free_and_dirichlet_values(f::ExtendedFESpace,cv)
   _cv = reindex(cv,f.trian.cell_to_oldcell)
   gather_free_and_dirichlet_values(f.space,_cv)
 end
+
+# Delegated functions
 
 function num_free_dofs(f::ExtendedFESpace)
   num_free_dofs(f.space)

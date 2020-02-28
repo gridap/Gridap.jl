@@ -125,7 +125,12 @@ uh, ph = solve(op)
 # Visualization
 
 ph_fluid = restrict(ph, trian_fluid)
-writevtk(trian_fluid,"trian_fluid",cellfields=["ph"=>ph_fluid])
-writevtk(trian,"trian", cellfields=["uh" => uh])
+
+eu = u - uh
+ep = p - ph
+ep_fluid = p - ph_fluid
+
+writevtk(trian_fluid,"trian_fluid",cellfields=["ph"=>ph_fluid, "ep"=>ep_fluid])
+writevtk(trian,"trian", cellfields=["uh" => uh, "ph"=> ph, "eu"=>eu, "ep"=>ep])
 
 end # module
