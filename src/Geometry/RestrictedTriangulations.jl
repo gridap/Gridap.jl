@@ -5,12 +5,18 @@ struct RestrictedTriangulation{Dc,Dp,G} <: Triangulation{Dc,Dp}
   oldtrian::G
   cell_to_oldcell::Vector{Int}
   oldcell_to_cell::Vector{Int}
+  void_to_oldcell::Vector{Int}
 
   function RestrictedTriangulation(
     oldtrian::Triangulation{Dc,Dp},
     cell_to_oldcell::Vector{Int},
     oldcell_to_cell::Vector{Int}) where {Dc,Dp}
-    new{Dc,Dp,typeof(oldtrian)}(oldtrian,cell_to_oldcell,oldcell_to_cell)
+
+    _oldcell_to_cell = copy(oldcell_to_cell)
+    void_to_oldcell = findall(oldcell_to_cell .!= UNSET)
+    _oldcell_to_cell[void_to_oldcell] = -(1:length(void_to_oldcell))
+
+    new{Dc,Dp,typeof(oldtrian)}(oldtrian,cell_to_oldcell,_oldcell_to_cell,void_to_oldcell)
   end
 
 end

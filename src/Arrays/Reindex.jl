@@ -14,20 +14,8 @@ end
 
 function reindex(i_to_v::CompressedArray, j_to_i::AbstractArray)
   values = i_to_v.values
-  #ptrs = i_to_v.ptrs[j_to_i]
-  ptrs = _fill_reidexed_ptrs(i_to_v.ptrs,j_to_i)
+  ptrs = i_to_v.ptrs[j_to_i]
   CompressedArray(values,ptrs)
-end
-
-function _fill_reidexed_ptrs(i_to_ptr, j_to_i)
-  T = eltype(i_to_ptr)
-  j_to_ptr = fill(T(UNSET),length(j_to_i))
-  for (j,i) in enumerate(j_to_i)
-    if i != UNSET
-      j_to_ptr[j] = i_to_ptr[i]
-    end
-  end
-  j_to_ptr
 end
 
 struct Reindexed{T,N,A,B} <: AbstractArray{T,N}

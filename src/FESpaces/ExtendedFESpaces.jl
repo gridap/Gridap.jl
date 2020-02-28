@@ -1,4 +1,104 @@
 
+
+struct ExtendedVector{T,A,B} <: AbstractVector{T}
+  void_to_val::A
+  cell_to_val::B
+  oldcell_to_cell_or_void::Vector{Int}
+  void_to_oldcell::Vector{Int}
+  cell_to_oldcell::Vector{Int}
+  function ExtendedVector(
+    void_to_val::AbstractArray,
+    cell_to_val::AbstractArray,
+    oldcell_to_cell_or_void::Vector{Int},
+    void_to_oldcell::Vector{Int},
+    cell_to_oldcell::Vector{Int})
+
+    A = typeof(void_to_val)
+    B = typeof(cell_to_val)
+    ai = testitem(void_to_val)
+    bi = testitem(cell_to_val)
+    T = eltype([ai,bi])
+
+    new{T,A,B}(
+      void_to_val,
+      cell_to_val,
+      oldcell_to_cell_or_void,
+      void_to_oldcell,
+      cell_to_oldcell)
+
+  end
+end
+
+Base.size(a::ExtendedVector) = (length(a.oldcell_to_cell_or_void),)
+
+Base.IndexStyle(::Type{<:ExtendedVector}) = IndexLinear()
+
+function Base.getindex(a::ExtendedVector,i::Integer)
+  cache = array_cache(a)
+  getindex!(cache,a,i)
+end
+
+function array_cache(a::ExtendedVector)
+  cv = array_cache(a.void_to_val)
+  cc = array_cache(a.cell_to_val)
+  (cv,cc)
+end
+
+@inline function getindex!(cache,a::ExtendedVector,oldcell)
+  cv, cc = cache
+  i = a.oldcell_to_cell_or_void[oldcell]
+  if i > 0
+    cell = i
+    return getindex!(cc,a.cell_to_val,cell)
+  else
+    void = -i
+    return getindex!(cv,a.void_to_val,void)
+  end
+end
+
+function evaluate_field_array(a::ExtendedVector,x::AbstractArray)
+  x_void = reindex(x,a.void_to_oldcell)
+  x_cell = reindex(x,a.cell_to_oldcell)
+  r_void = evaluate_field_array(a.void_to_val,x_void)
+  r_cell = evaluate_field_array(a.cell_to_val,x_cell)
+  ExtendedVector(
+      r_void,
+      r_cell,
+      oldcell_to_cell_or_void,
+      void_to_oldcell,
+      cell_to_oldcell)
+end
+
+function reindex(a::ExtendedVector,ptrs)
+  if a.cell_to_oldcell === ptrs || a.cell_to_oldcell == ptrs
+    return a.cell_to_val
+  elseif a.void_to_oldcell === ptrs || a.void_to_oldcell == ptrs
+    return a.void_to_val
+  else
+    return Reindexed(a,ptrs)
+  end
+end
+
+struct VoidBasis{T} <: Field end
+
+function field_cache(f::VoidBasis{T},x) where T
+  Q = length(x)
+  v = zeros(T,(Q,0))
+  CachedArray(v)
+end
+
+@inline function evaluate_field!(cache,f::VoidBasis{T},x) where T
+  Q = length(x)
+  setsize!(cache,(Q,0))
+  cache.array
+end
+
+function field_gradient(f::VoidBasis{T}) where T
+  VoidBasis{eltype(T)}()
+end
+
+
+
 # TODO This is temporary
 using Gridap.Arrays: Reindexed
 
