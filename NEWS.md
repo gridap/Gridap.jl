@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Curl-conforming reference FE `NedelecRefFE` and corresponding FE space constructor since PR [#199]
 - Macro `@statelaw` in order to deal with constitutive laws with state / historical variables. Since PR [#193](https://github.com/gridap/Gridap.jl/pull/193).
 - New constructors `AffineFETermFromCellMatVec` and `FETermFromCellJacRes` that provides full control in the definition of cell matrices and vectors. Since PR [#191](https://github.com/gridap/Gridap.jl/pull/191).
 - Support for simultaneous integration of matrices and vectors. Since PR [#191](https://github.com/gridap/Gridap.jl/pull/191).
