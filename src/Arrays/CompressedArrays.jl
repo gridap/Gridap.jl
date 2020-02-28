@@ -29,6 +29,10 @@ struct CompressedArray{T,N,A,P} <: AbstractArray{T,N}
   end
 end
 
+function testitem(a::CompressedArray)
+  testitem(a.values)
+end
+
 size(a::CompressedArray) = size(a.ptrs)
 
 @propagate_inbounds function getindex(a::CompressedArray,i::Integer)

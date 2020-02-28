@@ -11,7 +11,7 @@ using Gridap.Fields
 
 n = 10
 mesh = (n,n)
-domain = (0,1,0,1)
+domain = (0,1,0,1) .- 1
 order = 1
 model = CartesianDiscreteModel(domain, mesh)
 
@@ -32,6 +32,8 @@ incell_to_cell = findall(collect1d(apply(is_in,oldcell_to_coods)))
 
 trian_in = RestrictedTriangulation(trian, incell_to_cell)
 
+quad_in = CellQuadrature(trian_in,2*order)
+
 reffes = [LagrangianRefFE(Float64,get_polytope(p),order) for p in get_reffes(trian_in)]
 
 V_in = DiscontinuousFESpace(reffes,trian_in)
@@ -48,12 +50,11 @@ uh = interpolate(U,u)
 
 uh_in = restrict(uh,trian_in)
 
+t_Ω = AffineFETerm( (u,v) -> v*u, (v) -> v*4, trian_in, quad_in)
 
-using Gridap.Visualization
-writevtk(trian_in,"trian_in",cellfields=["uh"=>uh_in])
-writevtk(trian,"trian")#,cellfields=["uh"=>uh])
+op = AffineFEOperator(U,V,t_Ω)
 
-
-
+q_in = get_coordinates(quad_in)
+collect(evaluate(uh_in,q_in))
 
 end # module
