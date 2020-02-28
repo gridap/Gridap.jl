@@ -139,6 +139,7 @@ export HEX8
 export SerendipityRefFE
 export PDiscRefFE
 export RaviartThomasRefFE
+export NedelecRefFE
 
 include("Polytopes.jl")
 
@@ -161,5 +162,7 @@ include("SerendipityRefFEs.jl")
 include("PDiscRefFEs.jl")
 
 include("RaviartThomasRefFEs.jl")
+
+include("NedelecRefFEs.jl")
 
 end # module

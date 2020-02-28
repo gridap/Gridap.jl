@@ -178,6 +178,7 @@ export FESpaceWithLastDofRemoved
 export ZeroMeanFESpace
 export CLagrangianFESpace
 export DivConformingFESpace
+export CurlConformingFESpace
 export DirichletFESpace
 
 export @law
@@ -217,6 +218,8 @@ include("UnconstrainedFESpaces.jl")
 include("ConformingFESpaces.jl")
 
 include("DivConformingFESpaces.jl")
+
+include("CurlConformingFESpaces.jl")
 
 include("DiscontinuousFESpaces.jl")
 

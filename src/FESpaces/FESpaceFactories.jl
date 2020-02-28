@@ -17,6 +17,10 @@ function FESpace(;kwargs...)
 
     fespace = _setup_hdiv_space(kwargs)
 
+  elseif reffe == :Nedelec
+
+    fespace = _setup_hcurl_space(kwargs)
+
   else
     @notimplemented "Unsupported reffe $reffe."
   end
@@ -65,6 +69,34 @@ function _setup_hdiv_space(kwargs)
 
   if conformity in [true, :default, :HDiv, :Hdiv]
       V =  DivConformingFESpace(reffes,model,labels,diritags)
+  else
+    s = "Conformity $conformity not implemented for $reffe reference FE on polytopes $(polytopes...)"
+    @unreachable s
+  end
+
+  V
+end
+
+function _setup_hcurl_space(kwargs)
+
+  reffe = _get_kwarg(:reffe,kwargs)
+  model = _get_kwarg(:model,kwargs)
+  labels = _get_kwarg(:labels,kwargs,get_face_labeling(model))
+  conformity = _get_kwarg(:conformity,kwargs,true)
+  diritags = _get_kwarg(:dirichlet_tags,kwargs,Int[])
+  order = _get_kwarg(:order,kwargs,nothing)
+  Tf = _get_kwarg(:valuetype,kwargs,VectorValue{1,Float64})
+  T = eltype(Tf)
+
+  if order == nothing
+    @unreachable "order is a mandatory keyword argument in FESpace constructor for Nedelec reference FEs"
+  end
+
+  polytopes = get_polytopes(model)
+  reffes = [NedelecRefFE(T,p,order) for p in polytopes]
+
+  if conformity in [true, :default, :HCurl, :Hcurl]
+      V =  CurlConformingFESpace(reffes,model,labels,diritags)
   else
     s = "Conformity $conformity not implemented for $reffe reference FE on polytopes $(polytopes...)"
     @unreachable s
