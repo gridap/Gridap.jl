@@ -87,5 +87,27 @@ ids = get_cell_id(strian)
 
 
 
+model = DiscreteModelMock()
+
+trian = Triangulation(model)
+
+cell_to_is_left = [true,true,false,true,false]
+
+itrian = InterfaceTriangulation(model,cell_to_is_left)
+
+ltrian = get_left_boundary(itrian)
+rtrian = get_right_boundary(itrian)
+
+ni = get_normal_vector(itrian)
+nl = get_normal_vector(ltrian)
+nr = get_normal_vector(rtrian)
+
+#using Gridap.Visualization
+#
+#writevtk(trian,"trian")
+#writevtk(itrian,"itrian",nsubcells=10,cellfields=["ni"=>ni,"nl"=>nl,"nr"=>nr])
+
+
+
 
 end # module

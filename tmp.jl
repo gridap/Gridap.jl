@@ -47,12 +47,12 @@ function is_in(coords)
   d < 0
 end
 
-oldcell_to_coods = get_cell_coordinates(trian)
-oldcell_to_is_solid = collect1d(apply(is_in,oldcell_to_coods))
-oldcell_to_is_fluid = Vector{Bool}(.! oldcell_to_is_solid)
+cell_to_coods = get_cell_coordinates(trian)
+cell_to_is_solid = collect1d(apply(is_in,cell_to_coods))
+cell_to_is_fluid = Vector{Bool}(.! cell_to_is_solid)
 
-trian_solid = RestrictedTriangulation(trian, oldcell_to_is_solid)
-trian_fluid = RestrictedTriangulation(trian, oldcell_to_is_fluid)
+trian_solid = RestrictedTriangulation(trian, cell_to_is_solid)
+trian_fluid = RestrictedTriangulation(trian, cell_to_is_fluid)
 
 order = 2
 
@@ -64,6 +64,10 @@ btrian = BoundaryTriangulation(model,labels,"neumann")
 bdegree = 2*order
 bquad = CellQuadrature(btrian,bdegree)
 n = get_normal_vector(btrian)
+
+trian_Γ = InterfaceTriangulation(model,cell_to_is_fluid)
+n_Γ = get_normal_vector(trian_Γ)
+quad_Γ = CellQuadrature(trian_Γ,bdegree)
 
 # FESpaces
 
@@ -110,16 +114,23 @@ function l_fluid(y)
   v*f + q*g
 end
 
-function l_Γ_fluid(y)
+function l_Γn_fluid(y)
   v,q = y
   v*(n*∇u) - (n*v)*p
 end
 
+# Pressure drop at the interface
+function l_Γ(y)
+  v,q = y
+  - mean(n_Γ*v)*p
+end
+
 t_Ω_solid = AffineFETerm(a_solid,l_solid,trian_solid,quad_solid)
 t_Ω_fluid = AffineFETerm(a_fluid,l_fluid,trian_fluid,quad_fluid)
-t_Γ_fluid = FESource(l_Γ_fluid,btrian,bquad)
+t_Γn_fluid = FESource(l_Γn_fluid,btrian,bquad)
+t_Γ = FESource(l_Γ,trian_Γ,quad_Γ)
 
-op = AffineFEOperator(X,Y,t_Ω_solid,t_Ω_fluid,t_Γ_fluid)
+op = AffineFEOperator(X,Y,t_Ω_solid,t_Ω_fluid,t_Γn_fluid,t_Γ)
 uh, ph = solve(op)
 
 # Visualization

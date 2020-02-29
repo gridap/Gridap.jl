@@ -36,6 +36,76 @@ function SkeletonTriangulation(model::DiscreteModel)
   SkeletonTriangulation(model,face_to_mask)
 end
 
+"""
+"""
+function InterfaceTriangulation(model::DiscreteModel,cell_to_is_left::Vector{Bool})
+
+  D = num_cell_dims(model)
+  facet_grid = Grid(ReferenceFE{D-1},model)
+  cell_grid = Grid(ReferenceFE{D},model)
+
+  topo = get_grid_topology(model)
+  facet_to_cells = Table(get_faces(topo,D-1,D))
+  ifacet_to_facet, facet_to_lcell_left, facet_to_lcell_right = _find_interface_facets(
+    cell_to_is_left, facet_to_cells)
+
+  ifacet_trian = TriangulationPortion(facet_grid,ifacet_to_facet)
+
+  left = GenericBoundaryTriangulation(ifacet_trian,cell_grid,topo,ifacet_to_facet,facet_to_lcell_left)
+  right = GenericBoundaryTriangulation(ifacet_trian,cell_grid,topo,ifacet_to_facet,facet_to_lcell_right)
+
+  SkeletonTriangulation(left,right)
+end
+
+function _find_interface_facets( cell_to_is_left, facet_to_cells::Table)
+
+  nifacets = 0
+  for facet in 1:length(facet_to_cells)
+    a = facet_to_cells.ptrs[facet]
+    b = facet_to_cells.ptrs[facet+1]
+    if b-a == 2
+      cell1 = facet_to_cells.data[a]
+      cell2 = facet_to_cells.data[a+1]
+      is_left_1 = cell_to_is_left[cell1]
+      is_left_2 = cell_to_is_left[cell2]
+      if is_left_1 != is_left_2
+        nifacets += 1
+      end
+    end
+  end
+
+  T = eltype(eltype(facet_to_cells))
+  ifacet_to_facet = zeros(T,nifacets)
+  nfacets = length(facet_to_cells)
+  facet_to_lcell_left = fill(Int8(1),nfacets)
+  facet_to_lcell_right = fill(Int8(2),nfacets)
+
+  nifacets = 0
+  for facet in 1:length(facet_to_cells)
+    a = facet_to_cells.ptrs[facet]
+    b = facet_to_cells.ptrs[facet+1]
+    if b-a == 2
+      cell1 = facet_to_cells.data[a]
+      cell2 = facet_to_cells.data[a+1]
+      is_left_1 = cell_to_is_left[cell1]
+      is_left_2 = cell_to_is_left[cell2]
+      if is_left_1 != is_left_2
+        nifacets += 1
+        ifacet_to_facet[nifacets] = facet
+        if is_left_1
+          facet_to_lcell_left[facet] = 1
+          facet_to_lcell_right[facet] = 2
+        else
+          facet_to_lcell_left[facet] = 2
+          facet_to_lcell_right[facet] = 1
+        end
+      end
+    end
+  end
+
+   ifacet_to_facet, facet_to_lcell_left, facet_to_lcell_right
+ end
+
 # Triangulation interface
 
 function get_cell_coordinates(trian::SkeletonTriangulation)
@@ -77,3 +147,14 @@ end
 function get_normal_vector(trian::SkeletonTriangulation)
   get_normal_vector(trian.left)
 end
+
+# Specific API
+
+"""
+"""
+get_left_boundary(trian::SkeletonTriangulation) = trian.left
+
+"""
+"""
+get_right_boundary(trian::SkeletonTriangulation) = trian.right
+

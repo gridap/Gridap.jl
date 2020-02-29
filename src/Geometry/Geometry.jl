@@ -183,6 +183,9 @@ export SkeletonPair
 export jump
 export mean
 export SkeletonTriangulation
+export InterfaceTriangulation
+export get_left_boundary
+export get_right_boundary
 export CellQuadrature
 export QPointCellField
 
