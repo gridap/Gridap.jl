@@ -23,6 +23,11 @@ function DiscreteModelPortion(model::DiscreteModel, cell_to_oldcell::Vector{Int}
   DiscreteModelPortion(model_p,model,d_to_dface_to_old_dface)
 end
 
+function DiscreteModelPortion(model::DiscreteModel, cell_to_is_in::Vector{Bool})
+  cell_to_oldcell = findall(cell_to_is_in)
+  DiscreteModelPortion(model,cell_to_oldcell)
+end
+
 function _setup_labels_p(model,topo_p,cell_to_oldcell)
 
   topo = get_grid_topology(model)
