@@ -22,6 +22,8 @@ using Test
 
 @testset "DiscreteModels" begin include("DiscreteModelsTests.jl") end
 
+@testset "DiscreteModelPortions" begin include("DiscreteModelPortionsTests.jl") end
+
 @testset "FaceLabelings" begin include("FaceLabelingsTests.jl") end
 
 @testset "UnstructuredGrids" begin include("UnstructuredGridsTests.jl") end

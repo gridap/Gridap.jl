@@ -179,6 +179,8 @@ export test_boundary_triangulation
 
 export GenericBoundaryTriangulation
 
+export DiscreteModelPortion
+
 export SkeletonPair
 export jump
 export mean
@@ -218,6 +220,8 @@ include("CartesianGrids.jl")
 include("FaceLabelings.jl")
 
 include("DiscreteModels.jl")
+
+include("DiscreteModelPortions.jl")
 
 include("DiscreteModelMocks.jl")
 

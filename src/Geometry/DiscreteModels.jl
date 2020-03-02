@@ -468,3 +468,4 @@ function GridTopology(::Type{<:Polytope{D}},model::DiscreteModel) where D
   GridTopology(Polytope{D},get_grid_topology(model))
 end
 
+
