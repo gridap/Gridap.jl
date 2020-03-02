@@ -31,8 +31,8 @@ The underlying implementation uses the function [`testargs`](@ref) to generate
 some test values in order to call the function and determine the returned type.
 This mechanism does not use `Base._return_type`. One of the advantages is
 that the given function `f` is called, and thus, meaningful error messages
-will be displayed if there is any error in `f`. 
-    
+will be displayed if there is any error in `f`.
+
 """
 function return_type(f::Function,Ts...)
   args = testargs(f,Ts...)
@@ -114,7 +114,7 @@ Returns an arbitrary instance of type `T`. It defaults to `zero(T)` for
 non-array types and to an empty array for array types.
 This function is used to compute the default test arguments in
 [`testargs`](@ref).
-It can be overloaded for new types `T` if `zero(T)` does not makes sense. 
+It can be overloaded for new types `T` if `zero(T)` does not makes sense.
 """
 function testvalue end
 
