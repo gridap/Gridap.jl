@@ -26,7 +26,7 @@ function CurlConformingFESpace(
 
   cell_shapefuns, cell_dof_basis = _compute_hcurl_cell_space(reffes, cell_to_ctype, cell_map)
 
-  UnsconstrainedFESpace(
+  UnconstrainedFESpace(
     nfree,
     ndirichlet,
     cell_dofs,

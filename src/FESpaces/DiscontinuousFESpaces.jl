@@ -16,7 +16,7 @@ function DiscontinuousFESpace(reffes::Vector{<:ReferenceFE}, trian::Triangulatio
 
   cell_shapefuns, cell_dof_basis = compute_cell_space(reffes, cell_to_ctype, cell_map)
 
-  UnsconstrainedFESpace(
+  UnconstrainedFESpace(
     nfree,
     ndirichlet,
     cell_dofs,

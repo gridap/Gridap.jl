@@ -123,7 +123,7 @@ export get_cell_dof_basis
 
 export SingleFieldFEFunction
 
-export UnsconstrainedFESpace
+export UnconstrainedFESpace
 export GradConformingFESpace
 export DiscontinuousFESpace
 

@@ -9,7 +9,7 @@
     end
 """
 struct CLagrangianFESpace{S} <: SingleFieldFESpace
-  space::UnsconstrainedFESpace
+  space::UnconstrainedFESpace
   grid::Grid
   dof_to_node::Vector{Int}
   dof_to_comp::Vector{Int8}
@@ -114,7 +114,7 @@ function _generate_clargangian_fespace(T,grid)
     dirichlet_cells = Int[]
     ntags = 0
 
-    space = UnsconstrainedFESpace(
+    space = UnconstrainedFESpace(
       nfree,
       ndirichlet,
       cell_dofs,

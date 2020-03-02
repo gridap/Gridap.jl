@@ -19,7 +19,7 @@ V = FESpace(
  order=order,
  conformity=:L2)
 
-@test isa(V,UnsconstrainedFESpace)
+@test isa(V,UnconstrainedFESpace)
 
 V = FESpace(
  model=model,
@@ -28,7 +28,7 @@ V = FESpace(
  order=order,
  conformity=:H1)
 
-@test isa(V,UnsconstrainedFESpace)
+@test isa(V,UnconstrainedFESpace)
 
 V = FESpace(
  model=model,
@@ -38,7 +38,7 @@ V = FESpace(
  order=order,
  dirichlet_tags="boundary")
 
-@test isa(V,UnsconstrainedFESpace)
+@test isa(V,UnconstrainedFESpace)
 
 D = num_point_dims(model)
 
@@ -51,7 +51,7 @@ V = FESpace(
  dirichlet_tags="boundary",
  dirichlet_masks=(true,false))
 
-@test isa(V,UnsconstrainedFESpace)
+@test isa(V,UnconstrainedFESpace)
 
 V = FESpace(
  model=model,
@@ -62,7 +62,7 @@ V = FESpace(
  dirichlet_tags=[1,2],
  dirichlet_masks=[(true,false),(false,true)])
 
-@test isa(V,UnsconstrainedFESpace)
+@test isa(V,UnconstrainedFESpace)
 
 V = FESpace(
  model=model,
@@ -71,7 +71,7 @@ V = FESpace(
  order=order,
  conformity=:L2)
 
-@test isa(V,UnsconstrainedFESpace)
+@test isa(V,UnconstrainedFESpace)
 
 V = FESpace(
  model=model,

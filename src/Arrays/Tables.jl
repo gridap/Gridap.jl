@@ -6,7 +6,7 @@
       ptrs::Vector{P}
     end
 
-Type representing a list of lists (i.e., a table) in 
+Type representing a list of lists (i.e., a table) in
 compressed format.
 """
 struct Table{T,P} <: AbstractVector{Vector{T}}
@@ -337,7 +337,7 @@ end
 """
     collect1d(a)
 
-Equivalent to 
+Equivalent to
 
     [a[i] for in 1:length(a)]
 """
@@ -437,5 +437,3 @@ function from_dict(::Type{Table{T,P}}, dict::Dict{Symbol,Any}) where {T,P}
   ptrs::Vector{P} = dict[:ptrs]
   Table(data,ptrs)
 end
-
-
