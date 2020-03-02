@@ -28,17 +28,25 @@ function FESpace(;kwargs...)
   @assert fespace != nothing
 
   if constraint == nothing
-    return fespace
+    _fespace = fespace
 
   elseif constraint == :zeromean
     model = _get_kwarg(:model,kwargs)
     order = _get_kwarg(:order,kwargs)
     trian = get_triangulation(model)
     quad = CellQuadrature(trian,order)
-    return ZeroMeanFESpace(fespace,trian,quad)
+    _fespace = ZeroMeanFESpace(fespace,trian,quad)
 
   else
     @unreachable "Unknown constraint value $constraint"
+  end
+
+  restricted_at = _get_kwarg(:restricted_at,kwargs,nothing)
+  if restricted_at == nothing
+    return _fespace
+  else
+    @assert isa(restricted_at,RestrictedTriangulation)
+    return ExtendedFESpace(_fespace,restricted_at)
   end
 
 end

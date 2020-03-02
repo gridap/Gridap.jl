@@ -81,6 +81,7 @@ end
 @publish Geometry num_cells
 @publish Geometry Triangulation
 @publish Geometry get_normal_vector
+@publish Geometry get_cell_coordinates
 @publish Geometry restrict
 @publish Geometry get_physical_coordinate
 @publish Geometry get_cell_map
@@ -101,6 +102,8 @@ end
 @publish Geometry CellQuadrature
 @publish Geometry QPointCellField
 @publish Geometry CellField
+@publish Geometry RestrictedTriangulation
+@publish Geometry InterfaceTriangulation
 
 @publish FESpaces FESpace
 @publish FESpaces TrialFESpace

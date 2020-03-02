@@ -1,10 +1,9 @@
-module Tmp
+module SurfaceCouplingTests
 
+using Test
 using Gridap
 using Gridap.Arrays
-using Gridap.Geometry
 using Gridap.FESpaces
-using Gridap.ReferenceFEs
 import Gridap: ∇
 using LinearAlgebra: tr
 
@@ -57,6 +56,7 @@ trian_fluid = RestrictedTriangulation(trian, cell_to_is_fluid)
 order = 2
 
 degree = 2*order
+quad = CellQuadrature(trian,degree)
 quad_solid = CellQuadrature(trian_solid,degree)
 quad_fluid = CellQuadrature(trian_fluid,degree)
 
@@ -65,6 +65,8 @@ bdegree = 2*order
 bquad = CellQuadrature(btrian,bdegree)
 n = get_normal_vector(btrian)
 
+# This returns a SkeletonTriangulation whose normal vector
+# goes outwards to the fluid domain.
 trian_Γ = InterfaceTriangulation(model,cell_to_is_fluid)
 n_Γ = get_normal_vector(trian_Γ)
 quad_Γ = CellQuadrature(trian_Γ,bdegree)
@@ -79,10 +81,25 @@ V = TestFESpace(
   conformity =:H1,
   dirichlet_tags="dirichlet")
 
-# TODO better user API
-reffes = [PDiscRefFE(Float64,get_polytope(p),order-1) for p in get_reffes(trian_fluid)]
-Q_fluid = DiscontinuousFESpace(reffes,trian_fluid)
-Q = ExtendedFESpace(Q_fluid,trian_fluid)
+## This FESpace is defined only in the fluid part
+#Q_fluid = TestFESpace(
+#  triangulation=trian_fluid,
+#  valuetype=Float64,
+#  order=order-1,
+#  reffe=:PLagrangian,
+#  conformity=:L2)
+#
+## This one is defined everywhere
+#Q = ExtendedFESpace(Q_fluid,trian_fluid)
+
+# Equivalent to previous commented block
+Q = TestFESpace(
+  triangulation=trian_fluid,
+  valuetype=Float64,
+  order=order-1,
+  reffe=:PLagrangian,
+  conformity=:L2,
+  restricted_at=trian_fluid)
 
 U = TrialFESpace(V,u)
 P = TrialFESpace(Q)
@@ -141,7 +158,22 @@ eu = u - uh
 ep = p - ph
 ep_fluid = p - ph_fluid
 
-writevtk(trian_fluid,"trian_fluid",cellfields=["ph"=>ph_fluid, "ep"=>ep_fluid])
-writevtk(trian,"trian", cellfields=["uh" => uh, "ph"=> ph, "eu"=>eu, "ep"=>ep])
+#writevtk(trian_fluid,"trian_fluid",cellfields=["ph"=>ph_fluid, "ep"=>ep_fluid])
+#
+#writevtk(trian,"trian", cellfields=["uh" => uh, "ph"=> ph, "eu"=>eu, "ep"=>ep])
+
+# Errors
+
+l2(v) = v*v
+h1(v) = v*v + inner(∇(v),∇(v))
+
+eu_l2 = sqrt(sum(integrate(l2(eu),trian,quad)))
+eu_h1 = sqrt(sum(integrate(h1(eu),trian,quad)))
+ep_l2 = sqrt(sum(integrate(l2(ep_fluid),trian_fluid,quad_fluid)))
+
+tol = 1.0e-9
+@test eu_l2 < tol
+@test eu_h1 < tol
+@test ep_l2 < tol
 
 end # module

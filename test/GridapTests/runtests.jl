@@ -14,4 +14,6 @@ using Test
 
 @testset "Darcy" begin include("DarcyTests.jl") end
 
+@testset "SurfaceCoupling" begin include("SurfaceCouplingTests.jl") end
+
 end # module
