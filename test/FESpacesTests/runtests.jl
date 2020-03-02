@@ -50,6 +50,8 @@ using Test
 
 @testset "DirichletFESpaces" begin include("DirichletFESpacesTests.jl") end
 
+@testset "ExtendedFESpaces" begin include("ExtendedFESpacesTests.jl") end
+
 @testset "FESpaceFactories" begin include("FESpaceFactoriesTests.jl") end
 
 @testset "StateLaws" begin include("StateLawsTests.jl") end

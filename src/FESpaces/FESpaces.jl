@@ -26,6 +26,8 @@ using Gridap.Geometry: CellFieldLike
 using Gridap.Geometry: UnimplementedField
 using Gridap.Geometry: test_cell_field_like
 using Gridap.Arrays: _split
+using Gridap.Arrays: Reindexed
+using Gridap.Arrays: IdentityVector
 
 import Gridap.Arrays: get_array
 import Gridap.Arrays: array_cache
@@ -33,6 +35,7 @@ import Gridap.Arrays: getindex!
 import Gridap.Arrays: kernel_cache
 import Gridap.Arrays: apply_kernel!
 import Gridap.Arrays: kernel_return_type
+import Gridap.Arrays: reindex
 import Gridap.Geometry: get_cell_map
 import Gridap.Geometry: get_cell_shapefuns
 import Gridap.Geometry: get_reffes
@@ -47,6 +50,10 @@ import Gridap.Fields: integrate
 import Gridap.Fields: evaluate
 import Gridap.Fields: gradient
 import Gridap.Fields: grad2curl
+import Gridap.Fields: evaluate_field_array
+import Gridap.Fields: field_cache
+import Gridap.Fields: evaluate_field!
+import Gridap.Fields: field_gradient
 
 import Gridap.Algebra: allocate_residual
 import Gridap.Algebra: allocate_jacobian
@@ -180,6 +187,7 @@ export CLagrangianFESpace
 export DivConformingFESpace
 export CurlConformingFESpace
 export DirichletFESpace
+export ExtendedFESpace
 
 export @law
 export operate
@@ -240,6 +248,8 @@ include("ZeroMeanFESpaces.jl")
 include("CLagrangianFESpaces.jl")
 
 include("DirichletFESpaces.jl")
+
+include("ExtendedFESpaces.jl")
 
 include("FESpaceFactories.jl")
 

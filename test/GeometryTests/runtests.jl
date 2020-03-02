@@ -14,11 +14,15 @@ using Test
 
 @testset "Grids" begin include("GridsTests.jl") end
 
+@testset "RestrictedTriangulations" begin include("RestrictedTriangulationsTests.jl") end
+
 @testset "TriangulationPortions" begin include("TriangulationPortionsTests.jl") end
 
 @testset "GridPortions" begin include("GridPortionsTests.jl") end
 
 @testset "DiscreteModels" begin include("DiscreteModelsTests.jl") end
+
+@testset "DiscreteModelPortions" begin include("DiscreteModelPortionsTests.jl") end
 
 @testset "FaceLabelings" begin include("FaceLabelingsTests.jl") end
 

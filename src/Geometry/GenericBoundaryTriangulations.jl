@@ -41,7 +41,7 @@ function GenericBoundaryTriangulation(
   cell_trian::Triangulation,
   topo::GridTopology,
   face_to_oldface::Vector{Int},
-  icell_arround::Integer=1)
+  icell_arround=1)
 
 
   D = num_cell_dims(cell_trian)
@@ -82,7 +82,7 @@ end
     GenericBoundaryTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
 """
 function GenericBoundaryTriangulation(
-  model::DiscreteModel,face_to_mask::Vector{Bool},icell_arround::Integer=1)
+  model::DiscreteModel,face_to_mask::Vector{Bool},icell_arround=1)
   D = num_cell_dims(model)
   topo = get_grid_topology(model)
   oldface_grid = Grid(ReferenceFE{D-1},model)

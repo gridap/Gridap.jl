@@ -22,6 +22,15 @@ V = FESpace(
 @test isa(V,UnsconstrainedFESpace)
 
 V = FESpace(
+ triangulation=get_triangulation(model),
+ valuetype=Float64,
+ reffe=:Lagrangian,
+ order=order,
+ conformity=:L2)
+
+@test isa(V,UnsconstrainedFESpace)
+
+V = FESpace(
  model=model,
  valuetype=Float64,
  reffe=:SLagrangian,
@@ -70,6 +79,10 @@ V = FESpace(
  reffe=:PLagrangian,
  order=order,
  conformity=:L2)
+
+#using Gridap.Visualization
+#uh = FEFunction(V,rand(num_free_dofs(V)))
+#writevtk(get_triangulation(model),"trian",nsubcells=20,cellfields=["uh"=>uh])
 
 @test isa(V,UnsconstrainedFESpace)
 

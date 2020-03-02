@@ -133,6 +133,7 @@ export compute_linear_grid
 export compute_reference_grid
 
 export TriangulationPortion
+export RestrictedTriangulation
 export GridPortion
 export UnstructuredGrid
 
@@ -178,10 +179,15 @@ export test_boundary_triangulation
 
 export GenericBoundaryTriangulation
 
+export DiscreteModelPortion
+
 export SkeletonPair
 export jump
 export mean
 export SkeletonTriangulation
+export InterfaceTriangulation
+export get_left_boundary
+export get_right_boundary
 export CellQuadrature
 export QPointCellField
 
@@ -201,6 +207,8 @@ include("Grids.jl")
 
 include("GridMocks.jl")
 
+include("RestrictedTriangulations.jl")
+
 include("TriangulationPortions.jl")
 
 include("GridPortions.jl")
@@ -212,6 +220,8 @@ include("CartesianGrids.jl")
 include("FaceLabelings.jl")
 
 include("DiscreteModels.jl")
+
+include("DiscreteModelPortions.jl")
 
 include("DiscreteModelMocks.jl")
 

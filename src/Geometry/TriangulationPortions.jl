@@ -22,3 +22,4 @@ end
 function get_cell_coordinates(trian::TriangulationPortion)
   reindex(get_cell_coordinates(trian.oldtrian),trian.cell_to_oldcell)
 end
+
