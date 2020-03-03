@@ -4,19 +4,19 @@
     CurlConformingFESpace(
       reffes::Vector{<:ReferenceFE},
       model::DiscreteModel,
-      face_labeing::FaceLabeling,
+      face_labeling::FaceLabeling,
       dirichlet_tags)
 """
 function CurlConformingFESpace(
   reffes::Vector{<:ReferenceFE},
   model::DiscreteModel,
-  face_labeing::FaceLabeling,
+  face_labeling::FaceLabeling,
   dirichlet_tags)
 
   grid_topology = get_grid_topology(model)
 
   cell_dofs, nfree, ndirichlet, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
-    reffes,grid_topology,face_labeing,dirichlet_tags)
+    reffes,grid_topology,face_labeling,dirichlet_tags)
 
   ntags = length(dirichlet_tags)
 

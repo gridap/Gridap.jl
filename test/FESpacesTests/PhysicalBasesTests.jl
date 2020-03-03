@@ -23,6 +23,7 @@ reffes = [LagrangianRefFE(T,p,order) for p in polytopes]
 dof_basis = map(get_dof_basis,reffes)
 
 grid_topology = get_grid_topology(model)
+
 cell_to_ctype = get_cell_type(grid_topology)
 
 cell_dof_basis = CompressedArray(dof_basis,cell_to_ctype)
@@ -49,22 +50,28 @@ isa(cell_prebasis,CellBasis)
 change_basis(cell_prebasis[1],cell_matrix_inv[1])
 
 cell_shapefuns = apply(change_basis,cell_prebasis,cell_matrix_inv)
-
-a = (cell_prebasis,cell_matrix_inv)
-
-import Base.zero
-fi[1]
-
-typeof(a)
-sizeof(a)
-zero(a)
-
-fi = testitems(a...)
-zero(fi[1])
-zero(fi[2])
-
-
 gradient(cell_shapefuns)
+
+function compute_cell_space_physical_space(reffes, cell_to_ctype, cell_map)
+
+  dof_basis = map(get_dof_basis,reffes)
+  cell_dof_basis = CompressedArray(dof_basis,cell_to_ctype)
+
+  prebasis =  map(get_prebasis,reffes)
+  refprebasis = CompressedArray(prebasis,cell_to_ctype)
+  cell_prebasis = attachmap(refprebasis,cell_map)
+
+  cell_matrix = evaluate_dof_array(cell_dof_basis,cell_prebasis)
+  cell_matrix_inv = apply(inv,cell_matrix)
+  cell_shapefuns = apply(change_basis,cell_prebasis,cell_matrix_inv)
+
+  # shapefuns =  map(get_shapefuns,reffes)
+  # refshapefuns = CompressedArray(shapefuns,cell_to_ctype)
+  # cell_shapefuns = attachmap(cell_shapefuns,cell_map)
+
+  (cell_shapefuns, cell_dof_basis)
+end
+
 
 # Whereas for the standard approach...
 gradient(cell_prebasis)

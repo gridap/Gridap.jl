@@ -7,10 +7,10 @@ function GradConformingFESpace(
   dirichlet_tags,
   dirichlet_components=nothing)
 
-  face_labeing = get_face_labeling(model)
+  face_labeling = get_face_labeling(model)
 
   GradConformingFESpace(
-    reffes,model,face_labeing,dirichlet_tags,dirichlet_components)
+    reffes,model,face_labeling,dirichlet_tags,dirichlet_components)
 
 end
 
@@ -21,9 +21,9 @@ function GradConformingFESpace(
   dirichlet_tags,
   dirichlet_components=nothing) where T
 
-  face_labeing = get_face_labeling(model)
+  face_labeling = get_face_labeling(model)
 
-  GradConformingFESpace(T,model,order,face_labeing,dirichlet_tags,dirichlet_components)
+  GradConformingFESpace(T,model,order,face_labeling,dirichlet_tags,dirichlet_components)
 
 end
 
@@ -31,7 +31,7 @@ function GradConformingFESpace(
   ::Type{T},
   model::DiscreteModel,
   order::Integer,
-  face_labeing::FaceLabeling,
+  face_labeling::FaceLabeling,
   dirichlet_tags,
   dirichlet_components=nothing) where T
 
@@ -41,7 +41,7 @@ function GradConformingFESpace(
   reffes = [ LagrangianRefFE(T,p,order) for p in polytopes ]
 
   GradConformingFESpace(
-    reffes,model,face_labeing,dirichlet_tags,dirichlet_components)
+    reffes,model,face_labeling,dirichlet_tags,dirichlet_components)
 
 end
 
@@ -50,7 +50,7 @@ end
 function GradConformingFESpace(
   reffes::Vector{<:LagrangianRefFE},
   model::DiscreteModel,
-  face_labeing::FaceLabeling,
+  face_labeling::FaceLabeling,
   dirichlet_tags,
   dirichlet_components=nothing)
 
@@ -59,7 +59,7 @@ function GradConformingFESpace(
   _dirichlet_components = _convert_dirichlet_components(dirichlet_tags,dirichlet_components)
 
   cell_dofs, nfree, ndirichlet, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
-    reffes,grid_topology,face_labeing,dirichlet_tags,_dirichlet_components)
+    reffes,grid_topology,face_labeling,dirichlet_tags,_dirichlet_components)
 
   ntags = length(dirichlet_tags)
 
@@ -100,13 +100,13 @@ end
   compute_conforming_cell_dofs(
     reffes,
     grid_topology,
-    face_labeing,
+    face_labeling,
     dirichlet_tags)
 
   compute_conforming_cell_dofs(
     reffes,
     grid_topology,
-    face_labeing,
+    face_labeling,
     dirichlet_tags,
     dirichlet_components)
 
@@ -121,7 +121,7 @@ If `dirichlet_components`  is given, then `get_dof_to_comp` has to be defined
 for the reference elements in `reffes`.
 """
 function compute_conforming_cell_dofs(
-  reffes,grid_topology,face_labeing,dirichlet_tags,dirichlet_components=nothing)
+  reffes,grid_topology,face_labeling,dirichlet_tags,dirichlet_components=nothing)
 
   D = num_cell_dims(grid_topology)
   n_faces = num_faces(grid_topology)
@@ -140,7 +140,7 @@ function compute_conforming_cell_dofs(
      d_to_offset,
      d_to_ctype_to_ldface_to_own_ldofs)
 
-  d_to_dface_to_tag = [ get_face_tag_index(face_labeing,dirichlet_tags,d)  for d in 0:D]
+  d_to_dface_to_tag = [ get_face_tag_index(face_labeling,dirichlet_tags,d)  for d in 0:D]
   cell_to_faces = Table(get_cell_faces(grid_topology))
 
   nfree, ndiri, diri_dof_tag = _split_face_own_dofs_into_free_and_dirichlet!(
