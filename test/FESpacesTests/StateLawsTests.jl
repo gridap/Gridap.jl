@@ -48,9 +48,19 @@ end
 
 r_q = evaluate(r,q)
 @test r_q[end] == zeros(size(q[end]))
+@test r_q[1] == zeros(size(q[1]))
 
+_ = testitem(wh_q)
 loop(wh_q)
 
+@test r_q[1] == ones(size(q[1]))
 @test r_q[end] == ones(size(q[end]))
+
+update_state_variables!(quad,foo,uh,s,r)
+update_state_variables!(quad,foo,uh,s,r)
+
+@test r_q[1] == 3*ones(size(q[1]))
+@test r_q[end] == 3*ones(size(q[end]))
+
 
 end # module

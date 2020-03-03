@@ -35,7 +35,11 @@ struct StateLawKernel{F<:Function} <: Kernel
 end
 
 function kernel_cache(k::StateLawKernel,a::AbstractVector,b::AbstractVector...)
-  v = zeros(eltype(a),size(a))
+  Ta = eltype(a)
+  Tb = map(eltype,b)
+  args  = testargs(k.op,Ta,Tb...)
+  vi, = k.op(args...) 
+  v = zeros(typeof(vi),size(a))
   CachedArray(v)
 end
 
@@ -59,6 +63,20 @@ function apply_kernel!(cache,k::StateLawKernel,a::AbstractVector,b::AbstractVect
   v
 end
 
+function apply_kernel_for_cache!(cache,k::StateLawKernel,a::AbstractVector,b::AbstractVector...)
+  Q = length(a)
+  setsize!(cache,size(a))
+  v = cache.array
+  for q in 1:Q
+    aq = a[q]
+    bq = getitems(b,q)
+    r = k.op(aq,bq...)
+    vq, states = _split(r...)
+    v[q] = vq
+  end
+  v
+end
+
 @inline function _update_states!(b,q,states,::Val{i}) where i
   _update_state!(b,q,states,Val{i}())
   _update_states!(b,q,states,Val{i-1}())
@@ -76,4 +94,21 @@ end
   b[i+o][q] = states[i]
   nothing
 end
+
+"""
+"""
+function update_state_variables!(quad::CellQuadrature, statelaw::Function, a...)
+  b = apply_statelaw(statelaw,a...)
+  q = get_coordinates(quad)
+  b_q = evaluate(b,q)
+  c = array_cache(b_q)
+  _update_state_variables!(c,b_q)
+end
+
+function _update_state_variables!(c,b)
+  for i in 1:length(b)
+    bi = getindex!(c,b,i)
+  end
+end
+
 

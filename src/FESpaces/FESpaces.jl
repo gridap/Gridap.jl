@@ -35,6 +35,7 @@ import Gridap.Arrays: getindex!
 import Gridap.Arrays: kernel_cache
 import Gridap.Arrays: apply_kernel!
 import Gridap.Arrays: kernel_return_type
+import Gridap.Arrays: apply_kernel_for_cache!
 import Gridap.Arrays: reindex
 import Gridap.Geometry: get_cell_map
 import Gridap.Geometry: get_cell_shapefuns
@@ -200,6 +201,7 @@ export apply_cellvector
 export @statelaw
 export apply_statelaw
 export CellField
+export update_state_variables!
 
 include("CellBases.jl")
 
