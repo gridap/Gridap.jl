@@ -30,6 +30,10 @@ function change_basis(basis,changeofbasis::AbstractMatrix)
   BasisFromChangeOfBasis(basis,changeofbasis)
 end
 
+function kernel_return_type(::typeof(change_basis),prebasis,matrix_inv)
+  typeof(change_basis(prebasis,matrix_inv))
+end
+
 struct BasisFromChangeOfBasis{B,M} <: Field
   basis::B
   change::M
