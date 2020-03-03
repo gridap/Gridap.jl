@@ -201,6 +201,7 @@ export apply_cellvector
 export @statelaw
 export apply_statelaw
 export CellField
+export update_state_variables!
 
 include("CellBases.jl")
 

@@ -91,3 +91,20 @@ end
   nothing
 end
 
+"""
+"""
+function update_state_variables!(quad::CellQuadrature, statelaw::Function, a...)
+  b = apply_statelaw(statelaw,a...)
+  q = get_coordinates(quad)
+  b_q = evaluate(b,q)
+  c = array_cache(b_q)
+  _update_state_variables!(c,b_q)
+end
+
+function _update_state_variables!(c,b)
+  for i in 1:length(b)
+    bi = getindex!(c,b,i)
+  end
+end
+
+
