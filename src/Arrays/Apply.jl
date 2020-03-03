@@ -211,11 +211,25 @@ function _array_cache(hash,a::AppliedArray)
   fi = testitems(a.f...)
   cf = array_caches(hash,a.f...)
   cgi = kernel_cache(gi,fi...)
-  ai = apply_kernel!(cgi,gi,fi...)
+  ai = apply_kernel_for_cache!(cgi,gi,fi...)
   i = -testitem(eachindex(a))
   e = Evaluation((i,),ai)
   c = (cg, cgi, cf)
   (c,e)
+end
+
+@inline function apply_kernel_for_cache!(cache,k,x...)
+  apply_kernel!(cache,k,x...)
+end
+
+function testitem(a::AppliedArray)
+  cg = array_cache(a.g)
+  gi = testitem(a.g)
+  fi = testitems(a.f...)
+  cf = array_caches(a.f...)
+  cgi = kernel_cache(gi,fi...)
+  ai = apply_kernel_for_cache!(cgi,gi,fi...)
+  ai
 end
 
 function getindex!(cache,a::AppliedArray,i::Integer...)

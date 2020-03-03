@@ -59,6 +59,20 @@ function apply_kernel!(cache,k::StateLawKernel,a::AbstractVector,b::AbstractVect
   v
 end
 
+function apply_kernel_for_cache!(cache,k::StateLawKernel,a::AbstractVector,b::AbstractVector...)
+  Q = length(a)
+  setsize!(cache,size(a))
+  v = cache.array
+  for q in 1:Q
+    aq = a[q]
+    bq = getitems(b,q)
+    r = k.op(aq,bq...)
+    vq, states = _split(r...)
+    v[q] = vq
+  end
+  v
+end
+
 @inline function _update_states!(b,q,states,::Val{i}) where i
   _update_state!(b,q,states,Val{i}())
   _update_states!(b,q,states,Val{i-1}())

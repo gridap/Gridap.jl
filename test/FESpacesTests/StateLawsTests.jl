@@ -48,9 +48,16 @@ end
 
 r_q = evaluate(r,q)
 @test r_q[end] == zeros(size(q[end]))
+@test r_q[1] == zeros(size(q[1]))
 
+display(r_q)
+
+_ = testitem(wh_q)
 loop(wh_q)
 
+display(r_q)
+
+@test r_q[1] == ones(size(q[1]))
 @test r_q[end] == ones(size(q[end]))
 
 end # module
