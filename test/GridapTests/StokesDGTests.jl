@@ -81,12 +81,12 @@ end
 function A_∂Ω(x,y)
   u, p = x
   v, q = y
-  (γ/h)*v*u - v*(∇(u)*nb) - (∇(v)*nb)*u + 2*(q*nb)*u
+  (γ/h)*v*u - v*(nb*∇(u)) - (nb*∇(v))*u + 2*(q*nb)*u
 end
 
 function B_∂Ω(y)
   v, q = y
-  (γ/h)*v*u - (∇(v)*nb)*u + (q*nb)*u
+  (γ/h)*v*u - (nb*∇(v))*u + (q*nb)*u
 end
 
 function A_Γ(x,y)
