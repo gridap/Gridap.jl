@@ -35,7 +35,11 @@ struct StateLawKernel{F<:Function} <: Kernel
 end
 
 function kernel_cache(k::StateLawKernel,a::AbstractVector,b::AbstractVector...)
-  v = zeros(eltype(a),size(a))
+  Ta = eltype(a)
+  Tb = map(eltype,b)
+  args  = testargs(k.op,Ta,Tb...)
+  vi, = k.op(args...) 
+  v = zeros(typeof(vi),size(a))
   CachedArray(v)
 end
 
