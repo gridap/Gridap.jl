@@ -174,6 +174,7 @@ export CartesianDiscreteModel
 export BoundaryTriangulation
 export get_volume_triangulation
 export get_face_to_cell
+export get_face_to_lface
 export get_face_to_cell_map
 export test_boundary_triangulation
 
