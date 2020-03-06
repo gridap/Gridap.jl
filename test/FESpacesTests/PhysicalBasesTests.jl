@@ -5,6 +5,7 @@ using Gridap.Arrays
 using Gridap.Fields
 using Gridap.FESpaces
 using Gridap.Polynomials
+using Test
 
 # Start with a PhysicalSpaceCellBasis
 
@@ -28,11 +29,15 @@ cell_map = get_cell_map(grid)
 
 # Test against the ref approach...
 
-newsfs, x  = compute_cell_space_physical_space(reffes, cell_to_ctype, cell_map)
-r11 = evaluate(newsfs,q)
-r22 = evaluate(gradient(newsfs),q)
-
-
+sfs, x  = Gridap.FESpaces.compute_cell_space(reffes, cell_to_ctype, cell_map)
+psfs, x  = Gridap.FESpaces.compute_cell_space_physical_space(reffes, cell_to_ctype, cell_map)
+r, x = evaluate(sfs,q)
+rg, x = evaluate(gradient(sfs),q)
+rp, x = evaluate(psfs,q)
+rgp, x = evaluate(gradient(psfs),q)
+@test r == rp
+@test collect(rg) == collect(rgp)
+@test rg == rgp
 ##
 # If I want new evaluation...
 function kernel_evaluate(k::typeof{change_basis},x,cell_prebasis,cell_matrix_inv)

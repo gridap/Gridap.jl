@@ -102,7 +102,7 @@ export test_reference_fe
 export num_dofs
 
 export NodalReferenceFE
-export GenericNodalRefFE
+export GenericNodalCartesianRefFE
 export get_face_own_nodes
 export get_face_nodes
 export get_face_own_nodes_permutations
