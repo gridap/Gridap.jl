@@ -80,6 +80,7 @@ export TET_AXIS
 export INVALID_PERM
 
 export Dof
+export get_nodes
 export evaluate_dof!
 export evaluate_dof
 export dof_cache

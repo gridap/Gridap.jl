@@ -107,7 +107,8 @@ are assumed to be computable at a reference FE space.
 function compute_cell_space_physical_space(reffes, cell_to_ctype, cell_map)
 
   # Create new dof_basis with nodes in the physical space
-  ctype_to_refnodes= map(get_node_coordinates,reffes)
+  dof_bases = map(get_dof_basis,reffes)
+  ctype_to_refnodes = map(get_node_coordinates,dof_bases)
   cell_to_refnodes = CompressedArray(ctype_to_refnodes,cell_to_ctype)
   cell_physnodes = evaluate(cell_map,cell_to_refnodes)
 

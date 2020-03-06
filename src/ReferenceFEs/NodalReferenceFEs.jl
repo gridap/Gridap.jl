@@ -147,7 +147,6 @@ function get_face_nodes(reffe::NodalReferenceFE,d::Integer)
 end
 
 # Generic implementation
-
 """
   struct GenericNodalCartesianRefFE{D,T,V} <: NodalReferenceFE{D}
     reffe::GenericRefFE{D}
