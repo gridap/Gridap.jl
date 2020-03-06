@@ -26,10 +26,14 @@ cell_to_ctype = get_cell_type(model)
 grid = get_grid(model)
 cell_map = get_cell_map(grid)
 
+# Test against the ref approach...
+
 newsfs, x  = compute_cell_space_physical_space(reffes, cell_to_ctype, cell_map)
 r11 = evaluate(newsfs,q)
 r22 = evaluate(gradient(newsfs),q)
 
+
+##
 # If I want new evaluation...
 function kernel_evaluate(k::typeof{change_basis},x,cell_prebasis,cell_matrix_inv)
    cell_prebasis_x = evaluate_field_array(cell_prebasis,x)
@@ -39,6 +43,7 @@ function apply_gradient(k::typeof(change_basis),cell_prebasis,cell_matrix_inv)
    cell_prebasis_grad = gradient(cell_prebasis)
    apply(change_basis,cell_prebasis_grad,cell_matrix_inv)
 end
+##
 # Optimisation : evaluate_field_array for AbstractArray with FieldLike
 # Define a new kernel that better treats the inverse
 struct InvKernel <: Kernel end
