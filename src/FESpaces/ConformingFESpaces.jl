@@ -97,6 +97,37 @@ function compute_cell_space(reffes, cell_to_ctype, cell_map)
 end
 
 """
+It creates the cell-wise DOF basis and shape functions, when the DOFs
+are evaluated at the physical space. The DOFs (moments) for the prebasis
+are assumed to be computable at a reference FE space.
+"""
+# E.g., if one has to implement $\int_F q ϕ_h(x)$ for $q \in P(F)$, we can
+# assume that it can be written as $\sum_{x_{gp} \in Q}_{\hat{F}}
+# \hat{q}(\tilde{x}_{gp}) ϕ(x_{gp})$ for $\hat{q} \in P(\hat{F})$.
+function compute_cell_space_physical_space(reffes, cell_to_ctype, cell_map)
+
+  # Create new dof_basis with nodes in the physical space
+  ctype_to_refnodes= map(get_node_coordinates,reffes)
+  cell_to_refnodes = CompressedArray(ctype_to_refnodes,cell_to_ctype)
+  cell_physnodes = evaluate(cell_map,cell_to_refnodes)
+
+  dof_basis = map(get_dof_basis,reffes)
+  # Not efficient, create a Kernel
+  cell_dof_basis = apply( nodes -> LagrangianDofBasis(Float64,nodes), cell_physnodes )
+
+  prebasis =  map(get_prebasis,reffes)
+  cell_prebasis = CompressedArray(prebasis,cell_to_ctype)
+
+  cell_matrix = evaluate_dof_array(cell_dof_basis,cell_prebasis)
+  cell_matrix_inv = apply(inv,cell_matrix)
+  cell_shapefuns_phys = apply(change_basis,cell_prebasis,cell_matrix_inv)
+  cell_shapefuns = compose(cell_shapefuns_phys,cell_map)
+
+  (cell_shapefuns, cell_dof_basis)
+end
+
+
+"""
   compute_conforming_cell_dofs(
     reffes,
     grid_topology,
