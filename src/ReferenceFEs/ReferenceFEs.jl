@@ -81,6 +81,9 @@ export INVALID_PERM
 
 export Dof
 export get_nodes
+export get_face_moments
+export get_face_nodes_dofs
+export get_nodes
 export evaluate_dof!
 export evaluate_dof
 export dof_cache
@@ -104,8 +107,6 @@ export num_dofs
 
 export NodalReferenceFE
 export GenericNodalCartesianRefFE
-export get_face_own_nodes
-export get_face_nodes
 export get_face_own_nodes_permutations
 export get_own_nodes_permutations
 export get_node_coordinates
@@ -129,6 +130,10 @@ export is_affine
 export is_Q
 export is_P
 export is_S
+
+export MomentBasedDofBasis
+export get_face_own_nodes
+export get_face_nodes
 
 export VERTEX1
 export SEG2

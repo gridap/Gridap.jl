@@ -14,7 +14,7 @@ using Test
 domain = (0,1,0,1)
 partition = (2,2)
 model = CartesianDiscreteModel(domain,partition)
-order = 1
+order = 2
 # order = 2
 
 trian = get_triangulation(model)
@@ -34,7 +34,7 @@ T = Float64
 
 reffes = [LagrangianRefFE(T,p,order) for p in polytopes]
 
-psfs, x  = Gridap.FESpaces.compute_cell_space_physical_space_lagrangian(reffes, cell_to_ctype, cell_map)
+psfs, x  = Gridap.FESpaces.shapefuns_dofs_physical_space(reffes, cell_to_ctype, cell_map)
 sfs, x  = Gridap.FESpaces.compute_cell_space(reffes, cell_to_ctype, cell_map)
 
 r = evaluate(sfs,q)
@@ -59,17 +59,20 @@ rgp = evaluate(gradient(psfs),q)
 @test all([ r[i] ≈ rp[i] for i in 1:length(rg) ])
 @test all([ rg[i] ≈ rgp[i] for i in 1:length(rg) ])
 
-dofp[2]
-dof
-q[1]
-r[1]
-rp[1]
-
 ##
+
 dof_bases = map(get_dof_basis,reffes)
+
+Gridap.FESpaces.prueba(dof_bases)
 
 ctype_to_refnodes = map(get_nodes,dof_bases)
 cell_to_refnodes = CompressedArray(ctype_to_refnodes,cell_to_ctype)
+
+typeof(dof_bases) <: Vector{<:Gridap.ReferenceFEs.MomentBasedDofBasis}
+
+
+function cell_dof
+
 cell_physnodes = evaluate(cell_map,cell_to_refnodes)
 
 # Not efficient, create a Kernel
@@ -78,18 +81,12 @@ c_face_moments = CompressedArray(ct_face_moments,cell_to_ctype)
 ct_face_nodes_dofs = map(ReferenceFEs.get_face_nodes_dofs,dof_bases)
 c_face_nodes_dofs = CompressedArray(ct_face_nodes_dofs,cell_to_ctype)
 cell_dof_basis = apply( (n,m,nd) -> ReferenceFEs.MomentBasedDofBasis(n,m,nd),
-                  cell_physnodes, c_face_moments, c_face_nodes_dofs)
+cell_physnodes, c_face_moments, c_face_nodes_dofs)
 
-prebasis =  map(get_prebasis,reffes)
-cell_prebasis = CompressedArray(prebasis,cell_to_ctype)
 
-cell_matrix = evaluate_dof_array(cell_dof_basis,cell_prebasis)
-cell_matrix_inv = apply(inv,cell_matrix)
-cell_shapefuns_phys = apply(change_basis,cell_prebasis,cell_matrix_inv)
-cell_shapefuns = compose(cell_shapefuns_phys,cell_map)
 
-(cell_shapefuns, cell_dof_basis)
-##
+
+
 
 ##
 # If I want new evaluation...
