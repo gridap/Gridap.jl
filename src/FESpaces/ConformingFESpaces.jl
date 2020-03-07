@@ -104,11 +104,37 @@ are assumed to be computable at a reference FE space.
 # E.g., if one has to implement $\int_F q ϕ_h(x)$ for $q \in P(F)$, we can
 # assume that it can be written as $\sum_{x_{gp} \in Q}_{\hat{F}}
 # \hat{q}(\tilde{x}_{gp}) ϕ(x_{gp})$ for $\hat{q} \in P(\hat{F})$.
-function compute_cell_space_physical_space(reffes, cell_to_ctype, cell_map)
+function compute_cell_space_physical_space_moment(reffes, cell_to_ctype, cell_map)
+
+  dof_bases = map(get_dof_basis,reffes)
+
+  ctype_to_refnodes = map(get_nodes,dof_bases)
+  cell_to_refnodes = CompressedArray(ctype_to_refnodes,cell_to_ctype)
+  cell_physnodes = evaluate(cell_map,cell_to_refnodes)
+
+  # Not efficient, create a Kernel
+  ct_face_moments = map(ReferenceFEs.get_face_moments,dof_bases)
+  c_face_moments = CompressedArray(ct_face_moments,cell_to_ctype)
+  ct_face_nodes_dofs = map(ReferenceFEs.get_face_nodes_dofs,dof_bases)
+  c_face_nodes_dofs = CompressedArray(ct_face_nodes_dofs,cell_to_ctype)
+  cell_dof_basis = apply( (n,m,nd) -> ReferenceFEs.MomentBasedDofBasis(n,m,nd),
+  cell_physnodes, c_face_moments, c_face_nodes_dofs)
+
+  prebasis =  map(get_prebasis,reffes)
+  cell_prebasis = CompressedArray(prebasis,cell_to_ctype)
+
+  cell_matrix = evaluate_dof_array(cell_dof_basis,cell_prebasis)
+  cell_matrix_inv = apply(inv,cell_matrix)
+  cell_shapefuns_phys = apply(change_basis,cell_prebasis,cell_matrix_inv)
+  cell_shapefuns = compose(cell_shapefuns_phys,cell_map)
+
+  (cell_shapefuns, cell_dof_basis)
+end
+
+function compute_cell_space_physical_space_lagrangian(reffes, cell_to_ctype, cell_map)
 
   # Create new dof_basis with nodes in the physical space
-  dof_bases = map(get_dof_basis,reffes)
-  ctype_to_refnodes = map(get_node_coordinates,dof_bases)
+  ctype_to_refnodes= map(get_node_coordinates,reffes)
   cell_to_refnodes = CompressedArray(ctype_to_refnodes,cell_to_ctype)
   cell_physnodes = evaluate(cell_map,cell_to_refnodes)
 
@@ -126,7 +152,6 @@ function compute_cell_space_physical_space(reffes, cell_to_ctype, cell_map)
 
   (cell_shapefuns, cell_dof_basis)
 end
-
 
 """
   compute_conforming_cell_dofs(

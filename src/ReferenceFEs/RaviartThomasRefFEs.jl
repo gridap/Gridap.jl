@@ -203,7 +203,6 @@ struct MomentBasedDofBasis{P,V} <: Dof
   end
 end
 
-putaspasa() = "Hola"
 get_nodes(b::MomentBasedDofBasis) = b.nodes
 get_face_moments(b::MomentBasedDofBasis) = b.face_moments
 get_face_nodes_dofs(b::MomentBasedDofBasis) = b.face_nodes

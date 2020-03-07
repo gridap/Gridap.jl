@@ -12,7 +12,7 @@ using Test
 # domain = (0,1)
 # partition = (3,)
 domain = (0,1,0,1)
-partition = (1,1)
+partition = (2,2)
 model = CartesianDiscreteModel(domain,partition)
 order = 1
 # order = 2
@@ -32,52 +32,64 @@ cell_map = get_cell_map(grid)
 # T = VectorValue{2,Float64}
 T = Float64
 
-# In fact, Lagrangian not needed, minor thing
-# reffes = [LagrangianRefFE(T,p,order) for p in polytopes]
+reffes = [LagrangianRefFE(T,p,order) for p in polytopes]
+
+psfs, x  = Gridap.FESpaces.compute_cell_space_physical_space_lagrangian(reffes, cell_to_ctype, cell_map)
+sfs, x  = Gridap.FESpaces.compute_cell_space(reffes, cell_to_ctype, cell_map)
+
+r = evaluate(sfs,q)
+rg = evaluate(gradient(sfs),q)
+rp = evaluate(psfs,q)
+rgp = evaluate(gradient(psfs),q)
+
+@test all([ rg[i] ≈ rgp[i] for i in 1:length(rg) ])
+@test all([ r[i] ≈ rp[i] for i in 1:length(rg) ])
+
+##
 reffes = [RaviartThomasRefFE(T,p,order) for p in polytopes]
 
+psfs, dofp  = Gridap.FESpaces.compute_cell_space_physical_space_moment(reffes, cell_to_ctype, cell_map)
+sfs, dof  = Gridap.FESpaces.compute_cell_space(reffes, cell_to_ctype, cell_map)
 
+r = evaluate(sfs,q)
+rg = evaluate(gradient(sfs),q)
+rp = evaluate(psfs,q)
+rgp = evaluate(gradient(psfs),q)
+
+@test all([ r[i] ≈ rp[i] for i in 1:length(rg) ])
+@test all([ rg[i] ≈ rgp[i] for i in 1:length(rg) ])
+
+dofp[2]
+dof
+q[1]
+r[1]
+rp[1]
+
+##
+dof_bases = map(get_dof_basis,reffes)
+
+ctype_to_refnodes = map(get_nodes,dof_bases)
 cell_to_refnodes = CompressedArray(ctype_to_refnodes,cell_to_ctype)
 cell_physnodes = evaluate(cell_map,cell_to_refnodes)
 
-dof_bases = map(get_dof_basis,reffes)
 # Not efficient, create a Kernel
-# Here I have the problem !!!
-# cell_dof_basis = apply( nodes -> LagrangianDofBasis(Float64,nodes), cell_physnodes )
-# cell_dof_basis = apply( nodes -> LagrangianDofBasis(Float64,nodes), cell_physnodes )
-ctype_to_refnodes = map(Gridap.ReferenceFEs.get_nodes,dof_bases)
-ctype_to_face_moments = map(Gridap.ReferenceFEs.get_face_moments,dof_bases)
-ctype_to_face_nodes_dofs = map(Gridap.ReferenceFEs.get_face_nodes_dofs,dof_bases)
-cell_dof_basis = apply( (n,m,nd) -> Gridap.ReferenceFEs.MomentBasedDofBasis(n,m,nd),
-                         ctype_to_refnodes, ctype_to_face_moments, ctype_to_face_nodes_dofs)
+ct_face_moments = map(ReferenceFEs.get_face_moments,dof_bases)
+c_face_moments = CompressedArray(ct_face_moments,cell_to_ctype)
+ct_face_nodes_dofs = map(ReferenceFEs.get_face_nodes_dofs,dof_bases)
+c_face_nodes_dofs = CompressedArray(ct_face_nodes_dofs,cell_to_ctype)
+cell_dof_basis = apply( (n,m,nd) -> ReferenceFEs.MomentBasedDofBasis(n,m,nd),
+                  cell_physnodes, c_face_moments, c_face_nodes_dofs)
 
 prebasis =  map(get_prebasis,reffes)
 cell_prebasis = CompressedArray(prebasis,cell_to_ctype)
 
-# Juno.@enter evaluate_dof_array(cell_dof_basis,cell_prebasis)
 cell_matrix = evaluate_dof_array(cell_dof_basis,cell_prebasis)
 cell_matrix_inv = apply(inv,cell_matrix)
 cell_shapefuns_phys = apply(change_basis,cell_prebasis,cell_matrix_inv)
 cell_shapefuns = compose(cell_shapefuns_phys,cell_map)
 
 (cell_shapefuns, cell_dof_basis)
-
-evaluate(cell_shapefuns,q)
-evaluate(gradient(cell_shapefuns),q)
-
-
-psfs, x  = Gridap.FESpaces.compute_cell_space_physical_space(reffes, cell_to_ctype, cell_map)
-sfs, x  = Gridap.FESpaces.compute_cell_space(reffes, cell_to_ctype, cell_map)
-
-q
-evaluate(sfs[1],q[1])
-r, x = evaluate(sfs,q)
-rg, x = evaluate(gradient(sfs),q)
-rp, x = evaluate(psfs,q)
-rgp, x = evaluate(gradient(psfs),q)
-@test r ≈ rp
-@test rg ≈ rgp
-
+##
 
 ##
 # If I want new evaluation...
@@ -117,28 +129,6 @@ change_basis(cell_prebasis[1],cell_matrix_inv[1])
 
 # Juno.@enter gradient(cell_prebasis)
 # Juno.@enter evaluate(g_cpb,q)
-
-function compute_cell_space_physical_space(reffes, cell_to_ctype, cell_map)
-
-  # Create new dof_basis with nodes in the physical space
-  ctype_to_refnodes= map(get_node_coordinates,reffes)
-  cell_to_refnodes = CompressedArray(ctype_to_refnodes,cell_to_ctype)
-  cell_physnodes = evaluate(cell_map,cell_to_refnodes)
-
-  dof_basis = map(get_dof_basis,reffes)
-  # Not efficient, create a Kernel
-  cell_dof_basis = apply( nodes -> LagrangianDofBasis(Float64,nodes), cell_physnodes )
-
-  prebasis =  map(get_prebasis,reffes)
-  cell_prebasis = CompressedArray(prebasis,cell_to_ctype)
-
-  cell_matrix = evaluate_dof_array(cell_dof_basis,cell_prebasis)
-  cell_matrix_inv = apply(inv,cell_matrix)
-  cell_shapefuns_phys = apply(change_basis,cell_prebasis,cell_matrix_inv)
-  cell_shapefuns = compose(cell_shapefuns_phys,cell_map)
-
-  (cell_shapefuns, cell_dof_basis)
-end
 
 
 a1 = Gridap.Arrays.Fill(1.0,3)
