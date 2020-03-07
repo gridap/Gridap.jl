@@ -34,7 +34,7 @@ T = Float64
 
 reffes = [LagrangianRefFE(T,p,order) for p in polytopes]
 
-psfs, x  = Gridap.FESpaces.shapefuns_dofs_physical_space(reffes, cell_to_ctype, cell_map)
+psfs, x  = Gridap.FESpaces.compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
 sfs, x  = Gridap.FESpaces.compute_cell_space(reffes, cell_to_ctype, cell_map)
 
 r = evaluate(sfs,q)
@@ -48,7 +48,7 @@ rgp = evaluate(gradient(psfs),q)
 ##
 reffes = [RaviartThomasRefFE(T,p,order) for p in polytopes]
 
-psfs, dofp  = Gridap.FESpaces.compute_cell_space_physical_space_moment(reffes, cell_to_ctype, cell_map)
+psfs, dofp  = Gridap.FESpaces.compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
 sfs, dof  = Gridap.FESpaces.compute_cell_space(reffes, cell_to_ctype, cell_map)
 
 r = evaluate(sfs,q)
