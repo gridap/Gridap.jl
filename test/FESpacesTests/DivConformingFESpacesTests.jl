@@ -20,7 +20,8 @@ V = TestFESpace(
   conformity = :Hdiv,
   order = order,
   model = model,
-  dirichlet_tags = [1,6])
+  dirichlet_tags = [1,6]
+  dof_space = :reference)
 test_single_field_fe_space(V)
 
 U = TrialFESpace(V,u)

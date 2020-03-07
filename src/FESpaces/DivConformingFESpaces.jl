@@ -10,7 +10,8 @@ function DivConformingFESpace(
   reffes::Vector{<:ReferenceFE},
   model::DiscreteModel,
   face_labeling::FaceLabeling,
-  dirichlet_tags)
+  dirichlet_tags,
+  is_ref)
 
   grid_topology = get_grid_topology(model)
 
@@ -23,7 +24,13 @@ function DivConformingFESpace(
   cell_to_ctype = get_cell_type(grid_topology)
   cell_map = get_cell_map(grid)
 
-  cell_shapefuns, cell_dof_basis = _compute_hdiv_cell_space(reffes, cell_to_ctype, cell_map)
+  # cell_shapefuns, cell_dof_basis = _compute_hdiv_cell_space(reffes, cell_to_ctype, cell_map)
+  if is_ref
+    cell_shapefuns, cell_dof_basis = compute_cell_space(reffes,cell_to_ctype,cell_map)
+  else
+    cell_shapefuns, cell_dof_basis = compute_cell_space_physical(reffes,cell_to_ctype,cell_map)
+  end
+
 
   UnconstrainedFESpace(
     nfree,
@@ -40,5 +47,5 @@ end
 
 function _compute_hdiv_cell_space(reffes, cell_to_ctype, cell_map)
   #TODO: fine for structured hex meshes, but not otherwise
-  compute_cell_space(reffes,cell_to_ctype,cell_map)
+  # compute_cell_space(reffes,cell_to_ctype,cell_map)
 end

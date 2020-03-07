@@ -8,6 +8,8 @@ using Gridap.Polynomials
 using Test
 
 # Start with a PhysicalSpaceCellBasis
+a = 1
+b = ( a == 1 )
 
 # domain = (0,1)
 # partition = (3,)

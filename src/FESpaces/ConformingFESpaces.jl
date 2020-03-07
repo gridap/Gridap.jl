@@ -5,12 +5,13 @@ function GradConformingFESpace(
   reffes::Vector{<:ReferenceFE},
   model::DiscreteModel,
   dirichlet_tags,
-  dirichlet_components=nothing)
+  dirichlet_components=nothing,
+  is_ref=true)
 
   face_labeling = get_face_labeling(model)
 
   GradConformingFESpace(
-    reffes,model,face_labeling,dirichlet_tags,dirichlet_components)
+    reffes,model,face_labeling,dirichlet_tags,dirichlet_components,is_ref)
 
 end
 
@@ -19,11 +20,12 @@ function GradConformingFESpace(
   model::DiscreteModel,
   order::Integer,
   dirichlet_tags,
-  dirichlet_components=nothing) where T
+  dirichlet_components=nothing,
+  is_ref=true) where T
 
   face_labeling = get_face_labeling(model)
 
-  GradConformingFESpace(T,model,order,face_labeling,dirichlet_tags,dirichlet_components)
+  GradConformingFESpace(T,model,order,face_labeling,dirichlet_tags,dirichlet_components,is_ref)
 
 end
 
@@ -33,7 +35,8 @@ function GradConformingFESpace(
   order::Integer,
   face_labeling::FaceLabeling,
   dirichlet_tags,
-  dirichlet_components=nothing) where T
+  dirichlet_components=nothing,
+  is_ref=true) where T
 
   grid_topology = get_grid_topology(model)
   polytopes = get_polytopes(grid_topology)
@@ -41,7 +44,7 @@ function GradConformingFESpace(
   reffes = [ LagrangianRefFE(T,p,order) for p in polytopes ]
 
   GradConformingFESpace(
-    reffes,model,face_labeling,dirichlet_tags,dirichlet_components)
+    reffes,model,face_labeling,dirichlet_tags,dirichlet_components,is_ref)
 
 end
 
@@ -52,7 +55,8 @@ function GradConformingFESpace(
   model::DiscreteModel,
   face_labeling::FaceLabeling,
   dirichlet_tags,
-  dirichlet_components=nothing)
+  dirichlet_components=nothing,
+  is_ref=true)
 
   grid_topology = get_grid_topology(model)
 
@@ -67,7 +71,11 @@ function GradConformingFESpace(
   cell_to_ctype = get_cell_type(grid_topology)
   cell_map = get_cell_map(grid)
 
-  cell_shapefuns, cell_dof_basis = compute_cell_space(reffes, cell_to_ctype, cell_map)
+  if is_ref
+    cell_shapefuns, cell_dof_basis = compute_cell_space(reffes, cell_to_ctype, cell_map)
+  else
+    cell_shapefuns, cell_dof_basis = compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
+  end
 
   UnconstrainedFESpace(
     nfree,
@@ -104,33 +112,6 @@ are assumed to be computable at a reference FE space.
 # E.g., if one has to implement $\int_F q ϕ_h(x)$ for $q \in P(F)$, we can
 # assume that it can be written as $\sum_{x_{gp} \in Q}_{\hat{F}}
 # \hat{q}(\tilde{x}_{gp}) ϕ(x_{gp})$ for $\hat{q} \in P(\hat{F})$.
-# function compute_cell_space_physical_space_moment(reffes, cell_to_ctype, cell_map)
-#
-#   dof_bases = map(get_dof_basis,reffes)
-#
-#   ctype_to_refnodes = map(get_nodes,dof_bases)
-#   cell_to_refnodes = CompressedArray(ctype_to_refnodes,cell_to_ctype)
-#   cell_physnodes = evaluate(cell_map,cell_to_refnodes)
-#
-#   # Not efficient, create a Kernel
-#   ct_face_moments = map(ReferenceFEs.get_face_moments,dof_bases)
-#   c_face_moments = CompressedArray(ct_face_moments,cell_to_ctype)
-#   ct_face_nodes_dofs = map(ReferenceFEs.get_face_nodes_dofs,dof_bases)
-#   c_face_nodes_dofs = CompressedArray(ct_face_nodes_dofs,cell_to_ctype)
-#   cell_dof_basis = apply( (n,m,nd) -> ReferenceFEs.MomentBasedDofBasis(n,m,nd),
-#   cell_physnodes, c_face_moments, c_face_nodes_dofs)
-#
-#   prebasis =  map(get_prebasis,reffes)
-#   cell_prebasis = CompressedArray(prebasis,cell_to_ctype)
-#
-#   cell_matrix = evaluate_dof_array(cell_dof_basis,cell_prebasis)
-#   cell_matrix_inv = apply(inv,cell_matrix)
-#   cell_shapefuns_phys = apply(change_basis,cell_prebasis,cell_matrix_inv)
-#   cell_shapefuns = compose(cell_shapefuns_phys,cell_map)
-#
-#   (cell_shapefuns, cell_dof_basis)
-# end
-
 function compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
 
   dof_bases = map(get_dof_basis,reffes)
@@ -148,6 +129,7 @@ end
 function _cell_dof_basis_physical_space(dof_bases,cell_to_ctype,cell_map)
   @notimplemented
 end
+
 function _cell_dof_basis_physical_space(
   dof_bases::Vector{MomentBasedDofBasis{T,V}},
   cell_to_ctype,cell_map) where {T,V}
@@ -183,21 +165,6 @@ function _cell_shape_functions_physical_space(cell_prebasis,cell_dof_basis,cell_
   cell_shapefuns_phys = apply(change_basis,cell_prebasis,cell_matrix_inv)
   cell_shapefuns = compose(cell_shapefuns_phys,cell_map)
 end
-
-# function compute_cell_space_physical_space_lagrangian(reffes, cell_to_ctype, cell_map)
-#
-#
-#   dof_basis = map(get_dof_basis,reffes)
-#   # Not efficient, create a Kernel
-#   cell_dof_basis = apply( nodes -> LagrangianDofBasis(Float64,nodes), cell_physnodes )
-#
-#   prebasis =  map(get_prebasis,reffes)
-#   cell_prebasis = CompressedArray(prebasis,cell_to_ctype)
-#
-#   cell_shapefuns = _cell_shape_functions_physical_space(cell_prebasis,cell_dof_basis,cell_map)
-#
-#   (cell_shapefuns, cell_dof_basis)
-# end
 
 """
   compute_conforming_cell_dofs(

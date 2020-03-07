@@ -57,6 +57,9 @@ function _setup_hdiv_space(kwargs)
   conformity = _get_kwarg(:conformity,kwargs,true)
   diritags = _get_kwarg(:dirichlet_tags,kwargs,Int[])
   order = _get_kwarg(:order,kwargs,nothing)
+  dofspace = _get_kwarg(:dof_space,kwargs,:reference)
+  ( dofspace == :reference ? true : false )
+
   Tf = _get_kwarg(:valuetype,kwargs,VectorValue{1,Float64})
   T = eltype(Tf)
 
@@ -68,7 +71,7 @@ function _setup_hdiv_space(kwargs)
   reffes = [RaviartThomasRefFE(T,p,order) for p in polytopes]
 
   if conformity in [true, :default, :HDiv, :Hdiv]
-      V =  DivConformingFESpace(reffes,model,labels,diritags)
+      V =  DivConformingFESpace(reffes,model,labels,diritags,(dofspace==:reference))
   else
     s = "Conformity $conformity not implemented for $reffe reference FE on polytopes $(polytopes...)"
     @unreachable s
@@ -141,9 +144,9 @@ function _setup_lagrange_spaces(kwargs)
 
     elseif conformity in [true, :default, :H1, :C0]
       if labels == nothing
-        return GradConformingFESpace(_reffes,model,diritags,dirimasks)
+        return GradConformingFESpace(_reffes,model,diritags,dirimasks,(dofspace==:reference))
       else
-        return GradConformingFESpace(_reffes,model,labels,diritags,dirimasks)
+        return GradConformingFESpace(_reffes,model,labels,diritags,dirimasks,(dofspace==:reference))
       end
 
     else
