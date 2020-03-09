@@ -44,6 +44,10 @@ end
   a.i_to_v[i]
 end
 
+function testitem(a::Reindexed)
+  testitem(a.i_to_v)
+end
+
 array_cache(a::Reindexed) = array_cache(a.i_to_v)
 
 function getindex!(cache,a::Reindexed,j::Integer...)

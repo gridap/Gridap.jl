@@ -12,6 +12,10 @@ using Test
 
 @testset "StokesDG" begin include("StokesDGTests.jl") end
 
+@testset "StokesNitsche" begin include("StokesNitscheTests.jl") end
+
 @testset "Darcy" begin include("DarcyTests.jl") end
+
+@testset "SurfaceCoupling" begin include("SurfaceCouplingTests.jl") end
 
 end # module
