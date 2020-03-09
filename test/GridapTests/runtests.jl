@@ -18,4 +18,6 @@ using Test
 
 @testset "SurfaceCoupling" begin include("SurfaceCouplingTests.jl") end
 
+@testset "IsotropicDamage" begin include("IsotropicDamageTests.jl") end
+
 end # module
