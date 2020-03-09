@@ -159,7 +159,6 @@ end
 
 function _compute_cell_vals(f,cell_field)
   cell_dof_basis = get_cell_dof_basis(f)
-  cell_dofs = get_cell_dofs(f)
   cell_vals = evaluate_dof_array(cell_dof_basis,get_array(cell_field))
   cell_vals
 end
@@ -171,6 +170,7 @@ even in the case that the given cell field does not fulfill them)
 function interpolate(fs::SingleFieldFESpace,object)
   cell_map = get_cell_map(fs)
   cell_field = convert_to_cell_field(object,cell_map)
+  # Here we have a problem because the nodes are in the physical space!!!
   free_values = compute_free_values(fs,cell_field)
   FEFunction(fs,free_values)
 end
@@ -195,6 +195,37 @@ function interpolate_dirichlet(fs::SingleFieldFESpace,object)
   free_values = zero_free_values(fs)
   FEFunction(fs,free_values, dirichlet_values)
 end
+
+function interpolate_physical(fs::SingleFieldFESpace,object)
+  field = function_field(object)
+  cell_dof_basis = get_cell_dof_basis(fs)
+  cell_field = Fill(field,length(get_cell_map(fs)))
+  #
+  cell_vals = apply(cell_dof_basis,cell_field)
+  free_values = gather_free_values(fs,cell_vals)
+  FEFunction(fs,free_values)
+end
+
+function interpolate_dirichlet_physical(fs::SingleFieldFESpace,object)
+  field = function_field(object)
+  cell_dof_basis = get_cell_dof_basis(fs)
+  cell_field = Fill(field,length(get_cell_map(fs)))
+  cell_vals = apply(cell_dof_basis,cell_field)
+  dirichlet_values = gather_dirichlet_values(fs,cell_vals)
+  free_values = zero_free_values(fs)
+  FEFunction(fs,free_values, dirichlet_values)
+end
+
+function interpolate_everywhere_physical(fs::SingleFieldFESpace,object)
+  field = function_field(object)
+  cell_dof_basis = get_cell_dof_basis(fs)
+  cell_field = Fill(field,length(get_cell_map(fs)))
+  cell_vals = apply(cell_dof_basis,cell_field)
+  fv, dv = gather_free_and_dirichlet_values(fs,cell_vals)
+  FEFunction(fs,fv,dv)
+end
+
+
 
 """
 """
@@ -231,4 +262,3 @@ end
 function _convert_to_collectable(object::Number,ntags)
   _convert_to_collectable(fill(object,ntags),ntags)
 end
-

@@ -119,6 +119,7 @@ It can be overloaded for new types `T` if `zero(T)` does not makes sense.
 function testvalue end
 
 testvalue(::Type{T}) where T = zero(T)
+testvalue(v) = testvalue(typeof(v))
 
 function testvalue(::Type{T}) where T<:AbstractArray{E,N} where {E,N}
    similar(T,fill(0,N)...)

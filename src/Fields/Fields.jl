@@ -69,6 +69,8 @@ export AffineMap
 export field_operation
 export field_array_operation
 
+export function_field
+
 import Gridap.Arrays: kernel_cache
 import Gridap.Arrays: apply_kernel!
 import Gridap.Arrays: kernel_return_type
@@ -84,6 +86,8 @@ import Base: adjoint
 include("FieldInterface.jl")
 
 include("MockFields.jl")
+
+include("FunctionFields.jl")
 
 include("ConstantFields.jl")
 
