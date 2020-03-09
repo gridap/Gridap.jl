@@ -108,7 +108,7 @@ function _setup_hcurl_space(kwargs)
   reffes = [NedelecRefFE(T,p,order) for p in polytopes]
 
   if conformity in [true, :default, :HCurl, :Hcurl]
-      V =  CurlConformingFESpace(reffes,model,labels,diritags)
+      V =  CurlConformingFESpace(reffes,model,labels,diritags,(dofspace==:reference))
   else
     s = "Conformity $conformity not implemented for $reffe reference FE on polytopes $(polytopes...)"
     @unreachable s
