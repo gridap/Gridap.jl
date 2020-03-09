@@ -28,7 +28,7 @@ V = FESpace(
  order=order,
  conformity=:L2)
 
-@test isa(V,UnsconstrainedFESpace)
+@test isa(V,UnconstrainedFESpace)
 
 V = FESpace(
  model=model,
@@ -84,7 +84,7 @@ V = FESpace(
 #uh = FEFunction(V,rand(num_free_dofs(V)))
 #writevtk(get_triangulation(model),"trian",nsubcells=20,cellfields=["uh"=>uh])
 
-@test isa(V,UnsconstrainedFESpace)
+@test isa(V,UnconstrainedFESpace)
 
 V = FESpace(
  model=model,
