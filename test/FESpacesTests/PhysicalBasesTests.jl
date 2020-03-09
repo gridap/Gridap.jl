@@ -1,3 +1,5 @@
+module PhysicalBasesTests
+
 using Gridap
 using Gridap.ReferenceFEs
 using Gridap.Geometry
@@ -44,10 +46,20 @@ rg = evaluate(gradient(sfs),q)
 rp = evaluate(psfs,q)
 rgp = evaluate(gradient(psfs),q)
 
+func(x) = x
+evaluate(func,q)
+import Gridap.Fields: evaluate
+evaluate(f::Function,x) = apply(f,x)
+
+cell_field = convert_to_cell_field(func,cell_map)
+
+isa(cell_field,CellField)
+
 @test all([ rg[i] ≈ rgp[i] for i in 1:length(rg) ])
 @test all([ r[i] ≈ rp[i] for i in 1:length(rg) ])
 
-##
+# Now RT elements
+
 reffes = [RaviartThomasRefFE(T,p,order) for p in polytopes]
 
 psfs, dofp  = Gridap.FESpaces.compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
@@ -61,80 +73,38 @@ rgp = evaluate(gradient(psfs),q)
 @test all([ r[i] ≈ rp[i] for i in 1:length(rg) ])
 @test all([ rg[i] ≈ rgp[i] for i in 1:length(rg) ])
 
-##
+end #module
 
-dof_bases = map(get_dof_basis,reffes)
-
-Gridap.FESpaces.prueba(dof_bases)
-
-ctype_to_refnodes = map(get_nodes,dof_bases)
-cell_to_refnodes = CompressedArray(ctype_to_refnodes,cell_to_ctype)
-
-typeof(dof_bases) <: Vector{<:Gridap.ReferenceFEs.MomentBasedDofBasis}
-
-
-function cell_dof
-
-cell_physnodes = evaluate(cell_map,cell_to_refnodes)
-
-# Not efficient, create a Kernel
-ct_face_moments = map(ReferenceFEs.get_face_moments,dof_bases)
-c_face_moments = CompressedArray(ct_face_moments,cell_to_ctype)
-ct_face_nodes_dofs = map(ReferenceFEs.get_face_nodes_dofs,dof_bases)
-c_face_nodes_dofs = CompressedArray(ct_face_nodes_dofs,cell_to_ctype)
-cell_dof_basis = apply( (n,m,nd) -> ReferenceFEs.MomentBasedDofBasis(n,m,nd),
-cell_physnodes, c_face_moments, c_face_nodes_dofs)
-
-
-
-
-
-
-##
-# If I want new evaluation...
-function kernel_evaluate(k::typeof{change_basis},x,cell_prebasis,cell_matrix_inv)
-   cell_prebasis_x = evaluate_field_array(cell_prebasis,x)
-  apply(mul,cell_prebasis_x,cell_prebasis,cell_matrix_inv)
-end
-function apply_gradient(k::typeof(change_basis),cell_prebasis,cell_matrix_inv)
-   cell_prebasis_grad = gradient(cell_prebasis)
-   apply(change_basis,cell_prebasis_grad,cell_matrix_inv)
-end
-##
-# Optimisation : evaluate_field_array for AbstractArray with FieldLike
-# Define a new kernel that better treats the inverse
-struct InvKernel <: Kernel end
-function kernel_cache(k::InvKernel,mat)
-end
-function apply_kernel!(cache,k::InvKernel,mat)
-end
-function kernel_cache(k::InvKernel,mat)
-CachedArray(copy(mat))
-end
-function apply_kernel!(cache,k::InvKernel,mat)
-  setsize!(cache,size(mat))
-  m = cache.array
-  fill!(m,zero(m))
-  for i:size(m,1); m[i] = 1; end
-  ldiv!(mat,m)
-  m
-end
-k = InvKernel()
-
-isa(cell_prebasis,CellBasis)
-
-change_basis(cell_prebasis[1],cell_matrix_inv[1])
-##
-
-# Juno.@enter gradient(cell_prebasis)
-# Juno.@enter evaluate(g_cpb,q)
-
-
-a1 = Gridap.Arrays.Fill(1.0,3)
-b1 = Gridap.Arrays.Fill(1.0,3)
-c1 = Gridap.Arrays.Fill(1.0,3)
-f(a,b,c) = a+b+c
-p1 = Gridap.Arrays.pair_arrays(a1,b1)
-p2 = Gridap.Arrays.pair_arrays(p1,c1)
-
-apply(f,a1,b1,c1)
+# # If I want new evaluation...
+# function kernel_evaluate(k::typeof{change_basis},x,cell_prebasis,cell_matrix_inv)
+#    cell_prebasis_x = evaluate_field_array(cell_prebasis,x)
+#   apply(mul,cell_prebasis_x,cell_prebasis,cell_matrix_inv)
+# end
+# function apply_gradient(k::typeof(change_basis),cell_prebasis,cell_matrix_inv)
+#    cell_prebasis_grad = gradient(cell_prebasis)
+#    apply(change_basis,cell_prebasis_grad,cell_matrix_inv)
+# end
+# ##
+# # Optimisation : evaluate_field_array for AbstractArray with FieldLike
+# # Define a new kernel that better treats the inverse
+# struct InvKernel <: Kernel end
+# function kernel_cache(k::InvKernel,mat)
+# end
+# function apply_kernel!(cache,k::InvKernel,mat)
+# end
+# function kernel_cache(k::InvKernel,mat)
+# CachedArray(copy(mat))
+# end
+# function apply_kernel!(cache,k::InvKernel,mat)
+#   setsize!(cache,size(mat))
+#   m = cache.array
+#   fill!(m,zero(m))
+#   for i:size(m,1); m[i] = 1; end
+#   ldiv!(mat,m)
+#   m
+# end
+# k = InvKernel()
+#
+# isa(cell_prebasis,CellBasis)
+#
+# change_basis(cell_prebasis[1],cell_matrix_inv[1])

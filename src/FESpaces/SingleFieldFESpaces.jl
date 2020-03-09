@@ -197,35 +197,30 @@ function interpolate_dirichlet(fs::SingleFieldFESpace,object)
 end
 
 function interpolate_physical(fs::SingleFieldFESpace,object)
-  field = function_field(object)
-  cell_dof_basis = get_cell_dof_basis(fs)
-  cell_field = Fill(field,length(get_cell_map(fs)))
-  #
-  cell_vals = apply(cell_dof_basis,cell_field)
+  cell_vals = _physical_cell_vals(fs,object)
   free_values = gather_free_values(fs,cell_vals)
   FEFunction(fs,free_values)
 end
 
 function interpolate_dirichlet_physical(fs::SingleFieldFESpace,object)
-  field = function_field(object)
-  cell_dof_basis = get_cell_dof_basis(fs)
-  cell_field = Fill(field,length(get_cell_map(fs)))
-  cell_vals = apply(cell_dof_basis,cell_field)
+  cell_vals = _physical_cell_vals(fs,object)
   dirichlet_values = gather_dirichlet_values(fs,cell_vals)
   free_values = zero_free_values(fs)
   FEFunction(fs,free_values, dirichlet_values)
 end
 
 function interpolate_everywhere_physical(fs::SingleFieldFESpace,object)
-  field = function_field(object)
-  cell_dof_basis = get_cell_dof_basis(fs)
-  cell_field = Fill(field,length(get_cell_map(fs)))
-  cell_vals = apply(cell_dof_basis,cell_field)
+  cell_vals = _physical_cell_vals(fs,object)
   fv, dv = gather_free_and_dirichlet_values(fs,cell_vals)
   FEFunction(fs,fv,dv)
 end
 
-
+function _physical_cell_vals(fs::SingleFieldFESpace,object)
+  field = function_field(object)
+  cell_dof_basis = get_cell_dof_basis(fs)
+  cell_field = Fill(field,length(get_cell_map(fs)))
+  cell_vals = apply(cell_dof_basis,cell_field)
+end
 
 """
 """
