@@ -21,7 +21,6 @@ test_array_of_fields(a,q,s_q)
 
 r = QPointCellField(0.0,trian,quad)
 r_q = evaluate(r,q)
-@show r_q === r.array.array
 test_cell_field(r,q,r_q)
 
 end # module
