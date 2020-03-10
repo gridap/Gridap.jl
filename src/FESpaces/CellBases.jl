@@ -350,6 +350,16 @@ struct SkeletonCellBasis{T} <: GridapType
   right::CellBasis
 end
 
+function Base.getproperty(x::SkeletonCellBasis, sym::Symbol)
+  if sym == :inward
+    x.left
+  elseif sym == :outward
+    x.right
+  else
+    getfield(x, sym)
+  end
+end
+
 TrialStyle(::Type{<:SkeletonCellBasis{T}}) where T = Val{T}()
 
 function get_cell_map(a::SkeletonCellBasis)

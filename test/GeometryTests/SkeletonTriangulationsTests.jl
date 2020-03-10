@@ -6,6 +6,7 @@ using Gridap.Arrays
 using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry
+using Gridap.Geometry: IN, OUT
 using Gridap.Geometry: DiscreteModelMock
 
 model = DiscreteModelMock()
@@ -107,7 +108,29 @@ nr = get_normal_vector(rtrian)
 #writevtk(trian,"trian")
 #writevtk(itrian,"itrian",nsubcells=10,cellfields=["ni"=>ni,"nl"=>nl,"nr"=>nr])
 
+domain = (0,1,0,1)
+partition = (10,10)
+model = CartesianDiscreteModel(domain,partition)
 
+cell_to_inout = zeros(Int8,num_cells(model))
+cell_to_inout[1:13] .= OUT
+cell_to_inout[14:34] .= IN
 
+itrian = InterfaceTriangulation(model,cell_to_inout)
+@test num_cells(itrian) == 11
+
+itrian = InterfaceTriangulation(model,1:13,14:34)
+@test num_cells(itrian) == 11
+
+#ltrian = get_left_boundary(itrian)
+#rtrian = get_right_boundary(itrian)
+#ni = get_normal_vector(itrian)
+#nl = get_normal_vector(ltrian)
+#nr = get_normal_vector(rtrian)
+#trian = Triangulation(model)
+#
+#using Gridap.Visualization
+#writevtk(trian,"trian",celldata=["inout"=>cell_to_inout])
+#writevtk(itrian,"itrian",nsubcells=10,cellfields=["ni"=>ni,"nl"=>nl,"nr"=>nr])
 
 end # module

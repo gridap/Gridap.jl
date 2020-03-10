@@ -48,6 +48,8 @@ oldcell_to_coods = get_cell_coordinates(trian)
 
 incell_to_cell = findall(collect1d(apply(is_in,oldcell_to_coods)))
 
+model_in = DiscreteModel(model,incell_to_cell)
+
 trian_in = RestrictedTriangulation(trian, incell_to_cell)
 
 quad_in = CellQuadrature(trian_in,2*order)
@@ -84,6 +86,18 @@ collect(evaluate(uh_in,q_in))
 
 q = get_coordinates(quad)
 collect(evaluate(uh,q))
+
+V = TestFESpace(model=model_in,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:H1)
+@test isa(V,ExtendedFESpace)
+
+V = TestFESpace(model=model,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:H1)
+@test !isa(V,ExtendedFESpace)
+
+V = TestFESpace(triangulation=trian_in,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:L2)
+@test isa(V,ExtendedFESpace)
+
+V = TestFESpace(triangulation=trian,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:L2)
+@test !isa(V,ExtendedFESpace)
 
 #using Gridap.Visualization
 #writevtk(trian,"trian",cellfields=["uh"=>uh])

@@ -41,7 +41,7 @@ function FESpace(;kwargs...)
     @unreachable "Unknown constraint value $constraint"
   end
 
-  restricted_at = _get_kwarg(:restricted_at,kwargs,nothing)
+  restricted_at = _get_restricted_triangulation(kwargs)
   if restricted_at == nothing
     return _fespace
   else
@@ -49,6 +49,31 @@ function FESpace(;kwargs...)
     return ExtendedFESpace(_fespace,restricted_at)
   end
 
+end
+
+function _get_restricted_triangulation(kwargs)
+  model  = _get_kwarg(:model,kwargs,nothing)
+  _trian = _get_kwarg(:triangulation,kwargs,nothing)
+  if _trian == nothing
+    if model == nothing
+      @unreachable "either a model or a triangulation has to be provided for building a FESpace"
+    end
+    trian = get_triangulation(model)
+  else
+    if model != nothing
+      @unreachable "either a model or a triangulation BUT NOT BOTH has to be provided for building a FESpace"
+    end
+    trian = _trian
+  end
+  _get_restricted_triangulation_or_nothing(trian)
+end
+
+function  _get_restricted_triangulation_or_nothing(trian)
+  nothing
+end
+
+function  _get_restricted_triangulation_or_nothing(trian::RestrictedTriangulation)
+  trian
 end
 
 """
