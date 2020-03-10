@@ -23,9 +23,9 @@ cell_to_oldcell = findall(collect1d(apply(is_in,oldcell_to_coods)))
 
 model = DiscreteModelPortion(oldmodel,cell_to_oldcell)
 
-using Gridap.Visualization
-
-writevtk(model,"model")
+#using Gridap.Visualization
+#
+#writevtk(model,"model")
 
 
 end # module

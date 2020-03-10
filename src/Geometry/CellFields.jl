@@ -210,6 +210,16 @@ struct SkeletonCellField <: GridapType
   right::CellField
 end
 
+function Base.getproperty(x::SkeletonCellField, sym::Symbol)
+  if sym == :inward
+    x.left
+  elseif sym == :outward
+    x.right
+  else
+    getfield(x, sym)
+  end
+end
+
 """
     get_cell_map(a::SkeletonCellField)
 """
