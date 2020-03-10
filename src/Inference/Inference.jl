@@ -13,6 +13,7 @@ module Inference
 
 using DocStringExtensions
 using FillArrays
+using Gridap.Helpers
 
 export testvalue
 export testvalues
@@ -126,6 +127,46 @@ end
 
 function testvalue(::Type{T}) where T<:Fill{E,N} where {E,N}
   Fill(zero(E),fill(0,N)...)
+end
+
+function testvalue(::Type{<:Tuple})
+  @notimplemented "testvalue on Tuple type only implemented up to 8 tuple elements"
+end
+
+function testvalue(::Type{Tuple{T1,T2,T3,T4,T5,T6,T7,T8}}) where {T1,T2,T3,T4,T5,T6,T7,T8}
+  (testvalue(T1),testvalue(T2),testvalue(T3),testvalue(T4),testvalue(T5),testvalue(T6),testvalue(T7),testvalue(T8))
+end
+
+function testvalue(::Type{Tuple{T1,T2,T3,T4,T5,T6,T7}}) where {T1,T2,T3,T4,T5,T6,T7}
+  (testvalue(T1),testvalue(T2),testvalue(T3),testvalue(T4),testvalue(T5),testvalue(T6),testvalue(T7))
+end
+
+function testvalue(::Type{Tuple{T1,T2,T3,T4,T5,T6}}) where {T1,T2,T3,T4,T5,T6}
+  (testvalue(T1),testvalue(T2),testvalue(T3),testvalue(T4),testvalue(T5),testvalue(T6))
+end
+
+function testvalue(::Type{Tuple{T1,T2,T3,T4,T5}}) where {T1,T2,T3,T4,T5}
+  (testvalue(T1),testvalue(T2),testvalue(T3),testvalue(T4),testvalue(T5))
+end
+
+function testvalue(::Type{Tuple{T1,T2,T3,T4}}) where {T1,T2,T3,T4}
+  (testvalue(T1),testvalue(T2),testvalue(T3),testvalue(T4))
+end
+
+function testvalue(::Type{Tuple{T1,T2,T3}}) where {T1,T2,T3}
+  (testvalue(T1),testvalue(T2),testvalue(T3))
+end
+
+function testvalue(::Type{Tuple{T1,T2}}) where {T1,T2}
+  (testvalue(T1),testvalue(T2))
+end
+
+function testvalue(::Type{Tuple{T1}}) where {T1}
+  (testvalue(T1),)
+end
+
+function testvalue(::Type{Tuple{}})
+  ()
 end
 
 """

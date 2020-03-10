@@ -126,6 +126,7 @@ end
 @publish FESpaces FEOperator
 @publish FESpaces FESolver
 @publish FESpaces apply_statelaw
+@publish FESpaces update_state_variables!
 
 using Gridap.FESpaces: @law; export @law
 using Gridap.FESpaces: @statelaw; export @statelaw
