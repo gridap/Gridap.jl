@@ -1,7 +1,6 @@
 module IsotropicDamageTests
 
 using Gridap
-using Gridap.FESpaces
 using LinearAlgebra
 using Test
 
@@ -32,7 +31,7 @@ function q(r)
   r_0 + H*(r-r_0)
 end
 
-function update(ε_in,r_in,d_in)
+@law function update(ε_in,r_in,d_in)
   τ_in = τ(ε_in)
   if τ_in <= r_in
     r_out = r_in
@@ -54,9 +53,9 @@ end
 
 end
 
-@law function dσ(dε_in,ε_in,r_in,d_in)
+@law function dσ(dε_in,ε_in,state)
 
-  damaged, r_out, d_out = update(ε_in,r_in,d_in)
+  damaged, r_out, d_out = state
 
   if ! damaged
     return (1-d_out)*σe(dε_in)
@@ -95,10 +94,10 @@ function main(;n,nsteps)
   degree = 2*order
   quad = CellQuadrature(trian,degree)
 
-  r = QPointCellField(r_0,trian,quad)
-  d = QPointCellField(0.0,trian,quad)
+  r = CellField(r_0,trian,quad)
+  d = CellField(0.0,trian,quad)
 
-  nls = NLSolver(show_trace=true, method=:newton)
+  nls = NLSolver(show_trace=false, method=:newton)
   solver = FESolver(nls)
 
   function step(uh_in,factor)
@@ -109,7 +108,10 @@ function main(;n,nsteps)
     U = TrialFESpace(V,[u0,ud,u0,u0])
 
     res(u,v) = inner( ε(v), σ(ε(u),r,d) )
-    jac(u,du,v) = inner( ε(v), dσ(ε(du),ε(u),r,d) )
+    function jac(u,du,v)
+      state = update(ε(u),r,d)
+      inner( ε(v), dσ(ε(du),ε(u),state) )
+    end
     t_Ω = FETerm(res,jac,trian,quad)
     op = FEOperator(U,V,t_Ω)
 
