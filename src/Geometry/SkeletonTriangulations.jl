@@ -36,9 +36,25 @@ function SkeletonTriangulation(model::DiscreteModel)
   SkeletonTriangulation(model,face_to_mask)
 end
 
+const IN = -1
+const OUT = 1
+
 """
 """
-function InterfaceTriangulation(model::DiscreteModel,cell_to_is_left::Vector{Bool})
+function InterfaceTriangulation(model::DiscreteModel,cell_to_is_in::Vector{Bool})
+  cell_to_inout = fill(Int8(OUT),length(cell_to_is_in))
+  cell_to_inout[cell_to_is_in] .= IN
+  InterfaceTriangulation(model,cell_to_inout)
+end
+
+function InterfaceTriangulation(model::DiscreteModel,cells_in,cells_out)
+  cell_to_inout = fill(Int8(OUT),num_cells(model))
+  cell_to_inout[cells_in] .= IN
+  cell_to_inout[cells_out] .= OUT
+  InterfaceTriangulation(model,cell_to_inout)
+end
+
+function InterfaceTriangulation(model::DiscreteModel,cell_to_inout::AbstractVector{<:Integer})
 
   D = num_cell_dims(model)
   facet_grid = Grid(ReferenceFE{D-1},model)
@@ -47,7 +63,7 @@ function InterfaceTriangulation(model::DiscreteModel,cell_to_is_left::Vector{Boo
   topo = get_grid_topology(model)
   facet_to_cells = Table(get_faces(topo,D-1,D))
   ifacet_to_facet, facet_to_lcell_left, facet_to_lcell_right = _find_interface_facets(
-    cell_to_is_left, facet_to_cells)
+    cell_to_inout, facet_to_cells)
 
   ifacet_trian = TriangulationPortion(facet_grid,ifacet_to_facet)
 
@@ -57,7 +73,7 @@ function InterfaceTriangulation(model::DiscreteModel,cell_to_is_left::Vector{Boo
   SkeletonTriangulation(left,right)
 end
 
-function _find_interface_facets( cell_to_is_left, facet_to_cells::Table)
+function _find_interface_facets( cell_to_inout, facet_to_cells::Table)
 
   nifacets = 0
   for facet in 1:length(facet_to_cells)
@@ -66,9 +82,9 @@ function _find_interface_facets( cell_to_is_left, facet_to_cells::Table)
     if b-a == 2
       cell1 = facet_to_cells.data[a]
       cell2 = facet_to_cells.data[a+1]
-      is_left_1 = cell_to_is_left[cell1]
-      is_left_2 = cell_to_is_left[cell2]
-      if is_left_1 != is_left_2
+      inout_1 = cell_to_inout[cell1]
+      inout_2 = cell_to_inout[cell2]
+      if (inout_1== IN && inout_2==OUT) || (inout_1== OUT && inout_2==IN)
         nifacets += 1
       end
     end
@@ -87,12 +103,12 @@ function _find_interface_facets( cell_to_is_left, facet_to_cells::Table)
     if b-a == 2
       cell1 = facet_to_cells.data[a]
       cell2 = facet_to_cells.data[a+1]
-      is_left_1 = cell_to_is_left[cell1]
-      is_left_2 = cell_to_is_left[cell2]
-      if is_left_1 != is_left_2
+      inout_1 = cell_to_inout[cell1]
+      inout_2 = cell_to_inout[cell2]
+      if (inout_1== IN && inout_2==OUT) || (inout_1== OUT && inout_2==IN)
         nifacets += 1
         ifacet_to_facet[nifacets] = facet
-        if is_left_1
+        if inout_1 == IN
           facet_to_lcell_left[facet] = 1
           facet_to_lcell_right[facet] = 2
         else
