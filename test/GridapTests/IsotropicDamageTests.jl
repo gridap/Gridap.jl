@@ -3,9 +3,12 @@ module IsotropicDamageTests
 using Gridap
 using Gridap.FESpaces
 using LinearAlgebra
+using Test
 
 # max imposed displacement
 const udx_max = 0.05
+
+const L = 1
 
 # Elastic model
 const E = 2.1e4 # Pa
@@ -14,6 +17,7 @@ const λ = (E*ν)/((1+ν)*(1-2*ν))
 const μ = E/(2*(1+ν))
 σe(ε) = λ*tr(ε)*one(ε) + 2*μ*ε # Pa
 τ(ε) = sqrt(inner(ε,σe(ε))) # Pa^(1/2)
+
 
 # Damage model
 const σ_u = 5.5 # Pa
@@ -64,9 +68,11 @@ end
   end
 end
 
+u(x) = VectorValue( udx_max*x[1]/L, -ν*udx_max*x[2]/L, -ν*udx_max*x[3]/L )
+
 function main(;n,nsteps)
 
-  domain = (0,1,0,1,0,1)
+  domain = (0,L,0,L,0,L)
   partition = (n,n,n)
   model = CartesianDiscreteModel(domain,partition)
 
@@ -126,9 +132,14 @@ function main(;n,nsteps)
 
   end
 
+  e = uh - u
+
+  e_l2 = sqrt(sum(integrate(e*e,trian,quad)))
+  @test e_l2 < 1.0e-9
+
 end
 
-main(n=5,nsteps=20)
+main(n=5,nsteps=10)
 
 
-end
+end # module
