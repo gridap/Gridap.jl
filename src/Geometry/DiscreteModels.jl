@@ -419,6 +419,16 @@ function DiscreteModel(model::DiscreteModel,cell_to_mask::AbstractVector{Bool})
   RestrictedDiscreteModel(model,cell_to_mask)
 end
 
+function DiscreteModel(model::DiscreteModel,labels::FaceLabeling,tags)
+  cell_to_mask = get_face_mask(labels,tags,num_cell_dims(model))
+  DiscreteModel(model,cell_to_mask)
+end
+
+function DiscreteModel(model::DiscreteModel,tags)
+  labels = get_face_labeling(model)
+  DiscreteModel(model,labels,tags)
+end
+
 # IO
 
 function to_dict(model::DiscreteModel)

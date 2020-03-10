@@ -154,6 +154,7 @@ export add_tag_from_tags!
 export get_face_mask
 export get_face_tag
 export get_face_tag_index
+export get_cell_entity
 
 export DiscreteModel
 export DiscreteModelFromFile

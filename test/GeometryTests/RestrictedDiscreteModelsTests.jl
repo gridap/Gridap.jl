@@ -23,6 +23,17 @@ oldcell_to_coods = get_cell_coordinates(oldgrid)
 cell_to_mask = collect1d(apply(is_in,oldcell_to_coods))
 cell_to_oldcell = findall(cell_to_mask)
 
+labels = get_face_labeling(oldmodel)
+
+ne = num_entities(labels)
+fluid_entity = ne+1
+solid_entity = ne+2
+cell_to_entity = get_cell_entity(labels)
+cell_to_entity .= fluid_entity
+cell_to_entity[cell_to_oldcell] .= solid_entity
+add_tag!(labels,"fluid",[fluid_entity])
+add_tag!(labels,"solid",[solid_entity])
+
 model = RestrictedDiscreteModel(oldmodel,cell_to_oldcell)
 test_discrete_model(model)
 
@@ -37,6 +48,10 @@ test_discrete_model(model)
 @test isa(model,RestrictedDiscreteModel)
 
 model = DiscreteModel(oldmodel,cell_to_mask)
+test_discrete_model(model)
+@test isa(model,RestrictedDiscreteModel)
+
+model = DiscreteModel(oldmodel,"fluid")
 test_discrete_model(model)
 @test isa(model,RestrictedDiscreteModel)
 
