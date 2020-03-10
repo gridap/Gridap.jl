@@ -191,6 +191,8 @@ export get_right_boundary
 export CellQuadrature
 export QPointCellField
 
+export RestrictedDiscreteModel
+
 include("GridTopologies.jl")
 
 include("GridTopologyMocks.jl")
@@ -222,6 +224,8 @@ include("FaceLabelings.jl")
 include("DiscreteModels.jl")
 
 include("DiscreteModelPortions.jl")
+
+include("RestrictedDiscreteModels.jl")
 
 include("DiscreteModelMocks.jl")
 

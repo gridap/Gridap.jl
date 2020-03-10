@@ -29,6 +29,24 @@ test_triangulation(trian)
 @test reindex(collect(1:n_cells),trian) == cell_to_oldcell
 @test get_cell_id(trian) == cell_to_oldcell
 
+oldmodel = CartesianDiscreteModel(domain,partition)
+
+trian = Triangulation(oldmodel,oldcell_to_mask)
+@test isa(trian,RestrictedTriangulation)
+test_triangulation(trian)
+
+@test restrict(collect(1:n_cells),trian) == cell_to_oldcell
+@test reindex(collect(1:n_cells),trian) == cell_to_oldcell
+@test get_cell_id(trian) == cell_to_oldcell
+
+trian = Triangulation(oldmodel,cell_to_oldcell)
+@test isa(trian,RestrictedTriangulation)
+test_triangulation(trian)
+
+@test restrict(collect(1:n_cells),trian) == cell_to_oldcell
+@test reindex(collect(1:n_cells),trian) == cell_to_oldcell
+@test get_cell_id(trian) == cell_to_oldcell
+
 end # module
 
 
