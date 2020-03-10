@@ -50,8 +50,8 @@ cell_to_coods = get_cell_coordinates(trian)
 cell_to_is_solid = collect1d(apply(is_in,cell_to_coods))
 cell_to_is_fluid = Vector{Bool}(.! cell_to_is_solid)
 
-trian_solid = RestrictedTriangulation(trian, cell_to_is_solid)
-trian_fluid = RestrictedTriangulation(trian, cell_to_is_fluid)
+trian_solid = Triangulation(model, cell_to_is_solid)
+trian_fluid = Triangulation(model, cell_to_is_fluid)
 
 order = 2
 
@@ -81,18 +81,6 @@ V = TestFESpace(
   conformity =:H1,
   dirichlet_tags="dirichlet")
 
-## This FESpace is defined only in the fluid part
-#Q_fluid = TestFESpace(
-#  triangulation=trian_fluid,
-#  valuetype=Float64,
-#  order=order-1,
-#  reffe=:PLagrangian,
-#  conformity=:L2)
-#
-## This one is defined everywhere
-#Q = ExtendedFESpace(Q_fluid,trian_fluid)
-
-# Equivalent to previous commented block
 Q = TestFESpace(
   triangulation=trian_fluid,
   valuetype=Float64,

@@ -51,11 +51,19 @@ model = DiscreteModel(oldmodel,cell_to_mask)
 test_discrete_model(model)
 @test isa(model,RestrictedDiscreteModel)
 
-model = DiscreteModel(oldmodel,"fluid")
-test_discrete_model(model)
-@test isa(model,RestrictedDiscreteModel)
+model_fluid = DiscreteModel(oldmodel,"fluid")
+test_discrete_model(model_fluid)
+@test isa(model_fluid,RestrictedDiscreteModel)
+
+model_solid = DiscreteModel(oldmodel,"solid")
+test_discrete_model(model_solid)
+@test isa(model_solid,RestrictedDiscreteModel)
+
+itrian = InterfaceTriangulation(model_fluid,model_solid)
 
 #using Gridap.Visualization
+#writevtk(itrian,"itrian",nsubcells=3,cellfields=["normal"=>get_normal_vector(itrian)])
+
 #
 #writevtk(model,"model")
 #writevtk(trian,"trian")
