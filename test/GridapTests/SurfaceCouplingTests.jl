@@ -86,8 +86,7 @@ Q = TestFESpace(
   valuetype=Float64,
   order=order-1,
   reffe=:PLagrangian,
-  conformity=:L2,
-  restricted_at=trian_fluid)
+  conformity=:L2)
 
 U = TrialFESpace(V,u)
 P = TrialFESpace(Q)
