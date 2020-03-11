@@ -8,8 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Support for surface-coupled multi-physics. See [`SurfaceCouplingTests.jl`](https://github.com/gridap/Gridap.jl/blob/master/test/GridapTests/SurfaceCouplingTests.jl) for further details. Since PR [#209](https://github.com/gridap/Gridap.jl/pull/209).
+- Support for constitutive laws with state / historical variables. See [`IsotropicDamageTests.jl`](https://github.com/gridap/Gridap.jl/blob/master/test/GridapTests/IsotropicDamageTests.jl) for further details. Since PR [#208](https://github.com/gridap/Gridap.jl/pull/208).
 - Curl-conforming reference FE `NedelecRefFE` and corresponding FE space constructor since PR [#199](https://github.com/gridap/Gridap.jl/pull/199).
-- Macro `@statelaw` in order to deal with constitutive laws with state / historical variables. Since PR [#193](https://github.com/gridap/Gridap.jl/pull/193).
 - New constructors `AffineFETermFromCellMatVec` and `FETermFromCellJacRes` that provides full control in the definition of cell matrices and vectors. Since PR [#191](https://github.com/gridap/Gridap.jl/pull/191).
 - Support for simultaneous integration of matrices and vectors. Since PR [#191](https://github.com/gridap/Gridap.jl/pull/191).
 
