@@ -19,6 +19,14 @@ function get_cell_map(cf::CellFieldLike)
 end
 
 """
+This trait returns `Val{true}()` when the `CellFieldLike` is defined in a
+reference finite element space, and `Val{false}()` when it is defined in the
+physical space
+"""
+RefTrait(::Type{<:CellFieldLike}) = Val{true}()
+RefTrait(a) = RefTrait(typeof(a))
+
+"""
     similar_object(cf::CellFieldLike,array::AbstractArray)
 """
 function similar_object(cf::CellFieldLike,array::AbstractArray)
@@ -280,4 +288,3 @@ function operate(op,object,cf2::SkeletonCellField)
   cf1 = convert_to_cell_field(object,cm)
   operate(op,cf1,cf2)
 end
-
