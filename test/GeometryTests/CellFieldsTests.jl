@@ -29,6 +29,9 @@ r = [[0.0], [2.0], [0.0], [2.0]]
 g = Vector{VectorValue{2,Float64}}[[(1, 0)], [(1, 0)], [(1, 0)], [(1, 0)]]
 test_cell_field(cf1,q,r,grad=g)
 
+isa(cf1,Gridap.Geometry.CellFieldLike)
+@test RefTrait(cf1) == Val{true}()
+
 cf2 = cf1 + 4
 r2 = map( (i) -> i.+4, r)
 test_cell_field(cf2,q,r2)

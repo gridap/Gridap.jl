@@ -1,4 +1,4 @@
-module PhysicalBasesTests
+# module PhysicalBasesTests
 
 using Gridap
 using Gridap.ReferenceFEs
@@ -47,7 +47,7 @@ rp = evaluate(psfs,q)
 rgp = evaluate(gradient(psfs),q)
 
 func(x) = x
-evaluate(func,q)
+# evaluate(func,q)
 import Gridap.Fields: evaluate
 evaluate(f::Function,x) = apply(f,x)
 
@@ -65,6 +65,13 @@ reffes = [RaviartThomasRefFE(T,p,order) for p in polytopes]
 psfs, dofp  = Gridap.FESpaces.compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
 sfs, dof  = Gridap.FESpaces.compute_cell_space(reffes, cell_to_ctype, cell_map)
 
+GenericCellDofBasis(true,dof)
+
+isa(dof,AbstractArray{<:Dof})
+
+methods(RefTrait)
+
+
 r = evaluate(sfs,q)
 rg = evaluate(gradient(sfs),q)
 rp = evaluate(psfs,q)
@@ -73,7 +80,7 @@ rgp = evaluate(gradient(psfs),q)
 @test all([ r[i] ≈ rp[i] for i in 1:length(rg) ])
 @test all([ rg[i] ≈ rgp[i] for i in 1:length(rg) ])
 
-end #module
+# end #module
 
 # # If I want new evaluation...
 # function kernel_evaluate(k::typeof{change_basis},x,cell_prebasis,cell_matrix_inv)
