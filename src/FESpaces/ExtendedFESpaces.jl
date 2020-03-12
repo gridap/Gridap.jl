@@ -160,6 +160,7 @@ end
 function get_cell_dof_basis(f::ExtendedFESpace)
 
   cell_to_val = get_cell_dof_basis(f.space)
+  cell_to_val = cell_to_val.array 
 
   D = num_dims(f.trian)
   T = Float64 # TODO
@@ -223,4 +224,3 @@ function TrialFESpace(f::ExtendedFESpace)
   U = TrialFESpace(f.space)
   ExtendedFESpace(U,f.trian)
 end
-
