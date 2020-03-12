@@ -16,3 +16,5 @@ struct GenericCellDofBasis{R} <: CellDofBasis
 end
 
 RefTrait(::Type{<:GenericCellDofBasis{R}}) where R = Val{R}()
+
+get_array(a::GenericCellDofBasis) = a.array

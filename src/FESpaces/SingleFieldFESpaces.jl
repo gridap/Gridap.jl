@@ -159,7 +159,7 @@ end
 
 function _compute_cell_vals(f,cell_field)
   cell_dof_basis = get_cell_dof_basis(f)
-  cell_vals = evaluate_dof_array(cell_dof_basis,get_array(cell_field))
+  cell_vals = evaluate_dof_array(get_array(cell_dof_basis),get_array(cell_field))
   cell_vals
 end
 

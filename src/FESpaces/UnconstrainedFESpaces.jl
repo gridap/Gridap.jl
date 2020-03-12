@@ -20,7 +20,7 @@ struct UnconstrainedFESpace{A,B,C} <: SingleFieldFESpace
     ndirichlet::Int,
     cell_dofs::AbstractArray,
     cell_shapefuns::AbstractArray,
-    cell_dof_basis::AbstractArray,
+    cell_dof_basis::CellDofBasis,
     cell_map::AbstractArray,
     dirichlet_dof_tag::Vector{Int8},
     dirichlet_cells::Vector{Int},
