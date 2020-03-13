@@ -38,6 +38,7 @@ T = Float64
 
 reffes = [LagrangianRefFE(T,p,order) for p in polytopes]
 
+# Juno.@enter Gridap.FESpaces.compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
 psfs, x  = Gridap.FESpaces.compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
 sfs, x  = Gridap.FESpaces.compute_cell_space(reffes, cell_to_ctype, cell_map)
 

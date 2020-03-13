@@ -83,7 +83,7 @@ evaluate_dof(dof,field)
 evaluate(dof::Dof,field)
 ```
 
-### Working with arrays of DOFs
+<!-- ### Working with arrays of DOFs
 
 ```@docs
 evaluate_dof_array(dof::AbstractArray,field::AbstractArray)
@@ -94,7 +94,7 @@ evaluate(dof::AbstractArray{<:Dof},field::AbstractArray)
 ```@docs
 LagrangianDofBasis
 LagrangianDofBasis(::Type{T},nodes::Vector{<:Point}) where T
-```
+``` -->
 
 ## Reference Finite Elements
 

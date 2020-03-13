@@ -89,7 +89,7 @@ export evaluate_dof
 export dof_cache
 export dof_return_type
 export test_dof
-export evaluate_dof_array
+# export evaluate_dof_array
 
 export ReferenceFE
 export GenericRefFE

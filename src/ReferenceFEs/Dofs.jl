@@ -129,12 +129,12 @@ The result is numerically equivalent to
 
 but it is described with a more memory-friendly lazy type.
 """
-function evaluate_dof_array(dof::AbstractArray,field::AbstractArray)
+function evaluate_dof_array(dof::AbstractArray,field::AbstractArray,::Val{true})
   k = DofEval()
   apply(k,dof,field)
 end
 
-function evaluate_dof_array(dof::AbstractArray{<:Dof},field::AbstractArray)
+function evaluate_dof_array(dof::AbstractArray{<:Dof},field::AbstractArray,::Val{false})
   apply(dof,field)
 end
 
@@ -143,6 +143,8 @@ end
 
 Equivalent to `evaluate_dof_array(dof,field)`
 """
+# @santiagobadia : I have put the trait for the moment, not sure it is needed...
+# If we keep it, I have to change the documentation
 function evaluate(dof::AbstractArray{<:Dof},field::AbstractArray)
   evaluate_dof_array(dof,field)
 end
@@ -160,4 +162,3 @@ end
 function kernel_return_type(k::DofEval,dof,field)
   dof_return_type(dof,field)
 end
-

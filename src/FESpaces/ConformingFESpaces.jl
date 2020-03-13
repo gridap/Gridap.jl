@@ -159,11 +159,10 @@ function _cell_dof_basis_physical_space(
   cell_to_refnodes = CompressedArray(ctype_to_refnodes,cell_to_ctype)
   cell_physnodes = evaluate(cell_map,cell_to_refnodes)
   cell_dof_basis = apply( nodes -> LagrangianDofBasis(Float64,nodes), cell_physnodes )
-  cell_dof_basis = GenericCellDofBasis(false,cell_dof_basis)
 end
 
 function _cell_shape_functions_physical_space(cell_prebasis,cell_dof_basis,cell_map)
-  cell_matrix = evaluate_dof_array(cell_dof_basis,cell_prebasis)
+  cell_matrix = evaluate(cell_dof_basis,cell_prebasis)
   cell_matrix_inv = apply(inv,cell_matrix)
   cell_shapefuns_phys = apply(change_basis,cell_prebasis,cell_matrix_inv)
   cell_shapefuns = compose(cell_shapefuns_phys,cell_map)
