@@ -168,10 +168,21 @@ The resulting FE function is in the space (in particular it fulfills Dirichlet B
 even in the case that the given cell field does not fulfill them)
 """
 function interpolate(fs::SingleFieldFESpace,object)
+  cdb = get_cell_dof_basis(fs)
+  _interpolate(fs,object,RefTrait(cdb))
+end
+
+function _interpolate(fs,object,::Val{true})
+  cell_dofs = get_cell_dofs
   cell_map = get_cell_map(fs)
   cell_field = convert_to_cell_field(object,cell_map)
-  # Here we have a problem because the nodes are in the physical space!!!
   free_values = compute_free_values(fs,cell_field)
+  FEFunction(fs,free_values)
+end
+
+function _interpolate(fs,object,::Val{false})
+  cell_vals = _physical_cell_vals(fs,object)
+  free_values = gather_free_values(fs,cell_vals)
   FEFunction(fs,free_values)
 end
 
@@ -180,15 +191,31 @@ like interpolate, but also compute new degrees of freedom for the dirichlet comp
 The resulting FEFunction does not necessary belongs to the underlying space
 """
 function interpolate_everywhere(fs::SingleFieldFESpace,object)
+  cdb = get_cell_dof_basis(fs)
+  _interpolate_everywhere(fs,object,RefTrait(cdb))
+end
+
+function _interpolate_everywhere(fs,object,::Val{true})
   cell_map = get_cell_map(fs)
   cell_field = convert_to_cell_field(object,cell_map)
   free_values, dirichlet_values = compute_free_and_dirichlet_values(fs,cell_field)
   FEFunction(fs,free_values, dirichlet_values)
 end
 
+function _interpolate_everywhere(fs,object,::Val{false})
+  cell_vals = _physical_cell_vals(fs,object)
+  fv, dv = gather_free_and_dirichlet_values(fs,cell_vals)
+  FEFunction(fs,fv,dv)
+end
+
 """
 """
 function interpolate_dirichlet(fs::SingleFieldFESpace,object)
+  cdb = get_cell_dof_basis(fs)
+  _interpolate_dirichlet(fs,object,RefTrait(cdb))
+end
+
+function _interpolate_dirichlet(fs,object,::Val{true})
   cell_map = get_cell_map(fs)
   cell_field = convert_to_cell_field(object,cell_map)
   dirichlet_values = compute_dirichlet_values(fs,cell_field)
@@ -196,30 +223,18 @@ function interpolate_dirichlet(fs::SingleFieldFESpace,object)
   FEFunction(fs,free_values, dirichlet_values)
 end
 
-function interpolate_physical(fs::SingleFieldFESpace,object)
-  cell_vals = _physical_cell_vals(fs,object)
-  free_values = gather_free_values(fs,cell_vals)
-  FEFunction(fs,free_values)
-end
-
-function interpolate_dirichlet_physical(fs::SingleFieldFESpace,object)
+function _interpolate_dirichlet(fs,object,::Val{false})
   cell_vals = _physical_cell_vals(fs,object)
   dirichlet_values = gather_dirichlet_values(fs,cell_vals)
   free_values = zero_free_values(fs)
   FEFunction(fs,free_values, dirichlet_values)
 end
 
-function interpolate_everywhere_physical(fs::SingleFieldFESpace,object)
-  cell_vals = _physical_cell_vals(fs,object)
-  fv, dv = gather_free_and_dirichlet_values(fs,cell_vals)
-  FEFunction(fs,fv,dv)
-end
-
 function _physical_cell_vals(fs::SingleFieldFESpace,object)
   field = function_field(object)
   cell_dof_basis = get_cell_dof_basis(fs)
   cell_field = Fill(field,length(get_cell_map(fs)))
-  cell_vals = apply(cell_dof_basis,cell_field)
+  cell_vals = apply(cell_dof_basis.array,cell_field)
 end
 
 """
@@ -253,6 +268,7 @@ end
 function _convert_to_collectable(object::Function,ntags)
   _convert_to_collectable(fill(object,ntags),ntags)
 end
+
 
 function _convert_to_collectable(object::Number,ntags)
   _convert_to_collectable(fill(object,ntags),ntags)

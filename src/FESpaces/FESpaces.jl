@@ -22,6 +22,8 @@ using Gridap.Algebra
 using Gridap.Polynomials
 using Gridap.TensorValues
 
+using Gridap.ReferenceFEs: evaluate_dof_array
+
 using Gridap.Geometry: CellFieldLike
 using Gridap.Geometry: UnimplementedField
 using Gridap.Geometry: test_cell_field_like
@@ -210,7 +212,7 @@ export update_state_variables!
 
 include("CellBases.jl")
 
-include("CellDofs.jl")
+include("CellDofBases.jl")
 
 include("Law.jl")
 

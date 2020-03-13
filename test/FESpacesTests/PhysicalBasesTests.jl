@@ -66,13 +66,6 @@ reffes = [RaviartThomasRefFE(T,p,order) for p in polytopes]
 psfs, dofp  = Gridap.FESpaces.compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
 sfs, dof  = Gridap.FESpaces.compute_cell_space(reffes, cell_to_ctype, cell_map)
 
-GenericCellDofBasis(true,dof)
-
-isa(dof,AbstractArray{<:Dof})
-
-methods(RefTrait)
-
-
 r = evaluate(sfs,q)
 rg = evaluate(gradient(sfs),q)
 rp = evaluate(psfs,q)
