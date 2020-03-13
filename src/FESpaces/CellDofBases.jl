@@ -53,6 +53,8 @@ end
 #   apply(dof_array,field_array)
 # end
 
+
+# @santiagobadia : To create trait for CellBasis and CellField and implement these methods
 _to_ref_space(a) = a
 
 _to_physical_space(a) = a
