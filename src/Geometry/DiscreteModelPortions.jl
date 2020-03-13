@@ -13,6 +13,12 @@ get_grid_topology(model::DiscreteModelPortion) = get_grid_topology(model.model)
 
 get_face_labeling(model::DiscreteModelPortion) = get_face_labeling(model.model)
 
+get_face_to_oldface(model::DiscreteModelPortion,d::Integer) = model.d_to_dface_to_old_dface[d+1]
+
+get_cell_to_oldcell(model::DiscreteModelPortion) = get_face_to_oldface(model,num_cell_dims(model))
+
+get_oldmodel(model::DiscreteModelPortion) = model.oldmodel
+
 """
 """
 function DiscreteModelPortion(model::DiscreteModel, cell_to_oldcell::Vector{Int})
