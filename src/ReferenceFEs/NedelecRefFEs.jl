@@ -4,9 +4,9 @@
 The `order` argument has the following meaning: the curl of the  functions in this basis
 is in the Q space of degree `order`.
 """
-# @santiagobadia : Project, go to complex numbers
 function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
 
+  # @santiagobadia : Project, go to complex numbers
   D = num_dims(p)
 
   prebasis = QGradMonomialBasis{D}(et,order)
