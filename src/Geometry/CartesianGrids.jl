@@ -173,10 +173,12 @@ get_reffes(g::CartesianGrid{2}) = [QUAD4,]
 get_reffes(g::CartesianGrid{3}) = [HEX8,]
 
 """
-    CartesianGrid(domain,partition,map::Function=identity)
+    CartesianGrid(args...)
+
+Same args needed to construct a `CartesianDescriptor`
 """
-function CartesianGrid(domain,partition,map::Function=identity)
-  desc = CartesianDescriptor(domain,partition,map)
+function CartesianGrid(args...)
+  desc = CartesianDescriptor(args...)
   CartesianGrid(desc)
 end
 

@@ -124,6 +124,10 @@ function get_face_to_cell(trian::GenericBoundaryTriangulation)
   trian.glue.face_to_cell
 end
 
+function get_face_to_lface(trian::GenericBoundaryTriangulation)
+  trian.glue.face_to_lface
+end
+
 function get_volume_triangulation(trian::GenericBoundaryTriangulation)
   trian.cell_trian
 end
