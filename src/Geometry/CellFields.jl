@@ -189,9 +189,14 @@ end
       cell_map::AbstractArray
     end
 """
-struct GenericCellField <: CellField
+struct GenericCellField{R} <: CellField
   array::AbstractArray
   cell_map::AbstractArray
+  ref_trait::Val{R}
+end
+
+function GenericCellField(array::AbstractArray,cell_map::AbstractArray)
+  GenericCellField(array,cell_map,Val{true})
 end
 
 function get_array(cf::GenericCellField)
@@ -202,6 +207,11 @@ function get_cell_map(cf::GenericCellField)
   cf.cell_map
 end
 
+function RefTrait(::Type{<:GenericCellField{R}}) where {R}
+  Val{R}()
+end
+
+RefTrait(a::GenericCellField) = RefTrait(typeof(a))
 
 # Skeleton related
 

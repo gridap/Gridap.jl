@@ -191,17 +191,29 @@ end
 
 """
 """
-struct GenericCellBasis{T} <: CellBasis
+struct GenericCellBasis{T,R} <: CellBasis
   trial_style::Val{T}
   array
   cell_map
+  ref_trait::Val{R}
 end
 
 """
 """
 function GenericCellBasis(array::AbstractArray,cell_map::AbstractArray)
   trial_style = Val{false}()
-  GenericCellBasis(trial_style,array,cell_map)
+  ref_trait = Val{true}()
+  GenericCellBasis(trial_style,array,cell_map,ref_trait)
+end
+
+function GenericCellBasis(trial_style::Val{T},array::AbstractArray,cell_map::AbstractArray) where T
+  ref_trait = Val{true}()
+  GenericCellBasis(trial_style,array,cell_map,ref_trait)
+end
+
+function GenericCellBasis(array::AbstractArray,cell_map::AbstractArray,ref_trait::Val{R}) where R
+  trial_style = Val{false}()
+  GenericCellBasis(trial_style,array,cell_map,ref_trait)
 end
 
 get_array(a::GenericCellBasis) = a.array
@@ -211,6 +223,12 @@ get_cell_map(a::GenericCellBasis) = a.cell_map
 function TrialStyle(::Type{<:GenericCellBasis{T}}) where T
   Val{T}()
 end
+
+function RefTrait(::Type{<:GenericCellBasis{T,R}}) where {T,R}
+  Val{R}()
+end
+
+RefTrait(a::GenericCellBasis) = RefTrait(typeof(a))
 
 # CellMatrixField
 
@@ -635,4 +653,3 @@ end
   add_to_array!(vecd,vec)
   (mat, vecd)
 end
-
