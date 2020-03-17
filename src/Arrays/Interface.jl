@@ -329,8 +329,6 @@ function add_to_array!(a::AbstractArray{Ta,N},b::AbstractArray{Tb,N},combine=+) 
   end
 end
 
-"""
-"""
 function add_to_array!(a::AbstractArray,b::Number,combine=+)
   @inbounds for i in eachindex(a)
     a[i] = combine(a[i],b)

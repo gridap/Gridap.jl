@@ -1,4 +1,6 @@
 
+"""
+"""
 struct RestrictedDiscreteModel{Dc,Dp} <: DiscreteModel{Dc,Dc}
   model::DiscreteModelPortion{Dc,Dp}
 end
