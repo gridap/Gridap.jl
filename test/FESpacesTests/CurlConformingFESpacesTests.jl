@@ -10,7 +10,7 @@ partition = (3,3,3)
 model = CartesianDiscreteModel(domain,partition)
 trian = get_triangulation(model)
 
-order = 3
+order = 2
 
 u(x) = VectorValue(x[1]*x[1],x[1]*x[1]*x[1],0.0)
 # u(x) = x

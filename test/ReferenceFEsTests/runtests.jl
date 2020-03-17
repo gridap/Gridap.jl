@@ -24,4 +24,6 @@ using Test
 
 @testset "RaviartThomasRefFEs" begin include("RaviartThomasRefFEsTests.jl") end
 
+@testset "NedelecRefFEs" begin include("NedelecRefFEsTests.jl") end
+
 end # module
