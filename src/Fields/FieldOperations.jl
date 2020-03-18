@@ -40,7 +40,7 @@ end
 
 # Unary operations on fields and arrays of fields
 
-for op in (:+,:-,:tr, :transpose, :adjoint, :symmetic_part)
+for op in (:+,:-,:tr, :transpose, :adjoint, :symmetric_part)
   @eval begin
 
     function ($op)(f::Field)

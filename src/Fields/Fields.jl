@@ -76,7 +76,7 @@ import Gridap.Arrays: apply_kernel!
 import Gridap.Arrays: kernel_return_type
 import Gridap.TensorValues: outer
 import Gridap.TensorValues: inner
-import Gridap.TensorValues: symmetic_part
+import Gridap.TensorValues: symmetric_part
 import Base: +, - , *
 import LinearAlgebra: cross
 import LinearAlgebra: tr

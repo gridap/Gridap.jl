@@ -209,7 +209,7 @@ end
 
 """
 """
-@generated function symmetic_part(v::TensorValue{D}) where D
+@generated function symmetric_part(v::TensorValue{D}) where D
   str = "("
   for j in 1:D
     for i in 1:D
@@ -222,7 +222,7 @@ end
 
 # Define new operations for Gridap types
 
-for op in (:symmetic_part,)
+for op in (:symmetric_part,)
   @eval begin
     function ($op)(a::GridapType)
       operate($op,a)

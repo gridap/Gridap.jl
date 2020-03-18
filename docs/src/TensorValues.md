@@ -34,6 +34,6 @@ n_components
 inner
 outer
 meas
-symmetic_part
+symmetric_part
 ```
 

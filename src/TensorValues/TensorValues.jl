@@ -41,7 +41,7 @@ export VectorValue
 export inner, outer, meas
 #export det, inv, tr, dot, norm
 export mutable
-export symmetic_part
+export symmetric_part
 export n_components
 export change_eltype
 export diagonal_tensor

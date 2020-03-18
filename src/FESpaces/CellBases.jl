@@ -16,6 +16,8 @@ end
 
 TrialStyle(cb) = TrialStyle(typeof(cb))
 
+RefTrait(::CellBasis) = @notimplemented
+
 """
 """
 is_trial(cb) = is_trial(typeof(cb))
@@ -229,6 +231,24 @@ function RefTrait(::Type{<:GenericCellBasis{T,R}}) where {T,R}
 end
 
 RefTrait(a::GenericCellBasis) = RefTrait(typeof(a))
+
+function evaluate(cf::GenericCellBasis,x)
+  ref_trait = RefTrait(cf)
+  _evaluate(cf,x,ref_trait)
+end
+
+function _evaluate(cf,x,::Val{true}) where R
+  a = get_array(cf)
+  evaluate_field_array(a,x)
+end
+
+function _evaluate(cf,x,::Val{false}) where R
+  # @santiagobadia : How to implement it more efficiently?
+  cm = get_cell_map(cf)
+  _x = evaluate(cm,x)
+  a = get_array(cf)
+  evaluate_field_array(a,_x)
+end
 
 # CellMatrixField
 

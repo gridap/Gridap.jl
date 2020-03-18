@@ -158,7 +158,7 @@ function _cell_dof_basis_physical_space(
   ctype_to_refnodes= map(get_nodes,dof_bases)
   cell_to_refnodes = CompressedArray(ctype_to_refnodes,cell_to_ctype)
   cell_physnodes = evaluate(cell_map,cell_to_refnodes)
-  cell_dof_basis = apply( nodes -> LagrangianDofBasis(Float64,nodes), cell_physnodes )
+  cell_dof_basis = apply( nodes -> LagrangianDofBasis(V,nodes), cell_physnodes )
 end
 
 function _cell_shape_functions_physical_space(cell_prebasis,cell_dof_basis,cell_map)

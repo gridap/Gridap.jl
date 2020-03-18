@@ -196,7 +196,7 @@ struct GenericCellField{R} <: CellField
 end
 
 function GenericCellField(array::AbstractArray,cell_map::AbstractArray)
-  GenericCellField(array,cell_map,Val{true})
+  GenericCellField(array,cell_map,Val{true}())
 end
 
 function get_array(cf::GenericCellField)
