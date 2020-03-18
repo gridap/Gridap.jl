@@ -88,8 +88,28 @@ function _extended_reindex(a,ptrs)
   elseif a.void_to_oldcell === ptrs || a.void_to_oldcell == ptrs
     return a.void_to_val
   else
-    return Reindexed(a,ptrs)
+    j_to_oldcell = ptrs
+    j_to_cell_or_void = a.oldcell_to_cell_or_void[j_to_oldcell]
+    all_cell, all_void = _find_all_cell_all_void(j_to_cell_or_void)
+    if all_cell
+      return reindex(a.cell_to_val,j_to_cell_or_void)
+    elseif all_void
+      j_to_cell_or_void .*= -1
+      return reindex(a.void_to_val,j_to_cell_or_void)
+    else
+      return Reindexed(a,ptrs)
+    end
   end
+end
+
+function _find_all_cell_all_void(j_to_cell_or_void)
+  all_cell = true
+  all_void = true
+  for k in j_to_cell_or_void
+    all_cell = all_cell && (k>0)
+    all_void = all_void && (k<0)
+  end
+  all_cell, all_void
 end
 
 struct VoidBasis{T} <: Field end
