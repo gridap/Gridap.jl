@@ -241,7 +241,6 @@ function _evaluate(cf,x,::Val{true}) where R
 end
 
 function _evaluate(cf,x,::Val{false}) where R
-  # @santiagobadia : How to implement it more efficiently?
   cm = get_cell_map(cf)
   _x = evaluate(cm,x)
   a = get_array(cf)

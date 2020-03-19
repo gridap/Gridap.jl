@@ -96,7 +96,7 @@ function compute_cell_space(reffes, cell_to_ctype, cell_map)
 
   dof_basis = map(get_dof_basis,reffes)
   cell_dof_basis = CompressedArray(dof_basis,cell_to_ctype)
-  cell_dof_basis = GenericCellDofBasis(true,cell_dof_basis)
+  cell_dof_basis = GenericCellDofBasis(Val{true}(),cell_dof_basis)
 
   shapefuns =  map(get_shapefuns,reffes)
   refshapefuns = CompressedArray(shapefuns,cell_to_ctype)
@@ -118,7 +118,7 @@ function compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
   dof_bases = map(get_dof_basis,reffes)
 
   cell_dof_basis = _cell_dof_basis_physical_space(dof_bases,cell_to_ctype,cell_map)
-  cell_dof_basis = GenericCellDofBasis(false,cell_dof_basis)
+  cell_dof_basis = GenericCellDofBasis(Val{false}(),cell_dof_basis)
 
   prebasis =  map(get_prebasis,reffes)
   cell_prebasis = CompressedArray(prebasis,cell_to_ctype)

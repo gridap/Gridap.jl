@@ -14,7 +14,7 @@ struct GenericCellDofBasis{R} <: CellDofBasis
    ref_trait::Val{R}
    array::AbstractArray{<:Dof}
 
-   GenericCellDofBasis(R,array) = new{R}(Val{R}(),array)
+   # GenericCellDofBasis(R,array) = new{R}(Val{R}(),array)
 
 end
 

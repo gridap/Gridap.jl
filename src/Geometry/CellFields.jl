@@ -26,6 +26,10 @@ physical space
 RefStyle(::Type{<:CellFieldLike}) = @notimplemented
 RefStyle(::T) where T<:CellFieldLike = RefStyle(T)
 
+is_in_ref_space(::Type{T}) where T <:CellFieldLike = get_val_parameter(RefStyle(T))
+is_in_ref_space(::T) where T <:CellFieldLike = is_in_ref_space(T)
+is_in_physical_space(a) = !is_in_ref_space(a)
+
 """
     similar_object(cf::CellFieldLike,array::AbstractArray)
 """
