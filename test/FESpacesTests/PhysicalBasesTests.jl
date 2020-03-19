@@ -1,4 +1,4 @@
-# module PhysicalBasesTests
+module PhysicalBasesTests
 
 using Gridap
 using Gridap.ReferenceFEs
@@ -65,9 +65,6 @@ rgp = evaluate(gradient(psfs),q)
 @test all([ r[i] ≈ rp[i] for i in 1:length(rg) ])
 
 func(x) = x
-# # evaluate(func,q)
-# import Gridap.Fields: evaluate
-# evaluate(f::Function,x) = apply(f,x)
 
 cell_field = convert_to_cell_field(func,cell_map)
 isa(cell_field,CellField)
@@ -88,7 +85,7 @@ rgp = evaluate(gradient(psfs),q)
 @test all([ r[i] ≈ rp[i] for i in 1:length(rg) ])
 @test all([ rg[i] ≈ rgp[i] for i in 1:length(rg) ])
 
-# end #module
+end #module
 
 # # If I want new evaluation...
 # function kernel_evaluate(k::typeof{change_basis},x,cell_prebasis,cell_matrix_inv)

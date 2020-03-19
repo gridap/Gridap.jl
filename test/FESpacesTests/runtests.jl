@@ -52,6 +52,12 @@ using Test
 
 @testset "ExtendedFESpaces" begin include("ExtendedFESpacesTests.jl") end
 
+@testset "ExtendedFESpaces" begin include("ExtendedFESpacesTests.jl") end
+
+@testset "PhysicalBasesTests" begin include("PhysicalBasesTests.jl") end
+
+@testset "PhysicalFESpaces" begin include("PhysicalFESpacesTests.jl") end
+
 @testset "FESpaceFactories" begin include("FESpaceFactoriesTests.jl") end
 
 @testset "StateLaws" begin include("StateLawsTests.jl") end
