@@ -30,6 +30,19 @@ is_in_ref_space(::Type{T}) where T <:CellFieldLike = get_val_parameter(RefStyle(
 is_in_ref_space(::T) where T <:CellFieldLike = is_in_ref_space(T)
 is_in_physical_space(a) = !is_in_ref_space(a)
 
+to_ref_space(a::CellFieldLike) = _to_ref_space(a,RefTrait(a))
+_to_ref_space(a,::Val{true}) = a
+function _to_ref_space(a,::Val{false})
+  cell_map = get_cell_map(a)
+  array = compose(  get_array(a), cell_map  )
+  similar_object(a,array) # This creates a CellFieldLike from `array` using the metadata in `a`.
+end
+
+to_physical_space(a::CellFieldLike) = _to_physical_space(a,RefTrait(a))
+_to_physical_space(a,::Val{true}) = @abstractmethod
+_to_physical_space(a,::Val{false}) = a
+
+
 """
     similar_object(cf::CellFieldLike,array::AbstractArray)
 """
