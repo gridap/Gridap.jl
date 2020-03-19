@@ -82,7 +82,13 @@ function reindex(a::ExtendedVector,trian::Triangulation)
   _extended_reindex(a,ptrs)
 end
 
-function _extended_reindex(a,ptrs)
+function _extended_reindex(a,ptrs::SkeletonPair)
+  left= _extended_reindex(a,ptrs.left)
+  right = _extended_reindex(a,ptrs.right)
+  SkeletonPair(left,right)
+end
+
+function _extended_reindex(a,ptrs::AbstractArray)
   if a.cell_to_oldcell === ptrs || a.cell_to_oldcell == ptrs
     return a.cell_to_val
   elseif a.void_to_oldcell === ptrs || a.void_to_oldcell == ptrs

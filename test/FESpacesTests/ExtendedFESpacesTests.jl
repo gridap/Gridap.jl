@@ -90,9 +90,8 @@ op_Ω = AffineFEOperator(U,V,t_Ω)
 
 @test get_vector(op_in) ≈ get_vector(op_Ω)
 
-# TODO
-#t_Γ = AffineFETerm( (u,v) -> jump(v)*jump(u), (v) -> jump(v)*4, trian_Γ, quad_Γ)
-#op_Γ = AffineFEOperator(U,V,t_Γ)
+t_Γ = AffineFETerm( (u,v) -> jump(v)*jump(u), (v) -> jump(v)*4, trian_Γ, quad_Γ)
+op_Γ = AffineFEOperator(U,V,t_Γ)
 
 q_in = get_coordinates(quad_in)
 collect(evaluate(uh_in,q_in))
