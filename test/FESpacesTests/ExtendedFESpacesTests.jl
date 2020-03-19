@@ -1,4 +1,4 @@
-module ExtendedFESpacesTests
+# module ExtendedFESpacesTests
 
 using Test
 using Gridap.Arrays
@@ -67,6 +67,7 @@ u(x) = x[1]+x[2]
 
 uh = interpolate(U,u)
 
+
 uh_in = restrict(uh,trian_in)
 
 t_in = AffineFETerm( (u,v) -> v*u, (v) -> v*4, trian_in, quad_in)
@@ -89,4 +90,4 @@ collect(evaluate(uh,q))
 #writevtk(trian,"trian",cellfields=["uh"=>uh])
 #writevtk(trian_in,"trian_in",cellfields=["uh"=>uh_in])
 
-end # module
+# end # module

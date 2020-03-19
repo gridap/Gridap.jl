@@ -44,16 +44,6 @@ function  _evaluate_cell_dofs(cell_dofs,cell_field,ref_trait::Val{false})
   evaluate_dof_array(get_array(cell_dofs),get_array(_to_physical_space(cell_field)),ref_trait)
 end
 
-# function evaluate_dof_array(dof_array::AbstractArray,field_array::AbstractArray,::Val{true})
-#   k = DofEval()
-#   apply(k,dof_array,field)
-# end
-#
-# function evaluate_dof_array(dof_array::AbstractArray,field_array::AbstractArray,::Val{false})
-#   apply(dof_array,field_array)
-# end
-
-
 # @santiagobadia : To create trait for CellBasis and CellField and implement these methods
 _to_ref_space(a) = a
 

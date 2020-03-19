@@ -3,8 +3,8 @@
 """
 function FESpace(;kwargs...)
 
-  # constraint = _get_kwarg(:constraint,kwargs,nothing)
-  constraint = nothing
+  constraint = _get_kwarg(:constraint,kwargs,nothing)
+  # constraint = nothing
   reffe = _get_kwarg(:reffe,kwargs)
   @notimplementedif !isa(reffe,Symbol) "For the moment, reffe can only be a symbol"
 
@@ -42,8 +42,8 @@ function FESpace(;kwargs...)
     @unreachable "Unknown constraint value $constraint"
   end
 
-  # restricted_at = _get_kwarg(:restricted_at,kwargs,nothing)
-  restricted_at = nothing
+  restricted_at = _get_kwarg(:restricted_at,kwargs,nothing)
+  # restricted_at = nothing
   if restricted_at == nothing
     return _fespace
   else
@@ -126,11 +126,11 @@ function _setup_lagrange_spaces(kwargs)
   order = _get_kwarg(:order,kwargs)
   T = _get_kwarg(:valuetype,kwargs,nothing)
   diritags = _get_kwarg(:dirichlet_tags,kwargs,Int[])
-  # dirimasks = _get_kwarg(:dirichlet_masks,kwargs,nothing)
-  dirimasks = nothing
+  dirimasks = _get_kwarg(:dirichlet_masks,kwargs,nothing)
+  # dirimasks = nothing
   dofspace = _get_kwarg(:dof_space,kwargs,:reference)
-  # labels = _get_kwarg(:labels,kwargs,nothing)
-  labels = nothing
+  labels = _get_kwarg(:labels,kwargs,nothing)
+  # labels = nothing
   model = _get_kwarg(:model,kwargs,nothing)
 
   if T == nothing

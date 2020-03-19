@@ -160,18 +160,22 @@ end
 function get_cell_dof_basis(f::ExtendedFESpace)
 
   cell_to_val = get_cell_dof_basis(f.space)
-  cell_to_val = cell_to_val.array 
+  ref_trait = RefTrait(cell_to_val)
+  cell_to_val = cell_to_val.array
 
   D = num_dims(f.trian)
   T = Float64 # TODO
   void_to_val = Fill(LagrangianDofBasis(T,Point{D,T}[]),length(f.trian.void_to_oldcell))
 
-  ExtendedVector(
-    void_to_val,
-    cell_to_val,
-    f.trian.oldcell_to_cell,
-    f.trian.void_to_oldcell,
-    f.trian.cell_to_oldcell)
+  eb = ExtendedVector(
+         void_to_val,
+         cell_to_val,
+         f.trian.oldcell_to_cell,
+         f.trian.void_to_oldcell,
+         f.trian.cell_to_oldcell)
+
+  _bool(::Val{R}) where R = R
+  cell_dof_basis = GenericCellDofBasis(_bool(ref_trait),eb)
 
 end
 

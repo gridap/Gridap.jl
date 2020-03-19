@@ -212,22 +212,20 @@ end
 """
 function interpolate_dirichlet(fs::SingleFieldFESpace,object)
   cdb = get_cell_dof_basis(fs)
-  _interpolate_dirichlet(fs,object,RefTrait(cdb))
+  dirichlet_values = _interpolate_dirichlet(fs,object,RefTrait(cdb))
+  free_values = zero_free_values(fs)
+  FEFunction(fs,free_values, dirichlet_values)
 end
 
 function _interpolate_dirichlet(fs,object,::Val{true})
   cell_map = get_cell_map(fs)
   cell_field = convert_to_cell_field(object,cell_map)
   dirichlet_values = compute_dirichlet_values(fs,cell_field)
-  free_values = zero_free_values(fs)
-  FEFunction(fs,free_values, dirichlet_values)
 end
 
 function _interpolate_dirichlet(fs,object,::Val{false})
   cell_vals = _physical_cell_vals(fs,object)
   dirichlet_values = gather_dirichlet_values(fs,cell_vals)
-  free_values = zero_free_values(fs)
-  FEFunction(fs,free_values, dirichlet_values)
 end
 
 function _physical_cell_vals(fs::SingleFieldFESpace,object)
@@ -241,12 +239,13 @@ end
 """
 function compute_dirichlet_values_for_tags(f::SingleFieldFESpace,tag_to_object)
   dirichlet_dof_to_tag = get_dirichlet_dof_tag(f)
+  cdb = get_cell_dof_basis(f)
+  ref_trait = RefTrait(cdb)
   cell_map = get_cell_map(f)
   dirichlet_values = zero_dirichlet_values(f)
   _tag_to_object = _convert_to_collectable(tag_to_object,num_dirichlet_tags(f))
   for (tag, object) in enumerate(_tag_to_object)
-    cell_field = convert_to_cell_field(object,cell_map)
-    dv = compute_dirichlet_values(f,cell_field)
+    dv = _interpolate_dirichlet(f,object,ref_trait)
     _fill_dirichlet_values_for_tag!(dirichlet_values,dv,tag,dirichlet_dof_to_tag)
   end
   dirichlet_values
