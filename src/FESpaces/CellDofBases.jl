@@ -7,15 +7,28 @@ defined for functions in the reference or physical space
 """
 abstract type CellDofBasis end
 
-RefStyle(::Type{<:CellDofBasis}) = @notimplemented
+RefStyle(::Type{<:CellDofBasis}) = @abstractmethod
+get_array(::CellDofBasis) = @abstractmethod
+evaluate(cell_dofs::CellDofBasis,cell_field::CellFieldLike) = @abstractmethod
+
 RefStyle(::T) where T <: CellDofBasis = RefStyle(T)
 
+is_in_ref_space(::Type{T}) where T <:CellDofBasis = get_val_parameter(RefStyle(T))
+is_in_ref_space(::T) where T <:CellDofBasis = is_in_ref_space(T)
+# is_in_physical_space(a) = !is_in_ref_space(a) # @santiagobadia : not needed, already in CellFieldLike
+
+function test_cell_dof_basis(cf::CellDofBasis,f::CellFieldLike)
+  ar = get_array(cf)
+  @test isa(ar,AbstractArray)
+  a = evaluate(cf,f)
+  @test isa(RefStyle(cf),Bool)
+end
+
+"""
+"""
 struct GenericCellDofBasis{R} <: CellDofBasis
    ref_trait::Val{R}
    array::AbstractArray{<:Dof}
-
-   # GenericCellDofBasis(R,array) = new{R}(Val{R}(),array)
-
 end
 
 RefStyle(::Type{<:GenericCellDofBasis{R}}) where R = Val{R}()
