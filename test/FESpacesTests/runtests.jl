@@ -28,7 +28,7 @@ using Test
 
 @testset "DivConformingFESpaces" begin include("DivConformingFESpacesTests.jl") end
 
-@testset "CurlConformingFESpaces" begin include("DivConformingFESpacesTests.jl") end
+@testset "CurlConformingFESpaces" begin include("CurlConformingFESpacesTests.jl") end
 
 @testset "DiscontinuousFESpaces" begin include("DiscontinuousFESpacesTests.jl") end
 

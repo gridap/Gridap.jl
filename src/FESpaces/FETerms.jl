@@ -557,6 +557,8 @@ function get_cell_matrix_and_vector(t::AffineFETermFromCellMatVec,uhd,u,v)
   (cellmatvec_with_diri, nothing, nothing)
 end
 
+"""
+"""
 struct FETermFromCellJacRes <: FETerm
   jacresfun::Function
   trian::Triangulation

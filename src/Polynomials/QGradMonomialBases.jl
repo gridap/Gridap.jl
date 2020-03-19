@@ -22,21 +22,31 @@ end
 
 Returns a `QGradMonomialBasis` object. `D` is the dimension
 of the coordinate space and `T` is the type of the components in the vector-value.
+The `order` argument has the following meaning: the curl of the  functions in this basis
+is in the Q space of degree `order`.
 """
 function QGradMonomialBasis{D}(::Type{T},order::Int) where {D,T}
   @assert T<:Real "T needs to be <:Real since represents the type of the components of the vector value"
-  _t = tfill(order+1,Val{D-1}())
-  t = (order,_t...)
+  _order = order + 1
+  _t = tfill(_order+1,Val{D-1}())
+  t = (_order,_t...)
   terms = CartesianIndices(t)
   perms = _prepare_perms(D)
   QGradMonomialBasis(T,order,terms,perms)
 end
 
+"""
+    num_terms(f::QGradMonomialBasis{D,T}) where {D,T}
+"""
+num_terms(f::QGradMonomialBasis{D,T}) where {D,T} = length(f.terms)*D
+
+get_order(f::QGradMonomialBasis) = f.order
+
 function field_cache(f::QGradMonomialBasis{D,T},x) where {D,T}
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = _ndofs_qgrad(f)
-  n = 1 + f.order
+  n = 1 + f.order+1
   V = VectorValue{D,T}
   r = CachedArray(zeros(V,(np,ndof)))
   v = CachedArray(zeros(V,(ndof,)))
@@ -48,13 +58,13 @@ function evaluate_field!(cache,f::QGradMonomialBasis{D,T},x) where {D,T}
   r, v, c = cache
   np = length(x)
   ndof = _ndofs_qgrad(f)
-  n = 1 + f.order
+  n = 1 + f.order+1
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))
   setsize!(c,(D,n))
   for i in 1:np
     @inbounds xi = x[i]
-      _evaluate_nd_qgrad!(v,xi,f.order,f.terms,f.perms,c)
+      _evaluate_nd_qgrad!(v,xi,f.order+1,f.terms,f.perms,c)
     for j in 1:ndof
       @inbounds r[i,j] = v[j]
     end
@@ -66,7 +76,7 @@ function gradient_cache(f::QGradMonomialBasis{D,T},x) where {D,T}
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = _ndofs_qgrad(f)
-  n = 1 + f.order
+  n = 1 + f.order+1
   xi = testitem(x)
   V = VectorValue{D,T}
   G = gradient_type(V,xi)
@@ -81,7 +91,7 @@ function evaluate_gradient!(cache,f::QGradMonomialBasis{D,T},x) where {D,T}
   r, v, c, g = cache
   np = length(x)
   ndof = _ndofs_qgrad(f)
-  n = 1 + f.order
+  n = 1 + f.order+1
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))
   setsize!(c,(D,n))
@@ -89,7 +99,7 @@ function evaluate_gradient!(cache,f::QGradMonomialBasis{D,T},x) where {D,T}
   V = VectorValue{D,T}
   for i in 1:np
     @inbounds xi = x[i]
-    _gradient_nd_qgrad!(v,xi,f.order,f.terms,f.perms,c,g,V)
+    _gradient_nd_qgrad!(v,xi,f.order+1,f.terms,f.perms,c,g,V)
     for j in 1:ndof
       @inbounds r[i,j] = v[j]
     end
@@ -98,8 +108,6 @@ function evaluate_gradient!(cache,f::QGradMonomialBasis{D,T},x) where {D,T}
 end
 
 # Helpers
-
-#_ndofs_qgrad(f::QGradMonomialBasis{D}) where D = D*f.order*(f.order+1)^(D-1)
 
 _ndofs_qgrad(f::QGradMonomialBasis{D}) where D = D*(length(f.terms))
 

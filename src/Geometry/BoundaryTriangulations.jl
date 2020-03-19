@@ -19,6 +19,12 @@ end
 
 """
 """
+function get_face_to_lface(trian::BoundaryTriangulation)
+  @abstractmethod
+end
+
+"""
+"""
 function get_face_to_cell_map(trian::BoundaryTriangulation)
   @abstractmethod
 end
@@ -38,6 +44,7 @@ function test_boundary_triangulation(trian::BoundaryTriangulation)
   test_triangulation(trian)
   @test isa(get_volume_triangulation(trian),Triangulation)
   @test isa(get_face_to_cell(trian),AbstractArray{<:Integer})
+  @test isa(get_face_to_lface(trian),AbstractArray{<:Integer})
   @test isa(get_face_to_cell_map(trian),AbstractArray{<:Field})
   @test isa(get_normal_vector(trian),CellField)
 end

@@ -1,4 +1,4 @@
-module RaviartThomasRefFEsTest
+module NedelecRefFEsTest
 
 using Test
 using Gridap.Polynomials
@@ -12,7 +12,7 @@ D = num_dims(QUAD)
 et = Float64
 order = 0
 
-reffe = RaviartThomasRefFE(et,p,order)
+reffe = NedelecRefFE(et,p,order)
 test_reference_fe(reffe)
 @test num_terms(get_prebasis(reffe)) == 4
 @test get_order(get_prebasis(reffe)) == 0
@@ -23,7 +23,7 @@ D = num_dims(QUAD)
 et = Float64
 order = 1
 
-reffe = RaviartThomasRefFE(et,p,order)
+reffe = NedelecRefFE(et,p,order)
 test_reference_fe(reffe)
 @test num_terms(get_prebasis(reffe)) == 12
 @test num_dofs(reffe) == 12

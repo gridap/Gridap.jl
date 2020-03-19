@@ -131,6 +131,12 @@ function get_face_entity(lab::FaceLabeling,d::Integer)
 end
 
 """
+"""
+function get_cell_entity(lab::FaceLabeling)
+  get_face_entity(lab,num_dims(lab))
+end
+
+"""
     get_face_entity(lab::FaceLabeling)
 """
 function get_face_entity(lab::FaceLabeling)

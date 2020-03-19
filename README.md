@@ -33,11 +33,11 @@ A hands-on user-guide to the library is available as a set of [tutorials](https:
 
 These are some popular PDEs solved with the Gridap library. Examples taken from the [Gridap Tutorials](https://github.com/gridap/Tutorials).
 
-| ![](https://gridap.github.io/Tutorials/dev/assets/t001_poisson/fig_uh.png)   |  ![](https://gridap.github.io/Tutorials/dev/assets/t003_elasticity/disp_ux_40.png) | ![](https://gridap.github.io/Tutorials/dev/assets/t004_hyperelasticity/neo_hook_3d.png)  | ![](https://gridap.github.io/Tutorials/dev/assets/t0041_p_laplacian/sol-plap.png)  |
+| ![](https://gridap.github.io/Tutorials/dev/assets/poisson/fig_uh.png)   |  ![](https://gridap.github.io/Tutorials/dev/assets/elasticity/disp_ux_40.png) | ![](https://gridap.github.io/Tutorials/dev/assets/hyperelasticity/neo_hook_3d.png)  | ![](https://gridap.github.io/Tutorials/dev/assets/p_laplacian/sol-plap.png)  |
 |:-------------:|:-------------:|:-----:|:----:|
-| [Poisson equation](https://gridap.github.io/Tutorials/dev/pages/t001_poisson/) |  [Linear elasticity](https://gridap.github.io/Tutorials/dev/pages/t003_elasticity/) |  [Hyper-elasticity](https://gridap.github.io/Tutorials/dev/pages/t004_hyperelasticity/)  | [p-Laplacian](https://gridap.github.io/Tutorials/dev/pages/t0041_p_laplacian/)   |
-| ![](https://gridap.github.io/Tutorials/dev/assets/t006_poisson_dg/jump_u.png) | ![](https://gridap.github.io/Tutorials/dev/assets/t007_darcy/darcy_results.png) |![](https://gridap.github.io/Tutorials/dev/assets/t008_inc_navier_stokes/ins_solution.png) | |
-| [Poisson eq. with DG](https://gridap.github.io/Tutorials/dev/pages/t005_dg_discretization/)  |  [Darcy eq. with RT](https://gridap.github.io/Tutorials/dev/pages/t007_darcy/)  |  [Incompressible Navier-Stokes](https://gridap.github.io/Tutorials/dev/pages/t008_inc_navier_stokes/)  |  |
+| [Poisson equation](https://gridap.github.io/Tutorials/dev/pages/t001_poisson/) |  [Linear elasticity](https://gridap.github.io/Tutorials/dev/pages/t003_elasticity/) |  [Hyper-elasticity](https://gridap.github.io/Tutorials/dev/pages/t005_hyperelasticity/)  | [p-Laplacian](https://gridap.github.io/Tutorials/dev/pages/t004_p_laplacian/)   |
+| ![](https://gridap.github.io/Tutorials/dev/assets/dg_discretization/jump_u.png) | ![](https://gridap.github.io/Tutorials/dev/assets/darcy/darcy_results.png) |![](https://gridap.github.io/Tutorials/dev/assets/inc_navier_stokes/ins_solution.png) | ![](https://gridap.github.io/Tutorials/dev/assets/isotropic_damage/damage_end.png) |
+| [Poisson eq. with DG](https://gridap.github.io/Tutorials/dev/pages/t006_dg_discretization/)  |  [Darcy eq. with RT](https://gridap.github.io/Tutorials/dev/pages/t007_darcy/)  |  [Incompressible Navier-Stokes](https://gridap.github.io/Tutorials/dev/pages/t008_inc_navier_stokes/)  | [Isotropic damage](https://gridap.github.io/Tutorials/dev/pages/t010_isotropic_damage/)  |
 
 
 ## How to cite Gridap

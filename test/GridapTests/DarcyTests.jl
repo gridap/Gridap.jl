@@ -18,7 +18,7 @@ f(x) = u(x) + ∇p(x)
 
 domain = (0,1,0,1)
 partition = (4,4)
-order = 2
+order = 1
 model = CartesianDiscreteModel(domain,partition)
 
 V = FESpace(
@@ -26,7 +26,7 @@ V = FESpace(
   conformity=:Hdiv, model=model, dirichlet_tags=[5,6])
 
 Q = FESpace(
-  reffe=:QLagrangian, order=order-1, valuetype=Float64,
+  reffe=:QLagrangian, order=order, valuetype=Float64,
   conformity=:L2, model=model)
 
 U = TrialFESpace(V,u)
@@ -41,7 +41,7 @@ quad = CellQuadrature(trian,degree)
 
 neumanntags = [7,8]
 btrian = BoundaryTriangulation(model,neumanntags)
-degree = 2*order
+degree = 2*(order+1)
 bquad = CellQuadrature(btrian,degree)
 nb = get_normal_vector(btrian)
 

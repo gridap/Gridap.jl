@@ -9,6 +9,12 @@ function QPointCellField(value::Number,trian::Triangulation,quad::CellQuadrature
   GenericCellField(array, cell_map)
 end
 
+"""
+"""
+function CellField(value::Number,trian::Triangulation,quad::CellQuadrature)
+  QPointCellField(value,trian,quad)
+end
+
 struct EvaluatedField{A<:AbstractArray,P<:AbstractArray} <:Field
   array::A
   points::P

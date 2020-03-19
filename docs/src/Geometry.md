@@ -51,6 +51,13 @@ integrate(cell_field,trian::Triangulation,quad::CellQuadrature)
 TriangulationPortion
 TriangulationPortion(oldtrian::Triangulation{Dc,Dp},cell_to_oldcell::Vector{Int}) where {Dc,Dp}
 ```
+
+### RestrictedTriangulation
+
+```@docs
+RestrictedTriangulation
+```
+
 ## BoundaryTriangulations
 
 ### Interface
@@ -61,6 +68,7 @@ BoundaryTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
 BoundaryTriangulation(model::DiscreteModel,tags::Vector{Int})
 get_volume_triangulation(trian::BoundaryTriangulation)
 get_face_to_cell(trian::BoundaryTriangulation)
+get_face_to_lface(trian::BoundaryTriangulation)
 get_face_to_cell_map(trian::BoundaryTriangulation)
 get_normal_vector(trian::BoundaryTriangulation)
 test_boundary_triangulation
@@ -78,8 +86,11 @@ GenericBoundaryTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
 ```@docs
 SkeletonTriangulation
 SkeletonTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
+InterfaceTriangulation(model::DiscreteModel,cell_to_is_in::Vector{Bool})
 get_volume_triangulation(trian::SkeletonTriangulation)
 get_normal_vector(trian::SkeletonTriangulation)
+get_left_boundary(trian::SkeletonTriangulation)
+get_right_boundary(trian::SkeletonTriangulation)
 ```
 
 ### SkeletonPairs
@@ -163,6 +174,7 @@ num_facets(lab::FaceLabeling)
 num_cells(lab::FaceLabeling)
 get_face_entity(lab::FaceLabeling,d::Integer)
 get_face_entity(lab::FaceLabeling)
+get_cell_entity(lab::FaceLabeling)
 get_tag_entities(lab::FaceLabeling,tag::Integer)
 get_tag_entities(lab::FaceLabeling)
 get_tag_name(lab::FaceLabeling,tag::Integer)
@@ -313,6 +325,19 @@ CartesianDiscreteModel(args...)
 get_cartesian_descriptor(a::CartesianDiscreteModel)
 ```
 
+### DiscreteModelPortion
+
+```@docs
+DiscreteModelPortion
+```
+
+### RestrictedDiscreteModel
+
+```@docs
+RestrictedDiscreteModel
+```
+
+
 ## CellFields
 
 ### CellFieldLike interface
@@ -341,6 +366,8 @@ restrict(cf::CellField,trian::Triangulation)
 ```@docs
 GenericCellField
 SkeletonCellField
+QPointCellField(value::Number,trian::Triangulation,quad::CellQuadrature)
+CellField(value::Number,trian::Triangulation,quad::CellQuadrature)
 get_cell_map(a::SkeletonCellField)
 jump(sf::SkeletonCellField)
 mean(sf::SkeletonCellField)

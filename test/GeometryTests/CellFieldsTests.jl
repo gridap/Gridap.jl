@@ -89,6 +89,10 @@ collect(evaluate(flux2,s))
 strian = SkeletonTriangulation(model)
 
 scf1 = restrict(cf1,strian)
+
+@test scf1.left === scf1.inward
+@test scf1.right === scf1.outward
+
 @test isa(scf1,SkeletonCellField)
 
 j = jump(scf1)

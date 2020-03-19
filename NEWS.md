@@ -4,16 +4,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [unreleased]
+
+## [Unreleased]
+
+### Fixed
+
+- Bug in jumps of quantities restricted to `InterfaceTriangulation` objects.  Since PR [#215](https://github.com/gridap/Gridap.jl/pull/215).
+
+## [0.8.0] - 2020-3-17
 
 ### Added
 
+- Support for surface-coupled multi-physics. See [`SurfaceCouplingTests.jl`](https://github.com/gridap/Gridap.jl/blob/master/test/GridapTests/SurfaceCouplingTests.jl) for further details. Since PR [#209](https://github.com/gridap/Gridap.jl/pull/209).
+- Support for constitutive laws with state / historical variables. See [`IsotropicDamageTests.jl`](https://github.com/gridap/Gridap.jl/blob/master/test/GridapTests/IsotropicDamageTests.jl) for further details. Since PR [#208](https://github.com/gridap/Gridap.jl/pull/208).
 - Curl-conforming reference FE `NedelecRefFE` and corresponding FE space constructor since PR [#199](https://github.com/gridap/Gridap.jl/pull/199).
-- Macro `@statelaw` in order to deal with constitutive laws with state / historical variables. Since PR [#193](https://github.com/gridap/Gridap.jl/pull/193).
 - New constructors `AffineFETermFromCellMatVec` and `FETermFromCellJacRes` that provides full control in the definition of cell matrices and vectors. Since PR [#191](https://github.com/gridap/Gridap.jl/pull/191).
 - Support for simultaneous integration of matrices and vectors. Since PR [#191](https://github.com/gridap/Gridap.jl/pull/191).
 
 ### Changed
+
+- The definition of interpolation order in Raviart-Thomas and Nédélec reference FEs has changed. Now, the divergence of functions in the Raviart-Thomas space of order `k` belongs to `P_k` or `Q_k` depending on the underlying polytope. Idem for Nédelec, but using the curl instead of the divergence. Since PR [#212](https://github.com/gridap/Gridap.jl/pull/212).
 
 - The order in which test and trial spaces are written in the code has changed and also the other in the arguments of functions defining bi-linear and linear forms, and weak residuals and Jacobians. **This affects everybody that is using Gridap, even the most basic users**. Now, we write the trial space before the test one in all methods taking two spaces in their arguments.  E.g., we have changed `AffineFEOperator(V,U,terms...)` to `AffineFEOperator(U,V,terms...)`, where `U` is the trial and `V` is the test space. For functions defining weak forms, now we have: The new signatures for bi-linear and a linear forms are `a(u,v)`, `l(v)`, where `u` is a trial function and `v` is a test one. For weak Jacobians and residuals `jac(u,du,v)` and `res(u,v)`, where `u` is the (trial) function in which we evaluate these quantities, `du` is the direction in which we evaluate the Jacobian and `v` is a test function. Since PR [#195](https://github.com/gridap/Gridap.jl/pull/195) and PR [#197](https://github.com/gridap/Gridap.jl/pull/197).
 
