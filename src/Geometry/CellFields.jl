@@ -23,8 +23,8 @@ This trait returns `Val{true}()` when the `CellFieldLike` is defined in a
 reference finite element space, and `Val{false}()` when it is defined in the
 physical space
 """
-# RefStyle(::Type{<:CellFieldLike}) = Val{true}()
-# RefStyle(a) = RefStyle(typeof(a))
+RefStyle(::Type{<:CellFieldLike}) = @notimplemented
+RefStyle(::T) where T<:CellFieldLike = RefStyle(T)
 
 """
     similar_object(cf::CellFieldLike,array::AbstractArray)
@@ -71,6 +71,7 @@ function test_cell_field_like(cf::CellFieldLike,x::AbstractArray,b::AbstractArra
     g = evaluate(gradient(cf),x)
     test_array(g,grad,pred)
   end
+  RefStyle(cf)
 end
 
 """

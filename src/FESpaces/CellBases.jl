@@ -16,7 +16,7 @@ end
 
 TrialStyle(cb) = TrialStyle(typeof(cb))
 
-RefStyle(::CellBasis) = @notimplemented
+# RefStyle(::Type{<:CellBasis}) = @notimplemented
 
 """
 """
