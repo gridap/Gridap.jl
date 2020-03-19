@@ -23,8 +23,8 @@ This trait returns `Val{true}()` when the `CellFieldLike` is defined in a
 reference finite element space, and `Val{false}()` when it is defined in the
 physical space
 """
-# RefTrait(::Type{<:CellFieldLike}) = Val{true}()
-# RefTrait(a) = RefTrait(typeof(a))
+# RefStyle(::Type{<:CellFieldLike}) = Val{true}()
+# RefStyle(a) = RefStyle(typeof(a))
 
 """
     similar_object(cf::CellFieldLike,array::AbstractArray)
@@ -207,11 +207,11 @@ function get_cell_map(cf::GenericCellField)
   cf.cell_map
 end
 
-function RefTrait(::Type{<:GenericCellField{R}}) where {R}
+function RefStyle(::Type{<:GenericCellField{R}}) where {R}
   Val{R}()
 end
 
-RefTrait(a::GenericCellField) = RefTrait(typeof(a))
+RefStyle(a::GenericCellField) = RefStyle(typeof(a))
 
 # Skeleton related
 

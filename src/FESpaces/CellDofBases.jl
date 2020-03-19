@@ -15,8 +15,8 @@ struct GenericCellDofBasis{R} <: CellDofBasis
 
 end
 
-RefTrait(::Type{<:GenericCellDofBasis{R}}) where R = Val{R}()
-RefTrait(a::GenericCellDofBasis) = RefTrait(typeof(a))
+RefStyle(::Type{<:GenericCellDofBasis{R}}) where R = Val{R}()
+RefStyle(a::GenericCellDofBasis) = RefStyle(typeof(a))
 
 get_array(a::GenericCellDofBasis) = a.array
 
@@ -33,7 +33,7 @@ The result is numerically equivalent to
 but it is described with a more memory-friendly lazy type.
 """
 function evaluate(cell_dofs::CellDofBasis,cell_field) #::CellFieldLike)
- _evaluate_cell_dofs(cell_dofs,cell_field,RefTrait(cell_dofs))
+ _evaluate_cell_dofs(cell_dofs,cell_field,RefStyle(cell_dofs))
 end
 
 function  _evaluate_cell_dofs(cell_dofs,cell_field,ref_trait::Val{true})

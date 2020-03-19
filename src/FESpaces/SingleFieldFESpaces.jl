@@ -169,7 +169,7 @@ even in the case that the given cell field does not fulfill them)
 """
 function interpolate(fs::SingleFieldFESpace,object)
   cdb = get_cell_dof_basis(fs)
-  _interpolate(fs,object,RefTrait(cdb))
+  _interpolate(fs,object,RefStyle(cdb))
 end
 
 function _interpolate(fs,object,::Val{true})
@@ -192,7 +192,7 @@ The resulting FEFunction does not necessary belongs to the underlying space
 """
 function interpolate_everywhere(fs::SingleFieldFESpace,object)
   cdb = get_cell_dof_basis(fs)
-  _interpolate_everywhere(fs,object,RefTrait(cdb))
+  _interpolate_everywhere(fs,object,RefStyle(cdb))
 end
 
 function _interpolate_everywhere(fs,object,::Val{true})
@@ -212,7 +212,7 @@ end
 """
 function interpolate_dirichlet(fs::SingleFieldFESpace,object)
   cdb = get_cell_dof_basis(fs)
-  dirichlet_values = _interpolate_dirichlet(fs,object,RefTrait(cdb))
+  dirichlet_values = _interpolate_dirichlet(fs,object,RefStyle(cdb))
   free_values = zero_free_values(fs)
   FEFunction(fs,free_values, dirichlet_values)
 end
@@ -240,7 +240,7 @@ end
 function compute_dirichlet_values_for_tags(f::SingleFieldFESpace,tag_to_object)
   dirichlet_dof_to_tag = get_dirichlet_dof_tag(f)
   cdb = get_cell_dof_basis(f)
-  ref_trait = RefTrait(cdb)
+  ref_trait = RefStyle(cdb)
   cell_map = get_cell_map(f)
   dirichlet_values = zero_dirichlet_values(f)
   _tag_to_object = _convert_to_collectable(tag_to_object,num_dirichlet_tags(f))

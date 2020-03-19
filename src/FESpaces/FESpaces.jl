@@ -44,7 +44,7 @@ import Gridap.Geometry: get_cell_map
 import Gridap.Geometry: get_cell_shapefuns
 import Gridap.Geometry: get_reffes
 import Gridap.Geometry: get_cell_type
-import Gridap.Geometry: RefTrait
+import Gridap.Geometry: RefStyle
 import Gridap.Helpers: operate
 import Gridap.Geometry: similar_object
 import Gridap.Geometry: jump

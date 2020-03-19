@@ -75,14 +75,14 @@ rp = evaluate(Up.cell_basis,q)
 
 @test all(collect(r) .≈ collect(rp))
 
-@test Gridap.FESpaces.RefTrait(Up.space.cell_dof_basis) == Val{false}()
-@test Gridap.FESpaces.RefTrait(U.space.cell_dof_basis) == Val{true}()
+@test Gridap.FESpaces.RefStyle(Up.space.cell_dof_basis) == Val{false}()
+@test Gridap.FESpaces.RefStyle(U.space.cell_dof_basis) == Val{true}()
 
-@test Gridap.FESpaces.RefTrait(Up.space.cell_basis) == Val{false}()
-@test Gridap.FESpaces.RefTrait(U.space.cell_basis) == Val{true}()
+@test Gridap.FESpaces.RefStyle(Up.space.cell_basis) == Val{false}()
+@test Gridap.FESpaces.RefStyle(U.space.cell_basis) == Val{true}()
 
-@test Gridap.FESpaces.RefTrait(Vp.cell_basis) == Val{false}()
-@test Gridap.FESpaces.RefTrait(V.cell_basis) == Val{true}()
+@test Gridap.FESpaces.RefStyle(Vp.cell_basis) == Val{false}()
+@test Gridap.FESpaces.RefStyle(V.cell_basis) == Val{true}()
 
 uhf = Gridap.FESpaces.interpolate(Up,u)
 uhd = Gridap.FESpaces.interpolate_dirichlet(Up,u)

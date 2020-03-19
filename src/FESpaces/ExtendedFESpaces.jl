@@ -186,7 +186,7 @@ end
 function get_cell_dof_basis(f::ExtendedFESpace)
 
   cell_to_val = get_cell_dof_basis(f.space)
-  ref_trait = RefTrait(cell_to_val)
+  ref_trait = RefStyle(cell_to_val)
   cell_to_val = cell_to_val.array
 
   D = num_dims(f.trian)

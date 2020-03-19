@@ -16,7 +16,7 @@ end
 
 TrialStyle(cb) = TrialStyle(typeof(cb))
 
-RefTrait(::CellBasis) = @notimplemented
+RefStyle(::CellBasis) = @notimplemented
 
 """
 """
@@ -226,14 +226,14 @@ function TrialStyle(::Type{<:GenericCellBasis{T}}) where T
   Val{T}()
 end
 
-function RefTrait(::Type{<:GenericCellBasis{T,R}}) where {T,R}
+function RefStyle(::Type{<:GenericCellBasis{T,R}}) where {T,R}
   Val{R}()
 end
 
-RefTrait(a::GenericCellBasis) = RefTrait(typeof(a))
+RefStyle(a::GenericCellBasis) = RefStyle(typeof(a))
 
 function evaluate(cf::GenericCellBasis,x)
-  ref_trait = RefTrait(cf)
+  ref_trait = RefStyle(cf)
   _evaluate(cf,x,ref_trait)
 end
 
