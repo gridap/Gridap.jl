@@ -7,6 +7,7 @@ using Gridap.Arrays
 using Gridap.Fields
 using Gridap.FESpaces
 using Gridap.Polynomials
+using Gridap.Integration
 using Test
 
 # Start with a PhysicalSpaceCellBasis

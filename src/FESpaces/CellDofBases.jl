@@ -7,6 +7,9 @@ defined for functions in the reference or physical space
 """
 abstract type CellDofBasis end
 
+RefStyle(::Type{<:CellDofBasis}) = @notimplemented
+RefStyle(::T) where T <: CellDofBasis = RefStyle(T)
+
 struct GenericCellDofBasis{R} <: CellDofBasis
    ref_trait::Val{R}
    array::AbstractArray{<:Dof}
