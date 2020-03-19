@@ -187,7 +187,7 @@ function get_cell_dof_basis(f::ExtendedFESpace)
 
   cell_to_val = get_cell_dof_basis(f.space)
   ref_trait = RefStyle(cell_to_val)
-  cell_to_val = cell_to_val.array
+  cell_to_val = get_array(cell_to_val)
 
   D = num_dims(f.trian)
   T = Float64 # TODO
@@ -200,8 +200,7 @@ function get_cell_dof_basis(f::ExtendedFESpace)
          f.trian.void_to_oldcell,
          f.trian.cell_to_oldcell)
 
-  _bool(::Val{R}) where R = R
-  cell_dof_basis = GenericCellDofBasis(_bool(ref_trait),eb)
+  cell_dof_basis = GenericCellDofBasis(get_val_parameter(ref_trait),eb)
 
 end
 

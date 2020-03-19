@@ -92,6 +92,10 @@ export RefStyle
 export similar_object
 export test_cell_field
 export convert_to_cell_field
+export to_ref_space
+export to_physical_space
+export is_in_physical_space
+export is_in_ref_space
 
 export GridTopology
 export num_cells

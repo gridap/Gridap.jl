@@ -47,7 +47,7 @@ The result is numerically equivalent to
 
 but it is described with a more memory-friendly lazy type.
 """
-function evaluate(cell_dofs::CellDofBasis,cell_field) #::CellFieldLike)
+function evaluate(cell_dofs::CellDofBasis,cell_field::CellFieldLike)
  _evaluate_cell_dofs(cell_dofs,cell_field,RefStyle(cell_dofs))
 end
 
