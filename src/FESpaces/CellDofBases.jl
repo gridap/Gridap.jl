@@ -16,7 +16,6 @@ struct GenericCellDofBasis{R} <: CellDofBasis
 end
 
 RefStyle(::Type{<:GenericCellDofBasis{R}}) where R = Val{R}()
-RefStyle(a::GenericCellDofBasis) = RefStyle(typeof(a))
 
 get_array(a::GenericCellDofBasis) = a.array
 
@@ -44,7 +43,7 @@ function  _evaluate_cell_dofs(cell_dofs,cell_field,ref_trait::Val{false})
   evaluate_dof_array(get_array(cell_dofs),get_array(_to_physical_space(cell_field)),ref_trait)
 end
 
-# @santiagobadia : To be implemented 
+# @santiagobadia : To be implemented
 _to_ref_space(a) = a
 
 _to_physical_space(a) = a

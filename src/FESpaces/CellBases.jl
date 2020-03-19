@@ -230,8 +230,6 @@ function RefStyle(::Type{<:GenericCellBasis{T,R}}) where {T,R}
   Val{R}()
 end
 
-RefStyle(a::GenericCellBasis) = RefStyle(typeof(a))
-
 function evaluate(cf::GenericCellBasis,x)
   ref_trait = RefStyle(cf)
   _evaluate(cf,x,ref_trait)

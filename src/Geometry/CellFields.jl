@@ -212,8 +212,6 @@ function RefStyle(::Type{<:GenericCellField{R}}) where {R}
   Val{R}()
 end
 
-RefStyle(a::GenericCellField) = RefStyle(typeof(a))
-
 # Skeleton related
 
 """
