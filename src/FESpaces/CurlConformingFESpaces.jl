@@ -11,7 +11,8 @@ function CurlConformingFESpace(
   reffes::Vector{<:ReferenceFE},
   model::DiscreteModel,
   face_labeling::FaceLabeling,
-  dirichlet_tags)
+  dirichlet_tags,
+  is_ref)
 
   grid_topology = get_grid_topology(model)
 

@@ -1,4 +1,4 @@
-module CurlConformingFESpacesTests
+# module CurlConformingFESpacesTests
 ##
 using Test
 using Gridap
@@ -45,4 +45,4 @@ el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
 
 ##
 
-end # module
+# end # module

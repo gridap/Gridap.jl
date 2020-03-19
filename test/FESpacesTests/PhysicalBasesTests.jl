@@ -72,6 +72,7 @@ isa(cell_field,CellField)
 # Now RT elements
 
 T = Float64
+order = 0
 reffes = [RaviartThomasRefFE(T,p,order) for p in polytopes]
 
 psfs, dofp  = Gridap.FESpaces.compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
@@ -82,7 +83,7 @@ rg = evaluate(gradient(sfs),q)
 rp = evaluate(psfs,q)
 rgp = evaluate(gradient(psfs),q)
 
-@test all([ r[i] ≈ rp[i] for i in 1:length(rg) ])
+@test all([ r[i] ≈ rp[i] for i in 1:length(rp) ])
 @test all([ rg[i] ≈ rgp[i] for i in 1:length(rg) ])
 
 end #module
