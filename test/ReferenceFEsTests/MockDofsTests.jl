@@ -24,7 +24,7 @@ af = fill(f,l)
 ax = fill(x,l)
 
 afx = evaluate(af,ax)
-abf = evaluate(ab,af,Val{true}())
+abf = evaluate(ab,af)
 @test abf == afx
 
 end # module
