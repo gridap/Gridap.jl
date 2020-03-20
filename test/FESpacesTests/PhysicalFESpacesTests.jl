@@ -1,4 +1,4 @@
-module PhysicalFESpacesTests
+# module PhysicalFESpacesTests
 
 using Gridap
 using Gridap.ReferenceFEs
@@ -116,4 +116,4 @@ el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
 
 @test el2 < 1.0e-10
 
-end #module
+# end #module

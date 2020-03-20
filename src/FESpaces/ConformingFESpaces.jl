@@ -101,6 +101,7 @@ function compute_cell_space(reffes, cell_to_ctype, cell_map)
   shapefuns =  map(get_shapefuns,reffes)
   refshapefuns = CompressedArray(shapefuns,cell_to_ctype)
   cell_shapefuns = attachmap(refshapefuns,cell_map)
+  cell_shapefuns = GenericCellBasis(Val{false}(),cell_shapefuns,cell_map,Val{true}())
 
   (cell_shapefuns, cell_dof_basis)
 end
@@ -122,6 +123,8 @@ function compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
 
   prebasis =  map(get_prebasis,reffes)
   cell_prebasis = CompressedArray(prebasis,cell_to_ctype)
+  cell_prebasis = GenericCellBasis(Val{false}(),cell_prebasis,cell_map,Val{false}())
+  # @santiagobadia : Think about last argument
 
   cell_shapefuns = _cell_shape_functions_physical_space(cell_prebasis,cell_dof_basis,cell_map)
 
@@ -164,8 +167,11 @@ end
 function _cell_shape_functions_physical_space(cell_prebasis,cell_dof_basis,cell_map)
   cell_matrix = evaluate(cell_dof_basis,cell_prebasis)
   cell_matrix_inv = apply(inv,cell_matrix)
-  cell_shapefuns_phys = apply(change_basis,cell_prebasis,cell_matrix_inv)
+  cell_shapefuns_phys = apply(change_basis,get_array(cell_prebasis),cell_matrix_inv)
   cell_shapefuns = compose(cell_shapefuns_phys,cell_map)
+  # @santiagobadia : twice cell_map
+  GenericCellBasis(Val{false}(),cell_shapefuns,cell_map,Val{false}())
+   # @santiagobadia : better implementation in the future...
 end
 
 """

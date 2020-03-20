@@ -1,4 +1,4 @@
-module PhysicalBasesTests
+# module PhysicalBasesTests
 
 using Gridap
 using Gridap.ReferenceFEs
@@ -36,6 +36,23 @@ cell_map = get_cell_map(grid)
 
 T = Float64
 reffes = [LagrangianRefFE(T,p,order) for p in polytopes]
+
+dof_bases = map(get_dof_basis,reffes)
+
+FEM = Gridap.FESpaces
+cell_dof_basis = FEM._cell_dof_basis_physical_space(dof_bases,cell_to_ctype,cell_map)
+cell_dof_basis = GenericCellDofBasis(Val{false}(),cell_dof_basis)
+
+prebasis =  map(get_prebasis,reffes)
+cell_prebasis = CompressedArray(prebasis,cell_to_ctype)
+cell_prebasis_new = GenericCellBasis(Val{false}(),cell_prebasis,cell_map,Val{false}())
+
+typeof(cell_prebasis)
+isa(cell_prebasis,CellBasis)
+
+# cell_matrix = evaluate(cell_dof_basis,cell_prebasis)
+
+# cell_shapefuns = _cell_shape_functions_physical_space(cell_prebasis,cell_dof_basis,cell_map)
 
 psfs, x  = Gridap.FESpaces.compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
 sfs, x  = Gridap.FESpaces.compute_cell_space(reffes, cell_to_ctype, cell_map)
@@ -76,7 +93,8 @@ T = Float64
 order = 0
 reffes = [RaviartThomasRefFE(T,p,order) for p in polytopes]
 
-psfs, dofp  = Gridap.FESpaces.compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
+psfs_, dofp  = Gridap.FESpaces.compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
+psfs = get_array(psfs_)
 sfs, dof  = Gridap.FESpaces.compute_cell_space(reffes, cell_to_ctype, cell_map)
 
 r = evaluate(sfs,q)
@@ -87,7 +105,7 @@ rgp = evaluate(gradient(psfs),q)
 @test all([ r[i] ≈ rp[i] for i in 1:length(rp) ])
 @test all([ rg[i] ≈ rgp[i] for i in 1:length(rg) ])
 
-end #module
+# end #module
 
 # # If I want new evaluation...
 # function kernel_evaluate(k::typeof{change_basis},x,cell_prebasis,cell_matrix_inv)

@@ -9,7 +9,6 @@ abstract type CellDofBasis end
 
 RefStyle(::Type{<:CellDofBasis}) = @abstractmethod
 get_array(::CellDofBasis) = @abstractmethod
-evaluate(cell_dofs::CellDofBasis,cell_field::CellFieldLike) = @abstractmethod
 
 RefStyle(::T) where T <: CellDofBasis = RefStyle(T)
 
@@ -23,17 +22,6 @@ function test_cell_dof_basis(cf::CellDofBasis,f::CellFieldLike)
   a = evaluate(cf,f)
   @test isa(RefStyle(cf),Bool)
 end
-
-"""
-"""
-struct GenericCellDofBasis{R} <: CellDofBasis
-   ref_trait::Val{R}
-   array::AbstractArray{<:Dof}
-end
-
-RefStyle(::Type{<:GenericCellDofBasis{R}}) where R = Val{R}()
-
-get_array(a::GenericCellDofBasis) = a.array
 
 """
     evaluate(dof_array::CellDofBasis,field_array::AbstractArray)
@@ -52,14 +40,20 @@ function evaluate(cell_dofs::CellDofBasis,cell_field::CellFieldLike)
 end
 
 function  _evaluate_cell_dofs(cell_dofs,cell_field,ref_trait::Val{true})
-  evaluate_dof_array(get_array(cell_dofs),get_array(_to_ref_space(cell_field)),ref_trait)
+  evaluate_dof_array(get_array(cell_dofs),get_array(to_ref_space(cell_field)),ref_trait)
 end
 
 function  _evaluate_cell_dofs(cell_dofs,cell_field,ref_trait::Val{false})
-  evaluate_dof_array(get_array(cell_dofs),get_array(_to_physical_space(cell_field)),ref_trait)
+  evaluate_dof_array(get_array(cell_dofs),get_array(to_physical_space(cell_field)),ref_trait)
 end
 
-# @santiagobadia : To be implemented
-_to_ref_space(a) = a
+"""
+"""
+struct GenericCellDofBasis{R} <: CellDofBasis
+   ref_trait::Val{R}
+   array::AbstractArray{<:Dof}
+end
 
-_to_physical_space(a) = a
+RefStyle(::Type{<:GenericCellDofBasis{R}}) where R = Val{R}()
+
+get_array(a::GenericCellDofBasis) = a.array

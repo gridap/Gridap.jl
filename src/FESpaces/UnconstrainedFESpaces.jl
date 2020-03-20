@@ -19,14 +19,12 @@ struct UnconstrainedFESpace{A,B,C} <: SingleFieldFESpace
     nfree::Int,
     ndirichlet::Int,
     cell_dofs::AbstractArray,
-    cell_shapefuns::AbstractArray,
+    cell_basis::CellBasis,
     cell_dof_basis::CellDofBasis,
     cell_map::AbstractArray,
     dirichlet_dof_tag::Vector{Int8},
     dirichlet_cells::Vector{Int},
     ntags) where T
-
-    cell_basis = GenericCellBasis(cell_shapefuns,cell_map,RefStyle(cell_dof_basis))
 
     A = typeof(cell_dofs)
     B = typeof(cell_basis)
