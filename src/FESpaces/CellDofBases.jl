@@ -39,11 +39,11 @@ function evaluate(cell_dofs::CellDofBasis,cell_field::CellFieldLike)
 end
 
 function  _evaluate_cell_dofs(cell_dofs,cell_field,ref_trait::Val{true})
-  evaluate_dof_array(get_array(cell_dofs),get_array(to_ref_space(cell_field)),RefStyle(cell_dofs))
+  evaluate_dof_array(get_array(cell_dofs),get_array(to_ref_space(cell_field)))
 end
 
 function  _evaluate_cell_dofs(cell_dofs,cell_field,ref_trait::Val{false})
-  evaluate_dof_array(get_array(cell_dofs),get_array(to_physical_space(cell_field)),RefStyle(cell_dofs))
+  evaluate_dof_array(get_array(cell_dofs),get_array(to_physical_space(cell_field)))
 end
 
 """

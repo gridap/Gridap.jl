@@ -233,6 +233,10 @@ function GenericCellField(array::AbstractArray,cell_map::AbstractArray)
   GenericCellField(array,cell_map,Val{true}())
 end
 
+# function GenericCellField(array::AbstractArray,cell_map::AbstractArray,ref_style)
+#   GenericCellField(array,cell_map,ref_style)
+# end
+
 function get_array(cf::GenericCellField)
   cf.array
 end
@@ -243,6 +247,17 @@ end
 
 function RefStyle(::Type{<:GenericCellField{R}}) where {R}
   Val{R}()
+end
+
+function cell_field_from_function(fun,cell_map,::Val{true})
+  # GenericCellField(cell_field,cell_map,Val{true}())
+  cell_field = convert_to_cell_field(fun,cell_map)
+end
+
+function cell_field_from_function(fun,cell_map,::Val{false})
+  field = function_field(fun)
+  cell_field = Fill(field,length(cell_map))
+  GenericCellField(cell_field,cell_map,Val{false}())
 end
 
 # Skeleton related

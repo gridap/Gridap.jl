@@ -143,14 +143,9 @@ end
 
 Equivalent to `evaluate_dof_array(dof,field)`
 """
-# @santiagobadia : I have put the trait for the moment, not sure it is needed...
-# If we keep it, I have to change the documentation
 function evaluate(dof::AbstractArray{<:Dof},field::AbstractArray)
   evaluate_dof_array(dof,field)
 end
-# function evaluate(dof::AbstractArray{<:Dof},field::AbstractArray,reft::Val{R}) where R
-#   evaluate_dof_array(dof,field,reft)
-# end
 
 struct DofEval <: Kernel end
 

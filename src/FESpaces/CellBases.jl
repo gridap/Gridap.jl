@@ -210,21 +210,10 @@ end
 
 """
 """
-# function GenericCellBasis(array::AbstractArray,cell_map::AbstractArray)
-#   trial_style = Val{false}()
-#   ref_trait = Val{true}()
-#   GenericCellBasis(trial_style,array,cell_map,ref_trait)
-# end
-
 function GenericCellBasis(trial_style::Val{T},array::AbstractArray,cell_map::AbstractArray) where T
   ref_trait = Val{true}()
   GenericCellBasis(trial_style,array,cell_map,ref_trait)
 end
-
-# function GenericCellBasis(array::AbstractArray,cell_map::AbstractArray,ref_trait::Val{R}) where R
-#   trial_style = Val{false}()
-#   GenericCellBasis(trial_style,array,cell_map,ref_trait)
-# end
 
 get_array(a::GenericCellBasis) = a.array
 
