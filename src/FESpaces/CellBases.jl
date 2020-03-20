@@ -16,8 +16,6 @@ end
 
 TrialStyle(cb) = TrialStyle(typeof(cb))
 
-# RefStyle(::Type{<:CellBasis}) = @notimplemented
-
 """
 """
 is_trial(cb) = is_trial(typeof(cb))
@@ -202,21 +200,21 @@ end
 
 """
 """
-function GenericCellBasis(array::AbstractArray,cell_map::AbstractArray)
-  trial_style = Val{false}()
-  ref_trait = Val{true}()
-  GenericCellBasis(trial_style,array,cell_map,ref_trait)
-end
+# function GenericCellBasis(array::AbstractArray,cell_map::AbstractArray)
+#   trial_style = Val{false}()
+#   ref_trait = Val{true}()
+#   GenericCellBasis(trial_style,array,cell_map,ref_trait)
+# end
 
 function GenericCellBasis(trial_style::Val{T},array::AbstractArray,cell_map::AbstractArray) where T
   ref_trait = Val{true}()
   GenericCellBasis(trial_style,array,cell_map,ref_trait)
 end
 
-function GenericCellBasis(array::AbstractArray,cell_map::AbstractArray,ref_trait::Val{R}) where R
-  trial_style = Val{false}()
-  GenericCellBasis(trial_style,array,cell_map,ref_trait)
-end
+# function GenericCellBasis(array::AbstractArray,cell_map::AbstractArray,ref_trait::Val{R}) where R
+#   trial_style = Val{false}()
+#   GenericCellBasis(trial_style,array,cell_map,ref_trait)
+# end
 
 get_array(a::GenericCellBasis) = a.array
 
@@ -225,29 +223,6 @@ get_cell_map(a::GenericCellBasis) = a.cell_map
 function TrialStyle(::Type{<:GenericCellBasis{T}}) where T
   Val{T}()
 end
-
-function RefStyle(::Type{<:GenericCellBasis{T,R}}) where {T,R}
-  Val{R}()
-end
-
-# function evaluate(cf::GenericCellBasis,x)
-#   ref_trait = RefStyle(cf)
-#   _evaluate(cf,x,ref_trait)
-# end
-
-# function _evaluate(cf,x,::Val{true}) where R
-#   a = get_array(cf)
-#   evaluate_field_array(a,x)
-# end
-#
-# function _evaluate(cf,x,::Val{false}) where R
-#   cm = get_cell_map(cf)
-#   _x = evaluate(cm,x)
-#   a = get_array(cf)
-#   evaluate_field_array(a,_x)
-# end
-
-# CellMatrixField
 
 """
 """

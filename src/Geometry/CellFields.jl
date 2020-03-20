@@ -35,13 +35,14 @@ _to_ref_space(a,::Val{true}) = a
 function _to_ref_space(a,::Val{false})
   cell_map = get_cell_map(a)
   array = compose(  get_array(a), cell_map  )
-  similar_object(a,array) # This creates a CellFieldLike from `array` using the metadata in `a`.
+  similar_object(a,array)
 end
 
 to_physical_space(a::CellFieldLike) = _to_physical_space(a,RefStyle(a))
-_to_physical_space(a,::Val{true}) = @notimplemented
+_to_physical_space(a,::Val{true}) = @notimplemented # and probably not doable in some cases
 _to_physical_space(a,::Val{false}) = a
 
+# Assumption : x ALWAIS defined in the reference space
 function evaluate(cf::CellFieldLike,x::AbstractArray)
   _evaluate(cf,x,RefStyle(cf))
 end
