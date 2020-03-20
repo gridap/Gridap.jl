@@ -200,7 +200,7 @@ function get_cell_dof_basis(f::ExtendedFESpace)
          f.trian.void_to_oldcell,
          f.trian.cell_to_oldcell)
 
-  cell_dof_basis = GenericCellDofBasis(get_val_parameter(ref_trait),eb)
+  cell_dof_basis = GenericCellDofBasis(ref_trait,eb)
 
 end
 

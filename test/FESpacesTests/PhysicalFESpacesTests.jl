@@ -46,6 +46,8 @@ V = TestFESpace(
   model = model,
   dirichlet_tags = [1,6])
 
+  V.cell_basis.ref_trait
+
 # Vp = TestFESpace(
 #   reffe = :RaviartThomas,
 #   conformity = :Hdiv,
@@ -64,6 +66,8 @@ V = TestFESpace(
 
 Up = TrialFESpace(Vp,u)
 U = TrialFESpace(V,u)
+U.cell_basis.ref_trait
+U.space.cell_basis.ref_trait
 
 # FEM = Gridap.FESpaces
 # Juno.@enter TrialFESpace(Vp,u)

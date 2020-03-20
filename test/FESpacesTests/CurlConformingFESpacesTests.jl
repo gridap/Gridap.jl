@@ -1,5 +1,5 @@
-# module CurlConformingFESpacesTests
-##
+module CurlConformingFESpacesTests
+
 using Test
 using Gridap
 using LinearAlgebra
@@ -43,6 +43,5 @@ el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
 
 # writevtk(trian,"trian",nsubcells=10,cellfields=["uh"=>uh])
 
-##
 
-# end # module
+end # module

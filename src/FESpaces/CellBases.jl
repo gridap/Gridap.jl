@@ -41,6 +41,16 @@ end
 
 # Define how the metadata is preserved
 
+function change_ref_style(cf::CellBasis)
+  ref_sty = RefStyle(cf)
+  new_sty = !get_value_type(ref_sty)
+  new_sty = Val{new_sty}()
+  trial_style = TrialStyle(cf)
+  ar = get_array(cf)
+  cm = get_cell_map(cf)
+  GenericCellBasis(trial_style,ar,cm,new_sty)
+end
+
 function similar_object(cf::CellBasis,array::AbstractArray)
   cm = get_cell_map(cf)
   trial_style = TrialStyle(cf)
@@ -224,6 +234,10 @@ function TrialStyle(::Type{<:GenericCellBasis{T}}) where T
   Val{T}()
 end
 
+function RefStyle(::Type{<:GenericCellBasis{T,R}}) where {T,R}
+  Val{R}()
+end
+
 """
 """
 abstract type CellMatrixField <: CellFieldLike end
@@ -293,6 +307,9 @@ function operate(op,a,b::CellMatrixField)
   _a = convert_to_cell_field(a,cm)
   operate(op,_a,b)
 end
+
+RefStyle(::CellMatrixField) = Val{true}()
+# @santiagobadia : @fverdugo can you check what we need here???
 
 # Concrete CellMatrixField
 

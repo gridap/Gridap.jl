@@ -35,7 +35,8 @@ _to_ref_space(a,::Val{true}) = a
 function _to_ref_space(a,::Val{false})
   cell_map = get_cell_map(a)
   array = compose(  get_array(a), cell_map  )
-  similar_object(a,array)
+  no = similar_object(a,array)
+  change_ref_style(no)
 end
 
 to_physical_space(a::CellFieldLike) = _to_physical_space(a,RefStyle(a))

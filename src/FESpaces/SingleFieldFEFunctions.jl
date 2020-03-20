@@ -33,3 +33,4 @@ get_cell_map(f::SingleFieldFEFunction) = get_cell_map(f.fe_space)
 
 get_cell_values(f::SingleFieldFEFunction) = f.cell_vals
 
+RefStyle(f::SingleFieldFEFunction) = RefStyle(get_cell_dof_basis(f.fe_space))

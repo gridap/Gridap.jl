@@ -16,6 +16,8 @@ get_cell_map(cb::CellBasisWithFieldID) = get_cell_map(cb.cell_basis)
 
 TrialStyle(::Type{CellBasisWithFieldID{S}}) where S = Val{S}()
 
+RefStyle(cb::CellBasisWithFieldID) = RefStyle(cb.cell_basis)
+
 function similar_object(cb::CellBasisWithFieldID,array::AbstractArray)
   cell_basis = similar_object(cb.cell_basis,array)
   field_id = cb.field_id
@@ -224,6 +226,3 @@ end
   end
   vec
 end
-
-
-
