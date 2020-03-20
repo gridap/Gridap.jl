@@ -1,4 +1,4 @@
-struct FunctionField{F}
+struct FunctionField{F} <: Field
   f::F
 end
 
@@ -18,4 +18,8 @@ function evaluate_field!(c,f::FunctionField,x)
     c[i] = f.f(x[i])
   end
   c
+end
+
+function field_gradient(f::FunctionField)
+  FunctionField(gradient(f.f))
 end

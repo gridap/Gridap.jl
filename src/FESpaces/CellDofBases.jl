@@ -10,16 +10,13 @@ abstract type CellDofBasis end
 RefStyle(::Type{<:CellDofBasis}) = @abstractmethod
 get_array(::CellDofBasis) = @abstractmethod
 
-RefStyle(::T) where T <: CellDofBasis = RefStyle(T)
-
-is_in_ref_space(::Type{T}) where T <:CellDofBasis = get_val_parameter(RefStyle(T))
-is_in_ref_space(::T) where T <:CellDofBasis = is_in_ref_space(T)
-
 function test_cell_dof_basis(cf::CellDofBasis,f::CellFieldLike)
   ar = get_array(cf)
   @test isa(ar,AbstractArray)
   a = evaluate(cf,f)
-  @test isa(RefStyle(cf),Bool)
+  _ = collect(a)
+  rs = RefStyle(cf)
+  @test isa(get_val_parameter(rs),Bool)
 end
 
 """

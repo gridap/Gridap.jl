@@ -90,6 +90,7 @@ export GenericCellField
 export SkeletonCellField
 export RefStyle
 export similar_object
+export change_ref_style
 export test_cell_field
 export convert_to_cell_field
 export to_ref_space

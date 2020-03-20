@@ -45,6 +45,7 @@ import Gridap.Geometry: get_cell_shapefuns
 import Gridap.Geometry: get_reffes
 import Gridap.Geometry: get_cell_type
 import Gridap.Geometry: RefStyle
+import Gridap.Geometry: change_ref_style
 import Gridap.Helpers: operate
 import Gridap.Geometry: similar_object
 import Gridap.Geometry: jump
@@ -152,6 +153,7 @@ export attach_dirichlet_bcs
 
 export CellDofBasis
 export GenericCellDofBasis
+export test_cell_dof_basis
 
 export FECellBasisStyle
 export is_a_fe_cell_basis

@@ -134,9 +134,9 @@ function evaluate_dof_array(dof::AbstractArray,field::AbstractArray)
   apply(k,dof,field)
 end
 
-# function evaluate_dof_array(dof::AbstractArray{<:Dof},field::AbstractArray)
-#   apply(dof,field)
-# end
+function evaluate_dof_array(dof::AbstractArray{<:Dof},field::AbstractArray)
+  apply(dof,field)
+end
 
 """
     evaluate(dof::AbstractArray{<:Dof},field::AbstractArray)

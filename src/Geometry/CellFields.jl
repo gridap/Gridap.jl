@@ -24,11 +24,13 @@ reference finite element space, and `Val{false}()` when it is defined in the
 physical space
 """
 RefStyle(::Type{<:CellFieldLike}) = @notimplemented
-RefStyle(::T) where T<:CellFieldLike = RefStyle(T)
 
-is_in_ref_space(::Type{T}) where T <:CellFieldLike = get_val_parameter(RefStyle(T))
-is_in_ref_space(::T) where T <:CellFieldLike = is_in_ref_space(T)
-is_in_physical_space(a) = !is_in_ref_space(a)
+# We use duck typing here for all types marked with the RefStyle
+RefStyle(::T) where T = RefStyle(T)
+is_in_ref_space(::Type{T}) where T = get_val_parameter(RefStyle(T))
+is_in_ref_space(::T) where T = is_in_ref_space(T)
+is_in_physical_space(::Type{T}) where T = !is_in_ref_space(T)
+is_in_physical_space(a::T) where T = !is_in_ref_space(T)
 
 to_ref_space(a::CellFieldLike) = _to_ref_space(a,RefStyle(a))
 _to_ref_space(a,::Val{true}) = a
@@ -44,6 +46,10 @@ _to_physical_space(a,::Val{true}) = @notimplemented # and probably not doable in
 _to_physical_space(a,::Val{false}) = a
 
 # Assumption : x ALWAIS defined in the reference space
+# In the future we can also add the RefStyle to x
+"""
+    evaluate(cf::CellFieldLike,x)
+"""
 function evaluate(cf::CellFieldLike,x::AbstractArray)
   _evaluate(cf,x,RefStyle(cf))
 end
@@ -55,9 +61,8 @@ end
 function _evaluate(cf::CellFieldLike,x::AbstractArray,::Val{false})
   cm = get_cell_map(cf)
   _x = evaluate(cm,x)
-  evaluate_field_array(get_array(cf),x)
+  evaluate_field_array(get_array(cf),_x)
 end
-
 
 """
     similar_object(cf::CellFieldLike,array::AbstractArray)
@@ -70,6 +75,15 @@ end
     similar_object(cf1::CellFieldLike,cf2::CellFieldLike,array::AbstractArray)
 """
 function similar_object(cf1::CellFieldLike,cf2::CellFieldLike,array::AbstractArray)
+  @abstractmethod
+end
+
+"""
+   change_ref_style(cf::CellFieldLike)
+
+Return an object with the same array and metadata as in `cf`, except for `RefStyle` which is changed.
+"""
+function change_ref_style(cf::CellFieldLike)
   @abstractmethod
 end
 
@@ -104,15 +118,12 @@ function test_cell_field_like(cf::CellFieldLike,x::AbstractArray,b::AbstractArra
     g = evaluate(gradient(cf),x)
     test_array(g,grad,pred)
   end
-  RefStyle(cf)
-end
-
-"""
-    evaluate(cf::CellFieldLike,x)
-"""
-function evaluate(cf::CellFieldLike,x)
-  a = get_array(cf)
-  evaluate_field_array(a,x)
+  rs = RefStyle(cf)
+  @test isa(get_val_parameter(rs),Bool)
+  _cf = change_ref_style(cf)
+  @test get_array(_cf) === get_array(cf)
+  @test is_in_ref_space(cf) == !is_in_ref_space(_cf)
+  @test is_in_physical_space(cf) == !is_in_physical_space(_cf)
 end
 
 """
@@ -139,12 +150,22 @@ end
 
 function similar_object(cf::CellField,array::AbstractArray)
   cm = get_cell_map(cf)
-  GenericCellField(array,cm)
+  GenericCellField(array,cm,RefStyle(cf))
 end
 
 function similar_object(cf1::CellField,cf2::CellField,array::AbstractArray)
   cm = get_cell_map(cf1)
-  GenericCellField(array,cm)
+  @assert is_in_ref_space(cf1) == is_in_ref_space(cf2)
+  GenericCellField(array,cm,RefStyle(cf1))
+end
+
+function change_ref_style(cf::CellField)
+  ref_sty = RefStyle(cf)
+  bool = !get_val_parameter(ref_sty)
+  new_sty = Val{bool}()
+  ar = get_array(cf)
+  cm = get_cell_map(cf)
+  GenericCellField(ar,cm,new_sty)
 end
 
 # Diff operations
@@ -181,46 +202,64 @@ end
 
 function operate(op,cf1::CellField,object)
   cm = get_cell_map(cf1)
-  cf2 = convert_to_cell_field(object,cm)
+  cf2 = convert_to_cell_field(object,cm,RefStyle(cf1))
   operate(op,cf1,cf2)
 end
 
 function operate(op,object,cf2::CellField)
   cm = get_cell_map(cf2)
-  cf1 = convert_to_cell_field(object,cm)
+  cf1 = convert_to_cell_field(object,cm,RefStyle(cf2))
   operate(op,cf1,cf2)
 end
 
 # Conversions
 
+function convert_to_cell_field(object,cell_map)
+  ref_style = Val{true}()
+  convert_to_cell_field(object,cell_map,ref_style)
+end
+
 """
-    convert_to_cell_field(object::CellField,cell_map)
+    convert_to_cell_field(object,cell_map,ref_style)
 """
-function convert_to_cell_field(object::CellField,cell_map)
+function convert_to_cell_field(object::CellField,cell_map,ref_style::Val)
+  @assert RefStyle(object) == ref_style
   object
 end
 
-function convert_to_cell_field(object::AbstractArray,cell_map)
+function convert_to_cell_field(object::CellField,cell_map)
+  ref_style = RefStyle(object)
+  convert_to_cell_field(object,cell_map,ref_style)
+end
+
+function convert_to_cell_field(object::AbstractArray,cell_map,ref_style::Val)
   @assert length(object) == length(cell_map)
-  GenericCellField(object,cell_map)
+  GenericCellField(object,cell_map,ref_style)
 end
 
-function convert_to_cell_field(object::Function,cell_map)
+function convert_to_cell_field(object::Function,cell_map,ref_style::Val{true})
   b = compose(object,cell_map)
-  GenericCellField(b,cell_map)
+  GenericCellField(b,cell_map,Val{true}())
 end
 
-function convert_to_cell_field(object::Number,cell_map)
+function convert_to_cell_field(fun::Function,cell_map,ref_style::Val{false})
+  field = function_field(fun)
+  cell_field = Fill(field,length(cell_map))
+  GenericCellField(cell_field,cell_map,Val{false}())
+end
+
+function convert_to_cell_field(object::Number,cell_map,ref_style::Val)
   a = Fill(object,length(cell_map))
-  GenericCellField(a,cell_map)
+  GenericCellField(a,cell_map,ref_style)
 end
 
 # Concrete implementation
 
 """
-    struct GenericCellField <: CellField
+struct GenericCellField{R} <: CellField
       array::AbstractArray
       cell_map::AbstractArray
+      ref_trait::Val{R}
     end
 """
 struct GenericCellField{R} <: CellField
@@ -233,10 +272,6 @@ function GenericCellField(array::AbstractArray,cell_map::AbstractArray)
   GenericCellField(array,cell_map,Val{true}())
 end
 
-# function GenericCellField(array::AbstractArray,cell_map::AbstractArray,ref_style)
-#   GenericCellField(array,cell_map,ref_style)
-# end
-
 function get_array(cf::GenericCellField)
   cf.array
 end
@@ -247,17 +282,6 @@ end
 
 function RefStyle(::Type{<:GenericCellField{R}}) where {R}
   Val{R}()
-end
-
-function cell_field_from_function(fun,cell_map,::Val{true})
-  # GenericCellField(cell_field,cell_map,Val{true}())
-  cell_field = convert_to_cell_field(fun,cell_map)
-end
-
-function cell_field_from_function(fun,cell_map,::Val{false})
-  field = function_field(fun)
-  cell_field = Fill(field,length(cell_map))
-  GenericCellField(cell_field,cell_map,Val{false}())
 end
 
 # Skeleton related
@@ -346,12 +370,12 @@ end
 
 function operate(op,cf1::SkeletonCellField,object)
   cm = get_cell_map(cf1)
-  cf2 = convert_to_cell_field(object,cm)
+  cf2 = convert_to_cell_field(object,cm,RefStyle(cf1.left))
   operate(op,cf1,cf2)
 end
 
 function operate(op,object,cf2::SkeletonCellField)
   cm = get_cell_map(cf2)
-  cf1 = convert_to_cell_field(object,cm)
+  cf1 = convert_to_cell_field(object,cm,RefStyle(cf2.left))
   operate(op,cf1,cf2)
 end

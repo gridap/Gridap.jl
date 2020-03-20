@@ -31,7 +31,7 @@ function  _prepare_trial_cell_basis(space)
   a = get_array(cb)
   cm = get_cell_map(cb)
   trial_style = Val{true}()
-  cell_basis = GenericCellBasis(trial_style,a,cm)
+  cell_basis = GenericCellBasis(trial_style,a,cm,RefStyle(cb))
 end
 
 # Genuine functions

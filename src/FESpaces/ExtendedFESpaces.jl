@@ -180,7 +180,7 @@ function get_cell_basis(f::ExtendedFESpace)
 
   cm = get_cell_map(f.trian.oldtrian)
   trial_style = TrialStyle(cell_basis)
-  GenericCellBasis(trial_style,array,cm)
+  GenericCellBasis(trial_style,array,cm,RefStyle(cell_basis))
 end
 
 function get_cell_dof_basis(f::ExtendedFESpace)

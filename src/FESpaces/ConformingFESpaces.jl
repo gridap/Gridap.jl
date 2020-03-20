@@ -111,21 +111,20 @@ It creates the cell-wise DOF basis and shape functions, when the DOFs
 are evaluated at the physical space. The DOFs (moments) for the prebasis
 are assumed to be computable at a reference FE space.
 """
+function compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
 # E.g., if one has to implement $\int_F q ϕ_h(x)$ for $q \in P(F)$, we can
 # assume that it can be written as $\sum_{x_{gp} \in Q}_{\hat{F}}
 # \hat{q}(\tilde{x}_{gp}) ϕ(x_{gp})$ for $\hat{q} \in P(\hat{F})$.
-function compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
 
   dof_bases = map(get_dof_basis,reffes)
 
   cell_dof_basis = _cell_dof_basis_physical_space(dof_bases,cell_to_ctype,cell_map)
-  cell_dof_basis = GenericCellDofBasis(Val{false}(),cell_dof_basis)
+  ref_style = Val{false}()
+  cell_dof_basis = GenericCellDofBasis(ref_style,cell_dof_basis)
 
   prebasis =  map(get_prebasis,reffes)
   cell_prebasis = CompressedArray(prebasis,cell_to_ctype)
   cell_prebasis = GenericCellBasis(Val{false}(),cell_prebasis,cell_map,Val{false}())
-  # @santiagobadia : Think about last argument
-
   cell_shapefuns = _cell_shape_functions_physical_space(cell_prebasis,cell_dof_basis,cell_map)
 
   (cell_shapefuns, cell_dof_basis)
@@ -168,9 +167,9 @@ function _cell_shape_functions_physical_space(cell_prebasis,cell_dof_basis,cell_
   cell_matrix = evaluate(cell_dof_basis,cell_prebasis)
   cell_matrix_inv = apply(inv,cell_matrix)
   cell_shapefuns_phys = apply(change_basis,get_array(cell_prebasis),cell_matrix_inv)
-  cell_shapefuns = compose(cell_shapefuns_phys,cell_map)
-  # @santiagobadia : twice cell_map
-  GenericCellBasis(Val{false}(),cell_shapefuns,cell_map,Val{false}())
+  ref_style = Val{false}()
+  trial_style = Val{false}()
+  GenericCellBasis(trial_style,cell_shapefuns_phys,cell_map,ref_style)
    # @santiagobadia : better implementation in the future...
 end
 

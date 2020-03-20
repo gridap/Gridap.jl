@@ -1,4 +1,4 @@
-# module PhysicalFESpacesTests
+module PhysicalFESpacesTests
 
 using Gridap
 using Gridap.ReferenceFEs
@@ -95,7 +95,6 @@ uhf.dirichlet_values
 uhdf.dirichlet_values
 uhd.dirichlet_values
 
-
 uhf_r = Gridap.FESpaces.interpolate(U,u)
 uhd_r= Gridap.FESpaces.interpolate_dirichlet(U,u)
 uhdf_r = Gridap.FESpaces.interpolate_everywhere(U,u)
@@ -114,10 +113,16 @@ uhd_r.dirichlet_values
 @test uhdf.dirichlet_values == uhd.dirichlet_values
 @test uhdf.dirichlet_values == uhdf_r.dirichlet_values
 
+e = u - uhf_r
+
+el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
+
+@test el2 < 1.0e-10
+
 e = u - uhf
 
 el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
 
 @test el2 < 1.0e-10
 
-# end #module
+end #module

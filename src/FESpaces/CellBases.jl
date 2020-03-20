@@ -43,8 +43,8 @@ end
 
 function change_ref_style(cf::CellBasis)
   ref_sty = RefStyle(cf)
-  new_sty = !get_value_type(ref_sty)
-  new_sty = Val{new_sty}()
+  bool = !get_val_parameter(ref_sty)
+  new_sty = Val{bool}()
   trial_style = TrialStyle(cf)
   ar = get_array(cf)
   cm = get_cell_map(cf)
@@ -54,7 +54,7 @@ end
 function similar_object(cf::CellBasis,array::AbstractArray)
   cm = get_cell_map(cf)
   trial_style = TrialStyle(cf)
-  GenericCellBasis(trial_style,array,cm)
+  GenericCellBasis(trial_style,array,cm,RefStyle(cf))
 end
 
 function similar_object(a::CellBasis,b::CellField,v::AbstractArray)
@@ -83,7 +83,8 @@ end
 
 function _similar_cell_basis_test_trial(v,a,b)
   cm = get_cell_map(a)
-  GenericCellMatrixField(v,cm)
+  @assert is_in_ref_space(a) == is_in_ref_space(b)
+  GenericCellMatrixField(v,cm,RefStyle(a))
 end
 
 # Operations
@@ -124,13 +125,13 @@ end
 
 function operate(op,cf1::CellBasis,object)
   cm = get_cell_map(cf1)
-  cf2 = convert_to_cell_field(object,cm)
+  cf2 = convert_to_cell_field(object,cm,RefStyle(cf1))
   operate(op,cf1,cf2)
 end
 
 function operate(op,object,cf2::CellBasis)
   cm = get_cell_map(cf2)
-  cf1 = convert_to_cell_field(object,cm)
+  cf1 = convert_to_cell_field(object,cm,RefStyle(cf2))
   operate(op,cf1,cf2)
 end
 
@@ -208,8 +209,6 @@ struct GenericCellBasis{T,R} <: CellBasis
   ref_trait::Val{R}
 end
 
-"""
-"""
 function GenericCellBasis(trial_style::Val{T},array::AbstractArray,cell_map::AbstractArray) where T
   ref_trait = Val{true}()
   GenericCellBasis(trial_style,array,cell_map,ref_trait)
@@ -239,9 +238,18 @@ end
 
 # Define how the metadata is preserved
 
+function change_ref_style(cf::CellMatrixField)
+  ref_sty = RefStyle(cf)
+  bool = !get_val_parameter(ref_sty)
+  new_sty = Val{bool}()
+  ar = get_array(cf)
+  cm = get_cell_map(cf)
+  GenericCellMatrixField(ar,cm,new_sty)
+end
+
 function similar_object(cf::CellMatrixField,a::AbstractArray)
   cm = get_cell_map(cf)
-  GenericCellMatrixField(a,cm)
+  GenericCellMatrixField(a,cm,RefStyle(cf))
 end
 
 function similar_object(a::CellMatrixField,b::CellField,v::AbstractArray)
@@ -287,27 +295,28 @@ end
 
 function operate(op,a::CellMatrixField,b)
   cm = get_cell_map(a)
-  _b = convert_to_cell_field(b,cm)
+  _b = convert_to_cell_field(b,cm,RefStyle(a))
   operate(op,a,_b)
 end
 
 function operate(op,a,b::CellMatrixField)
   cm = get_cell_map(b)
-  _a = convert_to_cell_field(a,cm)
+  _a = convert_to_cell_field(a,cm,RefStyle(b))
   operate(op,_a,b)
 end
 
-RefStyle(::CellMatrixField) = Val{true}()
-# @santiagobadia : @fverdugo can you check what we need here???
 
 # Concrete CellMatrixField
 
 """
 """
-struct GenericCellMatrixField{A,B} <: CellMatrixField
+struct GenericCellMatrixField{A,B,R} <: CellMatrixField
   array::A
   cell_map::B
+  ref_style::Val{R}
 end
+
+RefStyle(::Type{GenericCellMatrixField{A,B,R}}) where {A,B,R} = Val{R}()
 
 get_array(a::GenericCellMatrixField) = a.array
 
@@ -316,7 +325,8 @@ get_cell_map(a::GenericCellMatrixField) = a.cell_map
 # Restrictions
 
 function restrict(cf::CellBasis,trian::Triangulation)
-  a = get_array(cf)
+  _cf = to_ref_space(cf)
+  a = get_array(_cf)
   r = restrict(a,trian)
   trial_style = TrialStyle(cf)
   _restrict_cell_basis(trial_style,r,trian)
@@ -414,13 +424,13 @@ end
 
 function operate(op,cf1::SkeletonCellBasis,object)
   cm = get_cell_map(cf1)
-  cf2 = convert_to_cell_field(object,cm)
+  cf2 = convert_to_cell_field(object,cm,RefStyle(cf1.left))
   operate(op,cf1,cf2)
 end
 
 function operate(op,object,cf2::SkeletonCellBasis)
   cm = get_cell_map(cf2)
-  cf1 = convert_to_cell_field(object,cm)
+  cf1 = convert_to_cell_field(object,cm,RefStyle(cf2.left))
   operate(op,cf1,cf2)
 end
 
@@ -466,13 +476,13 @@ end
 
 function operate(op,cf1::ReducedSkeletonCellBasis,object)
   cm = get_cell_map(cf1)
-  cf2 = convert_to_cell_field(object,cm)
+  cf2 = convert_to_cell_field(object,cm,RefStyle(cf1.left))
   operate(op,cf1,cf2)
 end
 
 function operate(op,object,cf2::ReducedSkeletonCellBasis)
   cm = get_cell_map(cf2)
-  cf1 = convert_to_cell_field(object,cm)
+  cf1 = convert_to_cell_field(object,cm,RefStyle(cf2.left))
   operate(op,cf1,cf2)
 end
 
@@ -549,13 +559,13 @@ end
 
 function operate(op,object,cf2::SkeletonCellMatrixField)
   cm = get_cell_map(cf2)
-  cf1 = convert_to_cell_field(object,cm)
+  cf1 = convert_to_cell_field(object,cm,RefStyle(cf2.ll))
   operate(op,cf1,cf2)
 end
 
 function operate(op,cf1::SkeletonCellMatrixField,object)
   cm = get_cell_map(cf1)
-  cf2 = convert_to_cell_field(object,cm)
+  cf2 = convert_to_cell_field(object,cm,RefStyle(cf1.ll))
   operate(op,cf1,cf2)
 end
 

@@ -93,8 +93,7 @@ T = Float64
 order = 0
 reffes = [RaviartThomasRefFE(T,p,order) for p in polytopes]
 
-psfs_, dofp  = Gridap.FESpaces.compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
-psfs = get_array(psfs_)
+psfs, dofp  = Gridap.FESpaces.compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
 sfs, dof  = Gridap.FESpaces.compute_cell_space(reffes, cell_to_ctype, cell_map)
 
 r = evaluate(sfs,q)

@@ -4,6 +4,8 @@ using Test
 
 @testset "CellBases" begin include("CellBasesTests.jl") end
 
+@testset "CellDofBases" begin include("CellDofBasesTests.jl") end
+
 @testset "Law" begin include("LawTests.jl") end
 
 @testset "FEFunctions" begin include("FEFunctionsTests.jl") end

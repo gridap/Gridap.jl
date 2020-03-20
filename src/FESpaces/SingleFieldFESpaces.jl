@@ -134,34 +134,6 @@ function gather_free_values(f::SingleFieldFESpace,cell_vals)
   free_values, _ = gather_free_and_dirichlet_values(f,cell_vals)
   free_values
 end
-# 
-# """
-# cell_field defined in the reference space with derivatives in the physical one
-# """
-# function compute_free_and_dirichlet_values(f::SingleFieldFESpace, cell_field::CellField)
-#   cell_vals = _compute_cell_vals(f, cell_field)
-#   gather_free_and_dirichlet_values(f,cell_vals)
-# end
-#
-# """
-# """
-# function compute_dirichlet_values(f::SingleFieldFESpace,cell_field::CellField)
-#   cell_vals = _compute_cell_vals(f, cell_field)
-#   gather_dirichlet_values(f,cell_vals)
-# end
-#
-# """
-# """
-# function compute_free_values(f::SingleFieldFESpace,cell_field::CellField)
-#   cell_vals = _compute_cell_vals(f, cell_field)
-#   gather_free_values(f,cell_vals)
-# end
-#
-# function _compute_cell_vals(f,cell_field)
-#   cell_dof_basis = get_cell_dof_basis(f)
-#   cell_vals = evaluate(cell_dof_basis,cell_field)
-#   cell_vals
-# end
 
 """
 The resulting FE function is in the space (in particular it fulfills Dirichlet BCs
@@ -176,7 +148,7 @@ end
 function _cell_vals(fs::SingleFieldFESpace,object)
   cdb = get_cell_dof_basis(fs)
   cm = get_cell_map(fs)
-  cf = cell_field_from_function(object,cm,RefStyle(cdb))
+  cf = convert_to_cell_field(object,cm,RefStyle(cdb))
   cell_vals = evaluate(cdb,cf)
 end
 
