@@ -32,7 +32,7 @@ face_own_nodes = face_own_dofs
 face_own_nodes_permutations = face_own_dofs_permutations
 face_nodes = face_dofs
 
-reffe = GenericNodalRefFE(
+reffe = GenericNodalCartesianRefFE(
   reffe,
   node_coordinates,
   node_and_comp_to_dof,

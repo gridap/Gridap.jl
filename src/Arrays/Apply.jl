@@ -118,7 +118,7 @@ end
 """
     apply_all(f::Tuple,a::AbstractArray...) -> Tuple
 
-Numerically equivalent to 
+Numerically equivalent to
 
     tuple( ( apply(fi, a...) for fi in f)... )
 
@@ -370,4 +370,3 @@ Base.IndexStyle(::Type{<:ArrayWithCounter{T,N,A}}) where {T,A,N} = IndexStyle(A)
 function reset_counter!(a::ArrayWithCounter)
   a.counter[:] .= 0
 end
-

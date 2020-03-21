@@ -180,23 +180,27 @@ function get_cell_basis(f::ExtendedFESpace)
 
   cm = get_cell_map(f.trian.oldtrian)
   trial_style = TrialStyle(cell_basis)
-  GenericCellBasis(trial_style,array,cm)
+  GenericCellBasis(trial_style,array,cm,RefStyle(cell_basis))
 end
 
 function get_cell_dof_basis(f::ExtendedFESpace)
 
   cell_to_val = get_cell_dof_basis(f.space)
+  ref_trait = RefStyle(cell_to_val)
+  cell_to_val = get_array(cell_to_val)
 
   D = num_dims(f.trian)
   T = Float64 # TODO
   void_to_val = Fill(LagrangianDofBasis(T,Point{D,T}[]),length(f.trian.void_to_oldcell))
 
-  ExtendedVector(
-    void_to_val,
-    cell_to_val,
-    f.trian.oldcell_to_cell,
-    f.trian.void_to_oldcell,
-    f.trian.cell_to_oldcell)
+  eb = ExtendedVector(
+         void_to_val,
+         cell_to_val,
+         f.trian.oldcell_to_cell,
+         f.trian.void_to_oldcell,
+         f.trian.cell_to_oldcell)
+
+  cell_dof_basis = GenericCellDofBasis(ref_trait,eb)
 
 end
 
@@ -249,4 +253,3 @@ function TrialFESpace(f::ExtendedFESpace)
   U = TrialFESpace(f.space)
   ExtendedFESpace(U,f.trian)
 end
-

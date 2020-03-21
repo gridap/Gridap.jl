@@ -162,10 +162,10 @@ get_face_own_nodes_permutations(reffe::NodalReferenceFE,d::Integer)
 get_face_nodes(reffe::NodalReferenceFE,d::Integer)
 ```
 
-### GenericNodalRefFE
+### GenericNodalCartesianRefFE
 
 ```@docs
-GenericNodalRefFE
+GenericNodalCartesianRefFE
 ```
 
 ### Lagrangian reference elements

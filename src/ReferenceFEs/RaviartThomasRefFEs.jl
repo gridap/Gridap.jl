@@ -179,6 +179,12 @@ struct MomentBasedDofBasis{P,V} <: Dof
   face_moments::Vector{Array{V}}
   face_nodes::Vector{UnitRange{Int}}
 
+  function MomentBasedDofBasis(nodes,f_moments,f_nodes)
+    P = eltype(nodes)
+    V = eltype(eltype(f_moments))
+    new{P,V}(nodes,f_moments,f_nodes)
+  end
+
   function MomentBasedDofBasis(f_nodes,f_moments)
     P = eltype(eltype(f_nodes))
     V = eltype(eltype(f_moments))
@@ -199,6 +205,10 @@ struct MomentBasedDofBasis{P,V} <: Dof
     new{P,V}(nodes,f_moments,face_nodes)
   end
 end
+
+get_nodes(b::MomentBasedDofBasis) = b.nodes
+get_face_moments(b::MomentBasedDofBasis) = b.face_moments
+get_face_nodes_dofs(b::MomentBasedDofBasis) = b.face_nodes
 
 function num_dofs(b::MomentBasedDofBasis)
   n = 0

@@ -4,6 +4,7 @@
 function FESpace(;kwargs...)
 
   constraint = _get_kwarg(:constraint,kwargs,nothing)
+  # constraint = nothing
   reffe = _get_kwarg(:reffe,kwargs)
   @notimplementedif !isa(reffe,Symbol) "For the moment, reffe can only be a symbol"
 
@@ -90,6 +91,11 @@ function _setup_hdiv_space(kwargs)
   conformity = _get_kwarg(:conformity,kwargs,true)
   diritags = _get_kwarg(:dirichlet_tags,kwargs,Int[])
   order = _get_kwarg(:order,kwargs,nothing)
+  dofspace = _get_kwarg(:dof_space,kwargs,:reference)
+  ( dofspace == :reference ? true : false )
+
+  is_ref = (dofspace==:reference)
+
   Tf = _get_kwarg(:valuetype,kwargs,VectorValue{1,Float64})
   T = eltype(Tf)
 
@@ -101,7 +107,7 @@ function _setup_hdiv_space(kwargs)
   reffes = [RaviartThomasRefFE(T,p,order) for p in polytopes]
 
   if conformity in [true, :default, :HDiv, :Hdiv]
-      V =  DivConformingFESpace(reffes,model,labels,diritags)
+      V =  DivConformingFESpace(reffes,model,labels,diritags,is_ref)
   else
     s = "Conformity $conformity not implemented for $reffe reference FE on polytopes $(polytopes...)"
     @unreachable s
@@ -118,8 +124,11 @@ function _setup_hcurl_space(kwargs)
   conformity = _get_kwarg(:conformity,kwargs,true)
   diritags = _get_kwarg(:dirichlet_tags,kwargs,Int[])
   order = _get_kwarg(:order,kwargs,nothing)
+  dofspace = _get_kwarg(:dof_space,kwargs,:reference)
   Tf = _get_kwarg(:valuetype,kwargs,VectorValue{1,Float64})
   T = eltype(Tf)
+
+  is_ref = dofspace==:reference
 
   if order == nothing
     @unreachable "order is a mandatory keyword argument in FESpace constructor for Nedelec reference FEs"
@@ -129,7 +138,7 @@ function _setup_hcurl_space(kwargs)
   reffes = [NedelecRefFE(T,p,order) for p in polytopes]
 
   if conformity in [true, :default, :HCurl, :Hcurl]
-      V =  CurlConformingFESpace(reffes,model,labels,diritags)
+      V =  CurlConformingFESpace(reffes,model,labels,diritags,is_ref)
   else
     s = "Conformity $conformity not implemented for $reffe reference FE on polytopes $(polytopes...)"
     @unreachable s
@@ -146,8 +155,13 @@ function _setup_lagrange_spaces(kwargs)
   T = _get_kwarg(:valuetype,kwargs,nothing)
   diritags = _get_kwarg(:dirichlet_tags,kwargs,Int[])
   dirimasks = _get_kwarg(:dirichlet_masks,kwargs,nothing)
+  # dirimasks = nothing
+  dofspace = _get_kwarg(:dof_space,kwargs,:reference)
   labels = _get_kwarg(:labels,kwargs,nothing)
+  # labels = nothing
   model = _get_kwarg(:model,kwargs,nothing)
+
+  is_ref = (dofspace==:reference)
 
   if T == nothing
     @unreachable "valuetype is a mandatory keyword argument in FESpace constructor for Lagrangian reference FEs"
@@ -188,7 +202,7 @@ function _setup_lagrange_spaces(kwargs)
       end
     end
 
-    return  DiscontinuousFESpace(_reffes,trian)
+    return  DiscontinuousFESpace(_reffes,trian,is_ref)
 
   elseif conformity in [true, :default, :H1, :C0]
 
@@ -207,9 +221,9 @@ function _setup_lagrange_spaces(kwargs)
       _reffes = [LagrangianRefFE(T,p,order) for p in polytopes]
     end
     if labels == nothing
-      return GradConformingFESpace(_reffes,model,diritags,dirimasks)
+      return GradConformingFESpace(_reffes,model,diritags,dirimasks,is_ref)
     else
-      return GradConformingFESpace(_reffes,model,labels,diritags,dirimasks)
+      return GradConformingFESpace(_reffes,model,labels,diritags,dirimasks,is_ref)
     end
 
   else

@@ -9,7 +9,7 @@ function symmetric_gradient end
 """
     symmetric_gradient(f)
 """
-symmetric_gradient(f) = symmetic_part(gradient(f))
+symmetric_gradient(f) = symmetric_part(gradient(f))
 
 """
     const ε = symmetric_gradient

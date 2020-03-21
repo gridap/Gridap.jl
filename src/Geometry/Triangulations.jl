@@ -233,7 +233,8 @@ end
     restrict(cf::CellField,trian::Triangulation)
 """
 function restrict(cf::CellField,trian::Triangulation)
-  a = get_array(cf)
+  _cf = to_ref_space(cf)
+  a = get_array(_cf)
   r = restrict(a,trian)
   _restrict_cell_field(r,trian)
 end

@@ -3,7 +3,7 @@
 Generic implementation of an unconstrained single-field FE space
 Private fields and type parameters
 """
-struct UnsconstrainedFESpace{A,B,C} <: SingleFieldFESpace
+struct UnconstrainedFESpace{A,B,C} <: SingleFieldFESpace
   nfree::Int
   ndirichlet::Int
   cell_dofs::A
@@ -15,18 +15,16 @@ struct UnsconstrainedFESpace{A,B,C} <: SingleFieldFESpace
 
   @doc """
   """
-  function UnsconstrainedFESpace(
+  function UnconstrainedFESpace(
     nfree::Int,
     ndirichlet::Int,
     cell_dofs::AbstractArray,
-    cell_shapefuns::AbstractArray,
-    cell_dof_basis::AbstractArray,
+    cell_basis::CellBasis,
+    cell_dof_basis::CellDofBasis,
     cell_map::AbstractArray,
     dirichlet_dof_tag::Vector{Int8},
     dirichlet_cells::Vector{Int},
     ntags) where T
-
-    cell_basis = GenericCellBasis(cell_shapefuns,cell_map)
 
     A = typeof(cell_dofs)
     B = typeof(cell_basis)
@@ -46,53 +44,53 @@ end
 
 # FESpace interface
 
-constraint_style(::Type{<:UnsconstrainedFESpace}) = Val{false}()
+constraint_style(::Type{<:UnconstrainedFESpace}) = Val{false}()
 
-function num_free_dofs(f::UnsconstrainedFESpace)
+function num_free_dofs(f::UnconstrainedFESpace)
   f.nfree
 end
 
-function get_cell_basis(f::UnsconstrainedFESpace)
+function get_cell_basis(f::UnconstrainedFESpace)
   f.cell_basis
 end
 
-function zero_free_values(::Type{T},f::UnsconstrainedFESpace) where T
+function zero_free_values(::Type{T},f::UnconstrainedFESpace) where T
   zeros(T,num_free_dofs(f))
 end
 
 # SingleFieldFESpace interface
 
-function get_cell_dofs(f::UnsconstrainedFESpace)
+function get_cell_dofs(f::UnconstrainedFESpace)
   f.cell_dofs
 end
 
-function get_cell_dof_basis(f::UnsconstrainedFESpace)
+function get_cell_dof_basis(f::UnconstrainedFESpace)
   f.cell_dof_basis
 end
 
-function num_dirichlet_dofs(f::UnsconstrainedFESpace)
+function num_dirichlet_dofs(f::UnconstrainedFESpace)
   f.ndirichlet
 end
 
-function num_dirichlet_tags(f::UnsconstrainedFESpace)
+function num_dirichlet_tags(f::UnconstrainedFESpace)
   f.ntags
 end
 
-function zero_dirichlet_values(f::UnsconstrainedFESpace)
+function zero_dirichlet_values(f::UnconstrainedFESpace)
   T = Float64 # TODO
   zeros(T,num_dirichlet_dofs(f))
 end
 
-function get_dirichlet_dof_tag(f::UnsconstrainedFESpace)
+function get_dirichlet_dof_tag(f::UnconstrainedFESpace)
   f.dirichlet_dof_tag
 end
 
-function scatter_free_and_dirichlet_values(f::UnsconstrainedFESpace,free_values,dirichlet_values)
+function scatter_free_and_dirichlet_values(f::UnconstrainedFESpace,free_values,dirichlet_values)
   cell_dofs = get_cell_dofs(f)
   LocalToGlobalPosNegArray(cell_dofs,free_values,dirichlet_values)
 end
 
-function gather_free_and_dirichlet_values(f::UnsconstrainedFESpace,cell_vals)
+function gather_free_and_dirichlet_values(f::UnconstrainedFESpace,cell_vals)
 
   cell_dofs = get_cell_dofs(f)
   cache_vals = array_cache(cell_vals)
@@ -113,7 +111,7 @@ function gather_free_and_dirichlet_values(f::UnsconstrainedFESpace,cell_vals)
   (free_vals, dirichlet_vals)
 end
 
-function gather_dirichlet_values(f::UnsconstrainedFESpace,cell_vals)
+function gather_dirichlet_values(f::UnconstrainedFESpace,cell_vals)
 
   cell_dofs = get_cell_dofs(f)
   cache_vals = array_cache(cell_vals)

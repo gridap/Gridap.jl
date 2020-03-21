@@ -22,12 +22,14 @@ quad = CellQuadrature(trian,degree)
 q = get_coordinates(quad)
 
 V = TestFESpace(model=model,reffe=:Lagrangian,order=order,conformity=:H1,valuetype=Float64)
+Vp = TestFESpace(model=model,reffe=:Lagrangian,order=order,conformity=:H1,valuetype=Float64,dof_space=:physical)
 U = TrialFESpace(V)
 
 cell_basis_v = get_cell_basis(V)
 field_id_v = 3
 v = CellBasisWithFieldID(cell_basis_v,field_id_v)
 vq = collect(evaluate(v,q))
+@test is_in_ref_space(v)
 
 field_id_a = 2
 a = CellBasisWithFieldID(cell_basis_v,field_id_a)
@@ -41,6 +43,12 @@ uq = collect(evaluate(u,q))
 field_id_b = 5
 b = CellBasisWithFieldID(cell_basis_u,field_id_b)
 bq = collect(evaluate(b,q))
+
+cell_basis_vp = get_cell_basis(Vp)
+field_id_vp = 6
+vp = CellBasisWithFieldID(cell_basis_vp,field_id_vp)
+vpq = collect(evaluate(vp,q))
+@test !is_in_ref_space(vp)
 
 r = 2*v
 test_cell_basis(r,q,2*vq)

@@ -21,6 +21,7 @@ import Gridap.Fields: evaluate_gradient!
 import Gridap.Fields: gradient_cache
 import Gridap.Fields: evaluate_hessian!
 import Gridap.Fields: hessian_cache
+import Gridap.Arrays: kernel_return_type
 
 export MonomialBasis
 export QGradMonomialBasis

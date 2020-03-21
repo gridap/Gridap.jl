@@ -76,6 +76,7 @@ u(x) = x[1]+x[2]
 
 uh = interpolate(U,u)
 
+
 uh_in = restrict(uh,trian_in)
 
 uh_Γ = restrict(uh,trian_Γ)

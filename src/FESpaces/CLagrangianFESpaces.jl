@@ -9,7 +9,7 @@
     end
 """
 struct CLagrangianFESpace{S} <: SingleFieldFESpace
-  space::UnsconstrainedFESpace
+  space::UnconstrainedFESpace
   grid::Grid
   dof_to_node::Vector{Int}
   dof_to_comp::Vector{Int8}
@@ -19,7 +19,7 @@ struct CLagrangianFESpace{S} <: SingleFieldFESpace
       CLagrangianFESpace(::Type{T},grid::Grid) where T
   """
   function CLagrangianFESpace(::Type{T},grid::Grid) where T
-    space, dof_to_node, dof_to_comp, node_and_comp_to_dof = _generate_clargangian_fespace(T,grid)
+    space, dof_to_node, dof_to_comp, node_and_comp_to_dof = _generate_clagrangian_fespace(T,grid)
     S = eltype(node_and_comp_to_dof)
     new{S}(space,grid,dof_to_node,dof_to_comp,node_and_comp_to_dof)
   end
@@ -81,7 +81,7 @@ end
 
 # Helpers
 
-function _generate_clargangian_fespace(T,grid)
+function _generate_clagrangian_fespace(T,grid)
 
     grid_reffes = get_reffes(grid)
     function fun(reffe)
@@ -114,7 +114,7 @@ function _generate_clargangian_fespace(T,grid)
     dirichlet_cells = Int[]
     ntags = 0
 
-    space = UnsconstrainedFESpace(
+    space = UnconstrainedFESpace(
       nfree,
       ndirichlet,
       cell_dofs,
@@ -235,4 +235,3 @@ function _fill_cell_dofs_clagrangian_fespace!(
   end
 
 end
-

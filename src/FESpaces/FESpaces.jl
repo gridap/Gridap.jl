@@ -22,9 +22,12 @@ using Gridap.Algebra
 using Gridap.Polynomials
 using Gridap.TensorValues
 
+using Gridap.ReferenceFEs: evaluate_dof_array
+
 using Gridap.Geometry: CellFieldLike
 using Gridap.Geometry: UnimplementedField
 using Gridap.Geometry: test_cell_field_like
+
 using Gridap.Arrays: _split
 using Gridap.Arrays: Reindexed
 using Gridap.Arrays: IdentityVector
@@ -41,6 +44,8 @@ import Gridap.Geometry: get_cell_map
 import Gridap.Geometry: get_cell_shapefuns
 import Gridap.Geometry: get_reffes
 import Gridap.Geometry: get_cell_type
+import Gridap.Geometry: RefStyle
+import Gridap.Geometry: change_ref_style
 import Gridap.Helpers: operate
 import Gridap.Geometry: similar_object
 import Gridap.Geometry: jump
@@ -131,7 +136,7 @@ export get_cell_dof_basis
 
 export SingleFieldFEFunction
 
-export UnsconstrainedFESpace
+export UnconstrainedFESpace
 export GradConformingFESpace
 export DiscontinuousFESpace
 
@@ -145,6 +150,10 @@ export TrialStyle
 export is_trial
 export is_test
 export attach_dirichlet_bcs
+
+export CellDofBasis
+export GenericCellDofBasis
+export test_cell_dof_basis
 
 export FECellBasisStyle
 export is_a_fe_cell_basis
@@ -204,6 +213,8 @@ export CellField
 export update_state_variables!
 
 include("CellBases.jl")
+
+include("CellDofBases.jl")
 
 include("Law.jl")
 

@@ -41,6 +41,7 @@ import Gridap.Geometry: restrict
 import Gridap.Fields: integrate
 import Gridap.Fields: evaluate
 import Gridap.FESpaces: TrialStyle
+import Gridap.FESpaces: RefStyle
 import Gridap.FESpaces: FECellBasisStyle
 import Gridap.FESpaces: FEFunctionStyle
 import Gridap.FESpaces: num_free_dofs

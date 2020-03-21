@@ -88,9 +88,16 @@ import Gridap.Arrays: apply_kernel!
 export CellField
 export GenericCellField
 export SkeletonCellField
+export RefStyle
 export similar_object
+export change_ref_style
 export test_cell_field
 export convert_to_cell_field
+export to_ref_space
+export to_physical_space
+export is_in_physical_space
+export is_in_ref_space
+export cell_field_from_function
 
 export GridTopology
 export num_cells
