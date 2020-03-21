@@ -1,9 +1,9 @@
 Gridap Copyright and License
 ==
 
-Copyright (c) 2019 by the Gridap.jl [authors](./AUTHORS). See the `AUTHORS` file for details.
+Copyright (c) 2019 by [Santiago Badia](mailto:santiago.badia@monash.edu) and [Francesc Verdugo](mailto:fverdugo@cimne.upc.edu).
 
-Gridap.jl and its related packages are licensed under the MIT Expat License
+Gridap.jl is licensed under the MIT Expat License
 
 ```
 Permission is hereby granted, free of charge, to any person obtaining a copy
