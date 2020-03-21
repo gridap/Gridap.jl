@@ -1,4 +1,4 @@
-Gridap Copyright and License
+Gridap.jl Copyright and License
 ==
 
 Copyright (c) 2019 by [Santiago Badia](mailto:santiago.badia@monash.edu) and [Francesc Verdugo](mailto:fverdugo@cimne.upc.edu).
@@ -92,4 +92,4 @@ By making a contribution to this project, I certify that:
 Contact
 ==
 
-Please, contact the project [administrators](./ADMINISTRATORS) for further questions about licenses and terms of use.
+Please, contact the project administrators, [Santiago Badia](mailto:santiago.badia@monash.edu) and [Francesc Verdugo](mailto:fverdugo@cimne.upc.edu), for further questions about licenses and terms of use.
