@@ -188,8 +188,8 @@ struct MultiCellBasis{S,R} <: GridapType
     R = is_in_ref_space(cb)
     new_blocks = CellBasisWithFieldID{S}[]
     for (field_id, cell_basis) in enumerate(blocks)
-      @assert is_trial(cell_basis) == S "All the provided bases need to be either test or trial"
-      @assert is_in_ref_space(cell_basis) == R
+      @assert is_trial(cell_basis) == S "All the provided bases must be of the same type (trial or test)"
+      @assert is_in_ref_space(cell_basis) == R "All the provided bases must be defined in the same space (reference or physical)"
       block = CellBasisWithFieldID(cell_basis,field_id)
       push!(new_blocks,block)
     end

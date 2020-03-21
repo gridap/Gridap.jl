@@ -1,7 +1,7 @@
 
 abstract type MultiFieldStyle end
 
-struct ConsequtiveMultiFieldStyle <: MultiFieldStyle end
+struct ConsecutiveMultiFieldStyle <: MultiFieldStyle end
 
 struct StridedMultiFieldStyle <: MultiFieldStyle end
 
@@ -30,7 +30,7 @@ end
     MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace})
 """
 function MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace})
-  MultiFieldFESpace(spaces,ConsequtiveMultiFieldStyle())
+  MultiFieldFESpace(spaces,ConsecutiveMultiFieldStyle())
 end
 
 MultiFieldStyle(::Type{MultiFieldFESpace{S,B}}) where {S,B} = S()
@@ -129,7 +129,7 @@ function  _restrict_to_field(f,::MultiFieldStyle,free_values,field)
   @notimplemented
 end
 
-function  _restrict_to_field(f,::ConsequtiveMultiFieldStyle,free_values,field)
+function  _restrict_to_field(f,::ConsecutiveMultiFieldStyle,free_values,field)
   offsets = compute_field_offsets(f)
   U = f.spaces
   pini = offsets[field] + 1
@@ -146,7 +146,7 @@ function _get_cell_dofs(f,::MultiFieldStyle)
 end
 
 
-function _get_cell_dofs(f,::ConsequtiveMultiFieldStyle)
+function _get_cell_dofs(f,::ConsecutiveMultiFieldStyle)
   offsets = compute_field_offsets(f)
   spaces = f.spaces
   function fun(i,space)
@@ -171,13 +171,13 @@ function _sum_if_first_positive(a,b)
   end
 end
 
-# API for the ConsequtiveMultiFieldStyle
+# API for the ConsecutiveMultiFieldStyle
 
 """
     compute_field_offsets(f::MultiFieldFESpace)
 """
 function compute_field_offsets(f::MultiFieldFESpace)
-  @assert MultiFieldStyle(f) == ConsequtiveMultiFieldStyle()
+  @assert MultiFieldStyle(f) == ConsecutiveMultiFieldStyle()
   U = f.spaces
   n = length(U)
   offsets = zeros(Int,n)

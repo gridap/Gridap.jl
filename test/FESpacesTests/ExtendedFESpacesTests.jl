@@ -1,4 +1,4 @@
-# module ExtendedFESpacesTests
+module ExtendedFESpacesTests
 
 using Test
 using Gridap.Arrays
@@ -120,4 +120,4 @@ V = TestFESpace(triangulation=trian,valuetype=Float64,reffe=:Lagrangian,order=2,
 #writevtk(trian,"trian",cellfields=["uh"=>uh])
 #writevtk(trian_in,"trian_in",cellfields=["uh"=>uh_in])
 
-# end # module
+end # module

@@ -10,7 +10,7 @@ using Test
 using Gridap.MultiField
 using Gridap.MultiField: MultiFieldFESpace
 using Gridap.MultiField: MultiFieldCellArray
-using Gridap.MultiField: ConsequtiveMultiFieldStyle
+using Gridap.MultiField: ConsecutiveMultiFieldStyle
 
 order = 2
 
@@ -22,64 +22,69 @@ trian = get_triangulation(model)
 degree = order
 quad = CellQuadrature(trian,degree)
 
-V = TestFESpace(model=model,order=order,reffe=:Lagrangian,conformity=:H1,valuetype=Float64)
-Q = TestFESpace(model=model,order=order-1,reffe=:Lagrangian,conformity=:L2,valuetype=Float64)
+ref_style = [:reference,:physical]
 
-U = TrialFESpace(V)
-P = TrialFESpace(Q)
+for ref_st in ref_style
+  
+  V = TestFESpace(model=model,order=order,reffe=:Lagrangian,conformity=:H1,valuetype=Float64,dof_space=ref_st)
+  Q = TestFESpace(model=model,order=order-1,reffe=:Lagrangian,conformity=:L2,valuetype=Float64,dof_space=ref_st)
 
-multi_field_style = ConsequtiveMultiFieldStyle()
+  U = TrialFESpace(V)
+  P = TrialFESpace(Q)
 
-Y = MultiFieldFESpace([V,Q],multi_field_style)
-X = MultiFieldFESpace([U,P],multi_field_style)
+  multi_field_style = ConsecutiveMultiFieldStyle()
 
-@test num_free_dofs(X) == num_free_dofs(U) + num_free_dofs(P)
-@test num_free_dofs(X) == num_free_dofs(Y)
+  Y = MultiFieldFESpace([V,Q],multi_field_style)
+  X = MultiFieldFESpace([U,P],multi_field_style)
 
-free_values = rand(num_free_dofs(X))
-xh = FEFunction(X,free_values)
-test_fe_function(xh)
-@test is_a_fe_function(xh)
-uh, ph = xh
-@test is_a_fe_function(uh)
-@test is_a_fe_function(ph)
+  @test num_free_dofs(X) == num_free_dofs(U) + num_free_dofs(P)
+  @test num_free_dofs(X) == num_free_dofs(Y)
 
-dy = get_cell_basis(Y)
-@test is_test(dy)
-@test is_a_fe_cell_basis(dy)
-dv, dq = dy
-@test is_a_fe_cell_basis(dv)
-@test is_a_fe_cell_basis(dq)
+  free_values = rand(num_free_dofs(X))
+  xh = FEFunction(X,free_values)
+  test_fe_function(xh)
+  @test is_a_fe_function(xh)
+  uh, ph = xh
+  @test is_a_fe_function(uh)
+  @test is_a_fe_function(ph)
 
-dx = get_cell_basis(X)
-@test is_a_fe_cell_basis(dx)
-@test is_trial(dx)
-du, dp = dx
-@test is_a_fe_cell_basis(du)
-@test is_a_fe_cell_basis(dp)
+  dy = get_cell_basis(Y)
+  @test is_test(dy)
+  @test is_a_fe_cell_basis(dy)
+  dv, dq = dy
+  @test is_a_fe_cell_basis(dv)
+  @test is_a_fe_cell_basis(dq)
 
-cellmat = integrate(dv*du,trian,quad)
-cellvec = integrate(dv*2,trian,quad)
-cellids = get_cell_id(trian)
-cellmatvec = pair_arrays(cellmat,cellvec)
+  dx = get_cell_basis(X)
+  @test is_a_fe_cell_basis(dx)
+  @test is_trial(dx)
+  du, dp = dx
+  @test is_a_fe_cell_basis(du)
+  @test is_a_fe_cell_basis(dp)
 
-matvecdata = (cellmatvec,cellids,cellids)
-matdata = (cellmat,cellids,cellids)
-vecdata = (cellvec,cellids)
+  cellmat = integrate(dv*du,trian,quad)
+  cellvec = integrate(dv*2,trian,quad)
+  cellids = get_cell_id(trian)
+  cellmatvec = pair_arrays(cellmat,cellvec)
 
-test_fe_space(V,matvecdata,matdata,vecdata)
-test_fe_space(U,matvecdata,matdata,vecdata)
+  matvecdata = (cellmatvec,cellids,cellids)
+  matdata = (cellmat,cellids,cellids)
+  vecdata = (cellvec,cellids)
 
-#using Gridap.Visualization
-#writevtk(trian,"trian";nsubcells=30,cellfields=["uh" => uh, "ph"=> ph])
+  test_fe_space(V,matvecdata,matdata,vecdata)
+  test_fe_space(U,matvecdata,matdata,vecdata)
 
-cell_dofs = get_cell_dofs(X)
-@test isa(cell_dofs,MultiFieldCellArray)
+  #using Gridap.Visualization
+  #writevtk(trian,"trian";nsubcells=30,cellfields=["uh" => uh, "ph"=> ph])
 
-cellids = [3,5,2]
+  cell_dofs = get_cell_dofs(X)
+  @test isa(cell_dofs,MultiFieldCellArray)
 
-cell_dofs_new = reindex(cell_dofs,cellids)
-@test isa(cell_dofs_new,MultiFieldCellArray)
-@test cell_dofs_new.block_ids == cell_dofs.block_ids
+  cellids = [3,5,2]
+
+  cell_dofs_new = reindex(cell_dofs,cellids)
+  @test isa(cell_dofs_new,MultiFieldCellArray)
+  @test cell_dofs_new.block_ids == cell_dofs.block_ids
+end
 
 end # module

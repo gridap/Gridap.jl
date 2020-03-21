@@ -29,73 +29,80 @@ add_tag_from_tags!(labels,"neumann",[6,7,8])
 
 order = 2
 
-V = TestFESpace(
- model=model,
- order=order,
- reffe=:Lagrangian,
- labels=labels,
- valuetype=VectorValue{2,Float64},
- dirichlet_tags="dirichlet",
- conformity=:H1)
+ref_style = [:reference,:physical]
 
-Q = TestFESpace(
- model=model,
- order=order-1,
- reffe=:Lagrangian,
- valuetype=Float64,
- conformity=:H1)
+for ref_st in ref_style
+  V = TestFESpace(
+  model=model,
+  order=order,
+  reffe=:Lagrangian,
+  labels=labels,
+  valuetype=VectorValue{2,Float64},
+  dirichlet_tags="dirichlet",
+  dof_space=ref_st,
+  conformity=:H1)
 
-U = TrialFESpace(V,u)
-P = TrialFESpace(Q)
+  Q = TestFESpace(
+  model=model,
+  order=order-1,
+  reffe=:Lagrangian,
+  valuetype=Float64,
+  dof_space=ref_st,
+  conformity=:H1)
 
-Y = MultiFieldFESpace([V,Q])
-X = MultiFieldFESpace([U,P])
+  U = TrialFESpace(V,u)
+  P = TrialFESpace(Q)
 
-trian = get_triangulation(model)
-degree = order
-quad = CellQuadrature(trian,degree)
+  Y = MultiFieldFESpace([V,Q])
+  X = MultiFieldFESpace([U,P])
 
-btrian = BoundaryTriangulation(model,labels,"neumann")
-bdegree = order
-bquad = CellQuadrature(btrian,bdegree)
-const n = get_normal_vector(btrian)
+  trian = get_triangulation(model)
+  degree = order
+  quad = CellQuadrature(trian,degree)
 
-function a(x,y)
-  u,p = x
-  v,q = y
-  inner(∇(v),∇(u)) - (∇*v)*p + q*(∇*u)
+  btrian = BoundaryTriangulation(model,labels,"neumann")
+  bdegree = order
+  bquad = CellQuadrature(btrian,bdegree)
+  n = get_normal_vector(btrian)
+
+  function a(x,y)
+    u,p = x
+    v,q = y
+    inner(∇(v),∇(u)) - (∇*v)*p + q*(∇*u)
+  end
+
+  function l(y)
+    v,q = y
+    v*f + q*g
+  end
+
+  function l_Γb(y)
+    v,q = y
+    v*(n*∇u) - (n*v)*p
+  end
+
+  t_Ω = AffineFETerm(a,l,trian,quad)
+  t_Γb = FESource(l_Γb,btrian,bquad)
+
+  op = AffineFEOperator(X,Y,t_Ω,t_Γb)
+
+  uh, ph = solve(op)
+
+  eu = u - uh
+  ep = p - ph
+
+  l2(v) = v*v
+  h1(v) = v*v + inner(∇(v),∇(v))
+
+  eu_l2 = sqrt(sum(integrate(l2(eu),trian,quad)))
+  eu_h1 = sqrt(sum(integrate(h1(eu),trian,quad)))
+  ep_l2 = sqrt(sum(integrate(l2(ep),trian,quad)))
+
+  tol = 1.0e-9
+  @test eu_l2 < tol
+  @test eu_h1 < tol
+  @test ep_l2 < tol
 end
 
-function l(y)
-  v,q = y
-  v*f + q*g
-end
-
-function l_Γb(y)
-  v,q = y
-  v*(n*∇u) - (n*v)*p
-end
-
-t_Ω = AffineFETerm(a,l,trian,quad)
-t_Γb = FESource(l_Γb,btrian,bquad)
-
-op = AffineFEOperator(X,Y,t_Ω,t_Γb)
-
-uh, ph = solve(op)
-
-eu = u - uh
-ep = p - ph
-
-l2(v) = v*v
-h1(v) = v*v + inner(∇(v),∇(v))
-
-eu_l2 = sqrt(sum(integrate(l2(eu),trian,quad)))
-eu_h1 = sqrt(sum(integrate(h1(eu),trian,quad)))
-ep_l2 = sqrt(sum(integrate(l2(ep),trian,quad)))
-
-tol = 1.0e-9
-@test eu_l2 < tol
-@test eu_h1 < tol
-@test ep_l2 < tol
 
 end # module
