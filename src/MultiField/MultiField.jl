@@ -37,6 +37,7 @@ using Gridap.FESpaces: CellMatKernel
 using Gridap.FESpaces: CellVecKernel
 import Gridap.Geometry: get_cell_map
 import Gridap.Geometry: similar_object
+import Gridap.Geometry: change_ref_style
 import Gridap.Geometry: restrict
 import Gridap.Fields: integrate
 import Gridap.Fields: evaluate

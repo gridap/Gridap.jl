@@ -14,11 +14,7 @@ function DiscontinuousFESpace(reffes::Vector{<:ReferenceFE}, trian::Triangulatio
   dirichlet_cells = Int[]
   ntags = 0
 
-  if is_ref
-    cell_shapefuns, cell_dof_basis = compute_cell_space(reffes, cell_to_ctype, cell_map)
-  else
-    cell_shapefuns, cell_dof_basis = compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
-  end
+  cell_shapefuns, cell_dof_basis = compute_cell_space(reffes, cell_to_ctype, cell_map,Val(is_ref))
 
   UnconstrainedFESpace(
     nfree,

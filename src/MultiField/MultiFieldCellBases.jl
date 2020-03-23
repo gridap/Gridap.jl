@@ -21,6 +21,12 @@ TrialStyle(::Type{CellBasisWithFieldID{S,R}}) where {S,R} = Val{S}()
 
 RefStyle(::Type{CellBasisWithFieldID{S,R}}) where {S,R} = Val{R}()
 
+function change_ref_style(cf::CellBasisWithFieldID)
+  cell_basis = change_ref_style(cf.cell_basis)
+  field_id = cf.field_id
+  CellBasisWithFieldID(cell_basis,field_id)
+end
+
 function similar_object(cb::CellBasisWithFieldID,array::AbstractArray)
   cell_basis = similar_object(cb.cell_basis,array)
   field_id = cb.field_id
@@ -97,6 +103,12 @@ get_cell_map(a::CellMatrixFieldWithFieldIds) = get_cell_map(a.cell_matrix_field)
 
 function _have_same_field_ids(a::CellMatrixFieldWithFieldIds,b::CellMatrixFieldWithFieldIds)
   (a.field_id_rows == b.field_id_rows) && (a.field_id_cols == b.field_id_cols)
+end
+
+function change_ref_style(cf::CellMatrixFieldWithFieldIds)
+  cell_matrix_field = change_ref_style(cf.cell_matrix_field)
+  CellMatrixFieldWithFieldIds(
+    cell_matrix_field,cf.field_id_rows,cf.field_id_cols,RefStyle(cell_matrix_field))
 end
 
 function similar_object(cf::CellMatrixFieldWithFieldIds,a::AbstractArray)

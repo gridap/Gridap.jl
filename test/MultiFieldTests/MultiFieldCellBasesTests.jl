@@ -29,6 +29,7 @@ cell_basis_v = get_cell_basis(V)
 field_id_v = 3
 v = CellBasisWithFieldID(cell_basis_v,field_id_v)
 vq = collect(evaluate(v,q))
+test_cell_basis(v,q,vq)
 @test is_in_ref_space(v)
 
 field_id_a = 2
@@ -48,6 +49,7 @@ cell_basis_vp = get_cell_basis(Vp)
 field_id_vp = 6
 vp = CellBasisWithFieldID(cell_basis_vp,field_id_vp)
 vpq = collect(evaluate(vp,q))
+test_cell_basis(vp,q,vpq)
 @test !is_in_ref_space(vp)
 
 r = 2*v
@@ -74,11 +76,13 @@ r = ∇(u)
 @test is_trial(r)
 
 r = v * u
+test_cell_matrix_field(r,q,collect(evaluate(r,q)))
 @test isa(r,CellMatrixFieldWithFieldIds)
 @test r.field_id_rows == v.field_id
 @test r.field_id_cols == u.field_id
 
 r = u * v
+test_cell_matrix_field(r,q,collect(evaluate(r,q)))
 @test isa(r,CellMatrixFieldWithFieldIds)
 @test r.field_id_rows == v.field_id
 @test r.field_id_cols == u.field_id

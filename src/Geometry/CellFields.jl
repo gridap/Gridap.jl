@@ -26,8 +26,8 @@ physical space
 RefStyle(::Type{<:CellFieldLike}) = @notimplemented
 
 # We use duck typing here for all types marked with the RefStyle
-# @santiagobadia : That is dangerous, it creates overflows if called with
-RefStyle(::T) where T = RefStyle(T)
+RefStyle(::Type) = @notimplemented
+RefStyle(a) = RefStyle(typeof(a))
 is_in_ref_space(::Type{T}) where T = get_val_parameter(RefStyle(T))
 is_in_ref_space(::T) where T = is_in_ref_space(T)
 is_in_physical_space(::Type{T}) where T = !is_in_ref_space(T)

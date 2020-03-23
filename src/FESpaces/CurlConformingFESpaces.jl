@@ -25,12 +25,7 @@ function CurlConformingFESpace(
   cell_to_ctype = get_cell_type(grid_topology)
   cell_map = get_cell_map(grid)
 
-  # cell_shapefuns, cell_dof_basis = _compute_hcurl_cell_space(reffes, cell_to_ctype, cell_map)
-  if is_ref
-    cell_shapefuns, cell_dof_basis = compute_cell_space(reffes,cell_to_ctype,cell_map)
-  else
-    cell_shapefuns, cell_dof_basis = compute_cell_space_physical(reffes,cell_to_ctype,cell_map)
-  end
+  cell_shapefuns, cell_dof_basis = compute_cell_space(reffes,cell_to_ctype,cell_map,Val(is_ref))
 
   UnconstrainedFESpace(
     nfree,
