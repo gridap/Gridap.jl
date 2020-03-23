@@ -28,7 +28,6 @@ cell_basis = get_cell_basis(V)
 
 test_cell_dof_basis(cell_dof_basis,cell_basis)
 
-# TODO not working: it should be the cell-wise identity...
 #display(evaluate(cell_dof_basis,cell_basis))
 
 V = TestFESpace(
