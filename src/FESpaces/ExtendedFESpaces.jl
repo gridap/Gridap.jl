@@ -118,7 +118,7 @@ function _find_all_cell_all_void(j_to_cell_or_void)
   all_cell, all_void
 end
 
-struct VoidBasis{T} <: Field end
+struct VoidBasis{T,D} <: Field end
 
 function field_cache(f::VoidBasis{T},x) where T
   Q = length(x)
@@ -132,8 +132,10 @@ end
   cache.array
 end
 
-function field_gradient(f::VoidBasis{T}) where T
-  VoidBasis{eltype(T)}()
+function field_gradient(f::VoidBasis{T,D}) where {T,D}
+  x = zero(Point{D,eltype(T)})
+  G = gradient_type(T,x)
+  VoidBasis{G,D}()
 end
 
 """
@@ -169,7 +171,8 @@ function get_cell_basis(f::ExtendedFESpace)
   vi = testitem(cell_to_val)
   Tv = field_return_type(vi,xi)
   T = eltype(Tv)
-  void_to_val = Fill(VoidBasis{T}(),length(f.trian.void_to_oldcell))
+  D = n_components(eltype(xi))
+  void_to_val = Fill(VoidBasis{T,D}(),length(f.trian.void_to_oldcell))
 
   array = ExtendedVector(
     void_to_val,
