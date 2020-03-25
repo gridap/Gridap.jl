@@ -158,8 +158,8 @@ end
 
 function (==)(a::ExtrusionPolytope{D},b::ExtrusionPolytope{D}) where D
   #The first axis is irrelevant here
-  ea = Point(a.extrusion.array.data[2:end])
-  eb = Point(b.extrusion.array.data[2:end])
+  ea = Point(Tuple(a.extrusion)[2:end])
+  eb = Point(Tuple(b.extrusion)[2:end])
   ea == eb
 end
 
@@ -202,11 +202,11 @@ function get_face_vertex_permutations(p::ExtrusionPolytope)
 end
 
 function is_simplex(p::ExtrusionPolytope)
-  all(p.extrusion.array .== TET_AXIS)
+  all(Tuple(p.extrusion) .== TET_AXIS)
 end
 
 function is_n_cube(p::ExtrusionPolytope)
-  all(p.extrusion.array .== HEX_AXIS)
+  all(Tuple(p.extrusion) .== HEX_AXIS)
 end
 
 function is_simplex(p::ExtrusionPolytope{0})
@@ -512,7 +512,7 @@ function _vertices_coordinates(::Type{T},p::DFace{D}) where {D,T}
   vcs = zeros(Point{D,T},length(vs))
   for i = 1:length(vs)
     vx = p.nfaces[vs[i]]
-    vc = vx.anchor.array.data
+    vc = Tuple(vx.anchor)
     vcs[i] = vc
   end
   vcs
@@ -664,9 +664,9 @@ function _admissible_permutations(p::DFace{D}) where D
   if D > 3
     @warn "Computing permutations for a polytope of dim > 3 is overkill"
   end
-  if D in (0,1) || all( p.extrusion.array.data[2:end] .== TET_AXIS )
+  if D in (0,1) || all( Tuple(p.extrusion)[2:end] .== TET_AXIS )
     perms = _admissible_permutations_simplex(p)
-  elseif all( p.extrusion.array.data[2:end] .== HEX_AXIS)
+  elseif all( Tuple(p.extrusion)[2:end] .== HEX_AXIS)
     perms = _admissible_permutations_n_cube(p)
   else
     @notimplemented "admissible vertex permutations only implemented for simplices and n-cubes"

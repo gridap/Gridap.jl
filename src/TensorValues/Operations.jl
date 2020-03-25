@@ -2,11 +2,11 @@
 # Comparison
 
 function (==)(a::MultiValue,b::MultiValue)
-  a.array == b.array
+  a.data == b.data
 end
 
 function (≈)(a::MultiValue,b::MultiValue)
-  a.array ≈ b.array
+  isapprox(collect(a.data), collect(b.data))
 end
 
 function (≈)(a::VectorValue{0},b::VectorValue{0})
@@ -35,19 +35,23 @@ function Base.isless(a::VectorValue{N},b::VectorValue{N}) where N
   false
 end
 
+function Base.isless(a::Number,b::MultiValue) where {D,T}
+    all(a .< b.data)
+end
+
 # Addition / subtraction
 
 for op in (:+,:-)
   @eval begin
 
-    function ($op)(a::MultiValue{S}) where S
-      r = $op(a.array)
-      MultiValue(r)
+    function ($op)(a::T) where {T<:MultiValue}
+      r = map($op, a.data)
+      T(r)
     end
 
-    function ($op)(a::MultiValue{S},b::MultiValue{S}) where S
-      r = $op(a.array, b.array)
-      MultiValue(r)
+    function ($op)(a::T,b::T)  where {T<:MultiValue}
+      r = broadcast(($op), a.data, b.data)
+      T(r)
     end
 
   end
@@ -55,46 +59,84 @@ end
 
 # Matrix Division
 
-function (\)(a::TensorValue, b::MultiValue)
-  r = a.array \ b.array
-  MultiValue(r)
+function (\)(a::T1 where {T1<:TensorValue}, b::T2) where {T2<:MultiValue}
+  r = get_array(a) \ get_array(b)
+  T2(r)
 end
 
 # Operations with other numbers
 
 for op in (:+,:-,:*)
   @eval begin
-    ($op)(a::MultiValue,b::Number) = MultiValue($op.(a.array,b))
-    ($op)(a::Number,b::MultiValue) = MultiValue($op.(a,b.array))
+    function ($op)(a::T,b::Number) where {T<:MultiValue} 
+        r = broadcast($op,a.data,b)
+        PT  = change_eltype(T,eltype(r))
+        PT(r)
+    end
+
+    function ($op)(a::Number,b::T) where {T<:MultiValue} 
+        r = broadcast($op,a,b.data)
+        PT  = change_eltype(T,eltype(r))
+        PT(r)
+    end
   end
 end
 
-(/)(a::MultiValue,b::Number) = MultiValue(a.array/b)
+function (/)(a::T,b::Number) where {T<:MultiValue}
+    r = broadcast(/,a.data,b)
+    PT  = change_eltype(T,eltype(r))
+    PT(r)
+end
 
 # Dot product (simple contraction)
 
-(*)(a::VectorValue{D}, b::VectorValue{D}) where D = inner(a,b)
-
-function (*)(a::MultiValue,b::MultiValue)
-  r = a.array * b.array
-  MultiValue(r)
+function (*)(a::VectorValue{D}, b::VectorValue{D}) where D 
+    inner(a,b)
 end
 
-@generated function (*)(a::VectorValue{D}, b::TensorValue{D}) where D
+@generated function (*)(a::VectorValue{D1}, b::TensorValue{D2,D1}) where {D1,D2}
   ss = String[]
-  for j in 1:D
-    s = join([ "a.array[$i]*b.array[$i,$j]+" for i in 1:D])
+  for j in 1:D2
+    s = join([ "a[$i]*b[$i,$j]+" for i in 1:D1])
     push!(ss,s[1:(end-1)]*", ")
   end
   str = join(ss)
-  Meta.parse("VectorValue($str)")
+  Meta.parse("VectorValue{$D2}($str)")
 end
 
-@inline dot(u::VectorValue,v::VectorValue) = inner(u,v)
+@generated function (*)(a::TensorValue{D1,D2}, b::VectorValue{D1}) where {D1,D2}
+  ss = String[]
+  for j in 1:D2
+    s = join([ "b[$i]*a[$j,$i]+" for i in 1:D1])
+    push!(ss,s[1:(end-1)]*", ")
+  end
+  str = join(ss)
+  Meta.parse("VectorValue{$D2}($str)")
+end
 
-@inline dot(u::TensorValue,v::VectorValue) = u*v
+@generated function (*)(a::TensorValue{D1,D2}, b::TensorValue{D3,D1}) where {D1,D2,D3}
+  ss = String[]
+  for j in 1:D2
+    for i in 1:D1
+        s = join([ "a[$i,$k]*b[$k,$j]+" for k in 1:D3])
+        push!(ss,s[1:(end-1)]*", ")
+    end
+  end
+  str = join(ss)
+  Meta.parse("TensorValue{$D2,$D3}($str)")
+end
 
-@inline dot(u::VectorValue,v::TensorValue) = u*v
+@inline function dot(u::VectorValue,v::VectorValue) 
+    inner(u,v)
+end
+
+@inline function dot(u::TensorValue,v::VectorValue) 
+    u*v
+end
+
+@inline function dot(u::VectorValue,v::TensorValue) 
+    u*v
+end
 
 # Inner product (full contraction)
 
@@ -102,8 +144,9 @@ inner(a::Real,b::Real) = a*b
 
 """
 """
-@generated function inner(a::MultiValue{S,T,N,L}, b::MultiValue{S,W,N,L}) where {S,T,N,L,W}
-  str = join([" a.array.data[$i]*b.array.data[$i] +" for i in 1:L ])
+@generated function inner(a::MultiValue, b::MultiValue)
+  @assert length(a) == length(b)
+  str = join([" a[$i]*b[$i] +" for i in 1:length(a) ])
   Meta.parse(str[1:(end-1)])
 end
 
@@ -111,7 +154,9 @@ end
 
 for op in (:sum,:maximum,:minimum)
   @eval begin
-    $op(a::MultiValue) = $op(a.array)
+    function $op(a::T) where {T<: MultiValue}
+        $op(a.data)
+    end
   end
 end
 
@@ -126,20 +171,20 @@ outer(a::MultiValue,b::Real) = a*b
 outer(a::Real,b::MultiValue) = a*b
 
 @generated function outer(a::VectorValue{D},b::VectorValue{Z}) where {D,Z}
-  str = join(["a.array[$i]*b.array[$j], " for j in 1:Z for i in 1:D])
-  Meta.parse("MultiValue(SMatrix{$D,$Z}($str))")
+  str = join(["a[$i]*b[$j], " for j in 1:Z for i in 1:D])
+  Meta.parse("TensorValue{$D,$Z}($str)")
 end
 
-@generated function outer(a::VectorValue{D},b::MultiValue{Tuple{A,B}}) where {D,A,B}
-  str = join(["a.array[$i]*b.array[$j,$k], "  for k in 1:B for j in 1:A for i in 1:D])
-  Meta.parse("MultiValue(SArray{Tuple{$D,$A,$B}}($str))")
-end
+#@generated function outer(a::VectorValue{D},b::TensorValue{D1,D2}) where {D,D1,D2}
+#  str = join(["a.array[$i]*b.array[$j,$k], "  for k in 1:D2 for j in 1:D1 for i in 1:D])
+#  Meta.parse("MultiValue(SArray{Tuple{$D,$D1,$D2}}($str))")
+#end
 
 # Linear Algebra
 
-det(a::TensorValue) = det(a.array)
+det(a::TensorValue{D1,D2,T,L}) where {D1,D2,T,L} = det(convert(StaticArrays.SMatrix{D1,D2,T,L},a))
 
-inv(a::TensorValue) = MultiValue(inv(a.array))
+inv(a::TensorValue{D1,D2,T,L}) where {D1,D2,T,L} = TensorValue(inv(convert(StaticArrays.SMatrix{D1,D2,T,L},a)))
 
 # Measure
 
@@ -149,14 +194,14 @@ meas(a::VectorValue) = sqrt(inner(a,a))
 
 meas(a::TensorValue) = abs(det(a))
 
-function meas(v::MultiValue{Tuple{1,2}})
+function meas(v::TensorValue{1,2})
   n1 = v[1,2]
   n2 = -1*v[1,1]
   n = VectorValue(n1,n2)
   sqrt(n*n)
 end
 
-function meas(v::MultiValue{Tuple{2,3}})
+function meas(v::TensorValue{2,3})
   n1 = v[1,2]*v[2,3] - v[1,3]*v[2,2]
   n2 = v[1,3]*v[2,1] - v[1,1]*v[2,3]
   n3 = v[1,1]*v[2,2] - v[1,2]*v[2,1]
@@ -170,39 +215,41 @@ end
 
 # conj
 
-conj(a::MultiValue) = MultiValue(conj(a.array))
+conj(a::VectorValue) = a
+
+conj(a::T) where {T<:TensorValue} = T(conj(get_array(a)))
 
 # Trace
 
 @generated function tr(v::TensorValue{D}) where D
-  str = join([" v.array.data[$i+$((i-1)*D)] +" for i in 1:D ])
+  str = join([" v[$i+$((i-1)*D)] +" for i in 1:D ])
   Meta.parse(str[1:(end-1)])
 end
 
-@generated function tr(v::MultiValue{Tuple{A,A,B}}) where {A,B}
-  str = ""
-  for k in 1:B
-    for i in 1:A
-      if i !=1
-        str *= " + "
-      end
-      str *= " v.array[$i,$i,$k]"
-    end
-    str *= ", "
-  end
-  Meta.parse("VectorValue($str)")
-end
+#@generated function tr(v::MultiValue{Tuple{A,A,B}}) where {A,B}
+#  str = ""
+#  for k in 1:B
+#    for i in 1:A
+#      if i !=1
+#        str *= " + "
+#      end
+#      str *= " v.array[$i,$i,$k]"
+#    end
+#    str *= ", "
+#  end
+#  Meta.parse("VectorValue($str)")
+#end
 
 # Adjoint and transpose
 
-function adjoint(v::TensorValue)
-  t = adjoint(v.array)
-  TensorValue(t)
+function adjoint(v::T) where {T<:TensorValue}
+  t = adjoint(get_array(v))
+  T(t)
 end
 
-function transpose(v::TensorValue)
-  t = transpose(v.array)
-  TensorValue(t)
+function transpose(v::T) where {T<:TensorValue}
+  t = transpose(get_array(v))
+  T(t)
 end
 
 # Symmetric part
@@ -213,7 +260,7 @@ end
   str = "("
   for j in 1:D
     for i in 1:D
-      str *= "0.5*v.array.data[$i+$((j-1)*D)] + 0.5*v.array.data[$j+$((i-1)*D)], "
+      str *= "0.5*v.data[$i+$((j-1)*D)] + 0.5*v.data[$j+$((i-1)*D)], "
     end
   end
   str *= ")"

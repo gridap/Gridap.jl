@@ -1,11 +1,17 @@
 
-function reinterpret(a::Array{MultiValue{S,T,N,L}}) where {S,T,N,L}
+function reinterpret(a::Array{VectorValue{D,T}}) where {D,T}
   b = reinterpret(T,a)
   sa = size(a)
-  sv = Size(S)
-  t = _Size_to_tuple(sv)
+  t = size(VectorValue{D,T})
   s = (t...,sa...)
   reshape(b,s)
 end
 
-_Size_to_tuple(::Size{t}) where t = t
+function reinterpret(a::Array{TensorValue{D1,D2,T,L}}) where {D1,D2,T,L}
+  b = reinterpret(T,a)
+  sa = size(a)
+  t = size(TensorValue{D1,D2,T,L})
+  s = (t...,sa...)
+  reshape(b,s)
+end
+

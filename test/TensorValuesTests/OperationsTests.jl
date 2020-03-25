@@ -44,7 +44,7 @@ r = VectorValue(-1,1,-3)
 
 # Matrix Division
 
-t = one(TensorValue{3,Int,9})
+t = one(TensorValue{3,3,Int,9})
 
 c = t\a
 
@@ -80,17 +80,17 @@ r = VectorValue(1/2,1.0,3/2)
 @test c == r
 
 c = 2 * t
-@test isa(c,TensorValue{3,Int})
+@test isa(c,TensorValue{3})
 r = TensorValue(2, 4, 6, 8, 10, 12, 14, 16, 18)
 @test c == r
 
 c = t * 2
-@test isa(c,TensorValue{3,Int})
+@test isa(c,TensorValue{3})
 r = TensorValue(2, 4, 6, 8, 10, 12, 14, 16, 18)
 @test c == r
 
 c = t + 2
-@test isa(c,TensorValue{3,Int})
+@test isa(c,TensorValue{3,3,Int})
 r = TensorValue(3, 4, 5, 6, 7, 8, 9, 10, 11)
 @test c == r
 
@@ -112,7 +112,7 @@ r = VectorValue(30,36,42)
 @test c == r
 
 c = s * t
-@test isa(c,TensorValue{3,Int})
+@test isa(c,TensorValue{3,3,Int})
 r = TensorValue(38,24,18,98,69,48,158,114,78)
 @test c == r
 
@@ -168,16 +168,16 @@ c = outer(a,2)
 @test c == r
 
 c = outer(a,e)
-@test isa(c,MultiValue{Tuple{3,2},Int})
-r = MultiValue{Tuple{3,2},Int}(2,4,6,5,10,15)
+@test isa(c,TensorValue{3,2,Int})
+r = TensorValue{3,2,Int}(2,4,6,5,10,15)
 @test c == r
 
-e = VectorValue(10,20)
-k = TensorValue(1,2,3,4)
-c = outer(e,k)
-@test c == MultiValue{Tuple{2,2,2}}(10, 20, 20, 40, 30, 60, 40, 80)
-
-@test tr(c) == VectorValue(50,110)
+#e = VectorValue(10,20)
+#k = TensorValue(1,2,3,4)
+#c = outer(e,k)
+#@test c == MultiValue{Tuple{2,2,2}}(10, 20, 20, 40, 30, 60, 40, 80)
+#
+#@test tr(c) == VectorValue(50,110)
 
 # Linear Algebra
 
@@ -199,13 +199,13 @@ t = TensorValue(10,2,30,4,5,6,70,8,9)
 c = meas(t)
 @test c ≈ 8802.0
 
-v = MultiValue{Tuple{1,2}}(10,20)
+v = TensorValue{1,2}(10,20)
 @test meas(v) == sqrt(500)
 
-v = MultiValue{Tuple{2,3}}(1,0,0,1,0,0)
+v = TensorValue{2,3}(1,0,0,1,0,0)
 @test meas(v) ≈ 1.0
 
-v = MultiValue{Tuple{2,3}}(1,0,0,1,1,0)
+v = TensorValue{2,3}(1,0,0,1,1,0)
 @test meas(v) ≈ sqrt(2)
  
 # Broadcasted operations

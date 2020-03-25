@@ -36,7 +36,7 @@ for (k,ti) in enumerate(t)
 end
 
 v = @SMatrix zeros(2,3)
-w = MultiValue(v)
+w = TensorValue{2,3}(v)
 @test CartesianIndices(w) == CartesianIndices(v)
 @test LinearIndices(w) == LinearIndices(v)
 

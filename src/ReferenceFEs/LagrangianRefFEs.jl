@@ -276,7 +276,7 @@ function to_dict(reffe::LagrangianRefFE)
   b = get_prebasis(reffe)
   dict = Dict{Symbol,Any}()
   dict[:orders] = collect(get_orders(reffe))
-  dict[:extrusion] = Array(get_extrusion(p).array)
+  dict[:extrusion] = Array(get_array(get_extrusion(p)))
   if is_S(reffe)
     dict[:space] = "serendipity"
   else
@@ -374,7 +374,6 @@ function _generate_face_nodes_aux(
 end
 
 function _generate_face_own_dofs(face_own_nodes, node_and_comp_to_dof)
-
   faces = 1:length(face_own_nodes)
   T = eltype(node_and_comp_to_dof)
   comps = 1:n_components(T)
@@ -704,13 +703,13 @@ function NodalReferenceFE(p::ExtrusionPolytope)
 end
 
 function compute_monomial_basis(::Type{T},p::ExtrusionPolytope{D},orders) where {D,T}
-  extrusion = Tuple(p.extrusion.array)
+  extrusion = Tuple(p.extrusion)
   terms = _monomial_terms(extrusion,orders)
   MonomialBasis{D}(T,orders,terms)
 end
 
 function compute_own_nodes(p::ExtrusionPolytope{D},orders) where D
-  extrusion = Tuple(p.extrusion.array)
+  extrusion = Tuple(p.extrusion)
   if all(orders .== 0)
     _interior_nodes_order_0(p)
   else
@@ -729,7 +728,7 @@ function compute_face_orders(p::ExtrusionPolytope,face::ExtrusionPolytope{D},ifa
   offset = get_offset(p,d)
   nface = p.dface.nfaces[iface+offset]
   face_orders = _eliminate_zeros(Val{D}(),nface.extrusion,orders)
-  face_orders.array.data
+  Tuple(face_orders)
 end
 
 function _eliminate_zeros(::Val{d},a,o) where d

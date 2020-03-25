@@ -1,29 +1,31 @@
 
-size(a::MultiValue) = size(a.array)
+#size(a<:MultiValue) = size(a.array)
 
-length(a::MultiValue) = length(a.array)
+#length(a<:MultiValue) = length(a.array)
 
-@propagate_inbounds function getindex(
-    a::MultiValue{S,T,N}, I::Vararg{Integer,N}) where {S,T,N}
-    a.array[I...]
+function getindex(a::VectorValue,i::Integer)
+    a.data[i]
 end
 
-@propagate_inbounds function getindex(a::MultiValue, i::Integer)
-    a.array[i]
+function getindex(a::TensorValue,i::Integer)
+    a.data[i]
 end
 
-eltype(a::Type{MultiValue{S,T,N,L}}) where {S,T,N,L} = T
+function getindex(a::TensorValue{D1,D2},i::Integer,j::Integer) where {D1,D2}
+    index = (j-1)*D1 + i
+    a.data[index]
+end
 
-@inline iterate(a::MultiValue) = iterate(a.array)
+@inline iterate(a::MultiValue) = iterate(a.data)
 
-@inline iterate(a::MultiValue, state) = iterate(a.array, state)
+@inline iterate(a::MultiValue, state) = iterate(a.data, state)
 
-eachindex(a::MultiValue) = eachindex(a.array)
+eachindex(a::MultiValue) = eachindex(a.data)
 
 function CartesianIndices(a::MultiValue)
-  CartesianIndices(a.array)
+  CartesianIndices(get_array(a))
 end
 
 function LinearIndices(a::MultiValue)
-  LinearIndices(a.array)
+  LinearIndices(get_array(a))
 end
