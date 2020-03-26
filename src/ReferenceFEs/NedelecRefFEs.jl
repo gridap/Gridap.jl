@@ -174,7 +174,7 @@ const _Nedelec_cell_moments = _RT_cell_moments
 function _broadcast_cross(::Type{T},n,b) where T
   c = Array{T}(undef,size(b))
   for (ii, i) in enumerate(b)
-    c[ii] = T(cross(i.array,n.array))# cross product
+    c[ii] = T(cross(get_array(i),get_array(n)))# cross product
   end
   return c
 end

@@ -33,6 +33,7 @@ using DocStringExtensions
 using StaticArrays
 using Base: @propagate_inbounds, @pure
 using Gridap.Helpers
+using Gridap.Arrays
 
 export MultiValue
 export TensorValue
@@ -61,6 +62,8 @@ import Base: adjoint
 import Base: transpose
 
 import LinearAlgebra: det, inv, tr, dot, norm
+
+import Gridap.Arrays: get_array
 
 include("Types.jl")
 
