@@ -29,7 +29,7 @@ r = [(0,0,0), (1,0,0), (0,1,0), (0,0,1)]
 @test get_exponents(b) == r
 
 orders = (2,2)
-extrusion = Tuple(QUAD.extrusion.array)
+extrusion = Tuple(QUAD.extrusion)
 
 dofs = LagrangianDofBasis(VectorValue{3,Float64},TET,1)
 @test dofs.nodes == Point{3,Float64}[(0,0,0), (1,0,0), (0,1,0), (0,0,1)]

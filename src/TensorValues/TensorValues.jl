@@ -45,7 +45,6 @@ export symmetic_part
 export n_components
 export change_eltype
 export diagonal_tensor
-export get_array
 
 import Base: show
 import Base: zero, one

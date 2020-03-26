@@ -15,7 +15,7 @@ x3 = Point(2,1)
 x = [x1,x2,x3]
 
 r = Point{2,Int}[(1, 1), (3, 3), (5, 3)]
-∇r = TensorValue{2,Int,4}[(2, 0, 0, 2), (2, 0, 0, 2), (2, 0, 0, 2)]
+∇r = TensorValue{2,2,Int,4}[(2, 0, 0, 2), (2, 0, 0, 2), (2, 0, 0, 2)]
 test_field(h,x,r,grad=∇r)
 
 end # module

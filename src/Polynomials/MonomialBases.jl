@@ -386,7 +386,7 @@ function _hessian_nd!(
     _hessian_1d!(h,x,orders[d],d)
   end
 
-  z = zero(mutable(TensorValue{D,T,D*D}))
+  z = zero(mutable(TensorValue{D,D,T}))
   o = one(T)
   k = 1
 

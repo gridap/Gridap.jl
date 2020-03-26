@@ -276,7 +276,7 @@ function to_dict(reffe::LagrangianRefFE)
   b = get_prebasis(reffe)
   dict = Dict{Symbol,Any}()
   dict[:orders] = collect(get_orders(reffe))
-  dict[:extrusion] = Array(get_array(get_extrusion(p)))
+  dict[:extrusion] = Array(TensorValues.get_array(get_extrusion(p)))
   if is_S(reffe)
     dict[:space] = "serendipity"
   else

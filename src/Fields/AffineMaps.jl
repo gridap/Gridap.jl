@@ -2,9 +2,9 @@
 """
 """
 struct AffineMap{D,T,L} <:Field
-  jacobian::TensorValue{D,T,L}
+  jacobian::TensorValue{D,D,T,L}
   origin::Point{D,T}
-  function AffineMap(jacobian::TensorValue{D,T,L}, origin::Point{D,T}) where {D,T,L}
+  function AffineMap(jacobian::TensorValue{D,D,T,L}, origin::Point{D,T}) where {D,T,L}
     new{D,T,L}(jacobian,origin)
   end
 end
@@ -32,7 +32,7 @@ function _apply_affine_map(h,x)
 end
 
 struct AffineMapGrad{D,T,L} <: Field
-  jacobian::TensorValue{D,T,L}
+  jacobian::TensorValue{D,D,T,L}
 end
 
 function field_gradient(h::AffineMap)
