@@ -5,12 +5,12 @@
 """
 Type representing a multi-dimensional value
 """
-abstract type MultiValue <: Number end
+abstract type MultiValue{S,T,N,L} <: Number end
 
 """
 Type representing a first-order tensor
 """
-struct VectorValue{D,T} <: MultiValue
+struct VectorValue{D,T} <: MultiValue{Tuple{D},T,1,D}
     data::NTuple{D,T}
     function VectorValue{D,T}(data::NTuple{D,T}) where {D,T}
         new{D,T}(data)
@@ -20,7 +20,7 @@ end
 """
 Type representing a second-order tensor
 """
-struct TensorValue{D1,D2,T,L} <: MultiValue
+struct TensorValue{D1,D2,T,L} <: MultiValue{Tuple{D1,D2},T,2,L}
     data::NTuple{L,T}
     function TensorValue{D1,D2,T}(data::NTuple{L,T}) where {D1,D2,T,L}
         @assert L == D1*D2
@@ -283,16 +283,9 @@ end
 # Conversions (VectorValue)
 ###############################################################
 
-function convert(::Type{<:VectorValue}, arg::NTuple{D}) where {D}
-    VectorValue{D}(arg)
-end
-
-function convert(::Type{<:VectorValue{D}}, arg::NTuple{D}) where {D}
-    VectorValue{D}(NTuple{D}(arg))
-end
-
-function convert(::Type{<:VectorValue{D,T}}, arg::NTuple{D}) where {D,T}
-    VectorValue{D,T}(NTuple{D,T}(arg))
+function convert(::T, arg::NTuple{D}) where {D,T<:VectorValue}
+@show T
+    T(arg)
 end
 
 function convert(::Type{<:NTuple}, arg::VectorValue{D,T}) where {D,T}
