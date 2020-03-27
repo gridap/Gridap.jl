@@ -49,9 +49,14 @@ for op in (:+,:-)
       T(r)
     end
 
-    function ($op)(a::T,b::T)  where {T<:MultiValue}
+    function ($op)(a::T where {T<:VectorValue{D}},b::T where {T<:VectorValue{D}})  where {D}
       r = broadcast(($op), a.data, b.data)
-      T(r)
+      VectorValue{D}(r)
+    end
+
+    function ($op)(a::T where {T<:TensorValue{D1,D2}},b::T where {T<:TensorValue{D1,D2}})  where {D1,D2}
+      r = broadcast(($op), a.data, b.data)
+      TensorValue{D1,D2}(r)
     end
 
   end
