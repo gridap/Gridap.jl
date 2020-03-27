@@ -26,4 +26,6 @@ using Test
 
 @testset "ArrayPairs" begin include("ArrayPairsTests.jl") end
 
+@testset "AppendedArrays" begin include("AppendedArraysTests.jl") end
+
 end # module
