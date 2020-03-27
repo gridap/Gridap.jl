@@ -296,6 +296,12 @@ function evaluate_field_array(a::AppendedArray,b::AppendedArray)
   end
 end
 
+function evaluate_field_array(a::AppendedArray,b::AbstractArray)
+  n = length(a.a)
+  _b = lazy_append(lazy_split(b,n)...)
+  evaluate_field_array(a,_b)
+end
+
 function field_array_gradient(a::AppendedArray)
   c_a = field_array_gradient(a.a)
   c_b = field_array_gradient(a.b)

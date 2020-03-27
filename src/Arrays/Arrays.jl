@@ -87,6 +87,7 @@ export unpair_arrays
 export matvec_muladd!
 
 export lazy_append
+export lazy_split
 export AppendedArray
 
 import Base: size

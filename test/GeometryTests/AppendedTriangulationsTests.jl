@@ -59,4 +59,22 @@ cellmat =  integrate(∇(dv)*∇(dv),trian,quad)
 #writevtk(trian_out,"trian_out")
 #writevtk(trian,"trian",cellfields=["v"=>v])
 
+# Append triangulations of different cell type
+
+domain = (0,1,0,1)
+partition = (10,10)
+grid1 = CartesianGrid(domain,partition)
+
+domain = (1,2,0,1)
+partition = (10,10)
+grid2 = simplexify(CartesianGrid(domain,partition))
+
+trian = lazy_append(grid1,grid2)
+test_triangulation(trian)
+
+d = mktempdir()
+f = joinpath(d,"trian")
+writevtk(trian,f)
+rm(d,recursive=true)
+
 end # module

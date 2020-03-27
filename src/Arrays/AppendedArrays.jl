@@ -5,6 +5,48 @@ function lazy_append(a::AbstractArray,b::AbstractArray)
   AppendedArray(a,b)
 end
 
+"""
+"""
+function lazy_split(f::AbstractArray,n::Integer)
+  _lazy_split(f,n)
+end
+
+function lazy_split(f::CompressedArray,n::Integer)
+  _a , _b =_lazy_split(f,n)
+  a = _compact_values_ptrs(_a)
+  b = _compact_values_ptrs(_b)
+  a,b
+end
+
+function _lazy_split(f,n)
+  l = length(f)
+  @assert n <= l
+  ids_a = collect(1:n)
+  ids_b = collect((n+1):l)
+  a = reindex(f,ids_a)
+  b = reindex(f,ids_b)
+  a,b
+end
+
+function _compact_values_ptrs(a)
+  v = a.values
+  p = a.ptrs
+  touched = fill(false,length(v))
+  for i in p
+    touched[i] = true
+  end
+  if all(touched) || length(p) == 0
+    return a
+  else
+    j_to_i = findall(touched)
+    i_to_j = zeros(Int,length(v))
+    i_to_j[j_to_i] = 1:length(j_to_i)
+    _v = v[j_to_i]
+    _p = i_to_j[p]
+    return CompressedArray(_v, _p)
+  end
+end
+
 struct AppendedArray{T,A,B} <: AbstractVector{T}
   a::A
   b::B
