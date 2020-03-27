@@ -27,10 +27,13 @@ using Gridap.ReferenceFEs: _get_offsets
 using Gridap.ReferenceFEs: _get_offset
 using Gridap.ReferenceFEs: _find_unique_with_indices
 
+using Gridap.Arrays: Reindexed
+
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
 import Gridap.Arrays: reindex
 import Gridap.Arrays: get_array
+import Gridap.Arrays: lazy_append
 
 import Gridap.Fields: field_cache
 import Gridap.Fields: evaluate_field!
@@ -202,6 +205,8 @@ export QPointCellField
 
 export RestrictedDiscreteModel
 
+export AppendedTriangulation
+
 include("GridTopologies.jl")
 
 include("GridTopologyMocks.jl")
@@ -251,5 +256,7 @@ include("SkeletonTriangulations.jl")
 include("CellQuadratures.jl")
 
 include("QPointCellFields.jl")
+
+include("AppendedTriangulations.jl")
 
 end # module

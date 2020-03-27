@@ -54,3 +54,9 @@ end
 function get_cell_id(trian::RestrictedTriangulation)
   trian.cell_to_oldcell
 end
+
+function get_cell_map(trian::RestrictedTriangulation)
+  cell_map = get_cell_map(trian.oldtrian)
+  reindex(cell_map,trian.cell_to_oldcell)
+end
+
