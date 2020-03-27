@@ -77,10 +77,14 @@ function reindex(a::ExtendedVector,ptrs::IdentityVector)
   a
 end
 
-function reindex(a::ExtendedVector,trian::Triangulation)
-  ptrs = get_cell_id(trian)
-  _extended_reindex(a,ptrs)
+function reindex(a::ExtendedVector,ptrs::SkeletonPair)
+  _extended_reindex(a,ptrs::SkeletonPair)
 end
+
+#function reindex(a::ExtendedVector,trian::Triangulation)
+#  ptrs = get_cell_id(trian)
+#  _extended_reindex(a,ptrs)
+#end
 
 function _extended_reindex(a,ptrs::SkeletonPair)
   left= _extended_reindex(a,ptrs.left)
