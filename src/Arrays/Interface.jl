@@ -188,8 +188,8 @@ function test_array(
   t = true
   for i in eachindex(a)
     ai = getindex!(cache,a,i)
-    t = t && (typeof(ai) == eltype(a))
-    t = t && (typeof(ai) == T)
+    t = t && (typeof(ai) <: eltype(a))
+    t = t && (typeof(ai) <: T)
   end
   @test t
   @test IndexStyle(a) == IndexStyle(b)

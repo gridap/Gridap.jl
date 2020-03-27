@@ -86,6 +86,9 @@ export unpair_arrays
 
 export matvec_muladd!
 
+export lazy_append
+export AppendedArray
+
 import Base: size
 import Base: getindex, setindex!
 import Base: similar
@@ -117,5 +120,7 @@ include("IdentityVectors.jl")
 include("SubVectors.jl")
 
 include("ArrayPairs.jl")
+
+include("AppendedArrays.jl")
 
 end # module
