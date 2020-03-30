@@ -128,7 +128,7 @@ end
     end
   end
   str = join(ss)
-  Meta.parse("TensorValue{$D2,$D3}($str)")
+  Meta.parse("TensorValue{$D2,$D3}(($str))")
 end
 
 @inline function dot(u::VectorValue,v::VectorValue) 
@@ -177,7 +177,7 @@ outer(a::Real,b::MultiValue) = a*b
 
 @generated function outer(a::VectorValue{D},b::VectorValue{Z}) where {D,Z}
   str = join(["a[$i]*b[$j], " for j in 1:Z for i in 1:D])
-  Meta.parse("TensorValue{$D,$Z}($str)")
+  Meta.parse("TensorValue{$D,$Z}(($str))")
 end
 
 #@generated function outer(a::VectorValue{D},b::TensorValue{D1,D2}) where {D,D1,D2}
@@ -249,12 +249,12 @@ end
 
 function adjoint(v::T) where {T<:TensorValue}
   t = adjoint(get_array(v))
-  T(t)
+  TensorValue(t)
 end
 
 function transpose(v::T) where {T<:TensorValue}
   t = transpose(get_array(v))
-  T(t)
+  TensorValue(t)
 end
 
 # Symmetric part

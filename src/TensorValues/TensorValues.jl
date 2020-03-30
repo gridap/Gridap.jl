@@ -31,6 +31,7 @@ module TensorValues
 using DocStringExtensions
 
 using StaticArrays
+using StaticArrays: SVector, MVector, SMatrix, MMatrix, SArray, MArray
 using Base: @propagate_inbounds, @pure
 using Gridap.Helpers
 using Gridap.Arrays

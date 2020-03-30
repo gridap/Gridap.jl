@@ -32,96 +32,46 @@ end
 # Constructors (VectorValue)
 ###############################################################
 
-# VectorValue no-arguments constructor
+# Empty VectorValue constructor
 
-function VectorValue() 
-    VectorValue{0}()
-end
-
-function VectorValue{0}() 
-    VectorValue{0,Int}()
-end
-
-function VectorValue{0,T}() where {T}
-    VectorValue{0,T}(NTuple{0,T}())
-end
-
-# VectorValue empty tuple constructor
-
-function VectorValue(data::NTuple{0})
-    VectorValue{0,Int}(data)
-end
-
-function VectorValue{0}(data::NTuple{0})
-    VectorValue{0,Int}(data)
-end
+VectorValue()                   = VectorValue{0,Int}(NTuple{0,Int}())
+VectorValue{0}()                = VectorValue{0,Int}(NTuple{0,Int}())
+VectorValue{0,T}() where {T}    = VectorValue{0,T}(NTuple{0,T}())
+VectorValue(data::NTuple{0})    = VectorValue{0,Int}(data)
+VectorValue{0}(data::NTuple{0}) = VectorValue{0,Int}(data)
 
 # VectorValue single NTuple argument constructor
 
-function VectorValue(data::NTuple{D,T}) where {D,T}
-    VectorValue{D,T}(data)
-end
-
-function VectorValue{D}(data::NTuple{D,T}) where {D,T}
-    VectorValue{D,T}(data)
-end
-
-function VectorValue{D,T1}(data::NTuple{D,T2}) where {D,T1,T2}
-    VectorValue{D,T1}(NTuple{D,T1}(data))
-end
+VectorValue(data::NTuple{D,T})        where {D,T}     = VectorValue{D,T}(data)
+VectorValue{D}(data::NTuple{D,T})     where {D,T}     = VectorValue{D,T}(data)
+VectorValue{D,T1}(data::NTuple{D,T2}) where {D,T1,T2} = VectorValue{D,T1}(NTuple{D,T1}(data))
 
 # VectorValue Vararg constructor
 
-function VectorValue(data::Vararg)
-    VectorValue(NTuple{length(data)}(data))
-end
+VectorValue(data::Vararg)                  = VectorValue(NTuple{length(data)}(data))
+VectorValue{D}(data::Vararg)   where {D}   = VectorValue{D}(NTuple{D}(data))
+VectorValue{D,T}(data::Vararg) where {D,T} = VectorValue{D,T}(NTuple{D,T}(data))
 
-function VectorValue{D}(data::Vararg) where {D}
-    VectorValue{D}(NTuple{D}(data))
-end
+# VectorValue single SVector, MVector and AbstractVector argument constructor
 
-function VectorValue{D,T}(data::Vararg) where {D,T}
-    VectorValue{D,T}(NTuple{D,T}(data))
-end
-
-# VectorValue single MVector argument constructor
-
-function VectorValue(data::MVector{D,T}) where {D,T}
-    VectorValue{D,T}(NTuple{D,T}(data))
-end
-
-function VectorValue{D}(data::MVector{D,T}) where {D,T}
-    VectorValue{D,T}(NTuple{D,T}(data))
-end
-
-function VectorValue{D,T1}(data::MVector{D,T2}) where {D,T1,T2}
-    VectorValue{D,T1}(NTuple{D,T1}(data))
-end
-
-# VectorValue single MVector argument constructor
-
-function VectorValue(data::SVector{D,T}) where {D,T}
-    VectorValue{D,T}(NTuple{D,T}(data))
-end
-
-function VectorValue{D}(data::SVector{D,T}) where {D,T}
-    VectorValue{D,T}(NTuple{D,T}(data))
-end
-
-function VectorValue{D,T1}(data::SVector{D,T2}) where {D,T1,T2}
-    VectorValue{D,T1}(NTuple{D,T1}(data))
+for s in (  Symbol("VectorValue"),
+            Symbol("VectorValue{D}"),
+            Symbol("VectorValue{D,T1}"))
+  @eval begin
+    function ($s)(data::T where {T<:
+                    Union{
+                        SVector{D,T2},
+                        MVector{D,T2},
+                        AbstractVector{T2}
+                    }}) where {D,T1,T2}
+        PD = (@isdefined D)  ? D  : length(data)
+        PT = (@isdefined T1) ? T1 : T2
+        VectorValue{PD,PT}(NTuple{PD,PT}(data))
+    end
+  end
 end
 
 # VectorValue single AbstractArray argument constructor
-
-function VectorValue(data::AbstractArray{T}) where {T}
-    D = length(data)
-    VectorValue{D,T}(NTuple{D,T}(data))
-end
-
-function VectorValue{D}(data::AbstractArray{T}) where {D,T}
-    VectorValue{D,T}(NTuple{D,T}(data))
-end
 
 function VectorValue{D,T1}(data::AbstractArray{T2}) where {D,T1,T2}
     VectorValue{D,T1}(NTuple{D,T1}(data))
@@ -131,317 +81,124 @@ end
 # Constructors (TensorValue)
 ###############################################################
 
-# TensorValue no-arguments constructor
+# Empty TensorValue constructor
 
-function TensorValue() 
-    TensorValue{0,0}()
-end
-
-function TensorValue{0,0}() 
-    TensorValue{0,0,Int}(NTuple{0,Int}())
-end
-
-function TensorValue{0,0,T}() where {T}
-    TensorValue{0,0,T}(NTuple{0,T}())
-end
-
-# TensorValue empty tuple constructor
-
-function TensorValue(data::NTuple{0})
-    TensorValue{0,0,Int}(data)
-end
-
-function TensorValue{0,0}(data::NTuple{0})
-    TensorValue{0,0,Int}(data)
-end
+TensorValue()                     = TensorValue{0,0,Int}(NTuple{0,Int}())
+TensorValue{0,0}()                = TensorValue{0,0,Int}(NTuple{0,Int}())
+TensorValue{0,0,T}() where {T}    = TensorValue{0,0,T}(NTuple{0,T}())
+TensorValue(data::NTuple{0})      = TensorValue{0,0,Int}(data)
+TensorValue{0,0}(data::NTuple{0}) = TensorValue{0,0,Int}(data)
 
 # TensorValue single NTuple argument constructor
 
-function TensorValue(data::NTuple{L,T}) where {L,T}
-    D=Int(sqrt(L))
-    TensorValue{D,D,T}(data)
-end
-
-function TensorValue{D}(data::NTuple{L,T}) where {D,L,T}
-    TensorValue{D,D,T}(data)
-end
-
-function TensorValue{D1,D2}(data::NTuple{L,T}) where {D1,D2,L,T}
-    TensorValue{D1,D2,T}(data)
-end
-
-function TensorValue{D1,D2,T1}(data::NTuple{L,T2}) where {D1,D2,L,T1,T2}
-    TensorValue{D1,D2,T1}(NTuple{L,T1}(data))
-end
-
-function TensorValue{D1,D2,T1,L}(data::NTuple{L,T2}) where {D1,D2,L,T1,T2}
-    TensorValue{D1,D2,T1}(NTuple{L,T1}(data))
-end
+TensorValue(data::NTuple{L,T}) where {L,T}                        = (D=Int(sqrt(L));TensorValue{D,D,T}(data))
+TensorValue{D}(data::NTuple{L,T}) where {D,L,T}                   = TensorValue{D,D,T}(data)
+TensorValue{D1,D2}(data::NTuple{L,T}) where {D1,D2,L,T}           = TensorValue{D1,D2,T}(data)
+TensorValue{D1,D2,T1}(data::NTuple{L,T2}) where {D1,D2,L,T1,T2}   = TensorValue{D1,D2,T1}(NTuple{L,T1}(data))
+TensorValue{D1,D2,T1,L}(data::NTuple{L,T2}) where {D1,D2,L,T1,T2} = TensorValue{D1,D2,T1}(NTuple{L,T1}(data))
 
 # TensorValue Vararg constructor
 
-function TensorValue(data::Vararg)
-    TensorValue(NTuple{length(data)}(data))
+TensorValue(data::Vararg)                          = TensorValue(NTuple{length(data)}(data))
+TensorValue{D}(data::Vararg) where {D}             = TensorValue{D,D}(NTuple{D*D}(data))
+TensorValue{D1,D2}(data::Vararg) where {D1,D2}     = TensorValue{D1,D2}(NTuple{D1*D2}(data))
+TensorValue{D1,D2,T}(data::Vararg) where {D1,D2,T} = TensorValue{D1,D2,T}(NTuple{D1*D2,T}(data))
+
+# VectorValue single SVector, MVector, SMatrix, MMatrix and AbstractMatrix argument constructor
+
+for s in (  Symbol("TensorValue"),
+            Symbol("TensorValue{D1,D2}"),
+            Symbol("TensorValue{D1,D2,T1}"),
+            Symbol("TensorValue{D1,D2,T1,L}"))
+  @eval begin
+    function ($s)(data::T where {T<:
+                    Union{
+                        SVector{L,T2},
+                        MVector{L,T2},
+                        SMatrix{D1,D2,T2,L},
+                        MMatrix{D1,D2,T2,L},
+                        AbstractMatrix{T2}
+                    }}) where {D1,D2,T1,T2,L}
+        PD1 = (@isdefined D1) ? D1 : size(data)[1]
+        PD2 = (@isdefined D2) ? D2 : size(data)[2]
+        PT  = (@isdefined T1) ? T1 : T2
+        PL  = (@isdefined L)  ? L  : length(data)
+        TensorValue{PD1,PD2,PT}(NTuple{PL,PT}(data))
+    end
+  end
 end
 
-function TensorValue{D}(data::Vararg) where {D}
-    TensorValue{D,D}(NTuple{D*D}(data))
-end
-
-function TensorValue{D1,D2}(data::Vararg) where {D1,D2}
-    TensorValue{D1,D2}(NTuple{D1*D2}(data))
-end
-
-function TensorValue{D1,D2,T}(data::Vararg) where {D1,D2,T}
-    TensorValue{D1,D2,T}(NTuple{D1*D2,T}(data))
-end
-
-# TensorValue single MVector argument constructor
-
-function TensorValue(data::MVector{L,T}) where {L,T}
-    D=Int(sqrt(L))
-    TensorValue{D,D,T}(NTuple{L,T}(data))
-end
-
-function TensorValue{D1,D2}(data::MVector{L,T}) where {D1,D2,T,L}
-    TensorValue{D1,D2,T}(NTuple{L,T}(data))
-end
-
-function TensorValue{D1,D2,T1}(data::MVector{L,T2}) where {D1,D2,T1,T2,L}
-    TensorValue{D1,D2,T1}(NTuple{L,T1}(data))
-end
-
-# TensorValue single SVector argument constructor
-
-function TensorValue(data::SVector{L,T}) where {L,T}
-    D=Int(sqrt(L))
-    TensorValue{D,D,T}(NTuple{L,T}(data))
-end
-
-function TensorValue{D1,D2}(data::SVector{L,T}) where {D1,D2,T,L}
-    TensorValue{D1,D2,T}(NTuple{L,T}(data))
-end
-
-function TensorValue{D1,D2,T1}(data::SVector{L,T2}) where {D1,D2,T1,T2,L}
-    TensorValue{D1,D2,T1}(NTuple{L,T1}(data))
-end
-
-# TensorValue single MMAtrix argument constructor
-
-function TensorValue(data::StaticArrays.MMatrix{D1,D2,T,L}) where {D1,D2,T,L}
-    D=Int(sqrt(L))
-    TensorValue{D,D,T}(NTuple{L,T}(data))
-end
-
-function TensorValue{D1,D2}(data::StaticArrays.MMatrix{D1,D2,T,L}) where {D1,D2,T,L}
-    TensorValue{D1,D2,T}(NTuple{L,T}(data))
-end
-
-function TensorValue{D1,D2,T1}(data::StaticArrays.MMatrix{D1,D2,T2,L}) where {D1,D2,T1,T2,L}
-    TensorValue{D1,D2,T1}(NTuple{L,T1}(data))
-end
-
-function TensorValue{D1,D2,T1,L}(data::StaticArrays.MMatrix{D1,D2,T2,L}) where {D1,D2,T1,T2,L}
-    TensorValue{D1,D2,T1}(NTuple{L,T1}(data))
-end
-
-# TensorValue single SMatrix argument constructor
-
-function TensorValue(data::StaticArrays.SMatrix{D1,D2,T,L}) where {D1,D2,T,L}
-    D=Int(sqrt(L))
-    TensorValue{D,D,T}(NTuple{L,T}(data))
-end
-
-function TensorValue{D1,D2}(data::StaticArrays.SMatrix{D1,D2,T,L}) where {D1,D2,T,L}
-    TensorValue{D1,D2,T}(NTuple{L,T}(data))
-end
-
-function TensorValue{D1,D2,T1}(data::StaticArrays.SMatrix{D1,D2,T2,L}) where {D1,D2,T1,T2,L}
-    TensorValue{D1,D2,T1}(NTuple{L,T1}(data))
-end
-
-function TensorValue{D1,D2,T1,L}(data::StaticArrays.SMatrix{D1,D2,T2,L}) where {D1,D2,T1,T2,L}
-    TensorValue{D1,D2,T1}(NTuple{L,T1}(data))
-end
-
-# TensorValue single AbstractArray argument constructor
-
-function TensorValue(data::AbstractArray{T}) where {T}
-    L = length(data)
-    TensorValue(NTuple{L,T}(data))
-end
-
-function TensorValue{D1,D2}(data::AbstractArray{T}) where {D1,D2,T}
-    TensorValue{D1,D2,T}(NTuple{D1*D2,T}(data))
-end
-
-function TensorValue{D1,D2,T1}(data::AbstractArray{T2}) where {D1,D2,T1,T2}
-    TensorValue{D1,D2,T1}(NTuple{D1*D2,T1}(data))
-end
 
 ###############################################################
 # Conversions (VectorValue)
 ###############################################################
 
-function convert(::T, arg::NTuple{D}) where {D,T<:VectorValue}
-@show T
-    T(arg)
+function convert(::Type{<:Union{VectorValue,VectorValue{D,T1}}}, 
+                arg::T where {T<:
+                    Union{
+                        NTuple{D,T2},
+                        SVector{D,T2},
+                        MVector{D,T2},
+                        AbstractArray{T2}
+                    }}) where {D,T1,T2}
+    PT = (@isdefined T1) ? T1 : T2
+    PD = (@isdefined D)  ? D  : length(arg)
+    VectorValue{PD,PT}(NTuple{PD,PT}(arg))
 end
 
-function convert(::Type{<:NTuple}, arg::VectorValue{D,T}) where {D,T}
-    NTuple{D,T}(arg.data)
+function convert(::Type{<:Union{NTuple,NTuple{D,T1}}}, arg::VectorValue{D,T2}) where {D,T1,T2}
+    PT = (@isdefined T1) ? T1 : T2
+    NTuple{D,PT}(arg.data)
 end
 
-function convert(::Type{<:NTuple{D}}, arg::VectorValue{D,T}) where {D,T}
-    NTuple{D,T}(arg.data)
+function convert(::Type{<:Union{SVector,SVector{D,T1}}}, arg::VectorValue{D,T2}) where {D,T1,T2}
+    PT = (@isdefined T1) ? T1 : T2
+    SVector{D,PT}(arg.data)
 end
 
-function convert(::Type{<:NTuple{D,T1}}, arg::VectorValue{D,T2}) where {D,T1,T2}
-    NTuple{D,T1}(arg.data)
+function convert(::Type{<:Union{MVector,MVector{D,T1}}}, arg::VectorValue{D,T2}) where {D,T1,T2}
+    PT = (@isdefined T1) ? T1 : T2
+    MVector{D,PT}(arg.data)
 end
 
-function convert(::Type{<:VectorValue}, arg::SVector{D,T}) where {D,T}
-    VectorValue{D,T}(arg)
-end
-
-function convert(::Type{<:VectorValue{D}}, arg::SVector{D,T}) where {D,T}
-    VectorValue{D,T}(arg)
-end
-
-function convert(::Type{<:VectorValue{D,T1}}, arg::SVector{D,T2}) where {D,T1,T2}
-    VectorValue{D,T1}(arg)
-end
-
-function convert(::Type{<:VectorValue}, arg::MVector{D,T}) where {D,T}
-    VectorValue{D,T}(arg)
-end
-
-function convert(::Type{<:VectorValue{D}}, arg::MVector{D,T}) where {D,T}
-    VectorValue{D,T}(arg)
-end
-
-function convert(::Type{<:VectorValue{D,T1}}, arg::MVector{D,T2}) where {D,T1,T2}
-    VectorValue{D,T1}(arg)
-end
-
-function convert(::Type{<:SVector}, arg::VectorValue{D,T}) where {D,T}
-    SVector{D,T}(arg.data)
-end
-
-function convert(::Type{<:SVector{D}}, arg::VectorValue{D,T}) where {D,T}
-    SVector{D,T}(arg.data)
-end
-
-function convert(::Type{<:SVector{D,T1}}, arg::VectorValue{D,T2}) where {D,T1,T2}
-    SVector{D,T1}(arg.data)
-end
-
-function convert(::Type{<:MVector}, arg::VectorValue{D,T}) where {D,T}
-    MVector{D,T}(arg.data)
-end
-
-function convert(::Type{<:MVector{D}}, arg::VectorValue{D,T}) where {D,T}
-    MVector{D,T}(arg.data)
-end
-
-function convert(::Type{<:MVector{D,T1}}, arg::VectorValue{D,T2}) where {D,T1,T2}
-    MVector{D,T1}(arg.data)
-end
-
-function convert(AAT::Type{<:AbstractArray{T1,N}}, arg::VectorValue{D,T2}) where {D,T1,T2,N}
-    AAT{T1,N}(collect(T1,arg.data))
-end
-
-function convert(::Type{<:VectorValue}, arg::AbstractArray{T,1}) where {T}
-    D =length(arg)
-    VectorValue{D,T}(NTuple{D,T}(arg))
-end
-
-function convert(::Type{<:VectorValue{D}}, arg::AbstractArray{T,1}) where {D,T}
-    VectorValue{D,T}(NTuple{D,T}(arg))
-end
-
-function convert(::Type{<:VectorValue{D,T1}}, arg::AbstractArray{T2,1}) where {D,T1,T2}
-    VectorValue{D,T1}(NTuple{D,T1}(arg))
-end
-
-function convert(::Type{<:VectorValue}, arg::VectorValue{D,T2}) where {D,T2}
-    arg
-end
-
-function convert(::Type{<:VectorValue{D}}, arg::VectorValue{D,T2}) where {D,T2}
-end
-
-function convert(::Type{<:VectorValue{D,T1}}, arg::VectorValue{D,T2}) where {D,T1,T2}
-    T1 == T2 ? arg : convert(VectorValue{D,T1}, arg.data)
+function convert(::Type{<:Union{VectorValue,VectorValue{D,T1}}}, arg::VectorValue{D,T2}) where {D,T1,T2}
+    PT = (@isdefined T1) ? T1 : T2
+    PT == T2 ? arg : convert(VectorValue{D,PT}, arg.data)
 end
 
 ###############################################################
 # Conversions (TensorValue)
 ###############################################################
 
-function convert(::Type{<:TensorValue}, arg::NTuple{L}) where {L}
-    TensorValue(arg)
+function convert(::Type{<:Union{TensorValue,TensorValue{D1,D2,T1,L}}}, 
+                arg::T where {T<:
+                    Union{
+                        NTuple{L},
+SMatrix{D1,D2,T2,L},
+MMatrix{D1,D2,T2,L}
+                    }}) where {D1,D2,T1,T2,L}
+    PT = (@isdefined T1) ? T1 : T2
+    TensorValue{D1,D2,PT}(arg)
 end
 
-function convert(::Type{<:TensorValue{D1,D2}}, arg::NTuple{L}) where {D1,D2,L}
-    TensorValue{D1,D2}(arg)
+function convert(T::Type{<:Union{NTuple,NTuple{L,T1}}}, arg::TensorValue{D1,D2,T2,L}) where {D1,D2,T1,T2,L}
+    PT = (@isdefined T1) ? T1 : T2
+    NTuple{L,PT}(arg.data)
 end
 
-function convert(::Type{<:TensorValue{D1,D2,T1}}, arg::NTuple{L}) where {D1,D2,T1,L}
-    TensorValue{D1,D2,T1}(arg)
+function convert(::Type{<:Union{SMatrix,SMatrix{D1,D2,T1,L}}}, arg::TensorValue{D1,D2,T2,L}) where {D1,D2,T1,T2,L}
+    PT = (@isdefined T1) ? T1 : T2
+    SMatrix{D1,D2,PT,L}(arg.data)
 end
 
-function convert(::Type{<:NTuple}, arg::TensorValue{D1,D2,T2,L}) where {D1,D2,T2,L}
-    NTuple(arg.data)
+function convert(::Type{<:Union{MMatrix,MMatrix{D1,D2,T1,L}}}, arg::TensorValue{D1,D2,T2,L}) where {D1,D2,T1,T2,L}
+    PT = (@isdefined T1) ? T1 : T2
+    MMatrix{D1,D2,PT,L}(arg.data)
 end
 
-function convert(::Type{<:NTuple{L,T1}}, arg::TensorValue{D1,D2,T2,L}) where {D1,D2,T1,T2,L}
-    NTuple{L,T1}(arg.data)
-end
-
-function convert(::Type{<:TensorValue}, arg::StaticArrays.SMatrix{D1,D2,T2,L}) where {D1,D2,T2,L}
-    TensorValue{D1,D2,T2}(arg)
-end
-
-function convert(::Type{<:TensorValue{D1,D2,T1}}, arg::StaticArrays.SMatrix{D1,D2,T2,L}) where {D1,D2,T1,T2,L}
-    TensorValue{D1,D2,T1}(arg)
-end
-
-function convert(::Type{<:TensorValue}, arg::StaticArrays.MMatrix{D1,D2,T2,L}) where {D1,D2,T2,L}
-    TensorValue{D1,D2,T2}(arg)
-end
-
-function convert(::Type{<:TensorValue{D1,D2,T1}}, arg::StaticArrays.MMatrix{D1,D2,T2,L}) where {D1,D2,T1,T2,L}
-    TensorValue{D1,D2,T1}(arg)
-end
-
-function convert(::Type{<:StaticArrays.SMatrix}, arg::TensorValue{D1,D2,T2,L}) where {D1,D2,T2,L}
-    StaticArrays.SMatrix{D1,D2,T2,L}(arg.data)
-end
-
-function convert(::Type{<:StaticArrays.SMatrix{D1,D2,T1}}, arg::TensorValue{D1,D2,T2,L}) where {D1,D2,T1,T2,L}
-    StaticArrays.SMatrix{D1,D2,T1,L}(arg.data)
-end
-
-function convert(::Type{<:StaticArrays.MMatrix}, arg::TensorValue{D1,D2,T2,L}) where {D1,D2,T2,L}
-    StaticArrays.MMatrix{D1,D2,T2,L}(arg.data)
-end
-
-function convert(::Type{<:StaticArrays.MMatrix{D1,D2,T1}}, arg::TensorValue{D1,D2,T2,L}) where {D1,D2,T1,T2,L}
-    StaticArrays.MMatrix{D1,D2,T1,L}(arg.data)
-end
-
-function convert(::Type{<:TensorValue}, arg::TensorValue{D1,D2,T2,L}) where {D1,D2,T2,L}
-    arg
-end
-
-function convert(::Type{<:TensorValue{D1,D2}}, arg::TensorValue{D1,D2,T2,L}) where {D1,D2,T2,L}
-    arg
-end
-
-function convert(::Type{<:TensorValue{D1,D2,T1}}, arg::TensorValue{D1,D2,T2,L}) where {D1,D2,T1,T2,L}
-    T1 == T2 ? arg : convert(TensorValue{D1,D2,T1,L}, arg.data)
+function convert(::Type{<:Union{TensorValue,TensorValue{D1,D2,T1,L}}}, arg::TensorValue{D1,D2,T2,L}) where {D1,D2,T1,T2,L}
+    PT = (@isdefined T1) ? T1 : T2
+    PT == T2 ? arg : convert(TensorValue{D1,D2,PT,L}, arg.data)
 end
 
 ###############################################################
@@ -530,8 +287,8 @@ function change_eltype(::IT where {IT<:TensorValue{D1,D2,T1,L}},::Type{T2}) wher
     change_eltype(TensorValue{D1,D2,T1,L},T2)
 end
 
-function StaticArrays.SMatrix(arg::IT where {IT<:TensorValue{D1,D2,T,L}}) where {D1,D2,T,L}
-    StaticArrays.SMatrix{D1,D2,T,L}(arg.data)
+function SMatrix(arg::IT where {IT<:TensorValue{D1,D2,T,L}}) where {D1,D2,T,L}
+    SMatrix{D1,D2,T,L}(arg.data)
 end
 
 function SArray(arg::IT where {IT<:TensorValue{D1,D2,T,L}}) where {D1,D2,T,L}
