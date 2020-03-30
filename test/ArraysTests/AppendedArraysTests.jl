@@ -9,11 +9,14 @@ c = lazy_append(a,b)
 r = vcat(a,b)
 test_array(c,r)
 
+
 a = collect(Float64,11:20)
 b = collect(Float64,101:120)
 c = lazy_append(a,b)
 r = vcat(a,b)
 test_array(c,r)
+
+@test sum(c) == sum(r)
 
 d = apply(-,c)
 r = -c

@@ -115,4 +115,7 @@ function apply(::Type{T},f,a::AppendedArray...) where T
   end
 end
 
+function Base.sum(a::AppendedArray)
+  sum(a.a) + sum(a.b)
+end
 
