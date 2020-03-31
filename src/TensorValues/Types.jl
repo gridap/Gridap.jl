@@ -48,9 +48,9 @@ VectorValue{D,T1}(data::NTuple{D,T2}) where {D,T1,T2} = VectorValue{D,T1}(NTuple
 
 # VectorValue Vararg constructor
 
-VectorValue(data::Vararg{VT} where {VT<:Real})                  = VectorValue(NTuple{length(data)}(data))
-VectorValue{D}(data::Vararg{VT} where {VT<:Real})   where {D}   = VectorValue{D}(NTuple{D}(data))
-VectorValue{D,T}(data::Vararg{VT} where {VT<:Real}) where {D,T} = VectorValue{D,T}(NTuple{D,T}(data))
+VectorValue(data::Real...)                  = VectorValue(NTuple{length(data)}(data))
+VectorValue{D}(data::Real...)   where {D}   = VectorValue{D}(NTuple{D}(data))
+VectorValue{D,T}(data::Real...) where {D,T} = VectorValue{D,T}(NTuple{D,T}(data))
 
 # VectorValue single SVector, MVector and AbstractVector argument constructor
 
@@ -58,12 +58,12 @@ for s in (  Symbol("VectorValue"),
             Symbol("VectorValue{D}"),
             Symbol("VectorValue{D,T1}"))
   @eval begin
-    function ($s)(data::T where {T<:
+    function ($s)(data::
                     Union{
                         SVector{D,T2},
                         MVector{D,T2},
                         AbstractVector{T2}
-                    }}) where {D,T1,T2}
+                    }) where {D,T1,T2}
         PD = (@isdefined D)  ? D  : length(data)
         PT = (@isdefined T1) ? T1 : T2
         VectorValue{PD,PT}(NTuple{PD,PT}(data))
@@ -99,10 +99,10 @@ TensorValue{D1,D2,T1,L}(data::NTuple{L,T2}) where {D1,D2,L,T1,T2} = TensorValue{
 
 # TensorValue Vararg constructor
 
-TensorValue(data::Vararg{VT} where {VT<:Real})                          = TensorValue(NTuple{length(data)}(data))
-TensorValue{D}(data::Vararg{VT} where {VT<:Real}) where {D}             = TensorValue{D,D}(NTuple{D*D}(data))
-TensorValue{D1,D2}(data::Vararg{VT} where {VT<:Real}) where {D1,D2}     = TensorValue{D1,D2}(NTuple{D1*D2}(data))
-TensorValue{D1,D2,T}(data::Vararg{VT} where {VT<:Real}) where {D1,D2,T} = TensorValue{D1,D2,T}(NTuple{D1*D2,T}(data))
+TensorValue(data::Real...)                          = TensorValue(NTuple{length(data)}(data))
+TensorValue{D}(data::Real...) where {D}             = TensorValue{D,D}(NTuple{D*D}(data))
+TensorValue{D1,D2}(data::Real...) where {D1,D2}     = TensorValue{D1,D2}(NTuple{D1*D2}(data))
+TensorValue{D1,D2,T}(data::Real...) where {D1,D2,T} = TensorValue{D1,D2,T}(NTuple{D1*D2,T}(data))
 
 # VectorValue single SVector, MVector, SMatrix, MMatrix and AbstractMatrix argument constructor
 
@@ -111,14 +111,14 @@ for s in (  Symbol("TensorValue"),
             Symbol("TensorValue{D1,D2,T1}"),
             Symbol("TensorValue{D1,D2,T1,L}"))
   @eval begin
-    function ($s)(data::T where {T<:
+    function ($s)(data::
                     Union{
                         SVector{L,T2},
                         MVector{L,T2},
                         SMatrix{D1,D2,T2,L},
                         MMatrix{D1,D2,T2,L},
                         AbstractMatrix{T2}
-                    }}) where {D1,D2,T1,T2,L}
+                    }) where {D1,D2,T1,T2,L}
         PD1 = (@isdefined D1) ? D1 : size(data)[1]
         PD2 = (@isdefined D2) ? D2 : size(data)[2]
         PT  = (@isdefined T1) ? T1 : T2
@@ -128,19 +128,24 @@ for s in (  Symbol("TensorValue"),
   end
 end
 
+function TensorValue{D1,D2,T1}(data::MMatrix{D1,D2,T2,L}) where {D1,D2,T1,T2,L}
+    TensorValue{D1,D2,T1}(NTuple{L,T1}(data))
+end
+
+
 
 ###############################################################
 # Conversions (VectorValue)
 ###############################################################
 
 function convert(::Type{<:Union{VectorValue,VectorValue{D,T1}}}, 
-                arg::T where {T<:
+                arg::
                     Union{
                         NTuple{D,T2},
                         SVector{D,T2},
                         MVector{D,T2},
                         AbstractArray{T2}
-                    }}) where {D,T1,T2}
+                    }) where {D,T1,T2}
     PT = (@isdefined T1) ? T1 : T2
     PD = (@isdefined D)  ? D  : length(arg)
     VectorValue{PD,PT}(NTuple{PD,PT}(arg))
@@ -170,13 +175,13 @@ end
 # Conversions (TensorValue)
 ###############################################################
 
-function convert(::Type{<:Union{TensorValue,TensorValue{D1,D2,T1,L}}}, 
-                arg::T where {T<:
+function convert(TT::Type{<:Union{TensorValue,TensorValue{D1,D2,T1,L}}}, 
+                arg::
                     Union{
-                        NTuple{L},
+                        NTuple{L,T2},
                         SMatrix{D1,D2,T2,L},
                         MMatrix{D1,D2,T2,L}
-                    }}) where {D1,D2,T1,T2,L}
+                    }) where {D1,D2,T1,T2,L}
     PT = (@isdefined T1) ? T1 : T2
     TensorValue{D1,D2,PT}(arg)
 end
