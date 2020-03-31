@@ -1,10 +1,10 @@
-module NonLinearOperatorsTests
+module NonlinearOperatorsTests
 
 using Test
 using Gridap.Algebra
-using Gridap.Algebra: NonLinearOperatorMock
+using Gridap.Algebra: NonlinearOperatorMock
 
-op = NonLinearOperatorMock()
+op = NonlinearOperatorMock()
 
 x = [1.0, 3.0]
 b = [0.0,0.0]

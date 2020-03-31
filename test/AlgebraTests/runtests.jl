@@ -8,9 +8,9 @@ using Test
 
 @testset "SymSparseMatrixCSR" begin include("SymSparseMatrixCSR.jl") end
 
-@testset "NonLinearOperators" begin include("NonLinearOperatorsTests.jl") end
+@testset "NonlinearOperators" begin include("NonlinearOperatorsTests.jl") end
 
-@testset "NonLinearSolvers" begin include("NonLinearSolversTests.jl") end
+@testset "NonlinearSolvers" begin include("NonlinearSolversTests.jl") end
 
 @testset "NLSolvers" begin include("NLSolversTests.jl") end
 

@@ -170,7 +170,7 @@ export get_algebraic_operator
 
 export FESolver
 export LinearFESolver
-export NonLinearFESolver
+export NonlinearFESolver
 export test_fe_solver
 
 export FETerm

@@ -1,9 +1,9 @@
 module NLSolversTests
 
 using Gridap.Algebra
-using Gridap.Algebra: NonLinearOperatorMock
+using Gridap.Algebra: NonlinearOperatorMock
 
-op = NonLinearOperatorMock()
+op = NonlinearOperatorMock()
 nls = NLSolver(show_trace=false,method=:newton)
 
 x0 = zero_initial_guess(op)

@@ -100,7 +100,7 @@ function test_fe_operator(op::FEOperator,args...;kwargs...)
   test_non_linear_operator(_op,args...;kwargs...)
 end
 
-# FEOperator viewed as a NonLinearOperator
+# FEOperator viewed as a NonlinearOperator
 
 """
 """
@@ -108,7 +108,7 @@ function get_algebraic_operator(feop::FEOperator)
   AlgebraicOpFromFEOp(feop)
 end
 
-struct AlgebraicOpFromFEOp <: NonLinearOperator
+struct AlgebraicOpFromFEOp <: NonlinearOperator
   feop::FEOperator
 end
 

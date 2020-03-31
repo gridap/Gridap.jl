@@ -46,7 +46,7 @@ end
 """
 """
 function solve(op::FEOperator)
-  solver = NonLinearFESolver()
+  solver = NonlinearFESolver()
   solve(solver,op)
 end
 
@@ -116,30 +116,30 @@ function solve!(u,solver::LinearFESolver,feop::AffineFEOperator, cache)
 end
 
 """
-A general NonLinearFESolver
+A general NonlinearFESolver
 """
-struct NonLinearFESolver <: FESolver
-  nls::NonLinearSolver
+struct NonlinearFESolver <: FESolver
+  nls::NonlinearSolver
 end
 
 """
 """
-function FESolver(nls::NonLinearSolver)
-  NonLinearFESolver(nls)
+function FESolver(nls::NonlinearSolver)
+  NonlinearFESolver(nls)
 end
 
 function FESolver()
-  NonLinearFESolver()
+  NonlinearFESolver()
 end
 
 """
 """
-function NonLinearFESolver()
+function NonlinearFESolver()
   nls = NLSolver(show_trace=false,method=:newton)
-  NonLinearFESolver(nls)
+  NonlinearFESolver(nls)
 end
 
-function solve!(u,solver::NonLinearFESolver,feop::FEOperator)
+function solve!(u,solver::NonlinearFESolver,feop::FEOperator)
   @assert is_a_fe_function(u)
   x = get_free_values(u)
   op = get_algebraic_operator(feop)
@@ -149,7 +149,7 @@ function solve!(u,solver::NonLinearFESolver,feop::FEOperator)
   (u_new, cache)
 end
 
-function solve!(u,solver::NonLinearFESolver,feop::FEOperator,cache)
+function solve!(u,solver::NonlinearFESolver,feop::FEOperator,cache)
   @assert is_a_fe_function(u)
   x = get_free_values(u)
   op = get_algebraic_operator(feop)

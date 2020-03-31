@@ -1,14 +1,14 @@
 
 """
-    abstract type NonLinearSolver <: GridapType end
+    abstract type NonlinearSolver <: GridapType end
 
-- [`solve!(x::AbstractVector,nls::NonLinearSolver,op::NonLinearOperator)`](@ref)
-- [`solve!(x::AbstractVector,nls::NonLinearSolver,op::NonLinearOperator, cache)`](@ref)
+- [`solve!(x::AbstractVector,nls::NonlinearSolver,op::NonlinearOperator)`](@ref)
+- [`solve!(x::AbstractVector,nls::NonlinearSolver,op::NonlinearOperator, cache)`](@ref)
 """
-abstract type NonLinearSolver <: GridapType end
+abstract type NonlinearSolver <: GridapType end
 
 """
-    solve!(x::AbstractVector,nls::NonLinearSolver,op::NonLinearOperator)
+    solve!(x::AbstractVector,nls::NonlinearSolver,op::NonlinearOperator)
 
 Usage:
 
@@ -18,26 +18,26 @@ The returned `cache` object can be used in subsequent solves:
 
    solve!(x,nls,op,cache)
 """
-function solve!(x::AbstractVector,nls::NonLinearSolver,op::NonLinearOperator)
+function solve!(x::AbstractVector,nls::NonlinearSolver,op::NonlinearOperator)
   @abstractmethod
 end
 
 """
-    solve!(x::AbstractVector,nls::NonLinearSolver,op::NonLinearOperator,cache)
+    solve!(x::AbstractVector,nls::NonlinearSolver,op::NonlinearOperator,cache)
 
 Solve using the cache object from a previous solve.
 """
-function solve!(x::AbstractVector,nls::NonLinearSolver,op::NonLinearOperator,cache)
+function solve!(x::AbstractVector,nls::NonlinearSolver,op::NonlinearOperator,cache)
   @abstractmethod
 end
 
 
 """
-    solve(nls::NonLinearSolver,op::NonLinearOperator)
+    solve(nls::NonlinearSolver,op::NonlinearOperator)
 
 Creates and uses a zero initial guess.
 """
-function solve(nls::NonLinearSolver,op::NonLinearOperator)
+function solve(nls::NonlinearSolver,op::NonlinearOperator)
   x = zero_initial_guess(op)
   solve!(x,nls,op)
   x
@@ -45,15 +45,15 @@ end
 
 """
     test_non_linear_solver(
-      nls::NonLinearSolver,
-      op::NonLinearOperator,
+      nls::NonlinearSolver,
+      op::NonlinearOperator,
       x0::AbstractVector,
       x::AbstractVector,
       pred::Function=isapprox)
 """
 function test_non_linear_solver(
-  nls::NonLinearSolver,
-  op::NonLinearOperator,
+  nls::NonlinearSolver,
+  op::NonlinearOperator,
   x0::AbstractVector,
   x::AbstractVector,
   pred::Function=isapprox)

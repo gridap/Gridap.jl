@@ -1,11 +1,11 @@
 
 """
-    struct AffineOperator{A<:AbstractMatrix,B<:AbstractVector} <: NonLinearOperator
+    struct AffineOperator{A<:AbstractMatrix,B<:AbstractVector} <: NonlinearOperator
       matrix::A
       vector::B
     end
 """
-struct AffineOperator{A<:AbstractMatrix,B<:AbstractVector} <: NonLinearOperator
+struct AffineOperator{A<:AbstractMatrix,B<:AbstractVector} <: NonlinearOperator
   matrix::A
   vector::B
 end
@@ -47,13 +47,13 @@ function allocate_jacobian(op::AffineOperator,x::AbstractVector)
 end
 
 """
-    abstract type LinearSolver <: NonLinearSolver end
+    abstract type LinearSolver <: NonlinearSolver end
 
 - [`symbolic_setup(::LinearSolver,mat::AbstractMatrix)`](@ref)
 - [`test_linear_solver`](@ref)
 
 """
-abstract type LinearSolver <: NonLinearSolver end
+abstract type LinearSolver <: NonlinearSolver end
 
 """
     symbolic_setup(::LinearSolver,mat::AbstractMatrix) -> SymbolicSetup
@@ -137,14 +137,14 @@ function test_linear_solver(
 
 end
 
-# Implementation of NonLinearSolver interface
+# Implementation of NonlinearSolver interface
 # A LinearSolver is only able to solve an AffineOperator
 
-function solve!(x::AbstractVector,ls::LinearSolver,op::NonLinearOperator)
+function solve!(x::AbstractVector,ls::LinearSolver,op::NonlinearOperator)
   @unreachable "A LinearSolver can only solve an AffineOperator"
 end
 
-function solve!(x::AbstractVector,ls::LinearSolver,op::NonLinearOperator,cache)
+function solve!(x::AbstractVector,ls::LinearSolver,op::NonlinearOperator,cache)
   @unreachable "A LinearSolver can only solve an AffineOperator"
 end
 
@@ -238,4 +238,3 @@ function solve!(
   x::AbstractVector,ns::BackslashNumericalSetup,b::AbstractVector)
    copyto!(x, ns.A\b)
 end
-

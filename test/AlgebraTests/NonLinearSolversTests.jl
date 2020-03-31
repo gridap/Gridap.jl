@@ -1,9 +1,9 @@
-module NonLinearSolversTests
+module NonlinearSolversTests
 
 using Gridap.Algebra
-using Gridap.Algebra: NonLinearOperatorMock
+using Gridap.Algebra: NonlinearOperatorMock
 
-op = NonLinearOperatorMock()
+op = NonlinearOperatorMock()
 
 ls = LUSolver()
 tol = 1.e-10

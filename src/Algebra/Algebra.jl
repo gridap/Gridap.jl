@@ -45,7 +45,7 @@ export test_linear_solver
 export LUSolver
 export BackslashSolver
 
-export NonLinearOperator
+export NonlinearOperator
 export residual!
 export residual
 export jacobian!
@@ -58,7 +58,7 @@ export allocate_residual_and_jacobian
 export zero_initial_guess
 export test_non_linear_operator
 
-export NonLinearSolver
+export NonlinearSolver
 export test_non_linear_solver
 
 export NewtonRaphsonSolver
@@ -75,9 +75,9 @@ include("SparseMatrices.jl")
 
 include("CompressedSparseMatrices.jl")
 
-include("NonLinearOperators.jl")
+include("NonlinearOperators.jl")
 
-include("NonLinearSolvers.jl")
+include("NonlinearSolvers.jl")
 
 include("LinearSolvers.jl")
 
