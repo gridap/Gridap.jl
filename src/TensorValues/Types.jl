@@ -48,9 +48,9 @@ VectorValue{D,T1}(data::NTuple{D,T2}) where {D,T1,T2} = VectorValue{D,T1}(NTuple
 
 # VectorValue Vararg constructor
 
-VectorValue(data::Vararg)                  = VectorValue(NTuple{length(data)}(data))
-VectorValue{D}(data::Vararg)   where {D}   = VectorValue{D}(NTuple{D}(data))
-VectorValue{D,T}(data::Vararg) where {D,T} = VectorValue{D,T}(NTuple{D,T}(data))
+VectorValue(data::Vararg{VT} where {VT<:Real})                  = VectorValue(NTuple{length(data)}(data))
+VectorValue{D}(data::Vararg{VT} where {VT<:Real})   where {D}   = VectorValue{D}(NTuple{D}(data))
+VectorValue{D,T}(data::Vararg{VT} where {VT<:Real}) where {D,T} = VectorValue{D,T}(NTuple{D,T}(data))
 
 # VectorValue single SVector, MVector and AbstractVector argument constructor
 
@@ -99,10 +99,10 @@ TensorValue{D1,D2,T1,L}(data::NTuple{L,T2}) where {D1,D2,L,T1,T2} = TensorValue{
 
 # TensorValue Vararg constructor
 
-TensorValue(data::Vararg)                          = TensorValue(NTuple{length(data)}(data))
-TensorValue{D}(data::Vararg) where {D}             = TensorValue{D,D}(NTuple{D*D}(data))
-TensorValue{D1,D2}(data::Vararg) where {D1,D2}     = TensorValue{D1,D2}(NTuple{D1*D2}(data))
-TensorValue{D1,D2,T}(data::Vararg) where {D1,D2,T} = TensorValue{D1,D2,T}(NTuple{D1*D2,T}(data))
+TensorValue(data::Vararg{VT} where {VT<:Real})                          = TensorValue(NTuple{length(data)}(data))
+TensorValue{D}(data::Vararg{VT} where {VT<:Real}) where {D}             = TensorValue{D,D}(NTuple{D*D}(data))
+TensorValue{D1,D2}(data::Vararg{VT} where {VT<:Real}) where {D1,D2}     = TensorValue{D1,D2}(NTuple{D1*D2}(data))
+TensorValue{D1,D2,T}(data::Vararg{VT} where {VT<:Real}) where {D1,D2,T} = TensorValue{D1,D2,T}(NTuple{D1*D2,T}(data))
 
 # VectorValue single SVector, MVector, SMatrix, MMatrix and AbstractMatrix argument constructor
 
@@ -174,8 +174,8 @@ function convert(::Type{<:Union{TensorValue,TensorValue{D1,D2,T1,L}}},
                 arg::T where {T<:
                     Union{
                         NTuple{L},
-SMatrix{D1,D2,T2,L},
-MMatrix{D1,D2,T2,L}
+                        SMatrix{D1,D2,T2,L},
+                        MMatrix{D1,D2,T2,L}
                     }}) where {D1,D2,T1,T2,L}
     PT = (@isdefined T1) ? T1 : T2
     TensorValue{D1,D2,PT}(arg)
