@@ -98,6 +98,32 @@ s = a-v
 @test s.block_ids[1] == (field_id_a,)
 @test s.block_ids[2] == (field_id_v,)
 
+s = (a+v)*(b-u)
+@test s.block_ids[1] == (field_id_a,field_id_b)
+@test s.block_ids[2] == (field_id_a,field_id_u)
+@test s.block_ids[3] == (field_id_v,field_id_b)
+@test s.block_ids[4] == (field_id_v,field_id_u)
+sau = s.blocks[2]
+test_cell_matrix_field(sau,q,-1*collect(evaluate(a*u,q)))
+sab = s.blocks[1]
+test_cell_matrix_field(sab,q,collect(evaluate(a*b,q)))
+
+s = 4*(b+u)
+@test s.block_ids[1] == (field_id_b,)
+@test s.block_ids[2] == (field_id_u,)
+s4b = s.blocks[1]
+test_cell_basis(s4b,q,4*collect(evaluate(b,q)))
+s4u = s.blocks[2]
+test_cell_basis(s4u,q,4*collect(evaluate(u,q)))
+
+s = (b+u)*4
+@test s.block_ids[1] == (field_id_b,)
+@test s.block_ids[2] == (field_id_u,)
+s4b = s.blocks[1]
+test_cell_basis(s4b,q,4*collect(evaluate(b,q)))
+s4u = s.blocks[2]
+test_cell_basis(s4u,q,4*collect(evaluate(u,q)))
+
 r = u*v
 s = a*b
 
