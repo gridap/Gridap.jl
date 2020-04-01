@@ -54,26 +54,31 @@ VectorValue{D,T}(data::Real...) where {D,T} = VectorValue{D,T}(NTuple{D,T}(data)
 
 # VectorValue single SVector, MVector and AbstractVector argument constructor
 
-for s in (  Symbol("VectorValue"),
-            Symbol("VectorValue{D}"),
-            Symbol("VectorValue{D,T1}"))
-  @eval begin
-    function ($s)(data::
-                    Union{
-                        SVector{D,T2},
-                        MVector{D,T2},
-                        AbstractVector{T2}
-                    }) where {D,T1,T2}
-        PD = (@isdefined D)  ? D  : length(data)
-        PT = (@isdefined T1) ? T1 : T2
-        VectorValue{PD,PT}(NTuple{PD,PT}(data))
-    end
-  end
+function VectorValue(data::
+                Union{
+                    SVector{D,T2},
+                    MVector{D,T2},
+                    AbstractArray{T2}
+                }) where {D,T1,T2}
+    PD = (@isdefined D)  ? D  : length(data)
+    VectorValue{PD,T2}(NTuple{PD,T2}(data))
 end
 
-# VectorValue single AbstractArray argument constructor
+function VectorValue{D}(data::
+                Union{
+                    SVector{D,T2},
+                    MVector{D,T2},
+                    AbstractArray{T2}
+                }) where {D,T1,T2}
+    VectorValue{D,T2}(NTuple{D,T2}(data))
+end
 
-function VectorValue{D,T1}(data::AbstractArray{T2}) where {D,T1,T2}
+function VectorValue{D,T1}(data::
+                Union{
+                    SVector{D,T2},
+                    MVector{D,T2},
+                    AbstractArray{T2}
+                }) where {D,T1,T2}
     VectorValue{D,T1}(NTuple{D,T1}(data))
 end
 
@@ -106,33 +111,47 @@ TensorValue{D1,D2,T}(data::Real...) where {D1,D2,T} = TensorValue{D1,D2,T}(NTupl
 
 # VectorValue single SVector, MVector, SMatrix, MMatrix and AbstractMatrix argument constructor
 
-for s in (  Symbol("TensorValue"),
-            Symbol("TensorValue{D1,D2}"),
-            Symbol("TensorValue{D1,D2,T1}"),
-            Symbol("TensorValue{D1,D2,T1,L}"))
-  @eval begin
-    function ($s)(data::
-                    Union{
-                        SVector{L,T2},
-                        MVector{L,T2},
-                        SMatrix{D1,D2,T2,L},
-                        MMatrix{D1,D2,T2,L},
-                        AbstractMatrix{T2}
-                    }) where {D1,D2,T1,T2,L}
-        PD1 = (@isdefined D1) ? D1 : size(data)[1]
-        PD2 = (@isdefined D2) ? D2 : size(data)[2]
-        PT  = (@isdefined T1) ? T1 : T2
-        PL  = (@isdefined L)  ? L  : length(data)
-        TensorValue{PD1,PD2,PT}(NTuple{PL,PT}(data))
-    end
-  end
+function TensorValue(data::
+                Union{
+                    SMatrix{D1,D2,T2,L},
+                    MMatrix{D1,D2,T2,L},
+                    AbstractMatrix{T2}
+                }) where {D1,D2,T1,T2,L}
+    PD1 = (@isdefined D1) ? D1 : size(data)[1]
+    PD2 = (@isdefined D2) ? D2 : size(data)[2]
+    PL  = (@isdefined L)  ? L  : length(data)
+    TensorValue{PD1,PD2,T2}(NTuple{PL,T2}(data))
 end
 
-function TensorValue{D1,D2,T1}(data::MMatrix{D1,D2,T2,L}) where {D1,D2,T1,T2,L}
+function TensorValue{D1,D2}(data::
+                Union{
+                    SMatrix{D1,D2,T2,L},
+                    MMatrix{D1,D2,T2,L},
+                    AbstractMatrix{T2}
+                }) where {D1,D2,T1,T2,L}
+    PT  = (@isdefined T1) ? T1 : T2
+    PL  = (@isdefined L)  ? L  : length(data)
+    TensorValue{D1,D2,PT}(NTuple{PL,PT}(data))
+end
+
+function TensorValue{D1,D2,T1}(data::
+                Union{
+                    SMatrix{D1,D2,T2,L},
+                    MMatrix{D1,D2,T2,L},
+                    AbstractMatrix{T2}
+                }) where {D1,D2,T1,T2,L}
+    PL  = (@isdefined L)  ? L  : length(data)
+    TensorValue{D1,D2,T1}(NTuple{PL,T1}(data))
+end
+
+function TensorValue{D1,D2,T1,L}(data::
+                Union{
+                    SMatrix{D1,D2,T2,L},
+                    MMatrix{D1,D2,T2,L},
+                    AbstractMatrix{T2}
+                }) where {D1,D2,T1,T2,L}
     TensorValue{D1,D2,T1}(NTuple{L,T1}(data))
 end
-
-
 
 ###############################################################
 # Conversions (VectorValue)
@@ -175,7 +194,7 @@ end
 # Conversions (TensorValue)
 ###############################################################
 
-function convert(TT::Type{<:Union{TensorValue,TensorValue{D1,D2,T1,L}}}, 
+function convert(TT::Type{<:Union{TensorValue,TensorValue{D1,D2,T1},TensorValue{D1,D2,T1,L}}}, 
                 arg::
                     Union{
                         NTuple{L,T2},
@@ -201,9 +220,17 @@ function convert(::Type{<:Union{MMatrix,MMatrix{D1,D2,T1,L}}}, arg::TensorValue{
     MMatrix{D1,D2,PT,L}(arg.data)
 end
 
-function convert(::Type{<:Union{TensorValue,TensorValue{D1,D2,T1,L}}}, arg::TensorValue{D1,D2,T2,L}) where {D1,D2,T1,T2,L}
+function convert(::Type{<:SMatrix{D1,D2,T1}}, arg::TensorValue{D1,D2,T2,L}) where {D1,D2,T1,T2,L}
+    SMatrix{D1,D2,T1,L}(arg.data)
+end
+
+function convert(::Type{<:MMatrix{D1,D2,T1}}, arg::TensorValue{D1,D2,T2,L}) where {D1,D2,T1,T2,L}
+    MMatrix{D1,D2,T1,L}(arg.data)
+end
+
+function convert(::Type{<:Union{TensorValue,TensorValue{D1,D2},TensorValue{D1,D2,T1},TensorValue{D1,D2,T1,L}}}, arg::TensorValue{D1,D2,T2,L}) where {D1,D2,T1,T2,L}
     PT = (@isdefined T1) ? T1 : T2
-    PT == T2 ? arg : convert(TensorValue{D1,D2,PT,L}, arg.data)
+    PT == T2 ? arg : convert(TensorValue{D1,D2,T1,L}, arg.data)
 end
 
 ###############################################################
@@ -230,27 +257,27 @@ function change_eltype(::Type{VectorValue{D,T1}},::Type{T2}) where {D,T1,T2}
     VectorValue{D,T2}
 end
 
-function zero(::IT where {IT<:VectorValue{D,T}}) where {D,T}
+function zero(::VectorValue{D,T}) where {D,T}
    zero(VectorValue{D,T})
 end
 
-function one(::IT where {IT<:VectorValue{D,T}}) where {D,T}
+function one(::VectorValue{D,T}) where {D,T}
     one(VectorValue{D,T})
 end
 
-function mutable(::IT where {IT<:VectorValue{D,T}}) where {D,T}
+function mutable(::VectorValue{D,T}) where {D,T}
     mutable(VectorValue{D,T})
 end
 
-function change_eltype(::IT where {IT<:VectorValue{D,T1}},::Type{T2}) where {D,T1,T2}
+function change_eltype(::VectorValue{D,T1},::Type{T2}) where {D,T1,T2}
     change_eltype(VectorValue{D,T1},T2)
 end
 
-function SVector(arg::IT where {IT<:VectorValue{D,T}}) where {D,T}
+function SVector(arg::VectorValue{D,T}) where {D,T}
     SVector{D,T}(arg.data)
 end
 
-function SArray(arg::IT where {IT<:VectorValue{D,T}}) where {D,T}
+function SArray(arg::VectorValue{D,T}) where {D,T}
     SVector(arg)
 end
 
@@ -276,27 +303,27 @@ function change_eltype(::Type{TensorValue{D1,D2,T1,L}},::Type{T2}) where {D1,D2,
     TensorValue{D1,D2,T2,L}
 end
 
-function zero(::IT where {IT<:TensorValue{D1,D2,T}}) where {D1,D2,T}
+function zero(::TensorValue{D1,D2,T}) where {D1,D2,T}
     zero(TensorValue{D1,D2,T})
 end
 
-function one(::IT where {IT<:TensorValue{D1,D2,T}}) where {D1,D2,T}
+function one(::TensorValue{D1,D2,T}) where {D1,D2,T}
     one(TensorValue{D1,D2,T})
 end
 
-function mutable(::IT where {IT<:TensorValue{D1,D2,T}}) where {D1,D2,T}
+function mutable(::TensorValue{D1,D2,T}) where {D1,D2,T}
     mutable(TensorValue{D1,D2,T})
 end
 
-function change_eltype(::IT where {IT<:TensorValue{D1,D2,T1,L}},::Type{T2}) where {D1,D2,T1,T2,L}
+function change_eltype(::TensorValue{D1,D2,T1,L},::Type{T2}) where {D1,D2,T1,T2,L}
     change_eltype(TensorValue{D1,D2,T1,L},T2)
 end
 
-function SMatrix(arg::IT where {IT<:TensorValue{D1,D2,T,L}}) where {D1,D2,T,L}
+function SMatrix(arg::TensorValue{D1,D2,T,L}) where {D1,D2,T,L}
     SMatrix{D1,D2,T,L}(arg.data)
 end
 
-function SArray(arg::IT where {IT<:TensorValue{D1,D2,T,L}}) where {D1,D2,T,L}
+function SArray(arg::TensorValue{D1,D2,T,L}) where {D1,D2,T,L}
     StaticArrays.SMatrix(arg)
 end
 
@@ -327,11 +354,11 @@ function eltype(::Type{<:TensorValue{D1,D2,T}}) where {D1,D2,T}
     T
 end
 
-function eltype(arg::IT where {IT<:VectorValue{D,T}}) where {D,T} 
+function eltype(arg::VectorValue{D,T}) where {D,T} 
     eltype(VectorValue{D,T})
 end
 
-function eltype(arg::IT where {IT<:TensorValue{D1,D2,T}}) where {D1,D2,T} 
+function eltype(arg::TensorValue{D1,D2,T}) where {D1,D2,T} 
     eltype(TensorValue{D1,D2,T})
 end
 
@@ -359,11 +386,11 @@ function size(::Type{TensorValue{D1,D2,T,L}}) where {D1,D2,T,L}
     (D1,D2)
 end
 
-function size(arg::IT where {IT<:VectorValue{D,T}}) where {D,T} 
+function size(arg::VectorValue{D,T}) where {D,T} 
     size(VectorValue{D,T})
 end
 
-function size(arg::IT where {IT<:TensorValue{D1,D2,T}}) where {D1,D2,T} 
+function size(arg::TensorValue{D1,D2,T}) where {D1,D2,T} 
     size(TensorValue{D1,D2,T})
 end
 
@@ -387,11 +414,11 @@ function length(::Type{TensorValue{D1,D2,T,L}}) where {D1,D2,T,L}
     L
 end
 
-function length(arg::IT where {IT<:VectorValue{D,T}}) where {D,T} 
+function length(arg::VectorValue{D,T}) where {D,T} 
     length(VectorValue{D,T})
 end
 
-function length(arg::IT where {IT<:TensorValue{D1,D2,T,L}}) where {D1,D2,T,L} 
+function length(arg::TensorValue{D1,D2,T,L}) where {D1,D2,T,L} 
     length(TensorValue{D1,D2,T,L})
 end
 
@@ -419,17 +446,17 @@ function n_components(::Type{TensorValue{D1,D2,T,L}}) where {D1,D2,T,L}
     length(TensorValue{D1,D2,T,L})
 end
 
-function n_components(arg::IT where {IT<:Number})
+function n_components(arg::Number)
     n_components(Number)
 end
 
 
-function n_components(arg::IT where {IT<:VectorValue{D,T}}) where {D,T}
+function n_components(arg::VectorValue{D,T}) where {D,T}
     n_components(VectorValue{D,T})
 end
 
 
-function n_components(arg::IT where {IT<:TensorValue{D1,D2,T,L}}) where {D1,D2,T,L}
+function n_components(arg::TensorValue{D1,D2,T,L}) where {D1,D2,T,L}
     n_components(TensorValue{D1,D2,T,L})
 end
 
@@ -454,14 +481,14 @@ end
 
 # Custom type printing
 
-function show(io::IO,v::IT where {IT<:MultiValue})
+function show(io::IO,v::MultiValue)
   print(io,v.data)
 end
 
-function show(io::IO,::MIME"text/plain",v:: IT where {IT<:MultiValue})
+function show(io::IO,::MIME"text/plain",v:: MultiValue)
   print(io,typeof(v))
   print(io,v.data)
 end
 
-@inline Tuple(arg::IT where {IT<:MultiValue}) = arg.data
+@inline Tuple(arg::MultiValue) = arg.data
 

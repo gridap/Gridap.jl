@@ -1,8 +1,4 @@
 
-#size(a<:MultiValue) = size(a.array)
-
-#length(a<:MultiValue) = length(a.array)
-
 function getindex(a::VectorValue,i::Integer)
     a.data[i]
 end

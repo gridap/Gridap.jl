@@ -50,7 +50,7 @@ export diagonal_tensor
 
 import Base: show
 import Base: zero, one
-import Base: +, -, *, /, \, ==, ≈
+import Base: +, -, *, /, \, ==, ≈, isless
 import Base: conj
 import Base: sum, maximum, minimum
 import Base: getindex, iterate, eachindex

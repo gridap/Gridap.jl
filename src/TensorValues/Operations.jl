@@ -22,7 +22,7 @@ function (≈)(
   true
 end
 
-function Base.isless(a::VectorValue{N},b::VectorValue{N}) where N
+function isless(a::VectorValue{N},b::VectorValue{N}) where N
   for d in N:-1:1
     if a[d] < b[d]
       return true
@@ -35,7 +35,7 @@ function Base.isless(a::VectorValue{N},b::VectorValue{N}) where N
   false
 end
 
-function Base.isless(a::Number,b::MultiValue) where {D,T}
+function isless(a::Number,b::MultiValue) where {D,T}
     all(a .< b.data)
 end
 
@@ -249,12 +249,12 @@ end
 
 function adjoint(v::T) where {T<:TensorValue}
   t = adjoint(get_array(v))
-  TensorValue(t)
+  T(t)
 end
 
 function transpose(v::T) where {T<:TensorValue}
   t = transpose(get_array(v))
-  TensorValue(t)
+  T(t)
 end
 
 # Symmetric part
