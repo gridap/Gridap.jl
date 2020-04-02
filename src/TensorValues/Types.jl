@@ -234,237 +234,49 @@ function convert(::Type{<:Union{TensorValue,TensorValue{D1,D2},TensorValue{D1,D2
 end
 
 ###############################################################
-# Other constructors (VectorValue)
+# Other constructors and conversions (VectorValue)
 ###############################################################
 
-function zero(::Type{<:VectorValue{D,T}}) where {D,T}
-   VectorValue{D,T}(NTuple{D,T}(zeros(T,D)))
-end
+zero(::Type{<:VectorValue{D,T}}) where {D,T} = VectorValue{D,T}(NTuple{D,T}(zeros(T,D)))
+zero(::VectorValue{D,T}) where {D,T} = zero(VectorValue{D,T})
 
-function one(::Type{<:VectorValue{D,T}}) where {D,T}
-    VectorValue{D,T}(NTuple{D,T}(ones(T,D)))
-end
+one(::Type{<:VectorValue{D,T}}) where {D,T} = VectorValue{D,T}(NTuple{D,T}(ones(T,D)))
+one(::VectorValue{D,T}) where {D,T} = one(VectorValue{D,T})
 
-function mutable(::Type{VectorValue{D,T}}) where {D,T}
-    MVector{D,T}
-end
+mutable(::Type{VectorValue{D,T}}) where {D,T} = MVector{D,T}
+mutable(::VectorValue{D,T}) where {D,T} = mutable(VectorValue{D,T})
 
-function change_eltype(::Type{VectorValue{D}},::Type{T}) where {D,T}
-    VectorValue{D,T}
-end
+change_eltype(::Type{VectorValue{D}},::Type{T}) where {D,T} = VectorValue{D,T}
+change_eltype(::Type{VectorValue{D,T1}},::Type{T2}) where {D,T1,T2} = VectorValue{D,T2}
+change_eltype(::VectorValue{D,T1},::Type{T2}) where {D,T1,T2} = change_eltype(VectorValue{D,T1},T2)
 
-function change_eltype(::Type{VectorValue{D,T1}},::Type{T2}) where {D,T1,T2}
-    VectorValue{D,T2}
-end
-
-function zero(::VectorValue{D,T}) where {D,T}
-   zero(VectorValue{D,T})
-end
-
-function one(::VectorValue{D,T}) where {D,T}
-    one(VectorValue{D,T})
-end
-
-function mutable(::VectorValue{D,T}) where {D,T}
-    mutable(VectorValue{D,T})
-end
-
-function change_eltype(::VectorValue{D,T1},::Type{T2}) where {D,T1,T2}
-    change_eltype(VectorValue{D,T1},T2)
-end
-
-function SVector(arg::VectorValue{D,T}) where {D,T}
-    SVector{D,T}(arg.data)
-end
-
-function SArray(arg::VectorValue{D,T}) where {D,T}
-    SVector(arg)
-end
+SVector(arg::VectorValue{D,T}) where {D,T} = SVector{D,T}(arg.data)
+SArray(arg::VectorValue{D,T}) where {D,T} = SVector(arg)
+get_array(arg::T where {T<:VectorValue}) = convert(SVector,arg)
 
 ###############################################################
-# Other constructors (TensorValue)
+# Other constructors and conversions (TensorValue)
 ###############################################################
 
-function zero(::Type{<:TensorValue{D1,D2,T}}) where {D1,D2,T}
-    D=D1*D2
-    TensorValue{D1,D2,T}(NTuple{D,T}(zeros(T,D)))
-end
+zero(::Type{<:TensorValue{D1,D2,T}}) where {D1,D2,T} = (D=D1*D2;TensorValue{D1,D2,T}(NTuple{D,T}(zeros(T,D))))
+zero(::TensorValue{D1,D2,T}) where {D1,D2,T} = zero(TensorValue{D1,D2,T})
 
 @generated function one(::Type{<:TensorValue{D1,D2,T}}) where {D1,D2,T}
   str = join(["$i==$j ? one(T) : zero(T), " for i in 1:D1 for j in 1:D2])
   Meta.parse("TensorValue{D1,D2,T}(($str))")
 end
+one(::TensorValue{D1,D2,T}) where {D1,D2,T} = one(TensorValue{D1,D2,T})
 
-function mutable(::Type{<:TensorValue{D1,D2,T}}) where {D1,D2,T}
-    MMatrix{D1,D2,T}
-end
+mutable(::Type{<:TensorValue{D1,D2,T}}) where {D1,D2,T} = MMatrix{D1,D2,T}
+mutable(::TensorValue{D1,D2,T}) where {D1,D2,T} = mutable(TensorValue{D1,D2,T})
 
-function change_eltype(::Type{TensorValue{D1,D2,T1,L}},::Type{T2}) where {D1,D2,T1,T2,L}
-    TensorValue{D1,D2,T2,L}
-end
+change_eltype(::Type{TensorValue{D1,D2,T1,L}},::Type{T2}) where {D1,D2,T1,T2,L} = TensorValue{D1,D2,T2,L}
+change_eltype(::TensorValue{D1,D2,T1,L},::Type{T2}) where {D1,D2,T1,T2,L} = change_eltype(TensorValue{D1,D2,T1,L},T2)
 
-function zero(::TensorValue{D1,D2,T}) where {D1,D2,T}
-    zero(TensorValue{D1,D2,T})
-end
+SMatrix(arg::TensorValue{D1,D2,T,L}) where {D1,D2,T,L} = SMatrix{D1,D2,T,L}(arg.data)
+SArray(arg::TensorValue{D1,D2,T,L}) where {D1,D2,T,L} = StaticArrays.SMatrix(arg)
+get_array(arg::T where {T<:TensorValue}) = convert(SMatrix,arg)
 
-function one(::TensorValue{D1,D2,T}) where {D1,D2,T}
-    one(TensorValue{D1,D2,T})
-end
-
-function mutable(::TensorValue{D1,D2,T}) where {D1,D2,T}
-    mutable(TensorValue{D1,D2,T})
-end
-
-function change_eltype(::TensorValue{D1,D2,T1,L},::Type{T2}) where {D1,D2,T1,T2,L}
-    change_eltype(TensorValue{D1,D2,T1,L},T2)
-end
-
-function SMatrix(arg::TensorValue{D1,D2,T,L}) where {D1,D2,T,L}
-    SMatrix{D1,D2,T,L}(arg.data)
-end
-
-function SArray(arg::TensorValue{D1,D2,T,L}) where {D1,D2,T,L}
-    StaticArrays.SMatrix(arg)
-end
-
-
-
-
-function get_array(arg::T where {T<:VectorValue}) 
-    convert(SVector,arg)
-end
-
-function get_array(arg::T where {T<:TensorValue})
-    convert(SMatrix,arg)
-end
-
-function change_eltype(::Type{<:Number},::Type{T}) where {T}
-    T
-end
-
-function change_eltype(::Number,::Type{T2}) where {T2}
-    change_eltype(Number,T2)
-end
-
-function eltype(::Type{<:VectorValue{D,T}}) where {D,T} 
-    T
-end
-
-function eltype(::Type{<:TensorValue{D1,D2,T}}) where {D1,D2,T} 
-    T
-end
-
-function eltype(arg::VectorValue{D,T}) where {D,T} 
-    eltype(VectorValue{D,T})
-end
-
-function eltype(arg::TensorValue{D1,D2,T}) where {D1,D2,T} 
-    eltype(TensorValue{D1,D2,T})
-end
-
-function size(::Type{VectorValue{D}}) where {D} 
-    (D,)
-end
-
-function size(::Type{VectorValue{D,T}}) where {D,T} 
-    (D,)
-end
-
-function size(::Type{TensorValue{D}}) where {D} 
-    (D,D)
-end
-
-function size(::Type{TensorValue{D1,D2}}) where {D1,D2} 
-    (D1,D2)
-end
-
-function size(::Type{TensorValue{D1,D2,T}}) where {D1,D2,T} 
-    (D1,D2)
-end
-
-function size(::Type{TensorValue{D1,D2,T,L}}) where {D1,D2,T,L} 
-    (D1,D2)
-end
-
-function size(arg::VectorValue{D,T}) where {D,T} 
-    size(VectorValue{D,T})
-end
-
-function size(arg::TensorValue{D1,D2,T}) where {D1,D2,T} 
-    size(TensorValue{D1,D2,T})
-end
-
-function length(::Type{VectorValue{D}}) where {D} 
-    D
-end
-
-function length(::Type{VectorValue{D,T}}) where {D,T} 
-    D
-end
-
-function length(::Type{TensorValue{D}}) where {D} 
-    length(TensorValue{D,D})
-end
-
-function length(::Type{TensorValue{D1,D2}}) where {D1,D2} 
-    D1*D1
-end
-
-function length(::Type{TensorValue{D1,D2,T,L}}) where {D1,D2,T,L} 
-    L
-end
-
-function length(arg::VectorValue{D,T}) where {D,T} 
-    length(VectorValue{D,T})
-end
-
-function length(arg::TensorValue{D1,D2,T,L}) where {D1,D2,T,L} 
-    length(TensorValue{D1,D2,T,L})
-end
-
-function n_components(::Type{<:Number}) 
-    1
-end
-
-function n_components(::Type{VectorValue{D}}) where {D}
-    length(VectorValue{D})
-end
-
-function n_components(::Type{VectorValue{D,T}}) where {D,T}
-    length(VectorValue{D,T})
-end
-
-function n_components(::Type{TensorValue{D}}) where {D}
-    length(TensorValue{D,D})
-end
-
-function n_components(::Type{TensorValue{D1,D2}}) where {D1,D2}
-    length(TensorValue{D1,D2})
-end
-
-function n_components(::Type{TensorValue{D1,D2,T,L}}) where {D1,D2,T,L}
-    length(TensorValue{D1,D2,T,L})
-end
-
-function n_components(arg::Number)
-    n_components(Number)
-end
-
-
-function n_components(arg::VectorValue{D,T}) where {D,T}
-    n_components(VectorValue{D,T})
-end
-
-
-function n_components(arg::TensorValue{D1,D2,T,L}) where {D1,D2,T,L}
-    n_components(TensorValue{D1,D2,T,L})
-end
-
-
-
-
-"""
-"""
 @generated function diagonal_tensor(v::VectorValue{D,T}) where {D,T}
   s = ["zero(T), " for i in 1:(D*D)]
   for i in 1:D
@@ -474,6 +286,63 @@ end
   str = join(s)
   Meta.parse("TensorValue(($str))")
 end
+
+###############################################################
+# Introspection (VectorValue)
+###############################################################
+
+eltype(::Type{<:VectorValue{D,T}}) where {D,T} = T
+eltype(arg::VectorValue{D,T}) where {D,T} = eltype(VectorValue{D,T})
+
+size(::Type{VectorValue{D}}) where {D} = (D,)
+size(::Type{VectorValue{D,T}}) where {D,T} = (D,)
+size(::VectorValue{D,T}) where {D,T}  = size(VectorValue{D,T})
+
+length(::Type{VectorValue{D}}) where {D} = D
+length(::Type{VectorValue{D,T}}) where {D,T} = D
+length(::VectorValue{D,T}) where {D,T} = length(VectorValue{D,T})
+
+n_components(::Type{VectorValue{D}}) where {D} = length(VectorValue{D})
+n_components(::Type{VectorValue{D,T}}) where {D,T} = length(VectorValue{D,T})
+n_components(::VectorValue{D,T}) where {D,T} = n_components(VectorValue{D,T})
+
+###############################################################
+# Introspection (TensorValue)
+###############################################################
+
+eltype(::Type{<:TensorValue{D1,D2,T}}) where {D1,D2,T} = T
+eltype(::TensorValue{D1,D2,T}) where {D1,D2,T} = eltype(TensorValue{D1,D2,T})
+
+size(::Type{TensorValue{D}}) where {D} = (D,D)
+size(::Type{TensorValue{D1,D2}}) where {D1,D2} = (D1,D2)
+size(::Type{TensorValue{D1,D2,T}}) where {D1,D2,T} = (D1,D2)
+size(::Type{TensorValue{D1,D2,T,L}}) where {D1,D2,T,L} = (D1,D2)
+size(::TensorValue{D1,D2,T}) where {D1,D2,T} = size(TensorValue{D1,D2,T})
+
+length(::Type{TensorValue{D}}) where {D} = length(TensorValue{D,D})
+length(::Type{TensorValue{D1,D2}}) where {D1,D2} = D1*D1
+length(::Type{TensorValue{D1,D2,T,L}}) where {D1,D2,T,L} = L
+length(::TensorValue{D1,D2,T,L}) where {D1,D2,T,L} = length(TensorValue{D1,D2,T,L})
+
+n_components(::Type{TensorValue{D}}) where {D} = length(TensorValue{D,D})
+n_components(::Type{TensorValue{D1,D2}}) where {D1,D2} = length(TensorValue{D1,D2})
+n_components(::Type{TensorValue{D1,D2,T,L}}) where {D1,D2,T,L} = length(TensorValue{D1,D2,T,L})
+n_components(::TensorValue{D1,D2,T,L}) where {D1,D2,T,L} = n_components(TensorValue{D1,D2,T,L})
+
+
+###############################################################
+# Other constructors and conversions implemented for more general types
+###############################################################
+
+change_eltype(::Type{<:Number},::Type{T}) where {T} = T
+change_eltype(::Number,::Type{T2}) where {T2} = change_eltype(Number,T2)
+
+n_components(::Type{<:Number}) = 1
+n_components(::Number) = n_components(Number)
+
+###############################################################
+# Misc
+###############################################################
 
 # Misc operations on the type itself
 

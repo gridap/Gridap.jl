@@ -1,27 +1,16 @@
 
-function getindex(a::VectorValue,i::Integer)
-    a.data[i]
-end
+getindex(arg::VectorValue,  i::Integer) = arg.data[i]
+getindex(arg::VectorValue, ci::CartesianIndex{1}) = get_index(arg,ci[1])
+getindex(arg::TensorValue,  i::Integer) = arg.data[i]
 
-function getindex(a::TensorValue,i::Integer)
-    a.data[i]
-end
+getindex(arg::TensorValue{D1,D2},i::Integer,j::Integer) where {D1,D2} = (index=((j-1)*D1)+i; arg.data[index])
+getindex(arg::TensorValue{D1,D2},ci::CartesianIndex{2}) where {D1,D2} = get_index(arg,ci[1],ci[2])
 
-function getindex(a::TensorValue{D1,D2},i::Integer,j::Integer) where {D1,D2}
-    index = (j-1)*D1 + i
-    a.data[index]
-end
+@inline iterate(arg::MultiValue) = iterate(arg.data)
+@inline iterate(arg::MultiValue, state) = iterate(arg.data, state)
 
-@inline iterate(a::MultiValue) = iterate(a.data)
+eachindex(arg::MultiValue) = eachindex(arg.data)
 
-@inline iterate(a::MultiValue, state) = iterate(a.data, state)
+CartesianIndices(arg::MultiValue) = CartesianIndices(get_array(arg))
 
-eachindex(a::MultiValue) = eachindex(a.data)
-
-function CartesianIndices(a::MultiValue)
-  CartesianIndices(get_array(a))
-end
-
-function LinearIndices(a::MultiValue)
-  LinearIndices(get_array(a))
-end
+LinearIndices(arg::MultiValue) = LinearIndices(get_array(arg))
