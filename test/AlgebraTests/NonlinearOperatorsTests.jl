@@ -10,7 +10,7 @@ x = [1.0, 3.0]
 b = [0.0,0.0]
 A = [-1.0 0.0; 0.0 1.0]
 
-test_non_linear_operator(op,x,b,jac=A)
+test_nonlinear_operator(op,x,b,jac=A)
 
 @test residual(op,x) ≈ b
 @test jacobian(op,x) ≈ A

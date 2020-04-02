@@ -44,14 +44,14 @@ function solve(nls::NonlinearSolver,op::NonlinearOperator)
 end
 
 """
-    test_non_linear_solver(
+    test_nonlinear_solver(
       nls::NonlinearSolver,
       op::NonlinearOperator,
       x0::AbstractVector,
       x::AbstractVector,
       pred::Function=isapprox)
 """
-function test_non_linear_solver(
+function test_nonlinear_solver(
   nls::NonlinearSolver,
   op::NonlinearOperator,
   x0::AbstractVector,

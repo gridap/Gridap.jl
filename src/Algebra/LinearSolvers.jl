@@ -133,7 +133,7 @@ function test_linear_solver(
 
   op = AffineOperator(A,b)
   x0 = copy(x)
-  test_non_linear_solver(ls,op,x0,x)
+  test_nonlinear_solver(ls,op,x0,x)
 
 end
 
