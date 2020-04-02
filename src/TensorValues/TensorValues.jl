@@ -37,6 +37,7 @@ using Gridap.Helpers
 using Gridap.Arrays
 
 export MultiValue
+export SymTensorValue
 export TensorValue
 export VectorValue
 
@@ -66,7 +67,15 @@ import LinearAlgebra: det, inv, tr, dot, norm
 
 import Gridap.Arrays: get_array
 
-include("Types.jl")
+include("MultiValueType.jl")
+
+include("VectorValueType.jl")
+
+include("TensorValueType.jl")
+
+include("SymTensorValueType.jl")
+
+include("Misc.jl")
 
 include("Indexing.jl")
 
