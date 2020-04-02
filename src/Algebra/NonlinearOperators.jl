@@ -101,14 +101,14 @@ function allocate_residual_and_jacobian(op::NonlinearOperator,x::AbstractVector)
 end
 
 """
-    test_non_linear_operator(
+    test_nonlinear_operator(
       op::NonlinearOperator,
       x::AbstractVector,
       b::AbstractVector,
       pred=isapprox;
       jac=nothing)
 """
-function test_non_linear_operator(
+function test_nonlinear_operator(
   op::NonlinearOperator,
   x::AbstractVector,
   b::AbstractVector,
@@ -173,4 +173,3 @@ function allocate_jacobian(op::NonlinearOperatorMock,x::AbstractVector)
   m = 2
   zeros(T,n,m)
 end
-
