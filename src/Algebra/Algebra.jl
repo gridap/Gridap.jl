@@ -56,10 +56,10 @@ export allocate_residual
 export allocate_jacobian
 export allocate_residual_and_jacobian
 export zero_initial_guess
-export test_non_linear_operator
+export test_nonlinear_operator
 
 export NonlinearSolver
-export test_non_linear_solver
+export test_nonlinear_solver
 
 export NewtonRaphsonSolver
 export NLSolver
