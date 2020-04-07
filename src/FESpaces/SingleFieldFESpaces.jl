@@ -174,10 +174,12 @@ end
 """
 """
 function compute_dirichlet_values_for_tags(f::SingleFieldFESpace,tag_to_object)
-  dirichlet_dof_to_tag = get_dirichlet_dof_tag(f)
-  cdb = get_cell_dof_basis(f)
-  cell_map = get_cell_map(f)
   dirichlet_values = zero_dirichlet_values(f)
+  compute_dirichlet_values_for_tags!(f,tag_to_object,dirichlet_values)
+end
+
+function compute_dirichlet_values_for_tags!(dirichlet_values,f::SingleFieldFESpace,tag_to_object)
+  dirichlet_dof_to_tag = get_dirichlet_dof_tag(f)
   _tag_to_object = _convert_to_collectable(tag_to_object,num_dirichlet_tags(f))
   for (tag, object) in enumerate(_tag_to_object)
     cell_vals = _cell_vals(f,object)

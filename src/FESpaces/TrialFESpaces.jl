@@ -22,6 +22,14 @@ function TrialFESpace(space::SingleFieldFESpace,objects)
   TrialFESpace(space,dirichlet_values,cell_basis,constraint_style(space))
 end
 
+"""
+"""
+function TrialFESpace(dir_values::AbstractVector,space::SingleFieldFESpace,objects)
+  dir_values = compute_dirichlet_values_for_tags!(dir_values,space,objects)
+  cell_basis = _prepare_trial_cell_basis(space)
+  TrialFESpace(space,dir_values,cell_basis,constraint_style(space))
+end
+
 function TrialFESpace(space::TrialFESpace)
   space
 end
@@ -67,5 +75,3 @@ gather_free_and_dirichlet_values(f::TrialFESpace,cv) = gather_free_and_dirichlet
 gather_dirichlet_values(f::TrialFESpace,cv) = gather_dirichlet_values(f.space,cv)
 
 gather_free_values(f::TrialFESpace,cv) = gather_free_values(f.space,cv)
-
-

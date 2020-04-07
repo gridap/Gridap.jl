@@ -128,6 +128,7 @@ export compute_free_and_dirichlet_values
 export compute_dirichlet_values
 export compute_free_values
 export compute_dirichlet_values_for_tags
+export compute_dirichlet_values_for_tags!
 export test_single_field_fe_space
 export interpolate
 export interpolate_everywhere
