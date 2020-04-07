@@ -59,7 +59,7 @@ end
 # Matrix Division
 ###############################################################
 
-function (\)(a::T1 where {T1<:TensorValue}, b::T2) where {T2<:MultiValue}
+function (\)(a::T1 where {T1<:Union{TensorValue,SymTensorValue}}, b::T2) where {T2<:MultiValue}
   r = get_array(a) \ get_array(b)
   T2(r)
 end
@@ -96,7 +96,7 @@ end
 
 (*)(a::VectorValue{D}, b::VectorValue{D}) where D = inner(a,b)
 
-@generated function (*)(a::VectorValue{D1}, b::TensorValue{D2,D1}) where {D1,D2}
+@generated function (*)(a::VectorValue{D1}, b::MultiValue{Tuple{D1,D2},T2,2}) where {D1,D2,T2}
     ss = String[]
     for j in 1:D2
         s = join([ "a[$i]*b[$i,$j]+" for i in 1:D1])
@@ -106,7 +106,7 @@ end
     Meta.parse("VectorValue{$D2}($str)")
 end
 
-@generated function (*)(a::TensorValue{D1,D2}, b::VectorValue{D1}) where {D1,D2}
+@generated function (*)(a::MultiValue{Tuple{D1,D2},T1,2}, b::VectorValue{D1}) where {D1,D2,T1}
     ss = String[]
     for j in 1:D2
         s = join([ "b[$i]*a[$j,$i]+" for i in 1:D1])
@@ -116,7 +116,7 @@ end
     Meta.parse("VectorValue{$D2}($str)")
 end
 
-@generated function (*)(a::TensorValue{D1,D2}, b::TensorValue{D3,D1}) where {D1,D2,D3}
+@generated function (*)(a::MultiValue{Tuple{D1,D2},T1,2}, b::MultiValue{Tuple{D3,D2},T2,2}) where {D1,D2,D3,T1,T2}
     ss = String[]
     for j in 1:D2
         for i in 1:D1
@@ -140,6 +140,11 @@ inner(a::Real,b::Real) = a*b
 @generated function inner(a::MultiValue, b::MultiValue)
     @assert length(a) == length(b)
     str = join([" a[$i]*b[$i] +" for i in 1:length(a) ])
+    Meta.parse(str[1:(end-1)])
+end
+
+@generated function inner(a::MultiValue{Tuple{D1,D2},T,2}, b::MultiValue{Tuple{D1,D2},T,2}) where {D1,D2,T}
+    str = join([" a[$i,$j]*b[$i,$j] +" for i in 1:D1 for j in 1:D2 ])
     Meta.parse(str[1:(end-1)])
 end
 
@@ -174,8 +179,8 @@ end
 # Linear Algebra
 ###############################################################
 
-det(a::TensorValue{D1,D2,T,L}) where {D1,D2,T,L} = det(convert(StaticArrays.SMatrix{D1,D2,T,L},a))
-inv(a::TensorValue{D1,D2,T,L}) where {D1,D2,T,L} = TensorValue(inv(convert(StaticArrays.SMatrix{D1,D2,T,L},a)))
+det(a::MultiValue{Tuple{D1,D2},T,2,L}) where {D1,D2,T,L} = det(convert(SMatrix{D1,D2,T,L},a))
+inv(a::MultiValue{Tuple{D1,D2},T,2,L}) where {D1,D2,T,L} = TensorValue(inv(convert(SMatrix{D1,D2,T,L},a)))
 
 ###############################################################
 # Measure
@@ -184,7 +189,7 @@ inv(a::TensorValue{D1,D2,T,L}) where {D1,D2,T,L} = TensorValue(inv(convert(Stati
 """
 """
 meas(a::VectorValue) = sqrt(inner(a,a))
-meas(a::TensorValue) = abs(det(a))
+meas(a::MultiValue{S,T,2,L}) where {S,T,L} = abs(det(a))
 
 function meas(v::TensorValue{1,2})
   n1 = v[1,2]
@@ -209,14 +214,15 @@ end
 ###############################################################
 
 conj(a::VectorValue) = a
+conj(a::SymTensorValue) = a
 conj(a::T) where {T<:TensorValue} = T(conj(get_array(a)))
 
 ###############################################################
 # Trace
 ###############################################################
 
-@generated function tr(v::TensorValue{D}) where D
-    str = join([" v[$i+$((i-1)*D)] +" for i in 1:D ])
+@generated function tr(v::MultiValue{Tuple{D,D}}) where D
+    str = join([" v[$i,$i] +" for i in 1:D ])
     Meta.parse(str[1:(end-1)])
 end
 
@@ -238,8 +244,10 @@ end
 # Adjoint and transpose
 ###############################################################
 
-adjoint(v::T) where {T<:TensorValue} = T(adjoint(get_array(v)))
-transpose(v::T) where {T<:TensorValue} = T(transpose(get_array(v)))
+adjoint(arg::T) where {T<:TensorValue} = T(adjoint(get_array(arg)))
+transpose(arg::T) where {T<:TensorValue} = T(transpose(get_array(arg)))
+adjoint(arg::SymTensorValue) = arg
+transpose(arg::SymTensorValue) = arg
 
 ###############################################################
 # Symmetric part
@@ -247,11 +255,11 @@ transpose(v::T) where {T<:TensorValue} = T(transpose(get_array(v)))
 
 """
 """
-@generated function symmetic_part(v::TensorValue{D}) where D
+@generated function symmetic_part(v::MultiValue{Tuple{D,D},T,2,L}) where {D,T,L}
     str = "("
     for j in 1:D
         for i in 1:D
-            str *= "0.5*v.data[$i+$((j-1)*D)] + 0.5*v.data[$j+$((i-1)*D)], "
+            str *= "0.5*v[$i,$j] + 0.5*v[$j,$i], "
         end
     end
     str *= ")"

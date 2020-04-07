@@ -2,6 +2,7 @@ module OperationsTests
 
 using Test
 using Gridap.TensorValues
+using Gridap.Arrays
 using LinearAlgebra
 
 # Comparison
@@ -45,14 +46,17 @@ r = VectorValue(-1,1,-3)
 # Matrix Division
 
 t = one(TensorValue{3,3,Int,9})
-
 c = t\a
+@test c == a
 
+st = one(SymTensorValue{3,Int,6})
+c = st\a
 @test c == a
 
 # Operations by a scalar
 
 t = TensorValue(1,2,3,4,5,6,7,8,9)
+st = SymTensorValue(1,2,3,5,6,9)
 a = VectorValue(1,2,3)
 
 c = 2 * a
@@ -94,6 +98,22 @@ c = t + 2
 r = TensorValue(3, 4, 5, 6, 7, 8, 9, 10, 11)
 @test c == r
 
+
+c = 2 * st
+@test isa(c,SymTensorValue{3})
+r = SymTensorValue(2,4,6,10,12,18)
+@test c == r
+
+c = st * 2
+@test isa(c,SymTensorValue{3})
+r = SymTensorValue(2,4,6,10,12,18)
+@test c == r
+
+c = st + 2
+@test isa(c,SymTensorValue{3})
+r = SymTensorValue(3,4,5,7,8,11)
+@test c == r
+
 # Dot product (simple contraction)
 
 a = VectorValue(1,2,3)
@@ -101,6 +121,8 @@ b = VectorValue(2,1,6)
 
 t = TensorValue(1,2,3,4,5,6,7,8,9)
 s = TensorValue(9,8,3,4,5,6,7,2,1)
+st = SymTensorValue(1,2,3,5,6,9)
+st2 = SymTensorValue(9,6,5,3,2,1)
 
 c = a * b
 @test isa(c,Int)
@@ -111,14 +133,24 @@ c = t * a
 r = VectorValue(30,36,42)
 @test c == r
 
+c = st * a
+@test isa(c,VectorValue{3,Int})
+r = VectorValue(14,30,42)
+@test c == r
+
 c = s * t
 @test isa(c,TensorValue{3,3,Int})
 r = TensorValue(38,24,18,98,69,48,158,114,78)
 @test c == r
 
-c = a * t
+c = st * st2
+@test isa(c,TensorValue{3,3,Int})
+r = TensorValue(36, 78, 108, 18, 39, 54, 12, 26, 36)
+@test c == r
+
+c = a * st
 @test isa(c,VectorValue{3,Int})
-r = VectorValue(14, 32, 50)
+r = VectorValue(14,30,42)
 @test c == r
 
 # Inner product (full contraction)
@@ -133,6 +165,10 @@ c = inner(a,b)
 c = inner(t,s)
 @test isa(c,Int)
 @test c == 185
+
+c = inner(st,st2)
+@test isa(c,Int)
+@test c == inner(TensorValue(get_array(st)),TensorValue(get_array(st2)))
 
 # Reductions
 
@@ -189,6 +225,10 @@ c = det(t)
 c = inv(t)
 @test isa(c,TensorValue{3})
 
+st = SymTensorValue(9,8,7,5,4,1)
+@test det(st) == det(TensorValue(get_array(st)))
+@test inv(st) == inv(TensorValue(get_array(st)))
+
 # Measure
 
 a = VectorValue(1,2,3)
@@ -198,6 +238,9 @@ c = meas(a)
 t = TensorValue(10,2,30,4,5,6,70,8,9)
 c = meas(t)
 @test c ≈ 8802.0
+
+st = SymTensorValue(1,2,3,5,6,9)
+@test meas(st) == meas(TensorValue(get_array(st)))
 
 v = TensorValue{1,2}(10,20)
 @test meas(v) == sqrt(500)
@@ -245,13 +288,15 @@ v = VectorValue(1,0)
 
 t = TensorValue(1,2,3,4)
 @test tr(t) == 5
-@test tr(t) == 5
 
 t = TensorValue(1,2,3,4,5,6,7,8,9)
 @test tr(t) == 15
-@test tr(t) == 15
+
+st = SymTensorValue(1,2,3,5,6,9)
+@test tr(st) == tr(TensorValue(get_array(st)))
 
 @test symmetic_part(t) == TensorValue(1.0, 3.0, 5.0, 3.0, 5.0, 7.0, 5.0, 7.0, 9.0)
+@test symmetic_part(st) == symmetic_part(TensorValue(get_array(st)))
 
 a = TensorValue(1,2,3,4)
 b = a'
@@ -264,6 +309,18 @@ b = a'
 @test transpose(a) == b
 @test b == TensorValue(1,3,2,4)
 @test a*b == TensorValue(10,14,14,20)
+
+sa = SymTensorValue(1,2,3,5,6,9)
+sb = sa'
+@test adjoint(sa) == sb
+@test sb == SymTensorValue(1,2,3,5,6,9)
+@test sa*sb == TensorValue(get_array(sa))*TensorValue(get_array(sb))
+
+sa = SymTensorValue(1,2,3,5,6,9)
+sb = sa'
+@test transpose(sa) == sb
+@test sb == SymTensorValue(1,2,3,5,6,9)
+@test sa*sb == TensorValue(get_array(sa))*TensorValue(get_array(sb))
 
 u = VectorValue(1.0,2.0)
 v = VectorValue(2.0,3.0)

@@ -52,9 +52,76 @@ SymTensorValue{D,T}(data::Real...) where {D,T} = (L=length(data);SymTensorValue{
 #From Square Matrices
 # SymTensorValue -> b[[(D*(i-1))+j for i in 1:D for j in i:D]]
 
+# SymTensorValue single SVector, MVector, SMatrix, MMatrix and AbstractMatrix argument constructor
+
+function _FlattenUpperTriangle(data::
+                Union{
+                    SMatrix{D1,D2,T2,L},
+                    MMatrix{D1,D2,T2,L},
+                    AbstractMatrix{T2}
+                }) where {D1,D2,T1,T2,L}
+    PD1 = (@isdefined D1) ? D1 : size(data)[1]
+    PD2 = (@isdefined D2) ? D2 : size(data)[2]
+    [data[i,j] for i in 1:PD1 for j in i:PD2]
+end
+
+function SymTensorValue(data::
+                Union{
+                    SMatrix{D,D,T2,L},
+                    MMatrix{D,D,T2,L},
+                    AbstractMatrix{T2}
+                }) where {D,T1,T2,L}
+    PD1 = (@isdefined D) ? D : size(data)[1]
+    PD2 = (@isdefined D) ? D : size(data)[2]
+    @assert PD1 == PD2
+    ut=_FlattenUpperTriangle(data)
+    SymTensorValue{PD1,T2}(NTuple{length(ut)T2}(ut))
+end
+
+function SymTensorValue{D}(data::
+                Union{
+                    SMatrix{D,D,T2,L},
+                    MMatrix{D,D,T2,L},
+                    AbstractMatrix{T2}
+                }) where {D,T1,T2,L}
+    ut=_FlattenUpperTriangle(data)
+    SymTensorValue{D,T2}(NTuple{length(ut),T2}(ut))
+end
+
+function SymTensorValue{D,T1}(data::
+                Union{
+                    SMatrix{D,D,T2,L},
+                    MMatrix{D,D,T2,L},
+                    AbstractMatrix{T2}
+                }) where {D,T1,T2,L}
+    ut=_FlattenUpperTriangle(data)
+    SymTensorValue{D,T1}(NTuple{length(ut),T1}(ut))
+end
+
+function SymTensorValue{D,T1,L1}(data::
+                Union{
+                    SMatrix{D,D,T2,L2},
+                    MMatrix{D,D,T2,L2},
+                    AbstractMatrix{T2}
+                }) where {D,T1,T2,L1,L2}
+    ut=_FlattenUpperTriangle(data)
+    SymTensorValue{D,T1}(NTuple{L1,T1}(ut))
+end
+
 ###############################################################
 # Conversions (SymTensorValue)
 ###############################################################
+
+function SymTensorValueToArray(arg::SymTensorValue{D,T,L}) where {D,T,L}
+    z = zeros(T,D,D)
+    vector = collect(Tuple(arg))
+    for i in 1:D
+        index = _getindex(arg,i)
+        range = index:index+(D-i)
+        z[i,i:D] = z[i:D,i] = vector[range]
+    end
+    z
+end
 
 function convert(TT::Type{<:Union{SymTensorValue,SymTensorValue{D,T1},SymTensorValue{D,T1,L}}}, 
                 arg::
@@ -115,20 +182,9 @@ mutable(::SymTensorValue{D,T}) where {D,T} = mutable(SymTensorValue{D,T})
 change_eltype(::Type{SymTensorValue{D,T1,L}},::Type{T2}) where {D,T1,T2,L} = SymTensorValue{D,T2,L}
 change_eltype(::SymTensorValue{D,T1,L},::Type{T2}) where {D,T1,T2,L} = change_eltype(SymTensorValue{D,T1,L},T2)
 
-function SymTensorValueToArray(arg::SymTensorValue{D,T,L}) where {D,T,L}
-    z = zeros(T,D,D)
-    vector = collect(Tuple(arg))
-    for i in 1:D
-        index = _getindex(arg,i)
-        range = index:index+(D-i)
-        z[i,i:D] = z[i:D,i] = vector[range]
-    end
-    z
-end
-
-SMatrix(arg::SymTensorValue{D,T,L}) where {D,T,L} = SMatrix{D,D,T,L}(SymTensorValueToArray(arg.data))
-SArray(arg::SymTensorValue{D,T,L}) where {D,T,L} =  SMatrix(arg)
-get_array(arg::SymTensorValue{D,T,L}) where {D,T,L} = SMatrix(arg)
+SMatrix(arg::SymTensorValue{D,T,L}) where {D,T,L} = convert(SMatrix{D,D,T}, arg)
+SArray(arg::SymTensorValue{D,T,L}) where {D,T,L} =  convert(SMatrix{D,D,T}, arg)
+get_array(arg::SymTensorValue{D,T,L}) where {D,T,L} = convert(SMatrix{D,D,T}, arg)
 
 ###############################################################
 # Introspection (SymTensorValue)
