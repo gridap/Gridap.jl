@@ -1,4 +1,4 @@
-# module TrialFESpacesTests
+module TrialFESpacesTests
 
 using Test
 using Gridap.Arrays
@@ -29,6 +29,7 @@ isa(V,SingleFieldFESpace)
 ud = compute_dirichlet_values_for_tags!(v,V,[4,3])
 @test all(ud .== v)
 test_single_field_fe_space(U)
+U = TrialFESpace(v,V,[4,3])
 
 matvecdata = ([],[],[])
 matdata = ([],[],[])
@@ -48,4 +49,4 @@ cell_basis = get_cell_basis(U)
 #
 #writevtk(trian,"trian",cellfields=["uh"=>uh])
 
-# end # module
+end # module

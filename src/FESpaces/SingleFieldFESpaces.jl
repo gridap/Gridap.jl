@@ -175,7 +175,7 @@ end
 """
 function compute_dirichlet_values_for_tags(f::SingleFieldFESpace,tag_to_object)
   dirichlet_values = zero_dirichlet_values(f)
-  compute_dirichlet_values_for_tags!(f,tag_to_object,dirichlet_values)
+  compute_dirichlet_values_for_tags!(dirichlet_values,f,tag_to_object)
 end
 
 function compute_dirichlet_values_for_tags!(dirichlet_values,f::SingleFieldFESpace,tag_to_object)
