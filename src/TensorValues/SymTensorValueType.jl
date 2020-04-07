@@ -13,6 +13,16 @@ struct SymTensorValue{D,T,L} <: MultiValue{Tuple{D,D},T,2,L}
     end
 end
 
+function _getindex(arg::SymTensorValue{D},i::Integer) where {D}
+    index=((i-1)*D)-sum(1:i-1)+i
+end
+
+function _getindex(arg::SymTensorValue{D},i::Integer,j::Integer) where {D}
+    _j,_i=sort([i,j])
+    index=((_j-1)*D)-sum(1:_j-1)+_i
+end
+
+
 
 ###############################################################
 # Constructors (SymTensorValue)
@@ -21,7 +31,7 @@ end
 # Empty SymTensorValue constructor
 
 SymTensorValue()                   = SymTensorValue{0,Int}(NTuple{0,Int}())
-SymTensorValue{0}()                = SymTensorValue{0,Int}(NTuple{0,Int}())
+SymTensorValue{0}() where {T}      = SymTensorValue{0,Int}(NTuple{0,Int}())
 SymTensorValue{0,T}() where {T}    = SymTensorValue{0,T}(NTuple{0,T}())
 SymTensorValue(data::NTuple{0})    = SymTensorValue{0,Int}(data)
 SymTensorValue{0}(data::NTuple{0}) = SymTensorValue{0,Int}(data)
@@ -30,14 +40,17 @@ SymTensorValue{0}(data::NTuple{0}) = SymTensorValue{0,Int}(data)
 
 SymTensorValue(data::NTuple{L,T}) where {L,T}                = SymTensorValue{floor(Int,sqrt(L*2)),T}(data)
 SymTensorValue{D}(data::NTuple{L,T}) where {D,L,T}           = SymTensorValue{D,T}(data)
-SymTensorValue{D,T1}(data::NTuple{L,T2}) where {D,L,T1,T2}   = SymTensorValue{D,T1,}(NTuple{L,T1}(data))
-SymTensorValue{D,T1,L}(data::NTuple{L,T2}) where {D,L,T1,T2} = SymTensorValue{D,T1,L}(NTuple{L,T1}(data))
+SymTensorValue{D,T1}(data::NTuple{L,T2}) where {D,L,T1,T2}   = SymTensorValue{D,T1}(NTuple{L,T1}(data))
+SymTensorValue{D,T1,L}(data::NTuple{L,T2}) where {D,L,T1,T2} = SymTensorValue{D,T1}(NTuple{L,T1}(data))
 
 # SymTensorValue Vararg constructor
 
-SymTensorValue(data::Real...)                  = SymTensorValue{floor(Int,sqrt(length(data)*2))}(NTuple(data))
-SymTensorValue{D}(data::Real...) where {D}     = SymTensorValue{D}(NTuple(data))
-SymTensorValue{D,T}(data::Real...) where {D,T} = SymTensorValue{D,T}(NTuple(data))
+SymTensorValue(data::Real...)                  = (L=length(data);SymTensorValue{floor(Int,sqrt(L*2))}(NTuple{L}(data)))
+SymTensorValue{D}(data::Real...) where {D}     = (L=length(data);SymTensorValue{D}(NTuple{L}(data)))
+SymTensorValue{D,T}(data::Real...) where {D,T} = (L=length(data);SymTensorValue{D,T}(NTuple{L,T}(data)))
+
+#From Square Matrices
+# SymTensorValue -> b[[(D*(i-1))+j for i in 1:D for j in i:D]]
 
 ###############################################################
 # Conversions (SymTensorValue)
@@ -50,6 +63,32 @@ function convert(TT::Type{<:Union{SymTensorValue,SymTensorValue{D,T1},SymTensorV
                     }) where {D,T1,T2,L}
     PT = (@isdefined T1) ? T1 : T2
     SymTensorValue{D,PT}(arg)
+end
+
+function convert(::Type{Union{SMatrix,SMatrix{D,D}}}, arg::SymTensorValue{D,T2,L2}) where {D,T1,T2,L1,L2}
+    PT = (@isdefined T1) ? T1 : T2
+    SMatrix{D,D,PT}(SymTensorValueToArray(arg))
+end
+
+function convert(::Type{<:SMatrix{D,D,T1}}, arg::SymTensorValue{D,T2,L}) where {D,T1,T2,L}
+    SMatrix{D,D,T1}(SymTensorValueToArray(arg))
+end
+
+function convert(::Type{<:SMatrix{D,D}}, arg::SymTensorValue{D,T2,L}) where {D,T2,L}
+    SMatrix{D,D,T2}(SymTensorValueToArray(arg))
+end
+
+function convert(::Type{Union{MMatrix,MMatrix{D,D,T1,L1}}}, arg::SymTensorValue{D,T2,L2}) where {D,T1,T2,L1,L2}
+    PT = (@isdefined T1) ? T1 : T2
+    MMatrix{D,D,PT}(SymTensorValueToArray(arg))
+end
+
+function convert(::Type{<:MMatrix{D,D,T1}}, arg::SymTensorValue{D,T2,L}) where {D,T1,T2,L}
+    MMatrix{D,D,T1}(SymTensorValueToArray(arg))
+end
+
+function convert(::Type{<:MMatrix{D,D}}, arg::SymTensorValue{D,T2,L}) where {D,T2,L}
+    MMatrix{D,D,T2}(SymTensorValueToArray(arg))
 end
 
 function convert(T::Type{<:Union{NTuple,NTuple{L,T1}}}, arg::SymTensorValue{D,T2,L}) where {D,T1,T2,L}
@@ -76,19 +115,20 @@ mutable(::SymTensorValue{D,T}) where {D,T} = mutable(SymTensorValue{D,T})
 change_eltype(::Type{SymTensorValue{D,T1,L}},::Type{T2}) where {D,T1,T2,L} = SymTensorValue{D,T2,L}
 change_eltype(::SymTensorValue{D,T1,L},::Type{T2}) where {D,T1,T2,L} = change_eltype(SymTensorValue{D,T1,L},T2)
 
-#SMatrix(arg::SymTensorValue{D,T,L}) where {D,T,L} = SMatrix{D,T,L}(arg.data)
-#SArray(arg::SymTensorValue{D,T,L}) where {D1,D2,T,L} = StaticArrays.SMatrix(arg)
-#get_array(arg::T where {T<:SymTensorValue}) = convert(SMatrix,arg)
+function SymTensorValueToArray(arg::SymTensorValue{D,T,L}) where {D,T,L}
+    z = zeros(T,D,D)
+    vector = collect(Tuple(arg))
+    for i in 1:D
+        index = _getindex(arg,i)
+        range = index:index+(D-i)
+        z[i,i:D] = z[i:D,i] = vector[range]
+    end
+    z
+end
 
-#@generated function diagonal_tensor(v::VectorValue{D,T}) where {D,T}
-#  s = ["zero(T), " for i in 1:(D*D)]
-#  for i in 1:D
-#    d = D*(i-1)+i
-#    s[d] = "v.data[$i],"
-#  end
-#  str = join(s)
-#  Meta.parse("SymTensorValue(($str))")
-#end
+SMatrix(arg::SymTensorValue{D,T,L}) where {D,T,L} = SMatrix{D,D,T,L}(SymTensorValueToArray(arg.data))
+SArray(arg::SymTensorValue{D,T,L}) where {D,T,L} =  SMatrix(arg)
+get_array(arg::SymTensorValue{D,T,L}) where {D,T,L} = SMatrix(arg)
 
 ###############################################################
 # Introspection (SymTensorValue)

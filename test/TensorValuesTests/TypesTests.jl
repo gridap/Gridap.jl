@@ -40,6 +40,41 @@ t = TensorValue{1}((10,))
 @test isa(t,TensorValue{1,1,Int})
 @test convert(SMatrix,t) == 10*ones(1,1)
 
+# Constructors (SymTensorValue)
+
+s = SymTensorValue( (11,21,22) )
+@test isa(s,SymTensorValue{2,Int})
+@test convert(SMatrix{2,2},s) == [11 21;21 22]
+
+s = SymTensorValue(11,21,22)
+@test isa(s,SymTensorValue{2,Int})
+@test convert(SMatrix{2,2,Float64},s) == [11.0 21.0;21.0 22.0]
+
+s = SymTensorValue{2}( (11,21,22) )
+@test isa(s,SymTensorValue{2,Int})
+@test convert(SMatrix,s) == [11 21;21 22]
+
+s = SymTensorValue{2}(11,21,22)
+@test isa(s,SymTensorValue{2,Int})
+@test convert(SMatrix{2,2,Float64},s) == [11.0 21.0;21.0 22.0]
+
+s = SymTensorValue{2,Int}( (11,21,22) )
+@test isa(s,SymTensorValue{2,Int})
+@test convert(SMatrix,s) == [11 21;21 22]
+
+s = SymTensorValue{2,Float64}(11,21,22)
+@test isa(s,SymTensorValue{2,Float64})
+@test convert(SMatrix{2,2,Float64},s) == [11.0 21.0;21.0 22.0]
+
+s = SymTensorValue{0,Int}( () )
+@test isa(s,SymTensorValue{0,Int})
+@test convert(SMatrix{0,0},s) == Array{Any,2}(undef,0,0)
+
+s = SymTensorValue{0,Int}()
+@test isa(s,SymTensorValue{0,Int})
+@test convert(SMatrix,s) == Array{Any,2}(undef,0,0)
+
+
 # Constructors (VectorValue)
 
 a = SVector(1)
@@ -115,6 +150,10 @@ z = zero(TensorValue{3,3,Int,9})
 @test isa(z,TensorValue{3,3,Int,9})
 @test convert(SMatrix,z) == zeros(Int,(3,3))
 
+z = zero(SymTensorValue{3,Int})
+@test isa(z,SymTensorValue{3,Int,6})
+@test convert(SMatrix,z) == zeros(Int,(3,3))
+
 z = zero(VectorValue{3,Int})
 @test isa(z,VectorValue{3,Int})
 @test convert(SVector,z) == zeros(Int,3)
@@ -124,6 +163,14 @@ z = one(TensorValue{3,3,Int,9})
 @test convert(SMatrix,z) == [1 0 0; 0 1 0; 0 0 1]
 s = one(z)
 @test convert(SMatrix,s) == [1 0 0; 0 1 0; 0 0 1]
+
+z = one(SymTensorValue{3,Int})
+@test isa(z,SymTensorValue{3,Int,6})
+@test convert(SMatrix,z) == [1 0 0; 0 1 0; 0 0 1]
+
+z = one(VectorValue{3,Int})
+@test isa(z,VectorValue{3,Int})
+@test convert(SVector,z) == ones(Int,3)
 
 # Conversions
 
@@ -146,6 +193,13 @@ b = convert(V,a)
 b = V[a,a,a,]
 @test isa(b,Vector{V})
 
+a = (11,21,22)
+V = SymTensorValue{2,Int,3}
+b = convert(V,a)
+@test isa(b,V)
+b = V[a,a,a,]
+@test isa(b,Vector{V})
+
 # Misc operations on the type itself
 
 V = VectorValue{3,Int}
@@ -160,6 +214,10 @@ V = VectorValue{3}
 
 v = TensorValue{3,2,Float64}(1,2,3,4,5,6)
 s = "(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)"
+@test string(v) == s
+
+v = SymTensorValue{3,Int64}(1, 0, 0, 1, 0, 1)
+s = "(1, 0, 0, 1, 0, 1)"
 @test string(v) == s
 
 # Misc
@@ -196,5 +254,10 @@ t = diagonal_tensor(p)
 p = VectorValue(1,2,3)
 t = diagonal_tensor(p)
 @test t == TensorValue(1,0,0,0,2,0,0,0,3)
+
+a = SymTensorValue(11,21,22)
+@test change_eltype(a,Float64) == SymTensorValue{2,Float64,3}
+@test isa(Tuple(a),Tuple)
+@test Tuple(a) == a.data
 
 end # module TypesTests

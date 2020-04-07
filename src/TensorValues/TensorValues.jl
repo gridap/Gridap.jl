@@ -37,9 +37,9 @@ using Gridap.Helpers
 using Gridap.Arrays
 
 export MultiValue
-export SymTensorValue
-export TensorValue
 export VectorValue
+export TensorValue
+export SymTensorValue
 
 export inner, outer, meas
 #export det, inv, tr, dot, norm

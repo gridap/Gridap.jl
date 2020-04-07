@@ -13,6 +13,10 @@ struct TensorValue{D1,D2,T,L} <: MultiValue{Tuple{D1,D2},T,2,L}
     end
 end
 
+function _getindex(arg::TensorValue{D1,D2},i::Integer,j::Integer) where {D1,D2} 
+    index=((j-1)*D1)+i
+end
+
 ###############################################################
 # Constructors 
 ###############################################################
