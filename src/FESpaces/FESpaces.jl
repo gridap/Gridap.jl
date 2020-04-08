@@ -104,6 +104,7 @@ export get_test
 export get_trial
 export allocate_matrix
 export assemble_matrix!
+export assemble_matrix_add!
 export assemble_matrix
 export allocate_vector
 export assemble_vector!
