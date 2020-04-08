@@ -31,6 +31,7 @@ ud = compute_dirichlet_values_for_tags!(v,V,[4,3])
 test_single_field_fe_space(U)
 U = TrialFESpace(v,V,[4,3])
 
+
 matvecdata = ([],[],[])
 matdata = ([],[],[])
 vecdata = ([],[])
@@ -39,6 +40,8 @@ test_single_field_fe_space(U,matvecdata,matdata,vecdata)
 uh = interpolate(U,0)
 
 @test get_dirichlet_values(U) == [4.0, 3.0, 3.0, 3.0, 3.0, 3.0]
+TrialFESpace!(U,[1,2])
+@test get_dirichlet_values(U) == [1.0, 2.0, 2.0, 2.0, 2.0, 2.0]
 
 cell_basis = get_cell_basis(U)
 @test is_trial(cell_basis)

@@ -30,6 +30,14 @@ function TrialFESpace(dir_values::AbstractVector,space::SingleFieldFESpace,objec
   TrialFESpace(space,dir_values,cell_basis,constraint_style(space))
 end
 
+"""
+"""
+function TrialFESpace!(space::SingleFieldFESpace,objects)
+  dir_values = get_dirichlet_values(space)
+  dir_values = compute_dirichlet_values_for_tags!(dir_values,space,objects)
+  space
+end
+
 function TrialFESpace(space::TrialFESpace)
   space
 end
