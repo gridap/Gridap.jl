@@ -40,6 +40,7 @@ export MultiValue
 export VectorValue
 export TensorValue
 export SymTensorValue
+export SymFourthOrderTensorValue
 
 export inner, outer, meas
 #export det, inv, tr, dot, norm
@@ -74,6 +75,8 @@ include("VectorValueType.jl")
 include("TensorValueType.jl")
 
 include("SymTensorValueType.jl")
+
+include("SymFourthOrderTensorValueType.jl")
 
 include("Misc.jl")
 
