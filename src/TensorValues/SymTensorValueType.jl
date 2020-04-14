@@ -123,11 +123,8 @@ function SymTensorValueToArray(arg::SymTensorValue{D,T,L}) where {D,T,L}
     z
 end
 
-function convert(TT::Type{<:Union{SymTensorValue,SymTensorValue{D,T1},SymTensorValue{D,T1,L}}}, 
-                arg::
-                    Union{
-                        NTuple{L,T2},
-                    }) where {D,T1,T2,L}
+function convert(::Type{<:Union{SymTensorValue,SymTensorValue{D,T1},SymTensorValue{D,T1,L}}}, 
+                arg::NTuple{L,T2}) where {D,T1,T2,L}
     PT = (@isdefined T1) ? T1 : T2
     SymTensorValue{D,PT}(arg)
 end
@@ -158,7 +155,7 @@ function convert(::Type{<:MMatrix{D,D}}, arg::SymTensorValue{D,T2,L}) where {D,T
     MMatrix{D,D,T2}(SymTensorValueToArray(arg))
 end
 
-function convert(T::Type{<:Union{NTuple,NTuple{L,T1}}}, arg::SymTensorValue{D,T2,L}) where {D,T1,T2,L}
+function convert(::Type{<:Union{NTuple,NTuple{L,T1}}}, arg::SymTensorValue{D,T2,L}) where {D,T1,T2,L}
     PT = (@isdefined T1) ? T1 : T2
     NTuple{L,PT}(arg.data)
 end
@@ -174,7 +171,7 @@ zero(::SymTensorValue{D,T}) where {D,T} = zero(SymTensorValue{D,T})
   str = join(["$i==$j ? one(T) : zero(T), " for i in 1:D for j in i:D])
   Meta.parse("SymTensorValue{D,T}(($str))")
 end
-one(::SymTensorValue{D,T}) where {D,T} = one(TensorValue{D,T})
+one(::SymTensorValue{D,T}) where {D,T} = one(SymTensorValue{D,T})
 
 mutable(::Type{<:SymTensorValue{D,T}}) where {D,T} = MMatrix{D,D,T}
 mutable(::SymTensorValue{D,T}) where {D,T} = mutable(SymTensorValue{D,T})
