@@ -162,6 +162,8 @@ export is_a_fe_cell_basis
 
 export TrialFESpace
 export TrialFESpace!
+export HomogeneousTrialFESpace
+export HomogeneousTrialFESpace!
 export TestFESpace
 export compute_conforming_cell_dofs
 export SparseMatrixAssembler

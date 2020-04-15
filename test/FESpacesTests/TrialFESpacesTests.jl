@@ -29,7 +29,7 @@ isa(V,SingleFieldFESpace)
 ud = compute_dirichlet_values_for_tags!(v,V,[4,3])
 @test all(ud .== v)
 test_single_field_fe_space(U)
-U = TrialFESpace(v,V,[4,3])
+U = TrialFESpace!(v,V,[4,3])
 
 
 matvecdata = ([],[],[])
@@ -45,6 +45,14 @@ TrialFESpace!(U,[1,2])
 
 cell_basis = get_cell_basis(U)
 @test is_trial(cell_basis)
+
+U0 = HomogeneousTrialFESpace(V)
+@test get_dirichlet_values(U0) == zeros(6)
+
+U0 = HomogeneousTrialFESpace!(v,V)
+@test v === get_dirichlet_values(U0)
+@test v == zeros(6)
+@test get_dirichlet_values(U0) == zeros(6)
 
 #trian = get_triangulation(model)
 #
