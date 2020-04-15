@@ -36,7 +36,7 @@ end
 
 """
 """
-function TrialFESpace!(space::SingleFieldFESpace,objects)
+function TrialFESpace!(space::TrialFESpace,objects)
   dir_values = get_dirichlet_values(space)
   dir_values = compute_dirichlet_values_for_tags!(dir_values,space,objects)
   space
