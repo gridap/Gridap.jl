@@ -42,14 +42,24 @@ for op in (:+,:-)
       T(r)
     end
 
-    function ($op)(a::T where {T<:VectorValue{D}},b::T where {T<:VectorValue{D}})  where {D}
+    function ($op)(a::VectorValue{D},b::VectorValue{D})  where {D}
       r = broadcast(($op), a.data, b.data)
       VectorValue{D}(r)
     end
 
-    function ($op)(a::T where {T<:TensorValue{D1,D2}},b::T where {T<:TensorValue{D1,D2}})  where {D1,D2}
+    function ($op)(a::TensorValue{D1,D2},b::TensorValue{D1,D2})  where {D1,D2}
       r = broadcast(($op), a.data, b.data)
       TensorValue{D1,D2}(r)
+    end
+
+    function ($op)(a::SymTensorValue{D},b::SymTensorValue{D})  where {D}
+      r = broadcast(($op), a.data, b.data)
+      SymTensorValue{D}(r)
+    end
+
+    function ($op)(a::SymFourthOrderTensorValue{D},b::SymFourthOrderTensorValue{D})  where {D}
+      r = broadcast(($op), a.data, b.data)
+      SymFourthOrderTensorValue{D}(r)
     end
 
   end

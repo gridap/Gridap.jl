@@ -57,6 +57,7 @@ c = st\a
 
 t = TensorValue(1,2,3,4,5,6,7,8,9)
 st = SymTensorValue(1,2,3,5,6,9)
+s4ot = one(SymFourthOrderTensorValue{2,Int})
 a = VectorValue(1,2,3)
 
 c = 2 * a
@@ -112,6 +113,21 @@ r = SymTensorValue(2,4,6,10,12,18)
 c = st + 2
 @test isa(c,SymTensorValue{3})
 r = SymTensorValue(3,4,5,7,8,11)
+@test c == r
+
+c = 2 * s4ot
+@test isa(c,SymFourthOrderTensorValue{2})
+r = SymFourthOrderTensorValue(2,0,2,0,0,0,2,0,2)
+@test c == r
+
+c = s4ot * 2
+@test isa(c,SymFourthOrderTensorValue{2})
+r = SymFourthOrderTensorValue(2,0,2,0,0,0,2,0,2)
+@test c == r
+
+c = s4ot + 2
+@test isa(c,SymFourthOrderTensorValue{2})
+r = SymFourthOrderTensorValue(3,2,3,2,2,2,3,2,3)
 @test c == r
 
 # Dot product (simple contraction)
