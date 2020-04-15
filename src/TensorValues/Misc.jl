@@ -1,5 +1,5 @@
 ###############################################################
-# Other constructors and conversions implemented for more general types
+# Other constructors and conversions implemented for more generic types
 ###############################################################
 
 change_eltype(::Type{<:Number},::Type{T}) where {T} = T

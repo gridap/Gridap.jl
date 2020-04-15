@@ -13,16 +13,14 @@ struct SymFourthOrderTensorValue{D,T,L} <: MultiValue{Tuple{D,D,D,D},T,4,L}
   end
 end
 
-#function _getindex(arg::SymTensorValue{D},i::Integer) where {D}
-#    index=((i-1)*D)-sum(1:i-1)+i
-#end
-
-#function _getindex(arg::SymTensorValue{D},i::Integer,j::Integer) where {D}
-#    _j,_i=sort([i,j])
-#    index=((_j-1)*D)-sum(1:_j-1)+_i
-#end
-
-
+function _getindex(arg::SymFourthOrderTensorValue{D},i::Integer,j::Integer,k::Integer,l::Integer) where {D}
+    _j,_i=sort([i,j])
+    _l,_k=sort([k,l])
+    block_length=sum(1:D)
+    element_index=((_j-1)*D)-sum(1:_j-1)+_i
+    block_index=((_l-1)*D)-sum(1:_l-1)+_k
+    index=(block_index-1)*block_length+element_index
+end
 
 ###############################################################
 # Constructors (SymTensorValue)
@@ -74,11 +72,11 @@ end
 zero(::Type{<:SymFourthOrderTensorValue{D,T}}) where {D,T} = (L=Int((D*(D+1)/2)^2);SymFourthOrderTensorValue{D,T}(NTuple{L,T}(zeros(T,L))))
 zero(::SymFourthOrderTensorValue{D,T}) where {D,T} = zero(SymFourthOrderTensorValue{D,T})
 
-#@generated function one(::Type{<:SymFourthOrderTensorValue{D,T}}) where {D,T}
-#  str = join(["$i==$j ? one(T) : zero(T), " for i in 1:D for j in i:D])
-#  Meta.parse("SymFourthOrderTensorValue{D,T}(($str))")
-#end
-#one(::SymFourthOrderTensorValue{D,T}) where {D,T} = one(TensorValue{D,T})
+@generated function one(::Type{<:SymFourthOrderTensorValue{D,T}}) where {D,T}
+  str = join(["($i==$j && $k==$l) ? one(T) : zero(T), " for i in 1:D for j in i:D for k in 1:D for l in k:D])
+  Meta.parse("SymFourthOrderTensorValue{D,T}(($str))")
+end
+one(::SymFourthOrderTensorValue{D,T}) where {D,T} = one(SymFourthOrderTensorValue{D,T})
 
 change_eltype(::Type{SymFourthOrderTensorValue{D,T1,L}},::Type{T2}) where {D,T1,T2,L} = SymFourthOrderTensorValue{D,T2,L}
 change_eltype(::SymFourthOrderTensorValue{D,T1,L},::Type{T2}) where {D,T1,T2,L} = change_eltype(SymFourthOrderTensorValue{D,T1,L},T2)

@@ -75,7 +75,7 @@ function SymTensorValue(data::
     PD2 = (@isdefined D) ? D : size(data)[2]
     @assert PD1 == PD2
     ut=_FlattenUpperTriangle(data)
-    SymTensorValue{PD1,T2}(NTuple{length(ut)T2}(ut))
+    SymTensorValue{PD1,T2}(NTuple{length(ut),T2}(ut))
 end
 
 function SymTensorValue{D}(data::
@@ -114,11 +114,11 @@ end
 
 function SymTensorValueToArray(arg::SymTensorValue{D,T,L}) where {D,T,L}
     z = zeros(T,D,D)
-    vector = collect(Tuple(arg))
+    data = collect(Tuple(arg))
     for i in 1:D
         index = _getindex(arg,i)
         range = index:index+(D-i)
-        z[i,i:D] = z[i:D,i] = vector[range]
+        z[i,i:D] = z[i:D,i] = data[range]
     end
     z
 end
