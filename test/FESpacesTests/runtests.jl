@@ -4,6 +4,8 @@ using Test
 
 @testset "CellBases" begin include("CellBasesTests.jl") end
 
+@testset "CellDofBases" begin include("CellDofBasesTests.jl") end
+
 @testset "Law" begin include("LawTests.jl") end
 
 @testset "FEFunctions" begin include("FEFunctionsTests.jl") end
@@ -51,6 +53,10 @@ using Test
 @testset "DirichletFESpaces" begin include("DirichletFESpacesTests.jl") end
 
 @testset "ExtendedFESpaces" begin include("ExtendedFESpacesTests.jl") end
+
+@testset "PhysicalBasesTests" begin include("PhysicalBasesTests.jl") end
+
+@testset "PhysicalFESpaces" begin include("PhysicalFESpacesTests.jl") end
 
 @testset "FESpaceFactories" begin include("FESpaceFactoriesTests.jl") end
 

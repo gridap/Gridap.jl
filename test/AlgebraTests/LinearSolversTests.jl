@@ -27,7 +27,7 @@ x = rand(n^2)
 b = A*x
 
 op = AffineOperator(A,b)
-test_non_linear_operator(op,x,zeros(size(x)),jac=A)
+test_nonlinear_operator(op,x,zeros(size(x)),jac=A)
 
 ls = LUSolver()
 test_linear_solver(ls,A,b,x)
@@ -46,6 +46,6 @@ op = AffineOperator(A,b)
 @test jacobian(op,x) === op.matrix
 
 solve!(x0,nls,op)
-test_non_linear_solver(nls,op,x0,x)
+test_nonlinear_solver(nls,op,x0,x)
 
 end # module

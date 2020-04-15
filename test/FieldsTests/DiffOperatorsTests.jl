@@ -34,7 +34,7 @@ for f in (_f,_af)
   
   @test outer(f,∇) == transpose(∇(f))
 
-  @test ε(f) == symmetic_part(gradient(f))
+  @test ε(f) == symmetric_part(gradient(f))
 
   @test Δ(f) == ∇*∇(f)
 

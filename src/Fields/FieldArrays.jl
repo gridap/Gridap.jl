@@ -284,3 +284,26 @@ for op in (:+,:-)
   end
 end
 
+# More optimizations
+
+function evaluate_field_array(a::AppendedArray,b::AppendedArray)
+  if (length(a.a) == length(b.a)) && (length(a.b) == length(b.b))
+    c_a = evaluate_field_array(a.a,b.a)
+    c_b = evaluate_field_array(a.b,b.b)
+    lazy_append(c_a,c_b)
+  else
+    _evaluate_field_array(a,b)
+  end
+end
+
+function evaluate_field_array(a::AppendedArray,b::AbstractArray)
+  n = length(a.a)
+  _b = lazy_append(lazy_split(b,n)...)
+  evaluate_field_array(a,_b)
+end
+
+function field_array_gradient(a::AppendedArray)
+  c_a = field_array_gradient(a.a)
+  c_b = field_array_gradient(a.b)
+  lazy_append(c_a,c_b)
+end

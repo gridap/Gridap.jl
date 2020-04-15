@@ -311,8 +311,8 @@ t = TensorValue(1,2,3,4,5,6,7,8,9)
 st = SymTensorValue(1,2,3,5,6,9)
 @test tr(st) == tr(TensorValue(get_array(st)))
 
-@test symmetic_part(t) == TensorValue(1.0, 3.0, 5.0, 3.0, 5.0, 7.0, 5.0, 7.0, 9.0)
-@test symmetic_part(st) == symmetic_part(TensorValue(get_array(st)))
+@test symmetric_part(t) == TensorValue(1.0, 3.0, 5.0, 3.0, 5.0, 7.0, 5.0, 7.0, 9.0)
+@test symmetric_part(st) == symmetric_part(TensorValue(get_array(st)))
 
 a = TensorValue(1,2,3,4)
 b = a'

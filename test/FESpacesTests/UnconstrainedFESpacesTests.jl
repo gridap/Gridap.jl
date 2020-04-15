@@ -1,4 +1,4 @@
-module UnsconstrainedFESpacesTests
+module UnconstrainedFESpacesTests
 
 using Test
 using Gridap.Arrays

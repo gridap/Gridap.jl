@@ -1,6 +1,9 @@
 
 """
     RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
+
+The `order` argument has the following meaning: the divergence of the  functions in this basis
+is in the Q space of degree `order`.
 """
 function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
 
@@ -48,7 +51,7 @@ function _RT_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) where et
   nf_nodes[frange] = fcips
   nf_moments[frange] = fmoments
 
-  if (order > 1)
+  if (order > 0)
     ccips, cmoments = _RT_cell_values(p,et,order)
     crange = get_dimrange(p,D)
     nf_nodes[crange] = ccips
@@ -115,7 +118,7 @@ function _RT_face_values(p,et,order)
   # the one of the points in the polytope after applying the geopmap
   # (fcips), and the weights for these nodes (fwips, a constant cell array)
   # Nodes (fcips)
-  degree = order*2
+  degree = (order+1)*2
   fquad = Quadrature(fp,degree)
   fips = get_coordinates(fquad)
   wips = get_weights(fquad)
@@ -124,7 +127,7 @@ function _RT_face_values(p,et,order)
 
   # Moments (fmoments)
   # The RT prebasis is expressed in terms of shape function
-  fshfs = MonomialBasis(et,fp,order-1)
+  fshfs = MonomialBasis(et,fp,order)
 
   # Face moments, i.e., M(Fi)_{ab} = q_RF^a(xgp_RFi^b) w_Fi^b n_Fi ⋅ ()
   fmoments = _RT_face_moments(p, fshfs, c_fips, fcips, fwips)
@@ -142,7 +145,7 @@ end
 # It provides for every cell the nodes and the moments arrays
 function _RT_cell_values(p,et,order)
   # Compute integration points at interior
-  degree = 2*order
+  degree = 2*(order+1)
   iquad = Quadrature(p,degree)
   ccips = get_coordinates(iquad)
   cwips = get_weights(iquad)
@@ -176,6 +179,12 @@ struct MomentBasedDofBasis{P,V} <: Dof
   face_moments::Vector{Array{V}}
   face_nodes::Vector{UnitRange{Int}}
 
+  function MomentBasedDofBasis(nodes,f_moments,f_nodes)
+    P = eltype(nodes)
+    V = eltype(eltype(f_moments))
+    new{P,V}(nodes,f_moments,f_nodes)
+  end
+
   function MomentBasedDofBasis(f_nodes,f_moments)
     P = eltype(eltype(f_nodes))
     V = eltype(eltype(f_moments))
@@ -196,6 +205,10 @@ struct MomentBasedDofBasis{P,V} <: Dof
     new{P,V}(nodes,f_moments,face_nodes)
   end
 end
+
+get_nodes(b::MomentBasedDofBasis) = b.nodes
+get_face_moments(b::MomentBasedDofBasis) = b.face_moments
+get_face_nodes_dofs(b::MomentBasedDofBasis) = b.face_nodes
 
 function num_dofs(b::MomentBasedDofBasis)
   n = 0

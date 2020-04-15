@@ -4,26 +4,56 @@ struct TrialFESpace{B} <: SingleFieldFESpace
   dirichlet_values::AbstractVector
   cell_basis::CellBasis
   constraint_style::Val{B}
+
+  function TrialFESpace(dirichlet_values::AbstractVector,space::SingleFieldFESpace)
+    cell_basis = _prepare_trial_cell_basis(space)
+    cs = constraint_style(space)
+    B = get_val_parameter(cs)
+    new{B}(space,dirichlet_values,cell_basis,cs)
+  end
 end
 
 """
 """
 function TrialFESpace(space::SingleFieldFESpace)
   dirichlet_values = get_dirichlet_values(space)
-  cell_basis = _prepare_trial_cell_basis(space)
-  TrialFESpace(space,dirichlet_values,cell_basis,constraint_style(space))
+  TrialFESpace(dirichlet_values,space)
 end
 
 """
 """
 function TrialFESpace(space::SingleFieldFESpace,objects)
   dirichlet_values = compute_dirichlet_values_for_tags(space,objects)
-  cell_basis = _prepare_trial_cell_basis(space)
-  TrialFESpace(space,dirichlet_values,cell_basis,constraint_style(space))
+  TrialFESpace(dirichlet_values,space)
+end
+
+"""
+"""
+function TrialFESpace!(dir_values::AbstractVector,space::SingleFieldFESpace,objects)
+  dir_values = compute_dirichlet_values_for_tags!(dir_values,space,objects)
+  TrialFESpace(dir_values,space)
+end
+
+"""
+"""
+function TrialFESpace!(space::SingleFieldFESpace,objects)
+  dir_values = get_dirichlet_values(space)
+  dir_values = compute_dirichlet_values_for_tags!(dir_values,space,objects)
+  space
 end
 
 function TrialFESpace(space::TrialFESpace)
   space
+end
+
+function HomogeneousTrialFESpace(U::FESpace)
+  dirichlet_values = zero_dirichlet_values(U)
+  TrialFESpace(dirichlet_values,U)
+end
+
+function HomogeneousTrialFESpace!(dirichlet_values::AbstractVector,U::FESpace)
+  fill!(dirichlet_values,zero(eltype(dirichlet_values)))
+  TrialFESpace(dirichlet_values,U)
 end
 
 function  _prepare_trial_cell_basis(space)
@@ -31,7 +61,7 @@ function  _prepare_trial_cell_basis(space)
   a = get_array(cb)
   cm = get_cell_map(cb)
   trial_style = Val{true}()
-  cell_basis = GenericCellBasis(trial_style,a,cm)
+  cell_basis = GenericCellBasis(trial_style,a,cm,RefStyle(cb))
 end
 
 # Genuine functions
@@ -67,5 +97,3 @@ gather_free_and_dirichlet_values(f::TrialFESpace,cv) = gather_free_and_dirichlet
 gather_dirichlet_values(f::TrialFESpace,cv) = gather_dirichlet_values(f.space,cv)
 
 gather_free_values(f::TrialFESpace,cv) = gather_free_values(f.space,cv)
-
-

@@ -1,9 +1,12 @@
 """
     NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
+
+The `order` argument has the following meaning: the curl of the  functions in this basis
+is in the Q space of degree `order`.
 """
-# @santiagobadia : Project, go to complex numbers
 function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
 
+  # @santiagobadia : Project, go to complex numbers
   D = num_dims(p)
 
   prebasis = QGradMonomialBasis{D}(et,order)
@@ -48,7 +51,7 @@ function _Nedelec_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) whe
   nf_nodes[erange] = ecips
   nf_moments[erange] = emoments
 
-  if ( num_dims(p) == 3 && order > 1)
+  if ( num_dims(p) == 3 && order > 0)
 
     fcips, fmoments = _Nedelec_face_values(p,et,order)
     frange = get_dimrange(p,D-1)
@@ -57,7 +60,7 @@ function _Nedelec_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) whe
 
   end
 
-  if (order > 1)
+  if (order > 0)
 
     ccips, cmoments = _Nedelec_cell_values(p,et,order)
     crange = get_dimrange(p,D)
@@ -79,7 +82,7 @@ function _Nedelec_edge_values(p,et,order)
   egeomap = _ref_face_to_faces_geomap(p,ep)
 
   # Compute integration points at all polynomial edges
-  degree = order*2
+  degree = (order+1)*2
   equad = Quadrature(ep,degree)
   cips = get_coordinates(equad)
   wips = get_weights(equad)
@@ -88,7 +91,7 @@ function _Nedelec_edge_values(p,et,order)
   c_eips, ecips, ewips = _nfaces_evaluation_points_weights(p, egeomap, cips, wips)
 
   # Edge moments, i.e., M(Ei)_{ab} = q_RE^a(xgp_REi^b) w_Fi^b t_Ei ⋅ ()
-  eshfs = MonomialBasis(et,ep,order-1)
+  eshfs = MonomialBasis(et,ep,order)
   emoments = _Nedelec_edge_moments(p, eshfs, c_eips, ecips, ewips)
 
   return ecips, emoments
@@ -116,7 +119,7 @@ function _Nedelec_face_values(p,et,order)
   fgeomap = _ref_face_to_faces_geomap(p,fp)
 
   # Compute integration points at all polynomial edges
-  degree = order*2
+  degree = (order+1)*2
   fquad = Quadrature(fp,degree)
   fips = get_coordinates(fquad)
   wips = get_weights(fquad)
@@ -156,7 +159,7 @@ end
 function _Nedelec_cell_values(p,et,order)
 
   # Compute integration points at interior
-  degree = 2*order
+  degree = 2*(order+1)
   iquad = Quadrature(p,degree)
   ccips = get_coordinates(iquad)
   cwips = get_weights(iquad)

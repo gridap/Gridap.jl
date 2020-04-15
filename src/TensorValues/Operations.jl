@@ -265,7 +265,7 @@ transpose(arg::SymTensorValue) = arg
 
 """
 """
-@generated function symmetic_part(v::MultiValue{Tuple{D,D},T,2,L}) where {D,T,L}
+@generated function symmetric_part(v::MultiValue{Tuple{D,D},T,2,L}) where {D,T,L}
     str = "("
     for j in 1:D
         for i in 1:D

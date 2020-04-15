@@ -23,3 +23,7 @@ function get_cell_coordinates(trian::TriangulationPortion)
   reindex(get_cell_coordinates(trian.oldtrian),trian.cell_to_oldcell)
 end
 
+function get_cell_map(trian::TriangulationPortion)
+  cell_map = get_cell_map(trian.oldtrian)
+  reindex(cell_map,trian.cell_to_oldcell)
+end

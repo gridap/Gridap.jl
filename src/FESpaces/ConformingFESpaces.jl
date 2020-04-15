@@ -5,12 +5,13 @@ function GradConformingFESpace(
   reffes::Vector{<:ReferenceFE},
   model::DiscreteModel,
   dirichlet_tags,
-  dirichlet_components=nothing)
+  dirichlet_components=nothing,
+  is_ref=true)
 
-  face_labeing = get_face_labeling(model)
+  face_labeling = get_face_labeling(model)
 
   GradConformingFESpace(
-    reffes,model,face_labeing,dirichlet_tags,dirichlet_components)
+    reffes,model,face_labeling,dirichlet_tags,dirichlet_components,is_ref)
 
 end
 
@@ -19,11 +20,12 @@ function GradConformingFESpace(
   model::DiscreteModel,
   order::Integer,
   dirichlet_tags,
-  dirichlet_components=nothing) where T
+  dirichlet_components=nothing,
+  is_ref=true) where T
 
-  face_labeing = get_face_labeling(model)
+  face_labeling = get_face_labeling(model)
 
-  GradConformingFESpace(T,model,order,face_labeing,dirichlet_tags,dirichlet_components)
+  GradConformingFESpace(T,model,order,face_labeling,dirichlet_tags,dirichlet_components,is_ref)
 
 end
 
@@ -31,9 +33,10 @@ function GradConformingFESpace(
   ::Type{T},
   model::DiscreteModel,
   order::Integer,
-  face_labeing::FaceLabeling,
+  face_labeling::FaceLabeling,
   dirichlet_tags,
-  dirichlet_components=nothing) where T
+  dirichlet_components=nothing,
+  is_ref=true) where T
 
   grid_topology = get_grid_topology(model)
   polytopes = get_polytopes(grid_topology)
@@ -41,7 +44,7 @@ function GradConformingFESpace(
   reffes = [ LagrangianRefFE(T,p,order) for p in polytopes ]
 
   GradConformingFESpace(
-    reffes,model,face_labeing,dirichlet_tags,dirichlet_components)
+    reffes,model,face_labeling,dirichlet_tags,dirichlet_components,is_ref)
 
 end
 
@@ -50,16 +53,17 @@ end
 function GradConformingFESpace(
   reffes::Vector{<:LagrangianRefFE},
   model::DiscreteModel,
-  face_labeing::FaceLabeling,
+  face_labeling::FaceLabeling,
   dirichlet_tags,
-  dirichlet_components=nothing)
+  dirichlet_components=nothing,
+  is_ref=true)
 
   grid_topology = get_grid_topology(model)
 
   _dirichlet_components = _convert_dirichlet_components(dirichlet_tags,dirichlet_components)
 
   cell_dofs, nfree, ndirichlet, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
-    reffes,grid_topology,face_labeing,dirichlet_tags,_dirichlet_components)
+    reffes,grid_topology,face_labeling,dirichlet_tags,_dirichlet_components)
 
   ntags = length(dirichlet_tags)
 
@@ -67,9 +71,9 @@ function GradConformingFESpace(
   cell_to_ctype = get_cell_type(grid_topology)
   cell_map = get_cell_map(grid)
 
-  cell_shapefuns, cell_dof_basis = compute_cell_space(reffes, cell_to_ctype, cell_map)
+  cell_shapefuns, cell_dof_basis = compute_cell_space(reffes, cell_to_ctype, cell_map, Val(is_ref))
 
-  UnsconstrainedFESpace(
+  UnconstrainedFESpace(
     nfree,
     ndirichlet,
     cell_dofs,
@@ -82,31 +86,108 @@ function GradConformingFESpace(
 
 end
 
+function compute_cell_space(reffes, cell_to_ctype, cell_map,ref_style::Val{true})
+  compute_cell_space(reffes, cell_to_ctype, cell_map)
+end
+
+function compute_cell_space(reffes, cell_to_ctype, cell_map,ref_style::Val{false})
+  compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
+end
+
 """
 """
 function compute_cell_space(reffes, cell_to_ctype, cell_map)
 
   dof_basis = map(get_dof_basis,reffes)
   cell_dof_basis = CompressedArray(dof_basis,cell_to_ctype)
+  cell_dof_basis = GenericCellDofBasis(Val{true}(),cell_dof_basis)
 
   shapefuns =  map(get_shapefuns,reffes)
   refshapefuns = CompressedArray(shapefuns,cell_to_ctype)
   cell_shapefuns = attachmap(refshapefuns,cell_map)
+  cell_shapefuns = GenericCellBasis(Val{false}(),cell_shapefuns,cell_map,Val{true}())
 
   (cell_shapefuns, cell_dof_basis)
+end
+
+"""
+It creates the cell-wise DOF basis and shape functions, when the DOFs
+are evaluated at the physical space. The DOFs (moments) for the prebasis
+are assumed to be computable at a reference FE space.
+"""
+function compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
+# E.g., if one has to implement $\int_F q ϕ_h(x)$ for $q \in P(F)$, we can
+# assume that it can be written as $\sum_{x_{gp} \in Q}_{\hat{F}}
+# \hat{q}(\tilde{x}_{gp}) ϕ(x_{gp})$ for $\hat{q} \in P(\hat{F})$.
+
+  dof_bases = map(get_dof_basis,reffes)
+
+  cell_dof_basis = _cell_dof_basis_physical_space(dof_bases,cell_to_ctype,cell_map)
+  ref_style = Val{false}()
+  cell_dof_basis = GenericCellDofBasis(ref_style,cell_dof_basis)
+
+  prebasis =  map(get_prebasis,reffes)
+  cell_prebasis = CompressedArray(prebasis,cell_to_ctype)
+  cell_prebasis = GenericCellBasis(Val{false}(),cell_prebasis,cell_map,Val{false}())
+  cell_shapefuns = _cell_shape_functions_physical_space(cell_prebasis,cell_dof_basis,cell_map)
+
+  (cell_shapefuns, cell_dof_basis)
+end
+
+function _cell_dof_basis_physical_space(dof_bases,cell_to_ctype,cell_map)
+  @notimplemented
+end
+
+function _cell_dof_basis_physical_space(
+  dof_bases::Vector{MomentBasedDofBasis{T,V}},
+  cell_to_ctype,cell_map) where {T,V}
+
+  ctype_to_refnodes = map(get_nodes,dof_bases)
+  cell_to_refnodes = CompressedArray(ctype_to_refnodes,cell_to_ctype)
+  cell_physnodes = evaluate(cell_map,cell_to_refnodes)
+
+  # Not efficient, create a Kernel
+  ct_face_moments = map(get_face_moments,dof_bases)
+  c_face_moments = CompressedArray(ct_face_moments,cell_to_ctype)
+  ct_face_nodes_dofs = map(get_face_nodes_dofs,dof_bases)
+  c_face_nodes_dofs = CompressedArray(ct_face_nodes_dofs,cell_to_ctype)
+  cell_dof_basis = apply( (n,m,nd) -> MomentBasedDofBasis(n,m,nd),
+                          cell_physnodes, c_face_moments, c_face_nodes_dofs)
+end
+
+function _cell_dof_basis_physical_space(
+  dof_bases::Vector{LagrangianDofBasis{T,V}},
+  cell_to_ctype,cell_map) where {T,V}
+
+  # Create new dof_basis with nodes in the physical space
+  # ctype_to_refnodes= map(get_node_coordinates,reffes)
+  ctype_to_refnodes= map(get_nodes,dof_bases)
+  cell_to_refnodes = CompressedArray(ctype_to_refnodes,cell_to_ctype)
+  cell_physnodes = evaluate(cell_map,cell_to_refnodes)
+  cell_dof_basis = apply( nodes -> LagrangianDofBasis(V,nodes), cell_physnodes )
+end
+
+function _cell_shape_functions_physical_space(cell_prebasis,cell_dof_basis,cell_map)
+  cell_matrix = evaluate(cell_dof_basis,cell_prebasis)
+  cell_matrix_inv = apply(inv,cell_matrix)
+  cell_shapefuns_phys = apply(change_basis,get_array(cell_prebasis),cell_matrix_inv)
+  ref_style = Val{false}()
+  trial_style = Val{false}()
+  GenericCellBasis(trial_style,cell_shapefuns_phys,cell_map,ref_style)
+   # @santiagobadia : better implementation in the future...
 end
 
 """
   compute_conforming_cell_dofs(
     reffes,
     grid_topology,
-    face_labeing,
+    face_labeling,
     dirichlet_tags)
 
   compute_conforming_cell_dofs(
     reffes,
     grid_topology,
-    face_labeing,
+    face_labeling,
     dirichlet_tags,
     dirichlet_components)
 
@@ -121,7 +202,7 @@ If `dirichlet_components`  is given, then `get_dof_to_comp` has to be defined
 for the reference elements in `reffes`.
 """
 function compute_conforming_cell_dofs(
-  reffes,grid_topology,face_labeing,dirichlet_tags,dirichlet_components=nothing)
+  reffes,grid_topology,face_labeling,dirichlet_tags,dirichlet_components=nothing)
 
   D = num_cell_dims(grid_topology)
   n_faces = num_faces(grid_topology)
@@ -140,7 +221,7 @@ function compute_conforming_cell_dofs(
      d_to_offset,
      d_to_ctype_to_ldface_to_own_ldofs)
 
-  d_to_dface_to_tag = [ get_face_tag_index(face_labeing,dirichlet_tags,d)  for d in 0:D]
+  d_to_dface_to_tag = [ get_face_tag_index(face_labeling,dirichlet_tags,d)  for d in 0:D]
   cell_to_faces = Table(get_cell_faces(grid_topology))
 
   nfree, ndiri, diri_dof_tag = _split_face_own_dofs_into_free_and_dirichlet!(
@@ -526,4 +607,3 @@ end
 ###  getindex!(cache,a,cell)
 ###end
 ###
-

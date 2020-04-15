@@ -97,10 +97,10 @@ function test_fe_operator(op::FEOperator,args...;kwargs...)
   @test isa(b,AbstractVector)
   @test isa(A,AbstractMatrix)
   _op = get_algebraic_operator(op)
-  test_non_linear_operator(_op,args...;kwargs...)
+  test_nonlinear_operator(_op,args...;kwargs...)
 end
 
-# FEOperator viewed as a NonLinearOperator
+# FEOperator viewed as a NonlinearOperator
 
 """
 """
@@ -108,7 +108,7 @@ function get_algebraic_operator(feop::FEOperator)
   AlgebraicOpFromFEOp(feop)
 end
 
-struct AlgebraicOpFromFEOp <: NonLinearOperator
+struct AlgebraicOpFromFEOp <: NonlinearOperator
   feop::FEOperator
 end
 
@@ -164,4 +164,3 @@ function zero_initial_guess(::Type{T},op::AlgebraicOpFromFEOp) where T
   trial = get_trial(op.feop)
   x = zero_free_values(T,trial)
 end
-

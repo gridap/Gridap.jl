@@ -173,10 +173,12 @@ get_reffes(g::CartesianGrid{2}) = [QUAD4,]
 get_reffes(g::CartesianGrid{3}) = [HEX8,]
 
 """
-    CartesianGrid(domain,partition,map::Function=identity)
+    CartesianGrid(args...)
+
+Same args needed to construct a `CartesianDescriptor`
 """
-function CartesianGrid(domain,partition,map::Function=identity)
-  desc = CartesianDescriptor(domain,partition,map)
+function CartesianGrid(args...)
+  desc = CartesianDescriptor(args...)
   CartesianGrid(desc)
 end
 
@@ -211,6 +213,11 @@ function field_array_gradient(a::CartesianMap)
   jacobian = diagonal_tensor(dx)
   j = AffineMapGrad(jacobian)
   Fill(j,length(a))
+end
+
+function field_array_gradient(a::Reindexed{T,N,A}) where {T,N,A<:CartesianMap}
+  g = field_array_gradient(a.i_to_v)
+  reindex(g,a.j_to_i)
 end
 
 function get_cell_map(grid::CartesianGrid{D,T,typeof(identity)} where {D,T})

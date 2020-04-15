@@ -1,5 +1,5 @@
 module CurlConformingFESpacesTests
-##
+
 using Test
 using Gridap
 using LinearAlgebra
@@ -10,7 +10,7 @@ partition = (3,3,3)
 model = CartesianDiscreteModel(domain,partition)
 trian = get_triangulation(model)
 
-order = 3
+order = 2
 
 u(x) = VectorValue(x[1]*x[1],x[1]*x[1]*x[1],0.0)
 # u(x) = x
@@ -43,6 +43,5 @@ el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
 
 # writevtk(trian,"trian",nsubcells=10,cellfields=["uh"=>uh])
 
-##
 
 end # module

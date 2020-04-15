@@ -64,6 +64,12 @@ function _tensor_product(::Type{Point{D,T}},quads,npoints) where {D,T}
   (coords, weights)
 end
 
+function _tensor_product(::Type{Point{0,T}},quads,npoints) where T
+  coords = [zero(Point{0,T})]
+  weights = [one(T)]
+  coords, weights
+end
+
 function _tensor_product!(quads,coords,weights,cis)
   p = zero(mutable(eltype(coords)))
   D = length(p)

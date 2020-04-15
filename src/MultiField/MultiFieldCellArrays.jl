@@ -106,3 +106,53 @@ function operate(::typeof(-),a::BlockTracker,b::BlockTracker)
   BlockTracker(new_blocks,new_block_ids)
 end
 
+function operate(op,a::BlockTracker,b::BlockTracker)
+  msg = "Operation $op not yet implemented in this context"
+  @notimplementedif !( op  in (*,inner) ) msg
+  new_blocks = []
+  new_block_ids = NTuple{2,Int}[]
+  for i in 1:length(a.blocks)
+    ai = a.blocks[i]
+    @notimplementedif ! isa(ai,CellBasisWithFieldID) msg
+    ai_id, = a.block_ids[i]
+    for j in 1:length(b.blocks)
+      bj = b.blocks[j]
+      @notimplementedif ! isa(bj,CellBasisWithFieldID) msg
+      bj_id, = b.block_ids[j]
+      push!(new_blocks, operate(op,ai.cell_basis,bj.cell_basis))
+      push!(new_block_ids, (ai_id,bj_id))
+    end
+  end
+  BlockTracker(Tuple(new_blocks),new_block_ids)
+end
+
+function operate(op,a,b::BlockTracker)
+  _operate_bt_b(op,a,b)
+end
+
+function operate(op,a::CellField,b::BlockTracker)
+  _operate_bt_b(op,a,b)
+end
+
+function operate(op,b::BlockTracker,a)
+  _operate_bt_a(op,b,a)
+end
+
+function operate(op,b::BlockTracker,a::CellField)
+  _operate_bt_a(op,b,a)
+end
+
+function _operate_bt_b(op,a,b)
+  msg = "Operation $op not yet implemented in this context"
+  @notimplementedif !( op  in (*,inner) ) msg
+  new_blocks = map(bi->operate(op,a,bi),b.blocks)
+  BlockTracker(new_blocks,b.block_ids)
+end
+
+function _operate_bt_a(op,b,a)
+  msg = "Operation $op not yet implemented in this context"
+  @notimplementedif !( op  in (*,inner) ) msg
+  new_blocks = map(bi->operate(op,a,bi),b.blocks)
+  BlockTracker(new_blocks,b.block_ids)
+end
+

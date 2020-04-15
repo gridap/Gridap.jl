@@ -50,7 +50,7 @@ uh = solve(solver,op)
 uh = solve(op)
 @test get_free_values(uh) ≈ x
 
-solver = NonLinearFESolver()
+solver = NonlinearFESolver()
 test_fe_solver(solver,op,x0,x)
 uh = solve(solver,op)
 @test get_free_values(uh) ≈ x

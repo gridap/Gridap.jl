@@ -76,7 +76,7 @@ function test_nodal_reference_fe(reffe::NodalReferenceFE)
   @test isa(get_face_nodes(reffe),Vector{Vector{Int}})
 end
 
-# Dafault API
+# Default API
 
 """
     num_nodes(reffe::NodalReferenceFE)
@@ -147,9 +147,8 @@ function get_face_nodes(reffe::NodalReferenceFE,d::Integer)
 end
 
 # Generic implementation
-
 """
-  struct GenericNodalRefFE{D,T,V} <: NodalReferenceFE{D}
+  struct GenericNodalCartesianRefFE{D,T,V} <: NodalReferenceFE{D}
     reffe::GenericRefFE{D}
     node_coordinates::Vector{Point{D,T}}
     node_and_comp_to_dof::Vector{V}
@@ -158,7 +157,7 @@ end
     face_nodes::Vector{Vector{Int}}
   end
 """
-struct GenericNodalRefFE{D,T,V} <: NodalReferenceFE{D}
+struct GenericNodalCartesianRefFE{D,T,V} <: NodalReferenceFE{D}
   reffe::GenericRefFE{D}
   node_coordinates::Vector{Point{D,T}}
   node_and_comp_to_dof::Vector{V}
@@ -169,31 +168,30 @@ end
 
 # NodalReffe
 
-get_node_coordinates(reffe::GenericNodalRefFE) = reffe.node_coordinates
+get_node_coordinates(reffe::GenericNodalCartesianRefFE) = reffe.node_coordinates
 
-get_node_and_comp_to_dof(reffe::GenericNodalRefFE) = reffe.node_and_comp_to_dof
+get_node_and_comp_to_dof(reffe::GenericNodalCartesianRefFE) = reffe.node_and_comp_to_dof
 
-get_face_own_nodes(reffe::GenericNodalRefFE) = reffe.face_own_nodes
+get_face_own_nodes(reffe::GenericNodalCartesianRefFE) = reffe.face_own_nodes
 
-get_face_own_nodes_permutations(reffe::GenericNodalRefFE) = reffe.face_own_nodes_permutations
+get_face_own_nodes_permutations(reffe::GenericNodalCartesianRefFE) = reffe.face_own_nodes_permutations
 
-get_face_nodes(reffe::GenericNodalRefFE) = reffe.face_nodes
+get_face_nodes(reffe::GenericNodalCartesianRefFE) = reffe.face_nodes
 
-# Reffe 
+# Reffe
 
-num_dofs(reffe::GenericNodalRefFE) = reffe.reffe.ndofs
+num_dofs(reffe::GenericNodalCartesianRefFE) = reffe.reffe.ndofs
 
-get_polytope(reffe::GenericNodalRefFE) = reffe.reffe.polytope
+get_polytope(reffe::GenericNodalCartesianRefFE) = reffe.reffe.polytope
 
-get_prebasis(reffe::GenericNodalRefFE) = reffe.reffe.prebasis
+get_prebasis(reffe::GenericNodalCartesianRefFE) = reffe.reffe.prebasis
 
-get_dof_basis(reffe::GenericNodalRefFE) = reffe.reffe.dofs
+get_dof_basis(reffe::GenericNodalCartesianRefFE) = reffe.reffe.dofs
 
-get_face_own_dofs(reffe::GenericNodalRefFE) = reffe.reffe.face_own_dofs
+get_face_own_dofs(reffe::GenericNodalCartesianRefFE) = reffe.reffe.face_own_dofs
 
-get_face_own_dofs_permutations(reffe::GenericNodalRefFE) = reffe.reffe.face_own_dofs_permutations
+get_face_own_dofs_permutations(reffe::GenericNodalCartesianRefFE) = reffe.reffe.face_own_dofs_permutations
 
-get_face_dofs(reffe::GenericNodalRefFE) = reffe.reffe.face_own_dofs
+get_face_dofs(reffe::GenericNodalCartesianRefFE) = reffe.reffe.face_own_dofs
 
-get_shapefuns(reffe::GenericNodalRefFE) = reffe.reffe.shapefuns
-
+get_shapefuns(reffe::GenericNodalCartesianRefFE) = reffe.reffe.shapefuns

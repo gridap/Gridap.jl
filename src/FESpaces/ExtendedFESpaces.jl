@@ -77,22 +77,52 @@ function reindex(a::ExtendedVector,ptrs::IdentityVector)
   a
 end
 
-function reindex(a::ExtendedVector,trian::Triangulation)
-  ptrs = get_cell_id(trian)
-  _extended_reindex(a,ptrs)
+function reindex(a::ExtendedVector,ptrs::SkeletonPair)
+  _extended_reindex(a,ptrs::SkeletonPair)
 end
 
-function _extended_reindex(a,ptrs)
+#function reindex(a::ExtendedVector,trian::Triangulation)
+#  ptrs = get_cell_id(trian)
+#  _extended_reindex(a,ptrs)
+#end
+
+function _extended_reindex(a,ptrs::SkeletonPair)
+  left= _extended_reindex(a,ptrs.left)
+  right = _extended_reindex(a,ptrs.right)
+  SkeletonPair(left,right)
+end
+
+function _extended_reindex(a,ptrs::AbstractArray)
   if a.cell_to_oldcell === ptrs || a.cell_to_oldcell == ptrs
     return a.cell_to_val
   elseif a.void_to_oldcell === ptrs || a.void_to_oldcell == ptrs
     return a.void_to_val
   else
-    return Reindexed(a,ptrs)
+    j_to_oldcell = ptrs
+    j_to_cell_or_void = a.oldcell_to_cell_or_void[j_to_oldcell]
+    all_cell, all_void = _find_all_cell_all_void(j_to_cell_or_void)
+    if all_cell
+      return reindex(a.cell_to_val,j_to_cell_or_void)
+    elseif all_void
+      j_to_cell_or_void .*= -1
+      return reindex(a.void_to_val,j_to_cell_or_void)
+    else
+      return Reindexed(a,ptrs)
+    end
   end
 end
 
-struct VoidBasis{T} <: Field end
+function _find_all_cell_all_void(j_to_cell_or_void)
+  all_cell = true
+  all_void = true
+  for k in j_to_cell_or_void
+    all_cell = all_cell && (k>0)
+    all_void = all_void && (k<0)
+  end
+  all_cell, all_void
+end
+
+struct VoidBasis{T,D} <: Field end
 
 function field_cache(f::VoidBasis{T},x) where T
   Q = length(x)
@@ -106,8 +136,10 @@ end
   cache.array
 end
 
-function field_gradient(f::VoidBasis{T}) where T
-  VoidBasis{eltype(T)}()
+function field_gradient(f::VoidBasis{T,D}) where {T,D}
+  x = zero(Point{D,eltype(T)})
+  G = gradient_type(T,x)
+  VoidBasis{G,D}()
 end
 
 """
@@ -143,7 +175,8 @@ function get_cell_basis(f::ExtendedFESpace)
   vi = testitem(cell_to_val)
   Tv = field_return_type(vi,xi)
   T = eltype(Tv)
-  void_to_val = Fill(VoidBasis{T}(),length(f.trian.void_to_oldcell))
+  D = n_components(eltype(xi))
+  void_to_val = Fill(VoidBasis{T,D}(),length(f.trian.void_to_oldcell))
 
   array = ExtendedVector(
     void_to_val,
@@ -154,23 +187,27 @@ function get_cell_basis(f::ExtendedFESpace)
 
   cm = get_cell_map(f.trian.oldtrian)
   trial_style = TrialStyle(cell_basis)
-  GenericCellBasis(trial_style,array,cm)
+  GenericCellBasis(trial_style,array,cm,RefStyle(cell_basis))
 end
 
 function get_cell_dof_basis(f::ExtendedFESpace)
 
   cell_to_val = get_cell_dof_basis(f.space)
+  ref_trait = RefStyle(cell_to_val)
+  cell_to_val = get_array(cell_to_val)
 
   D = num_dims(f.trian)
   T = Float64 # TODO
   void_to_val = Fill(LagrangianDofBasis(T,Point{D,T}[]),length(f.trian.void_to_oldcell))
 
-  ExtendedVector(
-    void_to_val,
-    cell_to_val,
-    f.trian.oldcell_to_cell,
-    f.trian.void_to_oldcell,
-    f.trian.cell_to_oldcell)
+  eb = ExtendedVector(
+         void_to_val,
+         cell_to_val,
+         f.trian.oldcell_to_cell,
+         f.trian.void_to_oldcell,
+         f.trian.cell_to_oldcell)
+
+  cell_dof_basis = GenericCellDofBasis(ref_trait,eb)
 
 end
 
@@ -223,4 +260,3 @@ function TrialFESpace(f::ExtendedFESpace)
   U = TrialFESpace(f.space)
   ExtendedFESpace(U,f.trian)
 end
-

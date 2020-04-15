@@ -118,7 +118,7 @@ end
 """
     apply_all(f::Tuple,a::AbstractArray...) -> Tuple
 
-Numerically equivalent to 
+Numerically equivalent to
 
     tuple( ( apply(fi, a...) for fi in f)... )
 
@@ -209,6 +209,10 @@ function _array_cache(hash,a::AppliedArray)
   cg = array_cache(hash,a.g)
   gi = testitem(a.g)
   fi = testitems(a.f...)
+  @notimplementedif any( map(isabstracttype,map(eltype,a.f)) )
+  if ! (eltype(a.g)<:Function)
+    @notimplementedif isabstracttype(eltype(a.g))
+  end
   cf = array_caches(hash,a.f...)
   cgi = kernel_cache(gi,fi...)
   ai = apply_kernel_for_cache!(cgi,gi,fi...)
@@ -366,4 +370,3 @@ Base.IndexStyle(::Type{<:ArrayWithCounter{T,N,A}}) where {T,A,N} = IndexStyle(A)
 function reset_counter!(a::ArrayWithCounter)
   a.counter[:] .= 0
 end
-

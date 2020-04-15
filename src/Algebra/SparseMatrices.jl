@@ -1,10 +1,10 @@
 
 # SparseMatrices implementation contains:
-# 
+#
 #   - Data types:
 #     + `SparseMatrixCSR`:Compressed Sparse Row (CSR) sparse matrix implementation with Bi-based indexing.
 #     + `SymSparseMatrixCSR`: Symmetric Compressed Sparse Row sparse matrix implementation with Bi-based indexing.
-# 
+#
 #   - Procedures:
 #     + `push_coo!`: Helper function to build COO arrays for further building a SparseMatrix
 #     + `finalize_coo!`: Finalization of COO arrays building.
@@ -61,7 +61,7 @@ end
 
 
 """
-    finalize_coo!(::Type{T} where T,I,J,V,m,n) 
+    finalize_coo!(::Type{T} where T,I,J,V,m,n)
 
 Check and insert diagonal entries in COO vectors if needed.
 """
@@ -104,4 +104,3 @@ function _copy!(a,b)
     a[i] = b[i]
   end
 end
-

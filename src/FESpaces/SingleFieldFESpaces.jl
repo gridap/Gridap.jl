@@ -136,43 +136,20 @@ function gather_free_values(f::SingleFieldFESpace,cell_vals)
 end
 
 """
-cell_field defined in the reference space with derivatives in the physical one
-"""
-function compute_free_and_dirichlet_values(f::SingleFieldFESpace, cell_field::CellField)
-  cell_vals = _compute_cell_vals(f, cell_field)
-  gather_free_and_dirichlet_values(f,cell_vals)
-end
-
-"""
-"""
-function compute_dirichlet_values(f::SingleFieldFESpace,cell_field::CellField)
-  cell_vals = _compute_cell_vals(f, cell_field)
-  gather_dirichlet_values(f,cell_vals)
-end
-
-"""
-"""
-function compute_free_values(f::SingleFieldFESpace,cell_field::CellField)
-  cell_vals = _compute_cell_vals(f, cell_field)
-  gather_free_values(f,cell_vals)
-end
-
-function _compute_cell_vals(f,cell_field)
-  cell_dof_basis = get_cell_dof_basis(f)
-  cell_dofs = get_cell_dofs(f)
-  cell_vals = evaluate_dof_array(cell_dof_basis,get_array(cell_field))
-  cell_vals
-end
-
-"""
 The resulting FE function is in the space (in particular it fulfills Dirichlet BCs
 even in the case that the given cell field does not fulfill them)
 """
 function interpolate(fs::SingleFieldFESpace,object)
-  cell_map = get_cell_map(fs)
-  cell_field = convert_to_cell_field(object,cell_map)
-  free_values = compute_free_values(fs,cell_field)
+  cell_vals = _cell_vals(fs,object)
+  free_values = gather_free_values(fs,cell_vals)
   FEFunction(fs,free_values)
+end
+
+function _cell_vals(fs::SingleFieldFESpace,object)
+  cdb = get_cell_dof_basis(fs)
+  cm = get_cell_map(fs)
+  cf = convert_to_cell_field(object,cm,RefStyle(cdb))
+  cell_vals = evaluate(cdb,cf)
 end
 
 """
@@ -180,18 +157,16 @@ like interpolate, but also compute new degrees of freedom for the dirichlet comp
 The resulting FEFunction does not necessary belongs to the underlying space
 """
 function interpolate_everywhere(fs::SingleFieldFESpace,object)
-  cell_map = get_cell_map(fs)
-  cell_field = convert_to_cell_field(object,cell_map)
-  free_values, dirichlet_values = compute_free_and_dirichlet_values(fs,cell_field)
-  FEFunction(fs,free_values, dirichlet_values)
+  cell_vals = _cell_vals(fs,object)
+  free_values, dirichlet_values = gather_free_and_dirichlet_values(fs,cell_vals)
+  FEFunction(fs,free_values,dirichlet_values)
 end
 
 """
 """
 function interpolate_dirichlet(fs::SingleFieldFESpace,object)
-  cell_map = get_cell_map(fs)
-  cell_field = convert_to_cell_field(object,cell_map)
-  dirichlet_values = compute_dirichlet_values(fs,cell_field)
+  cell_vals = _cell_vals(fs,object)
+  dirichlet_values = gather_dirichlet_values(fs,cell_vals)
   free_values = zero_free_values(fs)
   FEFunction(fs,free_values, dirichlet_values)
 end
@@ -199,13 +174,16 @@ end
 """
 """
 function compute_dirichlet_values_for_tags(f::SingleFieldFESpace,tag_to_object)
-  dirichlet_dof_to_tag = get_dirichlet_dof_tag(f)
-  cell_map = get_cell_map(f)
   dirichlet_values = zero_dirichlet_values(f)
+  compute_dirichlet_values_for_tags!(dirichlet_values,f,tag_to_object)
+end
+
+function compute_dirichlet_values_for_tags!(dirichlet_values,f::SingleFieldFESpace,tag_to_object)
+  dirichlet_dof_to_tag = get_dirichlet_dof_tag(f)
   _tag_to_object = _convert_to_collectable(tag_to_object,num_dirichlet_tags(f))
   for (tag, object) in enumerate(_tag_to_object)
-    cell_field = convert_to_cell_field(object,cell_map)
-    dv = compute_dirichlet_values(f,cell_field)
+    cell_vals = _cell_vals(f,object)
+    dv = gather_dirichlet_values(f,cell_vals)
     _fill_dirichlet_values_for_tag!(dirichlet_values,dv,tag,dirichlet_dof_to_tag)
   end
   dirichlet_values
@@ -228,7 +206,7 @@ function _convert_to_collectable(object::Function,ntags)
   _convert_to_collectable(fill(object,ntags),ntags)
 end
 
+
 function _convert_to_collectable(object::Number,ntags)
   _convert_to_collectable(fill(object,ntags),ntags)
 end
-

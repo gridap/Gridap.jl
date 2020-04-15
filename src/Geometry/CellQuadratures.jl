@@ -77,6 +77,12 @@ function _get_coordinates(q::Fill{<:Quadrature})
   Fill(coords,length(q))
 end
 
+function _get_coordinates(q::AppendedArray)
+  a = _get_coordinates(q.a)
+  b = _get_coordinates(q.b)
+  lazy_append(a,b)
+end
+
 function _get_weights(q::AbstractArray{<:Quadrature})
   @notimplemented "Not implemented, since we dont need it"
 end
@@ -91,6 +97,12 @@ function _get_weights(q::Fill{<:Quadrature})
   Fill(w,length(q))
 end
 
+function _get_weights(q::AppendedArray)
+  a = _get_weights(q.a)
+  b = _get_weights(q.b)
+  lazy_append(a,b)
+end
+
 """
     integrate(cell_field,trian::Triangulation,quad::CellQuadrature)
 
@@ -101,9 +113,15 @@ function integrate(cell_field,trian::Triangulation,quad::CellQuadrature)
   q = get_coordinates(quad)
   w = get_weights(quad)
   j = gradient(cell_map)
-  f = convert_to_cell_field(cell_field,cell_map)
+  _f = CellField(cell_field,trian)
+  f = to_ref_space(_f)
   @assert length(f) == length(cell_map) "Are you using the right triangulation to integrate?"
   @assert length(f) == length(w) "Are you using the right quadrature to integrate?"
   integrate(get_array(f),q,w,j)
+end
+
+function lazy_append(quad1::CellQuadrature,quad2::CellQuadrature)
+  array = lazy_append(quad1.array,quad2.array)
+  CellQuadrature(array)
 end
 

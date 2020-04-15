@@ -3,19 +3,20 @@
     DivConformingFESpace(
       reffes::Vector{<:ReferenceFE},
       model::DiscreteModel,
-      face_labeing::FaceLabeling,
+      face_labeling::FaceLabeling,
       dirichlet_tags)
 """
 function DivConformingFESpace(
   reffes::Vector{<:ReferenceFE},
   model::DiscreteModel,
-  face_labeing::FaceLabeling,
-  dirichlet_tags)
+  face_labeling::FaceLabeling,
+  dirichlet_tags,
+  is_ref)
 
   grid_topology = get_grid_topology(model)
 
   cell_dofs, nfree, ndirichlet, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
-    reffes,grid_topology,face_labeing,dirichlet_tags)
+    reffes,grid_topology,face_labeling,dirichlet_tags)
 
   ntags = length(dirichlet_tags)
 
@@ -23,9 +24,9 @@ function DivConformingFESpace(
   cell_to_ctype = get_cell_type(grid_topology)
   cell_map = get_cell_map(grid)
 
-  cell_shapefuns, cell_dof_basis = _compute_hdiv_cell_space(reffes, cell_to_ctype, cell_map)
+  cell_shapefuns, cell_dof_basis = compute_cell_space(reffes,cell_to_ctype,cell_map,Val(is_ref))
 
-  UnsconstrainedFESpace(
+  UnconstrainedFESpace(
     nfree,
     ndirichlet,
     cell_dofs,
@@ -40,5 +41,5 @@ end
 
 function _compute_hdiv_cell_space(reffes, cell_to_ctype, cell_map)
   #TODO: fine for structured hex meshes, but not otherwise
-  compute_cell_space(reffes,cell_to_ctype,cell_map)
+  # compute_cell_space(reffes,cell_to_ctype,cell_map)
 end

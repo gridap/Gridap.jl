@@ -36,6 +36,8 @@ function LagrangianDofBasis(::Type{T},nodes::Vector{<:Point}) where T
   LagrangianDofBasis(nodes,r...)
 end
 
+get_nodes(b::LagrangianDofBasis) = b.nodes
+
 function _generate_dof_layout_node_major(::Type{<:Real},nnodes::Integer)
   ndofs = nnodes
   dof_to_comp = ones(Int,ndofs)
@@ -127,5 +129,3 @@ function _evaluate_lagr_dof!(c::AbstractMatrix,node_pdof_comp_to_val,node_and_co
   end
   r
 end
-
-

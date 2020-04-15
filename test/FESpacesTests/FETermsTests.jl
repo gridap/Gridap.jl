@@ -101,7 +101,7 @@ b = assemble_vector(assem,vecdata...)
 x = A \ -b
 @test (x.+1) ≈ ones(length(x))
 
-# NonLinearFETerm
+# NonlinearFETerm
 
 t_nonlinear = FETerm(r,j,trian,quad)
 

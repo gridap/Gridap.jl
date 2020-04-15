@@ -160,4 +160,3 @@ end
 function kernel_return_type(k::DofEval,dof,field)
   dof_return_type(dof,field)
 end
-

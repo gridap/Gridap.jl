@@ -188,8 +188,8 @@ function test_array(
   t = true
   for i in eachindex(a)
     ai = getindex!(cache,a,i)
-    t = t && (typeof(ai) == eltype(a))
-    t = t && (typeof(ai) == T)
+    t = t && (typeof(ai) <: eltype(a))
+    t = t && (typeof(ai) <: T)
   end
   @test t
   @test IndexStyle(a) == IndexStyle(b)
@@ -329,8 +329,6 @@ function add_to_array!(a::AbstractArray{Ta,N},b::AbstractArray{Tb,N},combine=+) 
   end
 end
 
-"""
-"""
 function add_to_array!(a::AbstractArray,b::Number,combine=+)
   @inbounds for i in eachindex(a)
     a[i] = combine(a[i],b)

@@ -22,9 +22,12 @@ using Gridap.Algebra
 using Gridap.Polynomials
 using Gridap.TensorValues
 
+using Gridap.ReferenceFEs: evaluate_dof_array
+
 using Gridap.Geometry: CellFieldLike
 using Gridap.Geometry: UnimplementedField
 using Gridap.Geometry: test_cell_field_like
+
 using Gridap.Arrays: _split
 using Gridap.Arrays: Reindexed
 using Gridap.Arrays: IdentityVector
@@ -41,6 +44,8 @@ import Gridap.Geometry: get_cell_map
 import Gridap.Geometry: get_cell_shapefuns
 import Gridap.Geometry: get_reffes
 import Gridap.Geometry: get_cell_type
+import Gridap.Geometry: RefStyle
+import Gridap.Geometry: change_ref_style
 import Gridap.Helpers: operate
 import Gridap.Geometry: similar_object
 import Gridap.Geometry: jump
@@ -99,6 +104,7 @@ export get_test
 export get_trial
 export allocate_matrix
 export assemble_matrix!
+export assemble_matrix_add!
 export assemble_matrix
 export allocate_vector
 export assemble_vector!
@@ -123,6 +129,7 @@ export compute_free_and_dirichlet_values
 export compute_dirichlet_values
 export compute_free_values
 export compute_dirichlet_values_for_tags
+export compute_dirichlet_values_for_tags!
 export test_single_field_fe_space
 export interpolate
 export interpolate_everywhere
@@ -131,7 +138,7 @@ export get_cell_dof_basis
 
 export SingleFieldFEFunction
 
-export UnsconstrainedFESpace
+export UnconstrainedFESpace
 export GradConformingFESpace
 export DiscontinuousFESpace
 
@@ -146,10 +153,17 @@ export is_trial
 export is_test
 export attach_dirichlet_bcs
 
+export CellDofBasis
+export GenericCellDofBasis
+export test_cell_dof_basis
+
 export FECellBasisStyle
 export is_a_fe_cell_basis
 
 export TrialFESpace
+export TrialFESpace!
+export HomogeneousTrialFESpace
+export HomogeneousTrialFESpace!
 export TestFESpace
 export compute_conforming_cell_dofs
 export SparseMatrixAssembler
@@ -161,7 +175,7 @@ export get_algebraic_operator
 
 export FESolver
 export LinearFESolver
-export NonLinearFESolver
+export NonlinearFESolver
 export test_fe_solver
 
 export FETerm
@@ -204,6 +218,8 @@ export CellField
 export update_state_variables!
 
 include("CellBases.jl")
+
+include("CellDofBases.jl")
 
 include("Law.jl")
 

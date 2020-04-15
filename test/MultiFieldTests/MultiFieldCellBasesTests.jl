@@ -22,12 +22,15 @@ quad = CellQuadrature(trian,degree)
 q = get_coordinates(quad)
 
 V = TestFESpace(model=model,reffe=:Lagrangian,order=order,conformity=:H1,valuetype=Float64)
+Vp = TestFESpace(model=model,reffe=:Lagrangian,order=order,conformity=:H1,valuetype=Float64,dof_space=:physical)
 U = TrialFESpace(V)
 
 cell_basis_v = get_cell_basis(V)
 field_id_v = 3
 v = CellBasisWithFieldID(cell_basis_v,field_id_v)
 vq = collect(evaluate(v,q))
+test_cell_basis(v,q,vq)
+@test is_in_ref_space(v)
 
 field_id_a = 2
 a = CellBasisWithFieldID(cell_basis_v,field_id_a)
@@ -41,6 +44,13 @@ uq = collect(evaluate(u,q))
 field_id_b = 5
 b = CellBasisWithFieldID(cell_basis_u,field_id_b)
 bq = collect(evaluate(b,q))
+
+cell_basis_vp = get_cell_basis(Vp)
+field_id_vp = 6
+vp = CellBasisWithFieldID(cell_basis_vp,field_id_vp)
+vpq = collect(evaluate(vp,q))
+test_cell_basis(vp,q,vpq)
+@test !is_in_ref_space(vp)
 
 r = 2*v
 test_cell_basis(r,q,2*vq)
@@ -66,11 +76,13 @@ r = ∇(u)
 @test is_trial(r)
 
 r = v * u
+test_cell_matrix_field(r,q,collect(evaluate(r,q)))
 @test isa(r,CellMatrixFieldWithFieldIds)
 @test r.field_id_rows == v.field_id
 @test r.field_id_cols == u.field_id
 
 r = u * v
+test_cell_matrix_field(r,q,collect(evaluate(r,q)))
 @test isa(r,CellMatrixFieldWithFieldIds)
 @test r.field_id_rows == v.field_id
 @test r.field_id_cols == u.field_id
@@ -85,6 +97,32 @@ s = a-v
 @test s.blocks[1] === a
 @test s.block_ids[1] == (field_id_a,)
 @test s.block_ids[2] == (field_id_v,)
+
+s = (a+v)*(b-u)
+@test s.block_ids[1] == (field_id_a,field_id_b)
+@test s.block_ids[2] == (field_id_a,field_id_u)
+@test s.block_ids[3] == (field_id_v,field_id_b)
+@test s.block_ids[4] == (field_id_v,field_id_u)
+sau = s.blocks[2]
+test_cell_matrix_field(sau,q,-1*collect(evaluate(a*u,q)))
+sab = s.blocks[1]
+test_cell_matrix_field(sab,q,collect(evaluate(a*b,q)))
+
+s = 4*(b+u)
+@test s.block_ids[1] == (field_id_b,)
+@test s.block_ids[2] == (field_id_u,)
+s4b = s.blocks[1]
+test_cell_basis(s4b,q,4*collect(evaluate(b,q)))
+s4u = s.blocks[2]
+test_cell_basis(s4u,q,4*collect(evaluate(u,q)))
+
+s = (b+u)*4
+@test s.block_ids[1] == (field_id_b,)
+@test s.block_ids[2] == (field_id_u,)
+s4b = s.blocks[1]
+test_cell_basis(s4b,q,4*collect(evaluate(b,q)))
+s4u = s.blocks[2]
+test_cell_basis(s4u,q,4*collect(evaluate(u,q)))
 
 r = u*v
 s = a*b

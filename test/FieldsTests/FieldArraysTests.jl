@@ -32,7 +32,6 @@ agx = fill(gx,l)
 a∇gx = fill(∇gx,l)
 test_array_of_fields(ag,ax,agx,grad=a∇gx)
 
-
 struct FieldPlaceHolder <: Field end
 
 ag = apply_to_field_array(FieldPlaceHolder,bcast(+),af,af)
@@ -90,5 +89,50 @@ ag = apply_to_field_array(bcast(+),af,aw)
 agx = fill(r,l)
 a∇gx = fill(∇r,l)
 test_array_of_fields(ag,ax,agx,grad=a∇gx)
+
+# lazy_append
+
+np = 4
+p = Point(1,2)
+x = fill(p,np)
+
+v = 3.0
+d = 2
+f = MockField{d}(v)
+fx = evaluate(f,x)
+∇fx = evaluate(∇(f),x)
+
+l = 10
+af = Fill(f,l)
+ax = fill(x,l)
+afx = fill(fx,l)
+a∇fx = fill(∇fx,l)
+
+np = 5
+p = Point(4,3)
+x = fill(p,np)
+
+v = 5.0
+d = 2
+f = MockField{d}(v)
+fx = evaluate(f,x)
+∇fx = evaluate(∇(f),x)
+
+l = 15
+bf = Fill(f,l)
+bx = fill(x,l)
+bfx = fill(fx,l)
+b∇fx = fill(∇fx,l)
+
+cf = lazy_append(af,bf)
+cx = lazy_append(ax,bx)
+
+cfx = evaluate(cf,cx)
+∇cfx = evaluate(∇(cf),cx)
+rfx = vcat(afx,bfx)
+∇rfx = vcat(a∇fx,b∇fx)
+test_array_of_fields(cf,cx,rfx,grad=∇rfx)
+@test isa(cfx, AppendedArray)
+@test isa(∇cfx, AppendedArray)
 
 end # module

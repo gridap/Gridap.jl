@@ -268,4 +268,3 @@ end
   a = apply_kernel!(cmat,k.kmat,mat,cellid)
   (a,vec)
 end
-

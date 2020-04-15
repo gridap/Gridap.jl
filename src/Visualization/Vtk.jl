@@ -399,8 +399,8 @@ end
 function _prepare_pdata(trian,cellfields,samplingpoints)
   pdata = Dict()
   for (k,v) in cellfields
-    _v = convert_to_cell_field(v,get_cell_map(trian))
-    pdata[k], = _prepare_node_to_coords(evaluate_field_array(get_array(_v),samplingpoints))
+    _v = CellField(v,trian)
+    pdata[k], = _prepare_node_to_coords(evaluate(_v,samplingpoints))
   end
   pdata
 end

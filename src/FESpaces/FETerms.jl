@@ -463,7 +463,7 @@ function get_cell_values(t::LinearFETermFromIntegration,uhd)
   reindex(cellvals,t.trian)
 end
 
-struct NonLinearFETerm <: FETerm
+struct NonlinearFETerm <: FETerm
   res::Function
   jac::Function
   trian::Triangulation
@@ -474,10 +474,10 @@ end
 """
 function FETerm(
   res::Function, jac::Function, trian::Triangulation, quad::CellQuadrature)
-  NonLinearFETerm(res,jac,trian,quad)
+  NonlinearFETerm(res,jac,trian,quad)
 end
 
-function get_cell_jacobian(t::NonLinearFETerm,uh,du,v)
+function get_cell_jacobian(t::NonlinearFETerm,uh,du,v)
   @assert is_a_fe_function(uh)
   @assert is_a_fe_cell_basis(v)
   @assert is_a_fe_cell_basis(du)
@@ -487,7 +487,7 @@ function get_cell_jacobian(t::NonLinearFETerm,uh,du,v)
   integrate(t.jac(_uh,_du,_v),t.trian,t.quad)
 end
 
-function get_cell_residual(t::NonLinearFETerm,uh,v)
+function get_cell_residual(t::NonlinearFETerm,uh,v)
   @assert is_a_fe_function(uh)
   @assert is_a_fe_cell_basis(v)
   _v = restrict(v,t.trian)
@@ -495,7 +495,7 @@ function get_cell_residual(t::NonLinearFETerm,uh,v)
   integrate(t.res(_uh,_v),t.trian,t.quad)
 end
 
-function get_cell_id(t::NonLinearFETerm)
+function get_cell_id(t::NonlinearFETerm)
   get_cell_id(t.trian)
 end
 
@@ -557,6 +557,8 @@ function get_cell_matrix_and_vector(t::AffineFETermFromCellMatVec,uhd,u,v)
   (cellmatvec_with_diri, nothing, nothing)
 end
 
+"""
+"""
 struct FETermFromCellJacRes <: FETerm
   jacresfun::Function
   trian::Triangulation
