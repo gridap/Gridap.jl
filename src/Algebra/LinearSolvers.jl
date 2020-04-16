@@ -140,15 +140,11 @@ end
 # Implementation of NonlinearSolver interface
 # A LinearSolver is only able to solve an AffineOperator
 
-function solve!(x::AbstractVector,ls::LinearSolver,op::NonlinearOperator)
-  @unreachable "A LinearSolver can only solve an AffineOperator"
-end
-
 function solve!(x::AbstractVector,ls::LinearSolver,op::NonlinearOperator,cache)
   @unreachable "A LinearSolver can only solve an AffineOperator"
 end
 
-function solve!(x::AbstractVector,ls::LinearSolver,op::AffineOperator)
+function solve!(x::AbstractVector,ls::LinearSolver,op::AffineOperator,cache::Nothing)
   A = op.matrix
   b = op.vector
   ss = symbolic_setup(ls,A)
@@ -160,6 +156,7 @@ end
 function solve!(x::AbstractVector,ls::LinearSolver,op::AffineOperator,cache)
   newmatrix = true
   solve!(x,ls,op,cache,newmatrix)
+  cache
 end
 
 """
@@ -179,7 +176,7 @@ function solve!(
     numerical_setup!(ns,A)
   end
   solve!(x,ns,b)
-  x
+  cache
 end
 
 # Concrete implementations

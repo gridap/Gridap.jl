@@ -21,7 +21,7 @@ struct NewtonRaphsonCache <: GridapType
   ns::NumericalSetup
 end
 
-function solve!(x::AbstractVector,nls::NewtonRaphsonSolver,op::NonlinearOperator)
+function solve!(x::AbstractVector,nls::NewtonRaphsonSolver,op::NonlinearOperator,cache::Nothing)
   b = residual(op, x)
   A = jacobian(op, x)
   dx = similar(b)
@@ -41,6 +41,7 @@ function solve!(
   jacobian!(A, op, x)
   numerical_setup!(ns,A)
   _solve_nr!(x,A,b,dx,ns,nls,op)
+  cache
 end
 
 function _solve_nr!(x,A,b,dx,ns,nls,op)
@@ -133,7 +134,7 @@ mutable struct NLSolversCache <: GridapType
   result
 end
 
-function solve!(x::AbstractVector,nls::NLSolver,op::NonlinearOperator)
+function solve!(x::AbstractVector,nls::NLSolver,op::NonlinearOperator,cache::Nothing)
   cache = _new_nlsolve_cache(x,nls,op)
   _nlsolve_with_updated_cache!(x,nls,op,cache)
   cache
@@ -143,6 +144,7 @@ function solve!(
   x::AbstractVector,nls::NLSolver,op::NonlinearOperator,cache::NLSolversCache)
   _update_nlsolve_cache!(cache,x,op)
   _nlsolve_with_updated_cache!(x,nls,op,cache)
+  cache
 end
 
 function _nlsolve_with_updated_cache!(x,nls,op,cache)
