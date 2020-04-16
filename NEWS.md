@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+  - Function `HomogeneousTrialFESpace`. Since PR [#226](https://github.com/gridap/Gridap.jl/pull/226).
+  - Function `lazy_append` in order to lazily append two objects (implemented for `AbstractVector`, `Triangulation`, and `CellQuadrature`).  Since PR [#220](https://github.com/gridap/Gridap.jl/pull/220).
+  - Support for FE spaces with DOFs defined in the physical space. Since PR [#216](https://github.com/gridap/Gridap.jl/pull/216) and [#218](https://github.com/gridap/Gridap.jl/pull/218).
+
+### Changed
+
+  - Replaced `non_linear` -> `nonlinear`. Since PR [#223](https://github.com/gridap/Gridap.jl/pull/223).
+  - The `FESpace` interface has slightly changed, mainly the return type of functions `get_cell_basis` and `get_cell_dof_basis.`. Since PR [#216](https://github.com/gridap/Gridap.jl/pull/216) and [#218](https://github.com/gridap/Gridap.jl/pull/218).
+
 ### Fixed
 
 - Bug in gradient operator in the void part of `ExtendedFESpace` objects. Since PR [#219](https://github.com/gridap/Gridap.jl/pull/219).
