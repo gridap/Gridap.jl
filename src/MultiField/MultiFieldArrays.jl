@@ -103,11 +103,12 @@ function Base.show(io::IO,::MIME"text/plain",a::MultiFieldArray)
 end
 
 function add_to_array!(a::MultiFieldArray{Ta,N},b::MultiFieldArray{Tb,N},combine=+) where {Ta,Tb,N}
-  for k in 1:length(a.blocks)
-    ak = a.blocks[k]
-    bk = b.blocks[k]
+  for coords in b.coordinates
+    ak = a[coords...]
+    bk = b[coords...]
     add_to_array!(ak,bk,combine)
   end
+  a
 end
 
 function add_to_array!(a::MultiFieldArray,b::Number,combine=+)
