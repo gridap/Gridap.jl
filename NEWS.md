@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Bug that showed up when some field had no contribution to the rhs vector. Since [#229](https://github.com/gridap/Gridap.jl/pull/229).
+- Bug that showed up in multi-field computations when some field had no contribution to the rhs vector. Since [#229](https://github.com/gridap/Gridap.jl/pull/229).
 - Bug in gradient operator in the void part of `ExtendedFESpace` objects. Since PR [#219](https://github.com/gridap/Gridap.jl/pull/219).
 - Bug in jumps of quantities restricted to `InterfaceTriangulation` objects.  Since PR [#215](https://github.com/gridap/Gridap.jl/pull/215).
 
