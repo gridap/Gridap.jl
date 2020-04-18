@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-  - Replaced `non_linear` -> `nonlinear`. Since PR [#223](https://github.com/gridap/Gridap.jl/pull/223).
+  - Replaced `non_linear` -> `nonlinear` and `NonLinear` -> `Nonlinear`. Since PR [#223](https://github.com/gridap/Gridap.jl/pull/223).
   - The `FESpace` interface has slightly changed, mainly the return type of functions `get_cell_basis` and `get_cell_dof_basis.`. Since PR [#216](https://github.com/gridap/Gridap.jl/pull/216) and [#218](https://github.com/gridap/Gridap.jl/pull/218).
 
 ### Fixed
