@@ -63,6 +63,7 @@ import Gridap.FESpaces: allocate_vector
 import Gridap.FESpaces: assemble_vector!
 import Gridap.FESpaces: allocate_matrix
 import Gridap.FESpaces: assemble_matrix!
+import Gridap.FESpaces: assemble_matrix_add!
 import Gridap.FESpaces: assemble_matrix
 import Gridap.FESpaces: allocate_matrix_and_vector
 import Gridap.FESpaces: assemble_matrix_and_vector!

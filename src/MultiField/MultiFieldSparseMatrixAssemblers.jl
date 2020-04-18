@@ -186,6 +186,11 @@ function assemble_matrix!(
   mat,a::MultiFieldSparseMatrixAssembler, term_to_cellmat, term_to_cellidsrows, term_to_cellidscols)
   z = zero(eltype(mat))
   fill_entries!(mat,z)
+  assemble_matrix_add!(mat,a,term_to_cellmat, term_to_cellidsrows, term_to_cellidscols)
+end
+
+function assemble_matrix_add!(
+  mat,a::MultiFieldSparseMatrixAssembler, term_to_cellmat, term_to_cellidsrows, term_to_cellidscols)
   celldofs_rows = get_cell_dofs(a.test)
   celldofs_cols = get_cell_dofs(a.trial)
   for (cellmat_rc,cellidsrows,cellidscols) in zip(term_to_cellmat,term_to_cellidsrows,term_to_cellidscols)
@@ -407,4 +412,3 @@ function _assemble_matrix_and_vector!(mat,vec,vals_cache,rows_cache,cols_cache,c
 
   end
 end
-

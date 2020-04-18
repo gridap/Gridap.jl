@@ -23,6 +23,13 @@ struct MultiFieldFEFunction
   end
 end
 
+function MultiFieldFEFunction(
+  space::MultiFieldFESpace,
+  blocks::Vector{<:SingleFieldFEFunction})
+  fv = zero_free_values(space)
+  xh0 = MultiFieldFEFunction(fv,X0,blocks)
+end
+
 FEFunctionStyle(::Type{MultiFieldFEFunction}) = Val{true}()
 
 get_free_values(f::MultiFieldFEFunction) = f.free_values
