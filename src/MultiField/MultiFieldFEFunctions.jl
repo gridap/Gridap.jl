@@ -27,7 +27,7 @@ function MultiFieldFEFunction(
   space::MultiFieldFESpace,
   blocks::Vector{<:SingleFieldFEFunction})
   fv = zero_free_values(space)
-  xh0 = MultiFieldFEFunction(fv,X0,blocks)
+  xh0 = MultiFieldFEFunction(fv,space,blocks)
 end
 
 FEFunctionStyle(::Type{MultiFieldFEFunction}) = Val{true}()
