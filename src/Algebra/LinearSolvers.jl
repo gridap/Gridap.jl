@@ -137,11 +137,37 @@ function test_linear_solver(
 
 end
 
-# Implementation of NonlinearSolver interface
-# A LinearSolver is only able to solve an AffineOperator
+# function solve!(x::AbstractVector,ls::LinearSolver,op::NonlinearOperator,cache)
+#   @unreachable "A LinearSolver can only solve an AffineOperator"
+# end
 
-function solve!(x::AbstractVector,ls::LinearSolver,op::NonlinearOperator,cache)
-  @unreachable "A LinearSolver can only solve an AffineOperator"
+function solve!(x::AbstractVector,
+                ls::LinearSolver,
+                op::NonlinearOperator,
+                cache::Nothing)
+  x .= zero(eltype(x))
+  b = residual(op, x)
+  A = jacobian(op, x)
+  ss = symbolic_setup(ls, A)
+  ns = numerical_setup(ss,A)
+  broadcast!(*,b,b,-1)
+  solve!(x,ns,b)
+  LinearSolverCache(A,b,ns)
+end
+
+function solve!(x::AbstractVector,
+                ls::LinearSolver,
+                op::NonlinearOperator,
+                cache)
+  x .= zero(eltype(x))
+  b = cache.b
+  A = cache.A
+  ns = cache.ns
+  residual!(b, op, x)
+  numerical_setup!(ns,A)
+  broadcast!(*,b,b,-1)
+  solve!(x,ns,b)
+  cache
 end
 
 function solve!(x::AbstractVector,ls::LinearSolver,op::AffineOperator,cache::Nothing)
