@@ -141,6 +141,12 @@ end
 #   @unreachable "A LinearSolver can only solve an AffineOperator"
 # end
 
+struct LinearSolverCache <: GridapType
+  A::AbstractMatrix
+  b::AbstractVector
+  ns::NumericalSetup
+end
+
 function solve!(x::AbstractVector,
                 ls::LinearSolver,
                 op::NonlinearOperator,
