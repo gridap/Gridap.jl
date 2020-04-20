@@ -23,9 +23,9 @@ end
 """
 function SkeletonTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
   left_cell_around = 1
-  left = GenericBoundaryTriangulation(model,face_to_mask,left_cell_around)
+  left = BoundaryTriangulation(model,face_to_mask,left_cell_around)
   right_cell_around = 2
-  right = GenericBoundaryTriangulation(model,face_to_mask,right_cell_around)
+  right = BoundaryTriangulation(model,face_to_mask,right_cell_around)
   SkeletonTriangulation(left,right)
 end
 

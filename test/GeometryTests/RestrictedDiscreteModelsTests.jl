@@ -68,4 +68,25 @@ itrian = InterfaceTriangulation(model_fluid,model_solid)
 #writevtk(model,"model")
 #writevtk(trian,"trian")
 
+oldtrian = Triangulation(oldmodel)
+trian_s = SkeletonTriangulation(model)
+trian_b = BoundaryTriangulation(model)
+
+meas_K_b = cell_measure(trian_b,oldtrian)
+meas_K_sl = cell_measure(trian_s.left,oldtrian)
+meas_K_sr = cell_measure(trian_s.right,oldtrian)
+
+oldcell_to_cell = zeros(Int,num_cells(oldmodel))
+oldcell_to_cell[cell_to_oldcell] .= 1:length(cell_to_oldcell)
+
+@test all( oldcell_to_cell[findall(meas_K_b .!= 0)] .!= 0 )
+@test all( oldcell_to_cell[findall(meas_K_sl .!= 0)] .!= 0 )
+@test all( oldcell_to_cell[findall(meas_K_sr .!= 0)] .!= 0 )
+
+#using Gridap.Visualization
+#writevtk(trian_b,"trian_b")
+#writevtk(trian_s,"trian_s")
+#writevtk(trian,"trian")
+#writevtk(oldtrian,"oldtrian",celldata=["meas_K_b"=>meas_K_b,"meas_K_sl"=>meas_K_sl,"meas_K_sr"=>meas_K_sr])
+
 end # module
