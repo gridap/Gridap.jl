@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+  - Function `cell_measure`. Since PR [#234](https://github.com/gridap/Gridap.jl/pull/234).
+
+### Fixed
+
+  - Several bugs associated with `ExtendedFESpace`. In particular, we have fixed a bug that showed up when combining `ZeroMeanFESpace` and `ExtendedFESpace`. Fixed via PR [#234](https://github.com/gridap/Gridap.jl/pull/234).
 
 ## [0.9.0] - 2020-4-18
 
