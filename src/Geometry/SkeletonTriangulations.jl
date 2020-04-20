@@ -23,9 +23,9 @@ end
 """
 function SkeletonTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
   left_cell_around = 1
-  left = GenericBoundaryTriangulation(model,face_to_mask,left_cell_around)
+  left = BoundaryTriangulation(model,face_to_mask,left_cell_around)
   right_cell_around = 2
-  right = GenericBoundaryTriangulation(model,face_to_mask,right_cell_around)
+  right = BoundaryTriangulation(model,face_to_mask,right_cell_around)
   SkeletonTriangulation(left,right)
 end
 
@@ -52,13 +52,6 @@ function InterfaceTriangulation(model::DiscreteModel,cells_in,cells_out)
   cell_to_inout[cells_in] .= IN
   cell_to_inout[cells_out] .= OUT
   InterfaceTriangulation(model,cell_to_inout)
-end
-
-function InterfaceTriangulation(model_in::RestrictedDiscreteModel,model_out::RestrictedDiscreteModel)
-  cells_in = get_cell_to_oldcell(model_in)
-  cells_out = get_cell_to_oldcell(model_out)
-  model = get_oldmodel(model_in)
-  InterfaceTriangulation(model,cells_in,cells_out)
 end
 
 function InterfaceTriangulation(model::DiscreteModel,cell_to_inout::AbstractVector{<:Integer})

@@ -135,6 +135,7 @@ export test_triangulation
 export restrict
 export get_physical_coordinate
 export get_cell_id
+export cell_measure
 
 export Grid
 export get_cell_nodes
@@ -239,8 +240,6 @@ include("DiscreteModels.jl")
 
 include("DiscreteModelPortions.jl")
 
-include("RestrictedDiscreteModels.jl")
-
 include("DiscreteModelMocks.jl")
 
 include("UnstructuredDiscreteModels.jl")
@@ -258,5 +257,7 @@ include("CellQuadratures.jl")
 include("QPointCellFields.jl")
 
 include("AppendedTriangulations.jl")
+
+include("RestrictedDiscreteModels.jl")
 
 end # module
