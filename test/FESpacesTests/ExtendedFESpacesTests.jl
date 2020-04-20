@@ -109,15 +109,24 @@ collect(evaluate(jump(ε(uh_Γ)),q_Γ))
 V = TestFESpace(model=model_in,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:H1)
 @test isa(V,ExtendedFESpace)
 
+V = TestFESpace(model=model_in,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:H1,constraint=:zeromean)
+uh = FEFunction(V,rand(num_free_dofs(V)))
+uh_in = restrict(uh,trian_in)
+@test sum(integrate(uh_in,trian_in,quad_in)) + 1 ≈ 1
+
 V = TestFESpace(model=model,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:H1)
 @test !isa(V,ExtendedFESpace)
 
 V = TestFESpace(triangulation=trian_in,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:L2)
 @test isa(V,ExtendedFESpace)
 
+V = TestFESpace(triangulation=trian_in,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:L2,constraint=:zeromean)
+uh = FEFunction(V,rand(num_free_dofs(V)))
+uh_in = restrict(uh,trian_in)
+@test sum(integrate(uh_in,trian_in,quad_in)) + 1 ≈ 1
+
 V = TestFESpace(triangulation=trian,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:L2)
 @test !isa(V,ExtendedFESpace)
-
 
 #using Gridap.Visualization
 #writevtk(trian,"trian",cellfields=["uh"=>uh])
