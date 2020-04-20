@@ -21,7 +21,7 @@ function getindex(arg::SymFourthOrderTensorValue{D},i::Integer,j::Integer,k::Int
     getindex(arg, _getindex(arg, i, j, k, l))
 end
 
-getindex(arg::VectorValue, i::CartesianIndex{1}) = getindex(arg,ci[1])
+getindex(arg::VectorValue, ci::CartesianIndex{1}) = getindex(arg,ci[1])
 getindex(arg::TensorValue{D1,D2},ci::CartesianIndex{2}) where {D1,D2} = getindex(arg,ci[1],ci[2])
 getindex(arg::SymTensorValue{D},ci::CartesianIndex{2}) where {D} = getindex(arg,ci[1],ci[2])
 getindex(arg::SymFourthOrderTensorValue{D},ci::CartesianIndex{4}) where {D} = getindex(arg,ci[1],ci[2],ci[3],ci[4])
@@ -31,6 +31,6 @@ getindex(arg::SymFourthOrderTensorValue{D},ci::CartesianIndex{4}) where {D} = ge
 
 eachindex(arg::MultiValue) = eachindex(arg.data)
 
-CartesianIndices(arg::MultiValue) = CartesianIndices(get_array(arg))
+CartesianIndices(arg::MultiValue) = CartesianIndices(size(arg))
 
-LinearIndices(arg::MultiValue) = LinearIndices(get_array(arg))
+LinearIndices(arg::MultiValue) = LinearIndices(size(arg))

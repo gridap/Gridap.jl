@@ -32,86 +32,40 @@ VectorValue{D,T1}(data::NTuple{D,T2}) where {D,T1,T2} = VectorValue{D,T1}(NTuple
 
 # VectorValue Vararg constructor
 
-VectorValue(data::Real...)                  = VectorValue(NTuple{length(data)}(data))
-VectorValue{D}(data::Real...)   where {D}   = VectorValue{D}(NTuple{D}(data))
-VectorValue{D,T}(data::Real...) where {D,T} = VectorValue{D,T}(NTuple{D,T}(data))
+VectorValue(data::T...) where {T}              = (D=length(data); VectorValue{D,T}(NTuple{D,T}(data)))
+VectorValue{D}(data::T...) where {D,T}         = VectorValue{D,T}(NTuple{D,T}(data))
+VectorValue{D,T1}(data::T2...) where {D,T1,T2} = VectorValue{D,T1}(NTuple{D,T1}(data))
 
-# VectorValue single SVector, MVector and AbstractVector argument constructor
+# VectorValue single AbstractVector argument constructor
 
-function VectorValue(data::
-                Union{
-                    SVector{D,T2},
-                    MVector{D,T2},
-                    AbstractArray{T2}
-                }) where {D,T1,T2}
-    PD = (@isdefined D)  ? D  : length(data)
-    VectorValue{PD,T2}(NTuple{PD,T2}(data))
-end
-
-function VectorValue{D}(data::
-                Union{
-                    SVector{D,T2},
-                    MVector{D,T2},
-                    AbstractArray{T2}
-                }) where {D,T1,T2}
-    VectorValue{D,T2}(NTuple{D,T2}(data))
-end
-
-function VectorValue{D,T1}(data::
-                Union{
-                    SVector{D,T2},
-                    MVector{D,T2},
-                    AbstractArray{T2}
-                }) where {D,T1,T2}
-    VectorValue{D,T1}(NTuple{D,T1}(data))
-end
+VectorValue(data::AbstractArray{T}) where {T}              = (D=length(data);VectorValue{D,T}(NTuple{D,T}(data)))
+VectorValue{D}(data::AbstractArray{T}) where {D,T}         = VectorValue{D,T}(NTuple{D,T}(data))
+VectorValue{D,T1}(data::AbstractArray{T2}) where {D,T1,T2} = VectorValue{D,T1}(NTuple{D,T1}(data))
 
 ###############################################################
 # Conversions (VectorValue)
 ###############################################################
 
-function convert(::Type{<:Union{VectorValue,VectorValue{D,T1}}}, 
-                arg::
-                    Union{
-                        NTuple{D,T2},
-                        SVector{D,T2},
-                        MVector{D,T2},
-                        AbstractArray{T2}
-                    }) where {D,T1,T2}
-    PT = (@isdefined T1) ? T1 : T2
-    PD = (@isdefined D)  ? D  : length(arg)
-    VectorValue{PD,PT}(NTuple{PD,PT}(arg))
-end
+# Direct conversion
+convert(::Type{<:VectorValue{D,T}}, arg:: AbstractArray) where {D,T} = VectorValue{D,T}(NTuple{D,T}(arg))
+convert(::Type{<:VectorValue{D,T}}, arg:: Tuple) where {D,T} = VectorValue{D,T}(arg)
 
-function convert(::Type{<:Union{NTuple,NTuple{D,T1}}}, arg::VectorValue{D,T2}) where {D,T1,T2}
-    PT = (@isdefined T1) ? T1 : T2
-    NTuple{D,PT}(arg.data)
-end
+# Inverse conversion
+convert(::Type{<:AbstractArray{T}}, arg::VectorValue) where {T}  = Vector{T}([Tuple(arg)...])
+convert(::Type{<:SVector{D,T}}, arg::VectorValue{D}) where {D,T} = SVector{D,T}(Tuple(arg))
+convert(::Type{<:MVector{D,T}}, arg::VectorValue{D}) where {D,T} = MVector{D,T}(Tuple(arg))
+convert(::Type{<:NTuple{D,T}},  arg::VectorValue{D}) where {D,T} = NTuple{D,T}(Tuple(arg))
 
-function convert(::Type{<:Union{SVector,SVector{D,T1}}}, arg::VectorValue{D,T2}) where {D,T1,T2}
-    PT = (@isdefined T1) ? T1 : T2
-    SVector{D,PT}(arg.data)
-end
-
-function convert(::Type{<:Union{MVector,MVector{D,T1}}}, arg::VectorValue{D,T2}) where {D,T1,T2}
-    PT = (@isdefined T1) ? T1 : T2
-    MVector{D,PT}(arg.data)
-end
-
-function convert(::Type{<:Union{VectorValue,VectorValue{D,T1}}}, arg::VectorValue{D,T2}) where {D,T1,T2}
-    PT = (@isdefined T1) ? T1 : T2
-    PT == T2 ? arg : convert(VectorValue{D,PT}, arg.data)
-end
+# Internal conversion
+convert(::Type{<:VectorValue{D,T}}, arg::VectorValue{D}) where {D,T} = VectorValue{D,T}(Tuple(arg))
+convert(::Type{<:VectorValue{D,T}}, arg::VectorValue{D,T}) where {D,T} = arg
 
 ###############################################################
 # Other constructors and conversions (VectorValue)
 ###############################################################
 
-zero(::Type{<:VectorValue{D,T}}) where {D,T} = VectorValue{D,T}(NTuple{D,T}(zeros(T,D)))
+zero(::Type{<:VectorValue{D,T}}) where {D,T} = VectorValue{D,T}(tfill(zero(T),Val{D}()))
 zero(::VectorValue{D,T}) where {D,T} = zero(VectorValue{D,T})
-
-one(::Type{<:VectorValue{D,T}}) where {D,T} = VectorValue{D,T}(NTuple{D,T}(ones(T,D)))
-one(::VectorValue{D,T}) where {D,T} = one(VectorValue{D,T})
 
 mutable(::Type{VectorValue{D,T}}) where {D,T} = MVector{D,T}
 mutable(::VectorValue{D,T}) where {D,T} = mutable(VectorValue{D,T})
@@ -120,9 +74,7 @@ change_eltype(::Type{VectorValue{D}},::Type{T}) where {D,T} = VectorValue{D,T}
 change_eltype(::Type{VectorValue{D,T1}},::Type{T2}) where {D,T1,T2} = VectorValue{D,T2}
 change_eltype(::VectorValue{D,T1},::Type{T2}) where {D,T1,T2} = change_eltype(VectorValue{D,T1},T2)
 
-SVector(arg::VectorValue{D,T}) where {D,T} = SVector{D,T}(arg.data)
-SArray(arg::VectorValue{D,T}) where {D,T} = SVector(arg)
-get_array(arg::T where {T<:VectorValue}) = convert(SVector,arg)
+get_array(arg::VectorValue{D,T}) where {D,T} = convert(SVector{D,T}, arg)
 
 ###############################################################
 # Introspection (VectorValue)

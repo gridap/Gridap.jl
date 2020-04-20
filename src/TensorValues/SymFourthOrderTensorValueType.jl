@@ -43,34 +43,31 @@ SymFourthOrderTensorValue{D,T1,L}(data::NTuple{L,T2}) where {D,L,T1,T2} = SymFou
 
 # SymTensorValue Vararg constructor
 
-SymFourthOrderTensorValue(data::Real...)                  = (L=length(data);SymFourthOrderTensorValue{floor(Int,sqrt(sqrt(L*2)))}(NTuple{L}(data)))
-SymFourthOrderTensorValue{D}(data::Real...) where {D}     = (L=length(data);SymFourthOrderTensorValue{D}(NTuple{L}(data)))
-SymFourthOrderTensorValue{D,T}(data::Real...) where {D,T} = (L=length(data);SymFourthOrderTensorValue{D,T}(NTuple{L,T}(data)))
+SymFourthOrderTensorValue(data::T...) where {T}              = (L=length(data);SymFourthOrderTensorValue{floor(Int,sqrt(sqrt(L*2)))}(NTuple{L}(data)))
+SymFourthOrderTensorValue{D}(data::T...) where {D,T}         = (L=length(data);SymFourthOrderTensorValue{D,T}(NTuple{L,T}(data)))
+SymFourthOrderTensorValue{D,T1}(data::T2...) where {D,T1,T2} = (L=length(data);SymFourthOrderTensorValue{D,T1}(NTuple{L,T1}(data)))
 
 ###############################################################
 # Conversions (SymTensorValue)
 ###############################################################
 
-function convert(::Type{<:Union{SymFourthOrderTensorValue,
-                                SymFourthOrderTensorValue{D,T1},
-                                SymFourthOrderTensorValue{D,T1,L}}}, 
-                arg::NTuple{L,T2}) where {D,T1,T2,L}
-    PT = (@isdefined T1) ? T1 : T2
-    SymFourthOrderTensorValue{D,PT}(arg)
-end
+# Direct conversion
+convert(::Type{<:SymFourthOrderTensorValue{D,T}}, arg::Tuple) where {D,T} = SymFourthOrderTensorValue{D,T}(arg)
 
-function convert(::Type{<:Union{NTuple,NTuple{L,T1}}}, 
-                arg::SymFourthOrderTensorValue{D,T2,L}) where {D,T1,T2,L}
-    PT = (@isdefined T1) ? T1 : T2
-    NTuple{L,PT}(arg.data)
-end
+# Inverse conversion
+convert(::Type{<:NTuple{L,T}}, arg::SymFourthOrderTensorValue) where {L,T} = NTuple{L,T}(Tuple(arg))
+
+# Internal conversion
+convert(::Type{<:SymFourthOrderTensorValue{D,T}}, arg::SymFourthOrderTensorValue{D}) where {D,T} = SymFourthOrderTensorValue{D,T}(Tuple(arg))
+convert(::Type{<:SymFourthOrderTensorValue{D,T}}, arg::SymFourthOrderTensorValue{D,T}) where {D,T} = arg
 
 ###############################################################
 # Other constructors and conversions (SymTensorValue)
 ###############################################################
 
-zero(::Type{<:SymFourthOrderTensorValue{D,T}}) where {D,T} = (L=Int((D*(D+1)/2)^2);SymFourthOrderTensorValue{D,T}(NTuple{L,T}(zeros(T,L))))
-zero(::SymFourthOrderTensorValue{D,T}) where {D,T} = zero(SymFourthOrderTensorValue{D,T})
+zero(::Type{<:SymFourthOrderTensorValue{D,T}}) where {D,T} = (L=Int((D*(D+1)/2)^2);SymFourthOrderTensorValue{D,T}(tfill(zero(T),Val{L}())))
+zero(::Type{<:SymFourthOrderTensorValue{D,T,L}}) where {D,T,L} = SymFourthOrderTensorValue{D,T}(tfill(zero(T),Val{L}()))
+zero(::SymFourthOrderTensorValue{D,T,L}) where {D,T,L} = zero(SymFourthOrderTensorValue{D,T,L})
 
 @generated function one(::Type{<:SymFourthOrderTensorValue{D,T}}) where {D,T}
   str = join(["($i==$j && $k==$l) ? one(T) : zero(T), " for i in 1:D for j in i:D for k in 1:D for l in k:D])
