@@ -240,8 +240,6 @@ include("DiscreteModels.jl")
 
 include("DiscreteModelPortions.jl")
 
-include("RestrictedDiscreteModels.jl")
-
 include("DiscreteModelMocks.jl")
 
 include("UnstructuredDiscreteModels.jl")
@@ -259,5 +257,7 @@ include("CellQuadratures.jl")
 include("QPointCellFields.jl")
 
 include("AppendedTriangulations.jl")
+
+include("RestrictedDiscreteModels.jl")
 
 end # module

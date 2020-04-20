@@ -54,13 +54,6 @@ function InterfaceTriangulation(model::DiscreteModel,cells_in,cells_out)
   InterfaceTriangulation(model,cell_to_inout)
 end
 
-function InterfaceTriangulation(model_in::RestrictedDiscreteModel,model_out::RestrictedDiscreteModel)
-  cells_in = get_cell_to_oldcell(model_in)
-  cells_out = get_cell_to_oldcell(model_out)
-  model = get_oldmodel(model_in)
-  InterfaceTriangulation(model,cells_in,cells_out)
-end
-
 function InterfaceTriangulation(model::DiscreteModel,cell_to_inout::AbstractVector{<:Integer})
 
   D = num_cell_dims(model)

@@ -63,3 +63,10 @@ function BoundaryTriangulation(model::RestrictedDiscreteModel,face_to_mask::Vect
   BoundaryTriangulation(oldmodel,oldface_to_mask)
 end
 
+function InterfaceTriangulation(model_in::RestrictedDiscreteModel,model_out::RestrictedDiscreteModel)
+  cells_in = get_cell_to_oldcell(model_in)
+  cells_out = get_cell_to_oldcell(model_out)
+  model = get_oldmodel(model_in)
+  InterfaceTriangulation(model,cells_in,cells_out)
+end
+
