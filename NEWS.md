@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-  - Several bugs associated with `ExtendedFESpace`. In particular, we have fixed a bug that showed up when combining `ZeroMeanFESpace` and `ExtendedFESpace`. Fixed via PR [#234](https://github.com/gridap/Gridap.jl/pull/234).
+  - Several bugs associated with `ExtendedFESpace`. In particular, we have fixed a bug that showed up when combining `ZeroMeanFESpace` and `ExtendedFESpace`. Since PR [#234](https://github.com/gridap/Gridap.jl/pull/234).
 
 ## [0.9.0] - 2020-4-18
 
