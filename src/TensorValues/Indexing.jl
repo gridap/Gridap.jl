@@ -1,5 +1,5 @@
 
-eachindex(arg::MultiValue) = eachindex(arg.data)
+eachindex(arg::MultiValue) = eachindex(1:prod(size(arg)))
 
 CartesianIndices(arg::MultiValue) = CartesianIndices(size(arg))
 
