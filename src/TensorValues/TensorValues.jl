@@ -68,15 +68,15 @@ import LinearAlgebra: det, inv, tr, dot, norm
 
 import Gridap.Arrays: get_array
 
-include("MultiValueType.jl")
+include("MultiValueTypes.jl")
 
-include("VectorValueType.jl")
+include("VectorValueTypes.jl")
 
-include("TensorValueType.jl")
+include("TensorValueTypes.jl")
 
-include("SymTensorValueType.jl")
+include("SymTensorValueTypes.jl")
 
-include("SymFourthOrderTensorValueType.jl")
+include("SymFourthOrderTensorValueTypes.jl")
 
 include("Misc.jl")
 
