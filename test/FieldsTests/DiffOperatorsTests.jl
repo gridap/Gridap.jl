@@ -40,4 +40,24 @@ for f in (_f,_af)
 
 end
 
+# Test automatic differentiation
+
+
+u_scal(x) = x[1]^2 + x[2]
+∇u_scal(x) = VectorValue( 2*x[1], one(x[2]) )
+Δu_scal(x) = 2
+
+u_vec(x) = VectorValue( x[1]^2 + x[2], 4*x[1] - x[2]^2 )
+∇u_vec(x) = TensorValue( 2*x[1], one(x[2]), 4*one(x[1]), - 2*x[2] )
+Δu_vec(x) = VectorValue( 2, -2 )
+
+xs = [ Point(1,1), Point(2,0), Point(0,3), Point(-1,3)]
+for x in xs
+  ∇(u_scal)(x) == ∇u_scal(x)
+  Δ(u_scal)(x) == Δu_scal(x)
+  ∇(u_vec)(x) == ∇u_vec(x)
+  Δ(u_vec)(x) == Δu_vec(x)
+end
+
+
 end # module

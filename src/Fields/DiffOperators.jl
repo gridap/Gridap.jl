@@ -107,3 +107,44 @@ function _curl_kernel(∇u::TensorValue{3})
   VectorValue(c1,c2,c3)
 end
 
+# Automatic differentiation of functions
+
+function gradient(f::Function)
+  function grad_f(x)
+    _grad_f(f,x,zero(return_type(f,typeof(x))))
+  end
+end
+
+function _grad_f(f,x,fx)
+  VectorValue(ForwardDiff.gradient(f,x.array))
+end
+
+function _grad_f(f,x,fx::VectorValue)
+  TensorValue(ForwardDiff.jacobian(y->f(y).array,x.array))
+end
+
+function _grad_f(f,x,fx::MultiValue)
+  @notimplemented
+end
+
+function laplacian(f::Function)
+  function lapl_f(x)
+    _lapl_f(f,x,zero(return_type(f,typeof(x))))
+  end
+end
+
+function _lapl_f(f,x,fx)
+  tr(ForwardDiff.jacobian(y->ForwardDiff.gradient(f,y), x.array))
+end
+
+function _lapl_f(f,x,fx::VectorValue)
+  A = length(x)
+  B = length(fx)
+  a = ForwardDiff.jacobian(y->ForwardDiff.jacobian(z->f(z).array,y), x.array)
+  tr(MultiValue{Tuple{A,A,B}}(Tuple(a)))
+end
+
+function _lapl_f(f,x,fx::MultiValue)
+  @notimplemented
+end
+
