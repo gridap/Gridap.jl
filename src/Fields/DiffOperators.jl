@@ -96,6 +96,8 @@ grad2curl(f::AbstractArray{<:Field}) = apply_to_field_array(bcast(_curl_kernel),
 
 grad2curl(::Type{T}, f::AbstractArray{<:Field}) where T = apply_to_field_array(T,bcast(_curl_kernel),f)
 
+grad2curl(∇u::MultiValue) = _curl_kernel(∇u)
+
 function _curl_kernel(∇u::TensorValue{2})
   ∇u[1,2] - ∇u[2,1]
 end
@@ -120,11 +122,19 @@ function _grad_f(f,x,fx)
 end
 
 function _grad_f(f,x,fx::VectorValue)
-  TensorValue(ForwardDiff.jacobian(y->f(y).array,x.array))
+  TensorValue(transpose(ForwardDiff.jacobian(y->f(y).array,x.array)))
 end
 
 function _grad_f(f,x,fx::MultiValue)
   @notimplemented
+end
+
+function divergence(f::Function)
+  x -> tr(ForwardDiff.jacobian(y->f(y).array,x.array))
+end
+
+function curl(f::Function)
+  x -> grad2curl(TensorValue(transpose(ForwardDiff.jacobian(y->f(y).array,x.array))))
 end
 
 function laplacian(f::Function)
@@ -140,8 +150,8 @@ end
 function _lapl_f(f,x,fx::VectorValue)
   A = length(x)
   B = length(fx)
-  a = ForwardDiff.jacobian(y->ForwardDiff.jacobian(z->f(z).array,y), x.array)
-  tr(MultiValue{Tuple{A,A,B}}(Tuple(a)))
+  a = ForwardDiff.jacobian(y->transpose(ForwardDiff.jacobian(z->f(z).array,y)), x.array)
+  tr(MultiValue{Tuple{A,A,B}}(Tuple(transpose(a))))
 end
 
 function _lapl_f(f,x,fx::MultiValue)

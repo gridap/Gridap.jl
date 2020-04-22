@@ -31,22 +31,30 @@ ddegree = order
 dquad = CellQuadrature(dtrian,ddegree)
 const dn = get_normal_vector(dtrian)
 
+# Using automatic differentiation
 u_scal(x) = x[1]^2 + x[2]
-∇u_scal(x) = VectorValue( 2*x[1], one(x[2]) )
-Δu_scal(x) = 2
-f_scal(x) = - Δu_scal(x)
-∇(::typeof(u_scal)) = ∇u_scal
+f_scal(x) = - Δ(u_scal)(x)
+
+#u_scal(x) = x[1]^2 + x[2]
+#∇u_scal(x) = VectorValue( 2*x[1], one(x[2]) )
+#Δu_scal(x) = 2
+#f_scal(x) = - Δu_scal(x)
+#∇(::typeof(u_scal)) = ∇u_scal
 
 scalar_data = Dict{Symbol,Any}()
 scalar_data[:valuetype] = Float64
 scalar_data[:u] = u_scal
 scalar_data[:f] = f_scal
 
+# Using automatic differentiation
 u_vec(x) = VectorValue( x[1]^2 + x[2], 4*x[1] - x[2]^2 )
-∇u_vec(x) = TensorValue( 2*x[1], one(x[2]), 4*one(x[1]), - 2*x[2] )
-Δu_vec(x) = VectorValue( 2, -2 )
-f_vec(x) = - Δu_vec(x)
-∇(::typeof(u_vec)) = ∇u_vec
+f_vec(x) = - Δ(u_vec)(x)
+
+#u_vec(x) = VectorValue( x[1]^2 + x[2], 4*x[1] - x[2]^2 )
+#∇u_vec(x) = TensorValue( 2*x[1], one(x[2]), 4*one(x[1]), - 2*x[2] )
+#Δu_vec(x) = VectorValue( 2, -2 )
+#f_vec(x) = - Δu_vec(x)
+#∇(::typeof(u_vec)) = ∇u_vec
 
 vector_data = Dict{Symbol,Any}()
 vector_data[:valuetype] = VectorValue{2,Float64}

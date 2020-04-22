@@ -6,18 +6,25 @@ import Gridap: ∇
 
 using LinearAlgebra: tr
 
+# Using automatic differentiation
 u(x) = VectorValue( x[1]^2 + 2*x[2]^2, -x[1]^2 )
-∇u(x) = TensorValue( 2*x[1], 4*x[2], -2*x[1], zero(x[1]) )
-Δu(x) = VectorValue( 6, -2 )
-
 p(x) = x[1] + 3*x[2]
-∇p(x) = VectorValue(1,3)
+f(x) = -Δ(u)(x) + ∇(p)(x)
+g(x) = (∇*u)(x)
+∇u(x) = ∇(u)(x)
 
-f(x) = -Δu(x) + ∇p(x)
-g(x) = tr(∇u(x))
-
-∇(::typeof(u)) = ∇u
-∇(::typeof(p)) = ∇p
+#u(x) = VectorValue( x[1]^2 + 2*x[2]^2, -x[1]^2 )
+#∇u(x) = TensorValue( 2*x[1], 4*x[2], -2*x[1], zero(x[1]) )
+#Δu(x) = VectorValue( 6, -2 )
+#
+#p(x) = x[1] + 3*x[2]
+#∇p(x) = VectorValue(1,3)
+#
+#f(x) = -Δu(x) + ∇p(x)
+#g(x) = tr(∇u(x))
+#
+#∇(::typeof(u)) = ∇u
+#∇(::typeof(p)) = ∇p
 
 domain = (0,2,0,2)
 partition = (3,3)
