@@ -173,7 +173,11 @@ end
 function AppliedArray(g::AbstractArray,f::AbstractArray...)
   gi = testitem(g) #Assumes that all kernels return the same type
   fi = testitems(f...)
-  T = kernel_return_type(gi,fi...)
+  if length(g) == 0
+    T = kernel_return_type(gi,fi...)
+  else
+    T = typeof(apply_kernel_for_cache(gi,fi...))
+  end
   AppliedArray(T,g,f...)
 end
 
@@ -220,6 +224,11 @@ function _array_cache(hash,a::AppliedArray)
   e = Evaluation((i,),ai)
   c = (cg, cgi, cf)
   (c,e)
+end
+
+function apply_kernel_for_cache(k,x...)
+  cache = kernel_cache(k,x...)
+  apply_kernel_for_cache!(cache,k,x...)
 end
 
 @inline function apply_kernel_for_cache!(cache,k,x...)
