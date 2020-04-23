@@ -13,15 +13,6 @@ struct SymFourthOrderTensorValue{D,T,L} <: MultiValue{Tuple{D,D,D,D},T,4,L}
   end
 end
 
-function _getindex(arg::SymFourthOrderTensorValue{D},i::Integer,j::Integer,k::Integer,l::Integer) where {D}
-    _j,_i=sort([i,j])
-    _l,_k=sort([k,l])
-    block_length=sum(1:D)
-    element_index=((_j-1)*D)-sum(1:_j-1)+_i
-    block_index=((_l-1)*D)-sum(1:_l-1)+_k
-    index=(block_index-1)*block_length+element_index
-end
-
 ###############################################################
 # Constructors (SymTensorValue)
 ###############################################################
@@ -86,17 +77,12 @@ change_eltype(::SymFourthOrderTensorValue{D,T1,L},::Type{T2}) where {D,T1,T2,L} 
 eltype(::Type{<:SymFourthOrderTensorValue{D,T}}) where {D,T} = T
 eltype(::SymFourthOrderTensorValue{D,T}) where {D,T} = eltype(SymFourthOrderTensorValue{D,T})
 
-size(::Type{SymFourthOrderTensorValue{D}}) where {D} = (D,D,D,D)
-size(::Type{SymFourthOrderTensorValue{D,T}}) where {D,T} = (D,D,D,D)
-size(::Type{SymFourthOrderTensorValue{D,T,L}}) where {D,T,L} = (D,D,D,D)
-size(::SymFourthOrderTensorValue{D,T}) where {D,T} = size(SymFourthOrderTensorValue{D,T})
+size(::Type{<:SymFourthOrderTensorValue{D}}) where {D} = (D,D,D,D)
+size(::SymFourthOrderTensorValue{D}) where {D} = size(SymFourthOrderTensorValue{D})
 
-length(::Type{SymFourthOrderTensorValue{D}}) where {D} = Int((D*(D+1)/2)^2)
-length(::Type{SymFourthOrderTensorValue{D,T}}) where {D,T} = length(SymFourthOrderTensorValue{D})
-length(::Type{SymFourthOrderTensorValue{D,T,L}}) where {D,T,L} = L
-length(::SymFourthOrderTensorValue{D,T,L}) where {D,T,L} = length(SymFourthOrderTensorValue{D,T,L})
+length(::Type{<:SymFourthOrderTensorValue{D}}) where {D} = D*D*D*D
+length(::SymFourthOrderTensorValue{D}) where {D} = length(SymFourthOrderTensorValue{D})
 
-n_components(::Type{SymFourthOrderTensorValue{D}}) where {D} = length(SymFourthOrderTensorValue{D})
-n_components(::Type{SymFourthOrderTensorValue{D,T,L}}) where {D,T,L} = length(SymFourthOrderTensorValue{D,T,L})
-n_components(::SymFourthOrderTensorValue{D,T,L}) where {D,T,L} = n_components(SymFourthOrderTensorValue{D,T,L})
+n_components(::Type{<:SymFourthOrderTensorValue{D}}) where {D} = length(SymFourthOrderTensorValue{D})
+n_components(::SymFourthOrderTensorValue{D}) where {D} = n_components(SymFourthOrderTensorValue{D})
 

@@ -83,15 +83,12 @@ get_array(arg::VectorValue{D,T}) where {D,T} = convert(SVector{D,T}, arg)
 eltype(::Type{<:VectorValue{D,T}}) where {D,T} = T
 eltype(arg::VectorValue{D,T}) where {D,T} = eltype(VectorValue{D,T})
 
-size(::Type{VectorValue{D}}) where {D} = (D,)
-size(::Type{VectorValue{D,T}}) where {D,T} = (D,)
-size(::VectorValue{D,T}) where {D,T}  = size(VectorValue{D,T})
+size(::Type{<:VectorValue{D}}) where {D} = (D,)
+size(::VectorValue{D}) where {D}  = size(VectorValue{D})
 
-length(::Type{VectorValue{D}}) where {D} = D
-length(::Type{VectorValue{D,T}}) where {D,T} = D
-length(::VectorValue{D,T}) where {D,T} = length(VectorValue{D,T})
+length(::Type{<:VectorValue{D}}) where {D} = D
+length(::VectorValue{D}) where {D} = length(VectorValue{D})
 
-n_components(::Type{VectorValue{D}}) where {D} = length(VectorValue{D})
-n_components(::Type{VectorValue{D,T}}) where {D,T} = length(VectorValue{D,T})
-n_components(::VectorValue{D,T}) where {D,T} = n_components(VectorValue{D,T})
+n_components(::Type{<:VectorValue{D}}) where {D} = length(VectorValue{D})
+n_components(::VectorValue{D}) where {D} = n_components(VectorValue{D})
 

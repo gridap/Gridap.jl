@@ -39,7 +39,7 @@ s = SymTensorValue{2}(11,21,22)
 t = TensorValue(convert(SMatrix{2,2,Int},s))
 
 @test size(s) == (2,2)
-@test length(s) == 3
+@test length(s) == 4
 
 for (k,i) in enumerate(eachindex(t))
     @test s[i] == t[k]

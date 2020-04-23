@@ -280,8 +280,8 @@ v = VectorValue(m)
 @test n_components(VectorValue{3,Float64}) == 3
 @test n_components(VectorValue(1,2,3)) == 3
 @test n_components(TensorValue(1,2,3,4)) == 4
-@test n_components(SymTensorValue(1,2,3)) == 3
-@test n_components(SymFourthOrderTensorValue(1111,2111,2211, 1121,2121,2221, 1122,2122,2222)) == 9
+@test n_components(SymTensorValue(1,2,3)) == 4
+@test n_components(SymFourthOrderTensorValue(1111,2111,2211, 1121,2121,2221, 1122,2122,2222)) == 16
 
 a = VectorValue(1,2,3,4)
 @test change_eltype(a,Float64) == VectorValue{4,Float64}

@@ -13,17 +13,6 @@ struct SymTensorValue{D,T,L} <: MultiValue{Tuple{D,D},T,2,L}
     end
 end
 
-function _get_first_row_index(arg::SymTensorValue{D},i::Integer) where {D}
-    index=((i-1)*D)-sum(1:i-1)+i
-end
-
-function _getindex(arg::SymTensorValue{D},i::Integer,j::Integer) where {D}
-    _j,_i=sort([i,j])
-    index=((_j-1)*D)-sum(1:_j-1)+_i
-end
-
-
-
 ###############################################################
 # Constructors (SymTensorValue)
 ###############################################################
@@ -52,24 +41,23 @@ SymTensorValue{D,T1}(data::T2...) where {D,T1,T2} = SymTensorValue{D,T1}(Tuple(d
 # SymTensorValue single AbstractMatrix argument constructor
 
 #From Square Matrices
-_FlattenUpperTriangle(data::AbstractArray,::Val{D}) where D = Tuple(data[i,j] for i in 1:D for j in i:D)
+_flatten_upper_triangle(data::AbstractArray,::Val{D}) where D = Tuple(data[i,j] for i in 1:D for j in i:D)
 
 SymTensorValue(data::AbstractMatrix{T}) where {T} = ((D1,D2)=size(data); SymTensorValue{D1}(data))
-SymTensorValue{D}(data::AbstractMatrix{T}) where {D,T} = SymTensorValue{D,T}(_FlattenUpperTriangle(data,Val{D}()))
-SymTensorValue{D,T1}(data::AbstractMatrix{T2}) where {D,T1,T2} = SymTensorValue{D,T1}(_FlattenUpperTriangle(data,Val{D}()))
-SymTensorValue{D,T1,L}(data::AbstractMatrix{T2}) where {D,T1,T2,L} = SymTensorValue{D,T1,L}(_FlattenUpperTriangle(data,Val{D}()))
+SymTensorValue{D}(data::AbstractMatrix{T}) where {D,T} = SymTensorValue{D,T}(_flatten_upper_triangle(data,Val{D}()))
+SymTensorValue{D,T1}(data::AbstractMatrix{T2}) where {D,T1,T2} = SymTensorValue{D,T1}(_flatten_upper_triangle(data,Val{D}()))
+SymTensorValue{D,T1,L}(data::AbstractMatrix{T2}) where {D,T1,T2,L} = SymTensorValue{D,T1,L}(_flatten_upper_triangle(data,Val{D}()))
 
 ###############################################################
 # Conversions (SymTensorValue)
 ###############################################################
 
-function SymTensorValueToArray(arg::SymTensorValue{D,T,L}) where {D,T,L}
-    z = zeros(T,D,D)
-    data = collect(Tuple(arg))
-    for i in 1:D
-        index = _get_first_row_index(arg,i)
-        range = index:index+(D-i)
-        z[i,i:D] = z[i:D,i] = data[range]
+function _SymTensorValue_to_array(arg::SymTensorValue{D,T,L}) where {D,T,L}
+    z = zeros(MMatrix{D,D,T})
+    for j in 1:D
+        for i in j:D
+            z[j,i] = z[i,j] = arg[i,j]
+        end
     end
     z
 end
@@ -79,8 +67,8 @@ convert(::Type{<:SymTensorValue{D,T}}, arg::AbstractArray) where {D,T} = SymTens
 convert(::Type{<:SymTensorValue{D,T}}, arg::Tuple) where {D,T} = SymTensorValue{D,T}(arg)
 
 # Inverse conversion
-convert(::Type{<:SMatrix{D,D,T}}, arg::SymTensorValue) where {D,T} = SMatrix{D,D,T}(SymTensorValueToArray(arg))
-convert(::Type{<:MMatrix{D,D,T}}, arg::SymTensorValue) where {D,T} = SMatrix{D,D,T}(SymTensorValueToArray(arg))
+convert(::Type{<:MMatrix{D,D,T}}, arg::SymTensorValue) where {D,T} = _SymTensorValue_to_array(arg)
+convert(::Type{<:SMatrix{D,D,T}}, arg::SymTensorValue) where {D,T} = SMatrix{D,D,T}(_SymTensorValue_to_array(arg))
 convert(::Type{<:NTuple{L,T}}, arg::SymTensorValue) where {L,T} = NTuple{L,T}(Tuple(arg))
 
 # Internal conversion
@@ -116,17 +104,12 @@ get_array(arg::SymTensorValue{D,T,L}) where {D,T,L} = convert(SMatrix{D,D,T}, ar
 eltype(::Type{<:SymTensorValue{D,T}}) where {D,T} = T
 eltype(::SymTensorValue{D,T}) where {D,T} = eltype(SymTensorValue{D,T})
 
-size(::Type{SymTensorValue{D}}) where {D} = (D,D)
-size(::Type{SymTensorValue{D,T}}) where {D,T} = (D,D)
-size(::Type{SymTensorValue{D,T,L}}) where {D,T,L} = (D,D)
-size(::SymTensorValue{D,T}) where {D,T} = size(SymTensorValue{D,T})
+size(::Type{<:SymTensorValue{D}}) where {D} = (D,D)
+size(::SymTensorValue{D}) where {D} = size(SymTensorValue{D})
 
-length(::Type{SymTensorValue{D}}) where {D} = Int(D*(D+1)/2)
-length(::Type{SymTensorValue{D,T}}) where {D,T} = length(SymTensorValue{D})
-length(::Type{SymTensorValue{D,T,L}}) where {D,T,L} = L
-length(::SymTensorValue{D,T,L}) where {D,T,L} = length(SymTensorValue{D,T,L})
+length(::Type{<:SymTensorValue{D}}) where {D} = D*D
+length(::SymTensorValue{D}) where {D} = length(SymTensorValue{D})
 
-n_components(::Type{SymTensorValue{D}}) where {D} = length(SymTensorValue{D})
-n_components(::Type{SymTensorValue{D,T,L}}) where {D,T,L} = length(SymTensorValue{D,T,L})
-n_components(::SymTensorValue{D,T,L}) where {D,T,L} = n_components(SymTensorValue{D,T,L})
+n_components(::Type{<:SymTensorValue{D}}) where {D} = length(SymTensorValue{D})
+n_components(::SymTensorValue{D}) where {D} = n_components(SymTensorValue{D})
 

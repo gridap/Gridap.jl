@@ -189,6 +189,7 @@ end
 # Linear Algebra
 ###############################################################
 
+#TODO: write det and inv function for small specific cases.
 det(a::MultiValue{Tuple{D1,D2},T,2,L}) where {D1,D2,T,L} = det(convert(SMatrix{D1,D2,T,L},a))
 inv(a::MultiValue{Tuple{D1,D2},T,2,L}) where {D1,D2,T,L} = TensorValue(inv(convert(SMatrix{D1,D2,T,L},a)))
 
