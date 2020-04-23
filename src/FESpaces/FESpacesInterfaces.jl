@@ -70,18 +70,28 @@ constraint_style(f::T) where T<:FESpace = constraint_style(T)
 """
 """
 function get_constraint_kernel_matrix_cols(f::FESpace)
-  @abstractmethod
+  _default_constraint_kernel(f,constraint_style(f))
 end
 
 """
 """
 function get_constraint_kernel_matrix_rows(f::FESpace)
-  @abstractmethod
+  _default_constraint_kernel(f,constraint_style(f))
 end
 
 """
 """
 function get_constraint_kernel_vector(f::FESpace)
+  _default_constraint_kernel(f,constraint_style(f))
+end
+
+function _default_constraint_kernel(f,::Val{false})
+  function default_kernel(m,i)
+    m
+  end
+end
+
+function _default_constraint_kernel(f,::Val{true})
   @abstractmethod
 end
 
