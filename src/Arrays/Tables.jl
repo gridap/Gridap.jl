@@ -442,3 +442,8 @@ function from_dict(::Type{Table{T,P}}, dict::Dict{Symbol,Any}) where {T,P}
   ptrs::Vector{P} = dict[:ptrs]
   Table(data,ptrs)
 end
+
+function Base.copy(a::Table)
+  Table(copy(a.data),copy(a.ptrs))
+end
+
