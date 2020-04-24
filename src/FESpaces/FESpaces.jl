@@ -202,6 +202,7 @@ export CLagrangianFESpace
 export DivConformingFESpace
 export CurlConformingFESpace
 export DirichletFESpace
+export FESpaceWithLinearConstraints
 export ExtendedFESpace
 
 export @law
@@ -268,6 +269,8 @@ include("CLagrangianFESpaces.jl")
 include("DirichletFESpaces.jl")
 
 include("ExtendedFESpaces.jl")
+
+include("FESpacesWithLinearConstraints.jl")
 
 include("FESpaceFactories.jl")
 

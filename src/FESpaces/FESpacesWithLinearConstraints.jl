@@ -75,8 +75,14 @@ function FESpaceWithLinearConstraints(
 end
 
 function _merge_free_and_diri_constraints(fdof_to_dofs, fdof_to_coeffs, ddof_to_dofs, ddof_to_coeffs)
+  n_fdofs = length(fdof_to_dofs)
   DOF_to_DOFs = append_tables_globally(fdof_to_dofs,ddof_to_dofs)
-  DOF_to_coeffs = Table(vcat(fdof_to_coeffs,ddof_to_coeffs),DOF_to_DOFs.ptrs)
+  for i in 1:length(DOF_to_DOFs.data)
+    dof = DOF_to_DOFs.data[i]
+    DOF = _dof_to_DOF(dof,n_fdofs)
+    DOF_to_DOFs.data[i] = DOF
+  end
+  DOF_to_coeffs = Table(vcat(fdof_to_coeffs.data,ddof_to_coeffs.data),DOF_to_DOFs.ptrs)
   DOF_to_DOFs, DOF_to_coeffs
 end
 
@@ -115,6 +121,7 @@ function _find_master_dofs(DOF_to_DOFs,n_fdofs)
       @assert (DOF_to_DOFs.ptrs[_DOF+1]-DOF_to_DOFs.ptrs[_DOF]) == 1 "Rcursive constraints not allowed now"
       @assert DOF_to_DOFs.data[DOF_to_DOFs.ptrs[_DOF]] == _DOF "Rcursive constraints not allowed now"
       DOF_to_ismaster[_DOF] = true
+    end
   end
   n_fmdofs = 0
   for DOF in 1:n_fdofs
@@ -140,7 +147,7 @@ end
 function _setup_cell_to_lmdof_to_mdof(cell_to_ldof_to_dof,DOF_to_mDOFs,n_fdofs,n_fmdofs)
 
   n_cells = length(cell_to_ldof_to_dof)
-  cell_to_lmdof_to_mdof_ptrs = zeros(eltype(cell_to_ldof_to_dof.ptrs),n_cells)
+  cell_to_lmdof_to_mdof_ptrs = zeros(eltype(cell_to_ldof_to_dof.ptrs),n_cells+1)
 
   for cell in 1:n_cells
     mdofs = Set{Int}()
@@ -149,8 +156,8 @@ function _setup_cell_to_lmdof_to_mdof(cell_to_ldof_to_dof,DOF_to_mDOFs,n_fdofs,n
     for p in pini:pend
       dof = cell_to_ldof_to_dof.data[p]
       DOF = _dof_to_DOF(dof,n_fdofs)
-      qini = DOF_to_mDOFs.ptrs[fdof]
-      qend = DOF_to_mDOFs.ptrs[fdof+1]-1
+      qini = DOF_to_mDOFs.ptrs[DOF]
+      qend = DOF_to_mDOFs.ptrs[DOF+1]-1
       for q in qini:qend
         mDOF = DOF_to_mDOFs.data[q]
         mdof = _DOF_to_dof(mDOF,n_fmdofs)
@@ -171,8 +178,8 @@ function _setup_cell_to_lmdof_to_mdof(cell_to_ldof_to_dof,DOF_to_mDOFs,n_fdofs,n
     for p in pini:pend
       dof = cell_to_ldof_to_dof.data[p]
       DOF = _dof_to_DOF(dof,n_fdofs)
-      qini = DOF_to_mDOFs.ptrs[fdof]
-      qend = DOF_to_mDOFs.ptrs[fdof+1]-1
+      qini = DOF_to_mDOFs.ptrs[DOF]
+      qend = DOF_to_mDOFs.ptrs[DOF+1]-1
       for q in qini:qend
         mDOF = DOF_to_mDOFs.data[q]
         mdof = _DOF_to_dof(mDOF,n_fmdofs)
@@ -223,63 +230,161 @@ end
 
 num_dirichlet_tags(f::FESpaceWithLinearConstraints) = num_dirichlet_tags(f.space)
 
-get_dirichlet_dof_tag(f::FESpaceWithLinearConstraints) = get_dirichlet_dof_tag(f.space)
+function get_dirichlet_dof_tag(f::FESpaceWithLinearConstraints)
+  ddof_to_tag = get_dirichlet_dof_tag(f.space)
+  dmdof_to_tag = zeros(eltype(ddof_to_tag),num_dirichlet_dofs(f))
+  _setup_ddof_to_tag!(
+    dmdof_to_tag,
+    ddof_to_tag,
+    f.mDOF_to_DOF,
+    f.n_fdofs,
+    f.n_fmdofs)
+  dmdof_to_tag
+end
+
+function _setup_ddof_to_tag!(
+  dmdof_to_tag,
+  ddof_to_tag,
+  mDOF_to_DOF,
+  n_fdofs,
+  n_fmdofs)
+
+  for mDOF in (n_fmdofs+1):length(mDOF_to_DOF)
+    mdof = _DOF_to_dof(mDOF,n_fmdofs)
+    @assert mdof < 0 "Dirichlet dofs can only depend on Dirichlet dofs"
+    dmdof = -mdof
+    DOF = mDOF_to_DOF[mDOF]
+    dof = _DOF_to_dof(DOF,n_fdofs)
+    @assert dof < 0 "Dirichlet dofs can only depend on Dirichlet dofs"
+    ddof = -dof
+    dmdof_to_tag[dmdof] = ddof_to_tag[ddof]
+  end
+end
+
+function get_dirichlet_values(f::FESpaceWithLinearConstraints)
+  ddof_to_tag = get_dirichlet_values(f.space)
+  dmdof_to_tag = zeros(eltype(ddof_to_tag),num_dirichlet_dofs(f))
+  _setup_ddof_to_tag!(
+    dmdof_to_tag,
+    ddof_to_tag,
+    f.mDOF_to_DOF,
+    f.n_fdofs,
+    f.n_fmdofs)
+  dmdof_to_tag
+end
 
 function scatter_free_and_dirichlet_values(f::FESpaceWithLinearConstraints,fmdof_to_val,dmdof_to_val)
   fdof_to_val = zero_free_values(eltype(fmdof_to_val),f.space)
   ddof_to_val = zero_dirichlet_values(f.space)
-  _setup_dof_to_val_and_mdof_to_val!(fdof_to_val,mdof_to_val,ddof_to_val,fdof_to_mddofs,fdof_to_coeffs)
+  _setup_dof_to_val!(
+    fdof_to_val,
+    ddof_to_val,
+    fmdof_to_val,
+    dmdof_to_val,
+    f.DOF_to_mDOFs,
+    f.DOF_to_coeffs,
+    f.n_fdofs,
+    f.n_fmdofs)
   scatter_free_and_dirichlet_values(f.space,fdof_to_val,ddof_to_val)
 end
 
-function _setup_dof_to_val_and_mdof_to_val!(
-  fdof_to_val,ddof_to_val,DOF_to_mDOFs,n_fmdofs)
+function _setup_dof_to_val!(
+  fdof_to_val,
+  ddof_to_val,
+  fmdof_to_val,
+  dmdof_to_val,
+  DOF_to_mDOFs,
+  DOF_to_coeffs,
+  n_fdofs,
+  n_fmdofs)
 
+  T = eltype(fdof_to_val)
 
+  for DOF in 1:length(DOF_to_mDOFs)
+    pini = DOF_to_mDOFs.ptrs[DOF]
+    pend = DOF_to_mDOFs.ptrs[DOF+1]-1
+    val = zero(T)
+    for p in pini:pend
+      mDOF = DOF_to_mDOFs.data[p]
+      coeff = DOF_to_coeffs.data[p]
+      mdof = _DOF_to_dof(mDOF,n_fmdofs)
+      if mdof > 0
+        fmdof = mdof
+        val += fmdof_to_val[fmdof]*coeff
+      else
+        dmdof = -mdof
+        val += dmdof_to_val[dmdof]*coeff
+      end
+    end
+    dof = _DOF_to_dof(DOF,n_fdofs)
+    if dof > 0
+      fdof = dof
+      fdof_to_val[fdof] = val
+    else
+      ddof = -dof
+      ddof_to_val[ddof] = val
+    end
+  end
 
 end
 
+function gather_free_and_dirichlet_values(f::FESpaceWithLinearConstraints,cell_to_ludof_to_val)
+  fdof_to_val, ddof_to_val = gather_free_and_dirichlet_values(f.space,cell_to_ludof_to_val)
+  fmdof_to_val = zero_free_values(eltype(fdof_to_val),f)
+  dmdof_to_val = zero_dirichlet_values(f)
+  _setup_mdof_to_val!(
+    fmdof_to_val,
+    dmdof_to_val,
+    fdof_to_val,
+    ddof_to_val,
+    f.mDOF_to_DOF,
+    f.n_fdofs,
+    f.n_fmdofs)
+  fmdof_to_val, dmdof_to_val
+end
 
+function _setup_mdof_to_val!(
+  fmdof_to_val,
+  dmdof_to_val,
+  fdof_to_val,
+  ddof_to_val,
+  mDOF_to_DOF,
+  n_fdofs,
+  n_fmdofs)
 
+  for mDOF in 1:length(mDOF_to_DOF)
+    DOF = mDOF_to_DOF[mDOF]
+    dof = _DOF_to_dof(DOF,n_fdofs)
+    if dof > 0
+      fdof = dof
+      val = fdof_to_val[fdof]
+    else
+      ddof = -dof
+      val = ddof_to_val[ddof]
+    end
+    mdof = _DOF_to_dof(mDOF,n_fmdofs)
+    if mdof > 0
+      fmdof = mdof
+      fmdof_to_val[fmdof] = val
+    else
+      dmdof = -mdof
+      dmdof_to_val[dmdof] = val
+    end
+  end
 
+end
 
-
-
+# Implementation of FESpace interface
 
 num_free_dofs(f::FESpaceWithLinearConstraints) = f.n_fmdofs
-
-
-function zero_free_values(::Type{T},f::FESpaceWithLinearConstraints) where T
-  zeros(T,num_free_dofs(f))
-end
-
-
-
-
-
-
-
-
-function scatter_free_and_dirichlet_values(f::FESpaceWithLinearConstraints,mvals,dvals)
-  mdof_to_val = mvals
-  ddof_to_val = dvals
-  fdof_to_mddofs = f.fdof_to_mddofs
-  fdof_to_coeffs = f.dof_to_coeffs
-  fdof_to_val = zero_free_values(eltype(mvals),f.space)
-  _setup_fdof_to_val!(fdof_to_val,mdof_to_val,ddof_to_val,fdof_to_mddofs,fdof_to_coeffs)
-  scatter_free_and_dirichlet_values(f.space,fdof_to_val,ddof_to_val)
-end
-
-function gather_free_and_dirichlet_values(f::FESpaceWithLinearConstraints,cv)
-  fdof_to_val, ddof_to_val = gather_free_and_dirichlet_values(f.space,cv)
-  mdof_to_val = fdof_to_val[f.mdof_to_fdof]
-  mdof_to_val, ddof_to_val
-end
 
 function get_cell_basis(f::FESpaceWithLinearConstraints)
   get_cell_basis(f.space)
 end
 
+function zero_free_values(::Type{T},f::FESpaceWithLinearConstraints) where T
+  zeros(T,num_free_dofs(f))
+end
 
 constraint_style(::Type{<:FESpaceWithLinearConstraints}) = Val{true}()
 
@@ -293,83 +398,76 @@ end
 
 function get_constraint_kernel_vector(f::FESpaceWithLinearConstraints)
   k_space = get_constraint_kernel_vector(f.space)
-  k = LinearConstraintsVectorKernel(f.cell_to_lmdof_to_ldofs_and_coeffs,k_space)
+  LinearConstraintsVectorKernel(
+    f.cell_to_lmdof_to_mdof,
+    f.cell_to_ldof_to_dof,
+    f.DOF_to_mDOFs,
+    f.DOF_to_coeffs,
+    k_space,
+    length(f.mDOF_to_DOF),
+    f.n_fmdofs,
+    f.n_fdofs)
 end
 
-struct LinearConstraintsVectorKernel{A,B} <: Kernel
-  cell_to_lmdof_to_ldofs_and_coeffs::A
-  k_space::B
+struct LinearConstraintsVectorKernel{A,B,C} <: Kernel
+  cell_to_lmdof_to_mdof::A
+  cell_to_ldof_to_dof::A
+  DOF_to_mDOFs::A
+  DOF_to_coeffs::B
+  k_space::C
+  n_mDOFs::Int
+  n_fmdofs::Int
+  n_fdofs::Int
 end
 
-function kernel_cache(k::LinearConstraintsVectorKernel,vec::AbstractVector,cellid::Integer)
-  a = array_cache(k.cell_to_lmdof_to_ldofs_and_coeffs)
-  b = kernel_cache(k.k_space,vec,cellid)
-  ldof_to_v = apply_kernel!(b,k.k_space,vec,cellid)
-  c = CachedArray(copy(ldof_to_v))
-  a,b,c
+function kernel_cache(k::LinearConstraintsVectorKernel,ludof_to_val::AbstractVector,cellid::Integer)
+  a = kernel_cache(k.k_space, ludof_to_val, cellid)
+  ldof_to_val = apply_kernel!(a, k.k_space, ludof_to_val, cellid)
+  b = CachedArray(copy(ldof_to_val))
+  mDOF_to_lmdof = zeros(Int8,length(k.n_mDOFs))
+  a, b, mDOF_to_lmdof
 end
 
-function kernel_return_type(k::LinearConstraintsVectorKernel,vec::AbstractVector,cellid::Integer)
-  kernel_return_type(k.k_space,vec,cellid)
+function kernel_return_type(k::LinearConstraintsVectorKernel,ludof_to_val::AbstractVector,cellid::Integer)
+  kernel_return_type(k.k_space,ludof_to_val,cellid)
 end
 
-@inline function apply_kernel!(cache,k::LinearConstraintsVectorKernel,vec::AbstractVector,cellid::Integer)
-  a, b, c = cache
-  ldof_to_v = apply_kernel!(b,k.k_space,vec,cellid)
-  lmdof_to_ldofs_and_coeffs = getindex!(a,k.cell_to_lmdof_to_ldofs_and_coeffs,cellid)
-  num_lmdofs = length(lmdof_to_ldofs_and_coeffs)
-  setsize!(c,(num_lmdofs,))
-  lmdof_to_v = c.array
-  fill!(lmdof_to_v,zero(eltype(lmdof_to_v)))
-  for lmdof in 1:num_lmdofs
-    for ldof, coeff in lmdof_to_ldofs_and_coeffs[lmdof]
-      lmdof_to_v[lmdof] += ldof_to_v[ldof]*coeff
+@inline function apply_kernel!(
+  cache,k::LinearConstraintsVectorKernel,ludof_to_val::AbstractVector,cellid::Integer)
+
+  a, b, mDOF_to_lmdof = cache
+
+  ldof_to_val = apply_kernel!(a, k.k_space, ludof_to_val, cellid)
+
+  pini = k.cell_to_lmdof_to_mdof.ptrs[cellid]
+  pend = k.cell_to_lmdof_to_mdof.ptrs[cellid+1]-1
+  for (lmdof,p) in enumerate(pini:pend)
+    mdof = k.cell_to_lmdof_to_mdof.data[p]
+    mDOF = _dof_to_DOF(mdof,k.n_fmdofs)
+    mDOF_to_lmdof[mDOF] = lmdof
+  end
+
+  n_lmdofs = length(pini:pend)
+  setsize!(b,(n_lmdofs,))
+  lmdof_to_val = b.array
+  fill!(lmdof_to_val,zero(eltype(lmdof_to_val)))
+
+  pini = k.cell_to_ldof_to_dof.ptrs[cellid]
+  pend = k.cell_to_ldof_to_dof.ptrs[cellid+1]-1
+  for (ldof,p) in enumerate(pini:pend)
+    val = ldof_to_val[ldof]
+    dof = k.cell_to_ldof_to_dof.data[p]
+    DOF = _dof_to_DOF(dof,k.n_fdofs)
+    qini = k.DOF_to_mDOFs.ptrs[DOF]
+    qend = k.DOF_to_mDOFs.ptrs[DOF+1]-1
+    for q in qini:qend
+      mDOF = k.DOF_to_mDOFs.data[q]
+      coeff = k.DOF_to_coeffs.data[q]
+      lmdof = mDOF_to_lmdof[mDOF]
+      lmdof_to_val[lmdof] += coeff*val
     end
   end
-  lmdof_to_v
+
+  lmdof_to_val
 end
-
-@inline function apply_kernel!(cache,k::LinearConstraintsVectorKernel,vec::AbstractVector,cellid::Integer)
-  # prepare the map fmdof_to_lmdof and dmdof_to_lmdof
-  a = k.cell_ldof_to_dofs.ptrs[cellid]-1
-  for ldof in 1:n_ldofs
-    dof = k.cell_ldof_to_dofs.data[a+ldof]
-    if dof > 0
-      fdof = dof
-      pini = k.fdof_to_mdofs.ptrs[fdof]
-      pend = k.fdof_to_mdofs.ptrs[fdof+1]-1
-      for p in pini:pend
-        mdof = k.fdof_to_mdofs.data[p]
-        if mddof>0
-        else
-        end
-      end
-    else
-      ddof = -dof
-    end
-
-  end
-end
-
-# Helpers
-
-function _setup_fdof_to_val!(fdof_to_val,mdof_to_val,ddof_to_val,fdof_to_mddofs,fdof_to_coeffs)
-  for fdof in 1:length(fdof_to_val)
-    pini = fdof_to_mddofs.ptrs[fdof]
-    pend = fdof_to_mddofs.ptrs[fdof+1]-1
-    for p in pini:pend
-      mddof = fdof_to_mddofs.data[p]
-      coeff = fdof_to_coeffs.data[p]
-      if mddof > 0
-        mdof = mddof
-        val = mdof_to_val[mdof]
-      else
-        ddof = -mddof
-        val = ddof_to_val[ddof]
-      end
-      fdof_to_val[fdof] += val*coeff
-    end
-  end
-end
-
 
