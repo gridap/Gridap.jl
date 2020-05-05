@@ -20,7 +20,7 @@ get_vector(op::AffineOperator) = op.vector
 
 function residual!(b::AbstractVector,op::AffineOperator,x::AbstractVector)
   mul!(b,op.matrix,x)
-  b .-=  op.vector
+  add_entries!(b,op.vector,-)
   b
 end
 
@@ -36,6 +36,7 @@ end
 function zero_initial_guess(op::AffineOperator)
   x = allocate_in_domain(typeof(op.vector),op.matrix)
   fill_entries!(x,zero(eltype(x)))
+  x
 end
 
 function allocate_residual(op::AffineOperator,x::AbstractVector)
@@ -151,12 +152,12 @@ function solve!(x::AbstractVector,
                 ls::LinearSolver,
                 op::NonlinearOperator,
                 cache::Nothing)
-  x .= zero(eltype(x))
+  fill_entries!(x,zero(eltype(x)))
   b = residual(op, x)
   A = jacobian(op, x)
   ss = symbolic_setup(ls, A)
   ns = numerical_setup(ss,A)
-  broadcast!(*,b,b,-1)
+  scale_entries!(b,-1)
   solve!(x,ns,b)
   LinearSolverCache(A,b,ns)
 end
@@ -165,13 +166,13 @@ function solve!(x::AbstractVector,
                 ls::LinearSolver,
                 op::NonlinearOperator,
                 cache)
-  x .= zero(eltype(x))
+  fill_entries!(x,zero(eltype(x)))
   b = cache.b
   A = cache.A
   ns = cache.ns
   residual!(b, op, x)
   numerical_setup!(ns,A)
-  broadcast!(*,b,b,-1)
+  scale_entries!(b,-1)
   solve!(x,ns,b)
   cache
 end
@@ -238,7 +239,8 @@ end
 function solve!(
   x::AbstractVector,ns::LUNumericalSetup,b::AbstractVector)
   y = ns.factors\b # the allocation of y can be avoided
-  x .= y
+  copy_entries!(x,y)
+  x
 end
 
 """
@@ -265,5 +267,6 @@ end
 
 function solve!(
   x::AbstractVector,ns::BackslashNumericalSetup,b::AbstractVector)
-   copyto!(x, ns.A\b)
+  copy_entries!(x, ns.A\b)
 end
+
