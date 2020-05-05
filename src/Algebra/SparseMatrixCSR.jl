@@ -163,8 +163,8 @@ function findnz(S::SparseMatrixCSR{Bi,Tv,Ti}) where {Bi,Tv,Ti}
     return (I, J, V)
 end
 
-function sparse_from_coo(M::Type{<:SparseMatrixCSR}, args...)
-  sparsecsr(M, args...)
+function sparse_from_coo(M::Type{<:SparseMatrixCSR}, I,J,V,m,n)
+  sparsecsr(M, I,J,V,m,n)
 end
 
 function push_coo!(::Type{<:SparseMatrixCSR},

@@ -9,16 +9,7 @@ function sparse_from_coo(::Type{T} where T,I,J,V,m,n)
 end
 
 """
-    add_entry!(A,v,i,j,combine=+)
-
-Add an entry given its position and the operation to perform.
-"""
-function add_entry!(A,v,i,j,combine=+)
-  @abstractmethod
-end
-
-"""
-    fill_entry!(A::AbstractSparseMatrix,v)
+    fill_entries!(A::AbstractSparseMatrix,v)
 
 Fills the non-zero entries in the sparse matrix A with a given value v.
 """

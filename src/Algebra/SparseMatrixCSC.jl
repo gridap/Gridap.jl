@@ -1,6 +1,6 @@
 
-function sparse_from_coo(::Type{<:SparseMatrixCSC}, args...)
-  sparse(args...)
+function sparse_from_coo(::Type{<:SparseMatrixCSC}, I,J,V,m,n)
+  sparse(I,J,V,m,n)
 end
 
 @inline function push_coo!(

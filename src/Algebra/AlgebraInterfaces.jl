@@ -8,8 +8,12 @@ function allocate_matrix_and_vector end
 Allocate a vector of type `V` indexable at the incides `indices`
 """
 function allocate_vector(::Type{V},indices) where V
-  T = eltype(V)
   n = length(indices)
+  allocate_vector(V,n)
+end
+
+function allocate_vector(::Type{V},n::Integer) where V
+  T = eltype(V)
   zeros(T,n)
 end
 
@@ -19,8 +23,8 @@ end
 Allocate a vector of type `V` in the range of matrix `matrix`.
 """
 function allocate_in_range(::Type{V},matrix) where V
-  indices = 1:size(matrix,1)
-  allocate_vector(V,indices)
+  n = size(matrix,1)
+  allocate_vector(V,n)
 end
 
 """
@@ -29,8 +33,8 @@ end
 Allocate a vector of type `V` in the domain of matrix `matrix`.
 """
 function allocate_in_domain(::Type{V},matrix) where V
-  indices = 1:size(matrix,2)
-  allocate_vector(V,indices)
+  n = size(matrix,2)
+  allocate_vector(V,n)
 end
 
 """
@@ -67,6 +71,26 @@ function add_entries!(a,b,combine=+)
     a[i] = combine(a[i],b[i])
   end
   a
+end
+
+"""
+    add_entry!(A,v,i,j,combine=+)
+
+Add an entry given its position and the operation to perform.
+"""
+function add_entry!(A,v,i::Integer,j::Integer,combine=+)
+  aij = A[i,j]
+  A[i,j] = combine(aij,v)
+end
+
+"""
+    add_entry!(A,v,i,combine=+)
+
+Add an entry given its position and the operation to perform.
+"""
+function add_entry!(A,v,i::Integer,combine=+)
+  ai = A[i]
+  A[i] = combine(ai,v)
 end
 
 """

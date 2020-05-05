@@ -3,6 +3,10 @@ module AlgebraInterfacesTests
 using Gridap.Algebra
 using Test
 
+a = allocate_vector(Vector{Int},10)
+@test isa(a,Vector{Int})
+@test length(a) == 10
+
 a = allocate_vector(Vector{Int},1:10)
 @test isa(a,Vector{Int})
 @test length(a) == 10
