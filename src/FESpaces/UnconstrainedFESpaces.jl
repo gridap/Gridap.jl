@@ -54,8 +54,8 @@ function get_cell_basis(f::UnconstrainedFESpace)
   f.cell_basis
 end
 
-function zero_free_values(::Type{T},f::UnconstrainedFESpace) where T
-  zeros(T,num_free_dofs(f))
+function zero_free_values(f::UnconstrainedFESpace)
+  zeros(num_free_dofs(f))
 end
 
 # SingleFieldFESpace interface
@@ -77,8 +77,7 @@ function num_dirichlet_tags(f::UnconstrainedFESpace)
 end
 
 function zero_dirichlet_values(f::UnconstrainedFESpace)
-  T = Float64 # TODO
-  zeros(T,num_dirichlet_dofs(f))
+  zeros(num_dirichlet_dofs(f))
 end
 
 function get_dirichlet_dof_tag(f::UnconstrainedFESpace)

@@ -95,7 +95,7 @@ get_cell_dof_basis(f::ZeroMeanFESpace) = get_cell_dof_basis(f.space)
 
 num_free_dofs(f::ZeroMeanFESpace) = num_free_dofs(f.space)
 
-zero_free_values(::Type{T},f::ZeroMeanFESpace) where T = zero_free_values(T,f.space)
+zero_free_values(f::ZeroMeanFESpace) = zero_free_values(f.space)
 
 get_cell_dofs(f::ZeroMeanFESpace) = get_cell_dofs(f.space)
 

@@ -161,8 +161,6 @@ function residual_and_jacobian(op::AlgebraicOpFromFEOp,x::AbstractVector)
 end
 
 function zero_initial_guess(op::AlgebraicOpFromFEOp)
-  # TODO
-  T = Float64
   trial = get_trial(op.feop)
-  x = zero_free_values(T,trial)
+  x = zero_free_values(trial)
 end
