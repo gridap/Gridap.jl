@@ -69,11 +69,11 @@ end
 # Helpers
 
 function _fill_cartesian_face_labeling!(labels,topo)
-  _fill_cartesian_entitties!(labels,topo)
+  _fill_cartesian_entities!(labels,topo)
   _add_cartesian_tags!(labels,topo)
 end
 
-function _fill_cartesian_entitties!(labels,topo)
+function _fill_cartesian_entities!(labels,topo)
   D = num_cell_dims(topo)
   d_to_dface_to_entity = labels.d_to_dface_to_entity
   polytope = first(get_polytopes(topo))
