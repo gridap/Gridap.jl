@@ -3,7 +3,7 @@
 
 - [`residual!(b::AbstractVector,op::NonlinearOperator,x::AbstractVector)`](@ref)
 - [`jacobian!(A::AbstractMatrix,op::NonlinearOperator,x::AbstractVector)`](@ref)
-- [`zero_initial_guess(::Type{T},op::NonlinearOperator) where T`](@ref)
+- [`zero_initial_guess(op::NonlinearOperator)`](@ref)
 - [`allocate_residual(op::NonlinearOperator,x::AbstractVector)`](@ref)
 - [`allocate_jacobian(op::NonlinearOperator,x::AbstractVector)`](@ref)
 
@@ -64,17 +64,10 @@ function residual_and_jacobian(op::NonlinearOperator,x::AbstractVector)
 end
 
 """
-    zero_initial_guess(::Type{T},op::NonlinearOperator) where T
-"""
-function zero_initial_guess(::Type{T},op::NonlinearOperator) where T
-  @abstractmethod
-end
-
-"""
     zero_initial_guess(op::NonlinearOperator)
 """
 function zero_initial_guess(op::NonlinearOperator)
-  zero_initial_guess(Float64,op)
+  @abstractmethod
 end
 
 """
@@ -120,8 +113,6 @@ function test_nonlinear_operator(
   @test pred(b,b1)
 
   x0 = zero_initial_guess(op)
-  x0 = zero_initial_guess(Int,op)
-  @assert eltype(x0) == Int
 
   if jac != nothing
     nrows, ncols = size(jac)
@@ -156,15 +147,16 @@ function jacobian!(A::AbstractMatrix,::NonlinearOperatorMock,x::AbstractVector)
   A[2,2] = 1
 end
 
-function zero_initial_guess(::Type{T},op::NonlinearOperatorMock) where T
-  x = T[]
-  allocate_residual(op,x)
+function zero_initial_guess(op::NonlinearOperatorMock)
+  x = allocate_residual(op,Float64[])
+  fill!(x,zero(eltype(x)))
+  x
 end
 
 function allocate_residual(op::NonlinearOperatorMock,x::AbstractVector)
   T = eltype(x)
   n = 2
-  zeros(T,n)
+  similar(x,T,n)
 end
 
 function allocate_jacobian(op::NonlinearOperatorMock,x::AbstractVector)

@@ -33,13 +33,13 @@ function jacobian(op::AffineOperator,x::AbstractVector)
   op.matrix
 end
 
-function zero_initial_guess(::Type{T},op::AffineOperator) where T
-  n = size(op.matrix,2)
-  zeros(T,n)
+function zero_initial_guess(op::AffineOperator)
+  x = allocate_in_domain(typeof(op.vector),op.matrix)
+  fill_entries!(x,zero(eltype(x)))
 end
 
 function allocate_residual(op::AffineOperator,x::AbstractVector)
-  similar(x,eltype(x),length(op.vector))
+  allocate_in_range(typeof(op.vector),op.matrix)
 end
 
 function allocate_jacobian(op::AffineOperator,x::AbstractVector)
