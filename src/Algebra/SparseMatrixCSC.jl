@@ -61,7 +61,7 @@ function _copy_entries_sparse!(a,b)
   na = nonzeros(a)
   nb = nonzeros(b)
   if na !== nb
-    _copy!(na,nb)
+    copyto!(na,nb)
   end
 end
 

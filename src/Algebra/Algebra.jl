@@ -13,6 +13,17 @@ using Test
 
 using Gridap.Helpers
 
+import Base: convert, size, getindex, show, count, *
+import LinearAlgebra: mul!
+import SparseArrays: nnz, nonzeros, nzrange, findnz, rowvals
+
+export allocate_vector
+export allocate_in_domain
+export allocate_in_range
+export add_entries!
+export scale_entries!
+export muladd!
+
 export push_coo!
 export is_entry_stored
 export finalize_coo!
@@ -71,11 +82,17 @@ export get_vector
 export SparseMatrixCSR
 export SymSparseMatrixCSR
 
-include("MethodsAbstractMatrices.jl")
+include("AlgebraInterfaces.jl")
 
 include("SparseMatrices.jl")
 
 include("CompressedSparseMatrices.jl")
+
+include("SparseMatrixCSC.jl")
+
+include("SparseMatrixCSR.jl")
+
+include("SymSparseMatrixCSR.jl")
 
 include("NonlinearOperators.jl")
 
