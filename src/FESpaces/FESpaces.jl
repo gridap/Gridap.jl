@@ -74,6 +74,9 @@ import Gridap.Algebra: get_matrix
 import Gridap.Algebra: get_vector
 import Gridap.Algebra: solve!
 import Gridap.Algebra: solve
+import Gridap.Algebra: allocate_vector
+import Gridap.Algebra: allocate_matrix
+import Gridap.Algebra: allocate_matrix_and_vector
 
 export FEFunctionStyle
 export is_a_fe_function
@@ -102,16 +105,16 @@ export test_fe_space
 export Assembler
 export get_test
 export get_trial
-export allocate_matrix
 export assemble_matrix!
 export assemble_matrix_add!
 export assemble_matrix
-export allocate_vector
 export assemble_vector!
 export assemble_vector
-export allocate_matrix_and_vector
 export assemble_matrix_and_vector!
 export assemble_matrix_and_vector
+export allocate_vector
+export allocate_matrix
+export allocate_matrix_and_vector
 export test_assembler
 
 export SingleFieldFESpace

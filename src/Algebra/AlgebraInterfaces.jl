@@ -1,4 +1,7 @@
 
+function allocate_matrix end
+function allocate_matrix_and_vector end
+
 """
     allocate_vector(::Type{V},indices) where V
 
