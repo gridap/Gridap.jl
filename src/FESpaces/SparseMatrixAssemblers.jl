@@ -1,5 +1,5 @@
 
-struct SparseMatrixAssembler{M,V} <: Assembler
+struct SingleFieldSparseMatrixAssembler{M,V} <: SparseMatrixAssembler
   matrix_type::Type{M}
   vector_type::Type{V}
   trial::SingleFieldFESpace
@@ -7,14 +7,19 @@ struct SparseMatrixAssembler{M,V} <: Assembler
   strategy::AssemblyStrategy
 end
 
+function SparseMatrixAssembler(
+  mat::Type,vec::Type,trial::SingleFieldFESpace,test::SingleFieldFESpace,strategy::AssemblyStrategy)
+  SingleFieldSparseMatrixAssembler(mat,vec,trial,test,strategy)
+end
+
 function SparseMatrixAssembler(mat::Type,vec::Type,trial::SingleFieldFESpace,test::SingleFieldFESpace)
   strategy = DefaultAssemblyStrategy()
-  SparseMatrixAssembler(mat,vec,trial,test,strategy)
+  SingleFieldSparseMatrixAssembler(mat,vec,trial,test,strategy)
 end
 
 function SparseMatrixAssembler(mat::Type,trial::SingleFieldFESpace,test::SingleFieldFESpace)
   strategy = DefaultAssemblyStrategy()
-  SparseMatrixAssembler(mat,Vector{Float64},trial,test,strategy)
+  SingleFieldSparseMatrixAssembler(mat,Vector{Float64},trial,test,strategy)
 end
 
 """
@@ -23,27 +28,20 @@ function SparseMatrixAssembler(trial::SingleFieldFESpace,test::SingleFieldFESpac
   matrix_type = SparseMatrixCSC{Float64,Int}
   vector_type = Vector{Float64}
   strategy = DefaultAssemblyStrategy()
-  SparseMatrixAssembler(matrix_type,vector_type,trial,test,strategy)
+  SingleFieldSparseMatrixAssembler(matrix_type,vector_type,trial,test,strategy)
 end
 
-get_test(a::SparseMatrixAssembler) = a.test
+get_test(a::SingleFieldSparseMatrixAssembler) = a.test
 
-get_trial(a::SparseMatrixAssembler) = a.trial
+get_trial(a::SingleFieldSparseMatrixAssembler) = a.trial
 
-get_assembly_strategy(a::SparseMatrixAssembler) = a.strategy
+get_matrix_type(a::SingleFieldSparseMatrixAssembler) = a.matrix_type
 
-function allocate_vector(a::SparseMatrixAssembler,term_to_cellidsrows)
-  n = num_free_dofs(a.test)
-  allocate_vector(a.vector_type,n)
-end
+get_vector_type(a::SingleFieldSparseMatrixAssembler) = a.vector_type
 
-function assemble_vector!(b,a::SparseMatrixAssembler,term_to_cellvec,term_to_cellidsrows)
-  fill_entries!(b,zero(eltype(b)))
-  assemble_vector_add!(b,a,term_to_cellvec,term_to_cellidsrows)
-end
+get_assembly_strategy(a::SingleFieldSparseMatrixAssembler) = a.strategy
 
-#TODO corresponding abstract method
-function assemble_vector_add!(b,a::SparseMatrixAssembler,term_to_cellvec,term_to_cellidsrows)
+function assemble_vector_add!(b,a::SingleFieldSparseMatrixAssembler,term_to_cellvec,term_to_cellidsrows)
   celldofs = get_cell_dofs(a.test)
   for (cellvec, cellids) in zip(term_to_cellvec,term_to_cellidsrows)
     rows = reindex(celldofs,cellids)
@@ -69,13 +67,7 @@ function _assemble_vector!(vec,vals_cache,rows_cache,cell_vals,cell_rows,strateg
   end
 end
 
-#TODO
-function count_matrix_nnz_coo(a::Assembler,term_to_cellmat,term_to_cellidsrows, term_to_cellidscols)
-  count_matrix_nnz_coo(a,term_to_cellidsrows, term_to_cellidscols)
-end
-
-#TODO
-function count_matrix_nnz_coo(a::SparseMatrixAssembler,term_to_cellidsrows, term_to_cellidscols)
+function count_matrix_nnz_coo(a::SingleFieldSparseMatrixAssembler,term_to_cellidsrows, term_to_cellidscols)
   celldofs_rows = get_cell_dofs(a.test)
   celldofs_cols = get_cell_dofs(a.trial)
   n = 0
@@ -113,13 +105,7 @@ end
   n
 end
 
-#TODO
-function fill_matrix_coo_symbolic!(I,J,a::Assembler,term_to_cellmat,term_to_cellidsrows, term_to_cellidscols)
-  fill_matrix_coo_symbolic!(I,J,a,term_to_cellidsrows, term_to_cellidscols)
-end
-
-#TODO
-function fill_matrix_coo_symbolic!(I,J,a::SparseMatrixAssembler,term_to_cellidsrows, term_to_cellidscols)
+function fill_matrix_coo_symbolic!(I,J,a::SingleFieldSparseMatrixAssembler,term_to_cellidsrows, term_to_cellidscols)
   celldofs_rows = get_cell_dofs(a.test)
   celldofs_cols = get_cell_dofs(a.trial)
   nini = 0
@@ -156,26 +142,8 @@ end
   n
 end
 
-# TODO Perhapswe can move this to the abstract interface
-function allocate_matrix(a::SparseMatrixAssembler,term_to_cellidsrows, term_to_cellidscols)
-  n = count_matrix_nnz_coo(a,term_to_cellidsrows,term_to_cellidscols)
-  I,J,V = allocate_coo_vectors(a.matrix_type,n)
-  fill_matrix_coo_symbolic!(I,J,a,term_to_cellidsrows,term_to_cellidscols)
-  m = num_free_dofs(a.test)
-  n = num_free_dofs(a.trial)
-  finalize_coo!(a.matrix_type,I,J,V,m,n)
-  sparse_from_coo(a.matrix_type,I,J,V,m,n)
-end
-
-function assemble_matrix!(
-  mat,a::SparseMatrixAssembler, term_to_cellmat, term_to_cellidsrows, term_to_cellidscols)
-  z = zero(eltype(mat))
-  fill_entries!(mat,z)
-  assemble_matrix_add!(mat,a,term_to_cellmat,term_to_cellidsrows,term_to_cellidscols)
-end
-
 function assemble_matrix_add!(
-  mat,a::SparseMatrixAssembler, term_to_cellmat, term_to_cellidsrows, term_to_cellidscols)
+  mat,a::SingleFieldSparseMatrixAssembler, term_to_cellmat, term_to_cellidsrows, term_to_cellidscols)
 
   celldofs_rows = get_cell_dofs(a.test)
   celldofs_cols = get_cell_dofs(a.trial)
@@ -214,20 +182,8 @@ function _assemble_matrix!(mat,vals_cache,rows_cache,cols_cache,cell_vals,cell_r
   end
 end
 
-function assemble_matrix(
-  a::SparseMatrixAssembler, term_to_cellmat, term_to_cellidsrows, term_to_cellidscols)
-
-  n = count_matrix_nnz_coo(a,term_to_cellidsrows,term_to_cellidscols)
-  I,J,V = allocate_coo_vectors(a.matrix_type,n)
-  fill_matrix_coo_numeric!(I,J,V,a,term_to_cellmat,term_to_cellidsrows,term_to_cellidscols)
-  m = num_free_dofs(a.test)
-  n = num_free_dofs(a.trial)
-  finalize_coo!(a.matrix_type,I,J,V,m,n)
-  sparse_from_coo(a.matrix_type,I,J,V,m,n)
-end
-
 function fill_matrix_coo_numeric!(
-  I,J,V,a::SparseMatrixAssembler,term_to_cellmat,term_to_cellidsrows, term_to_cellidscols,n=0)
+  I,J,V,a::SingleFieldSparseMatrixAssembler,term_to_cellmat,term_to_cellidsrows, term_to_cellidscols,n=0)
 
   nini = n
   celldofs_rows = get_cell_dofs(a.test)
@@ -275,15 +231,8 @@ end
   n
 end
 
-function assemble_matrix_and_vector!(A,b,a::SparseMatrixAssembler, matvecdata, matdata, vecdata)
-  fill_entries!(A,zero(eltype(A)))
-  fill_entries!(b,zero(eltype(b)))
-  assemble_matrix_and_vector_add!(A,b,a,matvecdata, matdata, vecdata)
-  A, b
-end
-
 function assemble_matrix_and_vector_add!(
-  A,b,a::SparseMatrixAssembler, matvecdata, matdata, vecdata)
+  A,b,a::SingleFieldSparseMatrixAssembler, matvecdata, matdata, vecdata)
 
   celldofs_rows = get_cell_dofs(a.test)
   celldofs_cols = get_cell_dofs(a.trial)
@@ -333,24 +282,7 @@ function _assemble_matrix_and_vector!(A,b,vals_cache,rows_cache,cols_cache,cell_
   end
 end
 
-function assemble_matrix_and_vector( a::SparseMatrixAssembler, matvecdata, matdata, vecdata)
-
-  term_to_cellidsrows, term_to_cellidscols,  =  _rearange_cell_ids(matvecdata,matdata,vecdata)
-  n = count_matrix_nnz_coo(a,term_to_cellidsrows,term_to_cellidscols)
-  I,J,V = allocate_coo_vectors(a.matrix_type,n)
-  b = allocate_vector(a,vecdata...)
-
-  fill_matrix_and_vector_coo_numeric!(I,J,V,b,a, matvecdata, matdata, vecdata)
-
-  m = num_free_dofs(a.test)
-  n = num_free_dofs(a.trial)
-  finalize_coo!(a.matrix_type,I,J,V,m,n)
-  A = sparse_from_coo(a.matrix_type,I,J,V,m,n)
-
-  A, b
-end
-
-function fill_matrix_and_vector_coo_numeric!(I,J,V,b,a::SparseMatrixAssembler,matvecdata, matdata, vecdata,n=0)
+function fill_matrix_and_vector_coo_numeric!(I,J,V,b,a::SingleFieldSparseMatrixAssembler,matvecdata, matdata, vecdata,n=0)
 
   nini = n
 

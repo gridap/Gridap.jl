@@ -109,13 +109,22 @@ export assemble_matrix!
 export assemble_matrix_add!
 export assemble_matrix
 export assemble_vector!
+export assemble_vector_add!
 export assemble_vector
 export assemble_matrix_and_vector!
+export assemble_matrix_and_vector_add!
 export assemble_matrix_and_vector
 export allocate_vector
 export allocate_matrix
 export allocate_matrix_and_vector
 export test_assembler
+export get_matrix_type
+export get_vector_type
+export count_matrix_nnz_coo
+export fill_matrix_coo_symbolic!
+export fill_matrix_coo_numeric!
+export fill_matrix_and_vector_coo_numeric!
+export test_sparse_matrix_assembler
 
 export SingleFieldFESpace
 export num_dirichlet_dofs
