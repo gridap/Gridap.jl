@@ -40,12 +40,19 @@ function AffineFEOperator(trial::FESpace,test::FESpace,assem::Assembler,terms::A
 end
 
 function AffineFEOperator(trial::FESpace,test::FESpace,terms::AffineFETerm...)
-  assem = SparseMatrixAssembler(test,trial)
+  assem = SparseMatrixAssembler(trial,test)
   AffineFEOperator(trial,test,assem,terms...)
 end
 
-function AffineFEOperator(mat::Type{<:AbstractSparseMatrix},trial::FESpace,test::FESpace,terms::AffineFETerm...)
+function AffineFEOperator(
+  mat::Type{<:AbstractSparseMatrix},trial::FESpace,test::FESpace,terms::AffineFETerm...)
   assem = SparseMatrixAssembler(mat,trial,test)
+  AffineFEOperator(trial,test,assem,terms...)
+end
+
+function AffineFEOperator(
+  mat::Type{<:AbstractSparseMatrix},vec::Type{<:AbstractVector},trial::FESpace,test::FESpace,terms::AffineFETerm...)
+  assem = SparseMatrixAssembler(mat,vec,trial,test)
   AffineFEOperator(trial,test,assem,terms...)
 end
 

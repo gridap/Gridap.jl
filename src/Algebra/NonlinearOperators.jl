@@ -138,6 +138,7 @@ struct NonlinearOperatorMock <: NonlinearOperator end
 function residual!(b::AbstractVector,::NonlinearOperatorMock,x::AbstractVector)
   b[1] = (x[1]-2)*(x[1]-1)
   b[2] = x[2]-3
+  b
 end
 
 function jacobian!(A::AbstractMatrix,::NonlinearOperatorMock,x::AbstractVector)
@@ -145,6 +146,7 @@ function jacobian!(A::AbstractMatrix,::NonlinearOperatorMock,x::AbstractVector)
   A[1,2] = 0
   A[2,1] = 0
   A[2,2] = 1
+  A
 end
 
 function zero_initial_guess(op::NonlinearOperatorMock)

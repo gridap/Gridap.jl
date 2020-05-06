@@ -1,6 +1,44 @@
 
 """
 """
+abstract type AssemblyStrategy end
+
+"""
+"""
+function row_map(a::AssemblyStrategy,row)
+  @abstractmethod
+end
+
+"""
+"""
+function col_map(a::AssemblyStrategy,col)
+  @abstractmethod
+end
+
+"""
+"""
+function row_mask(a::AssemblyStrategy,row)
+  @abstractmethod
+end
+
+"""
+"""
+function col_mask(a::AssemblyStrategy,col)
+  @abstractmethod
+end
+
+struct DefaultAssemblyStrategy <: AssemblyStrategy end
+
+row_map(a::DefaultAssemblyStrategy,row) = row
+
+col_map(a::DefaultAssemblyStrategy,col) = col
+
+row_mask(a::DefaultAssemblyStrategy,row) = true
+
+col_mask(a::DefaultAssemblyStrategy,col) = true
+
+"""
+"""
 abstract type Assembler <: GridapType end
 
 """
@@ -12,6 +50,12 @@ end
 """
 """
 function get_trial(a::Assembler)
+  @abstractmethod
+end
+
+"""
+"""
+function get_assembly_strategy(a::Assembler)
   @abstractmethod
 end
 
@@ -143,5 +187,7 @@ function test_assembler(a::Assembler,matvecdata,matdata,vecdata)
   @test num_free_dofs(trial_fesp) == size(A,2)
   @test num_free_dofs(test_fesp) == size(A,1)
   @test num_free_dofs(test_fesp) == length(b)
+  strategy = get_assembly_strategy(a)
+  @test isa(strategy,AssemblyStrategy)
 end
 

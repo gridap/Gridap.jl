@@ -35,7 +35,7 @@ strian = SkeletonTriangulation(model)
 degree = 2
 squad = CellQuadrature(strian,degree)
 
-assem = SparseMatrixAssembler(V,U)
+assem = SparseMatrixAssembler(U,V)
 
 uhd = zero(U)
 v = get_cell_basis(V)

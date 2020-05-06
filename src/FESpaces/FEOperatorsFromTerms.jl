@@ -18,12 +18,17 @@ end
 """
 """
 function FEOperator(trial::FESpace,test::FESpace,terms::FETerm...)
-  assem = SparseMatrixAssembler(test,trial)
+  assem = SparseMatrixAssembler(trial,test)
   FEOperator(trial,test,assem,terms...)
 end
 
 function FEOperator(mat::Type{<:AbstractSparseMatrix},trial::FESpace,test::FESpace,terms::FETerm...)
-  assem = SparseMatrixAssembler(mat,test,trial)
+  assem = SparseMatrixAssembler(mat,trial,test)
+  FEOperator(trial,test,assem,terms...)
+end
+
+function FEOperator(mat::Type{<:AbstractSparseMatrix},vec::Type{<:AbstractVector},trial::FESpace,test::FESpace,terms::FETerm...)
+  assem = SparseMatrixAssembler(mat,vec,trial,test)
   FEOperator(trial,test,assem,terms...)
 end
 

@@ -74,7 +74,7 @@ mtypes = [
 
 for T in mtypes
 
-  assem = SparseMatrixAssembler(T,V,U)
+  assem = SparseMatrixAssembler(T,Vector{Float64},U,V)
   test_assembler(assem,matvecdata,matdata,vecdata)
   
   mat = assemble_matrix(assem,[cellmat],[cellids],[cellids])

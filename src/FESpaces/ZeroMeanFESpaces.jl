@@ -27,7 +27,7 @@ end
 
 function _setup_vols(V,trian,quad)
   U = TrialFESpace(V)
-  assem = SparseMatrixAssembler(V,U)
+  assem = SparseMatrixAssembler(U,V)
   bh = get_cell_basis(V)
   bh_trian = restrict(bh,trian)
   cellvec = integrate(bh_trian,trian,quad)
