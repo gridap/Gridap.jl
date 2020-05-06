@@ -103,6 +103,12 @@ export apply_constraints_matrix_and_vector_rows
 export test_fe_space
 
 export Assembler
+export AssemblyStrategy
+export row_map
+export col_map
+export row_mask
+export col_mask
+export DefaultAssemblyStrategy
 export get_test
 export get_trial
 export assemble_matrix!

@@ -289,7 +289,12 @@ function assemble_matrix(
 
   n = count_matrix_nnz_coo(a,term_to_cellidsrows,term_to_cellidscols)
   I,J,V = allocate_coo_vectors(get_matrix_type(a),n)
-  fill_matrix_coo_numeric!(I,J,V,a,term_to_cellmat,term_to_cellidsrows,term_to_cellidscols)
+
+  nmax = fill_matrix_coo_numeric!(I,J,V,a,term_to_cellmat,term_to_cellidsrows,term_to_cellidscols)
+  resize!(I,nmax)
+  resize!(J,nmax)
+  resize!(V,nmax)
+
   m = num_free_dofs(a.test)
   n = num_free_dofs(a.trial)
   finalize_coo!(get_matrix_type(a),I,J,V,m,n)
@@ -316,7 +321,10 @@ function assemble_matrix_and_vector(a::SparseMatrixAssembler, matvecdata, matdat
   I,J,V = allocate_coo_vectors(get_matrix_type(a),n)
   b = allocate_vector(a,vecdata...)
 
-  fill_matrix_and_vector_coo_numeric!(I,J,V,b,a, matvecdata, matdata, vecdata)
+  nmax = fill_matrix_and_vector_coo_numeric!(I,J,V,b,a, matvecdata, matdata, vecdata)
+  resize!(I,nmax)
+  resize!(J,nmax)
+  resize!(V,nmax)
 
   m = num_free_dofs(a.test)
   n = num_free_dofs(a.trial)

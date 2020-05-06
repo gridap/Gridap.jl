@@ -74,12 +74,13 @@ import Gridap.FESpaces: SparseMatrixAssembler
 import Gridap.FESpaces: AffineFEOperator
 import Gridap.FESpaces: FEOperator
 import Gridap.FESpaces: EvaluationFunction
-export Gridap.FESpaces: get_matrix_type
-export Gridap.FESpaces: get_vector_type
-export Gridap.FESpaces: count_matrix_nnz_coo
-export Gridap.FESpaces: fill_matrix_coo_symbolic!
-export Gridap.FESpaces: fill_matrix_coo_numeric!
-export Gridap.FESpaces: fill_matrix_and_vector_coo_numeric!
+import Gridap.FESpaces: get_matrix_type
+import Gridap.FESpaces: get_vector_type
+import Gridap.FESpaces: get_assembly_strategy
+import Gridap.FESpaces: count_matrix_nnz_coo
+import Gridap.FESpaces: fill_matrix_coo_symbolic!
+import Gridap.FESpaces: fill_matrix_coo_numeric!
+import Gridap.FESpaces: fill_matrix_and_vector_coo_numeric!
 
 import Base: +, -
 
