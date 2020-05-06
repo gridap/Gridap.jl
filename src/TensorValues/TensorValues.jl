@@ -13,7 +13,7 @@ A = zeros(VectorValue{2,Int}, (4,5))
 v = VectorValue(12,31)
 A .= v # This is posible since  VectorValue <: Number
 
-# Broatcasing of tensor operations in arrays of TensorValues
+# Broadcasting of tensor operations in arrays of TensorValues
 t = TensorValue(13,41,53,17) # creates a 2x2 TensorValue
 g = TensorValue(32,41,3,14) # creates another 2x2 TensorValue
 B = fill(t,(1,5))
