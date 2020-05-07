@@ -380,7 +380,7 @@ end
 """
 function _find_ncube_face_neighbor_deltas(p::ExtrusionPolytope{D}) where {D}
   nfaces = num_faces(p)
-  delta_faces = Vector{CartesianIndex}(undef, nfaces - 1)
+  delta_faces = Vector{CartesianIndex{D}}(undef, nfaces - 1)
   for face_lid = 1:nfaces-1
     delta_faces[face_lid] = _find_ncube_face_neighbor_delta(p, face_lid)
   end
