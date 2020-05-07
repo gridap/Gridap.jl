@@ -4,15 +4,12 @@ struct FEOperatorFromTerms <: FEOperator
   test::FESpace
   assem::Assembler
   terms
-  function FEOperatorFromTerms(trial::FESpace,test::FESpace,assem::Assembler,terms::FETerm...)
-    new(trial,test,assem,terms)
-  end
 end
 
 """
 """
 function FEOperator(trial::FESpace,test::FESpace,assem::Assembler,terms::FETerm...)
-  FEOperatorFromTerms(trial,test,assem,terms...)
+  FEOperatorFromTerms(trial,test,assem,terms)
 end
 
 """

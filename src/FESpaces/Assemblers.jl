@@ -164,8 +164,6 @@ function test_assembler(a::Assembler,matdata,vecdata,data)
   @test num_free_dofs(trial_fesp) == size(A,2)
   @test num_free_dofs(test_fesp) == size(A,1)
   @test num_free_dofs(test_fesp) == length(b)
-  strategy = get_assembly_strategy(a)
-  @test isa(strategy,AssemblyStrategy)
 end
 
 # This is an extended interface that only make sense for assemblers that build (sequential) sparse matrices
