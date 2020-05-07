@@ -268,55 +268,89 @@ function _fill_subgrid_cartesian_entities!(labels, topo, subdesc, desc, cmin)
     face_to_cells = get_faces(topo, d, D)
     cell_to_faces = get_faces(topo, D, d)
     face_to_geolabel = face_labeling.d_to_dface_to_entity[d+1]
-    nfaces = length(face_to_geolabel)
-    for face_gid = 1:nfaces
-      cell_gid = face_to_cells.data[face_to_cells.ptrs[face_gid]]
-      a = cell_to_faces.ptrs[cell_gid]
-      b = cell_to_faces.ptrs[cell_gid+1] - 1
-      gci = (subcis[cell_gid] + minus_one_ci) + cmin
-
-      face_lid = -1
-      for j = a:b
-        if (cell_to_faces.data[j] == face_gid)
-          face_lid = j - a + 1
-          break
-        end
-      end
-      @assert face_lid != -1
-
-      face_lid += offsets[d+1]
-      # Check whether cell neighbour across face face_lid belongs to the
-      # global grid. If yes, the current face is actually at the interior
-      is_assigned_face_delta = isassigned(face_deltas, face_lid)
-      if (is_assigned_face_delta && (gci + face_deltas[face_lid]) in gcis)
-        face_to_geolabel[face_gid] = interior_id
-      else
-        cell_found = false
-        for j = d+1:D-1
-          dface_to_jfaces =
-            polytope_d_face_to_jfaces[d+1, j+1][face_lid-offsets[d+1]]
-          cell_found = _is_there_interior_cell_across_higher_dim_faces(
-            dface_to_jfaces,
-            offsets[j+1],
-            gcis,
-            gci,
-            face_deltas,
-          )
-          cell_found && break
-        end
-        if (cell_found)
-          # The current face is at least in two subgrid cells
-          face_to_geolabel[face_gid] = boundary_id
-        else
-          # The current face is only in one subgrid cell
-          face_to_geolabel[face_gid] = face_lid
-        end
-      end
-    end
+    _generate_subgrid_pregeo_label!(
+      face_to_geolabel,
+      d,
+      D,
+      offsets,
+      polytope_d_face_to_jfaces,
+      minus_one_ci,
+      face_to_cells,
+      cell_to_faces,
+      subcis,
+      gcis,
+      face_deltas,
+      cmin,
+      interior_id,
+      boundary_id,
+    )
   end
   _fix_geolabels(D, topo, d_to_dface_to_entity, interior_id, boundary_id)
   fill!(d_to_dface_to_entity[end], interior_id)
 end
+
+function _generate_subgrid_pregeo_label!(
+  face_to_geolabel,
+  d,
+  D,
+  offsets,
+  polytope_d_face_to_jfaces,
+  minus_one_ci,
+  face_to_cells,
+  cell_to_faces,
+  subcis,
+  gcis,
+  face_deltas,
+  cmin,
+  interior_id,
+  boundary_id,
+)
+  for face_gid = 1:length(face_to_geolabel)
+    cell_gid = face_to_cells.data[face_to_cells.ptrs[face_gid]]
+    a = cell_to_faces.ptrs[cell_gid]
+    b = cell_to_faces.ptrs[cell_gid+1] - 1
+    gci = (subcis[cell_gid] + minus_one_ci) + cmin
+
+    face_lid = -1
+    for j = a:b
+      if (cell_to_faces.data[j] == face_gid)
+        face_lid = j - a + 1
+        break
+      end
+    end
+    @assert face_lid != -1
+
+    face_lid += offsets[d+1]
+    # Check whether cell neighbour across face face_lid belongs to the
+    # global grid. If yes, the current face is actually at the interior
+    is_assigned_face_delta = isassigned(face_deltas, face_lid)
+    if (is_assigned_face_delta && (gci + face_deltas[face_lid]) in gcis)
+      face_to_geolabel[face_gid] = interior_id
+    else
+      cell_found = false
+      for j = d+1:D-1
+        dface_to_jfaces =
+          polytope_d_face_to_jfaces[d+1, j+1][face_lid-offsets[d+1]]
+        cell_found = _is_there_interior_cell_across_higher_dim_faces(
+          dface_to_jfaces,
+          offsets[j+1],
+          gcis,
+          gci,
+          face_deltas,
+        )
+        cell_found && break
+      end
+      if (cell_found)
+        # The current face is at least in two subgrid cells
+        face_to_geolabel[face_gid] = boundary_id
+      else
+        # The current face is only in one subgrid cell
+        face_to_geolabel[face_gid] = face_lid
+      end
+    end
+  end
+end
+
 
 function _is_there_interior_cell_across_higher_dim_faces(
   dface_to_jfaces,
