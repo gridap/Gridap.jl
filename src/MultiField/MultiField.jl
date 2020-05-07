@@ -81,6 +81,8 @@ import Gridap.FESpaces: count_matrix_nnz_coo
 import Gridap.FESpaces: fill_matrix_coo_symbolic!
 import Gridap.FESpaces: fill_matrix_coo_numeric!
 import Gridap.FESpaces: fill_matrix_and_vector_coo_numeric!
+import Gridap.FESpaces: count_matrix_and_vector_nnz_coo
+import Gridap.FESpaces: fill_matrix_and_vector_coo_symbolic!
 
 import Base: +, -
 

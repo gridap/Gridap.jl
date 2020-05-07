@@ -43,15 +43,15 @@ end
 function allocate_residual(op::FEOperatorFromTerms,uh)
   @assert is_a_fe_function(uh)
   v = get_cell_basis(op.test)
-  _, cellids = collect_cell_residual(uh,v,op.terms)
-  allocate_vector(op.assem, cellids)
+  vecdata = collect_cell_residual(uh,v,op.terms)
+  allocate_vector(op.assem, vecdata)
 end
 
 function residual!(b::AbstractVector,op::FEOperatorFromTerms,uh)
   @assert is_a_fe_function(uh)
   v = get_cell_basis(op.test)
-  cellvecs, cellids = collect_cell_residual(uh,v,op.terms)
-  assemble_vector!(b,op.assem, cellvecs, cellids)
+  vecdata = collect_cell_residual(uh,v,op.terms)
+  assemble_vector!(b,op.assem, vecdata)
   b
 end
 
@@ -59,16 +59,16 @@ function allocate_jacobian(op::FEOperatorFromTerms,uh)
   @assert is_a_fe_function(uh)
   du = get_cell_basis(op.trial)
   v = get_cell_basis(op.test)
-  _, cellidsrows, cellidscols = collect_cell_jacobian(uh,du,v,op.terms)
-  allocate_matrix(op.assem, cellidsrows, cellidscols)
+  matdata = collect_cell_jacobian(uh,du,v,op.terms)
+  allocate_matrix(op.assem, matdata)
 end
 
 function jacobian!(A::AbstractMatrix,op::FEOperatorFromTerms,uh)
   @assert is_a_fe_function(uh)
   du = get_cell_basis(op.trial)
   v = get_cell_basis(op.test)
-  cellmats, cellidsrows, cellidscols = collect_cell_jacobian(uh,du,v,op.terms)
-  assemble_matrix!(A,op.assem, cellmats, cellidsrows, cellidscols)
+  matdata = collect_cell_jacobian(uh,du,v,op.terms)
+  assemble_matrix!(A,op.assem,matdata)
   A
 end
 
@@ -77,7 +77,7 @@ function residual_and_jacobian!(b::AbstractVector,A::AbstractMatrix,op::FEOperat
   du = get_cell_basis(op.trial)
   v = get_cell_basis(op.test)
   data = collect_cell_jacobian_and_residual(uh,du,v,op.terms)
-  assemble_matrix_and_vector!(A, b, op.assem,data...)
+  assemble_matrix_and_vector!(A, b, op.assem, data)
   (b,A)
 end
 
@@ -86,6 +86,6 @@ function residual_and_jacobian(op::FEOperatorFromTerms,uh)
   du = get_cell_basis(op.trial)
   v = get_cell_basis(op.test)
   data = collect_cell_jacobian_and_residual(uh,du,v,op.terms)
-  A, b = assemble_matrix_and_vector(op.assem,data...)
+  A, b = assemble_matrix_and_vector(op.assem, data)
   (b, A)
 end

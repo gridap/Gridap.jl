@@ -28,13 +28,13 @@ function AffineFEOperator(trial::FESpace,test::FESpace,assem::Assembler,terms::A
 
   uhd = zero(trial)
 
-  matvecdata, matdata, vecdata = collect_cell_matrix_and_vector(uhd,u,v,terms)
-  A,b = assemble_matrix_and_vector(assem,matvecdata,matdata,vecdata)
+  data = collect_cell_matrix_and_vector(uhd,u,v,terms)
+  A,b = assemble_matrix_and_vector(assem,data)
 
   #matdata = collect_cell_matrix(u,v,terms)
   #vecdata = collect_cell_vector(uhd,v,terms)
-  #A = assemble_matrix(assem,matdata...)
-  #b = assemble_vector(assem,vecdata...)
+  #A = assemble_matrix(assem,matdata)
+  #b = assemble_vector(assem,vecdata)
 
   AffineFEOperator(trial,test,A,b)
 end

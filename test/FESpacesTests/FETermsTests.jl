@@ -61,24 +61,24 @@ t_affine = AffineFETerm(a,l,trian,quad)
 
 matdata = collect_cell_matrix(u,v,[t_affine, t_linear])
 vecdata = collect_cell_vector(uhd,v,[t_affine, t_linear, t_source])
-A = assemble_matrix(assem,matdata...)
-b = assemble_vector(assem,vecdata...)
+A = assemble_matrix(assem,matdata)
+b = assemble_vector(assem,vecdata)
 x = A \ b
 @test x ≈ get_free_values(uh)
 
 data = collect_cell_matrix_and_vector(uhd,u,v,[t_affine, t_linear, t_source])
-A, b = allocate_matrix_and_vector(assem,data...)
-assemble_matrix_and_vector!(A,b,assem,data...)
+A, b = allocate_matrix_and_vector(assem,data)
+assemble_matrix_and_vector!(A,b,assem,data)
 x = A \ b
 @test x ≈ get_free_values(uh)
-A, b = assemble_matrix_and_vector(assem,data...)
+A, b = assemble_matrix_and_vector(assem,data)
 x = A \ b
 @test x ≈ get_free_values(uh)
 
 matdata = collect_cell_jacobian(uh,u,v,[t_affine])
 vecdata = collect_cell_residual(uh,v,[t_affine])
-A = assemble_matrix(assem,matdata...)
-b = assemble_vector(assem,vecdata...)
+A = assemble_matrix(assem,matdata)
+b = assemble_vector(assem,vecdata)
 x = A \ -b
 @test (x.+1) ≈ ones(length(x))
 
@@ -89,15 +89,15 @@ t_source = FESource(l,trian,quad)
 
 matdata = collect_cell_matrix(u,v,[t_linear, t_source])
 vecdata = collect_cell_vector(uhd,v,[t_linear, t_source])
-A = assemble_matrix(assem,matdata...)
-b = assemble_vector(assem,vecdata...)
+A = assemble_matrix(assem,matdata)
+b = assemble_vector(assem,vecdata)
 x = A \ b
 @test x ≈ get_free_values(uh)
 
 matdata = collect_cell_jacobian(uh,u,v,[t_linear, t_source])
 vecdata = collect_cell_residual(uh,v,[t_linear, t_source])
-A = assemble_matrix(assem,matdata...)
-b = assemble_vector(assem,vecdata...)
+A = assemble_matrix(assem,matdata)
+b = assemble_vector(assem,vecdata)
 x = A \ -b
 @test (x.+1) ≈ ones(length(x))
 
@@ -107,14 +107,14 @@ t_nonlinear = FETerm(r,j,trian,quad)
 
 matdata = collect_cell_jacobian(uh,u,v,[t_nonlinear])
 vecdata = collect_cell_residual(uh,v,[t_nonlinear])
-A = assemble_matrix(assem,matdata...)
-b = assemble_vector(assem,vecdata...)
+A = assemble_matrix(assem,matdata)
+b = assemble_vector(assem,vecdata)
 x = A \ -b
 @test (x.+1) ≈ ones(length(x))
 
 data = collect_cell_jacobian_and_residual(uh,u,v,[t_nonlinear])
-A, b = allocate_matrix_and_vector(assem,data...)
-assemble_matrix_and_vector!(A,b,assem,data...)
+A, b = allocate_matrix_and_vector(assem,data)
+assemble_matrix_and_vector!(A,b,assem,data)
 x = A \ -b
 @test (x.+1) ≈ ones(length(x))
 
@@ -154,14 +154,14 @@ t_matvec_Ω = AffineFETermFromCellMatVec(matvecfun,trian)
 
 matdata = collect_cell_matrix(u,v,[t_matvec_Ω,])
 vecdata = collect_cell_vector(uhd,v,[t_matvec_Ω,])
-A = assemble_matrix(assem,matdata...)
-b = assemble_vector(assem,vecdata...)
+A = assemble_matrix(assem,matdata)
+b = assemble_vector(assem,vecdata)
 x = A \ b
 @test x ≈ get_free_values(uh)
 
 data = collect_cell_matrix_and_vector(uhd,u,v,[t_matvec_Ω,])
-A, b = allocate_matrix_and_vector(assem,data...)
-assemble_matrix_and_vector!(A,b,assem,data...)
+A, b = allocate_matrix_and_vector(assem,data)
+assemble_matrix_and_vector!(A,b,assem,data)
 x = A \ b
 @test x ≈ get_free_values(uh)
 
@@ -195,14 +195,14 @@ t_jacres_Ω = FETermFromCellJacRes(jacresfun,trian)
 
 matdata = collect_cell_jacobian(uh,u,v,[t_jacres_Ω])
 vecdata = collect_cell_residual(uh,v,[t_jacres_Ω])
-A = assemble_matrix(assem,matdata...)
-b = assemble_vector(assem,vecdata...)
+A = assemble_matrix(assem,matdata)
+b = assemble_vector(assem,vecdata)
 x = A \ -b
 @test (x.+1) ≈ ones(length(x))
 
 data = collect_cell_jacobian_and_residual(uh,u,v,[t_jacres_Ω])
-A, b = allocate_matrix_and_vector(assem,data...)
-assemble_matrix_and_vector!(A,b,assem,data...)
+A, b = allocate_matrix_and_vector(assem,data)
+assemble_matrix_and_vector!(A,b,assem,data)
 x = A \ -b
 @test (x.+1) ≈ ones(length(x))
 

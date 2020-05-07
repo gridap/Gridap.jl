@@ -41,9 +41,9 @@ get_vector_type(a::SingleFieldSparseMatrixAssembler) = a.vector_type
 
 get_assembly_strategy(a::SingleFieldSparseMatrixAssembler) = a.strategy
 
-function assemble_vector_add!(b,a::SingleFieldSparseMatrixAssembler,term_to_cellvec,term_to_cellidsrows)
+function assemble_vector_add!(b,a::SingleFieldSparseMatrixAssembler,vecdata)
   celldofs = get_cell_dofs(a.test)
-  for (cellvec, cellids) in zip(term_to_cellvec,term_to_cellidsrows)
+  for (cellvec, cellids) in zip(vecdata...)
     rows = reindex(celldofs,cellids)
     vals = apply_constraints_vector(a.test,cellvec,cellids)
     rows_cache = array_cache(rows)
@@ -67,7 +67,8 @@ function _assemble_vector!(vec,vals_cache,rows_cache,cell_vals,cell_rows,strateg
   end
 end
 
-function count_matrix_nnz_coo(a::SingleFieldSparseMatrixAssembler,term_to_cellidsrows, term_to_cellidscols)
+function count_matrix_nnz_coo(a::SingleFieldSparseMatrixAssembler,matdata)
+  _,term_to_cellidsrows, term_to_cellidscols = matdata
   celldofs_rows = get_cell_dofs(a.test)
   celldofs_cols = get_cell_dofs(a.trial)
   n = 0
@@ -105,10 +106,18 @@ end
   n
 end
 
-function fill_matrix_coo_symbolic!(I,J,a::SingleFieldSparseMatrixAssembler,term_to_cellidsrows, term_to_cellidscols)
+function count_matrix_and_vector_nnz_coo(a::SingleFieldSparseMatrixAssembler,data)
+  matvecdata, matdata, vecdata = data
+  n = count_matrix_nnz_coo(a,matvecdata)
+  n += count_matrix_nnz_coo(a,matdata)
+  n
+end
+
+function fill_matrix_coo_symbolic!(I,J,a::SingleFieldSparseMatrixAssembler,matdata,n=0)
+  _,term_to_cellidsrows, term_to_cellidscols = matdata
   celldofs_rows = get_cell_dofs(a.test)
   celldofs_cols = get_cell_dofs(a.trial)
-  nini = 0
+  nini = n
   for (cellidsrows,cellidscols) in zip(term_to_cellidsrows,term_to_cellidscols)
     cell_rows = reindex(celldofs_rows,cellidsrows)
     cell_cols = reindex(celldofs_cols,cellidscols)
@@ -116,6 +125,7 @@ function fill_matrix_coo_symbolic!(I,J,a::SingleFieldSparseMatrixAssembler,term_
     cols_cache = array_cache(cell_cols)
     nini = _allocate_matrix!(a.matrix_type,nini,I,J,rows_cache,cols_cache,cell_rows,cell_cols,a.strategy)
   end
+  nini
 end
 
 @noinline function _allocate_matrix!(a::Type{M},nini,I,J,rows_cache,cols_cache,cell_rows,cell_cols,strategy) where M
@@ -142,12 +152,18 @@ end
   n
 end
 
-function assemble_matrix_add!(
-  mat,a::SingleFieldSparseMatrixAssembler, term_to_cellmat, term_to_cellidsrows, term_to_cellidscols)
+function fill_matrix_and_vector_coo_symbolic!(I,J,a::SingleFieldSparseMatrixAssembler,data,n=0)
+  matvecdata, matdata, vecdata = data
+  nini = fill_matrix_coo_symbolic!(I,J,a,matvecdata,n)
+  nini = fill_matrix_coo_symbolic!(I,J,a,matdata,nini)
+  nini
+end
+
+function assemble_matrix_add!(mat,a::SingleFieldSparseMatrixAssembler,matdata)
 
   celldofs_rows = get_cell_dofs(a.test)
   celldofs_cols = get_cell_dofs(a.trial)
-  for (cellmat_rc,cellidsrows,cellidscols) in zip(term_to_cellmat,term_to_cellidsrows,term_to_cellidscols)
+  for (cellmat_rc,cellidsrows,cellidscols) in zip(matdata...)
     cell_rows = reindex(celldofs_rows,cellidsrows)
     cell_cols = reindex(celldofs_cols,cellidscols)
     cellmat_r = apply_constraints_matrix_cols(a.trial,cellmat_rc,cellidscols)
@@ -182,13 +198,12 @@ function _assemble_matrix!(mat,vals_cache,rows_cache,cols_cache,cell_vals,cell_r
   end
 end
 
-function fill_matrix_coo_numeric!(
-  I,J,V,a::SingleFieldSparseMatrixAssembler,term_to_cellmat,term_to_cellidsrows, term_to_cellidscols,n=0)
+function fill_matrix_coo_numeric!(I,J,V,a::SingleFieldSparseMatrixAssembler,matdata,n=0)
 
   nini = n
   celldofs_rows = get_cell_dofs(a.test)
   celldofs_cols = get_cell_dofs(a.trial)
-  for (cellmat_rc,cellidsrows,cellidscols) in zip(term_to_cellmat,term_to_cellidsrows,term_to_cellidscols)
+  for (cellmat_rc,cellidsrows,cellidscols) in zip(matdata...)
     cell_rows = reindex(celldofs_rows,cellidsrows)
     cell_cols = reindex(celldofs_cols,cellidscols)
     cellmat_r = apply_constraints_matrix_cols(a.trial,cellmat_rc,cellidscols)
@@ -231,9 +246,9 @@ end
   n
 end
 
-function assemble_matrix_and_vector_add!(
-  A,b,a::SingleFieldSparseMatrixAssembler, matvecdata, matdata, vecdata)
+function assemble_matrix_and_vector_add!(A,b,a::SingleFieldSparseMatrixAssembler, data)
 
+  matvecdata, matdata, vecdata = data
   celldofs_rows = get_cell_dofs(a.test)
   celldofs_cols = get_cell_dofs(a.trial)
 
@@ -247,8 +262,8 @@ function assemble_matrix_and_vector_add!(
     vals_cache = array_cache(cellmatvec)
     _assemble_matrix_and_vector!(A,b,vals_cache,rows_cache,cols_cache,cellmatvec,cell_rows,cell_cols,a.strategy)
   end
-  assemble_matrix_add!(A,a,matdata...)
-  assemble_vector_add!(b,a,vecdata...)
+  assemble_matrix_add!(A,a,matdata)
+  assemble_vector_add!(b,a,vecdata)
   A, b
 end
 
@@ -282,8 +297,9 @@ function _assemble_matrix_and_vector!(A,b,vals_cache,rows_cache,cols_cache,cell_
   end
 end
 
-function fill_matrix_and_vector_coo_numeric!(I,J,V,b,a::SingleFieldSparseMatrixAssembler,matvecdata, matdata, vecdata,n=0)
-
+function fill_matrix_and_vector_coo_numeric!(I,J,V,b,a::SingleFieldSparseMatrixAssembler,data,n=0)
+   
+  matvecdata, matdata, vecdata = data
   nini = n
 
   celldofs_rows = get_cell_dofs(a.test)
@@ -303,8 +319,8 @@ function fill_matrix_and_vector_coo_numeric!(I,J,V,b,a::SingleFieldSparseMatrixA
       a.matrix_type,nini,I,J,V,b,vals_cache,rows_cache,cols_cache,cellmatvec,cell_rows,cell_cols,a.strategy)
   end
 
-  nini = fill_matrix_coo_numeric!(I,J,V,a,matdata...,nini)
-  assemble_vector_add!(b,a,vecdata...)
+  nini = fill_matrix_coo_numeric!(I,J,V,a,matdata,nini)
+  assemble_vector_add!(b,a,vecdata)
 
   nini
 end
