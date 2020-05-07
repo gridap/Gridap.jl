@@ -323,8 +323,7 @@ function _generate_subgrid_pregeo_label!(
     face_lid += offsets[d+1]
     # Check whether cell neighbour across face face_lid belongs to the
     # global grid. If yes, the current face is actually at the interior
-    is_assigned_face_delta = isassigned(face_deltas, face_lid)
-    if (is_assigned_face_delta && (gci + face_deltas[face_lid]) in gcis)
+    if ((gci + face_deltas[face_lid]) in gcis)
       face_to_geolabel[face_gid] = interior_id
     else
       cell_found = false
