@@ -68,11 +68,9 @@ function test_single_field_fe_space(f::SingleFieldFESpace,pred=(==))
   fe_function = FEFunction(f,free_values,dirichlet_values)
   @test isa(fe_function, SingleFieldFEFunction)
   test_fe_function(fe_function)
-  if length(get_dirichlet_dof_tag(f)) == 0
-    @test num_dirichlet_tags(f) == 0
-  else
-    @test maximum(get_dirichlet_dof_tag(f)) == num_dirichlet_tags(f)
-  end
+  ddof_to_tag = get_dirichlet_dof_tag(f)
+  @test length(ddof_to_tag) == num_dirichlet_dofs(f)
+  @test maximum(get_dirichlet_dof_tag(f)) <= num_dirichlet_tags(f)
   cell_dof_basis = get_cell_dof_basis(f)
 end
 

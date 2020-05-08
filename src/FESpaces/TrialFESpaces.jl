@@ -97,3 +97,16 @@ gather_free_and_dirichlet_values(f::TrialFESpace,cv) = gather_free_and_dirichlet
 gather_dirichlet_values(f::TrialFESpace,cv) = gather_dirichlet_values(f.space,cv)
 
 gather_free_values(f::TrialFESpace,cv) = gather_free_values(f.space,cv)
+
+function get_constraint_kernel_matrix_cols(f::TrialFESpace)
+  get_constraint_kernel_matrix_cols(f.space)
+end
+
+function get_constraint_kernel_matrix_rows(f::TrialFESpace)
+  get_constraint_kernel_matrix_rows(f.space)
+end
+
+function get_constraint_kernel_vector(f::TrialFESpace)
+  get_constraint_kernel_vector(f.space)
+end
+
