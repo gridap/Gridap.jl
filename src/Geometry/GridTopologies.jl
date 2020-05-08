@@ -885,7 +885,7 @@ function _face_to_cells(
   face_to_cells_ptrs = zeros(P,nfaces+1)
 
   _face_to_cells_count!(
-    face_to_cells_ptrs, cell_to_faces_data, cell_to_faces_ptrs)
+    face_to_cells_ptrs, cell_to_faces_data)
 
   length_to_ptrs!(face_to_cells_ptrs)
 
@@ -904,18 +904,10 @@ function _face_to_cells(
 end
 
 function _face_to_cells_count!(
-    face_to_cells_ptrs, cell_to_faces_data, cell_to_faces_ptrs)
-
-  ncells = length(cell_to_faces_ptrs) - 1
-  for cell in 1:ncells
-    a = cell_to_faces_ptrs[cell]
-    b = cell_to_faces_ptrs[cell+1]-1
-    for p in a:b
-      face = cell_to_faces_data[p]
-      face_to_cells_ptrs[face+1] += 1
-    end
+    face_to_cells_ptrs, cell_to_faces_data)
+  for i=1:length(cell_to_faces_data)
+    face_to_cells_ptrs[cell_to_faces_data[i]+1]+=1
   end
-
 end
 
 function _face_to_cells_fill!(

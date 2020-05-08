@@ -43,6 +43,9 @@ test_discrete_model(model)
 model2 = from_dict(DiscreteModel,to_dict(model))
 test_discrete_model(model2)
 
+model3 = CartesianDiscreteModel(desc,CartesianIndex(2,2,2),CartesianIndex(3,3,3))
+test_discrete_model(model3)
+
 #using Gridap.Visualization
 #writevtk(model2,"model2")
 
