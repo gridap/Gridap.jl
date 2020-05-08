@@ -7,7 +7,7 @@
 #
 # Assumptions:
 #
-#  - A constrained dof depends only on master dofs, i.e., only one level of constraints
+#  - A constrained dof depends only on master dofs, i.e., only one level of constraints.
 #    This can be easily relaxed in the future.
 #
 #  - We can add constraints to Dirichlet dofs but their masters have to be Dirichlet as well.
@@ -27,6 +27,9 @@
 #  - fdof: a free dof in the original space. We have: fdof = dof = DOF
 #
 #  - ddof: a Dirichlet dof in the original space. We have: ddof = -dof = DOF - n_fdofs
+#
+#  - sDOF a slave dof (either free or Dirichlet). It is possible to tell if it is free or Dirichlet
+#    thanks to the vector sDOF_to_dof.
 #
 #  - mdof: a master dof (i.e. a dof in the constrained space).
 #    It can be free or Dirichlet. The sign of the value tells if it is one or the other.
@@ -49,6 +52,7 @@
 #
 #  - coeff: A coefficient in a linear constraint
 
+# TODO we can optimize memory by only storing info about slave DOFs
 struct FESpaceWithLinearConstraints <: SingleFieldFESpace
   space::SingleFieldFESpace
   n_fdofs::Int
@@ -61,6 +65,76 @@ struct FESpaceWithLinearConstraints <: SingleFieldFESpace
 end
 
 # Constructors
+
+# This will be the public constructor
+function FESpaceWithLinearConstraints(
+  sDOF_to_dof::AbstractVector{<:Integer},
+  sDOF_to_dofs::Table,
+  sDOF_to_coeffs::Table,
+  space::SingleFieldFESpace)
+
+  n_fdofs = num_free_dofs(space)
+  n_ddofs = num_dirichlet_dofs(space)
+  n_DOFs = n_fdofs + n_ddofs
+
+  DOF_to_DOFs, DOF_to_coeffs = _prepare_DOF_to_DOFs(
+    sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs, n_fdofs, n_DOFs)
+
+  FESpaceWithLinearConstraints!(DOF_to_DOFs,DOF_to_coeffs,space)
+
+end
+
+function _prepare_DOF_to_DOFs(
+  sDOF_to_dof, sDOF_to_dofs, sDOF_to_coeffs, n_fdofs, n_DOFs)
+
+  Tp = eltype(sDOF_to_dofs.ptrs)
+  Td = eltype(sDOF_to_dofs.data)
+  Tc = eltype(sDOF_to_coeffs.data)
+
+  DOF_to_DOFs_ptrs = ones(Tp,n_DOFs+1)
+
+  n_sDOFs = length(sDOF_to_dof)
+
+  for sDOF in 1:n_sDOFs
+    a = sDOF_to_dofs.ptrs[sDOF]
+    b = sDOF_to_dofs.ptrs[sDOF+1]
+    dof = sDOF_to_dof[sDOF]
+    DOF = _dof_to_DOF(dof,n_fdofs)
+    DOF_to_DOFs_ptrs[DOF+1] = b-a
+  end
+
+  length_to_ptrs!(DOF_to_DOFs_ptrs)
+  ndata = DOF_to_DOFs_ptrs[end]-1
+  DOF_to_DOFs_data = zeros(Td,ndata)
+  DOF_to_coeffs_data = ones(Tc,ndata)
+
+  for DOF in 1:n_DOFs
+    q = DOF_to_DOFs_ptrs[DOF]
+    DOF_to_DOFs_data[q] = DOF
+  end
+
+  for sDOF in 1:n_sDOFs
+    dof = sDOF_to_dof[sDOF]
+    DOF = _dof_to_DOF(dof,n_fdofs)
+    q = DOF_to_DOFs_ptrs[DOF]-1
+    pini = sDOF_to_dofs.ptrs[sDOF]
+    pend = sDOF_to_dofs.ptrs[sDOF+1]-1
+    for (i,p) in enumerate(pini:pend)
+      _dof = sDOF_to_dofs.data[p]
+      _DOF = _dof_to_DOF(_dof,n_fdofs)
+      coeff = sDOF_to_coeffs.data[p]
+      DOF_to_DOFs_data[q+i] = _DOF
+      DOF_to_coeffs_data[q+i] = coeff
+    end
+  end
+
+  DOF_to_DOFs = Table(DOF_to_DOFs_data,DOF_to_DOFs_ptrs)
+  DOF_to_coeffs = Table(DOF_to_coeffs_data,DOF_to_DOFs_ptrs)
+
+  DOF_to_DOFs, DOF_to_coeffs
+end
+
+# Private constructors
 
 function FESpaceWithLinearConstraints(
   fdof_to_dofs::Table,
@@ -85,6 +159,7 @@ function _merge_free_and_diri_constraints(fdof_to_dofs, fdof_to_coeffs, ddof_to_
   DOF_to_coeffs = Table(vcat(fdof_to_coeffs.data,ddof_to_coeffs.data),DOF_to_DOFs.ptrs)
   DOF_to_DOFs, DOF_to_coeffs
 end
+
 
 function FESpaceWithLinearConstraints(DOF_to_DOFs::Table,DOF_to_coeffs::Table,space::SingleFieldFESpace)
   FESpaceWithLinearConstraints!(copy(DOF_to_DOFs),copy(DOF_to_coeffs),space::SingleFieldFESpace)
