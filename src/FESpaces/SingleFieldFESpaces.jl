@@ -70,7 +70,9 @@ function test_single_field_fe_space(f::SingleFieldFESpace,pred=(==))
   test_fe_function(fe_function)
   ddof_to_tag = get_dirichlet_dof_tag(f)
   @test length(ddof_to_tag) == num_dirichlet_dofs(f)
-  @test maximum(get_dirichlet_dof_tag(f)) <= num_dirichlet_tags(f)
+  if length(get_dirichlet_dof_tag(f)) != 0
+    @test maximum(get_dirichlet_dof_tag(f)) <= num_dirichlet_tags(f)
+  end
   cell_dof_basis = get_cell_dof_basis(f)
 end
 

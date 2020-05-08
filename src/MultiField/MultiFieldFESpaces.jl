@@ -18,9 +18,7 @@ struct MultiFieldFESpace{S<:MultiFieldStyle,B} <: FESpace
   constraint_style::Val{B}
   function MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace},mfs::MultiFieldStyle)
     S = typeof(mfs)
-    msg = "MultiFieldFESpace only implemented when the underlying fields have no constraints."
-    @notimplementedif any( map(has_constraints,spaces) ) msg
-    B = false
+    B = any( map(has_constraints,spaces) )
     cs = Val{B}()
     new{S,B}(spaces,mfs,cs)
   end
@@ -101,6 +99,18 @@ end
 function zero_free_values(::Type{T},spaces::Vector{<:SingleFieldFESpace}) where T
   f = MultiFieldFESpace(spaces)
   zero_free_values(T,f)
+end
+
+function get_constraint_kernel_matrix_cols(f::MultiFieldFESpace)
+  @notimplemented
+end
+
+function get_constraint_kernel_matrix_rows(f::MultiFieldFESpace)
+  @notimplemented
+end
+
+function get_constraint_kernel_vector(f::MultiFieldFESpace)
+  @notimplemented
 end
 
 # API for multi field case

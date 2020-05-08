@@ -74,8 +74,8 @@ t2 = FESource(b2,btrian,bquad)
 op = AffineFEOperator(Uc,Vc,t1,t2)
 uch = solve(op)
 
-using Gridap.Visualization
-writevtk(trian,"trian",nsubcells=10,cellfields=["uch"=>uch])
+#using Gridap.Visualization
+#writevtk(trian,"trian",nsubcells=10,cellfields=["uch"=>uch])
 
 e = u - uch
 

@@ -573,6 +573,7 @@ function  _fill_lmdof_to_val!(
 
   pini = k.cell_to_ldof_to_dof.ptrs[cellid]
   pend = k.cell_to_ldof_to_dof.ptrs[cellid+1]-1
+  # TODO this can more efficiently done with a matrix vector multiplication
   for (ldof,p) in enumerate(pini:pend)
     val = ldof_to_val[ldof]
     dof = k.cell_to_ldof_to_dof.data[p]
