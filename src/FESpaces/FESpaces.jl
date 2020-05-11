@@ -89,6 +89,8 @@ export get_cell_basis
 export zero_free_values
 export constraint_style
 export has_constraints
+export get_cell_isconstrained
+export get_cell_constraints
 export get_constraint_kernel_matrix_cols
 export get_constraint_kernel_matrix_rows
 export get_constraint_kernel_vector

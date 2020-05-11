@@ -110,3 +110,11 @@ function get_constraint_kernel_vector(f::TrialFESpace)
   get_constraint_kernel_vector(f.space)
 end
 
+function get_cell_isconstrained(f::TrialFESpace)
+  get_cell_isconstrained(f.space)
+end
+
+function get_cell_constraints(f::TrialFESpace)
+  get_cell_constraints(f.space)
+end
+
