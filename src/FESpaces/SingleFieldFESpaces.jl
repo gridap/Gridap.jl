@@ -130,8 +130,6 @@ function apply_kernel!(cache,k::IdentityConstraintKernel,dofs)
 end
 
 function get_constraint_kernel_vector(f::SingleFieldFESpace)
-  cell_isconstr = get_cell_isconstrained(f)
-  cell_constr = get_cell_constraints(f)
   VectorConstraintKernel()
 end
 

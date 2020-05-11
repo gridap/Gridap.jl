@@ -531,6 +531,7 @@ function apply_kernel!(cache,k::LinearConstraintsKernel,lmdof_to_mdof,ldof_to_do
     end
   end
 
+  #TODO this is not always needed
   mul!(a2,a1,mat)
   a2
 end
