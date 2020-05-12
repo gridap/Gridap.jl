@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-  - Added inner constructor to CartesianDiscreteModel. Since PR [#245](https://github.com/gridap/Gridap.jl/pull/245)
+  - Added inner constructor to `CartesianDiscreteModel` allowing to build a model that represents a subgrid of
+      a larger grid. Since PR [#245](https://github.com/gridap/Gridap.jl/pull/245)
 
 ## [0.9.2] - 2020-4-26
 
