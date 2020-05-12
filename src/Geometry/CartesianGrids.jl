@@ -4,8 +4,8 @@
 """
     struct CartesianDescriptor{D,T,F<:Function}
       origin::Point{D,T}
-      sizes::Point{D,T}
-      partition::Point{D,Int}
+      sizes::NTuple{D,T}
+      partition::NTuple{D,Int}
       map::F
     end
 
@@ -13,8 +13,8 @@ Struct that stores the data defining a Cartesian grid.
 """
 struct CartesianDescriptor{D,T,F<:Function} <: GridapType
   origin::Point{D,T}
-  sizes::Point{D,T}
-  partition::Point{D,Int}
+  sizes::NTuple{D,T}
+  partition::NTuple{D,Int}
   map::F
   @doc """
       CartesianDescriptor(origin,sizes,partition,map::Function=identity)
@@ -33,7 +33,7 @@ end
 function CartesianDescriptor(domain,partition,map::Function=identity)
   D = length(partition)
   limits = [(domain[2*d-1],domain[2*d]) for d in 1:D]
-  sizes = [(limits[d][2]-limits[d][1])/partition[d] for d in 1:D]
+  sizes = Tuple([(limits[d][2]-limits[d][1])/partition[d] for d in 1:D])
   origin = [ limits[d][1] for d in 1:D]
   CartesianDescriptor(origin,sizes,partition,map)
 end
@@ -60,7 +60,7 @@ struct CartesianCoordinates{D,T,F} <: AbstractArray{Point{D,T},D}
   data::CartesianDescriptor{D,T,F}
 end
 
-Base.size(a::CartesianCoordinates) = Tuple(a.data.partition) .+ 1
+Base.size(a::CartesianCoordinates) = a.data.partition .+ 1
 
 Base.IndexStyle(::Type{<:CartesianCoordinates}) = IndexCartesian()
 
@@ -77,14 +77,14 @@ end
 # Cell nodes
 
 struct CartesianCellNodes{D} <: AbstractArray{Vector{Int},D}
-  partition::Point{D,Int}
+  partition::NTuple{D,Int}
   function CartesianCellNodes(partition)
     D = length(partition)
     new{D}(partition)
   end
 end
 
-Base.size(a::CartesianCellNodes) = Tuple(a.partition)
+Base.size(a::CartesianCellNodes) = a.partition
 
 Base.IndexStyle(::Type{<:CartesianCellNodes}) = IndexCartesian()
 
@@ -192,7 +192,7 @@ struct CartesianMap{D,T,L} <: AbstractArray{AffineMap{D,T,L},D}
   end
 end
 
-Base.size(a::CartesianMap) = Tuple(a.data.partition)
+Base.size(a::CartesianMap) = a.data.partition
 
 Base.IndexStyle(::Type{<:CartesianMap}) = IndexCartesian()
 
@@ -204,13 +204,13 @@ function Base.getindex(a::CartesianMap{D,T},I::Vararg{Int,D}) where {D,T}
     p[d] =  x0[d] + (I[d]-1)*dx[d]
   end
   origin =  Point(p)
-  jacobian = diagonal_tensor(dx)
+  jacobian = diagonal_tensor(VectorValue(dx))
   AffineMap(jacobian,origin)
 end
 
 function field_array_gradient(a::CartesianMap)
   dx = a.data.sizes
-  jacobian = diagonal_tensor(dx)
+  jacobian = diagonal_tensor(VectorValue(dx))
   j = AffineMapGrad(jacobian)
   Fill(j,length(a))
 end
@@ -223,4 +223,3 @@ end
 function get_cell_map(grid::CartesianGrid{D,T,typeof(identity)} where {D,T})
   CartesianMap(grid.node_coords.data)
 end
-

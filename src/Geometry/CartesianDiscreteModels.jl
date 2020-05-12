@@ -40,9 +40,9 @@ struct CartesianDiscreteModel{D,T,F} <: DiscreteModel{D,D}
                                   cmax::CartesianIndex) where {D,T,F}
 
      suborigin = Tuple(desc.origin) .+
-                        (Tuple(cmin) .- 1) .* Tuple(desc.sizes)
+                        (Tuple(cmin) .- 1) .* desc.sizes
      subpartition = Tuple(cmax) .- Tuple(cmin) .+ 1
-     subsizes = Tuple(desc.sizes)
+     subsizes = desc.sizes
      subdesc =
         CartesianDescriptor(suborigin, subsizes, subpartition, desc.map)
 
@@ -245,8 +245,8 @@ end
 function _fill_subgrid_cartesian_entities!(labels, topo, subdesc, desc, cmin)
   D = num_cell_dims(topo)
   d_to_dface_to_entity = labels.d_to_dface_to_entity
-  gcis = CartesianIndices(Tuple(desc.partition))
-  subcis = CartesianIndices(Tuple(subdesc.partition))
+  gcis = CartesianIndices(desc.partition)
+  subcis = CartesianIndices(subdesc.partition)
 
   polytope = first(get_polytopes(topo))
   face_labeling = labels
