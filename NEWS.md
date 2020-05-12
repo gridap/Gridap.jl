@@ -8,7 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
   - Added inner constructor to `CartesianDiscreteModel` allowing to build a model that represents a subgrid of
-      a larger grid. Since PR [#245](https://github.com/gridap/Gridap.jl/pull/245)
+    a larger grid. Since PR [#245](https://github.com/gridap/Gridap.jl/pull/245).
+
+### Changed
+  - Change the types of the sizes and partition fields of CartesianDescriptor to tuples instead of points. 
+    Since PR [#246](https://github.com/gridap/Gridap.jl/pull/246).
+
 
 ## [0.9.2] - 2020-4-26
 
