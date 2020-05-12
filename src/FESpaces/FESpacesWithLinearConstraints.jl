@@ -53,6 +53,7 @@
 #  - coeff: A coefficient in a linear constraint
 
 # TODO we can optimize memory by only storing info about slave DOFs
+# The fields of this struct are private
 struct FESpaceWithLinearConstraints <: SingleFieldFESpace
   space::SingleFieldFESpace
   n_fdofs::Int
@@ -66,7 +67,7 @@ end
 
 # Constructors
 
-# This will be the public constructor
+# This is the public constructor
 function FESpaceWithLinearConstraints(
   sDOF_to_dof::AbstractVector{<:Integer},
   sDOF_to_dofs::Table,
@@ -536,181 +537,3 @@ function apply_kernel!(cache,k::LinearConstraintsKernel,lmdof_to_mdof,ldof_to_do
   a2
 end
 
-
-
-
-#function get_constraint_kernel_matrix_cols(f::FESpaceWithLinearConstraints)
-#  k_space = get_constraint_kernel_matrix_cols(f.space)
-#  LinearConstraintsKernel(
-#    Val{:matrix_cols}(),
-#    f.cell_to_lmdof_to_mdof,
-#    f.cell_to_ldof_to_dof,
-#    f.DOF_to_mDOFs,
-#    f.DOF_to_coeffs,
-#    k_space,
-#    length(f.mDOF_to_DOF),
-#    f.n_fmdofs,
-#    f.n_fdofs)
-#end
-#
-#function get_constraint_kernel_matrix_rows(f::FESpaceWithLinearConstraints)
-#  k_space = get_constraint_kernel_matrix_rows(f.space)
-#  LinearConstraintsKernel(
-#    Val{:matrix_rows}(),
-#    f.cell_to_lmdof_to_mdof,
-#    f.cell_to_ldof_to_dof,
-#    f.DOF_to_mDOFs,
-#    f.DOF_to_coeffs,
-#    k_space,
-#    length(f.mDOF_to_DOF),
-#    f.n_fmdofs,
-#    f.n_fdofs)
-#end
-#
-#function get_constraint_kernel_vector(f::FESpaceWithLinearConstraints)
-#  k_space = get_constraint_kernel_vector(f.space)
-#  LinearConstraintsKernel(
-#    Val{:vector}(),
-#    f.cell_to_lmdof_to_mdof,
-#    f.cell_to_ldof_to_dof,
-#    f.DOF_to_mDOFs,
-#    f.DOF_to_coeffs,
-#    k_space,
-#    length(f.mDOF_to_DOF),
-#    f.n_fmdofs,
-#    f.n_fdofs)
-#end
-#
-#struct LinearConstraintsKernel{S,A,B,C} <: Kernel
-#  s::Val{S}
-#  cell_to_lmdof_to_mdof::A
-#  cell_to_ldof_to_dof::A
-#  DOF_to_mDOFs::A
-#  DOF_to_coeffs::B
-#  k_space::C
-#  n_mDOFs::Int
-#  n_fmdofs::Int
-#  n_fdofs::Int
-#end
-#
-#function kernel_cache(k::LinearConstraintsKernel,ludof_to_val::AbstractArray,cellid::Integer)
-#  a = kernel_cache(k.k_space, ludof_to_val, cellid)
-#  ldof_to_val = apply_kernel!(a, k.k_space, ludof_to_val, cellid)
-#  b = CachedArray(copy(ldof_to_val))
-#  mDOF_to_lmdof = zeros(Int8,k.n_mDOFs)
-#  a, b, mDOF_to_lmdof
-#end
-#
-#function kernel_return_type(k::LinearConstraintsKernel,ludof_to_val::AbstractArray,cellid::Integer)
-#  kernel_return_type(k.k_space,ludof_to_val,cellid)
-#end
-#
-#@inline function apply_kernel!(
-#  cache,k::LinearConstraintsKernel,ludof_to_val::AbstractArray,cellid::Integer)
-#
-#  a, b, mDOF_to_lmdof = cache
-#
-#  ldof_to_val = apply_kernel!(a, k.k_space, ludof_to_val, cellid)
-#
-#  pini = k.cell_to_lmdof_to_mdof.ptrs[cellid]
-#  pend = k.cell_to_lmdof_to_mdof.ptrs[cellid+1]-1
-#  for (lmdof,p) in enumerate(pini:pend)
-#    mdof = k.cell_to_lmdof_to_mdof.data[p]
-#    mDOF = _dof_to_DOF(mdof,k.n_fmdofs)
-#    mDOF_to_lmdof[mDOF] = lmdof
-#  end
-#
-#  n_lmdofs = length(pini:pend)
-#  _setsize_b!(b,n_lmdofs,k)
-#  lmdof_to_val = b.array
-#  fill!(lmdof_to_val,zero(eltype(lmdof_to_val)))
-#
-#  _fill_lmdof_to_val!(lmdof_to_val,ldof_to_val,mDOF_to_lmdof,cellid,k)
-#
-#  lmdof_to_val
-#end
-#
-#function _setsize_b!(b,n_lmdofs,k::LinearConstraintsKernel{:vector})
-#  setsize!(b,(n_lmdofs,))
-#end
-#
-#function _setsize_b!(b,n_lmdofs,k::LinearConstraintsKernel{:matrix_rows})
-#  n = size(b,2)
-#  setsize!(b,(n_lmdofs,n))
-#end
-#
-#function _setsize_b!(b,n_lmdofs,k::LinearConstraintsKernel{:matrix_cols})
-#  n = size(b,1)
-#  setsize!(b,(n,n_lmdofs))
-#end
-#
-#function  _fill_lmdof_to_val!(
-#  lmdof_to_val,ldof_to_val,mDOF_to_lmdof,cellid,k::LinearConstraintsKernel{:vector})
-#
-#  pini = k.cell_to_ldof_to_dof.ptrs[cellid]
-#  pend = k.cell_to_ldof_to_dof.ptrs[cellid+1]-1
-#  # TODO this can more efficiently done with a matrix vector multiplication
-#  for (ldof,p) in enumerate(pini:pend)
-#    val = ldof_to_val[ldof]
-#    dof = k.cell_to_ldof_to_dof.data[p]
-#    DOF = _dof_to_DOF(dof,k.n_fdofs)
-#    qini = k.DOF_to_mDOFs.ptrs[DOF]
-#    qend = k.DOF_to_mDOFs.ptrs[DOF+1]-1
-#    for q in qini:qend
-#      mDOF = k.DOF_to_mDOFs.data[q]
-#      coeff = k.DOF_to_coeffs.data[q]
-#      lmdof = mDOF_to_lmdof[mDOF]
-#      lmdof_to_val[lmdof] += coeff*val
-#    end
-#  end
-#end
-#
-#function  _fill_lmdof_to_val!(
-#  lmdof_to_val,ldof_to_val,mDOF_to_lmdof,cellid,k::LinearConstraintsKernel{:matrix_rows})
-#
-#  pini = k.cell_to_ldof_to_dof.ptrs[cellid]
-#  pend = k.cell_to_ldof_to_dof.ptrs[cellid+1]-1
-#  n = size(lmdof_to_val,2)
-#  # TODO this can more efficiently done with a matrix matrix multiplication
-#  for i in 1:n
-#    for (ldof,p) in enumerate(pini:pend)
-#      val = ldof_to_val[ldof,i]
-#      dof = k.cell_to_ldof_to_dof.data[p]
-#      DOF = _dof_to_DOF(dof,k.n_fdofs)
-#      qini = k.DOF_to_mDOFs.ptrs[DOF]
-#      qend = k.DOF_to_mDOFs.ptrs[DOF+1]-1
-#      for q in qini:qend
-#        mDOF = k.DOF_to_mDOFs.data[q]
-#        coeff = k.DOF_to_coeffs.data[q]
-#        lmdof = mDOF_to_lmdof[mDOF]
-#        lmdof_to_val[lmdof,i] += coeff*val
-#      end
-#    end
-#  end
-#end
-#
-#function  _fill_lmdof_to_val!(
-#  lmdof_to_val,ldof_to_val,mDOF_to_lmdof,cellid,k::LinearConstraintsKernel{:matrix_cols})
-#
-#  pini = k.cell_to_ldof_to_dof.ptrs[cellid]
-#  pend = k.cell_to_ldof_to_dof.ptrs[cellid+1]-1
-#  n = size(lmdof_to_val,1)
-#  # TODO this can more efficiently done with a matrix matrix multiplication
-#  for i in 1:n
-#    for (ldof,p) in enumerate(pini:pend)
-#      val = ldof_to_val[i,ldof]
-#      dof = k.cell_to_ldof_to_dof.data[p]
-#      DOF = _dof_to_DOF(dof,k.n_fdofs)
-#      qini = k.DOF_to_mDOFs.ptrs[DOF]
-#      qend = k.DOF_to_mDOFs.ptrs[DOF+1]-1
-#      for q in qini:qend
-#        mDOF = k.DOF_to_mDOFs.data[q]
-#        coeff = k.DOF_to_coeffs.data[q]
-#        lmdof = mDOF_to_lmdof[mDOF]
-#        lmdof_to_val[i,lmdof] += coeff*val
-#      end
-#    end
-#  end
-#end
-#
-#
