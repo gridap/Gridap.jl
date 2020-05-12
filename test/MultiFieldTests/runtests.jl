@@ -18,4 +18,6 @@ using Test
 
 @testset "MultiFieldFEOperators" begin include("MultiFieldFEOperatorsTests.jl") end
 
+@testset "MultiFieldFESpacesWithLinearConstraints" begin include("MultiFieldFESpacesWithLinearConstraintsTests.jl") end
+
 end # module

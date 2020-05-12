@@ -18,9 +18,7 @@ struct MultiFieldFESpace{S<:MultiFieldStyle,B} <: FESpace
   constraint_style::Val{B}
   function MultiFieldFESpace(spaces::Vector{<:SingleFieldFESpace},mfs::MultiFieldStyle)
     S = typeof(mfs)
-    msg = "MultiFieldFESpace only implemented when the underlying fields have no constraints."
-    @notimplementedif any( map(has_constraints,spaces) ) msg
-    B = false
+    B = any( map(has_constraints,spaces) )
     cs = Val{B}()
     new{S,B}(spaces,mfs,cs)
   end
@@ -101,6 +99,129 @@ end
 function zero_free_values(::Type{T},spaces::Vector{<:SingleFieldFESpace}) where T
   f = MultiFieldFESpace(spaces)
   zero_free_values(T,f)
+end
+
+function get_cell_isconstrained(f::MultiFieldFESpace)
+  data = map(get_cell_isconstrained,f.spaces)
+  apply( (args...) -> args,  data...)
+end
+
+function get_cell_constraints(f::MultiFieldFESpace)
+  data = map(get_cell_constraints,f.spaces)
+  block_ids = [ (i,1) for i in 1:length(f.spaces)]
+  MultiFieldCellArray(tuple(data...),block_ids)
+end
+
+function get_constraint_kernel_vector(f::MultiFieldFESpace)
+  MultiFieldVectorConstraintKernel()
+end
+
+struct MultiFieldVectorConstraintKernel <: Kernel end
+
+function kernel_cache(k::MultiFieldVectorConstraintKernel,vec::MultiFieldArray,isconstr,constr)
+  v = copy(vec)
+  cv = CachedMultiFieldArray(v)
+  v,cv
+end
+
+function apply_kernel!(
+  cache,k::MultiFieldVectorConstraintKernel,vec::MultiFieldArray,isconstr,constr::MultiFieldArray)
+
+  if any(isconstr)
+    v, cv = cache
+    for iblock in 1:length(vec.blocks)
+      field_id, = vec.coordinates[iblock]
+      iconstr = constr.blocks[field_id]
+      n = size(iconstr,1)
+      setsize!(cv.blocks[iblock],(n,))
+    end
+    _move_cached_arrays!(v,cv)
+    for iblock in 1:length(vec.blocks)
+      ivec = vec.blocks[iblock]
+      field_id, = vec.coordinates[iblock]
+      iconstr = constr.blocks[field_id]
+      mul!(v.blocks[iblock],iconstr,ivec)
+    end
+    return v
+  else
+    return vec
+  end
+end
+
+function get_constraint_kernel_matrix_rows(f::MultiFieldFESpace)
+  MultiFieldMatrixRowsConstraintKernel()
+end
+
+struct MultiFieldMatrixRowsConstraintKernel <: Kernel end
+
+function kernel_cache(k::MultiFieldMatrixRowsConstraintKernel,mat::MultiFieldArray,isconstr,constr)
+  v = copy(mat)
+  cv = CachedMultiFieldArray(v)
+  v,cv
+end
+
+function apply_kernel!(
+  cache,k::MultiFieldMatrixRowsConstraintKernel,mat::MultiFieldArray,isconstr,constr::MultiFieldArray)
+
+  if any(isconstr)
+    v, cv = cache
+    for iblock in 1:length(mat.blocks)
+      imat = mat.blocks[iblock]
+      field_id, _ = mat.coordinates[iblock]
+      iconstr = constr.blocks[field_id]
+      n = size(iconstr,1)
+      m = size(imat,2)
+      setsize!(cv.blocks[iblock],(n,m))
+    end
+    _move_cached_arrays!(v,cv)
+    for iblock in 1:length(mat.blocks)
+      imat = mat.blocks[iblock]
+      field_id,_ = mat.coordinates[iblock]
+      iconstr = constr.blocks[field_id]
+      mul!(v.blocks[iblock],iconstr,imat)
+    end
+    return v
+  else
+    return mat
+  end
+end
+
+function get_constraint_kernel_matrix_cols(f::MultiFieldFESpace)
+  MultiFieldMatrixColsConstraintKernel()
+end
+
+struct MultiFieldMatrixColsConstraintKernel <: Kernel end
+
+function kernel_cache(k::MultiFieldMatrixColsConstraintKernel,mat::MultiFieldArray,isconstr,constr)
+  v = copy(mat)
+  cv = CachedMultiFieldArray(v)
+  v,cv
+end
+
+function apply_kernel!(
+  cache,k::MultiFieldMatrixColsConstraintKernel,mat::MultiFieldArray,isconstr,constr::MultiFieldArray)
+
+  if any(isconstr)
+    v, cv = cache
+    for iblock in 1:length(mat.blocks)
+      imat = mat.blocks[iblock]
+      _,field_id = mat.coordinates[iblock]
+      iconstr = constr.blocks[field_id]
+      n = size(iconstr,1)
+      m = size(imat,1)
+      setsize!(cv.blocks[iblock],(m,n))
+    end
+    _move_cached_arrays!(v,cv)
+    for iblock in 1:length(mat.blocks)
+      imat = mat.blocks[iblock]
+      _,field_id = mat.coordinates[iblock]
+      iconstr = constr.blocks[field_id]
+      mul!(v.blocks[iblock],imat,Transpose(iconstr))
+    end
+    return v
+  else
+    return mat
+  end
 end
 
 # API for multi field case

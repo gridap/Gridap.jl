@@ -3,6 +3,7 @@ module CellDofBasesTests
 using Test
 using Gridap.Geometry
 using Gridap.FESpaces
+using Gridap.Arrays
 using Gridap.Fields
 
 domain =(0,1,0,1)
@@ -22,6 +23,12 @@ V = TestFESpace(
 
 cell_dof_basis = get_cell_dof_basis(V)
 @test is_in_physical_space(cell_dof_basis)
+
+indices = [2,3,3,1]
+
+f = reindex(cell_dof_basis,indices)
+@test length(get_array(f)) == length(indices)
+@test is_in_physical_space(f)
 
 cell_basis = get_cell_basis(V)
 @test is_in_physical_space(cell_basis)
