@@ -17,24 +17,31 @@ struct CartesianDescriptor{D,T,F<:Function} <: GridapType
   partition::NTuple{D,Int}
   map::F
   @doc """
-      CartesianDescriptor(origin,sizes,partition,map::Function=identity)
+      CartesianDescriptor(
+        origin::Point{D}, sizes::NTuple{D}, partition, map::Function=identity) where D
+
+  `partition` is a 1D indexable collection of arbitrary type.
   """
-  function CartesianDescriptor(origin,sizes,partition,map::Function=identity)
-    D = length(partition)
+  function CartesianDescriptor(
+    origin::Point{D}, sizes::NTuple{D}, partition, map::Function=identity) where D
+
     T = eltype(sizes)
     F = typeof(map)
-    new{D,T,F}(origin,sizes,partition,map)
+    new{D,T,F}(origin,sizes,Tuple(partition),map)
   end
+
 end
 
 """
     CartesianDescriptor(domain,partition,map::Function=identity)
+
+`domain` and `partition` are 1D indexable collections of arbitrary type.
 """
 function CartesianDescriptor(domain,partition,map::Function=identity)
   D = length(partition)
   limits = [(domain[2*d-1],domain[2*d]) for d in 1:D]
   sizes = Tuple([(limits[d][2]-limits[d][1])/partition[d] for d in 1:D])
-  origin = [ limits[d][1] for d in 1:D]
+  origin = Point([ limits[d][1] for d in 1:D]...)
   CartesianDescriptor(origin,sizes,partition,map)
 end
 
@@ -42,6 +49,7 @@ end
     CartesianDescriptor(
       pmin::Point{D},pmax::Point{D},partition,map::Function=identity) where D
 
+`partition` is a 1D indexable collection of arbitrary type.
 """
 function CartesianDescriptor(
   pmin::Point{D},pmax::Point{D},partition,map::Function=identity) where D

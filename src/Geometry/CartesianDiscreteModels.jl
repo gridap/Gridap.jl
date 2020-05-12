@@ -39,12 +39,11 @@ struct CartesianDiscreteModel{D,T,F} <: DiscreteModel{D,D}
                                   cmin::CartesianIndex,
                                   cmax::CartesianIndex) where {D,T,F}
 
-     suborigin = Tuple(desc.origin) .+
-                        (Tuple(cmin) .- 1) .* desc.sizes
+     suborigin = Tuple(desc.origin) .+ (Tuple(cmin) .- 1) .* desc.sizes
      subpartition = Tuple(cmax) .- Tuple(cmin) .+ 1
      subsizes = desc.sizes
      subdesc =
-        CartesianDescriptor(suborigin, subsizes, subpartition, desc.map)
+       CartesianDescriptor(Point(suborigin), subsizes, subpartition, desc.map)
 
      grid = CartesianGrid(subdesc)
      _grid = UnstructuredGrid(grid)

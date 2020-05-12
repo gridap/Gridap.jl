@@ -195,6 +195,11 @@ function convert(::Type{<:MultiValue{S,T,N,L}},a::NTuple{L,R}) where {S,T,N,L,R}
   MultiValue(SArray{S,T}(a))
 end
 
+function convert(::Type{<:MultiValue{S,T,N,L}},a::MultiValue{S,Ta,N,L} where Ta) where {S,T,N,L}
+  b = convert(SArray{S,T,N,L},a.array)
+  MultiValue(b)
+end
+
 # Misc operations on the type itself
 
 length(::Type{<: MultiValue{S,T,N,L} where {S,T,N}}  ) where L = L
