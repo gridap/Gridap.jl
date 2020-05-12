@@ -7,10 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+  - Added `FESpaceWithLinearConstraints`. Since PR [#247](https://github.com/gridap/Gridap.jl/pull/247).
   - Added inner constructor to `CartesianDiscreteModel` allowing to build a model that represents a subgrid of
     a larger grid. Since PR [#245](https://github.com/gridap/Gridap.jl/pull/245).
 
 ### Changed
+
+  - The part associated with the imposition of constraints in the `FESpace` interface has changed slightly. Since PR [#247](https://github.com/gridap/Gridap.jl/pull/247).
   - Change the types of the sizes and partition fields of CartesianDescriptor to tuples instead of points. 
     Since PR [#246](https://github.com/gridap/Gridap.jl/pull/246).
 
