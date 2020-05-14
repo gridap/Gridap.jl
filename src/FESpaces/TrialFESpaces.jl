@@ -78,7 +78,7 @@ get_cell_dof_basis(f::TrialFESpace) = get_cell_dof_basis(f.space)
 
 num_free_dofs(f::TrialFESpace) = num_free_dofs(f.space)
 
-zero_free_values(::Type{T},f::TrialFESpace) where T = zero_free_values(T,f.space)
+zero_free_values(f::TrialFESpace) = zero_free_values(f.space)
 
 get_cell_dofs(f::TrialFESpace) = get_cell_dofs(f.space)
 

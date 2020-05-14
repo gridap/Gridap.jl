@@ -92,13 +92,13 @@ function EvaluationFunction(spaces::Vector{<:SingleFieldFESpace}, free_values)
   EvaluationFunction(f,free_values)
 end
 
-function zero_free_values(::Type{T},fs::MultiFieldFESpace) where T
-  zeros(T,num_free_dofs(fs))
+function zero_free_values(fs::MultiFieldFESpace)
+  zeros(num_free_dofs(fs))
 end
 
-function zero_free_values(::Type{T},spaces::Vector{<:SingleFieldFESpace}) where T
+function zero_free_values(spaces::Vector{<:SingleFieldFESpace})
   f = MultiFieldFESpace(spaces)
-  zero_free_values(T,f)
+  zero_free_values(f)
 end
 
 function get_cell_isconstrained(f::MultiFieldFESpace)

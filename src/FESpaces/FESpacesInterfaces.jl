@@ -20,15 +20,11 @@ end
 """
 abstract type FESpace <: GridapType end
 
-"""
-"""
-function num_free_dofs(f::FESpace)
-  @abstractmethod
-end
+# Minimal FE interface (used by FEOperator)
 
 """
 """
-function get_cell_basis(f::FESpace)
+function num_free_dofs(f::FESpace)
   @abstractmethod
 end
 
@@ -44,12 +40,8 @@ end
 
 """
 """
-function zero_free_values(::Type{T},fs::FESpace) where T
-  @abstractmethod
-end
-
 function zero_free_values(fs::FESpace)
-  zero_free_values(Float64,fs)
+  @abstractmethod
 end
 
 """
@@ -57,6 +49,14 @@ end
 function Base.zero(f::FESpace)
   free_values = zero_free_values(f)
   FEFunction(f,free_values)
+end
+
+# Extended FEInterface used by FEOperatorFromTerms and Assemblers
+
+"""
+"""
+function get_cell_basis(f::FESpace)
+  @abstractmethod
 end
 
 """
@@ -107,7 +107,6 @@ end
 """
 function test_fe_space(f::FESpace)
   free_values = zero_free_values(f)
-  @test eltype(zero_free_values(Int,f)) == Int
   fe_function = FEFunction(f,free_values)
   test_fe_function(fe_function)
   fe_basis = get_cell_basis(f)

@@ -37,8 +37,8 @@ function get_cell_basis(f::CLagrangianFESpace)
   get_cell_basis(f.space)
 end
 
-function zero_free_values(::Type{T},f::CLagrangianFESpace) where T
-  zero_free_values(T,f.space)
+function zero_free_values(f::CLagrangianFESpace)
+  zero_free_values(f.space)
 end
 
 # SingleFieldFESpace interface

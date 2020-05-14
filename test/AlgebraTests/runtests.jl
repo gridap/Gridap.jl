@@ -2,6 +2,8 @@ module AlgebraTests
 
 using Test
 
+@testset "AlgebraInterfaces" begin include("AlgebraInterfacesTests.jl") end
+
 @testset "SparseMatrixCSC" begin include("SparseMatrixCSC.jl") end
 
 @testset "SparseMatrixCSR" begin include("SparseMatrixCSR.jl") end

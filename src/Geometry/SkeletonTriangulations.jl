@@ -10,9 +10,10 @@ The inner constructor enforces `B<:BoundaryTriangulation`
 struct SkeletonTriangulation{Dc,Dp,B} <: Triangulation{Dc,Dp}
   left::B
   right::B
-  function SkeletonTriangulation(left::B,right::B) where B<:BoundaryTriangulation
+  function SkeletonTriangulation(left::B,right::B) where B<:Triangulation
     Dc = num_cell_dims(left)
     Dp = num_point_dims(left)
+    @assert Dc + 1 == Dp
     new{Dc,Dp,B}(left,right)
   end
 end
@@ -162,6 +163,12 @@ end
 """
 function get_normal_vector(trian::SkeletonTriangulation)
   get_normal_vector(trian.left)
+end
+
+function TriangulationPortion(oldtrian::SkeletonTriangulation,cell_to_oldcell::Vector{Int})
+  left = TriangulationPortion(oldtrian.left,cell_to_oldcell)
+  right = TriangulationPortion(oldtrian.right,cell_to_oldcell)
+  SkeletonTriangulation(left,right)
 end
 
 # Specific API

@@ -25,8 +25,7 @@ end
 """
     solve!(x::AbstractVector,nls::NonlinearSolver,op::NonlinearOperator,cache)
 
-Solve using the cache object from a previous solve. If cache === nothing, a new
-cache is created a returned.
+Solve using the cache object from a previous solve.
 """
 function solve!(x::AbstractVector,nls::NonlinearSolver,op::NonlinearOperator,cache)
   @abstractmethod

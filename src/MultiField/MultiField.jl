@@ -64,17 +64,28 @@ import Gridap.FESpaces: get_test
 import Gridap.FESpaces: get_trial
 import Gridap.FESpaces: allocate_vector
 import Gridap.FESpaces: assemble_vector!
+import Gridap.FESpaces: assemble_vector_add!
 import Gridap.FESpaces: allocate_matrix
 import Gridap.FESpaces: assemble_matrix!
 import Gridap.FESpaces: assemble_matrix_add!
 import Gridap.FESpaces: assemble_matrix
 import Gridap.FESpaces: allocate_matrix_and_vector
 import Gridap.FESpaces: assemble_matrix_and_vector!
+import Gridap.FESpaces: assemble_matrix_and_vector_add!
 import Gridap.FESpaces: assemble_matrix_and_vector
 import Gridap.FESpaces: SparseMatrixAssembler
 import Gridap.FESpaces: AffineFEOperator
 import Gridap.FESpaces: FEOperator
 import Gridap.FESpaces: EvaluationFunction
+import Gridap.FESpaces: get_matrix_type
+import Gridap.FESpaces: get_vector_type
+import Gridap.FESpaces: get_assembly_strategy
+import Gridap.FESpaces: count_matrix_nnz_coo
+import Gridap.FESpaces: fill_matrix_coo_symbolic!
+import Gridap.FESpaces: fill_matrix_coo_numeric!
+import Gridap.FESpaces: fill_matrix_and_vector_coo_numeric!
+import Gridap.FESpaces: count_matrix_and_vector_nnz_coo
+import Gridap.FESpaces: fill_matrix_and_vector_coo_symbolic!
 
 import Base: +, -
 

@@ -27,3 +27,15 @@ function get_cell_map(trian::TriangulationPortion)
   cell_map = get_cell_map(trian.oldtrian)
   reindex(cell_map,trian.cell_to_oldcell)
 end
+
+function get_cell_id(trian::TriangulationPortion)
+  reindex(get_cell_id(trian.oldtrian),trian.cell_to_oldcell)
+end
+
+function restrict(f::AbstractArray,trian::TriangulationPortion)
+  reindex(f,trian)
+end
+
+function get_normal_vector(trian::TriangulationPortion)
+  reindex(get_normal_vector(trian.oldtrian),trian.cell_to_oldcell)
+end

@@ -54,9 +54,9 @@ function _solve_nr!(x,A,b,dx,ns,nls,op)
   for nliter in 1:nls.max_nliters
 
     # Solve linearized problem
-    broadcast!(*,b,b,-1)
+    scale_entries!(b,-1)
     solve!(dx,ns,b)
-    broadcast!(+,x,x,dx)
+    add_entries!(x,dx)
 
     # Check convergence for the current residual
     residual!(b, op, x)
@@ -157,7 +157,7 @@ function _nlsolve_with_updated_cache!(x,nls,op,cache)
   end
   r = nlsolve(df,x;linsolve=linsolve!,kwargs...)
   cache.result = r
-  x[:] .= r.zero
+  copy_entries!(x,r.zero)
 end
 
 function _new_nlsolve_cache(x0,nls,op)

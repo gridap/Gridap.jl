@@ -335,26 +335,5 @@ function add_to_array!(a::AbstractArray,b::Number,combine=+)
   end
 end
 
-"""
-"""
-function matvec_muladd!(c::AbstractVector,a::AbstractMatrix,b::AbstractVector)
-  _matvec_muladd!(c,a,b)
-end
-
-@static if VERSION >= v"1.3"
-  function _matvec_muladd!(c,a,b)
-    mul!(c,a,b,1,1)
-  end
-else
-  function _matvec_muladd!(c,a,b)
-    @assert length(c) == size(a,1)
-    @assert length(b) == size(a,2)
-    @inbounds for j in 1:size(a,2)
-      for i in 1:size(a,1)
-        c[i] += a[i,j]*b[j]
-      end
-    end
-  end
-end
 
 

@@ -27,12 +27,13 @@ end
 
 function _setup_vols(V,trian,quad)
   U = TrialFESpace(V)
-  assem = SparseMatrixAssembler(V,U)
+  assem = SparseMatrixAssembler(U,V)
   bh = get_cell_basis(V)
   bh_trian = restrict(bh,trian)
   cellvec = integrate(bh_trian,trian,quad)
   cellids = get_cell_id(trian)
-  vol_i = assemble_vector(assem,[cellvec],[cellids])
+  vecdata = ([cellvec],[cellids])
+  vol_i = assemble_vector(assem,vecdata)
   vol = sum(vol_i)
   (vol_i, vol)
 end
@@ -95,7 +96,7 @@ get_cell_dof_basis(f::ZeroMeanFESpace) = get_cell_dof_basis(f.space)
 
 num_free_dofs(f::ZeroMeanFESpace) = num_free_dofs(f.space)
 
-zero_free_values(::Type{T},f::ZeroMeanFESpace) where T = zero_free_values(T,f.space)
+zero_free_values(f::ZeroMeanFESpace) = zero_free_values(f.space)
 
 get_cell_dofs(f::ZeroMeanFESpace) = get_cell_dofs(f.space)
 
