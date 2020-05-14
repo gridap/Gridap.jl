@@ -22,9 +22,19 @@ test_triangulation(btrian)
 nb = get_normal_vector(btrian)
 @test length(nb) == num_cells(btrian)
 
+sface_to_oldsface = collect(10:45)
+oldstrian = SkeletonTriangulation(oldmodel)
+strian = TriangulationPortion(oldstrian,sface_to_oldsface)
+test_triangulation(strian)
+
+ns = get_normal_vector(strian)
+@test length(ns) == num_cells(strian)
+
 #using Gridap.Visualization
 #writevtk(oldtrian,"oldtrian")
 #writevtk(btrian,"btrian",cellfields=["normal"=>nb],celldata=["oldcell"=>get_cell_id(btrian)])
+#writevtk(strian,"strian",cellfields=["normal"=>ns],
+#  celldata=["oldcell_left"=>get_cell_id(strian).left,"oldcell_right"=>get_cell_id(strian).right])
 
 end # module
 

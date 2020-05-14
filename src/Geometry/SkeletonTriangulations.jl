@@ -165,6 +165,12 @@ function get_normal_vector(trian::SkeletonTriangulation)
   get_normal_vector(trian.left)
 end
 
+function TriangulationPortion(oldtrian::SkeletonTriangulation,cell_to_oldcell::Vector{Int})
+  left = TriangulationPortion(oldtrian.left,cell_to_oldcell)
+  right = TriangulationPortion(oldtrian.right,cell_to_oldcell)
+  SkeletonTriangulation(left,right)
+end
+
 # Specific API
 
 """
