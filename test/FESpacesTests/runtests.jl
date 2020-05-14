@@ -54,6 +54,8 @@ using Test
 
 @testset "ExtendedFESpaces" begin include("ExtendedFESpacesTests.jl") end
 
+@testset "FESpacesWithLinearConstraints" begin include("FESpacesWithLinearConstraintsTests.jl") end
+
 @testset "PhysicalBasesTests" begin include("PhysicalBasesTests.jl") end
 
 @testset "PhysicalFESpaces" begin include("PhysicalFESpacesTests.jl") end

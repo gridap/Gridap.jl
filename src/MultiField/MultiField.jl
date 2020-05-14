@@ -17,6 +17,7 @@ using Gridap.TensorValues
 using FillArrays
 using SparseArrays
 import LinearAlgebra: mul!
+using LinearAlgebra: Transpose
 
 using Gridap.Arrays: IdentityVector
 using Gridap.FESpaces: _operate_cell_basis
@@ -53,6 +54,8 @@ import Gridap.FESpaces: constraint_style
 import Gridap.FESpaces: get_constraint_kernel_matrix_cols
 import Gridap.FESpaces: get_constraint_kernel_matrix_rows
 import Gridap.FESpaces: get_constraint_kernel_vector
+import Gridap.FESpaces: get_cell_isconstrained
+import Gridap.FESpaces: get_cell_constraints
 import Gridap.FESpaces: get_cell_dofs
 import Gridap.FESpaces: get_fe_space
 import Gridap.FESpaces: get_free_values

@@ -92,6 +92,8 @@ export get_cell_basis
 export zero_free_values
 export constraint_style
 export has_constraints
+export get_cell_isconstrained
+export get_cell_constraints
 export get_constraint_kernel_matrix_cols
 export get_constraint_kernel_matrix_rows
 export get_constraint_kernel_vector
@@ -223,6 +225,7 @@ export CLagrangianFESpace
 export DivConformingFESpace
 export CurlConformingFESpace
 export DirichletFESpace
+export FESpaceWithLinearConstraints
 export ExtendedFESpace
 
 export @law
@@ -289,6 +292,8 @@ include("CLagrangianFESpaces.jl")
 include("DirichletFESpaces.jl")
 
 include("ExtendedFESpaces.jl")
+
+include("FESpacesWithLinearConstraints.jl")
 
 include("FESpaceFactories.jl")
 

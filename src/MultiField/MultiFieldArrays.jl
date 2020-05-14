@@ -48,6 +48,10 @@ function _get_block_size(coordinates::Vector{NTuple{N,Int}}) where N
   NTuple{N,Int}(m)
 end
 
+function Base.copy(a::MultiFieldArray)
+  MultiFieldArray([copy(b) for b in a.blocks],a.coordinates)
+end
+
 """
 """
 function get_block_size(a::MultiFieldArray)

@@ -45,7 +45,11 @@ end
 end
 
 function testitem(a::Reindexed)
-  testitem(a.i_to_v)
+  if length(a.j_to_i) == 0
+    testitem(a.i_to_v)
+  else
+    a.i_to_v[first(a.j_to_i)]
+  end
 end
 
 array_cache(a::Reindexed) = array_cache(a.i_to_v)

@@ -53,3 +53,12 @@ end
 RefStyle(::Type{<:GenericCellDofBasis{R}}) where R = Val{R}()
 
 get_array(a::GenericCellDofBasis) = a.array
+
+function reindex(cf::CellDofBasis,a::AbstractVector)
+  similar_object(cf,reindex(get_array(cf),a))
+end
+
+function similar_object(cf::CellDofBasis,a::AbstractArray)
+  GenericCellDofBasis(RefStyle(cf),a)
+end
+

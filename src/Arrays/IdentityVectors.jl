@@ -29,3 +29,7 @@ end
 function reindex(a::AppliedArray,b::IdentityVector)
   a
 end
+
+function reindex(a::Fill,b::IdentityVector)
+  a
+end
