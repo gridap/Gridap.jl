@@ -4,11 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.10.0] - 2020-5-14
 
 ### Added
 
-  - Extended support of `TriangulationPortion` to boundary and skeleton triangulations.  Since PR ...
+  - Extended support of `TriangulationPortion` to boundary and skeleton triangulations.  Since PR [#249](https://github.com/gridap/Gridap.jl/pull/249).
   - Added `FESpaceWithLinearConstraints`. Since PR [#247](https://github.com/gridap/Gridap.jl/pull/247).
   - Added inner constructor to `CartesianDiscreteModel` allowing to build a model that represents a subgrid of
     a larger grid. Since PR [#245](https://github.com/gridap/Gridap.jl/pull/245).
@@ -16,13 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
   - The part associated with the imposition of constraints in the `FESpace` interface has changed slightly. Since PR [#247](https://github.com/gridap/Gridap.jl/pull/247).
-  - Simplified the signature of `zero_free_values(::FESpace)`. Since PR ...
+  - Simplified the signature of `zero_free_values(::FESpace)`. Since PR [#249](https://github.com/gridap/Gridap.jl/pull/249).
   - Major refactoring in the `Assembler` interface. 
-    **Important change:** assembly-related functions take the data returned by functions like
+    **Important change:** Now, assembly-related functions take the data returned by functions like
     `collect_cell_matrix` as it is. Example: the old user code `assemble_matrix(assembler,collect_cell_matrix(du,dv,terms)...)`
     now is written simply as `assemble_matrix(assembler,collect_cell_matrix(du,dv,terms))`, i.e., the unpack of the last argument is not
-    used anymore.  With new new assembler interface, it is also possible to customize the assembly process
-    via a so-called `AssemblerStrategy` object. Since PR ...
+    used anymore.  In addition, with the new assembler interface, it is possible to customize the assembly process
+    via a so-called `AssemblerStrategy` object. Since PR [#249](https://github.com/gridap/Gridap.jl/pull/249).
   - Change the types of the sizes and partition fields of CartesianDescriptor to tuples instead of points. 
     Since PR [#246](https://github.com/gridap/Gridap.jl/pull/246).
 
