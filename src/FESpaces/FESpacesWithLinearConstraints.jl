@@ -350,7 +350,7 @@ function get_dirichlet_values(f::FESpaceWithLinearConstraints)
 end
 
 function scatter_free_and_dirichlet_values(f::FESpaceWithLinearConstraints,fmdof_to_val,dmdof_to_val)
-  fdof_to_val = zero_free_values(eltype(fmdof_to_val),f.space)
+  fdof_to_val = zero_free_values(f.space)
   ddof_to_val = zero_dirichlet_values(f.space)
   _setup_dof_to_val!(
     fdof_to_val,
@@ -406,7 +406,7 @@ end
 
 function gather_free_and_dirichlet_values(f::FESpaceWithLinearConstraints,cell_to_ludof_to_val)
   fdof_to_val, ddof_to_val = gather_free_and_dirichlet_values(f.space,cell_to_ludof_to_val)
-  fmdof_to_val = zero_free_values(eltype(fdof_to_val),f)
+  fmdof_to_val = zero_free_values(f)
   dmdof_to_val = zero_dirichlet_values(f)
   _setup_mdof_to_val!(
     fmdof_to_val,
@@ -458,8 +458,8 @@ function get_cell_basis(f::FESpaceWithLinearConstraints)
   get_cell_basis(f.space)
 end
 
-function zero_free_values(::Type{T},f::FESpaceWithLinearConstraints) where T
-  zeros(T,num_free_dofs(f))
+function zero_free_values(f::FESpaceWithLinearConstraints) where T
+  zeros(num_free_dofs(f))
 end
 
 constraint_style(::Type{<:FESpaceWithLinearConstraints}) = Val{true}()
