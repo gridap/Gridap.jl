@@ -166,7 +166,7 @@ function test_assembler(a::Assembler,matdata,vecdata,data)
   @test num_free_dofs(test_fesp) == length(b)
 end
 
-# This is an extended interface that only make sense for assemblers that build (sequential) sparse matrices
+# This is an extended interface that only makes sense for assemblers that build (sequential) sparse matrices
 # (e.g. not for matrix free assemblers or for distributed assemblers)
 
 """
@@ -304,4 +304,3 @@ function test_sparse_matrix_assembler(a::SparseMatrixAssembler,matdata,vecdata,d
   _ = get_matrix_type(a)
   _ = get_vector_type(a)
 end
-
