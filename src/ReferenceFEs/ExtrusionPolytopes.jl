@@ -217,8 +217,24 @@ function is_n_cube(p::ExtrusionPolytope{0})
   true
 end
 
+function is_simplex(p::ExtrusionPolytope{1})
+  true
+end
+
+function is_n_cube(p::ExtrusionPolytope{1})
+  true
+end
+
 function simplexify(p::ExtrusionPolytope)
   @notimplemented
+end
+
+function simplexify(p::ExtrusionPolytope{0})
+  [[1,],], VERTEX
+end
+
+function simplexify(p::ExtrusionPolytope{1})
+  [[1,2],], SEGMENT
 end
 
 function simplexify(p::ExtrusionPolytope{2})
