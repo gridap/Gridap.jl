@@ -35,6 +35,18 @@ function get_normal_vector(trian::BoundaryTriangulation)
   @abstractmethod
 end
 
+"""
+"""
+function get_face_to_face(trian::BoundaryTriangulation)
+  @abstractmethod
+end
+
+"""
+"""
+function get_cell_around(trian::BoundaryTriangulation)
+  @abstractmethod
+end
+
 # Tester
 
 """
@@ -65,7 +77,7 @@ end
     BoundaryTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
     BoundaryTriangulation(model::DiscreteModel)
 """
-function BoundaryTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool},icell_around::Integer)
+function BoundaryTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool},icell_around)
   GenericBoundaryTriangulation(model,face_to_mask,icell_around)
 end
 
