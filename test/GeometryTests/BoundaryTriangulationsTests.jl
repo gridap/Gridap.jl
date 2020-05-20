@@ -41,6 +41,8 @@ model = CartesianDiscreteModel(domain,partition)
 
 btrian = BoundaryTriangulation(model,"tag_8")
 test_boundary_triangulation(btrian)
+@test btrian.face_trian.cell_to_oldcell == get_face_to_face(btrian)
+@test 1 == get_cell_around(btrian)
 
 btrian = BoundaryTriangulation(model,get_face_labeling(model),"tag_8")
 test_boundary_triangulation(btrian)

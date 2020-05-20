@@ -17,21 +17,24 @@ is_oriented(::FaceToCellGlue{O}) where O = O
       # + private fields
     end
 """
-struct GenericBoundaryTriangulation{Dc,Dp,Gf,Gc,O} <: BoundaryTriangulation{Dc,Dp}
+struct GenericBoundaryTriangulation{Dc,Dp,Gf,Gc,O,A} <: BoundaryTriangulation{Dc,Dp}
   face_trian::Gf
   cell_trian::Gc
   glue::FaceToCellGlue{O}
+  cell_around::A
 
   function GenericBoundaryTriangulation(
     face_trian::Triangulation,
     cell_trian::Triangulation,
-    glue::FaceToCellGlue{O}) where O
+    glue::FaceToCellGlue{O},
+    cell_around=1) where O
 
     Dc = num_cell_dims(face_trian)
     Dp = num_point_dims(face_trian)
     Gf = typeof(face_trian)
     Gc = typeof(cell_trian)
-    new{Dc,Dp,Gf,Gc,O}(face_trian, cell_trian, glue)
+    A = typeof(cell_around)
+    new{Dc,Dp,Gf,Gc,O,A}(face_trian, cell_trian, glue, cell_around)
   end
 
 end
@@ -41,7 +44,7 @@ function GenericBoundaryTriangulation(
   cell_trian::Triangulation,
   topo::GridTopology,
   face_to_oldface::Vector{Int},
-  icell_arround=1)
+  icell_around=1)
 
 
   D = num_cell_dims(cell_trian)
@@ -50,7 +53,7 @@ function GenericBoundaryTriangulation(
   cell_to_lface_to_pindex = Table(get_cell_permutations(topo,D-1))
   orientation = OrientationStyle(topo)
 
-  oldface_to_cell = get_local_item(oldface_to_cells, icell_arround)
+  oldface_to_cell = get_local_item(oldface_to_cells, icell_around)
   oldface_to_lface = find_local_index(oldface_to_cell, cell_to_oldfaces)
   face_to_cell = collect(Int,reindex(oldface_to_cell, face_to_oldface))
   face_to_lface = collect(Int8,reindex(oldface_to_lface, face_to_oldface))
@@ -74,7 +77,7 @@ function GenericBoundaryTriangulation(
     cell_to_lface_to_pindex,
     ctype_to_lface_to_ftype)
 
-  GenericBoundaryTriangulation(face_trian, cell_trian, glue)
+  GenericBoundaryTriangulation(face_trian, cell_trian, glue, icell_around)
 
 end
 
@@ -82,14 +85,14 @@ end
     GenericBoundaryTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
 """
 function GenericBoundaryTriangulation(
-  model::DiscreteModel,face_to_mask::Vector{Bool},icell_arround=1)
+  model::DiscreteModel,face_to_mask::Vector{Bool},icell_around=1)
   D = num_cell_dims(model)
   topo = get_grid_topology(model)
   oldface_grid = Grid(ReferenceFE{D-1},model)
   cell_grid = Grid(ReferenceFE{D},model)
   face_to_oldface = findall(face_to_mask)
   face_trian = TriangulationPortion(oldface_grid,face_to_oldface)
-  GenericBoundaryTriangulation(face_trian,cell_grid,topo,face_to_oldface,icell_arround)
+  GenericBoundaryTriangulation(face_trian,cell_grid,topo,face_to_oldface,icell_around)
 end
 
 function _fill_ctype_to_lface_to_ftype!(
@@ -130,6 +133,14 @@ end
 
 function get_volume_triangulation(trian::GenericBoundaryTriangulation)
   trian.cell_trian
+end
+
+function get_face_to_face(trian::GenericBoundaryTriangulation)
+  trian.face_trian.cell_to_oldcell
+end
+
+function get_cell_around(trian::GenericBoundaryTriangulation)
+  trian.cell_around
 end
 
 # Cell to face map
