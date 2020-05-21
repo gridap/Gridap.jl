@@ -9,8 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
- - New key-word arguments `zeromean_trian` and `zeromean_quad` in the `FESpace` constructor.
- - New method `reindex(::Triangulation,indices)`.
+ - New key-word arguments `zeromean_trian` and `zeromean_quad` in the `FESpace` constructor. Since
+ PR [#257](https://github.com/gridap/Gridap.jl/pull/257).
+ - New method `reindex(::Triangulation,indices)`. Since
+ PR [#257](https://github.com/gridap/Gridap.jl/pull/257).
  - New functions `get_face_to_face(::BoundaryTriangulation)` and `get_cell_around(::BoundaryTriangulation)`. Since
  PR [#256](https://github.com/gridap/Gridap.jl/pull/256).
 
