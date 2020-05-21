@@ -28,6 +28,7 @@ using Gridap.ReferenceFEs: _get_offset
 using Gridap.ReferenceFEs: _find_unique_with_indices
 
 using Gridap.Arrays: Reindexed
+using Gridap.Arrays: IdentityVector
 
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!

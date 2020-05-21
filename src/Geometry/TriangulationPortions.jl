@@ -1,4 +1,16 @@
 
+function reindex(trian::Triangulation,indices)
+  TriangulationPortion(trian,collect(Int,indices))
+end
+
+function reindex(trian::Triangulation,indices::Vector{Int})
+  TriangulationPortion(trian,indices)
+end
+
+function reindex(trian::Triangulation,indices::IdentityVector)
+  trian
+end
+
 """
 """
 struct TriangulationPortion{Dc,Dp,G} <: Triangulation{Dc,Dp}

@@ -42,12 +42,20 @@ function FESpace(;kwargs...)
   elseif constraint == :zeromean
     order = _get_kwarg(:order,kwargs)
     model = _get_kwarg(:model,kwargs,nothing)
-    if model === nothing
+    zeromean_trian = _get_kwarg(:zeromean_trian,kwargs,nothing)
+    zeromean_quad = _get_kwarg(:zeromean_quad,kwargs,nothing)
+    if zeromean_trian !== nothing
+      trian = zeromean_trian
+    elseif model === nothing
       trian = _get_kwarg(:triangulation,kwargs)
     else
       trian = get_triangulation(model)
     end
-    quad = CellQuadrature(trian,order)
+    if zeromean_quad === nothing
+      quad = CellQuadrature(trian,order)
+    else
+      quad = zeromean_quad
+    end
     return ZeroMeanFESpace(_fespace,trian,quad)
 
   else
