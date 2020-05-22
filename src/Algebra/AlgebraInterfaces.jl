@@ -5,7 +5,7 @@ function allocate_matrix_and_vector end
 """
     allocate_vector(::Type{V},indices) where V
 
-Allocate a vector of type `V` indexable at the incides `indices`
+Allocate a vector of type `V` indexable at the indices `indices`
 """
 function allocate_vector(::Type{V},indices) where V
   n = length(indices)
@@ -132,4 +132,3 @@ else
     end
   end
 end
-
