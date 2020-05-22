@@ -119,7 +119,6 @@ module SparseMatrixCSRTests
                CSC = sparse(I, J, V, nrows,ncols)
                CSR = sparsecsr(I, J, V, nrows,ncols)
                @test CSR == CSC
-               println(CSR == CSC)
            end
            test_rectangular(Ti,Tv,maxrowsorcols,maxcols)
            test_rectangular(Ti,Tv,maxrowsorcols,maxcols)
