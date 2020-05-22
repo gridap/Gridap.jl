@@ -237,19 +237,21 @@ conj(a::T) where {T<:TensorValue} = T(conj(get_array(a)))
     Meta.parse(str[1:(end-1)])
 end
 
-#@generated function tr(v::MultiValue{Tuple{A,A,B}}) where {A,B}
-#  str = ""
-#  for k in 1:B
-#    for i in 1:A
-#      if i !=1
-#        str *= " + "
-#      end
-#      str *= " v.array[$i,$i,$k]"
-#    end
-#    str *= ", "
-#  end
-#  Meta.parse("VectorValue($str)")
-#end
+@generated function tr(v::MultiValue{Tuple{A,A,B}}) where {A,B}
+  lis = LinearIndices((A,A,B))
+  str = ""
+  for k in 1:B
+    for i in 1:A
+      if i !=1
+        str *= " + "
+      end
+      p = lis[i,i,k]
+      str *= " v.data[$p]"
+    end
+    str *= ", "
+  end
+  Meta.parse("VectorValue($str)")
+end
 
 ###############################################################
 # Adjoint and transpose

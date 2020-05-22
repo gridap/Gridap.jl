@@ -41,9 +41,9 @@ export VectorValue
 export TensorValue
 export SymTensorValue
 export SymFourthOrderTensorValue
+export ThirdOrderTensorValue
 
 export inner, outer, meas
-#export det, inv, tr, dot, norm
 export mutable
 export symmetric_part
 export n_components
@@ -77,6 +77,8 @@ include("TensorValueTypes.jl")
 include("SymTensorValueTypes.jl")
 
 include("SymFourthOrderTensorValueTypes.jl")
+
+include("ThirdOrderTensorValueTypes.jl")
 
 include("Misc.jl")
 

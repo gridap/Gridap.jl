@@ -51,7 +51,7 @@ convert(::Type{<:VectorValue{D,T}}, arg:: AbstractArray) where {D,T} = VectorVal
 convert(::Type{<:VectorValue{D,T}}, arg:: Tuple) where {D,T} = VectorValue{D,T}(arg)
 
 # Inverse conversion
-convert(::Type{<:AbstractArray{T}}, arg::VectorValue) where {T}  = Vector{T}([Tuple(arg)...])
+#convert(::Type{<:AbstractArray{T}}, arg::VectorValue) where {T}  = Vector{T}([Tuple(arg)...])
 convert(::Type{<:SVector{D,T}}, arg::VectorValue{D}) where {D,T} = SVector{D,T}(Tuple(arg))
 convert(::Type{<:MVector{D,T}}, arg::VectorValue{D}) where {D,T} = MVector{D,T}(Tuple(arg))
 convert(::Type{<:NTuple{D,T}},  arg::VectorValue{D}) where {D,T} = NTuple{D,T}(Tuple(arg))
