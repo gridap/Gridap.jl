@@ -55,9 +55,6 @@ term_to_cellvec = [cellvec, bcellvec]
 term_to_cellids = [cellids, bcellids]
 term_to_cellmatvec = [ cellmatvec, bcellmatvec ]
 
-matvecdata = ( term_to_cellmatvec , term_to_cellids, term_to_cellids)
-matdata = (term_to_cellmat,term_to_cellids,term_to_cellids)
-vecdata = (term_to_cellvec,term_to_cellids)
 
 mtypes = [
   SparseMatrixCSC,
@@ -74,16 +71,24 @@ mtypes = [
 
 for T in mtypes
 
-  assem = SparseMatrixAssembler(T,V,U)
-  test_assembler(assem,matvecdata,matdata,vecdata)
+  matvecdata = ( term_to_cellmatvec , term_to_cellids, term_to_cellids)
+  matdata = (term_to_cellmat,term_to_cellids,term_to_cellids)
+  vecdata = (term_to_cellvec,term_to_cellids)
+  data = (matvecdata,matdata,vecdata)
+
+  assem = SparseMatrixAssembler(T,Vector{Float64},U,V)
+  test_assembler(assem,matdata,vecdata,data)
   
-  mat = assemble_matrix(assem,[cellmat],[cellids],[cellids])
-  vec = assemble_vector(assem,[cellvec],[cellids])
+  matdata = ([cellmat],[cellids],[cellids])
+  vecdata = ([cellvec],[cellids])
+
+  mat = assemble_matrix(assem,matdata)
+  vec = assemble_vector(assem,vecdata)
   
   x = mat \ vec
   
-  assemble_matrix!(mat,assem,[cellmat],[cellids],[cellids])
-  assemble_vector!(vec,assem,[cellvec],[cellids])
+  assemble_matrix!(mat,assem,matdata)
+  assemble_vector!(vec,assem,vecdata)
   
   x2 = mat \ vec
   @test x ≈ x2
@@ -97,9 +102,10 @@ for T in mtypes
   @test mat[2, 3]  ≈ -0.33333333333333
   @test mat[3, 3]  ≈ 1.333333333333333
 
-  mat, vec = allocate_matrix_and_vector(assem,([cellmatvec],[cellids],[cellids]))
-  assemble_matrix_and_vector!(mat,vec,assem,([cellmatvec],[cellids],[cellids]))
-  assemble_matrix_and_vector!(mat,vec,assem,([cellmatvec],[cellids],[cellids]))
+  data = (([cellmatvec],[cellids],[cellids]),([],[],[]),([],[]))
+  mat, vec = allocate_matrix_and_vector(assem,data)
+  assemble_matrix_and_vector!(mat,vec,assem,data)
+  assemble_matrix_and_vector!(mat,vec,assem,data)
 
   @test vec ≈ [0.0625, 0.125, 0.0625]
   @test mat[1, 1]  ≈  1.333333333333333
@@ -108,7 +114,7 @@ for T in mtypes
   x3 = mat \ vec
   @test x ≈ x3
 
-  mat, vec = assemble_matrix_and_vector(assem,([cellmatvec],[cellids],[cellids]))
+  mat, vec = assemble_matrix_and_vector(assem,data)
 
   x4 = mat \ vec
   @test x ≈ x4

@@ -9,6 +9,21 @@ using Gridap.MultiField: _resize_for_mul!
 using Gridap.MultiField: _move_cached_arrays!
 using Gridap.MultiField: CachedMultiFieldArray
 
+B1 = 10*ones(Int,3)
+B2 = 20*ones(Int,5)
+blocks = [B1,B2]
+coordinates = [(1,),(2,)]
+b = MultiFieldArray(blocks,coordinates)
+
+C1 = 1*ones(Int,3)
+C2 = 2*ones(Int,5)
+blocks = [C2]
+coordinates = [(2,)]
+c = MultiFieldArray(blocks,coordinates)
+
+add_to_array!(b,c)
+@test b.blocks == [[10, 10, 10], [22, 22, 22, 22, 22]]
+
 A11 = ones(Int,2,3)
 A21 = 2*ones(Int,4,3)
 A12 = 3*ones(Int,2,5)

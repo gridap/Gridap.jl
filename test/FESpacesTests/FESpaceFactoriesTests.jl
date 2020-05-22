@@ -3,6 +3,7 @@ module FESpaceFactoriesTests
 using Test
 
 using Gridap.Geometry
+using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.ReferenceFEs
 using Gridap.FESpaces
@@ -96,5 +97,30 @@ V = FESpace(
 
 @test isa(V,ZeroMeanFESpace)
 
+trian = reindex(Triangulation(model),1:4)
+quad = CellQuadrature(trian,order)
+
+V = FESpace(
+ model=model,
+ valuetype=Float64,
+ reffe=:PLagrangian,
+ order=order,
+ conformity=:L2,
+ constraint=:zeromean,
+ zeromean_trian = trian,
+ zeromean_quad = quad)
+
+@test abs(V.vol - 4/9) < 1.0e-9
+
+V = FESpace(
+ model=model,
+ valuetype=Float64,
+ reffe=:PLagrangian,
+ order=order,
+ conformity=:L2,
+ constraint=:zeromean,
+ zeromean_trian = trian)
+
+@test abs(V.vol - 4/9) < 1.0e-9
 
 end # module

@@ -20,15 +20,11 @@ end
 """
 abstract type FESpace <: GridapType end
 
-"""
-"""
-function num_free_dofs(f::FESpace)
-  @abstractmethod
-end
+# Minimal FE interface (used by FEOperator)
 
 """
 """
-function get_cell_basis(f::FESpace)
+function num_free_dofs(f::FESpace)
   @abstractmethod
 end
 
@@ -44,12 +40,8 @@ end
 
 """
 """
-function zero_free_values(::Type{T},fs::FESpace) where T
-  @abstractmethod
-end
-
 function zero_free_values(fs::FESpace)
-  zero_free_values(Float64,fs)
+  @abstractmethod
 end
 
 """
@@ -57,6 +49,14 @@ end
 function Base.zero(f::FESpace)
   free_values = zero_free_values(f)
   FEFunction(f,free_values)
+end
+
+# Extended FEInterface used by FEOperatorFromTerms and Assemblers
+
+"""
+"""
+function get_cell_basis(f::FESpace)
+  @abstractmethod
 end
 
 """
@@ -67,21 +67,39 @@ end
 
 constraint_style(f::T) where T<:FESpace = constraint_style(T)
 
+function get_cell_isconstrained(f::FESpace)
+  @abstractmethod
+end
+
+function get_cell_constraints(f::FESpace)
+  @abstractmethod
+end
+
 """
 """
 function get_constraint_kernel_matrix_cols(f::FESpace)
-  @abstractmethod
+  _default_constraint_kernel(f,constraint_style(f))
 end
 
 """
 """
 function get_constraint_kernel_matrix_rows(f::FESpace)
-  @abstractmethod
+  _default_constraint_kernel(f,constraint_style(f))
 end
 
 """
 """
 function get_constraint_kernel_vector(f::FESpace)
+  _default_constraint_kernel(f,constraint_style(f))
+end
+
+function _default_constraint_kernel(f,::Val{false})
+  function default_kernel(m,isconstr,constr)
+    m
+  end
+end
+
+function _default_constraint_kernel(f,::Val{true})
   @abstractmethod
 end
 
@@ -89,7 +107,6 @@ end
 """
 function test_fe_space(f::FESpace)
   free_values = zero_free_values(f)
-  @test eltype(zero_free_values(Int,f)) == Int
   fe_function = FEFunction(f,free_values)
   test_fe_function(fe_function)
   fe_basis = get_cell_basis(f)
@@ -150,8 +167,10 @@ function _apply_constraints_matrix_cols(::Val{false},f,cellmat,cellids)
 end
 
 function _apply_constraints_matrix_cols(::Val{true},f,cellmat,cellids)
+  cell_to_isconstr = reindex(get_cell_isconstrained(f),cellids)
+  cell_to_constr = reindex(get_cell_constraints(f),cellids)
   k = get_constraint_kernel_matrix_cols(f)
-  apply(k,cellmat,cellids)
+  apply(k,cellmat,cell_to_isconstr,cell_to_constr)
 end
 
 """
@@ -165,8 +184,10 @@ function _apply_constraints_matrix_rows(::Val{false},f,cellmat,cellids)
 end
 
 function _apply_constraints_matrix_rows(::Val{true},f,cellmat,cellids)
+  cell_to_isconstr = reindex(get_cell_isconstrained(f),cellids)
+  cell_to_constr = reindex(get_cell_constraints(f),cellids)
   k = get_constraint_kernel_matrix_rows(f)
-  apply(k,cellmat,cellids)
+  apply(k,cellmat,cell_to_isconstr,cell_to_constr)
 end
 
 """
@@ -180,8 +201,10 @@ function _apply_constraints_vector(::Val{false},f,cellvec,cellids)
 end
 
 function _apply_constraints_vector(::Val{true},f,cellvec,cellids)
+  cell_to_isconstr = reindex(get_cell_isconstrained(f),cellids)
+  cell_to_constr = reindex(get_cell_constraints(f),cellids)
   k = get_constraint_kernel_vector(f)
-  apply(k,cellvec,cellids)
+  apply(k,cellvec,cell_to_isconstr,cell_to_constr)
 end
 
 """
@@ -195,9 +218,11 @@ function _apply_constraints_matrix_and_vector_cols(::Val{false},f,cellmatvec,cel
 end
 
 function _apply_constraints_matrix_and_vector_cols(::Val{true},f,cellmatvec,cellids)
+  cell_to_isconstr = reindex(get_cell_isconstrained(f),cellids)
+  cell_to_constr = reindex(get_cell_constraints(f),cellids)
   kmat = get_constraint_kernel_matrix_cols(f)
   k = MatKernel(kmat)
-  apply(k,cellmatvec,cellids)
+  apply(k,cellmatvec,cell_to_isconstr,cell_to_constr)
 end
 
 """
@@ -211,10 +236,12 @@ function _apply_constraints_matrix_and_vector_rows(::Val{false},f,cellmatvec,cel
 end
 
 function _apply_constraints_matrix_and_vector_rows(::Val{true},f,cellmatvec,cellids)
+  cell_to_isconstr = reindex(get_cell_isconstrained(f),cellids)
+  cell_to_constr = reindex(get_cell_constraints(f),cellids)
   kmat = get_constraint_kernel_matrix_rows(f)
   kvec = get_constraint_kernel_vector(f)
   k = MatVecKernel(kmat,kvec)
-  apply(k,cellmatvec,cellids)
+  apply(k,cellmatvec,cell_to_isconstr,cell_to_constr)
 end
 
 # Helpers
@@ -224,25 +251,25 @@ struct MatVecKernel{A<:Kernel,B<:Kernel} <: Kernel
   kvec::B
 end
 
-function kernel_cache(k::MatVecKernel,matvec,cellid)
+function kernel_cache(k::MatVecKernel,matvec,isconstr,constr)
   mat, vec = matvec
-  cmat = kernel_cache(k.kmat,mat,cellid)
-  cvec = kernel_cache(k.kvec,vec,cellid)
+  cmat = kernel_cache(k.kmat,mat,isconstr,constr)
+  cvec = kernel_cache(k.kvec,vec,isconstr,constr)
   (cmat, cvec)
 end
 
-function kernel_return_type(k::MatVecKernel,matvec,cellid)
+function kernel_return_type(k::MatVecKernel,matvec,isconstr,constr)
   mat, vec = matvec
-  A = kernel_return_type(k.kmat,mat,cellid)
-  B = kernel_return_type(k.kvec,vec,cellid)
+  A = kernel_return_type(k.kmat,mat,isconstr,constr)
+  B = kernel_return_type(k.kvec,vec,isconstr,constr)
   Tuple{A,B}
 end
 
-@inline function apply_kernel!(cache,k::MatVecKernel,matvec,cellid)
+@inline function apply_kernel!(cache,k::MatVecKernel,matvec,isconstr,constr)
   cmat, cvec = cache
   mat, vec = matvec
-  a = apply_kernel!(cmat,k.kmat,mat,cellid)
-  b = apply_kernel!(cvec,k.kvec,vec,cellid)
+  a = apply_kernel!(cmat,k.kmat,mat,isconstr,constr)
+  b = apply_kernel!(cvec,k.kvec,vec,isconstr,constr)
   (a,b)
 end
 
@@ -250,21 +277,21 @@ struct MatKernel{A<:Kernel} <: Kernel
   kmat::A
 end
 
-function kernel_cache(k::MatKernel,matvec,cellid)
+function kernel_cache(k::MatKernel,matvec,isconstr,constr)
   mat, vec = matvec
-  cmat = kernel_cache(k.kmat,mat,cellid)
+  cmat = kernel_cache(k.kmat,mat,isconstr,constr)
   cmat
 end
 
-function kernel_return_type(k::MatKernel,matvec,cellid)
+function kernel_return_type(k::MatKernel,matvec,isconstr,constr)
   mat, vec = matvec
-  A = kernel_return_type(k.kmat,mat,cellid)
+  A = kernel_return_type(k.kmat,mat,isconstr,constr)
   B = typeof(vec)
   Tuple{A,B}
 end
 
-@inline function apply_kernel!(cmat,k::MatKernel,matvec,cellid)
+@inline function apply_kernel!(cmat,k::MatKernel,matvec,isconstr,constr)
   mat, vec = matvec
-  a = apply_kernel!(cmat,k.kmat,mat,cellid)
+  a = apply_kernel!(cmat,k.kmat,mat,isconstr,constr)
   (a,vec)
 end

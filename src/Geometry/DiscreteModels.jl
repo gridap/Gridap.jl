@@ -385,12 +385,12 @@ end
 
 """
 """
-function Triangulation(model,cell_to_oldcell::AbstractVector{<:Integer})
+function Triangulation(model::DiscreteModel,cell_to_oldcell::AbstractVector{<:Integer})
   oldtrian = Triangulation(model)
   RestrictedTriangulation(oldtrian,cell_to_oldcell)
 end
 
-function Triangulation(model,cell_to_mask::AbstractVector{Bool})
+function Triangulation(model::DiscreteModel,cell_to_mask::AbstractVector{Bool})
   oldtrian = Triangulation(model)
   RestrictedTriangulation(oldtrian,cell_to_mask)
 end

@@ -22,7 +22,7 @@ pkg> add Gridap
 
 ## Tutorials
 
-A hands-on user-guide to the library is available as a set of [tutorials](https://github.com/gridap/Tutorials). They are available as Jupyther notebooks and html pages.
+A hands-on user-guide to the library is available as a set of [tutorials](https://github.com/gridap/Tutorials). They are available as Jupyter notebooks and html pages.
 
 ## Plugins
 

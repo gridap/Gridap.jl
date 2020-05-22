@@ -5,10 +5,78 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [Unreleased]
+## [0.10.2] - 2020-5-21
+
+### Added
+
+ - New key-word arguments `zeromean_trian` and `zeromean_quad` in the `FESpace` constructor. Since
+ PR [#257](https://github.com/gridap/Gridap.jl/pull/257).
+ - New method `reindex(::Triangulation,indices)`. Since
+ PR [#257](https://github.com/gridap/Gridap.jl/pull/257).
+ - New functions `get_face_to_face(::BoundaryTriangulation)` and `get_cell_around(::BoundaryTriangulation)`. Since
+ PR [#256](https://github.com/gridap/Gridap.jl/pull/256).
+
+## [0.10.1] - 2020-5-19
 
 ### Fixed
 
+  - Added missing implementation of `simplexify(SEGMENT)` and `simplexify(VERTEX)`. Since PR [#252](https://github.com/gridap/Gridap.jl/pull/252).
+
+## [0.10.0] - 2020-5-14
+
+### Added
+
+  - Extended support of `TriangulationPortion` to boundary and skeleton triangulations.  Since PR [#249](https://github.com/gridap/Gridap.jl/pull/249).
+  - Added `FESpaceWithLinearConstraints`. Since PR [#247](https://github.com/gridap/Gridap.jl/pull/247).
+  - Added inner constructor to `CartesianDiscreteModel` allowing to build a model that represents a subgrid of
+    a larger grid. Since PR [#245](https://github.com/gridap/Gridap.jl/pull/245).
+
+### Changed
+
+  - The part associated with the imposition of constraints in the `FESpace` interface has changed slightly. Since PR [#247](https://github.com/gridap/Gridap.jl/pull/247).
+  - Simplified the signature of `zero_free_values(::FESpace)`. Since PR [#249](https://github.com/gridap/Gridap.jl/pull/249).
+  - Simplified the signature of `zero_initial_guess(op::NonlinearOperator)`. Since PR [#249](https://github.com/gridap/Gridap.jl/pull/249).
+  - Major refactoring in the `Assembler` interface. 
+    **Important change:** Now, assembly-related functions take the data returned by functions like
+    `collect_cell_matrix` as it is. Example: the old user code `assemble_matrix(assembler,collect_cell_matrix(du,dv,terms)...)`
+    now is written simply as `assemble_matrix(assembler,collect_cell_matrix(du,dv,terms))`, i.e., the unpack of the last argument is not
+    used anymore.  In addition, with the new assembler interface, it is possible to customize the assembly process
+    via a so-called `AssemblerStrategy` object. Since PR [#249](https://github.com/gridap/Gridap.jl/pull/249).
+  - Change the types of the sizes and partition fields of CartesianDescriptor to tuples instead of points. 
+    Since PR [#246](https://github.com/gridap/Gridap.jl/pull/246).
+
+## [0.9.2] - 2020-4-26
+
+### Added
+
+  - Automatic differentiation of manufactured solutions. Since PR [#236](https://github.com/gridap/Gridap.jl/pull/236).
+
+## [0.9.1] - 2020-4-20
+
+### Added
+
+  - Function `cell_measure`. Since PR [#234](https://github.com/gridap/Gridap.jl/pull/234).
+
+### Fixed
+
+  - Several bugs associated with `ExtendedFESpace`. In particular, we have fixed a bug that showed up when combining `ZeroMeanFESpace` and `ExtendedFESpace`. Since PR [#234](https://github.com/gridap/Gridap.jl/pull/234).
+
+## [0.9.0] - 2020-4-18
+
+### Added
+
+  - Function `HomogeneousTrialFESpace`. Since PR [#226](https://github.com/gridap/Gridap.jl/pull/226).
+  - Function `lazy_append` in order to lazily append two objects (implemented for `AbstractVector`, `Triangulation`, and `CellQuadrature`).  Since PR [#220](https://github.com/gridap/Gridap.jl/pull/220).
+  - Support for FE spaces with DOFs defined in the physical space. Since PR [#216](https://github.com/gridap/Gridap.jl/pull/216) and [#218](https://github.com/gridap/Gridap.jl/pull/218).
+
+### Changed
+
+  - Replaced `non_linear` -> `nonlinear` and `NonLinear` -> `Nonlinear`. Since PR [#223](https://github.com/gridap/Gridap.jl/pull/223).
+  - The `FESpace` interface has slightly changed, mainly the return type of functions `get_cell_basis` and `get_cell_dof_basis.`. Since PR [#216](https://github.com/gridap/Gridap.jl/pull/216) and [#218](https://github.com/gridap/Gridap.jl/pull/218).
+
+### Fixed
+
+- Bug that showed up in multi-field computations when some field had no contribution to the rhs vector. Since [#229](https://github.com/gridap/Gridap.jl/pull/229).
 - Bug in gradient operator in the void part of `ExtendedFESpace` objects. Since PR [#219](https://github.com/gridap/Gridap.jl/pull/219).
 - Bug in jumps of quantities restricted to `InterfaceTriangulation` objects.  Since PR [#215](https://github.com/gridap/Gridap.jl/pull/215).
 

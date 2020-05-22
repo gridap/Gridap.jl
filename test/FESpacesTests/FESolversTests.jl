@@ -36,9 +36,11 @@ cellmat = integrate(∇(v)*∇(u),trian,quad)
 cellvec = integrate(v*f,trian,quad)
 cellids = collect(1:num_cells(trian))
 
-assem = SparseMatrixAssembler(V,U)
-A =  assemble_matrix(assem,[cellmat],[cellids],[cellids])
-b =  assemble_vector(assem,[cellvec],[cellids])
+assem = SparseMatrixAssembler(U,V)
+matdata = ([cellmat],[cellids],[cellids])
+vecdata = ([cellvec],[cellids])
+A =  assemble_matrix(assem,matdata)
+b =  assemble_vector(assem,vecdata)
 x = A \ b
 x0 = zeros(length(x))
 

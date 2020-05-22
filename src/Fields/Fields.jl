@@ -23,6 +23,7 @@ using Gridap.Arrays: Contracted
 using Test
 using DocStringExtensions
 using FillArrays
+import ForwardDiff
 
 export Point
 export field_gradient

@@ -28,6 +28,7 @@ using Gridap.ReferenceFEs: _get_offset
 using Gridap.ReferenceFEs: _find_unique_with_indices
 
 using Gridap.Arrays: Reindexed
+using Gridap.Arrays: IdentityVector
 
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
@@ -135,6 +136,7 @@ export test_triangulation
 export restrict
 export get_physical_coordinate
 export get_cell_id
+export cell_measure
 
 export Grid
 export get_cell_nodes
@@ -187,6 +189,8 @@ export get_volume_triangulation
 export get_face_to_cell
 export get_face_to_lface
 export get_face_to_cell_map
+export get_face_to_face
+export get_cell_around
 export test_boundary_triangulation
 
 export GenericBoundaryTriangulation
@@ -239,8 +243,6 @@ include("DiscreteModels.jl")
 
 include("DiscreteModelPortions.jl")
 
-include("RestrictedDiscreteModels.jl")
-
 include("DiscreteModelMocks.jl")
 
 include("UnstructuredDiscreteModels.jl")
@@ -258,5 +260,7 @@ include("CellQuadratures.jl")
 include("QPointCellFields.jl")
 
 include("AppendedTriangulations.jl")
+
+include("RestrictedDiscreteModels.jl")
 
 end # module

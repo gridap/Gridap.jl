@@ -32,8 +32,8 @@ function num_free_dofs(f::DirichletFESpace)
   num_dirichlet_dofs(f.space)
 end
 
-function zero_free_values(::Type{T},f::DirichletFESpace) where T
-  zeros(T,num_free_dofs(f))
+function zero_free_values(f::DirichletFESpace)
+  zero_dirichlet_values(f.space)
 end
 
 function get_cell_dofs(f::DirichletFESpace)
@@ -45,8 +45,7 @@ function num_dirichlet_dofs(f::DirichletFESpace)
 end
 
 function zero_dirichlet_values(f::DirichletFESpace)
-  T = Float64
-  zero_free_values(T,f.space)
+  zero_free_values(f.space)
 end
 
 function num_dirichlet_tags(f::DirichletFESpace)

@@ -74,6 +74,9 @@ import Gridap.Algebra: get_matrix
 import Gridap.Algebra: get_vector
 import Gridap.Algebra: solve!
 import Gridap.Algebra: solve
+import Gridap.Algebra: allocate_vector
+import Gridap.Algebra: allocate_matrix
+import Gridap.Algebra: allocate_matrix_and_vector
 
 export FEFunctionStyle
 export is_a_fe_function
@@ -89,6 +92,8 @@ export get_cell_basis
 export zero_free_values
 export constraint_style
 export has_constraints
+export get_cell_isconstrained
+export get_cell_constraints
 export get_constraint_kernel_matrix_cols
 export get_constraint_kernel_matrix_rows
 export get_constraint_kernel_vector
@@ -100,19 +105,36 @@ export apply_constraints_matrix_and_vector_rows
 export test_fe_space
 
 export Assembler
+export AssemblyStrategy
+export row_map
+export col_map
+export row_mask
+export col_mask
+export DefaultAssemblyStrategy
 export get_test
 export get_trial
-export allocate_matrix
 export assemble_matrix!
 export assemble_matrix_add!
 export assemble_matrix
-export allocate_vector
 export assemble_vector!
+export assemble_vector_add!
 export assemble_vector
-export allocate_matrix_and_vector
 export assemble_matrix_and_vector!
+export assemble_matrix_and_vector_add!
 export assemble_matrix_and_vector
+export allocate_vector
+export allocate_matrix
+export allocate_matrix_and_vector
 export test_assembler
+export get_matrix_type
+export get_vector_type
+export count_matrix_nnz_coo
+export count_matrix_and_vector_nnz_coo
+export fill_matrix_coo_symbolic!
+export fill_matrix_and_vector_coo_symbolic!
+export fill_matrix_coo_numeric!
+export fill_matrix_and_vector_coo_numeric!
+export test_sparse_matrix_assembler
 
 export SingleFieldFESpace
 export num_dirichlet_dofs
@@ -171,6 +193,7 @@ export SparseMatrixAssembler
 export FEOperator
 export test_fe_operator
 export AffineFEOperator
+export FEOperatorFromTerms
 export get_algebraic_operator
 
 export FESolver
@@ -202,6 +225,7 @@ export CLagrangianFESpace
 export DivConformingFESpace
 export CurlConformingFESpace
 export DirichletFESpace
+export FESpaceWithLinearConstraints
 export ExtendedFESpace
 
 export @law
@@ -268,6 +292,8 @@ include("CLagrangianFESpaces.jl")
 include("DirichletFESpaces.jl")
 
 include("ExtendedFESpaces.jl")
+
+include("FESpacesWithLinearConstraints.jl")
 
 include("FESpaceFactories.jl")
 

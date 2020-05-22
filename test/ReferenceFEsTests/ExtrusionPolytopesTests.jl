@@ -123,10 +123,22 @@ r = [[[1,2],[2,1]],[[1,2],[2,1]],[[1,2],[2,1]]]
 v,p = simplexify(QUAD)
 @test p == TRI
 
+v,p = simplexify(TRI)
+@test p == TRI
+
 v,p = simplexify(HEX)
 @test p == TET
 
+v,p = simplexify(TET)
+@test p == TET
 
+v,p = simplexify(SEGMENT)
+@test p == SEGMENT
+@test is_simplex(p)
+
+v,p = simplexify(VERTEX)
+@test p == VERTEX
+@test is_simplex(p)
 
 
 

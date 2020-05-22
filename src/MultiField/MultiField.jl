@@ -17,6 +17,7 @@ using Gridap.TensorValues
 using FillArrays
 using SparseArrays
 import LinearAlgebra: mul!
+using LinearAlgebra: Transpose
 
 using Gridap.Arrays: IdentityVector
 using Gridap.FESpaces: _operate_cell_basis
@@ -53,6 +54,8 @@ import Gridap.FESpaces: constraint_style
 import Gridap.FESpaces: get_constraint_kernel_matrix_cols
 import Gridap.FESpaces: get_constraint_kernel_matrix_rows
 import Gridap.FESpaces: get_constraint_kernel_vector
+import Gridap.FESpaces: get_cell_isconstrained
+import Gridap.FESpaces: get_cell_constraints
 import Gridap.FESpaces: get_cell_dofs
 import Gridap.FESpaces: get_fe_space
 import Gridap.FESpaces: get_free_values
@@ -61,16 +64,28 @@ import Gridap.FESpaces: get_test
 import Gridap.FESpaces: get_trial
 import Gridap.FESpaces: allocate_vector
 import Gridap.FESpaces: assemble_vector!
+import Gridap.FESpaces: assemble_vector_add!
 import Gridap.FESpaces: allocate_matrix
 import Gridap.FESpaces: assemble_matrix!
+import Gridap.FESpaces: assemble_matrix_add!
 import Gridap.FESpaces: assemble_matrix
 import Gridap.FESpaces: allocate_matrix_and_vector
 import Gridap.FESpaces: assemble_matrix_and_vector!
+import Gridap.FESpaces: assemble_matrix_and_vector_add!
 import Gridap.FESpaces: assemble_matrix_and_vector
 import Gridap.FESpaces: SparseMatrixAssembler
 import Gridap.FESpaces: AffineFEOperator
 import Gridap.FESpaces: FEOperator
 import Gridap.FESpaces: EvaluationFunction
+import Gridap.FESpaces: get_matrix_type
+import Gridap.FESpaces: get_vector_type
+import Gridap.FESpaces: get_assembly_strategy
+import Gridap.FESpaces: count_matrix_nnz_coo
+import Gridap.FESpaces: fill_matrix_coo_symbolic!
+import Gridap.FESpaces: fill_matrix_coo_numeric!
+import Gridap.FESpaces: fill_matrix_and_vector_coo_numeric!
+import Gridap.FESpaces: count_matrix_and_vector_nnz_coo
+import Gridap.FESpaces: fill_matrix_and_vector_coo_symbolic!
 
 import Base: +, -
 

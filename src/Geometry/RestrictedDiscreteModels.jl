@@ -41,3 +41,32 @@ function get_triangulation(model::RestrictedDiscreteModel)
   RestrictedTriangulation(model)
 end
 
+function Triangulation(::Type{ReferenceFE{d}},model::RestrictedDiscreteModel) where d
+  @notimplemented
+end
+
+function Triangulation(model::RestrictedDiscreteModel,cell_to_oldcell::AbstractVector{<:Integer})
+  @notimplemented
+end
+
+function Triangulation(model::RestrictedDiscreteModel,cell_to_mask::AbstractVector{Bool})
+  @notimplemented
+end
+
+function BoundaryTriangulation(model::RestrictedDiscreteModel,face_to_mask::Vector{Bool},icell_around::Integer)
+  d = num_cell_dims(model)-1
+  face_to_oldface = get_face_to_oldface(model,d)
+  oldmodel = get_oldmodel(model)
+  num_oldfaces = num_faces(oldmodel,d)
+  oldface_to_mask = fill(false,num_oldfaces)
+  oldface_to_mask[face_to_oldface] .= face_to_mask
+  BoundaryTriangulation(oldmodel,oldface_to_mask)
+end
+
+function InterfaceTriangulation(model_in::RestrictedDiscreteModel,model_out::RestrictedDiscreteModel)
+  cells_in = get_cell_to_oldcell(model_in)
+  cells_out = get_cell_to_oldcell(model_out)
+  model = get_oldmodel(model_in)
+  InterfaceTriangulation(model,cells_in,cells_out)
+end
+

@@ -1,4 +1,16 @@
 
+function reindex(trian::Triangulation,indices)
+  TriangulationPortion(trian,collect(Int,indices))
+end
+
+function reindex(trian::Triangulation,indices::Vector{Int})
+  TriangulationPortion(trian,indices)
+end
+
+function reindex(trian::Triangulation,indices::IdentityVector)
+  trian
+end
+
 """
 """
 struct TriangulationPortion{Dc,Dp,G} <: Triangulation{Dc,Dp}
@@ -26,4 +38,16 @@ end
 function get_cell_map(trian::TriangulationPortion)
   cell_map = get_cell_map(trian.oldtrian)
   reindex(cell_map,trian.cell_to_oldcell)
+end
+
+function get_cell_id(trian::TriangulationPortion)
+  reindex(get_cell_id(trian.oldtrian),trian.cell_to_oldcell)
+end
+
+function restrict(f::AbstractArray,trian::TriangulationPortion)
+  reindex(f,trian)
+end
+
+function get_normal_vector(trian::TriangulationPortion)
+  reindex(get_normal_vector(trian.oldtrian),trian.cell_to_oldcell)
 end

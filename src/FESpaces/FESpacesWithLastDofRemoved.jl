@@ -25,8 +25,8 @@ function num_free_dofs(f::FESpaceWithLastDofRemoved)
   num_free_dofs(f.space) - 1
 end
 
-function zero_free_values(::Type{T},f::FESpaceWithLastDofRemoved) where T
-  zeros(T,num_free_dofs(f))
+function zero_free_values(f::FESpaceWithLastDofRemoved)
+  zeros(num_free_dofs(f))
 end
 
 function get_cell_dofs(f::FESpaceWithLastDofRemoved)

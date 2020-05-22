@@ -135,6 +135,10 @@ function Base.length(cf::CellFieldLike)
   length(a)
 end
 
+function reindex(cf::CellFieldLike,a::AbstractVector)
+  similar_object(cf,reindex(get_array(cf),a))
+end
+
 """
     abstract type CellField <: CellFieldLike end
 """

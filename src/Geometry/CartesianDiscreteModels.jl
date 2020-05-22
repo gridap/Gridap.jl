@@ -22,6 +22,37 @@ struct CartesianDiscreteModel{D,T,F} <: DiscreteModel{D,D}
     _fill_cartesian_face_labeling!(labels,topo)
     new{D,T,F}(grid,topo,labels)
   end
+
+  @doc """
+      CartesianDiscreteModel(desc::CartesianDescriptor{D,T,F},
+                             cmin::CartesianIndex,
+                             cmax::CartesianIndex)
+
+      Builds a CartesianDiscreteModel object which represents a subgrid of
+      a (larger) grid represented by desc. This subgrid is described by its
+      D-dimensional minimum (cmin) and maximum (cmax) CartesianIndex
+      identifiers.
+
+  Inner constructor
+  """
+  function CartesianDiscreteModel(desc::CartesianDescriptor{D,T,F},
+                                  cmin::CartesianIndex,
+                                  cmax::CartesianIndex) where {D,T,F}
+
+     suborigin = Tuple(desc.origin) .+ (Tuple(cmin) .- 1) .* desc.sizes
+     subpartition = Tuple(cmax) .- Tuple(cmin) .+ 1
+     subsizes = desc.sizes
+     subdesc =
+       CartesianDescriptor(Point(suborigin), subsizes, subpartition, desc.map)
+
+     grid = CartesianGrid(subdesc)
+     _grid = UnstructuredGrid(grid)
+     topo = UnstructuredGridTopology(_grid)
+     nfaces = [num_faces(topo, d) for d = 0:num_cell_dims(topo)]
+     labels = FaceLabeling(nfaces)
+     _fill_subgrid_cartesian_face_labeling!(labels,topo,subdesc,desc,cmin)
+     new{D,T,F}(grid, topo, labels)
+  end
 end
 
 """
@@ -33,6 +64,7 @@ function CartesianDiscreteModel(args...)
   desc = CartesianDescriptor(args...)
   CartesianDiscreteModel(desc)
 end
+
 
 """
     get_cartesian_descriptor(model::CartesianDiscreteModel)
@@ -69,11 +101,11 @@ end
 # Helpers
 
 function _fill_cartesian_face_labeling!(labels,topo)
-  _fill_cartesian_entitties!(labels,topo)
+  _fill_cartesian_entities!(labels,topo)
   _add_cartesian_tags!(labels,topo)
 end
 
-function _fill_cartesian_entitties!(labels,topo)
+function _fill_cartesian_entities!(labels,topo)
   D = num_cell_dims(topo)
   d_to_dface_to_entity = labels.d_to_dface_to_entity
   polytope = first(get_polytopes(topo))
@@ -91,9 +123,14 @@ function _fill_cartesian_entitties!(labels,topo)
       offset,
       interior_id,boundary_id,d,D)
   end
-  for d in 0:(D-2)
-    for j in (d+1):(D-1)
-      dface_to_jfaces = get_faces(topo,d,j)
+  _fix_geolabels(D, topo, d_to_dface_to_entity, interior_id, boundary_id)
+  fill!(d_to_dface_to_entity[end],interior_id)
+end
+
+function _fix_geolabels(D, topo, d_to_dface_to_entity, interior_id, boundary_id)
+  for d = 0:(D-2)
+    for j = (d+1):(D-1)
+      dface_to_jfaces = get_faces(topo, d, j)
       dface_to_geolabel = d_to_dface_to_entity[d+1]
       jface_to_geolabel = d_to_dface_to_entity[j+1]
       _fix_dface_geolabels!(
@@ -101,10 +138,11 @@ function _fill_cartesian_entitties!(labels,topo)
         jface_to_geolabel,
         dface_to_jfaces.data,
         dface_to_jfaces.ptrs,
-        interior_id,boundary_id)
+        interior_id,
+        boundary_id,
+      )
     end
   end
-  fill!(d_to_dface_to_entity[end],interior_id)
 end
 
 function _add_cartesian_tags!(labels,topo)
@@ -151,7 +189,6 @@ function _generate_pre_geolabel_kernel!(
   cell_to_faces_data,
   cell_to_faces_ptrs,
   offset,boundary_id,max_ncells_around)
-
   nfaces = length(face_to_geolabel)
   for face in 1:nfaces
     a = face_to_cells_ptrs[face]-1
@@ -172,7 +209,6 @@ function _generate_pre_geolabel_kernel!(
       face_to_geolabel[face] = boundary_id
     end
   end
-
 end
 
 function _fix_dface_geolabels!(
@@ -198,4 +234,166 @@ function _fix_dface_geolabels!(
       end
     end
   end
+end
+
+function _fill_subgrid_cartesian_face_labeling!(labels,topo,subdesc,desc,cmin)
+   _fill_subgrid_cartesian_entities!(labels,topo,subdesc,desc,cmin)
+   _add_cartesian_tags!(labels,topo)
+end
+
+function _fill_subgrid_cartesian_entities!(labels, topo, subdesc, desc, cmin)
+  D = num_cell_dims(topo)
+  d_to_dface_to_entity = labels.d_to_dface_to_entity
+  gcis = CartesianIndices(desc.partition)
+  subcis = CartesianIndices(subdesc.partition)
+
+  polytope = first(get_polytopes(topo))
+  face_labeling = labels
+  offsets = get_offsets(polytope)
+  interior_id = num_faces(polytope)
+  boundary_id = -1
+
+  minus_one_ci = CartesianIndex(tfill(-1, Val{D}()))
+
+  polytope_d_face_to_jfaces = Matrix{Vector{Vector{Int}}}(undef, (D, D))
+  for d = 0:(D-1)
+    for j = d+1:D-1
+      polytope_d_face_to_jfaces[d+1, j+1] = get_faces(polytope, d, j)
+    end
+  end
+
+  face_deltas = _find_ncube_face_neighbor_deltas(polytope)
+  for d = 0:(D-1)
+    face_to_cells = get_faces(topo, d, D)
+    cell_to_faces = get_faces(topo, D, d)
+    face_to_geolabel = face_labeling.d_to_dface_to_entity[d+1]
+    _generate_subgrid_pregeo_label!(
+      face_to_geolabel,
+      d,
+      D,
+      offsets,
+      polytope_d_face_to_jfaces,
+      minus_one_ci,
+      face_to_cells,
+      cell_to_faces,
+      subcis,
+      gcis,
+      face_deltas,
+      cmin,
+      interior_id,
+      boundary_id,
+    )
+  end
+  _fix_geolabels(D, topo, d_to_dface_to_entity, interior_id, boundary_id)
+  fill!(d_to_dface_to_entity[end], interior_id)
+end
+
+function _generate_subgrid_pregeo_label!(
+  face_to_geolabel,
+  d,
+  D,
+  offsets,
+  polytope_d_face_to_jfaces,
+  minus_one_ci,
+  face_to_cells,
+  cell_to_faces,
+  subcis,
+  gcis,
+  face_deltas,
+  cmin,
+  interior_id,
+  boundary_id,
+)
+  for face_gid = 1:length(face_to_geolabel)
+    cell_gid = face_to_cells.data[face_to_cells.ptrs[face_gid]]
+    a = cell_to_faces.ptrs[cell_gid]
+    b = cell_to_faces.ptrs[cell_gid+1] - 1
+    gci = (subcis[cell_gid] + minus_one_ci) + cmin
+
+    face_lid = -1
+    for j = a:b
+      if (cell_to_faces.data[j] == face_gid)
+        face_lid = j - a + 1
+        break
+      end
+    end
+    @assert face_lid != -1
+
+    face_lid += offsets[d+1]
+    # Check whether cell neighbour across face face_lid belongs to the
+    # global grid. If yes, the current face is actually at the interior
+    if ((gci + face_deltas[face_lid]) in gcis)
+      face_to_geolabel[face_gid] = interior_id
+    else
+      cell_found = false
+      for j = d+1:D-1
+        dface_to_jfaces =
+          polytope_d_face_to_jfaces[d+1, j+1][face_lid-offsets[d+1]]
+        cell_found = _is_there_interior_cell_across_higher_dim_faces(
+          dface_to_jfaces,
+          offsets[j+1],
+          gcis,
+          gci,
+          face_deltas,
+        )
+        cell_found && break
+      end
+      if (cell_found)
+        # The current face is at least in two subgrid cells
+        face_to_geolabel[face_gid] = boundary_id
+      else
+        # The current face is only in one subgrid cell
+        face_to_geolabel[face_gid] = face_lid
+      end
+    end
+  end
+end
+
+
+function _is_there_interior_cell_across_higher_dim_faces(
+  dface_to_jfaces,
+  offset_j,
+  gcis,
+  gci,
+  face_deltas,
+)
+  for k in dface_to_jfaces
+    jface_lid = k + offset_j
+    if (isassigned(face_deltas, jface_lid))
+      if ((gci + face_deltas[jface_lid]) in gcis)
+        return true
+      end
+    end
+  end
+  return false
+end
+
+"""
+  _find_ncube_face_neighbor_deltas(p::ExtrusionPolytope{D}) -> Vector{CartesianIndex}
+
+  Given an n-cube type ExtrusionPolytope{D}, returns V=Vector{CartesianIndex} with as many
+  entries as the number of faces in the boundary of the Polytope. For an entry face_lid
+  in this vector, V[face_lid] returns what has to be added to the CartesianIndex of a
+  cell in order to obtain the CartesianIndex of the cell neighbour of K across the face F
+  with local ID face_lid.
+"""
+function _find_ncube_face_neighbor_deltas(p::ExtrusionPolytope{D}) where {D}
+  nfaces = num_faces(p)
+  delta_faces = Vector{CartesianIndex{D}}(undef, nfaces - 1)
+  for face_lid = 1:nfaces-1
+    delta_faces[face_lid] = _find_ncube_face_neighbor_delta(p, face_lid)
+  end
+  delta_faces
+end
+
+function _find_ncube_face_neighbor_delta(p::ExtrusionPolytope{D}, face_lid) where {D}
+  @assert is_n_cube(p)
+  result = fill(0, D)
+  face = p.dface.nfaces[face_lid]
+  for d = 1:D
+    if (face.extrusion[d] == 0)
+      result[d] = (face.anchor[d] == 0) ? -1 : 1
+    end
+  end
+  return CartesianIndex(Tuple(result))
 end

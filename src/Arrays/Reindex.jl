@@ -8,8 +8,7 @@ end
 
 function reindex(i_to_v::Fill, j_to_i::AbstractArray)
   v = i_to_v.value
-  l = length(j_to_i)
-  Fill(v,l)
+  Fill(v,size(j_to_i)...)
 end
 
 function reindex(i_to_v::CompressedArray, j_to_i::AbstractArray)
@@ -45,7 +44,11 @@ end
 end
 
 function testitem(a::Reindexed)
-  testitem(a.i_to_v)
+  if length(a.j_to_i) == 0
+    testitem(a.i_to_v)
+  else
+    a.i_to_v[first(a.j_to_i)]
+  end
 end
 
 array_cache(a::Reindexed) = array_cache(a.i_to_v)
@@ -63,4 +66,3 @@ function reindex(i_to_v::AppliedArray, j_to_i::AbstractArray)
 end
 
 Base.getindex(a::AppliedArray,i::AbstractArray) = reindex(a,i)
-

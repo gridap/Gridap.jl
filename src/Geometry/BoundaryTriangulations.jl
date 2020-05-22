@@ -35,6 +35,18 @@ function get_normal_vector(trian::BoundaryTriangulation)
   @abstractmethod
 end
 
+"""
+"""
+function get_face_to_face(trian::BoundaryTriangulation)
+  @abstractmethod
+end
+
+"""
+"""
+function get_cell_around(trian::BoundaryTriangulation)
+  @abstractmethod
+end
+
 # Tester
 
 """
@@ -65,15 +77,20 @@ end
     BoundaryTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
     BoundaryTriangulation(model::DiscreteModel)
 """
+function BoundaryTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool},icell_around)
+  GenericBoundaryTriangulation(model,face_to_mask,icell_around)
+end
+
 function BoundaryTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
-  GenericBoundaryTriangulation(model,face_to_mask)
+  icell_around = 1
+  BoundaryTriangulation(model,face_to_mask,icell_around)
 end
 
 function BoundaryTriangulation(model::DiscreteModel)
   topo = get_grid_topology(model)
   D = num_cell_dims(model)
   face_to_mask = collect(Bool,get_isboundary_face(topo,D-1))
-  GenericBoundaryTriangulation(model,face_to_mask)
+  BoundaryTriangulation(model,face_to_mask)
 end
 
 """

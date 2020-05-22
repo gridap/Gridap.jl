@@ -28,24 +28,31 @@ function AffineFEOperator(trial::FESpace,test::FESpace,assem::Assembler,terms::A
 
   uhd = zero(trial)
 
-  matvecdata, matdata, vecdata = collect_cell_matrix_and_vector(uhd,u,v,terms)
-  A,b = assemble_matrix_and_vector(assem,matvecdata,matdata,vecdata)
+  data = collect_cell_matrix_and_vector(uhd,u,v,terms)
+  A,b = assemble_matrix_and_vector(assem,data)
 
   #matdata = collect_cell_matrix(u,v,terms)
   #vecdata = collect_cell_vector(uhd,v,terms)
-  #A = assemble_matrix(assem,matdata...)
-  #b = assemble_vector(assem,vecdata...)
+  #A = assemble_matrix(assem,matdata)
+  #b = assemble_vector(assem,vecdata)
 
   AffineFEOperator(trial,test,A,b)
 end
 
 function AffineFEOperator(trial::FESpace,test::FESpace,terms::AffineFETerm...)
-  assem = SparseMatrixAssembler(test,trial)
+  assem = SparseMatrixAssembler(trial,test)
   AffineFEOperator(trial,test,assem,terms...)
 end
 
-function AffineFEOperator(mat::Type{<:AbstractSparseMatrix},trial::FESpace,test::FESpace,terms::AffineFETerm...)
+function AffineFEOperator(
+  mat::Type{<:AbstractSparseMatrix},trial::FESpace,test::FESpace,terms::AffineFETerm...)
   assem = SparseMatrixAssembler(mat,trial,test)
+  AffineFEOperator(trial,test,assem,terms...)
+end
+
+function AffineFEOperator(
+  mat::Type{<:AbstractSparseMatrix},vec::Type{<:AbstractVector},trial::FESpace,test::FESpace,terms::AffineFETerm...)
+  assem = SparseMatrixAssembler(mat,vec,trial,test)
   AffineFEOperator(trial,test,assem,terms...)
 end
 

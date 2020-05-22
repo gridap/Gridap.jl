@@ -236,8 +236,8 @@ function num_free_dofs(f::ExtendedFESpace)
   num_free_dofs(f.space)
 end
 
-function zero_free_values(::Type{T},f::ExtendedFESpace) where T
-  zeros(T,num_free_dofs(f))
+function zero_free_values(f::ExtendedFESpace)
+  zero_free_values(f.space)
 end
 
 function num_dirichlet_dofs(f::ExtendedFESpace)

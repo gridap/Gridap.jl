@@ -20,7 +20,7 @@ get_vector(op::AffineOperator) = op.vector
 
 function residual!(b::AbstractVector,op::AffineOperator,x::AbstractVector)
   mul!(b,op.matrix,x)
-  b .-=  op.vector
+  add_entries!(b,op.vector,-)
   b
 end
 
@@ -33,13 +33,14 @@ function jacobian(op::AffineOperator,x::AbstractVector)
   op.matrix
 end
 
-function zero_initial_guess(::Type{T},op::AffineOperator) where T
-  n = size(op.matrix,2)
-  zeros(T,n)
+function zero_initial_guess(op::AffineOperator)
+  x = allocate_in_domain(typeof(op.vector),op.matrix)
+  fill_entries!(x,zero(eltype(x)))
+  x
 end
 
 function allocate_residual(op::AffineOperator,x::AbstractVector)
-  similar(x,eltype(x),length(op.vector))
+  allocate_in_range(typeof(op.vector),op.matrix)
 end
 
 function allocate_jacobian(op::AffineOperator,x::AbstractVector)
@@ -137,18 +138,46 @@ function test_linear_solver(
 
 end
 
-# Implementation of NonlinearSolver interface
-# A LinearSolver is only able to solve an AffineOperator
+# function solve!(x::AbstractVector,ls::LinearSolver,op::NonlinearOperator,cache)
+#   @unreachable "A LinearSolver can only solve an AffineOperator"
+# end
 
-function solve!(x::AbstractVector,ls::LinearSolver,op::NonlinearOperator)
-  @unreachable "A LinearSolver can only solve an AffineOperator"
+struct LinearSolverCache <: GridapType
+  A::AbstractMatrix
+  b::AbstractVector
+  ns::NumericalSetup
 end
 
-function solve!(x::AbstractVector,ls::LinearSolver,op::NonlinearOperator,cache)
-  @unreachable "A LinearSolver can only solve an AffineOperator"
+function solve!(x::AbstractVector,
+                ls::LinearSolver,
+                op::NonlinearOperator,
+                cache::Nothing)
+  fill_entries!(x,zero(eltype(x)))
+  b = residual(op, x)
+  A = jacobian(op, x)
+  ss = symbolic_setup(ls, A)
+  ns = numerical_setup(ss,A)
+  scale_entries!(b,-1)
+  solve!(x,ns,b)
+  LinearSolverCache(A,b,ns)
 end
 
-function solve!(x::AbstractVector,ls::LinearSolver,op::AffineOperator)
+function solve!(x::AbstractVector,
+                ls::LinearSolver,
+                op::NonlinearOperator,
+                cache)
+  fill_entries!(x,zero(eltype(x)))
+  b = cache.b
+  A = cache.A
+  ns = cache.ns
+  residual!(b, op, x)
+  numerical_setup!(ns,A)
+  scale_entries!(b,-1)
+  solve!(x,ns,b)
+  cache
+end
+
+function solve!(x::AbstractVector,ls::LinearSolver,op::AffineOperator,cache::Nothing)
   A = op.matrix
   b = op.vector
   ss = symbolic_setup(ls,A)
@@ -160,6 +189,7 @@ end
 function solve!(x::AbstractVector,ls::LinearSolver,op::AffineOperator,cache)
   newmatrix = true
   solve!(x,ls,op,cache,newmatrix)
+  cache
 end
 
 """
@@ -179,7 +209,7 @@ function solve!(
     numerical_setup!(ns,A)
   end
   solve!(x,ns,b)
-  x
+  cache
 end
 
 # Concrete implementations
@@ -209,7 +239,8 @@ end
 function solve!(
   x::AbstractVector,ns::LUNumericalSetup,b::AbstractVector)
   y = ns.factors\b # the allocation of y can be avoided
-  x .= y
+  copy_entries!(x,y)
+  x
 end
 
 """
@@ -236,5 +267,6 @@ end
 
 function solve!(
   x::AbstractVector,ns::BackslashNumericalSetup,b::AbstractVector)
-   copyto!(x, ns.A\b)
+  copy_entries!(x, ns.A\b)
 end
+

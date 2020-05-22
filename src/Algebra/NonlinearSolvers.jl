@@ -16,10 +16,10 @@ Usage:
 
 The returned `cache` object can be used in subsequent solves:
 
-   solve!(x,nls,op,cache)
+   cache = solve!(x,nls,op,cache)
 """
 function solve!(x::AbstractVector,nls::NonlinearSolver,op::NonlinearOperator)
-  @abstractmethod
+  solve!(x,nls,op,nothing)
 end
 
 """
@@ -63,7 +63,11 @@ function test_nonlinear_solver(
   @test pred(x1,x)
 
   x1 = copy(x0)
-  solve!(x1,nls,op,cache)
+  cache = solve!(x1,nls,op,cache)
+  @test pred(x1,x)
+
+  x1 = copy(x0)
+  cache = solve!(x1,nls,op,cache)
   @test pred(x1,x)
 
 end

@@ -36,7 +36,7 @@ end
 
 """
 """
-function TrialFESpace!(space::SingleFieldFESpace,objects)
+function TrialFESpace!(space::TrialFESpace,objects)
   dir_values = get_dirichlet_values(space)
   dir_values = compute_dirichlet_values_for_tags!(dir_values,space,objects)
   space
@@ -78,7 +78,7 @@ get_cell_dof_basis(f::TrialFESpace) = get_cell_dof_basis(f.space)
 
 num_free_dofs(f::TrialFESpace) = num_free_dofs(f.space)
 
-zero_free_values(::Type{T},f::TrialFESpace) where T = zero_free_values(T,f.space)
+zero_free_values(f::TrialFESpace) = zero_free_values(f.space)
 
 get_cell_dofs(f::TrialFESpace) = get_cell_dofs(f.space)
 
@@ -97,3 +97,24 @@ gather_free_and_dirichlet_values(f::TrialFESpace,cv) = gather_free_and_dirichlet
 gather_dirichlet_values(f::TrialFESpace,cv) = gather_dirichlet_values(f.space,cv)
 
 gather_free_values(f::TrialFESpace,cv) = gather_free_values(f.space,cv)
+
+function get_constraint_kernel_matrix_cols(f::TrialFESpace)
+  get_constraint_kernel_matrix_cols(f.space)
+end
+
+function get_constraint_kernel_matrix_rows(f::TrialFESpace)
+  get_constraint_kernel_matrix_rows(f.space)
+end
+
+function get_constraint_kernel_vector(f::TrialFESpace)
+  get_constraint_kernel_vector(f.space)
+end
+
+function get_cell_isconstrained(f::TrialFESpace)
+  get_cell_isconstrained(f.space)
+end
+
+function get_cell_constraints(f::TrialFESpace)
+  get_cell_constraints(f.space)
+end
+
