@@ -3,7 +3,7 @@
 ###############################################################
 
 (==)(a::MultiValue,b::MultiValue) = a.data == b.data
-(≈)(a::MultiValue,b::MultiValue) = isapprox(collect(a.data), collect(b.data))
+(≈)(a::MultiValue,b::MultiValue) = isapprox(get_array(a), get_array(b))
 (≈)(a::VectorValue{0},b::VectorValue{0}) = true
 
 function (≈)(
@@ -60,6 +60,11 @@ for op in (:+,:-)
     function ($op)(a::SymFourthOrderTensorValue{D},b::SymFourthOrderTensorValue{D})  where {D}
       r = broadcast(($op), a.data, b.data)
       SymFourthOrderTensorValue{D}(r)
+    end
+
+    function ($op)(a::ThirdOrderTensorValue{D1,D2,D3},b::ThirdOrderTensorValue{D1,D2,D3})  where {D1,D2,D3}
+      r = broadcast(($op), a.data, b.data)
+      ThirdOrderTensorValue{D1,D2}(r)
     end
 
   end
