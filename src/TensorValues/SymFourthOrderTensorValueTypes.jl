@@ -27,16 +27,21 @@ SymFourthOrderTensorValue{0}(data::NTuple{0}) = SymFourthOrderTensorValue{0,Int}
 
 # SymTensorValue single NTuple argument constructor
 
-SymFourthOrderTensorValue(data::NTuple{L,T}) where {L,T}                = SymFourthOrderTensorValue{floor(Int,sqrt(sqrt(L*2))),T}(data)
+@generated function SymFourthOrderTensorValue(data::NTuple{L,T}) where {L,T}
+  D = Int( (sqrt(1+8*sqrt(L))-1)/2 )
+  quote
+    SymFourthOrderTensorValue{$D,T}(data)
+  end
+end
 SymFourthOrderTensorValue{D}(data::NTuple{L,T}) where {D,L,T}           = SymFourthOrderTensorValue{D,T}(data)
 SymFourthOrderTensorValue{D,T1}(data::NTuple{L,T2}) where {D,L,T1,T2}   = SymFourthOrderTensorValue{D,T1}(NTuple{L,T1}(data))
 SymFourthOrderTensorValue{D,T1,L}(data::NTuple{L,T2}) where {D,L,T1,T2} = SymFourthOrderTensorValue{D,T1}(NTuple{L,T1}(data))
 
 # SymTensorValue Vararg constructor
 
-SymFourthOrderTensorValue(data::T...) where {T}              = (L=length(data);SymFourthOrderTensorValue{floor(Int,sqrt(sqrt(L*2)))}(NTuple{L}(data)))
-SymFourthOrderTensorValue{D}(data::T...) where {D,T}         = (L=length(data);SymFourthOrderTensorValue{D,T}(NTuple{L,T}(data)))
-SymFourthOrderTensorValue{D,T1}(data::T2...) where {D,T1,T2} = (L=length(data);SymFourthOrderTensorValue{D,T1}(NTuple{L,T1}(data)))
+SymFourthOrderTensorValue(data::T...) where {T}              = SymFourthOrderTensorValue(data)
+SymFourthOrderTensorValue{D}(data::T...) where {D,T}         = SymFourthOrderTensorValue{D}(data)
+SymFourthOrderTensorValue{D,T1}(data::T2...) where {D,T1,T2} = SymFourthOrderTensorValue{D,T1}(data)
 
 ###############################################################
 # Conversions (SymTensorValue)
@@ -56,7 +61,12 @@ convert(::Type{<:SymFourthOrderTensorValue{D,T}}, arg::SymFourthOrderTensorValue
 # Other constructors and conversions (SymTensorValue)
 ###############################################################
 
-zero(::Type{<:SymFourthOrderTensorValue{D,T}}) where {D,T} = (L=Int((D*(D+1)/2)^2);SymFourthOrderTensorValue{D,T}(tfill(zero(T),Val{L}())))
+@generated function zero(::Type{<:SymFourthOrderTensorValue{D,T}}) where {D,T}
+  L=Int((D*(D+1)/2)^2)
+  quote
+    SymFourthOrderTensorValue{D,T}(tfill(zero(T),Val{$L}()))
+  end
+end
 zero(::Type{<:SymFourthOrderTensorValue{D,T,L}}) where {D,T,L} = SymFourthOrderTensorValue{D,T}(tfill(zero(T),Val{L}()))
 zero(::SymFourthOrderTensorValue{D,T,L}) where {D,T,L} = zero(SymFourthOrderTensorValue{D,T,L})
 
@@ -72,7 +82,6 @@ change_eltype(::SymFourthOrderTensorValue{D,T1,L},::Type{T2}) where {D,T1,T2,L} 
 ###############################################################
 # Introspection (SymTensorValue)
 ###############################################################
-
 
 eltype(::Type{<:SymFourthOrderTensorValue{D,T}}) where {D,T} = T
 eltype(::SymFourthOrderTensorValue{D,T}) where {D,T} = eltype(SymFourthOrderTensorValue{D,T})

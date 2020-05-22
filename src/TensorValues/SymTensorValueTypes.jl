@@ -27,21 +27,34 @@ SymTensorValue{0}(data::NTuple{0}) = SymTensorValue{0,Int}(data)
 
 # SymTensorValue single NTuple argument constructor
 
-SymTensorValue(data::NTuple{L,T}) where {L,T}                = SymTensorValue{floor(Int,sqrt(L*2)),T}(data)
-SymTensorValue{D}(data::NTuple{L,T}) where {D,L,T}           = SymTensorValue{D,T}(NTuple{L,T}(data))
+@generated function SymTensorValue(data::NTuple{L,T}) where {L,T}
+  D = Int( (sqrt(1+8*L)-1)/2 )
+  quote
+    SymTensorValue{$D,T}(data)
+  end
+end
+SymTensorValue{D}(data::NTuple{L,T}) where {D,L,T}           = SymTensorValue{D,T}(data)
 SymTensorValue{D,T1}(data::NTuple{L,T2}) where {D,L,T1,T2}   = SymTensorValue{D,T1}(NTuple{L,T1}(data))
 SymTensorValue{D,T1,L}(data::NTuple{L,T2}) where {D,L,T1,T2} = SymTensorValue{D,T1}(NTuple{L,T1}(data))
 
 # SymTensorValue Vararg constructor
 
-SymTensorValue(data::T...) where {T}              = SymTensorValue(Tuple(data))
-SymTensorValue{D}(data::T...) where {D,T}         = SymTensorValue{D}(Tuple(data))
-SymTensorValue{D,T1}(data::T2...) where {D,T1,T2} = SymTensorValue{D,T1}(Tuple(data))
+SymTensorValue(data::T...) where {T}              = SymTensorValue(data)
+SymTensorValue{D}(data::T...) where {D,T}         = SymTensorValue{D}(data)
+SymTensorValue{D,T1}(data::T2...) where {D,T1,T2} = SymTensorValue{D,T1}(data)
 
 # SymTensorValue single AbstractMatrix argument constructor
 
 #From Square Matrices
-_flatten_upper_triangle(data::AbstractArray,::Val{D}) where D = Tuple(data[i,j] for i in 1:D for j in i:D)
+@generated function _flatten_upper_triangle(data::AbstractArray,::Val{D}) where D
+  str = ""
+  for i in 1:D
+    for j in i:D
+      str *= "data[i,j], "
+    end
+  end
+  Meta.parse("($str)")
+end
 
 SymTensorValue(data::AbstractMatrix{T}) where {T} = ((D1,D2)=size(data); SymTensorValue{D1}(data))
 SymTensorValue{D}(data::AbstractMatrix{T}) where {D,T} = SymTensorValue{D,T}(_flatten_upper_triangle(data,Val{D}()))
@@ -52,14 +65,15 @@ SymTensorValue{D,T1,L}(data::AbstractMatrix{T2}) where {D,T1,T2,L} = SymTensorVa
 # Conversions (SymTensorValue)
 ###############################################################
 
-function _SymTensorValue_to_array(arg::SymTensorValue{D,T,L}) where {D,T,L}
-    z = zeros(MMatrix{D,D,T})
-    for j in 1:D
-        for i in j:D
-            z[j,i] = z[i,j] = arg[i,j]
-        end
+@generated function _SymTensorValue_to_array(arg::SymTensorValue{D,T,L}) where {D,T,L}
+  str = ""
+  for j in 1:D
+    for i in 1:D
+      p = _2d_sym_tensor_linear_index(D,i,j)
+      str *= "arg.data[$p], "
     end
-    z
+  end
+  Meta.parse("SMatrix{D,D,T}(($str))")
 end
 
 # Direct conversion
@@ -67,8 +81,8 @@ convert(::Type{<:SymTensorValue{D,T}}, arg::AbstractArray) where {D,T} = SymTens
 convert(::Type{<:SymTensorValue{D,T}}, arg::Tuple) where {D,T} = SymTensorValue{D,T}(arg)
 
 # Inverse conversion
-convert(::Type{<:MMatrix{D,D,T}}, arg::SymTensorValue) where {D,T} = _SymTensorValue_to_array(arg)
-convert(::Type{<:SMatrix{D,D,T}}, arg::SymTensorValue) where {D,T} = SMatrix{D,D,T}(_SymTensorValue_to_array(arg))
+convert(::Type{<:MMatrix{D,D,T}}, arg::SymTensorValue) where {D,T} = MMatrix{D,D,T}(_SymTensorValue_to_array(arg))
+convert(::Type{<:SMatrix{D,D,T}}, arg::SymTensorValue) where {D,T} = _SymTensorValue_to_array(arg)
 convert(::Type{<:NTuple{L,T}}, arg::SymTensorValue) where {L,T} = NTuple{L,T}(Tuple(arg))
 
 # Internal conversion
@@ -79,7 +93,13 @@ convert(::Type{<:SymTensorValue{D,T}}, arg::SymTensorValue{D,T}) where {D,T} = a
 # Other constructors and conversions (SymTensorValue)
 ###############################################################
 
-zero(::Type{<:SymTensorValue{D,T}}) where {D,T} = (L=Int(D*(D+1)/2);SymTensorValue{D,T}(tfill(zero(T),Val{L}())))
+@generated function zero(::Type{<:SymTensorValue{D,T}}) where {D,T}
+  L=Int(D*(D+1)/2)
+  quote
+    SymTensorValue{D,T}(tfill(zero(T),Val{$L}()))
+  end
+end
+
 zero(::Type{<:SymTensorValue{D,T,L}}) where {D,T,L} = SymTensorValue{D,T}(tfill(zero(T),Val{L}()))
 zero(::SymTensorValue{D,T,L}) where {D,T,L} = zero(SymTensorValue{D,T,L})
 

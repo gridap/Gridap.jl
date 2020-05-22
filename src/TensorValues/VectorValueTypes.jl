@@ -32,14 +32,14 @@ VectorValue{D,T1}(data::NTuple{D,T2}) where {D,T1,T2} = VectorValue{D,T1}(NTuple
 
 # VectorValue Vararg constructor
 
-VectorValue(data::T...) where {T}              = (D=length(data); VectorValue{D,T}(NTuple{D,T}(data)))
-VectorValue{D}(data::T...) where {D,T}         = VectorValue{D,T}(NTuple{D,T}(data))
-VectorValue{D,T1}(data::T2...) where {D,T1,T2} = VectorValue{D,T1}(NTuple{D,T1}(data))
+VectorValue(data::T...) where {T}              = VectorValue(data)
+VectorValue{D}(data::T...) where {D,T}         = VectorValue{D}(data)
+VectorValue{D,T1}(data::T2...) where {D,T1,T2} = VectorValue{D,T1}(data)
 
 # VectorValue single AbstractVector argument constructor
 
-VectorValue(data::AbstractArray{T}) where {T}              = (D=length(data);VectorValue{D,T}(NTuple{D,T}(data)))
-VectorValue{D}(data::AbstractArray{T}) where {D,T}         = VectorValue{D,T}(NTuple{D,T}(data))
+VectorValue(data::AbstractArray{T}) where {T}              = (D=length(data);VectorValue(NTuple{D,T}(data)))
+VectorValue{D}(data::AbstractArray{T}) where {D,T}         = VectorValue{D}(NTuple{D,T}(data))
 VectorValue{D,T1}(data::AbstractArray{T2}) where {D,T1,T2} = VectorValue{D,T1}(NTuple{D,T1}(data))
 
 ###############################################################
@@ -51,7 +51,6 @@ convert(::Type{<:VectorValue{D,T}}, arg:: AbstractArray) where {D,T} = VectorVal
 convert(::Type{<:VectorValue{D,T}}, arg:: Tuple) where {D,T} = VectorValue{D,T}(arg)
 
 # Inverse conversion
-#convert(::Type{<:AbstractArray{T}}, arg::VectorValue) where {T}  = Vector{T}([Tuple(arg)...])
 convert(::Type{<:SVector{D,T}}, arg::VectorValue{D}) where {D,T} = SVector{D,T}(Tuple(arg))
 convert(::Type{<:MVector{D,T}}, arg::VectorValue{D}) where {D,T} = MVector{D,T}(Tuple(arg))
 convert(::Type{<:NTuple{D,T}},  arg::VectorValue{D}) where {D,T} = NTuple{D,T}(Tuple(arg))

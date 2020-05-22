@@ -27,7 +27,12 @@ TensorValue{0,0}(data::NTuple{0}) = TensorValue{0,0,Int}(data)
 
 # TensorValue single NTuple argument constructor
 
-TensorValue(data::NTuple{L,T}) where {L,T}                        = (D=Int(sqrt(L));TensorValue{D,D,T}(data))
+@generated function TensorValue(data::NTuple{L,T}) where {L,T}
+  D = Int(sqrt(L))
+  quote
+    TensorValue{$D,$D,T}(data)
+  end
+end
 TensorValue{D}(data::NTuple{L,T}) where {D,L,T}                   = TensorValue{D,D,T}(data)
 TensorValue{D1,D2}(data::NTuple{L,T}) where {D1,D2,L,T}           = TensorValue{D1,D2,T}(data)
 TensorValue{D1,D2,T1}(data::NTuple{L,T2}) where {D1,D2,L,T1,T2}   = TensorValue{D1,D2,T1}(NTuple{L,T1}(data))
@@ -35,11 +40,11 @@ TensorValue{D1,D2,T1,L}(data::NTuple{L,T2}) where {D1,D2,L,T1,T2} = TensorValue{
 
 # TensorValue Vararg constructor
 
-TensorValue(data::T...) where {T}                      = (L=length(data);D=Int(sqrt(L));TensorValue{D,D,T}(NTuple{L,T}(data)))
-TensorValue{D}(data::T...) where {D,T}                 = (L=length(data);TensorValue{D,D,T}(NTuple{L,T}(data)))
-TensorValue{D1,D2}(data::T...) where {D1,D2,T}         = (L=length(data);TensorValue{D1,D2,T}(NTuple{L,T}(data)))
-TensorValue{D1,D2,T1}(data::T2...) where {D1,D2,T1,T2} = (L=length(data);TensorValue{D1,D2,T1}(NTuple{L,T1}(data)))
-TensorValue{D1,D2,T1,L}(data::T2...) where {D1,D2,L,T1,T2} = TensorValue{D1,D2,T1}(NTuple{L,T1}(data))
+TensorValue(data::T...) where {T}                      = TensorValue(data)
+TensorValue{D}(data::T...) where {D,T}                 = TensorValue{D}(data)
+TensorValue{D1,D2}(data::T...) where {D1,D2,T}         = TensorValue{D1,D2,T}(data)
+TensorValue{D1,D2,T1}(data::T2...) where {D1,D2,T1,T2} = TensorValue{D1,D2,T1}(data)
+TensorValue{D1,D2,T1,L}(data::T2...) where {D1,D2,L,T1,T2} = TensorValue{D1,D2,T1}(data)
 
 # TensorValue single AbstractMatrix argument constructor
 
