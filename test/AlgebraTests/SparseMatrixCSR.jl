@@ -65,12 +65,12 @@ module SparseMatrixCSRTests
                 @test [nzrange(CSC,col) for col in 1:size(CSC,2)] == [nzrange(TCSR,row) for row in 1:size(TCSR,1)]
                 @test [nzrange(CSR,row) for row in 1:size(CSR,1)] == [nzrange(TCSC,col) for col in 1:size(TCSC,2)]
 
-                @test nonzeros(CSC) == nonzeros(TCSR) && nonzeros(CSR) == nonzeros(TCSC) 
+                @test nonzeros(CSC) == nonzeros(TCSR) && nonzeros(CSR) == nonzeros(TCSC)
 
                 ICSC,JCSC,VCSC= findnz(CSC)
                 ICSR,JCSR,VCSR= findnz(CSR)
 
-                @test sort(ICSC)==sort(JCSR) && sort(JCSC)==sort(ICSR) && sort(VCSC)==sort(VCSR)
+                @test sort(ICSC)==sort(ICSR) && sort(JCSC)==sort(JCSR) && sort(VCSC)==sort(VCSR)
 
                 v = rand(size(CSC)[2])
                 @test CSC*v == CSR*v
@@ -106,6 +106,5 @@ module SparseMatrixCSRTests
 
             end
         end
-    end    
+    end
 end
-
