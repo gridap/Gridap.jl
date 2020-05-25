@@ -16,50 +16,154 @@ struct CartesianDescriptor{D,T,F<:Function} <: GridapType
   sizes::NTuple{D,T}
   partition::NTuple{D,Int}
   map::F
+  isperiodic::NTuple{D,Bool}
   @doc """
       CartesianDescriptor(
-        origin::Point{D}, sizes::NTuple{D}, partition, map::Function=identity) where D
+        origin::Point{D},
+        sizes::NTuple{D},
+        partition,
+        map::Function=identity,
+        isperiodic::NTuple{D,Bool}=tfill(false,Val{D})) where D
 
   `partition` is a 1D indexable collection of arbitrary type.
   """
   function CartesianDescriptor(
-    origin::Point{D}, sizes::NTuple{D}, partition, map::Function=identity) where D
+    origin::Point{D},
+    sizes::NTuple{D},
+    partition,
+    map::Function=identity,
+    isperiodic::NTuple{D,Bool}=tfill(false,Val{D}())) where D
+
+    for i in 1:D
+      if isperiodic[i]
+        @assert (partition[i] > 2) "A minimum of 3 elements is required in any
+          periodic direction"
+      end
+    end
 
     T = eltype(sizes)
     F = typeof(map)
-    new{D,T,F}(origin,sizes,Tuple(partition),map)
+    new{D,T,F}(origin,sizes,Tuple(partition),map,isperiodic)
   end
 
 end
 
 """
-    CartesianDescriptor(domain,partition,map::Function=identity)
-
-`domain` and `partition` are 1D indexable collections of arbitrary type.
-"""
-function CartesianDescriptor(domain,partition,map::Function=identity)
-  D = length(partition)
-  limits = [(domain[2*d-1],domain[2*d]) for d in 1:D]
-  sizes = Tuple([(limits[d][2]-limits[d][1])/partition[d] for d in 1:D])
-  origin = Point([ limits[d][1] for d in 1:D]...)
-  CartesianDescriptor(origin,sizes,partition,map)
-end
-
-"""
     CartesianDescriptor(
-      pmin::Point{D},pmax::Point{D},partition,map::Function=identity) where D
+      origin::Point{D},
+      sizes::NTuple{D},
+      partition;
+      map::Function=identity,
+      isperiodic::NTuple{D,Bool}=tfill(false,Val{D})) where D
 
 `partition` is a 1D indexable collection of arbitrary type.
 """
 function CartesianDescriptor(
-  pmin::Point{D},pmax::Point{D},partition,map::Function=identity) where D
+  origin::Point{D},
+  sizes::NTuple{D},
+  partition;
+  map::Function=identity,
+  isperiodic::NTuple{D,Bool}=tfill(false,Val{D}())) where D
+
+  T = eltype(sizes)
+  F = typeof(map)
+  CartesianDescriptor(origin,sizes,Tuple(partition),map,isperiodic)
+end
+
+"""
+    CartesianDescriptor(
+      domain,
+      partition,
+      map::Function=identity,
+      isperiodic::NTuple{D,Bool}=tfill(false,Val{D}))
+
+`domain` and `partition` are 1D indexable collections of arbitrary type.
+"""
+function CartesianDescriptor(
+  domain,
+  partition,
+  map::Function=identity,
+  isperiodic::NTuple=tfill(false,Val{length(partition)}()))
+
+  D = length(partition)
+  limits = [(domain[2*d-1],domain[2*d]) for d in 1:D]
+  sizes = Tuple([(limits[d][2]-limits[d][1])/partition[d] for d in 1:D])
+  origin = Point([ limits[d][1] for d in 1:D]...)
+  CartesianDescriptor(origin,sizes,partition,map,isperiodic)
+end
+
+"""
+    CartesianDescriptor(
+      domain,
+      partition;
+      map::Function=identity,
+      isperiodic::NTuple{D,Bool}=tfill(false,Val{D}))
+
+`domain` and `partition` are 1D indexable collections of arbitrary type.
+"""
+function CartesianDescriptor(
+  domain,
+  partition;
+  map::Function=identity,
+  isperiodic::NTuple=tfill(false,Val{length(partition)}()))
+
+  D = length(partition)
+  limits = [(domain[2*d-1],domain[2*d]) for d in 1:D]
+  sizes = Tuple([(limits[d][2]-limits[d][1])/partition[d] for d in 1:D])
+  origin = Point([ limits[d][1] for d in 1:D]...)
+  CartesianDescriptor(origin,sizes,partition,map,isperiodic)
+end
+
+"""
+    CartesianDescriptor(
+      pmin::Point{D},
+      pmax::Point{D},
+      partition,
+      map::Function=identity,
+      isperiodic::NTuple{D,Bool}=tfill(false,Val{D})) where D
+
+`partition` is a 1D indexable collection of arbitrary type.
+"""
+function CartesianDescriptor(
+  pmin::Point{D},
+  pmax::Point{D},
+  partition,
+  map::Function=identity,
+  isperiodic::NTuple{D,Bool}=tfill(false,Val{D}())) where D
+
   T = eltype(pmin)
   domain = zeros(T,2*D)
   for d in 1:D
     domain[2*(d-1)+1] = pmin[d]
     domain[2*(d-1)+2] = pmax[d]
   end
-  CartesianDescriptor(domain,partition,map)
+  CartesianDescriptor(domain,partition,map,isperiodic)
+end
+
+"""
+    CartesianDescriptor(
+      pmin::Point{D},
+      pmax::Point{D},
+      partition;
+      map::Function=identity,
+      isperiodic::NTuple{D,Bool}=tfill(false,Val{D}())) where D
+
+`partition` is a 1D indexable collection of arbitrary type.
+"""
+function CartesianDescriptor(
+  pmin::Point{D},
+  pmax::Point{D},
+  partition;
+  map::Function=identity,
+  isperiodic::NTuple{D,Bool}=tfill(false,Val{D}())) where D
+
+  T = eltype(pmin)
+  domain = zeros(T,2*D)
+  for d in 1:D
+    domain[2*(d-1)+1] = pmin[d]
+    domain[2*(d-1)+2] = pmax[d]
+  end
+  CartesianDescriptor(domain,partition,map,isperiodic)
 end
 
 # Coordinates
@@ -181,12 +285,12 @@ get_reffes(g::CartesianGrid{2}) = [QUAD4,]
 get_reffes(g::CartesianGrid{3}) = [HEX8,]
 
 """
-    CartesianGrid(args...)
+    CartesianGrid(args...;kwargs...)
 
 Same args needed to construct a `CartesianDescriptor`
 """
-function CartesianGrid(args...)
-  desc = CartesianDescriptor(args...)
+function CartesianGrid(args...;kwargs...)
+  desc = CartesianDescriptor(args...;kwargs...)
   CartesianGrid(desc)
 end
 

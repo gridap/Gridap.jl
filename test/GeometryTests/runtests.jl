@@ -36,6 +36,8 @@ using Test
 
 @testset "CartesianDiscreteModels" begin include("CartesianDiscreteModelsTests.jl") end
 
+@testset "PeriodicBC" begin include("PeriodicBCTests.jl") end
+
 @testset "BoundaryTriangulations" begin include("BoundaryTriangulationsTests.jl") end
 
 @testset "GenericBoundaryTriangulations" begin include("GenericBoundaryTriangulationsTests.jl") end
