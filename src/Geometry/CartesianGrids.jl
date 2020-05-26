@@ -30,7 +30,7 @@ struct CartesianDescriptor{D,T,F<:Function} <: GridapType
   function CartesianDescriptor(
     origin::Point{D},
     sizes::NTuple{D},
-    partition,
+    partition;
     map::Function=identity,
     isperiodic::NTuple{D,Bool}=tfill(false,Val{D}())) where D
 
@@ -45,57 +45,12 @@ struct CartesianDescriptor{D,T,F<:Function} <: GridapType
     F = typeof(map)
     new{D,T,F}(origin,sizes,Tuple(partition),map,isperiodic)
   end
-
-end
-
-"""
-    CartesianDescriptor(
-      origin::Point{D},
-      sizes::NTuple{D},
-      partition;
-      map::Function=identity,
-      isperiodic::NTuple{D,Bool}=tfill(false,Val{D})) where D
-
-`partition` is a 1D indexable collection of arbitrary type.
-"""
-function CartesianDescriptor(
-  origin::Point{D},
-  sizes::NTuple{D},
-  partition;
-  map::Function=identity,
-  isperiodic::NTuple{D,Bool}=tfill(false,Val{D}())) where D
-
-  T = eltype(sizes)
-  F = typeof(map)
-  CartesianDescriptor(origin,sizes,Tuple(partition),map,isperiodic)
 end
 
 """
     CartesianDescriptor(
       domain,
       partition,
-      map::Function=identity,
-      isperiodic::NTuple{D,Bool}=tfill(false,Val{D}))
-
-`domain` and `partition` are 1D indexable collections of arbitrary type.
-"""
-function CartesianDescriptor(
-  domain,
-  partition,
-  map::Function=identity,
-  isperiodic::NTuple=tfill(false,Val{length(partition)}()))
-
-  D = length(partition)
-  limits = [(domain[2*d-1],domain[2*d]) for d in 1:D]
-  sizes = Tuple([(limits[d][2]-limits[d][1])/partition[d] for d in 1:D])
-  origin = Point([ limits[d][1] for d in 1:D]...)
-  CartesianDescriptor(origin,sizes,partition,map,isperiodic)
-end
-
-"""
-    CartesianDescriptor(
-      domain,
-      partition;
       map::Function=identity,
       isperiodic::NTuple{D,Bool}=tfill(false,Val{D}))
 
@@ -111,33 +66,7 @@ function CartesianDescriptor(
   limits = [(domain[2*d-1],domain[2*d]) for d in 1:D]
   sizes = Tuple([(limits[d][2]-limits[d][1])/partition[d] for d in 1:D])
   origin = Point([ limits[d][1] for d in 1:D]...)
-  CartesianDescriptor(origin,sizes,partition,map,isperiodic)
-end
-
-"""
-    CartesianDescriptor(
-      pmin::Point{D},
-      pmax::Point{D},
-      partition,
-      map::Function=identity,
-      isperiodic::NTuple{D,Bool}=tfill(false,Val{D})) where D
-
-`partition` is a 1D indexable collection of arbitrary type.
-"""
-function CartesianDescriptor(
-  pmin::Point{D},
-  pmax::Point{D},
-  partition,
-  map::Function=identity,
-  isperiodic::NTuple{D,Bool}=tfill(false,Val{D}())) where D
-
-  T = eltype(pmin)
-  domain = zeros(T,2*D)
-  for d in 1:D
-    domain[2*(d-1)+1] = pmin[d]
-    domain[2*(d-1)+2] = pmax[d]
-  end
-  CartesianDescriptor(domain,partition,map,isperiodic)
+  CartesianDescriptor(origin,sizes,partition;map=map,isperiodic=isperiodic)
 end
 
 """
@@ -146,7 +75,7 @@ end
       pmax::Point{D},
       partition;
       map::Function=identity,
-      isperiodic::NTuple{D,Bool}=tfill(false,Val{D}())) where D
+      isperiodic::NTuple{D,Bool}=tfill(false,Val{D})) where D
 
 `partition` is a 1D indexable collection of arbitrary type.
 """
@@ -163,8 +92,16 @@ function CartesianDescriptor(
     domain[2*(d-1)+1] = pmin[d]
     domain[2*(d-1)+2] = pmax[d]
   end
-  CartesianDescriptor(domain,partition,map,isperiodic)
+  CartesianDescriptor(domain,partition;map=map,isperiodic=isperiodic)
 end
+
+# Deprecated signatures for backwards compatibility
+
+@deprecate CartesianDescriptor(origin::Point{D}, sizes::NTuple{D}, partition, map::Function) where D CartesianDescriptor(origin, sizes, partition; map=map)
+
+@deprecate CartesianDescriptor(domain,partition,map::Function) CartesianDescriptor(domain,partition;map=map)
+
+@deprecate CartesianDescriptor(pmin::Point{D}, pmax::Point{D}, partition, map::Function) where D CartesianDescriptor(pmin, pmax, partition; map=map)
 
 # Coordinates
 

@@ -47,7 +47,7 @@ struct CartesianDiscreteModel{D,T,F} <: DiscreteModel{D,D}
      subpartition = Tuple(cmax) .- Tuple(cmin) .+ 1
      subsizes = desc.sizes
      subdesc =
-       CartesianDescriptor(Point(suborigin), subsizes, subpartition, desc.map)
+       CartesianDescriptor(Point(suborigin), subsizes, subpartition; map=desc.map)
 
      grid = CartesianGrid(subdesc)
      _grid = UnstructuredGrid(grid)
