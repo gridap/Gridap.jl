@@ -17,7 +17,7 @@ struct CartesianDiscreteModel{D,T,F} <: DiscreteModel{D,D}
     grid = CartesianGrid(desc)
     _grid = UnstructuredGrid(grid)
     if any(desc.isperiodic)
-      topo = UnstructuredGridTopology(_grid, desc.isperiodic, desc.partition)
+      topo = _cartesian_grid_topology_with_periodic_bcs(_grid, desc.isperiodic, desc.partition)
     else
       topo = UnstructuredGridTopology(_grid)
     end
@@ -47,7 +47,7 @@ struct CartesianDiscreteModel{D,T,F} <: DiscreteModel{D,D}
      subpartition = Tuple(cmax) .- Tuple(cmin) .+ 1
      subsizes = desc.sizes
      subdesc =
-       CartesianDescriptor(Point(suborigin), subsizes, subpartition; map=desc.map)
+       CartesianDescriptor(Point(suborigin), subsizes, subpartition; map=desc.map, isperiodic=desc.isperiodic)
 
      grid = CartesianGrid(subdesc)
      _grid = UnstructuredGrid(grid)

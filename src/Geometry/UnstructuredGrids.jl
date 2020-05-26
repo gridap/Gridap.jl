@@ -33,7 +33,7 @@ struct UnstructuredGrid{Dc,Dp,Tp,O} <: Grid{Dc,Dp}
   end
 end
 
-""" 
+"""
     UnstructuredGrid(trian::Grid)
 """
 function UnstructuredGrid(trian::Grid)
@@ -167,15 +167,6 @@ function UnstructuredGridTopology(grid::UnstructuredGrid)
   _generate_grid_topology_from_grid(grid,cell_to_vertices,vertex_to_node)
 end
 
-function UnstructuredGridTopology(grid::UnstructuredGrid,
-  isperiodic::NTuple,
-  partition)
-
-  cell_to_vertices, vertex_to_node =
-    _generate_cell_to_vertices_from_grid(grid, isperiodic, partition)
-  _generate_grid_topology_from_grid(grid,cell_to_vertices,vertex_to_node)
-end
-
 function UnstructuredGridTopology(grid::UnstructuredGrid, cell_to_vertices::Table, vertex_to_node::AbstractVector)
   _generate_grid_topology_from_grid(grid,cell_to_vertices,vertex_to_node)
 end
@@ -220,74 +211,6 @@ function _generate_cell_to_vertices_from_grid(grid::UnstructuredGrid)
       num_nodes(grid))
   end
   (cell_to_vertices, vertex_to_node, node_to_vertex)
-end
-
-function _generate_cell_to_vertices_from_grid(grid::UnstructuredGrid,
-  isperiodic::NTuple, partition)
-
-  if is_first_order(grid)
-    nodes = get_cell_nodes(grid)
-    cell_to_vertices = copy(nodes)
-
-    nnodes = num_nodes(grid)
-    num_nodes_x_dir = [partition[i]+1 for i in 1:length(partition)]
-    point_to_isperiodic, slave_point_to_point, slave_point_to_master_point =
-      _generate_slave_to_master_point(num_nodes_x_dir,isperiodic, nnodes)
-
-    vertex_to_point = findall( .! point_to_isperiodic)
-    point_to_vertex = fill(-1,length(point_to_isperiodic))
-    point_to_vertex[vertex_to_point] = 1:length(vertex_to_point)
-    point_to_vertex[slave_point_to_point] = point_to_vertex[slave_point_to_master_point]
-
-    cell_to_vertices = Table(LocalToGlobalArray(nodes,point_to_vertex))
-
-    vertex_to_node = vertex_to_point
-    node_to_vertex = point_to_vertex
-  else
-    @notimplemented
-  end
-  (cell_to_vertices,vertex_to_node, node_to_vertex)
-end
-
-function _generate_slave_to_master_point(num_nodes_x_dir::Vector{Int},
-  isperiodic::NTuple, num_nodes::Int)
-
-  point_to_isperiodic = fill(false,num_nodes)
-
-  slave_ijk_bounds = Array{Any,1}(undef,length(isperiodic))
-  master_ijk_bounds = Array{Any,1}(undef,length(isperiodic))
-
-  linear_indices = LinearIndices(Tuple(num_nodes_x_dir))
-  periodic_dirs = findall(x->x==true, isperiodic)
-  for periodic_dir in periodic_dirs
-    for i in 1:length(isperiodic)
-      if i == periodic_dir
-        slave_ijk_bounds[i] = num_nodes_x_dir[i]
-      else
-        slave_ijk_bounds[i] = 1:num_nodes_x_dir[i]
-      end
-    end
-    slave_ijk_set = CartesianIndices(Tuple(slave_ijk_bounds))
-    point_to_isperiodic[linear_indices[slave_ijk_set]] .= true
-  end
-
-  slave_point_to_point = findall( point_to_isperiodic)
-  slave_point_to_master_point = Array{Int,1}(undef,length(slave_point_to_point))
-
-  cartesian_indices = CartesianIndices(Tuple(num_nodes_x_dir))
-  for (i,point) in enumerate(slave_point_to_point)
-    ijk = collect(cartesian_indices[point].I)
-    for i in periodic_dirs
-      if ijk[i] == num_nodes_x_dir[i]
-        ijk[i] = 1
-      end
-    end
-
-    master_point_ijk = CartesianIndex(Tuple(ijk))
-    slave_point_to_master_point[i] = linear_indices[master_point_ijk]
-  end
-
-  point_to_isperiodic, slave_point_to_point, slave_point_to_master_point
 end
 
 
@@ -419,4 +342,3 @@ function _refine_grid_connectivity(cell_to_points::Table, ltcell_to_lpoints)
     ltcell_to_lpoints)
   Table(data,ptrs)
 end
-
