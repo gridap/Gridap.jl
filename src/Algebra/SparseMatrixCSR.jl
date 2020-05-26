@@ -2,9 +2,9 @@
 """
     struct SparseMatrixCSR{Bi,Tv,Ti<:Integer} <: AbstractSparseMatrix{Tv,Ti}
 
-Matrix type for storing Bi-based sparse matrices 
-in the Compressed Sparse Row format. The standard 
-way of constructing SparseMatrixCSR is through the 
+Matrix type for storing Bi-based sparse matrices
+in the Compressed Sparse Row format. The standard
+way of constructing SparseMatrixCSR is through the
 [`sparsecsr`](@ref) function.
 """
 struct SparseMatrixCSR{Bi,Tv,Ti} <: AbstractSparseMatrix{Tv,Ti}
@@ -30,9 +30,9 @@ struct SparseMatrixCSR{Bi,Tv,Ti} <: AbstractSparseMatrix{Tv,Ti}
 end
 
 
-SparseMatrixCSR(transpose::SparseMatrixCSC) where {Tv,Ti} = 
+SparseMatrixCSR(transpose::SparseMatrixCSC) where {Tv,Ti} =
         SparseMatrixCSR{1}(transpose.n, transpose.m, transpose.colptr, transpose.rowval, transpose.nzval)
-SparseMatrixCSR{Bi}(transpose::SparseMatrixCSC{Tv,Ti}) where {Bi,Tv,Ti} = 
+SparseMatrixCSR{Bi}(transpose::SparseMatrixCSC{Tv,Ti}) where {Bi,Tv,Ti} =
         SparseMatrixCSR{Bi}(transpose.n, transpose.m, transpose.colptr, transpose.rowval, transpose.nzval)
 
 size(S::SparseMatrixCSR) = (S.m, S.n)
@@ -57,17 +57,13 @@ colvals(S::SparseMatrixCSR) = S.colval
 
 Same args than `sparse`.
 """
-sparsecsr(I,J,args...) = 
-        SparseMatrixCSR(sparse(J,I,args...))
-sparsecsr(::Type{<:SparseMatrixCSR},I,J,args...) = 
+sparsecsr(I,J,V,m,n,args...) =
+        SparseMatrixCSR(sparse(J,I,V,n,m,args...))
+sparsecsr(::Type{<:SparseMatrixCSR},I,J,args...) =
         sparsecsr(I,J,args...)
-sparsecsr(::Type{<:SparseMatrixCSR{Bi}},I,J,args...) where {Bi} = 
-        SparseMatrixCSR{Bi}(sparse(J,I,args...))
-sparsecsr(::Type{<:SparseMatrixCSR{Bi}},I,J,V,m,n,args...) where {Bi} = 
+sparsecsr(::Type{<:SparseMatrixCSR{Bi}},I,J,V,m,n,args...) where {Bi} =
         SparseMatrixCSR{Bi}(sparse(J,I,V,n,m,args...))
-sparsecsr(::Type{<:SparseMatrixCSR{Bi,Tv,Ti}},I::Vector{Ti},J::Vector{Ti},args...) where {Bi,Tv,Ti} = 
-        SparseMatrixCSR{Bi}(sparse(J,I,args...))
-sparsecsr(::Type{<:SparseMatrixCSR{Bi,Tv,Ti}},I::Vector{Ti},J::Vector{Ti},V::Vector{Tv},m,n,args...) where {Bi,Tv,Ti} = 
+sparsecsr(::Type{<:SparseMatrixCSR{Bi,Tv,Ti}},I::Vector{Ti},J::Vector{Ti},V::Vector{Tv},m,n,args...) where {Bi,Tv,Ti} =
         SparseMatrixCSR{Bi}(sparse(J,I,V,n,m,args...))
 
 *(A::SparseMatrixCSR, v::Vector) = (y = similar(v,A.n);mul!(y,A,v))
@@ -153,8 +149,8 @@ function findnz(S::SparseMatrixCSR{Bi,Tv,Ti}) where {Bi,Tv,Ti}
     count = 1
     @inbounds for row in 1:S.m
         @inbounds for k in nzrange(S,row)
-            I[count] = S.colval[k]-S.offset
-            J[count] = row
+            I[count] = row
+            J[count] = S.colval[k]-S.offset
             V[count] = S.nzval[k]
             count += 1
         end
@@ -181,7 +177,7 @@ end
 end
 
 function finalize_coo!(::Type{<:SparseMatrixCSR},
-    I::Vector,J::Vector,V::Vector,m::Integer,n::Integer) 
+    I::Vector,J::Vector,V::Vector,m::Integer,n::Integer)
 end
 
 function add_entry!(A::SparseMatrixCSR{Bi,Tv,Ti},v::Number,i::Integer,j::Integer,combine::Function=+) where {Bi,Tv,Ti<:Integer}
@@ -231,10 +227,10 @@ function convert(::Type{<:SparseMatrixCSR{Bi}}, x::SparseMatrixCSR{xBi}) where {
     if Bi == xBi
         return x
     else
-        return SparseMatrixCSR{Bi}( x.m, 
-                                    x.n, 
-                                    copy(getptr(x)).-x.offset, 
-                                    copy(getindices(x)).-x.offset, 
+        return SparseMatrixCSR{Bi}( x.m,
+                                    x.n,
+                                    copy(getptr(x)).-x.offset,
+                                    copy(getindices(x)).-x.offset,
                                     copy(nonzeros(x)))
     end
 end
@@ -244,10 +240,10 @@ function convert(::Type{<:SparseMatrixCSR{Bi,Tv,Ti}}, x::SparseMatrixCSR{xBi,xTv
     if (Bi,Tv,Ti) == (xBi,xTv,xTi)
         return x
     else
-        return SparseMatrixCSR{Bi}( x.m, 
-                                    x.n, 
-                                    convert(Vector{Ti}, copy(getptr(x)).-x.offset), 
-                                    convert(Vector{Ti}, copy(getindices(x)).-x.offset), 
+        return SparseMatrixCSR{Bi}( x.m,
+                                    x.n,
+                                    convert(Vector{Ti}, copy(getptr(x)).-x.offset),
+                                    convert(Vector{Ti}, copy(getindices(x)).-x.offset),
                                     convert(Vector{Tv}, copy(nonzeros(x))))
     end
 end
@@ -262,20 +258,19 @@ end
 
 function convert(::Type{<:SparseMatrixCSR{Bi,Tv,Ti}}, x::SparseMatrixCSC) where {Bi,Tv,Ti}
     A = sparse(transpose(x))
-    return SparseMatrixCSR{Bi}( A.m, 
-                                A.n, 
-                                convert(Vector{Ti}, getptr(A)), 
-                                convert(Vector{Ti}, getindices(A)), 
+    return SparseMatrixCSR{Bi}( A.m,
+                                A.n,
+                                convert(Vector{Ti}, getptr(A)),
+                                convert(Vector{Ti}, getindices(A)),
                                 convert(Vector{Tv}, nonzeros(A)))
 end
 
 
 function convert(::Type{SparseMatrixCSC{Tv,Ti}}, x::SparseMatrixCSR{xBi,xTv,xTi}) where {Tv,Ti,xBi,xTv,xTi}
     A = sparse(transpose(x))
-    return SparseMatrixCSR{Bi}( A.m, 
-                                A.n, 
-                                convert(Vector{Ti}, getptr(A)), 
-                                convert(Vector{Ti}, getindices(A)), 
+    return SparseMatrixCSR{Bi}( A.m,
+                                A.n,
+                                convert(Vector{Ti}, getptr(A)),
+                                convert(Vector{Ti}, getindices(A)),
                                 convert(Vector{Tv}, nonzeros(A)))
 end
-

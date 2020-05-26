@@ -8,6 +8,7 @@ module SparseMatrixCSRTests
     maxnz=5
     maxrows=5
     maxcols=5
+    maxrowsorcols=7
     int_types=(Int32,Int64)
     float_types=(Float32,Float64)
     Bi_types=(0,1)
@@ -65,12 +66,12 @@ module SparseMatrixCSRTests
                 @test [nzrange(CSC,col) for col in 1:size(CSC,2)] == [nzrange(TCSR,row) for row in 1:size(TCSR,1)]
                 @test [nzrange(CSR,row) for row in 1:size(CSR,1)] == [nzrange(TCSC,col) for col in 1:size(TCSC,2)]
 
-                @test nonzeros(CSC) == nonzeros(TCSR) && nonzeros(CSR) == nonzeros(TCSC) 
+                @test nonzeros(CSC) == nonzeros(TCSR) && nonzeros(CSR) == nonzeros(TCSC)
 
                 ICSC,JCSC,VCSC= findnz(CSC)
                 ICSR,JCSR,VCSR= findnz(CSR)
 
-                @test sort(ICSC)==sort(JCSR) && sort(JCSC)==sort(ICSR) && sort(VCSC)==sort(VCSR)
+                @test sort(ICSC)==sort(ICSR) && sort(JCSC)==sort(JCSR) && sort(VCSC)==sort(VCSR)
 
                 v = rand(size(CSC)[2])
                 @test CSC*v == CSR*v
@@ -105,7 +106,22 @@ module SparseMatrixCSRTests
                 @test all(x->x==0, nonzeros(CSR))
 
             end
-        end
-    end    
-end
 
+            function test_rectangular(Ti::Type,Tv::Type,nrows,ncols)
+               I = Vector{Ti}()
+               J = Vector{Ti}()
+               V = Vector{Tv}()
+               for (ik, jk, vk) in zip(rand(1:nrows, maxnz), rand(1:ncols, maxnz), rand(1:Tv(maxnz), maxnz-1))
+                 push_coo!(SparseMatrixCSR{1,Tv,Ti},I,J,V,ik,jk,vk)
+               end
+               push_coo!(SparseMatrixCSR{1,Tv,Ti},I,J,V,nrows,ncols,maxnz)
+               finalize_coo!(SparseMatrixCSR{1,Tv,Ti},I,J,V,nrows,ncols)
+               CSC = sparse(I, J, V, nrows,ncols)
+               CSR = sparsecsr(I, J, V, nrows,ncols)
+               @test CSR == CSC
+           end
+           test_rectangular(Ti,Tv,maxrowsorcols,maxcols)
+           test_rectangular(Ti,Tv,maxrowsorcols,maxcols)
+        end
+    end
+end
