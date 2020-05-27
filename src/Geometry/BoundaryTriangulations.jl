@@ -67,6 +67,29 @@ function restrict(f::AbstractArray, trian::BoundaryTriangulation)
   compose_field_arrays(reindex(f,trian), get_face_to_cell_map(trian))
 end
 
+is_portion_of_boundary_triangulation(::TriangulationPortion{Dc,Dp,<:Triangulation}) where {Dc,Dp}=false
+is_portion_of_boundary_triangulation(trian::TriangulationPortion{Dc,Dp,<:TriangulationPortion}) where {Dc,Dp}=
+  is_portion_of_boundary_triangulation(trian.oldtrian)
+is_portion_of_boundary_triangulation(::TriangulationPortion{Dc,Dp,<:BoundaryTriangulation}) where {Dc,Dp}=true
+
+function get_face_to_cell_map(::TriangulationPortion{Dc,Dp,<:Triangulation}) where {Dc,Dp}
+  @assert false "You can only call get_face_to_cell_map with a TriangulationPortion of a BoundaryTriangulation"
+end
+function get_face_to_cell_map(trian::TriangulationPortion{Dc,Dp,<:TriangulationPortion}) where {Dc,Dp}
+  get_face_to_cell_map(trian.oldtrian)
+end
+function get_face_to_cell_map(trian::TriangulationPortion{Dc,Dp,<:BoundaryTriangulation}) where {Dc,Dp}
+  get_face_to_cell_map(trian.oldtrian)
+end
+
+function restrict(f::AbstractArray,trian::TriangulationPortion)
+  if (is_portion_of_boundary_triangulation(trian))
+    compose_field_arrays(reindex(f,trian), reindex(get_face_to_cell_map(trian),trian.cell_to_oldcell))
+  else
+    reindex(f,trian)
+  end
+end
+
 function get_cell_id(trian::BoundaryTriangulation)
   get_face_to_cell(trian)
 end
@@ -131,6 +154,3 @@ end
 #  D = num_cell_dims(model)
 #  face_to_mask = get_face_mask(labeling,tags,D-1)
 #end
-
-
-
