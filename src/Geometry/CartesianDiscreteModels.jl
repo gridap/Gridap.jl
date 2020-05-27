@@ -16,7 +16,11 @@ struct CartesianDiscreteModel{D,T,F} <: DiscreteModel{D,D}
   function CartesianDiscreteModel(desc::CartesianDescriptor{D,T,F}) where {D,T,F}
     grid = CartesianGrid(desc)
     _grid = UnstructuredGrid(grid)
-    topo = UnstructuredGridTopology(_grid)
+    if any(desc.isperiodic)
+      topo = _cartesian_grid_topology_with_periodic_bcs(_grid, desc.isperiodic, desc.partition)
+    else
+      topo = UnstructuredGridTopology(_grid)
+    end
     nfaces = [num_faces(topo,d) for d in 0:num_cell_dims(topo)]
     labels = FaceLabeling(nfaces)
     _fill_cartesian_face_labeling!(labels,topo)
@@ -43,7 +47,7 @@ struct CartesianDiscreteModel{D,T,F} <: DiscreteModel{D,D}
      subpartition = Tuple(cmax) .- Tuple(cmin) .+ 1
      subsizes = desc.sizes
      subdesc =
-       CartesianDescriptor(Point(suborigin), subsizes, subpartition, desc.map)
+       CartesianDescriptor(Point(suborigin), subsizes, subpartition; map=desc.map, isperiodic=desc.isperiodic)
 
      grid = CartesianGrid(subdesc)
      _grid = UnstructuredGrid(grid)
@@ -60,8 +64,8 @@ end
 
 Same args needed to construct a `CartesianDescriptor`
 """
-function CartesianDiscreteModel(args...)
-  desc = CartesianDescriptor(args...)
+function CartesianDiscreteModel(args...; kwargs...)
+  desc = CartesianDescriptor(args...; kwargs...)
   CartesianDiscreteModel(desc)
 end
 

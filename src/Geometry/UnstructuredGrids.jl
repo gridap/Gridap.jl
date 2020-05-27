@@ -33,7 +33,7 @@ struct UnstructuredGrid{Dc,Dp,Tp,O} <: Grid{Dc,Dp}
   end
 end
 
-""" 
+"""
     UnstructuredGrid(trian::Grid)
 """
 function UnstructuredGrid(trian::Grid)
@@ -213,6 +213,7 @@ function _generate_cell_to_vertices_from_grid(grid::UnstructuredGrid)
   (cell_to_vertices, vertex_to_node, node_to_vertex)
 end
 
+
 function _generate_cell_to_vertices(
   cell_to_nodes::Table,
   cell_to_cell_type::AbstractVector{<:Integer},
@@ -341,4 +342,3 @@ function _refine_grid_connectivity(cell_to_points::Table, ltcell_to_lpoints)
     ltcell_to_lpoints)
   Table(data,ptrs)
 end
-
