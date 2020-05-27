@@ -48,6 +48,10 @@ end
 #  reindex(f,trian)
 #end
 
+function restrict(f::AbstractArray,trian::TriangulationPortion)
+  reindex(restrict(f,trian.oldtrian),trian)
+end
+
 function get_normal_vector(trian::TriangulationPortion)
   reindex(get_normal_vector(trian.oldtrian),trian.cell_to_oldcell)
 end
