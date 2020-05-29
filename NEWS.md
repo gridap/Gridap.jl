@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+ - Function `print_op_tree` to visualize lazy operation trees. Since PR [#270](https://github.com/gridap/Gridap.jl/pull/270).
+ - Exported `apply` and `reindex` from `Gridap` top level. Since PR [#270](https://github.com/gridap/Gridap.jl/pull/270).
  - Extended support of `CartesianDiscreteModel` to models with periodic boundary conditions.
  PR [#266](https://github.com/gridap/Gridap.jl/pull/266).
 
