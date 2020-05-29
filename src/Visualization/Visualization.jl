@@ -36,17 +36,23 @@ using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.ReferenceFEs: _find_unique_with_indices
 using Gridap.ReferenceFEs: SerendipityPolytope
+using Gridap.FESpaces
+using FillArrays
 
 import Gridap.Geometry: get_reffes
 import Gridap.Geometry: get_cell_type
 import Gridap.Geometry: get_node_coordinates
 import Gridap.Geometry: get_cell_nodes
 
+import AbstractTrees
 
 export writevtk
 export createvtk
 export write_vtk_file
+export print_op_tree
 
 include("Vtk.jl")
+
+include("PrintOpTrees.jl")
 
 end # module
