@@ -30,6 +30,13 @@ test_triangulation(strian)
 ns = get_normal_vector(strian)
 @test length(ns) == num_cells(strian)
 
+v = [i for i=1:num_cells(trian)]
+cell_to_oldcell = [2,9,7]
+trian_portion = TriangulationPortion(oldtrian,cell_to_oldcell)
+trian_portion_portion = TriangulationPortion(trian_portion,[3,1])
+@test get_cell_id(trian_portion_portion)==[7,2]
+@test restrict(v, trian_portion_portion)==[7,2]
+
 #using Gridap.Visualization
 #writevtk(oldtrian,"oldtrian")
 #writevtk(btrian,"btrian",cellfields=["normal"=>nb],celldata=["oldcell"=>get_cell_id(btrian)])
@@ -37,4 +44,3 @@ ns = get_normal_vector(strian)
 #  celldata=["oldcell_left"=>get_cell_id(strian).left,"oldcell_right"=>get_cell_id(strian).right])
 
 end # module
-
