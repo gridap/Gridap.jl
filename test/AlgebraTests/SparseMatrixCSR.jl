@@ -71,7 +71,7 @@ module SparseMatrixCSRTests
                 ICSC,JCSC,VCSC= findnz(CSC)
                 ICSR,JCSR,VCSR= findnz(CSR)
 
-                @test sort(ICSC)==sort(JCSR) && sort(JCSC)==sort(ICSR) && sort(VCSC)==sort(VCSR)
+                @test sort(ICSC)==sort(ICSR) && sort(JCSC)==sort(JCSR) && sort(VCSC)==sort(VCSR)
 
                 v = rand(size(CSC)[2])
                 @test CSC*v == CSR*v

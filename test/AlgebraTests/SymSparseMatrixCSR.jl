@@ -58,13 +58,13 @@ module SymSparseMatrixCSRTests
                 @test getptr(SYMCSR)           == SYMCSR.uppertrian.rowptr
                 @test getindices(SYMCSR)       == colvals(SYMCSR)
 
-                @test nnz(SYMCSC.data) == nnz(SYMCSR.uppertrian) <= nnz(SYMCSR) 
+                @test nnz(SYMCSC.data) == nnz(SYMCSR.uppertrian) <= nnz(SYMCSR)
                 @test count(!iszero, SYMCSC.data) == count(!iszero, SYMCSR.uppertrian)
 
                 ICSC,JCSC,VCSC= findnz(SYMCSC.data)
                 ICSR,JCSR,VCSR= findnz(SYMCSR)
 
-                @test sort(ICSC)==sort(JCSR) && sort(JCSC)==sort(ICSR) && sort(VCSC)==sort(VCSR)
+                @test sort(ICSC)==sort(ICSR) && sort(JCSC)==sort(JCSR) && sort(VCSC)==sort(VCSR)
 
                 v = rand(size(SYMCSC)[2])
                 @test SYMCSC*v == SYMCSR*v
@@ -101,6 +101,5 @@ module SymSparseMatrixCSRTests
             end
         end
     end
-    
-end
 
+end
