@@ -2,7 +2,7 @@ module PrintOpTrees
 
 using FillArrays
 using Gridap
-using Gridap.Arrays
+using Gridap.Arrays: CompressedArray
 
 io = IOBuffer()
 
@@ -19,6 +19,8 @@ d = apply(-,collect(c))
 d = apply(+,d,d)
 print_op_tree(io,d)
 
+r = reindex(d,[4,3,3,1])
+print_op_tree(io,r,showid=true)
 
 domain = (0,1,0,1)
 partition = (3,3)
