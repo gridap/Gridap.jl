@@ -27,8 +27,16 @@ end
     writevtk(x::AbstractVector{<:Point}, filebase; kwargs...)
 """
 function writevtk(x::AbstractVector{<:Point}, filebase; kwargs...)
+  vtkfile = createvtk(grid,filebase; kwargs...)
+  outfiles = vtk_save(vtkfile)
+end
+
+"""
+    createvtk(x::AbstractVector{<:Point}, filebase; kwargs...)
+"""
+function createvtk(x::AbstractVector{<:Point}, filebase; kwargs...)
   grid = UnstructuredGrid(x)
-  write_vtk_file(grid,filebase; kwargs...)
+  create_vtk_file(grid,filebase; kwargs...)
 end
 
 """
@@ -94,6 +102,24 @@ Low level entry point to vtk. Other vtk-related routines in Gridap eventually ca
 """
 function write_vtk_file(
   trian::Grid, filebase; celldata=Dict(), nodaldata=Dict())
+  vtkfile = create_vtk_file(trian, filebase, celldata=celldata, nodaldata=nodaldata)
+  outfiles = vtk_save(vtkfile)
+end
+
+"""
+
+    create_vtk_file(
+      trian::Grid,
+      filebase;
+      celldata=Dict(),
+      nodaldata=Dict())
+
+Low level entry point to vtk. Other vtk-related routines in Gridap eventually call this one.
+This function only creates the vtkFile, without writing to disk.
+
+"""
+function create_vtk_file(
+  trian::Grid, filebase; celldata=Dict(), nodaldata=Dict())
 
   points = _vtkpoints(trian)
   cells = _vtkcells(trian)
@@ -106,7 +132,7 @@ function write_vtk_file(
     vtk_point_data(vtkfile, _prepare_data(v), k)
   end
 
-  outfiles = vtk_save(vtkfile)
+  return vtkfile
 end
 
 function _vtkpoints(trian)
@@ -138,7 +164,7 @@ function _generate_vtk_cells(
   cell_to_nodes,
   cell_to_type,
   type_to_vtkid,
-  type_to_vtknodes) 
+  type_to_vtknodes)
 
   V = eltype(cell_to_nodes)
   meshcells = MeshCell{V}[]
@@ -366,12 +392,19 @@ end
 """
 """
 function writevtk(trian::Triangulation, filebase; order=-1, nsubcells=-1, celldata=Dict(), cellfields=Dict())
+  vtkfile = createvtk(trian,filebase, order, nsubcells, celldata, cellfields)
+  outfiles = vtk_save(vtkfile)
+end
+
+"""
+"""
+function createvtk(trian::Triangulation, filebase; order=-1, nsubcells=-1, celldata=Dict(), cellfields=Dict())
 
   if order == -1 && nsubcells == -1
     # Use the given cells as visualization cells
 
     f = (reffe) -> UnstructuredGrid(reffe)
-    
+
   elseif order != -1 && nsubcells == -1
     # Use cells of given order as visualization cells
 
@@ -392,7 +425,7 @@ function writevtk(trian::Triangulation, filebase; order=-1, nsubcells=-1, cellda
   cdata = _prepare_cdata(celldata,visgrid.sub_cell_to_cell)
   pdata = _prepare_pdata(trian,cellfields,visgrid.cell_to_refpoints)
 
-  write_vtk_file(visgrid,filebase,celldata=cdata,nodaldata=pdata)
+  create_vtk_file(visgrid,filebase,celldata=cdata,nodaldata=pdata)
 
 end
 
@@ -565,6 +598,21 @@ end
 function writevtk(
   cell_to_points::AbstractArray{<:AbstractArray{<:Point}},
   filename; celldata=Dict(), nodaldata=Dict())
+  vtkfile = createvtk(cell_to_points, filename, celldata, nodaldata)
+  outfiles = vtk_save(vtkfile)
+end
+
+
+"""
+    createvtk(
+      cell_to_points::AbstractArray{<:AbstractArray{<:Point}},
+      filename;
+      celldata=Dict(),
+      nodaldata=Dict())
+"""
+function createvtk(
+  cell_to_points::AbstractArray{<:AbstractArray{<:Point}},
+  filename; celldata=Dict(), nodaldata=Dict())
 
   node_to_point, cell_to_offset = _prepare_node_to_coords(cell_to_points)
   nnodes = length(node_to_point)
@@ -584,7 +632,7 @@ function writevtk(
   cdata = _prepare_cdata(celldata,node_to_cell)
   pdata = _prepare_pdata_for_cell_points(nodaldata)
 
-  write_vtk_file(grid,filename,celldata=cdata,nodaldata=pdata)
+  create_vtk_file(grid,filename,celldata=cdata,nodaldata=pdata)
 
 end
 
@@ -612,4 +660,3 @@ function _prepare_pdata_for_cell_points(nodaldata)
   end
   pdata
 end
-

@@ -44,6 +44,7 @@ import Gridap.Geometry: get_cell_nodes
 
 
 export writevtk
+export createvtk
 export write_vtk_file
 
 include("Vtk.jl")
