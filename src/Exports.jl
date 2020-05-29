@@ -25,6 +25,8 @@ end
 @publish Arrays array_cache
 @publish Arrays getindex!
 @publish Arrays get_array
+@publish Arrays apply
+@publish Arrays reindex
 
 @publish TensorValues VectorValue
 @publish TensorValues TensorValue
