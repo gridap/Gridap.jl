@@ -1,7 +1,7 @@
 name = "Gridap"
 uuid = "56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e"
 authors = ["Santiago Badia <santiago.badia@monash.edu>", "Francesc Verdugo <fverdugo@cimne.upc.edu>"]
-version = "0.10.2"
+version = "0.10.3"
 
 [deps]
 AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
@@ -24,6 +24,7 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 
 [compat]
+AbstractTrees = "0.3.3"
 BSON = "0.2.5"
 Combinatorics = "1.0.0"
 DocStringExtensions = "0.8.1"
