@@ -27,7 +27,7 @@ end
     writevtk(x::AbstractVector{<:Point}, filebase; kwargs...)
 """
 function writevtk(x::AbstractVector{<:Point}, filebase; kwargs...)
-  vtkfile = createvtk(grid,filebase; kwargs...)
+  vtkfile = createvtk(x,filebase; kwargs...)
   outfiles = vtk_save(vtkfile)
 end
 
