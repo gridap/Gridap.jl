@@ -392,7 +392,7 @@ end
 """
 """
 function writevtk(trian::Triangulation, filebase; order=-1, nsubcells=-1, celldata=Dict(), cellfields=Dict())
-  vtkfile = createvtk(trian,filebase, order, nsubcells, celldata, cellfields)
+  vtkfile = createvtk(trian,filebase, order=order, nsubcells=nsubcells, celldata=celldata, cellfields=cellfields)
   outfiles = vtk_save(vtkfile)
 end
 
@@ -598,7 +598,7 @@ end
 function writevtk(
   cell_to_points::AbstractArray{<:AbstractArray{<:Point}},
   filename; celldata=Dict(), nodaldata=Dict())
-  vtkfile = createvtk(cell_to_points, filename, celldata, nodaldata)
+  vtkfile = createvtk(cell_to_points, filename, celldata=celldata, nodaldata=nodaldata)
   outfiles = vtk_save(vtkfile)
 end
 
