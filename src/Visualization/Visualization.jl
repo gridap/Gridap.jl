@@ -47,6 +47,7 @@ import Gridap.Geometry: get_cell_nodes
 import AbstractTrees
 
 export writevtk
+export createvtk
 export write_vtk_file
 export print_op_tree
 

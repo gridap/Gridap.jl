@@ -9,6 +9,7 @@ using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.Visualization
+using WriteVTK
 
 d = mktempdir()
 f = joinpath(d,"trian")
@@ -90,6 +91,16 @@ writevtk(Grid(LagrangianRefFE(Float64,QUAD,3)),joinpath(d,"quad_order3"))
 writevtk(Grid(LagrangianRefFE(Float64,QUAD,4)),joinpath(d,"quad_order4"))
 writevtk(Grid(LagrangianRefFE(Float64,TET,3)),joinpath(d,"tet_order1"))
 writevtk(Grid(LagrangianRefFE(Float64,HEX,3)),joinpath(d,"hex_order1"))
+
+# Paraview collections
+f = joinpath(d,"collection")
+paraview_collection(f) do pvd
+    for i in 1:10
+        pvd[Float64(i)] = createvtk(trian, f*"_$i", celldata=["rnd"=>rand(num_cells(trian))], cellfields=["cf" => compose(fun, get_cell_map(trian))])
+        pvd[Float64(10+i)] = createvtk(x,f*"_$(10+i)",celldata=["cellid" => collect(1:num_cells(trian))], nodaldata = ["x" => x])
+    end
+    vtk_save(pvd)
+end
 
 rm(d,recursive=true)
 
