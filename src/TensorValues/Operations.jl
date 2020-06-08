@@ -4,7 +4,7 @@
 
 (==)(a::MultiValue,b::MultiValue) = a.data == b.data
 (≈)(a::MultiValue,b::MultiValue) = isapprox(get_array(a), get_array(b))
-(≈)(a::VectorValue{0},b::VectorValue{0}) = true
+(≈)(a::MultiValue{S,T1,N,0} where T1,b::MultiValue{S,T2,N,0} where T2) where {S,N} = true
 
 function (≈)(
   a::AbstractArray{<:MultiValue}, b::AbstractArray{<:MultiValue})
@@ -15,8 +15,8 @@ function (≈)(
   true
 end
 
-function isless(a::VectorValue{N},b::VectorValue{N}) where N
-  for d in N:-1:1
+function isless(a::MultiValue{Tuple{L}},b::MultiValue{Tuple{L}}) where L
+  for d in L:-1:1
     if a[d] < b[d]
       return true
     elseif a[d] > b[d]
@@ -42,29 +42,18 @@ for op in (:+,:-)
       T(r)
     end
 
-    function ($op)(a::VectorValue{D},b::VectorValue{D})  where {D}
+    function ($op)(a::MultiValue{S},b::MultiValue{S})  where S
       r = broadcast(($op), a.data, b.data)
-      VectorValue{D}(r)
+      T = change_eltype(a,eltype(r))
+      T(r)
     end
 
-    function ($op)(a::TensorValue{D1,D2},b::TensorValue{D1,D2})  where {D1,D2}
-      r = broadcast(($op), a.data, b.data)
-      TensorValue{D1,D2}(r)
+    function ($op)(a::TensorValue,b::SymTensorValue)
+      @notimplemented
     end
 
-    function ($op)(a::SymTensorValue{D},b::SymTensorValue{D})  where {D}
-      r = broadcast(($op), a.data, b.data)
-      SymTensorValue{D}(r)
-    end
-
-    function ($op)(a::SymFourthOrderTensorValue{D},b::SymFourthOrderTensorValue{D})  where {D}
-      r = broadcast(($op), a.data, b.data)
-      SymFourthOrderTensorValue{D}(r)
-    end
-
-    function ($op)(a::ThirdOrderTensorValue{D1,D2,D3},b::ThirdOrderTensorValue{D1,D2,D3})  where {D1,D2,D3}
-      r = broadcast(($op), a.data, b.data)
-      ThirdOrderTensorValue{D1,D2}(r)
+    function ($op)(a::SymTensorValue,b::TensorValue)
+      @notimplemented
     end
 
   end
@@ -74,9 +63,10 @@ end
 # Matrix Division
 ###############################################################
 
-function (\)(a::T1 where {T1<:Union{TensorValue,SymTensorValue}}, b::T2) where {T2<:MultiValue}
+function (\)(a::MultiValue{Tuple{D,D}} where D, b::MultiValue)
   r = get_array(a) \ get_array(b)
-  T2(r)
+  T = change_eltype(b,eltype(r))
+  T(r)
 end
 
 ###############################################################
@@ -85,33 +75,44 @@ end
 
 for op in (:+,:-,:*)
   @eval begin
-    function ($op)(a::T,b::Number) where {T<:MultiValue} 
+    function ($op)(a::MultiValue,b::Number)
         r = broadcast($op,a.data,b)
-        PT  = change_eltype(T,eltype(r))
-        PT(r)
+        T  = change_eltype(a,eltype(r))
+        T(r)
     end
 
-    function ($op)(a::Number,b::T) where {T<:MultiValue} 
+    function ($op)(a::Number,b::MultiValue)
         r = broadcast($op,a,b.data)
-        PT  = change_eltype(T,eltype(r))
-        PT(r)
+        T  = change_eltype(b,eltype(r))
+        T(r)
     end
   end
 end
 
-function (/)(a::T,b::Number) where {T<:MultiValue}
+function (/)(a::MultiValue,b::Number)
     r = broadcast(/,a.data,b)
-    PT  = change_eltype(T,eltype(r))
-    PT(r)
+    P  = change_eltype(a,eltype(r))
+    P(r)
 end
 
 ###############################################################
 # Dot product (simple contraction)
 ###############################################################
 
-(*)(a::VectorValue{D}, b::VectorValue{D}) where D = inner(a,b)
+function (*)(a::MultiValue, b::MultiValue)
+  #msg = """
+  #Method (*)(::$(typeof(a)),::$(typeof(b))) has been removed
+  #Use simple contraction LinearAlgebra.⋅ (\cdot) or full contraction Gridap.⊙ (\odot) instead.
+  #"""
+  #error(msg)
+  dot(a,b)
+end
 
-@generated function (*)(a::VectorValue{D1}, b::MultiValue{Tuple{D1,D2},T2,2}) where {D1,D2,T2}
+dot(a::MultiValue{Tuple{D}}, b::MultiValue{Tuple{D}}) where D = inner(a,b)
+
+dot(a::MultiValue,b::MultiValue) = @notimplemented
+
+@generated function dot(a::MultiValue{Tuple{D1}}, b::MultiValue{Tuple{D1,D2}}) where {D1,D2}
     ss = String[]
     for j in 1:D2
         s = join([ "a[$i]*b[$i,$j]+" for i in 1:D1])
@@ -121,17 +122,17 @@ end
     Meta.parse("VectorValue{$D2}($str)")
 end
 
-@generated function (*)(a::MultiValue{Tuple{D1,D2},T1,2}, b::VectorValue{D1}) where {D1,D2,T1}
+@generated function dot(a::MultiValue{Tuple{D1,D2}}, b::VectorValue{D1}) where {D1,D2}
     ss = String[]
     for j in 1:D2
-        s = join([ "b[$i]*a[$j,$i]+" for i in 1:D1])
+        s = join([ "a[$j,$i]*b[$i]+" for i in 1:D1])
         push!(ss,s[1:(end-1)]*", ")
     end
     str = join(ss)
-    Meta.parse("VectorValue{$D2}($str)")
+    Meta.parse("VectorValue{$D1}($str)")
 end
 
-@generated function (*)(a::MultiValue{Tuple{D1,D2},T1,2}, b::MultiValue{Tuple{D3,D2},T2,2}) where {D1,D2,D3,T1,T2}
+@generated function dot(a::MultiValue{Tuple{D1,D3}}, b::MultiValue{Tuple{D3,D2}}) where {D1,D2,D3}
     ss = String[]
     for j in 1:D2
         for i in 1:D1
@@ -140,28 +141,36 @@ end
         end
     end
     str = join(ss)
-    Meta.parse("TensorValue{$D2,$D3}(($str))")
+    Meta.parse("TensorValue{$D1,$D2}(($str))")
 end
-
-@inline dot(u::VectorValue,v::VectorValue) = inner(u,v)
-@inline dot(u::TensorValue,v::VectorValue) = u*v
-@inline dot(u::VectorValue,v::TensorValue) = u*v
 
 ###############################################################
 # Inner product (full contraction)
 ###############################################################
 
 inner(a::Real,b::Real) = a*b
-@generated function inner(a::MultiValue, b::MultiValue)
-    @assert length(a) == length(b)
+
+function inner(a::MultiValue, b::MultiValue)
+  @notimplemented
+end
+
+@generated function inner(a::MultiValue{S}, b::MultiValue{S}) where S
     str = join([" a[$i]*b[$i] +" for i in 1:length(a) ])
     Meta.parse(str[1:(end-1)])
 end
 
-@generated function inner(a::MultiValue{Tuple{D1,D2},T,2}, b::MultiValue{Tuple{D1,D2},T,2}) where {D1,D2,T}
-    str = join([" a[$i,$j]*b[$i,$j] +" for i in 1:D1 for j in 1:D2 ])
-    Meta.parse(str[1:(end-1)])
+@generated function inner(a::SymTensorValue{D}, b::SymTensorValue{D}) where D
+  str = ""
+  for i in 1:D
+    for j in 1:D
+      k = _2d_tensor_linear_index(D,i,j)
+      str *= " a.data[$k]*b.data[$k] +"
+    end
+  end
+  Meta.parse(str[1:(end-1)])
 end
+
+const ⊙ = inner
 
 ###############################################################
 # Reductions
@@ -180,23 +189,29 @@ end
 outer(a::Real,b::Real) = a*b
 outer(a::MultiValue,b::Real) = a*b
 outer(a::Real,b::MultiValue) = a*b
-@generated function outer(a::VectorValue{D},b::VectorValue{Z}) where {D,Z}
+
+outer(a::MultiValue,b::MultiValue) = @notimplemented
+
+@generated function outer(a::MultiValue{Tuple{D}},b::MultiValue{Tuple{Z}}) where {D,Z}
     str = join(["a[$i]*b[$j], " for j in 1:Z for i in 1:D])
     Meta.parse("TensorValue{$D,$Z}(($str))")
 end
 
-#@generated function outer(a::VectorValue{D},b::TensorValue{D1,D2}) where {D,D1,D2}
-#  str = join(["a.array[$i]*b.array[$j,$k], "  for k in 1:D2 for j in 1:D1 for i in 1:D])
-#  Meta.parse("MultiValue(SArray{Tuple{$D,$D1,$D2}}($str))")
-#end
+@generated function outer(a::MultiValue{Tuple{D}},b::MultiValue{Tuple{D1,D2}}) where {D,D1,D2}
+  str = join(["a.array[$i]*b.array[$j,$k], "  for k in 1:D2 for j in 1:D1 for i in 1:D])
+  Meta.parse("ThirdOrderTensorValue($str))")
+end
+
+const ⊗ = outer
+
 
 ###############################################################
 # Linear Algebra
 ###############################################################
 
 #TODO: write det and inv function for small specific cases.
-det(a::MultiValue{Tuple{D1,D2},T,2,L}) where {D1,D2,T,L} = det(convert(SMatrix{D1,D2,T,L},a))
-inv(a::MultiValue{Tuple{D1,D2},T,2,L}) where {D1,D2,T,L} = TensorValue(inv(convert(SMatrix{D1,D2,T,L},a)))
+det(a::MultiValue{Tuple{D1,D2}}) where {D1,D2} = det(get_array(a))
+inv(a::MultiValue{Tuple{D1,D2}}) where {D1,D2} = TensorValue(inv(get_array(a)))
 
 ###############################################################
 # Measure
@@ -204,17 +219,17 @@ inv(a::MultiValue{Tuple{D1,D2},T,2,L}) where {D1,D2,T,L} = TensorValue(inv(conve
 
 """
 """
-meas(a::VectorValue) = sqrt(inner(a,a))
-meas(a::MultiValue{S,T,2,L}) where {S,T,L} = abs(det(a))
+meas(a::MultiValue{Tuple{D}}) where D = sqrt(inner(a,a))
+meas(a::MultiValue{Tuple{D,D}}) where D = abs(det(a))
 
-function meas(v::TensorValue{1,2})
+function meas(v::MultiValue{Tuple{1,2}})
   n1 = v[1,2]
   n2 = -1*v[1,1]
   n = VectorValue(n1,n2)
   sqrt(n*n)
 end
 
-function meas(v::TensorValue{2,3})
+function meas(v::MultiValue{Tuple{2,3}})
   n1 = v[1,2]*v[2,3] - v[1,3]*v[2,2]
   n2 = v[1,3]*v[2,1] - v[1,1]*v[2,3]
   n3 = v[1,1]*v[2,2] - v[1,2]*v[2,1]
@@ -222,16 +237,17 @@ function meas(v::TensorValue{2,3})
   sqrt(n*n)
 end
 
-@inline norm(u::VectorValue) = sqrt(inner(u,u))
-@inline norm(u::VectorValue{0,T}) where T = sqrt(zero(T))
+@inline norm(u::MultiValue{Tuple{D}}) where D = sqrt(inner(u,u))
+@inline norm(u::VectorValue{Tuple{0}}) = sqrt(zero(T))
 
 ###############################################################
 # conj
 ###############################################################
 
-conj(a::VectorValue) = a
-conj(a::SymTensorValue) = a
-conj(a::T) where {T<:TensorValue} = T(conj(get_array(a)))
+function conj(a::T) where {T<:MultiValue}
+  r = map(conj, a.data)
+  T(r)
+end
 
 ###############################################################
 # Trace
@@ -262,10 +278,40 @@ end
 # Adjoint and transpose
 ###############################################################
 
-adjoint(arg::T) where {T<:TensorValue} = T(adjoint(get_array(arg)))
-transpose(arg::T) where {T<:TensorValue} = T(transpose(get_array(arg)))
-adjoint(arg::SymTensorValue) = arg
-transpose(arg::SymTensorValue) = arg
+adjoint(a::MultiValue{Tuple{D,D}}) where D = @notimplemented
+transpose(a::MultiValue{Tuple{D,D}}) where D = @notimplemented
+
+@generated function adjoint(a::TensorValue{D1,D2}) where {D1,D2}
+  str = ""
+  for i in 1:D1
+    for j in 1:D2
+      k = (j-1)*D1 + i
+      str *= "conj(a.data[$k]), "
+    end
+  end
+  Meta.parse("TensorValue{D2,D1}($str)")
+end
+
+@generated function transpose(a::TensorValue{D1,D2}) where {D1,D2}
+  str = ""
+  for i in 1:D1
+    for j in 1:D2
+      k = (j-1)*D1 + i
+      str *= "a.data[$k], "
+    end
+  end
+  Meta.parse("TensorValue{D2,D1}($str)")
+end
+
+@inline function adjoint(a::TensorValue{D1,D2,T}) where {D1,D2,T<:Real}
+  transpose(a)
+end
+
+adjoint(a::SymTensorValue) = conj(a)
+
+@inline adjoint(a::SymTensorValue{D,T} where {D,T<:Real}) = transpose(a)
+
+transpose(a::SymTensorValue) = a
 
 ###############################################################
 # Symmetric part
@@ -273,7 +319,7 @@ transpose(arg::SymTensorValue) = arg
 
 """
 """
-@generated function symmetric_part(v::MultiValue{Tuple{D,D},T,2,L}) where {D,T,L}
+@generated function symmetric_part(v::MultiValue{Tuple{D,D}}) where D
     str = "("
     for j in 1:D
         for i in 1:D

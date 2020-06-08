@@ -31,6 +31,8 @@ end
 @publish TensorValues VectorValue
 @publish TensorValues TensorValue
 @publish TensorValues inner
+@publish TensorValues ⊙
+@publish TensorValues ⊗
 @publish TensorValues outer
 @publish TensorValues diagonal_tensor
 

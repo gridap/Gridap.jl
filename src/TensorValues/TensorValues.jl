@@ -49,6 +49,8 @@ export symmetric_part
 export n_components
 export change_eltype
 export diagonal_tensor
+export ⊙
+export ⊗
 
 import Base: show
 import Base: zero, one
