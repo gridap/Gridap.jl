@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Functions `create_vtk_file` and `createvtk`. Since PR [#273](https://github.com/gridap/Gridap.jl/pull/273).
+
+## [0.10.3] - 2020-5-29
+
+### Added
+
+ - Function `print_op_tree` to visualize lazy operation trees. Since PR [#270](https://github.com/gridap/Gridap.jl/pull/270).
+ - Exported `apply` and `reindex` from `Gridap` top level. Since PR [#270](https://github.com/gridap/Gridap.jl/pull/270).
+ - Extended support of `CartesianDiscreteModel` to models with periodic boundary conditions.
+ PR [#266](https://github.com/gridap/Gridap.jl/pull/266).
+
+### Deprecated
+ - Optional argument `map` for CartesianDescriptor converted to a key-word argument. Since PR [#266](https://github.com/gridap/Gridap.jl/pull/266).
+ 
+### Fixed
+ - Fixed some methods of the `sparsecsr` generic function. Since PR [#262](https://github.com/gridap/Gridap.jl/pull/262).
+ - Fixed BUG in `findnz` function for `SparseMatrixCSR`. Since PR [#264](https://github.com/gridap/Gridap.jl/pull/264).
+ - Fixed `restrict(::AbstractArray,::TriangulationPortion)` for portions of triangulations extending `BoundaryTriangulation`. Since PR [#267](https://github.com/gridap/Gridap.jl/pull/267).
 
 ## [0.10.2] - 2020-5-21
 
@@ -36,13 +58,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The part associated with the imposition of constraints in the `FESpace` interface has changed slightly. Since PR [#247](https://github.com/gridap/Gridap.jl/pull/247).
   - Simplified the signature of `zero_free_values(::FESpace)`. Since PR [#249](https://github.com/gridap/Gridap.jl/pull/249).
   - Simplified the signature of `zero_initial_guess(op::NonlinearOperator)`. Since PR [#249](https://github.com/gridap/Gridap.jl/pull/249).
-  - Major refactoring in the `Assembler` interface. 
+  - Major refactoring in the `Assembler` interface.
     **Important change:** Now, assembly-related functions take the data returned by functions like
     `collect_cell_matrix` as it is. Example: the old user code `assemble_matrix(assembler,collect_cell_matrix(du,dv,terms)...)`
     now is written simply as `assemble_matrix(assembler,collect_cell_matrix(du,dv,terms))`, i.e., the unpack of the last argument is not
     used anymore.  In addition, with the new assembler interface, it is possible to customize the assembly process
     via a so-called `AssemblerStrategy` object. Since PR [#249](https://github.com/gridap/Gridap.jl/pull/249).
-  - Change the types of the sizes and partition fields of CartesianDescriptor to tuples instead of points. 
+  - Change the types of the sizes and partition fields of CartesianDescriptor to tuples instead of points.
     Since PR [#246](https://github.com/gridap/Gridap.jl/pull/246).
 
 ## [0.9.2] - 2020-4-26

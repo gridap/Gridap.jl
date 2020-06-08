@@ -131,6 +131,3 @@ end
 #  D = num_cell_dims(model)
 #  face_to_mask = get_face_mask(labeling,tags,D-1)
 #end
-
-
-

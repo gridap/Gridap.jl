@@ -30,7 +30,7 @@ using Test
 
 @time @testset "Visualization" begin include("VisualizationTests/runtests.jl") end
 
-@time @testset "Gridap" begin include("GridapTests/runtests.jl") end
+include("GridapTests/runtests.jl")
 
 include("../bench/runbenchs.jl")
 

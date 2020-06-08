@@ -149,8 +149,8 @@ function findnz(S::SparseMatrixCSR{Bi,Tv,Ti}) where {Bi,Tv,Ti}
     count = 1
     @inbounds for row in 1:S.m
         @inbounds for k in nzrange(S,row)
-            I[count] = S.colval[k]-S.offset
-            J[count] = row
+            I[count] = row
+            J[count] = S.colval[k]-S.offset
             V[count] = S.nzval[k]
             count += 1
         end

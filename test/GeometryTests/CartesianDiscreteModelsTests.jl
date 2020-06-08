@@ -36,7 +36,7 @@ end
 
 domain = (1,2,0,pi,0,0.5)
 partition = (10,30,4)
-model = CartesianDiscreteModel(domain,partition,polar)
+model = CartesianDiscreteModel(domain,partition;map=polar)
 test_discrete_model(model)
 @test is_oriented(get_grid(model)) == true
 

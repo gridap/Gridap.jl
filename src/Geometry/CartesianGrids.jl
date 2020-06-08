@@ -16,51 +16,92 @@ struct CartesianDescriptor{D,T,F<:Function} <: GridapType
   sizes::NTuple{D,T}
   partition::NTuple{D,Int}
   map::F
+  isperiodic::NTuple{D,Bool}
   @doc """
       CartesianDescriptor(
-        origin::Point{D}, sizes::NTuple{D}, partition, map::Function=identity) where D
+        origin::Point{D},
+        sizes::NTuple{D},
+        partition;
+        map::Function=identity,
+        isperiodic::NTuple{D,Bool}=tfill(false,Val{D})) where D
 
   `partition` is a 1D indexable collection of arbitrary type.
   """
   function CartesianDescriptor(
-    origin::Point{D}, sizes::NTuple{D}, partition, map::Function=identity) where D
+    origin::Point{D},
+    sizes::NTuple{D},
+    partition;
+    map::Function=identity,
+    isperiodic::NTuple{D,Bool}=tfill(false,Val{D}())) where D
+
+    for i in 1:D
+      if isperiodic[i]
+        @assert (partition[i] > 2) "A minimum of 3 elements is required in any
+          periodic direction"
+      end
+    end
 
     T = eltype(sizes)
     F = typeof(map)
-    new{D,T,F}(origin,sizes,Tuple(partition),map)
+    new{D,T,F}(origin,sizes,Tuple(partition),map,isperiodic)
   end
-
-end
-
-"""
-    CartesianDescriptor(domain,partition,map::Function=identity)
-
-`domain` and `partition` are 1D indexable collections of arbitrary type.
-"""
-function CartesianDescriptor(domain,partition,map::Function=identity)
-  D = length(partition)
-  limits = [(domain[2*d-1],domain[2*d]) for d in 1:D]
-  sizes = Tuple([(limits[d][2]-limits[d][1])/partition[d] for d in 1:D])
-  origin = Point([ limits[d][1] for d in 1:D]...)
-  CartesianDescriptor(origin,sizes,partition,map)
 end
 
 """
     CartesianDescriptor(
-      pmin::Point{D},pmax::Point{D},partition,map::Function=identity) where D
+      domain,
+      partition;
+      map::Function=identity,
+      isperiodic::NTuple{D,Bool}=tfill(false,Val{D}))
+
+`domain` and `partition` are 1D indexable collections of arbitrary type.
+"""
+function CartesianDescriptor(
+  domain,
+  partition;
+  map::Function=identity,
+  isperiodic::NTuple=tfill(false,Val{length(partition)}()))
+
+  D = length(partition)
+  limits = [(domain[2*d-1],domain[2*d]) for d in 1:D]
+  sizes = Tuple([(limits[d][2]-limits[d][1])/partition[d] for d in 1:D])
+  origin = Point([ limits[d][1] for d in 1:D]...)
+  CartesianDescriptor(origin,sizes,partition;map=map,isperiodic=isperiodic)
+end
+
+"""
+    CartesianDescriptor(
+      pmin::Point{D},
+      pmax::Point{D},
+      partition;
+      map::Function=identity,
+      isperiodic::NTuple{D,Bool}=tfill(false,Val{D})) where D
 
 `partition` is a 1D indexable collection of arbitrary type.
 """
 function CartesianDescriptor(
-  pmin::Point{D},pmax::Point{D},partition,map::Function=identity) where D
+  pmin::Point{D},
+  pmax::Point{D},
+  partition;
+  map::Function=identity,
+  isperiodic::NTuple{D,Bool}=tfill(false,Val{D}())) where D
+
   T = eltype(pmin)
   domain = zeros(T,2*D)
   for d in 1:D
     domain[2*(d-1)+1] = pmin[d]
     domain[2*(d-1)+2] = pmax[d]
   end
-  CartesianDescriptor(domain,partition,map)
+  CartesianDescriptor(domain,partition;map=map,isperiodic=isperiodic)
 end
+
+# Deprecated signatures for backwards compatibility
+
+@deprecate CartesianDescriptor(origin::Point{D}, sizes::NTuple{D}, partition, map::Function) where D CartesianDescriptor(origin, sizes, partition; map=map)
+
+@deprecate CartesianDescriptor(domain,partition,map::Function) CartesianDescriptor(domain,partition;map=map)
+
+@deprecate CartesianDescriptor(pmin::Point{D}, pmax::Point{D}, partition, map::Function) where D CartesianDescriptor(pmin, pmax, partition; map=map)
 
 # Coordinates
 
@@ -181,12 +222,12 @@ get_reffes(g::CartesianGrid{2}) = [QUAD4,]
 get_reffes(g::CartesianGrid{3}) = [HEX8,]
 
 """
-    CartesianGrid(args...)
+    CartesianGrid(args...;kwargs...)
 
 Same args needed to construct a `CartesianDescriptor`
 """
-function CartesianGrid(args...)
-  desc = CartesianDescriptor(args...)
+function CartesianGrid(args...;kwargs...)
+  desc = CartesianDescriptor(args...;kwargs...)
   CartesianGrid(desc)
 end
 
@@ -230,4 +271,83 @@ end
 
 function get_cell_map(grid::CartesianGrid{D,T,typeof(identity)} where {D,T})
   CartesianMap(grid.node_coords.data)
+end
+
+# Cartesian grid topology with periodic BC
+
+function _cartesian_grid_topology_with_periodic_bcs(grid::UnstructuredGrid,
+  isperiodic::NTuple,
+  partition)
+
+  cell_to_vertices, vertex_to_node =
+    _generate_cell_to_vertices_from_grid(grid, isperiodic, partition)
+  _generate_grid_topology_from_grid(grid,cell_to_vertices,vertex_to_node)
+end
+
+function _generate_cell_to_vertices_from_grid(grid::UnstructuredGrid,
+  isperiodic::NTuple, partition)
+
+  if is_first_order(grid)
+    nodes = get_cell_nodes(grid)
+    cell_to_vertices = copy(nodes)
+
+    nnodes = num_nodes(grid)
+    num_nodes_x_dir = [partition[i]+1 for i in 1:length(partition)]
+    point_to_isperiodic, slave_point_to_point, slave_point_to_master_point =
+      _generate_slave_to_master_point(num_nodes_x_dir,isperiodic, nnodes)
+
+    vertex_to_point = findall( .! point_to_isperiodic)
+    point_to_vertex = fill(-1,length(point_to_isperiodic))
+    point_to_vertex[vertex_to_point] = 1:length(vertex_to_point)
+    point_to_vertex[slave_point_to_point] = point_to_vertex[slave_point_to_master_point]
+
+    cell_to_vertices = Table(LocalToGlobalArray(nodes,point_to_vertex))
+
+    vertex_to_node = vertex_to_point
+    node_to_vertex = point_to_vertex
+  else
+    @notimplemented
+  end
+  (cell_to_vertices,vertex_to_node, node_to_vertex)
+end
+
+function _generate_slave_to_master_point(num_nodes_x_dir::Vector{Int},
+  isperiodic::NTuple, num_nodes::Int)
+
+  point_to_isperiodic = fill(false,num_nodes)
+
+  slave_ijk_bounds = Array{Any,1}(undef,length(isperiodic))
+  master_ijk_bounds = Array{Any,1}(undef,length(isperiodic))
+
+  linear_indices = LinearIndices(Tuple(num_nodes_x_dir))
+  periodic_dirs = findall(x->x==true, isperiodic)
+  for periodic_dir in periodic_dirs
+    for i in 1:length(isperiodic)
+      if i == periodic_dir
+        slave_ijk_bounds[i] = num_nodes_x_dir[i]
+      else
+        slave_ijk_bounds[i] = 1:num_nodes_x_dir[i]
+      end
+    end
+    slave_ijk_set = CartesianIndices(Tuple(slave_ijk_bounds))
+    point_to_isperiodic[linear_indices[slave_ijk_set]] .= true
+  end
+
+  slave_point_to_point = findall( point_to_isperiodic)
+  slave_point_to_master_point = Array{Int,1}(undef,length(slave_point_to_point))
+
+  cartesian_indices = CartesianIndices(Tuple(num_nodes_x_dir))
+  for (i,point) in enumerate(slave_point_to_point)
+    ijk = collect(cartesian_indices[point].I)
+    for i in periodic_dirs
+      if ijk[i] == num_nodes_x_dir[i]
+        ijk[i] = 1
+      end
+    end
+
+    master_point_ijk = CartesianIndex(Tuple(ijk))
+    slave_point_to_master_point[i] = linear_indices[master_point_ijk]
+  end
+
+  point_to_isperiodic, slave_point_to_point, slave_point_to_master_point
 end

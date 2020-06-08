@@ -25,6 +25,8 @@ end
 @publish Arrays array_cache
 @publish Arrays getindex!
 @publish Arrays get_array
+@publish Arrays apply
+@publish Arrays reindex
 
 @publish TensorValues VectorValue
 @publish TensorValues TensorValue
@@ -134,4 +136,6 @@ using Gridap.FESpaces: @statelaw; export @statelaw
 @publish MultiField MultiFieldFESpace
 
 @publish Visualization writevtk
+@publish Visualization createvtk
+@publish Visualization print_op_tree
 

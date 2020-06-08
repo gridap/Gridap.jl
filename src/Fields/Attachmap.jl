@@ -48,14 +48,15 @@ end
   _attachmap_checks(a,b)
   s = size(a)
   setsize!(r,s)
+  c = r.array
   np, ni = s
   for p in 1:np
     @inbounds jacinv = inv(b[p])
     for i in 1:ni
-      @inbounds r[p,i] = jacinv * a[p,i]
+      @inbounds c[p,i] = jacinv * a[p,i]
     end
   end
-  r
+  c
 end
 
 struct AddMap <: Kernel end

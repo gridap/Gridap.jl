@@ -45,7 +45,7 @@ function get_cell_id(trian::TriangulationPortion)
 end
 
 function restrict(f::AbstractArray,trian::TriangulationPortion)
-  reindex(f,trian)
+  reindex(restrict(f,trian.oldtrian),trian.cell_to_oldcell)
 end
 
 function get_normal_vector(trian::TriangulationPortion)
