@@ -269,6 +269,8 @@ t = TensorValue(10,2,30,4,5,6,70,8,9)
 
 c = det(t)
 @test c ≈ -8802.0
+@test det(t) == det(TensorValue(get_array(t)))
+@test inv(t) == inv(TensorValue(get_array(t)))
 
 c = inv(t)
 @test isa(c,TensorValue{3})
@@ -276,6 +278,14 @@ c = inv(t)
 st = SymTensorValue(9,8,7,5,4,1)
 @test det(st) == det(TensorValue(get_array(st)))
 @test inv(st) == inv(TensorValue(get_array(st)))
+
+t = TensorValue(10)
+@test det(t) == 10
+@test inv(t) == TensorValue(1/10)
+
+t = TensorValue(1,4,-1,1)
+@test det(t) == det(TensorValue(get_array(t)))
+@test inv(t) == inv(TensorValue(get_array(t)))
 
 # Measure
 

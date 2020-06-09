@@ -238,9 +238,55 @@ const ⊗ = outer
 # Linear Algebra
 ###############################################################
 
-#TODO: write det and inv function for small specific cases.
 det(a::MultiValue{Tuple{D1,D2}}) where {D1,D2} = det(get_array(a))
+
+det(a::MultiValue{Tuple{1,1}}) = a[1]
+
+function det(a::MultiValue{Tuple{2,2}})
+  a_11 = a[1,1]; a_12 = a[1,2]
+  a_21 = a[2,1]; a_22 = a[2,2]
+  a_11*a_22 - a_12*a_21 
+end
+
+function det(a::MultiValue{Tuple{3,3}})
+  a_11 = a[1,1]; a_12 = a[1,2]; a_13 = a[1,3]
+  a_21 = a[2,1]; a_22 = a[2,2]; a_23 = a[2,3]
+  a_31 = a[3,1]; a_32 = a[3,2]; a_33 = a[3,3]
+  a_11*a_22*a_33 + a_12*a_23*a_31 + a_13*a_21*a_32 -
+    (a_11*a_23*a_32 + a_12*a_21*a_33 + a_13*a_22*a_31)
+end
+
 inv(a::MultiValue{Tuple{D1,D2}}) where {D1,D2} = TensorValue(inv(get_array(a)))
+
+function inv(a::MultiValue{Tuple{1,1}})
+  r = 1/a[1]
+  T = change_eltype(a,typeof(r))
+  T(r)
+end
+
+function inv(a::MultiValue{Tuple{2,2}})
+ c = 1/det(a)
+ data = (a[2,2]*c, -a[2,1]*c, -a[1,2]*c,  a[1,1]*c)
+ TensorValue{2}(data)
+end
+
+function inv(a::MultiValue{Tuple{3,3}})
+ a_11 = a[1,1]; a_12 = a[1,2]; a_13 = a[1,3]
+ a_21 = a[2,1]; a_22 = a[2,2]; a_23 = a[2,3]
+ a_31 = a[3,1]; a_32 = a[3,2]; a_33 = a[3,3]
+ c = 1/det(a)
+ data = (
+    ( a_22*a_33 - a_23*a_32 )*c,
+   -( a_21*a_33 - a_23*a_31 )*c,
+    ( a_21*a_32 - a_22*a_31 )*c,
+   -( a_12*a_33 - a_13*a_32 )*c,
+    ( a_11*a_33 - a_13*a_31 )*c,
+   -( a_11*a_32 - a_12*a_31 )*c,
+    ( a_12*a_23 - a_13*a_22 )*c,
+   -( a_11*a_23 - a_13*a_21 )*c,
+    ( a_11*a_22 - a_12*a_21 )*c)
+ TensorValue{3}(data)
+end
 
 ###############################################################
 # Measure
