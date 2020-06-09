@@ -6,6 +6,7 @@ using Gridap.Arrays
 using Gridap.Fields
 using Gridap.Fields: OtherMockBasis, MockBasis
 using FillArrays
+using LinearAlgebra
 
 p1 = Point(2,2)
 p2 = Point(4,2)
@@ -32,7 +33,7 @@ bx = rx
 for i in 1:np
   jacinv = inv(∇ϕx[i])
   for j in 1:ndof
-    ∇bx[i,j] = jacinv*∇rx[i,j]
+    ∇bx[i,j] = jacinv⋅∇rx[i,j]
   end
 end
 test_field(b,x,bx,grad=∇bx)

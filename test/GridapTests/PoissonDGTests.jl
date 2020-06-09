@@ -3,6 +3,7 @@ module PoissonDGTests
 using Test
 using Gridap
 import Gridap: ∇
+using LinearAlgebra
 
 #domain = (0,1,0,1)
 #partition = (4,4)
@@ -50,15 +51,15 @@ V = TestFESpace(
 
 U = TrialFESpace(V,u)
 
-a(u,v) = inner(∇(v),∇(u))
+a(u,v) = ∇(v)⋅∇(u)
 l(v) = v*f
 t_Ω = AffineFETerm(a,l,trian,quad)
 
-a_Γd(u,v) = (γ/h)*v*u  - v*(bn*∇(u)) - (bn*∇(v))*u
-l_Γd(v) = (γ/h)*v*u - (bn*∇(v))*u
+a_Γd(u,v) = (γ/h)*v*u  - v*(bn⋅∇(u)) - (bn⋅∇(v))*u
+l_Γd(v) = (γ/h)*v*u - (bn⋅∇(v))*u
 t_Γd = AffineFETerm(a_Γd,l_Γd,btrian,bquad)
 
-a_Γ(u,v) = (γ/h)*jump(v*sn)*jump(u*sn) - jump(v*sn)*mean(∇(u)) -  mean(∇(v))*jump(u*sn)
+a_Γ(u,v) = (γ/h)*jump(v*sn)⋅jump(u*sn) - jump(v*sn)⋅mean(∇(u)) -  mean(∇(v))⋅jump(u*sn)
 t_Γ = LinearFETerm(a_Γ,strian,squad)
 
 op = AffineFEOperator(U,V,t_Ω,t_Γ,t_Γd)

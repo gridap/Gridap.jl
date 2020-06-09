@@ -32,8 +32,8 @@ f(x) = x[2]
 v = get_cell_basis(V)
 u = get_cell_basis(U)
 
-cellmat = integrate(∇(v)*∇(u),trian,quad)
-cellvec = integrate(v*f,trian,quad)
+cellmat = integrate(∇(v)⊙∇(u),trian,quad)
+cellvec = integrate(v⊙f,trian,quad)
 cellids = collect(1:num_cells(trian))
 
 assem = SparseMatrixAssembler(U,V)

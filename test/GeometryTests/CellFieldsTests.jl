@@ -87,10 +87,10 @@ nvec = get_normal_vector(btrian)
 z = 2*bcf1 + nvec
 @test isa(z,CellField)
 
-flux1 = nvec*∇u
+flux1 = nvec⋅∇u
 collect(evaluate(flux1,s))
 
-flux2 = ∇u*nvec
+flux2 = ∇u⋅nvec
 collect(evaluate(flux2,s))
 
 strian = SkeletonTriangulation(model)

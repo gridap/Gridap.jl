@@ -7,6 +7,7 @@ using Test
 using Gridap
 import Gridap: ∇
 import LinearAlgebra: tr
+import LinearAlgebra: ⋅
 
 #
 const T = VectorValue{2,Float64}
@@ -94,13 +95,13 @@ function A_∂Ω(x,y)
   u, p = x
   v, q = y
   # (γ/h) * inner(v,u) - inner(outer(nb,v), ∇(u)) - inner(∇(v), outer(nb,u)) + inner(v, p*nb) + inner(q*nb,u)
-  (γ/h)*v*u - v*(nb*∇(u)) - (nb*∇(v))*u + (p*nb)*v + (q*nb)*u
+  (γ/h)*v⋅u - v⋅(nb⋅∇(u)) - (nb⋅∇(v))⋅u + (p*nb)⋅v + (q*nb)⋅u
 end
 
 function B_∂Ω(y)
   v, q = y
   # + (γ/h) * inner(v,ud)  - inner(∇(v), outer(nb,ud_cf)) + inner(q*nb,ud)
-  (γ/h)*v*u - (nb*∇(v))*u + (q*nb)*u
+  (γ/h)*v⋅u - (nb⋅∇(v))⋅u + (q*nb)⋅u
 end
 
 t_Ω = AffineFETerm(A_Ω,B_Ω,trian,quad)

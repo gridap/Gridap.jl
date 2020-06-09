@@ -116,7 +116,7 @@ get_value_type(::Type{MonomialBasis{D,T}}) where {D,T} = T
 function field_cache(f::MonomialBasis{D,T},x) where {D,T}
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
-  ndof = length(f.terms)*n_components(T)
+  ndof = length(f.terms)*num_components(T)
   n = 1 + _maximum(f.orders)
   r = CachedArray(zeros(T,(np,ndof)))
   v = CachedArray(zeros(T,(ndof,)))
@@ -127,7 +127,7 @@ end
 function evaluate_field!(cache,f::MonomialBasis{D,T},x) where {D,T}
   r, v, c = cache
   np = length(x)
-  ndof = length(f.terms)*n_components(T)
+  ndof = length(f.terms)*num_components(T)
   n = 1 + _maximum(f.orders)
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))
@@ -145,7 +145,7 @@ end
 function gradient_cache(f::MonomialBasis{D,V},x) where {D,V}
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
-  ndof = length(f.terms)*n_components(V)
+  ndof = length(f.terms)*num_components(V)
   xi = testitem(x)
   T = gradient_type(V,xi)
   n = 1 + _maximum(f.orders)
@@ -159,7 +159,7 @@ end
 function evaluate_gradient!(cache,f::MonomialBasis{D,T},x) where {D,T}
   r, v, c, g = cache
   np = length(x)
-  ndof = length(f.terms) * n_components(T)
+  ndof = length(f.terms) * num_components(T)
   n = 1 + _maximum(f.orders)
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))
@@ -178,7 +178,7 @@ end
 function hessian_cache(f::MonomialBasis{D,V},x) where {D,V}
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
-  ndof = length(f.terms)*n_components(V)
+  ndof = length(f.terms)*num_components(V)
   xi = testitem(x)
   T = gradient_type(gradient_type(V,xi),xi)
   n = 1 + _maximum(f.orders)
@@ -193,7 +193,7 @@ end
 function evaluate_hessian!(cache,f::MonomialBasis{D,T},x) where {D,T}
   r, v, c, g, h = cache
   np = length(x)
-  ndof = length(f.terms) * n_components(T)
+  ndof = length(f.terms) * num_components(T)
   n = 1 + _maximum(f.orders)
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))

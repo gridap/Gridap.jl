@@ -8,6 +8,7 @@ using Gridap.Visualization
 using Gridap.FESpaces
 using Gridap.Fields
 using Gridap.Integration
+using LinearAlgebra: ⋅
 
 domain = (0,1,0,1)
 partition = (10,10)
@@ -50,7 +51,7 @@ el2 = sqrt(sum(integrate(e*e,trian,quad)))
 _dv = get_cell_basis(V)
 dv = restrict(_dv,trian)
 
-cellmat =  integrate(∇(dv)*∇(dv),trian,quad)
+cellmat =  integrate(∇(dv)⋅∇(dv),trian,quad)
 @test isa(cellmat,AppendedArray)
 @test isa(cellmat.a,CompressedArray)
 @test isa(cellmat.b,CompressedArray)

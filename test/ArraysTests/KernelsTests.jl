@@ -3,6 +3,7 @@ module KernelsTests
 using Test
 using Gridap.Arrays
 using Gridap.TensorValues
+using LinearAlgebra
 
 test_kernel(+,(3,2),5)
 
@@ -33,11 +34,11 @@ test_kernel(k,([3,4],[1,2]),[2,2])
 k = contract(-)
 test_kernel(k,([3,4],[1,2]),3-1+4-2)
 
-f = bcast(*)
+f = bcast(⋅)
 a = fill(TensorValue(2,0,0,0,2,0,0,0,2),2)
 b = VectorValue(1,2,3)
 c = zeros(VectorValue{3,Int},2)
-broadcast!(*,c,a,b)
+broadcast!(⋅,c,a,b)
 test_kernel(f,(a,b),c)
 
 end # module

@@ -8,6 +8,7 @@ module Geometry
 using Test
 using DocStringExtensions
 using FillArrays
+using LinearAlgebra: ⋅
 
 using Gridap.Helpers
 using Gridap.Arrays

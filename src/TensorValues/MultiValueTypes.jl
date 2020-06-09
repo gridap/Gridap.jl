@@ -27,8 +27,13 @@ end
 change_eltype(::Type{<:Number},::Type{T}) where {T} = T
 change_eltype(::Number,::Type{T2}) where {T2} = change_eltype(Number,T2)
 
-n_components(::Type{<:Number}) = 1
-n_components(::Number) = n_components(Number)
+num_components(::Type{<:Number}) = 1
+num_components(::Number) = num_components(Number)
+
+function n_components(a)
+  msg = "Function n_components is deprecated use num_components instead"
+  error(msg)
+end
 
 function data_index(::Type{<:MultiValue},i...)
   @abstractmethod

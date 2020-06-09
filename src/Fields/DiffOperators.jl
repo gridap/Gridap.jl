@@ -49,14 +49,24 @@ function laplacian(f)
 end
 
 """
-    ∇*f
+    ∇⋅f
 
 Equivalent to
 
     divergence(f)
 """
-(*)(::typeof(∇),f) = divergence(f)
-(*)(::typeof(∇),f::GridapType) = divergence(f)
+dot(::typeof(∇),f) = divergence(f)
+dot(::typeof(∇),f::GridapType) = divergence(f)
+
+function (*)(::typeof(∇),f)
+  msg = "Syntax ∇*f has been removed, use ∇⋅f instead"
+  error(msg)
+end
+
+function (*)(::typeof(∇),f::GridapType)
+  msg = "Syntax ∇*f has been removed, use ∇⋅f instead"
+  error(msg)
+end
 
 """
     outer(∇,f)

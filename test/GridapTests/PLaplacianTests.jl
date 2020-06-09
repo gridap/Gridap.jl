@@ -3,8 +3,8 @@
 using Test
 using Gridap
 import Gridap: ∇
-using LinearAlgebra: norm
 using Gridap.Geometry: DiscreteModelMock
+using LinearAlgebra
 
 model = DiscreteModelMock()
 

@@ -81,6 +81,7 @@ import Gridap.TensorValues: symmetric_part
 import Base: +, - , *
 import LinearAlgebra: cross
 import LinearAlgebra: tr
+import LinearAlgebra: dot
 import Base: transpose
 import Base: adjoint
 

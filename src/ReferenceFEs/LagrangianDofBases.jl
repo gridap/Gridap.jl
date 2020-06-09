@@ -48,7 +48,7 @@ end
 
 # Node major implementation
 function _generate_dof_layout_node_major(::Type{T},nnodes::Integer) where T<:MultiValue
-  ncomps = n_components(T)
+  ncomps = num_components(T)
   V = change_eltype(T,Int)
   ndofs = ncomps*nnodes
   dof_to_comp = zeros(Int,ndofs)
@@ -93,7 +93,7 @@ end
   vals = evaluate_field!(cf,field,b.nodes)
   ndofs = length(b.dof_to_node)
   T = eltype(vals)
-  ncomps = n_components(T)
+  ncomps = num_components(T)
   _evaluate_lagr_dof!(c,vals,b.node_and_comp_to_dof,ndofs,ncomps)
 end
 

@@ -2,6 +2,7 @@ module PeriodicDarcyTests
 
 using Gridap
 using Test
+using LinearAlgebra
 
 u(x) = VectorValue(x[1]*(x[1]-1)*(2x[2]-1.0),-x[2]*(x[2]-1.0)*(2x[1]-1.0))
 p(x) = x[2]-0.5
@@ -35,12 +36,12 @@ x = get_physical_coordinate(trian)
 function a(x,y)
   u, p = x
   v, q = y
-  v*u - p*(∇*v) + q*(∇*u)
+  v⋅u - p*(∇⋅v) + q*(∇⋅u)
 end
 
 function l(y)
   v, q = y
-  v*f + q*g
+  v⋅f + q*g
 end
 
 t_Ω = AffineFETerm(a,l,trian,quad)
@@ -51,7 +52,7 @@ uh, ph = xh
 eu = u - uh
 ep = p - ph
 
-l2(v) = v*v
+l2(v) = v⋅v
 eu_l2 = sum(integrate(l2(eu),trian,quad))
 ep_l2 = sum(integrate(l2(ep),trian,quad))
 

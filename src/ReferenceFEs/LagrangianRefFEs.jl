@@ -376,7 +376,7 @@ end
 function _generate_face_own_dofs(face_own_nodes, node_and_comp_to_dof)
   faces = 1:length(face_own_nodes)
   T = eltype(node_and_comp_to_dof)
-  comps = 1:n_components(T)
+  comps = 1:num_components(T)
   face_own_dofs = [Int[] for i in faces]
   for face in faces
     nodes = face_own_nodes[face]
@@ -397,7 +397,7 @@ end
 function _find_own_dof_permutaions(node_perms,node_and_comp_to_dof,nfacenodeids,nfacedofsids)
   dof_perms = Vector{Int}[]
   T = eltype(node_and_comp_to_dof)
-  ncomps = n_components(T)
+  ncomps = num_components(T)
   idof_to_dof = nfacedofsids[end]
   inode_to_node = nfacenodeids[end]
   for inode_to_pinode in node_perms
@@ -733,7 +733,7 @@ end
 
 function _eliminate_zeros(::Val{d},a,o) where d
   b = zero(mutable(Point{d,Int}))
-  D = n_components(a)
+  D = num_components(a)
   k = 1
   for i in 1:D
     m = a[i]

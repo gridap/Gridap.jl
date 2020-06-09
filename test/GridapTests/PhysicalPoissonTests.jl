@@ -3,6 +3,7 @@ module PhysicalPoissonTests
 using Test
 using Gridap
 import Gridap: ∇
+using LinearAlgebra
 
 domain = (0,1,0,1)
 partition = (4,4)
@@ -75,17 +76,17 @@ for data in [ vector_data, scalar_data ]
   uh = interpolate(U,u)
 
   a(u,v) = inner(∇(v),∇(u))
-  l(v) = v*f
+  l(v) = v⊙f
   t_Ω = AffineFETerm(a,l,trian,quad)
 
   uh_Γn = restrict(uh,ntrian)
   uh_Γd = restrict(uh,dtrian)
 
-  l_Γn(v) = v*(nn*∇(uh_Γn))
+  l_Γn(v) = v⊙(nn⋅∇(uh_Γn))
   t_Γn = FESource(l_Γn,ntrian,nquad)
 
-  a_Γd(u,v) = (γ/h)*v*u  - v*(dn*∇(u)) - (dn*∇(v))*u
-  l_Γd(v) = (γ/h)*v*uh_Γd - (dn*∇(v))*u
+  a_Γd(u,v) = (γ/h)*v⊙u  - v⊙(dn⋅∇(u)) - (dn⋅∇(v))⊙u
+  l_Γd(v) = (γ/h)*v⊙uh_Γd - (dn⋅∇(v))⊙u
   t_Γd = AffineFETerm(a_Γd,l_Γd,dtrian,dquad)
 
   op = AffineFEOperator(U,V,t_Ω,t_Γn,t_Γd)

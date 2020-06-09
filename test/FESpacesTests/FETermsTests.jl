@@ -42,7 +42,7 @@ v = get_cell_basis(V)
 u = get_cell_basis(U)
 uh = interpolate(U,u_sol)
 
-a(u,v) = ∇(v)*∇(u)
+a(u,v) = ∇(v)⊙∇(u)
 l(v) = f*v
 
 j(u,du,v) = a(du,v)
@@ -135,7 +135,7 @@ function poisson_matvec_kernel!(mat,vec,∇v,∇u,v,j,w,x)
     f_q = f(x[q])
     for n in 1:N
       for m in 1:M
-        mat[m,n] += ∇v[q,m]*∇u[q,n]*dV
+        mat[m,n] += ∇v[q,m]⊙∇u[q,n]*dV
       end
     end
     for m in 1:M
@@ -173,9 +173,9 @@ function poisson_jacres_kernel!(jac,res,∇v,∇du,v,∇uh,j,w,x)
     f_q = f(x[q])
     for m in 1:M
       for n in 1:N
-        jac[m,n] += ∇v[q,m]*∇du[q,n]*dV
+        jac[m,n] += ∇v[q,m]⊙∇du[q,n]*dV
       end
-      res[m] += ∇v[q,m]*∇uh[q]*dV
+      res[m] += ∇v[q,m]⊙∇uh[q]*dV
     end
     for m in 1:M
       res[m] -= v[q,m]*f_q*dV

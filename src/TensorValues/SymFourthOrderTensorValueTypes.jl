@@ -94,6 +94,6 @@ size(::SymFourthOrderTensorValue{D}) where {D} = size(SymFourthOrderTensorValue{
 length(::Type{<:SymFourthOrderTensorValue{D}}) where {D} = D*D*D*D
 length(::SymFourthOrderTensorValue{D}) where {D} = length(SymFourthOrderTensorValue{D})
 
-n_components(::Type{<:SymFourthOrderTensorValue{D}}) where {D} = length(SymFourthOrderTensorValue{D})
-n_components(::SymFourthOrderTensorValue{D}) where {D} = n_components(SymFourthOrderTensorValue{D})
+num_components(::Type{<:SymFourthOrderTensorValue{D}}) where {D} = length(SymFourthOrderTensorValue{D})
+num_components(::SymFourthOrderTensorValue{D}) where {D} = num_components(SymFourthOrderTensorValue{D})
 

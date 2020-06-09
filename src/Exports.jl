@@ -33,6 +33,7 @@ end
 @publish TensorValues inner
 @publish TensorValues outer
 @publish TensorValues diagonal_tensor
+@publish TensorValues num_components
 using Gridap.TensorValues: ⊙; export ⊙
 using Gridap.TensorValues: ⊗; export ⊗
 

@@ -360,25 +360,25 @@ a = TensorValue(1,2,3,4)
 b = a'
 @test adjoint(a) == b
 @test b == TensorValue(1,3,2,4)
-@test a*b == TensorValue(10,14,14,20)
+@test a⋅b == TensorValue(10,14,14,20)
 
 a = TensorValue(1,2,3,4)
 b = a'
 @test transpose(a) == b
 @test b == TensorValue(1,3,2,4)
-@test a*b == TensorValue(10,14,14,20)
+@test a⋅b == TensorValue(10,14,14,20)
 
 sa = SymTensorValue(1,2,3,5,6,9)
 sb = sa'
 @test adjoint(sa) == sb
 @test sb == SymTensorValue(1,2,3,5,6,9)
-@test sa*sb == TensorValue(get_array(sa))*TensorValue(get_array(sb))
+@test sa⋅sb == TensorValue(get_array(sa))⋅TensorValue(get_array(sb))
 
 sa = SymTensorValue(1,2,3,5,6,9)
 sb = sa'
 @test transpose(sa) == sb
 @test sb == SymTensorValue(1,2,3,5,6,9)
-@test sa*sb == TensorValue(get_array(sa))*TensorValue(get_array(sb))
+@test sa⋅sb == TensorValue(get_array(sa))⋅TensorValue(get_array(sb))
 
 u = VectorValue(1.0,2.0)
 v = VectorValue(2.0,3.0)
@@ -398,6 +398,7 @@ a = VectorValue{0,Int}()
 σ = λ*tr(ε)*one(ε) + 2*μ*ε
 @test isa(σ,SymTensorValue)
 @test (σ ⊙ ε) == 52
+#@test σ:ε == 52
 
 I = one(SymFourthOrderTensorValue{2,Int})
 @test I[1,1,1,1] == 1
@@ -406,21 +407,21 @@ I = one(SymFourthOrderTensorValue{2,Int})
 @test I[2,2,2,2] == 1
 
 @test I ⊙ ε == ε
+#@test I : ε == ε
 
 a = TensorValue(1,2,3,4)
 b = I ⊙ a
 @test b == symmetric_part(a)
+#b = I : a
+#@test b == symmetric_part(a)
 
 
 σ1 = λ*tr(ε)*one(ε) + 2*μ*ε
 C = 2*μ*one(ε⊗ε) + λ*one(ε)⊗one(ε)
 σ2 = C ⊙ ε
 @test σ1 == σ2
-
-
-#I = one(ε) ⊗ one(ε)
-
-
+#σ2 = C : ε
+#@test σ1 == σ2
 
 
 end # module OperationsTests

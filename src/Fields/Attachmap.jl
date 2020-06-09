@@ -32,7 +32,7 @@ function kernel_cache(k::PhysGrad,a,b)
   _attachmap_checks(a,b)
   Ta = eltype(a)
   Tb = eltype(b)
-  T = return_type(*,return_type(inv,Tb),Ta)
+  T = return_type(⋅,return_type(inv,Tb),Ta)
   r = zeros(T,size(a))
   CachedArray(r)
 end
@@ -53,7 +53,7 @@ end
   for p in 1:np
     @inbounds jacinv = inv(b[p])
     for i in 1:ni
-      @inbounds c[p,i] = jacinv * a[p,i]
+      @inbounds c[p,i] = jacinv ⋅ a[p,i]
     end
   end
   c

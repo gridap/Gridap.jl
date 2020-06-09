@@ -35,6 +35,7 @@ using StaticArrays: SVector, MVector, SMatrix, MMatrix, SArray, MArray
 using Base: @propagate_inbounds, @pure
 using Gridap.Helpers
 using Gridap.Arrays
+using LinearAlgebra: ⋅
 
 export MultiValue
 export VectorValue
@@ -47,6 +48,7 @@ export inner, outer, meas
 export mutable
 export symmetric_part
 export n_components
+export num_components
 export change_eltype
 export diagonal_tensor
 export ⊙

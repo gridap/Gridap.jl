@@ -5,7 +5,7 @@ using Gridap
 using Gridap.Arrays
 using Gridap.FESpaces
 import Gridap: ∇
-using LinearAlgebra: tr
+using LinearAlgebra: tr, ⋅
 
 # Analytical functions
 
@@ -104,29 +104,29 @@ end
 
 function l_solid(y)
   v,q = y
-  v*s
+  v⋅s
 end
 
 function a_fluid(x,y)
   u,p = x
   v,q = y
-  inner(∇(v),∇(u)) - (∇*v)*p + q*(∇*u)
+  inner(∇(v),∇(u)) - (∇⋅v)*p + q*(∇⋅u)
 end
 
 function l_fluid(y)
   v,q = y
-  v*f + q*g
+  v⋅f + q*g
 end
 
 function l_Γn_fluid(y)
   v,q = y
-  v*(n*∇u) - (n*v)*p
+  v⋅(n⋅∇u) - (n⋅v)*p
 end
 
 # Pressure drop at the interface
 function l_Γ(y)
   v,q = y
-  - mean(n_Γ*v)*p
+  - mean(n_Γ⋅v)*p
 end
 
 t_Ω_solid = AffineFETerm(a_solid,l_solid,trian_solid,quad_solid)
@@ -151,8 +151,8 @@ ep_fluid = p - ph_fluid
 
 # Errors
 
-l2(v) = v*v
-h1(v) = v*v + inner(∇(v),∇(v))
+l2(v) = v⋅v
+h1(v) = v⋅v + inner(∇(v),∇(v))
 
 eu_l2 = sqrt(sum(integrate(l2(eu),trian,quad)))
 eu_h1 = sqrt(sum(integrate(h1(eu),trian,quad)))

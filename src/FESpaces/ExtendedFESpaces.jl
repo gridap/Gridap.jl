@@ -175,7 +175,7 @@ function get_cell_basis(f::ExtendedFESpace)
   vi = testitem(cell_to_val)
   Tv = field_return_type(vi,xi)
   T = eltype(Tv)
-  D = n_components(eltype(xi))
+  D = num_components(eltype(xi))
   void_to_val = Fill(VoidBasis{T,D}(),length(f.trian.void_to_oldcell))
 
   array = ExtendedVector(

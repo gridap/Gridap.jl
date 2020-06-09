@@ -100,12 +100,12 @@ end
 ###############################################################
 
 function (*)(a::MultiValue, b::MultiValue)
-  #msg = """
-  #Method (*)(::$(typeof(a)),::$(typeof(b))) has been removed
-  #Use simple contraction LinearAlgebra.⋅ (\cdot) or full contraction Gridap.⊙ (\odot) instead.
-  #"""
-  #error(msg)
-  dot(a,b)
+  msg = """
+  Method (*)(::$(typeof(a)),::$(typeof(b))) has been removed
+  Use simple contraction LinearAlgebra.⋅ (\\cdot) or full contraction Gridap.⊙ (\\odot) instead.
+  """
+  error(msg)
+  #dot(a,b)
 end
 
 dot(a::MultiValue{Tuple{D}}, b::MultiValue{Tuple{D}}) where D = inner(a,b)
@@ -153,6 +153,12 @@ end
     str = join(ss)
     Meta.parse("TensorValue{$D1,$D2}(($str))")
 end
+
+# Double contraction
+
+#(::Colon)(a::MultiValue{Tuple{D1,D2}},b::MultiValue{Tuple{D1,D2}}) where {D1,D2} = inner(a,b)
+#(::Colon)(a::MultiValue{Tuple{D1,D2}},b::MultiValue{Tuple{D1,D2,D3,D4}}) where {D1,D2,D3,D4} = inner(a,b)
+#(::Colon)(a::MultiValue{Tuple{D1,D2,D3,D4}},b::MultiValue{Tuple{D1,D2}}) where {D1,D2,D3,D4} = inner(a,b)
 
 ###############################################################
 # Inner product (full contraction)
@@ -321,7 +327,7 @@ function meas(v::MultiValue{Tuple{1,2}})
   n1 = v[1,2]
   n2 = -1*v[1,1]
   n = VectorValue(n1,n2)
-  sqrt(n*n)
+  sqrt(n ⋅ n)
 end
 
 function meas(v::MultiValue{Tuple{2,3}})
@@ -329,7 +335,7 @@ function meas(v::MultiValue{Tuple{2,3}})
   n2 = v[1,3]*v[2,1] - v[1,1]*v[2,3]
   n3 = v[1,1]*v[2,2] - v[1,2]*v[2,1]
   n = VectorValue(n1,n2,n3)
-  sqrt(n*n)
+  sqrt(n ⋅ n)
 end
 
 @inline norm(u::MultiValue{Tuple{D}}) where D = sqrt(inner(u,u))
@@ -435,7 +441,7 @@ for op in (:symmetric_part,)
     end
 end
 
-for op in (:inner,:outer)
+for op in (:inner,:outer,:(:))
     @eval begin
         ($op)(a::GridapType,b::GridapType) = operate($op,a,b)
         ($op)(a::GridapType,b::Number)     = operate($op,a,b)

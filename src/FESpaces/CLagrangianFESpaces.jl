@@ -138,7 +138,7 @@ function _generate_dof_layout_component_major(::Type{<:Real},nnodes::Integer)
 end
 
 function _generate_dof_layout_component_major(::Type{T},nnodes::Integer) where T
-  ncomps = n_components(T)
+  ncomps = num_components(T)
   V = change_eltype(T,Int)
   ndofs = ncomps*nnodes
   dof_to_comp = zeros(Int8,ndofs)
@@ -175,7 +175,7 @@ function _generate_cell_dofs_clagrangian_fespace(
   cell_to_ctype,
   node_and_comp_to_dof) where T
 
-  ncomps = n_components(T)
+  ncomps = num_components(T)
 
   ctype_to_lnode_to_comp_to_ldof = map(get_node_and_comp_to_dof,reffes)
   ctype_to_num_ldofs = map(num_dofs,reffes)

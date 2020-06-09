@@ -28,7 +28,7 @@ end
 function _apply_affine_map(h,x)
   t = h.origin
   s = h.jacobian
-  (s*x)+t
+  (s⋅x)+t
 end
 
 struct AffineMapGrad{D,T,L} <: Field
