@@ -112,52 +112,34 @@ dot(a::MultiValue{Tuple{D}}, b::MultiValue{Tuple{D}}) where D = inner(a,b)
 
 dot(a::MultiValue,b::MultiValue) = @notimplemented
 
-@generated function dot(a::MultiValue{Tuple{D1}}, b::MultiValue{Tuple{D1,D2}}) where {D1,D2}
+@generated function dot(a::A,b::B) where {A<:MultiValue{Tuple{D1}},B<:MultiValue{Tuple{D1,D2}}} where {D1,D2}
     ss = String[]
     for j in 1:D2
-        s = join([ "a[$i]*b[$i,$j]+" for i in 1:D1])
+      s = ""
+      for i in 1:D1
+        ak = data_index(A,i)
+        bk = data_index(B,i,j)
+        s *= "a.data[$ak]*b.data[$bk]+"
+      end
         push!(ss,s[1:(end-1)]*", ")
     end
     str = join(ss)
     Meta.parse("VectorValue{$D2}($str)")
 end
 
-@generated function dot(a::MultiValue{Tuple{D1,D2}}, b::MultiValue{Tuple{D1}}) where {D1,D2}
+@generated function dot(a::A,b::B) where {A<:MultiValue{Tuple{D1,D2}},B<:MultiValue{Tuple{D2}}} where {D1,D2}
     ss = String[]
-    for j in 1:D2
-        s = join([ "a[$j,$i]*b[$i]+" for i in 1:D1])
+    for i in 1:D1
+      s = ""
+      for j in 1:D2
+        ak = data_index(A,i,j)
+        bk = data_index(B,j)
+        s *= "a.data[$ak]*b.data[$bk]+"
+      end
         push!(ss,s[1:(end-1)]*", ")
     end
     str = join(ss)
     Meta.parse("VectorValue{$D1}($str)")
-end
-
-@generated function dot(a::VectorValue{D}, b::SymTensorValue{D}) where D
-    ss = String[]
-    for j in 1:D
-        s = ""
-        for i in 1:D
-          k = _2d_sym_tensor_linear_index(D,i,j)
-          s *= "a.data[$i]*b.data[$k]+"
-        end
-        push!(ss,s[1:(end-1)]*", ")
-    end
-    str = join(ss)
-    Meta.parse("VectorValue{$D}($str)")
-end
-
-@generated function dot(a::SymTensorValue{D}, b::VectorValue{D}) where D
-    ss = String[]
-    for j in 1:D
-        s = ""
-        for i in 1:D
-          k = _2d_sym_tensor_linear_index(D,j,i)
-          s *= "a.data[$k]*b.data[$i]+"
-        end
-        push!(ss,s[1:(end-1)]*", ")
-    end
-    str = join(ss)
-    Meta.parse("VectorValue{$D}($str)")
 end
 
 @generated function dot(a::MultiValue{Tuple{D1,D3}}, b::MultiValue{Tuple{D3,D2}}) where {D1,D2,D3}
@@ -191,7 +173,7 @@ end
   str = ""
   for i in 1:D
     for j in 1:D
-      k = _2d_sym_tensor_linear_index(D,i,j)
+      k = data_index(a,i,j)
       str *= " a.data[$k]*b.data[$k] +"
     end
   end
@@ -313,7 +295,7 @@ function meas(v::MultiValue{Tuple{2,3}})
 end
 
 @inline norm(u::MultiValue{Tuple{D}}) where D = sqrt(inner(u,u))
-@inline norm(u::VectorValue{Tuple{0}}) = sqrt(zero(T))
+@inline norm(u::MultiValue{Tuple{0},T}) where T = sqrt(zero(T))
 
 ###############################################################
 # conj

@@ -40,6 +40,12 @@ getindex(arg::ThirdOrderTensorValue, i::Integer) = arg.data[i]
 @inline iterate(arg::MultiValue)        = iterate(arg.data)
 @inline iterate(arg::MultiValue, state) = iterate(arg.data, state)
 
+data_index(::Type{<:VectorValue},i) = i
+data_index(::Type{<:TensorValue{D}},i,j) where D = _2d_tensor_linear_index(D,i,j)
+data_index(::Type{<:SymTensorValue{D}},i,j) where D = _2d_sym_tensor_linear_index(D,i,j)
+data_index(::Type{<:ThirdOrderTensorValue{D1,D2}},i,j,k) where {D1,D2} = _3d_tensor_linear_index(D1,D2,i,j,k)
+data_index(::Type{<:SymFourthOrderTensorValue{D}},i,j,k,l) where D = _4d_sym_tensor_linear_index(D,i,j,k,l)
+
 _symmetric_index_gaps(i::Integer) = i*(i-1)÷2
 
 _2d_tensor_linear_index(D,i,j) = ((j-1)*D)+i

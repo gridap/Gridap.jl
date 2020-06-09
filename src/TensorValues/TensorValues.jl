@@ -82,8 +82,6 @@ include("SymFourthOrderTensorValueTypes.jl")
 
 include("ThirdOrderTensorValueTypes.jl")
 
-include("Misc.jl")
-
 include("Indexing.jl")
 
 include("Operations.jl")
