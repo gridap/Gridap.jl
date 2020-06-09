@@ -43,13 +43,41 @@ c = a - b
 r = VectorValue(-1,1,-3)
 @test c == r
 
+a = TensorValue(1,2,3,4)
+b = TensorValue(5,6,7,8)
+
+c = +a
+r = a
+@test c==r
+
+c = -a
+r = TensorValue(-1,-2,-3,-4)
+@test c==r
+
+c = a - b
+r = TensorValue(-4, -4, -4, -4)
+@test c==r
+
+a = SymTensorValue(1,2,3)
+b = SymTensorValue(5,6,7)
+
+c = -a
+r = SymTensorValue(-1,-2,-3)
+@test c==r
+
+c = a + b
+r = SymTensorValue(6,8,10)
+@test c==r
+
 # Matrix Division
 
-t = one(TensorValue{3,3,Int,9})
+a = VectorValue(1,2,3)
+
+t = one(TensorValue{3,3,Int})
 c = t\a
 @test c == a
 
-st = one(SymTensorValue{3,Int,6})
+st = one(SymTensorValue{3,Int})
 c = st\a
 @test c == a
 
@@ -140,41 +168,41 @@ s = TensorValue(9,8,3,4,5,6,7,2,1)
 st = SymTensorValue(1,2,3,5,6,9)
 st2 = SymTensorValue(9,6,5,3,2,1)
 
-c = a * b
+c = a ⋅ b
 @test isa(c,Int)
 @test c == 2+2+18
 
-c = t * a
+c = t ⋅ a
 @test isa(c,VectorValue{3,Int})
 r = VectorValue(30,36,42)
 @test c == r
 
-c = st * a
+c = st ⋅ a
 @test isa(c,VectorValue{3,Int})
 r = VectorValue(14,30,42)
 @test c == r
 
-c = s * t
+c = s ⋅ t
 @test isa(c,TensorValue{3,3,Int})
 r = TensorValue(38,24,18,98,69,48,158,114,78)
 @test c == r
 
-c = st * st2
+c = st ⋅ st2
 @test isa(c,TensorValue{3,3,Int})
 r = TensorValue(36, 78, 108, 18, 39, 54, 12, 26, 36)
 @test c == r
 
-c = a * st
+c = a ⋅ st
 @test isa(c,VectorValue{3,Int})
 r = VectorValue(14,30,42)
 @test c == r
 
 # Inner product (full contraction)
 
-c = inner(2,3)
+c = 2 ⊙ 3
 @test c == 6
 
-c = inner(a,b)
+c = a ⊙ b
 @test isa(c,Int)
 @test c == 2+2+18
 
@@ -183,6 +211,7 @@ c = inner(t,s)
 @test c == 185
 
 c = inner(st,st2)
+c = st ⊙ st2
 @test isa(c,Int)
 @test c == inner(TensorValue(get_array(st)),TensorValue(get_array(st2)))
 
@@ -208,10 +237,12 @@ a = VectorValue(1,2,3)
 e = VectorValue(2,5)
 
 c = outer(2,3)
+c = 2 ⊗ 3
 @test c == 6
 
 r = VectorValue(2,4,6)
 c = outer(2,a)
+c = 2 ⊗ a
 @test isa(c,VectorValue{3,Int})
 @test c == r
 
@@ -220,16 +251,17 @@ c = outer(a,2)
 @test c == r
 
 c = outer(a,e)
+c = a ⊗ e
 @test isa(c,TensorValue{3,2,Int})
 r = TensorValue{3,2,Int}(2,4,6,5,10,15)
 @test c == r
 
-#e = VectorValue(10,20)
-#k = TensorValue(1,2,3,4)
-#c = outer(e,k)
-#@test c == MultiValue{Tuple{2,2,2}}(10, 20, 20, 40, 30, 60, 40, 80)
-#
-#@test tr(c) == VectorValue(50,110)
+e = VectorValue(10,20)
+k = TensorValue(1,2,3,4)
+c = outer(e,k)
+@test c == ThirdOrderTensorValue{2,2,2}(10, 20, 20, 40, 30, 60, 40, 80)
+
+@test tr(c) == VectorValue(50,110)
 
 # Linear Algebra
 

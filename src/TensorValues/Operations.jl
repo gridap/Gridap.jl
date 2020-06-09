@@ -122,7 +122,7 @@ dot(a::MultiValue,b::MultiValue) = @notimplemented
     Meta.parse("VectorValue{$D2}($str)")
 end
 
-@generated function dot(a::MultiValue{Tuple{D1,D2}}, b::VectorValue{D1}) where {D1,D2}
+@generated function dot(a::MultiValue{Tuple{D1,D2}}, b::MultiValue{Tuple{D1}}) where {D1,D2}
     ss = String[]
     for j in 1:D2
         s = join([ "a[$j,$i]*b[$i]+" for i in 1:D1])
@@ -130,6 +130,34 @@ end
     end
     str = join(ss)
     Meta.parse("VectorValue{$D1}($str)")
+end
+
+@generated function dot(a::VectorValue{D}, b::SymTensorValue{D}) where D
+    ss = String[]
+    for j in 1:D
+        s = ""
+        for i in 1:D
+          k = _2d_sym_tensor_linear_index(D,i,j)
+          s *= "a.data[$i]*b.data[$k]+"
+        end
+        push!(ss,s[1:(end-1)]*", ")
+    end
+    str = join(ss)
+    Meta.parse("VectorValue{$D}($str)")
+end
+
+@generated function dot(a::SymTensorValue{D}, b::VectorValue{D}) where D
+    ss = String[]
+    for j in 1:D
+        s = ""
+        for i in 1:D
+          k = _2d_sym_tensor_linear_index(D,j,i)
+          s *= "a.data[$k]*b.data[$i]+"
+        end
+        push!(ss,s[1:(end-1)]*", ")
+    end
+    str = join(ss)
+    Meta.parse("VectorValue{$D}($str)")
 end
 
 @generated function dot(a::MultiValue{Tuple{D1,D3}}, b::MultiValue{Tuple{D3,D2}}) where {D1,D2,D3}
@@ -163,7 +191,7 @@ end
   str = ""
   for i in 1:D
     for j in 1:D
-      k = _2d_tensor_linear_index(D,i,j)
+      k = _2d_sym_tensor_linear_index(D,i,j)
       str *= " a.data[$k]*b.data[$k] +"
     end
   end
@@ -190,20 +218,21 @@ outer(a::Real,b::Real) = a*b
 outer(a::MultiValue,b::Real) = a*b
 outer(a::Real,b::MultiValue) = a*b
 
-outer(a::MultiValue,b::MultiValue) = @notimplemented
+function outer(a::MultiValue,b::MultiValue)
+   @notimplemented
+end
 
 @generated function outer(a::MultiValue{Tuple{D}},b::MultiValue{Tuple{Z}}) where {D,Z}
     str = join(["a[$i]*b[$j], " for j in 1:Z for i in 1:D])
-    Meta.parse("TensorValue{$D,$Z}(($str))")
+    Meta.parse("TensorValue{$D,$Z}($str)")
 end
 
 @generated function outer(a::MultiValue{Tuple{D}},b::MultiValue{Tuple{D1,D2}}) where {D,D1,D2}
-  str = join(["a.array[$i]*b.array[$j,$k], "  for k in 1:D2 for j in 1:D1 for i in 1:D])
-  Meta.parse("ThirdOrderTensorValue($str))")
+  str = join(["a[$i]*b[$j,$k], "  for k in 1:D2 for j in 1:D1 for i in 1:D])
+  Meta.parse("ThirdOrderTensorValue{D,D1,D2}($str)")
 end
 
 const ⊗ = outer
-
 
 ###############################################################
 # Linear Algebra
