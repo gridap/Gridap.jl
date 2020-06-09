@@ -59,14 +59,22 @@ function _2d_sym_tensor_linear_index(D,i,j)
   index
 end
 
+#function _4d_sym_tensor_linear_index(D,i,j,k,l)
+#  _j=min(i,j)
+#  _i=max(i,j)
+#  _l=min(k,l)
+#  _k=max(k,l)
+#  block_length=_symmetric_index_gaps(D+1)
+#  element_index=_2d_tensor_linear_index(D,_i,_j)-_symmetric_index_gaps(_j)
+#  block_index=_2d_tensor_linear_index(D,_l,_k)-_symmetric_index_gaps(_l)
+#  index=(block_index-1)*block_length+element_index
+#  index
+#end
+
 function _4d_sym_tensor_linear_index(D,i,j,k,l)
-  _j=min(i,j)
-  _i=max(i,j)
-  _l=min(k,l)
-  _k=max(k,l)
-  block_length=_symmetric_index_gaps(D+1)
-  element_index=_2d_tensor_linear_index(D,_i,_j)-_symmetric_index_gaps(_j)
-  block_index=_2d_tensor_linear_index(D,_l,_k)-_symmetric_index_gaps(_l)
+  block_length = (D*(D+1))÷2
+  block_index = _2d_sym_tensor_linear_index(D,i,j)
+  element_index = _2d_sym_tensor_linear_index(D,k,l)
   index=(block_index-1)*block_length+element_index
   index
 end

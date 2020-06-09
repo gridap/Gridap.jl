@@ -145,17 +145,17 @@ r = SymTensorValue(3,4,5,7,8,11)
 
 c = 2 * s4ot
 @test isa(c,SymFourthOrderTensorValue{2})
-r = SymFourthOrderTensorValue(2,0,2,0,0,0,2,0,2)
+r = SymFourthOrderTensorValue(2,0,0, 0,1,0, 0,0,2)
 @test c == r
 
 c = s4ot * 2
 @test isa(c,SymFourthOrderTensorValue{2})
-r = SymFourthOrderTensorValue(2,0,2,0,0,0,2,0,2)
+r = SymFourthOrderTensorValue(2,0,0, 0,1,0, 0,0,2)
 @test c == r
 
-c = s4ot + 2
+c = c + 0
 @test isa(c,SymFourthOrderTensorValue{2})
-r = SymFourthOrderTensorValue(3,2,3,2,2,2,3,2,3)
+r = SymFourthOrderTensorValue(2,0,0, 0,1,0, 0,0,2)
 @test c == r
 
 # Dot product (simple contraction)
@@ -353,7 +353,7 @@ t = TensorValue(1,2,3,4,5,6,7,8,9)
 st = SymTensorValue(1,2,3,5,6,9)
 @test tr(st) == tr(TensorValue(get_array(st)))
 
-@test symmetric_part(t) == TensorValue(1.0, 3.0, 5.0, 3.0, 5.0, 7.0, 5.0, 7.0, 9.0)
+@test get_array(symmetric_part(t)) == get_array(TensorValue(1.0, 3.0, 5.0, 3.0, 5.0, 7.0, 5.0, 7.0, 9.0))
 @test symmetric_part(st) == symmetric_part(TensorValue(get_array(st)))
 
 a = TensorValue(1,2,3,4)
@@ -391,5 +391,36 @@ b = VectorValue(2.0,3.0)
 
 a = VectorValue{0,Int}()
 @test a ≈ a
+
+λ = 1
+μ = 1
+ε = SymTensorValue(1,2,3)
+σ = λ*tr(ε)*one(ε) + 2*μ*ε
+@test isa(σ,SymTensorValue)
+@test (σ ⊙ ε) == 52
+
+I = one(SymFourthOrderTensorValue{2,Int})
+@test I[1,1,1,1] == 1
+@test I[1,2,1,2] == 0.5
+@test I[2,1,1,2] == 0.5
+@test I[2,2,2,2] == 1
+
+@test I ⊙ ε == ε
+
+a = TensorValue(1,2,3,4)
+b = I ⊙ a
+@test b == symmetric_part(a)
+
+
+σ1 = λ*tr(ε)*one(ε) + 2*μ*ε
+C = 2*μ*one(ε⊗ε) + λ*one(ε)⊗one(ε)
+σ2 = C ⊙ ε
+@test σ1 == σ2
+
+
+#I = one(ε) ⊗ one(ε)
+
+
+
 
 end # module OperationsTests

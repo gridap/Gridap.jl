@@ -180,6 +180,28 @@ end
   Meta.parse(str[1:(end-1)])
 end
 
+@generated function inner(a::SymFourthOrderTensorValue{D}, b::SymTensorValue{D}) where D
+  str = ""
+  for i in 1:D
+    for j in i:D
+      s = ""
+      for k in 1:D
+        for l in 1:D
+          ak = data_index(a,i,j,k,l)
+          bk = data_index(b,k,l)
+          s *= " a.data[$ak]*b.data[$bk] +"
+        end
+      end
+      str *= s[1:(end-1)]*", "
+    end
+  end
+  Meta.parse("SymTensorValue{D}($str)")
+end
+
+function inner(a::SymFourthOrderTensorValue{D},b::MultiValue{Tuple{D,D}}) where D
+  inner(a,symmetric_part(b))
+end
+
 const ⊙ = inner
 
 ###############################################################
@@ -212,6 +234,22 @@ end
 @generated function outer(a::MultiValue{Tuple{D}},b::MultiValue{Tuple{D1,D2}}) where {D,D1,D2}
   str = join(["a[$i]*b[$j,$k], "  for k in 1:D2 for j in 1:D1 for i in 1:D])
   Meta.parse("ThirdOrderTensorValue{D,D1,D2}($str)")
+end
+
+@generated function outer(a::SymTensorValue{D},b::SymTensorValue{D}) where D
+  str = ""
+  for i in 1:D
+    for j in i:D
+      ak = data_index(a,i,j)
+      for k in 1:D
+        for l in k:D
+          bk = data_index(b,k,l)
+          str *= "a.data[$ak]*b.data[$bk], "
+        end
+      end
+    end
+  end
+  Meta.parse("SymFourthOrderTensorValue{D}($str)")
 end
 
 const ⊗ = outer
@@ -379,12 +417,12 @@ transpose(a::SymTensorValue) = a
 @generated function symmetric_part(v::MultiValue{Tuple{D,D}}) where D
     str = "("
     for j in 1:D
-        for i in 1:D
+        for i in j:D
             str *= "0.5*v[$i,$j] + 0.5*v[$j,$i], "
         end
     end
     str *= ")"
-    Meta.parse("TensorValue($str)")
+    Meta.parse("SymTensorValue{D}($str)")
 end
 
 ###############################################################

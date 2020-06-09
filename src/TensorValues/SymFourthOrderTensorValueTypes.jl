@@ -70,9 +70,11 @@ end
 zero(::Type{<:SymFourthOrderTensorValue{D,T,L}}) where {D,T,L} = SymFourthOrderTensorValue{D,T}(tfill(zero(T),Val{L}()))
 zero(::SymFourthOrderTensorValue{D,T,L}) where {D,T,L} = zero(SymFourthOrderTensorValue{D,T,L})
 
+# This is in fact the "symmetrized" 4th order identity
 @generated function one(::Type{<:SymFourthOrderTensorValue{D,T}}) where {D,T}
-  str = join(["($i==$j && $k==$l) ? one(T) : zero(T), " for i in 1:D for j in i:D for k in 1:D for l in k:D])
-  Meta.parse("SymFourthOrderTensorValue{D,T}(($str))")
+  S = typeof(one(T)/2)
+  str = join(["($i==$k && $j==$l) ?  ( $i==$j ? one($S) :  one(T)/2) : zero($S), " for i in 1:D for j in i:D for k in 1:D for l in k:D])
+  Meta.parse("SymFourthOrderTensorValue{D,$S}(($str))")
 end
 one(::SymFourthOrderTensorValue{D,T}) where {D,T} = one(SymFourthOrderTensorValue{D,T})
 

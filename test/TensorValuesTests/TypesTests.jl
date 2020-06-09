@@ -76,9 +76,9 @@ s = SymTensorValue{0,Int}()
 
 # Constructors (SymFourthOrderTensorValue)
 
-s = SymFourthOrderTensorValue( (1111,2111,2211, 1121,2121,2221, 1122,2122,2222) )
+s = SymFourthOrderTensorValue( (1111,1121,1122, 2111,2121,2122, 2211,2221,2222) )
 @test isa(s,SymFourthOrderTensorValue{2,Int})
-@test Tuple(s) == (1111,2111,2211, 1121,2121,2221, 1122,2122,2222  )
+@test Tuple(s) == (1111,1121,1122, 2111,2121,2122, 2211,2221,2222)
 
 s = SymFourthOrderTensorValue(1111,2111,2211, 1121,2121,2221, 1122,2122,2222)
 @test isa(s,SymFourthOrderTensorValue{2,Int})
@@ -203,8 +203,8 @@ s = one(z)
 @test convert(SMatrix{3,3,Int},s) == [1 0 0; 0 1 0; 0 0 1]
 
 z = one(SymFourthOrderTensorValue{2,Int})
-@test isa(z,SymFourthOrderTensorValue{2,Int,9})
-@test Tuple(z) == (1,0,1, 0,0,0, 1,0,1)
+@test isa(z,SymFourthOrderTensorValue{2})
+@test Tuple(z) == (1.,0.,0., 0.,0.5,0., 0.,0.,1.)
 
 # Conversions
 
@@ -234,10 +234,14 @@ b = convert(V,a)
 b = V[a,a,a,]
 @test isa(b,Vector{V})
 
-a = (1111,2111,2211, 1121,2121,2221, 1122,2122,2222)
+a = (1111,1121,1122, 2111,2121,2122, 2211,2221,2222)
 V = SymFourthOrderTensorValue{2,Int,9}
 b = convert(V,a)
 @test isa(b,V)
+@test b[2,2,2,1] == 2221
+@test b[2,2,1,2] == 2221
+@test b[2,1,2,1] == 2121
+@test b[1,2,2,1] == 2121
 b = V[a,a,a,]
 @test isa(b,Vector{V})
 
@@ -261,8 +265,8 @@ v = SymTensorValue{3,Int64}(1, 0, 0, 1, 0, 1)
 s = "(1, 0, 0, 1, 0, 1)"
 @test string(v) == s
 
-v = SymFourthOrderTensorValue{2,Int64}(1111,2111,2211, 1121,2121,2221, 1122,2122,2222)
-s = "(1111, 2111, 2211, 1121, 2121, 2221, 1122, 2122, 2222)"
+v = SymFourthOrderTensorValue{2,Int64}(1111,1121,1122, 2111,2121,2122, 2211,2221,2222)
+s = "(1111, 1121, 1122, 2111, 2121, 2122, 2211, 2221, 2222)"
 @test string(v) == s
 
 # Misc
@@ -281,7 +285,7 @@ v = VectorValue(m)
 @test n_components(VectorValue(1,2,3)) == 3
 @test n_components(TensorValue(1,2,3,4)) == 4
 @test n_components(SymTensorValue(1,2,3)) == 4
-@test n_components(SymFourthOrderTensorValue(1111,2111,2211, 1121,2121,2221, 1122,2122,2222)) == 16
+@test n_components(SymFourthOrderTensorValue(1111,1121,1122, 2111,2121,2122, 2211,2221,2222)) == 16
 
 a = VectorValue(1,2,3,4)
 @test change_eltype(a,Float64) == VectorValue{4,Float64}
@@ -308,7 +312,7 @@ a = SymTensorValue(11,21,22)
 @test isa(Tuple(a),Tuple)
 @test Tuple(a) == a.data
 
-a = SymFourthOrderTensorValue(1111,2111,2211, 1121,2121,2221, 1122,2122,2222)
+a = SymFourthOrderTensorValue(1111,1121,1122, 2111,2121,2122, 2211,2221,2222)
 @test change_eltype(a,Float64) == SymFourthOrderTensorValue{2,Float64,9}
 @test isa(Tuple(a),Tuple)
 @test Tuple(a) == a.data
