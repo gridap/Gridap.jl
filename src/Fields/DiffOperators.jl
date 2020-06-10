@@ -59,12 +59,12 @@ dot(::typeof(∇),f) = divergence(f)
 dot(::typeof(∇),f::GridapType) = divergence(f)
 
 function (*)(::typeof(∇),f)
-  msg = "Syntax ∇*f has been removed, use ∇⋅f instead"
+  msg = "Syntax ∇*f has been removed, use ∇⋅f (\\nabla \\cdot f) instead"
   error(msg)
 end
 
 function (*)(::typeof(∇),f::GridapType)
-  msg = "Syntax ∇*f has been removed, use ∇⋅f instead"
+  msg = "Syntax ∇*f has been removed, use ∇⋅f (\\nabla \\cdot f) instead"
   error(msg)
 end
 

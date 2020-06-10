@@ -19,6 +19,7 @@ using Gridap.Arrays: BCasted
 using Gridap.Arrays: NumberOrArray
 using Gridap.Arrays: AppliedArray
 using Gridap.Arrays: Contracted
+using LinearAlgebra: ⋅
 
 using Test
 using DocStringExtensions

@@ -35,7 +35,7 @@ using StaticArrays: SVector, MVector, SMatrix, MMatrix, SArray, MArray
 using Base: @propagate_inbounds, @pure
 using Gridap.Helpers
 using Gridap.Arrays
-using LinearAlgebra: ⋅
+using LinearAlgebra
 
 export MultiValue
 export VectorValue
@@ -69,7 +69,9 @@ import Base: adjoint
 import Base: transpose
 #import Base: :
 
-import LinearAlgebra: det, inv, tr, dot, norm
+import LinearAlgebra: det, inv, tr, cross, dot, norm
+# Reexport from LinearAlgebra (just for convenience)
+export det, inv, tr, cross, dot, norm, ×, ⋅
 
 import Gridap.Arrays: get_array
 

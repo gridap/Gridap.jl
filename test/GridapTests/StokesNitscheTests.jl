@@ -6,8 +6,6 @@ module StokesNitsche
 using Test
 using Gridap
 import Gridap: ∇
-import LinearAlgebra: tr
-import LinearAlgebra: ⋅
 
 #
 const T = VectorValue{2,Float64}
@@ -20,8 +18,6 @@ p(x) = x[1] - x[2]
 ∇p(x) = VectorValue(1.0,-1.0)
 
 ∇(::typeof(u)) = ∇u
-
-
 
 n = 2
 order = 2
@@ -83,24 +79,22 @@ nb = get_normal_vector(btrian)
 function A_Ω(x,y)
   u, p = x
   v, q = y
-  inner(∇(v), ∇(u)) - inner(q,divergence(u)) - inner(divergence(v), p)
+  ∇(v)⊙∇(u) - q*(∇⋅u) - (∇⋅v)*p
 end
 
 function B_Ω(y)
   v, q = y
-  inner(v,f) - inner(q, g)
+  v⋅f - q*g
 end
 
 function A_∂Ω(x,y)
   u, p = x
   v, q = y
-  # (γ/h) * inner(v,u) - inner(outer(nb,v), ∇(u)) - inner(∇(v), outer(nb,u)) + inner(v, p*nb) + inner(q*nb,u)
   (γ/h)*v⋅u - v⋅(nb⋅∇(u)) - (nb⋅∇(v))⋅u + (p*nb)⋅v + (q*nb)⋅u
 end
 
 function B_∂Ω(y)
   v, q = y
-  # + (γ/h) * inner(v,ud)  - inner(∇(v), outer(nb,ud_cf)) + inner(q*nb,ud)
   (γ/h)*v⋅u - (nb⋅∇(v))⋅u + (q*nb)⋅u
 end
 
@@ -125,8 +119,8 @@ ep = p - ph
 # writevtk(trian,"trian",cellfields=["uh"=>uh,"ph"=>ph, "eu"=>eu, "ep"=>ep])
 
 # Define norms to measure the error
-l2(u) = inner(u,u)
-h1(u) = inner(∇(u),∇(u)) + l2(u)
+l2(u) = u⊙u
+h1(u) = ∇(u)⊙∇(u) + l2(u)
 
 # Compute errors
 eul2 = sqrt(sum( integrate(l2(eu),trian,quad) ))

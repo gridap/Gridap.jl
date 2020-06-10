@@ -101,8 +101,8 @@ end
 
 function (*)(a::MultiValue, b::MultiValue)
   msg = """
-  Method (*)(::$(typeof(a)),::$(typeof(b))) has been removed
-  Use simple contraction LinearAlgebra.⋅ (\\cdot) or full contraction Gridap.⊙ (\\odot) instead.
+  Method (*)(::$(typeof(a)),::$(typeof(b))) has been removed.
+  Depending the case, use simple contraction dot aka ⋅ (\\cdot) or full contraction inner aka ⊙ (\\odot) instead.
   """
   error(msg)
   #dot(a,b)

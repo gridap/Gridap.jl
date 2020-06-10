@@ -5,6 +5,7 @@ using Gridap.Arrays
 using Gridap.Fields
 using Gridap.Geometry
 using Gridap.FESpaces
+using Gridap.TensorValues
 using Gridap.MultiField
 using Test
 
@@ -62,8 +63,8 @@ test_fe_space(V)
 @test has_constraints(U)
 @test has_constraints(V)
 
-a(u,v) = ∇(v)*∇(u)
-b_Γ(v,u,n_Γ) = v*(n_Γ*∇(u))
+a(u,v) = ∇(v)⋅∇(u)
+b_Γ(v,u,n_Γ) = v*(n_Γ⋅∇(u))
 
 function A(u,v)
   u1,u2 = u

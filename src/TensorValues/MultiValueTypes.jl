@@ -31,7 +31,7 @@ num_components(::Type{<:Number}) = 1
 num_components(::Number) = num_components(Number)
 
 function n_components(a)
-  msg = "Function n_components is deprecated use num_components instead"
+  msg = "Function n_components has been removed, use num_components instead"
   error(msg)
 end
 
