@@ -8,8 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-  - Added `⊙` (\odot) as an alias of `inner`. Since PR [#239](https://github.com/gridap/Gridap.jl/pull/239).
-  - Added `⊗` (\otimes) as an alias of `outer`. Since PR [#239](https://github.com/gridap/Gridap.jl/pull/239).
+  - Operator `⊙` (\odot) as an alias of `inner`. Since PR [#239](https://github.com/gridap/Gridap.jl/pull/239).
+  - Operator `⊗` (\otimes) as an alias of `outer`. Since PR [#239](https://github.com/gridap/Gridap.jl/pull/239).
+  - Support for (symmetric) 4th order tensors. Since PR [#239](https://github.com/gridap/Gridap.jl/pull/239).
+  - Optimizations for symmetric 2nd order tensors. Since PR [#239](https://github.com/gridap/Gridap.jl/pull/239).
 
 ### Changed
 
