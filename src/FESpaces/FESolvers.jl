@@ -10,9 +10,9 @@ This function changes the state of the input and can render it in a corrupted st
 It is recommended to rewrite the input `uh` with the output as illustrated to prevent any
 issue.
 """
-function solve!(u,solver::FESolver,op::FEOperator)
-  @assert is_a_fe_function(u)
-  solve!(u,solver,op,nothing)
+function solve!(uh,solver::FESolver,op::FEOperator)
+  @assert is_a_fe_function(uh)
+  solve!(uh,solver,op,nothing)
 end
 
 """
@@ -23,7 +23,7 @@ It is recommended to rewrite the input `uh` with the output as illustrated to pr
 issue. If `cache===nothing`, then it creates a new cache object.
 """
 function solve!(uh,solver::FESolver,op::FEOperator,cache)
-  @assert is_a_fe_function(u)
+  @assert is_a_fe_function(uh)
   @abstractmethod
 end
 
