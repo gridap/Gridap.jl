@@ -67,6 +67,7 @@ import Base: CartesianIndices
 import Base: LinearIndices
 import Base: adjoint
 import Base: transpose
+#import Base: :
 
 import LinearAlgebra: det, inv, tr, dot, norm
 
