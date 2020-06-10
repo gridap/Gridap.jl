@@ -65,7 +65,7 @@ collect(evaluate(grad_cfu,q))
 t_grad_cfu = outer(cfu,∇)
 collect(evaluate(t_grad_cfu,q))
 
-div_cfu = ∇*cfu
+div_cfu = ∇⋅cfu
 collect(evaluate(div_cfu,q))
 
 curl_cfu = cross(∇,cfu)
@@ -87,10 +87,10 @@ nvec = get_normal_vector(btrian)
 z = 2*bcf1 + nvec
 @test isa(z,CellField)
 
-flux1 = nvec*∇u
+flux1 = nvec⋅∇u
 collect(evaluate(flux1,s))
 
-flux2 = ∇u*nvec
+flux2 = ∇u⋅nvec
 collect(evaluate(flux2,s))
 
 strian = SkeletonTriangulation(model)
@@ -124,7 +124,7 @@ collect(evaluate(grad_cfu,s))
 t_grad_cfu = jump(outer(scfu,∇))
 collect(evaluate(t_grad_cfu,s))
 
-div_cfu = mean(∇*scfu)
+div_cfu = mean(∇⋅scfu)
 collect(evaluate(div_cfu,s))
 
 curl_cfu = jump(cross(∇,scfu))

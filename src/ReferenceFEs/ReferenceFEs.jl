@@ -11,8 +11,8 @@ using LinearAlgebra
 using Combinatorics
 
 using Gridap.Helpers
-using Gridap.TensorValues
 using Gridap.Arrays
+using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
 using Gridap.Integration

@@ -26,17 +26,23 @@ for f in (_f,_af)
   
   @test curl(f) == grad2curl(gradient(f))
   
-  @test ∇*f == divergence(f)
+  @test ∇⋅f == divergence(f)
   
   @test cross(∇,f) == curl(f)
+
+  @test ∇×f == curl(f)
   
   @test outer(∇,f) == ∇(f)
+
+  @test ∇⊗f == ∇(f)
   
   @test outer(f,∇) == transpose(∇(f))
 
+  @test f⊗∇ == transpose(∇(f))
+
   @test ε(f) == symmetric_part(gradient(f))
 
-  @test Δ(f) == ∇*∇(f)
+  @test Δ(f) == ∇⋅∇(f)
 
 end
 
@@ -63,7 +69,7 @@ u(x) = VectorValue( x[1]^2 + 2*x[2]^2, -x[1]^2 )
 Δu(x) = VectorValue( 6, -2 )
 
 for x in xs
-  @test (∇*u)(x) == tr(∇u(x)) 
+  @test (∇⋅u)(x) == tr(∇u(x)) 
   @test (∇×u)(x) == grad2curl(∇u(x))
   @test Δ(u)(x) == Δu(x)
 end

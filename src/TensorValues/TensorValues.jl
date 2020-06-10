@@ -31,24 +31,32 @@ module TensorValues
 using DocStringExtensions
 
 using StaticArrays
+using StaticArrays: SVector, MVector, SMatrix, MMatrix, SArray, MArray
 using Base: @propagate_inbounds, @pure
 using Gridap.Helpers
+using Gridap.Arrays
+using LinearAlgebra
 
 export MultiValue
-export TensorValue
 export VectorValue
+export TensorValue
+export SymTensorValue
+export SymFourthOrderTensorValue
+export ThirdOrderTensorValue
 
 export inner, outer, meas
-#export det, inv, tr, dot, norm
 export mutable
 export symmetric_part
 export n_components
+export num_components
 export change_eltype
 export diagonal_tensor
+export ⊙
+export ⊗
 
 import Base: show
 import Base: zero, one
-import Base: +, -, *, /, \, ==, ≈
+import Base: +, -, *, /, \, ==, ≈, isless
 import Base: conj
 import Base: sum, maximum, minimum
 import Base: getindex, iterate, eachindex
@@ -59,10 +67,25 @@ import Base: CartesianIndices
 import Base: LinearIndices
 import Base: adjoint
 import Base: transpose
+#import Base: :
 
-import LinearAlgebra: det, inv, tr, dot, norm
+import LinearAlgebra: det, inv, tr, cross, dot, norm
+# Reexport from LinearAlgebra (just for convenience)
+export det, inv, tr, cross, dot, norm, ×, ⋅
 
-include("Types.jl")
+import Gridap.Arrays: get_array
+
+include("MultiValueTypes.jl")
+
+include("VectorValueTypes.jl")
+
+include("TensorValueTypes.jl")
+
+include("SymTensorValueTypes.jl")
+
+include("SymFourthOrderTensorValueTypes.jl")
+
+include("ThirdOrderTensorValueTypes.jl")
 
 include("Indexing.jl")
 

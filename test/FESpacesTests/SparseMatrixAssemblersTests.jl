@@ -40,8 +40,8 @@ bquad = CellQuadrature(btrian,degree)
 bu = restrict(u,btrian)
 bv = restrict(v,btrian)
 
-cellmat = integrate(∇(v)*∇(u),trian,quad)
-cellvec = integrate(v*b,trian,quad)
+cellmat = integrate(∇(v)⊙∇(u),trian,quad)
+cellvec = integrate(v⊙b,trian,quad)
 cellmatvec = pair_arrays(cellmat,cellvec)
 cellids = collect(1:num_cells(trian))
 

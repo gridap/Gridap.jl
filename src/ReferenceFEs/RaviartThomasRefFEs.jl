@@ -259,7 +259,7 @@ function _eval_moment_dof_basis!(dofs,vals::AbstractVector,b)
       for j in 1:nj
         dofs[o] = z
         for i in 1:ni
-          dofs[o] += moments[i,j]*vals[nodes[i]]
+          dofs[o] += moments[i,j]⋅vals[nodes[i]]
         end
         o += 1
       end
@@ -282,7 +282,7 @@ function _eval_moment_dof_basis!(dofs,vals::AbstractMatrix,b)
         for a in 1:na
           dofs[o,a] = z
           for i in 1:ni
-            dofs[o,a] += moments[i,j]*vals[nodes[i],a]
+            dofs[o,a] += moments[i,j]⋅vals[nodes[i],a]
           end
         end
         o += 1

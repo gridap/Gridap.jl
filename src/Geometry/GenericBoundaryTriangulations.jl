@@ -416,8 +416,8 @@ function kernel_evaluate(k::NormalVectorValued,x,J,refn)
   apply(k,Jx,refn)
 end
 
-function _map_normal(J::TensorValue{D,T},n::VectorValue{D,T}) where {D,T}
-  v = inv(J)*n
+function _map_normal(J::TensorValue{D,D,T},n::VectorValue{D,T}) where {D,T}
+  v = inv(J)⋅n
   m = sqrt(inner(v,v))
   if m < eps()
     return zero(n)

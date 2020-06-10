@@ -4,209 +4,207 @@ using Gridap.TensorValues
 using Test
 using StaticArrays
 
-# Constructors (MultiValue)
-
-a = MArray{Tuple{3,2}}((1,2,3,4,5,6))
-v = MultiValue(a)
-@test isa(v,MultiValue{Tuple{3,2},Int})
-@test v.array.data === a.data
-
-a = SArray{Tuple{3,2}}((1,2,3,4,5,6))
-
-v = MultiValue(a)
-@test isa(v,MultiValue{Tuple{3,2},Int})
-@test v.array === a
-
-v = MultiValue{Tuple{3,2}}((1,2,3,4,5,6))
-@test isa(v,MultiValue{Tuple{3,2},Int})
-@test v.array == a
-
-v = MultiValue{Tuple{3,2}}(1,2,3,4,5,6)
-@test isa(v,MultiValue{Tuple{3,2},Int})
-@test v.array == a
-
-v = MultiValue{Tuple{3,2},Float64}((1,2,3,4,5,6))
-@test isa(v,MultiValue{Tuple{3,2},Float64})
-@test v.array == a
-
-v = MultiValue{Tuple{3,2},Float64}(1,2,3,4,5,6)
-@test isa(v,MultiValue{Tuple{3,2},Float64})
-@test v.array == a
-
-a = SVector(1)
-v = MultiValue{Tuple{1}}((1,))
-@test isa(v,MultiValue{Tuple{1},Int})
-@test v.array == a
-
-v = MultiValue{Tuple{1}}(1)
-@test isa(v,MultiValue{Tuple{1},Int})
-@test v.array == a
-
-a = SMatrix{1,1}(1)
-v = MultiValue{Tuple{1,1}}(1)
-@test isa(v,MultiValue{Tuple{1,1},Int})
-@test v.array == a
-
-a = SVector{0,Int}()
-v = MultiValue{Tuple{0},Int}(())
-@test isa(v,MultiValue{Tuple{0},Int})
-@test v.array == a
-
-a = SMatrix{0,0,Int}()
-v = MultiValue{Tuple{0,0},Int}()
-@test isa(v,MultiValue{Tuple{0,0},Int})
-@test v.array == a
-
 # Constructors (TensorValue)
 
 a = SMatrix{2,2}(1,2,3,4)
 t = TensorValue(a)
-@test isa(t,TensorValue{2,Int})
-@test t.array == [1 3;2 4]
+@test isa(t,TensorValue{2,2,Int})
+@test convert(SMatrix{2,2,Int},t) == [1 3;2 4]
 
 a = MMatrix{2,2}(1,2,3,4)
 t = TensorValue(a)
-@test isa(t,TensorValue{2,Int})
-@test t.array == [1 3;2 4]
+@test isa(t,TensorValue{2,2,Int})
+@test convert(SMatrix{2,2,Int},t) == [1 3;2 4]
 
 t = TensorValue{2}((1,2,3,4))
-@test isa(t,TensorValue{2,Int})
-@test t.array == [1 3;2 4]
-
-t = TensorValue{2,Float64}((1,2,3,4))
-@test isa(t,TensorValue{2,Float64})
-@test t.array == [1 3;2 4]
+@test isa(t,TensorValue{2,2,Int})
+@test convert(SMatrix{2,2,Int},t) == [1 3;2 4]
 
 t = TensorValue{2}(1,2,3,4)
-@test isa(t,TensorValue{2,Int})
-@test t.array == [1 3;2 4]
-
-t = TensorValue{2,Float64}(1,2,3,4)
-@test isa(t,TensorValue{2,Float64})
-@test t.array == [1 3;2 4]
+@test isa(t,TensorValue{2,2,Int})
+@test convert(SMatrix{2,2,Int},t) == [1 3;2 4]
 
 t = TensorValue(1,2,3,4)
-@test isa(t,TensorValue{2,Int})
-@test t.array == [1 3;2 4]
+@test isa(t,TensorValue{2,2,Int})
+@test convert(SMatrix{2,2,Int},t) == [1 3;2 4]
 
 t = TensorValue((1,2,3,4))
-@test isa(t,TensorValue{2,Int})
-@test t.array == [1 3;2 4]
-
-t = TensorValue{0,Int}()
-@test isa(t,TensorValue{0,Int})
-@test t.array == zeros(0,0)
+@test isa(t,TensorValue{2,2,Int})
+@test convert(SMatrix{2,2,Int},t) == [1 3;2 4]
 
 t = TensorValue{1}(10)
-@test isa(t,TensorValue{1,Int})
-@test t.array == 10*ones(1,1)
+@test isa(t,TensorValue{1,1,Int})
+@test convert(SMatrix{1,1,Int},t) == 10*ones(1,1)
 
 t = TensorValue{1}((10,))
-@test isa(t,TensorValue{1,Int})
-@test t.array == 10*ones(1,1)
+@test isa(t,TensorValue{1,1,Int})
+@test convert(SMatrix{1,1,Int},t) == 10*ones(1,1)
 
-t = TensorValue{1,Float64}(10)
-@test isa(t,TensorValue{1,Float64})
-@test t.array == 10*ones(1,1)
+# Constructors (SymTensorValue)
 
-t = TensorValue{1,Float64}((10,))
-@test isa(t,TensorValue{1,Float64})
-@test t.array == 10*ones(1,1)
+s = SymTensorValue( (11,21,22) )
+@test isa(s,SymTensorValue{2,Int})
+@test convert(SMatrix{2,2,Int},s) == [11 21;21 22]
+
+s = SymTensorValue(11,21,22)
+@test isa(s,SymTensorValue{2,Int})
+@test convert(SMatrix{2,2,Float64},s) == [11.0 21.0;21.0 22.0]
+
+s = SymTensorValue{2}( (11,21,22) )
+@test isa(s,SymTensorValue{2,Int})
+@test convert(SMatrix{2,2,Int},s) == [11 21;21 22]
+
+s = SymTensorValue{2}(11,21,22)
+@test isa(s,SymTensorValue{2,Int})
+@test convert(SMatrix{2,2,Float64},s) == [11.0 21.0;21.0 22.0]
+
+s = SymTensorValue{2,Int}( (11,21,22) )
+@test isa(s,SymTensorValue{2,Int})
+@test convert(SMatrix{2,2,Int},s) == [11 21;21 22]
+
+s = SymTensorValue{2,Float64}(11,21,22)
+@test isa(s,SymTensorValue{2,Float64})
+@test convert(SMatrix{2,2,Float64},s) == [11.0 21.0;21.0 22.0]
+
+s = SymTensorValue{0,Int}( () )
+@test isa(s,SymTensorValue{0,Int})
+@test convert(SMatrix{0,0,Int},s) == Array{Any,2}(undef,0,0)
+
+s = SymTensorValue{0,Int}()
+@test isa(s,SymTensorValue{0,Int})
+@test convert(SMatrix{0,0,Int},s) == Array{Any,2}(undef,0,0)
+
+# Constructors (SymFourthOrderTensorValue)
+
+s = SymFourthOrderTensorValue( (1111,1121,1122, 2111,2121,2122, 2211,2221,2222) )
+@test isa(s,SymFourthOrderTensorValue{2,Int})
+@test Tuple(s) == (1111,1121,1122, 2111,2121,2122, 2211,2221,2222)
+
+s = SymFourthOrderTensorValue(1111,2111,2211, 1121,2121,2221, 1122,2122,2222)
+@test isa(s,SymFourthOrderTensorValue{2,Int})
+@test Tuple(s) == (1111,2111,2211, 1121,2121,2221, 1122,2122,2222  )
+
+s = SymFourthOrderTensorValue{2}( (1111,2111,2211, 1121,2121,2221, 1122,2122,2222) )
+@test isa(s,SymFourthOrderTensorValue{2,Int})
+@test Tuple(s) == (1111,2111,2211, 1121,2121,2221, 1122,2122,2222  )
+
+s = SymFourthOrderTensorValue{2}(1111,2111,2211, 1121,2121,2221, 1122,2122,2222)
+@test isa(s,SymFourthOrderTensorValue{2,Int})
+@test Tuple(s) == (1111,2111,2211, 1121,2121,2221, 1122,2122,2222  )
+
+s = SymFourthOrderTensorValue{2,Int}( (1111,2111,2211, 1121,2121,2221, 1122,2122,2222) )
+@test isa(s,SymFourthOrderTensorValue{2,Int})
+@test Tuple(s) == (1111,2111,2211, 1121,2121,2221, 1122,2122,2222  )
+
+s = SymFourthOrderTensorValue{2,Float64}(1111,2111,2211, 1121,2121,2221, 1122,2122,2222)
+@test isa(s,SymFourthOrderTensorValue{2,Float64})
+@test Tuple(s) == (1111.0,2111.0,2211.0, 1121.0,2121.0,2221.0, 1122.0,2122.0,2222.0)
+
+s = SymFourthOrderTensorValue{0,Int}( () )
+@test isa(s,SymFourthOrderTensorValue{0,Int})
+@test Tuple(s) == ()
+
+s = SymFourthOrderTensorValue{0,Int}()
+@test isa(s,SymFourthOrderTensorValue{0,Int})
+@test Tuple(s) == ()
 
 # Constructors (VectorValue)
+
 
 a = SVector(1)
 g = VectorValue(a)
 @test isa(g,VectorValue{1,Int})
-@test g.array == [1,]
+@test convert(SVector{1,Int},g) == [1,]
 
 a = SVector(1,2,3,4)
 g = VectorValue(a)
 @test isa(g,VectorValue{4,Int})
-@test g.array == [1,2,3,4]
+@test convert(SVector{4,Int},g) == [1,2,3,4]
 
 a = MVector(1,2,3,4)
 g = VectorValue(a)
 @test isa(g,VectorValue{4,Int})
-@test g.array == [1,2,3,4]
+@test convert(MVector{4,Int},g) == [1,2,3,4]
 
 g = VectorValue{4}((1,2,3,4))
 @test isa(g,VectorValue{4,Int})
-@test g.array == [1,2,3,4]
+@test convert(SVector{4,Int},g) == [1,2,3,4]
 
 g = VectorValue{1}((1,))
 @test isa(g,VectorValue{1,Int})
-@test g.array == [1,]
+@test convert(SVector{1,Int},g) == [1,]
 
 g = VectorValue{0,Int}(())
 @test isa(g,VectorValue{0,Int})
-@test g.array == []
+@test convert(SVector{0,Int},g) == []
 
 g = VectorValue{4}(1,2,3,4)
 @test isa(g,VectorValue{4,Int})
-@test g.array == [1,2,3,4]
+@test convert(SVector{4,Int},g) == [1,2,3,4]
 
 g = VectorValue{1}(1)
 @test isa(g,VectorValue{1,Int})
-@test g.array == [1,]
+@test convert(SVector{1,Int},g) == [1,]
 
 g = VectorValue{1,Float64}(1)
 @test isa(g,VectorValue{1,Float64})
-@test g.array == [1,]
-
-g = VectorValue{1,Float64}((1,))
-@test isa(g,VectorValue{1,Float64})
-@test g.array == [1,]
+@test convert(SVector{1,Float64},g) == [1,]
 
 g = VectorValue{0,Int}()
 @test isa(g,VectorValue{0,Int})
-@test g.array == []
+@test convert(SVector{0,Int},g) == []
 
 g = VectorValue{4,Float64}((1,2,3,4))
 @test isa(g,VectorValue{4,Float64})
-@test g.array == [1,2,3,4]
+@test convert(SVector{4,Float64},g) == [1,2,3,4]
 
 g = VectorValue{4}(1,2,3,4)
 @test isa(g,VectorValue{4,Int})
-@test g.array == [1,2,3,4]
+@test convert(SVector{4,Int},g) == [1,2,3,4]
 
 g = VectorValue{4,Float64}(1,2,3,4)
 @test isa(g,VectorValue{4,Float64})
-@test g.array == [1,2,3,4]
+@test convert(SVector{4,Float64},g) == [1,2,3,4]
 
 g = VectorValue(1,2,3,4)
 @test isa(g,VectorValue{4,Int})
-@test g.array == [1,2,3,4]
+@test convert(SVector{4,Int},g) == [1,2,3,4]
 
 g = VectorValue((1,2,3,4))
 @test isa(g,VectorValue{4,Int})
-@test g.array == [1,2,3,4]
+@test convert(SVector{4,Int},g) == [1,2,3,4]
 
 g = VectorValue(1)
 @test isa(g,VectorValue{1,Int})
-@test g.array == [1,]
+@test convert(SVector{1,Int},g) == [1,]
 
 # Initializers
 
-z = zero(MultiValue{Tuple{3,2},Int,2,6})
-@test isa(z,MultiValue{Tuple{3,2},Int,2,6})
-@test z.array == zeros(Int,(3,2))
-s = zero(z)
-@test s.array == zeros(Int,(3,2))
+z = zero(TensorValue{3,3,Int,9})
+@test isa(z,TensorValue{3,3,Int,9})
+@test convert(SMatrix{3,3,Int},z) == zeros(Int,(3,3))
 
-z = zero(TensorValue{3,Int,9})
-@test isa(z,TensorValue{3,Int,9})
-@test z.array == zeros(Int,(3,3))
+z = zero(SymTensorValue{3,Int})
+@test isa(z,SymTensorValue{3,Int,6})
+@test convert(SMatrix{3,3,Int},z) == zeros(Int,(3,3))
+
+z = zero(SymFourthOrderTensorValue{2,Int})
+@test isa(z,SymFourthOrderTensorValue{2,Int,9})
+@test Tuple(z) == Tuple(zeros(Int,(9)))
 
 z = zero(VectorValue{3,Int})
 @test isa(z,VectorValue{3,Int})
-@test z.array == zeros(Int,3)
+@test convert(SVector{3,Int},z) == zeros(Int,3)
 
-z = one(TensorValue{3,Int,9})
-@test isa(z,TensorValue{3,Int,9})
-@test z.array == [1 0 0; 0 1 0; 0 0 1]
+z = one(TensorValue{3,3,Int,9})
+@test isa(z,TensorValue{3,3,Int,9})
+@test convert(SMatrix{3,3,Int},z) == [1 0 0; 0 1 0; 0 0 1]
 s = one(z)
-@test s.array == [1 0 0; 0 1 0; 0 0 1]
+@test convert(SMatrix{3,3,Int},s) == [1 0 0; 0 1 0; 0 0 1]
+
+z = one(SymFourthOrderTensorValue{2,Int})
+@test isa(z,SymFourthOrderTensorValue{2})
+@test Tuple(z) == (1.,0.,0., 0.,0.5,0., 0.,0.,1.)
 
 # Conversions
 
@@ -223,9 +221,27 @@ b = convert(VectorValue{1,Int},a)
 @test isa(b,VectorValue{1,Int})
 
 a = (1,2,2,1,3,2)
-V = MultiValue{Tuple{3,2},Int,2,6}
+V = TensorValue{3,2,Int,6}
 b = convert(V,a)
 @test isa(b,V)
+b = V[a,a,a,]
+@test isa(b,Vector{V})
+
+a = (11,21,22)
+V = SymTensorValue{2,Int,3}
+b = convert(V,a)
+@test isa(b,V)
+b = V[a,a,a,]
+@test isa(b,Vector{V})
+
+a = (1111,1121,1122, 2111,2121,2122, 2211,2221,2222)
+V = SymFourthOrderTensorValue{2,Int,9}
+b = convert(V,a)
+@test isa(b,V)
+@test b[2,2,2,1] == 2221
+@test b[2,2,1,2] == 2221
+@test b[2,1,2,1] == 2121
+@test b[1,2,2,1] == 2121
 b = V[a,a,a,]
 @test isa(b,Vector{V})
 
@@ -241,8 +257,16 @@ V = VectorValue{3}
 
 # Custom type printing
 
-v = MultiValue{Tuple{3,2},Float64}(1,2,3,4,5,6)
+v = TensorValue{3,2,Float64}(1,2,3,4,5,6)
 s = "(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)"
+@test string(v) == s
+
+v = SymTensorValue{3,Int64}(1, 0, 0, 1, 0, 1)
+s = "(1, 0, 0, 1, 0, 1)"
+@test string(v) == s
+
+v = SymFourthOrderTensorValue{2,Int64}(1111,1121,1122, 2111,2121,2122, 2211,2221,2222)
+s = "(1111, 1121, 1122, 2111, 2121, 2122, 2211, 2221, 2222)"
 @test string(v) == s
 
 # Misc
@@ -253,24 +277,27 @@ m = zero(M)
 v = VectorValue(m)
 @test isa(v,VectorValue{3,Int})
 
-@test n_components(Int) == 1
-@test n_components(Float64) == 1
-@test n_components(1.0) == 1
-@test n_components(1) == 1
-@test n_components(VectorValue{3,Float64}) == 3
-@test n_components(VectorValue(1,2,3)) == 3
+@test num_components(Int) == 1
+@test num_components(Float64) == 1
+@test num_components(1.0) == 1
+@test num_components(1) == 1
+@test num_components(VectorValue{3,Float64}) == 3
+@test num_components(VectorValue(1,2,3)) == 3
+@test num_components(TensorValue(1,2,3,4)) == 4
+@test num_components(SymTensorValue(1,2,3)) == 4
+@test num_components(SymFourthOrderTensorValue(1111,1121,1122, 2111,2121,2122, 2211,2221,2222)) == 16
 
 a = VectorValue(1,2,3,4)
 @test change_eltype(a,Float64) == VectorValue{4,Float64}
 
 a = TensorValue(1,2,3,4)
-@test change_eltype(a,Float64) == TensorValue{2,Float64,4}
+@test change_eltype(a,Float64) == TensorValue{2,2,Float64,4}
 
 @test change_eltype(1,Float64) == Float64
 
 a = TensorValue(1,2,3,4)
 @test isa(Tuple(a),Tuple)
-@test Tuple(a) == a.array.data
+@test Tuple(a) == a.data
 
 p = VectorValue(2,3)
 t = diagonal_tensor(p)
@@ -279,5 +306,15 @@ t = diagonal_tensor(p)
 p = VectorValue(1,2,3)
 t = diagonal_tensor(p)
 @test t == TensorValue(1,0,0,0,2,0,0,0,3)
+
+a = SymTensorValue(11,21,22)
+@test change_eltype(a,Float64) == SymTensorValue{2,Float64,3}
+@test isa(Tuple(a),Tuple)
+@test Tuple(a) == a.data
+
+a = SymFourthOrderTensorValue(1111,1121,1122, 2111,2121,2122, 2211,2221,2222)
+@test change_eltype(a,Float64) == SymFourthOrderTensorValue{2,Float64,9}
+@test isa(Tuple(a),Tuple)
+@test Tuple(a) == a.data
 
 end # module TypesTests

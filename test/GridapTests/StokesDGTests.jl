@@ -3,7 +3,7 @@ module StokesDGTests
 using Test
 using Gridap
 import Gridap: ∇
-import LinearAlgebra: tr
+import LinearAlgebra: tr, ⋅
 
 const T = VectorValue{2,Float64}
 
@@ -70,23 +70,23 @@ const ns = get_normal_vector(strian)
 function A_Ω(x,y)
   u, p = x
   v, q = y
-  inner(∇(v), ∇(u)) - ∇(q)*u + v*∇(p)
+  ∇(v)⊙∇(u) - ∇(q)⋅u + v⋅∇(p)
 end
 
 function B_Ω(y)
   v, q = y
-  v*f + q*g
+  v⋅f + q*g
 end
 
 function A_∂Ω(x,y)
   u, p = x
   v, q = y
-  (γ/h)*v*u - v*(nb*∇(u)) - (nb*∇(v))*u + 2*(q*nb)*u
+  (γ/h)*v⋅u - v⋅(nb⋅∇(u)) - (nb⋅∇(v))⋅u + 2*(q*nb)⋅u
 end
 
 function B_∂Ω(y)
   v, q = y
-  (γ/h)*v*u - (nb*∇(v))*u + (q*nb)*u
+  (γ/h)*v⋅u - (nb⋅∇(v))⋅u + (q*nb)⋅u
 end
 
 function A_Γ(x,y)
@@ -95,9 +95,9 @@ function A_Γ(x,y)
   (γ/h)*inner( jump(outer(v,ns)), jump(outer(u,ns))) -
     inner( jump(outer(v,ns)), mean(∇(u)) ) -
     inner( mean(∇(v)), jump(outer(u,ns)) ) +
-    (γ0*h)*jump(q*ns)*jump(p*ns) +
-    jump(q*ns)*mean(u) -
-    mean(v)*jump(p*ns)
+    (γ0*h)*jump(q*ns)⋅jump(p*ns) +
+    jump(q*ns)⋅mean(u) -
+    mean(v)⋅jump(p*ns)
 end
 
 t_Ω = AffineFETerm(A_Ω,B_Ω,trian,quad)
@@ -111,8 +111,8 @@ uh, ph = solve(op)
 eu = u - uh
 ep = p - ph
 
-l2(v) = v*v
-h1(v) = v*v + inner(∇(v),∇(v))
+l2(v) = v⋅v
+h1(v) = v⋅v + inner(∇(v),∇(v))
 
 eu_l2 = sqrt(sum(integrate(l2(eu),trian,quad)))
 eu_h1 = sqrt(sum(integrate(h1(eu),trian,quad)))

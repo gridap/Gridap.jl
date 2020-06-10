@@ -2,7 +2,7 @@ module PeriodicCoupledPoissonTests
 
 using Gridap
 using Test
-
+using LinearAlgebra
 
 u(x) =  x[1]^2 + 2*x[2]^2
 v(x) = -x[2]^2
@@ -52,7 +52,7 @@ eu = u - uh
 ev = v - vh
 
 l2(u) = u*u
-h1(u) = ∇(u)*∇(u) + l2(u)
+h1(u) = ∇(u)⋅∇(u) + l2(u)
 
 eul2 = sqrt(sum( integrate(l2(eu),trian,quad) ))
 euh1 = sqrt(sum( integrate(h1(eu),trian,quad) ))

@@ -33,7 +33,7 @@ f(x) = x[2]
 v = get_cell_basis(V)
 u = get_cell_basis(U)
 
-cellmat = integrate(∇(v)*∇(u),trian,quad)
+cellmat = integrate(∇(v)⊙∇(u),trian,quad)
 cellvec = integrate(v*f,trian,quad)
 cellids = collect(1:num_cells(trian))
 
@@ -64,7 +64,7 @@ dirichlet_tags = "boundary"
 V = GradConformingFESpace(reffes,model,dirichlet_tags)
 U = TrialFESpace(V,u_sol)
 
-a(v,u) = ∇(v)*∇(u)
+a(v,u) = ∇(v)⊙∇(u)
 l(v) = v*f_fun
 
 t_Ω = AffineFETerm(a,l,trian,quad)
@@ -96,7 +96,7 @@ function poisson_matvec_kernel!(mat,vec,∇v,∇u,v,j,w,x)
     f_q = f_fun(x[q])
     for n in 1:N
       for m in 1:M
-        mat[m,n] += ∇v[q,m]*∇u[q,n]*dV
+        mat[m,n] += ∇v[q,m]⊙∇u[q,n]*dV
       end
     end
     for m in 1:M

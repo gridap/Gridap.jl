@@ -82,17 +82,17 @@ uh_in = restrict(uh,trian_in)
 
 uh_Γ = restrict(uh,trian_Γ)
 
-t_in = AffineFETerm( (u,v) -> v*u, (v) -> v*u, trian_in, quad_in)
+t_in = AffineFETerm( (u,v) -> v⊙u, (v) -> v⊙u, trian_in, quad_in)
 op_in = AffineFEOperator(U,V,t_in)
 
 quad = CellQuadrature(trian,2*order)
 
-t_Ω = AffineFETerm( (u,v) -> v*u, (v) -> v*u, trian, quad)
+t_Ω = AffineFETerm( (u,v) -> v⊙u, (v) -> v⊙u, trian, quad)
 op_Ω = AffineFEOperator(U,V,t_Ω)
 
 @test get_vector(op_in) ≈ get_vector(op_Ω)
 
-t_Γ = AffineFETerm( (u,v) -> jump(v)*jump(u) + inner(jump(ε(v)),jump(ε(u))), (v) -> jump(v)*u, trian_Γ, quad_Γ)
+t_Γ = AffineFETerm( (u,v) -> jump(v)⊙jump(u) + jump(ε(v))⊙jump(ε(u)), (v) -> jump(v)⊙u, trian_Γ, quad_Γ)
 op_Γ = AffineFEOperator(U,V,t_Γ)
 
 q_in = get_coordinates(quad_in)

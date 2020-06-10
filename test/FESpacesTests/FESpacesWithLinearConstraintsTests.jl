@@ -6,6 +6,7 @@ using Gridap.Fields
 using Gridap.Geometry
 using Gridap.FESpaces
 using Test
+using LinearAlgebra
 
 domain = (0,1,0,1)
 partition = (2,2)
@@ -66,9 +67,9 @@ bquad = CellQuadrature(btrian,2)
 
 bn = get_normal_vector(btrian)
 
-a(u,v) = ∇(v)*∇(u)
+a(u,v) = ∇(v)⋅∇(u)
 b1(v) = v*f
-b2(v) = v*(bn*∇(u))
+b2(v) = v*(bn⋅∇(u))
 t1 = AffineFETerm(a,b1,trian,quad)
 t2 = FESource(b2,btrian,bquad)
 op = AffineFEOperator(Uc,Vc,t1,t2)

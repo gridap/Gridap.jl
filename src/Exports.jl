@@ -5,6 +5,10 @@ macro publish(mod,name)
   end
 end
 
+# Reexport from LinearAlgebra (just for convenience)
+using LinearAlgebra:  det, inv, tr, cross, dot, norm, ×, ⋅
+export det, inv, tr, cross, dot, norm, ×, ⋅
+
 @publish Helpers operate
 @publish Helpers GridapType
 
@@ -33,6 +37,9 @@ end
 @publish TensorValues inner
 @publish TensorValues outer
 @publish TensorValues diagonal_tensor
+@publish TensorValues num_components
+using Gridap.TensorValues: ⊙; export ⊙
+using Gridap.TensorValues: ⊗; export ⊗
 
 @publish Fields gradient
 @publish Fields ∇

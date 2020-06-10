@@ -158,8 +158,8 @@ end
 
 function (==)(a::ExtrusionPolytope{D},b::ExtrusionPolytope{D}) where D
   #The first axis is irrelevant here
-  ea = Point(a.extrusion.array.data[2:end])
-  eb = Point(b.extrusion.array.data[2:end])
+  ea = Point(Tuple(a.extrusion)[2:end])
+  eb = Point(Tuple(b.extrusion)[2:end])
   ea == eb
 end
 
@@ -202,11 +202,11 @@ function get_face_vertex_permutations(p::ExtrusionPolytope)
 end
 
 function is_simplex(p::ExtrusionPolytope)
-  all(p.extrusion.array .== TET_AXIS)
+  all(Tuple(p.extrusion) .== TET_AXIS)
 end
 
 function is_n_cube(p::ExtrusionPolytope)
-  all(p.extrusion.array .== HEX_AXIS)
+  all(Tuple(p.extrusion) .== HEX_AXIS)
 end
 
 function is_simplex(p::ExtrusionPolytope{0})
@@ -343,7 +343,7 @@ end
 # Generates the array of n-faces of a polytope
 function _polytopenfaces(anchor, extrusion)
 
-  D = n_components(extrusion)
+  D = num_components(extrusion)
   zerop = zero(Point{D,Int})
   nf_nfs = Vector{NFace{D}}(undef,0)
   _nfaceboundary!(anchor, zerop, extrusion, true, nf_nfs)
@@ -389,7 +389,7 @@ end
 # boundary
 function _nfaceboundary!(anchor, extrusion, extend, isanchor, list)
 
-  D = n_components(extrusion)
+  D = num_components(extrusion)
   newext = extend
   push!(list,NFace(anchor,extrusion))
 
@@ -416,7 +416,7 @@ end
 
 function _newext(newext,i)
   m = zero(mutable(newext))
-  D = n_components(newext)
+  D = num_components(newext)
   for j in 1:D
     m[j] = j == i ? 0 : newext[j]
   end
@@ -425,7 +425,7 @@ end
 
 function _edim(newext,i)
   m = zero(mutable(newext))
-  D = n_components(newext)
+  D = num_components(newext)
   for j in 1:D
     m[j] = j == i ? 1 : 0
   end
@@ -434,7 +434,7 @@ end
 
 function _tetp(anchor,i)
   m = zero(mutable(anchor))
-  D = n_components(anchor)
+  D = num_components(anchor)
   for j in 1:D
     m[j] = j >= i ? anchor[j] : 0
   end
@@ -509,7 +509,7 @@ end
 
 function _eliminate_zeros(::Val{d},a) where d
   b = zero(mutable(Point{d,Int}))
-  D = n_components(a)
+  D = num_components(a)
   k = 1
   for i in 1:D
     m = a[i]
@@ -528,7 +528,7 @@ function _vertices_coordinates(::Type{T},p::DFace{D}) where {D,T}
   vcs = zeros(Point{D,T},length(vs))
   for i = 1:length(vs)
     vx = p.nfaces[vs[i]]
-    vc = vx.anchor.array.data
+    vc = Tuple(vx.anchor)
     vcs[i] = vc
   end
   vcs
@@ -587,7 +587,7 @@ function _facet_normal(::Type{T},p::DFace{D}, nf_vs, vs, i_f) where {D,T}
     v = zeros(T,n1,n2)
     for i in 2:length(nf_vs[i_f])
       vi = vs[nf_vs[i_f][i]] - vs[nf_vs[i_f][1]]
-      for d in 1:n_components(vi)
+      for d in 1:num_components(vi)
         v[i-1,d] = vi[d]
       end
     end
@@ -680,9 +680,9 @@ function _admissible_permutations(p::DFace{D}) where D
   if D > 3
     @warn "Computing permutations for a polytope of dim > 3 is overkill"
   end
-  if D in (0,1) || all( p.extrusion.array.data[2:end] .== TET_AXIS )
+  if D in (0,1) || all( Tuple(p.extrusion)[2:end] .== TET_AXIS )
     perms = _admissible_permutations_simplex(p)
-  elseif all( p.extrusion.array.data[2:end] .== HEX_AXIS)
+  elseif all( Tuple(p.extrusion)[2:end] .== HEX_AXIS)
     perms = _admissible_permutations_n_cube(p)
   else
     @notimplemented "admissible vertex permutations only implemented for simplices and n-cubes"

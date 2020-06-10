@@ -35,8 +35,26 @@ for (k,ti) in enumerate(t)
   @test ti == a[k]
 end
 
+s = SymTensorValue{2}(11,21,22)
+t = TensorValue(convert(SMatrix{2,2,Int},s))
+
+@test size(s) == (2,2)
+@test length(s) == 4
+
+for (k,i) in enumerate(eachindex(t))
+    @test s[i] == t[k]
+end
+
+@test s[2,1] == 21
+
+@test s[2] == 21
+
+for (k,si) in enumerate(t)
+  @test si == s[k]
+end
+
 v = @SMatrix zeros(2,3)
-w = MultiValue(v)
+w = TensorValue(v)
 @test CartesianIndices(w) == CartesianIndices(v)
 @test LinearIndices(w) == LinearIndices(v)
 

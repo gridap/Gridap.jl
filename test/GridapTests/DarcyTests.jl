@@ -3,6 +3,7 @@ module DarcyTests
 using Test
 using Gridap
 import Gridap: ∇, divergence
+using LinearAlgebra
 
 u(x) = VectorValue(2*x[1],x[1]+x[2])
 
@@ -48,17 +49,17 @@ nb = get_normal_vector(btrian)
 function a(x,y)
   u, p = x
   v, q = y
-  u*v - p*(∇*v) + q*(∇*u)
+  u⋅v - p*(∇⋅v) + q*(∇⋅u)
 end
 
 function l(y)
   v, q = y
-  v*f + q*(∇*u)
+  v⋅f + q*(∇⋅u)
 end
 
 function l_Γ(y)
   v, q = y
-  -(v*nb)*p
+  -(v⋅nb)*p
 end
 
 t_Ω = AffineFETerm(a,l,trian,quad)
@@ -70,8 +71,8 @@ uh, ph = xh
 eu = u - uh
 ep = p - ph
 
-l2(v) = v*v
-h1(v) = v*v + ∇(v)*∇(v)
+l2(v) = v⋅v
+h1(v) = v*v + ∇(v)⋅∇(v)
 
 eu_l2 = sum(integrate(l2(eu),trian,quad))
 ep_l2 = sum(integrate(l2(ep),trian,quad))

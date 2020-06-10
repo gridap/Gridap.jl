@@ -49,14 +49,24 @@ function laplacian(f)
 end
 
 """
-    ∇*f
+    ∇⋅f
 
 Equivalent to
 
     divergence(f)
 """
-(*)(::typeof(∇),f) = divergence(f)
-(*)(::typeof(∇),f::GridapType) = divergence(f)
+dot(::typeof(∇),f) = divergence(f)
+dot(::typeof(∇),f::GridapType) = divergence(f)
+
+function (*)(::typeof(∇),f)
+  msg = "Syntax ∇*f has been removed, use ∇⋅f (\\nabla \\cdot f) instead"
+  error(msg)
+end
+
+function (*)(::typeof(∇),f::GridapType)
+  msg = "Syntax ∇*f has been removed, use ∇⋅f (\\nabla \\cdot f) instead"
+  error(msg)
+end
 
 """
     outer(∇,f)
@@ -118,11 +128,11 @@ function gradient(f::Function)
 end
 
 function _grad_f(f,x,fx)
-  VectorValue(ForwardDiff.gradient(f,x.array))
+  VectorValue(ForwardDiff.gradient(f,get_array(x)))
 end
 
 function _grad_f(f,x,fx::VectorValue)
-  TensorValue(transpose(ForwardDiff.jacobian(y->f(y).array,x.array)))
+  TensorValue(transpose(ForwardDiff.jacobian(y->get_array(f(y)),get_array(x))))
 end
 
 function _grad_f(f,x,fx::MultiValue)
@@ -130,11 +140,11 @@ function _grad_f(f,x,fx::MultiValue)
 end
 
 function divergence(f::Function)
-  x -> tr(ForwardDiff.jacobian(y->f(y).array,x.array))
+  x -> tr(ForwardDiff.jacobian(y->get_array(f(y)),get_array(x)))
 end
 
 function curl(f::Function)
-  x -> grad2curl(TensorValue(transpose(ForwardDiff.jacobian(y->f(y).array,x.array))))
+  x -> grad2curl(TensorValue(transpose(ForwardDiff.jacobian(y->get_array(f(y)),get_array(x)))))
 end
 
 function laplacian(f::Function)
@@ -144,14 +154,14 @@ function laplacian(f::Function)
 end
 
 function _lapl_f(f,x,fx)
-  tr(ForwardDiff.jacobian(y->ForwardDiff.gradient(f,y), x.array))
+  tr(ForwardDiff.jacobian(y->ForwardDiff.gradient(f,y), get_array(x)))
 end
 
 function _lapl_f(f,x,fx::VectorValue)
   A = length(x)
   B = length(fx)
-  a = ForwardDiff.jacobian(y->transpose(ForwardDiff.jacobian(z->f(z).array,y)), x.array)
-  tr(MultiValue{Tuple{A,A,B}}(Tuple(transpose(a))))
+  a = ForwardDiff.jacobian(y->transpose(ForwardDiff.jacobian(z->get_array(f(z)),y)), get_array(x))
+  tr(ThirdOrderTensorValue{A,A,B}(Tuple(transpose(a))))
 end
 
 function _lapl_f(f,x,fx::MultiValue)

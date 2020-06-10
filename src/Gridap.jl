@@ -36,9 +36,9 @@ include("Io/Io.jl")
 
 include("Algebra/Algebra.jl")
 
-include("TensorValues/TensorValues.jl")
-
 include("Arrays/Arrays.jl")
+
+include("TensorValues/TensorValues.jl")
 
 include("Fields/Fields.jl")
 

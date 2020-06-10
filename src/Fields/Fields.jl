@@ -19,6 +19,7 @@ using Gridap.Arrays: BCasted
 using Gridap.Arrays: NumberOrArray
 using Gridap.Arrays: AppliedArray
 using Gridap.Arrays: Contracted
+using LinearAlgebra: ⋅
 
 using Test
 using DocStringExtensions
@@ -81,6 +82,7 @@ import Gridap.TensorValues: symmetric_part
 import Base: +, - , *
 import LinearAlgebra: cross
 import LinearAlgebra: tr
+import LinearAlgebra: dot
 import Base: transpose
 import Base: adjoint
 

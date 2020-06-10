@@ -49,7 +49,7 @@ end
 function a_Γ(x,y)
   u,p = x
   v,q = y
-  jump(v)*mean(u) + jump(∇(q))*jump(∇(p)) - mean(v)*mean(p)
+  jump(v)*mean(u) + jump(∇(q))⋅jump(∇(p)) - mean(v)*mean(p)
 end
 
 t_Ω = AffineFETerm(a,l,trian,quad)

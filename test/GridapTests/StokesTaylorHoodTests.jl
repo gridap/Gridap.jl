@@ -4,13 +4,13 @@ using Test
 using Gridap
 import Gridap: ∇
 
-using LinearAlgebra: tr
+using LinearAlgebra: tr, ⋅
 
 # Using automatic differentiation
 u(x) = VectorValue( x[1]^2 + 2*x[2]^2, -x[1]^2 )
 p(x) = x[1] + 3*x[2]
 f(x) = -Δ(u)(x) + ∇(p)(x)
-g(x) = (∇*u)(x)
+g(x) = (∇⋅u)(x)
 ∇u(x) = ∇(u)(x)
 
 #u(x) = VectorValue( x[1]^2 + 2*x[2]^2, -x[1]^2 )
@@ -75,17 +75,17 @@ for ref_st in ref_style
   function a(x,y)
     u,p = x
     v,q = y
-    inner(∇(v),∇(u)) - (∇*v)*p + q*(∇*u)
+    ∇(v)⊙∇(u) - (∇⋅v)*p + q*(∇⋅u)
   end
 
   function l(y)
     v,q = y
-    v*f + q*g
+    v⋅f + q*g
   end
 
   function l_Γb(y)
     v,q = y
-    v*(n*∇u) - (n*v)*p
+    v⋅(n⋅∇u) - (n⋅v)*p
   end
 
   t_Ω = AffineFETerm(a,l,trian,quad)
@@ -98,8 +98,8 @@ for ref_st in ref_style
   eu = u - uh
   ep = p - ph
 
-  l2(v) = v*v
-  h1(v) = v*v + inner(∇(v),∇(v))
+  l2(v) = v⋅v
+  h1(v) = v⋅v + ∇(v)⊙∇(v)
 
   eu_l2 = sqrt(sum(integrate(l2(eu),trian,quad)))
   eu_h1 = sqrt(sum(integrate(h1(eu),trian,quad)))
