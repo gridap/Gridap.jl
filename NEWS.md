@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+  - Added `⊙` (\odot) as an alias of `inner`. Since PR [#239](https://github.com/gridap/Gridap.jl/pull/239).
+  - Added `⊗` (\otimes) as an alias of `outer`. Since PR [#239](https://github.com/gridap/Gridap.jl/pull/239).
+
+### Changed
+
+  - Major refactoring in the module `Gridap.TensorValues`.
+  Since PR [#239](https://github.com/gridap/Gridap.jl/pull/239).
+   **The following changes are likely to affect all users:**
+    - The operator `*` is not allowed for expressing the dot product anymore. Use `LinearAlgebra.dot`
+  function aka `⋅` (\cdot).
+    - The syntax `∇*u` is not allowed anymore.  Use `∇⋅u` instead.
+    - Gridap re-exports `dot`, `⋅`, and other names from LinearAlbegra that are used 
+  often in Gridap code. 
+    - Function `n_components` is renamed to `num_components`.
+
 ## [0.10.4] - 2020-6-8
 
 ### Added
