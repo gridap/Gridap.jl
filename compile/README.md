@@ -28,7 +28,7 @@ or run an interactive Julia session as:
 $ julia -J Gridapv0.10.4.so
 ```
 
-### Known issues, TO-DO, misc learn lessons, etc.
+### Known issues, TO-DO, misc learned lessons, etc.
 
 1. **The sysimage works and is useful when `Gridap.jl` is being used but not being modified**, e.g., while developing `GridapDistributed.jl` or `GridapODEs.jl`. If you want to develop `Gridap.jl`, use [`Revise.jl`](https://github.com/gridap/Gridap.jl/wiki/REPL-based-workflow#editing-small-parts-of-the-project).  
 
