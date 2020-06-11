@@ -47,10 +47,9 @@ end
 
 """
 """
-function gather_free_and_dirichlet_values(f::SingleFieldFESpace,cell_vals)
+function gather_free_and_dirichlet_values!(free_values, dirichlet_values,fs::SingleFieldFESpace,cell_vals)
   @abstractmethod
 end
-
 
 """
 """
@@ -64,6 +63,7 @@ function test_single_field_fe_space(f::SingleFieldFESpace,pred=(==))
   free_values = zero_free_values(f)
   cell_vals = scatter_free_and_dirichlet_values(f,free_values,dirichlet_values)
   fv, dv = gather_free_and_dirichlet_values(f,cell_vals)
+  gather_free_and_dirichlet_values!(fv,dv,f,cell_vals)
   @test pred(fv,free_values)
   @test pred(dv,dirichlet_values)
   fe_function = FEFunction(f,free_values,dirichlet_values)
@@ -239,16 +239,42 @@ end
 
 """
 """
+function gather_free_and_dirichlet_values(f::SingleFieldFESpace,cell_vals)
+  free_values = zero_free_values(f)
+  dirichlet_values = zero_dirichlet_values(f)
+  gather_free_and_dirichlet_values!(free_values,dirichlet_values,f,cell_vals)
+end
+
+"""
+"""
 function gather_dirichlet_values(f::SingleFieldFESpace,cell_vals)
-  _, dirichlet_values = gather_free_and_dirichlet_values(f,cell_vals)
+  dirichlet_values = zero_dirichlet_values(f)
+  gather_dirichlet_values!(dirichlet_values,f,cell_vals)
   dirichlet_values
 end
 
 """
 """
 function gather_free_values(f::SingleFieldFESpace,cell_vals)
-  free_values, _ = gather_free_and_dirichlet_values(f,cell_vals)
+  free_values = zero_free_values(f)
+  gather_free_values!(free_values,f,cell_vals)
   free_values
+end
+
+"""
+"""
+function gather_dirichlet_values!(dirichlet_values,f::SingleFieldFESpace,cell_vals)
+  free_values = zero_free_values(f)
+  gather_free_and_dirichlet_values!(free_values,dirichlet_values,f,cell_vals)
+  dirichlet_values
+end
+
+"""
+"""
+function gather_free_values!(free_values,f::SingleFieldFESpace,cell_vals)
+    dirichlet_values = zero_dirichlet_values(f)
+    gather_free_and_dirichlet_values!(free_values,dirichlet_values,f,cell_vals)
+    free_values
 end
 
 """
@@ -256,9 +282,16 @@ The resulting FE function is in the space (in particular it fulfills Dirichlet B
 even in the case that the given cell field does not fulfill them)
 """
 function interpolate(fs::SingleFieldFESpace,object)
-  cell_vals = _cell_vals(fs,object)
-  free_values = gather_free_values(fs,cell_vals)
-  FEFunction(fs,free_values)
+  free_values = zero_free_values(fs)
+  interpolate!(free_values,fs,object)
+end
+
+"""
+"""
+function interpolate!(free_values,fs::SingleFieldFESpace,object)
+    cell_vals = _cell_vals(fs,object)
+    gather_free_values!(free_values,fs,cell_vals)
+    FEFunction(fs,free_values)
 end
 
 function _cell_vals(fs::SingleFieldFESpace,object)
@@ -273,16 +306,32 @@ like interpolate, but also compute new degrees of freedom for the dirichlet comp
 The resulting FEFunction does not necessary belongs to the underlying space
 """
 function interpolate_everywhere(fs::SingleFieldFESpace,object)
+  free_values = zero_free_values(fs)
+  dirichlet_values = zero_dirichlet_values(fs)
+  interpolate_everywhere!(free_values,dirichlet_values,fs,object)
+end
+
+"""
+"""
+function interpolate_everywhere!(free_values,dirichlet_values,fs::SingleFieldFESpace,object)
   cell_vals = _cell_vals(fs,object)
-  free_values, dirichlet_values = gather_free_and_dirichlet_values(fs,cell_vals)
+  gather_free_and_dirichlet_values!(free_values,dirichlet_values,fs,cell_vals)
   FEFunction(fs,free_values,dirichlet_values)
 end
 
 """
 """
 function interpolate_dirichlet(fs::SingleFieldFESpace,object)
+  free_values = zero_free_values(fs)
+  dirichlet_values = zero_dirichlet_values(fs)
+  interpolate_dirichlet!(free_values,dirichlet_values,fs,object)
+end
+
+"""
+"""
+function interpolate_dirichlet!(free_values,dirichlet_values,fs::SingleFieldFESpace,object)
   cell_vals = _cell_vals(fs,object)
-  dirichlet_values = gather_dirichlet_values(fs,cell_vals)
+  gather_dirichlet_values!(dirichlet_values,fs,cell_vals)
   free_values = zero_free_values(fs)
   FEFunction(fs,free_values, dirichlet_values)
 end

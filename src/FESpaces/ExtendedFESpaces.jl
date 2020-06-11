@@ -225,9 +225,9 @@ function scatter_free_and_dirichlet_values(f::ExtendedFESpace,fv,dv)
     f.trian.cell_to_oldcell)
 end
 
-function gather_free_and_dirichlet_values(f::ExtendedFESpace,cv)
+function gather_free_and_dirichlet_values!(fv,dv,f::ExtendedFESpace,cv)
   _cv = reindex(cv,f.trian.cell_to_oldcell)
-  gather_free_and_dirichlet_values(f.space,_cv)
+  gather_free_and_dirichlet_values!(fv,dv,f.space,_cv)
 end
 
 # Delegated functions
