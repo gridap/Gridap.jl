@@ -263,6 +263,17 @@ c = outer(e,k)
 
 @test tr(c) == VectorValue(50,110)
 
+# Cross product
+
+a = VectorValue(1,2,3)
+b = VectorValue(3,1,6)
+c = VectorValue(9,3,-5)
+@test a × b == c
+
+a = VectorValue(2,3)
+b = VectorValue(5,2)
+@test a × b == -11
+
 # Linear Algebra
 
 t = TensorValue(10,2,30,4,5,6,70,8,9)
