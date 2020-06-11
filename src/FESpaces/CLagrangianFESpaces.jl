@@ -75,8 +75,8 @@ function gather_free_and_dirichlet_values!(free_values,dirichlet_values,f::CLagr
   gather_free_and_dirichlet_values!(free_values,dirichlet_values,f.space,cell_vals)
 end
 
-function gather_dirichlet_values(f::CLagrangianFESpace,cell_vals)
-    gather_dirichlet_values(f.space,cell_vals)
+function gather_dirichlet_values!(dirichlet_vals,f::CLagrangianFESpace,cell_vals)
+    gather_dirichlet_values!(dirichlet_vals,f.space,cell_vals)
 end
 
 # Helpers
