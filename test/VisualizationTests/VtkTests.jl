@@ -67,7 +67,14 @@ writevtk(trian,f,nsubcells=5,celldata=["rnd"=>rand(num_cells(trian))])
 fun(x) = sin(4*x[1]*pi)*cos(5*x[2]*pi)
 cf = compose(fun, get_cell_map(trian))
 
-writevtk(trian,f,nsubcells=10, cellfields=["cf" => cf])
+writevtk(trian,f,nsubcells=10, cellfields=[
+  "cf"=>cf,
+  "a"=>x->1,
+  "v2"=>x->VectorValue(1,2),
+  "v"=>x->VectorValue(1,2,3),
+  "s"=>x->SymTensorValue(1.0,2.0,3.0),
+  "c"=>x->SymFourthOrderTensorValue(1,2,3, 1,2,3, 1,2,3),
+  "t"=>x->TensorValue(1,2,3,4),])
 
 trian = GridMock()
 

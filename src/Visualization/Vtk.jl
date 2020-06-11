@@ -191,9 +191,9 @@ end
 
 _prepare_data(v) = v
 
-function _prepare_data(v::AbstractArray{<:VectorValue{D,T}}) where {D,T}
+function _prepare_data(v::AbstractArray{<:MultiValue})
   a = collect(v)
-  reshape(reinterpret(T,a),(D,length(a)))
+  reinterpret(a)
 end
 
 function _prepare_data(v::AbstractArray{<:VectorValue{2,T}}) where T
@@ -201,11 +201,6 @@ function _prepare_data(v::AbstractArray{<:VectorValue{2,T}}) where T
   b = reshape(reinterpret(T,a),(2,length(a)))
   z = zeros((1,size(b,2)))
   vcat(b,z)
-end
-
-function _prepare_data(v::AbstractArray{<:TensorValue{D,T}}) where {D,T}
-  a = collect(v)
-  reshape(reinterpret(T,a),(D*D,length(a)))
 end
 
 """
