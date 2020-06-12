@@ -54,15 +54,23 @@ function scatter_free_and_dirichlet_values(
  scatter_free_and_dirichlet_values(f.space,_fv,_dv)
 end
 
-function gather_free_and_dirichlet_values!(
-  fv,dv,f::FESpaceWithLastDofRemoved,cv)
-  _fv = zero_free_values(f.space)
-  _dv = zero_dirichlet_values(f.space)
-  gather_free_and_dirichlet_values!(_fv,_dv,f.space,cv)
+function gather_free_and_dirichlet_values(
+  f::FESpaceWithLastDofRemoved,cv)
+  _fv, _dv = gather_free_and_dirichlet_values(f.space,cv)
   @assert length(_dv) == 0
   l = length(_fv)
   fv = SubVector(_fv,1,l-1)
   dv = SubVector(_fv,l,l)
+  (fv, dv)
+end
+
+function gather_free_and_dirichlet_values!(
+  fv,dv,f::FESpaceWithLastDofRemoved,cv)
+  _fv , _dv = gather_free_and_dirichlet_values(f.space,cv)
+  @assert length(_dv) == 0
+  l = length(_fv)
+  fv .= SubVector(_fv,1,l-1)
+  dv .= SubVector(_fv,l,l)
   (fv, dv)
 end
 

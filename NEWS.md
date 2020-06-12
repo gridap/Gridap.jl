@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Operator `⊗` (\otimes) as an alias of `outer`. Since PR [#239](https://github.com/gridap/Gridap.jl/pull/239).
   - Support for (symmetric) 4th order tensors. Since PR [#239](https://github.com/gridap/Gridap.jl/pull/239).
   - Optimizations for symmetric 2nd order tensors. Since PR [#239](https://github.com/gridap/Gridap.jl/pull/239).
+  - Interpolation is now supported also for multifield spaces. Since PR [#279](https://github.com/gridap/Gridap.jl/pull/279).
 
 ### Changed
 
@@ -24,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Gridap re-exports `dot`, `⋅`, and other names from LinearAlbegra that are used 
   often in Gridap code. 
     - Function `n_components` is renamed to `num_components`.
+    - The `SingleFieldFESpace` interface has changed. The function `gather_free_and_dirichlet_values!` 
+  has been added as mandatory for all FE space implementations and the old function `gather_free_and_dirichlet_values` 
+  is now optional.
 
 ## [0.10.4] - 2020-6-8
 

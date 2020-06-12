@@ -404,10 +404,23 @@ function _setup_dof_to_val!(
 
 end
 
+function gather_free_and_dirichlet_values(f::FESpaceWithLinearConstraints,cell_to_ludof_to_val)
+  fdof_to_val, ddof_to_val = gather_free_and_dirichlet_values(f.space,cell_to_ludof_to_val)
+  fmdof_to_val = zero_free_values(f)
+  dmdof_to_val = zero_dirichlet_values(f)
+  _setup_mdof_to_val!(
+    fmdof_to_val,
+    dmdof_to_val,
+    fdof_to_val,
+    ddof_to_val,
+    f.mDOF_to_DOF,
+    f.n_fdofs,
+    f.n_fmdofs)
+  fmdof_to_val, dmdof_to_val
+end
+
 function gather_free_and_dirichlet_values!(fmdof_to_val,dmdof_to_val,f::FESpaceWithLinearConstraints,cell_to_ludof_to_val)
-  fdof_to_val = zero_free_values(f.space)
-  ddof_to_val = zero_dirichlet_values(f.space)
-  gather_free_and_dirichlet_values!(fdof_to_val, ddof_to_val,f.space,cell_to_ludof_to_val)
+  fdof_to_val, ddof_to_val = gather_free_and_dirichlet_values(f.space,cell_to_ludof_to_val)
   _setup_mdof_to_val!(
     fmdof_to_val,
     dmdof_to_val,
