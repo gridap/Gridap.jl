@@ -264,13 +264,12 @@ const ⊗ = outer
 # Cross Product
 ###############################################################
 
-@generated function cross(a::MultiValue{Tuple{3}}, b::MultiValue{Tuple{3}})
-  str = "a[2]b[3]-a[3]b[2], a[3]b[1]-a[1]b[3], a[1]b[2]-a[2]b[1]"
-  Meta.parse("VectorValue{3}($str)")
+function cross(a::MultiValue{Tuple{3}}, b::MultiValue{Tuple{3}})
+  VectorValue{3}(a[2]b[3]-a[3]b[2], a[3]b[1]-a[1]b[3], a[1]b[2]-a[2]b[1])
 end
 
-@generated function cross(a::MultiValue{Tuple{2}}, b::MultiValue{Tuple{2}})
-  Meta.parse("a[1]b[2]-a[2]b[1]")
+function cross(a::MultiValue{Tuple{2}}, b::MultiValue{Tuple{2}})
+  a[1]b[2]-a[2]b[1]
 end
 
 cross(a::MultiValue,b::MultiValue) = error("Cross product only defined for R2 and R3 vectors")
