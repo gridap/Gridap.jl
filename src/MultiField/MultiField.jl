@@ -23,6 +23,9 @@ using Gridap.Arrays: IdentityVector
 using Gridap.FESpaces: _operate_cell_basis
 using Gridap.FESpaces: _operate_cell_matrix_field
 using Gridap.FESpaces: SkeletonCellBasis
+using Gridap.FESpaces: interpolate!
+using Gridap.FESpaces: interpolate_everywhere!
+using Gridap.FESpaces: interpolate_dirichlet!
 
 import Gridap.Helpers: operate
 import Gridap.Arrays: get_array
@@ -86,6 +89,9 @@ import Gridap.FESpaces: fill_matrix_coo_numeric!
 import Gridap.FESpaces: fill_matrix_and_vector_coo_numeric!
 import Gridap.FESpaces: count_matrix_and_vector_nnz_coo
 import Gridap.FESpaces: fill_matrix_and_vector_coo_symbolic!
+import Gridap.FESpaces: interpolate
+import Gridap.FESpaces: interpolate_everywhere
+import Gridap.FESpaces: interpolate_dirichlet
 
 import Base: +, -
 

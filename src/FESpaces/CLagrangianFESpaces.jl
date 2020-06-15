@@ -71,12 +71,12 @@ function scatter_free_and_dirichlet_values(f::CLagrangianFESpace,free_values,dir
   scatter_free_and_dirichlet_values(f.space,free_values,dirichlet_values)
 end
 
-function gather_free_and_dirichlet_values(f::CLagrangianFESpace,cell_vals)
-  gather_free_and_dirichlet_values(f.space,cell_vals)
+function gather_free_and_dirichlet_values!(free_values,dirichlet_values,f::CLagrangianFESpace,cell_vals)
+  gather_free_and_dirichlet_values!(free_values,dirichlet_values,f.space,cell_vals)
 end
 
-function gather_dirichlet_values(f::CLagrangianFESpace,cell_vals)
-  gather_dirichlet_values(f.space,cell_vals)
+function gather_dirichlet_values!(dirichlet_vals,f::CLagrangianFESpace,cell_vals)
+    gather_dirichlet_values!(dirichlet_vals,f.space,cell_vals)
 end
 
 # Helpers

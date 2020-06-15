@@ -141,11 +141,14 @@ export num_dirichlet_dofs
 export get_cell_dofs
 export zero_dirichlet_values
 export gather_free_and_dirichlet_values
+export gather_free_and_dirichlet_values!
 export scatter_free_and_dirichlet_values
 export get_dirichlet_values
 export gather_dirichlet_values
+export gather_dirichlet_values!
 export num_dirichlet_tags
 export gather_free_values
+export gather_free_values!
 export get_dirichlet_dof_tag
 export compute_free_and_dirichlet_values
 export compute_dirichlet_values

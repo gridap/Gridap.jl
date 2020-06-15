@@ -89,13 +89,11 @@ function scatter_free_and_dirichlet_values(f::UnconstrainedFESpace,free_values,d
   LocalToGlobalPosNegArray(cell_dofs,free_values,dirichlet_values)
 end
 
-function gather_free_and_dirichlet_values(f::UnconstrainedFESpace,cell_vals)
+function gather_free_and_dirichlet_values!(free_vals,dirichlet_vals,f::UnconstrainedFESpace,cell_vals)
 
   cell_dofs = get_cell_dofs(f)
   cache_vals = array_cache(cell_vals)
   cache_dofs = array_cache(cell_dofs)
-  free_vals = zero_free_values(f)
-  dirichlet_vals = zero_dirichlet_values(f)
   cells = 1:length(cell_vals)
 
   _free_and_dirichlet_values_fill!(
@@ -107,16 +105,15 @@ function gather_free_and_dirichlet_values(f::UnconstrainedFESpace,cell_vals)
     cell_dofs,
     cells)
 
-  (free_vals, dirichlet_vals)
+  (free_vals,dirichlet_vals)
 end
 
-function gather_dirichlet_values(f::UnconstrainedFESpace,cell_vals)
+function gather_dirichlet_values!(dirichlet_vals,f::UnconstrainedFESpace,cell_vals)
 
   cell_dofs = get_cell_dofs(f)
   cache_vals = array_cache(cell_vals)
   cache_dofs = array_cache(cell_dofs)
   free_vals = zero_free_values(f)
-  dirichlet_vals = zero_dirichlet_values(f)
   cells = f.dirichlet_cells
 
   _free_and_dirichlet_values_fill!(
