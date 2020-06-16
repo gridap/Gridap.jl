@@ -132,4 +132,14 @@ V = TestFESpace(triangulation=trian,valuetype=Float64,reffe=:Lagrangian,order=2,
 #writevtk(trian,"trian",cellfields=["uh"=>uh])
 #writevtk(trian_in,"trian_in",cellfields=["uh"=>uh_in])
 
+V_in = TestFESpace(model=model_in,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:H1)
+V = TestFESpace(model=model,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:H1)
+
+vh_in = interpolate(V_in,x->x[1])
+vh_in = interpolate(V_in,vh_in)
+vh = interpolate(V,vh_in)
+
+#using Gridap.Visualization
+#writevtk(trian,"trian",cellfields=["vh"=>vh,"vh_in"=>vh_in])
+
 end # module
