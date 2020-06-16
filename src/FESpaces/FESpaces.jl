@@ -40,6 +40,7 @@ import Gridap.Arrays: apply_kernel!
 import Gridap.Arrays: kernel_return_type
 import Gridap.Arrays: apply_kernel_for_cache!
 import Gridap.Arrays: reindex
+import Gridap.Arrays: apply
 import Gridap.Geometry: get_cell_map
 import Gridap.Geometry: get_cell_shapefuns
 import Gridap.Geometry: get_reffes
@@ -57,6 +58,7 @@ import Gridap.Fields: evaluate
 import Gridap.Fields: gradient
 import Gridap.Fields: grad2curl
 import Gridap.Fields: evaluate_field_array
+import Gridap.ReferenceFEs: evaluate_dof_array
 import Gridap.Fields: field_cache
 import Gridap.Fields: evaluate_field!
 import Gridap.Fields: field_gradient

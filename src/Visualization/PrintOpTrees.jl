@@ -85,3 +85,9 @@ function get_children(n::TreeNode, a::Arrays.Table)
   (similar_tree_node(n,a.data),similar_tree_node(n,a.ptrs))
 end
 
+function get_children(n::TreeNode, a::FESpaces.ExtendedVector)
+ (
+  similar_tree_node(n,a.void_to_val),
+  similar_tree_node(n,a.cell_to_val)
+ )
+end
