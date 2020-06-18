@@ -45,7 +45,15 @@ x0 = zeros(length(x))
 op = AffineOperator(A,b)
 @test jacobian(op,x) === op.matrix
 
-solve!(x0,nls,op)
+cache = solve!(x0,nls,op)
 test_nonlinear_solver(nls,op,x0,x)
+
+x1 = copy(x0)
+cache = solve!(x1,nls,op,cache)
+@test all(x1 .≈ x0)
+
+op = AffineOperator(A,2*b)
+solve!(x1,nls,op,cache)
+@test all(x1 .≈ 2*x0)
 
 end # module
