@@ -24,7 +24,7 @@ Build a table from the given data and pointers. If the arguments are not of
 type `Vector`, they will be converted.
 """
 function Table(data::AbstractVector{T},ptrs::AbstractVector{P}) where {T,P}
-  Table{Vector{T}(data),Vector{P}(ptrs)}
+  Table(Vector{T}(data),Vector{P}(ptrs))
 end
 
 """
@@ -446,4 +446,3 @@ end
 function Base.copy(a::Table)
   Table(copy(a.data),copy(a.ptrs))
 end
-
