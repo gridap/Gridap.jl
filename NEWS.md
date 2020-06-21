@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-  - Bug in outer constructor of Table{...} for input arrays of abstract type. Fixed via PR [#XXX](https://github.com/gridap/Gridap.jl/pull/XXX).
+  - Bug in outer constructor of Table{...} for input arrays of abstract type. Fixed via PR [#285](https://github.com/gridap/Gridap.jl/pull/285).
 
 ## [0.11.1] - 2020-6-19
 
