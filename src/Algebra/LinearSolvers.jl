@@ -212,6 +212,11 @@ function solve!(
   cache
 end
 
+function solve!(
+  x::AbstractVector,ls::LinearSolver,op::AffineOperator,cache::Nothing,newmatrix::Bool)
+  solve!(x,ls,op)
+end
+
 # Concrete implementations
 
 """
