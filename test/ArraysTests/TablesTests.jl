@@ -4,6 +4,7 @@ using Test
 using Gridap.Arrays
 using Gridap.Io
 using JSON
+using FillArrays
 
 data = Float64[2,3,1,3,6,7,3,2,5,6,3,4]
 ptrs = [1,4,4,7,13]
@@ -13,6 +14,13 @@ test_array(a,b)
 
 c = convert(Table{Float64,Int32},a)
 test_array(c,b)
+
+data = Fill(1.3,12)
+ptrs = [1,4,4,7,13]
+d = Table(data,ptrs)
+e = [ data[ptrs[i]:ptrs[i+1]-1] for i in 1:length(ptrs)-1]
+test_array(d,e)
+
 
 vv = Array{Array{Int,2},2}(undef,2,2)
 vv[1,1] = rand(1:10,2,2)
