@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+  - Method `solve!(x,ls,op::AffineOperator,cache::Nothing,newmatrix)`. Since PR [#288](https://github.com/gridap/Gridap.jl/pull/288).
+
 ### Fixed
 
+  - Bug related with `WriteVTK` version 1.7. Fixed via PR [#287](https://github.com/gridap/Gridap.jl/pull/287).
   - Bug in outer constructor of Table{...} for input arrays of abstract type. Fixed via PR [#285](https://github.com/gridap/Gridap.jl/pull/285).
 
 ## [0.11.1] - 2020-6-19
