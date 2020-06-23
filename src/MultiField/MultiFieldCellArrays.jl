@@ -108,7 +108,7 @@ end
 
 function operate(op,a::BlockTracker,b::BlockTracker)
   msg = "Operation $op not yet implemented in this context"
-  @notimplementedif !( op  in (*,inner) ) msg
+  @notimplementedif !( op  in (*,inner,dot) ) msg
   new_blocks = []
   new_block_ids = NTuple{2,Int}[]
   for i in 1:length(a.blocks)
