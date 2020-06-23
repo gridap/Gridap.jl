@@ -18,6 +18,7 @@ using FillArrays
 using SparseArrays
 import LinearAlgebra: mul!
 using LinearAlgebra: Transpose
+using LinearAlgebra: dot
 
 using Gridap.Arrays: IdentityVector
 using Gridap.FESpaces: _operate_cell_basis
