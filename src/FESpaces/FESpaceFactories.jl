@@ -120,7 +120,7 @@ function _setup_hdiv_space(kwargs)
   reffes = [RaviartThomasRefFE(T,p,order) for p in polytopes]
 
   if conformity in [true, :default, :HDiv, :Hdiv]
-      V =  DivConformingFESpace(reffes,model,labels,diritags,is_ref)
+      V =  ConformingFESpace(reffes,model,labels,diritags,nothing,is_ref)
   else
     s = "Conformity $conformity not implemented for $reffe reference FE on polytopes $(polytopes...)"
     @unreachable s
@@ -151,7 +151,7 @@ function _setup_hcurl_space(kwargs)
   reffes = [NedelecRefFE(T,p,order) for p in polytopes]
 
   if conformity in [true, :default, :HCurl, :Hcurl]
-      V =  CurlConformingFESpace(reffes,model,labels,diritags,is_ref)
+      V =  ConformingFESpace(reffes,model,labels,diritags,nothing,is_ref)
   else
     s = "Conformity $conformity not implemented for $reffe reference FE on polytopes $(polytopes...)"
     @unreachable s
@@ -210,6 +210,8 @@ function _setup_lagrange_spaces(kwargs)
     else
       if reffe == :PLagrangian
         _reffes = [PDiscRefFE(T,p,order) for p in polytopes]
+      elseif reffe == :QLagrangian
+        _reffes = [QDiscRefFE(T,p,order) for p in polytopes]
       else
         @unreachable "Not possible to use a $reffe reffe on polytopoes $(polytopes...)"
       end
@@ -236,7 +238,7 @@ function _setup_lagrange_spaces(kwargs)
     if labels == nothing
       return GradConformingFESpace(_reffes,model,diritags,dirimasks,is_ref)
     else
-      return GradConformingFESpace(_reffes,model,labels,diritags,dirimasks,is_ref)
+      return ConformingFESpace(_reffes,model,labels,diritags,dirimasks,is_ref)
     end
 
   else

@@ -227,8 +227,7 @@ export collect_cell_residual
 export FESpaceWithLastDofRemoved
 export ZeroMeanFESpace
 export CLagrangianFESpace
-export DivConformingFESpace
-export CurlConformingFESpace
+export ConformingFESpace
 export DirichletFESpace
 export FESpaceWithLinearConstraints
 export ExtendedFESpace
@@ -271,10 +270,6 @@ include("SparseMatrixAssemblers.jl")
 include("UnconstrainedFESpaces.jl")
 
 include("ConformingFESpaces.jl")
-
-include("DivConformingFESpaces.jl")
-
-include("CurlConformingFESpaces.jl")
 
 include("DiscontinuousFESpaces.jl")
 
