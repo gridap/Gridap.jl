@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2020-06-26
+
+### New
+
+  - New `ConformingFESpace` constructor
+  - Added `QDiscRefFE` constructor for `DiscRefFE`
+
+### Changed
+  - Renamed `PDiscRefFE` -> `DiscRefFE` struct keeping the name for constructor
+  - One of the `GradConformingFESpace` methods now more general `ConformingFESpace`
+  - `DivConformingFESpace` and `CurlConformingFESpace` constructors eliminated
+
+
 ## [0.11.2] - 2020-6-22
 
 ### Added
@@ -20,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
   - Bug in the handling of caches in `NLSolver`. Fixed via PR [#283](https://github.com/gridap/Gridap.jl/pull/283).
-  - Bug that showed up when interpolating a FE function defined on an 
+  - Bug that showed up when interpolating a FE function defined on an
   `ExtendedFESpace` onto a non-extended `FESpace`. Fixed via PR [#282](https://github.com/gridap/Gridap.jl/pull/282).
 
 ## [0.11.0] - 2020-6-16
@@ -42,11 +55,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - The operator `*` is not allowed for expressing the dot product anymore. Use `LinearAlgebra.dot`
   function aka `⋅` (\cdot).
     - The syntax `∇*u` is not allowed anymore.  Use `∇⋅u` instead.
-    - Gridap re-exports `dot`, `⋅`, and other names from LinearAlbegra that are used 
-  often in Gridap code. 
+    - Gridap re-exports `dot`, `⋅`, and other names from LinearAlbegra that are used
+  often in Gridap code.
     - Function `n_components` is renamed to `num_components`.
-  - The `SingleFieldFESpace` interface has changed. The function `gather_free_and_dirichlet_values!` 
-  has been added as mandatory for all FE space implementations and the old function `gather_free_and_dirichlet_values` 
+  - The `SingleFieldFESpace` interface has changed. The function `gather_free_and_dirichlet_values!`
+  has been added as mandatory for all FE space implementations and the old function `gather_free_and_dirichlet_values`
   is now optional. Since PR [#279](https://github.com/gridap/Gridap.jl/pull/279).
 
 ## [0.10.4] - 2020-6-8
@@ -66,7 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Deprecated
  - Optional argument `map` for CartesianDescriptor converted to a key-word argument. Since PR [#266](https://github.com/gridap/Gridap.jl/pull/266).
- 
+
 ### Fixed
  - Fixed some methods of the `sparsecsr` generic function. Since PR [#262](https://github.com/gridap/Gridap.jl/pull/262).
  - Fixed BUG in `findnz` function for `SparseMatrixCSR`. Since PR [#264](https://github.com/gridap/Gridap.jl/pull/264).

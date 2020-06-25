@@ -143,7 +143,9 @@ export TET4
 export HEX8
 
 export SerendipityRefFE
+export DiscRefFE
 export PDiscRefFE
+export QDiscRefFE
 export RaviartThomasRefFE
 export NedelecRefFE
 
@@ -165,7 +167,7 @@ include("LagrangianRefFEs.jl")
 
 include("SerendipityRefFEs.jl")
 
-include("PDiscRefFEs.jl")
+include("DiscRefFEs.jl")
 
 include("RaviartThomasRefFEs.jl")
 

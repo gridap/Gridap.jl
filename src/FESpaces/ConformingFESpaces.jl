@@ -1,3 +1,40 @@
+"""
+"""
+function ConformingFESpace(
+  reffes::Vector{<:ReferenceFE},
+  model::DiscreteModel,
+  face_labeling::FaceLabeling,
+  dirichlet_tags,
+  dirichlet_components=nothing,
+  is_ref=true)
+
+  grid_topology = get_grid_topology(model)
+
+  _dirichlet_components = _convert_dirichlet_components(dirichlet_tags,dirichlet_components)
+
+  cell_dofs, nfree, ndirichlet, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
+    reffes,grid_topology,face_labeling,dirichlet_tags,_dirichlet_components)
+
+  ntags = length(dirichlet_tags)
+
+  grid = get_grid(model)
+  cell_to_ctype = get_cell_type(grid_topology)
+  cell_map = get_cell_map(grid)
+
+  cell_shapefuns, cell_dof_basis = compute_cell_space(reffes, cell_to_ctype, cell_map, Val(is_ref))
+
+  UnconstrainedFESpace(
+    nfree,
+    ndirichlet,
+    cell_dofs,
+    cell_shapefuns,
+    cell_dof_basis,
+    cell_map,
+    dirichlet_dof_tag,
+    dirichlet_cells,
+    ntags)
+
+end
 
 """
 """
@@ -10,7 +47,7 @@ function GradConformingFESpace(
 
   face_labeling = get_face_labeling(model)
 
-  GradConformingFESpace(
+  ConformingFESpace(
     reffes,model,face_labeling,dirichlet_tags,dirichlet_components,is_ref)
 
 end
@@ -43,46 +80,8 @@ function GradConformingFESpace(
 
   reffes = [ LagrangianRefFE(T,p,order) for p in polytopes ]
 
-  GradConformingFESpace(
+  ConformingFESpace(
     reffes,model,face_labeling,dirichlet_tags,dirichlet_components,is_ref)
-
-end
-
-"""
-"""
-function GradConformingFESpace(
-  reffes::Vector{<:LagrangianRefFE},
-  model::DiscreteModel,
-  face_labeling::FaceLabeling,
-  dirichlet_tags,
-  dirichlet_components=nothing,
-  is_ref=true)
-
-  grid_topology = get_grid_topology(model)
-
-  _dirichlet_components = _convert_dirichlet_components(dirichlet_tags,dirichlet_components)
-
-  cell_dofs, nfree, ndirichlet, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
-    reffes,grid_topology,face_labeling,dirichlet_tags,_dirichlet_components)
-
-  ntags = length(dirichlet_tags)
-
-  grid = get_grid(model)
-  cell_to_ctype = get_cell_type(grid_topology)
-  cell_map = get_cell_map(grid)
-
-  cell_shapefuns, cell_dof_basis = compute_cell_space(reffes, cell_to_ctype, cell_map, Val(is_ref))
-
-  UnconstrainedFESpace(
-    nfree,
-    ndirichlet,
-    cell_dofs,
-    cell_shapefuns,
-    cell_dof_basis,
-    cell_map,
-    dirichlet_dof_tag,
-    dirichlet_cells,
-    ntags)
 
 end
 
