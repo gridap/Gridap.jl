@@ -13,6 +13,11 @@ partition = (3,3)
 model = CartesianDiscreteModel(domain,partition)
 order = 3
 
+T = VectorValue{2,Float64}
+reffe = QDiscRefFE(T,QUAD,2)
+V = FESpace(model=model,reffe=reffe)
+@test isa(V,UnconstrainedFESpace)
+
 V = FESpace(
  model=model,
  valuetype=Float64,
