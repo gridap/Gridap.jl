@@ -40,6 +40,7 @@ import Gridap.Arrays: apply_kernel!
 import Gridap.Arrays: kernel_return_type
 import Gridap.Arrays: apply_kernel_for_cache!
 import Gridap.Arrays: reindex
+import Gridap.Arrays: apply
 import Gridap.Geometry: get_cell_map
 import Gridap.Geometry: get_cell_shapefuns
 import Gridap.Geometry: get_reffes
@@ -57,6 +58,7 @@ import Gridap.Fields: evaluate
 import Gridap.Fields: gradient
 import Gridap.Fields: grad2curl
 import Gridap.Fields: evaluate_field_array
+import Gridap.ReferenceFEs: evaluate_dof_array
 import Gridap.Fields: field_cache
 import Gridap.Fields: evaluate_field!
 import Gridap.Fields: field_gradient
@@ -141,11 +143,14 @@ export num_dirichlet_dofs
 export get_cell_dofs
 export zero_dirichlet_values
 export gather_free_and_dirichlet_values
+export gather_free_and_dirichlet_values!
 export scatter_free_and_dirichlet_values
 export get_dirichlet_values
 export gather_dirichlet_values
+export gather_dirichlet_values!
 export num_dirichlet_tags
 export gather_free_values
+export gather_free_values!
 export get_dirichlet_dof_tag
 export compute_free_and_dirichlet_values
 export compute_dirichlet_values
@@ -222,8 +227,7 @@ export collect_cell_residual
 export FESpaceWithLastDofRemoved
 export ZeroMeanFESpace
 export CLagrangianFESpace
-export DivConformingFESpace
-export CurlConformingFESpace
+export ConformingFESpace
 export DirichletFESpace
 export FESpaceWithLinearConstraints
 export ExtendedFESpace
@@ -266,10 +270,6 @@ include("SparseMatrixAssemblers.jl")
 include("UnconstrainedFESpaces.jl")
 
 include("ConformingFESpaces.jl")
-
-include("DivConformingFESpaces.jl")
-
-include("CurlConformingFESpaces.jl")
 
 include("DiscontinuousFESpaces.jl")
 

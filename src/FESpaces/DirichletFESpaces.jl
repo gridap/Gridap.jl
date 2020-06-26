@@ -60,9 +60,9 @@ function scatter_free_and_dirichlet_values(f::DirichletFESpace,fv,dv)
   scatter_free_and_dirichlet_values(f.space,dv,fv)
 end
 
-function gather_free_and_dirichlet_values(f::DirichletFESpace,cv)
-  dv, fv = gather_free_and_dirichlet_values(f.space,cv)
-  (fv, dv)
+function gather_free_and_dirichlet_values!(fv,dv,f::DirichletFESpace,cv)
+  gather_free_and_dirichlet_values!(dv,fv,f.space,cv)
+  (fv,dv)
 end
 
 function TrialFESpace(f::DirichletFESpace)

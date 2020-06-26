@@ -212,6 +212,11 @@ function solve!(
   cache
 end
 
+function solve!(
+  x::AbstractVector,ls::LinearSolver,op::AffineOperator,cache::Nothing,newmatrix::Bool)
+  solve!(x,ls,op,cache)
+end
+
 # Concrete implementations
 
 """
@@ -269,4 +274,3 @@ function solve!(
   x::AbstractVector,ns::BackslashNumericalSetup,b::AbstractVector)
   copy_entries!(x, ns.A\b)
 end
-

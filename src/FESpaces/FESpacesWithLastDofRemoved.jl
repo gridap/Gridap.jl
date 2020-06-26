@@ -64,6 +64,16 @@ function gather_free_and_dirichlet_values(
   (fv, dv)
 end
 
+function gather_free_and_dirichlet_values!(
+  fv,dv,f::FESpaceWithLastDofRemoved,cv)
+  _fv , _dv = gather_free_and_dirichlet_values(f.space,cv)
+  @assert length(_dv) == 0
+  l = length(_fv)
+  fv .= SubVector(_fv,1,l-1)
+  dv .= SubVector(_fv,l,l)
+  (fv, dv)
+end
+
 function TrialFESpace(f::FESpaceWithLastDofRemoved)
   U = TrialFESpace(f.space)
   FESpaceWithLastDofRemoved(U)

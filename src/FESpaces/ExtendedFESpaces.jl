@@ -69,6 +69,27 @@ function evaluate_field_array(a::ExtendedVector,x::AbstractArray)
       a.cell_to_oldcell)
 end
 
+function evaluate_dof_array(dofs::AbstractArray,fields::ExtendedVector)
+  _evaluate_dof_array_extended_fields(dofs,fields)
+end
+
+function evaluate_dof_array(dofs::AbstractArray{<:Dof},fields::ExtendedVector)
+  _evaluate_dof_array_extended_fields(dofs,fields)
+end
+
+function _evaluate_dof_array_extended_fields(dofs,fields)
+  dofs_void = reindex(dofs,fields.void_to_oldcell)
+  dofs_cell = reindex(dofs,fields.cell_to_oldcell)
+  r_void = evaluate_dof_array(dofs_void,fields.void_to_val)
+  r_cell = evaluate_dof_array(dofs_cell,fields.cell_to_val)
+  ExtendedVector(
+      r_void,
+      r_cell,
+      fields.oldcell_to_cell_or_void,
+      fields.void_to_oldcell,
+      fields.cell_to_oldcell)
+end
+
 function reindex(a::ExtendedVector,ptrs::AbstractArray)
   _extended_reindex(a,ptrs)
 end
@@ -79,6 +100,38 @@ end
 
 function reindex(a::ExtendedVector,ptrs::SkeletonPair)
   _extended_reindex(a,ptrs::SkeletonPair)
+end
+
+function apply(f::Fill,a::ExtendedVector...)
+  a_void, a_cell = _split_void_non_void(a...)
+  r_void = apply(f.value,a_void...)
+  r_cell = apply(f.value,a_cell...)
+  ExtendedVector(
+      r_void,
+      r_cell,
+      a[1].oldcell_to_cell_or_void,
+      a[1].void_to_oldcell,
+      a[1].cell_to_oldcell)
+end
+
+function apply(::Type{T},f::Fill,a::ExtendedVector...) where T
+  a_void, a_cell = _split_void_non_void(a...)
+  r_void = apply(T,f.value,a_void...)
+  r_cell = apply(T,f.value,a_cell...)
+  ExtendedVector(
+      r_void,
+      r_cell,
+      a[1].oldcell_to_cell_or_void,
+      a[1].void_to_oldcell,
+      a[1].cell_to_oldcell)
+end
+
+function _split_void_non_void(a::ExtendedVector...)
+  @notimplementedif ! all(map(i->i.void_to_oldcell===a[1].void_to_oldcell,a))
+  @notimplementedif ! all(map(i->i.cell_to_oldcell===a[1].cell_to_oldcell,a))
+  a_void = map(i->i.void_to_val,a)
+  a_cell = map(i->i.cell_to_val,a)
+  a_void, a_cell
 end
 
 #function reindex(a::ExtendedVector,trian::Triangulation)
@@ -225,9 +278,9 @@ function scatter_free_and_dirichlet_values(f::ExtendedFESpace,fv,dv)
     f.trian.cell_to_oldcell)
 end
 
-function gather_free_and_dirichlet_values(f::ExtendedFESpace,cv)
+function gather_free_and_dirichlet_values!(fv,dv,f::ExtendedFESpace,cv)
   _cv = reindex(cv,f.trian.cell_to_oldcell)
-  gather_free_and_dirichlet_values(f.space,_cv)
+  gather_free_and_dirichlet_values!(fv,dv,f.space,_cv)
 end
 
 # Delegated functions

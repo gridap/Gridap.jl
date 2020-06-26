@@ -142,7 +142,7 @@ end
 
 function solve!(
   x::AbstractVector,nls::NLSolver,op::NonlinearOperator,cache::NLSolversCache)
-  _update_nlsolve_cache!(cache,x,op)
+  cache = _update_nlsolve_cache!(cache,x,op)
   _nlsolve_with_updated_cache!(x,nls,op,cache)
   cache
 end

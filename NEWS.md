@@ -4,7 +4,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.12.0] - 2020-06-26
+
+### New
+
+  - New `ConformingFESpace` constructor. Since PR [#293](https://github.com/gridap/Gridap.jl/pull/293).
+  - Added `QDiscRefFE` constructor for `DiscRefFE`. Since PR [#293](https://github.com/gridap/Gridap.jl/pull/293).
+
+### Changed
+  - Renamed `PDiscRefFE` -> `DiscRefFE` struct keeping the name for constructor. Since PR [#293](https://github.com/gridap/Gridap.jl/pull/293).
+  - One of the `GradConformingFESpace` methods now more general `ConformingFESpace`. Since PR [#293](https://github.com/gridap/Gridap.jl/pull/293).
+  - `DivConformingFESpace` and `CurlConformingFESpace` constructors eliminated. Since PR [#293](https://github.com/gridap/Gridap.jl/pull/293).
+
+
+## [0.11.2] - 2020-06-22
+
+### Added
+
+  - Method `solve!(x,ls,op::AffineOperator,cache::Nothing,newmatrix)`. Since PR [#288](https://github.com/gridap/Gridap.jl/pull/288).
+
+### Fixed
+
+  - Bug related with `WriteVTK` version 1.7. Fixed via PR [#287](https://github.com/gridap/Gridap.jl/pull/287).
+  - Bug in outer constructor of Table{...} for input arrays of abstract type. Fixed via PR [#285](https://github.com/gridap/Gridap.jl/pull/285).
+
+## [0.11.1] - 2020-06-19
+
+### Fixed
+
+  - Bug in the handling of caches in `NLSolver`. Fixed via PR [#283](https://github.com/gridap/Gridap.jl/pull/283).
+  - Bug that showed up when interpolating a FE function defined on an
+  `ExtendedFESpace` onto a non-extended `FESpace`. Fixed via PR [#282](https://github.com/gridap/Gridap.jl/pull/282).
+
+## [0.11.0] - 2020-06-16
 
 ### Added
 
@@ -12,6 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Operator `⊗` (\otimes) as an alias of `outer`. Since PR [#239](https://github.com/gridap/Gridap.jl/pull/239).
   - Support for (symmetric) 4th order tensors. Since PR [#239](https://github.com/gridap/Gridap.jl/pull/239).
   - Optimizations for symmetric 2nd order tensors. Since PR [#239](https://github.com/gridap/Gridap.jl/pull/239).
+  - Methods for `cross` function (aka `×` (\times)) to operate with `VectorValues`. Since PR [#280](https://github.com/gridap/Gridap.jl/pull/280).
+  - Interpolation is now supported also for multifield spaces. Since PR [#279](https://github.com/gridap/Gridap.jl/pull/279).
 
 ### Changed
 
@@ -21,17 +55,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - The operator `*` is not allowed for expressing the dot product anymore. Use `LinearAlgebra.dot`
   function aka `⋅` (\cdot).
     - The syntax `∇*u` is not allowed anymore.  Use `∇⋅u` instead.
-    - Gridap re-exports `dot`, `⋅`, and other names from LinearAlbegra that are used 
-  often in Gridap code. 
+    - Gridap re-exports `dot`, `⋅`, and other names from LinearAlbegra that are used
+  often in Gridap code.
     - Function `n_components` is renamed to `num_components`.
+  - The `SingleFieldFESpace` interface has changed. The function `gather_free_and_dirichlet_values!`
+  has been added as mandatory for all FE space implementations and the old function `gather_free_and_dirichlet_values`
+  is now optional. Since PR [#279](https://github.com/gridap/Gridap.jl/pull/279).
 
-## [0.10.4] - 2020-6-8
+## [0.10.4] - 2020-06-8
 
 ### Added
 
 - Functions `create_vtk_file` and `createvtk`. Since PR [#273](https://github.com/gridap/Gridap.jl/pull/273).
 
-## [0.10.3] - 2020-5-29
+## [0.10.3] - 2020-05-29
 
 ### Added
 
@@ -42,13 +79,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Deprecated
  - Optional argument `map` for CartesianDescriptor converted to a key-word argument. Since PR [#266](https://github.com/gridap/Gridap.jl/pull/266).
- 
+
 ### Fixed
  - Fixed some methods of the `sparsecsr` generic function. Since PR [#262](https://github.com/gridap/Gridap.jl/pull/262).
  - Fixed BUG in `findnz` function for `SparseMatrixCSR`. Since PR [#264](https://github.com/gridap/Gridap.jl/pull/264).
  - Fixed `restrict(::AbstractArray,::TriangulationPortion)` for portions of triangulations extending `BoundaryTriangulation`. Since PR [#267](https://github.com/gridap/Gridap.jl/pull/267).
 
-## [0.10.2] - 2020-5-21
+## [0.10.2] - 2020-05-21
 
 ### Added
 
@@ -59,13 +96,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - New functions `get_face_to_face(::BoundaryTriangulation)` and `get_cell_around(::BoundaryTriangulation)`. Since
  PR [#256](https://github.com/gridap/Gridap.jl/pull/256).
 
-## [0.10.1] - 2020-5-19
+## [0.10.1] - 2020-05-19
 
 ### Fixed
 
   - Added missing implementation of `simplexify(SEGMENT)` and `simplexify(VERTEX)`. Since PR [#252](https://github.com/gridap/Gridap.jl/pull/252).
 
-## [0.10.0] - 2020-5-14
+## [0.10.0] - 2020-05-14
 
 ### Added
 
@@ -88,13 +125,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Change the types of the sizes and partition fields of CartesianDescriptor to tuples instead of points.
     Since PR [#246](https://github.com/gridap/Gridap.jl/pull/246).
 
-## [0.9.2] - 2020-4-26
+## [0.9.2] - 2020-04-26
 
 ### Added
 
   - Automatic differentiation of manufactured solutions. Since PR [#236](https://github.com/gridap/Gridap.jl/pull/236).
 
-## [0.9.1] - 2020-4-20
+## [0.9.1] - 2020-04-20
 
 ### Added
 
@@ -104,7 +141,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   - Several bugs associated with `ExtendedFESpace`. In particular, we have fixed a bug that showed up when combining `ZeroMeanFESpace` and `ExtendedFESpace`. Since PR [#234](https://github.com/gridap/Gridap.jl/pull/234).
 
-## [0.9.0] - 2020-4-18
+## [0.9.0] - 2020-04-18
 
 ### Added
 
@@ -123,7 +160,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bug in gradient operator in the void part of `ExtendedFESpace` objects. Since PR [#219](https://github.com/gridap/Gridap.jl/pull/219).
 - Bug in jumps of quantities restricted to `InterfaceTriangulation` objects.  Since PR [#215](https://github.com/gridap/Gridap.jl/pull/215).
 
-## [0.8.0] - 2020-3-17
+## [0.8.0] - 2020-03-17
 
 ### Added
 
