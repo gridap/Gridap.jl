@@ -40,6 +40,22 @@ t = TensorValue{1}((10,))
 @test isa(t,TensorValue{1,1,Int})
 @test convert(SMatrix{1,1,Int},t) == 10*ones(1,1)
 
+t = TensorValue(1,2.0,3,4)
+@test isa(t,TensorValue{2,2,Float64})
+@test convert(SMatrix{2,2,Float64},t) == [1 3;2 4]
+
+t = TensorValue{2}(1,2.0,3,4)
+@test isa(t,TensorValue{2,2,Float64})
+@test convert(SMatrix{2,2,Float64},t) == [1 3;2 4]
+
+t = TensorValue{2,2}(1,2.0,3,4)
+@test isa(t,TensorValue{2,2,Float64})
+@test convert(SMatrix{2,2,Float64},t) == [1 3;2 4]
+
+t = TensorValue{2,2,Int}(1,2.0,3,4)
+@test isa(t,TensorValue{2,2,Int})
+@test convert(SMatrix{2,2,Int},t) == [1 3;2 4]
+
 # Constructors (SymTensorValue)
 
 s = SymTensorValue( (11,21,22) )
