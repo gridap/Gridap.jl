@@ -40,11 +40,17 @@ SymTensorValue{D}(data::NTuple{L,T}) where {D,L,T}           = SymTensorValue{D,
 SymTensorValue{D,T1}(data::NTuple{L,T2}) where {D,L,T1,T2}   = SymTensorValue{D,T1}(NTuple{L,T1}(data))
 SymTensorValue{D,T1,L}(data::NTuple{L,T2}) where {D,L,T1,T2} = SymTensorValue{D,T1}(NTuple{L,T1}(data))
 
+# SymTensorValue single Tuple argument constructor
+
+SymTensorValue(data::Tuple)                      = SymTensorValue(promote(data...))
+SymTensorValue{D}(data::Tuple) where {D}         = SymTensorValue{D}(promote(data...))
+SymTensorValue{D,T1}(data::Tuple) where {D,T1}   = SymTensorValue{D,T1}(NTuple{length(data),T1}(data))
+
 # SymTensorValue Vararg constructor
 
-SymTensorValue(data::T...) where {T}              = SymTensorValue(data)
-SymTensorValue{D}(data::T...) where {D,T}         = SymTensorValue{D}(data)
-SymTensorValue{D,T1}(data::T2...) where {D,T1,T2} = SymTensorValue{D,T1}(data)
+SymTensorValue(data...)                    = SymTensorValue(data)
+SymTensorValue{D}(data...)    where {D}    = SymTensorValue{D}(data)
+SymTensorValue{D,T1}(data...) where {D,T1} = SymTensorValue{D,T1}(data)
 
 # SymTensorValue single AbstractMatrix argument constructor
 

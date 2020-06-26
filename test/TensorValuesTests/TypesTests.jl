@@ -90,6 +90,18 @@ s = SymTensorValue{0,Int}()
 @test isa(s,SymTensorValue{0,Int})
 @test convert(SMatrix{0,0,Int},s) == Array{Any,2}(undef,0,0)
 
+s = SymTensorValue(11,21.0,22)
+@test isa(s,SymTensorValue{2,Float64})
+@test convert(SMatrix{2,2,Float64},s) == [11.0 21.0;21.0 22.0]
+
+s = SymTensorValue{2}(11,21.0,22)
+@test isa(s,SymTensorValue{2,Float64})
+@test convert(SMatrix{2,2,Float64},s) == [11.0 21.0;21.0 22.0]
+
+s = SymTensorValue{2,Int}(11,21.0,22)
+@test isa(s,SymTensorValue{2,Int})
+@test convert(SMatrix{2,2,Int},s) == [11.0 21.0;21.0 22.0]
+
 # Constructors (SymFourthOrderTensorValue)
 
 s = SymFourthOrderTensorValue( (1111,1121,1122, 2111,2121,2122, 2211,2221,2222) )
@@ -124,8 +136,19 @@ s = SymFourthOrderTensorValue{0,Int}()
 @test isa(s,SymFourthOrderTensorValue{0,Int})
 @test Tuple(s) == ()
 
-# Constructors (VectorValue)
+s = SymFourthOrderTensorValue(1111,2111,2211.0, 1121,2121.0,2221, 1122,2122,2222)
+@test isa(s,SymFourthOrderTensorValue{2,Float64})
+@test Tuple(s) == (1111,2111,2211, 1121,2121,2221, 1122,2122,2222  )
 
+s = SymFourthOrderTensorValue{2}(1111,2111,2211.0, 1121,2121.0,2221, 1122,2122,2222)
+@test isa(s,SymFourthOrderTensorValue{2,Float64})
+@test Tuple(s) == (1111,2111,2211, 1121,2121,2221, 1122,2122,2222  )
+
+s = SymFourthOrderTensorValue{2,Int}(1111,2111,2211.0, 1121,2121.0,2221, 1122,2122,2222)
+@test isa(s,SymFourthOrderTensorValue{2,Int})
+@test Tuple(s) == (1111,2111,2211, 1121,2121,2221, 1122,2122,2222  )
+
+# Constructors (VectorValue)
 
 a = SVector(1)
 g = VectorValue(a)
