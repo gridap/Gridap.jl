@@ -4,13 +4,15 @@
 function FESpace(;kwargs...)
 
   constraint = _get_kwarg(:constraint,kwargs,nothing)
-  # constraint = nothing
   reffe = _get_kwarg(:reffe,kwargs)
-  @notimplementedif !isa(reffe,Symbol) "For the moment, reffe can only be a symbol"
 
   fespace = nothing
 
-  if reffe in [:Lagrangian,:QLagrangian,:PLagrangian,:SLagrangian]
+  if isa(reffe,ReferenceFE)
+
+    fespace = _setup_generic_space(kwargs)
+
+  elseif reffe in [:Lagrangian,:QLagrangian,:PLagrangian,:SLagrangian]
 
     fespace = _setup_lagrange_spaces(kwargs)
 
@@ -94,6 +96,40 @@ end
 """
 function TestFESpace(;kwargs...)
   FESpace(;kwargs...)
+end
+
+function _setup_generic_space(kwargs)
+
+  reffe = _get_kwarg(:reffe,kwargs)
+  model = _get_kwarg(:model,kwargs)
+  labels = _get_kwarg(:labels,kwargs,get_face_labeling(model))
+  conformity = _get_kwarg(:conformity,kwargs,true)
+  diritags = _get_kwarg(:dirichlet_tags,kwargs,Int[])
+  order = _get_kwarg(:order,kwargs,nothing)
+  dofspace = _get_kwarg(:dof_space,kwargs,:reference)
+  ( dofspace == :reference ? true : false )
+
+  is_ref = (dofspace==:reference)
+
+  Tf = _get_kwarg(:valuetype,kwargs,VectorValue{1,Float64})
+  T = eltype(Tf)
+
+
+  polytopes = get_polytopes(model)
+  if length(polytopes) > 2 || polytopes[1] != get_polytope(reffe)
+    @unreachable "RefFE and geometrical model are not compatible in generic FESpace constructor"
+  end
+
+  reffes = [ reffe ]
+
+  if conformity in [true, :default]
+      V =  ConformingFESpace(reffes,model,labels,diritags,nothing,is_ref)
+  else
+    s = "Conformity is determined by $reffe reference FE and cannot be imposed in generic FESpace constructor, leave it `true` or simply do not specify it"
+    @unreachable s
+  end
+
+  V
 end
 
 function _setup_hdiv_space(kwargs)
@@ -213,7 +249,7 @@ function _setup_lagrange_spaces(kwargs)
       elseif reffe == :QLagrangian
         _reffes = [QDiscRefFE(T,p,order) for p in polytopes]
       else
-        @unreachable "Not possible to use a $reffe reffe on polytopoes $(polytopes...)"
+        @unreachable "Not possible to use a $reffe reffe on polytopes $(polytopes...)"
       end
     end
 
