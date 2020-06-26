@@ -28,13 +28,23 @@ test_single_field_fe_space(V)
 U = TrialFESpace(V,u)
 
 uh = interpolate(U,u)
-length(uh.free_values)
-uh.free_values
 
 e = u - uh
 
 trian = Triangulation(model)
 quad = CellQuadrature(trian,order)
+
+el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
+@test el2 < 1.0e-10
+
+T = Float64
+reffe = NedelecRefFE(T,HEX,order)
+V = FESpace(model=model,reffe=reffe,dirichlet_tags = [21,22])
+test_single_field_fe_space(V)
+
+U = TrialFESpace(V,u)
+
+uh = interpolate(U,u)
 
 el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
 @test el2 < 1.0e-10
