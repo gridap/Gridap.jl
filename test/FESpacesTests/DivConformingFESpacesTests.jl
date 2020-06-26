@@ -35,6 +35,18 @@ quad = CellQuadrature(trian,order)
 el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
 @test el2 < 1.0e-10
 
+T = Float64
+reffe = RaviartThomasRefFE(T,QUAD,order)
+V = FESpace(model=model,reffe=reffe,dirichlet_tags = [1,6])
+test_single_field_fe_space(V)
+
+U = TrialFESpace(V,u)
+
+uh = interpolate(U,u)
+
+el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
+@test el2 < 1.0e-10
+
 #using Gridap.Visualization
 #
 #writevtk(trian,"trian",nsubcells=10,cellfields=["uh"=>uh])
