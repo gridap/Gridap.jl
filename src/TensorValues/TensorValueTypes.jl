@@ -47,6 +47,7 @@ TensorValue(data::Tuple)                             = TensorValue(promote(data.
 TensorValue{D}(data::Tuple)        where {D}         = TensorValue{D}(promote(data...))
 TensorValue{D1,D2}(data::Tuple)    where {D1,D2}     = TensorValue{D1,D2}(promote(data...))
 TensorValue{D1,D2,T1}(data::Tuple) where {D1,D2,T1}  = TensorValue{D1,D2,T1}(NTuple{length(data),T1}(data))
+TensorValue{D1,D2,T1,L}(data::Tuple) where {D1,D2,T1,L}  = TensorValue{D1,D2,T1}(NTuple{length(data),T1}(data))
 
 # TensorValue Vararg constructor
 
@@ -54,6 +55,7 @@ TensorValue(data...)                            = TensorValue(data)
 TensorValue{D}(data...)        where {D}        = TensorValue{D}(data)
 TensorValue{D1,D2}(data...)    where {D1,D2}    = TensorValue{D1,D2}(data)
 TensorValue{D1,D2,T1}(data...) where {D1,D2,T1} = TensorValue{D1,D2,T1}(data)
+TensorValue{D1,D2,T1,L}(data...) where {D1,D2,T1,L} = TensorValue{D1,D2,T1}(data)
 
 # TensorValue single AbstractMatrix argument constructor
 

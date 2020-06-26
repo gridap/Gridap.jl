@@ -37,6 +37,7 @@ ThirdOrderTensorValue(data::Tuple) = ThirdOrderTensorValue(promote(data...))
 ThirdOrderTensorValue{D}(data::Tuple) where {D} = ThirdOrderTensorValue{D,D,D}(promote(data...))
 ThirdOrderTensorValue{D1,D2,D3}(data::Tuple) where {D1,D2,D3} = ThirdOrderTensorValue{D1,D2,D3}(promote(data...))
 ThirdOrderTensorValue{D1,D2,D3,T1}(data::Tuple) where {D1,D2,D3,T1}  = ThirdOrderTensorValue{D1,D2,D3,T1}(NTuple{length(data),T1}(data))
+ThirdOrderTensorValue{D1,D2,D3,T1,L}(data::Tuple) where {D1,D2,D3,T1,L}  = ThirdOrderTensorValue{D1,D2,D3,T1}(NTuple{L,T1}(data))
 
 # ThirdOrderTensorValue Vararg constructor
 
@@ -44,6 +45,7 @@ ThirdOrderTensorValue(data...) = ThirdOrderTensorValue(data)
 ThirdOrderTensorValue{D}(data...) where {D} = ThirdOrderTensorValue{D}(data)
 ThirdOrderTensorValue{D1,D2,D3}(data...) where {D1,D2,D3} = ThirdOrderTensorValue{D1,D2,D3}(data)
 ThirdOrderTensorValue{D1,D2,D3,T1}(data...) where {D1,D2,D3,T1} =  ThirdOrderTensorValue{D1,D2,D3,T1}(data)
+ThirdOrderTensorValue{D1,D2,D3,T1,L}(data...) where {D1,D2,D3,T1,L} =  ThirdOrderTensorValue{D1,D2,D3,T1}(data)
 
 # From an array
 
