@@ -178,6 +178,23 @@ g = VectorValue(1)
 @test isa(g,VectorValue{1,Int})
 @test convert(SVector{1,Int},g) == [1,]
 
+g = VectorValue(1.0,2,3.0,4)
+@test isa(g,VectorValue{4,Float64})
+@test convert(SVector{4,Float64},g) == [1,2,3,4]
+
+g = VectorValue{4}(1.0,2,3.0,4)
+@test isa(g,VectorValue{4,Float64})
+@test convert(SVector{4,Float64},g) == [1,2,3,4]
+
+g = VectorValue{4,Int}(1.0,2,3.0,4)
+@test isa(g,VectorValue{4,Int})
+@test convert(SVector{4,Int},g) == [1,2,3,4]
+
+g = VectorValue((1.0,2,3.0,4))
+@test isa(g,VectorValue{4,Float64})
+@test convert(SVector{4,Float64},g) == [1,2,3,4]
+
+
 # Initializers
 
 z = zero(TensorValue{3,3,Int,9})
