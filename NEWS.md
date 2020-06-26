@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - One of the `GradConformingFESpace` methods now more general `ConformingFESpace`. Since PR [#293](https://github.com/gridap/Gridap.jl/pull/293).
   - `DivConformingFESpace` and `CurlConformingFESpace` constructors eliminated. Since PR [#293](https://github.com/gridap/Gridap.jl/pull/293).
 
+### Fixed
+
+  - Construction of `VectorValue`, `TensorValue`, et al. objects from non-homogeneous arguments.  This solves some problems associated with automatic differentiation. Since PR [#298](https://github.com/gridap/Gridap.jl/pull/298).
+
 ## [0.11.2] - 2020-06-22
 
 ### Added

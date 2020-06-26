@@ -40,11 +40,17 @@ SymFourthOrderTensorValue{D}(data::NTuple{L,T}) where {D,L,T}           = SymFou
 SymFourthOrderTensorValue{D,T1}(data::NTuple{L,T2}) where {D,L,T1,T2}   = SymFourthOrderTensorValue{D,T1}(NTuple{L,T1}(data))
 SymFourthOrderTensorValue{D,T1,L}(data::NTuple{L,T2}) where {D,L,T1,T2} = SymFourthOrderTensorValue{D,T1}(NTuple{L,T1}(data))
 
+# SymTensorValue single Tuple argument constructor
+
+SymFourthOrderTensorValue(data::Tuple) = SymFourthOrderTensorValue(promote(data...))
+SymFourthOrderTensorValue{D}(data::Tuple) where {D} = SymFourthOrderTensorValue{D}(promote(data...))
+SymFourthOrderTensorValue{D,T1}(data::Tuple) where {D,T1} = SymFourthOrderTensorValue{D,T1}(NTuple{length(data),T1}(data))
+
 # SymTensorValue Vararg constructor
 
-SymFourthOrderTensorValue(data::T...) where {T}              = SymFourthOrderTensorValue(data)
-SymFourthOrderTensorValue{D}(data::T...) where {D,T}         = SymFourthOrderTensorValue{D}(data)
-SymFourthOrderTensorValue{D,T1}(data::T2...) where {D,T1,T2} = SymFourthOrderTensorValue{D,T1}(data)
+SymFourthOrderTensorValue(data...) = SymFourthOrderTensorValue(data)
+SymFourthOrderTensorValue{D}(data...) where {D} = SymFourthOrderTensorValue{D}(data)
+SymFourthOrderTensorValue{D,T1}(data...) where {D,T1} = SymFourthOrderTensorValue{D,T1}(data)
 
 ###############################################################
 # Conversions (SymTensorValue)

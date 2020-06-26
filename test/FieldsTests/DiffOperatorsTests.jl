@@ -74,4 +74,14 @@ for x in xs
   @test Δ(u)(x) == Δu(x)
 end
 
+u(x) = VectorValue( x[1]^2 + 2*x[2]^2, 0 )
+∇u(x) = TensorValue( 2*x[1], 4*x[2], 0, 0 )
+Δu(x) = VectorValue( 6, 0 )
+
+for x in xs
+  @test (∇⋅u)(x) == tr(∇u(x)) 
+  @test (∇×u)(x) == grad2curl(∇u(x))
+  @test Δ(u)(x) == Δu(x)
+end
+
 end # module

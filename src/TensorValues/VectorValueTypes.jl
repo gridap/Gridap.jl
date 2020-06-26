@@ -30,11 +30,23 @@ VectorValue(data::NTuple{D,T})        where {D,T}     = VectorValue{D,T}(data)
 VectorValue{D}(data::NTuple{D,T})     where {D,T}     = VectorValue{D,T}(data)
 VectorValue{D,T1}(data::NTuple{D,T2}) where {D,T1,T2} = VectorValue{D,T1}(NTuple{D,T1}(data))
 
+VectorValue{D}(data::NTuple{D2,T2}) where {D,D2,T2} = @unreachable
+VectorValue{D1,T1}(data::NTuple{D2,T2}) where {D1,T1,D2,T2} = @unreachable
+
+# VectorValue single Tuple argument constructor
+
+VectorValue(data::Tuple)                    = VectorValue(promote(data...))
+VectorValue{D}(data::Tuple)    where {D}    = VectorValue{D}(promote(data...))
+VectorValue{D,T1}(data::Tuple) where {D,T1} = VectorValue{D,T1}(NTuple{D,T1}(data))
+
 # VectorValue Vararg constructor
 
-VectorValue(data::T...) where {T}              = VectorValue(data)
-VectorValue{D}(data::T...) where {D,T}         = VectorValue{D}(data)
-VectorValue{D,T1}(data::T2...) where {D,T1,T2} = VectorValue{D,T1}(data)
+VectorValue(data...)                    = VectorValue(data)
+VectorValue{D}(data...)    where {D}    = VectorValue{D}(data)
+VectorValue{D,T1}(data...) where {D,T1} = VectorValue{D,T1}(data)
+
+# Fix for julia 1.0.4
+VectorValue{D}(data::T...)    where {D,T}    = VectorValue{D,T}(data)
 
 # VectorValue single AbstractVector argument constructor
 
