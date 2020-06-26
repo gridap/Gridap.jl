@@ -325,6 +325,36 @@ v = SymFourthOrderTensorValue{2,Int64}(1111,1121,1122, 2111,2121,2122, 2211,2221
 s = "(1111, 1121, 1122, 2111, 2121, 2122, 2211, 2221, 2222)"
 @test string(v) == s
 
+# Third order tensors
+
+a = SArray{Tuple{2,2,2}}(1,2,3,4,5,6,7,8)
+t = ThirdOrderTensorValue(a)
+@test isa(t,ThirdOrderTensorValue{2,2,2,Int})
+
+t = ThirdOrderTensorValue(1,2,3,4,5,6,7,8)
+@test isa(t,ThirdOrderTensorValue{2,2,2,Int})
+
+t = ThirdOrderTensorValue{2}(1,2,3,4,5,6,7,8)
+@test isa(t,ThirdOrderTensorValue{2,2,2,Int})
+
+t = ThirdOrderTensorValue{2,2,2}(1,2,3,4,5,6,7,8)
+@test isa(t,ThirdOrderTensorValue{2,2,2,Int})
+
+t = ThirdOrderTensorValue{2,2,2,Float64}(1,2,3,4,5,6,7,8)
+@test isa(t,ThirdOrderTensorValue{2,2,2,Float64})
+
+t = ThirdOrderTensorValue(1,2.0,3,4,5,6,7,8)
+@test isa(t,ThirdOrderTensorValue{2,2,2,Float64})
+
+t = ThirdOrderTensorValue{2}(1,2.0,3,4,5,6,7,8)
+@test isa(t,ThirdOrderTensorValue{2,2,2,Float64})
+
+t = ThirdOrderTensorValue{2,2,2}(1,2.0,3,4,5,6,7,8)
+@test isa(t,ThirdOrderTensorValue{2,2,2,Float64})
+
+t = ThirdOrderTensorValue{2,2,2,Int}(1,2.0,3,4,5,6,7,8)
+@test isa(t,ThirdOrderTensorValue{2,2,2,Int})
+
 # Misc
 
 M = mutable(VectorValue{3,Int})
