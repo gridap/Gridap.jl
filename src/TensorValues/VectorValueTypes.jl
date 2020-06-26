@@ -45,6 +45,9 @@ VectorValue(data...)                    = VectorValue(data)
 VectorValue{D}(data...)    where {D}    = VectorValue{D}(data)
 VectorValue{D,T1}(data...) where {D,T1} = VectorValue{D,T1}(data)
 
+# Fix for julia 1.0.4
+VectorValue{D}(data::T...)    where {D,T}    = VectorValue{D,T}(data)
+
 # VectorValue single AbstractVector argument constructor
 
 VectorValue(data::AbstractArray{T}) where {T}              = (D=length(data);VectorValue(NTuple{D,T}(data)))
