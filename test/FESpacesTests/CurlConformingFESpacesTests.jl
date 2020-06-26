@@ -4,6 +4,7 @@ using Test
 using Gridap
 using LinearAlgebra
 using Gridap.FESpaces
+using Gridap.ReferenceFEs
 
 domain =(0,1,0,1,0,1)
 partition = (3,3,3)
