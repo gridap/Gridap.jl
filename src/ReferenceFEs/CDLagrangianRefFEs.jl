@@ -23,9 +23,6 @@ function CDLagrangianRefFE(::Type{T},p::Polytope{D},orders,cont) where {T,D}
 
   face_own_dofs_permutations = _trivial_face_own_dofs_permutations(face_own_dofs)
 
-  # face_dofs = _generate_face_dofs(ndofs,face_own_dofs,p,_reffaces)
-  # face_dofs = Vector{Vector{Int}}()
-
   GenericRefFE(
       grfe.ndofs,
       grfe.polytope,
@@ -33,7 +30,7 @@ function CDLagrangianRefFE(::Type{T},p::Polytope{D},orders,cont) where {T,D}
       grfe.dofs,
       face_own_dofs,
       face_own_dofs_permutations,
-      grfe.face_dofs, # santiagobadia : To think
+      grfe.face_dofs, 
       grfe.shapefuns)
 
 end
