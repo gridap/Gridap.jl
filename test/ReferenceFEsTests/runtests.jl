@@ -26,4 +26,6 @@ using Test
 
 @testset "NedelecRefFEs" begin include("NedelecRefFEsTests.jl") end
 
+@testset "CDLagrangianRefFEs" begin include("CDLagrangianRefFEsTests.jl") end
+
 end # module
