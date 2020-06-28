@@ -3,7 +3,7 @@ const DISC = 1
 
 function CDLagrangianRefFE(::Type{T},p::Polytope{D},order::Int,cont) where {T,D}
   orders = tfill(order,Val{D}())
-  CDLagrangianRefFE(T,p,orders)
+  CDLagrangianRefFE(T,p,orders,cont)
 end
 
 function CDLagrangianRefFE(::Type{T},p::Polytope{D},orders,cont) where {T,D}

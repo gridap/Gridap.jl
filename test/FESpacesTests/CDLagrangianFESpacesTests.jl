@@ -14,7 +14,7 @@ trian = get_triangulation(model)
 order = 1
 
 T = Float64
-reffe = CDLagrangianRefFE(T,QUAD,order)
+reffe = CDLagrangianRefFE(T,QUAD,order,(CONT,DISC))
 V = FESpace(model=model,reffe=reffe,dirichlet_tags = [1,6])
 test_single_field_fe_space(V)
 
