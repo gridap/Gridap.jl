@@ -40,6 +40,22 @@ t = TensorValue{1}((10,))
 @test isa(t,TensorValue{1,1,Int})
 @test convert(SMatrix{1,1,Int},t) == 10*ones(1,1)
 
+t = TensorValue(1,2.0,3,4)
+@test isa(t,TensorValue{2,2,Float64})
+@test convert(SMatrix{2,2,Float64},t) == [1 3;2 4]
+
+t = TensorValue{2}(1,2.0,3,4)
+@test isa(t,TensorValue{2,2,Float64})
+@test convert(SMatrix{2,2,Float64},t) == [1 3;2 4]
+
+t = TensorValue{2,2}(1,2.0,3,4)
+@test isa(t,TensorValue{2,2,Float64})
+@test convert(SMatrix{2,2,Float64},t) == [1 3;2 4]
+
+t = TensorValue{2,2,Int}(1,2.0,3,4)
+@test isa(t,TensorValue{2,2,Int})
+@test convert(SMatrix{2,2,Int},t) == [1 3;2 4]
+
 # Constructors (SymTensorValue)
 
 s = SymTensorValue( (11,21,22) )
@@ -73,6 +89,18 @@ s = SymTensorValue{0,Int}( () )
 s = SymTensorValue{0,Int}()
 @test isa(s,SymTensorValue{0,Int})
 @test convert(SMatrix{0,0,Int},s) == Array{Any,2}(undef,0,0)
+
+s = SymTensorValue(11,21.0,22)
+@test isa(s,SymTensorValue{2,Float64})
+@test convert(SMatrix{2,2,Float64},s) == [11.0 21.0;21.0 22.0]
+
+s = SymTensorValue{2}(11,21.0,22)
+@test isa(s,SymTensorValue{2,Float64})
+@test convert(SMatrix{2,2,Float64},s) == [11.0 21.0;21.0 22.0]
+
+s = SymTensorValue{2,Int}(11,21.0,22)
+@test isa(s,SymTensorValue{2,Int})
+@test convert(SMatrix{2,2,Int},s) == [11.0 21.0;21.0 22.0]
 
 # Constructors (SymFourthOrderTensorValue)
 
@@ -108,8 +136,19 @@ s = SymFourthOrderTensorValue{0,Int}()
 @test isa(s,SymFourthOrderTensorValue{0,Int})
 @test Tuple(s) == ()
 
-# Constructors (VectorValue)
+s = SymFourthOrderTensorValue(1111,2111,2211.0, 1121,2121.0,2221, 1122,2122,2222)
+@test isa(s,SymFourthOrderTensorValue{2,Float64})
+@test Tuple(s) == (1111,2111,2211, 1121,2121,2221, 1122,2122,2222  )
 
+s = SymFourthOrderTensorValue{2}(1111,2111,2211.0, 1121,2121.0,2221, 1122,2122,2222)
+@test isa(s,SymFourthOrderTensorValue{2,Float64})
+@test Tuple(s) == (1111,2111,2211, 1121,2121,2221, 1122,2122,2222  )
+
+s = SymFourthOrderTensorValue{2,Int}(1111,2111,2211.0, 1121,2121.0,2221, 1122,2122,2222)
+@test isa(s,SymFourthOrderTensorValue{2,Int})
+@test Tuple(s) == (1111,2111,2211, 1121,2121,2221, 1122,2122,2222  )
+
+# Constructors (VectorValue)
 
 a = SVector(1)
 g = VectorValue(a)
@@ -158,10 +197,6 @@ g = VectorValue{4,Float64}((1,2,3,4))
 @test isa(g,VectorValue{4,Float64})
 @test convert(SVector{4,Float64},g) == [1,2,3,4]
 
-g = VectorValue{4}(1,2,3,4)
-@test isa(g,VectorValue{4,Int})
-@test convert(SVector{4,Int},g) == [1,2,3,4]
-
 g = VectorValue{4,Float64}(1,2,3,4)
 @test isa(g,VectorValue{4,Float64})
 @test convert(SVector{4,Float64},g) == [1,2,3,4]
@@ -177,6 +212,23 @@ g = VectorValue((1,2,3,4))
 g = VectorValue(1)
 @test isa(g,VectorValue{1,Int})
 @test convert(SVector{1,Int},g) == [1,]
+
+g = VectorValue(1.0,2,3.0,4)
+@test isa(g,VectorValue{4,Float64})
+@test convert(SVector{4,Float64},g) == [1,2,3,4]
+
+g = VectorValue{4}(1.0,2,3.0,4)
+@test isa(g,VectorValue{4,Float64})
+@test convert(SVector{4,Float64},g) == [1,2,3,4]
+
+g = VectorValue{4,Int}(1.0,2,3.0,4)
+@test isa(g,VectorValue{4,Int})
+@test convert(SVector{4,Int},g) == [1,2,3,4]
+
+g = VectorValue((1.0,2,3.0,4))
+@test isa(g,VectorValue{4,Float64})
+@test convert(SVector{4,Float64},g) == [1,2,3,4]
+
 
 # Initializers
 
@@ -268,6 +320,36 @@ s = "(1, 0, 0, 1, 0, 1)"
 v = SymFourthOrderTensorValue{2,Int64}(1111,1121,1122, 2111,2121,2122, 2211,2221,2222)
 s = "(1111, 1121, 1122, 2111, 2121, 2122, 2211, 2221, 2222)"
 @test string(v) == s
+
+# Third order tensors
+
+a = SArray{Tuple{2,2,2}}(1,2,3,4,5,6,7,8)
+t = ThirdOrderTensorValue(a)
+@test isa(t,ThirdOrderTensorValue{2,2,2,Int})
+
+t = ThirdOrderTensorValue(1,2,3,4,5,6,7,8)
+@test isa(t,ThirdOrderTensorValue{2,2,2,Int})
+
+t = ThirdOrderTensorValue{2}(1,2,3,4,5,6,7,8)
+@test isa(t,ThirdOrderTensorValue{2,2,2,Int})
+
+t = ThirdOrderTensorValue{2,2,2}(1,2,3,4,5,6,7,8)
+@test isa(t,ThirdOrderTensorValue{2,2,2,Int})
+
+t = ThirdOrderTensorValue{2,2,2,Float64}(1,2,3,4,5,6,7,8)
+@test isa(t,ThirdOrderTensorValue{2,2,2,Float64})
+
+t = ThirdOrderTensorValue(1,2.0,3,4,5,6,7,8)
+@test isa(t,ThirdOrderTensorValue{2,2,2,Float64})
+
+t = ThirdOrderTensorValue{2}(1,2.0,3,4,5,6,7,8)
+@test isa(t,ThirdOrderTensorValue{2,2,2,Float64})
+
+t = ThirdOrderTensorValue{2,2,2}(1,2.0,3,4,5,6,7,8)
+@test isa(t,ThirdOrderTensorValue{2,2,2,Float64})
+
+t = ThirdOrderTensorValue{2,2,2,Int}(1,2.0,3,4,5,6,7,8)
+@test isa(t,ThirdOrderTensorValue{2,2,2,Int})
 
 # Misc
 
