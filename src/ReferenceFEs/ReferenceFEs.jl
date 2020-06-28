@@ -142,12 +142,16 @@ export QUAD4
 export TET4
 export HEX8
 
+export CONT
+export DISC
+
 export SerendipityRefFE
 export DiscRefFE
 export PDiscRefFE
 export QDiscRefFE
 export RaviartThomasRefFE
 export NedelecRefFE
+export CDLagrangianRefFE
 
 include("Polytopes.jl")
 
@@ -172,5 +176,7 @@ include("DiscRefFEs.jl")
 include("RaviartThomasRefFEs.jl")
 
 include("NedelecRefFEs.jl")
+
+include("CDLagrangianRefFEs.jl")
 
 end # module
