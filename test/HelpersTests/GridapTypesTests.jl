@@ -49,4 +49,7 @@ using Gridap.TensorValues
 c = inner(2,a)
 @test c.bar == 2
 
+c = a / b
+@test c.bar == -1
+
 end # module
