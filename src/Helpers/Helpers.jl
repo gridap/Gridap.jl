@@ -9,7 +9,7 @@ $(EXPORTS)
 module Helpers
 using DocStringExtensions
 
-import Base: +, -, *, transpose, adjoint
+import Base: +, -, *, /, transpose, adjoint
 import LinearAlgebra: cross, tr, dot
 
 export @abstractmethod
