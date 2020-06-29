@@ -86,8 +86,6 @@ ids = get_cell_id(strian)
 #writevtk(strian,"strian")
 #writevtk(x,"x",nodaldata=["nvec" => nx])
 
-
-
 model = DiscreteModelMock()
 
 trian = Triangulation(model)
@@ -132,5 +130,13 @@ itrian = InterfaceTriangulation(model,1:13,14:34)
 #using Gridap.Visualization
 #writevtk(trian,"trian",celldata=["inout"=>cell_to_inout])
 #writevtk(itrian,"itrian",nsubcells=10,cellfields=["ni"=>ni,"nl"=>nl,"nr"=>nr])
+
+reffe = CDLagrangianRefFE(Float64,QUAD,(2,2),(CONT,DISC))
+face_own_dofs = get_face_own_dofs(reffe)
+strian = SkeletonTriangulation(model,reffe,face_own_dofs)
+ns = get_normal_vector(strian)
+
+#using Gridap.Visualization
+#writevtk(strian,"strian",cellfields=["normal"=>ns])
 
 end # module
