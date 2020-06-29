@@ -37,6 +37,88 @@ function SkeletonTriangulation(model::DiscreteModel)
   SkeletonTriangulation(model,face_to_mask)
 end
 
+function SkeletonTriangulation(
+  model::DiscreteModel,
+  reffe::ReferenceFE,
+  face_own_dofs::Vector{Vector{Int}})
+
+  ncells = num_cells(model)
+  cell_to_reffe = Fill(1,ncells)
+  SkeletonTriangulation(model,[reffe],cell_to_reffe,[face_own_dofs])
+end
+
+function SkeletonTriangulation(
+  model::DiscreteModel,
+  reffes::Vector{<:ReferenceFE},
+  cell_to_reffe::AbstractVector,
+  reffe_to_face_own_dofs::Vector{Vector{Vector{Int}}})
+
+  reffe_to_polytope = map(get_polytope,reffes)
+  reffe_to_faces = map(get_faces,reffe_to_polytope)
+  reffe_to_range = map(p->get_dimrange(p,num_dims(p)-1),reffe_to_polytope)
+
+  reffe_to_lfacet_to_mask = _compute_reffe_to_facet_to_mask(
+    reffe_to_faces,reffe_to_range,reffe_to_face_own_dofs)
+
+  topo = get_grid_topology(model)
+
+  D = num_cell_dims(model)
+  nfacets = num_facets(model)
+  facet_to_isboundary = get_isboundary_face(topo,D-1)
+  cell_to_facets = get_faces(topo,D,D-1)
+  facet_to_mask = _compute_disc_facet_mask(
+    facet_to_isboundary,cell_to_facets,cell_to_reffe,reffe_to_lfacet_to_mask)
+
+  SkeletonTriangulation(model,facet_to_mask)
+
+end
+
+function _compute_disc_facet_mask(
+  facet_to_isboundary, cell_to_facets::Table, cell_to_reffe, reffe_to_lfacet_to_mask)
+  nfacets = length(facet_to_isboundary)
+  facet_to_mask = Vector{Bool}(undef,nfacets)
+  ncells = length(cell_to_reffe)
+  for cell in 1:ncells
+    pini = cell_to_facets.ptrs[cell]
+    pend = cell_to_facets.ptrs[cell+1]-1
+    reffe = cell_to_reffe[cell]
+    lfacet_to_mask = reffe_to_lfacet_to_mask[reffe]
+    for (lfacet,p) in enumerate(pini:pend)
+      facet = cell_to_facets.data[p]
+      mask = lfacet_to_mask[lfacet]
+      isinterior = ! facet_to_isboundary[facet]
+      facet_to_mask[facet] = mask && isinterior
+    end
+  end
+  facet_to_mask
+end
+
+function _compute_reffe_to_facet_to_mask(
+  reffe_to_faces,reffe_to_range,reffe_to_face_own_dofs)
+
+  reffe_to_facet_to_mask = Vector{Bool}[]
+  nreffes = length(reffe_to_faces)
+  for reffe in 1:nreffes
+    range = reffe_to_range[reffe]
+    facet_to_faces = reffe_to_faces[reffe][range]
+    facet_to_own_dofs = reffe_to_face_own_dofs[reffe][range]
+    face_to_own_dofs = reffe_to_face_own_dofs[reffe]
+    nfacets = length(facet_to_faces)
+    facet_to_mask = fill(false,nfacets)
+    for facet in 1:nfacets
+      n = length(facet_to_own_dofs[facet])
+      faces = facet_to_faces[facet]
+      for face in faces
+        n += length(face_to_own_dofs[face])
+      end
+      facet_to_mask[facet] = n == 0
+    end
+    push!(reffe_to_facet_to_mask,facet_to_mask)
+  end
+
+  reffe_to_facet_to_mask
+end
+
 const IN = -1
 const OUT = 1
 
