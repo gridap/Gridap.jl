@@ -34,7 +34,7 @@ for op in (:+,:-,:tr, :transpose, :adjoint)
   end
 end
 
-for op in (:+,:-,:*,:cross,:dot)
+for op in (:+,:-,:*,:cross,:dot,:/)
   @eval begin
 
     function ($op)(a::GridapType,b::GridapType)
