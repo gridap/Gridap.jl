@@ -34,6 +34,8 @@ using Test
 
 @testset "DiscontinuousFESpaces" begin include("DiscontinuousFESpacesTests.jl") end
 
+@testset "CDLagrangianFESpaces" begin include("CDLagrangianFESpacesTests.jl") end
+
 @testset "FETerms" begin include("FETermsTests.jl") end
 
 @testset "CellKernels" begin include("CellKernelsTests.jl") end
