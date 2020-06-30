@@ -30,14 +30,17 @@ function CDLagrangianRefFE(::Type{T},p::Polytope{D},orders,cont) where {T,D}
       grfe.dofs,
       face_own_dofs,
       face_own_dofs_permutations,
-      grfe.face_dofs, 
+      grfe.face_dofs,
       grfe.shapefuns)
 
 end
 
 function _compute_cd_face_own_nodes(p::ExtrusionPolytope{D},orders::NTuple{D,<:Int},cont::NTuple{D,<:Int}) where D
-  nodes_ijk = CartesianIndices(Tuple(orders.+1))
-  nodes_i = LinearIndices(nodes_ijk)
+  nodes, _ = compute_nodes(p,orders)
+  _ord = convert(NTuple{D,Float64},orders)
+  _nodes = map(i -> i.data.*_ord,nodes)
+  _nodes = map(i -> convert(NTuple{D,Int64},i),_nodes)
+  perm = Dict(_nodes[i] => i for i = 1:length(_nodes))
   face_owned_nodes = Vector{Int64}[]
   for nf in p.dface.nfaces
     anc = nf.anchor
@@ -45,21 +48,21 @@ function _compute_cd_face_own_nodes(p::ExtrusionPolytope{D},orders::NTuple{D,<:I
     fns = UnitRange{Int64}[]
     for (i,(e,a,c,o)) in enumerate(zip(ext,anc,cont,orders))
       if e==0 && c == DISC
-        push!(fns,1:-1)
+        push!(fns,0:-1)
         break
       elseif e==0 && c == CONT
-        push!(fns,a*o+1:a*o+1)
+        push!(fns,a*o:a*o)
       elseif e==1 && c == DISC
-        push!(fns,1:o+1)
+        push!(fns,0:o)
       elseif e==1 && c == CONT
-        push!(fns,2:o)
+        push!(fns,1:o-1)
       end
     end
-    n_ijk = CartesianIndices(Tuple(fns))
+    n_ijk = map(i->i.I,collect(CartesianIndices(Tuple(fns))))
     if length(n_ijk) == 0
       n_i = Int64[]
     else
-      n_i = Int64[nodes_i[n_ijk]...]
+      n_i = sort(reshape([perm[i] for i in n_ijk],length(n_ijk)))
     end
     push!(face_owned_nodes,n_i)
   end

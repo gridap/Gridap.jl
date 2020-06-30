@@ -15,4 +15,8 @@ T = VectorValue{3,Float64}
 reffe = CDLagrangianRefFE(T,HEX,(2,2,2),(CONT,CONT,DISC))
 test_reference_fe(reffe)
 
+T = Float64
+reffe = LagrangianRefFE(T,QUAD,2)
+reffe.face_own_nodes
+
 end # module
