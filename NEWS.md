@@ -23,7 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-  - Construction of `VectorValue`, `TensorValue`, et al. objects from non-homogeneous arguments.  This solves some problems associated with automatic differentiation. Since PR [#298](https://github.com/gridap/Gridap.jl/pull/298).
+  - Construction of `VectorValue`, `TensorValue`, et al. objects from non-homogeneous arguments.  This solves some problems associated with automatic differentiation. Since PR [#298](https://github.com/gridap/Gridap.jl/pull/298).  
+  - `CDLagrangianRefFE` node ordering. Since PR [#305](https://github.com/gridap/Gridap.jl/pull/305).
 
 ## [0.11.2] - 2020-06-22
 
