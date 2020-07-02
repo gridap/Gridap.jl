@@ -11,10 +11,12 @@ partition = (3,3)
 model = CartesianDiscreteModel(domain,partition)
 trian = get_triangulation(model)
 
-order = 1
+# order = 1
+orders = (2,1)
+order = 2*max(orders...)
 
 T = VectorValue{2,Float64}
-reffe = CDLagrangianRefFE(T,QUAD,order,(DISC,CONT))
+reffe = CDLagrangianRefFE(T,QUAD,orders,(DISC,CONT))
 V = FESpace(model=model,reffe=reffe)#),dirichlet_tags = [1,6])
 test_single_field_fe_space(V)
 
