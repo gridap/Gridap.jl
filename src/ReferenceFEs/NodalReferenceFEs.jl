@@ -50,6 +50,17 @@ function get_face_own_nodes(reffe::NodalReferenceFE)
   get_face_own_nodes(reffe,conf)
 end
 
+function get_face_own_nodes(reffe::NodalReferenceFE,conf::L2Conformity)
+  _get_face_own_nodes_l2(reffe)
+end
+
+function _get_face_own_nodes_l2(reffe::NodalReferenceFE)
+  p = get_polytope(reffe)
+  r = [Int[] for i in 1:num_faces(p)]
+  r[end] = collect(1:num_nodes(reffe))
+  r
+end
+
 """
     get_face_own_nodes_permutations(reffe::NodalReferenceFE,conf::Conformity)
 """
@@ -63,6 +74,17 @@ end
 function get_face_own_nodes_permutations(reffe::NodalReferenceFE)
   conf = get_default_conformity(reffe)
   get_face_own_nodes_permutations(reffe,conf)
+end
+
+function get_face_own_nodes_permutations(reffe::NodalReferenceFE,conf::L2Conformity)
+  _get_face_own_nodes_permutations_l2(reffe)
+end
+
+function _get_face_own_nodes_permutations_l2(reffe::NodalReferenceFE)
+  p = get_polytope(reffe)
+  r = [ [Int[]] for i in 1:num_faces(p)]
+  r[end] = [collect(1:num_nodes(reffe))]
+  r
 end
 
 """
@@ -231,9 +253,17 @@ function get_face_own_nodes(reffe::GenericNodalCartesianRefFE,conf::Conformity)
   reffe.face_own_nodes
 end
 
+function get_face_own_nodes(reffe::GenericNodalCartesianRefFE,conf::L2Conformity)
+  _get_face_own_nodes_l2(reffe)
+end
+
 function get_face_own_nodes_permutations(reffe::GenericNodalCartesianRefFE,conf::Conformity)
   @notimplementedif conf != get_default_conformity(reffe)
   reffe.face_own_nodes_permutations
+end
+
+function get_face_own_nodes_permutations(reffe::GenericNodalCartesianRefFE,conf::L2Conformity)
+  _get_face_own_nodes_permutations_l2(reffe)
 end
 
 get_face_nodes(reffe::GenericNodalCartesianRefFE) = reffe.face_nodes
@@ -252,7 +282,11 @@ get_default_conformity(reffe::GenericNodalCartesianRefFE) = get_default_conformi
 
 get_face_own_dofs(reffe::GenericNodalCartesianRefFE,conf::Conformity) = get_face_own_dofs(reffe.reffe,conf)
 
-get_face_own_dofs_permutations(reffe::GenericNodalCartesianRefFE,conf::Conformity) = get_face_own_dofs_permutations(reffe.reffe)
+get_face_own_dofs(reffe::GenericNodalCartesianRefFE,conf::L2Conformity) = get_face_own_dofs(reffe.reffe,conf)
+
+get_face_own_dofs_permutations(reffe::GenericNodalCartesianRefFE,conf::Conformity) = get_face_own_dofs_permutations(reffe.reffe,conf)
+
+get_face_own_dofs_permutations(reffe::GenericNodalCartesianRefFE,conf::L2Conformity) = get_face_own_dofs_permutations(reffe.reffe,conf)
 
 get_face_dofs(reffe::GenericNodalCartesianRefFE) = reffe.reffe.face_own_dofs
 

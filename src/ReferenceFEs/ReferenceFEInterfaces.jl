@@ -92,6 +92,10 @@ function get_face_own_dofs(reffe::ReferenceFE)
 end
 
 function get_face_own_dofs(reffe::ReferenceFE,conf::L2Conformity)
+  _get_face_own_dofs_l2(reffe)
+end
+
+function _get_face_own_dofs_l2(reffe::ReferenceFE)
   p = get_polytope(reffe)
   r = [Int[] for i in 1:num_faces(p)]
   r[end] = collect(1:num_dofs(reffe))
@@ -114,6 +118,10 @@ function get_face_own_dofs_permutations(reffe::ReferenceFE)
 end
 
 function get_face_own_dofs_permutations(reffe::ReferenceFE,conf::L2Conformity)
+  _get_face_own_dofs_permutations_l2(reffe)
+end
+
+function _get_face_own_dofs_permutations_l2(reffe::ReferenceFE)
   p = get_polytope(reffe)
   r = [ [Int[]] for i in 1:num_faces(p)]
   r[end] = [collect(1:num_dofs(reffe))]
@@ -401,9 +409,17 @@ function get_face_own_dofs(reffe::GenericRefFE, conf::Conformity)
   reffe.face_own_dofs
 end
 
+function get_face_own_dofs(reffe::GenericRefFE, conf::L2Conformity)
+  _get_face_own_dofs_l2(reffe)
+end
+
 function get_face_own_dofs_permutations(reffe::GenericRefFE,conf::Conformity)
   @notimplementedif conf != reffe.conformity
   reffe.face_own_dofs_permutations
+end
+
+function get_face_own_dofs_permutations(reffe::GenericRefFE,conf::L2Conformity)
+  _get_face_own_dofs_permutations_l2(reffe)
 end
 
 get_face_dofs(reffe::GenericRefFE) = reffe.face_dofs

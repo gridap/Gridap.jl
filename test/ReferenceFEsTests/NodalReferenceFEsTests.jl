@@ -45,5 +45,10 @@ test_nodal_reference_fe(reffe)
 @test get_dof_to_node(reffe) == [1, 2, 3, 4]
 @test get_own_nodes_permutations(reffe) == get_face_own_nodes_permutations(reffe)[end]
 
+@test get_face_own_dofs(reffe,L2Conformity()) == [[], [], [], [], [], [], [], [], [1, 2, 3, 4]]
+@test get_face_own_nodes(reffe,L2Conformity()) == [[], [], [], [], [], [], [], [], [1, 2, 3, 4]]
+@test get_face_own_dofs_permutations(reffe,L2Conformity()) == [[[]], [[]], [[]], [[]], [[]], [[]], [[]], [[]], [[1, 2, 3, 4]]]
+@test get_face_own_nodes_permutations(reffe,L2Conformity()) == [[[]], [[]], [[]], [[]], [[]], [[]], [[]], [[]], [[1, 2, 3, 4]]]
+
 
 end # module
