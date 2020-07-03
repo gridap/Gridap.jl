@@ -1,30 +1,20 @@
 
 
 """
-    struct Table{T,P} <: AbstractVector{Vector{T}}
-      data::Vector{T}
-      ptrs::Vector{P}
-    end
+     struct Table{T,Vd<:AbstractVector{T},Vp<:AbstractVector} <: AbstractVector{Vector{T}}
+        data::Vd
+        ptrs::Vp
+     end   
 
 Type representing a list of lists (i.e., a table) in
 compressed format.
 """
-struct Table{T,P} <: AbstractVector{Vector{T}}
-  data::Vector{T}
-  ptrs::Vector{P}
-  function Table(data::Vector{T},ptrs::Vector{P}) where {T,P}
-    new{T,P}(data,ptrs)
-  end
-end
-
-@doc """
-    Table(data::AbstractVector{T},ptrs::AbstractVector{P}) where {T,P}
-
-Build a table from the given data and pointers. If the arguments are not of
-type `Vector`, they will be converted.
-"""
-function Table(data::AbstractVector{T},ptrs::AbstractVector{P}) where {T,P}
-  Table(Vector{T}(data),Vector{P}(ptrs))
+struct Table{T,Vd<:AbstractVector{T},Vp<:AbstractVector} <: AbstractVector{Vector{T}}
+  data::Vd
+  ptrs::Vp
+  function Table(data::AbstractVector,ptrs::AbstractVector)
+    new{eltype(data),typeof(data),typeof(ptrs)}(data,ptrs)
+  end   
 end
 
 """
@@ -42,13 +32,13 @@ function Table(a::Table)
   a
 end
 
-function Base.convert(::Type{Table{T,P}},table::Table{Ta,Pa}) where {T,P,Ta,Pa}
-  data = convert(Vector{T},table.data)
-  ptrs = convert(Vector{P},table.ptrs)
+function Base.convert(::Type{Table{T,Vd,Vp}},table::Table{Ta,Vda,Vpa}) where {T,Vd,Vp,Ta,Vda,Vpa}
+  data = convert(Vd,table.data)
+  ptrs = convert(Vp,table.ptrs)
   Table(data,ptrs)
 end
 
-function Base.convert(::Type{Table{T,P}},table::Table{T,P}) where {T,P}
+function Base.convert(::Type{Table{T,Vd,Vp}},table::Table{T,Vd,Vp}) where {T,Vd,Vp}
   table
 end
 
@@ -103,9 +93,11 @@ function getindex!(c,a::Table,i::Integer)
   r
 end
 
-function getindex(a::Table,i::Integer)
-  cache = array_cache(a)
-  getindex!(cache,a,i)
+@inline function Base.getindex(a::Table,i::Integer)
+  @inbounds pini = a.ptrs[i]
+  @inbounds pend = a.ptrs[i+1]-1
+  ids = pini:pend
+  view(a.data,ids)
 end
 
 function Base.getindex(a::Table,i::UnitRange)
@@ -243,7 +235,7 @@ end
 
 """
 """
-function append_tables_globally(tables::Table{T,P}...) where {T,P}
+function append_tables_globally(tables::Table{T,Vd,Vp}...) where {T,Vd,Vp}
   first_table, = tables
   data = copy(first_table.data)
   ptrs = copy(first_table.ptrs)
@@ -262,13 +254,13 @@ end
 
 """
 """
-get_ptrs_eltype(::Table{T,P}) where {T,P} = P
-get_ptrs_eltype(::Type{Table{T,P}}) where {T,P} = P
+get_ptrs_eltype(::Table{T,Vd,Vp}) where {T,Vd,Vp} = eltype(Vp)
+get_ptrs_eltype(::Type{Table{T,Vd,Vp}}) where {T,Vd,Vp} = eltype(Vp)
 
 """
 """
-get_data_eltype(::Table{T,P}) where {T,P} = T
-get_data_eltype(::Type{Table{T,P}}) where {T,P} = T
+get_data_eltype(::Table{T,Vd,Vp}) where {T,Vd,Vp} = T
+get_data_eltype(::Type{Table{T,Vd,Vp}}) where {T,Vd,Vp} = T
 
 """
     append_tables_locally(tables::Table...)
@@ -360,8 +352,8 @@ function get_local_item(a_to_lb_to_b::Table, lb::AbstractArray{<:Integer})
   a_to_b
 end
 
-struct LocalItemFromTable{T,P,A} <: AbstractVector{T}
-  a_to_lb_to_b::Table{T,P}
+struct LocalItemFromTable{T,Vd,Vp,A} <: AbstractVector{T}
+  a_to_lb_to_b::Table{T,Vd,Vp}
   lb::A
 end
 
@@ -386,9 +378,9 @@ function find_local_index(a_to_b, b_to_la_to_a::Table)
   a_to_la
 end
 
-struct LocalIndexFromTable{T,P,V<:AbstractVector} <: AbstractVector{T}
+struct LocalIndexFromTable{T,Vd,Vp,V<:AbstractVector} <: AbstractVector{T}
   a_to_b::V
-  b_to_la_to_a::Table{T,P}
+  b_to_la_to_a::Table{T,Vd,Vp}
 end
 
 Base.size(m::LocalIndexFromTable) = size(m.a_to_b)
@@ -437,9 +429,9 @@ function to_dict(table::Table)
   dict
 end
 
-function from_dict(::Type{Table{T,P}}, dict::Dict{Symbol,Any}) where {T,P}
-  data::Vector{T} = dict[:data]
-  ptrs::Vector{P} = dict[:ptrs]
+function from_dict(::Type{Table{T,Vd,Vp}}, dict::Dict{Symbol,Any}) where {T,Vd,Vp}
+  data::Vd = dict[:data]
+  ptrs::Vp = dict[:ptrs]
   Table(data,ptrs)
 end
 

@@ -257,11 +257,12 @@ end
 function _generate_face_to_own_dofs(
   n_faces,
   cell_to_ctype,
-  d_to_cell_to_dfaces::Vector{Table{T,P}},
-  d_to_dface_to_cells::Vector{Table{T,P}},
+  d_to_cell_to_dfaces::Vector{Table{T,Vd,Vp}},
+  d_to_dface_to_cells::Vector{Table{T,Vd,Vp}},
   d_to_offset,
-  d_to_ctype_to_ldface_to_own_ldofs) where {T,P}
+  d_to_ctype_to_ldface_to_own_ldofs) where {T,Vd,Vp}
 
+  P=eltype(Vp)
   face_to_own_dofs_ptrs = zeros(P,n_faces+1)
 
   D = length(d_to_offset)-1
@@ -517,12 +518,12 @@ function _convert_dirichlet_components(dirichlet_tags::String,dirichlet_componen
 end
 
 struct CellDofsNonOriented <:AbstractVector{Vector{Int}}
-  cell_to_faces::Table{Int,Int32}
-  cell_to_lface_to_pindex::Table{Int8,Int32}
+  cell_to_faces::Table{Int,Vector{Int},Vector{Int32}}
+  cell_to_lface_to_pindex::Table{Int8,Vector{Int8},Vector{Int32}}
   cell_to_ctype::Vector{Int8}
   ctype_to_lface_to_own_ldofs::Vector{Vector{Vector{Int}}}
   ctype_to_num_dofs::Vector{Int}
-  face_to_own_dofs::Table{Int,Int32}
+  face_to_own_dofs::Table{Int,Vector{Int},Vector{Int32}}
   ctype_to_lface_to_pindex_to_pdofs::Vector{Vector{Vector{Vector{Int}}}}
 end
 

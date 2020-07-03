@@ -1,6 +1,7 @@
 module TablesTests
 
 using Test
+using Gridap
 using Gridap.Arrays
 using Gridap.Io
 using JSON
@@ -12,7 +13,7 @@ a = Table(data,ptrs)
 b = [ data[ptrs[i]:ptrs[i+1]-1] for i in 1:length(ptrs)-1]
 test_array(a,b)
 
-c = convert(Table{Float64,Int32},a)
+c = convert(Table{Float64,Vector{Float64},Vector{Int32}},a)
 test_array(c,b)
 
 data = Fill(1.3,12)
@@ -20,6 +21,35 @@ ptrs = [1,4,4,7,13]
 d = Table(data,ptrs)
 e = [ data[ptrs[i]:ptrs[i+1]-1] for i in 1:length(ptrs)-1]
 test_array(d,e)
+
+
+data = Int64[2,3,1,3,6,7,3,2,5,6,3,4]
+ptrs = [1,4,4,7,13]
+a = Table(data,ptrs)
+
+data  = reinterpret(Int64,Vector{Float64}(undef,12))
+data[1:6] .= a.data[7:12]
+data[7:9] .= a.data[4:6]
+data[10:12] .= a.data[1:3]
+
+perm = Vector{Int64}(undef,12)
+perm[1:3]  .= 10:12
+perm[4:6]  .= 7:9
+perm[7:12] .= 1:6
+data = reindex(data,perm)
+b = Table(data,ptrs)
+test_array(a,b)
+
+k=1
+data = rand(Int,12)
+c=Table(data,ptrs)
+for i in 1:length(b)
+  for j in 1:length(b[i])
+    b[i][j] = data[k]
+    global k=k+1
+  end
+end
+test_array(c,b)
 
 
 vv = Array{Array{Int,2},2}(undef,2,2)
@@ -124,11 +154,11 @@ ptrs = [1,4,4,7,13]
 a = Table(data,ptrs)
 
 dict = to_dict(a)
-b = from_dict(Table{Float64,Int32},dict)
+b = from_dict(Table{Float64,Vector{Float64},Vector{Int32}},dict)
 @test a == b
 
 s = to_json(a)
-b = from_json(Table{Float64,Int32},s)
+b = from_json(Table{Float64,Vector{Float64},Vector{Int32}},s)
 @test a == b
 
 d = mktempdir()
