@@ -24,7 +24,7 @@ face_dofs = [[1],[2],[3],[4],[1,2],[3,4],[1,3],[2,4],[1,2,3,4]]
 
 reffe = GenericRefFE(
   ndofs, polytope, prebasis, dofs,
-  face_own_dofs, face_own_dofs_permutations, face_dofs)
+  GradConformity(), face_own_dofs, face_own_dofs_permutations, face_dofs)
 
 node_coordinates = Point{2,Float64}[(0,0),(1,0),(0,1),(1,1)]
 node_and_comp_to_dof = [1,2,3,4]
@@ -44,6 +44,11 @@ test_nodal_reference_fe(reffe)
 
 @test get_dof_to_node(reffe) == [1, 2, 3, 4]
 @test get_own_nodes_permutations(reffe) == get_face_own_nodes_permutations(reffe)[end]
+
+@test get_face_own_dofs(reffe,L2Conformity()) == [[], [], [], [], [], [], [], [], [1, 2, 3, 4]]
+@test get_face_own_nodes(reffe,L2Conformity()) == [[], [], [], [], [], [], [], [], [1, 2, 3, 4]]
+@test get_face_own_dofs_permutations(reffe,L2Conformity()) == [[[]], [[]], [[]], [[]], [[]], [[]], [[]], [[]], [[1, 2, 3, 4]]]
+@test get_face_own_nodes_permutations(reffe,L2Conformity()) == [[[]], [[]], [[]], [[]], [[]], [[]], [[]], [[]], [[1, 2, 3, 4]]]
 
 
 end # module

@@ -1,3 +1,5 @@
+struct CurlConformity <: Conformity end
+
 """
     NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
 
@@ -28,6 +30,7 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
     p,
     prebasis,
     dof_basis,
+    CurlConformity(),
     face_own_dofs,
     face_own_dofs_permutations,
     face_dofs)

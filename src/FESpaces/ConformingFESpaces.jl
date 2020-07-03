@@ -2,6 +2,7 @@
 """
 function ConformingFESpace(
   reffes::Vector{<:ReferenceFE},
+  conf::Conformity,
   model::DiscreteModel,
   face_labeling::FaceLabeling,
   dirichlet_tags,
@@ -13,7 +14,7 @@ function ConformingFESpace(
   _dirichlet_components = _convert_dirichlet_components(dirichlet_tags,dirichlet_components)
 
   cell_dofs, nfree, ndirichlet, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
-    reffes,grid_topology,face_labeling,dirichlet_tags,_dirichlet_components)
+    reffes,conf,grid_topology,face_labeling,dirichlet_tags,_dirichlet_components)
 
   ntags = length(dirichlet_tags)
 
@@ -36,6 +37,25 @@ function ConformingFESpace(
 
 end
 
+function ConformingFESpace(
+  reffes::Vector{<:ReferenceFE},
+  model::DiscreteModel,
+  face_labeling::FaceLabeling,
+  dirichlet_tags,
+  dirichlet_components=nothing,
+  is_ref=true)
+
+  conf = get_default_conformity(first(reffes))
+  ConformingFESpace(
+    reffes,
+    conf,
+    model,
+    face_labeling,
+    dirichlet_tags,
+    dirichlet_components,
+    is_ref)
+end
+
 """
 """
 function GradConformingFESpace(
@@ -48,7 +68,7 @@ function GradConformingFESpace(
   face_labeling = get_face_labeling(model)
 
   ConformingFESpace(
-    reffes,model,face_labeling,dirichlet_tags,dirichlet_components,is_ref)
+    reffes,GradConformity(),model,face_labeling,dirichlet_tags,dirichlet_components,is_ref)
 
 end
 
@@ -81,7 +101,7 @@ function GradConformingFESpace(
   reffes = [ LagrangianRefFE(T,p,order) for p in polytopes ]
 
   ConformingFESpace(
-    reffes,model,face_labeling,dirichlet_tags,dirichlet_components,is_ref)
+    reffes,GradConformity(),model,face_labeling,dirichlet_tags,dirichlet_components,is_ref)
 
 end
 
@@ -179,12 +199,14 @@ end
 """
   compute_conforming_cell_dofs(
     reffes,
+    conf,
     grid_topology,
     face_labeling,
     dirichlet_tags)
 
   compute_conforming_cell_dofs(
     reffes,
+    conf,
     grid_topology,
     face_labeling,
     dirichlet_tags,
@@ -201,7 +223,7 @@ If `dirichlet_components`  is given, then `get_dof_to_comp` has to be defined
 for the reference elements in `reffes`.
 """
 function compute_conforming_cell_dofs(
-  reffes,grid_topology,face_labeling,dirichlet_tags,dirichlet_components=nothing)
+  reffes,conf,grid_topology,face_labeling,dirichlet_tags,dirichlet_components=nothing)
 
   D = num_cell_dims(grid_topology)
   n_faces = num_faces(grid_topology)
@@ -210,7 +232,7 @@ function compute_conforming_cell_dofs(
   d_to_dface_to_cells = [ Table(get_faces(grid_topology,d,D)) for d in 0:D]
   d_to_offset = get_offsets(grid_topology)
   d_to_ctype_to_ldface_to_own_ldofs = [
-    [ get_face_own_dofs(reffe,d) for reffe in reffes] for d in 0:D]
+    [ get_face_own_dofs(reffe,conf,d) for reffe in reffes] for d in 0:D]
 
   face_to_own_dofs, ntotal, d_to_dface_to_cell, d_to_dface_to_ldface =  _generate_face_to_own_dofs(
      n_faces,
@@ -234,9 +256,9 @@ function compute_conforming_cell_dofs(
     dirichlet_components)
 
   cell_to_lface_to_pindex = Table(get_cell_permutations(grid_topology))
-  ctype_to_lface_to_own_ldofs = [ get_face_own_dofs(reffe) for reffe in reffes]
+  ctype_to_lface_to_own_ldofs = [ get_face_own_dofs(reffe,conf) for reffe in reffes]
   ctype_to_num_dofs = [num_dofs(reffe) for reffe in reffes]
-  ctype_to_lface_to_pindex_to_pdofs = [get_face_own_dofs_permutations(reffe) for reffe in reffes]
+  ctype_to_lface_to_pindex_to_pdofs = [get_face_own_dofs_permutations(reffe,conf) for reffe in reffes]
 
   cell_dofs = CellDofsNonOriented(
     cell_to_faces,

@@ -1,3 +1,8 @@
+
+abstract type Conformity end
+
+struct L2Conformity <: Conformity end
+
 """
     abstract type ReferenceFE{D} <: GridapType
 
@@ -17,8 +22,9 @@ The `ReferenceFE` interface is defined by overloading these methods:
 - [`get_polytope(reffe::ReferenceFE)`](@ref)
 - [`get_prebasis(reffe::ReferenceFE)`](@ref)
 - [`get_dof_basis(reffe::ReferenceFE)`](@ref)
-- [`get_face_own_dofs(reffe::ReferenceFE)`](@ref)
-- [`get_face_own_dofs_permutations(reffe::ReferenceFE)`](@ref)
+- [`get_default_conformity(reffe::ReferenceFE)`](@ref)
+- [`get_face_own_dofs(reffe::ReferenceFE,conf::Conformity)`](@ref)
+- [`get_face_own_dofs_permutations(reffe::ReferenceFE,conf::Conformity)`](@ref)
 - [`get_face_dofs(reffe::ReferenceFE)`](@ref)
 
 The interface is tested with
@@ -64,9 +70,42 @@ function get_dof_basis(reffe::ReferenceFE)
 end
 
 """
+    get_default_conformity(reffe::ReferenceFE) -> Conformity
+"""
+function get_default_conformity(reffe::ReferenceFE)
+  @abstractmethod
+end
+
+"""
+    get_face_own_dofs(reffe::ReferenceFE,conf::Conformity) -> Vector{Vector{Int}}
+"""
+function get_face_own_dofs(reffe::ReferenceFE,conf::Conformity)
+  @abstractmethod
+end
+
+"""
     get_face_own_dofs(reffe::ReferenceFE) -> Vector{Vector{Int}}
 """
 function get_face_own_dofs(reffe::ReferenceFE)
+  conf = get_default_conformity(reffe)
+  get_face_own_dofs(reffe,conf)
+end
+
+function get_face_own_dofs(reffe::ReferenceFE,conf::L2Conformity)
+  _get_face_own_dofs_l2(reffe)
+end
+
+function _get_face_own_dofs_l2(reffe::ReferenceFE)
+  p = get_polytope(reffe)
+  r = [Int[] for i in 1:num_faces(p)]
+  r[end] = collect(1:num_dofs(reffe))
+  r
+end
+
+"""
+    get_face_own_dofs_permutations(reffe::ReferenceFE,conf::Conformity) -> Vector{Vector{Vector{Int}}}
+"""
+function get_face_own_dofs_permutations(reffe::ReferenceFE,conf::Conformity)
   @abstractmethod
 end
 
@@ -74,7 +113,19 @@ end
     get_face_own_dofs_permutations(reffe::ReferenceFE) -> Vector{Vector{Vector{Int}}}
 """
 function get_face_own_dofs_permutations(reffe::ReferenceFE)
-  @abstractmethod
+  conf = get_default_conformity(reffe)
+  get_face_own_dofs_permutations(reffe,conf)
+end
+
+function get_face_own_dofs_permutations(reffe::ReferenceFE,conf::L2Conformity)
+  _get_face_own_dofs_permutations_l2(reffe)
+end
+
+function _get_face_own_dofs_permutations_l2(reffe::ReferenceFE)
+  p = get_polytope(reffe)
+  r = [ [Int[]] for i in 1:num_faces(p)]
+  r[end] = [collect(1:num_dofs(reffe))]
+  r
 end
 
 """
@@ -95,6 +146,12 @@ end
 Test if the methods in the `ReferenceFE` interface are defined for the object `reffe`.
 """
 function test_reference_fe(reffe::ReferenceFE{D}) where D
+  conf = get_default_conformity(reffe)
+  @test isa(conf,Conformity)
+  test_reference_fe(reffe,conf)
+end
+
+function test_reference_fe(reffe::ReferenceFE{D},conf::Conformity) where D
   @test D == num_dims(reffe)
   p = get_polytope(reffe)
   @test isa(p,Polytope{D})
@@ -102,10 +159,10 @@ function test_reference_fe(reffe::ReferenceFE{D}) where D
   @test isa(basis,Field)
   dofs = get_dof_basis(reffe)
   @test isa(dofs,Dof)
-  facedofs = get_face_own_dofs(reffe)
+  facedofs = get_face_own_dofs(reffe,conf)
   @test isa(facedofs,Vector{Vector{Int}})
   @test length(facedofs) == num_faces(p)
-  facedofs_perms = get_face_own_dofs_permutations(reffe)
+  facedofs_perms = get_face_own_dofs_permutations(reffe,conf)
   @test isa(facedofs_perms,Vector{Vector{Vector{Int}}})
   @test length(facedofs_perms) == num_faces(p)
   facedofs = get_face_dofs(reffe)
@@ -178,14 +235,21 @@ num_edges(reffe::ReferenceFE) = num_edges(get_polytope(reffe))
 """
 num_facets(reffe::ReferenceFE) = num_facets(get_polytope(reffe))
 
+"""
+    get_face_own_dofs(reffe::ReferenceFE,conf::Conformity,d::Integer)
+"""
+function get_face_own_dofs(reffe::ReferenceFE,conf::Conformity,d::Integer)
+  p = get_polytope(reffe)
+  range = get_dimrange(p,d)
+  get_face_own_dofs(reffe,conf)[range]
+end
 
 """
     get_face_own_dofs(reffe::ReferenceFE,d::Integer)
 """
 function get_face_own_dofs(reffe::ReferenceFE,d::Integer)
-  p = get_polytope(reffe)
-  range = get_dimrange(p,d)
-  get_face_own_dofs(reffe)[range]
+  conf = get_default_conformity(reffe)
+  get_face_own_dofs(reffe,conf,d)
 end
 
 """
@@ -198,20 +262,36 @@ function get_face_dofs(reffe::ReferenceFE,d::Integer)
 end
 
 """
+    get_face_own_dofs_permutations(reffe::ReferenceFE,conf::Conformity,d::Integer)
+"""
+function get_face_own_dofs_permutations(reffe::ReferenceFE,conf::Conformity,d::Integer)
+  p = get_polytope(reffe)
+  range = get_dimrange(p,d)
+  get_face_own_dofs_permutations(reffe,conf)[range]
+end
+
+"""
     get_face_own_dofs_permutations(reffe::ReferenceFE,d::Integer)
 """
 function get_face_own_dofs_permutations(reffe::ReferenceFE,d::Integer)
-  p = get_polytope(reffe)
-  range = get_dimrange(p,d)
-  get_face_own_dofs_permutations(reffe)[range]
+  conf = get_default_conformity(reffe)
+  get_face_own_dofs_permutations(reffe,conf,d)
+end
+
+"""
+    get_own_dofs_permutations(reffe::ReferenceFE,conf::Conformity)
+"""
+function get_own_dofs_permutations(reffe::ReferenceFE,conf::Conformity)
+  n = num_faces(get_polytope(reffe))
+  get_face_own_dofs_permutations(reffe,conf)[n]
 end
 
 """
     get_own_dofs_permutations(reffe::ReferenceFE)
 """
 function get_own_dofs_permutations(reffe::ReferenceFE)
-  n = num_faces(get_polytope(reffe))
-  get_face_own_dofs_permutations(reffe)[n]
+  conf = get_default_conformity(reffe)
+  get_own_dofs_permutations(reffe,conf)
 end
 
 """
@@ -245,11 +325,12 @@ end
 # Concrete implementation
 
 """
-    struct GenericRefFE{D} <: ReferenceFE{D}
+    struct GenericRefFE{D,C<:Conformity} <: ReferenceFE{D}
       ndofs::Int
       polytope::Polytope{D}
       prebasis::Field
       dofs::Dof
+      conformity::C
       face_own_dofs::Vector{Vector{Int}}
       face_own_dofs_permutations::Vector{Vector{Vector{Int}}}
       face_dofs::Vector{Vector{Int}}
@@ -265,11 +346,12 @@ Note that some fields in this `struct` are type unstable deliberately in order t
 type signature. Don't access them in computationally expensive functions,
 instead extract the required fields before and pass them to the computationally expensive function.
 """
-struct GenericRefFE{D} <: ReferenceFE{D}
+struct GenericRefFE{D,C<:Conformity} <: ReferenceFE{D}
   ndofs::Int
   polytope::Polytope{D}
   prebasis::Field
   dofs::Dof
+  conformity::C
   face_own_dofs::Vector{Vector{Int}}
   face_own_dofs_permutations::Vector{Vector{Vector{Int}}}
   face_dofs::Vector{Vector{Int}}
@@ -280,6 +362,7 @@ struct GenericRefFE{D} <: ReferenceFE{D}
         polytope::Polytope{D},
         prebasis::Field,
         dofs::Dof,
+        conformity::Conformity,
         face_own_dofs::Vector{Vector{Int}},
         face_own_dofs_permutations::Vector{Vector{Vector{Int}}},
         face_dofs::Vector{Vector{Int}},
@@ -292,16 +375,18 @@ struct GenericRefFE{D} <: ReferenceFE{D}
     polytope::Polytope{D},
     prebasis::Field,
     dofs::Dof,
+    conformity::Conformity,
     face_own_dofs::Vector{Vector{Int}},
     face_own_dofs_permutations::Vector{Vector{Vector{Int}}},
     face_dofs::Vector{Vector{Int}},
     shapefuns::Field=compute_shapefuns(dofs,prebasis)) where D
 
-    new{D}(
+    new{D,typeof(conformity)}(
       ndofs,
       polytope,
       prebasis,
       dofs,
+      conformity,
       face_own_dofs,
       face_own_dofs_permutations,
       face_dofs,
@@ -317,9 +402,25 @@ get_prebasis(reffe::GenericRefFE) = reffe.prebasis
 
 get_dof_basis(reffe::GenericRefFE) = reffe.dofs
 
-get_face_own_dofs(reffe::GenericRefFE) = reffe.face_own_dofs
+get_default_conformity(reffe::GenericRefFE) = reffe.conformity
 
-get_face_own_dofs_permutations(reffe::GenericRefFE) = reffe.face_own_dofs_permutations
+function get_face_own_dofs(reffe::GenericRefFE, conf::Conformity)
+  @notimplementedif conf != reffe.conformity
+  reffe.face_own_dofs
+end
+
+function get_face_own_dofs(reffe::GenericRefFE, conf::L2Conformity)
+  _get_face_own_dofs_l2(reffe)
+end
+
+function get_face_own_dofs_permutations(reffe::GenericRefFE,conf::Conformity)
+  @notimplementedif conf != reffe.conformity
+  reffe.face_own_dofs_permutations
+end
+
+function get_face_own_dofs_permutations(reffe::GenericRefFE,conf::L2Conformity)
+  _get_face_own_dofs_permutations_l2(reffe)
+end
 
 get_face_dofs(reffe::GenericRefFE) = reffe.face_dofs
 

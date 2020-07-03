@@ -1,3 +1,4 @@
+struct DivConformity <: Conformity end
 
 """
     RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
@@ -28,6 +29,7 @@ function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
     p,
     prebasis,
     dof_basis,
+    DivConformity(),
     face_own_dofs,
     face_own_dofs_permutations,
     face_dofs)

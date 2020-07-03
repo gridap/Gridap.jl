@@ -18,6 +18,21 @@ reffe = QDiscRefFE(T,QUAD,2)
 V = FESpace(model=model,reffe=reffe)
 @test isa(V,UnconstrainedFESpace)
 
+V = FESpace(model=model,reffe=QUAD4,conformity=GradConformity())
+v1 = FEFunction(V,rand(num_free_dofs(V)))
+@test isa(V,UnconstrainedFESpace)
+
+V = FESpace(model=model,reffe=QUAD4,conformity=L2Conformity())
+v2 = FEFunction(V,rand(num_free_dofs(V)))
+@test isa(V,UnconstrainedFESpace)
+
+V = FESpace(model=model,reffe=QUAD4,conformity=CDConformity((CONT,DISC)))
+v3 = FEFunction(V,rand(num_free_dofs(V)))
+@test isa(V,UnconstrainedFESpace)
+
+using Gridap.Visualization
+writevtk(Triangulation(model),"results",cellfields=["v1"=>v1,"v2"=>v2,"v3"=>v3])
+
 V = FESpace(
  model=model,
  valuetype=Float64,

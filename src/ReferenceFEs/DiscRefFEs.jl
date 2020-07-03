@@ -34,11 +34,13 @@ get_prebasis(reffe::DiscRefFE) = get_prebasis(reffe.p_reffe)
 
 get_dof_basis(reffe::DiscRefFE) = get_dof_basis(reffe.p_reffe)
 
-function get_face_own_dofs(reffe::DiscRefFE)
+get_default_conformity(reffe::DiscRefFE) = L2Conformity()
+
+function get_face_own_dofs(reffe::DiscRefFE,conf::L2Conformity)
   _compute_non_conf_face_own_x(reffe,num_dofs(reffe))
 end
 
-function get_face_own_dofs_permutations(reffe::DiscRefFE)
+function get_face_own_dofs_permutations(reffe::DiscRefFE,conf::L2Conformity)
   _compute_non_conf_face_own_x_permutations(reffe,num_dofs(reffe))
 end
 
@@ -50,11 +52,11 @@ get_node_coordinates(reffe::DiscRefFE) = get_node_coordinates(reffe.p_reffe)
 
 get_node_and_comp_to_dof(reffe::DiscRefFE) = get_node_and_comp_to_dof(reffe.p_reffe)
 
-function get_face_own_nodes(reffe::DiscRefFE)
+function get_face_own_nodes(reffe::DiscRefFE,conf::L2Conformity)
   _compute_non_conf_face_own_x(reffe,num_nodes(reffe))
 end
 
-function get_face_own_nodes_permutations(reffe::DiscRefFE)
+function get_face_own_nodes_permutations(reffe::DiscRefFE,conf::L2Conformity)
   _compute_non_conf_face_own_x_permutations(reffe,num_nodes(reffe))
 end
 

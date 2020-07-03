@@ -123,9 +123,12 @@ function _setup_generic_space(kwargs)
   reffes = [ reffe ]
 
   if conformity in [true, :default]
-      V =  ConformingFESpace(reffes,model,labels,diritags,nothing,is_ref)
+    conf = get_default_conformity(reffe)
+    V =  ConformingFESpace(reffes,conf,model,labels,diritags,nothing,is_ref)
+  elseif isa(conformity,Conformity)
+    V =  ConformingFESpace(reffes,conformity,model,labels,diritags,nothing,is_ref)
   else
-    s = "Conformity is determined by $reffe reference FE and cannot be imposed in generic FESpace constructor, leave it `true` or simply do not specify it"
+    s = "Unsuported conformity = $conformity"
     @unreachable s
   end
 
@@ -156,7 +159,7 @@ function _setup_hdiv_space(kwargs)
   reffes = [RaviartThomasRefFE(T,p,order) for p in polytopes]
 
   if conformity in [true, :default, :HDiv, :Hdiv]
-      V =  ConformingFESpace(reffes,model,labels,diritags,nothing,is_ref)
+    V =  ConformingFESpace(reffes,DivConformity(),model,labels,diritags,nothing,is_ref)
   else
     s = "Conformity $conformity not implemented for $reffe reference FE on polytopes $(polytopes...)"
     @unreachable s
@@ -187,7 +190,7 @@ function _setup_hcurl_space(kwargs)
   reffes = [NedelecRefFE(T,p,order) for p in polytopes]
 
   if conformity in [true, :default, :HCurl, :Hcurl]
-      V =  ConformingFESpace(reffes,model,labels,diritags,nothing,is_ref)
+    V =  ConformingFESpace(reffes,CurlConformity(),model,labels,diritags,nothing,is_ref)
   else
     s = "Conformity $conformity not implemented for $reffe reference FE on polytopes $(polytopes...)"
     @unreachable s
@@ -274,7 +277,7 @@ function _setup_lagrange_spaces(kwargs)
     if labels == nothing
       return GradConformingFESpace(_reffes,model,diritags,dirimasks,is_ref)
     else
-      return ConformingFESpace(_reffes,model,labels,diritags,dirimasks,is_ref)
+      return ConformingFESpace(_reffes,GradConformity(),model,labels,diritags,dirimasks,is_ref)
     end
 
   else
