@@ -8,10 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+  - 
   - Added `SkeletonTriangulation` constructor in order to integrate, where a given interpolation is discontinuous. . Since PR [#304](https://github.com/gridap/Gridap.jl/pull/304).
   - New `ConformingFESpace` constructor. Since PR [#293](https://github.com/gridap/Gridap.jl/pull/293).
   - Added `QDiscRefFE` constructor for `DiscRefFE`. Since PR [#293](https://github.com/gridap/Gridap.jl/pull/293).
   - New `FESpace` constructor that takes an instance of `ReferenceFE`. Since PR [#294](https://github.com/gridap/Gridap.jl/pull/294).
+  - New `FESpace` constructor that takes an instance of `Conformity`. Since PR [#311](https://github.com/gridap/Gridap.jl/pull/311).
   - New `CDLagrangianRefFE` struct, that provides a Lagrangian reference FE with different conformity per direction. Since PR [#299](https://github.com/gridap/Gridap.jl/pull/299).
   - New `FESpace` method that takes a model and a `RefFE`. Since PR [#299](https://github.com/gridap/Gridap.jl/pull/299).
   - Possibility to have 0 order in `DISC` directions of a `CDLagrangianRefFE`. Since PR [#308](https://github.com/gridap/Gridap.jl/pull/308).
@@ -19,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+  - Changed the interfaces of `ReferenceFE` and `NodalReferenceFE` in relation of DOF ownership. Now function `get_face_own_dofs` and related ones are parametrized by a `Conformity` object. Since PR [#311](https://github.com/gridap/Gridap.jl/pull/311).
+  - The constructors `GenericRefFE`, `GenericNodalCartesianRefFE`, and `compute_conforming_cell_dofs` take an extra argument of type `Conformity`. Since PR [#311](https://github.com/gridap/Gridap.jl/pull/311).
   - Renamed `PDiscRefFE` -> `DiscRefFE` struct keeping the name for constructor. Since PR [#293](https://github.com/gridap/Gridap.jl/pull/293).
   - One of the `GradConformingFESpace` methods now more general `ConformingFESpace`. Since PR [#293](https://github.com/gridap/Gridap.jl/pull/293).
   - `DivConformingFESpace` and `CurlConformingFESpace` constructors eliminated. Since PR [#293](https://github.com/gridap/Gridap.jl/pull/293).
