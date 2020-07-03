@@ -37,6 +37,25 @@ function ConformingFESpace(
 
 end
 
+function ConformingFESpace(
+  reffes::Vector{<:ReferenceFE},
+  model::DiscreteModel,
+  face_labeling::FaceLabeling,
+  dirichlet_tags,
+  dirichlet_components=nothing,
+  is_ref=true)
+
+  conf = get_default_conformity(first(reffes))
+  ConformingFESpace(
+    reffes,
+    conf,
+    model,
+    face_labeling,
+    dirichlet_tags,
+    dirichlet_components,
+    is_ref)
+end
+
 """
 """
 function GradConformingFESpace(

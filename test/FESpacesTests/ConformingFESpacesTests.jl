@@ -73,4 +73,7 @@ test_single_field_fe_space(V,matvecdata,matdata,vecdata)
 V = GradConformingFESpace(reffes,model,dirichlet_tags,dirichlet_components)
 test_single_field_fe_space(V)
 
+V = ConformingFESpace(reffes,model,get_face_labeling(model),dirichlet_tags,dirichlet_components)
+test_single_field_fe_space(V)
+
 end  # module
