@@ -17,12 +17,13 @@ order = 2
 grid_topology = get_grid_topology(model)
 polytopes = get_polytopes(grid_topology)
 reffes = [LagrangianRefFE(Float64,p,order) for p in polytopes]
+conf = GradConformity()
 
 face_labeling = get_face_labeling(model)
 dirichlet_tags = ["tag_1","tag_6"]
 
 cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
-  reffes, grid_topology, face_labeling, dirichlet_tags)
+  reffes,conf,grid_topology, face_labeling, dirichlet_tags)
 
 r = [
   [-1,1,4,5,14,15,16,17,35],[1,2,5,6,18,19,17,20,36],[2,3,6,7,21,22,20,23,37],
@@ -40,7 +41,7 @@ reffes = [LagrangianRefFE(VectorValue{2,Float64},p,order) for p in polytopes]
 dirichlet_components = [(true,true), (false,true)]
 
 cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
-  reffes, grid_topology, face_labeling, dirichlet_tags, dirichlet_components)
+  reffes,conf,grid_topology, face_labeling, dirichlet_tags, dirichlet_components)
 
 r = [
   [-1,1,7,9,-2,2,8,10],[1,3,9,11,2,4,10,12],[3,5,11,13,4,6,12,14],
@@ -59,7 +60,7 @@ reffes = [LagrangianRefFE(VectorValue{2,Float64},p,order) for p in polytopes]
 dirichlet_components = [(true,true), (false,true)]
 
 cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
-  reffes, grid_topology, face_labeling, dirichlet_tags, dirichlet_components)
+  reffes, conf, grid_topology, face_labeling, dirichlet_tags, dirichlet_components)
 
 V = GradConformingFESpace(reffes,model,dirichlet_tags)
 test_single_field_fe_space(V)
