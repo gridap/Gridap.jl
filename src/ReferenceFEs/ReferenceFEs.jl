@@ -96,6 +96,7 @@ export GenericRefFE
 export get_polytope
 export get_prebasis
 export get_dof_basis
+export get_default_conformity
 export get_face_own_dofs
 export get_face_own_dofs_permutations
 export get_face_dofs
@@ -144,6 +145,14 @@ export HEX8
 
 export CONT
 export DISC
+
+export Conformity
+export L2Conformity
+export H1Conformity
+export GradConformity
+export CurlConformity
+export DivConformity
+export CDConformity
 
 export SerendipityRefFE
 export DiscRefFE

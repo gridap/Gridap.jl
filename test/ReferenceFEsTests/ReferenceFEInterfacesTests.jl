@@ -24,7 +24,7 @@ face_dofs = [[1],[2],[3],[4],[1,2],[3,4],[1,3],[2,4],[1,2,3,4]]
 
 reffe = GenericRefFE(
   ndofs, polytope, prebasis, dofs,
-  face_own_dofs, face_own_dofs_permutations, face_dofs)
+  GradConformity(),face_own_dofs, face_own_dofs_permutations, face_dofs)
 
 test_reference_fe(reffe)
 

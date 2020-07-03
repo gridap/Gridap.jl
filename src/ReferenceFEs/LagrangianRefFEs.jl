@@ -1,3 +1,6 @@
+struct GradConformity <: Conformity end
+const H1Conformity = GradConformity
+
 """
     struct LagrangianRefFE{D} <: NodalReferenceFE{D}
       # private fields
@@ -12,7 +15,7 @@ For this type
 
 """
 struct LagrangianRefFE{D} <: NodalReferenceFE{D}
-  data::GenericRefFE{D}
+  data::GenericRefFE{D,GradConformity}
   face_own_nodes::Vector{Vector{Int}}
   own_nodes_permutations::Vector{Vector{Int}}
   face_nodes::Vector{Vector{Int}}
@@ -64,6 +67,7 @@ struct LagrangianRefFE{D} <: NodalReferenceFE{D}
       polytope,
       prebasis,
       dofs,
+      GradConformity(),
       face_own_dofs,
       face_own_dofs_permutations,
       face_dofs)
@@ -82,9 +86,11 @@ get_prebasis(reffe::LagrangianRefFE) = reffe.data.prebasis
 
 get_dof_basis(reffe::LagrangianRefFE) = reffe.data.dofs
 
-get_face_own_dofs(reffe::LagrangianRefFE) = reffe.data.face_own_dofs
+get_default_conformity(reffe::LagrangianRefFE) = GradConformity()
 
-get_face_own_dofs_permutations(reffe::LagrangianRefFE) = reffe.data.face_own_dofs_permutations
+get_face_own_dofs(reffe::LagrangianRefFE,conf::GradConformity) = reffe.data.face_own_dofs
+
+get_face_own_dofs_permutations(reffe::LagrangianRefFE,conf::GradConformity) = reffe.data.face_own_dofs_permutations
 
 get_face_dofs(reffe::LagrangianRefFE) = reffe.data.face_dofs
 
@@ -98,9 +104,9 @@ get_node_and_comp_to_dof(reffe::LagrangianRefFE) = reffe.data.dofs.node_and_comp
 
 get_dof_to_node(reffe::LagrangianRefFE) = reffe.data.dofs.dof_to_node
 
-get_face_own_nodes(reffe::LagrangianRefFE) = reffe.face_own_nodes
+get_face_own_nodes(reffe::LagrangianRefFE,conf::GradConformity) = reffe.face_own_nodes
 
-function get_face_own_nodes_permutations(reffe::LagrangianRefFE)
+function get_face_own_nodes_permutations(reffe::LagrangianRefFE,conf::GradConformity)
   _reffaces = vcat(reffe.reffaces...)
   face_own_nodes_permutations = map(get_own_nodes_permutations,_reffaces)
 
@@ -135,7 +141,7 @@ end
 
 get_face_nodes(reffe::LagrangianRefFE) = reffe.face_nodes
 
-function get_own_nodes_permutations(reffe::LagrangianRefFE)
+function get_own_nodes_permutations(reffe::LagrangianRefFE,conf::GradConformity)
   reffe.own_nodes_permutations
 end
 
@@ -173,8 +179,8 @@ function (==)(a::LagrangianRefFE{D}, b::LagrangianRefFE{D}) where D
   expsa = get_exponents(get_prebasis(a))
   expsb = get_exponents(get_prebasis(b))
   t = t && (expsa == expsb)
-  facedofsa = get_face_own_dofs(a)
-  facedofsb = get_face_own_dofs(b)
+  facedofsa = get_face_dofs(a)
+  facedofsb = get_face_dofs(b)
   t = t && (facedofsa == facedofsb)
   ia = get_node_and_comp_to_dof(a)
   ib = get_node_and_comp_to_dof(b)

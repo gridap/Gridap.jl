@@ -1,6 +1,10 @@
 const CONT = 0
 const DISC = 1
 
+struct CDConformity{D} <: Conformity
+  cont::NTuple{D,Int}
+end
+
 function CDLagrangianRefFE(::Type{T},p::ExtrusionPolytope{D},order::Int,cont) where {T,D}
 
   @assert all([cond(c,o) for (c,o) in zip(cont,orders)])
@@ -33,6 +37,7 @@ function CDLagrangianRefFE(::Type{T},p::ExtrusionPolytope{D},orders,cont) where 
       p,
       prebasis,
       dofs,
+      CDConformity(Tuple(cont)),
       face_own_dofs,
       face_own_dofs_permutations,
       face_dofs)
