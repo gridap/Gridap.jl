@@ -5,6 +5,14 @@ using FillArrays
 using Gridap.Arrays
 using Gridap.Arrays: AppliedArray
 
+a = [1,2,3]
+b = reindex(a,[3,2,1])
+for i=1:3
+    b[i]=i
+end
+@test b == [1,2,3]
+@test a == [3,2,1]
+
 a = [[1,2,4,5],[2,4,6,7],[4,3,5,1],[2,3]]
 b = [3,1,2]
 
