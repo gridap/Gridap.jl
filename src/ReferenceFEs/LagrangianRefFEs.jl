@@ -445,7 +445,7 @@ are for the polynomial order of the resulting space, which allows isotropic or a
 indexable collection of `D` integers (e.g., a tuple or a vector), being `D` the number of space dimensions.
 
 In order to be able to use this function, the type of the provided polytope `p` has to implement the
-following additional methods. They have been implemented for `ExtrusionPolytope` in the library. They 
+following additional methods. They have been implemented for `ExtrusionPolytope` in the library. They
 need to be implemented for new polytope types in order to build Lagangian reference elements on top of them.
 
 - [`compute_monomial_basis(::Type{T},p::Polytope,orders) where T`](@ref)
@@ -461,6 +461,15 @@ new polytope types increasing customization possibilities.
 - [`compute_lagrangian_reffaces(::Type{T},p::Polytope,orders) where T`](@ref)
 """
 function LagrangianRefFE(::Type{T},p::Polytope{D},orders) where {T,D}
+  if any(orders.==0) && !all(orders.==0)
+    cont = map(i -> i == 0 ? DISC : CONT,orders)
+    return _cd_lagrangian_ref_fe(T,p,orders,cont)
+  else
+    return _lagrangian_ref_fe(T,p,orders)
+  end
+end
+
+function _lagrangian_ref_fe(::Type{T},p::Polytope{D},orders) where {T,D}
   prebasis = compute_monomial_basis(T,p,orders)
   nodes, face_own_nodes = compute_nodes(p,orders)
   dofs = LagrangianDofBasis(T,nodes)
@@ -610,7 +619,7 @@ end
 
 function _compute_high_order_nodes_dim_0!(nodes,facenodes,p)
   x = get_vertex_coordinates(p)
-  k = 1 
+  k = 1
   for vertex in 1:num_vertices(p)
     push!(nodes,x[vertex])
     push!(facenodes[vertex],k)
@@ -659,7 +668,7 @@ function _compute_node_permutations(p, interior_nodes)
   change = inv(evaluate(lbasis,vertex_to_coord))
   lshapefuns = change_basis(lbasis,change)
   perms = get_vertex_permutations(p)
-  map = evaluate(lshapefuns,interior_nodes) 
+  map = evaluate(lshapefuns,interior_nodes)
   pvertex_to_coord = similar(vertex_to_coord)
   node_perms = Vector{Int}[]
   tol = 1.0e-10
@@ -896,4 +905,3 @@ const TET4 = LagrangianRefFE(Float64,TET,1)
     const HEX8 = LagrangianRefFE(Float64,HEX,1)
 """
 const HEX8 = LagrangianRefFE(Float64,HEX,1)
-
