@@ -5,13 +5,29 @@ struct CDConformity{D} <: Conformity
   cont::NTuple{D,Int}
 end
 
+
+function LagrangianRefFE(::Type{T},p::ExtrusionPolytope{D},order::Int,cont) where {T,D}
+  CDLagrangianRefFE(T,p,order,cont)
+end
+
+function LagrangianRefFE(::Type{T},p::ExtrusionPolytope{D},orders,cont) where {T,D}
+  CDLagrangianRefFE(T,p,orders,cont)
+end
+
 function CDLagrangianRefFE(::Type{T},p::ExtrusionPolytope{D},order::Int,cont) where {T,D}
   orders = tfill(order,Val{D}())
-  #@assert all([cond(c,o) for (c,o) in zip(cont,orders)])
   CDLagrangianRefFE(T,p,orders,cont)
 end
 
 function CDLagrangianRefFE(::Type{T},p::ExtrusionPolytope{D},orders,cont) where {T,D}
+  cond(c,o) = ( o > 0 || c == DISC )
+  @assert all([cond(c,o) for (c,o) in zip(cont,orders)])
+  _cd_lagrangian_ref_fe(T,p,orders,cont)
+end
+
+function _cd_lagrangian_ref_fe(::Type{T},p::ExtrusionPolytope{D},orders,cont) where {T,D}
+
+  @assert isa(p,ExtrusionPolytope)
 
   prebasis = compute_monomial_basis(T,p,orders)
 
@@ -41,7 +57,20 @@ function CDLagrangianRefFE(::Type{T},p::ExtrusionPolytope{D},orders,cont) where 
 
 end
 
+function get_face_own_dofs(reffe::GenericRefFE,conf::CDConformity)
+  _cd_get_face_own_dofs(reffe,conf)
+end
+
 function get_face_own_dofs(reffe::LagrangianRefFE,conf::CDConformity)
+  _cd_get_face_own_dofs(reffe,conf)
+end
+
+function _cd_get_face_own_dofs(reffe,conf::CDConformity)
+  # cond(c,o) = ( o > 0 || c == DISC )
+  # santiagobadia : Problem, I cannot check order = 0 -> cont = DISC,
+  # otherwise nonsense
+  # For CDConformity we do not have a Lagrangian RefFE but GenericRefFE
+  # @assert all([cond(c,o) for (c,o) in zip(conf.cont,orders)])
   p = get_polytope(reffe)
   orders = get_orders(get_prebasis(reffe))
   cont = conf.cont
@@ -52,7 +81,15 @@ function get_face_own_dofs(reffe::LagrangianRefFE,conf::CDConformity)
   face_own_dofs
 end
 
+function get_face_own_dofs_permutations(reffe::GenericRefFE,conf::CDConformity)
+  _cd_get_face_own_dofs_permutations(reffe,conf)
+end
+
 function get_face_own_dofs_permutations(reffe::LagrangianRefFE,conf::CDConformity)
+  _cd_get_face_own_dofs_permutations(reffe,conf)
+end
+
+function _cd_get_face_own_dofs_permutations(reffe,conf::CDConformity)
   face_own_dofs = get_face_own_dofs(reffe,conf)
   face_own_dofs_permutations = _trivial_face_own_dofs_permutations(face_own_dofs)
   face_own_dofs_permutations
