@@ -70,7 +70,6 @@ function _cd_get_face_own_dofs(reffe,conf::CDConformity)
   # santiagobadia : Problem, I cannot check order = 0 -> cont = DISC,
   # otherwise nonsense
   # For CDConformity we do not have a Lagrangian RefFE but GenericRefFE
-  # @assert all([cond(c,o) for (c,o) in zip(conf.cont,orders)])
   p = get_polytope(reffe)
   orders = get_orders(get_prebasis(reffe))
   cont = conf.cont
