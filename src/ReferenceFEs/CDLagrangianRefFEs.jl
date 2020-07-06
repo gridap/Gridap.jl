@@ -66,13 +66,12 @@ function get_face_own_dofs(reffe::LagrangianRefFE,conf::CDConformity)
 end
 
 function _cd_get_face_own_dofs(reffe,conf::CDConformity)
-  # cond(c,o) = ( o > 0 || c == DISC )
-  # santiagobadia : Problem, I cannot check order = 0 -> cont = DISC,
-  # otherwise nonsense
-  # For CDConformity we do not have a Lagrangian RefFE but GenericRefFE
   p = get_polytope(reffe)
   orders = get_orders(get_prebasis(reffe))
   cont = conf.cont
+  cond(c,o) = ( o > 0 || c == DISC )
+  @assert all([cond(c,o) for (c,o) in zip(cont,orders)])
+  p = get_polytope(reffe)
   dofs = get_dof_basis(reffe)
   @assert is_n_cube(p)
   face_own_nodes = _compute_cd_face_own_nodes(p,orders,cont)
