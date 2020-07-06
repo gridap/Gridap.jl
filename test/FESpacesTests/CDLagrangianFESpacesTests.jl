@@ -96,7 +96,7 @@ el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
 @test el2 < 1.0e-10
 
 cdquad9 = LagrangianRefFE(T,QUAD,(2,0))
-V = FESpace(model=model,reffe=cdquad9,conformity=CDConformity((DISC,CONT)))
+V = FESpace(model=model,reffe=cdquad9,conformity=CDConformity((CONT,DISC)))
 
 u(x) = VectorValue(x[1],0.0)
 U = TrialFESpace(V,u)
