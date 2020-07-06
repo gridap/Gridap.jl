@@ -66,6 +66,7 @@ function get_face_own_dofs(reffe::LagrangianRefFE,conf::CDConformity)
 end
 
 function _cd_get_face_own_dofs(reffe,conf::CDConformity)
+  p = get_polytope(reffe)
   orders = get_orders(get_prebasis(reffe))
   cont = conf.cont
   cond(c,o) = ( o > 0 || c == DISC )
