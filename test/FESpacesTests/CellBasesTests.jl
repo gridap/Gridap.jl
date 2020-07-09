@@ -165,8 +165,15 @@ sq = get_coordinates(squad)
 sv = restrict(v,strian)
 @test isa(sv,SkeletonCellBasis)
 @test is_test(sv)
-@test sv.left === sv.inward
-@test sv.right === sv.outward
+_sv = sv.inward
+@test isa(_sv,ReducedSkeletonCellBasis)
+@test is_test(_sv)
+@test evaluate(sv.inward.left,sq) == evaluate(sv.left,sq)
+@test evaluate(sv.outward.right,sq) == evaluate(sv.right,sq)
+
+_sv = sv.outward
+@test isa(_sv,ReducedSkeletonCellBasis)
+@test is_test(_sv)
 
 _sv = jump(2*∇(sv))
 @test isa(_sv,ReducedSkeletonCellBasis)

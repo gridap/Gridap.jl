@@ -376,13 +376,13 @@ struct SkeletonCellBasis{T} <: GridapType
   right::CellBasis
 end
 
-function Base.getproperty(x::SkeletonCellBasis, sym::Symbol)
+function Base.getproperty(a::SkeletonCellBasis, sym::Symbol)
   if sym == :inward
-    x.left
+    ReducedSkeletonCellBasis(a.trial_style,1*a.left,0*a.right)
   elseif sym == :outward
-    x.right
+    ReducedSkeletonCellBasis(a.trial_style,0*a.left,1*a.right)
   else
-    getfield(x, sym)
+    getfield(a, sym)
   end
 end
 
