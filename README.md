@@ -8,7 +8,7 @@
 | **Community** |
 | [![Join the chat at https://gitter.im/Gridap-jl/community](https://badges.gitter.im/Gridap-jl/community.svg)](https://gitter.im/Gridap-jl/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) |
 | **Citation** |
-| [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3934469.svg)](https://doi.org/10.5281/zenodo.3934469) |
+| [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3934468.svg)](https://doi.org/10.5281/zenodo.3934468) |
 
 
 
