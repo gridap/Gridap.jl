@@ -7,6 +7,8 @@
 | [![Build Status](https://travis-ci.com/gridap/Gridap.jl.svg?branch=master)](https://travis-ci.com/gridap/Gridap.jl) [![Codecov](https://codecov.io/gh/gridap/Gridap.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/gridap/Gridap.jl) |
 | **Community** |
 | [![Join the chat at https://gitter.im/Gridap-jl/community](https://badges.gitter.im/Gridap-jl/community.svg)](https://gitter.im/Gridap-jl/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) |
+| **Citation** |
+| [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3934469.svg)](https://doi.org/10.5281/zenodo.3934469) |
 
 
 
@@ -64,3 +66,5 @@ If you have used the Gridap library in a scientific publication, please cite the
     primaryClass={cs.MS},
 }
 ```
+
+
