@@ -56,14 +56,18 @@ These are some popular PDEs solved with the Gridap library. Examples taken from 
 If you have used the Gridap library in a scientific publication, please cite the project as follows:
 
 ```
-@article{gridap_guide_2019,
-    author={Francesc Verdugo and Santiago Badia},
-    journal = {{arXiv}},
-    title = {{A user-guide to Gridap -- grid-based approximation of partial differential equations in Julia}},
-    year = {2019},
-    eprint={1910.01412},
-    archivePrefix={arXiv},
-    primaryClass={cs.MS},
+@software{gridap_project,
+  author       = {Francesc Verdugo and
+                  Santiago Badia and
+                  Víctor Sande and
+                  Alberto F. Martin and
+                  Oriol Colomés and
+                  Jesús Bonilla},
+  title        = {Gridap.jl},
+  year         = 2020,
+  publisher    = {Zenodo},
+  doi          = {10.5281/zenodo.3934468},
+  url          = {https://doi.org/10.5281/zenodo.3934468}
 }
 ```
 
