@@ -1,0 +1,30 @@
+{
+  "@context": "https://raw.githubusercontent.com/codemeta/codemeta/master/codemeta.jsonld",
+  "@type": "Code",
+  "author": [
+    {
+      "@id": "https://orcid.org/0000-0003-3667-443X",
+      "@type": "Person",
+      "email": "fverdugo@cimne.upd.edu",
+      "name": "Francesc Verdugo",
+      "affiliation": "Centre Internacional de Mètodes Numèrics en Enginyeria"
+    },
+    {
+      "@id": "https://orcid.org/0000-0003-2391-4086",
+      "@type": "Person",
+      "email": "santiago.badia@monash.edu",
+      "name": "Santiago Badia",
+      "affiliation": "School of Mathematics, Monash University"
+    }
+  ],
+  "identifier": "",
+  "codeRepository": "https://github.com/gridap/Gridap.jl",
+  "datePublished": "2020-07-07",
+  "dateModified": "2020-07-07",
+  "dateCreated": "2020-07-07",
+  "description": "Grid-based approximation of partial differential equations in Julia",
+  "keywords": "julia, pdes, partial-differential-equations, finite-elements, numerical-methods",
+  "license": "MIT",
+  "title": "Gridap.jl",
+  "version": "v0.12.0"
+}
