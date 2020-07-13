@@ -571,7 +571,7 @@ end
 
 # Particular implementation for ExtrusionPolytope
 
-function NodalReferenceFE(p::ExtrusionPolytope)
+function LagrangianRefFE(p::ExtrusionPolytope)
   order = 1
   LagrangianRefFE(Float64,p,order)
 end

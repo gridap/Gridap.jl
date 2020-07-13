@@ -77,7 +77,7 @@ function get_vertex_permutations(p::SerendipityPolytope)
   get_vertex_permutations(p.hex)
 end
 
-NodalReferenceFE(p::SerendipityPolytope) = NodalReferenceFE(p.hex)
+LagrangianRefFE(p::SerendipityPolytope) = LagrangianRefFE(p.hex)
 
 is_simplex(p::SerendipityPolytope) = false
 

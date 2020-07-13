@@ -178,9 +178,8 @@ include("LagrangianRefFEs.jl")
 
 include("GeometricLagrangianRefFEs.jl")
 
-#
-#include("SerendipityRefFEs.jl")
-#
+include("SerendipityRefFEs.jl")
+
 #include("DiscRefFEs.jl")
 #
 #include("RaviartThomasRefFEs.jl")
