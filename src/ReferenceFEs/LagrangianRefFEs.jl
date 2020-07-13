@@ -15,7 +15,7 @@ For this type
 
 """
 struct LagrangianRefFE{D} <: NodalReferenceFE{D}
-  data::GenericRefFE{GradConformity,D}
+  data::GenericRefFE{GradConformity,Nothing,D}
   face_own_nodes::Vector{Vector{Int}}
   own_nodes_permutations::Vector{Vector{Int}}
   face_nodes::Vector{Vector{Int}}

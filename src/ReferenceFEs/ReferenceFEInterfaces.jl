@@ -330,8 +330,9 @@ end
 # Concrete implementation
 
 """
-    struct GenericRefFE{C<:Conformity,D} <: ReferenceFE{D}
-      # private fields
+    struct GenericRefFE{C<:Conformity,M,D} <: ReferenceFE{D}
+      metadata::M
+      # + private fields
     end
 
 This type is a *materialization* of the `ReferenceFE` interface. That is, it is a 
@@ -343,13 +344,13 @@ Note that some fields in this `struct` are type unstable deliberately in order t
 type signature. Don't access them in computationally expensive functions,
 instead extract the required fields before and pass them to the computationally expensive function.
 """
-struct GenericRefFE{C<:Conformity,D} <: ReferenceFE{D}
+struct GenericRefFE{C<:Conformity,M,D} <: ReferenceFE{D}
   ndofs::Int
   polytope::Polytope{D}
   prebasis::Field
   dofs::Dof
   conformity::C
-  metadata
+  metadata::M
   face_dofs::Vector{Vector{Int}}
   shapefuns::Field
   @doc """
@@ -375,7 +376,7 @@ struct GenericRefFE{C<:Conformity,D} <: ReferenceFE{D}
     face_dofs::Vector{Vector{Int}},
     shapefuns::Field=compute_shapefuns(dofs,prebasis)) where D
 
-    new{typeof(conformity),D}(
+    new{typeof(conformity),typeof(metadata),D}(
       ndofs,
       polytope,
       prebasis,

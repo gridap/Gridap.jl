@@ -224,8 +224,8 @@ end
 
 # Generic implementation
 """
-  struct GenericNodalCartesianRefFE{D,T,V,C} <: NodalReferenceFE{D}
-    reffe::GenericRefFE{D}
+  struct GenericNodalCartesianRefFE{D,T,V,C,M} <: NodalReferenceFE{D}
+    reffe::GenericRefFE{C,M,D}
     node_coordinates::Vector{Point{D,T}}
     node_and_comp_to_dof::Vector{V}
     face_own_nodes::Vector{Vector{Int}}
@@ -233,8 +233,8 @@ end
     face_nodes::Vector{Vector{Int}}
   end
 """
-struct GenericNodalCartesianRefFE{D,T,V,C} <: NodalReferenceFE{D}
-  reffe::GenericRefFE{C,D}
+struct GenericNodalCartesianRefFE{D,T,V,C,M} <: NodalReferenceFE{D}
+  reffe::GenericRefFE{C,M,D}
   node_coordinates::Vector{Point{D,T}}
   node_and_comp_to_dof::Vector{V}
   face_own_nodes::Vector{Vector{Int}}
