@@ -5,6 +5,16 @@ struct CDConformity{D} <: Conformity
   cont::NTuple{D,Int}
 end
 
+function get_face_own_nodes(reffe::GenericLagrangianRefFE{<:CDConformity},conf::CDConformity)
+  @assert get_default_conformity(reffe).cont == conf.cont
+  _cd_get_face_own_nodes(reffe,conf)
+end
+
+function get_face_own_nodes(reffe::GenericLagrangianRefFE{GradConformity},conf::CDConformity)
+  _cd_get_face_own_nodes(reffe,conf)
+end
+
+# Constructors
 
 function LagrangianRefFE(::Type{T},p::ExtrusionPolytope{D},order::Int,cont) where {T,D}
   CDLagrangianRefFE(T,p,order,cont)
@@ -38,14 +48,14 @@ function _cd_lagrangian_ref_fe(::Type{T},p::ExtrusionPolytope{D},orders,cont) wh
   ndofs = length(dofs.dof_to_node)
 
   face_own_nodes = _compute_cd_face_own_nodes(p,orders,cont)
-  #face_nodes = _compute_face_nodes(p,face_own_nodes)
+  face_nodes = _compute_face_nodes(p,face_own_nodes)
 
   face_own_dofs = _generate_face_own_dofs(face_own_nodes, dofs.node_and_comp_to_dof)
   face_dofs = _compute_face_nodes(p,face_own_dofs)
 
   data = nothing
 
-  GenericRefFE(
+  reffe = GenericRefFE(
       ndofs,
       p,
       prebasis,
@@ -54,15 +64,20 @@ function _cd_lagrangian_ref_fe(::Type{T},p::ExtrusionPolytope{D},orders,cont) wh
       data,
       face_dofs)
 
+  GenericLagrangianRefFE(reffe,face_nodes)
 end
 
-function get_face_own_dofs(reffe::GenericRefFE{<:CDConformity},conf::CDConformity)
-  @assert reffe.conformity.cont == conf.cont
-  _cd_get_face_own_dofs(reffe,conf)
-end
-
-function get_face_own_dofs(reffe::LagrangianRefFE,conf::CDConformity)
-  _cd_get_face_own_dofs(reffe,conf)
+function _cd_get_face_own_nodes(reffe,conf::CDConformity)
+  p = get_polytope(reffe)
+  orders = get_orders(get_prebasis(reffe))
+  cont = conf.cont
+  cond(c,o) = ( o > 0 || c == DISC )
+  @assert all([cond(c,o) for (c,o) in zip(cont,orders)])
+  p = get_polytope(reffe)
+  dofs = get_dof_basis(reffe)
+  @assert is_n_cube(p)
+  face_own_nodes = _compute_cd_face_own_nodes(p,orders,cont)
+  face_own_nodes
 end
 
 function _cd_get_face_own_dofs(reffe,conf::CDConformity)

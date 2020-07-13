@@ -180,12 +180,13 @@ include("GeometricLagrangianRefFEs.jl")
 
 include("SerendipityRefFEs.jl")
 
-#include("DiscRefFEs.jl")
-#
+include("PDiscRefFEs.jl")
+
+include("CDLagrangianRefFEs.jl")
+
 #include("RaviartThomasRefFEs.jl")
 #
 #include("NedelecRefFEs.jl")
 #
-#include("CDLagrangianRefFEs.jl")
 
 end # module
