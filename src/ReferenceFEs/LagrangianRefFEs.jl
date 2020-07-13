@@ -15,7 +15,7 @@ For this type
 
 """
 struct LagrangianRefFE{D} <: NodalReferenceFE{D}
-  data::GenericRefFE{D,GradConformity}
+  data::GenericRefFE{GradConformity,D}
   face_own_nodes::Vector{Vector{Int}}
   own_nodes_permutations::Vector{Vector{Int}}
   face_nodes::Vector{Vector{Int}}
@@ -50,17 +50,7 @@ struct LagrangianRefFE{D} <: NodalReferenceFE{D}
 
     face_dofs = _generate_face_dofs(ndofs,face_own_dofs,polytope,_reffaces)
 
-    own_dofs_permutations = _find_own_dof_permutaions(
-      own_nodes_permutations,
-      dofs.node_and_comp_to_dof,
-      face_own_nodes,
-      face_own_dofs)
-
-    face_own_dofs_permutations = _compute_face_own_nodes_permutations(
-      ndofs,
-      face_own_dofs,
-      map(get_own_dofs_permutations,_reffaces),
-      own_dofs_permutations)
+    metadata = nothing
 
     data = GenericRefFE(
       ndofs,
@@ -68,8 +58,7 @@ struct LagrangianRefFE{D} <: NodalReferenceFE{D}
       prebasis,
       dofs,
       GradConformity(),
-      face_own_dofs,
-      face_own_dofs_permutations,
+      metadata,
       face_dofs)
 
     new{D}(data,face_own_nodes,own_nodes_permutations,face_nodes,reffaces)
@@ -88,9 +77,32 @@ get_dof_basis(reffe::LagrangianRefFE) = reffe.data.dofs
 
 get_default_conformity(reffe::LagrangianRefFE) = GradConformity()
 
-get_face_own_dofs(reffe::LagrangianRefFE,conf::GradConformity) = reffe.data.face_own_dofs
+function get_face_own_dofs(reffe::LagrangianRefFE,conf::GradConformity)
+  dofs = get_dof_basis(reffe)
+  face_own_dofs = _generate_face_own_dofs(reffe.face_own_nodes, dofs.node_and_comp_to_dof)
+  face_own_dofs
+end
 
-get_face_own_dofs_permutations(reffe::LagrangianRefFE,conf::GradConformity) = reffe.data.face_own_dofs_permutations
+function get_face_own_dofs_permutations(reffe::LagrangianRefFE,conf::GradConformity)
+   _reffaces = vcat(reffe.reffaces...)
+   dofs = get_dof_basis(reffe)
+   face_own_dofs = get_face_own_dofs(reffe)
+   own_dofs_permutations = _find_own_dof_permutaions(
+     reffe.own_nodes_permutations,
+     dofs.node_and_comp_to_dof,
+     reffe.face_own_nodes,
+     face_own_dofs)
+
+   ndofs = num_dofs(reffe)
+
+   face_own_dofs_permutations = _compute_face_own_nodes_permutations(
+     ndofs,
+     face_own_dofs,
+     map(get_own_dofs_permutations,_reffaces),
+     own_dofs_permutations)
+
+   face_own_dofs_permutations
+end
 
 get_face_dofs(reffe::LagrangianRefFE) = reffe.data.face_dofs
 
