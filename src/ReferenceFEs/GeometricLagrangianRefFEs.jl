@@ -1,7 +1,6 @@
 struct GradConformity <: Conformity end
 const H1Conformity = GradConformity
 
-
 function get_face_own_nodes(reffe::GenericLagrangianRefFE{GradConformity},conf::GradConformity)
   p = get_polytope(reffe)
   orders = get_orders(reffe)
@@ -11,7 +10,7 @@ end
 
 function get_own_nodes_permutations(reffe::GenericLagrangianRefFE{GradConformity},conf::GradConformity)
   p = get_polytope(reffe)
-  face_own_nodes = get_face_own_nodes(reffe,conf)
+  face_own_nodes = get_face_own_nodes(reffe)
   dofs = get_dof_basis(reffe)
   interior_nodes = dofs.nodes[face_own_nodes[end]]
   compute_own_nodes_permutations(p,interior_nodes)
@@ -226,12 +225,18 @@ function _lagrangian_ref_fe(::Type{T},p::Polytope{D},orders) where {T,D}
   face_own_dofs = _generate_face_own_dofs(face_own_nodes, dofs.node_and_comp_to_dof)
   face_dofs = _generate_face_dofs(ndofs,face_own_dofs,p,_reffaces)
 
+  if all(orders .== 0 ) && D>0
+    conf = L2Conformity()
+  else
+    conf = GradConformity()
+  end
+
   reffe = GenericRefFE(
     ndofs,
     p,
     prebasis,
     dofs,
-    GradConformity(),
+    conf,
     metadata,
     face_dofs)
 
