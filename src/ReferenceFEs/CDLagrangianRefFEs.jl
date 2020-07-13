@@ -6,7 +6,6 @@ struct CDConformity{D} <: Conformity
 end
 
 function get_face_own_nodes(reffe::GenericLagrangianRefFE{<:CDConformity},conf::CDConformity)
-  @assert get_default_conformity(reffe).cont == conf.cont
   _cd_get_face_own_nodes(reffe,conf)
 end
 

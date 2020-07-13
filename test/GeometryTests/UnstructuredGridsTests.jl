@@ -55,7 +55,7 @@ grid = UnstructuredGrid(trian)
 test_grid(grid)
 @test grid === UnstructuredGrid(grid)
 
-# UnstructuredGrid from NodalReferenceFE
+# UnstructuredGrid from LagrangianRefFE
 
 quad8 = LagrangianRefFE(Float64,QUAD,2)
 grid = UnstructuredGrid(quad8)
