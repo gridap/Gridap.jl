@@ -118,7 +118,6 @@ export get_vertex_node
 export num_nodes
 export test_lagrangian_reference_fe
 
-export GeometricLagrangianRefFE
 export LagrangianDofBasis
 export compute_monomial_basis
 export compute_own_nodes
@@ -155,9 +154,7 @@ export DivConformity
 export CDConformity
 
 export SerendipityRefFE
-export DiscRefFE
 export PDiscRefFE
-export QDiscRefFE
 export RaviartThomasRefFE
 export NedelecRefFE
 export CDLagrangianRefFE
@@ -176,7 +173,7 @@ include("ReferenceFEInterfaces.jl")
 
 include("LagrangianRefFEs.jl")
 
-include("GeometricLagrangianRefFEs.jl")
+include("CLagrangianRefFEs.jl")
 
 include("SerendipityRefFEs.jl")
 
@@ -184,9 +181,8 @@ include("PDiscRefFEs.jl")
 
 include("CDLagrangianRefFEs.jl")
 
-#include("RaviartThomasRefFEs.jl")
-#
-#include("NedelecRefFEs.jl")
-#
+include("RaviartThomasRefFEs.jl")
+
+include("NedelecRefFEs.jl")
 
 end # module

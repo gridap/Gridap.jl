@@ -16,7 +16,7 @@ using Test
 
 @testset "LagrangianRefFEs" begin include("LagrangianRefFEsTests.jl") end
 
-@testset "GeometricLagrangianRefFEs" begin include("GeometricLagrangianRefFEsTests.jl") end
+@testset "CLagrangianRefFEs" begin include("CLagrangianRefFEsTests.jl") end
 
 @testset "SerendipityRefFEs" begin include("SerendipityRefFEsTests.jl") end
 
