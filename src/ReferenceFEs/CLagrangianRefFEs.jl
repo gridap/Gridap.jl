@@ -61,7 +61,7 @@ function ReferenceFE{N}(reffe::GenericLagrangianRefFE{GradConformity},iface::Int
   reffaces[N+1][iface]
 end
 
-function ReferenceFE{D}(reffe::GenericLagrangianRefFE{GradConformity,M,D} where M,iface::Integer) where D
+function ReferenceFE{D}(reffe::GenericLagrangianRefFE{GradConformity,D},iface::Integer) where D
   @assert iface==1 "Only one D-face"
   reffe
 end

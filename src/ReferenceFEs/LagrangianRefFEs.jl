@@ -337,13 +337,13 @@ end
 
 # Generic implementation
 """
-  struct GenericLagrangianRefFE{C,M,D} <: LagrangianRefFE{D}
-    reffe::GenericRefFE{C,M,D}
+  struct GenericLagrangianRefFE{C,D} <: LagrangianRefFE{D}
+    reffe::GenericRefFE{C,D}
     face_nodes::Vector{Vector{Int}}
   end
 """
-struct GenericLagrangianRefFE{C,M,D} <: LagrangianRefFE{D}
-  reffe::GenericRefFE{C,M,D}
+struct GenericLagrangianRefFE{C,D} <: LagrangianRefFE{D}
+  reffe::GenericRefFE{C,D}
   face_nodes::Vector{Vector{Int}}
 end
 
