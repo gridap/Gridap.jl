@@ -1,4 +1,4 @@
-# module CDLagrangianRefFEsTests
+module CDLagrangianRefFEsTests
 
 using Gridap
 using Gridap.TensorValues
@@ -36,4 +36,4 @@ test_reference_fe(reffe)
 
 reffe = LagrangianRefFE(T,QUAD,(2,2))
 
-# end # module
+end # module

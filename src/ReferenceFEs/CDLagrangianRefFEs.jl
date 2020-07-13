@@ -57,7 +57,7 @@ function _cd_lagrangian_ref_fe(::Type{T},p::ExtrusionPolytope{D},orders,cont) wh
 end
 
 function get_face_own_dofs(reffe::GenericRefFE{<:CDConformity},conf::CDConformity)
-  @assert reffe.conformity.cont == cont.cont
+  @assert reffe.conformity.cont == conf.cont
   _cd_get_face_own_dofs(reffe,conf)
 end
 

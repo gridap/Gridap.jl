@@ -234,7 +234,7 @@ end
   end
 """
 struct GenericNodalCartesianRefFE{D,T,V,C} <: NodalReferenceFE{D}
-  reffe::GenericRefFE{D,C}
+  reffe::GenericRefFE{C,D}
   node_coordinates::Vector{Point{D,T}}
   node_and_comp_to_dof::Vector{V}
   face_own_nodes::Vector{Vector{Int}}
@@ -288,6 +288,6 @@ get_face_own_dofs_permutations(reffe::GenericNodalCartesianRefFE,conf::Conformit
 
 get_face_own_dofs_permutations(reffe::GenericNodalCartesianRefFE,conf::L2Conformity) = get_face_own_dofs_permutations(reffe.reffe,conf)
 
-get_face_dofs(reffe::GenericNodalCartesianRefFE) = reffe.reffe.face_own_dofs
+get_face_dofs(reffe::GenericNodalCartesianRefFE) = reffe.reffe.face_dofs
 
 get_shapefuns(reffe::GenericNodalCartesianRefFE) = reffe.reffe.shapefuns

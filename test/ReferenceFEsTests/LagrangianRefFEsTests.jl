@@ -53,7 +53,7 @@ b = MonomialBasis(VectorValue{2,Int},VERTEX,())
 
 reffe = LagrangianRefFE(VectorValue{2,Int},VERTEX,())
 @test reffe.face_own_nodes == [[1]]
-@test reffe.data.face_own_dofs == [[1,2]]
+@test get_face_own_dofs(reffe) == [[1,2]]
 @test get_face_own_dofs_permutations(reffe) == [[[1, 2]]] 
 test_nodal_reference_fe(reffe)
 @test ReferenceFE{0}(reffe,1) === reffe

@@ -106,7 +106,7 @@ end
     get_face_own_dofs_permutations(reffe::ReferenceFE,conf::Conformity) -> Vector{Vector{Vector{Int}}}
 """
 function get_face_own_dofs_permutations(reffe::ReferenceFE,conf::Conformity)
-  face_own_dofs = get_face_own_dofs(reffe)
+  face_own_dofs = get_face_own_dofs(reffe,conf)
   _trivial_face_own_dofs_permutations(face_own_dofs)
 end
 
