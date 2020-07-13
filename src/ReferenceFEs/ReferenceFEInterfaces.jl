@@ -122,17 +122,6 @@ function get_face_own_dofs_permutations(reffe::ReferenceFE)
   get_face_own_dofs_permutations(reffe,conf)
 end
 
-function get_face_own_dofs_permutations(reffe::ReferenceFE,conf::L2Conformity)
-  _get_face_own_dofs_permutations_l2(reffe)
-end
-
-function _get_face_own_dofs_permutations_l2(reffe::ReferenceFE)
-  p = get_polytope(reffe)
-  r = [ [Int[]] for i in 1:num_faces(p)]
-  r[end] = [collect(1:num_dofs(reffe))]
-  r
-end
-
 """
     get_face_dofs(reffe::ReferenceFE) -> Vector{Vector{Int}}
 
