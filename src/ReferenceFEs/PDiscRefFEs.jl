@@ -1,38 +1,23 @@
-"""
-    struct PDiscRefFE{D} <: LagrangianRefFE{D}
-      # Private fields
-    end
-"""
-struct PDiscRefFE{D} <: LagrangianRefFE{D}
-  reffe::LagrangianRefFE{D}
-  polytope::Polytope{D}
-end
 
 function PDiscRefFE(::Type{T},p::Polytope,order::Integer) where T
   D = num_cell_dims(p)
   extrusion = tfill(TET_AXIS,Val{D}())
   simplex = ExtrusionPolytope(extrusion)
   reffe = LagrangianRefFE(T,simplex,order)
-  PDiscRefFE{D}(reffe,p)
+  metadata = nothing
+  face_nodes = [Int[] for face in 1:num_faces(simplex)]
+  face_nodes[end] = collect(1:num_nodes(reffe))
+  dofs = get_dof_basis(reffe)
+  face_dofs = _generate_face_own_dofs(face_nodes,dofs.node_and_comp_to_dof)
+
+  reffe = GenericRefFE(
+    num_dofs(reffe),
+    simplex,
+    get_prebasis(reffe),
+    get_dof_basis(reffe),
+    L2Conformity(),
+    metadata,
+    face_dofs)
+  GenericLagrangianRefFE(reffe,face_nodes)
 end
-
-# LagrangianRefFE
-
-get_face_nodes(reffe::PDiscRefFE) = get_face_own_nodes(reffe)
-
-# Reffe
-
-num_dofs(reffe::PDiscRefFE) = num_dofs(reffe.reffe)
-
-get_polytope(reffe::PDiscRefFE) = reffe.polytope
-
-get_prebasis(reffe::PDiscRefFE) = get_prebasis(reffe.reffe)
-
-get_dof_basis(reffe::PDiscRefFE) = get_dof_basis(reffe.reffe)
-
-get_default_conformity(reffe::PDiscRefFE) = L2Conformity()
-
-get_face_dofs(reffe::PDiscRefFE) = get_face_own_dofs(reffe)
-
-get_shapefuns(reffe::PDiscRefFE) = get_shapefuns(reffe.reffe)
 
