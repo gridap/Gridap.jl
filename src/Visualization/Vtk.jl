@@ -7,9 +7,9 @@
 #end
 
 """
-    writevtk(reffe::NodalReferenceFE,filebase)
+    writevtk(reffe::LagrangianRefFE,filebase)
 """
-function writevtk(reffe::NodalReferenceFE,filebase)
+function writevtk(reffe::LagrangianRefFE,filebase)
 
   p = get_polytope(reffe)
   writevtk(p,filebase)

@@ -16,13 +16,13 @@ function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
 
   face_own_dofs = _face_own_dofs_from_moments(nf_moments)
 
-  face_own_dofs_permutations = _trivial_face_own_dofs_permutations(face_own_dofs)
-
   face_dofs = face_own_dofs
 
   dof_basis = MomentBasedDofBasis(nf_nodes, nf_moments)
 
   ndofs = num_dofs(dof_basis)
+
+  metadata = nothing
 
   reffe = GenericRefFE(
     ndofs,
@@ -30,11 +30,14 @@ function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
     prebasis,
     dof_basis,
     DivConformity(),
-    face_own_dofs,
-    face_own_dofs_permutations,
+    metadata,
     face_dofs)
 
   reffe
+end
+
+function get_face_own_dofs(reffe::GenericRefFE{DivConformity}, conf::DivConformity)
+  get_face_dofs(reffe)
 end
 
 function _RT_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) where et
@@ -170,10 +173,6 @@ function _face_own_dofs_from_moments(f_moments)
     o += ndofs
   end
   face_dofs
-end
-
-function _trivial_face_own_dofs_permutations(face_own_dofs)
-  [ [collect(Int,1:length(dofs)),]  for dofs in face_own_dofs  ]
 end
 
 struct MomentBasedDofBasis{P,V} <: Dof

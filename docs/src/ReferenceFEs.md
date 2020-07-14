@@ -146,20 +146,20 @@ GenericRefFE(
 ### Interface
 
 ```@docs
-NodalReferenceFE
-get_node_coordinates(reffe::NodalReferenceFE)
-get_node_and_comp_to_dof(reffe::NodalReferenceFE)
-get_face_own_nodes(reffe::NodalReferenceFE)
-get_face_own_nodes_permutations(reffe::NodalReferenceFE)
-get_face_nodes(reffe::NodalReferenceFE)
+LagrangianRefFE
+get_node_coordinates(reffe::LagrangianRefFE)
+get_node_and_comp_to_dof(reffe::LagrangianRefFE)
+get_face_own_nodes(reffe::LagrangianRefFE)
+get_face_own_nodes_permutations(reffe::LagrangianRefFE)
+get_face_nodes(reffe::LagrangianRefFE)
 test_nodal_reference_fe
-num_nodes(reffe::NodalReferenceFE)
-get_dof_to_node(reffe::NodalReferenceFE)
-get_own_nodes_permutations(reffe::NodalReferenceFE)
-get_vertex_node(reffe::NodalReferenceFE)
-get_face_own_nodes(reffe::NodalReferenceFE,d::Integer)
-get_face_own_nodes_permutations(reffe::NodalReferenceFE,d::Integer)
-get_face_nodes(reffe::NodalReferenceFE,d::Integer)
+num_nodes(reffe::LagrangianRefFE)
+get_dof_to_node(reffe::LagrangianRefFE)
+get_own_nodes_permutations(reffe::LagrangianRefFE)
+get_vertex_node(reffe::LagrangianRefFE)
+get_face_own_nodes(reffe::LagrangianRefFE,d::Integer)
+get_face_own_nodes_permutations(reffe::LagrangianRefFE,d::Integer)
+get_face_nodes(reffe::LagrangianRefFE,d::Integer)
 ```
 
 ### GenericNodalCartesianRefFE

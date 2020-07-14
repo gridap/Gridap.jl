@@ -21,10 +21,20 @@ a = [1]
 b = Int[]
 face_own_dofs_permutations = [[a],[a],[a],[a],[b,b],[b,b],[b,b],[b,b],fill(b,8)]
 face_dofs = [[1],[2],[3],[4],[1,2],[3,4],[1,3],[2,4],[1,2,3,4]]
+metadata = nothing
+
+struct MockConformity <: Conformity end
 
 reffe = GenericRefFE(
-  ndofs, polytope, prebasis, dofs,
-  GradConformity(),face_own_dofs, face_own_dofs_permutations, face_dofs)
+  ndofs, polytope, prebasis, dofs, MockConformity(), metadata ,face_dofs)
+
+function ReferenceFEs.get_face_own_dofs(reffe::GenericRefFE{MockConformity},::MockConformity)
+  face_own_dofs
+end
+
+function ReferenceFEs.get_face_own_dofs_permutations(reffe::GenericRefFE{MockConformity},::MockConformity)
+  face_own_dofs_permutations
+end
 
 test_reference_fe(reffe)
 
