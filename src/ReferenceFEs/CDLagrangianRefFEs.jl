@@ -15,20 +15,12 @@ end
 
 # Constructors
 
-function LagrangianRefFE(::Type{T},p::ExtrusionPolytope{D},order::Int,cont) where {T,D}
-  CDLagrangianRefFE(T,p,order,cont)
-end
-
-function LagrangianRefFE(::Type{T},p::ExtrusionPolytope{D},orders,cont) where {T,D}
-  CDLagrangianRefFE(T,p,orders,cont)
-end
-
-function CDLagrangianRefFE(::Type{T},p::ExtrusionPolytope{D},order::Int,cont) where {T,D}
+function _CDLagrangianRefFE(::Type{T},p::ExtrusionPolytope{D},order::Int,cont) where {T,D}
   orders = tfill(order,Val{D}())
-  CDLagrangianRefFE(T,p,orders,cont)
+  _CDLagrangianRefFE(T,p,orders,cont)
 end
 
-function CDLagrangianRefFE(::Type{T},p::ExtrusionPolytope{D},orders,cont) where {T,D}
+function _CDLagrangianRefFE(::Type{T},p::ExtrusionPolytope{D},orders,cont) where {T,D}
   cond(c,o) = ( o > 0 || c == DISC )
   @assert all([cond(c,o) for (c,o) in zip(cont,orders)])
   _cd_lagrangian_ref_fe(T,p,orders,cont)

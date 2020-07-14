@@ -36,6 +36,13 @@ reffe = SerendipityRefFE(Float64,HEX,order)
 @test is_Q(reffe) == false
 @test is_S(reffe) == true
 
+reffe = LagrangianRefFE(Float64,HEX,order,space=:S)
+@test get_order(reffe) == order
+@test get_orders(reffe) == (order,order,order)
+@test is_P(reffe) == false
+@test is_Q(reffe) == false
+@test is_S(reffe) == true
+
 reffe = SerendipityRefFE(Float64,QUAD,(3,3))
 @test reffe == from_dict(LagrangianRefFE,to_dict(reffe))
 
