@@ -131,8 +131,9 @@ itrian = InterfaceTriangulation(model,1:13,14:34)
 #writevtk(trian,"trian",celldata=["inout"=>cell_to_inout])
 #writevtk(itrian,"itrian",nsubcells=10,cellfields=["ni"=>ni,"nl"=>nl,"nr"=>nr])
 
-reffe = CDLagrangianRefFE(Float64,QUAD,(2,2),(CONT,DISC))
-face_own_dofs = get_face_own_dofs(reffe)
+reffe = LagrangianRefFE(Float64,QUAD,(2,2))
+conf = CDConformity((CONT,DISC))
+face_own_dofs = get_face_own_dofs(reffe,conf)
 strian = SkeletonTriangulation(model,reffe,face_own_dofs)
 ns = get_normal_vector(strian)
 
