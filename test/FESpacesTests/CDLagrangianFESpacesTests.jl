@@ -16,93 +16,51 @@ orders = (2,1)
 order = 2*max(orders...)
 
 T = VectorValue{2,Float64}
-reffe = CDLagrangianRefFE(T,QUAD,orders,(DISC,CONT))
-V = FESpace(model=model,reffe=reffe)#),dirichlet_tags = [1,6])
+reffe = LagrangianRefFE(T,QUAD,orders)
+V = FESpace(model=model,reffe=reffe,conformity=CDConformity((DISC,CONT)))#),dirichlet_tags = [1,6])
 test_single_field_fe_space(V)
 
 u(x) = x
 
 U = TrialFESpace(V,u)
 uh = interpolate(U,u)
-
 e = u - uh
-
 trian = Triangulation(model)
 quad = CellQuadrature(trian,order)
-
 el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
 @test el2 < 1.0e-10
 
-reffe = CDLagrangianRefFE(Float64,QUAD,(2,2),(CONT,DISC))
-
-quad9 = LagrangianRefFE(T,QUAD,2)
-V = FESpace(model=model,reffe=quad9,conformity=CDConformity((CONT,DISC)))
-
+reffe = LagrangianRefFE(T,QUAD,2)
+V = FESpace(model=model,reffe=reffe,conformity=CDConformity((CONT,DISC)))
 U = TrialFESpace(V,u)
 uh = interpolate(U,u)
 e = u - uh
-
 el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
 @test el2 < 1.0e-10
 
-cdquad9 = CDLagrangianRefFE(T,QUAD,2,(CONT,DISC))
-V = FESpace(model=model,reffe=cdquad9)
-
+reffe = LagrangianRefFE(T,QUAD,(2,1))
+V = FESpace(model=model,reffe=reffe,conformity=CDConformity((DISC,CONT)))
 U = TrialFESpace(V,u)
 uh = interpolate(U,u)
 e = u - uh
-
 el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
 @test el2 < 1.0e-10
 
-cdquad9 = CDLagrangianRefFE(T,QUAD,2,(CONT,DISC))
-V = FESpace(model=model,reffe=cdquad9,conformity=CDConformity((CONT,DISC)))
-
-U = TrialFESpace(V,u)
-uh = interpolate(U,u)
-e = u - uh
-
-el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
-@test el2 < 1.0e-10
-
-cdquad9 = CDLagrangianRefFE(T,QUAD,2,(CONT,DISC))
-V = FESpace(model=model,reffe=cdquad9,conformity=CDConformity((DISC,CONT)))
-
-U = TrialFESpace(V,u)
-uh = interpolate(U,u)
-e = u - uh
-
-el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
-@test el2 < 1.0e-10
-
-cdquad9 = LagrangianRefFE(T,QUAD,2,(CONT,DISC))
-V = FESpace(model=model,reffe=cdquad9,conformity=CDConformity((DISC,CONT)))
-
-U = TrialFESpace(V,u)
-uh = interpolate(U,u)
-e = u - uh
-
-el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
-@test el2 < 1.0e-10
-
-cdquad9 = LagrangianRefFE(T,QUAD,(2,1))
-V = FESpace(model=model,reffe=cdquad9,conformity=CDConformity((DISC,CONT)))
-
-U = TrialFESpace(V,u)
-uh = interpolate(U,u)
-e = u - uh
-
-el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
-@test el2 < 1.0e-10
-
-cdquad9 = LagrangianRefFE(T,QUAD,(2,0))
-V = FESpace(model=model,reffe=cdquad9,conformity=CDConformity((CONT,DISC)))
-
+reffe = LagrangianRefFE(T,QUAD,(2,0))
+V = FESpace(model=model,reffe=reffe,conformity=CDConformity((CONT,DISC)))
 u(x) = VectorValue(x[1],0.0)
 U = TrialFESpace(V,u)
 uh = interpolate(U,u)
 e = u - uh
+el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
+@test el2 < 1.0e-10
 
+reffe = LagrangianRefFE(T,QUAD,(2,0))
+V = FESpace(model=model,reffe=reffe,conformity=CDConformity((DISC,DISC)))
+u(x) = VectorValue(x[1],0.0)
+U = TrialFESpace(V,u)
+uh = interpolate(U,u)
+e = u - uh
 el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
 @test el2 < 1.0e-10
 

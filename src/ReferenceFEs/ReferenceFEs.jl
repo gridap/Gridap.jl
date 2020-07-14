@@ -154,10 +154,8 @@ export DivConformity
 export CDConformity
 
 export SerendipityRefFE
-export PDiscRefFE
 export RaviartThomasRefFE
 export NedelecRefFE
-export CDLagrangianRefFE
 
 include("Polytopes.jl")
 

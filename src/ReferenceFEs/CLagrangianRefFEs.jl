@@ -201,12 +201,26 @@ new polytope types increasing customization possibilities.
 - [`compute_own_nodes_permutations(p::Polytope, interior_nodes)`](@ref)
 - [`compute_lagrangian_reffaces(::Type{T},p::Polytope,orders) where T`](@ref)
 """
-function LagrangianRefFE(::Type{T},p::Polytope{D},orders) where {T,D}
-  if any(orders.==0) && !all(orders.==0)
-    cont = map(i -> i == 0 ? DISC : CONT,orders)
-    return _cd_lagrangian_ref_fe(T,p,orders,cont)
+function LagrangianRefFE(::Type{T},p::Polytope{D},orders;space::Symbol=_default_space(p)) where {T,D}
+  if space == :P && is_n_cube(p)
+    return _PDiscRefFE(T,p,orders)
+  elseif space == :S && is_n_cube(p)
+    SerendipityRefFE(T,p,orders)
   else
-    return _lagrangian_ref_fe(T,p,orders)
+    if any(orders.==0) && !all(orders.==0)
+      cont = map(i -> i == 0 ? DISC : CONT,orders)
+      return _cd_lagrangian_ref_fe(T,p,orders,cont)
+    else
+      return _lagrangian_ref_fe(T,p,orders)
+    end
+  end
+end
+
+function _default_space(p)
+  if is_n_cube(p)
+    :Q
+  else
+    :P
   end
 end
 
@@ -320,43 +334,11 @@ function _generate_face_nodes_aux(
   face_fnode_to_node
 end
 
-#function _find_own_dof_permutaions(node_perms,node_and_comp_to_dof,nfacenodeids,nfacedofsids)
-#  dof_perms = Vector{Int}[]
-#  T = eltype(node_and_comp_to_dof)
-#  ncomps = num_components(T)
-#  idof_to_dof = nfacedofsids[end]
-#  inode_to_node = nfacenodeids[end]
-#  for inode_to_pinode in node_perms
-#    ninodes = length(inode_to_pinode)
-#    nidofs = ncomps*ninodes
-#    idof_to_pidof = fill(INVALID_PERM,nidofs)
-#    for (inode,ipnode) in enumerate(inode_to_pinode)
-#      if ipnode == INVALID_PERM
-#        continue
-#      end
-#      node = inode_to_node[inode]
-#      pnode = inode_to_node[ipnode]
-#      comp_to_pdof = node_and_comp_to_dof[pnode]
-#      comp_to_dof = node_and_comp_to_dof[node]
-#      for comp in 1:ncomps
-#        dof = comp_to_dof[comp]
-#        pdof = comp_to_pdof[comp]
-#        idof = findfirst(i->i==dof,idof_to_dof)
-#        ipdof = findfirst(i->i==pdof,idof_to_dof)
-#        idof_to_pidof[idof] = ipdof
-#      end
-#    end
-#    push!(dof_perms,idof_to_pidof)
-#  end
-#  dof_perms
-#end
-
-
 # Constructors taking Int
 
-function LagrangianRefFE(::Type{T},p::Polytope{D},order::Int) where {T,D}
+function LagrangianRefFE(::Type{T},p::Polytope{D},order::Int;space::Symbol=_default_space(p)) where {T,D}
   orders = tfill(order,Val{D}())
-  LagrangianRefFE(T,p,orders)
+  LagrangianRefFE(T,p,orders;space=space)
 end
 
 function MonomialBasis(::Type{T},p::Polytope{D},order::Int) where {D,T}
