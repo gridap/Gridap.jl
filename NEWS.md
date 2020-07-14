@@ -8,14 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
   - The meaning of `inward/outward` has slightly changed for `SkeletonCellBasis` objects. Now, by accessing to these properties a `ReducedSkeletonCellBasis` is returned, which allows to use the result in a more flexible way (in particular, the result can be used in a similar way than the result of `jump` or `mean`).Since PR [#317](https://github.com/gridap/Gridap.jl/pull/317).
-  - Major refactoring in `ReferenceFEs` module. Since PR [#319](https://github.com/gridap/Gridap.jl/pull/319). In particular:
+  - Major refactoring in `ReferenceFEs` module. Since PR [#319](https://github.com/gridap/Gridap.jl/pull/319) and [#320](https://github.com/gridap/Gridap.jl/pull/320). In particular:
     - `NodalReferenceFE` has been partially replaced with a new abstract type `LagrangianRefFE`.
     - `GenericNodalCartesianRefFE` has been partially replaced by `GenericLagrangianRefFE`.
     - `DiscRefFE` partially replaced by `PDiscRefFE`.
 
 ## Removed
-  - Removals associated with the `ReferenceFEs` refactoring in PR [#319](https://github.com/gridap/Gridap.jl/pull/319):
+  - Removals associated with the `ReferenceFEs` refactoring in PR [#319](https://github.com/gridap/Gridap.jl/pull/319) and [#320](https://github.com/gridap/Gridap.jl/pull/320):
     - Removed `QDiscRefFE` constructor. Use a standard `LagrangianRefFE` and `L2Conformity` instead.
+    - Removed `PDiscRefFE` constructor. Use `LagrangianRefFE` constructor with the kw-argument `space=:P`.
+    - Removed `CDLagrangianRefFE` constructor. Use a standard `LagrangianRefFE` and `CDConformity` instead.
     - Removed fields `face_own_dofs` and `face_own_dof_permutations` from `GenericRefFE`.
 
 ### Fixed
