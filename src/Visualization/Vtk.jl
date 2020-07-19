@@ -167,7 +167,7 @@ function _generate_vtk_cells(
   type_to_vtknodes)
 
   V = eltype(cell_to_nodes)
-  meshcells = MeshCell{V}[]
+  meshcells = MeshCell{WriteVTK.VTKCellTypes.VTKCellType,V}[]
 
   d = _vtkcelltypedict()
 
