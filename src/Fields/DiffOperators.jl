@@ -168,3 +168,7 @@ function _lapl_f(f,x,fx::MultiValue)
   @notimplemented
 end
 
+function symmetric_gradient(f::Function)
+    x -> symmetric_part(_grad_f(f,x,zero(return_type(f,typeof(x)))))
+end
+
