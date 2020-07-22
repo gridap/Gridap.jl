@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.13.0] - Unreleased 
 
 ### Added
+  - Automatic differentiation for symmetric gradient, i.e. `ε(u)` for a given vector-valued function `u`. Since PR [#327](https://github.com/gridap/Gridap.jl/pull/327/).
   - Added missing SparseMatrixAssembler constructor for MultiFieldFESpaces. Since PR [#320](https://github.com/gridap/Gridap.jl/pull/320/).
   - kw-argument `space` to `LagrangianRefFE` constructor in order to select the type of underlying polynomial space, i.e., `:Q`, `:S`, or `:P`. Since PR [#321](https://github.com/gridap/Gridap.jl/pull/321).
 
