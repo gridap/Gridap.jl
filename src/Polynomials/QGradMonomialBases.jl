@@ -69,7 +69,7 @@ function evaluate_field!(cache,f::QGradMonomialBasis{D,T},x) where {D,T}
       @inbounds r[i,j] = v[j]
     end
   end
-  r
+  r.array
 end
 
 function gradient_cache(f::QGradMonomialBasis{D,T},x) where {D,T}
@@ -104,7 +104,7 @@ function evaluate_gradient!(cache,f::QGradMonomialBasis{D,T},x) where {D,T}
       @inbounds r[i,j] = v[j]
     end
   end
-  r
+  r.array
 end
 
 # Helpers
