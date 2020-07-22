@@ -103,8 +103,18 @@ t_Ω = AffineFETerm(A_Ω,B_Ω,trian,quad)
 # t_∂Ω = FESource(B_∂Ω,btrian,bquad)
 t_∂Ω = AffineFETerm(A_∂Ω,B_∂Ω,btrian,bquad)
 
+# Dummy term with 0 facets to check degenerated case
+trian0 = BoundaryTriangulation(model,fill(false,Gridap.ReferenceFEs.num_facets(model)))
+quad0 = CellQuadrature(trian0,2*order)
+s0(x) = VectorValue(2.0*x[1],2.0)
+function L0(y)
+  v,q = y
+  s0⋅v
+end
+t_0 = FESource(L0,trian0,quad0)
+
 # Define the FEOperator
-op = AffineFEOperator(X,Y,t_Ω,t_∂Ω)
+op = AffineFEOperator(X,Y,t_Ω,t_∂Ω,t_0)
 # op = LinearFEOperator(Yh,Xh,t_Ω)
 
 # Solve!
