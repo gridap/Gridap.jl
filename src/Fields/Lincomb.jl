@@ -22,7 +22,6 @@ end
 struct LinCom <: Kernel end
 
 function kernel_cache(k::LinCom,a,b)
-  _lincomb_checks(a,b)
   Ta = eltype(a)
   Tb = eltype(b)
   T = return_type(outer,Ta,Tb)
@@ -31,11 +30,23 @@ function kernel_cache(k::LinCom,a,b)
   CachedArray(r)
 end
 
+function kernel_testitem!(r,k::LinCom,a,b)
+  if _lincomb_valid_checks(a,b)
+    apply_kernel!(r,k,a,b)
+  else
+    r.array
+  end
+end
+
 function _lincomb_checks(a,b)
+  s = "lincom: Number of fields in basis needs to be equal to number of coefs."
+  @assert _lincomb_valid_checks(a,b) s
+end
+
+function _lincomb_valid_checks(a,b)
   nb = length(b)
   np, na = size(a)
-  s = "lincom: Number of fields in basis needs to be equal to number of coefs."
-  @assert nb == na s
+  nb == na
 end
 
 @inline function apply_kernel!(r,k::LinCom,a,b)

@@ -32,4 +32,13 @@ agx = fill(gx,l)
 a∇gx = fill(∇gx,l)
 test_array_of_fields(ag,ax,agx,grad=a∇gx)
 
+l = 0
+af = Fill(f,l)
+ax = fill(x,l)
+aw = fill(w,l)
+ag = lincomb(af,aw)
+agx = fill(gx,l)
+a∇gx = fill(∇gx,l)
+test_array_of_fields(ag,ax,agx,grad=a∇gx)
+
 end #module
