@@ -38,7 +38,7 @@ import Gridap.Arrays: getindex!
 import Gridap.Arrays: kernel_cache
 import Gridap.Arrays: apply_kernel!
 import Gridap.Arrays: kernel_return_type
-import Gridap.Arrays: apply_kernel_for_cache!
+import Gridap.Arrays: kernel_testitem!
 import Gridap.Arrays: reindex
 import Gridap.Arrays: apply
 import Gridap.Geometry: get_cell_map

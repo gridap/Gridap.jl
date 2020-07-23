@@ -80,6 +80,8 @@ function test_kernel(f,x::Tuple,y,cmp=(==))
   @test cmp(z,y)
   z = apply_kernel!(cache,f,x...)
   @test cmp(z,y)
+  z = kernel_testitem!(cache,f,x...)
+  @test cmp(typeof(z),typeof(y))
 end
 
 
@@ -171,6 +173,15 @@ end
 function _kernel_return_types(x::Tuple,a)
   Ta = kernel_return_type(a,x...)
   (Ta,)
+end
+
+function kernel_testitem(k,x...)
+  cache = kernel_cache(k,x...)
+  kernel_testitem!(cache,k,x...)
+end
+
+@inline function kernel_testitem!(cache,k,x...)
+  apply_kernel!(cache,k,x...)
 end
 
 # Include some well-known types in this interface

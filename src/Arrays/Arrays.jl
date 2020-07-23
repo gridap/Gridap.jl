@@ -52,6 +52,7 @@ export elem
 export contract
 export kernel_return_type
 export kernel_return_types
+export kernel_testitem
 export Kernel
 
 export apply
