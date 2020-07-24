@@ -165,8 +165,8 @@ r = map(f,a)
 test_array(c,r)
 
 g(ai) = ai[2]-ai[1]
-import Gridap.Inference: testargs
-testargs(::typeof(g),T) = (zeros(eltype(T),2),)
+import Gridap.Arrays: kernel_testitem!
+kernel_testitem!(c,::typeof(g),ai) = zero(eltype(ai))
 l = 0
 ai = [8, 0]
 a = fill(ai,l)

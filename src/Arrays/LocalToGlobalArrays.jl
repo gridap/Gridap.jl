@@ -21,12 +21,6 @@ struct LocalToGlobalArray{T,M,N,L,V} <: AbstractArray{Array{T,M},N}
   end
 end
 
-function testitem(a::LocalToGlobalArray)
-  val = testitem(a.gid_to_val)
-  gids = testitem(a.lid_to_gid)
-  fill(val,size(gids))
-end
-
 size(a::LocalToGlobalArray) = size(a.lid_to_gid)
 
 function IndexStyle(::Type{LocalToGlobalArray{T,M,N,L,V}}) where {T,M,N,L,V}

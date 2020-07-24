@@ -48,8 +48,6 @@ end
   a.i_to_v[i]=v
 end
 
-
-
 function testitem(a::Reindexed)
   if length(a.j_to_i) == 0
     testitem(a.i_to_v)
