@@ -23,12 +23,6 @@ struct LocalToGlobalPosNegArray{T,M,N,L,V,W} <: AbstractArray{Array{T,M},N}
   end
 end
 
-function testitem(a::LocalToGlobalPosNegArray)
-  val = testitem(a.gid_to_val_pos)
-  gids = testitem(a.lid_to_gid)
-  fill(val,size(gids))
-end
-
 size(a::LocalToGlobalPosNegArray) = size(a.lid_to_gid)
 
 function IndexStyle(::Type{<:LocalToGlobalPosNegArray{T,M,N,L}}) where {T,M,N,L}

@@ -226,9 +226,7 @@ function testitem(a::AppliedArray)
   cg = array_cache(a.g)
   gi = testitem(a.g)
   fi = testitems(a.f...)
-  cf = array_caches(a.f...)
-  ai = kernel_testitem(gi,fi...)
-  ai
+  kernel_testitem(gi,fi...)
 end
 
 function getindex!(cache,a::AppliedArray,i::Integer...)

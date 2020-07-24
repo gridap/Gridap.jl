@@ -30,10 +30,10 @@ abstract type Kernel <: GridapType end
 Returns the type of the result of calling kernel `f` with
 arguments of the types of the objects `x`.
 
-It defaults to `typeof(apply_kernel(f,x...))`
+It defaults to `typeof(kernel_testitem(f,x...))`
 """
 function kernel_return_type(f,x...)
-  typeof(apply_kernel(f,x...))
+  typeof(kernel_testitem(f,x...))
 end
 
 """
