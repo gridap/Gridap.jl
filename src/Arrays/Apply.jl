@@ -173,7 +173,12 @@ end
 function AppliedArray(g::AbstractArray,f::AbstractArray...)
   gi = testitem(g) #Assumes that all kernels return the same type
   fi = testitems(f...)
-  T = typeof(kernel_testitem(gi,fi...))
+  if length(g) > 0
+    T = typeof(kernel_testitem(gi,fi...))
+  else
+    # Since the array is empty, we need to rely on type inference
+    T = kernel_return_type(gi,fi...)
+  end
   AppliedArray(T,g,f...)
 end
 
@@ -215,7 +220,12 @@ function _array_cache(hash,a::AppliedArray)
   end
   cf = array_caches(hash,a.f...)
   cgi = kernel_cache(gi,fi...)
-  ai = kernel_testitem!(cgi,gi,fi...)
+  if length(a) > 0
+    ai = kernel_testitem!(cgi,gi,fi...)
+  else
+    # Since the array is empty, we need to rely on type inference
+    ai = testvalue(kernel_return_type(gi,fi...))
+  end
   i = -testitem(eachindex(a))
   e = Evaluation((i,),ai)
   c = (cg, cgi, cf)
@@ -223,12 +233,15 @@ function _array_cache(hash,a::AppliedArray)
 end
 
 function testitem(a::AppliedArray)
-  cg = array_cache(a.g)
-  gi = testitem(a.g)
-  fi = testitems(a.f...)
-  cf = array_caches(a.f...)
-  ai = kernel_testitem(gi,fi...)
-  ai
+  if length(a) > 0
+    first(a)
+  else
+    # Since the array is empty, we need to rely on type inference
+    cg = array_cache(a.g)
+    gi = testitem(a.g)
+    fi = testitems(a.f...)
+    testvalue(kernel_return_type(gi,fi...))
+  end
 end
 
 function getindex!(cache,a::AppliedArray,i::Integer...)

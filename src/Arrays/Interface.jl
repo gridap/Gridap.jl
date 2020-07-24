@@ -193,6 +193,7 @@ function test_array(
   end
   @test t
   @test IndexStyle(a) == IndexStyle(b)
+  @test isa(testitem(a),eltype(a))
   true
 end
 

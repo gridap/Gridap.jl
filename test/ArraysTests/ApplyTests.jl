@@ -128,6 +128,53 @@ r = map(+,a,b)
 test_array(c,r)
 @test isa(c,Fill)
 
+l = 10
+ai = [8 0; 0 4]
+a = Fill(ai,l)
+c = apply(inv,a)
+r = map(inv,a)
+test_array(c,r)
+@test isa(c,Fill)
+
+l = 10
+ai = [8 0; 0 4]
+a = fill(ai,l)
+c = apply(inv,a)
+r = map(inv,a)
+test_array(c,r)
+
+l = 0
+ai = [8 0; 0 4]
+a = fill(ai,l)
+c = apply(inv,a)
+r = map(inv,a)
+test_array(c,r)
+
+ai = [8 0; 0 4]
+a = CompressedArray([ai,],Int[])
+c = apply(inv,a)
+r = map(inv,a)
+test_array(c,r)
+
+l = 10
+ai = [8, 0]
+a = fill(ai,l)
+f(ai) = ai[2]-ai[1]
+c = apply(f,a)
+r = map(f,a)
+test_array(c,r)
+
+g(ai) = ai[2]-ai[1]
+import Gridap.Inference: testargs
+testargs(::typeof(g),T) = (zeros(eltype(T),2),)
+l = 0
+ai = [8, 0]
+a = fill(ai,l)
+c = apply(g,a)
+r = map(g,a)
+test_array(c,r)
+
+
 #f = rand(10)
 #a = rand(10)
 #@test apply(f,a) === f
