@@ -4,11 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.13.1] - Unreleased
+## [0.13.1] - 2020-7-24
 
 ### Fixed
 
-  - Bug associated with `LinCom` kernel and triangulations with 0 cells. Since PR [#331](https://github.com/gridap/Gridap.jl/pull/331/).
+  - Bugs associated with the degenerated case of 0-length arrays. Since PR [#331](https://github.com/gridap/Gridap.jl/pull/331/) and [#332](https://github.com/gridap/Gridap.jl/pull/332/).
 
 ## [0.13.0] - 2020-07-23
 
