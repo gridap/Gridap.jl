@@ -1,7 +1,7 @@
 
 """
 """
-function autodiff_array_gradient(a,i_to_x)
+function autodiff_array_gradient(a,i_to_x,j_to_i=IdentityVector(length(i_to_x)))
 
   i_to_xdual = apply(i_to_x) do x
     cfg = ForwardDiff.GradientConfig(nothing, x)
@@ -9,10 +9,11 @@ function autodiff_array_gradient(a,i_to_x)
     xdual
   end
 
-  i_to_f = to_array_of_functions(a,i_to_xdual)
+  j_to_f = to_array_of_functions(a,i_to_xdual,j_to_i)
+  j_to_x = reindex(i_to_x,j_to_i)
 
   k = ForwardDiffGradientKernel()
-  apply(k,i_to_f,i_to_x)
+  apply(k,j_to_f,j_to_x)
 
 end
 
@@ -24,7 +25,7 @@ function kernel_cache(k::ForwardDiffGradientKernel,f,x)
   (r, cfg)
 end
 
-function apply_kernel!(cache,k::ForwardDiffGradientKernel,f,x)
+@inline function apply_kernel!(cache,k::ForwardDiffGradientKernel,f,x)
   r, cfg = cache
   @notimplementedif length(r) != length(x)
   ForwardDiff.gradient!(r,f,x,cfg)
@@ -33,7 +34,7 @@ end
 
 """
 """
-function autodiff_array_jacobian(a,i_to_x)
+function autodiff_array_jacobian(a,i_to_x,j_to_i=IdentityVector(length(i_to_x)))
 
   i_to_xdual = apply(i_to_x) do x
     cfg = ForwardDiff.JacobianConfig(nothing, x)
@@ -41,10 +42,11 @@ function autodiff_array_jacobian(a,i_to_x)
     xdual
   end
 
-  i_to_f = to_array_of_functions(a,i_to_xdual)
+  j_to_f = to_array_of_functions(a,i_to_xdual,j_to_i)
+  j_to_x = reindex(i_to_x,j_to_i)
 
   k = ForwardDiffJacobianKernel()
-  apply(k,i_to_f,i_to_x)
+  apply(k,j_to_f,j_to_x)
 
 end
 
@@ -57,7 +59,7 @@ function kernel_cache(k::ForwardDiffJacobianKernel,f,x)
   (j, cfg)
 end
 
-function apply_kernel!(cache,k::ForwardDiffJacobianKernel,f,x)
+@inline function apply_kernel!(cache,k::ForwardDiffJacobianKernel,f,x)
   j, cfg = cache
   @notimplementedif size(j,1) != length(x)
   @notimplementedif size(j,2) != length(x)
@@ -67,15 +69,15 @@ end
 
 """
 """
-function autodiff_array_hessian(a,i_to_x)
-   agrad = i_to_y -> autodiff_array_gradient(a,i_to_y)
-   autodiff_array_jacobian(agrad,i_to_x)
+function autodiff_array_hessian(a,i_to_x,j_to_i=IdentityVector(length(i_to_x)))
+   agrad = i_to_y -> autodiff_array_gradient(a,i_to_y,j_to_i)
+   autodiff_array_jacobian(agrad,i_to_x,j_to_i)
 end
 
-function to_array_of_functions(a,x)
+function to_array_of_functions(a,x,ids=IdentityVector(length(x)))
   k = ArrayOfFunctionsKernel(a,x)
-  i = IdentityVector(length(x))
-  apply(k,i)
+  j = IdentityVector(length(ids))
+  apply(k,j)
 end
 
 struct ArrayOfFunctionsKernel{A,X} <: Kernel
@@ -83,7 +85,7 @@ struct ArrayOfFunctionsKernel{A,X} <: Kernel
   x::X
 end
 
-function kernel_cache(k::ArrayOfFunctionsKernel,i)
+function kernel_cache(k::ArrayOfFunctionsKernel,j)
   xi = testitem(k.x)
   l = length(k.x)
   x = MutableFill(xi,l)
@@ -92,11 +94,11 @@ function kernel_cache(k::ArrayOfFunctionsKernel,i)
   (ax, x, axc)
 end
 
-function apply_kernel!(cache,k::ArrayOfFunctionsKernel,i)
+@inline function apply_kernel!(cache,k::ArrayOfFunctionsKernel,j)
   ax, x, axc = cache
-  @noinline function f(xi)
-    x.value = xi
-    axi = getindex!(axc,ax,i)
+  @noinline function f(xj)
+    x.value = xj
+    axj = getindex!(axc,ax,j)
   end
   f
 end
