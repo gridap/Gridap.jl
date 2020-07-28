@@ -37,8 +37,9 @@ function user_cell_jacobian(cell_u)
   apply(f,cell_u)
 end
 
-l = 10
-cell_u = [ rand(3) for i in 1:l ]
+L = 10
+l = 12 # TODO it does not work for greater than 12
+cell_u = [ rand(l) for i in 1:L ]
 
 cell_e = user_cell_energy(cell_u)
 cell_r = user_cell_residual(cell_u)
