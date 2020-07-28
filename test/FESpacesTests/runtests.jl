@@ -68,4 +68,6 @@ using Test
 
 @testset "FEAutodiff" begin include("FEAutodiffTests.jl") end
 
+@testset "FETermsWithAutodiff" begin include("FETermsWithAutodiffTests.jl") end
+
 end # module

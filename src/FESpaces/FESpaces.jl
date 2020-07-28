@@ -306,4 +306,6 @@ include("StateLaws.jl")
 
 include("FEAutodiff.jl")
 
+include("FETermsWithAutodiff.jl")
+
 end # module
