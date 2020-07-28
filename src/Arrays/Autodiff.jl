@@ -96,7 +96,7 @@ end
 
 @inline function apply_kernel!(cache,k::ArrayOfFunctionsKernel,j)
   ax, x, axc = cache
-  @noinline function f(xj)
+  @inline function f(xj)
     x.value = xj
     axj = getindex!(axc,ax,j)
   end
