@@ -50,4 +50,21 @@ cell_j_Γ_auto = get_cell_jacobian(t_auto_Γ,uh,du,dv)
 test_array(cell_r_Γ_auto,cell_r_Γ)
 test_array(cell_j_Γ_auto,cell_j_Γ)
 
+ener(uh) = 0.5*∇(uh)⋅∇(uh)
+t_auto_Ω = FEEnergy(ener,trian,quad)
+
+cell_r_auto = get_cell_residual(t_auto_Ω,uh,dv)
+cell_j_auto = get_cell_jacobian(t_auto_Ω,uh,du,dv)
+
+test_array(cell_r_auto,cell_r)
+test_array(cell_j_auto,cell_j)
+
+t_auto_Γ = FEEnergy(ener,trian_Γ,quad_Γ)
+
+cell_r_Γ_auto = get_cell_residual(t_auto_Γ,uh,dv)
+cell_j_Γ_auto = get_cell_jacobian(t_auto_Γ,uh,du,dv)
+
+test_array(cell_r_Γ_auto,cell_r_Γ)
+test_array(cell_j_Γ_auto,cell_j_Γ)
+
 end # module

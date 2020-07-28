@@ -118,6 +118,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish FESpaces TrialFESpace
 @publish FESpaces TestFESpace
 @publish FESpaces FETerm
+@publish FESpaces FEEnergy
 @publish FESpaces AffineFETerm
 @publish FESpaces LinearFETerm
 @publish FESpaces FESource

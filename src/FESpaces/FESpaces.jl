@@ -250,6 +250,8 @@ export autodiff_cell_residual_from_energy
 export autodiff_cell_jacobian_from_energy
 export autodiff_cell_jacobian_from_residual
 
+export FEEnergy
+
 include("CellBases.jl")
 
 include("CellDofBases.jl")
