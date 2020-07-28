@@ -4,7 +4,7 @@
 function autodiff_array_gradient(a,i_to_x,j_to_i=IdentityVector(length(i_to_x)))
 
   i_to_xdual = apply(i_to_x) do x
-    cfg = ForwardDiff.GradientConfig(nothing, x)
+    cfg = ForwardDiff.GradientConfig(nothing, x, ForwardDiff.Chunk{length(x)}())
     xdual = cfg.duals
     xdual
   end
@@ -20,7 +20,7 @@ end
 struct ForwardDiffGradientKernel <: Kernel end
 
 function kernel_cache(k::ForwardDiffGradientKernel,f,x)
-  cfg = ForwardDiff.GradientConfig(nothing, x)
+  cfg = ForwardDiff.GradientConfig(nothing, x, ForwardDiff.Chunk{length(x)}())
   r = copy(x)
   (r, cfg)
 end
@@ -37,7 +37,7 @@ end
 function autodiff_array_jacobian(a,i_to_x,j_to_i=IdentityVector(length(i_to_x)))
 
   i_to_xdual = apply(i_to_x) do x
-    cfg = ForwardDiff.JacobianConfig(nothing, x)
+    cfg = ForwardDiff.JacobianConfig(nothing, x, ForwardDiff.Chunk{length(x)}())
     xdual = cfg.duals
     xdual
   end
@@ -53,7 +53,7 @@ end
 struct ForwardDiffJacobianKernel <: Kernel end
 
 function kernel_cache(k::ForwardDiffJacobianKernel,f,x)
-  cfg = ForwardDiff.JacobianConfig(nothing, x)
+  cfg = ForwardDiff.JacobianConfig(nothing, x, ForwardDiff.Chunk{length(x)}())
   n = length(x)
   j = zeros(eltype(x),n,n)
   (j, cfg)

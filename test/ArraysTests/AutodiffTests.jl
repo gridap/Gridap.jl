@@ -38,7 +38,7 @@ function user_cell_jacobian(cell_u)
 end
 
 L = 10
-l = 12 # TODO it does not work for greater than 12
+l = 24 # Do not use a number <13 (too easy for ForwardDiff)
 cell_u = [ rand(l) for i in 1:L ]
 
 cell_e = user_cell_energy(cell_u)

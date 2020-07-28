@@ -12,7 +12,7 @@ domain = (0,1,0,1)
 partition = (2,2)
 model = CartesianDiscreteModel(domain,partition)
 
-order = 2
+order = 3
 T = Float64
 
 V = TestFESpace(
