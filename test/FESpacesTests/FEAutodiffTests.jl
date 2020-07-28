@@ -44,4 +44,39 @@ test_array(cell_r_auto,cell_r)
 test_array(cell_j_auto,cell_j)
 test_array(cell_h_auto,cell_h)
 
+trian_Γ = BoundaryTriangulation(model)
+quad_Γ = CellQuadrature(trian_Γ,2)
+cell_ids = get_cell_id(trian_Γ)
+
+function user_uh_to_cell_energy_Γ(uh)
+  uh_Γ = restrict(uh,trian_Γ)
+  cell_e = integrate(0.5*∇(uh_Γ)⋅∇(uh_Γ),trian_Γ,quad_Γ)
+end
+
+function user_uh_to_cell_residual_Γ(uh)
+  uh_Γ = restrict(uh,trian_Γ)
+  dv_Γ = restrict(dv,trian_Γ)
+  cell_r = integrate(∇(uh_Γ)⋅∇(dv_Γ),trian_Γ,quad_Γ)
+end
+
+function user_uh_to_cell_jacobian_Γ(uh)
+  uh_Γ = restrict(uh,trian_Γ)
+  dv_Γ = restrict(dv,trian_Γ)
+  du_Γ = restrict(du,trian_Γ)
+  cell_j = integrate(∇(du_Γ)⋅∇(dv_Γ),trian_Γ,quad_Γ)
+end
+
+cell_e_Γ = user_uh_to_cell_energy_Γ(uh)
+cell_r_Γ = user_uh_to_cell_residual_Γ(uh)
+cell_j_Γ = user_uh_to_cell_jacobian_Γ(uh)
+cell_h_Γ = cell_j_Γ
+
+cell_r_Γ_auto = autodiff_cell_residual_from_energy(user_uh_to_cell_energy_Γ,uh,cell_ids)
+cell_h_Γ_auto = autodiff_cell_jacobian_from_energy(user_uh_to_cell_energy_Γ,uh,cell_ids)
+cell_j_Γ_auto = autodiff_cell_jacobian_from_residual(user_uh_to_cell_residual_Γ,uh,cell_ids)
+
+test_array(cell_r_Γ_auto,cell_r_Γ)
+test_array(cell_j_Γ_auto,cell_j_Γ)
+test_array(cell_h_Γ_auto,cell_h_Γ)
+
 end # module
