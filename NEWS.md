@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
   - Automatic differentiation of the Jacobian from a given residual and the Jacobian and the residual from a given energy. Not working at this moment on the Skeleton nor for multi-field (WIP), but yes for other cases.
-  Now, the user can omit `jac` from `FETerms(res,jac,trian,quad)`, i.e. `FETerm(res,trian,quad)` and the Jacobian will be automatically generated. In addition, the user can write `FEEnergy(ener,trian,quad)` for a given `ener(uh)` function
+  Now, the user can omit `jac` from `FETerm(res,jac,trian,quad)`, i.e. `FETerm(res,trian,quad)` and the Jacobian will be automatically generated. In addition, the user can write `FEEnergy(ener,trian,quad)` for a given `ener(uh)` function
   and the residual and the Jacobian will be automatically generated. Since PR [#338](https://github.com/gridap/Gridap.jl/pull/338/).
 
 ## [0.13.1] - 2020-7-24
