@@ -162,6 +162,7 @@ export interpolate
 export interpolate_everywhere
 export interpolate_dirichlet
 export get_cell_dof_basis
+export get_cell_shapefuns
 
 export SingleFieldFEFunction
 
@@ -245,6 +246,12 @@ export apply_statelaw
 export CellField
 export update_state_variables!
 
+export autodiff_cell_residual_from_energy
+export autodiff_cell_jacobian_from_energy
+export autodiff_cell_jacobian_from_residual
+
+export FEEnergy
+
 include("CellBases.jl")
 
 include("CellDofBases.jl")
@@ -298,5 +305,9 @@ include("FESpacesWithLinearConstraints.jl")
 include("FESpaceFactories.jl")
 
 include("StateLaws.jl")
+
+include("FEAutodiff.jl")
+
+include("FETermsWithAutodiff.jl")
 
 end # module

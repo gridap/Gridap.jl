@@ -28,4 +28,6 @@ using Test
 
 @testset "AppendedArrays" begin include("AppendedArraysTests.jl") end
 
+@testset "AutodiffTests" begin include("AutodiffTests.jl") end
+
 end # module
