@@ -7,6 +7,7 @@ import Gridap.Arrays: kernel_cache
 import Gridap.Arrays: apply_kernel!
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
+import Gridap.Arrays: apply
 
 Gridap.Arrays.array_caches() = ()
 Gridap.Arrays.getitems!(::Tuple{},::Tuple{},i) = ()
@@ -218,26 +219,22 @@ function is_zero_block(a::VectorOfBlockArrayCoo,i::Integer...)
   p < 0
 end
 
-function apply_field_op(k::FieldOp,args::AbstractArray...)
-  apply(k,args...)
-end
-
-function apply_field_op(k::FieldOp,a::VectorOfBlockArrayCoo)
+function apply(k::FieldOp,a::VectorOfBlockArrayCoo)
   blocks = map(b->apply(k,b), a.blocks)
   VectorOfBlockArrayCoo(blocks,a.blockids,a.axes,a.ptrs)
 end
 
-function apply_field_op(k::FieldOp,a::VectorOfBlockArrayCoo,b::AbstractArray)
+function apply(k::FieldOp,a::VectorOfBlockArrayCoo,b::AbstractArray)
   blocks = map(block->apply(k,block,b), a.blocks)
   VectorOfBlockArrayCoo(blocks,a.blockids,a.axes,a.ptrs)
 end
 
-function apply_field_op(k::FieldOp,b::AbstractArray,a::VectorOfBlockArrayCoo)
+function apply(k::FieldOp,b::AbstractArray,a::VectorOfBlockArrayCoo)
   blocks = map(block->apply(k,b,block), a.blocks)
   VectorOfBlockArrayCoo(blocks,a.blockids,a.axes,a.ptrs)
 end
 
-function apply_field_op(k::FieldOp,a::VectorOfBlockArrayCoo{Ta,N} where Ta, b::VectorOfBlockArrayCoo{Tb,N} where Tb) where N
+function apply(k::FieldOp,a::VectorOfBlockArrayCoo{Ta,N} where Ta, b::VectorOfBlockArrayCoo{Tb,N} where Tb) where N
   @assert size(a.ptrs) == size(b.ptrs)
   blocks = []
   blockids = NTuple{N,Int}[]
@@ -253,7 +250,7 @@ function apply_field_op(k::FieldOp,a::VectorOfBlockArrayCoo{Ta,N} where Ta, b::V
   VectorOfBlockArrayCoo(Tuple(blocks),blockids,a.axes)
 end
 
-function apply_field_op(k::FieldOp{typeof(+)},a::VectorOfBlockArrayCoo{Ta,N} where Ta, b::VectorOfBlockArrayCoo{Tb,N} where Tb) where N
+function apply(k::FieldOp{typeof(+)},a::VectorOfBlockArrayCoo{Ta,N} where Ta, b::VectorOfBlockArrayCoo{Tb,N} where Tb) where N
   @assert size(a.ptrs) == size(b.ptrs)
   blocks = []
   blockids = NTuple{N,Int}[]
@@ -277,7 +274,7 @@ function apply_field_op(k::FieldOp{typeof(+)},a::VectorOfBlockArrayCoo{Ta,N} whe
   VectorOfBlockArrayCoo(Tuple(blocks),blockids,a.axes)
 end
 
-function apply_field_op(k::FieldOp{typeof(-)},a::VectorOfBlockArrayCoo{Ta,N} where Ta, b::VectorOfBlockArrayCoo{Tb,N} where Tb) where N
+function apply(k::FieldOp{typeof(-)},a::VectorOfBlockArrayCoo{Ta,N} where Ta, b::VectorOfBlockArrayCoo{Tb,N} where Tb) where N
   @assert size(a.ptrs) == size(b.ptrs)
   blocks = []
   blockids = NTuple{N,Int}[]
@@ -301,7 +298,7 @@ function apply_field_op(k::FieldOp{typeof(-)},a::VectorOfBlockArrayCoo{Ta,N} whe
   VectorOfBlockArrayCoo(Tuple(blocks),blockids,a.axes)
 end
 
-function apply_field_op(k::FieldOp,a::VectorOfBlockArrayCoo{Ta,2} where Ta, b::VectorOfBlockArrayCoo{Tb,3} where Tb)
+function apply(k::FieldOp,a::VectorOfBlockArrayCoo{Ta,2} where Ta, b::VectorOfBlockArrayCoo{Tb,3} where Tb)
   axs = apply( (a1,a2) -> (a1[1],a1[2],a2[3]) ,a.axes,b.axes)
   blocks = []
   blockids = NTuple{3,Int}[]
@@ -321,7 +318,7 @@ function apply_field_op(k::FieldOp,a::VectorOfBlockArrayCoo{Ta,2} where Ta, b::V
   VectorOfBlockArrayCoo(Tuple(blocks),blockids,axs)
 end
 
-function apply_field_op(k::FieldOp,a::VectorOfBlockArrayCoo{Ta,3} where Ta, b::VectorOfBlockArrayCoo{Tb,2} where Tb)
+function apply(k::FieldOp,a::VectorOfBlockArrayCoo{Ta,3} where Ta, b::VectorOfBlockArrayCoo{Tb,2} where Tb)
   axs = apply( (a1,a2) -> (a1[1],a2[2],a1[3]) ,a.axes,b.axes)
   blocks = []
   blockids = NTuple{3,Int}[]
@@ -429,27 +426,27 @@ cbu = trialize_array_of_matrices(cbv)
 
 # random operations between cell fields
 f(f1,f2) = f1*f2+f1
-ca = apply_field_op(FieldOp(f),cf,cf)
+ca = apply(FieldOp(f),cf,cf)
 cr = [ f.(cfi,cfi)  for cfi in cf]
 test_array(ca,cr)
 
 # Linear operations on cell basis (test)
 f(u,u2,f) = u +f*u2
-ca = apply_field_op(FieldOp(f),cbv,cbv,cf)
+ca = apply(FieldOp(f),cbv,cbv,cf)
 cr = [ f.(cbvi,cbvi,cfi)  for (cbvi,cfi) in zip(cbv,cf)]
 @test size(ca[1]) == (npoin,ndofs)
 test_array(ca,cr)
 
 # Linear operations on cell basis (trial)
 f(u,u2,f) = u +f*u2
-ca = apply_field_op(FieldOp(f),cbu,cbu,cf)
+ca = apply(FieldOp(f),cbu,cbu,cf)
 cr = [ f.(cbui,cbui,cfi)  for (cbui,cfi) in zip(cbu,cf)]
 @test size(ca[1]) == (npoin,1,ndofs)
 test_array(ca,cr)
 
 # Bi-linear operations on test/trial cell bases
 f(v,v2,u,u2,f) = (v+v2)*(u+f*u2)
-ca = apply_field_op(FieldOp(f),cbv,cbv,cbu,cbu,cf)
+ca = apply(FieldOp(f),cbv,cbv,cbu,cbu,cf)
 cr = [ f.(cbvi,cbvi,cbui,cbui,cfi)  for (cbvi,cbui,cfi) in zip(cbv,cbu,cf)]
 @test size(ca[1]) == (npoin,ndofs,ndofs)
 test_array(ca,cr)
@@ -467,49 +464,49 @@ cbu2 = trialize_array_of_matrices(cbv2)
 
 # Unary operations on cell basis (test)
 f(u) = VectorValue(u,u)
-ca = apply_field_op(FieldOp(f),cbv1)
+ca = apply(FieldOp(f),cbv1)
 
 f(a,b) = VectorValue(a,b)
-ca = apply_field_op(FieldOp(f),cbv1,cf1)
-ca = apply_field_op(FieldOp(f),cf1,cbv1)
+ca = apply(FieldOp(f),cbv1,cf1)
+ca = apply(FieldOp(f),cf1,cbv1)
 
 # Unary operations on cell basis (trial)
 f(u) = VectorValue(u,u)
-ca = apply_field_op(FieldOp(f),cbu1)
+ca = apply(FieldOp(f),cbu1)
 
 f(a,b) = VectorValue(a,b)
-ca = apply_field_op(FieldOp(f),cbu1,cf1)
-ca = apply_field_op(FieldOp(f),cf1,cbu1)
+ca = apply(FieldOp(f),cbu1,cf1)
+ca = apply(FieldOp(f),cf1,cbu1)
 
 # Linear operations on cell basis (test)
 f(u,u2) = u + 2*u2
-ca = apply_field_op(FieldOp(f),cbv1,cbv2)
+ca = apply(FieldOp(f),cbv1,cbv2)
 
-ca = apply_field_op(FieldOp(+),cbv1,cbv2)
+ca = apply(FieldOp(+),cbv1,cbv2)
 @test ca[Block(1,1)] === cbv1[Block(1,1)]
 @test ca[Block(1,2)] === cbv2[Block(1,2)]
 
-ca = apply_field_op(FieldOp(-),cbv1,cbv2)
+ca = apply(FieldOp(-),cbv1,cbv2)
 @test ca[Block(1,1)] === cbv1[Block(1,1)]
 
 # Linear operations on cell basis (trial)
 f(u,u2) = u + 2*u2
-ca = apply_field_op(FieldOp(f),cbu1,cbu2)
+ca = apply(FieldOp(f),cbu1,cbu2)
 
-ca = apply_field_op(FieldOp(+),cbu1,cbu2)
+ca = apply(FieldOp(+),cbu1,cbu2)
 @test ca[Block(1,1,1)] === cbu1[Block(1,1,1)]
 @test ca[Block(1,1,2)] === cbu2[Block(1,1,2)]
 
-ca = apply_field_op(FieldOp(-),cbu1,cbu2)
+ca = apply(FieldOp(-),cbu1,cbu2)
 @test ca[Block(1,1,1)] === cbu1[Block(1,1,1)]
 
 # Bi-linear operations on cell basis (test/trial)
 f(v,u) = 2*v*u
-ca = apply_field_op(FieldOp(f),cbv1,cbu2)
+ca = apply(FieldOp(f),cbv1,cbu2)
 @test ca.blockids == [(1,1,2)]
 
 # Bi-linear operations on cell basis (trial/test)
-ca = apply_field_op(FieldOp(f),cbu1,cbv2)
+ca = apply(FieldOp(f),cbu1,cbv2)
 @test ca.blockids == [(1,2,1)]
 
 end # module
