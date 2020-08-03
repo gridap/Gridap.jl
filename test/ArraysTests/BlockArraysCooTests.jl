@@ -227,6 +227,16 @@ function apply_field_op(k::FieldOp,a::VectorOfBlockArrayCoo)
   VectorOfBlockArrayCoo(blocks,a.blockids,a.axes,a.ptrs)
 end
 
+function apply_field_op(k::FieldOp,a::VectorOfBlockArrayCoo,b::AbstractArray)
+  blocks = map(block->apply(k,block,b), a.blocks)
+  VectorOfBlockArrayCoo(blocks,a.blockids,a.axes,a.ptrs)
+end
+
+function apply_field_op(k::FieldOp,b::AbstractArray,a::VectorOfBlockArrayCoo)
+  blocks = map(block->apply(k,b,block), a.blocks)
+  VectorOfBlockArrayCoo(blocks,a.blockids,a.axes,a.ptrs)
+end
+
 function apply_field_op(k::FieldOp,a::VectorOfBlockArrayCoo{Ta,N} where Ta, b::VectorOfBlockArrayCoo{Tb,N} where Tb) where N
   @assert size(a.ptrs) == size(b.ptrs)
   blocks = []
@@ -291,30 +301,45 @@ function apply_field_op(k::FieldOp{typeof(-)},a::VectorOfBlockArrayCoo{Ta,N} whe
   VectorOfBlockArrayCoo(Tuple(blocks),blockids,a.axes)
 end
 
-#function apply_field_op(k::FieldOp,a::VectorOfBlockArrayCoo{Ta,N} where Ta, b::VectorOfBlockArrayCoo{Ta,N}) where N
-#  @assert size(a.ptrs) == size(b.ptrs)
-#  blocks = []
-#  blockids = []
-#  cis = CartesianIndices(a.ptrs)
-#  for ci in cis
-#    p1 = a.ptrs[ci]
-#    p2 = a.ptrs[ci]
-#    if p1 > 0 && p2 >0
-#      block = apply(k,a.blocks[p1],b.blocks[p2])
-#      push!(blocks,block)
-#      push!(blockids,Tuple(ci))
-#    elseif p2 > 0
-#      block = apply(k,b.blocks[p2])
-#      push!(blocks,block)
-#      push!(blockids,Tuple(ci))
-#    elseif p1 > 0
-#      block = a.blocks[p1]
-#      push!(blocks,block)
-#      push!(blockids,Tuple(ci))
-#    end
-#  end
-#  VectorOfBlockArrayCoo(Tuple(blocks),collect(blockids),a.axes)
-#end
+function apply_field_op(k::FieldOp,a::VectorOfBlockArrayCoo{Ta,2} where Ta, b::VectorOfBlockArrayCoo{Tb,3} where Tb)
+  axs = apply( (a1,a2) -> (a1[1],a1[2],a2[3]) ,a.axes,b.axes)
+  blocks = []
+  blockids = NTuple{3,Int}[]
+  nfield1 = size(a.ptrs,2)
+  nfield2 = size(b.ptrs,3)
+  for f1 in 1:nfield1
+    I1 = Block(1,f1)
+    for f2 in 1:nfield2
+      I2 = Block(1,1,f2)
+      if !is_zero_block(a,I1) && !is_zero_block(b,I2)
+        block = apply(k,a[I1],b[I2])
+        push!(blocks,block)
+        push!(blockids,(1,f1,f2))
+      end
+    end
+  end
+  VectorOfBlockArrayCoo(Tuple(blocks),blockids,axs)
+end
+
+function apply_field_op(k::FieldOp,a::VectorOfBlockArrayCoo{Ta,3} where Ta, b::VectorOfBlockArrayCoo{Tb,2} where Tb)
+  axs = apply( (a1,a2) -> (a1[1],a2[2],a1[3]) ,a.axes,b.axes)
+  blocks = []
+  blockids = NTuple{3,Int}[]
+  nfield1 = size(b.ptrs,2)
+  nfield2 = size(a.ptrs,3)
+  for f1 in 1:nfield1
+    I1 = Block(1,f1)
+    for f2 in 1:nfield2
+      I2 = Block(1,1,f2)
+      if !is_zero_block(b,I1) && !is_zero_block(a,I2)
+        block = apply(k,b[I1],a[I2])
+        push!(blocks,block)
+        push!(blockids,(1,f1,f2))
+      end
+    end
+  end
+  VectorOfBlockArrayCoo(Tuple(blocks),blockids,axs)
+end
 
 
 struct TrializedMatrix{T,A} <: AbstractArray{T,3}
@@ -363,8 +388,6 @@ blockids = [(1,1),(2,1)]
 ax = (blockedrange([2,3]), blockedrange([2,4]))
 ptrs = _compute_ptrs(blockids,ax)
 zero_blocks = _compute_zero_blocks(eltype(blocks),ptrs,ax)
-
-display(zero_blocks)
 
 a = BlockArrayCoo(blocks,blockids,ax)
 @test a[Block(1),Block(1)] === blocks[1]
@@ -447,56 +470,47 @@ cbu2 = trialize_array_of_matrices(cbv2)
 f(u) = VectorValue(u,u)
 ca = apply_field_op(FieldOp(f),cbv1)
 
+f(a,b) = VectorValue(a,b)
+ca = apply_field_op(FieldOp(f),cbv1,cf1)
+ca = apply_field_op(FieldOp(f),cf1,cbv1)
+
+# Unary operations on cell basis (trial)
+f(u) = VectorValue(u,u)
+ca = apply_field_op(FieldOp(f),cbu1)
+
+f(a,b) = VectorValue(a,b)
+ca = apply_field_op(FieldOp(f),cbu1,cf1)
+ca = apply_field_op(FieldOp(f),cf1,cbu1)
+
 # Linear operations on cell basis (test)
 f(u,u2) = u + 2*u2
 ca = apply_field_op(FieldOp(f),cbv1,cbv2)
-display(ca[1])
 
 ca = apply_field_op(FieldOp(+),cbv1,cbv2)
 @test ca[Block(1,1)] === cbv1[Block(1,1)]
 @test ca[Block(1,2)] === cbv2[Block(1,2)]
-display(ca[1])
 
 ca = apply_field_op(FieldOp(-),cbv1,cbv2)
 @test ca[Block(1,1)] === cbv1[Block(1,1)]
-display(ca[1])
 
+# Linear operations on cell basis (trial)
+f(u,u2) = u + 2*u2
+ca = apply_field_op(FieldOp(f),cbu1,cbu2)
 
-kk
+ca = apply_field_op(FieldOp(+),cbu1,cbu2)
+@test ca[Block(1,1,1)] === cbu1[Block(1,1,1)]
+@test ca[Block(1,1,2)] === cbu2[Block(1,1,2)]
 
+ca = apply_field_op(FieldOp(-),cbu1,cbu2)
+@test ca[Block(1,1,1)] === cbu1[Block(1,1,1)]
 
+# Bi-linear operations on cell basis (test/trial)
+f(v,u) = 2*v*u
+ca = apply_field_op(FieldOp(f),cbv1,cbu2)
+@test ca.blockids == [(1,1,2)]
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-a = rand(3,4)
-b = trialize_matrix(a)
-b2 = reshape(a,(3,1,4))
-test_array(b,b2)
-
-
-cb1t = trialize_array_of_matrices(cb1)
-cache = array_cache(cb1t)
-@btime getindex!($cache,$cb1t,1)
-#display(cb1t)
-
-cb2t = trialize_array_of_matrices(cb2)
-#display(cb2t)
-
-
-cache = array_cache(ca)
-@btime getindex!($cache,$ca,1)
-
-
+# Bi-linear operations on cell basis (trial/test)
+ca = apply_field_op(FieldOp(f),cbu1,cbv2)
+@test ca.blockids == [(1,2,1)]
 
 end # module
