@@ -128,7 +128,7 @@ UnstructuredGrid
 UnstructuredGrid(
   node_coordinates::Vector{Point{Dp,Tp}},
   cell_nodes::Table{Ti},
-  reffes::Vector{<:NodalReferenceFE{Dc}},
+  reffes::Vector{<:LagrangianRefFE{Dc}},
   cell_types::Vector,
   ::Val{B}=Val{false}()) where {Dc,Dp,Tp,Ti,B}
 UnstructuredGrid(trian::Grid)

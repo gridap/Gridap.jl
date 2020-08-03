@@ -23,9 +23,16 @@ end
 struct IntKernel <: Kernel end
 
 function kernel_cache(k::IntKernel,f::AbstractVector,w,j)
-  _integrate_checks(f,w,j)
   T = _integrate_rt(f,w,j)
   zero(T)
+end
+
+function kernel_testitem!(c,k::IntKernel,f::AbstractVector,w,j)
+  if _integrate_valid_sizes(f,w,j)
+    apply_kernel!(c,k,f,w,j)
+  else
+    c
+  end
 end
 
 @noinline function apply_kernel!(z,k::IntKernel,f::AbstractVector,w,j)
@@ -38,11 +45,18 @@ end
 end
 
 function kernel_cache(k::IntKernel,f::AbstractArray,w,j)
-  _integrate_checks(f,w,j)
   T = _integrate_rt(f,w,j)
   _, s = _split(size(f)...)
   r = zeros(T,s)
   c = CachedArray(r)
+end
+
+function kernel_testitem!(c,k::IntKernel,f::AbstractArray,w,j)
+  if _integrate_valid_sizes(f,w,j)
+    apply_kernel!(c,k,f,w,j)
+  else
+    c.array
+  end
 end
 
 @inline function apply_kernel!(c,k::IntKernel,f::AbstractArray,w,j)
@@ -72,9 +86,13 @@ function _integrate_rt(f,w,j)
 end
 
 function _integrate_checks(f,w,j)
+  @assert _integrate_valid_sizes(f,w,j) "integrate: sizes  mismatch."
+end
+
+function _integrate_valid_sizes(f,w,j)
   nf, = size(f)
   nw = length(w)
   nj = length(j)
-  @assert (nf == nw) && (nw == nj) "integrate: sizes  mismatch."
+  (nf == nw) && (nw == nj)
 end
 

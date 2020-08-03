@@ -32,6 +32,10 @@ reffe = LagrangianRefFE(VectorValue{3,Float64},WEDGE,(3,3,4))
 f = joinpath(d,"reffe")
 writevtk(reffe,f)
 
+reffe = LagrangianRefFE(VectorValue{2,Float64},QUAD,(2,0))
+f = joinpath(d,"reffe")
+writevtk(reffe,f)
+
 f = joinpath(d,"poly")
 writevtk(HEX,f)
 

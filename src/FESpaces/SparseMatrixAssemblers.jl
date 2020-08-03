@@ -291,7 +291,7 @@ function _assemble_matrix_and_vector!(A,b,vals_cache,rows_cache,cols_cache,cell_
       if gidrow > 0 && row_mask(strategy,gidrow)
         _gidrow = row_map(strategy,gidrow)
         bi = vecvals[i]
-        b[_gidrow] += bi
+        add_entry!(b,bi,_gidrow)
       end
     end
   end
@@ -354,7 +354,7 @@ end
       if gidrow > 0 && row_mask(strategy,gidrow)
         _gidrow = row_map(strategy,gidrow)
         bi = vecvals[i]
-        b[_gidrow] += bi
+        add_entry!(b,bi,_gidrow)
       end
     end
   end

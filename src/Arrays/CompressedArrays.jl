@@ -30,7 +30,11 @@ struct CompressedArray{T,N,A,P} <: AbstractArray{T,N}
 end
 
 function testitem(a::CompressedArray)
-  testitem(a.values)
+  if length(a.ptrs) == 0
+    testitem(a.values)
+  else
+    a.values[first(a.ptrs)]
+  end
 end
 
 size(a::CompressedArray) = size(a.ptrs)

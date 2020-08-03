@@ -19,7 +19,7 @@ function evaluate_field!(c,f::MockField,x)
     @inbounds xi = x[i]
     @inbounds c[i] = f.v*xi[1]
   end
-  c
+  c.array
 end
 
 @inline function field_gradient(f::MockField{T,D}) where {T,D}
@@ -57,7 +57,7 @@ function evaluate_field!(v,f::MockBasis,x)
       @inbounds v[i,j] = f.v*xi[1]
     end
   end
-  v
+  v.array
 end
 
 @inline function field_gradient(f::MockBasis{T,D}) where {T,D}
@@ -94,7 +94,7 @@ function evaluate_field!(v,f::OtherMockBasis,x)
       @inbounds v[i,j] = 2*xi
     end
   end
-  v
+  v.array
 end
 
 @inline function field_gradient(f::OtherMockBasis{D}) where D

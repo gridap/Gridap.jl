@@ -7,9 +7,9 @@
 #end
 
 """
-    writevtk(reffe::NodalReferenceFE,filebase)
+    writevtk(reffe::LagrangianRefFE,filebase)
 """
-function writevtk(reffe::NodalReferenceFE,filebase)
+function writevtk(reffe::LagrangianRefFE,filebase)
 
   p = get_polytope(reffe)
   writevtk(p,filebase)
@@ -167,7 +167,7 @@ function _generate_vtk_cells(
   type_to_vtknodes)
 
   V = eltype(cell_to_nodes)
-  meshcells = MeshCell{V}[]
+  meshcells = MeshCell{WriteVTK.VTKCellTypes.VTKCellType,V}[]
 
   d = _vtkcelltypedict()
 

@@ -4,14 +4,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.12.0] - Unreleased
+## [0.13.2] - 2020-7-31
+
+### Added
+  - Automatic differentiation of the Jacobian from a given residual and the Jacobian and the residual from a given energy. Not working at this moment on the Skeleton nor for multi-field (WIP), but yes for other cases.
+  Now, the user can omit `jac` from `FETerm(res,jac,trian,quad)`, i.e. `FETerm(res,trian,quad)` and the Jacobian will be automatically generated. In addition, the user can write `FEEnergy(ener,trian,quad)` for a given `ener(uh)` function
+  and the residual and the Jacobian will be automatically generated. Since PR [#338](https://github.com/gridap/Gridap.jl/pull/338/).
+
+## [0.13.1] - 2020-7-24
+
+### Fixed
+  - Bugs associated with the degenerated case of 0-length arrays. Since PR [#331](https://github.com/gridap/Gridap.jl/pull/331/) and [#332](https://github.com/gridap/Gridap.jl/pull/332/).
+
+## [0.13.0] - 2020-07-23
+
+### Added
+  - Automatic differentiation for symmetric gradient, i.e. `ε(u)` for a given vector-valued function `u`. Since PR [#327](https://github.com/gridap/Gridap.jl/pull/327/).
+  - Added missing SparseMatrixAssembler constructor for MultiFieldFESpaces. Since PR [#320](https://github.com/gridap/Gridap.jl/pull/320/).
+  - kw-argument `space` to `LagrangianRefFE` constructor in order to select the type of underlying polynomial space, i.e., `:Q`, `:S`, or `:P`. Since PR [#321](https://github.com/gridap/Gridap.jl/pull/321).
+
+### Changed
+  - The meaning of `inward/outward` has slightly changed for `SkeletonCellBasis` objects. Now, by accessing to these properties a `ReducedSkeletonCellBasis` is returned, which allows to use the result in a more flexible way (in particular, the result can be used in a similar way than the result of `jump` or `mean`). Since PR [#317](https://github.com/gridap/Gridap.jl/pull/317).
+  - Major refactoring in `ReferenceFEs` module. Since PR [#319](https://github.com/gridap/Gridap.jl/pull/319) and [#321](https://github.com/gridap/Gridap.jl/pull/321). In particular:
+    - `NodalReferenceFE` has been replaced by a new abstract type `LagrangianRefFE`.
+    - `GenericNodalCartesianRefFE` has been replaced by `GenericLagrangianRefFE`.
+
+### Removed
+  - Removals associated with the `ReferenceFEs` refactoring in PR [#319](https://github.com/gridap/Gridap.jl/pull/319):
+    - Removed `QDiscRefFE` constructor. Use a standard `LagrangianRefFE` and `L2Conformity` instead.
+    - Removed `PDiscRefFE` constructor. Use `LagrangianRefFE` constructor with the kw-argument `space=:P`.
+    - Removed `CDLagrangianRefFE` constructor. Use a standard `LagrangianRefFE` and `CDConformity` instead.
+    - Removed fields `face_own_dofs` and `face_own_dof_permutations` from `GenericRefFE`.
+    - Removed struct `DiscRefFE`.
+
+### Fixed
+  - Better handling of FE terms defined on empty triangulations. Since PR [#329](https://github.com/gridap/Gridap.jl/pull/329).
+  - Replaced `+=` by `add_entry!`. Since PR [#316](https://github.com/gridap/Gridap.jl/pull/316).
+  - Minor fix to let Vtk.jl support changes in Vtk 1.7.X versus 1.6.X. Since PR [#324](https://github.com/gridap/Gridap.jl/pull/324).
+  
+## [0.12.0] - 2020-07-07
 
 ### Added
 
-  - Added `SkeletonTriangulation` constructor in order to integrate, where a given interpolation is discontinuous. . Since PR [#304](https://github.com/gridap/Gridap.jl/pull/304).
+  - Added `SkeletonTriangulation` constructor in order to integrate, where a given interpolation is discontinuous. Since PR [#304](https://github.com/gridap/Gridap.jl/pull/304).
   - New `ConformingFESpace` constructor. Since PR [#293](https://github.com/gridap/Gridap.jl/pull/293).
   - Added `QDiscRefFE` constructor for `DiscRefFE`. Since PR [#293](https://github.com/gridap/Gridap.jl/pull/293).
   - New `FESpace` constructor that takes an instance of `ReferenceFE`. Since PR [#294](https://github.com/gridap/Gridap.jl/pull/294).
+  - New `FESpace` constructor that takes an instance of `Conformity`. Since PR [#311](https://github.com/gridap/Gridap.jl/pull/311).
   - New `CDLagrangianRefFE` struct, that provides a Lagrangian reference FE with different conformity per direction. Since PR [#299](https://github.com/gridap/Gridap.jl/pull/299).
   - New `FESpace` method that takes a model and a `RefFE`. Since PR [#299](https://github.com/gridap/Gridap.jl/pull/299).
   - Possibility to have 0 order in `DISC` directions of a `CDLagrangianRefFE`. Since PR [#308](https://github.com/gridap/Gridap.jl/pull/308).
@@ -20,6 +59,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+  - Changed the interfaces of `ReferenceFE` and `NodalReferenceFE` in relation of DOF ownership. Now function `get_face_own_dofs` and related ones are parametrized by a `Conformity` object. Since PR [#311](https://github.com/gridap/Gridap.jl/pull/311).
+  - The constructors `GenericRefFE`, `GenericNodalCartesianRefFE`, and `compute_conforming_cell_dofs` take an extra argument of type `Conformity`. Since PR [#311](https://github.com/gridap/Gridap.jl/pull/311).
   - Renamed `PDiscRefFE` -> `DiscRefFE` struct keeping the name for constructor. Since PR [#293](https://github.com/gridap/Gridap.jl/pull/293).
   - One of the `GradConformingFESpace` methods now more general `ConformingFESpace`. Since PR [#293](https://github.com/gridap/Gridap.jl/pull/293).
   - `DivConformingFESpace` and `CurlConformingFESpace` constructors eliminated. Since PR [#293](https://github.com/gridap/Gridap.jl/pull/293).

@@ -66,4 +66,8 @@ using Test
 
 @testset "StateLaws" begin include("StateLawsTests.jl") end
 
+@testset "FEAutodiff" begin include("FEAutodiffTests.jl") end
+
+@testset "FETermsWithAutodiff" begin include("FETermsWithAutodiffTests.jl") end
+
 end # module
