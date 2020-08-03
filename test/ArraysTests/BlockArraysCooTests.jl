@@ -3,6 +3,9 @@ module BlockArraysCooTests
 using BlockArrays
 using Gridap
 using Gridap.Arrays
+using Gridap.Fields
+using Gridap.Fields: IntKernel
+using Gridap.TensorValues
 import Gridap.Arrays: kernel_cache
 import Gridap.Arrays: apply_kernel!
 import Gridap.Arrays: array_cache
@@ -62,7 +65,7 @@ function _compute_zero_blocks(::Type{A},ptrs,axes) where A
   zero_blocks
 end
 
-function BlockArrays.getblock(a::BlockArrayCoo{T,N,A} where {T,N},i::Integer...) where A
+function BlockArrays.getblock(a::BlockArrayCoo,i::Integer...)
   p = a.ptrs[i...]
   if p>0
     a.blocks[p]
@@ -87,7 +90,7 @@ function is_zero_block(a::BlockArrayCoo,i::Integer...)
   p < 0
 end
 
-function BlockArrays.getblock!(block,a::BlockArrayCoo{T,N,A} where {T,N},i::Integer...) where A
+function BlockArrays.getblock!(block,a::BlockArrayCoo,i::Integer...)
   p = a.ptrs[i...]
   if p>0
     block .= a.blocks[p]
@@ -375,6 +378,20 @@ function trialize_array_of_matrices(a::VectorOfBlockArrayCoo)
   VectorOfBlockArrayCoo(blocks,blockids,axs)
 end
 
+function apply(k::IntKernel,f::VectorOfBlockArrayCoo{T,2} where T,w::AbstractArray,j::AbstractArray)
+  ax = apply(a->(a[2],),f.axes)
+  blocks = map(block->apply(k,block,w,j),f.blocks)
+  blockids = [ (ids[2],) for ids in f.blockids ]
+  VectorOfBlockArrayCoo(blocks,blockids,ax)
+end
+
+function apply(k::IntKernel,f::VectorOfBlockArrayCoo{T,3} where T,w::AbstractArray,j::AbstractArray)
+  ax = apply(a->(a[2],a[3]),f.axes)
+  blocks = map(block->apply(k,block,w,j),f.blocks)
+  blockids = [ (ids[2], ids[3]) for ids in f.blockids ]
+  VectorOfBlockArrayCoo(blocks,blockids,ax)
+end
+
 using Test
 using BenchmarkTools
 using FillArrays
@@ -398,6 +415,10 @@ b12 = ones(2,4)
 getblock!(b12,a,Block(1,2))
 @test b12 == a[Block(1,2)]
 
+blocks = [ [1,2,3] ]
+blockids = [(2,)]
+ax = (blockedrange([2,3]),)
+a = BlockArrayCoo(blocks,blockids,ax)
 
 l = 10
 b11 = [  i*[1 2; 3 4]  for i in 1:l ]
@@ -423,6 +444,8 @@ ncell = 10
 cf = [rand(npoin) for cell in 1:ncell]
 cbv = [rand(npoin,ndofs) for cell in 1:ncell]
 cbu = trialize_array_of_matrices(cbv)
+
+cj = [ fill(TensorValue(1,0,0,2),npoin) for cell in 1:ncell ]
 
 # random operations between cell fields
 f(f1,f2) = f1*f2+f1
@@ -508,5 +531,13 @@ ca = apply(FieldOp(f),cbv1,cbu2)
 # Bi-linear operations on cell basis (trial/test)
 ca = apply(FieldOp(f),cbu1,cbv2)
 @test ca.blockids == [(1,2,1)]
+
+# Integration of vectors
+ca = apply(IntKernel(),cbv1,cf1,cj)
+display(ca.axes)
+display(ca[1])
+
+ca = apply(IntKernel(),apply(FieldOp(*),cbv1,cbu2),cf1,cj)
+display(ca[1])
 
 end # module
