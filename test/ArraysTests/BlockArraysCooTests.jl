@@ -341,7 +341,6 @@ function apply_field_op(k::FieldOp,a::VectorOfBlockArrayCoo{Ta,3} where Ta, b::V
   VectorOfBlockArrayCoo(Tuple(blocks),blockids,axs)
 end
 
-
 struct TrializedMatrix{T,A} <: AbstractArray{T,3}
   matrix::A
   @inline function TrializedMatrix(matrix::AbstractMatrix{T}) where T
