@@ -3,21 +3,29 @@ module BlockArraysCooTests
 using BlockArrays
 using Gridap
 using Gridap.Arrays
+import Gridap.Arrays: kernel_cache
+import Gridap.Arrays: apply_kernel!
+import Gridap.Arrays: array_cache
+import Gridap.Arrays: getindex!
+
+Gridap.Arrays.array_caches() = ()
+Gridap.Arrays.getitems!(::Tuple{},::Tuple{},i) = ()
 
 struct BlockArrayCoo{T,N,A,X} <: AbstractBlockArray{T,N}
   blocks::Vector{A}
   blockids::Vector{NTuple{N,Int}}
   axes::X
   ptrs::Array{Int,N}
+  zero_blocks::Vector{A}
   function BlockArrayCoo(
-    blocks::Vector{<:AbstractArray{T,N}},
+    blocks::Vector{A},
     blockids::Vector{NTuple{N,Int}},
     axes::NTuple{N},
-    ptrs::Array{Int,N}=_compute_ptrs(blockids,axes)) where {T,N}
+    ptrs::Array{Int,N}=_compute_ptrs(blockids,axes),
+    zero_blocks::Vector{A}=_compute_zero_blocks(A,ptrs,axes)) where {T,N,A<:AbstractArray{T,N}}
 
-    A = eltype(blocks)
     X = typeof(axes)
-    new{T,N,A,X}(blocks,blockids,axes,ptrs)
+    new{T,N,A,X}(blocks,blockids,axes,ptrs,zero_blocks)
   end
 end
 
@@ -27,7 +35,30 @@ function _compute_ptrs(blockids,axes)
   for (i,c) in enumerate(blockids)
     ptrs[c...] = i
   end
+  m = 1
+  for (k,p) in enumerate(ptrs)
+    if p ==0
+      ptrs[k] = -m
+      m += 1
+    end
+  end
   ptrs
+end
+
+function _compute_zero_blocks(::Type{A},ptrs,axes) where A
+  cis = CartesianIndices(ptrs)
+  zero_blocks = A[]
+  for ci in cis
+    p = ptrs[ci]
+    if p<0
+      i = Tuple(ci)
+      s = map((k,l)->length(k[Block(l)]),axes,i)
+      block = A(undef,s)
+      fill!(block,zero(eltype(A)))
+      push!(zero_blocks,block)
+    end
+  end
+  zero_blocks
 end
 
 function BlockArrays.getblock(a::BlockArrayCoo{T,N,A} where {T,N},i::Integer...) where A
@@ -35,11 +66,24 @@ function BlockArrays.getblock(a::BlockArrayCoo{T,N,A} where {T,N},i::Integer...)
   if p>0
     a.blocks[p]
   else
-    s = map((k,l)->length(k[Block(l)]),a.axes,i)
-    block = A(undef,s)
-    fill!(block,zero(eltype(A)))
-    block
+    a.zero_blocks[-p]
   end
+end
+
+function is_zero_block(a,b::Block)
+  i = convert(Tuple,b)
+  is_zero_block(a,i...)
+end
+
+function is_zero_block(a,b::CartesianIndex)
+  i = Tuple(b)
+  is_zero_block(a,i...)
+end
+
+function is_zero_block(a::BlockArrayCoo,i::Integer...)
+  p = a.ptrs[i...]
+  @assert p != 0
+  p < 0
 end
 
 function BlockArrays.getblock!(block,a::BlockArrayCoo{T,N,A} where {T,N},i::Integer...) where A
@@ -47,8 +91,7 @@ function BlockArrays.getblock!(block,a::BlockArrayCoo{T,N,A} where {T,N},i::Inte
   if p>0
     block .= a.blocks[p]
   else
-    fill!(block,zero(eltype(A)))
-    block
+    block .= a.zero_blocks[-p]
   end
 end
 
@@ -62,16 +105,32 @@ function Base.getindex(a::BlockArrayCoo,i::Integer...)
   ai
 end
 
-struct VectorOfBlockArrayCoo{T,B,N,X} <: AbstractVector{T}
+struct FieldOp{T} <: Kernel
+  op::T
+end
+
+function kernel_cache(k::FieldOp,args...)
+  bk = bcast(k.op)
+  kernel_cache(bk,args...)
+end
+
+@inline function apply_kernel!(cache,k::FieldOp,args...)
+  bk = bcast(k.op)
+  apply_kernel!(cache,bk,args...)
+end
+
+struct VectorOfBlockArrayCoo{T,N,B,X,Z} <: AbstractVector{T}
   blocks::B
   blockids::Vector{NTuple{N,Int}}
   axes::X
   ptrs::Array{Int,N}
+  zero_blocks::Z
   function VectorOfBlockArrayCoo(
     blocks::Tuple,
     blockids::Vector{NTuple{N,Int}},
     axes::AbstractArray{<:NTuple{N}},
-    ptrs::Array{Int,N} = _compute_ptrs(blockids,testitem(axes))) where N
+    ptrs::Array{Int,N} = _compute_ptrs(blockids,testitem(axes)),
+    zero_blocks::Tuple=_compute_zero_blocks_array(blocks,ptrs,axes)) where N
 
     msg = "Trying to build a VectorOfBlockArrayCoo with repeated blocks"
     @assert _no_has_repeaded_blocks(blockids,ptrs) msg
@@ -83,7 +142,8 @@ struct VectorOfBlockArrayCoo{T,B,N,X} <: AbstractVector{T}
     axes_i = testitem(axes)
     t = BlockArrayCoo(blocks_i,blockids,axes_i,ptrs)
     T = typeof(t)
-    new{T,B,N,X}(blocks,blockids,axes,ptrs)
+    Z = typeof(zero_blocks)
+    new{T,N,B,X,Z}(blocks,blockids,axes,ptrs,zero_blocks)
   end
 end
 
@@ -96,28 +156,165 @@ function _no_has_repeaded_blocks(blockids::Vector{NTuple{N,Int}},ptrs) where N
   all( touched .<= 1 )
 end
 
+function _compute_zero_blocks_array(blocks,ptrs,axes)
+  A = eltype(first(blocks))
+  cis = CartesianIndices(ptrs)
+  zero_blocks = []
+  for ci in cis
+    p = ptrs[ci]
+    if p<0
+      block = apply(axes) do a
+        i = Tuple(ci)
+        s = map((k,l)->length(k[Block(l)]),a,i)
+        b = A(undef,s)
+        fill!(b,zero(eltype(A)))
+        b
+      end
+      push!(zero_blocks,block)
+    end
+  end
+  Tuple(zero_blocks)
+end
+
 Base.IndexStyle(::Type{<:VectorOfBlockArrayCoo}) = IndexLinear()
 
 Base.size(a::VectorOfBlockArrayCoo) = (length(first(a.blocks)),)
 
-function Gridap.Arrays.array_cache(a::VectorOfBlockArrayCoo)
+function array_cache(a::VectorOfBlockArrayCoo)
   blocks_i = collect(map(testitem,a.blocks))
+  zero_blocks_i = collect(eltype(blocks_i),map(testitem,a.zero_blocks))
   ca = array_cache(a.axes)
   cb = array_caches(a.blocks...)
-  (blocks_i,ca,cb)
+  cz = array_caches(a.zero_blocks...)
+  (blocks_i,zero_blocks_i,ca,cb,cz)
 end
 
-@inline function Gridap.Arrays.getindex!(cache,a::VectorOfBlockArrayCoo,i::Integer)
-  blocks_i, ca, cb = cache
+@inline function getindex!(cache,a::VectorOfBlockArrayCoo,i::Integer)
+  blocks_i, zero_blocks_i, ca, cb, cz = cache
   axes_i = getindex!(ca,a.axes,i)
   blocks_i .= getitems!(cb,a.blocks,i)
-  BlockArrayCoo(blocks_i,a.blockids,axes_i,a.ptrs)
+  zero_blocks_i .= getitems!(cz,a.zero_blocks,i)
+  BlockArrayCoo(blocks_i,a.blockids,axes_i,a.ptrs,zero_blocks_i)
 end
 
 function Base.getindex(a::VectorOfBlockArrayCoo,i::Integer)
   cache = array_cache(a)
   getindex!(cache,a,i)
 end
+
+function Base.getindex(a::VectorOfBlockArrayCoo,b::Block)
+  i = convert(Tuple,b)
+  p = a.ptrs[i...]
+  if p>0
+    a.blocks[p]
+  else
+    a.zero_blocks[-p]
+  end
+end
+
+function is_zero_block(a::VectorOfBlockArrayCoo,i::Integer...)
+  p = a.ptrs[i...]
+  @assert p != 0
+  p < 0
+end
+
+function apply_field_op(k::FieldOp,args::AbstractArray...)
+  apply(k,args...)
+end
+
+function apply_field_op(k::FieldOp,a::VectorOfBlockArrayCoo)
+  blocks = map(b->apply(k,b), a.blocks)
+  VectorOfBlockArrayCoo(blocks,a.blockids,a.axes,a.ptrs)
+end
+
+function apply_field_op(k::FieldOp,a::VectorOfBlockArrayCoo{Ta,N} where Ta, b::VectorOfBlockArrayCoo{Tb,N} where Tb) where N
+  @assert size(a.ptrs) == size(b.ptrs)
+  blocks = []
+  blockids = NTuple{N,Int}[]
+  cis = CartesianIndices(a.ptrs)
+  for ci in cis
+    I = Block(Tuple(ci))
+    if (!is_zero_block(a,I)) || (!is_zero_block(b,I))
+      block = apply(k,a[I],b[I])
+      push!(blocks,block)
+      push!(blockids,Tuple(ci))
+    end
+  end
+  VectorOfBlockArrayCoo(Tuple(blocks),blockids,a.axes)
+end
+
+function apply_field_op(k::FieldOp{typeof(+)},a::VectorOfBlockArrayCoo{Ta,N} where Ta, b::VectorOfBlockArrayCoo{Tb,N} where Tb) where N
+  @assert size(a.ptrs) == size(b.ptrs)
+  blocks = []
+  blockids = NTuple{N,Int}[]
+  cis = CartesianIndices(a.ptrs)
+  for ci in cis
+    I = Block(Tuple(ci))
+    if (!is_zero_block(a,I)) && (!is_zero_block(b,I))
+      block = apply(k,a[I],b[I])
+      push!(blocks,block)
+      push!(blockids,Tuple(ci))
+    elseif !is_zero_block(a,I)
+      block = a[I]
+      push!(blocks,block)
+      push!(blockids,Tuple(ci))
+    elseif !is_zero_block(b,I)
+      block = b[I]
+      push!(blocks,block)
+      push!(blockids,Tuple(ci))
+    end
+  end
+  VectorOfBlockArrayCoo(Tuple(blocks),blockids,a.axes)
+end
+
+function apply_field_op(k::FieldOp{typeof(-)},a::VectorOfBlockArrayCoo{Ta,N} where Ta, b::VectorOfBlockArrayCoo{Tb,N} where Tb) where N
+  @assert size(a.ptrs) == size(b.ptrs)
+  blocks = []
+  blockids = NTuple{N,Int}[]
+  cis = CartesianIndices(a.ptrs)
+  for ci in cis
+    I = Block(Tuple(ci))
+    if (!is_zero_block(a,I)) && (!is_zero_block(b,I))
+      block = apply(k,a[I],b[I])
+      push!(blocks,block)
+      push!(blockids,Tuple(ci))
+    elseif !is_zero_block(a,I)
+      block = a[I]
+      push!(blocks,block)
+      push!(blockids,Tuple(ci))
+    elseif !is_zero_block(b,I)
+      block = apply(k,b[I])
+      push!(blocks,block)
+      push!(blockids,Tuple(ci))
+    end
+  end
+  VectorOfBlockArrayCoo(Tuple(blocks),blockids,a.axes)
+end
+
+#function apply_field_op(k::FieldOp,a::VectorOfBlockArrayCoo{Ta,N} where Ta, b::VectorOfBlockArrayCoo{Ta,N}) where N
+#  @assert size(a.ptrs) == size(b.ptrs)
+#  blocks = []
+#  blockids = []
+#  cis = CartesianIndices(a.ptrs)
+#  for ci in cis
+#    p1 = a.ptrs[ci]
+#    p2 = a.ptrs[ci]
+#    if p1 > 0 && p2 >0
+#      block = apply(k,a.blocks[p1],b.blocks[p2])
+#      push!(blocks,block)
+#      push!(blockids,Tuple(ci))
+#    elseif p2 > 0
+#      block = apply(k,b.blocks[p2])
+#      push!(blocks,block)
+#      push!(blockids,Tuple(ci))
+#    elseif p1 > 0
+#      block = a.blocks[p1]
+#      push!(blocks,block)
+#      push!(blockids,Tuple(ci))
+#    end
+#  end
+#  VectorOfBlockArrayCoo(Tuple(blocks),collect(blockids),a.axes)
+#end
 
 
 struct TrializedMatrix{T,A} <: AbstractArray{T,3}
@@ -163,12 +360,16 @@ using FillArrays
 
 blocks = [ [1 2; 3 4], [5 6; 7 8; 9 10] ]
 blockids = [(1,1),(2,1)]
-axes = (blockedrange([2,3]), blockedrange([2,4]))
-ptrs = _compute_ptrs(blockids,axes)
+ax = (blockedrange([2,3]), blockedrange([2,4]))
+ptrs = _compute_ptrs(blockids,ax)
+zero_blocks = _compute_zero_blocks(eltype(blocks),ptrs,ax)
 
-a = BlockArrayCoo(blocks,blockids,axes)
+display(zero_blocks)
+
+a = BlockArrayCoo(blocks,blockids,ax)
 @test a[Block(1),Block(1)] === blocks[1]
 @test a[Block(1,1)] === blocks[1]
+@test a[Block(1,2)] === a.zero_blocks[1]
 
 b21 = zeros(3,2)
 getblock!(b21,a,Block(2,1))
@@ -178,17 +379,20 @@ b12 = ones(2,4)
 getblock!(b12,a,Block(1,2))
 @test b12 == a[Block(1,2)]
 
+
 l = 10
 b11 = [  i*[1 2; 3 4]  for i in 1:l ]
 b21 = [  i*[5 6; 7 8; 9 10] for i in 1:l]
 blocks = (b11,b21)
 blockids = [(1,1),(2,1)]
-axes = Fill((blockedrange([2,3]), blockedrange([2,4])),l)
-ptrs = _compute_ptrs(blockids,first(axes))
+ax = Fill((blockedrange([2,3]), blockedrange([2,4])),l)
+ptrs = _compute_ptrs(blockids,first(ax))
+zero_blocks = _compute_zero_blocks_array(blocks,ptrs,ax)
 
-al = VectorOfBlockArrayCoo(blocks,blockids,axes)
+al = VectorOfBlockArrayCoo(blocks,blockids,ax)
+@test al[Block(1,1)] === b11
 
-rl = [ BlockArrayCoo([b11i,b21i],blockids,axi,ptrs)  for (b11i,b21i,axi) in zip(b11,b21,axes) ]
+rl = [ BlockArrayCoo([b11i,b21i],blockids,axi,ptrs)  for (b11i,b21i,axi) in zip(b11,b21,ax) ]
 test_array(al,rl)
 
 npoin = 3
@@ -198,7 +402,35 @@ ncell = 10
 
 # single-field
 cf = [rand(npoin) for cell in 1:ncell]
-cb = [rand(npoin,ndofs) for cell in 1:ncell]
+cbv = [rand(npoin,ndofs) for cell in 1:ncell]
+cbu = trialize_array_of_matrices(cbv)
+
+# random operations between cell fields
+f(f1,f2) = f1*f2+f1
+ca = apply_field_op(FieldOp(f),cf,cf)
+cr = [ f.(cfi,cfi)  for cfi in cf]
+test_array(ca,cr)
+
+# Linear operations on cell basis (test)
+f(u,u2,f) = u +f*u2
+ca = apply_field_op(FieldOp(f),cbv,cbv,cf)
+cr = [ f.(cbvi,cbvi,cfi)  for (cbvi,cfi) in zip(cbv,cf)]
+@test size(ca[1]) == (npoin,ndofs)
+test_array(ca,cr)
+
+# Linear operations on cell basis (trial)
+f(u,u2,f) = u +f*u2
+ca = apply_field_op(FieldOp(f),cbu,cbu,cf)
+cr = [ f.(cbui,cbui,cfi)  for (cbui,cfi) in zip(cbu,cf)]
+@test size(ca[1]) == (npoin,1,ndofs)
+test_array(ca,cr)
+
+# Bi-linear operations on test/trial cell bases
+f(v,v2,u,u2,f) = (v+v2)*(u+f*u2)
+ca = apply_field_op(FieldOp(f),cbv,cbv,cbu,cbu,cf)
+cr = [ f.(cbvi,cbvi,cbui,cbui,cfi)  for (cbvi,cbui,cfi) in zip(cbv,cbu,cf)]
+@test size(ca[1]) == (npoin,ndofs,ndofs)
+test_array(ca,cr)
 
 # multi-field
 cf1 = [rand(npoin) for cell in 1:ncell]
@@ -206,20 +438,52 @@ cf2 = [rand(npoin) for cell in 1:ncell]
 b1 = [rand(npoin,ndofs) for cell in 1:ncell]
 b2 = [rand(npoin,ndofs) for cell in 1:ncell]
 axs = Fill( (blockedrange([npoin]),blockedrange([ndofs,ndofs])),ncell)
-cb1 = VectorOfBlockArrayCoo((b1,),[(1,1)],axs)
-cb2 = VectorOfBlockArrayCoo((b2,),[(1,2)],axs)
+cbv1 = VectorOfBlockArrayCoo((b1,),[(1,1)],axs)
+cbv2 = VectorOfBlockArrayCoo((b2,),[(1,2)],axs)
+cbu1 = trialize_array_of_matrices(cbv1)
+cbu2 = trialize_array_of_matrices(cbv2)
 
-#cell = 2
-#display(cb[cell])
-#display(cb1[cell])
-#display(cb2[cell])
+# Unary operations on cell basis (test)
+f(u) = VectorValue(u,u)
+ca = apply_field_op(FieldOp(f),cbv1)
+
+# Linear operations on cell basis (test)
+f(u,u2) = u + 2*u2
+ca = apply_field_op(FieldOp(f),cbv1,cbv2)
+display(ca[1])
+
+ca = apply_field_op(FieldOp(+),cbv1,cbv2)
+@test ca[Block(1,1)] === cbv1[Block(1,1)]
+@test ca[Block(1,2)] === cbv2[Block(1,2)]
+display(ca[1])
+
+ca = apply_field_op(FieldOp(-),cbv1,cbv2)
+@test ca[Block(1,1)] === cbv1[Block(1,1)]
+display(ca[1])
+
+
+kk
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 a = rand(3,4)
 b = trialize_matrix(a)
 b2 = reshape(a,(3,1,4))
 test_array(b,b2)
 
-cbt = trialize_array_of_matrices(cb)
 
 cb1t = trialize_array_of_matrices(cb1)
 cache = array_cache(cb1t)
@@ -230,6 +494,8 @@ cb2t = trialize_array_of_matrices(cb2)
 #display(cb2t)
 
 
+cache = array_cache(ca)
+@btime getindex!($cache,$ca,1)
 
 
 
