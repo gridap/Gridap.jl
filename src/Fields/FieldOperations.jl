@@ -134,7 +134,7 @@ end
 
 function kernel_testitem!(
   c,k::FieldBinOp,a::AbstractMatrix,b::AbstractVector)
-  if _valid_checks_matvec(a,b) 
+  if _valid_checks_matvec(a,b)
     apply_kernel!(c,k,a,b)
   else
     c.array
@@ -284,3 +284,18 @@ for op in (:+,:-)
   end
 end
 
+for op in (:*,:/)
+  @eval begin
+
+    function apply_kernel_gradient(k::FieldBinOp{typeof($op)},a::Number,b)
+      gb = field_gradient(b)
+      apply_kernel_to_field(k,a,gb)
+    end
+
+    function apply_gradient(k::Valued{FieldBinOp{typeof($op)}},a::Number,b)
+      gb = field_array_gradient(b)
+      apply(k,a,gb)
+    end
+
+  end
+end

@@ -115,4 +115,10 @@ agx = fill(gx,l)
 ∇agx = fill(∇gx,l)
 test_array_of_fields(ag,ax,agx,grad=∇agx)
 
+g = field_operation(*,va,fa)
+gx = [*(va,ai) for ai in fax]
+∇gx = [*(va,ai) for ai in ∇fax]
+test_field(g,x,gx,grad=∇gx)
+
+
 end # module
