@@ -6,6 +6,7 @@ using Gridap.Arrays
 using Gridap.Fields
 using Gridap.Fields: IntKernel
 using Gridap.TensorValues
+using LinearAlgebra
 import Gridap.Arrays: kernel_cache
 import Gridap.Arrays: apply_kernel!
 import Gridap.Arrays: array_cache
@@ -392,9 +393,88 @@ function apply(k::IntKernel,f::VectorOfBlockArrayCoo{T,3} where T,w::AbstractArr
   VectorOfBlockArrayCoo(blocks,blockids,ax)
 end
 
+struct MulKernel <: Kernel end
+
+function kernel_cache(k::MulKernel,a,b)
+  c = a*b
+  CachedArray(c)
+end
+
+@inline function apply_kernel!(cache,k::MulKernel,a::AbstractMatrix,b::AbstractVector)
+  m = size(a,1)
+  setsize!(cache,(m,))
+  c = cache.array
+  mul!(c,a,b)
+  c
+end
+
+@inline function apply_kernel!(cache,k::MulKernel,a::AbstractMatrix,b::AbstractMatrix)
+  m = size(a,1)
+  n = size(b,2)
+  setsize!(cache,(m,n))
+  c = cache.array
+  mul!(c,a,b)
+  c
+end
+
+#function apply(
+#  k::MulKernel,a::VectorOfBlockArrayCoo{Ta,2} where Ta, b::VectorOfBlockArrayCoo{Tb,1} where Tb)
+#  m,n = size(a.ptrs)
+#  blocks = []
+#  blockids = Tuple{Int}[]
+#  for i in 1:m
+#    block = nothing
+#    for j in 1:n
+#      if !is_zero_block(a,i,j) && !is_zero_block(b,j)
+#        if block === nothing
+#          block = apply(k,a[Block(i,j)],b[Block(j)])
+#        else
+#        end
+#        push!(blocks,block)
+#        push!(blockids,(i,))
+#      end
+#    end
+#  end
+#end
+
+#function apply(
+#  k::MulKernel,a::VectorOfBlockArrayCoo{Ta,2} where Ta, b::VectorOfBlockArrayCoo{Tb,2} where Tb)
+#  m,n = size(a.ptrs)
+#  l = size(b.ptrs,2)
+#  blocks = []
+#  blockids = Tuple{Int,Int}[]
+#  for j in 1:n
+#    for i in 1:m
+#      if !is_zero_block(a,i,j) && !is_zero_block(b,j)
+#        block = apply(k,a[Block(i,j)],b[Block(j)])
+#        push!(blocks,block)
+#        push!(blockids,(i,))
+#      end
+#    end
+#  end
+#end
+
 using Test
 using BenchmarkTools
 using FillArrays
+
+a = rand(3,4)
+b = rand(4)
+k = MulKernel()
+cache = kernel_cache(k,a,b)
+c =  apply_kernel!(cache,k,a,b)
+@test c == a*b
+
+a = rand(3,4)
+b = rand(4,5)
+k = MulKernel()
+cache = kernel_cache(k,a,b)
+c =  apply_kernel!(cache,k,a,b)
+@test c == a*b
+
+
+
+
 
 blocks = [ [1 2; 3 4], [5 6; 7 8; 9 10] ]
 blockids = [(1,1),(2,1)]
