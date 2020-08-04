@@ -131,3 +131,51 @@ function similar(::Type{CachedArray{T,N,A}},s::Tuple{Vararg{Int}}) where {T,N,A}
   CachedArray(a)
 end
 
+function setaxes!(a::CachedArray,ax)
+  s = map(length,ax)
+  if s != size(a.array)
+    if haskey(a.buffer,s)
+      a.array = a.buffer[s]
+    else
+      a.array = _similar_from_axes(a.array,ax)
+      a.buffer[s] = a.array
+    end
+  end
+end
+
+function _similar_from_axes(a,ax)
+  s = map(length,ax)
+  similar(a,eltype(a),s)
+end
+
+function _similar_from_axes(a::BlockArrayCoo,ax)
+  @notimplemented
+end
+
+function _similar_from_axes(a::BlockMatrixCoo,axs)
+  A = eltype(a.blocks)
+  blocks = A[]
+  for p in 1:length(a.blocks)
+    I,J = a.blockids[p]
+    M,N = map(blocklengths,axs)
+    m = M[I]
+    n = N[J]
+    block = similar(a.blocks[p],eltype(a),m,n)
+    push!(blocks,block)
+  end
+  BlockArrayCoo(blocks,a.blockids,axs,a.ptrs)
+end
+
+function _similar_from_axes(a::BlockVectorCoo,axs)
+  A = eltype(a.blocks)
+  blocks = A[]
+  for p in 1:length(a.blocks)
+    I, = a.blockids[p]
+    M, = map(blocklengths,axs)
+    m = M[I]
+    block = similar(a.blocks[p],eltype(a),m)
+    push!(blocks,block)
+  end
+  BlockArrayCoo(blocks,a.blockids,axs,a.ptrs)
+end
+

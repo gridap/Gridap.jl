@@ -245,6 +245,7 @@ else
 end
 
 function Base.fill!(a::BlockArrayCoo,v)
+  @notimplementedif v != zero(v)
   for b in a.blocks
     fill!(b,v)
   end

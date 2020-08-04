@@ -45,6 +45,7 @@ export CachedArray
 export CachedMatrix
 export CachedVector
 export setsize!
+export setaxes!
 
 export CompressedArray
 export LocalToGlobalArray

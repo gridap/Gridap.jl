@@ -81,4 +81,28 @@ mul!(c,a,b)
 @test blocksize(c) == (3,3)
 @test Array(a)*Array(b) == c
 
+cc = CachedArray(c)
+
+axs = (blockedrange([2,3,3]), blockedrange([2,3,3]))
+setaxes!(cc,axs)
+@test cc.array === c
+
+axs = (blockedrange([4,5,3]), blockedrange([2,4,3]))
+setaxes!(cc,axs)
+fill!(cc.array,0)
+
+blocks = [ 10*[1,2], 20*[1,2,3] ]
+blockids = [(1,),(3,)]
+axs = (blockedrange([2,4,3]),)
+b = BlockArrayCoo(blocks,blockids,axs)
+
+cb = CachedArray(b)
+
+setaxes!(cb,axs)
+@test cb.array === b
+
+axs = (blockedrange([3,2,3]),)
+setaxes!(cb,axs)
+@test size(cb) == (8,)
+
 end # module
