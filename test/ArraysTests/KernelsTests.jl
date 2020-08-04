@@ -4,6 +4,7 @@ using Test
 using Gridap.Arrays
 using Gridap.TensorValues
 using LinearAlgebra
+using BlockArrays
 
 test_kernel(+,(3,2),5)
 
@@ -40,5 +41,34 @@ b = VectorValue(1,2,3)
 c = zeros(VectorValue{3,Int},2)
 broadcast!(⋅,c,a,b)
 test_kernel(f,(a,b),c)
+
+a = rand(3,4)
+b = rand(4)
+k = MulKernel()
+test_kernel(k,(a,b),a*b)
+
+a = rand(3,4)
+b = rand(4)
+k = MulKernel()
+test_kernel(k,(a,b),a*b)
+
+blocks = [ [1 2; 3 4], [5 6 7 8; 9 10 11 12; 13 14 15 16], [1 2 3 4; 5 6 7 8], [1 2 3; 4 5 6; 7 8 9] ]
+blockids = [(1,1),(2,2),(1,2),(3,3)]
+ax = (blockedrange([2,3,3]), blockedrange([2,4,3]))
+a = BlockArrayCoo(blocks,blockids,ax)
+
+blocks = [ 10*[1,2], 20*[1,2,3] ]
+blockids = [(1,),(3,)]
+axs = (blockedrange([2,4,3]),)
+b = BlockArrayCoo(blocks,blockids,axs)
+test_kernel(k,(a,b),a*b)
+
+#cache = kernel_cache(k,a,b)
+#using BenchmarkTools
+#@btime apply_kernel!($cache,$k,$a,$b)
+
+
+
+
 
 end # module
