@@ -22,6 +22,8 @@ using ForwardDiff
 using BlockArrays
 
 export BlockArrayCoo
+export BlockVectorCoo
+export BlockMatrixCoo
 export is_zero_block
 export is_nonzero_block
 export enumerateblocks
