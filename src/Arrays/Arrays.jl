@@ -61,6 +61,7 @@ export bcast
 export elem
 export contract
 export MulKernel
+export MulAddKernel
 export kernel_return_type
 export kernel_return_types
 export kernel_testitem

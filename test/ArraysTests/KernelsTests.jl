@@ -44,8 +44,11 @@ test_kernel(f,(a,b),c)
 
 a = rand(3,4)
 b = rand(4)
+c = rand(3)
 k = MulKernel()
 test_kernel(k,(a,b),a*b)
+k = MulAddKernel(2,3)
+test_kernel(k,(a,b,c),2*a*b+3*c)
 
 a = rand(3,4)
 b = rand(4)
@@ -62,6 +65,10 @@ blockids = [(1,),(3,)]
 axs = (blockedrange([2,4,3]),)
 b = BlockArrayCoo(blocks,blockids,axs)
 test_kernel(k,(a,b),a*b)
+
+c = a*b
+k = MulAddKernel(2,3)
+test_kernel(k,(a,b,c),2*a*b+3*c)
 
 #cache = kernel_cache(k,a,b)
 #using BenchmarkTools

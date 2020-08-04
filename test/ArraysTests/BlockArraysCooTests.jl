@@ -68,6 +68,12 @@ mul!(c,a,b)
 @test blocksize(c) == (3,)
 @test Array(a)*Array(b) == c
 
+d = copy(c)
+mul!(d,a,b,2,1)
+@test axes(d,1) === axes(a,1)
+@test blocksize(d) == (3,)
+@test 2*Array(a)*Array(b) + 1*Array(c) == d
+
 b = Transpose(a)
 c = a*b
 @test axes(c,1) === axes(a,1)
@@ -104,5 +110,16 @@ setaxes!(cb,axs)
 axs = (blockedrange([3,2,3]),)
 setaxes!(cb,axs)
 @test size(cb) == (8,)
+
+c = copy(a)
+@test isa(c,BlockArrayCoo)
+@test c == a
+@test axes(c) == axes(a)
+
+fill!(c,0)
+copyto!(c,a)
+@test c == a
+@test axes(c) == axes(a)
+
 
 end # module

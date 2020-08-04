@@ -160,13 +160,23 @@ function _mul_block_result(a::BlockMatrixCoo,b::BlockMatrixCoo)
   BlockArrayCoo(blocks,blockids,axs)
 end
 
-@static if VERSION >= v"1.3"
+#@static if VERSION >= v"1.3"
 
-  function LinearAlgebra.mul!(c::BlockVectorCoo,a::BlockMatrixCoo,b::BlockVectorCoo,α,β)
+function LinearAlgebra.mul!(c::BlockVectorCoo,a::BlockMatrixCoo,b::BlockVectorCoo)
+  mul!(c,a,b,1,0)
+end
+
+function LinearAlgebra.mul!(c::BlockMatrixCoo,a::BlockMatrixCoo,b::BlockMatrixCoo)
+  mul!(c,a,b,1,0)
+end
+
+  function LinearAlgebra.mul!(c::BlockVectorCoo,a::BlockMatrixCoo,b::BlockVectorCoo,α::Number,β::Number)
     for I in 1:blocksize(a,1)
       cI = c[Block(I)]
-      for i in eachindex(cI)
-        cI[i] = β*cI[i]
+      if is_nonzero_block(c,Block(I))
+        for i in eachindex(cI)
+          cI[i] = β*cI[i]
+        end
       end
       for J in 1:blocksize(a,2)
         if is_nonzero_block(a,Block(I,J)) && is_nonzero_block(b,Block(J))
@@ -179,12 +189,14 @@ end
     c
   end
 
-  function LinearAlgebra.mul!(c::BlockMatrixCoo,a::BlockMatrixCoo,b::BlockMatrixCoo,α,β)
+  function LinearAlgebra.mul!(c::BlockMatrixCoo,a::BlockMatrixCoo,b::BlockMatrixCoo,α::Number,β::Number)
     for I in 1:blocksize(a,1)
       for J in 1:blocksize(b,2)
         cIJ = c[Block(I,J)]
-        for ij in eachindex(cIJ)
-          cIJ[ij] = β*cIJ[ij]
+        if is_nonzero_block(c,Block(I,J))
+          for ij in eachindex(cIJ)
+            cIJ[ij] = β*cIJ[ij]
+          end
         end
         for K in 1:blocksize(a,2)
           if is_nonzero_block(a,Block(I,K)) && is_nonzero_block(b,Block(K,J))
@@ -198,51 +210,51 @@ end
     c
   end
 
-else
-
-  function LinearAlgebra.mul!(c::BlockVectorCoo,a::BlockMatrixCoo,b::BlockVectorCoo)
-    fill!(c,zero(eltype(c)))
-    for I in 1:blocksize(a,1)
-      for J in 1:blocksize(a,2)
-        if is_nonzero_block(a,Block(I,J)) && is_nonzero_block(b,Block(J))
-          aIJ = a[Block(I,J)]
-          bJ = b[Block(J)]
-          cI = c[Block(I)]
-          for j in 1:size(aIJ,2)
-            for i in 1:size(aIJ,1)
-              cI[i] += aIJ[i,j]*bJ[j]
-            end
-          end
-        end
-      end
-    end
-    c
-  end
-
-  function LinearAlgebra.mul!(c::BlockMatrixCoo,a::BlockMatrixCoo,b::BlockMatrixCoo)
-    fill!(c,zero(eltype(c)))
-    for I in 1:blocksize(a,1)
-      for J in 1:blocksize(b,2)
-        for K in 1:blocksize(a,2)
-          if is_nonzero_block(a,Block(I,K)) && is_nonzero_block(b,Block(K,J))
-            aIK = a[Block(I,K)]
-            bKJ = b[Block(K,J)]
-            cIJ = c[Block(I,J)]
-            for i in 1:size(aIK,1)
-              for j in 1:size(bKJ,2)
-                for k in 1:size(aIK,2)
-                  cIJ[i,j] += aIK[i,k]*bKJ[k,j]
-                end
-              end
-            end
-          end
-        end
-      end
-    end
-    c
-  end
-
-end
+#else
+#
+#  function LinearAlgebra.mul!(c::BlockVectorCoo,a::BlockMatrixCoo,b::BlockVectorCoo)
+#    fill!(c,zero(eltype(c)))
+#    for I in 1:blocksize(a,1)
+#      for J in 1:blocksize(a,2)
+#        if is_nonzero_block(a,Block(I,J)) && is_nonzero_block(b,Block(J))
+#          aIJ = a[Block(I,J)]
+#          bJ = b[Block(J)]
+#          cI = c[Block(I)]
+#          for j in 1:size(aIJ,2)
+#            for i in 1:size(aIJ,1)
+#              cI[i] += aIJ[i,j]*bJ[j]
+#            end
+#          end
+#        end
+#      end
+#    end
+#    c
+#  end
+#
+#  function LinearAlgebra.mul!(c::BlockMatrixCoo,a::BlockMatrixCoo,b::BlockMatrixCoo)
+#    fill!(c,zero(eltype(c)))
+#    for I in 1:blocksize(a,1)
+#      for J in 1:blocksize(b,2)
+#        for K in 1:blocksize(a,2)
+#          if is_nonzero_block(a,Block(I,K)) && is_nonzero_block(b,Block(K,J))
+#            aIK = a[Block(I,K)]
+#            bKJ = b[Block(K,J)]
+#            cIJ = c[Block(I,J)]
+#            for i in 1:size(aIK,1)
+#              for j in 1:size(bKJ,2)
+#                for k in 1:size(aIK,2)
+#                  cIJ[i,j] += aIK[i,k]*bKJ[k,j]
+#                end
+#              end
+#            end
+#          end
+#        end
+#      end
+#    end
+#    c
+#  end
+#
+#end
 
 function Base.fill!(a::BlockArrayCoo,v)
   @notimplementedif v != zero(v)
@@ -262,3 +274,18 @@ function LinearAlgebra.Transpose(a::BlockMatrixCoo)
   BlockArrayCoo(blocks,blockids,axs,ptrs,zero_blocks)
 end
 
+function Base.copy(a::BlockArrayCoo)
+  blocks = copy(a.blocks)
+  blockids = copy(a.blockids)
+  axes = copy.(a.axes)
+  ptrs = copy(a.ptrs)
+  zero_blocks = copy(a.zero_blocks)
+  BlockArrayCoo(blocks,blockids,axes,ptrs,zero_blocks)
+end
+
+function Base.copyto!(a::BlockArrayCoo,b::BlockArrayCoo)
+  for p in 1:length(a.blocks)
+    copyto!(a.blocks[p],b.blocks[p])
+  end
+ a
+end

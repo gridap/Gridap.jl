@@ -489,4 +489,21 @@ end
   c
 end
 
+struct MulAddKernel{T} <: Kernel
+  α::T
+  β::T
+end
+
+function kernel_cache(k::MulAddKernel,a,b,c)
+  d = copy(c)
+  CachedArray(d)
+end
+
+@inline function apply_kernel!(cache,k::MulAddKernel,a,b,c)
+  setaxes!(cache,axes(c))
+  d = cache.array
+  copyto!(d,c)
+  mul!(d,a,b,k.α,k.β)
+  d
+end
 
