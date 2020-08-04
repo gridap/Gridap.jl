@@ -93,11 +93,9 @@ function getindex!(c,a::Table,i::Integer)
   r
 end
 
-@inline function Base.getindex(a::Table,i::Integer)
-  @inbounds pini = a.ptrs[i]
-  @inbounds pend = a.ptrs[i+1]-1
-  ids = pini:pend
-  view(a.data,ids)
+function Base.getindex(a::Table,i::Integer)
+  cache = array_cache(a)
+  getindex!(cache,a,i)
 end
 
 function Base.getindex(a::Table,i::UnitRange)

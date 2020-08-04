@@ -22,7 +22,6 @@ d = Table(data,ptrs)
 e = [ data[ptrs[i]:ptrs[i+1]-1] for i in 1:length(ptrs)-1]
 test_array(d,e)
 
-
 data = Int64[2,3,1,3,6,7,3,2,5,6,3,4]
 ptrs = [1,4,4,7,13]
 a = Table(data,ptrs)
@@ -39,18 +38,6 @@ perm[7:12] .= 1:6
 data = reindex(data,perm)
 b = Table(data,ptrs)
 test_array(a,b)
-
-k=1
-data = rand(Int,12)
-c=Table(data,ptrs)
-for i in 1:length(b)
-  for j in 1:length(b[i])
-    b[i][j] = data[k]
-    global k=k+1
-  end
-end
-test_array(c,b)
-
 
 vv = Array{Array{Int,2},2}(undef,2,2)
 vv[1,1] = rand(1:10,2,2)
