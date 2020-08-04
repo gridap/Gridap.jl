@@ -4,6 +4,8 @@ using Test
 
 @testset "Interfaces" begin include("InterfaceTests.jl") end
 
+@testset "BlockArraysCoo" begin include("BlockArraysCooTests.jl") end
+
 @testset "CachedArrays" begin include("CachedArraysTests.jl") end
 
 @testset "Kernels" begin include("KernelsTests.jl") end
@@ -27,8 +29,6 @@ using Test
 @testset "ArrayPairs" begin include("ArrayPairsTests.jl") end
 
 @testset "AppendedArrays" begin include("AppendedArraysTests.jl") end
-
-@testset "BlockArraysCoo" begin include("BlockArraysCooTests.jl") end
 
 @testset "AutodiffTests" begin include("AutodiffTests.jl") end
 

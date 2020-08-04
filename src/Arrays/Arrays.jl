@@ -19,6 +19,12 @@ using FillArrays
 using Base: @propagate_inbounds
 using LinearAlgebra
 using ForwardDiff
+using BlockArrays
+
+export BlockArrayCoo
+export is_zero_block
+export is_nonzero_block
+export enumerateblocks
 
 export array_cache
 export getindex!
@@ -103,6 +109,8 @@ import Gridap.Io: to_dict
 import Gridap.Io: from_dict
 
 include("Interface.jl")
+
+include("BlockArraysCoo.jl")
 
 include("CachedArrays.jl")
 
