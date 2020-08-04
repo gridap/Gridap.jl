@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
-  - Product binary operation (`*`) between a scalar and a field gradient. Since PR [#340](https://github.com/gridap/Gridap.jl/pull/340).
+  - Gradient of a product binary operation (`*`) between a scalar and a field. Since PR [#340](https://github.com/gridap/Gridap.jl/pull/340).
 
 ## [0.13.2] - 2020-7-31
 
