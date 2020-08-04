@@ -257,6 +257,8 @@ function array_caches(hash::Dict,a::AbstractArray)
   (ca,)
 end
 
+array_caches() = ()
+
 """
     getitems!(c::Tuple,a::Tuple,i...) -> Tuple
 
@@ -293,6 +295,8 @@ end
 @inline function getitems!(cf::Tuple,a::Tuple{Vararg{<:AbstractArray}},i...)
   _getitems!(cf,i,a...)
 end
+
+getitems!(::Tuple{},::Tuple{},i) = ()
 
 @inline function _getitems!(c,i,a,b...)
   ca,cb = _split(c...)
