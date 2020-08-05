@@ -495,7 +495,7 @@ struct MulAddKernel{T} <: Kernel
 end
 
 function kernel_cache(k::MulAddKernel,a,b,c)
-  d = copy(c)
+  d = a*b+c
   CachedArray(d)
 end
 

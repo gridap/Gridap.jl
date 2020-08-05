@@ -69,10 +69,10 @@ mul!(c,a,b)
 @test Array(a)*Array(b) == c
 
 d = copy(c)
-mul!(d,a,b,2,1)
+mul!(d,a,b,2,3)
 @test axes(d,1) === axes(a,1)
 @test blocksize(d) == (3,)
-@test 2*Array(a)*Array(b) + 1*Array(c) == d
+@test 2*Array(a)*Array(b) + 3*Array(c) == d
 
 b = Transpose(a)
 c = a*b
@@ -121,5 +121,33 @@ copyto!(c,a)
 @test c == a
 @test axes(c) == axes(a)
 
+c = 2*a
+@test isa(c,BlockArrayCoo)
+@test 2*Array(a) == c
+
+c = a*2
+@test isa(c,BlockArrayCoo)
+@test 2*Array(a) == c
+
+c = a + a
+@test isa(c,BlockArrayCoo)
+@test 2*Array(a) == c
+
+blocks = [ [1 2; 3 4], [5 6 7 8; 9 10 11 12; 13 14 15 16], [1 2 3 4; 5 6 7 8], [1 2 3; 4 5 6; 7 8 9] ]
+blockids = [(1,1),(2,2),(1,2),(3,3)]
+ax = (blockedrange([2,3,3]), blockedrange([2,4,3]))
+a = BlockArrayCoo(blocks,blockids,ax)
+
+blocks = [ [1 2; 3 4], [1 2; 4 5; 8 9], [5 6 7 8; 9 10 11 12; 13 14 15 16] ]
+blockids = [(1,1),(2,1),(3,2)]
+b = BlockArrayCoo(blocks,blockids,ax)
+
+c = a + b
+@test isa(c,BlockArrayCoo)
+@test Array(a)+Array(b) == c
+
+c = a - 2*b
+@test isa(c,BlockArrayCoo)
+@test Array(a)-2*Array(b) == c
 
 end # module

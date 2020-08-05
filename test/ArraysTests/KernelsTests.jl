@@ -70,11 +70,15 @@ c = a*b
 k = MulAddKernel(2,3)
 test_kernel(k,(a,b,c),2*a*b+3*c)
 
+#k = MulKernel()
 #cache = kernel_cache(k,a,b)
 #using BenchmarkTools
 #@btime apply_kernel!($cache,$k,$a,$b)
-
-
+#
+#
+#k = MulAddKernel(2,3)
+#cache = kernel_cache(k,a,b,c)
+#@btime apply_kernel!($cache,$k,$a,$b,$c)
 
 
 

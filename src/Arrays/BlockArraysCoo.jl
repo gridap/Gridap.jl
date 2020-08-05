@@ -115,6 +115,49 @@ function Base.getindex(a::BlockArrayCoo,i::Integer...)
   ai
 end
 
+function Base.:+(a::BlockArrayCoo{Ta,N},b::BlockArrayCoo{Tb,N}) where {Ta,Tb,N}
+  @assert axes(a) == axes(b)
+  @assert blockaxes(a) == blockaxes(b)
+  T = promote_type(Ta,Tb)
+  blocks = Array{T,N}[]
+  blockids = NTuple{N,Int}[]
+  for (I,aI) in enumerateblocks(a)
+    bI = b[I]
+    if is_nonzero_block(a,I) || is_nonzero_block(b,I)
+      block = aI + bI
+      push!(blocks,block)
+      push!(blockids,I.n)
+    end
+  end
+  BlockArrayCoo(blocks,blockids,a.axes)
+end
+
+function Base.:-(a::BlockArrayCoo{Ta,N},b::BlockArrayCoo{Tb,N}) where {Ta,Tb,N}
+  @assert axes(a) == axes(b)
+  @assert blockaxes(a) == blockaxes(b)
+  T = promote_type(Ta,Tb)
+  blocks = Array{T,N}[]
+  blockids = NTuple{N,Int}[]
+  for (I,aI) in enumerateblocks(a)
+    bI = b[I]
+    if is_nonzero_block(a,I) || is_nonzero_block(b,I)
+      block = aI - bI
+      push!(blocks,block)
+      push!(blockids,I.n)
+    end
+  end
+  BlockArrayCoo(blocks,blockids,a.axes)
+end
+
+function Base.:*(a::BlockArrayCoo,b::Number)
+  *(b,a)
+end
+
+function Base.:*(a::Number,b::BlockArrayCoo)
+  blocks = [a*block for block in b.blocks]
+  BlockArrayCoo(blocks,b.blockids,b.axes,b.ptrs,b.zero_blocks)
+end
+
 function Base.:*(a::BlockArrayCoo,b::BlockArrayCoo)
   c = _mul_block_result(a,b)
   mul!(c,a,b)
@@ -275,12 +318,16 @@ function LinearAlgebra.Transpose(a::BlockMatrixCoo)
 end
 
 function Base.copy(a::BlockArrayCoo)
-  blocks = copy(a.blocks)
+  blocks = copy.(a.blocks)
   blockids = copy(a.blockids)
   axes = copy.(a.axes)
   ptrs = copy(a.ptrs)
-  zero_blocks = copy(a.zero_blocks)
+  zero_blocks = copy.(a.zero_blocks)
   BlockArrayCoo(blocks,blockids,axes,ptrs,zero_blocks)
+end
+
+function Base.copy!(a::BlockArrayCoo,b::BlockArrayCoo)
+  copyto!(a,b)
 end
 
 function Base.copyto!(a::BlockArrayCoo,b::BlockArrayCoo)
