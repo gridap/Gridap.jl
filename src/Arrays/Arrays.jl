@@ -30,6 +30,7 @@ export enumerateblocks
 export VectorOfBlockArrayCoo
 export VectorOfBlockVectorCoo
 export VectorOfBlockMatrixCoo
+export all_zero_blocks
 
 export array_cache
 export getindex!

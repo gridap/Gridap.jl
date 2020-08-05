@@ -74,7 +74,8 @@ mul!(d,a,b,2,3)
 @test blocksize(d) == (3,)
 @test 2*Array(a)*Array(b) + 3*Array(c) == d
 
-b = Transpose(a)
+b = transpose(a)
+@test isa(b,BlockArrayCoo)
 c = a*b
 @test axes(c,1) === axes(a,1)
 @test axes(c,2) === axes(a,1)
@@ -158,5 +159,69 @@ axs = (blockedrange([2,4,3]),)
 b = BlockArrayCoo(blocks,blockids,axs)
 
 @test b[2] == b[2,1]
+
+axs = (blockedrange([2,4,3]),)
+
+# Blocks of Blocks
+
+bL = BlockArrayCoo([[1,2]],[(1,)],axs)
+bR = BlockArrayCoo([[2,3],[4,5,6]],[(1,),(3,)],axs)
+
+bS = BlockArrayCoo([bL,bR],[(1,),(2,)],(blockedrange([9,9]),))
+
+cS = 2*bS
+@test isa(cS,BlockArrayCoo)
+@test isa(cS[Block(1)],BlockArrayCoo)
+
+bZ = all_zero_blocks(bR)
+
+dS = BlockArrayCoo([bZ,bR],[false,true])
+
+r = cS - dS
+@test isa(r,BlockArrayCoo)
+@test isa(r[Block(1)],BlockArrayCoo)
+
+r = cS + dS
+@test isa(r,BlockArrayCoo)
+@test isa(r[Block(1)],BlockArrayCoo)
+
+ax = (blockedrange([2,3]), blockedrange([2,4]))
+aLL = BlockArrayCoo([[1 2; 3 4],[5 6; 7 8; 9 10] ],[(1,1),(2,1)],ax)
+aLR = BlockArrayCoo([[1 2 5 6; 3 4 1 2; 1 2 3 4],[5 6; 7 8; 9 10] ],[(2,2),(2,1)],ax)
+aRL = all_zero_blocks(aLL)
+aRR = BlockArrayCoo([[1 2; 3 4],[5 6; 7 8; 9 10] ],[(1,1),(2,1)],ax)
+
+allblocks = Matrix{typeof(aLL)}(undef,2,2)
+allblocks[1,1] = aLL
+allblocks[1,2] = aLR
+allblocks[2,1] = aRL
+allblocks[2,2] = aRR
+
+mask = [true true; false true]
+
+aS = BlockArrayCoo(allblocks,mask)
+@test is_zero_block(aS,2,1)
+@test is_nonzero_block(aS,2,2)
+display(aS)
+
+aSt = transpose(aS)
+@test Array(aSt) == transpose(Array(aS))
+@test isa(aSt,BlockArrayCoo)
+@test isa(aSt[Block(2),Block(2)],BlockArrayCoo)
+
+rS = aS*aSt
+@test rS == Array(aS)*Array(aSt)
+@test isa(rS,BlockArrayCoo)
+display(rS[Block(2),Block(2)])
+@test isa(rS[Block(2),Block(2)],BlockArrayCoo)
+display(rS)
+
+#display(transpose(aRL))
+#zero_blocks = [ Transpose(block) for block in a.zero_blocks ]
+
+#display(transpose(aS))
+
+
+
 
 end # module

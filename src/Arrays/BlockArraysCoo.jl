@@ -17,8 +17,65 @@ struct BlockArrayCoo{T,N,A,X} <: AbstractBlockArray{T,N}
   end
 end
 
+function BlockArrayCoo(
+  blocks::Vector{A},ax::NTuple{N},ptrs::Array{Int,N},zero_blocks::Vector{A}) where {A,N}
+  cis = CartesianIndices(ptrs)
+  blockids = NTuple{N,Int}[]
+  for ci in cis
+    p = ptrs[ci]
+    if p>0
+      push!(blockids,Tuple(ci))
+    end
+  end
+  BlockArrayCoo(blocks,blockids,ax,ptrs,zero_blocks)
+end
+
+function BlockArrayCoo(allblocks::AbstractArray{A,N},mask::AbstractArray{Bool,N}=fill(true,size(allblocks))) where {A,N}
+  blocks = A[]
+  zero_blocks = A[]
+  ptrs = zeros(Int,size(allblocks))
+  pp = 1
+  pn = 1
+  cis = CartesianIndices(allblocks)
+  for ci in cis
+    if mask[ci]
+      push!(blocks,allblocks[ci])
+      ptrs[ci] = pp
+      pp += 1
+    else
+      push!(zero_blocks,allblocks[ci])
+      ptrs[ci] = -pn
+      pn += 1
+    end
+  end
+  axs = _compute_axes_from_allblocks(allblocks)
+  BlockArrayCoo(blocks,axs,ptrs,zero_blocks)
+end
+
+function _compute_axes_from_allblocks(allblocks)
+  N = ndims(allblocks)
+  s = size(allblocks)
+  axtmp = [ zeros(Int,s[n]) for n in 1:N]
+  cis = CartesianIndices(allblocks)
+  for ci in cis
+    block = allblocks[ci]
+    sb = size(block)
+    for (n,cin) in enumerate(Tuple(ci))
+      axtmp[n][cin] = sb[n]
+    end
+  end
+  axs = map(blockedrange,Tuple(axtmp))
+  axs
+end
+
 const BlockMatrixCoo = BlockArrayCoo{T,2} where T
 const BlockVectorCoo = BlockArrayCoo{T,1} where T
+
+function all_zero_blocks(a::BlockArrayCoo)
+  blocks = eltype(a.blocks)[]
+  blockids = eltype(a.blockids)[]
+  BlockArrayCoo(blocks,blockids,a.axes)
+end
 
 function _compute_ptrs(blockids,axes)
   s = map(i->first(blocksize(i)),axes)
@@ -129,8 +186,8 @@ end
 function Base.:+(a::BlockArrayCoo{Ta,N},b::BlockArrayCoo{Tb,N}) where {Ta,Tb,N}
   @assert axes(a) == axes(b)
   @assert blockaxes(a) == blockaxes(b)
-  T = promote_type(Ta,Tb)
-  blocks = Array{T,N}[]
+  A = promote_type(eltype(a.blocks),eltype(b.blocks))
+  blocks = A[]
   blockids = NTuple{N,Int}[]
   for (I,aI) in enumerateblocks(a)
     bI = b[I]
@@ -146,8 +203,8 @@ end
 function Base.:-(a::BlockArrayCoo{Ta,N},b::BlockArrayCoo{Tb,N}) where {Ta,Tb,N}
   @assert axes(a) == axes(b)
   @assert blockaxes(a) == blockaxes(b)
-  T = promote_type(Ta,Tb)
-  blocks = Array{T,N}[]
+  A = promote_type(eltype(a.blocks),eltype(b.blocks))
+  blocks = A[]
   blockids = NTuple{N,Int}[]
   for (I,aI) in enumerateblocks(a)
     bI = b[I]
@@ -234,6 +291,7 @@ end
       end
       for J in 1:blocksize(a,2)
         if is_nonzero_block(a,Block(I,J)) && is_nonzero_block(b,Block(J))
+          @assert is_nonzero_block(c,Block(I))
           aIJ = a[Block(I,J)]
           bJ = b[Block(J)]
           mul!(cI,aIJ,bJ,α,1)
@@ -254,6 +312,7 @@ end
         end
         for K in 1:blocksize(a,2)
           if is_nonzero_block(a,Block(I,K)) && is_nonzero_block(b,Block(K,J))
+            @assert is_nonzero_block(c,Block(I,J))
             aIK = a[Block(I,K)]
             bKJ = b[Block(K,J)]
             mul!(cIJ,aIK,bKJ,α,1)
@@ -318,13 +377,13 @@ function Base.fill!(a::BlockArrayCoo,v)
   a
 end
 
-function LinearAlgebra.Transpose(a::BlockMatrixCoo)
-  blocks = [ Transpose(block) for block in a.blocks ]
-  zero_blocks = [ Transpose(block) for block in a.zero_blocks ]
+function LinearAlgebra.transpose(a::BlockMatrixCoo)
+  blocks = transpose.(a.blocks)
+  zero_blocks = transpose.(a.zero_blocks)
   blockids = [ (j,i) for (i,j) in a.blockids ]
   ax,ay = axes(a)
   axs = (ay,ax)
-  ptrs = collect(Transpose(a.ptrs))
+  ptrs = collect(transpose(a.ptrs))
   BlockArrayCoo(blocks,blockids,axs,ptrs,zero_blocks)
 end
 
