@@ -87,16 +87,20 @@ function main()
     tutorials_tag = parsed_args["tutorials-tag"]
     gridap_path = parsed_args["gridap-path"]
     tutorials_path = parsed_args["tutorials-path"]
-    clone_and_checkout_tag(
+    if (! parsed_args["do-not-clone-gridap"])
+      clone_and_checkout_tag(
         "https://github.com/gridap/Gridap.jl",
         gridap_path,
         gridap_tag,
-    )
-    clone_and_checkout_tag(
+      )
+    end 
+    if (! parsed_args["do-not-clone-tutorials"])
+      clone_and_checkout_tag(
        "https://github.com/gridap/Tutorials",
        tutorials_path,
        tutorials_tag,
-    )
+      )
+    end 
 
     @info "Creating system image for Gridap.jl#$(gridap_tag) object file at: '$(image_path)'"
     @info "Building Gridap.jl#$(gridap_tag) into system image: $(joinpath(image_path,image_name))"
