@@ -1,3 +1,5 @@
+struct CurlConformity <: Conformity end
+
 """
     NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
 
@@ -15,24 +17,28 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
 
   face_own_dofs = _face_own_dofs_from_moments(nf_moments)
 
-  face_own_dofs_permutations = _trivial_face_own_dofs_permutations(face_own_dofs)
-
   face_dofs = face_own_dofs
 
   dof_basis = MomentBasedDofBasis(nf_nodes, nf_moments)
 
   ndofs = num_dofs(dof_basis)
 
+  metadata = nothing
+
   reffe = GenericRefFE(
     ndofs,
     p,
     prebasis,
     dof_basis,
-    face_own_dofs,
-    face_own_dofs_permutations,
+    CurlConformity(),
+    metadata,
     face_dofs)
 
   reffe
+end
+
+function get_face_own_dofs(reffe::GenericRefFE{CurlConformity}, conf::CurlConformity)
+  get_face_dofs(reffe)
 end
 
 function _Nedelec_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) where et

@@ -82,13 +82,21 @@ end
 
 function kernel_cache(
   k::FieldBinOp,a::AbstractVector,b::AbstractVector)
-  _field_bin_op_checks_vecvec(a,b)
   na = length(a)
   Ta = eltype(a)
   Tb = eltype(b)
   T = return_type(k.op,Ta,Tb)
   r = zeros(T,na)
   CachedArray(r)
+end
+
+function kernel_testitem!(
+  c,k::FieldBinOp,a::AbstractVector,b::AbstractVector)
+  if _valid_checks_vecvec(a,b)
+    apply_kernel!(c,k,a,b)
+  else
+    c.array
+  end
 end
 
 @inline function apply_kernel!(
@@ -104,21 +112,33 @@ end
 end
 
 function _field_bin_op_checks_vecvec(a,b)
+  @assert _valid_checks_vecvec(a,b) "Binary operation between fields: vector vs vector size mismatch."
+end
+
+function _valid_checks_vecvec(a,b)
   na = length(a)
   nb = length(b)
-  @assert na == nb "Binary operation between fields: vector vs vector size mismatch."
+  na == nb
 end
 
 # Matrix vs Vector
 
 function kernel_cache(
   k::FieldBinOp,a::AbstractMatrix,b::AbstractVector)
-  _field_bin_op_checks_matvec(a,b)
   Ta = eltype(a)
   Tb = eltype(b)
   T = return_type(k.op,Ta,Tb)
   r = zeros(T,size(a))
   CachedArray(r)
+end
+
+function kernel_testitem!(
+  c,k::FieldBinOp,a::AbstractMatrix,b::AbstractVector)
+  if _valid_checks_matvec(a,b)
+    apply_kernel!(c,k,a,b)
+  else
+    c.array
+  end
 end
 
 @inline function apply_kernel!(
@@ -137,21 +157,33 @@ end
 end
 
 function _field_bin_op_checks_matvec(a,b)
+  @assert _valid_checks_matvec(a,b) "Binary operation between fields: matrix vs vector size mismatch."
+end
+
+function _valid_checks_matvec(a,b)
   na, _ = size(a)
   nb = length(b)
-  @assert na == nb "Binary operation between fields: matrix vs vector size mismatch."
+  na == nb
 end
 
 # Vector vs Matrix
 
 function kernel_cache(
   k::FieldBinOp,a::AbstractVector,b::AbstractMatrix)
-  _field_bin_op_checks_vecmat(a,b)
   Ta = eltype(a)
   Tb = eltype(b)
   T = return_type(k.op,Ta,Tb)
   r = zeros(T,size(b))
   CachedArray(r)
+end
+
+function kernel_testitem!(
+  c,k::FieldBinOp,a::AbstractVector,b::AbstractMatrix)
+  if _valid_checks_vecmat(a,b)
+    apply_kernel!(c,k,a,b)
+  else
+    c.array
+  end
 end
 
 @inline function apply_kernel!(
@@ -170,16 +202,19 @@ end
 end
 
 function _field_bin_op_checks_vecmat(a,b)
+  @assert _valid_checks_vecmat(a,b) "Binary operation between fields: vector vs matrix size mismatch."
+end
+
+function _valid_checks_vecmat(a,b)
   nb, _ = size(b)
   na = length(a)
-  @assert na == nb "Binary operation between fields: vector vs matrix size mismatch."
+  na == nb
 end
 
 # Matrix vs matrix
 
 function kernel_cache(
   k::FieldBinOp,a::AbstractMatrix,b::AbstractMatrix)
-  _field_bin_op_checks_matmat(a,b)
   Ta = eltype(a)
   Tb = eltype(b)
   T = return_type(k.op,Ta,Tb)
@@ -187,6 +222,15 @@ function kernel_cache(
   _, nj = size(b)
   r = zeros(T,(np,ni,nj))
   CachedArray(r)
+end
+
+function kernel_testitem!(
+  c,k::FieldBinOp,a::AbstractMatrix,b::AbstractMatrix)
+  if _valid_checks_matmat(a,b)
+    apply_kernel!(c,k,a,b)
+  else
+    c.array
+  end
 end
 
 @inline function apply_kernel!(
@@ -207,9 +251,13 @@ end
 end
 
 function _field_bin_op_checks_matmat(a,b)
+  @assert _valid_checks_matmat(a,b) "Binary operation between fields: matrix vs matrix size mismatch."
+end
+
+function _valid_checks_matmat(a,b)
   na, ni = size(a)
   nb, nj = size(b)
-  @assert na == nb "Binary operation between fields: matrix vs matrix size mismatch."
+  na == nb
 end
 
 # Define gradients
@@ -236,3 +284,18 @@ for op in (:+,:-)
   end
 end
 
+for op in (:*,:/)
+  @eval begin
+
+    function apply_kernel_gradient(k::FieldBinOp{typeof($op)},a::Number,b)
+      gb = field_gradient(b)
+      apply_kernel_to_field(k,a,gb)
+    end
+
+    function apply_gradient(k::Valued{FieldBinOp{typeof($op)}},a::Number,b)
+      gb = field_array_gradient(b)
+      apply(k,a,gb)
+    end
+
+  end
+end

@@ -4,13 +4,15 @@
 function FESpace(;kwargs...)
 
   constraint = _get_kwarg(:constraint,kwargs,nothing)
-  # constraint = nothing
   reffe = _get_kwarg(:reffe,kwargs)
-  @notimplementedif !isa(reffe,Symbol) "For the moment, reffe can only be a symbol"
 
   fespace = nothing
 
-  if reffe in [:Lagrangian,:QLagrangian,:PLagrangian,:SLagrangian]
+  if isa(reffe,ReferenceFE)
+
+    fespace = _setup_generic_space(kwargs)
+
+  elseif reffe in [:Lagrangian,:QLagrangian,:PLagrangian,:SLagrangian]
 
     fespace = _setup_lagrange_spaces(kwargs)
 
@@ -96,6 +98,43 @@ function TestFESpace(;kwargs...)
   FESpace(;kwargs...)
 end
 
+function _setup_generic_space(kwargs)
+
+  reffe = _get_kwarg(:reffe,kwargs)
+  model = _get_kwarg(:model,kwargs)
+  labels = _get_kwarg(:labels,kwargs,get_face_labeling(model))
+  conformity = _get_kwarg(:conformity,kwargs,true)
+  diritags = _get_kwarg(:dirichlet_tags,kwargs,Int[])
+  order = _get_kwarg(:order,kwargs,nothing)
+  dofspace = _get_kwarg(:dof_space,kwargs,:reference)
+  ( dofspace == :reference ? true : false )
+
+  is_ref = (dofspace==:reference)
+
+  Tf = _get_kwarg(:valuetype,kwargs,VectorValue{1,Float64})
+  T = eltype(Tf)
+
+
+  polytopes = get_polytopes(model)
+  if length(polytopes) > 2 || polytopes[1] != get_polytope(reffe)
+    @unreachable "RefFE and geometrical model are not compatible in generic FESpace constructor"
+  end
+
+  reffes = [ reffe ]
+
+  if conformity in [true, :default]
+    conf = get_default_conformity(reffe)
+    V =  ConformingFESpace(reffes,conf,model,labels,diritags,nothing,is_ref)
+  elseif isa(conformity,Conformity)
+    V =  ConformingFESpace(reffes,conformity,model,labels,diritags,nothing,is_ref)
+  else
+    s = "Unsuported conformity = $conformity"
+    @unreachable s
+  end
+
+  V
+end
+
 function _setup_hdiv_space(kwargs)
 
   reffe = _get_kwarg(:reffe,kwargs)
@@ -120,7 +159,7 @@ function _setup_hdiv_space(kwargs)
   reffes = [RaviartThomasRefFE(T,p,order) for p in polytopes]
 
   if conformity in [true, :default, :HDiv, :Hdiv]
-      V =  ConformingFESpace(reffes,model,labels,diritags,nothing,is_ref)
+    V =  ConformingFESpace(reffes,DivConformity(),model,labels,diritags,nothing,is_ref)
   else
     s = "Conformity $conformity not implemented for $reffe reference FE on polytopes $(polytopes...)"
     @unreachable s
@@ -151,7 +190,7 @@ function _setup_hcurl_space(kwargs)
   reffes = [NedelecRefFE(T,p,order) for p in polytopes]
 
   if conformity in [true, :default, :HCurl, :Hcurl]
-      V =  ConformingFESpace(reffes,model,labels,diritags,nothing,is_ref)
+    V =  ConformingFESpace(reffes,CurlConformity(),model,labels,diritags,nothing,is_ref)
   else
     s = "Conformity $conformity not implemented for $reffe reference FE on polytopes $(polytopes...)"
     @unreachable s
@@ -209,11 +248,9 @@ function _setup_lagrange_spaces(kwargs)
       end
     else
       if reffe == :PLagrangian
-        _reffes = [PDiscRefFE(T,p,order) for p in polytopes]
-      elseif reffe == :QLagrangian
-        _reffes = [QDiscRefFE(T,p,order) for p in polytopes]
+        _reffes = [LagrangianRefFE(T,p,order;space=:P) for p in polytopes]
       else
-        @unreachable "Not possible to use a $reffe reffe on polytopoes $(polytopes...)"
+        @unreachable "Not possible to use a $reffe reffe on polytopes $(polytopes...)"
       end
     end
 
@@ -238,7 +275,7 @@ function _setup_lagrange_spaces(kwargs)
     if labels == nothing
       return GradConformingFESpace(_reffes,model,diritags,dirimasks,is_ref)
     else
-      return ConformingFESpace(_reffes,model,labels,diritags,dirimasks,is_ref)
+      return ConformingFESpace(_reffes,GradConformity(),model,labels,diritags,dirimasks,is_ref)
     end
 
   else
@@ -247,74 +284,6 @@ function _setup_lagrange_spaces(kwargs)
   end
 
 end
-
-#function _setup_lagrange_spaces(kwargs)
-#
-#  reffe = _get_kwarg(:reffe,kwargs)
-#  model = _get_kwarg(:model,kwargs)
-#  labels = _get_kwarg(:labels,kwargs,nothing)
-#  conformity = _get_kwarg(:conformity,kwargs,true)
-#  diritags = _get_kwarg(:dirichlet_tags,kwargs,Int[])
-#  dirimasks = _get_kwarg(:dirichlet_masks,kwargs,nothing)
-#  order = _get_kwarg(:order,kwargs)
-#
-#  polytopes = get_polytopes(model)
-#  trian = get_triangulation(model)
-#
-#  T = _get_kwarg(:valuetype,kwargs,nothing)
-#  if T == nothing
-#    @unreachable "valuetype is a mandatory keyword argument in FESpace constructor for Lagrangian reference FEs"
-#  end
-#
-#  if _is_reffe_lagrangian_compatible_with_polytopes(reffe,polytopes)
-#
-#    if reffe == :SLagrangian
-#      _reffes = [SerendipityRefFE(T,p,order) for p in polytopes]
-#    else
-#      _reffes = [LagrangianRefFE(T,p,order) for p in polytopes]
-#    end
-#
-#    if conformity in [false, :L2]
-#
-#      s = "Strong dirichlet conditions cannot be imposed in discontinuous spaces for the moment"
-#      @notimplementedif diritags != Int[] s
-#      @notimplementedif dirimasks != nothing s
-#
-#      return  DiscontinuousFESpace(_reffes,trian)
-#
-#    elseif conformity in [true, :default, :H1, :C0]
-#      if labels == nothing
-#        return GradConformingFESpace(_reffes,model,diritags,dirimasks)
-#      else
-#        return GradConformingFESpace(_reffes,model,labels,diritags,dirimasks)
-#      end
-#
-#    else
-#      s = "Conformity $conformity not implemented for $reffe reference FE on polytopes $(polytopes...)"
-#      @unreachable s
-#
-#    end
-#
-#  elseif reffe == :PLagrangian
-#
-#      if conformity in [false, :L2]
-#
-#        _reffes = [PDiscRefFE(T,p,order) for p in polytopes]
-#        return  DiscontinuousFESpace(_reffes,trian)
-#
-#      else
-#
-#        @unreachable "Conformity $conformity not possible for $reffe reference FE on $(polytopes...)"
-#
-#      end
-#
-#  else
-#
-#    @notimplemented "Reference element $reffe not implemented on $(polytopes...)"
-#
-#  end
-#
-#end
 
 function _get_kwarg(kwarg,kwargs)
   try

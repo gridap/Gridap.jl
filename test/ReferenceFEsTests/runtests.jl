@@ -14,9 +14,9 @@ using Test
 
 @testset "ReferenceFEInterfaces" begin include("ReferenceFEInterfacesTests.jl") end
 
-@testset "NodalReferenceFEs" begin include("NodalReferenceFEsTests.jl") end
-
 @testset "LagrangianRefFEs" begin include("LagrangianRefFEsTests.jl") end
+
+@testset "CLagrangianRefFEs" begin include("CLagrangianRefFEsTests.jl") end
 
 @testset "SerendipityRefFEs" begin include("SerendipityRefFEsTests.jl") end
 
@@ -25,5 +25,7 @@ using Test
 @testset "RaviartThomasRefFEs" begin include("RaviartThomasRefFEsTests.jl") end
 
 @testset "NedelecRefFEs" begin include("NedelecRefFEsTests.jl") end
+
+@testset "CDLagrangianRefFEs" begin include("CDLagrangianRefFEsTests.jl") end
 
 end # module

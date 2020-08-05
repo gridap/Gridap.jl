@@ -18,6 +18,7 @@ using Test
 using FillArrays
 using Base: @propagate_inbounds
 using LinearAlgebra
+using ForwardDiff
 
 export array_cache
 export getindex!
@@ -52,6 +53,7 @@ export elem
 export contract
 export kernel_return_type
 export kernel_return_types
+export kernel_testitem
 export Kernel
 
 export apply
@@ -88,6 +90,10 @@ export lazy_append
 export lazy_split
 export AppendedArray
 
+export autodiff_array_gradient
+export autodiff_array_jacobian
+export autodiff_array_hessian
+
 import Base: size
 import Base: getindex, setindex!
 import Base: similar
@@ -121,5 +127,7 @@ include("SubVectors.jl")
 include("ArrayPairs.jl")
 
 include("AppendedArrays.jl")
+
+include("Autodiff.jl")
 
 end # module

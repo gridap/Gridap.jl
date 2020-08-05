@@ -96,6 +96,7 @@ export GenericRefFE
 export get_polytope
 export get_prebasis
 export get_dof_basis
+export get_default_conformity
 export get_face_own_dofs
 export get_face_own_dofs_permutations
 export get_face_dofs
@@ -105,8 +106,8 @@ export compute_shapefuns
 export test_reference_fe
 export num_dofs
 
-export NodalReferenceFE
-export GenericNodalCartesianRefFE
+export LagrangianRefFE
+export GenericLagrangianRefFE
 export get_face_own_nodes_permutations
 export get_own_nodes_permutations
 export get_node_coordinates
@@ -115,9 +116,8 @@ export get_dof_to_comp
 export get_node_and_comp_to_dof
 export get_vertex_node
 export num_nodes
-export test_nodal_reference_fe
+export test_lagrangian_reference_fe
 
-export LagrangianRefFE
 export LagrangianDofBasis
 export compute_monomial_basis
 export compute_own_nodes
@@ -142,10 +142,18 @@ export QUAD4
 export TET4
 export HEX8
 
+export CONT
+export DISC
+
+export Conformity
+export L2Conformity
+export H1Conformity
+export GradConformity
+export CurlConformity
+export DivConformity
+export CDConformity
+
 export SerendipityRefFE
-export DiscRefFE
-export PDiscRefFE
-export QDiscRefFE
 export RaviartThomasRefFE
 export NedelecRefFE
 
@@ -161,13 +169,15 @@ include("LagrangianDofBases.jl")
 
 include("ReferenceFEInterfaces.jl")
 
-include("NodalReferenceFEs.jl")
-
 include("LagrangianRefFEs.jl")
+
+include("CLagrangianRefFEs.jl")
 
 include("SerendipityRefFEs.jl")
 
-include("DiscRefFEs.jl")
+include("PDiscRefFEs.jl")
+
+include("CDLagrangianRefFEs.jl")
 
 include("RaviartThomasRefFEs.jl")
 

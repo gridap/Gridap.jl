@@ -16,6 +16,15 @@ function SparseMatrixAssembler(
   matrix_type::Type{<:AbstractSparseMatrix},
   vector_type::Type{<:AbstractVector},
   test::MultiFieldFESpace,
+  trial::MultiFieldFESpace,
+  strategy::AssemblyStrategy)
+  MultiFieldSparseMatrixAssembler(matrix_type,vector_type,test,trial,strategy)
+end
+
+function SparseMatrixAssembler(
+  matrix_type::Type{<:AbstractSparseMatrix},
+  vector_type::Type{<:AbstractVector},
+  test::MultiFieldFESpace,
   trial::MultiFieldFESpace)
   strategy = DefaultAssemblyStrategy()
   MultiFieldSparseMatrixAssembler(matrix_type,vector_type,test,trial,strategy)

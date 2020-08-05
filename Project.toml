@@ -1,7 +1,7 @@
 name = "Gridap"
 uuid = "56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e"
 authors = ["Santiago Badia <santiago.badia@monash.edu>", "Francesc Verdugo <fverdugo@cimne.upc.edu>"]
-version = "0.12.0"
+version = "0.13.2"
 
 [deps]
 AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
@@ -38,7 +38,7 @@ LineSearches = "7.0.1"
 NLsolve = "4.3.0"
 QuadGK = "2.3.1"
 StaticArrays = "0.12.1"
-WriteVTK = "~1.6"
+WriteVTK = "1.7"
 julia = "1.0"
 
 [extras]

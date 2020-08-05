@@ -84,7 +84,7 @@ function test_triangulation(trian::Triangulation{Dc,Dp}) where {Dc,Dp}
   cell_coords = get_cell_coordinates(trian)
   @test isa(cell_coords,AbstractArray{<:AbstractVector{<:Point}})
   reffes = get_reffes(trian)
-  @test isa(reffes,AbstractVector{LagrangianRefFE{Dc}})
+  @test isa(reffes,AbstractVector{<:LagrangianRefFE{Dc}})
   cell_types = get_cell_type(trian)
   @test isa(cell_types,AbstractArray{<:Integer})
   ncells = num_cells(trian)
@@ -160,7 +160,7 @@ function restrict(f::AbstractArray,trian::Triangulation)
 end
 
 """
-    get_cell_reffes(trian::Triangulation) -> Vector{<:NodalReferenceFEs}
+    get_cell_reffes(trian::Triangulation) -> Vector{<:LagrangianRefFE}
 
 It is not desirable to iterate over the resulting array
 for large number of cells if the underlying reference FEs

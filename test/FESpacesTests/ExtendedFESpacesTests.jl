@@ -52,6 +52,14 @@ incell_to_cell = findall(oldcell_to_is_in)
 outcell_to_cell = findall(collect(Bool, .! oldcell_to_is_in))
 
 model_in = DiscreteModel(model,incell_to_cell)
+
+V = TestFESpace(
+  model=model_in,valuetype=Float64,reffe=:Lagrangian,
+  order=1,conformity=:H1,dof_space=:physical)
+@test isa(V,ExtendedFESpace)
+
+
+
 model_out = DiscreteModel(model,outcell_to_cell)
 
 trian_in = RestrictedTriangulation(trian, incell_to_cell)

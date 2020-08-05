@@ -173,11 +173,7 @@ end
 function AppliedArray(g::AbstractArray,f::AbstractArray...)
   gi = testitem(g) #Assumes that all kernels return the same type
   fi = testitems(f...)
-  if length(g) == 0
-    T = kernel_return_type(gi,fi...)
-  else
-    T = typeof(apply_kernel_for_cache(gi,fi...))
-  end
+  T = typeof(kernel_testitem(gi,fi...))
   AppliedArray(T,g,f...)
 end
 
@@ -219,30 +215,18 @@ function _array_cache(hash,a::AppliedArray)
   end
   cf = array_caches(hash,a.f...)
   cgi = kernel_cache(gi,fi...)
-  ai = apply_kernel_for_cache!(cgi,gi,fi...)
+  ai = kernel_testitem!(cgi,gi,fi...)
   i = -testitem(eachindex(a))
   e = Evaluation((i,),ai)
   c = (cg, cgi, cf)
   (c,e)
 end
 
-function apply_kernel_for_cache(k,x...)
-  cache = kernel_cache(k,x...)
-  apply_kernel_for_cache!(cache,k,x...)
-end
-
-@inline function apply_kernel_for_cache!(cache,k,x...)
-  apply_kernel!(cache,k,x...)
-end
-
 function testitem(a::AppliedArray)
   cg = array_cache(a.g)
   gi = testitem(a.g)
   fi = testitems(a.f...)
-  cf = array_caches(a.f...)
-  cgi = kernel_cache(gi,fi...)
-  ai = apply_kernel_for_cache!(cgi,gi,fi...)
-  ai
+  kernel_testitem(gi,fi...)
 end
 
 function getindex!(cache,a::AppliedArray,i::Integer...)

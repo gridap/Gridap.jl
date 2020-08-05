@@ -63,7 +63,7 @@ function apply_kernel!(cache,k::StateLawKernel,a::AbstractVector,b::AbstractVect
   v
 end
 
-function apply_kernel_for_cache!(cache,k::StateLawKernel,a::AbstractVector,b::AbstractVector...)
+function kernel_testitem!(cache,k::StateLawKernel,a::AbstractVector,b::AbstractVector...)
   Q = length(a)
   setsize!(cache,size(a))
   v = cache.array

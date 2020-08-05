@@ -34,6 +34,8 @@ using Test
 
 @testset "DiscontinuousFESpaces" begin include("DiscontinuousFESpacesTests.jl") end
 
+@testset "CDLagrangianFESpaces" begin include("CDLagrangianFESpacesTests.jl") end
+
 @testset "FETerms" begin include("FETermsTests.jl") end
 
 @testset "CellKernels" begin include("CellKernelsTests.jl") end
@@ -63,5 +65,9 @@ using Test
 @testset "FESpaceFactories" begin include("FESpaceFactoriesTests.jl") end
 
 @testset "StateLaws" begin include("StateLawsTests.jl") end
+
+@testset "FEAutodiff" begin include("FEAutodiffTests.jl") end
+
+@testset "FETermsWithAutodiff" begin include("FETermsWithAutodiffTests.jl") end
 
 end # module
