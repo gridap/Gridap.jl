@@ -10,10 +10,13 @@ Pkg.add("PackageCompiler")
 using ArgParse
 using LibGit2
 using PackageCompiler
-
+const do_not_clone_gridap_flag="--do-not-clone-gridap"
+const do_not_clone_tutorials_flag="--do-not-clone-tutorials"
 
 function parse_commandline()
     s = ArgParseSettings()
+    do_not_clone_gridap_flag="--do-not-clone-gridap"
+    do_not_clone_tutorials_flag="--do-not-clone-tutorials"
     @add_arg_table! s begin
         "--image-name", "-n"
         help = "The name of the Gridap.jl custom system image that will be created"
@@ -24,21 +27,38 @@ function parse_commandline()
         arg_type = String
         default = "./"
         "--gridap-tag", "-g"
-        help = "Gridap.jl Git repo Tag string with the source code from which the Gridap.jl custom system image will be created"
+        help = """Gridap.jl Git repo Tag string with the source code from which the Gridap.jl custom system 
+                  image will be created. This option is ignored if $(do_not_clone_gridap_flag) flag IS PASSED.
+               """
         arg_type = String
         default = "master"
         "--tutorials-tag", "-t"
-        help = "Tutorials Git repo Tag string with the base code line that will be executed in order to generate the Gridap.jl custom system image"
+        help = "Tutorials Git repo Tag string with the base code line that will be executed in order to generate 
+                the Gridap.jl custom system image. This option is ignored if $(do_not_clone_tutorials_flag) flag IS PASSED"
         arg_type = String
         default = "master"
         "--gridap-path"
-        help = "The relative or absolute PATH where to clone the Gridap.jl Git repo (Warning: Removed if it exists!)"
+        help = """If $(do_not_clone_gridap_flag) flag IS NOT PASSED, the relative or absolute PATH where to 
+                  clone the Gridap.jl Git repo (Warning: Removed if it exists!).
+                  If $(do_not_clone_gridap_flag) flag IS PASSED, the relative or absolute PATH where an existing
+                  Gridap.jl source directory tree can be found.
+               """
         arg_type = String
         default = "/tmp/Gridap.jl/"
         "--tutorials-path"
-        help = "The relative or absolute PATH where to clone the Tutorials Git repo (Warning: Removed if it exists!)"
         arg_type = String
         default = "/tmp/Tutorials/"
+        help = """If $(do_not_clone_tutorials_flag) flag IS NOT PASSED, the relative or absolute PATH where to 
+                  clone the Tutorials Git repo (Warning: Removed if it exists!).
+                  If $(do_not_clone_tutorials_flag) flag IS PASSED, the relative or absolute PATH where an existing
+                  Tutorials source directory tree can be found.
+               """
+        "--do-not-clone-gridap"
+        help = "Do not clone the Gridap.jl Git repo, but instead use an existing source directory."
+        action = :store_true
+        "--do-not-clone-tutorials"
+        help = "Do not clone the Tutorials Git repo, but instead use an existing source directory."
+        action = :store_true
     end
     return parse_args(s)
 end
