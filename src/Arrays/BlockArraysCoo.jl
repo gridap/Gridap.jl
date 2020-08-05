@@ -109,8 +109,15 @@ Base.size(a::BlockArrayCoo) = map(length,Base.axes(a))
 
 Base.axes(a::BlockArrayCoo) = a.axes
 
-function Base.getindex(a::BlockArrayCoo,i::Integer...)
+function Base.getindex(a::BlockArrayCoo{T,N} where T,i::Vararg{Integer,N}) where N
   s = map(findblockindex,a.axes,i)
+  ai = a[s...]
+  ai
+end
+
+function Base.getindex(a::BlockVectorCoo,i::Integer,j::Integer...)
+  @assert all( j .== 1)
+  s = map(findblockindex,a.axes,(i,))
   ai = a[s...]
   ai
 end

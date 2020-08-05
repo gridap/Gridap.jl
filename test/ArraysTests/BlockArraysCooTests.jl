@@ -150,4 +150,13 @@ c = a - 2*b
 @test isa(c,BlockArrayCoo)
 @test Array(a)-2*Array(b) == c
 
+@test a[1,2,1] == a[1,2]
+
+blocks = [ 10*[1,2], 20*[1,2,3] ]
+blockids = [(1,),(3,)]
+axs = (blockedrange([2,4,3]),)
+b = BlockArrayCoo(blocks,blockids,axs)
+
+@test b[2] == b[2,1]
+
 end # module
