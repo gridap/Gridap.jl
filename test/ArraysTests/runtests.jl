@@ -6,6 +6,8 @@ using Test
 
 @testset "BlockArraysCoo" begin include("BlockArraysCooTests.jl") end
 
+@testset "VectorsOfBlockArrayCoo" begin include("VectorsOfBlockArrayCooTests.jl") end
+
 @testset "CachedArrays" begin include("CachedArraysTests.jl") end
 
 @testset "Kernels" begin include("KernelsTests.jl") end

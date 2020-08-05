@@ -100,9 +100,13 @@ function BlockArrays.eachblock(a::BlockArrayCoo)
 end
 
 function enumerateblocks(a)
-  cis = CartesianIndices(blocksize(a))
-  blocks = map(ci->Block(Tuple(ci)),cis)
+  blocks = eachblockindex(a)
   zip(blocks,eachblock(a))
+end
+
+function eachblockindex(a)
+  cis = CartesianIndices(blocksize(a))
+  map(ci->Block(Tuple(ci)),cis)
 end
 
 Base.size(a::BlockArrayCoo) = map(length,Base.axes(a))
@@ -338,8 +342,17 @@ function Base.copy!(a::BlockArrayCoo,b::BlockArrayCoo)
 end
 
 function Base.copyto!(a::BlockArrayCoo,b::BlockArrayCoo)
-  for p in 1:length(a.blocks)
-    copyto!(a.blocks[p],b.blocks[p])
+  if a.ptrs === b.ptrs || a.ptrs == b.ptrs
+    for p in 1:length(a.blocks)
+      copyto!(a.blocks[p],b.blocks[p])
+    end
+  else
+    for I in eachblockindex(a)
+      if is_nonzero_block(a,I)
+        copyto!(a[I],b[I])
+      end
+    end
   end
  a
 end
+

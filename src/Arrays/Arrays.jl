@@ -27,6 +27,9 @@ export BlockMatrixCoo
 export is_zero_block
 export is_nonzero_block
 export enumerateblocks
+export VectorOfBlockArrayCoo
+export VectorOfBlockVectorCoo
+export VectorOfBlockMatrixCoo
 
 export array_cache
 export getindex!
@@ -140,6 +143,8 @@ include("SubVectors.jl")
 include("ArrayPairs.jl")
 
 include("AppendedArrays.jl")
+
+include("VectorsOfBlockArrayCoo.jl")
 
 include("Autodiff.jl")
 
