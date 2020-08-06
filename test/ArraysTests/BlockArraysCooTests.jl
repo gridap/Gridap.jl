@@ -173,7 +173,7 @@ cS = 2*bS
 @test isa(cS,BlockArrayCoo)
 @test isa(cS[Block(1)],BlockArrayCoo)
 
-bZ = all_zero_blocks(bR)
+bZ = zeros_like(bR)
 
 dS = BlockArrayCoo([bZ,bR],[false,true])
 
@@ -188,7 +188,7 @@ r = cS + dS
 ax = (blockedrange([2,3]), blockedrange([2,4]))
 aLL = BlockArrayCoo([[1 2; 3 4],[5 6; 7 8; 9 10] ],[(1,1),(2,1)],ax)
 aLR = BlockArrayCoo([[1 2 5 6; 3 4 1 2; 1 2 3 4],[5 6; 7 8; 9 10] ],[(2,2),(2,1)],ax)
-aRL = all_zero_blocks(aLL)
+aRL = zeros_like(aLL)
 aRR = BlockArrayCoo([[1 2; 3 4],[5 6; 7 8; 9 10] ],[(1,1),(2,1)],ax)
 
 allblocks = Matrix{typeof(aLL)}(undef,2,2)
@@ -202,7 +202,10 @@ mask = [true true; false true]
 aS = BlockArrayCoo(allblocks,mask)
 @test is_zero_block(aS,2,1)
 @test is_nonzero_block(aS,2,2)
-display(aS)
+
+aS2 = copy(aS)
+@test isa(aS2,BlockArrayCoo)
+@test isa(aS2[Block(2),Block(2)],BlockArrayCoo)
 
 aSt = transpose(aS)
 @test Array(aSt) == transpose(Array(aS))
@@ -212,16 +215,32 @@ aSt = transpose(aS)
 rS = aS*aSt
 @test rS == Array(aS)*Array(aSt)
 @test isa(rS,BlockArrayCoo)
-display(rS[Block(2),Block(2)])
 @test isa(rS[Block(2),Block(2)],BlockArrayCoo)
-display(rS)
 
-#display(transpose(aRL))
-#zero_blocks = [ Transpose(block) for block in a.zero_blocks ]
+mul!(rS,aS,aSt)
+@test rS == Array(aS)*Array(aSt)
+@test isa(rS,BlockArrayCoo)
+@test isa(rS[Block(2),Block(2)],BlockArrayCoo)
 
-#display(transpose(aS))
+axs =(blockedrange([2,4]),)
+bL = BlockArrayCoo([[1,2]],[(1,)],axs)
+bR = BlockArrayCoo([[2,3],[4,5,6,8]],[(1,),(2,)],axs)
+bS = BlockArrayCoo([bL,bR],[(1,),(2,)],(blockedrange([6,6]),))
 
+rS = aS*bS
+@test rS == Array(aS)*Array(bS)
+@test isa(rS,BlockArrayCoo)
+@test isa(rS[Block(2)],BlockArrayCoo)
 
+mul!(rS,aS,bS)
+@test rS == Array(aS)*Array(bS)
+@test isa(rS,BlockArrayCoo)
+@test isa(rS[Block(2)],BlockArrayCoo)
 
+cS = copy(rS)
+mul!(rS,aS,bS,3,2)
+@test rS == 3*Array(aS)*Array(bS) + 2*cS
+@test isa(rS,BlockArrayCoo)
+@test isa(rS[Block(2)],BlockArrayCoo)
 
 end # module

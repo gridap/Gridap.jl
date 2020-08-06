@@ -12,6 +12,7 @@ module Arrays
 
 using Gridap.Helpers
 using Gridap.Inference
+using Gridap.Algebra
 
 using DocStringExtensions
 using Test
@@ -30,7 +31,7 @@ export enumerateblocks
 export VectorOfBlockArrayCoo
 export VectorOfBlockVectorCoo
 export VectorOfBlockMatrixCoo
-export all_zero_blocks
+export zeros_like
 
 export array_cache
 export getindex!
@@ -116,6 +117,8 @@ import Base: IndexStyle
 
 import Gridap.Io: to_dict
 import Gridap.Io: from_dict
+
+import Gridap.Algebra: scale_entries!
 
 include("Interface.jl")
 

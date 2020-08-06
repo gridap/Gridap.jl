@@ -71,10 +71,17 @@ end
 const BlockMatrixCoo = BlockArrayCoo{T,2} where T
 const BlockVectorCoo = BlockArrayCoo{T,1} where T
 
-function all_zero_blocks(a::BlockArrayCoo)
+function zeros_like(a::BlockArrayCoo)
   blocks = eltype(a.blocks)[]
   blockids = eltype(a.blockids)[]
   BlockArrayCoo(blocks,blockids,a.axes)
+end
+
+function zeros_like(a::AbstractArray)
+  T = eltype(a)
+  b = similar(a,T,size(a))
+  fill!(b,zero(T))
+  b
 end
 
 function _compute_ptrs(blockids,axes)
@@ -186,7 +193,8 @@ end
 function Base.:+(a::BlockArrayCoo{Ta,N},b::BlockArrayCoo{Tb,N}) where {Ta,Tb,N}
   @assert axes(a) == axes(b)
   @assert blockaxes(a) == blockaxes(b)
-  A = promote_type(eltype(a.blocks),eltype(b.blocks))
+  I1 = first(eachblockindex(a))
+  A = typeof(a[I1]+b[I1])
   blocks = A[]
   blockids = NTuple{N,Int}[]
   for (I,aI) in enumerateblocks(a)
@@ -203,7 +211,8 @@ end
 function Base.:-(a::BlockArrayCoo{Ta,N},b::BlockArrayCoo{Tb,N}) where {Ta,Tb,N}
   @assert axes(a) == axes(b)
   @assert blockaxes(a) == blockaxes(b)
-  A = promote_type(eltype(a.blocks),eltype(b.blocks))
+  I1 = first(eachblockindex(a))
+  A = typeof(a[I1]-b[I1])
   blocks = A[]
   blockids = NTuple{N,Int}[]
   for (I,aI) in enumerateblocks(a)
@@ -222,56 +231,50 @@ function Base.:*(a::BlockArrayCoo,b::Number)
 end
 
 function Base.:*(a::Number,b::BlockArrayCoo)
-  blocks = [a*block for block in b.blocks]
+  f(block)= a*block
+  blocks = f.(b.blocks)
   BlockArrayCoo(blocks,b.blockids,b.axes,b.ptrs,b.zero_blocks)
 end
 
-function Base.:*(a::BlockArrayCoo,b::BlockArrayCoo)
-  c = _mul_block_result(a,b)
-  mul!(c,a,b)
-end
-
-function _mul_block_result(a::BlockMatrixCoo,b::BlockVectorCoo)
+function Base.:*(a::BlockMatrixCoo,b::BlockVectorCoo)
   @assert blocksize(a,2) == blocksize(b,1)
-  T = promote_type(eltype(a),eltype(b))
-  blocks = Vector{T}[]
+  A = typeof(a[Block(1,1)]*b[Block(1)])
+  blocks = A[]
   blockids = Tuple{Int}[]
   for i in 1:blocksize(a,1)
+    block = zeros_like(a[Block(i,1)]*b[Block(1)])
     for j in 1:blocksize(a,2)
       if is_nonzero_block(a,Block(i,j)) && is_nonzero_block(b,Block(j))
-        block = zeros(T,size(a[Block(i,j)],1))
-        push!(blocks,block)
-        push!(blockids,(i,))
-        break
+        block += a[Block(i,j)]*b[Block(j)]
       end
     end
+    push!(blocks,block)
+    push!(blockids,(i,))
   end
   axs = (axes(a)[1],)
   BlockArrayCoo(blocks,blockids,axs)
 end
 
-function _mul_block_result(a::BlockMatrixCoo,b::BlockMatrixCoo)
+function Base.:*(a::BlockMatrixCoo,b::BlockMatrixCoo)
   @assert blocksize(a,2) == blocksize(b,1)
-  T = promote_type(eltype(a),eltype(b))
-  blocks = Matrix{T}[]
+  A = typeof(a[Block(1,1)]*b[Block(1,1)])
+  blocks = A[]
   blockids = Tuple{Int,Int}[]
   for i in 1:blocksize(a,1)
     for j in 1:blocksize(b,2)
+      block = zeros_like(a[Block(i,1)]*b[Block(1,j)])
       for k in 1:blocksize(a,2)
         if is_nonzero_block(a,Block(i,k)) && is_nonzero_block(b,Block(k,j))
-          block = zeros(T,size(a[Block(i,k)],1),size(b[Block(k,j)],2))
-          push!(blocks,block)
-          push!(blockids,(i,j))
-          break
+          block += a[Block(i,k)]*b[Block(k,j)]
         end
       end
+      push!(blocks,block)
+      push!(blockids,(i,j))
     end
   end
   axs = (axes(a)[1],axes(b)[2])
   BlockArrayCoo(blocks,blockids,axs)
 end
-
-#@static if VERSION >= v"1.3"
 
 function LinearAlgebra.mul!(c::BlockVectorCoo,a::BlockMatrixCoo,b::BlockVectorCoo)
   mul!(c,a,b,1,0)
@@ -281,93 +284,73 @@ function LinearAlgebra.mul!(c::BlockMatrixCoo,a::BlockMatrixCoo,b::BlockMatrixCo
   mul!(c,a,b,1,0)
 end
 
-  function LinearAlgebra.mul!(c::BlockVectorCoo,a::BlockMatrixCoo,b::BlockVectorCoo,α::Number,β::Number)
-    for I in 1:blocksize(a,1)
-      cI = c[Block(I)]
-      if is_nonzero_block(c,Block(I))
-        for i in eachindex(cI)
-          cI[i] = β*cI[i]
-        end
+function scale_entries!(c::BlockArrayCoo,β)
+  for block in c.blocks
+    scale_entries!(block,β)
+  end
+  c
+end
+
+function LinearAlgebra.mul!(c::BlockVectorCoo,a::BlockMatrixCoo,b::BlockVectorCoo,α::Number,β::Number)
+  for I in 1:blocksize(a,1)
+    cI = c[Block(I)]
+    if is_nonzero_block(c,Block(I))
+      scale_entries!(cI,β)
+    end
+    for J in 1:blocksize(a,2)
+      if is_nonzero_block(a,Block(I,J)) && is_nonzero_block(b,Block(J))
+        @assert is_nonzero_block(c,Block(I))
+        aIJ = a[Block(I,J)]
+        bJ = b[Block(J)]
+        mul!(cI,aIJ,bJ,α,1)
       end
-      for J in 1:blocksize(a,2)
-        if is_nonzero_block(a,Block(I,J)) && is_nonzero_block(b,Block(J))
-          @assert is_nonzero_block(c,Block(I))
-          aIJ = a[Block(I,J)]
-          bJ = b[Block(J)]
-          mul!(cI,aIJ,bJ,α,1)
+    end
+  end
+  c
+end
+
+function LinearAlgebra.mul!(c::BlockMatrixCoo,a::BlockMatrixCoo,b::BlockMatrixCoo,α::Number,β::Number)
+  for I in 1:blocksize(a,1)
+    for J in 1:blocksize(b,2)
+      cIJ = c[Block(I,J)]
+      if is_nonzero_block(c,Block(I,J))
+        scale_entries!(cIJ,β)
+      end
+      for K in 1:blocksize(a,2)
+        if is_nonzero_block(a,Block(I,K)) && is_nonzero_block(b,Block(K,J))
+          @assert is_nonzero_block(c,Block(I,J))
+          cIJ = c[Block(I,J)]
+          aIK = a[Block(I,K)]
+          bKJ = b[Block(K,J)]
+          mymul!(cIJ,aIK,bKJ,α) # Hack to avoid allocations
+          #mul!(cIJ,aIK,bKJ,α,1) # Why this leads to memory allocations??
         end
       end
     end
-    c
   end
+  c
+end
 
-  function LinearAlgebra.mul!(c::BlockMatrixCoo,a::BlockMatrixCoo,b::BlockMatrixCoo,α::Number,β::Number)
-    for I in 1:blocksize(a,1)
-      for J in 1:blocksize(b,2)
-        cIJ = c[Block(I,J)]
-        if is_nonzero_block(c,Block(I,J))
-          for ij in eachindex(cIJ)
-            cIJ[ij] = β*cIJ[ij]
-          end
-        end
-        for K in 1:blocksize(a,2)
-          if is_nonzero_block(a,Block(I,K)) && is_nonzero_block(b,Block(K,J))
-            @assert is_nonzero_block(c,Block(I,J))
-            aIK = a[Block(I,K)]
-            bKJ = b[Block(K,J)]
-            mul!(cIJ,aIK,bKJ,α,1)
-          end
-        end
+# Hack to avoid allocations
+@inline function mymul!(cIJ,aIK,bKJ,α)
+  @boundscheck begin
+    @assert size(cIJ,1) == size(aIK,1)
+    @assert size(cIJ,2) == size(bKJ,2)
+    @assert size(aIK,2) == size(bKJ,1)
+  end
+  for i in 1:size(cIJ,1)
+    for j in 1:size(bKJ,2)
+      for k in 1:size(bKJ,1)
+        @inbounds cIJ[i,j] += α*aIK[i,k]*bKJ[k,j]
       end
     end
-    c
   end
+end
 
-#else
-#
-#  function LinearAlgebra.mul!(c::BlockVectorCoo,a::BlockMatrixCoo,b::BlockVectorCoo)
-#    fill!(c,zero(eltype(c)))
-#    for I in 1:blocksize(a,1)
-#      for J in 1:blocksize(a,2)
-#        if is_nonzero_block(a,Block(I,J)) && is_nonzero_block(b,Block(J))
-#          aIJ = a[Block(I,J)]
-#          bJ = b[Block(J)]
-#          cI = c[Block(I)]
-#          for j in 1:size(aIJ,2)
-#            for i in 1:size(aIJ,1)
-#              cI[i] += aIJ[i,j]*bJ[j]
-#            end
-#          end
-#        end
-#      end
-#    end
-#    c
-#  end
-#
-#  function LinearAlgebra.mul!(c::BlockMatrixCoo,a::BlockMatrixCoo,b::BlockMatrixCoo)
-#    fill!(c,zero(eltype(c)))
-#    for I in 1:blocksize(a,1)
-#      for J in 1:blocksize(b,2)
-#        for K in 1:blocksize(a,2)
-#          if is_nonzero_block(a,Block(I,K)) && is_nonzero_block(b,Block(K,J))
-#            aIK = a[Block(I,K)]
-#            bKJ = b[Block(K,J)]
-#            cIJ = c[Block(I,J)]
-#            for i in 1:size(aIK,1)
-#              for j in 1:size(bKJ,2)
-#                for k in 1:size(aIK,2)
-#                  cIJ[i,j] += aIK[i,k]*bKJ[k,j]
-#                end
-#              end
-#            end
-#          end
-#        end
-#      end
-#    end
-#    c
-#  end
-#
-#end
+# Hack to avoid allocations 
+@inline function mymul!(cIJ::BlockMatrixCoo,aIK::BlockMatrixCoo,bKJ::BlockMatrixCoo,α)
+  mul!(cIJ,aIK,bKJ,α,1)
+end
 
 function Base.fill!(a::BlockArrayCoo,v)
   @notimplementedif v != zero(v)
