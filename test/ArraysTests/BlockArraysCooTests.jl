@@ -5,7 +5,7 @@ using Gridap.Arrays
 using BlockArrays
 using LinearAlgebra
 
-blocks = [ [1 2; 3 4], [5 6; 7 8; 9 10] ]
+blocks = Matrix{Float64}[ [1 2; 3 4], [5 6; 7 8; 9 10] ]
 blockids = [(1,1),(2,1)]
 ax = (blockedrange([2,3]), blockedrange([2,4]))
 
@@ -38,7 +38,7 @@ b12 = ones(2,4)
 getblock!(b12,a,Block(1,2))
 @test b12 == a[Block(1,2)]
 
-blocks = [ [1,2,3] ]
+blocks = Vector{Float64}[ [1,2,3] ]
 blockids = [(2,)]
 ax = (blockedrange([2,3,4]),)
 a = BlockArrayCoo(blocks,blockids,ax)
@@ -48,12 +48,12 @@ a = BlockArrayCoo(blocks,blockids,ax)
 @test a[Block(3)] === a.zero_blocks[2]
 @test a[BlockIndex(2,3)] === blocks[1][3]
 
-blocks = [ [1 2; 3 4], [5 6 7 8; 9 10 11 12; 13 14 15 16], [1 2 3 4; 5 6 7 8], [1 2 3; 4 5 6; 7 8 9] ]
+blocks = Matrix{Float64}[ [1 2; 3 4], [5 6 7 8; 9 10 11 12; 13 14 15 16], [1 2 3 4; 5 6 7 8], [1 2 3; 4 5 6; 7 8 9] ]
 blockids = [(1,1),(2,2),(1,2),(3,3)]
 ax = (blockedrange([2,3,3]), blockedrange([2,4,3]))
 a = BlockArrayCoo(blocks,blockids,ax)
 
-blocks = [ 10*[1,2], 20*[1,2,3] ]
+blocks = Vector{Float64}[ 10*[1,2], 20*[1,2,3] ]
 blockids = [(1,),(3,)]
 ax = (blockedrange([2,4,3]),)
 b = BlockArrayCoo(blocks,blockids,ax)

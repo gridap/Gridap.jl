@@ -58,11 +58,38 @@ test_array(dl,transpose.(al))
 dl = apply(MulKernel(),al,apply(transpose,al))
 test_array(dl,[ a*transpose(a) for a in al ])
 
+# in-homogeneous case
 
+l1 = 4
+l2 = 6
+a11 = vcat([i*[1 2; 3 4] for i in 1:l1 ],[i*[1 2 3; 3 4 5; 6 7 8] for i in 1:l2])
+a12 = vcat([10*i*[1 2; 3 4] for i in 1:l1 ],[10*i*[1 2 3; 3 4 5; 6 7 8] for i in 1:l2])
+blocks = (a11,a12)
+blockids = [(1,1),(1,2)]
+ax1 = (blockedrange([2,2]),blockedrange([2,2]))
+ax2 = (blockedrange([3,3]),blockedrange([3,3]))
+ax = CompressedArray([ax1,ax2],vcat(fill(1,l1),fill(2,l2)))
+al = VectorOfBlockArrayCoo(blocks,blockids,ax)
 
+b2 = vcat([i*[1,2] for i in 1:l1 ],[i*[1,2,3] for i in 1:l2])
+blocks = (b2,)
+blockids = [(2,)]
+ax1 = (blockedrange([2,2]),)
+ax2 = (blockedrange([3,3]),)
+ax = CompressedArray([ax1,ax2],vcat(fill(1,l1),fill(2,l2)))
+bl = VectorOfBlockArrayCoo(blocks,blockids,ax)
 
+dl = apply(MulKernel(),al,bl)
+test_array(dl,[ a*b for (a,b) in zip(al,bl) ])
 
+dl = apply(MulAddKernel(2,3),al,bl,bl)
+test_array(dl,[ 2*a*b + 3*c for (a,b,c) in zip(al,bl,bl) ])
 
+dl = apply(transpose,al)
+test_array(dl,transpose.(al))
+
+dl = apply(MulKernel(),al,apply(transpose,al))
+test_array(dl,[ a*transpose(a) for a in al ])
 
 
 end # module

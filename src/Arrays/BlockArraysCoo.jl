@@ -323,7 +323,7 @@ function LinearAlgebra.mul!(c::BlockMatrixCoo,a::BlockMatrixCoo,b::BlockMatrixCo
           aIK = a[Block(I,K)]
           bKJ = b[Block(K,J)]
           mymul!(cIJ,aIK,bKJ,α) # Hack to avoid allocations
-          #mul!(cIJ,aIK,bKJ,α,1) # Why this leads to memory allocations??
+          #mul!(cIJ,aIK,bKJ,α,1) # Why this leads to memory allocations?? Specially with Ints
         end
       end
     end
