@@ -93,11 +93,11 @@ function from_dict(T::Type{UnstructuredDiscreteModel},dict::Dict{Symbol,Any})
   vertex_coordinates = get_node_coordinates(grid)[vertex_to_node]
 
   nvertices = length(vertex_to_node)
-  d_dface_to_vertices = Vector{Table{Int,Int32}}(undef,D+1)
+  d_dface_to_vertices = Vector{Table{Int,Vector{Int},Vector{Int32}}}(undef,D+1)
   d_dface_to_vertices[0+1] = identity_table(Int,Int32,nvertices)
   for d in 1:D
     k = Symbol("face_vertices_$d")
-    dface_to_vertices = from_dict(Table{Int,Int32},dict[k])
+    dface_to_vertices = from_dict(Table{Int,Vector{Int},Vector{Int32}},dict[k])
     d_dface_to_vertices[d+1] = dface_to_vertices
   end
 
