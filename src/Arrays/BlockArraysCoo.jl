@@ -30,7 +30,7 @@ function BlockArrayCoo(
   BlockArrayCoo(blocks,blockids,ax,ptrs,zero_blocks)
 end
 
-function BlockArrayCoo(allblocks::AbstractArray{A,N},mask::AbstractArray{Bool,N}=fill(true,size(allblocks))) where {A,N}
+function BlockArrayCoo(allblocks::AbstractArray{A,N},ax::NTuple{N},mask::AbstractArray{Bool,N}=fill(true,size(allblocks))) where {A,N}
   blocks = A[]
   zero_blocks = A[]
   ptrs = zeros(Int,size(allblocks))
@@ -48,25 +48,26 @@ function BlockArrayCoo(allblocks::AbstractArray{A,N},mask::AbstractArray{Bool,N}
       pn += 1
     end
   end
-  axs = _compute_axes_from_allblocks(allblocks)
-  BlockArrayCoo(blocks,axs,ptrs,zero_blocks)
+  BlockArrayCoo(blocks,ax,ptrs,zero_blocks)
 end
 
-function _compute_axes_from_allblocks(allblocks)
-  N = ndims(allblocks)
-  s = size(allblocks)
-  axtmp = [ zeros(Int,s[n]) for n in 1:N]
-  cis = CartesianIndices(allblocks)
-  for ci in cis
-    block = allblocks[ci]
-    sb = size(block)
-    for (n,cin) in enumerate(Tuple(ci))
-      axtmp[n][cin] = sb[n]
-    end
-  end
-  axs = map(blockedrange,Tuple(axtmp))
-  axs
-end
+#  axs = _compute_axes_from_allblocks(allblocks)
+#
+#function _compute_axes_from_allblocks(allblocks)
+#  N = ndims(allblocks)
+#  s = size(allblocks)
+#  axtmp = [ zeros(Int,s[n]) for n in 1:N]
+#  cis = CartesianIndices(allblocks)
+#  for ci in cis
+#    block = allblocks[ci]
+#    sb = size(block)
+#    for (n,cin) in enumerate(Tuple(ci))
+#      axtmp[n][cin] = sb[n]
+#    end
+#  end
+#  axs = map(blockedrange,Tuple(axtmp))
+#  axs
+#end
 
 const BlockMatrixCoo = BlockArrayCoo{T,2} where T
 const BlockVectorCoo = BlockArrayCoo{T,1} where T
@@ -96,6 +97,28 @@ function zeros_like(::Type{A},axs::Tuple) where A <: AbstractArray
   a = similar(A,axs)
   fill!(a,zero(eltype(a)))
   a
+end
+
+Base.similar(a::BlockArrayCoo) = similar(a,eltype(a),axes(a))
+
+Base.similar(a::BlockArrayCoo,axs::Tuple) = similar(a,eltype(a),axs)
+
+function Base.similar(a::BlockArrayCoo{S,N} where S,::Type{T}, axs::NTuple{N,<:BlockedUnitRange}) where {T,N}
+  _similar_block_array_coo(a,T,axs)
+end
+
+function _similar_block_array_coo(a,::Type{T},axs) where T
+  S = eltype(a)
+  @notimplementedif S != T
+  A = eltype(a.blocks)
+  blocks = A[]
+  for p in 1:length(a.blocks)
+    I = a.blockids[p]
+    laxs = map( local_range, axs, I)
+    block = similar(a.blocks[p],T,laxs)
+    push!(blocks,block)
+  end
+  BlockArrayCoo(blocks,a.blockids,axs,a.ptrs)
 end
 
 function local_range(a::BlockedUnitRange,k::Integer)
@@ -432,6 +455,12 @@ function BlockArrays.blockedrange(local_ranges::Vector{<:BlockedUnitRange})
   TwoLevelBlockedUnitRange(local_ranges)
 end
 
+function Base.similar(a::BlockArrayCoo{S,N} where S,::Type{T}, axs::NTuple{N,<:TwoLevelBlockedUnitRange}) where {T,N}
+  _similar_block_array_coo(a,T,axs)
+end
+
+local_range(a::TwoLevelBlockedUnitRange,k::Integer) = a.local_ranges[k]
+
 Base.first(a::TwoLevelBlockedUnitRange) = first(a.global_range)
 Base.last(a::TwoLevelBlockedUnitRange) = last(a.global_range)
 BlockArrays.blockaxes(a::TwoLevelBlockedUnitRange) = blockaxes(a.global_range)
@@ -439,7 +468,11 @@ BlockArrays.blocklasts(a::TwoLevelBlockedUnitRange) = blocklasts(a.global_range)
 BlockArrays.findblock(a::TwoLevelBlockedUnitRange,k::Integer) = findblock(a.global_range,k)
 Base.getindex(a::TwoLevelBlockedUnitRange,i::Integer) = a.global_range[i]
 Base.getindex(a::TwoLevelBlockedUnitRange,i::Block{1}) = a.global_range[i]
-local_range(a::TwoLevelBlockedUnitRange,k::Integer) = a.local_ranges[k]
+Base.axes(a::TwoLevelBlockedUnitRange) = axes(a.global_range)
+Base.Broadcast.axistype(a::T, b::T) where T<:TwoLevelBlockedUnitRange =  Base.Broadcast.axistype(a.global_range,b.global_range)
+Base.Broadcast.axistype(a::TwoLevelBlockedUnitRange, b::TwoLevelBlockedUnitRange) = Base.Broadcast.axistype(a.global_range,b.global_range)
+Base.Broadcast.axistype(a::TwoLevelBlockedUnitRange, b) = Base.Broadcast.axistype(a.global_range,b)
+Base.Broadcast.axistype(a, b::TwoLevelBlockedUnitRange) =Base.Broadcast.axistype(a,b.global_range)
 Base.print_matrix_row(
   io::IO,
   X::TwoLevelBlockedUnitRange,

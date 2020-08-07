@@ -166,8 +166,9 @@ axs = (blockedrange([2,4,3]),)
 
 bL = BlockArrayCoo([[1,2]],[(1,)],axs)
 bR = BlockArrayCoo([[2,3],[4,5,6]],[(1,),(3,)],axs)
+axs = (blockedrange([axs[1],axs[1]]),)
 
-bS = BlockArrayCoo([bL,bR],[(1,),(2,)],(blockedrange([axs[1],axs[1]]),))
+bS = BlockArrayCoo([bL,bR],[(1,),(2,)],axs)
 
 zS = zeros_like(bS)
 @test isa(zS,BlockArrayCoo)
@@ -183,7 +184,7 @@ cS = 2*bS
 
 bZ = zeros_like(bR)
 
-dS = BlockArrayCoo([bZ,bR],[false,true])
+dS = BlockArrayCoo([bZ,bR],axs,[false,true])
 
 r = cS - dS
 @test isa(r,BlockArrayCoo)
@@ -207,7 +208,9 @@ allblocks[2,2] = aRR
 
 mask = [true true; false true]
 
-aS = BlockArrayCoo(allblocks,mask)
+axs = ( blockedrange([ax[1],ax[1]]) , blockedrange([ax[2],ax[2]]))
+
+aS = BlockArrayCoo(allblocks,axs,mask)
 @test is_zero_block(aS,2,1)
 @test is_nonzero_block(aS,2,2)
 
