@@ -71,17 +71,36 @@ end
 const BlockMatrixCoo = BlockArrayCoo{T,2} where T
 const BlockVectorCoo = BlockArrayCoo{T,1} where T
 
-function zeros_like(a::BlockArrayCoo)
+zeros_like(a::AbstractArray) = zeros_like(a,axes(a))
+
+function zeros_like(a::BlockArrayCoo,axs::Tuple)
   blocks = eltype(a.blocks)[]
   blockids = eltype(a.blockids)[]
-  BlockArrayCoo(blocks,blockids,a.axes)
+  BlockArrayCoo(blocks,blockids,axs)
 end
 
-function zeros_like(a::AbstractArray)
+function zeros_like(a::AbstractArray,axs::Tuple)
   T = eltype(a)
-  b = similar(a,T,size(a))
+  b = similar(a,T,axs)
   fill!(b,zero(T))
   b
+end
+
+function zeros_like(::Type{<:BlockArrayCoo{T,N,A}},axs::Tuple) where {T,N,A}
+  blocks = A[]
+  blockids = NTuple{N,Int}[]
+  BlockArrayCoo(blocks,blockids,axs)
+end
+
+function zeros_like(::Type{A},axs::Tuple) where A <: AbstractArray
+  a = similar(A,axs)
+  fill!(a,zero(eltype(a)))
+  a
+end
+
+function local_range(a::BlockedUnitRange,k::Integer)
+  n = length(a[Block(k)])
+  Base.OneTo(n)
 end
 
 function _compute_ptrs(blockids,axes)
@@ -100,16 +119,15 @@ function _compute_ptrs(blockids,axes)
   ptrs
 end
 
-function _compute_zero_blocks(::Type{A},ptrs,axes) where A
+function _compute_zero_blocks(::Type{A},ptrs,axs) where A
   cis = CartesianIndices(ptrs)
   zero_blocks = A[]
   for ci in cis
     p = ptrs[ci]
     if p<0
-      i = Tuple(ci)
-      s = map((k,l)->length(k[Block(l)]),axes,i)
-      block = A(undef,s)
-      fill!(block,zero(eltype(A)))
+      I = Tuple(ci)
+      laxs = map( local_range, axs, I)
+      block = zeros_like(A,laxs)
       push!(zero_blocks,block)
     end
   end
@@ -397,4 +415,37 @@ function Base.copyto!(a::BlockArrayCoo,b::BlockArrayCoo)
   end
  a
 end
+
+# For blocks of blocks
+
+struct TwoLevelBlockedUnitRange{CS} <: AbstractUnitRange{Int}
+  global_range::BlockedUnitRange{CS}
+  local_ranges::Vector{BlockedUnitRange{CS}}
+end
+
+function TwoLevelBlockedUnitRange(local_ranges::Vector{<:BlockedUnitRange})
+  global_range = blockedrange(length.(local_ranges))
+  TwoLevelBlockedUnitRange(global_range,local_ranges)
+end
+
+function BlockArrays.blockedrange(local_ranges::Vector{<:BlockedUnitRange})
+  TwoLevelBlockedUnitRange(local_ranges)
+end
+
+Base.first(a::TwoLevelBlockedUnitRange) = first(a.global_range)
+Base.last(a::TwoLevelBlockedUnitRange) = last(a.global_range)
+BlockArrays.blockaxes(a::TwoLevelBlockedUnitRange) = blockaxes(a.global_range)
+BlockArrays.blocklasts(a::TwoLevelBlockedUnitRange) = blocklasts(a.global_range)
+BlockArrays.findblock(a::TwoLevelBlockedUnitRange,k::Integer) = findblock(a.global_range,k)
+Base.getindex(a::TwoLevelBlockedUnitRange,i::Integer) = a.global_range[i]
+Base.getindex(a::TwoLevelBlockedUnitRange,i::Block{1}) = a.global_range[i]
+local_range(a::TwoLevelBlockedUnitRange,k::Integer) = a.local_ranges[k]
+Base.print_matrix_row(
+  io::IO,
+  X::TwoLevelBlockedUnitRange,
+  A::Vector,
+  i::Integer,
+  cols::AbstractVector,
+  sep::AbstractString) = print_matrix_row(io,X.global_range,A,i,cols,sep)
+Base.show(io::IO, mimetype::MIME"text/plain", a::TwoLevelBlockedUnitRange) = show(io,mimetype,a.global_range)
 

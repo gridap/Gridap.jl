@@ -167,7 +167,15 @@ axs = (blockedrange([2,4,3]),)
 bL = BlockArrayCoo([[1,2]],[(1,)],axs)
 bR = BlockArrayCoo([[2,3],[4,5,6]],[(1,),(3,)],axs)
 
-bS = BlockArrayCoo([bL,bR],[(1,),(2,)],(blockedrange([9,9]),))
+bS = BlockArrayCoo([bL,bR],[(1,),(2,)],(blockedrange([axs[1],axs[1]]),))
+
+zS = zeros_like(bS)
+@test isa(zS,BlockArrayCoo)
+@test isa(zS[Block(1)],BlockArrayCoo)
+@test isa(zS[Block(2)],BlockArrayCoo)
+@test length(zS.blocks) == 0
+@test length(zS[Block(1)].blocks) == 0
+@test length(zS[Block(2)].blocks) == 0
 
 cS = 2*bS
 @test isa(cS,BlockArrayCoo)
