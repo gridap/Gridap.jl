@@ -33,6 +33,13 @@ for (i,b) in enumerateblocks(al)
   @test al[i] === b
 end
 
+b1 = [  i*[3,4] for i in 1:l]
+b2 = [  i*[3,4,5,6] for i in 1:l]
+blocks = (b1,b2,)
+blockids = [(1,),(2,)]
+ax = Fill((blockedrange([2,4]),),l)
+bl = VectorOfBlockArrayCoo(blocks,blockids,ax)
+
 b2 = [  i*[3,4,5,6] for i in 1:l]
 blocks = (b2,)
 blockids = [(2,)]

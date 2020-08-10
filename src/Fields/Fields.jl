@@ -113,6 +113,8 @@ include("Integrate.jl")
 
 include("FieldOperations.jl")
 
+include("FieldOperationsNew.jl")
+
 include("DiffOperators.jl")
 
 end # module

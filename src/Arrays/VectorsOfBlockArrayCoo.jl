@@ -20,7 +20,7 @@ struct VectorOfBlockArrayCoo{T,N,B,X,Z} <: AbstractVector{T}
     X = typeof(axes)
     blocks_i = collect(map(testitem,blocks))
     axes_i = testitem(axes)
-    zero_blocks_i = collect(map(testitem,zero_blocks))
+    zero_blocks_i = collect(eltype(blocks_i),map(testitem,zero_blocks))
     t = BlockArrayCoo(blocks_i,blockids,axes_i,ptrs,zero_blocks_i)
     T = typeof(t)
     Z = typeof(zero_blocks)
