@@ -71,4 +71,8 @@ If you have used the Gridap library in a scientific publication, please cite the
 }
 ```
 
+## Contact
+
+
+Please, contact the project administrators, [Santiago Badia](mailto:santiago.badia@monash.edu) and [Francesc Verdugo](mailto:fverdugo@cimne.upc.edu), for further questions about licenses and terms of use.
 
