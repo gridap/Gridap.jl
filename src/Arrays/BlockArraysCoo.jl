@@ -459,6 +459,10 @@ function Base.similar(a::BlockArrayCoo{S,N} where S,::Type{T}, axs::NTuple{N,<:T
   _similar_block_array_coo(a,T,axs)
 end
 
+function Base.similar(::Type{T},axs::NTuple{N,<:TwoLevelBlockedUnitRange}) where {N,T<:Array}
+  similar(T,map(length,axs))
+end
+
 local_range(a::TwoLevelBlockedUnitRange,k::Integer) = a.local_ranges[k]
 
 Base.first(a::TwoLevelBlockedUnitRange) = first(a.global_range)

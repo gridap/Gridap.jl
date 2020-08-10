@@ -14,18 +14,35 @@ struct VectorOfBlockArrayCoo{T,N,B,X,Z} <: AbstractVector{T}
 
     msg = "Trying to build a VectorOfBlockArrayCoo with repeated blocks"
     @assert _no_has_repeaded_blocks(blockids,ptrs) msg
-    @assert all(map(length,blocks) .==  length(first(blocks)) )
+
+    if length(blocks) != 0
+      @assert all(map(length,blocks) .==  length(first(blocks)) )
+      blocks_i = collect(map(testitem,blocks))
+      zero_blocks_i = collect(eltype(blocks_i),map(testitem,zero_blocks))
+    else
+      @assert length(zero_blocks) !=0
+      zero_blocks_i = collect(map(testitem,zero_blocks))
+      blocks_i = collect(eltype(zero_blocks_i),map(testitem,blocks))
+    end
 
     B = typeof(blocks)
     X = typeof(axes)
-    blocks_i = collect(map(testitem,blocks))
     axes_i = testitem(axes)
-    zero_blocks_i = collect(eltype(blocks_i),map(testitem,zero_blocks))
     t = BlockArrayCoo(blocks_i,blockids,axes_i,ptrs,zero_blocks_i)
     T = typeof(t)
     Z = typeof(zero_blocks)
     new{T,N,B,X,Z}(blocks,blockids,axes,ptrs,zero_blocks)
   end
+end
+
+function VectorOfBlockArrayCoo(
+  blocks::Tuple,
+  blockids::Vector{NTuple{N,Int}},
+  axes::AbstractArray{<:NTuple{N}},
+  zero_blocks::Tuple) where N
+
+  ptrs = _compute_ptrs(blockids,testitem(axes))
+  VectorOfBlockArrayCoo(blocks,blockids,axes,ptrs,zero_blocks)
 end
 
 const VectorOfBlockVectorCoo = VectorOfBlockArrayCoo{T,1} where T
@@ -47,15 +64,49 @@ function _compute_zero_blocks_array(blocks,ptrs,axs)
   for ci in cis
     p = ptrs[ci]
     if p<0
-      block = apply(axs) do a
-        I = Tuple(ci)
-        laxs = map( local_range, a, I)
-        zeros_like(A,laxs)
-      end
+      block = _zeros_like(A,Tuple(ci),axs)
       push!(zero_blocks,block)
     end
   end
   Tuple(zero_blocks)
+end
+
+function zeros_like(a::VectorOfBlockArrayCoo{T,N} where T) where N
+  ptrs = copy(a.ptrs)
+  for k in 1:length(ptrs)
+    ptrs[k] = -k
+  end
+  zero_blocks = _compute_zero_blocks_array(a.blocks,ptrs,a.axes)
+  blocks = ()
+  blockids = NTuple{N,Int}[]
+  VectorOfBlockArrayCoo(blocks,blockids,a.axes,ptrs,zero_blocks)
+end
+
+function _zeros_like(::Type{A},I,axs) where A
+  block = apply(axs) do a
+    laxs = map( local_range, a, I)
+    zeros_like(A,laxs)
+  end
+  block
+end
+
+function _zeros_like(::Type{<:BlockArrayCoo{T,N,A} where T},I,axs) where {N,A}
+  axsI = apply(axs) do a
+    map(local_range, a, I)
+  end
+  blocks = ()
+  blockids = NTuple{N,Int}[]
+  ptrs = zeros(Int,map(x->blocksize(x,1),testitem(axsI)))
+  for k in 1:length(ptrs)
+    ptrs[k] = -k
+  end
+  zero_blocks = []
+  cis = CartesianIndices(ptrs)
+  for ci in cis
+    block = _zeros_like(A,Tuple(ci),axsI)
+    push!(zero_blocks,block)
+  end
+  VectorOfBlockArrayCoo(blocks,blockids,axsI,ptrs,Tuple(zero_blocks))
 end
 
 BlockArrays.blocksize(a::VectorOfBlockArrayCoo) = blocksize(testitem(a))
@@ -70,11 +121,24 @@ end
 
 Base.IndexStyle(::Type{<:VectorOfBlockArrayCoo}) = IndexLinear()
 
-Base.size(a::VectorOfBlockArrayCoo) = (length(first(a.blocks)),)
+function Base.size(a::VectorOfBlockArrayCoo) 
+  if length(a.blocks) != 0
+    (length(first(a.blocks)),)
+  else
+    (length(first(a.zero_blocks)),)
+  end
+end
 
 function array_cache(a::VectorOfBlockArrayCoo)
-  blocks_i = collect(map(testitem,a.blocks))
-  zero_blocks_i = collect(eltype(blocks_i),map(testitem,a.zero_blocks))
+
+  if length(a.blocks) != 0
+    blocks_i = collect(map(testitem,a.blocks))
+    zero_blocks_i = collect(eltype(blocks_i),map(testitem,a.zero_blocks))
+  else
+    zero_blocks_i = collect(map(testitem,a.zero_blocks))
+    blocks_i = collect(eltype(zero_blocks_i),map(testitem,a.blocks))
+  end
+
   ca = array_cache(a.axes)
   cb = array_caches(a.blocks...)
   cz = array_caches(a.zero_blocks...)
