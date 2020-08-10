@@ -40,19 +40,17 @@ function _no_has_repeaded_blocks(blockids::Vector{NTuple{N,Int}},ptrs) where N
   all( touched .<= 1 )
 end
 
-function _compute_zero_blocks_array(blocks,ptrs,axes)
+function _compute_zero_blocks_array(blocks,ptrs,axs)
   A = eltype(first(blocks))
   cis = CartesianIndices(ptrs)
   zero_blocks = []
   for ci in cis
     p = ptrs[ci]
     if p<0
-      block = apply(axes) do a
-        i = Tuple(ci)
-        s = map((k,l)->length(k[Block(l)]),a,i)
-        b = A(undef,s)
-        fill!(b,zero(eltype(A)))
-        b
+      block = apply(axs) do a
+        I = Tuple(ci)
+        laxs = map( local_range, a, I)
+        zeros_like(A,laxs)
       end
       push!(zero_blocks,block)
     end
