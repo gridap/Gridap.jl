@@ -3,6 +3,8 @@ module TestVisualizationData
 using Test
 using Gridap
 using Gridap.Visualization
+using Gridap.ReferenceFEs
+using Gridap.Geometry: get_reffes
 
 domain = (0,2pi, 0, 4pi)
 partition = (2, 3)
@@ -22,8 +24,9 @@ op = AffineFEOperator(U,V0,t_Ω)
 u = solve(op)
 
 visdata = visualization_data(trian, cellfields=Dict("u" =>u))
-ncells = 12
-nodes_per_cell = 3
+
+ncells = num_cells(visdata.grid)
+nodes_per_cell = num_nodes(first(get_reffes(visdata.grid)))
 @test size(visdata.nodaldata["u"]) == (ncells * nodes_per_cell,)
 @test size(visdata.celldata["cell"]) == (ncells,)
 @test visdata.grid isa Gridap.Visualization.VisualizationGrid
