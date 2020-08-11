@@ -28,6 +28,8 @@ using Test
 
 @testset "FieldOperationsNew" begin include("FieldOperationsTestsNew.jl") end
 
+@testset "InsertInBlocks" begin include("InsertInBlocksTests.jl") end
+
 @testset "DiffOperators" begin include("DiffOperatorsTests.jl") end
 
 end # module
