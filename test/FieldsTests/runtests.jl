@@ -28,7 +28,7 @@ using Test
 
 @testset "FieldOperationsNew" begin include("FieldOperationsTestsNew.jl") end
 
-@testset "InsertInBlocks" begin include("InsertInBlocksTests.jl") end
+@testset "VectorsOfBlockBasisCoo" begin include("VectorsOfBlockBasisCooTests.jl") end
 
 @testset "DiffOperators" begin include("DiffOperatorsTests.jl") end
 
