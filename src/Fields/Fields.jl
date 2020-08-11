@@ -69,8 +69,14 @@ export symmetric_gradient
 export Homothecy
 export AffineMap
 
+# TODO: Delete
 export field_operation
 export field_array_operation
+
+export operate_fields
+export operate_arrays_of_fields
+export trialize_basis
+export trialize_array_of_bases
 
 export function_field
 

@@ -1,9 +1,28 @@
 
+"""
+"""
+function operate_fields(op::Function,args...)
+  k = FieldOpKernel(op)
+  apply_kernel_to_field(k,args...)
+end
+
+"""
+"""
+function operate_arrays_of_fields(op::Function,args...)
+  k = FieldOpKernel(op)
+  apply_to_field_array(k,args...)
+end
+
+function operate_arrays_of_fields(::Type{T},op::Function,args...) where T
+  k = FieldOpKernel(op)
+  apply_to_field_array(T,k,args...)
+end
+
 struct FieldOpKernel{T} <: Kernel
   op::T
 end
 
-# Broadcast by default. It will work always assuming that the trial bases have shape (np,1,ndof)
+# FieldOpKernel does broadcast by default. It will work always assuming that the trial bases have shape (np,1,ndof)
 # but perhaps inefficient for blocked matrices.
 # In any case, optimizations for block matrices will be done at the global level (for all cells)
 # instead of at the cell level in this kernel.
@@ -21,12 +40,25 @@ end
 
 # Move the value of a test basis into "trial" state
 
-@inline function trialize_matrix(a::AbstractMatrix)
+"""
+"""
+function trialize_basis(f)
+  apply_kernel_to_field(trialize_basis_value,f)
+end
+
+"""
+"""
+function trialize_array_of_bases(af)
+  apply_to_field_array(trialize_basis_value,af)
+end
+
+@inline function trialize_basis_value(a::AbstractMatrix)
   TrializedMatrix(a)
 end
 
-function trialize_array_of_matrices(a)
-  apply(trialize_matrix,a)
+function apply_kernel_gradient(::typeof(trialize_basis_value),a)
+  g = field_gradient(a)
+  trialize_basis(g)
 end
 
 struct TrializedMatrix{T,A} <: AbstractArray{T,3}
@@ -53,8 +85,8 @@ Base.IndexStyle(::Type{<:TrializedMatrix{T,A}}) where {T,A} = IndexStyle(A)
 
 # Optimizations for block matrices at global level (for all cells)
 
-function trialize_array_of_matrices(a::VectorOfBlockMatrixCoo)
-  blocks = map(trialize_array_of_matrices,a.blocks)
+function apply(f::typeof(trialize_basis_value),a::VectorOfBlockMatrixCoo)
+  blocks = map(b->apply(f,b),a.blocks)
   blockids = broadcast(ij->(ij[1],1,ij[2]),a.blockids)
   axs = apply( ax -> (ax[1],blockedrange([1]),ax[2]), a.axes)
   VectorOfBlockArrayCoo(blocks,blockids,axs)

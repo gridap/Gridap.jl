@@ -5,8 +5,9 @@ using Gridap.Arrays
 using Gridap.Fields
 using Gridap.Fields: IntKernel
 using Gridap.Fields: FieldOpKernel
-using Gridap.Fields: trialize_array_of_matrices
+using Gridap.Fields: trialize_basis_value
 using Gridap.TensorValues
+using Gridap.Fields: MockField, MockBasis
 
 using Test
 using FillArrays
@@ -15,6 +16,51 @@ using LinearAlgebra
 l = 10
 np = 3
 ndofs = 4
+
+# Operations between fields and array of fields
+
+p = Point(1,2)
+x = fill(p,np)
+z = 2.0
+
+v = VectorValue(3.0,1.5)
+w = VectorValue(3.4,3.5)
+test_basis = MockBasis{2}(v,ndofs)
+test_basis_2 = MockBasis{2}(w,ndofs)
+
+b = operate_fields(⋅,test_basis,test_basis_2)
+test_field(b,x,fill(v⋅w,np,ndofs))
+
+b = operate_fields(+,test_basis,z)
+test_field(b,x,fill(v+z,np,ndofs))
+
+trial_basis = trialize_basis(test_basis)
+r = reshape(evaluate(test_basis,x),(np,1,ndofs))
+∇r = reshape(evaluate(∇(test_basis),x),(np,1,ndofs))
+test_field(trial_basis,x,r,grad=∇r)
+
+xl = Fill(x,l)
+fl = [ z for  i in 1:l]
+
+test_basis_array = Fill(test_basis,l)
+
+bl = operate_arrays_of_fields(Nothing,*,test_basis_array,fl)
+test_array_of_fields(bl,xl,fill(fill(z*v,np,ndofs),l))
+
+bl = operate_arrays_of_fields(*,test_basis_array,fl)
+test_array_of_fields(bl,xl,fill(fill(z*v,np,ndofs),l))
+
+trial_basis_array = trialize_array_of_bases(bl)
+
+trial_basis_array_x = evaluate(trial_basis_array,xl)
+@test trial_basis_array_x.g.value === trialize_basis_value
+
+bl = operate_arrays_of_fields(⋅,trial_basis_array,test_basis_array)
+test_array_of_fields(bl,xl,fill(fill(z*v⋅v,np,ndofs,ndofs),l))
+bl_x = evaluate(bl,xl)
+@test bl_x.g.value == FieldOpKernel(⋅)
+
+# Operations between values
 
 al = [rand(np,ndofs) for k in 1:l]
 bl = [rand(np) for k in 1:l]
@@ -36,11 +82,11 @@ f(a,b,c) = b*(2*a-c)
 dl = apply(FieldOpKernel(f),al,bl,cl)
 test_array(dl,map((a,b,c)->f.(a,b,c),al,bl,cl))
 
-dl = trialize_array_of_matrices(al)
+dl = apply(trialize_basis_value,al)
 test_array(dl,map(a->reshape(a,(size(a,1),1,size(a,2))),al))
 
-atl = trialize_array_of_matrices(al)
-ctl = trialize_array_of_matrices(cl)
+atl = apply(trialize_basis_value,al)
+ctl = apply(trialize_basis_value,cl)
 
 f(a,b) = 2*a*b
 dl = apply(FieldOpKernel(f),al,atl)
@@ -51,6 +97,10 @@ dl = apply(FieldOpKernel(f),al,cl,atl,ctl)
 test_array(dl,map((a,c,at,ct)->f.(a,c,at,ct),al,cl,atl,ctl))
 
 @test size(dl[1]) == (np,ndofs,ndofs)
+
+
+
+
 
 # Blocks
 
@@ -64,8 +114,8 @@ blocks = (cl,)
 blockids = [(1,2)]
 cBl = VectorOfBlockArrayCoo(blocks,blockids,axs)
 
-atBl = trialize_array_of_matrices(aBl)
-ctBl = trialize_array_of_matrices(cBl)
+atBl = apply(trialize_basis_value,aBl)
+ctBl = apply(trialize_basis_value,cBl)
 @test isa(atBl,VectorOfBlockArrayCoo)
 
 f(a) = 2*a

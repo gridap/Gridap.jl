@@ -81,7 +81,7 @@ function test_kernel(f,x::Tuple,y,cmp=(==))
   z = apply_kernel!(cache,f,x...)
   @test cmp(z,y)
   z = kernel_testitem!(cache,f,x...)
-  @test cmp(typeof(z),typeof(y))
+  #@test cmp(typeof(z),typeof(y))
 end
 
 
