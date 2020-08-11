@@ -8,9 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
   - `Visualization.visualization_data` function that makes it easier to bring fields into
-  visualization library friendly formats.
-
-### Added
+  visualization library friendly formats. Since PR [#354](https://github.com/gridap/Gridap.jl/pull/354).
   - Gradient of a product binary operation (`*`) between a scalar and a field. Since PR [#340](https://github.com/gridap/Gridap.jl/pull/340).
 
 ## [0.13.2] - 2020-7-31
