@@ -1,3 +1,9 @@
+struct VisualizationData
+    grid::VisualizationGrid
+    celldata
+    nodaldata
+end
+
 """
 """
 function visualization_data(trian::Triangulation; order=-1, nsubcells=-1, celldata=Dict(), cellfields=Dict())
@@ -21,5 +27,5 @@ function visualization_data(trian::Triangulation; order=-1, nsubcells=-1, cellda
   cdata = _prepare_cdata(celldata,visgrid.sub_cell_to_cell)
   pdata = _prepare_pdata(trian,cellfields,visgrid.cell_to_refpoints)
 
-  return (grid=visgrid, nodaldata=pdata, celldata=cdata)
+  return VisualizationData(visgrid, nodaldata, celldata)
 end
