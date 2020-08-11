@@ -29,7 +29,7 @@ ncells = num_cells(visdata.grid)
 nodes_per_cell = num_nodes(first(get_reffes(visdata.grid)))
 @test size(visdata.nodaldata["u"]) == (ncells * nodes_per_cell,)
 @test size(visdata.celldata["cell"]) == (ncells,)
-@test visdata.grid isa Gridap.Visualization.VisualizationGrid
+@test visdata.grid isa Visualization.VisualizationGrid
 @test visdata isa Visualization.VisualizationData
 
 end#module
