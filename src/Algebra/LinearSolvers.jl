@@ -11,10 +11,18 @@ struct AffineOperator{A<:AbstractMatrix,B<:AbstractVector} <: NonlinearOperator
 end
 
 """
+    get_matrix(operator)
+
+Return the matrix corresponding to the assembled left hand side of the operator.
+This matrix incorporates all boundary conditions and constraints.
 """
 get_matrix(op::AffineOperator) = op.matrix
 
 """
+    get_vector(operator)
+
+Return the vector corresponding to the assembled right hand side of the operator.
+This vector includes all boundary conditions and constraints.
 """
 get_vector(op::AffineOperator) = op.vector
 

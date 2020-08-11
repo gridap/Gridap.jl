@@ -1,5 +1,9 @@
 
 """
+    abstract type FETerm <: GridapType end
+
+A `FETerm` is a lazy representation of a summand of a finite element problem. It is not assembled.
+See also [FEOperator](@ref).
 """
 abstract type FETerm <: GridapType end
 
@@ -60,6 +64,7 @@ function _setup_jac_and_res(celljac::Nothing,cellres::Nothing)
 end
 
 """
+See also [FETerm](@ref).
 """
 abstract type AffineFETerm <: FETerm end
 
@@ -145,6 +150,7 @@ function _setup_cell_matrix_and_vector(cellmat::Nothing,cellvec::Nothing,cellval
 end
 
 """
+See also [FETerm](@ref).
 """
 abstract type LinearFETerm <: AffineFETerm end
 
