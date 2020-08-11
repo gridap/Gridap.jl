@@ -50,7 +50,9 @@ export writevtk
 export createvtk
 export write_vtk_file
 export print_op_tree
+export visualization_data
 
+include("VisualizationData.jl")
 include("Vtk.jl")
 
 include("PrintOpTrees.jl")
