@@ -6,4 +6,6 @@ using Test
 
 @testset "Vtk" begin include("VtkTests.jl") end
 
+@testset "visualization_data" begin include("VisualizationData.jl") end
+
 end # module
