@@ -159,6 +159,14 @@ function Base.getindex(a::VectorOfBlockArrayCoo,i::Integer)
 end
 
 function Base.getindex(a::VectorOfBlockArrayCoo,b::Block)
+  _get_block_index(a,b)
+end
+
+function Base.getindex(a::VectorOfBlockVectorCoo,b::Block{1})
+  _get_block_index(a,b)
+end
+
+function _get_block_index(a,b)
   i = convert(Tuple,b)
   p = a.ptrs[i...]
   if p>0

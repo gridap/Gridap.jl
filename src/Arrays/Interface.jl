@@ -311,6 +311,66 @@ end
   (ai,)
 end
 
+# Hack to fix type-instability (use generated function?)
+@inline function _getitems!(c,i,a1,a2)
+  ca1,ca2 = c
+  a1i = getindex!(ca1,a1,i...)
+  a2i = getindex!(ca2,a2,i...)
+  (a1i,a2i)
+end
+
+# Hack to fix type-instability (use generated function?)
+@inline function _getitems!(c,i,a1,a2,a3)
+  ca1,ca2,ca3 = c
+  a1i = getindex!(ca1,a1,i...)
+  a2i = getindex!(ca2,a2,i...)
+  a3i = getindex!(ca3,a3,i...)
+  (a1i,a2i,a3i)
+end
+
+# Hack to fix type-instability
+@inline function _getitems!(c,i,a1,a2,a3,a4)
+  ca1,ca2,ca3,ca4 = c
+  a1i = getindex!(ca1,a1,i...)
+  a2i = getindex!(ca2,a2,i...)
+  a3i = getindex!(ca3,a3,i...)
+  a4i = getindex!(ca4,a4,i...)
+  (a1i,a2i,a3i,a4i)
+end
+
+@inline function _getitems!(c,i,a1,a2,a3,a4,a5)
+  ca1,ca2,ca3,ca4,ca5 = c
+  a1i = getindex!(ca1,a1,i...)
+  a2i = getindex!(ca2,a2,i...)
+  a3i = getindex!(ca3,a3,i...)
+  a4i = getindex!(ca4,a4,i...)
+  a5i = getindex!(ca5,a5,i...)
+  (a1i,a2i,a3i,a4i,a5i)
+end
+
+@inline function _getitems!(c,i,a1,a2,a3,a4,a5,a6)
+  ca1,ca2,ca3,ca4,ca5,ca6 = c
+  a1i = getindex!(ca1,a1,i...)
+  a2i = getindex!(ca2,a2,i...)
+  a3i = getindex!(ca3,a3,i...)
+  a4i = getindex!(ca4,a4,i...)
+  a5i = getindex!(ca5,a5,i...)
+  a6i = getindex!(ca6,a6,i...)
+  (a1i,a2i,a3i,a4i,a5i,a6i)
+end
+
+@inline function _getitems!(c,i,a1,a2,a3,a4,a5,a6,a7)
+  ca1,ca2,ca3,ca4,ca5,ca6,ca7 = c
+  a1i = getindex!(ca1,a1,i...)
+  a2i = getindex!(ca2,a2,i...)
+  a3i = getindex!(ca3,a3,i...)
+  a4i = getindex!(ca4,a4,i...)
+  a5i = getindex!(ca5,a5,i...)
+  a6i = getindex!(ca6,a6,i...)
+  a7i = getindex!(ca7,a7,i...)
+  (a1i,a2i,a3i,a4i,a5i,a6i,a7i)
+end
+
 """
 """
 @inline function getitems(a::Tuple{Vararg{<:AbstractArray}},i...)
