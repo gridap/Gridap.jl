@@ -8,14 +8,34 @@ function operate_fields(op::Function,args...)
   apply_kernel_to_field(k,args...)
 end
 
-# Define gradients at local level
+# Operate fields at global level
+
+"""
+"""
+function operate_arrays_of_fields(op::Function,args...)
+  k = FieldOpKernel(op)
+  apply_to_field_array(k,args...)
+end
+
+function operate_arrays_of_fields(::Type{T},op::Function,args...) where T
+  k = FieldOpKernel(op)
+  apply_to_field_array(T,k,args...)
+end
+
+# Define gradients at local and global level
 
 function apply_kernel_gradient(k::FieldOpKernel,args...)
   @notimplemented "The gradient of the result of operation $(k.op) is not yet implemented."
 end
 
+function apply_gradient(k::Valued{<:FieldOpKernel},args...)
+  @notimplemented "The gradient of the result of operation $(k.op) is not yet implemented."
+end
+
 for op in (:+,:-)
   @eval begin
+
+    # Local level
 
     function apply_kernel_gradient(k::FieldOpKernel{typeof($op)},a,b)
       ga = field_gradient(a)
@@ -38,11 +58,36 @@ for op in (:+,:-)
       apply_kernel_to_field(k,gb)
     end
 
+    # Global level
+
+    function apply_gradient(k::Valued{FieldOpKernel{typeof($op)}},a,b)
+      ga = field_array_gradient(a)
+      gb = field_array_gradient(b)
+      apply(k,ga,gb)
+    end
+
+    function apply_gradient(k::Valued{FieldOpKernel{typeof($op)}},a)
+      ga = field_array_gradient(a)
+      apply(k,ga)
+    end
+
+    function apply_gradient(k::Valued{FieldOpKernel{typeof($op)}},a::Number,b)
+      gb = field_array_gradient(b)
+      apply(k,gb)
+    end
+
+    function apply_gradient(k::Valued{FieldOpKernel{typeof($op)}},b,a::Number)
+      gb = field_array_gradient(b)
+      apply(k,gb)
+    end
+
   end
 end
 
 for op in (:*,⋅)
   @eval begin
+
+    # Local level
 
     function apply_kernel_gradient(k::FieldOpKernel{typeof($op)},a::Number,b)
       gb = field_gradient(b)
@@ -62,26 +107,41 @@ for op in (:*,⋅)
       operate_fields(+,f1,f2)
     end
 
+    # Global level
+
+    function apply_gradient(k::Valued{FieldOpKernel{typeof($op)}},a::Number,b)
+      gb = field_array_gradient(b)
+      apply(k,a,gb)
+    end
+
+    function apply_gradient(k::Valued{FieldOpKernel{typeof($op)}},b,a::Number)
+      gb = field_array_gradient(b)
+      apply(k,gb,a)
+    end
+
+    function apply_gradient(k::Valued{FieldOpKernel{typeof($op)}},a,b)
+      ga = field_array_gradient(a)
+      gb = field_array_gradient(b)
+      f1 = apply(k,ga,b)
+      f2 = apply(k,a,gb)
+      operate_arrays_of_fields(+,f1,f2)
+    end
+
   end
 end
+
+# Local level
 
 function apply_kernel_gradient(k::FieldOpKernel{typeof(/)},b,a::Number)
   gb = field_gradient(b)
   apply_kernel_to_field(k,gb,a)
 end
 
-# Operate fields at global level
+# Global level
 
-"""
-"""
-function operate_arrays_of_fields(op::Function,args...)
-  k = FieldOpKernel(op)
-  apply_to_field_array(k,args...)
-end
-
-function operate_arrays_of_fields(::Type{T},op::Function,args...) where T
-  k = FieldOpKernel(op)
-  apply_to_field_array(T,k,args...)
+function apply_gradient(k::Valued{FieldOpKernel{typeof(/)}},b,a::Number)
+  gb = field_array_gradient(b)
+  apply(k,gb,a)
 end
 
 # Operations between field values

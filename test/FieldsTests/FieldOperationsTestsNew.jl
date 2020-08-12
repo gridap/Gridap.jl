@@ -65,6 +65,7 @@ xl = Fill(x,l)
 fl = [ z for  i in 1:l]
 
 test_basis_array = Fill(test_basis,l)
+test_basis_2_array = fill(test_basis_2,l)
 
 bl = operate_arrays_of_fields(Nothing,*,test_basis_array,fl)
 test_array_of_fields(bl,xl,fill(fill(z*v,np,ndofs),l))
@@ -72,14 +73,25 @@ test_array_of_fields(bl,xl,fill(fill(z*v,np,ndofs),l))
 bl = operate_arrays_of_fields(*,test_basis_array,fl)
 test_array_of_fields(bl,xl,fill(fill(z*v,np,ndofs),l))
 
-trial_basis_array = trialize_array_of_bases(bl)
+bl = operate_arrays_of_fields(+,test_basis_array,test_basis_2_array)
+r = fill(broadcast(+,t1x,t2x),l)
+∇r = fill(broadcast(+,∇t1x,∇t2x),l)
+test_array_of_fields(bl,xl,r,grad=∇r)
+
+bl = operate_arrays_of_fields(⋅,test_basis_array,test_basis_2_array)
+r = fill(broadcast(⋅,t1x,t2x),l)
+∇r = fill(broadcast(⋅,∇t1x,t2x) + broadcast(⋅,t1x,∇t2x),l)
+test_array_of_fields(bl,xl,r,grad=∇r)
+
+trial_basis_array = trialize_array_of_bases(operate_arrays_of_fields(*,test_basis_array,fl))
 
 trial_basis_array_x = evaluate(trial_basis_array,xl)
 @test trial_basis_array_x.g.value === trialize_basis_value
 
 bl = operate_arrays_of_fields(⋅,trial_basis_array,test_basis_array)
-test_array_of_fields(bl,xl,fill(fill(z*v⋅v,np,ndofs,ndofs),l))
+r = fill(fill(z*v⋅v,np,ndofs,ndofs),l)
 bl_x = evaluate(bl,xl)
+test_array_of_fields(bl,xl,r)
 @test bl_x.g.value == FieldOpKernel(⋅)
 
 # Operations between values
