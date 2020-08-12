@@ -70,6 +70,8 @@ export symmetric_gradient
 export Homothecy
 export AffineMap
 
+export VectorOfBlockBasisCoo
+
 # TODO: Delete
 export field_operation
 export field_array_operation
@@ -123,6 +125,8 @@ include("Integrate.jl")
 include("FieldOperations.jl")
 
 include("FieldOperationsNew.jl")
+
+include("VectorsOfBlockBasisCoo.jl")
 
 include("DiffOperators.jl")
 

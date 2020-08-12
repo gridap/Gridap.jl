@@ -22,6 +22,29 @@ function operate_arrays_of_fields(::Type{T},op::Function,args...) where T
   apply_to_field_array(T,k,args...)
 end
 
+
+# Operations between field values
+
+struct FieldOpKernel{T} <: Kernel
+  op::T
+end
+
+# FieldOpKernel does broadcast by default. It will work always assuming that the trial bases have shape (np,1,ndof)
+# but perhaps inefficient for blocked matrices.
+# In any case, optimizations for block matrices will be done at the global level (for all cells)
+# instead of at the cell level in this kernel.
+# In other words, we can assume that this kernel receives standard non-blocked arrays in practice.
+
+function kernel_cache(k::FieldOpKernel,args...)
+  bk = bcast(k.op)
+  kernel_cache(bk,args...)
+end
+
+@inline function apply_kernel!(cache,k::FieldOpKernel,args...)
+  bk = bcast(k.op)
+  apply_kernel!(cache,bk,args...)
+end
+
 # Define gradients at local and global level
 
 function apply_kernel_gradient(k::FieldOpKernel,args...)
@@ -142,28 +165,6 @@ end
 function apply_gradient(k::Valued{FieldOpKernel{typeof(/)}},b,a::Number)
   gb = field_array_gradient(b)
   apply(k,gb,a)
-end
-
-# Operations between field values
-
-struct FieldOpKernel{T} <: Kernel
-  op::T
-end
-
-# FieldOpKernel does broadcast by default. It will work always assuming that the trial bases have shape (np,1,ndof)
-# but perhaps inefficient for blocked matrices.
-# In any case, optimizations for block matrices will be done at the global level (for all cells)
-# instead of at the cell level in this kernel.
-# In other words, we can assume that this kernel receives standard non-blocked arrays in practice.
-
-function kernel_cache(k::FieldOpKernel,args...)
-  bk = bcast(k.op)
-  kernel_cache(bk,args...)
-end
-
-@inline function apply_kernel!(cache,k::FieldOpKernel,args...)
-  bk = bcast(k.op)
-  apply_kernel!(cache,bk,args...)
 end
 
 # Move the value of a test basis into "trial" state
