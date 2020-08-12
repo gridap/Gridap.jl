@@ -11,9 +11,6 @@ function tfill(v, ::Val{D}) where D
 end
 
 tfill(v,::Val{0}) = ()
-tfill(v,::Val{1}) = (v,)
-tfill(v,::Val{2}) = (v,v)
-tfill(v,::Val{3}) = (v,v,v)
 
 """
     get_val_parameter(::Val{T}) where T
