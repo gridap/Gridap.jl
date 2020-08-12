@@ -28,8 +28,30 @@ w = VectorValue(3.4,3.5)
 test_basis = MockBasis{2}(v,ndofs)
 test_basis_2 = MockBasis{2}(w,ndofs)
 
+t1x = evaluate(test_basis,x)
+t2x = evaluate(test_basis_2,x)
+∇t1x = evaluate(∇(test_basis),x)
+∇t2x = evaluate(∇(test_basis_2),x)
+
+b = operate_fields(+,test_basis,test_basis_2)
+r = broadcast(+,t1x,t2x)
+∇r = broadcast(+,∇t1x,∇t2x)
+test_field(b,x,r,grad=∇r)
+
+b = operate_fields(-,test_basis,test_basis_2)
+r = broadcast(-,t1x,t2x)
+∇r = broadcast(-,∇t1x,∇t2x)
+test_field(b,x,r,grad=∇r)
+
 b = operate_fields(⋅,test_basis,test_basis_2)
-test_field(b,x,fill(v⋅w,np,ndofs))
+r = broadcast(⋅,t1x,t2x)
+∇r = broadcast(⋅,∇t1x,t2x) + broadcast(⋅,t1x,∇t2x)
+test_field(b,x,r,grad=∇r)
+
+b = operate_fields(*,test_basis,z)
+r = broadcast(*,t1x,z)
+∇r = broadcast(*,∇t1x,z)
+test_field(b,x,r,grad=∇r)
 
 b = operate_fields(+,test_basis,z)
 test_field(b,x,fill(v+z,np,ndofs))

@@ -1,10 +1,76 @@
 
+# Operate fields at local level
+
 """
 """
 function operate_fields(op::Function,args...)
   k = FieldOpKernel(op)
   apply_kernel_to_field(k,args...)
 end
+
+# Define gradients at local level
+
+function apply_kernel_gradient(k::FieldOpKernel,args...)
+  @notimplemented "The gradient of the result of operation $(k.op) is not yet implemented."
+end
+
+for op in (:+,:-)
+  @eval begin
+
+    function apply_kernel_gradient(k::FieldOpKernel{typeof($op)},a,b)
+      ga = field_gradient(a)
+      gb = field_gradient(b)
+      apply_kernel_to_field(k,ga,gb)
+    end
+
+    function apply_kernel_gradient(k::FieldOpKernel{typeof($op)},a)
+      ga = field_gradient(a)
+      apply_kernel_to_field(k,ga)
+    end
+
+    function apply_kernel_gradient(k::FieldOpKernel{typeof($op)},a::Number,b)
+      gb = field_gradient(b)
+      apply_kernel_to_field(k,gb)
+    end
+
+    function apply_kernel_gradient(k::FieldOpKernel{typeof($op)},b,a::Number)
+      gb = field_gradient(b)
+      apply_kernel_to_field(k,gb)
+    end
+
+  end
+end
+
+for op in (:*,⋅)
+  @eval begin
+
+    function apply_kernel_gradient(k::FieldOpKernel{typeof($op)},a::Number,b)
+      gb = field_gradient(b)
+      apply_kernel_to_field(k,a,gb)
+    end
+
+    function apply_kernel_gradient(k::FieldOpKernel{typeof($op)},b,a::Number)
+      gb = field_gradient(b)
+      apply_kernel_to_field(k,gb,a)
+    end
+
+    function apply_kernel_gradient(k::FieldOpKernel{typeof($op)},a,b)
+      ga = field_gradient(a)
+      gb = field_gradient(b)
+      f1 = apply_kernel_to_field(k,ga,b)
+      f2 = apply_kernel_to_field(k,a,gb)
+      operate_fields(+,f1,f2)
+    end
+
+  end
+end
+
+function apply_kernel_gradient(k::FieldOpKernel{typeof(/)},b,a::Number)
+  gb = field_gradient(b)
+  apply_kernel_to_field(k,gb,a)
+end
+
+# Operate fields at global level
 
 """
 """
@@ -17,6 +83,8 @@ function operate_arrays_of_fields(::Type{T},op::Function,args...) where T
   k = FieldOpKernel(op)
   apply_to_field_array(T,k,args...)
 end
+
+# Operations between field values
 
 struct FieldOpKernel{T} <: Kernel
   op::T
