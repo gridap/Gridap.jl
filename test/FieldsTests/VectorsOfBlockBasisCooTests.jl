@@ -6,6 +6,7 @@ using Gridap.Fields
 
 import Gridap.Fields: evaluate_field!
 import Gridap.Fields: evaluate_field_array
+import Gridap.Fields: field_array_gradient
 
 
 struct BlockBasisCoo <: Field end
@@ -31,6 +32,11 @@ Base.getindex(v::VectorOfBlockBasisCoo,i::Integer) = BlockBasisCoo()
 function evaluate_field_array(v::VectorOfBlockBasisCoo,x::AbstractArray)
   blocks = evaluate_field_arrays(v.blocks,x)
   VectorOfBlockArrayCoo(blocks,v.blockids,v.axs)
+end
+
+function field_array_gradient(v::VectorOfBlockBasisCoo)
+  blocks = map(field_array_gradient,v.blocks)
+  VectorOfBlockBasisCoo(blocks,v.blockids,v.axs)
 end
 
 using Test
@@ -83,8 +89,16 @@ btBl = trialize_array_of_bases(bBl)
 btBl_x = evaluate(btBl,xl)
 @test isa(btBl_x,VectorOfBlockArrayCoo)
 
+∇aBl = ∇(aBl)
+@test isa(∇aBl,VectorOfBlockBasisCoo)
+∇aBl_x = evaluate(∇aBl,xl)
+@test isa(∇aBl_x,VectorOfBlockArrayCoo)
+
 cl = operate_arrays_of_fields(-,aBl,bBl)
 cl_x = evaluate(cl,xl)
+@test isa(cl_x,VectorOfBlockArrayCoo)
+∇cl = ∇(cl)
+∇cl_x = evaluate(∇cl,xl)
 @test isa(cl_x,VectorOfBlockArrayCoo)
 
 cl = operate_arrays_of_fields(⋅,atBl,cl)
@@ -95,26 +109,8 @@ cl_x = evaluate(cl,xl)
 @test is_zero_block(cl_x,Block(1,2,1))
 @test is_nonzero_block(cl_x,Block(1,2,2))
 
-
-
 #cache = array_cache(cl_x)
 #using BenchmarkTools
 #@btime getindex!($cache,$cl_x,3)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 end # module
