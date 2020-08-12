@@ -275,15 +275,6 @@ function kernel_evaluate(k::Valued,x,f...)
   a = apply(k.k,fx...)
 end
 
-for op in (:+,:-)
-  @eval begin
-    function apply_gradient(k::Valued{BCasted{typeof($op)}},f...)
-      g = field_array_gradients(f...)
-      apply(k,g...)
-    end
-  end
-end
-
 # More optimizations
 
 function evaluate_field_array(a::AppendedArray,b::AppendedArray)
