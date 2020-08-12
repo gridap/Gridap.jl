@@ -23,7 +23,7 @@ function operate_arrays_of_fields(::Type{T},op::Function,args...) where T
 end
 
 # Pre-define some operations
-# Not sure about this. Some of them do not make sense for array of fields
+# some of them only make sense for fields, not for arrays of fields.
 
 for op in (:+,:-,:tr, :transpose, :adjoint, :symmetric_part)
   @eval begin
@@ -32,9 +32,9 @@ for op in (:+,:-,:tr, :transpose, :adjoint, :symmetric_part)
       operate_fields($op,f)
     end
 
-    function ($op)(f::AbstractArray{<:Field})
-      operate_arrays_of_fields($op,f)
-    end
+    #function ($op)(f::AbstractArray{<:Field})
+    #  operate_arrays_of_fields($op,f)
+    #end
 
   end
 end
@@ -46,9 +46,9 @@ for op in (:+,:-,:*,:inner,:outer,:dot)
       operate_fields($op,f,g)
     end
 
-    function ($op)(f::AbstractArray{<:Field},g::AbstractArray{<:Field})
-      operate_arrays_of_fields($op,f,g)
-    end
+    #function ($op)(f::AbstractArray{<:Field},g::AbstractArray{<:Field})
+    #  operate_arrays_of_fields($op,f,g)
+    #end
 
   end
 end
