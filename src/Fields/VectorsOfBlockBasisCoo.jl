@@ -13,7 +13,7 @@ end
 struct VectorOfBlockBasisCoo <: AbstractVector{BlockBasisCoo}
   blocks::Tuple
   blockids
-  axs
+  ranges
 end
 
 Base.size(v::VectorOfBlockBasisCoo) = (length(first(v.blocks)) ,)
@@ -21,11 +21,23 @@ Base.getindex(v::VectorOfBlockBasisCoo,i::Integer) = BlockBasisCoo()
 
 function evaluate_field_array(v::VectorOfBlockBasisCoo,x::AbstractArray)
   blocks = evaluate_field_arrays(v.blocks,x)
-  VectorOfBlockArrayCoo(blocks,v.blockids,v.axs)
+  axs = apply(_new_axes,x,v.ranges)
+  VectorOfBlockArrayCoo(blocks,v.blockids,axs)
+end
+
+function _new_axes(x,ran::BlockedUnitRange)
+  np = length(x)
+  (blockedrange([np]),ran)
+end
+
+function _new_axes(x,ran::TwoLevelBlockedUnitRange)
+  np = length(x)
+  r = blockedrange([np])
+  (blockedrange([r]),ran)
 end
 
 function field_array_gradient(v::VectorOfBlockBasisCoo)
   blocks = map(field_array_gradient,v.blocks)
-  VectorOfBlockBasisCoo(blocks,v.blockids,v.axs)
+  VectorOfBlockBasisCoo(blocks,v.blockids,v.ranges)
 end
 

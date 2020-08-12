@@ -32,6 +32,7 @@ export VectorOfBlockArrayCoo
 export VectorOfBlockVectorCoo
 export VectorOfBlockMatrixCoo
 export zeros_like
+export TwoLevelBlockedUnitRange
 
 export array_cache
 export getindex!

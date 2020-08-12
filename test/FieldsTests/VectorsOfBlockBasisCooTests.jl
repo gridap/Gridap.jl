@@ -28,16 +28,18 @@ xl = Fill(x,l)
 
 blocks = (al,)
 blockids = [(1,2)]
-axs_i = (blockedrange([np]),blockedrange([ndofs1,ndofs2]))
-axs = Fill(axs_i,l)
-aBl = VectorOfBlockBasisCoo(blocks,blockids,axs)
+ranges_i = blockedrange([ndofs1,ndofs2])
+ranges = Fill(ranges_i,l)
+aBl = VectorOfBlockBasisCoo(blocks,blockids,ranges)
 
 blocks = (bl,)
 blockids = [(1,1)]
-bBl = VectorOfBlockBasisCoo(blocks,blockids,axs)
+bBl = VectorOfBlockBasisCoo(blocks,blockids,ranges)
 
 aBl_x = evaluate(aBl,xl)
 @test isa(aBl_x,VectorOfBlockArrayCoo)
+@test isa(aBl_x.axes,Fill)
+@test aBl_x.axes[1] == (blockedrange([np]),blockedrange([ndofs1,ndofs2]))
 
 bBl_x = evaluate(bBl,xl)
 @test isa(bBl_x,VectorOfBlockArrayCoo)
