@@ -123,11 +123,11 @@ testvalue(::Type{T}) where T = zero(T)
 testvalue(v) = testvalue(typeof(v))
 
 function testvalue(::Type{T}) where T<:AbstractArray{E,N} where {E,N}
-   similar(T,tfill(0,N)...)
+   similar(T,tfill(0,Val(N))...)
 end
 
 function testvalue(::Type{T}) where T<:Fill{E,N} where {E,N}
-  Fill(zero(E),tfill(0,N)...)
+  Fill(zero(E),tfill(0,Val(N))...)
 end
 
 function testvalue(::Type{<:Tuple})
