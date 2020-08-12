@@ -100,19 +100,19 @@ cross(::typeof(∇),f::GridapType) = curl(f)
 
 # Helpers
 
-grad2curl(f::Field) = apply_kernel_to_field(bcast(_curl_kernel),f)
+grad2curl(f::Field) = operate_fields(_curl_kernel,f)
 
-grad2curl(f::AbstractArray{<:Field}) = apply_to_field_array(bcast(_curl_kernel),f)
+grad2curl(f::AbstractArray{<:Field}) = operate_arrays_of_fields(_curl_kernel,f)
 
-grad2curl(::Type{T}, f::AbstractArray{<:Field}) where T = apply_to_field_array(T,bcast(_curl_kernel),f)
+grad2curl(::Type{T}, f::AbstractArray{<:Field}) where T = operate_arrays_of_fields(T,_curl_kernel,f)
 
 grad2curl(∇u::MultiValue) = _curl_kernel(∇u)
 
-function _curl_kernel(∇u::TensorValue{2})
+@inline function _curl_kernel(∇u::TensorValue{2})
   ∇u[1,2] - ∇u[2,1]
 end
 
-function _curl_kernel(∇u::TensorValue{3})
+@inline function _curl_kernel(∇u::TensorValue{3})
   c1 = ∇u[2,3] - ∇u[3,2]
   c2 = ∇u[3,1] - ∇u[1,3]
   c3 = ∇u[1,2] - ∇u[2,1]

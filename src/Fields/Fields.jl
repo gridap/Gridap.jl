@@ -72,10 +72,6 @@ export AffineMap
 
 export VectorOfBlockBasisCoo
 
-# TODO: Delete
-export field_operation
-export field_array_operation
-
 export operate_fields
 export operate_arrays_of_fields
 export trialize_basis
@@ -123,8 +119,6 @@ include("Attachmap.jl")
 include("Integrate.jl")
 
 include("FieldOperations.jl")
-
-include("FieldOperationsNew.jl")
 
 include("VectorsOfBlockBasisCoo.jl")
 
