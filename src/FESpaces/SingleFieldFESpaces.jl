@@ -282,18 +282,48 @@ function gather_free_values!(free_values,f::SingleFieldFESpace,cell_vals)
     free_values
 end
 
+@deprecate(
+  interpolate(fs::SingleFieldFESpace, object),
+  interpolate(object, fs::SingleFieldFESpace)
+)
+
+@deprecate(
+  interpolate!(free_values,fs::SingleFieldFESpace, object),
+  interpolate!(object, free_values,fs::SingleFieldFESpace)
+)
+
+@deprecate(
+  interpolate_everywhere(fs::SingleFieldFESpace, object),
+  interpolate_everywhere(object, fs::SingleFieldFESpace)
+)
+
+@deprecate(
+  interpolate_everywhere!(free_values,dirichlet_values,fs::SingleFieldFESpace, object),
+  interpolate_everywhere!(object, free_values,dirichlet_values,fs::SingleFieldFESpace)
+)
+
+@deprecate(
+  interpolate_dirichlet(fs::SingleFieldFESpace, object),
+  interpolate_dirichlet(object, fs::SingleFieldFESpace)
+)
+
+@deprecate(
+  interpolate_dirichlet!(free_values,dirichlet_values,fs::SingleFieldFESpace, object),
+  interpolate_dirichlet!(object, free_values,dirichlet_values,fs::SingleFieldFESpace)
+)
+
 """
 The resulting FE function is in the space (in particular it fulfills Dirichlet BCs
 even in the case that the given cell field does not fulfill them)
 """
-function interpolate(fs::SingleFieldFESpace,object)
+function interpolate(object, fs::SingleFieldFESpace)
   free_values = zero_free_values(fs)
   interpolate!(free_values,fs,object)
 end
 
 """
 """
-function interpolate!(free_values,fs::SingleFieldFESpace,object)
+function interpolate!(object, free_values,fs::SingleFieldFESpace)
     cell_vals = _cell_vals(fs,object)
     gather_free_values!(free_values,fs,cell_vals)
     FEFunction(fs,free_values)
@@ -310,7 +340,7 @@ end
 like interpolate, but also compute new degrees of freedom for the dirichlet component.
 The resulting FEFunction does not necessary belongs to the underlying space
 """
-function interpolate_everywhere(fs::SingleFieldFESpace,object)
+function interpolate_everywhere(object, fs::SingleFieldFESpace)
   free_values = zero_free_values(fs)
   dirichlet_values = zero_dirichlet_values(fs)
   interpolate_everywhere!(free_values,dirichlet_values,fs,object)
@@ -318,7 +348,7 @@ end
 
 """
 """
-function interpolate_everywhere!(free_values,dirichlet_values,fs::SingleFieldFESpace,object)
+function interpolate_everywhere!(object, free_values,dirichlet_values,fs::SingleFieldFESpace)
   cell_vals = _cell_vals(fs,object)
   gather_free_and_dirichlet_values!(free_values,dirichlet_values,fs,cell_vals)
   FEFunction(fs,free_values,dirichlet_values)
@@ -326,7 +356,7 @@ end
 
 """
 """
-function interpolate_dirichlet(fs::SingleFieldFESpace,object)
+function interpolate_dirichlet(object, fs::SingleFieldFESpace)
   free_values = zero_free_values(fs)
   dirichlet_values = zero_dirichlet_values(fs)
   interpolate_dirichlet!(free_values,dirichlet_values,fs,object)
@@ -334,7 +364,7 @@ end
 
 """
 """
-function interpolate_dirichlet!(free_values,dirichlet_values,fs::SingleFieldFESpace,object)
+function interpolate_dirichlet!(object, free_values,dirichlet_values,fs::SingleFieldFESpace)
   cell_vals = _cell_vals(fs,object)
   gather_dirichlet_values!(dirichlet_values,fs,cell_vals)
   fill!(free_values,zero(eltype(free_values)))
