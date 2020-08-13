@@ -84,6 +84,7 @@ import Gridap.Arrays: apply_kernel!
 import Gridap.Arrays: kernel_return_type
 import Gridap.Arrays: kernel_testitem!
 import Gridap.Arrays: apply
+import Gridap.Arrays: reindex
 import Gridap.TensorValues: outer
 import Gridap.TensorValues: inner
 import Gridap.TensorValues: symmetric_part

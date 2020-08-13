@@ -25,19 +25,30 @@ function evaluate_field_array(v::VectorOfBlockBasisCoo,x::AbstractArray)
   VectorOfBlockArrayCoo(blocks,v.blockids,axs)
 end
 
-function _new_axes(x,ran::BlockedUnitRange)
+function _new_axes(x,ran::NTuple{N,<:BlockedUnitRange} where N)
   np = length(x)
-  (blockedrange([np]),ran)
+  (blockedrange([np]),ran...)
 end
 
-function _new_axes(x,ran::TwoLevelBlockedUnitRange)
+function _new_axes(x,ran::NTuple{N,<:TwoLevelBlockedUnitRange} where N)
   np = length(x)
   r = blockedrange([np])
-  (blockedrange([r]),ran)
+  (blockedrange([r]),ran...)
 end
 
 function field_array_gradient(v::VectorOfBlockBasisCoo)
   blocks = map(field_array_gradient,v.blocks)
+  VectorOfBlockBasisCoo(blocks,v.blockids,v.ranges)
+end
+
+function reindex(v::VectorOfBlockBasisCoo,j_to_i::AbstractArray)
+  blocks = map(b->reindex(b,j_to_i),v.blocks)
+  ranges = reindex(v.ranges,j_to_i)
+  VectorOfBlockBasisCoo(blocks,v.blockids,ranges)
+end
+
+function compose_field_arrays(v::VectorOfBlockBasisCoo,f)
+  blocks = map(b->compose_field_arrays(b,f),v.blocks)
   VectorOfBlockBasisCoo(blocks,v.blockids,v.ranges)
 end
 
