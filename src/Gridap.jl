@@ -42,14 +42,14 @@ include("TensorValues/TensorValues.jl")
 
 include("Fields/Fields.jl")
 
-#include("Polynomials/Polynomials.jl")
-#
-#include("Integration/Integration.jl")
-#
-#include("ReferenceFEs/ReferenceFEs.jl")
-#
+include("Polynomials/Polynomials.jl")
+
+include("Integration/Integration.jl")
+
+include("ReferenceFEs/ReferenceFEs.jl")
+
 #include("Geometry/Geometry.jl")
-#
+
 #include("FESpaces/FESpaces.jl")
 #
 #include("MultiField/MultiField.jl")
