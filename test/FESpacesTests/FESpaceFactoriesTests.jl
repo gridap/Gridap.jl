@@ -138,4 +138,19 @@ V = FESpace(
 
 @test abs(V.vol - 4/9) < 1.0e-9
 
+@testset "FESpace argchecks" begin
+    model = CartesianDiscreteModel((0, 2), 10)
+    trian = Triangulation(model)
+    TestFESpace(model=model, reffe=:Lagrangian, order=1, valuetype=Float64, dirichlet_tags="boundary")
+    FESpace(model=model, reffe=:Lagrangian, order=1, valuetype=Float64, dirichlet_tags="boundary")
+
+    # dirichlet_tags spelling error!
+    @test_throws ArgumentError TestFESpace(model=model, reffe=:Lagrangian, order=1, valuetype=Float64,
+        dirichlet_tag="boundary"
+    )
+    @test_throws ArgumentError FESpace(model=model, reffe=:Lagrangian, order=1, valuetype=Float64,
+        dirichlet_tag="boundary"
+    )
+end
+
 end # module
