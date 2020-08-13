@@ -27,18 +27,51 @@ atl = trialize_array_of_bases(al)
 bl = Fill(b,l)
 xl = Fill(x,l)
 
+ax1 = Fill((Base.OneTo(ndofs1),),l)
+ax2 = Fill((Base.OneTo(ndofs2),),l)
+aBl = insert_array_of_bases_in_block(al,ax1,ax2,2)
+aBl_x = evaluate(aBl,xl)
+@test isa(aBl,VectorOfBlockBasisCoo)
+@test isa(aBl_x,VectorOfBlockArrayCoo)
+
+bBl = insert_array_of_bases_in_block(bl,ax1,ax2,1)
+bBl_x = evaluate(bBl,xl)
+@test isa(bBl,VectorOfBlockBasisCoo)
+@test isa(bBl_x,VectorOfBlockArrayCoo)
+
+ax1 = Fill((Base.OneTo(1),Base.OneTo(ndofs1)),l)
+ax2 = Fill((Base.OneTo(1),Base.OneTo(ndofs2)),l)
+atBl = insert_array_of_bases_in_block(atl,ax1,ax2,2)
+atBl_x = evaluate(atBl,xl)
+@test isa(atBl,VectorOfBlockBasisCoo)
+@test isa(atBl_x,VectorOfBlockArrayCoo)
+
+ax1 = aBl.axes
+ax2 = aBl.axes
+aSl = insert_array_of_bases_in_block(aBl,ax1,ax2,1)
+@test isa(aSl,VectorOfBlockBasisCoo)
+aSl_x = evaluate(aSl,xl)
+@test isa(aSl_x,VectorOfBlockArrayCoo)
+
+ax1 = atBl.axes
+ax2 = atBl.axes
+atSl = insert_array_of_bases_in_block(atBl,ax1,ax2,1)
+@test isa(atSl,VectorOfBlockBasisCoo)
+atSl_x = evaluate(atSl,xl)
+@test isa(atSl_x,VectorOfBlockArrayCoo)
+
 blocks = (al,)
-blockids = [(1,2)]
+blockids = [(2,)]
 ranges_i = (blockedrange([ndofs1,ndofs2]),)
 ranges = Fill(ranges_i,l)
 aBl = VectorOfBlockBasisCoo(blocks,blockids,ranges)
 
 blocks = (bl,)
-blockids = [(1,1)]
+blockids = [(1,)]
 bBl = VectorOfBlockBasisCoo(blocks,blockids,ranges)
 
 blocks = (atl,)
-blockids = [(1,1,2)]
+blockids = [(1,2)]
 ranges_i = (blockedrange([1]),blockedrange([ndofs1,ndofs2]))
 ranges = Fill(ranges_i,l)
 atBl = VectorOfBlockBasisCoo(blocks,blockids,ranges)
@@ -100,6 +133,7 @@ fl = Fill(f,l)
 
 cl = compose_field_arrays(aBl,fl)
 @test isa(cl,VectorOfBlockBasisCoo)
+
 
 #cache = array_cache(cl_x)
 #using BenchmarkTools

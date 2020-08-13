@@ -71,6 +71,7 @@ export Homothecy
 export AffineMap
 
 export VectorOfBlockBasisCoo
+export insert_array_of_bases_in_block
 
 export operate_fields
 export operate_arrays_of_fields
