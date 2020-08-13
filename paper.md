@@ -29,32 +29,7 @@ The main motivation behind Gridap is to find an improved balance between computa
 
 Another major feature of Gridap is that it is not a simple Julia translation of a standard object-oriented FE code. There are other FE libraries written in Julia that have been inspired by standard FE frameworks, see, e.g., FinEtools [@finetools], JuliaFEM [@frondelius2017juliafem], or JuAFEM [@Carlsson] (whose interface resembles Deal.II).  In contrast,  Gridap adopts a novel software design that allows one to manipulate different types of data associated with the cells of the computational mesh in a convenient way. For instance, one can build an object representing the elemental matrices for all cells in the mesh using high-level API calls, without explicitly writing any for-loop. These objects representing data for all cells of the mesh are usually _lazy_, meaning that the underlying data is never stored for all cells in the mesh simultaneously. Instead, the value for a specific cell is computed on-the-fly when needed, which certainly reduces memory requirements.  This software design allows the library developers to hide assembly loops and other core computations from the user-code, leading to a very compact, user-friendly, syntax, while providing a high degree of flexibility for users to define their own weak forms.  A Poisson or Stokes problem can be solved with Gridap in 10-20 lines of code, as this example for the Poisson equation shows:
 
-```julia
-using Gridap
-# Manufactured solutions
-u(x) = x[1]^2 + x[2]
-f(x) = -Δ(u)(x); g(x) = u(x)
-# FE mesh (aka discrete model)
-pmin = Point(0,0,0); pmax = Point(1,1,1)
-cells=(8,8,8); order = 1
-model = CartesianDiscreteModel(pmin, pmax, cells)
-# FE Spaces
-V0 = TestFESpace(model=model, reffe=:Lagrangian,
-  valuetype=Float64, order=order,
-  conformity=:H1, dirichlet_tags="boundary")
-Ug = TrialFESpace(V0, g)
-# Weak form
-a(u,v) = ∇(u)⋅∇(v); l(v) = v*f
-trian_Ω = Triangulation(model)
-quad_Ω = CellQuadrature(trian_Ω, 2*order)
-t_Ω = AffineFETerm(a,l,trian_Ω,quad_Ω)
-# FE Problem and solution
-op = AffineFEOperator(Ug,V0,t_Ω)
-uh = solve(op)
-# Output for visualization
-writevtk(trian_Ω,"results",
-  cellfields=["uh"=>uh,"grad_uh"=>∇(uh)])
-```
+![](code.pdf)
 
 Other FE packages like FEniCS also achieve such compact user interfaces, but in contrast to Gridap, they are based on a sophisticated compiler of variational forms [@Kirby2006], which generates, compiles and links a specialized C++ back-end for the problem at hand. One of the limitations of this approach is that the form compiler is a rigid system that is not designed to be extended by average users.
 
