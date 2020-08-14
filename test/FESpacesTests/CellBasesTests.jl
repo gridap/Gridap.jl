@@ -40,7 +40,7 @@ cbx = collect(evaluate(cell_basis,q))
 
 f(x) = sin(4*pi*(x[1]-x[2]^2))+1
 
-uh = interpolate_everywhere(V0,f)
+uh = interpolate_everywhere(f,V0)
 uhx = collect(evaluate(uh,q))
 
 v = GenericCellBasis(Val{false}(),get_array(cell_basis),get_cell_map(cell_basis),Val{true}())

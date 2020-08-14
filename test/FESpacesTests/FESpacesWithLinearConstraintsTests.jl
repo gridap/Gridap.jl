@@ -49,7 +49,7 @@ r = [[-1.0, -1.5, 1.0, 1.0], [-1.5, -2.0, 1.0, 2.0], [1.0, 1.0, 3.0, 3.5], [1.0,
 @test get_cell_values(vch) ≈ r
 
 v(x) = sin(4*x[1]+0.4)*cos(5*x[2]+0.7)
-vch = interpolate(Vc,v)
+vch = interpolate(v,Vc)
 
 #using Gridap.Visualization
 #writevtk(trian,"trian",nsubcells=10,cellfields=["vh"=>vh,"vch"=>vch])
@@ -58,7 +58,7 @@ u(x) = x[1] + 2*x[2]
 f(x) = -Δ(u)(x)
 Uc = TrialFESpace(Vc,u)
 @test has_constraints(Uc)
-uch = interpolate(Uc,u)
+uch = interpolate(u,Uc)
 
 btrian = BoundaryTriangulation(model,"neumann")
 

@@ -88,16 +88,16 @@ rp = evaluate(Up.cell_basis,q)
 @test Gridap.FESpaces.RefStyle(Vp.cell_basis) == Val{false}()
 @test Gridap.FESpaces.RefStyle(V.cell_basis) == Val{true}()
 
-uhf = Gridap.FESpaces.interpolate(Up,u)
-uhd = Gridap.FESpaces.interpolate_dirichlet(Up,u)
-uhdf = Gridap.FESpaces.interpolate_everywhere(Up,u)
+uhf = Gridap.FESpaces.interpolate(u,Up)
+uhd = Gridap.FESpaces.interpolate_dirichlet(u,Up)
+uhdf = Gridap.FESpaces.interpolate_everywhere(u,Up)
 uhf.dirichlet_values
 uhdf.dirichlet_values
 uhd.dirichlet_values
 
-uhf_r = Gridap.FESpaces.interpolate(U,u)
-uhd_r= Gridap.FESpaces.interpolate_dirichlet(U,u)
-uhdf_r = Gridap.FESpaces.interpolate_everywhere(U,u)
+uhf_r = Gridap.FESpaces.interpolate(u,U)
+uhd_r= Gridap.FESpaces.interpolate_dirichlet(u,U)
+uhdf_r = Gridap.FESpaces.interpolate_everywhere(u,U)
 uhd_r.dirichlet_values
 
 
