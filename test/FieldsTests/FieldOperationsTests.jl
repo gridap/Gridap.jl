@@ -13,6 +13,27 @@ using Test
 using FillArrays
 using LinearAlgebra
 
+ndofs1 = 5
+ndofs2 = 4
+np = 7
+ax1 = (Base.OneTo(ndofs1),)
+ax2 = (1,Base.OneTo(ndofs2),)
+ax3 = ()
+ax = field_operation_axes(ax1,ax2,ax3)
+@test ax == (Base.OneTo(ndofs1),Base.OneTo(ndofs2))
+
+ax1 = (Base.OneTo(np),Base.OneTo(ndofs1),)
+ax2 = (Base.OneTo(np),1,Base.OneTo(ndofs2),)
+ax3 = (Base.OneTo(np),)
+ax = field_operation_axes(ax3,ax2,ax1)
+@test ax == (Base.OneTo(np),Base.OneTo(ndofs1),Base.OneTo(ndofs2))
+
+ax1 = (blockedrange([ndofs1,ndofs2]),)
+ax2 = (blockedrange([1]),blockedrange([ndofs2,ndofs1]))
+ax3 = ()
+ax = field_operation_axes(ax3,ax2,ax1)
+@test ax == (blockedrange([ndofs1,ndofs2]),blockedrange([ndofs2,ndofs1]))
+
 l = 10
 np = 3
 ndofs = 4

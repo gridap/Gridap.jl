@@ -77,6 +77,7 @@ export operate_fields
 export operate_arrays_of_fields
 export trialize_basis
 export trialize_array_of_bases
+export field_operation_axes
 
 export function_field
 

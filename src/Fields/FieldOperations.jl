@@ -8,6 +8,32 @@ function operate_fields(op::Function,args...)
   apply_kernel_to_field(k,args...)
 end
 
+"""
+    field_operation_axes(axs::Tuple...)
+
+Returns the axes after applying a FieldOpKernel to some arrays with axes `axs...`
+"""
+function field_operation_axes(axs::Tuple...)
+  n = maximum( map(length,axs) )
+  rs = []
+  for i in 1:n
+    r = 1:0
+    for ax in axs
+      if length(ax) >= i
+        if length(r) > 1
+          @assert length(ax[i]) == 1 || length(ax[i]) == length(r)
+        end
+        if length(ax[i]) > length(r)
+          r = ax[i]
+        end
+      end
+    end
+    push!(rs,r)
+  end
+  Tuple(rs)
+end
+
+
 # Operate fields at global level
 
 """

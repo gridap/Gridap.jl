@@ -23,6 +23,13 @@ function get_cell_map(cf::CellField)
 end
 
 """
+    get_cell_axes(cf::CellField)
+"""
+function get_cell_axes(cf::CellField)
+  @abstractmethod
+end
+
+"""
 This trait returns `Val{true}()` when the `CellField` is defined in a
 reference finite element space, and `Val{false}()` when it is defined in the
 physical space
@@ -62,6 +69,7 @@ function test_cell_field(cf::CellField,x::AbstractArray,b::AbstractArray,pred=(=
   @test get_array(_cf) === get_array(cf)
   @test is_in_ref_space(cf) == !is_in_ref_space(_cf)
   @test is_in_physical_space(cf) == !is_in_physical_space(_cf)
+  @test isa(get_cell_axes(cf),AbstractArray{<:Tuple})
 end
 
 # Concrete implementation
@@ -71,16 +79,22 @@ struct GenericCellField{R} <: CellField
       array::AbstractArray
       cell_map::AbstractArray
       ref_trait::Val{R}
+      cell_axes::AbstractArray
     end
 """
 struct GenericCellField{R} <: CellField
   array::AbstractArray
   cell_map::AbstractArray
   ref_trait::Val{R}
+  cell_axes::AbstractArray
 end
 
 function GenericCellField(array::AbstractArray,cell_map::AbstractArray)
-  GenericCellField(array,cell_map,Val{true}())
+  GenericCellField(array,cell_map,Val{true}(),Fill((),length(cell_map)))
+end
+
+function GenericCellField(array::AbstractArray,cell_map::AbstractArray,ref_trait::Val)
+  GenericCellField(array,cell_map,ref_trait,Fill((),length(cell_map)))
 end
 
 function get_array(cf::GenericCellField)
@@ -89,6 +103,10 @@ end
 
 function get_cell_map(cf::GenericCellField)
   cf.cell_map
+end
+
+function get_cell_axes(cf::GenericCellField)
+  cf.cell_axes
 end
 
 function RefStyle(::Type{<:GenericCellField{R}}) where {R}
@@ -100,11 +118,11 @@ end
 # Preserving and manipulating the metadata
 
 """
-    similar_object(cf::CellField,array::AbstractArray)
+    similar_object(cf::CellField,array::AbstractArray,cell_axes::AbstractArray)
 """
-function similar_object(cf::CellField,array::AbstractArray)
+function similar_object(cf::CellField,array::AbstractArray,cell_axes::AbstractArray)
   cm = get_cell_map(cf)
-  GenericCellField(array,cm,RefStyle(cf))
+  GenericCellField(array,cm,RefStyle(cf),cell_axes)
 end
 
 """
@@ -121,16 +139,6 @@ function change_ref_style(cf::CellField)
   GenericCellField(ar,cm,new_sty)
 end
 
-"""
-    have_same_metadata(a::CellField,b::CellField)
-
-Check if `a` and `b` have the same metadata, or at least, if 
-`similar_object(a,get_array(b))` is a `CellField` object that makes sense.
-"""
-function have_same_metadata(a::CellField,b::CellField)
-  RefStyle(a) == RefStyle(b)
-end
-
 # Move between ref and phys spaces by using the underling cell_map
 
 to_ref_space(a::CellField) = _to_ref_space(a,RefStyle(a))
@@ -138,7 +146,7 @@ _to_ref_space(a,::Val{true}) = a
 function _to_ref_space(a,::Val{false})
   cell_map = get_cell_map(a)
   array = compose(  get_array(a), cell_map  )
-  no = similar_object(a,array)
+  no = similar_object(a,array,get_cell_axes(a))
   change_ref_style(no)
 end
 
@@ -174,7 +182,9 @@ function Base.length(cf::CellField)
 end
 
 function reindex(cf::CellField,a::AbstractVector)
-  similar_object(cf,reindex(get_array(cf),a))
+  array = reindex(get_array(cf),a)
+  cell_axes = reindex(get_cell_axes(cf),a)
+  similar_object(cf,array,cell_axes)
 end
 
 # Diff ops
@@ -185,13 +195,13 @@ end
 function gradient(cf::CellField)
   a = get_array(cf)
   ag = field_array_gradient(a)
-  similar_object(cf,ag)
+  similar_object(cf,ag,get_cell_axes(cf))
 end
 
 function grad2curl(cf::CellField)
   a = get_array(cf)
   b = operate_arrays_of_fields(Fields._UnimplementedField,Fields._curl_kernel,a)
-  similar_object(cf,b)
+  similar_object(cf,b,get_cell_axes(cf))
 end
 
 # Operations
@@ -199,16 +209,17 @@ end
 function operate(op,cf::CellField)
   a = get_array(cf)
   b = operate_arrays_of_fields(Fields._UnimplementedField,op,a)
-  similar_object(cf,b)
+  similar_object(cf,b,get_cell_axes(cf))
 end
 
 function operate(op,cf1::CellField,cf2::CellField)
   @assert length(cf1) == length(cf2)
-  @assert have_same_metadata(cf1,cf2)
+  @assert RefStyle(cf1) == RefStyle(cf2)
   a1 = get_array(cf1)
   a2 = get_array(cf2)
   b = operate_arrays_of_fields(Fields._UnimplementedField,op,a1,a2)
-  similar_object(cf1,b)
+  axs = apply(field_operation_axes,get_cell_axes(cf1),get_cell_axes(cf2))
+  similar_object(cf1,b,axs)
 end
 
 function operate(op,cf1::CellField,object)
@@ -226,10 +237,11 @@ end
 function operate(op,args::CellField...)
   a1 = first(args)
   @assert all( map( a->length(a) == length(a1), args) )
-  @assert all( map( a->have_same_metadata(a,a1), args) )
+  @assert all( map( a->RefStyle(a)==RefStyle(a1), args) )
   arrs = map(get_array,args)
   m = operate_arrays_of_fields(Fields._UnimplementedField,op,arrs...)
-  similar_object(a1,m)
+  axs = apply(field_operation_axes,map(get_cell_axes,args)...)
+  similar_object(a1,m,axs)
 end
 
 function operate(op,a1::CellField,args...)

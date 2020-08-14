@@ -91,6 +91,7 @@ import Gridap.Fields: integrate
 import Gridap.Arrays: apply_kernel!
 
 export CellField
+export get_cell_axes
 export GenericCellField
 export SkeletonCellField
 export RefStyle
