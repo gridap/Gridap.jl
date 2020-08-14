@@ -44,6 +44,29 @@ is_in_ref_space(::T) where T = is_in_ref_space(T)
 is_in_physical_space(::Type{T}) where T = !is_in_ref_space(T)
 is_in_physical_space(a::T) where T = !is_in_ref_space(T)
 
+"""
+This trait provides information about the field size at a single 
+evaluation point.
+
+For physical fields `MetaSizeStyle(T) == Val( () )`
+For test bases `MetaSizeStyle(T) == Val( (:,) )`
+For trial bases `MetaSizeStyle(T) = Val( (1,:) )`
+For fields representing elemental matrices `MetaSizeStyle(T) = Val( (:,:) )`
+"""
+MetaSizeStyle(::Type{<:CellField}) = @notimplemented
+
+# We use duck typing here for all types marked with the MetaSizeStyle trait
+MetaSizeStyle(::Type) = @notimplemented
+MetaSizeStyle(::T) where T = MetaSizeStyle(T)
+get_metasize(::Type{T}) where T = get_val_parameter(MetaSizeStyle(T))
+get_metasize(::T) where T = get_val_parameter(MetaSizeStyle(T))
+is_test(::Type{T}) where T = get_metasize(T) == (:,)
+is_test(::T) where T = is_test(T)
+is_trial(::Type{T}) where T = get_metasize(T) == (1,:)
+is_trial(::T) where T = is_trial(T)
+is_basis(::Type{T}) where T =  is_test(T) || is_trial(T)
+is_basis(::T) where T = is_basis(T)
+
 # Tester
 
 """
@@ -69,7 +92,11 @@ function test_cell_field(cf::CellField,x::AbstractArray,b::AbstractArray,pred=(=
   @test get_array(_cf) === get_array(cf)
   @test is_in_ref_space(cf) == !is_in_ref_space(_cf)
   @test is_in_physical_space(cf) == !is_in_physical_space(_cf)
+  @test get_metasize(_cf) == get_metasize(cf)
+  @test get_cell_axes(_cf) == get_cell_axes(cf)
   @test isa(get_cell_axes(cf),AbstractArray{<:Tuple})
+  @test isa(get_metasize(cf),Tuple)
+  @test isa(MetaSizeStyle(cf),Val)
 end
 
 # Concrete implementation
@@ -82,11 +109,12 @@ struct GenericCellField{R} <: CellField
       cell_axes::AbstractArray
     end
 """
-struct GenericCellField{R} <: CellField
+struct GenericCellField{R,S} <: CellField
   array::AbstractArray
   cell_map::AbstractArray
   ref_trait::Val{R}
   cell_axes::AbstractArray
+  metasize::Val{S}
 end
 
 function GenericCellField(array::AbstractArray,cell_map::AbstractArray)
@@ -95,6 +123,11 @@ end
 
 function GenericCellField(array::AbstractArray,cell_map::AbstractArray,ref_trait::Val)
   GenericCellField(array,cell_map,ref_trait,Fill((),length(cell_map)))
+end
+
+function GenericCellField(
+  array::AbstractArray,cell_map::AbstractArray,ref_trait::Val,cell_axes::AbstractArray)
+  GenericCellField(array,cell_map,ref_trait,cell_axes,Val(()))
 end
 
 function get_array(cf::GenericCellField)
@@ -113,40 +146,20 @@ function RefStyle(::Type{<:GenericCellField{R}}) where {R}
   Val{R}()
 end
 
+function MetaSizeStyle(::Type{<:GenericCellField{R,S}}) where {R,S}
+  Val{S}()
+end
+
 # The rest of the file is some default API using the CellField interface
-
-# Basis-related
-
-function is_basis(cf::CellField)
-  axs = get_cell_axes(cf)
-  eltype(axs) != Tuple{}
-end
-
-function is_test(cf::CellField)
-  axs = get_cell_axes(cf)
-  eltype(axs) <: NTuple{1}
-end
-
-function is_trial(cf::CellField)
-  axs = get_cell_axes(cf)
-  eltype(axs) <: NTuple{2}
-end
-
-function trialize_cell_basis(a::CellField)
-  @assert is_test(a)
-  array = trialize_array_of_bases(get_array(a))
-  axs = apply(Fields._add_singleton_block,get_cell_axes(a))
-  similar_object(a,array,axs)
-end
 
 # Preserving and manipulating the metadata
 
 """
-    similar_object(cf::CellField,array::AbstractArray,cell_axes::AbstractArray)
+    similar_object(cf::CellField,array::AbstractArray,cell_axes::AbstractArray,msize_style::Val)
 """
-function similar_object(cf::CellField,array::AbstractArray,cell_axes::AbstractArray)
+function similar_object(cf::CellField,array::AbstractArray,cell_axes::AbstractArray,msize_style::Val)
   cm = get_cell_map(cf)
-  GenericCellField(array,cm,RefStyle(cf),cell_axes)
+  GenericCellField(array,cm,RefStyle(cf),cell_axes,msize_style)
 end
 
 """
@@ -160,7 +173,7 @@ function change_ref_style(cf::CellField)
   new_sty = Val{bool}()
   ar = get_array(cf)
   cm = get_cell_map(cf)
-  GenericCellField(ar,cm,new_sty)
+  GenericCellField(ar,cm,new_sty,get_cell_axes(cf),MetaSizeStyle(cf))
 end
 
 # Move between ref and phys spaces by using the underling cell_map
@@ -170,7 +183,7 @@ _to_ref_space(a,::Val{true}) = a
 function _to_ref_space(a,::Val{false})
   cell_map = get_cell_map(a)
   array = compose(  get_array(a), cell_map  )
-  no = similar_object(a,array,get_cell_axes(a))
+  no = similar_object(a,array,get_cell_axes(a),MetaSizeStyle(a))
   change_ref_style(no)
 end
 
@@ -208,7 +221,14 @@ end
 function reindex(cf::CellField,a::AbstractVector)
   array = reindex(get_array(cf),a)
   cell_axes = reindex(get_cell_axes(cf),a)
-  similar_object(cf,array,cell_axes)
+  similar_object(cf,array,cell_axes,MetaSizeStyle(cf))
+end
+
+function trialize_cell_basis(a::CellField)
+  @assert is_test(a)
+  array = trialize_array_of_bases(get_array(a))
+  axs = apply(Fields._add_singleton_block,get_cell_axes(a))
+  similar_object(a,array,axs,Val((1,:)))
 end
 
 # Diff ops
@@ -219,13 +239,13 @@ end
 function gradient(cf::CellField)
   a = get_array(cf)
   ag = field_array_gradient(a)
-  similar_object(cf,ag,get_cell_axes(cf))
+  similar_object(cf,ag,get_cell_axes(cf),MetaSizeStyle(cf))
 end
 
 function grad2curl(cf::CellField)
   a = get_array(cf)
   b = operate_arrays_of_fields(Fields._UnimplementedField,Fields._curl_kernel,a)
-  similar_object(cf,b,get_cell_axes(cf))
+  similar_object(cf,b,get_cell_axes(cf),MetaSizeStyle(cf))
 end
 
 # Operations
@@ -233,7 +253,7 @@ end
 function operate(op,cf::CellField)
   a = get_array(cf)
   b = operate_arrays_of_fields(Fields._UnimplementedField,op,a)
-  similar_object(cf,b,get_cell_axes(cf))
+  similar_object(cf,b,get_cell_axes(cf),MetaSizeStyle(cf))
 end
 
 function operate(op,cf1::CellField,cf2::CellField)
@@ -243,7 +263,8 @@ function operate(op,cf1::CellField,cf2::CellField)
   a2 = get_array(cf2)
   b = operate_arrays_of_fields(Fields._UnimplementedField,op,a1,a2)
   axs = apply(field_operation_axes,get_cell_axes(cf1),get_cell_axes(cf2))
-  similar_object(cf1,b,axs)
+  metasize = field_operation_metasize(get_metasize(cf1),get_metasize(cf2))
+  similar_object(cf1,b,axs,Val(metasize))
 end
 
 function operate(op,cf1::CellField,object)
@@ -265,7 +286,8 @@ function operate(op,args::CellField...)
   arrs = map(get_array,args)
   m = operate_arrays_of_fields(Fields._UnimplementedField,op,arrs...)
   axs = apply(field_operation_axes,map(get_cell_axes,args)...)
-  similar_object(a1,m,axs)
+  metasize = field_operation_metasize(map(get_metasize,args)...)
+  similar_object(a1,m,axs,Val(metasize))
 end
 
 function operate(op,a1::CellField,args...)
@@ -432,9 +454,9 @@ function merge_skeleton_cell_fields(cfL,cfR)
     ax1 = get_cell_axes(cfL)
     ax2 = get_cell_axes(cfR)
     arrL = insert_array_of_bases_in_block(get_array(cfL),ax1,ax2,1)
-    cfSL = similar_object(cfL,arrL,arrL.axes)
+    cfSL = similar_object(cfL,arrL,arrL.axes,MetaSizeStyle(cfL))
     arrR = insert_array_of_bases_in_block(get_array(cfR),ax1,ax2,2)
-    cfSR = similar_object(cfR,arrR,arrR.axes)
+    cfSR = similar_object(cfR,arrR,arrR.axes,MetaSizeStyle(cfR))
     (cfSL,cfSR)
   end
 end

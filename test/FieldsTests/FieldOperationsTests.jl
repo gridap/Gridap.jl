@@ -13,6 +13,15 @@ using Test
 using FillArrays
 using LinearAlgebra
 
+s = field_operation_metasize((),(:,),(1,:))
+@test s == (:,:)
+
+s = field_operation_metasize((),(),(:,))
+@test s == (:,)
+
+s = field_operation_metasize((1,:),(1,:))
+@test s == (1,:)
+
 ndofs1 = 5
 ndofs2 = 4
 np = 7

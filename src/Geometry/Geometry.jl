@@ -110,6 +110,8 @@ export is_trial
 export trialize_cell_basis
 export merge_skeleton_dof_ids
 export merge_skeleton_cell_fields
+export MetaSizeStyle
+export get_metasize
 
 export GridTopology
 export num_cells

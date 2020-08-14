@@ -33,6 +33,22 @@ function field_operation_axes(axs::Tuple...)
   Tuple(rs)
 end
 
+function field_operation_metasize(axs::Tuple...)
+  n = maximum( map(length,axs) )
+  rs = []
+  for i in 1:n
+    r = 1
+    for ax in axs
+      if length(ax) >= i
+        if ax[i] == (:)
+          r = ax[i]
+        end
+      end
+    end
+    push!(rs,r)
+  end
+  Tuple(rs)
+end
 
 # Operate fields at global level
 

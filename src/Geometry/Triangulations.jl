@@ -237,20 +237,20 @@ function restrict(cf::CellField,trian::Triangulation)
   a = get_array(_cf)
   r = restrict(a,trian)
   axs = reindex(get_cell_axes(cf),trian)
-  _restrict_cell_field(r,axs,trian)
+  _restrict_cell_field(r,axs,MetaSizeStyle(cf),trian)
 end
 
-function _restrict_cell_field(r::AbstractArray,axs::AbstractArray,trian)
+function _restrict_cell_field(r::AbstractArray,axs::AbstractArray,msize_style::Val,trian)
   cm = get_cell_map(trian)
-  GenericCellField(r,cm,Val(true),axs)
+  GenericCellField(r,cm,Val(true),axs,msize_style)
 end
 
-function _restrict_cell_field(r::SkeletonPair,axs::SkeletonPair,trian)
+function _restrict_cell_field(r::SkeletonPair,axs::SkeletonPair,msize_style::Val,trian)
   cm = get_cell_map(trian)
   la = r.left
   ra = r.right
-  l = GenericCellField(la,cm,Val(true),axs.left)
-  r = GenericCellField(ra,cm,Val(true),axs.right)
+  l = GenericCellField(la,cm,Val(true),axs.left,msize_style)
+  r = GenericCellField(ra,cm,Val(true),axs.right,msize_style)
   lS, rS = merge_skeleton_cell_fields(l,r)
   SkeletonCellField(lS,rS)
 end

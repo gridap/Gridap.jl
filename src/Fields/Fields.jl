@@ -78,6 +78,7 @@ export operate_arrays_of_fields
 export trialize_basis
 export trialize_array_of_bases
 export field_operation_axes
+export field_operation_metasize
 
 export function_field
 
