@@ -37,7 +37,7 @@ matdata = ([],[],[])
 vecdata = ([],[])
 test_single_field_fe_space(U,matvecdata,matdata,vecdata)
 
-uh = interpolate(U,0)
+uh = interpolate(0,U)
 
 @test get_dirichlet_values(U) == [4.0, 3.0, 3.0, 3.0, 3.0, 3.0]
 TrialFESpace!(U,[1,2])

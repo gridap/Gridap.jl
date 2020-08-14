@@ -83,7 +83,7 @@ test_single_field_fe_space(U)
 
 u(x) = VectorValue(x[1]+x[2], x[1])
 
-uh = interpolate(U,u)
+uh = interpolate(u,U)
 
 
 uh_in = restrict(uh,trian_in)
@@ -143,9 +143,11 @@ V = TestFESpace(triangulation=trian,valuetype=Float64,reffe=:Lagrangian,order=2,
 V_in = TestFESpace(model=model_in,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:H1)
 V = TestFESpace(model=model,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:H1)
 
-vh_in = interpolate(V_in,x->x[1])
-vh_in = interpolate(V_in,vh_in)
-vh = interpolate(V,vh_in)
+vh_in = interpolate(V_in) do x
+    x[1]
+end
+vh_in = interpolate(vh_in, V_in)
+vh = interpolate(vh_in, V)
 
 #using Gridap.Visualization
 #writevtk(trian,"trian",cellfields=["vh"=>vh,"vh_in"=>vh_in])

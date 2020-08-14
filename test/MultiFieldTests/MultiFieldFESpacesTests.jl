@@ -25,7 +25,7 @@ quad = CellQuadrature(trian,degree)
 ref_style = [:reference,:physical]
 
 for ref_st in ref_style
-  
+
   V = TestFESpace(model=model,order=order,reffe=:Lagrangian,conformity=:H1,valuetype=Float64,dof_space=ref_st)
   Q = TestFESpace(model=model,order=order-1,reffe=:Lagrangian,conformity=:L2,valuetype=Float64,dof_space=ref_st)
 
@@ -87,9 +87,9 @@ for ref_st in ref_style
   @test cell_dofs_new.block_ids == cell_dofs.block_ids
 
   f(x) = sin(4*pi*(x[1]-x[2]^2))+1
-  fh = interpolate(X,[f,f])
-  fh = interpolate_everywhere(X,[f,f])
-  fh = interpolate_dirichlet(X,[f,f])
+  fh = interpolate([f,f],X)
+  fh = interpolate_everywhere([f,f],X)
+  fh = interpolate_dirichlet([f,f],X)
 end
 
 end # module

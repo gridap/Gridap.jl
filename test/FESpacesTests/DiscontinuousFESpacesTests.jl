@@ -23,7 +23,7 @@ U = TrialFESpace(V)
 
 f(x) = sin(pi*x[1])*cos(2*pi*x[2])
 
-fh = interpolate(U,f)
+fh = interpolate(f,U)
 
 uh = FEFunction(V,rand(num_free_dofs(V)))
 

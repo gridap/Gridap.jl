@@ -40,7 +40,7 @@ assem = SparseMatrixAssembler(U,V)
 uhd = zero(U)
 v = get_cell_basis(V)
 u = get_cell_basis(U)
-uh = interpolate(U,u_sol)
+uh = interpolate(u_sol,U)
 
 a(u,v) = ∇(v)⊙∇(u)
 l(v) = f*v

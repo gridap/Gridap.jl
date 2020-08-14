@@ -309,16 +309,31 @@ function compute_field_offsets(f::MultiFieldFESpace)
   offsets
 end
 
+@deprecate(
+  interpolate(fs::MultiFieldFESpace, object),
+  interpolate(object, fs::MultiFieldFESpace)
+)
+
+@deprecate(
+  interpolate_everywhere(fs::MultiFieldFESpace, object),
+  interpolate_everywhere(object, fs::MultiFieldFESpace)
+)
+
+@deprecate(
+  interpolate_dirichlet(fs::MultiFieldFESpace, object),
+  interpolate_dirichlet(object, fs::MultiFieldFESpace)
+)
+
 """
 The resulting MultiFieldFEFunction is in the space (in particular it fulfills Dirichlet BCs
 even in the case that the given cell field does not fulfill them)
 """
-function interpolate(fe::MultiFieldFESpace,objects)
+function interpolate(objects, fe::MultiFieldFESpace)
   free_values = zero_free_values(fe)
   blocks = SingleFieldFEFunction[]
   for (field, (U,object)) in enumerate(zip(fe.spaces,objects))
     free_values_i = restrict_to_field(fe,free_values,field)
-    uhi = interpolate!(free_values_i,U,object)
+    uhi = interpolate!(object, free_values_i,U)
     push!(blocks,uhi)
   end
   MultiFieldFEFunction(free_values,fe,blocks)
@@ -328,13 +343,13 @@ end
 like interpolate, but also compute new degrees of freedom for the dirichlet component.
 The resulting MultiFieldFEFunction does not necessary belongs to the underlying space
 """
-function interpolate_everywhere(fe::MultiFieldFESpace,objects)
+function interpolate_everywhere(objects, fe::MultiFieldFESpace)
   free_values = zero_free_values(fe)
   blocks = SingleFieldFEFunction[]
   for (field, (U,object)) in enumerate(zip(fe.spaces,objects))
     free_values_i = restrict_to_field(fe,free_values,field)
     dirichlet_values_i = zero_dirichlet_values(U)
-    uhi = interpolate_everywhere!(free_values_i,dirichlet_values_i,U,object)
+    uhi = interpolate_everywhere!(object, free_values_i,dirichlet_values_i,U)
     push!(blocks,uhi)
   end
   MultiFieldFEFunction(free_values,fe,blocks)
@@ -342,13 +357,13 @@ end
 
 """
 """
-function interpolate_dirichlet(fe::MultiFieldFESpace,objects)
+function interpolate_dirichlet(objects, fe::MultiFieldFESpace)
   free_values = zero_free_values(fe)
   blocks = SingleFieldFEFunction[]
   for (field, (U,object)) in enumerate(zip(fe.spaces,objects))
     free_values_i = restrict_to_field(fe,free_values,field)
     dirichlet_values_i = zero_dirichlet_values(U)
-    uhi = interpolate_dirichlet!(free_values_i,dirichlet_values_i,U,object)
+    uhi = interpolate_dirichlet!(object, free_values_i,dirichlet_values_i,U)
     push!(blocks,uhi)
   end
   MultiFieldFEFunction(free_values,fe,blocks)

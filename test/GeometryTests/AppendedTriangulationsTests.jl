@@ -41,7 +41,7 @@ V = TestFESpace(model=model,valuetype=Float64,order=order,reffe=:Lagrangian,conf
 
 u(x) = x[1]+x[2]
 
-_v = interpolate(V,u)
+_v = interpolate(u,V)
 v = restrict(_v,trian)
 
 e = u - v
