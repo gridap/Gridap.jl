@@ -318,7 +318,7 @@ even in the case that the given cell field does not fulfill them)
 """
 function interpolate(object, fs::SingleFieldFESpace)
   free_values = zero_free_values(fs)
-  interpolate!(free_values,fs,object)
+  interpolate!(object, free_values,fs)
 end
 
 """
@@ -343,7 +343,7 @@ The resulting FEFunction does not necessary belongs to the underlying space
 function interpolate_everywhere(object, fs::SingleFieldFESpace)
   free_values = zero_free_values(fs)
   dirichlet_values = zero_dirichlet_values(fs)
-  interpolate_everywhere!(free_values,dirichlet_values,fs,object)
+  interpolate_everywhere!(object, free_values,dirichlet_values,fs)
 end
 
 """
@@ -359,7 +359,7 @@ end
 function interpolate_dirichlet(object, fs::SingleFieldFESpace)
   free_values = zero_free_values(fs)
   dirichlet_values = zero_dirichlet_values(fs)
-  interpolate_dirichlet!(free_values,dirichlet_values,fs,object)
+  interpolate_dirichlet!(object, free_values,dirichlet_values,fs)
 end
 
 """
