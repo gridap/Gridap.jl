@@ -115,6 +115,30 @@ end
 
 # The rest of the file is some default API using the CellField interface
 
+# Basis-related
+
+function is_basis(cf::CellField)
+  axs = get_cell_axes(cf)
+  eltype(axs) != Tuple{}
+end
+
+function is_test(cf::CellField)
+  axs = get_cell_axes(cf)
+  eltype(axs) <: NTuple{1}
+end
+
+function is_trial(cf::CellField)
+  axs = get_cell_axes(cf)
+  eltype(axs) <: NTuple{2}
+end
+
+function trialize_cell_basis(a::CellField)
+  @assert is_test(a)
+  array = trialize_array_of_bases(get_array(a))
+  axs = apply(Fields._add_singleton_block,get_cell_axes(a))
+  similar_object(a,array,axs)
+end
+
 # Preserving and manipulating the metadata
 
 """
@@ -391,5 +415,27 @@ function operate(op,object,cf2::SkeletonCellField)
   cm = get_cell_map(cf2)
   cf1 = convert_to_cell_field(object,cm,RefStyle(cf2.left))
   operate(op,cf1,cf2)
+end
+
+function merge_skeleton_dof_ids(idsL,idsR,axesL,axesR)
+  blocks = (idsL,idsR)
+  blockids = [(1,),(2,)]
+  axs = apply(Fields._cat_axes,axesL,axesR)
+  VectorOfBlockArrayCoo(blocks,blockids,axs)
+end
+
+function merge_skeleton_cell_fields(cfL,cfR)
+  @assert is_basis(cfL) == is_basis(cfR)
+  if !is_basis(cfL) 
+    (cfL,cfR)
+  else
+    ax1 = get_cell_axes(cfL)
+    ax2 = get_cell_axes(cfR)
+    arrL = insert_array_of_bases_in_block(get_array(cfL),ax1,ax2,1)
+    cfSL = similar_object(cfL,arrL,arrL.axes)
+    arrR = insert_array_of_bases_in_block(get_array(cfR),ax1,ax2,2)
+    cfSR = similar_object(cfR,arrR,arrR.axes)
+    (cfSL,cfSR)
+  end
 end
 

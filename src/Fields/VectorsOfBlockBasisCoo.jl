@@ -80,6 +80,10 @@ function _new_axes(x,ran::NTuple{N,<:TwoLevelBlockedUnitRange} where N)
   (blockedrange([r]),ran...)
 end
 
+function _add_singleton_block(ran::NTuple{N,<:Base.OneTo} where N)
+  (Base.OneTo(1),ran...)
+end
+
 function _add_singleton_block(ran::NTuple{N,<:BlockedUnitRange} where N)
   (blockedrange([1]),ran...)
 end
