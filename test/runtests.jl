@@ -32,6 +32,7 @@ using Test
 
 @time @testset "Issues" begin
     include("issue_349.jl")
+    include("issue_368.jl")
 end
 
 include("GridapTests/runtests.jl")
