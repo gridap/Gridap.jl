@@ -236,43 +236,24 @@ function restrict(cf::CellField,trian::Triangulation)
   _cf = to_ref_space(cf)
   a = get_array(_cf)
   r = restrict(a,trian)
-  _restrict_cell_field(r,trian)
+  axs = reindex(get_cell_axes(cf),trian)
+  _restrict_cell_field(r,axs,trian)
 end
 
-function _restrict_cell_field(r::AbstractArray,trian)
+function _restrict_cell_field(r::AbstractArray,axs::AbstractArray,trian)
   cm = get_cell_map(trian)
-  GenericCellField(r,cm)
+  GenericCellField(r,cm,Val(true),axs)
 end
 
-function _restrict_cell_field(r::SkeletonPair,trian)
+function _restrict_cell_field(r::SkeletonPair,axs::SkeletonPair,trian)
   cm = get_cell_map(trian)
   la = r.left
   ra = r.right
-  l = GenericCellField(la,cm)
-  r = GenericCellField(ra,cm)
-  SkeletonCellField(l,r)
+  l = GenericCellField(la,cm,Val(true),axs.left)
+  r = GenericCellField(ra,cm,Val(true),axs.right)
+  lS, rS = merge_skeleton_cell_fields(l,r)
+  SkeletonCellField(lS,rS)
 end
-
-#function restrict(cf::CellBasis,trian::Triangulation)
-#  _cf = to_ref_space(cf)
-#  a = get_array(_cf)
-#  r = restrict(a,trian)
-#  _restrict_cell_basis(r,cf,trian)
-#end
-#
-#function _restrict_cell_basis(r::SkeletonPair,cb,trian)
-#  cm = get_cell_map(trian)
-#  cell_axes = reindex(get_cell_axes(cb),trian)
-#  la = insert_array_of_bases_in_block(r.left,cell_axes.left,cell_axes.right,1)
-#  ra = insert_array_of_bases_in_block(r.right,cell_axes.left,cell_axes.right,2)
-#  l = GenericCellField(la,cm)
-#  r = GenericCellField(ra,cm)
-#  SkeletonCellField(l,r)
-#end
-#
-#function _restrict_cell_basis(r::AbstractArray,cb,trian)
-#  _restrict_cell_field(r,trian)
-#end
 
 """
 """
