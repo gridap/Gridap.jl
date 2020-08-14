@@ -1,7 +1,37 @@
+const _FESPACE_ALLOWED_KWARGS = [
+  :reffe,
+  :conformity,
+  :order,
+  :labels,
+  :valuetype,
+  :model, :triangulation,
+  :dirichlet_tags, :dirichlet_masks,
+  :dof_space,
+  :constraint, :zeromean_trian, :zeromean_quad,
+]
+
+supported_kwargs(::Type{FESpace}) = _FESPACE_ALLOWED_KWARGS
+
+function check_all_kwargs_supported(f, given_kw)
+  allowed_kw = supported_kwargs(f)
+  for key in keys(given_kw)
+    if !(key in allowed_kw)
+      msg = """$f got unsupported keyword $(sprint(print, key)). Allowed keywords are:
+      $allowed_kw
+      """
+      throw(ArgumentError(msg))
+    end
+  end
+end
 
 """
+    $(SIGNATURES)
+
+Construct a `FESpace`. Supported keywords are:
+$(supported_kwargs(FESpace))
 """
 function FESpace(;kwargs...)
+  check_all_kwargs_supported(FESpace, kwargs)
 
   constraint = _get_kwarg(:constraint,kwargs,nothing)
   reffe = _get_kwarg(:reffe,kwargs)
