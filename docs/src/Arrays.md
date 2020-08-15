@@ -67,7 +67,7 @@ kernel_caches
 kernel_return_types
 ```
 
-### Build-in kernels
+### Built-in kernels
 
 ```@docs
 bcast
