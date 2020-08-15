@@ -38,7 +38,7 @@ array_caches
 testitems
 ```
 
-## Creting lazy operation trees
+## Creating lazy operation trees
 
 ```@docs
 apply(f,a::AbstractArray...)
