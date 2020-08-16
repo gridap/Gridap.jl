@@ -51,8 +51,22 @@ af = GenericCellField(al,ϕl,Val(true),Fill((Base.OneTo(ndofs),),l),Val((:,)))
 bf = GenericCellField(bl,ϕl,Val(true),Fill((Base.OneTo(ndofs),),l),Val((:,)))
 zf = convert_to_cell_field(zl,ϕl)
 df = af*zf
-
 dft = trialize_cell_basis(df)
+
+# Check memoization
+df_x1 = evaluate(df,xl)
+df_x2 = evaluate(df,xl)
+@test df_x1 === df_x2
+∇gf1 = ∇(gf)
+∇gf2 = ∇(gf)
+@test ∇gf1 === ∇gf2
+@test evaluate(∇gf1,xl) === evaluate(∇gf2,xl)
+εgf1 = ε(gf)
+εgf2 = ε(gf)
+@test εgf1 === εgf2
+@test ∇×gf === ∇×gf
+@test evaluate(∇×gf,xl) === evaluate(∇×gf,xl)
+
 @test is_test(af)
 @test is_trial(dft)
 @test is_basis(af)

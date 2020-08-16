@@ -35,7 +35,7 @@ curl(f) = grad2curl(gradient(f))
 
 function curl(a::AbstractArray{<:Field})
   ag = gradient(a)
-  operate_arrays_of_fields(_curl_kernel,ag)
+  operate_arrays_of_fields(grad2curl,ag)
 end
 
 """
@@ -45,15 +45,15 @@ function grad2curl(f)
   @abstractmethod
 end
 
-grad2curl(f::Field) = operate_fields(_curl_kernel,f)
+grad2curl(a::GridapType) = operate(grad2curl,a)
 
-grad2curl(∇u::MultiValue) = _curl_kernel(∇u)
+grad2curl(f::Field) = operate_fields(grad2curl,f)
 
-@inline function _curl_kernel(∇u::TensorValue{2})
+@inline function grad2curl(∇u::TensorValue{2})
   ∇u[1,2] - ∇u[2,1]
 end
 
-@inline function _curl_kernel(∇u::TensorValue{3})
+@inline function grad2curl(∇u::TensorValue{3})
   c1 = ∇u[2,3] - ∇u[3,2]
   c2 = ∇u[3,1] - ∇u[1,3]
   c3 = ∇u[1,2] - ∇u[2,1]

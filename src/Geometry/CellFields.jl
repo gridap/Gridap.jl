@@ -102,12 +102,10 @@ end
 # Concrete implementation
 
 """
-struct GenericCellField{R} <: CellField
-      array::AbstractArray
-      cell_map::AbstractArray
-      ref_trait::Val{R}
-      cell_axes::AbstractArray
-    end
+struct GenericCellField{R,S} <: CellField
+  # Private fields
+end
+
 """
 struct GenericCellField{R,S} <: CellField
   array::AbstractArray
@@ -115,6 +113,16 @@ struct GenericCellField{R,S} <: CellField
   ref_trait::Val{R}
   cell_axes::AbstractArray
   metasize::Val{S}
+  memo::Dict
+  function GenericCellField(
+    array::AbstractArray,
+    cell_map::AbstractArray,
+    ref_trait::Val{R},
+    cell_axes::AbstractArray,
+    metasize::Val{S}) where {R,S}
+    memo = Dict()
+    new{R,S}(array,cell_map,ref_trait,cell_axes,metasize,memo)
+  end
 end
 
 function GenericCellField(array::AbstractArray,cell_map::AbstractArray)
@@ -197,7 +205,11 @@ _to_physical_space(a,::Val{false}) = a
     evaluate(cf::CellField,x)
 """
 function evaluate(cf::CellField,x::AbstractArray)
-  _evaluate(cf,x,RefStyle(cf))
+  key = (:evaluate,objectid(x))
+  if !haskey(cf.memo,key)
+    cf.memo[key] = _evaluate(cf,x,RefStyle(cf))
+  end
+  cf.memo[key]
 end
 
 function _evaluate(cf::CellField,x::AbstractArray,::Val{true})
@@ -237,23 +249,25 @@ end
     gradient(cf::CellField)
 """
 function gradient(cf::CellField)
-  a = get_array(cf)
-  ag = field_array_gradient(a)
-  similar_object(cf,ag,get_cell_axes(cf),MetaSizeStyle(cf))
-end
-
-function grad2curl(cf::CellField)
-  a = get_array(cf)
-  b = operate_arrays_of_fields(Fields._UnimplementedField,Fields._curl_kernel,a)
-  similar_object(cf,b,get_cell_axes(cf),MetaSizeStyle(cf))
+  key = :gradient
+  if !haskey(cf.memo,key)
+    a = get_array(cf)
+    ag = field_array_gradient(a)
+    cf.memo[key] = similar_object(cf,ag,get_cell_axes(cf),MetaSizeStyle(cf))
+  end
+  cf.memo[key]
 end
 
 # Operations
 
 function operate(op,cf::CellField)
-  a = get_array(cf)
-  b = operate_arrays_of_fields(Fields._UnimplementedField,op,a)
-  similar_object(cf,b,get_cell_axes(cf),MetaSizeStyle(cf))
+  key = objectid(op)
+  if !haskey(cf.memo,key)
+    a = get_array(cf)
+    b = operate_arrays_of_fields(Fields._UnimplementedField,op,a)
+    cf.memo[key] = similar_object(cf,b,get_cell_axes(cf),MetaSizeStyle(cf))
+  end
+  cf.memo[key]
 end
 
 function operate(op,cf1::CellField,cf2::CellField)
