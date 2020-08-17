@@ -90,29 +90,6 @@ import Gridap.Fields: integrate
 
 import Gridap.Arrays: apply_kernel!
 
-export CellField
-export get_cell_axes
-export GenericCellField
-export SkeletonCellField
-export RefStyle
-export similar_object
-export change_ref_style
-export test_cell_field
-export convert_to_cell_field
-export to_ref_space
-export to_physical_space
-export is_in_physical_space
-export is_in_ref_space
-export cell_field_from_function
-export is_basis
-export is_test
-export is_trial
-export trialize_cell_basis
-export merge_skeleton_dof_ids
-export merge_skeleton_cell_fields
-export MetaSizeStyle
-export get_metasize
-
 export GridTopology
 export num_cells
 export get_polytopes
