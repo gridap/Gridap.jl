@@ -47,7 +47,7 @@ f = Fill(f,l)
 
 @test divergence(f) == operate_arrays_of_fields(tr,gradient(f))
 
-@test curl(f) == operate_arrays_of_fields(Fields._curl_kernel,gradient(f))
+@test curl(f) == operate_arrays_of_fields(grad2curl,gradient(f))
 
 @test ε(f) == operate_arrays_of_fields(symmetric_part,gradient(f))
 

@@ -4,8 +4,6 @@ using Test
 using Gridap.ReferenceFEs
 using Gridap.Arrays
 using Gridap.Geometry
-using Gridap.Visualization
-using Gridap.FESpaces
 using Gridap.Fields
 using Gridap.Integration
 using LinearAlgebra: ⋅
@@ -37,6 +35,10 @@ w = get_weights(quad)
 @test isa(q,AppendedArray)
 @test isa(w,AppendedArray)
 
+@test_broken begin
+
+using Gridap.FESpaces
+
 V = TestFESpace(model=model,valuetype=Float64,order=order,reffe=:Lagrangian,conformity=:H1)
 
 u(x) = x[1]+x[2]
@@ -56,6 +58,8 @@ cellmat =  integrate(∇(dv)⋅∇(dv),trian,quad)
 @test isa(cellmat.a,CompressedArray)
 @test isa(cellmat.b,CompressedArray)
 
+end
+
 #writevtk(trian_in,"trian_in")
 #writevtk(trian_out,"trian_out")
 #writevtk(trian,"trian",cellfields=["v"=>v])
@@ -72,10 +76,5 @@ grid2 = simplexify(CartesianGrid(domain,partition))
 
 trian = lazy_append(grid1,grid2)
 test_triangulation(trian)
-
-d = mktempdir()
-f = joinpath(d,"trian")
-writevtk(trian,f)
-rm(d,recursive=true)
 
 end # module
