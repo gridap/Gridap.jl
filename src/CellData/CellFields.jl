@@ -447,7 +447,7 @@ function operate(op,object,cf2::SkeletonCellField)
   operate(op,cf1,cf2)
 end
 
-function merge_cell_dof_ids_at_skeleton(idsL,idsR,axesL,axesR)
+function merge_cell_dofs_at_skeleton(idsL,idsR,axesL,axesR)
   blocks = (idsL,idsR)
   blockids = [(1,),(2,)]
   axs = apply(Fields._cat_axes,axesL,axesR)

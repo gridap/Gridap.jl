@@ -70,3 +70,12 @@ end
   end
 end
 
+function merge_cell_constraints_at_skeleton(cL,cR,axesL_rows,axesR_rows,axesL_cols,axesR_cols)
+  blocks = (cL,cR)
+  blockids = [(1,1),(2,2)]
+  axs_rows = apply(Fields._cat_axes,axesL_rows,axesR_rows)
+  axs_cols = apply(Fields._cat_axes,axesL_cols,axesR_cols)
+  axs = apply((r,c) -> (r[1],c[1]),axs_rows,axs_cols)
+  VectorOfBlockArrayCoo(blocks,blockids,axs)
+end
+

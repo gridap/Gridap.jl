@@ -56,7 +56,7 @@ export get_inward
 export get_outward
 export jump
 export mean
-export merge_cell_dof_ids_at_skeleton
+export merge_cell_dofs_at_skeleton
 export merge_cell_fields_at_skeleton
 
 export CellQuadrature
@@ -73,6 +73,7 @@ export attach_dirichlet
 
 export attach_constraints_rows
 export attach_constraints_cols
+export merge_cell_constraints_at_skeleton
 
 include("CellFields.jl")
 

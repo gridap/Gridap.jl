@@ -76,7 +76,7 @@ idsR = [ 2*i*collect(1:ndofs)  for i in 1:l]
 axesL = Fill((Base.OneTo(ndofs),),l)
 axesR = Fill((Base.OneTo(ndofs),),l)
 
-idsS = merge_cell_dof_ids_at_skeleton(idsL,idsR,axesL,axesR)
+idsS = merge_cell_dofs_at_skeleton(idsL,idsR,axesL,axesR)
 @test isa(idsS,VectorOfBlockArrayCoo)
 
 afS = merge_cell_fields_at_skeleton(af,2*af)
