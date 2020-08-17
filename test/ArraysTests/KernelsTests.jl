@@ -48,7 +48,7 @@ c = rand(3)
 k = MulKernel()
 test_kernel(k,(a,b),a*b)
 k = MulAddKernel(2,3)
-test_kernel(k,(a,b,c),2*a*b+3*c)
+test_kernel(k,(a,b,c),2*a*b+3*c,≈)
 
 a = rand(3,4)
 b = rand(4)

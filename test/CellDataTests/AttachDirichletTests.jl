@@ -11,8 +11,15 @@ cellmatvec = pair_arrays(cellmat,cellvec)
 cellvals = [ rand(ndofs) for cell in 1:ncells]
 
 cellmatvec_with_dbc = attach_dirichlet(cellmatvec,cellvals)
-r = map((mat,vec,vals)-> (mat,vec-mat*vals),cellmat,cellvec,cellvals)
+r = collect(cellmatvec_with_dbc)
 test_array(cellmatvec_with_dbc,r)
+
+r = map((mat,vec,vals)-> (mat,vec-mat*vals),cellmat,cellvec,cellvals)
+a,b = unpair_arrays(cellmatvec_with_dbc)
+ra,rb = unpair_arrays(r) 
+test_array(a,ra,≈)
+test_array(b,rb,≈)
+
 
 #a = cellmatvec_with_dbc
 #cache = array_cache(a)
