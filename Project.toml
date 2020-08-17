@@ -27,6 +27,7 @@ WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 [compat]
 AbstractTrees = "0.3.3"
 BSON = "0.2.5"
+BlockArrays = "0.12.12"
 Combinatorics = "1.0.0"
 DocStringExtensions = "0.8.1"
 FastGaussQuadrature = "0.4.2"
@@ -40,7 +41,7 @@ NLsolve = "4.3.0"
 QuadGK = "2.3.1"
 StaticArrays = "0.12.1"
 WriteVTK = "1.7"
-julia = "1.0"
+julia = "1.3"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
