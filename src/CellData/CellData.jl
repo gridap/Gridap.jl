@@ -69,6 +69,11 @@ export CellDofBasis
 export test_cell_dof_basis
 export GenericCellDofBasis
 
+export attach_dirichlet
+
+export attach_constraints_rows
+export attach_constraints_cols
+
 include("CellFields.jl")
 
 include("CellQuadratures.jl")
@@ -76,6 +81,10 @@ include("CellQuadratures.jl")
 include("QPointCellFields.jl")
 
 include("CellDofBases.jl")
+
+include("AttachDirichlet.jl")
+
+include("AttachConstraints.jl")
 
 end # module
 

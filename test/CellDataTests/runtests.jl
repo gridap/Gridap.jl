@@ -10,4 +10,8 @@ using Test
 
 @testset "CellDofBases" begin include("CellDofBasesTests.jl") end
 
+@testset "AttachDirichlet" begin include("AttachDirichletTests.jl") end
+
+@testset "AttachConstraints" begin include("AttachConstraintsTests.jl") end
+
 end # module
