@@ -8,4 +8,6 @@ using Test
 
 @testset "QPointCellFields" begin include("QPointCellFieldsTests.jl") end
 
+@testset "CellDofBases" begin include("CellDofBasesTests.jl") end
+
 end # module

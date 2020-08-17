@@ -30,6 +30,7 @@ import Gridap.Fields: evaluate_field!
 import Gridap.Fields: evaluate_field_array
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
+import Gridap.Arrays: reindex
 
 export CellField
 export get_cell_map
@@ -64,11 +65,17 @@ export get_weights
 
 export QPointCellField
 
+export CellDofBasis
+export test_cell_dof_basis
+export GenericCellDofBasis
+
 include("CellFields.jl")
 
 include("CellQuadratures.jl")
 
 include("QPointCellFields.jl")
+
+include("CellDofBases.jl")
 
 end # module
 
