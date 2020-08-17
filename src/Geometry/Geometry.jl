@@ -18,6 +18,7 @@ using Gridap.ReferenceFEs
 using Gridap.TensorValues
 using Gridap.Io
 using Gridap.Integration
+using Gridap.CellData
 
 using Gridap.ReferenceFEs: _num_faces
 using Gridap.ReferenceFEs: _num_facets
@@ -36,6 +37,10 @@ import Gridap.Arrays: getindex!
 import Gridap.Arrays: reindex
 import Gridap.Arrays: get_array
 import Gridap.Arrays: lazy_append
+import Gridap.CellData: CellField
+import Gridap.CellData: CellQuadrature
+import Gridap.CellData: QPointCellField
+import Gridap.CellData: get_cell_map
 
 import Gridap.Fields: field_cache
 import Gridap.Fields: evaluate_field!
@@ -117,13 +122,13 @@ export get_reffes
 export get_cell_coordinates
 export get_cell_reffes
 export get_cell_shapefuns
-export get_cell_map
 export get_normal_vector
 export test_triangulation
 export restrict
 export get_physical_coordinate
 export get_cell_id
 export cell_measure
+export get_cell_map
 
 export Grid
 export get_cell_nodes
@@ -235,10 +240,6 @@ include("BoundaryTriangulations.jl")
 include("GenericBoundaryTriangulations.jl")
 
 include("SkeletonTriangulations.jl")
-
-include("CellQuadratures.jl")
-
-include("QPointCellFields.jl")
 
 include("AppendedTriangulations.jl")
 

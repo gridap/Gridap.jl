@@ -251,8 +251,30 @@ function _restrict_cell_field(r::SkeletonPair,axs::SkeletonPair,msize_style::Val
   ra = r.right
   l = GenericCellField(la,cm,Val(true),axs.left,msize_style)
   r = GenericCellField(ra,cm,Val(true),axs.right,msize_style)
-  lS, rS = merge_skeleton_cell_fields(l,r)
-  SkeletonCellField(lS,rS)
+  merge_cell_fields_at_skeleton(l,r)
+end
+
+"""
+    CellQuadrature(trian::Triangulation, degree::Integer)
+"""
+function CellQuadrature(trian::Triangulation, degree::Integer)
+  polytopes = map(get_polytope,get_reffes(trian))
+  cell_type = get_cell_type(trian)
+  CellQuadrature(degree,polytopes,cell_type)
+end
+
+"""
+    integrate(cell_field,trian::Triangulation,quad::CellQuadrature)
+
+The `cell_field` is aligned with the cells in `trian`
+"""
+function integrate(cell_field,trian::Triangulation,quad::CellQuadrature)
+  cell_map = get_cell_map(trian)
+  integrate(cell_field,cell_map,quad)
+end
+
+function CellField(value::Number,trian::Triangulation,quad::CellQuadrature)
+  CellField(value,get_cell_map(trian),quad)
 end
 
 """

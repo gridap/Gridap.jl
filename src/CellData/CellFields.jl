@@ -230,7 +230,7 @@ function Base.length(cf::CellField)
   length(a)
 end
 
-function reindex(cf::CellField,a::AbstractVector)
+function Arrays.reindex(cf::CellField,a::AbstractVector)
   array = reindex(get_array(cf),a)
   cell_axes = reindex(get_cell_axes(cf),a)
   similar_object(cf,array,cell_axes,MetaSizeStyle(cf))

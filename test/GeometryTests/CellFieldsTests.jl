@@ -7,6 +7,7 @@ using Gridap.Fields
 using Gridap.TensorValues
 using FillArrays
 using LinearAlgebra
+using Gridap.CellData
 
 import Gridap.Fields: ∇
 

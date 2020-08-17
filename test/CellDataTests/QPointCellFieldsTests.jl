@@ -24,6 +24,10 @@ degree = 3
 quad = CellQuadrature(degree,[QUAD],Fill(1,l))
 q = get_coordinates(quad)
 
+s_q = [i*ones(size(qi)) for (i,qi) in enumerate(q)]
+a = CellData.ArrayOfEvaluatedFields(s_q,q)
+test_array_of_fields(a,q,s_q)
+
 v = VectorValue(3.0,4.0)
 cf = QPointCellField(v,ϕl,quad)
 cf_q = evaluate(cf,q)
