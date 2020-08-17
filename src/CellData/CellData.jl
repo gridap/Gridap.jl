@@ -18,9 +18,13 @@ using Gridap.Integration
 using Gridap.ReferenceFEs
 
 import Gridap.Arrays: get_array
+import Gridap.Arrays: lazy_append
 import Gridap.Fields: evaluate
 import Gridap.Fields: gradient
+import Gridap.Fields: integrate
 import Gridap.Helpers: operate
+import Gridap.Integration: get_coordinates
+import Gridap.Integration: get_weights
 
 export CellField
 export get_cell_map
@@ -49,7 +53,13 @@ export mean
 export merge_cell_dof_ids_at_skeleton
 export merge_cell_fields_at_skeleton
 
+export CellQuadrature
+export get_coordinates
+export get_weights
+
 include("CellFields.jl")
+
+include("CellQuadratures.jl")
 
 end # module
 
