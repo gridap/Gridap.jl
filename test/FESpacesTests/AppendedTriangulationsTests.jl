@@ -8,6 +8,7 @@ using Gridap.Fields
 using Gridap.Integration
 using LinearAlgebra: ⋅
 using Gridap.CellData
+using Gridap.FESpaces
 
 domain = (0,1,0,1)
 partition = (10,10)
@@ -36,17 +37,23 @@ w = get_weights(quad)
 @test isa(q,AppendedArray)
 @test isa(w,AppendedArray)
 
-# Append triangulations of different cell type
+V = TestFESpace(model=model,valuetype=Float64,order=order,reffe=:Lagrangian,conformity=:H1)
 
-domain = (0,1,0,1)
-partition = (10,10)
-grid1 = CartesianGrid(domain,partition)
+u(x) = x[1]+x[2]
 
-domain = (1,2,0,1)
-partition = (10,10)
-grid2 = simplexify(CartesianGrid(domain,partition))
+_v = interpolate(u,V)
+v = restrict(_v,trian)
 
-trian = lazy_append(grid1,grid2)
-test_triangulation(trian)
+e = u - v
+el2 = sqrt(sum(integrate(e*e,trian,quad)))
+@test el2 < 1.0e-8
+
+_dv = get_cell_basis(V)
+dv = restrict(_dv,trian)
+
+cellmat =  integrate(∇(dv)⋅∇(dv),trian,quad)
+@test isa(cellmat,AppendedArray)
+@test isa(cellmat.a,CompressedArray)
+@test isa(cellmat.b,CompressedArray)
 
 end # module
