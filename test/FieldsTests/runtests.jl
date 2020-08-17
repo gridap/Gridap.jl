@@ -30,6 +30,4 @@ using Test
 
 @testset "DiffOperators" begin include("DiffOperatorsTests.jl") end
 
-@testset "CellFields" begin include("CellFieldsTests.jl") end
-
 end # module
