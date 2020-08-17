@@ -39,11 +39,11 @@ getindex!(cache,a::AbstractArray,i...) = a[i...]
     array_cache(a::AbstractArray)
 
 Returns a cache object to be used in the [`getindex!`](@ref) function.
-It defaults to 
+It defaults to
 
     array_cache(a::T) where T = nothing
 
-for types `T` such that `uses_hash(T) == Val(false)`, and 
+for types `T` such that `uses_hash(T) == Val(false)`, and
 
     function array_cache(a::T) where T
       hash = Dict{UInt,Any}()
@@ -56,7 +56,7 @@ type `T` should implement the following signature:
     array_cache(hash::Dict,a::AbstractArray)
 
 where we pass a dictionary (i.e., a hash table) in the first argument. This hash table can be used to test
-if the object `a` has already build a cache and re-use it as follows
+if the object `a` has already built a cache and re-use it as follows
 
     id = objectid(a)
     if haskey(hash,id)
@@ -172,7 +172,7 @@ end
       a::AbstractArray{T,N}, b::AbstractArray{S,N},cmp=(==)) where {T,S,N}
 
 Checks if the entries in `a` and `b` are equal using the comparison function `cmp`.
-It also stresses the new methods added to the `AbstractArray` interface interface.
+It also stresses the new methods added to the `AbstractArray` interface.
 """
 function test_array(
   a::AbstractArray{T,N}, b::AbstractArray{S,N},cmp=(==)) where {T,S,N}
@@ -402,6 +402,3 @@ function add_to_array!(a::AbstractArray,b::Number,combine=+)
     a[i] = combine(a[i],b)
   end
 end
-
-
-

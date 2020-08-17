@@ -66,7 +66,7 @@ end
     test_kernel(f,x::Tuple,y,cmp=(==))
 
 Function used to test if the kernel `f` has been
-implemented correctly. `f` is a kernel object, `x` is a tuple containing the arguments 
+implemented correctly. `f` is a kernel object, `x` is a tuple containing the arguments
 of the kernel, and `y` is the expected result. Function `cmp` is used to compare
 the computed result with the expected one. The checks are done with the `@test`
 macro.
@@ -200,7 +200,7 @@ const NumberOrArray = Union{Number,AbstractArray}
 """
     bcast(f::Function)
 
-Returns a kernel object that represents the "boradcasted" version of the given
+Returns a kernel object that represents the "broadcasted" version of the given
 function `f`.
 """
 bcast(f::Function) = BCasted(f)
