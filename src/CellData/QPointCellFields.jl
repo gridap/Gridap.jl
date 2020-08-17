@@ -1,18 +1,17 @@
 
 """
 """
-function QPointCellField(value::Number,trian::Triangulation,quad::CellQuadrature)
+function QPointCellField(value::Number,cell_map::AbstractArray{<:Field},quad::CellQuadrature)
   q = get_coordinates(quad)
   v_q = [ fill(value,size(qi)) for qi in q ]
   array = ArrayOfEvaluatedFields(v_q,q)
-  cell_map = get_cell_map(trian)
   GenericCellField(array, cell_map)
 end
 
 """
 """
-function CellField(value::Number,trian::Triangulation,quad::CellQuadrature)
-  QPointCellField(value,trian,quad)
+function CellField(value::Number,cell_map::AbstractArray{<:Field},quad::CellQuadrature)
+  QPointCellField(value,cell_map,quad)
 end
 
 struct EvaluatedField{A<:AbstractArray,P<:AbstractArray} <:Field

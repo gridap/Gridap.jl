@@ -185,14 +185,10 @@ export GenericBoundaryTriangulation
 export DiscreteModelPortion
 
 export SkeletonPair
-export jump
-export mean
 export SkeletonTriangulation
 export InterfaceTriangulation
 export get_left_boundary
 export get_right_boundary
-export CellQuadrature
-export QPointCellField
 
 export RestrictedDiscreteModel
 
@@ -203,8 +199,6 @@ include("GridTopologies.jl")
 include("GridTopologyMocks.jl")
 
 include("UnstructuredGridTopologies.jl")
-
-include("CellFields.jl")
 
 include("SkeletonPairs.jl")
 

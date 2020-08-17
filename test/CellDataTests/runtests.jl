@@ -6,4 +6,6 @@ using Test
 
 @testset "CellQuadratures" begin include("CellQuadraturesTests.jl") end
 
+@testset "QPointCellFields" begin include("QPointCellFieldsTests.jl") end
+
 end # module

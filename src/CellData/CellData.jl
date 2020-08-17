@@ -25,6 +25,11 @@ import Gridap.Fields: integrate
 import Gridap.Helpers: operate
 import Gridap.Integration: get_coordinates
 import Gridap.Integration: get_weights
+import Gridap.Fields: field_cache
+import Gridap.Fields: evaluate_field!
+import Gridap.Fields: evaluate_field_array
+import Gridap.Arrays: array_cache
+import Gridap.Arrays: getindex!
 
 export CellField
 export get_cell_map
@@ -57,9 +62,13 @@ export CellQuadrature
 export get_coordinates
 export get_weights
 
+export QPointCellField
+
 include("CellFields.jl")
 
 include("CellQuadratures.jl")
+
+include("QPointCellFields.jl")
 
 end # module
 
