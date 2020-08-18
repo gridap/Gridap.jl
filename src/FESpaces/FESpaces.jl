@@ -21,12 +21,9 @@ using Gridap.Integration
 using Gridap.Algebra
 using Gridap.Polynomials
 using Gridap.TensorValues
+using Gridap.CellData
 
 using Gridap.ReferenceFEs: evaluate_dof_array
-
-using Gridap.Geometry: CellFieldLike
-using Gridap.Geometry: UnimplementedField
-using Gridap.Geometry: test_cell_field_like
 
 using Gridap.Arrays: _split
 using Gridap.Arrays: Reindexed
@@ -41,16 +38,15 @@ import Gridap.Arrays: kernel_return_type
 import Gridap.Arrays: kernel_testitem!
 import Gridap.Arrays: reindex
 import Gridap.Arrays: apply
-import Gridap.Geometry: get_cell_map
+import Gridap.CellData: get_cell_map
 import Gridap.Geometry: get_cell_shapefuns
 import Gridap.Geometry: get_reffes
 import Gridap.Geometry: get_cell_type
-import Gridap.Geometry: RefStyle
-import Gridap.Geometry: change_ref_style
+import Gridap.CellData: RefStyle
+import Gridap.CellData: get_cell_axes
+import Gridap.CellData: change_ref_style
 import Gridap.Helpers: operate
 import Gridap.Geometry: similar_object
-import Gridap.Geometry: jump
-import Gridap.Geometry: mean
 import Gridap.Geometry: restrict
 import Gridap.Geometry: get_cell_id
 import Gridap.Fields: integrate
@@ -91,19 +87,14 @@ export FESpace
 export FEFunction
 export num_free_dofs
 export get_cell_basis
+export get_cell_dofs
 export zero_free_values
 export constraint_style
 export has_constraints
 export get_cell_isconstrained
 export get_cell_constraints
-export get_constraint_kernel_matrix_cols
-export get_constraint_kernel_matrix_rows
-export get_constraint_kernel_vector
-export apply_constraints_matrix_cols
-export apply_constraints_matrix_rows
-export apply_constraints_vector
-export apply_constraints_matrix_and_vector_cols
-export apply_constraints_matrix_and_vector_rows
+export get_cell_axes
+export get_cell_axes_with_constraints
 export test_fe_space
 
 export Assembler
@@ -140,7 +131,6 @@ export test_sparse_matrix_assembler
 
 export SingleFieldFESpace
 export num_dirichlet_dofs
-export get_cell_dofs
 export zero_dirichlet_values
 export gather_free_and_dirichlet_values
 export gather_free_and_dirichlet_values!
@@ -169,21 +159,6 @@ export SingleFieldFEFunction
 export UnconstrainedFESpace
 export GradConformingFESpace
 export DiscontinuousFESpace
-
-export CellBasis
-export test_cell_basis
-export CellMatrixField
-export test_cell_matrix_field
-export GenericCellBasis
-export GenericCellMatrixField
-export TrialStyle
-export is_trial
-export is_test
-export attach_dirichlet_bcs
-
-export CellDofBasis
-export GenericCellDofBasis
-export test_cell_dof_basis
 
 export FECellBasisStyle
 export is_a_fe_cell_basis
@@ -233,81 +208,64 @@ export DirichletFESpace
 export FESpaceWithLinearConstraints
 export ExtendedFESpace
 
-export @law
-export operate
-export GridapType
-
-export apply_cellmatvec
-export apply_cellmatrix
-export apply_cellvector
-
-export @statelaw
-export apply_statelaw
-export CellField
-export update_state_variables!
-
 export autodiff_cell_residual_from_energy
 export autodiff_cell_jacobian_from_energy
 export autodiff_cell_jacobian_from_residual
 
 export FEEnergy
 
-include("CellBases.jl")
-
-include("CellDofBases.jl")
-
-include("Law.jl")
-
 include("FEFunctions.jl")
 
+include("FECellBases.jl")
+
 include("FESpacesInterfaces.jl")
-
-include("Assemblers.jl")
-
-include("FEOperators.jl")
 
 include("SingleFieldFESpaces.jl")
 
 include("SingleFieldFEFunctions.jl")
 
-include("TrialFESpaces.jl")
-
-include("SparseMatrixAssemblers.jl")
-
 include("UnconstrainedFESpaces.jl")
 
 include("ConformingFESpaces.jl")
 
-include("DiscontinuousFESpaces.jl")
-
-include("FETerms.jl")
-
-include("CellKernels.jl")
-
-include("AffineFEOperators.jl")
-
-include("FEOperatorsFromTerms.jl")
-
-include("FESolvers.jl")
-
-include("FESpacesWithLastDofRemoved.jl")
-
-include("ZeroMeanFESpaces.jl")
-
-include("CLagrangianFESpaces.jl")
-
-include("DirichletFESpaces.jl")
-
-include("ExtendedFESpaces.jl")
-
-include("FESpacesWithLinearConstraints.jl")
-
-include("FESpaceFactories.jl")
-
-include("StateLaws.jl")
-
-include("FEAutodiff.jl")
-
-include("FETermsWithAutodiff.jl")
+#include("DiscontinuousFESpaces.jl")
+#
+#include("TrialFESpaces.jl")
+#
+#include("Assemblers.jl")
+#
+#include("FEOperators.jl")
+#
+#include("SparseMatrixAssemblers.jl")
+#
+#include("FETerms.jl")
+#
+#include("CellKernels.jl")
+#
+#include("AffineFEOperators.jl")
+#
+#include("FEOperatorsFromTerms.jl")
+#
+#include("FESolvers.jl")
+#
+#include("FESpacesWithLastDofRemoved.jl")
+#
+#include("ZeroMeanFESpaces.jl")
+#
+#include("CLagrangianFESpaces.jl")
+#
+#include("DirichletFESpaces.jl")
+#
+#include("ExtendedFESpaces.jl")
+#
+#include("FESpacesWithLinearConstraints.jl")
+#
+#include("FESpaceFactories.jl")
+#
+#include("StateLaws.jl")
+#
+#include("FEAutodiff.jl")
+#
+#include("FETermsWithAutodiff.jl")
 
 end # module

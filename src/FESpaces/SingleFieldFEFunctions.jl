@@ -38,3 +38,7 @@ get_cell_map(f::SingleFieldFEFunction) = get_cell_map(f.fe_space)
 get_cell_values(f::SingleFieldFEFunction) = f.cell_vals
 
 RefStyle(::Type{SingleFieldFEFunction{R}}) where R = Val{R}()
+
+CellData.MetaSizeStyle(::Type{<:SingleFieldFEFunction}) = Val(())
+
+CellData.get_cell_axes(a::SingleFieldFEFunction) = get_cell_axes(get_fe_space(a))

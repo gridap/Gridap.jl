@@ -85,13 +85,13 @@ end
 
 struct IdentityConstraintKernel <: Kernel end
 
-function kernel_cache(k::IdentityConstraintKernel,axs)
+function Arrays.kernel_cache(k::IdentityConstraintKernel,axs)
   n = length(axs[1])
   a = zeros(n,n)
   CachedArray(a)
 end
 
-function apply_kernel!(cache,k::IdentityConstraintKernel,axs)
+function Arrays.apply_kernel!(cache,k::IdentityConstraintKernel,axs)
   n = length(axs[1])
   setsize!(cache,(n,n))
   a = cache.array

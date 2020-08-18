@@ -3,43 +3,15 @@
 Generic implementation of an unconstrained single-field FE space
 Private fields and type parameters
 """
-struct UnconstrainedFESpace{A,B,C} <: SingleFieldFESpace
+struct UnconstrainedFESpace <: SingleFieldFESpace
   nfree::Int
   ndirichlet::Int
-  cell_dofs::A
-  cell_basis::B
-  cell_dof_basis::C
+  cell_dofs::AbstractArray
+  cell_basis::CellField
+  cell_dof_basis::CellDofBasis
   dirichlet_dof_tag::Vector{Int8}
   dirichlet_cells::Vector{Int}
   ntags::Int
-
-  @doc """
-  """
-  function UnconstrainedFESpace(
-    nfree::Int,
-    ndirichlet::Int,
-    cell_dofs::AbstractArray,
-    cell_basis::CellBasis,
-    cell_dof_basis::CellDofBasis,
-    cell_map::AbstractArray,
-    dirichlet_dof_tag::Vector{Int8},
-    dirichlet_cells::Vector{Int},
-    ntags) where T
-
-    A = typeof(cell_dofs)
-    B = typeof(cell_basis)
-    C = typeof(cell_dof_basis)
-
-    new{A,B,C}(
-      nfree,
-      ndirichlet,
-      cell_dofs,
-      cell_basis,
-      cell_dof_basis,
-      dirichlet_dof_tag,
-      dirichlet_cells,
-      ntags)
-  end
 end
 
 # FESpace interface
@@ -62,6 +34,10 @@ end
 
 function get_cell_dofs(f::UnconstrainedFESpace)
   f.cell_dofs
+end
+
+function CellData.get_cell_axes(f::UnconstrainedFESpace)
+  get_cell_axes(get_cell_basis(f))
 end
 
 function get_cell_dof_basis(f::UnconstrainedFESpace)

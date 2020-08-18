@@ -1,21 +1,4 @@
 
-# The object returned by get_cell_basis has to implement the following trait
-
-FECellBasisStyle(::Type{T}) where T = Val{false}()
-
-FECellBasisStyle(cell_basis) = FECellBasisStyle(typeof(cell_basis))
-
-"""
-"""
-function is_a_fe_cell_basis(cell_basis)
-  v = FECellBasisStyle(cell_basis)
-  get_val_parameter(v)
-end
-
-function is_a_fe_cell_basis(::Type)
-  @unreachable "is_a_fe_cell_basis cannot be called on types"
-end
-
 """
 """
 abstract type FESpace <: GridapType end
@@ -55,97 +38,11 @@ end
 
 """
 """
-function get_cell_basis(f::FESpace)
-  @abstractmethod
-end
-
-"""
-"""
 function constraint_style(::Type{<:FESpace})
   @abstractmethod
 end
 
 constraint_style(f::T) where T<:FESpace = constraint_style(T)
-
-function get_cell_isconstrained(f::FESpace)
-  @abstractmethod
-end
-
-function get_cell_constraints(f::FESpace)
-  @abstractmethod
-end
-
-"""
-"""
-function get_constraint_kernel_matrix_cols(f::FESpace)
-  _default_constraint_kernel(f,constraint_style(f))
-end
-
-"""
-"""
-function get_constraint_kernel_matrix_rows(f::FESpace)
-  _default_constraint_kernel(f,constraint_style(f))
-end
-
-"""
-"""
-function get_constraint_kernel_vector(f::FESpace)
-  _default_constraint_kernel(f,constraint_style(f))
-end
-
-function _default_constraint_kernel(f,::Val{false})
-  function default_kernel(m,isconstr,constr)
-    m
-  end
-end
-
-function _default_constraint_kernel(f,::Val{true})
-  @abstractmethod
-end
-
-"""
-"""
-function test_fe_space(f::FESpace)
-  free_values = zero_free_values(f)
-  fe_function = FEFunction(f,free_values)
-  test_fe_function(fe_function)
-  fe_basis = get_cell_basis(f)
-  @test isa(has_constraints(f),Bool)
-  @test isa(has_constraints(typeof(f)),Bool)
-end
-
-function test_fe_space(f::FESpace,matvecdata,matdata,vecdata)
-  test_fe_space(f)
-
-  cellmat, cellidsrows, cellidscols = matdata
-  cm = apply_constraints_matrix_cols(f,cellmat,cellidscols)
-  if ! has_constraints(f)
-    @test cm === cellmat
-  end
-  cm = apply_constraints_matrix_rows(f,cellmat,cellidsrows)
-  if ! has_constraints(f)
-    @test cm === cellmat
-  end
-
-  cellvec, cellidsrows = vecdata
-  cv = apply_constraints_vector(f,cellvec,cellidsrows)
-  if ! has_constraints(f)
-    @test cv === cellvec
-  end
-
-  cellmatvec, cellidsrows, cellidscols = matvecdata
-  cmv = apply_constraints_matrix_and_vector_cols(f,cellmatvec,cellidscols)
-  if ! has_constraints(f)
-    @test cmv === cellmatvec
-  end
-  cmv = apply_constraints_matrix_and_vector_rows(f,cellmatvec,cellidsrows)
-  if ! has_constraints(f)
-    @test cmv === cellmatvec
-  end
-
-end
-
-# API
 
 """
 """
@@ -158,140 +55,166 @@ has_constraints(f::T) where T<:FESpace = has_constraints(T)
 
 """
 """
-function apply_constraints_matrix_cols(f::FESpace,cellmat,cellids)
-  _apply_constraints_matrix_cols(constraint_style(f),f,cellmat,cellids)
+function get_cell_dofs(f::FESpace)
+  @abstractmethod
 end
 
-function _apply_constraints_matrix_cols(::Val{false},f,cellmat,cellids)
-  cellmat
+function get_cell_dofs(f::FESpace,cellids::AbstractArray)
+  reindex(get_cell_dofs(f),cellids)
 end
 
-function _apply_constraints_matrix_cols(::Val{true},f,cellmat,cellids)
-  cell_to_isconstr = reindex(get_cell_isconstrained(f),cellids)
-  cell_to_constr = reindex(get_cell_constraints(f),cellids)
-  k = get_constraint_kernel_matrix_cols(f)
-  apply(k,cellmat,cell_to_isconstr,cell_to_constr)
-end
-
-"""
-"""
-function apply_constraints_matrix_rows(f::FESpace,cellmat,cellids)
-  _apply_constraints_matrix_rows(constraint_style(f),f,cellmat,cellids)
-end
-
-function _apply_constraints_matrix_rows(::Val{false},f,cellmat,cellids)
-  cellmat
-end
-
-function _apply_constraints_matrix_rows(::Val{true},f,cellmat,cellids)
-  cell_to_isconstr = reindex(get_cell_isconstrained(f),cellids)
-  cell_to_constr = reindex(get_cell_constraints(f),cellids)
-  k = get_constraint_kernel_matrix_rows(f)
-  apply(k,cellmat,cell_to_isconstr,cell_to_constr)
+function get_cell_dofs(f::FESpace,cellids::SkeletonPair)
+  ids = reindex(get_cell_dofs(f),cellids)
+  axs = reindex(get_cell_axes_with_constraints(f),cellids)
+  merge_cell_dofs_at_skeleton(ids.left,ids.right,axs.left,axs.right)
 end
 
 """
 """
-function apply_constraints_vector(f::FESpace,cellvec,cellids)
-  _apply_constraints_vector(constraint_style(f),f,cellvec,cellids)
-end
-
-function _apply_constraints_vector(::Val{false},f,cellvec,cellids)
-  cellvec
-end
-
-function _apply_constraints_vector(::Val{true},f,cellvec,cellids)
-  cell_to_isconstr = reindex(get_cell_isconstrained(f),cellids)
-  cell_to_constr = reindex(get_cell_constraints(f),cellids)
-  k = get_constraint_kernel_vector(f)
-  apply(k,cellvec,cell_to_isconstr,cell_to_constr)
+function get_cell_basis(f::FESpace)
+  @abstractmethod
 end
 
 """
 """
-function apply_constraints_matrix_and_vector_cols(f::FESpace,cellmatvec,cellids)
-  _apply_constraints_matrix_and_vector_cols(constraint_style(f),f,cellmatvec,cellids)
-end
-
-function _apply_constraints_matrix_and_vector_cols(::Val{false},f,cellmatvec,cellids)
-  cellmatvec
-end
-
-function _apply_constraints_matrix_and_vector_cols(::Val{true},f,cellmatvec,cellids)
-  cell_to_isconstr = reindex(get_cell_isconstrained(f),cellids)
-  cell_to_constr = reindex(get_cell_constraints(f),cellids)
-  kmat = get_constraint_kernel_matrix_cols(f)
-  k = MatKernel(kmat)
-  apply(k,cellmatvec,cell_to_isconstr,cell_to_constr)
+function get_cell_axes(f::FESpace)
+  @abstractmethod
 end
 
 """
 """
-function apply_constraints_matrix_and_vector_rows(f::FESpace,cellmatvec,cellids)
-  _apply_constraints_matrix_and_vector_rows(constraint_style(f),f,cellmatvec,cellids)
+function get_cell_axes_with_constraints(f::FESpace)
+  _get_cell_axes_with_constraints(f,constraint_style(f))
 end
 
-function _apply_constraints_matrix_and_vector_rows(::Val{false},f,cellmatvec,cellids)
-  cellmatvec
+function _get_cell_axes_with_constraints(f,::Val{false})
+  get_cell_axes(f)
 end
 
-function _apply_constraints_matrix_and_vector_rows(::Val{true},f,cellmatvec,cellids)
-  cell_to_isconstr = reindex(get_cell_isconstrained(f),cellids)
-  cell_to_constr = reindex(get_cell_constraints(f),cellids)
-  kmat = get_constraint_kernel_matrix_rows(f)
-  kvec = get_constraint_kernel_vector(f)
-  k = MatVecKernel(kmat,kvec)
-  apply(k,cellmatvec,cell_to_isconstr,cell_to_constr)
+function _get_cell_axes_with_constraints(f,::Val{true})
+  @abstractmethod
 end
 
-# Helpers
-
-struct MatVecKernel{A<:Kernel,B<:Kernel} <: Kernel
-  kmat::A
-  kvec::B
+function get_cell_constraints(f::FESpace)
+  _get_cell_constraints(f,constraint_style(f))
 end
 
-function kernel_cache(k::MatVecKernel,matvec,isconstr,constr)
-  mat, vec = matvec
-  cmat = kernel_cache(k.kmat,mat,isconstr,constr)
-  cvec = kernel_cache(k.kvec,vec,isconstr,constr)
-  (cmat, cvec)
+function _get_cell_constraints(f,::Val{false})
+  identity_constraints(get_cell_axes(f))
 end
 
-function kernel_return_type(k::MatVecKernel,matvec,isconstr,constr)
-  mat, vec = matvec
-  A = kernel_return_type(k.kmat,mat,isconstr,constr)
-  B = kernel_return_type(k.kvec,vec,isconstr,constr)
-  Tuple{A,B}
+function _get_cell_constraints(f,::Val{true})
+  @abstractmethod
 end
 
-@inline function apply_kernel!(cache,k::MatVecKernel,matvec,isconstr,constr)
-  cmat, cvec = cache
-  mat, vec = matvec
-  a = apply_kernel!(cmat,k.kmat,mat,isconstr,constr)
-  b = apply_kernel!(cvec,k.kvec,vec,isconstr,constr)
-  (a,b)
+function get_cell_constraints(f::FESpace,cellids::AbstractArray)
+  reindex(get_cell_constraints(f),cellids)
 end
 
-struct MatKernel{A<:Kernel} <: Kernel
-  kmat::A
+function get_cell_constraints(f::FESpace,cellids::SkeletonPair)
+  constr = reindex(get_cell_constraints(f),cellids)
+  axsrows = reindex(get_cell_axes_with_constraints(f),cellids)
+  axscols = reindex(get_cell_axes(f),cellids)
+  merge_cell_dofs_at_skeleton(
+    constr.left,constr.right,
+    axsrows.left,axsrows.right,
+    axscols.left,axscols.right)
 end
 
-function kernel_cache(k::MatKernel,matvec,isconstr,constr)
-  mat, vec = matvec
-  cmat = kernel_cache(k.kmat,mat,isconstr,constr)
-  cmat
+function get_cell_isconstrained(f::FESpace)
+  _get_cell_isconstrained(f,constraint_style(f))
 end
 
-function kernel_return_type(k::MatKernel,matvec,isconstr,constr)
-  mat, vec = matvec
-  A = kernel_return_type(k.kmat,mat,isconstr,constr)
-  B = typeof(vec)
-  Tuple{A,B}
+function _get_cell_isconstrained(f,::Val{false})
+  Fill(false,length(get_cell_dofs(f)))
 end
 
-@inline function apply_kernel!(cmat,k::MatKernel,matvec,isconstr,constr)
-  mat, vec = matvec
-  a = apply_kernel!(cmat,k.kmat,mat,isconstr,constr)
-  (a,vec)
+function _get_cell_isconstrained(f,::Val{true})
+  @abstractmethod
 end
+
+function get_cell_isconstrained(f::FESpace,cellids::AbstractArray)
+  reindex(get_cell_isconstrained(f),cellids)
+end
+
+function get_cell_isconstrained(f::FESpace,cellids::SkeletonPair)
+  isconstr = reindex(get_cell_isconstrained(f),cellids)
+  apply((l,r)-> l||r,isconstr.left,isconstr.right)
+end
+
+function CellData.attach_constraints_rows(f::FESpace,cellarr,cellids)
+  _attach_constraints_rows(f,cellarr,cellids,constraint_style(f))
+end
+
+function _attach_constraints_rows(f::FESpace,cellarr,cellids,::Val{false})
+  cellarr
+end
+
+function _attach_constraints_rows(f::FESpace,cellarr,cellids,::Val{true})
+  cellconstr = get_cell_constraints(f,cellids)
+  cellmask = get_cell_isconstrained(f,cellids)
+  attach_constraints_rows(cellarr,cellconstr,cellmask)
+end
+
+function CellData.attach_constraints_cols(f::FESpace,cellarr,cellids)
+  _attach_constraints_cols(f,cellarr,cellids,constraint_style(f))
+end
+
+function _attach_constraints_cols(f::FESpace,cellarr,cellids,::Val{false})
+  cellarr
+end
+
+function _attach_constraints_cols(f::FESpace,cellarr,cellids,::Val{true})
+  cellconstr = get_cell_constraints(f,cellids)
+  cellmask = get_cell_isconstrained(f,cellids)
+  attach_constraints_cols(cellarr,cellconstr,cellmask)
+end
+
+"""
+"""
+function test_fe_space(f::FESpace)
+  free_values = zero_free_values(f)
+  @test length(free_values) == num_free_dofs(f)
+  fe_function = FEFunction(f,free_values)
+  test_fe_function(fe_function)
+  fe_basis = get_cell_basis(f)
+  @test isa(has_constraints(f),Bool)
+  @test isa(has_constraints(typeof(f)),Bool)
+  @test length(get_cell_dofs(f)) == length(fe_basis)
+  @test length(get_cell_axes(f)) == length(fe_basis)
+  @test length(get_cell_axes_with_constraints(f)) == length(fe_basis)
+  @test length(get_cell_constraints(f)) == length(fe_basis)
+  @test length(get_cell_isconstrained(f)) == length(fe_basis)
+end
+
+function test_fe_space(f::FESpace,matvecdata,matdata,vecdata)
+  test_fe_space(f)
+
+  cellmat, cellidsrows, cellidscols = matdata
+  cm = attach_constraints_cols(f,cellmat,cellidscols)
+  if ! has_constraints(f)
+    @test cm === cellmat
+  end
+  cm = attach_constraints_rows(f,cellmat,cellidsrows)
+  if ! has_constraints(f)
+    @test cm === cellmat
+  end
+
+  cellvec, cellidsrows = vecdata
+  cv = attach_constraints_rows(f,cellvec,cellidsrows)
+  if ! has_constraints(f)
+    @test cv === cellvec
+  end
+
+  cellmatvec, cellidsrows, cellidscols = matvecdata
+  cmv = attach_constraints_cols(f,cellmatvec,cellidscols)
+  if ! has_constraints(f)
+    @test cmv === cellmatvec
+  end
+  cmv = attach_constraints_rows(f,cellmatvec,cellidsrows)
+  if ! has_constraints(f)
+    @test cmv === cellmatvec
+  end
+
+end
+

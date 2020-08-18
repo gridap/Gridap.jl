@@ -5,12 +5,6 @@ abstract type SingleFieldFESpace <: FESpace end
 
 """
 """
-function get_cell_dofs(f::SingleFieldFESpace)
-  @abstractmethod
-end
-
-"""
-"""
 function get_cell_dof_basis(f::SingleFieldFESpace)
   @abstractmethod
 end
@@ -55,7 +49,8 @@ end
 """
 function test_single_field_fe_space(f::SingleFieldFESpace,pred=(==))
   fe_basis = get_cell_basis(f)
-  @test isa(fe_basis,CellBasis)
+  @test isa(fe_basis,CellField)
+  @test is_basis(fe_basis)
   test_fe_space(f)
   cell_dofs = get_cell_dofs(f)
   dirichlet_values = zero_dirichlet_values(f)
@@ -85,121 +80,6 @@ end
 function test_single_field_fe_space(f,matvecdata,matdata,vecdata,pred=(==))
   test_single_field_fe_space(f,pred)
   test_fe_space(f,matvecdata,matdata,vecdata)
-end
-
-function get_cell_isconstrained(f::SingleFieldFESpace)
-  _get_cell_isconstrained(f,constraint_style(f))
-end
-
-function _get_cell_isconstrained(f,::Val{false})
-  n = length(get_cell_dofs(f))
-  Fill(false,n)
-end
-
-function _get_cell_isconstrained(f,::Val{true})
-  @abstractmethod
-end
-
-function get_cell_constraints(f::SingleFieldFESpace)
-  _get_cell_constraints(f,constraint_style(f))
-end
-
-function _get_cell_constraints(f,::Val{false})
-  k = IdentityConstraintKernel()
-  cell_to_dofs = get_cell_dofs(f)
-  apply(k,cell_to_dofs)
-end
-
-function _get_cell_constraints(f,::Val{true})
-  @abstractmethod
-end
-
-struct IdentityConstraintKernel <: Kernel end
-
-function kernel_cache(k::IdentityConstraintKernel,dofs)
-  n = length(dofs)
-  a = zeros(n,n)
-  CachedArray(a)
-end
-
-function apply_kernel!(cache,k::IdentityConstraintKernel,dofs)
-  n = length(dofs)
-  setsize!(cache,(n,n))
-  a = cache.array
-  fill!(a,zero(eltype(a)))
-  o = one(eltype(a))
-  @inbounds for i in 1:size(a,1)
-    a[i,i] = o
-  end
-  a
-end
-
-function get_constraint_kernel_vector(f::SingleFieldFESpace)
-  VectorConstraintKernel()
-end
-
-struct VectorConstraintKernel <: Kernel end
-
-function kernel_cache(k::VectorConstraintKernel,vec,isconstr,constr)
-  CachedArray(copy(vec))
-end
-
-function apply_kernel!(cache,k::VectorConstraintKernel,vec,isconstr,constr)
-  if isconstr
-    n = size(constr,1)
-    setsize!(cache,(n,))
-    v = cache.array
-    mul!(v,constr,vec)
-    return v
-  else
-    return vec
-  end
-end
-
-function get_constraint_kernel_matrix_rows(f::SingleFieldFESpace)
-  MatrixRowsConstraintKernel()
-end
-
-struct MatrixRowsConstraintKernel <: Kernel end
-
-function kernel_cache(k::MatrixRowsConstraintKernel,mat,isconstr,constr)
-  CachedArray(copy(mat))
-end
-
-function apply_kernel!(cache,k::MatrixRowsConstraintKernel,mat,isconstr,constr)
-  if isconstr
-    n = size(constr,1)
-    m = size(mat,2)
-    setsize!(cache,(n,m))
-    v = cache.array
-    mul!(v,constr,mat)
-    return v
-  else
-    return mat
-  end
-end
-
-function get_constraint_kernel_matrix_cols(f::SingleFieldFESpace)
-  MatrixColsConstraintKernel()
-end
-
-struct MatrixColsConstraintKernel <: Kernel end
-
-function kernel_cache(k::MatrixColsConstraintKernel,mat,isconstr,constr)
-  CachedArray(copy(mat))
-end
-
-function apply_kernel!(cache,k::MatrixColsConstraintKernel,mat,isconstr,constr)
-  if isconstr
-    m = size(mat,1)
-    n = size(constr,1)
-    setsize!(cache,(m,n))
-    v = cache.array
-    mul!(v,mat,Transpose(constr))
-    return v
-  else
-    return mat
-  end
 end
 
 """
