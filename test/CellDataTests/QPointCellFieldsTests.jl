@@ -40,5 +40,28 @@ test_cell_field(cf,q,cf_q)
 cf = CellField(1.0,ϕl,quad)
 @test sum(integrate(cf,ϕl,quad)) ≈ 213.33333333333323
 
+a = CellField(1.0,ϕl,quad)
+b = CellField(1.0,ϕl,quad)
+c = CellField(1.0,ϕl,quad)
+
+function updater(a,b,c)
+  b_new = 2*b
+  c_new = 4*c
+  true, b_new, c_new
+end
+
+@test evaluate(a,q)[1] == fill(1.0,4)
+@test evaluate(b,q)[1] == fill(1.0,4)
+@test evaluate(c,q)[1] == fill(1.0,4)
+
+update_state_variables!(updater,quad,a,b,c)
+@test evaluate(a,q)[1] == fill(1.0,4)
+@test evaluate(b,q)[1] == fill(2.0,4)
+@test evaluate(c,q)[1] == fill(4.0,4)
+
+update_state_variables!(updater,quad,a,b,c)
+@test evaluate(a,q)[1] == fill(1.0,4)
+@test evaluate(b,q)[1] == fill(4.0,4)
+@test evaluate(c,q)[1] == fill(16.0,4)
 
 end # module

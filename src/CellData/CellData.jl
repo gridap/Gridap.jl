@@ -64,6 +64,7 @@ export get_coordinates
 export get_weights
 
 export QPointCellField
+export update_state_variables!
 
 export CellDofBasis
 export test_cell_dof_basis
@@ -74,6 +75,10 @@ export attach_dirichlet
 export attach_constraints_rows
 export attach_constraints_cols
 export merge_cell_constraints_at_skeleton
+
+export @law
+export operate
+export GridapType
 
 include("CellFields.jl")
 
@@ -86,6 +91,8 @@ include("CellDofBases.jl")
 include("AttachDirichlet.jl")
 
 include("AttachConstraints.jl")
+
+include("Law.jl")
 
 end # module
 

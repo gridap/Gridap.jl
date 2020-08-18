@@ -14,4 +14,6 @@ using Test
 
 @testset "AttachConstraints" begin include("AttachConstraintsTests.jl") end
 
+@testset "Law" begin include("LawTests.jl") end
+
 end # module

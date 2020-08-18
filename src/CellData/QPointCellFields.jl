@@ -70,4 +70,48 @@ function evaluate_field_array(a::ArrayOfEvaluatedFields,x::AbstractArray)
   a.array
 end
 
+function update_state_variables!(updater::Function,quad::CellQuadrature,f::CellField...)
+  x = get_coordinates(quad)
+  update_state_variables!(updater,x,f...)
+end
 
+function update_state_variables!(updater::Function,x::AbstractArray,f::CellField...)
+  fx = map(i->evaluate(i,x),f)
+  caches = array_caches(fx...)
+  cache_x = array_cache(x)
+  _update_state_variables!(updater,caches,fx,cache_x,x)
+end
+
+@noinline function  _update_state_variables!(updater,caches,fx,cache_x,x)
+  ncells = length(x)
+  for cell in 1:ncells
+    fxi = getitems!(caches,fx,cell)
+    xi = getindex!(cache_x,x,cell)
+    for q in 1:length(xi)
+      fxiq = getitems(fxi,q)
+      r = updater(fxiq...)
+      need_to_update, states = Arrays._split(r...)
+      if need_to_update
+        _update_states!(fxi,q,states,Val{length(states)}())
+      end
+    end
+  end
+end
+
+@inline function _update_states!(b,q,states,::Val{i}) where i
+  _update_state!(b,q,states,Val{i}())
+  _update_states!(b,q,states,Val{i-1}())
+  nothing
+end
+
+@inline function _update_states!(b,q,states,::Val{0})
+  nothing
+end
+
+@inline function _update_state!(b,q,states,::Val{i}) where i
+  m = length(b)
+  n = length(states)
+  o = m-n
+  b[i+o][q] = states[i]
+  nothing
+end
