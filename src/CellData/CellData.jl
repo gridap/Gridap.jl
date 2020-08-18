@@ -75,6 +75,7 @@ export attach_dirichlet
 export attach_constraints_rows
 export attach_constraints_cols
 export merge_cell_constraints_at_skeleton
+export identity_constraints
 
 export @law
 export operate

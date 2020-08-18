@@ -2,6 +2,7 @@ module AttachConstraintsTests
 
 using Test
 using FillArrays
+using LinearAlgebra
 using Gridap.Helpers
 using Gridap.Fields
 using Gridap.ReferenceFEs
@@ -64,9 +65,10 @@ gl = fill(g,l)
 al = Fill(a,l)
 bl = fill(b,l)
 
+cell_axes = Fill((Base.OneTo(ndofs),),l)
 gf = GenericCellField(gl,ϕl,Val(true))
-af = GenericCellField(al,ϕl,Val(true),Fill((Base.OneTo(ndofs),),l),Val((:,)))
-bf = GenericCellField(bl,ϕl,Val(true),Fill((Base.OneTo(ndofs),),l),Val((:,)))
+af = GenericCellField(al,ϕl,Val(true),cell_axes,Val((:,)))
+bf = GenericCellField(bl,ϕl,Val(true),cell_axes,Val((:,)))
 zf = convert_to_cell_field(zl,ϕl)
 df = af*zf
 dft = trialize_cell_basis(df)
@@ -86,6 +88,10 @@ cellmatvec = attach_constraints_cols(cellmatvec,cellconstr)
 
 @test size(cellmatvec[1][1]) == (ndofs_c,ndofs_c)
 @test size(cellmatvec[1][2]) == (ndofs_c,)
+
+cellconstr = identity_constraints(cell_axes)
+test_array(cellconstr,Fill(Matrix(I,ndofs,ndofs),l))
+@test isa(cellconstr,Fill)
 
 # Test at skeleton
 aS = merge_cell_fields_at_skeleton(af,af)
@@ -112,17 +118,14 @@ cellmatvec = attach_constraints_rows(cellmatvec,cellconstr)
 cellmatvec = attach_constraints_cols(cellmatvec,cellconstr)
 test_array(cellmatvec,collect(cellmatvec))
 
-#a = cellmatvec
-#display(a[1][1])
-#display(a[1][2])
-#
+cellconstr = identity_constraints(cell_axes)
+cellconstr = merge_cell_constraints_at_skeleton(cellconstr,cellconstr,cell_axes,cell_axes,cell_axes,cell_axes)
+@test isa(cellconstr,VectorOfBlockArrayCoo)
+
+##a = cellmatvec
+#a = cellconstr
 #cache = array_cache(a)
 #using BenchmarkTools
 #@btime getindex!($cache,$a,2)
-
-
-
-
-
 
 end # module

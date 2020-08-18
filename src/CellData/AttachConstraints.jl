@@ -79,3 +79,26 @@ function merge_cell_constraints_at_skeleton(cL,cR,axesL_rows,axesR_rows,axesL_co
   VectorOfBlockArrayCoo(blocks,blockids,axs)
 end
 
+function identity_constraints(cell_axes)
+  apply(IdentityConstraintKernel(),cell_axes)
+end
+
+struct IdentityConstraintKernel <: Kernel end
+
+function kernel_cache(k::IdentityConstraintKernel,axs)
+  n = length(axs[1])
+  a = zeros(n,n)
+  CachedArray(a)
+end
+
+function apply_kernel!(cache,k::IdentityConstraintKernel,axs)
+  n = length(axs[1])
+  setsize!(cache,(n,n))
+  a = cache.array
+  fill!(a,zero(eltype(a)))
+  o = one(eltype(a))
+  @inbounds for i in 1:size(a,1)
+    a[i,i] = o
+  end
+  a
+end
