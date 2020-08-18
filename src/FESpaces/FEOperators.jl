@@ -22,15 +22,10 @@ function allocate_residual(op::FEOperator,u)
   @abstractmethod
 end
 
-function doc_inplace_version(f)
-    # TODO move this helper elsewhere
-    "Inplace version of [`$f`](@ref)."
-end
-
 """
     $(SIGNATURES)
 
-$(doc_inplace_version(residual))
+Inplace version of [`residual`](@ref).
 """
 function residual!(b::AbstractVector,op::FEOperator,u)
   @assert is_a_fe_function(u)
@@ -59,7 +54,7 @@ end
 """
     $(SIGNATURES)
 
-$(doc_inplace_version(jacobian))
+Inplace version of [`jacobian`](@ref).
 """
 function jacobian!(A::AbstractMatrix,op::FEOperator,u)
   @assert is_a_fe_function(u)
@@ -82,7 +77,7 @@ end
 """
     $(SIGNATURES)
 
-$(doc_inplace_version(residual_and_jacobian))
+Inplace version of [`residual_and_jacobian`](@ref).
 """
 function residual_and_jacobian!(b::AbstractVector,A::AbstractMatrix,op::FEOperator,u)
   residual!(b,op,u)
@@ -94,7 +89,7 @@ end
     residual, jacobian = $(SIGNATURES)
 
 Compute the residual and jacobian of an operator `op` at a given point `u`.
-Depending on the nature of `op` the point `u` can either be a plain array or a `FeFunction`.
+Depending on the nature of `op` the point `u` can either be a plain array or a `FEFunction`.
 
 See also [`jacobian`](@ref), [`residual`](@ref), [`get_algebraic_operator`](@ref).
 """
