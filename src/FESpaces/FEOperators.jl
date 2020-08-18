@@ -23,12 +23,20 @@ function allocate_residual(op::FEOperator,u)
 end
 
 """
+    $(SIGNATURES)
+
+Inplace version of [`residual`](@ref).
 """
 function residual!(b::AbstractVector,op::FEOperator,u)
   @assert is_a_fe_function(u)
   @abstractmethod
 end
 
+"""
+    $(SIGNATURES)
+
+Compute the residual of `op` at `u`. See also [`residual_and_jacobian`](@ref)
+"""
 function residual(op::FEOperator,u)
   @assert is_a_fe_function(u)
   b = allocate_residual(op,u)
@@ -44,12 +52,21 @@ function allocate_jacobian(op::FEOperator,u)
 end
 
 """
+    $(SIGNATURES)
+
+Inplace version of [`jacobian`](@ref).
 """
 function jacobian!(A::AbstractMatrix,op::FEOperator,u)
   @assert is_a_fe_function(u)
   @abstractmethod
 end
 
+"""
+    $(SIGNATURES)
+
+Compute the jacobian of an operator `op`.
+See also [`get_algebraic_operator`](@ref), [`residual_and_jacobian!`](@ref).
+"""
 function jacobian(op::FEOperator,u)
   @assert is_a_fe_function(u)
   A = allocate_jacobian(op,u)
@@ -58,6 +75,9 @@ function jacobian(op::FEOperator,u)
 end
 
 """
+    $(SIGNATURES)
+
+Inplace version of [`residual_and_jacobian`](@ref).
 """
 function residual_and_jacobian!(b::AbstractVector,A::AbstractMatrix,op::FEOperator,u)
   residual!(b,op,u)
@@ -66,6 +86,12 @@ function residual_and_jacobian!(b::AbstractVector,A::AbstractMatrix,op::FEOperat
 end
 
 """
+    residual, jacobian = $(SIGNATURES)
+
+Compute the residual and jacobian of an operator `op` at a given point `u`.
+Depending on the nature of `op` the point `u` can either be a plain array or a `FEFunction`.
+
+See also [`jacobian`](@ref), [`residual`](@ref), [`get_algebraic_operator`](@ref).
 """
 function residual_and_jacobian(op::FEOperator,u)
   b = residual(op,u)
@@ -100,9 +126,14 @@ function test_fe_operator(op::FEOperator,args...;kwargs...)
   test_nonlinear_operator(_op,args...;kwargs...)
 end
 
-# FEOperator viewed as a NonlinearOperator
-
 """
+    $(SIGNATURES)
+
+Return an "algebraic view" of an operator. Algebraic
+means, that the resulting operator acts on plain arrays,
+instead of `FEFunctions`. This can be useful for solving
+with external tools like `NLsolve.jl`.
+See also [`FEOperator`](@ref).
 """
 function get_algebraic_operator(feop::FEOperator)
   AlgebraicOpFromFEOp(feop)
