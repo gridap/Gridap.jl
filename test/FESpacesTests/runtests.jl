@@ -22,17 +22,18 @@ using Test
 
 @testset "DiscontinuousFESpaces" begin include("DiscontinuousFESpacesTests.jl") end
 
+@testset "Assemblers" begin include("AssemblersTests.jl") end
+
+@testset "SparseMatrixAssemblers" begin include("SparseMatrixAssemblersTests.jl") end
+
 #@testset "CellBases" begin include("CellBasesTests.jl") end
 #
 #@testset "CellDofBases" begin include("CellDofBasesTests.jl") end
 #
 #@testset "Law" begin include("LawTests.jl") end
 #
-#@testset "Assemblers" begin include("AssemblersTests.jl") end
-#
 #@testset "FEOperators" begin include("FEOperatorsTests.jl") end
 #
-#@testset "SparseMatrixAssemblers" begin include("SparseMatrixAssemblersTests.jl") end
 #
 #@testset "CDLagrangianFESpaces" begin include("CDLagrangianFESpacesTests.jl") end
 #

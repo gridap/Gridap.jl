@@ -1,5 +1,5 @@
 
-struct SingleFieldSparseMatrixAssembler{M,V} <: SparseMatrixAssembler
+struct GenericSparseMatrixAssembler{M,V} <: SparseMatrixAssembler
   matrix_type::Type{M}
   vector_type::Type{V}
   trial::SingleFieldFESpace
@@ -9,17 +9,17 @@ end
 
 function SparseMatrixAssembler(
   mat::Type,vec::Type,trial::SingleFieldFESpace,test::SingleFieldFESpace,strategy::AssemblyStrategy)
-  SingleFieldSparseMatrixAssembler(mat,vec,trial,test,strategy)
+  GenericSparseMatrixAssembler(mat,vec,trial,test,strategy)
 end
 
 function SparseMatrixAssembler(mat::Type,vec::Type,trial::SingleFieldFESpace,test::SingleFieldFESpace)
   strategy = DefaultAssemblyStrategy()
-  SingleFieldSparseMatrixAssembler(mat,vec,trial,test,strategy)
+  GenericSparseMatrixAssembler(mat,vec,trial,test,strategy)
 end
 
 function SparseMatrixAssembler(mat::Type,trial::SingleFieldFESpace,test::SingleFieldFESpace)
   strategy = DefaultAssemblyStrategy()
-  SingleFieldSparseMatrixAssembler(mat,Vector{Float64},trial,test,strategy)
+  GenericSparseMatrixAssembler(mat,Vector{Float64},trial,test,strategy)
 end
 
 """
@@ -28,24 +28,23 @@ function SparseMatrixAssembler(trial::SingleFieldFESpace,test::SingleFieldFESpac
   matrix_type = SparseMatrixCSC{Float64,Int}
   vector_type = Vector{Float64}
   strategy = DefaultAssemblyStrategy()
-  SingleFieldSparseMatrixAssembler(matrix_type,vector_type,trial,test,strategy)
+  GenericSparseMatrixAssembler(matrix_type,vector_type,trial,test,strategy)
 end
 
-get_test(a::SingleFieldSparseMatrixAssembler) = a.test
+get_test(a::GenericSparseMatrixAssembler) = a.test
 
-get_trial(a::SingleFieldSparseMatrixAssembler) = a.trial
+get_trial(a::GenericSparseMatrixAssembler) = a.trial
 
-get_matrix_type(a::SingleFieldSparseMatrixAssembler) = a.matrix_type
+get_matrix_type(a::GenericSparseMatrixAssembler) = a.matrix_type
 
-get_vector_type(a::SingleFieldSparseMatrixAssembler) = a.vector_type
+get_vector_type(a::GenericSparseMatrixAssembler) = a.vector_type
 
-get_assembly_strategy(a::SingleFieldSparseMatrixAssembler) = a.strategy
+get_assembly_strategy(a::GenericSparseMatrixAssembler) = a.strategy
 
-function assemble_vector_add!(b,a::SingleFieldSparseMatrixAssembler,vecdata)
-  celldofs = get_cell_dofs(a.test)
+function assemble_vector_add!(b,a::GenericSparseMatrixAssembler,vecdata)
   for (cellvec, cellids) in zip(vecdata...)
-    rows = reindex(celldofs,cellids)
-    vals = apply_constraints_vector(a.test,cellvec,cellids)
+    rows = get_cell_dofs(a.test,cellids)
+    vals = attach_constraints_rows(a.test,cellvec,cellids)
     rows_cache = array_cache(rows)
     vals_cache = array_cache(vals)
     _assemble_vector!(b,vals_cache,rows_cache,vals,rows,a.strategy)
@@ -53,51 +52,79 @@ function assemble_vector_add!(b,a::SingleFieldSparseMatrixAssembler,vecdata)
   b
 end
 
-function _assemble_vector!(vec,vals_cache,rows_cache,cell_vals,cell_rows,strategy)
+@noinline function _assemble_vector!(vec,vals_cache,rows_cache,cell_vals,cell_rows,strategy)
   @assert length(cell_vals) == length(cell_rows)
   for cell in 1:length(cell_rows)
     rows = getindex!(rows_cache,cell_rows,cell)
     vals = getindex!(vals_cache,cell_vals,cell)
-    for (i,gid) in enumerate(rows)
-      if gid > 0 && row_mask(strategy,gid)
-        _gid = row_map(strategy,gid)
-        add_entry!(vec,vals[i],_gid)
-      end
+    _assemble_vector_at_cell!(vec,rows,vals,strategy)
+  end
+end
+
+@inline function _assemble_vector_at_cell!(vec,rows,vals,strategy)
+  for (i,gid) in enumerate(rows)
+    if gid > 0 && row_mask(strategy,gid)
+      _gid = row_map(strategy,gid)
+      add_entry!(vec,vals[i],_gid)
     end
   end
 end
 
-function count_matrix_nnz_coo(a::SingleFieldSparseMatrixAssembler,matdata)
-  _,term_to_cellidsrows, term_to_cellidscols = matdata
-  celldofs_rows = get_cell_dofs(a.test)
-  celldofs_cols = get_cell_dofs(a.trial)
+@inline function _assemble_vector_at_cell!(vec,rows::BlockArrayCoo,vals::BlockArrayCoo,strategy)
+  for I in eachblockindex(vals)
+    if is_nonzero_block(vals,I)
+      _assemble_vector_at_cell!(vec,vals[I],rows[I],strategy)
+    end
+  end
+end
+
+function count_matrix_nnz_coo(a::GenericSparseMatrixAssembler,matdata)
   n = 0
-  for (cellidsrows,cellidscols) in zip(term_to_cellidsrows,term_to_cellidscols)
-    cell_rows = reindex(celldofs_rows,cellidsrows)
-    cell_cols = reindex(celldofs_cols,cellidscols)
+  for (cellmat_rc,cellidsrows,cellidscols) in zip(matdata...)
+    cell_rows = get_cell_dofs(a.test,cellidsrows)
+    cell_cols = get_cell_dofs(a.trial,cellidscols)
     rows_cache = array_cache(cell_rows)
     cols_cache = array_cache(cell_cols)
+    cellmat_r = attach_constraints_cols(a.trial,cellmat_rc,cellidscols)
+    cellmat = attach_constraints_rows(a.test,cellmat_r,cellidsrows)
     @assert length(cell_cols) == length(cell_rows)
-    n += _count_matrix_entries(a.matrix_type,rows_cache,cols_cache,cell_rows,cell_cols,a.strategy)
+    if length(cell_cols) > 0
+      mat, = first(cellmat)
+      Is = _get_block_layout(mat)
+      n += _count_matrix_entries(a.matrix_type,rows_cache,cols_cache,cell_rows,cell_cols,a.strategy,Is)
+    end
   end
-
   n
 end
 
-@noinline function _count_matrix_entries(::Type{M},rows_cache,cols_cache,cell_rows,cell_cols,strategy) where M
+function _get_block_layout(a)
+  nothing
+end
+
+function _get_block_layout(a::BlockArrayCoo)
+  [(I,_get_block_layout(a[I])) for I in eachblockindex(a) if is_nonzero_block(a,I) ]
+end
+
+@noinline function _count_matrix_entries(::Type{M},rows_cache,cols_cache,cell_rows,cell_cols,strategy,Is) where M
   n = 0
   for cell in 1:length(cell_cols)
     rows = getindex!(rows_cache,cell_rows,cell)
     cols = getindex!(cols_cache,cell_cols,cell)
-    for gidcol in cols
-      if gidcol > 0 && col_mask(strategy,gidcol)
-        _gidcol = col_map(strategy,gidcol)
-        for gidrow in rows
-          if gidrow > 0 && row_mask(strategy,gidrow)
-            _gidrow = row_map(strategy,gidrow)
-            if is_entry_stored(M,_gidrow,_gidcol)
-              n += 1
-            end
+    n += _count_matrix_entries_at_cell(M,rows,cols,strategy,Is)
+  end
+  n
+end
+
+@inline function _count_matrix_entries_at_cell(::Type{M},rows,cols,strategy,Is) where M
+  n = 0
+  for gidcol in cols
+    if gidcol > 0 && col_mask(strategy,gidcol)
+      _gidcol = col_map(strategy,gidcol)
+      for gidrow in rows
+        if gidrow > 0 && row_mask(strategy,gidrow)
+          _gidrow = row_map(strategy,gidrow)
+          if is_entry_stored(M,_gidrow,_gidcol)
+            n += 1
           end
         end
       end
@@ -106,44 +133,65 @@ end
   n
 end
 
-function count_matrix_and_vector_nnz_coo(a::SingleFieldSparseMatrixAssembler,data)
+@inline function _count_matrix_entries_at_cell(
+  ::Type{M},rows::BlockArrayCoo,cols::BlockArrayCoo,strategy,Is) where M
+  n = 0
+  for (I,Is_next) in Is
+    i,j = I.n
+    n += _count_matrix_entries_at_cell(M,rows[Block(i)],cols[Block(j)],strategy,Is_next)
+  end
+  n
+end
+
+function count_matrix_and_vector_nnz_coo(a::GenericSparseMatrixAssembler,data)
   matvecdata, matdata, vecdata = data
   n = count_matrix_nnz_coo(a,matvecdata)
   n += count_matrix_nnz_coo(a,matdata)
   n
 end
 
-function fill_matrix_coo_symbolic!(I,J,a::SingleFieldSparseMatrixAssembler,matdata,n=0)
-  _,term_to_cellidsrows, term_to_cellidscols = matdata
-  celldofs_rows = get_cell_dofs(a.test)
-  celldofs_cols = get_cell_dofs(a.trial)
+function fill_matrix_coo_symbolic!(I,J,a::GenericSparseMatrixAssembler,matdata,n=0)
+  term_to_cellmat,term_to_cellidsrows, term_to_cellidscols = matdata
   nini = n
-  for (cellidsrows,cellidscols) in zip(term_to_cellidsrows,term_to_cellidscols)
-    cell_rows = reindex(celldofs_rows,cellidsrows)
-    cell_cols = reindex(celldofs_cols,cellidscols)
+  for (cellmat_rc,cellidsrows,cellidscols) in zip(term_to_cellmat,term_to_cellidsrows,term_to_cellidscols)
+    cell_rows = get_cell_dofs(a.test,cellidsrows)
+    cell_cols = get_cell_dofs(a.trial,cellidscols)
     rows_cache = array_cache(cell_rows)
     cols_cache = array_cache(cell_cols)
-    nini = _allocate_matrix!(a.matrix_type,nini,I,J,rows_cache,cols_cache,cell_rows,cell_cols,a.strategy)
+    cellmat_r = attach_constraints_cols(a.trial,cellmat_rc,cellidscols)
+    cellmat = attach_constraints_rows(a.test,cellmat_r,cellidsrows)
+    @assert length(cell_cols) == length(cell_rows)
+    if length(cell_cols) > 0
+      mat, = first(cellmat)
+      Is = _get_block_layout(mat)
+      nini = _allocate_matrix!(a.matrix_type,nini,I,J,rows_cache,cols_cache,cell_rows,cell_cols,a.strategy,Is)
+    end
   end
   nini
 end
 
-@noinline function _allocate_matrix!(a::Type{M},nini,I,J,rows_cache,cols_cache,cell_rows,cell_cols,strategy) where M
+@noinline function _allocate_matrix!(a::Type{M},nini,I,J,rows_cache,cols_cache,cell_rows,cell_cols,strategy,Is) where M
   n = nini
   for cell in 1:length(cell_cols)
     rows = getindex!(rows_cache,cell_rows,cell)
     cols = getindex!(cols_cache,cell_cols,cell)
-    for gidcol in cols
-      if gidcol > 0 && col_mask(strategy,gidcol)
-        _gidcol = col_map(strategy,gidcol)
-        for gidrow in rows
-          if gidrow > 0 && row_mask(strategy,gidrow)
-            _gidrow = row_map(strategy,gidrow)
-            if is_entry_stored(M,_gidrow,_gidcol)
-              n += 1
-              @inbounds I[n] = _gidrow
-              @inbounds J[n] = _gidcol
-            end
+    n = _allocate_matrix_at_cell!(M,n,I,J,rows,cols,strategy,Is)
+  end
+  n
+end
+
+@inline function _allocate_matrix_at_cell!(::Type{M},nini,I,J,rows,cols,strategy,Is) where M
+  n = nini
+  for gidcol in cols
+    if gidcol > 0 && col_mask(strategy,gidcol)
+      _gidcol = col_map(strategy,gidcol)
+      for gidrow in rows
+        if gidrow > 0 && row_mask(strategy,gidrow)
+          _gidrow = row_map(strategy,gidrow)
+          if is_entry_stored(M,_gidrow,_gidcol)
+            n += 1
+            @inbounds I[n] = _gidrow
+            @inbounds J[n] = _gidcol
           end
         end
       end
@@ -152,62 +200,80 @@ end
   n
 end
 
-function fill_matrix_and_vector_coo_symbolic!(I,J,a::SingleFieldSparseMatrixAssembler,data,n=0)
+@inline function _allocate_matrix_at_cell!(
+  ::Type{M},nini,I,J,rows::BlockArrayCoo,cols::BlockArrayCoo,strategy,Is) where M
+  n = nini
+  for (I,Is_next) in Is
+    i,j = I.n
+    n = _allocate_matrix_at_cell!(M,n,I,J,rows[Block(i)],cols[Block(j)],strategy,Is_next)
+  end
+  n
+end
+
+function fill_matrix_and_vector_coo_symbolic!(I,J,a::GenericSparseMatrixAssembler,data,n=0)
   matvecdata, matdata, vecdata = data
   nini = fill_matrix_coo_symbolic!(I,J,a,matvecdata,n)
   nini = fill_matrix_coo_symbolic!(I,J,a,matdata,nini)
   nini
 end
 
-function assemble_matrix_add!(mat,a::SingleFieldSparseMatrixAssembler,matdata)
+function assemble_matrix_add!(mat,a::GenericSparseMatrixAssembler,matdata)
 
-  celldofs_rows = get_cell_dofs(a.test)
-  celldofs_cols = get_cell_dofs(a.trial)
   for (cellmat_rc,cellidsrows,cellidscols) in zip(matdata...)
-    cell_rows = reindex(celldofs_rows,cellidsrows)
-    cell_cols = reindex(celldofs_cols,cellidscols)
-    cellmat_r = apply_constraints_matrix_cols(a.trial,cellmat_rc,cellidscols)
-    cellmat = apply_constraints_matrix_rows(a.test,cellmat_r,cellidsrows)
+    cell_rows = get_cell_dofs(a.test,cellidsrows)
+    cell_cols = get_cell_dofs(a.trial,cellidscols)
+    cellmat_r = attach_constraints_cols(a.trial,cellmat_rc,cellidscols)
+    cell_vals = attach_constraints_rows(a.test,cellmat_r,cellidsrows)
     rows_cache = array_cache(cell_rows)
     cols_cache = array_cache(cell_cols)
-    vals_cache = array_cache(cellmat)
-    _assemble_matrix!(mat,vals_cache,rows_cache,cols_cache,cellmat,cell_rows,cell_cols,a.strategy)
+    vals_cache = array_cache(cell_vals)
+    @assert length(cell_cols) == length(cell_rows)
+    @assert length(cell_vals) == length(cell_rows)
+    _assemble_matrix!(mat,vals_cache,rows_cache,cols_cache,cell_vals,cell_rows,cell_cols,a.strategy)
   end
   mat
 end
 
-function _assemble_matrix!(mat,vals_cache,rows_cache,cols_cache,cell_vals,cell_rows,cell_cols,strategy)
-  @assert length(cell_cols) == length(cell_rows)
-  @assert length(cell_vals) == length(cell_rows)
+@noinline function _assemble_matrix!(mat,vals_cache,rows_cache,cols_cache,cell_vals,cell_rows,cell_cols,strategy)
   for cell in 1:length(cell_cols)
     rows = getindex!(rows_cache,cell_rows,cell)
     cols = getindex!(cols_cache,cell_cols,cell)
     vals = getindex!(vals_cache,cell_vals,cell)
-    for (j,gidcol) in enumerate(cols)
-      if gidcol > 0 && col_mask(strategy,gidcol)
-        _gidcol = col_map(strategy,gidcol)
-        for (i,gidrow) in enumerate(rows)
-          if gidrow > 0 && row_mask(strategy,gidrow)
-            _gidrow = row_map(strategy,gidrow)
-            v = vals[i,j]
-            add_entry!(mat,v,_gidrow,_gidcol)
-          end
+    _assemble_matrix_at_cell!(mat,rows,cols,vals,strategy)
+  end
+end
+
+@inline function _assemble_matrix_at_cell!(mat,rows,cols,vals,strategy)
+  for (j,gidcol) in enumerate(cols)
+    if gidcol > 0 && col_mask(strategy,gidcol)
+      _gidcol = col_map(strategy,gidcol)
+      for (i,gidrow) in enumerate(rows)
+        if gidrow > 0 && row_mask(strategy,gidrow)
+          _gidrow = row_map(strategy,gidrow)
+          v = vals[i,j]
+          add_entry!(mat,v,_gidrow,_gidcol)
         end
       end
     end
   end
 end
 
-function fill_matrix_coo_numeric!(I,J,V,a::SingleFieldSparseMatrixAssembler,matdata,n=0)
+@inline function _assemble_matrix_at_cell!(mat,rows::BlockArrayCoo,cols::BlockArrayCoo,vals::BlockArrayCoo,strategy)
+  for I in eachblockindex(vals)
+    if is_nonzero_block(vals,I)
+      i,j = I.n
+      _assemble_matrix_at_cell!(mat,rows[Block(i)],cols[Block(j)],vals[I],strategy)
+    end
+  end
+end
 
+function fill_matrix_coo_numeric!(I,J,V,a::GenericSparseMatrixAssembler,matdata,n=0)
   nini = n
-  celldofs_rows = get_cell_dofs(a.test)
-  celldofs_cols = get_cell_dofs(a.trial)
   for (cellmat_rc,cellidsrows,cellidscols) in zip(matdata...)
-    cell_rows = reindex(celldofs_rows,cellidsrows)
-    cell_cols = reindex(celldofs_cols,cellidscols)
-    cellmat_r = apply_constraints_matrix_cols(a.trial,cellmat_rc,cellidscols)
-    cell_vals = apply_constraints_matrix_rows(a.test,cellmat_r,cellidsrows)
+    cell_rows = get_cell_dofs(a.test,cellidsrows)
+    cell_cols = get_cell_dofs(a.trial,cellidscols)
+    cellmat_r = attach_constraints_cols(a.trial,cellmat_rc,cellidscols)
+    cell_vals = attach_constraints_rows(a.test,cellmat_r,cellidsrows)
     rows_cache = array_cache(cell_rows)
     cols_cache = array_cache(cell_cols)
     vals_cache = array_cache(cell_vals)
@@ -226,18 +292,24 @@ end
     rows = getindex!(rows_cache,cell_rows,cell)
     cols = getindex!(cols_cache,cell_cols,cell)
     vals = getindex!(vals_cache,cell_vals,cell)
-    for (j,gidcol) in enumerate(cols)
-      if gidcol > 0 && col_mask(strategy,gidcol)
-        _gidcol = col_map(strategy,gidcol)
-        for (i,gidrow) in enumerate(rows)
-          if gidrow > 0 && row_mask(strategy,gidrow)
-            _gidrow = row_map(strategy,gidrow)
-            if is_entry_stored(M,_gidrow,_gidcol)
-              n += 1
-              @inbounds I[n] = _gidrow
-              @inbounds J[n] = _gidcol
-              @inbounds V[n] = vals[i,j]
-            end
+    n = _fill_matrix_at_cell!(M,n,I,J,V,rows,cols,vals,strategy)
+  end
+  n
+end
+
+@inline function _fill_matrix_at_cell!(::Type{M},nini,I,J,V,rows,cols,vals,strategy) where M
+  n = nini
+  for (j,gidcol) in enumerate(cols)
+    if gidcol > 0 && col_mask(strategy,gidcol)
+      _gidcol = col_map(strategy,gidcol)
+      for (i,gidrow) in enumerate(rows)
+        if gidrow > 0 && row_mask(strategy,gidrow)
+          _gidrow = row_map(strategy,gidrow)
+          if is_entry_stored(M,_gidrow,_gidcol)
+            n += 1
+            @inbounds I[n] = _gidrow
+            @inbounds J[n] = _gidcol
+            @inbounds V[n] = vals[i,j]
           end
         end
       end
@@ -246,17 +318,27 @@ end
   n
 end
 
-function assemble_matrix_and_vector_add!(A,b,a::SingleFieldSparseMatrixAssembler, data)
+@inline function _fill_matrix_at_cell!(
+  ::Type{M},nini,I,J,V,rows::BlockArrayCoo,cols::BlockArrayCoo,vals::BlockArrayCoo,strategy) where M
+  n = nini
+  for I in eachblockindex(vals)
+    if is_nonzero_block(vals,I)
+      i,j = I.n
+      n = _fill_matrix_at_cell!(M,n,I,J,V,rows[Block(i)],cols[Block(j)],vals[I],strategy)
+    end
+  end
+  n
+end
+
+function assemble_matrix_and_vector_add!(A,b,a::GenericSparseMatrixAssembler, data)
 
   matvecdata, matdata, vecdata = data
-  celldofs_rows = get_cell_dofs(a.test)
-  celldofs_cols = get_cell_dofs(a.trial)
 
   for (cellmatvec_rc,cellidsrows,cellidscols) in zip(matvecdata...)
-    cell_rows = reindex(celldofs_rows,cellidsrows)
-    cell_cols = reindex(celldofs_cols,cellidscols)
-    cellmatvec_r = apply_constraints_matrix_and_vector_cols(a.trial,cellmatvec_rc,cellidscols)
-    cellmatvec = apply_constraints_matrix_and_vector_rows(a.test,cellmatvec_r,cellidsrows)
+    cell_rows = get_cell_dofs(a.test,cellidsrows)
+    cell_cols = get_cell_dofs(a.trial,cellidscols)
+    cellmatvec_r = attach_constraints_cols(a.trial,cellmatvec_rc,cellidscols)
+    cellmatvec = attach_constraints_rows(a.test,cellmatvec_r,cellidsrows)
     rows_cache = array_cache(cell_rows)
     cols_cache = array_cache(cell_cols)
     vals_cache = array_cache(cellmatvec)
@@ -267,7 +349,7 @@ function assemble_matrix_and_vector_add!(A,b,a::SingleFieldSparseMatrixAssembler
   A, b
 end
 
-function _assemble_matrix_and_vector!(A,b,vals_cache,rows_cache,cols_cache,cell_vals,cell_rows,cell_cols,strategy)
+@noinline function _assemble_matrix_and_vector!(A,b,vals_cache,rows_cache,cols_cache,cell_vals,cell_rows,cell_cols,strategy)
   @assert length(cell_cols) == length(cell_rows)
   @assert length(cell_vals) == length(cell_rows)
   for cell in 1:length(cell_cols)
@@ -275,41 +357,21 @@ function _assemble_matrix_and_vector!(A,b,vals_cache,rows_cache,cols_cache,cell_
     cols = getindex!(cols_cache,cell_cols,cell)
     vals = getindex!(vals_cache,cell_vals,cell)
     matvals, vecvals = vals
-    for (j,gidcol) in enumerate(cols)
-      if gidcol > 0 && col_mask(strategy,gidcol)
-        _gidcol = col_map(strategy,gidcol)
-        for (i,gidrow) in enumerate(rows)
-          if gidrow > 0 && row_mask(strategy,gidrow)
-            _gidrow = row_map(strategy,gidrow)
-            v = matvals[i,j]
-            add_entry!(A,v,_gidrow,_gidcol)
-          end
-        end
-      end
-    end
-    for (i,gidrow) in enumerate(rows)
-      if gidrow > 0 && row_mask(strategy,gidrow)
-        _gidrow = row_map(strategy,gidrow)
-        bi = vecvals[i]
-        add_entry!(b,bi,_gidrow)
-      end
-    end
+    _assemble_matrix_at_cell!(A,rows,cols,matvals,strategy)
+    _assemble_vector_at_cell!(b,rows,vecvals,strategy)
   end
 end
 
-function fill_matrix_and_vector_coo_numeric!(I,J,V,b,a::SingleFieldSparseMatrixAssembler,data,n=0)
+function fill_matrix_and_vector_coo_numeric!(I,J,V,b,a::GenericSparseMatrixAssembler,data,n=0)
    
   matvecdata, matdata, vecdata = data
   nini = n
 
-  celldofs_rows = get_cell_dofs(a.test)
-  celldofs_cols = get_cell_dofs(a.trial)
-
   for (cellmatvec_rc,cellidsrows,cellidscols) in zip(matvecdata...)
-    cell_rows = reindex(celldofs_rows,cellidsrows)
-    cell_cols = reindex(celldofs_cols,cellidscols)
-    cellmatvec_r = apply_constraints_matrix_and_vector_cols(a.trial,cellmatvec_rc,cellidscols)
-    cellmatvec = apply_constraints_matrix_and_vector_rows(a.test,cellmatvec_r,cellidsrows)
+    cell_rows = get_cell_dofs(a.test,cellidsrows)
+    cell_cols = get_cell_dofs(a.trial,cellidscols)
+    cellmatvec_r = attach_constraints_cols(a.trial,cellmatvec_rc,cellidscols)
+    cellmatvec = attach_constraints_rows(a.test,cellmatvec_r,cellidsrows)
     rows_cache = array_cache(cell_rows)
     cols_cache = array_cache(cell_cols)
     vals_cache = array_cache(cellmatvec)
@@ -333,30 +395,8 @@ end
     cols = getindex!(cols_cache,cell_cols,cell)
     vals = getindex!(vals_cache,cell_vals,cell)
     matvals, vecvals = vals
-    for (j,gidcol) in enumerate(cols)
-      if gidcol > 0 && col_mask(strategy,gidcol)
-        _gidcol = col_map(strategy,gidcol)
-        for (i,gidrow) in enumerate(rows)
-          if gidrow > 0 && row_mask(strategy,gidrow)
-            _gidrow = row_map(strategy,gidrow)
-            if is_entry_stored(M,gidrow,gidcol)
-              n += 1
-              @inbounds v = matvals[i,j]
-              @inbounds I[n] = _gidrow
-              @inbounds J[n] = _gidcol
-              @inbounds V[n] = v
-            end
-          end
-        end
-      end
-    end
-    for (i,gidrow) in enumerate(rows)
-      if gidrow > 0 && row_mask(strategy,gidrow)
-        _gidrow = row_map(strategy,gidrow)
-        bi = vecvals[i]
-        add_entry!(b,bi,_gidrow)
-      end
-    end
+    n = _fill_matrix_at_cell!(M,n,I,J,V,rows,cols,matvals,strategy)
+    _assemble_vector_at_cell!(b,rows,vecvals,strategy)
   end
   n
 end

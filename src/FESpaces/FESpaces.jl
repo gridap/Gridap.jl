@@ -168,6 +168,7 @@ export HomogeneousTrialFESpace!
 export TestFESpace
 export compute_conforming_cell_dofs
 export SparseMatrixAssembler
+export GenericSparseMatrixAssembler
 
 export FEOperator
 export test_fe_operator
@@ -231,12 +232,13 @@ include("ConformingFESpaces.jl")
 include("TrialFESpaces.jl")
 
 include("DiscontinuousFESpaces.jl")
-#
-#include("Assemblers.jl")
-#
+
+include("Assemblers.jl")
+
+include("SparseMatrixAssemblers.jl")
+
 #include("FEOperators.jl")
 #
-#include("SparseMatrixAssemblers.jl")
 #
 #include("FETerms.jl")
 #

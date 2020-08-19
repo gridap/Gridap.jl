@@ -80,11 +80,15 @@ idsS = merge_cell_dofs_at_skeleton(idsL,idsR,axesL,axesR)
 @test isa(idsS,VectorOfBlockArrayCoo)
 
 afS = merge_cell_fields_at_skeleton(af,2*af)
+@test isa(afS,SkeletonCellField)
 
 afL_x = evaluate(afS.left,xl)
 afR_x = evaluate(afS.right,xl)
 @test isa(afL_x,VectorOfBlockArrayCoo)
 @test isa(afR_x,VectorOfBlockArrayCoo)
+
+@test isa(afS*2,SkeletonCellField)
+@test isa(afS+afS,SkeletonCellField)
 
 # Checks associated with trial bases
 df = bf
