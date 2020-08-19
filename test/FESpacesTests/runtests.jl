@@ -14,14 +14,14 @@ using Test
 
 @testset "ConformingFESpaces" begin include("ConformingFESpacesTests.jl") end
 
-#@testset "TrialFESpaces" begin include("TrialFESpacesTests.jl") end
-#
-#@testset "DivConformingFESpaces" begin include("DivConformingFESpacesTests.jl") end
-#
-#@testset "CurlConformingFESpaces" begin include("CurlConformingFESpacesTests.jl") end
-#
-#@testset "DiscontinuousFESpaces" begin include("DiscontinuousFESpacesTests.jl") end
-#
+@testset "TrialFESpaces" begin include("TrialFESpacesTests.jl") end
+
+@testset "DivConformingFESpaces" begin include("DivConformingFESpacesTests.jl") end
+
+@testset "CurlConformingFESpaces" begin include("CurlConformingFESpacesTests.jl") end
+
+@testset "DiscontinuousFESpaces" begin include("DiscontinuousFESpacesTests.jl") end
+
 #@testset "CellBases" begin include("CellBasesTests.jl") end
 #
 #@testset "CellDofBases" begin include("CellDofBasesTests.jl") end

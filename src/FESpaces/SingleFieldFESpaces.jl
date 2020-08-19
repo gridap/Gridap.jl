@@ -84,16 +84,13 @@ end
 
 """
 """
-function get_cell_map(fs::SingleFieldFESpace)
+function CellData.get_cell_map(fs::SingleFieldFESpace)
   fe_basis = get_cell_basis(fs)
   get_cell_map(fe_basis)
 end
 
-"""
-"""
-function get_cell_shapefuns(fs::SingleFieldFESpace)
-  fe_basis = get_cell_basis(fs)
-  get_array(fe_basis)
+function CellData.get_cell_axes(f::SingleFieldFESpace)
+  get_cell_axes(get_cell_basis(f))
 end
 
 """
@@ -106,8 +103,8 @@ are the ones provided by `get_dirichlet_values(fs)`
 function FEFunction(
   fs::SingleFieldFESpace, free_values::AbstractVector, dirichlet_values::AbstractVector)
   cell_vals = scatter_free_and_dirichlet_values(fs,free_values,dirichlet_values)
-  cell_shapefuns = get_cell_shapefuns(fs)
-  cell_field = lincomb(cell_shapefuns,cell_vals)
+  cell_basis = get_cell_basis(fs)
+  cell_field = lincomb(cell_basis,cell_vals)
   SingleFieldFEFunction(cell_field,cell_vals,free_values,dirichlet_values,fs)
 end
 

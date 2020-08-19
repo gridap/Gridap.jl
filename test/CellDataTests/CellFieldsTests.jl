@@ -86,5 +86,18 @@ afR_x = evaluate(afS.right,xl)
 @test isa(afL_x,VectorOfBlockArrayCoo)
 @test isa(afR_x,VectorOfBlockArrayCoo)
 
+# Checks associated with trial bases
+df = bf
+dft = trialize_cell_basis(df)
+cell_vals = [rand(ndofs) for  i in 1:l]
+r1 = lincomb(df,cell_vals)
+r2 = lincomb(dft,cell_vals)
+@test evaluate(r1,xl) == evaluate(r2,xl)
+
+@test ∇(dft).test === ∇(df)
+@test (∇⋅dft).test === ∇⋅df
+@test evaluate(dft,xl).f[1] === evaluate(df,xl)
+@test evaluate(∇(dft),xl).f[1] === evaluate(∇(df),xl)
+
 end # module
 

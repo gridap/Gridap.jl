@@ -39,7 +39,6 @@ import Gridap.Arrays: kernel_testitem!
 import Gridap.Arrays: reindex
 import Gridap.Arrays: apply
 import Gridap.CellData: get_cell_map
-import Gridap.Geometry: get_cell_shapefuns
 import Gridap.Geometry: get_reffes
 import Gridap.Geometry: get_cell_type
 import Gridap.CellData: RefStyle
@@ -152,7 +151,6 @@ export interpolate
 export interpolate_everywhere
 export interpolate_dirichlet
 export get_cell_dof_basis
-export get_cell_shapefuns
 
 export SingleFieldFEFunction
 
@@ -224,13 +222,15 @@ include("SingleFieldFESpaces.jl")
 
 include("SingleFieldFEFunctions.jl")
 
+include("FESpaceFactories.jl")
+
 include("UnconstrainedFESpaces.jl")
 
 include("ConformingFESpaces.jl")
 
-#include("DiscontinuousFESpaces.jl")
-#
-#include("TrialFESpaces.jl")
+include("TrialFESpaces.jl")
+
+include("DiscontinuousFESpaces.jl")
 #
 #include("Assemblers.jl")
 #
@@ -260,7 +260,6 @@ include("ConformingFESpaces.jl")
 #
 #include("FESpacesWithLinearConstraints.jl")
 #
-#include("FESpaceFactories.jl")
 #
 #include("StateLaws.jl")
 #

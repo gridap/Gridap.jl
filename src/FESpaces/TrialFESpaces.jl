@@ -2,11 +2,11 @@
 struct TrialFESpace{B} <: SingleFieldFESpace
   space::SingleFieldFESpace
   dirichlet_values::AbstractVector
-  cell_basis::CellBasis
+  cell_basis::CellField
   constraint_style::Val{B}
 
   function TrialFESpace(dirichlet_values::AbstractVector,space::SingleFieldFESpace)
-    cell_basis = _prepare_trial_cell_basis(space)
+    cell_basis = trialize_cell_basis(get_cell_basis(space))
     cs = constraint_style(space)
     B = get_val_parameter(cs)
     new{B}(space,dirichlet_values,cell_basis,cs)
@@ -56,14 +56,6 @@ function HomogeneousTrialFESpace!(dirichlet_values::AbstractVector,U::FESpace)
   TrialFESpace(dirichlet_values,U)
 end
 
-function  _prepare_trial_cell_basis(space)
-  cb = get_cell_basis(space)
-  a = get_array(cb)
-  cm = get_cell_map(cb)
-  trial_style = Val{true}()
-  cell_basis = GenericCellBasis(trial_style,a,cm,RefStyle(cb))
-end
-
 # Genuine functions
 
 get_dirichlet_values(f::TrialFESpace) = f.dirichlet_values
@@ -81,6 +73,11 @@ num_free_dofs(f::TrialFESpace) = num_free_dofs(f.space)
 zero_free_values(f::TrialFESpace) = zero_free_values(f.space)
 
 get_cell_dofs(f::TrialFESpace) = get_cell_dofs(f.space)
+
+function get_cell_axes_with_constraints(t::TrialFESpace)
+  cell_axes = get_cell_axes_with_constraints(t.space)
+  apply(Fields._add_singleton_block,cell_axes)
+end
 
 num_dirichlet_dofs(f::TrialFESpace) = num_dirichlet_dofs(f.space)
 
@@ -103,18 +100,6 @@ gather_dirichlet_values!(dv,f::TrialFESpace,cv) = gather_dirichlet_values!(dv,f.
 gather_free_values(f::TrialFESpace,cv) = gather_free_values(f.space,cv)
 
 gather_free_values!(fv,f::TrialFESpace,cv) = gather_free_values!(fv,f.space,cv)
-
-function get_constraint_kernel_matrix_cols(f::TrialFESpace)
-  get_constraint_kernel_matrix_cols(f.space)
-end
-
-function get_constraint_kernel_matrix_rows(f::TrialFESpace)
-  get_constraint_kernel_matrix_rows(f.space)
-end
-
-function get_constraint_kernel_vector(f::TrialFESpace)
-  get_constraint_kernel_vector(f.space)
-end
 
 function get_cell_isconstrained(f::TrialFESpace)
   get_cell_isconstrained(f.space)

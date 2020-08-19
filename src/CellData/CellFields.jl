@@ -29,6 +29,10 @@ function get_cell_axes(cf::CellField)
   @abstractmethod
 end
 
+function get_memo(cf::CellField)
+  @abstractmethod
+end
+
 """
 This trait returns `Val{true}()` when the `CellField` is defined in a
 reference finite element space, and `Val{false}()` when it is defined in the
@@ -97,6 +101,7 @@ function test_cell_field(cf::CellField,x::AbstractArray,b::AbstractArray,pred=(=
   @test isa(get_cell_axes(cf),AbstractArray{<:Tuple})
   @test isa(get_metasize(cf),Tuple)
   @test isa(MetaSizeStyle(cf),Val)
+  @test isa(get_memo(cf),Dict)
 end
 
 # Concrete implementation
@@ -144,6 +149,10 @@ end
 
 function get_cell_map(cf::GenericCellField)
   cf.cell_map
+end
+
+function get_memo(cf::GenericCellField)
+  cf.memo
 end
 
 function get_cell_axes(cf::GenericCellField)
@@ -206,10 +215,11 @@ _to_physical_space(a,::Val{false}) = a
 """
 function evaluate(cf::CellField,x::AbstractArray)
   key = (:evaluate,objectid(x))
-  if !haskey(cf.memo,key)
-    cf.memo[key] = _evaluate(cf,x,RefStyle(cf))
+  memo = get_memo(cf)
+  if !haskey(memo,key)
+    memo[key] = _evaluate(cf,x,RefStyle(cf))
   end
-  cf.memo[key]
+  memo[key]
 end
 
 function _evaluate(cf::CellField,x::AbstractArray,::Val{true})
@@ -236,11 +246,64 @@ function Arrays.reindex(cf::CellField,a::AbstractVector)
   similar_object(cf,array,cell_axes,MetaSizeStyle(cf))
 end
 
-function trialize_cell_basis(a::CellField)
-  @assert is_test(a)
-  array = trialize_array_of_bases(get_array(a))
-  axs = apply(Fields._add_singleton_block,get_cell_axes(a))
-  similar_object(a,array,axs,Val((1,:)))
+# Bases-related
+
+# In some places (see lincom below) we need to "remember" which is the test basis
+# In order places, this is also used for performing optimizations
+struct TrialCellBasis{T<:CellField} <: CellField
+  test::CellField
+  trial::T
+end
+
+get_array(a::TrialCellBasis) = get_array(a.trial)
+get_cell_map(a::TrialCellBasis) = get_cell_map(a.trial)
+get_cell_axes(a::TrialCellBasis) = get_cell_axes(a.trial)
+get_memo(a::TrialCellBasis) = get_memo(a.trial)
+RefStyle(::Type{TrialCellBasis{T}}) where T = RefStyle(T)
+MetaSizeStyle(::Type{TrialCellBasis{T}}) where T = MetaSizeStyle(T)
+
+function trialize_cell_basis(test::CellField)
+  @assert is_test(test)
+  array = trialize_array_of_bases(get_array(test))
+  axs = apply(Fields._add_singleton_block,get_cell_axes(test))
+  trial = similar_object(test,array,axs,Val((1,:)))
+  TrialCellBasis(test,trial)
+end
+
+function Fields.lincomb(a::CellField,b::AbstractArray)
+  @notimplementedif !is_test(a)
+  lincomb(get_array(a),b)
+end
+
+function Fields.lincomb(a::TrialCellBasis,b::AbstractArray)
+  lincomb(get_array(a.test),b)
+end
+
+function evaluate(cf::TrialCellBasis,x::AbstractArray)
+  key = (:evaluate,objectid(x))
+  memo = get_memo(cf)
+  if !haskey(memo,key)
+    memo[key] = apply(Fields.trialize_basis_value,evaluate(cf.test,x))
+  end
+  memo[key]
+end
+
+function gradient(a::TrialCellBasis)
+  key = :gradient
+  memo = get_memo(a)
+  if !haskey(memo,key)
+    memo[key] = trialize_cell_basis(gradient(a.test))
+  end
+  memo[key]
+end
+
+function operate(op,a::TrialCellBasis)
+  key = objectid(op)
+  memo = get_memo(a)
+  if !haskey(memo,key)
+    memo[key] = trialize_cell_basis(operate(op,a.test))
+  end
+  memo[key]
 end
 
 # Diff ops
@@ -250,24 +313,26 @@ end
 """
 function gradient(cf::CellField)
   key = :gradient
-  if !haskey(cf.memo,key)
+  memo = get_memo(cf)
+  if !haskey(memo,key)
     a = get_array(cf)
     ag = field_array_gradient(a)
-    cf.memo[key] = similar_object(cf,ag,get_cell_axes(cf),MetaSizeStyle(cf))
+    memo[key] = similar_object(cf,ag,get_cell_axes(cf),MetaSizeStyle(cf))
   end
-  cf.memo[key]
+  memo[key]
 end
 
 # Operations
 
 function operate(op,cf::CellField)
   key = objectid(op)
-  if !haskey(cf.memo,key)
+  memo = get_memo(cf)
+  if !haskey(memo,key)
     a = get_array(cf)
     b = operate_arrays_of_fields(Fields._UnimplementedField,op,a)
-    cf.memo[key] = similar_object(cf,b,get_cell_axes(cf),MetaSizeStyle(cf))
+    memo[key] = similar_object(cf,b,get_cell_axes(cf),MetaSizeStyle(cf))
   end
-  cf.memo[key]
+  memo[key]
 end
 
 function operate(op,cf1::CellField,cf2::CellField)

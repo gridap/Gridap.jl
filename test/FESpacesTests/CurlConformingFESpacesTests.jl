@@ -1,9 +1,12 @@
 module CurlConformingFESpacesTests
 
 using Test
-using Gridap
 using LinearAlgebra
 using Gridap.FESpaces
+using Gridap.Geometry
+using Gridap.TensorValues
+using Gridap.CellData
+using Gridap.Fields
 using Gridap.ReferenceFEs
 
 domain =(0,1,0,1,0,1)

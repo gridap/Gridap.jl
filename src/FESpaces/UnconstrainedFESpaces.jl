@@ -36,10 +36,6 @@ function get_cell_dofs(f::UnconstrainedFESpace)
   f.cell_dofs
 end
 
-function CellData.get_cell_axes(f::UnconstrainedFESpace)
-  get_cell_axes(get_cell_basis(f))
-end
-
 function get_cell_dof_basis(f::UnconstrainedFESpace)
   f.cell_dof_basis
 end

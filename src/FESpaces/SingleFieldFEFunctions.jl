@@ -8,6 +8,7 @@ struct SingleFieldFEFunction{R} <: CellField
   dirichlet_values
   fe_space
   ref_style::Val{R}
+  memo::Dict
   @doc """
   """
   function SingleFieldFEFunction(
@@ -19,7 +20,8 @@ struct SingleFieldFEFunction{R} <: CellField
 
     ref_style = RefStyle(get_cell_dof_basis(fe_space))
     R = get_val_parameter(ref_style)
-    new{R}(array,cell_vals,free_values,dirichlet_values,fe_space,ref_style)
+    memo = Dict()
+    new{R}(array,cell_vals,free_values,dirichlet_values,fe_space,ref_style,memo)
   end
 end
 
@@ -42,3 +44,5 @@ RefStyle(::Type{SingleFieldFEFunction{R}}) where R = Val{R}()
 CellData.MetaSizeStyle(::Type{<:SingleFieldFEFunction}) = Val(())
 
 CellData.get_cell_axes(a::SingleFieldFEFunction) = get_cell_axes(get_fe_space(a))
+
+CellData.get_memo(a::SingleFieldFEFunction) = a.memo

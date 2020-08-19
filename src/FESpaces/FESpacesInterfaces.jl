@@ -77,7 +77,7 @@ end
 
 """
 """
-function get_cell_axes(f::FESpace)
+function CellData.get_cell_axes(f::FESpace)
   @abstractmethod
 end
 
