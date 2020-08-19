@@ -115,7 +115,7 @@ function get_cell_constraints(f::FESpace,cellids::SkeletonPair)
   constr = reindex(get_cell_constraints(f),cellids)
   axsrows = reindex(get_cell_axes_with_constraints(f),cellids)
   axscols = reindex(get_cell_axes(f),cellids)
-  merge_cell_dofs_at_skeleton(
+  merge_cell_constraints_at_skeleton(
     constr.left,constr.right,
     axsrows.left,axsrows.right,
     axscols.left,axscols.right)
