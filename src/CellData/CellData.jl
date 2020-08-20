@@ -36,6 +36,7 @@ import Gridap.Arrays: reindex
 export CellField
 export get_cell_map
 export get_cell_axes
+export get_memo
 export RefStyle
 export is_in_ref_space
 export is_in_physical_space

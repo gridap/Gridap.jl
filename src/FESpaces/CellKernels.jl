@@ -25,7 +25,7 @@ struct CellMatVecKernel{F<:Function} <: Kernel
   op::F
 end
 
-function kernel_cache(k::CellMatVecKernel,a::AbstractMatrix,b::AbstractMatrix,c...)
+function kernel_cache(k::CellMatVecKernel,a::AbstractArray,b::AbstractArray,c...)
   @assert ndims(a) == 2
   @assert ndims(b) == 2
   Ta = eltype(a)
@@ -57,7 +57,7 @@ struct CellMatKernel{F<:Function} <: Kernel
   op::F
 end
 
-function kernel_cache(k::CellMatKernel,a::AbstractMatrix,b::AbstractMatrix,c...)
+function kernel_cache(k::CellMatKernel,a::AbstractArray,b::AbstractArray,c...)
   @assert ndims(a) == 2
   @assert ndims(b) == 2
   Ta = eltype(a)
@@ -84,7 +84,7 @@ struct CellVecKernel{F<:Function} <: Kernel
   op::F
 end
 
-function kernel_cache(k::CellVecKernel,a::AbstractMatrix,c...)
+function kernel_cache(k::CellVecKernel,a::AbstractArray,c...)
   @assert ndims(a) == 2
   Ta = eltype(a)
   T = return_type(inner,Ta,Ta)

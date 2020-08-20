@@ -26,9 +26,18 @@ using Test
 
 @testset "SparseMatrixAssemblers" begin include("SparseMatrixAssemblersTests.jl") end
 
-@testset "CellKernels" begin include("CellKernelsTests.jl") end
+#@testset "CellKernels" begin include("CellKernelsTests.jl") end
 
 @testset "FETerms" begin include("FETermsTests.jl") end
+
+@testset "FEOperators" begin include("FEOperatorsTests.jl") end
+
+@testset "AffineFEOperators" begin include("AffineFEOperatorsTests.jl") end
+
+@testset "FEOperatorsFromTerms" begin include("FEOperatorsFromTermsTests.jl") end
+
+@testset "FESolvers" begin include("FESolversTests.jl") end
+
 
 
 
@@ -39,18 +48,11 @@ using Test
 #
 #@testset "Law" begin include("LawTests.jl") end
 #
-#@testset "FEOperators" begin include("FEOperatorsTests.jl") end
 #
 #
 #@testset "CDLagrangianFESpaces" begin include("CDLagrangianFESpacesTests.jl") end
 #
 #
-#
-#@testset "AffineFEOperators" begin include("AffineFEOperatorsTests.jl") end
-#
-#@testset "FEOperatorsFromTerms" begin include("FEOperatorsFromTermsTests.jl") end
-#
-#@testset "FESolvers" begin include("FESolversTests.jl") end
 #
 #@testset "FESpacesWithLastDofRemoved" begin include("FESpacesWithLastDofRemovedTests.jl") end
 #
