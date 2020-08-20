@@ -120,7 +120,6 @@ function _generate_clagrangian_fespace(T,grid)
       cell_dofs,
       cell_shapefuns,
       cell_dof_basis,
-      cell_map,
       dirichlet_dof_tag,
       dirichlet_cells,
       ntags)

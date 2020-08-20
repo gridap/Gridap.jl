@@ -76,17 +76,15 @@ end
 
 constraint_style(::Type{ZeroMeanFESpace{B}}) where B = Val{B}()
 
-function get_constraint_kernel_matrix_cols(f::ZeroMeanFESpace)
-  get_constraint_kernel_matrix_cols(f.space)
-end
+get_cell_axes(t::ZeroMeanFESpace)= get_cell_axes(t.space)
 
-function get_constraint_kernel_matrix_rows(f::ZeroMeanFESpace)
-  get_constraint_kernel_matrix_rows(f.space)
-end
+get_cell_axes_with_constraints(t::ZeroMeanFESpace)= get_cell_axes_with_constraints(t.space)
 
-function get_constraint_kernel_vector(f::ZeroMeanFESpace)
-  get_constraint_kernel_vector(f.space)
-end
+CellData.CellField(t::ZeroMeanFESpace,cell_vals) = CellField(t.space,cell_vals)
+
+get_cell_isconstrained(f::ZeroMeanFESpace) = get_cell_isconstrained(f.space)
+
+get_cell_constraints(f::ZeroMeanFESpace) = get_cell_constraints(f.space)
 
 get_dirichlet_values(f::ZeroMeanFESpace) = get_dirichlet_values(f.space)
 

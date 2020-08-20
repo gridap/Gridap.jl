@@ -38,6 +38,14 @@ using Test
 
 @testset "FESolvers" begin include("FESolversTests.jl") end
 
+@testset "FESpacesWithLastDofRemoved" begin include("FESpacesWithLastDofRemovedTests.jl") end
+
+@testset "ZeroMeanFESpaces" begin include("ZeroMeanFESpacesTests.jl") end
+
+@testset "CLagrangianFESpaces" begin include("CLagrangianFESpacesTests.jl") end
+
+@testset "DirichletFESpaces" begin include("DirichletFESpacesTests.jl") end
+
 
 
 
@@ -54,13 +62,7 @@ using Test
 #
 #
 #
-#@testset "FESpacesWithLastDofRemoved" begin include("FESpacesWithLastDofRemovedTests.jl") end
 #
-#@testset "ZeroMeanFESpaces" begin include("ZeroMeanFESpacesTests.jl") end
-#
-#@testset "CLagrangianFESpaces" begin include("CLagrangianFESpacesTests.jl") end
-#
-#@testset "DirichletFESpaces" begin include("DirichletFESpacesTests.jl") end
 #
 #@testset "ExtendedFESpaces" begin include("ExtendedFESpacesTests.jl") end
 #

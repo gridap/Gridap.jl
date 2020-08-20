@@ -250,14 +250,14 @@ include("FEOperatorsFromTerms.jl")
 
 include("FESolvers.jl")
 
-#include("FESpacesWithLastDofRemoved.jl")
-#
-#include("ZeroMeanFESpaces.jl")
-#
-#include("CLagrangianFESpaces.jl")
-#
-#include("DirichletFESpaces.jl")
-#
+include("FESpacesWithLastDofRemoved.jl")
+
+include("ZeroMeanFESpaces.jl")
+
+include("CLagrangianFESpaces.jl")
+
+include("DirichletFESpaces.jl")
+
 #include("ExtendedFESpaces.jl")
 #
 #include("FESpacesWithLinearConstraints.jl")
