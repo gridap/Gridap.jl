@@ -1,16 +1,15 @@
 module MultiFieldFESpacesTests
 
+using BlockArrays
 using Gridap.Arrays
 using Gridap.Geometry
 using Gridap.FESpaces
 using Gridap.Fields
 using Gridap.Integration
+using Gridap.CellData
 using Test
 
 using Gridap.MultiField
-using Gridap.MultiField: MultiFieldFESpace
-using Gridap.MultiField: MultiFieldCellArray
-using Gridap.MultiField: ConsecutiveMultiFieldStyle
 
 order = 2
 
@@ -37,8 +36,16 @@ for ref_st in ref_style
   Y = MultiFieldFESpace([V,Q],multi_field_style)
   X = MultiFieldFESpace([U,P],multi_field_style)
 
+  cell_axes = get_cell_axes(Y)
+  @test isa(cell_axes[1][1],BlockedUnitRange)
+
+  cell_axes = get_cell_axes(X)
+  @test isa(cell_axes[1][1],BlockedUnitRange)
+
   @test num_free_dofs(X) == num_free_dofs(U) + num_free_dofs(P)
   @test num_free_dofs(X) == num_free_dofs(Y)
+
+  kk
 
   free_values = rand(num_free_dofs(X))
   xh = FEFunction(X,free_values)

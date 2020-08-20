@@ -487,9 +487,9 @@ function merge_cell_fields_at_skeleton(cfL,cfR)
   else
     ax1 = get_cell_axes(cfL)
     ax2 = get_cell_axes(cfR)
-    arrL = insert_array_of_bases_in_block(get_array(cfL),ax1,ax2,1)
+    arrL = insert_array_of_bases_in_block(1,get_array(cfL),ax1,ax2)
     cfSL = similar_object(cfL,arrL,arrL.axes,MetaSizeStyle(cfL))
-    arrR = insert_array_of_bases_in_block(get_array(cfR),ax1,ax2,2)
+    arrR = insert_array_of_bases_in_block(2,get_array(cfR),ax1,ax2)
     cfSR = similar_object(cfR,arrR,arrR.axes,MetaSizeStyle(cfR))
     SkeletonCellField(cfSL,cfSR)
   end

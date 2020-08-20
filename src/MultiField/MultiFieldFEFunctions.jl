@@ -4,7 +4,13 @@
       # private fields
     end
 """
-struct MultiFieldFEFunction
+struct MultiFieldFEFunction{T<:MultiFieldCellField} <: CellField
+  multi_cell_field::T
+  cell_vals
+  free_values
+  dirichlet_values
+  fe_space
+
   free_values::AbstractVector
   space::MultiFieldFESpace
   blocks::Vector{<:SingleFieldFEFunction}

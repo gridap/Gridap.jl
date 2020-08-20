@@ -42,10 +42,10 @@ function compose_field_arrays(v::VectorOfBlockBasisCoo,f)
   VectorOfBlockBasisCoo(blocks,v.blockids,v.axes)
 end
 
-function insert_array_of_bases_in_block(a,ax1,ax2,i)
+function insert_array_of_bases_in_block(i::Integer,a,ax1,ax2...)
   blocks = (a,)
   blockids = _compute_blockids(eltype(ax1),i)
-  axs = apply(_cat_axes,ax1,ax2)
+  axs = apply(_cat_axes,ax1,ax2...)
 
   VectorOfBlockBasisCoo(blocks,blockids,axs)
 end
@@ -62,10 +62,19 @@ function _cat_axes(a::NTuple{1},b::NTuple{1})
   (_blockedrange([a[1],b[1]]),)
 end
 
+function _cat_axes(a::NTuple{1}...)
+  (_blockedrange([map(i->i[1],a)...]),)
+end
+
 function _cat_axes(a::NTuple{2},b::NTuple{2})
   @assert length(a[1]) == 1
   @assert length(b[1]) == 1
   ran = (_blockedrange([a[2],b[2]]),)
+  _add_singleton_block(ran)
+end
+
+function _cat_axes(a::NTuple{2}...)
+  ran = (_blockedrange([map(i->i[2],a)...]),)
   _add_singleton_block(ran)
 end
 
