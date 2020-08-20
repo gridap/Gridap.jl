@@ -5,6 +5,7 @@ using Gridap.Geometry
 using Gridap.FESpaces
 using Gridap.Arrays
 using Gridap.Fields
+using Gridap.CellData
 
 domain =(0,1,0,1)
 partition = (3,3)

@@ -346,6 +346,11 @@ function convert_to_cell_field(object,cell_map)
   convert_to_cell_field(object,cell_map,ref_style)
 end
 
+function convert_to_cell_field(object::CellField,cell_map)
+  @assert length(object) == length(cell_map)
+  object
+end
+
 # pre-defined conversions
 
 function convert_to_cell_field(object::CellField,cell_map,ref_style::Val)

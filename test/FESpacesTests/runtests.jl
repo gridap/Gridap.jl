@@ -26,8 +26,6 @@ using Test
 
 @testset "SparseMatrixAssemblers" begin include("SparseMatrixAssemblersTests.jl") end
 
-#@testset "CellKernels" begin include("CellKernelsTests.jl") end
-
 @testset "FETerms" begin include("FETermsTests.jl") end
 
 @testset "FEOperators" begin include("FEOperatorsTests.jl") end
@@ -54,32 +52,18 @@ using Test
 
 @testset "FETermsWithAutodiff" begin include("FETermsWithAutodiffTests.jl") end
 
+@testset "CellDofBases" begin include("CellDofBasesTests.jl") end
 
+@testset "Law" begin include("LawTests.jl") end
 
-#@testset "CellBases" begin include("CellBasesTests.jl") end
-#
-#@testset "CellDofBases" begin include("CellDofBasesTests.jl") end
-#
-#@testset "Law" begin include("LawTests.jl") end
-#
-#
-#
-#@testset "CDLagrangianFESpaces" begin include("CDLagrangianFESpacesTests.jl") end
-#
-#
-#
-#
-#
-#
-#@testset "PhysicalBasesTests" begin include("PhysicalBasesTests.jl") end
-#
-#@testset "PhysicalFESpaces" begin include("PhysicalFESpacesTests.jl") end
-#
-#@testset "FESpaceFactories" begin include("FESpaceFactoriesTests.jl") end
-#
-#@testset "StateLaws" begin include("StateLawsTests.jl") end
-#
-#
-#@testset "AppendedTriangulations" begin include("AppendedTriangulationsTests.jl") end
+@testset "CDLagrangianFESpaces" begin include("CDLagrangianFESpacesTests.jl") end
+
+@testset "PhysicalBasesTests" begin include("PhysicalBasesTests.jl") end
+
+@testset "PhysicalFESpaces" begin include("PhysicalFESpacesTests.jl") end
+
+@testset "FESpaceFactories" begin include("FESpaceFactoriesTests.jl") end
+
+@testset "AppendedTriangulations" begin include("AppendedTriangulationsTests.jl") end
 
 end # module

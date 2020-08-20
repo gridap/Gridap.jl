@@ -1,12 +1,13 @@
 module PhysicalFESpacesTests
 
-using Gridap
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.Arrays
 using Gridap.Fields
 using Gridap.FESpaces
 using Gridap.Polynomials
+using Gridap.CellData
+using Gridap.TensorValues
 using Test
 
 # domain = (0,1)
@@ -79,27 +80,26 @@ rp = evaluate(Up.cell_basis,q)
 
 @test all(collect(r) .≈ collect(rp))
 
-@test Gridap.FESpaces.RefStyle(Up.space.cell_dof_basis) == Val{false}()
-@test Gridap.FESpaces.RefStyle(U.space.cell_dof_basis) == Val{true}()
+@test RefStyle(Up.space.cell_dof_basis) == Val{false}()
+@test RefStyle(U.space.cell_dof_basis) == Val{true}()
 
-@test Gridap.FESpaces.RefStyle(Up.space.cell_basis) == Val{false}()
-@test Gridap.FESpaces.RefStyle(U.space.cell_basis) == Val{true}()
+@test RefStyle(Up.space.cell_basis) == Val{false}()
+@test RefStyle(U.space.cell_basis) == Val{true}()
 
-@test Gridap.FESpaces.RefStyle(Vp.cell_basis) == Val{false}()
-@test Gridap.FESpaces.RefStyle(V.cell_basis) == Val{true}()
+@test RefStyle(Vp.cell_basis) == Val{false}()
+@test RefStyle(V.cell_basis) == Val{true}()
 
-uhf = Gridap.FESpaces.interpolate(u,Up)
-uhd = Gridap.FESpaces.interpolate_dirichlet(u,Up)
-uhdf = Gridap.FESpaces.interpolate_everywhere(u,Up)
+uhf = interpolate(u,Up)
+uhd = interpolate_dirichlet(u,Up)
+uhdf = interpolate_everywhere(u,Up)
 uhf.dirichlet_values
 uhdf.dirichlet_values
 uhd.dirichlet_values
 
-uhf_r = Gridap.FESpaces.interpolate(u,U)
-uhd_r= Gridap.FESpaces.interpolate_dirichlet(u,U)
-uhdf_r = Gridap.FESpaces.interpolate_everywhere(u,U)
+uhf_r = interpolate(u,U)
+uhd_r= interpolate_dirichlet(u,U)
+uhdf_r = interpolate_everywhere(u,U)
 uhd_r.dirichlet_values
-
 
 @test uhf.free_values == uhf_r.free_values
 @test uhf.dirichlet_values == uhf_r.dirichlet_values

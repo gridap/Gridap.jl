@@ -238,8 +238,6 @@ include("Assemblers.jl")
 
 include("SparseMatrixAssemblers.jl")
 
-#include("CellKernels.jl")
-
 include("FETerms.jl")
 
 include("FEOperators.jl")
@@ -265,10 +263,5 @@ include("FESpacesWithLinearConstraints.jl")
 include("FEAutodiff.jl")
 
 include("FETermsWithAutodiff.jl")
-
-#include("StateLaws.jl")
-#
-#
-#
 
 end # module
