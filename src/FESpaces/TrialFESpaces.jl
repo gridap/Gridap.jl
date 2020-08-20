@@ -64,6 +64,12 @@ get_cell_basis(f::TrialFESpace) = f.cell_basis
 
 # Delegated functions
 
+get_cell_axes(t::TrialFESpace)= get_cell_axes(t.space)
+
+get_cell_axes_with_constraints(t::TrialFESpace)= get_cell_axes_with_constraints(t.space)
+
+CellData.CellField(t::TrialFESpace,cell_vals) = CellField(t.space,cell_vals)
+
 constraint_style(::Type{<:TrialFESpace{B}}) where B = Val{B}()
 
 get_cell_dof_basis(f::TrialFESpace) = get_cell_dof_basis(f.space)
@@ -73,11 +79,6 @@ num_free_dofs(f::TrialFESpace) = num_free_dofs(f.space)
 zero_free_values(f::TrialFESpace) = zero_free_values(f.space)
 
 get_cell_dofs(f::TrialFESpace) = get_cell_dofs(f.space)
-
-function get_cell_axes_with_constraints(t::TrialFESpace)
-  cell_axes = get_cell_axes_with_constraints(t.space)
-  apply(Fields._add_singleton_block,cell_axes)
-end
 
 num_dirichlet_dofs(f::TrialFESpace) = num_dirichlet_dofs(f.space)
 
@@ -101,11 +102,7 @@ gather_free_values(f::TrialFESpace,cv) = gather_free_values(f.space,cv)
 
 gather_free_values!(fv,f::TrialFESpace,cv) = gather_free_values!(fv,f.space,cv)
 
-function get_cell_isconstrained(f::TrialFESpace)
-  get_cell_isconstrained(f.space)
-end
+get_cell_isconstrained(f::TrialFESpace) = get_cell_isconstrained(f.space)
 
-function get_cell_constraints(f::TrialFESpace)
-  get_cell_constraints(f.space)
-end
+get_cell_constraints(f::TrialFESpace) = get_cell_constraints(f.space)
 

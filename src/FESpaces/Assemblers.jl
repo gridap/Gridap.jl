@@ -197,7 +197,7 @@ end
 
 """
 """
-function count_matrix_nnz_coo(a::SparseMatrixAssembler,vecdata)
+function count_matrix_nnz_coo(a::SparseMatrixAssembler,matdata)
   @abstractmethod
 end
 

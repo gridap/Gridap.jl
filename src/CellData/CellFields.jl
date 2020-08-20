@@ -248,62 +248,18 @@ end
 
 # Bases-related
 
-# In some places (see lincom below) we need to "remember" which is the test basis
-# In order places, this is also used for performing optimizations
-struct TrialCellBasis{T<:CellField} <: CellField
-  test::CellField
-  trial::T
-end
-
-get_array(a::TrialCellBasis) = get_array(a.trial)
-get_cell_map(a::TrialCellBasis) = get_cell_map(a.trial)
-get_cell_axes(a::TrialCellBasis) = get_cell_axes(a.trial)
-get_memo(a::TrialCellBasis) = get_memo(a.trial)
-RefStyle(::Type{TrialCellBasis{T}}) where T = RefStyle(T)
-MetaSizeStyle(::Type{TrialCellBasis{T}}) where T = MetaSizeStyle(T)
-
 function trialize_cell_basis(test::CellField)
   @assert is_test(test)
   array = trialize_array_of_bases(get_array(test))
   axs = apply(Fields._add_singleton_block,get_cell_axes(test))
-  trial = similar_object(test,array,axs,Val((1,:)))
-  TrialCellBasis(test,trial)
+  similar_object(test,array,axs,Val((1,:)))
 end
 
 function Fields.lincomb(a::CellField,b::AbstractArray)
   @notimplementedif !is_test(a)
-  lincomb(get_array(a),b)
-end
-
-function Fields.lincomb(a::TrialCellBasis,b::AbstractArray)
-  lincomb(get_array(a.test),b)
-end
-
-function evaluate(cf::TrialCellBasis,x::AbstractArray)
-  key = (:evaluate,objectid(x))
-  memo = get_memo(cf)
-  if !haskey(memo,key)
-    memo[key] = apply(Fields.trialize_basis_value,evaluate(cf.test,x))
-  end
-  memo[key]
-end
-
-function gradient(a::TrialCellBasis)
-  key = :gradient
-  memo = get_memo(a)
-  if !haskey(memo,key)
-    memo[key] = trialize_cell_basis(gradient(a.test))
-  end
-  memo[key]
-end
-
-function operate(op,a::TrialCellBasis)
-  key = objectid(op)
-  memo = get_memo(a)
-  if !haskey(memo,key)
-    memo[key] = trialize_cell_basis(operate(op,a.test))
-  end
-  memo[key]
+  array = lincomb(get_array(a),b)
+  axs = Fill((),length(b))
+  similar_object(a,array,axs,Val(()))
 end
 
 # Diff ops

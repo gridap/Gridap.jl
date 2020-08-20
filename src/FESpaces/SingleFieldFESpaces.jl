@@ -75,6 +75,7 @@ function test_single_field_fe_space(f::SingleFieldFESpace,pred=(==))
     @test maximum(get_dirichlet_dof_tag(f)) <= num_dirichlet_tags(f)
   end
   cell_dof_basis = get_cell_dof_basis(f)
+  @test isa(CellField(f,get_cell_dofs(f)),CellField)
 end
 
 function test_single_field_fe_space(f,matvecdata,matdata,vecdata,pred=(==))
@@ -103,9 +104,14 @@ are the ones provided by `get_dirichlet_values(fs)`
 function FEFunction(
   fs::SingleFieldFESpace, free_values::AbstractVector, dirichlet_values::AbstractVector)
   cell_vals = scatter_free_and_dirichlet_values(fs,free_values,dirichlet_values)
+  cell_field = CellField(fs,cell_vals)
+  SingleFieldFEFunction(cell_field,cell_vals,free_values,dirichlet_values,fs)
+end
+
+function CellData.CellField(fs::SingleFieldFESpace,cell_vals)
   cell_basis = get_cell_basis(fs)
   cell_field = lincomb(cell_basis,cell_vals)
-  SingleFieldFEFunction(cell_field,cell_vals,free_values,dirichlet_values,fs)
+  cell_field
 end
 
 function FEFunction(fe::SingleFieldFESpace, free_values)

@@ -73,7 +73,7 @@ end
 @inline function _assemble_vector_at_cell!(vec,rows::BlockArrayCoo,vals::BlockArrayCoo,strategy)
   for I in eachblockindex(vals)
     if is_nonzero_block(vals,I)
-      _assemble_vector_at_cell!(vec,vals[I],rows[I],strategy)
+      _assemble_vector_at_cell!(vec,rows[I],vals[I],strategy)
     end
   end
 end
@@ -89,7 +89,7 @@ function count_matrix_nnz_coo(a::GenericSparseMatrixAssembler,matdata)
     cellmat = attach_constraints_rows(a.test,cellmat_r,cellidsrows)
     @assert length(cell_cols) == length(cell_rows)
     if length(cell_cols) > 0
-      mat, = first(cellmat)
+      mat = first(cellmat)
       Is = _get_block_layout(mat)
       n += _count_matrix_entries(a.matrix_type,rows_cache,cols_cache,cell_rows,cell_cols,a.strategy,Is)
     end
@@ -97,7 +97,11 @@ function count_matrix_nnz_coo(a::GenericSparseMatrixAssembler,matdata)
   n
 end
 
-function _get_block_layout(a)
+function _get_block_layout(a::Tuple)
+  _get_block_layout(a[1])
+end
+
+function _get_block_layout(a::AbstractMatrix)
   nothing
 end
 
@@ -162,7 +166,7 @@ function fill_matrix_coo_symbolic!(I,J,a::GenericSparseMatrixAssembler,matdata,n
     cellmat = attach_constraints_rows(a.test,cellmat_r,cellidsrows)
     @assert length(cell_cols) == length(cell_rows)
     if length(cell_cols) > 0
-      mat, = first(cellmat)
+      mat = first(cellmat)
       Is = _get_block_layout(mat)
       nini = _allocate_matrix!(a.matrix_type,nini,I,J,rows_cache,cols_cache,cell_rows,cell_cols,a.strategy,Is)
     end
@@ -203,8 +207,8 @@ end
 @inline function _allocate_matrix_at_cell!(
   ::Type{M},nini,I,J,rows::BlockArrayCoo,cols::BlockArrayCoo,strategy,Is) where M
   n = nini
-  for (I,Is_next) in Is
-    i,j = I.n
+  for (B,Is_next) in Is
+    i,j = B.n
     n = _allocate_matrix_at_cell!(M,n,I,J,rows[Block(i)],cols[Block(j)],strategy,Is_next)
   end
   n
@@ -321,10 +325,10 @@ end
 @inline function _fill_matrix_at_cell!(
   ::Type{M},nini,I,J,V,rows::BlockArrayCoo,cols::BlockArrayCoo,vals::BlockArrayCoo,strategy) where M
   n = nini
-  for I in eachblockindex(vals)
-    if is_nonzero_block(vals,I)
-      i,j = I.n
-      n = _fill_matrix_at_cell!(M,n,I,J,V,rows[Block(i)],cols[Block(j)],vals[I],strategy)
+  for B in eachblockindex(vals)
+    if is_nonzero_block(vals,B)
+      i,j = B.n
+      n = _fill_matrix_at_cell!(M,n,I,J,V,rows[Block(i)],cols[Block(j)],vals[B],strategy)
     end
   end
   n

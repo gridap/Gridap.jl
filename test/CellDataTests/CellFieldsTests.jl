@@ -93,15 +93,13 @@ afR_x = evaluate(afS.right,xl)
 # Checks associated with trial bases
 df = bf
 dft = trialize_cell_basis(df)
+@test is_trial(dft) == true
 cell_vals = [rand(ndofs) for  i in 1:l]
-r1 = lincomb(df,cell_vals)
-r2 = lincomb(dft,cell_vals)
-@test evaluate(r1,xl) == evaluate(r2,xl)
-
-@test ∇(dft).test === ∇(df)
-@test (∇⋅dft).test === ∇⋅df
-@test evaluate(dft,xl).f[1] === evaluate(df,xl)
-@test evaluate(∇(dft),xl).f[1] === evaluate(∇(df),xl)
+cell_field = lincomb(df,cell_vals)
+@test isa(cell_field,CellField)
+@test get_metasize(cell_field) == ()
+cell_field_x = evaluate(cell_field,xl)
+@test isa(cell_field_x[1],AbstractVector)
 
 end # module
 

@@ -62,13 +62,16 @@ quad = CellQuadrature(trian,order)
 el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
 @test el2 < 1.0e-10
 
-@test_broken begin
-  uh = zero(U)
-  cellidsL = [4,2,1,3]
-  cellidsR = [2,4,3,1]
-  cellidsS = SkeletonPair(cellidsL,cellidsR)
-  cell_vals = get_cell_values(uh,cellidsS)
-end
+uh = zero(U)
+cellidsL = [4,2,1,3]
+cellidsR = [2,4,3,1]
+cellidsS = SkeletonPair(cellidsL,cellidsR)
+cell_vals = get_cell_values(uh,cellidsS)
+@test isa(cell_vals[1],BlockArrayCoo)
+
+cell_dofs = get_cell_dofs(U,cellidsS)
+@test isa(cell_dofs[1],BlockArrayCoo)
+
 
 #trian = get_triangulation(model)
 #

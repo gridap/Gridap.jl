@@ -145,9 +145,10 @@ matdata = ([scellmat],[scellids],[scellids])
 vecdata = ([scellvec],[scellids])
 data = (matvecdata,matdata,vecdata)
 
-@test_broken begin
 assem = SparseMatrixAssembler(U,V)
 test_sparse_matrix_assembler(assem,matdata,vecdata,data)
-end
+
+A = assemble_matrix(assem,matdata)
+@test A == zeros(num_free_dofs(V),num_free_dofs(U))
 
 end # module

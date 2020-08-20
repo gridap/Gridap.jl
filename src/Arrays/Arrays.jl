@@ -28,6 +28,7 @@ export BlockMatrixCoo
 export is_zero_block
 export is_nonzero_block
 export enumerateblocks
+export eachblockindex
 export VectorOfBlockArrayCoo
 export VectorOfBlockVectorCoo
 export VectorOfBlockMatrixCoo

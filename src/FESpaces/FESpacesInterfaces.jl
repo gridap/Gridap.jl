@@ -17,6 +17,10 @@ function FEFunction(fe::FESpace, free_values)
   @abstractmethod
 end
 
+function CellData.CellField(fe::FESpace,cell_vals)
+  @abstractmethod
+end
+
 function EvaluationFunction(fe::FESpace, free_values)
   FEFunction(fe,free_values)
 end
@@ -185,6 +189,7 @@ function test_fe_space(f::FESpace)
   @test length(get_cell_axes_with_constraints(f)) == length(fe_basis)
   @test length(get_cell_constraints(f)) == length(fe_basis)
   @test length(get_cell_isconstrained(f)) == length(fe_basis)
+  @test CellField(f,get_cell_dofs(f)) != nothing
 end
 
 function test_fe_space(f::FESpace,matvecdata,matdata,vecdata)
