@@ -20,6 +20,15 @@ ra,rb = unpair_arrays(r)
 test_array(a,ra,≈)
 test_array(b,rb,≈)
 
+cellmatvec_with_dbc = attach_dirichlet(cellmat,cellvals)
+r = collect(cellmatvec_with_dbc)
+test_array(cellmatvec_with_dbc,r)
+
+r = map((mat,vals)-> (mat,-mat*vals),cellmat,cellvals)
+a,b = unpair_arrays(cellmatvec_with_dbc)
+ra,rb = unpair_arrays(r) 
+test_array(a,ra,≈)
+test_array(b,rb,≈)
 
 #a = cellmatvec_with_dbc
 #cache = array_cache(a)

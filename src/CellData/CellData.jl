@@ -16,6 +16,7 @@ using Gridap.Fields
 using Gridap.Polynomials
 using Gridap.Integration
 using Gridap.ReferenceFEs
+using Gridap.Algebra
 
 import Gridap.Arrays: get_array
 import Gridap.Arrays: lazy_append
