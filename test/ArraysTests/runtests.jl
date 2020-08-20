@@ -16,6 +16,8 @@ using Test
 
 @testset "LocalToGlobalPosNegArrays" begin include("LocalToGlobalPosNegArraysTests.jl") end
 
+@testset "FilteredArraysTests" begin include("FilteredArraysTests.jl") end
+
 @testset "Tables" begin include("TablesTests.jl") end
 
 @testset "Reindex" begin include("ReindexTests.jl") end
