@@ -109,6 +109,10 @@ function FEFunction(
 end
 
 function CellData.CellField(fs::SingleFieldFESpace,cell_vals)
+  _default_cell_field(fs,cell_vals)
+end
+
+function _default_cell_field(fs,cell_vals)
   cell_basis = get_cell_basis(fs)
   cell_field = lincomb(cell_basis,cell_vals)
   cell_field

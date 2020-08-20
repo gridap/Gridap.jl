@@ -46,6 +46,14 @@ using Test
 
 @testset "DirichletFESpaces" begin include("DirichletFESpacesTests.jl") end
 
+@testset "ExtendedFESpaces" begin include("ExtendedFESpacesTests.jl") end
+
+@testset "FESpacesWithLinearConstraints" begin include("FESpacesWithLinearConstraintsTests.jl") end
+
+@testset "FEAutodiff" begin include("FEAutodiffTests.jl") end
+
+@testset "FETermsWithAutodiff" begin include("FETermsWithAutodiffTests.jl") end
+
 
 
 
@@ -64,9 +72,6 @@ using Test
 #
 #
 #
-#@testset "ExtendedFESpaces" begin include("ExtendedFESpacesTests.jl") end
-#
-#@testset "FESpacesWithLinearConstraints" begin include("FESpacesWithLinearConstraintsTests.jl") end
 #
 #@testset "PhysicalBasesTests" begin include("PhysicalBasesTests.jl") end
 #
@@ -76,9 +81,6 @@ using Test
 #
 #@testset "StateLaws" begin include("StateLawsTests.jl") end
 #
-#@testset "FEAutodiff" begin include("FEAutodiffTests.jl") end
-#
-#@testset "FETermsWithAutodiff" begin include("FETermsWithAutodiffTests.jl") end
 #
 #@testset "AppendedTriangulations" begin include("AppendedTriangulationsTests.jl") end
 

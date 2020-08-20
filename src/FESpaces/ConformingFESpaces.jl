@@ -194,9 +194,9 @@ function _cell_shape_functions_physical_space(cell_prebasis,cell_dof_basis,cell_
   cell_matrix = evaluate(cell_dof_basis,cell_prebasis)
   cell_matrix_inv = apply(inv,cell_matrix)
   cell_shapefuns_phys = apply(change_basis,get_array(cell_prebasis),cell_matrix_inv)
-  trial_style = Val{false}()
   cell_axs = get_cell_axes(cell_prebasis)
   metasize_style = MetaSizeStyle(cell_prebasis)
+  ref_style = RefStyle(cell_prebasis)
   GenericCellField(cell_shapefuns_phys,cell_map,ref_style,cell_axs,metasize_style)
    # @santiagobadia : better implementation in the future...
 end

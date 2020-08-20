@@ -258,15 +258,16 @@ include("CLagrangianFESpaces.jl")
 
 include("DirichletFESpaces.jl")
 
-#include("ExtendedFESpaces.jl")
-#
-#include("FESpacesWithLinearConstraints.jl")
-#
+include("ExtendedFESpaces.jl")
+
+include("FESpacesWithLinearConstraints.jl")
+
+include("FEAutodiff.jl")
+
+include("FETermsWithAutodiff.jl")
+
 #include("StateLaws.jl")
 #
-#include("FEAutodiff.jl")
-#
-#include("FETermsWithAutodiff.jl")
 #
 #
 
