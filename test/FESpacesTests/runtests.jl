@@ -26,6 +26,13 @@ using Test
 
 @testset "SparseMatrixAssemblers" begin include("SparseMatrixAssemblersTests.jl") end
 
+@testset "CellKernels" begin include("CellKernelsTests.jl") end
+
+@testset "FETerms" begin include("FETermsTests.jl") end
+
+
+
+
 #@testset "CellBases" begin include("CellBasesTests.jl") end
 #
 #@testset "CellDofBases" begin include("CellDofBasesTests.jl") end
@@ -37,9 +44,7 @@ using Test
 #
 #@testset "CDLagrangianFESpaces" begin include("CDLagrangianFESpacesTests.jl") end
 #
-#@testset "FETerms" begin include("FETermsTests.jl") end
 #
-#@testset "CellKernels" begin include("CellKernelsTests.jl") end
 #
 #@testset "AffineFEOperators" begin include("AffineFEOperatorsTests.jl") end
 #

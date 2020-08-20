@@ -214,6 +214,11 @@ export autodiff_cell_jacobian_from_residual
 
 export FEEnergy
 
+# TODO move to CellData
+export apply_cellmatrix
+export apply_cellvector
+export apply_cellmatvec
+
 include("FEFunctions.jl")
 
 include("FECellBases.jl")
@@ -238,12 +243,12 @@ include("Assemblers.jl")
 
 include("SparseMatrixAssemblers.jl")
 
+include("CellKernels.jl")
+
+include("FETerms.jl")
+
 #include("FEOperators.jl")
 #
-#
-#include("FETerms.jl")
-#
-#include("CellKernels.jl")
 #
 #include("AffineFEOperators.jl")
 #
@@ -269,5 +274,7 @@ include("SparseMatrixAssemblers.jl")
 #include("FEAutodiff.jl")
 #
 #include("FETermsWithAutodiff.jl")
+#
+#
 
 end # module

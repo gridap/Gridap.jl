@@ -3,7 +3,7 @@ FECellBasisStyle(::Type{T}) where T = Val{false}()
 
 FECellBasisStyle(cell_basis) = FECellBasisStyle(typeof(cell_basis))
 
-FECellBasisStyle(::Type{T}) where T<:CellField = is_basis(T)
+FECellBasisStyle(::Type{T}) where T<:CellField = Val(is_basis(T))
 
 """
 """

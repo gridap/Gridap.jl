@@ -8,6 +8,7 @@ using Gridap.Integration
 using Gridap.FESpaces
 using LinearAlgebra
 using Gridap.TensorValues
+using Gridap.CellData
 
 function poisson_matvec_kernel!(mat,vec,∇u,∇v,v,j,w)
   Q = length(w)
