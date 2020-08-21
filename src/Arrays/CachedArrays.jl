@@ -132,57 +132,14 @@ function similar(::Type{CachedArray{T,N,A}},s::Tuple{Vararg{Int}}) where {T,N,A}
 end
 
 function setaxes!(a::CachedArray,ax)
-  if ! _same_axes(axes(a.array),ax)
-    s = map(length,ax)
+  s = map(length,ax)
+  if s != size(a.array)
     if haskey(a.buffer,s)
       a.array = a.buffer[s]
-      if ! _same_axes(axes(a.array),ax)
-        a.array = similar(a.array,ax)
-        a.buffer[s] = a.array
-      end
     else
       a.array = similar(a.array,ax)
       a.buffer[s] = a.array
     end
-  end
-  nothing
-end
-
-function _same_axes(a,b)
-  a === b || a == b
-end
-
-function _same_axes(a::NTuple{N,BlockedUnitRange},b::NTuple{N,BlockedUnitRange}) where N
-  if a === b
-    true
-  else
-    all(map(_same_axes_1d,a,b))
-  end
-end
-
-_same_axes_1d(a::BlockedUnitRange,b::BlockedUnitRange) = blocklasts(a) == blocklasts(b)
-
-function _same_axes(a::NTuple{N,TwoLevelBlockedUnitRange},b::NTuple{N,TwoLevelBlockedUnitRange}) where N
-  if a === b
-    true
-  else
-    all(map(_same_axes_1d,a,b))
-  end
-end
-
-function _same_axes_1d(a::TwoLevelBlockedUnitRange,b::TwoLevelBlockedUnitRange)
-  r = _same_axes_1d(a.global_range,b.global_range)
-  la = length(a.local_ranges)
-  lb = length(b.local_ranges)
-  if la!=lb
-    return false
-  else
-    for i in 1:la
-      @inbounds ra = a.local_ranges[i]
-      @inbounds rb = b.local_ranges[i]
-      r = r && _same_axes_1d(ra,rb)
-    end
-    return r
   end
 end
 
