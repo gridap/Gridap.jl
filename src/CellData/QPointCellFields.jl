@@ -82,6 +82,18 @@ function update_state_variables!(updater::Function,x::AbstractArray,f::CellField
   _update_state_variables!(updater,caches,fx,cache_x,x)
 end
 
+function update_state_variables!(quad::CellQuadrature,updater::Function,f::CellField...)
+  msg =
+  """
+  The method
+      update_state_variables!(quad::CellQuadrature,updater::Function,f::CellField...)
+  has been removed. Use
+      update_state_variables!(updater::Function,quad::CellQuadrature,f::CellField...)
+  instead
+  """
+  error(msg)
+end
+
 @noinline function  _update_state_variables!(updater,caches,fx,cache_x,x)
   ncells = length(x)
   for cell in 1:ncells
