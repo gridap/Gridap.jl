@@ -92,11 +92,24 @@ cc = CachedArray(c)
 
 axs = (blockedrange([2,3,3]), blockedrange([2,3,3]))
 setaxes!(cc,axs)
+@test map(blocklasts,axes(cc.array)) == map(blocklasts,axs)
 @test cc.array === c
 
 axs = (blockedrange([4,5,3]), blockedrange([2,4,3]))
 setaxes!(cc,axs)
+@test map(blocklasts,axes(cc.array)) == map(blocklasts,axs)
 fill!(cc.array,0)
+
+axs = (blockedrange([5,4,3]), blockedrange([4,2,3]))
+setaxes!(cc,axs)
+@test map(blocklasts,axes(cc.array)) == map(blocklasts,axs)
+
+axs1 = (blockedrange([5,4,3]), blockedrange([4,2,3]))
+axs2 = (blockedrange([4,5,3]), blockedrange([2,4,3]))
+axs3 = (blockedrange([4,5,3]), blockedrange([2,4,3]))
+@test Arrays._same_axes(axs1,axs2) == false
+@test Arrays._same_axes(axs2,axs2)
+@test Arrays._same_axes(axs2,axs3)
 
 blocks = [ 10*[1,2], 20*[1,2,3] ]
 blockids = [(1,),(3,)]
@@ -106,10 +119,12 @@ b = BlockArrayCoo(blocks,blockids,axs)
 cb = CachedArray(b)
 
 setaxes!(cb,axs)
+@test map(blocklasts,axes(cb.array)) == map(blocklasts,axs)
 @test cb.array === b
 
 axs = (blockedrange([3,2,3]),)
 setaxes!(cb,axs)
+@test map(blocklasts,axes(cb.array)) == map(blocklasts,axs)
 @test size(cb) == (8,)
 
 c = copy(a)
@@ -253,5 +268,17 @@ mul!(rS,aS,bS,3,2)
 @test rS == 3*Array(aS)*Array(bS) + 2*cS
 @test isa(rS,BlockArrayCoo)
 @test isa(rS[Block(2)],BlockArrayCoo)
+
+axs1 = (blockedrange([5,4,3]), blockedrange([4,2,3]))
+axs2 = (blockedrange([4,5,3]), blockedrange([2,4,3]))
+axsA = (blockedrange([axs1[1],axs1[1]]),blockedrange([axs2[2],axs2[2]]))
+axsB = (blockedrange([axs2[1],axs2[1]]),blockedrange([axs1[2],axs1[2]]))
+axsC = (blockedrange([axs2[1],axs2[1]]),blockedrange([axs1[2],axs1[2]]))
+@test Arrays._same_axes(axsA,axsB) == false
+@test Arrays._same_axes(axsA,axsA)
+@test Arrays._same_axes(axsB,axsC)
+
+#using BenchmarkTools
+#@btime Arrays._same_axes($axsA,$axsA)
 
 end # module
