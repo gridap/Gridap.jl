@@ -140,29 +140,29 @@ end
 struct GenericSparseMatrixAssembler{M,V} <: SparseMatrixAssembler
   matrix_type::Type{M}
   vector_type::Type{V}
-  trial::SingleFieldFESpace
-  test::SingleFieldFESpace
+  trial::FESpace
+  test::FESpace
   strategy::AssemblyStrategy
 end
 
 function SparseMatrixAssembler(
-  mat::Type,vec::Type,trial::SingleFieldFESpace,test::SingleFieldFESpace,strategy::AssemblyStrategy)
+  mat::Type,vec::Type,trial::FESpace,test::FESpace,strategy::AssemblyStrategy)
   GenericSparseMatrixAssembler(mat,vec,trial,test,strategy)
 end
 
-function SparseMatrixAssembler(mat::Type,vec::Type,trial::SingleFieldFESpace,test::SingleFieldFESpace)
+function SparseMatrixAssembler(mat::Type,vec::Type,trial::FESpace,test::FESpace)
   strategy = DefaultAssemblyStrategy()
   GenericSparseMatrixAssembler(mat,vec,trial,test,strategy)
 end
 
-function SparseMatrixAssembler(mat::Type,trial::SingleFieldFESpace,test::SingleFieldFESpace)
+function SparseMatrixAssembler(mat::Type,trial::FESpace,test::FESpace)
   strategy = DefaultAssemblyStrategy()
   GenericSparseMatrixAssembler(mat,Vector{Float64},trial,test,strategy)
 end
 
 """
 """
-function SparseMatrixAssembler(trial::SingleFieldFESpace,test::SingleFieldFESpace)
+function SparseMatrixAssembler(trial::FESpace,test::FESpace)
   matrix_type = SparseMatrixCSC{Float64,Int}
   vector_type = Vector{Float64}
   strategy = DefaultAssemblyStrategy()
