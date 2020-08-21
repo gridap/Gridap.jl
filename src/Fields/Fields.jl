@@ -72,6 +72,7 @@ export AffineMap
 
 export VectorOfBlockBasisCoo
 export insert_array_of_bases_in_block
+export create_array_of_blocked_axes
 
 export operate_fields
 export operate_arrays_of_fields

@@ -476,7 +476,7 @@ end
 function merge_cell_dofs_at_skeleton(idsL,idsR,axesL,axesR)
   blocks = (idsL,idsR)
   blockids = [(1,),(2,)]
-  axs = apply(Fields._cat_axes,axesL,axesR)
+  axs = create_array_of_blocked_axes(axesL,axesR)
   VectorOfBlockArrayCoo(blocks,blockids,axs)
 end
 

@@ -18,9 +18,9 @@ struct MultiFieldCellField{R,S} <: CellField
   end
 end
 
-CellData.get_array(a::MultiFieldCellField) = @unreachable
+Arrays.get_array(a::MultiFieldCellField) = @notimplemented
 
-CellData.get_memo(a::MultiFieldCellField) = @unreachable
+CellData.get_memo(a::MultiFieldCellField) = @notimplemented
 
 CellData.get_cell_map(a::MultiFieldCellField) = a.cell_map
 
@@ -40,12 +40,17 @@ Base.iterate(a::MultiFieldCellField,state)  = iterate(a.single_fields,state)
 
 function Fields.evaluate(cf::MultiFieldCellField,x::AbstractArray)
   s = """
-  Evaluation of MultiFieldCellField objects is intentionally forbiden.
+  Evaluation of MultiFieldCellField objects is not implemented at this moment.
   You need to extract the individual fields and then evaluate them separatelly.
+  If ever implemented, evaluating a `MultiFieldCellField` directly would provide,
+  at each evaluation point, a tuple with the value of the different fields.
   """
-  @unreachable s
+  @notimplemented s
 end
 
-
-
+function Geometry.restrict(a::MultiFieldCellField,trian::Triangulation)
+  f = (ai) -> restrict(ai,trian)
+  blocks = map(f,a.single_fields)
+  blocks
+end
 

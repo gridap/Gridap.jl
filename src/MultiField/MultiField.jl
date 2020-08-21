@@ -21,6 +21,7 @@ using Gridap.Fields
 using FillArrays
 using SparseArrays
 using LinearAlgebra
+using BlockArrays
 
 
 #import LinearAlgebra: mul!
@@ -119,7 +120,7 @@ include("MultiFieldCellFields.jl")
 
 include("MultiFieldFESpaces.jl")
 
-#include("MultiFieldFEFunctions.jl")
+include("MultiFieldFEFunctions.jl")
 
 #include("MultiFieldArrays.jl")
 #

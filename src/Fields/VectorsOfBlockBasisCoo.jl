@@ -45,9 +45,13 @@ end
 function insert_array_of_bases_in_block(i::Integer,a,ax1,ax2...)
   blocks = (a,)
   blockids = _compute_blockids(eltype(ax1),i)
-  axs = apply(_cat_axes,ax1,ax2...)
-
+  axs = create_array_of_blocked_axes(ax1,ax2...)
   VectorOfBlockBasisCoo(blocks,blockids,axs)
+end
+
+#TODO perhaps this should go into Arrays/BlockArraysCoo.jl
+function create_array_of_blocked_axes(axs...)
+  axs = apply(_cat_axes,axs...)
 end
 
 function _compute_blockids(::Type{<:NTuple{1}},i)

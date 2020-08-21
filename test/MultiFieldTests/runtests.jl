@@ -6,6 +6,8 @@ using Test
 
 @testset "MultiFieldFESpaces" begin include("MultiFieldFESpacesTests.jl") end
 
+@testset "MultiFieldFEFunctions" begin include("MultiFieldFEFunctionsTests.jl") end
+
 #@testset "MultiFieldArrays" begin include("MultiFieldArraysTests.jl") end
 #
 #@testset "MultiFieldCellArrays" begin include("MultiFieldCellArraysTests.jl") end
@@ -15,7 +17,6 @@ using Test
 #@testset "MultiFieldCellKernels" begin include("MultiFieldCellKernelsTests.jl") end
 #
 #
-#@testset "MultiFieldFEFunctions" begin include("MultiFieldFEFunctionsTests.jl") end
 #
 #@testset "MultiFieldSparseMatrixAssemblers" begin include("MultiFieldSparseMatrixAssemblersTests.jl") end
 #
