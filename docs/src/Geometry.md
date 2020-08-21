@@ -340,19 +340,6 @@ RestrictedDiscreteModel
 
 ## CellFields
 
-### CellFieldLike interface
-```@docs
-CellFieldLike
-get_array(cf::CellFieldLike)
-get_cell_map(cf::CellFieldLike)
-similar_object(cf::CellFieldLike,array::AbstractArray)
-similar_object(cf1::CellFieldLike,cf2::CellFieldLike,array::AbstractArray)
-gradient(cf::CellFieldLike)
-grad2curl(cf::CellFieldLike)
-test_cell_field_like
-evaluate(cf::CellFieldLike,x)
-length(cf::CellFieldLike)
-```
 ### CellField interface
 
 ```@docs
