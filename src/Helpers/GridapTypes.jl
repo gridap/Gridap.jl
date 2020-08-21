@@ -11,9 +11,9 @@ end
 """
 """
 function operate(op,a)
-  s = "Unary operation $op is not defined for objects of type $(typeof(object))\n"
+  s = "Unary operation $op is not defined for objects of type $(typeof(a))\n"
   s *= "Possible fix, define:\n"
-  s *= "Gridap.Helpers.operate(::$(typeof(op)),::$(typeof(object)))"
+  s *= "Gridap.Helpers.operate(::$(typeof(op)),::$(typeof(a)))"
   @unreachable s
 end
 

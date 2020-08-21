@@ -10,6 +10,7 @@ using Gridap.FESpaces
 using Gridap.FESpaces: ExtendedVector
 using Gridap.Integration
 using Gridap.Fields
+using Gridap.CellData
 
 
 oldcell_to_cell = [1,2,-1,3,-2,-3,-4]
@@ -75,7 +76,6 @@ reffes = [LagrangianRefFE(VectorValue{2,Float64},get_polytope(p),order) for p in
 V_in = DiscontinuousFESpace(reffes,trian_in)
 
 V = ExtendedFESpace(V_in, trian_in)
-
 test_single_field_fe_space(V)
 
 U = TrialFESpace(V)

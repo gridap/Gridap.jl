@@ -1,10 +1,12 @@
 module CDLagrangianFESpacesTests
 
 using Test
-using Gridap
 using Gridap.Geometry
 using Gridap.ReferenceFEs
 using Gridap.FESpaces
+using Gridap.CellData
+using Gridap.TensorValues
+using Gridap.Fields
 
 domain =(0,1,0,1)
 partition = (3,3)

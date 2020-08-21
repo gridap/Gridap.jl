@@ -7,6 +7,7 @@ using Gridap.Geometry
 using Gridap.FESpaces
 using Test
 using LinearAlgebra
+using Gridap.CellData
 
 domain = (0,1,0,1)
 partition = (2,2)
@@ -39,6 +40,9 @@ Vc = FESpaceWithLinearConstraints(
 test_single_field_fe_space(Vc)
 @test has_constraints(Vc)
 
+scellids = SkeletonPair([1,2,1,3],[2,4,3,4])
+@test isa(get_cell_constraints(Vc,scellids)[1],BlockArrayCoo)
+
 @test Vc.n_fdofs == 6
 @test Vc.n_fmdofs == 4
 
@@ -67,12 +71,17 @@ bquad = CellQuadrature(btrian,2)
 
 bn = get_normal_vector(btrian)
 
+strian = SkeletonTriangulation(model)
+squad = CellQuadrature(strian,2)
+
 a(u,v) = ∇(v)⋅∇(u)
 b1(v) = v*f
 b2(v) = v*(bn⋅∇(u))
+a3(u,v) = jump(u)*jump(v)
 t1 = AffineFETerm(a,b1,trian,quad)
 t2 = FESource(b2,btrian,bquad)
-op = AffineFEOperator(Uc,Vc,t1,t2)
+t3 = LinearFETerm(a3,strian,squad)
+op = AffineFEOperator(Uc,Vc,t1,t2,t3)
 uch = solve(op)
 
 #using Gridap.Visualization

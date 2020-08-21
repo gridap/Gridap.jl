@@ -6,6 +6,7 @@ using Gridap.Geometry
 using Gridap.TensorValues
 using Gridap.Arrays
 using Gridap.FESpaces
+using Gridap.CellData
 
 domain = (0,1,0,1)
 partition = (2,2)

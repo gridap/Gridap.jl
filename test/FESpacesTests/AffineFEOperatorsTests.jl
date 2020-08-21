@@ -10,6 +10,7 @@ using Gridap.Integration
 using Gridap.Fields
 using Gridap.FESpaces
 using LinearAlgebra
+using Gridap.CellData
 
 domain =(0,1,0,1,0,1)
 partition = (3,3,3)
@@ -80,43 +81,5 @@ op = AffineFEOperator(U,V,t_Ω)
 uh = solve(op)
 e = u_sol - uh
 @test sum(integrate(e*e,trian,quad)) < tol
-
-q = get_coordinates(quad)
-w_q = get_weights(quad)
-ϕ = get_cell_map(trian)
-jac = ∇(ϕ)
-jac_q = evaluate(jac,q)
-x_q = evaluate(ϕ,q)
-
-function poisson_matvec_kernel!(mat,vec,∇v,∇u,v,j,w,x)
-  Q = length(w)
-  M,N = size(mat)
-  for q in 1:Q
-    dV = det(j[q])*w[q]
-    f_q = f_fun(x[q])
-    for n in 1:N
-      for m in 1:M
-        mat[m,n] += ∇v[q,m]⊙∇u[q,n]*dV
-      end
-    end
-    for m in 1:M
-      vec[m] += v[q,m]*f_q*dV
-    end
-  end
-end
-
-function cellmatvec_Ω(v,u)
-  v_q = evaluate(v,q)
-  ∇v_q = evaluate(∇(v),q)
-  apply_cellmatvec(poisson_matvec_kernel!, ∇v_q, ∇v_q, v_q, jac_q, w_q, x_q)
-end
-
-t_Ω = AffineFETermFromCellMatVec(cellmatvec_Ω,trian)
-
-op = AffineFEOperator(U,V,assem,t_Ω)
-uh = solve(op)
-e = u_sol - uh
-@test sum(integrate(e*e,trian,quad)) < tol
-
 
 end # module

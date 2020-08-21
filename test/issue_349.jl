@@ -59,7 +59,7 @@ sol = solve(op_works) # works in #349
 ϕ_sol, E_sol = sol
 @test errornorm(ϕ_e, ϕ_sol, trian, quad) < 1e-2
 @test errornorm(E_e, E_sol, trian, quad) < 1e-4
-@test_broken begin
+@test begin
     ϕ_sol2, E_sol2 = solve(op_fails) # throws LinearAlgebra.SingularException(0) in #349
     @test errornorm(ϕ_e, ϕ_sol, trian, quad) ≈
         errornorm(ϕ_e, ϕ_sol2, trian, quad)

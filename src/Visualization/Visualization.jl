@@ -38,6 +38,7 @@ using Gridap.ReferenceFEs: _find_unique_with_indices
 using Gridap.ReferenceFEs: SerendipityPolytope
 using Gridap.FESpaces
 using FillArrays
+using Gridap.CellData
 
 import Gridap.Geometry: get_reffes
 import Gridap.Geometry: get_cell_type

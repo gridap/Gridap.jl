@@ -7,6 +7,7 @@ using Gridap.Geometry
 using Gridap.FESpaces
 using Gridap.TensorValues
 using Gridap.MultiField
+using Gridap.CellData
 using Test
 
 domain = (0,1,0,1)
@@ -22,10 +23,12 @@ add_tag_from_tags!(labels,"neumann_2",[5,6,8])
 trian = Triangulation(model)
 btrian1 = BoundaryTriangulation(model,"neumann_1")
 btrian2 = BoundaryTriangulation(model,"neumann_2")
+strian = SkeletonTriangulation(model)
 
 quad = CellQuadrature(trian,2)
 bquad1 = CellQuadrature(btrian1,2)
 bquad2 = CellQuadrature(btrian2,2)
+squad = CellQuadrature(strian,2)
 
 bn1 = get_normal_vector(btrian1)
 bn2 = get_normal_vector(btrian2)
@@ -87,11 +90,25 @@ function B2_Γ(v)
   b_Γ(v2,u2,bn2)
 end
 
+# This is only to stress skeleton machinery
+# since shape functions are continuous
+function As(u,v)
+  u1,u2 = u
+  v1,v2 = v
+  jump(v1)*jump(u2) + jump(v2)*jump(u2)
+end
+
+function Bs(v)
+  v1,v2 = v
+  jump(v2)
+end
+
 t_Ω = AffineFETerm(A,B,trian,quad)
 t1_Γ = FESource(B1_Γ,btrian1,bquad1)
 t2_Γ = FESource(B2_Γ,btrian2,bquad2)
+t_s = AffineFETerm(As,Bs,strian,squad)
 
-op = AffineFEOperator(U,V,t_Ω,t1_Γ,t2_Γ)
+op = AffineFEOperator(U,V,t_Ω,t1_Γ,t2_Γ,t_s)
 uh = solve(op)
 
 uh1, uh2 = uh

@@ -108,11 +108,12 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish Geometry jump
 @publish Geometry mean
 @publish Geometry SkeletonTriangulation
-@publish Geometry CellQuadrature
-@publish Geometry QPointCellField
-@publish Geometry CellField
 @publish Geometry RestrictedTriangulation
 @publish Geometry InterfaceTriangulation
+
+@publish CellData CellQuadrature
+@publish CellData QPointCellField
+@publish CellData CellField
 
 @publish FESpaces FESpace
 @publish FESpaces TrialFESpace
@@ -135,11 +136,9 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish FESpaces interpolate_dirichlet
 @publish FESpaces FEOperator
 @publish FESpaces FESolver
-@publish FESpaces apply_statelaw
 @publish FESpaces update_state_variables!
 
 using Gridap.FESpaces: @law; export @law
-using Gridap.FESpaces: @statelaw; export @statelaw
 
 @publish MultiField MultiFieldFESpace
 

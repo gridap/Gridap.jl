@@ -8,6 +8,7 @@ using Gridap.Geometry
 using Gridap.Integration
 using Gridap.Fields
 using Gridap.FESpaces
+using Gridap.CellData
 
 domain =(0,1,0,1,0,1)
 partition = (3,3,3)
@@ -31,13 +32,10 @@ ud = compute_dirichlet_values_for_tags!(v,V,[4,3])
 test_single_field_fe_space(U)
 U = TrialFESpace!(v,V,[4,3])
 
-
 matvecdata = ([],[],[])
 matdata = ([],[],[])
 vecdata = ([],[])
 test_single_field_fe_space(U,matvecdata,matdata,vecdata)
-
-uh = interpolate(0,U)
 
 @test get_dirichlet_values(U) == [4.0, 3.0, 3.0, 3.0, 3.0, 3.0]
 TrialFESpace!(U,[1,2])
@@ -53,6 +51,27 @@ U0 = HomogeneousTrialFESpace!(v,V)
 @test v === get_dirichlet_values(U0)
 @test v == zeros(6)
 @test get_dirichlet_values(U0) == zeros(6)
+
+u(x) = x[1]
+U = TrialFESpace(V,u)
+uh = interpolate(u,U)
+e = u - uh
+trian = Triangulation(model)
+quad = CellQuadrature(trian,order)
+
+el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
+@test el2 < 1.0e-10
+
+uh = zero(U)
+cellidsL = [4,2,1,3]
+cellidsR = [2,4,3,1]
+cellidsS = SkeletonPair(cellidsL,cellidsR)
+cell_vals = get_cell_values(uh,cellidsS)
+@test isa(cell_vals[1],BlockArrayCoo)
+
+cell_dofs = get_cell_dofs(U,cellidsS)
+@test isa(cell_dofs[1],BlockArrayCoo)
+
 
 #trian = get_triangulation(model)
 #

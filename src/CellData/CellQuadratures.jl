@@ -18,16 +18,7 @@ struct CellQuadrature <: GridapType
 end
 
 """
-    CellQuadrature(trian::Triangulation, degree::Integer)
-"""
-function CellQuadrature(trian::Triangulation, degree::Integer)
-  polytopes = map(get_polytope,get_reffes(trian))
-  cell_type = get_cell_type(trian)
-  CellQuadrature(degree,polytopes,cell_type)
-end
-
-"""
-    CellQuadrature(polytopes::Vector{<:Polytope}, cell_types::AbstractVector)
+    CellQuadrature(degree,polytopes::Vector{<:Polytope}, cell_types::AbstractVector)
 """
 function CellQuadrature(degree,polytopes::Vector{<:Polytope}, cell_types::AbstractVector)
   f = (p) -> Quadrature(p,degree)
@@ -104,16 +95,13 @@ function _get_weights(q::AppendedArray)
 end
 
 """
-    integrate(cell_field,trian::Triangulation,quad::CellQuadrature)
-
-The `cell_field` is aligned with the cells in `trian`
+    integrate(cell_field,cell_map::AbstractArray{<:Field},quad::CellQuadrature)
 """
-function integrate(cell_field,trian::Triangulation,quad::CellQuadrature)
-  cell_map = get_cell_map(trian)
+function integrate(cell_field,cell_map::AbstractArray{<:Field},quad::CellQuadrature)
   q = get_coordinates(quad)
   w = get_weights(quad)
   j = gradient(cell_map)
-  _f = CellField(cell_field,trian)
+  _f = convert_to_cell_field(cell_field,cell_map)
   f = to_ref_space(_f)
   @assert length(f) == length(cell_map) "Are you using the right triangulation to integrate?"
   @assert length(f) == length(w) "Are you using the right quadrature to integrate?"

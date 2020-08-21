@@ -4,12 +4,22 @@
 """
 divergence(f) = tr(gradient(f))
 
+function divergence(a::AbstractArray{<:Field})
+  ag = gradient(a)
+  operate_arrays_of_fields(tr,ag)
+end
+
 function symmetric_gradient end
 
 """
     symmetric_gradient(f)
 """
 symmetric_gradient(f) = symmetric_part(gradient(f))
+
+function symmetric_gradient(a::AbstractArray{<:Field})
+  ag = gradient(a)
+  operate_arrays_of_fields(symmetric_part,ag)
+end
 
 """
     const ε = symmetric_gradient
@@ -23,11 +33,31 @@ const ε = symmetric_gradient
 """
 curl(f) = grad2curl(gradient(f))
 
+function curl(a::AbstractArray{<:Field})
+  ag = gradient(a)
+  operate_arrays_of_fields(grad2curl,ag)
+end
+
 """
     grad2curl(∇f)
 """
 function grad2curl(f)
   @abstractmethod
+end
+
+grad2curl(a::GridapType) = operate(grad2curl,a)
+
+grad2curl(f::Field) = operate_fields(grad2curl,f)
+
+@inline function grad2curl(∇u::TensorValue{2})
+  ∇u[1,2] - ∇u[2,1]
+end
+
+@inline function grad2curl(∇u::TensorValue{3})
+  c1 = ∇u[2,3] - ∇u[3,2]
+  c2 = ∇u[3,1] - ∇u[1,3]
+  c3 = ∇u[1,2] - ∇u[2,1]
+  VectorValue(c1,c2,c3)
 end
 
 function laplacian end
@@ -44,8 +74,7 @@ const Δ = laplacian
 """
 function laplacian(f)
   g = gradient(f)
-  h = gradient(g)
-  tr(h)
+  divergence(g)
 end
 
 """
@@ -97,27 +126,6 @@ Equivalent to
 """
 cross(::typeof(∇),f) = curl(f)
 cross(::typeof(∇),f::GridapType) = curl(f)
-
-# Helpers
-
-grad2curl(f::Field) = apply_kernel_to_field(bcast(_curl_kernel),f)
-
-grad2curl(f::AbstractArray{<:Field}) = apply_to_field_array(bcast(_curl_kernel),f)
-
-grad2curl(::Type{T}, f::AbstractArray{<:Field}) where T = apply_to_field_array(T,bcast(_curl_kernel),f)
-
-grad2curl(∇u::MultiValue) = _curl_kernel(∇u)
-
-function _curl_kernel(∇u::TensorValue{2})
-  ∇u[1,2] - ∇u[2,1]
-end
-
-function _curl_kernel(∇u::TensorValue{3})
-  c1 = ∇u[2,3] - ∇u[3,2]
-  c2 = ∇u[3,1] - ∇u[1,3]
-  c3 = ∇u[1,2] - ∇u[2,1]
-  VectorValue(c1,c2,c3)
-end
 
 # Automatic differentiation of functions
 

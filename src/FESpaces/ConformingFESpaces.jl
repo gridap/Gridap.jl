@@ -30,7 +30,6 @@ function ConformingFESpace(
     cell_dofs,
     cell_shapefuns,
     cell_dof_basis,
-    cell_map,
     dirichlet_dof_tag,
     dirichlet_cells,
     ntags)
@@ -124,7 +123,10 @@ function compute_cell_space(reffes, cell_to_ctype, cell_map)
   shapefuns =  map(get_shapefuns,reffes)
   refshapefuns = CompressedArray(shapefuns,cell_to_ctype)
   cell_shapefuns = attachmap(refshapefuns,cell_map)
-  cell_shapefuns = GenericCellBasis(Val{false}(),cell_shapefuns,cell_map,Val{true}())
+
+  reffe_to_axs = map(reffe->(Base.OneTo(num_dofs(reffe)),),reffes) 
+  cell_axs = CompressedArray(reffe_to_axs,cell_to_ctype)
+  cell_shapefuns = GenericCellField(cell_shapefuns,cell_map,Val{true}(),cell_axs,Val((:,)))
 
   (cell_shapefuns, cell_dof_basis)
 end
@@ -147,7 +149,9 @@ function compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
 
   prebasis =  map(get_prebasis,reffes)
   cell_prebasis = CompressedArray(prebasis,cell_to_ctype)
-  cell_prebasis = GenericCellBasis(Val{false}(),cell_prebasis,cell_map,Val{false}())
+  reffe_to_axs = map(reffe->(Base.OneTo(num_dofs(reffe)),),reffes) 
+  cell_axs = CompressedArray(reffe_to_axs,cell_to_ctype)
+  cell_prebasis = GenericCellField(cell_prebasis,cell_map,Val{false}(),cell_axs,Val((:,)))
   cell_shapefuns = _cell_shape_functions_physical_space(cell_prebasis,cell_dof_basis,cell_map)
 
   (cell_shapefuns, cell_dof_basis)
@@ -190,9 +194,10 @@ function _cell_shape_functions_physical_space(cell_prebasis,cell_dof_basis,cell_
   cell_matrix = evaluate(cell_dof_basis,cell_prebasis)
   cell_matrix_inv = apply(inv,cell_matrix)
   cell_shapefuns_phys = apply(change_basis,get_array(cell_prebasis),cell_matrix_inv)
-  ref_style = Val{false}()
-  trial_style = Val{false}()
-  GenericCellBasis(trial_style,cell_shapefuns_phys,cell_map,ref_style)
+  cell_axs = get_cell_axes(cell_prebasis)
+  metasize_style = MetaSizeStyle(cell_prebasis)
+  ref_style = RefStyle(cell_prebasis)
+  GenericCellField(cell_shapefuns_phys,cell_map,ref_style,cell_axs,metasize_style)
    # @santiagobadia : better implementation in the future...
 end
 

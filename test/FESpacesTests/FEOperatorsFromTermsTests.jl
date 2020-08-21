@@ -10,6 +10,7 @@ using Gridap.Geometry
 using Gridap.Integration
 using Gridap.Fields
 using Gridap.FESpaces
+using Gridap.CellData
 
 import Gridap.Fields: ∇
 

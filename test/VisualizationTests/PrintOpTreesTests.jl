@@ -1,8 +1,13 @@
 module PrintOpTrees
 
 using FillArrays
-using Gridap
+using Gridap.Arrays
+using Gridap.Geometry
+using Gridap.CellData
+using Gridap.FESpaces
+using Gridap.Fields
 using Gridap.Arrays: CompressedArray
+using Gridap.Visualization
 
 io = IOBuffer()
 
