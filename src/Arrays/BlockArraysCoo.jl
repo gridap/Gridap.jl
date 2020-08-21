@@ -318,10 +318,12 @@ function Base.:*(a::BlockMatrixCoo,b::BlockMatrixCoo)
 end
 
 function LinearAlgebra.mul!(c::BlockVectorCoo,a::BlockMatrixCoo,b::BlockVectorCoo)
+  fill!(c,zero(eltype(c)))
   mul!(c,a,b,1,0)
 end
 
 function LinearAlgebra.mul!(c::BlockMatrixCoo,a::BlockMatrixCoo,b::BlockMatrixCoo)
+  fill!(c,zero(eltype(c)))
   mul!(c,a,b,1,0)
 end
 
