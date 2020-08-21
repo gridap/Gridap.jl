@@ -57,6 +57,7 @@ export setaxes!
 export CompressedArray
 export LocalToGlobalArray
 export LocalToGlobalPosNegArray
+export FilteredCellArray
 
 export kernel_cache
 export kernel_caches
@@ -139,6 +140,8 @@ include("Tables.jl")
 include("LocalToGlobalArrays.jl")
 
 include("LocalToGlobalPosNegArrays.jl")
+
+include("FilteredArrays.jl")
 
 include("Reindex.jl")
 
