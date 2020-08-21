@@ -60,6 +60,8 @@ FESpaces.get_free_values(f::MultiFieldFEFunction) = f.free_values
 
 FESpaces.get_fe_space(f::MultiFieldFEFunction) = f.fe_space
 
+Base.length(f::MultiFieldFEFunction) = length(f.multi_cell_field)
+
 """
     num_fields(m::MultiFieldFEFunction)
 """

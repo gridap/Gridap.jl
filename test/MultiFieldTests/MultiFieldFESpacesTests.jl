@@ -96,8 +96,8 @@ for ref_st in ref_style
   cf = CellField(X,get_cell_dofs(X))
   @test isa(cf,MultiFieldCellField)
 
-  test_fe_space(V,matvecdata,matdata,vecdata)
-  test_fe_space(U,matvecdata,matdata,vecdata)
+  test_fe_space(X,matvecdata,matdata,vecdata)
+  test_fe_space(Y,matvecdata,matdata,vecdata)
 
   #using Gridap.Visualization
   #writevtk(trian,"trian";nsubcells=30,cellfields=["uh" => uh, "ph"=> ph])

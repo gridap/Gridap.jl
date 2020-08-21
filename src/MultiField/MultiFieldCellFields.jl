@@ -30,6 +30,8 @@ CellData.RefStyle(::Type{<:MultiFieldCellField{R}}) where R = Val(R)
 
 CellData.MetaSizeStyle(::Type{<:MultiFieldCellField{R,S}}) where {R,S} = Val(S)
 
+Base.length(f::MultiFieldCellField) = length(first(f.single_fields))
+
 num_fields(a::MultiFieldCellField) = length(a.single_fields)
 
 Base.getindex(a::MultiFieldCellField,i) = a.single_fields[i]

@@ -208,6 +208,9 @@ Base.getindex(m::MultiFieldFESpace,field_id::Integer) = m.spaces[field_id]
 
 
 # API for the ConsecutiveMultiFieldStyle
+import Gridap.FESpaces: interpolate
+import Gridap.FESpaces: interpolate_everywhere
+import Gridap.FESpaces: interpolate_dirichlet
 
 @deprecate(
   interpolate(fs::MultiFieldFESpace, object),
