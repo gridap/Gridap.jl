@@ -8,16 +8,6 @@ using Test
 
 @testset "MultiFieldFEFunctions" begin include("MultiFieldFEFunctionsTests.jl") end
 
-#@testset "MultiFieldArrays" begin include("MultiFieldArraysTests.jl") end
-#
-#@testset "MultiFieldCellArrays" begin include("MultiFieldCellArraysTests.jl") end
-#
-#@testset "MultiFieldCellBases" begin include("MultiFieldCellBasesTests.jl") end
-#
-#@testset "MultiFieldCellKernels" begin include("MultiFieldCellKernelsTests.jl") end
-#
-#
-#
 #@testset "MultiFieldSparseMatrixAssemblers" begin include("MultiFieldSparseMatrixAssemblersTests.jl") end
 #
 #@testset "MultiFieldFEOperators" begin include("MultiFieldFEOperatorsTests.jl") end

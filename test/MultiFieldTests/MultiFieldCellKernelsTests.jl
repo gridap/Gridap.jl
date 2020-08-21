@@ -1,8 +1,0 @@
-module MultiFieldCellKernelsTests
-
-
-
-
-
-
-end # module
