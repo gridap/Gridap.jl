@@ -85,6 +85,7 @@ export test_fe_function
 
 export FESpace
 export FEFunction
+export EvaluationFunction
 export num_free_dofs
 export get_cell_basis
 export get_cell_dofs
