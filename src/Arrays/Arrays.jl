@@ -42,6 +42,7 @@ export CompressedArray
 export LocalToGlobalArray
 export LocalToGlobalPosNegArray
 export FilteredCellArray
+export FilterKernel
 
 export kernel_cache
 export kernel_caches
