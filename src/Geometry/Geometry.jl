@@ -1,4 +1,22 @@
 """
+The Geometry module contains data structures for space discretization.
+
+## Mesh based finite element analysis
+
+Mesh based finite element analysis requires multiple pieces of information:
+* Information about the face structure. For instance which `vertices` belong to a given edge.
+* A tagging system that allows to assign tags to parts of the space. For instance
+to assign Dirichlet conditions on some parts of the boundary and von Neumann conditions on other parts.
+to different boundary conditions.
+* Information about the isomorphism between reference space and the physical space. This isomorphism
+is encoded via the `nodes`. For linear meshes `nodes` coincide with `vertices`. The latter are by definition the "corners" of the cells.
+
+In `Gridap` these informations are organized into the following types:
+
+* A [`Triangulation`](@ref) contains `cells` and `nodes`. It does not know about `vertices` or the face structure.
+* A [`GridTopology`](@ref) contains information about the `vertices` and the face structure.
+* A [`FaceLabeling`](@ref) records which faces carry which tags.
+* A [`DiscreteModel`](@ref) contains all of the above: [`Triangulation`](@ref), [`GridTopology`](@ref) and [`FaceLabeling`](@ref)
 
 Exported names are
 $(EXPORTS)

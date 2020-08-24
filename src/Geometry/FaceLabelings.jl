@@ -5,6 +5,8 @@
       tag_to_entities::Vector{Vector{Int32}}
       tag_to_name::Vector{String}
     end
+
+A `FaceLabeling` connects face identities, also called "entities" to tags.
 """
 struct FaceLabeling <: GridapType
   d_to_dface_to_entity::Vector{Vector{Int32}}
@@ -33,9 +35,9 @@ function FaceLabeling(topo::GridTopology)
     if d != D
       dface_to_is_boundary = get_isboundary_face(topo,d)
       dface_to_entity .= dface_to_is_boundary
-      dface_to_entity .+= 1 
+      dface_to_entity .+= 1
     else
-      dface_to_entity .= 1 
+      dface_to_entity .= 1
     end
   end
   add_tag!(labels,"interior",[1])
