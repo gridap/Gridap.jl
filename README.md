@@ -53,7 +53,7 @@ These are some popular PDEs solved with the Gridap library. Examples taken from 
 
 ## How to cite Gridap
 
-If you have used the Gridap library in a scientific publication, please cite the project as follows:
+In order to give credit to the `Gridap` contributors, we simply ask you to cite the refence below in any publication in which you have made use of `Gridap` packages:
 
 ```
 @software{gridap_project,
@@ -71,4 +71,8 @@ If you have used the Gridap library in a scientific publication, please cite the
 }
 ```
 
+## Contact
+
+
+Please, contact the project administrators, [Santiago Badia](mailto:santiago.badia@monash.edu) and [Francesc Verdugo](mailto:fverdugo@cimne.upc.edu), for further questions about licenses and terms of use.
 

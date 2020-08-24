@@ -25,8 +25,8 @@ V = FESpace(model=model,reffe=QUAD4,conformity=CDConformity((CONT,DISC)))
 v3 = FEFunction(V,rand(num_free_dofs(V)))
 @test isa(V,UnconstrainedFESpace)
 
-using Gridap.Visualization
-writevtk(Triangulation(model),"results",cellfields=["v1"=>v1,"v2"=>v2,"v3"=>v3])
+#using Gridap.Visualization
+#writevtk(Triangulation(model),"results",cellfields=["v1"=>v1,"v2"=>v2,"v3"=>v3])
 
 V = FESpace(
  model=model,
@@ -137,5 +137,20 @@ V = FESpace(
  zeromean_trian = trian)
 
 @test abs(V.vol - 4/9) < 1.0e-9
+
+@testset "FESpace argchecks" begin
+    model = CartesianDiscreteModel((0, 2), 10)
+    trian = Triangulation(model)
+    TestFESpace(model=model, reffe=:Lagrangian, order=1, valuetype=Float64, dirichlet_tags="boundary")
+    FESpace(model=model, reffe=:Lagrangian, order=1, valuetype=Float64, dirichlet_tags="boundary")
+
+    # dirichlet_tags spelling error!
+    @test_throws ArgumentError TestFESpace(model=model, reffe=:Lagrangian, order=1, valuetype=Float64,
+        dirichlet_tag="boundary"
+    )
+    @test_throws ArgumentError FESpace(model=model, reffe=:Lagrangian, order=1, valuetype=Float64,
+        dirichlet_tag="boundary"
+    )
+end
 
 end # module

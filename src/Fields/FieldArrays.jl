@@ -2,12 +2,12 @@
 """
     evaluate_field_array(f::AbstractArray,x::AbstractArray) -> AbstractArray
 
-Evaluates the fields in the array `f` at all the vector of points in the 
+Evaluates the fields in the array `f` at all the vector of points in the
 array of vector of points `x` and returns the result as a lazy array.
 
-The result is numerically equivalent to 
+The result is numerically equivalent to
 
-    map(evaluate_field,a,x)
+    map(evaluate_field,f,x)
 """
 function evaluate_field_array(a::AbstractArray,x::AbstractArray)
   _evaluate_field_array(a,x)
@@ -61,7 +61,7 @@ end
 """
     evaluate(a::AbstractArray{<:Field},x::AbstractArray)
 
-Equivalent to 
+Equivalent to
 
     evaluate_field_array(a,x)
 
@@ -103,7 +103,7 @@ end
     field_array_gradient(a::AbstractArray)
 
 Returns an array containing the gradients of the fields in the array `a`.
-Numerically equivalent to 
+Numerically equivalent to
 
     map(field_gradient,a)
 """
@@ -149,7 +149,7 @@ end
 """
     gradient(f::AbstractArray{<:Field})
 
-Equivalent to 
+Equivalent to
 
     field_array_gradient(f)
 
@@ -162,7 +162,7 @@ end
 """
     field_array_gradients(f...)
 
-Equivalent to 
+Equivalent to
 
     map(field_array_gradient,f)
 """
@@ -200,7 +200,7 @@ end
       cmp::Function=(==);
       grad = nothing)
 
-Function to test an array of fields `a`. The array `v` is the expected result when calling 
+Function to test an array of fields `a`. The array `v` is the expected result when calling
 `evaluate_field_array(a,x)`. The entries in the computed array and the expected one are compared
 with the `cmp` function. The key-word argument `grad` is optional. If present, it should contain
 the expected result of
@@ -214,7 +214,7 @@ function test_array_of_fields(
   v::AbstractArray,
   cmp::Function=(==);
   grad = nothing)
-  
+
   ax = evaluate_field_array(a,x)
   test_array(ax,v,cmp)
 

@@ -38,7 +38,7 @@ array_caches
 testitems
 ```
 
-## Creting lazy operation trees
+## Creating lazy operation trees
 
 ```@docs
 apply(f,a::AbstractArray...)
@@ -67,7 +67,7 @@ kernel_caches
 kernel_return_types
 ```
 
-### Build-in kernels
+### Built-in kernels
 
 ```@docs
 bcast

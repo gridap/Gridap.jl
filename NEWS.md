@@ -4,19 +4,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+
+## [0.13.4] - 2020-08-23
+
+### Added 
+  - New `FilteredCellArray` since PR [#372](https://github.com/gridap/Gridap.jl/pull/372/).
+
+## [0.13.3] - 2020-08-12
 
 ### Added
+  - `Visualization.visualization_data` function that makes it easier to bring fields into
+  visualization library friendly formats. Since PR [#354](https://github.com/gridap/Gridap.jl/pull/354).
   - Gradient of a product binary operation (`*`) between a scalar and a field. Since PR [#340](https://github.com/gridap/Gridap.jl/pull/340).
 
-## [0.13.2] - 2020-7-31
+## [0.13.2] - 2020-07-31
 
 ### Added
   - Automatic differentiation of the Jacobian from a given residual and the Jacobian and the residual from a given energy. Not working at this moment on the Skeleton nor for multi-field (WIP), but yes for other cases.
   Now, the user can omit `jac` from `FETerm(res,jac,trian,quad)`, i.e. `FETerm(res,trian,quad)` and the Jacobian will be automatically generated. In addition, the user can write `FEEnergy(ener,trian,quad)` for a given `ener(uh)` function
   and the residual and the Jacobian will be automatically generated. Since PR [#338](https://github.com/gridap/Gridap.jl/pull/338/).
 
-## [0.13.1] - 2020-7-24
+## [0.13.1] - 2020-07-24
 
 ### Fixed
   - Bugs associated with the degenerated case of 0-length arrays. Since PR [#331](https://github.com/gridap/Gridap.jl/pull/331/) and [#332](https://github.com/gridap/Gridap.jl/pull/332/).
@@ -46,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Better handling of FE terms defined on empty triangulations. Since PR [#329](https://github.com/gridap/Gridap.jl/pull/329).
   - Replaced `+=` by `add_entry!`. Since PR [#316](https://github.com/gridap/Gridap.jl/pull/316).
   - Minor fix to let Vtk.jl support changes in Vtk 1.7.X versus 1.6.X. Since PR [#324](https://github.com/gridap/Gridap.jl/pull/324).
-  
+
 ## [0.12.0] - 2020-07-07
 
 ### Added
@@ -71,7 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-  - Construction of `VectorValue`, `TensorValue`, et al. objects from non-homogeneous arguments.  This solves some problems associated with automatic differentiation. Since PR [#298](https://github.com/gridap/Gridap.jl/pull/298).  
+  - Construction of `VectorValue`, `TensorValue`, et al. objects from non-homogeneous arguments.  This solves some problems associated with automatic differentiation. Since PR [#298](https://github.com/gridap/Gridap.jl/pull/298).
   - `CDLagrangianRefFE` node ordering. Since PR [#305](https://github.com/gridap/Gridap.jl/pull/305).
 
 ## [0.11.2] - 2020-06-22
