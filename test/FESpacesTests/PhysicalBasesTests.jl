@@ -1,6 +1,6 @@
 module PhysicalBasesTests
 
-using Gridap
+using FillArrays
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.Arrays
@@ -8,6 +8,8 @@ using Gridap.Fields
 using Gridap.FESpaces
 using Gridap.Polynomials
 using Gridap.Integration
+using Gridap.CellData
+using Gridap.TensorValues
 using Test
 
 # Start with a PhysicalSpaceCellBasis
@@ -39,23 +41,23 @@ reffes = [LagrangianRefFE(T,p,order) for p in polytopes]
 
 dof_bases = map(get_dof_basis,reffes)
 
-FEM = Gridap.FESpaces
-cell_dof_basis = FEM._cell_dof_basis_physical_space(dof_bases,cell_to_ctype,cell_map)
+cell_dof_basis = FESpaces._cell_dof_basis_physical_space(dof_bases,cell_to_ctype,cell_map)
 cell_dof_basis = GenericCellDofBasis(Val{false}(),cell_dof_basis)
 
 prebasis =  map(get_prebasis,reffes)
 cell_prebasis = CompressedArray(prebasis,cell_to_ctype)
-cell_prebasis_new = GenericCellBasis(Val{false}(),cell_prebasis,cell_map,Val{false}())
 
-typeof(cell_prebasis)
-isa(cell_prebasis,CellBasis)
+ncells = num_cells(model)
+ndofs = num_dofs(first(reffes))
+cell_prebasis_new = GenericCellField(cell_prebasis,cell_map,Val{false}(),Fill((Base.OneTo(ndofs),),ncells),Val((:,)))
+
 
 # cell_matrix = evaluate(cell_dof_basis,cell_prebasis)
 
 # cell_shapefuns = _cell_shape_functions_physical_space(cell_prebasis,cell_dof_basis,cell_map)
 
-psfs, x  = Gridap.FESpaces.compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
-sfs, x  = Gridap.FESpaces.compute_cell_space(reffes, cell_to_ctype, cell_map)
+psfs, x  = FESpaces.compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
+sfs, x  = FESpaces.compute_cell_space(reffes, cell_to_ctype, cell_map)
 
 # T = VectorValue{2,Float64}
 # reffes = [LagrangianRefFE(T,p,order) for p in polytopes]
@@ -71,8 +73,8 @@ rgp = evaluate(gradient(psfs),q)
 T = VectorValue{2,Float64}
 reffes = [LagrangianRefFE(T,p,order) for p in polytopes]
 
-psfs, x  = Gridap.FESpaces.compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
-sfs, x  = Gridap.FESpaces.compute_cell_space(reffes, cell_to_ctype, cell_map)
+psfs, x  = FESpaces.compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
+sfs, x  = FESpaces.compute_cell_space(reffes, cell_to_ctype, cell_map)
 
 r = evaluate(sfs,q)
 rg = evaluate(gradient(sfs),q)
@@ -93,8 +95,8 @@ T = Float64
 order = 0
 reffes = [RaviartThomasRefFE(T,p,order) for p in polytopes]
 
-psfs, dofp  = Gridap.FESpaces.compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
-sfs, dof  = Gridap.FESpaces.compute_cell_space(reffes, cell_to_ctype, cell_map)
+psfs, dofp  = FESpaces.compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
+sfs, dof  = FESpaces.compute_cell_space(reffes, cell_to_ctype, cell_map)
 
 r = evaluate(sfs,q)
 rg = evaluate(gradient(sfs),q)

@@ -5,6 +5,7 @@ using Gridap.Geometry
 using Gridap.Fields
 using Gridap.Integration
 using Gridap.FESpaces
+using Gridap.CellData
 
 domain = (0,1,0,1)
 partition = (4,4)
@@ -36,7 +37,7 @@ test_single_field_fe_space(U,matvecdata,matdata,vecdata)
 @test is_trial(get_cell_basis(U))
 
 fun(x) = sin(4*pi*(x[1]+x[2]^2)) + 3
-uh = interpolate(U,fun)
+uh = interpolate(fun, U)
 
 mean1 = sum(integrate(uh,trian,quad))
 

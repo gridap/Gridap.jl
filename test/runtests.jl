@@ -22,13 +22,22 @@ using Test
 
 @time @testset "ReferenceFEs" begin include("ReferenceFEsTests/runtests.jl") end
 
+@time @testset "CellData" begin include("CellDataTests/runtests.jl") end
+
 @time @testset "Geometry" begin include("GeometryTests/runtests.jl") end
 
-@time @testset "FESpaces" begin include("FESpacesTests/runtests.jl") end
+@time @testset "FESpaces (1/2)" begin include("FESpacesTests/runtests_1.jl") end
+
+@time @testset "FESpaces (2/2)" begin include("FESpacesTests/runtests_2.jl") end
 
 @time @testset "MultiField" begin include("MultiFieldTests/runtests.jl") end
 
 @time @testset "Visualization" begin include("VisualizationTests/runtests.jl") end
+
+@time @testset "Issues" begin
+    include("issue_349.jl")
+    include("issue_368.jl")
+end
 
 include("GridapTests/runtests.jl")
 

@@ -89,19 +89,13 @@ function get_cell_dof_basis(f::FESpaceWithLastDofRemoved)
   get_cell_dof_basis(f.space)
 end
 
+get_cell_axes(t::FESpaceWithLastDofRemoved)= get_cell_axes(t.space)
+
+get_cell_axes_with_constraints(t::FESpaceWithLastDofRemoved)= get_cell_axes_with_constraints(t.space)
+
+CellData.CellField(t::FESpaceWithLastDofRemoved,cell_vals) = CellField(t.space,cell_vals)
+
 constraint_style(::Type{FESpaceWithLastDofRemoved{B}}) where B = Val{B}()
-
-function get_constraint_kernel_matrix_cols(f::FESpaceWithLastDofRemoved)
-  get_constraint_kernel_matrix_cols(f.space)
-end
-
-function get_constraint_kernel_matrix_rows(f::FESpaceWithLastDofRemoved)
-  get_constraint_kernel_matrix_rows(f.space)
-end
-
-function get_constraint_kernel_vector(f::FESpaceWithLastDofRemoved)
-  get_constraint_kernel_vector(f.space)
-end
 
 # Helpers
 

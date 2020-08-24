@@ -113,6 +113,20 @@ paraview_collection(f) do pvd
     vtk_save(pvd)
 end
 
+# Visualize AppendedTriangulation
+
+domain = (0,1,0,1)
+partition = (10,10)
+grid1 = CartesianGrid(domain,partition)
+
+domain = (1,2,0,1)
+partition = (10,10)
+grid2 = simplexify(CartesianGrid(domain,partition))
+
+trian = lazy_append(grid1,grid2)
+
+f = joinpath(d,"trian")
+writevtk(trian,f)
 rm(d,recursive=true)
 
 end # module

@@ -1,9 +1,12 @@
 module CurlConformingFESpacesTests
 
 using Test
-using Gridap
 using LinearAlgebra
 using Gridap.FESpaces
+using Gridap.Geometry
+using Gridap.TensorValues
+using Gridap.CellData
+using Gridap.Fields
 using Gridap.ReferenceFEs
 
 domain =(0,1,0,1,0,1)
@@ -28,7 +31,7 @@ test_single_field_fe_space(V)
 
 U = TrialFESpace(V,u)
 
-uh = interpolate(U,u)
+uh = interpolate(u,U)
 
 e = u - uh
 
@@ -45,7 +48,7 @@ test_single_field_fe_space(V)
 
 U = TrialFESpace(V,u)
 
-uh = interpolate(U,u)
+uh = interpolate(u,U)
 
 el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
 @test el2 < 1.0e-10

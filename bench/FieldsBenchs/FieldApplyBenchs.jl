@@ -18,13 +18,13 @@ function bench1(n)
   v = 3.0
   d = 2
   f = MockField{d}(v)
-  g = apply_kernel_to_field(bcast(+),f,v)
+  g = operate_fields(+,f,v)
   cg = field_cache(g,x)
   @time repeat(n,evaluate!,cg,g,x)
   ∇g = gradient(g)
   ∇cg = field_cache(∇g,x)
   @time repeat(n,evaluate!,∇cg,∇g,x)
-  h = apply_kernel_to_field(bcast(+),f,f)
+  h = operate_fields(+,f,f)
   ch = field_cache(h,x)
   @time repeat(n,evaluate!,ch,h,x)
 end

@@ -18,6 +18,7 @@ using Gridap.ReferenceFEs
 using Gridap.TensorValues
 using Gridap.Io
 using Gridap.Integration
+using Gridap.CellData
 
 using Gridap.ReferenceFEs: _num_faces
 using Gridap.ReferenceFEs: _num_facets
@@ -36,6 +37,10 @@ import Gridap.Arrays: getindex!
 import Gridap.Arrays: reindex
 import Gridap.Arrays: get_array
 import Gridap.Arrays: lazy_append
+import Gridap.CellData: CellField
+import Gridap.CellData: CellQuadrature
+import Gridap.CellData: QPointCellField
+import Gridap.CellData: get_cell_map
 
 import Gridap.Fields: field_cache
 import Gridap.Fields: evaluate_field!
@@ -90,20 +95,6 @@ import Gridap.Fields: integrate
 
 import Gridap.Arrays: apply_kernel!
 
-export CellField
-export GenericCellField
-export SkeletonCellField
-export RefStyle
-export similar_object
-export change_ref_style
-export test_cell_field
-export convert_to_cell_field
-export to_ref_space
-export to_physical_space
-export is_in_physical_space
-export is_in_ref_space
-export cell_field_from_function
-
 export GridTopology
 export num_cells
 export get_polytopes
@@ -131,13 +122,13 @@ export get_reffes
 export get_cell_coordinates
 export get_cell_reffes
 export get_cell_shapefuns
-export get_cell_map
 export get_normal_vector
 export test_triangulation
 export restrict
 export get_physical_coordinate
 export get_cell_id
 export cell_measure
+export get_cell_map
 
 export Grid
 export get_cell_nodes
@@ -199,14 +190,10 @@ export GenericBoundaryTriangulation
 export DiscreteModelPortion
 
 export SkeletonPair
-export jump
-export mean
 export SkeletonTriangulation
 export InterfaceTriangulation
 export get_left_boundary
 export get_right_boundary
-export CellQuadrature
-export QPointCellField
 
 export RestrictedDiscreteModel
 
@@ -217,8 +204,6 @@ include("GridTopologies.jl")
 include("GridTopologyMocks.jl")
 
 include("UnstructuredGridTopologies.jl")
-
-include("CellFields.jl")
 
 include("SkeletonPairs.jl")
 
@@ -255,10 +240,6 @@ include("BoundaryTriangulations.jl")
 include("GenericBoundaryTriangulations.jl")
 
 include("SkeletonTriangulations.jl")
-
-include("CellQuadratures.jl")
-
-include("QPointCellFields.jl")
 
 include("AppendedTriangulations.jl")
 

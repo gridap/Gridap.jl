@@ -1,5 +1,9 @@
 
 """
+    abstract type FETerm <: GridapType end
+
+A `FETerm` is a lazy representation of a summand of a finite element problem. It is not assembled.
+See also [FEOperator](@ref).
 """
 abstract type FETerm <: GridapType end
 
@@ -42,11 +46,6 @@ function _setup_jac_and_res(celljac,cellres)
   (celljacres, nothing, nothing)
 end
 
-function _setup_jac_and_res(celljac::SkeletonCellMatrix,cellres::SkeletonCellVector)
-  #TODO for the moment do not pair on the skeleton
-  (nothing, celljac, cellres)
-end
-
 function _setup_jac_and_res(celljac::Nothing,cellres)
   (nothing, nothing, cellres)
 end
@@ -60,6 +59,7 @@ function _setup_jac_and_res(celljac::Nothing,cellres::Nothing)
 end
 
 """
+See also [FETerm](@ref).
 """
 abstract type AffineFETerm <: FETerm end
 
@@ -74,20 +74,19 @@ end
 
 """
 Returns an object (e.g. a CellVector) representing the contribution to the
-system rhs of the given term. Returns nothing if the term has not
+system rhs of the given term (with Dirichlet bcs included). Returns nothing if the term has not
 contribution (typically for linear terms)
 """
 function get_cell_vector(t::AffineFETerm,uhd,v)
   @abstractmethod
 end
 
+"""
+Returns an object (e.g. a CellVector) representing the contribution to the
+system rhs of the given term (without Dirichlet bcs). Returns nothing if the term has not
+contribution (typically for linear terms)
+"""
 function get_cell_vector(t::AffineFETerm,v)
-  @abstractmethod
-end
-
-"""
-"""
-function get_cell_values(t::FETerm,uhd)
   @abstractmethod
 end
 
@@ -105,34 +104,19 @@ function get_cell_matrix_and_vector(t::AffineFETerm,uhd,u,v)
   @assert is_a_fe_cell_basis(v)
   @assert is_a_fe_cell_basis(u)
   cellmat = get_cell_matrix(t,u,v)
-  cellvec = _get_cell_vector_tmp_hack(cellmat,t,v,uhd) #TODO
-  cellvals = get_cell_values(t,uhd)
-  _setup_cell_matrix_and_vector(cellmat,cellvec,cellvals)
-end
-
-function _get_cell_vector_tmp_hack(cellmat,t,v,uhd) #TODO
   cellvec = get_cell_vector(t,v)
-  cellvec
-end
-
-function _get_cell_vector_tmp_hack(cellmat::SkeletonCellMatrix,t,v,uhd) #TODO
-  cellvec = get_cell_vector(t,uhd,v)
-  cellvec
+  cellvals = get_cell_values(uhd,get_cell_id(t))
+  _setup_cell_matrix_and_vector(cellmat,cellvec,cellvals)
 end
 
 function  _setup_cell_matrix_and_vector(cellmat,cellvec,cellvals)
   cellmatvec = pair_arrays(cellmat,cellvec)
-  cellmatvec_with_diri = attach_dirichlet_bcs(cellmatvec,cellvals)
+  cellmatvec_with_diri = attach_dirichlet(cellmatvec,cellvals)
   (cellmatvec_with_diri, nothing, nothing)
 end
 
-function  _setup_cell_matrix_and_vector(cellmat::SkeletonCellMatrix,cellvec::SkeletonCellVector,cellvals)
-  # TODO for the moment do not pair quantities on the skeleton and assume that cellvec has dirichlet bcs
-  (nothing, cellmat, cellvec)
-end
-
 function _setup_cell_matrix_and_vector(cellmat,cellvec::Nothing,cellvals)
-  cellmatvec_with_diri = attach_dirichlet_bcs(cellmat,cellvals)
+  cellmatvec_with_diri = attach_dirichlet(cellmat,cellvals)
   (cellmatvec_with_diri, nothing, nothing)
 end
 
@@ -145,6 +129,7 @@ function _setup_cell_matrix_and_vector(cellmat::Nothing,cellvec::Nothing,cellval
 end
 
 """
+See also [FETerm](@ref).
 """
 abstract type LinearFETerm <: AffineFETerm end
 
@@ -276,18 +261,6 @@ function _push_matrix_contribution!(w,r,c,cellvals::Nothing,cellids)
   nothing
 end
 
-function _push_matrix_contribution!(w,r,c,cellvals::SkeletonCellMatrix,cellids::SkeletonPair)
-  push!(w,cellvals.ll)
-  push!(w,cellvals.lr)
-  push!(w,cellvals.rl)
-  push!(w,cellvals.rr)
-  push!(r,cellids.left); push!(c,cellids.left)
-  push!(r,cellids.left); push!(c,cellids.right)
-  push!(r,cellids.right); push!(c,cellids.left)
-  push!(r,cellids.right); push!(c,cellids.right)
-  nothing
-end
-
 function _push_vector_contribution!(v,r,cellvals,cellids)
   push!(v,cellvals)
   push!(r,cellids)
@@ -295,14 +268,6 @@ function _push_vector_contribution!(v,r,cellvals,cellids)
 end
 
 function _push_vector_contribution!(v,r,cellvals::Nothing,cellids)
-  nothing
-end
-
-function _push_vector_contribution!(v,r,cellvals::SkeletonCellVector,cellids::SkeletonPair)
-  push!(v,cellvals.left)
-  push!(v,cellvals.right)
-  push!(r,cellids.left)
-  push!(r,cellids.right)
   nothing
 end
 
@@ -356,12 +321,6 @@ function get_cell_id(t::AffineFETermFromIntegration)
   get_cell_id(t.trian)
 end
 
-function get_cell_values(t::AffineFETermFromIntegration,uhd)
-  @assert is_a_fe_function(uhd)
-  cellvals = get_cell_values(uhd)
-  reindex(cellvals,t.trian)
-end
-
 struct FESourceFromIntegration <: FESource
   liform::Function
   trian::Triangulation
@@ -403,12 +362,6 @@ end
 
 function get_cell_id(t::FESourceFromIntegration)
   get_cell_id(t.trian)
-end
-
-function get_cell_values(t::FESourceFromIntegration,uhd)
-  @assert is_a_fe_function(uhd)
-  cellvals = get_cell_values(uhd)
-  reindex(cellvals,t.trian)
 end
 
 struct LinearFETermFromIntegration <: LinearFETerm
@@ -455,12 +408,6 @@ end
 
 function get_cell_id(t::LinearFETermFromIntegration)
   get_cell_id(t.trian)
-end
-
-function get_cell_values(t::LinearFETermFromIntegration,uhd)
-  @assert is_a_fe_function(uhd)
-  cellvals = get_cell_values(uhd)
-  reindex(cellvals,t.trian)
 end
 
 struct NonlinearFETerm <: FETerm
@@ -523,9 +470,9 @@ function get_cell_vector(t::AffineFETermFromCellMatVec,uhd,v)
   u = get_cell_basis(trial)
   _v = restrict(v,t.trian)
   _u = restrict(u,t.trian)
-  _cellvals = get_cell_values(t,uhd)
+  _cellvals = get_cell_values(uhd,get_cell_id(t.trian))
   cellmatvec = t.matvecfun(_u,_v)
-  cellmatvec_with_diri = attach_dirichlet_bcs(cellmatvec,_cellvals)
+  cellmatvec_with_diri = attach_dirichlet(cellmatvec,_cellvals)
   _, cellvec_with_diri = unpair_arrays(cellmatvec_with_diri)
   cellvec_with_diri
 end
@@ -539,21 +486,15 @@ function get_cell_id(t::AffineFETermFromCellMatVec)
   get_cell_id(t.trian)
 end
 
-function get_cell_values(t::AffineFETermFromCellMatVec,uhd)
-  @assert is_a_fe_function(uhd)
-  cellvals = get_cell_values(uhd)
-  reindex(cellvals,t.trian)
-end
-
 function get_cell_matrix_and_vector(t::AffineFETermFromCellMatVec,uhd,u,v)
   @assert is_a_fe_function(uhd)
   @assert is_a_fe_cell_basis(v)
   @assert is_a_fe_cell_basis(u)
   _v = restrict(v,t.trian)
   _u = restrict(u,t.trian)
-  _cellvals = get_cell_values(t,uhd)
+  _cellvals = get_cell_values(uhd,get_cell_id(t.trian))
   cellmatvec = t.matvecfun(_u,_v)
-  cellmatvec_with_diri = attach_dirichlet_bcs(cellmatvec,_cellvals)
+  cellmatvec_with_diri = attach_dirichlet(cellmatvec,_cellvals)
   (cellmatvec_with_diri, nothing, nothing)
 end
 

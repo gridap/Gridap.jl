@@ -25,13 +25,11 @@ test_single_field_fe_space(V0,matvecdata,matdata,vecdata)
 
 cell_map = get_cell_map(V0)
 
-cell_shapefuns = get_cell_shapefuns(V0)
-
 f(x) = sin(4*pi*(x[1]-x[2]^2))+1
 
-fh = interpolate_everywhere(V0,f)
+fh = interpolate_everywhere(f, V0)
 
-fh = interpolate_dirichlet(V0,f)
+fh = interpolate_dirichlet(f, V0)
 
 dirichlet_values = compute_dirichlet_values_for_tags(V0,[1,2])
 

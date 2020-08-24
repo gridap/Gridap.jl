@@ -37,20 +37,20 @@ function bench1(n)
   aba = Fill(ba,l)
   abb = Fill(bb,l)
 
-  ag_ff = field_array_operation(inner,afa,afb)
+  ag_ff = operate_arrays_of_fields(inner,afa,afb)
   agx_ff = evaluate(ag_ff,ax)
   cagx_ff = array_cache(agx_ff)
   @time loop(agx_ff,cagx_ff)
 
-  ag_bf = field_array_operation(inner,aba,afb)
+  ag_bf = operate_arrays_of_fields(inner,aba,afb)
   agx_bf = evaluate(ag_bf,ax)
   cagx_bf = array_cache(agx_bf)
   @time loop(agx_bf,cagx_bf)
 
-  ag_bb = field_array_operation(inner,aba,abb)
-  agx_bb = evaluate(ag_bb,ax)
-  cagx_bb = array_cache(agx_bb)
-  @time loop(agx_bb,cagx_bb)
+  #ag_bb = operate_arrays_of_fields(inner,aba,abb)
+  #agx_bb = evaluate(ag_bb,ax)
+  #cagx_bb = array_cache(agx_bb)
+  #@time loop(agx_bb,cagx_bb)
 
 end
 

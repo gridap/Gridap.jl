@@ -220,8 +220,47 @@ function get_cell_dofs(f::ExtendedFESpace)
 
 end
 
+function get_cell_axes(f::ExtendedFESpace)
+  _extend_cell_axes(f,get_cell_axes(f.space))
+end
+
+function get_cell_axes_with_constraints(f::ExtendedFESpace)
+  _extend_cell_axes(f,get_cell_axes_with_constraints(f.space))
+end
+
+function _extend_cell_axes(f,cell_axes)
+  cell_axes_void = Fill(_empty_axes(testitem(cell_axes)...),length(f.trian.void_to_oldcell))
+  array = ExtendedVector(
+    cell_axes_void,
+    cell_axes,
+    f.trian.oldcell_to_cell,
+    f.trian.void_to_oldcell,
+    f.trian.cell_to_oldcell)
+end
+
+#TODO this is a little hacky
+function _empty_axes(::Base.OneTo)
+  (Base.OneTo(0),)
+end
+
+function _empty_axes(::Base.OneTo,::Base.OneTo)
+  (Base.OneTo(1),Base.OneTo(0))
+end
+
+function _empty_axes(::BlockedUnitRange)
+  (blockedrange([0]),)
+end
+
+function _empty_axes(::BlockedUnitRange,::BlockedUnitRange)
+  (blockedrange([1]),blockedrange([0]))
+end
+
 function get_cell_basis(f::ExtendedFESpace)
   cell_basis = get_cell_basis(f.space)
+  _extend_cell_basis(f,cell_basis)
+end
+
+function _extend_cell_basis(f,cell_basis)
   cell_to_val = get_array(cell_basis)
 
   xi = testitem(get_cell_coordinates(f.trian))
@@ -229,7 +268,9 @@ function get_cell_basis(f::ExtendedFESpace)
   Tv = field_return_type(vi,xi)
   T = eltype(Tv)
   D = num_components(eltype(xi))
-  void_to_val = Fill(VoidBasis{T,D}(),length(f.trian.void_to_oldcell))
+
+  _void_to_val = Fill(VoidBasis{T,D}(),length(f.trian.void_to_oldcell))
+  void_to_val = _trialize_if_needed(_void_to_val,MetaSizeStyle(cell_basis))
 
   array = ExtendedVector(
     void_to_val,
@@ -239,8 +280,31 @@ function get_cell_basis(f::ExtendedFESpace)
     f.trian.cell_to_oldcell)
 
   cm = get_cell_map(f.trian.oldtrian)
-  trial_style = TrialStyle(cell_basis)
-  GenericCellBasis(trial_style,array,cm,RefStyle(cell_basis))
+  ca = _extend_cell_axes(f,get_cell_axes(cell_basis))
+  GenericCellField(array,cm,RefStyle(cell_basis),ca,MetaSizeStyle(cell_basis))
+end
+
+function _trialize_if_needed(_void_to_val,::Val{(:,)})
+  _void_to_val
+end
+
+function _trialize_if_needed(_void_to_val,::Val{(1,:)})
+  trialize_array_of_bases(_void_to_val)
+end
+
+function CellData.CellField(f::ExtendedFESpace,cell_vals)
+  _cell_field_for_ext_fe_space(f,cell_vals,f.space)
+end
+
+function  _cell_field_for_ext_fe_space(f,cell_vals,ft::Any)
+  _default_cell_field(f,cell_vals)
+end
+
+# TODO, this is a bit hacky, lincomb should also work for trial bases
+function  _cell_field_for_ext_fe_space(f,cell_vals,ft::TrialFESpace)
+  cell_basis = _extend_cell_basis(f,get_cell_basis(ft.space))
+  cell_field = lincomb(cell_basis,cell_vals)
+  cell_field
 end
 
 function get_cell_dof_basis(f::ExtendedFESpace)

@@ -10,7 +10,7 @@ abstract type CellDofBasis end
 RefStyle(::Type{<:CellDofBasis}) = @abstractmethod
 get_array(::CellDofBasis) = @abstractmethod
 
-function test_cell_dof_basis(cf::CellDofBasis,f::CellFieldLike)
+function test_cell_dof_basis(cf::CellDofBasis,f::CellField)
   ar = get_array(cf)
   @test isa(ar,AbstractArray)
   a = evaluate(cf,f)
@@ -31,16 +31,16 @@ The result is numerically equivalent to
 
 but it is described with a more memory-friendly lazy type.
 """
-function evaluate(cell_dofs::CellDofBasis,cell_field::CellFieldLike)
+function evaluate(cell_dofs::CellDofBasis,cell_field::CellField)
  _evaluate_cell_dofs(cell_dofs,cell_field,RefStyle(cell_dofs))
 end
 
 function  _evaluate_cell_dofs(cell_dofs,cell_field,ref_trait::Val{true})
-  evaluate_dof_array(get_array(cell_dofs),get_array(to_ref_space(cell_field)))
+  ReferenceFEs.evaluate_dof_array(get_array(cell_dofs),get_array(to_ref_space(cell_field)))
 end
 
 function  _evaluate_cell_dofs(cell_dofs,cell_field,ref_trait::Val{false})
-  evaluate_dof_array(get_array(cell_dofs),get_array(to_physical_space(cell_field)))
+  ReferenceFEs.evaluate_dof_array(get_array(cell_dofs),get_array(to_physical_space(cell_field)))
 end
 
 """

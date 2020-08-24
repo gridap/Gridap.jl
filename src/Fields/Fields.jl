@@ -20,6 +20,7 @@ using Gridap.Arrays: NumberOrArray
 using Gridap.Arrays: AppliedArray
 using Gridap.Arrays: Contracted
 using LinearAlgebra: ⋅
+using BlockArrays
 
 using Test
 using DocStringExtensions
@@ -55,6 +56,7 @@ export evaluate_fields!
 export field_gradients
 export field_array_cache
 export evaluate_field_array
+export evaluate_field_arrays
 export field_array_gradient
 export gradient_type
 export curl
@@ -68,8 +70,16 @@ export symmetric_gradient
 export Homothecy
 export AffineMap
 
-export field_operation
-export field_array_operation
+export VectorOfBlockBasisCoo
+export insert_array_of_bases_in_block
+export create_array_of_blocked_axes
+
+export operate_fields
+export operate_arrays_of_fields
+export trialize_basis
+export trialize_array_of_bases
+export field_operation_axes
+export field_operation_metasize
 
 export function_field
 
@@ -77,6 +87,8 @@ import Gridap.Arrays: kernel_cache
 import Gridap.Arrays: apply_kernel!
 import Gridap.Arrays: kernel_return_type
 import Gridap.Arrays: kernel_testitem!
+import Gridap.Arrays: apply
+import Gridap.Arrays: reindex
 import Gridap.TensorValues: outer
 import Gridap.TensorValues: inner
 import Gridap.TensorValues: symmetric_part
@@ -113,6 +125,10 @@ include("Integrate.jl")
 
 include("FieldOperations.jl")
 
+include("VectorsOfBlockBasisCoo.jl")
+
 include("DiffOperators.jl")
+
+include("UnimplementedFields.jl")
 
 end # module

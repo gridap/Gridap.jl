@@ -21,12 +21,12 @@ V0 = GradConformingFESpace(reffes,model,dirichlet_tags)
 
 f(x) = sin(4*pi*(x[1]-x[2]^2))+1
 
-fh = interpolate(V0,f)
+fh = interpolate(f,V0)
 @test get_dirichlet_values(fh) == get_dirichlet_values(V0)
 
-fh = interpolate_everywhere(V0,f)
+fh = interpolate_everywhere(f,V0)
 
-fh = interpolate_dirichlet(V0,f)
+fh = interpolate_dirichlet(f,V0)
 @test get_free_values(fh) == zero_free_values(V0)
 
 #trian = get_triangulation(model)
