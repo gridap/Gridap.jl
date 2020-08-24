@@ -68,6 +68,20 @@ cellvec = integrate( n⋅dv, trian, quad)
 @test isa(cellmat,VectorOfBlockArrayCoo)
 @test isa(cellvec,VectorOfBlockArrayCoo)
 
+cellmat1 = integrate( ((n⋅dv) - dq)*((n⋅du) + dp), trian, quad)
+cellmat2 = integrate( (n⋅dv)*(n⋅du) + (n⋅dv)*dp - dq*(n⋅du) - dq*dp, trian, quad)
+test_array(cellmat1,cellmat2,≈)
+
+cellmat1 = integrate( (n⋅dv)*2, trian, quad)
+cellmat2 = integrate( (n⋅dv)*fill(2,num_cells(trian)), trian, quad)
+test_array(cellmat1,cellmat2,≈)
+
+op(u,∇u,v,∇v) = u⋅v + ∇u⊙∇v
+
+cellmat1 = integrate( operate(op,du,∇(du),dv,∇(dv)) , trian, quad)
+cellmat2 = integrate( du⋅dv + ∇(du)⊙∇(dv) , trian, quad)
+test_array(cellmat1,cellmat2,≈)
+
 dv_Γ, dq_Γ = restrict(get_cell_basis(Y), trian_Γ)
 du_Γ, dp_Γ = restrict(get_cell_basis(X), trian_Γ)
 
@@ -83,6 +97,11 @@ R = 2
 cell = 1
 @test isa(cellmat_Γ[cell][Block(L,R)],BlockArrayCoo)
 @test isa(cellvec_Γ[cell][Block(L)],BlockArrayCoo)
+
+cellmat1_Γ = integrate(((n⋅dv_Γ.⁺)-dq_Γ.⁻)*((n⋅du_Γ.⁺)+dp_Γ.⁻),trian_Γ,quad_Γ)
+cellmat2_Γ = integrate((n⋅dv_Γ.⁺)*(n⋅du_Γ.⁺)+(n⋅dv_Γ.⁺)*dp_Γ.⁻-dq_Γ.⁻*(n⋅du_Γ.⁺)-dq_Γ.⁻*dp_Γ.⁻,trian_Γ,quad_Γ)
+test_array(cellmat1_Γ,cellmat2_Γ,≈)
+
 
 #a = cellmat_Γ
 #using BenchmarkTools
