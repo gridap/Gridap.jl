@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Table struct has been generalized such that data and ptrs arrays can be of an arbitrary type extending AbstractArray. Since PR [#310](https://github.com/gridap/Gridap.jl/pull/310/)
  - `interpolate, interpolate!, interpolate_dirichlet...` switched argument order to function first style. For instance `interpolate(u, V)` instead of `interpolate(V, u)`
 
+## [0.13.4] - 2020-08-23
+
+### Added 
+  - New `FilteredCellArray` since PR [#372](https://github.com/gridap/Gridap.jl/pull/372/).
+
 ## [0.13.3] - 2020-08-12
 
 ### Added
