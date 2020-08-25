@@ -445,8 +445,79 @@ function apply(
 end
 
 # General operation
-# TODO
+# Assumption only one block per direction. This assumption is OK since it is the only
+# efficient situation.
+function apply(
+  k::FieldOpKernel,
+  b::VectorOfBlockArrayCoo,
+  c::VectorOfBlockArrayCoo,
+  d::Union{VectorOfBlockArrayCoo,AbstractArray{<:AbstractVector}}...)
+  a = (b,c,d...)
+  I = _general_op_block_id(a...)
+  aI = map(_get_first_block,a)
+  blocks = (apply(k,aI...),)
+  blockids = [I,]
+  axs = _general_op_axes(a...)
+  VectorOfBlockArrayCoo(blocks,blockids,axs)
+end
 
+function _general_op_block_id(a...)
+  I = zeros(Int,3)
+  I[1] = 1
+  for ai in a
+    i = _get_first_block_id(ai)
+    if I[length(i)] == 0
+        I[length(i)] = i[end]
+      else
+      @notimplementedif I[length(i)] != i[end]
+    end
+  end
+  if I[3] == 0
+    (I[1],I[2])
+  else
+    if I[2] == 0
+      I[2] = 1
+    end
+    Tuple(I)
+  end
+end
+
+_get_first_block_id(a) = (1,)
+
+function _get_first_block_id(a::VectorOfBlockArrayCoo)
+  @notimplementedif length(a.blocks) != 1
+  first(a.blockids)
+end
+
+_get_first_block(a) = a
+_get_first_block(a::VectorOfBlockArrayCoo) = first(a.blocks)
+
+function  _general_op_axes(a...)
+  test = nothing
+  for ai in a
+    if isa(ai,VectorOfBlockArrayCoo{T,2} where T)
+      test = ai
+      break
+    end
+  end
+  trial = nothing
+  for ai in a
+    if isa(ai,VectorOfBlockArrayCoo{T,3} where T)
+      trial = ai
+      break
+    end
+  end
+  if test != nothing && trial != nothing
+    axs = apply( (a1,a2) -> (a1[1],a1[2],a2[3]),test.axes,trial.axes)
+  elseif test == nothing && trial != nothing
+    axs = trial.axes
+  elseif test != nothing && trial == nothing
+    axs = test.axes
+  else
+    @unreachable
+  end
+  axs
+end
 
 # Integration of elem vectors
 function apply(k::IntKernel,f::VectorOfBlockArrayCoo{T,2} where T,w::AbstractArray,j::AbstractArray)
