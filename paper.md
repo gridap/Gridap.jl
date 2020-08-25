@@ -33,7 +33,7 @@ Another major feature of Gridap is that it is not a simple Julia translation of 
 
 Other FE packages like FEniCS also achieve such compact user interfaces, but in contrast to Gridap, they are based on a sophisticated compiler of variational forms [@Kirby2006], which generates, compiles and links a specialized C++ back-end for the problem at hand. One of the limitations of this approach is that the form compiler is a rigid system that is not designed to be extended by average users.
 
-Gridap is an open-source project hosted at Github and distributed under an MIT license. The source code for Gridap has been archived to Zenodo with the linked DOI [10.5281/zenodo.3934468](https://doi.org/10.5281/zenodo.3934468).
+Gridap is an open-source project hosted at Github and distributed under an MIT license.
 
 # References
 
