@@ -58,4 +58,6 @@ include("Visualization/Visualization.jl")
 
 include("Exports.jl")
 
+include("NewKernels/NewKernels.jl")
+
 end # module
