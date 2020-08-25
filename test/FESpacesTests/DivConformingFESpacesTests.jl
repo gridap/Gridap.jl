@@ -1,10 +1,12 @@
 module DivConformingFESpacesTests
 
 using Test
-using Gridap
 using Gridap.Geometry
 using Gridap.ReferenceFEs
 using Gridap.FESpaces
+using Gridap.CellData
+using Gridap.TensorValues
+using Gridap.Fields
 
 domain =(0,1,0,1)
 partition = (3,3)
@@ -25,7 +27,7 @@ test_single_field_fe_space(V)
 
 U = TrialFESpace(V,u)
 
-uh = interpolate(U,u)
+uh = interpolate(u,U)
 
 e = u - uh
 
@@ -42,7 +44,7 @@ test_single_field_fe_space(V)
 
 U = TrialFESpace(V,u)
 
-uh = interpolate(U,u)
+uh = interpolate(u,U)
 
 el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
 @test el2 < 1.0e-10

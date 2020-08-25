@@ -10,7 +10,7 @@ struct GridPortion{Dc,Dp,G} <: Grid{Dc,Dp}
   oldgrid::G
   cell_to_oldcell::Vector{Int}
   node_to_oldnode::Vector{Int}
-  cell_to_nodes::Table{Int,Int32}
+  cell_to_nodes::Table{Int,Vector{Int},Vector{Int32}}
   @doc """
       GridPortion(oldgrid::Grid{Dc,Dp},cell_to_oldcell::Vector{Int}) where {Dc,Dp}
   """

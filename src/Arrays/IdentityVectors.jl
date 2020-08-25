@@ -27,9 +27,21 @@ function reindex(values::AbstractArray, indices::IdentityVector)
 end
 
 function reindex(a::AppliedArray,b::IdentityVector)
+  @assert length(a) == length(b)
   a
 end
 
 function reindex(a::Fill,b::IdentityVector)
+  @assert length(a) == length(b)
+  a
+end
+
+function reindex(a::CompressedArray,b::IdentityVector)
+  @assert length(a) == length(b)
+  a
+end
+
+function reindex(a::Reindexed,b::IdentityVector)
+  @assert length(a) == length(b)
   a
 end

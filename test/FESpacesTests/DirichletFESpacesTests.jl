@@ -4,6 +4,7 @@ using Test
 using Gridap.Algebra
 using Gridap.Geometry
 using Gridap.FESpaces
+using Gridap.CellData
 
 n = 2
 mesh = (n,n)

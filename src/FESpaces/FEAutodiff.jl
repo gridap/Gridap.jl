@@ -39,11 +39,7 @@ end
 
 function _change_argument_to_cell_u(uh_to_cell_energy,U)
   function f(cell_u)
-    cell_shapefuns = get_cell_shapefuns(U)
-    cell_map = get_cell_map(U)
-    ref_style = RefStyle(get_cell_dof_basis(U))
-    array = lincomb(cell_shapefuns,cell_u)
-    uh = GenericCellField(array,cell_map,ref_style)
+    uh = CellField(U,cell_u)
     cell_e = uh_to_cell_energy(uh)
     cell_e
   end

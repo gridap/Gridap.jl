@@ -471,6 +471,21 @@ function get_cell_basis(f::FESpaceWithLinearConstraints)
   get_cell_basis(f.space)
 end
 
+function CellData.CellField(f::FESpaceWithLinearConstraints,cellvals)
+  CellField(f.space,cellvals)
+end
+
+function get_cell_axes(f::FESpaceWithLinearConstraints)
+  get_cell_axes(f.space)
+end
+
+function get_cell_axes_with_constraints(f::FESpaceWithLinearConstraints)
+  # In some situations this can be compressed
+  ptrs = f.cell_to_lmdof_to_mdof.ptrs
+  ncells = length(get_cell_basis(f))
+  apply(i->(Base.OneTo(ptrs[i+1]-ptrs[i]),),IdentityVector(ncells))
+end
+
 function zero_free_values(f::FESpaceWithLinearConstraints) where T
   zeros(num_free_dofs(f))
 end
