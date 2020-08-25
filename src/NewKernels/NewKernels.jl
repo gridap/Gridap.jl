@@ -33,9 +33,6 @@ It defaults to `typeof(kernel_testitem(f,x...))`
 """
 return_type(f::NewKernel,x) = typeof(testitem(f,x...))
 
-kernel_return_type(f,x...) = typeof(testitem(f,x...))
-
-
 """
     kernel_cache(f,x...)
 
@@ -44,8 +41,6 @@ of the same type as the objects in `x`.
 This function returns `nothing` by default.
 """
 cache(f::NewKernel,x) = nothing
-
-kernel_cache(f,x...) = nothing
 
 """
     apply_kernel!(cache,f,x...)
@@ -58,9 +53,8 @@ If the result of two or more invocations of this function need to be accessed si
 (e.g., in multi-threading), create and use various `cache` objects (e.g., one cache
 per thread).
 """
-evaluate!(cache,f::NewKernel,x) = @abstractmethod
+evaluate!(cache,f::NewKernel,x...) = @abstractmethod
 
-evaluate_kernel!(cache,f,x...) = @abstractmethod
 
 # Testing the interface
 
@@ -74,15 +68,15 @@ the computed result with the expected one. The checks are done with the `@test`
 macro.
 """
 function test_kernel(f,x::Tuple,y,cmp=(==))
-  z = evaluate_kernel(f,x...)
+  z = evaluate(f,x...)
   @test cmp(z,y)
-  @test typeof(z) == kernel_return_type(f,x...)
-  cache = kernel_cache(f,x...)
-  z = evaluate_kernel!(cache,f,x...)
+  @test typeof(z) == return_type(f,x...)
+  cache = cache(f,x...)
+  z = evaluate!(cache,f,x...)
   @test cmp(z,y)
-  z = evaluate_kernel!(cache,f,x...)
+  z = evaluate!(cache,f,x...)
   @test cmp(z,y)
-  z = kernel_testitem!(cache,f,x...)
+  z = testitem!(cache,f,x...)
   @test cmp(typeof(z),typeof(y))
 end
 
@@ -99,11 +93,9 @@ cache = kernel_cache(f,x...)
 apply_kernel!(cache,f,x...)
 ```
 """
-evaluate(f::NewKernel,x) = evaluate_kernel(f,x)
-
-function evaluate_kernel(f,x...)
-  cache = kernel_cache(f,x...)
-  y = apply_kernel!(cache,f,x...)
+function evaluate(f::NewKernel,x)
+  cache = cache(f,x...)
+  y = evaluate!(cache,f,x...)
   y
 end
 
@@ -116,10 +108,6 @@ Returns a tuple with the cache corresponding to each kernel in `fs`
 for the arguments `x...`.
 """
 function caches(fs::NTuple{N,<:NewKernel},x...)
-  _kernel_caches(x,fs...)
-end
-
-function kernel_caches(fs::Tuple,x...)
   _kernel_caches(x,fs...)
 end
 
@@ -141,22 +129,18 @@ Applies the kernels in the tuple `fs` at the arguments `x...`
 by using the corresponding cache objects in the tuple `caches`.
 The result is also a tuple containing the result for each kernel in `fs`.
 """
-@inline function apply!(cfs::Tuple,f::NTuple{N,<:NewKernel},x...) where N
-  _apply_kernels!(cfs,x,f...)
+@inline function evaluate!(cfs::Tuple,f::NTuple{N,<:NewKernel},x...) where N
+  _evaluate_kernels!(cfs,x,f...)
 end
 
-@inline function apply_kernels!(cfs::Tuple,f::Tuple,x...)
-  _apply_kernels!(cfs,x,f...)
-end
-
-@inline function _apply_kernels!(cfs,x,f1,f...)
+@inline function _evaluate_kernels!(cfs,x,f1,f...)
   cf1, cf = _split(cfs...)
   f1x = apply_kernel!(cf1,f1,x...)
   fx = apply_kernels!(cf,f,x...)
   (f1x,fx...)
 end
 
-@inline function _apply_kernels!(cfs,x,f1)
+@inline function _evaluate_kernels!(cfs,x,f1)
   cf1, = cfs
   f1x = apply_kernel!(cf1,f1,x...)
   (f1x,)
@@ -176,10 +160,6 @@ function return_types(f::NTuple{N,<:Kernel},x...) where N
   _kernel_return_types(x,f...)
 end
 
-function kernel_return_types(f::Tuple,x...)
-  _kernel_return_types(x,f...)
-end
-
 function _kernel_return_types(x::Tuple,a,b...)
   Ta = kernel_return_type(a,x...)
   Tb = kernel_return_types(b,x...)
@@ -191,23 +171,14 @@ function _kernel_return_types(x::Tuple,a)
   (Ta,)
 end
 
-function kernel_testitem(k,x...)
+function testitem(k::NewKernel,x...)
   cache = kernel_cache(k,x...)
-  kernel_testitem!(cache,k,x...)
+  testitem!(cache,k,x...)
 end
 
-@inline function kernel_testitem!(cache,k,x...)
+@inline function testitem!(cache,k::NewKernel,x...)
   evaluate_kernel!(cache,k,x...)
 end
-
-# Include some well-known types in this interface
-
-function kernel_return_type(f::Function,x...)
-  Ts = map(typeof,x)
-  return_type(f,Ts...)
-end
-
-@inline apply_kernel!(::Nothing,f::Function,args...) = f(args...)
 
 # Some particular cases
 
