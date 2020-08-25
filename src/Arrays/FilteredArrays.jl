@@ -74,3 +74,34 @@ function getindex(a::FilteredCellArray,i::Integer...)
   cache = array_cache(a)
   getindex!(cache,a,i...)
 end
+
+struct FilterKernel <: Kernel end
+
+function kernel_return_type(f::FilterKernel,x...)
+  typeof(kernel_testitem(f,x...))
+end
+
+function kernel_cache(k::FilterKernel,f,a)
+  # vals = testitem(a)
+  vals = a
+  T = eltype(eltype(a))
+  r = zeros(T,length(vals))
+  c = CachedArray(r)
+end
+
+function apply_kernel!(cache,k::FilterKernel,f,a)
+  c = cache
+  vals = a
+  filters = f
+  @assert size(vals) == size(filters) "Local arrays mismatch"
+  setsize!(c,(sum(filters),))
+  r = c.array
+  i = 0
+  for (val,filter) in zip(vals,filters)
+    if filter
+      i += 1
+      r[i] = val
+    end
+  end
+  r
+end
