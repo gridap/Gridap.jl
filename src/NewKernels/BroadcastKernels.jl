@@ -4,9 +4,7 @@
 Returns a kernel object that represents the "broadcasted" version of the given
 function `f`.
 """
-BroadcastKernel(f::Function) = BroadcastKernel(f)
-
-struct BroadcastKernel{F<:Function} <: Kernel
+struct BroadcastKernel{F<:Function} <: NewKernel
   f::F
 end
 
@@ -15,7 +13,7 @@ function return_type(f::BroadcastKernel,x::Number...)
   return_type(f.f,Ts...)
 end
 
-function cache(f::BroadcastKernel,x::Number...)
+function return_cache(f::BroadcastKernel,x::Number...)
   nothing
 end
 
@@ -27,7 +25,7 @@ function return_type(f::BroadcastKernel,x::NumberOrArray...)
   typeof(cache(f,x...).array)
 end
 
-function cache(f::BroadcastKernel,x::NumberOrArray...)
+function return_cache(f::BroadcastKernel,x::NumberOrArray...)
   s = _sizes(x...)
   bs = Base.Broadcast.broadcast_shape(s...)
   Te = map(numbertype,x)

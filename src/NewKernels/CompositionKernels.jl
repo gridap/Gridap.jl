@@ -16,7 +16,7 @@ resulting field, one needs to define the gradient operator
 associated with the underlying kernel.
 This is done by adding a new method to [`apply_kernel_gradient(k,f...)`](@ref) for each kernel type.
 """
-@inline function composition(k::NewKernel,l::NTuple{N,<:NewKernel})
+@inline function composition(k::NewKernel,l::NTuple{N,<:NewKernel}) where N
   CompositionKernel(k,l...)
 end
 
@@ -56,7 +56,7 @@ function return_type(c::CompositionKernel,x)
   return_type(c.k, testvalues(Ts...)...)
 end
 
-function cache(c::CompositionKernel,x)
+function return_cache(c::CompositionKernel,x)
   cl = caches(c.l,x)
   lx = evaluate!(cl,c.l,x)
   ck = cache(c.k,lx...)
