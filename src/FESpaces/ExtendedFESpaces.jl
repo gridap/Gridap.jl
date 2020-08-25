@@ -236,6 +236,10 @@ function _extend_cell_axes(f,cell_axes)
     f.trian.oldcell_to_cell,
     f.trian.void_to_oldcell,
     f.trian.cell_to_oldcell)
+  # TODO this is a hack
+  # to circumvent a julia bug (?) that is triggered
+  # by commit f8e8942c30ffa8d6756e9b68386c19d16914a3dc 
+  collect(array)
 end
 
 #TODO this is a little hacky
