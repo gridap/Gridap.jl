@@ -5,7 +5,7 @@
     end
 """
 struct ZeroMeanFESpace{B} <: SingleFieldFESpace
-  space::FESpaceWithLastDofRemoved
+  space::FESpaceWithDofPotentiallyRemoved
   vol_i::Vector{Float64}
   vol::Float64
   constraint_style::Val{B}
@@ -20,7 +20,9 @@ end
 function ZeroMeanFESpace(
   space::SingleFieldFESpace,trian::Triangulation,quad::CellQuadrature)
 
-  _space = FESpaceWithLastDofRemoved(space)
+  _space = FESpaceWithDofPotentiallyRemoved(space,
+                                            true,
+                                            num_free_dofs(space))
   vol_i, vol = _setup_vols(space,trian,quad)
   ZeroMeanFESpace(_space,vol_i,vol,constraint_style(_space))
 end
@@ -63,7 +65,7 @@ end
 function _compute_new_fixedval(fv,dv,vol_i,vol)
   @assert length(fv) + 1 == length(vol_i)
   @assert length(dv) == 1
-  c = 0.0
+  c = zero(eltype(vol_i))
   for (i,vi) in enumerate(fv)
     c += vi*vol_i[i]
   end
@@ -119,4 +121,3 @@ gather_dirichlet_values!(dv,f::ZeroMeanFESpace,cv) = gather_dirichlet_values!(dv
 gather_free_values(f::ZeroMeanFESpace,cv) = gather_free_values(f.space,cv)
 
 gather_free_values!(fv,f::ZeroMeanFESpace,cv) = gather_free_values!(fv,f.space,cv)
-
