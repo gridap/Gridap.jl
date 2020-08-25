@@ -13,7 +13,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - `interpolate, interpolate!, interpolate_dirichlet...` switched argument order to function first style. For instance `interpolate(u, V)` instead of `interpolate(V, u)`
  
  ### Added 
-
   - New `FilterKernel` since PR [#379](https://github.com/gridap/Gridap.jl/pull/379/).
 
 ## [0.13.4] - 2020-08-23
