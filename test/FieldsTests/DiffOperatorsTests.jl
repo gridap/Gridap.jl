@@ -13,38 +13,59 @@ x = fill(p,np)
 
 v = 3.0
 d = 2
-_f = MockField{d}(v)
+f = MockField{d}(v)
+
+@test ∇(f) == gradient(f)
+
+@test divergence(f) == tr(gradient(f))
+
+@test curl(f) == grad2curl(gradient(f))
+
+@test ∇⋅f == divergence(f)
+
+@test cross(∇,f) == curl(f)
+
+@test ∇×f == curl(f)
+
+@test outer(∇,f) == ∇(f)
+
+@test ∇⊗f == ∇(f)
+
+@test outer(f,∇) == transpose(∇(f))
+
+@test f⊗∇ == transpose(∇(f))
+
+@test ε(f) == symmetric_part(gradient(f))
+
+@test Δ(f) == ∇⋅∇(f)
+
 
 l = 10
-_af = Fill(_f,l)
+f = Fill(f,l)
 
-for f in (_f,_af)
+@test ∇(f) == gradient(f)
 
-  @test ∇(f) == gradient(f)
-  
-  @test divergence(f) == tr(gradient(f))
-  
-  @test curl(f) == grad2curl(gradient(f))
-  
-  @test ∇⋅f == divergence(f)
-  
-  @test cross(∇,f) == curl(f)
+@test divergence(f) == operate_arrays_of_fields(tr,gradient(f))
 
-  @test ∇×f == curl(f)
-  
-  @test outer(∇,f) == ∇(f)
+@test curl(f) == operate_arrays_of_fields(grad2curl,gradient(f))
 
-  @test ∇⊗f == ∇(f)
-  
-  @test outer(f,∇) == transpose(∇(f))
+@test ε(f) == operate_arrays_of_fields(symmetric_part,gradient(f))
 
-  @test f⊗∇ == transpose(∇(f))
+@test ∇⋅f == divergence(f)
 
-  @test ε(f) == symmetric_part(gradient(f))
+@test cross(∇,f) == curl(f)
 
-  @test Δ(f) == ∇⋅∇(f)
+@test ∇×f == curl(f)
 
-end
+@test outer(∇,f) == ∇(f)
+
+@test ∇⊗f == ∇(f)
+
+@test outer(f,∇) == transpose(∇(f))
+
+@test f⊗∇ == transpose(∇(f))
+
+@test Δ(f) == ∇⋅∇(f)
 
 # Test automatic differentiation
 

@@ -7,6 +7,7 @@ using Gridap.Geometry
 using Gridap.FESpaces
 using Test
 using LinearAlgebra
+using Gridap.CellData
 
 domain = (0,1,0,1)
 partition = (2,2)
@@ -39,6 +40,9 @@ Vc = FESpaceWithLinearConstraints(
 test_single_field_fe_space(Vc)
 @test has_constraints(Vc)
 
+scellids = SkeletonPair([1,2,1,3],[2,4,3,4])
+@test isa(get_cell_constraints(Vc,scellids)[1],BlockArrayCoo)
+
 @test Vc.n_fdofs == 6
 @test Vc.n_fmdofs == 4
 
@@ -49,7 +53,7 @@ r = [[-1.0, -1.5, 1.0, 1.0], [-1.5, -2.0, 1.0, 2.0], [1.0, 1.0, 3.0, 3.5], [1.0,
 @test get_cell_values(vch) ≈ r
 
 v(x) = sin(4*x[1]+0.4)*cos(5*x[2]+0.7)
-vch = interpolate(Vc,v)
+vch = interpolate(v,Vc)
 
 #using Gridap.Visualization
 #writevtk(trian,"trian",nsubcells=10,cellfields=["vh"=>vh,"vch"=>vch])
@@ -58,7 +62,7 @@ u(x) = x[1] + 2*x[2]
 f(x) = -Δ(u)(x)
 Uc = TrialFESpace(Vc,u)
 @test has_constraints(Uc)
-uch = interpolate(Uc,u)
+uch = interpolate(u,Uc)
 
 btrian = BoundaryTriangulation(model,"neumann")
 
@@ -67,12 +71,17 @@ bquad = CellQuadrature(btrian,2)
 
 bn = get_normal_vector(btrian)
 
+strian = SkeletonTriangulation(model)
+squad = CellQuadrature(strian,2)
+
 a(u,v) = ∇(v)⋅∇(u)
 b1(v) = v*f
 b2(v) = v*(bn⋅∇(u))
+a3(u,v) = jump(u)*jump(v)
 t1 = AffineFETerm(a,b1,trian,quad)
 t2 = FESource(b2,btrian,bquad)
-op = AffineFEOperator(Uc,Vc,t1,t2)
+t3 = LinearFETerm(a3,strian,squad)
+op = AffineFEOperator(Uc,Vc,t1,t2,t3)
 uch = solve(op)
 
 #using Gridap.Visualization

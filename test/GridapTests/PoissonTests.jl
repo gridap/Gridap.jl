@@ -78,7 +78,7 @@ for data in [ vector_data, scalar_data ]
 
   U = TrialFESpace(V,u)
 
-  uh = interpolate(U,u)
+  uh = interpolate(u, U)
 
   a(u,v) = ∇(v)⊙∇(u)
   l(v) = v⊙f

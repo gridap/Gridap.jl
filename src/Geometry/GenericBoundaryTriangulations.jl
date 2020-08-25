@@ -4,7 +4,7 @@ struct FaceToCellGlue{O} <: GridapType
   face_to_cell::Vector{Int}
   face_to_lface::Vector{Int8}
   cell_to_ctype::Vector{Int8}
-  cell_to_lface_to_pindex::Table{Int8,Int32}
+  cell_to_lface_to_pindex::Table{Int8,Vector{Int8},Vector{Int32}}
   ctype_to_lface_to_ftype::Vector{Vector{Int8}}
 end
 

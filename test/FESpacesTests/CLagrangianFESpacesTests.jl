@@ -6,6 +6,7 @@ using Gridap.Geometry
 using Gridap.TensorValues
 using Gridap.Arrays
 using Gridap.FESpaces
+using Gridap.CellData
 
 domain = (0,1,0,1)
 partition = (2,2)
@@ -25,7 +26,7 @@ test_single_field_fe_space(V,matvecdata,matdata,vecdata)
 @test V.node_and_comp_to_dof == V.dof_to_node
 
 u(x) = x[1]+x[2]
-uh = interpolate(V,u)
+uh = interpolate(u,V)
 uhx = get_free_values(uh)
 ux = u.(x)
 @test uhx ≈ ux
@@ -39,7 +40,7 @@ test_single_field_fe_space(V,matvecdata,matdata,vecdata)
 @test V.node_and_comp_to_dof == VectorValue{2,Int}[(1,2),(3,4),(5,6),(7,8),(9,10),(11,12),(13,14),(15,16),(17,18)]
 
 u(x) = VectorValue(x[1]+x[2],x[2])
-uh = interpolate(V,u)
+uh = interpolate(u,V)
 uhx = get_free_values(uh)
 ux = u.(x)
 @test uhx ≈ collect1d(reinterpret(ux))

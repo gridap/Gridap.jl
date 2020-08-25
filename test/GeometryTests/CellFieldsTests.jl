@@ -7,6 +7,7 @@ using Gridap.Fields
 using Gridap.TensorValues
 using FillArrays
 using LinearAlgebra
+using Gridap.CellData
 
 import Gridap.Fields: ∇
 
@@ -29,14 +30,14 @@ r = [[0.0], [2.0], [0.0], [2.0]]
 g = Vector{VectorValue{2,Float64}}[[(1, 0)], [(1, 0)], [(1, 0)], [(1, 0)]]
 test_cell_field(cf1,q,r,grad=g)
 
-isa(cf1,Geometry.CellFieldLike)
+isa(cf1,Geometry.CellField)
 @test RefStyle(cf1) == Val{true}()
 
 indices = [3,2,3]
 _cf1 = reindex(cf1,indices)
 @test length(_cf1) == length(indices)
 test_cell_field(_cf1,reindex(q,indices),reindex(r,indices),grad=reindex(g,indices))
-isa(_cf1,Geometry.CellFieldLike)
+isa(_cf1,Geometry.CellField)
 @test RefStyle(_cf1) == Val{true}()
 
 cf2 = cf1 + 4

@@ -1,5 +1,9 @@
 
 """
+    AffineFEOperator
+
+Reprepresent a fully assembled affine (linear) finite element problem.
+See also [FEOperator](@ref)
 """
 struct AffineFEOperator <: FEOperator
   trial::FESpace
