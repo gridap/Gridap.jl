@@ -103,41 +103,27 @@ function reindex(a::ExtendedVector,ptrs::SkeletonPair)
 end
 
 function apply(f::Fill,a::ExtendedVector...)
-  if _comptatible(a...)
-    a_void, a_cell = _split_void_non_void(a...)
-    r_void = apply(f.value,a_void...)
-    r_cell = apply(f.value,a_cell...)
-    return ExtendedVector(
-        r_void,
-        r_cell,
-        a[1].oldcell_to_cell_or_void,
-        a[1].void_to_oldcell,
-        a[1].cell_to_oldcell)
-  else
-    return Arrays.AppliedArray(f,a...)
-  end
+  a_void, a_cell = _split_void_non_void(a...)
+  r_void = apply(f.value,a_void...)
+  r_cell = apply(f.value,a_cell...)
+  ExtendedVector(
+      r_void,
+      r_cell,
+      a[1].oldcell_to_cell_or_void,
+      a[1].void_to_oldcell,
+      a[1].cell_to_oldcell)
 end
 
 function apply(::Type{T},f::Fill,a::ExtendedVector...) where T
-  if _comptatible(a...)
-    a_void, a_cell = _split_void_non_void(a...)
-    r_void = apply(T,f.value,a_void...)
-    r_cell = apply(T,f.value,a_cell...)
-    return ExtendedVector(
-        r_void,
-        r_cell,
-        a[1].oldcell_to_cell_or_void,
-        a[1].void_to_oldcell,
-        a[1].cell_to_oldcell)
-  else
-    return Arrays.AppliedArray(T,f,a...)
-  end
-end
-
-function _comptatible(a...)
-  b1 = all(map(i->i.void_to_oldcell===a[1].void_to_oldcell,a))
-  b2 = all(map(i->i.cell_to_oldcell===a[1].cell_to_oldcell,a))
-  b1 && b2
+  a_void, a_cell = _split_void_non_void(a...)
+  r_void = apply(T,f.value,a_void...)
+  r_cell = apply(T,f.value,a_cell...)
+  ExtendedVector(
+      r_void,
+      r_cell,
+      a[1].oldcell_to_cell_or_void,
+      a[1].void_to_oldcell,
+      a[1].cell_to_oldcell)
 end
 
 function _split_void_non_void(a::ExtendedVector...)

@@ -28,24 +28,6 @@ a = ExtendedVector(
 r = [10.0, 20.0, -10.0, 30.0, -20.0, -30.0, -40.0]
 test_array(a,r)
 
-b_oldcell_to_cell = -1*oldcell_to_cell
-b_cell_to_oldcell = void_to_oldcell
-b_void_to_oldcell = cell_to_oldcell
-b_void_to_val = cell_to_val
-b_cell_to_val = void_to_val
-b = ExtendedVector(
-  b_void_to_val,
-  b_cell_to_val,
-  b_oldcell_to_cell,
-  b_void_to_oldcell,
-  b_cell_to_oldcell)
-test_array(a,b)
-
-c = apply(+,a,b)
-test_array(c,a.+b)
-
-c = apply(Float64,+,a,b)
-test_array(c,a.+b)
 
 n = 10
 mesh = (n,n)
