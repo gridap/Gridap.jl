@@ -31,7 +31,7 @@ arguments of the types of the objects `x`.
 
 It defaults to `typeof(kernel_testitem(f,x...))`
 """
-return_type(f::NewKernel,x) = typeof(testitem(f,x...))
+return_type(f::NewKernel,x...) = typeof(testitem(f,x...))
 
 """
     kernel_cache(f,x...)
@@ -40,7 +40,7 @@ Returns the `cache` needed to apply kernel `f` with arguments
 of the same type as the objects in `x`.
 This function returns `nothing` by default.
 """
-cache(f::NewKernel,x) = nothing
+return_cache(f::NewKernel,x...) = nothing
 
 """
     apply_kernel!(cache,f,x...)
@@ -71,7 +71,7 @@ function test_kernel(f,x::Tuple,y,cmp=(==))
   z = evaluate(f,x...)
   @test cmp(z,y)
   @test typeof(z) == return_type(f,x...)
-  cache = cache(f,x...)
+  cache = return_cache(f,x...)
   z = evaluate!(cache,f,x...)
   @test cmp(z,y)
   z = evaluate!(cache,f,x...)
@@ -93,9 +93,9 @@ cache = kernel_cache(f,x...)
 apply_kernel!(cache,f,x...)
 ```
 """
-function evaluate(f::NewKernel,x)
-  cache = cache(f,x...)
-  y = evaluate!(cache,f,x...)
+function evaluate(f::NewKernel,x...)
+  c = return_cache(f,x...)
+  y = evaluate!(c,f,x...)
   y
 end
 
@@ -107,18 +107,18 @@ end
 Returns a tuple with the cache corresponding to each kernel in `fs`
 for the arguments `x...`.
 """
-function caches(fs::NTuple{N,<:NewKernel},x...)
+function return_caches(fs::NTuple{N,<:NewKernel},x...) where N
   _kernel_caches(x,fs...)
 end
 
 function _kernel_caches(x::Tuple,a,b...)
-  ca = kernel_cache(a,x...)
-  cb = kernel_caches(b,x...)
+  ca = return_cache(a,x...)
+  cb = return_caches(b,x...)
   (ca,cb...)
 end
 
 function _kernel_caches(x::Tuple,a)
-  ca = kernel_cache(a,x...)
+  ca = return_cache(a,x...)
   (ca,)
 end
 
@@ -135,14 +135,14 @@ end
 
 @inline function _evaluate_kernels!(cfs,x,f1,f...)
   cf1, cf = _split(cfs...)
-  f1x = apply_kernel!(cf1,f1,x...)
-  fx = apply_kernels!(cf,f,x...)
+  f1x = evaluate!(cf1,f1,x...)
+  fx = evaluate!(cf,f,x...)
   (f1x,fx...)
 end
 
 @inline function _evaluate_kernels!(cfs,x,f1)
   cf1, = cfs
-  f1x = apply_kernel!(cf1,f1,x...)
+  f1x = evaluate!(cf1,f1,x...)
   (f1x,)
 end
 
@@ -156,28 +156,28 @@ end
 Computes the return types of the kernels in `f` when called
 with arguments `x`.
 """
-function return_types(f::NTuple{N,<:Kernel},x...) where N
+function return_types(f::Tuple,x...)
   _kernel_return_types(x,f...)
 end
 
 function _kernel_return_types(x::Tuple,a,b...)
-  Ta = kernel_return_type(a,x...)
-  Tb = kernel_return_types(b,x...)
+  Ta = return_type(a,x...)
+  Tb = return_types(b,x...)
   (Ta,Tb...)
 end
 
 function _kernel_return_types(x::Tuple,a)
-  Ta = kernel_return_type(a,x...)
+  Ta = return_type(a,x...)
   (Ta,)
 end
 
 function testitem(k::NewKernel,x...)
-  cache = kernel_cache(k,x...)
+  cache = return_cache(k,x...)
   testitem!(cache,k,x...)
 end
 
 @inline function testitem!(cache,k::NewKernel,x...)
-  evaluate_kernel!(cache,k,x...)
+  evaluate!(cache,k,x...)
 end
 
 # Some particular cases
