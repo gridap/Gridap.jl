@@ -40,7 +40,7 @@ struct MockBasis{V,D} <: NewField
   end
 end
 
-function cache(f::MockBasis,x)
+function return_cache(f::MockBasis,x)
   np = length(x)
   s = (np, f.ndofs)
   c = zeros(typeof(f.v),s)
