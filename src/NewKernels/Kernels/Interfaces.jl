@@ -33,6 +33,11 @@ It defaults to `typeof(kernel_testitem(f,x...))`
 """
 return_type(f::NewKernel,x...) = typeof(testitem(f,x...))
 
+# @santiagobadia :  Why not
+# function return_type(f::NewField,x)
+#   typeof(evaluate(f,x))
+# end
+
 """
     kernel_cache(f,x...)
 
@@ -107,7 +112,7 @@ end
 Returns a tuple with the cache corresponding to each kernel in `fs`
 for the arguments `x...`.
 """
-function return_caches(fs::NTuple{N,<:NewKernel},x...) where N
+function return_caches(fs::Tuple{Vararg{<:NewKernel}},x...) where N
   _kernel_caches(x,fs...)
 end
 
@@ -129,7 +134,7 @@ Applies the kernels in the tuple `fs` at the arguments `x...`
 by using the corresponding cache objects in the tuple `caches`.
 The result is also a tuple containing the result for each kernel in `fs`.
 """
-@inline function evaluate!(cfs::Tuple,f::NTuple{N,<:NewKernel},x...) where N
+@inline function evaluate!(cfs::Tuple,f::Tuple{Vararg{<:NewKernel}},x...) where N
   _evaluate_kernels!(cfs,x,f...)
 end
 

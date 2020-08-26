@@ -7,6 +7,8 @@ using Gridap.Arrays: CachedArray
 
 using Test
 
+import Gridap.Inference: return_type
+
 export NewKernel
 
 export FunctionKernel
@@ -21,9 +23,9 @@ export test_kernel
 export return_caches
 export return_types
 
-import Gridap.Inference: return_type
+# Field
 
-include("Interface.jl")
+include("Interfaces.jl")
 
 include("BroadcastKernels.jl")
 
