@@ -22,7 +22,7 @@ end
 end
 
 function return_type(f::BroadcastKernel,x::NumberOrArray...)
-  typeof(cache(f,x...).array)
+  typeof(return_cache(f,x...).array)
 end
 
 function return_cache(f::BroadcastKernel,x::NumberOrArray...)
