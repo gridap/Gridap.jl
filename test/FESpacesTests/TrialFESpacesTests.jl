@@ -72,6 +72,8 @@ cell_vals = get_cell_values(uh,cellidsS)
 cell_dofs = get_cell_dofs(U,cellidsS)
 @test isa(cell_dofs[1],BlockArrayCoo)
 
+U0 = HomogeneousTrialFESpace(U)
+@test get_dirichlet_values(U0) == zeros(6)
 
 #trian = get_triangulation(model)
 #
