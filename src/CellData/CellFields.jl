@@ -176,7 +176,12 @@ end
 """
 function similar_object(cf::CellField,array::AbstractArray,cell_axes::AbstractArray,msize_style::Val)
   cm = get_cell_map(cf)
-  GenericCellField(array,cm,RefStyle(cf),cell_axes,msize_style)
+  similar_object(cf,array,cm,cell_axes,msize_style)
+end
+
+function similar_object(
+  cf::CellField,array::AbstractArray,cell_map::AbstractArray,cell_axes::AbstractArray,msize_style::Val)
+  GenericCellField(array,cell_map,RefStyle(cf),cell_axes,msize_style)
 end
 
 """
@@ -243,7 +248,8 @@ end
 function Arrays.reindex(cf::CellField,a::AbstractVector)
   array = reindex(get_array(cf),a)
   cell_axes = reindex(get_cell_axes(cf),a)
-  similar_object(cf,array,cell_axes,MetaSizeStyle(cf))
+  cell_map = reindex(get_cell_map(cf),a)
+  similar_object(cf,array,cell_map,cell_axes,MetaSizeStyle(cf))
 end
 
 # Bases-related

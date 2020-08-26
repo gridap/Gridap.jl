@@ -46,6 +46,12 @@ zf = convert_to_cell_field(zl,ϕl)
 df = af*zf
 dft = trialize_cell_basis(df)
 
+zfr = reindex(zf,[1,4,3])
+@test length(zfr) == 3
+@test length(get_array(zfr)) == 3
+@test length(get_cell_map(zfr)) == 3
+@test length(get_cell_axes(zfr)) == 3
+
 # Check memoization
 df_x1 = evaluate(df,xl)
 df_x2 = evaluate(df,xl)
