@@ -108,8 +108,11 @@ function Base.similar(a::BlockArrayCoo{S,N} where S,::Type{T}, axs::NTuple{N,<:B
 end
 
 function _similar_block_array_coo(a,::Type{T},axs) where T
-  @notimplementedif length(a.blocks) == 0
-  A = typeof(similar(first(a.blocks),T))
+  if length(a.blocks) != 0
+    A = typeof(similar(first(a.blocks),T))
+  else
+    A = typeof(similar(first(a.zero_blocks),T))
+  end
   blocks = A[]
   for p in 1:length(a.blocks)
     I = a.blockids[p]
