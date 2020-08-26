@@ -8,7 +8,7 @@
 | **Community** |
 | [![Join the chat at https://gitter.im/Gridap-jl/community](https://badges.gitter.im/Gridap-jl/community.svg)](https://gitter.im/Gridap-jl/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) |
 | **Citation** |
-| [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3934468.svg)](https://doi.org/10.5281/zenodo.3934468) |
+| [![DOI](https://joss.theoj.org/papers/10.21105/joss.02520/status.svg)](https://doi.org/10.21105/joss.02520) |
 
 
 
@@ -56,18 +56,17 @@ These are some popular PDEs solved with the Gridap library. Examples taken from 
 In order to give credit to the `Gridap` contributors, we simply ask you to cite the refence below in any publication in which you have made use of `Gridap` packages:
 
 ```
-@software{gridap_project,
-  author       = {Francesc Verdugo and
-                  Santiago Badia and
-                  Víctor Sande and
-                  Alberto F. Martin and
-                  Oriol Colomés and
-                  Jesús Bonilla},
-  title        = {Gridap.jl},
-  year         = 2020,
-  publisher    = {Zenodo},
-  doi          = {10.5281/zenodo.3934468},
-  url          = {https://doi.org/10.5281/zenodo.3934468}
+@article{Badia2020,
+  doi = {10.21105/joss.02520},
+  url = {https://doi.org/10.21105/joss.02520},
+  year = {2020},
+  publisher = {The Open Journal},
+  volume = {5},
+  number = {52},
+  pages = {2520},
+  author = {Santiago Badia and Francesc Verdugo},
+  title = {Gridap: An extensible Finite Element toolbox in Julia},
+  journal = {Journal of Open Source Software}
 }
 ```
 
