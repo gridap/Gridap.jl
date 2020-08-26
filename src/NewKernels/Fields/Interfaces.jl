@@ -99,15 +99,15 @@ function test_field(
 
   _x = vcat(x,x)
   _v = vcat(v,v)
-  _w = evaluate_field!(cf,f,_x)
+  _w = evaluate!(cf,f,_x)
   @test cmp(_w,_v)
 
-  if isa(f,Field)
+  if isa(f,NewField)
     test_kernel(f,(x,),v,cmp)
   end
 
   if grad != nothing
-    g = field_gradient(f)
+    g = gradient(f)
     test_field(g,x,grad,cmp,grad=hessian)
   end
 

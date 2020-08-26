@@ -6,6 +6,8 @@ using Gridap.NewKernels
 using Gridap.Arrays
 using Gridap.TensorValues: VectorValue, mutable, outer
 
+using Gridap.Arrays: CachedArray
+
 using Test
 
 import Gridap.NewKernels: return_type
@@ -14,6 +16,7 @@ import Gridap.NewKernels: evaluate!
 import Gridap.NewKernels: evaluate
 import Gridap.NewKernels: return_caches
 import Gridap.NewKernels: return_types
+import Gridap.NewKernels: test_kernel
 
 export NewField
 
