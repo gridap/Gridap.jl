@@ -91,7 +91,13 @@ function FESpaces.EvaluationFunction(fe::MultiFieldFESpace, free_values)
 end
 
 function CellData.CellField(fe::MultiFieldFESpace,cell_values)
-  @notimplemented
+  single_fields = CellField[]
+  for field in 1:num_fields(fe)
+    cell_values_field = apply(a->a[Block(field)],cell_values)
+    cf = CellField(fe.spaces[field],cell_values_field)
+    push!(single_fields,cf)
+  end
+  MultiFieldCellField(single_fields)
 end
 
 function CellData.CellField(fe::MultiFieldFESpace,cell_values::VectorOfBlockArrayCoo)
