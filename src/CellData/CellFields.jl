@@ -49,7 +49,7 @@ is_in_physical_space(::Type{T}) where T = !is_in_ref_space(T)
 is_in_physical_space(a::T) where T = !is_in_ref_space(T)
 
 """
-This trait provides information about the field size at a single 
+This trait provides information about the field size at a single
 evaluation point.
 
 For physical fields `MetaSizeStyle(T) == Val( () )`
@@ -247,9 +247,19 @@ function Arrays.reindex(cf::CellField,a::AbstractVector)
 end
 
 # Bases-related
-
 function trialize_cell_basis(test::CellField)
-  @assert is_test(test)
+  _trialize_cell_basis(test,MetaSizeStyle(test))
+end
+
+function _trialize_cell_basis(test,metasize)
+  @unreachable
+end
+
+function _trialize_cell_basis(trial,metasize::Val{(1,:)})
+  trial
+end
+
+function _trialize_cell_basis(test::CellField,metasize::Val{(:,)})
   array = trialize_array_of_bases(get_array(test))
   axs = apply(Fields._add_singleton_block,get_cell_axes(test))
   similar_object(test,array,axs,Val((1,:)))
@@ -482,7 +492,7 @@ end
 
 function merge_cell_fields_at_skeleton(cfL,cfR)
   @assert is_basis(cfL) == is_basis(cfR)
-  if !is_basis(cfL) 
+  if !is_basis(cfL)
     SkeletonCellField(cfL,cfR)
   else
     ax1 = get_cell_axes(cfL)
@@ -494,4 +504,3 @@ function merge_cell_fields_at_skeleton(cfL,cfR)
     SkeletonCellField(cfSL,cfSR)
   end
 end
-
