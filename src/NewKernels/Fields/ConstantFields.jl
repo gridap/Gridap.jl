@@ -7,6 +7,8 @@ end
 
 ConstantField(v::Union{Number,AbstractArray{<:Number}}) = ConstantField{typeof(v)}(v)
 
+constant_field(v::Union{Number,AbstractArray{<:Number}}) =  ConstantField(v)
+
 # Number
 
 function return_cache(f::ConstantField,x)

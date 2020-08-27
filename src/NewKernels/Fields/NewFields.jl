@@ -21,8 +21,12 @@ import Gridap.NewKernels: return_types
 import Gridap.NewKernels: test_kernel
 
 export NewField
+export ConstantField
+export FunctionField
+export LinearCombinationField
 
 export gradient
+export ∇
 export gradients
 export test_field
 export Point
@@ -33,10 +37,16 @@ export return_gradient_cache
 export evaluate_hessian!
 export return_hessian_cache
 
+export linear_combination
+
 include("Interfaces.jl")
 
 include("MockFields.jl")
 
 include("ConstantFields.jl")
+
+include("FunctionFields.jl")
+
+include("LinearCombinationFields.jl")
 
 end
