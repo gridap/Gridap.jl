@@ -6,6 +6,8 @@ using Test
 
 @time @testset "PoissonDG" begin include("PoissonDGTests.jl") end
 
+@time @testset "Poisson1D" begin include("Poisson1DTests.jl") end
+
 @time @testset "PLaplacian" begin include("PLaplacianTests.jl") end
 
 @time @testset "PLaplacianWithAutodiff" begin include("PLaplacianWithAutodiffTests.jl") end
