@@ -2,7 +2,7 @@
 
 | **Documentation** |
 |:------------ |
-| [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://gridap.github.io/Gridap.jl/stable) [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://gridap.github.io/Gridap.jl/dev) [![Arxiv: 1910.01412](https://img.shields.io/badge/cs.MS-arXiv%3A1910.01412-B31B1B.svg)](https://arxiv.org/abs/1910.01412) |
+| [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://gridap.github.io/Gridap.jl/stable) [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://gridap.github.io/Gridap.jl/dev) |
 |**Build Status** |
 | [![Build Status](https://travis-ci.com/gridap/Gridap.jl.svg?branch=master)](https://travis-ci.com/gridap/Gridap.jl) [![Codecov](https://codecov.io/gh/gridap/Gridap.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/gridap/Gridap.jl) |
 | **Community** |
@@ -19,7 +19,10 @@ Gridap provides a set of tools for the grid-based approximation of partial diffe
 
 - [**STABLE**](https://gridap.github.io/Gridap.jl/stable) &mdash; **Documentation for the most recently tagged version of Gridap.jl.**
 - [**DEVEL**](https://gridap.github.io/Gridap.jl/dev) &mdash; *Documentation for the in-development version of Gridap.*
-- [**ARTICLE**](https://arxiv.org/abs/1910.01412) &mdash; F. Verdugo, S. Badia. A user-guide to Gridap -- grid-based approximation of partial differential equations in Julia. *arXiv*. 2019. [arXiv:1910.01412](https://arxiv.org/abs/1910.01412)
+
+## Tutorials
+
+A hands-on user-guide to the library is available as a set of [tutorials](https://github.com/gridap/Tutorials). They are available as Jupyter notebooks and html pages.
 
 ## Installation
 
@@ -27,10 +30,6 @@ Gridap is a registered package in the official [Julia package registry](https://
 ```julia
 pkg> add Gridap
 ```
-
-## Tutorials
-
-A hands-on user-guide to the library is available as a set of [tutorials](https://github.com/gridap/Tutorials). They are available as Jupyter notebooks and html pages.
 
 ## Plugins
 
