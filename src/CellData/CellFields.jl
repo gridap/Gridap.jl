@@ -398,12 +398,15 @@ end
 # Skeleton related
 
 """
-    struct SkeletonCellField <: GridapType
-      left::CellField
-      right::CellField
-    end
+    SkeletonCellField <: GridapType
 
+Represents a skeleton field. In DG methods, fields with discontinuities at facets are needed.
+For each inner facet there are two adjacent cells called "+" and "-".
+A skeleton field contains the field limits when approaching a facet from the "+" resp. "-" cell.
+This information can be accessed via `fs.⁺` and `fs.⁻`.
+Which cell is called "+" and which is called "-" is an implementation detail.
 Supports the same differential and algebraic operations than [`CellField`](@ref)
+See also [`jump`](@ref), [`mean`](@ref).
 """
 struct SkeletonCellField <: GridapType
   left::CellField
@@ -433,6 +436,9 @@ end
 
 """
     jump(sf::SkeletonCellField)
+
+Compute `jump(sf) = sf.₊ - sf.₋`.
+See also [`mean`](@ref), [`SkeletonCellField`](@ref).
 """
 function jump(sf::SkeletonCellField)
   sf.⁺ - sf.⁻
@@ -440,6 +446,9 @@ end
 
 """
     mean(sf::SkeletonCellField)
+
+Compute `mean(sf) = 0.5* (sf.₊ + sf.₋)`.
+See also [`mean`](@ref), [`SkeletonCellField`](@ref).
 """
 function mean(sf::SkeletonCellField)
   operate(_mean,sf.⁺,sf.⁻)
