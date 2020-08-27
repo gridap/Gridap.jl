@@ -16,17 +16,15 @@ end
 
 constraint_style(::Type{DirichletFESpace{B}}) where B = Val{B}()
 
-function get_constraint_kernel_matrix_cols(f::DirichletFESpace)
-  get_constraint_kernel_matrix_cols(f.space)
-end
+get_cell_axes(t::DirichletFESpace)= get_cell_axes(t.space)
 
-function get_constraint_kernel_matrix_rows(f::DirichletFESpace)
-  get_constraint_kernel_matrix_rows(f.space)
-end
+get_cell_axes_with_constraints(t::DirichletFESpace)= get_cell_axes_with_constraints(t.space)
 
-function get_constraint_kernel_vector(f::DirichletFESpace)
-  get_constraint_kernel_vector(f.space)
-end
+CellData.CellField(t::DirichletFESpace,cell_vals) = CellField(t.space,cell_vals)
+
+get_cell_isconstrained(f::DirichletFESpace) = get_cell_isconstrained(f.space)
+
+get_cell_constraints(f::DirichletFESpace) = get_cell_constraints(f.space)
 
 function num_free_dofs(f::DirichletFESpace)
   num_dirichlet_dofs(f.space)

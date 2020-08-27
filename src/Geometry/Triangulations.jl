@@ -236,21 +236,45 @@ function restrict(cf::CellField,trian::Triangulation)
   _cf = to_ref_space(cf)
   a = get_array(_cf)
   r = restrict(a,trian)
-  _restrict_cell_field(r,trian)
+  axs = reindex(get_cell_axes(cf),trian)
+  _restrict_cell_field(r,axs,MetaSizeStyle(cf),trian)
 end
 
-function _restrict_cell_field(r::SkeletonPair,trian)
+function _restrict_cell_field(r::AbstractArray,axs::AbstractArray,msize_style::Val,trian)
+  cm = get_cell_map(trian)
+  GenericCellField(r,cm,Val(true),axs,msize_style)
+end
+
+function _restrict_cell_field(r::SkeletonPair,axs::SkeletonPair,msize_style::Val,trian)
   cm = get_cell_map(trian)
   la = r.left
   ra = r.right
-  l = GenericCellField(la,cm)
-  r = GenericCellField(ra,cm)
-  SkeletonCellField(l,r)
+  l = GenericCellField(la,cm,Val(true),axs.left,msize_style)
+  r = GenericCellField(ra,cm,Val(true),axs.right,msize_style)
+  merge_cell_fields_at_skeleton(l,r)
 end
 
-function _restrict_cell_field(r::AbstractArray,trian)
-  cm = get_cell_map(trian)
-  GenericCellField(r,cm)
+"""
+    CellQuadrature(trian::Triangulation, degree::Integer)
+"""
+function CellQuadrature(trian::Triangulation, degree::Integer)
+  polytopes = map(get_polytope,get_reffes(trian))
+  cell_type = get_cell_type(trian)
+  CellQuadrature(degree,polytopes,cell_type)
+end
+
+"""
+    integrate(cell_field,trian::Triangulation,quad::CellQuadrature)
+
+The `cell_field` is aligned with the cells in `trian`
+"""
+function integrate(cell_field,trian::Triangulation,quad::CellQuadrature)
+  cell_map = get_cell_map(trian)
+  integrate(cell_field,cell_map,quad)
+end
+
+function CellField(value::Number,trian::Triangulation,quad::CellQuadrature)
+  CellField(value,get_cell_map(trian),quad)
 end
 
 """

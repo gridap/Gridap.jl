@@ -12,6 +12,7 @@ module Arrays
 
 using Gridap.Helpers
 using Gridap.Inference
+using Gridap.Algebra
 
 using DocStringExtensions
 using Test
@@ -19,6 +20,20 @@ using FillArrays
 using Base: @propagate_inbounds
 using LinearAlgebra
 using ForwardDiff
+using BlockArrays
+
+export BlockArrayCoo
+export BlockVectorCoo
+export BlockMatrixCoo
+export is_zero_block
+export is_nonzero_block
+export enumerateblocks
+export eachblockindex
+export VectorOfBlockArrayCoo
+export VectorOfBlockVectorCoo
+export VectorOfBlockMatrixCoo
+export zeros_like
+export TwoLevelBlockedUnitRange
 
 export array_cache
 export getindex!
@@ -37,11 +52,13 @@ export CachedArray
 export CachedMatrix
 export CachedVector
 export setsize!
+export setaxes!
 
 export CompressedArray
 export LocalToGlobalArray
 export LocalToGlobalPosNegArray
 export FilteredCellArray
+export FilterKernel
 
 export kernel_cache
 export kernel_caches
@@ -52,6 +69,8 @@ export test_kernel
 export bcast
 export elem
 export contract
+export MulKernel
+export MulAddKernel
 export kernel_return_type
 export kernel_return_types
 export kernel_testitem
@@ -103,7 +122,11 @@ import Base: IndexStyle
 import Gridap.Io: to_dict
 import Gridap.Io: from_dict
 
+import Gridap.Algebra: scale_entries!
+
 include("Interface.jl")
+
+include("BlockArraysCoo.jl")
 
 include("CachedArrays.jl")
 
@@ -130,6 +153,8 @@ include("SubVectors.jl")
 include("ArrayPairs.jl")
 
 include("AppendedArrays.jl")
+
+include("VectorsOfBlockArrayCoo.jl")
 
 include("Autodiff.jl")
 

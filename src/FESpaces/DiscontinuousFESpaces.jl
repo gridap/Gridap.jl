@@ -22,7 +22,6 @@ function DiscontinuousFESpace(reffes::Vector{<:ReferenceFE}, trian::Triangulatio
     cell_dofs,
     cell_shapefuns,
     cell_dof_basis,
-    cell_map,
     dirichlet_dof_tag,
     dirichlet_cells,
     ntags)

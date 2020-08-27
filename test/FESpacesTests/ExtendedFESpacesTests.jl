@@ -10,6 +10,7 @@ using Gridap.FESpaces
 using Gridap.FESpaces: ExtendedVector
 using Gridap.Integration
 using Gridap.Fields
+using Gridap.CellData
 
 
 oldcell_to_cell = [1,2,-1,3,-2,-3,-4]
@@ -75,7 +76,6 @@ reffes = [LagrangianRefFE(VectorValue{2,Float64},get_polytope(p),order) for p in
 V_in = DiscontinuousFESpace(reffes,trian_in)
 
 V = ExtendedFESpace(V_in, trian_in)
-
 test_single_field_fe_space(V)
 
 U = TrialFESpace(V)
@@ -83,7 +83,7 @@ test_single_field_fe_space(U)
 
 u(x) = VectorValue(x[1]+x[2], x[1])
 
-uh = interpolate(U,u)
+uh = interpolate(u,U)
 
 
 uh_in = restrict(uh,trian_in)
@@ -143,11 +143,27 @@ V = TestFESpace(triangulation=trian,valuetype=Float64,reffe=:Lagrangian,order=2,
 V_in = TestFESpace(model=model_in,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:H1)
 V = TestFESpace(model=model,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:H1)
 
-vh_in = interpolate(V_in,x->x[1])
-vh_in = interpolate(V_in,vh_in)
-vh = interpolate(V,vh_in)
+vh_in = interpolate(V_in) do x
+    x[1]
+end
+vh_in = interpolate(vh_in, V_in)
+vh = interpolate(vh_in, V)
 
 #using Gridap.Visualization
 #writevtk(trian,"trian",cellfields=["vh"=>vh,"vh_in"=>vh_in])
+
+
+V_in = TestFESpace(
+  model=model_in,valuetype=Float64,reffe=:Lagrangian,
+  order=1,conformity=:H1,dof_space=:physical)
+
+V_out = TestFESpace(
+  model=model_out,valuetype=Float64,reffe=:Lagrangian,
+  order=2,conformity=:H1,dof_space=:physical)
+
+cell_axes = Fields.create_array_of_blocked_axes(get_cell_axes(V_in),get_cell_axes(V_out))
+#using BenchmarkTools
+#cache = array_cache(cell_axes)
+#@btime getindex!($cache,$cell_axes,1)
 
 end # module

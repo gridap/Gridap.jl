@@ -8,6 +8,7 @@ using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.Arrays
 using Gridap.Integration
+using Gridap.CellData
 
 using Gridap.Geometry: GridMock
 

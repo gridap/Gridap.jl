@@ -9,6 +9,7 @@ using Gridap.Geometry
 using Gridap.Integration
 using Gridap.Fields
 using Gridap.FESpaces
+using Gridap.CellData
 
 #e = @macroexpand @law function  l(a)
 #  println("a is Any") 
@@ -42,7 +43,8 @@ r = ν(u,x)
 @test evaluate(r,q) == evaluate(operate(ν,u,x),q)
 
 dr = dν(du,x)
-@test isa(dr,CellBasis)
+@test isa(dr,CellField)
+@test is_basis(dr)
 @test is_trial(dr)
 @test evaluate(dr,q) == evaluate(operate(dν,du,x),q)
 

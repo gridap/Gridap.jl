@@ -5,6 +5,7 @@ using Gridap.Arrays
 using Gridap.Geometry
 using Gridap.Fields
 using Gridap.ReferenceFEs
+using Gridap.CellData
 
 using Gridap.Geometry: GridMock
 

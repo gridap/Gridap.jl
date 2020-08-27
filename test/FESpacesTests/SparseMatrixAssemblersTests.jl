@@ -10,6 +10,7 @@ using Gridap.Fields
 using Gridap.Algebra
 using SparseArrays
 using Gridap.FESpaces
+using Gridap.CellData
 
 domain =(0,1,0,1)
 partition = (2,2)
@@ -77,7 +78,7 @@ for T in mtypes
   data = (matvecdata,matdata,vecdata)
 
   assem = SparseMatrixAssembler(T,Vector{Float64},U,V)
-  test_assembler(assem,matdata,vecdata,data)
+  test_sparse_matrix_assembler(assem,matdata,vecdata,data)
   
   matdata = ([cellmat],[cellids],[cellids])
   vecdata = ([cellvec],[cellids])
@@ -124,5 +125,36 @@ for T in mtypes
   @test mat[2, 1]  ≈ -0.33333333333333
 
 end
+
+strian = SkeletonTriangulation(model)
+squad = CellQuadrature(strian,degree)
+
+su = restrict(u,strian)
+sv = restrict(v,strian)
+
+scellmat = integrate(jump(sv)*su.⁻,strian,squad)
+scellvec = integrate(mean(sv*3),strian,squad)
+scellmatvec = pair_arrays(scellmat,scellvec)
+scellids = get_cell_id(strian)
+zh = zero(V)
+scellvals = get_cell_values(zh,scellids)
+scellmatvec = attach_dirichlet(scellmatvec,scellvals)
+
+matvecdata = ([scellmatvec],[scellids],[scellids])
+matdata = ([scellmat],[scellids],[scellids])
+vecdata = ([scellvec],[scellids])
+data = (matvecdata,matdata,vecdata)
+
+assem = SparseMatrixAssembler(U,V)
+test_sparse_matrix_assembler(assem,matdata,vecdata,data)
+
+A = assemble_matrix(assem,matdata)
+@test A == zeros(num_free_dofs(V),num_free_dofs(U))
+
+# Allowing a non-blocked matrix in a context where you would expect a blocked one.
+scellmat = map(i->zeros(size(i)),scellmat)
+matdata = ([scellmat],[scellids],[scellids])
+A = assemble_matrix(assem,matdata)
+@test A == zeros(num_free_dofs(V),num_free_dofs(U))
 
 end # module

@@ -1,10 +1,12 @@
 module CDLagrangianFESpacesTests
 
 using Test
-using Gridap
 using Gridap.Geometry
 using Gridap.ReferenceFEs
 using Gridap.FESpaces
+using Gridap.CellData
+using Gridap.TensorValues
+using Gridap.Fields
 
 domain =(0,1,0,1)
 partition = (3,3)
@@ -23,7 +25,7 @@ test_single_field_fe_space(V)
 u(x) = x
 
 U = TrialFESpace(V,u)
-uh = interpolate(U,u)
+uh = interpolate(u,U)
 e = u - uh
 trian = Triangulation(model)
 quad = CellQuadrature(trian,order)
@@ -33,7 +35,7 @@ el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
 reffe = LagrangianRefFE(T,QUAD,2)
 V = FESpace(model=model,reffe=reffe,conformity=CDConformity((CONT,DISC)))
 U = TrialFESpace(V,u)
-uh = interpolate(U,u)
+uh = interpolate(u,U)
 e = u - uh
 el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
 @test el2 < 1.0e-10
@@ -41,7 +43,7 @@ el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
 reffe = LagrangianRefFE(T,QUAD,(2,1))
 V = FESpace(model=model,reffe=reffe,conformity=CDConformity((DISC,CONT)))
 U = TrialFESpace(V,u)
-uh = interpolate(U,u)
+uh = interpolate(u,U)
 e = u - uh
 el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
 @test el2 < 1.0e-10
@@ -50,7 +52,7 @@ reffe = LagrangianRefFE(T,QUAD,(2,0))
 V = FESpace(model=model,reffe=reffe,conformity=CDConformity((CONT,DISC)))
 u(x) = VectorValue(x[1],0.0)
 U = TrialFESpace(V,u)
-uh = interpolate(U,u)
+uh = interpolate(u,U)
 e = u - uh
 el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
 @test el2 < 1.0e-10
@@ -59,7 +61,7 @@ reffe = LagrangianRefFE(T,QUAD,(2,0))
 V = FESpace(model=model,reffe=reffe,conformity=CDConformity((DISC,DISC)))
 u(x) = VectorValue(x[1],0.0)
 U = TrialFESpace(V,u)
-uh = interpolate(U,u)
+uh = interpolate(u,U)
 e = u - uh
 el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
 @test el2 < 1.0e-10

@@ -9,6 +9,7 @@ using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.ReferenceFEs
+using Gridap.CellData
 
 import Gridap.Geometry: get_cell_type
 import Gridap.Geometry: get_reffes

@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0] - Unreleased
+
+### Removed
+ - Support for Julia v1.0. Now, the minimum supported is Julia v1.3. Since PR [#376](https://github.com/gridap/Gridap.jl/pull/376/).
+
+### Changed
+ - Major refactoring associated with the handling of elemental matrices and vectors in multi-field computations and also on the skeleton. Since PR [#376](https://github.com/gridap/Gridap.jl/pull/376/).
+ - First and second argument switch in `update_state_variables!` in order to have function-first style. Since PR [#376](https://github.com/gridap/Gridap.jl/pull/376/).
+ - Table struct has been generalized such that data and ptrs arrays can be of an arbitrary type extending AbstractArray. Since PR [#310](https://github.com/gridap/Gridap.jl/pull/310/)
+ - `interpolate, interpolate!, interpolate_dirichlet...` switched argument order to function first style. For instance `interpolate(u, V)` instead of `interpolate(V, u)`
+ 
+### Added
+ - Allowing the construction of an `HomogeneousTrialFESpace` from a `TrialFESpace`. Since PR [#384](https://github.com/gridap/Gridap.jl/pull/384).
+ - Support for automatic differentiation of residuals and Jacobians in multi-field computations since PR [#383](https://github.com/gridap/Gridap.jl/pull/383/).
+ - New `FilterKernel` since PR [#379](https://github.com/gridap/Gridap.jl/pull/379/).
+
+## [0.13.4] - 2020-08-23
+
+### Added 
+  - New `FilteredCellArray` since PR [#372](https://github.com/gridap/Gridap.jl/pull/372/).
+
 ## [0.13.3] - 2020-08-12
 
 ### Added
@@ -63,6 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Possibility to have 0 order in `DISC` directions of a `CDLagrangianRefFE`. Since PR [#308](https://github.com/gridap/Gridap.jl/pull/308).
   - Added setindex! method for Reindexed. Since PR [#309](https://github.com/gridap/Gridap.jl/pull/309).
 
+
 ### Changed
 
   - Changed the interfaces of `ReferenceFE` and `NodalReferenceFE` in relation of DOF ownership. Now function `get_face_own_dofs` and related ones are parametrized by a `Conformity` object. Since PR [#311](https://github.com/gridap/Gridap.jl/pull/311).
@@ -70,6 +92,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Renamed `PDiscRefFE` -> `DiscRefFE` struct keeping the name for constructor. Since PR [#293](https://github.com/gridap/Gridap.jl/pull/293).
   - One of the `GradConformingFESpace` methods now more general `ConformingFESpace`. Since PR [#293](https://github.com/gridap/Gridap.jl/pull/293).
   - `DivConformingFESpace` and `CurlConformingFESpace` constructors eliminated. Since PR [#293](https://github.com/gridap/Gridap.jl/pull/293).
+  - Extend table to support arbitrary vector types. Since PR [#310](https://github.com/gridap/Gridap.jl/pull/310).
 
 ### Fixed
 

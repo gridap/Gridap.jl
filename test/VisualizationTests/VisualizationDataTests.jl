@@ -1,7 +1,11 @@
 module TestVisualizationData
 
 using Test
-using Gridap
+using Gridap.Geometry
+using Gridap.CellData
+using Gridap.FESpaces
+using Gridap.TensorValues
+using Gridap.Algebra
 using Gridap.Visualization
 using Gridap.ReferenceFEs
 using Gridap.Geometry: get_reffes

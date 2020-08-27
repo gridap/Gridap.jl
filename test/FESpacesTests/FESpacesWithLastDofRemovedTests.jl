@@ -21,9 +21,9 @@ V = TestFESpace(
 V0 = FESpaceWithLastDofRemoved(V)
 test_single_field_fe_space(V0)
 
-fun(x) = sin(4*pi*(x[1]+x[2]^2)) + 3
-uh0 = interpolate(V0,fun)
-
+uh0 = interpolate(V0) do x
+    sin(4*pi*(x[1]+x[2]^2)) + 3
+end
 #using Gridap.Visualization
 #
 #writevtk(trian,"trian",nsubcells=20,cellfields=["uh0"=>uh0])

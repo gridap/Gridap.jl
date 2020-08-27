@@ -33,6 +33,17 @@ function get_cell_values(object)
   @abstractmethod
 end
 
+function get_cell_values(object,cellids::AbstractArray)
+  reindex(get_cell_values(object),cellids)
+end
+
+function get_cell_values(object,cellids::SkeletonPair)
+  vals = reindex(get_cell_values(object),cellids)
+  f = get_fe_space(object)
+  axs = reindex(get_cell_axes(f),cellids)
+  merge_cell_dofs_at_skeleton(vals.left,vals.right,axs.left,axs.right)
+end
+
 """
 """
 function get_fe_space(object)
