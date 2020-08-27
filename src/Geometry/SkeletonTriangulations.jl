@@ -242,6 +242,9 @@ end
 
 """
     get_normal_vector(trian::SkeletonTriangulation)
+
+Return the outward normal vector of the "+" cell.
+See also [`SkeletonTriangulation`](@ref).
 """
 function get_normal_vector(trian::SkeletonTriangulation)
   get_normal_vector(trian.left)
