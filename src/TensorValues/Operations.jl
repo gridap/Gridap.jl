@@ -44,8 +44,9 @@ for op in (:+,:-)
 
     function ($op)(a::MultiValue{S},b::MultiValue{S})  where S
       r = broadcast(($op), a.data, b.data)
-      T = change_eltype(a,eltype(r))
-      T(r)
+      T = _eltype($op,r,a,b)
+      M = change_eltype(a,T)
+      M(r)
     end
 
     function ($op)(a::TensorValue,b::SymTensorValue)
@@ -77,22 +78,33 @@ for op in (:+,:-,:*)
   @eval begin
     function ($op)(a::MultiValue,b::Number)
         r = broadcast($op,a.data,b)
-        T  = change_eltype(a,eltype(r))
-        T(r)
+        T = _eltype($op,r,a,b)
+        M  = change_eltype(a,T)
+        M(r)
     end
 
     function ($op)(a::Number,b::MultiValue)
         r = broadcast($op,a,b.data)
-        T  = change_eltype(b,eltype(r))
-        T(r)
+        T = _eltype($op,r,a,b)
+        M  = change_eltype(b,T)
+        M(r)
     end
   end
 end
 
 function (/)(a::MultiValue,b::Number)
     r = broadcast(/,a.data,b)
-    P  = change_eltype(a,eltype(r))
+    T = _eltype(/,r,a,b)
+    P  = change_eltype(a,T)
     P(r)
+end
+
+@inline function _eltype(op,r,a,b)
+  eltype(r)
+end
+
+@inline function _eltype(op,r::Tuple{},a,b)
+  typeof(op(zero(eltype(a)),zero(eltype(b))))
 end
 
 ###############################################################
