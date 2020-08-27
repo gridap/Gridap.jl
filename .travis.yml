@@ -19,9 +19,8 @@ jobs:
       julia: 1.5
       os: linux
       script:
-        - julia --project=. -e 'using Pkg;
-                                Pkg.develop(PackageSpec(path=pwd()));
-                                Pkg.instantiate()'
+        - echo $PWD
+        - julia --project=. --color=yes -e 'using Pkg; Pkg.instantiate()'
         - julia --project=. --color=yes --check-bounds=yes test/GridapTests/runtests.jl
       after_success: skip
     - stage: "Documentation"
