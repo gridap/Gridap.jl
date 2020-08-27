@@ -10,6 +10,8 @@ using Gridap.Arrays: CachedArray
 
 using Test
 
+using FillArrays
+
 import Gridap.NewKernels: return_type
 import Gridap.NewKernels: return_cache
 import Gridap.NewKernels: evaluate!
@@ -34,5 +36,7 @@ export return_hessian_cache
 include("Interfaces.jl")
 
 include("MockFields.jl")
+
+include("ConstantFields.jl")
 
 end

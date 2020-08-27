@@ -108,6 +108,7 @@ function test_field(
 
   if grad != nothing
     g = gradient(f)
+    @test g isa NewField
     test_field(g,x,grad,cmp,grad=hessian)
   end
 
