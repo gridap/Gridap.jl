@@ -37,6 +37,15 @@ struct FieldPlaceHolder <: Field end
 ag = apply_to_field_array(FieldPlaceHolder,FieldOpKernel(+),af,af)
 test_array(evaluate_field_array(ag,ax),agx)
 
+c = 0.5
+ac = fill(c,l)
+ag = apply_to_field_array(FieldOpKernel(*),ac,af)
+gx = fill(c*v,np)
+∇gx = fill(VectorValue(c*v,0.0),np)
+agx = fill(gx,l)
+a∇gx = fill(∇gx,l)
+test_array_of_fields(ag,ax,agx,grad=a∇gx)
+
 w = 2.0
 aw = fill(w,l)
 ag = apply_to_field_array(FieldOpKernel(+),af,aw)

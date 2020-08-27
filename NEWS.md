@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.14.0] - Unreleased
 
+### Removed
+ - Support for Julia v1.0. Now, the minimum supported is Julia v1.3. Since PR [#376](https://github.com/gridap/Gridap.jl/pull/376/).
+
 ### Changed
  - Major refactoring associated with the handling of elemental matrices and vectors in multi-field computations and also on the skeleton. Since PR [#376](https://github.com/gridap/Gridap.jl/pull/376/).
  - First and second argument switch in `update_state_variables!` in order to have function-first style. Since PR [#376](https://github.com/gridap/Gridap.jl/pull/376/).
@@ -13,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - `interpolate, interpolate!, interpolate_dirichlet...` switched argument order to function first style. For instance `interpolate(u, V)` instead of `interpolate(V, u)`
  
 ### Added
+ - Allowing the construction of an `HomogeneousTrialFESpace` from a `TrialFESpace`. Since PR [#384](https://github.com/gridap/Gridap.jl/pull/384).
  - Support for automatic differentiation of residuals and Jacobians in multi-field computations since PR [#383](https://github.com/gridap/Gridap.jl/pull/383/).
  - New `FilterKernel` since PR [#379](https://github.com/gridap/Gridap.jl/pull/379/).
 

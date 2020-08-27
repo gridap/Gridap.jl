@@ -204,12 +204,12 @@ for op in (:*,⋅)
 
     # Global level
 
-    function apply_gradient(k::Valued{FieldOpKernel{typeof($op)}},a::Number,b)
+    function apply_gradient(k::Valued{FieldOpKernel{typeof($op)}},a::AbstractArray{<:Number},b)
       gb = field_array_gradient(b)
       apply(k,a,gb)
     end
 
-    function apply_gradient(k::Valued{FieldOpKernel{typeof($op)}},b,a::Number)
+    function apply_gradient(k::Valued{FieldOpKernel{typeof($op)}},b,a::AbstractArray{<:Number})
       gb = field_array_gradient(b)
       apply(k,gb,a)
     end
@@ -534,4 +534,3 @@ function apply(k::IntKernel,f::VectorOfBlockArrayCoo{T,3} where T,w::AbstractArr
   blockids = [ (ids[2], ids[3]) for ids in f.blockids ]
   VectorOfBlockArrayCoo(blocks,blockids,ax)
 end
-
