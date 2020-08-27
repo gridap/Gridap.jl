@@ -15,7 +15,7 @@ after_success:
 
 jobs:
   include:
-    - stage: "Drivers"
+    - stage: "test"
       julia: 1.5
       os: linux
       script:
