@@ -6,6 +6,7 @@ using Gridap.Arrays
 using Gridap.Helpers
 using Gridap.Geometry
 using Gridap.Fields
+using Gridap.FESpaces
 
 function get_new_cell_map(trian::Triangulation)
   array = get_cell_map(trian)
@@ -113,6 +114,36 @@ function Fields.gradient(a::TmpCellField)
   TmpCellField(gradient(a.cf))
 end
 
+function Base.:∘(f::TmpCellField,ϕ::CellField)
+  f.cf∘ϕ
+end
+
+function Base.:∘(f::TmpCellField,ϕ::FaceMap)
+  f.cf∘ϕ
+end
+
+struct LebesgueMeasure
+  trian::Triangulation
+  quad::CellQuadrature
+end
+
+function LebesgueMeasure(trian::Triangulation,degree::Integer)
+  quad = CellQuadrature(trian,degree)
+  LebesgueMeasure(trian,quad)
+end
+
+struct Integral
+  integrand
+end
+
+const ∫ = Integral
+
+function Base.:*(a::Integral,b::LebesgueMeasure)
+  f = a.integrand
+  ϕ = get_new_cell_map(b.trian)
+  integrate( f∘ϕ, b.trian, b.quad)
+end
+
 domain = (0,1,0,1)
 cells = (10,10)
 model = CartesianDiscreteModel(domain,cells)
@@ -127,6 +158,8 @@ Vh = FESpace(model=model,reffe=:Lagrangian,order=1,valuetype=Float64,conformity=
 Uh = TrialFESpace(Vh)
 vh = TmpCellField(FEFunction(Vh,rand(num_free_dofs(Vh))))
 uh = TmpCellField(FEFunction(Uh,rand(num_free_dofs(Uh))))
+dvh = TmpCellField(get_cell_basis(Vh))
+duh = TmpCellField(get_cell_basis(Uh))
 n = TmpCellField(get_new_normal_vector(trian_Γ))
 
 vh ∘ ϕ_Ω
@@ -134,13 +167,26 @@ vh ∘ ϕ_Γ
 n ∘ ϕ_Γ
 
 ( vh*(n⋅∇(uh)) )∘ϕ_Γ
+writevtk(trian_Ω,"trian_Ω",cellfields=["v"=>vh∘ϕ_Ω,"vu"=>( ∇(vh)⋅∇(uh) )∘ϕ_Ω])
 
-writevtk(trian_Ω,"trian_Ω",cellfields=["v"=>vh∘ϕ_Ω])
 writevtk(trian_Γ,"trian_Γ",cellfields=
   ["v"=>vh∘ϕ_Γ,
    "n"=>n∘ϕ_Γ,
    "n⋅∇v"=>(n∘ϕ_Γ)⋅(∇(vh)∘ϕ_Γ),
    "v*n⋅∇u"=>( vh*(n⋅∇(uh)) )∘ϕ_Γ])
+
+degree = 3
+dΓ = LebesgueMeasure(trian_Γ,degree)
+dΩ = LebesgueMeasure(trian_Ω,degree)
+
+a_Ω(u,v) = ∫( ∇(v)⋅∇(u) )*dΩ
+a_Γ(u,v) = ∫( v*(n⋅∇(u)) )*dΓ
+
+cellval = a_Ω(uh,vh)
+cellvec = a_Ω(uh,dvh)
+cellmat = a_Ω(duh,dvh)
+
+display(cellvec)
 
 #(n∘ϕ_Γ)⋅(∇(vh)∘ϕ_Γ)
 #
