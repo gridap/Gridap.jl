@@ -33,7 +33,7 @@ function return_cache(f::LinearCombinationField, x)
   ca = return_cache(f.basis, x)
   a = evaluate!(ca, f.basis, x)
   b = f.coefs
-  ck = return_cache(MulKernel(), a, b)
+  ck = return_cache(MatVecMapping(), a, b)
   (ca, ck)
 end
 
@@ -41,7 +41,7 @@ end
   ca, ck = cache
   a = evaluate!(ca, f.basis, x)
   b = f.coefs
-  evaluate!(ck, MulKernel(), a, b)
+  evaluate!(ck, MatVecMapping(), a, b)
 end
 
 function gradient(f::LinearCombinationField)
@@ -52,13 +52,13 @@ end
 # @santiagobadia : Here I must specialize the function in AppliedArray
 # for optimization with arrays
 
-# struct LinComValued <: Kernel end
+# struct LinComValued <: Mapping end
 
-# @inline function kernel_cache(k::LinComValued, a, b)
+# @inline function mapping_cache(k::LinComValued, a, b)
 # LinComField(a,b)
 # end
 
-# @inline function apply_kernel!(f, k::LinComValued, a, b)
+# @inline function apply_mapping!(f, k::LinComValued, a, b)
 #   f.basis = a
 #   f.coefs = b
 #   f
@@ -69,7 +69,7 @@ end
 #   LinearCombinationField(g, b)
 # end
 
-# function kernel_evaluate(k::LinComValued, x, a, b)
+# function mapping_evaluate(k::LinComValued, x, a, b)
 #   ax = evaluate_field_array(a, x)
-#   apply(MulKernel(), ax, b)
+#   apply(MulMapping(), ax, b)
 # end

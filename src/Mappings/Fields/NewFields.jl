@@ -2,7 +2,7 @@ module NewFields
 
 using Gridap.Helpers
 using Gridap.Inference
-using Gridap.NewKernels
+using Gridap.Mappings
 using Gridap.Arrays
 using Gridap.TensorValues: VectorValue, mutable, outer
 
@@ -12,13 +12,15 @@ using Test
 
 using FillArrays
 
-import Gridap.NewKernels: return_type
-import Gridap.NewKernels: return_cache
-import Gridap.NewKernels: evaluate!
-import Gridap.NewKernels: evaluate
-import Gridap.NewKernels: return_caches
-import Gridap.NewKernels: return_types
-import Gridap.NewKernels: test_kernel
+import Gridap.Mappings: return_type
+import Gridap.Mappings: return_cache
+import Gridap.Mappings: evaluate!
+import Gridap.Mappings: evaluate
+import Gridap.Mappings: return_caches
+import Gridap.Mappings: return_types
+import Gridap.Mappings: test_mapping
+
+
 
 export NewField
 export ConstantField

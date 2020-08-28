@@ -8,11 +8,6 @@ using Gridap.NewFields: MockField, MockBasis
 using FillArrays
 using Gridap.TensorValues
 
-
-
-a = subtypes(Kernel)
-a[1:10]
-
 np = 4
 p = Point(1,2)
 x = fill(p,np)
@@ -29,22 +24,24 @@ gx = fx*w
 ∇gx = ∇fx*w
 test_field(g,x,gx,grad=∇gx)
 
-l = 10
-af = Fill(f,l)
-ax = fill(x,l)
-aw = fill(w,l)
-ag = lincomb(af,aw)
-agx = fill(gx,l)
-a∇gx = fill(∇gx,l)
-test_array_of_fields(ag,ax,agx,grad=a∇gx)
+# @santiagobadia : I will consider the array of fields (or mappings?)
+# in a further step
+# l = 10
+# af = Fill(f,l)
+# ax = fill(x,l)
+# aw = fill(w,l)
+# ag = linear_combination(af,aw)
+# agx = fill(gx,l)
+# a∇gx = fill(∇gx,l)
+# test_array_of_fields(ag,ax,agx,grad=a∇gx)
 
-l = 0
-af = Fill(f,l)
-ax = fill(x,l)
-aw = fill(w,l)
-ag = lincomb(af,aw)
-agx = fill(gx,l)
-a∇gx = fill(∇gx,l)
-test_array_of_fields(ag,ax,agx,grad=a∇gx)
+# l = 0
+# af = Fill(f,l)
+# ax = fill(x,l)
+# aw = fill(w,l)
+# ag = lincomb(af,aw)
+# agx = fill(gx,l)
+# a∇gx = fill(∇gx,l)
+# test_array_of_fields(ag,ax,agx,grad=a∇gx)
 
 end #module

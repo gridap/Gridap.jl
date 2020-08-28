@@ -9,37 +9,37 @@ function gradient(f)
   FieldGradient(f)
 end
 
-struct KernelGradient{F} <: NewKernel
+struct MappingGradient{F} <: Mapping
   field::F
-  KernelGradient(f) = new{typeof(f)}(f)
+  MappingGradient(f) = new{typeof(f)}(f)
 end
 
-@inline function evaluate!(cache,f::KernelGradient,x)
+@inline function evaluate!(cache,f::MappingGradient,x)
   evaluate_gradient!(cache,f.field,x)
 end
 
-@inline function return_cache(f::KernelGradient,x)
+@inline function return_cache(f::MappingGradient,x)
   return_gradient_cache(f.field,x)
 end
 
-@inline function gradient(f::KernelGradient)
+@inline function gradient(f::MappingGradient)
   FieldHessian(f.field)
 end
 
-struct KernelHessian{F} <: NewKernel
+struct MappingHessian{F} <: Mapping
   field::F
-  KernelHessian(f) = new{typeof(f)}(f)
+  MappingHessian(f) = new{typeof(f)}(f)
 end
 
-@inline function evaluate_field!(cache,f::KernelHessian,x)
+@inline function evaluate!(cache,f::MappingHessian,x)
   evaluate_hessian!(cache,f.field,x)
 end
 
-@inline function return_cache(f::KernelHessian,x)
+@inline function return_cache(f::MappingHessian,x)
   return_hessian_cache(f.field,x)
 end
 
-@inline function gradient(f::KernelHessian)
+@inline function gradient(f::MappingHessian)
   @unreachable "Default implementation of 3rt order derivatives not available"
 end
 

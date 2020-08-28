@@ -1,31 +1,31 @@
 """
     bcast(f::Function)
 
-Returns a kernel object that represents the "broadcasted" version of the given
+Returns a mapping object that represents the "broadcasted" version of the given
 function `f`.
 """
-struct BroadcastKernel{F<:Function} <: NewKernel
+struct BroadcastMapping{F<:Function} <: Mapping
   f::F
 end
 
-function return_type(f::BroadcastKernel,x::Number...)
+function return_type(f::BroadcastMapping,x::Number...)
   Ts = map(typeof,x)
   return_type(f.f,Ts...)
 end
 
-function return_cache(f::BroadcastKernel,x::Number...)
+function return_cache(f::BroadcastMapping,x::Number...)
   nothing
 end
 
-@inline function evaluate!(::Nothing,f::BroadcastKernel,x::Number...)
+@inline function evaluate!(::Nothing,f::BroadcastMapping,x::Number...)
   f.f(x...)
 end
 
-function return_type(f::BroadcastKernel,x::NumberOrArray...)
+function return_type(f::BroadcastMapping,x::NumberOrArray...)
   typeof(return_cache(f,x...).array)
 end
 
-function return_cache(f::BroadcastKernel,x::NumberOrArray...)
+function return_cache(f::BroadcastMapping,x::NumberOrArray...)
   s = _sizes(x...)
   bs = Base.Broadcast.broadcast_shape(s...)
   Te = map(numbertype,x)
@@ -42,7 +42,7 @@ numbertype(a::AbstractArray) = eltype(a)
 
 numbertype(a::Number) = typeof(a)
 
-@inline function evaluate!(cache,f::BroadcastKernel,x::NumberOrArray...)
+@inline function evaluate!(cache,f::BroadcastMapping,x::NumberOrArray...)
   r = _prepare_cache(cache,x...)
   a = r.array
   broadcast!(f.f,a,x...)

@@ -1,36 +1,41 @@
-module NewKernels
+module Mappings
 
 using Gridap.Helpers
 using Gridap.Inference
 
-using Gridap.Arrays: CachedArray
+using Gridap.Arrays
+
+using Gridap.Algebra: mul!
 
 using Test
 
 import Gridap.Inference: return_type
 
-export NewKernel
+export Mapping
 
-export FunctionKernel
-export BroadcastKernel
-export CompositionKernel
+export FunctionMapping
+export BroadcastMapping
+export CompositionMapping
+export MatVecMapping
 
 export return_type
 export return_cache
 export evaluate!
 export evaluate
-export test_kernel
+export test_mapping
 export return_caches
 export return_types
 
 # Field
 
-include("Interfaces.jl")
+include("MappingInterfaces.jl")
 
-include("BroadcastKernels.jl")
+include("BroadcastMappings.jl")
 
-include("FunctionKernels.jl")
+include("FunctionMappings.jl")
 
-include("CompositionKernels.jl")
+include("CompositionMappings.jl")
+
+include("AlgebraMappings.jl")
 
 end

@@ -1,4 +1,3 @@
-
 """
     evaluate_field_array(f::AbstractArray,x::AbstractArray) -> AbstractArray
 
