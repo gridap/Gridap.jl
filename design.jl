@@ -122,7 +122,7 @@ function Base.:∘(f::TmpCellField,ϕ::FaceMap)
   f.cf∘ϕ
 end
 
-struct LebesgueMeasure
+struct LebesgueMeasure <: GridapType
   trian::Triangulation
   quad::CellQuadrature
 end
@@ -141,7 +141,31 @@ const ∫ = Integral
 function Base.:*(a::Integral,b::LebesgueMeasure)
   f = a.integrand
   ϕ = get_new_cell_map(b.trian)
-  integrate( f∘ϕ, b.trian, b.quad)
+  cell_value = integrate( f∘ϕ, b.trian, b.quad)
+  cell_id = get_cell_id(b.trian)
+  CellContribution(cell_value,cell_id,b)
+end
+
+struct CellContribution <: GridapType
+  cell_values
+  cell_id
+  object
+end
+
+Arrays.get_array(a::CellContribution) = a.cell_values
+Geometry.get_cell_id(a::CellContribution) = a.cell_id
+get_object(a::CellContribution) = a.object
+
+function Base.:+(a::CellContribution,b::CellContribution)
+  if get_object(a) === get_object(b)
+    array = apply(bcast(+),get_array(a),get_array(b))
+    CellContribution(array,get_cell_id(a),get_object(a))
+  else
+    dict = Dict{UInt,CellContribution}()
+    dict[objectid(get_object(a))] = a
+    dict[objectid(get_object(b))] = b
+    dict
+  end
 end
 
 domain = (0,1,0,1)
@@ -182,9 +206,15 @@ dΩ = LebesgueMeasure(trian_Ω,degree)
 a_Ω(u,v) = ∫( ∇(v)⋅∇(u) )*dΩ
 a_Γ(u,v) = ∫( v*(n⋅∇(u)) )*dΓ
 
+a(u,v) = ∫( ∇(v)⋅∇(u) )*dΩ + ∫( v*(n⋅∇(u)) )*dΓ
+
 cellval = a_Ω(uh,vh)
 cellvec = a_Ω(uh,dvh)
 cellmat = a_Ω(duh,dvh)
+
+display( a_Ω(uh,vh) + a_Ω(uh,vh) )
+display( a_Ω(uh,vh) + a_Γ(uh,vh) )
+display( a(uh,vh) )
 
 display(cellvec)
 
