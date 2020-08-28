@@ -1,7 +1,7 @@
 module FunctionFieldsTests
 
 using Gridap.Inference
-using Gridap.NewKernels
+using Gridap.Mappings
 using Gridap.NewFields
 using Gridap.Arrays: CachedArray
 

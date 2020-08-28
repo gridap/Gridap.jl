@@ -2,7 +2,7 @@ module FieldInterfaceTests
 
 using Test
 using Gridap.TensorValues
-using Gridap.NewKernels
+using Gridap.Mappings
 using Gridap.NewFields: MockField
 
 v = 3
@@ -31,8 +31,9 @@ Tfg = return_types((f,g),x)
 
 ∇f = gradient(f)
 ∇g = gradient(g)
+# @santiagobadia : To be done!
 # ∇fg = gradients(f,g)
-@test (∇f,∇g) == ∇fg
+# @test (∇f,∇g) == ∇fg
 
 x = Point(1,2)
 @test return_gradient_type(Float64,x) == VectorValue{2,Float64}

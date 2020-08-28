@@ -2,7 +2,7 @@ module LinearCombinationTests
 
 using Test
 using Gridap.Arrays
-using Gridap.NewKernels
+using Gridap.Mappings
 using Gridap.NewFields
 using Gridap.NewFields: MockField, MockBasis
 using FillArrays

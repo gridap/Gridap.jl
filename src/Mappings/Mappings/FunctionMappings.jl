@@ -1,4 +1,4 @@
-struct FunctionMapping{F} <: NewMapping
+struct FunctionMapping{F} <: Mapping
   f::F
 end
 

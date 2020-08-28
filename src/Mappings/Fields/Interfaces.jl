@@ -54,7 +54,7 @@ For instance, a default implementation is available for numbers, which behave li
 "constant" bases of fields.  However, we recommend that new types inherit from `Field`.
 
 """
-abstract type NewField <: NewMapping end
+abstract type NewField <: Mapping end
 
 function return_type(f::NewField,x)
   typeof(evaluate(f,x))

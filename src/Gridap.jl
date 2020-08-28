@@ -61,8 +61,8 @@ include("Visualization/Visualization.jl")
 
 include("Exports.jl")
 
-include("NewKernels/Kernels/NewKernels.jl")
+include("Mappings/Mappings/Mappings.jl")
 
-include("NewKernels/Fields/NewFields.jl")
+include("Mappings/Fields/NewFields.jl")
 
 end # module

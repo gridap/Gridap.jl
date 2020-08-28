@@ -3,8 +3,8 @@ module ConstantFieldsTests
 using Gridap.TensorValues
 using Gridap.Arrays
 using Gridap.NewFields
-using Gridap.NewFields: ConstantField
-using Gridap.NewKernels
+# using Gridap.NewFields: ConstantField
+using Gridap.Mappings
 
 for v in (3.0,VectorValue(1,2))
   f = ConstantField(v)
