@@ -7,6 +7,8 @@ using Gridap.Arrays
 
 using Gridap.Algebra: mul!
 
+using FillArrays
+
 using Test
 
 import Gridap.Inference: return_type
@@ -26,6 +28,17 @@ export test_mapping
 export return_caches
 export return_types
 
+export MappingArray
+
+export apply
+export apply_all
+
+import Gridap.Arrays: testitem
+import Gridap.Arrays: array_cache
+import Gridap.Arrays: uses_hash
+import Gridap.Arrays: getindex!
+import Gridap.Arrays: apply
+
 # Field
 
 include("MappingInterfaces.jl")
@@ -37,5 +50,7 @@ include("FunctionMappings.jl")
 include("CompositionMappings.jl")
 
 include("AlgebraMappings.jl")
+
+include("MappingArrays.jl")
 
 end
