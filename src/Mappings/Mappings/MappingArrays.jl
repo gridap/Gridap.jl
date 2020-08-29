@@ -253,7 +253,7 @@ end
 # Particular implementations for Fill
 
 function apply(f::Fill,a::Fill...)
-  ai = getvalues(a...)
+  ai = _getvalues(a...)
   r = apply_mapping(f.value,ai...)
   s = common_size(f,a...)
   Fill(r,s)
@@ -263,13 +263,13 @@ function apply(::Type{T},f::Fill,a::Fill...) where T
   apply(f,a...)
 end
 
-function getvalues(a::Fill,b::Fill...)
+function _getvalues(a::Fill,b::Fill...)
   ai = a.value
-  bi = getvalues(b...)
+  bi = _getvalues(b...)
   (ai,bi...)
 end
 
-function getvalues(a::Fill)
+function _getvalues(a::Fill)
   ai = a.value
   (ai,)
 end
