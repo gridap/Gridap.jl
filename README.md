@@ -34,6 +34,7 @@ pkg> add Gridap
 ## Plugins
 
 - [GridapGmsh](https://github.com/gridap/GridapGmsh.jl) Generate a FE mesh with [GMSH](www.gmsh.info) and use it in Gridap.
+- [GridapMakie](https://github.com/gridap/GridapMakie.jl) Makie plotting recipies for Gridap.
 - [GridapPardiso](https://github.com/gridap/GridapPardiso.jl) Use the [Intel Pardiso MKL direct sparse solver](https://software.intel.com/en-us/mkl-developer-reference-fortran-intel-mkl-pardiso-parallel-direct-sparse-solver-interface) in Gridap.
 - [GridapEmbedded](https://github.com/gridap/GridapEmbedded.jl) Embedded finite elements in Julia.
 - [GridapODEs](https://github.com/gridap/GridapODEs.jl) Gridap support for time-dependent PDEs.
@@ -48,6 +49,21 @@ These are some popular PDEs solved with the Gridap library. Examples taken from 
 | [Poisson equation](https://gridap.github.io/Tutorials/dev/pages/t001_poisson/) |  [Linear elasticity](https://gridap.github.io/Tutorials/dev/pages/t003_elasticity/) |  [Hyper-elasticity](https://gridap.github.io/Tutorials/dev/pages/t005_hyperelasticity/)  | [p-Laplacian](https://gridap.github.io/Tutorials/dev/pages/t004_p_laplacian/)   |
 | ![](https://gridap.github.io/Tutorials/dev/assets/dg_discretization/jump_u.png) | ![](https://gridap.github.io/Tutorials/dev/assets/darcy/darcy_results.png) |![](https://gridap.github.io/Tutorials/dev/assets/inc_navier_stokes/ins_solution.png) | ![](https://gridap.github.io/Tutorials/dev/assets/isotropic_damage/damage_end.png) |
 | [Poisson eq. with DG](https://gridap.github.io/Tutorials/dev/pages/t006_dg_discretization/)  |  [Darcy eq. with RT](https://gridap.github.io/Tutorials/dev/pages/t007_darcy/)  |  [Incompressible Navier-Stokes](https://gridap.github.io/Tutorials/dev/pages/t008_inc_navier_stokes/)  | [Isotropic damage](https://gridap.github.io/Tutorials/dev/pages/t010_isotropic_damage/)  |
+
+ ## Gridap community
+
+Join to our [gitter](https://gitter.im/Gridap-jl/community) chat to ask questions and interact with the Gridap community.
+
+## Contributing to Gridap
+
+Gridap is a collaborative project open to contributions. If you want to contribute, please take into account:
+
+  - Before opening a PR with a significant contribution, contact the project administrators, e.g., by writing a message in [our gitter chat](https://gitter.im/Gridap-jl/community) or by opening an issue describing what you are willing to implement. Wait for feed-back.
+  - Carefully read and follow the instructions in the [CONTRIBUTING.md](https://github.com/gridap/Gridap.jl/blob/master/CONTRIBUTING.md) file.
+  - Carefully read and follow the instructions in the [CODE_OF_CONDUCT.md](https://github.com/gridap/Gridap.jl/blob/master/CODE_OF_CONDUCT.md) file.
+  - Open a PR with your contribution.
+
+Want to help? We have a number of [issues waiting for help](https://github.com/gridap/Gridap.jl/labels/help%20wanted). You can start contributing to the Gridap project by solving some of those issues.
 
 
 ## How to cite Gridap
