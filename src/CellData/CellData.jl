@@ -83,19 +83,19 @@ export @law
 export operate
 export GridapType
 
-include("CellFields.jl")
-
-include("CellQuadratures.jl")
-
-include("QPointCellFields.jl")
-
-include("CellDofBases.jl")
-
-include("AttachDirichlet.jl")
-
-include("AttachConstraints.jl")
-
-include("Law.jl")
+#include("CellFields.jl")
+#
+#include("CellQuadratures.jl")
+#
+#include("QPointCellFields.jl")
+#
+#include("CellDofBases.jl")
+#
+#include("AttachDirichlet.jl")
+#
+#include("AttachConstraints.jl")
+#
+#include("Law.jl")
 
 end # module
 
