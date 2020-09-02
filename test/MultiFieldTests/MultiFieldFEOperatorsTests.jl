@@ -67,5 +67,39 @@ b = residual(op,xh)
 A = jacobian(op,xh)
 test_fe_operator(op,get_free_values(xh),b)
 
+function r(x,y)
+  u,p = x
+  v,q = y
+  v*(u*u) + v*p*u - q*p - v*4 + q
+end
+
+function j(x,dx,y)
+  u,p = x
+  du,dp = dx
+  v,q = y
+  2*v*u*du + v*dp*u + v*p*du - q*dp
+end
+
+t_Ω = FETerm(r,j,trian,quad)
+t_Ω_auto = FETerm(r,trian,quad)
+
+x = FEFunction(X,rand(num_free_dofs(X)))
+dx = get_cell_basis(X)
+y = get_cell_basis(Y)
+
+cell_r = get_cell_residual(t_Ω,x,y)
+cell_j = get_cell_jacobian(t_Ω,x,dx,y)
+
+cell_r_auto = get_cell_residual(t_Ω_auto,x,y)
+cell_j_auto = get_cell_jacobian(t_Ω_auto,x,dx,y)
+test_array(cell_r_auto,cell_r,≈)
+test_array(cell_j_auto,cell_j,≈)
+
+op = FEOperator(X,Y,t_Ω_auto)
+xh = zero(X)
+b = residual(op,xh)
+A = jacobian(op,xh)
+test_fe_operator(op,get_free_values(xh),b)
+
 
 end # module

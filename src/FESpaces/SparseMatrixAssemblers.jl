@@ -276,7 +276,7 @@ end
 end
 
 @inline function _count_matrix_entries_at_cell(
-  ::Type{M},rows::BlockArrayCoo,cols::BlockArrayCoo,strategy,Is) where M
+  ::Type{M},rows::BlockArrayCoo,cols::BlockArrayCoo,strategy,Is::AbstractArray) where M
   n = 0
   for (I,Is_next) in Is
     i,j = I.n
@@ -343,7 +343,7 @@ end
 end
 
 @inline function _allocate_matrix_at_cell!(
-  ::Type{M},nini,I,J,rows::BlockArrayCoo,cols::BlockArrayCoo,strategy,Is) where M
+  ::Type{M},nini,I,J,rows::BlockArrayCoo,cols::BlockArrayCoo,strategy,Is::AbstractArray) where M
   n = nini
   for (B,Is_next) in Is
     i,j = B.n

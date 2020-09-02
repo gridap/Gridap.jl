@@ -108,9 +108,11 @@ function Base.similar(a::BlockArrayCoo{S,N} where S,::Type{T}, axs::NTuple{N,<:B
 end
 
 function _similar_block_array_coo(a,::Type{T},axs) where T
-  S = eltype(a)
-  @notimplementedif S != T
-  A = eltype(a.blocks)
+  if length(a.blocks) != 0
+    A = typeof(similar(first(a.blocks),T))
+  else
+    A = typeof(similar(first(a.zero_blocks),T))
+  end
   blocks = A[]
   for p in 1:length(a.blocks)
     I = a.blockids[p]
@@ -229,6 +231,22 @@ function Base.getindex(a::BlockVectorCoo,i::Integer,j::Integer...)
   s = map(findblockindex,a.axes,(i,))
   ai = a[s...]
   ai
+end
+
+function Base.setindex!(a::BlockArrayCoo{T,N} where T,v,i::Vararg{Integer,N}) where N
+  s = map(findblockindex,a.axes,i)
+  s = map(findblockindex,a.axes,(i,))
+  I = Block(map(i->i.I[1],s)...)
+  α = CartesianIndex(map(BlockArrays.blockindex,s))
+  a[I][α] = v
+end
+
+function Base.setindex!(a::BlockVectorCoo,v,i::Integer,j::Integer...)
+  @assert all( j .== 1)
+  s = map(findblockindex,a.axes,(i,))
+  I = Block(map(i->i.I[1],s)...)
+  α = CartesianIndex(map(BlockArrays.blockindex,s))
+  a[I][α] = v
 end
 
 function Base.:+(a::BlockArrayCoo{Ta,N},b::BlockArrayCoo{Tb,N}) where {Ta,Tb,N}
