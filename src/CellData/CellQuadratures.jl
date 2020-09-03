@@ -1,20 +1,29 @@
 """
     struct CellQuadrature <: GridapType
-      array
+      # + private fields
     end
 """
 struct CellQuadrature <: GridapType
   array
   coords
   weights
-  @doc """
-      CellQuadrature(array::AbstractArray{<:Quadrature})
-  """
-  function CellQuadrature(array::AbstractArray{<:Quadrature})
-    coords = _get_coordinates(array)
-    weights = _get_weights(array)
-    new(array,coords,weights)
-  end
+end
+
+"""
+    CellQuadrature(array::AbstractArray{<:Quadrature})
+"""
+function CellQuadrature(array::AbstractArray{<:Quadrature})
+  coords = _get_coordinates(array)
+  weights = _get_weights(array)
+  CellQuadrature(array,coords,weights)
+end
+
+"""
+    CellQuadrature(coords::AbstractArray,weights::AbstractArray)
+"""
+function CellQuadrature(coords,weights)
+  array = apply((a,b)->GenericQuadrature(a,b),coords,weights)
+  CellQuadrature(array,coords,weights)
 end
 
 """
@@ -95,21 +104,81 @@ function _get_weights(q::AppendedArray)
 end
 
 """
-    integrate(cell_field,cell_map::AbstractArray{<:Field},quad::CellQuadrature)
+    integrate(cell_field,ϕ::CellField,quad::CellQuadrature)
 """
-function integrate(cell_field,cell_map::AbstractArray{<:Field},quad::CellQuadrature)
-  q = get_coordinates(quad)
-  w = get_weights(quad)
-  j = gradient(cell_map)
-  _f = convert_to_cell_field(cell_field,cell_map)
-  f = to_ref_space(_f)
-  @assert length(f) == length(cell_map) "Are you using the right triangulation to integrate?"
+function integrate(f,ϕ::CellField,quad::CellQuadrature)
+  integrate(f,ϕ,get_coordinates(quad),get_weights(quad))
+end
+
+function integrate(cell_field,ϕ::CellField,q,w)
+  f = convert_to_cell_field(cell_field,length(ϕ))
+  j = get_array(∇(ϕ))
+  @assert length(f) == length(ϕ) "Are you using the right triangulation to integrate?"
   @assert length(f) == length(w) "Are you using the right quadrature to integrate?"
-  integrate(get_array(f),q,w,j)
+  integrate(get_array(f∘ϕ),q,w,j)
 end
 
 function lazy_append(quad1::CellQuadrature,quad2::CellQuadrature)
   array = lazy_append(quad1.array,quad2.array)
-  CellQuadrature(array)
+  coords = lazy_append(quad1.coords,quad2.coords)
+  weights = lazy_append(quad1.weights,quad2.weights)
+  CellQuadrature(array,coords,weights)
+end
+
+# Some syntactic sugar
+
+struct MappedCellValues{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
+  physvals::A
+  refvals::AbstractArray
+  ϕ::CellField
+end
+
+Base.size(a::MappedCellValues) = size(a.physvals)
+Base.getindex(a::MappedCellValues,i...) = a.physvals[i...]
+Base.IndexStyle(::Type{MappedCellValues{T,N,A}}) where {T,N,A} = IndexStyle(A)
+Arrays.get_array(a::MappedCellValues) = a.physvals
+Arrays.array_cache(a::MappedCellValues) = array_cache(a.physvals)
+Arrays.getindex!(cache,a,i...) = getindex!(cache,a.physvals,i...)
+
+function evaluate(f::CellField,x::MappedCellValues)
+  q = x.refvals
+  ϕ = x.ϕ
+  evaluate(f∘ϕ,q)
+end
+
+function evaluate(ϕ::CellField,quad::CellQuadrature)
+  q = get_coordinates(quad)
+  wq = get_weights(quad)
+  x = MappedCellValues(ϕ(q),q,ϕ)
+  wx = MappedCellValues( apply(bcast(*),wq, det(∇(ϕ))(q)), wq, ϕ)
+  CellQuadrature(x,wx)
+end
+
+function integrate(f,quad::CellQuadrature)
+  x = get_coordinates(quad)
+  wx = get_weights(quad)
+  _integrate(f,x,wx)
+end
+
+function  _integrate(f,x,wx)
+  @notimplemented
+end
+
+function  _integrate(f,x::MappedCellValues,wx::MappedCellValues)
+  @assert x.ϕ == wx.ϕ
+  ϕ = x.ϕ
+  q = x.refvals
+  wq = wx.refvals
+  integrate(f,ϕ,q,wq)
+end
+
+struct Integral
+  integrand
+end
+
+const ∫ = Integral
+
+function Base.:*(a::Integral,b::CellQuadrature)
+  integrate(a.integrand,b)
 end
 

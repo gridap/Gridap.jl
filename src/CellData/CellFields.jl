@@ -170,7 +170,7 @@ function Base.:∘(f::CellField,ϕ::CellField)
 end
 
 function _compose_cell_fields(f,ϕ)
-  @notimplementedif length(f) == length(g)
+  @notimplementedif length(f) != length(ϕ)
   array = compose_field_arrays(get_array(f),get_array(ϕ))
   GenericCellField(array,get_cell_axes(f),MetaSizeStyle(f))
 end
@@ -272,7 +272,7 @@ function operate(op,cf1::CellField,object)
   operate(op,cf1,cf2)
 end
 
-function operate(op,object,cf1::CellField)
+function operate(op,object,cf2::CellField)
   cf1 = convert_to_cell_field(object,length(cf2))
   operate(op,cf1,cf2)
 end

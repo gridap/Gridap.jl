@@ -83,11 +83,12 @@ export identity_constraints
 export @law
 export operate
 export GridapType
+export ∫
 
 include("CellFields.jl")
 
-#include("CellQuadratures.jl")
-#
+include("CellQuadratures.jl")
+
 #include("QPointCellFields.jl")
 #
 #include("CellDofBases.jl")
