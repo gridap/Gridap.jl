@@ -60,6 +60,7 @@ export jump
 export mean
 export merge_cell_dofs_at_skeleton
 export merge_cell_fields_at_skeleton
+export inverse_map
 
 export CellQuadrature
 export get_coordinates
@@ -83,8 +84,8 @@ export @law
 export operate
 export GridapType
 
-#include("CellFields.jl")
-#
+include("CellFields.jl")
+
 #include("CellQuadratures.jl")
 #
 #include("QPointCellFields.jl")

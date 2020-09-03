@@ -134,6 +134,13 @@ function _split_void_non_void(a::ExtendedVector...)
   a_void, a_cell
 end
 
+function Arrays.get_children(n::TreeNode, a::FESpaces.ExtendedVector)
+ (
+  similar_tree_node(n,a.void_to_val),
+  similar_tree_node(n,a.cell_to_val)
+ )
+end
+
 #function reindex(a::ExtendedVector,trian::Triangulation)
 #  ptrs = get_cell_id(trian)
 #  _extended_reindex(a,ptrs)

@@ -118,24 +118,6 @@ function MetaSizeStyle(::Type{<:GenericCellField{S}}) where {S}
   Val{S}()
 end
 
-#function Base.:∘(a::GenericCellField,ϕ::CellField)
-#  _compose_cell_fields(a,get_array(a),ϕ)
-#end
-#
-#function _compose_cell_fields(a::GenericCellField,array,ϕ)
-#  _compose_cell_fields(a,ϕ)
-#end
-#
-#function _compose_cell_fields(a::GenericCellField,::AbstractArray{<:Number},ϕ)
-#  @assert length(a) == length(ϕ)
-#  a
-#end
-#
-#function _compose_cell_fields(a::GenericCellField,f::Fill{<:Fields.FunctionField},ϕ)
-#  array = compose(f.value.f,get_array(ϕ))
-#  GenericCellField(array)
-#end
-
 # The rest of the file is some default API using the CellField interface
 
 """
@@ -162,9 +144,9 @@ in `get_array(f)`.
 """
 function evaluate(f::CellField,x::AbstractArray)
   key = (:evaluate,objectid(x))
-  memo = get_memo(cf)
+  memo = get_memo(f)
   if !haskey(memo,key)
-    memo[key] = evaluate_array_of_fields(get_array(f),x)
+    memo[key] = evaluate_field_array(get_array(f),x)
   end
   memo[key]
 end
@@ -207,7 +189,7 @@ function Arrays.reindex(f::CellField,a::AbstractVector)
   GenericCellField(array,cell_axes,MetaSizeStyle(f))
 end
 
-function Arrays.reindex(f::object,a::AbstractVector)
+function Arrays.reindex(object,a::AbstractVector)
   f = convert_to_cell_field(object,length(a))
   reindex(f,a)
 end
@@ -236,24 +218,28 @@ end
 
 Struct representing a `CellField` defined as an operation between other `CellField` objects.
 This struct allows to compute, e.g., `(a*b)∘ϕ` as `(a∘ϕ)*(b∘ϕ)`, which is the trick needed to 
-implement operations involving `CellField` objects defined on different geometrical objects.
+implement operations involving `CellField` objects defined on different geometrical entities.
 """
 struct CellFieldFromOperation{F,S} <: CellField
-  op::F
+  op
   args::Tuple
   cell_axes::AbstractArray
   metasize::Val{S}
   memo::Dict
   function CellFieldFromOperation(
-    op::F,args::Tuple,cell_axes::AbstractArray,metasize::Val{S}) where {F,S}
+    op,::F,args::Tuple,cell_axes::AbstractArray,metasize::Val{S}) where {F,S}
     memo = Dict()
     new{F,S}(op,args,cell_axes,metasize,memo)
   end
 end
 
+function CellFieldFromOperation(op,args::Tuple,cell_axes::AbstractArray,metasize::Val)
+  CellFieldFromOperation(op,op,args,cell_axes,metasize)
+end
+
 function get_array(a::CellFieldFromOperation)
   key = :get_array
-  memo = get_memo(cf)
+  memo = get_memo(a)
   if !haskey(memo,key)
     memo[key] = get_array(a.op(a.args...))
   end
@@ -270,7 +256,7 @@ end
 
 function operate(op,a::CellField)
   key = objectid(op)
-  memo = get_memo(cf)
+  memo = get_memo(a)
   if !haskey(memo,key)
     memo[key] = _operate_wrapper(op,a)
   end
@@ -296,15 +282,10 @@ function operate(op,a1::CellField,args...)
   operate(op,a1,cfs...)
 end
 
-struct Operate{F}
-  op::F
-end
-
-(a::Operate)(args...) = _operate(a.op,args...)
-
 function _operate_wrapper(op,args...)
   cell_axes, metasize = _compute_metadata_from_op(op,args...)
-  CellFieldFromOperation(Operate(op),args,cell_axes,metasize)
+  f(args...) = _operate(op,args...)
+  CellFieldFromOperation(f,op,args,cell_axes,metasize)
 end
 
 function _operate(op,args::CellField...)
@@ -350,7 +331,12 @@ end
 # Bases-related
 
 function trialize_cell_basis(test::CellField)
-  _trialize_cell_basis(test,MetaSizeStyle(test))
+  key = :trialize_cell_basis
+  memo = get_memo(test)
+  if !haskey(memo,key)
+    memo[key] = _trialize_cell_basis(test,MetaSizeStyle(test))
+  end
+  memo[key]
 end
 
 function _trialize_cell_basis(test,metasize)
@@ -364,7 +350,7 @@ end
 function _trialize_cell_basis(test::CellField,metasize::Val{(:,)})
   axs = apply(Fields._add_singleton_block,get_cell_axes(test))
   metasize = Val((1,:))
-  CellFieldFromOperation((test,),axs,metasize) do test
+  CellFieldFromOperation(trialize_cell_basis,(test,),axs,metasize) do test
     axs = apply(Fields._add_singleton_block,get_cell_axes(test))
     metasize = Val((1,:))
     array = trialize_array_of_bases(get_array(test))
@@ -372,23 +358,36 @@ function _trialize_cell_basis(test::CellField,metasize::Val{(:,)})
   end
 end
 
+function gradient(cf::CellFieldFromOperation{typeof(trialize_cell_basis)})
+  key = :gradient
+  memo = get_memo(cf)
+  if !haskey(memo,key)
+    memo[key] = trialize_cell_basis(gradient(first(cf.args)))
+  end
+  memo[key]
+end
+
 function Fields.lincomb(a::CellField,b::AbstractArray)
   @notimplementedif !is_test(a)
-  array = lincomb(get_array(a),b)
-  GenericCellField(array)
+  cell_axes = Fill((),length(a))
+  metasize = Val(())
+  CellFieldFromOperation(lincomb,(a,),cell_axes,metasize) do a
+    array = lincomb(get_array(a),b)
+    GenericCellField(array)
+  end
 end
 
 # Skeleton related
 
 """
-    jump(sf)
+    jump(f)
 """
 function jump(sf)
   sf.⁺ - sf.⁻
 end
 
 """
-    mean(sf::SkeletonCellField)
+    mean(f)
 """
 function mean(sf)
   operate(_mean,sf.⁺,sf.⁻)
@@ -465,8 +464,12 @@ end
 
 get_array(a::InverseCellMap) = get_array(get_inverse_cell_map(a))
 get_cell_axes(a::InverseCellMap) = get_cell_axes(a.direct_cell_map)
-get_memo(a::InverseCellMap) = get_memo(a.memo)
+get_memo(a::InverseCellMap) = a.memo
 MetaSizeStyle(::Type{InverseCellMap}) = Val(())
+
+function Base.:∘(f::CellField,ϕinv::InverseCellMap)
+  CellFieldComposedWithInverseMap(f,ϕinv)
+end
 
 function Arrays.reindex(f::InverseCellMap,a::AbstractVector)
   InverseCellMap(reindex(f.direct_cell_map,a),reindex(f.inverse_cell_map))
@@ -480,29 +483,37 @@ end
 struct representing `f∘inverse_map(ϕ)`, i.e. a `CellField` in the reference space
 pushed to the physical one.  This struct allows a number of optimizations.
 In particular, the computation of `f∘inverse_map(ϕ)∘ϕ`, which is simply computed as`f`.
-It also computes `∇(f∘inverse_map(ϕ))` as `(inv(ϕ)*∇(f))∘inverse_map(ϕ)` which is in turn
+It also computes `∇(f∘inverse_map(ϕ))` as `(∇(ϕ)\\∇(f))∘inverse_map(ϕ)` which is in turn
 stored in an instance of `CellFieldComposedWithInverseMap`.
 """
 struct CellFieldComposedWithInverseMap{T<:CellField} <: CellField
   f::T
   map::InverseCellMap
+  memo::Dict
+  function CellFieldComposedWithInverseMap(f::CellField,map::InverseCellMap)
+    memo = Dict()
+    T = typeof(f)
+    new{T}(f,map,memo)
+  end
 end
 
 function get_array(a::CellFieldComposedWithInverseMap)
-  get_array(f.f∘f.map.inverse_map)
+  get_array(a.f∘get_inverse_cell_map(a.map))
 end
 
-get_cell_axes(a::CellFieldComposedWithInverseMap) = @notimplemented
-get_memo(a::CellFieldComposedWithInverseMap) = @notimplemented
-MetaSizeStyle(::Type{CellFieldComposedWithInverseMap}) = @notimplemented
-evaluate(a::CellFieldComposedWithInverseMap,x::AbstractArray) = @notimplemented
+function get_cell_axes(a::CellFieldComposedWithInverseMap)
+  @notimplementedif length(a.f) != length(a.map.direct_cell_map)
+  get_cell_axes(a.f)
+end
+
+get_memo(a::CellFieldComposedWithInverseMap) = a.memo
+MetaSizeStyle(::Type{CellFieldComposedWithInverseMap{T}}) where T = MetaSizeStyle(T)
 
 function Base.:∘(f::CellFieldComposedWithInverseMap,ϕ::CellField)
   if f.map.direct_cell_map == ϕ
     return f.f
   else
-    @notimplemented
-    return (f.f∘f.map.inverse_map)∘ϕ
+    return (f.f∘get_inverse_map(f.map))∘ϕ
   end
 end
 
@@ -510,9 +521,26 @@ function Arrays.reindex(f::CellFieldComposedWithInverseMap,a::AbstractVector)
   CellFieldComposedWithInverseMap(reindex(f.f,a),reindex(f.map,a))
 end
 
-# TODO
-function gradient(cf::CellFieldComposedWithInverseMap)
-  @notimplemented
+function gradient(f::CellFieldComposedWithInverseMap)
+  key = :gradient
+  memo = get_memo(f)
+  if !haskey(memo,key)
+    memo[key] = _gradient(f)
+  end
+  memo[key]
+end
+
+function _gradient(f::CellFieldComposedWithInverseMap)
+  ∇ϕ = gradient(f.map.direct_cell_map)
+  ∇f = gradient(f.f)
+  g = _phys_grad(∇f,∇ϕ)
+  CellFieldComposedWithInverseMap(g,f.map)
+end
+
+function _phys_grad(∇f,∇ϕ)
+  #inv(∇ϕ)⋅∇f This also works but larger op tree
+  a = apply_to_field_array(Fields.PhysGrad(),get_array(∇f),get_array(∇ϕ))
+  GenericCellField(a,get_cell_axes(∇f),MetaSizeStyle(∇f))
 end
 
 function Fields.lincomb(a::CellFieldComposedWithInverseMap,b::AbstractArray)

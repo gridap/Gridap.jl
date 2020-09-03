@@ -110,6 +110,8 @@ export lazy_append
 export lazy_split
 export AppendedArray
 
+export print_op_tree
+
 export autodiff_array_gradient
 export autodiff_array_jacobian
 export autodiff_array_hessian
@@ -123,6 +125,8 @@ import Gridap.Io: to_dict
 import Gridap.Io: from_dict
 
 import Gridap.Algebra: scale_entries!
+
+import AbstractTrees
 
 include("Interface.jl")
 
@@ -157,5 +161,7 @@ include("AppendedArrays.jl")
 include("VectorsOfBlockArrayCoo.jl")
 
 include("Autodiff.jl")
+
+include("PrintOpTrees.jl")
 
 end # module

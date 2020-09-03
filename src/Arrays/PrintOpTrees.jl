@@ -31,7 +31,7 @@ function print_node(io,n::TreeNode,a)
 end
 
 function print_op_tree(a,args...;kwargs...)
-  print_op_tree(stdin,a,args...;kwargs...)
+  print_op_tree(stdout,a,args...;kwargs...)
 end
 
 function print_op_tree(io::IO,a,args...;showid=false,kwargs...)
@@ -85,9 +85,3 @@ function get_children(n::TreeNode, a::Arrays.Table)
   (similar_tree_node(n,a.data),similar_tree_node(n,a.ptrs))
 end
 
-function get_children(n::TreeNode, a::FESpaces.ExtendedVector)
- (
-  similar_tree_node(n,a.void_to_val),
-  similar_tree_node(n,a.cell_to_val)
- )
-end

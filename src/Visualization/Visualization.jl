@@ -45,8 +45,6 @@ import Gridap.Geometry: get_cell_type
 import Gridap.Geometry: get_node_coordinates
 import Gridap.Geometry: get_cell_nodes
 
-import AbstractTrees
-
 export writevtk
 export createvtk
 export write_vtk_file
@@ -56,6 +54,5 @@ export visualization_data
 include("VisualizationData.jl")
 include("Vtk.jl")
 
-include("PrintOpTrees.jl")
 
 end # module

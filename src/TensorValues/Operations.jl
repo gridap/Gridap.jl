@@ -472,7 +472,7 @@ end
 # Define new operations for Gridap types
 ###############################################################
 
-for op in (:symmetric_part,)
+for op in (:symmetric_part,:meas)
     @eval begin
         ($op)(a::GridapType) = operate($op,a)
     end

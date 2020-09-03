@@ -26,7 +26,7 @@ function operate(op,a,b)
   @unreachable s
 end
 
-for op in (:+,:-,:tr, :transpose, :adjoint)
+for op in (:+,:-,:tr, :transpose, :adjoint,:inv,:det)
   @eval begin
     function ($op)(a::GridapType)
       operate($op,a)
@@ -34,7 +34,7 @@ for op in (:+,:-,:tr, :transpose, :adjoint)
   end
 end
 
-for op in (:+,:-,:*,:cross,:dot,:/)
+for op in (:+,:-,:*,:cross,:dot,:/,:\)
   @eval begin
 
     function ($op)(a::GridapType,b::GridapType)
