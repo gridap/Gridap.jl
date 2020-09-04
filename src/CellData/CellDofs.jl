@@ -54,13 +54,20 @@ end
     end
 
 Basis `σ`  defined as `σ(f) = σ_ref(f∘ϕ) `
+We addopt a small abuse of notation and say that
+`σ = ϕ(σ_ref)` (i.e. the sampling points used to evaluate `σ_ref`
+ are mapped by `ϕ`). Indeed, `σ = ϕ(σ_ref)` returns an instance of `MappedCellDof`.
 """
-struct MappedCellDof
+struct MappedCellDof <: CellDof
   σ_ref::CellDof
   ϕ::CellField
 end
 
 function evaluate(a::MappedCellDof,f::CellField)
   a.σ_ref(f∘a.ϕ)
+end
+
+function evaluate(ϕ::CellField,a::CellDof)
+  MappedCellDof(a,ϕ)
 end
 

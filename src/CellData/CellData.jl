@@ -88,11 +88,11 @@ include("QPointCellFields.jl")
 
 include("CellDofs.jl")
 
-#include("AttachDirichlet.jl")
-#
-#include("AttachConstraints.jl")
-#
-#include("Law.jl")
+include("AttachDirichlet.jl")
+
+include("AttachConstraints.jl")
+
+include("Law.jl")
 
 end # module
 

@@ -60,27 +60,33 @@ l = 10
 zl = [ z for  i in 1:l]
 cl = fill(c,l)
 fl = Fill(f,l)
-ϕl = lincomb(fl,cl)
+ϕ = GenericCellField(lincomb(fl,cl))
 gl = fill(g,l)
 al = Fill(a,l)
 bl = fill(b,l)
 
 cell_axes = Fill((Base.OneTo(ndofs),),l)
-gf = GenericCellField(gl,ϕl,Val(true))
-af = GenericCellField(al,ϕl,Val(true),cell_axes,Val((:,)))
-bf = GenericCellField(bl,ϕl,Val(true),cell_axes,Val((:,)))
-zf = convert_to_cell_field(zl,ϕl)
+gf = GenericCellField(gl)∘inverse_map(ϕ)
+af = GenericCellField(al,cell_axes,Val((:,)))∘inverse_map(ϕ)
+bf = GenericCellField(bl,cell_axes,Val((:,)))∘inverse_map(ϕ)
+#zf = convert_to_cell_field(zl,ϕ)∘inverse_map(ϕ)
+zf = convert_to_cell_field(zl,length(ϕ))
 df = af*zf
 dft = trialize_cell_basis(df)
 
 degree = 3
-quad = CellQuadrature(degree,[QUAD,],ones(Int,l))
+quad = ϕ(CellQuadrature(degree,[QUAD,],ones(Int,l)))
+
+integrate(∇(df),quad)
+
+kk
+
 
 ndofs_c = 5
 cellconstr = [ rand(ndofs_c,ndofs) for i in 1:l]
 cellvals = [ rand(ndofs) for i in 1:l]
-cellvec = integrate(bf⋅v,ϕl,quad)
-cellmat = integrate(∇(bf)⊙∇(dft),ϕl,quad)
+cellvec = integrate(bf⋅v,quad)
+cellmat = integrate(∇(bf)⊙∇(dft),quad)
 cellmatvec = pair_arrays(cellmat,cellvec)
 cellmatvec = attach_dirichlet(cellmatvec,cellvals)
 cellmatvec = attach_constraints_rows(cellmatvec,cellconstr)
@@ -92,6 +98,8 @@ cellmatvec = attach_constraints_cols(cellmatvec,cellconstr)
 cellconstr = identity_constraints(cell_axes)
 test_array(cellconstr,Fill(Matrix(I,ndofs,ndofs),l))
 @test isa(cellconstr,Fill)
+
+kk
 
 # Test at skeleton
 aS = merge_cell_fields_at_skeleton(af,af)
