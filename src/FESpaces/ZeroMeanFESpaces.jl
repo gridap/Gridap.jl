@@ -51,8 +51,11 @@ function FEFunction(
   f::ZeroMeanFESpace,
   free_values::AbstractVector,
   dirichlet_values::AbstractVector)
-
-  c = _compute_new_fixedval(free_values,dirichlet_values,f.vol_i,f.vol)
+  c = _compute_new_fixedval(free_values,
+                            dirichlet_values,
+                            f.vol_i,
+                            f.vol,
+                            f.space.dof_to_remove)
   fv = apply(+,free_values,Fill(c,length(free_values)))
   dv = dirichlet_values .+ c
   FEFunction(f.space,fv,dv)
@@ -62,14 +65,17 @@ function EvaluationFunction(f::ZeroMeanFESpace,free_values)
   FEFunction(f.space,free_values)
 end
 
-function _compute_new_fixedval(fv,dv,vol_i,vol)
+function _compute_new_fixedval(fv,dv,vol_i,vol,fixed_dof)
   @assert length(fv) + 1 == length(vol_i)
   @assert length(dv) == 1
   c = zero(eltype(vol_i))
-  for (i,vi) in enumerate(fv)
-    c += vi*vol_i[i]
+  for i=1:fixed_dof-1
+    c += fv[i]*vol_i[i]
   end
-  c += vol_i[end]*first(dv)
+  c += first(dv)*vol_i[fixed_dof]
+  for i=fixed_dof+1:length(vol_i)
+    c += fv[i-1]*vol_i[i]
+  end
   c = -c/vol
   c
 end
