@@ -250,6 +250,28 @@ get_cell_axes(a::CellFieldFromOperation) = a.cell_axes
 get_memo(a::CellFieldFromOperation) = a.memo
 MetaSizeStyle(::Type{CellFieldFromOperation{F,S}}) where {F,S} = Val{S}()
 
+for op in (:+ ,:-)
+  @eval begin
+    function gradient(a::CellFieldFromOperation{typeof($op)})
+      key = :gradient
+      memo = get_memo(a)
+      if !haskey(memo,key)
+        memo[key] = $op(map(gradient,a.args)...)
+      end
+      memo[key]
+    end
+  end
+end
+
+function gradient(a::CellFieldFromOperation{typeof(*)})
+  key = :gradient
+  memo = get_memo(a)
+  if !haskey(memo,key)
+    memo[key] = a.args[1]*gradient(a.args[2]) + a.args[2]*gradient(a.args[1])
+  end
+  memo[key]
+end
+
 function Base.:∘(f::CellFieldFromOperation,ϕ::CellField)
   f.op(map(i->i∘ϕ,f.args)...)
 end
