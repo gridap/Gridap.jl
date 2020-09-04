@@ -2,9 +2,9 @@ module CellDataTests
 
 using Test
 
-@testset "CellFields (1/2)" begin include("CellFieldsNewTests.jl") end
+@testset "CellFields (1/2)" begin include("CellFieldsTests_1.jl") end
 
-@testset "CellFields (2/2)" begin include("CellFieldsTests.jl") end
+@testset "CellFields (2/2)" begin include("CellFieldsTests_2.jl") end
 
 #@testset "CellQuadratures" begin include("CellQuadraturesTests.jl") end
 #
