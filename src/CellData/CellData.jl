@@ -63,9 +63,10 @@ export get_weights
 export QPointCellField
 export update_state_variables!
 
-export CellDofBasis
+export CellDof
 export test_cell_dof_basis
-export GenericCellDofBasis
+export GenericCellDof
+export MappedCellDof
 
 export attach_dirichlet
 
@@ -79,15 +80,14 @@ export operate
 export GridapType
 export ∫
 
-
 include("CellFields.jl")
 
 include("CellQuadratures.jl")
 
 include("QPointCellFields.jl")
 
-#include("CellDofBases.jl")
-#
+include("CellDofs.jl")
+
 #include("AttachDirichlet.jl")
 #
 #include("AttachConstraints.jl")

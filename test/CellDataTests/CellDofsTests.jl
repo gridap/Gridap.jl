@@ -27,7 +27,7 @@ ref_style = Val(true)
 axs = (Base.OneTo(num_dofs(reffe)),)
 cell_axes = Fill(axs,l)
 cb = GenericCellField(bl,ϕl,ref_style,cell_axes)
-cd = GenericCellDofBasis(ref_style,dl)
+cd = GenericCellDof(ref_style,dl)
 test_cell_dof_basis(cd,cb)
 
 @test evaluate(cd,cb) ≈ Fill(Matrix(I,num_dofs(reffe),num_dofs(reffe)),l)
