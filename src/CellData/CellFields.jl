@@ -1,4 +1,10 @@
 
+# DISCLAIMER
+# ==========
+#  This is a experimental implementation of the new behavior of CellFields
+#  Most of this functionality can (should) be improved and implemented in more low level
+#  modules. The issue is mainly code style not performance.
+
 """
     abstract type CellField <: GridapType end
 
@@ -49,6 +55,16 @@ is_trial(::T) where T = is_trial(T)
 is_basis(::Type{T}) where T =  is_test(T) || is_trial(T)
 is_basis(::T) where T = is_basis(T)
 
+function Base.getproperty(x::CellField, sym::Symbol)
+  if sym in (:inward,:⁺)
+    get_inward(x)
+  elseif sym in (:outward,:⁻)
+    get_outward(x)
+  else
+    getfield(x, sym)
+  end
+end
+
 # Tester
 
 """
@@ -66,8 +82,8 @@ function test_cell_field(cf::CellField,x::AbstractArray,b::AbstractArray,pred=(=
     g = evaluate(gradient(cf),x)
     test_array(g,grad,pred)
   end
-  @test get_metasize(_cf) == get_metasize(cf)
-  @test get_cell_axes(_cf) == get_cell_axes(cf)
+  @test get_metasize(cf) == get_metasize(cf)
+  @test get_cell_axes(cf) == get_cell_axes(cf)
   @test isa(get_cell_axes(cf),AbstractArray{<:Tuple})
   @test isa(get_metasize(cf),Tuple)
   @test isa(MetaSizeStyle(cf),Val)
@@ -126,7 +142,10 @@ end
 Check if two `CellField` objects are the same. Uses `===` by default. 
 """
 function Base.:(==)(a::CellField,b::CellField)
-  a === b || get_array(a) === get_array(b)
+  if length(a) != length(b)
+    return false
+  end
+  a === b || get_array(a) === get_array(b) || get_array(a) == get_array(b)
 end
 
 """
@@ -176,23 +195,22 @@ function _compose_cell_fields(f,ϕ)
 end
 
 function Base.:∘(object,ϕ::CellField)
-  f = convert_to_cell_field(object,length(ϕ))
-  f∘ϕ
+  convert_to_cell_field(object,ϕ)
 end
 
 """
-    reindex(f::CellField,a::AbstractVector)
+    reindex(f::CellField,a::AbstractArray)
 """
-function Arrays.reindex(f::CellField,a::AbstractVector)
+function Arrays.reindex(f::CellField,a::AbstractArray)
   array = reindex(get_array(f),a)
   cell_axes = reindex(get_cell_axes(f),a)
   GenericCellField(array,cell_axes,MetaSizeStyle(f))
 end
 
-function Arrays.reindex(object,a::AbstractVector)
-  f = convert_to_cell_field(object,length(a))
-  reindex(f,a)
-end
+#function Arrays.reindex(object,a::AbstractArray)
+#  f = convert_to_cell_field(object,length(a))
+#  reindex(f,a)
+#end
 
 """
     gradient(cf::CellField)
@@ -273,6 +291,10 @@ function gradient(a::CellFieldFromOperation{typeof(*)})
 end
 
 function Base.:∘(f::CellFieldFromOperation,ϕ::CellField)
+  _compose_cell_field_from_op(f,ϕ)
+end
+
+function _compose_cell_field_from_op(f,ϕ)
   f.op(map(i->i∘ϕ,f.args)...)
 end
 
@@ -305,7 +327,12 @@ function operate(op,a1::CellField,args...)
 end
 
 function _operate_wrapper(op,args...)
-  cell_axes, metasize = _compute_metadata_from_op(op,args...)
+  if all( length(first(args)) .== map(length,args) )
+   cell_axes, metasize = _compute_metadata_from_op(op,args...)
+  else # TODO. This is hacky
+    cell_axes = get_cell_axes(first(args))
+    metasize = MetaSizeStyle(first(args))
+  end
   f(args...) = _operate(op,args...)
   CellFieldFromOperation(f,op,args,cell_axes,metasize)
 end
@@ -348,6 +375,29 @@ end
 function convert_to_cell_field(f::Function,l::Integer)
   ff = function_field(f)
   GenericCellField(Fill(ff,l))
+end
+
+function convert_to_cell_field(f,ϕ::CellField)
+  @abstractmethod
+end
+
+function convert_to_cell_field(f::CellField,ϕ::CellField)
+  f∘ϕ
+end
+
+function convert_to_cell_field(f::AbstractArray{<:Number},ϕ::CellField)
+  @assert length(f) == length(ϕ)
+  GenericCellField(f)
+end
+
+function convert_to_cell_field(f::Number,ϕ::CellField)
+  l = length(ϕ)
+  GenericCellField(Fill(f,l))
+end
+
+function convert_to_cell_field(f::Function,ϕ::CellField)
+  ff = Fields.compose(f,get_array(ϕ))
+  GenericCellField(ff)
 end
 
 # Bases-related
@@ -401,6 +451,51 @@ end
 
 # Skeleton related
 
+struct SkeletonFaceMap{L<:CellField} <:CellField
+  left::L
+  right::CellField
+end
+
+Arrays.get_array(a::SkeletonFaceMap) = get_array(a.left)
+get_cell_axes(a::SkeletonFaceMap) = get_cell_axes(a.left)
+get_memo(a::SkeletonFaceMap) = get_memo(a.left)
+MetaSizeStyle(::Type{SkeletonFaceMap{T}}) where T = MetaSizeStyle(T)
+Base.:∘(f::CellField,ϕ::SkeletonFaceMap) = f∘ϕ.left
+
+for op in (:get_inward, :get_outward)
+  @eval begin
+
+    function ($op)(a::CellField)
+      f(a) = @unreachable "You need to compose first with a SkeletonFaceMap"
+      CellFieldFromOperation(f,$op,(a,),get_cell_axes(a),MetaSizeStyle(a))
+    end
+
+    function gradient(a::CellFieldFromOperation{typeof($op)})
+      key = :gradient
+      memo = get_memo(a)
+      if !haskey(memo,key)
+        memo[key] = $op(gradient(a.args[1]))
+      end
+      memo[key]
+    end
+
+  end
+end
+
+function Base.:∘(f::CellFieldFromOperation{typeof(get_inward)},ϕ::SkeletonFaceMap)
+  left, = merge_cell_fields_at_skeleton(f.args[1]∘ϕ.left,f.args[1]∘ϕ.right)
+  left
+end
+
+function Base.:∘(f::CellFieldFromOperation{typeof(get_outward)},ϕ::SkeletonFaceMap)
+  _, right = merge_cell_fields_at_skeleton(f.args[1]∘ϕ.left,f.args[1]∘ϕ.right)
+  right
+end
+
+function Base.:∘(f::CellFieldFromOperation,ϕ::SkeletonFaceMap)
+  _compose_cell_field_from_op(f,ϕ)
+end
+
 """
     jump(f)
 """
@@ -432,12 +527,60 @@ function merge_cell_fields_at_skeleton(cfL,cfR)
     ax1 = get_cell_axes(cfL)
     ax2 = get_cell_axes(cfR)
     arrL = insert_array_of_bases_in_block(1,get_array(cfL),ax1,ax2)
-    cfSL = similar_object(cfL,arrL,arrL.axes,MetaSizeStyle(cfL))
+    cfSL = GenericCellField(arrL,arrL.axes,MetaSizeStyle(cfL))
     arrR = insert_array_of_bases_in_block(2,get_array(cfR),ax1,ax2)
-    cfSR = similar_object(cfR,arrR,arrR.axes,MetaSizeStyle(cfR))
+    cfSR = GenericCellField(arrR,arrR.axes,MetaSizeStyle(cfR))
     cfSL, cfSR
   end
 end
+# Other relevant types of maps
+
+struct ReindexedCellMap{F<:CellField} <: CellField
+  map::F
+  cell_map::CellField
+  ids::AbstractArray
+end
+
+function ReindexedCellMap(cell_map::CellField,ids::AbstractArray)
+  map = reindex(cell_map,ids)
+  ReindexedCellMap(map,cell_map,ids)
+end
+
+Arrays.get_array(a::ReindexedCellMap) = get_array(a.map)
+get_cell_axes(a::ReindexedCellMap) = get_cell_axes(a.map)
+get_memo(a::ReindexedCellMap) = get_memo(a.map)
+MetaSizeStyle(::Type{ReindexedCellMap{T}}) where T = MetaSizeStyle(T)
+Base.:∘(f::CellFieldFromOperation,ϕ::ReindexedCellMap) = _compose_cell_field_from_op(f,ϕ)
+
+function Base.:∘(f::CellField,ϕ::ReindexedCellMap)
+  reindex(f∘ϕ.cell_map,ϕ.ids)
+end
+
+struct FaceMap{T<:CellField} <: CellField
+  face_map::T
+  cell_map::CellField
+  face_to_cell::AbstractArray
+  refface_to_refcell_map::CellField
+end
+
+function change_face_map(a::FaceMap,face_map::CellField)
+  FaceMap(
+    face_map,
+    a.cell_map,
+    a.face_to_cell,
+    a.refface_to_refcell_map)
+end
+
+Arrays.get_array(a::FaceMap) = get_array(a.face_map)
+get_cell_axes(a::FaceMap) = get_cell_axes(a.face_map)
+get_memo(a::FaceMap) = get_memo(a.face_map)
+MetaSizeStyle(::Type{FaceMap{T}}) where T = MetaSizeStyle(T)
+Base.:∘(f::CellFieldFromOperation,ϕ::FaceMap) = _compose_cell_field_from_op(f,ϕ)
+function Base.:∘(f::CellField,ϕ::FaceMap)
+  g = reindex(f,ϕ.face_to_cell)
+  g∘ϕ.face_map
+end
+
 
 # Optimizations associated with inverse maps (i.e., with the reference space)
 
@@ -532,11 +675,41 @@ get_memo(a::CellFieldComposedWithInverseMap) = a.memo
 MetaSizeStyle(::Type{CellFieldComposedWithInverseMap{T}}) where T = MetaSizeStyle(T)
 
 function Base.:∘(f::CellFieldComposedWithInverseMap,ϕ::CellField)
+  _compose_cell_field_with_inv(f,ϕ)
+end
+
+function _compose_cell_field_with_inv(f,ϕ)
   if f.map.direct_cell_map == ϕ
     return f.f
   else
     return (f.f∘get_inverse_map(f.map))∘ϕ
   end
+end
+
+function Base.:∘(f::CellFieldComposedWithInverseMap,ϕ::ReindexedCellMap)
+  if f.map.direct_cell_map == ϕ
+    return f.f
+  elseif f.map.direct_cell_map == ϕ.cell_map
+    return reindex(f.f,ϕ.ids)
+  else
+    return (f.f∘get_inverse_map(f.map))∘ϕ
+  end
+end
+
+function Base.:∘(f::CellFieldComposedWithInverseMap,ϕ::FaceMap)
+  if f.map.direct_cell_map == ϕ
+    return f.f
+  elseif f.map.direct_cell_map == ϕ.cell_map
+    return _to_ref_face_space(f,ϕ)
+  else
+    return (f.f∘get_inverse_map(f.map))∘ϕ
+  end
+end
+
+function _to_ref_face_space(f,ϕ)
+  cell_to_f = f∘ϕ.cell_map
+  face_to_f = reindex(cell_to_f,ϕ.face_to_cell)
+  face_to_f∘ϕ.refface_to_refcell_map
 end
 
 function Arrays.reindex(f::CellFieldComposedWithInverseMap,a::AbstractVector)
@@ -569,3 +742,4 @@ function Fields.lincomb(a::CellFieldComposedWithInverseMap,b::AbstractArray)
   u = lincomb(a.f,b)
   CellFieldComposedWithInverseMap(u,a.map)
 end
+

@@ -116,4 +116,8 @@ function apply_gradient(k::CompFieldArray,g,f)
   compose_field_arrays(∇g,f)
 end
 
+function compose_field_arrays(g::AbstractArray{<:Number},f)
+  g
+end
+
 

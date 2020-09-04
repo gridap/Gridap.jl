@@ -111,11 +111,11 @@ function integrate(f,ϕ::CellField,quad::CellQuadrature)
 end
 
 function integrate(cell_field,ϕ::CellField,q,w)
-  f = convert_to_cell_field(cell_field,length(ϕ))
+  f = cell_field∘ϕ
   j = get_array(∇(ϕ))
   @assert length(f) == length(ϕ) "Are you using the right triangulation to integrate?"
   @assert length(f) == length(w) "Are you using the right quadrature to integrate?"
-  integrate(get_array(f∘ϕ),q,w,j)
+  integrate(get_array(f),q,w,j)
 end
 
 function lazy_append(quad1::CellQuadrature,quad2::CellQuadrature)

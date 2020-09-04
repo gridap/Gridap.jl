@@ -53,7 +53,6 @@ export to_ref_space
 export to_physical_space
 export trialize_cell_basis
 export convert_to_cell_field
-export SkeletonCellField
 export get_inward
 export get_outward
 export jump
@@ -61,6 +60,9 @@ export mean
 export merge_cell_dofs_at_skeleton
 export merge_cell_fields_at_skeleton
 export inverse_map
+export SkeletonFaceMap
+export ReindexedCellMap
+export FaceMap
 
 export CellQuadrature
 export get_coordinates
@@ -84,6 +86,7 @@ export @law
 export operate
 export GridapType
 export ∫
+
 
 include("CellFields.jl")
 
