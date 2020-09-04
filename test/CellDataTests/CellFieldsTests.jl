@@ -20,36 +20,30 @@ v = VectorValue(3.0,1.5)
 w = VectorValue(3.4,3.5)
 a = MockBasis{2}(v,ndofs)
 b = MockBasis{2}(w,ndofs)
-c = fill(1.0,ndofs)
-f = OtherMockBasis{2}(ndofs)
 
 g = MockField{2}(v)
 
 l = 10
 xl = Fill(x,l)
 zl = [ z for  i in 1:l]
-cl = fill(c,l)
-fl = Fill(f,l)
-ϕl = lincomb(fl,cl)
 gl = fill(g,l)
 al = Fill(a,l)
 bl = fill(b,l)
 
-gf = GenericCellField(gl,ϕl,Val(true))
+gf = GenericCellField(gl)
 gf_x = evaluate(gf,xl)
 ∇gf_x = evaluate(∇(gf),xl)
 test_cell_field(gf,xl,gf_x,grad=∇gf_x)
 
-af = GenericCellField(al,ϕl,Val(true),Fill((Base.OneTo(ndofs),),l),Val((:,)))
-bf = GenericCellField(bl,ϕl,Val(true),Fill((Base.OneTo(ndofs),),l),Val((:,)))
-zf = convert_to_cell_field(zl,ϕl)
+af = GenericCellField(al,Fill((Base.OneTo(ndofs),),l),Val((:,)))
+bf = GenericCellField(bl,Fill((Base.OneTo(ndofs),),l),Val((:,)))
+zf = convert_to_cell_field(zl,l)
 df = af*zf
 dft = trialize_cell_basis(df)
 
 zfr = reindex(zf,[1,4,3])
 @test length(zfr) == 3
 @test length(get_array(zfr)) == 3
-@test length(get_cell_map(zfr)) == 3
 @test length(get_cell_axes(zfr)) == 3
 
 # Check memoization
@@ -85,16 +79,12 @@ axesR = Fill((Base.OneTo(ndofs),),l)
 idsS = merge_cell_dofs_at_skeleton(idsL,idsR,axesL,axesR)
 @test isa(idsS,VectorOfBlockArrayCoo)
 
-afS = merge_cell_fields_at_skeleton(af,2*af)
-@test isa(afS,SkeletonCellField)
+afS_left, afS_right= merge_cell_fields_at_skeleton(af,2*af)
 
-afL_x = evaluate(afS.left,xl)
-afR_x = evaluate(afS.right,xl)
+afL_x = evaluate(afS_left,xl)
+afR_x = evaluate(afS_right,xl)
 @test isa(afL_x,VectorOfBlockArrayCoo)
 @test isa(afR_x,VectorOfBlockArrayCoo)
-
-@test isa(afS*2,SkeletonCellField)
-@test isa(afS+afS,SkeletonCellField)
 
 # Checks associated with trial bases
 df = bf

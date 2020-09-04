@@ -34,12 +34,8 @@ import Gridap.Arrays: getindex!
 import Gridap.Arrays: reindex
 
 export CellField
-export get_cell_map
 export get_cell_axes
 export get_memo
-export RefStyle
-export is_in_ref_space
-export is_in_physical_space
 export MetaSizeStyle
 export get_metasize
 export is_basis
@@ -47,10 +43,6 @@ export is_test
 export is_trial
 export test_cell_field
 export GenericCellField
-export similar_object
-export change_ref_style
-export to_ref_space
-export to_physical_space
 export trialize_cell_basis
 export convert_to_cell_field
 export get_inward

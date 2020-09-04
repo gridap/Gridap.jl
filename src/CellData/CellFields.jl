@@ -329,7 +329,9 @@ end
 function _operate_wrapper(op,args...)
   if all( length(first(args)) .== map(length,args) )
    cell_axes, metasize = _compute_metadata_from_op(op,args...)
-  else # TODO. This is hacky
+ else # TODO. This is hacky.
+    # This can be fixed if f∘inverse_map(ϕ) returns an ExtendedVector
+    # for the case that triggers this branch.
     cell_axes = get_cell_axes(first(args))
     metasize = MetaSizeStyle(first(args))
   end
