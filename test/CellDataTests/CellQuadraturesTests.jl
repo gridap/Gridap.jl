@@ -55,19 +55,20 @@ l = 10
 zl = [ z for  i in 1:l]
 cl = fill(c,l)
 fl = Fill(f,l)
-ϕl = lincomb(fl,cl)
 gl = fill(g,l)
 al = Fill(a,l)
 bl = fill(b,l)
 
-gf = GenericCellField(gl,ϕl,Val(true))
-af = GenericCellField(al,ϕl,Val(true),Fill((Base.OneTo(ndofs),),l),Val((:,)))
-bf = GenericCellField(bl,ϕl,Val(true),Fill((Base.OneTo(ndofs),),l),Val((:,)))
-zf = convert_to_cell_field(zl,ϕl)
+ϕl = GenericCellField(lincomb(fl,cl))
+gf = GenericCellField(gl)∘inverse_map(ϕl)
+af = GenericCellField(al,Fill((Base.OneTo(ndofs),),l),Val((:,)))∘inverse_map(ϕl)
+bf = GenericCellField(bl,Fill((Base.OneTo(ndofs),),l),Val((:,)))∘inverse_map(ϕl)
+zf = convert_to_cell_field(zl,ϕl)∘inverse_map(ϕl)
 df = af*zf
 dft = trialize_cell_basis(df)
 
 @test sum(integrate(1,ϕl,quad)) ≈ 213.33333333333323
+
 @test sum(integrate(zl,ϕl,quad)) ≈  426.66666666666646
 
 cm = integrate(df⋅dft,ϕl,quad)

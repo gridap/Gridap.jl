@@ -6,10 +6,10 @@ using Test
 
 @testset "CellFields (2/2)" begin include("CellFieldsTests_2.jl") end
 
-#@testset "CellQuadratures" begin include("CellQuadraturesTests.jl") end
-#
-#@testset "QPointCellFields" begin include("QPointCellFieldsTests.jl") end
-#
+@testset "CellQuadratures" begin include("CellQuadraturesTests.jl") end
+
+@testset "QPointCellFields" begin include("QPointCellFieldsTests.jl") end
+
 #@testset "CellDofBases" begin include("CellDofBasesTests.jl") end
 #
 #@testset "AttachDirichlet" begin include("AttachDirichletTests.jl") end

@@ -1,17 +1,31 @@
 
 """
 """
-function QPointCellField(value::Number,cell_map::AbstractArray{<:Field},quad::CellQuadrature)
-  q = get_coordinates(quad)
+function QPointCellField(value::Number,quad::CellQuadrature)
+  QPointCellField(value,get_coordinates(quad))
+end
+
+function QPointCellField(value::Number,x::AbstractArray)
+  array = _qpoint_array(value,x)
+  GenericCellField(array)
+end
+
+function QPointCellField(value::Number,x::MappedCellValues)
+  q = x.refvals
+  ϕ = x.ϕ
+  array = _qpoint_array(value,q)
+  GenericCellField(array)∘inverse_map(ϕ)
+end
+
+function _qpoint_array(value,q)
   v_q = [ fill(value,size(qi)) for qi in q ]
-  array = ArrayOfEvaluatedFields(v_q,q)
-  GenericCellField(array, cell_map)
+  ArrayOfEvaluatedFields(v_q,q)
 end
 
 """
 """
-function CellField(value::Number,cell_map::AbstractArray{<:Field},quad::CellQuadrature)
-  QPointCellField(value,cell_map,quad)
+function CellField(value::Number,quad::CellQuadrature)
+  QPointCellField(value,quad)
 end
 
 struct EvaluatedField{A<:AbstractArray,P<:AbstractArray} <:Field

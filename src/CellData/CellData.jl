@@ -84,8 +84,8 @@ include("CellFields.jl")
 
 include("CellQuadratures.jl")
 
-#include("QPointCellFields.jl")
-#
+include("QPointCellFields.jl")
+
 #include("CellDofBases.jl")
 #
 #include("AttachDirichlet.jl")

@@ -107,10 +107,10 @@ end
     integrate(cell_field,ϕ::CellField,quad::CellQuadrature)
 """
 function integrate(f,ϕ::CellField,quad::CellQuadrature)
-  integrate(f,ϕ,get_coordinates(quad),get_weights(quad))
+  _integrate(f,ϕ,get_coordinates(quad),get_weights(quad))
 end
 
-function integrate(cell_field,ϕ::CellField,q,w)
+function _integrate(cell_field,ϕ::CellField,q,w)
   f = cell_field∘ϕ
   j = get_array(∇(ϕ))
   @assert length(f) == length(ϕ) "Are you using the right triangulation to integrate?"
@@ -169,7 +169,7 @@ function  _integrate(f,x::MappedCellValues,wx::MappedCellValues)
   ϕ = x.ϕ
   q = x.refvals
   wq = wx.refvals
-  integrate(f,ϕ,q,wq)
+  _integrate(f,ϕ,q,wq)
 end
 
 struct Integral
