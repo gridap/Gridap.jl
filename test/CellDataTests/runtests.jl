@@ -14,8 +14,8 @@ using Test
 
 @testset "AttachDirichlet" begin include("AttachDirichletTests.jl") end
 
-#@testset "AttachConstraints" begin include("AttachConstraintsTests.jl") end
-#
-#@testset "Law" begin include("LawTests.jl") end
+@testset "AttachConstraints" begin include("AttachConstraintsTests.jl") end
+
+@testset "Law" begin include("LawTests.jl") end
 
 end # module

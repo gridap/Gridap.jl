@@ -16,13 +16,13 @@ f = OtherMockBasis{2}(ndofs)
 ncells = 10
 cl = fill(c,ncells)
 fl = Fill(f,ncells)
-ϕl = lincomb(fl,cl)
+ϕ = GenericCellField(lincomb(fl,cl))
 
 degree = 3
 quad = CellQuadrature(degree,[QUAD,],Fill(1,ncells))
 q = get_coordinates(quad)
-dv = GenericCellField(Fill(b,ncells),ϕl,Val(true),Fill((Base.OneTo(ndofs),),ncells),Val((:,)))
-u = convert_to_cell_field(x->x[2]^2,ϕl)
+dv = GenericCellField(Fill(b,ncells),Fill((Base.OneTo(ndofs),),ncells),Val((:,)))∘inverse_map(ϕ)
+u = convert_to_cell_field(x->x[2]^2,ϕ)
 
 @law g(u) = u^2
 @law h(u,dv) = (1+u)*dv
@@ -30,12 +30,12 @@ u = convert_to_cell_field(x->x[2]^2,ϕl)
 cf = g(u)
 @test isa(cf,CellField)
 @test get_metasize(cf) == ()
-test_array(evaluate(cf,q),evaluate(operate(g,u),q),≈)
+test_array(evaluate(cf∘ϕ,q),evaluate(operate(g,u)∘ϕ,q),≈)
 
 cf = h(u,dv)
 @test isa(cf,CellField)
 @test get_metasize(cf) == (:,)
-test_array(evaluate(cf,q),evaluate(operate(h,u,dv),q),≈)
+test_array(evaluate(cf∘ϕ,q),evaluate(operate(h,u,dv)∘ϕ,q),≈)
 
 
 end # module

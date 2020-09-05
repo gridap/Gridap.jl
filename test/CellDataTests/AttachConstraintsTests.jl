@@ -105,11 +105,8 @@ cellconstr = identity_constraints(cell_axes)
 test_array(cellconstr,Fill(Matrix(I,ndofs,ndofs),l))
 @test isa(cellconstr,Fill)
 
-kk
-
 # Test at skeleton
-aS = merge_cell_fields_at_skeleton(af,af)
-dSt = merge_cell_fields_at_skeleton(dft,dft)
+
 
 axesL = Fill((Base.OneTo(ndofs),),l)
 axesR = axesL
@@ -124,8 +121,12 @@ axesL_cols = axesL
 axesR_cols = axesR
 cellconstr = merge_cell_constraints_at_skeleton(cellconstrL,cellconstrR,axesL_rows,axesR_rows,axesL_cols,axesR_cols)
 
-cellvec = integrate(jump(aS⋅v),ϕl,quad)
-cellmat = integrate( jump(aS⋅v)*(w⋅dSt.⁻),ϕl,quad)
+ϕ_Γ = SkeletonFaceMap(ϕ,ϕ)
+quad_Γ = ϕ_Γ(quad_ref)
+
+cellvec = integrate(jump(af⋅v), quad_Γ)
+cellmat = integrate( jump(af⋅v)*(w⋅dft.⁻),quad_Γ)
+
 cellmatvec = pair_arrays(cellmat,cellvec)
 cellmatvec = attach_dirichlet(cellmatvec,cellvals)
 cellmatvec = attach_constraints_rows(cellmatvec,cellconstr)
