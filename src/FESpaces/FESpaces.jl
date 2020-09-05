@@ -254,8 +254,6 @@ include("FEOperatorsFromTerms.jl")
 
 include("FESolvers.jl")
 
-include("FESpacesWithLastDofRemoved.jl")
-
 include("FESpacesWithDofPotentiallyRemoved.jl")
 
 include("ZeroMeanFESpaces.jl")
