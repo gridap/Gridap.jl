@@ -285,9 +285,60 @@ function gradient(a::CellFieldFromOperation{typeof(*)})
   key = :gradient
   memo = get_memo(a)
   if !haskey(memo,key)
-    memo[key] = a.args[1]*gradient(a.args[2]) + a.args[2]*gradient(a.args[1])
+    memo[key] = _product_rule(a.args[1],a.args[2])
   end
   memo[key]
+end
+
+# TODO this is very hacky. The reason is that we cannot call `get_array(::CellFieldComposedWithInverseMap)`
+# in general.  We need to fix this. The other option is to compute the right gradient for numbers,
+# but inefficient
+function _product_rule(a,b)
+    a*gradient(b) + b*gradient(a)
+end
+
+function _product_rule(a::GenericCellField,b)
+  _product_rule_a(a,get_array(a),b)
+end
+
+function _product_rule(a,b::GenericCellField)
+  _product_rule_b(a,b,get_array(b))
+end
+
+function _product_rule(a::GenericCellField,b::GenericCellField)
+  _product_rule(a,get_array(a),b,get_array(b))
+end
+
+function _product_rule_a(a,_a,b)
+    a*gradient(b) + b*gradient(a)
+end
+
+function _product_rule_a(a,::AbstractArray{<:Number},b)
+    a*gradient(b)
+end
+
+function _product_rule_b(a,b,_b)
+    a*gradient(b) + b*gradient(a)
+end
+
+function _product_rule_b(a,b,::AbstractArray{<:Number})
+    b*gradient(a)
+end
+
+function _product_rule(a,_a,b,_b)
+  a*gradient(b) + b*gradient(a)
+end
+
+function _product_rule(a,::AbstractArray{<:Number},b,_b)
+    a*gradient(b)
+end
+
+function _product_rule(a,_a,b,::AbstractArray{<:Number})
+    b*gradient(a)
+end
+
+function _product_rule(a,::AbstractArray{<:Number},b,::AbstractArray{<:Number})
+  @notimplemented
 end
 
 function Base.:∘(f::CellFieldFromOperation,ϕ::CellField)

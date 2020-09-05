@@ -75,12 +75,18 @@ df = af*zf
 dft = trialize_cell_basis(df)
 
 degree = 3
-quad = ϕ(CellQuadrature(degree,[QUAD,],ones(Int,l)))
+quad_ref = CellQuadrature(degree,[QUAD,],ones(Int,l))
+quad = ϕ(quad_ref)
 
-integrate(∇(df),quad)
+q = get_coordinates(quad_ref)
 
-kk
+r1 = (∇(2*af)∘ϕ)(q)
+r2 = (2*∇(af)∘ϕ)(q)
+test_array(r1,r2)
 
+r1 = (∇(af*2)∘ϕ)(q)
+r2 = (2*∇(af)∘ϕ)(q)
+test_array(r1,r2)
 
 ndofs_c = 5
 cellconstr = [ rand(ndofs_c,ndofs) for i in 1:l]
