@@ -48,6 +48,7 @@ hx = apply_kernel(k,evaluate(f,x),evaluate_field(g,x))
 ∇hx = apply_kernel(k,evaluate(∇(f),x),evaluate_field(field_gradient(g),x))
 test_field(h,x,hx,grad=∇hx)
 
+
 fi = 3.0
 gi = [1,2,3,4,5]
 d = 2
@@ -57,5 +58,11 @@ h = apply_kernel_to_field(k,f,g)
 hx = apply_kernel(k,evaluate(f,x),evaluate_field(g,x))
 ∇hx = apply_kernel(k,evaluate(∇(f),x),evaluate_field(field_gradient(g),x))
 test_field(h,x,hx,grad=∇hx)
+
+@enter apply_kernel(k,evaluate(f,x),evaluate_field(g,x))
+
+evaluate(f,x)
+evaluate_field(g,x)
+evaluate_field(field_gradient(g),x)
 
 end # module

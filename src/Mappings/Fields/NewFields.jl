@@ -19,6 +19,7 @@ import Gridap.Mappings: evaluate
 import Gridap.Mappings: return_caches
 import Gridap.Mappings: return_types
 import Gridap.Mappings: test_mapping
+import Gridap.Mappings: gradient
 
 
 

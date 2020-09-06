@@ -27,6 +27,7 @@ function evaluate!(c,f::ConstantField,x)
   r
 end
 
+# @santiagobadia : It seems wrong to me
 function gradient(f::ConstantField)
   T = typeof(f.v)
   E = eltype(T)

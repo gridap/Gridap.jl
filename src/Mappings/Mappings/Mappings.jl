@@ -19,6 +19,7 @@ export FunctionMapping
 export BroadcastMapping
 export CompositionMapping
 export MatVecMapping
+export ConstantMapping
 
 export return_type
 export return_cache
@@ -27,12 +28,19 @@ export evaluate
 export test_mapping
 export return_caches
 export return_types
+export gradient
 
 export MappingArray
 
-export apply
-export apply_all
+# export apply
+# export apply_all
 
+export CompositionMapping
+
+export composition
+
+# To create the MappingArray <: AbstractArray
+# using the extended Gridap API
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: testitem
 import Gridap.Arrays: uses_hash
@@ -53,5 +61,7 @@ include("CompositionMappings.jl")
 include("AlgebraMappings.jl")
 
 include("MappingArrays.jl")
+
+include("ConstantMappings.jl")
 
 end

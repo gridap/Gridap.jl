@@ -252,16 +252,17 @@ end
 
 # Particular implementations for Fill
 
-function apply(f::Fill,a::Fill...)
-  ai = _getvalues(a...)
-  r = apply_mapping(f.value,ai...)
-  s = common_size(f,a...)
-  Fill(r,s)
-end
+# @santiagobadia : Uncomment when eliminating the one in arrays
+# function apply(f::Fill,a::Fill...)
+#   ai = _getvalues(a...)
+#   r = apply_mapping(f.value,ai...)
+#   s = common_size(f,a...)
+#   Fill(r,s)
+# end
 
-function apply(::Type{T},f::Fill,a::Fill...) where T
-  apply(f,a...)
-end
+# function apply(::Type{T},f::Fill,a::Fill...) where T
+#   apply(f,a...)
+# end
 
 function _getvalues(a::Fill,b::Fill...)
   ai = a.value

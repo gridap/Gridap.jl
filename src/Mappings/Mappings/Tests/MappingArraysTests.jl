@@ -2,10 +2,10 @@ module MappingarraysTests
 
 using Test
 using Gridap.Arrays
-# using Gridap.Arrays: ArrayWithCounter, reset_counter!
 using Gridap.Mappings
 using Gridap.Mappings: evaluate
 using FillArrays
+# using Gridap.Arrays: ArrayWithCounter, reset_counter!
 
 a = rand(3,2,4)
 test_array(a,a)

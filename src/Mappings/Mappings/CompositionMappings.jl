@@ -16,7 +16,8 @@ resulting field, one needs to define the gradient operator
 associated with the underlying mapping.
 This is done by adding a new method to [`apply_mapping_gradient(k,f...)`](@ref) for each mapping type.
 """
-@inline function composition(k::Mapping,l::NTuple{N,<:Mapping}) where N
+# @inline function composition(k::Mapping,l::NTuple{N,<:Mapping}) where N
+@inline function composition(k::Mapping,l::Tuple{Vararg{<:Mapping}})
   CompositionMapping(k,l...)
 end
 
@@ -57,9 +58,9 @@ function return_type(c::CompositionMapping,x)
 end
 
 function return_cache(c::CompositionMapping,x)
-  cl = caches(c.l,x)
+  cl = return_caches(c.l,x)
   lx = evaluate!(cl,c.l,x)
-  ck = cache(c.k,lx...)
+  ck = return_cache(c.k,lx...)
   (ck,cl)
 end
 
