@@ -1,4 +1,5 @@
-# Gridap
+![Gridap logo](https://github.com/gridap/Gridap.jl/blob/master/images/color-text.png)
+---
 
 | **Documentation** |
 |:------------ |
