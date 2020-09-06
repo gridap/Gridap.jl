@@ -1,5 +1,5 @@
-![Gridap logo](https://github.com/gridap/Gridap.jl/blob/master/images/color-text.png)
----
+# <img src="https://github.com/gridap/Gridap.jl/blob/master/images/color-text.png" width="250" title="Gridap logo">
+
 
 | **Documentation** |
 |:------------ |
