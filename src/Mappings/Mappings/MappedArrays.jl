@@ -102,7 +102,7 @@ println(c)
 ```
 """
 function apply(f::AbstractArray{<:Mapping},a::AbstractArray...)
-  MappingArray(f,a...)
+  MappedArray(f,a...)
 end
 
 """
@@ -112,15 +112,15 @@ Like [`apply(f::AbstractArray,a::AbstractArray...)`](@ref), but the user provide
 of the resulting array in order to circumvent type inference.
 """
 function apply(::Type{T},f::AbstractArray{<:Mapping},a::AbstractArray...) where T
-  MappingArray(T,f,a...)
+  MappedArray(T,f,a...)
 end
 
 # Helpers
 
-struct MappingArray{T,N,F,G} <: AbstractArray{T,N}
+struct MappedArray{T,N,F,G} <: AbstractArray{T,N}
   g::G
   f::F
-  function MappingArray(::Type{T},g::AbstractArray{<:Mapping},f::AbstractArray...) where T
+  function MappedArray(::Type{T},g::AbstractArray{<:Mapping},f::AbstractArray...) where T
     G = typeof(g)
     F = typeof(f)
     f1, = f
@@ -128,18 +128,18 @@ struct MappingArray{T,N,F,G} <: AbstractArray{T,N}
   end
 end
 
-function MappingArray(g::AbstractArray{<:Mapping},f::AbstractArray...)
+function MappedArray(g::AbstractArray{<:Mapping},f::AbstractArray...)
   gi = testitem(g) #Assumes that all mappings return the same type
   fi = testitems(f...)
   T = typeof(testitem(gi,fi...))
-  MappingArray(T,g,f...)
+  MappedArray(T,g,f...)
 end
 
-function uses_hash(::Type{<:MappingArray})
+function uses_hash(::Type{<:MappedArray})
   Val(true)
 end
 
-function array_cache(hash::Dict,a::MappingArray)
+function array_cache(hash::Dict,a::MappedArray)
     id = objectid(a)
     _cache = _array_cache(hash,a)
     if haskey(hash,id)
@@ -156,7 +156,7 @@ end
   hash[id]
 end
 
-function _array_cache(hash,a::MappingArray)
+function _array_cache(hash,a::MappedArray)
   cg = array_cache(hash,a.g)
   gi = testitem(a.g)
   fi = testitems(a.f...)
@@ -173,27 +173,27 @@ function _array_cache(hash,a::MappingArray)
   (c,e)
 end
 
-function testitem(a::MappingArray)
+function testitem(a::MappedArray)
   cg = array_cache(a.g)
   gi = testitem(a.g)
   fi = testitems(a.f...)
   testitem(gi,fi...)
 end
 
-function getindex!(cache,a::MappingArray,i::Integer...)
+function getindex!(cache,a::MappedArray,i::Integer...)
   li = LinearIndices(a)
   getindex!(cache,a,li[i...])
 end
 
-function getindex!(cache,a::MappingArray,i::Integer)
+function getindex!(cache,a::MappedArray,i::Integer)
   _cached_getindex!(cache,a,(i,))
 end
 
-function getindex!(cache,a::MappingArray,i::CartesianIndex)
+function getindex!(cache,a::MappedArray,i::CartesianIndex)
   _cached_getindex!(cache,a,Tuple(i))
 end
 
-function _cached_getindex!(cache,a::MappingArray,i::Tuple)
+function _cached_getindex!(cache,a::MappedArray,i::Tuple)
   c, e = cache
   v = e.fx
   if e.x != i
@@ -204,7 +204,7 @@ function _cached_getindex!(cache,a::MappingArray,i::Tuple)
    v
 end
 
-function _getindex!(cache,a::MappingArray,i...)
+function _getindex!(cache,a::MappedArray,i...)
   cg, cgi, cf = cache
   gi = getindex!(cg,a.g,i...)
   fi = getitems!(cf,a.f,i...)
@@ -212,17 +212,17 @@ function _getindex!(cache,a::MappingArray,i...)
   vi
 end
 
-function Base.getindex(a::MappingArray,i...)
+function Base.getindex(a::MappedArray,i...)
   ca = array_cache(a)
   getindex!(ca,a,i...)
 end
 
 function Base.IndexStyle(
-  ::Type{MappingArray{T,N,F,G}}) where {T,N,F,G}
+  ::Type{MappedArray{T,N,F,G}}) where {T,N,F,G}
   common_index_style(F)
 end
 
-function Base.size(a::MappingArray)
+function Base.size(a::MappedArray)
   f, = a.f
   size(f)
 end
@@ -275,7 +275,7 @@ function _getvalues(a::Fill)
   (ai,)
 end
 
-function Base.sum(a::MappingArray)
+function Base.sum(a::MappedArray)
   cache = array_cache(a)
   _sum_array_cache(cache,a)
 end
