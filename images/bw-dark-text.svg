@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="183.26944mm"
+   height="45.883625mm"
+   viewBox="0 0 183.26944 45.883625"
+   version="1.1"
+   id="svg131"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)"
+   sodipodi:docname="bw-dark-text.svg"
+   inkscape:export-filename="/home/fverdugo/Code/jl/Gridap2.jl/images/bw-dark-text.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96">
+  <defs
+     id="defs125" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.98994949"
+     inkscape:cx="336.95958"
+     inkscape:cy="-24.680851"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1920"
+     inkscape:window-height="1025"
+     inkscape:window-x="0"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0" />
+  <metadata
+     id="metadata128">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-3.974202,-56.106753)">
+    <g
+       transform="translate(0.78393154,54.074889)"
+       style="display:inline;fill:#ffffff"
+       id="g1258"
+       inkscape:export-ydpi="96"
+       inkscape:export-xdpi="96">
+      <path
+         inkscape:connector-curvature="0"
+         style="display:inline;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         d="m 25.135418,30.072607 v 15.46569 a 1.5275724,1.5275724 29.999997 0 0 2.291359,1.322916 l 13.393679,-7.732846 a 1.5275726,1.5275726 89.999995 0 0 0,-2.645833 L 27.426777,28.74969 a 1.5275727,1.5275727 150 0 0 -2.291359,1.322917 z"
+         id="path1547"
+         inkscape:original-d="M 25.135418,27.426774 V 48.18413 L 43.111815,37.80545 Z" />
+      <path
+         inkscape:connector-curvature="0"
+         style="display:inline;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         d="m 28.749693,26.458331 13.393677,7.732841 a 1.5275727,1.5275727 150 0 0 2.291359,-1.322916 V 17.402572 A 1.5275727,1.5275727 30.000002 0 0 42.14337,16.079656 l -13.393677,7.732841 a 1.5275723,1.5275723 90 0 0 0,2.645834 z"
+         id="path1549"
+         inkscape:original-d="M 26.458334,25.135414 44.434729,35.514089 V 14.756739 Z" />
+      <path
+         inkscape:connector-curvature="0"
+         style="display:inline;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         d="m 5.48163,16.079657 14.716593,8.496627 a 4.5827175,4.5827175 59.999994 0 1 2.291359,3.968749 l 2e-6,16.993264 a 1.5275724,1.5275724 150 0 1 -2.291359,1.322916 L 5.4816298,38.364583 A 4.5827178,4.5827178 60 0 1 3.190271,34.395833 V 17.402574 A 1.5275728,1.5275728 150 0 1 5.48163,16.079657 Z"
+         id="path1551"
+         inkscape:original-d="m 3.190271,14.756741 19.299311,11.142459 2e-6,22.28493 L 3.190271,37.041666 Z" />
+      <path
+         inkscape:connector-curvature="0"
+         style="display:inline;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         d="M 6.8045467,11.142463 21.521139,2.6458319 a 4.5827171,4.5827171 -180 0 1 4.582718,-3e-7 l 14.716596,8.4966304 a 1.5275727,1.5275727 89.999998 0 1 0,2.645834 l -14.716596,8.496632 a 4.5827167,4.5827167 1.4577562e-6 0 1 -4.582718,0 L 6.8045467,13.788297 a 1.527573,1.527573 90 0 1 0,-2.645834 z"
+         id="path1553"
+         inkscape:original-d="M 4.513188,12.46538 23.812498,1.322915 43.111812,12.465379 23.812498,23.607845 Z" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:42.33330154px;line-height:1.25;font-family:'Open Sans';-inkscape-font-specification:'Open Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;display:inline;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.26458299"
+         x="50.468117"
+         y="37.745575"
+         id="text980"><tspan
+           sodipodi:role="line"
+           id="tspan978"
+           x="50.468117"
+           y="37.745575"
+           style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:42.33330154px;font-family:'Open Sans';-inkscape-font-specification:'Open Sans Semi-Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;stroke-width:0.26458299;fill:#ffffff">Gridap</tspan></text>
+    </g>
+  </g>
+</svg>
