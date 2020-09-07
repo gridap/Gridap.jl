@@ -502,6 +502,30 @@ function Fields.lincomb(a::CellField,b::AbstractArray)
   end
 end
 
+# Lazy append
+
+function Arrays.lazy_append(a::CellField,b::CellField)
+  AppendedCellField(a,b)
+end
+
+struct AppendedCellField{F<:CellField} <: CellField
+  a::F
+  b::CellField
+  memo::Dict
+  function AppendedCellField(a::CellField,b::CellField)
+    F = typeof(a)
+    new{F}(a,b,Dict())
+  end
+end
+
+Arrays.get_array(f::AppendedCellField) = lazy_append(get_array(f.a),get_array(f.b))
+get_cell_axes(f::AppendedCellField) = lazy_append(get_cell_axes(f.a),get_cell_axes(f.b))
+get_memo(f::AppendedCellField) = f.memo
+MetaSizeStyle(::Type{AppendedCellField{T}}) where T = MetaSizeStyle(T)
+Base.:∘(f::CellFieldFromOperation,ϕ::AppendedCellField) = _compose_cell_field_from_op(f,ϕ)
+Base.:∘(f::CellField,ϕ::AppendedCellField) = lazy_append(f∘ϕ.a,f∘ϕ.b)
+Base.:∘(f,ϕ::AppendedCellField) = lazy_append(f∘ϕ.a,f∘ϕ.b)
+
 # Skeleton related
 
 struct SkeletonFaceMap{L<:CellField} <:CellField
@@ -728,10 +752,6 @@ get_memo(a::CellFieldComposedWithInverseMap) = a.memo
 MetaSizeStyle(::Type{CellFieldComposedWithInverseMap{T}}) where T = MetaSizeStyle(T)
 
 function Base.:∘(f::CellFieldComposedWithInverseMap,ϕ::CellField)
-  _compose_cell_field_with_inv(f,ϕ)
-end
-
-function _compose_cell_field_with_inv(f,ϕ)
   if f.map.direct_cell_map == ϕ
     return f.f
   else
@@ -756,6 +776,14 @@ function Base.:∘(f::CellFieldComposedWithInverseMap,ϕ::FaceMap)
     return _to_ref_face_space(f,ϕ)
   else
     return (f.f∘get_inverse_map(f.map))∘ϕ
+  end
+end
+
+function Base.:∘(f::CellFieldComposedWithInverseMap,ϕ::AppendedCellField)
+  if f.map.direct_cell_map == ϕ
+    return f.f
+  else
+    return lazy_append(f∘ϕ.a,f∘ϕ.b)
   end
 end
 

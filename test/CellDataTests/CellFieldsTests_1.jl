@@ -188,4 +188,54 @@ test_array(r,collect(r))
 r = ∫( n*∇(dv)⋅∇(du)*f + 2*dv*du )*dΛ
 test_array(r,collect(r))
 
+# lazy_append
+
+ids1 = [4,2]
+ϕ1 = ReindexedCellMap(ϕ,ids1)
+
+ids2 = [3,1]
+ϕ2 = ReindexedCellMap(ϕ,ids2)
+ϕ12 = lazy_append(ϕ1,ϕ2)
+
+q1 = reindex(q,ids1)
+w1 = reindex(w,ids1)
+dΓ1_ref = CellQuadrature(q1,w1)
+
+q2 = reindex(q,ids2)
+w2 = reindex(w,ids2)
+dΓ2_ref = CellQuadrature(q2,w2)
+
+dΓ12_ref = lazy_append(dΓ1_ref,dΓ2_ref)
+dΓ12 = ϕ12(dΓ12_ref)
+
+q12 = get_coordinates(dΓ12_ref)
+r = (dv∘ϕ12)(q12)
+@test isa(r,AppendedArray)
+test_array(r,collect(r))
+
+r = ∫(1)*dΓ12
+@test isa(r,AppendedArray)
+test_array(r,collect(r))
+
+r = ∫(x->1)*dΓ12
+@test isa(r,AppendedArray)
+test_array(r,collect(r))
+
+r = ∫( 3*∇(dv)⋅∇(du)*f + 2*dv*du )*dΓ12
+@test isa(r,AppendedArray)
+test_array(r,collect(r))
+
+n_ref(x) = x[1]
+n1_ref = convert_to_cell_field(n_ref,ϕ1)
+n2_ref = convert_to_cell_field(n_ref,ϕ2)
+n12_ref = lazy_append(n1_ref,n2_ref)
+n12 = n12_ref∘inverse_map(ϕ12)
+r = (n12∘ϕ12)(q12)
+@test isa(r,AppendedArray)
+test_array(r,collect(r))
+
+r = ∫( 3*∇(dv)⋅∇(du)*n12 + 2*dv*du )*dΓ12
+@test isa(r,AppendedArray)
+test_array(r,collect(r))
+
 end # module
