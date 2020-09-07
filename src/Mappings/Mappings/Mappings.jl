@@ -30,7 +30,7 @@ export return_caches
 export return_types
 export gradient
 
-export MappingArray
+export MappedArray
 
 # export apply
 # export apply_all
@@ -60,7 +60,7 @@ include("CompositionMappings.jl")
 
 include("AlgebraMappings.jl")
 
-include("MappingArrays.jl")
+include("MappedArrays.jl")
 
 include("ConstantMappings.jl")
 
