@@ -36,10 +36,8 @@ function get_cell_id(trian::AppendedTriangulation)
   lazy_append(a,b)
 end
 
-function restrict(f::AbstractArray,trian::AppendedTriangulation)
-  a = restrict(f,trian.a)
-  b = restrict(f,trian.b)
-  lazy_append(a,b)
+function CellField(object,trian::AppendedTriangulation)
+  CellField(object,trian.a)
 end
 
 function get_cell_reffes(trian::AppendedTriangulation)
@@ -61,16 +59,28 @@ function get_cell_map(trian::AppendedTriangulation)
 end
 
 function get_normal_vector(trian::AppendedTriangulation)
-  cm = get_cell_map(trian)
-  a = get_array(get_normal_vector(trian.a))
-  b = get_array(get_normal_vector(trian.b))
-  GenericCellField(lazy_append(a,b),cm)
+  n1 = get_normal_vector(trian.a)
+  n2 = get_normal_vector(trian.b)
+  ϕ1 = get_cell_map(trian.a)
+  ϕ2 = get_cell_map(trian.b)
+  ϕ = get_cell_map(trian)
+  lazy_append(n1∘ϕ1,n2∘ϕ2)∘inverse_map(ϕ)
+end
+
+function reference_cell_quadrature(trian::AppendedTriangulation,degree1::Integer,degree2::Integer)
+  quad1 = reference_cell_quadrature(trian.a,degree1)
+  quad2 = reference_cell_quadrature(trian.b,degree2)
+  lazy_append(quad1,quad2)
+end
+
+function reference_cell_quadrature(trian::AppendedTriangulation,degree::Integer)
+  reference_cell_quadrature(trian,degree,degree)
 end
 
 function CellQuadrature(trian::AppendedTriangulation,degree1::Integer,degree2::Integer)
-  quad1 = CellQuadrature(trian.a,degree1)
-  quad2 = CellQuadrature(trian.b,degree2)
-  lazy_append(quad1,quad2)
+  quad_ref = reference_cell_quadrature(trian,degree1,degree2)
+  ϕ = get_cell_map(trian)
+  ϕ(quad_ref)
 end
 
 function CellQuadrature(trian::AppendedTriangulation,degree::Integer)

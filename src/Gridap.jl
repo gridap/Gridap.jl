@@ -51,8 +51,8 @@ include("ReferenceFEs/ReferenceFEs.jl")
 
 include("CellData/CellData.jl")
 
-#include("Geometry/Geometry.jl")
-#
+include("Geometry/Geometry.jl")
+
 #include("FESpaces/FESpaces.jl")
 #
 #include("MultiField/MultiField.jl")

@@ -38,7 +38,7 @@ test_triangulation(trian)
 
 _ = collect(apply(x->norm(x[1]-x[2]),get_cell_coordinates(trian)))
 
-cell_map = get_cell_map(trian)
+ϕ = get_cell_map(trian)
 
 ncells = num_cells(trian)
 @test ncells == 3
@@ -64,7 +64,7 @@ j2 = fill(ji2,np)
 j3 = fill(ji3,np)
 j = [j1,j2,j3]
 
-test_array_of_fields(cell_map,q,x,grad=j)
+test_cell_field(ϕ,q,x,grad=j)
 
 @test is_affine(trian) == true
 @test is_first_order(trian) == true

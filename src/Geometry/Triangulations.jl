@@ -28,8 +28,8 @@ For triangulations living in a space of co-dimension 1, the following method can
 
 In some cases, concrete implementations want to override the default implementation of the following methods:
 
-- [`restrict(f::AbstractArray, trian::Triangulation)`]
 - [`get_cell_id(f::AbstractArray, trian::Triangulation)`]
+- [`get_cell_map(trian::Triangulation)`]
 
 The (mandatory) `Triangulation` interface can be tested with
 
@@ -153,13 +153,6 @@ function get_cell_id(trian::Triangulation)
 end
 
 """
-    restrict(f::AbstractArray, trian::Triangulation)
-"""
-function restrict(f::AbstractArray,trian::Triangulation)
-  f
-end
-
-"""
     get_cell_reffes(trian::Triangulation) -> Vector{<:LagrangianRefFE}
 
 It is not desirable to iterate over the resulting array
@@ -179,13 +172,20 @@ function get_cell_shapefuns(trian::Triangulation)
   type_to_reffes = get_reffes(trian)
   cell_to_type = get_cell_type(trian)
   type_to_shapefuns = map(get_shapefuns, type_to_reffes)
-  _get_cell_data(type_to_shapefuns,cell_to_type)
+  type_to_axs = map(reffe -> (Base.OneTo(num_dofs(reffe)),), type_to_reffes)
+  a = _get_cell_data(type_to_shapefuns,cell_to_type)
+  axs = _get_cell_data(type_to_axs,cell_to_type)
+  GenericCellField(a,axs,Val((:,)))
 end
 
 """
     get_cell_map(trian::Triangulation) -> Vector{<:Field}
 """
 function get_cell_map(trian::Triangulation)
+  _get_cell_map(trian)
+end
+
+function _get_cell_map(trian)
   cell_to_coords = get_cell_coordinates(trian)
   cell_to_shapefuns = get_cell_shapefuns(trian)
   lincomb(cell_to_shapefuns, cell_to_coords)
@@ -194,16 +194,15 @@ end
 """
 """
 function CellField(object,trian::Triangulation)
-  cm = get_cell_map(trian)
-  convert_to_cell_field(object,cm)
+  # object is defined in the "physical" space
+  convert_to_cell_field(object,num_cells(trian))
 end
 
 """
     get_physical_coordinate(trian::Triangulation)
 
-In contrast to get_cell_map, the returned object:
-- is a [`CellField`](@ref)
-- its gradient is the identity tensor
+In contrast to get_cell_map, the returned object is
+defined on the physical space.
 """
 function get_physical_coordinate(trian::Triangulation)
   CellField(_phys_coord,trian)
@@ -230,60 +229,30 @@ function _get_cell_data(type_to_data, cell_to_type::Fill)
 end
 
 """
-    restrict(cf::CellField,trian::Triangulation)
+    reference_cell_quadrature(trian::Triangulation, degree::Integer)
 """
-function restrict(cf::CellField,trian::Triangulation)
-  _cf = to_ref_space(cf)
-  a = get_array(_cf)
-  r = restrict(a,trian)
-  axs = reindex(get_cell_axes(cf),trian)
-  _restrict_cell_field(r,axs,MetaSizeStyle(cf),trian)
-end
-
-function _restrict_cell_field(r::AbstractArray,axs::AbstractArray,msize_style::Val,trian)
-  cm = get_cell_map(trian)
-  GenericCellField(r,cm,Val(true),axs,msize_style)
-end
-
-function _restrict_cell_field(r::SkeletonPair,axs::SkeletonPair,msize_style::Val,trian)
-  cm = get_cell_map(trian)
-  la = r.left
-  ra = r.right
-  l = GenericCellField(la,cm,Val(true),axs.left,msize_style)
-  r = GenericCellField(ra,cm,Val(true),axs.right,msize_style)
-  merge_cell_fields_at_skeleton(l,r)
-end
-
-"""
-    CellQuadrature(trian::Triangulation, degree::Integer)
-"""
-function CellQuadrature(trian::Triangulation, degree::Integer)
+function reference_cell_quadrature(trian::Triangulation, degree::Integer)
   polytopes = map(get_polytope,get_reffes(trian))
   cell_type = get_cell_type(trian)
   CellQuadrature(degree,polytopes,cell_type)
 end
 
 """
-    integrate(cell_field,trian::Triangulation,quad::CellQuadrature)
-
-The `cell_field` is aligned with the cells in `trian`
+    CellQuadrature(trian::Triangulation, degree::Integer)
 """
-function integrate(cell_field,trian::Triangulation,quad::CellQuadrature)
-  cell_map = get_cell_map(trian)
-  integrate(cell_field,cell_map,quad)
-end
-
-function CellField(value::Number,trian::Triangulation,quad::CellQuadrature)
-  CellField(value,get_cell_map(trian),quad)
+function CellQuadrature(trian::Triangulation, degree::Integer)
+  ϕ = get_cell_map(trian)
+  ref_quad = reference_cell_quadrature(trian,degree)
+  ϕ(ref_quad)
 end
 
 """
 """
 function cell_measure(trian_Ω1::Triangulation,n_bgcells::Integer)
-  trian_cut_1 = trian_Ω1
-  quad_cut_1 = CellQuadrature(trian_cut_1,0)
-  subcell1_to_dV = integrate(1,trian_cut_1,quad_cut_1)
-  subcell1_to_bgcell = get_cell_id(trian_cut_1)
+  trian_Ω1 = trian_Ω1
+  Ω1 = CellQuadrature(trian_Ω1,0)
+  subcell1_to_dV = ∫(1)*Ω1
+  subcell1_to_bgcell = get_cell_id(trian_Ω1)
   bgcell_to_dV = zeros(n_bgcells)
   _meas_K_fill!(bgcell_to_dV,subcell1_to_dV,subcell1_to_bgcell)
   bgcell_to_dV

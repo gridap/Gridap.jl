@@ -47,16 +47,15 @@ function get_cell_coordinates(trian::RestrictedTriangulation)
   reindex(get_cell_coordinates(trian.oldtrian),trian.cell_to_oldcell)
 end
 
-function restrict(f::AbstractArray,trian::RestrictedTriangulation)
-  reindex(f,trian)
-end
-
 function get_cell_id(trian::RestrictedTriangulation)
   trian.cell_to_oldcell
 end
 
 function get_cell_map(trian::RestrictedTriangulation)
   cell_map = get_cell_map(trian.oldtrian)
-  reindex(cell_map,trian.cell_to_oldcell)
+  ReindexedCellMap(cell_map,trian.cell_to_oldcell)
 end
 
+function CellField(object,trian::RestrictedTriangulation)
+  CellField(object,trian.oldtrian)
+end

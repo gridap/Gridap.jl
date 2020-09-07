@@ -40,7 +40,6 @@ import Gridap.Arrays: lazy_append
 import Gridap.CellData: CellField
 import Gridap.CellData: CellQuadrature
 import Gridap.CellData: QPointCellField
-import Gridap.CellData: get_cell_map
 
 import Gridap.Fields: field_cache
 import Gridap.Fields: evaluate_field!
@@ -119,16 +118,17 @@ export UnstructuredGridTopology
 
 export Triangulation
 export get_reffes
+export get_cell_map
 export get_cell_coordinates
 export get_cell_reffes
 export get_cell_shapefuns
 export get_normal_vector
 export test_triangulation
-export restrict
 export get_physical_coordinate
 export get_cell_id
 export cell_measure
 export get_cell_map
+export reference_cell_quadrature
 
 export Grid
 export get_cell_nodes

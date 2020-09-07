@@ -35,7 +35,7 @@ cell_to_oldcell = [2,9,7]
 trian_portion = TriangulationPortion(oldtrian,cell_to_oldcell)
 trian_portion_portion = TriangulationPortion(trian_portion,[3,1])
 @test get_cell_id(trian_portion_portion)==[7,2]
-@test restrict(v, trian_portion_portion)==[7,2]
+@test reindex(v, trian_portion_portion)==[7,2]
 
 #using Gridap.Visualization
 #writevtk(oldtrian,"oldtrian")

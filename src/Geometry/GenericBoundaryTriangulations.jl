@@ -151,7 +151,8 @@ function get_face_to_cell_map(trian::GenericBoundaryTriangulation)
   ftype_to_shapefuns = map( f, get_reffes(trian.face_trian) )
   face_to_ftype = collect(Int8, get_cell_type(trian.face_trian))
   face_to_shapefuns = CompressedArray(ftype_to_shapefuns, face_to_ftype)
-  lincomb(face_to_shapefuns,face_to_fvertex_to_qcoors)
+  array = lincomb(face_to_shapefuns,face_to_fvertex_to_qcoors)
+  GenericCellField(array)
 end
 
 struct FaceCellCoordinates{D,T,O} <: AbstractVector{Vector{Point{D,T}}}
@@ -365,10 +366,13 @@ end
 function get_normal_vector(trian::GenericBoundaryTriangulation)
   k = NormalVectorValued()
   refn = ReferenceNormal(trian)
-  cell_map = restrict(get_cell_map(trian.cell_trian),trian)
+  ϕv = get_cell_map(trian.cell_trian)
+  ϕ = get_cell_map(trian)
+  cell_map = (ϕv∘inverse_map(ϕv))∘ϕ
   J = gradient(cell_map)
-  a = apply(k,J,refn)
-  GenericCellField(a,cell_map)
+  a = apply(k,get_array(J),refn)
+  ϕ = get_cell_map(trian)
+  GenericCellField(a)∘inverse_map(ϕ)
 end
 
 struct ReferenceNormal{D,T} <: AbstractVector{Point{D,T}}

@@ -52,6 +52,20 @@ function get_cell_type(grid::GridPortion)
   reindex(get_cell_type(grid.oldgrid),grid.cell_to_oldcell)
 end
 
+function get_cell_map(trian::GridPortion)
+  cell_map = get_cell_map(trian.oldgrid)
+  ReindexedCellMap(cell_map,trian.cell_to_oldcell)
+end
+
+function get_cell_id(trian::GridPortion)
+  reindex(get_cell_id(trian.oldgrid),trian.cell_to_oldcell)
+end
+
+function CellField(object,trian::GridPortion)
+  CellField(object,trian.oldgrid)
+end
+
+
 # Helpers
 
 function _find_active_nodes(oldcell_to_oldnodes,cell_to_oldcell,noldnodes)

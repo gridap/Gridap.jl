@@ -225,11 +225,21 @@ function get_cell_id(trian::SkeletonTriangulation)
   SkeletonPair(left,right)
 end
 
-function restrict(f::AbstractArray, trian::SkeletonTriangulation)
-  left = restrict(f,trian.left)
-  right = restrict(f,trian.right)
-  SkeletonPair(left,right)
+function get_cell_map(trian::SkeletonTriangulation)
+  left = get_cell_map(trian.left)
+  right = get_cell_map(trian.right)
+  SkeletonFaceMap(left,right)
 end
+
+function CellField(object,trian::SkeletonTriangulation)
+  CellField(object,trian.left)
+end
+
+#function restrict(f::AbstractArray, trian::SkeletonTriangulation)
+#  left = restrict(f,trian.left)
+#  right = restrict(f,trian.right)
+#  SkeletonPair(left,right)
+#end
 
 # Delegating into the left side
 

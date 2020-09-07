@@ -526,11 +526,68 @@ Base.:∘(f::CellFieldFromOperation,ϕ::AppendedCellField) = _compose_cell_field
 Base.:∘(f::CellField,ϕ::AppendedCellField) = lazy_append(f∘ϕ.a,f∘ϕ.b)
 Base.:∘(f,ϕ::AppendedCellField) = lazy_append(f∘ϕ.a,f∘ϕ.b)
 
+# Other relevant types of maps
+
+struct ReindexedCellMap{F<:CellField} <: CellField
+  map::F
+  cell_map::CellField
+  ids::AbstractArray
+end
+
+function ReindexedCellMap(cell_map::CellField,ids::AbstractArray)
+  map = reindex(cell_map,ids)
+  ReindexedCellMap(map,cell_map,ids)
+end
+
+Arrays.get_array(a::ReindexedCellMap) = get_array(a.map)
+get_cell_axes(a::ReindexedCellMap) = get_cell_axes(a.map)
+get_memo(a::ReindexedCellMap) = get_memo(a.map)
+MetaSizeStyle(::Type{ReindexedCellMap{T}}) where T = MetaSizeStyle(T)
+Base.:∘(f::CellFieldFromOperation,ϕ::ReindexedCellMap) = _compose_cell_field_from_op(f,ϕ)
+
+function Base.:∘(f::CellField,ϕ::ReindexedCellMap)
+  reindex(f∘ϕ.cell_map,ϕ.ids)
+end
+
+struct FaceMap{T<:CellField} <: CellField
+  face_map::T
+  cell_map::CellField
+  face_to_cell::AbstractArray
+  refface_to_refcell_map::CellField
+end
+
+function change_face_map(a::FaceMap,face_map::CellField)
+  FaceMap(
+    face_map,
+    a.cell_map,
+    a.face_to_cell,
+    a.refface_to_refcell_map)
+end
+
+Arrays.get_array(a::FaceMap) = get_array(a.face_map)
+get_cell_axes(a::FaceMap) = get_cell_axes(a.face_map)
+get_memo(a::FaceMap) = get_memo(a.face_map)
+MetaSizeStyle(::Type{FaceMap{T}}) where T = MetaSizeStyle(T)
+Base.:∘(f::CellFieldFromOperation,ϕ::FaceMap) = _compose_cell_field_from_op(f,ϕ)
+function Base.:∘(f::CellField,ϕ::FaceMap)
+  g = reindex(f,ϕ.face_to_cell)
+  g∘ϕ.face_map
+end
+
 # Skeleton related
 
 struct SkeletonFaceMap{L<:CellField} <:CellField
   left::L
   right::CellField
+
+  function SkeletonFaceMap(left::CellField,right::CellField)
+    new{typeof(left)}(left,right)
+  end
+
+  function SkeletonFaceMap(left::FaceMap,right::FaceMap)
+    _right = change_face_map(right,left.face_map)
+    new{typeof(left)}(left,_right)
+  end
 end
 
 Arrays.get_array(a::SkeletonFaceMap) = get_array(a.left)
@@ -610,54 +667,6 @@ function merge_cell_fields_at_skeleton(cfL,cfR)
     cfSL, cfSR
   end
 end
-# Other relevant types of maps
-
-struct ReindexedCellMap{F<:CellField} <: CellField
-  map::F
-  cell_map::CellField
-  ids::AbstractArray
-end
-
-function ReindexedCellMap(cell_map::CellField,ids::AbstractArray)
-  map = reindex(cell_map,ids)
-  ReindexedCellMap(map,cell_map,ids)
-end
-
-Arrays.get_array(a::ReindexedCellMap) = get_array(a.map)
-get_cell_axes(a::ReindexedCellMap) = get_cell_axes(a.map)
-get_memo(a::ReindexedCellMap) = get_memo(a.map)
-MetaSizeStyle(::Type{ReindexedCellMap{T}}) where T = MetaSizeStyle(T)
-Base.:∘(f::CellFieldFromOperation,ϕ::ReindexedCellMap) = _compose_cell_field_from_op(f,ϕ)
-
-function Base.:∘(f::CellField,ϕ::ReindexedCellMap)
-  reindex(f∘ϕ.cell_map,ϕ.ids)
-end
-
-struct FaceMap{T<:CellField} <: CellField
-  face_map::T
-  cell_map::CellField
-  face_to_cell::AbstractArray
-  refface_to_refcell_map::CellField
-end
-
-function change_face_map(a::FaceMap,face_map::CellField)
-  FaceMap(
-    face_map,
-    a.cell_map,
-    a.face_to_cell,
-    a.refface_to_refcell_map)
-end
-
-Arrays.get_array(a::FaceMap) = get_array(a.face_map)
-get_cell_axes(a::FaceMap) = get_cell_axes(a.face_map)
-get_memo(a::FaceMap) = get_memo(a.face_map)
-MetaSizeStyle(::Type{FaceMap{T}}) where T = MetaSizeStyle(T)
-Base.:∘(f::CellFieldFromOperation,ϕ::FaceMap) = _compose_cell_field_from_op(f,ϕ)
-function Base.:∘(f::CellField,ϕ::FaceMap)
-  g = reindex(f,ϕ.face_to_cell)
-  g∘ϕ.face_map
-end
-
 
 # Optimizations associated with inverse maps (i.e., with the reference space)
 

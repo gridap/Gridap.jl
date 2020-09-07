@@ -270,7 +270,8 @@ function field_array_gradient(a::Reindexed{T,N,A}) where {T,N,A<:CartesianMap}
 end
 
 function get_cell_map(grid::CartesianGrid{D,T,typeof(identity)} where {D,T})
-  CartesianMap(grid.node_coords.data)
+  array = CartesianMap(grid.node_coords.data)
+  GenericCellField(array)
 end
 
 # Cartesian grid topology with periodic BC

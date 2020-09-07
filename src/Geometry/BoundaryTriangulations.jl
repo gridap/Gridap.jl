@@ -63,8 +63,15 @@ end
 
 # Default API
 
-function restrict(f::AbstractArray, trian::BoundaryTriangulation)
-  compose_field_arrays(reindex(f,trian), get_face_to_cell_map(trian))
+function get_cell_map(trian::BoundaryTriangulation)
+  vtrian = get_volume_triangulation(trian)
+  ϕ = get_cell_map(vtrian)
+  ϕ_Γ = _get_cell_map(trian)
+  FaceMap(ϕ_Γ,ϕ,get_face_to_cell(trian),get_face_to_cell_map(trian))
+end
+
+function CellField(object,trian::BoundaryTriangulation)
+  CellField(object,get_volume_triangulation(trian))
 end
 
 function get_cell_id(trian::BoundaryTriangulation)
@@ -116,18 +123,3 @@ function BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling,tags)
   BoundaryTriangulation(model,face_to_mask)
 end
 
-#function BoundaryTriangulation(model::DiscreteModel,names::Vector{String})
-#  labeling = get_face_labeling(model)
-#  tags = get_tags_from_names(labeling,names)
-#  BoundaryTriangulation(model,tags)
-#end
-#
-#function BoundaryTriangulation(model::DiscreteModel,tag::Union{Int,String})
-#  tags = [tag,]
-#  BoundaryTriangulation(model,tags)
-#end
-#
-#function _convert_to_face_to_masks(labeling,tags)
-#  D = num_cell_dims(model)
-#  face_to_mask = get_face_mask(labeling,tags,D-1)
-#end

@@ -190,10 +190,10 @@ test_array(r,collect(r))
 
 # lazy_append
 
-ids1 = [4,2]
+ids1 = [4,2,3]
 ϕ1 = ReindexedCellMap(ϕ,ids1)
 
-ids2 = [3,1]
+ids2 = [3,1,4,2,3]
 ϕ2 = ReindexedCellMap(ϕ,ids2)
 ϕ12 = lazy_append(ϕ1,ϕ2)
 

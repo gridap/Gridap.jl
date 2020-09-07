@@ -6,10 +6,6 @@ using Test
 
 @testset "UnstructuredGridTopologies" begin include("UnstructuredGridTopologiesTests.jl") end
 
-@testset "CellFields" begin include("CellFieldsTests.jl") end
-
-@testset "QPointCellFields" begin include("QPointCellFieldsTests.jl") end
-
 @testset "Triangulations" begin include("TriangulationsTests.jl") end
 
 @testset "Grids" begin include("GridsTests.jl") end
@@ -46,8 +42,12 @@ using Test
 
 @testset "SkeletonTriangulations" begin include("SkeletonTriangulationsTests.jl") end
 
+@testset "AppendedTriangulations" begin include("AppendedTriangulationsTests.jl") end
+
+@testset "CellFields" begin include("CellFieldsTests.jl") end
+
 @testset "CellQuadratures" begin include("CellQuadraturesTests.jl") end
 
-@testset "AppendedTriangulations" begin include("AppendedTriangulationsTests.jl") end
+@testset "QPointCellFields" begin include("QPointCellFieldsTests.jl") end
 
 end # module
