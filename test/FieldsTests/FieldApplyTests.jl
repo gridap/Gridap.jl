@@ -64,5 +64,3 @@ evaluate_field(g,x)
 evaluate_field(field_gradient(g),x)
 
 end # module
-@law L(∇u,∇du)
-end
