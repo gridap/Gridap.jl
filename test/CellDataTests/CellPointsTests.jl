@@ -1,0 +1,3 @@
+module CellPointsTests
+
+end # module

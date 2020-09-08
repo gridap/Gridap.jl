@@ -18,6 +18,8 @@ using Gridap.Integration
 using Gridap.ReferenceFEs
 using Gridap.Algebra
 
+using Gridap.Arrays: IdentityVector
+
 import Gridap.Arrays: get_array
 import Gridap.Arrays: lazy_append
 import Gridap.Fields: evaluate
@@ -32,6 +34,16 @@ import Gridap.Fields: evaluate_field_array
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
 import Gridap.Arrays: reindex
+
+export CellPoint
+export GenericCellPoint
+export get_cell_id
+export num_cell_ids
+export test_cell_point
+
+export CellMap
+export GenericCellMap
+export test_cell_map
 
 export CellField
 export get_cell_axes
@@ -53,7 +65,6 @@ export merge_cell_dofs_at_skeleton
 export merge_cell_fields_at_skeleton
 export inverse_map
 export SkeletonFaceMap
-export ReindexedCellMap
 export FaceMap
 
 export CellQuadrature
@@ -80,19 +91,23 @@ export operate
 export GridapType
 export ∫
 
+include("CellPoints.jl")
+
+include("CellMaps.jl")
+
 include("CellFields.jl")
 
 include("CellQuadratures.jl")
 
-include("QPointCellFields.jl")
-
-include("CellDofs.jl")
-
-include("AttachDirichlet.jl")
-
-include("AttachConstraints.jl")
-
-include("Law.jl")
+#include("QPointCellFields.jl")
+#
+#include("CellDofs.jl")
+#
+#include("AttachDirichlet.jl")
+#
+#include("AttachConstraints.jl")
+#
+#include("Law.jl")
 
 end # module
 

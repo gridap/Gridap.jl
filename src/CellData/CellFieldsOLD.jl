@@ -156,23 +156,18 @@ function Base.length(cf::CellField)
 end
 
 """
-    evaluate(f::CellField,x::CellPoint)
+    evaluate(f::CellField,x::AbstractArray)
 
 It is assumed that `x` is in the domain of the array of fields
 in `get_array(f)`.
 """
-function evaluate(f::CellField,x::CellPoint)
+function evaluate(f::CellField,x::AbstractArray)
   key = (:evaluate,objectid(x))
   memo = get_memo(f)
   if !haskey(memo,key)
-    memo[key] = compute_evaluate(f,x)
+    memo[key] = evaluate_field_array(get_array(f),x)
   end
   memo[key]
-end
-
-function compute_evaluate(f::CellField,x::CellPoint)
-  b = reindex(get_array(f),get_cell_id(x))
-  evaluate_field_array(b,get_array(x))
 end
 
 """
@@ -185,23 +180,22 @@ function (f::CellField)(x)
 end
 
 """
-    Base.:∘(f::CellField,ϕ::CellMap)
+    Base.:∘(f::CellField,ϕ::CellField)
 
-Composition `(f∘ϕ)(q) == f(ϕ(q)) `
+Composition of cell fields `(f∘ϕ)(q) == f(ϕ(q)) `
 """
-function Base.:∘(f::CellField,ϕ::CellMap)
+function Base.:∘(f::CellField,ϕ::CellField)
   _compose_cell_fields(f,ϕ)
 end
 
 function _compose_cell_fields(f,ϕ)
-  g = reindex(f,get_cell_id(ϕ))
-  array = compose_field_arrays(get_array(g),get_array(ϕ))
-  GenericCellField(array,get_cell_axes(g),MetaSizeStyle(g))
+  @notimplementedif length(f) != length(ϕ)
+  array = compose_field_arrays(get_array(f),get_array(ϕ))
+  GenericCellField(array,get_cell_axes(f),MetaSizeStyle(f))
 end
 
-function Base.:∘(object,ϕ::CellMap)
-  f = convert_to_cell_field(object,num_cell_ids(ϕ))
-  f∘ϕ
+function Base.:∘(object,ϕ::CellField)
+  convert_to_cell_field(object,ϕ)
 end
 
 """
@@ -213,6 +207,11 @@ function Arrays.reindex(f::CellField,a::AbstractArray)
   GenericCellField(array,cell_axes,MetaSizeStyle(f))
 end
 
+#function Arrays.reindex(object,a::AbstractArray)
+#  f = convert_to_cell_field(object,length(a))
+#  reindex(f,a)
+#end
+
 """
     gradient(cf::CellField)
 """
@@ -220,15 +219,11 @@ function gradient(cf::CellField)
   key = :gradient
   memo = get_memo(cf)
   if !haskey(memo,key)
-    memo[key] = compute_gradient(cf)
+    a = get_array(cf)
+    ag = field_array_gradient(a)
+    memo[key] = GenericCellField(ag,get_cell_axes(cf),MetaSizeStyle(cf))
   end
   memo[key]
-end
-
-function compute_gradient(cf::CellField)
-  a = get_array(cf)
-  ag = field_array_gradient(a)
-  GenericCellField(ag,get_cell_axes(cf),MetaSizeStyle(cf))
 end
 
 # Operations
@@ -275,14 +270,24 @@ MetaSizeStyle(::Type{CellFieldFromOperation{F,S}}) where {F,S} = Val{S}()
 
 for op in (:+ ,:-)
   @eval begin
-    function compute_gradient(a::CellFieldFromOperation{typeof($op)})
-      $op(map(gradient,a.args)...)
+    function gradient(a::CellFieldFromOperation{typeof($op)})
+      key = :gradient
+      memo = get_memo(a)
+      if !haskey(memo,key)
+        memo[key] = $op(map(gradient,a.args)...)
+      end
+      memo[key]
     end
   end
 end
 
-function compute_gradient(a::CellFieldFromOperation{typeof(*)})
-  _product_rule(a.args[1],a.args[2])
+function gradient(a::CellFieldFromOperation{typeof(*)})
+  key = :gradient
+  memo = get_memo(a)
+  if !haskey(memo,key)
+    memo[key] = _product_rule(a.args[1],a.args[2])
+  end
+  memo[key]
 end
 
 # TODO this is very hacky. The reason is that we cannot call `get_array(::CellFieldComposedWithInverseMap)`
@@ -336,7 +341,7 @@ function _product_rule(a,::AbstractArray{<:Number},b,::AbstractArray{<:Number})
   @notimplemented
 end
 
-function Base.:∘(f::CellFieldFromOperation,ϕ::CellMap)
+function Base.:∘(f::CellFieldFromOperation,ϕ::CellField)
   _compose_cell_field_from_op(f,ϕ)
 end
 
@@ -373,8 +378,7 @@ function operate(op,a1::CellField,args...)
 end
 
 function _operate_wrapper(op,args...)
- #if all( length(first(args)) .== map(length,args) )
- if all( length(get_cell_axes(first(args))) .== map(i->length(get_cell_axes(i)),args) )
+  if all( length(first(args)) .== map(length,args) )
    cell_axes, metasize = _compute_metadata_from_op(op,args...)
  else # TODO. This is hacky.
     # This can be fixed if f∘inverse_map(ϕ) returns an ExtendedVector
@@ -426,6 +430,29 @@ function convert_to_cell_field(f::Function,l::Integer)
   GenericCellField(Fill(ff,l))
 end
 
+function convert_to_cell_field(f,ϕ::CellField)
+  @abstractmethod
+end
+
+function convert_to_cell_field(f::CellField,ϕ::CellField)
+  f∘ϕ
+end
+
+function convert_to_cell_field(f::AbstractArray{<:Number},ϕ::CellField)
+  @assert length(f) == length(ϕ)
+  GenericCellField(f)
+end
+
+function convert_to_cell_field(f::Number,ϕ::CellField)
+  l = length(ϕ)
+  GenericCellField(Fill(f,l))
+end
+
+function convert_to_cell_field(f::Function,ϕ::CellField)
+  ff = Fields.compose(f,get_array(ϕ))
+  GenericCellField(ff)
+end
+
 # Bases-related
 
 function trialize_cell_basis(test::CellField)
@@ -475,63 +502,324 @@ function Fields.lincomb(a::CellField,b::AbstractArray)
   end
 end
 
+# Lazy append
+
+function Arrays.lazy_append(a::CellField,b::CellField)
+  AppendedCellField(a,b)
+end
+
+struct AppendedCellField{F<:CellField} <: CellField
+  a::F
+  b::CellField
+  memo::Dict
+  function AppendedCellField(a::CellField,b::CellField)
+    F = typeof(a)
+    new{F}(a,b,Dict())
+  end
+end
+
+Arrays.get_array(f::AppendedCellField) = lazy_append(get_array(f.a),get_array(f.b))
+get_cell_axes(f::AppendedCellField) = lazy_append(get_cell_axes(f.a),get_cell_axes(f.b))
+get_memo(f::AppendedCellField) = f.memo
+MetaSizeStyle(::Type{AppendedCellField{T}}) where T = MetaSizeStyle(T)
+Base.:∘(f::CellFieldFromOperation,ϕ::AppendedCellField) = _compose_cell_field_from_op(f,ϕ)
+Base.:∘(f::CellField,ϕ::AppendedCellField) = lazy_append(f∘ϕ.a,f∘ϕ.b)
+Base.:∘(f,ϕ::AppendedCellField) = lazy_append(f∘ϕ.a,f∘ϕ.b)
+
+# Other relevant types of maps
+
+struct ReindexedCellMap{F<:CellField} <: CellField
+  map::F
+  cell_map::CellField
+  ids::AbstractArray
+end
+
+function ReindexedCellMap(cell_map::CellField,ids::AbstractArray)
+  map = reindex(cell_map,ids)
+  ReindexedCellMap(map,cell_map,ids)
+end
+
+Arrays.get_array(a::ReindexedCellMap) = get_array(a.map)
+get_cell_axes(a::ReindexedCellMap) = get_cell_axes(a.map)
+get_memo(a::ReindexedCellMap) = get_memo(a.map)
+MetaSizeStyle(::Type{ReindexedCellMap{T}}) where T = MetaSizeStyle(T)
+Base.:∘(f::CellFieldFromOperation,ϕ::ReindexedCellMap) = _compose_cell_field_from_op(f,ϕ)
+
+function Base.:∘(f::CellField,ϕ::ReindexedCellMap)
+  reindex(f∘ϕ.cell_map,ϕ.ids)
+end
+
+struct FaceMap{T<:CellField} <: CellField
+  face_map::T
+  cell_map::CellField
+  face_to_cell::AbstractArray
+  refface_to_refcell_map::CellField
+end
+
+function change_face_map(a::FaceMap,face_map::CellField)
+  FaceMap(
+    face_map,
+    a.cell_map,
+    a.face_to_cell,
+    a.refface_to_refcell_map)
+end
+
+Arrays.get_array(a::FaceMap) = get_array(a.face_map)
+get_cell_axes(a::FaceMap) = get_cell_axes(a.face_map)
+get_memo(a::FaceMap) = get_memo(a.face_map)
+MetaSizeStyle(::Type{FaceMap{T}}) where T = MetaSizeStyle(T)
+Base.:∘(f::CellFieldFromOperation,ϕ::FaceMap) = _compose_cell_field_from_op(f,ϕ)
+function Base.:∘(f::CellField,ϕ::FaceMap)
+  g = reindex(f,ϕ.face_to_cell)
+  g∘ϕ.face_map
+end
+
+# Skeleton related
+
+struct SkeletonFaceMap{L<:CellField} <:CellField
+  left::L
+  right::CellField
+
+  function SkeletonFaceMap(left::CellField,right::CellField)
+    new{typeof(left)}(left,right)
+  end
+
+  function SkeletonFaceMap(left::FaceMap,right::FaceMap)
+    _right = change_face_map(right,left.face_map)
+    new{typeof(left)}(left,_right)
+  end
+end
+
+Arrays.get_array(a::SkeletonFaceMap) = get_array(a.left)
+get_cell_axes(a::SkeletonFaceMap) = get_cell_axes(a.left)
+get_memo(a::SkeletonFaceMap) = get_memo(a.left)
+MetaSizeStyle(::Type{SkeletonFaceMap{T}}) where T = MetaSizeStyle(T)
+Base.:∘(f::CellField,ϕ::SkeletonFaceMap) = f∘ϕ.left
+
+for op in (:get_inward, :get_outward)
+  @eval begin
+
+    function ($op)(a::CellField)
+      f(a) = @unreachable "You need to compose first with a SkeletonFaceMap"
+      CellFieldFromOperation(f,$op,(a,),get_cell_axes(a),MetaSizeStyle(a))
+    end
+
+    function gradient(a::CellFieldFromOperation{typeof($op)})
+      key = :gradient
+      memo = get_memo(a)
+      if !haskey(memo,key)
+        memo[key] = $op(gradient(a.args[1]))
+      end
+      memo[key]
+    end
+
+  end
+end
+
+function Base.:∘(f::CellFieldFromOperation{typeof(get_inward)},ϕ::SkeletonFaceMap)
+  left, = merge_cell_fields_at_skeleton(f.args[1]∘ϕ.left,f.args[1]∘ϕ.right)
+  left
+end
+
+function Base.:∘(f::CellFieldFromOperation{typeof(get_outward)},ϕ::SkeletonFaceMap)
+  _, right = merge_cell_fields_at_skeleton(f.args[1]∘ϕ.left,f.args[1]∘ϕ.right)
+  right
+end
+
+function Base.:∘(f::CellFieldFromOperation,ϕ::SkeletonFaceMap)
+  _compose_cell_field_from_op(f,ϕ)
+end
+
+"""
+    jump(f)
+"""
+function jump(sf)
+  sf.⁺ - sf.⁻
+end
+
+"""
+    mean(f)
+"""
+function mean(sf)
+  operate(_mean,sf.⁺,sf.⁻)
+end
+
+_mean(x,y) = 0.5*x + 0.5*y
+
+function merge_cell_dofs_at_skeleton(idsL,idsR,axesL,axesR)
+  blocks = (idsL,idsR)
+  blockids = [(1,),(2,)]
+  axs = create_array_of_blocked_axes(axesL,axesR)
+  VectorOfBlockArrayCoo(blocks,blockids,axs)
+end
+
+function merge_cell_fields_at_skeleton(cfL,cfR)
+  @assert is_basis(cfL) == is_basis(cfR)
+  if !is_basis(cfL)
+    cfL, cfR
+  else
+    ax1 = get_cell_axes(cfL)
+    ax2 = get_cell_axes(cfR)
+    arrL = insert_array_of_bases_in_block(1,get_array(cfL),ax1,ax2)
+    cfSL = GenericCellField(arrL,arrL.axes,MetaSizeStyle(cfL))
+    arrR = insert_array_of_bases_in_block(2,get_array(cfR),ax1,ax2)
+    cfSR = GenericCellField(arrR,arrR.axes,MetaSizeStyle(cfR))
+    cfSL, cfSR
+  end
+end
+
 # Optimizations associated with inverse maps (i.e., with the reference space)
+
+"""
+    inverse_map(ϕ::CellField)
+
+Return another `CellField` representing the inverse map of the given map `ϕ`.
+By defalut, it returns an instance of `InverseCellMap`, which keeps the direct cell map `ϕ` as metadata.
+"""
+inverse_map(ϕ::CellField) = InverseCellMap(ϕ)
+
+inverse_map(ϕ::AbstractArray) = @notimplemented
+
+"""
+    struct InverseCellMap <: CellField
+      direct_cell_map::CellField
+      # + private fields
+    end
+
+An inverse cell map that keeps the direct cell map as metadata.
+"""
+struct InverseCellMap <: CellField
+  direct_cell_map::CellField
+  memo::Dict
+  function InverseCellMap(direct_cell_map::CellField)
+    memo = Dict()
+    new(direct_cell_map,memo)
+  end
+end
+
+function get_inverse_cell_map(a::InverseCellMap)
+  key = :inverse_cell_map
+  memo = get_memo(a)
+  if !haskey(memo,key)
+    memo[key] = _get_inverse_map(a)
+  end
+  memo[key]
+end
+
+function _get_inverse_map(a)
+  array = inverse_map(get_array(a.direct_cell_map))
+  @notimplementedif length(array) != length(direct_cell_map)
+  GenericCellField(
+    array,get_cell_axes(a.direct_cell_map),MetaSizeStyle(a.direct_cell_map))
+end
+
+get_array(a::InverseCellMap) = get_array(get_inverse_cell_map(a))
+get_cell_axes(a::InverseCellMap) = get_cell_axes(a.direct_cell_map)
+get_memo(a::InverseCellMap) = a.memo
+MetaSizeStyle(::Type{InverseCellMap}) = Val(())
 
 function Base.:∘(f::CellField,ϕinv::InverseCellMap)
   CellFieldComposedWithInverseMap(f,ϕinv)
 end
 
+function Arrays.reindex(f::InverseCellMap,a::AbstractVector)
+  InverseCellMap(reindex(f.direct_cell_map,a),reindex(f.inverse_cell_map))
+end
+
 """
     struct CellFieldComposedWithInverseMap{T<:CellField} <: CellField
       f::T
-      ϕinv::InverseCellMap
+      map::InverseCellMap
     end
 struct representing `f∘inverse_map(ϕ)`, i.e. a `CellField` in the reference space
 pushed to the physical one.  This struct allows a number of optimizations.
-In particular, the computation of `(f∘inverse_map(ϕ))∘ϕ`, which is simply computed as`f`.
+In particular, the computation of `f∘inverse_map(ϕ)∘ϕ`, which is simply computed as`f`.
 It also computes `∇(f∘inverse_map(ϕ))` as `(∇(ϕ)\\∇(f))∘inverse_map(ϕ)` which is in turn
 stored in an instance of `CellFieldComposedWithInverseMap`.
 """
 struct CellFieldComposedWithInverseMap{T<:CellField} <: CellField
   f::T
-  ϕinv::InverseCellMap
+  map::InverseCellMap
   memo::Dict
-  function CellFieldComposedWithInverseMap(f::CellField,ϕinv::InverseCellMap)
+  function CellFieldComposedWithInverseMap(f::CellField,map::InverseCellMap)
     memo = Dict()
     T = typeof(f)
-    new{T}(f,ϕinv,memo)
+    new{T}(f,map,memo)
   end
 end
 
-Base.length(a::CellFieldComposedWithInverseMap) = length(a.ϕinv)
-
 function get_array(a::CellFieldComposedWithInverseMap)
-  get_array(a.f∘get_inverse_cell_map(a))
+  get_array(a.f∘get_inverse_cell_map(a.map))
 end
 
 function get_cell_axes(a::CellFieldComposedWithInverseMap)
-  @notimplementedif length(a.f) != length(a.ϕinv.ϕ)
+  @notimplementedif length(a.f) != length(a.map.direct_cell_map)
   get_cell_axes(a.f)
 end
 
+get_memo(a::CellFieldComposedWithInverseMap) = a.memo
 MetaSizeStyle(::Type{CellFieldComposedWithInverseMap{T}}) where T = MetaSizeStyle(T)
 
-get_memo(a::CellFieldComposedWithInverseMap) = a.memo
+function Base.:∘(f::CellFieldComposedWithInverseMap,ϕ::CellField)
+  if f.map.direct_cell_map == ϕ
+    return f.f
+  else
+    return (f.f∘get_inverse_cell_map(f.map))∘ϕ
+  end
+end
 
-function get_inverse_cell_map(a::CellFieldComposedWithInverseMap)
-  ϕinv = GenericCellMap(get_array(a.ϕinv),get_cell_id(a.ϕinv),num_cell_ids(a.ϕinv))
-  ϕinv
+function Base.:∘(f::CellFieldComposedWithInverseMap,ϕ::ReindexedCellMap)
+  if f.map.direct_cell_map == ϕ
+    return f.f
+  elseif f.map.direct_cell_map == ϕ.cell_map
+    return reindex(f.f,ϕ.ids)
+  else
+    return (f.f∘get_inverse_cell_map(f.map))∘ϕ
+  end
+end
+
+function Base.:∘(f::CellFieldComposedWithInverseMap,ϕ::FaceMap)
+  if f.map.direct_cell_map == ϕ
+    return f.f
+  elseif f.map.direct_cell_map == ϕ.cell_map
+    return _to_ref_face_space(f,ϕ)
+  else
+    return (f.f∘get_inverse_cell_map(f.map))∘ϕ
+  end
+end
+
+function Base.:∘(f::CellFieldComposedWithInverseMap,ϕ::AppendedCellField)
+  if f.map.direct_cell_map == ϕ
+    return f.f
+  else
+    return lazy_append(f∘ϕ.a,f∘ϕ.b)
+  end
+end
+
+function _to_ref_face_space(f,ϕ)
+  cell_to_f = f∘ϕ.cell_map
+  face_to_f = reindex(cell_to_f,ϕ.face_to_cell)
+  face_to_f∘ϕ.refface_to_refcell_map
 end
 
 function Arrays.reindex(f::CellFieldComposedWithInverseMap,a::AbstractVector)
-  CellFieldComposedWithInverseMap(reindex(f.f,a),reindex(f.ϕinv,a))
+  CellFieldComposedWithInverseMap(reindex(f.f,a),reindex(f.map,a))
 end
 
-function compute_gradient(f::CellFieldComposedWithInverseMap)
-  ∇ϕ = gradient(f.ϕinv.ϕ)
+function gradient(f::CellFieldComposedWithInverseMap)
+  key = :gradient
+  memo = get_memo(f)
+  if !haskey(memo,key)
+    memo[key] = _gradient(f)
+  end
+  memo[key]
+end
+
+function _gradient(f::CellFieldComposedWithInverseMap)
+  ∇ϕ = gradient(f.map.direct_cell_map)
   ∇f = gradient(f.f)
   g = _phys_grad(∇f,∇ϕ)
-  CellFieldComposedWithInverseMap(g,f.ϕinv)
+  CellFieldComposedWithInverseMap(g,f.map)
 end
 
 function _phys_grad(∇f,∇ϕ)
@@ -544,218 +832,4 @@ function Fields.lincomb(a::CellFieldComposedWithInverseMap,b::AbstractArray)
   u = lincomb(a.f,b)
   CellFieldComposedWithInverseMap(u,a.map)
 end
-
-function Base.:∘(f::CellFieldComposedWithInverseMap,ϕ::CellMap)
-  if f.ϕinv.ϕ == ϕ
-    return f.f
-  else
-    return (f.f∘get_inverse_cell_map(f))∘ϕ
-  end
-end
-
-function Base.:∘(f::CellFieldComposedWithInverseMap,ϕ::FaceMap)
-  if f.ϕinv.ϕ == ϕ
-    return f.f
-  elseif f.ϕinv.ϕ == ϕ.cell_map
-    return f.f∘ϕ.refface_to_refcell_map
-  else
-    return (f.f∘get_inverse_cell_map(f.ϕinv))∘ϕ
-  end
-end
-
-#function _to_ref_face_space(f,ϕ)
-#  cell_to_f = f∘ϕ.cell_map
-#  face_to_f = reindex(cell_to_f,ϕ.face_to_cell)
-#  face_to_f∘ϕ.refface_to_refcell_map
-#end
-
-#function Base.:∘(f::CellFieldComposedWithInverseMap,ϕ::ReindexedCellMap)
-#  if f.map.direct_cell_map == ϕ
-#    return f.f
-#  elseif f.map.direct_cell_map == ϕ.cell_map
-#    return reindex(f.f,ϕ.ids)
-#  else
-#    return (f.f∘get_inverse_cell_map(f.map))∘ϕ
-#  end
-#end
-#
-#
-#function Base.:∘(f::CellFieldComposedWithInverseMap,ϕ::AppendedCellField)
-#  if f.map.direct_cell_map == ϕ
-#    return f.f
-#  else
-#    return lazy_append(f∘ϕ.a,f∘ϕ.b)
-#  end
-#end
-#
-
-
-
-
-## Lazy append
-#
-#function Arrays.lazy_append(a::CellField,b::CellField)
-#  AppendedCellField(a,b)
-#end
-#
-#struct AppendedCellField{F<:CellField} <: CellField
-#  a::F
-#  b::CellField
-#  memo::Dict
-#  function AppendedCellField(a::CellField,b::CellField)
-#    F = typeof(a)
-#    new{F}(a,b,Dict())
-#  end
-#end
-#
-#Arrays.get_array(f::AppendedCellField) = lazy_append(get_array(f.a),get_array(f.b))
-#get_cell_axes(f::AppendedCellField) = lazy_append(get_cell_axes(f.a),get_cell_axes(f.b))
-#get_memo(f::AppendedCellField) = f.memo
-#MetaSizeStyle(::Type{AppendedCellField{T}}) where T = MetaSizeStyle(T)
-#Base.:∘(f::CellFieldFromOperation,ϕ::AppendedCellField) = _compose_cell_field_from_op(f,ϕ)
-#Base.:∘(f::CellField,ϕ::AppendedCellField) = lazy_append(f∘ϕ.a,f∘ϕ.b)
-#Base.:∘(f,ϕ::AppendedCellField) = lazy_append(f∘ϕ.a,f∘ϕ.b)
-#
-## Other relevant types of maps
-#
-#struct ReindexedCellMap{F<:CellField} <: CellField
-#  map::F
-#  cell_map::CellField
-#  ids::AbstractArray
-#end
-#
-#function ReindexedCellMap(cell_map::CellField,ids::AbstractArray)
-#  map = reindex(cell_map,ids)
-#  ReindexedCellMap(map,cell_map,ids)
-#end
-#
-#Arrays.get_array(a::ReindexedCellMap) = get_array(a.map)
-#get_cell_axes(a::ReindexedCellMap) = get_cell_axes(a.map)
-#get_memo(a::ReindexedCellMap) = get_memo(a.map)
-#MetaSizeStyle(::Type{ReindexedCellMap{T}}) where T = MetaSizeStyle(T)
-#Base.:∘(f::CellFieldFromOperation,ϕ::ReindexedCellMap) = _compose_cell_field_from_op(f,ϕ)
-#
-#function Base.:∘(f::CellField,ϕ::ReindexedCellMap)
-#  reindex(f∘ϕ.cell_map,ϕ.ids)
-#end
-#
-#struct FaceMap{T<:CellField} <: CellField
-#  face_map::T
-#  cell_map::CellField
-#  face_to_cell::AbstractArray
-#  refface_to_refcell_map::CellField
-#end
-#
-#function change_face_map(a::FaceMap,face_map::CellField)
-#  FaceMap(
-#    face_map,
-#    a.cell_map,
-#    a.face_to_cell,
-#    a.refface_to_refcell_map)
-#end
-#
-#Arrays.get_array(a::FaceMap) = get_array(a.face_map)
-#get_cell_axes(a::FaceMap) = get_cell_axes(a.face_map)
-#get_memo(a::FaceMap) = get_memo(a.face_map)
-#MetaSizeStyle(::Type{FaceMap{T}}) where T = MetaSizeStyle(T)
-#Base.:∘(f::CellFieldFromOperation,ϕ::FaceMap) = _compose_cell_field_from_op(f,ϕ)
-#function Base.:∘(f::CellField,ϕ::FaceMap)
-#  g = reindex(f,ϕ.face_to_cell)
-#  g∘ϕ.face_map
-#end
-#
-## Skeleton related
-#
-#struct SkeletonFaceMap{L<:CellField} <:CellField
-#  left::L
-#  right::CellField
-#
-#  function SkeletonFaceMap(left::CellField,right::CellField)
-#    new{typeof(left)}(left,right)
-#  end
-#
-#  function SkeletonFaceMap(left::FaceMap,right::FaceMap)
-#    _right = change_face_map(right,left.face_map)
-#    new{typeof(left)}(left,_right)
-#  end
-#end
-#
-#Arrays.get_array(a::SkeletonFaceMap) = get_array(a.left)
-#get_cell_axes(a::SkeletonFaceMap) = get_cell_axes(a.left)
-#get_memo(a::SkeletonFaceMap) = get_memo(a.left)
-#MetaSizeStyle(::Type{SkeletonFaceMap{T}}) where T = MetaSizeStyle(T)
-#Base.:∘(f::CellField,ϕ::SkeletonFaceMap) = f∘ϕ.left
-#
-#for op in (:get_inward, :get_outward)
-#  @eval begin
-#
-#    function ($op)(a::CellField)
-#      f(a) = @unreachable "You need to compose first with a SkeletonFaceMap"
-#      CellFieldFromOperation(f,$op,(a,),get_cell_axes(a),MetaSizeStyle(a))
-#    end
-#
-#    function gradient(a::CellFieldFromOperation{typeof($op)})
-#      key = :gradient
-#      memo = get_memo(a)
-#      if !haskey(memo,key)
-#        memo[key] = $op(gradient(a.args[1]))
-#      end
-#      memo[key]
-#    end
-#
-#  end
-#end
-#
-#function Base.:∘(f::CellFieldFromOperation{typeof(get_inward)},ϕ::SkeletonFaceMap)
-#  left, = merge_cell_fields_at_skeleton(f.args[1]∘ϕ.left,f.args[1]∘ϕ.right)
-#  left
-#end
-#
-#function Base.:∘(f::CellFieldFromOperation{typeof(get_outward)},ϕ::SkeletonFaceMap)
-#  _, right = merge_cell_fields_at_skeleton(f.args[1]∘ϕ.left,f.args[1]∘ϕ.right)
-#  right
-#end
-#
-#function Base.:∘(f::CellFieldFromOperation,ϕ::SkeletonFaceMap)
-#  _compose_cell_field_from_op(f,ϕ)
-#end
-#
-#"""
-#    jump(f)
-#"""
-#function jump(sf)
-#  sf.⁺ - sf.⁻
-#end
-#
-#"""
-#    mean(f)
-#"""
-#function mean(sf)
-#  operate(_mean,sf.⁺,sf.⁻)
-#end
-#
-#_mean(x,y) = 0.5*x + 0.5*y
-#
-#function merge_cell_dofs_at_skeleton(idsL,idsR,axesL,axesR)
-#  blocks = (idsL,idsR)
-#  blockids = [(1,),(2,)]
-#  axs = create_array_of_blocked_axes(axesL,axesR)
-#  VectorOfBlockArrayCoo(blocks,blockids,axs)
-#end
-#
-#function merge_cell_fields_at_skeleton(cfL,cfR)
-#  @assert is_basis(cfL) == is_basis(cfR)
-#  if !is_basis(cfL)
-#    cfL, cfR
-#  else
-#    ax1 = get_cell_axes(cfL)
-#    ax2 = get_cell_axes(cfR)
-#    arrL = insert_array_of_bases_in_block(1,get_array(cfL),ax1,ax2)
-#    cfSL = GenericCellField(arrL,arrL.axes,MetaSizeStyle(cfL))
-#    arrR = insert_array_of_bases_in_block(2,get_array(cfR),ax1,ax2)
-#    cfSR = GenericCellField(arrR,arrR.axes,MetaSizeStyle(cfR))
-#    cfSL, cfSR
-#  end
-#end
-
 
