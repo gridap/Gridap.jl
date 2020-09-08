@@ -24,24 +24,16 @@ gx = fx*w
 ∇gx = ∇fx*w
 test_field(g,x,gx,grad=∇gx)
 
-# @santiagobadia : I will consider the array of fields (or mappings?)
-# in a further step
-# l = 10
-# af = Fill(f,l)
-# ax = fill(x,l)
-# aw = fill(w,l)
-# ag = linear_combination(af,aw)
-# agx = fill(gx,l)
-# a∇gx = fill(∇gx,l)
-# test_array_of_fields(ag,ax,agx,grad=a∇gx)
-
-# l = 0
-# af = Fill(f,l)
-# ax = fill(x,l)
-# aw = fill(w,l)
-# ag = lincomb(af,aw)
-# agx = fill(gx,l)
-# a∇gx = fill(∇gx,l)
-# test_array_of_fields(ag,ax,agx,grad=a∇gx)
+l = 10
+af = Fill(f,l)
+ax = fill(x,l)
+aw = fill(w,l)
+ag = apply_function(linear_combination,af,aw)
+∇af = apply_function(gradient,af)
+∇ag = apply_function(linear_combination,∇af,aw)
+agx = fill(gx,l)
+a∇gx = fill(∇gx,l)
+test_mapped_array(ag,ax,agx)#,grad=a∇gx)
+test_mapped_array(∇ag,ax,a∇gx)#,grad=a∇gx)
 
 end #module

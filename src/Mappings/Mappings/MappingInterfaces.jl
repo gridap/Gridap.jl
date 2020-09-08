@@ -188,3 +188,8 @@ end
 # Some particular cases
 
 const NumberOrArray = Union{Number,AbstractArray}
+
+# @santiagobadia : To be decided
+function gradient(k::Mapping)
+  @notimplemented
+end

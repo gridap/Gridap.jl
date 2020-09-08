@@ -43,13 +43,13 @@ f = MockField{d}(fi)
 g = MockField{d}(gi)
 
 # @santiagobadia : I like the tuple, k ∘ (f,g)
-h = composition(k,(f,g))
+h = composition(k,f,g)
 
 hx = evaluate(k,evaluate(f,x),evaluate(g,x))
 ∇hx = evaluate(k,evaluate(∇(f),x),evaluate(∇(g),x))
 test_mapping(h,(x,),hx) #,grad=∇hx)
 
-∇h = composition(k,(∇(f),∇(g)))
+∇h = composition(k,∇(f),∇(g))
 test_mapping(∇h,(x,),∇hx)
 
 fi = 3.0
@@ -57,13 +57,13 @@ gi = VectorValue(4,5)
 d = 2
 f = MockField{d}(fi)
 g = ConstantField(gi)
-h = composition(k,(f,g))
+h = composition(k,f,g)
 
 hx = evaluate(k,evaluate(f,x),evaluate(g,x))
 ∇hx = evaluate(k,evaluate(∇(f),x),evaluate(∇(g),x))
 test_mapping(h,(x,),hx)
 
-∇h = composition(k,(∇(f),∇(g)))
+∇h = composition(k,∇(f),∇(g))
 test_mapping(∇h,(x,),∇hx)
 
 
@@ -72,8 +72,11 @@ fi = 3.0
 gi = [1,2,3,4,5]
 d = 2
 f = MockField{d}(fi)
-g = ConstantMapping(gi)
-h = composition(k,(f,g))
+g = ConstantField(gi)
+h = composition(k,f,g)
+
+evaluate(f,x)
+evaluate(g,x)
 
 # @santiagobadia : A field can be paralelised wrt array of points
 # A mapping on the contrary can take multiple arguments...
@@ -86,13 +89,8 @@ h = composition(k,(f,g))
 hx = evaluate(k,evaluate(f,x),evaluate(g,x))
 test_mapping(h,(x,),hx) #,grad=∇hx)
 
-∇h = composition(k,(∇(f),∇(g)))
+∇h = composition(k,∇(f),∇(g))
 ∇hx = evaluate(k,evaluate(∇(f),x),evaluate(∇(g),x))
-test_mapping(∇h,(x,),∇hx
-
-
-m = CompositionMapping(BroadcastMapping(+),f,f)
-evaluate(f,x)
-evaluate(m,x)
+test_mapping(∇h,(x,),∇hx)
 
 end # module

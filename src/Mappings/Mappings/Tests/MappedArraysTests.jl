@@ -128,13 +128,6 @@ xx = fill(x,5)
 r = apply_mapping(v,xx)
 @test all(r[1] .== c[1])
 
-k1 = [1,2,3,4,5]
-
-
-f(k...) = println(k)
-
-f(k1)
-
 # Test the intermediate results caching mechanism
 
 

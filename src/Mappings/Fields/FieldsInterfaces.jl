@@ -122,6 +122,10 @@ function test_field(
 
 end
 
+function test_field(f::NewField,x,v::AbstractArray,cmp=(==);grad=nothing,hessian=nothing)
+  test_field(f,(x,),v,cmp;grad=grad,hessian=hessian)
+end
+
 # Some API
 
 """

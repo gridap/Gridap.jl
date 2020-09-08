@@ -17,7 +17,6 @@ export Mapping
 
 export FunctionMapping
 export BroadcastMapping
-export CompositionMapping
 export MatVecMapping
 export ConstantMapping
 
@@ -25,7 +24,7 @@ export return_type
 export return_cache
 export evaluate!
 export evaluate
-export multievaluate
+# export multievaluate
 export test_mapping
 export return_caches
 export return_types
@@ -37,7 +36,6 @@ export apply_mapping
 export apply_mappings
 export apply_function
 export test_mapped_array
-# export apply_all
 
 export CompositionMapping
 
@@ -69,5 +67,8 @@ include("MappedArrays.jl")
 include("MappingArrays.jl")
 
 include("ConstantMappings.jl")
+
+# @santiagobadia : To be decided what to do here
+# include("MappingGradients.jl")
 
 end
