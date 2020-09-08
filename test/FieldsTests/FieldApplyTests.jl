@@ -59,10 +59,10 @@ hx = apply_kernel(k,evaluate(f,x),evaluate_field(g,x))
 ∇hx = apply_kernel(k,evaluate(∇(f),x),evaluate_field(field_gradient(g),x))
 test_field(h,x,hx,grad=∇hx)
 
-@enter apply_kernel(k,evaluate(f,x),evaluate_field(g,x))
-
 evaluate(f,x)
 evaluate_field(g,x)
 evaluate_field(field_gradient(g),x)
 
 end # module
+@law L(∇u,∇du)
+end
