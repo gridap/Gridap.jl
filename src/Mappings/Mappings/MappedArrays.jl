@@ -56,9 +56,9 @@ println(c)
 ```
 
 """
-function apply(f::Mapping,a::AbstractArray...)
+function apply_mapping(f::Mapping,a::AbstractArray...)
   s = common_size(a...)
-  apply(Fill(f,s...),a...)
+  apply_mapping(Fill(f,s...),a...)
 end
 
 """
@@ -67,9 +67,9 @@ end
 Like [`apply(f,a::AbstractArray...)`](@ref), but the user provides the element type
 of the resulting array in order to circumvent type inference.
 """
-function apply(::Type{T},f::Mapping,a::AbstractArray...) where T
+function apply_mapping(::Type{T},f::Mapping,a::AbstractArray...) where T
   s = common_size(a...)
-  apply(T,Fill(f,s...),a...)
+  apply_mapping(T,Fill(f,s...),a...)
 end
 
 """
@@ -101,7 +101,7 @@ println(c)
 [5, -1, 3, 1]
 ```
 """
-function apply(f::AbstractArray{<:Mapping},a::AbstractArray...)
+function apply_mapping(f::AbstractArray{<:Mapping},a::AbstractArray...)
   MappedArray(f,a...)
 end
 
@@ -111,8 +111,13 @@ end
 Like [`apply(f::AbstractArray,a::AbstractArray...)`](@ref), but the user provides the element type
 of the resulting array in order to circumvent type inference.
 """
-function apply(::Type{T},f::AbstractArray{<:Mapping},a::AbstractArray...) where T
+function apply_mapping(::Type{T},f::AbstractArray{<:Mapping},a::AbstractArray...) where T
   MappedArray(T,f,a...)
+end
+
+# @santiagobadia : Do we really need this?
+function apply_mappings(fs::Tuple,x::AbstractArray)
+  return Tuple([apply_mapping(f,ax) for f in fs])
 end
 
 # Helpers
@@ -252,17 +257,16 @@ end
 
 # Particular implementations for Fill
 
-# @santiagobadia : Uncomment when eliminating the one in arrays
-# function apply(f::Fill,a::Fill...)
-#   ai = _getvalues(a...)
-#   r = apply_mapping(f.value,ai...)
-#   s = common_size(f,a...)
-#   Fill(r,s)
-# end
+function apply_mapping(f::Fill,a::Fill...)
+  ai = _getvalues(a...)
+  r = evaluate(f.value,ai...)
+  s = common_size(f,a...)
+  Fill(r,s)
+end
 
-# function apply(::Type{T},f::Fill,a::Fill...) where T
-#   apply(f,a...)
-# end
+function apply_mapping(::Type{T},f::Fill,a::Fill...) where T
+  apply_mapping(f,a...)
+end
 
 function _getvalues(a::Fill,b::Fill...)
   ai = a.value
@@ -315,3 +319,54 @@ end
 # function reset_counter!(a::ArrayWithCounter)
 #   a.counter[:] .= 0
 # end
+
+"""
+    field_array_cache(a::AbstractArray,x::AbstractArray) -> Tuple
+
+    Returns the caches needed to perform the following iteration
+
+        ca, cfi, cx = field_array_cache(a,x)
+
+        for i in length(a)
+          fi = getindex!(ca,a,i)
+          xi = getindex!(cx,x,i)
+          fxi = evaluate!(cfi,fi,xi)
+        end
+    """
+    function return_mapping_array_cache(a::AbstractArray,x::AbstractArray)
+      ca = array_cache(a)
+      fi = testitem(a)
+      xi = testitem(x)
+      cfi = return_cache(fi,xi)
+      cx = array_cache(x)
+      (ca,cfi,cx)
+    end
+
+function test_mapped_array(
+  a::AbstractArray,
+  x::AbstractArray,
+  v::AbstractArray,
+  cmp::Function=(==);
+  grad = nothing)
+
+  ax = apply_mapping(a,x)
+  test_array(ax,v,cmp)
+
+  ca, cfi, cx = return_mapping_array_cache(a,x)
+  t = true
+  for i in 1:length(a)
+    fi = getindex!(ca,a,i)
+    xi = getindex!(cx,x,i)
+    fxi = evaluate!(cfi,fi,xi)
+    vi = v[i]
+    ti = cmp(fxi,vi)
+    t = t && ti
+  end
+  @test t
+
+  if grad != nothing
+    g = apply_function(gradient,a)
+    test_mapped_array(g,x,grad,cmp)
+  end
+
+end

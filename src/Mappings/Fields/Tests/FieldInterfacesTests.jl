@@ -1,9 +1,10 @@
-module FieldInterfaceTests
+module FieldInterfacesTests
 
 using Test
 using Gridap.TensorValues
 using Gridap.Mappings
 using Gridap.NewFields: MockField
+using Gridap.NewFields
 
 v = 3
 w = 4.0

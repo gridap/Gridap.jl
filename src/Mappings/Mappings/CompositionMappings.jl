@@ -17,7 +17,8 @@ associated with the underlying mapping.
 This is done by adding a new method to [`apply_mapping_gradient(k,f...)`](@ref) for each mapping type.
 """
 # @inline function composition(k::Mapping,l::NTuple{N,<:Mapping}) where N
-@inline function composition(k::Mapping,l::Tuple{Vararg{<:Mapping}})
+# @inline function composition(k::Mapping,l::Tuple{Vararg{<:Mapping}})
+@inline function composition(k::Mapping,l::Vararg{<:Mapping})
   CompositionMapping(k,l...)
 end
 

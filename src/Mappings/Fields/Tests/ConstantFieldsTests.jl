@@ -3,7 +3,6 @@ module ConstantFieldsTests
 using Gridap.TensorValues
 using Gridap.Arrays
 using Gridap.NewFields
-# using Gridap.NewFields: ConstantField
 using Gridap.Mappings
 
 for v in (3.0,VectorValue(1,2))
@@ -13,7 +12,7 @@ for v in (3.0,VectorValue(1,2))
   x = fill(xi,np)
   fx = fill(v,np)
   ∇fx = fill(zero(v[1]),np)
-  test_field(f,x,fx,grad=∇fx)
+  test_field(f,(x,),fx,grad=∇fx)
 end
 
 for v in (3.0,VectorValue(1,2))
@@ -23,7 +22,7 @@ for v in (3.0,VectorValue(1,2))
   x = fill(xi,np)
   fx = repeat(f.v',np)
   ∇fx = fill(zero(v[1]),size(fx)...)
-  test_field(f,x,fx,grad=∇fx)
+  test_field(f,(x,),fx,grad=∇fx)
 end
 
 end # module

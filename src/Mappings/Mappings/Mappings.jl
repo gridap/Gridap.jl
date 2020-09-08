@@ -25,6 +25,7 @@ export return_type
 export return_cache
 export evaluate!
 export evaluate
+export multievaluate
 export test_mapping
 export return_caches
 export return_types
@@ -32,7 +33,10 @@ export gradient
 
 export MappedArray
 
-# export apply
+export apply_mapping
+export apply_mappings
+export apply_function
+export test_mapped_array
 # export apply_all
 
 export CompositionMapping
@@ -61,6 +65,8 @@ include("CompositionMappings.jl")
 include("AlgebraMappings.jl")
 
 include("MappedArrays.jl")
+
+include("MappingArrays.jl")
 
 include("ConstantMappings.jl")
 

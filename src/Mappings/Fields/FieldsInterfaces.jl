@@ -56,9 +56,15 @@ For instance, a default implementation is available for numbers, which behave li
 """
 abstract type NewField <: Mapping end
 
-function return_type(f::NewField,x)
+function return_type(f::NewField,x::AbstractArray{<:Point})
   typeof(evaluate(f,x))
 end
+
+return_type(f::NewField,x::Point) = return_type(f,[x])
+
+evaluate!(cache,f::NewField,x::Point) = evaluate!(cache,f,[x])
+
+evaluate(f::NewField,x::Point) = evaluate(f,[x])
 
 # Testers
 
@@ -79,10 +85,12 @@ The checks are performed with the `@test` macro.
 """
 function test_field(
   f::NewField, # @santiagobadia : Duck typing here? Also at Field level?
-  x,
+  x::Tuple,
   v::AbstractArray,cmp=(==);
   grad=nothing,
   hessian=nothing)
+
+  x, = x
 
   @test isa(x,AbstractVector{<:Point})
 
@@ -109,7 +117,7 @@ function test_field(
   if grad != nothing
     g = gradient(f)
     @test g isa NewField
-    test_field(g,x,grad,cmp,grad=hessian)
+    test_field(g,(x,),grad,cmp,grad=hessian)
   end
 
 end

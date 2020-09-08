@@ -88,11 +88,11 @@ test_mapping(h,(x,),hx) #,grad=∇hx)
 
 ∇h = composition(k,(∇(f),∇(g)))
 ∇hx = evaluate(k,evaluate(∇(f),x),evaluate(∇(g),x))
-test_mapping(∇h,(x,),∇hx)
+test_mapping(∇h,(x,),∇hx
 
 
-f1(1,2,3,4)
-
-f1(x...) = x
+m = CompositionMapping(BroadcastMapping(+),f,f)
+evaluate(f,x)
+evaluate(m,x)
 
 end # module
