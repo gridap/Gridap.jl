@@ -34,7 +34,6 @@ test_array(face_to_fvertex_to_qcoors,r)
 
 s2q = get_face_to_cell_map(btrian)
 
-
 q = evaluate(s2q,s)
 r = Vector{Point{2,Float64}}[
   [(0.25,0.0),(0.75,0.0)],[(0.0,0.25),(0.0,0.75)],
@@ -46,7 +45,7 @@ test_array(q,r)
 
 q2x = reindex(get_cell_map(get_grid(model)), btrian.glue.face_to_cell)
 
-s2x = compose(q2x,s2q)
+s2x = q2x∘s2q
 
 x = evaluate(s2x,s)
 r = Vector{Point{2,Float64}}[
@@ -57,12 +56,12 @@ r = Vector{Point{2,Float64}}[
 test_array(x,r)
 
 cell_shapefuns_q = reindex(get_cell_shapefuns(get_grid(model)), btrian.glue.face_to_cell)
-cell_shapefuns_s = compose(cell_shapefuns_q,s2q) 
+cell_shapefuns_s = cell_shapefuns_q∘s2q
 @test isa(evaluate(cell_shapefuns_s,s), CellShapeFunsAtFaces)
 
 nvec = get_normal_vector(btrian)
 
-nvec_s = evaluate(nvec,s)
+nvec_s = evaluate(nvec∘get_cell_map(btrian),s)
 r = Vector{Point{2,Float64}}[
   [(0.0,-1.0),(0.0,-1.0)],[(-1.0,0.0),(-1.0,0.0)],
   [(0.0,-1.0),(0.0,-1.0)],[(1.0,-0.0),(1.0,-0.0)],

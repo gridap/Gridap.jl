@@ -23,7 +23,12 @@
 #  1 ---1--- 2 ---5--- 3
 #
 
-struct GridMock <: Grid{2,2} end
+struct GridMock <: Grid{2,2}
+  memo::Dict
+  GridMock() = new(Dict())
+end
+
+get_memo(a::GridMock) = a.memo
 
 function get_node_coordinates(::GridMock)
   Point{2,Float64}[(0,0),(1,0),(2,0),(0,1),(1,1),(2,1),(0,2),(1,2),(2,2)]

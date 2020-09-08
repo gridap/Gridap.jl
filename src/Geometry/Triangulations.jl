@@ -73,6 +73,10 @@ function get_normal_vector(trian::Triangulation)
   end
 end
 
+function CellData.get_memo(trian::Triangulation)
+  @abstractmethod
+end
+
 """
     test_triangulation(trian::Triangulation)
 """
@@ -90,6 +94,8 @@ function test_triangulation(trian::Triangulation{Dc,Dp}) where {Dc,Dp}
   ncells = num_cells(trian)
   @test ncells == length(cell_coords)
   @test ncells == length(cell_types)
+  @test isa(get_memo(trian),Dict)
+  get_cell_map(trian) === get_cell_map(trian)
 end
 
 # Some API
@@ -182,6 +188,15 @@ end
     get_cell_map(trian::Triangulation) -> Vector{<:Field}
 """
 function get_cell_map(trian::Triangulation)
+  key = :get_cell_map
+  memo = get_memo(trian)
+  if ! haskey(memo,key)
+    memo[key] = compute_cell_map(trian)
+  end
+  memo[key]
+end
+
+function compute_cell_map(trian::Triangulation)
   _get_cell_map(trian)
 end
 

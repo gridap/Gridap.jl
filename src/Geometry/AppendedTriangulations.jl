@@ -6,7 +6,13 @@ end
 struct AppendedTriangulation{Dc,Dp} <: Triangulation{Dc,Dp}
   a::Triangulation{Dc,Dp}
   b::Triangulation{Dc,Dp}
+  memo::Dict
+  function AppendedTriangulation(a::Triangulation{Dc,Dp},b::Triangulation{Dc,Dp}) where {Dc,Dp}
+    new{Dc,Dp}(a,b,Dict())
+  end
 end
+
+get_memo(a::AppendedTriangulation) = a.memo
 
 function get_cell_coordinates(trian::AppendedTriangulation)
   a = get_cell_coordinates(trian.a)
@@ -52,7 +58,7 @@ function get_cell_shapefuns(trian::AppendedTriangulation)
   lazy_append(a,b)
 end
 
-function get_cell_map(trian::AppendedTriangulation)
+function compute_cell_map(trian::AppendedTriangulation)
   a = get_cell_map(trian.a)
   b = get_cell_map(trian.b)
   lazy_append(a,b)

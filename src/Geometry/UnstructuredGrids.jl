@@ -12,6 +12,7 @@ struct UnstructuredGrid{Dc,Dp,Tp,O} <: Grid{Dc,Dp}
   cell_nodes::Table{Int,Vector{Int},Vector{Int32}}
   reffes::Vector{LagrangianRefFE{Dc}}
   cell_types::Vector{Int8}
+  memo::Dict
   @doc """
       function UnstructuredGrid(
         node_coordinates::Vector{Point{Dp,Tp}},
@@ -29,9 +30,11 @@ struct UnstructuredGrid{Dc,Dp,Tp,O} <: Grid{Dc,Dp}
     reffes::Vector{<:LagrangianRefFE{Dc}},
     cell_types::Vector,
     ::Val{B}=Val{false}()) where {Dc,Dp,Tp,Ti,B}
-    new{Dc,Dp,Tp,B}(node_coordinates,cell_nodes,reffes,cell_types)
+    new{Dc,Dp,Tp,B}(node_coordinates,cell_nodes,reffes,cell_types,Dict())
   end
 end
+
+get_memo(a::UnstructuredGrid) = a.memo
 
 """
     UnstructuredGrid(trian::Grid)

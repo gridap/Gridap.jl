@@ -23,10 +23,19 @@ function get_face_to_lface(trian::BoundaryTriangulation)
   @abstractmethod
 end
 
+function compute_face_to_cell_map(trian::BoundaryTriangulation)
+  @abstractmethod
+end
+
 """
 """
 function get_face_to_cell_map(trian::BoundaryTriangulation)
-  @abstractmethod
+  key = :get_face_to_cell_map
+  memo = get_memo(trian)
+  if ! haskey(memo,key)
+    memo[key] = compute_face_to_cell_map(trian)
+  end
+  memo[key]
 end
 
 """
@@ -57,13 +66,14 @@ function test_boundary_triangulation(trian::BoundaryTriangulation)
   @test isa(get_volume_triangulation(trian),Triangulation)
   @test isa(get_face_to_cell(trian),AbstractArray{<:Integer})
   @test isa(get_face_to_lface(trian),AbstractArray{<:Integer})
-  @test isa(get_face_to_cell_map(trian),AbstractArray{<:Field})
+  @test isa(get_face_to_cell_map(trian),CellField)
   @test isa(get_normal_vector(trian),CellField)
+  @test get_face_to_cell_map(trian) === get_face_to_cell_map(trian)
 end
 
 # Default API
 
-function get_cell_map(trian::BoundaryTriangulation)
+function compute_cell_map(trian::BoundaryTriangulation)
   vtrian = get_volume_triangulation(trian)
   ϕ = get_cell_map(vtrian)
   ϕ_Γ = _get_cell_map(trian)

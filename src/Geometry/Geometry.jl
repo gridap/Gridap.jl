@@ -40,6 +40,7 @@ import Gridap.Arrays: lazy_append
 import Gridap.CellData: CellField
 import Gridap.CellData: CellQuadrature
 import Gridap.CellData: QPointCellField
+import Gridap.CellData: get_memo
 
 import Gridap.Fields: field_cache
 import Gridap.Fields: evaluate_field!

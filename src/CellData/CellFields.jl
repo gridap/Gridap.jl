@@ -764,7 +764,7 @@ function Base.:∘(f::CellFieldComposedWithInverseMap,ϕ::CellField)
   if f.map.direct_cell_map == ϕ
     return f.f
   else
-    return (f.f∘get_inverse_map(f.map))∘ϕ
+    return (f.f∘get_inverse_cell_map(f.map))∘ϕ
   end
 end
 
@@ -774,7 +774,7 @@ function Base.:∘(f::CellFieldComposedWithInverseMap,ϕ::ReindexedCellMap)
   elseif f.map.direct_cell_map == ϕ.cell_map
     return reindex(f.f,ϕ.ids)
   else
-    return (f.f∘get_inverse_map(f.map))∘ϕ
+    return (f.f∘get_inverse_cell_map(f.map))∘ϕ
   end
 end
 
@@ -784,7 +784,7 @@ function Base.:∘(f::CellFieldComposedWithInverseMap,ϕ::FaceMap)
   elseif f.map.direct_cell_map == ϕ.cell_map
     return _to_ref_face_space(f,ϕ)
   else
-    return (f.f∘get_inverse_map(f.map))∘ϕ
+    return (f.f∘get_inverse_cell_map(f.map))∘ϕ
   end
 end
 

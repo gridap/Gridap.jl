@@ -15,6 +15,9 @@ test_triangulation(trian)
 
 oldbtrian = BoundaryTriangulation(oldmodel)
 
+nold = get_normal_vector(oldbtrian)
+ϕold = get_cell_map(oldbtrian)
+
 bface_to_oldbface = collect(1:32)
 btrian = TriangulationPortion(oldbtrian,bface_to_oldbface)
 test_triangulation(btrian)

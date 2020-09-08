@@ -9,6 +9,7 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Geometry
 using Gridap.ReferenceFEs
+using Gridap.CellData
 
 domain = (0,1)
 partition = (1,)
@@ -84,7 +85,7 @@ r = Vector{Point{2,Float64}}[[(0.25, 0.25)], [(0.75, 0.25)], [(0.25, 0.75)], [(0
 ∇r = Vector{TensorValue{2,2,Float64,4}}[
   [(0.5, 0.0, 0.0, 0.5)], [(0.5, 0.0, 0.0, 0.5)],
   [(0.5, 0.0, 0.0, 0.5)], [(0.5, 0.0, 0.0, 0.5)]]
-test_array_of_fields(map,ax,r,grad=∇r)
+test_cell_field(map,ax,r,grad=∇r)
 @test isa(evaluate(∇(map),ax),Fill)
 
 # Extract grid topology

@@ -11,6 +11,7 @@ struct GridPortion{Dc,Dp,G} <: Grid{Dc,Dp}
   cell_to_oldcell::Vector{Int}
   node_to_oldnode::Vector{Int}
   cell_to_nodes::Table{Int,Vector{Int},Vector{Int32}}
+  memo::Dict
   @doc """
       GridPortion(oldgrid::Grid{Dc,Dp},cell_to_oldcell::Vector{Int}) where {Dc,Dp}
   """
@@ -23,9 +24,11 @@ struct GridPortion{Dc,Dp,G} <: Grid{Dc,Dp}
     node_to_oldnode, oldnode_to_node = _find_active_nodes(oldcell_to_oldnodes,cell_to_oldcell,noldnodes)
     cell_to_nodes = _renumber_cell_nodes(oldcell_to_oldnodes,oldnode_to_node,cell_to_oldcell)
 
-    new{Dc,Dp,typeof(oldgrid)}(oldgrid,cell_to_oldcell,node_to_oldnode,cell_to_nodes)
+    new{Dc,Dp,typeof(oldgrid)}(oldgrid,cell_to_oldcell,node_to_oldnode,cell_to_nodes,Dict())
   end
 end
+
+get_memo(a::GridPortion) = a.memo
 
 function OrientationStyle(::Type{GridPortion{Dc,Dp,G}}) where {Dc,Dp,G}
   OrientationStyle(G)
@@ -52,7 +55,7 @@ function get_cell_type(grid::GridPortion)
   reindex(get_cell_type(grid.oldgrid),grid.cell_to_oldcell)
 end
 
-function get_cell_map(trian::GridPortion)
+function compute_cell_map(trian::GridPortion)
   cell_map = get_cell_map(trian.oldgrid)
   ReindexedCellMap(cell_map,trian.cell_to_oldcell)
 end

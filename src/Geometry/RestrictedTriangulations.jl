@@ -6,6 +6,7 @@ struct RestrictedTriangulation{Dc,Dp,G} <: Triangulation{Dc,Dp}
   cell_to_oldcell::Vector{Int}
   oldcell_to_cell::Vector{Int}
   void_to_oldcell::Vector{Int}
+  memo::Dict
 
   function RestrictedTriangulation(
     oldtrian::Triangulation{Dc,Dp},
@@ -14,10 +15,12 @@ struct RestrictedTriangulation{Dc,Dp,G} <: Triangulation{Dc,Dp}
     void_to_oldcell::Vector{Int}) where {Dc,Dp}
 
     new{Dc,Dp,typeof(oldtrian)}(
-      oldtrian,cell_to_oldcell,oldcell_to_cell,void_to_oldcell)
+      oldtrian,cell_to_oldcell,oldcell_to_cell,void_to_oldcell,Dict())
   end
 
 end
+
+get_memo(a::RestrictedTriangulation) = a.memo
 
 function RestrictedTriangulation(
   oldtrian::Triangulation{Dc,Dp},cell_to_oldcell::Vector{Int}) where {Dc,Dp}
@@ -51,7 +54,7 @@ function get_cell_id(trian::RestrictedTriangulation)
   trian.cell_to_oldcell
 end
 
-function get_cell_map(trian::RestrictedTriangulation)
+function compute_cell_map(trian::RestrictedTriangulation)
   cell_map = get_cell_map(trian.oldtrian)
   ReindexedCellMap(cell_map,trian.cell_to_oldcell)
 end

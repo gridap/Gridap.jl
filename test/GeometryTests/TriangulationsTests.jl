@@ -14,8 +14,14 @@ using Gridap.CellData
 import Gridap.Geometry: get_cell_type
 import Gridap.Geometry: get_reffes
 import Gridap.Geometry: get_cell_coordinates
+import Gridap.Geometry: get_memo
 
-struct MockTriangulation <: Triangulation{2,2} end
+struct MockTriangulation <: Triangulation{2,2}
+  memo::Dict
+  MockTriangulation() = new(Dict())
+end
+
+get_memo(a::MockTriangulation) = a.memo
 
 function get_cell_coordinates(::MockTriangulation)
   c1 = Point{2,Float64}[(0,0), (2,0), (0,2)]

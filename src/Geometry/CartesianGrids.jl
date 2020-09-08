@@ -180,6 +180,7 @@ struct CartesianGrid{D,T,F} <: Grid{D,D}
   node_coords::CartesianCoordinates{D,T,F}
   cell_nodes::CartesianCellNodes{D}
   cell_type::Fill{Int8,1,Tuple{Base.OneTo{Int}}}
+  memo::Dict
   @doc """
       CartesianGrid(desc::CartesianDescriptor)
   """
@@ -187,9 +188,11 @@ struct CartesianGrid{D,T,F} <: Grid{D,D}
     node_coords = CartesianCoordinates(desc)
     cell_nodes = CartesianCellNodes(desc.partition)
     cell_type = Fill(Int8(1),length(cell_nodes))
-    new{D,T,F}(node_coords,cell_nodes,cell_type)
+    new{D,T,F}(node_coords,cell_nodes,cell_type,Dict())
   end
 end
+
+get_memo(a::CartesianGrid) = a.memo
 
 OrientationStyle(::Type{<:CartesianGrid}) = Val{true}()
 
@@ -269,7 +272,7 @@ function field_array_gradient(a::Reindexed{T,N,A}) where {T,N,A<:CartesianMap}
   reindex(g,a.j_to_i)
 end
 
-function get_cell_map(grid::CartesianGrid{D,T,typeof(identity)} where {D,T})
+function compute_cell_map(grid::CartesianGrid{D,T,typeof(identity)} where {D,T})
   array = CartesianMap(grid.node_coords.data)
   GenericCellField(array)
 end

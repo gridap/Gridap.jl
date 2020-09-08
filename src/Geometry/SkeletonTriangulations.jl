@@ -10,13 +10,16 @@ The inner constructor enforces `B<:BoundaryTriangulation`
 struct SkeletonTriangulation{Dc,Dp,B} <: Triangulation{Dc,Dp}
   left::B
   right::B
+  memo::Dict
   function SkeletonTriangulation(left::B,right::B) where B<:Triangulation
     Dc = num_cell_dims(left)
     Dp = num_point_dims(left)
     @assert Dc + 1 == Dp
-    new{Dc,Dp,B}(left,right)
+    new{Dc,Dp,B}(left,right,Dict())
   end
 end
+
+get_memo(a::SkeletonTriangulation) = a.memo
 
 """
     SkeletonTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
@@ -225,7 +228,7 @@ function get_cell_id(trian::SkeletonTriangulation)
   SkeletonPair(left,right)
 end
 
-function get_cell_map(trian::SkeletonTriangulation)
+function compute_cell_map(trian::SkeletonTriangulation)
   left = get_cell_map(trian.left)
   right = get_cell_map(trian.right)
   SkeletonFaceMap(left,right)

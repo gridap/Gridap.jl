@@ -22,6 +22,7 @@ struct GenericBoundaryTriangulation{Dc,Dp,Gf,Gc,O,A} <: BoundaryTriangulation{Dc
   cell_trian::Gc
   glue::FaceToCellGlue{O}
   cell_around::A
+  memo::Dict
 
   function GenericBoundaryTriangulation(
     face_trian::Triangulation,
@@ -34,10 +35,12 @@ struct GenericBoundaryTriangulation{Dc,Dp,Gf,Gc,O,A} <: BoundaryTriangulation{Dc
     Gf = typeof(face_trian)
     Gc = typeof(cell_trian)
     A = typeof(cell_around)
-    new{Dc,Dp,Gf,Gc,O,A}(face_trian, cell_trian, glue, cell_around)
+    new{Dc,Dp,Gf,Gc,O,A}(face_trian, cell_trian, glue, cell_around, Dict())
   end
 
 end
+
+get_memo(a::GenericBoundaryTriangulation) = a.memo
 
 function GenericBoundaryTriangulation(
   face_trian::Triangulation,
@@ -145,7 +148,7 @@ end
 
 # Cell to face map
 
-function get_face_to_cell_map(trian::GenericBoundaryTriangulation)
+function compute_face_to_cell_map(trian::GenericBoundaryTriangulation)
   face_to_fvertex_to_qcoors = FaceCellCoordinates(trian)
   f = (p)-> get_shapefuns(LagrangianRefFE(Float64,get_polytope(p),1))
   ftype_to_shapefuns = map( f, get_reffes(trian.face_trian) )
@@ -368,8 +371,7 @@ function get_normal_vector(trian::GenericBoundaryTriangulation)
   refn = ReferenceNormal(trian)
   ϕv = get_cell_map(trian.cell_trian)
   ϕ = get_cell_map(trian)
-  cell_map = (ϕv∘inverse_map(ϕv))∘ϕ
-  J = gradient(cell_map)
+  J = (∇(ϕv)∘inverse_map(ϕv))∘ϕ
   a = apply(k,get_array(J),refn)
   ϕ = get_cell_map(trian)
   GenericCellField(a)∘inverse_map(ϕ)

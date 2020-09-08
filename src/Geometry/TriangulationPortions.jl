@@ -16,12 +16,15 @@ end
 struct TriangulationPortion{Dc,Dp,G} <: Triangulation{Dc,Dp}
   oldtrian::G
   cell_to_oldcell::Vector{Int}
+  memo::Dict
   @doc """
   """
   function TriangulationPortion(oldtrian::Triangulation{Dc,Dp},cell_to_oldcell::Vector{Int}) where {Dc,Dp}
-    new{Dc,Dp,typeof(oldtrian)}(oldtrian,cell_to_oldcell)
+    new{Dc,Dp,typeof(oldtrian)}(oldtrian,cell_to_oldcell,Dict())
   end
 end
+
+get_memo(a::TriangulationPortion) = a.memo
 
 function get_reffes(trian::TriangulationPortion)
   get_reffes(trian.oldtrian)
@@ -35,7 +38,7 @@ function get_cell_coordinates(trian::TriangulationPortion)
   reindex(get_cell_coordinates(trian.oldtrian),trian.cell_to_oldcell)
 end
 
-function get_cell_map(trian::TriangulationPortion)
+function compute_cell_map(trian::TriangulationPortion)
   cell_map = get_cell_map(trian.oldtrian)
   ReindexedCellMap(cell_map,trian.cell_to_oldcell)
 end
