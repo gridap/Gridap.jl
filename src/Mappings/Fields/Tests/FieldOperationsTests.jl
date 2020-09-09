@@ -81,7 +81,7 @@ test_basis_2_array = fill(test_basis_2,l)
 ∇test_basis_2_array = fill(gradient(test_basis_2),l)
 
 op = Fill(BroadcastMapping(*),l)
-bl = apply_function(composition,op,test_basis_array,fl)
+bl = apply_mapping(composition,op,test_basis_array,fl)
 test_mapped_array(bl,xl,fill(fill(z*v,np,ndofs),l))
 
 # @santiagobadia :  Not sure what to check with the Nothing

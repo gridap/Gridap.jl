@@ -116,9 +116,9 @@ agx = fill(r,l)
 test_mapped_array(ag,ax,agx)#,grad=a∇gx)
 
 a∇gx = fill(∇r,l)
-∇af = apply_function(gradient,af)
-∇aw = apply_function(gradient,aw)
-∇ag = apply_function(composition,s,∇af,∇aw)
+∇af = apply_mapping(gradient,af)
+∇aw = apply_mapping(gradient,aw)
+∇ag = apply_mapping(composition,s,∇af,∇aw)
 test_mapped_array(∇ag,ax,a∇gx)
 
 # lazy_append
