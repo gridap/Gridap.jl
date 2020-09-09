@@ -13,10 +13,10 @@ model = CartesianDiscreteModel(domain,partition)
 trian = Triangulation(model)
 degree = 4
 quad = CellQuadrature(trian,degree)
-q = get_coordinates(quad)
+x = get_coordinates(quad)
 
-r = CellField(0.0,trian,quad)
-r_q = evaluate(r,q)
-test_cell_field(r,q,r_q)
+r = CellField(0.0,quad)
+r_x = evaluate(r,x)
+test_cell_field(r,x,r_x)
 
 end # module

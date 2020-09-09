@@ -30,9 +30,9 @@ test_quadrature(quad)
 trian = GridMock()
 
 degree = 3
-quad = CellQuadrature(trian,degree)
+quad = reference_cell_quadrature(trian,degree)
 q = get_coordinates(quad)
-@test isa(q,CompressedArray)
+@test isa(get_array(q),CompressedArray)
 w = get_weights(quad)
 @test isa(w,CompressedArray)
 
@@ -46,21 +46,23 @@ x = evaluate(q2x,q)
 domain = (0,1,0,1)
 partition = (2,3)
 trian = CartesianGrid(domain,partition)
-quad = CellQuadrature(trian,degree)
+quad = reference_cell_quadrature(trian,degree)
 q = get_coordinates(quad)
-@test isa(q,Fill) || isa(q,CompressedArray)
+@test isa(get_array(q),Fill) || isa(get_array(q),CompressedArray)
 w = get_weights(quad)
 @test isa(w,Fill) || isa(w,CompressedArray)
 
-vol = sum(integrate(1,trian,quad))
+dΩ = CellQuadrature(trian,degree)
+
+vol = sum(∫(1)*dΩ)
 @test vol ≈ 1
 
 domain = (0,2,0,2,0,2)
 partition = (2,3,2)
 trian = CartesianGrid(domain,partition)
-quad = CellQuadrature(trian,degree)
+dΩ = CellQuadrature(trian,degree)
 
-vol = sum(integrate(1,trian,quad))
+vol = sum(∫(1)*dΩ)
 @test vol ≈ 2^3
 
 @test isa(get_array(quad),AbstractArray{<:Quadrature})
