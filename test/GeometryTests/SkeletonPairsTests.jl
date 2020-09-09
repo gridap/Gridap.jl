@@ -13,10 +13,9 @@ model = CartesianDiscreteModel(domain,partition)
 trian_Γ = SkeletonTriangulation(model)
 trian = get_volume_triangulation(trian_Γ)
 
-fun(x) = sin(pi*x[1])*cos(pi*x[2])
-q2x = get_cell_map(trian)
-funq = compose(fun,q2x)
-fun_Γ = restrict(funq,trian_Γ)
-@test isa(fun_Γ,SkeletonPair)
+a = rand(num_cells(trian))
+a_Γ = reindex(a,trian_Γ)
+@test isa(a_Γ,SkeletonPair)
+
 
 end # module

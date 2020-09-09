@@ -1,6 +1,6 @@
 module CartesianDiscreteModelsTests
 
-using Gridap
+using Gridap.Arrays
 using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry
@@ -23,7 +23,7 @@ labels = get_face_labeling(model)
 @test num_entities(labels) == 27
 
 map = get_cell_map(get_grid(model))
-@test isa(map,CartesianMap)
+@test isa(get_array(map),CartesianMap)
 
 desc = get_cartesian_descriptor(model)
 

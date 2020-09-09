@@ -155,7 +155,7 @@ function evaluate(ϕ::CellMap,quad::CellQuadrature)
   q = get_coordinates(quad)
   wq = get_weights(quad)
   x = ϕ(q)
-  wx = MappedCellValues( apply(bcast(*),wq, det(∇(ϕ))(q)), wq, ϕ)
+  wx = MappedCellValues( apply(bcast(*),wq, meas(∇(ϕ))(q)), wq, ϕ)
   CellQuadrature(x,wx)
 end
 

@@ -43,7 +43,8 @@ r = Vector{Point{2,Float64}}[
 test_array(q,r)
 @test isa(q,FaceToCellMapValue)
 
-q2x = reindex(get_cell_map(get_grid(model)), btrian.glue.face_to_cell)
+#q2x = reindex(get_cell_map(get_grid(model)), btrian.glue.face_to_cell)
+q2x = get_cell_map(get_grid(model))
 
 s2x = q2x∘s2q
 

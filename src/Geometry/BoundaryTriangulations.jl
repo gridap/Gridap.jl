@@ -66,7 +66,7 @@ function test_boundary_triangulation(trian::BoundaryTriangulation)
   @test isa(get_volume_triangulation(trian),Triangulation)
   @test isa(get_face_to_cell(trian),AbstractArray{<:Integer})
   @test isa(get_face_to_lface(trian),AbstractArray{<:Integer})
-  @test isa(get_face_to_cell_map(trian),CellField)
+  @test isa(get_face_to_cell_map(trian),CellMap)
   @test isa(get_normal_vector(trian),CellField)
   @test get_face_to_cell_map(trian) === get_face_to_cell_map(trian)
 end
@@ -76,12 +76,9 @@ end
 function compute_cell_map(trian::BoundaryTriangulation)
   vtrian = get_volume_triangulation(trian)
   ϕ = get_cell_map(vtrian)
-  ϕ_Γ = _get_cell_map(trian)
-  FaceMap(ϕ_Γ,ϕ,get_face_to_cell(trian),get_face_to_cell_map(trian))
-end
-
-function CellField(object,trian::BoundaryTriangulation)
-  CellField(object,get_volume_triangulation(trian))
+  array = get_array(get_cell_map(trian.face_trian))
+  ϕ_Γ = GenericCellMap(array,get_face_to_cell(trian),num_cells(vtrian))
+  FaceMap(ϕ_Γ,ϕ,get_face_to_cell_map(trian))
 end
 
 function get_cell_id(trian::BoundaryTriangulation)

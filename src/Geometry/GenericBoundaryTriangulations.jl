@@ -155,7 +155,7 @@ function compute_face_to_cell_map(trian::GenericBoundaryTriangulation)
   face_to_ftype = collect(Int8, get_cell_type(trian.face_trian))
   face_to_shapefuns = CompressedArray(ftype_to_shapefuns, face_to_ftype)
   array = lincomb(face_to_shapefuns,face_to_fvertex_to_qcoors)
-  GenericCellField(array)
+  GenericCellMap(array,get_face_to_cell(trian),num_cells(trian.cell_trian))
 end
 
 struct FaceCellCoordinates{D,T,O} <: AbstractVector{Vector{Point{D,T}}}

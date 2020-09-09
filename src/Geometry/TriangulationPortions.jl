@@ -47,10 +47,6 @@ function get_cell_id(trian::TriangulationPortion)
   reindex(get_cell_id(trian.oldtrian),trian.cell_to_oldcell)
 end
 
-function CellField(object,trian::TriangulationPortion)
-  CellField(object,trian.oldtrian)
-end
-
 function get_normal_vector(trian::TriangulationPortion)
   nold = get_normal_vector(trian.oldtrian)
   ϕold = get_cell_map(trian.oldtrian)

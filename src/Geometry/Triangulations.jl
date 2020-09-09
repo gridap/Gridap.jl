@@ -203,14 +203,16 @@ end
 function _get_cell_map(trian)
   cell_to_coords = get_cell_coordinates(trian)
   cell_to_shapefuns = get_cell_shapefuns(trian)
-  lincomb(cell_to_shapefuns, cell_to_coords)
+  cf = lincomb(cell_to_shapefuns, cell_to_coords)
+  GenericCellMap(get_array(cf))
 end
 
 """
 """
 function CellField(object,trian::Triangulation)
   # object is defined in the "physical" space
-  convert_to_cell_field(object,num_cells(trian))
+  cm = get_cell_map(trian)
+  convert_to_cell_field(object,num_cell_ids(cm))
 end
 
 """

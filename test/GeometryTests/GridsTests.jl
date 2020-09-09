@@ -37,7 +37,7 @@ x4 = fill(x4i,np1)
 x5 = fill(x5i,np1)
 x = [x1,x2,x3,x4,x5]
 
-test_cell_field(cell_map,q,x)
+test_cell_map(cell_map,q,x)
 
 # from LagrangianRefFE
 

@@ -70,7 +70,7 @@ j2 = fill(ji2,np)
 j3 = fill(ji3,np)
 j = [j1,j2,j3]
 
-test_cell_field(ϕ,q,x,grad=j)
+test_cell_map(ϕ,q,x,grad=j)
 
 @test is_affine(trian) == true
 @test is_first_order(trian) == true

@@ -274,7 +274,7 @@ end
 
 function compute_cell_map(grid::CartesianGrid{D,T,typeof(identity)} where {D,T})
   array = CartesianMap(grid.node_coords.data)
-  GenericCellField(array)
+  GenericCellMap(array)
 end
 
 # Cartesian grid topology with periodic BC

@@ -34,7 +34,6 @@ r = Vector{Point{2,Float64}}[
   [(2.5,4.0),(3.5,4.0)],[(4.0,2.5),(4.0,3.5)]]
 test_array(x,r)
 
-
 nvec = get_normal_vector(btrian)
 nvec_x = evaluate(nvec∘_s2x,s)
 

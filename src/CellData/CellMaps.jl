@@ -39,6 +39,20 @@ function test_cell_map(ϕ::CellMap)
   @test isa(num_cell_ids(ϕ),Int)
 end
 
+function test_cell_map(ϕ::CellMap,x::CellPoint,b::AbstractArray,pred=(==);grad=nothing)
+  test_cell_map(ϕ)
+  cf = GenericCellField(get_array(ϕ))
+  test_cell_field(cf,x,b,pred;grad=grad)
+end
+
+function test_cell_map(ϕ::CellMap,x::AbstractArray,b::AbstractArray,pred=(==);grad=nothing)
+  test_cell_map(ϕ,GenericCellPoint(x),b,pred;grad=grad)
+end
+
+function test_cell_field(ϕ::CellMap,x,b::AbstractArray,pred=(==);grad=nothing)
+  test_cell_map(ϕ,x,b,pred;grad=grad)
+end
+
 """
 """
 struct GenericCellMap <: CellMap
@@ -72,7 +86,7 @@ Base.length(ϕ::CellMap) = length(get_array(ϕ))
 """
     evaluate(f::CellMap,x::CellPoint)
 """
-function evaluate(f::CellMap,x::CellPoint)
+function evaluate(f::CellMap,x)
   key = (:evaluate,objectid(x))
   memo = get_memo(f)
   if !haskey(memo,key)
@@ -88,6 +102,11 @@ function compute_evaluate(ϕ::CellMap,q::CellPoint)
   cell_ids = reindex(ϕids,qids)
   x = GenericCellPoint(array,cell_ids,num_cell_ids(ϕ))
   MappedCellPoint(x,ϕ,q)
+end
+
+function compute_evaluate(ϕ::CellMap,q::AbstractArray)
+  x = compute_evaluate(ϕ,GenericCellPoint(q))
+  get_array(x)
 end
 
 """

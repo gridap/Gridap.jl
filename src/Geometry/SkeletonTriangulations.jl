@@ -234,10 +234,6 @@ function compute_cell_map(trian::SkeletonTriangulation)
   SkeletonFaceMap(left,right)
 end
 
-function CellField(object,trian::SkeletonTriangulation)
-  CellField(object,trian.left)
-end
-
 #function restrict(f::AbstractArray, trian::SkeletonTriangulation)
 #  left = restrict(f,trian.left)
 #  right = restrict(f,trian.right)

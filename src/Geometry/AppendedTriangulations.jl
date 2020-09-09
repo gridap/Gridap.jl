@@ -42,10 +42,6 @@ function get_cell_id(trian::AppendedTriangulation)
   lazy_append(a,b)
 end
 
-function CellField(object,trian::AppendedTriangulation)
-  CellField(object,trian.a)
-end
-
 function get_cell_reffes(trian::AppendedTriangulation)
   a = get_cell_reffes(trian.a)
   b = get_cell_reffes(trian.b)

@@ -1,5 +1,6 @@
 module TriangulationPortionsTests
 
+using Gridap.Arrays
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Test
@@ -23,7 +24,8 @@ btrian = TriangulationPortion(oldbtrian,bface_to_oldbface)
 test_triangulation(btrian)
 
 nb = get_normal_vector(btrian)
-@test length(nb) == num_cells(btrian)
+#@test length(nb) == num_cells(btrian)
+@test length(nb) == num_cells(oldtrian)
 
 sface_to_oldsface = collect(10:45)
 oldstrian = SkeletonTriangulation(oldmodel)
@@ -31,7 +33,8 @@ strian = TriangulationPortion(oldstrian,sface_to_oldsface)
 test_triangulation(strian)
 
 ns = get_normal_vector(strian)
-@test length(ns) == num_cells(strian)
+#@test length(ns) == num_cells(strian)
+@test length(ns) == num_cells(oldtrian)
 
 v = [i for i=1:num_cells(trian)]
 cell_to_oldcell = [2,9,7]

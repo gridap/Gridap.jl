@@ -489,6 +489,11 @@ function Base.:∘(f::CellField,ϕinv::InverseCellMap)
   CellFieldComposedWithInverseMap(f,ϕinv)
 end
 
+function Base.:∘(f::CellMap,ϕinv::InverseCellMap)
+  g = GenericCellField(get_array(f))
+  g∘ϕinv
+end
+
 """
     struct CellFieldComposedWithInverseMap{T<:CellField} <: CellField
       f::T

@@ -59,6 +59,3 @@ function compute_cell_map(trian::RestrictedTriangulation)
   ReindexedCellMap(cell_map,trian.cell_to_oldcell)
 end
 
-function CellField(object,trian::RestrictedTriangulation)
-  CellField(object,trian.oldtrian)
-end
