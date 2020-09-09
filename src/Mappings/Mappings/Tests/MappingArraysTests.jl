@@ -17,18 +17,18 @@ p3 = Point(4,3)
 p4 = Point(6,1)
 x = [p1,p2,p3,p4]
 
-a = FunctionMapping(x -> x[1]^2)
-b = FunctionMapping(x -> sqrt(x[1]))
-h = composition(a,b)
-evaluate(h,x[1])
+# a = FunctionMapping(x -> x[1]^2)
+# b = FunctionMapping(x -> sqrt(x[1]))
+# h = composition(a,b)
+# evaluate(h,x[1])
 
 fa(x) = x[1]^2
 fb(x) = sqrt(x[1])
 fh = composition(fa,fb)
-@test evaluate(fh,x[1]) == evaluate(h,x[1])
+@test evaluate(fh,x[1]) ≈ x[1][1]
 
-aa = Fill(a,4)
-bb = Fill(b,4)
+aa = Fill(fa,4)
+bb = Fill(fb,4)
 cm = apply_mapping(composition,aa,bb)
 r = apply_mapping(cm,x)
 @test all([ r[i] .≈ x[i][1] for i in 1:4])

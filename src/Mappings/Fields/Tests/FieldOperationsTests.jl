@@ -122,7 +122,7 @@ bl = [rand(np) for k in 1:l]
 cl = [rand(np,ndofs) for k in 1:l]
 
 f(a,b) = 2*a-b*a
-af = fill(FunctionMapping(f),l)
+# af = fill(FunctionMapping(f),l)
 # dl = apply_mapping(af,bl,bl)
 # @santiagobadia : Errors in the algebraic operations
 # test_array(dl,map((a,b)->f.(a,b),bl,bl))

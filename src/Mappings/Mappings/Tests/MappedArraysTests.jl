@@ -113,16 +113,15 @@ d = 2
 f = MockField{d}(v)
 f = MockField(d,v)
 
-a = Fill(FunctionMapping(MockField),5)
+# a = Fill(FunctionMapping(MockField),5)
 b = Fill(2,5)
 c = [6.0,2.0,5.0,7.0,9.0]
-v = apply_mapping(a,b,c)
+v = apply_mapping(mock_field,b,c)
 
 @test isa(v,AbstractArray{<:Mapping})
 
-vv = apply_mapping(FunctionMapping(MockField),b,c)
-
-@test vv == v
+# vv = apply_mapping(FunctionMapping(MockField),b,c)
+# @test vv == v
 
 xx = fill(x,5)
 r = apply_mapping(v,xx)

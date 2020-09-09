@@ -8,6 +8,8 @@ end
 
 MockField(D::Int,v::Number) = MockField{D}(v)
 
+mock_field(D::Int,v::Number) = MockField{D}(v)
+
 function return_cache(f::MockField,x)
   nx = length(x)
   c = zeros(typeof(f.v),nx)

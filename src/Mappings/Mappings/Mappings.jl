@@ -55,7 +55,7 @@ include("MappingInterfaces.jl")
 
 include("BroadcastMappings.jl")
 
-include("FunctionMappings.jl")
+# include("FunctionMappings.jl")
 
 include("CompositionMappings.jl")
 
@@ -63,7 +63,7 @@ include("AlgebraMappings.jl")
 
 include("MappedArrays.jl")
 
-include("MappingArrays.jl")
+# include("MappingArrays.jl")
 
 include("ConstantMappings.jl")
 

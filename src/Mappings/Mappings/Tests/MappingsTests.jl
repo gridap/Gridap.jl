@@ -7,8 +7,9 @@ using Gridap.TensorValues
 # using LinearAlgebra
 # using Gridap.Inference
 
-test_mapping(FunctionMapping(+),(3,2),5)
-@test Mappings.return_types((FunctionMapping(+),FunctionMapping(/)),1,1) == (Int,Float64)
+# test_mapping(FunctionMapping(+),(3,2),5)
+# @test Mappings.return_types((FunctionMapping(+),FunctionMapping(/)),1,1) == (Int,Float64)
+@test Mappings.return_types((+,/),1,1) == (Int,Float64)
 
 test_mapping(+,(3,2),5)
 

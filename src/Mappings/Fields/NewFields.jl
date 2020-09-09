@@ -27,6 +27,7 @@ export NewField
 export ConstantField
 export FunctionField
 export LinearCombinationField
+export MockField
 
 export gradient
 export ∇
@@ -41,6 +42,8 @@ export evaluate_hessian!
 export return_hessian_cache
 
 export linear_combination
+
+export mock_field
 
 include("FieldsInterfaces.jl")
 
