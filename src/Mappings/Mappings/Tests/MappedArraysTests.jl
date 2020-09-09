@@ -16,24 +16,24 @@ test_array(a,a)
 
 a = rand(3,2)
 a = CartesianIndices(a)
-c = apply_mapping(FunctionMapping(-),a)
+c = apply_mapping(-,a)
 test_array(c,-a)
 
 a = rand(12)
-c = apply_mapping(FunctionMapping(-),a)
+c = apply_mapping(-,a)
 test_array(c,-a)
 
 a = rand(12)
 b = rand(12)
-c = apply_mapping(FunctionMapping(-),a,b)
+c = apply_mapping(-,a,b)
 test_array(c,a.-b)
 
-c = apply_mapping(Float64,FunctionMapping(-),a,b)
+c = apply_mapping(Float64,-,a,b)
 test_array(c,a.-b)
 
 a = rand(0)
 b = rand(0)
-c = apply_mapping(FunctionMapping(-),a,b)
+c = apply_mapping(-,a,b)
 test_array(c,a.-b)
 
 a = fill(rand(2,3),12)
@@ -77,7 +77,7 @@ ai, bi = testitems(a,b)
 @test ai == Array{Int,2}(undef,0,0)
 @test bi == zero(Int)
 
-a = fill(FunctionMapping(+),10)
+a = fill(+,10)
 x = rand(10)
 y = rand(10)
 v = apply_mapping(a,x,y)
@@ -117,11 +117,11 @@ a = Fill(FunctionMapping(MockField),5)
 b = Fill(2,5)
 c = [6.0,2.0,5.0,7.0,9.0]
 v = apply_mapping(a,b,c)
+
 @test isa(v,AbstractArray{<:Mapping})
 
 vv = apply_mapping(FunctionMapping(MockField),b,c)
-vv = apply_function(MockField,b,c)
-isa(MockField,Function)
+
 @test vv == v
 
 xx = fill(x,5)

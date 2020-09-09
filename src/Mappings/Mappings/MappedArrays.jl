@@ -1,4 +1,3 @@
-
 """
     apply(f,a::AbstractArray...) -> AbstractArray
 
@@ -56,7 +55,7 @@ println(c)
 ```
 
 """
-function apply_mapping(f::Mapping, a::AbstractArray...)
+function apply_mapping(f::MappingOrFunction, a::AbstractArray...)
     s = common_size(a...)
     apply_mapping(Fill(f, s...), a...)
 end
@@ -67,7 +66,7 @@ end
 Like [`apply(f,a::AbstractArray...)`](@ref), but the user provides the element type
 of the resulting array in order to circumvent type inference.
 """
-function apply_mapping(::Type{T}, f::Mapping, a::AbstractArray...) where T
+function apply_mapping(::Type{T}, f::MappingOrFunction, a::AbstractArray...) where T
     s = common_size(a...)
     apply_mapping(T, Fill(f, s...), a...)
 end
@@ -101,7 +100,7 @@ println(c)
 [5, -1, 3, 1]
 ```
 """
-function apply_mapping(f::AbstractArray{<:Mapping}, a::AbstractArray...)
+function apply_mapping(f::AbstractArray{<:MappingOrFunction}, a::AbstractArray...)
     MappedArray(f, a...)
 end
 
@@ -111,7 +110,7 @@ end
 Like [`apply(f::AbstractArray,a::AbstractArray...)`](@ref), but the user provides the element type
 of the resulting array in order to circumvent type inference.
 """
-function apply_mapping(::Type{T}, f::AbstractArray{<:Mapping}, a::AbstractArray...) where T
+function apply_mapping(::Type{T}, f::AbstractArray{<:MappingOrFunction}, a::AbstractArray...) where T
     MappedArray(T, f, a...)
 end
 
@@ -125,7 +124,7 @@ end
 struct MappedArray{T,N,F,G} <: AbstractArray{T,N}
     g::G
     f::F
-    function MappedArray(::Type{T}, g::AbstractArray{<:Mapping}, f::AbstractArray...) where T
+    function MappedArray(::Type{T}, g::AbstractArray{<:MappingOrFunction}, f::AbstractArray...) where T
         G = typeof(g)
         F = typeof(f)
         f1, = f
@@ -133,7 +132,7 @@ struct MappedArray{T,N,F,G} <: AbstractArray{T,N}
     end
 end
 
-function MappedArray(g::AbstractArray{<:Mapping}, f::AbstractArray...)
+function MappedArray(g::AbstractArray{<:MappingOrFunction}, f::AbstractArray...)
     gi = testitem(g) # Assumes that all mappings return the same type
     fi = testitems(f...)
     T = typeof(testitem(gi, fi...))
@@ -365,7 +364,7 @@ function test_mapped_array(
   @test t
 
   if grad != nothing
-    g = apply_function(gradient, a)
+    g = apply_mapping(gradient, a)
     test_mapped_array(g, x, grad, cmp)
   end
 

@@ -34,7 +34,6 @@ export MappedArray
 
 export apply_mapping
 export apply_mappings
-export apply_function
 export test_mapped_array
 
 export CompositionMapping

@@ -1,5 +1,5 @@
 
-apply_function(f,x...) = apply_mapping(FunctionMapping(f),x...)
+# apply_mapping(f,x...) = apply_mapping(FunctionMapping(f),x...)
 
 # Optimisations
 

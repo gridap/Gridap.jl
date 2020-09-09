@@ -19,11 +19,11 @@ This is done by adding a new method to [`apply_mapping_gradient(k,f...)`](@ref) 
 # @inline function composition(k::Mapping,l::NTuple{N,<:Mapping}) where N
 # @santiagobadia : To decide tuple or no tuple
 # @inline function composition(k::Mapping,l::Tuple{Vararg{<:Mapping}})
-@inline function composition(k::Mapping,l::Vararg{<:Mapping})
+@inline function composition(k::MappingOrFunction,l::Vararg{<:MappingOrFunction})
   CompositionMapping(k,l...)
 end
 
-@inline function composition(k::Mapping,l::Mapping)
+@inline function composition(k::MappingOrFunction,l::MappingOrFunction)
   CompositionMapping(k,l)
 end
 

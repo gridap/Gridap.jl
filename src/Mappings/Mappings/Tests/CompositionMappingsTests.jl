@@ -9,7 +9,8 @@ using Gridap.TensorValues
 using Gridap.NewFields
 using Gridap.NewFields: MockField, MockBasis, OtherMockBasis
 
-k = FunctionMapping(-)
+
+k = -
 
 v = 3.0
 d = 2

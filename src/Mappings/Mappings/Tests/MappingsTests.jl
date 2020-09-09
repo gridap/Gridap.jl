@@ -10,6 +10,8 @@ using Gridap.TensorValues
 test_mapping(FunctionMapping(+),(3,2),5)
 @test Mappings.return_types((FunctionMapping(+),FunctionMapping(/)),1,1) == (Int,Float64)
 
+test_mapping(+,(3,2),5)
+
 f = BroadcastMapping(+)
 a = rand(3,2)
 b = 3

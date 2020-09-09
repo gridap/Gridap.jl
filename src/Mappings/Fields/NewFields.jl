@@ -4,7 +4,7 @@ using Gridap.Helpers
 using Gridap.Inference
 using Gridap.Mappings
 using Gridap.Arrays
-using Gridap.TensorValues: VectorValue, mutable, outer
+using Gridap.TensorValues: MultiValue, VectorValue, mutable, outer
 
 using Gridap.Arrays: CachedArray
 

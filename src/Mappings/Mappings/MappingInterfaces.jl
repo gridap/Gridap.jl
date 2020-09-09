@@ -1,4 +1,3 @@
-
 """
 Abstract type representing the operations to be used in the [`apply`](@ref) function.
 
@@ -22,6 +21,8 @@ for `Function` objects.  However, we recommend that new types inherit from `Mapp
 
 """
 abstract type Mapping <: GridapType end
+
+const MappingOrFunction = Union{Mapping,Function}
 
 """
     mapping_return_type(f,x...)
@@ -112,7 +113,7 @@ end
 Returns a tuple with the cache corresponding to each mapping in `fs`
 for the arguments `x...`.
 """
-function return_caches(fs::Tuple{Vararg{<:Mapping}},x...) where N
+function return_caches(fs::Tuple{Vararg{<:MappingOrFunction}},x...) where N
   _mapping_caches(x,fs...)
 end
 
@@ -134,7 +135,7 @@ Applies the mappings in the tuple `fs` at the arguments `x...`
 by using the corresponding cache objects in the tuple `caches`.
 The result is also a tuple containing the result for each mapping in `fs`.
 """
-@inline function evaluate!(cfs::Tuple,f::Tuple{Vararg{<:Mapping}},x...) where N
+@inline function evaluate!(cfs::Tuple,f::Tuple{Vararg{<:MappingOrFunction}},x...) where N
   _evaluate_mappings!(cfs,x,f...)
 end
 
@@ -193,3 +194,24 @@ const NumberOrArray = Union{Number,AbstractArray}
 function gradient(k::Mapping)
   @notimplemented
 end
+
+# Function implementation
+
+evaluate!(cache,f::Function,x...) = f(x...)
+
+return_cache(f::Function,x...) = nothing
+
+function return_type(f,x...)
+  Ts = map(typeof,x)
+  return_type(f,Ts...)
+end
+
+evaluate(f::Function,x...) = f(x...)   #evaluate(FunctionMapping(f),x...)
+
+evaluate(T::Type,f::Function,x...) = f(x...) #evaluate(T,FunctionMapping(f),x...)
+
+testitem(f,x...) = f(x...)
+
+testitem!(cache,f,x...) = f(x...)
+
+return_caches(f::Tuple{Vararg{<:Function}},x...) = ( x -> nothing, length(f))

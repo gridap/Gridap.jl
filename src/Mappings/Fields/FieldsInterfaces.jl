@@ -56,6 +56,8 @@ For instance, a default implementation is available for numbers, which behave li
 """
 abstract type NewField <: Mapping end
 
+const NewFieldOrFunction = Union{NewField,Function}
+
 function return_type(f::NewField,x::AbstractArray{<:Point})
   typeof(evaluate(f,x))
 end
@@ -84,13 +86,17 @@ Idem for `hessian`.
 The checks are performed with the `@test` macro.
 """
 function test_field(
-  f::NewField, # @santiagobadia : Duck typing here? Also at Field level?
+  f::NewFieldOrFunction, # @santiagobadia : Duck typing here? Also at Field level?
   x::Tuple,
   v::AbstractArray,cmp=(==);
   grad=nothing,
   hessian=nothing)
 
   x, = x
+
+  if isa(f,Function)
+    @test return_type(f,eltype(x)) <: MultiValue
+  end
 
   @test isa(x,AbstractVector{<:Point})
 
@@ -122,7 +128,7 @@ function test_field(
 
 end
 
-function test_field(f::NewField,x,v::AbstractArray,cmp=(==);grad=nothing,hessian=nothing)
+function test_field(f::NewFieldOrFunction,x,v::AbstractArray,cmp=(==);grad=nothing,hessian=nothing)
   test_field(f,(x,),v,cmp;grad=grad,hessian=hessian)
 end
 
