@@ -5,15 +5,15 @@ function QPointCellField(value::Number,quad::CellQuadrature)
   QPointCellField(value,get_coordinates(quad))
 end
 
-function QPointCellField(value::Number,x::AbstractArray)
-  array = _qpoint_array(value,x)
+function QPointCellField(value::Number,x::CellPoint)
+  array = _qpoint_array(value,get_array(x))
   GenericCellField(array)
 end
 
-function QPointCellField(value::Number,x::MappedCellValues)
-  q = x.refvals
+function QPointCellField(value::Number,x::MappedCellPoint)
+  q = x.q
   ϕ = x.ϕ
-  array = _qpoint_array(value,q)
+  array = _qpoint_array(value,get_array(q))
   GenericCellField(array)∘inverse_map(ϕ)
 end
 
@@ -89,11 +89,11 @@ function update_state_variables!(updater::Function,quad::CellQuadrature,f::CellF
   update_state_variables!(updater,x,f...)
 end
 
-function update_state_variables!(updater::Function,x::AbstractArray,f::CellField...)
+function update_state_variables!(updater::Function,x::CellPoint,f::CellField...)
   fx = map(i->evaluate(i,x),f)
   caches = array_caches(fx...)
-  cache_x = array_cache(x)
-  _update_state_variables!(updater,caches,fx,cache_x,x)
+  cache_x = array_cache(get_array(x))
+  _update_state_variables!(updater,caches,fx,cache_x,get_array(x))
 end
 
 function update_state_variables!(quad::CellQuadrature,updater::Function,f::CellField...)

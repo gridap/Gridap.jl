@@ -16,13 +16,13 @@ f = OtherMockBasis{2}(ndofs)
 ncells = 10
 cl = fill(c,ncells)
 fl = Fill(f,ncells)
-ϕ = GenericCellField(lincomb(fl,cl))
+ϕ = GenericCellMap(lincomb(fl,cl))
 
 degree = 3
 quad = CellQuadrature(degree,[QUAD,],Fill(1,ncells))
 q = get_coordinates(quad)
 dv = GenericCellField(Fill(b,ncells),Fill((Base.OneTo(ndofs),),ncells),Val((:,)))∘inverse_map(ϕ)
-u = convert_to_cell_field(x->x[2]^2,ϕ)
+u = convert_to_cell_field(x->x[2]^2,length(ϕ))
 
 @law g(u) = u^2
 @law h(u,dv) = (1+u)*dv

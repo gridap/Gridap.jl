@@ -3,6 +3,7 @@ module QPointCellFieldsTests
 using Test
 using FillArrays
 using Gridap.Helpers
+using Gridap.Arrays
 using Gridap.Fields
 using Gridap.CellData
 using Gridap.TensorValues
@@ -18,15 +19,15 @@ f = OtherMockBasis{2}(ndofs)
 l = 10
 cl = fill(c,l)
 fl = Fill(f,l)
-ϕ = GenericCellField(lincomb(fl,cl))
+ϕ = GenericCellMap(lincomb(fl,cl))
 
 degree = 3
 ref_quad = CellQuadrature(degree,[QUAD],Fill(1,l))
 q = get_coordinates(ref_quad)
 
-s_q = [i*ones(size(qi)) for (i,qi) in enumerate(q)]
-a = CellData.ArrayOfEvaluatedFields(s_q,q)
-test_array_of_fields(a,q,s_q)
+s_q = [i*ones(size(qi)) for (i,qi) in enumerate(get_array(q))]
+a = CellData.ArrayOfEvaluatedFields(s_q,get_array(q))
+test_array_of_fields(a,get_array(q),s_q)
 
 quad = ϕ(ref_quad)
 x = get_coordinates(quad)

@@ -75,7 +75,7 @@ end
       pred=(==);
       grad=nothing)
 """
-function test_cell_field(cf::CellField,x::AbstractArray,b::AbstractArray,pred=(==);grad=nothing)
+function test_cell_field(cf::CellField,x::CellPoint,b::AbstractArray,pred=(==);grad=nothing)
   a = evaluate(cf,x)
   test_array(a,b,pred)
   if grad != nothing
@@ -88,6 +88,10 @@ function test_cell_field(cf::CellField,x::AbstractArray,b::AbstractArray,pred=(=
   @test isa(get_metasize(cf),Tuple)
   @test isa(MetaSizeStyle(cf),Val)
   @test isa(get_memo(cf),Dict)
+end
+
+function test_cell_field(cf::CellField,x::AbstractArray,b::AbstractArray,pred=(==);grad=nothing)
+  test_cell_field(cf,GenericCellPoint(x),b,pred;grad=grad)
 end
 
 # Concrete implementation
@@ -161,7 +165,7 @@ end
 It is assumed that `x` is in the domain of the array of fields
 in `get_array(f)`.
 """
-function evaluate(f::CellField,x::CellPoint)
+function evaluate(f::CellField,x)
   key = (:evaluate,objectid(x))
   memo = get_memo(f)
   if !haskey(memo,key)
@@ -173,6 +177,10 @@ end
 function compute_evaluate(f::CellField,x::CellPoint)
   b = reindex(get_array(f),get_cell_id(x))
   evaluate_field_array(b,get_array(x))
+end
+
+function compute_evaluate(f::CellField,x::AbstractArray)
+  compute_evaluate(f,GenericCellPoint(x))
 end
 
 """
@@ -683,9 +691,12 @@ end
 # Skeleton related
 
 struct SkeletonFaceMap <:CellMap
-  left::FaceMap
-  right::FaceMap
+  left::CellMap
+  right::CellMap
   memo::Dict
+  function SkeletonFaceMap(left::CellMap,right::CellMap)
+    new(left,right,Dict())
+  end
   function SkeletonFaceMap(left::FaceMap,right::FaceMap)
     _right = change_face_map(right,left.face_map)
     new(left,_right,Dict())

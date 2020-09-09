@@ -21,7 +21,7 @@ bl = fill(b,l)
 dl = Fill(d,l)
 cl = fill(c,l)
 fl = Fill(f,l)
-ϕ = GenericCellField(lincomb(fl,cl))
+ϕ = GenericCellMap(lincomb(fl,cl))
 
 ref_style = Val(true)
 axs = (Base.OneTo(num_dofs(reffe)),)

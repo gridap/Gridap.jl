@@ -100,15 +100,15 @@ include("CellFields.jl")
 
 include("CellQuadratures.jl")
 
-#include("QPointCellFields.jl")
-#
-#include("CellDofs.jl")
-#
-#include("AttachDirichlet.jl")
-#
-#include("AttachConstraints.jl")
-#
-#include("Law.jl")
+include("QPointCellFields.jl")
+
+include("CellDofs.jl")
+
+include("AttachDirichlet.jl")
+
+include("AttachConstraints.jl")
+
+include("Law.jl")
 
 end # module
 

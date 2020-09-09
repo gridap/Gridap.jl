@@ -60,14 +60,14 @@ We addopt a small abuse of notation and say that
 """
 struct MappedCellDof <: CellDof
   σ_ref::CellDof
-  ϕ::CellField
+  ϕ::CellMap
 end
 
 function evaluate(a::MappedCellDof,f::CellField)
   a.σ_ref(f∘a.ϕ)
 end
 
-function evaluate(ϕ::CellField,a::CellDof)
+function evaluate(ϕ::CellMap,a::CellDof)
   MappedCellDof(a,ϕ)
 end
 
