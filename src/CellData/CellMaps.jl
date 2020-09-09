@@ -206,7 +206,51 @@ get_cell_id(a::FaceMap) = get_cell_id(a.face_map)
 num_cell_ids(a::FaceMap) = num_cell_ids(a.face_map)
 get_memo(a::FaceMap) = a.memo
 
+function change_face_map(a::FaceMap,face_map::CellMap)
+  FaceMap(
+    face_map,
+    a.cell_map,
+    a.refface_to_refcell_map)
+end
 
+struct ReindexedCellMap <: CellMap
+  ϕ::CellMap
+  cell_map::CellMap
+  ids::AbstractArray
+  memo::Dict
+  function ReindexedCellMap(cell_map::CellMap,ids::AbstractArray)
+    array = reindex(get_array(cell_map),ids)
+    cell_id = reindex(get_cell_id(cell_map),ids)
+    ϕ = GenericCellMap(array,cell_id,num_cell_ids(cell_map))
+    new(ϕ,cell_map,ids,Dict())
+  end
+end
 
+Arrays.get_array(a::ReindexedCellMap) = get_array(a.ϕ)
+get_cell_id(a::ReindexedCellMap) = get_cell_id(a.ϕ)
+num_cell_ids(a::ReindexedCellMap) = num_cell_ids(a.ϕ)
+get_memo(a::ReindexedCellMap) = a.memo
 
+function Arrays.lazy_append(a::CellMap,b::CellMap)
+  AppendedCellMap(a,b)
+end
+
+struct AppendedCellMap <: CellMap
+  ϕ::CellMap
+  ϕ1::CellMap
+  ϕ2::CellMap
+  memo::Dict
+  function AppendedCellMap(a::CellMap,b::CellMap)
+    @assert num_cell_ids(a) == num_cell_ids(b)
+    array = lazy_append(get_array(a),get_array(b))
+    cell_ids = lazy_append(get_cell_id(a),get_cell_id(b))
+    c = GenericCellMap(array,cell_ids,num_cell_ids(a))
+    new(c,a,b,Dict())
+  end
+end
+
+Arrays.get_array(a::AppendedCellMap) = get_array(a.ϕ)
+get_cell_id(a::AppendedCellMap) = get_cell_id(a.ϕ)
+num_cell_ids(a::AppendedCellMap) = num_cell_ids(a.ϕ)
+get_memo(a::AppendedCellMap) = a.memo
 

@@ -128,6 +128,8 @@ import Gridap.Algebra: scale_entries!
 
 import AbstractTrees
 
+export IdentityVector
+
 include("Interface.jl")
 
 include("BlockArraysCoo.jl")

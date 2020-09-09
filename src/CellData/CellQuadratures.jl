@@ -125,7 +125,7 @@ end
 
 function lazy_append(quad1::CellQuadrature,quad2::CellQuadrature)
   array = lazy_append(quad1.array,quad2.array)
-  coords = lazy_append(get_array(quad1.coords),get_array(quad2.coords))
+  coords = lazy_append(quad1.coords,quad2.coords)
   weights = lazy_append(quad1.weights,quad2.weights)
   CellQuadrature(array,coords,weights)
 end

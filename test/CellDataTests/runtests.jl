@@ -6,7 +6,7 @@ using Test
 
 @testset "CellMaps" begin include("CellMapsTests.jl") end
 
-#@testset "CellFields (1/2)" begin include("CellFieldsTests_1.jl") end
+@testset "CellFields (1/2)" begin include("CellFieldsTests_1.jl") end
 #
 #@testset "CellFields (2/2)" begin include("CellFieldsTests_2.jl") end
 #

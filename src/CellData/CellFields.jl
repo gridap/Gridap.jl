@@ -553,14 +553,38 @@ function Base.:∘(f::CellFieldComposedWithInverseMap,ϕ::CellMap)
   end
 end
 
+function Base.:∘(f::CellFieldComposedWithInverseMap,ϕ::ReindexedCellMap)
+  if f.ϕinv.ϕ == ϕ
+    return f.f
+  else
+    return reindex(f∘ϕ.cell_map,ϕ.ids)
+  end
+end
+
 function Base.:∘(f::CellFieldComposedWithInverseMap,ϕ::FaceMap)
   if f.ϕinv.ϕ == ϕ
     return f.f
-  elseif f.ϕinv.ϕ == ϕ.cell_map
-    return f.f∘ϕ.refface_to_refcell_map
   else
-    return (f.f∘get_inverse_cell_map(f.ϕinv))∘ϕ
+    return (f∘ϕ.cell_map)∘ϕ.refface_to_refcell_map
   end
+end
+
+function Base.:∘(f::CellFieldComposedWithInverseMap,ϕ::AppendedCellMap)
+  if f.ϕinv.ϕ == ϕ
+    return f.f
+  else
+    return lazy_append(f∘ϕ.ϕ1,f∘ϕ.ϕ2)
+  end
+end
+
+Base.:∘(f::CellFieldFromOperation,ϕ::AppendedCellMap) = _compose_cell_field_from_op(f,ϕ)
+Base.:∘(f::CellField,ϕ::AppendedCellMap) = lazy_append(f∘ϕ.ϕ1,f∘ϕ.ϕ2)
+Base.:∘(f,ϕ::AppendedCellMap) = lazy_append(f∘ϕ.ϕ1,f∘ϕ.ϕ2)
+
+function Arrays.lazy_append(a::CellField,b::CellField)
+  array = lazy_append(get_array(a),get_array(b))
+  cell_axs = lazy_append(get_cell_axes(a),get_cell_axes(b))
+  GenericCellField(array,cell_axs,MetaSizeStyle(a))
 end
 
 #function _to_ref_face_space(f,ϕ)
@@ -646,14 +670,6 @@ end
 #  refface_to_refcell_map::CellField
 #end
 #
-#function change_face_map(a::FaceMap,face_map::CellField)
-#  FaceMap(
-#    face_map,
-#    a.cell_map,
-#    a.face_to_cell,
-#    a.refface_to_refcell_map)
-#end
-#
 #Arrays.get_array(a::FaceMap) = get_array(a.face_map)
 #get_cell_axes(a::FaceMap) = get_cell_axes(a.face_map)
 #get_memo(a::FaceMap) = get_memo(a.face_map)
@@ -664,98 +680,84 @@ end
 #  g∘ϕ.face_map
 #end
 #
-## Skeleton related
-#
-#struct SkeletonFaceMap{L<:CellField} <:CellField
-#  left::L
-#  right::CellField
-#
-#  function SkeletonFaceMap(left::CellField,right::CellField)
-#    new{typeof(left)}(left,right)
-#  end
-#
-#  function SkeletonFaceMap(left::FaceMap,right::FaceMap)
-#    _right = change_face_map(right,left.face_map)
-#    new{typeof(left)}(left,_right)
-#  end
-#end
-#
-#Arrays.get_array(a::SkeletonFaceMap) = get_array(a.left)
-#get_cell_axes(a::SkeletonFaceMap) = get_cell_axes(a.left)
-#get_memo(a::SkeletonFaceMap) = get_memo(a.left)
-#MetaSizeStyle(::Type{SkeletonFaceMap{T}}) where T = MetaSizeStyle(T)
-#Base.:∘(f::CellField,ϕ::SkeletonFaceMap) = f∘ϕ.left
-#
-#for op in (:get_inward, :get_outward)
-#  @eval begin
-#
-#    function ($op)(a::CellField)
-#      f(a) = @unreachable "You need to compose first with a SkeletonFaceMap"
-#      CellFieldFromOperation(f,$op,(a,),get_cell_axes(a),MetaSizeStyle(a))
-#    end
-#
-#    function gradient(a::CellFieldFromOperation{typeof($op)})
-#      key = :gradient
-#      memo = get_memo(a)
-#      if !haskey(memo,key)
-#        memo[key] = $op(gradient(a.args[1]))
-#      end
-#      memo[key]
-#    end
-#
-#  end
-#end
-#
-#function Base.:∘(f::CellFieldFromOperation{typeof(get_inward)},ϕ::SkeletonFaceMap)
-#  left, = merge_cell_fields_at_skeleton(f.args[1]∘ϕ.left,f.args[1]∘ϕ.right)
-#  left
-#end
-#
-#function Base.:∘(f::CellFieldFromOperation{typeof(get_outward)},ϕ::SkeletonFaceMap)
-#  _, right = merge_cell_fields_at_skeleton(f.args[1]∘ϕ.left,f.args[1]∘ϕ.right)
-#  right
-#end
-#
-#function Base.:∘(f::CellFieldFromOperation,ϕ::SkeletonFaceMap)
-#  _compose_cell_field_from_op(f,ϕ)
-#end
-#
-#"""
-#    jump(f)
-#"""
-#function jump(sf)
-#  sf.⁺ - sf.⁻
-#end
-#
-#"""
-#    mean(f)
-#"""
-#function mean(sf)
-#  operate(_mean,sf.⁺,sf.⁻)
-#end
-#
-#_mean(x,y) = 0.5*x + 0.5*y
-#
-#function merge_cell_dofs_at_skeleton(idsL,idsR,axesL,axesR)
-#  blocks = (idsL,idsR)
-#  blockids = [(1,),(2,)]
-#  axs = create_array_of_blocked_axes(axesL,axesR)
-#  VectorOfBlockArrayCoo(blocks,blockids,axs)
-#end
-#
-#function merge_cell_fields_at_skeleton(cfL,cfR)
-#  @assert is_basis(cfL) == is_basis(cfR)
-#  if !is_basis(cfL)
-#    cfL, cfR
-#  else
-#    ax1 = get_cell_axes(cfL)
-#    ax2 = get_cell_axes(cfR)
-#    arrL = insert_array_of_bases_in_block(1,get_array(cfL),ax1,ax2)
-#    cfSL = GenericCellField(arrL,arrL.axes,MetaSizeStyle(cfL))
-#    arrR = insert_array_of_bases_in_block(2,get_array(cfR),ax1,ax2)
-#    cfSR = GenericCellField(arrR,arrR.axes,MetaSizeStyle(cfR))
-#    cfSL, cfSR
-#  end
-#end
+# Skeleton related
+
+struct SkeletonFaceMap <:CellMap
+  left::FaceMap
+  right::FaceMap
+  memo::Dict
+  function SkeletonFaceMap(left::FaceMap,right::FaceMap)
+    _right = change_face_map(right,left.face_map)
+    new(left,_right,Dict())
+  end
+end
+
+Arrays.get_array(a::SkeletonFaceMap) = get_array(a.left)
+get_cell_id(a::SkeletonFaceMap) = get_cell_id(a.left)
+num_cell_ids(a::SkeletonFaceMap) = num_cell_ids(a.left)
+get_memo(a::SkeletonFaceMap) = a.memo
+
+for op in (:get_inward, :get_outward)
+  @eval begin
+
+    function ($op)(a::CellField)
+      f(a) = @unreachable "You need to compose first with a SkeletonFaceMap"
+      CellFieldFromOperation(f,$op,(a,),get_cell_axes(a),MetaSizeStyle(a))
+    end
+
+    function compute_gradient(a::CellFieldFromOperation{typeof($op)})
+      $op(gradient(a.args[1]))
+    end
+
+  end
+end
+
+function Base.:∘(f::CellFieldFromOperation{typeof(get_inward)},ϕ::SkeletonFaceMap)
+  left, = merge_cell_fields_at_skeleton(f.args[1]∘ϕ.left,f.args[1]∘ϕ.right)
+  left
+end
+
+function Base.:∘(f::CellFieldFromOperation{typeof(get_outward)},ϕ::SkeletonFaceMap)
+  _, right = merge_cell_fields_at_skeleton(f.args[1]∘ϕ.left,f.args[1]∘ϕ.right)
+  right
+end
+
+"""
+    jump(f)
+"""
+function jump(sf)
+  sf.⁺ - sf.⁻
+end
+
+"""
+    mean(f)
+"""
+function mean(sf)
+  operate(_mean,sf.⁺,sf.⁻)
+end
+
+_mean(x,y) = 0.5*x + 0.5*y
+
+function merge_cell_dofs_at_skeleton(idsL,idsR,axesL,axesR)
+  blocks = (idsL,idsR)
+  blockids = [(1,),(2,)]
+  axs = create_array_of_blocked_axes(axesL,axesR)
+  VectorOfBlockArrayCoo(blocks,blockids,axs)
+end
+
+function merge_cell_fields_at_skeleton(cfL,cfR)
+  @assert is_basis(cfL) == is_basis(cfR)
+  if !is_basis(cfL)
+    cfL, cfR
+  else
+    ax1 = get_cell_axes(cfL)
+    ax2 = get_cell_axes(cfR)
+    arrL = insert_array_of_bases_in_block(1,get_array(cfL),ax1,ax2)
+    cfSL = GenericCellField(arrL,arrL.axes,MetaSizeStyle(cfL))
+    arrR = insert_array_of_bases_in_block(2,get_array(cfR),ax1,ax2)
+    cfSR = GenericCellField(arrR,arrR.axes,MetaSizeStyle(cfR))
+    cfSL, cfSR
+  end
+end
 
 

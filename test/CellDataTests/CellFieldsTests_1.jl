@@ -155,154 +155,143 @@ dΓ = ϕ_Γ(dΓ_ref)
 r = ∫( 3*∇(dv)⋅∇(du)*f + h*dv*du*2 )*dΓ
 test_array(r,collect(r))
 
+r = ∫( 1 )*dΓ
+test_array(r,collect(r))
 
+r = ∫( x->1 )*dΓ
+test_array(r,collect(r))
 
+# Face map + re-indexed
 
+ids = [2,1]
+ϕ1_Γ = ReindexedCellMap(ϕ_Γ,ids)
 
+q1_Γ = GenericCellPoint(reindex(get_array(q_Γ),ids))
+w1_Γ = reindex(w_Γ,ids)
+dΓ1_ref = CellQuadrature(q1_Γ,w1_Γ)
 
+r1 = (dv∘ϕ1_Γ)(q1_Γ)
+r2 = reindex( (dv∘ϕ_Γ)(q_Γ), ids)
+test_array(r1,r2)
 
+dΓ1 = ϕ1_Γ(dΓ1_ref)
 
+r = ∫( 1 )*dΓ1
+test_array(r,collect(r))
 
+j_ref = convert_to_cell_field(x->x[1],length(ids))
+j = j_ref∘inverse_map(ϕ1_Γ)
+@test length(ϕ1_Γ) == 2
+@test num_cell_ids(ϕ_Γ) == 4
+@test num_cell_ids(ϕ1_Γ) == 4
+@test length(j_ref) == 2
+@test length(j) == 4
 
+r = ∫( 3*∇(dv)⋅∇(du)*h + dv*du*j )*dΓ1
+test_array(r,collect(r))
 
-#ϕ_Λ = FaceMap(reindex(ϕ,ids),ϕ,ids,identity∘reindex(ϕ,ids))
-
-
-
-
-
-#
 ## Skeleton related
-#
-#ϕ_Γ = SkeletonFaceMap(ϕ,ϕ)
-#test_cell_field(ϕ_Γ,q,collect(ϕ_Γ(q)))
-#
-#r = (dv.⁺∘ϕ_Γ)(q)
-#@test isa(r,VectorOfBlockArrayCoo)
-#test_array(r,collect(r))
-#
-#r = (du.⁻∘ϕ_Γ)(q)
-#@test isa(r,VectorOfBlockArrayCoo)
-#test_array(r,collect(r))
-#
-#r1 = (∇(dv).⁺∘ϕ_Γ)(q)
-#r2 = (∇(dv.⁺)∘ϕ_Γ)(q)
-#test_array(r1,r2)
-#
-#r1 = (jump(∇(du))∘ϕ_Γ)(q)
-#r2 = (∇(jump(du))∘ϕ_Γ)(q)
-#test_array(r1,r2)
-#
-#dΓ = ϕ_Γ(dΩ_ref)
-#
-#r = ∫( mean(∇(dv))⋅jump(∇(du)) + du.⁺*jump(dv)  )*dΓ
-#@test isa(r,VectorOfBlockArrayCoo)
-#test_array(r,collect(r))
-#
-#r = ∫( 1 )*dΓ
-#test_array(r,collect(r))
-#
-#r = ∫( f )*dΓ
-#test_array(r,collect(r))
-#
-## Related with other maps
-#
-#ids = [4,2]
-#ϕ_Γ = ReindexedCellMap(ϕ,ids)
-#q_Γ = reindex(q,ids)
-#w_Γ = reindex(w,ids)
-#test_cell_field(ϕ_Γ,q_Γ,collect(ϕ_Γ(q_Γ)))
-#
-#dΓ_ref = CellQuadrature(q_Γ,w_Γ)
-#dΓ = ϕ_Γ(dΓ_ref)
-#
-#r = (dv∘ϕ_Γ)(q_Γ)
-#@test isa(r,Fill)
-#test_array(r,collect(r))
-#
-#r = ∫( 3*∇(dv)⋅∇(du)*f + dv*du*2 )*dΓ
-#test_array(r,collect(r))
-#
-#r = ∫( 1 )*dΩ
-#test_array(r,collect(r))
-#@test sum(r) ≈ 16
-#
-#r = ∫( x->1 )*dΩ
-#test_array(r,collect(r))
-#@test sum(r) ≈ 16
-#
-#r = ∫( 1 )*dΓ
-#test_array(r,collect(r))
-#@test sum(r) ≈ 8
-#
-#r = ∫( x->1 )*dΓ
-#test_array(r,collect(r))
-#@test sum(r) ≈ 8
-#
-#ϕ_Λ = FaceMap(reindex(ϕ,ids),ϕ,ids,identity∘reindex(ϕ,ids))
-#dΛ = ϕ_Λ(dΓ_ref)
-#
-#r = (dv∘ϕ_Λ)(q_Γ)
-#test_array(r,collect(r))
-#
-#n = ((x-> x[1])∘ϕ_Λ)∘inverse_map(ϕ_Λ)
-#r = (n∘ϕ_Λ)(q_Γ)
-#test_array(r,collect(r))
-#
-#r = ∫( 3*∇(dv)⋅∇(du)*f + 2*dv*du )*dΛ
-#test_array(r,collect(r))
-#
-#r = ∫( n*∇(dv)⋅∇(du)*f + 2*dv*du )*dΛ
-#test_array(r,collect(r))
-#
-## lazy_append
-#
-#ids1 = [4,2,3]
-#ϕ1 = ReindexedCellMap(ϕ,ids1)
-#
-#ids2 = [3,1,4,2,3]
-#ϕ2 = ReindexedCellMap(ϕ,ids2)
-#ϕ12 = lazy_append(ϕ1,ϕ2)
-#
-#q1 = reindex(q,ids1)
-#w1 = reindex(w,ids1)
-#dΓ1_ref = CellQuadrature(q1,w1)
-#
-#q2 = reindex(q,ids2)
-#w2 = reindex(w,ids2)
-#dΓ2_ref = CellQuadrature(q2,w2)
-#
-#dΓ12_ref = lazy_append(dΓ1_ref,dΓ2_ref)
-#dΓ12 = ϕ12(dΓ12_ref)
-#
-#q12 = get_coordinates(dΓ12_ref)
-#r = (dv∘ϕ12)(q12)
-#@test isa(r,AppendedArray)
-#test_array(r,collect(r))
-#
-#r = ∫(1)*dΓ12
-#@test isa(r,AppendedArray)
-#test_array(r,collect(r))
-#
-#r = ∫(x->1)*dΓ12
-#@test isa(r,AppendedArray)
-#test_array(r,collect(r))
-#
-#r = ∫( 3*∇(dv)⋅∇(du)*f + 2*dv*du )*dΓ12
-#@test isa(r,AppendedArray)
-#test_array(r,collect(r))
-#
-#n_ref(x) = x[1]
-#n1_ref = convert_to_cell_field(n_ref,ϕ1)
-#n2_ref = convert_to_cell_field(n_ref,ϕ2)
-#n12_ref = lazy_append(n1_ref,n2_ref)
-#n12 = n12_ref∘inverse_map(ϕ12)
-#r = (n12∘ϕ12)(q12)
-#@test isa(r,AppendedArray)
-#test_array(r,collect(r))
-#
-#r = ∫( 3*∇(dv)⋅∇(du)*n12 + 2*dv*du )*dΓ12
-#@test isa(r,AppendedArray)
-#test_array(r,collect(r))
+
+ϕ_Λ = SkeletonFaceMap(ϕ_Γ,ϕ_Γ)
+test_cell_map(ϕ_Γ)
+q_Λ = q_Γ
+
+r = (dv.⁺∘ϕ_Λ)(q_Λ)
+@test isa(r,VectorOfBlockArrayCoo)
+test_array(r,collect(r))
+
+r = (du.⁻∘ϕ_Λ)(q_Λ)
+@test isa(r,VectorOfBlockArrayCoo)
+test_array(r,collect(r))
+
+r1 = (∇(dv).⁺∘ϕ_Λ)(q_Λ)
+r2 = (∇(dv.⁺)∘ϕ_Λ)(q_Λ)
+test_array(r1,r2)
+
+r1 = (jump(∇(du))∘ϕ_Λ)(q_Λ)
+r2 = (∇(jump(du))∘ϕ_Λ)(q_Λ)
+test_array(r1,r2)
+
+dΛ = ϕ_Λ(dΓ_ref)
+
+r = ∫( h*mean(∇(dv))⋅jump(∇(du)) + du.⁺*jump(dv)  )*dΛ
+@test isa(r,VectorOfBlockArrayCoo)
+test_array(r,collect(r))
+
+r = ∫( 1 )*dΛ
+test_array(r,collect(r))
+
+r = ∫( f )*dΛ
+test_array(r,collect(r))
+
+# ReindexedCellMap
+
+ids1 = [4,2,3]
+ϕ1 = ReindexedCellMap(ϕ,ids1)
+
+q1 = GenericCellPoint(reindex(get_array(q),ids1))
+w1 = reindex(w,ids1)
+dΩ1_ref = CellQuadrature(q1,w1)
+
+r1 = (dv∘ϕ1)(q1)
+r2 = reindex( (dv∘ϕ)(q), ids1)
+test_array(r1,r2)
+
+dΩ1 = ϕ1(dΩ1_ref)
+
+r = ∫( 1 )*dΩ1
+test_array(r,collect(r))
+
+h_ref = convert_to_cell_field(x->x[1],length(ids1))
+h = h_ref∘inverse_map(ϕ1)
+@test length(ϕ1) == 3
+@test num_cell_ids(ϕ1) == 4
+@test length(h_ref) == 3
+@test length(h) == 4
+
+r = ∫( 3*∇(dv)⋅∇(du)*h + dv*du*2 )*dΩ1
+test_array(r,collect(r))
+
+# lazy_append
+ids2 = [3,1,4,2,3]
+ϕ2 = ReindexedCellMap(ϕ,ids2)
+ϕ12 = lazy_append(ϕ1,ϕ2)
+
+q2 = GenericCellPoint(reindex(get_array(q),ids2))
+w2 = reindex(w,ids2)
+dΓ2_ref = CellQuadrature(q2,w2)
+
+dΓ12_ref = lazy_append(dΩ1_ref,dΓ2_ref)
+dΓ12 = ϕ12(dΓ12_ref)
+
+q12 = get_coordinates(dΓ12_ref)
+r = (dv∘ϕ12)(q12)
+@test isa(r,AppendedArray)
+test_array(r,collect(r))
+
+r = ∫(1)*dΓ12
+@test isa(r,AppendedArray)
+test_array(r,collect(r))
+
+r = ∫(x->1)*dΓ12
+@test isa(r,AppendedArray)
+test_array(r,collect(r))
+
+r = ∫( 3*∇(dv)⋅∇(du)*f + 2*dv*du )*dΓ12
+@test isa(r,AppendedArray)
+test_array(r,collect(r))
+
+n_ref(x) = x[1]
+n1_ref = convert_to_cell_field(n_ref,length(ϕ1))
+n2_ref = convert_to_cell_field(n_ref,length(ϕ2))
+n12_ref = lazy_append(n1_ref,n2_ref)
+n12 = n12_ref∘inverse_map(ϕ12)
+r = (n12∘ϕ12)(q12)
+@test isa(r,AppendedArray)
+test_array(r,collect(r))
+
+r = ∫( 3*∇(dv)⋅∇(du)*n12 + 2*dv*du )*dΓ12
+@test isa(r,AppendedArray)
+test_array(r,collect(r))
 
 end # module

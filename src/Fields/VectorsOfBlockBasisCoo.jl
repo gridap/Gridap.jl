@@ -37,6 +37,11 @@ function reindex(v::VectorOfBlockBasisCoo,j_to_i::AbstractArray)
   VectorOfBlockBasisCoo(blocks,v.blockids,axs)
 end
 
+function reindex(v::VectorOfBlockBasisCoo,j_to_i::IdentityVector)
+  @assert length(v) == length(j_to_i)
+  v
+end
+
 function compose_field_arrays(v::VectorOfBlockBasisCoo,f)
   blocks = map(b->compose_field_arrays(b,f),v.blocks)
   VectorOfBlockBasisCoo(blocks,v.blockids,v.axes)

@@ -66,6 +66,7 @@ export merge_cell_fields_at_skeleton
 export inverse_map
 export SkeletonFaceMap
 export FaceMap
+export ReindexedCellMap
 
 export CellQuadrature
 export get_coordinates
