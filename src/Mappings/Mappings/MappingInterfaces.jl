@@ -88,6 +88,8 @@ derivative(k::Mapping) = @notimplemented
 
 gradient(k::Mapping) = transpose(derivative(k::Mapping))
 
+const ∇ = gradient
+
 # Testing the interface
 
 """

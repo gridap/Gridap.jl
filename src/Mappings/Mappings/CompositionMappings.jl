@@ -16,16 +16,9 @@ resulting field, one needs to define the gradient operator
 associated with the underlying mapping.
 This is done by adding a new method to [`apply_mapping_gradient(k,f...)`](@ref) for each mapping type.
 """
-# @inline function composition(k::Mapping,l::NTuple{N,<:Mapping}) where N
-# @santiagobadia : To decide tuple or no tuple
-# @inline function composition(k::Mapping,l::Tuple{Vararg{<:Mapping}})
 @inline function composition(k,l...)
   CompositionMapping(k,l...)
 end
-
-# @inline function composition(k,l)
-#   CompositionMapping(k,l)
-# end
 
 """
     apply_mapping_gradient(k,f...)
@@ -34,18 +27,6 @@ Returns a field representing the gradient of the field obtained with
 
     apply_mapping_to_field(k,f...)
 """
-# function apply_mapping_gradient(k,f...)
-#   @abstractmethod
-# end
-
-# @inline apply_mapping_gradient(k::BCasted{typeof(+)},a) = field_gradient(a)
-
-# @inline apply_mapping_gradient(k::BCasted{typeof(-)},a...) = apply_mapping_to_field(k,field_gradients(a...)...)
-
-# @inline apply_mapping_gradient(k::BCasted{typeof(+)},a...) = apply_mapping_to_field(k,field_gradients(a...)...)
-
-# Result of applying a mapping to the value of some fields
-
 struct CompositionMapping{K,L} <: Mapping
   k::K
   l::L
@@ -71,7 +52,3 @@ end
   lx = evaluate!(cf,c.l,x)
   evaluate!(ck,c.k,lx...)
 end
-
-# @inline function field_gradient(f::CompositionMapping)
-  # apply_mapping_gradient(f.k,f.f...)
-# end

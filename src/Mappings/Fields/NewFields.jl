@@ -4,9 +4,8 @@ using Gridap.Helpers
 using Gridap.Inference
 using Gridap.Mappings
 using Gridap.Arrays
-using Gridap.TensorValues: MultiValue, VectorValue, mutable, outer
-
 using Gridap.Arrays: CachedArray
+using Gridap.TensorValues: MultiValue, VectorValue, mutable, outer
 
 using Test
 
@@ -19,9 +18,7 @@ import Gridap.Mappings: evaluate
 import Gridap.Mappings: return_caches
 import Gridap.Mappings: return_types
 import Gridap.Mappings: test_mapping
-import Gridap.Mappings: gradient
-
-
+import Gridap.Mappings: gradient, ∇
 
 export NewField
 export ConstantField
@@ -29,12 +26,11 @@ export FunctionField
 export LinearCombinationField
 export MockField
 
-export gradient
-export ∇
-export gradients
+# export gradient
+# export ∇
+# export gradients
 export test_field
 export Point
-export return_gradient_type
 
 export evaluate_gradient!
 export return_gradient_cache

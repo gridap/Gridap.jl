@@ -29,7 +29,7 @@ struct LinearCombinationField{A,B} <: NewField
   end
 end
 
-function return_cache(f::LinearCombinationField, x)
+function return_cache(f::LinearCombinationField, x::AbstractArray{<:Point})
   ca = return_cache(f.basis, x)
   a = evaluate!(ca, f.basis, x)
   b = f.coefs
@@ -37,7 +37,7 @@ function return_cache(f::LinearCombinationField, x)
   (ca, ck)
 end
 
-@inline function evaluate!(cache, f::LinearCombinationField, x)
+@inline function evaluate!(cache, f::LinearCombinationField, x::AbstractArray{<:Point})
   ca, ck = cache
   a = evaluate!(ca, f.basis, x)
   b = f.coefs

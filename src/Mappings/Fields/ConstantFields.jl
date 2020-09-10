@@ -1,23 +1,23 @@
-struct ConstantField{T} <: NewField
+struct ConstantField{T<:Number} <: NewField
   v::T
-  function ConstantField{T}(v::Union{Number,AbstractArray{<:Number}}) where {T}
+  function ConstantField{T}(v::T) where {T<:Number}
     new{typeof(v)}(v)
   end
 end
 
-ConstantField(v::Union{Number,AbstractArray{<:Number}}) = ConstantField{typeof(v)}(v)
+ConstantField(v::Number) = ConstantField{typeof(v)}(v)
 
-constant_field(v::Union{Number,AbstractArray{<:Number}}) =  ConstantField(v)
+constant_field(v::Number) =  ConstantField(v)
 
 # Number
 
-function return_cache(f::ConstantField,x)
+function return_cache(f::ConstantField,x::AbstractArray{<:Point})
   nx = length(x)
   c = zeros(typeof(f.v),nx)
   CachedArray(c)
 end
 
-function evaluate!(c,f::ConstantField,x)
+function evaluate!(c,f::ConstantField,x::AbstractArray{<:Point})
   nx = length(x)
   setsize!(c,(nx,))
   r = c.array
@@ -36,7 +36,7 @@ end
 
 # Array
 
-function return_cache(f::ConstantField{<:AbstractArray{<:Number}},x)
+function return_cache(f::ConstantField{<:AbstractArray{<:Number}},x::AbstractArray{<:Point})
   nx = length(x)
   sv = size(f.v)
   s = (nx,sv...)
@@ -44,7 +44,7 @@ function return_cache(f::ConstantField{<:AbstractArray{<:Number}},x)
   CachedArray(c)
 end
 
-function evaluate!(c,f::ConstantField{<:AbstractArray{<:Number}},x)
+function evaluate!(c,f::ConstantField{<:AbstractArray{<:Number}},x::AbstractArray{<:Point})
   nx = length(x)
   sv = size(f.v)
   s = (nx,sv...)

@@ -56,11 +56,14 @@ For instance, a default implementation is available for numbers, which behave li
 """
 abstract type NewField <: Mapping end
 
-const NewFieldOrFunction = Union{NewField,Function}
+# const NewFieldOrFunction = Union{NewField,Function}
+const FieldOrArrayOfFields = Union{NewField,AbstractArray{<:NewField}}
 
 function return_type(f::NewField,x::AbstractArray{<:Point})
   typeof(evaluate(f,x))
 end
+
+# Default implementation for the non-vectorised case
 
 return_type(f::NewField,x::Point) = return_type(f,Fill(x,1))
 
@@ -75,6 +78,8 @@ end
 function evaluate!(cache,f::AbstractArray{<:NewField},x::Point)
   @notimplemented
 end
+
+@inline derivative(f::NewField) = transpose(gradient(f))
 
 # Testers
 
@@ -94,7 +99,7 @@ Idem for `hessian`.
 The checks are performed with the `@test` macro.
 """
 function test_field(
-  f::NewFieldOrFunction, # @santiagobadia : Duck typing here? Also at Field level?
+  f::FieldOrArrayOfFields,
   x::Tuple,
   v::AbstractArray,cmp=(==);
   grad=nothing,
@@ -136,7 +141,7 @@ function test_field(
 
 end
 
-function test_field(f::NewFieldOrFunction,x,v::AbstractArray,cmp=(==);grad=nothing,hessian=nothing)
+function test_field(f::FieldOrArrayOfFields,x,v::AbstractArray,cmp=(==);grad=nothing,hessian=nothing)
   test_field(f,(x,),v,cmp;grad=grad,hessian=hessian)
 end
 
@@ -156,19 +161,3 @@ function gradient end
 
 Alias for the `gradient` function.
 """
-const ∇ = gradient
-
-"""
-    gradient(f::Field)
-
-Equivalent to
-
-    field_gradient(f)
-
-But only for types that inherit from `Field`. Types that implement
-the field interface but not inherit from `Field` (e.g., numbers and arrays of numbers)
-cannot use this function. Use `field_gradient` instead.
-"""
-# function gradient(f::Field)
-  # field_gradient(f)
-# end

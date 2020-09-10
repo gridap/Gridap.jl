@@ -10,13 +10,13 @@ MockField(D::Int,v::Number) = MockField{D}(v)
 
 mock_field(D::Int,v::Number) = MockField{D}(v)
 
-function return_cache(f::MockField,x)
+function return_cache(f::MockField,x::AbstractArray{<:Point})
   nx = length(x)
   c = zeros(typeof(f.v),nx)
   CachedArray(c)
 end
 
-function evaluate!(c,f::MockField,x)
+function evaluate!(c,f::MockField,x::AbstractArray{<:Point})
   nx = length(x)
   setsize!(c,(nx,))
   for i in eachindex(x)
@@ -36,6 +36,9 @@ end
   MockField{D}(vg)
 end
 
+# @santiagobadia : We want this to be an array. Result of the meeting w/
+# @fverdugo 09/09/20.
+
 struct MockBasis{V,D} <: NewField
   v::V
   ndofs::Int
@@ -44,14 +47,14 @@ struct MockBasis{V,D} <: NewField
   end
 end
 
-function return_cache(f::MockBasis,x)
+function return_cache(f::MockBasis,x::AbstractArray{<:Point})
   np = length(x)
   s = (np, f.ndofs)
   c = zeros(typeof(f.v),s)
   CachedArray(c)
 end
 
-function evaluate!(v,f::MockBasis,x)
+function evaluate!(v,f::MockBasis,x::AbstractArray{<:Point})
   np = length(x)
   s = (np, f.ndofs)
   setsize!(v,s)
@@ -81,14 +84,14 @@ struct OtherMockBasis{D} <: NewField
   end
 end
 
-function return_cache(f::OtherMockBasis,x)
+function return_cache(f::OtherMockBasis,x::AbstractArray{<:Point})
   np = length(x)
   s = (np, f.ndofs)
   c = zeros(eltype(x),s)
   CachedArray(c)
 end
 
-function evaluate!(v,f::OtherMockBasis,x)
+function evaluate!(v,f::OtherMockBasis,x::AbstractArray{<:Point})
   np = length(x)
   s = (np, f.ndofs)
   setsize!(v,s)

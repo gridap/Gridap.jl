@@ -4,14 +4,14 @@ end
 
 function_field(f::Function) =  FunctionField(f)
 
-function return_cache(f::FunctionField,x)
+function return_cache(f::FunctionField,x::AbstractArray{<:Point})
   nx = length(x)
   Te = eltype(x)
   c = zeros(return_type(f.f,Te),nx)
   CachedArray(c)
 end
 
-function evaluate!(c,f::FunctionField,x)
+function evaluate!(c,f::FunctionField,x::AbstractArray{<:Point})
   nx = length(x)
   setsize!(c,(nx,))
   for i in eachindex(x)
