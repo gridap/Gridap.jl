@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased 
 
 ### Added
- - Added VectorWithEntryInserted and VectorWithEntryRemoved. Since PR[XXX](https://github.com/gridap/Gridap.jl/pull/XXX/)
+ - Added VectorWithEntryInserted and VectorWithEntryRemoved. Since PR[#401](https://github.com/gridap/Gridap.jl/pull/401/)
 
 ## [0.14.0] - 2020-08-27
 
