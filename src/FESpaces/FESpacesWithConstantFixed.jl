@@ -1,40 +1,41 @@
-"""
-    struct FESpaceWithConstantFixed{CS,RD} <: SingleFieldFESpace
-      space::SingleFieldFESpace
-      constraint_style::Val{CS}
-      remove_dof::Val{RD}
-      dof_to_remove::Int
-    end
-"""
-struct FESpaceWithConstantFixed{CS,RD} <: SingleFieldFESpace
+abstract type ConstantApproach end;
+struct FixConstant      <: ConstantApproach end;
+struct DoNotFixConstant <: ConstantApproach end;
+
+#"""
+#    struct FESpaceWithConstantFixed{CS,<:ConstantApproach} <: SingleFieldFESpace
+#      space::SingleFieldFESpace
+#      constraint_style::Val{CS}
+#      dof_to_fix::Int
+#    end
+#"""
+struct FESpaceWithConstantFixed{CS,CA<:ConstantApproach} <: SingleFieldFESpace
   space::SingleFieldFESpace
   constraint_style::Val{CS}
-  remove_dof::Val{RD}
-  dof_to_remove::Int
+  dof_to_fix::Int
   @doc """
-      FESpaceWithConstantFixed(space::SingleFieldFESpace, remove_dof::Bool,
-      dof_to_remove::Int=num_free_dofs(space))
+      FESpaceWithConstantFixed(space::SingleFieldFESpace, fix_constant::Bool,
+      dof_to_fix::Int=num_free_dofs(space))
   """
   function FESpaceWithConstantFixed(space::SingleFieldFESpace,
-     remove_dof::Bool,
-     dof_to_remove::Int=num_free_dofs(space))
-    s = "FESpaceWithConstantFixed can only be constructed from spaces without dirichlet dofs."
-    @notimplementedif num_dirichlet_dofs(space) != 0 s
-    @assert !remove_dof || 1 <= dof_to_remove <= num_free_dofs(space)
+     fix_constant::Bool,
+     dof_to_fix::Int=num_free_dofs(space))
     cs = constraint_style(space)
     CS = get_val_parameter(cs)
-    rd = Val{remove_dof}()
-    RD = remove_dof
-    new{CS,RD}(space,cs,rd,dof_to_remove)
+    if (fix_constant && num_dirichlet_dofs(space)==0)
+      new{CS,FixConstant}(space,cs,dof_to_fix)
+    else
+      new{CS,DoNotFixConstant}(space,cs,dof_to_fix)
+    end
   end
 end
 
 # Genuine functions
-function num_free_dofs(f::FESpaceWithConstantFixed{CS,true}) where {CS}
+function num_free_dofs(f::FESpaceWithConstantFixed{CS,FixConstant}) where {CS}
   num_free_dofs(f.space)-1
 end
 
-function num_free_dofs(f::FESpaceWithConstantFixed{CS,false}) where {CS}
+function num_free_dofs(f::FESpaceWithConstantFixed{CS,DoNotFixConstant}) where {CS}
   num_free_dofs(f.space)
 end
 
@@ -42,19 +43,19 @@ function zero_free_values(f::FESpaceWithConstantFixed)
   zeros(num_free_dofs(f))
 end
 
-function get_cell_dofs(f::FESpaceWithConstantFixed{CS,true}) where {CS}
+function get_cell_dofs(f::FESpaceWithConstantFixed{CS,FixConstant}) where {CS}
   cell_dofs = get_cell_dofs(f.space)
-  CellDofsWithDofRemoved(cell_dofs,f.dof_to_remove)
+  CellDofsWithDofFixed(cell_dofs,f.dof_to_fix)
 end
 
-function get_cell_dofs(f::FESpaceWithConstantFixed{CS,false}) where {CS}
+function get_cell_dofs(f::FESpaceWithConstantFixed{CS,DoNotFixConstant}) where {CS}
   get_cell_dofs(f.space)
 end
 
 
-num_dirichlet_dofs(f::FESpaceWithConstantFixed{CS,true}) where {CS} = 1
+num_dirichlet_dofs(f::FESpaceWithConstantFixed{CS,FixConstant}) where {CS} = 1
 
-num_dirichlet_dofs(f::FESpaceWithConstantFixed{CS,false}) where {CS} = 0
+num_dirichlet_dofs(f::FESpaceWithConstantFixed{CS,DoNotFixConstant}) where {CS} = 0
 
 function zero_dirichlet_values(f::FESpaceWithConstantFixed)
   T = Float64 # TODO
@@ -62,65 +63,65 @@ function zero_dirichlet_values(f::FESpaceWithConstantFixed)
 end
 
 
-num_dirichlet_tags(f::FESpaceWithConstantFixed{CS,true}) where {CS} = 1
+num_dirichlet_tags(f::FESpaceWithConstantFixed{CS,FixConstant}) where {CS} = 1
 
-num_dirichlet_tags(f::FESpaceWithConstantFixed{CS,false}) where {CS} = 0
+num_dirichlet_tags(f::FESpaceWithConstantFixed{CS,DoNotFixConstant}) where {CS} = 0
 
-get_dirichlet_dof_tag(f::FESpaceWithConstantFixed{CS,true}) where {CS} = Int8[1,]
+get_dirichlet_dof_tag(f::FESpaceWithConstantFixed{CS,FixConstant}) where {CS} = Int8[1,]
 
-get_dirichlet_dof_tag(f::FESpaceWithConstantFixed{CS,false}) where {CS} = Int8[]
+get_dirichlet_dof_tag(f::FESpaceWithConstantFixed{CS,DoNotFixConstant}) where {CS} = Int8[]
 
 function scatter_free_and_dirichlet_values(
-  f::FESpaceWithConstantFixed{CS,true},fv,dv) where {CS}
+  f::FESpaceWithConstantFixed{CS,FixConstant},fv,dv) where {CS}
   @assert length(dv) == 1
   _dv = similar(dv,eltype(dv),0)
-  _fv = vcat(view(fv,1:f.dof_to_remove-1),
+  _fv = vcat(view(fv,1:f.dof_to_fix-1),
              dv,
-             view(fv,f.dof_to_remove:length(fv))) # TODO lazy append
+             view(fv,f.dof_to_fix:length(fv))) # TODO lazy append
  scatter_free_and_dirichlet_values(f.space,_fv,_dv)
 end
 
 function scatter_free_and_dirichlet_values(
-  f::FESpaceWithConstantFixed{CS,false},fv,dv) where {CS}
+  f::FESpaceWithConstantFixed{CS,DoNotFixConstant},fv,dv) where {CS}
   @assert length(dv) == 0
  scatter_free_and_dirichlet_values(f.space,fv,dv)
 end
 
 function gather_free_and_dirichlet_values(
-  f::FESpaceWithConstantFixed{CS,true},cv) where {CS}
+  f::FESpaceWithConstantFixed{CS,FixConstant},cv) where {CS}
   _fv, _dv = gather_free_and_dirichlet_values(f.space,cv)
   @assert length(_dv) == 0
-  fv = vcat(view(_fv,1:f.dof_to_remove-1),
-            view(_fv,f.dof_to_remove+1:length(_fv))) # TODO: can we avoid
+  fv = vcat(view(_fv,1:f.dof_to_fix-1),
+            view(_fv,f.dof_to_fix+1:length(_fv))) # TODO: can we avoid
                                           # allocating new memory?
-  dv = view(_fv,f.dof_to_remove:f.dof_to_remove)
+  dv = view(_fv,f.dof_to_fix:f.dof_to_fix)
   (fv, dv)
 end
 
 function gather_free_and_dirichlet_values(
-  f::FESpaceWithConstantFixed{CS,false},cv) where {CS}
+  f::FESpaceWithConstantFixed{CS,DoNotFixConstant},cv) where {CS}
   gather_free_and_dirichlet_values(f.space,cv)
 end
 
 function gather_free_and_dirichlet_values!(
-  fv,dv,f::FESpaceWithConstantFixed{CS,true},cv) where {CS}
+  fv,dv,f::FESpaceWithConstantFixed{CS,FixConstant},cv) where {CS}
   _fv, _dv = gather_free_and_dirichlet_values(f.space,cv)
   @assert length(_dv) == 0
-  fv .= vcat(view(_fv,1:f.dof_to_remove-1),
-            view(_fv,f.dof_to_remove+1:length(_fv))) # TODO: can we avoid
+  fv .= vcat(view(_fv,1:f.dof_to_fix-1),
+            view(_fv,f.dof_to_fix+1:length(_fv))) # TODO: can we avoid
                                           # allocating new memory?
-  dv .= view(_fv,f.dof_to_remove:f.dof_to_remove)
+  dv .= view(_fv,f.dof_to_fix:f.dof_to_fix)
   (fv, dv)
 end
 
 function gather_free_and_dirichlet_values!(
-  fv,dv,f::FESpaceWithConstantFixed{CS,false},cv) where {CS}
+  fv,dv,f::FESpaceWithConstantFixed{CS,DoNotFixConstant},cv) where {CS}
   gather_free_and_dirichlet_values(f.space,cv)
 end
 
-function TrialFESpace(f::FESpaceWithConstantFixed{CS,RD}) where {CS,RD}
+function TrialFESpace(f::FESpaceWithConstantFixed{CS,CA}) where {CS,CA}
   U = TrialFESpace(f.space)
-  FESpaceWithConstantFixed(U,RD,f.dof_to_remove)
+  FESpaceWithConstantFixed{CS,CA}(U,f.dof_to_fix)
 end
 
 # Delegated functions
@@ -143,21 +144,21 @@ constraint_style(::Type{<:FESpaceWithConstantFixed{CS}}) where CS = Val{CS}()
 
 # Helpers
 
-struct CellDofsWithDofRemoved{A<:AbstractArray} <: AbstractVector{Vector{Int}}
+struct CellDofsWithDofFixed{A<:AbstractArray} <: AbstractVector{Vector{Int}}
   cell_dofs::A
-  dof_to_remove::Int
+  dof_to_fix::Int
 end
 
-Base.size(a::CellDofsWithDofRemoved) = (length(a.cell_dofs),)
+Base.size(a::CellDofsWithDofFixed) = (length(a.cell_dofs),)
 
-Base.IndexStyle(::Type{<:CellDofsWithDofRemoved}) = IndexLinear()
+Base.IndexStyle(::Type{<:CellDofsWithDofFixed}) = IndexLinear()
 
-function Base.getindex(a::CellDofsWithDofRemoved,i::Integer)
+function Base.getindex(a::CellDofsWithDofFixed,i::Integer)
   cache = array_cache(a)
   getindex!(cache,a,i)
 end
 
-function array_cache(a::CellDofsWithDofRemoved)
+function array_cache(a::CellDofsWithDofFixed)
   @assert eltype(a.cell_dofs) == Vector{Int}
   b = testitem(a.cell_dofs)
   c = CachedArray(b)
@@ -165,16 +166,16 @@ function array_cache(a::CellDofsWithDofRemoved)
   (c, cache)
 end
 
-@inline function getindex!(d,a::CellDofsWithDofRemoved,i::Integer)
+@inline function getindex!(d,a::CellDofsWithDofFixed,i::Integer)
   c, cache = d
   b = getindex!(cache,a.cell_dofs,i)
   setsize!(c,size(b))
   r = c.array
   for j in 1:length(b)
     bj = b[j]
-    if bj == a.dof_to_remove
+    if bj == a.dof_to_fix
       rj = -1
-    elseif bj < a.dof_to_remove
+    elseif bj < a.dof_to_fix
       rj = bj
     else
       rj = bj-1
