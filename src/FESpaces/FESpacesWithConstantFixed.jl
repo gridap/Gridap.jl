@@ -75,10 +75,8 @@ function scatter_free_and_dirichlet_values(
   f::FESpaceWithConstantFixed{CS,FixConstant},fv,dv) where {CS}
   @assert length(dv) == 1
   _dv = similar(dv,eltype(dv),0)
-  _fv = vcat(view(fv,1:f.dof_to_fix-1),
-             dv,
-             view(fv,f.dof_to_fix:length(fv))) # TODO lazy append
- scatter_free_and_dirichlet_values(f.space,_fv,_dv)
+  _fv = VectorWithEntryInserted(fv,f.dof_to_fix,dv[1])
+  scatter_free_and_dirichlet_values(f.space,_fv,_dv)
 end
 
 function scatter_free_and_dirichlet_values(
@@ -91,10 +89,8 @@ function gather_free_and_dirichlet_values(
   f::FESpaceWithConstantFixed{CS,FixConstant},cv) where {CS}
   _fv, _dv = gather_free_and_dirichlet_values(f.space,cv)
   @assert length(_dv) == 0
-  fv = vcat(view(_fv,1:f.dof_to_fix-1),
-            view(_fv,f.dof_to_fix+1:length(_fv))) # TODO: can we avoid
-                                          # allocating new memory?
-  dv = view(_fv,f.dof_to_fix:f.dof_to_fix)
+  fv = VectorWithEntryRemoved(_fv,f.dof_to_fix)
+  dv = _fv[f.dof_to_fix:f.dof_to_fix]
   (fv, dv)
 end
 
@@ -107,10 +103,8 @@ function gather_free_and_dirichlet_values!(
   fv,dv,f::FESpaceWithConstantFixed{CS,FixConstant},cv) where {CS}
   _fv, _dv = gather_free_and_dirichlet_values(f.space,cv)
   @assert length(_dv) == 0
-  fv .= vcat(view(_fv,1:f.dof_to_fix-1),
-            view(_fv,f.dof_to_fix+1:length(_fv))) # TODO: can we avoid
-                                          # allocating new memory?
-  dv .= view(_fv,f.dof_to_fix:f.dof_to_fix)
+  fv    .= VectorWithEntryRemoved(_fv,f.dof_to_fix)
+  dv[1]  = _fv[f.dof_to_fix]
   (fv, dv)
 end
 

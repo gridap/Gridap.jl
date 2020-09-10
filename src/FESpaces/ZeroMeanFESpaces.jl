@@ -21,8 +21,8 @@ function ZeroMeanFESpace(
   space::SingleFieldFESpace,trian::Triangulation,quad::CellQuadrature)
 
   _space = FESpaceWithConstantFixed(space,
-                                            true,
-                                            num_free_dofs(space))
+                                    true,
+                                    num_free_dofs(space))
   vol_i, vol = _setup_vols(space,trian,quad)
   ZeroMeanFESpace(_space,vol_i,vol,constraint_style(_space))
 end
