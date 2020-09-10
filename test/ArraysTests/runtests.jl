@@ -36,4 +36,8 @@ using Test
 
 @testset "AutodiffTests" begin include("AutodiffTests.jl") end
 
+@testset "VectorWithEntryRemovedTests" begin include("VectorWithEntryRemovedTests.jl") end
+
+@testset "VectorWithEntryInsertedTests" begin include("VectorWithEntryInsertedTests.jl") end
+
 end # module
