@@ -23,8 +23,6 @@ matdata = ([],[],[])
 vecdata = ([],[])
 test_single_field_fe_space(V0,matvecdata,matdata,vecdata)
 
-cell_map = get_cell_map(V0)
-
 f(x) = sin(4*pi*(x[1]-x[2]^2))+1
 
 fh = interpolate_everywhere(f, V0)

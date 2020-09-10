@@ -59,7 +59,9 @@ e = u - uh
 trian = Triangulation(model)
 quad = CellQuadrature(trian,order)
 
-el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
+ϕ = get_cell_map(trian)
+
+el2 = sqrt(sum(integrate(inner(e,e),quad)))
 @test el2 < 1.0e-10
 
 uh = zero(U)

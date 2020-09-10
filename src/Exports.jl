@@ -91,7 +91,6 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish Geometry Triangulation
 @publish Geometry get_normal_vector
 @publish Geometry get_cell_coordinates
-@publish Geometry restrict
 @publish Geometry get_physical_coordinate
 @publish Geometry get_cell_map
 @publish Geometry CartesianGrid

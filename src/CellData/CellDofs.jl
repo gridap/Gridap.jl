@@ -30,6 +30,8 @@ function evaluate(cell_dofs::CellDof,cell_field::CellField)
   ReferenceFEs.evaluate_dof_array(get_array(cell_dofs),get_array(cell_field))
 end
 
+Base.length(a::CellDof) = length(get_array(a))
+
 """
 Functor-like evaluation for CellDof
 """
@@ -63,7 +65,10 @@ struct MappedCellDof <: CellDof
   ϕ::CellMap
 end
 
+Base.length(a::MappedCellDof) = num_cell_ids(a.ϕ)
+
 function evaluate(a::MappedCellDof,f::CellField)
+  @notimplementedif !isa(get_cell_id(a.ϕ),IdentityVector)
   a.σ_ref(f∘a.ϕ)
 end
 

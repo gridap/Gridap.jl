@@ -114,19 +114,19 @@ end
 
 """
 """
-function compute_cell_space(reffes, cell_to_ctype, cell_map)
+function compute_cell_space(reffes, cell_to_ctype, ϕ)
 
   dof_basis = map(get_dof_basis,reffes)
-  cell_dof_basis = CompressedArray(dof_basis,cell_to_ctype)
-  cell_dof_basis = GenericCellDofBasis(Val{true}(),cell_dof_basis)
+  refdofs = CompressedArray(dof_basis,cell_to_ctype)
+  cell_dof_basis_ref = GenericCellDof(refdofs)
+  cell_dof_basis = ϕ(cell_dof_basis_ref)
 
   shapefuns =  map(get_shapefuns,reffes)
   refshapefuns = CompressedArray(shapefuns,cell_to_ctype)
-  cell_shapefuns = attachmap(refshapefuns,cell_map)
-
   reffe_to_axs = map(reffe->(Base.OneTo(num_dofs(reffe)),),reffes) 
   cell_axs = CompressedArray(reffe_to_axs,cell_to_ctype)
-  cell_shapefuns = GenericCellField(cell_shapefuns,cell_map,Val{true}(),cell_axs,Val((:,)))
+  cell_shapefuns_ref = GenericCellField(refshapefuns,cell_axs,Val((:,)))
+  cell_shapefuns = cell_shapefuns_ref∘inverse_map(ϕ)
 
   (cell_shapefuns, cell_dof_basis)
 end
@@ -144,14 +144,13 @@ function compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
   dof_bases = map(get_dof_basis,reffes)
 
   cell_dof_basis = _cell_dof_basis_physical_space(dof_bases,cell_to_ctype,cell_map)
-  ref_style = Val{false}()
-  cell_dof_basis = GenericCellDofBasis(ref_style,cell_dof_basis)
+  cell_dof_basis = GenericCellDofBasis(cell_dof_basis)
 
   prebasis =  map(get_prebasis,reffes)
   cell_prebasis = CompressedArray(prebasis,cell_to_ctype)
   reffe_to_axs = map(reffe->(Base.OneTo(num_dofs(reffe)),),reffes) 
   cell_axs = CompressedArray(reffe_to_axs,cell_to_ctype)
-  cell_prebasis = GenericCellField(cell_prebasis,cell_map,Val{false}(),cell_axs,Val((:,)))
+  cell_prebasis = GenericCellField(cell_prebasis,cell_axs,Val((:,)))
   cell_shapefuns = _cell_shape_functions_physical_space(cell_prebasis,cell_dof_basis,cell_map)
 
   (cell_shapefuns, cell_dof_basis)
@@ -196,8 +195,7 @@ function _cell_shape_functions_physical_space(cell_prebasis,cell_dof_basis,cell_
   cell_shapefuns_phys = apply(change_basis,get_array(cell_prebasis),cell_matrix_inv)
   cell_axs = get_cell_axes(cell_prebasis)
   metasize_style = MetaSizeStyle(cell_prebasis)
-  ref_style = RefStyle(cell_prebasis)
-  GenericCellField(cell_shapefuns_phys,cell_map,ref_style,cell_axs,metasize_style)
+  GenericCellField(cell_shapefuns_phys,cell_axs,metasize_style)
    # @santiagobadia : better implementation in the future...
 end
 

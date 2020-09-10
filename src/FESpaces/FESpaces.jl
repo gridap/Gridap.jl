@@ -39,15 +39,11 @@ import Gridap.Arrays: kernel_return_type
 import Gridap.Arrays: kernel_testitem!
 import Gridap.Arrays: reindex
 import Gridap.Arrays: apply
-import Gridap.CellData: get_cell_map
+import Gridap.Geometry: get_cell_map
 import Gridap.Geometry: get_reffes
 import Gridap.Geometry: get_cell_type
-import Gridap.CellData: RefStyle
 import Gridap.CellData: get_cell_axes
-import Gridap.CellData: change_ref_style
 import Gridap.Helpers: operate
-import Gridap.Geometry: similar_object
-import Gridap.Geometry: restrict
 import Gridap.Geometry: get_cell_id
 import Gridap.Fields: integrate
 import Gridap.Fields: evaluate

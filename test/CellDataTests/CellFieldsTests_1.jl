@@ -84,6 +84,11 @@ test_array(r1,r2)
 
 du = trialize_cell_basis(dv)
 
+cell_to_u = [ rand(length(nodes)) for nodes in cell_to_node]
+uh = lincomb(du,cell_to_u)
+r = (uh∘ϕ)(q)
+test_array(r,collect(r))
+
 # Gradient rules (trial)
 r1 = (∇(du+du)∘ϕ)(q)
 r2 = ((∇(du)+∇(du))∘ϕ)(q)
@@ -95,6 +100,26 @@ test_array(r1,r2)
 
 r1 = (∇(2*du)∘ϕ)(q)
 r2 = ((2*∇(du))∘ϕ)(q)
+test_array(r1,r2)
+
+# Gradient rules (FEFunction)
+r1 = (∇(uh)∘ϕ)(q)
+r2 = (lincomb(∇(du),cell_to_u)∘ϕ)(q)
+test_array(r1,r2)
+
+r2 = (lincomb(∇(dv)∘ϕ,cell_to_u))(q)
+test_array(r1,r2)
+
+r1 = (∇(uh+uh)∘ϕ)(q)
+r2 = ((∇(uh)+∇(uh))∘ϕ)(q)
+test_array(r1,r2)
+
+r1 = (∇(uh-uh)∘ϕ)(q)
+r2 = ((∇(uh)-∇(uh))∘ϕ)(q)
+test_array(r1,r2)
+
+r1 = (∇(2*uh)∘ϕ)(q)
+r2 = ((2*∇(uh))∘ϕ)(q)
 test_array(r1,r2)
 
 # integration

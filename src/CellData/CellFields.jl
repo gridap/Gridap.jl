@@ -464,23 +464,26 @@ function _trialize_cell_basis(test::CellField,metasize::Val{(:,)})
   end
 end
 
-function gradient(cf::CellFieldFromOperation{typeof(trialize_cell_basis)})
-  key = :gradient
-  memo = get_memo(cf)
-  if !haskey(memo,key)
-    memo[key] = trialize_cell_basis(gradient(first(cf.args)))
-  end
-  memo[key]
+function compute_gradient(cf::CellFieldFromOperation{typeof(trialize_cell_basis)})
+  trialize_cell_basis(gradient(first(cf.args)))
 end
 
 function Fields.lincomb(a::CellField,b::AbstractArray)
-  @notimplementedif !is_test(a)
   cell_axes = Fill((),length(a))
   metasize = Val(())
   CellFieldFromOperation(lincomb,(a,),cell_axes,metasize) do a
     array = lincomb(get_array(a),b)
     GenericCellField(array)
   end
+end
+
+function Fields.lincomb(cf::CellFieldFromOperation{typeof(trialize_cell_basis)},b::AbstractArray)
+  lincomb(first(cf.args),b)
+end
+
+function compute_gradient(cf::CellFieldFromOperation{typeof(lincomb)})
+  a = gradient(cf.args[1])
+  CellFieldFromOperation(cf.op,lincomb,(a,),get_cell_axes(cf),MetaSizeStyle(cf))
 end
 
 # Optimizations associated with inverse maps (i.e., with the reference space)
@@ -553,10 +556,10 @@ function _phys_grad(∇f,∇ϕ)
   GenericCellField(a,get_cell_axes(∇f),MetaSizeStyle(∇f))
 end
 
-function Fields.lincomb(a::CellFieldComposedWithInverseMap,b::AbstractArray)
-  u = lincomb(a.f,b)
-  CellFieldComposedWithInverseMap(u,a.map)
-end
+#function Fields.lincomb(a::CellFieldComposedWithInverseMap,b::AbstractArray)
+#  u = lincomb(a.f,b)
+#  CellFieldComposedWithInverseMap(u,a.ϕinv)
+#end
 
 function Base.:∘(f::CellFieldComposedWithInverseMap,ϕ::CellMap)
   if f.ϕinv.ϕ == ϕ

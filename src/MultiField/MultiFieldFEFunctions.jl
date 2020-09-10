@@ -46,11 +46,9 @@ Arrays.get_array(a::MultiFieldFEFunction) = get_array(a.multi_cell_field)
 
 CellData.get_memo(a::MultiFieldFEFunction) = get_memo(a.multi_cell_field)
 
-CellData.get_cell_map(a::MultiFieldFEFunction) = get_cell_map(a.multi_cell_field)
+Geometry.get_cell_map(a::MultiFieldFEFunction) = get_cell_map(a.multi_cell_field)
 
 CellData.get_cell_axes(a::MultiFieldFEFunction) = get_cell_axes(a.multi_cell_field)
-
-CellData.RefStyle(::Type{<:MultiFieldFEFunction{T}}) where T = RefStyle(T)
 
 CellData.MetaSizeStyle(::Type{<:MultiFieldFEFunction{T}}) where T = MetaSizeStyle(T)
 
@@ -73,11 +71,11 @@ Base.iterate(m::MultiFieldFEFunction,state) = iterate(m.single_fe_functions,stat
 
 Base.getindex(m::MultiFieldFEFunction,field_id::Integer) = m.single_fe_functions[field_id]
 
-function Geometry.restrict(a::MultiFieldFEFunction,trian::Triangulation)
-  f = (ai) -> restrict(ai,trian)
-  blocks = map(f,a.single_fe_functions)
-  blocks
-end
+#function Geometry.restrict(a::MultiFieldFEFunction,trian::Triangulation)
+#  f = (ai) -> restrict(ai,trian)
+#  blocks = map(f,a.single_fe_functions)
+#  blocks
+#end
 
 function FESpaces.get_cell_values(f::MultiFieldFEFunction)
   f.cell_dof_values

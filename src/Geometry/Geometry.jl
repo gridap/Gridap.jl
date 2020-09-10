@@ -43,6 +43,7 @@ import Gridap.CellData: QPointCellField
 import Gridap.CellData: get_memo
 import Gridap.CellData: get_cell_id
 import Gridap.CellData: num_cell_ids
+import Gridap.CellData: integrate
 
 import Gridap.Fields: field_cache
 import Gridap.Fields: evaluate_field!
@@ -121,7 +122,6 @@ export UnstructuredGridTopology
 
 export Triangulation
 export get_reffes
-export get_cell_map
 export get_cell_coordinates
 export get_cell_reffes
 export get_cell_shapefuns

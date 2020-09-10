@@ -271,7 +271,17 @@ function get_cell_basis(f::ExtendedFESpace)
   _extend_cell_basis(f,cell_basis)
 end
 
+function _extend_cell_basis(f,cell_basis::CellFieldComposedWithInverseMap)
+  ϕ = get_cell_map(f.trian.oldtrian)
+  cell_basis_ref = _extend_cell_basis_work(f,cell_basis.f)
+  cell_basis_ref∘inverse_map(ϕ)
+end
+
 function _extend_cell_basis(f,cell_basis)
+  _extend_cell_basis_work(f,cell_basis)
+end
+
+function _extend_cell_basis_work(f,cell_basis)
   cell_to_val = get_array(cell_basis)
 
   xi = testitem(get_cell_coordinates(f.trian))
@@ -290,9 +300,8 @@ function _extend_cell_basis(f,cell_basis)
     f.trian.void_to_oldcell,
     f.trian.cell_to_oldcell)
 
-  cm = get_cell_map(f.trian.oldtrian)
   ca = _extend_cell_axes(f,get_cell_axes(cell_basis))
-  GenericCellField(array,cm,RefStyle(cell_basis),ca,MetaSizeStyle(cell_basis))
+  GenericCellField(array,ca,MetaSizeStyle(cell_basis))
 end
 
 function _trialize_if_needed(_void_to_val,::Val{(:,)})
@@ -319,10 +328,23 @@ function  _cell_field_for_ext_fe_space(f,cell_vals,ft::TrialFESpace)
 end
 
 function get_cell_dof_basis(f::ExtendedFESpace)
+  cell_dof = get_cell_dof_basis(f.space)
+  _extend_cell_dof_basis(f,cell_dof)
+end
 
-  cell_to_val = get_cell_dof_basis(f.space)
-  ref_trait = RefStyle(cell_to_val)
-  cell_to_val = get_array(cell_to_val)
+function _extend_cell_dof_basis(f,cell_dof::MappedCellDof)
+  ϕ = get_cell_map(f.trian.oldtrian)
+  σ_ref = _extend_cell_dof_basis_work(f,cell_dof.σ_ref)
+  ϕ(σ_ref)
+end
+
+function _extend_cell_dof_basis(f,cell_dof)
+  _extend_cell_dof_basis_work(f,cell_dof)
+end
+
+function _extend_cell_dof_basis_work(f,cell_dof)
+
+  cell_to_val = get_array(cell_dof)
 
   D = num_dims(f.trian)
   T = Float64 # TODO
@@ -335,7 +357,7 @@ function get_cell_dof_basis(f::ExtendedFESpace)
          f.trian.void_to_oldcell,
          f.trian.cell_to_oldcell)
 
-  cell_dof_basis = GenericCellDofBasis(ref_trait,eb)
+  cell_dof_basis = GenericCellDofBasis(eb)
 
 end
 

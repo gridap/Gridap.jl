@@ -34,8 +34,8 @@ f(x) = x[2]
 v = get_cell_basis(V)
 u = get_cell_basis(U)
 
-cellmat = integrate(∇(v)⊙∇(u),trian,quad)
-cellvec = integrate(v*f,trian,quad)
+cellmat = integrate(∇(v)⊙∇(u),quad)
+cellvec = integrate(v*f,quad)
 cellids = collect(1:num_cells(trian))
 
 assem = SparseMatrixAssembler(U,V)
@@ -75,11 +75,11 @@ assem = SparseMatrixAssembler(V,U)
 op = AffineFEOperator(U,V,assem,t_Ω)
 uh = solve(op)
 e = u_sol - uh
-@test sum(integrate(e*e,trian,quad)) < tol
+@test sum(integrate(e*e,quad)) < tol
 
 op = AffineFEOperator(U,V,t_Ω)
 uh = solve(op)
 e = u_sol - uh
-@test sum(integrate(e*e,trian,quad)) < tol
+@test sum(integrate(e*e,quad)) < tol
 
 end # module

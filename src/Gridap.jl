@@ -53,12 +53,12 @@ include("CellData/CellData.jl")
 
 include("Geometry/Geometry.jl")
 
-#include("FESpaces/FESpaces.jl")
-#
-#include("MultiField/MultiField.jl")
-#
-#include("Visualization/Visualization.jl")
-#
-#include("Exports.jl")
+include("FESpaces/FESpaces.jl")
+
+include("MultiField/MultiField.jl")
+
+include("Visualization/Visualization.jl")
+
+include("Exports.jl")
 
 end # module

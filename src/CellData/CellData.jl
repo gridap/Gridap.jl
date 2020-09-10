@@ -64,6 +64,7 @@ export mean
 export merge_cell_dofs_at_skeleton
 export merge_cell_fields_at_skeleton
 export inverse_map
+export CellFieldComposedWithInverseMap
 export SkeletonFaceMap
 export FaceMap
 export ReindexedCellMap

@@ -284,3 +284,10 @@ function _meas_K_fill!(bgcell_to_dV,subcell1_to_dV,subcell1_to_bgcell)
     bgcell_to_dV[bgcell] += subcell1_to_dV[subcell1]
   end
 end
+
+@deprecate(
+  integrate(object,trian::Triangulation,quad::CellQuadrature),
+  integrate(object,quad::CellQuadrature)
+)
+
+

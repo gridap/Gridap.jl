@@ -53,10 +53,10 @@ l2(u) = inner(u,u)
 sh1(u) = inner(∇(u),∇(u))
 h1(u) = sh1(u) + l2(u)
 
-el2 = sqrt(sum( integrate(l2(e),trian,quad) ))
-eh1 = sqrt(sum( integrate(h1(e),trian,quad) ))
-ul2 = sqrt(sum( integrate(l2(uh),trian,quad) ))
-uh1 = sqrt(sum( integrate(h1(uh),trian,quad) ))
+el2 = sqrt(sum( integrate(l2(e),quad) ))
+eh1 = sqrt(sum( integrate(h1(e),quad) ))
+ul2 = sqrt(sum( integrate(l2(uh),quad) ))
+uh1 = sqrt(sum( integrate(h1(uh),quad) ))
 
 @test el2/ul2 < 1.e-8
 @test eh1/uh1 < 1.e-7

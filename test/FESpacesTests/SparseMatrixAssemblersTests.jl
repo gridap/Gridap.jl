@@ -38,16 +38,13 @@ quad = CellQuadrature(trian,degree)
 btrian = BoundaryTriangulation(model)
 bquad = CellQuadrature(btrian,degree)
 
-bu = restrict(u,btrian)
-bv = restrict(v,btrian)
-
-cellmat = integrate(∇(v)⊙∇(u),trian,quad)
-cellvec = integrate(v⊙b,trian,quad)
+cellmat = integrate(∇(v)⊙∇(u),quad)
+cellvec = integrate(v⊙b,quad)
 cellmatvec = pair_arrays(cellmat,cellvec)
 cellids = collect(1:num_cells(trian))
 
-bcellmat = integrate(bv*bu,btrian,bquad)
-bcellvec = integrate(bv*3,btrian,bquad)
+bcellmat = integrate(v*u,bquad)
+bcellvec = integrate(v*3,bquad)
 bcellmatvec = pair_arrays(bcellmat,bcellvec)
 bcellids = get_face_to_cell(btrian)
 
@@ -129,11 +126,9 @@ end
 strian = SkeletonTriangulation(model)
 squad = CellQuadrature(strian,degree)
 
-su = restrict(u,strian)
-sv = restrict(v,strian)
 
-scellmat = integrate(jump(sv)*su.⁻,strian,squad)
-scellvec = integrate(mean(sv*3),strian,squad)
+scellmat = integrate(jump(v)*u.⁻,squad)
+scellvec = integrate(mean(v*3),squad)
 scellmatvec = pair_arrays(scellmat,scellvec)
 scellids = get_cell_id(strian)
 zh = zero(V)

@@ -1,20 +1,17 @@
 
-struct MultiFieldCellField{R,S} <: CellField
+struct MultiFieldCellField{S} <: CellField
   single_fields::Vector{<:CellField}
   cell_map::AbstractArray
-  ref_trait::Val{R}
   cell_axes::AbstractArray
   metasize::Val{S}
   function MultiFieldCellField(single_fields::Vector{<:CellField})
     @assert length(single_fields) > 0
     f1 = first(single_fields)
     cell_map = get_cell_map(f1)
-    ref_style = RefStyle(f1)
     cell_axes = get_cell_axes(f1)
     metasize = MetaSizeStyle(f1)
-    R = get_val_parameter(ref_style)
     S = get_val_parameter(metasize)
-    new{R,S}(single_fields,cell_map,ref_style,cell_axes,metasize)
+    new{S}(single_fields,cell_map,cell_axes,metasize)
   end
 end
 
@@ -22,13 +19,11 @@ Arrays.get_array(a::MultiFieldCellField) = @notimplemented
 
 CellData.get_memo(a::MultiFieldCellField) = @notimplemented
 
-CellData.get_cell_map(a::MultiFieldCellField) = a.cell_map
+Geometry.get_cell_map(a::MultiFieldCellField) = a.cell_map
 
 CellData.get_cell_axes(a::MultiFieldCellField) = a.cell_axes
 
-CellData.RefStyle(::Type{<:MultiFieldCellField{R}}) where R = Val(R)
-
-CellData.MetaSizeStyle(::Type{<:MultiFieldCellField{R,S}}) where {R,S} = Val(S)
+CellData.MetaSizeStyle(::Type{<:MultiFieldCellField{S}}) where S = Val(S)
 
 Base.length(f::MultiFieldCellField) = length(first(f.single_fields))
 
@@ -50,9 +45,9 @@ function Fields.evaluate(cf::MultiFieldCellField,x::AbstractArray)
   @notimplemented s
 end
 
-function Geometry.restrict(a::MultiFieldCellField,trian::Triangulation)
-  f = (ai) -> restrict(ai,trian)
-  blocks = map(f,a.single_fields)
-  blocks
-end
+#function Geometry.restrict(a::MultiFieldCellField,trian::Triangulation)
+#  f = (ai) -> restrict(ai,trian)
+#  blocks = map(f,a.single_fields)
+#  blocks
+#end
 

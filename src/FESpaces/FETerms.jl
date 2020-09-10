@@ -290,31 +290,24 @@ end
 function get_cell_matrix(t::AffineFETermFromIntegration,u,v)
   @assert is_a_fe_cell_basis(v)
   @assert is_a_fe_cell_basis(u)
-  _v = restrict(v,t.trian)
-  _u = restrict(u,t.trian)
-  integrate(t.biform(_u,_v),t.trian,t.quad)
+  integrate(t.biform(u,v),t.quad)
 end
 
 function get_cell_vector(t::AffineFETermFromIntegration,uhd,v)
   @assert is_a_fe_function(uhd)
   @assert is_a_fe_cell_basis(v)
-  _v = restrict(v,t.trian)
-  _uhd = restrict(uhd,t.trian)
-  integrate(t.liform(_v)-t.biform(_uhd,_v),t.trian,t.quad)
+  integrate(t.liform(v)-t.biform(uhd,v),t.quad)
 end
 
 function get_cell_vector(t::AffineFETermFromIntegration,v)
   @assert is_a_fe_cell_basis(v)
-  _v = restrict(v,t.trian)
-  integrate(t.liform(_v),t.trian,t.quad)
+  integrate(t.liform(v),t.quad)
 end
 
 function get_cell_residual(t::AffineFETermFromIntegration,uh,v)
   @assert is_a_fe_function(uh)
   @assert is_a_fe_cell_basis(v)
-  _v = restrict(v,t.trian)
-  _uh = restrict(uh,t.trian)
-  integrate(t.biform(_uh,_v)-t.liform(_v),t.trian,t.quad)
+  integrate(t.biform(uh,v)-t.liform(v),t.quad)
 end
 
 function get_cell_id(t::AffineFETermFromIntegration)
@@ -343,21 +336,18 @@ end
 function get_cell_vector(t::FESourceFromIntegration,uhd,v)
   @assert is_a_fe_function(uhd)
   @assert is_a_fe_cell_basis(v)
-  _v = restrict(v,t.trian)
-  integrate(t.liform(_v),t.trian,t.quad)
+  integrate(t.liform(v),t.quad)
 end
 
 function get_cell_vector(t::FESourceFromIntegration,v)
   @assert is_a_fe_cell_basis(v)
-  _v = restrict(v,t.trian)
-  integrate(t.liform(_v),t.trian,t.quad)
+  integrate(t.liform(v),t.quad)
 end
 
 function get_cell_residual(t::FESourceFromIntegration,uh,v)
   @assert is_a_fe_function(uh)
   @assert is_a_fe_cell_basis(v)
-  _v = restrict(v,t.trian)
-  integrate(-t.liform(_v),t.trian,t.quad)
+  integrate(-t.liform(v),t.quad)
 end
 
 function get_cell_id(t::FESourceFromIntegration)
@@ -380,17 +370,13 @@ end
 function get_cell_matrix(t::LinearFETermFromIntegration,u,v)
   @assert is_a_fe_cell_basis(v)
   @assert is_a_fe_cell_basis(u)
-  _v = restrict(v,t.trian)
-  _u = restrict(u,t.trian)
-  integrate(t.biform(_u,_v),t.trian,t.quad)
+  integrate(t.biform(u,v),t.quad)
 end
 
 function get_cell_vector(t::LinearFETermFromIntegration,uhd,v)
   @assert is_a_fe_function(uhd)
   @assert is_a_fe_cell_basis(v)
-  _v = restrict(v,t.trian)
-  _uhd = restrict(uhd,t.trian)
-  integrate(-t.biform(_uhd,_v),t.trian,t.quad)
+  integrate(-t.biform(uhd,v),t.quad)
 end
 
 function get_cell_vector(t::LinearFETermFromIntegration,v)
@@ -401,9 +387,7 @@ end
 function get_cell_residual(t::LinearFETermFromIntegration,uh,v)
   @assert is_a_fe_function(uh)
   @assert is_a_fe_cell_basis(v)
-  _v = restrict(v,t.trian)
-  _uh = restrict(uh,t.trian)
-  integrate(t.biform(_uh,_v),t.trian,t.quad)
+  integrate(t.biform(uh,v),t.quad)
 end
 
 function get_cell_id(t::LinearFETermFromIntegration)
@@ -428,18 +412,13 @@ function get_cell_jacobian(t::NonlinearFETerm,uh,du,v)
   @assert is_a_fe_function(uh)
   @assert is_a_fe_cell_basis(v)
   @assert is_a_fe_cell_basis(du)
-  _v = restrict(v,t.trian)
-  _uh = restrict(uh,t.trian)
-  _du = restrict(du,t.trian)
-  integrate(t.jac(_uh,_du,_v),t.trian,t.quad)
+  integrate(t.jac(uh,du,v),t.quad)
 end
 
 function get_cell_residual(t::NonlinearFETerm,uh,v)
   @assert is_a_fe_function(uh)
   @assert is_a_fe_cell_basis(v)
-  _v = restrict(v,t.trian)
-  _uh = restrict(uh,t.trian)
-  integrate(t.res(_uh,_v),t.trian,t.quad)
+  integrate(t.res(uh,v),t.quad)
 end
 
 function get_cell_id(t::NonlinearFETerm)
@@ -456,9 +435,7 @@ end
 function get_cell_matrix(t::AffineFETermFromCellMatVec,u,v)
   @assert is_a_fe_cell_basis(v)
   @assert is_a_fe_cell_basis(u)
-  _v = restrict(v,t.trian)
-  _u = restrict(u,t.trian)
-  cellmatvec = t.matvecfun(_u,_v)
+  cellmatvec = t.matvecfun(u,v)
   cellmat, _ = unpair_arrays(cellmatvec)
   cellmat
 end
@@ -468,10 +445,8 @@ function get_cell_vector(t::AffineFETermFromCellMatVec,uhd,v)
   @assert is_a_fe_cell_basis(v)
   trial = TrialFESpace(get_fe_space(uhd))
   u = get_cell_basis(trial)
-  _v = restrict(v,t.trian)
-  _u = restrict(u,t.trian)
   _cellvals = get_cell_values(uhd,get_cell_id(t.trian))
-  cellmatvec = t.matvecfun(_u,_v)
+  cellmatvec = t.matvecfun(u,v)
   cellmatvec_with_diri = attach_dirichlet(cellmatvec,_cellvals)
   _, cellvec_with_diri = unpair_arrays(cellmatvec_with_diri)
   cellvec_with_diri
@@ -490,10 +465,8 @@ function get_cell_matrix_and_vector(t::AffineFETermFromCellMatVec,uhd,u,v)
   @assert is_a_fe_function(uhd)
   @assert is_a_fe_cell_basis(v)
   @assert is_a_fe_cell_basis(u)
-  _v = restrict(v,t.trian)
-  _u = restrict(u,t.trian)
   _cellvals = get_cell_values(uhd,get_cell_id(t.trian))
-  cellmatvec = t.matvecfun(_u,_v)
+  cellmatvec = t.matvecfun(u,v)
   cellmatvec_with_diri = attach_dirichlet(cellmatvec,_cellvals)
   (cellmatvec_with_diri, nothing, nothing)
 end
@@ -509,10 +482,7 @@ function get_cell_jacobian(t::FETermFromCellJacRes,uh,du,v)
   @assert is_a_fe_function(uh)
   @assert is_a_fe_cell_basis(v)
   @assert is_a_fe_cell_basis(du)
-  _v = restrict(v,t.trian)
-  _du = restrict(du,t.trian)
-  _uh = restrict(uh,t.trian)
-  celljacres = t.jacresfun(_uh,_du,_v)
+  celljacres = t.jacresfun(uh,du,v)
   celljac, _ = unpair_arrays(celljacres)
   celljac
 end
@@ -522,10 +492,7 @@ function get_cell_residual(t::FETermFromCellJacRes,uh,v)
   @assert is_a_fe_cell_basis(v)
   trial = TrialFESpace(get_fe_space(uh))
   du = get_cell_basis(trial)
-  _v = restrict(v,t.trian)
-  _du = restrict(du,t.trian)
-  _uh = restrict(uh,t.trian)
-  celljacres = t.jacresfun(_uh,_du,_v)
+  celljacres = t.jacresfun(uh,du,v)
   _, cellres = unpair_arrays(celljacres)
   cellres
 end
@@ -538,9 +505,6 @@ function get_cell_jacobian_and_residual(t::FETermFromCellJacRes,uh,du,v)
   @assert is_a_fe_function(uh)
   @assert is_a_fe_cell_basis(v)
   @assert is_a_fe_cell_basis(du)
-  _v = restrict(v,t.trian)
-  _du = restrict(du,t.trian)
-  _uh = restrict(uh,t.trian)
-  celljacres = t.jacresfun(_uh,_du,_v)
+  celljacres = t.jacresfun(uh,du,v)
   (celljacres, nothing, nothing)
 end

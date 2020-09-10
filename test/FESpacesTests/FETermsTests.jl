@@ -129,8 +129,8 @@ jac_q = evaluate(jac,q)
 x_q = evaluate(ϕ,q)
 
 function matvecfun(u,v)
-  cellmat = integrate(∇(u)⋅∇(v),trian,quad)
-  cellvec = integrate(v*f,trian,quad)
+  cellmat = integrate(∇(u)⋅∇(v),quad)
+  cellvec = integrate(v*f,quad)
   pair_arrays(cellmat,cellvec)
 end
 
@@ -150,8 +150,8 @@ x = A \ b
 @test x ≈ get_free_values(uh)
 
 function jacresfun(uh,du,v)
-  cellmat = integrate(∇(du)⋅∇(v),trian,quad)
-  cellvec = integrate(∇(uh)⋅∇(v)-v*f,trian,quad)
+  cellmat = integrate(∇(du)⋅∇(v),quad)
+  cellvec = integrate(∇(uh)⋅∇(v)-v*f,quad)
   pair_arrays(cellmat,cellvec)
 end
 

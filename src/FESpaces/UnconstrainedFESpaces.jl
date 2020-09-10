@@ -8,7 +8,7 @@ struct UnconstrainedFESpace <: SingleFieldFESpace
   ndirichlet::Int
   cell_dofs::AbstractArray
   cell_basis::CellField
-  cell_dof_basis::CellDofBasis
+  cell_dof_basis::CellDof
   dirichlet_dof_tag::Vector{Int8}
   dirichlet_cells::Vector{Int}
   ntags::Int

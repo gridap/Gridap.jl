@@ -83,12 +83,12 @@ function test_single_field_fe_space(f,matvecdata,matdata,vecdata,pred=(==))
   test_fe_space(f,matvecdata,matdata,vecdata)
 end
 
-"""
-"""
-function CellData.get_cell_map(fs::SingleFieldFESpace)
-  fe_basis = get_cell_basis(fs)
-  get_cell_map(fe_basis)
-end
+#"""
+#"""
+#function get_cell_map(fs::SingleFieldFESpace)
+#  fe_basis = get_cell_basis(fs)
+#  get_cell_map(fe_basis)
+#end
 
 function CellData.get_cell_axes(f::SingleFieldFESpace)
   get_cell_axes(get_cell_basis(f))
@@ -218,8 +218,7 @@ end
 
 function _cell_vals(fs::SingleFieldFESpace,object)
   cdb = get_cell_dof_basis(fs)
-  cm = get_cell_map(fs)
-  cf = convert_to_cell_field(object,cm,RefStyle(cdb))
+  cf = convert_to_cell_field(object,length(cdb))
   cell_vals = evaluate(cdb,cf)
 end
 

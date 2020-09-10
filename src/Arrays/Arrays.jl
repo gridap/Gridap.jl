@@ -110,6 +110,7 @@ export lazy_append
 export lazy_split
 export AppendedArray
 
+export TreeNode
 export print_op_tree
 
 export autodiff_array_gradient
