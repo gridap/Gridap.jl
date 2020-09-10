@@ -55,7 +55,7 @@ function FEFunction(
                             dirichlet_values,
                             f.vol_i,
                             f.vol,
-                            f.space.dof_to_remove)
+                            f.space.dof_to_fix)
   fv = apply(+,free_values,Fill(c,length(free_values)))
   dv = dirichlet_values .+ c
   FEFunction(f.space,fv,dv)

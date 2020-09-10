@@ -121,7 +121,7 @@ end
 
 function TrialFESpace(f::FESpaceWithConstantFixed{CS,CA}) where {CS,CA}
   U = TrialFESpace(f.space)
-  FESpaceWithConstantFixed{CS,CA}(U,f.dof_to_fix)
+  FESpaceWithConstantFixed(U,CA==FixConstant,f.dof_to_fix)
 end
 
 # Delegated functions
