@@ -22,7 +22,7 @@ for `Function` objects.  However, we recommend that new types inherit from `Mapp
 """
 abstract type Mapping <: GridapType end
 
-const MappingOrFunction = Union{Mapping,Function}
+# const MappingOrFunction = Union{Mapping,Function}
 
 """
     mapping_return_type(f,x...)
@@ -32,7 +32,7 @@ arguments of the types of the objects `x`.
 
 It defaults to `typeof(Mapping_testitem(f,x...))`
 """
-return_type(f::Mapping,x...) = typeof(testitem(f,x...))
+return_type(f,x...) = typeof(testitem(f,x...))
 
 # @santiagobadia :  Why not
 # function return_type(f::NewField,x)
@@ -46,7 +46,7 @@ Returns the `cache` needed to apply mapping `f` with arguments
 of the same type as the objects in `x`.
 This function returns `nothing` by default.
 """
-return_cache(f::Mapping,x...) = nothing
+return_cache(f,x...) = nothing
 
 """
     apply_mapping!(cache,f,x...)
@@ -59,7 +59,7 @@ If the result of two or more invocations of this function need to be accessed si
 (e.g., in multi-threading), create and use various `cache` objects (e.g., one cache
 per thread).
 """
-evaluate!(cache,f::Mapping,x...) = @abstractmethod
+evaluate!(cache,f,x...) = @abstractmethod
 
 
 # Testing the interface
@@ -99,7 +99,7 @@ cache = mapping_cache(f,x...)
 apply_mapping!(cache,f,x...)
 ```
 """
-function evaluate(f::Mapping,x...)
+function evaluate(f,x...)
   c = return_cache(f,x...)
   y = evaluate!(c,f,x...)
   y
@@ -113,7 +113,7 @@ end
 Returns a tuple with the cache corresponding to each mapping in `fs`
 for the arguments `x...`.
 """
-function return_caches(fs::Tuple{Vararg{<:MappingOrFunction}},x...) where N
+function return_caches(fs::Tuple,x...)
   _mapping_caches(x,fs...)
 end
 
@@ -135,7 +135,7 @@ Applies the mappings in the tuple `fs` at the arguments `x...`
 by using the corresponding cache objects in the tuple `caches`.
 The result is also a tuple containing the result for each mapping in `fs`.
 """
-@inline function evaluate!(cfs::Tuple,f::Tuple{Vararg{<:MappingOrFunction}},x...) where N
+@inline function evaluate!(cfs::Tuple,f::Tuple,x...)
   _evaluate_mappings!(cfs,x,f...)
 end
 
@@ -188,9 +188,8 @@ end
 
 # Some particular cases
 
-const NumberOrArray = Union{Number,AbstractArray}
-
 # @santiagobadia : To be decided
+# automatic differentiation? derivative?
 function gradient(k::Mapping)
   @notimplemented
 end
@@ -210,8 +209,24 @@ evaluate(f::Function,x...) = f(x...)   #evaluate(FunctionMapping(f),x...)
 
 evaluate(T::Type,f::Function,x...) = f(x...) #evaluate(T,FunctionMapping(f),x...)
 
-testitem(f,x...) = f(x...)
+testitem(f::Function,x...) = f(x...)
 
-testitem!(cache,f,x...) = f(x...)
+testitem!(cache,f::Function,x...) = f(x...)
 
-return_caches(f::Tuple{Vararg{<:Function}},x...) = ( x -> nothing, length(f))
+# Number or Array implementation
+
+const NumberOrArray = Union{Number,AbstractArray{<:Number}}
+
+evaluate!(cache,f::NumberOrArray,x...) = f
+
+return_cache(f::NumberOrArray,x...) = nothing
+
+return_type(f::NumberOrArray,x...) = typeof(f)
+
+evaluate(f::NumberOrArray,x...) = f
+
+evaluate(T::Type,f::NumberOrArray,x...) = f
+
+testitem(f::NumberOrArray,x...) = f
+
+testitem!(cache,f::NumberOrArray,x...) = f

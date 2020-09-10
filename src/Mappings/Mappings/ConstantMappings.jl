@@ -1,13 +1,13 @@
-struct ConstantMapping{T} <: Mapping
-  v::T
-  function ConstantMapping{T}(v::Union{Number,AbstractArray{<:Number}}) where {T}
-    new{typeof(v)}(v)
-  end
-end
+# struct ConstantMapping{T} <: Mapping
+#   v::T
+#   function ConstantMapping{T}(v::Union{Number,AbstractArray{<:Number}}) where {T}
+#     new{typeof(v)}(v)
+#   end
+# end
 
-ConstantMapping(v::Union{Number,AbstractArray{<:Number}}) = ConstantMapping{typeof(v)}(v)
+# ConstantMapping(v::Union{Number,AbstractArray{<:Number}}) = ConstantMapping{typeof(v)}(v)
 
-constant_mapping(v::Union{Number,AbstractArray{<:Number}}) = ConstantMapping(v)
+# constant_mapping(v::Union{Number,AbstractArray{<:Number}}) = ConstantMapping(v)
 
 # Number
 
@@ -31,9 +31,9 @@ constant_mapping(v::Union{Number,AbstractArray{<:Number}}) = ConstantMapping(v)
 #   c
 # end
 
-function evaluate!(c,f::ConstantMapping,x...)
-  return f.v
-end
+# function evaluate!(c,f::ConstantMapping,x...)
+#   return f.v
+# end
 
 # function evaluate!(c,f::ConstantMapping,x::AbstractArray)
   # return c

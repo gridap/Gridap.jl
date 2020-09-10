@@ -13,3 +13,9 @@
 #function return_type(k::FunctionMapping,x...)
 #  typeof(evaluate(k,x...))
 #end
+
+# struct GenericMapping{T} <: Mapping
+  # f::T
+#  end
+
+# return_cache(m::GenericMapping,x...) = return_cache(m.f,x...)

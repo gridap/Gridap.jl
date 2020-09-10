@@ -62,11 +62,23 @@ function return_type(f::NewField,x::AbstractArray{<:Point})
   typeof(evaluate(f,x))
 end
 
-return_type(f::NewField,x::Point) = return_type(f,[x])
+return_type(f::NewField,x::Point) = return_type(f,Fill(x,1))
 
-evaluate!(cache,f::NewField,x::Point) = evaluate!(cache,f,[x])
+function evaluate!(cache,f::NewField,x::Point)
+  first(evaluate!(cache,f,Fill(x,1)))
+end
 
-evaluate(f::NewField,x::Point) = evaluate(f,[x])
+function evaluate(f::NewField,x::Point)
+  first(evaluate(f,Fill(x,1)))
+end
+
+function evaluate!(cache,f::AbstractArray{<:NewField},x::Point)
+  @notimplemented
+end
+
+function evaluate(f::NewField,x::Point)
+first(evaluate(f,Fill(x,1)))
+end
 
 # Testers
 

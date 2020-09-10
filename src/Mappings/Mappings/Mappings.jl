@@ -24,7 +24,6 @@ export return_type
 export return_cache
 export evaluate!
 export evaluate
-# export multievaluate
 export test_mapping
 export return_caches
 export return_types

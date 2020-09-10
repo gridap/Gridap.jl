@@ -9,6 +9,21 @@ using Gridap.TensorValues
 using Gridap.NewFields
 using Gridap.NewFields: MockField, MockBasis, OtherMockBasis
 
+function foo2(t::Vararg{T}) where T
+  t
+end
+
+function foo3(t...)
+  t
+end
+
+function foo(t)
+  t
+end
+
+foo3(1,2)
+foo3(1)
+
 
 k = -
 

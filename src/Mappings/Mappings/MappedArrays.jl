@@ -55,10 +55,18 @@ println(c)
 ```
 
 """
-function apply_mapping(f::MappingOrFunction, a::AbstractArray...)
+
+apply_mapping(f::Function,a...) = _apply_broadcast(f,a...)
+
+apply_mapping(f::Mapping,a...) = _apply_broadcast(f,a...)
+
+function _apply_broadcast(f,a::AbstractArray...)
     s = common_size(a...)
     apply_mapping(Fill(f, s...), a...)
 end
+
+
+  = (Fill(f,length(a)),a...)
 
 """
     apply(::Type{T},f,a::AbstractArray...) where T
@@ -100,7 +108,7 @@ println(c)
 [5, -1, 3, 1]
 ```
 """
-function apply_mapping(f::AbstractArray{<:MappingOrFunction}, a::AbstractArray...)
+function apply_mapping(f::AbstractArray, a::AbstractArray...)
     MappedArray(f, a...)
 end
 
@@ -110,7 +118,7 @@ end
 Like [`apply(f::AbstractArray,a::AbstractArray...)`](@ref), but the user provides the element type
 of the resulting array in order to circumvent type inference.
 """
-function apply_mapping(::Type{T}, f::AbstractArray{<:MappingOrFunction}, a::AbstractArray...) where T
+function apply_mapping(::Type{T}, f::AbstractArray, a::AbstractArray...) where T
     MappedArray(T, f, a...)
 end
 
@@ -124,7 +132,7 @@ end
 struct MappedArray{T,N,F,G} <: AbstractArray{T,N}
     g::G
     f::F
-    function MappedArray(::Type{T}, g::AbstractArray{<:MappingOrFunction}, f::AbstractArray...) where T
+    function MappedArray(::Type{T}, g::AbstractArray, f::AbstractArray...) where T
         G = typeof(g)
         F = typeof(f)
         f1, = f
@@ -132,7 +140,7 @@ struct MappedArray{T,N,F,G} <: AbstractArray{T,N}
     end
 end
 
-function MappedArray(g::AbstractArray{<:MappingOrFunction}, f::AbstractArray...)
+function MappedArray(g::AbstractArray, f::AbstractArray...)
     gi = testitem(g) # Assumes that all mappings return the same type
     fi = testitems(f...)
     T = typeof(testitem(gi, fi...))

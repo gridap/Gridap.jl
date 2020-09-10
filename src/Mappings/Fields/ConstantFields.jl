@@ -64,3 +64,5 @@ function gradient(f::ConstantField{<:AbstractArray{<:Number}})
   E = eltype(T)
   ConstantField(Fill(zero(E),size(f.v)))
 end
+
+using BenchmarkTools
