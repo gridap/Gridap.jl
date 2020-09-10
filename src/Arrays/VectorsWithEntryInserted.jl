@@ -5,7 +5,7 @@ mutable struct VectorWithEntryInserted{T,A} <: AbstractVector{T}
   function VectorWithEntryInserted(a::AbstractVector,index::Integer,value)
     A = typeof(a)
     T = eltype(a)
-    @assert 1 <= index <= length(a)
+    @assert 1 <= index <= length(a)+1
     new{T,A}(a,index,value)
   end
 end
