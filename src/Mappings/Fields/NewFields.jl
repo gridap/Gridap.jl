@@ -33,6 +33,7 @@ export test_field
 export Point
 
 export evaluate_gradient!
+export return_gradient_type
 export return_gradient_cache
 export evaluate_hessian!
 export return_hessian_cache

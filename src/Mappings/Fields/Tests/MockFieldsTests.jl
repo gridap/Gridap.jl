@@ -3,6 +3,7 @@ module MockFieldsTests
 using Gridap.NewFields
 using Gridap.NewFields: MockField, MockBasis, OtherMockBasis
 using Gridap.TensorValues
+using Gridap.Mappings
 
 np = 4
 p = Point(1,2)

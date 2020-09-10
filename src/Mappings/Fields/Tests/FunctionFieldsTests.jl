@@ -20,7 +20,6 @@ f = FunctionField(u)
 
 test_field(f,x,CachedArray(x))
 
-test_field(u,(x,),x)
 test_mapping(u,(x,),x)
 
 end #module
