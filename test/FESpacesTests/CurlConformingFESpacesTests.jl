@@ -38,7 +38,7 @@ e = u - uh
 trian = Triangulation(model)
 quad = CellQuadrature(trian,order)
 
-el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
+el2 = sqrt(sum(integrate(inner(e,e),quad)))
 @test el2 < 1.0e-10
 
 T = Float64
@@ -50,7 +50,7 @@ U = TrialFESpace(V,u)
 
 uh = interpolate(u,U)
 
-el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
+el2 = sqrt(sum(integrate(inner(e,e),quad)))
 @test el2 < 1.0e-10
 
 # using Gridap.Visualization
