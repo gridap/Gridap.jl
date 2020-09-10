@@ -17,7 +17,7 @@ function field_operation_axes(axs::Tuple...)
   n = maximum( map(length,axs) )
   rs = []
   for i in 1:n
-    r = 1:0
+    r = Base.OneTo(0)
     for ax in axs
       if length(ax) >= i
         if length(r) > 1

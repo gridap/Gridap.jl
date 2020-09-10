@@ -85,11 +85,6 @@ u(x) = VectorValue(x[1]+x[2], x[1])
 
 uh = interpolate(u,U)
 
-
-uh_in = restrict(uh,trian_in)
-
-uh_Γ = restrict(uh,trian_Γ)
-
 t_in = AffineFETerm( (u,v) -> v⊙u, (v) -> v⊙u, trian_in, quad_in)
 op_in = AffineFEOperator(U,V,t_in)
 
@@ -103,24 +98,25 @@ op_Ω = AffineFEOperator(U,V,t_Ω)
 t_Γ = AffineFETerm( (u,v) -> jump(v)⊙jump(u) + jump(ε(v))⊙jump(ε(u)), (v) -> jump(v)⊙u, trian_Γ, quad_Γ)
 op_Γ = AffineFEOperator(U,V,t_Γ)
 
-q_in = get_coordinates(quad_in)
-collect(evaluate(uh_in,q_in))
+x_in = get_coordinates(quad_in)
+collect(evaluate(uh.cell_field,x_in))
 
-q = get_coordinates(quad)
-collect(evaluate(uh,q))
+kk
 
-q_Γ = get_coordinates(quad_Γ)
-collect(evaluate(jump(uh_Γ),q_Γ))
-collect(evaluate(jump(∇(uh_Γ)),q_Γ))
-collect(evaluate(jump(ε(uh_Γ)),q_Γ))
+x = get_coordinates(quad)
+collect(evaluate(uh,x))
+
+x_Γ = get_coordinates(quad_Γ)
+collect(evaluate(jump(uh),x_Γ))
+collect(evaluate(jump(∇(uh)),x_Γ))
+collect(evaluate(jump(ε(uh)),x_Γ))
 
 V = TestFESpace(model=model_in,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:H1)
 @test isa(V,ExtendedFESpace)
 
 V = TestFESpace(model=model_in,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:H1,constraint=:zeromean)
 uh = FEFunction(V,rand(num_free_dofs(V)))
-uh_in = restrict(uh,trian_in)
-@test sum(integrate(uh_in,trian_in,quad_in)) + 1 ≈ 1
+@test sum(integrate(uh,quad_in)) + 1 ≈ 1
 
 V = TestFESpace(model=model,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:H1)
 @test !isa(V,ExtendedFESpace)
@@ -130,8 +126,7 @@ V = TestFESpace(triangulation=trian_in,valuetype=Float64,reffe=:Lagrangian,order
 
 V = TestFESpace(triangulation=trian_in,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:L2,constraint=:zeromean)
 uh = FEFunction(V,rand(num_free_dofs(V)))
-uh_in = restrict(uh,trian_in)
-@test sum(integrate(uh_in,trian_in,quad_in)) + 1 ≈ 1
+@test sum(integrate(uh,quad_in)) + 1 ≈ 1
 
 V = TestFESpace(triangulation=trian,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:L2)
 @test !isa(V,ExtendedFESpace)

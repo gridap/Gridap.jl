@@ -357,7 +357,7 @@ function _extend_cell_dof_basis_work(f,cell_dof)
          f.trian.void_to_oldcell,
          f.trian.cell_to_oldcell)
 
-  cell_dof_basis = GenericCellDofBasis(eb)
+  cell_dof_basis = GenericCellDof(eb)
 
 end
 
@@ -406,7 +406,7 @@ function get_dirichlet_dof_tag(f::ExtendedFESpace)
   get_dirichlet_dof_tag(f.space)
 end
 
-function TrialFESpace(f::ExtendedFESpace)
-  U = TrialFESpace(f.space)
-  ExtendedFESpace(U,f.trian)
-end
+#function TrialFESpace(f::ExtendedFESpace)
+#  U = TrialFESpace(f.space)
+#  ExtendedFESpace(U,f.trian)
+#end

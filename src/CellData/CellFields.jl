@@ -409,6 +409,10 @@ function _compute_metadata_from_op(op,args::CellField...)
   axs, Val(S)
 end
 
+function _compute_metadata_from_op(op,arg::CellField)
+  get_cell_axes(arg), MetaSizeStyle(arg)
+end
+
 # Conversions
 
 function convert_to_cell_field(f,l::Integer)

@@ -39,7 +39,7 @@ test_single_field_fe_space(U,matvecdata,matdata,vecdata)
 fun(x) = sin(4*pi*(x[1]+x[2]^2)) + 3
 uh = interpolate(fun, U)
 
-mean1 = sum(integrate(uh,trian,quad))
+mean1 = sum(integrate(uh,quad))
 
 tol = 1.0e-10
 @test abs(mean1) < tol

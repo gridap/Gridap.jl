@@ -74,6 +74,10 @@ r1 = (∇(dv+dv)∘ϕ)(q)
 r2 = ((∇(dv)+∇(dv))∘ϕ)(q)
 test_array(r1,r2)
 
+r1 = (∇(dv+dv)∘ϕ)(q)
+r2 = ((∇(dv)+∇(dv))∘ϕ)(q)
+test_array(r1,r2)
+
 r1 = (∇(dv-dv)∘ϕ)(q)
 r2 = ((∇(dv)-∇(dv))∘ϕ)(q)
 test_array(r1,r2)
@@ -185,6 +189,9 @@ test_array(r,collect(r))
 
 r = ∫( x->1 )*dΓ
 test_array(r,collect(r))
+
+r1 = (uh∘ϕ_Γ)(q_Γ)
+kk
 
 # Face map + re-indexed
 
