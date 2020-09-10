@@ -42,14 +42,14 @@ reffes = [LagrangianRefFE(T,p,order) for p in polytopes]
 dof_bases = map(get_dof_basis,reffes)
 
 cell_dof_basis = FESpaces._cell_dof_basis_physical_space(dof_bases,cell_to_ctype,cell_map)
-cell_dof_basis = GenericCellDofBasis(Val{false}(),cell_dof_basis)
+cell_dof_basis = GenericCellDof(cell_dof_basis)
 
 prebasis =  map(get_prebasis,reffes)
 cell_prebasis = CompressedArray(prebasis,cell_to_ctype)
 
 ncells = num_cells(model)
 ndofs = num_dofs(first(reffes))
-cell_prebasis_new = GenericCellField(cell_prebasis,cell_map,Val{false}(),Fill((Base.OneTo(ndofs),),ncells),Val((:,)))
+cell_prebasis_new = GenericCellField(cell_prebasis,Fill((Base.OneTo(ndofs),),ncells),Val((:,)))
 
 
 # cell_matrix = evaluate(cell_dof_basis,cell_prebasis)
@@ -86,7 +86,7 @@ rgp = evaluate(gradient(psfs),q)
 
 func(x) = x
 
-cell_field = convert_to_cell_field(func,cell_map)
+cell_field = convert_to_cell_field(func,num_cell_ids(cell_map))
 isa(cell_field,CellField)
 
 # Now RT elements

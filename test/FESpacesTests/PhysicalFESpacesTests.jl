@@ -47,8 +47,6 @@ V = TestFESpace(
   model = model,
   dirichlet_tags = [1,6])
 
-  V.cell_basis.ref_trait
-
 # Vp = TestFESpace(
 #   reffe = :RaviartThomas,
 #   conformity = :Hdiv,
@@ -67,8 +65,6 @@ V = TestFESpace(
 
 Up = TrialFESpace(Vp,u)
 U = TrialFESpace(V,u)
-U.cell_basis.ref_trait
-U.space.cell_basis.ref_trait
 
 # FEM = Gridap.FESpaces
 # Juno.@enter TrialFESpace(Vp,u)
@@ -80,14 +76,14 @@ rp = evaluate(Up.cell_basis,q)
 
 @test all(collect(r) .≈ collect(rp))
 
-@test RefStyle(Up.space.cell_dof_basis) == Val{false}()
-@test RefStyle(U.space.cell_dof_basis) == Val{true}()
-
-@test RefStyle(Up.space.cell_basis) == Val{false}()
-@test RefStyle(U.space.cell_basis) == Val{true}()
-
-@test RefStyle(Vp.cell_basis) == Val{false}()
-@test RefStyle(V.cell_basis) == Val{true}()
+#@test RefStyle(Up.space.cell_dof_basis) == Val{false}()
+#@test RefStyle(U.space.cell_dof_basis) == Val{true}()
+#
+#@test RefStyle(Up.space.cell_basis) == Val{false}()
+#@test RefStyle(U.space.cell_basis) == Val{true}()
+#
+#@test RefStyle(Vp.cell_basis) == Val{false}()
+#@test RefStyle(V.cell_basis) == Val{true}()
 
 uhf = interpolate(u,Up)
 uhd = interpolate_dirichlet(u,Up)
@@ -115,13 +111,13 @@ uhd_r.dirichlet_values
 
 e = u - uhf_r
 
-el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
+el2 = sqrt(sum(integrate(inner(e,e),quad)))
 
 @test el2 < 1.0e-10
 
 e = u - uhf
 
-el2 = sqrt(sum(integrate(inner(e,e),trian,quad)))
+el2 = sqrt(sum(integrate(inner(e,e),quad)))
 
 @test el2 < 1.0e-10
 

@@ -490,6 +490,11 @@ function compute_gradient(cf::CellFieldFromOperation{typeof(lincomb)})
   CellFieldFromOperation(cf.op,lincomb,(a,),get_cell_axes(cf),MetaSizeStyle(cf))
 end
 
+function _compose_cell_field_from_op(f::CellFieldFromOperation{typeof(lincomb)},ϕ)
+  a = f.op(f.args...)
+  a∘ϕ
+end
+
 # Optimizations associated with inverse maps (i.e., with the reference space)
 
 function Base.:∘(f::CellField,ϕinv::InverseCellMap)
@@ -548,10 +553,21 @@ function Arrays.reindex(f::CellFieldComposedWithInverseMap,a::AbstractVector)
 end
 
 function compute_gradient(f::CellFieldComposedWithInverseMap)
+  _compute_phys_gradient(f,f.f)
+end
+
+function _compute_phys_gradient(f,f_ref)
   ∇ϕ = gradient(f.ϕinv.ϕ)
-  ∇f = gradient(f.f)
+  ∇f = gradient(f_ref)
   g = _phys_grad(∇f,∇ϕ)
   CellFieldComposedWithInverseMap(g,f.ϕinv)
+end
+
+function _compute_phys_gradient(f,cf::CellFieldFromOperation{typeof(lincomb)})
+  a = _compute_phys_gradient(f,cf.args[1])
+  b = CellFieldFromOperation(cf.op,lincomb,(a.f,),get_cell_axes(cf),MetaSizeStyle(cf))
+  c = GenericCellField(get_array(b))
+  CellFieldComposedWithInverseMap(c,f.ϕinv)
 end
 
 function _phys_grad(∇f,∇ϕ)
@@ -560,10 +576,10 @@ function _phys_grad(∇f,∇ϕ)
   GenericCellField(a,get_cell_axes(∇f),MetaSizeStyle(∇f))
 end
 
-#function Fields.lincomb(a::CellFieldComposedWithInverseMap,b::AbstractArray)
-#  u = lincomb(a.f,b)
-#  CellFieldComposedWithInverseMap(u,a.ϕinv)
-#end
+function Fields.lincomb(a::CellFieldComposedWithInverseMap,b::AbstractArray)
+  u = lincomb(a.f,b)
+  CellFieldComposedWithInverseMap(u,a.ϕinv)
+end
 
 function Base.:∘(f::CellFieldComposedWithInverseMap,ϕ::CellMap)
   if f.ϕinv.ϕ == ϕ

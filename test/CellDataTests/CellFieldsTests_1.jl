@@ -190,8 +190,8 @@ test_array(r,collect(r))
 r = ∫( x->1 )*dΓ
 test_array(r,collect(r))
 
-r1 = (uh∘ϕ_Γ)(q_Γ)
-kk
+r = (uh∘ϕ_Γ)(q_Γ)
+test_array(r,collect(r))
 
 # Face map + re-indexed
 

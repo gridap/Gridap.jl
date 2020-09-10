@@ -23,16 +23,16 @@ V = TestFESpace(
   dof_space = :physical)
 
 cell_dof_basis = get_cell_dof_basis(V)
-@test is_in_physical_space(cell_dof_basis)
+#@test is_in_physical_space(cell_dof_basis)
 
 indices = [2,3,3,1]
 
 f = reindex(cell_dof_basis,indices)
 @test length(get_array(f)) == length(indices)
-@test is_in_physical_space(f)
+#@test is_in_physical_space(f)
 
 cell_basis = get_cell_basis(V)
-@test is_in_physical_space(cell_basis)
+#@test is_in_physical_space(cell_basis)
 
 test_cell_dof_basis(cell_dof_basis,cell_basis)
 
@@ -47,10 +47,10 @@ V = TestFESpace(
   dirichlet_tags = [1,6])
 
 cell_dof_basis = get_cell_dof_basis(V)
-@test is_in_ref_space(cell_dof_basis)
+#@test is_in_ref_space(cell_dof_basis)
 
 cell_basis = get_cell_basis(V)
-@test is_in_ref_space(cell_basis)
+#@test is_in_ref_space(cell_basis)
 
 test_cell_dof_basis(cell_dof_basis,cell_basis)
 

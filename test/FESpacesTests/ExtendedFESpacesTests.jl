@@ -101,8 +101,6 @@ op_Γ = AffineFEOperator(U,V,t_Γ)
 x_in = get_coordinates(quad_in)
 collect(evaluate(uh.cell_field,x_in))
 
-kk
-
 x = get_coordinates(quad)
 collect(evaluate(uh,x))
 

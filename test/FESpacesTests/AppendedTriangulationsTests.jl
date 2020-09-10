@@ -34,24 +34,22 @@ quad_out = CellQuadrature(trian_out,2*order)
 
 q = get_coordinates(quad)
 w = get_weights(quad)
-@test isa(q,AppendedArray)
-@test isa(w,AppendedArray)
+@test isa(get_array(q.q),AppendedArray)
+@test isa(w.refvals,AppendedArray)
 
 V = TestFESpace(model=model,valuetype=Float64,order=order,reffe=:Lagrangian,conformity=:H1)
 
 u(x) = x[1]+x[2]
 
-_v = interpolate(u,V)
-v = restrict(_v,trian)
+v = interpolate(u,V)
 
 e = u - v
-el2 = sqrt(sum(integrate(e*e,trian,quad)))
+el2 = sqrt(sum(integrate(e*e,quad)))
 @test el2 < 1.0e-8
 
-_dv = get_cell_basis(V)
-dv = restrict(_dv,trian)
+dv = get_cell_basis(V)
 
-cellmat =  integrate(∇(dv)⋅∇(dv),trian,quad)
+cellmat =  integrate(∇(dv)⋅∇(dv),quad)
 @test isa(cellmat,AppendedArray)
 @test isa(cellmat.a,CompressedArray)
 @test isa(cellmat.b,CompressedArray)

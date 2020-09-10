@@ -18,7 +18,7 @@ using Test
 
 @testset "FETermsWithAutodiff" begin include("FETermsWithAutodiffTests.jl") end
 
-@testset "CellDofBases" begin include("CellDofBasesTests.jl") end
+@testset "CellDofs" begin include("CellDofBasesTests.jl") end
 
 @testset "Law" begin include("LawTests.jl") end
 

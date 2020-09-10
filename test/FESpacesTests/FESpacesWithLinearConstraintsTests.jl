@@ -92,8 +92,8 @@ e = u - uch
 l2(u) = u*u
 h1(u) = u*u + a(u,u)
 
-e_l2 = sqrt(sum(integrate(l2(e),trian,quad)))
-e_h1 = sqrt(sum(integrate(h1(e),trian,quad)))
+e_l2 = sqrt(sum(integrate(l2(e),quad)))
+e_h1 = sqrt(sum(integrate(h1(e),quad)))
 
 tol = 1.e-9
 @test e_l2 < tol

@@ -44,4 +44,5 @@ CellData.get_memo(a::SingleFieldFEFunction) = get_memo(a.cell_field)
 #TODO this is a bit hacky
 CellData._compose_cell_fields(f::SingleFieldFEFunction,ϕ) = f.cell_field∘ϕ
 
+#TODO this is a bit hacky
 Fields.gradient(f::SingleFieldFEFunction) = gradient(f.cell_field)
