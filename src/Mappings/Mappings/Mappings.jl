@@ -64,7 +64,7 @@ include("MappedArrays.jl")
 
 # include("MappingArrays.jl")
 
-include("ConstantMappings.jl")
+# include("ConstantMappings.jl")
 
 # @santiagobadia : To be decided what to do here
 # include("MappingGradients.jl")

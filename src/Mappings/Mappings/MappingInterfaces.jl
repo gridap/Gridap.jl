@@ -34,11 +34,6 @@ It defaults to `typeof(Mapping_testitem(f,x...))`
 """
 return_type(f,x...) = typeof(testitem(f,x...))
 
-# @santiagobadia :  Why not
-# function return_type(f::NewField,x)
-#   typeof(evaluate(f,x))
-# end
-
 """
     mapping_cache(f,x...)
 
@@ -61,6 +56,37 @@ per thread).
 """
 evaluate!(cache,f,x...) = @abstractmethod
 
+"""
+    apply_mapping(f,x...)
+
+apply the mapping `f` at the arguments in `x` by creating a temporary cache
+internally. This functions is equivalent to
+```jl
+cache = mapping_cache(f,x...)
+apply_mapping!(cache,f,x...)
+```
+"""
+function evaluate(f,x...)
+  c = return_cache(f,x...)
+  y = evaluate!(c,f,x...)
+  y
+end
+
+function testitem(k::Mapping,x...)
+  cache = return_cache(k,x...)
+  testitem!(cache,k,x...)
+end
+
+@inline function testitem!(cache,k::Mapping,x...)
+  evaluate!(cache,k,x...)
+end
+
+# Differentiation
+
+# @santiagobadia : We could consider autodiff here
+derivative(k::Mapping) = @notimplemented
+
+gradient(k::Mapping) = transpose(derivative(k::Mapping))
 
 # Testing the interface
 
@@ -84,25 +110,6 @@ function test_mapping(f,x::Tuple,y,cmp=(==))
   @test cmp(z,y)
   z = testitem!(cache,f,x...)
   @test cmp(typeof(z),typeof(y))
-end
-
-
-# Functions on mapping objects
-
-"""
-    apply_mapping(f,x...)
-
-apply the mapping `f` at the arguments in `x` by creating a temporary cache
-internally. This functions is equivalent to
-```jl
-cache = mapping_cache(f,x...)
-apply_mapping!(cache,f,x...)
-```
-"""
-function evaluate(f,x...)
-  c = return_cache(f,x...)
-  y = evaluate!(c,f,x...)
-  y
 end
 
 # Work with several mappings at once
@@ -177,37 +184,15 @@ function _mapping_return_types(x::Tuple,a)
   (Ta,)
 end
 
-function testitem(k::Mapping,x...)
-  cache = return_cache(k,x...)
-  testitem!(cache,k,x...)
-end
-
-@inline function testitem!(cache,k::Mapping,x...)
-  evaluate!(cache,k,x...)
-end
-
-# Some particular cases
-
-# @santiagobadia : To be decided
-# automatic differentiation? derivative?
-function gradient(k::Mapping)
-  @notimplemented
-end
-
 # Function implementation
 
 evaluate!(cache,f::Function,x...) = f(x...)
 
 return_cache(f::Function,x...) = nothing
 
-function return_type(f,x...)
-  Ts = map(typeof,x)
-  return_type(f,Ts...)
-end
+evaluate(f::Function,x...) = f(x...)
 
-evaluate(f::Function,x...) = f(x...)   #evaluate(FunctionMapping(f),x...)
-
-evaluate(T::Type,f::Function,x...) = f(x...) #evaluate(T,FunctionMapping(f),x...)
+evaluate(T::Type,f::Function,x...) = f(x...)
 
 testitem(f::Function,x...) = f(x...)
 
@@ -226,7 +211,3 @@ return_type(f::NumberOrArray,x...) = typeof(f)
 evaluate(f::NumberOrArray,x...) = f
 
 evaluate(T::Type,f::NumberOrArray,x...) = f
-
-testitem(f::NumberOrArray,x...) = f
-
-testitem!(cache,f::NumberOrArray,x...) = f

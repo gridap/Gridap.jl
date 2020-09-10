@@ -65,16 +65,13 @@ function _apply_broadcast(f,a::AbstractArray...)
     apply_mapping(Fill(f, s...), a...)
 end
 
-
-  = (Fill(f,length(a)),a...)
-
 """
     apply(::Type{T},f,a::AbstractArray...) where T
 
 Like [`apply(f,a::AbstractArray...)`](@ref), but the user provides the element type
 of the resulting array in order to circumvent type inference.
 """
-function apply_mapping(::Type{T}, f::MappingOrFunction, a::AbstractArray...) where T
+function apply_mapping(::Type{T}, f, a::AbstractArray...) where T
     s = common_size(a...)
     apply_mapping(T, Fill(f, s...), a...)
 end

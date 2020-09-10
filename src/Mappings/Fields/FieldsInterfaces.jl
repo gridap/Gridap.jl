@@ -76,10 +76,6 @@ function evaluate!(cache,f::AbstractArray{<:NewField},x::Point)
   @notimplemented
 end
 
-function evaluate(f::NewField,x::Point)
-first(evaluate(f,Fill(x,1)))
-end
-
 # Testers
 
 """
