@@ -5,7 +5,7 @@
     end
 """
 struct ZeroMeanFESpace{B} <: SingleFieldFESpace
-  space::FESpaceWithDofPotentiallyRemoved
+  space::FESpaceWithConstantFixed
   vol_i::Vector{Float64}
   vol::Float64
   constraint_style::Val{B}
@@ -20,7 +20,7 @@ end
 function ZeroMeanFESpace(
   space::SingleFieldFESpace,trian::Triangulation,quad::CellQuadrature)
 
-  _space = FESpaceWithDofPotentiallyRemoved(space,
+  _space = FESpaceWithConstantFixed(space,
                                             true,
                                             num_free_dofs(space))
   vol_i, vol = _setup_vols(space,trian,quad)

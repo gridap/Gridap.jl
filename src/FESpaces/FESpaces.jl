@@ -204,7 +204,7 @@ export collect_cell_jacobian
 export collect_cell_jacobian_and_residual
 export collect_cell_residual
 
-export FESpaceWithDofPotentiallyRemoved
+export FESpaceWithConstantFixed
 
 export ZeroMeanFESpace
 export CLagrangianFESpace
@@ -253,7 +253,7 @@ include("FEOperatorsFromTerms.jl")
 
 include("FESolvers.jl")
 
-include("FESpacesWithDofPotentiallyRemoved.jl")
+include("FESpacesWithConstantFixed.jl")
 
 include("ZeroMeanFESpaces.jl")
 

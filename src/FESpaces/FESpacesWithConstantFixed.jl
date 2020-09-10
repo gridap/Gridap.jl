@@ -1,24 +1,24 @@
 """
-    struct FESpaceWithDofPotentiallyRemoved{CS,RD} <: SingleFieldFESpace
+    struct FESpaceWithConstantFixed{CS,RD} <: SingleFieldFESpace
       space::SingleFieldFESpace
       constraint_style::Val{CS}
       remove_dof::Val{RD}
       dof_to_remove::Int
     end
 """
-struct FESpaceWithDofPotentiallyRemoved{CS,RD} <: SingleFieldFESpace
+struct FESpaceWithConstantFixed{CS,RD} <: SingleFieldFESpace
   space::SingleFieldFESpace
   constraint_style::Val{CS}
   remove_dof::Val{RD}
   dof_to_remove::Int
   @doc """
-      FESpaceWithDofPotentiallyRemoved(space::SingleFieldFESpace, remove_dof::Bool,
+      FESpaceWithConstantFixed(space::SingleFieldFESpace, remove_dof::Bool,
       dof_to_remove::Int=num_free_dofs(space))
   """
-  function FESpaceWithDofPotentiallyRemoved(space::SingleFieldFESpace,
+  function FESpaceWithConstantFixed(space::SingleFieldFESpace,
      remove_dof::Bool,
      dof_to_remove::Int=num_free_dofs(space))
-    s = "FESpaceWithDofPotentiallyRemoved can only be constructed from spaces without dirichlet dofs."
+    s = "FESpaceWithConstantFixed can only be constructed from spaces without dirichlet dofs."
     @notimplementedif num_dirichlet_dofs(space) != 0 s
     @assert !remove_dof || 1 <= dof_to_remove <= num_free_dofs(space)
     cs = constraint_style(space)
@@ -30,48 +30,48 @@ struct FESpaceWithDofPotentiallyRemoved{CS,RD} <: SingleFieldFESpace
 end
 
 # Genuine functions
-function num_free_dofs(f::FESpaceWithDofPotentiallyRemoved{CS,true}) where {CS}
+function num_free_dofs(f::FESpaceWithConstantFixed{CS,true}) where {CS}
   num_free_dofs(f.space)-1
 end
 
-function num_free_dofs(f::FESpaceWithDofPotentiallyRemoved{CS,false}) where {CS}
+function num_free_dofs(f::FESpaceWithConstantFixed{CS,false}) where {CS}
   num_free_dofs(f.space)
 end
 
-function zero_free_values(f::FESpaceWithDofPotentiallyRemoved)
+function zero_free_values(f::FESpaceWithConstantFixed)
   zeros(num_free_dofs(f))
 end
 
-function get_cell_dofs(f::FESpaceWithDofPotentiallyRemoved{CS,true}) where {CS}
+function get_cell_dofs(f::FESpaceWithConstantFixed{CS,true}) where {CS}
   cell_dofs = get_cell_dofs(f.space)
   CellDofsWithDofRemoved(cell_dofs,f.dof_to_remove)
 end
 
-function get_cell_dofs(f::FESpaceWithDofPotentiallyRemoved{CS,false}) where {CS}
+function get_cell_dofs(f::FESpaceWithConstantFixed{CS,false}) where {CS}
   get_cell_dofs(f.space)
 end
 
 
-num_dirichlet_dofs(f::FESpaceWithDofPotentiallyRemoved{CS,true}) where {CS} = 1
+num_dirichlet_dofs(f::FESpaceWithConstantFixed{CS,true}) where {CS} = 1
 
-num_dirichlet_dofs(f::FESpaceWithDofPotentiallyRemoved{CS,false}) where {CS} = 0
+num_dirichlet_dofs(f::FESpaceWithConstantFixed{CS,false}) where {CS} = 0
 
-function zero_dirichlet_values(f::FESpaceWithDofPotentiallyRemoved)
+function zero_dirichlet_values(f::FESpaceWithConstantFixed)
   T = Float64 # TODO
   zeros(T,num_dirichlet_dofs(f))
 end
 
 
-num_dirichlet_tags(f::FESpaceWithDofPotentiallyRemoved{CS,true}) where {CS} = 1
+num_dirichlet_tags(f::FESpaceWithConstantFixed{CS,true}) where {CS} = 1
 
-num_dirichlet_tags(f::FESpaceWithDofPotentiallyRemoved{CS,false}) where {CS} = 0
+num_dirichlet_tags(f::FESpaceWithConstantFixed{CS,false}) where {CS} = 0
 
-get_dirichlet_dof_tag(f::FESpaceWithDofPotentiallyRemoved{CS,true}) where {CS} = Int8[1,]
+get_dirichlet_dof_tag(f::FESpaceWithConstantFixed{CS,true}) where {CS} = Int8[1,]
 
-get_dirichlet_dof_tag(f::FESpaceWithDofPotentiallyRemoved{CS,false}) where {CS} = Int8[]
+get_dirichlet_dof_tag(f::FESpaceWithConstantFixed{CS,false}) where {CS} = Int8[]
 
 function scatter_free_and_dirichlet_values(
-  f::FESpaceWithDofPotentiallyRemoved{CS,true},fv,dv) where {CS}
+  f::FESpaceWithConstantFixed{CS,true},fv,dv) where {CS}
   @assert length(dv) == 1
   _dv = similar(dv,eltype(dv),0)
   _fv = vcat(view(fv,1:f.dof_to_remove-1),
@@ -81,13 +81,13 @@ function scatter_free_and_dirichlet_values(
 end
 
 function scatter_free_and_dirichlet_values(
-  f::FESpaceWithDofPotentiallyRemoved{CS,false},fv,dv) where {CS}
+  f::FESpaceWithConstantFixed{CS,false},fv,dv) where {CS}
   @assert length(dv) == 0
  scatter_free_and_dirichlet_values(f.space,fv,dv)
 end
 
 function gather_free_and_dirichlet_values(
-  f::FESpaceWithDofPotentiallyRemoved{CS,true},cv) where {CS}
+  f::FESpaceWithConstantFixed{CS,true},cv) where {CS}
   _fv, _dv = gather_free_and_dirichlet_values(f.space,cv)
   @assert length(_dv) == 0
   fv = vcat(view(_fv,1:f.dof_to_remove-1),
@@ -98,12 +98,12 @@ function gather_free_and_dirichlet_values(
 end
 
 function gather_free_and_dirichlet_values(
-  f::FESpaceWithDofPotentiallyRemoved{CS,false},cv) where {CS}
+  f::FESpaceWithConstantFixed{CS,false},cv) where {CS}
   gather_free_and_dirichlet_values(f.space,cv)
 end
 
 function gather_free_and_dirichlet_values!(
-  fv,dv,f::FESpaceWithDofPotentiallyRemoved{CS,true},cv) where {CS}
+  fv,dv,f::FESpaceWithConstantFixed{CS,true},cv) where {CS}
   _fv, _dv = gather_free_and_dirichlet_values(f.space,cv)
   @assert length(_dv) == 0
   fv .= vcat(view(_fv,1:f.dof_to_remove-1),
@@ -114,32 +114,32 @@ function gather_free_and_dirichlet_values!(
 end
 
 function gather_free_and_dirichlet_values!(
-  fv,dv,f::FESpaceWithDofPotentiallyRemoved{CS,false},cv) where {CS}
+  fv,dv,f::FESpaceWithConstantFixed{CS,false},cv) where {CS}
   gather_free_and_dirichlet_values(f.space,cv)
 end
 
-function TrialFESpace(f::FESpaceWithDofPotentiallyRemoved{CS,RD}) where {CS,RD}
+function TrialFESpace(f::FESpaceWithConstantFixed{CS,RD}) where {CS,RD}
   U = TrialFESpace(f.space)
-  FESpaceWithDofPotentiallyRemoved(U,RD,f.dof_to_remove)
+  FESpaceWithConstantFixed(U,RD,f.dof_to_remove)
 end
 
 # Delegated functions
 
-function get_cell_basis(f::FESpaceWithDofPotentiallyRemoved)
+function get_cell_basis(f::FESpaceWithConstantFixed)
   get_cell_basis(f.space)
 end
 
-function get_cell_dof_basis(f::FESpaceWithDofPotentiallyRemoved)
+function get_cell_dof_basis(f::FESpaceWithConstantFixed)
   get_cell_dof_basis(f.space)
 end
 
-get_cell_axes(t::FESpaceWithDofPotentiallyRemoved)= get_cell_axes(t.space)
+get_cell_axes(t::FESpaceWithConstantFixed)= get_cell_axes(t.space)
 
-get_cell_axes_with_constraints(t::FESpaceWithDofPotentiallyRemoved)= get_cell_axes_with_constraints(t.space)
+get_cell_axes_with_constraints(t::FESpaceWithConstantFixed)= get_cell_axes_with_constraints(t.space)
 
-CellData.CellField(t::FESpaceWithDofPotentiallyRemoved,cell_vals) = CellField(t.space,cell_vals)
+CellData.CellField(t::FESpaceWithConstantFixed,cell_vals) = CellField(t.space,cell_vals)
 
-constraint_style(::Type{<:FESpaceWithDofPotentiallyRemoved{CS}}) where CS = Val{CS}()
+constraint_style(::Type{<:FESpaceWithConstantFixed{CS}}) where CS = Val{CS}()
 
 # Helpers
 
