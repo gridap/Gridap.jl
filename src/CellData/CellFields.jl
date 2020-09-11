@@ -274,7 +274,7 @@ function _trialize_cell_basis(test::CellField,metasize::Val{(:,)})
   array = trialize_array_of_bases(get_array(a))
   axs = apply(Fields._add_singleton_block,get_cell_axes(a))
   b = GenericCellField(array,axs,Val((1,:)))
-  wrap_cell_field(test,a)
+  wrap_cell_field(test,b)
 end
 
 function Fields.lincomb(cf::CellField,b::AbstractArray)

@@ -99,7 +99,7 @@ du = trialize_cell_basis(dv)
 u(x) = x[1]+x[2]
 
 cell_to_u = [ u.(node_to_x[nodes]) for nodes in cell_to_node]
-uh = lincomb(du,cell_to_u)
+uh = lincomb(dv,cell_to_u)
 r = (uh∘ϕ)(q)
 test_array(r,collect(r))
 
@@ -118,7 +118,7 @@ test_array(r1,r2)
 
 # Gradient rules (FEFunction)
 r1 = (∇(uh)∘ϕ)(q)
-r2 = (lincomb(∇(du),cell_to_u)∘ϕ)(q)
+r2 = (lincomb(∇(dv),cell_to_u)∘ϕ)(q)
 test_array(r1,r2)
 
 r2 = (lincomb(∇(dv)∘ϕ,cell_to_u))(q)
