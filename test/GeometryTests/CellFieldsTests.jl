@@ -102,7 +102,7 @@ z2x = get_cell_map(strian)
 j = jump(cf1)
 
 s = CompressedArray([Point{1,Float64}[(0.25,),(0.75,)]],get_cell_type(strian))
-r = fill([0.0,0.0],length(j))
+r = fill([0.0,0.0],length(s))
 test_cell_field(j∘z2x,s,r)
 
 m = mean(cf1)
@@ -110,7 +110,7 @@ r = [[0.5, 1.5], [2.0, 2.0], [2.5, 3.5], [2.0, 2.0]]
 test_cell_field(m∘z2x,s,r)
 
 j = jump(∇(cf1))
-r = fill(VectorValue{2,Float64}[(0,0),(0,0)],length(j))
+r = fill(VectorValue{2,Float64}[(0,0),(0,0)],length(s))
 test_cell_field(j∘z2x,s,r)
 
 grad_cfu = jump(outer(∇,cfu))

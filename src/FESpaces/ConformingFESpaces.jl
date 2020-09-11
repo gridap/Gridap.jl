@@ -125,7 +125,8 @@ function compute_cell_space(reffes, cell_to_ctype, ϕ)
   refshapefuns = CompressedArray(shapefuns,cell_to_ctype)
   reffe_to_axs = map(reffe->(Base.OneTo(num_dofs(reffe)),),reffes) 
   cell_axs = CompressedArray(reffe_to_axs,cell_to_ctype)
-  cell_shapefuns_ref = GenericCellField(refshapefuns,cell_axs,Val((:,)))
+  refshapefuns_phys_grad = attachmap(refshapefuns,get_array(ϕ)) # TODO this should be avoided in the future
+  cell_shapefuns_ref = GenericCellField(refshapefuns_phys_grad,cell_axs,Val((:,)))
   cell_shapefuns = cell_shapefuns_ref∘inverse_map(ϕ)
 
   (cell_shapefuns, cell_dof_basis)

@@ -271,6 +271,7 @@ function get_cell_basis(f::ExtendedFESpace)
   _extend_cell_basis(f,cell_basis)
 end
 
+# TODO this is a bit hacky
 function _extend_cell_basis(f,cell_basis::CellFieldComposedWithInverseMap)
   ϕ = get_cell_map(f.trian.oldtrian)
   cell_basis_ref = _extend_cell_basis_work(f,cell_basis.f)
@@ -332,6 +333,7 @@ function get_cell_dof_basis(f::ExtendedFESpace)
   _extend_cell_dof_basis(f,cell_dof)
 end
 
+# TODO this is a bit hacky
 function _extend_cell_dof_basis(f,cell_dof::MappedCellDof)
   ϕ = get_cell_map(f.trian.oldtrian)
   σ_ref = _extend_cell_dof_basis_work(f,cell_dof.σ_ref)
