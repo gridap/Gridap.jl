@@ -1,4 +1,4 @@
-module FESpacesWithLastDofRemovedTests
+module FESpaceWithConstantFixedTests
 
 using Gridap.Geometry
 using Gridap.FESpaces
@@ -18,7 +18,7 @@ V = TestFESpace(
   order=order,
   conformity=:L2)
 
-V0 = FESpaceWithLastDofRemoved(V)
+V0 = FESpaceWithConstantFixed(V,true,rand(1:num_free_dofs(V)))
 test_single_field_fe_space(V0)
 
 uh0 = interpolate(V0) do x
