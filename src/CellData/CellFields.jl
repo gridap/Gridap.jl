@@ -150,7 +150,7 @@ end
 
 function align_cell_fields(cfs::CellField...)
   cf1 = first(cfs)
-  map(cf -> align_cell_fields(cf1,cf), cfs)
+  map(cf -> align_cell_fields(cf1,cf)[2], cfs)
 end
 
 function align_cell_fields(a::CellField)
@@ -344,14 +344,14 @@ function operate(op,object,cf2::CellField)
 end
 
 function operate(op,_args::CellField...)
-  args = map(get_wrapped_cell_field, align_cell_fields(_args...))
-  a1 = first(args)
+  _args_aligned = align_cell_fields(_args...)
+  args = map(get_wrapped_cell_field, _args_aligned)
   arrs = map(get_array,args)
   m = operate_arrays_of_fields(Fields._UnimplementedField,op,arrs...)
   axs = apply(field_operation_axes,map(get_cell_axes,args)...)
   metasize = field_operation_metasize(map(get_metasize,args)...)
   c = GenericCellField(m,axs,Val(metasize))
-  wrap_cell_field(a1,c)
+  wrap_cell_field(first(_args_aligned),c)
 end
 
 function operate(op,a1::CellField,args...)

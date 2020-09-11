@@ -43,15 +43,13 @@ dx = get_cell_basis(X)
 dv, dq = dy
 du, dp = dx
 
-cellmat = integrate(dv*du,trian,quad)
-cellvec = integrate(dv*2,trian,quad)
+cellmat = integrate(dv*du,quad)
+cellvec = integrate(dv*2,quad)
 cellids = get_cell_id(trian)
 cellmatvec = pair_arrays(cellmat,cellvec)
 
-dv_Γ, dq_Γ = restrict(get_cell_basis(Y), trian_Γ)
-du_Γ, dp_Γ = restrict(get_cell_basis(X), trian_Γ)
-cellmat_Γ = integrate(  jump(dv_Γ)*dp_Γ.⁺ + mean(dq_Γ)*jump(dp_Γ), trian_Γ,quad_Γ)
-cellvec_Γ = integrate(  jump(dv_Γ) + mean(dq_Γ), trian_Γ,quad_Γ)
+cellmat_Γ = integrate(  jump(dv)*dp.⁺ + mean(dq)*jump(dp),quad_Γ)
+cellvec_Γ = integrate(  jump(dv) + mean(dq), quad_Γ)
 cellmatvec_Γ = pair_arrays(cellmat_Γ,cellvec_Γ)
 cellids_Γ = get_cell_id(trian_Γ)
 

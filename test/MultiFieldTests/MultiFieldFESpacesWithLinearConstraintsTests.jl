@@ -127,8 +127,8 @@ e2 = u2 - uh2
 #writevtk(trian,"trian",nsubcells=10,cellfields=["uh1"=>uh1,"uh2"=>uh2,"e1"=>e1,"e2"=>e2])
 
 l2(u) = u*u
-e1_l2 = sqrt(sum(integrate(l2(e1),trian,quad)))
-e2_l2 = sqrt(sum(integrate(l2(e2),trian,quad)))
+e1_l2 = sqrt(sum(integrate(l2(e1),quad)))
+e2_l2 = sqrt(sum(integrate(l2(e2),quad)))
 
 tol = 1.0e-9
 @test e1_l2 < tol

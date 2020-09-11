@@ -65,9 +65,11 @@ function FESpaces.get_cell_basis(f::MultiFieldFESpace)
   MultiFieldCellField(all_bases)
 end
 
-function _insert_cell_basis_in_block(i::Int,cb,all_axes)
+function _insert_cell_basis_in_block(i::Int,_cb,all_axes)
+  cb = get_wrapped_cell_field(_cb)
   array =  insert_array_of_bases_in_block(i,get_array(cb),all_axes...)
-  similar_object(cb,array,array.axes,MetaSizeStyle(cb))
+  c = GenericCellField(array,array.axes,MetaSizeStyle(cb))
+  wrap_cell_field(_cb,c)
 end
 
 function FESpaces.FEFunction(fe::MultiFieldFESpace, free_values)

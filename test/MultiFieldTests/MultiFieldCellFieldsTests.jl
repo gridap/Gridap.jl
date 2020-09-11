@@ -63,31 +63,31 @@ du, dp = get_cell_basis(X)
 
 n = VectorValue(1,2)
 
-cellmat = integrate( (n⋅dv)*dp + dq*dp, trian, quad)
-cellvec = integrate( n⋅dv, trian, quad)
+cellmat = integrate( (n⋅dv)*dp + dq*dp, quad)
+cellvec = integrate( n⋅dv, quad)
 @test isa(cellmat,VectorOfBlockArrayCoo)
 @test isa(cellvec,VectorOfBlockArrayCoo)
 
-cellmat1 = integrate( ((n⋅dv) - dq)*((n⋅du) + dp), trian, quad)
-cellmat2 = integrate( (n⋅dv)*(n⋅du) + (n⋅dv)*dp - dq*(n⋅du) - dq*dp, trian, quad)
+cellmat1 = integrate( ((n⋅dv) - dq)*((n⋅du) + dp), quad)
+cellmat2 = integrate( (n⋅dv)*(n⋅du) + (n⋅dv)*dp - dq*(n⋅du) - dq*dp, quad)
 test_array(cellmat1,cellmat2,≈)
 
-cellmat1 = integrate( (n⋅dv)*2, trian, quad)
-cellmat2 = integrate( (n⋅dv)*fill(2,num_cells(trian)), trian, quad)
+cellmat1 = integrate( (n⋅dv)*2, quad)
+cellmat2 = integrate( (n⋅dv)*fill(2,num_cells(trian)), quad)
 test_array(cellmat1,cellmat2,≈)
 
 α = CellField(2,trian)
 op(u,∇u,v,∇v,α) = α*(u⋅v) + ∇u⊙∇v
-cellmat1 = integrate( operate(op,du,∇(du),dv,∇(dv),α) , trian, quad)
-cellmat2 = integrate( α*(du⋅dv) + ∇(du)⊙∇(dv) , trian, quad)
+cellmat1 = integrate( operate(op,du,∇(du),dv,∇(dv),α) , quad)
+cellmat2 = integrate( α*(du⋅dv) + ∇(du)⊙∇(dv) , quad)
 test_array(cellmat1,cellmat2,≈)
 @test isa(cellmat2,VectorOfBlockArrayCoo)
 @test isa(cellmat1,VectorOfBlockArrayCoo)
 
 α = CellField(2,trian)
 op2(u,∇u,α) = α*(∇u⋅u)
-cellmat1 = integrate( dv⋅operate(op2,du,∇(du),α) , trian, quad)
-cellmat2 = integrate( dv⋅(α*(∇(du)⋅du)), trian, quad)
+cellmat1 = integrate( dv⋅operate(op2,du,∇(du),α) , quad)
+cellmat2 = integrate( dv⋅(α*(∇(du)⋅du)), quad)
 test_array(cellmat1,cellmat2,≈)
 @test isa(cellmat2,VectorOfBlockArrayCoo)
 @test isa(cellmat1,VectorOfBlockArrayCoo)
@@ -96,23 +96,20 @@ conv(u,∇u,α) = α*(u⋅∇u)
 dconv(du,∇du,u,∇u,α) = conv(u,∇du,α)+conv(du,∇u,α)
 
 u = zero(U)
-cellvec2 = integrate(dv⊙(α*(u⋅∇(u))),trian,quad)
-cellvec1 = integrate(dv⊙operate(conv,u,∇(u),α),trian,quad)
+cellvec2 = integrate(dv⊙(α*(u⋅∇(u))),quad)
+cellvec1 = integrate(dv⊙operate(conv,u,∇(u),α),quad)
 test_array(cellvec1,cellvec2,≈)
 @test isa(cellvec2,VectorOfBlockArrayCoo)
 @test isa(cellvec1,VectorOfBlockArrayCoo)
 
-cellmat1 = integrate( dv⋅operate(dconv,du,∇(du),u,∇(u),α) , trian, quad)
-cellmat2 = integrate( dv⋅( α*(du⋅∇(u)) + α*(u⋅∇(du))), trian, quad)
+cellmat1 = integrate( dv⋅operate(dconv,du,∇(du),u,∇(u),α) , quad)
+cellmat2 = integrate( dv⋅( α*(du⋅∇(u)) + α*(u⋅∇(du))), quad)
 test_array(cellmat1,cellmat2,≈)
 @test isa(cellmat2,VectorOfBlockArrayCoo)
 @test isa(cellmat1,VectorOfBlockArrayCoo)
 
-dv_Γ, dq_Γ = restrict(get_cell_basis(Y), trian_Γ)
-du_Γ, dp_Γ = restrict(get_cell_basis(X), trian_Γ)
-
-cellmat_Γ = integrate(  jump(n⋅dv_Γ)*dp_Γ.⁺ + mean(dq_Γ)*jump(dp_Γ), trian_Γ,quad_Γ)
-cellvec_Γ = integrate(  jump(n⋅dv_Γ) + mean(dq_Γ), trian_Γ,quad_Γ)
+cellmat_Γ = integrate(  jump(n⋅dv)*dp.⁺ + mean(dq)*jump(dp), quad_Γ)
+cellvec_Γ = integrate(  jump(n⋅dv) + mean(dq), quad_Γ)
 L = 1
 R = 2
 @test isa(cellmat_Γ,VectorOfBlockArrayCoo)
@@ -124,8 +121,8 @@ cell = 1
 @test isa(cellmat_Γ[cell][Block(L,R)],BlockArrayCoo)
 @test isa(cellvec_Γ[cell][Block(L)],BlockArrayCoo)
 
-cellmat1_Γ = integrate(((n⋅dv_Γ.⁺)-dq_Γ.⁻)*((n⋅du_Γ.⁺)+dp_Γ.⁻),trian_Γ,quad_Γ)
-cellmat2_Γ = integrate((n⋅dv_Γ.⁺)*(n⋅du_Γ.⁺)+(n⋅dv_Γ.⁺)*dp_Γ.⁻-dq_Γ.⁻*(n⋅du_Γ.⁺)-dq_Γ.⁻*dp_Γ.⁻,trian_Γ,quad_Γ)
+cellmat1_Γ = integrate(((n⋅dv.⁺)-dq.⁻)*((n⋅du.⁺)+dp.⁻),quad_Γ)
+cellmat2_Γ = integrate((n⋅dv.⁺)*(n⋅du.⁺)+(n⋅dv.⁺)*dp.⁻-dq.⁻*(n⋅du.⁺)-dq.⁻*dp.⁻,quad_Γ)
 test_array(cellmat1_Γ,cellmat2_Γ,≈)
 
 

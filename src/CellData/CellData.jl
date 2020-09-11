@@ -68,6 +68,8 @@ export CellFieldComposedWithInverseMap
 export SkeletonFaceMap
 export FaceMap
 export ReindexedCellMap
+export get_wrapped_cell_field
+export wrap_cell_field
 
 export CellQuadrature
 export get_coordinates

@@ -61,8 +61,8 @@ for ref_st in ref_style
   @test is_a_fe_cell_basis(du)
   @test is_a_fe_cell_basis(dp)
 
-  cellmat = integrate(dv*du,trian,quad)
-  cellvec = integrate(dv*2,trian,quad)
+  cellmat = integrate(dv*du,quad)
+  cellvec = integrate(dv*2,quad)
   cellids = get_cell_id(trian)
   cellmatvec = pair_arrays(cellmat,cellvec)
   @test isa(cellmat, VectorOfBlockArrayCoo)

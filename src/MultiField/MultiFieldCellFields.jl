@@ -1,25 +1,21 @@
 
 struct MultiFieldCellField{S} <: CellField
   single_fields::Vector{<:CellField}
-  cell_map::AbstractArray
   cell_axes::AbstractArray
   metasize::Val{S}
   function MultiFieldCellField(single_fields::Vector{<:CellField})
     @assert length(single_fields) > 0
     f1 = first(single_fields)
-    cell_map = get_cell_map(f1)
     cell_axes = get_cell_axes(f1)
     metasize = MetaSizeStyle(f1)
     S = get_val_parameter(metasize)
-    new{S}(single_fields,cell_map,cell_axes,metasize)
+    new{S}(single_fields,cell_axes,metasize)
   end
 end
 
 Arrays.get_array(a::MultiFieldCellField) = @notimplemented
 
 CellData.get_memo(a::MultiFieldCellField) = @notimplemented
-
-Geometry.get_cell_map(a::MultiFieldCellField) = a.cell_map
 
 CellData.get_cell_axes(a::MultiFieldCellField) = a.cell_axes
 
