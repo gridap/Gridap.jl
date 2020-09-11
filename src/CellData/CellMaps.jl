@@ -128,6 +128,11 @@ get_array(x::MappedCellPoint) = get_array(x.x)
 get_cell_id(x::MappedCellPoint) = get_cell_id(x.x)
 num_cell_ids(x::MappedCellPoint) = num_cell_ids(x.x)
 
+function evaluate(f::Function,x::CellPoint)
+  cf = convert_to_cell_field(f,num_cell_ids(x))
+  evaluate(cf,x)
+end
+
 """
     Base.:(==)(a::CellMap,b::CellMap)
 

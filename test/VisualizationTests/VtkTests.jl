@@ -9,6 +9,7 @@ using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.Visualization
+using Gridap.CellData
 using WriteVTK
 
 d = mktempdir()
@@ -69,7 +70,7 @@ trian = CartesianGrid(domain,partition)
 writevtk(trian,f,nsubcells=5,celldata=["rnd"=>rand(num_cells(trian))])
 
 fun(x) = sin(4*x[1]*pi)*cos(5*x[2]*pi)
-cf = compose(fun, get_cell_map(trian))
+cf = CellField(fun, trian)
 
 writevtk(trian,f,nsubcells=10, cellfields=[
   "cf"=>cf,
@@ -107,26 +108,41 @@ writevtk(Grid(LagrangianRefFE(Float64,HEX,3)),joinpath(d,"hex_order1"))
 f = joinpath(d,"collection")
 paraview_collection(f) do pvd
     for i in 1:10
-        pvd[Float64(i)] = createvtk(trian, f*"_$i", celldata=["rnd"=>rand(num_cells(trian))], cellfields=["cf" => compose(fun, get_cell_map(trian))])
-        pvd[Float64(10+i)] = createvtk(x,f*"_$(10+i)",celldata=["cellid" => collect(1:num_cells(trian))], nodaldata = ["x" => x])
+
+        pvd[Float64(i)] = createvtk(
+          trian, f*"_$i",
+          celldata=["rnd"=>rand(num_cells(trian))],
+          cellfields=["cf" => CellField(fun, trian)])
+
+        pvd[Float64(10+i)] = createvtk(
+          x,f*"_$(10+i)",
+          celldata=["cellid" => collect(1:num_cells(trian))],
+          nodaldata = ["x" => x])
     end
     vtk_save(pvd)
 end
 
-# Visualize AppendedTriangulation
+x = get_cell_points(trian)
+h(x) = x[1] + x[2]
+hx = evaluate(h,x)
+f = joinpath(d,"x")
+writevtk(x,f,nodaldata=["h"=>hx])
 
-domain = (0,1,0,1)
-partition = (10,10)
-grid1 = CartesianGrid(domain,partition)
 
-domain = (1,2,0,1)
-partition = (10,10)
-grid2 = simplexify(CartesianGrid(domain,partition))
-
-trian = lazy_append(grid1,grid2)
-
-f = joinpath(d,"trian")
-writevtk(trian,f)
-rm(d,recursive=true)
+## Visualize AppendedTriangulation
+#
+#domain = (0,1,0,1)
+#partition = (10,10)
+#grid1 = CartesianGrid(domain,partition)
+#
+#domain = (1,2,0,1)
+#partition = (10,10)
+#grid2 = simplexify(CartesianGrid(domain,partition))
+#
+#trian = lazy_append(grid1,grid2)
+#
+#f = joinpath(d,"trian")
+#writevtk(trian,f)
+#rm(d,recursive=true)
 
 end # module

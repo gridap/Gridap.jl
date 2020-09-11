@@ -65,3 +65,4 @@ function Arrays.lazy_append(a::CellPoint,b::CellPoint)
   array = lazy_append(get_array(a),get_array(b))
   GenericCellPoint(array)
 end
+

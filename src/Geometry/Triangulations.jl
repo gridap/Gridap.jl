@@ -290,4 +290,14 @@ end
   integrate(object,quad::CellQuadrature)
 )
 
+function get_cell_points(trian::Triangulation)
+  ctype_to_reffe = get_reffes(trian)
+  cell_to_ctype = get_cell_type(trian)
+  ctype_to_coords = map(get_node_coordinates, ctype_to_reffe)
+  cell_to_coords = CompressedArray(ctype_to_coords,cell_to_ctype)
+  ϕ = get_cell_map(trian)
+  q = GenericCellPoint(cell_to_coords)
+  x = ϕ(q)
+  x
+end
 

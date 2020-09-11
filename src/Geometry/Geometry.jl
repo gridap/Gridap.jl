@@ -131,6 +131,7 @@ export get_physical_coordinate
 export get_cell_id
 export cell_measure
 export get_cell_map
+export get_cell_points
 export reference_cell_quadrature
 
 export Grid

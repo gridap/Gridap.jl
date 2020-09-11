@@ -31,12 +31,20 @@ function writevtk(x::AbstractVector{<:Point}, filebase; kwargs...)
   outfiles = vtk_save(vtkfile)
 end
 
+function writevtk(x::CellPoint, filebase; kwargs...)
+  writevtk(get_array(x), filebase; kwargs...)
+end
+
 """
     createvtk(x::AbstractVector{<:Point}, filebase; kwargs...)
 """
 function createvtk(x::AbstractVector{<:Point}, filebase; kwargs...)
   grid = UnstructuredGrid(x)
   create_vtk_file(grid,filebase; kwargs...)
+end
+
+function createvtk(x::CellPoint, filebase; kwargs...)
+  createvtk(get_array(x), filebase; kwargs...)
 end
 
 """

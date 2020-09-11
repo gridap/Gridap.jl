@@ -161,10 +161,13 @@ function _prepare_sub_cell_to_u(
 end
 
 function _prepare_pdata(trian,cellfields,samplingpoints)
+  ϕ = get_cell_map(trian)
+  q = GenericCellPoint(samplingpoints)
+  x = ϕ(q)
   pdata = Dict()
   for (k,v) in cellfields
     _v = CellField(v,trian)
-    pdata[k], = _prepare_node_to_coords(evaluate(_v,samplingpoints))
+    pdata[k], = _prepare_node_to_coords(evaluate(_v,x))
   end
   pdata
 end
