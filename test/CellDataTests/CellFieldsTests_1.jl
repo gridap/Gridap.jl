@@ -60,10 +60,14 @@ test_cell_point(x)
 r = apply(sum,det(∇(ϕ))(q))
 test_array(r , Fill(4*npoin,l), ≈)
 
-#In practice the inverse map of ϕ is never computed as long
-# as you compose f∘ϕ before evaluating f
-dv = s∘inverse_map(ϕ)
-@test dv∘ϕ === s
+# TODO For the moment, we need this.
+s_with_physical_grad = GenericCellField(attachmap(get_array(s),get_array(ϕ)),get_cell_axes(s),MetaSizeStyle(s))
+dv = s_with_physical_grad∘inverse_map(ϕ)
+
+# TODO in the future it should be like this:
+#dv = s∘inverse_map(ϕ)
+
+@test dv∘ϕ === s_with_physical_grad
 @test (dv∘ϕ)(q) === (dv∘ϕ)(q)
 @test ∇(dv) === ∇(dv)
 @test ∇(dv)∘ϕ === ∇(dv)∘ϕ
@@ -84,6 +88,10 @@ test_array(r1,r2)
 
 r1 = (∇(2*dv)∘ϕ)(q)
 r2 = ((2*∇(dv))∘ϕ)(q)
+test_array(r1,r2)
+
+r1 = (∇(dv*2)∘ϕ)(q)
+r2 = ((∇(dv)*2)∘ϕ)(q)
 test_array(r1,r2)
 
 du = trialize_cell_basis(dv)
@@ -222,40 +230,6 @@ j = j_ref∘inverse_map(ϕ1_Γ)
 r = ∫( 3*∇(dv)⋅∇(du)*h + dv*du*j )*dΓ1
 test_array(r,collect(r))
 
-## Skeleton related
-
-ϕ_Λ = SkeletonFaceMap(ϕ_Γ,ϕ_Γ)
-test_cell_map(ϕ_Γ)
-q_Λ = q_Γ
-
-r = (dv.⁺∘ϕ_Λ)(q_Λ)
-@test isa(r,VectorOfBlockArrayCoo)
-test_array(r,collect(r))
-
-r = (du.⁻∘ϕ_Λ)(q_Λ)
-@test isa(r,VectorOfBlockArrayCoo)
-test_array(r,collect(r))
-
-r1 = (∇(dv).⁺∘ϕ_Λ)(q_Λ)
-r2 = (∇(dv.⁺)∘ϕ_Λ)(q_Λ)
-test_array(r1,r2)
-
-r1 = (jump(∇(du))∘ϕ_Λ)(q_Λ)
-r2 = (∇(jump(du))∘ϕ_Λ)(q_Λ)
-test_array(r1,r2)
-
-dΛ = ϕ_Λ(dΓ_ref)
-
-r = ∫( h*mean(∇(dv))⋅jump(∇(du)) + du.⁺*jump(dv)  )*dΛ
-@test isa(r,VectorOfBlockArrayCoo)
-test_array(r,collect(r))
-
-r = ∫( 1 )*dΛ
-test_array(r,collect(r))
-
-r = ∫( f )*dΛ
-test_array(r,collect(r))
-
 # ReindexedCellMap
 
 ids1 = [4,2,3]
@@ -325,5 +299,43 @@ test_array(r,collect(r))
 r = ∫( 3*∇(dv)⋅∇(du)*n12 + 2*dv*du )*dΓ12
 @test isa(r,AppendedArray)
 test_array(r,collect(r))
+
+kkkk
+
+
+## Skeleton related
+
+ϕ_Λ = SkeletonFaceMap(ϕ_Γ,ϕ_Γ)
+test_cell_map(ϕ_Γ)
+q_Λ = q_Γ
+
+r = (dv.⁺∘ϕ_Λ)(q_Λ)
+@test isa(r,VectorOfBlockArrayCoo)
+test_array(r,collect(r))
+
+r = (du.⁻∘ϕ_Λ)(q_Λ)
+@test isa(r,VectorOfBlockArrayCoo)
+test_array(r,collect(r))
+
+r1 = (∇(dv).⁺∘ϕ_Λ)(q_Λ)
+r2 = (∇(dv.⁺)∘ϕ_Λ)(q_Λ)
+test_array(r1,r2)
+
+r1 = (jump(∇(du))∘ϕ_Λ)(q_Λ)
+r2 = (∇(jump(du))∘ϕ_Λ)(q_Λ)
+test_array(r1,r2)
+
+dΛ = ϕ_Λ(dΓ_ref)
+
+r = ∫( h*mean(∇(dv))⋅jump(∇(du)) + du.⁺*jump(dv)  )*dΛ
+@test isa(r,VectorOfBlockArrayCoo)
+test_array(r,collect(r))
+
+r = ∫( 1 )*dΛ
+test_array(r,collect(r))
+
+r = ∫( f )*dΛ
+test_array(r,collect(r))
+
 
 end # module
