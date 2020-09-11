@@ -573,6 +573,153 @@ function _align_cell_fields_b_wins(a,b)
   wrap_cell_field(b,c), b
 end
 
+# Skeleton related
+
+struct SkeletonFaceMap <:CellMap
+  left::CellMap
+  right::CellMap
+  memo::Dict
+  function SkeletonFaceMap(left::CellMap,right::CellMap)
+    new(left,right,Dict())
+  end
+  function SkeletonFaceMap(left::FaceMap,right::FaceMap)
+    _right = change_face_map(right,left.face_map)
+    new(left,_right,Dict())
+  end
+end
+
+Arrays.get_array(a::SkeletonFaceMap) = get_array(a.left)
+get_cell_id(a::SkeletonFaceMap) = get_cell_id(a.left)
+num_cell_ids(a::SkeletonFaceMap) = num_cell_ids(a.left)
+get_memo(a::SkeletonFaceMap) = a.memo
+
+struct CellFieldFromOperation{F} <: CellField
+  op
+  args::Tuple
+  memo::Dict
+  function CellFieldFromOperation(op,::F,args::Tuple) where F
+    new{F}(op,args,Dict())
+  end
+end
+
+function CellFieldFromOperation(op,args::Tuple)
+  CellFieldFromOperation(op,op,args)
+end
+
+get_memo(a::CellFieldFromOperation) = a.memo
+
+function operate(op,cfs::CellFieldFromOperation...)
+  _operate_cfs(op,cfs...)
+end
+
+function operate(op,a::CellFieldFromOperation,b::CellField)
+  _operate_cfs(op,a,b)
+end
+
+function operate(op,a::CellField,b::CellFieldFromOperation)
+  _operate_cfs(op,a,b)
+end
+
+function operate(op,a::CellFieldFromOperation,b)
+  _operate_cfs(op,a,b)
+end
+
+function operate(op,a,b::CellFieldFromOperation)
+  _operate_cfs(op,a,b)
+end
+
+function _operate_cfs(op,cfs...)
+  f(args...) = operate(op,args...)
+  CellFieldFromOperation(f,op,cfs)
+end
+
+for op in (:get_inward, :get_outward)
+  @eval begin
+
+    function ($op)(a::CellField)
+      CellFieldFromOperation($op,(a,))
+    end
+
+    function gradient(a::CellFieldFromOperation{typeof($op)})
+      key = :gradient
+      memo = get_memo(a)
+      if !haskey(memo,key)
+        memo[key] = $op(gradient(first(a.args)))
+      end
+      memo[key]
+    end
+
+  end
+end
+
+function gradient(a::CellFieldFromOperation)
+   key = :gradient
+   memo = get_memo(a)
+   if !haskey(memo,key)
+     memo[key] = CellFieldFromOperation(gradient,(a,))
+   end
+   memo[key]
+end
+
+function Base.:∘(f::CellFieldFromOperation,ϕ::CellMap)
+  f.op(map(i->i∘ϕ,f.args)...)
+end
+
+function Base.:∘(f::CellFieldFromOperation{typeof(get_inward)},ϕ::CellMap)
+  @unreachable
+end
+
+function Base.:∘(f::CellFieldFromOperation{typeof(get_outward)},ϕ::CellMap)
+  @unreachable
+end
+
+function Base.:∘(f::CellFieldFromOperation{typeof(get_inward)},ϕ::SkeletonFaceMap)
+  left, = merge_cell_fields_at_skeleton(f.args[1]∘ϕ.left,f.args[1]∘ϕ.right)
+  left
+end
+
+function Base.:∘(f::CellFieldFromOperation{typeof(get_outward)},ϕ::SkeletonFaceMap)
+  _, right = merge_cell_fields_at_skeleton(f.args[1]∘ϕ.left,f.args[1]∘ϕ.right)
+  right
+end
+
+"""
+    jump(f)
+"""
+function jump(sf)
+  sf.⁺ - sf.⁻
+end
+
+"""
+    mean(f)
+"""
+function mean(sf)
+  operate(_mean,sf.⁺,sf.⁻)
+end
+
+_mean(x,y) = 0.5*x + 0.5*y
+
+function merge_cell_dofs_at_skeleton(idsL,idsR,axesL,axesR)
+  blocks = (idsL,idsR)
+  blockids = [(1,),(2,)]
+  axs = create_array_of_blocked_axes(axesL,axesR)
+  VectorOfBlockArrayCoo(blocks,blockids,axs)
+end
+
+function merge_cell_fields_at_skeleton(cfL,cfR)
+  @assert is_basis(cfL) == is_basis(cfR)
+  if !is_basis(cfL)
+    cfL, cfR
+  else
+    ax1 = get_cell_axes(cfL)
+    ax2 = get_cell_axes(cfR)
+    arrL = insert_array_of_bases_in_block(1,get_array(cfL),ax1,ax2)
+    cfSL = GenericCellField(arrL,arrL.axes,MetaSizeStyle(cfL))
+    arrR = insert_array_of_bases_in_block(2,get_array(cfR),ax1,ax2)
+    cfSR = GenericCellField(arrR,arrR.axes,MetaSizeStyle(cfR))
+    cfSL, cfSR
+  end
+end
 
 
 #"""
@@ -922,87 +1069,5 @@ end
 ##  g∘ϕ.face_map
 ##end
 ##
-## Skeleton related
-#
-#struct SkeletonFaceMap <:CellMap
-#  left::CellMap
-#  right::CellMap
-#  memo::Dict
-#  function SkeletonFaceMap(left::CellMap,right::CellMap)
-#    new(left,right,Dict())
-#  end
-#  function SkeletonFaceMap(left::FaceMap,right::FaceMap)
-#    _right = change_face_map(right,left.face_map)
-#    new(left,_right,Dict())
-#  end
-#end
-#
-#Arrays.get_array(a::SkeletonFaceMap) = get_array(a.left)
-#get_cell_id(a::SkeletonFaceMap) = get_cell_id(a.left)
-#num_cell_ids(a::SkeletonFaceMap) = num_cell_ids(a.left)
-#get_memo(a::SkeletonFaceMap) = a.memo
-#
-#for op in (:get_inward, :get_outward)
-#  @eval begin
-#
-#    function ($op)(a::CellField)
-#      f(a) = @unreachable "You need to compose first with a SkeletonFaceMap"
-#      CellFieldFromOperation(f,$op,(a,),get_cell_axes(a),MetaSizeStyle(a))
-#    end
-#
-#    function compute_gradient(a::CellFieldFromOperation{typeof($op)})
-#      $op(gradient(a.args[1]))
-#    end
-#
-#  end
-#end
-#
-#function Base.:∘(f::CellFieldFromOperation{typeof(get_inward)},ϕ::SkeletonFaceMap)
-#  left, = merge_cell_fields_at_skeleton(f.args[1]∘ϕ.left,f.args[1]∘ϕ.right)
-#  left
-#end
-#
-#function Base.:∘(f::CellFieldFromOperation{typeof(get_outward)},ϕ::SkeletonFaceMap)
-#  _, right = merge_cell_fields_at_skeleton(f.args[1]∘ϕ.left,f.args[1]∘ϕ.right)
-#  right
-#end
-#
-#"""
-#    jump(f)
-#"""
-#function jump(sf)
-#  sf.⁺ - sf.⁻
-#end
-#
-#"""
-#    mean(f)
-#"""
-#function mean(sf)
-#  operate(_mean,sf.⁺,sf.⁻)
-#end
-#
-#_mean(x,y) = 0.5*x + 0.5*y
-#
-#function merge_cell_dofs_at_skeleton(idsL,idsR,axesL,axesR)
-#  blocks = (idsL,idsR)
-#  blockids = [(1,),(2,)]
-#  axs = create_array_of_blocked_axes(axesL,axesR)
-#  VectorOfBlockArrayCoo(blocks,blockids,axs)
-#end
-#
-#function merge_cell_fields_at_skeleton(cfL,cfR)
-#  @assert is_basis(cfL) == is_basis(cfR)
-#  if !is_basis(cfL)
-#    cfL, cfR
-#  else
-#    ax1 = get_cell_axes(cfL)
-#    ax2 = get_cell_axes(cfR)
-#    arrL = insert_array_of_bases_in_block(1,get_array(cfL),ax1,ax2)
-#    cfSL = GenericCellField(arrL,arrL.axes,MetaSizeStyle(cfL))
-#    arrR = insert_array_of_bases_in_block(2,get_array(cfR),ax1,ax2)
-#    cfSR = GenericCellField(arrR,arrR.axes,MetaSizeStyle(cfR))
-#    cfSL, cfSR
-#  end
-#end
 
 

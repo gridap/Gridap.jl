@@ -96,7 +96,9 @@ test_array(r1,r2)
 
 du = trialize_cell_basis(dv)
 
-cell_to_u = [ rand(length(nodes)) for nodes in cell_to_node]
+u(x) = x[1]+x[2]
+
+cell_to_u = [ u.(node_to_x[nodes]) for nodes in cell_to_node]
 uh = lincomb(du,cell_to_u)
 r = (uh∘ϕ)(q)
 test_array(r,collect(r))
@@ -145,6 +147,13 @@ test_array(r,collect(r))
 
 dΩ = ϕ(dΩ_ref)
 
+e = u - uh
+r = sum(∫( e*e )*dΩ)
+@test r < 1.0e-7
+
+r = sum(∫( ∇(e)⋅∇(e) )*dΩ)
+@test r < 1.0e-7
+
 r = ∫( 3*∇(dv)⋅∇(du)*f + dv*du*2 )*dΩ
 test_array(r,collect(r))
 
@@ -188,6 +197,12 @@ r2 = (s∘refface_to_refcell_map)(q_Γ)
 test_array(get_array(r1),get_array(r2))
 
 dΓ = ϕ_Γ(dΓ_ref)
+
+r = sum(∫( e*e )*dΓ)
+@test r < 1.0e-7
+
+r = sum(∫( ∇(e)⋅∇(e) )*dΓ)
+@test r < 1.0e-7
 
 r = ∫( 3*∇(dv)⋅∇(du)*f + h*dv*du*2 )*dΓ
 test_array(r,collect(r))
@@ -300,8 +315,6 @@ r = ∫( 3*∇(dv)⋅∇(du)*n12 + 2*dv*du )*dΓ12
 @test isa(r,AppendedArray)
 test_array(r,collect(r))
 
-kkkk
-
 
 ## Skeleton related
 
@@ -327,7 +340,9 @@ test_array(r1,r2)
 
 dΛ = ϕ_Λ(dΓ_ref)
 
-r = ∫( h*mean(∇(dv))⋅jump(∇(du)) + du.⁺*jump(dv)  )*dΛ
+z = convert_to_cell_field(x->x[1],num_cell_ids(ϕ_Λ))
+k = convert_to_cell_field(x->x[1],length(ϕ_Λ))∘inverse_map(ϕ_Λ)
+r = ∫( z*mean(∇(dv))⋅jump(∇(du)) + du.⁺*jump(dv)*k  )*dΛ
 @test isa(r,VectorOfBlockArrayCoo)
 test_array(r,collect(r))
 
