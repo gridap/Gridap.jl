@@ -53,8 +53,8 @@ eu = u - uh
 ep = p - ph
 
 l2(v) = v⋅v
-eu_l2 = sum(integrate(l2(eu),trian,quad))
-ep_l2 = sum(integrate(l2(ep),trian,quad))
+eu_l2 = sum(integrate(l2(eu),quad))
+ep_l2 = sum(integrate(l2(ep),quad))
 
 tol = 1.0e-9
 @test eu_l2 < tol

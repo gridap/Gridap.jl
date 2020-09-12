@@ -106,6 +106,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish Geometry BoundaryTriangulation
 @publish Geometry jump
 @publish Geometry mean
+@publish Geometry restrict # TODO deprecated
 @publish Geometry SkeletonTriangulation
 @publish Geometry RestrictedTriangulation
 @publish Geometry InterfaceTriangulation

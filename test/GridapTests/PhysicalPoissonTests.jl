@@ -79,14 +79,11 @@ for data in [ vector_data, scalar_data ]
   l(v) = v⊙f
   t_Ω = AffineFETerm(a,l,trian,quad)
 
-  uh_Γn = restrict(uh,ntrian)
-  uh_Γd = restrict(uh,dtrian)
-
-  l_Γn(v) = v⊙(nn⋅∇(uh_Γn))
+  l_Γn(v) = v⊙(nn⋅∇(uh))
   t_Γn = FESource(l_Γn,ntrian,nquad)
 
   a_Γd(u,v) = (γ/h)*v⊙u  - v⊙(dn⋅∇(u)) - (dn⋅∇(v))⊙u
-  l_Γd(v) = (γ/h)*v⊙uh_Γd - (dn⋅∇(v))⊙u
+  l_Γd(v) = (γ/h)*v⊙uh - (dn⋅∇(v))⊙u
   t_Γd = AffineFETerm(a_Γd,l_Γd,dtrian,dquad)
 
   op = AffineFEOperator(U,V,t_Ω,t_Γn,t_Γd)
@@ -99,10 +96,10 @@ for data in [ vector_data, scalar_data ]
   sh1(u) = a(u,u)
   h1(u) = sh1(u) + l2(u)
 
-  el2 = sqrt(sum( integrate(l2(e),trian,quad) ))
-  eh1 = sqrt(sum( integrate(h1(e),trian,quad) ))
-  ul2 = sqrt(sum( integrate(l2(uh),trian,quad) ))
-  uh1 = sqrt(sum( integrate(h1(uh),trian,quad) ))
+  el2 = sqrt(sum( integrate(l2(e),quad) ))
+  eh1 = sqrt(sum( integrate(h1(e),quad) ))
+  ul2 = sqrt(sum( integrate(l2(uh),quad) ))
+  uh1 = sqrt(sum( integrate(h1(uh),quad) ))
 
   @test el2/ul2 < 1.e-8
   @test eh1/uh1 < 1.e-7

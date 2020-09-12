@@ -136,7 +136,7 @@ function main(;n,nsteps)
 
   e = uh - u
 
-  e_l2 = sqrt(sum(integrate(e⋅e,trian,quad)))
+  e_l2 = sqrt(sum(integrate(e⋅e,quad)))
   @test e_l2 < 1.0e-9
 
 end

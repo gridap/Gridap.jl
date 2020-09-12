@@ -139,11 +139,9 @@ uh, ph = solve(op)
 
 # Visualization
 
-ph_fluid = restrict(ph, trian_fluid)
 
 eu = u - uh
 ep = p - ph
-ep_fluid = p - ph_fluid
 
 #writevtk(trian_fluid,"trian_fluid",cellfields=["ph"=>ph_fluid, "ep"=>ep_fluid])
 #
@@ -154,9 +152,9 @@ ep_fluid = p - ph_fluid
 l2(v) = v⋅v
 h1(v) = v⋅v + inner(∇(v),∇(v))
 
-eu_l2 = sqrt(sum(integrate(l2(eu),trian,quad)))
-eu_h1 = sqrt(sum(integrate(h1(eu),trian,quad)))
-ep_l2 = sqrt(sum(integrate(l2(ep_fluid),trian_fluid,quad_fluid)))
+eu_l2 = sqrt(sum(integrate(l2(eu),quad)))
+eu_h1 = sqrt(sum(integrate(h1(eu),quad)))
+ep_l2 = sqrt(sum(integrate(l2(ep),quad_fluid)))
 
 tol = 1.0e-9
 @test eu_l2 < tol

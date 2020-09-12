@@ -301,3 +301,27 @@ function get_cell_points(trian::Triangulation)
   x
 end
 
+function restrict(cf,trian)
+  msg =
+  """
+    Function restrict has been removed.  Now, functions and coordinates are defined
+    in the physical space and restrict is not needed any more.
+
+    E.g., this old code
+
+        uh = CellField(x->x[1], trian)
+        quad_Γ = CellQuadrature(trian_Γ)
+        q_Γ = get_coordinates(quad_Γ)
+        uh_Γ = restrict(uh,trian_Γ)
+        evaluate(uh_Γ,q_Γ)
+
+    is now expressed simply as
+
+        uh = CellField(x->x[1], trian)
+        quad_Γ = CellQuadrature(trian_Γ)
+        x_Γ = get_coordinates(quad_Γ)
+        evaluate(uh,x_Γ)
+
+  """
+  error(msg)
+end

@@ -44,8 +44,8 @@ uh, = solve!(uh0,solver,op)
 
 e = u - uh
 
-el2 = sqrt(sum(integrate(e*e,trian,quad)))
-eh1 = sqrt(sum(integrate(e*e+∇(e)⋅∇(e),trian,quad)))
+el2 = sqrt(sum(integrate(e*e,quad)))
+eh1 = sqrt(sum(integrate(e*e+∇(e)⋅∇(e),quad)))
 
 @test el2 < 1.e-8
 @test eh1 < 1.e-7

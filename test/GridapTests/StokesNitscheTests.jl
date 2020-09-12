@@ -133,10 +133,10 @@ l2(u) = u⊙u
 h1(u) = ∇(u)⊙∇(u) + l2(u)
 
 # Compute errors
-eul2 = sqrt(sum( integrate(l2(eu),trian,quad) ))
-euh1 = sqrt(sum( integrate(h1(eu),trian,quad) ))
+eul2 = sqrt(sum( integrate(l2(eu),quad) ))
+euh1 = sqrt(sum( integrate(h1(eu),quad) ))
 
-epl2 = sqrt(sum( integrate(l2(ep),trian,quad) ))
+epl2 = sqrt(sum( integrate(l2(ep),quad) ))
 
 @test eul2 < 1.e-8
 @test euh1 < 1.e-8

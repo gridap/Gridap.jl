@@ -74,9 +74,9 @@ ep = p - ph
 l2(v) = v⋅v
 h1(v) = v*v + ∇(v)⋅∇(v)
 
-eu_l2 = sum(integrate(l2(eu),trian,quad))
-ep_l2 = sum(integrate(l2(ep),trian,quad))
-ep_h1 = sum(integrate(h1(ep),trian,quad))
+eu_l2 = sum(integrate(l2(eu),quad))
+ep_l2 = sum(integrate(l2(ep),quad))
+ep_h1 = sum(integrate(h1(ep),quad))
 
 tol = 1.0e-9
 @test eu_l2 < tol
