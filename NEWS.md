@@ -4,10 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased 
+## [0.14.1] 
 
 ### Added
- - Added VectorWithEntryInserted and VectorWithEntryRemoved. Since PR [#401](https://github.com/gridap/Gridap.jl/pull/401/)
+ - Added VectorWithEntryInserted and VectorWithEntryRemoved. Since PR [#401](https://github.com/gridap/Gridap.jl/pull/401/).
+
+### Deprecated
+ - The name FESpaceWithLastDofRemoved has been deprecated in favor of its generalization FESpaceWithConstantFixed. Since PR [#396](https://github.com/gridap/Gridap.jl/pull/396).
 
 ## [0.14.0] - 2020-08-27
 

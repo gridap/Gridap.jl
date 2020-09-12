@@ -204,7 +204,6 @@ export collect_cell_jacobian
 export collect_cell_jacobian_and_residual
 export collect_cell_residual
 
-const FESpaceWithLastDofRemoved = FESpaceWithConstantFixed
 export FESpaceWithConstantFixed
 export FESpaceWithLastDofRemoved
 
