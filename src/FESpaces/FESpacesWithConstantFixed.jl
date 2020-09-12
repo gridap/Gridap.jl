@@ -30,8 +30,12 @@ struct FESpaceWithConstantFixed{CS,CA<:ConstantApproach} <: SingleFieldFESpace
   end
 end
 
+
 const FESpaceWithLastDofRemoved{CS} = FESpaceWithConstantFixed{CS,FixConstant}
-@deprecate FESpaceWithLastDofRemoved(space::SingleFieldFESpace) = FESpaceWithConstantFixed(space,true)
+
+@deprecate(FESpaceWithLastDofRemoved(space::SingleFieldFESpace),
+           FESpaceWithConstantFixed(space,true))
+
 
 # Genuine functions
 function num_free_dofs(f::FESpaceWithConstantFixed{CS,FixConstant}) where {CS}
