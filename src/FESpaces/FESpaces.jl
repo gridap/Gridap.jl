@@ -205,6 +205,7 @@ export collect_cell_jacobian_and_residual
 export collect_cell_residual
 
 export FESpaceWithConstantFixed
+export FESpaceWithLastDofRemoved
 
 export ZeroMeanFESpace
 export CLagrangianFESpace
