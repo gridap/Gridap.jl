@@ -95,6 +95,10 @@ export operate
 export GridapType
 export ∫
 
+export LebesgueMeasure
+export CellContribution
+export CollectionOfCellContribution
+
 include("CellPoints.jl")
 
 include("CellMaps.jl")
@@ -112,6 +116,8 @@ include("AttachDirichlet.jl")
 include("AttachConstraints.jl")
 
 include("Law.jl")
+
+include("CellContributions.jl")
 
 end # module
 

@@ -22,4 +22,6 @@ using Test
 
 @testset "Law" begin include("LawTests.jl") end
 
+@testset "CellContributions" begin include("CellContributionsTests.jl") end
+
 end # module
