@@ -72,10 +72,6 @@ import Gridap.Algebra: allocate_vector
 import Gridap.Algebra: allocate_matrix
 import Gridap.Algebra: allocate_matrix_and_vector
 
-import Gridap.CellData: collect_cell_matrix
-import Gridap.CellData: collect_cell_vector
-import Gridap.CellData: collect_cell_matrix_and_vector
-
 export FEFunctionStyle
 export is_a_fe_function
 export get_free_values
@@ -180,6 +176,7 @@ export test_fe_operator
 export AffineFEOperator
 export FEOperatorFromTerms
 export get_algebraic_operator
+export @form
 
 export FESolver
 export LinearFESolver
@@ -197,7 +194,6 @@ export get_cell_vector
 export get_cell_jacobian
 export get_cell_jacobian_and_residual
 export get_cell_residual
-
 export collect_cell_matrix
 export collect_cell_vector
 export collect_cell_matrix_and_vector
@@ -250,6 +246,8 @@ include("FEOperators.jl")
 include("AffineFEOperators.jl")
 
 include("FEOperatorsFromTerms.jl")
+
+include("FEOperatorsFromCellContributions.jl")
 
 include("FESolvers.jl")
 

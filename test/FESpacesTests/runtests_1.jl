@@ -34,6 +34,8 @@ using Test
 
 @testset "FEOperatorsFromTerms" begin include("FEOperatorsFromTermsTests.jl") end
 
+@testset "FEOperatorsFromCellContributions" begin include("FEOperatorsFromCellContributionsTests.jl") end
+
 @testset "FESolvers" begin include("FESolversTests.jl") end
 
 
