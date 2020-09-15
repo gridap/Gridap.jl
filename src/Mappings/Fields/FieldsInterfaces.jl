@@ -56,10 +56,13 @@ For instance, a default implementation is available for numbers, which behave li
 """
 abstract type NewField <: Mapping end
 
-# const NewFieldOrFunction = Union{NewField,Function}
-const FieldOrArrayOfFields = Union{NewField,AbstractArray{<:NewField}}
+const FieldVector{T} = AbstractVector{T} where T<:NewField
 
-function return_type(f::NewField,x::AbstractArray{<:Point})
+const FieldArray{T,N} = AbstractArray{T,N} where {T<:NewField,N}
+
+const FieldOrFieldArray = Union{NewField,FieldArray}
+
+function return_type(f::FieldOrFieldArray,x::AbstractArray{<:Point})
   typeof(evaluate(f,x))
 end
 
@@ -79,8 +82,47 @@ function evaluate!(cache,f::AbstractArray{<:NewField},x::Point)
   @notimplemented
 end
 
+"""
+    gradient_type(::Type{T},x::Point) where T
+"""
+function return_gradient_type(::Type{T},x::Point) where T
+  typeof(outer(zero(x),zero(T)))
+end
+
+function gradient end
+
 @inline derivative(f::NewField) = transpose(gradient(f))
 
+"""
+    const ∇ = gradient
+
+Alias for the `gradient` function.
+"""
+
+function evaluate_gradient!(cache,f,x)
+  @abstractmethod
+end
+
+# """
+# # $(SIGNATURES)
+# # """
+function return_gradient_cache(f,x)
+#   @abstractmethod
+end
+
+# """
+# $(SIGNATURES)
+# """
+function evaluate_hessian!(cache,f,x)
+  @abstractmethod
+end
+
+# """
+# $(SIGNATURES)
+# """
+function return_hessian_cache(f,x)
+  @abstractmethod
+end
 # Testers
 
 """
@@ -99,17 +141,13 @@ Idem for `hessian`.
 The checks are performed with the `@test` macro.
 """
 function test_field(
-  f::FieldOrArrayOfFields,
+  f::FieldOrFieldArray,
   x::Tuple,
   v::AbstractArray,cmp=(==);
   grad=nothing,
   hessian=nothing)
 
   x, = x
-
-  if isa(f,Function)
-    @test return_type(f,eltype(x)) <: MultiValue
-  end
 
   @test isa(x,AbstractVector{<:Point})
 
@@ -135,29 +173,16 @@ function test_field(
 
   if grad != nothing
     g = gradient(f)
-    @test g isa NewField
+    if typeof(f) <: NewField
+      @test g isa NewField
+    elseif typeof(f) <: AbstractArray{<:NewField}
+      @test g isa AbstractArray{<:NewField}
+    end
     test_field(g,(x,),grad,cmp,grad=hessian)
   end
 
 end
 
-function test_field(f::FieldOrArrayOfFields,x,v::AbstractArray,cmp=(==);grad=nothing,hessian=nothing)
+function test_field(f::FieldOrFieldArray,x,v::AbstractArray,cmp=(==);grad=nothing,hessian=nothing)
   test_field(f,(x,),v,cmp;grad=grad,hessian=hessian)
 end
-
-# Some API
-
-"""
-    gradient_type(::Type{T},x::Point) where T
-"""
-function return_gradient_type(::Type{T},x::Point) where T
-  typeof(outer(zero(x),zero(T)))
-end
-
-function gradient end
-
-"""
-    const ∇ = gradient
-
-Alias for the `gradient` function.
-"""

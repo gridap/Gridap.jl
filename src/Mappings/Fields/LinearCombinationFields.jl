@@ -15,7 +15,7 @@ On the other hand, the gradient of the resulting field is defined as
 ∇ax*b
 
 """
-function linear_combination(a::NewField, b::AbstractVector)
+function linear_combination(a::FieldVector, b::AbstractVector)
   LinearCombinationField(a, b)
 end
 

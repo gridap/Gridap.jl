@@ -72,6 +72,7 @@ function evaluate(f,x...)
   y
 end
 
+# @santiagobadia: Duck typing not ok here I guess
 function testitem(k::Mapping,x...)
   cache = return_cache(k,x...)
   testitem!(cache,k,x...)

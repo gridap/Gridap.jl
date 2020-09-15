@@ -4,9 +4,9 @@ using Test
 using Gridap.Arrays
 using Gridap.Mappings
 using Gridap.NewFields
-using Gridap.NewFields: MockField, MockBasis
 using FillArrays
 using Gridap.TensorValues
+
 
 np = 4
 p = Point(1,2)
@@ -17,6 +17,15 @@ d = 2
 f = MockField{d}(v)
 fx = fill(v,np)
 ∇fx = fill(VectorValue(v,0.0),np)
+test_field(f,x,fx,grad=∇fx)
+
+nf = 3
+b = Fill(f,nf)
+∇b = gradient(b)
+∇bx = evaluate(∇b,x)
+bx = fill(v,np,nf)
+∇bx = fill(VectorValue(v,0.0),np,nf)
+test_field(b,x,bx,grad=∇bx)
 
 l = 10
 af = Fill(f,l)
@@ -25,7 +34,12 @@ afx = fill(fx,l)
 a∇fx = fill(∇fx,l)
 test_mapped_array(af,ax,afx,grad=a∇fx)
 
-
+l = 10
+ab = Fill(b,l)
+ax = fill(x,l)
+abx = fill(bx,l)
+a∇bx = fill(∇bx,l)
+test_mapped_array(ab,ax,abx,grad=a∇bx)
 
 # s = Fill(BroadcastMapping(+),l)
 s = Fill(+,l)

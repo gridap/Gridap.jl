@@ -68,19 +68,15 @@ test_mapping(∇h,(x,),∇hx)
 
 
 k = BroadcastMapping(-)
-fi = 3.0
-gi = [1,2,3,4,5]
+fi = VectorValue(3.0,0.0)
 d = 2
 f = MockField{d}(fi)
-g = ConstantField(gi)
+g = broadcast(ConstantField,x)
 h = composition(k,f,g)
-
-evaluate(f,x)
-evaluate(g,x)
 
 # @santiagobadia : A field can be paralelised wrt array of points
 # A mapping on the contrary can take multiple arguments...
-# We must create two evalutes, one for arrays of tuples and
+# We must create two evaluates, one for arrays of tuples and
 # one for one tuple
 # @santiagobadia : The previous version of gradient is wrong
 # @santiagobadia : We could also have derivative (transpose of gradient),
@@ -88,6 +84,102 @@ evaluate(g,x)
 
 hx = evaluate(k,evaluate(f,x),evaluate(g,x))
 test_mapping(h,(x,),hx) #,grad=∇hx)
+
+G = ∇(g)
+
+v = 3.0
+v = VectorValue(3.0,0.0)
+f = MockField{d}(v)
+
+f = ConstantField(v)
+
+fx = evaluate(f,x)
+test_field(f,(x,),fx)
+
+# cf =
+# @enter return_cache(f,x)
+
+# c = return_gradient_cache(f,x)
+# evaluate_gradient!(c,f,x)
+# evaluate_gradient!(c,f,vcat(x,x))
+
+
+# ∇f = gradient(f)
+
+
+
+∇fx = evaluate(∇f,x)
+test_field(∇f,(x,),∇fx)
+
+
+
+
+
+
+
+
+
+
+f = ∇f
+w = evaluate(f,x)
+v = ∇fx
+np, = size(w)
+@test length(x) == np
+@test ==(w,v)
+@test typeof(w) == return_type(f,x)
+
+cf = return_cache(f,x)
+cf
+r = evaluate!(cf,f,x)
+@test ==(r,v)
+
+_x = vcat(x,x)
+_v = vcat(v,v)
+_w = evaluate!(cf,f,_x)
+@test ==(_w,_v)
+
+_w .== _v
+size(_w)
+
+_v
+size(_v)
+∇(f)
+
+evaluate(G,x)
+
+evaluate(∇(G),x)
+
+H = ∇(∇(g[1]))
+return_cache(H,x)
+
+
+return_cache(H,x)
+return_hessian_cache(g,x)
+
+evaluate(∇(g[1]),x)
+evaluate(∇(∇(g[1])),x)
+
+
+
+
+
+
+
+
+
+
+
+
+∇∇f = ∇(∇(f))
+∇∇fx = evaluate(∇∇f,x)
+test_field(∇∇f,x,∇∇fx)
+
+test_field(f,x,fx,grad=∇fx,hessian=∇∇fx)
+
+
+
+
+
 
 ∇h = composition(k,∇(f),∇(g))
 ∇hx = evaluate(k,evaluate(∇(f),x),evaluate(∇(g),x))

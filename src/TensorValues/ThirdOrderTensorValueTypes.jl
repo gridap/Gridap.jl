@@ -20,7 +20,7 @@ ThirdOrderTensorValue{0,0,0}(data::NTuple{0}) = ThirdOrderTensorValue{0,0,0,Int}
 
 # ThirdOrderTensorValue single NTuple argument constructor
 
-@generated function ThirdOrderTensorValue(data::NTuple{L,T}) where {L,T} 
+@generated function ThirdOrderTensorValue(data::NTuple{L,T}) where {L,T}
   D=Int(cbrt(L))
   quote
     ThirdOrderTensorValue{$D,$D,$D,T}(data)
@@ -55,3 +55,6 @@ ThirdOrderTensorValue{D,T1}(data::AbstractArray{T2,3}) where {D,T1,T2} = ThirdOr
 
 change_eltype(::Type{ThirdOrderTensorValue{D1,D2,D3,T1,L}},::Type{T2}) where {D1,D2,D3,T1,T2,L} = ThirdOrderTensorValue{D1,D2,D3,T2,L}
 change_eltype(::T,::Type{T2}) where {T<:ThirdOrderTensorValue,T2} = change_eltype(T,T2)
+
+zero(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}) where {D1,D2,D3,T} = ThirdOrderTensorValue{D1,D2,D3,T}(tfill(zero(T),Val{D1*D2*D3}()))
+zero(::ThirdOrderTensorValue{D1,D2,D3,T}) where {D1,D2,D3,T} = zero(ThirdOrderTensorValue{D1,D2,D3,T})

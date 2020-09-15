@@ -11,6 +11,8 @@ using Test
 
 using FillArrays
 
+import Gridap.Mappings: testitem, testitem!
+
 import Gridap.Mappings: return_type
 import Gridap.Mappings: return_cache
 import Gridap.Mappings: evaluate!
@@ -25,6 +27,12 @@ export ConstantField
 export FunctionField
 export LinearCombinationField
 export MockField
+
+export FieldGradient
+export FieldHessian
+export FieldGradientArray
+export FieldHessianArray
+
 
 # export gradient
 # export ∇
@@ -44,6 +52,8 @@ export mock_field
 
 include("FieldsInterfaces.jl")
 
+include("FieldGradients.jl")
+
 include("MockFields.jl")
 
 include("ConstantFields.jl")
@@ -51,5 +61,7 @@ include("ConstantFields.jl")
 include("FunctionFields.jl")
 
 include("LinearCombinationFields.jl")
+
+include("FieldArrays.jl")
 
 end
