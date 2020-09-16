@@ -62,7 +62,7 @@ const FieldArray{T,N} = AbstractArray{T,N} where {T<:NewField,N}
 
 const FieldOrFieldArray = Union{NewField,FieldArray}
 
-function return_type(f::FieldOrFieldArray,x::AbstractArray{<:Point})
+function return_type(f::FieldOrFieldArray,x)
   typeof(evaluate(f,x))
 end
 

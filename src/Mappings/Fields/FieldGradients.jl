@@ -9,10 +9,6 @@ function gradient(f::NewField)
   FieldGradient(f)
 end
 
-function gradient(af::FieldArray)
-  FieldGradientArray(af)
-end
-
 struct FieldGradient{F<:NewField} <: NewField
   field::F
   FieldGradient(f) = new{typeof(f)}(f)

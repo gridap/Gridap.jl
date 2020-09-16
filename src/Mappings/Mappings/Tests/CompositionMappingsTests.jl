@@ -27,14 +27,19 @@ fx = evaluate(f,x)
 ∇fx = evaluate(∇(f),x)
 gx = evaluate(k,fx)
 ∇gx = evaluate(k,∇fx)
-# santiagobadia :  I don't like the different notation for
-# mapping and kernel, i.e., tuple vs non-tuple, to be fixed
 test_mapping(g,(x,),gx) #,grad=∇gx)
 
 # @santiagobadia : Create the gradient method for composition
 # using chain rule
 ∇g = composition(k,∇(f))
 test_mapping(∇g,(x,),∇gx)
+
+
+g = field_composition(k,f)
+@test g isa NewField
+gx = evaluate(g,x)
+cache = return_cache(g,x)
+test_mapping(g,(x,),gx) #grad=∇gx)
 
 fi = 3.0
 gi = 4.5
@@ -52,7 +57,7 @@ test_mapping(h,(x,),hx) #,grad=∇hx)
 ∇h = composition(k,∇(f),∇(g))
 test_mapping(∇h,(x,),∇hx)
 
-fi = 3.0
+fi = VectorValue(3.0,0.0)
 gi = VectorValue(4,5)
 d = 2
 f = MockField{d}(fi)
@@ -95,94 +100,5 @@ f = ConstantField(v)
 
 fx = evaluate(f,x)
 test_field(f,(x,),fx)
-
-# cf =
-# @enter return_cache(f,x)
-
-# c = return_gradient_cache(f,x)
-# evaluate_gradient!(c,f,x)
-# evaluate_gradient!(c,f,vcat(x,x))
-
-
-# ∇f = gradient(f)
-
-
-
-∇fx = evaluate(∇f,x)
-test_field(∇f,(x,),∇fx)
-
-
-
-
-
-
-
-
-
-
-f = ∇f
-w = evaluate(f,x)
-v = ∇fx
-np, = size(w)
-@test length(x) == np
-@test ==(w,v)
-@test typeof(w) == return_type(f,x)
-
-cf = return_cache(f,x)
-cf
-r = evaluate!(cf,f,x)
-@test ==(r,v)
-
-_x = vcat(x,x)
-_v = vcat(v,v)
-_w = evaluate!(cf,f,_x)
-@test ==(_w,_v)
-
-_w .== _v
-size(_w)
-
-_v
-size(_v)
-∇(f)
-
-evaluate(G,x)
-
-evaluate(∇(G),x)
-
-H = ∇(∇(g[1]))
-return_cache(H,x)
-
-
-return_cache(H,x)
-return_hessian_cache(g,x)
-
-evaluate(∇(g[1]),x)
-evaluate(∇(∇(g[1])),x)
-
-
-
-
-
-
-
-
-
-
-
-
-∇∇f = ∇(∇(f))
-∇∇fx = evaluate(∇∇f,x)
-test_field(∇∇f,x,∇∇fx)
-
-test_field(f,x,fx,grad=∇fx,hessian=∇∇fx)
-
-
-
-
-
-
-∇h = composition(k,∇(f),∇(g))
-∇hx = evaluate(k,evaluate(∇(f),x),evaluate(∇(g),x))
-test_mapping(∇h,(x,),∇hx)
 
 end # module

@@ -1,32 +1,7 @@
-"""
-    apply_mapping_to_field(k,f...) -> Field
-
-Returns a field obtained by applying the mapping `k` to the
-values of the fields in `f`. That is, the returned field evaluated at
-a vector of points `x` provides the value obtained by applying mapping `k` to the
-values of the fields `f` at the vector of points `x`. Formally, the resulting field at a
-vector of points
- `x` is defined as
-
-    fx = evaluate_fields(f,x)
-    apply_mapping(k,fx...)
-
-In order to be able to call the [`field_gradient`](@ref) function of the
-resulting field, one needs to define the gradient operator
-associated with the underlying mapping.
-This is done by adding a new method to [`apply_mapping_gradient(k,f...)`](@ref) for each mapping type.
-"""
 @inline function composition(k,l...)
   CompositionMapping(k,l...)
 end
 
-"""
-    apply_mapping_gradient(k,f...)
-
-Returns a field representing the gradient of the field obtained with
-
-    apply_mapping_to_field(k,f...)
-"""
 struct CompositionMapping{K,L} <: Mapping
   k::K
   l::L

@@ -19,8 +19,8 @@ z = 2.0
 
 v = VectorValue(3.0,1.5)
 w = VectorValue(3.4,3.5)
-test_basis = MockBasis{2}(v,ndofs)
-test_basis_2 = MockBasis{2}(w,ndofs)
+test_basis = MockBasis(2,v,ndofs)
+test_basis_2 = MockBasis(2,w,ndofs)
 
 t1x = evaluate(test_basis,x)
 t2x = evaluate(test_basis_2,x)
@@ -28,7 +28,7 @@ t2x = evaluate(test_basis_2,x)
 ∇t2x = evaluate(∇(test_basis_2),x)
 
 
-b = composition(BroadcastMapping(+),test_basis,test_basis_2)
+b = field_composition(BroadcastMapping(+),test_basis,test_basis_2)
 r = broadcast(+,t1x,t2x)
 test_mapping(b,(x,),r)
 
@@ -81,6 +81,8 @@ test_basis_2_array = fill(test_basis_2,l)
 ∇test_basis_2_array = fill(gradient(test_basis_2),l)
 
 op = Fill(BroadcastMapping(*),l)
+
+# @santiagobadia : I am here ... arrays of arrays ...
 bl = apply_mapping(composition,op,test_basis_array,fl)
 test_mapped_array(bl,xl,fill(fill(z*v,np,ndofs),l))
 

@@ -39,7 +39,7 @@ end
 
 const MockBasis{T,D,N} = AbstractArray{MockField{T,D},N}
 
-MockBasis(v::Number,ndofs::Int) = fill(MockField(v),ndofs)
+MockBasis(D::Int,v::Number,ndofs::Int) = fill(MockField(D,v),ndofs)
 
 function _return_type(::MockBasis{T}) where T
   T
@@ -63,6 +63,10 @@ function evaluate!(v,af::MockBasis,x::AbstractArray{<:Point})
     end
   end
   v.array
+end
+
+@inline function gradient(af::MockBasis) where D
+  map(gradient,af)
 end
 
 struct OtherMockField{D} <: NewField end
@@ -95,6 +99,9 @@ end
 
 const OtherMockBasis{D,N} = AbstractArray{OtherMockField{D},N}
 
+OtherMockBasis(D::Int,ndofs::Int) = fill(OtherMockField{D}(),ndofs)
+
+
 function return_cache(af::OtherMockBasis{D},x::AbstractArray{<:Point{D}}) where D
   np = length(x)
   s = (np, size(af)...)
@@ -108,7 +115,7 @@ function evaluate!(v,af::OtherMockBasis{D},x::AbstractArray{<:Point{D}}) where D
   setsize!(v,s)
   for i in 1:np
     @inbounds xi = x[i]
-    for j in 1:f.ndofs
+    for j in eachindex(af)
       @inbounds v[i,j] = 2*xi
     end
   end
@@ -116,6 +123,5 @@ function evaluate!(v,af::OtherMockBasis{D},x::AbstractArray{<:Point{D}}) where D
 end
 
 @inline function gradient(af::AbstractArray{OtherMockField{D}}) where D
-  fg = gradient(OtherMockField{D}())
-  fill(fg,size(af))
+  map(gradient,af)
 end

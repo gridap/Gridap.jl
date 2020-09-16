@@ -5,15 +5,24 @@ using Gridap.Arrays
 using Gridap.NewFields
 using Gridap.Mappings
 
-for v in (3.0,VectorValue(1,2))
-  f = ConstantField(v)
-  xi = Point(2,1)
-  np = 4
-  x = fill(xi,np)
-  fx = fill(v,np)
-  ∇fx = fill(zero(v[1]),np)
-  test_field(f,x,fx,grad=∇fx)
-end
+# for v in (3.0,VectorValue(1,2))
+v = 3.0
+f = ConstantField(v)
+xi = Point(2,1)
+np = 4
+x = fill(xi,np)
+fx = fill(v,np)
+∇fx = CachedArray(fill(VectorValue(0.0,0.0),np))
+test_field(f,x,fx,grad=∇fx)
+
+v = VectorValue(1,2)
+f = ConstantField(v)
+xi = Point(2,1)
+np = 4
+x = fill(xi,np)
+fx = fill(v,np)
+∇fx = CachedArray(fill(TensorValue(0,0,0,0),np))
+test_field(f,x,fx,grad=∇fx)
 
 # @santiagobadia : This is an array of fields, next step
 # for v in (3.0,VectorValue(1,2))

@@ -27,6 +27,12 @@ export ConstantField
 export FunctionField
 export LinearCombinationField
 export MockField
+export MockBasis
+export OtherMockField
+export OtherMockBasis
+
+export GenericField
+export GenericFieldArray
 
 export FieldGradient
 export FieldHessian
@@ -48,9 +54,14 @@ export return_hessian_cache
 
 export linear_combination
 
+export field_composition
+export field_array_composition
+
 export mock_field
 
 include("FieldsInterfaces.jl")
+
+include("GenericFields.jl")
 
 include("FieldGradients.jl")
 
@@ -63,5 +74,7 @@ include("FunctionFields.jl")
 include("LinearCombinationFields.jl")
 
 include("FieldArrays.jl")
+
+include("FieldCompositions.jl")
 
 end

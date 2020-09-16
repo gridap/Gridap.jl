@@ -22,12 +22,12 @@ test_field(∇f,x,∇fx)
 test_field(f,x,fx,grad=∇fx)
 
 ndof = 8
-b = MockBasis{d}(v,ndof)
+b = MockBasis(d,v,ndof)
 bx = fill(v,np,ndof)
 ∇bx = fill(VectorValue(v,0.0),np,ndof)
 test_field(b,x,bx,grad=∇bx)
 
-b = OtherMockBasis{d}(ndof)
+b = OtherMockBasis(d,ndof)
 bx = fill(2*p,np,ndof)
 ∇bx = fill(TensorValue(2.0,0.0,0.0,2.0),np,ndof)
 test_field(b,x,bx,grad=∇bx)

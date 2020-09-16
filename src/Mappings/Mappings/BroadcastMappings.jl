@@ -1,9 +1,3 @@
-"""
-    bcast(f::Function)
-
-Returns a mapping object that represents the "broadcasted" version of the given
-function `f`.
-"""
 struct BroadcastMapping{F<:Function} <: Mapping
   f::F
 end

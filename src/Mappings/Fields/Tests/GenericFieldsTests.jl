@@ -1,4 +1,4 @@
-module FieldArraysTests
+module GenericFieldsTests
 
 using Test
 using Gridap.Arrays
@@ -7,25 +7,34 @@ using Gridap.NewFields
 using FillArrays
 using Gridap.TensorValues
 
-
 np = 4
 p = Point(1,2)
 x = fill(p,np)
 
-v = 3.0
+v = VectorValue(3.0,2.0)
 d = 2
 f = MockField{d}(v)
-fx = fill(v,np)
-∇fx = fill(VectorValue(v,0.0),np)
-test_field(f,x,fx,grad=∇fx)
 
-nf = 3
-b = Fill(f,nf)
-∇b = gradient(b)
-∇bx = evaluate(∇b,x)
-bx = fill(v,np,nf)
-∇bx = fill(VectorValue(v,0.0),np,nf)
-test_field(b,x,bx,grad=∇bx)
+ff = field_composition(f,f)
+fx = fill(3.0*v,np)
+test_field(ff,x,fx)#,grad=∇fx)
+
+sf = field_composition(+,f,f)
+fx = fill(v+v,np)
+test_field(sf,x,fx)#,grad=∇fx)
+
+l = 3
+af = MockBasis(d,v,l)
+evaluate(af,x)
+saf = field_array_composition(+,af,af)
+
+
+
+
+saf = composition(+,af,af)
+
+
+evaluate(saf,f)
 
 l = 10
 af = Fill(f,l)

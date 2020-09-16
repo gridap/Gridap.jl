@@ -1,3 +1,16 @@
+struct FieldOperation::T
+  op::T
+  fs::Tuple(<:NewField)
+end
+
+compose(::typeof{+},fs::Vararg{NewField}) = FieldOperation(op,fs)
+
+
+
+typeof{+},vararg{FieldArray} ->
+
+composition,vararg{FieldArray}
+
 # for op in (:+,:-,:tr, :transpose, :adjoint, :symmetric_part)
 #   @eval begin
 
