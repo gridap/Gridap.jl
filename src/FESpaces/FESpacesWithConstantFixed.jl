@@ -37,6 +37,8 @@ const FESpaceWithLastDofRemoved{CS} = FESpaceWithConstantFixed{CS,FixConstant}
            FESpaceWithConstantFixed(space,true))
 
 
+get_constant_approach(::FESpaceWithConstantFixed{CS,CA}) where {CS,CA}=CA
+
 # Genuine functions
 function num_free_dofs(f::FESpaceWithConstantFixed{CS,FixConstant}) where {CS}
   num_free_dofs(f.space)-1
