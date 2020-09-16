@@ -209,14 +209,6 @@ struct BCasted{F<:Function} <: Kernel
   f::F
 end
 
-function kernel_testitem(k::BCasted,x...)
-  try
-    apply_kernel(k,x...)
-  catch
-    broadcast(k.f,map(testvalue,x)...)
-  end
-end
-
 function kernel_return_type(f::BCasted,x::Number...)
   Ts = map(typeof,x)
   return_type(f.f,Ts...)
