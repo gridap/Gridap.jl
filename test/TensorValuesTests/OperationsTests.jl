@@ -43,6 +43,33 @@ c = a - b
 r = VectorValue(-1,1,-3)
 @test c == r
 
+a = VectorValue{0,Float64}()
+b = VectorValue{0,Int}()
+
+c = +a
+r = VectorValue{0,Float64}()
+@test c == r
+
+c = -a
+r = VectorValue{0,Float64}()
+@test c == r
+
+c = a + b
+r = VectorValue{0,Float64}()
+@test c == r
+
+c = a - b
+r = VectorValue{0,Float64}()
+@test c == r
+
+c = a*2
+r = VectorValue{0,Float64}()
+@test c == r
+
+c = 2*a
+r = VectorValue{0,Float64}()
+@test c == r
+
 a = TensorValue(1,2,3,4)
 b = TensorValue(5,6,7,8)
 

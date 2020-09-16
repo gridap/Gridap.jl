@@ -44,8 +44,9 @@ for op in (:+,:-)
 
     function ($op)(a::MultiValue{S},b::MultiValue{S})  where S
       r = broadcast(($op), a.data, b.data)
-      T = change_eltype(a,eltype(r))
-      T(r)
+      T = _eltype($op,r,a,b)
+      M = change_eltype(a,T)
+      M(r)
     end
 
     function ($op)(a::TensorValue,b::SymTensorValue)
@@ -77,22 +78,33 @@ for op in (:+,:-,:*)
   @eval begin
     function ($op)(a::MultiValue,b::Number)
         r = broadcast($op,a.data,b)
-        T  = change_eltype(a,eltype(r))
-        T(r)
+        T = _eltype($op,r,a,b)
+        M  = change_eltype(a,T)
+        M(r)
     end
 
     function ($op)(a::Number,b::MultiValue)
         r = broadcast($op,a,b.data)
-        T  = change_eltype(b,eltype(r))
-        T(r)
+        T = _eltype($op,r,a,b)
+        M  = change_eltype(b,T)
+        M(r)
     end
   end
 end
 
 function (/)(a::MultiValue,b::Number)
     r = broadcast(/,a.data,b)
-    P  = change_eltype(a,eltype(r))
+    T = _eltype(/,r,a,b)
+    P  = change_eltype(a,T)
     P(r)
+end
+
+@inline function _eltype(op,r,a,b)
+  eltype(r)
+end
+
+@inline function _eltype(op,r::Tuple{},a,b)
+  typeof(op(zero(eltype(a)),zero(eltype(b))))
 end
 
 ###############################################################
@@ -237,6 +249,16 @@ end
     Meta.parse("TensorValue{$D,$Z}($str)")
 end
 
+function outer(a::VectorValue{0,Ta},b::VectorValue{1,Tb}) where {Ta,Tb}
+  T = promote_type(Ta,Tb)
+  TensorValue{0,1,T}()
+end
+
+function outer(a::VectorValue{0,Ta},b::Tb) where {Ta,Tb<:Real}
+  T = promote_type(Ta,Tb)
+  VectorValue{0,T}()
+end
+
 @generated function outer(a::MultiValue{Tuple{D}},b::MultiValue{Tuple{D1,D2}}) where {D,D1,D2}
   str = join(["a[$i]*b[$j,$k], "  for k in 1:D2 for j in 1:D1 for i in 1:D])
   Meta.parse("ThirdOrderTensorValue{D,D1,D2}($str)")
@@ -336,6 +358,7 @@ end
 """
 meas(a::MultiValue{Tuple{D}}) where D = sqrt(inner(a,a))
 meas(a::MultiValue{Tuple{D,D}}) where D = abs(det(a))
+meas(a::TensorValue{0,1,T}) where T = one(T)
 
 function meas(v::MultiValue{Tuple{1,2}})
   n1 = v[1,2]

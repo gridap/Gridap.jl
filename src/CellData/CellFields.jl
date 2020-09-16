@@ -49,7 +49,7 @@ is_in_physical_space(::Type{T}) where T = !is_in_ref_space(T)
 is_in_physical_space(a::T) where T = !is_in_ref_space(T)
 
 """
-This trait provides information about the field size at a single 
+This trait provides information about the field size at a single
 evaluation point.
 
 For physical fields `MetaSizeStyle(T) == Val( () )`
@@ -176,7 +176,12 @@ end
 """
 function similar_object(cf::CellField,array::AbstractArray,cell_axes::AbstractArray,msize_style::Val)
   cm = get_cell_map(cf)
-  GenericCellField(array,cm,RefStyle(cf),cell_axes,msize_style)
+  similar_object(cf,array,cm,cell_axes,msize_style)
+end
+
+function similar_object(
+  cf::CellField,array::AbstractArray,cell_map::AbstractArray,cell_axes::AbstractArray,msize_style::Val)
+  GenericCellField(array,cell_map,RefStyle(cf),cell_axes,msize_style)
 end
 
 """
@@ -243,13 +248,24 @@ end
 function Arrays.reindex(cf::CellField,a::AbstractVector)
   array = reindex(get_array(cf),a)
   cell_axes = reindex(get_cell_axes(cf),a)
-  similar_object(cf,array,cell_axes,MetaSizeStyle(cf))
+  cell_map = reindex(get_cell_map(cf),a)
+  similar_object(cf,array,cell_map,cell_axes,MetaSizeStyle(cf))
 end
 
 # Bases-related
-
 function trialize_cell_basis(test::CellField)
-  @assert is_test(test)
+  _trialize_cell_basis(test,MetaSizeStyle(test))
+end
+
+function _trialize_cell_basis(test,metasize)
+  @unreachable
+end
+
+function _trialize_cell_basis(trial,metasize::Val{(1,:)})
+  trial
+end
+
+function _trialize_cell_basis(test::CellField,metasize::Val{(:,)})
   array = trialize_array_of_bases(get_array(test))
   axs = apply(Fields._add_singleton_block,get_cell_axes(test))
   similar_object(test,array,axs,Val((1,:)))
@@ -482,7 +498,7 @@ end
 
 function merge_cell_fields_at_skeleton(cfL,cfR)
   @assert is_basis(cfL) == is_basis(cfR)
-  if !is_basis(cfL) 
+  if !is_basis(cfL)
     SkeletonCellField(cfL,cfR)
   else
     ax1 = get_cell_axes(cfL)
@@ -494,4 +510,3 @@ function merge_cell_fields_at_skeleton(cfL,cfR)
     SkeletonCellField(cfSL,cfSR)
   end
 end
-
