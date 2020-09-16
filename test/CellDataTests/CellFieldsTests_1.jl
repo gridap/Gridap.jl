@@ -346,6 +346,10 @@ r = ∫( z*mean(∇(dv))⋅jump(∇(du)) + du.⁺*jump(dv)*k  )*dΛ
 @test isa(r,VectorOfBlockArrayCoo)
 test_array(r,collect(r))
 
+r = ∫( mean(∇(dv))⋅jump(k*du) + jump(k*dv)*jump(k*du) )*dΛ
+@test isa(r,VectorOfBlockArrayCoo)
+test_array(r,collect(r))
+
 r = ∫( 1 )*dΛ
 test_array(r,collect(r))
 

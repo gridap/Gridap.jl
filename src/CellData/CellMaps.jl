@@ -188,8 +188,8 @@ inverse_map(ϕ::AbstractArray) = @notimplemented
 
 Struct representing the inverse of `ϕ` that keeps the direct cell map `ϕ` as metadata.
 """
-struct InverseCellMap <: CellMap
-  ϕ::CellMap
+struct InverseCellMap{M<:CellMap} <: CellMap
+  ϕ::M
 end
 
 function get_array(ϕinv::InverseCellMap)

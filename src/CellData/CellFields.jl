@@ -593,6 +593,22 @@ get_cell_id(a::SkeletonFaceMap) = get_cell_id(a.left)
 num_cell_ids(a::SkeletonFaceMap) = num_cell_ids(a.left)
 get_memo(a::SkeletonFaceMap) = a.memo
 
+#struct SkeletonCellField{F<:CellField} <: CellField
+#  f::F
+#  memo::Dict
+#  SkeletonCellField(f::CellField) = new{typeof(f)}(f,Dict())
+#end
+#
+#Arrays.get_array(a::SkeletonCellField) = get_array(a.f)
+#get_cell_axes(a::SkeletonCellField) = get_cell_axes(a.f)
+#get_memo(a::SkeletonCellField) = a.memo
+#MetaSizeStyle(::Type{<:SkeletonCellField{F}}) where F = MetaSizeStyle(F)
+
+function Base.:∘(f::CellField,ϕinv::InverseCellMap{<:SkeletonFaceMap})
+  a = CellFieldComposedWithInverseMap(f,ϕinv)
+  CellFieldFromOperation(identity,(a,))
+end
+
 struct CellFieldFromOperation{F} <: CellField
   op
   args::Tuple
@@ -638,6 +654,14 @@ for op in (:get_inward, :get_outward)
 
     function ($op)(a::CellField)
       CellFieldFromOperation($op,(a,))
+    end
+
+    function ($op)(a::CellFieldFromOperation{typeof(identity)})
+      a
+    end
+
+    function ($op)(f::CellFieldFromOperation)
+      f.op(map($op,f.args)...)
     end
 
     function gradient(a::CellFieldFromOperation{typeof($op)})
