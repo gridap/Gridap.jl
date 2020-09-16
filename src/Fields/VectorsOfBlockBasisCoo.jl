@@ -18,6 +18,7 @@ end
 
 Base.size(v::VectorOfBlockBasisCoo) = (length(first(v.blocks)) ,)
 Base.getindex(v::VectorOfBlockBasisCoo,i::Integer) = BlockBasisCoo()
+Arrays.testitem(v::VectorOfBlockBasisCoo) = BlockBasisCoo()
 
 function evaluate_field_array(v::VectorOfBlockBasisCoo,x::AbstractArray)
   blocks = evaluate_field_arrays(v.blocks,x)

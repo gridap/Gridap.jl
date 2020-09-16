@@ -622,6 +622,11 @@ function CellFieldFromOperation(op,args::Tuple)
   CellFieldFromOperation(op,op,args)
 end
 
+#TODO hacky!
+Base.length(a::CellFieldFromOperation{typeof(identity)}) = length(a.args[1])
+get_cell_axes(a::CellFieldFromOperation{typeof(identity)}) = get_cell_axes(a.args[1])
+MetaSizeStyle(::Type{<:CellFieldFromOperation{typeof(identity)}}) = Val(())
+
 get_memo(a::CellFieldFromOperation) = a.memo
 
 function operate(op,cfs::CellFieldFromOperation...)
