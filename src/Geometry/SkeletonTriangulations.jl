@@ -253,7 +253,10 @@ end
     get_normal_vector(trian::SkeletonTriangulation)
 """
 function get_normal_vector(trian::SkeletonTriangulation)
-  get_normal_vector(trian.left)
+  nleft = get_normal_vector(trian.left)
+  nleft_ref = nleft∘get_cell_map(trian.left)
+  ϕ = get_cell_map(trian)
+  nleft_ref∘inverse_map(ϕ)
 end
 
 function TriangulationPortion(oldtrian::SkeletonTriangulation,cell_to_oldcell::Vector{Int})
