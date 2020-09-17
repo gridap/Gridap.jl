@@ -7,7 +7,7 @@ GenericField(f::NewField) = f
 
 return_cache(a::GenericField,x) = return_cache(a.field,x)
 evaluate!(cache,a::GenericField,x) = evaluate!(cache,a.field,x)
-gradient(a::GenericField) = GenericFieldArray(gradient(a.field))
+gradient(a::GenericField) = GenericField(Gradient(a.field))
 
 struct GenericFieldArray{F,N,A} <: AbstractArray{F,N}
   field_array::A
@@ -22,7 +22,7 @@ end
 
 return_cache(a::GenericFieldArray,x) = return_cache(a.field_array,x)
 evaluate!(cache,a::GenericFieldArray,x) = evaluate!(cache,a.field_array,x)
-gradient(a::GenericFieldArray) = GenericFieldArray(gradient(a.field_array))
+gradient(a::GenericFieldArray) = GenericFieldArray(Gradient(a.field_array))
 
 Base.size(a::GenericFieldArray) = size(a.field_array)
 Base.getindex(a::GenericFieldArray,i::Integer...) = GenericField(a.field_array[i...])

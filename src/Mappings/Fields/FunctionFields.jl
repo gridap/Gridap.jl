@@ -1,8 +1,6 @@
-struct FunctionField{F} <: NewField
-  f::F
-end
+function_field(f::Function) =  GenericField(f)
 
-function_field(f::Function) =  FunctionField(f)
+const FunctionField{F} = GenericField{F<:Function}
 
 function return_cache(f::FunctionField,x::AbstractArray{<:Point})
   nx = length(x)

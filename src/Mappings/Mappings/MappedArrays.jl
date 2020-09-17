@@ -21,14 +21,14 @@ function apply_mapping(::Type{T}, f::AbstractArray, a::AbstractArray...) where T
     MappedArray(T, f, a...)
 end
 
-struct MappedArray{T,N,F,G} <: AbstractArray{T,N}
+struct MappedArray{G,T,N,F} <: AbstractArray{T,N}
     g::G
     f::F
     function MappedArray(::Type{T}, g::AbstractArray, f::AbstractArray...) where T
         G = typeof(g)
         F = typeof(f)
         f1, = f
-        new{T,ndims(f1),F,G}(g, f)
+        new{G,T,ndims(f1),F}(g, f)
     end
 end
 
