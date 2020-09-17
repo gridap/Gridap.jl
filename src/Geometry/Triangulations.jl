@@ -325,3 +325,8 @@ function restrict(cf,trian)
   """
   error(msg)
 end
+
+@deprecate(
+  CellField(value::Number,trian::Triangulation,quad::CellQuadrature),
+  CellField(value::Number,quad::CellQuadrature))
+
