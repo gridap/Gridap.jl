@@ -352,10 +352,6 @@ restrict(cf::CellField,trian::Triangulation)
 
 ```@docs
 GenericCellField
-SkeletonCellField
 QPointCellField(value::Number,trian::Triangulation,quad::CellQuadrature)
 CellField(value::Number,trian::Triangulation,quad::CellQuadrature)
-get_cell_map(a::SkeletonCellField)
-jump(sf::SkeletonCellField)
-mean(sf::SkeletonCellField)
 ```
