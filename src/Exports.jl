@@ -114,6 +114,8 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish CellData CellQuadrature
 @publish CellData QPointCellField
 @publish CellData CellField
+@publish CellData LebesgueMeasure
+@publish CellData ∫
 
 @publish FESpaces FESpace
 @publish FESpaces TrialFESpace
@@ -138,7 +140,8 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish FESpaces FESolver
 @publish FESpaces update_state_variables!
 
-using Gridap.FESpaces: @law; export @law
+using Gridap.CellData: @law; export @law
+using Gridap.FESpaces: @form; export @form
 
 @publish MultiField MultiFieldFESpace
 

@@ -20,16 +20,16 @@ add_tag_from_tags!(labels,"nitsche",6)
 
 trian = get_triangulation(model)
 degree = order
-quad = CellQuadrature(trian,degree)
+dΩ = LebesgueMeasure(trian,degree)
 
 ntrian = BoundaryTriangulation(model,labels,"neumann")
 ndegree = order
-nquad = CellQuadrature(ntrian,ndegree)
+dΓn = LebesgueMeasure(ntrian,ndegree)
 const nn = get_normal_vector(ntrian)
 
 dtrian = BoundaryTriangulation(model,labels,"nitsche")
 ddegree = order
-dquad = CellQuadrature(dtrian,ddegree)
+dΓd = LebesgueMeasure(dtrian,ddegree)
 const dn = get_normal_vector(dtrian)
 
 # Using automatic differentiation
@@ -62,7 +62,7 @@ vector_data[:valuetype] = VectorValue{2,Float64}
 vector_data[:u] = u_vec
 vector_data[:f] = f_vec
 
-for data in [ vector_data, scalar_data ]
+for data in [ scalar_data, vector_data]
 
   T = data[:valuetype]
   u = data[:u]
@@ -80,31 +80,22 @@ for data in [ vector_data, scalar_data ]
 
   uh = interpolate(u, U)
 
-  a(u,v) = ∇(v)⊙∇(u)
-  l(v) = v⊙f
-  t_Ω = AffineFETerm(a,l,trian,quad)
+  @form a(u,v) = ∫( ∇(v)⊙∇(u) )*dΩ + ∫( (γ/h)*v⊙u  - v⊙(dn⋅∇(u)) - (dn⋅∇(v))⊙u )*dΓd
 
-  l_Γn(v) = v⊙(nn⋅∇(uh))
-  t_Γn = FESource(l_Γn,ntrian,nquad)
+  @form l(v) = ∫( v⊙f )*dΩ + ∫( v⊙(nn⋅∇(uh)) )*dΓn + ∫( (γ/h)*v⊙uh - (dn⋅∇(v))⊙u )*dΓd
 
-  a_Γd(u,v) = (γ/h)*v⊙u  - v⊙(dn⋅∇(u)) - (dn⋅∇(v))⊙u
-  l_Γd(v) = (γ/h)*v⊙uh - (dn⋅∇(v))⊙u
-  t_Γd = AffineFETerm(a_Γd,l_Γd,dtrian,dquad)
-
-  op = AffineFEOperator(U,V,t_Ω,t_Γn,t_Γd)
-
-  uh = solve(op)
+  uh = solve( a(U,V) == l(V) )
 
   e = u - uh
 
-  l2(u) = inner(u,u)
-  sh1(u) = a(u,u)
+  l2(u) = u⊙u
+  sh1(u) = ∇(u)⊙∇(u)
   h1(u) = sh1(u) + l2(u)
 
-  el2 = sqrt(sum( integrate(l2(e),quad) ))
-  eh1 = sqrt(sum( integrate(h1(e),quad) ))
-  ul2 = sqrt(sum( integrate(l2(uh),quad) ))
-  uh1 = sqrt(sum( integrate(h1(uh),quad) ))
+  el2 = sqrt(sum( ∫( l2(e) )*dΩ ))
+  eh1 = sqrt(sum( ∫( h1(e) )*dΩ ))
+  ul2 = sqrt(sum( ∫( l2(uh) )*dΩ ))
+  uh1 = sqrt(sum( ∫( h1(uh) )*dΩ ))
 
   @test el2/ul2 < 1.e-8
   @test eh1/uh1 < 1.e-7
