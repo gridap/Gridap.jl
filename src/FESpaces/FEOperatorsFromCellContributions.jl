@@ -37,7 +37,7 @@ function collect_cell_matrix_and_vector(
   matvec, mat, vec = _pair_contribution_when_possible(biform,liform)
   matvecdata = collect_cell_matrix(matvec)
   matdata = collect_cell_matrix(mat)
-  vecdata = collect_cell_matrix(mat)
+  vecdata = collect_cell_vector(vec)
   (matvecdata, matdata, vecdata)
 end
 
@@ -48,7 +48,7 @@ function collect_cell_matrix_and_vector(
   matvec, mat, vec = _pair_contribution_when_possible(biform,liform,uhd)
   matvecdata = collect_cell_matrix(matvec)
   matdata = collect_cell_matrix(mat)
-  vecdata = collect_cell_matrix(mat)
+  vecdata = collect_cell_vector(vec)
   (matvecdata, matdata, vecdata)
 end
 
@@ -75,7 +75,6 @@ end
 function _pair_contribution_when_possible(biform,liform,uhd)
   matvec = Dict{UInt,CellContribution}()
   mat = Dict{UInt,CellContribution}()
-  vec = Dict{UInt,CellContribution}()
   _matvec, _mat, _vec = _pair_contribution_when_possible(biform,liform)
   for (id,t) in _matvec.dict
     cellvals = get_cell_values(uhd,t.cell_id)
@@ -87,7 +86,7 @@ function _pair_contribution_when_possible(biform,liform,uhd)
     a = attach_dirichlet(get_array(t),cellvals)
     matvec[id] = CellContribution(a,t.cell_id,t.object)
   end
-  map(CollectionOfCellContribution, (matvec, mat, vec))
+  map(CollectionOfCellContribution, (matvec, mat, _vec.dict))
 end
 
 
