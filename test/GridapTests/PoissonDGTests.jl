@@ -17,18 +17,17 @@ const h = 1
 order = 2
 const γ = 10
 
-
 trian = get_triangulation(model)
-degree = order
+degree = 2*order
 dΩ = LebesgueMeasure(trian,degree)
 
 btrian = BoundaryTriangulation(model)
-bdegree = order
+bdegree = 2*order
 dΓb = LebesgueMeasure(btrian,bdegree)
 const bn = get_normal_vector(btrian)
 
 strian = SkeletonTriangulation(model)
-sdegree = order
+sdegree = 2*order
 dΓs = LebesgueMeasure(strian,sdegree)
 const sn = get_normal_vector(strian)
 
@@ -72,6 +71,20 @@ el2 = sqrt(sum( ∫( l2(e) )*dΩ ))
 eh1 = sqrt(sum( ∫( h1(e) )*dΩ ))
 ul2 = sqrt(sum( ∫( l2(uh) )*dΩ ))
 uh1 = sqrt(sum( ∫( h1(uh) )*dΩ ))
+
+d = mktempdir()
+
+writevtk(trian,joinpath(d,"trian"),order=order,
+  cellfields=["uh"=>uh,"e"=>e,"u"=>u],
+  celldata=["el2"=>∫( l2(e) )*dΩ])
+
+writevtk(strian,joinpath(d,"strian"),order=order,cellfields=[
+  "jump_e"=>jump(e),
+  "jump_∇e"=>jump(∇(e)),
+  "jump_n∇e"=>jump(sn⋅∇(e)),
+  "jump_∇uh"=>jump(∇(uh)),
+  "jump_n∇uh"=>jump(sn⋅∇(uh)),
+  "jump_uh"=>jump(uh)])
 
 @test el2/ul2 < 1.e-8
 @test eh1/uh1 < 1.e-7

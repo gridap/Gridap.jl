@@ -627,6 +627,11 @@ Base.length(a::CellFieldFromOperation{typeof(identity)}) = length(a.args[1])
 get_cell_axes(a::CellFieldFromOperation{typeof(identity)}) = get_cell_axes(a.args[1])
 MetaSizeStyle(::Type{<:CellFieldFromOperation{typeof(identity)}}) = Val(())
 
+#TODO very hacky
+function convert_to_cell_field(f::CellFieldFromOperation,l::Integer)
+  f
+end
+
 get_memo(a::CellFieldFromOperation) = a.memo
 
 function operate(op,cfs::CellFieldFromOperation...)
