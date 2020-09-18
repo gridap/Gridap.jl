@@ -1,19 +1,14 @@
 
 struct LebesgueMeasure <: GridapType
   quad::CellQuadrature
-  function LebesgueMeasure(quad::CellQuadrature)
-    new(quad)
-  end
+  cell_id
 end
 
-function LebesgueMeasure(args...)
-  quad = CellQuadrature(args...)
-  LebesgueMeasure(quad)
-end
+LebesgueMeasure(quad::CellQuadrature) = LebesgueMeasure(quad,get_cell_id(get_coordinates(quad)))
 
 function Base.:*(a::Integral,b::LebesgueMeasure)
   cell_values = a*b.quad
-  cell_id = get_cell_id(get_coordinates(b.quad))
+  cell_id = b.cell_id
   CellContribution(cell_values,cell_id,b)
 end
 
@@ -36,6 +31,16 @@ get_object(a::CellContribution) = a.object
 
 struct CollectionOfCellContribution <: GridapType
   dict::Dict{UInt,CellContribution}
+end
+
+function CollectionOfCellContribution(a::CellContribution)
+  dict = Dict{UInt,CellContribution}()
+  dict[objectid(a)] = a
+  CollectionOfCellContribution(dict)
+end
+
+function CollectionOfCellContribution(a::CollectionOfCellContribution)
+  a
 end
 
 function get_cell_contribution(a::CollectionOfCellContribution,object)

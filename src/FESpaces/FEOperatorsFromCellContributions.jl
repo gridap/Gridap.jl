@@ -32,6 +32,26 @@ function collect_cell_vector(a::CellContribution)
 end
 
 function collect_cell_matrix_and_vector(
+  biform::Union{CellContribution,CollectionOfCellContribution},
+  liform::Union{CellContribution,CollectionOfCellContribution})
+
+  collect_cell_matrix_and_vector(
+    CollectionOfCellContribution(biform),
+    CollectionOfCellContribution(liform))
+end
+
+function collect_cell_matrix_and_vector(
+  biform::Union{CellContribution,CollectionOfCellContribution},
+  liform::Union{CellContribution,CollectionOfCellContribution},
+  uhd)
+
+  collect_cell_matrix_and_vector(
+    CollectionOfCellContribution(biform),
+    CollectionOfCellContribution(liform),
+    uhd)
+end
+
+function collect_cell_matrix_and_vector(
   biform::CollectionOfCellContribution,liform::CollectionOfCellContribution)
 
   matvec, mat, vec = _pair_contribution_when_possible(biform,liform)

@@ -330,3 +330,8 @@ end
   CellField(value::Number,trian::Triangulation,quad::CellQuadrature),
   CellField(value::Number,quad::CellQuadrature))
 
+function CellData.LebesgueMeasure(trian::Triangulation,args...)
+  quad = CellQuadrature(trian,args...)
+  LebesgueMeasure(quad,get_cell_id(trian))
+end
+

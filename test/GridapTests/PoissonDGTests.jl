@@ -20,16 +20,16 @@ const γ = 10
 
 trian = get_triangulation(model)
 degree = order
-quad = CellQuadrature(trian,degree)
+dΩ = LebesgueMeasure(trian,degree)
 
 btrian = BoundaryTriangulation(model)
 bdegree = order
-bquad = CellQuadrature(btrian,bdegree)
+dΓb = LebesgueMeasure(btrian,bdegree)
 const bn = get_normal_vector(btrian)
 
 strian = SkeletonTriangulation(model)
 sdegree = order
-squad = CellQuadrature(strian,sdegree)
+dΓs = LebesgueMeasure(strian,sdegree)
 const sn = get_normal_vector(strian)
 
 u_scal(x) = x[1]^2 + x[2]
@@ -51,31 +51,27 @@ V = TestFESpace(
 
 U = TrialFESpace(V,u)
 
-a(u,v) = ∇(v)⋅∇(u)
-l(v) = v*f
-t_Ω = AffineFETerm(a,l,trian,quad)
+@form a(u,v) =
+  ∫( ∇(v)⋅∇(u) )*dΩ +
+  ∫( (γ/h)*v*u  - v*(bn⋅∇(u)) - (bn⋅∇(v))*u )*dΓb +
+  ∫( (γ/h)*jump(v*sn)⋅jump(u*sn) - jump(v*sn)⋅mean(∇(u)) - mean(∇(v))⋅jump(u*sn) )*dΓs
 
-a_Γd(u,v) = (γ/h)*v*u  - v*(bn⋅∇(u)) - (bn⋅∇(v))*u
-l_Γd(v) = (γ/h)*v*u - (bn⋅∇(v))*u
-t_Γd = AffineFETerm(a_Γd,l_Γd,btrian,bquad)
+@form l(v) =
+  ∫( v*f )*dΩ +
+  ∫( (γ/h)*v*u - (bn⋅∇(v))*u )*dΓb
 
-a_Γ(u,v) = (γ/h)*jump(v*sn)⋅jump(u*sn) - jump(v*sn)⋅mean(∇(u)) -  mean(∇(v))⋅jump(u*sn)
-t_Γ = LinearFETerm(a_Γ,strian,squad)
-
-op = AffineFEOperator(U,V,t_Ω,t_Γ,t_Γd)
-
-uh = solve(op)
+uh = solve( a(U,V) == l(V) )
 
 e = u - uh
 
-l2(u) = inner(u,u)
-sh1(u) = a(u,u)
+l2(u) = u⊙u
+sh1(u) = ∇(u)⊙∇(u)
 h1(u) = sh1(u) + l2(u)
 
-el2 = sqrt(sum( integrate(l2(e),quad) ))
-eh1 = sqrt(sum( integrate(h1(e),quad) ))
-ul2 = sqrt(sum( integrate(l2(uh),quad) ))
-uh1 = sqrt(sum( integrate(h1(uh),quad) ))
+el2 = sqrt(sum( ∫( l2(e) )*dΩ ))
+eh1 = sqrt(sum( ∫( h1(e) )*dΩ ))
+ul2 = sqrt(sum( ∫( l2(uh) )*dΩ ))
+uh1 = sqrt(sum( ∫( h1(uh) )*dΩ ))
 
 @test el2/ul2 < 1.e-8
 @test eh1/uh1 < 1.e-7
