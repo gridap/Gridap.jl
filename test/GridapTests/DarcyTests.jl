@@ -33,54 +33,38 @@ Q = FESpace(
 U = TrialFESpace(V,u)
 P = TrialFESpace(Q)
 
-Y = MultiFieldFESpace([V, Q])
-X = MultiFieldFESpace([U, P])
-
 trian = Triangulation(model)
 degree = 2
-quad = CellQuadrature(trian,degree)
+dΩ = LebesgueMeasure(trian,degree)
 
 neumanntags = [7,8]
 btrian = BoundaryTriangulation(model,neumanntags)
 degree = 2*(order+1)
-bquad = CellQuadrature(btrian,degree)
+dΓ = LebesgueMeasure(btrian,degree)
 nb = get_normal_vector(btrian)
 
-function a(x,y)
-  u, p = x
-  v, q = y
-  u⋅v - p*(∇⋅v) + q*(∇⋅u)
-end
+@form a((u,p),(v,q)) = 
+  ∫( u⋅v - p*(∇⋅v) + q*(∇⋅u) )*dΩ
 
-function l(y)
-  v, q = y
-  v⋅f + q*(∇⋅u)
-end
+@form l((v,q)) = 
+  ∫( v⋅f + q*(∇⋅u) )*dΩ +
+  ∫( -(v⋅nb)*p )*dΓ
 
-function l_Γ(y)
-  v, q = y
-  -(v⋅nb)*p
-end
-
-t_Ω = AffineFETerm(a,l,trian,quad)
-t_Γ = FESource(l_Γ,btrian,bquad)
-op = AffineFEOperator(X,Y,t_Ω,t_Γ)
-xh = solve(op)
-uh, ph = xh
+uh, ph = solve( a((U,P),(V,Q))==l((V,Q)) )
 
 eu = u - uh
 ep = p - ph
 
 l2(v) = v⋅v
-h1(v) = v*v + ∇(v)⋅∇(v)
+h1(v) = v⋅v + ∇(v)⊙∇(v)
 
-eu_l2 = sum(integrate(l2(eu),quad))
-ep_l2 = sum(integrate(l2(ep),quad))
-ep_h1 = sum(integrate(h1(ep),quad))
+eu_l2 = sqrt(sum(∫(l2(eu))*dΩ))
+eu_h1 = sqrt(sum(∫(h1(eu))*dΩ))
+ep_l2 = sqrt(sum(∫(l2(ep))*dΩ))
 
-tol = 1.0e-9
+tol = 1.0e-8
 @test eu_l2 < tol
+@test eu_h1 < tol
 @test ep_l2 < tol
-@test ep_h1 < tol
 
 end # module

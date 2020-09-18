@@ -56,20 +56,20 @@ trian_fluid = Triangulation(model, cell_to_is_fluid)
 order = 2
 
 degree = 2*order
-quad = CellQuadrature(trian,degree)
-quad_solid = CellQuadrature(trian_solid,degree)
-quad_fluid = CellQuadrature(trian_fluid,degree)
+dΩ = LebesgueMeasure(trian,degree)
+dΩ_solid = LebesgueMeasure(trian_solid,degree)
+dΩ_fluid = LebesgueMeasure(trian_fluid,degree)
 
 btrian = BoundaryTriangulation(model,labels,"neumann")
 bdegree = 2*order
-bquad = CellQuadrature(btrian,bdegree)
+dΛ = LebesgueMeasure(btrian,bdegree)
 n = get_normal_vector(btrian)
 
 # This returns a SkeletonTriangulation whose normal vector
 # goes outwards to the fluid domain.
 trian_Γ = InterfaceTriangulation(model,cell_to_is_fluid)
 n_Γ = get_normal_vector(trian_Γ)
-quad_Γ = CellQuadrature(trian_Γ,bdegree)
+dΓ = LebesgueMeasure(trian_Γ,bdegree)
 
 # FESpaces
 
@@ -91,72 +91,39 @@ Q = TestFESpace(
 U = TrialFESpace(V,u)
 P = TrialFESpace(Q)
 
-Y = MultiFieldFESpace([V,Q])
-X = MultiFieldFESpace([U,P])
-
 # FE problem
 
-function a_solid(x,y)
-  u,p = x
-  v,q = y
-  inner(∇(v),∇(u))
-end
+@form a((u,p),(v,q)) =
+  ∫( inner(∇(v),∇(u)) )*dΩ_solid +
+  ∫( inner(∇(v),∇(u)) - (∇⋅v)*p + q*(∇⋅u) )*dΩ_fluid
 
-function l_solid(y)
-  v,q = y
-  v⋅s
-end
+@form l((v,q)) =
+  ∫( v⋅s )*dΩ_solid +
+  ∫( v⋅f + q*g )*dΩ_fluid +
+  ∫( v⋅(n⋅∇u) - (n⋅v)*p )*dΛ +
+  ∫( - mean(n_Γ⋅v)*p )*dΓ
 
-function a_fluid(x,y)
-  u,p = x
-  v,q = y
-  inner(∇(v),∇(u)) - (∇⋅v)*p + q*(∇⋅u)
-end
-
-function l_fluid(y)
-  v,q = y
-  v⋅f + q*g
-end
-
-function l_Γn_fluid(y)
-  v,q = y
-  v⋅(n⋅∇u) - (n⋅v)*p
-end
-
-# Pressure drop at the interface
-function l_Γ(y)
-  v,q = y
-  - mean(n_Γ⋅v)*p
-end
-
-t_Ω_solid = AffineFETerm(a_solid,l_solid,trian_solid,quad_solid)
-t_Ω_fluid = AffineFETerm(a_fluid,l_fluid,trian_fluid,quad_fluid)
-t_Γn_fluid = FESource(l_Γn_fluid,btrian,bquad)
-t_Γ = FESource(l_Γ,trian_Γ,quad_Γ)
-
-op = AffineFEOperator(X,Y,t_Ω_solid,t_Ω_fluid,t_Γn_fluid,t_Γ)
-uh, ph = solve(op)
-
-# Visualization
-
+uh, ph = solve( a((U,P),(V,Q))==l((V,Q)) )
 
 eu = u - uh
 ep = p - ph
 
-#writevtk(trian_fluid,"trian_fluid",cellfields=["ph"=>ph_fluid, "ep"=>ep_fluid])
-#
-#writevtk(trian,"trian", cellfields=["uh" => uh, "ph"=> ph, "eu"=>eu, "ep"=>ep])
+# Visualization
+
+d = mktempdir()
+writevtk(trian,joinpath(d,"trian"),cellfields=["ep"=>ep,"eu"=>eu,"p"=>p])
+writevtk(trian_fluid,joinpath(d,"trian_fluid"),cellfields=["ep"=>ep,"p"=>p,"ph"=>ph])
 
 # Errors
 
 l2(v) = v⋅v
-h1(v) = v⋅v + inner(∇(v),∇(v))
+h1(v) = v⋅v + ∇(v)⊙∇(v)
 
-eu_l2 = sqrt(sum(integrate(l2(eu),quad)))
-eu_h1 = sqrt(sum(integrate(h1(eu),quad)))
-ep_l2 = sqrt(sum(integrate(l2(ep),quad_fluid)))
+eu_l2 = sqrt(sum(∫(l2(eu))*dΩ))
+eu_h1 = sqrt(sum(∫(h1(eu))*dΩ))
+ep_l2 = sqrt(sum(∫(l2(ep))*dΩ_fluid))
 
-tol = 1.0e-9
+tol = 1.0e-8
 @test eu_l2 < tol
 @test eu_h1 < tol
 @test ep_l2 < tol

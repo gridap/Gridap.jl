@@ -30,31 +30,19 @@ X = MultiFieldFESpace([U, P])
 
 trian = Triangulation(model)
 degree = 2*(order)
-quad = CellQuadrature(trian,degree)
+dΩ = LebesgueMeasure(trian,degree)
 x = get_physical_coordinate(trian)
 
-function a(x,y)
-  u, p = x
-  v, q = y
-  v⋅u - p*(∇⋅v) + q*(∇⋅u)
-end
-
-function l(y)
-  v, q = y
-  v⋅f + q*g
-end
-
-t_Ω = AffineFETerm(a,l,trian,quad)
-op = AffineFEOperator(X,Y,t_Ω)
-xh = solve(op)
-uh, ph = xh
+@form a((u,p),(v,q)) = ∫( u⋅v - p*(∇⋅v) + q*(∇⋅u) )*dΩ
+@form l((v,q)) = ∫( v⋅f + q*(∇⋅u) )*dΩ
+uh, ph = solve( a((U,P),(V,Q))==l((V,Q)) )
 
 eu = u - uh
 ep = p - ph
 
 l2(v) = v⋅v
-eu_l2 = sum(integrate(l2(eu),quad))
-ep_l2 = sum(integrate(l2(ep),quad))
+eu_l2 = sqrt(sum(∫(l2(eu))*dΩ))
+ep_l2 = sqrt(sum(∫(l2(ep))*dΩ))
 
 tol = 1.0e-9
 @test eu_l2 < tol
