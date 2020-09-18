@@ -57,90 +57,46 @@ model=model,
 order=order-1,
 constraint=:zeromean)
 
-# Define test and trial
-Y = MultiFieldFESpace([V,Q])
-# Y = [V,Q]
-
 U = TrialFESpace(V)
 P = TrialFESpace(Q)
 
-X = MultiFieldFESpace([U,P])
-# X = [U,P]
-
 # Define integration mesh and quadrature for volume
 trian = get_triangulation(model)
-quad = CellQuadrature(trian,2*order)
+dΩ = LebesgueMeasure(trian,2*order)
 
 btrian = BoundaryTriangulation(model)
-bquad = CellQuadrature(btrian,2*order)
+dΓ = LebesgueMeasure(btrian,2*order)
 nb = get_normal_vector(btrian)
-
-# Weak form
-function A_Ω(x,y)
-  u, p = x
-  v, q = y
-  ∇(v)⊙∇(u) - q*(∇⋅u) - (∇⋅v)*p
-end
-
-function B_Ω(y)
-  v, q = y
-  v⋅f - q*g
-end
-
-function A_∂Ω(x,y)
-  u, p = x
-  v, q = y
-  (γ/h)*v⋅u - v⋅(nb⋅∇(u)) - (nb⋅∇(v))⋅u + (p*nb)⋅v + (q*nb)⋅u
-end
-
-function B_∂Ω(y)
-  v, q = y
-  (γ/h)*v⋅u - (nb⋅∇(v))⋅u + (q*nb)⋅u
-end
-
-t_Ω = AffineFETerm(A_Ω,B_Ω,trian,quad)
-
-# t_∂Ω = FESource(B_∂Ω,btrian,bquad)
-t_∂Ω = AffineFETerm(A_∂Ω,B_∂Ω,btrian,bquad)
 
 # Dummy term with 0 facets to check degenerated case
 trian0 = BoundaryTriangulation(model,fill(false,Gridap.ReferenceFEs.num_facets(model)))
-quad0 = CellQuadrature(trian0,2*order)
-s0(x) = VectorValue(2.0*x[1],2.0)
-function L0(y)
-  v,q = y
-  s0⋅v
-end
-t_0 = FESource(L0,trian0,quad0)
+dΓ0 = LebesgueMeasure(trian0,2*order)
+const s0(x) = VectorValue(2.0*x[1],2.0)
 
-# Define the FEOperator
-op = AffineFEOperator(X,Y,t_Ω,t_∂Ω,t_0)
-# op = LinearFEOperator(Yh,Xh,t_Ω)
+@form a((u,p),(v,q)) =
+ ∫( ∇(v)⊙∇(u) - q*(∇⋅u) - (∇⋅v)*p )*dΩ +
+ ∫( (γ/h)*v⋅u - v⋅(nb⋅∇(u)) - (nb⋅∇(v))⋅u + (p*nb)⋅v + (q*nb)⋅u )*dΓ
 
-# Solve!
-xh = solve(op)
-uh, ph = xh
+@form l((v,q)) =
+ ∫( v⋅f - q*g )*dΩ +
+ ∫( (γ/h)*v⋅u - (nb⋅∇(v))⋅u + (q*nb)⋅u )*dΓ +
+ ∫( s0⋅v )*dΓ0
 
-# Define exact solution and error
+uh, ph = solve( a((U,P),(V,Q))==l((V,Q)) )
+
 eu = u - uh
-
 ep = p - ph
 
-# writevtk(trian,"trian",cellfields=["uh"=>uh,"ph"=>ph, "eu"=>eu, "ep"=>ep])
+l2(v) = v⋅v
+h1(v) = v⋅v + ∇(v)⊙∇(v)
 
-# Define norms to measure the error
-l2(u) = u⊙u
-h1(u) = ∇(u)⊙∇(u) + l2(u)
+eu_l2 = sqrt(sum(∫(l2(eu))*dΩ))
+eu_h1 = sqrt(sum(∫(h1(eu))*dΩ))
+ep_l2 = sqrt(sum(∫(l2(ep))*dΩ))
 
-# Compute errors
-eul2 = sqrt(sum( integrate(l2(eu),quad) ))
-euh1 = sqrt(sum( integrate(h1(eu),quad) ))
-
-epl2 = sqrt(sum( integrate(l2(ep),quad) ))
-
-@test eul2 < 1.e-8
-@test euh1 < 1.e-8
-
-@test epl2 < 1.e-8
+tol = 1.0e-8
+@test eu_l2 < tol
+@test eu_h1 < tol
+@test ep_l2 < tol
 
 end

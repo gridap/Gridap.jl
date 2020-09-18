@@ -50,73 +50,47 @@ Q = TestFESpace(
 U = TrialFESpace(V)
 P = TrialFESpace(Q)
 
-Y = MultiFieldFESpace([V,Q])
-X = MultiFieldFESpace([U,P])
-
 trian = get_triangulation(model)
 degree = 2*order
-quad = CellQuadrature(trian,degree)
+dΩ = LebesgueMeasure(trian,degree)
 
 btrian = BoundaryTriangulation(model)
 bdegree = 2*order
-bquad = CellQuadrature(btrian,bdegree)
+dΓ = LebesgueMeasure(btrian,bdegree)
 const nb = get_normal_vector(btrian)
 
 strian = SkeletonTriangulation(model)
 sdegree = 2*order
-squad = CellQuadrature(strian,sdegree)
+dΛ = LebesgueMeasure(strian,sdegree)
 const ns = get_normal_vector(strian)
 
-function A_Ω(x,y)
-  u, p = x
-  v, q = y
-  ∇(v)⊙∇(u) - ∇(q)⋅u + v⋅∇(p)
-end
+@form a((u,p),(v,q)) =
+  ∫( ∇(v)⊙∇(u) - ∇(q)⋅u + v⋅∇(p) )*dΩ +
+  ∫( (γ/h)*v⋅u - v⋅(nb⋅∇(u)) - (nb⋅∇(v))⋅u + 2*(q*nb)⋅u )*dΓ +
+  ∫(  
+    (γ/h)*jump(v⊗ns)⊙jump(u⊗ns) -
+      jump(v⊗ns)⊙mean(∇(u)) -
+      mean(∇(v))⊙jump(u⊗ns)  +
+      (γ0*h)*jump(q*ns)⋅jump(p*ns) +
+      jump(q*ns)⋅mean(u) -
+      mean(v)⋅jump(p*ns)
+   )*dΛ
 
-function B_Ω(y)
-  v, q = y
-  v⋅f + q*g
-end
+@form l((v,q)) = 
+  ∫( v⋅f + q*g )*dΩ +
+  ∫( (γ/h)*v⋅u - (nb⋅∇(v))⋅u + (q*nb)⋅u )*dΓ
 
-function A_∂Ω(x,y)
-  u, p = x
-  v, q = y
-  (γ/h)*v⋅u - v⋅(nb⋅∇(u)) - (nb⋅∇(v))⋅u + 2*(q*nb)⋅u
-end
-
-function B_∂Ω(y)
-  v, q = y
-  (γ/h)*v⋅u - (nb⋅∇(v))⋅u + (q*nb)⋅u
-end
-
-function A_Γ(x,y)
-  u, p = x
-  v, q = y
-  (γ/h)*inner( jump(outer(v,ns)), jump(outer(u,ns))) -
-    inner( jump(outer(v,ns)), mean(∇(u)) ) -
-    inner( mean(∇(v)), jump(outer(u,ns)) ) +
-    (γ0*h)*jump(q*ns)⋅jump(p*ns) +
-    jump(q*ns)⋅mean(u) -
-    mean(v)⋅jump(p*ns)
-end
-
-t_Ω = AffineFETerm(A_Ω,B_Ω,trian,quad)
-t_∂Ω = AffineFETerm(A_∂Ω,B_∂Ω,btrian,bquad)
-t_Γ = LinearFETerm(A_Γ,strian,squad)
-
-op = AffineFEOperator(X,Y,t_Ω,t_∂Ω,t_Γ)
-
-uh, ph = solve(op)
+uh, ph = solve( a((U,P),(V,Q))==l((V,Q)) )
 
 eu = u - uh
 ep = p - ph
 
 l2(v) = v⋅v
-h1(v) = v⋅v + inner(∇(v),∇(v))
+h1(v) = v⋅v + ∇(v)⊙∇(v)
 
-eu_l2 = sqrt(sum(integrate(l2(eu),quad)))
-eu_h1 = sqrt(sum(integrate(h1(eu),quad)))
-ep_l2 = sqrt(sum(integrate(l2(ep),quad)))
+eu_l2 = sqrt(sum(∫(l2(eu))*dΩ))
+eu_h1 = sqrt(sum(∫(h1(eu))*dΩ))
+ep_l2 = sqrt(sum(∫(l2(ep))*dΩ))
 
 tol = 1.0e-9
 @test eu_l2 < tol

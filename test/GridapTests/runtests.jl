@@ -11,8 +11,8 @@ using Test
 #@time @testset "PLaplacian" begin include("PLaplacianTests.jl") end
 #
 #@time @testset "PLaplacianWithAutodiff" begin include("PLaplacianWithAutodiffTests.jl") end
-#
-#@time @testset "StokesTaylorHood" begin include("StokesTaylorHoodTests.jl") end
+
+@time @testset "StokesTaylorHood" begin include("StokesTaylorHoodTests.jl") end
 
 @time @testset "StokesDG" begin include("StokesDGTests.jl") end
 

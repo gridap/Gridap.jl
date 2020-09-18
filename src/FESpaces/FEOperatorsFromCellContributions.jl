@@ -188,7 +188,6 @@ function Helpers.operate(b::Function,V::FESpace)
 end
 
 function Base.:(==)(bi::BilinearForm,li::LinearForm)
-  @assert li.V === bi.V
   AffineFEOperator(bi.U,bi.V,bi.a,li.b)
 end
 
@@ -213,6 +212,9 @@ macro form(fundef)
       function $(funname)($(U)::FESpace,$(V)::FESpace)
         operate($(funname),$(a...))
       end
+      function $(funname)($(U)::Tuple{Vararg{FESpace}},$(V)::Tuple{Vararg{FESpace}})
+        operate($(funname),$(a...))
+      end
       $(fundef)
     end
 
@@ -222,6 +224,9 @@ macro form(fundef)
     a = fundef.args[1].args[2:end]
     q = quote
       function $(funname)($(V)::FESpace)
+        operate($(funname),$(a...))
+      end
+      function $(funname)($(V)::Tuple{Vararg{FESpace}})
         operate($(funname),$(a...))
       end
       $(fundef)

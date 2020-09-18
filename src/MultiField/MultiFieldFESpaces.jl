@@ -280,3 +280,16 @@ function FESpaces.interpolate_dirichlet(objects, fe::MultiFieldFESpace)
   MultiFieldFEFunction(free_values,fe,blocks)
 end
 
+function Helpers.operate(a::Function,X::Tuple{Vararg{FESpace}},Y::Tuple{Vararg{FESpace}})
+  _X = MultiFieldFESpace([X...])
+  _Y = MultiFieldFESpace([Y...])
+  FESpaces.BilinearForm(a,_X,_Y)
+end
+
+function Helpers.operate(a::Function,Y::Tuple{Vararg{FESpace}})
+  _Y = MultiFieldFESpace([Y...])
+  FESpaces.LinearForm(a,_Y)
+end
+
+
+

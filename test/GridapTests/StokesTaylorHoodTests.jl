@@ -60,40 +60,19 @@ for ref_st in ref_style
   U = TrialFESpace(V,u)
   P = TrialFESpace(Q)
 
-  Y = MultiFieldFESpace([V,Q])
-  X = MultiFieldFESpace([U,P])
-
   trian = get_triangulation(model)
   degree = order
-  quad = CellQuadrature(trian,degree)
+  dΩ = LebesgueMeasure(trian,degree)
 
   btrian = BoundaryTriangulation(model,labels,"neumann")
   bdegree = order
-  bquad = CellQuadrature(btrian,bdegree)
+  dΓ = LebesgueMeasure(btrian,bdegree)
   n = get_normal_vector(btrian)
 
-  function a(x,y)
-    u,p = x
-    v,q = y
-    ∇(v)⊙∇(u) - (∇⋅v)*p + q*(∇⋅u)
-  end
+  @form a((u,p),(v,q)) = ∫( ∇(v)⊙∇(u) - (∇⋅v)*p + q*(∇⋅u) )*dΩ
+  @form l((v,q)) = ∫( v⋅f + q*g )*dΩ + ∫( v⋅(n⋅∇u) - (n⋅v)*p )*dΓ
 
-  function l(y)
-    v,q = y
-    v⋅f + q*g
-  end
-
-  function l_Γb(y)
-    v,q = y
-    v⋅(n⋅∇u) - (n⋅v)*p
-  end
-
-  t_Ω = AffineFETerm(a,l,trian,quad)
-  t_Γb = FESource(l_Γb,btrian,bquad)
-
-  op = AffineFEOperator(X,Y,t_Ω,t_Γb)
-
-  uh, ph = solve(op)
+  uh, ph = solve( a((U,P),(V,Q))==l((V,Q)) )
 
   eu = u - uh
   ep = p - ph
@@ -101,9 +80,9 @@ for ref_st in ref_style
   l2(v) = v⋅v
   h1(v) = v⋅v + ∇(v)⊙∇(v)
 
-  eu_l2 = sqrt(sum(integrate(l2(eu),quad)))
-  eu_h1 = sqrt(sum(integrate(h1(eu),quad)))
-  ep_l2 = sqrt(sum(integrate(l2(ep),quad)))
+  eu_l2 = sqrt(sum(∫(l2(eu))*dΩ))
+  eu_h1 = sqrt(sum(∫(h1(eu))*dΩ))
+  ep_l2 = sqrt(sum(∫(l2(ep))*dΩ))
 
   tol = 1.0e-9
   @test eu_l2 < tol

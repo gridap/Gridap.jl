@@ -24,32 +24,27 @@ U = TrialFESpace(V,u)
 
 degree = 2*order
 trian = Triangulation(model) 
-quad = CellQuadrature(trian,degree)
+dΩ = LebesgueMeasure(trian,degree)
 
 btrian = BoundaryTriangulation(model,1)
-bquad = CellQuadrature(btrian,degree)
+dΓ = LebesgueMeasure(btrian,degree)
 nb = get_normal_vector(btrian)
 
-a(u,v) = ∇(v)⋅∇(u)
-l(v) = v*f
-t_Ω = AffineFETerm(a,l,trian,quad)
+@form a(u,v) = ∫( ∇(v)⋅∇(u) )*dΩ
+@form l(v) = ∫( v*f )*dΩ + ∫( v*(nb⋅∇u) )*dΓ
 
-l_b(v) = v*(nb⋅∇u)
-t_b = FESource(l_b,btrian,bquad)
-
-op = AffineFEOperator(U,V,t_Ω,t_b)
-uh = solve(op)
+uh = solve( a(U,V)==l(V) )
 
 e = u - uh
 
-l2(u) = inner(u,u)
-sh1(u) = a(u,u)
+l2(u) = u⊙u
+sh1(u) = ∇(u)⊙∇(u)
 h1(u) = sh1(u) + l2(u)
 
-el2 = sqrt(sum( integrate(l2(e),quad) ))
-eh1 = sqrt(sum( integrate(h1(e),quad) ))
-ul2 = sqrt(sum( integrate(l2(uh),quad) ))
-uh1 = sqrt(sum( integrate(h1(uh),quad) ))
+el2 = sqrt(sum( ∫( l2(e) )*dΩ ))
+eh1 = sqrt(sum( ∫( h1(e) )*dΩ ))
+ul2 = sqrt(sum( ∫( l2(uh) )*dΩ ))
+uh1 = sqrt(sum( ∫( h1(uh) )*dΩ ))
 
 @test el2/ul2 < 1.e-8
 @test eh1/uh1 < 1.e-7
