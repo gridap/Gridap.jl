@@ -8,12 +8,8 @@ const FieldArray{T,N} = AbstractArray{T,N} where {T<:NewField,N}
 
 const FieldOrFieldArray = Union{NewField,FieldArray}
 
-function evaluate!(cache,f::NewField,x::Point)
-  @notimplemented
-end
-
-function evaluate!(cache,f::NewField,x::AbstractArray{<:Point})
-  @notimplemented
+function evaluate!(cache,f::NewField,x)
+  @abstractmethod
 end
 
 # Differentiation
@@ -41,6 +37,36 @@ end
 function return_gradient_type(::Type{T},x::Point) where T
 typeof(outer(zero(x),zero(T)))
 end
+
+# Make Field behave like a collection
+Base.length(::NewField) = 1
+Base.size(::NewField) = ()
+Base.axes(::NewField) = ()
+Base.IteratorSize(::Type{<:NewField}) = Base.HasShape{0}()
+Base.eltype(::Type{T}) where T<:NewField = T
+Base.iterate(a::NewField) = (a,nothing)
+Base.iterate(a::NewField,::Nothing) = nothing
+
+# Make Fields behave like numbers (operations are defined below)
+Base.zero(a::NewField) = ZeroField(a)
+
+struct ZeroField{F} <: NewField
+  field::F
+end
+
+evaluate!(cache,z::ZeroField,x::Point) = zero(return_type(z.field,x))
+
+function evaluate!(cache,z::ZeroField,x::AbstractArray{<:Point})
+  T = return_type(z.f,testitem(x))
+  zeros(T,length(x)) # TODO cache
+end
+
+# @fverdugo : TODO Implementinf this
+# Base.zero(a::Type{T}) where T<:Field
+# requires return_type be implemented for return_type(::Type{F},args...)
+# with is challenging in general. E.g. there is no general way of doing this for
+# Function (afaik). No big deal since Base.zero(a::Type{T}) is not needed in practice.
+
 
 function test_field(
   f::FieldOrFieldArray,

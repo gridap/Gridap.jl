@@ -130,32 +130,32 @@ include("BlockArraysCoo.jl")
 
 include("CachedArrays.jl")
 
-include("Kernels.jl")
+# include("Kernels.jl")
 
-include("Apply.jl")
+# include("Apply.jl")
 
-include("CompressedArrays.jl")
+# include("CompressedArrays.jl")
 
-include("Tables.jl")
+# include("Tables.jl")
 
-include("LocalToGlobalArrays.jl")
+# include("LocalToGlobalArrays.jl")
 
-include("LocalToGlobalPosNegArrays.jl")
+# include("LocalToGlobalPosNegArrays.jl")
 
-include("FilteredArrays.jl")
+# include("FilteredArrays.jl")
 
-include("Reindex.jl")
+# include("Reindex.jl")
 
-include("IdentityVectors.jl")
+# include("IdentityVectors.jl")
 
-include("SubVectors.jl")
+# include("SubVectors.jl")
 
-include("ArrayPairs.jl")
+# include("ArrayPairs.jl")
 
-include("AppendedArrays.jl")
+# include("AppendedArrays.jl")
 
-include("VectorsOfBlockArrayCoo.jl")
+# include("VectorsOfBlockArrayCoo.jl")
 
-include("Autodiff.jl")
+# include("Autodiff.jl")
 
 end # module

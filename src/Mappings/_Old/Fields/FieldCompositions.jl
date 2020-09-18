@@ -1,5 +1,6 @@
 # Composition
 
+# @fverdugo :  TODO find the ascii name
 Base.:∘(f::Field,g::Field) = GenericField(Composition(f,g))
 
 struct Composition{F,G} <: Mapping
@@ -20,10 +21,11 @@ function evaluate!(cache,a::Composition,x)
   evaluate!(cf,f.f,gx)
 end
 
-function gradient(a::Composition)
+function gradient(a::GenericField{<:Composition})
   ∇f = gradient(a.f)
   ∇g = gradient(a.g)
-  evaluate(FieldOperation(⋅),∇g,∇f)
+  # evaluate(FieldOperation(⋅),∇g,∇f)
+  ∇g⋅∇f
 end
 
 # Composition of FieldArray and Field

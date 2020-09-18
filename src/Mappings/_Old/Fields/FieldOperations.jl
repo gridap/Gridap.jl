@@ -1,11 +1,27 @@
+function evaluate!(cache,op::BroadcastMapping,args::Field...)
+  evaluate(op.f,args...)
+end
+
+# Needed to signal that f is something defined on the value
+# of the fields.
+# User API:
+# f(x) = sin(x[1])
+# g::Field
+# h = FieldOperation(f)(g)
 struct FieldOperation{T} <: Mapping
   op::T
 end
 
-evaluate!(cache,k::typeof{+},args::NewField...) = GenericField(Operation(k,args...))
-evaluate!(cache,k::typeof{-},f::NewField) = GenericField(Operation(k,f))
-evaluate!(cache,k::typeof{-},f::NewField,g::NewField) = GenericField(Operation(k,f,g))
-evaluate!(cache,k::typeof{inner},f::NewField,g::NewField) = GenericField(Operation(k,f,g))
+# Delegate usual operations to Field objects
+
+for op in (:+,:-,:*,:⋅,:inv,:det)
+  @eval ($op)(a::Field...) = FieldOperation($op)(a...)
+end
+
+# evaluate!(cache,k::typeof{+},args::NewField...) = GenericField(Operation(k,args...))
+# evaluate!(cache,k::typeof{-},f::NewField) = GenericField(Operation(k,f))
+# evaluate!(cache,k::typeof{-},f::NewField,g::NewField) = GenericField(Operation(k,f,g))
+# evaluate!(cache,k::typeof{inner},f::NewField,g::NewField) = GenericField(Operation(k,f,g))
 # add here other meaningful field operations
 
 function evaluate!(cache,k::FieldOperation,args::NewField...)
@@ -34,8 +50,14 @@ function evaluate!(cache,f::Operation,x)
 end
 
 # Implement product rules e.g.
-function gradient(a::Operation{typeof(+)})
-  Operation(+,map(gradient,a.args))
+for op in (:+,:-)
+  @eval begin
+    function gradient(a::GenericField{<:Operation{typeof($op)}})
+      f = a.args
+      g = map( gradient, f)
+      $op(g...)
+    end
+  end
 end
 
 # Operations
@@ -43,17 +65,17 @@ end
 # @santiagobadia : My main concern is here, there is no way to decide whether
 # the operation is a Field or FieldArray, it depends on the operator, so
 # I would be more specific ...
-# TODO operations between Fields and arrays of fields
-function evaluate!(cache,k::FieldOperation,args::FieldOrFieldArray...)
-  GenericFieldArray(Operation(k.op,args...))
-end
+# # TODO operations between Fields and arrays of fields
+# function evaluate!(cache,k::FieldOperation,args::FieldOrFieldArray...)
+#   GenericFieldArray(Operation(k.op,args...))
+# end
 
-# TODO this is the difficult part
-Base.size(a::Operation) = @notimplemented
-Base.getindex(a::Operation,i::Integer...) = @notimplemented
-Base.ndims(a::Operation) = @notimplemented
-Base.eltype(a::Operation) = @notimplemented
-Base.IndexStyle(::Type{<:Operation}) = @notimplemented
+# # TODO this is the difficult part
+# Base.size(a::Operation) = @notimplemented
+# Base.getindex(a::Operation,i::Integer...) = @notimplemented
+# Base.ndims(a::Operation) = @notimplemented
+# Base.eltype(a::Operation) = @notimplemented
+# Base.IndexStyle(::Type{<:Operation}) = @notimplemented
 
 # for op in (:+,:-,:tr, :transpose, :adjoint, :symmetric_part)
 #   @eval begin

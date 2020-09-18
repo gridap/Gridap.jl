@@ -20,6 +20,8 @@ end
 
 # Gradients
 
+gradient(f::ConstantField) = GenericField(Gradient(f.object))
+
 function return_gradient_cache(f::ConstantField{T},x) where T
   E = return_gradient_type(T,first(x))
   c = zeros(E,length(x))
@@ -110,4 +112,28 @@ function evaluate_hessian!(c,f::ConstantFieldArray,x)
     c .= zero(eltype(c))
   end
   c
+end
+
+# Make Numbers behave like Fields
+
+function evaluate!(cache,a::Number,x::AbstractArray{<:Point})
+  evaluate!(cache,ConstantField(a),x)
+en
+
+function return_cache(a::Number,x::AbstractArray{<:Point})
+  return_cache(ConstantField(f),x)
+end
+
+# Make Arrays behave like Fields
+
+function evaluate!(cache,a::AbstractArray{<:Number},x::AbstractArray{<:Point})
+  evaluate!(cache,ConstantFieldArray(a),x)
+en
+
+function return_cache(a::AbstractArray{<:Number},x::AbstractArray{<:Point})
+  return_cache(ConstantFieldArray(f),x)
+end
+
+function evaluate_gradient!(cache,a::AbstractArray{<:Number},x::Point)
+  evaluate_gradient!(cache,ConstantFieldArray(a),x::Point)
 end

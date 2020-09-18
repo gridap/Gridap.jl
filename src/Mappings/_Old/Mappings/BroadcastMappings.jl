@@ -1,3 +1,13 @@
+# Broadcast Functions
+
+struct BroadcastMapping{F<:Function} <: Mapping
+  f::F
+end
+
+function evaluate!(cache,b::BroadcastMapping,args...)
+  broadcast(b.f,args...)
+end
+
 struct BroadcastMapping{F<:Function} <: Mapping
   f::F
 end

@@ -41,28 +41,30 @@ include("Arrays/Arrays.jl")
 
 include("TensorValues/TensorValues.jl")
 
-include("Fields/Fields.jl")
+include("Mappings/Mappings.jl")
 
-include("Polynomials/Polynomials.jl")
+# include("Fields/Fields.jl")
 
-include("Integration/Integration.jl")
+# include("Polynomials/Polynomials.jl")
 
-include("ReferenceFEs/ReferenceFEs.jl")
+# include("Integration/Integration.jl")
 
-include("CellData/CellData.jl")
+# include("ReferenceFEs/ReferenceFEs.jl")
 
-include("Geometry/Geometry.jl")
+# include("CellData/CellData.jl")
 
-include("FESpaces/FESpaces.jl")
+# include("Geometry/Geometry.jl")
 
-include("MultiField/MultiField.jl")
+# include("FESpaces/FESpaces.jl")
 
-include("Visualization/Visualization.jl")
+# include("MultiField/MultiField.jl")
 
-include("Exports.jl")
+# include("Visualization/Visualization.jl")
 
-include("Mappings/Mappings/Mappings.jl")
+# include("Exports.jl")
 
-include("Mappings/Fields/NewFields.jl")
+# include("Mappings/Mappings/Mappings.jl")
+
+# include("Mappings/Fields/NewFields.jl")
 
 end # module

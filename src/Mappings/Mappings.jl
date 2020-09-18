@@ -17,27 +17,28 @@ export evaluate
 export test_mapping
 export return_caches
 export return_types
-export derivative
-export gradient
-export ∇
 
-export MappedArray
-export apply_mapping
-export apply_mappings
-export test_mapped_array
+# export derivative
+# export gradient
+# export ∇
 
-export CompositionMapping
-export composition
+# export MappedArray
+# export apply_mapping
+# export apply_mappings
+# export test_mapped_array
 
-export BroadcastMapping
-export MatVecMapping
+# export CompositionMapping
+# export composition
 
-# To create the MappingArray <: AbstractArray
-# using the extended Gridap API
-import Gridap.Arrays: array_cache
-import Gridap.Arrays: testitem
-import Gridap.Arrays: uses_hash
-import Gridap.Arrays: getindex!
+# export BroadcastMapping
+# export MatVecMapping
+
+# # To create the MappingArray <: AbstractArray
+# # using the extended Gridap API
+# import Gridap.Arrays: array_cache
+# import Gridap.Arrays: testitem
+# import Gridap.Arrays: uses_hash
+# import Gridap.Arrays: getindex!
 # @santiagobadia : Probably just export in the future
 # import Gridap.Arrays: apply
 
@@ -45,15 +46,15 @@ import Gridap.Arrays: getindex!
 
 include("MappingInterfaces.jl")
 
-include("BroadcastMappings.jl")
+# include("BroadcastMappings.jl")
 
 # include("FunctionMappings.jl")
 
-include("CompositionMappings.jl")
+# include("CompositionMappings.jl")
 
-include("AlgebraMappings.jl")
+# include("AlgebraMappings.jl")
 
-include("MappedArrays.jl")
+# include("MappedArrays.jl")
 
 # include("MappingArrays.jl")
 

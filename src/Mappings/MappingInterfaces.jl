@@ -1,10 +1,12 @@
 abstract type Mapping <: GridapType end
 
-return_type(f,x...) = typeof(testitem(f,x...))
-
 return_cache(f,x...) = nothing
 
 evaluate!(cache,f,x...) = @abstractmethod
+
+# @fverdugo : TODO unify inference mechanism for Function and Mapping
+return_type(f,x...) = typeof(testitem(f,x...))
+
 
 function evaluate(f,x...)
   c = return_cache(f,x...)
@@ -23,35 +25,18 @@ end
   evaluate!(cache,k,x...)
 end
 
-# Function implementation
+# Default implementation for Function
 
 evaluate!(cache,f::Function,x...) = f(x...)
-
+# @fverdugo : TODO This ad-hoc definition should be not needded
 return_type(f::Function,x...) = return_type(f,map(typeof,x))
-
-return_cache(f::Function,x...) = nothing
-
-evaluate(f::Function,x...) = f(x...)
-
-evaluate(T::Type,f::Function,x...) = f(x...)
-
-testitem(f::Function,x...) = f(x...)
-
-testitem!(cache,f::Function,x...) = f(x...)
 
 # Number or Array implementation
 
 const NumberOrArray = Union{Number,AbstractArray{<:Number}}
 
 evaluate!(cache,f::NumberOrArray,x...) = f
-
-return_cache(f::NumberOrArray,x...) = nothing
-
 return_type(f::NumberOrArray,x...) = typeof(f)
-
-evaluate(f::NumberOrArray,x...) = f
-
-evaluate(T::Type,f::NumberOrArray,x...) = f
 
 # Testing the interface
 
@@ -68,7 +53,7 @@ function test_mapping(f,x::Tuple,y,cmp=(==))
   @test cmp(typeof(z),typeof(y))
 end
 
-# Work with several mappings at once
+# Work with several Mapping objects
 
 function return_caches(fs::Tuple,x...)
   _mapping_caches(x,fs...)
@@ -120,11 +105,3 @@ function _mapping_return_types(x::Tuple,a)
   Ta = return_type(a,x...)
   (Ta,)
 end
-
-# Differentiation
-
-# derivative(k::Mapping) = @notimplemented
-
-# gradient(k::Mapping) = transpose(derivative(k::Mapping))
-
-# const ∇ = gradient
