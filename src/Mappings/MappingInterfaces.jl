@@ -7,7 +7,6 @@ evaluate!(cache,f,x...) = @abstractmethod
 # @fverdugo : TODO unify inference mechanism for Function and Mapping
 return_type(f,x...) = typeof(testitem(f,x...))
 
-
 function evaluate(f,x...)
   c = return_cache(f,x...)
   y = evaluate!(c,f,x...)
@@ -16,20 +15,18 @@ end
 
 (m::Mapping)(x...) = evaluate(m,x...)
 
-function testitem(k::Mapping,x...)
+function testitem(k,x...)
   cache = return_cache(k,x...)
   testitem!(cache,k,x...)
 end
 
-@inline function testitem!(cache,k::Mapping,x...)
+@inline function testitem!(cache,k,x...)
   evaluate!(cache,k,x...)
 end
 
 # Default implementation for Function
 
 evaluate!(cache,f::Function,x...) = f(x...)
-# @fverdugo : TODO This ad-hoc definition should be not needded
-return_type(f::Function,x...) = return_type(f,map(typeof,x))
 
 # Number or Array implementation
 
@@ -74,6 +71,12 @@ end
   _evaluate_mappings!(cfs,x,f...)
 end
 
+function evaluate(fs::Tuple,x...)
+cs = return_caches(fs,x...)
+y = evaluate!(cs,fs,x...)
+y
+end
+
 @inline function _evaluate_mappings!(cfs,x,f1,f...)
   cf1, cf = _split(cfs...)
   f1x = evaluate!(cf1,f1,x...)
@@ -87,6 +90,7 @@ end
   (f1x,)
 end
 
+# @fverdugo : TODO this function is quite usefull. Better name and export it
 @inline function _split(a,b...)
   (a,b)
 end
@@ -104,4 +108,29 @@ end
 function _mapping_return_types(x::Tuple,a)
   Ta = return_type(a,x...)
   (Ta,)
+end
+
+function testitems(a,b...)
+  va = testitem(a)
+  vb = testitems(b...)
+  (va,vb...)
+end
+
+function testitems(a)
+  va = testitem(a)
+  (va,)
+end
+
+# Extended Array interface
+
+# TODO better handling of Cartesian indices
+function return_cache(a::AbstractArray)
+  i = testitem(eachindex(a))
+  return_cache(a,Tuple(i)...)
+end
+
+# TODO perhaps we will need return_cache(state,AbstractArray,i...)
+# to reuse reuse operations in the branches of operation trees
+function return_cache(a::AbstractArray,i...)
+  nothing
 end

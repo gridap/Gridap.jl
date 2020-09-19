@@ -8,8 +8,8 @@ function evaluate!(cache,b::BroadcastMapping,args...)
   broadcast(b.f,args...)
 end
 
-struct BroadcastMapping{F<:Function} <: Mapping
-  f::F
+function evaluate!(cache,b::BroadcastMapping,args::Number...)
+  b.f(args...)
 end
 
 function return_type(f::BroadcastMapping,x::Number...)
@@ -17,16 +17,12 @@ function return_type(f::BroadcastMapping,x::Number...)
   return_type(f.f,Ts...)
 end
 
-function return_cache(f::BroadcastMapping,x::Number...)
-  nothing
-end
-
-@inline function evaluate!(::Nothing,f::BroadcastMapping,x::Number...)
-  f.f(x...)
-end
-
 function return_type(f::BroadcastMapping,x::NumberOrArray...)
   typeof(return_cache(f,x...).array)
+end
+
+function return_cache(f::BroadcastMapping,x::Number...)
+  nothing
 end
 
 function return_cache(f::BroadcastMapping,x::NumberOrArray...)

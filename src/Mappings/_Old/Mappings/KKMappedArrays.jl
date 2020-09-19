@@ -39,6 +39,7 @@ function MappedArray(g::AbstractArray, f::AbstractArray...)
     MappedArray(T, g, f...)
 end
 
+IndexStyle(a::MappedArray) = IndexStyle(a.g)
 # function uses_hash(::Type{<:MappedArray})
 #     Val(true)
 # end
@@ -117,7 +118,7 @@ function _getindex!(cache, a::MappedArray, i...)
 end
 
 function Base.getindex(a::MappedArray, i...)
-    ca = array_cache(a)
+    ca = return_cache(a)
     getindex!(ca, a, i...)
 end
 
