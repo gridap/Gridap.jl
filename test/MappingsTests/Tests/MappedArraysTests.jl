@@ -6,7 +6,6 @@ using Gridap.Mappings
 using Gridap.Mappings: evaluate
 using Gridap.Mappings: test_mapped_array
 using FillArrays
-# using Gridap.Arrays: ArrayWithCounter, reset_counter!
 
 a = rand(3,2,4)
 test_array(a,a)

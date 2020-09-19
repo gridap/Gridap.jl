@@ -134,3 +134,112 @@ end
 function return_cache(a::AbstractArray,i...)
   nothing
 end
+
+# Broadcast Functions
+
+struct BroadcastMapping{F<:Function} <: Mapping
+  f::F
+end
+
+function evaluate!(cache,b::BroadcastMapping,args...)
+  broadcast(b.f,args...)
+end
+
+function evaluate!(cache,b::BroadcastMapping,args::Number...)
+  b.f(args...)
+end
+
+function return_type(f::BroadcastMapping,x::Number...)
+  Ts = map(typeof,x)
+  return_type(f.f,Ts...)
+end
+
+function return_type(f::BroadcastMapping,x::NumberOrArray...)
+  typeof(return_cache(f,x...).array)
+end
+
+function return_cache(f::BroadcastMapping,x::Number...)
+  nothing
+end
+
+function return_cache(f::BroadcastMapping,x::NumberOrArray...)
+  s = _sizes(x...)
+  bs = Base.Broadcast.broadcast_shape(s...)
+  Te = map(numbertype,x)
+  T = return_type(f.f,Te...)
+  N = length(bs)
+  r = Array{T,N}(undef,bs)
+  ri = testvalue(T)
+  fill!(r,ri)
+  cache = CachedArray(r)
+   _prepare_cache(cache,x...)
+end
+
+numbertype(a::AbstractArray) = eltype(a)
+
+numbertype(a::Number) = typeof(a)
+
+@inline function evaluate!(cache,f::BroadcastMapping,x::NumberOrArray...)
+  r = _prepare_cache(cache,x...)
+  a = r.array
+  broadcast!(f.f,a,x...)
+  a
+end
+
+@inline function _prepare_cache(c,x...)
+  s = _sizes(x...)
+  bs = Base.Broadcast.broadcast_shape(s...)
+  if bs != size(c)
+    setsize!(c,bs)
+  end
+  c
+end
+
+# TODO use map
+@inline function _sizes(a,x...)
+  (_size(a), _sizes(x...)...)
+end
+
+@inline function _sizes(a)
+  (_size(a),)
+end
+
+@inline _size(a) = size(a)
+@inline _size(a::Number) = (1,)
+
+function _checks(a,b)
+  @assert size(a) == size(b) "Sizes must agree."
+  nothing
+end
+
+# Operations
+
+@inline function operation(k,l...)
+  OperationMapping(k,l...)
+end
+
+struct OperationMapping{K,L} <: Mapping
+  k::K
+  l::L
+  @inline function OperationMapping(k,l...)
+    new{typeof(k),typeof(l)}(k,l)
+  end
+end
+
+function return_type(c::OperationMapping,x)
+  Ts = return_types(c.l,x)
+  return_type(c.k, testvalues(Ts...)...)
+end
+
+function return_cache(c::OperationMapping,x)
+  cl = return_caches(c.l,x)
+  lx = evaluate!(cl,c.l,x)
+  ck = return_cache(c.k,lx...)
+  (ck,cl)
+end
+
+@inline function evaluate!(cache,c::OperationMapping,x)
+  ck, cf = cache
+  lx = evaluate!(cf,c.l,x)
+  evaluate!(ck,c.k,lx...)
+end
