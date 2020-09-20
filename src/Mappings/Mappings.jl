@@ -25,6 +25,7 @@ import Gridap.Arrays: array_cache
 import Gridap.Arrays: testitem
 import Gridap.Arrays: uses_hash
 import Gridap.Arrays: getindex!
+import Gridap.Arrays: IndexStyle
 # import Gridap.Arrays: apply
 
 # MappedArray

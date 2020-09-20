@@ -47,7 +47,7 @@ IndexStyle(a::MappedArray) = IndexStyle(a.g)
 
 # @fverdugo : TODO a lot of splating i... which is bad for CartesianIndices
 
-function return_cache(a::MappedArray,i...)
+function array_cache(a::MappedArray,i...)
   @notimplementedif ! all(map(isconcretetype, map(eltype, a.f)))
   if ! (eltype(a.g) <: Function)
     @notimplementedif ! isconcretetype(eltype(a.g))
@@ -67,16 +67,10 @@ if ! (eltype(a.g) <: Function)
 end
 gi = testitem(a.g)
 fi = testitems(a.f...)
-cg = return_cache(a.g)
-cf = return_caches(a.f)
+cg = array_cache(a.g)
+cf = map(array_cache,a.f)
 cgi = return_cache(gi, fi...)
 cg, cgi, cf
-end
-
-function testitem(a::MappedArray)
-  gi = testitem(a.g)
-  fi = testitems(a.f...)
-  testitem(gi, fi...)
 end
 
 @inline function getindex!(cache, a::MappedArray, i...)
@@ -120,14 +114,14 @@ function _getvalues(a::Fill)
   (ai,)
 end
 
-function return_mapping_array_cache(a::AbstractArray, x::AbstractArray)
-  ca = array_cache(a)
-  fi = testitem(a)
-  xi = testitem(x)
-  cfi = return_cache(fi, xi)
-  cx = array_cache(x)
-  (ca, cfi, cx)
-end
+# function return_mapping_array_cache(a::AbstractArray, x::AbstractArray)
+#   ca = array_cache(a)
+#   fi = testitem(a)
+#   xi = testitem(x)
+#   cfi = return_cache(fi, xi)
+#   cx = array_cache(x)
+#   (ca, cfi, cx)
+# end
 
 function test_mapped_array(
   a::AbstractArray,
@@ -139,7 +133,7 @@ function test_mapped_array(
   ax = apply_mapping(a, x)
   test_array(ax, v, cmp)
 
-  ca, cfi, cx = return_mapping_array_cache(a, x)
+  ca, cfi, cx = array_cache(a, x)
   t = true
   for i in 1:length(a)
     fi = getindex!(ca, a, i)

@@ -6,6 +6,7 @@ using Gridap.Mappings
 using Gridap.Mappings: evaluate
 using Gridap.Mappings: test_mapped_array
 using FillArrays
+using Gridap.Helpers
 
 a = rand(3,2,4)
 test_array(a,a)
@@ -14,7 +15,7 @@ a = rand(3,2,4)
 a = CartesianIndices(a)
 test_array(a,a)
 
-a = rand(3,2)
+a = rand(16,32)
 a = CartesianIndices(a)
 c = apply(-,a)
 test_array(c,-a)
@@ -77,6 +78,9 @@ p4 = [6,1]
 
 x = [p1,p2,p3,p4]
 
+fa(x) = 2*x
+fb(x) = sqrt.(x)
+
 aa = Fill(fa,4)
 r = apply(aa,x)
 @test all([ r[i] ≈ 2*x[i] for i in 1:4])
@@ -88,6 +92,18 @@ r = apply(bb,x)
 cm = apply(operation,aa,bb)
 r = apply(cm,x)
 @test all([ r[i] ≈ 2*(sqrt.(x[i])) for i in 1:4])
+
+r_cache = array_cache(r)
+getindex!(r_cache,r,1)
+cg, cgi, cf = r_cache
+cg
+cgi
+cf
+cache = array_cache(cm)
+getindex!(cache,cm,1)
+map(array_cache,(x,))
+
+
 
 # BroadcastMapping
 
