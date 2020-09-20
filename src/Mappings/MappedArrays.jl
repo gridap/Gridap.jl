@@ -114,6 +114,23 @@ function _getvalues(a::Fill)
   (ai,)
 end
 
+# Operator
+
+function apply(op::MappingOperator,x...)
+  apply(Fill(op,length(first(x))),x...)
+end
+
+function apply(
+  ::typeof(evaluate),
+  a::MappedArray{<:Fill{<:MappingOperator}},
+  x::AbstractArray)
+
+  fx = map( fi->apply(evaluate,fi,x), a.f)
+  op = a.g.value.op
+  apply( (args...) -> op(args...), fx...)
+  # apply( (args...) -> broadcast(op,args...), fx... )  # TODO use BroadcastMapping
+end
+
 # function return_mapping_array_cache(a::AbstractArray, x::AbstractArray)
 #   ca = array_cache(a)
 #   fi = testitem(a)

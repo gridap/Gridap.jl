@@ -39,6 +39,9 @@ export test_mapped_array
 
 export BroadcastMapping
 
+export OperationMapping
+export MappingOperator
+
 # OperationMappings
 
 export OperationMapping

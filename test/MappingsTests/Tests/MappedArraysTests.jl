@@ -93,17 +93,15 @@ cm = apply(operation,aa,bb)
 r = apply(cm,x)
 @test all([ r[i] ≈ 2*(sqrt.(x[i])) for i in 1:4])
 
-r_cache = array_cache(r)
-getindex!(r_cache,r,1)
-cg, cgi, cf = r_cache
-cg
-cgi
-cf
-cache = array_cache(cm)
-getindex!(cache,cm,1)
-map(array_cache,(x,))
-
-
+# r_cache = array_cache(r)
+# getindex!(r_cache,r,1)
+# cg, cgi, cf = r_cache
+# cg
+# cgi
+# cf
+# cache = array_cache(cm)
+# getindex!(cache,cm,1)
+# map(array_cache,(x,))
 
 # BroadcastMapping
 
@@ -137,6 +135,10 @@ y = [rand(1,3) for i in 1:10]
 v = apply(a,x,y)
 r = [(xi.+yi) for (xi,yi) in zip(x,y)]
 test_array(v,r)
+
+# Operations
+
+
 
 # using Gridap.NewFields
 # using Gridap.NewFields: MockField, MockBasis, OtherMockBasis

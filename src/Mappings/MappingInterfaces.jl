@@ -157,7 +157,7 @@ function return_type(f::BroadcastMapping,x::Number...)
   return_type(f.f,Ts...)
 end
 
-function return_type(f::BroadcastMapping,x::NumberOrArray...)
+function return_type(f::BroadcastMapping,x::AbstractArray...)
   typeof(return_cache(f,x...).array)
 end
 
@@ -208,7 +208,7 @@ function _checks(a,b)
   nothing
 end
 
-# Operations
+# OperationMappings
 
 @inline function operation(k,l...)
   OperationMapping(k,l)
@@ -239,3 +239,13 @@ end
   lx = evaluate!(cf,c.l,x...)
   evaluate!(ck,c.k,lx...)
 end
+
+# Operations
+
+struct MappingOperator{T} <: Mapping
+  op::T
+end
+
+evaluate!(cache,op::MappingOperator,x...) = OperationMapping(op.op,x)
+
+(op::MappingOperator)(x...) = OperationMapping(op.op,x)

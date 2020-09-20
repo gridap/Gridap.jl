@@ -147,6 +147,37 @@ for i in length(ch)
 end
 @test nalloc == 0
 
+# Operations
+
+x = rand(3,3)
+
+fa(x) = 2*x
+test_mapping(fa,(x,),2*x)
+
+fb(x) = sqrt.(x)
+test_mapping(fb,(x,),sqrt.(x))
+
+fab = MappingOperator(+)(fa,fb)
+test_mapping(fab,(x,),fa(x)+fb(x))
+
+ax = Fill(x,4)
+aa = Fill(fa,4)
+bb = Fill(fb,4)
+
+aop = apply(MappingOperator(+),aa,bb)
+@enter apply(evaluate,aop,ax)
+
+
+# cell_to_hx = apply(evaluate,cell_to_h,cell_to_x)
+# El dispatch es molt mes complicat per al segon cas:
+
+# apply(::typeof(evaluate),MappedArray{<:Fill{<::Operator}},::AbstractArray)
+# # vs
+# apply(::typeof(evaluate),::MappedArray{<:Fill{typeof(operation)},T,N,Tuple{Fill,Vararg{AbstractArray}} where {T,N},::AbstractArray)
+# En el segon cas, necesito comprovar que cell_to_h.g sigui Fill{typeof(operation)} i a mes a mes que cell_to_h.f[1] sigui Fill ja que seria necessari accedir a la funció aixi cell_to_h.f[1].value.
+
+# Després hi ha el tema de com preservar metadata en el resultat. E.g. que si els inputs són Field, que l'output tb ho sigui. Això s'aconsegueix en el draft implementant aquestes operacions a nivell de Field. Això es un tema més menor, ja que tb es podria aconseguir implementant-ho a nivell de Mapping, pero s'ha de pensar com fer-ho.
+
 # k = -
 
 # v = 3.0
