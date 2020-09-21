@@ -89,19 +89,15 @@ bb = Fill(fb,4)
 r = apply(bb,x)
 @test all([ r[i] ≈ sqrt.(x[i]) for i in 1:4])
 
-cm = apply(operation,aa,bb)
+aaop = apply(operation,aa)
+cm = apply(aaop,bb)
 r = apply(cm,x)
 @test all([ r[i] ≈ 2*(sqrt.(x[i])) for i in 1:4])
 
-# r_cache = array_cache(r)
-# getindex!(r_cache,r,1)
-# cg, cgi, cf = r_cache
-# cg
-# cgi
-# cf
-# cache = array_cache(cm)
-# getindex!(cache,cm,1)
-# map(array_cache,(x,))
+aop = apply(MappingOperator(+),aa,bb)
+apply(aa,x)+apply(bb,x)
+apply(evaluate,aop,x)
+@test apply(evaluate,aop,x) == apply(aa,x)+apply(bb,x)
 
 # BroadcastMapping
 
@@ -138,7 +134,77 @@ test_array(v,r)
 
 # Operations
 
+x = fill(4,3,3)
 
+ax = Fill(x,4)
+aa = Fill(fa,4)
+bb = Fill(fb,4)
+
+aop = apply(MappingOperator(BroadcastMapping(+)),aa,bb)
+aax = apply(evaluate,aa,ax)
+bbx = apply(evaluate,bb,ax)
+aopx = apply(evaluate,aop,ax)
+@test aopx == aax+bbx
+
+aop = apply(MappingOperator(BroadcastMapping(+)),aa,bb)
+aopx = apply(evaluate,aop,ax)
+@test aopx == aax+bbx
+
+aop = apply(MappingOperator(BroadcastMapping(*)),aa,bb)
+aopx = apply(evaluate,aop,ax)
+@test aopx[1] == aax[1].*bbx[1]
+
+# Allocations
+
+x = fill(4,3,3)
+
+ax = Fill(x,4)
+aa = Fill(MappingOperator(fa),4)
+bb = Fill(fb,4)
+cm = apply(aa,bb)
+r = apply(cm,ax)
+@test all([ r[i] ≈ 2*(sqrt.(ax[i])) for i in 1:4])
+
+nn = 2
+an = Fill(nn,4)
+ap = Fill(BroadcastMapping(*),4)
+cm = apply(ap,ax,an)
+@test all([cm[i] == nn*ax[i] for i in 1:4])
+
+c_cm = Mappings.array_cache(cm)
+@allocated Mappings.getindex!(c_cm,cm,1)
+nalloc = 0
+for i in length(cm)
+  global nalloc
+  nalloc += @allocated Mappings.getindex!(c_cm,cm,i)
+end
+@test nalloc == 0
+
+as = Fill(BroadcastMapping(sqrt),4)
+cs = apply(as,ax)
+@test all([cs[i] == sqrt.(ax[i]) for i in 1:4])
+
+c_cs = Mappings.array_cache(cs)
+@allocated getindex!(c_cs,cs,1)
+nalloc = 0
+for i in length(cs)
+  global nalloc
+  nalloc += @allocated Mappings.getindex!(c_cs,cs,i)
+end
+@test nalloc == 0
+
+asm = apply(operation,as)
+ah = apply(asm,ap)
+ch = apply(ah,ax,an)
+@test all([ ch[i] ≈ sqrt.(nn*ax[i]) for i in 1:4])
+c_ch = Mappings.array_cache(ch)
+@allocated getindex!(c_ch,ch,1)
+nalloc = 0
+for i in length(ch)
+  global nalloc
+  nalloc += @allocated Mappings.getindex!(c_ch,ch,i)
+end
+@test nalloc == 0
 
 # using Gridap.NewFields
 # using Gridap.NewFields: MockField, MockBasis, OtherMockBasis

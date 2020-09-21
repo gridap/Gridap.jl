@@ -32,26 +32,25 @@ import Gridap.Arrays: IndexStyle
 
 export MappedArray
 export apply
-export apply
 export test_mapped_array
 
 # BroadcastMapping
 
 export BroadcastMapping
 
-export OperationMapping
-export MappingOperator
-
 # OperationMappings
 
 export OperationMapping
 export operation
+export composition
+export MappingOperator
+
+export test_no_allocation
+export num_allocations
 
 # export derivative
 # export gradient
 # export ∇
-
-
 
 # export MatVecMapping
 

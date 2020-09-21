@@ -16,6 +16,10 @@ a = [3,2]
 b = [2,1]
 test_mapping(+,(a,b),a+b)
 
+bm = BroadcastMapping(+)
+cache = return_cache(bm,a,b)
+@btime evaluate!($cache,$bm,$a,$b)
+
 m = rand(2,2)
 test_mapping(m,(a,b),m)
 testitem(m,a,b)
@@ -48,11 +52,6 @@ b = 3
 c = a .+ b
 Mappings.test_mapping(f,(a,b),c)
 
-# Splatting issue
-# cache = return_cache(f,a,b)
-# evaluate!(cache,f,a,b)
-# @test (@allocated evaluate!(cache,f,a,b)) == 0
-
 k = BroadcastMapping(-)
 test_mapping(k,(1,),-1)
 test_mapping(k,([1,2],),[-1,-2])
@@ -70,6 +69,9 @@ c = zeros(VectorValue{3,Int},2)
 broadcast!(⋅,c,a,b)
 test_mapping(f,(a,b),c)
 
+cache = return_cache(f,a,b)
+@btime evaluate!($cache,$f,$a,$b)
+
 # x = [1,2]
 x = rand(3,3)
 
@@ -79,104 +81,26 @@ test_mapping(fa,(x,),2*x)
 fb(x) = sqrt.(x)
 test_mapping(fb,(x,),sqrt.(x))
 
+op = BroadcastMapping(*)
+cache = return_cache(op,2,x)
+@btime evaluate!($cache,$op,$2,$x)
+test_mapping(BroadcastMapping(*),(2,x),2*x)
 
-fab = operation(fa,fb)
+fab = MappingOperator(fa)(fb)
 test_mapping(fab,(x,),2*(sqrt.(x)))
 
 bm = BroadcastMapping(*)
-c = return_cache(bm,x,2)
-@allocated evaluate!(c,bm,x,2)
-@test (@allocated evaluate!(c,bm,x,2)) == 0
+cache = return_cache(bm,x,2)
+@btime evaluate!($cache,$bm,$x,$2)
 
 bs = BroadcastMapping(sqrt)
-d = return_cache(bs,x)
-@allocated evaluate!(d,bs,x)
-@test (@allocated evaluate!(d,bs,x)) == 0
+cache = return_cache(bs,x)
+@btime evaluate!($cache,$bs,$x)
 
-h = operation(bs,bm)
-e = return_cache(h,x,2)
-@allocated evaluate!(e,h,x,2)
-@test (@allocated evaluate!(e,h,x,2)) == 0
+h = MappingOperator(bs)(bm)
+cache = return_cache(h,x,2)
+@btime evaluate!($cache,$h,$x,$2)
 
-x = fill(4,3,3)
-
-ax = Fill(x,4)
-aa = Fill(fa,4)
-bb = Fill(fb,4)
-cm = apply(operation,aa,bb)
-r = apply(cm,ax)
-@test all([ r[i] ≈ 2*(sqrt.(ax[i])) for i in 1:4])
-
-nn = 2
-an = Fill(nn,4)
-ap = Fill(BroadcastMapping(*),4)
-cm = apply(ap,ax,an)
-@test all([cm[i] == nn*ax[i] for i in 1:4])
-
-c_cm = Mappings.array_cache(cm)
-@allocated Mappings.getindex!(c_cm,cm,1)
-nalloc = 0
-for i in length(cm)
-  global nalloc
-  nalloc += @allocated Mappings.getindex!(c_cm,cm,i)
-end
-@test nalloc == 0
-
-as = Fill(BroadcastMapping(sqrt),4)
-cs = apply(as,ax)
-@test all([cs[i] == sqrt.(ax[i]) for i in 1:4])
-
-c_cs = Mappings.array_cache(cs)
-@allocated getindex!(c_cs,cs,1)
-nalloc = 0
-for i in length(cs)
-  global nalloc
-  nalloc += @allocated Mappings.getindex!(c_cs,cs,i)
-end
-@test nalloc == 0
-
-ah = apply(operation,as,ap)
-ch = apply(ah,ax,an)
-@test all([ ch[i] ≈ sqrt.(nn*ax[i]) for i in 1:4])
-c_ch = Mappings.array_cache(ch)
-@allocated getindex!(c_ch,ch,1)
-nalloc = 0
-for i in length(ch)
-  global nalloc
-  nalloc += @allocated Mappings.getindex!(c_ch,ch,i)
-end
-@test nalloc == 0
-
-# Operations
-
-x = rand(3,3)
-
-fa(x) = 2*x
-test_mapping(fa,(x,),2*x)
-
-fb(x) = sqrt.(x)
-test_mapping(fb,(x,),sqrt.(x))
-
-fab = MappingOperator(+)(fa,fb)
-test_mapping(fab,(x,),fa(x)+fb(x))
-
-ax = Fill(x,4)
-aa = Fill(fa,4)
-bb = Fill(fb,4)
-
-aop = apply(MappingOperator(+),aa,bb)
-@enter apply(evaluate,aop,ax)
-
-
-# cell_to_hx = apply(evaluate,cell_to_h,cell_to_x)
-# El dispatch es molt mes complicat per al segon cas:
-
-# apply(::typeof(evaluate),MappedArray{<:Fill{<::Operator}},::AbstractArray)
-# # vs
-# apply(::typeof(evaluate),::MappedArray{<:Fill{typeof(operation)},T,N,Tuple{Fill,Vararg{AbstractArray}} where {T,N},::AbstractArray)
-# En el segon cas, necesito comprovar que cell_to_h.g sigui Fill{typeof(operation)} i a mes a mes que cell_to_h.f[1] sigui Fill ja que seria necessari accedir a la funció aixi cell_to_h.f[1].value.
-
-# Després hi ha el tema de com preservar metadata en el resultat. E.g. que si els inputs són Field, que l'output tb ho sigui. Això s'aconsegueix en el draft implementant aquestes operacions a nivell de Field. Això es un tema més menor, ja que tb es podria aconseguir implementant-ho a nivell de Mapping, pero s'ha de pensar com fer-ho.
 
 # k = -
 

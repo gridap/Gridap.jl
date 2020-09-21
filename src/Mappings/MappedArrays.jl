@@ -116,7 +116,7 @@ end
 
 # Operator
 
-function apply(op::MappingOperator,x...)
+function apply(op::MappingOperator,x::AbstractArray...)
   apply(Fill(op,length(first(x))),x...)
 end
 
@@ -127,18 +127,8 @@ function apply(
 
   fx = map( fi->apply(evaluate,fi,x), a.f)
   op = a.g.value.op
-  apply( (args...) -> op(args...), fx...)
-  # apply( (args...) -> broadcast(op,args...), fx... )  # TODO use BroadcastMapping
+  apply( op, fx...)
 end
-
-# function return_mapping_array_cache(a::AbstractArray, x::AbstractArray)
-#   ca = array_cache(a)
-#   fi = testitem(a)
-#   xi = testitem(x)
-#   cfi = return_cache(fi, xi)
-#   cx = array_cache(x)
-#   (ca, cfi, cx)
-# end
 
 function test_mapped_array(
   a::AbstractArray,

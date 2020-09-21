@@ -123,14 +123,12 @@ end
 
 # Extended Array interface
 
-# TODO better handling of Cartesian indices
+# @fverdugo: TODO better handling of Cartesian indices
 function return_cache(a::AbstractArray)
   i = testitem(eachindex(a))
   return_cache(a,Tuple(i)...)
 end
 
-# TODO perhaps we will need return_cache(state,AbstractArray,i...)
-# to reuse reuse operations in the branches of operation trees
 function return_cache(a::AbstractArray,i...)
   nothing
 end
@@ -210,7 +208,7 @@ end
 
 # OperationMappings
 
-@inline function operation(k,l...)
+@inline function composition(k,l...)
   OperationMapping(k,l)
 end
 
@@ -249,3 +247,5 @@ end
 evaluate!(cache,op::MappingOperator,x...) = OperationMapping(op.op,x)
 
 (op::MappingOperator)(x...) = OperationMapping(op.op,x)
+
+operation(x) = MappingOperator(x)
