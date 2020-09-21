@@ -1,7 +1,8 @@
-module FESpacesWithLastDofRemovedTests
-
+module FESpaceWithConstantFixedTests
+using Gridap
 using Gridap.Geometry
 using Gridap.FESpaces
+using Test
 
 domain = (0,1,0,1)
 partition = (4,4)
@@ -18,8 +19,10 @@ V = TestFESpace(
   order=order,
   conformity=:L2)
 
-V0 = FESpaceWithLastDofRemoved(V)
+V0 = FESpaceWithConstantFixed(V,true,rand(1:num_free_dofs(V)))
 test_single_field_fe_space(V0)
+
+@test Gridap.FESpaces.get_constant_approach(V0) == Gridap.FESpaces.FixConstant()
 
 uh0 = interpolate(V0) do x
     sin(4*pi*(x[1]+x[2]^2)) + 3

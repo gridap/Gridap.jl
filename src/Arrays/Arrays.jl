@@ -114,6 +114,9 @@ export autodiff_array_gradient
 export autodiff_array_jacobian
 export autodiff_array_hessian
 
+export VectorWithEntryRemoved
+export VectorWithEntryInserted
+
 import Base: size
 import Base: getindex, setindex!
 import Base: similar
@@ -157,5 +160,10 @@ include("CachedArrays.jl")
 # include("VectorsOfBlockArrayCoo.jl")
 
 # include("Autodiff.jl")
+
+include("VectorsWithEntryRemoved.jl")
+
+include("VectorsWithEntryInserted.jl")
+
 
 end # module

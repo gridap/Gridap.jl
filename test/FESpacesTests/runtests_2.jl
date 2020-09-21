@@ -2,7 +2,7 @@ module FESpacesTests2
 
 using Test
 
-@testset "FESpacesWithLastDofRemoved" begin include("FESpacesWithLastDofRemovedTests.jl") end
+@testset "FESpacesWithConstantFixed" begin include("FESpacesWithConstantFixedTests.jl") end
 
 @testset "ZeroMeanFESpaces" begin include("ZeroMeanFESpacesTests.jl") end
 
