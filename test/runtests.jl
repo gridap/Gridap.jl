@@ -16,7 +16,7 @@ using Test
 
 # @time @testset "Arrays" begin include("ArraysTests/runtests.jl") end
 
-# @time @testset "Fields" begin include("FieldsTests/runtests.jl") end
+@time @testset "Fields" begin include("FieldsTests/runtests.jl") end
 
 # @time @testset "Polynomials" begin include("PolynomialsTests/runtests.jl") end
 

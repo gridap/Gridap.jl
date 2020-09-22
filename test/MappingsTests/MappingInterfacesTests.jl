@@ -1,4 +1,4 @@
-module MappingsTests
+module MappingInterfacesTests
 
 using Test
 using Gridap.Arrays: CachedArray
@@ -86,7 +86,7 @@ cache = return_cache(op,2,x)
 @btime evaluate!($cache,$op,$2,$x)
 test_mapping(BroadcastMapping(*),(2,x),2*x)
 
-fab = MappingOperator(fa)(fb)
+fab = Operation(fa)(fb)
 test_mapping(fab,(x,),2*(sqrt.(x)))
 
 bm = BroadcastMapping(*)
@@ -97,7 +97,7 @@ bs = BroadcastMapping(sqrt)
 cache = return_cache(bs,x)
 @btime evaluate!($cache,$bs,$x)
 
-h = MappingOperator(bs)(bm)
+h = Operation(bs)(bm)
 cache = return_cache(h,x,2)
 @btime evaluate!($cache,$h,$x,$2)
 

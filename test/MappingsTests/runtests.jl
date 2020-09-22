@@ -2,7 +2,7 @@ module MappingsTests
 
 using Test
 
-@testset "Mappings" begin include("MappingsTests.jl") end
+@testset "Mappings" begin include("MappingInterfacesTests.jl") end
 
 @testset "MappedArrays" begin include("MappedArraysTests.jl") end
 

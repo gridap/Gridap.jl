@@ -1,4 +1,4 @@
-module MockFieldsTests
+module FieldInterfacesTests
 
 using Gridap.Mappings
 using Gridap.TensorValues

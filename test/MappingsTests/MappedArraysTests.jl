@@ -94,7 +94,7 @@ cm = apply(aaop,bb)
 r = apply(cm,x)
 @test all([ r[i] ≈ 2*(sqrt.(x[i])) for i in 1:4])
 
-aop = apply(MappingOperator(+),aa,bb)
+aop = apply(Operation(+),aa,bb)
 apply(aa,x)+apply(bb,x)
 apply(evaluate,aop,x)
 @test apply(evaluate,aop,x) == apply(aa,x)+apply(bb,x)
@@ -140,17 +140,17 @@ ax = Fill(x,4)
 aa = Fill(fa,4)
 bb = Fill(fb,4)
 
-aop = apply(MappingOperator(BroadcastMapping(+)),aa,bb)
+aop = apply(Operation(BroadcastMapping(+)),aa,bb)
 aax = apply(evaluate,aa,ax)
 bbx = apply(evaluate,bb,ax)
 aopx = apply(evaluate,aop,ax)
 @test aopx == aax+bbx
 
-aop = apply(MappingOperator(BroadcastMapping(+)),aa,bb)
+aop = apply(Operation(BroadcastMapping(+)),aa,bb)
 aopx = apply(evaluate,aop,ax)
 @test aopx == aax+bbx
 
-aop = apply(MappingOperator(BroadcastMapping(*)),aa,bb)
+aop = apply(Operation(BroadcastMapping(*)),aa,bb)
 aopx = apply(evaluate,aop,ax)
 @test aopx[1] == aax[1].*bbx[1]
 
@@ -159,7 +159,7 @@ aopx = apply(evaluate,aop,ax)
 x = fill(4,3,3)
 
 ax = Fill(x,4)
-aa = Fill(MappingOperator(fa),4)
+aa = Fill(Operation(fa),4)
 bb = Fill(fb,4)
 cm = apply(aa,bb)
 r = apply(cm,ax)
@@ -205,32 +205,5 @@ for i in length(ch)
   nalloc += @allocated Mappings.getindex!(c_ch,ch,i)
 end
 @test nalloc == 0
-
-# using Gridap.NewFields
-# using Gridap.NewFields: MockField, MockBasis, OtherMockBasis
-# using Gridap.TensorValues
-
-# np = 4
-# p = Point(1,2)
-# x = fill(p,np)
-
-# v = 3.0
-# d = 2
-# f = MockField{d}(v)
-# f = MockField(d,v)
-
-# # a = Fill(FunctionMapping(MockField),5)
-# b = Fill(2,5)
-# c = [6.0,2.0,5.0,7.0,9.0]
-# v = apply_mapping(mock_field,b,c)
-
-# @test isa(v,AbstractArray{<:Mapping})
-
-# # vv = apply_mapping(FunctionMapping(MockField),b,c)
-# # @test vv == v
-
-# xx = fill(x,5)
-# r = apply(v,xx)
-# @test all(r[1] .== c[1])
 
 end # module
