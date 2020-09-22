@@ -68,97 +68,97 @@ test_field(bdf,x,bdfp,grad=∇bdfp)
 
 # Operations between fields and array of fields
 
-p = Point(1,2)
-x = fill(p,np)
-z = 2.0
+# p = Point(1,2)
+# x = fill(p,np)
+# z = 2.0
 
-v = VectorValue(3.0,1.5)
-w = VectorValue(3.4,3.5)
-test_basis = MockBasis(2,v,ndofs)
-test_basis_2 = MockBasis(2,w,ndofs)
+# v = VectorValue(3.0,1.5)
+# w = VectorValue(3.4,3.5)
+# test_basis = MockBasis(2,v,ndofs)
+# test_basis_2 = MockBasis(2,w,ndofs)
 
-t1x = evaluate(test_basis,x)
-t2x = evaluate(test_basis_2,x)
-∇t1x = evaluate(∇(test_basis),x)
-∇t2x = evaluate(∇(test_basis_2),x)
+# t1x = evaluate(test_basis,x)
+# t2x = evaluate(test_basis_2,x)
+# ∇t1x = evaluate(∇(test_basis),x)
+# ∇t2x = evaluate(∇(test_basis_2),x)
 
 
-b = field_composition(BroadcastMapping(+),test_basis,test_basis_2)
-r = broadcast(+,t1x,t2x)
-test_mapping(b,(x,),r)
+# b = field_composition(BroadcastMapping(+),test_basis,test_basis_2)
+# r = broadcast(+,t1x,t2x)
+# test_mapping(b,(x,),r)
 
-∇b = composition(BroadcastMapping(+),gradient(test_basis),gradient(test_basis_2))
-∇r = broadcast(+,∇t1x,∇t2x)
-test_mapping(b,(x,),r)
+# ∇b = composition(BroadcastMapping(+),gradient(test_basis),gradient(test_basis_2))
+# ∇r = broadcast(+,∇t1x,∇t2x)
+# test_mapping(b,(x,),r)
 
-b = composition(BroadcastMapping(-),test_basis,test_basis_2)
-r = broadcast(-,t1x,t2x)
-test_mapping(b,(x,),r)
+# b = composition(BroadcastMapping(-),test_basis,test_basis_2)
+# r = broadcast(-,t1x,t2x)
+# test_mapping(b,(x,),r)
 
-∇b = composition(BroadcastMapping(-),gradient(test_basis),gradient(test_basis_2))
-∇r = broadcast(-,∇t1x,∇t2x)
-test_mapping(b,(x,),r)
+# ∇b = composition(BroadcastMapping(-),gradient(test_basis),gradient(test_basis_2))
+# ∇r = broadcast(-,∇t1x,∇t2x)
+# test_mapping(b,(x,),r)
 
-b = composition(BroadcastMapping(⋅),test_basis,test_basis_2)
-r = broadcast(⋅,t1x,t2x)
-test_mapping(b,(x,),r)
+# b = composition(BroadcastMapping(⋅),test_basis,test_basis_2)
+# r = broadcast(⋅,t1x,t2x)
+# test_mapping(b,(x,),r)
 
-∇b = composition(BroadcastMapping(⋅),gradient(test_basis),gradient(test_basis_2))
-∇r = broadcast(⋅,∇t1x,∇t2x)
-test_mapping(b,(x,),r)
+# ∇b = composition(BroadcastMapping(⋅),gradient(test_basis),gradient(test_basis_2))
+# ∇r = broadcast(⋅,∇t1x,∇t2x)
+# test_mapping(b,(x,),r)
 
-b = composition(BroadcastMapping(*),test_basis,ConstantField(z))
-r = broadcast(*,t1x,z)
-test_mapping(b,(x,),r)
+# b = composition(BroadcastMapping(*),test_basis,ConstantField(z))
+# r = broadcast(*,t1x,z)
+# test_mapping(b,(x,),r)
 
-∇b = composition(BroadcastMapping(*),gradient(test_basis),ConstantField(z))
-∇r = broadcast(*,∇t1x,z)
-test_mapping(b,(x,),r)
+# ∇b = composition(BroadcastMapping(*),gradient(test_basis),ConstantField(z))
+# ∇r = broadcast(*,∇t1x,z)
+# test_mapping(b,(x,),r)
 
-b = composition(BroadcastMapping(+),test_basis,ConstantField(z))
-r = broadcast(+,t1x,z)
-test_mapping(b,(x,),r)
-test_mapping(b,(x,),fill(v+z,np,ndofs))
+# b = composition(BroadcastMapping(+),test_basis,ConstantField(z))
+# r = broadcast(+,t1x,z)
+# test_mapping(b,(x,),r)
+# test_mapping(b,(x,),fill(v+z,np,ndofs))
 
-# @santiagobadia : To understand what should I do here
-# trial_basis = trialize_basis(test_basis)
-# r = reshape(evaluate(test_basis,x),(np,1,ndofs))
-# ∇r = reshape(evaluate(∇(test_basis),x),(np,1,ndofs))
-# test_field(trial_basis,x,r,grad=∇r
+# # @santiagobadia : To understand what should I do here
+# # trial_basis = trialize_basis(test_basis)
+# # r = reshape(evaluate(test_basis,x),(np,1,ndofs))
+# # ∇r = reshape(evaluate(∇(test_basis),x),(np,1,ndofs))
+# # test_field(trial_basis,x,r,grad=∇r
 
-xl = Fill(x,l)
-fl = [ ConstantField(z) for  i in 1:l]
+# xl = Fill(x,l)
+# fl = [ ConstantField(z) for  i in 1:l]
 
-test_basis_array = Fill(test_basis,l)
-test_basis_2_array = fill(test_basis_2,l)
+# test_basis_array = Fill(test_basis,l)
+# test_basis_2_array = fill(test_basis_2,l)
 
-∇test_basis_array = Fill(gradient(test_basis),l)
-∇test_basis_2_array = fill(gradient(test_basis_2),l)
+# ∇test_basis_array = Fill(gradient(test_basis),l)
+# ∇test_basis_2_array = fill(gradient(test_basis_2),l)
 
-op = Fill(BroadcastMapping(*),l)
+# op = Fill(BroadcastMapping(*),l)
 
-# @santiagobadia : I am here ... arrays of arrays ...
-bl = apply_mapping(composition,op,test_basis_array,fl)
-test_mapped_array(bl,xl,fill(fill(z*v,np,ndofs),l))
+# # @santiagobadia : I am here ... arrays of arrays ...
+# bl = apply_mapping(composition,op,test_basis_array,fl)
+# test_mapped_array(bl,xl,fill(fill(z*v,np,ndofs),l))
 
-# @santiagobadia :  Not sure what to check with the Nothing
-# bl = operate_arrays_of_fields(Nothing,*,test_basis_array,fl)
+# # @santiagobadia :  Not sure what to check with the Nothing
+# # bl = operate_arrays_of_fields(Nothing,*,test_basis_array,fl)
 
-op = Fill(BroadcastMapping(+),l)
-bl = apply_mapping(composition,op,test_basis_array,test_basis_2_array)
-r = fill(broadcast(+,t1x,t2x),l)
-∇r = fill(broadcast(+,∇t1x,∇t2x),l)
-test_mapped_array(bl,xl,r)
-∇bl = apply_mapping(composition,op,∇test_basis_array,∇test_basis_2_array)
-test_mapped_array(∇bl,xl,∇r)
+# op = Fill(BroadcastMapping(+),l)
+# bl = apply_mapping(composition,op,test_basis_array,test_basis_2_array)
+# r = fill(broadcast(+,t1x,t2x),l)
+# ∇r = fill(broadcast(+,∇t1x,∇t2x),l)
+# test_mapped_array(bl,xl,r)
+# ∇bl = apply_mapping(composition,op,∇test_basis_array,∇test_basis_2_array)
+# test_mapped_array(∇bl,xl,∇r)
 
-op = Fill(BroadcastMapping(⋅),l)
-bl = apply_mapping(composition,op,test_basis_array,test_basis_2_array)
-r = fill(broadcast(⋅,t1x,t2x),l)
-∇r = fill(broadcast(⋅,∇t1x,∇t2x),l)
-test_mapped_array(bl,xl,r)
-∇bl = apply_mapping(composition,op,∇test_basis_array,∇test_basis_2_array)
-test_mapped_array(∇bl,xl,∇r)
+# op = Fill(BroadcastMapping(⋅),l)
+# bl = apply_mapping(composition,op,test_basis_array,test_basis_2_array)
+# r = fill(broadcast(⋅,t1x,t2x),l)
+# ∇r = fill(broadcast(⋅,∇t1x,∇t2x),l)
+# test_mapped_array(bl,xl,r)
+# ∇bl = apply_mapping(composition,op,∇test_basis_array,∇test_basis_2_array)
+# test_mapped_array(∇bl,xl,∇r)
 
 # trial_basis_array = trialize_array_of_bases(operate_arrays_of_fields(*,test_basis_array,fl))
 
@@ -174,25 +174,25 @@ test_mapped_array(∇bl,xl,∇r)
 
 # Operations between values
 
-al = [rand(np,ndofs) for k in 1:l]
-bl = [rand(np) for k in 1:l]
-cl = [rand(np,ndofs) for k in 1:l]
+# al = [rand(np,ndofs) for k in 1:l]
+# bl = [rand(np) for k in 1:l]
+# cl = [rand(np,ndofs) for k in 1:l]
 
-f(a,b) = 2*a-b*a
+# f(a,b) = 2*a-b*a
 # af = fill(FunctionMapping(f),l)
 # dl = apply_mapping(af,bl,bl)
 # @santiagobadia : Errors in the algebraic operations
 # test_array(dl,map((a,b)->f.(a,b),bl,bl))
 
-f(a,b) = 2*a-b*a
+# f(a,b) = 2*a-b*a
 # dl = apply_mapping(FunctionMapping(f),al,bl)
 # test_array(dl,map((a,b)->f.(a,b),al,bl))
 
-f(a,b) = 2*a-b
+# f(a,b) = 2*a-b
 # dl = apply_mapping(FunctionMapping(f),al,cl)
 # test_array(dl,map((a,b)->f.(a,b),al,bl))
 
-f(a,b,c) = b*(2*a-c)
+# f(a,b,c) = b*(2*a-c)
 # dl = apply_mapping(FunctionMapping(f),al,bl,cl)
 # test_array(dl,map((a,b,c)->f.(a,b,c),al,bl,cl))
 
@@ -211,9 +211,6 @@ f(a,b,c) = b*(2*a-c)
 # test_array(dl,map((a,c,at,ct)->f.(a,c,at,ct),al,cl,atl,ctl))
 
 # @test size(dl[1]) == (np,ndofs,ndofs)
-
-
-
 
 # Blocks
 
