@@ -240,12 +240,12 @@ end
 
 # Operations
 
-struct MappingOperator{T} <: Mapping
+struct Operation{T} <: Mapping
   op::T
 end
 
-evaluate!(cache,op::MappingOperator,x...) = OperationMapping(op.op,x)
+evaluate!(cache,op::Operation,x...) = OperationMapping(op.op,x)
 
-(op::MappingOperator)(x...) = OperationMapping(op.op,x)
+(op::Operation)(x...) = evaluate!(nothing,op,x...)
 
-operation(x) = MappingOperator(x)
+operation(x) = Operation(x)

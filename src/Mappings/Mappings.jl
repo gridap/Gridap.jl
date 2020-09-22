@@ -43,7 +43,7 @@ export BroadcastMapping
 export OperationMapping
 export operation
 export composition
-export MappingOperator
+export Operation
 
 # export derivative
 # export gradient
@@ -68,6 +68,7 @@ using ForwardDiff
 
 import LinearAlgebra: det, inv
 import Base: +, -, *, /
+import LinearAlgebra: ⋅
 
 export Field
 export GenericField

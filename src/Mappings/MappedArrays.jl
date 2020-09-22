@@ -116,13 +116,13 @@ end
 
 # Operator
 
-function apply(op::MappingOperator,x::AbstractArray...)
+function apply(op::Operation,x::AbstractArray...)
   apply(Fill(op,length(first(x))),x...)
 end
 
 function apply(
   ::typeof(evaluate),
-  a::MappedArray{<:Fill{<:MappingOperator}},
+  a::MappedArray{<:Fill{<:Operation}},
   x::AbstractArray)
 
   fx = map( fi->apply(evaluate,fi,x), a.f)

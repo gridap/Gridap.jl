@@ -1,15 +1,3 @@
-# Meeting 21/09/2020
-
-# Operation(f)(a,b) -> OperationMapping
-
-# Operation(f)(a::Field...) -> GenericField{OperationMapping} (edited)
-
-# Base.:∘(f::Field,g::Field) = Operation(f)(g)
-
-# gradient(f::GenericField{<:OperationMapping{typeof(+)})
-
-# gradient(f::GenericField{<:GenericMapping{<:Field,Tuple{<:Field}}})
-
 const Point{D,T} = VectorValue{D,T}
 
 abstract type Field <: Mapping end
@@ -68,7 +56,7 @@ return_type(::Type{<:GenericField},::Type{T}) where T<:Field = T
 return_type(::Type{<:GenericField},::Type{T}) where T = GenericField{T}
 
 # Perhaps we need to delegate some more methods
-@inline return_cache!(a::GenericField,x) = return_cache!(a.object,x)
+@inline return_cache(a::GenericField,x) = return_cache(a.object,x)
 @inline return_type(a::GenericField,x) = return_type(a.object,x)
 @inline evaluate!(cache,a::GenericField,x) = evaluate!(cache,a.object,x)
 # gradient(a::GenericField) = Gradient(a)
@@ -108,19 +96,13 @@ gradient(z::ZeroField) = ZeroField(gradient(z.field))
 #   zeros(T,length(x)) # TODO cache
 # end
 
-# @santiagobadia : If it is a subtype of Field, is GenericField needed?
-struct Operation{T}
-  f::T
-end
+# Operations
+
+evaluate!(cache,op::Operation,x::Field...) = GenericField(OperationMapping(op.op,x))
 
 for op in (:+,:-,:*,:⋅,:inv,:det)
   @eval ($op)(a::Field...) = Operation($op)(a...)
 end
-
-function evaluate!(cache,op::Operation,args::Field...)
-  GenericField(Operation(op.f,args...))
-end
-
 
 # Make Number behave like Field
 
@@ -247,15 +229,39 @@ end
 #   GenericField(gradient(f.object))
 # end
 
-# Implement product rules e.g.
+# Operation rules e.g.
 for op in (:+,:-)
   @eval begin
     function gradient(a::GenericField{<:OperationMapping{typeof($op)}})
-      f = a.args
+      f = a.object.l
       g = map( gradient, f)
       $op(g...)
     end
   end
+end
+
+function gradient(a::GenericField{<:OperationMapping{typeof(⋅)}})
+  f = a.object.l
+  if length(f) != 2 @notimplemented end
+  f1, f2 = f
+  g1, g2 = map( gradient, f)
+  g1⋅f2+f1⋅g2
+end
+
+function gradient(a::GenericField{<:OperationMapping{typeof(*)}})
+  f = a.object.l
+  if length(f) != 2 @notimplemented end
+  f1, f2 = f
+  g1, g2 = map( gradient, f)
+  g1⋅f2+f1⋅g2
+end
+
+# Chain rule
+function gradient(f::GenericField{<:OperationMapping{<:Field,Tuple{<:Field}}})
+  a = f.object.k
+  @assert length(f.object.l) == 1
+  b, = f.object.l
+  (∇a∘b)⋅∇b
 end
 
 # TODO for the moment the user specifies the gradient of a function

@@ -2,14 +2,69 @@ module FieldOperationsTests
 
 using Gridap.Arrays
 using Gridap.Mappings
-using Gridap.NewFields
-using Gridap.NewFields: MockField, MockBasis
+# using Gridap.NewFields
+# using Gridap.NewFields: MockField, MockBasis
 using Gridap.TensorValues
 using FillArrays
 
-l = 10
+using Test
+
+# Operations
+
+d = 2
+p = Point(1.0,2.0)
+
+v = VectorValue{d}(1.0,1.0)
+f = MockField{d}(v)
+fp = evaluate(f,p)
+
+df = f+f
+∇fp = 2*evaluate(gradient(f),p)
+test_field(df,p,2*fp,grad=2.0*∇fp)
+
+df = f-f
+test_field(df,p,fp-fp,grad=0.0*∇fp)
+
+df = GenericField(2.0)*f
+test_field(df,p,fp*2.0,grad=2.0*∇fp)
+
+q(x) = 2*x
+∇q = gradient(q)
+
+f = GenericField(q)
+fp = evaluate(f,p)
+∇f = ∇(f)
+∇fp = evaluate(∇f,p)
+@test ∇fp == TensorValue(2.0, 0.0, 0.0, 2.0)
+test_field(f,p,fp,grad=∇fp)
+
+df = f+f
+test_field(df,p,2*fp,grad=2.0*∇fp)
+
+df = f-f
+test_field(df,p,fp-fp,grad=0.0*∇fp)
+
+df = GenericField(2.0)*f
+evaluate(df,p)
+∇df = ∇(df)
+∇dfp = 2*∇fp
+evaluate(∇df,p)
+test_field(df,p,fp*2.0,grad=∇dfp)
+
+df = f⋅f
+∇df = ∇(df)
+dfp = (∇fp⋅fp)*2
+test_field(df,p,fp⋅fp,grad=dfp)
+
 np = 3
-ndofs = 4
+x = fill(p,np)
+bdf = BroadcastField(df)
+evaluate(bdf,x)
+∇bdf = gradient(bdf)
+evaluate(∇bdf,x)
+bdfp = fill(fp⋅fp,np)
+∇bdfp = fill(dfp,np)
+test_field(bdf,x,bdfp,grad=∇bdfp)
 
 # Operations between fields and array of fields
 
