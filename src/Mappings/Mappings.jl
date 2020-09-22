@@ -45,9 +45,6 @@ export operation
 export composition
 export MappingOperator
 
-export test_no_allocation
-export num_allocations
-
 # export derivative
 # export gradient
 # export ∇
@@ -65,9 +62,69 @@ export num_allocations
 
 # Field
 
+using Gridap.TensorValues
+
+using ForwardDiff
+
+import LinearAlgebra: det, inv
+import Base: +, -, *, /
+
+export Field
+export GenericField
+export Gradient
+export Hessian
+export ConstantField
+export FunctionField
+export BroadcastField
+export ZeroField
+export MockField
+export Point
+
+export evaluate_gradient!
+export return_gradient_type
+export return_gradient_cache
+export evaluate_hessian!
+export return_hessian_cache
+
+export gradient
+export ∇
+export hessian
+
+export test_field
+
+export mock_field
+
+# export MockBasis
+# export LinearCombinationField
+# export OtherMockField
+# export OtherMockBasis
+
+# export GenericFieldArray
+
+# export FieldHessian
+# export FieldGradientArray
+# export FieldHessianArray
+
+
+# # export gradients
+
+
+# export linear_combination
+
+# export field_composition
+# export field_array_composition
+
+# export mock_field
+
 include("MappingInterfaces.jl")
 
 include("MappedArrays.jl")
+
+include("FieldsInterfaces.jl")
+
+include("MockFields.jl")
+
+include("AutoDiff.jl")
 
 # include("FunctionMappings.jl")
 

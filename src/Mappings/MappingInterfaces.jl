@@ -135,7 +135,7 @@ end
 
 # Broadcast Functions
 
-struct BroadcastMapping{F<:Function} <: Mapping
+struct BroadcastMapping{F} <: Mapping
   f::F
 end
 
