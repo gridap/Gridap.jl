@@ -1,6 +1,7 @@
 abstract type Mapping <: GridapType end
 
 return_cache(f,x...) = nothing
+# return_cache(f,x...) = zero(return_type(f(x...)))
 
 evaluate!(cache,f,x...) = @abstractmethod
 

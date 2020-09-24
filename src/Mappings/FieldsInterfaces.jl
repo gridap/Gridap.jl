@@ -67,13 +67,13 @@ return_type(::Type{<:GenericField},::Type{T}) where T = GenericField{T}
 
 # Make Field behave like a collection
 
-# Base.length(::Field) = 1
-# Base.size(::Field) = ()
-# Base.axes(::Field) = ()
-# Base.IteratorSize(::Type{<:Field}) = Base.HasShape{0}()
-# Base.eltype(::Type{T}) where T<:Field = T
-# Base.iterate(a::Field) = (a,nothing)
-# Base.iterate(a::Field,::Nothing) = nothing
+Base.length(::Field) = 1
+Base.size(::Field) = ()
+Base.axes(::Field) = ()
+Base.IteratorSize(::Type{<:Field}) = Base.HasShape{0}()
+Base.eltype(::Type{T}) where T<:Field = T
+Base.iterate(a::Field) = (a,nothing)
+Base.iterate(a::Field,::Nothing) = nothing
 
 # Zero field
 
@@ -277,6 +277,8 @@ struct BroadcastField{T<:Field} <: Field
   field::T
 end
 
+BroadcastField(f::BroadcastField) = f
+
 function return_cache(f::BroadcastField,x::AbstractArray{<:Point})
   T = return_type(f.field,first(x))
   s = size(x)
@@ -285,6 +287,8 @@ function return_cache(f::BroadcastField,x::AbstractArray{<:Point})
   cf = return_cache(f.field,first(x))
   cb, cf
 end
+
+return_type(f::BroadcastField,x::Point) = return_type(f.field,x)
 
 function return_cache(f::BroadcastField,x::Point)
   return_cache(f.field,x)
@@ -300,7 +304,23 @@ function evaluate!(c,f::BroadcastField,x::AbstractArray{<:Point})
   cb.array
 end
 
+evaluate!(c,f::BroadcastField,x::Point) = evaluate!(c,f.field,x)
+
 gradient(b::BroadcastField) = BroadcastField(gradient(b.field))
+
+for op in (:+,:-,:*,:⋅,:inv,:det)
+  @eval ($op)(a::BroadcastField...) = BroadcastField(Operation($op)(map( f -> f.field,a)...))
+end
+
+# Other operations
+
+transpose(f::Field) = f
+Base.copy(f::Field) = f
+(*)(f::Field,g::Field) = f⋅g
+
+# @santiagobadia : Just to make things work for the moment
+(*)(f::VectorValue,g::VectorValue) = f⋅g
+(*)(f::TensorValue,g::TensorValue) = f⊙g
 
 # Testers
 
@@ -313,7 +333,7 @@ function test_field(
 
   x, = x
 
-  @test isa(x,Union{Point,AbstractVector{<:Point}})
+  @test isa(x,Union{Point,AbstractArray{<:Point}})
 
   w = evaluate(f,x)
 
@@ -324,9 +344,9 @@ function test_field(
   r = evaluate!(cf,f,x)
   @test cmp(r,v)
 
-  if x isa AbstractVector{<:Point}
-     np, = size(w)
-     @test length(x) == np
+  if x isa AbstractArray{<:Point}
+    #  np, = size(w)
+    #  @test size(x) == size(w)
 
     _x = vcat(x,x)
     _v = vcat(v,v)
@@ -347,7 +367,6 @@ function test_field(
     end
     test_field(g,(x,),grad,cmp,grad=hessian)
   end
-
 end
 
 function test_field(f::FieldOrFieldArray,x,v,cmp=(==);grad=nothing,hessian=nothing)

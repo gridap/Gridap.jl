@@ -5,93 +5,180 @@ using Gridap.Mappings
 using Gridap.TensorValues
 using FillArrays
 
-using BenchmarkTools
 using Test
+using BenchmarkTools
 
 # Operations
 
+np = 4
 d = 2
 p = Point(1.0,2.0)
+x = fill(p,np)
+npp = (np,np)
 
 v = VectorValue{d}(1.0,1.0)
 f = MockField{d}(v)
-fp = evaluate(f,p)
+fx = fill(v,np)
+
+nf = 3
+nff = (nf,nf)
+
+# Sum
 
 df = f+f
-∇fp = 2*evaluate(gradient(f),p)
-test_field(df,p,2*fp,grad=2.0*∇fp)
 
-c = return_cache(df,p)
-@btime evaluate!($c,$df,$p)
+fia, p = test_field_array(f,p,nf,grad=true)
+fia, p = test_field_array(f,p,nff,grad=true)
 
-df = f-f
-test_field(df,p,fp-fp,grad=0.0*∇fp)
+fa, p = test_field_array(df,p,nf,grad=true)
+fa, p = test_field_array(df,p,nff,grad=true)
 
-df = GenericField(2.0)*f
-test_field(df,p,fp*2.0,grad=2.0*∇fp)
+@test fia+fia == fa
 
-c = return_cache(df,p)
-@btime evaluate!($c,$df,$p)
+bfia, x = test_broadcast_field_array(f,p,nf,np,grad=true)
+bfia, x = test_broadcast_field_array(f,p,nff,npp,grad=true)
 
-q(x) = 2*x
-∇q = gradient(q)
+bfa, x = test_broadcast_field_array(df,p,nf,np,grad=true)
+bfa, x = test_broadcast_field_array(df,p,nff,npp,grad=true)
 
-f = GenericField(q)
-fp = evaluate(f,p)
-∇f = ∇(f)
-∇fp = evaluate(∇f,p)
-@test ∇fp == TensorValue(2.0, 0.0, 0.0, 2.0)
-test_field(f,p,fp,grad=∇fp)
+@test bfia+bfia == bfa
 
-c = return_cache(f,p)
-@btime evaluate!($c,$f,$p)
+@test evaluate(bfia,x)+evaluate(bfia,x) == evaluate(bfa,x)
 
-df = f+f
-test_field(df,p,2*fp,grad=2.0*∇fp)
+# c = return_cache(bfia,x)
+# @btime evaluate!(c,bfia+bfia,x);
+# c = return_cache(bfa,x)
+# @btime evaluate!(c,bfa,x);
 
-c = return_cache(df,p)
-@btime evaluate!($c,$df,$p)
+# Subtraction
 
 df = f-f
-test_field(df,p,fp-fp,grad=0.0*∇fp)
+
+fa, p = test_field_array(df,p,nf,grad=true)
+fa, p = test_field_array(df,p,nff,grad=true)
+
+@test fia-fia == fa
+
+bfa, x = test_broadcast_field_array(df,p,nf,np,grad=true)
+bfa, x = test_broadcast_field_array(df,p,nff,npp,grad=true)
+
+@test bfia-bfia == bfa
+
+@test evaluate(bfia,x)-evaluate(bfia,x) == evaluate(bfa,x)
+
+# Times scalar
 
 df = GenericField(2.0)*f
-evaluate(df,p)
-∇df = ∇(df)
-∇dfp = 2*∇fp
-evaluate(∇df,p)
-test_field(df,p,fp*2.0,grad=∇dfp)
 
+fa, p = test_field_array(df,p,nf,grad=true)
+fa, p = test_field_array(df,p,nff,grad=true)
+
+@test GenericField(2.0).⋅fia == fa
+
+bfa, x = test_broadcast_field_array(df,p,nf,np,grad=true)
+bfa, x = test_broadcast_field_array(df,p,nff,npp,grad=true)
+
+@test bfa == BroadcastField(GenericField(2.0)).⋅bfia
+
+c = return_cache(bfa,x)
+@btime evaluate!(c,bfa,x);
 c = return_cache(df,p)
-@btime evaluate!($c,$df,$p)
-c = return_cache(∇df,p)
-@btime evaluate!($c,$∇df,$p)
+@btime evaluate!(c,df,p);
 
+# Inner product
 
 df = f⋅f
-∇df = ∇(df)
-dfp = (∇fp⋅fp)*2
-test_field(df,p,fp⋅fp,grad=dfp)
 
+fa, p = test_field_array(df,p,nf,grad=true)
+fa, p = test_field_array(df,p,nff,grad=true)
+
+@test fia.⋅fia == fa
+
+bfa, x = test_broadcast_field_array(df,p,nf,np,grad=true)
+bfa, x = test_broadcast_field_array(df,p,nff,npp,grad=true)
+
+@test bfa == bfia.⋅bfia
+
+c = return_cache(bfa,x)
+@btime evaluate!(c,bfa,x);
 c = return_cache(df,p)
-@btime evaluate!($c,$df,$p)
-c = return_cache(∇df,p)
-@btime evaluate!($c,$∇df,$p)
+@btime evaluate!(c,df,p);
 
-np = 3
-x = fill(p,np)
-bdf = BroadcastField(df)
-evaluate(bdf,x)
-∇bdf = gradient(bdf)
-evaluate(∇bdf,x)
-bdfp = fill(fp⋅fp,np)
-∇bdfp = fill(dfp,np)
-test_field(bdf,x,bdfp,grad=∇bdfp)
+# Function
 
-c = return_cache(bdf,x)
-@btime evaluate!($c,$bdf,$x)
-c = return_cache(∇bdf,x)
-@btime evaluate!($c,$∇bdf,$x)
+q(x) = 2*x
+
+f = GenericField(q)
+fia, p = test_field_array(f,p,nff,grad=true)
+bfia, x = test_broadcast_field_array(f,p,nff,npp,grad=true)
+
+
+fa, p = test_field_array(f,p,nf,grad=true)
+fa, p = test_field_array(f,p,nff,grad=true)
+
+@test fia == fa
+
+bfa, x = test_broadcast_field_array(f,p,nf,np,grad=true)
+bfa, x = test_broadcast_field_array(f,p,nff,npp,grad=true)
+
+@test bfia == bfa
+
+# Algebraic operations with arrays of fields
+
+fia = fill(f,nf)
+@test evaluate(transpose(fia)*fia,p) == nf*(evaluate(f,p)⋅evaluate(f,p))
+
+bfia = fill(BroadcastField(f),nf)
+@test evaluate(transpose(bfia)*bfia,p) == nf*(evaluate(f,p)⋅evaluate(f,p))
+
+fia = fill(f,nff)
+@test evaluate(transpose(fia).*fia,p) == fill(evaluate(f,p)⋅evaluate(f,p),nff)
+
+@test evaluate(fia*fia,p) == fill(60.0,nff)
+@test evaluate(transpose(fia)*fia,p) == fill(60.0,nff)
+
+v = VectorValue{d}(1.0,1.0)
+# v = 2.0
+g = MockField{d}(v)
+
+_nff = (3,3)
+fia = fill(g,_nff)
+@test evaluate(fia*fia,p) == fill(6.0,_nff)
+@test evaluate(transpose(fia)*fia,p) == fill(6.0,_nff)
+
+fia = [f g g; g f g; g g g]
+@test evaluate(fia*fia,p) == [24.0 14.0 10.0; 14.0 24.0 10.0; 10.0 10.0 6.0]
+
+####
+
+# This is the Operation-based approach... we must decide whether it pays
+# the price
+
+op = Operation(+)
+myop = OperationArray(Operation(+),fia,fia)
+c = return_cache(myop,p)
+@btime evaluate!(c,myop,p)
+c = return_cache(myop.res,p)
+@btime evaluate!(c,myop.res,p)
+fa = fia+fia
+c = return_cache(fa,p)
+@btime evaluate!(c,fa,p)
+@test myop.res == fa
+
+op = Operation(*)
+myop = OperationArray(Operation(*),fia,fia)
+c = return_cache(myop,p)
+@btime evaluate!(c,myop,p)
+c = return_cache(myop.res,p)
+@btime evaluate!(c,myop.res,p)
+
+
+fa = fia*fia
+c = return_cache(fa,p)
+@btime evaluate!(c,fa,p)
+@test myop.res == fa
+
+####
 
 # Operations between fields and array of fields
 

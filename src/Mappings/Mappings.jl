@@ -66,9 +66,12 @@ using Gridap.TensorValues
 
 using ForwardDiff
 
-import LinearAlgebra: det, inv
+import LinearAlgebra: det, inv, transpose
 import Base: +, -, *, /
 import LinearAlgebra: ⋅
+
+import Base: promote_type
+using LinearAlgebra: mul!
 
 export Field
 export GenericField
@@ -81,6 +84,9 @@ export ZeroField
 export MockField
 export Point
 
+export OperationFieldArray
+export OperationArray
+
 export evaluate_gradient!
 export return_gradient_type
 export return_gradient_cache
@@ -92,6 +98,8 @@ export ∇
 export hessian
 
 export test_field
+export test_field_array
+export test_broadcast_field_array
 
 export mock_field
 
@@ -122,6 +130,8 @@ include("MappingInterfaces.jl")
 include("MappedArrays.jl")
 
 include("FieldsInterfaces.jl")
+
+include("FieldArrays.jl")
 
 include("MockFields.jl")
 
