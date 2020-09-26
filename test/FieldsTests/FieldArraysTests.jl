@@ -24,15 +24,17 @@ nff = (nf,nf)
 
 fa, p = test_field_array(f,p,nf,grad=true)
 
-# c = return_cache(fa,p)
-# @btime evaluate!(c,fa,p)
-# c = return_cache(f,p)
-# @btime evaluate!(c,f,p)
+c = return_cache(fa,p)
+@btime evaluate!($c,$fa,$p)
+c = return_cache(f,p)
+@btime evaluate!($c,$f,$p)
 
 bfa, x = test_broadcast_field_array(f,p,nf,np,grad=true)
 
 bfa, x = test_broadcast_field_array(f,p,nff,npp,grad=true)
 
+c = return_cache(bfa,x)
+@btime evaluate!($c,$bfa,$x);
 
 
 
@@ -49,14 +51,19 @@ bfa, x = test_broadcast_field_array(∇f,p,nf,np)
 @test gradient(fa) == ∇fa
 
 c = return_cache(bfa,x)
-@btime evaluate!(c,bfa,x)
-c = return_cache(f,p)
-@btime evaluate!(c,f,p)
+@btime evaluate!($c,$bfa,$x)
 
 bf = BroadcastField(f)
 
 fa, x = test_field_array(bf,p,nf,grad=true)
 bfa, x = test_broadcast_field_array(bf,p,nf,np,grad=true)
+
+c = return_cache(bfa,x)
+@btime evaluate!($c,$bfa,$x)
+c = return_cache(af,p)
+@btime evaluate!($c,$af,$p)
+
+#
 
 q(x) = 2*x
 ∇q = gradient(q)
@@ -66,10 +73,21 @@ qf = GenericField(q)
 af, x = test_field_array(qf,p,nf,grad=true)
 bfa, x = test_broadcast_field_array(qf,p,nf,np,grad=true)
 
+c = return_cache(bfa,x)
+@btime evaluate!($c,$bfa,$x)
+c = return_cache(af,p)
+@btime evaluate!($c,$af,$p)
+
 bqf = BroadcastField(qf)
 
 af, x = test_field_array(bqf,p,nf,grad=true)
 bfa, x = test_broadcast_field_array(bqf,p,nf,np,grad=true)
+
+c = return_cache(bfa,x)
+@btime evaluate!($c,$bfa,$x)
+c = return_cache(af,p)
+@btime evaluate!($c,$af,$p)
+
 
 # GenericField (constant)
 
@@ -81,14 +99,22 @@ af, x = test_field_array(vf,p,nf,hessian=true)
 bfa, x = test_broadcast_field_array(vf,p,nf,np,hessian=true)
 
 c = return_cache(bfa,x)
-@btime evaluate!(c,bfa,x)
-@btime evaluate!(c,vf,p)
+@btime evaluate!($c,$bfa,$x)
+c = return_cache(af,p)
+@btime evaluate!($c,$af,$p)
+c = return_cache(vf,p)
+@btime evaluate!($c,$vf,$p)
 
 v = VectorValue(4.0,3.0)
 vf = GenericField(v)
 
 af, x = test_field_array(vf,p,nf,grad=true)
 bfa, x = test_broadcast_field_array(vf,p,nf,np,grad=true)
+
+c = return_cache(bfa,x)
+@btime evaluate!($c,$bfa,$x)
+c = return_cache(af,p)
+@btime evaluate!($c,$af,$p)
 
 # ZeroField
 
@@ -97,11 +123,50 @@ zvf = ZeroField(vf)
 af, x = test_field_array(zvf,p,nf,grad=true)
 bfa, x = test_broadcast_field_array(zvf,p,nf,np,grad=true)
 
+c = return_cache(bfa,x)
+@btime evaluate!($c,$bfa,$x)
+c = return_cache(af,p)
+@btime evaluate!($c,$af,$p)
+
 bzvf = BroadcastField(zvf)
 
 af, x = test_field_array(bzvf,p,nf,grad=true)
 bfa, x = test_broadcast_field_array(bzvf,p,nf,np,grad=true)
 
-#
+c = return_cache(bfa,x)
+@btime evaluate!($c,$bfa,$x)
+c = return_cache(af,p)
+@btime evaluate!($c,$af,$p)
+
+# Type unstable array
+# @santiagobadia : Anything to do here?
+# We would need to define promotion rules, convert, etc.
+# It seems not feasible but I think this case is not of
+# practical interest
+# On the other hand, we can always optimize these methods
+# for our particular problem at hand
+
+bfa = [zvf, vf, qf, zvf, vf, qf, zvf, vf, qf, zvf, vf, qf]
+
+c = return_cache(bfa,p)
+@btime evaluate!($c,$bfa,$p)
+
+
+q(x) = 2*x
+h(x) = 4*x
+qf = GenericField(q)
+hf = GenericField(h)
+
+bqf = BroadcastField(qf)
+bhf = BroadcastField(hf)
+
+af = [qf, hf, hf, qf]
+
+c = return_cache(af,p)
+@btime evaluate!($c,$af,$p)
+
+bfa = [bqf, bhf, bhf, bqf]
+c = return_cache(bfa,x)
+@btime evaluate!($c,$bfa,$x)
 
 end # module

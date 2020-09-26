@@ -45,6 +45,15 @@ bfa, x = test_broadcast_field_array(df,p,nff,npp,grad=true)
 
 @test evaluate(bfia,x)+evaluate(bfia,x) == evaluate(bfa,x)
 
+c = return_cache(fa,p)
+@btime evaluate!($c,$fa,$p);
+c = return_cache(fia,p)
+@btime evaluate!($c,$fia,$p);
+c = return_cache(bfa,x)
+@btime evaluate!($c,$bfa,$x);
+c = return_cache(bfia,x)
+@btime evaluate!($c,$bfia,$x);
+
 # c = return_cache(bfia,x)
 # @btime evaluate!(c,bfia+bfia,x);
 # c = return_cache(bfa,x)
@@ -66,6 +75,11 @@ bfa, x = test_broadcast_field_array(df,p,nff,npp,grad=true)
 
 @test evaluate(bfia,x)-evaluate(bfia,x) == evaluate(bfa,x)
 
+c = return_cache(fa,p);
+@btime evaluate!($c,$fa,$p);
+c = return_cache(bfa,x);
+@btime evaluate!($c,$bfa,$x);
+
 # Times scalar
 
 df = GenericField(2.0)*f
@@ -80,10 +94,10 @@ bfa, x = test_broadcast_field_array(df,p,nff,npp,grad=true)
 
 @test bfa == BroadcastField(GenericField(2.0)).⋅bfia
 
-c = return_cache(bfa,x)
-@btime evaluate!(c,bfa,x);
-c = return_cache(df,p)
-@btime evaluate!(c,df,p);
+c = return_cache(fa,p);
+@btime evaluate!($c,$fa,$p);
+c = return_cache(bfa,x);
+@btime evaluate!($c,$bfa,$x);
 
 # Inner product
 
@@ -99,10 +113,12 @@ bfa, x = test_broadcast_field_array(df,p,nff,npp,grad=true)
 
 @test bfa == bfia.⋅bfia
 
-c = return_cache(bfa,x)
-@btime evaluate!(c,bfa,x);
+c = return_cache(fa,p);
+@btime evaluate!($c,$fa,$p);
+c = return_cache(bfa,x);
+@btime evaluate!($c,$bfa,$x);
 c = return_cache(df,p)
-@btime evaluate!(c,df,p);
+@btime evaluate!($c,$df,$p);
 
 # Function
 
@@ -123,19 +139,38 @@ bfa, x = test_broadcast_field_array(f,p,nff,npp,grad=true)
 
 @test bfia == bfa
 
+c = return_cache(fa,p);
+@btime evaluate!($c,$fa,$p);
+c = return_cache(bfa,x);
+@btime evaluate!($c,$bfa,$x);
+
 # Algebraic operations with arrays of fields
 
 fia = fill(f,nf)
 @test evaluate(transpose(fia)*fia,p) == nf*(evaluate(f,p)⋅evaluate(f,p))
 
+fp = transpose(fia)*fia
+c = return_cache(fp,p)
+# @santiagobadia : Can we make it allocation-free
+@btime evaluate!($c,$fp,$p);
+@enter evaluate!(c,fp,p)
+
 bfia = fill(BroadcastField(f),nf)
 @test evaluate(transpose(bfia)*bfia,p) == nf*(evaluate(f,p)⋅evaluate(f,p))
+
+fp = transpose(bfia)*bfia
+c = return_cache(fp,x)
+@btime evaluate!($c,$fp,$x);
 
 fia = fill(f,nff)
 @test evaluate(transpose(fia).*fia,p) == fill(evaluate(f,p)⋅evaluate(f,p),nff)
 
 @test evaluate(fia*fia,p) == fill(60.0,nff)
 @test evaluate(transpose(fia)*fia,p) == fill(60.0,nff)
+
+fp = transpose(fia)*fia
+c = return_cache(fp,p)
+@btime evaluate!($c,$fp,$p);
 
 v = VectorValue{d}(1.0,1.0)
 # v = 2.0
@@ -151,8 +186,8 @@ fia = [f g g; g f g; g g g]
 
 ####
 
-# This is the Operation-based approach... we must decide whether it pays
-# the price
+# This is the Operation-based approach. Still many things to
+# make it performant
 
 op = Operation(+)
 myop = OperationArray(Operation(+),fia,fia)
@@ -177,6 +212,45 @@ fa = fia*fia
 c = return_cache(fa,p)
 @btime evaluate!(c,fa,p)
 @test myop.res == fa
+
+
+
+# Given a Field array with zero allocations, zero operation
+
+q(x) = 2*x
+
+f = GenericField(q)
+fia, p = test_field_array(f,p,nff,grad=true)
+
+c = return_cache(fia,p)
+@btime evaluate!($c,$fia,$p)
+
+
+v = VectorValue{d}(1.0,1.0)
+g = MockField{d}(v)
+gia, p = test_field_array(g,p,nff,grad=true)
+
+c = return_cache(gia,p)
+@btime evaluate!($c,$gia,$p)
+
+op = Operation(+)
+myop = OperationArray(Operation(+),fia)
+c = return_cache(myop,p)
+@btime evaluate!(c,myop,p);
+
+# Checking _inplace! operations
+
+r = rand(3,3)
+a = rand(3,3)
+b = rand(3,3)
+
+@btime Mappings._inplace!(+,$r,$a)
+@btime Mappings._inplace!(+,$r,$a,$b,$a)
+@btime Mappings._inplace!(-,$r,$a,$b,$a)
+@btime Mappings._inplace!(*,$r,$a)
+
+
+# Composition
 
 ####
 

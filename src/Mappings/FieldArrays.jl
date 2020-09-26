@@ -1,6 +1,6 @@
 # Arrays of Fields
 
-# Default implementation of evaluate! for arrays of field
+# Default implementation of evaluate! for arrays of fields
 
 function return_cache(f::AbstractArray{<:Field},x::Point)
   cfi = return_cache(first(f),x)
@@ -49,11 +49,10 @@ end
 
 # Gradient
 
+# We can create optimised versions for concrete types
 gradient(fa::AbstractArray{<:Field}) = gradient.(fa)
 
 # Operations
-
-evaluate!(cache,op::Operation,x::AbstractArray{<:Field}...) = GenericField.(OperationMapping.(op.op,x))
 
 # @santiagobadia : Just to check, think further
 function *(A::AbstractMatrix{<:Field}, B::AbstractMatrix{<:Field})
@@ -63,6 +62,8 @@ function *(A::AbstractMatrix{<:Field}, B::AbstractMatrix{<:Field})
 end
 
 #Compute operations with arrays efficiently
+
+evaluate!(cache,op::Operation,x::AbstractArray{<:Field}...) = GenericField.(OperationMapping.(op.op,x))
 
 struct OperationArray{T,N,S<:Field} <: AbstractArray{T,N}
   op::T
@@ -82,18 +83,24 @@ function return_cache(oa::OperationArray,x)
   # cr = zero(T(undef,sr))
   ri = map(a->testitem(a,x),oa.args)
   r = testitem(oa.op.op,ri...)
-  r, ri, ci
+  r, ci
   # Missing Cached arrays r cr
 end
 
 function evaluate!(c,f::OperationArray,x)
-  r, ri, ci = c
-  for (ff,rf,cf) in zip(f.args,ri,ci)
-  @inbounds rf = evaluate!(cf,ff,x)
-  end
-  _inplace!(f.op.op,r,ri...)
-  # return c.array
+  r, ci = c
+  # @santiagobadia : Not sure where the allocation is ???
+  # 3 allocations independent of array size, number operands,
+  # types of operands, etc
+  _inplace!(f.op.op,r,_evaluate!(ci,x,f.args)...)
   r
+end
+
+function _evaluate!(c,x,fs)
+  @inbounds for i in 1:length(fs)
+    evaluate!(c[i],fs[i],x)
+  end
+  map(ci->ci[1].array,c)
 end
 
 Base.size(oa::OperationArray) = Base.size(oa.res)
@@ -118,8 +125,8 @@ end
 end
 
 @inline function _inplace!(op::Union{typeof(+),typeof(-)},r::AbstractArray,a::AbstractArray,b::AbstractArray,c::AbstractArray...)
-  _inplace(op,r,a,b)
-  _inplace(op,r,r,c...)
+  _inplace!(op,r,a,b)
+  _inplace!(op,r,r,c...)
 end
 
 @inline function _inplace!(::typeof(*),r::AbstractArray,a::AbstractArray) end

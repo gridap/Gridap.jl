@@ -13,6 +13,9 @@ using Test
 d = 2
 p = Point(1.0,2.0)
 
+np = 3
+x = fill(p,np)
+
 v = VectorValue{d}(1.0,1.0)
 f = MockField{d}(v)
 fp = evaluate(f,p)
@@ -78,8 +81,6 @@ c = return_cache(df,p)
 c = return_cache(∇df,p)
 @btime evaluate!($c,$∇df,$p)
 
-np = 3
-x = fill(p,np)
 bdf = BroadcastField(df)
 evaluate(bdf,x)
 ∇bdf = gradient(bdf)
@@ -92,6 +93,91 @@ c = return_cache(bdf,x)
 @btime evaluate!($c,$bdf,$x)
 c = return_cache(∇bdf,x)
 @btime evaluate!($c,$∇bdf,$x)
+
+# Composition
+
+q(x) = VectorValue(x[1]^2,x[2]^2)
+# ∇q = gradient(q)
+
+f = GenericField(q)
+bf = BroadcastField(f)
+∇bf = ∇(bf)
+
+
+evaluate(bf,x)
+bdfx = evaluate(bf,evaluate(bf,x))
+bdf = evaluate(Operation(bf),bf)
+@test evaluate(bdf,x) == bdfx
+test_field(bdf,x,bdfx)#,grad=∇bdfp)
+
+bdfx = evaluate(bf+bf,x)
+bdf = evaluate(Operation(+),bf,bf)
+@test evaluate(bdf,x) == bdfx
+test_field(bdf,x,bdfx)#,grad=∇bdfp)
+
+bdfx = evaluate(bf*bf,x)
+bdf = bf⋅bf
+# bdf = evaluate(Operation(*),bf,bf)
+@test evaluate(bdf,x) == bdfx
+test_field(bdf,x,bdfx)#,grad=∇bdfp)
+
+bdfx = evaluate(bf⋅bf,x)
+bdf = bf*bf
+# bdf = evaluate(Operation(*),bf,bf)
+@test evaluate(bdf,x) == bdfx
+test_field(bdf,x,bdfx)#,grad=∇bdfp)
+
+# bbdf = evaluate(Operation(⋅),bf,bf)
+# evaluate(bbdf,x)
+
+
+@enter bf*bf
+
+∇bdf = ∇(bdf)
+typeof(∇bdf)
+typeof(bdf)
+#wrong structure GenericField{<:OperationMapping{<:Field}}
+
+Operation(BroadcastFunction(⋅))(BroadcastField(_x),BroadcastField(_y))
+
+
+@enter
+typeof(∇(bdf))
+evaluate(BroadcastField(
+  ∇bdf.f
+  typeof(bdf.field)
+  ),x)
+
+evaluate(∇bdf,p)
+
+∇bdfp = evaluate(∇bf,evaluate(bf,p)).⋅evaluate(∇bf,p)
+∇bdfx = evaluate(∇bf,evaluate(bf,x)).⋅evaluate(∇bf,x)
+
+evaluate(∇(bf),evaluate(bf,x))
+evaluate(∇bf,p)
+
+
+test_field(bbdf,p,bbdfp,grad=∇bbdfp)
+
+evaluate(bf,x)
+bbdfx = evaluate(bf,evaluate(bf,x))
+
+evaluate(∇(bf),evaluate(bf,x))
+.⋅
+evaluate(∇(bf),x)
+
+∇bbdf .== ∇bf
+
+bbdf
+∇bbdf = ∇(bbdf)
+∇bbdfx = evaluate(∇bbdf,x)
+∇bbdfx = evaluate(∇bf,evaluate(bf,x))⋅evaluate(∇bf,x)
+
+
+@enter evaluate(∇bbdf,x)
+
+
+test_field(bbdf,x,bbdfx,grad=∇bbdfx)
 
 # Operations between fields and array of fields
 

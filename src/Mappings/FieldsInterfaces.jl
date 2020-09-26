@@ -121,7 +121,7 @@ function gradient(a::GenericField{<:OperationMapping{typeof(⋅)}})
   if length(f) != 2 @notimplemented end
   f1, f2 = f
   g1, g2 = map( gradient, f)
-  g1⋅f2+f1⋅g2
+  g1.⋅f2+f1.⋅g2
 end
 
 function gradient(a::GenericField{<:OperationMapping{typeof(*)}})
@@ -129,15 +129,36 @@ function gradient(a::GenericField{<:OperationMapping{typeof(*)}})
   if length(f) != 2 @notimplemented end
   f1, f2 = f
   g1, g2 = map( gradient, f)
-  g1⋅f2+f1⋅g2
+  g1.⋅f2+f1.⋅g2
 end
 
 # Chain rule
-function gradient(f::GenericField{<:OperationMapping{<:Field,Tuple{<:Field}}})
+function gradient(f::GenericField{<:OperationMapping{<:Field}})#,Tuple{<:Field}}})
   a = f.object.k
   @assert length(f.object.l) == 1
   b, = f.object.l
-  (∇a∘b)⋅∇b
+  _x = ∇(a)∘b
+  _y = ∇(b)
+  # @santiagobadia : How can we express this product ????
+  BroadcastField(Operation(BroadcastFunction(⋅))(BroadcastField(_x),BroadcastField(_y)))
+end
+
+# function gradient(f::BroadcastField{GenericField{<:OperationMapping{<:Field}}})#,Tuple{<:Field}}})
+#   a = f.object.k
+#   @assert length(f.object.l) == 1
+#   b, = f.object.l
+#   _x = ∇(a)∘b
+#   _y = ∇(b)
+#   # @santiagobadia : How can we express this product ????
+# end
+
+# function gradient(a::GenericField{<:OperationMapping{typeof(*)}})
+function gradient(f::BroadcastField{GenericField})#{OperationMapping{BroadcastFunction{typeof(*)}}})
+#   f = a.object.l
+#   if length(f) != 2 @notimplemented end
+#   f1, f2 = f
+#   g1, g2 = map( gradient, f)
+#   g1.⋅f2+f1.⋅g2
 end
 
 # Make Number behave like Field
@@ -309,8 +330,17 @@ evaluate!(c,f::BroadcastField,x::Point) = evaluate!(c,f.field,x)
 gradient(b::BroadcastField) = BroadcastField(gradient(b.field))
 
 for op in (:+,:-,:*,:⋅,:inv,:det)
-  @eval ($op)(a::BroadcastField...) = BroadcastField(Operation($op)(map( f -> f.field,a)...))
+  # @eval ($op)(a::BroadcastField...) = BroadcastField(Operation($op)(map( f -> f.field,a)...))
+  @eval ($op)(a::BroadcastField...) = BroadcastField(Operation(BroadcastFunction($op))(map( f -> f.field,a)...))
 end
+
+struct BroadcastFunction{T}
+  op::T
+end
+
+(f::BroadcastFunction)(x) = f.op.(x)
+
+evaluate!(cache,f::BroadcastFunction,x...) = f.op.(x...)
 
 # Other operations
 
