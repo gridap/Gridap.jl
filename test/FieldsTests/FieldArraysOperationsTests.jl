@@ -187,14 +187,14 @@ c = return_cache(bfa,x);
 
 # Checking _inplace! operations
 
-r = rand(3,3)
-a = rand(3,3)
-b = rand(3,3)
+# r = rand(3,3)
+# a = rand(3,3)
+# b = rand(3,3)
 
-@btime Mappings._inplace!(+,$r,$a)
-@btime Mappings._inplace!(+,$r,$a,$b,$a)
-@btime Mappings._inplace!(-,$r,$a,$b,$a)
-@btime Mappings._inplace!(*,$r,$a)
+# @btime Mappings._inplace!(+,$r,$a)
+# @btime Mappings._inplace!(+,$r,$a,$b,$a)
+# @btime Mappings._inplace!(-,$r,$a,$b,$a)
+# @btime Mappings._inplace!(*,$r,$a)
 
 
 

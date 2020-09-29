@@ -1,10 +1,6 @@
 # Meeting 22 Sep
 # integrate(f::Field,x::AbstractVector{<:Point},w::AbstractVector{<:Real}) = sum( f(x) .* w  )
 # integrate(f::AbstractArray{<:Field},x::AbstractVector{<:Point},w::AbstractVector{<:Real}) =
-# linear_combination 17:21 per un tema d'optimitzacio 17:21 en el draft tinc transpose(i_to_f)*i_to_val
-# linear_combination(i_to_f,i_to_val) = transpose(i_to_f)*i_to_val
-# apply(linear_compination, cell_to_i_to_f,cell_to_i_to_val) es pot potmitizarA
-# apply((a,b) ->transpose(a)*b, cell_to_i_to_f,cell_to_i_to_val) dona el mateix resultat, pero no es facil optimitzar-ho pq tens una anonymous function
 
 const Point{D,T} = VectorValue{D,T}
 
