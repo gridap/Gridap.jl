@@ -71,7 +71,7 @@ import Base: +, -, *, /
 import LinearAlgebra: ⋅
 
 import Base: promote_type
-using LinearAlgebra: mul!
+using LinearAlgebra: mul!, Transpose
 
 export Field
 export GenericField
@@ -99,10 +99,12 @@ export hessian
 
 export test_field
 export test_field_array
+export test_operation_field_array
 export test_broadcast_field_array
 
 export mock_field
 
+export linear_combination
 # export MockBasis
 # export LinearCombinationField
 # export OtherMockField
@@ -118,7 +120,6 @@ export mock_field
 # # export gradients
 
 
-# export linear_combination
 
 # export field_composition
 # export field_array_composition

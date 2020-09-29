@@ -53,15 +53,15 @@ bfa, x = test_broadcast_field_array(∇f,p,nf,np)
 c = return_cache(bfa,x)
 @btime evaluate!($c,$bfa,$x)
 
-bf = BroadcastField(f)
+bf = f
 
 fa, x = test_field_array(bf,p,nf,grad=true)
 bfa, x = test_broadcast_field_array(bf,p,nf,np,grad=true)
 
 c = return_cache(bfa,x)
 @btime evaluate!($c,$bfa,$x)
-c = return_cache(af,p)
-@btime evaluate!($c,$af,$p)
+c = return_cache(fa,p)
+@btime evaluate!($c,$fa,$p)
 
 #
 
@@ -78,7 +78,7 @@ c = return_cache(bfa,x)
 c = return_cache(af,p)
 @btime evaluate!($c,$af,$p)
 
-bqf = BroadcastField(qf)
+bqf = qf
 
 af, x = test_field_array(bqf,p,nf,grad=true)
 bfa, x = test_broadcast_field_array(bqf,p,nf,np,grad=true)
@@ -128,7 +128,7 @@ c = return_cache(bfa,x)
 c = return_cache(af,p)
 @btime evaluate!($c,$af,$p)
 
-bzvf = BroadcastField(zvf)
+bzvf = zvf
 
 af, x = test_field_array(bzvf,p,nf,grad=true)
 bfa, x = test_broadcast_field_array(bzvf,p,nf,np,grad=true)
@@ -157,8 +157,8 @@ h(x) = 4*x
 qf = GenericField(q)
 hf = GenericField(h)
 
-bqf = BroadcastField(qf)
-bhf = BroadcastField(hf)
+bqf = qf
+bhf = hf
 
 af = [qf, hf, hf, qf]
 

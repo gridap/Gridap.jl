@@ -2,14 +2,10 @@ module FieldInterfacesTests
 
 using Gridap.Mappings
 using Gridap.TensorValues
+using Gridap.Arrays: CachedArray
 
 using BenchmarkTools
 using Test
-
-# using Gridap.NewFields: MockField, MockBasis, OtherMockBasis
-# using Gridap.Mappings
-
-# Test MockField
 
 np = 4
 p = Point(1.0,2.0)
@@ -19,19 +15,14 @@ x = fill(p,np)
 d = 2
 v = VectorValue{d}(1.0,1.0)
 f = MockField{d}(v)
-fx = fill(v,np)
-
-evaluate(f,p)
-bf = BroadcastField(f)
 fp = evaluate(f,p)
-bfx = fill(fp,np)
-evaluate(bf,x)
-test_field(bf,x,bfx)
+test_field(f,p,fp)
 
-c = return_cache(bf,x)
-@btime evaluate!(c,bf,x)
+fx = fill(fp,np)
+test_field(f,x,fx)
 
-@test BroadcastField(bf) == bf
+c = return_cache(f,x)
+@btime evaluate!(c,f,x)
 
 # test_field(f,p,evaluate(f,p),evaluate(∇(f),p))
 
@@ -46,20 +37,9 @@ test_field(f,p,fp,grad=∇fp)
 c = return_cache(∇f,p)
 @btime evaluate!(c,∇f,p)
 
-∇bf = gradient(bf)
-@test ∇bf == BroadcastField(gradient(f))
-∇bfx = fill(∇fp,4)
-test_field(∇bf,x,∇bfx)
-test_field(bf,x,bfx,grad=∇bfx)
-
-c = return_cache(∇bf,x)
-@btime evaluate!(c,∇bf,x)
-
 # GenericField (function)
 
-@test GenericField(bf) == bf == Field(bf)
 @test return_type(GenericField,Float64) == GenericField{Float64}
-@test return_type(GenericField,BroadcastField) == BroadcastField
 
 q(x) = 2*x
 ∇q = gradient(q)
@@ -82,18 +62,21 @@ test_field(qf,p,qfp,grad=∇qfp)
 c = return_cache(∇qf,p)
 @btime evaluate!($c,$∇qf,$p)
 
+qfx = q.(x)
+∇qfx = ∇q.(x)
+test_field(qf,x,qfx,grad=∇qfx)
 
-bqf = BroadcastField(qf)
-∇bqf = ∇(bqf)
-bqfx = q.(x)
-∇bqfx = ∇q.(x)
-test_field(bqf,x,bqfx,grad=∇bqfx)
+c = return_cache(qf,p)
+@btime evaluate!($c,$qf,$p)
 
-c = return_cache(bqf,p)
-@btime evaluate!($c,$bqf,$p)
+c = return_cache(∇qf,p)
+@btime evaluate!($c,$∇qf,$p)
 
-c = return_cache(∇bqf,p)
-@btime evaluate!($c,$∇bqf,$p)
+c = return_cache(qf,x)
+@btime evaluate!($c,$qf,$x)
+
+c = return_cache(∇qf,x)
+@btime evaluate!($c,$∇qf,$x)
 
 # GenericField (constant)
 
@@ -102,21 +85,39 @@ v = 1.0
 vf = GenericField(v)
 test_field(vf,p,v)
 
+vx = fill(v,np)
+evaluate(vf,x)
+
+test_field(vf,x,vx)
+
 c = return_cache(vf,p)
 @btime evaluate!($c,$vf,$p)
 
+c = return_cache(vf,x)
+@btime evaluate!($c,$vf,$x)
+
+
 ∇vf = ∇(vf)
+∇vf.object
 # ∇vp = TensorValue(0.0,0.0,0.0,0.0)
 ∇vp = VectorValue(0.0,0.0)
 test_field(vf,p,v,grad=∇vp)
+∇vfx = fill(∇vp,np)
+test_field(vf,x,vx,grad=∇vfx)
 
-c = return_cache(∇vf,p)
-@btime evaluate!($c,$∇vf,$p)
+c = return_cache(∇vf,x)
+@btime evaluate!($c,$∇vf,$x)
+
+c = return_cache(∇vf,x)
+@btime evaluate!($c,$∇vf,$x)
 
 ∇∇vf = gradient(gradient(vf))
 evaluate(∇∇vf,p)
 ∇∇vfp = TensorValue(0.0,0.0,0.0,0.0)
 test_field(vf,p,v,grad=∇vp,hessian=∇∇vfp)
+
+∇∇vfx = fill(∇∇vfp,np)
+test_field(vf,x,vx,grad=∇vfx,hessian=∇∇vfx)
 
 c = return_cache(∇∇vf,p)
 @btime evaluate!($c,$∇∇vf,$p)
@@ -129,10 +130,12 @@ zvfp = zero(return_type(vf,p))
 ∇zvfp = zero(return_type(∇vf,p))
 test_field(zvf,p,zvfp,grad=∇zvfp)
 
-bzvf = BroadcastField(zvf)
-bzvfx = fill(zvfp,np)
-∇bzvf = ∇(bzvf)
-∇bzvfx = fill(∇zvfp,np)
-test_field(bzvf,x,bzvfx,grad=∇bzvfx)
+zvfx = fill(zvfp,np)
+∇zvfx = fill(∇zvfp,np)
+
+c = return_cache(∇zvf,x)
+
+evaluate(zvf,x) == zvfx
+test_field(zvf,x,zvfx,grad=∇zvfx)
 
 end # module
