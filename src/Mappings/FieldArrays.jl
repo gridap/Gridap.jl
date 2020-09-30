@@ -330,7 +330,7 @@ end
 Base.size(a::FieldHessianArray) = size(a.fa)
 Base.axes(a::FieldHessianArray) = axes(a.fa)
 Base.getindex(a::FieldHessianArray,i::Integer...) = FieldHessian(a.fa[i...])
-Base.ndims(a::FieldhessianArray{A}) where A = ndims(A)
+Base.ndims(a::FieldHessianArray{A}) where A = ndims(A)
 Base.eltype(a::FieldHessianArray{A}) where A = FieldHessian{eltype(A)}
 Base.IndexStyle(::Type{<:FieldHessianArray{A}}) where A = IndexStyle(A)
 
