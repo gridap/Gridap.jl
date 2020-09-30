@@ -25,9 +25,133 @@ nff = nf #(nf,nf)
 
 fa = fill(f,nf)
 
+# Transpose
+
+c = return_cache(fa,p)
+@btime evaluate!($c,$fa,$p)
+
+c = return_cache(fa,x)
+@btime evaluate!($c,$fa,$x)
+
+tfa = transpose(fa)
+c = return_cache(tfa,p)
+@btime evaluate!($c,$tfa,$p)
+tr = evaluate!(c,tfa,p)
+r = evaluate!(c,fa,p)
+@test transpose(tr) == r
+
+c = return_cache(tfa,x)
+@btime evaluate!($c,$tfa,$x)
+tr = evaluate!(c,tfa,x)
+r = evaluate!(c,fa,x)
+@test size(tr) == (size(r,1),1,size(r,2))
+@test reshape(permutedims(tr,[1,3,2]),size(r,1),size(r,2)) == r
+
+# Broadcasted operations
+
+op = +
+b = BroadcastMapping(Operation(op))
+bpfa = b(fa,fa)
+@test bpfa == op(fa,fa)
+
+fa isa AbstractArray{<:Field}
+fa+fa
++(fa,fa)
+
+c = return_cache(bpfa,x)
+@btime evaluate!($c,$bpfa,$x);
+
+op = ⋅
+b = BroadcastMapping(Operation(op))
+bpfa = b(fa,fa)
+@test bpfa == op.(fa,fa)
+
+c = return_cache(bpfa,x)
+@btime evaluate!($c,$bpfa,$x);
+
+op = *
+b = BroadcastMapping(Operation(op))
+bpfa = b(fa,fa)
+@test bpfa == op.(fa,fa)
+
+c = return_cache(bpfa,x)
+@btime evaluate!($c,$bpfa,$x);
+
+# row vector * column vector -> field
+
+tfa = transpose(fa)
+fa
+
+tr = evaluate(tfa,x)
+r = evaluate(fa,x)
+
+# field + field array
+
+op = *
+b = BroadcastMapping(Operation(op))
+bpfa = b(f,fa)
+evaluate(bpfa,x) == broadcast(*,evaluate(f,x),evaluate(fa,x))
+# @santiagobadia : Why it is not working for == ?
+@test all(bpfa .== broadcast(*,f,fa))
+
+c = return_cache(bpfa,x)
+@btime evaluate!(c,bpfa,x)
+
+# column vector * row vector -> field array
+
+op = *
+b = BroadcastMapping(Operation(op))
+bpfa = b(fa,tfa)
+evaluate(bpfa,x) == broadcast(*,evaluate(fa,x),evaluate(tfa,x))
+# @santiagobadia : Why it is not working for == ?
+@test all(bpfa .== broadcast(*,fa,tfa))
+
+c = return_cache(bpfa,x)
+@btime evaluate!(c,bpfa,x)
+
+# row vector * column vector -> field
+
+dopa = tfa*fa
+c = return_cache(dopa,x)
+evaluate!(c,dopa,x)
+@enter dopa == tfa*fa
+@test evaluate(dopa,x)[1] == evaluate(tfa,p)⋅evaluate(fa,p)
+@btime evaluate!(c,dopa,x)
+
+dopa = fa⋅fa
+c = return_cache(dopa,x)
+evaluate!(c,dopa,x)
+@enter dopa == tfa*fa
+@test evaluate(dopa,x)[1] == evaluate(tfa,p)⋅evaluate(fa,p)
+@btime evaluate!(c,dopa,x)
+
+# linear combination
+
+va = [1.0,2.0,3.0]
+copa = fa⋅va
+@test evaluate(va⋅fa,x) == evaluate(fa⋅va,x)
+c = return_cache(dopa,x)
+@btime evaluate!(c,dopa,x)
+
+# composition
+
+fc = Operation(fa)(f)
+c = return_cache(fc,x)
+@btime evaluate!(c,fc,x)
+
+bm = BroadcastMapping(∘)
+fc = bm(fa,f);
+
+c = return_cache(fc,x)
+@btime evaluate!(c,fc,x)
+
+# Old Stuff
+
 q(x) = 2*x
 g = GenericField(q)
 ga = fill(g,nf)
+
+isbits(g)
 
 evaluate(fa,x)
 cf = return_cache(fa,x)

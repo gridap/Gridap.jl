@@ -1,168 +1,192 @@
-# Arrays of Fields
-
-# Default implementation of evaluate! for arrays of fields
+# # Default implementation of evaluate! for arrays of fields
 
 function return_cache(f::AbstractArray{<:Field},x::Point)
-  # @santiagobadia : Be careful, we could have different fields
-  _cfs = map(fi -> return_cache(fi,x),f)
-  cfs = _cfs # Not sure about CachedArray here, it does not have much sense
-  # @santiagobadia : We should check all return the same
-  # Anyway, this can be overwritten by concrete AbstractArray{<:Field}
-  T = return_type(first(f),x)
-  sf = size(f)
-  _cf = zeros(T,sf)
-  cf = CachedArray(_cf)
-  cf, cfs
+  T = return_type(first(f),first(x))
+  c = CachedArray(zeros(T,size(f)))
 end
 
 function evaluate!(c,f::AbstractArray{<:Field},x::Point)
-  cf, cfs = c
-  sf = size(f)
-  # Expect error here if f changes size and not type-stable
-  setsize!(cf,sf)
-  for i in eachindex(f)
-    # @ santiagobadia : Not allocation free
-    @inbounds cf.array[i] = evaluate!(cfs[i],f[i],x)
+  setsize!(c,size(f))
+  for j in eachindex(f)
+    @inbounds c.array[j] = evaluate(f[j],x)
   end
-  cf.array
+  c.array
 end
 
 function return_cache(f::AbstractArray{<:Field},x::AbstractArray{<:Point})
-  fi = first(f)
-  xi = first(x)
-  # @santiagobadia : Same comment as above
-  cfi = return_cache(fi,xi)
-  T = return_type(fi,xi)
-  sf = size(f)
-  sx = size(x)
-  _cf = zeros(T,sx...,sf...)
-  cf = CachedArray(_cf)
-  cf, cfi
+  T = return_type(first(f),first(x))
+  c = CachedArray(zeros(T,(size(x)...,size(f)...)))
 end
 
 function evaluate!(c,f::AbstractArray{<:Field},x::AbstractArray{<:Point})
-  cf, cfi = c
-  sf = size(f)
-  sx = size(x)
-  s = (sx...,sf...)
-  setsize!(cf,s)
-  for j in CartesianIndices(f)
-    for i in CartesianIndices(x)
-      @inbounds cf.array[i,j] = evaluate!(cfi,f[j],x[i])
+  setsize!(c,(size(x)...,size(f)...))
+  for j in eachindex(f)
+    for i in eachindex(x)
+      @inbounds c.array[i,j] = evaluate(f[j],x[i])
     end
   end
-  cf.array
+  c.array
 end
 
-# Gradient
+# Broadcasting operations
 
-# We can create optimised versions for concrete types (but this is very fast)
+# Non-performant default implementation
 
-gradient(fa::AbstractArray{<:Field}) = gradient.(fa)
+return_cache(b::BroadcastMapping,args::Union{Field,AbstractArray{<:Field}}...) = nothing
 
-# Operations
-
-# @santiagobadia : Probably improve it in the future, with some promote method
-# for Fields, not really to be used in practise
-
-const FieldMatrix{T,S} = Union{Transpose{T,S},S} where {T<:Field,S<:AbstractMatrix{<:Field}}
-
-function (*)(A::FieldMatrix, B::FieldMatrix)
-  TS = Field
-  mul!(similar(B, TS, (size(A,1), size(B,2))), A, B)
+function evaluate!(cache,b::BroadcastMapping,args::Union{Field,AbstractArray{<:Field}}...)
+  broadcast(b.f,args...)
 end
 
-# Transpose Field Array
+# @santiagobadia : Here if we put AbstractArray it goes to the + in Julia for Array...
+# for op in (:+,:-,:*,:⋅)
+  # @eval $op(a::Array{<:Field},b::Array{<:Field}) = BroadcastMapping(Operation($op))(a,b)
+# end
 
-return_cache(f::Transpose{<:Field},x::Point) = return_cache(transpose(f),x)
-return_cache(f::Transpose{<:Field},x::AbstractArray{<:Point}) = return_cache(transpose(f),x)
-evaluate!(c,f::Transpose{<:Field},x::Point) = transpose(evaluate!(c,transpose(f),x))
+# Transpose
 
-function evaluate!(c,f::Transpose{<:Field},x::AbstractArray{<:Point})
-  _r = evaluate!(c,transpose(f),x)
-  # @santiagobadia : Other ideas?
-  r = permutedims(reshape(_r,size(_r)...,1),[1,3,2])
+function Base.transpose(a::AbstractVector{<:Field})
+  TransposeFieldVector(a)
 end
 
-# Compute operations with arrays efficiently
-
-struct OperationArray{T,N,S<:Field} <: AbstractArray{S,N}
-  op::T
-  res::AbstractArray{S,N}
-  args
-  function OperationArray(op::Operation,args::Union{Field,AbstractArray{<:Field}}...)
-    res = op.op(args...)
-    S = eltype(res)
-    new{typeof(op.op),ndims(res),S}(op.op,res,args)
+struct TransposeFieldVector{B,T} <: AbstractArray{T,2}
+  basis::B
+  function TransposeFieldVector(basis)
+    @assert ndims(basis) == 1
+    T = eltype(basis)
+    new{typeof(basis),T}(basis)
   end
 end
 
-# @santiagobadia : We can change this, but not much important
-# Probably reshape it eliminating the first dimension
-function return_cache(f::OperationArray,x::Point)
-  return_cache(f,[x])
+Base.size(a::TransposeFieldVector) = (1,length(a.basis))
+Base.axes(a::TransposeFieldVector) = (Base.OneTo(1),axes(a.basis,1))
+Base.getindex(a::TransposeFieldVector,i::Integer,j::Integer) = a.basis[j,i]
+Base.getindex(a::TransposeFieldVector,i::Integer) = a.basis[i]
+Base.IndexStyle(::TransposeFieldVector{A}) where A = IndexStyle(A)
+
+return_cache(a::TransposeFieldVector,x::Point) = return_cache(a.basis,x)
+return_cache(a::TransposeFieldVector,x::AbstractArray{<:Point}) = return_cache(a.basis,x)
+
+# @santiagobadia : How to fix this?
+function evaluate!(cache,a::TransposeFieldVector,x::Point)
+  M = evaluate!(cache,a.basis,x)
+  transpose_field_indices(M)
 end
 
-function return_cache(f::OperationArray{typeof(transpose)},x::AbstractArray{<:Point})
-  @assert length(f.args) == 1
-  return_cache(f.args[1],x)
+function evaluate!(cache,a::TransposeFieldVector,x::AbstractArray{<:Point})
+  M = evaluate!(cache,a.basis,x)
+  transpose_field_indices(M)
 end
 
-# @santiagobadia : Is this what we want here?
-function evaluate!(c,f::OperationArray{typeof(transpose)},x::AbstractArray{<:Point})
-  transpose(evaluate!(c,f.args...,x))
+transpose_field_indices(M::AbstractVector) = transpose(M)
+transpose_field_indices(M::AbstractMatrix) = TransposeFieldIndices(M)
+
+struct TransposeFieldIndices{A,T} <: AbstractArray{T,3}
+  matrix::A
+  @inline function TransposeFieldIndices(matrix::AbstractMatrix{T}) where T
+    A = typeof(matrix)
+    new{A,T}(matrix)
+  end
 end
 
-# @santiagobadia : Do it with eval for + -
-# for op in (:+,:-,:*,:⋅,:inv,:det,:transpose)
-# eval ...
-function return_cache(f::OperationArray{typeof(+)},x::AbstractArray{<:Point})
+Base.size(a::TransposeFieldIndices) = (size(a.matrix,1),1,size(a.matrix,2))
+Base.axes(a::TransposeFieldIndices) = (axes(a.matrix,1),Base.OneTo(1),axes(a.matrix,2))
+Base.IndexStyle(::Type{<:TransposeFieldIndices{A}}) where A = IndexStyle(A)
+@inline Base.getindex(a::TransposeFieldIndices,i::Integer,j::Integer,k::Integer) = a.matrix[i,k]
+@inline Base.getindex(a::TransposeFieldIndices,i::Integer) = a.matrix[i]
+@inline Base.setindex!(a::TransposeFieldIndices,v,i::Integer,j::Integer,k::Integer) = (a.matrix[i,k] = v)
+@inline Base.setindex!(a::TransposeFieldIndices,v,i::Integer) = (a.matrix[i] = v)
+
+# Broadcast operations
+
+(b::BroadcastMapping{<:Operation})(args::Union{Field,AbstractArray{<:Field}}...) = BroadcastOpFieldArray(b.f.op,args...)
+
+struct BroadcastOpFieldArray{O,T,S<:Field,N} <: AbstractArray{S,N}
+  op::O
+  args::T
+  function BroadcastOpFieldArray(op,args::Union{Field,AbstractArray{<:Field}}...)
+    fs = map(first,args)
+    S = typeof(op(fs...))
+    s = map(size,args)
+    bs = Base.Broadcast.broadcast_shape(s...)
+    N = length(bs)
+    T = typeof(args)
+    O = typeof(op)
+    new{O,T,S,N}(op,args)
+  end
+end
+
+@inline Base.size(a::BroadcastOpFieldArray) = Base.Broadcast.broadcast_shape(map(size,a.args)...)
+# @santiagobadia : What do we want to do here?
+@inline Base.IndexStyle(::Type{<:BroadcastOpFieldArray}) = IndexLinear
+@inline Base.getindex(a::BroadcastOpFieldArray,I...) = broadcast(a.op,a.args...)[I...]
+
+function return_cache(f::BroadcastOpFieldArray,x::Point)
   cfs = return_caches(f.args,x)
-  rs = map(fi -> evaluate(fi,first(x)),f.args)
-  cr = CachedArray(f.op(rs...))
-  cr, cfs
+  rs = map((ci,fi) -> evaluate!(ci,fi,x),cfs,f.args)
+  bm = BroadcastMapping(f.op)
+  r = return_cache(bm,rs...)
+  r, cfs
 end
 
-# @santiagobadia :  How can we implement it allocation free?
-# How can we compute new dim if nfields is changing
-function evaluate!(c,f::OperationArray{typeof(+)},x::AbstractArray{<:Point})
-  cr, cfs = c
-  ri = map((ci,fi)->evaluate!(ci,fi,x),cfs,f.args)
-  f.op(ri...)
+function evaluate!(c,f::BroadcastOpFieldArray,x::Point)
+  r, cfs = c
+  rs = map((ci,fi) -> evaluate!(ci,fi,x),cfs,f.args)
+  bm = BroadcastMapping(f.op)
+  evaluate!(r,bm,rs...)
+  r.array
 end
 
-function return_cache(f::OperationArray{typeof(-)},x::AbstractArray{<:Point})
-  rs = return_caches(f.args,x)
+function return_cache(f::BroadcastOpFieldArray,x::AbstractArray{<:Point})
+  cfs = return_caches(f.args,x)
+  rs = map((ci,fi) -> evaluate!(ci,fi,x),cfs,f.args)
+  bm = BroadcastMapping(f.op)
+  r = return_cache(bm,rs...)
+  r, cfs
 end
 
-function evaluate!(c,f::OperationArray{typeof(-)},x::AbstractArray{<:Point})
-  ri = map((ci,fi)->evaluate!(ci,fi,x),c,f.args)
-  f.op(ri...)
+function evaluate!(c,f::BroadcastOpFieldArray,x::AbstractArray{<:Point})
+  r, cfs = c
+  rs = map((ci,fi) -> evaluate!(ci,fi,x),cfs,f.args)
+  bm = BroadcastMapping(f.op)
+  evaluate!(r,bm,rs...)
+  r.array
 end
 
-Base.ndims(::Field) = 0
+# Dot product vectors
 
-function (op::Operation{typeof(*)})(A::AbstractArray{<:Field},B::AbstractArray{<:Field})
-  r = A*B
-  if ndims(r) == 0
-    return DotArray(A,B)
-  else
-    return OperationArray(op,A,B)
-  end
+struct DotOpFieldVectors{F,G} <: Field
+  f::F
+  g::G
 end
 
-(op::Operation{typeof(⋅)})(A::AbstractArray{<:Field},B::AbstractArray{<:Field}) = DotArray(A,B)
+# @santiagobadia : How to implement nicely?
+*(f::TransposeFieldVector,g::AbstractVector{<:Field}) = DotOpFieldVectors(f.basis,g)
+⋅(f::TransposeFieldVector,g::AbstractVector{<:Field}) = DotOpFieldVectors(f.basis,g)
+⋅(g::AbstractVector{<:Field},f::AbstractVector{<:Field}) = DotOpFieldVectors(f,g)
+⋅(g::AbstractVector{<:Number},f::AbstractVector{<:Field}) = DotOpFieldVectors(f,GenericField.(g))
+⋅(f::AbstractVector{<:Field},g::AbstractVector{<:Number}) = DotOpFieldVectors(f,GenericField.(g))
 
-# Result of array operation is a scalar
-
-struct DotArray <: Field
-  f
-  g
+function return_cache(f::DotOpFieldVectors,x::Point)
+  f1 = f.f
+  f2 = f.g
+  c1 = return_cache(f1,x)
+  c2 = return_cache(f2,x)
+  c1, c2
 end
 
-# inner_product(f,g) = DotArray(f,g)
+function evaluate!(c,f::DotOpFieldVectors,x::Point)
+  cfs = c
+  c1, c2 = cfs
+  f1 = f.f
+  f2 = f.g
+  r = cr.array
+  r1 = evaluate!(c1,f1,x)
+  r2 = evaluate!(c2,f2,x)
+  r1⋅r2
+end
 
-function return_cache(f::DotArray,x::AbstractArray{<:Point})
+function return_cache(f::DotOpFieldVectors,x::AbstractArray{<:Point})
   f1 = f.f
   f2 = f.g
   c1 = return_cache(f1,x)
@@ -173,7 +197,7 @@ function return_cache(f::DotArray,x::AbstractArray{<:Point})
   r, (c1, c2)
 end
 
-function evaluate!(c,f::DotArray,x::AbstractArray{<:Point})
+function evaluate!(c,f::DotOpFieldVectors,x::AbstractArray{<:Point})
   cr, cfs = c
   c1, c2 = cfs
   f1 = f.f
@@ -183,149 +207,58 @@ function evaluate!(c,f::DotArray,x::AbstractArray{<:Point})
   r1 = evaluate!(c1,f1,x)
   r2 = evaluate!(c2,f2,x)
   for i in 1:length(x)
-    r[i] = selectdim(r1,1,i)⋅selectdim(r2,1,i)
+    @inbounds r[i] = view(r1,i,:)⋅view(r2,i,:)
   end
   r
 end
 
-# Result of array operation is an array
+# linear combination
 
-# matmul(A,B) = OperationArray(Operation(*),A,B)
+linear_combination(a,b) = a⋅b
 
-function return_cache(f::OperationArray{typeof(*)},x::Point)
-  @assert length(f.args) == 2
-  f1, f2 = f.args
-  c1 = return_cache(f1,x)
-  c2 = return_cache(f2,x)
-  r1 = evaluate!(c1,f1,first(x))
-  r2 = evaluate!(c2,f2,first(x))
-  r = CachedArray(zeros(eltype(r1*r2),length(f1),length(f1)))
-  r, (c1,c2)
-end
+# Composition
 
-function return_cache(f::OperationArray{typeof(*)},x::AbstractArray{<:Point})
-  @assert length(f.args) == 2
-  f1, f2 = f.args
-  c1 = return_cache(f1,first(x))
-  c2 = return_cache(f2,first(x))
-  r1 = evaluate!(c1,f1,first(x))
-  r2 = evaluate!(c2,f2,first(x))
-  _r = r1*r2
-  r = CachedArray(zeros(eltype(_r),length(x),size(_r)...))
-  r, (c1,c2)
-end
-
-function evaluate!(c,f::OperationArray{typeof(*)},x::Point)
-  cr, cfs = c
-  r = cr.array
-  c1, c2 = cfs
-  f1, f2 = f.args
-  r1 = evaluate!(c1,f1,x)
-  r2 = evaluate!(c2,f2,x)
-  r = r1*r2
-end
-function evaluate!(c,f::OperationArray{typeof(*)},x::AbstractArray{<:Point})
-  cr, cfs = c
-  r = cr.array
-  c1, c2 = cfs
-  f1, f2 = f.args
-  for i in eachindex(x)
-    xi = x[i]
-    r1 = evaluate!(c1,f1,xi)
-    r2 = evaluate!(c2,f2,xi)
-    _r = r1*r2
-    r[i,:,:] = _r
+struct CompositionFieldArrayField{T,N,A,B} <:AbstractArray{T,N}
+  f::A
+  g::B
+  function CompositionFieldArrayField(f::AbstractArray{<:Field},g::Field)
+    s = size(f)
+    T = typeof(first(f)∘g)
+    N = length(s)
+    A = typeof(f)
+    B = typeof(g)
+    new{T,N,A,B}(f,g)
   end
-  r
 end
 
-# Linear combination
+# Do we need CompositionFieldFieldArray?
+# function CompositionFieldArray(Field,AbstractArray{<:Field})
 
-# @santiagobadia : Pobably not really needed...
-# linear_combination(f,v) = GenericField.(v)⋅f
-linear_combination(f,v) = LinearCombination(f,v)
+(b::BroadcastMapping{typeof(∘)})(f::AbstractArray{<:Field},g::Field) = CompositionFieldArrayField(f,g)
 
-struct LinearCombination <: Field
-  base
-  vals
+
+function return_cache(fa::CompositionFieldArrayField,x::Point)
+  cg = return_cache(fa.g,x)
+  rg = evaluate!(cg,fa.g,x)
+  cf = return_cache(fa.f,x)
+  cf, cg
 end
 
-function return_cache(lc::LinearCombination,x::AbstractArray{<:Point})
-  f = lc.base
-  v = lc.vals
-  cf = return_cache(f,x)
-  rf = evaluate(f,first(x))
-  cr = CachedArray(zeros(typeof(rf⋅v),length(x)))
-  cr, cf
+function return_cache(fa::CompositionFieldArrayField,x::AbstractArray{<:Point})
+  cg = return_cache(fa.g,x)
+  rg = evaluate!(cg,fa.g,x)
+  cf = return_cache(fa.f,x)
+  cf, cg
 end
 
-function evaluate!(c,lc::LinearCombination,x::AbstractArray{<:Point})
-  cr, cf = c
-  f = lc.base
-  v = lc.vals
-  rf = evaluate!(cf,f,x)
-  setsize!(cr,(length(x),))
-  for i in eachindex(x)
-    cr.array[i] = rf[i,:]⋅v
-  end
-  cr.array
+function evaluate!(c,fa::CompositionFieldArrayField,x::Point)
+  cf, cg = c
+  rg = evaluate!(cg,fa.g,x)
+  rf = evaluate!(cf,fa.f,x)
 end
 
-# AbstractArray API for OperationArray
-
-Base.size(oa::OperationArray) = Base.size(oa.res)
-Base.axes(oa::OperationArray) = Base.axes(oa.res)
-Base.IndexStyle(oa::OperationArray) where A = Base.IndexStyle(oa.res)
-Base.eltype(oa::OperationArray) = Base.eltype(oa.res)
-Base.iterate(oa::OperationArray) = Base.iterate(oa.res)
-Base.getindex(oa::OperationArray,i) = Base.getindex(oa.res,i)
-
-
-evaluate!(cache,op::Operation,x::AbstractArray{<:Field}...) = OperationArray(op,x...)
-evaluate!(cache,op::Operation,x::Union{Field,AbstractArray{<:Field}}...) = OperationArray(op,x...)
-
-# Testers
-
-function test_field_array(f,p,nf;grad=false,hessian=false)
-  fa = fill(f,nf...)
-  fp = evaluate(f,p)
-  fap = fill(fp,nf...)
-  test_field(fa,p,fap)
-  if hessian
-    test_field_array(∇(f),p,nf;grad=true)
-  elseif grad
-    test_field_array(∇(f),p,nf)
-  end
-  fa, p
-end
-
-function test_broadcast_field_array(f,p,nf,np;grad=false,hessian=false)
-  test_field_array(f,p,nf,grad=grad,hessian=hessian)
-  fa = fill(f,nf...)
-  fp = evaluate(f,p)
-  x = fill(p,np...)
-  fax = fill(fp,np...,nf...)
-  test_field(fa,x,fax)
-  if hessian
-    test_broadcast_field_array(∇(f),p,nf,np;grad=true)
-  elseif grad
-    test_broadcast_field_array(∇(f),p,nf,np)
-  end
-  fa, x
-end
-
-function test_operation_field_array(op,x,fs...)
-  fop = Operation(op)
-  fb = op(fs...)
-  fba = fop(fs...)
-  if fb isa AbstractArray
-    @test eltype(fb) <: Field
-    @test fb isa AbstractArray{<:Field}
-    @test fba isa OperationArray
-    @test fba.res == fb
-  else
-    @test fb isa Field
-  end
-  @test evaluate(fb,x) == evaluate(fba,x)
-  fba
+function evaluate!(c,fa::CompositionFieldArrayField,x::AbstractArray{<:Point})
+  cf, cg = c
+  rg = evaluate!(cg,fa.g,x)
+  rf = evaluate!(cf,fa.f,x)
 end

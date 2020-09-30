@@ -84,8 +84,10 @@ export ZeroField
 export MockField
 export Point
 
-export OperationFieldArray
-export OperationArray
+export TransposeFieldVector
+export BroadcastOpFieldArray
+export CompositionFieldArrayField
+export DotOpFieldVectors
 
 export evaluate_gradient!
 export return_gradient_type

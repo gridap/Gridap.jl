@@ -302,7 +302,8 @@ struct OperationField{O,F} <: Field
 end
 
 function return_type(c::OperationField,x::Point)
-  return_type(c.op,map(typeof,evaluate(c.fields,x))...)
+  return_type(c.op,evaluate(c.fields,x)...)
+  # return_type(c.op,map(typeof,evaluate(c.fields,x))...)
 end
 
 function return_cache(c::OperationField,x::Point)
