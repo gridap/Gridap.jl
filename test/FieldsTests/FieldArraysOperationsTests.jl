@@ -25,6 +25,20 @@ nff = nf #(nf,nf)
 
 fa = fill(f,nf)
 
+# Gradients
+
+∇fa = BroadcastMapping(∇)(fa)
+c = return_cache(∇fa,x)
+# @santiagobadia : Not sure we can make it allocation-free
+@btime evaluate!($c,$∇fa,$x)
+
+_∇fa = gradient.(fa)
+c = return_cache(∇fa,x)
+# @santiagobadia : Whereas this one is allocation-free...
+@btime evaluate!($c,$_∇fa,$x)
+
+@test evaluate!(c,∇fa,x) == evaluate!(c,_∇fa,x)
+
 # Transpose
 
 c = return_cache(fa,p)

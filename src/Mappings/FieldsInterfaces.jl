@@ -264,25 +264,25 @@ end
 
 # Differentiation
 
-struct Gradient{F} <: Field
+struct FieldGradient{F} <: Field
   object::F
 end
 
-gradient(f::Field) = Gradient(f)
+gradient(f::Field) = FieldGradient(f)
 
-gradient(f::GenericField{Gradient}) = Hessian(f.object.object)
+gradient(f::GenericField{FieldGradient}) = Hessian(f.object.object)
 
-@inline evaluate!(cache,f::Gradient,x::Point) = evaluate_gradient!(cache,f.object,x)
-@inline evaluate!(cache,f::Gradient,x::AbstractArray{<:Point}) = evaluate_gradient!(cache,f.object,x)
+@inline evaluate!(cache,f::FieldGradient,x::Point) = evaluate_gradient!(cache,f.object,x)
+@inline evaluate!(cache,f::FieldGradient,x::AbstractArray{<:Point}) = evaluate_gradient!(cache,f.object,x)
 
-@inline return_cache(f::Gradient,x::Point) = return_gradient_cache(f.object,x)
-@inline return_cache(f::Gradient,x::AbstractArray{<:Point}) = return_gradient_cache(f.object,x)
+@inline return_cache(f::FieldGradient,x::Point) = return_gradient_cache(f.object,x)
+@inline return_cache(f::FieldGradient,x::AbstractArray{<:Point}) = return_gradient_cache(f.object,x)
 
 struct Hessian{F} <: Field
   object::F
 end
 
-gradient(f::Gradient) = Hessian(f.object)
+gradient(f::FieldGradient) = Hessian(f.object)
 
 @inline evaluate!(cache,f::Hessian,x::Point) = evaluate_hessian!(cache,f.object,x)
 @inline evaluate!(cache,f::Hessian,x::AbstractArray{<:Point}) = evaluate_hessian!(cache,f.object,x)

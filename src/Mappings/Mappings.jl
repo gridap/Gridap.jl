@@ -75,7 +75,7 @@ using LinearAlgebra: mul!, Transpose
 
 export Field
 export GenericField
-export Gradient
+export FieldGradient
 export Hessian
 export ConstantField
 export FunctionField

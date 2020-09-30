@@ -262,3 +262,77 @@ function evaluate!(c,fa::CompositionFieldArrayField,x::AbstractArray{<:Point})
   rg = evaluate!(cg,fa.g,x)
   rf = evaluate!(cf,fa.f,x)
 end
+
+# Gradients
+
+# User API:
+#
+# BroadcastMapping(∇)(i_to_f)
+#
+
+function evaluate!(cache,k::BroadcastMapping{typeof(gradient)},f::AbstractArray{<:Field})
+  FieldGradientArray(f)
+end
+
+struct FieldGradientArray{A,T,N} <: AbstractArray{T,N}
+  fa::A
+  function FieldGradientArray(f::AbstractArray{<:Field})
+    s = size(f)
+    T = typeof(FieldGradient(eltype(f)))
+    N = length(s)
+    A = typeof(f)
+    new{A,T,N}(f)
+  end
+end
+
+Base.size(a::FieldGradientArray) = size(a.fa)
+Base.axes(a::FieldGradientArray) = axes(a.fa)
+Base.getindex(a::FieldGradientArray,i::Integer...) = FieldGradient(a.fa[i...])
+Base.ndims(a::FieldGradientArray{A}) where A = ndims(A)
+Base.eltype(a::FieldGradientArray{A}) where A = FieldGradient{eltype(A)}
+Base.IndexStyle(::Type{<:FieldGradientArray{A}}) where A = IndexStyle(A)
+
+function evaluate!(cache,k::BroadcastMapping{typeof(gradient)},a::TransposeFieldVector)
+  transpose(BroadcastMapping(∇)(a.basis))
+end
+
+@inline return_cache(f::FieldGradientArray,x::Point) = return_gradient_cache(f.fa,x)
+@inline return_cache(f::FieldGradientArray,x::AbstractArray{<:Point}) = return_gradient_cache(f.fa,x)
+
+@inline evaluate!(cache,f::FieldGradientArray,x::Point) = evaluate_gradient!(cache,f.fa,x)
+@inline evaluate!(cache,f::FieldGradientArray,x::AbstractArray{<:Point}) = evaluate_gradient!(cache,f.fa,x)
+
+return_gradient_cache(fa::AbstractArray{<:Field},x::Point) = return_cache(∇.(fa),x)
+return_hessian_cache(fa::AbstractArray{<:Field},x::Point) = return_cache(∇.(∇.(fa)),x)
+
+@inline evaluate_gradient!(cache,f::AbstractArray{<:Field},x::Point) = evaluate(cache,∇.(f),x)
+@inline evaluate_hessian!(cache,f::AbstractArray{<:Field},x::Point) = evaluate(cache,∇.(∇.(f)),x)
+
+return_gradient_cache(fa::AbstractArray{<:Field},x::AbstractArray{<:Point}) = return_cache(∇.(fa),x)
+return_hessian_cache(fa::AbstractArray{<:Field},x::AbstractArray{<:Point}) = return_cache(∇.(∇.(fa)),x)
+
+@inline evaluate_gradient!(cache,f::AbstractArray{<:Field},x::AbstractArray{<:Point}) = evaluate(cache,∇.(f),x)
+@inline evaluate_hessian!(cache,f::AbstractArray{<:Field},x::AbstractArray{<:Point}) = evaluate(cache,∇.(∇.(f)),x)
+
+# Hessian
+
+struct FieldHessianArray{A,T,N} <: AbstractArray{T,N}
+  fa::A
+  function FieldHessianArray(f::AbstractArray{<:Field})
+    s = size(f)
+    T = typeof(FieldHessian(eltype(f)))
+    N = length(s)
+    A = typeof(f)
+    new{A,T,N}(f)
+  end
+end
+
+Base.size(a::FieldHessianArray) = size(a.fa)
+Base.axes(a::FieldHessianArray) = axes(a.fa)
+Base.getindex(a::FieldHessianArray,i::Integer...) = FieldHessian(a.fa[i...])
+Base.ndims(a::FieldhessianArray{A}) where A = ndims(A)
+Base.eltype(a::FieldHessianArray{A}) where A = FieldHessian{eltype(A)}
+Base.IndexStyle(::Type{<:FieldHessianArray{A}}) where A = IndexStyle(A)
+
+# @santiagobadia : Gradients of the previous operations ? needed?
+# reimplement again chain rules etc for arrays... !
