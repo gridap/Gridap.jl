@@ -1,31 +1,59 @@
 # # Default implementation of evaluate! for arrays of fields
 
-function return_cache(f::AbstractArray{<:Field},x::Point)
-  T = return_type(first(f),first(x))
-  c = CachedArray(zeros(T,size(f)))
-end
-
-function evaluate!(c,f::AbstractArray{<:Field},x::Point)
-  setsize!(c,size(f))
-  for j in eachindex(f)
-    @inbounds c.array[j] = evaluate(f[j],x)
+function return_cache(f::AbstractArray{T},x::Point) where T<:Field
+  S = return_type(first(f),first(x))
+  cr = CachedArray(zeros(S,size(f)))
+  if isconcretetype(T)
+    cf = return_cache(first(f),first(x))
+  else
+    cf = nothing
   end
-  c.array
+  cr, cf
 end
 
-function return_cache(f::AbstractArray{<:Field},x::AbstractArray{<:Point})
-  T = return_type(first(f),first(x))
-  c = CachedArray(zeros(T,(size(x)...,size(f)...)))
+function evaluate!(c::CachedArray,f::AbstractArray{T},x::Point) where T<:Field
+  cr, cf = c
+  setsize!(cr,size(f))
+  if isconcretetype(T)
+    for j in eachindex(f)
+      @inbounds cr.array[j] = evaluate!(cf,f[j],x)
+    end
+  else
+    for j in eachindex(f)
+      @inbounds cr.array[j] = evaluate(f[j],x)
+    end
+  end
+  cr.array
+end
+
+function return_cache(f::AbstractArray{T},x::AbstractArray{<:Point}) where T<:Field
+  S = return_type(first(f),first(x))
+  cr = CachedArray(zeros(S,(size(x)...,size(f)...)))
+  if isconcretetype(T)
+    cf = return_cache(first(f),first(x))
+  else
+    cf = nothing
+  end
+  cr, cf
 end
 
 function evaluate!(c,f::AbstractArray{<:Field},x::AbstractArray{<:Point})
-  setsize!(c,(size(x)...,size(f)...))
-  for j in eachindex(f)
-    for i in eachindex(x)
-      @inbounds c.array[i,j] = evaluate(f[j],x[i])
+  cr, cf = c
+  setsize!(cr,(size(x)...,size(f)...))
+  if isconcretetype(T)
+    for j in eachindex(f)
+      for i in eachindex(x)
+        @inbounds cr.array[i,j] = evaluate(cf,f[j],x[i])
+      end
+    end
+  else
+    for j in eachindex(f)
+      for i in eachindex(x)
+        @inbounds cr.array[i,j] = evaluate(f[j],x[i])
+      end
     end
   end
-  c.array
+  cr.array
 end
 
 # Broadcasting operations
@@ -40,7 +68,8 @@ end
 
 # @santiagobadia : Here if we put AbstractArray it goes to the + in Julia for Array...
 # for op in (:+,:-,:*,:⋅)
-  # @eval $op(a::Array{<:Field},b::Array{<:Field}) = BroadcastMapping(Operation($op))(a,b)
+# @eval $op(a::Array{<:Field},b::Array{<:Field}) = BroadcastMapping(Operation($op))(a,b)
+# @eval $op(a::AbstractArray{<:Field},b::AbstractArray{<:Field}) = BroadcastMapping(Operation($op))(a,b)
 # end
 
 # Transpose
@@ -67,7 +96,8 @@ Base.IndexStyle(::TransposeFieldVector{A}) where A = IndexStyle(A)
 return_cache(a::TransposeFieldVector,x::Point) = return_cache(a.basis,x)
 return_cache(a::TransposeFieldVector,x::AbstractArray{<:Point}) = return_cache(a.basis,x)
 
-# @santiagobadia : How to fix this?
+# @santiagobadia : Ned to dispatch for Point and AbstractArray{<:Point}
+# Any solution
 function evaluate!(cache,a::TransposeFieldVector,x::Point)
   M = evaluate!(cache,a.basis,x)
   transpose_field_indices(M)
@@ -214,6 +244,7 @@ end
 
 # linear combination
 
+# Function to be used for dispatch in MappedArray
 linear_combination(a,b) = a⋅b
 
 # Composition
@@ -230,9 +261,6 @@ struct CompositionFieldArrayField{T,N,A,B} <:AbstractArray{T,N}
     new{T,N,A,B}(f,g)
   end
 end
-
-# Do we need CompositionFieldFieldArray?
-# function CompositionFieldArray(Field,AbstractArray{<:Field})
 
 (b::BroadcastMapping{typeof(∘)})(f::AbstractArray{<:Field},g::Field) = CompositionFieldArrayField(f,g)
 
@@ -336,3 +364,7 @@ Base.IndexStyle(::Type{<:FieldHessianArray{A}}) where A = IndexStyle(A)
 
 # @santiagobadia : Gradients of the previous operations ? needed?
 # reimplement again chain rules etc for arrays... !
+
+# Meeting 22 Sep
+# integrate(f::Field,x::AbstractVector{<:Point},w::AbstractVector{<:Real}) = sum( f(x) .* w  )
+# integrate(f::AbstractArray{<:Field},x::AbstractVector{<:Point},w::AbstractVector{<:Real}) =

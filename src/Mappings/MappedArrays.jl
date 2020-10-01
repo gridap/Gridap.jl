@@ -43,9 +43,7 @@ function MappedArray(g::AbstractArray, f::AbstractArray...)
   MappedArray(T, g, f...)
 end
 
-IndexStyle(a::MappedArray) = IndexStyle(a.g)
-
-# @fverdugo : TODO a lot of splating i... which is bad for CartesianIndices
+IndexStyle(::Type{<:MappedArray}) = IndexCartesian()
 
 function array_cache(a::MappedArray,i...)
   @notimplementedif ! all(map(isconcretetype, map(eltype, a.f)))
@@ -78,7 +76,7 @@ end
   gi = getindex!(cg, a.g, i...)
   fi = getitems!(cf, a.f, i...)
   vi = evaluate!(cgi, gi, fi...)
-  vi
+  # vi
 end
 
 function Base.getindex(a::MappedArray, i...)
@@ -114,20 +112,12 @@ function _getvalues(a::Fill)
   (ai,)
 end
 
+# @santiagobadia CompressedArray and Union{CompressedArray,Fill}
+
 # Operator
 
 function apply(op::Operation,x::AbstractArray...)
   apply(Fill(op,length(first(x))),x...)
-end
-
-function apply(
-  ::typeof(evaluate),
-  a::MappedArray{<:Fill{<:Operation}},
-  x::AbstractArray)
-
-  fx = map( fi->apply(evaluate,fi,x), a.f)
-  op = a.g.value.op
-  apply( op, fx...)
 end
 
 function test_mapped_array(

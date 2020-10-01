@@ -76,7 +76,7 @@ using LinearAlgebra: mul!, Transpose
 export Field
 export GenericField
 export FieldGradient
-export Hessian
+export FieldHessian
 export ConstantField
 export FunctionField
 export BroadcastField
@@ -121,8 +121,6 @@ export linear_combination
 
 # # export gradients
 
-
-
 # export field_composition
 # export field_array_composition
 
@@ -136,15 +134,15 @@ include("FieldsInterfaces.jl")
 
 include("FieldArrays.jl")
 
+include("ApplyOptimizations.jl")
+
 include("MockFields.jl")
 
 include("AutoDiff.jl")
 
 # include("FunctionMappings.jl")
 
-
 # include("AlgebraMappings.jl")
-
 
 # include("MappingArrays.jl")
 

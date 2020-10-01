@@ -91,7 +91,7 @@ bpfa = b(fa,fa)
 c = return_cache(bpfa,x)
 @btime evaluate!($c,$bpfa,$x);
 
-# row vector * column vector -> field
+# transpoe
 
 tfa = transpose(fa)
 fa
@@ -128,7 +128,6 @@ c = return_cache(bpfa,x)
 dopa = tfa*fa
 c = return_cache(dopa,x)
 evaluate!(c,dopa,x)
-@enter dopa == tfa*fa
 @test evaluate(dopa,x)[1] == evaluate(tfa,p)⋅evaluate(fa,p)
 @btime evaluate!(c,dopa,x)
 

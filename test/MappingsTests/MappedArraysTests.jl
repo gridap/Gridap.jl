@@ -146,10 +146,6 @@ bbx = apply(evaluate,bb,ax)
 aopx = apply(evaluate,aop,ax)
 @test aopx == aax+bbx
 
-aop = apply(Operation(BroadcastMapping(+)),aa,bb)
-aopx = apply(evaluate,aop,ax)
-@test aopx == aax+bbx
-
 aop = apply(Operation(BroadcastMapping(*)),aa,bb)
 aopx = apply(evaluate,aop,ax)
 @test aopx[1] == aax[1].*bbx[1]

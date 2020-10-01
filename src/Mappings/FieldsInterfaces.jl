@@ -1,7 +1,3 @@
-# Meeting 22 Sep
-# integrate(f::Field,x::AbstractVector{<:Point},w::AbstractVector{<:Real}) = sum( f(x) .* w  )
-# integrate(f::AbstractArray{<:Field},x::AbstractVector{<:Point},w::AbstractVector{<:Real}) =
-
 const Point{D,T} = VectorValue{D,T}
 
 abstract type Field <: Mapping end
@@ -10,9 +6,38 @@ const FieldArray{T,N} = AbstractArray{T,N} where {T<:Field,N}
 
 const FieldOrFieldArray = Union{Field,FieldArray}
 
-function evaluate!(cache,f::Field,x)
-  @abstractmethod
+# evauate!(cache,f::Field,x) = _default_field_evauate!(cache,f,x)
+
+#  _default_field_evauate!(cache,x::Point)
+#  _default_field_evauate!(cache,f::Field,x::AbstractArray{<:Point})
+
+function return_cache(f::Field,x::AbstractArray{<:Point})
+  T = return_type(f,first(x))
+  s = size(x)
+  ab = zeros(T,s)
+  cb = CachedArray(ab)
+  cf = return_cache(f,first(x))
+  cb, cf
 end
+
+function evaluate!(c,f::Field,x::AbstractArray{<:Point})
+  cb, cf = c
+  sx = size(x)
+  setsize!(cb,sx)
+  for i in eachindex(x)
+    @inbounds cb[i] = evaluate!(cf,f,x[i])
+  end
+  cb.array
+end
+
+# function evaluate!(c,f::Field,x)
+#   default_field_evaluate(c,f,x)
+# end
+# @santiagobadia: Implement default functions for point or array of points
+# default_field_evaluate!(cache,f::Field,x::Point) -> Assume that f is implemented for vector of points
+# 17:55
+# default_field_evaluate!(cache,f::Field,x::AbstractVector<:Point}) -> Assume that f is implemented for a single point
+
 
 # Differentiation
 
@@ -43,10 +68,6 @@ end
 function return_hessian_type(::Type{T},x::Point) where T
   typeof(outer(zero(x),zero(return_gradient_type(T,x))))
 end
-
-# function return_type(f::Field,x::Point)
-#   typeof(evaluate(f,x))
-# end
 
 # GenericField
 
@@ -119,24 +140,6 @@ end
 
 gradient(z::ZeroField) = ZeroField(gradient(z.field))
 
-# function gradient(f::BroadcastField{GenericField{<:OperationMapping{<:Field}}})#,Tuple{<:Field}}})
-#   a = f.object.k
-#   @assert length(f.object.l) == 1
-#   b, = f.object.l
-#   _x = ∇(a)∘b
-#   _y = ∇(b)
-#   # @santiagobadia : How can we express this product ????
-# end
-
-# function gradient(a::GenericField{<:OperationMapping{typeof(*)}})
-# function gradient(f::BroadcastField{GenericField})#{OperationMapping{BroadcastFunction{typeof(*)}}})
-#   f = a.object.l
-#   if length(f) != 2 @notimplemented end
-#   f1, f2 = f
-#   g1, g2 = map( gradient, f)
-#   g1.⋅f2+f1.⋅g2
-# end
-
 # Make Number behave like Field
 
 const ConstantField{T} = GenericField{T} where T<:Number
@@ -207,7 +210,7 @@ end
 
 # Make Function behave like Field
 
-function_field(f::Function) =  GenericField(f)
+# function_field(f::Function) =  GenericField(f)
 
 const FunctionField{F} = GenericField{F} where F<:Function
 
@@ -226,14 +229,6 @@ function evaluate!(c,f::FunctionField,x::AbstractArray{<:Point})
   end
   c.array
 end
-
-# function evaluate!(cache,a::Function,x::AbstractArray{<:Point})
-#   evaluate!(cache,FunctionField(a),x)
-# end
-
-# function return_cache(f::Function,x::AbstractArray{<:Point})
-#   return_cache(FunctionField(f),x)
-# end
 
 function return_gradient_cache(f::FunctionField,x::Point)
   gradient(f.object)
@@ -261,16 +256,16 @@ function evaluate_gradient!(cache,f::FunctionField,x::AbstractArray{<:Point})
   c.array
 end
 
-
 # Differentiation
 
+# @santiagobadia : Rename to Gradient
 struct FieldGradient{F} <: Field
   object::F
 end
 
 gradient(f::Field) = FieldGradient(f)
 
-gradient(f::GenericField{FieldGradient}) = Hessian(f.object.object)
+gradient(f::GenericField{FieldGradient}) = FieldHessian(f.object.object)
 
 @inline evaluate!(cache,f::FieldGradient,x::Point) = evaluate_gradient!(cache,f.object,x)
 @inline evaluate!(cache,f::FieldGradient,x::AbstractArray{<:Point}) = evaluate_gradient!(cache,f.object,x)
@@ -278,19 +273,19 @@ gradient(f::GenericField{FieldGradient}) = Hessian(f.object.object)
 @inline return_cache(f::FieldGradient,x::Point) = return_gradient_cache(f.object,x)
 @inline return_cache(f::FieldGradient,x::AbstractArray{<:Point}) = return_gradient_cache(f.object,x)
 
-struct Hessian{F} <: Field
+struct FieldHessian{F} <: Field
   object::F
 end
 
-gradient(f::FieldGradient) = Hessian(f.object)
+gradient(f::FieldGradient) = FieldHessian(f.object)
 
-@inline evaluate!(cache,f::Hessian,x::Point) = evaluate_hessian!(cache,f.object,x)
-@inline evaluate!(cache,f::Hessian,x::AbstractArray{<:Point}) = evaluate_hessian!(cache,f.object,x)
+@inline evaluate!(cache,f::FieldHessian,x::Point) = evaluate_hessian!(cache,f.object,x)
+@inline evaluate!(cache,f::FieldHessian,x::AbstractArray{<:Point}) = evaluate_hessian!(cache,f.object,x)
 
-@inline return_cache(f::Hessian,x::Point) = return_hessian_cache(f.object,x)
-@inline return_cache(f::Hessian,x::AbstractArray{<:Point}) = return_hessian_cache(f.object,x)
+@inline return_cache(f::FieldHessian,x::Point) = return_hessian_cache(f.object,x)
+@inline return_cache(f::FieldHessian,x::AbstractArray{<:Point}) = return_hessian_cache(f.object,x)
 
-@inline function gradient(f::Hessian)
+@inline function gradient(f::FieldHessian)
   @unreachable "Default implementation of 3rt order derivatives not available"
 end
 
@@ -326,10 +321,8 @@ end
   setsize!(ck,sx)
   lx = evaluate!(cf,c.fields,x)
   for i in eachindex(x)
-    @inbounds ck.array[i] = c.op(map(lxi -> lxi[i], lx)...) #evaluate!(cfi,f[i],x)
+    @inbounds ck.array[i] = c.op(map(lxi -> lxi[i], lx)...)
   end
-  # Misssing result cache
-  # c.op.(lx...)
   ck.array
 end
 
@@ -393,65 +386,16 @@ end
 
 Base.:∘(f::Field,g::Field) = Operation(f)(g)
 
-# Broadcast fields
-
-# struct BroadcastField{T<:Field} <: Field
-#   field::T
-# end
-
-# BroadcastField(f::BroadcastField) = f
-
-function return_cache(f::Field,x::AbstractArray{<:Point})
-  T = return_type(f,first(x))
-  s = size(x)
-  ab = zeros(T,s)
-  cb = CachedArray(ab)
-  cf = return_cache(f,first(x))
-  cb, cf
-end
-
-# return_type(f::BroadcastField,x::Point) = return_type(f.field,x)
-
-# function return_cache(f::BroadcastField,x::Point)
-#   return_cache(f.field,x)
-# end
-
-function evaluate!(c,f::Field,x::AbstractArray{<:Point})
-  cb, cf = c
-  sx = size(x)
-  setsize!(cb,sx)
-  for i in eachindex(x)
-    @inbounds cb[i] = evaluate!(cf,f,x[i])
-  end
-  cb.array
-end
-
-# evaluate!(c,f::BroadcastField,x::Point) = evaluate!(c,f.field,x)
-
-# gradient(b::BroadcastField) = BroadcastField(gradient(b.field))
-
-# for op in (:+,:-,:*,:⋅,:inv,:det)
-#   # @eval ($op)(a::BroadcastField...) = BroadcastField(Operation($op)(map( f -> f.field,a)...))
-#   @eval ($op)(a::BroadcastField...) = BroadcastField(Operation(BroadcastFunction($op))(map( f -> f.field,a)...))
-# end
-
-# struct BroadcastFunction{T}
-#   op::T
-# end
-
-# (f::BroadcastFunction)(x) = f.op.(x)
-
-# evaluate!(cache,f::BroadcastFunction,x...) = f.op.(x...)
-
 # Other operations
 
 transpose(f::Field) = f
 Base.copy(f::Field) = f
-(*)(f::Field,g::Field) = f⋅g
+*(f::Field,g::Field) = Operation(*)(f,g)#⋅g
+# *(f::Field,g::Field) = f⋅g
 
 # @santiagobadia : Just to make things work for the moment
-(*)(f::VectorValue,g::VectorValue) = f⋅g
-(*)(f::TensorValue,g::TensorValue) = f⊙g
+# (*)(f::VectorValue,g::VectorValue) = f⋅g
+# (*)(f::TensorValue,g::TensorValue) = f⊙g
 
 # Testers
 

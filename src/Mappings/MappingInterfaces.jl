@@ -1,11 +1,9 @@
 abstract type Mapping <: GridapType end
 
 return_cache(f,x...) = nothing
-# return_cache(f,x...) = zero(return_type(f(x...)))
 
 evaluate!(cache,f,x...) = @abstractmethod
 
-# @fverdugo : TODO unify inference mechanism for Function and Mapping
 return_type(f,x...) = typeof(testitem(f,x...))
 
 function evaluate(f,x...)
@@ -91,7 +89,6 @@ end
   (f1x,)
 end
 
-# @fverdugo : TODO this function is quite usefull. Better name and export it
 @inline function _split(a,b...)
   (a,b)
 end
@@ -124,7 +121,6 @@ end
 
 # Extended Array interface
 
-# @fverdugo: TODO better handling of Cartesian indices
 function return_cache(a::AbstractArray)
   i = testitem(eachindex(a))
   return_cache(a,Tuple(i)...)

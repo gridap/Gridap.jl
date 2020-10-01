@@ -36,8 +36,6 @@ bfa, x = test_broadcast_field_array(f,p,nff,npp,grad=true)
 c = return_cache(bfa,x)
 @btime evaluate!($c,$bfa,$x);
 
-
-
 # c = return_cache(bfa,x)
 # @btime evaluate!(c,bfa,x);
 # c = return_cache(f,p)
