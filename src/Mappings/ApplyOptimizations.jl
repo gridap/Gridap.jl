@@ -183,6 +183,15 @@ function apply(
   apply(Operation(+),r1,r2)
 end
 
+function apply(
+  ::typeof(evaluate), a::MappedArray{<:Fill{typeof(integrate)}}, x::AbstractArray)
+  f, w, j = a.f
+  fx = apply(evaluate,f,x)
+  jx = apply(evaluate,j,x)
+  k = Integrate()
+  apply(k,fx,w,jx)
+end
+
 # Other optimizations
 
 function apply(
