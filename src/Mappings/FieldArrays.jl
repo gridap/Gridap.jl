@@ -11,7 +11,7 @@ function return_cache(f::AbstractArray{T},x::Point) where T<:Field
   cr, cf
 end
 
-function evaluate!(c::CachedArray,f::AbstractArray{T},x::Point) where T<:Field
+function evaluate!(c,f::AbstractArray{T},x::Point) where T<:Field
   cr, cf = c
   setsize!(cr,size(f))
   if isconcretetype(T)
@@ -37,13 +37,13 @@ function return_cache(f::AbstractArray{T},x::AbstractArray{<:Point}) where T<:Fi
   cr, cf
 end
 
-function evaluate!(c,f::AbstractArray{<:Field},x::AbstractArray{<:Point})
+function evaluate!(c,f::AbstractArray{T},x::AbstractArray{<:Point}) where T<:Field
   cr, cf = c
   setsize!(cr,(size(x)...,size(f)...))
   if isconcretetype(T)
     for j in eachindex(f)
       for i in eachindex(x)
-        @inbounds cr.array[i,j] = evaluate(cf,f[j],x[i])
+        @inbounds cr.array[i,j] = evaluate!(cf,f[j],x[i])
       end
     end
   else
@@ -245,7 +245,82 @@ end
 # linear combination
 
 # Function to be used for dispatch in MappedArray
-linear_combination(a,b) = a⋅b
+# linear_combination(a,b) = transpose(a)*b # a⋅b
+linear_combination(a::AbstractVector{<:Field},b::AbstractArray{<:Number}) = transpose(a)*b # a⋅b
+linear_combination(a::AbstractArray{<:Number},b::AbstractVector{<:Field}) = transpose(b)*a # a⋅b
+
+# mat product
+#
+# The only user API needed
+# transpose(i_to_f)*i_to_vals
+# transpose(i_to_f)*ij_to_vals
+#
+function Base.:*(a::TransposeFieldVector,b::AbstractVector{<:Number})
+  LinearCombinationField(a.basis,b)
+end
+
+function Base.:*(a::TransposeFieldVector,b::AbstractMatrix{<:Number})
+  LinearCombinationField(a.basis,b)
+end
+
+# These ones are not needed
+Base.:*(a::AbstractMatrix{<:Field},b::AbstractVector{<:Number}) = @notimplemented
+Base.:*(a::AbstractMatrix{<:Field},b::AbstractMatrix{<:Number}) = @notimplemented
+
+struct LinearCombinationField{B,V} <: Field
+  basis::B
+  values::V
+end
+
+function return_cache(a::LinearCombinationField,x::Point)
+  cb = return_cache(a.basis,x)
+  bx = evaluate!(cb, a.basis, x)
+  v = a.values
+  cr = _cache_lincomb(v,bx)
+  # cr = linear_combination_on_values!(cr,bx,v)
+  # cr = return_cache(MatMul(), transpose(v), bx)
+  cb, cr
+end
+
+_cache_lincomb(v::AbstractVector{<:Number},bp) = v⋅bp
+_cache_lincomb(v::AbstractMatrix{<:Number},bp) = return_cache(MatMul(),transpose(v),bp)
+
+
+function evaluate!(cache,a::LinearCombinationField,x::Point)
+  cb, cr = cache
+  M = evaluate!(cb,a.basis,x)
+  evaluate!(cr,LinCombVal(),M,a.values)
+  # cr = M ⋅ v
+  # linear_combination_on_values!(cr,M,a.values)
+end
+
+function return_cache(a::LinearCombinationField,x::AbstractArray{<:Point})
+  cb = return_cache(a.basis,x)
+  bx = evaluate!(cb, a.basis, x)
+  v = a.values
+  # cr = return_cache(MatMul(), bx, v)
+  cr = return_cache(LinCombVal(),bx,v)
+  cb, cr
+end
+
+function evaluate!(cache,a::LinearCombinationField,x::AbstractArray{<:Point})
+  cb, cr = cache
+  M = evaluate!(cb,a.basis,x)
+  evaluate!(cr,LinCombVal(),M,a.values)
+  # linear_combination_on_values!(cr,M,a.values)
+end
+
+# # TODO better names
+# linear_combination_on_values!(c,b_pi::AbstractMatrix,v_i::AbstractVector) = evaluate!(c,MatMul(),b_pi,v_i)
+# linear_combination_on_values!(c,b_pi::AbstractMatrix,v_ij::AbstractMatrix) = evaluate!(c,MatMul(),b_pi,v_ij)
+# linear_combination_on_values!(c,b_i::AbstractVector,v_i::AbstractVector) = b_i ⋅ v_i
+# linear_combination_on_values!(c,b_i::AbstractVector,v_ij::AbstractMatrix) = evaluate!(c,MatMul(),transpose(v_ij),b_i)
+
+# linear_combination_on_values!(c,b_pi::AbstractMatrix,v_i::AbstractVector) = evaluate!(c,MatMul(),b_pi,v_i)
+# linear_combination_on_values!(c,b_i::AbstractVector,v_i::AbstractVector) = b_i⋅v_i
+# linear_combination_on_values!(c,b_pi::AbstractMatrix,v_ij::AbstractMatrix) = evaluate!(c,MatMul(),b_pi,v_ij)
+# # @santiagobadia : Not sure we want the tranpose here
+# linear_combination_on_values!(c,b_i::AbstractVector,v_ij::AbstractMatrix) = evaluate!(c,MatMul(),transpose(v_ij),b_i)
 
 # Composition
 
@@ -333,14 +408,14 @@ end
 return_gradient_cache(fa::AbstractArray{<:Field},x::Point) = return_cache(∇.(fa),x)
 return_hessian_cache(fa::AbstractArray{<:Field},x::Point) = return_cache(∇.(∇.(fa)),x)
 
-@inline evaluate_gradient!(cache,f::AbstractArray{<:Field},x::Point) = evaluate(cache,∇.(f),x)
-@inline evaluate_hessian!(cache,f::AbstractArray{<:Field},x::Point) = evaluate(cache,∇.(∇.(f)),x)
+@inline evaluate_gradient!(cache,f::AbstractArray{<:Field},x::Point) = evaluate!(cache,∇.(fa),x)
+@inline evaluate_hessian!(cache,f::AbstractArray{<:Field},x::Point) = evaluate!(cache,∇.(∇.(fa)),x)
 
-return_gradient_cache(fa::AbstractArray{<:Field},x::AbstractArray{<:Point}) = return_cache(∇.(fa),x)
-return_hessian_cache(fa::AbstractArray{<:Field},x::AbstractArray{<:Point}) = return_cache(∇.(∇.(fa)),x)
+return_gradient_cache(f::AbstractArray{<:Field},x::AbstractArray{<:Point}) = return_cache(∇.(f),x)
+@inline evaluate_gradient!(cache,f::AbstractArray{<:Field},x::AbstractArray{<:Point}) = evaluate!(cache,∇.(f),x)
 
-@inline evaluate_gradient!(cache,f::AbstractArray{<:Field},x::AbstractArray{<:Point}) = evaluate(cache,∇.(f),x)
-@inline evaluate_hessian!(cache,f::AbstractArray{<:Field},x::AbstractArray{<:Point}) = evaluate(cache,∇.(∇.(f)),x)
+return_hessian_cache(f::AbstractArray{<:Field},x::AbstractArray{<:Point}) = return_cache(∇.(∇.(f)),x)
+@inline evaluate_hessian!(cache,f::AbstractArray{<:Field},x::AbstractArray{<:Point}) = evaluate!(cache,∇.(∇.(f)),x)
 
 # Hessian
 

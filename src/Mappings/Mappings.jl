@@ -107,6 +107,9 @@ export test_broadcast_field_array
 export mock_field
 
 export linear_combination
+
+export MatMul
+
 # export MockBasis
 # export LinearCombinationField
 # export OtherMockField
@@ -139,6 +142,8 @@ include("ApplyOptimizations.jl")
 include("MockFields.jl")
 
 include("AutoDiff.jl")
+
+include("ArraysMappings.jl")
 
 # include("FunctionMappings.jl")
 

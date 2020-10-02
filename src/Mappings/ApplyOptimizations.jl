@@ -3,7 +3,7 @@
 #
 #    apply(evaluate,cell_to_f,cell_to_x)
 #
-function apply(::typeof(evaluate),f::AbstractArray{<:Field},x::AbstractArray)
+function apply(::typeof(evaluate),f::AbstractArray,x::AbstractArray)
   apply(f,x)
 end
 
@@ -22,8 +22,14 @@ function apply(
 
   i_to_basis = apply(evaluate,a.f[1],x)
   i_to_values = a.f[2]
-  apply(linear_combination_on_values,i_to_basis,i_to_values)
+  apply(LinCombVal(),i_to_basis,i_to_values)
 end
+
+linear_combination_on_values(b_pi::AbstractMatrix,v_i::AbstractVector) = evaluate!(c,MatMul(),b_pi,v_i)
+linear_combination_on_values(b_pi::AbstractMatrix,v_ij::AbstractMatrix) = evaluate!(c,MatMul(),b_pi,v_ij)
+linear_combination_on_values(b_i::AbstractVector,v_i::AbstractVector) = b_i ⋅ v_i
+linear_combination_on_values(b_i::AbstractVector,v_ij::AbstractMatrix) = evaluate!(c,MatMul(),transpose(v_ij),b_i)
+
 
 # Optimization for
 #

@@ -10,6 +10,7 @@ using FillArrays
 using Gridap.Helpers
 
 using BenchmarkTools
+using Test
 
 
 np = 4
@@ -109,8 +110,9 @@ p3 = Point(4.0,3.0)
 p4 = Point(6.0,1.0)
 
 p = p1
-np = 4
-x = [p1,p2,p3,p4]
+np = 2
+# x = [p1,p2,p3,p4]
+x = [p1,p2]
 
 f1 = GenericField(x->1*x)
 f2 = GenericField(x->2*x)
@@ -124,12 +126,12 @@ f = GenericField(h)
 q(x) = Point(sqrt.(x.data))
 g = GenericField(q)
 
-nf = 5
+nf = 2
 # basis = [f1, f2, f3, f4, f5]
 basis = fill(f,nf)
 field = g
 
-na = 6
+na = 1
 
 x_a = fill(x,na)
 basis_a = fill(basis,na)
@@ -150,26 +152,8 @@ res_basis_a = apply(basis_a,x_a)
 c_r = array_cache(res_basis_a)
 @btime getindex!($c_r,$res_basis_a,1);
 
-
-###
-
-# @santiagobadia : With the previous basis we have allocations...
-# Is there any way to fix this problem? Anyway not practical importance
-# c = return_cache(fb,x)
-# @btime evaluate!(c,fb,x)
-
 cb = return_cache(basis,x)
 @btime evaluate!(cb,basis,x)
-
-# We rewrite the basis
-# basis = fill(f,nf)
-# basis_a = fill(basis,na)
-# res_basis_a = apply(basis_a,x_a)
-
-# c_r = array_cache(res_basis_a)
-# @btime getindex!($c_r,$res_basis_a,1);
-
-###
 
 # Transpose basis
 tbasis_a = apply(transpose,basis_a)
@@ -185,36 +169,17 @@ c_r = array_cache(res_tbasis_a)
 
 # Broadcast operation basis basis
 op = +
-brbasis_a = apply(BroadcastMapping(Operation(op)),basis_a,basis_a
-
-
-apply(evaluate,brbasis_a,x_a)
-
-
-res_brbasis_a = apply(brbasis_a,x_a)
-@test res_brbasis_a == res_basis_a.+res_basis_a
+brbasis_a = apply(BroadcastMapping(Operation(op)),basis_a,basis_a)
+res_brbasis_a = apply(evaluate,brbasis_a,x_a)
 
 c_r = array_cache(res_brbasis_a)
 @btime getindex!($c_r,$res_brbasis_a,$1);
-
-##
-
-# @santiagobadia :  The allocation is here... Any idea?
-bop = BroadcastMapping(Operation(op))
-args = (basis,basis)
-@btime broadcast(Operation($op),$basis,$basis)
-@btime evaluate($bop,$basis,$basis)
-@btime Operation(+)(basis[1],basis[1])
-a = Operation(+)
-@btime broadcast($a,$basis,$basis) # inside Julia (I would say)
-
-##
 
 # Broadcast operation basis field
 op = +
 brbasis_a = apply(BroadcastMapping(Operation(op)),basis_a,field_a)
 
-res_brbasisfield_a = apply(brbasis_a,x_a)
+res_brbasisfield_a = apply(evaluate,brbasis_a,x_a)
 for j in 1:na
   for i in 1:np
     @test res_brbasisfield_a[j][i,:] == res_basis_a[j][i,:] .+ res_field_a[j][i]
@@ -226,7 +191,7 @@ c_r = array_cache(res_brbasisfield_a)
 
 # Linear Combination basis values
 vxbasis_a = apply(linear_combination,v_a,basis_a)
-res_vxbasis_a = apply(vxbasis_a,x_a)
+res_vxbasis_a = apply(evaluate,vxbasis_a,x_a)
 
 for j in 1:na
   for i in 1:np
@@ -239,7 +204,7 @@ c_r = array_cache(res_vxbasis_a)
 
 # basis*transpose(basis)
 basisxtbasis_a = apply(BroadcastMapping(Operation(*)),basis_a,tbasis_a)
-res_basisxtbasis_a = apply(basisxtbasis_a,x_a)
+res_basisxtbasis_a = apply(evaluate,basisxtbasis_a,x_a)
 size(res_basisxtbasis_a[1])
 for j in 1:na
   for i in 1:np
@@ -254,7 +219,7 @@ c_r = array_cache(res_basisxtbasis_a)
 op = ∘
 compfield_a = apply(op,field_a,field_a)
 
-res_compfield_a = apply(compfield_a,x_a)
+res_compfield_a = apply(evaluate,compfield_a,x_a)
 @test all([ res_compfield_a[i] == apply(field_a,res_field_a)[i] for i in 1:na])
 
 c_r = array_cache(res_compfield_a)
@@ -264,7 +229,7 @@ c_r = array_cache(res_compfield_a)
 op = ∘
 compbasisfield_a = apply(BroadcastMapping(op),basis_a,field_a)
 
-res_compbasisfield_a = apply(compbasisfield_a,x_a)
+res_compbasisfield_a = apply(evaluate,compbasisfield_a,x_a)
 @test all([ res_compbasisfield_a[i] == apply(basis_a,res_field_a)[i] for i in 1:na])
 
 c_r = array_cache(res_compbasisfield_a)
@@ -275,7 +240,7 @@ c_r = array_cache(res_compbasisfield_a)
 
 # @santiagobadia : Do we want this syntax?
 tbasisxbasis_a = apply(*,tbasis_a,basis_a)
-res_tbasisxbasis_a = apply(tbasisxbasis_a,x_a)
+res_tbasisxbasis_a = apply(evaluate,tbasisxbasis_a,x_a)
 for j in 1:na
   for i in 1:np
     res_tbasisxbasis_a[j][i] == res_tbasis_a[j][i,1,:] ⋅ res_basis_a[j][i,:]
