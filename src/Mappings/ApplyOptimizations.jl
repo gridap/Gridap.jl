@@ -9,11 +9,6 @@ end
 
 # Optimization for
 #
-#  We cannot optimize this
-#  g = apply((b,v)->transpose(b)*v,cell_to_i_to_f, cell_to_i_to_val)
-#  apply(evaluate,g,cell_to_x)
-#
-#  we optimize this
 #  g = apply( linear_combination, cell_to_i_to_f, cell_to_i_to_val)
 #  apply(evaluate,g,cell_to_x)
 #
@@ -40,7 +35,7 @@ function apply(
   ::typeof(evaluate), a::MappedArray{<:Fill{typeof(transpose)}}, x::AbstractArray)
 
   i_to_basis = apply(evaluate,a.f[1],x)
-  apply(trialize_on_values,i_to_basis)
+  apply(transpose_field_indices,i_to_basis)
 end
 
 # Optimization for
@@ -123,8 +118,6 @@ end
 #
 #  g = apply( linear_combination, cell_to_i_to_f, cell_to_i_to_val)
 #  apply(BroadcastMapping(gradient),g)
-#
-#  It is important to not forget about this one
 #
 function apply(
   ::BroadcastMapping{typeof(gradient)}, a::MappedArray{<:Fill{typeof(linear_combination)}})

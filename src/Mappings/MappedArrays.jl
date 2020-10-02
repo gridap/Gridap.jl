@@ -113,6 +113,7 @@ function _getvalues(a::Fill)
 end
 
 # @santiagobadia CompressedArray and Union{CompressedArray,Fill}
+# To be done when starting Algebra part
 
 # Operator
 

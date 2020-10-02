@@ -10,23 +10,6 @@ MockField(D::Int,v::Number) = MockField{D}(v)
 
 mock_field(D::Int,v::Number) = MockField{D}(v)
 
-
-# function return_cache(f::MockField,x::AbstractArray{<:Point})
-#   nx = length(x)
-#   c = zeros(typeof(f.v),nx)
-#   CachedArray(c)
-# end
-
-# function evaluate!(c,f::MockField,x::AbstractArray{<:Point})
-#   nx = length(x)
-#   setsize!(c,(nx,))
-#   for i in eachindex(x)
-#     @inbounds xi = x[i]
-#     @inbounds c[i] = f.v*xi[1]
-#   end
-#   c.array
-# end
-
 function evaluate!(c,f::MockField,x::Point)
   f.v*x[1]
 end

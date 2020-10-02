@@ -31,8 +31,6 @@ c = return_cache(f,p)
 
 bfa, x = test_broadcast_field_array(f,p,nf,np,grad=true)
 
-bfa, x = test_broadcast_field_array(f,p,nff,npp,grad=true)
-
 c = return_cache(bfa,x)
 @btime evaluate!($c,$bfa,$x);
 
@@ -46,7 +44,7 @@ c = return_cache(bfa,x)
 ∇fa, p = test_field_array(∇f,p,nf)
 bfa, x = test_broadcast_field_array(∇f,p,nf,np)
 
-@test gradient(fa) == ∇fa
+@test gradient.(fa) == ∇fa
 
 c = return_cache(bfa,x)
 @btime evaluate!($c,$bfa,$x)

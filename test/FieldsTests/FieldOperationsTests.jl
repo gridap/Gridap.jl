@@ -119,8 +119,8 @@ bdf = evaluate(Operation(+),bf,bf)
 @test evaluate(bdf,x) == bdfx
 test_field(bdf,x,bdfx)#,grad=∇bdfp)
 
-bdfp = evaluate(bf*bf,p)
-bdfx = evaluate(bf*bf,x)
+bdfp = evaluate(bf⋅bf,p)
+bdfx = evaluate(bf⋅bf,x)
 bdf = bf⋅bf
 @test evaluate(bdf,x) == bdfx
 test_field(bdf,x,bdfx)#,grad=∇bdfp)

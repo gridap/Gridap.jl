@@ -25,6 +25,7 @@ end
 end
 
 # @santiagobadia : I don't understand why allocations in mul! with VectorValue
+# So, I have created mine, which involves 0 allocations
 @inline function _inplace_mul!(r,a::AbstractMatrix,b::AbstractMatrix)
   for i in 1:size(a,1)
     for j in 1:size(b,2)
@@ -39,7 +40,8 @@ end
   end
 end
 
-# @santiagobadia : Not so happy with this...
+# @santiagobadia : Not so happy with this... Probably a new type of array that
+# takes into account the insertion of the first axis...
 struct LinCombVal <: Mapping end
 
 @inline function return_cache(::LinCombVal,a::AbstractMatrix,b::AbstractMatrix)
@@ -51,7 +53,7 @@ end
 end
 
 @inline function return_cache(::LinCombVal,a::AbstractVector,b::AbstractMatrix)
-  return_cache(MatMul(),transpose(a),b)
+  return_cache(MatMul(),transpose(b),a)
 end
 
 @inline function return_cache(::LinCombVal,a::AbstractVector,b::AbstractVector)

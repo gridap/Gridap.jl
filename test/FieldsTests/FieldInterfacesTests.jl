@@ -52,7 +52,7 @@ qfp = q(p)
 
 @test return_cache(qf,p) == return_cache(q,p)
 @test return_type(qf,p) == return_type(q,p)
-@test typeof(gradient(qf)) <: Gradient
+@test typeof(gradient(qf)) <: FieldGradient
 
 ∇qf = gradient(qf)
 ∇qfp = ∇q(p)

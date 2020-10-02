@@ -140,6 +140,9 @@ field_a = fill(field,na)
 v = rand(nf)
 v_a = fill(v,na)
 
+vm = rand(nf,nf)
+vm_a = fill(vm,na)
+
 # Evaluate field
 res_field_a = apply(field_a,x_a)
 
@@ -189,26 +192,39 @@ end
 c_r = array_cache(res_brbasisfield_a)
 @btime getindex!($c_r,$res_brbasisfield_a,1);
 
-# Linear Combination basis values
-vxbasis_a = apply(linear_combination,v_a,basis_a)
+# Linear Combination basis values (vector values)
+vxbasis_a = apply(linear_combination,basis_a,v_a)
 res_vxbasis_a = apply(evaluate,vxbasis_a,x_a)
 
 for j in 1:na
   for i in 1:np
-    @test res_vxbasis_a[j][i] == res_basis_a[j][i,:]⋅v_a[i]
+    res_vxbasis_a[j][i] == transpose(res_basis_a[j][i,:])*v_a[j]
   end
 end
 
 c_r = array_cache(res_vxbasis_a)
-@btime getindex!($c_r,$res_vxbasis_a,1);
+@btime getindex!(c_r,res_vxbasis_a,1)
+
+# Linear Combination basis values (matrix values)
+vmxbasis_a = apply(linear_combination,basis_a,vm_a)
+res_vmxbasis_a = apply(evaluate,vmxbasis_a,x_a)
+
+for j in 1:na
+  for i in 1:np
+    res_vmxbasis_a[j][i] == transpose(res_basis_a[j][i,:])*vm_a[j]
+  end
+end
+
+c_r = array_cache(res_vmxbasis_a)
+@btime getindex!(c_r,res_vmxbasis_a,1)
 
 # basis*transpose(basis)
-basisxtbasis_a = apply(BroadcastMapping(Operation(*)),basis_a,tbasis_a)
+basisxtbasis_a = apply(BroadcastMapping(Operation(⋅)),basis_a,tbasis_a)
 res_basisxtbasis_a = apply(evaluate,basisxtbasis_a,x_a)
 size(res_basisxtbasis_a[1])
 for j in 1:na
   for i in 1:np
-    @test res_basisxtbasis_a[j][i,:,:] == broadcast(*,res_basis_a[j][i,:],res_tbasis_a[j][i,:,:])
+    @test res_basisxtbasis_a[j][i,:,:] == broadcast(⋅,res_basis_a[j][i,:],res_tbasis_a[j][i,:,:])
   end
 end
 
