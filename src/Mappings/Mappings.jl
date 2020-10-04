@@ -107,8 +107,10 @@ export test_broadcast_field_array
 export mock_field
 
 export linear_combination
+export integrate
 
 export MatMul
+export Integrate
 
 # export MockBasis
 # export LinearCombinationField

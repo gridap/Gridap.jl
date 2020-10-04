@@ -78,7 +78,7 @@ end
 
 # Integrate
 
-struct Integrate <: Kernel end
+struct Integrate <: Mapping end
 
 function return_cache(k::Integrate,f::AbstractVector,w,j)
   T = _integrate_rt(f,w,j)
@@ -94,14 +94,14 @@ end
   r
 end
 
-function kernel_cache(k::Integrate,f::AbstractArray,w,j)
+function return_cache(k::Integrate,f::AbstractArray,w,j)
   T = _integrate_rt(f,w,j)
   _, s = _split(size(f)...)
   r = zeros(T,s)
   c = CachedArray(r)
 end
 
-@inline function apply_kernel!(c,k::Integrate,f::AbstractArray,w,j)
+@inline function evaluate!(c,k::Integrate,f::AbstractArray,w,j)
   _integrate_checks(f,w,j)
   np, s = _split(size(f)...)
   cis = CartesianIndices(s)

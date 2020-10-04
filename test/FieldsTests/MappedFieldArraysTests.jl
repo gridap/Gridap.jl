@@ -266,4 +266,43 @@ end
 c_r = array_cache(res_tbasisxbasis_a)
 @btime getindex!($c_r,$res_tbasisxbasis_a,1);
 
+# integration (field)
+
+w_a = v_a
+jac = GenericField(TensorValue(4.0,0.0,0.0,4.0))
+jac_a = fill(jac,na)
+res_jac_a = apply(evaluate,jac_a,x_a)
+
+field_a
+integrate_a = apply(integrate,field_a,w_a,jac_a,x_a)
+res_integrate_a = apply(evaluate,integrate_a)
+
+meas_a = apply(BroadcastMapping(meas),res_jac_a)
+wmeas_a = apply(BroadcastMapping(*),w_a,meas_a)
+for i in 1:length(x_a)
+  @test transpose(res_field_a[i])*wmeas_a[i] == res_integrate_a[i]
+end
+
+c = array_cache(res_integrate_a)
+@btime getindex!($c,$res_integrate_a,1)
+
+# integration (basis)
+
+w_a = v_a
+jac = GenericField(TensorValue(4.0,0.0,0.0,4.0))
+jac_a = fill(jac,na)
+res_jac_a = apply(evaluate,jac_a,x_a)
+
+integrate_a = apply(integrate,basis_a,w_a,jac_a,x_a)
+res_integrate_a = apply(evaluate,integrate_a)
+
+meas_a = apply(BroadcastMapping(meas),res_jac_a)
+wmeas_a = apply(BroadcastMapping(*),w_a,meas_a)
+for i in 1:length(x_a)
+  @test transpose(res_basis_a[i])*wmeas_a[i] == res_integrate_a[i]
+end
+
+c = array_cache(res_integrate_a)
+@btime getindex!(c,res_integrate_a,1)
+
 end # module

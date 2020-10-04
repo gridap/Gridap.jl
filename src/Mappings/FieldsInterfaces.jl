@@ -88,7 +88,7 @@ end
 
 # Zero field
 
-B@inline ase.zero(a::Field) = ZeroField(a)
+@inline Base.zero(a::Field) = ZeroField(a)
 
 struct ZeroField{F} <: Field
   field::F

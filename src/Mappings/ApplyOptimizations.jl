@@ -183,9 +183,15 @@ function apply(
   apply(Operation(+),r1,r2)
 end
 
+# @santiagobadia : Function just used for dispatching
+integrate(f::Field,w,j,x) = transpose(evaluate(f,x))*(w.*meas.(j(x)))
+integrate(f::AbstractArray{<:Field},w,j,x) = transpose(evaluate(f,x))*(w.*meas.(j(x)))
+
+# @santiagobadia : I would say that the integration points should be at our disposal
+# when creating the MappedArray
 function apply(
-  ::typeof(evaluate), a::MappedArray{<:Fill{typeof(integrate)}}, x::AbstractArray)
-  f, w, j = a.f
+  ::typeof(evaluate), a::MappedArray{<:Fill{typeof(integrate)}})#, x::AbstractArray)
+  f, w, j, x = a.f
   fx = apply(evaluate,f,x)
   jx = apply(evaluate,j,x)
   k = Integrate()
