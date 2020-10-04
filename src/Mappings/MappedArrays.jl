@@ -38,7 +38,8 @@ end
 
 function MappedArray(g::AbstractArray, f::AbstractArray...)
   gi = testitem(g) # Assumes that all mappings return the same type
-  fi = testitems(f...)
+  fi = map(testitem,f)
+  # fi = testitems(f...)
   T = typeof(testitem(gi, fi...))
   MappedArray(T, g, f...)
 end
@@ -51,6 +52,7 @@ function array_cache(a::MappedArray,i...)
     @notimplementedif ! isconcretetype(eltype(a.g))
   end
   gi = testitem(a.g)
+  # fi = map(testitem,a.f)
   fi = testitems(a.f...)
   cg = return_cache(a.g,i...)
   cf = return_caches(a.f,i...)
@@ -64,6 +66,7 @@ if ! (eltype(a.g) <: Function)
   @notimplementedif ! isconcretetype(eltype(a.g))
 end
 gi = testitem(a.g)
+# fi = map(testitem,a.f...)
 fi = testitems(a.f...)
 cg = array_cache(a.g)
 cf = map(array_cache,a.f)

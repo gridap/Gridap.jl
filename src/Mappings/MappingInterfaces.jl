@@ -14,10 +14,11 @@ end
 
 (m::Mapping)(x...) = evaluate(m,x...)
 
-function testitem(k,x...)
-  cache = return_cache(k,x...)
-  testitem!(cache,k,x...)
-end
+@inline testitem(k,x...) = evaluate(k,x...)
+# function testitem(k,x...)
+#   cache = return_cache(k,x...)
+#   testitem!(cache,k,x...)
+# end
 
 @inline function testitem!(cache,k,x...)
   evaluate!(cache,k,x...)
@@ -67,26 +68,14 @@ function _mapping_caches(x::Tuple,a)
 end
 
 @inline function evaluate!(cfs::Tuple,f::Tuple,x...)
-  _evaluate_mappings!(cfs,x,f...)
+  map((c,fi) -> evaluate!(c,fi,x...),cfs,f)
+  # _evaluate_mappings!(cfs,x,f...)
 end
 
 function evaluate(fs::Tuple,x...)
 cs = return_caches(fs,x...)
 y = evaluate!(cs,fs,x...)
 y
-end
-
-@inline function _evaluate_mappings!(cfs,x,f1,f...)
-  cf1, cf = _split(cfs...)
-  f1x = evaluate!(cf1,f1,x...)
-  fx = evaluate!(cf,f,x...)
-  (f1x,fx...)
-end
-
-@inline function _evaluate_mappings!(cfs,x,f1)
-  cf1, = cfs
-  f1x = evaluate!(cf1,f1,x...)
-  (f1x,)
 end
 
 @inline function _split(a,b...)
@@ -107,6 +96,8 @@ function _mapping_return_types(x::Tuple,a)
   Ta = return_type(a,x...)
   (Ta,)
 end
+
+# map(testitem,a)
 
 function testitems(a,b...)
   va = testitem(a)
