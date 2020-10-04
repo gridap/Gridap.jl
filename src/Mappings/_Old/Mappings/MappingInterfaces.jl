@@ -86,38 +86,38 @@ function _mapping_caches(x::Tuple,a)
   (ca,)
 end
 
-@inline function evaluate!(cfs::Tuple,f::Tuple,x...)
-  _evaluate_mappings!(cfs,x,f...)
-end
+# @inline function evaluate!(cfs::Tuple,f::Tuple,x...)
+#   _evaluate_mappings!(cfs,x,f...)
+# end
 
-@inline function _evaluate_mappings!(cfs,x,f1,f...)
-  cf1, cf = _split(cfs...)
-  f1x = evaluate!(cf1,f1,x...)
-  fx = evaluate!(cf,f,x...)
-  (f1x,fx...)
-end
+# @inline function _evaluate_mappings!(cfs,x,f1,f...)
+#   cf1, cf = _split(cfs...)
+#   f1x = evaluate!(cf1,f1,x...)
+#   fx = evaluate!(cf,f,x...)
+#   (f1x,fx...)
+# end
 
-@inline function _evaluate_mappings!(cfs,x,f1)
-  cf1, = cfs
-  f1x = evaluate!(cf1,f1,x...)
-  (f1x,)
-end
+# @inline function _evaluate_mappings!(cfs,x,f1)
+#   cf1, = cfs
+#   f1x = evaluate!(cf1,f1,x...)
+#   (f1x,)
+# end
 
 @inline function _split(a,b...)
   (a,b)
 end
 
-function return_types(f::Tuple,x...)
-  _mapping_return_types(x,f...)
-end
+# function return_types(f::Tuple,x...)
+#   _mapping_return_types(x,f...)
+# end
 
-function _mapping_return_types(x::Tuple,a,b...)
-  Ta = return_type(a,x...)
-  Tb = return_types(b,x...)
-  (Ta,Tb...)
-end
+# function _mapping_return_types(x::Tuple,a,b...)
+#   Ta = return_type(a,x...)
+#   Tb = return_types(b,x...)
+#   (Ta,Tb...)
+# end
 
-function _mapping_return_types(x::Tuple,a)
-  Ta = return_type(a,x...)
-  (Ta,)
-end
+# function _mapping_return_types(x::Tuple,a)
+#   Ta = return_type(a,x...)
+#   (Ta,)
+# end

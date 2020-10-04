@@ -32,11 +32,14 @@ cs = return_caches((+,m),a,b)
 evaluate!(cs,(+,m),a,b) == (a+b,m)
 evaluate((+,m),a,b) == (a+b,m)
 
-return_types((+,m),a,b) == (Array{Int64,1}, Array{Float64,2})
+# return_types((+,m),a,b) == (Array{Int64,1}, Array{Float64,2})
 Mappings.testitems(a,b) == (a,b)
 Mappings._split(a,b,a,b) == (a,(b,a,b))
-Mappings.return_types((+,m),a,b)
-Mappings.return_types((+,/),1,1) == (Int,Float64)
+# Mappings.return_types((+,m),a,b)
+# Mappings.return_types((+,/),1,1) == (Int,Float64)
+
+# map(op -> return_type(op,a,b),(+,m))
+# return_type(+,m,a,b)
 
 z = evaluate(+,a,b)
 c = return_cache(+,a,b)
