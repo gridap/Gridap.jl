@@ -55,13 +55,8 @@ end
 
 function evaluate(fs::Tuple,x...)
 cs = map(fi -> return_cache(fi,x...),fs)
-# cs = return_caches(fs,x...)
 y = evaluate!(cs,fs,x...)
 y
-end
-
-@inline function _split(a,b...)
-  (a,b)
 end
 
 # Extended Array interface
