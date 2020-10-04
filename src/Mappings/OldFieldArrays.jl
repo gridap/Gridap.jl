@@ -117,7 +117,8 @@ end
 # for op in (:+,:-,:*,:⋅,:inv,:det,:transpose)
 # eval ...
 function return_cache(f::OperationArray{typeof(+)},x::AbstractArray{<:Point})
-  cfs = return_caches(f.args,x)
+  cfs = map(fi -> return_cache(fi,x),f.args)
+  # cfs = return_caches(f.args,x)
   rs = map(fi -> evaluate(fi,first(x)),f.args)
   cr = CachedArray(f.op(rs...))
   cr, cfs
@@ -132,7 +133,8 @@ function evaluate!(c,f::OperationArray{typeof(+)},x::AbstractArray{<:Point})
 end
 
 function return_cache(f::OperationArray{typeof(-)},x::AbstractArray{<:Point})
-  rs = return_caches(f.args,x)
+  rs = map(fi -> return_cache(fi,x),f.args)
+  # rs = return_caches(f.args,x)
 end
 
 function evaluate!(c,f::OperationArray{typeof(-)},x::AbstractArray{<:Point})

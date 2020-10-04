@@ -37,7 +37,8 @@ struct Operation{T,F} <: Mapping
 end
 
 function return_cache(f::Operation,x)
-  cargs = return_caches(f.args,x)
+  cargs = map(fi -> return_cache(fi,x),f.args)
+  # cargs = return_caches(f.args,x)
   cop = return_cache(op,evaluate!(cargs,f.args,x))
   (cop, cargs)
 end

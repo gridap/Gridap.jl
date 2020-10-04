@@ -285,14 +285,16 @@ function return_type(c::OperationField,x::Point)
 end
 
 function return_cache(c::OperationField,x::Point)
-  cl = return_caches(c.fields,x)
+  cl = map(fi -> return_cache(fi,x),c.fields)
+  # cl = return_caches(c.fields,x)
   lx = evaluate!(cl,c.fields,x)
   ck = return_cache(c.op,lx)
   ck, cl
 end
 
 function return_cache(c::OperationField,x::AbstractArray{<:Point})
-  cl = return_caches(c.fields,x)
+  cl = map(fi -> return_cache(fi,x),c.fields)
+  # cl = return_caches(c.fields,x)
   lx = evaluate!(cl,c.fields,x)
   ck = CachedArray(zero(c.op.(lx...)))
   ck, cl

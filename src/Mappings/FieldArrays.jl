@@ -152,7 +152,8 @@ end
 @inline Base.getindex(a::BroadcastOpFieldArray,I...) = broadcast(a.op,a.args...)[I...]
 
 function return_cache(f::BroadcastOpFieldArray,x)
-  cfs = return_caches(f.args,x)
+  cfs = map(fi -> return_cache(fi,x),f.args)
+  # cfs = return_caches(f.args,x)
   rs = map((ci,fi) -> evaluate!(ci,fi,x),cfs,f.args)
   bm = BroadcastMapping(f.op)
   r = return_cache(bm,rs...)

@@ -55,7 +55,8 @@ function array_cache(a::MappedArray,i...)
   fi = Tuple(testitem.(a.f))
   # fi = testitems(a.f...)
   cg = return_cache(a.g,i...)
-  cf = return_caches(a.f,i...)
+  cf = map(fi -> return_cache(fi,i...),a.f)
+  # cf = return_caches(a.f,i...)
   cgi = return_cache(gi, fi...)
   cg, cgi, cf
 end

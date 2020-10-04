@@ -71,20 +71,20 @@ end
 
 # Work with several mappings at once
 
-function return_caches(fs::Tuple,x...)
-  _mapping_caches(x,fs...)
-end
+# function return_caches(fs::Tuple,x...)
+#   _mapping_caches(x,fs...)
+# end
 
-function _mapping_caches(x::Tuple,a,b...)
-  ca = return_cache(a,x...)
-  cb = return_caches(b,x...)
-  (ca,cb...)
-end
+# function _mapping_caches(x::Tuple,a,b...)
+#   ca = return_cache(a,x...)
+#   cb = return_caches(b,x...)
+#   (ca,cb...)
+# end
 
-function _mapping_caches(x::Tuple,a)
-  ca = return_cache(a,x...)
-  (ca,)
-end
+# function _mapping_caches(x::Tuple,a)
+#   ca = return_cache(a,x...)
+#   (ca,)
+# end
 
 # @inline function evaluate!(cfs::Tuple,f::Tuple,x...)
 #   _evaluate_mappings!(cfs,x,f...)

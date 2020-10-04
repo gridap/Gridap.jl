@@ -15,7 +15,7 @@ export return_cache
 export evaluate!
 export evaluate
 export test_mapping
-export return_caches
+# export return_caches
 # export return_types
 
 # export derivative

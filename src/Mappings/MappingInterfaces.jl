@@ -15,10 +15,6 @@ end
 (m::Mapping)(x...) = evaluate(m,x...)
 
 @inline testitem(k,x...) = evaluate(k,x...)
-# function testitem(k,x...)
-#   cache = return_cache(k,x...)
-#   testitem!(cache,k,x...)
-# end
 
 @inline function testitem!(cache,k,x...)
   evaluate!(cache,k,x...)
@@ -52,28 +48,14 @@ end
 
 # Work with several Mapping objects
 
-function return_caches(fs::Tuple,x...)
-  _mapping_caches(x,fs...)
-end
-
-function _mapping_caches(x::Tuple,a,b...)
-  ca = return_cache(a,x...)
-  cb = return_caches(b,x...)
-  (ca,cb...)
-end
-
-function _mapping_caches(x::Tuple,a)
-  ca = return_cache(a,x...)
-  (ca,)
-end
-
 @inline function evaluate!(cfs::Tuple,f::Tuple,x...)
   map((c,fi) -> evaluate!(c,fi,x...),cfs,f)
   # _evaluate_mappings!(cfs,x,f...)
 end
 
 function evaluate(fs::Tuple,x...)
-cs = return_caches(fs,x...)
+cs = map(fi -> return_cache(fi,x...),fs)
+# cs = return_caches(fs,x...)
 y = evaluate!(cs,fs,x...)
 y
 end
@@ -81,36 +63,6 @@ end
 @inline function _split(a,b...)
   (a,b)
 end
-
-# map(fi -> return_type(fi,x),f)
-
-function return_types(f::Tuple,x...)
-  _mapping_return_types(x,f...)
-end
-
-function _mapping_return_types(x::Tuple,a,b...)
-  Ta = return_type(a,x...)
-  Tb = return_types(b,x...)
-  (Ta,Tb...)
-end
-
-function _mapping_return_types(x::Tuple,a)
-  Ta = return_type(a,x...)
-  (Ta,)
-end
-
-# map(testitem,a)
-
-# function testitems(a,b...)
-#   va = testitem(a)
-#   vb = testitems(b...)
-#   (va,vb...)
-# end
-
-# function testitems(a)
-#   va = testitem(a)
-#   (va,)
-# end
 
 # Extended Array interface
 
@@ -154,8 +106,7 @@ function return_cache(f::BroadcastMapping,x::Number...)
 end
 
 function return_cache(f::BroadcastMapping,x...)
-  s = _sizes(x...)
-  # s = Tuple(size.(x...))
+  s = _size.(x)
   bs = Base.Broadcast.broadcast_shape(s...)
   Te = map(numbertype,x)
   T = return_type(f.f,Te...)
@@ -172,21 +123,12 @@ numbertype(a::AbstractArray) = eltype(a)
 numbertype(a::Number) = typeof(a)
 
 @inline function _prepare_cache(c,x...)
-  s = _sizes(x...)
+  s = _size.(x)
   bs = Base.Broadcast.broadcast_shape(s...)
   if bs != size(c)
     setsize!(c,bs)
   end
   c
-end
-
-# TODO use map
-@inline function _sizes(a,x...)
-  (_size(a), _sizes(x...)...)
-end
-
-@inline function _sizes(a)
-  (_size(a),)
 end
 
 @inline _size(a) = size(a)
@@ -218,7 +160,8 @@ function return_type(c::OperationMapping,x...)
 end
 
 function return_cache(c::OperationMapping,x...)
-  cl = return_caches(c.l,x...)
+  cl = map(fi -> return_cache(fi,x...),c.l)
+  # cl = return_caches(c.l,x...)
   lx = evaluate!(cl,c.l,x...)
   ck = return_cache(c.k,lx...)
   (ck,cl)
