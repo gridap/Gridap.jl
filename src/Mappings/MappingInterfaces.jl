@@ -99,16 +99,16 @@ end
 
 # map(testitem,a)
 
-function testitems(a,b...)
-  va = testitem(a)
-  vb = testitems(b...)
-  (va,vb...)
-end
+# function testitems(a,b...)
+#   va = testitem(a)
+#   vb = testitems(b...)
+#   (va,vb...)
+# end
 
-function testitems(a)
-  va = testitem(a)
-  (va,)
-end
+# function testitems(a)
+#   va = testitem(a)
+#   (va,)
+# end
 
 # Extended Array interface
 
