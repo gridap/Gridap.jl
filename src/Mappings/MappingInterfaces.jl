@@ -82,6 +82,8 @@ end
   (a,b)
 end
 
+# map(fi -> return_type(fi,x),f)
+
 function return_types(f::Tuple,x...)
   _mapping_return_types(x,f...)
 end
@@ -153,6 +155,7 @@ end
 
 function return_cache(f::BroadcastMapping,x...)
   s = _sizes(x...)
+  # s = Tuple(size.(x...))
   bs = Base.Broadcast.broadcast_shape(s...)
   Te = map(numbertype,x)
   T = return_type(f.f,Te...)
@@ -209,7 +212,8 @@ struct OperationMapping{K,L} <: Mapping
 end
 
 function return_type(c::OperationMapping,x...)
-  Ts = return_types(c.l,x...)
+  Ts = map(fi -> return_type(fi,x...),c.l)
+  # Ts = return_types(c.l,x...)
   return_type(c.k, testvalues(Ts...)...)
 end
 

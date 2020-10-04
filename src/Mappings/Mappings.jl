@@ -17,8 +17,8 @@ export return_cache
 export evaluate!
 export evaluate
 export test_mapping
-export return_caches
-export return_types
+# export return_caches
+# export return_types
 import Gridap.Arrays: testitem
 import Gridap.Arrays: getindex!
 import Gridap.Arrays: array_cache

@@ -28,10 +28,12 @@ m = rand(2,2)
 test_mapping(m,(a,b),m)
 testitem(m,a,b)
 
-cs = return_caches((+,m),a,b)
+cs = map(op -> return_cache(op,a,b),(+,m))
+# cs = return_caches((+,m),a,b)
 evaluate!(cs,(+,m),a,b) == (a+b,m)
 evaluate((+,m),a,b) == (a+b,m)
 
+@test map(op -> return_type(op,a,b),(+,m)) == (Array{Int64,1}, Array{Float64,2})
 # return_types((+,m),a,b) == (Array{Int64,1}, Array{Float64,2})
 Mappings.testitems(a,b) == (a,b)
 Mappings._split(a,b,a,b) == (a,(b,a,b))
