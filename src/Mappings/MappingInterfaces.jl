@@ -9,7 +9,6 @@ return_type(f,x...) = typeof(testitem(f,x...))
 function evaluate(f,x...)
   c = return_cache(f,x...)
   y = evaluate!(c,f,x...)
-  y
 end
 
 (m::Mapping)(x...) = evaluate(m,x...)
@@ -49,15 +48,15 @@ end
 
 @inline function evaluate!(cfs::Tuple,f::Tuple,x...)
   map((c,fi) -> evaluate!(c,fi,x...),cfs,f)
-  # _evaluate_mappings!(cfs,x,f...)
 end
 
 function evaluate(fs::Tuple,x...)
-cs = map(fi -> return_cache(fi,x...),fs)
-y = evaluate!(cs,fs,x...)
-y
+  cs = map(fi -> return_cache(fi,x...),fs)
+  y = evaluate!(cs,fs,x...)
+  y
 end
 
+# @santiagobadia : Do we need this?
 # Extended Array interface
 
 # function return_cache(a::AbstractArray)
@@ -109,7 +108,7 @@ function return_cache(f::BroadcastMapping,x...)
   ri = testvalue(T)
   fill!(r,ri)
   cache = CachedArray(r)
-   _prepare_cache(cache,x...)
+  _prepare_cache(cache,x...)
 end
 
 @inline _numbertype(a::AbstractArray) = eltype(a)
@@ -129,10 +128,6 @@ end
 
 # OperationMappings
 
-# @inline function composition(k,l...)
-#   OperationMapping(k,l)
-# end
-
 struct OperationMapping{K,L} <: Mapping
   k::K
   l::L
@@ -143,13 +138,11 @@ end
 
 function return_type(c::OperationMapping,x...)
   Ts = map(fi -> return_type(fi,x...),c.l)
-  # Ts = return_types(c.l,x...)
   return_type(c.k, testvalues(Ts...)...)
 end
 
 function return_cache(c::OperationMapping,x...)
   cl = map(fi -> return_cache(fi,x...),c.l)
-  # cl = return_caches(c.l,x...)
   lx = evaluate!(cl,c.l,x...)
   ck = return_cache(c.k,lx...)
   (ck,cl)
@@ -167,8 +160,8 @@ struct Operation{T} <: Mapping
   op::T
 end
 
+operation(a) = Operation(a)
+
 evaluate!(cache,op::Operation,x...) = OperationMapping(op.op,x)
 
 (op::Operation)(x...) = evaluate!(nothing,op,x...)
-
-# operation(x) = Operation(x)

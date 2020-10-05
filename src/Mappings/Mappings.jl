@@ -12,10 +12,10 @@ import Gridap.Inference: return_type
 # Mapping interface
 
 export Mapping
-export return_type
 export return_cache
 export evaluate!
 export evaluate
+# export return_type
 export test_mapping
 
 import Gridap.Arrays: testitem
@@ -26,6 +26,7 @@ import Gridap.Arrays: IndexStyle
 # MappedArray
 
 export MappedArray
+
 export apply
 export test_mapped_array
 # import Gridap.Arrays: apply
@@ -34,17 +35,7 @@ import Gridap.Arrays: array_cache
 export BroadcastMapping
 export OperationMapping
 export Operation
-
-# export MatVecMapping
-
-# # To create the MappingArray <: AbstractArray
-# # using the extended Gridap API
-# import Gridap.Arrays: array_cache
-# import Gridap.Arrays: testitem
-# import Gridap.Arrays: uses_hash
-# import Gridap.Arrays: getindex!
-# @santiagobadia : Probably just export in the future
-# import Gridap.Arrays: apply
+export operation
 
 # Field
 
