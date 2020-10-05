@@ -96,14 +96,15 @@ end
 
 function return_cache(k::Integrate,f::AbstractArray,w,j)
   T = _integrate_rt(f,w,j)
-  _, s = _split(size(f)...)
-  r = zeros(T,s)
+  r = zeros(T,size(f)[2:end])
   c = CachedArray(r)
 end
 
 @inline function evaluate!(c,k::Integrate,f::AbstractArray,w,j)
   _integrate_checks(f,w,j)
-  np, s = _split(size(f)...)
+  _s = size(f)
+  np = _s[1]
+  s = _s[2:end]
   cis = CartesianIndices(s)
   setsize!(c,s)
   z = zero(eltype(c))

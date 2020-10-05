@@ -25,7 +25,8 @@ end
 getitems!(::Tuple{},::Tuple{},i) = ()
 
 @inline function _getitems!(c,i,a,b...)
-  ca,cb = _split(c...)
+  ca = c[1]
+  cb = c[2,end]
   ai = getindex!(ca,a,i...)
   bi = getitems!(cb,b,i...)
   (ai,bi...)

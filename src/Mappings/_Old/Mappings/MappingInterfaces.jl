@@ -68,7 +68,3 @@ function test_mapping(f,x::Tuple,y,cmp=(==))
   z = testitem!(cache,f,x...)
   @test cmp(typeof(z),typeof(y))
 end
-
-# @inline function _split(a,b...)
-  # (a,b)
-# end
