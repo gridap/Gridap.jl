@@ -15,7 +15,7 @@ export Mapping
 export return_cache
 export evaluate!
 export evaluate
-# export return_type
+export return_type
 export test_mapping
 
 import Gridap.Arrays: testitem

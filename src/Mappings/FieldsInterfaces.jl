@@ -2,10 +2,6 @@ const Point{D,T} = VectorValue{D,T}
 
 abstract type Field <: Mapping end
 
-const FieldArray{T,N} = AbstractArray{T,N} where {T<:Field,N}
-
-const FieldOrFieldArray = Union{Field,FieldArray}
-
 function return_cache(f::Field,x::AbstractArray{<:Point})
   T = return_type(f,first(x))
   s = size(x)
@@ -67,14 +63,17 @@ end
 @inline return_type(::Type{<:GenericField},::Type{T}) where T<:Field = T
 @inline return_type(::Type{<:GenericField},::Type{T}) where T = GenericField{T}
 
-@inline return_cache(a::GenericField,x::Point) = return_cache(a.object,x)
-@inline return_cache(a::GenericField,x::AbstractArray{<:Point}) = return_cache(a.object,x)
+@inline return_cache(a::GenericField,x) = return_cache(a.object,x)
+# @inline return_cache(a::GenericField,x::Point) = return_cache(a.object,x)
+# @inline return_cache(a::GenericField,x::AbstractArray{<:Point}) = return_cache(a.object,x)
 
-@inline return_type(a::GenericField,x::Point) = return_type(a.object,x)
-@inline return_type(a::GenericField,x::AbstractArray{<:Point}) = return_type(a.object,x)
+@inline return_type(a::GenericField,x) = return_type(a.object,x)
+# @inline return_type(a::GenericField,x::Point) = return_type(a.object,x)
+# @inline return_type(a::GenericField,x::AbstractArray{<:Point}) = return_type(a.object,x)
 
-@inline evaluate!(cache,a::GenericField,x::Point) = evaluate!(cache,a.object,x)
-@inline evaluate!(cache,a::GenericField,x::AbstractArray{<:Point}) = evaluate!(cache,a.object,x)
+@inline evaluate!(cache,a::GenericField,x) = evaluate!(cache,a.object,x)
+# @inline evaluate!(cache,a::GenericField,x::Point) = evaluate!(cache,a.object,x)
+# @inline evaluate!(cache,a::GenericField,x::AbstractArray{<:Point}) = evaluate!(cache,a.object,x)
 
 # Make Field behave like a collection
 
@@ -94,8 +93,8 @@ struct ZeroField{F} <: Field
   field::F
 end
 
-@inline return_type(z::ZeroField,x::Point) = return_type(z.field,x)
-@inline return_type(z::ZeroField,x::AbstractArray{<:Point}) = return_type(z.field,x)
+# @inline return_type(z::ZeroField,x::Point) = return_type(z.field,x)
+# @inline return_type(z::ZeroField,x::AbstractArray{<:Point}) = return_type(z.field,x)
 
 @inline return_cache(z::ZeroField,x::Point) = zero(return_type(z.field,x))
 
@@ -250,11 +249,13 @@ end
 
 @inline gradient(f::GenericField{FieldGradient}) = FieldHessian(f.object.object)
 
-@inline evaluate!(cache,f::FieldGradient,x::Point) = evaluate_gradient!(cache,f.object,x)
-@inline evaluate!(cache,f::FieldGradient,x::AbstractArray{<:Point}) = evaluate_gradient!(cache,f.object,x)
+@inline evaluate!(cache,f::FieldGradient,x) = evaluate_gradient!(cache,f.object,x)
+# @inline evaluate!(cache,f::FieldGradient,x::Point) = evaluate_gradient!(cache,f.object,x)
+# @inline evaluate!(cache,f::FieldGradient,x::AbstractArray{<:Point}) = evaluate_gradient!(cache,f.object,x)
 
-@inline return_cache(f::FieldGradient,x::Point) = return_gradient_cache(f.object,x)
-@inline return_cache(f::FieldGradient,x::AbstractArray{<:Point}) = return_gradient_cache(f.object,x)
+@inline return_cache(f::FieldGradient,x) = return_gradient_cache(f.object,x)
+# @inline return_cache(f::FieldGradient,x::Point) = return_gradient_cache(f.object,x)
+# @inline return_cache(f::FieldGradient,x::AbstractArray{<:Point}) = return_gradient_cache(f.object,x)
 
 struct FieldHessian{F} <: Field
   object::F
@@ -262,11 +263,13 @@ end
 
 gradient(f::FieldGradient) = FieldHessian(f.object)
 
-@inline evaluate!(cache,f::FieldHessian,x::Point) = evaluate_hessian!(cache,f.object,x)
-@inline evaluate!(cache,f::FieldHessian,x::AbstractArray{<:Point}) = evaluate_hessian!(cache,f.object,x)
+@inline evaluate!(cache,f::FieldHessian,x) = evaluate_hessian!(cache,f.object,x)
+# @inline evaluate!(cache,f::FieldHessian,x::Point) = evaluate_hessian!(cache,f.object,x)
+# @inline evaluate!(cache,f::FieldHessian,x::AbstractArray{<:Point}) = evaluate_hessian!(cache,f.object,x)
 
-@inline return_cache(f::FieldHessian,x::Point) = return_hessian_cache(f.object,x)
-@inline return_cache(f::FieldHessian,x::AbstractArray{<:Point}) = return_hessian_cache(f.object,x)
+@inline return_cache(f::FieldHessian,x) = return_hessian_cache(f.object,x)
+# @inline return_cache(f::FieldHessian,x::Point) = return_hessian_cache(f.object,x)
+# @inline return_cache(f::FieldHessian,x::AbstractArray{<:Point}) = return_hessian_cache(f.object,x)
 
 @inline function gradient(f::FieldHessian)
   @unreachable "Default implementation of 3rt order derivatives not available"
@@ -286,7 +289,6 @@ end
 
 function return_cache(c::OperationField,x::Point)
   cl = map(fi -> return_cache(fi,x),c.fields)
-  # cl = return_caches(c.fields,x)
   lx = evaluate!(cl,c.fields,x)
   ck = return_cache(c.op,lx)
   ck, cl
@@ -294,10 +296,15 @@ end
 
 function return_cache(c::OperationField,x::AbstractArray{<:Point})
   cl = map(fi -> return_cache(fi,x),c.fields)
-  # cl = return_caches(c.fields,x)
   lx = evaluate!(cl,c.fields,x)
   ck = CachedArray(zero(c.op.(lx...)))
   ck, cl
+end
+
+@inline function evaluate!(cache,c::OperationField,x::Point)
+  ck, cf = cache
+  lx = evaluate!(cf,c.fields,x)
+  c.op(lx...)
 end
 
 @inline function evaluate!(cache,c::OperationField,x::AbstractArray{<:Point})
@@ -309,13 +316,6 @@ end
     @inbounds ck.array[i] = c.op(map(lxi -> lxi[i], lx)...)
   end
   ck.array
-end
-
-@inline function evaluate!(cache,c::OperationField,x::Point)
-  ck, cf = cache
-  lx = evaluate!(cf,c.fields,x)
-  # evaluate!(ck,c.op,lx)
-  c.op(lx...)
 end
 
 @inline evaluate!(cache,op::Operation,x::Field...) = OperationField(op.op,x)
@@ -380,7 +380,7 @@ end
 # Testers
 
 function test_field(
-  f::FieldOrFieldArray,
+  f::Union{Field,AbstractArray{<:Field}},
   x::Tuple,
   v,cmp=(==);
   grad=nothing,
@@ -422,6 +422,6 @@ function test_field(
   end
 end
 
-@inline function test_field(f::FieldOrFieldArray,x,v,cmp=(==);grad=nothing,hessian=nothing)
+@inline function test_field(f::Union{Field,AbstractArray{<:Field}},x,v,cmp=(==);grad=nothing,hessian=nothing)
   test_field(f,(x,),v,cmp;grad=grad,hessian=hessian)
 end

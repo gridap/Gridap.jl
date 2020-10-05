@@ -10,7 +10,7 @@ using Test
 
 # @time @testset "Algebra" begin include("AlgebraTests/runtests.jl") end
 
-@time @testset "Mappings" begin include("MappingsTests/runtests.jl") end
+# @time @testset "Mappings" begin include("MappingsTests/runtests.jl") end
 
 # @time @testset "TensorValues" begin include("TensorValuesTests/runtests.jl") end
 
