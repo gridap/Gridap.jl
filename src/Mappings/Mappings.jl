@@ -1,5 +1,10 @@
 module Mappings
 
+#@fverdugo
+# For me it is very confusing to import so many parts of the old Gridap.
+# It is difficult to understand what is working thanks to the old implementation
+# and what thanks to the new one. In particular, importing Gridap.Arrays which has a lot of implementation
+# that collides with what is done in this new module.
 using Gridap.Helpers
 using Gridap.Inference
 using Gridap.Arrays

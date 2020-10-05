@@ -1,4 +1,30 @@
 
+#@fverdugo
+#
+# As I said before, I would remove the default mapping implementation for arrays of numbers.
+# If we do not remove it, we would need the apply_mapping function as we have in the draft.
+#
+# Consider this case
+#
+#  f = [10.0, 20.0]
+#  x = fill(1,10)
+#  y = fill(2,10)
+#  z = apply_mapping(f,x,y) # as defined in the draft
+#  @assert z = fill(f,10)
+#
+#  With the current implementation in this file it is not possible to recover this behavior.
+#
+#  We need a way to distinguish when f is to be interpreted as a mapping or as an array of mappings
+#  when f is an array of numbers. This ambiguity will be fixed if we remove the default mapping
+#  implementation for arrays of numbers.
+#
+#  On the other hand, you can always use 
+#
+#  z = apply(GenericFieldArray(f),x,y)
+#
+#  to recover previous behavior.
+#
+
 """
     apply(f,a::AbstractArray...) -> AbstractArray
 
@@ -139,6 +165,11 @@ end
 
 IndexStyle(::Type{<:MappedArray}) = IndexCartesian()
 
+#@fverdugo the signature of the index i... has to be improved
+# so that it is resilient to the different types of indices
+#
+# a default implementation of array_cache has to be provided also
+# for array_cache(a::AbstractArray,i...)
 function array_cache(a::MappedArray,i...)
   @notimplementedif ! all(map(isconcretetype, map(eltype, a.f)))
   if ! (eltype(a.g) <: Function)
@@ -165,6 +196,8 @@ cgi = return_cache(gi, fi...)
 cg, cgi, cf
 end
 
+#@fverdugo the signature of the index i... has to be improved
+# so that it is resilient to the different types of indices
 @inline function getindex!(cache, a::MappedArray, i...)
   cg, cgi, cf = cache
   gi = getindex!(cg, a.g, i...)
