@@ -17,37 +17,23 @@ export return_cache
 export evaluate!
 export evaluate
 export test_mapping
-# export return_caches
-# export return_types
+
 import Gridap.Arrays: testitem
 import Gridap.Arrays: getindex!
-import Gridap.Arrays: array_cache
-import Gridap.Arrays: testitem
 import Gridap.Arrays: uses_hash
-import Gridap.Arrays: getindex!
 import Gridap.Arrays: IndexStyle
-# import Gridap.Arrays: apply
 
 # MappedArray
 
 export MappedArray
 export apply
 export test_mapped_array
-
-# BroadcastMapping
+# import Gridap.Arrays: apply
+import Gridap.Arrays: array_cache
 
 export BroadcastMapping
-
-# OperationMappings
-
 export OperationMapping
-export operation
-export composition
 export Operation
-
-# export derivative
-# export gradient
-# export ∇
 
 # export MatVecMapping
 

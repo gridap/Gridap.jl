@@ -26,10 +26,9 @@ evaluate!(cache,f::Function,x...) = f(x...)
 
 # Number or Array implementation
 
-const NumberOrArray = Union{Number,AbstractArray{<:Number}}
+return_type(f::Union{Number,AbstractArray{<:Number}},x...) = typeof(f)
 
-evaluate!(cache,f::NumberOrArray,x...) = f
-return_type(f::NumberOrArray,x...) = typeof(f)
+evaluate!(cache,f::Union{Number,AbstractArray{<:Number}},x...) = f
 
 # Testing the interface
 
@@ -61,14 +60,14 @@ end
 
 # Extended Array interface
 
-function return_cache(a::AbstractArray)
-  i = testitem(eachindex(a))
-  return_cache(a,Tuple(i)...)
-end
+# function return_cache(a::AbstractArray)
+#   i = testitem(eachindex(a))
+#   return_cache(a,Tuple(i)...)
+# end
 
-function return_cache(a::AbstractArray,i...)
-  nothing
-end
+# function return_cache(a::AbstractArray,i...)
+#   nothing
+# end
 
 # Broadcast Functions
 
@@ -103,7 +102,7 @@ end
 function return_cache(f::BroadcastMapping,x...)
   s = _size.(x)
   bs = Base.Broadcast.broadcast_shape(s...)
-  Te = map(numbertype,x)
+  Te = map(_numbertype,x)
   T = return_type(f.f,Te...)
   N = length(bs)
   r = Array{T,N}(undef,bs)
@@ -113,9 +112,8 @@ function return_cache(f::BroadcastMapping,x...)
    _prepare_cache(cache,x...)
 end
 
-numbertype(a::AbstractArray) = eltype(a)
-
-numbertype(a::Number) = typeof(a)
+@inline _numbertype(a::AbstractArray) = eltype(a)
+@inline _numbertype(a::Number) = typeof(a)
 
 @inline function _prepare_cache(c,x...)
   s = _size.(x)
@@ -129,16 +127,11 @@ end
 @inline _size(a) = size(a)
 @inline _size(a::Number) = (1,)
 
-function _checks(a,b)
-  @assert size(a) == size(b) "Sizes must agree."
-  nothing
-end
-
 # OperationMappings
 
-@inline function composition(k,l...)
-  OperationMapping(k,l)
-end
+# @inline function composition(k,l...)
+#   OperationMapping(k,l)
+# end
 
 struct OperationMapping{K,L} <: Mapping
   k::K
@@ -178,4 +171,4 @@ evaluate!(cache,op::Operation,x...) = OperationMapping(op.op,x)
 
 (op::Operation)(x...) = evaluate!(nothing,op,x...)
 
-operation(x) = Operation(x)
+# operation(x) = Operation(x)
