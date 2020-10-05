@@ -276,27 +276,27 @@ struct OperationField{O,F} <: Field
 end
 
 function return_type(c::OperationField,x::Point)
-  return_type(c.op,evaluate(c.fields,x)...)
-  # return_type(c.op,map(typeof,evaluate(c.fields,x))...)
+  _fs = map(f -> evaluate(f,x),c.fields)
+  return_type(c.op,_fs...)
 end
 
 function return_cache(c::OperationField,x::Point)
   cl = map(fi -> return_cache(fi,x),c.fields)
-  lx = evaluate!(cl,c.fields,x)
+  lx = map((ci,fi) -> evaluate!(ci,fi,x),cl,c.fields)
   ck = return_cache(c.op,lx)
   ck, cl
 end
 
 function return_cache(c::OperationField,x::AbstractArray{<:Point})
   cl = map(fi -> return_cache(fi,x),c.fields)
-  lx = evaluate!(cl,c.fields,x)
+  lx = map((ci,fi) -> evaluate!(ci,fi,x),cl,c.fields)
   ck = CachedArray(zero(c.op.(lx...)))
   ck, cl
 end
 
 @inline function evaluate!(cache,c::OperationField,x::Point)
   ck, cf = cache
-  lx = evaluate!(cf,c.fields,x)
+  lx = map((ci,fi) -> evaluate!(ci,fi,x),cf,c.fields)
   c.op(lx...)
 end
 
@@ -304,7 +304,7 @@ end
   ck, cf = cache
   sx = size(x)
   setsize!(ck,sx)
-  lx = evaluate!(cf,c.fields,x)
+  lx = map((ci,fi) -> evaluate!(ci,fi,x),cf,c.fields)
   for i in eachindex(x)
     @inbounds ck.array[i] = c.op(map(lxi -> lxi[i], lx)...)
   end

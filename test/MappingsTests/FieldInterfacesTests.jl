@@ -22,7 +22,7 @@ fx = fill(fp,np)
 test_field(f,x,fx)
 
 c = return_cache(f,x)
-@btime evaluate!(c,f,x)
+# @btime evaluate!(c,f,x)
 
 ∇f = gradient(f)
 ∇fp = evaluate(∇f,p)
@@ -30,7 +30,7 @@ c = return_cache(f,x)
 test_field(f,p,fp,grad=∇fp)
 
 c = return_cache(∇f,p)
-@btime evaluate!(c,∇f,p)
+# @btime evaluate!(c,∇f,p)
 
 # GenericField (function)
 
@@ -43,7 +43,7 @@ q(x) = 2*x
 qf = GenericField(q)
 qfp = q(p)
 
-@btime evaluate!(nothing,$qf,$p)
+# @btime evaluate!(nothing,$qf,$p)
 
 @test return_cache(qf,p) == return_cache(q,p)
 @test return_type(qf,p) == return_type(q,p)
@@ -55,23 +55,23 @@ evaluate(∇qf,p)
 test_field(qf,p,qfp,grad=∇qfp)
 
 c = return_cache(∇qf,p)
-@btime evaluate!($c,$∇qf,$p)
+# @btime evaluate!($c,$∇qf,$p)
 
 qfx = q.(x)
 ∇qfx = ∇q.(x)
 test_field(qf,x,qfx,grad=∇qfx)
 
 c = return_cache(qf,p)
-@btime evaluate!($c,$qf,$p)
+# @btime evaluate!($c,$qf,$p)
 
 c = return_cache(∇qf,p)
-@btime evaluate!($c,$∇qf,$p)
+# @btime evaluate!($c,$∇qf,$p)
 
 c = return_cache(qf,x)
-@btime evaluate!($c,$qf,$x)
+# @btime evaluate!($c,$qf,$x)
 
 c = return_cache(∇qf,x)
-@btime evaluate!($c,$∇qf,$x)
+# @btime evaluate!($c,$∇qf,$x)
 
 # GenericField (constant)
 
@@ -86,10 +86,10 @@ evaluate(vf,x)
 test_field(vf,x,vx)
 
 c = return_cache(vf,p)
-@btime evaluate!($c,$vf,$p)
+# @btime evaluate!($c,$vf,$p)
 
 c = return_cache(vf,x)
-@btime evaluate!($c,$vf,$x)
+# @btime evaluate!($c,$vf,$x)
 
 
 ∇vf = ∇(vf)
@@ -100,10 +100,10 @@ test_field(vf,p,v,grad=∇vp)
 test_field(vf,x,vx,grad=∇vfx)
 
 c = return_cache(∇vf,x)
-@btime evaluate!($c,$∇vf,$x)
+# @btime evaluate!($c,$∇vf,$x)
 
 c = return_cache(∇vf,x)
-@btime evaluate!($c,$∇vf,$x)
+# @btime evaluate!($c,$∇vf,$x)
 
 ∇∇vf = gradient(gradient(vf))
 evaluate(∇∇vf,p)
@@ -114,7 +114,7 @@ test_field(vf,p,v,grad=∇vp,hessian=∇∇vfp)
 test_field(vf,x,vx,grad=∇vfx,hessian=∇∇vfx)
 
 c = return_cache(∇∇vf,p)
-@btime evaluate!($c,$∇∇vf,$p)
+# @btime evaluate!($c,$∇∇vf,$p)
 
 # ZeroField
 

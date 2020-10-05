@@ -94,6 +94,11 @@ cm = apply(aaop,bb)
 r = apply(cm,x)
 @test all([ r[i] ≈ 2*(sqrt.(x[i])) for i in 1:4])
 
+kk = cm[1]
+ckk = return_cache(kk,p)
+evaluate!(ckk,kk,p)
+
+
 aop = apply(Operation(+),aa,bb)
 apply(aa,x)+apply(bb,x)
 apply(evaluate,aop,x)

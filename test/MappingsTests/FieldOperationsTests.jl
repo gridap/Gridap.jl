@@ -25,11 +25,11 @@ df = f+f
 test_field(df,p,2*fp,grad=2.0*∇fp)
 
 c = return_cache(df,p)
-@btime evaluate!($c,$df,$p)
+# @btime evaluate!($c,$df,$p)
 
 ∇df = ∇(df)
 c = return_cache(∇df,p)
-@btime evaluate!($c,$∇df,$p)
+# @btime evaluate!($c,$∇df,$p)
 
 df = f-f
 test_field(df,p,fp-fp,grad=0.0*∇fp)
@@ -38,7 +38,7 @@ df = GenericField(2.0)*f
 test_field(df,p,fp*2.0,grad=2.0*∇fp)
 
 c = return_cache(df,p)
-@btime evaluate!($c,$df,$p)
+# @btime evaluate!($c,$df,$p)
 
 q(x) = 2*x
 ∇q = gradient(q)
@@ -51,13 +51,13 @@ fp = evaluate(f,p)
 test_field(f,p,fp,grad=∇fp)
 
 c = return_cache(f,p)
-@btime evaluate!($c,$f,$p)
+# @btime evaluate!($c,$f,$p)
 
 df = f+f
 test_field(df,p,2*fp,grad=2.0*∇fp)
 
 c = return_cache(df,p)
-@btime evaluate!($c,$df,$p)
+# @btime evaluate!($c,$df,$p)
 
 df = f-f
 test_field(df,p,fp-fp,grad=0.0*∇fp)
@@ -70,9 +70,9 @@ evaluate(∇df,p)
 test_field(df,p,fp*2.0,grad=∇dfp)
 
 c = return_cache(df,p)
-@btime evaluate!($c,$df,$p)
+# @btime evaluate!($c,$df,$p)
 c = return_cache(∇df,p)
-@btime evaluate!($c,$∇df,$p)
+# @btime evaluate!($c,$∇df,$p)
 
 
 df = f⋅f
@@ -81,9 +81,9 @@ dfp = (∇fp⋅fp)*2
 test_field(df,p,fp⋅fp,grad=dfp)
 
 c = return_cache(df,p)
-@btime evaluate!($c,$df,$p)
+# @btime evaluate!($c,$df,$p)
 c = return_cache(∇df,p)
-@btime evaluate!($c,$∇df,$p)
+# @btime evaluate!($c,$∇df,$p)
 
 
 bdf = df
@@ -95,9 +95,9 @@ bdfp = fill(fp⋅fp,np)
 test_field(bdf,x,bdfp,grad=∇bdfp)
 
 c = return_cache(bdf,x)
-@btime evaluate!($c,$bdf,$x)
+# @btime evaluate!($c,$bdf,$x)
 c = return_cache(∇bdf,x)
-@btime evaluate!($c,$∇bdf,$x)
+# @btime evaluate!($c,$∇bdf,$x)
 
 # Composition
 
@@ -142,6 +142,6 @@ bdfx = evaluate(bdf,x)
 test_field(bdf,x,bdfx,grad=∇bdfx)
 
 c = return_cache(∇bdf,x)
-@btime evaluate!(c,∇bdf,x)
+# @btime evaluate!(c,∇bdf,x)
 
 end # module

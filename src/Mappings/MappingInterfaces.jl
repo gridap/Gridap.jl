@@ -121,21 +121,9 @@ Applies the mappings in the tuple `fs` at the arguments `x...`
 by using the corresponding cache objects in the tuple `caches`.
 The result is also a tuple containing the result for each mapping in `fs`.
 """
-@inline function evaluate!(cfs::Tuple,f::Tuple,x...)
-  map((c,fi) -> evaluate!(c,fi,x...),cfs,f)
-end
-
-"""
-    evaluate(fs::Tuple,x...) -> Tuple
-
-Returns a tuple with the cache corresponding to each kernel in `fs`
-for the arguments `x...`.
-"""
-function evaluate(fs::Tuple,x...)
-  cs = map(fi -> return_cache(fi,x...),fs)
-  y = evaluate!(cs,fs,x...)
-  y
-end
+# @inline function evaluate!(cfs::Tuple,f::Tuple,x...)
+#   map((c,fi) -> evaluate!(c,fi,x...),cfs,f)
+# end
 
 # @santiagobadia : Do we need this?
 # Extended Array interface
@@ -224,14 +212,14 @@ end
 
 function return_cache(c::OperationMapping,x...)
   cl = map(fi -> return_cache(fi,x...),c.l)
-  lx = evaluate!(cl,c.l,x...)
+  lx = map((ci,fi) -> evaluate!(ci,fi,x...),cl,c.l)
   ck = return_cache(c.k,lx...)
   (ck,cl)
 end
 
 @inline function evaluate!(cache,c::OperationMapping,x...)
   ck, cf = cache
-  lx = evaluate!(cf,c.l,x...)
+  lx = map((ci,fi) -> evaluate!(ci,fi,x...),cf,c.l)
   evaluate!(ck,c.k,lx...)
 end
 
