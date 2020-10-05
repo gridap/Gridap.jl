@@ -112,33 +112,32 @@ function test_mapping(f,x::Tuple,y,cmp=(==))
   @test cmp(typeof(z),typeof(y))
 end
 
-# Work with several Mapping objects
-
-"""
-    evaluate!(caches::Tuple,fs::Tuple,x...) -> Tuple
-
-Applies the mappings in the tuple `fs` at the arguments `x...`
-by using the corresponding cache objects in the tuple `caches`.
-The result is also a tuple containing the result for each mapping in `fs`.
-"""
-# @inline function evaluate!(cfs::Tuple,f::Tuple,x...)
-#   map((c,fi) -> evaluate!(c,fi,x...),cfs,f)
-# end
-
-# @santiagobadia : Do we need this?
-# Extended Array interface
-
-# function return_cache(a::AbstractArray)
-#   i = testitem(eachindex(a))
-#   return_cache(a,Tuple(i)...)
-# end
-
-# function return_cache(a::AbstractArray,i...)
-#   nothing
-# end
-
 # Broadcast Functions
 
+"""
+    BroadcastMapping(f)
+
+Returns a mapping that represents the "broadcasted" version of the
+function `f`.
+
+# Example
+
+```jldoctest
+using Gridap.Mappings
+
+a = [3,2]
+b = [2,1]
+
+bm = BroadcastMapping(+)
+
+c = evaluate(bm,a,b)
+
+println(c)
+
+# output
+[5, 3]
+```
+"""
 struct BroadcastMapping{F} <: Mapping
   f::F
 end
@@ -197,6 +196,12 @@ end
 
 # OperationMappings
 
+"""
+    OperationMapping(f,args)
+
+Returns a mapping that represents the result of applying the function `f`
+to the arguments in the tuple `args`.
+"""
 struct OperationMapping{K,L} <: Mapping
   k::K
   l::L
@@ -225,6 +230,31 @@ end
 
 # Operations
 
+"""
+    Operation(op)
+
+Returns a mapping that, when applied to a tuple `args`, returns
+`OperationMapping(op,args)`
+
+# Example
+
+```jldoctest
+using Gridap.Mappings
+
+fa(x) = x.*x
+fb(x) = sqrt.(x)
+
+x = collect(0:5)
+
+fab = Operation(fa)(fb)
+c = evaluate(fab,x)
+
+println(c)
+
+# output
+[0.0, 1.0, 2.0, 3.0, 4.0, 5.0]
+```
+"""
 struct Operation{T} <: Mapping
   op::T
 end
