@@ -40,37 +40,28 @@ export operation
 # Field
 
 using Gridap.TensorValues
-
 using ForwardDiff
+using LinearAlgebra: mul!, Transpose
 
 import LinearAlgebra: det, inv, transpose
 import Base: +, -, *, /
 import LinearAlgebra: ⋅
 
-import Base: promote_type
-using LinearAlgebra: mul!, Transpose
-
 export Field
 export GenericField
 export FieldGradient
 export FieldHessian
-export ConstantField
-export FunctionField
 export BroadcastField
 export ZeroField
 export MockField
 export Point
-
-export TransposeFieldVector
-export BroadcastOpFieldArray
-export CompositionFieldArrayField
-export DotOpFieldVectors
 
 export evaluate_gradient!
 export return_gradient_type
 export return_gradient_cache
 export evaluate_hessian!
 export return_hessian_cache
+export return_hessian_type
 
 export gradient
 export ∇
@@ -83,30 +74,21 @@ export test_broadcast_field_array
 
 export mock_field
 
+export TransposeFieldVector
+export TransposeFieldIndices
+export BroadcastOpFieldArray
+export DotOpFieldVectors
+export LinearCombinationField
+export CompositionFieldArrayField
+export FieldGradientArray
+export FieldHessianArray
+
 export linear_combination
 export integrate
 
 export MatMul
+export LinCombVal
 export Integrate
-
-# export MockBasis
-# export LinearCombinationField
-# export OtherMockField
-# export OtherMockBasis
-
-# export GenericFieldArray
-
-# export FieldHessian
-# export FieldGradientArray
-# export FieldHessianArray
-
-
-# # export gradients
-
-# export field_composition
-# export field_array_composition
-
-# export mock_field
 
 include("MappingInterfaces.jl")
 
@@ -123,16 +105,5 @@ include("MockFields.jl")
 include("AutoDiff.jl")
 
 include("ArraysMappings.jl")
-
-# include("FunctionMappings.jl")
-
-# include("AlgebraMappings.jl")
-
-# include("MappingArrays.jl")
-
-# include("ConstantMappings.jl")
-
-# @santiagobadia : To be decided what to do here
-# include("MappingGradients.jl")
 
 end
