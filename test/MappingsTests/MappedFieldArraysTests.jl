@@ -65,17 +65,17 @@ vm_a = fill(vm,na)
 res_field_a = apply(field_a,x_a)
 
 c_r = array_cache(res_field_a)
-@btime getindex!($c_r,$res_field_a,1);
+# @btime getindex!($c_r,$res_field_a,1);
 
 # Evaluate basis
 
 res_basis_a = apply(basis_a,x_a)
 
 c_r = array_cache(res_basis_a)
-@btime getindex!($c_r,$res_basis_a,1);
+# @btime getindex!($c_r,$res_basis_a,1);
 
 cb = return_cache(basis,x)
-@btime evaluate!(cb,basis,x)
+# @btime evaluate!(cb,basis,x)
 
 # Transpose basis
 
@@ -88,7 +88,7 @@ for j in 1:na
 end
 
 c_r = array_cache(res_tbasis_a)
-@btime getindex!($c_r,$res_tbasis_a,1);
+# @btime getindex!($c_r,$res_tbasis_a,1);
 
 # Broadcast operation basis basis
 
@@ -97,7 +97,7 @@ brbasis_a = apply(BroadcastMapping(Operation(op)),basis_a,basis_a)
 res_brbasis_a = apply(evaluate,brbasis_a,x_a)
 
 c_r = array_cache(res_brbasis_a)
-@btime getindex!($c_r,$res_brbasis_a,$1);
+# @btime getindex!($c_r,$res_brbasis_a,$1);
 
 # Broadcast operation basis field
 
@@ -112,7 +112,7 @@ for j in 1:na
 end
 
 c_r = array_cache(res_brbasisfield_a)
-@btime getindex!($c_r,$res_brbasisfield_a,1);
+# @btime getindex!($c_r,$res_brbasisfield_a,1);
 
 # Linear Combination basis values (vector values)
 
@@ -126,7 +126,7 @@ for j in 1:na
 end
 
 c_r = array_cache(res_vxbasis_a)
-@btime getindex!(c_r,res_vxbasis_a,1)
+# @btime getindex!(c_r,res_vxbasis_a,1)
 
 # Linear Combination basis values (matrix values)
 
@@ -140,7 +140,7 @@ for j in 1:na
 end
 
 c_r = array_cache(res_vmxbasis_a)
-@btime getindex!(c_r,res_vmxbasis_a,1)
+# @btime getindex!(c_r,res_vmxbasis_a,1)
 
 # basis*transpose(basis)
 
@@ -154,7 +154,7 @@ for j in 1:na
 end
 
 c_r = array_cache(res_basisxtbasis_a)
-@btime getindex!($c_r,$res_basisxtbasis_a,1);
+# @btime getindex!($c_r,$res_basisxtbasis_a,1);
 
 # composition basis(field)
 
@@ -165,7 +165,7 @@ res_compfield_a = apply(evaluate,compfield_a,x_a)
 @test all([ res_compfield_a[i] == apply(field_a,res_field_a)[i] for i in 1:na])
 
 c_r = array_cache(res_compfield_a)
-@btime getindex!($c_r,$res_compfield_a,1);
+# @btime getindex!($c_r,$res_compfield_a,1);
 
 # composition basis(basis, field)
 
@@ -176,7 +176,7 @@ res_compbasisfield_a = apply(evaluate,compbasisfield_a,x_a)
 @test all([ res_compbasisfield_a[i] == apply(basis_a,res_field_a)[i] for i in 1:na])
 
 c_r = array_cache(res_compbasisfield_a)
-@btime getindex!($c_r,$res_compbasisfield_a,1);
+# @btime getindex!($c_r,$res_compbasisfield_a,1);
 
 
 # transpose(basis)*basis
@@ -190,11 +190,12 @@ for j in 1:na
 end
 
 c_r = array_cache(res_tbasisxbasis_a)
-@btime getindex!($c_r,$res_tbasisxbasis_a,1);
+# @btime getindex!($c_r,$res_tbasisxbasis_a,1);
 
 # integration (field)
 
-w_a = v_a
+w = rand(np)
+w_a = fill(w,na)
 jac = GenericField(TensorValue(4.0,0.0,0.0,4.0))
 jac_a = fill(jac,na)
 res_jac_a = apply(evaluate,jac_a,x_a)
@@ -210,11 +211,11 @@ for i in 1:length(x_a)
 end
 
 c = array_cache(res_integrate_a)
-@btime getindex!($c,$res_integrate_a,1)
+# @btime getindex!($c,$res_integrate_a,1)
 
 # integration (basis)
 
-w_a = v_a
+# w_a = v_a
 jac = GenericField(TensorValue(4.0,0.0,0.0,4.0))
 jac_a = fill(jac,na)
 res_jac_a = apply(evaluate,jac_a,x_a)
@@ -229,6 +230,6 @@ for i in 1:length(x_a)
 end
 
 c = array_cache(res_integrate_a)
-@btime getindex!(c,res_integrate_a,1)
+# @btime getindex!(c,res_integrate_a,1)
 
 end # module

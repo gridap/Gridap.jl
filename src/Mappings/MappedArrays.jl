@@ -1,5 +1,101 @@
-# Apply an array of Mapping to other arrays
 
+"""
+    apply(f,a::AbstractArray...) -> AbstractArray
+
+Applies the `Mapping` (or `Function`) `f` to the entries of the arrays in `a`
+(see the definition of [`Mapping`](@ref)).
+
+The resulting array `r` is such that `r[i]` equals to `evaluate(f,ai...)` where `ai`
+is the tuple containing the `i`-th entry of the arrays in `a` (see function
+[`evaluate`](@ref) for more details).
+In other words, the resulting array is numerically equivalent to:
+
+    map( (x...)->evaluate(f,x...), a...)
+
+# Examples
+
+Using a function as mapping
+
+```jldoctest
+using Gridap.Arrays
+
+a = collect(0:5)
+b = collect(10:15)
+
+c = apply(+,a,b)
+
+println(c)
+
+# output
+[10, 12, 14, 16, 18, 20]
+```
+
+Using a user-defined mapping
+
+```jldoctest
+using Gridap.Arrays
+import Gridap.Arrays: evaluate!
+
+a = collect(0:5)
+b = collect(10:15)
+
+struct MySum <: Mapping end
+
+evaluate!(cache,::MySum,x,y) = x + y
+
+k = MySum()
+
+c = apply(k,a,b)
+
+println(c)
+
+# output
+[10, 12, 14, 16, 18, 20]
+```
+"""
+apply(k::Mapping,f::AbstractArray...) = _apply_mapping(k,f...)
+
+apply(k::Function,f::AbstractArray...) = _apply_mapping(k,f...)
+
+"""
+    apply(::Type{T},f,a::AbstractArray...) where T
+
+Like [`apply(f,a::AbstractArray...)`](@ref), but the user provides the element type
+of the resulting array in order to circumvent type inference.
+"""
+apply(T::Type,k::Mapping,f::AbstractArray...) = _apply_mapping(T,k,f...)
+
+apply(T::Type,k::Function,f::AbstractArray...) = _apply_mapping(T,k,f...)
+
+"""
+    apply(f::AbstractArray,a::AbstractArray...) -> AbstractArray
+Applies the kernels in the array of kernels `f` to the entries in the arrays in `a`.
+
+The resulting array has the same entries as the one obtained with:
+
+    map( apply_kernel, f, a...)
+
+See the [`apply_kernel`](@ref) function for details.
+
+# Example
+
+"Evaluating" an array of functions
+
+```jldoctest
+using Gridap.Arrays
+
+f = [+,-,max,min]
+a = [1,2,3,4]
+b = [4,3,2,1]
+
+c = apply(f,a,b)
+
+println(c)
+
+# output
+[5, -1, 3, 1]
+```
+"""
 function apply(g::AbstractArray,f::AbstractArray...)
   MappedArray(g,f...)
 end
@@ -7,14 +103,6 @@ end
 function apply(::Type{T},g::AbstractArray,f::AbstractArray...) where T
   MappedArray(T,g,f...)
 end
-
-apply(T::Type,k::Mapping,f::AbstractArray...) = _apply_mapping(T,k,f...)
-
-apply(T::Type,k::Function,f::AbstractArray...) = _apply_mapping(T,k,f...)
-
-apply(k::Mapping,f::AbstractArray...) = _apply_mapping(k,f...)
-
-apply(k::Function,f::AbstractArray...) = _apply_mapping(k,f...)
 
 function _apply_mapping(k,f::AbstractArray...)
     s = common_size(f...)
@@ -158,3 +246,26 @@ function common_size(a::AbstractArray...)
   l = size(a1)
   (l,)
 end
+
+# struct ArrayWithCounter{T,N,A,C} <: AbstractArray{T,N}
+#   array::A
+#   counter::C
+#   function ArrayWithCounter(a::AbstractArray{T,N}) where {T,N}
+#     c = zeros(Int,size(a))
+#     c[:] .= 0
+#     new{T,N,typeof(a),typeof(c)}(a,c)
+#   end
+# end
+
+# Base.size(a::ArrayWithCounter) = size(a.array)
+
+# function Base.getindex(a::ArrayWithCounter,i::Integer...)
+#   a.counter[i...] += 1
+#   a.array[i...]
+# end
+
+# Base.IndexStyle(::Type{<:ArrayWithCounter{T,N,A}}) where {T,A,N} = IndexStyle(A)
+
+# function reset_counter!(a::ArrayWithCounter)
+#   a.counter[:] .= 0
+# end

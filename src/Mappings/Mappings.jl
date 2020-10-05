@@ -29,8 +29,8 @@ export MappedArray
 
 export apply
 export test_mapped_array
-# import Gridap.Arrays: apply
 import Gridap.Arrays: array_cache
+# import Gridap.Arrays: apply
 
 export BroadcastMapping
 export OperationMapping
