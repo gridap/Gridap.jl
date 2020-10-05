@@ -14,7 +14,7 @@ and optionally these ones:
 
 The kernel interface can be tested with the [`test_kernel`](@ref) function.
 
-Note that most of the functionality implemented in terms of this interface
+Note that most of the mapping implemented in terms of this interface
 relies in duck typing. That is, it is not strictly needed to work with types
 that inherit from `Kernel`. This is specially useful in order to accommodate
 existing types into this framework without the need to implement a wrapper type
@@ -506,4 +506,3 @@ end
   mul!(d,a,b,k.α,k.β)
   d
 end
-

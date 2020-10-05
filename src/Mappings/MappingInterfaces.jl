@@ -1,11 +1,70 @@
+"""
+Abstract type representing a function (mapping) that provides a cache and an in-place
+evaluation for performance. This is the type to be used in the [`apply`](@ref) function.
+
+Derived types must implement the following method:
+
+- [`evaluate!(cache,k,x...)`](@ref)
+
+and optionally these ones:
+
+- [`return_cache(k,x...)`](@ref)
+- [`return_type(k,x...)`](@ref)
+
+The mapping interface can be tested with the [`test_mapping`](@ref) function.
+
+Note that most of the functionality implemented in terms of this interface
+relies in duck typing. That is, it is not strictly needed to work with types
+that inherit from `Mapping`. This is specially useful in order to accommodate
+existing types into this framework without the need to implement a wrapper type
+that inherits from `Mapping`. For instance, a default implementation is available
+for `Function` objects.  However, we recommend that new types inherit from `Mapping`.
+
+"""
 abstract type Mapping <: GridapType end
 
+"""
+    return_cache(f,x...)
+
+Returns the `cache` needed to apply mapping `f` with arguments
+of the same type as the objects in `x`.
+This function returns `nothing` by default, i.e., no cache.
+"""
 return_cache(f,x...) = nothing
 
+"""
+    evaluate!(cache,f,x...)
+
+Applies the mapping `f` at the arguments `x...` using
+the scratch data provided in the given `cache` object. The `cache` object
+is built with the [`return_cache`](@ref) function using arguments of the same type as in `x`.
+In general, the returned value `y` can share some part of its state with the `cache` object.
+If the result of two or more calls to this function need to be accessed simultaneously
+(e.g., in multi-threading), create and use several `cache` objects (e.g., one cache
+per thread).
+"""
 evaluate!(cache,f,x...) = @abstractmethod
 
+"""
+    return_type(f,x...)
+
+Returns the type of the result of calling mapping `f` with
+arguments of the types of the objects `x`.
+
+Its default implementation is `typeof(kernel_testitem(f,x...))`
+"""
 return_type(f,x...) = typeof(testitem(f,x...))
 
+"""
+    evaluate(f,x...)
+
+evaluates the mapping `f` at the arguments in `x` by creating a temporary cache
+internally. This functions is equivalent to
+```jl
+cache = return_cache(f,x...)
+evaluate!(cache,f,x...)
+```
+"""
 function evaluate(f,x...)
   c = return_cache(f,x...)
   y = evaluate!(c,f,x...)
@@ -31,6 +90,15 @@ evaluate!(cache,f::Union{Number,AbstractArray{<:Number}},x...) = f
 
 # Testing the interface
 
+"""
+    test_mapping(f,x::Tuple,y,cmp=(==))
+
+Function used to test if the mapping `f` has been
+implemented correctly. `f` is a `Mapping` sub-type, `x` is a tuple in the domain of the
+mapping and `y` is the expected result. Function `cmp` is used to compare
+the computed result with the expected one. The checks are done with the `@test`
+macro.
+"""
 function test_mapping(f,x::Tuple,y,cmp=(==))
   z = evaluate(f,x...)
   @test cmp(z,y)
@@ -46,10 +114,23 @@ end
 
 # Work with several Mapping objects
 
+"""
+    evaluate!(caches::Tuple,fs::Tuple,x...) -> Tuple
+
+Applies the mappings in the tuple `fs` at the arguments `x...`
+by using the corresponding cache objects in the tuple `caches`.
+The result is also a tuple containing the result for each mapping in `fs`.
+"""
 @inline function evaluate!(cfs::Tuple,f::Tuple,x...)
   map((c,fi) -> evaluate!(c,fi,x...),cfs,f)
 end
 
+"""
+    evaluate(fs::Tuple,x...) -> Tuple
+
+Returns a tuple with the cache corresponding to each kernel in `fs`
+for the arguments `x...`.
+"""
 function evaluate(fs::Tuple,x...)
   cs = map(fi -> return_cache(fi,x...),fs)
   y = evaluate!(cs,fs,x...)

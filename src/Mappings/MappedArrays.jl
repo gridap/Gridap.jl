@@ -53,9 +53,9 @@ println(c)
 [10, 12, 14, 16, 18, 20]
 ```
 """
-apply(k::Mapping,f::AbstractArray...) = _apply_mapping(k,f...)
+apply(k,f::AbstractArray...) = _apply_mapping(k,f...)
 
-apply(k::Function,f::AbstractArray...) = _apply_mapping(k,f...)
+# apply(k::Function,f::AbstractArray...) = _apply_mapping(k,f...)
 
 """
     apply(::Type{T},f,a::AbstractArray...) where T
@@ -63,19 +63,19 @@ apply(k::Function,f::AbstractArray...) = _apply_mapping(k,f...)
 Like [`apply(f,a::AbstractArray...)`](@ref), but the user provides the element type
 of the resulting array in order to circumvent type inference.
 """
-apply(T::Type,k::Mapping,f::AbstractArray...) = _apply_mapping(T,k,f...)
+apply(T::Type,k,f::AbstractArray...) = _apply_mapping(T,k,f...)
 
-apply(T::Type,k::Function,f::AbstractArray...) = _apply_mapping(T,k,f...)
+# apply(T::Type,k::Function,f::AbstractArray...) = _apply_mapping(T,k,f...)
 
 """
     apply(f::AbstractArray,a::AbstractArray...) -> AbstractArray
-Applies the kernels in the array of kernels `f` to the entries in the arrays in `a`.
+Applies the mappings in the array of mappings `f` to the entries in the arrays in `a`.
 
 The resulting array has the same entries as the one obtained with:
 
-    map( apply_kernel, f, a...)
+    map( apply, f, a...)
 
-See the [`apply_kernel`](@ref) function for details.
+See the [`evaluate`](@ref) function for details.
 
 # Example
 
@@ -100,6 +100,12 @@ function apply(g::AbstractArray,f::AbstractArray...)
   MappedArray(g,f...)
 end
 
+"""
+    apply(::Type{T},f::AbstractArray,a::AbstractArray...) where T
+
+Like [`apply(f::AbstractArray,a::AbstractArray...)`](@ref), but the user provides the element type
+of the resulting array in order to circumvent type inference.
+"""
 function apply(::Type{T},g::AbstractArray,f::AbstractArray...) where T
   MappedArray(T,g,f...)
 end
