@@ -1,5 +1,63 @@
+"""
+    const Point{D,T} = VectorValue{D,T}
+
+Type representing a point of D dimensions with coordinates of type T.
+Fields are evaluated at vectors of `Point` objects.
+"""
 const Point{D,T} = VectorValue{D,T}
 
+"""
+    abstract type Field <: Mapping
+
+Abstract type representing a physical (scalar, vector, or tensor) field. The
+domain is a `Point` and the range a scalar (i.e., a sub-type of Julia `Number`),
+a `VectorValue`, or a `TensorValue`.
+
+These different cases are distinguished by the return value obtained when evaluating them. E.g.,
+a physical field returns a vector of values when evaluated at a vector of points, and a basis of `nf` fields
+returns a 2d matrix (`np` x `nf`) when evaluated at a vector of `np` points.
+
+The following functions (i.e., the `Mapping` API) need to be overloaded:
+
+- [`evaluate!(cache,f,x)`](@ref)
+- [`return_cache(f,x)`](@ref)
+
+and optionally
+
+- [`return_type(f,x)`](@ref)
+
+A `Field` can also provide its gradient if the following function is implemented
+- [`gradient(f)`](@ref)
+
+Higher derivatives can be obtained if the resulting object also implements this method.
+
+Moreover, if the [`gradient(f)`](@ref) is not provided, a default implementation that uses the
+following functions will be used.
+
+- [`evaluate_gradient!(cache,f,x)`](@ref)
+- [`return_gradient_cache(f,x)`](@ref)
+
+Higher order derivatives require the implementation of
+
+- [`evaluate_hessian!(cache,f,x)`](@ref)
+- [`return_hessian_cache(f,x)`](@ref)
+
+These four methods are only designed to be called by the default implementation of [`field_gradient(f)`](@ref) and thus
+cannot be assumed that they are available for an arbitrary field. For this reason, these functions are not
+exported. The general way of evaluating a gradient of a field is to
+build the gradient with [`gradient(f)`](@ref) and evaluating the resulting object. For evaluating
+the hessian, use two times `gradient`.
+
+The interface can be tested with
+
+- [`test_field`](@ref)
+
+For performance, the user can also consider a _vectorised_ version of the
+`Field` API that evaluates the field in a vector of points (instead of only one
+point). E.g., the `evaluate!` function for a vector of points returns a vector
+of scalar, vector or tensor values.
+
+"""
 abstract type Field <: Mapping end
 
 return_cache(f::Field,x) = _default_return_cache(f,x)
@@ -61,6 +119,10 @@ end
 
 # GenericField
 
+"""
+A wrapper for objects that can act as fields, e.g., functions, numbers, or
+vector or tensor values, which implement the `Field` API.
+"""
 struct GenericField{T} <: Field
   object::T
 end
@@ -90,12 +152,12 @@ end
 
 @inline Base.zero(a::Field) = ZeroField(a)
 
+"""
+It represents `0.0*f` for a field `f`.
+"""
 struct ZeroField{F} <: Field
   field::F
 end
-
-# @inline return_type(z::ZeroField,x::Point) = return_type(z.field,x)
-# @inline return_type(z::ZeroField,x::AbstractArray{<:Point}) = return_type(z.field,x)
 
 @inline return_cache(z::ZeroField,x::Point) = zero(return_type(z.field,x))
 
@@ -242,6 +304,11 @@ end
 
 # Differentiation
 
+"""
+Type that represents the gradient of a field. The wrapped field implements must
+implement `evaluate_gradient!` and `return_gradient_cache` for this gradient
+to work.
+"""
 struct FieldGradient{F} <: Field
   object::F
 end
@@ -254,6 +321,11 @@ end
 
 @inline return_cache(f::FieldGradient,x) = return_gradient_cache(f.object,x)
 
+"""
+Type that represents the hessian of a field. The wrapped field implements must
+implement `evaluate_hessian!` and `return_hessian_cache` for this Hessian
+to work.
+"""
 struct FieldHessian{F} <: Field
   object::F
 end
@@ -270,6 +342,9 @@ end
 
 # Operations
 
+"""
+A `Field` that is obtained as a given operation over a tuple of fields.
+"""
 struct OperationField{O,F} <: Field
   op::O
   fields::F
@@ -362,6 +437,11 @@ end
 
 # Composition
 
+"""
+    f∘g
+
+It returns the composition of two fields, which is just `Operation(f)(g)`
+"""
 @inline Base.:∘(f::Field,g::Field) = Operation(f)(g)
 
 # Other operations
@@ -372,10 +452,26 @@ end
 
 # Testers
 
+"""
+    test_field(
+      f::Union{Field,AbstractArray{<:Field}},
+      x,
+      v,
+      cmp=(==);
+      grad=nothing,
+      hessian=nothing)
+
+Function used to test the field interface. `v` is an array containing the expected
+result of evaluating the field `f` at the point or vector of points `x`. The comparison is performed using
+the `cmp` function. For fields objects that support the `gradient` function, the keyword
+argument `grad` can be used. It should contain the result of evaluating `gradient(f)` at x.
+Idem for `hessian`. The checks are performed with the `@test` macro.
+"""
 function test_field(
   f::Union{Field,AbstractArray{<:Field}},
   x::Tuple,
-  v,cmp=(==);
+  v,
+  cmp=(==);
   grad=nothing,
   hessian=nothing)
 

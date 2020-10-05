@@ -1,9 +1,19 @@
 # Default implementation of evaluate! for arrays of fields
 
+"""
+Implementation of `return_cache` for an array of `Field`
+"""
 @inline function return_cache(f::AbstractArray{<:Field},x)
   _default_return_cache(f,x)
 end
 
+"""
+Implementation of `return_cache` for a vector of `Field`.
+
+If the field vector has length `nf` and it is evaluated in one point, it
+returns an `nf` vector with the result. If the same array is applied to a
+vector of `np` points, it returns a matrix `np` x `nf`.
+"""
 @inline function evaluate!(c,f::AbstractArray{<:Field},x)
   _default_evaluate!(c,f,x)
 end
@@ -83,6 +93,9 @@ end
 
 # Transpose
 
+"""
+It returns the transpose of a field array, which is another field array.
+"""
 @inline function Base.transpose(a::AbstractVector{<:Field})
   TransposeFieldVector(a)
 end
@@ -112,26 +125,14 @@ end
 @inline transpose_field_indices(M::AbstractVector) = transpose(M)
 @inline transpose_field_indices(M::AbstractMatrix) = TransposeFieldIndices(M)
 
-struct TransposeFieldIndices{A,T} <: AbstractArray{T,3}
-  matrix::A
-  @inline function TransposeFieldIndices(matrix::AbstractMatrix{T}) where T
-    A = typeof(matrix)
-    new{A,T}(matrix)
-  end
-end
-
-@inline Base.size(a::TransposeFieldIndices) = (size(a.matrix,1),1,size(a.matrix,2))
-@inline Base.axes(a::TransposeFieldIndices) = (axes(a.matrix,1),Base.OneTo(1),axes(a.matrix,2))
-@inline Base.IndexStyle(::Type{<:TransposeFieldIndices{A}}) where A = IndexStyle(A)
-@inline Base.getindex(a::TransposeFieldIndices,i::Integer,j::Integer,k::Integer) = a.matrix[i,k]
-@inline Base.getindex(a::TransposeFieldIndices,i::Integer) = a.matrix[i]
-@inline Base.setindex!(a::TransposeFieldIndices,v,i::Integer,j::Integer,k::Integer) = (a.matrix[i,k] = v)
-@inline Base.setindex!(a::TransposeFieldIndices,v,i::Integer) = (a.matrix[i] = v)
-
 # Broadcast operations
 
 @inline (b::BroadcastMapping{<:Operation})(args::Union{Field,AbstractArray{<:Field}}...) = BroadcastOpFieldArray(b.f.op,args...)
 
+"""
+Type that represents a broadcast operation over a set of `AbstractArray{<:Field}`.
+The result is a sub-type of `AbstractArray{<:Field}`
+"""
 struct BroadcastOpFieldArray{O,T,S<:Field,N} <: AbstractArray{S,N}
   op::O
   args::T
@@ -169,6 +170,10 @@ end
 
 # Dot product vectors
 
+"""
+Type that represents the Julia dot-product for two vectors of fields.
+The result is a sub-type of `Field`
+"""
 struct DotOpFieldVectors{F,G} <: Field
   f::F
   g::G
@@ -228,6 +233,12 @@ end
 # linear combination
 
 # Function to be used for dispatch in MappedArray
+
+"""
+    linear_combination(a,b)
+It returns the linear combination of a vector of fields for a given vector of
+  coefficients. The result is a `LinearCombination` field.
+"""
 @inline linear_combination(a::AbstractVector{<:Field},b::AbstractArray{<:Number}) = transpose(a)*b
 @inline linear_combination(a::AbstractArray{<:Number},b::AbstractVector{<:Field}) = transpose(b)*a
 
@@ -237,6 +248,11 @@ end
 # transpose(i_to_f)*i_to_vals
 # transpose(i_to_f)*ij_to_vals
 #
+"""
+    a*b
+
+    Idem as `linear_combination(a,b)`
+"""
 @inline function Base.:*(a::TransposeFieldVector,b::AbstractVector{<:Number})
   LinearCombinationField(a.basis,b)
 end
@@ -249,6 +265,10 @@ end
 Base.:*(a::AbstractMatrix{<:Field},b::AbstractVector{<:Number}) = @notimplemented
 Base.:*(a::AbstractMatrix{<:Field},b::AbstractMatrix{<:Number}) = @notimplemented
 
+"""
+Sub-type of `Field` that represents the linear combination of a vector of fields
+for a given vector of coefficients.
+"""
 struct LinearCombinationField{B,V} <: Field
   basis::B
   values::V
@@ -270,6 +290,11 @@ end
 
 # Composition
 
+"""
+Sub-type of `Field` that represents the composition of two fields. It can
+also represent the vector of fields that results from the composition of
+every field in a vector of fields and another field.
+"""
 struct CompositionFieldArrayField{T,N,A,B} <:AbstractArray{T,N}
   f::A
   g::B
@@ -283,6 +308,10 @@ struct CompositionFieldArrayField{T,N,A,B} <:AbstractArray{T,N}
   end
 end
 
+"""
+Composition of a field (or vector of fields) and another field. It returns a
+`CompositionFieldArrayField`
+"""
 @inline (b::BroadcastMapping{typeof(∘)})(f::AbstractArray{<:Field},g::Field) = CompositionFieldArrayField(f,g)
 
 function return_cache(fa::CompositionFieldArrayField,x)
@@ -309,6 +338,9 @@ end
   FieldGradientArray(f)
 end
 
+"""
+A wrapper that represents the broadcast of `gradient` over an array of fields.
+"""
 struct FieldGradientArray{A,T,N} <: AbstractArray{T,N}
   fa::A
   function FieldGradientArray(f::AbstractArray{<:Field})
@@ -341,6 +373,10 @@ end
 
 # Hessian
 
+"""
+A wrapper that represents the application of `gradient` twice
+over an array of fields.
+"""
 struct FieldHessianArray{A,T,N} <: AbstractArray{T,N}
   fa::A
   function FieldHessianArray(f::AbstractArray{<:Field})
@@ -412,3 +448,25 @@ function test_operation_field_array(op,x,fs...)
   @test evaluate(fb,x) == evaluate(fba,x)
   fba
 end
+
+"""
+Given a matrix `np` x `nf1` x `nf2` result of the evaluation of a field vector
+on a vector of points, it returns an array in which the field axes (second and
+third axes) are permuted. It is equivalent as `Base.permutedims(A,(1,3,2)`
+but more performant, since it does not involve allocations.
+"""
+struct TransposeFieldIndices{A,T} <: AbstractArray{T,3}
+  matrix::A
+  @inline function TransposeFieldIndices(matrix::AbstractMatrix{T}) where T
+    A = typeof(matrix)
+    new{A,T}(matrix)
+  end
+end
+
+@inline Base.size(a::TransposeFieldIndices) = (size(a.matrix,1),1,size(a.matrix,2))
+@inline Base.axes(a::TransposeFieldIndices) = (axes(a.matrix,1),Base.OneTo(1),axes(a.matrix,2))
+@inline Base.IndexStyle(::Type{<:TransposeFieldIndices{A}}) where A = IndexStyle(A)
+@inline Base.getindex(a::TransposeFieldIndices,i::Integer,j::Integer,k::Integer) = a.matrix[i,k]
+@inline Base.getindex(a::TransposeFieldIndices,i::Integer) = a.matrix[i]
+@inline Base.setindex!(a::TransposeFieldIndices,v,i::Integer,j::Integer,k::Integer) = (a.matrix[i,k] = v)
+@inline Base.setindex!(a::TransposeFieldIndices,v,i::Integer) = (a.matrix[i] = v)

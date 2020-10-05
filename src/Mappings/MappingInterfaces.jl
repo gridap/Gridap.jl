@@ -259,6 +259,11 @@ struct Operation{T} <: Mapping
   op::T
 end
 
+"""
+    operation(op)
+
+    Idem as [`Operation(op)`](@ref)).
+"""
 operation(a) = Operation(a)
 
 evaluate!(cache,op::Operation,x...) = OperationMapping(op.op,x)
