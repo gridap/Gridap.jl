@@ -41,7 +41,8 @@ end
 end
 
 # @santiagobadia : Not so happy with this... Probably a new type of array that
-# takes into account the insertion of the first axis...
+# takes into account the insertion of the first axis and its own array operations
+# taking into account this extra point axis
 struct LinCombVal <: Mapping end
 
 @inline function return_cache(::LinCombVal,a::AbstractMatrix,b::AbstractMatrix)

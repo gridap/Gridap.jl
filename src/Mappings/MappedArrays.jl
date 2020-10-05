@@ -8,23 +8,23 @@ function apply(::Type{T},g::AbstractArray,f::AbstractArray...) where T
   MappedArray(T,g,f...)
 end
 
-function apply_mapping(k,f::AbstractArray...)
+apply(T::Type,k::Mapping,f::AbstractArray...) = _apply_mapping(T,k,f...)
+
+apply(T::Type,k::Function,f::AbstractArray...) = _apply_mapping(T,k,f...)
+
+apply(k::Mapping,f::AbstractArray...) = _apply_mapping(k,f...)
+
+apply(k::Function,f::AbstractArray...) = _apply_mapping(k,f...)
+
+function _apply_mapping(k,f::AbstractArray...)
     s = common_size(f...)
     apply(Fill(k, s...), f...)
 end
 
-function apply_mapping(::Type{T},k,f::AbstractArray...) where T
+function _apply_mapping(::Type{T},k,f::AbstractArray...) where T
   s = common_size(f...)
   apply(T,Fill(k, s...), f...)
 end
-
-apply(T::Type,k::Mapping,f::AbstractArray...) = apply_mapping(T,k,f...)
-
-apply(T::Type,k::Function,f::AbstractArray...) = apply_mapping(T,k,f...)
-
-apply(k::Mapping,f::AbstractArray...) = apply_mapping(k,f...)
-
-apply(k::Function,f::AbstractArray...) = apply_mapping(k,f...)
 
 struct MappedArray{G,T,N,F} <: AbstractArray{T,N}
   g::G
@@ -36,10 +36,9 @@ struct MappedArray{G,T,N,F} <: AbstractArray{T,N}
   end
 end
 
-function MappedArray(g::AbstractArray, f::AbstractArray...)
-  gi = testitem(g) # Assumes that all mappings return the same type
+function MappedArray(g::AbstractArray{S}, f::AbstractArray...) where S
+  isconcretetype(S) ? gi = testitem(g) : @notimplemented
   fi = map(testitem,f)
-  # fi = testitems(f...)
   T = typeof(testitem(gi, fi...))
   MappedArray(T, g, f...)
 end
@@ -53,10 +52,8 @@ function array_cache(a::MappedArray,i...)
   end
   gi = testitem(a.g)
   fi = Tuple(testitem.(a.f))
-  # fi = testitems(a.f...)
   cg = return_cache(a.g,i...)
   cf = map(fi -> return_cache(fi,i...),a.f)
-  # cf = return_caches(a.f,i...)
   cgi = return_cache(gi, fi...)
   cg, cgi, cf
 end
@@ -68,7 +65,6 @@ if ! (eltype(a.g) <: Function)
 end
 gi = testitem(a.g)
 fi = Tuple(testitem.(a.f))
-# fi = testitems(a.f...)
 cg = array_cache(a.g)
 cf = map(array_cache,a.f)
 cgi = return_cache(gi, fi...)
@@ -116,7 +112,7 @@ function _getvalues(a::Fill)
   (ai,)
 end
 
-# @santiagobadia CompressedArray and Union{CompressedArray,Fill}
+# @santiagobadia : CompressedArray and Union{CompressedArray,Fill}
 # To be done when starting Algebra part
 
 # Operator
@@ -151,7 +147,6 @@ function test_mapped_array(
     g = apply_mapping(gradient, a)
     test_mapped_array(g, x, grad, cmp)
   end
-
 end
 
 function common_size(a::AbstractArray...)

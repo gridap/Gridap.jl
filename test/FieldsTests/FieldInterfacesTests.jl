@@ -24,11 +24,6 @@ test_field(f,x,fx)
 c = return_cache(f,x)
 @btime evaluate!(c,f,x)
 
-# test_field(f,p,evaluate(f,p),evaluate(∇(f),p))
-
-# @btime evaluate(f,x)
-# @btime evaluate(bf,x)
-
 ∇f = gradient(f)
 ∇fp = evaluate(∇f,p)
 @test ∇fp == zero(TensorValue{2,2,Float64,4})
@@ -99,7 +94,6 @@ c = return_cache(vf,x)
 
 ∇vf = ∇(vf)
 ∇vf.object
-# ∇vp = TensorValue(0.0,0.0,0.0,0.0)
 ∇vp = VectorValue(0.0,0.0)
 test_field(vf,p,v,grad=∇vp)
 ∇vfx = fill(∇vp,np)

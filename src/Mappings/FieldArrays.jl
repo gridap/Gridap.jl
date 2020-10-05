@@ -104,7 +104,7 @@ end
 
 @inline return_cache(a::TransposeFieldVector,x) = return_cache(a.basis,x)
 
-function evaluate!(cache,a::TransposeFieldVector,x)#::AbstractArray{<:Point})
+function evaluate!(cache,a::TransposeFieldVector,x)
   M = evaluate!(cache,a.basis,x)
   transpose_field_indices(M)
 end
@@ -153,7 +153,6 @@ end
 
 function return_cache(f::BroadcastOpFieldArray,x)
   cfs = map(fi -> return_cache(fi,x),f.args)
-  # cfs = return_caches(f.args,x)
   rs = map((ci,fi) -> evaluate!(ci,fi,x),cfs,f.args)
   bm = BroadcastMapping(f.op)
   r = return_cache(bm,rs...)
@@ -255,13 +254,7 @@ struct LinearCombinationField{B,V} <: Field
   values::V
 end
 
-@inline return_cache(a::LinearCombinationField,x::Point) = _lincomb_return_cache(a,x)
-@inline evaluate!(cache,a::LinearCombinationField,x::Point) = _lincomb_evaluate!(cache,a,x)
-
-@inline return_cache(a::LinearCombinationField,x::AbstractArray{<:Point}) = _lincomb_return_cache(a,x)
-@inline evaluate!(cache,a::LinearCombinationField,x::AbstractArray{<:Point}) = _lincomb_evaluate!(cache,a,x)
-
-function _lincomb_return_cache(a::LinearCombinationField,x)#::AbstractArray{<:Point})
+function return_cache(a::LinearCombinationField,x)
   cb = return_cache(a.basis,x)
   bx = evaluate!(cb, a.basis, x)
   v = a.values
@@ -269,7 +262,7 @@ function _lincomb_return_cache(a::LinearCombinationField,x)#::AbstractArray{<:Po
   cb, cr
 end
 
-function _lincomb_evaluate!(cache,a::LinearCombinationField,x)#::AbstractArray{<:Point})
+function evaluate!(cache,a::LinearCombinationField,x)
   cb, cr = cache
   bx = evaluate!(cb,a.basis,x)
   evaluate!(cr,LinCombVal(),bx,a.values)
@@ -292,14 +285,14 @@ end
 
 @inline (b::BroadcastMapping{typeof(∘)})(f::AbstractArray{<:Field},g::Field) = CompositionFieldArrayField(f,g)
 
-function return_cache(fa::CompositionFieldArrayField,x)#::AbstractArray{<:Point})
+function return_cache(fa::CompositionFieldArrayField,x)
   cg = return_cache(fa.g,x)
   rg = evaluate!(cg,fa.g,x)
   cf = return_cache(fa.f,x)
   cf, cg
 end
 
-function evaluate!(c,fa::CompositionFieldArrayField,x)#::AbstractArray{<:Point})
+function evaluate!(c,fa::CompositionFieldArrayField,x)
   cf, cg = c
   rg = evaluate!(cg,fa.g,x)
   rf = evaluate!(cf,fa.f,x)
@@ -371,12 +364,8 @@ end
 @inline Base.eltype(a::FieldHessianArray{A}) where A = FieldHessian{eltype(A)}
 @inline Base.IndexStyle(::Type{<:FieldHessianArray{A}}) where A = IndexStyle(A)
 
-# @santiagobadia : Gradients of the previous operations ? needed?
-# reimplement again chain rules etc for arrays... !
-
-# Meeting 22 Sep
-# integrate(f::Field,x::AbstractVector{<:Point},w::AbstractVector{<:Real}) = sum( f(x) .* w  )
-# integrate(f::AbstractArray{<:Field},x::AbstractVector{<:Point},w::AbstractVector{<:Real}) =
+# @santiagobadia : Gradients of the previous operations ? needed? we can leave it
+# for the future if really needed
 
 # Testers
 

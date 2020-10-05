@@ -97,10 +97,6 @@ function apply(
   apply(op,fx...)
 end
 
-# Efficient gradients for Fields in lazy arrays
-# apply(gradient,f)
-# is the optimized API
-
 # Optimization for
 #
 #  g = apply( linear_combination, cell_to_i_to_f, cell_to_i_to_val)
@@ -183,7 +179,7 @@ function apply(
   apply(Operation(+),r1,r2)
 end
 
-# @santiagobadia : Function just used for dispatching
+# Function just used for dispatching
 integrate(f::Field,w,j,x) = transpose(evaluate(f,x))*(w.*meas.(j(x)))
 integrate(f::AbstractArray{<:Field},w,j,x) = transpose(evaluate(f,x))*(w.*meas.(j(x)))
 
@@ -199,7 +195,7 @@ function apply(
 end
 
 # Other optimizations
-
+#
 function apply(
   ::typeof(linear_combination), a::MappedArray{<:Fill{typeof(transpose)}}, i_to_values::AbstractArray)
 

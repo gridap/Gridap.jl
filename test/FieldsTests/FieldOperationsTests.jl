@@ -138,7 +138,6 @@ test_field(bdf,x,bdfx,grad=∇bdfx)
 bdf = bf∘bf
 ∇bdf = ∇(bdf)
 bdfx = evaluate(bdf,x)
-# ∇bdfp = evaluate(∇bf,evaluate(bf,p)).⋅evaluate(∇bf,p)
 ∇bdfx = evaluate(∇bf,evaluate(bf,x)).⋅evaluate(∇bf,x)
 test_field(bdf,x,bdfx,grad=∇bdfx)
 
