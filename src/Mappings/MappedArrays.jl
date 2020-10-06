@@ -52,12 +52,12 @@ println(c)
 [10, 12, 14, 16, 18, 20]
 ```
 """
-@inline function apply(k,f::AbstractArray...)
+@inline function lazy_map(k,f::AbstractArray...)
   s = common_size(f...)
-  apply(evaluate,Fill(k, s...), f...)
+  lazy_map(evaluate,Fill(k, s...), f...)
 end
 
-@inline apply(::typeof(evaluate),k::AbstractArray,f::AbstractArray...) = MappedArray(k,f...)
+@inline lazy_map(::typeof(evaluate),k::AbstractArray,f::AbstractArray...) = MappedArray(k,f...)
 
 """
     apply(::Type{T},f,a::AbstractArray...) where T
@@ -65,12 +65,12 @@ end
 Like [`apply(f,a::AbstractArray...)`](@ref), but the user provides the element type
 of the resulting array in order to circumvent type inference.
 """
-@inline function apply(k,T::Type,f::AbstractArray...)
+@inline function lazy_map(k,T::Type,f::AbstractArray...)
   s = common_size(f...)
-  apply(evaluate,T,Fill(k, s...), f...)
+  lazy_map(evaluate,T,Fill(k, s...), f...)
 end
 
-@inline apply(::typeof(evaluate),T::Type,k::AbstractArray,f::AbstractArray...) = MappedArray(T,k,f...)
+@inline lazy_map(::typeof(evaluate),T::Type,k::AbstractArray,f::AbstractArray...) = MappedArray(T,k,f...)
 
 # """
 #     apply(f::AbstractArray,a::AbstractArray...) -> AbstractArray

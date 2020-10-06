@@ -12,12 +12,12 @@
 #  g = apply( linear_combination, cell_to_i_to_f, cell_to_i_to_val)
 #  apply(evaluate,g,cell_to_x)
 #
-function apply(
+function lazy_map(
   ::typeof(evaluate), a::MappedArray{<:Fill{typeof(linear_combination)}}, x::AbstractArray)
 
-  i_to_basis = apply(evaluate,a.f[1],x)
+  i_to_basis = lazy_map(evaluate,a.f[1],x)
   i_to_values = a.f[2]
-  apply(LinCombVal(),i_to_basis,i_to_values)
+  lazy_map(LinCombVal(),i_to_basis,i_to_values)
 end
 
 linear_combination_on_values(b_pi::AbstractMatrix,v_i::AbstractVector) = evaluate!(c,MatMul(),b_pi,v_i)
@@ -31,11 +31,11 @@ linear_combination_on_values(b_i::AbstractVector,v_ij::AbstractMatrix) = evaluat
 #  g = apply(transpose,cell_to_i_to_f)
 #  apply(evaluate,g)
 #
-function apply(
+function lazy_map(
   ::typeof(evaluate), a::MappedArray{<:Fill{typeof(transpose)}}, x::AbstractArray)
 
-  i_to_basis = apply(evaluate,a.f[1],x)
-  apply(transpose_field_indices,i_to_basis)
+  i_to_basis = lazy_map(evaluate,a.f[1],x)
+  lazy_map(transpose_field_indices,i_to_basis)
 end
 
 # Optimization for
@@ -43,13 +43,13 @@ end
 #  g = apply(∘,cell_to_f,cell_to_h)
 #  apply(evaluate,g)
 #
-function apply(
+function lazy_map(
   ::typeof(evaluate), a::MappedArray{<:Fill{typeof(∘)}}, x::AbstractArray)
 
   f = a.f[1]
   g = a.f[2]
-  gx = apply(evaluate,g,x)
-  fx = apply(evaluate,f,gx)
+  gx = lazy_map(evaluate,g,x)
+  fx = lazy_map(evaluate,f,gx)
   fx
 end
 
@@ -58,13 +58,13 @@ end
 #  g = apply(Broadcasting(∘),cell_to_i_to_f,cell_to_h)
 #  apply(evaluate,g)
 #
-function apply(
+function lazy_map(
   ::typeof(evaluate), a::MappedArray{<:Fill{Broadcasting{typeof(∘)}}}, x::AbstractArray)
 
   f = a.f[1]
   g = a.f[2]
-  gx = apply(evaluate,g,x)
-  fx = apply(evaluate,f,gx)
+  gx = lazy_map(evaluate,g,x)
+  fx = lazy_map(evaluate,f,gx)
   fx
 end
 
@@ -73,14 +73,14 @@ end
 #  g = apply(Operation(+),cell_to_f,cell_to_h)
 #  apply(evaluate,g)
 #
-function apply(
+function lazy_map(
   ::typeof(evaluate),
   a::MappedArray{<:Fill{<:Operation}},
   x::AbstractArray)
 
-  fx = map( fi->apply(evaluate,fi,x), a.f)
+  fx = map( fi->lazy_map(evaluate,fi,x), a.f)
   op = a.g.value.op
-  apply( op, fx...)
+  lazy_map( op, fx...)
 end
 
 
@@ -89,12 +89,12 @@ end
 #  g = apply(Broadcasting(Operation(+)),cell_to_f,cell_to_h)
 #  apply(evaluate,g)
 #
-function apply(
+function lazy_map(
   ::typeof(evaluate), a::MappedArray{<:Fill{<:Broadcasting{<:Operation}}}, x::AbstractArray)
 
-  fx = map( fi->apply(evaluate,fi,x), a.f)
+  fx = map( fi->lazy_map(evaluate,fi,x), a.f)
   op = Broadcasting(a.g.value.f.op)
-  apply(op,fx...)
+  lazy_map(op,fx...)
 end
 
 # Optimization for
@@ -102,12 +102,12 @@ end
 #  g = apply( linear_combination, cell_to_i_to_f, cell_to_i_to_val)
 #  apply(gradient,g)
 #
-function apply(
+function lazy_map(
   ::typeof(gradient), a::MappedArray{<:Fill{typeof(linear_combination)}})
 
-  i_to_basis = apply(Broadcasting(gradient),a.f[1])
+  i_to_basis = lazy_map(Broadcasting(gradient),a.f[1])
   i_to_values = a.f[2]
-  apply(linear_combination,i_to_basis,i_to_values)
+  lazy_map(linear_combination,i_to_basis,i_to_values)
 end
 
 # Optimization for
@@ -115,12 +115,12 @@ end
 #  g = apply( linear_combination, cell_to_i_to_f, cell_to_i_to_val)
 #  apply(Broadcasting(gradient),g)
 #
-function apply(
+function lazy_map(
   ::Broadcasting{typeof(gradient)}, a::MappedArray{<:Fill{typeof(linear_combination)}})
 
-  i_to_basis = apply(Broadcasting(gradient),a.f[1])
+  i_to_basis = lazy_map(Broadcasting(gradient),a.f[1])
   i_to_values = a.f[2]
-  apply(linear_combination,i_to_basis,i_to_values)
+  lazy_map(linear_combination,i_to_basis,i_to_values)
 end
 
 # Optimization for
@@ -128,55 +128,55 @@ end
 #  g = apply(transpose,cell_to_i_to_f)
 #  apply(Broadcasting(gradient),g)
 #
-function apply(
+function lazy_map(
   ::Broadcasting{typeof(gradient)}, a::MappedArray{<:Fill{typeof(transpose)}})
 
-  i_to_basis = apply(gradient,a.f[1])
-  apply( transpose, i_to_basis)
+  i_to_basis = lazy_map(gradient,a.f[1])
+  lazy_map( transpose, i_to_basis)
 end
 
 # Product rules
 for op in (:+,:-)
   @eval begin
 
-    function apply(
+    function lazy_map(
       ::typeof(gradient), a::MappedArray{<:Fill{Operation{typeof($op)}}})
 
       f = a.f
-      g = map(i->apply(gradient,i),f)
-      apply(Operation($op),g...)
+      g = map(i->lazy_map(gradient,i),f)
+      lazy_map(Operation($op),g...)
     end
 
-    function apply(
+    function lazy_map(
       ::Broadcasting{typeof(gradient)}, a::MappedArray{<:Fill{Broadcasting{Operation{typeof($op)}}}})
 
       f = a.f
-      g = map(i->apply(gradient,i),f)
-      apply(Broadcasting(Operation($op)),g...)
+      g = map(i->lazy_map(gradient,i),f)
+      lazy_map(Broadcasting(Operation($op)),g...)
     end
 
   end
 end
 
-function apply(
+function lazy_map(
   ::Broadcasting{typeof(gradient)},
   a::MappedArray{<:Fill{Broadcasting{Operation{typeof(*)}}}})
 
   f = a.f
-  g = map(i->apply(gradient,i),f)
-  r1 = apply(Broadcasting(Operation(*)),f[1],g[2])
-  r2 = apply(Broadcasting(Operation(*)),f[2],g[1])
-  apply(Broadcasting(Operation(+)),r1,r2)
+  g = map(i->lazy_map(gradient,i),f)
+  r1 = lazy_map(Broadcasting(Operation(*)),f[1],g[2])
+  r2 = lazy_map(Broadcasting(Operation(*)),f[2],g[1])
+  lazy_map(Broadcasting(Operation(+)),r1,r2)
 end
 
-function apply(
+function lazy_map(
   ::typeof(gradient), a::MappedArray{<:Fill{Operation{typeof(*)}}})
 
   f = a.f
-  g = map(i->apply(gradient,i),f)
-  r1 = apply(Operation(*),f[1],g[2])
-  r2 = apply(Operation(*),f[2],g[1])
-  apply(Operation(+),r1,r2)
+  g = map(i->lazy_map(gradient,i),f)
+  r1 = lazy_map(Operation(*),f[1],g[2])
+  r2 = lazy_map(Operation(*),f[2],g[1])
+  lazy_map(Operation(+),r1,r2)
 end
 
 # Function just used for dispatching
@@ -185,20 +185,20 @@ integrate(f::AbstractArray{<:Field},w,j,x) = transpose(evaluate(f,x))*(w.*meas.(
 
 # @santiagobadia : I would say that the integration points should be at our disposal
 # when creating the MappedArray
-function apply(
+function lazy_map(
   ::typeof(evaluate), a::MappedArray{<:Fill{typeof(integrate)}})#, x::AbstractArray)
   f, w, j, x = a.f
-  fx = apply(evaluate,f,x)
-  jx = apply(evaluate,j,x)
+  fx = lazy_map(evaluate,f,x)
+  jx = lazy_map(evaluate,j,x)
   k = Integrate()
-  apply(k,fx,w,jx)
+  lazy_map(k,fx,w,jx)
 end
 
 # Other optimizations
 #
-function apply(
+function lazy_map(
   ::typeof(linear_combination), a::MappedArray{<:Fill{typeof(transpose)}}, i_to_values::AbstractArray)
 
   i_to_basis = a.f[1]
-  apply(linear_combination,i_to_basis,i_to_values)
+  lazy_map(linear_combination,i_to_basis,i_to_values)
 end
