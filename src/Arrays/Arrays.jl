@@ -37,7 +37,7 @@ export TwoLevelBlockedUnitRange
 
 export array_cache
 export getindex!
-export getitems!
+# export getitems!
 export getitems
 export testitem
 export uses_hash

@@ -204,40 +204,6 @@ end
 # Some API
 
 """
-    testitems(b::AbstractArray...) -> Tuple
-
-Returns a tuple with the result of `testitem` applied to each of the
-arrays in `b`.
-
-# Examples
-
-```jldoctest
-using Gridap.Arrays
-
-a = collect(3:10)
-b = Int[]
-c = Float64[]
-d = ones(10)
-
-testitems(a,b,c,d)
-
-# output
-(3, 0, 0.0, 1.0)
-
-```
-"""
-function testitems(a::AbstractArray,b::AbstractArray...)
-  va = testitem(a)
-  vb = testitems(b...)
-  (va,vb...)
-end
-
-function testitems(a::AbstractArray)
-  va = testitem(a)
-  (va,)
-end
-
-"""
     array_caches(a::AbstractArray...) -> Tuple
 
 Returns a tuple with the cache of each array in `a`.
@@ -260,134 +226,134 @@ end
 
 array_caches() = ()
 
-"""
-    getitems!(c::Tuple,a::Tuple,i...) -> Tuple
+# """
+#     getitems!(c::Tuple,a::Tuple,i...) -> Tuple
 
-Extracts the `i`-th entry of all arrays in the tuple `a` using the caches in the tuple
-`c`. The results is a tuple containing each one of the extracted entries.
+# Extracts the `i`-th entry of all arrays in the tuple `a` using the caches in the tuple
+# `c`. The results is a tuple containing each one of the extracted entries.
 
-# Example
+# # Example
 
-Iterating over three different arrays simultaneously using `getitems!`
+# Iterating over three different arrays simultaneously using `getitems!`
 
-```jldoctest
-using Gridap.Arrays
+# ```jldoctest
+# using Gridap.Arrays
 
-a = collect(0:5)
-b = collect(10:15)
-c = collect(20:25)
+# a = collect(0:5)
+# b = collect(10:15)
+# c = collect(20:25)
 
-caches = array_caches(a,b,c)
-for i in eachindex(a)
-   s = getitems!(caches,(a,b,c),i)
-   println("\$i -> \$s")
-end
+# caches = array_caches(a,b,c)
+# for i in eachindex(a)
+#    s = getitems!(caches,(a,b,c),i)
+#    println("\$i -> \$s")
+# end
 
-# output
-1 -> (0, 10, 20)
-2 -> (1, 11, 21)
-3 -> (2, 12, 22)
-4 -> (3, 13, 23)
-5 -> (4, 14, 24)
-6 -> (5, 15, 25)
-```
+# # output
+# 1 -> (0, 10, 20)
+# 2 -> (1, 11, 21)
+# 3 -> (2, 12, 22)
+# 4 -> (3, 13, 23)
+# 5 -> (4, 14, 24)
+# 6 -> (5, 15, 25)
+# ```
 
-"""
-@inline function getitems!(cf::Tuple,a::Tuple{Vararg{<:AbstractArray}},i...)
-  _getitems!(cf,i,a...)
-end
+# """
+# @inline function getitems!(cf::Tuple,a::Tuple{Vararg{<:AbstractArray}},i...)
+#   _getitems!(cf,i,a...)
+# end
 
-getitems!(::Tuple{},::Tuple{},i) = ()
+# getitems!(::Tuple{},::Tuple{},i) = ()
 
-@inline function _getitems!(c,i,a,b...)
-  ca,cb = _split(c...)
-  ai = getindex!(ca,a,i...)
-  bi = getitems!(cb,b,i...)
-  (ai,bi...)
-end
+# @inline function _getitems!(c,i,a,b...)
+#   ca,cb = _split(c...)
+#   ai = getindex!(ca,a,i...)
+#   bi = getitems!(cb,b,i...)
+#   (ai,bi...)
+# end
 
-@inline function _getitems!(c,i,a)
-  ca, = c
-  ai = getindex!(ca,a,i...)
-  (ai,)
-end
+# @inline function _getitems!(c,i,a)
+#   ca, = c
+#   ai = getindex!(ca,a,i...)
+#   (ai,)
+# end
 
-# Hack to fix type-instability (use generated function?)
-@inline function _getitems!(c,i,a1,a2)
-  ca1,ca2 = c
-  a1i = getindex!(ca1,a1,i...)
-  a2i = getindex!(ca2,a2,i...)
-  (a1i,a2i)
-end
+# # Hack to fix type-instability (use generated function?)
+# @inline function _getitems!(c,i,a1,a2)
+#   ca1,ca2 = c
+#   a1i = getindex!(ca1,a1,i...)
+#   a2i = getindex!(ca2,a2,i...)
+#   (a1i,a2i)
+# end
 
-# Hack to fix type-instability (use generated function?)
-@inline function _getitems!(c,i,a1,a2,a3)
-  ca1,ca2,ca3 = c
-  a1i = getindex!(ca1,a1,i...)
-  a2i = getindex!(ca2,a2,i...)
-  a3i = getindex!(ca3,a3,i...)
-  (a1i,a2i,a3i)
-end
+# # Hack to fix type-instability (use generated function?)
+# @inline function _getitems!(c,i,a1,a2,a3)
+#   ca1,ca2,ca3 = c
+#   a1i = getindex!(ca1,a1,i...)
+#   a2i = getindex!(ca2,a2,i...)
+#   a3i = getindex!(ca3,a3,i...)
+#   (a1i,a2i,a3i)
+# end
 
-# Hack to fix type-instability
-@inline function _getitems!(c,i,a1,a2,a3,a4)
-  ca1,ca2,ca3,ca4 = c
-  a1i = getindex!(ca1,a1,i...)
-  a2i = getindex!(ca2,a2,i...)
-  a3i = getindex!(ca3,a3,i...)
-  a4i = getindex!(ca4,a4,i...)
-  (a1i,a2i,a3i,a4i)
-end
+# # Hack to fix type-instability
+# @inline function _getitems!(c,i,a1,a2,a3,a4)
+#   ca1,ca2,ca3,ca4 = c
+#   a1i = getindex!(ca1,a1,i...)
+#   a2i = getindex!(ca2,a2,i...)
+#   a3i = getindex!(ca3,a3,i...)
+#   a4i = getindex!(ca4,a4,i...)
+#   (a1i,a2i,a3i,a4i)
+# end
 
-@inline function _getitems!(c,i,a1,a2,a3,a4,a5)
-  ca1,ca2,ca3,ca4,ca5 = c
-  a1i = getindex!(ca1,a1,i...)
-  a2i = getindex!(ca2,a2,i...)
-  a3i = getindex!(ca3,a3,i...)
-  a4i = getindex!(ca4,a4,i...)
-  a5i = getindex!(ca5,a5,i...)
-  (a1i,a2i,a3i,a4i,a5i)
-end
+# @inline function _getitems!(c,i,a1,a2,a3,a4,a5)
+#   ca1,ca2,ca3,ca4,ca5 = c
+#   a1i = getindex!(ca1,a1,i...)
+#   a2i = getindex!(ca2,a2,i...)
+#   a3i = getindex!(ca3,a3,i...)
+#   a4i = getindex!(ca4,a4,i...)
+#   a5i = getindex!(ca5,a5,i...)
+#   (a1i,a2i,a3i,a4i,a5i)
+# end
 
-@inline function _getitems!(c,i,a1,a2,a3,a4,a5,a6)
-  ca1,ca2,ca3,ca4,ca5,ca6 = c
-  a1i = getindex!(ca1,a1,i...)
-  a2i = getindex!(ca2,a2,i...)
-  a3i = getindex!(ca3,a3,i...)
-  a4i = getindex!(ca4,a4,i...)
-  a5i = getindex!(ca5,a5,i...)
-  a6i = getindex!(ca6,a6,i...)
-  (a1i,a2i,a3i,a4i,a5i,a6i)
-end
+# @inline function _getitems!(c,i,a1,a2,a3,a4,a5,a6)
+#   ca1,ca2,ca3,ca4,ca5,ca6 = c
+#   a1i = getindex!(ca1,a1,i...)
+#   a2i = getindex!(ca2,a2,i...)
+#   a3i = getindex!(ca3,a3,i...)
+#   a4i = getindex!(ca4,a4,i...)
+#   a5i = getindex!(ca5,a5,i...)
+#   a6i = getindex!(ca6,a6,i...)
+#   (a1i,a2i,a3i,a4i,a5i,a6i)
+# end
 
-@inline function _getitems!(c,i,a1,a2,a3,a4,a5,a6,a7)
-  ca1,ca2,ca3,ca4,ca5,ca6,ca7 = c
-  a1i = getindex!(ca1,a1,i...)
-  a2i = getindex!(ca2,a2,i...)
-  a3i = getindex!(ca3,a3,i...)
-  a4i = getindex!(ca4,a4,i...)
-  a5i = getindex!(ca5,a5,i...)
-  a6i = getindex!(ca6,a6,i...)
-  a7i = getindex!(ca7,a7,i...)
-  (a1i,a2i,a3i,a4i,a5i,a6i,a7i)
-end
+# @inline function _getitems!(c,i,a1,a2,a3,a4,a5,a6,a7)
+#   ca1,ca2,ca3,ca4,ca5,ca6,ca7 = c
+#   a1i = getindex!(ca1,a1,i...)
+#   a2i = getindex!(ca2,a2,i...)
+#   a3i = getindex!(ca3,a3,i...)
+#   a4i = getindex!(ca4,a4,i...)
+#   a5i = getindex!(ca5,a5,i...)
+#   a6i = getindex!(ca6,a6,i...)
+#   a7i = getindex!(ca7,a7,i...)
+#   (a1i,a2i,a3i,a4i,a5i,a6i,a7i)
+# end
 
-"""
-"""
-@inline function getitems(a::Tuple{Vararg{<:AbstractArray}},i...)
-  _getitems(i,a...)
-end
+# """
+# """
+# @inline function getitems(a::Tuple{Vararg{<:AbstractArray}},i...)
+#   _getitems(i,a...)
+# end
 
-@inline function _getitems(i,a,b...)
-  ai = a[i...]
-  bi = getitems(b,i...)
-  (ai,bi...)
-end
+# @inline function _getitems(i,a,b...)
+#   ai = a[i...]
+#   bi = getitems(b,i...)
+#   (ai,bi...)
+# end
 
-@inline function _getitems(i,a)
-  ai = a[i...]
-  (ai,)
-end
+# @inline function _getitems(i,a)
+#   ai = a[i...]
+#   (ai,)
+# end
 
 """
 """

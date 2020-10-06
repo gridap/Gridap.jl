@@ -256,7 +256,8 @@ end
 function _getindex!(cache,a::AppliedArray,i...)
   cg, cgi, cf = cache
   gi = getindex!(cg,a.g,i...)
-  fi = getitems!(cf,a.f,i...)
+  fi = map((ci,ai) -> getindex!(ci,ai,i...),cf,a.f)
+  # fi = getitems!(cf,a.f,i...)
   vi = apply_kernel!(cgi,gi,fi...)
   vi
 end

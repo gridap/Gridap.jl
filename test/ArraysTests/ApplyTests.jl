@@ -4,6 +4,7 @@ using Test
 using Gridap.Arrays
 using Gridap.Arrays: ArrayWithCounter, reset_counter!
 using FillArrays
+using Gridap.Mappings
 
 a = rand(3,2,4)
 test_array(a,a)
@@ -36,26 +37,33 @@ test_array(c,a.-b)
 
 a = fill(rand(2,3),12)
 b = rand(12)
-c = apply(bcast(-),a,b)
+c = apply(Broadcasting(-),a,b)
 test_array(c,[ai.-bi for (ai,bi) in zip(a,b)])
 
 a = fill(rand(2,3),0)
 b = rand(0)
-c = apply(bcast(-),a,b)
+c = apply(Broadcasting(-),a,b)
 test_array(c,[ai.-bi for (ai,bi) in zip(a,b)])
 
 a = fill(rand(2,3),12)
 b = rand(12)
-c = apply(bcast(-),a,b)
-d = apply(bcast(+),a,c)
-e = apply(bcast(*),d,c)
+c = apply(Broadcasting(-),a,b)
+d = apply(Broadcasting(+),a,c)
+e = apply(Broadcasting(*),d,c)
 test_array(e,[((ai.-bi).+ai).*(ai.-bi) for (ai,bi) in zip(a,b)])
 
 a = fill(rand(Int,2,3),12)
 b = fill(rand(Int,1,3),12)
-c = array_caches(a,b)
+c = map(array_cache,(a,b))
 i = 1
 v = getitems!(c,(a,b),i)
+v == map((ci,ai) -> getindex!(ci,ai,i),c,(a,b))
+
+i
+c
+a
+b
+
 @test c == (nothing,nothing)
 @test v == (a[i],b[i])
 
@@ -84,14 +92,14 @@ test_array(v,r)
 v = apply(Float64,a,x,y)
 test_array(v,r)
 
-a = Fill(bcast(+),10)
+a = Fill(Broadcasting(+),10)
 x = [rand(2,3) for i in 1:10]
 y = [rand(1,3) for i in 1:10]
 v = apply(a,x,y)
 r = [(xi.+yi) for (xi,yi) in zip(x,y)]
 test_array(v,r)
 
-a = Fill(bcast(+),10)
+a = Fill(Broadcasting(+),10)
 x = [rand(mod(i-1,3)+1,3) for i in 1:10]
 y = [rand(1,3) for i in 1:10]
 v = apply(a,x,y)
@@ -102,9 +110,9 @@ test_array(v,r)
 
 a = ArrayWithCounter(fill(rand(2,3),12))
 b = ArrayWithCounter(rand(12))
-c = apply(bcast(-),a,b)
-d = apply(bcast(+),a,c)
-e = apply(bcast(*),d,c)
+c = apply(Broadcasting(-),a,b)
+d = apply(Broadcasting(+),a,c)
+e = apply(Broadcasting(*),d,c)
 r = [ (ai.-bi).*(ai.+(ai.-bi)) for (ai,bi) in zip(a,b)]
 cache = array_cache(e)
 reset_counter!(a)
@@ -115,7 +123,7 @@ for i in 1:length(e)
   ei = getindex!(cache,e,i)
 end
 
-@test all(a.counter .== 2) 
+@test all(a.counter .== 2)
 @test all(b.counter .== 1)
 
 l = 10

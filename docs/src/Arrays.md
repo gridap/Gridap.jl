@@ -32,7 +32,6 @@ test_array
 ## Working with several arrays at once
 
 ```@docs
-getitems!
 getitems(a::Tuple{Vararg{<:AbstractArray}},i...)
 array_caches
 testitems

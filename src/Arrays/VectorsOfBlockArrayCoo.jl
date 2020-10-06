@@ -121,7 +121,7 @@ end
 
 Base.IndexStyle(::Type{<:VectorOfBlockArrayCoo}) = IndexLinear()
 
-function Base.size(a::VectorOfBlockArrayCoo) 
+function Base.size(a::VectorOfBlockArrayCoo)
   if length(a.blocks) != 0
     (length(first(a.blocks)),)
   else
@@ -148,8 +148,10 @@ end
 @inline function getindex!(cache,a::VectorOfBlockArrayCoo,i::Integer)
   blocks_i, zero_blocks_i, ca, cb, cz = cache
   axes_i = getindex!(ca,a.axes,i)
-  blocks_i .= getitems!(cb,a.blocks,i)
-  zero_blocks_i .= getitems!(cz,a.zero_blocks,i)
+  blocks_i .= map((ci,ai) -> getindex!(ci,ai,i),cb,a.blocks)
+  # blocks_i .= getitems!(cb,a.blocks,i)
+  zero_blocks_i .= map((ci,ai) -> getindex!(ci,ai,i),cz,a.zero_blocks)
+  # zero_blocks_i .= getitems!(cz,a.zero_blocks,i)
   BlockArrayCoo(blocks_i,a.blockids,axes_i,a.ptrs,zero_blocks_i)
 end
 
@@ -194,4 +196,3 @@ function apply(::typeof(transpose),a::VectorOfBlockMatrixCoo)
   ptrs = collect(Transpose(a.ptrs))
   VectorOfBlockArrayCoo(Tuple(blocks),blockids,axs,ptrs,Tuple(zero_blocks))
 end
-

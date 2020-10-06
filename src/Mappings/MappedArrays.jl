@@ -177,7 +177,7 @@ cgi = return_cache(gi, fi...)
 cg, cgi, cf
 end
 
-@inline function Base.getindex!(a::AbstractArray,i...) = a[i...]
+@inline getindex!(a::AbstractArray,i...) = a[i...]
 
 #@fverdugo the signature of the index i... has to be improved
 # so that it is resilient to the different types of indices
