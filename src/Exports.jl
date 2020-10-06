@@ -29,7 +29,7 @@ export det, inv, tr, cross, dot, norm, ×, ⋅
 @publish Arrays array_cache
 @publish Arrays getindex!
 @publish Arrays get_array
-@publish Arrays apply
+@publish Arrays lazy_map
 @publish Arrays reindex
 
 @publish TensorValues VectorValue
@@ -145,4 +145,3 @@ using Gridap.FESpaces: @law; export @law
 @publish Visualization writevtk
 @publish Visualization createvtk
 @publish Visualization print_op_tree
-

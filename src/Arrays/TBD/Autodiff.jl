@@ -3,7 +3,7 @@
 """
 function autodiff_array_gradient(a,i_to_x,j_to_i=IdentityVector(length(i_to_x)))
 
-  i_to_xdual = apply(i_to_x) do x
+  i_to_xdual = lazy_map(i_to_x) do x
     cfg = ForwardDiff.GradientConfig(nothing, x, ForwardDiff.Chunk{length(x)}())
     xdual = cfg.duals
     xdual
@@ -13,7 +13,7 @@ function autodiff_array_gradient(a,i_to_x,j_to_i=IdentityVector(length(i_to_x)))
   j_to_x = reindex(i_to_x,j_to_i)
 
   k = ForwardDiffGradientKernel()
-  apply(k,j_to_f,j_to_x)
+  lazy_map(k,j_to_f,j_to_x)
 
 end
 
@@ -25,7 +25,7 @@ function kernel_cache(k::ForwardDiffGradientKernel,f,x)
   (r, cfg)
 end
 
-@inline function apply_kernel!(cache,k::ForwardDiffGradientKernel,f,x)
+@inline function lazy_map_kernel!(cache,k::ForwardDiffGradientKernel,f,x)
   r, cfg = cache
   @notimplementedif length(r) != length(x)
   ForwardDiff.gradient!(r,f,x,cfg)
@@ -36,7 +36,7 @@ end
 """
 function autodiff_array_jacobian(a,i_to_x,j_to_i=IdentityVector(length(i_to_x)))
 
-  i_to_xdual = apply(i_to_x) do x
+  i_to_xdual = lazy_map(i_to_x) do x
     cfg = ForwardDiff.JacobianConfig(nothing, x, ForwardDiff.Chunk{length(x)}())
     xdual = cfg.duals
     xdual
@@ -46,7 +46,7 @@ function autodiff_array_jacobian(a,i_to_x,j_to_i=IdentityVector(length(i_to_x)))
   j_to_x = reindex(i_to_x,j_to_i)
 
   k = ForwardDiffJacobianKernel()
-  apply(k,j_to_f,j_to_x)
+  lazy_map(k,j_to_f,j_to_x)
 
 end
 
@@ -59,7 +59,7 @@ function kernel_cache(k::ForwardDiffJacobianKernel,f,x)
   (j, cfg)
 end
 
-@inline function apply_kernel!(cache,k::ForwardDiffJacobianKernel,f,x)
+@inline function lazy_map_kernel!(cache,k::ForwardDiffJacobianKernel,f,x)
   j, cfg = cache
   @notimplementedif size(j,1) != length(x)
   @notimplementedif size(j,2) != length(x)
@@ -77,7 +77,7 @@ end
 function to_array_of_functions(a,x,ids=IdentityVector(length(x)))
   k = ArrayOfFunctionsKernel(a,x)
   j = IdentityVector(length(ids))
-  apply(k,j)
+  lazy_map(k,j)
 end
 
 struct ArrayOfFunctionsKernel{A,X} <: Kernel
@@ -94,7 +94,7 @@ function kernel_cache(k::ArrayOfFunctionsKernel,j)
   (ax, x, axc)
 end
 
-@inline function apply_kernel!(cache,k::ArrayOfFunctionsKernel,j)
+@inline function lazy_map_kernel!(cache,k::ArrayOfFunctionsKernel,j)
   ax, x, axc = cache
   @inline function f(xj)
     x.value = xj
@@ -111,4 +111,3 @@ end
 Base.size(a::MutableFill) = (a.length,)
 
 @inline Base.getindex(a::MutableFill,i::Integer) = a.value
-

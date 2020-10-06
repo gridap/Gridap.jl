@@ -45,7 +45,7 @@ export test_array
 export testitems
 # export array_caches
 export get_array
-# export get_arrays
+export get_arrays
 # export add_to_array!
 
 export CachedArray
@@ -76,7 +76,7 @@ export kernel_return_types
 export kernel_testitem
 export Kernel
 
-# export apply
+# export lazy_map
 export apply_all
 
 export Table

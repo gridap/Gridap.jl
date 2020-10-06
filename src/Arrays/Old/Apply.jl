@@ -1,18 +1,18 @@
 
 """
-    apply(f,a::AbstractArray...) -> AbstractArray
+    lazy_map(f,a::AbstractArray...) -> AbstractArray
 
 Applies the kernel `f` to the entries of the arrays in `a` (see the definition of [`Kernel`](@ref)).
 
-The resulting array `r` is such that `r[i]` equals to `apply_kernel(f,ai...)` where `ai`
+The resulting array `r` is such that `r[i]` equals to `lazy_map_kernel(f,ai...)` where `ai`
 is the tuple containing the `i`-th entry of the arrays in `a` (see function
-[`apply_kernel`](@ref) for more details).
+[`lazy_map_kernel`](@ref) for more details).
 In other words, the resulting array is numerically equivalent to:
 
-    map( (x...)->apply_kernel(f,x...), a...)
+    map( (x...)->lazy_map_kernel(f,x...), a...)
 
 
-See the [`apply_kernel`](@ref) function for details.
+See the [`lazy_map_kernel`](@ref) function for details.
 
 # Examples
 
@@ -24,7 +24,7 @@ using Gridap.Arrays
 a = collect(0:5)
 b = collect(10:15)
 
-c = apply(+,a,b)
+c = lazy_map(+,a,b)
 
 println(c)
 
@@ -36,18 +36,18 @@ Using a user-defined kernel
 
 ```jldoctest
 using Gridap.Arrays
-import Gridap.Arrays: apply_kernel!
+import Gridap.Arrays: lazy_map_kernel!
 
 a = collect(0:5)
 b = collect(10:15)
 
 struct MySum <: Kernel end
 
-apply_kernel!(cache,::MySum,x,y) = x + y
+lazy_map_kernel!(cache,::MySum,x,y) = x + y
 
 k = MySum()
 
-c = apply(k,a,b)
+c = lazy_map(k,a,b)
 
 println(c)
 
@@ -62,9 +62,9 @@ function lazy_map(f,a::AbstractArray...)
 end
 
 """
-    apply(::Type{T},f,a::AbstractArray...) where T
+    lazy_map(::Type{T},f,a::AbstractArray...) where T
 
-Like [`apply(f,a::AbstractArray...)`](@ref), but the user provides the element type
+Like [`lazy_map(f,a::AbstractArray...)`](@ref), but the user provides the element type
 of the resulting array in order to circumvent type inference.
 """
 function lazy_map(::Type{T},f,a::AbstractArray...) where T
@@ -73,14 +73,14 @@ function lazy_map(::Type{T},f,a::AbstractArray...) where T
 end
 
 """
-    apply(f::AbstractArray,a::AbstractArray...) -> AbstractArray
+    lazy_map(f::AbstractArray,a::AbstractArray...) -> AbstractArray
 Applies the kernels in the array of kernels `f` to the entries in the arrays in `a`.
 
 The resulting array has the same entries as the one obtained with:
 
-    map( apply_kernel, f, a...)
+    map( lazy_map_kernel, f, a...)
 
-See the [`apply_kernel`](@ref) function for details.
+See the [`lazy_map_kernel`](@ref) function for details.
 
 # Example
 
@@ -93,7 +93,7 @@ f = [+,-,max,min]
 a = [1,2,3,4]
 b = [4,3,2,1]
 
-c = apply(f,a,b)
+c = lazy_map(f,a,b)
 
 println(c)
 
@@ -106,9 +106,9 @@ function lazy_map(f::AbstractArray,a::AbstractArray...)
 end
 
 """
-    apply(::Type{T},f::AbstractArray,a::AbstractArray...) where T
+    lazy_map(::Type{T},f::AbstractArray,a::AbstractArray...) where T
 
-Like [`apply(f::AbstractArray,a::AbstractArray...)`](@ref), but the user provides the element type
+Like [`lazy_map(f::AbstractArray,a::AbstractArray...)`](@ref), but the user provides the element type
 of the resulting array in order to circumvent type inference.
 """
 function lazy_map(::Type{T},f::AbstractArray,a::AbstractArray...) where T
@@ -116,11 +116,11 @@ function lazy_map(::Type{T},f::AbstractArray,a::AbstractArray...) where T
 end
 
 """
-    apply_all(f::Tuple,a::AbstractArray...) -> Tuple
+    lazy_map_all(f::Tuple,a::AbstractArray...) -> Tuple
 
 Numerically equivalent to
 
-    tuple( ( apply(fi, a...) for fi in f)... )
+    tuple( ( lazy_map(fi, a...) for fi in f)... )
 
 # Examples
 
@@ -130,10 +130,10 @@ using Gridap.Arrays
 a = [1,2,3,4]
 b = [4,3,2,1]
 
-c = apply_all( (+,-), a, b)
+c = lazy_map_all( (+,-), a, b)
 
 # Equivalent to
-# c = ( apply(+,a,b), apply(-,a,b) )
+# c = ( lazy_map(+,a,b), lazy_map(-,a,b) )
 
 println(c)
 
@@ -142,17 +142,17 @@ println(c)
 
 ```
 """
-function apply_all(f::Tuple,a::AbstractArray...)
-  _apply_several(a,f...)
+function lazy_map_all(f::Tuple,a::AbstractArray...)
+  _lazy_map_several(a,f...)
 end
 
-function _apply_several(a,f,g...)
+function _lazy_map_several(a,f,g...)
   fa = lazy_map(f,a...)
-  ga = _apply_several(a,g...)
+  ga = _lazy_map_several(a,g...)
   (fa,ga...)
 end
 
-function _apply_several(a,f)
+function _lazy_map_several(a,f)
   fa = lazy_map(f,a...)
   (fa,)
 end
@@ -259,7 +259,7 @@ function _getindex!(cache,a::AppliedArray,i...)
   gi = getindex!(cg,a.g,i...)
   fi = map((ci,ai) -> getindex!(ci,ai,i...),cf,a.f)
   # fi = getitems!(cf,a.f,i...)
-  vi = apply_kernel!(cgi,gi,fi...)
+  vi = lazy_map_kernel!(cgi,gi,fi...)
   vi
 end
 
@@ -305,7 +305,7 @@ end
 
 function lazy_map(f::Fill,a::Fill...)
   ai = getvalues(a...)
-  r = apply_kernel(f.value,ai...)
+  r = lazy_map_kernel(f.value,ai...)
   s = common_size(f,a...)
   Fill(r,s)
 end
