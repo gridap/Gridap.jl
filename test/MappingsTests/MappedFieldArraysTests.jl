@@ -60,16 +60,17 @@ v_a = fill(v,na)
 vm = rand(nf,nf)
 vm_a = fill(vm,na)
 
+
 # Evaluate field
 
-res_field_a = apply(field_a,x_a)
+res_field_a = apply(evaluate,field_a,x_a)
 
 c_r = array_cache(res_field_a)
 # @btime getindex!($c_r,$res_field_a,1);
 
 # Evaluate basis
 
-res_basis_a = apply(basis_a,x_a)
+res_basis_a = apply(evaluate,basis_a,x_a)
 
 c_r = array_cache(res_basis_a)
 # @btime getindex!($c_r,$res_basis_a,1);
@@ -82,7 +83,7 @@ cb = return_cache(basis,x)
 tbasis_a = apply(transpose,basis_a)
 @test all([ (tbasis_a[i] == transpose(basis_a[i])) for i in 1:na])
 
-res_tbasis_a = apply(tbasis_a,x_a)
+res_tbasis_a = apply(evaluate,tbasis_a,x_a)
 for j in 1:na
   @test all([res_tbasis_a[j][i,1,:] == res_basis_a[j][i,:] for i in 1:np])
 end
@@ -161,8 +162,14 @@ c_r = array_cache(res_basisxtbasis_a)
 op = ∘
 compfield_a = apply(op,field_a,field_a)
 
+res_field_a = apply(evaluate,field_a,x_a)
+
+
 res_compfield_a = apply(evaluate,compfield_a,x_a)
-@test all([ res_compfield_a[i] == apply(field_a,res_field_a)[i] for i in 1:na])
+
+@test all([
+  res_compfield_a[i]  ==   apply(evaluate,field_a,res_field_a)[i]
+  for i in 1:na])
 
 c_r = array_cache(res_compfield_a)
 # @btime getindex!($c_r,$res_compfield_a,1);
@@ -173,7 +180,7 @@ op = ∘
 compbasisfield_a = apply(Broadcasting(op),basis_a,field_a)
 
 res_compbasisfield_a = apply(evaluate,compbasisfield_a,x_a)
-@test all([ res_compbasisfield_a[i] == apply(basis_a,res_field_a)[i] for i in 1:na])
+@test all([ res_compbasisfield_a[i] == apply(evaluate,basis_a,res_field_a)[i] for i in 1:na])
 
 c_r = array_cache(res_compbasisfield_a)
 # @btime getindex!($c_r,$res_compbasisfield_a,1);
@@ -209,6 +216,11 @@ wmeas_a = apply(Broadcasting(*),w_a,meas_a)
 for i in 1:length(x_a)
   @test transpose(res_field_a[i])*wmeas_a[i] == res_integrate_a[i]
 end
+i = 1
+
+transpose(res_field_a[i])*wmeas_a[i]
+res_integrate_a[i]
+
 
 c = array_cache(res_integrate_a)
 # @btime getindex!($c,$res_integrate_a,1)

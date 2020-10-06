@@ -52,7 +52,12 @@ println(c)
 [10, 12, 14, 16, 18, 20]
 ```
 """
-apply(k,f::AbstractArray...) = _apply_mapping(k,f...)
+@inline function apply(k,f::AbstractArray...)
+  s = common_size(f...)
+  apply(evaluate,Fill(k, s...), f...)
+end
+
+@inline apply(::typeof(evaluate),k::AbstractArray,f::AbstractArray...) = MappedArray(k,f...)
 
 """
     apply(::Type{T},f,a::AbstractArray...) where T
@@ -60,60 +65,65 @@ apply(k,f::AbstractArray...) = _apply_mapping(k,f...)
 Like [`apply(f,a::AbstractArray...)`](@ref), but the user provides the element type
 of the resulting array in order to circumvent type inference.
 """
-apply(T::Type,k,f::AbstractArray...) = _apply_mapping(T,k,f...)
-
-"""
-    apply(f::AbstractArray,a::AbstractArray...) -> AbstractArray
-Applies the mappings in the array of mappings `f` to the entries in the arrays in `a`.
-
-The resulting array has the same entries as the one obtained with:
-
-    map( apply, f, a...)
-
-See the [`evaluate`](@ref) function for details.
-
-# Example
-
-"Evaluating" an array of functions
-
-```jldoctest
-using Gridap.Arrays
-
-f = [+,-,max,min]
-a = [1,2,3,4]
-b = [4,3,2,1]
-
-c = apply(f,a,b)
-
-println(c)
-
-# output
-[5, -1, 3, 1]
-```
-"""
-function apply(g::AbstractArray,f::AbstractArray...)
-  MappedArray(g,f...)
-end
-
-"""
-    apply(::Type{T},f::AbstractArray,a::AbstractArray...) where T
-
-Like [`apply(f::AbstractArray,a::AbstractArray...)`](@ref), but the user provides the element type
-of the resulting array in order to circumvent type inference.
-"""
-function apply(::Type{T},g::AbstractArray,f::AbstractArray...) where T
-  MappedArray(T,g,f...)
-end
-
-function _apply_mapping(k,f::AbstractArray...)
-    s = common_size(f...)
-    apply(Fill(k, s...), f...)
-end
-
-function _apply_mapping(::Type{T},k,f::AbstractArray...) where T
+@inline function apply(k,T::Type,f::AbstractArray...)
   s = common_size(f...)
-  apply(T,Fill(k, s...), f...)
+  apply(evaluate,T,Fill(k, s...), f...)
 end
+
+@inline apply(::typeof(evaluate),T::Type,k::AbstractArray,f::AbstractArray...) = MappedArray(T,k,f...)
+
+# """
+#     apply(f::AbstractArray,a::AbstractArray...) -> AbstractArray
+# Applies the mappings in the array of mappings `f` to the entries in the arrays in `a`.
+
+# The resulting array has the same entries as the one obtained with:
+
+#     map( apply, f, a...)
+
+# See the [`evaluate`](@ref) function for details.
+
+# # Example
+
+# "Evaluating" an array of functions
+
+# ```jldoctest
+# using Gridap.Arrays
+
+# f = [+,-,max,min]
+# a = [1,2,3,4]
+# b = [4,3,2,1]
+
+# c = apply(f,a,b)
+
+# println(c)
+
+# # output
+# [5, -1, 3, 1]
+# ```
+# """
+# function apply(g::AbstractArray,f::AbstractArray...)
+#   MappedArray(g,f...)
+# end
+
+# """
+#     apply(::Type{T},f::AbstractArray,a::AbstractArray...) where T
+
+# Like [`apply(f::AbstractArray,a::AbstractArray...)`](@ref), but the user provides the element type
+# of the resulting array in order to circumvent type inference.
+# """
+# function apply(::Type{T},g::AbstractArray,f::AbstractArray...) where T
+#   MappedArray(T,g,f...)
+# end
+
+# function _apply_mapping(k,f::AbstractArray...)
+#     s = common_size(f...)
+#     apply(Fill(k, s...), f...)
+# end
+
+# function _apply_mapping(::Type{T},k,f::AbstractArray...) where T
+#   s = common_size(f...)
+#   apply(T,Fill(k, s...), f...)
+# end
 
 
 """
@@ -230,9 +240,9 @@ end
 
 # Operator
 
-function apply(op::Operation,x::AbstractArray...)
-  apply(Fill(op,length(first(x))),x...)
-end
+# function apply(op::Operation,x::AbstractArray...)
+  # apply(Fill(op,length(first(x))),x...)
+# end
 
 function test_mapped_array(
   a::AbstractArray,

@@ -3,9 +3,9 @@
 #
 #    apply(evaluate,cell_to_f,cell_to_x)
 #
-function apply(::typeof(evaluate),f::AbstractArray,x::AbstractArray)
-  apply(f,x)
-end
+# function apply(::typeof(evaluate),f::AbstractArray,x::AbstractArray)
+  # apply(f,x)
+# end
 
 # Optimization for
 #

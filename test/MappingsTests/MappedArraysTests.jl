@@ -29,7 +29,7 @@ b = rand(12)
 c = apply(-,a,b)
 test_array(c,a.-b)
 
-c = apply(Float64,-,a,b)
+c = apply(-,Float64,a,b)
 test_array(c,a.-b)
 
 a = rand(0)
@@ -65,10 +65,10 @@ ai, bi = map(testitem,(a,b))
 a = fill(+,10)
 x = rand(10)
 y = rand(10)
-v = apply(a,x,y)
+v = apply(+,x,y)
 r = [(xi+yi) for (xi,yi) in zip(x,y)]
 test_array(v,r)
-v = apply(Float64,a,x,y)
+v = apply(+,Float64,x,y)
 test_array(v,r)
 
 p = 4
@@ -83,16 +83,16 @@ fa(x) = 2*x
 fb(x) = sqrt.(x)
 
 aa = Fill(fa,4)
-r = apply(aa,x)
+r = apply(fa,x)
 @test all([ r[i] ≈ 2*x[i] for i in 1:4])
 
 bb = Fill(fb,4)
-r = apply(bb,x)
+r = apply(fb,x)
 @test all([ r[i] ≈ sqrt.(x[i]) for i in 1:4])
 
 aaop = apply(operation,aa)
-cm = apply(aaop,bb)
-r = apply(cm,x)
+cm = apply(evaluate,aaop,bb)
+r = apply(evaluate,cm,x)
 @test all([ r[i] ≈ 2*(sqrt.(x[i])) for i in 1:4])
 
 kk = cm[1]
@@ -101,9 +101,9 @@ evaluate!(ckk,kk,p)
 
 
 aop = apply(Operation(+),aa,bb)
-apply(aa,x)+apply(bb,x)
+apply(evaluate,aa,x)+apply(evaluate,bb,x)
 apply(evaluate,aop,x)
-@test apply(evaluate,aop,x) == apply(aa,x)+apply(bb,x)
+@test apply(evaluate,aop,x) == apply(evaluate,aa,x)+apply(evaluate,bb,x)
 
 # Broadcasting
 
@@ -127,14 +127,14 @@ test_array(e,[((ai.-bi).+ai).*(ai.-bi) for (ai,bi) in zip(a,b)])
 a = Fill(Broadcasting(+),10)
 x = [rand(2,3) for i in 1:10]
 y = [rand(1,3) for i in 1:10]
-v = apply(a,x,y)
+v = apply(evaluate,a,x,y)
 r = [(xi.+yi) for (xi,yi) in zip(x,y)]
 test_array(v,r)
 
 a = Fill(Broadcasting(+),10)
 x = [rand(mod(i-1,3)+1,3) for i in 1:10]
 y = [rand(1,3) for i in 1:10]
-v = apply(a,x,y)
+v = apply(evaluate,a,x,y)
 r = [(xi.+yi) for (xi,yi) in zip(x,y)]
 test_array(v,r)
 
@@ -163,14 +163,14 @@ x = fill(4,3,3)
 ax = Fill(x,4)
 aa = Fill(Operation(fa),4)
 bb = Fill(fb,4)
-cm = apply(aa,bb)
-r = apply(cm,ax)
+cm = apply(evaluate,aa,bb)
+r = apply(evaluate,cm,ax)
 @test all([ r[i] ≈ 2*(sqrt.(ax[i])) for i in 1:4])
 
 nn = 2
 an = Fill(nn,4)
 ap = Fill(Broadcasting(*),4)
-cm = apply(ap,ax,an)
+cm = apply(evaluate,ap,ax,an)
 @test all([cm[i] == nn*ax[i] for i in 1:4])
 
 c_cm = Mappings.array_cache(cm)
@@ -183,7 +183,7 @@ end
 @test nalloc == 0
 
 as = Fill(Broadcasting(sqrt),4)
-cs = apply(as,ax)
+cs = apply(evaluate,as,ax)
 @test all([cs[i] == sqrt.(ax[i]) for i in 1:4])
 
 c_cs = Mappings.array_cache(cs)
@@ -196,8 +196,8 @@ end
 @test nalloc == 0
 
 asm = apply(operation,as)
-ah = apply(asm,ap)
-ch = apply(ah,ax,an)
+ah = apply(evaluate,asm,ap)
+ch = apply(evaluate,ah,ax,an)
 @test all([ ch[i] ≈ sqrt.(nn*ax[i]) for i in 1:4])
 c_ch = Mappings.array_cache(ch)
 @allocated getindex!(c_ch,ch,1)
