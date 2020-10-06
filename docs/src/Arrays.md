@@ -78,9 +78,7 @@ contract
 ```@docs
 collect1d
 reindex(i_to_v::AbstractArray, j_to_i::AbstractArray)
-add_to_array!(a::AbstractArray{Ta,N},b::AbstractArray{Tb,N},combine=+)  where {Ta,Tb,N} 
 get_array(a::AbstractArray)
-get_arrays(a,b...)
 matvec_muladd!(c::AbstractVector,a::AbstractMatrix,b::AbstractVector)
 pair_arrays(a::AbstractArray,b::AbstractArray)
 unpair_arrays(pair::AbstractArray{<:Tuple})

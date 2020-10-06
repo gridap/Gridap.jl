@@ -45,8 +45,8 @@ export test_array
 export testitems
 # export array_caches
 export get_array
-export get_arrays
-export add_to_array!
+# export get_arrays
+# export add_to_array!
 
 export CachedArray
 export CachedMatrix

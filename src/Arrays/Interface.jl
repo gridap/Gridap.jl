@@ -154,15 +154,15 @@ function get_array(a::AbstractArray)
   a
 end
 
-"""
-"""
-function get_arrays(a,b...)
-  (get_array(a),get_arrays(b...)...)
-end
+# """
+# """
+# function get_arrays(a,b...)
+#   (get_array(a),get_arrays(b...)...)
+# end
 
-function get_arrays(a)
-  (get_array(a),)
-end
+# function get_arrays(a)
+#   (get_array(a),)
+# end
 
 
 # Test the interface
@@ -355,17 +355,17 @@ end
 #   (ai,)
 # end
 
-"""
-"""
-function add_to_array!(a::AbstractArray{Ta,N},b::AbstractArray{Tb,N},combine=+) where {Ta,Tb,N}
-  @assert size(a) == size(b) "Arrays sizes mismatch"
-  @inbounds for i in eachindex(a)
-    a[i] = combine(a[i],b[i])
-  end
-end
+# """
+# """
+# function add_to_array!(a::AbstractArray{Ta,N},b::AbstractArray{Tb,N},combine=+) where {Ta,Tb,N}
+#   @assert size(a) == size(b) "Arrays sizes mismatch"
+#   @inbounds for i in eachindex(a)
+#     a[i] = combine(a[i],b[i])
+#   end
+# end
 
-function add_to_array!(a::AbstractArray,b::Number,combine=+)
-  @inbounds for i in eachindex(a)
-    a[i] = combine(a[i],b)
-  end
-end
+# function add_to_array!(a::AbstractArray,b::Number,combine=+)
+#   @inbounds for i in eachindex(a)
+#     a[i] = combine(a[i],b)
+#   end
+# end
