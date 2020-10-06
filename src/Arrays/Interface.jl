@@ -203,28 +203,28 @@ end
 
 # Some API
 
-"""
-    array_caches(a::AbstractArray...) -> Tuple
+# """
+#     array_caches(a::AbstractArray...) -> Tuple
 
-Returns a tuple with the cache of each array in `a`.
-"""
-function array_caches(a::AbstractArray,b::AbstractArray...)
-  hash = Dict{UInt,Any}()
-  array_caches(hash,a,b...)
-end
+# Returns a tuple with the cache of each array in `a`.
+# """
+# function array_caches(a::AbstractArray,b::AbstractArray...)
+#   hash = Dict{UInt,Any}()
+#   array_caches(hash,a,b...)
+# end
 
-function array_caches(hash::Dict,a::AbstractArray,b::AbstractArray...)
-  ca = array_cache(hash,a)
-  cb = array_caches(hash,b...)
-  (ca,cb...)
-end
+# function array_caches(hash::Dict,a::AbstractArray,b::AbstractArray...)
+#   ca = array_cache(hash,a)
+#   cb = array_caches(hash,b...)
+#   (ca,cb...)
+# end
 
-function array_caches(hash::Dict,a::AbstractArray)
-  ca = array_cache(hash,a)
-  (ca,)
-end
+# function array_caches(hash::Dict,a::AbstractArray)
+#   ca = array_cache(hash,a)
+#   (ca,)
+# end
 
-array_caches() = ()
+# array_caches() = ()
 
 # """
 #     getitems!(c::Tuple,a::Tuple,i...) -> Tuple

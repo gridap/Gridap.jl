@@ -140,8 +140,10 @@ function array_cache(a::VectorOfBlockArrayCoo)
   end
 
   ca = array_cache(a.axes)
-  cb = array_caches(a.blocks...)
-  cz = array_caches(a.zero_blocks...)
+  cb = map(array_cache,a.blocks...)
+  # cb = array_caches(a.blocks...)
+  cz = map(array_cache,a.zero_blocks...)
+  # cz = array_caches(a.zero_blocks...)
   (blocks_i,zero_blocks_i,ca,cb,cz)
 end
 

@@ -43,7 +43,7 @@ export testitem
 export uses_hash
 export test_array
 export testitems
-export array_caches
+# export array_caches
 export get_array
 export get_arrays
 export add_to_array!

@@ -56,5 +56,3 @@ function reindex(a::LocalToGlobalArray,b::AbstractArray)
   lid_to_gid = reindex(a.lid_to_gid,b)
   LocalToGlobalArray(lid_to_gid,a.gid_to_val)
 end
-
-

@@ -57,7 +57,7 @@ function array_cache(a::ArrayOfEvaluatedFields)
   (ca,cp)
 end
 
-@inline function getindex!(cache,a::ArrayOfEvaluatedFields,i...) 
+@inline function getindex!(cache,a::ArrayOfEvaluatedFields,i...)
   ca, cp = cache
   array = getindex!(ca,a.array,i...)
   points = getindex!(ca,a.points,i...)
@@ -77,7 +77,7 @@ end
 
 function update_state_variables!(updater::Function,x::AbstractArray,f::CellField...)
   fx = map(i->evaluate(i,x),f)
-  caches = array_caches(fx...)
+  caches = map(array_cache,fx...)
   cache_x = array_cache(x)
   _update_state_variables!(updater,caches,fx,cache_x,x)
 end
