@@ -28,6 +28,7 @@ using Test
 # Mapping interface
 
 export Mapping
+
 export return_cache
 export evaluate!
 export evaluate
