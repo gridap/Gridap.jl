@@ -83,7 +83,7 @@ function zeros_like(a::VectorOfBlockArrayCoo{T,N} where T) where N
 end
 
 function _zeros_like(::Type{A},I,axs) where A
-  block = apply(axs) do a
+  block = lazy_map(axs) do a
     laxs = map( local_range, a, I)
     zeros_like(A,laxs)
   end
@@ -91,7 +91,7 @@ function _zeros_like(::Type{A},I,axs) where A
 end
 
 function _zeros_like(::Type{<:BlockArrayCoo{T,N,A} where T},I,axs) where {N,A}
-  axsI = apply(axs) do a
+  axsI = lazy_map(axs) do a
     map(local_range, a, I)
   end
   blocks = ()
@@ -190,11 +190,11 @@ function is_zero_block(a::VectorOfBlockArrayCoo,i::Integer...)
   p < 0
 end
 
-function apply(::typeof(transpose),a::VectorOfBlockMatrixCoo)
-  blocks = [ apply(transpose,block) for block in a.blocks ]
-  zero_blocks = [ apply(transpose,block) for block in a.zero_blocks ]
+function lazy_map(::typeof(transpose),a::VectorOfBlockMatrixCoo)
+  blocks = [ lazy_map(transpose,block) for block in a.blocks ]
+  zero_blocks = [ lazy_map(transpose,block) for block in a.zero_blocks ]
   blockids = [ (j,i) for (i,j) in a.blockids ]
-  axs = apply( ax->(ax[2],ax[1]), a.axes)
+  axs = lazy_map( ax->(ax[2],ax[1]), a.axes)
   ptrs = collect(Transpose(a.ptrs))
   VectorOfBlockArrayCoo(Tuple(blocks),blockids,axs,ptrs,Tuple(zero_blocks))
 end

@@ -63,14 +63,14 @@ vm_a = fill(vm,na)
 
 # Evaluate field
 
-res_field_a = apply(evaluate,field_a,x_a)
+res_field_a = lazy_map(evaluate,field_a,x_a)
 
 c_r = array_cache(res_field_a)
 # @btime getindex!($c_r,$res_field_a,1);
 
 # Evaluate basis
 
-res_basis_a = apply(evaluate,basis_a,x_a)
+res_basis_a = lazy_map(evaluate,basis_a,x_a)
 
 c_r = array_cache(res_basis_a)
 # @btime getindex!($c_r,$res_basis_a,1);
@@ -80,10 +80,10 @@ cb = return_cache(basis,x)
 
 # Transpose basis
 
-tbasis_a = apply(transpose,basis_a)
+tbasis_a = lazy_map(transpose,basis_a)
 @test all([ (tbasis_a[i] == transpose(basis_a[i])) for i in 1:na])
 
-res_tbasis_a = apply(evaluate,tbasis_a,x_a)
+res_tbasis_a = lazy_map(evaluate,tbasis_a,x_a)
 for j in 1:na
   @test all([res_tbasis_a[j][i,1,:] == res_basis_a[j][i,:] for i in 1:np])
 end
@@ -94,8 +94,8 @@ c_r = array_cache(res_tbasis_a)
 # Broadcast operation basis basis
 
 op = +
-brbasis_a = apply(Broadcasting(Operation(op)),basis_a,basis_a)
-res_brbasis_a = apply(evaluate,brbasis_a,x_a)
+brbasis_a = lazy_map(Broadcasting(Operation(op)),basis_a,basis_a)
+res_brbasis_a = lazy_map(evaluate,brbasis_a,x_a)
 
 c_r = array_cache(res_brbasis_a)
 # @btime getindex!($c_r,$res_brbasis_a,$1);
@@ -103,9 +103,9 @@ c_r = array_cache(res_brbasis_a)
 # Broadcast operation basis field
 
 op = +
-brbasis_a = apply(Broadcasting(Operation(op)),basis_a,field_a)
+brbasis_a = lazy_map(Broadcasting(Operation(op)),basis_a,field_a)
 
-res_brbasisfield_a = apply(evaluate,brbasis_a,x_a)
+res_brbasisfield_a = lazy_map(evaluate,brbasis_a,x_a)
 for j in 1:na
   for i in 1:np
     @test res_brbasisfield_a[j][i,:] == res_basis_a[j][i,:] .+ res_field_a[j][i]
@@ -117,8 +117,8 @@ c_r = array_cache(res_brbasisfield_a)
 
 # Linear Combination basis values (vector values)
 
-vxbasis_a = apply(linear_combination,basis_a,v_a)
-res_vxbasis_a = apply(evaluate,vxbasis_a,x_a)
+vxbasis_a = lazy_map(linear_combination,basis_a,v_a)
+res_vxbasis_a = lazy_map(evaluate,vxbasis_a,x_a)
 
 for j in 1:na
   for i in 1:np
@@ -131,8 +131,8 @@ c_r = array_cache(res_vxbasis_a)
 
 # Linear Combination basis values (matrix values)
 
-vmxbasis_a = apply(linear_combination,basis_a,vm_a)
-res_vmxbasis_a = apply(evaluate,vmxbasis_a,x_a)
+vmxbasis_a = lazy_map(linear_combination,basis_a,vm_a)
+res_vmxbasis_a = lazy_map(evaluate,vmxbasis_a,x_a)
 
 for j in 1:na
   for i in 1:np
@@ -145,8 +145,8 @@ c_r = array_cache(res_vmxbasis_a)
 
 # basis*transpose(basis)
 
-basisxtbasis_a = apply(Broadcasting(Operation(⋅)),basis_a,tbasis_a)
-res_basisxtbasis_a = apply(evaluate,basisxtbasis_a,x_a)
+basisxtbasis_a = lazy_map(Broadcasting(Operation(⋅)),basis_a,tbasis_a)
+res_basisxtbasis_a = lazy_map(evaluate,basisxtbasis_a,x_a)
 size(res_basisxtbasis_a[1])
 for j in 1:na
   for i in 1:np
@@ -160,15 +160,15 @@ c_r = array_cache(res_basisxtbasis_a)
 # composition basis(field)
 
 op = ∘
-compfield_a = apply(op,field_a,field_a)
+compfield_a = lazy_map(op,field_a,field_a)
 
-res_field_a = apply(evaluate,field_a,x_a)
+res_field_a = lazy_map(evaluate,field_a,x_a)
 
 
-res_compfield_a = apply(evaluate,compfield_a,x_a)
+res_compfield_a = lazy_map(evaluate,compfield_a,x_a)
 
 @test all([
-  res_compfield_a[i]  ==   apply(evaluate,field_a,res_field_a)[i]
+  res_compfield_a[i]  ==   lazy_map(evaluate,field_a,res_field_a)[i]
   for i in 1:na])
 
 c_r = array_cache(res_compfield_a)
@@ -177,10 +177,10 @@ c_r = array_cache(res_compfield_a)
 # composition basis(basis, field)
 
 op = ∘
-compbasisfield_a = apply(Broadcasting(op),basis_a,field_a)
+compbasisfield_a = lazy_map(Broadcasting(op),basis_a,field_a)
 
-res_compbasisfield_a = apply(evaluate,compbasisfield_a,x_a)
-@test all([ res_compbasisfield_a[i] == apply(evaluate,basis_a,res_field_a)[i] for i in 1:na])
+res_compbasisfield_a = lazy_map(evaluate,compbasisfield_a,x_a)
+@test all([ res_compbasisfield_a[i] == lazy_map(evaluate,basis_a,res_field_a)[i] for i in 1:na])
 
 c_r = array_cache(res_compbasisfield_a)
 # @btime getindex!($c_r,$res_compbasisfield_a,1);
@@ -188,8 +188,8 @@ c_r = array_cache(res_compbasisfield_a)
 
 # transpose(basis)*basis
 
-tbasisxbasis_a = apply(*,tbasis_a,basis_a)
-res_tbasisxbasis_a = apply(evaluate,tbasisxbasis_a,x_a)
+tbasisxbasis_a = lazy_map(*,tbasis_a,basis_a)
+res_tbasisxbasis_a = lazy_map(evaluate,tbasisxbasis_a,x_a)
 for j in 1:na
   for i in 1:np
     res_tbasisxbasis_a[j][i] == res_tbasis_a[j][i,1,:] ⋅ res_basis_a[j][i,:]
@@ -205,14 +205,14 @@ w = rand(np)
 w_a = fill(w,na)
 jac = GenericField(TensorValue(4.0,0.0,0.0,4.0))
 jac_a = fill(jac,na)
-res_jac_a = apply(evaluate,jac_a,x_a)
+res_jac_a = lazy_map(evaluate,jac_a,x_a)
 
 field_a
-integrate_a = apply(integrate,field_a,w_a,jac_a,x_a)
-res_integrate_a = apply(evaluate,integrate_a)
+integrate_a = lazy_map(integrate,field_a,w_a,jac_a,x_a)
+res_integrate_a = lazy_map(evaluate,integrate_a)
 
-meas_a = apply(Broadcasting(meas),res_jac_a)
-wmeas_a = apply(Broadcasting(*),w_a,meas_a)
+meas_a = lazy_map(Broadcasting(meas),res_jac_a)
+wmeas_a = lazy_map(Broadcasting(*),w_a,meas_a)
 for i in 1:length(x_a)
   @test transpose(res_field_a[i])*wmeas_a[i] == res_integrate_a[i]
 end
@@ -230,13 +230,13 @@ c = array_cache(res_integrate_a)
 # w_a = v_a
 jac = GenericField(TensorValue(4.0,0.0,0.0,4.0))
 jac_a = fill(jac,na)
-res_jac_a = apply(evaluate,jac_a,x_a)
+res_jac_a = lazy_map(evaluate,jac_a,x_a)
 
-integrate_a = apply(integrate,basis_a,w_a,jac_a,x_a)
-res_integrate_a = apply(evaluate,integrate_a)
+integrate_a = lazy_map(integrate,basis_a,w_a,jac_a,x_a)
+res_integrate_a = lazy_map(evaluate,integrate_a)
 
-meas_a = apply(Broadcasting(meas),res_jac_a)
-wmeas_a = apply(Broadcasting(*),w_a,meas_a)
+meas_a = lazy_map(Broadcasting(meas),res_jac_a)
+wmeas_a = lazy_map(Broadcasting(*),w_a,meas_a)
 for i in 1:length(x_a)
   @test transpose(res_basis_a[i])*wmeas_a[i] == res_integrate_a[i]
 end

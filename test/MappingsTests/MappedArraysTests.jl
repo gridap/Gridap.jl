@@ -17,24 +17,24 @@ test_array(a,a)
 
 a = rand(16,32)
 a = CartesianIndices(a)
-c = apply(-,a)
+c = lazy_map(-,a)
 test_array(c,-a)
 
 a = rand(12)
-c = apply(-,a)
+c = lazy_map(-,a)
 test_array(c,-a)
 
 a = rand(12)
 b = rand(12)
-c = apply(-,a,b)
+c = lazy_map(-,a,b)
 test_array(c,a.-b)
 
-c = apply(-,Float64,a,b)
+c = lazy_map(-,Float64,a,b)
 test_array(c,a.-b)
 
 a = rand(0)
 b = rand(0)
-c = apply(-,a,b)
+c = lazy_map(-,a,b)
 test_array(c,a.-b)
 
 a = fill(rand(Int,2,3),12)
@@ -65,10 +65,10 @@ ai, bi = map(testitem,(a,b))
 a = fill(+,10)
 x = rand(10)
 y = rand(10)
-v = apply(+,x,y)
+v = lazy_map(+,x,y)
 r = [(xi+yi) for (xi,yi) in zip(x,y)]
 test_array(v,r)
-v = apply(+,Float64,x,y)
+v = lazy_map(+,Float64,x,y)
 test_array(v,r)
 
 p = 4
@@ -83,16 +83,16 @@ fa(x) = 2*x
 fb(x) = sqrt.(x)
 
 aa = Fill(fa,4)
-r = apply(fa,x)
+r = lazy_map(fa,x)
 @test all([ r[i] ≈ 2*x[i] for i in 1:4])
 
 bb = Fill(fb,4)
-r = apply(fb,x)
+r = lazy_map(fb,x)
 @test all([ r[i] ≈ sqrt.(x[i]) for i in 1:4])
 
-aaop = apply(operation,aa)
-cm = apply(evaluate,aaop,bb)
-r = apply(evaluate,cm,x)
+aaop = lazy_map(operation,aa)
+cm = lazy_map(evaluate,aaop,bb)
+r = lazy_map(evaluate,cm,x)
 @test all([ r[i] ≈ 2*(sqrt.(x[i])) for i in 1:4])
 
 kk = cm[1]
@@ -100,41 +100,41 @@ ckk = return_cache(kk,p)
 evaluate!(ckk,kk,p)
 
 
-aop = apply(Operation(+),aa,bb)
-apply(evaluate,aa,x)+apply(evaluate,bb,x)
-apply(evaluate,aop,x)
-@test apply(evaluate,aop,x) == apply(evaluate,aa,x)+apply(evaluate,bb,x)
+aop = lazy_map(Operation(+),aa,bb)
+lazy_map(evaluate,aa,x)+lazy_map(evaluate,bb,x)
+lazy_map(evaluate,aop,x)
+@test lazy_map(evaluate,aop,x) == lazy_map(evaluate,aa,x)+lazy_map(evaluate,bb,x)
 
 # Broadcasting
 
 a = fill(rand(2,3),12)
 b = rand(12)
-c = apply(Broadcasting(-),a,b)
+c = lazy_map(Broadcasting(-),a,b)
 test_array(c,[ai.-bi for (ai,bi) in zip(a,b)])
 
 a = fill(rand(2,3),0)
 b = rand(0)
-c = apply(Broadcasting(-),a,b)
+c = lazy_map(Broadcasting(-),a,b)
 test_array(c,[ai.-bi for (ai,bi) in zip(a,b)])
 
 a = fill(rand(2,3),12)
 b = rand(12)
-c = apply(Broadcasting(-),a,b)
-d = apply(Broadcasting(+),a,c)
-e = apply(Broadcasting(*),d,c)
+c = lazy_map(Broadcasting(-),a,b)
+d = lazy_map(Broadcasting(+),a,c)
+e = lazy_map(Broadcasting(*),d,c)
 test_array(e,[((ai.-bi).+ai).*(ai.-bi) for (ai,bi) in zip(a,b)])
 
 a = Fill(Broadcasting(+),10)
 x = [rand(2,3) for i in 1:10]
 y = [rand(1,3) for i in 1:10]
-v = apply(evaluate,a,x,y)
+v = lazy_map(evaluate,a,x,y)
 r = [(xi.+yi) for (xi,yi) in zip(x,y)]
 test_array(v,r)
 
 a = Fill(Broadcasting(+),10)
 x = [rand(mod(i-1,3)+1,3) for i in 1:10]
 y = [rand(1,3) for i in 1:10]
-v = apply(evaluate,a,x,y)
+v = lazy_map(evaluate,a,x,y)
 r = [(xi.+yi) for (xi,yi) in zip(x,y)]
 test_array(v,r)
 
@@ -146,14 +146,14 @@ ax = Fill(x,4)
 aa = Fill(fa,4)
 bb = Fill(fb,4)
 
-aop = apply(Operation(Broadcasting(+)),aa,bb)
-aax = apply(evaluate,aa,ax)
-bbx = apply(evaluate,bb,ax)
-aopx = apply(evaluate,aop,ax)
+aop = lazy_map(Operation(Broadcasting(+)),aa,bb)
+aax = lazy_map(evaluate,aa,ax)
+bbx = lazy_map(evaluate,bb,ax)
+aopx = lazy_map(evaluate,aop,ax)
 @test aopx == aax+bbx
 
-aop = apply(Operation(Broadcasting(*)),aa,bb)
-aopx = apply(evaluate,aop,ax)
+aop = lazy_map(Operation(Broadcasting(*)),aa,bb)
+aopx = lazy_map(evaluate,aop,ax)
 @test aopx[1] == aax[1].*bbx[1]
 
 # Allocations
@@ -163,14 +163,14 @@ x = fill(4,3,3)
 ax = Fill(x,4)
 aa = Fill(Operation(fa),4)
 bb = Fill(fb,4)
-cm = apply(evaluate,aa,bb)
-r = apply(evaluate,cm,ax)
+cm = lazy_map(evaluate,aa,bb)
+r = lazy_map(evaluate,cm,ax)
 @test all([ r[i] ≈ 2*(sqrt.(ax[i])) for i in 1:4])
 
 nn = 2
 an = Fill(nn,4)
 ap = Fill(Broadcasting(*),4)
-cm = apply(evaluate,ap,ax,an)
+cm = lazy_map(evaluate,ap,ax,an)
 @test all([cm[i] == nn*ax[i] for i in 1:4])
 
 c_cm = Mappings.array_cache(cm)
@@ -183,7 +183,7 @@ end
 @test nalloc == 0
 
 as = Fill(Broadcasting(sqrt),4)
-cs = apply(evaluate,as,ax)
+cs = lazy_map(evaluate,as,ax)
 @test all([cs[i] == sqrt.(ax[i]) for i in 1:4])
 
 c_cs = Mappings.array_cache(cs)
@@ -195,9 +195,9 @@ for i in length(cs)
 end
 @test nalloc == 0
 
-asm = apply(operation,as)
-ah = apply(evaluate,asm,ap)
-ch = apply(evaluate,ah,ax,an)
+asm = lazy_map(operation,as)
+ah = lazy_map(evaluate,asm,ap)
+ch = lazy_map(evaluate,ah,ax,an)
 @test all([ ch[i] ≈ sqrt.(nn*ax[i]) for i in 1:4])
 c_ch = Mappings.array_cache(ch)
 @allocated getindex!(c_ch,ch,1)

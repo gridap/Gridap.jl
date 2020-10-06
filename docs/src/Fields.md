@@ -48,8 +48,8 @@ evaluate_all(f::Tuple,x)
 ## Applying kernels to fields
 
 ```@docs
-apply_kernel_to_field(k,f...)
-apply_kernel_gradient(k,f...)
+lazy_map_kernel_to_field(k,f...)
+lazy_map_kernel_gradient(k,f...)
 ```
 
 ## Working with arrays of fields
@@ -72,9 +72,9 @@ field_array_gradients(f...)
 ## Applying kernels to arrays of fields
 
 ```@docs
-apply_to_field_array(k,f::AbstractArray...)
+lazy_map_to_field_array(k,f::AbstractArray...)
 kernel_evaluate(k,x,f...)
-apply_gradient(k,f...)
+lazy_map_gradient(k,f...)
 ```
 
 ## Operations on fields and arrays of fields
@@ -91,7 +91,7 @@ compose(g::Function,f...)
 compose(g::Function,f::AbstractArray...)
 lincomb(a::Field,b::AbstractVector)
 lincomb(a::AbstractArray,b::AbstractArray)
-apply_lincomb(ax,b)
+lazy_map_lincomb(ax,b)
 attachmap(f,phi)
 attachmap(f::AbstractArray,phi::AbstractArray)
 integrate(f,x,w,j)

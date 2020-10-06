@@ -62,9 +62,9 @@ export FilterKernel
 
 export kernel_cache
 export kernel_caches
-export apply_kernels!
-export apply_kernel!
-export apply_kernel
+export lazy_map_kernels!
+export lazy_map_kernel!
+export lazy_map_kernel
 export test_kernel
 export bcast
 export elem
@@ -77,7 +77,7 @@ export kernel_testitem
 export Kernel
 
 # export lazy_map
-export apply_all
+export lazy_map_all
 
 export Table
 export identity_table

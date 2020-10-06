@@ -131,33 +131,33 @@ bl = [rand(np) for k in 1:l]
 cl = [rand(np,ndofs) for k in 1:l]
 
 f(a,b) = 2*a-b*a
-dl = apply(FieldOpKernel(f),bl,bl)
+dl = lazy_map(FieldOpKernel(f),bl,bl)
 test_array(dl,map((a,b)->f.(a,b),bl,bl))
 
 f(a,b) = 2*a-b*a
-dl = apply(FieldOpKernel(f),al,bl)
+dl = lazy_map(FieldOpKernel(f),al,bl)
 test_array(dl,map((a,b)->f.(a,b),al,bl))
 
 f(a,b) = 2*a-b
-dl = apply(FieldOpKernel(f),al,cl)
+dl = lazy_map(FieldOpKernel(f),al,cl)
 test_array(dl,map((a,b)->f.(a,b),al,cl))
 
 f(a,b,c) = b*(2*a-c)
-dl = apply(FieldOpKernel(f),al,bl,cl)
+dl = lazy_map(FieldOpKernel(f),al,bl,cl)
 test_array(dl,map((a,b,c)->f.(a,b,c),al,bl,cl))
 
-dl = apply(trialize_basis_value,al)
+dl = lazy_map(trialize_basis_value,al)
 test_array(dl,map(a->reshape(a,(size(a,1),1,size(a,2))),al))
 
-atl = apply(trialize_basis_value,al)
-ctl = apply(trialize_basis_value,cl)
+atl = lazy_map(trialize_basis_value,al)
+ctl = lazy_map(trialize_basis_value,cl)
 
 f(a,b) = 2*a*b
-dl = apply(FieldOpKernel(f),al,atl)
+dl = lazy_map(FieldOpKernel(f),al,atl)
 test_array(dl,map((a,b)->f.(a,b),al,atl))
 
 f(a,c,at,ct) = 2*(a+c)*(2*at-ct)
-dl = apply(FieldOpKernel(f),al,cl,atl,ctl)
+dl = lazy_map(FieldOpKernel(f),al,cl,atl,ctl)
 test_array(dl,map((a,c,at,ct)->f.(a,c,at,ct),al,cl,atl,ctl))
 
 @test size(dl[1]) == (np,ndofs,ndofs)
@@ -178,45 +178,45 @@ blocks = (cl,)
 blockids = [(1,2)]
 cBl = VectorOfBlockArrayCoo(blocks,blockids,axs)
 
-atBl = apply(trialize_basis_value,aBl)
-ctBl = apply(trialize_basis_value,cBl)
+atBl = lazy_map(trialize_basis_value,aBl)
+ctBl = lazy_map(trialize_basis_value,cBl)
 @test isa(atBl,VectorOfBlockArrayCoo)
 
 f(a) = 2*a
-dl = apply(FieldOpKernel(f),aBl)
+dl = lazy_map(FieldOpKernel(f),aBl)
 @test isa(dl,VectorOfBlockArrayCoo)
 test_array(dl,map((a)->f.(a),aBl))
 
 f(a,b) = 2*a + a*b
-dl = apply(FieldOpKernel(f),aBl,bl)
+dl = lazy_map(FieldOpKernel(f),aBl,bl)
 @test isa(dl,VectorOfBlockArrayCoo)
 test_array(dl,map((a,b)->f.(a,b),aBl,bl))
 
 f(b,a) = 2*a + a*b
-dl = apply(FieldOpKernel(f),bl,atBl)
+dl = lazy_map(FieldOpKernel(f),bl,atBl)
 @test isa(dl,VectorOfBlockArrayCoo)
 test_array(dl,map((a,b)->f.(a,b),bl,atBl))
 
 f(b,a) = 2*a + b
-dl = apply(FieldOpKernel(f),atBl,ctBl)
+dl = lazy_map(FieldOpKernel(f),atBl,ctBl)
 @test isa(dl,VectorOfBlockArrayCoo)
 test_array(dl,map((a,b)->f.(a,b),atBl,ctBl))
 
-dl = apply(FieldOpKernel(+),atBl,ctBl)
+dl = lazy_map(FieldOpKernel(+),atBl,ctBl)
 @test isa(dl,VectorOfBlockArrayCoo)
 test_array(dl,map((a,b)->a+b,atBl,ctBl))
 
-dl = apply(FieldOpKernel(-),atBl,ctBl)
+dl = lazy_map(FieldOpKernel(-),atBl,ctBl)
 @test isa(dl,VectorOfBlockArrayCoo)
 test_array(dl,map((a,b)->a-b,atBl,ctBl))
 
 f(b,a) = 2*a*b
-dl = apply(FieldOpKernel(f),aBl,ctBl)
+dl = lazy_map(FieldOpKernel(f),aBl,ctBl)
 @test isa(dl,VectorOfBlockArrayCoo)
 test_array(dl,map((a,b)->f.(a,b),aBl,ctBl))
 
 f(b,a) = 2*a*b
-dl = apply(FieldOpKernel(f),atBl,cBl)
+dl = lazy_map(FieldOpKernel(f),atBl,cBl)
 @test isa(dl,VectorOfBlockArrayCoo)
 test_array(dl,map((a,b)->f.(a,b),atBl,cBl))
 
@@ -226,13 +226,13 @@ cj = [ fill(TensorValue(1,0,0,2),np) for cell in 1:l ]
 cw = [ rand(np) for cell in 1:l ]
 
 f(a,b) = 2*a + a*b
-vl = apply(FieldOpKernel(f),aBl,bl)
-dl = apply(IntKernel(),vl,cw,cj)
+vl = lazy_map(FieldOpKernel(f),aBl,bl)
+dl = lazy_map(IntKernel(),vl,cw,cj)
 @test isa(dl,VectorOfBlockArrayCoo)
 test_array(dl,map( (v,w,j) -> reshape(sum( broadcast(*,v,w,det.(j)), dims=1),(2*ndofs,)), vl,cw,cj ))
 
-vl = apply(FieldOpKernel(*),aBl,ctBl)
-dl = apply(IntKernel(),vl,cw,cj)
+vl = lazy_map(FieldOpKernel(*),aBl,ctBl)
+dl = lazy_map(IntKernel(),vl,cw,cj)
 @test isa(dl,VectorOfBlockArrayCoo)
 test_array(dl,map( (v,w,j) -> reshape(sum( broadcast(*,v,w,det.(j)), dims=1),(2*ndofs,2*ndofs)), vl,cw,cj ))
 
@@ -282,7 +282,7 @@ atRl = VectorOfBlockArrayCoo((atBl,),blockids,axs,(a0tBl,))
 ctRl = VectorOfBlockArrayCoo((ctBl,),blockids,axs,(c0tBl,))
 
 f(a) = 2*a
-dl = apply(FieldOpKernel(f),aLl)
+dl = lazy_map(FieldOpKernel(f),aLl)
 @test isa(dl,VectorOfBlockArrayCoo)
 @test isa(dl[Block(1,1)],VectorOfBlockArrayCoo)
 @test isa(dl[Block(1,2)],VectorOfBlockArrayCoo)
@@ -291,7 +291,7 @@ dl = apply(FieldOpKernel(f),aLl)
 test_array(dl,map((a)->f.(a),aLl))
 
 f(a,b) = 2*a + a*b
-dl = apply(FieldOpKernel(f),aRl,bl)
+dl = lazy_map(FieldOpKernel(f),aRl,bl)
 @test isa(dl,VectorOfBlockArrayCoo)
 @test isa(dl[Block(1,1)],VectorOfBlockArrayCoo)
 @test isa(dl[Block(1,2)],VectorOfBlockArrayCoo)
@@ -300,7 +300,7 @@ dl = apply(FieldOpKernel(f),aRl,bl)
 test_array(dl,map((a,b)->f.(a,b),aRl,bl))
 
 f(b,a) = 2*a + b
-dl = apply(FieldOpKernel(f),atRl,ctLl)
+dl = lazy_map(FieldOpKernel(f),atRl,ctLl)
 @test isa(dl,VectorOfBlockArrayCoo)
 @test isa(dl[Block(1,1,1)],VectorOfBlockArrayCoo)
 @test isa(dl[Block(1,1,2)],VectorOfBlockArrayCoo)
@@ -309,7 +309,7 @@ dl = apply(FieldOpKernel(f),atRl,ctLl)
 test_array(dl,map((a,b)->f.(a,b),atRl,ctLl))
 
 f(b,a) = 2*a + b
-dl = apply(FieldOpKernel(f),aRl,cLl)
+dl = lazy_map(FieldOpKernel(f),aRl,cLl)
 @test isa(dl,VectorOfBlockArrayCoo)
 @test isa(dl[Block(1,1)],VectorOfBlockArrayCoo)
 @test isa(dl[Block(1,2)],VectorOfBlockArrayCoo)
@@ -318,7 +318,7 @@ dl = apply(FieldOpKernel(f),aRl,cLl)
 test_array(dl,map((a,b)->f.(a,b),aRl,cLl))
 
 f(b,a) = 2*a + b
-dl = apply(FieldOpKernel(f),aRl,aRl)
+dl = lazy_map(FieldOpKernel(f),aRl,aRl)
 @test isa(dl,VectorOfBlockArrayCoo)
 @test isa(dl[Block(1,1)],VectorOfBlockArrayCoo)
 @test isa(dl[Block(1,2)],VectorOfBlockArrayCoo)
@@ -327,7 +327,7 @@ dl = apply(FieldOpKernel(f),aRl,aRl)
 test_array(dl,map((a,b)->f.(a,b),aRl,aRl))
 
 f(b,a) = a * b
-dl = apply(FieldOpKernel(f),aLl,ctRl)
+dl = lazy_map(FieldOpKernel(f),aLl,ctRl)
 @test isa(dl,VectorOfBlockArrayCoo)
 @test is_zero_block(dl,Block(1,1,1))
 @test is_nonzero_block(dl,Block(1,1,2))
@@ -344,8 +344,8 @@ dl = apply(FieldOpKernel(f),aLl,ctRl)
 test_array(dl,map((a,b)->f.(a,b),aLl,ctRl))
 
 f(b,a) = a * b
-v = apply(FieldOpKernel(-),ctLl,ctRl)
-dl = apply(FieldOpKernel(f),v,aLl)
+v = lazy_map(FieldOpKernel(-),ctLl,ctRl)
+dl = lazy_map(FieldOpKernel(f),v,aLl)
 @test isa(dl,VectorOfBlockArrayCoo)
 @test is_nonzero_block(dl,Block(1,1,1))
 @test is_nonzero_block(dl,Block(1,1,2))
@@ -364,8 +364,8 @@ test_array(dl,map((a,b)->f.(a,b),v,aLl))
 # Integration of Blocks of Blocks
 
 f(a,b) = 2*a + a*b
-vl = apply(FieldOpKernel(f),aRl,bl)
-dl = apply(IntKernel(),vl,cw,cj)
+vl = lazy_map(FieldOpKernel(f),aRl,bl)
+dl = lazy_map(IntKernel(),vl,cw,cj)
 test_array(dl,map( (v,w,j) -> reshape(sum( broadcast(*,v,w,det.(j)), dims=1),(4*ndofs,)), vl,cw,cj ))
 @test isa(dl,VectorOfBlockArrayCoo)
 @test is_zero_block(dl,Block(1))
@@ -374,9 +374,9 @@ test_array(dl,map( (v,w,j) -> reshape(sum( broadcast(*,v,w,det.(j)), dims=1),(4*
 @test isa(dl[Block(2)],VectorOfBlockArrayCoo)
 
 f(b,a) = a * b
-v = apply(FieldOpKernel(-),ctLl,ctRl)
-vl = apply(FieldOpKernel(f),v,aLl)
-dl = apply(IntKernel(),vl,cw,cj)
+v = lazy_map(FieldOpKernel(-),ctLl,ctRl)
+vl = lazy_map(FieldOpKernel(f),v,aLl)
+dl = lazy_map(IntKernel(),vl,cw,cj)
 test_array(dl,map( (v,w,j) -> reshape(sum( broadcast(*,v,w,det.(j)), dims=1),(4*ndofs,4*ndofs)), vl,cw,cj ))
 @test isa(dl,VectorOfBlockArrayCoo)
 @test is_nonzero_block(dl,Block(1,1))

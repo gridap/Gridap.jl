@@ -20,8 +20,8 @@ print_op_tree(io,b)
 c = CompressedArray([1.0,2.0],[1,2,1,1,1,2,2,1])
 print_op_tree(io,c,showid=true)
 
-d = apply(-,collect(c))
-d = apply(+,d,d)
+d = lazy_map(-,collect(c))
+d = lazy_map(+,d,d)
 print_op_tree(io,d)
 
 r = reindex(d,[4,3,3,1])

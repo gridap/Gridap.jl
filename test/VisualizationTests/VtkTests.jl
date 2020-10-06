@@ -21,7 +21,7 @@ cell_ids = collect(1:num_cells(trian))
 
 mean(x) = sum(x)/length(x)
 
-cell_center = apply(mean, get_cell_coordinates(trian) )
+cell_center = lazy_map(mean, get_cell_coordinates(trian) )
 
 write_vtk_file(
   trian,f,
