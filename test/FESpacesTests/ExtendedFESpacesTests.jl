@@ -47,7 +47,7 @@ function is_in(coords)
 end
 
 oldcell_to_coods = get_cell_coordinates(trian)
-oldcell_to_is_in = collect1d(apply(is_in,oldcell_to_coods))
+oldcell_to_is_in = collect1d(lazy_map(is_in,oldcell_to_coods))
 
 incell_to_cell = findall(oldcell_to_is_in)
 outcell_to_cell = findall(collect(Bool, .! oldcell_to_is_in))

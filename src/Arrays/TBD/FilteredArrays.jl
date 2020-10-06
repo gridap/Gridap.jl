@@ -89,7 +89,7 @@ function kernel_cache(k::FilterKernel,f,a)
   c = CachedArray(r)
 end
 
-function apply_kernel!(cache,k::FilterKernel,f,a)
+function lazy_map_kernel!(cache,k::FilterKernel,f,a)
   c = cache
   vals = a
   filters = f

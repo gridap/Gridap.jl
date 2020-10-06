@@ -162,19 +162,19 @@ struct FaceCellCoordinates{D,T,O} <: AbstractVector{Vector{Point{D,T}}}
   ctype_to_lface_to_pindex_to_perm::Vector{Vector{Vector{Vector{Int}}}}
   ctype_to_lface_to_pindex_to_qcoords::Vector{Vector{Vector{Vector{Point{D,T}}}}}
   function FaceCellCoordinates(trian::GenericBoundaryTriangulation)
-  
+
     d = num_cell_dims(trian)
     polytopes = map(get_polytope, get_reffes(trian.cell_trian))
     cell_to_ctype = trian.glue.cell_to_ctype
     ctype_to_lvertex_to_qcoords = map(get_vertex_coordinates, polytopes)
     ctype_to_lface_to_lvertices = map((p)->get_faces(p,d,0), polytopes)
     ctype_to_lface_to_pindex_to_perm = map( (p)->get_face_vertex_permutations(p,d), polytopes)
-  
+
     P = eltype(eltype(ctype_to_lvertex_to_qcoords))
     D = length(P)
     T = eltype(P)
     O = is_oriented(trian.glue)
-  
+
     ctype_to_lface_to_pindex_to_qcoords = Vector{Vector{Vector{Point{D,T}}}}[]
     for (ctype, lface_to_pindex_to_perm) in enumerate(ctype_to_lface_to_pindex_to_perm)
       lvertex_to_qcoods = ctype_to_lvertex_to_qcoords[ctype]
@@ -204,7 +204,7 @@ struct FaceCellCoordinates{D,T,O} <: AbstractVector{Vector{Point{D,T}}}
       ctype_to_lface_to_lvertices,
       ctype_to_lface_to_pindex_to_perm,
       ctype_to_lface_to_pindex_to_qcoords)
-  
+
   end
 end
 
@@ -223,7 +223,7 @@ end
 
 # Value of face to cell map
 
-function apply_lincomb(ax::CompressedArray,b::FaceCellCoordinates)
+function lazy_map_lincomb(ax::CompressedArray,b::FaceCellCoordinates)
   FaceToCellMapValue(ax,b)
 end
 
@@ -367,7 +367,7 @@ function get_normal_vector(trian::GenericBoundaryTriangulation)
   refn = ReferenceNormal(trian)
   cell_map = restrict(get_cell_map(trian.cell_trian),trian)
   J = gradient(cell_map)
-  a = apply(k,J,refn)
+  a = lazy_map(k,J,refn)
   GenericCellField(a,cell_map)
 end
 
@@ -406,14 +406,14 @@ struct NormalField <: Field end
 
 struct NormalVectorValued <: Kernel end
 
-function apply_kernel!(cache,k::NormalVectorValued,J,nref)
+function lazy_map_kernel!(cache,k::NormalVectorValued,J,nref)
   NormalField()
 end
 
 function kernel_evaluate(k::NormalVectorValued,x,J,refn)
   Jx = evaluate_field_array(J,x)
   k = bcast(_map_normal)
-  apply(k,Jx,refn)
+  lazy_map(k,Jx,refn)
 end
 
 function _map_normal(J::TensorValue{D,D,T},n::VectorValue{D,T}) where {D,T}
@@ -425,4 +425,3 @@ function _map_normal(J::TensorValue{D,D,T},n::VectorValue{D,T}) where {D,T}
     return v/m
   end
 end
-

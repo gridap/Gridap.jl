@@ -27,11 +27,11 @@ cache = kernel_cache(k,filters[1],a[1])
 
 kernel_return_type(k,filters[1],a[1])
 
-apply_kernel!(cache,k,filters[1],a[1])
+lazy_map_kernel!(cache,k,filters[1],a[1])
 
 test_kernel(k,(filters[1],a[1]),a[1][2:3])
 
-@test apply(k,filters,a) == fa
+@test lazy_map(k,filters,a) == fa
 
 #
 
@@ -60,6 +60,6 @@ res = [r1,r2,r3]
 r = CompressedArray(res,ptrs)
 test_array(fa,r)
 
-@test apply(k,filters,a) == fa
+@test lazy_map(k,filters,a) == fa
 
 end #module

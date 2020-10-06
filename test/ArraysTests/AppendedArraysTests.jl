@@ -18,22 +18,22 @@ test_array(c,r)
 
 @test sum(c) == sum(r)
 
-d = apply(-,c)
+d = lazy_map(-,c)
 r = -c
 test_array(d,r)
 @test isa(d,AppendedArray)
 
-e = apply(-,c,d)
+e = lazy_map(-,c,d)
 r = c-d
 test_array(e,r)
 @test isa(e,AppendedArray)
 
-d = apply(Float64,-,c)
+d = lazy_map(Float64,-,c)
 r = -c
 test_array(d,r)
 @test isa(d,AppendedArray)
 
-e = apply(Float64,-,c,d)
+e = lazy_map(Float64,-,c,d)
 r = c-d
 test_array(e,r)
 @test isa(e,AppendedArray)

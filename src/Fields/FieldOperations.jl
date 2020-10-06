@@ -5,13 +5,13 @@
 """
 function operate_fields(op::Function,args...)
   k = FieldOpKernel(op)
-  apply_kernel_to_field(k,args...)
+  lazy_map_kernel_to_field(k,args...)
 end
 
 """
     field_operation_axes(axs::Tuple...)
 
-Returns the axes after applying a FieldOpKernel to some arrays with axes `axs...`
+Returns the axes after lazy_maping a FieldOpKernel to some arrays with axes `axs...`
 """
 function field_operation_axes(axs::Tuple...)
   n = maximum( map(length,axs) )
@@ -56,12 +56,12 @@ end
 """
 function operate_arrays_of_fields(op::Function,args...)
   k = FieldOpKernel(op)
-  apply_to_field_array(k,args...)
+  lazy_map_to_field_array(k,args...)
 end
 
 function operate_arrays_of_fields(::Type{T},op::Function,args...) where T
   k = FieldOpKernel(op)
-  apply_to_field_array(T,k,args...)
+  lazy_map_to_field_array(T,k,args...)
 end
 
 # Pre-define some operations
@@ -112,18 +112,18 @@ function kernel_cache(k::FieldOpKernel,args...)
   kernel_cache(bk,args...)
 end
 
-@inline function apply_kernel!(cache,k::FieldOpKernel,args...)
+@inline function lazy_map_kernel!(cache,k::FieldOpKernel,args...)
   bk = bcast(k.op)
-  apply_kernel!(cache,bk,args...)
+  lazy_map_kernel!(cache,bk,args...)
 end
 
 # Define gradients at local and global level
 
-function apply_kernel_gradient(k::FieldOpKernel,args...)
+function lazy_map_kernel_gradient(k::FieldOpKernel,args...)
   @notimplemented "The gradient of the result of operation $(k.op) is not yet implemented."
 end
 
-function apply_gradient(k::Valued{<:FieldOpKernel},args...)
+function lazy_map_gradient(k::Valued{<:FieldOpKernel},args...)
   @notimplemented "The gradient of the result of operation $(k.op) is not yet implemented."
 end
 
@@ -132,46 +132,46 @@ for op in (:+,:-)
 
     # Local level
 
-    function apply_kernel_gradient(k::FieldOpKernel{typeof($op)},a,b)
+    function lazy_map_kernel_gradient(k::FieldOpKernel{typeof($op)},a,b)
       ga = field_gradient(a)
       gb = field_gradient(b)
-      apply_kernel_to_field(k,ga,gb)
+      lazy_map_kernel_to_field(k,ga,gb)
     end
 
-    function apply_kernel_gradient(k::FieldOpKernel{typeof($op)},a)
+    function lazy_map_kernel_gradient(k::FieldOpKernel{typeof($op)},a)
       ga = field_gradient(a)
-      apply_kernel_to_field(k,ga)
+      lazy_map_kernel_to_field(k,ga)
     end
 
-    function apply_kernel_gradient(k::FieldOpKernel{typeof($op)},a::Number,b)
+    function lazy_map_kernel_gradient(k::FieldOpKernel{typeof($op)},a::Number,b)
       gb = field_gradient(b)
-      apply_kernel_to_field(k,gb)
+      lazy_map_kernel_to_field(k,gb)
     end
 
-    function apply_kernel_gradient(k::FieldOpKernel{typeof($op)},b,a::Number)
+    function lazy_map_kernel_gradient(k::FieldOpKernel{typeof($op)},b,a::Number)
       gb = field_gradient(b)
       gb
     end
 
     # Global level
 
-    function apply_gradient(k::Valued{FieldOpKernel{typeof($op)}},a,b)
+    function lazy_map_gradient(k::Valued{FieldOpKernel{typeof($op)}},a,b)
       ga = field_array_gradient(a)
       gb = field_array_gradient(b)
-      apply(k,ga,gb)
+      lazy_map(k,ga,gb)
     end
 
-    function apply_gradient(k::Valued{FieldOpKernel{typeof($op)}},a)
+    function lazy_map_gradient(k::Valued{FieldOpKernel{typeof($op)}},a)
       ga = field_array_gradient(a)
-      apply(k,ga)
+      lazy_map(k,ga)
     end
 
-    function apply_gradient(k::Valued{FieldOpKernel{typeof($op)}},a::Number,b)
+    function lazy_map_gradient(k::Valued{FieldOpKernel{typeof($op)}},a::Number,b)
       gb = field_array_gradient(b)
-      apply(k,gb)
+      lazy_map(k,gb)
     end
 
-    function apply_gradient(k::Valued{FieldOpKernel{typeof($op)}},b,a::Number)
+    function lazy_map_gradient(k::Valued{FieldOpKernel{typeof($op)}},b,a::Number)
       gb = field_array_gradient(b)
       gb
     end
@@ -184,41 +184,41 @@ for op in (:*,⋅)
 
     # Local level
 
-    function apply_kernel_gradient(k::FieldOpKernel{typeof($op)},a::Number,b)
+    function lazy_map_kernel_gradient(k::FieldOpKernel{typeof($op)},a::Number,b)
       gb = field_gradient(b)
-      apply_kernel_to_field(k,a,gb)
+      lazy_map_kernel_to_field(k,a,gb)
     end
 
-    function apply_kernel_gradient(k::FieldOpKernel{typeof($op)},b,a::Number)
+    function lazy_map_kernel_gradient(k::FieldOpKernel{typeof($op)},b,a::Number)
       gb = field_gradient(b)
-      apply_kernel_to_field(k,gb,a)
+      lazy_map_kernel_to_field(k,gb,a)
     end
 
-    function apply_kernel_gradient(k::FieldOpKernel{typeof($op)},a,b)
+    function lazy_map_kernel_gradient(k::FieldOpKernel{typeof($op)},a,b)
       ga = field_gradient(a)
       gb = field_gradient(b)
-      f1 = apply_kernel_to_field(k,ga,b)
-      f2 = apply_kernel_to_field(k,a,gb)
+      f1 = lazy_map_kernel_to_field(k,ga,b)
+      f2 = lazy_map_kernel_to_field(k,a,gb)
       operate_fields(+,f1,f2)
     end
 
     # Global level
 
-    function apply_gradient(k::Valued{FieldOpKernel{typeof($op)}},a::AbstractArray{<:Number},b)
+    function lazy_map_gradient(k::Valued{FieldOpKernel{typeof($op)}},a::AbstractArray{<:Number},b)
       gb = field_array_gradient(b)
-      apply(k,a,gb)
+      lazy_map(k,a,gb)
     end
 
-    function apply_gradient(k::Valued{FieldOpKernel{typeof($op)}},b,a::AbstractArray{<:Number})
+    function lazy_map_gradient(k::Valued{FieldOpKernel{typeof($op)}},b,a::AbstractArray{<:Number})
       gb = field_array_gradient(b)
-      apply(k,gb,a)
+      lazy_map(k,gb,a)
     end
 
-    function apply_gradient(k::Valued{FieldOpKernel{typeof($op)}},a,b)
+    function lazy_map_gradient(k::Valued{FieldOpKernel{typeof($op)}},a,b)
       ga = field_array_gradient(a)
       gb = field_array_gradient(b)
-      f1 = apply(k,ga,b)
-      f2 = apply(k,a,gb)
+      f1 = lazy_map(k,ga,b)
+      f2 = lazy_map(k,a,gb)
       operate_arrays_of_fields(+,f1,f2)
     end
 
@@ -227,16 +227,16 @@ end
 
 # Local level
 
-function apply_kernel_gradient(k::FieldOpKernel{typeof(/)},b,a::Number)
+function lazy_map_kernel_gradient(k::FieldOpKernel{typeof(/)},b,a::Number)
   gb = field_gradient(b)
-  apply_kernel_to_field(k,gb,a)
+  lazy_map_kernel_to_field(k,gb,a)
 end
 
 # Global level
 
-function apply_gradient(k::Valued{FieldOpKernel{typeof(/)}},b,a::Number)
+function lazy_map_gradient(k::Valued{FieldOpKernel{typeof(/)}},b,a::Number)
   gb = field_array_gradient(b)
-  apply(k,gb,a)
+  lazy_map(k,gb,a)
 end
 
 # Move the value of a test basis into "trial" state
@@ -244,20 +244,20 @@ end
 """
 """
 function trialize_basis(f)
-  apply_kernel_to_field(trialize_basis_value,f)
+  lazy_map_kernel_to_field(trialize_basis_value,f)
 end
 
 """
 """
 function trialize_array_of_bases(af)
-  apply_to_field_array(trialize_basis_value,af)
+  lazy_map_to_field_array(trialize_basis_value,af)
 end
 
 @inline function trialize_basis_value(a::AbstractMatrix)
   TrializedMatrix(a)
 end
 
-function apply_kernel_gradient(::typeof(trialize_basis_value),a)
+function lazy_map_kernel_gradient(::typeof(trialize_basis_value),a)
   g = field_gradient(a)
   trialize_basis(g)
 end
@@ -286,47 +286,47 @@ Base.IndexStyle(::Type{<:TrializedMatrix{T,A}}) where {T,A} = IndexStyle(A)
 
 # Optimizations for block matrices at global level (for all cells)
 
-function apply(f::typeof(trialize_basis_value),a::VectorOfBlockMatrixCoo)
-  blocks = map(b->apply(f,b),a.blocks)
+function lazy_map(f::typeof(trialize_basis_value),a::VectorOfBlockMatrixCoo)
+  blocks = map(b->lazy_map(f,b),a.blocks)
   blockids = broadcast(ij->(ij[1],1,ij[2]),a.blockids)
-  axs = apply( ax -> (ax[1],blockedrange([1]),ax[2]), a.axes)
+  axs = lazy_map( ax -> (ax[1],blockedrange([1]),ax[2]), a.axes)
   VectorOfBlockArrayCoo(blocks,blockids,axs)
 end
 
 # Unary operations
 # Assumption: op is linear wrt a
-function apply(k::FieldOpKernel,a::VectorOfBlockArrayCoo)
-  blocks = map(b->apply(k,b), a.blocks)
+function lazy_map(k::FieldOpKernel,a::VectorOfBlockArrayCoo)
+  blocks = map(b->lazy_map(k,b), a.blocks)
   VectorOfBlockArrayCoo(blocks,a.blockids,a.axes,a.ptrs)
 end
 
 # Binary test/field or trial/field
 # Assumption: op is linear wrt a
-function apply(k::FieldOpKernel,a::VectorOfBlockArrayCoo,f::AbstractArray{<:AbstractVector})
-  blocks = map(b->apply(k,b,f), a.blocks)
+function lazy_map(k::FieldOpKernel,a::VectorOfBlockArrayCoo,f::AbstractArray{<:AbstractVector})
+  blocks = map(b->lazy_map(k,b,f), a.blocks)
   VectorOfBlockArrayCoo(blocks,a.blockids,a.axes,a.ptrs)
 end
 
-function apply(k::FieldOpKernel,a::VectorOfBlockArrayCoo,f::AbstractArray{<:Number})
-  blocks = map(b->apply(k,b,f), a.blocks)
+function lazy_map(k::FieldOpKernel,a::VectorOfBlockArrayCoo,f::AbstractArray{<:Number})
+  blocks = map(b->lazy_map(k,b,f), a.blocks)
   VectorOfBlockArrayCoo(blocks,a.blockids,a.axes,a.ptrs)
 end
 
 # Binary field/test or field/trial
 # Assumption: op is linear wrt a
-function apply(k::FieldOpKernel,f::AbstractArray{<:AbstractVector},a::VectorOfBlockArrayCoo)
-  blocks = map(b->apply(k,f,b), a.blocks)
+function lazy_map(k::FieldOpKernel,f::AbstractArray{<:AbstractVector},a::VectorOfBlockArrayCoo)
+  blocks = map(b->lazy_map(k,f,b), a.blocks)
   VectorOfBlockArrayCoo(blocks,a.blockids,a.axes,a.ptrs)
 end
 
-function apply(k::FieldOpKernel,f::AbstractArray{<:Number},a::VectorOfBlockArrayCoo)
-  blocks = map(b->apply(k,f,b), a.blocks)
+function lazy_map(k::FieldOpKernel,f::AbstractArray{<:Number},a::VectorOfBlockArrayCoo)
+  blocks = map(b->lazy_map(k,f,b), a.blocks)
   VectorOfBlockArrayCoo(blocks,a.blockids,a.axes,a.ptrs)
 end
 
 # Binary test/test or trial/trial
 # Assumption: op is a linear combination of a and b
-function apply(
+function lazy_map(
   k::FieldOpKernel,a::VectorOfBlockArrayCoo{Ta,N} where Ta,b::VectorOfBlockArrayCoo{Tb,N} where Tb) where N
   @assert size(a.ptrs) == size(b.ptrs)
   blocks = []
@@ -334,7 +334,7 @@ function apply(
   for (I,aI) in enumerateblocks(a)
     bI = b[I]
     if is_nonzero_block(a,I) || is_nonzero_block(b,I)
-      block = apply(k,aI,bI)
+      block = lazy_map(k,aI,bI)
       push!(blocks,block)
       push!(blockids,I.n)
     end
@@ -343,7 +343,7 @@ function apply(
 end
 
 # Binary + test/test or trial/trial
-function apply(
+function lazy_map(
   k::FieldOpKernel{typeof(+)},
   a::VectorOfBlockArrayCoo{Ta,N} where Ta,
   b::VectorOfBlockArrayCoo{Tb,N} where Tb) where N
@@ -354,7 +354,7 @@ function apply(
   for (I,aI) in enumerateblocks(a)
     bI = b[I]
     if is_nonzero_block(a,I) && is_nonzero_block(b,I)
-      block = apply(k,aI,bI)
+      block = lazy_map(k,aI,bI)
       push!(blocks,block)
       push!(blockids,I.n)
     elseif is_nonzero_block(a,I)
@@ -371,7 +371,7 @@ function apply(
 end
 
 # Binary - test/test or trial/trial
-function apply(
+function lazy_map(
   k::FieldOpKernel{typeof(-)},
   a::VectorOfBlockArrayCoo{Ta,N} where Ta,
   b::VectorOfBlockArrayCoo{Tb,N} where Tb) where N
@@ -382,7 +382,7 @@ function apply(
   for (I,aI) in enumerateblocks(a)
     bI = b[I]
     if is_nonzero_block(a,I) && is_nonzero_block(b,I)
-      block = apply(k,aI,bI)
+      block = lazy_map(k,aI,bI)
       push!(blocks,block)
       push!(blockids,I.n)
     elseif is_nonzero_block(a,I)
@@ -390,7 +390,7 @@ function apply(
       push!(blocks,block)
       push!(blockids,I.n)
     elseif is_nonzero_block(b,I)
-      block = apply(k,bI)
+      block = lazy_map(k,bI)
       push!(blocks,block)
       push!(blockids,I.n)
     end
@@ -400,9 +400,9 @@ end
 
 # Binary test/trial
 # Assumption: op is a product of a and b
-function apply(
+function lazy_map(
   k::FieldOpKernel,a::VectorOfBlockMatrixCoo,b::VectorOfBlockArrayCoo{Tb,3} where Tb)
-  axs = apply( (a1,a2) -> (a1[1],a1[2],a2[3]) ,a.axes,b.axes)
+  axs = lazy_map( (a1,a2) -> (a1[1],a1[2],a2[3]) ,a.axes,b.axes)
   blocks = []
   blockids = NTuple{3,Int}[]
   nfield1 = size(a.ptrs,2)
@@ -412,7 +412,7 @@ function apply(
     for f2 in 1:nfield2
       I2 = Block(1,1,f2)
       if is_nonzero_block(a,I1) && is_nonzero_block(b,I2)
-        block = apply(k,a[I1],b[I2])
+        block = lazy_map(k,a[I1],b[I2])
         push!(blocks,block)
         push!(blockids,(1,f1,f2))
       end
@@ -423,9 +423,9 @@ end
 
 # Binary trial/test
 # Assumption: op is a product of a and b
-function apply(
+function lazy_map(
   k::FieldOpKernel,a::VectorOfBlockArrayCoo{Tb,3} where Tb,b::VectorOfBlockMatrixCoo)
-  axs = apply( (a1,a2) -> (a1[1],a2[2],a1[3]) ,a.axes,b.axes)
+  axs = lazy_map( (a1,a2) -> (a1[1],a2[2],a1[3]) ,a.axes,b.axes)
   blocks = []
   blockids = NTuple{3,Int}[]
   nfield1 = size(b.ptrs,2)
@@ -435,7 +435,7 @@ function apply(
     for f2 in 1:nfield2
       I2 = Block(1,1,f2)
       if is_nonzero_block(b,I1) && is_nonzero_block(a,I2)
-        block = apply(k,b[I1],a[I2])
+        block = lazy_map(k,b[I1],a[I2])
         push!(blocks,block)
         push!(blockids,(1,f1,f2))
       end
@@ -447,7 +447,7 @@ end
 # General operation
 # Assumption only one block per direction. This assumption is OK since it is the only
 # efficient situation.
-function apply(
+function lazy_map(
   k::FieldOpKernel,
   b::VectorOfBlockArrayCoo,
   c::VectorOfBlockArrayCoo,
@@ -455,7 +455,7 @@ function apply(
   a = (b,c,d...)
   I = _general_op_block_id(a...)
   aI = map(_get_first_block,a)
-  blocks = (apply(k,aI...),)
+  blocks = (lazy_map(k,aI...),)
   blockids = [I,]
   axs = _general_op_axes(a...)
   VectorOfBlockArrayCoo(blocks,blockids,axs)
@@ -508,7 +508,7 @@ function  _general_op_axes(a...)
     end
   end
   if test != nothing && trial != nothing
-    axs = apply( (a1,a2) -> (a1[1],a1[2],a2[3]),test.axes,trial.axes)
+    axs = lazy_map( (a1,a2) -> (a1[1],a1[2],a2[3]),test.axes,trial.axes)
   elseif test == nothing && trial != nothing
     axs = trial.axes
   elseif test != nothing && trial == nothing
@@ -520,17 +520,17 @@ function  _general_op_axes(a...)
 end
 
 # Integration of elem vectors
-function apply(k::IntKernel,f::VectorOfBlockArrayCoo{T,2} where T,w::AbstractArray,j::AbstractArray)
-  ax = apply(a->(a[2],),f.axes)
-  blocks = map(block->apply(k,block,w,j),f.blocks)
+function lazy_map(k::IntKernel,f::VectorOfBlockArrayCoo{T,2} where T,w::AbstractArray,j::AbstractArray)
+  ax = lazy_map(a->(a[2],),f.axes)
+  blocks = map(block->lazy_map(k,block,w,j),f.blocks)
   blockids = [ (ids[2],) for ids in f.blockids ]
   VectorOfBlockArrayCoo(blocks,blockids,ax)
 end
 
 # Integration of elem matrices
-function apply(k::IntKernel,f::VectorOfBlockArrayCoo{T,3} where T,w::AbstractArray,j::AbstractArray)
-  ax = apply(a->(a[2],a[3]),f.axes)
-  blocks = map(block->apply(k,block,w,j),f.blocks)
+function lazy_map(k::IntKernel,f::VectorOfBlockArrayCoo{T,3} where T,w::AbstractArray,j::AbstractArray)
+  ax = lazy_map(a->(a[2],a[3]),f.axes)
+  blocks = map(block->lazy_map(k,block,w,j),f.blocks)
   blockids = [ (ids[2], ids[3]) for ids in f.blockids ]
   VectorOfBlockArrayCoo(blocks,blockids,ax)
 end

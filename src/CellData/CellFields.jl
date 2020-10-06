@@ -267,7 +267,7 @@ end
 
 function _trialize_cell_basis(test::CellField,metasize::Val{(:,)})
   array = trialize_array_of_bases(get_array(test))
-  axs = apply(Fields._add_singleton_block,get_cell_axes(test))
+  axs = lazy_map(Fields._add_singleton_block,get_cell_axes(test))
   similar_object(test,array,axs,Val((1,:)))
 end
 
@@ -313,7 +313,7 @@ function operate(op,cf1::CellField,cf2::CellField)
   a1 = get_array(cf1)
   a2 = get_array(cf2)
   b = operate_arrays_of_fields(Fields._UnimplementedField,op,a1,a2)
-  axs = apply(field_operation_axes,get_cell_axes(cf1),get_cell_axes(cf2))
+  axs = lazy_map(field_operation_axes,get_cell_axes(cf1),get_cell_axes(cf2))
   metasize = field_operation_metasize(get_metasize(cf1),get_metasize(cf2))
   similar_object(cf1,b,axs,Val(metasize))
 end
@@ -336,7 +336,7 @@ function operate(op,args::CellField...)
   @assert all( map( a->RefStyle(a)==RefStyle(a1), args) )
   arrs = map(get_array,args)
   m = operate_arrays_of_fields(Fields._UnimplementedField,op,arrs...)
-  axs = apply(field_operation_axes,map(get_cell_axes,args)...)
+  axs = lazy_map(field_operation_axes,map(get_cell_axes,args)...)
   metasize = field_operation_metasize(map(get_metasize,args)...)
   similar_object(a1,m,axs,Val(metasize))
 end

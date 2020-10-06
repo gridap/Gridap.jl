@@ -1,7 +1,7 @@
 
 function attach_dirichlet(cellmatvec,cellvals,cellmask=Fill(true,length(cellvals)))
   k = AttachDirichletKernel()
-  apply(k,cellmatvec,cellvals,cellmask)
+  lazy_map(k,cellmatvec,cellvals,cellmask)
 end
 
 struct AttachDirichletKernel <: Kernel
@@ -14,10 +14,10 @@ function Arrays.kernel_cache(k::AttachDirichletKernel,matvec::Tuple,vals,mask)
   kernel_cache(k.muladd,mat,vals,vec)
 end
 
-@inline function Arrays.apply_kernel!(cache,k::AttachDirichletKernel,matvec::Tuple,vals,mask)
+@inline function Arrays.lazy_map_kernel!(cache,k::AttachDirichletKernel,matvec::Tuple,vals,mask)
   if mask
     mat, vec = matvec
-    vec_with_bcs = apply_kernel!(cache,k.muladd,mat,vals,vec)
+    vec_with_bcs = lazy_map_kernel!(cache,k.muladd,mat,vals,vec)
     (mat, vec_with_bcs)
   else
     matvec
@@ -31,10 +31,10 @@ function Arrays.kernel_cache(k::AttachDirichletKernel,mat::AbstractMatrix,vals,m
   (cm,cv)
 end
 
-@inline function Arrays.apply_kernel!(cache,k::AttachDirichletKernel,mat::AbstractMatrix,vals,mask)
+@inline function Arrays.lazy_map_kernel!(cache,k::AttachDirichletKernel,mat::AbstractMatrix,vals,mask)
   cm, cv = cache
   if mask
-    vec_with_bcs = apply_kernel!(cm,MulKernel(),mat,vals)
+    vec_with_bcs = lazy_map_kernel!(cm,MulKernel(),mat,vals)
     scale_entries!(vec_with_bcs,-1)
     (mat, vec_with_bcs)
   else

@@ -49,7 +49,7 @@ d = a[b]
 test_array(c,d)
 
 x = [1,2,3,5,3,1,4,2]
-a = apply(-,x)
+a = lazy_map(-,x)
 b = [3,1,2]
 
 c = reindex(a,b)

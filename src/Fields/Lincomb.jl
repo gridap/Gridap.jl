@@ -32,7 +32,7 @@ end
 
 function kernel_testitem!(r,k::LinCom,a,b)
   if _lincomb_valid_checks(a,b)
-    apply_kernel!(r,k,a,b)
+    lazy_map_kernel!(r,k,a,b)
   else
     r.array
   end
@@ -49,7 +49,7 @@ function _lincomb_valid_checks(a,b)
   nb == na
 end
 
-@inline function apply_kernel!(r,k::LinCom,a,b)
+@inline function lazy_map_kernel!(r,k::LinCom,a,b)
   _lincomb_checks(a,b)
   np, nf = size(a)
   setsize!(r,(np,))
@@ -67,7 +67,7 @@ end
 mutable struct LinComField{A,B} <: Field
   basis::A
   coefs::B
-  @inline function LinComField(basis,coefs) 
+  @inline function LinComField(basis,coefs)
     A = typeof(basis)
     B = typeof(coefs)
     new{A,B}(basis,coefs)
@@ -88,7 +88,7 @@ end
   a = evaluate_field!(ca,f.basis,x)
   b = f.coefs
   k = LinCom()
-  apply_kernel!(ck,k,a,b)
+  lazy_map_kernel!(ck,k,a,b)
 end
 
 function field_gradient(f::LinComField)
@@ -102,28 +102,28 @@ struct LinComValued <: Kernel end
   LinComField(a,b)
 end
 
-@inline function apply_kernel!(f,k::LinComValued,a,b)
+@inline function lazy_map_kernel!(f,k::LinComValued,a,b)
   f.basis = a
   f.coefs = b
   f
 end
 
-function apply_gradient(k::LinComValued,a,b)
+function lazy_map_gradient(k::LinComValued,a,b)
   g = field_array_gradient(a)
   lincomb(g,b)
 end
 
 function kernel_evaluate(k::LinComValued,x,a,b)
   ax = evaluate_field_array(a,x)
-  apply_lincomb(ax,b)
+  lazy_map_lincomb(ax,b)
 end
 
 """
-    apply_lincomb(ax,b)
+    lazy_map_lincomb(ax,b)
 """
-function apply_lincomb(ax,b)
+function lazy_map_lincomb(ax,b)
   k = LinCom()
-  apply(k,ax,b)
+  lazy_map(k,ax,b)
 end
 
 """
@@ -135,7 +135,5 @@ Returns an array of fields numerically equivalent to
 """
 function lincomb(a::AbstractArray,b::AbstractArray)
   k = LinComValued()
-  apply(k,a,b)
+  lazy_map(k,a,b)
 end
-
-

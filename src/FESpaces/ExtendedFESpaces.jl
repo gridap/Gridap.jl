@@ -102,10 +102,10 @@ function reindex(a::ExtendedVector,ptrs::SkeletonPair)
   _extended_reindex(a,ptrs::SkeletonPair)
 end
 
-function apply(f::Fill,a::ExtendedVector...)
+function lazy_map(f::Fill,a::ExtendedVector...)
   a_void, a_cell = _split_void_non_void(a...)
-  r_void = apply(f.value,a_void...)
-  r_cell = apply(f.value,a_cell...)
+  r_void = lazy_map(f.value,a_void...)
+  r_cell = lazy_map(f.value,a_cell...)
   ExtendedVector(
       r_void,
       r_cell,
@@ -114,10 +114,10 @@ function apply(f::Fill,a::ExtendedVector...)
       a[1].cell_to_oldcell)
 end
 
-function apply(::Type{T},f::Fill,a::ExtendedVector...) where T
+function lazy_map(::Type{T},f::Fill,a::ExtendedVector...) where T
   a_void, a_cell = _split_void_non_void(a...)
-  r_void = apply(T,f.value,a_void...)
-  r_cell = apply(T,f.value,a_cell...)
+  r_void = lazy_map(T,f.value,a_void...)
+  r_cell = lazy_map(T,f.value,a_cell...)
   ExtendedVector(
       r_void,
       r_cell,
@@ -238,7 +238,7 @@ function _extend_cell_axes(f,cell_axes)
     f.trian.cell_to_oldcell)
   # TODO this is a hack
   # to circumvent a julia bug (?) that is triggered
-  # by commit f8e8942c30ffa8d6756e9b68386c19d16914a3dc 
+  # by commit f8e8942c30ffa8d6756e9b68386c19d16914a3dc
   collect(array)
 end
 

@@ -89,7 +89,7 @@ end
 
 @inline kernel_cache(dof::Dof,field) = dof_cache(dof,field)
 
-@inline apply_kernel!(cache,dof::Dof,field) = evaluate_dof!(cache,dof,field)
+@inline lazy_map_kernel!(cache,dof::Dof,field) = evaluate_dof!(cache,dof,field)
 
 @inline kernel_return_type(dof::Dof,field) = dof_return_type(dof,field)
 
@@ -131,11 +131,11 @@ but it is described with a more memory-friendly lazy type.
 """
 function evaluate_dof_array(dof::AbstractArray,field::AbstractArray)
   k = DofEval()
-  apply(k,dof,field)
+  lazy_map(k,dof,field)
 end
 
 function evaluate_dof_array(dof::AbstractArray{<:Dof},field::AbstractArray)
-  apply(dof,field)
+  lazy_map(dof,field)
 end
 
 """
@@ -153,7 +153,7 @@ function kernel_cache(k::DofEval,dof,field)
   dof_cache(dof,field)
 end
 
-@inline function apply_kernel!(cache,k::DofEval,dof,field)
+@inline function lazy_map_kernel!(cache,k::DofEval,dof,field)
   evaluate_dof!(cache,dof,field)
 end
 

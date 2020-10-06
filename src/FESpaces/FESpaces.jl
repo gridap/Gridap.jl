@@ -34,11 +34,11 @@ import Gridap.Arrays: get_array
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
 import Gridap.Arrays: kernel_cache
-import Gridap.Arrays: apply_kernel!
+import Gridap.Arrays: lazy_map_kernel!
 import Gridap.Arrays: kernel_return_type
 import Gridap.Arrays: kernel_testitem!
 import Gridap.Arrays: reindex
-import Gridap.Arrays: apply
+import Gridap.Arrays: lazy_map
 import Gridap.CellData: get_cell_map
 import Gridap.Geometry: get_reffes
 import Gridap.Geometry: get_cell_type

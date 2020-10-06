@@ -124,7 +124,7 @@ function compute_cell_space(reffes, cell_to_ctype, cell_map)
   refshapefuns = CompressedArray(shapefuns,cell_to_ctype)
   cell_shapefuns = attachmap(refshapefuns,cell_map)
 
-  reffe_to_axs = map(reffe->(Base.OneTo(num_dofs(reffe)),),reffes) 
+  reffe_to_axs = map(reffe->(Base.OneTo(num_dofs(reffe)),),reffes)
   cell_axs = CompressedArray(reffe_to_axs,cell_to_ctype)
   cell_shapefuns = GenericCellField(cell_shapefuns,cell_map,Val{true}(),cell_axs,Val((:,)))
 
@@ -149,7 +149,7 @@ function compute_cell_space_physical(reffes, cell_to_ctype, cell_map)
 
   prebasis =  map(get_prebasis,reffes)
   cell_prebasis = CompressedArray(prebasis,cell_to_ctype)
-  reffe_to_axs = map(reffe->(Base.OneTo(num_dofs(reffe)),),reffes) 
+  reffe_to_axs = map(reffe->(Base.OneTo(num_dofs(reffe)),),reffes)
   cell_axs = CompressedArray(reffe_to_axs,cell_to_ctype)
   cell_prebasis = GenericCellField(cell_prebasis,cell_map,Val{false}(),cell_axs,Val((:,)))
   cell_shapefuns = _cell_shape_functions_physical_space(cell_prebasis,cell_dof_basis,cell_map)
@@ -174,7 +174,7 @@ function _cell_dof_basis_physical_space(
   c_face_moments = CompressedArray(ct_face_moments,cell_to_ctype)
   ct_face_nodes_dofs = map(get_face_nodes_dofs,dof_bases)
   c_face_nodes_dofs = CompressedArray(ct_face_nodes_dofs,cell_to_ctype)
-  cell_dof_basis = apply( (n,m,nd) -> MomentBasedDofBasis(n,m,nd),
+  cell_dof_basis = lazy_map( (n,m,nd) -> MomentBasedDofBasis(n,m,nd),
                           cell_physnodes, c_face_moments, c_face_nodes_dofs)
 end
 
@@ -187,13 +187,13 @@ function _cell_dof_basis_physical_space(
   ctype_to_refnodes= map(get_nodes,dof_bases)
   cell_to_refnodes = CompressedArray(ctype_to_refnodes,cell_to_ctype)
   cell_physnodes = evaluate(cell_map,cell_to_refnodes)
-  cell_dof_basis = apply( nodes -> LagrangianDofBasis(V,nodes), cell_physnodes )
+  cell_dof_basis = lazy_map( nodes -> LagrangianDofBasis(V,nodes), cell_physnodes )
 end
 
 function _cell_shape_functions_physical_space(cell_prebasis,cell_dof_basis,cell_map)
   cell_matrix = evaluate(cell_dof_basis,cell_prebasis)
-  cell_matrix_inv = apply(inv,cell_matrix)
-  cell_shapefuns_phys = apply(change_basis,get_array(cell_prebasis),cell_matrix_inv)
+  cell_matrix_inv = lazy_map(inv,cell_matrix)
+  cell_shapefuns_phys = lazy_map(change_basis,get_array(cell_prebasis),cell_matrix_inv)
   cell_axs = get_cell_axes(cell_prebasis)
   metasize_style = MetaSizeStyle(cell_prebasis)
   ref_style = RefStyle(cell_prebasis)

@@ -14,7 +14,7 @@ end
 
 function _evaluate_field_array(a::AbstractArray,x::AbstractArray)
   k = Eval()
-  apply(k,a,x)
+  lazy_map(k,a,x)
 end
 
 struct Eval <: Kernel end
@@ -23,7 +23,7 @@ function kernel_cache(k::Eval,a,x)
   field_cache(a,x)
 end
 
-function apply_kernel!(cache,k::Eval,a,x)
+function lazy_map_kernel!(cache,k::Eval,a,x)
   evaluate_field!(cache,a,x)
 end
 
@@ -32,7 +32,7 @@ function kernel_return_type(k::Eval,a,x)
 end
 
 function _evaluate_field_array(a::AbstractArray{<:Field},x::AbstractArray)
-  apply(a,x)
+  lazy_map(a,x)
 end
 
 """
@@ -81,12 +81,12 @@ end
 """
     kernel_evaluate(k,x,f...)
 
-Function to control the evaluation of the field resulting from the operation `apply(k,f...)`, where `k`
+Function to control the evaluation of the field resulting from the operation `lazy_map(k,f...)`, where `k`
 is a kernel and `f...` contains several arrays of fields.
 
 By default, this function is implemented as
 
-    g = apply(k,f...)
+    g = lazy_map(k,f...)
     evaluate_field_array(g,x)
 
 However, it can be rewritten for specific kernels in order to improve performance and simplify
@@ -94,7 +94,7 @@ the underlying operation tree.
 
 """
 function kernel_evaluate(k,x,f...)
-  a = apply(k,f...)
+  a = lazy_map(k,f...)
   _evaluate_field_array(a,x)
 end
 
@@ -112,36 +112,36 @@ end
 
 function _field_array_gradient(a::AbstractArray)
   k = Grad()
-  apply(k,a)
+  lazy_map(k,a)
 end
 
 
 struct Grad <: Kernel end
 
-@inline apply_kernel!(::Nothing,k::Grad,x) = field_gradient(x)
+@inline lazy_map_kernel!(::Nothing,k::Grad,x) = field_gradient(x)
 
 function field_array_gradient(
   a::AppliedArray{T,N,F,<:Fill} where {T,N,F})
-  apply_gradient(a.g.value,a.f...)
+  lazy_map_gradient(a.g.value,a.f...)
 end
 
 """
-    apply_gradient(k,f...)
+    lazy_map_gradient(k,f...)
 
-Function to control the generation of the gradient the field resulting from the operation `apply(k,f...)`, where `k`
+Function to control the generation of the gradient the field resulting from the operation `lazy_map(k,f...)`, where `k`
 is a kernel and `f...` contains several arrays of fields.
 
 By default, it returns the array obtained as
 
-    a = apply(k,f...)
+    a = lazy_map(k,f...)
     field_array_gradient(a)
 
 However, it can be rewritten for specific kernels in order to improve performance and simplify
 the underlying operation tree.
 
 """
-function apply_gradient(k,f...)
-  a = apply(k,f...)
+function lazy_map_gradient(k,f...)
+  a = lazy_map(k,f...)
   _field_array_gradient(a)
 end
 
@@ -238,24 +238,24 @@ function test_array_of_fields(
 end
 
 """
-    apply_to_field_array(k,f::AbstractArray...)
-    apply_to_field_array(::Type{T},k,f::AbstractArray...) where T
+    lazy_map_to_field_array(k,f::AbstractArray...)
+    lazy_map_to_field_array(::Type{T},k,f::AbstractArray...) where T
 
 Returns an array of fields numerically equivalent to
 
-    map( (x...) -> apply_kernel_to_field(k,x...), f )
+    map( (x...) -> lazy_map_kernel_to_field(k,x...), f )
 
 """
-function apply_to_field_array(
+function lazy_map_to_field_array(
   k,f::AbstractArray...)
   v = Valued(k)
-  apply(v,f...)
+  lazy_map(v,f...)
 end
 
-function apply_to_field_array(
+function lazy_map_to_field_array(
   ::Type{T},k,f::AbstractArray...) where T
   v = Valued(k)
-  apply(T,v,f...)
+  lazy_map(T,v,f...)
 end
 
 struct Valued{K} <: Kernel
@@ -265,13 +265,13 @@ struct Valued{K} <: Kernel
   end
 end
 
-@inline function apply_kernel!(cache,k::Valued,x...)
-  apply_kernel_to_field(k.k,x...)
+@inline function lazy_map_kernel!(cache,k::Valued,x...)
+  lazy_map_kernel_to_field(k.k,x...)
 end
 
 function kernel_evaluate(k::Valued,x,f...)
   fx = evaluate_field_arrays(f,x)
-  a = apply(k.k,fx...)
+  a = lazy_map(k.k,fx...)
 end
 
 # More optimizations

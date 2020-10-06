@@ -87,13 +87,13 @@ import Gridap.ReferenceFEs: num_point_dims
 import Gridap.ReferenceFEs: simplexify
 
 import Gridap.Fields: field_array_gradient
-import Gridap.Fields: apply_lincomb
+import Gridap.Fields: lazy_map_lincomb
 import Gridap.Fields: evaluate_field_array
 import Gridap.Fields: kernel_evaluate
 import Gridap.Fields: evaluate
 import Gridap.Fields: integrate
 
-import Gridap.Arrays: apply_kernel!
+import Gridap.Arrays: lazy_map_kernel!
 
 export GridTopology
 export num_cells

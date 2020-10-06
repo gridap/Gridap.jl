@@ -1,6 +1,6 @@
 
 """
-    apply_kernel_to_field(k,f...) -> Field
+    lazy_map_kernel_to_field(k,f...) -> Field
 
 Returns a field obtained by applying the kernel `k` to the
 values of the fields in `f`. That is, the returned field evaluated at
@@ -10,25 +10,25 @@ vector of points
  `x` is defined as
 
     fx = evaluate_fields(f,x)
-    apply_kernel(k,fx...)
+    lazy_map_kernel(k,fx...)
 
 In order to be able to call the [`field_gradient`](@ref) function of the
 resulting field, one needs to define the gradient operator
 associated with the underlying kernel.
-This is done by adding a new method to [`apply_kernel_gradient(k,f...)`](@ref) for each kernel type.
+This is done by adding a new method to [`lazy_map_kernel_gradient(k,f...)`](@ref) for each kernel type.
 """
-@inline function apply_kernel_to_field(k,f...)
+@inline function lazy_map_kernel_to_field(k,f...)
   AppliedField(k,f...)
 end
 
 """
-    apply_kernel_gradient(k,f...)
+    lazy_map_kernel_gradient(k,f...)
 
 Returns a field representing the gradient of the field obtained with
 
-    apply_kernel_to_field(k,f...)
+    lazy_map_kernel_to_field(k,f...)
 """
-function apply_kernel_gradient(k,f...)
+function lazy_map_kernel_gradient(k,f...)
   @abstractmethod
 end
 
@@ -57,9 +57,9 @@ end
 @inline function evaluate_field!(cache,f::AppliedField,x)
   ck, cf = cache
   fx = evaluate_fields!(cf,f.f,x)
-  apply_kernel!(ck,f.k,fx...)
+  lazy_map_kernel!(ck,f.k,fx...)
 end
 
 @inline function field_gradient(f::AppliedField)
-  apply_kernel_gradient(f.k,f.f...)
+  lazy_map_kernel_gradient(f.k,f.f...)
 end

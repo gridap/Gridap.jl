@@ -36,7 +36,7 @@ end
 trian = MockTriangulation()
 test_triangulation(trian)
 
-_ = collect(apply(x->norm(x[1]-x[2]),get_cell_coordinates(trian)))
+_ = collect(lazy_map(x->norm(x[1]-x[2]),get_cell_coordinates(trian)))
 
 cell_map = get_cell_map(trian)
 

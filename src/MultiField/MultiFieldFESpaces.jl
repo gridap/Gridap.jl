@@ -93,7 +93,7 @@ end
 function CellData.CellField(fe::MultiFieldFESpace,cell_values)
   single_fields = CellField[]
   for field in 1:num_fields(fe)
-    cell_values_field = apply(a->a[Block(field)],cell_values)
+    cell_values_field = lazy_map(a->a[Block(field)],cell_values)
     cf = CellField(fe.spaces[field],cell_values_field)
     push!(single_fields,cf)
   end
@@ -149,7 +149,7 @@ end
 
 function FESpaces.get_cell_isconstrained(f::MultiFieldFESpace)
   data = map(get_cell_isconstrained,f.spaces)
-  apply( (args...) -> +(args...)>0,  data...)
+  lazy_map( (args...) -> +(args...)>0,  data...)
 end
 
 function FESpaces.get_cell_constraints(f::MultiFieldFESpace)
@@ -159,7 +159,7 @@ function FESpaces.get_cell_constraints(f::MultiFieldFESpace)
   all_axs_cols = map(get_cell_axes,f.spaces)
   axs_rows = create_array_of_blocked_axes(all_axs_rows...)
   axs_cols = create_array_of_blocked_axes(all_axs_cols...)
-  axs = apply((r,c) -> (r[1],c[1]),axs_rows,axs_cols)
+  axs = lazy_map((r,c) -> (r[1],c[1]),axs_rows,axs_cols)
   VectorOfBlockArrayCoo(blocks,blockids,axs)
 end
 
@@ -181,7 +181,7 @@ function _get_cell_dofs(f,::ConsecutiveMultiFieldStyle)
     end
     offset = offsets[i]
     o = Fill(offset,length(cell_dofs))
-    apply(elem(_sum_if_first_positive),cell_dofs,o)
+    lazy_map(elem(_sum_if_first_positive),cell_dofs,o)
   end
   blocks = Tuple([ fun(i,space) for (i,space) in enumerate(spaces) ])
   blockids = [ (i,) for i in 1:length(spaces)]
@@ -277,4 +277,3 @@ function FESpaces.interpolate_dirichlet(objects, fe::MultiFieldFESpace)
   end
   MultiFieldFEFunction(free_values,fe,blocks)
 end
-

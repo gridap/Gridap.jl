@@ -20,7 +20,7 @@ end
 
 oldcell_to_coods = get_cell_coordinates(oldgrid)
 
-cell_to_oldcell = findall(collect1d(apply(is_in,oldcell_to_coods)))
+cell_to_oldcell = findall(collect1d(lazy_map(is_in,oldcell_to_coods)))
 
 grid = GridPortion(oldgrid,cell_to_oldcell)
 test_grid(grid)

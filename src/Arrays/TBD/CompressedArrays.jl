@@ -17,7 +17,7 @@ struct CompressedArray{T,N,A,P} <: AbstractArray{T,N}
   @doc """
       CompressedArray(values::AbstractArray,ptrs::AbstractArray)
 
-  Creates a `CompressedArray` object by the given arrays of `values` and 
+  Creates a `CompressedArray` object by the given arrays of `values` and
   `ptrs`.
   """
   function CompressedArray(values::AbstractArray,ptrs::AbstractArray)
@@ -53,64 +53,64 @@ function IndexStyle(a::Type{CompressedArray{T,N,A,P}}) where {T,N,A,P}
   IndexStyle(P)
 end
 
-function apply(f::Fill,g1::CompressedArray,g::CompressedArray...)
+function lazy_map(f::Fill,g1::CompressedArray,g::CompressedArray...)
   if all( ( gi.ptrs === g1.ptrs for gi in g ) ) || all( ( gi.ptrs == g1.ptrs for gi in g ) )
-    _apply_fill_compressed(f,g1,g...)
+    _lazy_map_fill_compressed(f,g1,g...)
   else
     return AppliedArray(f,g1,g...)
   end
 end
 
-function apply(g1::CompressedArray,g::CompressedArray...)
+function lazy_map(g1::CompressedArray,g::CompressedArray...)
   if all( ( gi.ptrs === g1.ptrs for gi in g ) ) || all( ( gi.ptrs == g1.ptrs for gi in g ) )
-    _apply_compressed(g1,g...)
+    _lazy_map_compressed(g1,g...)
   else
     return AppliedArray(g1,g...)
   end
 end
 
-function apply(g1::CompressedArray,g::Fill...)
+function lazy_map(g1::CompressedArray,g::Fill...)
   f = _fill_to_compressed(g1,g)
-  _apply_compressed(g1,f...)
+  _lazy_map_compressed(g1,f...)
 end
 
-function apply(f::Fill,g1::CompressedArray,g::Fill...)
+function lazy_map(f::Fill,g1::CompressedArray,g::Fill...)
   h = _fill_to_compressed(g1,g)
-  _apply_fill_compressed(f,g1,h...)
+  _lazy_map_fill_compressed(f,g1,h...)
 end
 
-function apply(f::Fill,g1::CompressedArray)
-  _apply_fill_compressed(f,g1)
+function lazy_map(f::Fill,g1::CompressedArray)
+  _lazy_map_fill_compressed(f,g1)
 end
 
-function apply(::Type{T},f::Fill,g1::CompressedArray,g::CompressedArray...) where T
+function lazy_map(::Type{T},f::Fill,g1::CompressedArray,g::CompressedArray...) where T
   if all( ( gi.ptrs === g1.ptrs for gi in g ) ) || all( ( gi.ptrs == g1.ptrs for gi in g ) )
-    _apply_fill_compressed(f,g1,g...)
+    _lazy_map_fill_compressed(f,g1,g...)
   else
     return AppliedArray(T,f,g1,g...)
   end
 end
 
-function apply(::Type{T},g1::CompressedArray,g::CompressedArray...) where T
+function lazy_map(::Type{T},g1::CompressedArray,g::CompressedArray...) where T
   if all( ( gi.ptrs === g1.ptrs for gi in g ) ) || all( ( gi.ptrs == g1.ptrs for gi in g ) )
-    _apply_compressed(g1,g...)
+    _lazy_map_compressed(g1,g...)
   else
     return AppliedArray(T,g1,g...)
   end
 end
 
-function apply(::Type{T},g1::CompressedArray,g::Fill...) where T
+function lazy_map(::Type{T},g1::CompressedArray,g::Fill...) where T
   f = _fill_to_compressed(g1,g)
-  _apply_compressed(g1,f...)
+  _lazy_map_compressed(g1,f...)
 end
 
-function apply(::Type{T},f::Fill,g1::CompressedArray,g::Fill...) where T
+function lazy_map(::Type{T},f::Fill,g1::CompressedArray,g::Fill...) where T
   h = _fill_to_compressed(g1,g)
-  _apply_fill_compressed(f,g1,h...)
+  _lazy_map_fill_compressed(f,g1,h...)
 end
 
-function apply(::Type{T},f::Fill,g1::CompressedArray) where T
-  _apply_fill_compressed(f,g1)
+function lazy_map(::Type{T},f::Fill,g1::CompressedArray) where T
+  _lazy_map_fill_compressed(f,g1)
 end
 
 function _fill_to_compressed(g1,g)
@@ -120,18 +120,18 @@ function _fill_to_compressed(g1,g)
   f
 end
 
-function _apply_fill_compressed(f,g1,g...)
+function _lazy_map_fill_compressed(f,g1,g...)
   k = f.value
   ptrs = g1.ptrs
   vals = _getvalues(g1,g...)
-  vk = apply(k,vals...)
+  vk = lazy_map(k,vals...)
   CompressedArray(collect(vk),ptrs)
 end
 
-function _apply_compressed(g1,g...)
+function _lazy_map_compressed(g1,g...)
   ptrs = g1.ptrs
   vals = _getvalues(g...)
-  vk = apply(g1.values,vals...)
+  vk = lazy_map(g1.values,vals...)
   CompressedArray(collect(vk),ptrs)
 end
 
@@ -145,5 +145,3 @@ function _getvalues(a)
   va = a.values
   (va,)
 end
-
-

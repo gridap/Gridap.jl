@@ -38,7 +38,7 @@ export test_mapping
 
 export MappedArray
 
-# import Gridap.Arrays: apply
+# import Gridap.Arrays: lazy_map
 import Gridap.Arrays: array_cache
 
 export lazy_map

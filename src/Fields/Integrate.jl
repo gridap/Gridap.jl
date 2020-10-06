@@ -6,7 +6,7 @@ function integrate(f,x,w,j)
   fx = evaluate_field(f,x)
   jx = evaluate_field(j,x)
   k = IntKernel()
-  apply_kernel(k,fx,w,jx)
+  lazy_map_kernel(k,fx,w,jx)
 end
 
 """
@@ -17,7 +17,7 @@ function integrate(
   fx = evaluate_field_array(f,x)
   jx = evaluate_field_array(j,x)
   k = IntKernel()
-  apply(k,fx,w,jx)
+  lazy_map(k,fx,w,jx)
 end
 
 struct IntKernel <: Kernel end
@@ -29,13 +29,13 @@ end
 
 function kernel_testitem!(c,k::IntKernel,f::AbstractVector,w,j)
   if _integrate_valid_sizes(f,w,j)
-    apply_kernel!(c,k,f,w,j)
+    lazy_map_kernel!(c,k,f,w,j)
   else
     c
   end
 end
 
-@noinline function apply_kernel!(z,k::IntKernel,f::AbstractVector,w,j)
+@noinline function lazy_map_kernel!(z,k::IntKernel,f::AbstractVector,w,j)
   _integrate_checks(f,w,j)
   r = z
   for p in eachindex(f)
@@ -53,13 +53,13 @@ end
 
 function kernel_testitem!(c,k::IntKernel,f::AbstractArray,w,j)
   if _integrate_valid_sizes(f,w,j)
-    apply_kernel!(c,k,f,w,j)
+    lazy_map_kernel!(c,k,f,w,j)
   else
     c.array
   end
 end
 
-@inline function apply_kernel!(c,k::IntKernel,f::AbstractArray,w,j)
+@inline function lazy_map_kernel!(c,k::IntKernel,f::AbstractArray,w,j)
   _integrate_checks(f,w,j)
   np, s = _split(size(f)...)
   cis = CartesianIndices(s)
@@ -95,4 +95,3 @@ function _integrate_valid_sizes(f,w,j)
   nj = length(j)
   (nf == nw) && (nw == nj)
 end
-

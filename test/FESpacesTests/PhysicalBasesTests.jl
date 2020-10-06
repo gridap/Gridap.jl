@@ -111,11 +111,11 @@ end #module
 # # If I want new evaluation...
 # function kernel_evaluate(k::typeof{change_basis},x,cell_prebasis,cell_matrix_inv)
 #    cell_prebasis_x = evaluate_field_array(cell_prebasis,x)
-#   apply(mul,cell_prebasis_x,cell_prebasis,cell_matrix_inv)
+#   lazy_map(mul,cell_prebasis_x,cell_prebasis,cell_matrix_inv)
 # end
-# function apply_gradient(k::typeof(change_basis),cell_prebasis,cell_matrix_inv)
+# function lazy_map_gradient(k::typeof(change_basis),cell_prebasis,cell_matrix_inv)
 #    cell_prebasis_grad = gradient(cell_prebasis)
-#    apply(change_basis,cell_prebasis_grad,cell_matrix_inv)
+#    lazy_map(change_basis,cell_prebasis_grad,cell_matrix_inv)
 # end
 # ##
 # # Optimisation : evaluate_field_array for AbstractArray with FieldLike
@@ -123,12 +123,12 @@ end #module
 # struct InvKernel <: Kernel end
 # function kernel_cache(k::InvKernel,mat)
 # end
-# function apply_kernel!(cache,k::InvKernel,mat)
+# function lazy_map_kernel!(cache,k::InvKernel,mat)
 # end
 # function kernel_cache(k::InvKernel,mat)
 # CachedArray(copy(mat))
 # end
-# function apply_kernel!(cache,k::InvKernel,mat)
+# function lazy_map_kernel!(cache,k::InvKernel,mat)
 #   setsize!(cache,size(mat))
 #   m = cache.array
 #   fill!(m,zero(m))

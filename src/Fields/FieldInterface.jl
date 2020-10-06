@@ -9,7 +9,7 @@ const Point{D,T} = VectorValue{D,T}
 """
     abstract type Field <: Kernel
 
-Abstract type representing physical fields, bases of fields, and other related objects. 
+Abstract type representing physical fields, bases of fields, and other related objects.
 These different cases are distinguished by the return value obtained when evaluating them. E.g.,
 a physical field returns a vector of values when evaluated at a vector of points, and a basis of `nf` fields
 returns a 2d matrix (`np` x `nf`) when evaluated at a vector of `np` points.
@@ -69,7 +69,7 @@ end
 $(SIGNATURES)
 
 Returns an array containing the values of evaluating the field `f` at the vector of points
-`x` by (possibly) using the scratch data in the `cache` object.  The returned value is 
+`x` by (possibly) using the scratch data in the `cache` object.  The returned value is
 an array,  for which the length of the first axis is `length(x)`, i.e., the number of points where the field has
 been evaluated.E.g.,
 a physical field returns a vector of `np` values when evaluated at a vector of `np` points, and a basis of `nf` fields
@@ -185,7 +185,7 @@ function kernel_cache(f::Field,x)
   field_cache(f,x)
 end
 
-@inline function apply_kernel!(cache,f::Field,x)
+@inline function lazy_map_kernel!(cache,f::Field,x)
   evaluate_field!(cache,f,x)
 end
 
@@ -200,7 +200,7 @@ end
       hessian=nothing)
 
 Function used to test the field interface. `v` is an array containing the expected
-result of evaluating the field `f` at the vector of points `x`. The comparison is performed using 
+result of evaluating the field `f` at the vector of points `x`. The comparison is performed using
 the `cmp` function. For fields objects that support the `field_gradient` function, the key-word
 argument `grad` can be used. It should contain the result of evaluating `field_gradient(f)` at x.
 Idem for `hessian`.
@@ -253,7 +253,7 @@ end
 """
     evaluate(f::Field,x)
 
-Equivalent to 
+Equivalent to
 
     evaluate_field(f,x)
 
@@ -268,7 +268,7 @@ end
 """
     evaluate!(cache,f::Field,x)
 
-Equivalent to 
+Equivalent to
 
     evaluate_field!(cache,f,x)
 
@@ -284,7 +284,7 @@ end
 $(SIGNATURES)
 
 Evaluates the field `f` at the vector of points `x` by creating a temporary cache internally.
-Equivalent to 
+Equivalent to
 
     c = field_cache(f,x)
     evaluate_field!(c,f,x)
@@ -463,4 +463,3 @@ function gradient_all(a)
   ga = gradient(a)
   (ga,)
 end
-

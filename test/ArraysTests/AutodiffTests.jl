@@ -11,7 +11,7 @@ function user_cell_energy(cell_u)
     end
     e
   end
-  apply(f,cell_u)
+  lazy_map(f,cell_u)
 end
 
 function user_cell_residual(cell_u)
@@ -25,7 +25,7 @@ function user_cell_residual(cell_u)
     #end
     #r
   end
-  apply(f,cell_u)
+  lazy_map(f,cell_u)
 end
 
 function user_cell_jacobian(cell_u)
@@ -37,7 +37,7 @@ function user_cell_jacobian(cell_u)
     end
     j
   end
-  apply(f,cell_u)
+  lazy_map(f,cell_u)
 end
 
 L = 10

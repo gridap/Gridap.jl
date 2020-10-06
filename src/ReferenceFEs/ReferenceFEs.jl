@@ -18,7 +18,7 @@ using Gridap.Polynomials
 using Gridap.Integration
 
 import Gridap.Arrays: kernel_cache
-import Gridap.Arrays: apply_kernel!
+import Gridap.Arrays: lazy_map_kernel!
 import Gridap.Arrays: kernel_return_type
 import Gridap.Fields: evaluate
 import Gridap.Polynomials: MonomialBasis

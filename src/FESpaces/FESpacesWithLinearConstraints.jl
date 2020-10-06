@@ -12,7 +12,7 @@
 #
 #  - We can add constraints to Dirichlet dofs but their masters have to be Dirichlet as well.
 #    However, free dofs can be constrained both by free and Dirichlet.
-# 
+#
 # Notation in this file:
 #
 #  - dof: a dof (either free or Dirichlet) in the original space.
@@ -483,7 +483,7 @@ function get_cell_axes_with_constraints(f::FESpaceWithLinearConstraints)
   # In some situations this can be compressed
   ptrs = f.cell_to_lmdof_to_mdof.ptrs
   ncells = length(get_cell_basis(f))
-  apply(i->(Base.OneTo(ptrs[i+1]-ptrs[i]),),IdentityVector(ncells))
+  lazy_map(i->(Base.OneTo(ptrs[i+1]-ptrs[i]),),IdentityVector(ncells))
 end
 
 function zero_free_values(f::FESpaceWithLinearConstraints) where T
@@ -508,7 +508,7 @@ function get_cell_constraints(f::FESpaceWithLinearConstraints)
     f.n_fdofs)
 
   cell_to_mat = get_cell_constraints(f.space)
-  apply(k,f.cell_to_lmdof_to_mdof,f.cell_to_ldof_to_dof,cell_to_mat)
+  lazy_map(k,f.cell_to_lmdof_to_mdof,f.cell_to_ldof_to_dof,cell_to_mat)
 
 end
 
@@ -531,7 +531,7 @@ function kernel_cache(k::LinearConstraintsKernel,lmdof_to_mdof,ldof_to_dof,mat)
   m1, m2, mDOF_to_lmdof
 end
 
-function apply_kernel!(cache,k::LinearConstraintsKernel,lmdof_to_mdof,ldof_to_dof,mat)
+function lazy_map_kernel!(cache,k::LinearConstraintsKernel,lmdof_to_mdof,ldof_to_dof,mat)
   m1, m2, mDOF_to_lmdof = cache
   n_lmdofs = length(lmdof_to_mdof)
   n_ldofs = length(ldof_to_dof)
@@ -564,4 +564,3 @@ function apply_kernel!(cache,k::LinearConstraintsKernel,lmdof_to_mdof,ldof_to_do
   mul!(a2,a1,mat)
   a2
 end
-

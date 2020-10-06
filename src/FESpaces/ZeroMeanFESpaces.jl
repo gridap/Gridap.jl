@@ -56,7 +56,7 @@ function FEFunction(
                             f.vol_i,
                             f.vol,
                             f.space.dof_to_fix)
-  fv = apply(+,free_values,Fill(c,length(free_values)))
+  fv = lazy_map(+,free_values,Fill(c,length(free_values)))
   dv = dirichlet_values .+ c
   FEFunction(f.space,fv,dv)
 end

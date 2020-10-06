@@ -21,7 +21,7 @@ Base.getindex(v::VectorOfBlockBasisCoo,i::Integer) = BlockBasisCoo()
 
 function evaluate_field_array(v::VectorOfBlockBasisCoo,x::AbstractArray)
   blocks = evaluate_field_arrays(v.blocks,x)
-  axs = apply(_new_axes,x,v.axes)
+  axs = lazy_map(_new_axes,x,v.axes)
   blockids = map(i->(1,i...),v.blockids)
   VectorOfBlockArrayCoo(blocks,blockids,axs)
 end
@@ -51,7 +51,7 @@ end
 
 #TODO perhaps this should go into Arrays/BlockArraysCoo.jl
 function create_array_of_blocked_axes(axs...)
-  axs = apply(_cat_axes,axs...)
+  axs = lazy_map(_cat_axes,axs...)
 end
 
 function _compute_blockids(::Type{<:NTuple{1}},i)
@@ -113,5 +113,3 @@ end
 function _blockedrange(a::Vector{<:BlockedUnitRange})
   blockedrange(a)
 end
-
-

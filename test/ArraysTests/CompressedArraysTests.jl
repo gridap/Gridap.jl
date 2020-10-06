@@ -9,23 +9,23 @@ a = CompressedArray(values,ptrs)
 r = values[ptrs]
 test_array(a,r)
 
-b = apply(-,a)
+b = lazy_map(-,a)
 test_array(b,-r)
 @test isa(b,CompressedArray)
 
-c = apply(*,a,b)
+c = lazy_map(*,a,b)
 test_array(c,r.*(-r))
 @test isa(c,CompressedArray)
 
 k = CompressedArray([zero,+,-],copy(ptrs))
 r = collect(CompressedArray([0,20,-31],ptrs))
-c = apply(k,a)
+c = lazy_map(k,a)
 test_array(c,r)
 @test isa(c,CompressedArray)
 
 k = CompressedArray([zero,+,-],ptrs)
 r = collect(CompressedArray([0,20,-31],ptrs))
-c = apply(k,a)
+c = lazy_map(k,a)
 test_array(c,r)
 @test isa(c,CompressedArray)
 
