@@ -127,7 +127,6 @@ end
 
 # Broadcast Functions
 
-#@fverdugo rename Broadcasting -> Broadcasting
 """
     Broadcasting(f)
 
@@ -156,29 +155,19 @@ struct Broadcasting{F} <: Mapping
   f::F
 end
 
-# @fverdugo Consider this case:
-#
-#     struct Foo end
-#     sayhello(a::Foo) = "hi!"
-#     @assert sayhello.([Foo(),Foo()]) == ["hi!","hi!"] # Works
-#     @assert Broadcasting(sayhello)([Foo(),Foo()]) == ["hi!","hi!"]
-#
-# I would say that previous line does not work with the current implementation.
-# We need this more general implementation:
-#
-#    evaluate!(f::Broadcasting,x...) = nothing
-#    @inline evaluate!(cache,f::Broadcasting,x...) = broadcast(f.f,x...)
-#
-# and here the last argument should be x::Union{Number,AbstractArray{<:Number}}... also in return_cache below.
-@inline function evaluate!(cache,f::Broadcasting,x...)
+return_cache(f::Broadcasting,x...) = nothing
+
+@inline evaluate!(cache,f::Broadcasting,x...) = broadcast(f.f,x...)
+
+@inline function evaluate!(cache,f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
   r = _prepare_cache(cache,x...)
   a = r.array
   broadcast!(f.f,a,x...)
   a
 end
 
-function evaluate!(cache,b::Broadcasting,args::Number...)
-  b.f(args...)
+function evaluate!(cache,f::Broadcasting,args::Number...)
+  f.f(args...)
 end
 
 function return_type(f::Broadcasting,x::Number...)
@@ -186,7 +175,7 @@ function return_type(f::Broadcasting,x::Number...)
   return_type(f.f,Ts...)
 end
 
-function return_type(f::Broadcasting,x::AbstractArray...)
+function return_type(f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
   typeof(return_cache(f,x...).array)
 end
 
@@ -194,9 +183,7 @@ function return_cache(f::Broadcasting,x::Number...)
   nothing
 end
 
-#@fverdugo from a so general input, we cannot assume that the result will be an array always
-# last argument should be x::Union{Number,AbstractArray{<:Number}}...
-function return_cache(f::Broadcasting,x...)
+function return_cache(f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
   s = _size.(x)
   bs = Base.Broadcast.broadcast_shape(s...)
   Te = map(_numbertype,x)
@@ -227,6 +214,10 @@ end
 # OperationMappings
 # @fverdugo I would remove this if it is not used and if we don't expect to use it in the future
 # to avoid confusions and to keep focus only in the parts that are used.
+# @santiagobadia : Let us keep it for the moment... and when we will finish with all this,
+# we decide. If you take a look at the tests, you can see that having Operation
+# at the mapping level allows us to do operations with mapping that will probably
+# needed in some algebra kernels, e.g., composition of kernels.
 """
     OperationMapping(f,args)
 
@@ -266,11 +257,11 @@ end
 # I would remove OperationMapping and move Operation to the source file
 # where operation between fields are defined (and document only
 # Operation for Field arguments). I think this would be much more clear to understand for new users.
+# @santiagobadia : I have corrected the doc but as said above, I would keep it here
 """
     Operation(op)
 
-Returns a mapping that, when applied to a tuple `args`, returns
-`OperationMapping(op,args)`
+Returns a mapping that, when applied to a tuple `args`, returns a mapping.
 
 # Example
 
