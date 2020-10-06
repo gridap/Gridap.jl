@@ -40,18 +40,18 @@ testitems
 ## Creating lazy operation trees
 
 ```@docs
-apply(f,a::AbstractArray...)
-apply(::Type{T},f,a::AbstractArray...) where T
-apply(f::AbstractArray,a::AbstractArray...)
-apply(::Type{T},f::AbstractArray,a::AbstractArray...) where T
-apply_all
+lazy_map(f,a::AbstractArray...)
+lazy_map(::Type{T},f,a::AbstractArray...) where T
+lazy_map(f::AbstractArray,a::AbstractArray...)
+lazy_map(::Type{T},f::AbstractArray,a::AbstractArray...) where T
+lazy_map_all
 ```
 
 ### Operation kernels
 
 ```@docs
 Kernel
-apply_kernel!(cache,f,x...)
+lazy_map_kernel!(cache,f,x...)
 kernel_cache(f,x...)
 kernel_return_type(f,x...)
 test_kernel
@@ -60,8 +60,8 @@ test_kernel
 ### Other functions using kernels
 
 ```@docs
-apply_kernel
-apply_kernels!
+lazy_map_kernel
+lazy_map_kernels!
 kernel_caches
 kernel_return_types
 ```

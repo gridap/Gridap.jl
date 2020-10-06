@@ -1,5 +1,5 @@
 """
-    apply(f,a::AbstractArray...) -> AbstractArray
+    lazy_map(f,a::AbstractArray...) -> AbstractArray
 
 Applies the `Mapping` (or `Function`) `f` to the entries of the arrays in `a`
 (see the definition of [`Mapping`](@ref)).
@@ -21,7 +21,7 @@ using Gridap.Arrays
 a = collect(0:5)
 b = collect(10:15)
 
-c = apply(+,a,b)
+c = lazy_map(+,a,b)
 
 println(c)
 
@@ -44,7 +44,7 @@ evaluate!(cache,::MySum,x,y) = x + y
 
 k = MySum()
 
-c = apply(k,a,b)
+c = lazy_map(k,a,b)
 
 println(c)
 
@@ -60,9 +60,9 @@ end
 @inline lazy_map(::typeof(evaluate),k::AbstractArray,f::AbstractArray...) = MappedArray(k,f...)
 
 """
-    apply(::Type{T},f,a::AbstractArray...) where T
+    lazy_map(::Type{T},f,a::AbstractArray...) where T
 
-Like [`apply(f,a::AbstractArray...)`](@ref), but the user provides the element type
+Like [`lazy_map(f,a::AbstractArray...)`](@ref), but the user provides the element type
 of the resulting array in order to circumvent type inference.
 """
 @inline function lazy_map(k,T::Type,f::AbstractArray...)
@@ -73,12 +73,12 @@ end
 @inline lazy_map(::typeof(evaluate),T::Type,k::AbstractArray,f::AbstractArray...) = MappedArray(T,k,f...)
 
 # """
-#     apply(f::AbstractArray,a::AbstractArray...) -> AbstractArray
+#     lazy_map(f::AbstractArray,a::AbstractArray...) -> AbstractArray
 # Applies the mappings in the array of mappings `f` to the entries in the arrays in `a`.
 
 # The resulting array has the same entries as the one obtained with:
 
-#     map( apply, f, a...)
+#     map( lazy_map, f, a...)
 
 # See the [`evaluate`](@ref) function for details.
 
@@ -93,7 +93,7 @@ end
 # a = [1,2,3,4]
 # b = [4,3,2,1]
 
-# c = apply(f,a,b)
+# c = lazy_map(f,a,b)
 
 # println(c)
 
@@ -101,34 +101,34 @@ end
 # [5, -1, 3, 1]
 # ```
 # """
-# function apply(g::AbstractArray,f::AbstractArray...)
+# function lazy_map(g::AbstractArray,f::AbstractArray...)
 #   MappedArray(g,f...)
 # end
 
 # """
-#     apply(::Type{T},f::AbstractArray,a::AbstractArray...) where T
+#     lazy_map(::Type{T},f::AbstractArray,a::AbstractArray...) where T
 
-# Like [`apply(f::AbstractArray,a::AbstractArray...)`](@ref), but the user provides the element type
+# Like [`lazy_map(f::AbstractArray,a::AbstractArray...)`](@ref), but the user provides the element type
 # of the resulting array in order to circumvent type inference.
 # """
-# function apply(::Type{T},g::AbstractArray,f::AbstractArray...) where T
+# function lazy_map(::Type{T},g::AbstractArray,f::AbstractArray...) where T
 #   MappedArray(T,g,f...)
 # end
 
-# function _apply_mapping(k,f::AbstractArray...)
+# function _lazy_map_mapping(k,f::AbstractArray...)
 #     s = common_size(f...)
-#     apply(Fill(k, s...), f...)
+#     lazy_map(Fill(k, s...), f...)
 # end
 
-# function _apply_mapping(::Type{T},k,f::AbstractArray...) where T
+# function _lazy_map_mapping(::Type{T},k,f::AbstractArray...) where T
 #   s = common_size(f...)
-#   apply(T,Fill(k, s...), f...)
+#   lazy_map(T,Fill(k, s...), f...)
 # end
 
 
 """
-Subtype of `AbstractArray` which is the result of `apply`. It represents the
-result of applying a mapping / array of mappings to a set of arrays that
+Subtype of `AbstractArray` which is the result of `lazy_map`. It represents the
+result of lazy_maping a mapping / array of mappings to a set of arrays that
 contain the mapping arguments. This struct makes use of the cache provided
 by the mapping in order to compute its indices (thus allowing to prevent
 allocation). The array is lazy, i.e., the values are only computed on
@@ -213,15 +213,15 @@ end
 
 # Particular implementations for Fill
 
-function apply_mapping(f::Fill, a::Fill...)
+function lazy_map_mapping(f::Fill, a::Fill...)
   ai = _getvalues(a...)
   r = evaluate(f.value, ai...)
   s = common_size(f, a...)
   Fill(r, s)
 end
 
-function apply_mapping(::Type{T}, f::Fill, a::Fill...) where T
-  apply_mapping(f, a...)
+function lazy_map_mapping(::Type{T}, f::Fill, a::Fill...) where T
+  lazy_map_mapping(f, a...)
 end
 
 function _getvalues(a::Fill, b::Fill...)
@@ -240,8 +240,8 @@ end
 
 # Operator
 
-# function apply(op::Operation,x::AbstractArray...)
-  # apply(Fill(op,length(first(x))),x...)
+# function lazy_map(op::Operation,x::AbstractArray...)
+  # lazy_map(Fill(op,length(first(x))),x...)
 # end
 
 function test_mapped_array(
@@ -251,7 +251,7 @@ function test_mapped_array(
   cmp::Function=(==);
   grad=nothing)
 
-  ax = apply_mapping(a, x)
+  ax = lazy_map_mapping(a, x)
   test_array(ax, v, cmp)
 
   ca, cfi, cx = array_cache(a, x)
@@ -267,7 +267,7 @@ function test_mapped_array(
   @test t
 
   if grad != nothing
-    g = apply_mapping(gradient, a)
+    g = lazy_map_mapping(gradient, a)
     test_mapped_array(g, x, grad, cmp)
   end
 end

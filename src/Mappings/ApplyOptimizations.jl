@@ -1,16 +1,16 @@
 
 # optimization for
 #
-#    apply(evaluate,cell_to_f,cell_to_x)
+#    lazy_map(evaluate,cell_to_f,cell_to_x)
 #
-# function apply(::typeof(evaluate),f::AbstractArray,x::AbstractArray)
-  # apply(f,x)
+# function lazy_map(::typeof(evaluate),f::AbstractArray,x::AbstractArray)
+  # lazy_map(f,x)
 # end
 
 # Optimization for
 #
-#  g = apply( linear_combination, cell_to_i_to_f, cell_to_i_to_val)
-#  apply(evaluate,g,cell_to_x)
+#  g = lazy_map( linear_combination, cell_to_i_to_f, cell_to_i_to_val)
+#  lazy_map(evaluate,g,cell_to_x)
 #
 function lazy_map(
   ::typeof(evaluate), a::MappedArray{<:Fill{typeof(linear_combination)}}, x::AbstractArray)
@@ -28,8 +28,8 @@ linear_combination_on_values(b_i::AbstractVector,v_ij::AbstractMatrix) = evaluat
 
 # Optimization for
 #
-#  g = apply(transpose,cell_to_i_to_f)
-#  apply(evaluate,g)
+#  g = lazy_map(transpose,cell_to_i_to_f)
+#  lazy_map(evaluate,g)
 #
 function lazy_map(
   ::typeof(evaluate), a::MappedArray{<:Fill{typeof(transpose)}}, x::AbstractArray)
@@ -40,8 +40,8 @@ end
 
 # Optimization for
 #
-#  g = apply(∘,cell_to_f,cell_to_h)
-#  apply(evaluate,g)
+#  g = lazy_map(∘,cell_to_f,cell_to_h)
+#  lazy_map(evaluate,g)
 #
 function lazy_map(
   ::typeof(evaluate), a::MappedArray{<:Fill{typeof(∘)}}, x::AbstractArray)
@@ -55,8 +55,8 @@ end
 
 # Optimization for
 #
-#  g = apply(Broadcasting(∘),cell_to_i_to_f,cell_to_h)
-#  apply(evaluate,g)
+#  g = lazy_map(Broadcasting(∘),cell_to_i_to_f,cell_to_h)
+#  lazy_map(evaluate,g)
 #
 function lazy_map(
   ::typeof(evaluate), a::MappedArray{<:Fill{Broadcasting{typeof(∘)}}}, x::AbstractArray)
@@ -70,8 +70,8 @@ end
 
 # Optimization for
 #
-#  g = apply(Operation(+),cell_to_f,cell_to_h)
-#  apply(evaluate,g)
+#  g = lazy_map(Operation(+),cell_to_f,cell_to_h)
+#  lazy_map(evaluate,g)
 #
 function lazy_map(
   ::typeof(evaluate),
@@ -86,8 +86,8 @@ end
 
 # Optimization for
 #
-#  g = apply(Broadcasting(Operation(+)),cell_to_f,cell_to_h)
-#  apply(evaluate,g)
+#  g = lazy_map(Broadcasting(Operation(+)),cell_to_f,cell_to_h)
+#  lazy_map(evaluate,g)
 #
 function lazy_map(
   ::typeof(evaluate), a::MappedArray{<:Fill{<:Broadcasting{<:Operation}}}, x::AbstractArray)
@@ -99,8 +99,8 @@ end
 
 # Optimization for
 #
-#  g = apply( linear_combination, cell_to_i_to_f, cell_to_i_to_val)
-#  apply(gradient,g)
+#  g = lazy_map( linear_combination, cell_to_i_to_f, cell_to_i_to_val)
+#  lazy_map(gradient,g)
 #
 function lazy_map(
   ::typeof(gradient), a::MappedArray{<:Fill{typeof(linear_combination)}})
@@ -112,8 +112,8 @@ end
 
 # Optimization for
 #
-#  g = apply( linear_combination, cell_to_i_to_f, cell_to_i_to_val)
-#  apply(Broadcasting(gradient),g)
+#  g = lazy_map( linear_combination, cell_to_i_to_f, cell_to_i_to_val)
+#  lazy_map(Broadcasting(gradient),g)
 #
 function lazy_map(
   ::Broadcasting{typeof(gradient)}, a::MappedArray{<:Fill{typeof(linear_combination)}})
@@ -125,8 +125,8 @@ end
 
 # Optimization for
 #
-#  g = apply(transpose,cell_to_i_to_f)
-#  apply(Broadcasting(gradient),g)
+#  g = lazy_map(transpose,cell_to_i_to_f)
+#  lazy_map(Broadcasting(gradient),g)
 #
 function lazy_map(
   ::Broadcasting{typeof(gradient)}, a::MappedArray{<:Fill{typeof(transpose)}})

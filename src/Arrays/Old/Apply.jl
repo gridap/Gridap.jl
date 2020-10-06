@@ -56,9 +56,9 @@ println(c)
 ```
 
 """
-function apply(f,a::AbstractArray...)
+function lazy_map(f,a::AbstractArray...)
   s = common_size(a...)
-  apply(Fill(f,s...),a...)
+  lazy_map(Fill(f,s...),a...)
 end
 
 """
@@ -67,9 +67,9 @@ end
 Like [`apply(f,a::AbstractArray...)`](@ref), but the user provides the element type
 of the resulting array in order to circumvent type inference.
 """
-function apply(::Type{T},f,a::AbstractArray...) where T
+function lazy_map(::Type{T},f,a::AbstractArray...) where T
   s = common_size(a...)
-  apply(T,Fill(f,s...),a...)
+  lazy_map(T,Fill(f,s...),a...)
 end
 
 """
@@ -101,7 +101,7 @@ println(c)
 [5, -1, 3, 1]
 ```
 """
-function apply(f::AbstractArray,a::AbstractArray...)
+function lazy_map(f::AbstractArray,a::AbstractArray...)
   AppliedArray(f,a...)
 end
 
@@ -111,7 +111,7 @@ end
 Like [`apply(f::AbstractArray,a::AbstractArray...)`](@ref), but the user provides the element type
 of the resulting array in order to circumvent type inference.
 """
-function apply(::Type{T},f::AbstractArray,a::AbstractArray...) where T
+function lazy_map(::Type{T},f::AbstractArray,a::AbstractArray...) where T
   AppliedArray(T,f,a...)
 end
 
@@ -147,13 +147,13 @@ function apply_all(f::Tuple,a::AbstractArray...)
 end
 
 function _apply_several(a,f,g...)
-  fa = apply(f,a...)
+  fa = lazy_map(f,a...)
   ga = _apply_several(a,g...)
   (fa,ga...)
 end
 
 function _apply_several(a,f)
-  fa = apply(f,a...)
+  fa = lazy_map(f,a...)
   (fa,)
 end
 
@@ -303,15 +303,15 @@ end
 
 # Particular implementations for Fill
 
-function apply(f::Fill,a::Fill...)
+function lazy_map(f::Fill,a::Fill...)
   ai = getvalues(a...)
   r = apply_kernel(f.value,ai...)
   s = common_size(f,a...)
   Fill(r,s)
 end
 
-function apply(::Type{T},f::Fill,a::Fill...) where T
-  apply(f,a...)
+function lazy_map(::Type{T},f::Fill,a::Fill...) where T
+  lazy_map(f,a...)
 end
 
 function getvalues(a::Fill,b::Fill...)

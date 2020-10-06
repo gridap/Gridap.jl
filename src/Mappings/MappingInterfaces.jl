@@ -1,6 +1,6 @@
 """
 Abstract type representing a function (mapping) that provides a cache and an in-place
-evaluation for performance. This is the type to be used in the [`apply`](@ref) function.
+evaluation for performance. This is the type to be used in the [`lazy_map`](@ref) function.
 
 Derived types must implement the following method:
 
@@ -26,7 +26,7 @@ abstract type Mapping <: GridapType end
 """
     return_cache(f,x...)
 
-Returns the `cache` needed to apply mapping `f` with arguments
+Returns the `cache` needed to lazy_map mapping `f` with arguments
 of the same type as the objects in `x`.
 This function returns `nothing` by default, i.e., no cache.
 """
