@@ -76,7 +76,7 @@ export kernel_return_types
 export kernel_testitem
 export Kernel
 
-export apply
+# export apply
 export apply_all
 
 export Table
@@ -161,9 +161,9 @@ include("CachedArrays.jl")
 
 # include("Autodiff.jl")
 
-include("VectorsWithEntryRemoved.jl")
+# include("VectorsWithEntryRemoved.jl")
 
-include("VectorsWithEntryInserted.jl")
+# include("VectorsWithEntryInserted.jl")
 
 
 end # module

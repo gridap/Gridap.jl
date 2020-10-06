@@ -13,7 +13,8 @@ b32 = [  i*[5 6 7 8; 7 8 1 3] for i in 1:l]
 blocks = (b11,b21,b32)
 blockids = [(1,1),(2,1),(3,2)]
 ax = Fill((blockedrange([2,3,2]), blockedrange([2,4])),l)
-al = VectorOfBlockArrayCoo(blocks,blockids,ax)
+al =
+@enter VectorOfBlockArrayCoo(blocks,blockids,ax)
 
 @test al[Block(1,1)] === b11
 @test al[Block(2,1)] === b21

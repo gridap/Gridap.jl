@@ -140,7 +140,7 @@ c = return_cache(af,p)
 bfa = [zvf, vf, qf, zvf, vf, qf, zvf, vf, qf, zvf, vf, qf]
 
 c = return_cache(bfa,p)
-@btime evaluate!($c,$bfa,$p)
+# @btime evaluate!($c,$bfa,$p)
 
 
 q(x) = 2*x
@@ -154,10 +154,10 @@ bhf = hf
 af = [qf, hf, hf, qf]
 
 c = return_cache(af,p)
-@btime evaluate!($c,$af,$p)
+# @btime evaluate!($c,$af,$p)
 
 bfa = [bqf, bhf, bhf, bqf]
 c = return_cache(bfa,x)
-@btime evaluate!($c,$bfa,$x)
+# @btime evaluate!($c,$bfa,$x)
 
 end # module
