@@ -87,9 +87,9 @@ end
 #    myf(x) = sqrt(x-1)
 #    testargs(::typeof(myf),x) = zero(x) + 1
 #
-#
 #@santiagobadia : But if x is not in the domain, the error will arise anyway,
 # since the user would have provided a x not in the range...
+#
 @inline testitem(k,x...) = evaluate(k,x...)
 
 # @fverdugo
@@ -131,9 +131,9 @@ evaluate!(cache,f::Function,x...) = f(x...)
 #  evaluate!(cache,a::GenericField{<:Number},x...) = a.object
 #
 
-return_type(f::Union{Number,AbstractArray{<:Number}},x...) = typeof(f)
+# return_type(f::Union{Number,AbstractArray{<:Number}},x...) = typeof(f)
 
-evaluate!(cache,f::Union{Number,AbstractArray{<:Number}},x...) = f
+# evaluate!(cache,f::Union{Number,AbstractArray{<:Number}},x...) = f
 
 
 # Testing the interface

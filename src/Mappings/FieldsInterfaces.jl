@@ -192,6 +192,8 @@ end
 
 const ConstantField{T} = GenericField{T} where T<:Number
 
+@inline return_type(f::ConstantField,x) = typeof(f.object)
+
 @inline function evaluate!(c,f::ConstantField,x::Point)
   f.object
 end

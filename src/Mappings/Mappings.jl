@@ -8,13 +8,14 @@ using Gridap.Arrays: get_array
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: testitem
 import Gridap.Arrays: getindex!
-import Gridap.Arrays: uses_hash
+# import Gridap.Arrays: uses_hash
 import Gridap.Arrays: IndexStyle
 
 using Gridap.Helpers: GridapType, @abstractmethod, @notimplemented
 using Gridap.Helpers: @notimplementedif, @unreachable
-using Gridap.Inference
+using Gridap.Inference: testvalue, testvalues
 using Gridap.Algebra: mul!
+
 using FillArrays
 using Test
 
