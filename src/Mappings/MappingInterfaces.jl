@@ -51,7 +51,7 @@ evaluate!(cache,f,x...) = @abstractmethod
 Returns the type of the result of calling mapping `f` with
 arguments of the types of the objects `x`.
 
-Its default implementation is `typeof(kernel_testitem(f,x...))`
+Its default implementation is `typeof(testitem(f,x...))`
 """
 return_type(f,x...) = typeof(testitem(f,x...))
 
@@ -88,6 +88,8 @@ end
 #    testargs(::typeof(myf),x) = zero(x) + 1
 #
 #
+#@santiagobadia : But if x is not in the domain, the error will arise anyway,
+# since the user would have provided a x not in the range...
 @inline testitem(k,x...) = evaluate(k,x...)
 
 # @fverdugo
@@ -123,7 +125,7 @@ evaluate!(cache,f::Function,x...) = f(x...)
 # But I believe it is better to not define any default mapping behaviour for arrays of any kind
 # since arrays are not callable in Julia.
 #
-# I also would remove the default Mapping definition for numbers since it is VERY confusing 
+# I also would remove the default Mapping definition for numbers since it is VERY confusing
 #  that evaluate(1,3.0) == 1 and 1(3.0) == 3.0
 #  I would define instead
 #  evaluate!(cache,a::GenericField{<:Number},x...) = a.object
@@ -189,7 +191,7 @@ struct BroadcastMapping{F} <: Mapping
 end
 
 # @fverdugo Consider this case:
-#     
+#
 #     struct Foo end
 #     sayhello(a::Foo) = "hi!"
 #     @assert sayhello.([Foo(),Foo()]) == ["hi!","hi!"] # Works
@@ -335,8 +337,3 @@ end
 operation(a) = Operation(a)
 
 evaluate!(cache,op::Operation,x...) = OperationMapping(op.op,x)
-
-# @fverdugo
-# this is not needed since Operation <: Mapping and functor-like evaluation
-# is already defined for Mapping
-(op::Operation)(x...) = evaluate!(nothing,op,x...)

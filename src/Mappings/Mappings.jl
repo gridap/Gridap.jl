@@ -1,13 +1,19 @@
 module Mappings
 
-#@fverdugo
-# For me it is very confusing to import so many parts of the old Gridap.
-# It is difficult to understand what is working thanks to the old implementation
-# and what thanks to the new one. In particular, importing Gridap.Arrays which has a lot of implementation
-# that collides with what is done in this new module.
-using Gridap.Helpers
+using Gridap.Arrays: CachedArray
+using Gridap.Arrays: getitems!
+using Gridap.Arrays: setsize!
+using Gridap.Arrays: get_array
+
+import Gridap.Arrays: array_cache
+import Gridap.Arrays: testitem
+import Gridap.Arrays: getindex!
+import Gridap.Arrays: uses_hash
+import Gridap.Arrays: IndexStyle
+
+using Gridap.Helpers: GridapType, @abstractmethod, @notimplemented
+using Gridap.Helpers: @notimplementedif, @unreachable
 using Gridap.Inference
-using Gridap.Arrays
 using Gridap.Algebra: mul!
 using FillArrays
 using Test
@@ -23,19 +29,12 @@ export evaluate
 export return_type
 export test_mapping
 
-import Gridap.Arrays: testitem
-import Gridap.Arrays: getindex!
-import Gridap.Arrays: uses_hash
-import Gridap.Arrays: IndexStyle
-
 # MappedArray
 
 export MappedArray
 
 export apply
 export test_mapped_array
-import Gridap.Arrays: array_cache
-# import Gridap.Arrays: apply
 
 export BroadcastMapping
 export OperationMapping

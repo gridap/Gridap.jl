@@ -18,7 +18,7 @@
 #  when f is an array of numbers. This ambiguity will be fixed if we remove the default mapping
 #  implementation for arrays of numbers.
 #
-#  On the other hand, you can always use 
+#  On the other hand, you can always use
 #
 #  z = apply(GenericFieldArray(f),x,y)
 #
@@ -81,8 +81,6 @@ println(c)
 """
 apply(k,f::AbstractArray...) = _apply_mapping(k,f...)
 
-# apply(k::Function,f::AbstractArray...) = _apply_mapping(k,f...)
-
 """
     apply(::Type{T},f,a::AbstractArray...) where T
 
@@ -90,8 +88,6 @@ Like [`apply(f,a::AbstractArray...)`](@ref), but the user provides the element t
 of the resulting array in order to circumvent type inference.
 """
 apply(T::Type,k,f::AbstractArray...) = _apply_mapping(T,k,f...)
-
-# apply(T::Type,k::Function,f::AbstractArray...) = _apply_mapping(T,k,f...)
 
 """
     apply(f::AbstractArray,a::AbstractArray...) -> AbstractArray
