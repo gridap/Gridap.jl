@@ -168,10 +168,13 @@ end
 
 #@fverdugo the signature of the index i... has to be improved
 # so that it is resilient to the different types of indices
+# @santiagobadia : Can you handle this? I am not sure what you
+# have in mind
 @inline function getindex!(cache, a::MappedArray, i...)
   cg, cgi, cf = cache
   gi = getindex!(cg, a.g, i...)
-  fi = getitems!(cf, a.f, i...)
+  fi = map((ci,ai) -> getindex!(ci,ai,i...),cf,a.f)
+  # fi = getitems!(cf, a.f, i...)
   vi = evaluate!(cgi, gi, fi...)
   # vi
 end

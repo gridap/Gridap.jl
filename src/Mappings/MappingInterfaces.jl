@@ -88,7 +88,9 @@ end
 #    testargs(::typeof(myf),x) = zero(x) + 1
 #
 #@santiagobadia : But if x is not in the domain, the error will arise anyway,
-# since the user would have provided a x not in the range...
+# since the user would have provided a x not in the range... I would not
+# complicate things if the user provides the wrong x the DomainError will
+# arise anyway when evaluating
 #
 @inline testitem(k,x...) = evaluate(k,x...)
 

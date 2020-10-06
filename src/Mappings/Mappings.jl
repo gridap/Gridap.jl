@@ -1,9 +1,12 @@
 module Mappings
 
 using Gridap.Arrays: CachedArray
-using Gridap.Arrays: getitems!
 using Gridap.Arrays: setsize!
-using Gridap.Arrays: get_array
+
+# using Gridap.Arrays: getitems!
+# using Gridap.Arrays: get_array
+
+using Gridap.TensorValues: get_array
 
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: testitem
@@ -21,7 +24,6 @@ using Gridap.Algebra: mul!
 
 using FillArrays
 using Test
-
 
 # Mapping interface
 
