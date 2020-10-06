@@ -102,40 +102,6 @@ end
 
 evaluate!(cache,f::Function,x...) = f(x...)
 
-# Number or Array implementation
-#
-# The following default implementation for arrays of number is problematic.
-# I would define
-#
-#    evaluate!(cache,f::GenericFieldArray{AbstractArray{<:Number}},x...) = f.object
-#
-# instead.
-#
-# Interpreting arrays as mappings is problematic when you define the apply function
-# (see my comments there)
-#
-# I would try to avoid to interpret any type of array as a mapping.
-# In the hypothetical case, we want to give a default mapping behaviour to an array
-# I would use this definition: "an array is a mapping from a set of indices to a set of values"
-# which is general for any type of array, not only for arrays of numbers. That is:
-#
-#   return_cache(f::AbstractArray,i...) = array_cache(f,i...)
-#   evaluate!(cache,f::AbstractArray,i...) = getindex!(cache,f,i...)
-#
-# But I believe it is better to not define any default mapping behaviour for arrays of any kind
-# since arrays are not callable in Julia.
-#
-# I also would remove the default Mapping definition for numbers since it is VERY confusing
-#  that evaluate(1,3.0) == 1 and 1(3.0) == 3.0
-#  I would define instead
-#  evaluate!(cache,a::GenericField{<:Number},x...) = a.object
-#
-
-# return_type(f::Union{Number,AbstractArray{<:Number}},x...) = typeof(f)
-
-# evaluate!(cache,f::Union{Number,AbstractArray{<:Number}},x...) = f
-
-
 # Testing the interface
 """
     test_mapping(f,x::Tuple,y,cmp=(==))
@@ -161,9 +127,9 @@ end
 
 # Broadcast Functions
 
-#@fverdugo rename BroadcastMapping -> Broadcasting
+#@fverdugo rename Broadcasting -> Broadcasting
 """
-    BroadcastMapping(f)
+    Broadcasting(f)
 
 Returns a mapping that represents the "broadcasted" version of the
 function `f`.
@@ -176,7 +142,7 @@ using Gridap.Mappings
 a = [3,2]
 b = [2,1]
 
-bm = BroadcastMapping(+)
+bm = Broadcasting(+)
 
 c = evaluate(bm,a,b)
 
@@ -186,7 +152,7 @@ println(c)
 [5, 3]
 ```
 """
-struct BroadcastMapping{F} <: Mapping
+struct Broadcasting{F} <: Mapping
   f::F
 end
 
@@ -195,42 +161,42 @@ end
 #     struct Foo end
 #     sayhello(a::Foo) = "hi!"
 #     @assert sayhello.([Foo(),Foo()]) == ["hi!","hi!"] # Works
-#     @assert BroadcastMapping(sayhello)([Foo(),Foo()]) == ["hi!","hi!"]
+#     @assert Broadcasting(sayhello)([Foo(),Foo()]) == ["hi!","hi!"]
 #
 # I would say that previous line does not work with the current implementation.
 # We need this more general implementation:
 #
-#    evaluate!(f::BroadcastMapping,x...) = nothing
-#    @inline evaluate!(cache,f::BroadcastMapping,x...) = broadcast(f.f,x...)
+#    evaluate!(f::Broadcasting,x...) = nothing
+#    @inline evaluate!(cache,f::Broadcasting,x...) = broadcast(f.f,x...)
 #
 # and here the last argument should be x::Union{Number,AbstractArray{<:Number}}... also in return_cache below.
-@inline function evaluate!(cache,f::BroadcastMapping,x...)
+@inline function evaluate!(cache,f::Broadcasting,x...)
   r = _prepare_cache(cache,x...)
   a = r.array
   broadcast!(f.f,a,x...)
   a
 end
 
-function evaluate!(cache,b::BroadcastMapping,args::Number...)
+function evaluate!(cache,b::Broadcasting,args::Number...)
   b.f(args...)
 end
 
-function return_type(f::BroadcastMapping,x::Number...)
+function return_type(f::Broadcasting,x::Number...)
   Ts = map(typeof,x)
   return_type(f.f,Ts...)
 end
 
-function return_type(f::BroadcastMapping,x::AbstractArray...)
+function return_type(f::Broadcasting,x::AbstractArray...)
   typeof(return_cache(f,x...).array)
 end
 
-function return_cache(f::BroadcastMapping,x::Number...)
+function return_cache(f::Broadcasting,x::Number...)
   nothing
 end
 
 #@fverdugo from a so general input, we cannot assume that the result will be an array always
 # last argument should be x::Union{Number,AbstractArray{<:Number}}...
-function return_cache(f::BroadcastMapping,x...)
+function return_cache(f::Broadcasting,x...)
   s = _size.(x)
   bs = Base.Broadcast.broadcast_shape(s...)
   Te = map(_numbertype,x)

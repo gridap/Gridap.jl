@@ -37,7 +37,7 @@ export MappedArray
 export apply
 export test_mapped_array
 
-export BroadcastMapping
+export Broadcasting
 export OperationMapping
 export Operation
 export operation

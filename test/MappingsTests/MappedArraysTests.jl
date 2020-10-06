@@ -104,33 +104,33 @@ apply(aa,x)+apply(bb,x)
 apply(evaluate,aop,x)
 @test apply(evaluate,aop,x) == apply(aa,x)+apply(bb,x)
 
-# BroadcastMapping
+# Broadcasting
 
 a = fill(rand(2,3),12)
 b = rand(12)
-c = apply(BroadcastMapping(-),a,b)
+c = apply(Broadcasting(-),a,b)
 test_array(c,[ai.-bi for (ai,bi) in zip(a,b)])
 
 a = fill(rand(2,3),0)
 b = rand(0)
-c = apply(BroadcastMapping(-),a,b)
+c = apply(Broadcasting(-),a,b)
 test_array(c,[ai.-bi for (ai,bi) in zip(a,b)])
 
 a = fill(rand(2,3),12)
 b = rand(12)
-c = apply(BroadcastMapping(-),a,b)
-d = apply(BroadcastMapping(+),a,c)
-e = apply(BroadcastMapping(*),d,c)
+c = apply(Broadcasting(-),a,b)
+d = apply(Broadcasting(+),a,c)
+e = apply(Broadcasting(*),d,c)
 test_array(e,[((ai.-bi).+ai).*(ai.-bi) for (ai,bi) in zip(a,b)])
 
-a = Fill(BroadcastMapping(+),10)
+a = Fill(Broadcasting(+),10)
 x = [rand(2,3) for i in 1:10]
 y = [rand(1,3) for i in 1:10]
 v = apply(a,x,y)
 r = [(xi.+yi) for (xi,yi) in zip(x,y)]
 test_array(v,r)
 
-a = Fill(BroadcastMapping(+),10)
+a = Fill(Broadcasting(+),10)
 x = [rand(mod(i-1,3)+1,3) for i in 1:10]
 y = [rand(1,3) for i in 1:10]
 v = apply(a,x,y)
@@ -145,13 +145,13 @@ ax = Fill(x,4)
 aa = Fill(fa,4)
 bb = Fill(fb,4)
 
-aop = apply(Operation(BroadcastMapping(+)),aa,bb)
+aop = apply(Operation(Broadcasting(+)),aa,bb)
 aax = apply(evaluate,aa,ax)
 bbx = apply(evaluate,bb,ax)
 aopx = apply(evaluate,aop,ax)
 @test aopx == aax+bbx
 
-aop = apply(Operation(BroadcastMapping(*)),aa,bb)
+aop = apply(Operation(Broadcasting(*)),aa,bb)
 aopx = apply(evaluate,aop,ax)
 @test aopx[1] == aax[1].*bbx[1]
 
@@ -168,7 +168,7 @@ r = apply(cm,ax)
 
 nn = 2
 an = Fill(nn,4)
-ap = Fill(BroadcastMapping(*),4)
+ap = Fill(Broadcasting(*),4)
 cm = apply(ap,ax,an)
 @test all([cm[i] == nn*ax[i] for i in 1:4])
 
@@ -181,7 +181,7 @@ for i in length(cm)
 end
 @test nalloc == 0
 
-as = Fill(BroadcastMapping(sqrt),4)
+as = Fill(Broadcasting(sqrt),4)
 cs = apply(as,ax)
 @test all([cs[i] == sqrt.(ax[i]) for i in 1:4])
 

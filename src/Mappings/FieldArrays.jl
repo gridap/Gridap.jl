@@ -78,17 +78,17 @@ end
 
 # Non-performant default implementation
 
-@inline return_cache(b::BroadcastMapping,args::Union{Field,AbstractArray{<:Field}}...) = nothing
+@inline return_cache(b::Broadcasting,args::Union{Field,AbstractArray{<:Field}}...) = nothing
 
-@inline function evaluate!(cache,b::BroadcastMapping,args::Union{Field,AbstractArray{<:Field}}...)
+@inline function evaluate!(cache,b::Broadcasting,args::Union{Field,AbstractArray{<:Field}}...)
   broadcast(b.f,args...)
 end
 
 # @santiagobadia : I am not sure we want this syntatic sugar
 # @santiagobadia : Here if we put AbstractArray it goes to the + in Julia for Array...
 # for op in (:+,:-,:*,:⋅)
-# @eval $op(a::Array{<:Field},b::Array{<:Field}) = BroadcastMapping(Operation($op))(a,b)
-# @eval $op(a::AbstractArray{<:Field},b::AbstractArray{<:Field}) = BroadcastMapping(Operation($op))(a,b)
+# @eval $op(a::Array{<:Field},b::Array{<:Field}) = Broadcasting(Operation($op))(a,b)
+# @eval $op(a::AbstractArray{<:Field},b::AbstractArray{<:Field}) = Broadcasting(Operation($op))(a,b)
 # end
 
 # Transpose
@@ -127,7 +127,7 @@ end
 
 # Broadcast operations
 
-@inline (b::BroadcastMapping{<:Operation})(args::Union{Field,AbstractArray{<:Field}}...) = BroadcastOpFieldArray(b.f.op,args...)
+@inline (b::Broadcasting{<:Operation})(args::Union{Field,AbstractArray{<:Field}}...) = BroadcastOpFieldArray(b.f.op,args...)
 
 """
 Type that represents a broadcast operation over a set of `AbstractArray{<:Field}`.
@@ -155,7 +155,7 @@ end
 function return_cache(f::BroadcastOpFieldArray,x)
   cfs = map(fi -> return_cache(fi,x),f.args)
   rs = map((ci,fi) -> evaluate!(ci,fi,x),cfs,f.args)
-  bm = BroadcastMapping(f.op)
+  bm = Broadcasting(f.op)
   r = return_cache(bm,rs...)
   r, cfs
 end
@@ -163,7 +163,7 @@ end
 function evaluate!(c,f::BroadcastOpFieldArray,x)
   r, cfs = c
   rs = map((ci,fi) -> evaluate!(ci,fi,x),cfs,f.args)
-  bm = BroadcastMapping(f.op)
+  bm = Broadcasting(f.op)
   evaluate!(r,bm,rs...)
   r.array
 end
@@ -312,7 +312,7 @@ end
 Composition of a field (or vector of fields) and another field. It returns a
 `CompositionFieldArrayField`
 """
-@inline (b::BroadcastMapping{typeof(∘)})(f::AbstractArray{<:Field},g::Field) = CompositionFieldArrayField(f,g)
+@inline (b::Broadcasting{typeof(∘)})(f::AbstractArray{<:Field},g::Field) = CompositionFieldArrayField(f,g)
 
 function return_cache(fa::CompositionFieldArrayField,x)
   cg = return_cache(fa.g,x)
@@ -331,10 +331,10 @@ end
 
 # User API:
 #
-# BroadcastMapping(∇)(i_to_f)
+# Broadcasting(∇)(i_to_f)
 #
 
-@inline function evaluate!(cache,k::BroadcastMapping{typeof(gradient)},f::AbstractArray{<:Field})
+@inline function evaluate!(cache,k::Broadcasting{typeof(gradient)},f::AbstractArray{<:Field})
   FieldGradientArray(f)
 end
 
@@ -359,8 +359,8 @@ end
 @inline Base.eltype(a::FieldGradientArray{A}) where A = FieldGradient{eltype(A)}
 @inline Base.IndexStyle(::Type{<:FieldGradientArray{A}}) where A = IndexStyle(A)
 
-@inline function evaluate!(cache,k::BroadcastMapping{typeof(gradient)},a::TransposeFieldVector)
-  transpose(BroadcastMapping(∇)(a.basis))
+@inline function evaluate!(cache,k::Broadcasting{typeof(gradient)},a::TransposeFieldVector)
+  transpose(Broadcasting(∇)(a.basis))
 end
 
 @inline return_cache(f::FieldGradientArray,x) = return_gradient_cache(f.fa,x)

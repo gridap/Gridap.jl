@@ -27,7 +27,7 @@ fa = fill(f,nf)
 
 # Gradients
 
-∇fa = BroadcastMapping(∇)(fa)
+∇fa = Broadcasting(∇)(fa)
 c = return_cache(∇fa,x)
 # @santiagobadia : Not sure we can make it allocation-free
 evaluate!(c,∇fa,x)
@@ -65,7 +65,7 @@ r = evaluate!(c,fa,x)
 # Broadcasted operations
 
 op = +
-b = BroadcastMapping(Operation(op))
+b = Broadcasting(Operation(op))
 bpfa = b(fa,fa)
 @test bpfa == op(fa,fa)
 
@@ -77,7 +77,7 @@ c = return_cache(bpfa,x)
 # @btime evaluate!($c,$bpfa,$x);
 
 op = ⋅
-b = BroadcastMapping(Operation(op))
+b = Broadcasting(Operation(op))
 bpfa = b(fa,fa)
 @test bpfa == op.(fa,fa)
 
@@ -96,7 +96,7 @@ c = return_cache(tfa,x)
 # field + field array
 
 op = ⋅
-b = BroadcastMapping(Operation(op))
+b = Broadcasting(Operation(op))
 bpfa = b(f,fa)
 @test evaluate(bpfa,x) == broadcast(⋅,evaluate(f,x),evaluate(fa,x))
 
@@ -106,7 +106,7 @@ c = return_cache(bpfa,x)
 # column vector * row vector -> field array
 
 op = ⋅
-b = BroadcastMapping(Operation(op))
+b = Broadcasting(Operation(op))
 bpfa = b(fa,tfa)
 evaluate(bpfa,x) == broadcast(⋅,evaluate(fa,x),evaluate(tfa,x))
 @test all(bpfa .== broadcast(⋅,fa,tfa))
@@ -177,7 +177,7 @@ c  =return_cache(lc,p)
 
 # composition
 
-bm = BroadcastMapping(∘)
+bm = Broadcasting(∘)
 fc = bm(fa,f);
 
 c = return_cache(fc,x)

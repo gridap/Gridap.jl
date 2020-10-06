@@ -55,11 +55,11 @@ end
 
 # Optimization for
 #
-#  g = apply(BroadcastMapping(∘),cell_to_i_to_f,cell_to_h)
+#  g = apply(Broadcasting(∘),cell_to_i_to_f,cell_to_h)
 #  apply(evaluate,g)
 #
 function apply(
-  ::typeof(evaluate), a::MappedArray{<:Fill{BroadcastMapping{typeof(∘)}}}, x::AbstractArray)
+  ::typeof(evaluate), a::MappedArray{<:Fill{Broadcasting{typeof(∘)}}}, x::AbstractArray)
 
   f = a.f[1]
   g = a.f[2]
@@ -86,14 +86,14 @@ end
 
 # Optimization for
 #
-#  g = apply(BroadcastMapping(Operation(+)),cell_to_f,cell_to_h)
+#  g = apply(Broadcasting(Operation(+)),cell_to_f,cell_to_h)
 #  apply(evaluate,g)
 #
 function apply(
-  ::typeof(evaluate), a::MappedArray{<:Fill{<:BroadcastMapping{<:Operation}}}, x::AbstractArray)
+  ::typeof(evaluate), a::MappedArray{<:Fill{<:Broadcasting{<:Operation}}}, x::AbstractArray)
 
   fx = map( fi->apply(evaluate,fi,x), a.f)
-  op = BroadcastMapping(a.g.value.f.op)
+  op = Broadcasting(a.g.value.f.op)
   apply(op,fx...)
 end
 
@@ -105,7 +105,7 @@ end
 function apply(
   ::typeof(gradient), a::MappedArray{<:Fill{typeof(linear_combination)}})
 
-  i_to_basis = apply(BroadcastMapping(gradient),a.f[1])
+  i_to_basis = apply(Broadcasting(gradient),a.f[1])
   i_to_values = a.f[2]
   apply(linear_combination,i_to_basis,i_to_values)
 end
@@ -113,12 +113,12 @@ end
 # Optimization for
 #
 #  g = apply( linear_combination, cell_to_i_to_f, cell_to_i_to_val)
-#  apply(BroadcastMapping(gradient),g)
+#  apply(Broadcasting(gradient),g)
 #
 function apply(
-  ::BroadcastMapping{typeof(gradient)}, a::MappedArray{<:Fill{typeof(linear_combination)}})
+  ::Broadcasting{typeof(gradient)}, a::MappedArray{<:Fill{typeof(linear_combination)}})
 
-  i_to_basis = apply(BroadcastMapping(gradient),a.f[1])
+  i_to_basis = apply(Broadcasting(gradient),a.f[1])
   i_to_values = a.f[2]
   apply(linear_combination,i_to_basis,i_to_values)
 end
@@ -126,10 +126,10 @@ end
 # Optimization for
 #
 #  g = apply(transpose,cell_to_i_to_f)
-#  apply(BroadcastMapping(gradient),g)
+#  apply(Broadcasting(gradient),g)
 #
 function apply(
-  ::BroadcastMapping{typeof(gradient)}, a::MappedArray{<:Fill{typeof(transpose)}})
+  ::Broadcasting{typeof(gradient)}, a::MappedArray{<:Fill{typeof(transpose)}})
 
   i_to_basis = apply(gradient,a.f[1])
   apply( transpose, i_to_basis)
@@ -148,25 +148,25 @@ for op in (:+,:-)
     end
 
     function apply(
-      ::BroadcastMapping{typeof(gradient)}, a::MappedArray{<:Fill{BroadcastMapping{Operation{typeof($op)}}}})
+      ::Broadcasting{typeof(gradient)}, a::MappedArray{<:Fill{Broadcasting{Operation{typeof($op)}}}})
 
       f = a.f
       g = map(i->apply(gradient,i),f)
-      apply(BroadcastMapping(Operation($op)),g...)
+      apply(Broadcasting(Operation($op)),g...)
     end
 
   end
 end
 
 function apply(
-  ::BroadcastMapping{typeof(gradient)},
-  a::MappedArray{<:Fill{BroadcastMapping{Operation{typeof(*)}}}})
+  ::Broadcasting{typeof(gradient)},
+  a::MappedArray{<:Fill{Broadcasting{Operation{typeof(*)}}}})
 
   f = a.f
   g = map(i->apply(gradient,i),f)
-  r1 = apply(BroadcastMapping(Operation(*)),f[1],g[2])
-  r2 = apply(BroadcastMapping(Operation(*)),f[2],g[1])
-  apply(BroadcastMapping(Operation(+)),r1,r2)
+  r1 = apply(Broadcasting(Operation(*)),f[1],g[2])
+  r2 = apply(Broadcasting(Operation(*)),f[2],g[1])
+  apply(Broadcasting(Operation(+)),r1,r2)
 end
 
 function apply(

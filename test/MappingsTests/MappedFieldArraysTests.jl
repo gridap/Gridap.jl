@@ -93,7 +93,7 @@ c_r = array_cache(res_tbasis_a)
 # Broadcast operation basis basis
 
 op = +
-brbasis_a = apply(BroadcastMapping(Operation(op)),basis_a,basis_a)
+brbasis_a = apply(Broadcasting(Operation(op)),basis_a,basis_a)
 res_brbasis_a = apply(evaluate,brbasis_a,x_a)
 
 c_r = array_cache(res_brbasis_a)
@@ -102,7 +102,7 @@ c_r = array_cache(res_brbasis_a)
 # Broadcast operation basis field
 
 op = +
-brbasis_a = apply(BroadcastMapping(Operation(op)),basis_a,field_a)
+brbasis_a = apply(Broadcasting(Operation(op)),basis_a,field_a)
 
 res_brbasisfield_a = apply(evaluate,brbasis_a,x_a)
 for j in 1:na
@@ -144,7 +144,7 @@ c_r = array_cache(res_vmxbasis_a)
 
 # basis*transpose(basis)
 
-basisxtbasis_a = apply(BroadcastMapping(Operation(⋅)),basis_a,tbasis_a)
+basisxtbasis_a = apply(Broadcasting(Operation(⋅)),basis_a,tbasis_a)
 res_basisxtbasis_a = apply(evaluate,basisxtbasis_a,x_a)
 size(res_basisxtbasis_a[1])
 for j in 1:na
@@ -170,7 +170,7 @@ c_r = array_cache(res_compfield_a)
 # composition basis(basis, field)
 
 op = ∘
-compbasisfield_a = apply(BroadcastMapping(op),basis_a,field_a)
+compbasisfield_a = apply(Broadcasting(op),basis_a,field_a)
 
 res_compbasisfield_a = apply(evaluate,compbasisfield_a,x_a)
 @test all([ res_compbasisfield_a[i] == apply(basis_a,res_field_a)[i] for i in 1:na])
@@ -204,8 +204,8 @@ field_a
 integrate_a = apply(integrate,field_a,w_a,jac_a,x_a)
 res_integrate_a = apply(evaluate,integrate_a)
 
-meas_a = apply(BroadcastMapping(meas),res_jac_a)
-wmeas_a = apply(BroadcastMapping(*),w_a,meas_a)
+meas_a = apply(Broadcasting(meas),res_jac_a)
+wmeas_a = apply(Broadcasting(*),w_a,meas_a)
 for i in 1:length(x_a)
   @test transpose(res_field_a[i])*wmeas_a[i] == res_integrate_a[i]
 end
@@ -223,8 +223,8 @@ res_jac_a = apply(evaluate,jac_a,x_a)
 integrate_a = apply(integrate,basis_a,w_a,jac_a,x_a)
 res_integrate_a = apply(evaluate,integrate_a)
 
-meas_a = apply(BroadcastMapping(meas),res_jac_a)
-wmeas_a = apply(BroadcastMapping(*),w_a,meas_a)
+meas_a = apply(Broadcasting(meas),res_jac_a)
+wmeas_a = apply(Broadcasting(*),w_a,meas_a)
 for i in 1:length(x_a)
   @test transpose(res_basis_a[i])*wmeas_a[i] == res_integrate_a[i]
 end

@@ -16,7 +16,7 @@ a = [3,2]
 b = [2,1]
 test_mapping(+,(a,b),a+b)
 
-bm = BroadcastMapping(+)
+bm = Broadcasting(+)
 cache = return_cache(bm,a,b)
 # @btime evaluate!($cache,$bm,$a,$b)
 
@@ -43,13 +43,13 @@ return_type(+,a,b)
 testitem(+,a,b)
 
 
-f = BroadcastMapping(+)
+f = Broadcasting(+)
 a = rand(3,2)
 b = 3
 c = a .+ b
 Mappings.test_mapping(f,(a,b),c)
 
-k = BroadcastMapping(-)
+k = Broadcasting(-)
 test_mapping(k,(1,),-1)
 test_mapping(k,([1,2],),[-1,-2])
 test_mapping(k,(1,2),-1)
@@ -59,7 +59,7 @@ test_mapping(k,([1,2],2),[-1,0])
 test_mapping(k,(2,[1,2]),[1,0])
 test_mapping(k,([3,4],[1,2]),[2,2])
 
-f = BroadcastMapping(⋅)
+f = Broadcasting(⋅)
 a = fill(TensorValue(2,0,0,0,2,0,0,0,2),2)
 b = VectorValue(1,2,3)
 c = zeros(VectorValue{3,Int},2)
@@ -78,19 +78,19 @@ test_mapping(fa,(x,),2*x)
 fb(x) = sqrt.(x)
 test_mapping(fb,(x,),sqrt.(x))
 
-op = BroadcastMapping(*)
+op = Broadcasting(*)
 cache = return_cache(op,2,x)
 # @btime evaluate!($cache,$op,$2,$x)
-test_mapping(BroadcastMapping(*),(2,x),2*x)
+test_mapping(Broadcasting(*),(2,x),2*x)
 
 fab = Operation(fa)(fb)
 test_mapping(fab,(x,),2*(sqrt.(x)))
 
-bm = BroadcastMapping(*)
+bm = Broadcasting(*)
 cache = return_cache(bm,x,2)
 # @btime evaluate!($cache,$bm,$x,$2)
 
-bs = BroadcastMapping(sqrt)
+bs = Broadcasting(sqrt)
 cache = return_cache(bs,x)
 # @btime evaluate!($cache,$bs,$x)
 
@@ -162,7 +162,7 @@ cache = return_cache(h,x,2)
 # test_mapping(∇h,(x,),∇hx)
 
 
-# k = BroadcastMapping(-)
+# k = Broadcasting(-)
 # fi = VectorValue(3.0,0.0)
 # d = 2
 # f = MockField{d}(fi)
