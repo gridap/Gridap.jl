@@ -115,6 +115,18 @@ function _apply_mapping(::Type{T},k,f::AbstractArray...) where T
   apply(T,Fill(k, s...), f...)
 end
 
+
+"""
+Subtype of `AbstractArray` which is the result of `apply`. It represents the
+result of applying a mapping / array of mappings to a set of arrays that
+contain the mapping arguments. This struct makes use of the cache provided
+by the mapping in order to compute its indices (thus allowing to prevent
+allocation). The array is lazy, i.e., the values are only computed on
+demand. It extends the `AbstractArray` API with two methods:
+
+   `array_cache(a::AbstractArray)`
+   `getindex!(a::AbstractArray,i...)`
+"""
 struct MappedArray{G,T,N,F} <: AbstractArray{T,N}
   g::G
   f::F
@@ -136,9 +148,8 @@ IndexStyle(::Type{<:MappedArray}) = IndexCartesian()
 
 #@fverdugo the signature of the index i... has to be improved
 # so that it is resilient to the different types of indices
-#
-# a default implementation of array_cache has to be provided also
-# for array_cache(a::AbstractArray,i...)
+
+@inline array_cache(a::AbstractArray,i...) = nothing
 
 function array_cache(a::MappedArray,i...)
   @notimplementedif ! all(map(isconcretetype, map(eltype, a.f)))
@@ -165,6 +176,8 @@ cf = map(array_cache,a.f)
 cgi = return_cache(gi, fi...)
 cg, cgi, cf
 end
+
+@inline function Base.getindex!(a::AbstractArray,i...) = a[i...]
 
 #@fverdugo the signature of the index i... has to be improved
 # so that it is resilient to the different types of indices
