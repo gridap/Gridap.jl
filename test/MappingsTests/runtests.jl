@@ -4,7 +4,7 @@ using Test
 
 @testset "Mappings" begin include("MappingInterfacesTests.jl") end
 
-@testset "MappedArrays" begin include("MappedArraysTests.jl") end
+@testset "LazyArrays" begin include("LazyArraysTests.jl") end
 
 @testset "Fields" begin include("FieldInterfacesTests.jl") end
 
@@ -14,6 +14,6 @@ using Test
 
 @testset "FieldArraysOperations" begin include("FieldArraysOperationsTests.jl") end
 
-@testset "MappedFieldArrays" begin include("MappedFieldArraysTests.jl") end
+@testset "LazyFieldArrays" begin include("LazyFieldArraysTests.jl") end
 
 end

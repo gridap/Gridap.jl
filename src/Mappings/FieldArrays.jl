@@ -232,7 +232,7 @@ end
 
 # linear combination
 
-# Function to be used for dispatch in MappedArray
+# Function to be used for dispatch in LazyArray
 
 """
     linear_combination(a,b)

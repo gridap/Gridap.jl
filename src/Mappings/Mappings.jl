@@ -34,9 +34,9 @@ export evaluate
 export return_type
 export test_mapping
 
-# MappedArray
+# LazyArray
 
-export MappedArray
+export LazyArray
 
 # import Gridap.Arrays: lazy_map
 import Gridap.Arrays: array_cache
@@ -105,7 +105,7 @@ export Integrate
 
 include("MappingInterfaces.jl")
 
-include("MappedArrays.jl")
+include("LazyArrays.jl")
 
 include("FieldsInterfaces.jl")
 

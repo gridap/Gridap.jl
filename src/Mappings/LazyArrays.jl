@@ -57,7 +57,7 @@ println(c)
   lazy_map(evaluate,Fill(k, s...), f...)
 end
 
-@inline lazy_map(::typeof(evaluate),k::AbstractArray,f::AbstractArray...) = MappedArray(k,f...)
+@inline lazy_map(::typeof(evaluate),k::AbstractArray,f::AbstractArray...) = LazyArray(k,f...)
 
 """
     lazy_map(::Type{T},f,a::AbstractArray...) where T
@@ -70,7 +70,7 @@ of the resulting array in order to circumvent type inference.
   lazy_map(evaluate,T,Fill(k, s...), f...)
 end
 
-@inline lazy_map(::typeof(evaluate),T::Type,k::AbstractArray,f::AbstractArray...) = MappedArray(T,k,f...)
+@inline lazy_map(::typeof(evaluate),T::Type,k::AbstractArray,f::AbstractArray...) = LazyArray(T,k,f...)
 
 # """
 #     lazy_map(f::AbstractArray,a::AbstractArray...) -> AbstractArray
@@ -102,7 +102,7 @@ end
 # ```
 # """
 # function lazy_map(g::AbstractArray,f::AbstractArray...)
-#   MappedArray(g,f...)
+#   LazyArray(g,f...)
 # end
 
 # """
@@ -112,7 +112,7 @@ end
 # of the resulting array in order to circumvent type inference.
 # """
 # function lazy_map(::Type{T},g::AbstractArray,f::AbstractArray...) where T
-#   MappedArray(T,g,f...)
+#   LazyArray(T,g,f...)
 # end
 
 # function _lazy_map_mapping(k,f::AbstractArray...)
@@ -137,31 +137,31 @@ demand. It extends the `AbstractArray` API with two methods:
    `array_cache(a::AbstractArray)`
    `getindex!(a::AbstractArray,i...)`
 """
-struct MappedArray{G,T,N,F} <: AbstractArray{T,N}
+struct LazyArray{G,T,N,F} <: AbstractArray{T,N}
   g::G
   f::F
-  function MappedArray(::Type{T}, g::AbstractArray, f::AbstractArray...) where T
+  function LazyArray(::Type{T}, g::AbstractArray, f::AbstractArray...) where T
     G = typeof(g)
     F = typeof(f)
     new{G,T,ndims(first(f)),F}(g, f)
   end
 end
 
-function MappedArray(g::AbstractArray{S}, f::AbstractArray...) where S
+function LazyArray(g::AbstractArray{S}, f::AbstractArray...) where S
   isconcretetype(S) ? gi = testitem(g) : @notimplemented
   fi = map(testitem,f)
   T = typeof(testitem(gi, fi...))
-  MappedArray(T, g, f...)
+  LazyArray(T, g, f...)
 end
 
-IndexStyle(::Type{<:MappedArray}) = IndexCartesian()
+IndexStyle(::Type{<:LazyArray}) = IndexCartesian()
 
 #@fverdugo the signature of the index i... has to be improved
 # so that it is resilient to the different types of indices
 
 @inline array_cache(a::AbstractArray,i...) = nothing
 
-function array_cache(a::MappedArray,i...)
+function array_cache(a::LazyArray,i...)
   @notimplementedif ! all(map(isconcretetype, map(eltype, a.f)))
   if ! (eltype(a.g) <: Function)
     @notimplementedif ! isconcretetype(eltype(a.g))
@@ -174,7 +174,7 @@ function array_cache(a::MappedArray,i...)
   cg, cgi, cf
 end
 
-function array_cache(a::MappedArray)
+function array_cache(a::LazyArray)
 @notimplementedif ! all(map(isconcretetype, map(eltype, a.f)))
 if ! (eltype(a.g) <: Function)
   @notimplementedif ! isconcretetype(eltype(a.g))
@@ -193,7 +193,7 @@ end
 # so that it is resilient to the different types of indices
 # @santiagobadia : Can you handle this? I am not sure what you
 # have in mind
-@inline function getindex!(cache, a::MappedArray, i...)
+@inline function getindex!(cache, a::LazyArray, i...)
   cg, cgi, cf = cache
   gi = getindex!(cg, a.g, i...)
   fi = map((ci,ai) -> getindex!(ci,ai,i...),cf,a.f)
@@ -202,12 +202,12 @@ end
   # vi
 end
 
-function Base.getindex(a::MappedArray, i...)
+function Base.getindex(a::LazyArray, i...)
   ca = array_cache(a)
   getindex!(ca, a, i...)
 end
 
-function Base.size(a::MappedArray)
+function Base.size(a::LazyArray)
   size(first(a.f))
 end
 

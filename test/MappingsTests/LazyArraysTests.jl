@@ -1,4 +1,4 @@
-module MappedArraysTests
+module LazyArraysTests
 
 using Test
 using Gridap.Arrays
