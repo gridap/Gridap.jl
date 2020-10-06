@@ -13,13 +13,15 @@ import Gridap.Arrays: IndexStyle
 
 using Gridap.Helpers: GridapType, @abstractmethod, @notimplemented
 using Gridap.Helpers: @notimplementedif, @unreachable
-using Gridap.Inference: testvalue, testvalues
+
+using Gridap.Inference: testvalue
+import Gridap.Inference: return_type
+
 using Gridap.Algebra: mul!
 
 using FillArrays
 using Test
 
-import Gridap.Inference: return_type
 
 # Mapping interface
 

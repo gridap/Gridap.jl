@@ -234,7 +234,7 @@ end
 
 function return_type(c::OperationMapping,x...)
   Ts = map(fi -> return_type(fi,x...),c.l)
-  return_type(c.k, testvalues(Ts...)...)
+  return_type(c.k, map(testvalue,Ts)...)
 end
 
 function return_cache(c::OperationMapping,x...)

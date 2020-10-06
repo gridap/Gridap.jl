@@ -12,7 +12,7 @@ testargs(::typeof(foo),T::DataType) = (one(T),)
 testargs(::typeof(hola),Tx,Ty) = (one(Tx),testvalue(Ty))
 
 @test 0 == testvalue(Int)
-@test (0,0.0) == testvalues(Int,Float64)
+@test (0,0.0) == map(testvalue,(Int,Float64))
 
 @test return_type(sqrt, Int) == Float64
 @test return_type(foo, Int) == Float64

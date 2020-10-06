@@ -2,10 +2,10 @@
 """
     apply_kernel_to_field(k,f...) -> Field
 
-Returns a field obtained by applying the kernel `k` to the 
+Returns a field obtained by applying the kernel `k` to the
 values of the fields in `f`. That is, the returned field evaluated at
 a vector of points `x` provides the value obtained by applying kernel `k` to the
-values of the fields `f` at the vector of points `x`. Formally, the resulting field at a 
+values of the fields `f` at the vector of points `x`. Formally, the resulting field at a
 vector of points
  `x` is defined as
 
@@ -44,7 +44,7 @@ end
 
 function field_return_type(f::AppliedField,x)
   Ts = field_return_types(f.f,x)
-  kernel_return_type(f.k, testvalues(Ts...)...)
+  kernel_return_type(f.k,map(testvalue,Ts)...)
 end
 
 function field_cache(f::AppliedField,x)
@@ -63,4 +63,3 @@ end
 @inline function field_gradient(f::AppliedField)
   apply_kernel_gradient(f.k,f.f...)
 end
-

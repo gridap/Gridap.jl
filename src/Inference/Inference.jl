@@ -1,7 +1,7 @@
 """
 This module provides a set of helper function to safely infer return types of functions.
 
-In Gridap, we rely as less as possible in type inference. But, when needed, we adopt
+In Gridap, we rely as less as possible on type inference. But, when needed, we adopt
 the following mechanism in order to compute returned types. We do not rely on
 the `Base._return_type` function.
 
@@ -16,7 +16,6 @@ using FillArrays
 using Gridap.Helpers
 
 export testvalue
-export testvalues
 export testargs
 export testargs_broadcast
 export return_type
@@ -72,7 +71,7 @@ end
 $(SIGNATURES)
 """
 function testargs_broadcast(f::Function,Ts...)
-  testvalues(Ts...)
+  map(testvalue,Ts)
 end
 
 function testargs_broadcast(f::Function,Ts::Type{<:Number}...)
@@ -106,7 +105,7 @@ Float64
 ```
 
 """
-testargs(f::Function,Ts...) = testvalues(Ts...)
+testargs(f::Function,Ts...) = map(testvalue,Ts)
 
 """
     testvalue(::Type{T}) where T
@@ -119,8 +118,8 @@ It can be overloaded for new types `T` if `zero(T)` does not makes sense.
 """
 function testvalue end
 
-testvalue(::Type{T}) where T = zero(T)
-testvalue(v) = testvalue(typeof(v))
+@inline testvalue(::Type{T}) where T = zero(T)
+@inline testvalue(v) = testvalue(typeof(v))
 
 function testvalue(::Type{T}) where T<:AbstractArray{E,N} where {E,N}
    similar(T,tfill(0,Val(N))...)
@@ -168,23 +167,6 @@ end
 
 function testvalue(::Type{Tuple{}})
   ()
-end
-
-"""
-    testvalues(Ts::DataType...) -> Tuple
-
-Returns a tuple with test values for each of the types in `Ts`.
-Equivalent to `map(testvalue,Ts)`.
-"""
-function testvalues(a,b...)
-  ta = testvalue(a)
-  tb = testvalues(b...)
-  (ta,tb...)
-end
-
-function testvalues(a)
-  ta = testvalue(a)
-  (ta,)
 end
 
 end # module
