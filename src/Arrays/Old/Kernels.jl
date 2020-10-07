@@ -5,12 +5,12 @@ Abstract type representing the operations to be used in the [`lazy_map`](@ref) f
 
 Derived types must implement the following method:
 
-- [`lazy_map_kernel!(cache,k,x...)`](@ref)
+- [`evaluate!(cache,k,x...)`](@ref)
 
 and optionally these ones:
 
-- [`kernel_cache(k,x...)`](@ref)
-- [`kernel_return_type(k,x...)`](@ref)
+- [`return_cache(k,x...)`](@ref)
+- [`return_type(k,x...)`](@ref)
 
 The kernel interface can be tested with the [`test_kernel`](@ref) function.
 
@@ -25,38 +25,38 @@ for `Function` objects.  However, we recommend that new types inherit from `Kern
 abstract type Kernel <: GridapType end
 
 """
-    kernel_return_type(f,x...)
+    return_type(f,x...)
 
 Returns the type of the result of calling kernel `f` with
 arguments of the types of the objects `x`.
 
-It defaults to `typeof(kernel_testitem(f,x...))`
+It defaults to `typeof(testitem(f,x...))`
 """
-function kernel_return_type(f,x...)
-  typeof(kernel_testitem(f,x...))
+function return_type(f,x...)
+  typeof(testitem(f,x...))
 end
 
 """
-    kernel_cache(f,x...)
+    return_cache(f,x...)
 
 Returns the `cache` needed to lazy_map kernel `f` with arguments
 of the same type as the objects in `x`.
 This function returns `nothing` by default.
 """
-kernel_cache(f,x...) = nothing
+return_cache(f,x...) = nothing
 
 """
-    lazy_map_kernel!(cache,f,x...)
+    evaluate!(cache,f,x...)
 
 Applies the kernel `f` at the arguments `x...` using
 the scratch data provided in the given `cache` object. The `cache` object
-is built with the [`kernel_cache`](@ref) function using arguments of the same type as in `x`.
+is built with the [`return_cache`](@ref) function using arguments of the same type as in `x`.
 In general, the returned value `y` can share some part of its state with the `cache` object.
 If the result of two or more invocations of this function need to be accessed simultaneously
 (e.g., in multi-threading), create and use various `cache` objects (e.g., one cache
 per thread).
 """
-function lazy_map_kernel!(cache,f,x...)
+function evaluate!(cache,f,x...)
   @abstractmethod
 end
 
@@ -72,15 +72,15 @@ the computed result with the expected one. The checks are done with the `@test`
 macro.
 """
 function test_kernel(f,x::Tuple,y,cmp=(==))
-  z = lazy_map_kernel(f,x...)
+  z = evaluate(f,x...)
   @test cmp(z,y)
-  @test typeof(z) == kernel_return_type(f,x...)
-  cache = kernel_cache(f,x...)
-  z = lazy_map_kernel!(cache,f,x...)
+  @test typeof(z) == return_type(f,x...)
+  cache = return_cache(f,x...)
+  z = evaluate!(cache,f,x...)
   @test cmp(z,y)
-  z = lazy_map_kernel!(cache,f,x...)
+  z = evaluate!(cache,f,x...)
   @test cmp(z,y)
-  z = kernel_testitem!(cache,f,x...)
+  z = testitem!(cache,f,x...)
   #@test cmp(typeof(z),typeof(y))
 end
 
@@ -88,65 +88,65 @@ end
 # Functions on kernel objects
 
 """
-    lazy_map_kernel(f,x...)
+    evaluate(f,x...)
 
 lazy_map the kernel `f` at the arguments in `x` by creating a temporary cache
 internally. This functions is equivalent to
 ```jl
-cache = kernel_cache(f,x...)
-lazy_map_kernel!(cache,f,x...)
+cache = return_cache(f,x...)
+evaluate!(cache,f,x...)
 ```
 """
-function lazy_map_kernel(f,x...)
-  cache = kernel_cache(f,x...)
-  y = lazy_map_kernel!(cache,f,x...)
+function evaluate(f,x...)
+  cache = return_cache(f,x...)
+  y = evaluate!(cache,f,x...)
   y
 end
 
 # Work with several kernels at once
 
 """
-    kernel_caches(fs::Tuple,x...) -> Tuple
+    return_caches(fs::Tuple,x...) -> Tuple
 
 Returns a tuple with the cache corresponding to each kernel in `fs`
 for the arguments `x...`.
 """
-function kernel_caches(fs::Tuple,x...)
-  _kernel_caches(x,fs...)
+function return_caches(fs::Tuple,x...)
+  _return_caches(x,fs...)
 end
 
-function _kernel_caches(x::Tuple,a,b...)
-  ca = kernel_cache(a,x...)
-  cb = kernel_caches(b,x...)
+function _return_caches(x::Tuple,a,b...)
+  ca = return_cache(a,x...)
+  cb = return_caches(b,x...)
   (ca,cb...)
 end
 
-function _kernel_caches(x::Tuple,a)
-  ca = kernel_cache(a,x...)
+function _return_caches(x::Tuple,a)
+  ca = return_cache(a,x...)
   (ca,)
 end
 
 """
-    lazy_map_kernels!(caches::Tuple,fs::Tuple,x...) -> Tuple
+    evaluates!(caches::Tuple,fs::Tuple,x...) -> Tuple
 
 Applies the kernels in the tuple `fs` at the arguments `x...`
 by using the corresponding cache objects in the tuple `caches`.
 The result is also a tuple containing the result for each kernel in `fs`.
 """
-@inline function lazy_map_kernels!(cfs::Tuple,f::Tuple,x...)
-  _lazy_map_kernels!(cfs,x,f...)
+@inline function evaluates!(cfs::Tuple,f::Tuple,x...)
+  _evaluates!(cfs,x,f...)
 end
 
-@inline function _lazy_map_kernels!(cfs,x,f1,f...)
+@inline function _evaluates!(cfs,x,f1,f...)
   cf1, cf = _split(cfs...)
-  f1x = lazy_map_kernel!(cf1,f1,x...)
-  fx = lazy_map_kernels!(cf,f,x...)
+  f1x = evaluate!(cf1,f1,x...)
+  fx = evaluates!(cf,f,x...)
   (f1x,fx...)
 end
 
-@inline function _lazy_map_kernels!(cfs,x,f1)
+@inline function _evaluates!(cfs,x,f1)
   cf1, = cfs
-  f1x = lazy_map_kernel!(cf1,f1,x...)
+  f1x = evaluate!(cf1,f1,x...)
   (f1x,)
 end
 
@@ -155,43 +155,43 @@ end
 end
 
 """
-    kernel_return_types(f::Tuple,x...) -> Tuple
+    return_types(f::Tuple,x...) -> Tuple
 
 Computes the return types of the kernels in `f` when called
 with arguments `x`.
 """
-function kernel_return_types(f::Tuple,x...)
-  _kernel_return_types(x,f...)
+function return_types(f::Tuple,x...)
+  _return_types(x,f...)
 end
 
-function _kernel_return_types(x::Tuple,a,b...)
-  Ta = kernel_return_type(a,x...)
-  Tb = kernel_return_types(b,x...)
+function _return_types(x::Tuple,a,b...)
+  Ta = return_type(a,x...)
+  Tb = return_types(b,x...)
   (Ta,Tb...)
 end
 
-function _kernel_return_types(x::Tuple,a)
-  Ta = kernel_return_type(a,x...)
+function _return_types(x::Tuple,a)
+  Ta = return_type(a,x...)
   (Ta,)
 end
 
-function kernel_testitem(k,x...)
-  cache = kernel_cache(k,x...)
-  kernel_testitem!(cache,k,x...)
+function testitem(k,x...)
+  cache = return_cache(k,x...)
+  testitem!(cache,k,x...)
 end
 
-@inline function kernel_testitem!(cache,k,x...)
-  lazy_map_kernel!(cache,k,x...)
+@inline function testitem!(cache,k,x...)
+  evaluate!(cache,k,x...)
 end
 
 # Include some well-known types in this interface
 
-function kernel_return_type(f::Function,x...)
+function return_type(f::Function,x...)
   Ts = map(typeof,x)
   return_type(f,Ts...)
 end
 
-@inline lazy_map_kernel!(::Nothing,f::Function,args...) = f(args...)
+@inline evaluate!(::Nothing,f::Function,args...) = f(args...)
 
 # Some particular cases
 
@@ -209,24 +209,24 @@ struct BCasted{F<:Function} <: Kernel
   f::F
 end
 
-function kernel_return_type(f::BCasted,x::Number...)
+function return_type(f::BCasted,x::Number...)
   Ts = map(typeof,x)
   return_type(f.f,Ts...)
 end
 
-function kernel_cache(f::BCasted,x::Number...)
+function return_cache(f::BCasted,x::Number...)
   nothing
 end
 
-@inline function lazy_map_kernel!(::Nothing,f::BCasted,x::Number...)
+@inline function evaluate!(::Nothing,f::BCasted,x::Number...)
   f.f(x...)
 end
 
-function kernel_return_type(f::BCasted,x::NumberOrArray...)
-  typeof(kernel_cache(f,x...).array)
+function return_type(f::BCasted,x::NumberOrArray...)
+  typeof(return_cache(f,x...).array)
 end
 
-function kernel_cache(f::BCasted,x::NumberOrArray...)
+function return_cache(f::BCasted,x::NumberOrArray...)
   s = _sizes(x...)
   bs = Base.Broadcast.broadcast_shape(s...)
   Te = map(numbertype,x)
@@ -243,7 +243,7 @@ numbertype(a::AbstractArray) = eltype(a)
 
 numbertype(a::Number) = typeof(a)
 
-@inline function lazy_map_kernel!(cache,f::BCasted,x::NumberOrArray...)
+@inline function evaluate!(cache,f::BCasted,x::NumberOrArray...)
   r = _prepare_cache(cache,x...)
   a = r.array
   broadcast!(f.f,a,x...)
@@ -290,49 +290,49 @@ end
 
 # It defaults to bcast (TODO test these ones)
 
-@inline function lazy_map_kernel!(cache,k::Elem,x::NumberOrArray...)
+@inline function evaluate!(cache,k::Elem,x::NumberOrArray...)
   b = bcast(k.f)
-  lazy_map_kernel!(cache,b,x...)
+  evaluate!(cache,b,x...)
 end
 
-function kernel_cache(k::Elem,x::NumberOrArray...)
+function return_cache(k::Elem,x::NumberOrArray...)
   b = bcast(k.f)
-  kernel_cache(b,x...)
+  return_cache(b,x...)
 end
 
-function kernel_return_type(k::Elem,x::NumberOrArray...)
+function return_type(k::Elem,x::NumberOrArray...)
   b = bcast(k.f)
-  kernel_return_type(b,x...)
+  return_type(b,x...)
 end
 
 # More Efficient implementations
 
 # Number
 
-function kernel_return_type(k::Elem,a::Number)
+function return_type(k::Elem,a::Number)
   return_type(k.f,typeof(a))
 end
 
-function kernel_cache(k::Elem,a::Number)
+function return_cache(k::Elem,a::Number)
   nothing
 end
 
-@inline function lazy_map_kernel!(c,k::Elem,a::Number)
+@inline function evaluate!(c,k::Elem,a::Number)
   k.f(a)
 end
 
 # Array
 
-function kernel_return_type(k::Elem,a::AbstractArray)
-  typeof(kernel_cache(k,a).array)
+function return_type(k::Elem,a::AbstractArray)
+  typeof(return_cache(k,a).array)
 end
 
-function kernel_cache(k::Elem,a::AbstractArray)
+function return_cache(k::Elem,a::AbstractArray)
   T = return_type(k.f,eltype(a))
   CachedArray(similar(a,T))
 end
 
-@inline function lazy_map_kernel!(c,f::Elem,a::AbstractArray)
+@inline function evaluate!(c,f::Elem,a::AbstractArray)
   setsize!(c,size(a))
   r = c.array
   for i in eachindex(a)
@@ -343,17 +343,17 @@ end
 
 # Array vs Array
 
-function kernel_return_type(k::Elem,a::AbstractArray,b::AbstractArray)
-  typeof(kernel_cache(k,a,b).array)
+function return_type(k::Elem,a::AbstractArray,b::AbstractArray)
+  typeof(return_cache(k,a,b).array)
 end
 
-function kernel_cache(k::Elem,a::AbstractArray,b::AbstractArray)
+function return_cache(k::Elem,a::AbstractArray,b::AbstractArray)
   _checks(a,b)
   T = return_type(k.f,eltype(a),eltype(b))
   CachedArray(similar(a,T))
 end
 
-@inline function lazy_map_kernel!(c,f::Elem,a::AbstractArray,b::AbstractArray)
+@inline function evaluate!(c,f::Elem,a::AbstractArray,b::AbstractArray)
   _checks(a,b)
   setsize!(c,size(a))
   r = c.array
@@ -365,30 +365,30 @@ end
 
 # Number vs Number
 
-function kernel_return_type(k::Elem,a::Number,b::Number)
+function return_type(k::Elem,a::Number,b::Number)
   return_type(k.f,typeof(a),typeof(b))
 end
 
-function kernel_cache(k::Elem,a::Number,b::Number)
+function return_cache(k::Elem,a::Number,b::Number)
   nothing
 end
 
-@inline function lazy_map_kernel!(c,k::Elem,a::Number,b::Number)
+@inline function evaluate!(c,k::Elem,a::Number,b::Number)
   k.f(a,b)
 end
 
 # Array vs Number
 
-function kernel_return_type(k::Elem,a::AbstractArray,b::Number)
-  typeof(kernel_cache(k,a,b).array)
+function return_type(k::Elem,a::AbstractArray,b::Number)
+  typeof(return_cache(k,a,b).array)
 end
 
-function kernel_cache(k::Elem,a::AbstractArray,b::Number)
+function return_cache(k::Elem,a::AbstractArray,b::Number)
   T = return_type(k.f,eltype(a),typeof(b))
   CachedArray(similar(a,T))
 end
 
-@inline function lazy_map_kernel!(c,k::Elem,a::AbstractArray,b::Number)
+@inline function evaluate!(c,k::Elem,a::AbstractArray,b::Number)
   setsize!(c,size(a))
   r = c.array
   for i in eachindex(a)
@@ -399,16 +399,16 @@ end
 
 # Number vs Array
 
-function kernel_return_type(k::Elem,a::Number,b::AbstractArray)
-  typeof(kernel_cache(k,a,b).array)
+function return_type(k::Elem,a::Number,b::AbstractArray)
+  typeof(return_cache(k,a,b).array)
 end
 
-function kernel_cache(k::Elem,a::Number,b::AbstractArray)
+function return_cache(k::Elem,a::Number,b::AbstractArray)
   T = return_type(k.f,typeof(a),eltype(b))
   CachedArray(similar(b,T))
 end
 
-@inline function lazy_map_kernel!(c,k::Elem,a::Number,b::AbstractArray)
+@inline function evaluate!(c,k::Elem,a::Number,b::AbstractArray)
   setsize!(c,size(b))
   r = c.array
   for i in eachindex(b)
@@ -436,7 +436,7 @@ of `*` between components.
 ```jldoctests
 using Gridap.Arrays
 k = contract(-)
-lazy_map_kernel(k,[1,2],[2,4]) # Equivalent to (1-2) + (2-4)
+evaluate(k,[1,2],[2,4]) # Equivalent to (1-2) + (2-4)
 # output
 -3
 ```
@@ -448,15 +448,15 @@ struct Contracted{F} <: Kernel
   Contracted(f::Function) = new{typeof(f)}(f)
 end
 
-function kernel_return_type(k::Contracted,a::AbstractArray,b::AbstractArray)
+function return_type(k::Contracted,a::AbstractArray,b::AbstractArray)
   return_type(k.f,eltype(a),eltype(b))
 end
 
-function kernel_cache(k::Contracted,a::AbstractArray,b::AbstractArray)
-  kernel_return_type(k,a,b)
+function return_cache(k::Contracted,a::AbstractArray,b::AbstractArray)
+  return_type(k,a,b)
 end
 
-@inline function lazy_map_kernel!(T,f::Contracted,a::AbstractArray,b::AbstractArray)
+@inline function evaluate!(T,f::Contracted,a::AbstractArray,b::AbstractArray)
   _checks(a,b)
   c = zero(T)
   for i in eachindex(a)
@@ -467,12 +467,12 @@ end
 
 struct MulKernel <: Kernel end
 
-function kernel_cache(k::MulKernel,a,b)
+function return_cache(k::MulKernel,a,b)
   c = a*b
   CachedArray(c)
 end
 
-@inline function lazy_map_kernel!(cache,k::MulKernel,a::AbstractMatrix,b::AbstractVector)
+@inline function evaluate!(cache,k::MulKernel,a::AbstractMatrix,b::AbstractVector)
   m = axes(a,1)
   setaxes!(cache,(m,))
   c = cache.array
@@ -480,7 +480,7 @@ end
   c
 end
 
-@inline function lazy_map_kernel!(cache,k::MulKernel,a::AbstractMatrix,b::AbstractMatrix)
+@inline function evaluate!(cache,k::MulKernel,a::AbstractMatrix,b::AbstractMatrix)
   m = axes(a,1)
   n = axes(b,2)
   setaxes!(cache,(m,n))
@@ -494,12 +494,12 @@ struct MulAddKernel{T} <: Kernel
   β::T
 end
 
-function kernel_cache(k::MulAddKernel,a,b,c)
+function return_cache(k::MulAddKernel,a,b,c)
   d = a*b+c
   CachedArray(d)
 end
 
-@inline function lazy_map_kernel!(cache,k::MulAddKernel,a,b,c)
+@inline function evaluate!(cache,k::MulAddKernel,a,b,c)
   setaxes!(cache,axes(c))
   d = cache.array
   copyto!(d,c)

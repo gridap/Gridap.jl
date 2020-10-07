@@ -5,7 +5,7 @@
 """
 function operate_fields(op::Function,args...)
   k = FieldOpKernel(op)
-  lazy_map_kernel_to_field(k,args...)
+  evaluate_to_field(k,args...)
 end
 
 """
@@ -107,19 +107,19 @@ end
 # instead of at the cell level in this kernel.
 # In other words, we can assume that this kernel receives standard non-blocked arrays in practice.
 
-function kernel_cache(k::FieldOpKernel,args...)
+function return_cache(k::FieldOpKernel,args...)
   bk = bcast(k.op)
-  kernel_cache(bk,args...)
+  return_cache(bk,args...)
 end
 
-@inline function lazy_map_kernel!(cache,k::FieldOpKernel,args...)
+@inline function evaluate!(cache,k::FieldOpKernel,args...)
   bk = bcast(k.op)
-  lazy_map_kernel!(cache,bk,args...)
+  evaluate!(cache,bk,args...)
 end
 
 # Define gradients at local and global level
 
-function lazy_map_kernel_gradient(k::FieldOpKernel,args...)
+function evaluate_gradient(k::FieldOpKernel,args...)
   @notimplemented "The gradient of the result of operation $(k.op) is not yet implemented."
 end
 
@@ -132,23 +132,23 @@ for op in (:+,:-)
 
     # Local level
 
-    function lazy_map_kernel_gradient(k::FieldOpKernel{typeof($op)},a,b)
+    function evaluate_gradient(k::FieldOpKernel{typeof($op)},a,b)
       ga = field_gradient(a)
       gb = field_gradient(b)
-      lazy_map_kernel_to_field(k,ga,gb)
+      evaluate_to_field(k,ga,gb)
     end
 
-    function lazy_map_kernel_gradient(k::FieldOpKernel{typeof($op)},a)
+    function evaluate_gradient(k::FieldOpKernel{typeof($op)},a)
       ga = field_gradient(a)
-      lazy_map_kernel_to_field(k,ga)
+      evaluate_to_field(k,ga)
     end
 
-    function lazy_map_kernel_gradient(k::FieldOpKernel{typeof($op)},a::Number,b)
+    function evaluate_gradient(k::FieldOpKernel{typeof($op)},a::Number,b)
       gb = field_gradient(b)
-      lazy_map_kernel_to_field(k,gb)
+      evaluate_to_field(k,gb)
     end
 
-    function lazy_map_kernel_gradient(k::FieldOpKernel{typeof($op)},b,a::Number)
+    function evaluate_gradient(k::FieldOpKernel{typeof($op)},b,a::Number)
       gb = field_gradient(b)
       gb
     end
@@ -184,21 +184,21 @@ for op in (:*,⋅)
 
     # Local level
 
-    function lazy_map_kernel_gradient(k::FieldOpKernel{typeof($op)},a::Number,b)
+    function evaluate_gradient(k::FieldOpKernel{typeof($op)},a::Number,b)
       gb = field_gradient(b)
-      lazy_map_kernel_to_field(k,a,gb)
+      evaluate_to_field(k,a,gb)
     end
 
-    function lazy_map_kernel_gradient(k::FieldOpKernel{typeof($op)},b,a::Number)
+    function evaluate_gradient(k::FieldOpKernel{typeof($op)},b,a::Number)
       gb = field_gradient(b)
-      lazy_map_kernel_to_field(k,gb,a)
+      evaluate_to_field(k,gb,a)
     end
 
-    function lazy_map_kernel_gradient(k::FieldOpKernel{typeof($op)},a,b)
+    function evaluate_gradient(k::FieldOpKernel{typeof($op)},a,b)
       ga = field_gradient(a)
       gb = field_gradient(b)
-      f1 = lazy_map_kernel_to_field(k,ga,b)
-      f2 = lazy_map_kernel_to_field(k,a,gb)
+      f1 = evaluate_to_field(k,ga,b)
+      f2 = evaluate_to_field(k,a,gb)
       operate_fields(+,f1,f2)
     end
 
@@ -227,9 +227,9 @@ end
 
 # Local level
 
-function lazy_map_kernel_gradient(k::FieldOpKernel{typeof(/)},b,a::Number)
+function evaluate_gradient(k::FieldOpKernel{typeof(/)},b,a::Number)
   gb = field_gradient(b)
-  lazy_map_kernel_to_field(k,gb,a)
+  evaluate_to_field(k,gb,a)
 end
 
 # Global level
@@ -244,7 +244,7 @@ end
 """
 """
 function trialize_basis(f)
-  lazy_map_kernel_to_field(trialize_basis_value,f)
+  evaluate_to_field(trialize_basis_value,f)
 end
 
 """
@@ -257,7 +257,7 @@ end
   TrializedMatrix(a)
 end
 
-function lazy_map_kernel_gradient(::typeof(trialize_basis_value),a)
+function evaluate_gradient(::typeof(trialize_basis_value),a)
   g = field_gradient(a)
   trialize_basis(g)
 end

@@ -87,11 +87,11 @@ end
 
 # Implement Kernel interface
 
-@inline kernel_cache(dof::Dof,field) = dof_cache(dof,field)
+@inline return_cache(dof::Dof,field) = dof_cache(dof,field)
 
-@inline lazy_map_kernel!(cache,dof::Dof,field) = evaluate_dof!(cache,dof,field)
+@inline evaluate!(cache,dof::Dof,field) = evaluate_dof!(cache,dof,field)
 
-@inline kernel_return_type(dof::Dof,field) = dof_return_type(dof,field)
+@inline return_type(dof::Dof,field) = dof_return_type(dof,field)
 
 # Some API
 
@@ -149,14 +149,14 @@ end
 
 struct DofEval <: Kernel end
 
-function kernel_cache(k::DofEval,dof,field)
+function return_cache(k::DofEval,dof,field)
   dof_cache(dof,field)
 end
 
-@inline function lazy_map_kernel!(cache,k::DofEval,dof,field)
+@inline function evaluate!(cache,k::DofEval,dof,field)
   evaluate_dof!(cache,dof,field)
 end
 
-function kernel_return_type(k::DofEval,dof,field)
+function return_type(k::DofEval,dof,field)
   dof_return_type(dof,field)
 end

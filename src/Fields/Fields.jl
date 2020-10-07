@@ -39,7 +39,7 @@ export gradient
 export ∇
 export Field
 export test_field
-export lazy_map_kernel_to_field
+export evaluate_to_field
 export lazy_map_to_field_array
 export test_array_of_fields
 export compose
@@ -83,10 +83,10 @@ export field_operation_metasize
 
 export function_field
 
-import Gridap.Arrays: kernel_cache
-import Gridap.Arrays: lazy_map_kernel!
-import Gridap.Arrays: kernel_return_type
-import Gridap.Arrays: kernel_testitem!
+import Gridap.Arrays: return_cache
+import Gridap.Arrays: evaluate!
+import Gridap.Arrays: return_type
+import Gridap.Arrays: testitem!
 import Gridap.Arrays: lazy_map
 import Gridap.Arrays: reindex
 import Gridap.TensorValues: outer

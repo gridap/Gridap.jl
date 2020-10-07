@@ -17,21 +17,17 @@ test_array(a,r)
 filter = [false, true, true, false]
 filters = Fill(filter,6)
 
-fa = FilteredCellArray(a,filters)
+k = FilterMapping()
 
-test_array(fa,[a[i][2:3] for i in 1:6])
+cache = return_cache(k,filters[1],a[1])
 
-k = FilterKernel()
+return_type(k,filters[1],a[1])
 
-cache = kernel_cache(k,filters[1],a[1])
+evaluate!(cache,k,filters[1],a[1])
 
-kernel_return_type(k,filters[1],a[1])
+test_mapping(k,(filters[1],a[1]),a[1][2:3])
 
-lazy_map_kernel!(cache,k,filters[1],a[1])
-
-test_kernel(k,(filters[1],a[1]),a[1][2:3])
-
-@test lazy_map(k,filters,a) == fa
+@test lazy_map(k,filters,a) == [a[i][2:3] for i in 1:6]
 
 #
 
@@ -51,15 +47,12 @@ b[2,3] = b[1,4] = false
 
 filters = Fill(b,6)
 
-fa = FilteredCellArray(a,filters)
-
 r1 = [2, 2, 4, 4, 3, 3]
 r2 = [5, 2, 8, 4, 4, 4]
 r3 = [2, 2, 2, 9, 8, 6]
 res = [r1,r2,r3]
 r = CompressedArray(res,ptrs)
-test_array(fa,r)
 
-@test lazy_map(k,filters,a) == fa
+@test lazy_map(k,filters,a) == r
 
 end #module

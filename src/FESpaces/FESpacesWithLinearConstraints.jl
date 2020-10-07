@@ -520,7 +520,7 @@ struct LinearConstraintsKernel{A,B} <: Kernel
   n_fdofs::Int
 end
 
-function kernel_cache(k::LinearConstraintsKernel,lmdof_to_mdof,ldof_to_dof,mat)
+function return_cache(k::LinearConstraintsKernel,lmdof_to_mdof,ldof_to_dof,mat)
   n_lmdofs = length(lmdof_to_mdof)
   n_ldofs = length(ldof_to_dof)
   n_ludofs = size(mat,2)
@@ -531,7 +531,7 @@ function kernel_cache(k::LinearConstraintsKernel,lmdof_to_mdof,ldof_to_dof,mat)
   m1, m2, mDOF_to_lmdof
 end
 
-function lazy_map_kernel!(cache,k::LinearConstraintsKernel,lmdof_to_mdof,ldof_to_dof,mat)
+function evaluate!(cache,k::LinearConstraintsKernel,lmdof_to_mdof,ldof_to_dof,mat)
   m1, m2, mDOF_to_lmdof = cache
   n_lmdofs = length(lmdof_to_mdof)
   n_ldofs = length(ldof_to_dof)

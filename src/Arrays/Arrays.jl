@@ -91,23 +91,24 @@ export get_array
 export CompressedArray
 # export LocalToGlobalArray
 # export LocalToGlobalPosNegArray
-# export FilteredCellArray
-# export FilterKernel
 
-# export kernel_cache
-# export kernel_caches
-# export lazy_map_kernels!
-# export lazy_map_kernel!
-# export lazy_map_kernel
+# export FilteredCellArray
+export FilterMapping
+
+# export return_cache
+# export return_caches
+# export evaluates!
+# export evaluate!
+# export evaluate
 # export test_kernel
 # export bcast
 # export elem
 # export contract
 # export MulKernel
 # export MulAddKernel
-# export kernel_return_type
-# export kernel_return_types
-# export kernel_testitem
+# export return_type
+# export return_types
+# export testitem
 # export Kernel
 
 # # export lazy_map
@@ -172,7 +173,7 @@ include("CompressedArrays.jl")
 
 # include("LocalToGlobalPosNegArrays.jl")
 
-# include("FilteredArrays.jl")
+include("FilteredArrays.jl")
 
 # include("Reindex.jl")
 

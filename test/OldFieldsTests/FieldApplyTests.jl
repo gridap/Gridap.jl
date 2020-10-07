@@ -13,7 +13,7 @@ k = FieldOpKernel(-)
 v = 3.0
 d = 2
 f = MockField{d}(v)
-g = lazy_map_kernel_to_field(k,f)
+g = evaluate_to_field(k,f)
 
 p = 4
 p1 = Point(1,2)
@@ -24,8 +24,8 @@ x = [p1,p2,p3,p4]
 
 fx = evaluate(f,x)
 ∇fx = evaluate(∇(f),x)
-gx = lazy_map_kernel(k,fx)
-∇gx = lazy_map_kernel(k,∇fx)
+gx = evaluate(k,fx)
+∇gx = evaluate(k,∇fx)
 test_field(g,x,gx,grad=∇gx)
 
 fi = 3.0
@@ -33,9 +33,9 @@ gi = 4.5
 d = 2
 f = MockField{d}(fi)
 g = MockField{d}(gi)
-h = lazy_map_kernel_to_field(k,f,g)
-hx = lazy_map_kernel(k,evaluate(f,x),evaluate(g,x))
-∇hx = lazy_map_kernel(k,evaluate(∇(f),x),evaluate(∇(g),x))
+h = evaluate_to_field(k,f,g)
+hx = evaluate(k,evaluate(f,x),evaluate(g,x))
+∇hx = evaluate(k,evaluate(∇(f),x),evaluate(∇(g),x))
 test_field(h,x,hx,grad=∇hx)
 
 fi = 3.0
@@ -43,9 +43,9 @@ gi = VectorValue(4,5)
 d = 2
 f = MockField{d}(fi)
 g = gi
-h = lazy_map_kernel_to_field(k,f,g)
-hx = lazy_map_kernel(k,evaluate(f,x),evaluate_field(g,x))
-∇hx = lazy_map_kernel(k,evaluate(∇(f),x),evaluate_field(field_gradient(g),x))
+h = evaluate_to_field(k,f,g)
+hx = evaluate(k,evaluate(f,x),evaluate_field(g,x))
+∇hx = evaluate(k,evaluate(∇(f),x),evaluate_field(field_gradient(g),x))
 test_field(h,x,hx,grad=∇hx)
 
 
@@ -54,9 +54,9 @@ gi = [1,2,3,4,5]
 d = 2
 f = MockField{d}(fi)
 g = gi
-h = lazy_map_kernel_to_field(k,f,g)
-hx = lazy_map_kernel(k,evaluate(f,x),evaluate_field(g,x))
-∇hx = lazy_map_kernel(k,evaluate(∇(f),x),evaluate_field(field_gradient(g),x))
+h = evaluate_to_field(k,f,g)
+hx = evaluate(k,evaluate(f,x),evaluate_field(g,x))
+∇hx = evaluate(k,evaluate(∇(f),x),evaluate_field(field_gradient(g),x))
 test_field(h,x,hx,grad=∇hx)
 
 evaluate(f,x)

@@ -30,7 +30,7 @@ function change_basis(basis,changeofbasis::AbstractMatrix)
   BasisFromChangeOfBasis(basis,changeofbasis)
 end
 
-function kernel_return_type(::typeof(change_basis),prebasis,matrix_inv)
+function return_type(::typeof(change_basis),prebasis,matrix_inv)
   typeof(change_basis(prebasis,matrix_inv))
 end
 
@@ -88,4 +88,3 @@ function evaluate_hessian!(cache,b::BasisFromChangeOfBasis,x)
   mul!(c.array,bx,b.change)
   c.array
 end
-

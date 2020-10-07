@@ -19,15 +19,15 @@ end
 
 struct Eval <: Kernel end
 
-function kernel_cache(k::Eval,a,x)
+function return_cache(k::Eval,a,x)
   field_cache(a,x)
 end
 
-function lazy_map_kernel!(cache,k::Eval,a,x)
+function evaluate!(cache,k::Eval,a,x)
   evaluate_field!(cache,a,x)
 end
 
-function kernel_return_type(k::Eval,a,x)
+function return_type(k::Eval,a,x)
   field_return_type(a,x)
 end
 
@@ -118,7 +118,7 @@ end
 
 struct Grad <: Kernel end
 
-@inline lazy_map_kernel!(::Nothing,k::Grad,x) = field_gradient(x)
+@inline evaluate!(::Nothing,k::Grad,x) = field_gradient(x)
 
 function field_array_gradient(
   a::AppliedArray{T,N,F,<:Fill} where {T,N,F})
@@ -243,7 +243,7 @@ end
 
 Returns an array of fields numerically equivalent to
 
-    map( (x...) -> lazy_map_kernel_to_field(k,x...), f )
+    map( (x...) -> evaluate_to_field(k,x...), f )
 
 """
 function lazy_map_to_field_array(
@@ -265,8 +265,8 @@ struct Valued{K} <: Kernel
   end
 end
 
-@inline function lazy_map_kernel!(cache,k::Valued,x...)
-  lazy_map_kernel_to_field(k.k,x...)
+@inline function evaluate!(cache,k::Valued,x...)
+  evaluate_to_field(k.k,x...)
 end
 
 function kernel_evaluate(k::Valued,x,f...)

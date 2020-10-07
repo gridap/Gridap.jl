@@ -177,15 +177,15 @@ end
 
 # Implement kernel interface
 
-function kernel_return_type(f::Field,x)
+function return_type(f::Field,x)
   field_return_type(f,x)
 end
 
-function kernel_cache(f::Field,x)
+function return_cache(f::Field,x)
   field_cache(f,x)
 end
 
-@inline function lazy_map_kernel!(cache,f::Field,x)
+@inline function evaluate!(cache,f::Field,x)
   evaluate_field!(cache,f,x)
 end
 

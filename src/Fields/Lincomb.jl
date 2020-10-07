@@ -21,7 +21,7 @@ end
 
 struct LinCom <: Kernel end
 
-function kernel_cache(k::LinCom,a,b)
+function return_cache(k::LinCom,a,b)
   Ta = eltype(a)
   Tb = eltype(b)
   T = return_type(outer,Ta,Tb)
@@ -30,9 +30,9 @@ function kernel_cache(k::LinCom,a,b)
   CachedArray(r)
 end
 
-function kernel_testitem!(r,k::LinCom,a,b)
+function testitem!(r,k::LinCom,a,b)
   if _lincomb_valid_checks(a,b)
-    lazy_map_kernel!(r,k,a,b)
+    evaluate!(r,k,a,b)
   else
     r.array
   end
@@ -49,7 +49,7 @@ function _lincomb_valid_checks(a,b)
   nb == na
 end
 
-@inline function lazy_map_kernel!(r,k::LinCom,a,b)
+@inline function evaluate!(r,k::LinCom,a,b)
   _lincomb_checks(a,b)
   np, nf = size(a)
   setsize!(r,(np,))
@@ -79,7 +79,7 @@ function field_cache(f::LinComField,x)
   a = evaluate_field!(ca,f.basis,x)
   b = f.coefs
   k = LinCom()
-  ck = kernel_cache(k,a,b)
+  ck = return_cache(k,a,b)
   (ca,ck)
 end
 
@@ -88,7 +88,7 @@ end
   a = evaluate_field!(ca,f.basis,x)
   b = f.coefs
   k = LinCom()
-  lazy_map_kernel!(ck,k,a,b)
+  evaluate!(ck,k,a,b)
 end
 
 function field_gradient(f::LinComField)
@@ -98,11 +98,11 @@ end
 
 struct LinComValued <: Kernel end
 
-@inline function kernel_cache(k::LinComValued,a,b)
+@inline function return_cache(k::LinComValued,a,b)
   LinComField(a,b)
 end
 
-@inline function lazy_map_kernel!(f,k::LinComValued,a,b)
+@inline function evaluate!(f,k::LinComValued,a,b)
   f.basis = a
   f.coefs = b
   f

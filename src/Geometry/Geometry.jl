@@ -93,7 +93,7 @@ import Gridap.Fields: kernel_evaluate
 import Gridap.Fields: evaluate
 import Gridap.Fields: integrate
 
-import Gridap.Arrays: lazy_map_kernel!
+import Gridap.Arrays: evaluate!
 
 export GridTopology
 export num_cells

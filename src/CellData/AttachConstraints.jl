@@ -10,31 +10,31 @@ end
 
 struct ConstrainRowsKernel <: Kernel end
 
-function Arrays.kernel_cache(k::ConstrainRowsKernel,array::AbstractArray,constr,mask)
-  kernel_cache(MulKernel(),constr,array)
+function Arrays.return_cache(k::ConstrainRowsKernel,array::AbstractArray,constr,mask)
+  return_cache(MulKernel(),constr,array)
 end
 
-@inline function Arrays.lazy_map_kernel!(cache,k::ConstrainRowsKernel,array::AbstractArray,constr,mask)
+@inline function Arrays.evaluate!(cache,k::ConstrainRowsKernel,array::AbstractArray,constr,mask)
   if mask
-    lazy_map_kernel!(cache,MulKernel(),constr,array)
+    evaluate!(cache,MulKernel(),constr,array)
   else
     array
   end
 end
 
-function Arrays.kernel_cache(k::ConstrainRowsKernel,matvec::Tuple,constr,mask)
+function Arrays.return_cache(k::ConstrainRowsKernel,matvec::Tuple,constr,mask)
   mat, vec = matvec
-  cmat = kernel_cache(k,mat,constr,mask)
-  cvec = kernel_cache(k,vec,constr,mask)
+  cmat = return_cache(k,mat,constr,mask)
+  cvec = return_cache(k,vec,constr,mask)
   (cmat,cvec)
 end
 
-@inline function Arrays.lazy_map_kernel!(cache,k::ConstrainRowsKernel,matvec::Tuple,constr,mask)
+@inline function Arrays.evaluate!(cache,k::ConstrainRowsKernel,matvec::Tuple,constr,mask)
   if mask
     cmat, cvec = cache
     mat, vec = matvec
-    _mat = lazy_map_kernel!(cmat,k,mat,constr,mask)
-    _vec = lazy_map_kernel!(cvec,k,vec,constr,mask)
+    _mat = evaluate!(cmat,k,mat,constr,mask)
+    _vec = evaluate!(cvec,k,vec,constr,mask)
     (_mat,_vec)
   else
     matvec
@@ -43,27 +43,27 @@ end
 
 struct ConstrainColsKernel <: Kernel end
 
-function Arrays.kernel_cache(k::ConstrainColsKernel,array::AbstractArray,constr_t,mask)
-  kernel_cache(MulKernel(),array,constr_t)
+function Arrays.return_cache(k::ConstrainColsKernel,array::AbstractArray,constr_t,mask)
+  return_cache(MulKernel(),array,constr_t)
 end
 
-@inline function Arrays.lazy_map_kernel!(cache,k::ConstrainColsKernel,array::AbstractArray,constr_t,mask)
+@inline function Arrays.evaluate!(cache,k::ConstrainColsKernel,array::AbstractArray,constr_t,mask)
   if mask
-    lazy_map_kernel!(cache,MulKernel(),array,constr_t)
+    evaluate!(cache,MulKernel(),array,constr_t)
   else
     array
   end
 end
 
-function Arrays.kernel_cache(k::ConstrainColsKernel,matvec::Tuple,constr_t,mask)
+function Arrays.return_cache(k::ConstrainColsKernel,matvec::Tuple,constr_t,mask)
   mat, vec = matvec
-  kernel_cache(k,mat,constr_t,mask)
+  return_cache(k,mat,constr_t,mask)
 end
 
-@inline function Arrays.lazy_map_kernel!(cache,k::ConstrainColsKernel,matvec::Tuple,constr_t,mask)
+@inline function Arrays.evaluate!(cache,k::ConstrainColsKernel,matvec::Tuple,constr_t,mask)
   if mask
     mat, vec = matvec
-    _mat = lazy_map_kernel!(cache,k,mat,constr_t,mask)
+    _mat = evaluate!(cache,k,mat,constr_t,mask)
     (_mat,vec)
   else
     matvec
@@ -85,13 +85,13 @@ end
 
 struct IdentityConstraintKernel <: Kernel end
 
-function Arrays.kernel_cache(k::IdentityConstraintKernel,axs)
+function Arrays.return_cache(k::IdentityConstraintKernel,axs)
   n = length(axs[1])
   a = zeros(n,n)
   CachedArray(a)
 end
 
-function Arrays.lazy_map_kernel!(cache,k::IdentityConstraintKernel,axs)
+function Arrays.evaluate!(cache,k::IdentityConstraintKernel,axs)
   n = length(axs[1])
   setsize!(cache,(n,n))
   a = cache.array

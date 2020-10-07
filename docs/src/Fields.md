@@ -48,8 +48,8 @@ evaluate_all(f::Tuple,x)
 ## Applying kernels to fields
 
 ```@docs
-lazy_map_kernel_to_field(k,f...)
-lazy_map_kernel_gradient(k,f...)
+evaluate_to_field(k,f...)
+evaluate_gradient(k,f...)
 ```
 
 ## Working with arrays of fields

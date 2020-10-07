@@ -406,7 +406,7 @@ struct NormalField <: Field end
 
 struct NormalVectorValued <: Kernel end
 
-function lazy_map_kernel!(cache,k::NormalVectorValued,J,nref)
+function evaluate!(cache,k::NormalVectorValued,J,nref)
   NormalField()
 end
 

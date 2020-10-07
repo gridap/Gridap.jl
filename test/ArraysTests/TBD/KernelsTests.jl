@@ -8,7 +8,7 @@ using BlockArrays
 
 test_kernel(+,(3,2),5)
 
-@test kernel_return_types((+,/),1,1) == (Int,Float64)
+@test return_types((+,/),1,1) == (Int,Float64)
 
 f = bcast(+)
 a = rand(3,2)
@@ -71,14 +71,14 @@ k = MulAddKernel(2,3)
 test_kernel(k,(a,b,c),2*a*b+3*c)
 
 #k = MulKernel()
-#cache = kernel_cache(k,a,b)
+#cache = return_cache(k,a,b)
 #using BenchmarkTools
-#@btime lazy_map_kernel!($cache,$k,$a,$b)
+#@btime evaluate!($cache,$k,$a,$b)
 #
 #
 #k = MulAddKernel(2,3)
-#cache = kernel_cache(k,a,b,c)
-#@btime lazy_map_kernel!($cache,$k,$a,$b,$c)
+#cache = return_cache(k,a,b,c)
+#@btime evaluate!($cache,$k,$a,$b,$c)
 
 
 

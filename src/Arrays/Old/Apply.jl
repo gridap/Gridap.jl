@@ -4,15 +4,15 @@
 
 Applies the kernel `f` to the entries of the arrays in `a` (see the definition of [`Kernel`](@ref)).
 
-The resulting array `r` is such that `r[i]` equals to `lazy_map_kernel(f,ai...)` where `ai`
+The resulting array `r` is such that `r[i]` equals to `evaluate(f,ai...)` where `ai`
 is the tuple containing the `i`-th entry of the arrays in `a` (see function
-[`lazy_map_kernel`](@ref) for more details).
+[`evaluate`](@ref) for more details).
 In other words, the resulting array is numerically equivalent to:
 
-    map( (x...)->lazy_map_kernel(f,x...), a...)
+    map( (x...)->evaluate(f,x...), a...)
 
 
-See the [`lazy_map_kernel`](@ref) function for details.
+See the [`evaluate`](@ref) function for details.
 
 # Examples
 
@@ -36,14 +36,14 @@ Using a user-defined kernel
 
 ```jldoctest
 using Gridap.Arrays
-import Gridap.Arrays: lazy_map_kernel!
+import Gridap.Arrays: evaluate!
 
 a = collect(0:5)
 b = collect(10:15)
 
 struct MySum <: Kernel end
 
-lazy_map_kernel!(cache,::MySum,x,y) = x + y
+evaluate!(cache,::MySum,x,y) = x + y
 
 k = MySum()
 
@@ -78,9 +78,9 @@ Applies the kernels in the array of kernels `f` to the entries in the arrays in 
 
 The resulting array has the same entries as the one obtained with:
 
-    map( lazy_map_kernel, f, a...)
+    map( evaluate, f, a...)
 
-See the [`lazy_map_kernel`](@ref) function for details.
+See the [`evaluate`](@ref) function for details.
 
 # Example
 
@@ -173,7 +173,7 @@ end
 function AppliedArray(g::AbstractArray,f::AbstractArray...)
   gi = testitem(g) #Assumes that all kernels return the same type
   fi = testitems(f...)
-  T = typeof(kernel_testitem(gi,fi...))
+  T = typeof(testitem(gi,fi...))
   AppliedArray(T,g,f...)
 end
 
@@ -215,8 +215,8 @@ function _array_cache(hash,a::AppliedArray)
   end
   cf = map(fi -> array_cache(hash,fi),a.f...)
   # cf = array_caches(hash,a.f...)
-  cgi = kernel_cache(gi,fi...)
-  ai = kernel_testitem!(cgi,gi,fi...)
+  cgi = return_cache(gi,fi...)
+  ai = testitem!(cgi,gi,fi...)
   i = -testitem(eachindex(a))
   e = Evaluation((i,),ai)
   c = (cg, cgi, cf)
@@ -227,7 +227,7 @@ function testitem(a::AppliedArray)
   cg = array_cache(a.g)
   gi = testitem(a.g)
   fi = testitems(a.f...)
-  kernel_testitem(gi,fi...)
+  testitem(gi,fi...)
 end
 
 function getindex!(cache,a::AppliedArray,i::Integer...)
@@ -259,7 +259,7 @@ function _getindex!(cache,a::AppliedArray,i...)
   gi = getindex!(cg,a.g,i...)
   fi = map((ci,ai) -> getindex!(ci,ai,i...),cf,a.f)
   # fi = getitems!(cf,a.f,i...)
-  vi = lazy_map_kernel!(cgi,gi,fi...)
+  vi = evaluate!(cgi,gi,fi...)
   vi
 end
 
@@ -305,7 +305,7 @@ end
 
 function lazy_map(f::Fill,a::Fill...)
   ai = getvalues(a...)
-  r = lazy_map_kernel(f.value,ai...)
+  r = evaluate(f.value,ai...)
   s = common_size(f,a...)
   Fill(r,s)
 end

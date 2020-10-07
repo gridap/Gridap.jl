@@ -19,13 +19,13 @@ end
 
 struct ForwardDiffGradientKernel <: Kernel end
 
-function kernel_cache(k::ForwardDiffGradientKernel,f,x)
+function return_cache(k::ForwardDiffGradientKernel,f,x)
   cfg = ForwardDiff.GradientConfig(nothing, x, ForwardDiff.Chunk{length(x)}())
   r = copy(x)
   (r, cfg)
 end
 
-@inline function lazy_map_kernel!(cache,k::ForwardDiffGradientKernel,f,x)
+@inline function evaluate!(cache,k::ForwardDiffGradientKernel,f,x)
   r, cfg = cache
   @notimplementedif length(r) != length(x)
   ForwardDiff.gradient!(r,f,x,cfg)
@@ -52,14 +52,14 @@ end
 
 struct ForwardDiffJacobianKernel <: Kernel end
 
-function kernel_cache(k::ForwardDiffJacobianKernel,f,x)
+function return_cache(k::ForwardDiffJacobianKernel,f,x)
   cfg = ForwardDiff.JacobianConfig(nothing, x, ForwardDiff.Chunk{length(x)}())
   n = length(x)
   j = zeros(eltype(x),n,n)
   (j, cfg)
 end
 
-@inline function lazy_map_kernel!(cache,k::ForwardDiffJacobianKernel,f,x)
+@inline function evaluate!(cache,k::ForwardDiffJacobianKernel,f,x)
   j, cfg = cache
   @notimplementedif size(j,1) != length(x)
   @notimplementedif size(j,2) != length(x)
@@ -85,7 +85,7 @@ struct ArrayOfFunctionsKernel{A,X} <: Kernel
   x::X
 end
 
-function kernel_cache(k::ArrayOfFunctionsKernel,j)
+function return_cache(k::ArrayOfFunctionsKernel,j)
   xi = testitem(k.x)
   l = length(k.x)
   x = MutableFill(xi,l)
@@ -94,7 +94,7 @@ function kernel_cache(k::ArrayOfFunctionsKernel,j)
   (ax, x, axc)
 end
 
-@inline function lazy_map_kernel!(cache,k::ArrayOfFunctionsKernel,j)
+@inline function evaluate!(cache,k::ArrayOfFunctionsKernel,j)
   ax, x, axc = cache
   @inline function f(xj)
     x.value = xj

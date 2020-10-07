@@ -33,10 +33,10 @@ using Gridap.Arrays: IdentityVector
 import Gridap.Arrays: get_array
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
-import Gridap.Arrays: kernel_cache
-import Gridap.Arrays: lazy_map_kernel!
-import Gridap.Arrays: kernel_return_type
-import Gridap.Arrays: kernel_testitem!
+import Gridap.Arrays: return_cache
+import Gridap.Arrays: evaluate!
+import Gridap.Arrays: return_type
+import Gridap.Arrays: testitem!
 import Gridap.Arrays: reindex
 import Gridap.Arrays: lazy_map
 import Gridap.CellData: get_cell_map

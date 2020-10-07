@@ -6,7 +6,7 @@ function integrate(f,x,w,j)
   fx = evaluate_field(f,x)
   jx = evaluate_field(j,x)
   k = IntKernel()
-  lazy_map_kernel(k,fx,w,jx)
+  evaluate(k,fx,w,jx)
 end
 
 """
@@ -22,20 +22,20 @@ end
 
 struct IntKernel <: Kernel end
 
-function kernel_cache(k::IntKernel,f::AbstractVector,w,j)
+function return_cache(k::IntKernel,f::AbstractVector,w,j)
   T = _integrate_rt(f,w,j)
   zero(T)
 end
 
-function kernel_testitem!(c,k::IntKernel,f::AbstractVector,w,j)
+function testitem!(c,k::IntKernel,f::AbstractVector,w,j)
   if _integrate_valid_sizes(f,w,j)
-    lazy_map_kernel!(c,k,f,w,j)
+    evaluate!(c,k,f,w,j)
   else
     c
   end
 end
 
-@noinline function lazy_map_kernel!(z,k::IntKernel,f::AbstractVector,w,j)
+@noinline function evaluate!(z,k::IntKernel,f::AbstractVector,w,j)
   _integrate_checks(f,w,j)
   r = z
   for p in eachindex(f)
@@ -44,22 +44,22 @@ end
   r
 end
 
-function kernel_cache(k::IntKernel,f::AbstractArray,w,j)
+function return_cache(k::IntKernel,f::AbstractArray,w,j)
   T = _integrate_rt(f,w,j)
   _, s = _split(size(f)...)
   r = zeros(T,s)
   c = CachedArray(r)
 end
 
-function kernel_testitem!(c,k::IntKernel,f::AbstractArray,w,j)
+function testitem!(c,k::IntKernel,f::AbstractArray,w,j)
   if _integrate_valid_sizes(f,w,j)
-    lazy_map_kernel!(c,k,f,w,j)
+    evaluate!(c,k,f,w,j)
   else
     c.array
   end
 end
 
-@inline function lazy_map_kernel!(c,k::IntKernel,f::AbstractArray,w,j)
+@inline function evaluate!(c,k::IntKernel,f::AbstractArray,w,j)
   _integrate_checks(f,w,j)
   np, s = _split(size(f)...)
   cis = CartesianIndices(s)

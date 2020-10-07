@@ -51,19 +51,19 @@ lazy_map_all
 
 ```@docs
 Kernel
-lazy_map_kernel!(cache,f,x...)
-kernel_cache(f,x...)
-kernel_return_type(f,x...)
+evaluate!(cache,f,x...)
+return_cache(f,x...)
+return_type(f,x...)
 test_kernel
 ```
 
 ### Other functions using kernels
 
 ```@docs
-lazy_map_kernel
-lazy_map_kernels!
-kernel_caches
-kernel_return_types
+evaluate
+evaluates!
+return_caches
+return_types
 ```
 
 ### Built-in kernels

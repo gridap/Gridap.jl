@@ -121,14 +121,14 @@ end #module
 # # Optimisation : evaluate_field_array for AbstractArray with FieldLike
 # # Define a new kernel that better treats the inverse
 # struct InvKernel <: Kernel end
-# function kernel_cache(k::InvKernel,mat)
+# function return_cache(k::InvKernel,mat)
 # end
-# function lazy_map_kernel!(cache,k::InvKernel,mat)
+# function evaluate!(cache,k::InvKernel,mat)
 # end
-# function kernel_cache(k::InvKernel,mat)
+# function return_cache(k::InvKernel,mat)
 # CachedArray(copy(mat))
 # end
-# function lazy_map_kernel!(cache,k::InvKernel,mat)
+# function evaluate!(cache,k::InvKernel,mat)
 #   setsize!(cache,size(mat))
 #   m = cache.array
 #   fill!(m,zero(m))

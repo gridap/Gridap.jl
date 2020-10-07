@@ -6,22 +6,22 @@ Returns a new field obtained by composition of function `g` and the fields
 `f`. The value of the resulting field at a vector of points `x` is numerically equivalent to
 
     fx = evaluate_fields(f,x)
-    lazy_map_kernel(bcast(g), fx...)
+    evaluate(bcast(g), fx...)
 
 The gradient of the resulting field evaluated at a vector of points `x` is equivalent to
 
     fx = evaluate_fields(f,x)
-    lazy_map_kernel(bcast(gradient(g)), fx...)
+    evaluate(bcast(gradient(g)), fx...)
 
 Note that it is needed to overload `gradient(::typeof(g))` for the given function `g`
 in order to be able to compute the gradient.
 
-As in function [`lazy_map_kernel_to_field`](@ref) if any of the inputs in `f` is a number or an array
+As in function [`evaluate_to_field`](@ref) if any of the inputs in `f` is a number or an array
 instead of a field it will be treated as a "constant field".
 """
 function compose(g::Function,f...)
   k = Comp(g)
-  lazy_map_kernel_to_field(k,f...)
+  evaluate_to_field(k,f...)
 end
 
 struct Comp{F} <: Kernel
@@ -29,13 +29,13 @@ struct Comp{F} <: Kernel
   @inline Comp(f::Function) = new{typeof(f)}(BCasted(f))
 end
 
-@inline lazy_map_kernel!(cache,k::Comp,x...) = lazy_map_kernel!(cache,k.e,x...)
+@inline evaluate!(cache,k::Comp,x...) = evaluate!(cache,k.e,x...)
 
-kernel_cache(k::Comp,x...) = kernel_cache(k.e,x...)
+return_cache(k::Comp,x...) = return_cache(k.e,x...)
 
-kernel_return_type(k::Comp,x...) = kernel_return_type(k.e,x...)
+return_type(k::Comp,x...) = return_type(k.e,x...)
 
-function lazy_map_kernel_gradient(k::Comp,f...)
+function evaluate_gradient(k::Comp,f...)
   g = gradient(k.e.f)
   compose(g,f...)
 end
@@ -59,7 +59,7 @@ end
 """
 function compose_fields(g,f)
   k = CompField(g)
-  lazy_map_kernel_to_field(k,f)
+  evaluate_to_field(k,f)
 end
 
 """
@@ -73,13 +73,13 @@ struct CompField{G} <: Kernel
   g::G
 end
 
-kernel_cache(k::CompField,fx) = field_cache(k.g,fx)
+return_cache(k::CompField,fx) = field_cache(k.g,fx)
 
-@inline lazy_map_kernel!(cache,k::CompField,fx) = evaluate_field!(cache,k.g,fx)
+@inline evaluate!(cache,k::CompField,fx) = evaluate_field!(cache,k.g,fx)
 
-kernel_return_type(k::CompField,fx) = field_return_type(k.g,fx)
+return_type(k::CompField,fx) = field_return_type(k.g,fx)
 
-function lazy_map_kernel_gradient(k::CompField,f)
+function evaluate_gradient(k::CompField,f)
   g = field_gradient(k.g)
   compose_fields(g,f)
 end
@@ -101,9 +101,9 @@ end
 
 struct CompFieldArray <: Kernel end
 
-kernel_cache(k::CompFieldArray,gi,fi) = nothing
+return_cache(k::CompFieldArray,gi,fi) = nothing
 
-@inline lazy_map_kernel!(cache,k::CompFieldArray,gi,fi) = compose_fields(gi,fi)
+@inline evaluate!(cache,k::CompFieldArray,gi,fi) = compose_fields(gi,fi)
 
 function kernel_evaluate(k::CompFieldArray,x,g,f)
   fx = evaluate_field_array(f,x)

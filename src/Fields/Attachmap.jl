@@ -4,7 +4,7 @@
 """
 function attachmap(f,phi)
   k = MapGrad()
-  lazy_map_kernel_to_field(k,f,phi)
+  evaluate_to_field(k,f,phi)
 end
 
 """
@@ -17,18 +17,18 @@ end
 
 struct MapGrad <: Kernel end
 
-@inline lazy_map_kernel!(cache,k::MapGrad,fx,phix) = fx
+@inline evaluate!(cache,k::MapGrad,fx,phix) = fx
 
-function lazy_map_kernel_gradient(k::MapGrad,f,phi)
+function evaluate_gradient(k::MapGrad,f,phi)
   g = field_gradient(f)
   jac = field_gradient(phi)
   k = PhysGrad()
-  lazy_map_kernel_to_field(k,g,jac)
+  evaluate_to_field(k,g,jac)
 end
 
 struct PhysGrad <: Kernel end
 
-function kernel_cache(k::PhysGrad,a,b)
+function return_cache(k::PhysGrad,a,b)
   _attachmap_checks(a,b)
   Ta = eltype(a)
   Tb = eltype(b)
@@ -44,7 +44,7 @@ function _attachmap_checks(a,b)
   @assert ia == ib "attachmap: basis and jacobian size mismatch."
 end
 
-@inline function lazy_map_kernel!(r,k::PhysGrad,a,b)
+@inline function evaluate!(r,k::PhysGrad,a,b)
   _attachmap_checks(a,b)
   s = size(a)
   setsize!(r,s)
@@ -61,7 +61,7 @@ end
 
 struct AddMap <: Kernel end
 
-@inline function lazy_map_kernel!(cache,k::AddMap,fi,phii)
+@inline function evaluate!(cache,k::AddMap,fi,phii)
   attachmap(fi,phii)
 end
 
