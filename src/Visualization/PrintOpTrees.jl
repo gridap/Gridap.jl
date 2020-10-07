@@ -49,7 +49,7 @@ function get_children(n::TreeNode, a::CompressedArray)
   (similar_tree_node(n,a.values),similar_tree_node(n,a.ptrs))
 end
 
-function get_children(n::TreeNode, a::Arrays.AppliedArray)
+function get_children(n::TreeNode, a::Arrays.LazyArray)
   (similar_tree_node(n,a.g),map(i->similar_tree_node(n,i),a.f)...)
 end
 

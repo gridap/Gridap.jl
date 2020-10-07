@@ -187,7 +187,7 @@ cgi = return_cache(gi, fi...)
 cg, cgi, cf
 end
 
-@inline getindex!(a::AbstractArray,i...) = a[i...]
+# @inline getindex!(c,a::AbstractArray,i...) = a[i...]
 
 #@fverdugo the signature of the index i... has to be improved
 # so that it is resilient to the different types of indices
@@ -213,15 +213,15 @@ end
 
 # Particular implementations for Fill
 
-function lazy_map_mapping(f::Fill, a::Fill...)
+function lazy_map(f::Fill, a::Fill...)
   ai = _getvalues(a...)
   r = evaluate(f.value, ai...)
   s = common_size(f, a...)
   Fill(r, s)
 end
 
-function lazy_map_mapping(::Type{T}, f::Fill, a::Fill...) where T
-  lazy_map_mapping(f, a...)
+function lazy_map(::Type{T}, f::Fill, a::Fill...) where T
+  lazy_map(f, a...)
 end
 
 function _getvalues(a::Fill, b::Fill...)
@@ -251,7 +251,7 @@ function test_lazy_array(
   cmp::Function=(==);
   grad=nothing)
 
-  ax = lazy_map_mapping(a, x)
+  ax = lazy_map(a, x)
   test_array(ax, v, cmp)
 
   ca, cfi, cx = array_cache(a, x)
@@ -267,7 +267,7 @@ function test_lazy_array(
   @test t
 
   if grad != nothing
-    g = lazy_map_mapping(gradient, a)
+    g = lazy_map(gradient, a)
     test_lazy_array(g, x, grad, cmp)
   end
 end
@@ -304,3 +304,7 @@ end
 # function reset_counter!(a::ArrayWithCounter)
 #   a.counter[:] .= 0
 # end
+
+# @santiagobadia : Do we want the same names for both ?????
+# @inline array_cache(a::LazyArray,i...) = return_cache(a,i...)
+# @inline get_index!(c,a::LazyArray,i...) = evaluate!(c,a,i...)

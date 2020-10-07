@@ -4,7 +4,7 @@
      struct Table{T,Vd<:AbstractVector{T},Vp<:AbstractVector} <: AbstractVector{Vector{T}}
         data::Vd
         ptrs::Vp
-     end   
+     end
 
 Type representing a list of lists (i.e., a table) in
 compressed format.
@@ -14,7 +14,7 @@ struct Table{T,Vd<:AbstractVector{T},Vp<:AbstractVector} <: AbstractVector{Vecto
   ptrs::Vp
   function Table(data::AbstractVector,ptrs::AbstractVector)
     new{eltype(data),typeof(data),typeof(ptrs)}(data,ptrs)
-  end   
+  end
 end
 
 """

@@ -1,9 +1,38 @@
-
 """
     reindex(i_to_v::AbstractArray, j_to_i::AbstractArray)
 """
+struct Reindex{A} <: Mapping
+  values::A
+end
+
+@inline return_type(k::Reindex,x...) = typeof(first(k.values))
+
+@inline return_type(k::Reindex,x::AbstractArray...) = typeof(testitem(k,x...))
+
+@inline return_cache(k::Reindex,f) = array_cache(k.values)
+
+@inline function return_cache(k::Reindex,a::AbstractArray)
+  gids = a
+  vals = k.values
+  T = eltype(vals)
+  r = zeros(T,size(gids))
+  c = CachedArray(r)
+end
+
+@inline evaluate!(cache,k::Reindex,i) = getindex!(cache,k.values,i)
+
+@inline function evaluate!(cache,k::Reindex,gids::AbstractArray)
+  c = cache
+  setsize!(c,size(gids))
+  r = c.array
+  for i in eachindex(gids)
+    @inbounds r[i] = k.values[gids[i]]
+  end
+  r
+end
+
 function reindex(i_to_v::AbstractArray, j_to_i::AbstractArray)
-  Reindexed(i_to_v,j_to_i)
+  lazy_map(Reindex(i_to_v),j_to_i)
 end
 
 function reindex(i_to_v::Fill, j_to_i::AbstractArray)
@@ -17,57 +46,20 @@ function reindex(i_to_v::CompressedArray, j_to_i::AbstractArray)
   CompressedArray(values,ptrs)
 end
 
-struct Reindexed{T,N,A,B} <: AbstractArray{T,N}
-  i_to_v::A
-  j_to_i::B
-  function Reindexed(i_to_v::AbstractArray, j_to_i::AbstractArray)
-    T = eltype(i_to_v)
-    N = ndims(j_to_i)
-    A = typeof(i_to_v)
-    B = typeof(j_to_i)
-    new{T,N,A,B}(i_to_v,j_to_i)
-  end
+function reindex(gid_to_val::AbstractArray,lid_to_gid::AbstractArray{<:AbstractArray})
+  lazy_map(Reindex(gid_to_val),lid_to_gid)
 end
 
-Base.size(a::Reindexed) = size(a.j_to_i)
+Base.getindex(a::LazyArray,i::AbstractArray) = reindex(a,i)
 
-Base.IndexStyle(::Type{Reindexed{T,N,A,B}}) where {T,N,A,B} = IndexStyle(B)
-
-@propagate_inbounds function getindex(a::Reindexed,j::Integer)
-  i = a.j_to_i[j]
-  a.i_to_v[i]
+@propagate_inbounds function Base.setindex!(a::LazyArray{<:Fill{<:Reindex}},v,j::Integer)
+  k = a.g.value
+  i_to_v = k.values
+  j_to_i, = a.f
+  i = j_to_i[j]
+  i_to_v[i]=v
 end
 
-@propagate_inbounds function getindex(a::Reindexed{T,N}, j::Vararg{Int,N}) where {T,N}
-  i = a.j_to_i[j...]
-  a.i_to_v[i]
+@inline function testitem(k::Reindex,gids)
+  gids == 0 ? testitem(k,1) :  evaluate(k,gids)#testvalue(eltype(k.values))
 end
-
-@propagate_inbounds function Base.setindex!(a::Reindexed,v,j::Integer)
-  i = a.j_to_i[j]
-  a.i_to_v[i]=v
-end
-
-function testitem(a::Reindexed)
-  if length(a.j_to_i) == 0
-    testitem(a.i_to_v)
-  else
-    a.i_to_v[first(a.j_to_i)]
-  end
-end
-
-array_cache(a::Reindexed) = array_cache(a.i_to_v)
-
-function getindex!(cache,a::Reindexed,j::Integer...)
-  i = a.j_to_i[j...]
-  getindex!(cache,a.i_to_v,i)
-end
-
-function reindex(i_to_v::AppliedArray, j_to_i::AbstractArray)
-  g = reindex(i_to_v.g, j_to_i)
-  f = ( reindex(fi, j_to_i) for fi in i_to_v.f )
-  T = eltype(i_to_v)
-  AppliedArray(T,g,f...)
-end
-
-Base.getindex(a::AppliedArray,i::AbstractArray) = reindex(a,i)

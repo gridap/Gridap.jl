@@ -102,7 +102,7 @@ println(c)
 ```
 """
 function lazy_map(f::AbstractArray,a::AbstractArray...)
-  AppliedArray(f,a...)
+  LazyArray(f,a...)
 end
 
 """
@@ -112,7 +112,7 @@ Like [`lazy_map(f::AbstractArray,a::AbstractArray...)`](@ref), but the user prov
 of the resulting array in order to circumvent type inference.
 """
 function lazy_map(::Type{T},f::AbstractArray,a::AbstractArray...) where T
-  AppliedArray(T,f,a...)
+  LazyArray(T,f,a...)
 end
 
 """
@@ -159,10 +159,10 @@ end
 
 # Helpers
 
-struct AppliedArray{T,N,F,G} <: AbstractArray{T,N}
+struct LazyArray{T,N,F,G} <: AbstractArray{T,N}
   g::G
   f::F
-  function AppliedArray(::Type{T},g::AbstractArray,f::AbstractArray...) where T
+  function LazyArray(::Type{T},g::AbstractArray,f::AbstractArray...) where T
     G = typeof(g)
     F = typeof(f)
     f1, = f
@@ -170,18 +170,18 @@ struct AppliedArray{T,N,F,G} <: AbstractArray{T,N}
   end
 end
 
-function AppliedArray(g::AbstractArray,f::AbstractArray...)
+function LazyArray(g::AbstractArray,f::AbstractArray...)
   gi = testitem(g) #Assumes that all kernels return the same type
   fi = testitems(f...)
   T = typeof(testitem(gi,fi...))
-  AppliedArray(T,g,f...)
+  LazyArray(T,g,f...)
 end
 
-function uses_hash(::Type{<:AppliedArray})
+function uses_hash(::Type{<:LazyArray})
   Val(true)
 end
 
-function array_cache(hash::Dict,a::AppliedArray)
+function array_cache(hash::Dict,a::LazyArray)
     id = objectid(a)
     _cache = _array_cache(hash,a)
     if haskey(hash,id)
@@ -205,7 +205,7 @@ else
   end
 end
 
-function _array_cache(hash,a::AppliedArray)
+function _array_cache(hash,a::LazyArray)
   cg = array_cache(hash,a.g)
   gi = testitem(a.g)
   fi = testitems(a.f...)
@@ -223,27 +223,27 @@ function _array_cache(hash,a::AppliedArray)
   (c,e)
 end
 
-function testitem(a::AppliedArray)
+function testitem(a::LazyArray)
   cg = array_cache(a.g)
   gi = testitem(a.g)
   fi = testitems(a.f...)
   testitem(gi,fi...)
 end
 
-function getindex!(cache,a::AppliedArray,i::Integer...)
+function getindex!(cache,a::LazyArray,i::Integer...)
   li = LinearIndices(a)
   getindex!(cache,a,li[i...])
 end
 
-function getindex!(cache,a::AppliedArray,i::Integer)
+function getindex!(cache,a::LazyArray,i::Integer)
   _cached_getindex!(cache,a,(i,))
 end
 
-function getindex!(cache,a::AppliedArray,i::CartesianIndex)
+function getindex!(cache,a::LazyArray,i::CartesianIndex)
   _cached_getindex!(cache,a,Tuple(i))
 end
 
-function _cached_getindex!(cache,a::AppliedArray,i::Tuple)
+function _cached_getindex!(cache,a::LazyArray,i::Tuple)
   c, e = cache
   v = e.fx
   if e.x != i
@@ -254,7 +254,7 @@ function _cached_getindex!(cache,a::AppliedArray,i::Tuple)
    v
 end
 
-function _getindex!(cache,a::AppliedArray,i...)
+function _getindex!(cache,a::LazyArray,i...)
   cg, cgi, cf = cache
   gi = getindex!(cg,a.g,i...)
   fi = map((ci,ai) -> getindex!(ci,ai,i...),cf,a.f)
@@ -263,17 +263,17 @@ function _getindex!(cache,a::AppliedArray,i...)
   vi
 end
 
-function Base.getindex(a::AppliedArray,i...)
+function Base.getindex(a::LazyArray,i...)
   ca = array_cache(a)
   getindex!(ca,a,i...)
 end
 
 function Base.IndexStyle(
-  ::Type{AppliedArray{T,N,F,G}}) where {T,N,F,G}
+  ::Type{LazyArray{T,N,F,G}}) where {T,N,F,G}
   common_index_style(F)
 end
 
-function Base.size(a::AppliedArray)
+function Base.size(a::LazyArray)
   f, = a.f
   size(f)
 end
@@ -325,7 +325,7 @@ function getvalues(a::Fill)
   (ai,)
 end
 
-function Base.sum(a::AppliedArray)
+function Base.sum(a::LazyArray)
   cache = array_cache(a)
   _sum_array_cache(cache,a)
 end

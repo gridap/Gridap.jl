@@ -89,7 +89,10 @@ export get_array
 
 
 export CompressedArray
-# export LocalToGlobalArray
+export LocalToGlobalArray
+
+export Reindex
+
 # export LocalToGlobalPosNegArray
 
 # export FilteredCellArray
@@ -114,27 +117,27 @@ export FilterMapping
 # # export lazy_map
 # export lazy_map_all
 
-# export Table
-# export identity_table
-# export empty_table
-# export rewind_ptrs!
-# export length_to_ptrs!
-# export append_ptrs
-# export append_ptrs!
-# export get_ptrs_eltype
-# export get_data_eltype
-# export generate_data_and_ptrs
-# export find_inverse_index_map
-# export find_inverse_index_map!
-# export append_tables_globally
-# export append_tables_locally
-# export flatten_partition
-# export collect1d
-# export UNSET
-# export get_local_item
-# export find_local_index
+export Table
+export identity_table
+export empty_table
+export rewind_ptrs!
+export length_to_ptrs!
+export append_ptrs
+export append_ptrs!
+export get_ptrs_eltype
+export get_data_eltype
+export generate_data_and_ptrs
+export find_inverse_index_map
+export find_inverse_index_map!
+export append_tables_globally
+export append_tables_locally
+export flatten_partition
+export collect1d
+export UNSET
+export get_local_item
+export find_local_index
 
-# export reindex
+export reindex
 # export identity_vector
 
 # export SubVector
@@ -167,7 +170,9 @@ include("LazyArrays.jl")
 
 include("CompressedArrays.jl")
 
-# include("Tables.jl")
+include("Tables.jl")
+
+include("Reindex.jl")
 
 # include("LocalToGlobalArrays.jl")
 
@@ -175,7 +180,6 @@ include("CompressedArrays.jl")
 
 include("FilteredArrays.jl")
 
-# include("Reindex.jl")
 
 # include("IdentityVectors.jl")
 

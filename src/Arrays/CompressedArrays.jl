@@ -57,7 +57,7 @@ function lazy_map(::typeof(evaluate),f::Fill,g1::CompressedArray,g::CompressedAr
   if all( ( gi.ptrs === g1.ptrs for gi in g ) ) || all( ( gi.ptrs == g1.ptrs for gi in g ) )
     _lazy_map_fill_compressed(f,g1,g...)
   else
-    return AppliedArray(f,g1,g...)
+    return LazyArray(f,g1,g...)
   end
 end
 
@@ -65,7 +65,7 @@ function lazy_map(::typeof(evaluate),g1::CompressedArray,g::CompressedArray...)
   if all( ( gi.ptrs === g1.ptrs for gi in g ) ) || all( ( gi.ptrs == g1.ptrs for gi in g ) )
     _lazy_map_compressed(g1,g...)
   else
-    return AppliedArray(g1,g...)
+    return LazyArray(g1,g...)
   end
 end
 
@@ -87,7 +87,7 @@ function lazy_map(::typeof(evaluate),::Type{T},f::Fill,g1::CompressedArray,g::Co
   if all( ( gi.ptrs === g1.ptrs for gi in g ) ) || all( ( gi.ptrs == g1.ptrs for gi in g ) )
     _lazy_map_fill_compressed(f,g1,g...)
   else
-    return AppliedArray(T,f,g1,g...)
+    return LazyArray(T,f,g1,g...)
   end
 end
 
@@ -95,7 +95,7 @@ function lazy_map(::typeof(evaluate),::Type{T},g1::CompressedArray,g::Compressed
   if all( ( gi.ptrs === g1.ptrs for gi in g ) ) || all( ( gi.ptrs == g1.ptrs for gi in g ) )
     _lazy_map_compressed(g1,g...)
   else
-    return AppliedArray(T,g1,g...)
+    return LazyArray(T,g1,g...)
   end
 end
 

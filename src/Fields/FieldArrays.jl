@@ -74,7 +74,7 @@ end
 # Optimized version for arrays of fields obtained from a kernel
 # and other arrays
 function evaluate_field_array(
-  a::AppliedArray{T,N,F,<:Fill} where {T,N,F},x::AbstractArray)
+  a::LazyArray{T,N,F,<:Fill} where {T,N,F},x::AbstractArray)
   kernel_evaluate(a.g.value,x,a.f...)
 end
 
@@ -121,7 +121,7 @@ struct Grad <: Kernel end
 @inline evaluate!(::Nothing,k::Grad,x) = field_gradient(x)
 
 function field_array_gradient(
-  a::AppliedArray{T,N,F,<:Fill} where {T,N,F})
+  a::LazyArray{T,N,F,<:Fill} where {T,N,F})
   lazy_map_gradient(a.g.value,a.f...)
 end
 

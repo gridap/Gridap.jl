@@ -26,7 +26,7 @@ function reindex(values::AbstractArray, indices::IdentityVector)
   values
 end
 
-function reindex(a::AppliedArray,b::IdentityVector)
+function reindex(a::LazyArray,b::IdentityVector)
   @assert length(a) == length(b)
   a
 end

@@ -20,7 +20,7 @@ using Test
 
 @testset "CompressedArrays" begin include("CompressedArraysTests.jl") end
 
-# @testset "LocalToGlobalArrays" begin include("LocalToGlobalArraysTests.jl") end
+@testset "LocalToGlobalArrays" begin include("LocalToGlobalArraysTests.jl") end
 
 # @testset "LocalToGlobalPosNegArrays" begin include("LocalToGlobalPosNegArraysTests.jl") end
 
@@ -28,7 +28,7 @@ using Test
 
 # @testset "Tables" begin include("TablesTests.jl") end
 
-# @testset "Reindex" begin include("ReindexTests.jl") end
+@testset "Reindex" begin include("ReindexTests.jl") end
 
 # @testset "IdentityVectors" begin include("IdentityVectorsTests.jl") end
 

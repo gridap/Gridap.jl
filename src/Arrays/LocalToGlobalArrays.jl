@@ -1,58 +1,35 @@
+# struct ArrayReindex{A} <: Mapping
+  # values::A
+# end
 
+@inline return_type(k::Reindex,x::AbstractArray...) = typeof(testitem(k,x...))
 
-"""
-"""
-struct LocalToGlobalArray{T,M,N,L,V} <: AbstractArray{Array{T,M},N}
-  lid_to_gid::L
-  gid_to_val::V
-
-  @doc """
-  """
-  function LocalToGlobalArray(
-    lid_to_gid::AbstractArray{<:AbstractArray},
-    gid_to_val::AbstractArray)
-
-    L = typeof(lid_to_gid)
-    V = typeof(gid_to_val)
-    T = eltype(V)
-    M = ndims(eltype(L))
-    N = ndims(L)
-    new{T,M,N,L,V}(lid_to_gid,gid_to_val)
-  end
-end
-
-size(a::LocalToGlobalArray) = size(a.lid_to_gid)
-
-function IndexStyle(::Type{LocalToGlobalArray{T,M,N,L,V}}) where {T,M,N,L,V}
-  IndexStyle(L)
-end
-
-function array_cache(a::LocalToGlobalArray)
-  gids = testitem(a.lid_to_gid)
-  T = eltype(a.gid_to_val)
+@inline function return_cache(k::Reindex,a::AbstractArray)
+  gids = a
+  vals = k.values
+  T = eltype(vals)
   r = zeros(T,size(gids))
   c = CachedArray(r)
-  cl = array_cache(a.lid_to_gid)
-  (cl,c)
 end
 
-function getindex!(cache,a::LocalToGlobalArray,i::Integer...)
-  (cl,c) = cache
-  gids = getindex!(cl,a.lid_to_gid,i...)
+@inline function evaluate!(cache,k::Reindex,gids::AbstractArray)
+  c = cache
   setsize!(c,size(gids))
   r = c.array
   for i in eachindex(gids)
-    @inbounds r[i] = a.gid_to_val[gids[i]]
+    @inbounds r[i] = k.values[gids[i]]
   end
   r
 end
 
-function getindex(a::LocalToGlobalArray,i::Integer...)
-  cache = array_cache(a)
-  getindex!(cache,a,i...)
+function reindex(gid_to_val::AbstractArray,lid_to_gid::AbstractArray{<:AbstractArray})
+  lazy_map(Reindex(gid_to_val),lid_to_gid)
 end
 
-function reindex(a::LocalToGlobalArray,b::AbstractArray)
-  lid_to_gid = reindex(a.lid_to_gid,b)
-  LocalToGlobalArray(lid_to_gid,a.gid_to_val)
-end
+# function reindex(a::LazyArray{<:Fill{<:ArrayReindex}},b::AbstractArray)
+#   map = a.g.value
+#   gid_to_val = map.values
+#   lid_to_gid, = a.f
+#   lid_to_gid = reindex(lid_to_gid,b)
+#   lazy_map(ArrayReindex(gid_to_val),lid_to_gid)
+# end
