@@ -29,6 +29,38 @@ import Base: IndexStyle
 
 import Gridap.Algebra: scale_entries!
 
+# CachedArray
+
+export CachedArray
+export CachedMatrix
+export CachedVector
+export setsize!
+export setaxes!
+
+# Mapping
+
+export Mapping
+export return_cache
+export evaluate!
+export evaluate
+export test_mapping
+export test_lazy_array
+import Gridap.Inference: return_type
+export return_type
+
+export Broadcasting
+
+export Operation
+export operation
+
+
+# LazyArray
+
+export LazyArray
+export array_cache
+export getindex!
+export lazy_map
+
 export BlockArrayCoo
 export BlockVectorCoo
 export BlockMatrixCoo
@@ -55,11 +87,6 @@ export get_array
 # export get_arrays
 # # export add_to_array!
 
-export CachedArray
-export CachedMatrix
-export CachedVector
-export setsize!
-export setaxes!
 
 # export CompressedArray
 # export LocalToGlobalArray
@@ -132,6 +159,10 @@ include("Interface.jl")
 include("BlockArraysCoo.jl")
 
 include("CachedArrays.jl")
+
+include("Mappings.jl")
+
+include("LazyArrays.jl")
 
 # include("Kernels.jl")
 

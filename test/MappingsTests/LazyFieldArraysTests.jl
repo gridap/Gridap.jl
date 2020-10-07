@@ -4,8 +4,6 @@ using Test
 using Gridap.Arrays
 using Gridap.Mappings
 using Gridap.TensorValues
-using Gridap.Mappings: evaluate
-using Gridap.Mappings: test_mapped_array
 using FillArrays
 using Gridap.Helpers
 

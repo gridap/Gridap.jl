@@ -2,7 +2,7 @@ module FieldInterfacesTests
 
 using Gridap.Mappings
 using Gridap.TensorValues
-using Gridap.Arrays: CachedArray
+using Gridap.Arrays
 
 using BenchmarkTools
 using Test

@@ -2,9 +2,6 @@ module LazyArraysTests
 
 using Test
 using Gridap.Arrays
-using Gridap.Mappings
-using Gridap.Mappings: evaluate
-using Gridap.Mappings: test_mapped_array
 using FillArrays
 using Gridap.Helpers
 
@@ -173,12 +170,12 @@ ap = Fill(Broadcasting(*),4)
 cm = lazy_map(evaluate,ap,ax,an)
 @test all([cm[i] == nn*ax[i] for i in 1:4])
 
-c_cm = Mappings.array_cache(cm)
-@allocated Mappings.getindex!(c_cm,cm,1)
+c_cm = array_cache(cm)
+@allocated getindex!(c_cm,cm,1)
 nalloc = 0
 for i in length(cm)
   global nalloc
-  nalloc += @allocated Mappings.getindex!(c_cm,cm,i)
+  nalloc += @allocated getindex!(c_cm,cm,i)
 end
 @test nalloc == 0
 
@@ -186,12 +183,12 @@ as = Fill(Broadcasting(sqrt),4)
 cs = lazy_map(evaluate,as,ax)
 @test all([cs[i] == sqrt.(ax[i]) for i in 1:4])
 
-c_cs = Mappings.array_cache(cs)
+c_cs = array_cache(cs)
 @allocated getindex!(c_cs,cs,1)
 nalloc = 0
 for i in length(cs)
   global nalloc
-  nalloc += @allocated Mappings.getindex!(c_cs,cs,i)
+  nalloc += @allocated getindex!(c_cs,cs,i)
 end
 @test nalloc == 0
 
@@ -199,12 +196,12 @@ asm = lazy_map(operation,as)
 ah = lazy_map(evaluate,asm,ap)
 ch = lazy_map(evaluate,ah,ax,an)
 @test all([ ch[i] ≈ sqrt.(nn*ax[i]) for i in 1:4])
-c_ch = Mappings.array_cache(ch)
+c_ch = array_cache(ch)
 @allocated getindex!(c_ch,ch,1)
 nalloc = 0
 for i in length(ch)
   global nalloc
-  nalloc += @allocated Mappings.getindex!(c_ch,ch,i)
+  nalloc += @allocated getindex!(c_ch,ch,i)
 end
 @test nalloc == 0
 

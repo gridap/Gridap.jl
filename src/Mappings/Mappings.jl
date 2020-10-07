@@ -27,24 +27,24 @@ using Test
 
 # Mapping interface
 
-export Mapping
+# export Mapping
 
-export return_cache
-export evaluate!
-export evaluate
-export return_type
-export test_mapping
+# export return_cache
+# export evaluate!
+# export evaluate
+# export return_type
+# export test_mapping
 
 # LazyArray
 
-export LazyArray
+# export LazyArray
 
 # import Gridap.Arrays: lazy_map
-import Gridap.Arrays: array_cache
+# import Gridap.Arrays: array_cache
 
-export lazy_map
+# export lazy_map
 # export array_cache
-export test_mapped_array
+# export test_lazy_array
 
 export Broadcasting
 export OperationMapping
@@ -60,6 +60,31 @@ using LinearAlgebra: mul!, Transpose
 import LinearAlgebra: det, inv, transpose
 import Base: +, -, *, /
 import LinearAlgebra: ⋅
+
+# Mapping
+
+using Gridap.Arrays: Mapping
+using Gridap.Arrays: Operation
+using Gridap.Arrays: Broadcasting
+using Gridap.Arrays: evaluate
+using Gridap.Arrays: test_mapping
+using Gridap.Arrays: test_lazy_array
+
+import Gridap.Arrays: evaluate!
+import Gridap.Arrays: return_cache
+import Gridap.Arrays: return_type
+
+export evaluate!
+export return_type
+export return_cache
+
+# Lazy Arrays
+
+using Gridap.Arrays: LazyArray
+using Gridap.Arrays: getindex!
+
+import Gridap.Arrays: array_cache
+import Gridap.Arrays: lazy_map
 
 export Field
 export GenericField
@@ -104,17 +129,13 @@ export MatMul
 export LinCombVal
 export Integrate
 
-include("MappingInterfaces.jl")
-
-include("LazyArrays.jl")
-
 include("FieldsInterfaces.jl")
+
+include("MockFields.jl")
 
 include("FieldArrays.jl")
 
 include("ApplyOptimizations.jl")
-
-include("MockFields.jl")
 
 include("AutoDiff.jl")
 

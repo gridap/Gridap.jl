@@ -1,9 +1,7 @@
 module MappingInterfacesTests
 
 using Test
-using Gridap.Arrays: CachedArray
 using Gridap.Arrays
-using Gridap.Mappings
 using Gridap.TensorValues
 using Gridap.Inference
 
@@ -47,7 +45,7 @@ f = Broadcasting(+)
 a = rand(3,2)
 b = 3
 c = a .+ b
-Mappings.test_mapping(f,(a,b),c)
+Arrays.test_mapping(f,(a,b),c)
 
 k = Broadcasting(-)
 test_mapping(k,(1,),-1)

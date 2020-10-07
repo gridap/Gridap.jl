@@ -244,7 +244,7 @@ end
   # lazy_map(Fill(op,length(first(x))),x...)
 # end
 
-function test_mapped_array(
+function test_lazy_array(
   a::AbstractArray,
   x::AbstractArray,
   v::AbstractArray,
@@ -268,7 +268,7 @@ function test_mapped_array(
 
   if grad != nothing
     g = lazy_map_mapping(gradient, a)
-    test_mapped_array(g, x, grad, cmp)
+    test_lazy_array(g, x, grad, cmp)
   end
 end
 

@@ -10,6 +10,10 @@ using Test
 
 @testset "CachedArrays" begin include("CachedArraysTests.jl") end
 
+@testset "Mappings" begin include("MappingsTests.jl") end
+
+@testset "LazyArrays" begin include("LazyArraysTests.jl") end
+
 # @testset "Kernels" begin include("KernelsTests.jl") end
 
 # @testset "Apply" begin include("ApplyTests.jl") end
