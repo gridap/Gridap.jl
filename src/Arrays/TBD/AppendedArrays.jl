@@ -102,16 +102,16 @@ function lazy_map(f,a::AppendedArray...)
   end
 end
 
-function lazy_map(::Type{T},f,a::AppendedArray...) where T
+function lazy_map(f,::Type{T},a::AppendedArray...) where T
   la = map(ai->length(ai.a),a)
   lb = map(ai->length(ai.b),a)
   if all(la .== first(la)) && all(lb .== first(lb))
-    c_a = lazy_map(T,f,map(ai->ai.a,a)...)
-    c_b = lazy_map(T,f,map(ai->ai.b,a)...)
+    c_a = lazy_map(f,T,map(ai->ai.a,a)...)
+    c_b = lazy_map(f,T,map(ai->ai.b,a)...)
     lazy_append(c_a,c_b)
   else
     s = common_size(a...)
-    lazy_map(T,Fill(f,s...),a...)
+    lazy_map(Fill(f,s...),T,a...)
   end
 end
 

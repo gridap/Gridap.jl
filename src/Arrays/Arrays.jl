@@ -88,7 +88,7 @@ export get_array
 # # export add_to_array!
 
 
-# export CompressedArray
+export CompressedArray
 # export LocalToGlobalArray
 # export LocalToGlobalPosNegArray
 # export FilteredCellArray
@@ -164,11 +164,7 @@ include("Mappings.jl")
 
 include("LazyArrays.jl")
 
-# include("Kernels.jl")
-
-# include("Apply.jl")
-
-# include("CompressedArrays.jl")
+include("CompressedArrays.jl")
 
 # include("Tables.jl")
 

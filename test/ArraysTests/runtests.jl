@@ -18,7 +18,7 @@ using Test
 
 # @testset "Apply" begin include("ApplyTests.jl") end
 
-# @testset "CompressedArrays" begin include("CompressedArraysTests.jl") end
+@testset "CompressedArrays" begin include("CompressedArraysTests.jl") end
 
 # @testset "LocalToGlobalArrays" begin include("LocalToGlobalArraysTests.jl") end
 
