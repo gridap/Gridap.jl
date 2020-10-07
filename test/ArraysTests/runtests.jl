@@ -14,19 +14,15 @@ using Test
 
 @testset "LazyArrays" begin include("LazyArraysTests.jl") end
 
-# @testset "Kernels" begin include("KernelsTests.jl") end
-
-# @testset "Apply" begin include("ApplyTests.jl") end
-
 @testset "CompressedArrays" begin include("CompressedArraysTests.jl") end
-
-# @testset "LocalToGlobalPosNegArrays" begin include("LocalToGlobalPosNegArraysTests.jl") end
 
 @testset "FilteredArraysTests" begin include("FilteredArraysTests.jl") end
 
 # @testset "Tables" begin include("TablesTests.jl") end
 
 @testset "Reindex" begin include("ReindexTests.jl") end
+
+@testset "PosNegReindex" begin include("PosNegReindexTests.jl") end
 
 # @testset "IdentityVectors" begin include("IdentityVectorsTests.jl") end
 

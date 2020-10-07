@@ -89,11 +89,12 @@ export get_array
 
 
 export CompressedArray
-export LocalToGlobalArray
 
 export Reindex
+export reindex
 
-# export LocalToGlobalPosNegArray
+export PosNegReindex
+export posneg_reindex
 
 # export FilteredCellArray
 export FilterMapping
@@ -137,7 +138,6 @@ export UNSET
 export get_local_item
 export find_local_index
 
-export reindex
 # export identity_vector
 
 # export SubVector
@@ -174,9 +174,7 @@ include("Tables.jl")
 
 include("Reindex.jl")
 
-# include("LocalToGlobalArrays.jl")
-
-# include("LocalToGlobalPosNegArrays.jl")
+include("LocalToGlobalPosNegArrays.jl")
 
 include("FilteredArrays.jl")
 

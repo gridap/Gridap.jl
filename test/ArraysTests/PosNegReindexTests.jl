@@ -1,4 +1,4 @@
-module LocalToGlobalPosNegArraysTests
+module PosNegReindex
 
 using Test
 using Gridap.Arrays
@@ -10,7 +10,7 @@ ptrs = [1,4,4,7,13]
 gid_to_val_pos = [p, 2*p, 3*p, -p, p]
 gid_to_val_neg = [3*p, -p, p]
 lid_to_gid = Table(data,ptrs)
-ca = LocalToGlobalPosNegArray(lid_to_gid,gid_to_val_pos,gid_to_val_neg)
+ca = posneg_reindex(gid_to_val_pos,gid_to_val_neg,lid_to_gid)
 a = Vector{Int64}[[2, 3, 3], [], [3, -1, -1], [3, 2, 1, -1, 1, -1]]
 test_array( ca, a )
 
@@ -18,7 +18,7 @@ i_to_v=[[1, 2], [5, 6], [1, 5], [2, 6], [2, 3], [6, 7], [3, 7], [3, 4], [7, 8], 
 j_to_i=Int64[]
 lid_to_gid=reindex(i_to_v,j_to_i)
 gid_to_val=VectorValue{2,Float64}[(0.0, 0.25), (0.25, 0.25), (0.5, 0.25), (0.75, 0.25), (0.0, 0.5), (0.25, 0.5), (0.5, 0.5), (0.75, 0.5), (0.0, 0.75), (0.25, 0.75), (0.5, 0.75), (0.75, 0.75), (0.0, 1.0), (0.25, 1.0), (0.5, 1.0), (0.75, 1.0)]
-f2=LocalToGlobalPosNegArray(lid_to_gid,gid_to_val,gid_to_val)
+f2=posneg_reindex(gid_to_val,gid_to_val,lid_to_gid)
 test_array(f2,Vector{VectorValue{2,Float64}}[])
 
 end # module
