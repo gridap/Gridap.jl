@@ -20,8 +20,6 @@ using Test
 
 @testset "CompressedArrays" begin include("CompressedArraysTests.jl") end
 
-@testset "LocalToGlobalArrays" begin include("LocalToGlobalArraysTests.jl") end
-
 # @testset "LocalToGlobalPosNegArrays" begin include("LocalToGlobalPosNegArraysTests.jl") end
 
 @testset "FilteredArraysTests" begin include("FilteredArraysTests.jl") end
