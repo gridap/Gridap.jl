@@ -166,6 +166,19 @@ end
     Meta.parse("TensorValue{$D1,$D2}(($str))")
 end
 
+# a_ij = b_kij*c_k
+@generated function dot(a::A, b::B) where {A<:MultiValue{Tuple{D1,D2,D3}},B<:MultiValue{Tuple{D1}}} where {D1,D2,D3}
+  ss = String[]
+  for k in 1:D3
+    for j in 1:D2
+      s = join([ "a[$i,$j,$k]*b[$i]+" for i in 1:D1])
+      push!(ss,s[1:(end-1)]*", ")
+    end
+  end
+  str = join(ss)
+  Meta.parse("TensorValue{$D2,$D3}(($str))")
+end
+
 # Double contraction
 
 #(::Colon)(a::MultiValue{Tuple{D1,D2}},b::MultiValue{Tuple{D1,D2}}) where {D1,D2} = inner(a,b)
@@ -218,6 +231,17 @@ end
 
 function inner(a::SymFourthOrderTensorValue{D},b::MultiValue{Tuple{D,D}}) where D
   inner(a,symmetric_part(b))
+end
+
+# a_i = b_ijk*c_jk
+@generated function inner(a::A, b::B) where {A<:MultiValue{Tuple{D1,D2,D3}},B<:MultiValue{Tuple{D2,D3}}} where {D1,D2,D3}
+  ss = String[]
+  for i in 1:D1
+    s = join([ "a[$i,$j,$k]*b[$j,$k]+" for j in 1:D2 for k in 1:D3])
+    push!(ss,s[1:(end-1)]*", ")
+  end
+  str = join(ss)
+  Meta.parse("VectorValue{$D1}(($str))")
 end
 
 const ⊙ = inner
