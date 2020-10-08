@@ -78,15 +78,10 @@ export TwoLevelBlockedUnitRange
 
 export array_cache
 export getindex!
-# # export getitems!
-# export getitems
 export testitem
 # export uses_hash
 export test_array
-# export testitems
-# # export array_caches
 export get_array
-# export get_arrays
 # # export add_to_array!
 
 
@@ -100,24 +95,8 @@ export posneg_reindex
 
 export FilterMapping
 
-# export return_cache
-# export return_caches
-# export evaluates!
-# export evaluate!
-# export evaluate
-# export test_kernel
-# export bcast
-# export elem
-# export contract
-# export MulKernel
-# export MulAddKernel
-# export return_type
-# export return_types
-# export testitem
-# export Kernel
-
-# # export lazy_map
-# export lazy_map_all
+export MulMapping
+export MulAddMapping
 
 export Table
 export identity_table
@@ -156,8 +135,8 @@ export autodiff_array_hessian
 export VectorWithEntryRemoved
 export VectorWithEntryInserted
 
-# import Gridap.Io: to_dict
-# import Gridap.Io: from_dict
+import Gridap.Io: to_dict
+import Gridap.Io: from_dict
 
 include("Interface.jl")
 
@@ -166,6 +145,8 @@ include("BlockArraysCoo.jl")
 include("CachedArrays.jl")
 
 include("Mappings.jl")
+
+include("AlgebraMappings.jl")
 
 include("LazyArrays.jl")
 

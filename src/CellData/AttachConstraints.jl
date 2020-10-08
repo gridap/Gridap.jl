@@ -11,12 +11,12 @@ end
 struct ConstrainRowsKernel <: Kernel end
 
 function Arrays.return_cache(k::ConstrainRowsKernel,array::AbstractArray,constr,mask)
-  return_cache(MulKernel(),constr,array)
+  return_cache(MulMapping(),constr,array)
 end
 
 @inline function Arrays.evaluate!(cache,k::ConstrainRowsKernel,array::AbstractArray,constr,mask)
   if mask
-    evaluate!(cache,MulKernel(),constr,array)
+    evaluate!(cache,MulMapping(),constr,array)
   else
     array
   end
@@ -44,12 +44,12 @@ end
 struct ConstrainColsKernel <: Kernel end
 
 function Arrays.return_cache(k::ConstrainColsKernel,array::AbstractArray,constr_t,mask)
-  return_cache(MulKernel(),array,constr_t)
+  return_cache(MulMapping(),array,constr_t)
 end
 
 @inline function Arrays.evaluate!(cache,k::ConstrainColsKernel,array::AbstractArray,constr_t,mask)
   if mask
-    evaluate!(cache,MulKernel(),array,constr_t)
+    evaluate!(cache,MulMapping(),array,constr_t)
   else
     array
   end

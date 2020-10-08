@@ -140,9 +140,11 @@ function array_cache(a::VectorOfBlockArrayCoo)
   end
 
   ca = array_cache(a.axes)
-  cb = map(array_cache,a.blocks...)
+  cb = map(array_cache,a.blocks)
+  # cb = map(array_cache,a.blocks...)
   # cb = array_caches(a.blocks...)
-  cz = map(array_cache,a.zero_blocks...)
+  cz = map(array_cache,a.zero_blocks)
+  # cz = map(array_cache,a.zero_blocks...)
   # cz = array_caches(a.zero_blocks...)
   (blocks_i,zero_blocks_i,ca,cb,cz)
 end
@@ -153,6 +155,7 @@ end
   blocks_i .= map((ci,ai) -> getindex!(ci,ai,i),cb,a.blocks)
   # blocks_i .= getitems!(cb,a.blocks,i)
   zero_blocks_i .= map((ci,ai) -> getindex!(ci,ai,i),cz,a.zero_blocks)
+  # zero_blocks_i .= map(ai -> getindex!(cz,ai,i),a.zero_blocks)
   # zero_blocks_i .= getitems!(cz,a.zero_blocks,i)
   BlockArrayCoo(blocks_i,a.blockids,axes_i,a.ptrs,zero_blocks_i)
 end

@@ -465,14 +465,14 @@ end
   c
 end
 
-struct MulKernel <: Kernel end
+struct MulMapping <: Kernel end
 
-function return_cache(k::MulKernel,a,b)
+function return_cache(k::MulMapping,a,b)
   c = a*b
   CachedArray(c)
 end
 
-@inline function evaluate!(cache,k::MulKernel,a::AbstractMatrix,b::AbstractVector)
+@inline function evaluate!(cache,k::MulMapping,a::AbstractMatrix,b::AbstractVector)
   m = axes(a,1)
   setaxes!(cache,(m,))
   c = cache.array
@@ -480,7 +480,7 @@ end
   c
 end
 
-@inline function evaluate!(cache,k::MulKernel,a::AbstractMatrix,b::AbstractMatrix)
+@inline function evaluate!(cache,k::MulMapping,a::AbstractMatrix,b::AbstractMatrix)
   m = axes(a,1)
   n = axes(b,2)
   setaxes!(cache,(m,n))
@@ -489,17 +489,17 @@ end
   c
 end
 
-struct MulAddKernel{T} <: Kernel
+struct MulAddMapping{T} <: Kernel
   α::T
   β::T
 end
 
-function return_cache(k::MulAddKernel,a,b,c)
+function return_cache(k::MulAddMapping,a,b,c)
   d = a*b+c
   CachedArray(d)
 end
 
-@inline function evaluate!(cache,k::MulAddKernel,a,b,c)
+@inline function evaluate!(cache,k::MulAddMapping,a,b,c)
   setaxes!(cache,axes(c))
   d = cache.array
   copyto!(d,c)

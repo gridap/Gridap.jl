@@ -45,14 +45,14 @@ test_kernel(f,(a,b),c)
 a = rand(3,4)
 b = rand(4)
 c = rand(3)
-k = MulKernel()
+k = MulMapping()
 test_kernel(k,(a,b),a*b)
-k = MulAddKernel(2,3)
+k = MulAddMapping(2,3)
 test_kernel(k,(a,b,c),2*a*b+3*c,≈)
 
 a = rand(3,4)
 b = rand(4)
-k = MulKernel()
+k = MulMapping()
 test_kernel(k,(a,b),a*b)
 
 blocks = [ [1 2; 3 4], [5 6 7 8; 9 10 11 12; 13 14 15 16], [1 2 3 4; 5 6 7 8], [1 2 3; 4 5 6; 7 8 9] ]
@@ -67,16 +67,16 @@ b = BlockArrayCoo(blocks,blockids,axs)
 test_kernel(k,(a,b),a*b)
 
 c = a*b
-k = MulAddKernel(2,3)
+k = MulAddMapping(2,3)
 test_kernel(k,(a,b,c),2*a*b+3*c)
 
-#k = MulKernel()
+#k = MulMapping()
 #cache = return_cache(k,a,b)
 #using BenchmarkTools
 #@btime evaluate!($cache,$k,$a,$b)
 #
 #
-#k = MulAddKernel(2,3)
+#k = MulAddMapping(2,3)
 #cache = return_cache(k,a,b,c)
 #@btime evaluate!($cache,$k,$a,$b,$c)
 
