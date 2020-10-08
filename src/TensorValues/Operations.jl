@@ -169,8 +169,8 @@ end
 # a_ij = b_ijk*c_k
 @generated function dot(a::A, b::B) where {A<:MultiValue{Tuple{D1,D2,D3}},B<:MultiValue{Tuple{D3}}} where {D1,D2,D3}
   ss = String[]
-  for i in 1:D1
-    for j in 1:D2
+  for j in 1:D2
+    for i in 1:D1
       s = join([ "a[$i,$j,$k]*b[$k]+" for k in 1:D3])
       push!(ss,s[1:(end-1)]*", ")
     end
