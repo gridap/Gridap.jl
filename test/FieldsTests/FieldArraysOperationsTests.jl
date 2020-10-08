@@ -6,7 +6,7 @@ using Gridap.TensorValues
 using FillArrays
 
 using Test
-using BenchmarkTools
+# using BenchmarkTools
 
 # Check operations on results (OperationArray)
 

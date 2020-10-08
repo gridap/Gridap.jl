@@ -5,7 +5,7 @@ using Gridap.Fields
 using Gridap.TensorValues
 using FillArrays
 
-using BenchmarkTools
+# using BenchmarkTools
 using Test
 
 # Operations

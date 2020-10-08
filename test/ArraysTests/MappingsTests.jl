@@ -5,7 +5,7 @@ using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Inference
 
-using BenchmarkTools
+# using BenchmarkTools
 using FillArrays
 
 # Mapping Interfaces

@@ -4,7 +4,7 @@ using Gridap.Fields
 using Gridap.TensorValues
 using Gridap.Arrays
 
-using BenchmarkTools
+# using BenchmarkTools
 using Test
 
 np = 4
