@@ -6,7 +6,7 @@ using Test
 
 @testset "BlockArraysCoo" begin include("BlockArraysCooTests.jl") end
 
-# @testset "VectorsOfBlockArrayCoo" begin include("VectorsOfBlockArrayCooTests.jl") end
+@testset "VectorsOfBlockArrayCoo" begin include("VectorsOfBlockArrayCooTests.jl") end
 
 @testset "CachedArrays" begin include("CachedArraysTests.jl") end
 
@@ -18,24 +18,24 @@ using Test
 
 @testset "FilteredArraysTests" begin include("FilteredArraysTests.jl") end
 
-# @testset "Tables" begin include("TablesTests.jl") end
+@testset "Tables" begin include("TablesTests.jl") end
 
 @testset "Reindex" begin include("ReindexTests.jl") end
 
 @testset "PosNegReindex" begin include("PosNegReindexTests.jl") end
 
-# @testset "IdentityVectors" begin include("IdentityVectorsTests.jl") end
+@testset "IdentityVectors" begin include("IdentityVectorsTests.jl") end
 
-# @testset "SubVectors" begin include("SubVectorsTests.jl") end
+@testset "SubVectors" begin include("SubVectorsTests.jl") end
 
-# @testset "ArrayPairs" begin include("ArrayPairsTests.jl") end
+@testset "ArrayPairs" begin include("ArrayPairsTests.jl") end
 
-# @testset "AppendedArrays" begin include("AppendedArraysTests.jl") end
+@testset "AppendedArrays" begin include("AppendedArraysTests.jl") end
 
-# @testset "AutodiffTests" begin include("AutodiffTests.jl") end
+@testset "AutodiffTests" begin include("AutodiffTests.jl") end
 
-# @testset "VectorWithEntryRemovedTests" begin include("VectorWithEntryRemovedTests.jl") end
+@testset "VectorWithEntryRemovedTests" begin include("VectorWithEntryRemovedTests.jl") end
 
-# @testset "VectorWithEntryInsertedTests" begin include("VectorWithEntryInsertedTests.jl") end
+@testset "VectorWithEntryInsertedTests" begin include("VectorWithEntryInsertedTests.jl") end
 
 end # module

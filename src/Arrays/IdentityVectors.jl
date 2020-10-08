@@ -40,8 +40,3 @@ function reindex(a::CompressedArray,b::IdentityVector)
   @assert length(a) == length(b)
   a
 end
-
-function reindex(a::Reindexed,b::IdentityVector)
-  @assert length(a) == length(b)
-  a
-end

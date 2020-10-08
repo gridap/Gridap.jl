@@ -61,6 +61,8 @@ export array_cache
 export getindex!
 export lazy_map
 
+# BlockArrays
+
 export BlockArrayCoo
 export BlockVectorCoo
 export BlockMatrixCoo
@@ -68,11 +70,11 @@ export is_zero_block
 export is_nonzero_block
 export enumerateblocks
 export eachblockindex
-# export VectorOfBlockArrayCoo
-# export VectorOfBlockVectorCoo
-# export VectorOfBlockMatrixCoo
+export VectorOfBlockArrayCoo
+export VectorOfBlockVectorCoo
+export VectorOfBlockMatrixCoo
 export zeros_like
-# export TwoLevelBlockedUnitRange
+export TwoLevelBlockedUnitRange
 
 export array_cache
 export getindex!
@@ -96,7 +98,6 @@ export reindex
 export PosNegReindex
 export posneg_reindex
 
-# export FilteredCellArray
 export FilterMapping
 
 # export return_cache
@@ -138,22 +139,22 @@ export UNSET
 export get_local_item
 export find_local_index
 
-# export identity_vector
+export identity_vector
 
-# export SubVector
-# export pair_arrays
-# export unpair_arrays
+export SubVector
+export pair_arrays
+export unpair_arrays
 
-# export lazy_append
-# export lazy_split
-# export AppendedArray
+export AppendedArray
+export lazy_append
+export lazy_split
 
-# export autodiff_array_gradient
-# export autodiff_array_jacobian
-# export autodiff_array_hessian
+export autodiff_array_gradient
+export autodiff_array_jacobian
+export autodiff_array_hessian
 
-# export VectorWithEntryRemoved
-# export VectorWithEntryInserted
+export VectorWithEntryRemoved
+export VectorWithEntryInserted
 
 # import Gridap.Io: to_dict
 # import Gridap.Io: from_dict
@@ -172,28 +173,27 @@ include("CompressedArrays.jl")
 
 include("Tables.jl")
 
+include("IdentityVectors.jl")
+
 include("Reindex.jl")
 
-include("LocalToGlobalPosNegArrays.jl")
+include("PosNegReindex.jl")
 
 include("FilteredArrays.jl")
 
+include("SubVectors.jl")
 
-# include("IdentityVectors.jl")
+include("ArrayPairs.jl")
 
-# include("SubVectors.jl")
+include("AppendedArrays.jl")
 
-# include("ArrayPairs.jl")
+include("VectorsOfBlockArrayCoo.jl")
 
-# include("AppendedArrays.jl")
+include("Autodiff.jl")
 
-# include("VectorsOfBlockArrayCoo.jl")
+include("VectorsWithEntryRemoved.jl")
 
-# include("Autodiff.jl")
-
-# include("VectorsWithEntryRemoved.jl")
-
-# include("VectorsWithEntryInserted.jl")
+include("VectorsWithEntryInserted.jl")
 
 
 end # module
