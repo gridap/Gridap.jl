@@ -166,17 +166,30 @@ end
     Meta.parse("TensorValue{$D1,$D2}(($str))")
 end
 
-# a_ij = b_kij*c_k
-@generated function dot(a::A, b::B) where {A<:MultiValue{Tuple{D1,D2,D3}},B<:MultiValue{Tuple{D1}}} where {D1,D2,D3}
+# a_ij = b_ijk*c_k
+@generated function dot(a::A, b::B) where {A<:MultiValue{Tuple{D1,D2,D3}},B<:MultiValue{Tuple{D3}}} where {D1,D2,D3}
   ss = String[]
-  for k in 1:D3
+  for i in 1:D1
     for j in 1:D2
-      s = join([ "a[$i,$j,$k]*b[$i]+" for i in 1:D1])
+      s = join([ "a[$i,$j,$k]*b[$k]+" for k in 1:D3])
       push!(ss,s[1:(end-1)]*", ")
     end
   end
   str = join(ss)
-  Meta.parse("TensorValue{$D2,$D3}(($str))")
+  Meta.parse("TensorValue{$D1,$D2}($str)")
+end
+
+# a_ij = c_k*b_kij
+@generated function dot(a::A, b::B) where {A<:MultiValue{Tuple{D1}},B<:MultiValue{Tuple{D1,D2,D3}}} where {D1,D2,D3}
+  ss = String[]
+  for k in 1:D3
+    for j in 1:D2
+      s = join([ "a[$i]*b[$i,$j,$k]+" for i in 1:D1])
+      push!(ss,s[1:(end-1)]*", ")
+    end
+  end
+  str = join(ss)
+  Meta.parse("TensorValue{$D2,$D3}($str)")
 end
 
 # Double contraction

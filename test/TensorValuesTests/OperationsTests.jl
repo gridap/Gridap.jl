@@ -470,5 +470,32 @@ C = 2*μ*one(ε⊗ε) + λ*one(ε)⊗one(ε)
 #σ2 = C : ε
 #@test σ1 == σ2
 
+# third order contraction testing
+a = reshape(Vector(1:27),(3,3,3))
+a_tensor = ThirdOrderTensorValue(a...)
+left_contraction = Matrix(get_array(VectorValue(1,2,-1) ⋅ a_tensor))
+left_contraction_array = a[1,:,:] + 2*a[2,:,:] + -1*a[3,:,:]
+@test left_contraction == left_contraction_array
+right_contraction = Matrix(get_array(a_tensor ⋅ VectorValue(1,2,-1)))
+right_contraction_array = a[:,:,1] + 2*a[:,:,2] + -1*a[:,:,3]
+@test right_contraction == right_contraction_array
+
+a = reshape(Vector(1:27),(3,3,3))
+b = reshape(Vector(1:9),(3,3))
+a_tensor = ThirdOrderTensorValue(a...)
+b_tensor = TensorValue(b...)
+odot_contraction = Vector(get_array(a_tensor ⊙ b_tensor))
+odot_contraction_array = 1*a[:,1,1] + 4*a[:,1,2] + 7*a[:,1,3] + 2*a[:,2,1] +
+  5*a[:,2,2] + 8*a[:,2,3] + 3*a[:,3,1] + 6*a[:,3,2] + 9*a[:,3,3]
+@test odot_contraction == odot_contraction_array
+
+a = reshape(Vector(1:27),(3,3,3))
+a_tensor = ThirdOrderTensorValue(a...)
+b_tensor = SymTensorValue((1:6)...)
+b = Matrix(get_array(b_tensor))
+odot_contraction = Vector(get_array(a_tensor ⊙ b_tensor))
+odot_contraction_array = 1*a[:,1,1] + 2*a[:,1,2] + 3*a[:,1,3] + 2*a[:,2,1] +
+  4*a[:,2,2] + 5*a[:,2,3] + 3*a[:,3,1] + 5*a[:,3,2] + 6*a[:,3,3]
+@test odot_contraction == odot_contraction_array
 
 end # module OperationsTests
