@@ -4,7 +4,7 @@
 
 This type implements a multivariate vector-valued polynomial basis
 spanning the space needed for Nedelec reference elements on n-cubes.
-The type parameters and fields of this `struct` are not public.  
+The type parameters and fields of this `struct` are not public.
 This type fully implements the [`Field`](@ref) interface, with up to first order
 derivatives.
 """
@@ -42,7 +42,7 @@ num_terms(f::QGradMonomialBasis{D,T}) where {D,T} = length(f.terms)*D
 
 get_order(f::QGradMonomialBasis) = f.order
 
-function field_cache(f::QGradMonomialBasis{D,T},x) where {D,T}
+function return_cache(f::QGradMonomialBasis{D,T},x) where {D,T}
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = _ndofs_qgrad(f)
@@ -54,7 +54,7 @@ function field_cache(f::QGradMonomialBasis{D,T},x) where {D,T}
   (r, v, c)
 end
 
-function evaluate_field!(cache,f::QGradMonomialBasis{D,T},x) where {D,T}
+function evaluate!(cache,f::QGradMonomialBasis{D,T},x) where {D,T}
   r, v, c = cache
   np = length(x)
   ndof = _ndofs_qgrad(f)
@@ -72,14 +72,14 @@ function evaluate_field!(cache,f::QGradMonomialBasis{D,T},x) where {D,T}
   r.array
 end
 
-function gradient_cache(f::QGradMonomialBasis{D,T},x) where {D,T}
+function return_gradient_cache(f::QGradMonomialBasis{D,T},x) where {D,T}
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = _ndofs_qgrad(f)
   n = 1 + f.order+1
   xi = testitem(x)
   V = VectorValue{D,T}
-  G = gradient_type(V,xi)
+  G = return_gradient_type(V,xi)
   r = CachedArray(zeros(G,(np,ndof)))
   v = CachedArray(zeros(G,(ndof,)))
   c = CachedArray(zeros(T,(D,n)))

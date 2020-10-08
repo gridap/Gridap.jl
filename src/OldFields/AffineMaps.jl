@@ -9,12 +9,12 @@ struct AffineMap{D,T,L} <:Field
   end
 end
 
-function field_cache(f::AffineMap,x)
+function return_cache(f::AffineMap,x)
   y = copy(x)
   CachedArray(y)
 end
 
-@inline function evaluate_field!(cache,f::AffineMap,x)
+@inline function evaluate!(cache,f::AffineMap,x)
   setsize!(cache,size(x))
   y = cache.array
   @inbounds for i in eachindex(x)
@@ -39,15 +39,15 @@ function field_gradient(h::AffineMap)
   AffineMapGrad(h.jacobian)
 end
 
-function field_cache(f::AffineMapGrad,x)
+function return_cache(f::AffineMapGrad,x)
   xi = testitem(x)
   T = typeof(xi)
-  G = gradient_type(T,xi)
+  G = return_gradient_type(T,xi)
   j = similar(x,G)
   CachedArray(j)
 end
 
-function evaluate_field!(cache,f::AffineMapGrad,x)
+function evaluate!(cache,f::AffineMapGrad,x)
   setsize!(cache,size(x))
   y = cache.array
   G = eltype(y)
@@ -57,4 +57,3 @@ function evaluate_field!(cache,f::AffineMapGrad,x)
   end
   y
 end
-

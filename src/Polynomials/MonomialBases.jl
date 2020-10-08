@@ -4,7 +4,7 @@
 
 Type representing a basis of multivariate scalar-valued, vector-valued, or
 tensor-valued, iso- or aniso-tropic monomials. The fields
-of this `struct` are not public  
+of this `struct` are not public
 This type fully implements the [`Field`](@ref) interface, with up to second order
 derivatives.
 """
@@ -113,7 +113,7 @@ get_value_type(::Type{MonomialBasis{D,T}}) where {D,T} = T
 
 # Field implementation
 
-function field_cache(f::MonomialBasis{D,T},x) where {D,T}
+function return_cache(f::MonomialBasis{D,T},x) where {D,T}
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = length(f.terms)*num_components(T)
@@ -124,7 +124,7 @@ function field_cache(f::MonomialBasis{D,T},x) where {D,T}
   (r, v, c)
 end
 
-function evaluate_field!(cache,f::MonomialBasis{D,T},x) where {D,T}
+function evaluate!(cache,f::MonomialBasis{D,T},x) where {D,T}
   r, v, c = cache
   np = length(x)
   ndof = length(f.terms)*num_components(T)
@@ -142,12 +142,12 @@ function evaluate_field!(cache,f::MonomialBasis{D,T},x) where {D,T}
   r.array
 end
 
-function gradient_cache(f::MonomialBasis{D,V},x) where {D,V}
+function return_gradient_cache(f::MonomialBasis{D,V},x) where {D,V}
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = length(f.terms)*num_components(V)
   xi = testitem(x)
-  T = gradient_type(V,xi)
+  T = return_gradient_type(V,xi)
   n = 1 + _maximum(f.orders)
   r = CachedArray(zeros(T,(np,ndof)))
   v = CachedArray(zeros(T,(ndof,)))
@@ -175,12 +175,12 @@ function evaluate_gradient!(cache,f::MonomialBasis{D,T},x) where {D,T}
   r.array
 end
 
-function hessian_cache(f::MonomialBasis{D,V},x) where {D,V}
+function return_hessian_cache(f::MonomialBasis{D,V},x) where {D,V}
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = length(f.terms)*num_components(V)
   xi = testitem(x)
-  T = gradient_type(gradient_type(V,xi),xi)
+  T = return_gradient_type(return_gradient_type(V,xi),xi)
   n = 1 + _maximum(f.orders)
   r = CachedArray(zeros(T,(np,ndof)))
   v = CachedArray(zeros(T,(ndof,)))
@@ -418,4 +418,3 @@ end
 
 _maximum(orders::Tuple{}) = 0
 _maximum(orders) = maximum(orders)
-

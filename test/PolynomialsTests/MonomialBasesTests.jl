@@ -13,8 +13,8 @@ x = fill(xi,np)
 
 order = 0
 V = Float64
-G = gradient_type(V,xi)
-H = gradient_type(G,xi)
+G = return_gradient_type(V,xi)
+H = return_gradient_type(G,xi)
 b = MonomialBasis{2}(V,order)
 @test get_order(b) == 0
 @test get_orders(b) == (0,0)
@@ -32,8 +32,8 @@ test_field(b,x,bx,grad=∇bx,hessian=Hbx)
 
 order = 1
 V = Float64
-G = gradient_type(V,xi)
-H = gradient_type(G,xi)
+G = return_gradient_type(V,xi)
+H = return_gradient_type(G,xi)
 b = MonomialBasis{2}(V,order)
 
 v = V[1.0, 2.0, 3.0, 6.0]
@@ -49,7 +49,7 @@ test_field(b,x,bx,grad=∇bx,hessian=Hbx)
 
 orders = (1,2)
 V = Float64
-G = gradient_type(V,xi)
+G = return_gradient_type(V,xi)
 b = MonomialBasis{2}(V,orders)
 
 v = V[1.0, 2.0, 3.0, 6.0, 9.0, 18.0]
@@ -63,8 +63,8 @@ test_field(b,x,bx,grad=∇bx)
 
 order = 1
 V = VectorValue{3,Float64}
-G = gradient_type(V,xi)
-H = gradient_type(G,xi)
+G = return_gradient_type(V,xi)
+H = return_gradient_type(G,xi)
 b = MonomialBasis{2}(V,order)
 
 v = V[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0],
@@ -102,7 +102,7 @@ test_field(b,x,bx,grad=∇bx,hessian=Hbx)
 
 orders = (1,2)
 V = VectorValue{2,Float64}
-G = gradient_type(V,xi)
+G = return_gradient_type(V,xi)
 b = MonomialBasis{2}(V,orders)
 
 v = V[
@@ -126,7 +126,7 @@ test_field(b,x,bx,grad=∇bx)
 
 order = 1
 V = Float64
-G = gradient_type(V,xi)
+G = return_gradient_type(V,xi)
 filter = (e,o) -> sum(e) <= o
 b = MonomialBasis{2}(V,order,filter)
 
@@ -141,7 +141,7 @@ test_field(b,x,bx,grad=∇bx)
 
 order = 1
 V = VectorValue{3,Float64}
-G = gradient_type(V,xi)
+G = return_gradient_type(V,xi)
 filter = (e,o) -> sum(e) <= o
 b = MonomialBasis{2}(V,order,filter)
 
@@ -164,6 +164,6 @@ b = MonomialBasis{1}(Float64,order)
 @test evaluate(b,Point{1,Float64}[(0,),(1,)]) == [1.0 0.0; 1.0 1.0]
 
 b = MonomialBasis{0}(VectorValue{2,Float64},order)
-@test evaluate(b,Point{0,Float64}[(),()]) == VectorValue{2,Float64}[(1.0, 0.0) (0.0, 1.0); (1.0, 0.0) (0.0, 1.0)] 
+@test evaluate(b,Point{0,Float64}[(),()]) == VectorValue{2,Float64}[(1.0, 0.0) (0.0, 1.0); (1.0, 0.0) (0.0, 1.0)]
 
 end # module

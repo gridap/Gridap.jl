@@ -47,14 +47,14 @@ function field_return_type(f::AppliedField,x)
   return_type(f.k,map(testvalue,Ts)...)
 end
 
-function field_cache(f::AppliedField,x)
-  cf = field_caches(f.f,x)
+function return_cache(f::AppliedField,x)
+  cf = return_caches(f.f,x)
   fx = evaluate_fields!(cf,f.f,x)
   ck = return_cache(f.k,fx...)
   (ck,cf)
 end
 
-@inline function evaluate_field!(cache,f::AppliedField,x)
+@inline function evaluate!(cache,f::AppliedField,x)
   ck, cf = cache
   fx = evaluate_fields!(cf,f.f,x)
   evaluate!(ck,f.k,fx...)

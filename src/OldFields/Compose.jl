@@ -73,9 +73,9 @@ struct CompField{G} <: Kernel
   g::G
 end
 
-return_cache(k::CompField,fx) = field_cache(k.g,fx)
+return_cache(k::CompField,fx) = return_cache(k.g,fx)
 
-@inline evaluate!(cache,k::CompField,fx) = evaluate_field!(cache,k.g,fx)
+@inline evaluate!(cache,k::CompField,fx) = evaluate!(cache,k.g,fx)
 
 return_type(k::CompField,fx) = field_return_type(k.g,fx)
 

@@ -177,13 +177,13 @@ end
 
 struct VoidBasis{T,D} <: Field end
 
-function field_cache(f::VoidBasis{T},x) where T
+function return_cache(f::VoidBasis{T},x) where T
   Q = length(x)
   v = zeros(T,(Q,0))
   CachedArray(v)
 end
 
-@inline function evaluate_field!(cache,f::VoidBasis{T},x) where T
+@inline function evaluate!(cache,f::VoidBasis{T},x) where T
   Q = length(x)
   setsize!(cache,(Q,0))
   cache.array
@@ -191,7 +191,7 @@ end
 
 function field_gradient(f::VoidBasis{T,D}) where {T,D}
   x = zero(Point{D,eltype(T)})
-  G = gradient_type(T,x)
+  G = return_gradient_type(T,x)
   VoidBasis{G,D}()
 end
 

@@ -13,7 +13,7 @@ order = 0
 D = 2
 T = Float64
 V = VectorValue{D,T}
-G = gradient_type(V,xi)
+G = return_gradient_type(V,xi)
 b = QGradMonomialBasis{D}(T,order)
 
 @test num_terms(b) == 4
@@ -28,7 +28,7 @@ order = 0
 D = 3
 T = Float64
 V = VectorValue{D,T}
-G = gradient_type(V,xi)
+G = return_gradient_type(V,xi)
 b = QGradMonomialBasis{D}(T,order)
 
 v = V[
@@ -63,7 +63,7 @@ order = 1
 D = 2
 T = Float64
 V = VectorValue{D,T}
-G = gradient_type(V,xi)
+G = return_gradient_type(V,xi)
 b = QGradMonomialBasis{D}(T,order)
 
 v = V[

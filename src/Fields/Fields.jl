@@ -39,6 +39,7 @@ import Gridap.Arrays: lazy_map
 import Gridap.Arrays: array_cache
 # import Gridap.Arrays: uses_hash
 
+export evaluate
 export evaluate!
 export return_type
 export return_cache

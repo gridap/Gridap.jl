@@ -14,13 +14,13 @@ x = fill(xi,np)
 f = MockField{d}(v)
 g = MockField{d}(w)
 
-cf = field_cache(f,x)
-cg = field_cache(g,x)
-c = field_caches((f,g),x)
+cf = return_cache(f,x)
+cg = return_cache(g,x)
+c = return_caches((f,g),x)
 @test (cf,cg) == c
 
-fx = evaluate_field!(cf,f,x)
-gx = evaluate_field!(cg,g,x)
+fx = evaluate!(cf,f,x)
+gx = evaluate!(cg,g,x)
 fgx = evaluate_fields!(c,(f,g),x)
 @test (fx,gx) == fgx
 
@@ -35,8 +35,8 @@ Tfg = field_return_types((f,g),x)
 @test (∇f,∇g) == ∇fg
 
 x = Point(1,2)
-@test gradient_type(Float64,x) == VectorValue{2,Float64}
-@test gradient_type(VectorValue{2,Float64},x) == TensorValue{2,2,Float64,4}
-@test gradient_type(VectorValue{3,Float64},x) == TensorValue{2,3,Float64,6}
+@test return_gradient_type(Float64,x) == VectorValue{2,Float64}
+@test return_gradient_type(VectorValue{2,Float64},x) == TensorValue{2,2,Float64,4}
+@test return_gradient_type(VectorValue{3,Float64},x) == TensorValue{2,3,Float64,6}
 
 end # module

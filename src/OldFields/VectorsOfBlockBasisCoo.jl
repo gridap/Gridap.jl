@@ -1,7 +1,7 @@
 
 struct BlockBasisCoo <: Field end
 
-function evaluate_field!(cache,b::BlockBasisCoo,x)
+function evaluate!(cache,b::BlockBasisCoo,x)
   msg =
   """
   Not implemented! We not support iteration of vectors of block bases before

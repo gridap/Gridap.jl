@@ -55,8 +55,8 @@ import Gridap.Fields: gradient
 import Gridap.Fields: grad2curl
 import Gridap.Fields: evaluate_field_array
 import Gridap.ReferenceFEs: evaluate_dof_array
-import Gridap.Fields: field_cache
-import Gridap.Fields: evaluate_field!
+import Gridap.Fields: return_cache
+import Gridap.Fields: evaluate!
 import Gridap.Fields: field_gradient
 
 import Gridap.Algebra: allocate_residual

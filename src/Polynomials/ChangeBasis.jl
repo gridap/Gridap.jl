@@ -44,23 +44,23 @@ struct BasisFromChangeOfBasis{B,M} <: Field
   end
 end
 
-function field_cache(b::BasisFromChangeOfBasis,x)
-  cb = field_cache(b.basis,x)
-  bx = evaluate_field!(cb,b.basis,x)
+function return_cache(b::BasisFromChangeOfBasis,x)
+  cb = return_cache(b.basis,x)
+  bx = evaluate!(cb,b.basis,x)
   c = CachedArray(bx*b.change)
   (c,cb)
 end
 
-function evaluate_field!(cache,b::BasisFromChangeOfBasis,x)
+function evaluate!(cache,b::BasisFromChangeOfBasis,x)
   c, cb = cache
-  bx = evaluate_field!(cb,b.basis,x)
+  bx = evaluate!(cb,b.basis,x)
   setsize!(c,size(bx))
   mul!(c.array,bx,b.change)
   c.array
 end
 
-function gradient_cache(b::BasisFromChangeOfBasis,x)
-  cb = gradient_cache(b.basis,x)
+function return_gradient_cache(b::BasisFromChangeOfBasis,x)
+  cb = return_gradient_cache(b.basis,x)
   bx = evaluate_gradient!(cb,b.basis,x)
   c = CachedArray(bx*b.change)
   (c,cb)
@@ -74,8 +74,8 @@ function evaluate_gradient!(cache,b::BasisFromChangeOfBasis,x)
   c.array
 end
 
-function hessian_cache(b::BasisFromChangeOfBasis,x)
-  cb = hessian_cache(b.basis,x)
+function return_hessian_cache(b::BasisFromChangeOfBasis,x)
+  cb = return_hessian_cache(b.basis,x)
   bx = evaluate_hessian!(cb,b.basis,x)
   c = CachedArray(bx*b.change)
   (c,cb)

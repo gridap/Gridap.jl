@@ -14,12 +14,12 @@ struct Homothecy{D,T} <:Field
   scaling::Point{D,T}
 end
 
-function field_cache(f::Homothecy,x)
+function return_cache(f::Homothecy,x)
   y = copy(x)
   CachedArray(y)
 end
 
-@inline function evaluate_field!(cache,f::Homothecy,x)
+@inline function evaluate!(cache,f::Homothecy,x)
   setsize!(cache,size(x))
   y = cache.array
   @inbounds for i in eachindex(x)
@@ -48,15 +48,15 @@ function field_gradient(h::Homothecy)
   HomothecyGrad(h.scaling)
 end
 
-function field_cache(f::HomothecyGrad,x)
+function return_cache(f::HomothecyGrad,x)
   xi = testitem(x)
   T = typeof(xi)
-  G = gradient_type(T,xi)
+  G = return_gradient_type(T,xi)
   j = similar(x,G)
   CachedArray(j)
 end
 
-function evaluate_field!(cache,f::HomothecyGrad,x)
+function evaluate!(cache,f::HomothecyGrad,x)
   setsize!(cache,size(x))
   y = cache.array
   G = eltype(y)
@@ -75,4 +75,3 @@ function _apply_homothecy_gradient(h,G)
   end
   TensorValue(y)
 end
-

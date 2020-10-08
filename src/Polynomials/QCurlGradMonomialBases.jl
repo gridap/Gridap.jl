@@ -34,16 +34,16 @@ function QCurlGradMonomialBasis{D}(::Type{T},order::Int) where {D,T}
   QCurlGradMonomialBasis(T,order,terms,perms)
 end
 
-function field_cache(f::QCurlGradMonomialBasis,x)
-  field_cache(f.qgrad,x)
+function return_cache(f::QCurlGradMonomialBasis,x)
+  return_cache(f.qgrad,x)
 end
 
-@inline function evaluate_field!(cache,f::QCurlGradMonomialBasis,x)
-  evaluate_field!(cache,f.qgrad,x)
+@inline function evaluate!(cache,f::QCurlGradMonomialBasis,x)
+  evaluate!(cache,f.qgrad,x)
 end
 
-function gradient_cache(f::QCurlGradMonomialBasis,x)
-  gradient_cache(f.qgrad,x)
+function return_gradient_cache(f::QCurlGradMonomialBasis,x)
+  return_gradient_cache(f.qgrad,x)
 end
 
 @inline function evaluate_gradient!(cache,f::QCurlGradMonomialBasis,x)
@@ -58,4 +58,3 @@ get_value_type(::QCurlGradMonomialBasis{D,T}) where {D,T} = T
 num_terms(f::QCurlGradMonomialBasis{D,T}) where {D,T} = length(f.qgrad.terms)*D
 
 get_order(f::QCurlGradMonomialBasis{D,T}) where {D,T} = get_order(f.qgrad)
-

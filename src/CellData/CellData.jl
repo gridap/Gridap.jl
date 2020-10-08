@@ -26,8 +26,8 @@ import Gridap.Fields: integrate
 import Gridap.Helpers: operate
 import Gridap.Integration: get_coordinates
 import Gridap.Integration: get_weights
-import Gridap.Fields: field_cache
-import Gridap.Fields: evaluate_field!
+import Gridap.Fields: return_cache
+import Gridap.Fields: evaluate!
 import Gridap.Fields: evaluate_field_array
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
@@ -98,4 +98,3 @@ include("AttachConstraints.jl")
 include("Law.jl")
 
 end # module
-

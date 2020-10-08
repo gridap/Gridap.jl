@@ -29,9 +29,9 @@ import ForwardDiff
 
 export Point
 export field_gradient
-export evaluate_field!
+export evaluate!
 export evaluate_field
-export field_cache
+export return_cache
 export field_return_type
 export evaluate
 export evaluate!
@@ -49,7 +49,7 @@ export lincomb
 export lazy_map_lincomb
 export attachmap
 export integrate
-export field_caches
+export return_caches
 export field_return_types
 export evaluate_fields
 export evaluate_fields!
@@ -58,7 +58,7 @@ export field_array_cache
 export evaluate_field_array
 export evaluate_field_arrays
 export field_array_gradient
-export gradient_type
+export return_gradient_type
 export curl
 export grad2curl
 export laplacian

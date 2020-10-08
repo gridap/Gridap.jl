@@ -4,9 +4,9 @@ struct MockDofBasis{P} <: Dof
 end
 
 function dof_cache(b::MockDofBasis,field)
-  field_cache(field,b.x)
+  return_cache(field,b.x)
 end
 
 @inline function evaluate_dof!(cache,b::MockDofBasis,field)
-  evaluate_field!(cache,field,b.x)
+  evaluate!(cache,field,b.x)
 end

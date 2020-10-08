@@ -20,11 +20,11 @@ end
 struct Eval <: Kernel end
 
 function return_cache(k::Eval,a,x)
-  field_cache(a,x)
+  return_cache(a,x)
 end
 
 function evaluate!(cache,k::Eval,a,x)
-  evaluate_field!(cache,a,x)
+  evaluate!(cache,a,x)
 end
 
 function return_type(k::Eval,a,x)
@@ -186,7 +186,7 @@ function field_array_cache(a::AbstractArray,x::AbstractArray)
   ca = array_cache(a)
   fi = testitem(a)
   xi = testitem(x)
-  cfi = field_cache(fi,xi)
+  cfi = return_cache(fi,xi)
   cx = array_cache(x)
   (ca,cfi,cx)
 end
@@ -223,7 +223,7 @@ function test_array_of_fields(
   for i in 1:length(a)
     fi = getindex!(ca,a,i)
     xi = getindex!(cx,x,i)
-    fxi = evaluate_field!(cfi,fi,xi)
+    fxi = evaluate!(cfi,fi,xi)
     vi = v[i]
     ti = cmp(fxi,vi)
     t = t && ti

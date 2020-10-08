@@ -69,8 +69,8 @@ function _generate_dof_layout_node_major(::Type{T},nnodes::Integer) where T<:Mul
 end
 
 function dof_cache(b::LagrangianDofBasis,field)
-  cf = field_cache(field,b.nodes)
-  vals = evaluate_field!(cf,field,b.nodes)
+  cf = return_cache(field,b.nodes)
+  vals = evaluate!(cf,field,b.nodes)
   ndofs = length(b.dof_to_node)
   r = _lagr_dof_cache(vals,ndofs)
   c = CachedArray(r)
@@ -90,7 +90,7 @@ end
 
 @inline function evaluate_dof!(cache,b::LagrangianDofBasis,field)
   c, cf = cache
-  vals = evaluate_field!(cf,field,b.nodes)
+  vals = evaluate!(cf,field,b.nodes)
   ndofs = length(b.dof_to_node)
   T = eltype(vals)
   ncomps = num_components(T)

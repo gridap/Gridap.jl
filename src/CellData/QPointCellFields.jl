@@ -19,11 +19,11 @@ struct EvaluatedField{A<:AbstractArray,P<:AbstractArray} <:Field
   points::P
 end
 
-function field_cache(f::EvaluatedField,x)
+function return_cache(f::EvaluatedField,x)
   nothing
 end
 
-function evaluate_field!(cache,f::EvaluatedField,x)
+function evaluate!(cache,f::EvaluatedField,x)
   @assert length(x) == length(f.array)
   @assert x === f.points || x == f.points
   f.array

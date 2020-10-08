@@ -1,11 +1,11 @@
 
-function field_cache(v::Number,x)
+function return_cache(v::Number,x)
   nx = length(x)
   c = zeros(typeof(v),nx)
   CachedArray(c)
 end
 
-function evaluate_field!(c,v::Number,x)
+function evaluate!(c,v::Number,x)
   nx = length(x)
   setsize!(c,(nx,))
   r = c.array
@@ -21,7 +21,7 @@ function field_gradient(v::Number)
   zero(E)
 end
 
-function field_cache(v::AbstractArray{<:Number},x)
+function return_cache(v::AbstractArray{<:Number},x)
   nx = length(x)
   sv = size(v)
   s = (nx,sv...)
@@ -29,7 +29,7 @@ function field_cache(v::AbstractArray{<:Number},x)
   CachedArray(c)
 end
 
-function evaluate_field!(c,v::AbstractArray{<:Number},x)
+function evaluate!(c,v::AbstractArray{<:Number},x)
   nx = length(x)
   sv = size(v)
   s = (nx,sv...)
@@ -49,6 +49,3 @@ function field_gradient(v::AbstractArray{<:Number})
   E = eltype(T)
   Fill(zero(E),size(v))
 end
-
-
-

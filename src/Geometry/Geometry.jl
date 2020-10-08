@@ -42,8 +42,8 @@ import Gridap.CellData: CellQuadrature
 import Gridap.CellData: QPointCellField
 import Gridap.CellData: get_cell_map
 
-import Gridap.Fields: field_cache
-import Gridap.Fields: evaluate_field!
+import Gridap.Fields: return_cache
+import Gridap.Fields: evaluate!
 import Gridap.Fields: evaluate_field_array
 import Gridap.Fields: gradient
 import Gridap.Fields: grad2curl

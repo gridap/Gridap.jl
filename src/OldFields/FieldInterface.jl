@@ -16,8 +16,8 @@ returns a 2d matrix (`np` x `nf`) when evaluated at a vector of `np` points.
 
 The following functions need to be overloaded:
 
-- [`evaluate_field!(cache,f,x)`](@ref)
-- [`field_cache(f,x)`](@ref)
+- [`evaluate!(cache,f,x)`](@ref)
+- [`return_cache(f,x)`](@ref)
 
 The following functions can be also provided optionally
 
@@ -28,13 +28,13 @@ Moreover, if the [`field_gradient(f)`](@ref) is not provided, a default implemen
 functions will be used.
 
 - [`evaluate_gradient!(cache,f,x)`](@ref)
-- [`gradient_cache(f,x)`](@ref)
+- [`return_gradient_cache(f,x)`](@ref)
 
 In order to be able to call `field_gradient` again on the resulting object the following methods have to be
 provided
 
 - [`evaluate_hessian!(cache,f,x)`](@ref)
-- [`hessian_cache(f,x)`](@ref)
+- [`return_hessian_cache(f,x)`](@ref)
 
 These four methods are only designed to be called by the default implementation of [`field_gradient(f)`](@ref) and thus
 cannot be assumed that they are available for an arbitrary field. For this reason, these functions are not
@@ -61,7 +61,7 @@ $(SIGNATURES)
 
 Returns the cache object needed to evaluate field `f` at the vector of points `x`.
 """
-function field_cache(f,x)
+function return_cache(f,x)
   @abstractmethod
 end
 
@@ -82,10 +82,10 @@ This choice is made
 
 
 The `cache` object is computed
-with the [`field_cache`](@ref) function.
+with the [`return_cache`](@ref) function.
 
 """
-function evaluate_field!(cache,f,x)
+function evaluate!(cache,f,x)
   @abstractmethod
 end
 
@@ -118,12 +118,12 @@ struct FieldGrad{F} <: Field
   FieldGrad(f) = new{typeof(f)}(f)
 end
 
-@inline function evaluate_field!(cache,f::FieldGrad,x)
+@inline function evaluate!(cache,f::FieldGrad,x)
   evaluate_gradient!(cache,f.field,x)
 end
 
-@inline function field_cache(f::FieldGrad,x)
-  gradient_cache(f.field,x)
+@inline function return_cache(f::FieldGrad,x)
+  return_gradient_cache(f.field,x)
 end
 
 @inline function field_gradient(f::FieldGrad)
@@ -135,12 +135,12 @@ struct FieldHessian{F} <: Field
   FieldHessian(f) = new{typeof(f)}(f)
 end
 
-@inline function evaluate_field!(cache,f::FieldHessian,x)
+@inline function evaluate!(cache,f::FieldHessian,x)
   evaluate_hessian!(cache,f.field,x)
 end
 
-@inline function field_cache(f::FieldHessian,x)
-  hessian_cache(f.field,x)
+@inline function return_cache(f::FieldHessian,x)
+  return_hessian_cache(f.field,x)
 end
 
 @inline function field_gradient(f::FieldHessian)
@@ -157,7 +157,7 @@ end
 """
 $(SIGNATURES)
 """
-function gradient_cache(f,x)
+function return_gradient_cache(f,x)
   @abstractmethod
 end
 
@@ -171,7 +171,7 @@ end
 """
 $(SIGNATURES)
 """
-function hessian_cache(cache,x)
+function return_hessian_cache(cache,x)
   @abstractmethod
 end
 
@@ -182,11 +182,11 @@ function return_type(f::Field,x)
 end
 
 function return_cache(f::Field,x)
-  field_cache(f,x)
+  return_cache(f,x)
 end
 
 @inline function evaluate!(cache,f::Field,x)
-  evaluate_field!(cache,f,x)
+  evaluate!(cache,f,x)
 end
 
 # Testers
@@ -220,13 +220,13 @@ function test_field(
   @test cmp(w,v)
   @test typeof(w) == field_return_type(f,x)
 
-  cf = field_cache(f,x)
-  r = evaluate_field!(cf,f,x)
+  cf = return_cache(f,x)
+  r = evaluate!(cf,f,x)
   @test cmp(r,v)
 
   _x = vcat(x,x)
   _v = vcat(v,v)
-  _w = evaluate_field!(cf,f,_x)
+  _w = evaluate!(cf,f,_x)
   @test cmp(_w,_v)
 
   if isa(f,Field)
@@ -243,9 +243,9 @@ end
 # Some API
 
 """
-    gradient_type(::Type{T},x::Point) where T
+    return_gradient_type(::Type{T},x::Point) where T
 """
-function gradient_type(::Type{T},x::Point) where T
+function return_gradient_type(::Type{T},x::Point) where T
   typeof(outer(zero(x),zero(T)))
 end
 
@@ -270,14 +270,14 @@ end
 
 Equivalent to
 
-    evaluate_field!(cache,f,x)
+    evaluate!(cache,f,x)
 
 But only for types that inherit from `Field`. Types that implement
 the field interface but not inherit from `Field` (e.g., numbers and arrays of numbers)
-cannot use this function. Use `evaluate_field!` instead.
+cannot use this function. Use `evaluate!` instead.
 """
 @inline function evaluate!(cache,f::Field,x)
-  evaluate_field!(cache,f,x)
+  evaluate!(cache,f,x)
 end
 
 """
@@ -286,12 +286,12 @@ $(SIGNATURES)
 Evaluates the field `f` at the vector of points `x` by creating a temporary cache internally.
 Equivalent to
 
-    c = field_cache(f,x)
-    evaluate_field!(c,f,x)
+    c = return_cache(f,x)
+    evaluate!(c,f,x)
 """
 function evaluate_field(f,x)
-  c = field_cache(f,x)
-  evaluate_field!(c,f,x)
+  c = return_cache(f,x)
+  evaluate!(c,f,x)
 end
 
 function gradient end
@@ -345,24 +345,24 @@ function _field_return_types(x,a)
 end
 
 """
-    field_caches(f::Tuple,x) -> Tuple
+    return_caches(f::Tuple,x) -> Tuple
 
 Equivalent to
 
-    tuple((field_cache(fi,x) for fi in f)...)
+    tuple((return_cache(fi,x) for fi in f)...)
 """
-function field_caches(f::Tuple,x)
-  _field_caches(x,f...)
+function return_caches(f::Tuple,x)
+  _return_caches(x,f...)
 end
 
-function _field_caches(x,a,b...)
-  ca = field_cache(a,x)
-  cb = field_caches(b,x)
+function _return_caches(x,a,b...)
+  ca = return_cache(a,x)
+  cb = return_caches(b,x)
   (ca,cb...)
 end
 
-function _field_caches(x,a)
-  ca = field_cache(a,x)
+function _return_caches(x,a)
+  ca = return_cache(a,x)
   (ca,)
 end
 
@@ -374,7 +374,7 @@ Equivalent to
     tuple((evaluate_fields(fi,x) for fi in f)...)
 """
 function evaluate_fields(f::Tuple,x)
-  cf = field_caches(f,x)
+  cf = return_caches(f,x)
   evaluate_fields!(cf,f,x)
 end
 
@@ -391,14 +391,14 @@ end
 
 function _evaluate_fields!(c,x,a,b...)
   ca, cb = _split(c...)
-  ax = evaluate_field!(ca,a,x)
+  ax = evaluate!(ca,a,x)
   bx = evaluate_fields!(cb,b,x)
   (ax,bx...)
 end
 
 function _evaluate_fields!(c,x,a)
   ca, = c
-  ax = evaluate_field!(ca,a,x)
+  ax = evaluate!(ca,a,x)
   (ax,)
 end
 

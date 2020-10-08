@@ -220,8 +220,8 @@ function num_dofs(b::MomentBasedDofBasis)
 end
 
 function dof_cache(b::MomentBasedDofBasis,field)
-  cf = field_cache(field,b.nodes)
-  vals = evaluate_field!(cf,field,b.nodes)
+  cf = return_cache(field,b.nodes)
+  vals = evaluate!(cf,field,b.nodes)
   ndofs = num_dofs(b)
   r = _moment_dof_basis_cache(vals,ndofs)
   c = CachedArray(r)
@@ -241,7 +241,7 @@ end
 
 function evaluate_dof!(cache,b::MomentBasedDofBasis,field)
   c, cf = cache
-  vals = evaluate_field!(cf,field,b.nodes)
+  vals = evaluate!(cf,field,b.nodes)
   dofs = c.array
   _eval_moment_dof_basis!(dofs,vals,b)
   dofs

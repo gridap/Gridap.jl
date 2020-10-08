@@ -74,18 +74,18 @@ mutable struct LinComField{A,B} <: Field
   end
 end
 
-function field_cache(f::LinComField,x)
-  ca = field_cache(f.basis,x)
-  a = evaluate_field!(ca,f.basis,x)
+function return_cache(f::LinComField,x)
+  ca = return_cache(f.basis,x)
+  a = evaluate!(ca,f.basis,x)
   b = f.coefs
   k = LinCom()
   ck = return_cache(k,a,b)
   (ca,ck)
 end
 
-@inline function evaluate_field!(cache,f::LinComField,x)
+@inline function evaluate!(cache,f::LinComField,x)
   ca, ck = cache
-  a = evaluate_field!(ca,f.basis,x)
+  a = evaluate!(ca,f.basis,x)
   b = f.coefs
   k = LinCom()
   evaluate!(ck,k,a,b)

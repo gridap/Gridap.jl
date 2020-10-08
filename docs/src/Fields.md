@@ -12,14 +12,14 @@ Fields
 ```@docs
 Field
 Point
-evaluate_field!(cache,f,x)
-field_cache(f,x)
+evaluate!(cache,f,x)
+return_cache(f,x)
 field_gradient(f)
 field_return_type(f,x)
 evaluate_gradient!(cache,f,x)
-gradient_cache(f,x)
+return_gradient_cache(f,x)
 evaluate_hessian!(cache,f,x)
-hessian_cache(f,x)
+return_hessian_cache(f,x)
 test_field
 ```
 ## Helper functions using fields
@@ -37,7 +37,7 @@ gradient_type
 
 ```@docs
 field_return_types(f::Tuple,x)
-field_caches(f::Tuple,x)
+return_caches(f::Tuple,x)
 evaluate_fields(f::Tuple,x)
 evaluate_fields!(cf::Tuple,f::Tuple,x)
 field_gradients(a,b...)
