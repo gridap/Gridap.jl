@@ -1,6 +1,7 @@
 module FieldArraysTests
 
-using Gridap.Mappings
+using Gridap.Fields
+using Gridap.Arrays
 using Gridap.TensorValues
 
 using BenchmarkTools

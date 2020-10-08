@@ -1,299 +1,472 @@
+# Default implementation of evaluate! for arrays of fields
+
 """
-    evaluate_field_array(f::AbstractArray,x::AbstractArray) -> AbstractArray
-
-Evaluates the fields in the array `f` at all the vector of points in the
-array of vector of points `x` and returns the result as a lazy array.
-
-The result is numerically equivalent to
-
-    map(evaluate_field,f,x)
+Implementation of `return_cache` for an array of `Field`
 """
-function evaluate_field_array(a::AbstractArray,x::AbstractArray)
-  _evaluate_field_array(a,x)
-end
-
-function _evaluate_field_array(a::AbstractArray,x::AbstractArray)
-  k = Eval()
-  lazy_map(k,a,x)
-end
-
-struct Eval <: Kernel end
-
-function return_cache(k::Eval,a,x)
-  field_cache(a,x)
-end
-
-function evaluate!(cache,k::Eval,a,x)
-  evaluate_field!(cache,a,x)
-end
-
-function return_type(k::Eval,a,x)
-  field_return_type(a,x)
-end
-
-function _evaluate_field_array(a::AbstractArray{<:Field},x::AbstractArray)
-  lazy_map(a,x)
+@inline function return_cache(f::AbstractArray{<:Field},x)
+  _default_return_cache(f,x)
 end
 
 """
-    evaluate_field_arrays(f::Tuple,x::AbstractArray) -> Tuple
+Implementation of `return_cache` for a vector of `Field`.
 
-Equivalent to
-
-    tuple((evaluate_field_array(fi,x) for fi in f)...)
+If the field vector has length `nf` and it is evaluated in one point, it
+returns an `nf` vector with the result. If the same array is applied to a
+vector of `np` points, it returns a matrix `np` x `nf`.
 """
-function evaluate_field_arrays(f::Tuple,x::AbstractArray)
-  _evaluate_field_arrays(x,f...)
+@inline function evaluate!(c,f::AbstractArray{<:Field},x)
+  _default_evaluate!(c,f,x)
 end
 
-function _evaluate_field_arrays(x,a,b...)
-  ax = evaluate_field_array(a,x)
-  bx = evaluate_field_arrays(b,x)
-  (ax,bx...)
-end
-
-function _evaluate_field_arrays(x,a)
-  ax = evaluate_field_array(a,x)
-  (ax,)
-end
-
-"""
-    evaluate(a::AbstractArray{<:Field},x::AbstractArray)
-
-Equivalent to
-
-    evaluate_field_array(a,x)
-
-But only for arrays `a` whose element type inherits from `Field`. If this is not the case,
-use `evaluate_field_array(a,x)` instead.
-"""
-function evaluate(a::AbstractArray{<:Field},x::AbstractArray)
-  evaluate_field_array(a,x)
-end
-
-# Optimized version for arrays of fields obtained from a kernel
-# and other arrays
-function evaluate_field_array(
-  a::LazyArray{T,N,F,<:Fill} where {T,N,F},x::AbstractArray)
-  kernel_evaluate(a.g.value,x,a.f...)
-end
-
-"""
-    kernel_evaluate(k,x,f...)
-
-Function to control the evaluation of the field resulting from the operation `lazy_map(k,f...)`, where `k`
-is a kernel and `f...` contains several arrays of fields.
-
-By default, this function is implemented as
-
-    g = lazy_map(k,f...)
-    evaluate_field_array(g,x)
-
-However, it can be rewritten for specific kernels in order to improve performance and simplify
-the underlying operation tree.
-
-"""
-function kernel_evaluate(k,x,f...)
-  a = lazy_map(k,f...)
-  _evaluate_field_array(a,x)
-end
-
-"""
-    field_array_gradient(a::AbstractArray)
-
-Returns an array containing the gradients of the fields in the array `a`.
-Numerically equivalent to
-
-    map(field_gradient,a)
-"""
-function field_array_gradient(a::AbstractArray)
-  _field_array_gradient(a)
-end
-
-function _field_array_gradient(a::AbstractArray)
-  k = Grad()
-  lazy_map(k,a)
-end
-
-
-struct Grad <: Kernel end
-
-@inline evaluate!(::Nothing,k::Grad,x) = field_gradient(x)
-
-function field_array_gradient(
-  a::LazyArray{T,N,F,<:Fill} where {T,N,F})
-  lazy_map_gradient(a.g.value,a.f...)
-end
-
-"""
-    lazy_map_gradient(k,f...)
-
-Function to control the generation of the gradient the field resulting from the operation `lazy_map(k,f...)`, where `k`
-is a kernel and `f...` contains several arrays of fields.
-
-By default, it returns the array obtained as
-
-    a = lazy_map(k,f...)
-    field_array_gradient(a)
-
-However, it can be rewritten for specific kernels in order to improve performance and simplify
-the underlying operation tree.
-
-"""
-function lazy_map_gradient(k,f...)
-  a = lazy_map(k,f...)
-  _field_array_gradient(a)
-end
-
-"""
-    gradient(f::AbstractArray{<:Field})
-
-Equivalent to
-
-    field_array_gradient(f)
-
-but only for arrays whose element type is `<:Field`. Use function `field_array_gradient` otherwise.
-"""
-function gradient(f::AbstractArray{<:Field})
-  field_array_gradient(f)
-end
-
-"""
-    field_array_gradients(f...)
-
-Equivalent to
-
-    map(field_array_gradient,f)
-"""
-function field_array_gradients(f...)
-  map(field_array_gradient,f)
-end
-
-"""
-    field_array_cache(a::AbstractArray,x::AbstractArray) -> Tuple
-
-Returns the caches needed to perform the following iteration
-
-    ca, cfi, cx = field_array_cache(a,x)
-
-    for i in length(a)
-      fi = getindex!(ca,a,i)
-      xi = getindex!(cx,x,i)
-      fxi = evaluate!(cfi,fi,xi)
-    end
-"""
-function field_array_cache(a::AbstractArray,x::AbstractArray)
-  ca = array_cache(a)
-  fi = testitem(a)
-  xi = testitem(x)
-  cfi = field_cache(fi,xi)
-  cx = array_cache(x)
-  (ca,cfi,cx)
-end
-
-"""
-    function test_array_of_fields(
-      a::AbstractArray,
-      x::AbstractArray,
-      v::AbstractArray,
-      cmp::Function=(==);
-      grad = nothing)
-
-Function to test an array of fields `a`. The array `v` is the expected result when calling
-`evaluate_field_array(a,x)`. The entries in the computed array and the expected one are compared
-with the `cmp` function. The key-word argument `grad` is optional. If present, it should contain
-the expected result of
-
-    ∇a = field_array_gradient(a)
-    evaluate_field_array(∇a,x)
-"""
-function test_array_of_fields(
-  a::AbstractArray,
-  x::AbstractArray,
-  v::AbstractArray,
-  cmp::Function=(==);
-  grad = nothing)
-
-  ax = evaluate_field_array(a,x)
-  test_array(ax,v,cmp)
-
-  ca, cfi, cx = field_array_cache(a,x)
-
-  t = true
-  for i in 1:length(a)
-    fi = getindex!(ca,a,i)
-    xi = getindex!(cx,x,i)
-    fxi = evaluate_field!(cfi,fi,xi)
-    vi = v[i]
-    ti = cmp(fxi,vi)
-    t = t && ti
-  end
-  @test t
-
-  if grad != nothing
-    g = field_array_gradient(a)
-    test_array_of_fields(g,x,grad,cmp)
-  end
-
-end
-
-"""
-    lazy_map_to_field_array(k,f::AbstractArray...)
-    lazy_map_to_field_array(::Type{T},k,f::AbstractArray...) where T
-
-Returns an array of fields numerically equivalent to
-
-    map( (x...) -> evaluate_to_field(k,x...), f )
-
-"""
-function lazy_map_to_field_array(
-  k,f::AbstractArray...)
-  v = Valued(k)
-  lazy_map(v,f...)
-end
-
-function lazy_map_to_field_array(
-  ::Type{T},k,f::AbstractArray...) where T
-  v = Valued(k)
-  lazy_map(T,v,f...)
-end
-
-struct Valued{K} <: Kernel
-  k::K
-  function Valued(k)
-    new{typeof(k)}(k)
-  end
-end
-
-@inline function evaluate!(cache,k::Valued,x...)
-  evaluate_to_field(k.k,x...)
-end
-
-function kernel_evaluate(k::Valued,x,f...)
-  fx = evaluate_field_arrays(f,x)
-  a = lazy_map(k.k,fx...)
-end
-
-# More optimizations
-
-function evaluate_field_array(a::AppendedArray,b::AppendedArray)
-  if (length(a.a) == length(b.a)) && (length(a.b) == length(b.b))
-    c_a = evaluate_field_array(a.a,b.a)
-    c_b = evaluate_field_array(a.b,b.b)
-    lazy_append(c_a,c_b)
+function _default_return_cache(f::AbstractArray{T},x::Point) where T<:Field
+  S = return_type(first(f),first(x))
+  cr = CachedArray(zeros(S,size(f)))
+  if isconcretetype(T)
+    cf = return_cache(first(f),first(x))
   else
-    _evaluate_field_array(a,b)
+    cf = nothing
+  end
+  cr, cf
+end
+
+function _default_evaluate!(c,f::AbstractArray{T},x::Point) where T<:Field
+  cr, cf = c
+  setsize!(cr,size(f))
+  if isconcretetype(T)
+    for j in eachindex(f)
+      @inbounds cr.array[j] = evaluate!(cf,f[j],x)
+    end
+  else
+    for j in eachindex(f)
+      @inbounds cr.array[j] = evaluate(f[j],x)
+    end
+  end
+  cr.array
+end
+
+function _default_return_cache(f::AbstractArray{T},x::AbstractArray{<:Point}) where T<:Field
+  S = return_type(first(f),first(x))
+  cr = CachedArray(zeros(S,(size(x)...,size(f)...)))
+  if isconcretetype(T)
+    cf = return_cache(first(f),first(x))
+  else
+    cf = nothing
+  end
+  cr, cf
+end
+
+function _default_evaluate!(c,f::AbstractArray{T},x::AbstractArray{<:Point}) where T<:Field
+  cr, cf = c
+  setsize!(cr,(size(x)...,size(f)...))
+  if isconcretetype(T)
+    for j in eachindex(f)
+      for i in eachindex(x)
+        @inbounds cr.array[i,j] = evaluate!(cf,f[j],x[i])
+      end
+    end
+  else
+    for j in eachindex(f)
+      for i in eachindex(x)
+        @inbounds cr.array[i,j] = evaluate(f[j],x[i])
+      end
+    end
+  end
+  cr.array
+end
+
+# Broadcasting operations
+
+# Non-performant default implementation
+
+@inline return_cache(b::Broadcasting,args::Union{Field,AbstractArray{<:Field}}...) = nothing
+
+@inline function evaluate!(cache,b::Broadcasting,args::Union{Field,AbstractArray{<:Field}}...)
+  broadcast(b.f,args...)
+end
+
+# @santiagobadia : I am not sure we want this syntatic sugar
+# @santiagobadia : Here if we put AbstractArray it goes to the + in Julia for Array...
+# for op in (:+,:-,:*,:⋅)
+# @eval $op(a::Array{<:Field},b::Array{<:Field}) = Broadcasting(Operation($op))(a,b)
+# @eval $op(a::AbstractArray{<:Field},b::AbstractArray{<:Field}) = Broadcasting(Operation($op))(a,b)
+# end
+
+# Transpose
+
+"""
+It returns the transpose of a field array, which is another field array.
+"""
+@inline function Base.transpose(a::AbstractVector{<:Field})
+  TransposeFieldVector(a)
+end
+
+struct TransposeFieldVector{B,T} <: AbstractArray{T,2}
+  basis::B
+  function TransposeFieldVector(basis)
+    @assert ndims(basis) == 1
+    T = eltype(basis)
+    new{typeof(basis),T}(basis)
   end
 end
 
-function evaluate_field_array(a::AppendedArray,b::AbstractArray)
-  n = length(a.a)
-  _b = lazy_append(lazy_split(b,n)...)
-  evaluate_field_array(a,_b)
+@inline Base.size(a::TransposeFieldVector) = (1,length(a.basis))
+@inline Base.axes(a::TransposeFieldVector) = (Base.OneTo(1),axes(a.basis,1))
+@inline Base.getindex(a::TransposeFieldVector,i::Integer,j::Integer) = a.basis[j,i]
+@inline Base.getindex(a::TransposeFieldVector,i::Integer) = a.basis[i]
+@inline Base.IndexStyle(::TransposeFieldVector{A}) where A = IndexStyle(A)
+
+@inline return_cache(a::TransposeFieldVector,x) = return_cache(a.basis,x)
+
+function evaluate!(cache,a::TransposeFieldVector,x)
+  M = evaluate!(cache,a.basis,x)
+  transpose_field_indices(M)
 end
 
-function field_array_gradient(a::AppendedArray)
-  c_a = field_array_gradient(a.a)
-  c_b = field_array_gradient(a.b)
-  lazy_append(c_a,c_b)
+@inline transpose_field_indices(M::AbstractVector) = transpose(M)
+@inline transpose_field_indices(M::AbstractMatrix) = TransposeFieldIndices(M)
+
+# Broadcast operations
+
+@inline (b::Broadcasting{<:Operation})(args::Union{Field,AbstractArray{<:Field}}...) = BroadcastOpFieldArray(b.f.op,args...)
+
+"""
+Type that represents a broadcast operation over a set of `AbstractArray{<:Field}`.
+The result is a sub-type of `AbstractArray{<:Field}`
+"""
+struct BroadcastOpFieldArray{O,T,S<:Field,N} <: AbstractArray{S,N}
+  op::O
+  args::T
+  function BroadcastOpFieldArray(op,args::Union{Field,AbstractArray{<:Field}}...)
+    fs = map(first,args)
+    S = typeof(op(fs...))
+    s = map(size,args)
+    bs = Base.Broadcast.broadcast_shape(s...)
+    N = length(bs)
+    T = typeof(args)
+    O = typeof(op)
+    new{O,T,S,N}(op,args)
+  end
 end
+
+@inline Base.size(a::BroadcastOpFieldArray) = Base.Broadcast.broadcast_shape(map(size,a.args)...)
+@inline Base.IndexStyle(::Type{<:BroadcastOpFieldArray}) = IndexLinear
+@inline Base.getindex(a::BroadcastOpFieldArray,I...) = broadcast(a.op,a.args...)[I...]
+
+function return_cache(f::BroadcastOpFieldArray,x)
+  cfs = map(fi -> return_cache(fi,x),f.args)
+  rs = map((ci,fi) -> evaluate!(ci,fi,x),cfs,f.args)
+  bm = Broadcasting(f.op)
+  r = return_cache(bm,rs...)
+  r, cfs
+end
+
+function evaluate!(c,f::BroadcastOpFieldArray,x)
+  r, cfs = c
+  rs = map((ci,fi) -> evaluate!(ci,fi,x),cfs,f.args)
+  bm = Broadcasting(f.op)
+  evaluate!(r,bm,rs...)
+  r.array
+end
+
+# Dot product vectors
+
+"""
+Type that represents the Julia dot-product for two vectors of fields.
+The result is a sub-type of `Field`
+"""
+struct DotOpFieldVectors{F,G} <: Field
+  f::F
+  g::G
+end
+
+@inline *(f::TransposeFieldVector,g::AbstractVector{<:Field}) = DotOpFieldVectors(f.basis,g)
+@inline ⋅(f::TransposeFieldVector,g::AbstractVector{<:Field}) = DotOpFieldVectors(f.basis,g)
+@inline ⋅(g::AbstractVector{<:Field},f::AbstractVector{<:Field}) = DotOpFieldVectors(f,g)
+@inline ⋅(g::AbstractVector{<:Number},f::AbstractVector{<:Field}) = DotOpFieldVectors(f,GenericField.(g))
+@inline ⋅(f::AbstractVector{<:Field},g::AbstractVector{<:Number}) = DotOpFieldVectors(f,GenericField.(g))
+
+function return_cache(f::DotOpFieldVectors,x::Point)
+  f1 = f.f
+  f2 = f.g
+  c1 = return_cache(f1,x)
+  c2 = return_cache(f2,x)
+  c1, c2
+end
+
+function evaluate!(c,f::DotOpFieldVectors,x::Point)
+  cfs = c
+  c1, c2 = cfs
+  f1 = f.f
+  f2 = f.g
+  r = cr.array
+  r1 = evaluate!(c1,f1,x)
+  r2 = evaluate!(c2,f2,x)
+  r1⋅r2
+end
+
+function return_cache(f::DotOpFieldVectors,x::AbstractArray{<:Point})
+  f1 = f.f
+  f2 = f.g
+  c1 = return_cache(f1,x)
+  c2 = return_cache(f2,x)
+  r1 = evaluate(f1,first(x))
+  r2 = evaluate(f2,first(x))
+  r = CachedArray(zeros(typeof(r1⋅r2),length(x)))
+  r, (c1, c2)
+end
+
+function evaluate!(c,f::DotOpFieldVectors,x::AbstractArray{<:Point})
+  cr, cfs = c
+  c1, c2 = cfs
+  f1 = f.f
+  f2 = f.g
+  setsize!(cr,size(x))
+  r = cr.array
+  r1 = evaluate!(c1,f1,x)
+  r2 = evaluate!(c2,f2,x)
+  for i in 1:length(x)
+    @inbounds r[i] = view(r1,i,:)⋅view(r2,i,:)
+  end
+  r
+end
+
+# linear combination
+
+# Function to be used for dispatch in LazyArray
+
+"""
+    linear_combination(a,b)
+It returns the linear combination of a vector of fields for a given vector of
+  coefficients. The result is a `LinearCombination` field.
+"""
+@inline linear_combination(a::AbstractVector{<:Field},b::AbstractArray{<:Number}) = transpose(a)*b
+@inline linear_combination(a::AbstractArray{<:Number},b::AbstractVector{<:Field}) = transpose(b)*a
+
+# mat product
+#
+# The only user API needed
+# transpose(i_to_f)*i_to_vals
+# transpose(i_to_f)*ij_to_vals
+#
+"""
+    a*b
+
+    Idem as `linear_combination(a,b)`
+"""
+@inline function Base.:*(a::TransposeFieldVector,b::AbstractVector{<:Number})
+  LinearCombinationField(a.basis,b)
+end
+
+@inline function Base.:*(a::TransposeFieldVector,b::AbstractMatrix{<:Number})
+  LinearCombinationField(a.basis,b)
+end
+
+# These ones are not needed
+Base.:*(a::AbstractMatrix{<:Field},b::AbstractVector{<:Number}) = @notimplemented
+Base.:*(a::AbstractMatrix{<:Field},b::AbstractMatrix{<:Number}) = @notimplemented
+
+"""
+Sub-type of `Field` that represents the linear combination of a vector of fields
+for a given vector of coefficients.
+"""
+struct LinearCombinationField{B,V} <: Field
+  basis::B
+  values::V
+end
+
+function return_cache(a::LinearCombinationField,x)
+  cb = return_cache(a.basis,x)
+  bx = evaluate!(cb, a.basis, x)
+  v = a.values
+  cr = return_cache(LinCombVal(),bx,v)
+  cb, cr
+end
+
+function evaluate!(cache,a::LinearCombinationField,x)
+  cb, cr = cache
+  bx = evaluate!(cb,a.basis,x)
+  evaluate!(cr,LinCombVal(),bx,a.values)
+end
+
+# Composition
+
+"""
+Sub-type of `Field` that represents the composition of two fields. It can
+also represent the vector of fields that results from the composition of
+every field in a vector of fields and another field.
+"""
+struct CompositionFieldArrayField{T,N,A,B} <:AbstractArray{T,N}
+  f::A
+  g::B
+  function CompositionFieldArrayField(f::AbstractArray{<:Field},g::Field)
+    s = size(f)
+    T = typeof(first(f)∘g)
+    N = length(s)
+    A = typeof(f)
+    B = typeof(g)
+    new{T,N,A,B}(f,g)
+  end
+end
+
+"""
+Composition of a field (or vector of fields) and another field. It returns a
+`CompositionFieldArrayField`
+"""
+@inline (b::Broadcasting{typeof(∘)})(f::AbstractArray{<:Field},g::Field) = CompositionFieldArrayField(f,g)
+
+function return_cache(fa::CompositionFieldArrayField,x)
+  cg = return_cache(fa.g,x)
+  rg = evaluate!(cg,fa.g,x)
+  cf = return_cache(fa.f,x)
+  cf, cg
+end
+
+function evaluate!(c,fa::CompositionFieldArrayField,x)
+  cf, cg = c
+  rg = evaluate!(cg,fa.g,x)
+  rf = evaluate!(cf,fa.f,x)
+end
+
+# Gradients
+
+# User API:
+#
+# Broadcasting(∇)(i_to_f)
+#
+
+@inline function evaluate!(cache,k::Broadcasting{typeof(gradient)},f::AbstractArray{<:Field})
+  FieldGradientArray(f)
+end
+
+"""
+A wrapper that represents the broadcast of `gradient` over an array of fields.
+"""
+struct FieldGradientArray{A,T,N} <: AbstractArray{T,N}
+  fa::A
+  function FieldGradientArray(f::AbstractArray{<:Field})
+    s = size(f)
+    T = typeof(FieldGradient(eltype(f)))
+    N = length(s)
+    A = typeof(f)
+    new{A,T,N}(f)
+  end
+end
+
+@inline Base.size(a::FieldGradientArray) = size(a.fa)
+@inline Base.axes(a::FieldGradientArray) = axes(a.fa)
+@inline Base.getindex(a::FieldGradientArray,i::Integer...) = FieldGradient(a.fa[i...])
+@inline Base.ndims(a::FieldGradientArray{A}) where A = ndims(A)
+@inline Base.eltype(a::FieldGradientArray{A}) where A = FieldGradient{eltype(A)}
+@inline Base.IndexStyle(::Type{<:FieldGradientArray{A}}) where A = IndexStyle(A)
+
+@inline function evaluate!(cache,k::Broadcasting{typeof(gradient)},a::TransposeFieldVector)
+  transpose(Broadcasting(∇)(a.basis))
+end
+
+@inline return_cache(f::FieldGradientArray,x) = return_gradient_cache(f.fa,x)
+
+@inline evaluate!(cache,f::FieldGradientArray,x) = evaluate_gradient!(cache,f.fa,x)
+
+@inline return_gradient_cache(fa::AbstractArray{<:Field},x) = return_cache(∇.(fa),x)
+
+@inline evaluate_gradient!(cache,f::AbstractArray{<:Field},x) = evaluate!(cache,∇.(f),x)
+
+# Hessian
+
+"""
+A wrapper that represents the application of `gradient` twice
+over an array of fields.
+"""
+struct FieldHessianArray{A,T,N} <: AbstractArray{T,N}
+  fa::A
+  function FieldHessianArray(f::AbstractArray{<:Field})
+    s = size(f)
+    T = typeof(FieldHessian(eltype(f)))
+    N = length(s)
+    A = typeof(f)
+    new{A,T,N}(f)
+  end
+end
+
+@inline return_hessian_cache(fa::AbstractArray{<:Field},x) = return_cache(∇.(∇.(fa)),x)
+
+@inline evaluate_hessian!(cache,f::AbstractArray{<:Field},x) = evaluate!(cache,∇.(∇.(f)),x)
+
+
+@inline Base.size(a::FieldHessianArray) = size(a.fa)
+@inline Base.axes(a::FieldHessianArray) = axes(a.fa)
+@inline Base.getindex(a::FieldHessianArray,i::Integer...) = FieldHessian(a.fa[i...])
+@inline Base.ndims(a::FieldHessianArray{A}) where A = ndims(A)
+@inline Base.eltype(a::FieldHessianArray{A}) where A = FieldHessian{eltype(A)}
+@inline Base.IndexStyle(::Type{<:FieldHessianArray{A}}) where A = IndexStyle(A)
+
+# @santiagobadia : Gradients of the previous operations ? needed? we can leave it
+# for the future if really needed
+
+# Testers
+
+function test_field_array(f,p,nf;grad=false,hessian=false)
+  fa = fill(f,nf...)
+  fp = evaluate(f,p)
+  fap = fill(fp,nf...)
+  test_field(fa,p,fap)
+  if hessian
+    test_field_array(∇(f),p,nf;grad=true)
+  elseif grad
+    test_field_array(∇(f),p,nf)
+  end
+  fa, p
+end
+
+function test_broadcast_field_array(f,p,nf,np;grad=false,hessian=false)
+  test_field_array(f,p,nf,grad=grad,hessian=hessian)
+  fa = fill(f,nf...)
+  fp = evaluate(f,p)
+  x = fill(p,np...)
+  fax = fill(fp,np...,nf...)
+  test_field(fa,x,fax)
+  if hessian
+    test_broadcast_field_array(∇(f),p,nf,np;grad=true)
+  elseif grad
+    test_broadcast_field_array(∇(f),p,nf,np)
+  end
+  fa, x
+end
+
+function test_operation_field_array(op,x,fs...)
+  fop = Operation(op)
+  fb = op(fs...)
+  fba = fop(fs...)
+  if fb isa AbstractArray
+    @test eltype(fb) <: Field
+    @test fb isa AbstractArray{<:Field}
+    @test fba isa OperationArray
+    @test fba.res == fb
+  else
+    @test fb isa Field
+  end
+  @test evaluate(fb,x) == evaluate(fba,x)
+  fba
+end
+
+"""
+Given a matrix `np` x `nf1` x `nf2` result of the evaluation of a field vector
+on a vector of points, it returns an array in which the field axes (second and
+third axes) are permuted. It is equivalent as `Base.permutedims(A,(1,3,2)`
+but more performant, since it does not involve allocations.
+"""
+struct TransposeFieldIndices{A,T} <: AbstractArray{T,3}
+  matrix::A
+  @inline function TransposeFieldIndices(matrix::AbstractMatrix{T}) where T
+    A = typeof(matrix)
+    new{A,T}(matrix)
+  end
+end
+
+@inline Base.size(a::TransposeFieldIndices) = (size(a.matrix,1),1,size(a.matrix,2))
+@inline Base.axes(a::TransposeFieldIndices) = (axes(a.matrix,1),Base.OneTo(1),axes(a.matrix,2))
+@inline Base.IndexStyle(::Type{<:TransposeFieldIndices{A}}) where A = IndexStyle(A)
+@inline Base.getindex(a::TransposeFieldIndices,i::Integer,j::Integer,k::Integer) = a.matrix[i,k]
+@inline Base.getindex(a::TransposeFieldIndices,i::Integer) = a.matrix[i]
+@inline Base.setindex!(a::TransposeFieldIndices,v,i::Integer,j::Integer,k::Integer) = (a.matrix[i,k] = v)
+@inline Base.setindex!(a::TransposeFieldIndices,v,i::Integer) = (a.matrix[i] = v)

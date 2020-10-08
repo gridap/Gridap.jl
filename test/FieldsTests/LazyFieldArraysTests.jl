@@ -2,7 +2,7 @@ module LazyFieldArraysTests
 
 using Test
 using Gridap.Arrays
-using Gridap.Mappings
+using Gridap.Fields
 using Gridap.TensorValues
 using FillArrays
 using Gridap.Helpers

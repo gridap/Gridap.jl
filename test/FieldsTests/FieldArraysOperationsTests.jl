@@ -1,7 +1,7 @@
 module FieldArraysOperationsTests
 
 using Gridap.Arrays
-using Gridap.Mappings
+using Gridap.Fields
 using Gridap.TensorValues
 using FillArrays
 

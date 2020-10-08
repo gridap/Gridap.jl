@@ -1,134 +1,101 @@
-"""
-This module provides:
-
-- An interface for physical fields, basis of physical fields and related objects.
-- Helpers functions to work with fields and arrays of fields.
-- Helpers functions to create lazy operation trees from fields and arrays of fields
-
-The exported names are:
-
-$(EXPORTS)
-"""
 module Fields
 
-using Gridap.Helpers
-using Gridap.Inference
-using Gridap.TensorValues
-using Gridap.Arrays
-using Gridap.Arrays: BCasted
-using Gridap.Arrays: NumberOrArray
+using Gridap.Arrays: Mapping
+using Gridap.Arrays: evaluate
+using Gridap.Arrays: Operation
+using Gridap.Arrays: Broadcasting
+using Gridap.Arrays: test_mapping
 using Gridap.Arrays: LazyArray
-using Gridap.Arrays: Contracted
-using LinearAlgebra: ⋅
-using BlockArrays
+using Gridap.Arrays: test_lazy_array
+using Gridap.Arrays: CachedArray
+using Gridap.Arrays: setsize!
+using Gridap.Arrays: get_array
 
-using Test
-using DocStringExtensions
+using Gridap.Helpers: @abstractmethod, @notimplemented
+using Gridap.Helpers: @notimplementedif, @unreachable
+
+using Gridap.Algebra: mul!
+
+using Gridap.TensorValues
+
+using LinearAlgebra: mul!, Transpose
+
+using ForwardDiff
 using FillArrays
-import ForwardDiff
+using Test
 
-export Point
-export field_gradient
-export evaluate_field!
-export evaluate_field
-export field_cache
-export field_return_type
-export evaluate
+import LinearAlgebra: det, inv, transpose
+import LinearAlgebra: ⋅
+
+import Base: +, -, *, /
+
+import Gridap.Inference: return_type
+
+import Gridap.Arrays: IndexStyle
+import Gridap.Arrays: return_cache
+import Gridap.Arrays: return_type
+import Gridap.Arrays: evaluate!
+import Gridap.Arrays: lazy_map
+import Gridap.Arrays: array_cache
+# import Gridap.Arrays: uses_hash
+
 export evaluate!
+export return_type
+export return_cache
+
+export Field
+export GenericField
+export FieldGradient
+export FieldHessian
+export BroadcastField
+export ZeroField
+export MockField
+export Point
+
+export evaluate_gradient!
+export return_gradient_type
+export return_gradient_cache
+export evaluate_hessian!
+export return_hessian_cache
+export return_hessian_type
+
 export gradient
 export ∇
-export Field
+export hessian
+
 export test_field
-export evaluate_to_field
-export lazy_map_to_field_array
-export test_array_of_fields
-export compose
-export compose_fields
-export compose_field_arrays
-export lincomb
-export lazy_map_lincomb
-export attachmap
+export test_field_array
+export test_operation_field_array
+export test_broadcast_field_array
+
+export mock_field
+
+export TransposeFieldVector
+export TransposeFieldIndices
+export BroadcastOpFieldArray
+export DotOpFieldVectors
+export LinearCombinationField
+export CompositionFieldArrayField
+export FieldGradientArray
+export FieldHessianArray
+
+export linear_combination
 export integrate
-export field_caches
-export field_return_types
-export evaluate_fields
-export evaluate_fields!
-export field_gradients
-export field_array_cache
-export evaluate_field_array
-export evaluate_field_arrays
-export field_array_gradient
-export gradient_type
-export curl
-export grad2curl
-export laplacian
-export divergence
-export Δ
-export ε
-export symmetric_gradient
 
-export Homothecy
-export AffineMap
+export MatMul
+export LinCombVal
+export Integrate
 
-export VectorOfBlockBasisCoo
-export insert_array_of_bases_in_block
-export create_array_of_blocked_axes
-
-export operate_fields
-export operate_arrays_of_fields
-export trialize_basis
-export trialize_array_of_bases
-export field_operation_axes
-export field_operation_metasize
-
-export function_field
-
-import Gridap.Arrays: return_cache
-import Gridap.Arrays: evaluate!
-import Gridap.Arrays: return_type
-import Gridap.Arrays: testitem!
-import Gridap.Arrays: lazy_map
-import Gridap.Arrays: reindex
-import Gridap.TensorValues: outer
-import Gridap.TensorValues: inner
-import Gridap.TensorValues: symmetric_part
-import Base: +, - , *
-import LinearAlgebra: cross
-import LinearAlgebra: tr
-import LinearAlgebra: dot
-import Base: transpose
-import Base: adjoint
-
-include("FieldInterface.jl")
+include("FieldsInterfaces.jl")
 
 include("MockFields.jl")
 
-include("FunctionFields.jl")
-
-include("ConstantFields.jl")
-
-include("Homothecies.jl")
-
-include("AffineMaps.jl")
-
-include("FieldApply.jl")
-
 include("FieldArrays.jl")
 
-include("Lincomb.jl")
+include("ApplyOptimizations.jl")
 
-include("Compose.jl")
+include("AutoDiff.jl")
 
-include("Attachmap.jl")
+include("AlgebraMappings.jl")
 
-include("Integrate.jl")
-
-include("FieldOperations.jl")
-
-include("VectorsOfBlockBasisCoo.jl")
-
-include("DiffOperators.jl")
-
-include("UnimplementedFields.jl")
-
-end # module
+end

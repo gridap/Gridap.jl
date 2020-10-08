@@ -2,23 +2,21 @@ module GridapRunTests
 
 using Test
 
-# @time @testset "Helpers" begin include("HelpersTests/runtests.jl") end
+@time @testset "Helpers" begin include("HelpersTests/runtests.jl") end
 
-# @time @testset "Inference" begin include("InferenceTests/runtests.jl") end
+@time @testset "Inference" begin include("InferenceTests/runtests.jl") end
 
-# @time @testset "Io" begin include("IoTests/runtests.jl") end
+@time @testset "Io" begin include("IoTests/runtests.jl") end
 
-# @time @testset "Algebra" begin include("AlgebraTests/runtests.jl") end
-
-# @time @testset "Mappings" begin include("MappingsTests/runtests.jl") end
-
-# @time @testset "TensorValues" begin include("TensorValuesTests/runtests.jl") end
+@time @testset "Algebra" begin include("AlgebraTests/runtests.jl") end
 
 @time @testset "Arrays" begin include("ArraysTests/runtests.jl") end
 
-# @time @testset "Fields" begin include("FieldsTests/runtests.jl") end
+@time @testset "TensorValues" begin include("TensorValuesTests/runtests.jl") end
 
-# @time @testset "Polynomials" begin include("PolynomialsTests/runtests.jl") end
+@time @testset "Fields" begin include("FieldsTests/runtests.jl") end
+
+@time @testset "Polynomials" begin include("PolynomialsTests/runtests.jl") end
 
 # @time @testset "Integration" begin include("IntegrationTests/runtests.jl") end
 

@@ -1,4 +1,4 @@
-module MappingsTests
+module FieldsTests
 
 using Test
 
