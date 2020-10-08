@@ -1,4 +1,4 @@
-struct MatMul <:Mapping end
+struct MatMul <:Map end
 
 @inline function return_cache(::MatMul,a::AbstractArray{<:Number},b::AbstractArray{<:Number})
   CachedArray(a*b)
@@ -43,7 +43,7 @@ end
 # @santiagobadia : Not so happy with this... Probably a new type of array that
 # takes into account the insertion of the first axis and its own array operations
 # taking into account this extra point axis
-struct LinCombVal <: Mapping end
+struct LinCombVal <: Map end
 
 @inline function return_cache(::LinCombVal,a::AbstractMatrix,b::AbstractMatrix)
   return_cache(MatMul(), a, b)
@@ -79,7 +79,7 @@ end
 
 # Integrate
 
-struct Integrate <: Mapping end
+struct Integrate <: Map end
 
 function return_cache(k::Integrate,f::AbstractVector,w,j)
   T = _integrate_rt(f,w,j)

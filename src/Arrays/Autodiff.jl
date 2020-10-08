@@ -12,20 +12,20 @@ function autodiff_array_gradient(a,i_to_x,j_to_i=IdentityVector(length(i_to_x)))
   j_to_f = to_array_of_functions(a,i_to_xdual,j_to_i)
   j_to_x = reindex(i_to_x,j_to_i)
 
-  k = ForwardDiffGradientMapping()
+  k = ForwardDiffGradientMap()
   lazy_map(k,j_to_f,j_to_x)
 
 end
 
-struct ForwardDiffGradientMapping <: Mapping end
+struct ForwardDiffGradientMap <: Map end
 
-function return_cache(k::ForwardDiffGradientMapping,f,x)
+function return_cache(k::ForwardDiffGradientMap,f,x)
   cfg = ForwardDiff.GradientConfig(nothing, x, ForwardDiff.Chunk{length(x)}())
   r = copy(x)
   (r, cfg)
 end
 
-@inline function evaluate!(cache,k::ForwardDiffGradientMapping,f,x)
+@inline function evaluate!(cache,k::ForwardDiffGradientMap,f,x)
   r, cfg = cache
   @notimplementedif length(r) != length(x)
   ForwardDiff.gradient!(r,f,x,cfg)
@@ -45,21 +45,21 @@ function autodiff_array_jacobian(a,i_to_x,j_to_i=IdentityVector(length(i_to_x)))
   j_to_f = to_array_of_functions(a,i_to_xdual,j_to_i)
   j_to_x = reindex(i_to_x,j_to_i)
 
-  k = ForwardDiffJacobianMapping()
+  k = ForwardDiffJacobianMap()
   lazy_map(k,j_to_f,j_to_x)
 
 end
 
-struct ForwardDiffJacobianMapping <: Mapping end
+struct ForwardDiffJacobianMap <: Map end
 
-function return_cache(k::ForwardDiffJacobianMapping,f,x)
+function return_cache(k::ForwardDiffJacobianMap,f,x)
   cfg = ForwardDiff.JacobianConfig(nothing, x, ForwardDiff.Chunk{length(x)}())
   n = length(x)
   j = zeros(eltype(x),n,n)
   (j, cfg)
 end
 
-@inline function evaluate!(cache,k::ForwardDiffJacobianMapping,f,x)
+@inline function evaluate!(cache,k::ForwardDiffJacobianMap,f,x)
   j, cfg = cache
   @notimplementedif size(j,1) != length(x)
   @notimplementedif size(j,2) != length(x)
@@ -75,17 +75,17 @@ function autodiff_array_hessian(a,i_to_x,j_to_i=IdentityVector(length(i_to_x)))
 end
 
 function to_array_of_functions(a,x,ids=IdentityVector(length(x)))
-  k = ArrayOfFunctionsMapping(a,x)
+  k = ArrayOfFunctionsMap(a,x)
   j = IdentityVector(length(ids))
   lazy_map(k,j)
 end
 
-struct ArrayOfFunctionsMapping{A,X} <: Mapping
+struct ArrayOfFunctionsMap{A,X} <: Map
   a::A
   x::X
 end
 
-function return_cache(k::ArrayOfFunctionsMapping,j)
+function return_cache(k::ArrayOfFunctionsMap,j)
   xi = testitem(k.x)
   l = length(k.x)
   x = MutableFill(xi,l)
@@ -94,7 +94,7 @@ function return_cache(k::ArrayOfFunctionsMapping,j)
   (ax, x, axc)
 end
 
-@inline function evaluate!(cache,k::ArrayOfFunctionsMapping,j)
+@inline function evaluate!(cache,k::ArrayOfFunctionsMap,j)
   ax, x, axc = cache
   @inline function f(xj)
     x.value = xj

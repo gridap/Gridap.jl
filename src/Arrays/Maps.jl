@@ -15,13 +15,13 @@ The mapping interface can be tested with the [`test_mapping`](@ref) function.
 
 Note that most of the functionality implemented in terms of this interface
 relies in duck typing. That is, it is not strictly needed to work with types
-that inherit from `Mapping`. This is specially useful in order to accommodate
+that inherit from `Map`. This is specially useful in order to accommodate
 existing types into this framework without the need to implement a wrapper type
-that inherits from `Mapping`. For instance, a default implementation is available
-for `Function` objects.  However, we recommend that new types inherit from `Mapping`.
+that inherits from `Map`. For instance, a default implementation is available
+for `Function` objects.  However, we recommend that new types inherit from `Map`.
 
 """
-abstract type Mapping <: GridapType end
+abstract type Map <: GridapType end
 
 """
     return_cache(f,x...)
@@ -70,7 +70,7 @@ function evaluate(f,x...)
   y = evaluate!(c,f,x...)
 end
 
-(m::Mapping)(x...) = evaluate(m,x...)
+(m::Map)(x...) = evaluate(m,x...)
 
 #@fverdugo this default implementation should be improved to be more resilient
 # to inputs not defined in the domain of f.
@@ -109,7 +109,7 @@ evaluate!(cache,f::Function,x...) = f(x...)
     test_mapping(f,x::Tuple,y,cmp=(==))
 
 Function used to test if the mapping `f` has been
-implemented correctly. `f` is a `Mapping` sub-type, `x` is a tuple in the domain of the
+implemented correctly. `f` is a `Map` sub-type, `x` is a tuple in the domain of the
 mapping and `y` is the expected result. Function `cmp` is used to compare
 the computed result with the expected one. The checks are done with the `@test`
 macro.
@@ -138,7 +138,7 @@ function `f`.
 # Example
 
 ```jldoctest
-using Gridap.Mappings
+using Gridap.Maps
 
 a = [3,2]
 b = [2,1]
@@ -153,7 +153,7 @@ println(c)
 [5, 3]
 ```
 """
-struct Broadcasting{F} <: Mapping
+struct Broadcasting{F} <: Map
   f::F
 end
 
@@ -213,7 +213,7 @@ end
 @inline _size(a) = size(a)
 @inline _size(a::Number) = (1,)
 
-# OperationMappings
+# OperationMaps
 # @fverdugo I would remove this if it is not used and if we don't expect to use it in the future
 # to avoid confusions and to keep focus only in the parts that are used.
 # @santiagobadia : Let us keep it for the moment... and when we will finish with all this,
@@ -221,32 +221,32 @@ end
 # at the mapping level allows us to do operations with mapping that will probably
 # needed in some algebra kernels, e.g., composition of kernels.
 """
-    OperationMapping(f,args)
+    OperationMap(f,args)
 
 Returns a mapping that represents the result of applying the function `f`
 to the arguments in the tuple `args`.
 """
-struct OperationMapping{K,L} <: Mapping
+struct OperationMap{K,L} <: Map
   k::K
   l::L
-  @inline function OperationMapping(k,l)
+  @inline function OperationMap(k,l)
     new{typeof(k),typeof(l)}(k,l)
   end
 end
 
-function return_type(c::OperationMapping,x...)
+function return_type(c::OperationMap,x...)
   Ts = map(fi -> return_type(fi,x...),c.l)
   return_type(c.k, map(testvalue,Ts)...)
 end
 
-function return_cache(c::OperationMapping,x...)
+function return_cache(c::OperationMap,x...)
   cl = map(fi -> return_cache(fi,x...),c.l)
   lx = map((ci,fi) -> evaluate!(ci,fi,x...),cl,c.l)
   ck = return_cache(c.k,lx...)
   (ck,cl)
 end
 
-@inline function evaluate!(cache,c::OperationMapping,x...)
+@inline function evaluate!(cache,c::OperationMap,x...)
   ck, cf = cache
   lx = map((ci,fi) -> evaluate!(ci,fi,x...),cf,c.l)
   evaluate!(ck,c.k,lx...)
@@ -254,9 +254,9 @@ end
 
 # Operations
 
-#@fverdugo The result is not always an OperationMapping, so I would not state this in the documentation.
+#@fverdugo The result is not always an OperationMap, so I would not state this in the documentation.
 # In practice it will be an OperationField.
-# I would remove OperationMapping and move Operation to the source file
+# I would remove OperationMap and move Operation to the source file
 # where operation between fields are defined (and document only
 # Operation for Field arguments). I think this would be much more clear to understand for new users.
 # @santiagobadia : I have corrected the doc but as said above, I would keep it here
@@ -268,7 +268,7 @@ Returns a mapping that, when applied to a tuple `args`, returns a mapping.
 # Example
 
 ```jldoctest
-using Gridap.Mappings
+using Gridap.Maps
 
 fa(x) = x.*x
 fb(x) = sqrt.(x)
@@ -284,7 +284,7 @@ println(c)
 [0.0, 1.0, 2.0, 3.0, 4.0, 5.0]
 ```
 """
-struct Operation{T} <: Mapping
+struct Operation{T} <: Map
   op::T
 end
 
@@ -295,4 +295,4 @@ end
 """
 operation(a) = Operation(a)
 
-evaluate!(cache,op::Operation,x...) = OperationMapping(op.op,x)
+evaluate!(cache,op::Operation,x...) = OperationMap(op.op,x)

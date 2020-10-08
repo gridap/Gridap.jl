@@ -1,4 +1,4 @@
-module MappingInterfacesTests
+module MapInterfacesTests
 
 using Test
 using Gridap.Arrays
@@ -8,7 +8,7 @@ using Gridap.Inference
 # using BenchmarkTools
 using FillArrays
 
-# Mapping Interfaces
+# Map Interfaces
 
 a = [3,2]
 b = [2,1]

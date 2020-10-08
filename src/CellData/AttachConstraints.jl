@@ -1,35 +1,35 @@
 
 function attach_constraints_rows(cellvec,cellconstr,cellmask=Fill(true,length(cellconstr)))
-  lazy_map(ConstrainRowsMapping(),cellvec,cellconstr,cellmask)
+  lazy_map(ConstrainRowsMap(),cellvec,cellconstr,cellmask)
 end
 
 function attach_constraints_cols(cellmat,cellconstr,cellmask=Fill(true,length(cellconstr)))
   cellconstr_t = lazy_map(transpose,cellconstr)
-  lazy_map(ConstrainColsMapping(),cellmat,cellconstr_t,cellmask)
+  lazy_map(ConstrainColsMap(),cellmat,cellconstr_t,cellmask)
 end
 
-struct ConstrainRowsMapping <: Mapping end
+struct ConstrainRowsMap <: Map end
 
-function Arrays.return_cache(k::ConstrainRowsMapping,array::AbstractArray,constr,mask)
-  return_cache(MulMapping(),constr,array)
+function Arrays.return_cache(k::ConstrainRowsMap,array::AbstractArray,constr,mask)
+  return_cache(MulMap(),constr,array)
 end
 
-@inline function Arrays.evaluate!(cache,k::ConstrainRowsMapping,array::AbstractArray,constr,mask)
+@inline function Arrays.evaluate!(cache,k::ConstrainRowsMap,array::AbstractArray,constr,mask)
   if mask
-    evaluate!(cache,MulMapping(),constr,array)
+    evaluate!(cache,MulMap(),constr,array)
   else
     array
   end
 end
 
-function Arrays.return_cache(k::ConstrainRowsMapping,matvec::Tuple,constr,mask)
+function Arrays.return_cache(k::ConstrainRowsMap,matvec::Tuple,constr,mask)
   mat, vec = matvec
   cmat = return_cache(k,mat,constr,mask)
   cvec = return_cache(k,vec,constr,mask)
   (cmat,cvec)
 end
 
-@inline function Arrays.evaluate!(cache,k::ConstrainRowsMapping,matvec::Tuple,constr,mask)
+@inline function Arrays.evaluate!(cache,k::ConstrainRowsMap,matvec::Tuple,constr,mask)
   if mask
     cmat, cvec = cache
     mat, vec = matvec
@@ -41,26 +41,26 @@ end
   end
 end
 
-struct ConstrainColsMapping <: Mapping end
+struct ConstrainColsMap <: Map end
 
-function Arrays.return_cache(k::ConstrainColsMapping,array::AbstractArray,constr_t,mask)
-  return_cache(MulMapping(),array,constr_t)
+function Arrays.return_cache(k::ConstrainColsMap,array::AbstractArray,constr_t,mask)
+  return_cache(MulMap(),array,constr_t)
 end
 
-@inline function Arrays.evaluate!(cache,k::ConstrainColsMapping,array::AbstractArray,constr_t,mask)
+@inline function Arrays.evaluate!(cache,k::ConstrainColsMap,array::AbstractArray,constr_t,mask)
   if mask
-    evaluate!(cache,MulMapping(),array,constr_t)
+    evaluate!(cache,MulMap(),array,constr_t)
   else
     array
   end
 end
 
-function Arrays.return_cache(k::ConstrainColsMapping,matvec::Tuple,constr_t,mask)
+function Arrays.return_cache(k::ConstrainColsMap,matvec::Tuple,constr_t,mask)
   mat, vec = matvec
   return_cache(k,mat,constr_t,mask)
 end
 
-@inline function Arrays.evaluate!(cache,k::ConstrainColsMapping,matvec::Tuple,constr_t,mask)
+@inline function Arrays.evaluate!(cache,k::ConstrainColsMap,matvec::Tuple,constr_t,mask)
   if mask
     mat, vec = matvec
     _mat = evaluate!(cache,k,mat,constr_t,mask)
@@ -80,18 +80,18 @@ function merge_cell_constraints_at_skeleton(cL,cR,axesL_rows,axesR_rows,axesL_co
 end
 
 function identity_constraints(cell_axes)
-  lazy_map(IdentityConstraintMapping(),cell_axes)
+  lazy_map(IdentityConstraintMap(),cell_axes)
 end
 
-struct IdentityConstraintMapping <: Mapping end
+struct IdentityConstraintMap <: Map end
 
-function Arrays.return_cache(k::IdentityConstraintMapping,axs)
+function Arrays.return_cache(k::IdentityConstraintMap,axs)
   n = length(axs[1])
   a = zeros(n,n)
   CachedArray(a)
 end
 
-function Arrays.evaluate!(cache,k::IdentityConstraintMapping,axs)
+function Arrays.evaluate!(cache,k::IdentityConstraintMap,axs)
   n = length(axs[1])
   setsize!(cache,(n,n))
   a = cache.array

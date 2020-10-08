@@ -1,7 +1,7 @@
 """
     reindex(i_to_v::AbstractArray, j_to_i::AbstractArray)
 """
-struct Reindex{A} <: Mapping
+struct Reindex{A} <: Map
   values::A
 end
 

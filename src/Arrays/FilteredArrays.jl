@@ -75,13 +75,13 @@
 #   getindex!(cache,a,i...)
 # end
 
-struct FilterMapping <: Mapping end
+struct FilterMap <: Map end
 
-function return_type(f::FilterMapping,x...)
+function return_type(f::FilterMap,x...)
   typeof(testitem(f,x...))
 end
 
-function return_cache(k::FilterMapping,f,a)
+function return_cache(k::FilterMap,f,a)
   # vals = testitem(a)
   vals = a
   T = eltype(eltype(a))
@@ -89,7 +89,7 @@ function return_cache(k::FilterMapping,f,a)
   c = CachedArray(r)
 end
 
-function evaluate!(cache,k::FilterMapping,f,a)
+function evaluate!(cache,k::FilterMap,f,a)
   c = cache
   vals = a
   filters = f

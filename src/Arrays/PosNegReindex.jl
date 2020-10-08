@@ -60,7 +60,7 @@
 #   getindex!(cache,a,i...)
 # end
 
-struct PosNegReindex{A,B} <: Mapping
+struct PosNegReindex{A,B} <: Map
   values_pos::A
   values_neg::B
 end

@@ -4,7 +4,7 @@ using Test
 using Gridap.Arrays
 using Gridap.Fields
 using Gridap.Fields: MockField, MockBasis
-using Gridap.Fields: Valued, FieldOpMapping
+using Gridap.Fields: Valued, FieldOpMap
 using FillArrays
 using Gridap.TensorValues
 
@@ -25,7 +25,7 @@ afx = fill(fx,l)
 a∇fx = fill(∇fx,l)
 test_array_of_fields(af,ax,afx,grad=a∇fx)
 
-ag = lazy_map_to_field_array(FieldOpMapping(+),af,af)
+ag = lazy_map_to_field_array(FieldOpMap(+),af,af)
 gx = fill(v+v,np)
 ∇gx = fill(VectorValue(v+v,0.0),np)
 agx = fill(gx,l)
@@ -34,12 +34,12 @@ test_array_of_fields(ag,ax,agx,grad=a∇gx)
 
 struct FieldPlaceHolder <: Field end
 
-ag = lazy_map_to_field_array(FieldPlaceHolder,FieldOpMapping(+),af,af)
+ag = lazy_map_to_field_array(FieldPlaceHolder,FieldOpMap(+),af,af)
 test_array(evaluate_field_array(ag,ax),agx)
 
 c = 0.5
 ac = fill(c,l)
-ag = lazy_map_to_field_array(FieldOpMapping(*),ac,af)
+ag = lazy_map_to_field_array(FieldOpMap(*),ac,af)
 gx = fill(c*v,np)
 ∇gx = fill(VectorValue(c*v,0.0),np)
 agx = fill(gx,l)
@@ -48,20 +48,20 @@ test_array_of_fields(ag,ax,agx,grad=a∇gx)
 
 w = 2.0
 aw = fill(w,l)
-ag = lazy_map_to_field_array(FieldOpMapping(+),af,aw)
+ag = lazy_map_to_field_array(FieldOpMap(+),af,aw)
 gx = fill(v+w,np)
 ∇gx = fill(VectorValue(v,0.0),np)
 agx = fill(gx,l)
 a∇gx = fill(∇gx,l)
 test_array_of_fields(ag,ax,agx,grad=a∇gx)
 
-ag = lazy_map_to_field_array(FieldPlaceHolder,FieldOpMapping(+),af,aw)
+ag = lazy_map_to_field_array(FieldPlaceHolder,FieldOpMap(+),af,aw)
 test_array(evaluate_field_array(ag,ax),agx)
 
 l = 10
 af = Fill(f,l)
 ax = Fill(x,l)
-ag = lazy_map_to_field_array(FieldOpMapping(+),af,af)
+ag = lazy_map_to_field_array(FieldOpMap(+),af,af)
 r1 = evaluate(ag,ax)
 @test isa(r1,Fill)
 
@@ -79,7 +79,7 @@ f = MockBasis{d}(v,ndof)
 af = Fill(f,l)
 ax = fill(x,l)
 aw = fill(w,l)
-ag = lazy_map_to_field_array(FieldOpMapping(+),af,aw)
+ag = lazy_map_to_field_array(FieldOpMap(+),af,aw)
 agx = fill(r,l)
 a∇gx = fill(∇fx,l)
 test_array_of_fields(ag,ax,agx,grad=a∇gx)
@@ -94,7 +94,7 @@ f = MockField{d}(v)
 af = Fill(f,l)
 ax = fill(x,l)
 aw = fill(w,l)
-ag = lazy_map_to_field_array(FieldOpMapping(+),af,aw)
+ag = lazy_map_to_field_array(FieldOpMap(+),af,aw)
 agx = fill(r,l)
 a∇gx = fill(∇r,l)
 test_array_of_fields(ag,ax,agx,grad=a∇gx)

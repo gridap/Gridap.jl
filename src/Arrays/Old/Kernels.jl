@@ -16,13 +16,13 @@ The kernel interface can be tested with the [`test_mapping`](@ref) function.
 
 Note that most of the mapping implemented in terms of this interface
 relies in duck typing. That is, it is not strictly needed to work with types
-that inherit from `Mapping`. This is specially useful in order to accommodate
+that inherit from `Map`. This is specially useful in order to accommodate
 existing types into this framework without the need to implement a wrapper type
-that inherits from `Mapping`. For instance, a default implementation is available
-for `Function` objects.  However, we recommend that new types inherit from `Mapping`.
+that inherits from `Map`. For instance, a default implementation is available
+for `Function` objects.  However, we recommend that new types inherit from `Map`.
 
 """
-abstract type Mapping <: GridapType end
+abstract type Map <: GridapType end
 
 """
     return_type(f,x...)
@@ -205,7 +205,7 @@ function `f`.
 """
 bcast(f::Function) = BCasted(f)
 
-struct BCasted{F<:Function} <: Mapping
+struct BCasted{F<:Function} <: Map
   f::F
 end
 
@@ -281,7 +281,7 @@ performance optimizations with respect to broadcast.
 """
 elem(f::Function) = Elem(f)
 
-struct Elem{F} <: Mapping
+struct Elem{F} <: Map
   f::F
   Elem(f::Function) = new{typeof(f)}(f)
 end
@@ -443,7 +443,7 @@ evaluate(k,[1,2],[2,4]) # Equivalent to (1-2) + (2-4)
 """
 contract(f::Function) = Contracted(f)
 
-struct Contracted{F} <: Mapping
+struct Contracted{F} <: Map
   f::F
   Contracted(f::Function) = new{typeof(f)}(f)
 end
@@ -465,14 +465,14 @@ end
   c
 end
 
-struct MulMapping <: Mapping end
+struct MulMap <: Map end
 
-function return_cache(k::MulMapping,a,b)
+function return_cache(k::MulMap,a,b)
   c = a*b
   CachedArray(c)
 end
 
-@inline function evaluate!(cache,k::MulMapping,a::AbstractMatrix,b::AbstractVector)
+@inline function evaluate!(cache,k::MulMap,a::AbstractMatrix,b::AbstractVector)
   m = axes(a,1)
   setaxes!(cache,(m,))
   c = cache.array
@@ -480,7 +480,7 @@ end
   c
 end
 
-@inline function evaluate!(cache,k::MulMapping,a::AbstractMatrix,b::AbstractMatrix)
+@inline function evaluate!(cache,k::MulMap,a::AbstractMatrix,b::AbstractMatrix)
   m = axes(a,1)
   n = axes(b,2)
   setaxes!(cache,(m,n))
@@ -489,17 +489,17 @@ end
   c
 end
 
-struct MulAddMapping{T} <: Mapping
+struct MulAddMap{T} <: Map
   α::T
   β::T
 end
 
-function return_cache(k::MulAddMapping,a,b,c)
+function return_cache(k::MulAddMap,a,b,c)
   d = a*b+c
   CachedArray(d)
 end
 
-@inline function evaluate!(cache,k::MulAddMapping,a,b,c)
+@inline function evaluate!(cache,k::MulAddMap,a,b,c)
   setaxes!(cache,axes(c))
   d = cache.array
   copyto!(d,c)

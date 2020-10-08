@@ -17,7 +17,7 @@ test_array(a,r)
 filter = [false, true, true, false]
 filters = Fill(filter,6)
 
-k = FilterMapping()
+k = FilterMap()
 
 cache = return_cache(k,filters[1],a[1])
 

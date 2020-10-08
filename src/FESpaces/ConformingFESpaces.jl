@@ -169,7 +169,7 @@ function _cell_dof_basis_physical_space(
   cell_to_refnodes = CompressedArray(ctype_to_refnodes,cell_to_ctype)
   cell_physnodes = evaluate(cell_map,cell_to_refnodes)
 
-  # Not efficient, create a Mapping
+  # Not efficient, create a Map
   ct_face_moments = map(get_face_moments,dof_bases)
   c_face_moments = CompressedArray(ct_face_moments,cell_to_ctype)
   ct_face_nodes_dofs = map(get_face_nodes_dofs,dof_bases)

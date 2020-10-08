@@ -19,7 +19,7 @@ function lincomb(a::Field,b::AbstractVector)
   LinComField(a,b)
 end
 
-struct LinCom <: Mapping end
+struct LinCom <: Map end
 
 function return_cache(k::LinCom,a,b)
   Ta = eltype(a)
@@ -96,7 +96,7 @@ function field_gradient(f::LinComField)
   LinComField(g,f.coefs)
 end
 
-struct LinComValued <: Mapping end
+struct LinComValued <: Map end
 
 @inline function return_cache(k::LinComValued,a,b)
   LinComField(a,b)

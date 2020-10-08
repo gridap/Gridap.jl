@@ -50,7 +50,7 @@ lazy_map_all
 ### Operation kernels
 
 ```@docs
-Mapping
+Map
 evaluate!(cache,f,x...)
 return_cache(f,x...)
 return_type(f,x...)

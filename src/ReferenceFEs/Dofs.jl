@@ -1,7 +1,7 @@
-abstract type Dof <: Mapping end
+abstract type Dof <: Map end
 
 # """
-#     abstract type Dof <: Mapping
+#     abstract type Dof <: Map
 
 # Abstract type representing a degree of freedom (DOF), a basis of DOFs, and related objects.
 # These different cases are distinguished by the return type obtained when evaluating the `Dof`
@@ -25,7 +25,7 @@ abstract type Dof <: Mapping end
 
 
 # """
-# abstract type Dof <: Mapping end
+# abstract type Dof <: Map end
 
 # """
 #     return_cache(dof,field)
@@ -120,7 +120,7 @@ end
 # function evaluate(dof::AbstractArray{<:Dof},field::AbstractArray)
   # lazy_map(DofEval(),dof,field)
 # end
-struct DofEval <: Mapping end
+struct DofEval <: Map end
 
 function return_cache(k::DofEval,dof,field)
   return_cache(dof,field)

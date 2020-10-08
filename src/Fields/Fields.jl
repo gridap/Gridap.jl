@@ -1,6 +1,6 @@
 module Fields
 
-using Gridap.Arrays: Mapping
+using Gridap.Arrays: Map
 using Gridap.Arrays: evaluate
 using Gridap.Arrays: Operation
 using Gridap.Arrays: Broadcasting
@@ -97,6 +97,6 @@ include("ApplyOptimizations.jl")
 
 include("AutoDiff.jl")
 
-include("AlgebraMappings.jl")
+include("AlgebraMaps.jl")
 
 end

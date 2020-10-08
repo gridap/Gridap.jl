@@ -7,7 +7,7 @@ Fields are evaluated at vectors of `Point` objects.
 const Point{D,T} = VectorValue{D,T}
 
 """
-    abstract type Field <: Mapping
+    abstract type Field <: Map
 
 Abstract type representing a physical (scalar, vector, or tensor) field. The
 domain is a `Point` and the range a scalar (i.e., a sub-type of Julia `Number`),
@@ -17,7 +17,7 @@ These different cases are distinguished by the return value obtained when evalua
 a physical field returns a vector of values when evaluated at a vector of points, and a basis of `nf` fields
 returns a 2d matrix (`np` x `nf`) when evaluated at a vector of `np` points.
 
-The following functions (i.e., the `Mapping` API) need to be overloaded:
+The following functions (i.e., the `Map` API) need to be overloaded:
 
 - [`evaluate!(cache,f,x)`](@ref)
 - [`return_cache(f,x)`](@ref)
@@ -58,7 +58,7 @@ point). E.g., the `evaluate!` function for a vector of points returns a vector
 of scalar, vector or tensor values.
 
 """
-abstract type Field <: Mapping end
+abstract type Field <: Map end
 
 return_cache(f::Field,x) = _default_return_cache(f,x)
 

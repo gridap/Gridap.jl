@@ -7,7 +7,7 @@ Fields are evaluated at vectors of `Point` objects.
 const Point{D,T} = VectorValue{D,T}
 
 """
-    abstract type Field <: Mapping
+    abstract type Field <: Map
 
 Abstract type representing physical fields, bases of fields, and other related objects.
 These different cases are distinguished by the return value obtained when evaluating them. E.g.,
@@ -54,7 +54,7 @@ For instance, a default implementation is available for numbers, which behave li
 "constant" bases of fields.  However, we recommend that new types inherit from `Field`.
 
 """
-abstract type Field <: Mapping end
+abstract type Field <: Map end
 
 """
 $(SIGNATURES)

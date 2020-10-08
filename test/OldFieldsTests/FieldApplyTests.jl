@@ -6,9 +6,9 @@ using Gridap.Fields
 using FillArrays
 using Gridap.TensorValues
 
-using Gridap.Fields: MockField, MockBasis, FieldOpMapping
+using Gridap.Fields: MockField, MockBasis, FieldOpMap
 
-k = FieldOpMapping(-)
+k = FieldOpMap(-)
 
 v = 3.0
 d = 2

@@ -4,7 +4,7 @@ using Test
 using Gridap.Arrays
 using Gridap.Arrays: ArrayWithCounter, reset_counter!
 using FillArrays
-using Gridap.Mappings
+using Gridap.Maps
 
 a = rand(3,2,4)
 test_array(a,a)

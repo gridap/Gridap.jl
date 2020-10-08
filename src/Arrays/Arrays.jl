@@ -37,9 +37,9 @@ export CachedVector
 export setsize!
 export setaxes!
 
-# Mapping
+# Map
 
-export Mapping
+export Map
 export return_cache
 export evaluate!
 export evaluate
@@ -93,10 +93,10 @@ export reindex
 export PosNegReindex
 export posneg_reindex
 
-export FilterMapping
+export FilterMap
 
-export MulMapping
-export MulAddMapping
+export MulMap
+export MulAddMap
 
 export Table
 export identity_table
@@ -144,9 +144,9 @@ include("BlockArraysCoo.jl")
 
 include("CachedArrays.jl")
 
-include("Mappings.jl")
+include("Maps.jl")
 
-include("AlgebraMappings.jl")
+include("AlgebraMaps.jl")
 
 include("LazyArrays.jl")
 

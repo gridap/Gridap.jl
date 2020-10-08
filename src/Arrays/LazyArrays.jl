@@ -1,8 +1,8 @@
 """
     lazy_map(f,a::AbstractArray...) -> AbstractArray
 
-Applies the `Mapping` (or `Function`) `f` to the entries of the arrays in `a`
-(see the definition of [`Mapping`](@ref)).
+Applies the `Map` (or `Function`) `f` to the entries of the arrays in `a`
+(see the definition of [`Map`](@ref)).
 
 The resulting array `r` is such that `r[i]` equals to `evaluate(f,ai...)` where `ai`
 is the tuple containing the `i`-th entry of the arrays in `a` (see function
@@ -38,7 +38,7 @@ import Gridap.Arrays: evaluate!
 a = collect(0:5)
 b = collect(10:15)
 
-struct MySum <: Mapping end
+struct MySum <: Map end
 
 evaluate!(cache,::MySum,x,y) = x + y
 

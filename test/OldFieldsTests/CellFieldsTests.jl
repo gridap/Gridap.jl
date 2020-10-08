@@ -7,8 +7,8 @@ using BlockArrays
 using FillArrays
 using Gridap.Arrays
 using Gridap.Fields
-using Gridap.Fields: IntMapping
-using Gridap.Fields: FieldOpMapping
+using Gridap.Fields: IntMap
+using Gridap.Fields: FieldOpMap
 using Gridap.Fields: trialize_basis_value
 using Gridap.TensorValues
 using Gridap.Fields: MockField, MockBasis, OtherMockBasis
