@@ -363,6 +363,8 @@ end
   transpose(Broadcasting(∇)(a.basis))
 end
 
+@inline gradient(f::AbstractArray{<:Field}) = FieldGradientArray(f)
+
 @inline return_cache(f::FieldGradientArray,x) = return_gradient_cache(f.fa,x)
 
 @inline evaluate!(cache,f::FieldGradientArray,x) = evaluate_gradient!(cache,f.fa,x)
@@ -387,6 +389,14 @@ struct FieldHessianArray{A,T,N} <: AbstractArray{T,N}
     new{A,T,N}(f)
   end
 end
+
+@inline gradient(f::FieldGradientArray) = FieldHessianArray(f.fa)
+
+@inline hessian(f::AbstractArray{<:Field}) = FieldHessianArray(f)
+
+@inline return_cache(f::FieldHessianArray,x) = return_hessian_cache(f.fa,x)
+
+@inline evaluate!(cache,f::FieldHessianArray,x) = evaluate_hessian!(cache,f.fa,x)
 
 @inline return_hessian_cache(fa::AbstractArray{<:Field},x) = return_cache(∇.(∇.(fa)),x)
 

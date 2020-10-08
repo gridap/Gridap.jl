@@ -1,3 +1,4 @@
+struct Monomial <: Field end
 
 """
     struct MonomialBasis{D,T} <: Field
@@ -8,7 +9,7 @@ of this `struct` are not public
 This type fully implements the [`Field`](@ref) interface, with up to second order
 derivatives.
 """
-struct MonomialBasis{D,T} <: Field
+struct MonomialBasis{D,T} <: AbstractVector{Monomial}
   orders::NTuple{D,Int}
   terms::Vector{CartesianIndex{D}}
   function MonomialBasis{D}(
@@ -16,6 +17,12 @@ struct MonomialBasis{D,T} <: Field
     new{D,T}(orders,terms)
   end
 end
+
+@inline Base.size(a::MonomialBasis) = (length(a.terms),)
+@inline Base.axes(a::MonomialBasis) = (axes(a.terms,1),)
+# @santiagobadia : Not sure we want to create the monomial machinery
+@inline Base.getindex(a::MonomialBasis,i::Integer) = Monomial()
+@inline Base.IndexStyle(::MonomialBasis) = IndexLinear()
 
 """
     MonomialBasis{D}(::Type{T}, orders::Tuple [, filter::Function]) where {D,T}
