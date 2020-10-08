@@ -63,7 +63,7 @@ end
 """
     get_dof_basis(reffe::ReferenceFE) -> Dof
 
-Returns the underlying dof basis encoded in a `Dof` object. 
+Returns the underlying dof basis encoded in a `Dof` object.
 """
 function get_dof_basis(reffe::ReferenceFE)
   @abstractmethod
@@ -150,7 +150,7 @@ function test_reference_fe(reffe::ReferenceFE{D},conf::Conformity) where D
   p = get_polytope(reffe)
   @test isa(p,Polytope{D})
   basis = get_prebasis(reffe)
-  @test isa(basis,Field)
+  @test isa(basis,AbstractArray{<:Field})
   dofs = get_dof_basis(reffe)
   @test isa(dofs,Dof)
   facedofs = get_face_own_dofs(reffe,conf)
@@ -163,7 +163,7 @@ function test_reference_fe(reffe::ReferenceFE{D},conf::Conformity) where D
   @test isa(facedofs,Vector{Vector{Int}})
   @test length(facedofs) == num_faces(p)
   shapefuns = get_shapefuns(reffe)
-  @test isa(shapefuns,Field)
+  @test isa(shapefuns,AbstractVector{<:Field})
   ndofs = num_dofs(reffe)
   m = evaluate(dofs,basis)
   @test ndofs == size(m,1)
@@ -323,7 +323,7 @@ end
       # + private fields
     end
 
-This type is a *materialization* of the `ReferenceFE` interface. That is, it is a 
+This type is a *materialization* of the `ReferenceFE` interface. That is, it is a
 `struct` that stores the values of all abstract methods in the `ReferenceFE` interface.
 This type is useful to build reference FEs from the underlying ingredients without
 the need to create a new type.
@@ -335,34 +335,34 @@ instead extract the required fields before and pass them to the computationally 
 struct GenericRefFE{C<:Conformity,D} <: ReferenceFE{D}
   ndofs::Int
   polytope::Polytope{D}
-  prebasis::Field
+  prebasis::AbstractVector{<:Field}
   dofs::Dof
   conformity::C
   metadata
   face_dofs::Vector{Vector{Int}}
-  shapefuns::Field
+  shapefuns::AbstractVector{<:Field}
   @doc """
       GenericRefFE(
         ndofs::Int,
         polytope::Polytope{D},
-        prebasis::Field,
+        prebasis::AbstractVector{<:Field},
         dofs::Dof,
         conformity::Conformity,
         metadata,
         face_dofs::Vector{Vector{Int}},
-        shapefuns::Field=compute_shapefuns(dofs,prebasis)) where D
+        shapefuns::AbstractVector{<:Field}=compute_shapefuns(dofs,prebasis)) where D
 
   Constructs a `GenericRefFE` object with the provided data.
   """
   function GenericRefFE(
     ndofs::Int,
     polytope::Polytope{D},
-    prebasis::Field,
+    prebasis::AbstractVector{<:Field},
     dofs::Dof,
     conformity::Conformity,
     metadata,
     face_dofs::Vector{Vector{Int}},
-    shapefuns::Field=compute_shapefuns(dofs,prebasis)) where D
+    shapefuns::AbstractVector{<:Field}=compute_shapefuns(dofs,prebasis)) where D
 
     new{typeof(conformity),D}(
       ndofs,
@@ -389,4 +389,3 @@ get_default_conformity(reffe::GenericRefFE) = reffe.conformity
 get_face_dofs(reffe::GenericRefFE) = reffe.face_dofs
 
 get_shapefuns(reffe::GenericRefFE) = reffe.shapefuns
-

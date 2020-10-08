@@ -17,7 +17,7 @@ function _evaluate_field_array(a::AbstractArray,x::AbstractArray)
   lazy_map(k,a,x)
 end
 
-struct Eval <: Kernel end
+struct Eval <: Mapping end
 
 function return_cache(k::Eval,a,x)
   return_cache(a,x)
@@ -116,7 +116,7 @@ function _field_array_gradient(a::AbstractArray)
 end
 
 
-struct Grad <: Kernel end
+struct Grad <: Mapping end
 
 @inline evaluate!(::Nothing,k::Grad,x) = field_gradient(x)
 
@@ -258,7 +258,7 @@ function lazy_map_to_field_array(
   lazy_map(T,v,f...)
 end
 
-struct Valued{K} <: Kernel
+struct Valued{K} <: Mapping
   k::K
   function Valued(k)
     new{typeof(k)}(k)

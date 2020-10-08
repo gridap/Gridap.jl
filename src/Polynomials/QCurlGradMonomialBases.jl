@@ -1,6 +1,6 @@
 
 """
-    struct QCurlGradMonomialBasis{...} <: Field
+    struct QCurlGradMonomialBasis{...} <: AbstractArray{Monomial}
 
 This type implements a multivariate vector-valued polynomial basis
 spanning the space needed for Raviart-Thomas reference elements on n-cubes.
@@ -8,13 +8,19 @@ The type parameters and fields of this `struct` are not public.
 This type fully implements the [`Field`](@ref) interface, with up to first order
 derivatives.
 """
-struct QCurlGradMonomialBasis{D,T} <: Field
+struct QCurlGradMonomialBasis{D,T} <: AbstractVector{Monomial}
   qgrad::QGradMonomialBasis{D,T}
   function QCurlGradMonomialBasis(::Type{T},order::Int,terms::CartesianIndices{D},perms::Matrix{Int}) where {D,T}
     qgrad = QGradMonomialBasis(T,order,terms,perms)
     new{D,T}(qgrad)
   end
 end
+
+@inline Base.size(a::QCurlGradMonomialBasis) = (length(a.qgrad),)
+@inline Base.axes(a::QCurlGradMonomialBasis) = (axes(a.qgrad,1),)
+# @santiagobadia : Not sure we want to create the monomial machinery
+@inline Base.getindex(a::QCurlGradMonomialBasis,i::Integer) = Monomial()
+@inline Base.IndexStyle(::QCurlGradMonomialBasis) = IndexLinear()
 
 """
     QCurlGradMonomialBasis{D}(::Type{T},order::Int) where {D,T}

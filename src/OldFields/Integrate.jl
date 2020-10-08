@@ -5,7 +5,7 @@
 function integrate(f,x,w,j)
   fx = evaluate_field(f,x)
   jx = evaluate_field(j,x)
-  k = IntKernel()
+  k = IntMapping()
   evaluate(k,fx,w,jx)
 end
 
@@ -16,18 +16,18 @@ function integrate(
   f::AbstractArray,x,w,j)
   fx = evaluate_field_array(f,x)
   jx = evaluate_field_array(j,x)
-  k = IntKernel()
+  k = IntMapping()
   lazy_map(k,fx,w,jx)
 end
 
-struct IntKernel <: Kernel end
+struct IntMapping <: Mapping end
 
-function return_cache(k::IntKernel,f::AbstractVector,w,j)
+function return_cache(k::IntMapping,f::AbstractVector,w,j)
   T = _integrate_rt(f,w,j)
   zero(T)
 end
 
-function testitem!(c,k::IntKernel,f::AbstractVector,w,j)
+function testitem!(c,k::IntMapping,f::AbstractVector,w,j)
   if _integrate_valid_sizes(f,w,j)
     evaluate!(c,k,f,w,j)
   else
@@ -35,7 +35,7 @@ function testitem!(c,k::IntKernel,f::AbstractVector,w,j)
   end
 end
 
-@noinline function evaluate!(z,k::IntKernel,f::AbstractVector,w,j)
+@noinline function evaluate!(z,k::IntMapping,f::AbstractVector,w,j)
   _integrate_checks(f,w,j)
   r = z
   for p in eachindex(f)
@@ -44,14 +44,14 @@ end
   r
 end
 
-function return_cache(k::IntKernel,f::AbstractArray,w,j)
+function return_cache(k::IntMapping,f::AbstractArray,w,j)
   T = _integrate_rt(f,w,j)
   _, s = _split(size(f)...)
   r = zeros(T,s)
   c = CachedArray(r)
 end
 
-function testitem!(c,k::IntKernel,f::AbstractArray,w,j)
+function testitem!(c,k::IntMapping,f::AbstractArray,w,j)
   if _integrate_valid_sizes(f,w,j)
     evaluate!(c,k,f,w,j)
   else
@@ -59,7 +59,7 @@ function testitem!(c,k::IntKernel,f::AbstractArray,w,j)
   end
 end
 
-@inline function evaluate!(c,k::IntKernel,f::AbstractArray,w,j)
+@inline function evaluate!(c,k::IntMapping,f::AbstractArray,w,j)
   _integrate_checks(f,w,j)
   np, s = _split(size(f)...)
   cis = CartesianIndices(s)

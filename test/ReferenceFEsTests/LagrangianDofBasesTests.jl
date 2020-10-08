@@ -4,9 +4,10 @@ using Test
 
 using Gridap.TensorValues
 using Gridap.Fields
-using Gridap.Fields: MockField, MockBasis
-using Gridap.Fields: MockField
+using Gridap.Fields: MockField #, MockBasis
 using Gridap.ReferenceFEs
+
+MockBasis(v,ndof) = fill(v,ndof)
 
 x1 = Point(0,0)
 x2 = Point(1,0)
@@ -29,7 +30,7 @@ fx = evaluate(f,x)
 test_dof(db,f,fx)
 
 ndof = 8
-b = MockBasis{d}(v,ndof)
+b = MockBasis(f,ndof)
 bx = evaluate(b,x)
 test_dof(db,b,bx)
 
@@ -47,7 +48,7 @@ dbf = [0, 1, 0, 1, 0, 2, 0, 2]
 test_dof(db,f,dbf)
 
 ndof = 8
-b = MockBasis{d}(v,ndof)
+b = MockBasis(f,ndof)
 bx = evaluate(b,x)
 dbb = [
   0 0 0 0 0 0 0 0; 1 1 1 1 1 1 1 1; 0 0 0 0 0 0 0 0; 1 1 1 1 1 1 1 1;

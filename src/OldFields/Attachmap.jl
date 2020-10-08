@@ -15,7 +15,7 @@ function attachmap(f::AbstractArray,phi::AbstractArray)
   lazy_map(k,f,phi)
 end
 
-struct MapGrad <: Kernel end
+struct MapGrad <: Mapping end
 
 @inline evaluate!(cache,k::MapGrad,fx,phix) = fx
 
@@ -26,7 +26,7 @@ function evaluate_gradient(k::MapGrad,f,phi)
   evaluate_to_field(k,g,jac)
 end
 
-struct PhysGrad <: Kernel end
+struct PhysGrad <: Mapping end
 
 function return_cache(k::PhysGrad,a,b)
   _attachmap_checks(a,b)
@@ -59,7 +59,7 @@ end
   c
 end
 
-struct AddMap <: Kernel end
+struct AddMap <: Mapping end
 
 @inline function evaluate!(cache,k::AddMap,fi,phii)
   attachmap(fi,phii)

@@ -7,7 +7,7 @@ Fields are evaluated at vectors of `Point` objects.
 const Point{D,T} = VectorValue{D,T}
 
 """
-    abstract type Field <: Kernel
+    abstract type Field <: Mapping
 
 Abstract type representing physical fields, bases of fields, and other related objects.
 These different cases are distinguished by the return value obtained when evaluating them. E.g.,
@@ -54,7 +54,7 @@ For instance, a default implementation is available for numbers, which behave li
 "constant" bases of fields.  However, we recommend that new types inherit from `Field`.
 
 """
-abstract type Field <: Kernel end
+abstract type Field <: Mapping end
 
 """
 $(SIGNATURES)
@@ -230,7 +230,7 @@ function test_field(
   @test cmp(_w,_v)
 
   if isa(f,Field)
-    test_kernel(f,(x,),v,cmp)
+    test_mapping(f,(x,),v,cmp)
   end
 
   if grad != nothing

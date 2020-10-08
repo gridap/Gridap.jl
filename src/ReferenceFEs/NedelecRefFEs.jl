@@ -108,7 +108,7 @@ function _Nedelec_edge_moments(p, fshfs, c_fips, fcips, fwips)
   ts = get_edge_tangents(p)
   nc = length(c_fips)
   cfshfs = fill(fshfs, nc)
-  cvals = evaluate(cfshfs,c_fips)
+  cvals = lazy_map(evaluate,cfshfs,c_fips)
   cvals = [fwips[i].*cvals[i] for i in 1:nc]
   # @santiagobadia : Only working for oriented meshes now
   cvals = [ _broadcast(typeof(t),t,b) for (t,b) in zip(ts,cvals)]

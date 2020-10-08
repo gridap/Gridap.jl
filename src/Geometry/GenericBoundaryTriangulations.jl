@@ -404,7 +404,7 @@ end
 
 struct NormalField <: Field end
 
-struct NormalVectorValued <: Kernel end
+struct NormalVectorValued <: Mapping end
 
 function evaluate!(cache,k::NormalVectorValued,J,nref)
   NormalField()

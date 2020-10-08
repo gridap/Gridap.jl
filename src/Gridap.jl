@@ -47,7 +47,7 @@ include("Polynomials/Polynomials.jl")
 
 include("Integration/Integration.jl")
 
-# include("ReferenceFEs/ReferenceFEs.jl")
+include("ReferenceFEs/ReferenceFEs.jl")
 
 # include("CellData/CellData.jl")
 

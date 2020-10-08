@@ -34,7 +34,7 @@ function return_type(::typeof(change_basis),prebasis,matrix_inv)
   typeof(change_basis(prebasis,matrix_inv))
 end
 
-struct BasisFromChangeOfBasis{B,M} <: Field
+struct BasisFromChangeOfBasis{B,M} <: AbstractVector{Field}
   basis::B
   change::M
   function BasisFromChangeOfBasis(basis,change::AbstractMatrix)
@@ -43,6 +43,14 @@ struct BasisFromChangeOfBasis{B,M} <: Field
     new{B,M}(basis,change)
   end
 end
+
+struct BasisTermFromChangeOfBasis end
+
+@inline Base.size(a::BasisFromChangeOfBasis) = (length(a.basis),)
+@inline Base.axes(a::BasisFromChangeOfBasis) = (axes(a.basis,1),)
+# @santiagobadia : Not sure we want to create the real computation here
+@inline Base.getindex(a::BasisFromChangeOfBasis,i::Integer) = BasisTermFromChangeOfBasis()
+@inline Base.IndexStyle(::BasisFromChangeOfBasis) = IndexLinear()
 
 function return_cache(b::BasisFromChangeOfBasis,x)
   cb = return_cache(b.basis,x)

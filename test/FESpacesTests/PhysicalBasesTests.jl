@@ -120,15 +120,15 @@ end #module
 # ##
 # # Optimisation : evaluate_field_array for AbstractArray with FieldLike
 # # Define a new kernel that better treats the inverse
-# struct InvKernel <: Kernel end
-# function return_cache(k::InvKernel,mat)
+# struct InvMapping <: Mapping end
+# function return_cache(k::InvMapping,mat)
 # end
-# function evaluate!(cache,k::InvKernel,mat)
+# function evaluate!(cache,k::InvMapping,mat)
 # end
-# function return_cache(k::InvKernel,mat)
+# function return_cache(k::InvMapping,mat)
 # CachedArray(copy(mat))
 # end
-# function evaluate!(cache,k::InvKernel,mat)
+# function evaluate!(cache,k::InvMapping,mat)
 #   setsize!(cache,size(mat))
 #   m = cache.array
 #   fill!(m,zero(m))
@@ -136,7 +136,7 @@ end #module
 #   ldiv!(mat,m)
 #   m
 # end
-# k = InvKernel()
+# k = InvMapping()
 #
 # isa(cell_prebasis,CellBasis)
 #

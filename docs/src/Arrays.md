@@ -50,11 +50,11 @@ lazy_map_all
 ### Operation kernels
 
 ```@docs
-Kernel
+Mapping
 evaluate!(cache,f,x...)
 return_cache(f,x...)
 return_type(f,x...)
-test_kernel
+test_mapping
 ```
 
 ### Other functions using kernels

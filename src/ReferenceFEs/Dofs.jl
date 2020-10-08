@@ -1,6 +1,6 @@
 
 """
-    abstract type Dof <: Kernel
+    abstract type Dof <: Mapping
 
 Abstract type representing a degree of freedom (DOF), a basis of DOFs, and related objects.
 These different cases are distinguished by the return type obtained when evaluating the `Dof`
@@ -24,7 +24,7 @@ inherit from `Dof`. However, we recommend to inherit from `Dof`, when possible.
 
 
 """
-abstract type Dof <: Kernel end
+abstract type Dof <: Mapping end
 
 """
     dof_cache(dof,field)
@@ -78,14 +78,14 @@ value as `v`. Comparison is made with the `comp` function.
 """
 function test_dof(dof,field,v,comp::Function=(==))
   if isa(dof,Dof)
-    test_kernel(dof,(field,),v,comp)
+    test_mapping(dof,(field,),v,comp)
   end
   r = evaluate_dof(dof,field)
   @test comp(r,v)
   @test typeof(r) == dof_return_type(dof,field)
 end
 
-# Implement Kernel interface
+# Implement Mapping interface
 
 @inline return_cache(dof::Dof,field) = dof_cache(dof,field)
 
@@ -147,7 +147,7 @@ function evaluate(dof::AbstractArray{<:Dof},field::AbstractArray)
   evaluate_dof_array(dof,field)
 end
 
-struct DofEval <: Kernel end
+struct DofEval <: Mapping end
 
 function return_cache(k::DofEval,dof,field)
   dof_cache(dof,field)

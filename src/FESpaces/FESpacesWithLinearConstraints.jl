@@ -500,7 +500,7 @@ end
 
 function get_cell_constraints(f::FESpaceWithLinearConstraints)
 
-  k = LinearConstraintsKernel(
+  k = LinearConstraintsMapping(
     f.DOF_to_mDOFs,
     f.DOF_to_coeffs,
     length(f.mDOF_to_DOF),
@@ -512,7 +512,7 @@ function get_cell_constraints(f::FESpaceWithLinearConstraints)
 
 end
 
-struct LinearConstraintsKernel{A,B} <: Kernel
+struct LinearConstraintsMapping{A,B} <: Mapping
   DOF_to_mDOFs::A
   DOF_to_coeffs::B
   n_mDOFs::Int
@@ -520,7 +520,7 @@ struct LinearConstraintsKernel{A,B} <: Kernel
   n_fdofs::Int
 end
 
-function return_cache(k::LinearConstraintsKernel,lmdof_to_mdof,ldof_to_dof,mat)
+function return_cache(k::LinearConstraintsMapping,lmdof_to_mdof,ldof_to_dof,mat)
   n_lmdofs = length(lmdof_to_mdof)
   n_ldofs = length(ldof_to_dof)
   n_ludofs = size(mat,2)
@@ -531,7 +531,7 @@ function return_cache(k::LinearConstraintsKernel,lmdof_to_mdof,ldof_to_dof,mat)
   m1, m2, mDOF_to_lmdof
 end
 
-function evaluate!(cache,k::LinearConstraintsKernel,lmdof_to_mdof,ldof_to_dof,mat)
+function evaluate!(cache,k::LinearConstraintsMapping,lmdof_to_mdof,ldof_to_dof,mat)
   m1, m2, mDOF_to_lmdof = cache
   n_lmdofs = length(lmdof_to_mdof)
   n_ldofs = length(ldof_to_dof)

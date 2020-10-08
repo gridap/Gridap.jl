@@ -1,7 +1,7 @@
 struct Monomial <: Field end
 
 """
-    struct MonomialBasis{D,T} <: Field
+    struct MonomialBasis{D,T} <: AbstractVector{Monomial}
 
 Type representing a basis of multivariate scalar-valued, vector-valued, or
 tensor-valued, iso- or aniso-tropic monomials. The fields

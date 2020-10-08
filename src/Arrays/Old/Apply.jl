@@ -2,7 +2,7 @@
 """
     lazy_map(f,a::AbstractArray...) -> AbstractArray
 
-Applies the kernel `f` to the entries of the arrays in `a` (see the definition of [`Kernel`](@ref)).
+Applies the kernel `f` to the entries of the arrays in `a` (see the definition of [`Mapping`](@ref)).
 
 The resulting array `r` is such that `r[i]` equals to `evaluate(f,ai...)` where `ai`
 is the tuple containing the `i`-th entry of the arrays in `a` (see function
@@ -41,7 +41,7 @@ import Gridap.Arrays: evaluate!
 a = collect(0:5)
 b = collect(10:15)
 
-struct MySum <: Kernel end
+struct MySum <: Mapping end
 
 evaluate!(cache,::MySum,x,y) = x + y
 

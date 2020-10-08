@@ -552,7 +552,7 @@ function _nfaces_vertices(::Type{T},p::DFace,d::Integer) where T
   nc = _num_nfaces(p,d)
   verts = _vertices_coordinates(T,p)
   faces_vs = _dimfrom_fs_dimto_fs(p,d,0)
-  cfvs = collect(LocalToGlobalArray(faces_vs,verts))
+  cfvs = collect(reindex(verts,faces_vs))
 end
 
 # Return the n-faces vertices coordinates array for a given n-face dimension

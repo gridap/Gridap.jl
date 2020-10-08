@@ -73,14 +73,15 @@ function _ref_face_to_faces_geomap(p,fp)
   freffe = LagrangianRefFE(Float64,fp,1)
   fshfs = get_shapefuns(freffe)
   cfshfs = fill(fshfs, nc)
-  fgeomap = lincomb(cfshfs,cfvs)
+  # fgeomap = lincomb(cfshfs,cfvs)
+  fgeomap = lazy_map(linear_combination,cfshfs,cfvs)
 end
 
 function _nfaces_evaluation_points_weights(p, fgeomap, fips, wips)
   nc = length(fgeomap)
   c_fips = fill(fips,nc)
   c_wips = fill(wips,nc)
-  pquad = evaluate(fgeomap,c_fips)
+  pquad = lazy_map(evaluate,fgeomap,c_fips)
   c_fips, pquad, c_wips
 end
 
@@ -95,7 +96,7 @@ end
 function _RT_face_moments(p, fshfs, c_fips, fcips, fwips)
   nc = length(c_fips)
   cfshfs = fill(fshfs, nc)
-  cvals = evaluate(cfshfs,c_fips)
+  cvals = lazy_map(evaluate,cfshfs,c_fips)
   cvals = [fwips[i].*cvals[i] for i in 1:nc]
   # fns, os = get_facet_normals(p)
   fns = get_facet_normals(p)

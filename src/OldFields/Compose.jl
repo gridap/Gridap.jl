@@ -24,7 +24,7 @@ function compose(g::Function,f...)
   evaluate_to_field(k,f...)
 end
 
-struct Comp{F} <: Kernel
+struct Comp{F} <: Mapping
   e::BCasted{F}
   @inline Comp(f::Function) = new{typeof(f)}(BCasted(f))
 end
@@ -69,7 +69,7 @@ function compose(g::Field,f::Field)
   compose_fields(g,f)
 end
 
-struct CompField{G} <: Kernel
+struct CompField{G} <: Mapping
   g::G
 end
 
@@ -99,7 +99,7 @@ function compose(g::AbstractArray{<:Field},f::AbstractArray{<:Field})
   compose_field_arrays(g,f)
 end
 
-struct CompFieldArray <: Kernel end
+struct CompFieldArray <: Mapping end
 
 return_cache(k::CompFieldArray,gi,fi) = nothing
 

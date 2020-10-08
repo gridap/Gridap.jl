@@ -12,17 +12,17 @@ and optionally these ones:
 - [`return_cache(k,x...)`](@ref)
 - [`return_type(k,x...)`](@ref)
 
-The kernel interface can be tested with the [`test_kernel`](@ref) function.
+The kernel interface can be tested with the [`test_mapping`](@ref) function.
 
 Note that most of the mapping implemented in terms of this interface
 relies in duck typing. That is, it is not strictly needed to work with types
-that inherit from `Kernel`. This is specially useful in order to accommodate
+that inherit from `Mapping`. This is specially useful in order to accommodate
 existing types into this framework without the need to implement a wrapper type
-that inherits from `Kernel`. For instance, a default implementation is available
-for `Function` objects.  However, we recommend that new types inherit from `Kernel`.
+that inherits from `Mapping`. For instance, a default implementation is available
+for `Function` objects.  However, we recommend that new types inherit from `Mapping`.
 
 """
-abstract type Kernel <: GridapType end
+abstract type Mapping <: GridapType end
 
 """
     return_type(f,x...)
@@ -63,7 +63,7 @@ end
 # Testing the interface
 
 """
-    test_kernel(f,x::Tuple,y,cmp=(==))
+    test_mapping(f,x::Tuple,y,cmp=(==))
 
 Function used to test if the kernel `f` has been
 implemented correctly. `f` is a kernel object, `x` is a tuple containing the arguments
@@ -71,7 +71,7 @@ of the kernel, and `y` is the expected result. Function `cmp` is used to compare
 the computed result with the expected one. The checks are done with the `@test`
 macro.
 """
-function test_kernel(f,x::Tuple,y,cmp=(==))
+function test_mapping(f,x::Tuple,y,cmp=(==))
   z = evaluate(f,x...)
   @test cmp(z,y)
   @test typeof(z) == return_type(f,x...)
@@ -205,7 +205,7 @@ function `f`.
 """
 bcast(f::Function) = BCasted(f)
 
-struct BCasted{F<:Function} <: Kernel
+struct BCasted{F<:Function} <: Mapping
   f::F
 end
 
@@ -281,7 +281,7 @@ performance optimizations with respect to broadcast.
 """
 elem(f::Function) = Elem(f)
 
-struct Elem{F} <: Kernel
+struct Elem{F} <: Mapping
   f::F
   Elem(f::Function) = new{typeof(f)}(f)
 end
@@ -443,7 +443,7 @@ evaluate(k,[1,2],[2,4]) # Equivalent to (1-2) + (2-4)
 """
 contract(f::Function) = Contracted(f)
 
-struct Contracted{F} <: Kernel
+struct Contracted{F} <: Mapping
   f::F
   Contracted(f::Function) = new{typeof(f)}(f)
 end
@@ -465,7 +465,7 @@ end
   c
 end
 
-struct MulMapping <: Kernel end
+struct MulMapping <: Mapping end
 
 function return_cache(k::MulMapping,a,b)
   c = a*b
@@ -489,7 +489,7 @@ end
   c
 end
 
-struct MulAddMapping{T} <: Kernel
+struct MulAddMapping{T} <: Mapping
   α::T
   β::T
 end

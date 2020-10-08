@@ -20,7 +20,7 @@ using Test
 
 @time @testset "Integration" begin include("IntegrationTests/runtests.jl") end
 
-# @time @testset "ReferenceFEs" begin include("ReferenceFEsTests/runtests.jl") end
+@time @testset "ReferenceFEs" begin include("ReferenceFEsTests/runtests.jl") end
 
 # @time @testset "CellData" begin include("CellDataTests/runtests.jl") end
 
