@@ -45,7 +45,7 @@ include("Fields/Fields.jl")
 
 include("Polynomials/Polynomials.jl")
 
-# include("Integration/Integration.jl")
+include("Integration/Integration.jl")
 
 # include("ReferenceFEs/ReferenceFEs.jl")
 
