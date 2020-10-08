@@ -84,10 +84,10 @@ export get_nodes
 export get_face_moments
 export get_face_nodes_dofs
 export get_nodes
-export evaluate_dof!
+export evaluate!
 export evaluate_dof
-export dof_cache
-export dof_return_type
+export return_cache
+export return_type
 export test_dof
 # export evaluate_dof_array
 
@@ -163,8 +163,6 @@ include("ExtrusionPolytopes.jl")
 
 include("Dofs.jl")
 
-include("MockDofs.jl")
-
 include("LagrangianDofBases.jl")
 
 include("ReferenceFEInterfaces.jl")
@@ -182,5 +180,7 @@ include("CDLagrangianRefFEs.jl")
 include("RaviartThomasRefFEs.jl")
 
 include("NedelecRefFEs.jl")
+
+include("MockDofs.jl")
 
 end # module

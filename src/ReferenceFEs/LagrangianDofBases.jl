@@ -1,7 +1,10 @@
 
+struct PointValue{P} <: Dof
+  point::P
+end
 
 """
-    struct LagrangianDofBasis{P,V} <: Dof
+    struct LagrangianDofBasis{P,V} <: AbstractArray{<:Dof}
       nodes::Vector{P}
       dof_to_node::Vector{Int}
       dof_to_comp::Vector{Int}
@@ -18,12 +21,19 @@ Fields:
 - `dof_to_comp::Vector{Int}` vector of integers such that `dof_to_comp[dof]` returns the component id associated with dof id `dof`.
 
 """
-struct LagrangianDofBasis{P,V} <: Dof
+struct LagrangianDofBasis{P,V} <: AbstractVector{PointValue{P}}
   nodes::Vector{P}
   dof_to_node::Vector{Int}
   dof_to_comp::Vector{Int}
   node_and_comp_to_dof::Vector{V}
 end
+
+@inline Base.size(a::LagrangianDofBasis) = (length(a.nodes),)
+@inline Base.axes(a::LagrangianDofBasis) = (axes(a.nodes,1),)
+# @santiagobadia : Not sure we want to create the monomial machinery
+@inline Base.getindex(a::LagrangianDofBasis,i::Integer) = PointValue(a.nodes[i])
+@inline Base.IndexStyle(::LagrangianDofBasis) = IndexLinear()
+
 
 """
     LagrangianDofBasis(::Type{T},nodes::Vector{<:Point}) where T
@@ -68,7 +78,7 @@ function _generate_dof_layout_node_major(::Type{T},nnodes::Integer) where T<:Mul
   (dof_to_node, dof_to_comp, node_and_comp_to_dof)
 end
 
-function dof_cache(b::LagrangianDofBasis,field)
+function return_cache(b::LagrangianDofBasis,field)
   cf = return_cache(field,b.nodes)
   vals = evaluate!(cf,field,b.nodes)
   ndofs = length(b.dof_to_node)
@@ -88,7 +98,7 @@ function _lagr_dof_cache(node_pdof_comp_to_val::AbstractMatrix,ndofs)
   r = zeros(eltype(T),ndofs,npdofs)
 end
 
-@inline function evaluate_dof!(cache,b::LagrangianDofBasis,field)
+@inline function evaluate!(cache,b::LagrangianDofBasis,field)
   c, cf = cache
   vals = evaluate!(cf,field,b.nodes)
   ndofs = length(b.dof_to_node)

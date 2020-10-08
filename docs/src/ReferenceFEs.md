@@ -134,7 +134,7 @@ GenericRefFE(
   ndofs::Int,
   polytope::Polytope{D},
   prebasis::AbstractVector{<:Field},
-  dofs::Dof,
+  dofs::AbstractVector{<:Dof},
   face_own_dofs::Vector{Vector{Int}},
   face_own_dofs_permutations::Vector{Vector{Vector{Int}}},
   face_dofs::Vector{Vector{Int}},

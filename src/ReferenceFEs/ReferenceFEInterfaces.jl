@@ -152,7 +152,7 @@ function test_reference_fe(reffe::ReferenceFE{D},conf::Conformity) where D
   basis = get_prebasis(reffe)
   @test isa(basis,AbstractArray{<:Field})
   dofs = get_dof_basis(reffe)
-  @test isa(dofs,Dof)
+  @test isa(dofs,AbstractArray{<:Dof})
   facedofs = get_face_own_dofs(reffe,conf)
   @test isa(facedofs,Vector{Vector{Int}})
   @test length(facedofs) == num_faces(p)
@@ -336,7 +336,7 @@ struct GenericRefFE{C<:Conformity,D} <: ReferenceFE{D}
   ndofs::Int
   polytope::Polytope{D}
   prebasis::AbstractVector{<:Field}
-  dofs::Dof
+  dofs::AbstractVector{<:Dof}
   conformity::C
   metadata
   face_dofs::Vector{Vector{Int}}
@@ -346,7 +346,7 @@ struct GenericRefFE{C<:Conformity,D} <: ReferenceFE{D}
         ndofs::Int,
         polytope::Polytope{D},
         prebasis::AbstractVector{<:Field},
-        dofs::Dof,
+        dofs::AbstractVector{<:Dof},
         conformity::Conformity,
         metadata,
         face_dofs::Vector{Vector{Int}},
@@ -358,7 +358,7 @@ struct GenericRefFE{C<:Conformity,D} <: ReferenceFE{D}
     ndofs::Int,
     polytope::Polytope{D},
     prebasis::AbstractVector{<:Field},
-    dofs::Dof,
+    dofs::AbstractVector{<:Dof},
     conformity::Conformity,
     metadata,
     face_dofs::Vector{Vector{Int}},

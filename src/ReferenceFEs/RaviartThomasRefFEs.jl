@@ -176,7 +176,9 @@ function _face_own_dofs_from_moments(f_moments)
   face_dofs
 end
 
-struct MomentBasedDofBasis{P,V} <: Dof
+struct Moment <: Dof end
+
+struct MomentBasedDofBasis{P,V} <: AbstractVector{Moment}
   nodes::Vector{P}
   face_moments::Vector{Array{V}}
   face_nodes::Vector{UnitRange{Int}}
@@ -208,6 +210,12 @@ struct MomentBasedDofBasis{P,V} <: Dof
   end
 end
 
+@inline Base.size(a::MomentBasedDofBasis) = (length(a.nodes),)
+@inline Base.axes(a::MomentBasedDofBasis) = (axes(a.nodes,1),)
+# @santiagobadia : Not sure we want to create the moment dofs
+@inline Base.getindex(a::MomentBasedDofBasis,i::Integer) = Moment()
+@inline Base.IndexStyle(::MomentBasedDofBasis) = IndexLinear()
+
 get_nodes(b::MomentBasedDofBasis) = b.nodes
 get_face_moments(b::MomentBasedDofBasis) = b.face_moments
 get_face_nodes_dofs(b::MomentBasedDofBasis) = b.face_nodes
@@ -220,7 +228,7 @@ function num_dofs(b::MomentBasedDofBasis)
   n
 end
 
-function dof_cache(b::MomentBasedDofBasis,field)
+function return_cache(b::MomentBasedDofBasis,field)
   cf = return_cache(field,b.nodes)
   vals = evaluate!(cf,field,b.nodes)
   ndofs = num_dofs(b)
@@ -240,7 +248,7 @@ function _moment_dof_basis_cache(vals::AbstractMatrix,ndofs)
   r = zeros(eltype(T),ndofs,npdofs)
 end
 
-function evaluate_dof!(cache,b::MomentBasedDofBasis,field)
+function evaluate!(cache,b::MomentBasedDofBasis,field)
   c, cf = cache
   vals = evaluate!(cf,field,b.nodes)
   dofs = c.array
