@@ -536,7 +536,7 @@ for op in (:symmetric_part,)
     end
 end
 
-for op in (:inner,:outer, :⊡)#,:(:))
+for op in (:inner,:outer)#,:(:))
     @eval begin
         ($op)(a::GridapType,b::GridapType) = operate($op,a,b)
         ($op)(a::GridapType,b::Number)     = operate($op,a,b)
@@ -545,6 +545,10 @@ for op in (:inner,:outer, :⊡)#,:(:))
         ($op)(a::Function,  b::GridapType) = operate($op,a,b)
     end
 end
+
+⊡(a::Number,b::GridapType) = operate(⊡,a,b)
+⊡(a::GridapType,b::Number) = operate(⊡,a,b)
+⊡(a::Number,b::Number) = operate(⊡,a,b)
 
 
 

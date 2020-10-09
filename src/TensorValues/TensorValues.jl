@@ -53,6 +53,7 @@ export change_eltype
 export diagonal_tensor
 export ⊙
 export ⊗
+export ⊡
 
 import Base: show
 import Base: zero, one
