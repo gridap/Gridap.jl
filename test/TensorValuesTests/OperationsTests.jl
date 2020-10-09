@@ -515,6 +515,6 @@ for off_index in Sym4TensorIndexing
   end
   append!(result,inner)
 end
-@test result == [(SymFourthOrderTensorValue(1:36...) : SymFourthOrderTensorValue(1:36...))...]
+@test result == [(SymFourthOrderTensorValue(1:36...) ⊡ SymFourthOrderTensorValue(1:36...))...]
 
 end # module OperationsTests

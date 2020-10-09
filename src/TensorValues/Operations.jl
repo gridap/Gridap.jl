@@ -263,8 +263,8 @@ const ⊙ = inner
 # Double Contractions w/ products
 ###############################################################
 
-# a_ijpm = b_ijkl*c_jkpm
-@generated function (:)(a::A, b::B) where {A<:SymFourthOrderTensorValue{D},B<:SymFourthOrderTensorValue{D}} where D
+# a_ijpm = b_ijkl*c_klpm
+@generated function ⊡(a::A, b::B) where {A<:SymFourthOrderTensorValue{D},B<:SymFourthOrderTensorValue{D}} where D
 
   Sym4TensorIndexing = [1111, 1121, 1131, 1122, 1132, 1133, 2111, 2121, 2131, 2122, 2132, 2133,
                         3111, 3121, 3131, 3122, 3132, 3133, 2211, 2221, 2231, 2222, 2232, 2233,
@@ -536,7 +536,7 @@ for op in (:symmetric_part,)
     end
 end
 
-for op in (:inner,:outer,:(:))
+for op in (:inner,:outer, :⊡)#,:(:))
     @eval begin
         ($op)(a::GridapType,b::GridapType) = operate($op,a,b)
         ($op)(a::GridapType,b::Number)     = operate($op,a,b)
@@ -545,3 +545,6 @@ for op in (:inner,:outer,:(:))
         ($op)(a::Function,  b::GridapType) = operate($op,a,b)
     end
 end
+
+
+
