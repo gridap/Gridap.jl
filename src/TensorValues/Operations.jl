@@ -260,6 +260,27 @@ end
 const ⊙ = inner
 
 ###############################################################
+# Double Contractions w/ products
+###############################################################
+
+# a_ijpm = b_ijkl*c_jkpm
+@generated function (:)(a::A, b::B) where {A<:SymFourthOrderTensorValue{D},B<:SymFourthOrderTensorValue{D}} where D
+
+  Sym4TensorIndexing = [1111, 1121, 1131, 1122, 1132, 1133, 2111, 2121, 2131, 2122, 2132, 2133,
+                        3111, 3121, 3131, 3122, 3132, 3133, 2211, 2221, 2231, 2222, 2232, 2233,
+                        2311, 2321, 2331, 2322, 2332, 2333, 3311, 3321, 3331, 3322, 3332, 3333]
+  ss = String[]
+  for off_index in Sym4TensorIndexing
+    i = parse(Int,string(off_index)[1]); j = parse(Int,string(off_index)[2]);
+    m = parse(Int,string(off_index)[3]); p = parse(Int,string(off_index)[4]);
+    s = join([ "a[$i,$j,$k,$l]*b[$k,$l,$m,$p]+" for k in 1:D for l in 1:D])
+    push!(ss,s[1:(end-1)]*", ")
+  end
+  str = join(ss)
+  Meta.parse("SymFourthOrderTensorValue{$D}($str)")
+end
+
+###############################################################
 # Reductions
 ###############################################################
 
@@ -515,7 +536,7 @@ for op in (:symmetric_part,)
     end
 end
 
-for op in (:inner,:outer)#,:(:))
+for op in (:inner,:outer,:(:))
     @eval begin
         ($op)(a::GridapType,b::GridapType) = operate($op,a,b)
         ($op)(a::GridapType,b::Number)     = operate($op,a,b)

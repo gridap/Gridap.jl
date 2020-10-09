@@ -498,4 +498,23 @@ odot_contraction_array = 1*a[:,1,1] + 2*a[:,1,2] + 3*a[:,1,3] + 2*a[:,2,1] +
   4*a[:,2,2] + 5*a[:,2,3] + 3*a[:,3,1] + 5*a[:,3,2] + 6*a[:,3,3]
 @test odot_contraction == odot_contraction_array
 
+# double Contractions w/ products
+Sym4TensorIndexing = [1111, 1121, 1131, 1122, 1132, 1133, 2111, 2121, 2131, 2122, 2132, 2133,
+                      3111, 3121, 3131, 3122, 3132, 3133, 2211, 2221, 2231, 2222, 2232, 2233,
+                      2311, 2321, 2331, 2322, 2332, 2333, 3311, 3321, 3331, 3322, 3332, 3333]
+test1 = test2 = SymFourthOrderTensorValue(1:36...)
+result = Int64[]
+for off_index in Sym4TensorIndexing
+  i = parse(Int,string(off_index)[1]); j = parse(Int,string(off_index)[2]);
+  m = parse(Int,string(off_index)[3]); p = parse(Int,string(off_index)[4]);
+  inner = 0
+  for k in [1,2,3]
+    for l in [1,2,3]
+      inner += test1[i,j,k,l]*test2[k,l,m,p]
+    end
+  end
+  append!(result,inner)
+end
+@test result == [(SymFourthOrderTensorValue(1:36...) : SymFourthOrderTensorValue(1:36...))...]
+
 end # module OperationsTests
