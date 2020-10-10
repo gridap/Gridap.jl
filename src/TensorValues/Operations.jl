@@ -207,18 +207,18 @@ end
   Meta.parse("ThirdOrderTensorValue{$D}($str)")
 end
 
-# a_il = b_ij*c_jl
-@generated function dot(a::A,b::B) where {A<:MultiValue{Tuple{D1,D2}},B<:MultiValue{Tuple{D2,D3}}} where {D1,D2,D3}
-  ss = String[]
-  for l in 1:D3
-    for i in 1:D1
-      s = join([ "a[$i,$j]*b[$j,$l]+" for j in 1:D2])
-      push!(ss,s[1:(end-1)]*", ")
-    end
-  end
-  str = join(ss)
-  Meta.parse("TensorValue{$D1}($str)")
-end
+# a_il = b_ij*c_jl # Duplicate of L157
+# @generated function dot(a::A,b::B) where {A<:MultiValue{Tuple{D1,D2}},B<:MultiValue{Tuple{D2,D3}}} where {D1,D2,D3}
+#   ss = String[]
+#   for l in 1:D3
+#     for i in 1:D1
+#       s = join([ "a[$i,$j]*b[$j,$l]+" for j in 1:D2])
+#       push!(ss,s[1:(end-1)]*", ")
+#     end
+#   end
+#   str = join(ss)
+#   Meta.parse("TensorValue{$D1}($str)")
+# end
 
 const ⋅¹ = dot
 
