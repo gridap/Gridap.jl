@@ -484,7 +484,7 @@ a = reshape(Vector(1:27),(3,3,3))
 b = reshape(Vector(1:9),(3,3))
 a_tensor = ThirdOrderTensorValue(a...)
 b_tensor = TensorValue(b...)
-odot_contraction = Vector(get_array(a_tensor ⊙ b_tensor))
+odot_contraction = Vector(get_array(a_tensor ⋅² b_tensor))
 odot_contraction_array = 1*a[:,1,1] + 4*a[:,1,2] + 7*a[:,1,3] + 2*a[:,2,1] +
   5*a[:,2,2] + 8*a[:,2,3] + 3*a[:,3,1] + 6*a[:,3,2] + 9*a[:,3,3]
 @test odot_contraction == odot_contraction_array

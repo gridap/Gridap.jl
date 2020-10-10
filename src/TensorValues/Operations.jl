@@ -595,7 +595,7 @@ for op in (:symmetric_part,)
     end
 end
 
-for op in (:inner,:outer,:⋅¹,:⋅²)#,:(:))
+for op in (:inner,:outer,:⋅²)#,:(:))
     @eval begin
         ($op)(a::GridapType,b::GridapType) = operate($op,a,b)
         ($op)(a::GridapType,b::Number)     = operate($op,a,b)
