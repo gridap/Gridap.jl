@@ -220,11 +220,7 @@ end
   Meta.parse("TensorValue{$D1}($str)")
 end
 
-# Double contraction
-
-#(::Colon)(a::MultiValue{Tuple{D1,D2}},b::MultiValue{Tuple{D1,D2}}) where {D1,D2} = inner(a,b)
-#(::Colon)(a::MultiValue{Tuple{D1,D2}},b::MultiValue{Tuple{D1,D2,D3,D4}}) where {D1,D2,D3,D4} = inner(a,b)
-#(::Colon)(a::MultiValue{Tuple{D1,D2,D3,D4}},b::MultiValue{Tuple{D1,D2}}) where {D1,D2,D3,D4} = inner(a,b)
+const ⋅¹ = dot
 
 ###############################################################
 # Inner product (full contraction)
@@ -336,7 +332,6 @@ end
   Meta.parse("TensorValue{$D}($str)")
 end
 
-const ⋅¹ = ⋅
 const ⋅² = ⊡ = double_contraction
 
 ###############################################################
