@@ -493,7 +493,7 @@ a = reshape(Vector(1:27),(3,3,3))
 a_tensor = ThirdOrderTensorValue(a...)
 b_tensor = SymTensorValue((1:6)...)
 b = Matrix(get_array(b_tensor))
-odot_contraction = Vector(get_array(a_tensor ⊙ b_tensor))
+odot_contraction = Vector(get_array(a_tensor ⋅² b_tensor))
 odot_contraction_array = 1*a[:,1,1] + 2*a[:,1,2] + 3*a[:,1,3] + 2*a[:,2,1] +
   4*a[:,2,2] + 5*a[:,2,3] + 3*a[:,3,1] + 5*a[:,3,2] + 6*a[:,3,3]
 @test odot_contraction == odot_contraction_array
@@ -515,6 +515,96 @@ for off_index in Sym4TensorIndexing
   end
   append!(result,inner)
 end
-@test result == [(SymFourthOrderTensorValue(1:36...) ⊡ SymFourthOrderTensorValue(1:36...))...]
+@test result == [(SymFourthOrderTensorValue(1:36...) ⋅² SymFourthOrderTensorValue(1:36...))...]
+
+# a_ilm = b_ijk*c_jklm
+vals = ones(3,3,3);
+vals[1,:,:] .= [3 1 0
+               1 4 0
+               0 0 2];
+vals[2,:,:] .= [3 0 2
+                0 2 0
+                2 0 1];
+vals[3,:,:] .= [1 0 0
+                0 2 1
+                0 1 3];
+t1 = ThirdOrderTensorValue(vals ...)
+t2 = SymFourthOrderTensorValue(ones(36) ...)
+v111 = sum(vals[1,j,k]*ones(3,3,3,3)[j,k,1,1] for j in 1:3 for k in 1:3);
+v112 = sum(vals[1,j,k]*ones(3,3,3,3)[j,k,2,2] for j in 1:3 for k in 1:3);
+v113 = sum(vals[1,j,k]*ones(3,3,3,3)[j,k,1,3] for j in 1:3 for k in 1:3);
+v121 = sum(vals[1,j,k]*ones(3,3,3,3)[j,k,2,1] for j in 1:3 for k in 1:3);
+v131 = sum(vals[1,j,k]*ones(3,3,3,3)[j,k,3,1] for j in 1:3 for k in 1:3);
+v211 = sum(vals[2,j,k]*ones(3,3,3,3)[j,k,1,1] for j in 1:3 for k in 1:3);
+v311 = sum(vals[3,j,k]*ones(3,3,3,3)[j,k,1,1] for j in 1:3 for k in 1:3);
+@test v111 == (t1 ⋅² t2)[1,1,1]
+@test v112 == (t1 ⋅² t2)[1,1,2]
+@test v113 == (t1 ⋅² t2)[1,1,3]
+@test v121 == (t1 ⋅² t2)[1,2,1]
+@test v131 == (t1 ⋅² t2)[1,3,1]
+@test v211 == (t1 ⋅² t2)[2,1,1]
+@test v311 == (t1 ⋅² t2)[3,1,1]
+
+# a_ilm = b_ij*c_jlm
+vals = ones(3,3,3);
+vals[1,:,:] .= [3 1 0
+               1 4 0
+               0 0 2];
+vals[2,:,:] .= [3 0 2
+                0 2 0
+                2 0 1];
+vals[3,:,:] .= [1 0 0
+                0 2 1
+                0 1 3];
+t1 = TensorValue(ones(3,3)...)
+t2 = ThirdOrderTensorValue(vals ...)
+@test (t1 ⋅ t2)[1,1,1] == sum(ones(3,3)[1,j]*vals[j,1,1] for j in 1:3)
+@test (t1 ⋅ t2)[3,2,1] == sum(ones(3,3)[3,j]*vals[j,2,1] for j in 1:3)
+@test (t1 ⋅ t2)[1,1,2] == sum(ones(3,3)[1,j]*vals[j,1,2] for j in 1:3)
+@test (t1 ⋅ t2)[1,1,3] == sum(ones(3,3)[1,j]*vals[j,1,3] for j in 1:3)
+@test (t1 ⋅ t2)[1,2,2] == sum(ones(3,3)[1,j]*vals[j,2,2] for j in 1:3)
+@test (t1 ⋅ t2)[1,2,3] == sum(ones(3,3)[1,j]*vals[j,2,3] for j in 1:3)
+@test (t1 ⋅ t2)[1,3,3] == sum(ones(3,3)[1,j]*vals[j,3,3] for j in 1:3)
+
+# a_il = b_ijk*c_jkl
+vals = ones(3,3,3);
+vals[1,:,:] .= [3 1 0
+               1 4 0
+               0 0 2];
+vals[2,:,:] .= [3 0 2
+                0 2 0
+                2 0 1];
+vals[3,:,:] .= [1 0 0
+                0 2 1
+                0 1 3];
+t1 = ThirdOrderTensorValue(vals ...)
+@test (t1 ⋅² t1)[1,1] == sum(vals[1,i,j] .* vals[i,j,1] for i in 1:3 for j in 1:3)
+@test (t1 ⋅² t1)[2,1] == sum(vals[2,i,j] .* vals[i,j,1] for i in 1:3 for j in 1:3)
+@test (t1 ⋅² t1)[3,1] == sum(vals[3,i,j] .* vals[i,j,1] for i in 1:3 for j in 1:3)
+@test (t1 ⋅² t1)[1,2] == sum(vals[1,i,j] .* vals[i,j,2] for i in 1:3 for j in 1:3)
+@test (t1 ⋅² t1)[2,2] == sum(vals[2,i,j] .* vals[i,j,2] for i in 1:3 for j in 1:3)
+@test (t1 ⋅² t1)[3,2] == sum(vals[3,i,j] .* vals[i,j,2] for i in 1:3 for j in 1:3)
+@test (t1 ⋅² t1)[1,3] == sum(vals[1,i,j] .* vals[i,j,3] for i in 1:3 for j in 1:3)
+@test (t1 ⋅² t1)[2,3] == sum(vals[2,i,j] .* vals[i,j,3] for i in 1:3 for j in 1:3)
+@test (t1 ⋅² t1)[3,3] == sum(vals[3,i,j] .* vals[i,j,3] for i in 1:3 for j in 1:3)
+
+# a_il = b_ij*c_jl
+v1 = [1 2 3
+      2 4 0
+      3 0 5];
+v2 = [1 1 2
+      1 2 5
+      2 5 3];
+t1 = TensorValue(v1)
+t2 = TensorValue(v2)
+@test (t1 ⋅ t2)[1,1] == sum(v1[1,j] .* v2[j,1] for j in 1:3)
+@test (t1 ⋅ t2)[2,1] == sum(v1[2,j] .* v2[j,1] for j in 1:3)
+@test (t1 ⋅ t2)[3,1] == sum(v1[3,j] .* v2[j,1] for j in 1:3)
+@test (t1 ⋅ t2)[1,2] == sum(v1[1,j] .* v2[j,2] for j in 1:3)
+@test (t1 ⋅ t2)[2,2] == sum(v1[2,j] .* v2[j,2] for j in 1:3)
+@test (t1 ⋅ t2)[3,2] == sum(v1[3,j] .* v2[j,2] for j in 1:3)
+@test (t1 ⋅ t2)[1,3] == sum(v1[1,j] .* v2[j,3] for j in 1:3)
+@test (t1 ⋅ t2)[2,3] == sum(v1[2,j] .* v2[j,3] for j in 1:3)
+@test (t1 ⋅ t2)[3,3] == sum(v1[3,j] .* v2[j,3] for j in 1:3)
 
 end # module OperationsTests
