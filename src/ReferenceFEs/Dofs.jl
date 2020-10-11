@@ -86,40 +86,6 @@ function test_dof(dof,field,v,comp::Function=(==))
   @test typeof(r) == return_type(dof,field)
 end
 
-# Working with arrays of Dofs
-
-# """
-#     evaluate_dof_array(dof::AbstractArray,field::AbstractArray)
-
-# Evaluates the `Dof` objects in the array `dof` at the `Field` objects
-# at the array `field` element by element.
-
-# The result is numerically equivalent to
-
-#     map(evaluate_dof, dof, field)
-
-# but it is described with a more memory-friendly lazy type.
-# """
-# @santiagobadia : Do we want this?
-# function lazy_map_dof_array(dof::AbstractArray,field::AbstractArray)
-#   k = DofEval()
-#   lazy_map(k,dof,field)
-# end
-
-# function lazy_map_dof_array(dof::AbstractArray{<:Dof},field::AbstractArray)
-#   lazy_map(dof,field)
-# end
-
-# """
-#     evaluate(dof::AbstractArray{<:Dof},field::AbstractArray)
-
-# Equivalent to `evaluate_dof_array(dof,field)`
-# """
-# @santiagobadia : Is this the default we want ?
-# Should it be lazy_map(evaluate,dof_a,field_a) ?
-# function evaluate(dof::AbstractArray{<:Dof},field::AbstractArray)
-  # lazy_map(DofEval(),dof,field)
-# end
 struct DofEval <: Map end
 
 function return_cache(k::DofEval,dof,field)

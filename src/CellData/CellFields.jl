@@ -213,7 +213,7 @@ to_physical_space(a::CellField) = _to_physical_space(a,RefStyle(a))
 _to_physical_space(a,::Val{true}) = @notimplemented # and probably not doable in some cases
 _to_physical_space(a,::Val{false}) = a
 
-# Assumption : x ALWAIS defined in the reference space
+# Assumption : x ALWAYS defined in the reference space
 # In the future we can also add the RefStyle to x by defining CellPoints
 """
     evaluate(cf::CellField,x)
