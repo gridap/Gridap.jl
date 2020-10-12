@@ -55,3 +55,14 @@ ThirdOrderTensorValue{D,T1}(data::AbstractArray{T2,3}) where {D,T1,T2} = ThirdOr
 
 change_eltype(::Type{ThirdOrderTensorValue{D1,D2,D3,T1,L}},::Type{T2}) where {D1,D2,D3,T1,T2,L} = ThirdOrderTensorValue{D1,D2,D3,T2,L}
 change_eltype(::T,::Type{T2}) where {T<:ThirdOrderTensorValue,T2} = change_eltype(T,T2)
+
+# zero constructors
+
+@generated function zero(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}) where {D1,D2,D3,T}
+  L=D1*D2*D3
+  quote
+    ThirdOrderTensorValue{D1,D2,D3,T}(tfill(Base.zero(T),Val{$L}()))
+  end
+end
+zero(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T,L}}) where {D1,D2,D3,T,L} = ThirdOrderTensorValue{D1,D2,D3,T}(tfill(Base.zero(T),Val{L}()))
+zero(::ThirdOrderTensorValue{D1,D2,D3,T,L}) where {D1,D2,D3,T,L} = zero(ThirdOrderTensorValue{D1,D2,D3,T,L})
