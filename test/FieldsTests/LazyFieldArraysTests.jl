@@ -44,6 +44,7 @@ g = GenericField(q)
 nf = 2
 # basis = [f1, f2, f3, f4, f5]
 basis = fill(f,nf)
+
 field = g
 
 na = 3
@@ -241,5 +242,15 @@ end
 
 c = array_cache(res_integrate_a)
 # @btime getindex!(c,res_integrate_a,1)
+
+# Gradient
+
+∇field_a = lazy_map(gradient,field_a)
+res_∇field_a = lazy_map(evaluate,∇field_a,x_a)
+@test res_∇field_a[1][1] == TensorValue(0.5, 0.0, 0.0, 0.35355339059327373)
+
+∇basis_a = lazy_map(gradient,basis_a)
+res_∇basis_a = lazy_map(evaluate,∇basis_a,x_a)
+@test all(res_∇basis_a[1] .== TensorValue(2.0, 0.0, 0.0, 2.0))
 
 end # module
