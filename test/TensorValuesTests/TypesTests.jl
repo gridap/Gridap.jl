@@ -240,6 +240,10 @@ z = zero(SymTensorValue{3,Int})
 @test isa(z,SymTensorValue{3,Int,6})
 @test convert(SMatrix{3,3,Int},z) == zeros(Int,(3,3))
 
+z = zero(ThirdOrderTensorValue{3,3,3,Int,27})
+@test isa(z,ThirdOrderTensorValue{3,3,3,Int,27})
+@test Tuple(z) == Tuple(zeros(Int,(27)))
+
 z = zero(SymFourthOrderTensorValue{2,Int})
 @test isa(z,SymFourthOrderTensorValue{2,Int,9})
 @test Tuple(z) == Tuple(zeros(Int,(9)))
