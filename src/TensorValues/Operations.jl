@@ -274,8 +274,8 @@ const ⊙ = inner
   Meta.parse("VectorValue{$D1}(($str))")
 end
 
-# a_ijpm = b_ijkl*c_klpm
-@generated function double_contraction(a::A, b::B) where {A<:SymFourthOrderTensorValue{D},B<:SymFourthOrderTensorValue{D}} where D
+# a_ijpm = b_ijkl*c_klpm (3D)
+@generated function double_contraction(a::A, b::B) where {A<:SymFourthOrderTensorValue{3},B<:SymFourthOrderTensorValue{3}}
 
   Sym4TensorIndexing = [1111, 1121, 1131, 1122, 1132, 1133, 2111, 2121, 2131, 2122, 2132, 2133,
                         3111, 3121, 3131, 3122, 3132, 3133, 2211, 2221, 2231, 2222, 2232, 2233,
@@ -284,11 +284,32 @@ end
   for off_index in Sym4TensorIndexing
     i = parse(Int,string(off_index)[1]); j = parse(Int,string(off_index)[2]);
     m = parse(Int,string(off_index)[3]); p = parse(Int,string(off_index)[4]);
-    s = join([ "a[$i,$j,$k,$l]*b[$k,$l,$m,$p]+" for k in 1:D for l in 1:D])
+    s = join([ "a[$i,$j,$k,$l]*b[$k,$l,$m,$p]+" for k in 1:3 for l in 1:3])
     push!(ss,s[1:(end-1)]*", ")
   end
   str = join(ss)
-  Meta.parse("SymFourthOrderTensorValue{$D}($str)")
+  Meta.parse("SymFourthOrderTensorValue{3}($str)")
+end
+
+# a_ijpm = b_ijkl*c_klpm (general case)
+@generated function double_contraction(a::SymFourthOrderTensorValue{D}, b::SymFourthOrderTensorValue{D}) where D
+  str = ""
+  for j in 1:D
+    for i in j:D
+      for m in 1:D
+        for p in m:D
+          s = ""
+          for k in 1:D
+            for l in 1:D
+              s *= " a[$i,$j,$k,$l]*b[$k,$l,$p,$m] +"
+            end
+          end
+          str *= s[1:(end-1)]*", "
+        end
+      end
+    end
+  end
+  Meta.parse("SymFourthOrderTensorValue{D}($str)")
 end
 
 # a_ilm = b_ijk*c_jklm
@@ -319,7 +340,7 @@ end
   Meta.parse("TensorValue{$D}($str)")
 end
 
-const ⋅² = ⊡ = double_contraction
+const ⋅² = double_contraction
 
 ###############################################################
 # Reductions

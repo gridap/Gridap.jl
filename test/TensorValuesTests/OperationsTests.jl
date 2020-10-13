@@ -517,6 +517,38 @@ for off_index in Sym4TensorIndexing
 end
 @test result == [(SymFourthOrderTensorValue(1:36...) ⋅² SymFourthOrderTensorValue(1:36...))...]
 
+# generalised
+test1 = test2 = SymFourthOrderTensorValue(1:9...)
+res = zeros(2,2,2,2);
+res[1,1,1,1]=1; res[1,1,1,2]=2; res[1,1,2,1]=2; res[1,1,2,2]=3;
+res[1,2,1,1]=4; res[2,1,1,1]=4; res[1,2,1,2]=5; res[1,2,2,1]=5;
+res[2,1,1,2]=5; res[2,1,2,1]=5; res[2,1,2,2]=6; res[1,2,2,2]=6;
+res[2,2,2,2]=6; res[2,2,1,1]=7; res[2,2,2,1]=8; res[2,2,1,2]=8;
+res[2,2,2,2]=9;
+result = zeros(2,2,2,2)
+for i in 1:2
+  for j in 1:2
+    for p in 1:2
+      for m in 1:2
+        result[i,j,p,m] = sum(res[i,j,k,l]*res[k,l,p,m] for k in 1:2 for l in 1:2)
+      end
+    end
+  end
+end
+pass = true
+for i in 1:2
+  for j in 1:2
+    for p in 1:2
+      for m in 1:2
+        if result[i,j,p,m] != (test1 ⋅² test2)[i,j,p,m]
+          pass = false
+        end
+      end
+    end
+  end
+end
+@test pass
+
 # a_ilm = b_ijk*c_jklm
 vals = ones(3,3,3);
 vals[1,:,:] .= [3 1 0
