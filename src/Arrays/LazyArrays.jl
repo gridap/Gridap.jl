@@ -212,7 +212,7 @@ function Base.size(a::LazyArray)
 end
 
 # Particular implementations for Fill
-
+#@fverdugo: This seems out-dated
 function lazy_map(f::Fill, a::Fill...)
   ai = _getvalues(a...)
   r = evaluate(f.value, ai...)
@@ -220,6 +220,7 @@ function lazy_map(f::Fill, a::Fill...)
   Fill(r, s)
 end
 
+#@fverdugo: This seems out-dated
 function lazy_map(::Type{T}, f::Fill, a::Fill...) where T
   lazy_map(f, a...)
 end
@@ -244,6 +245,13 @@ end
   # lazy_map(Fill(op,length(first(x))),x...)
 # end
 
+#@fverdugo: I find the grad argument very confusing. It seems very specific for arrays of Maps/Fields
+# whereas LazyArray is something more general.
+# In fact, I don't believe we need this. It seems that it is not used in the tests, right?
+# Perhaps, what you really need is something similar to test_array_of_fields of the old Gridap verison.
+# Moreover, line
+#  ax = lazy_map(a, x)
+#  Seems outdated
 function test_lazy_array(
   a::AbstractArray,
   x::AbstractArray,
