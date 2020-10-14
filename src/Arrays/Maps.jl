@@ -115,6 +115,7 @@ end
 
 evaluate!(cache,f::Function,x...) = f(x...)
 
+# @fverdugo rename to test_map
 # Testing the interface
 """
     test_mapping(f,x::Tuple,y,cmp=(==))

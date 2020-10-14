@@ -97,6 +97,11 @@ cache = return_cache(h,x,2)
 # @btime evaluate!($cache,$h,$x,$2)
 
 
+# More exotic functions as Maps
+
+myf(::Type{T}) where T = one(T)
+@test_broken return_type(myf,0) == 1
+
 # k = -
 
 # v = 3.0
