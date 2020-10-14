@@ -39,7 +39,6 @@ Here, one can find a list of resources to get started with this programming lang
 Pages = [
   "Gridap.md",
   "Helpers.md",
-  "Inference.md",
   "Io.md",
   "Algebra.md",
   "TensorValues.md",

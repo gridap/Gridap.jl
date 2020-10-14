@@ -147,6 +147,77 @@ function testitem(a::Fill)
   a.value
 end
 
+function testitem(a::Number)
+  a
+end
+
+"""
+    testvalue(::Type{T}) where T
+
+Returns an arbitrary instance of type `T`. It defaults to `zero(T)` for
+non-array types and to an empty array for array types.
+This function is used to compute the default test arguments in
+[`testargs`](@ref).
+It can be overloaded for new types `T` if `zero(T)` does not makes sense.
+"""
+function testvalue end
+
+@inline testvalue(::Type{T}) where T = zero(T)
+@inline testvalue(v) = testvalue(typeof(v))
+
+function testvalue(::Type{T}) where T<:AbstractArray{E,N} where {E,N}
+   similar(T,tfill(0,Val(N))...)
+end
+
+testvalue(::Type{Base.OneTo{T}}) where T = Base.OneTo(zero(T))
+
+testvalue(::Type{Base.UnitRange{T}}) where T = UnitRange(one(T),zero(T))
+
+function testvalue(::Type{T}) where T<:Fill{E,N,A} where {E,N,A}
+  Fill(zero(E),testvalue(A))
+end
+
+function testvalue(::Type{<:Tuple})
+  @notimplemented "testvalue on Tuple type only implemented up to 8 tuple elements"
+end
+
+#@fverdugo: use meta-programming here
+function testvalue(::Type{Tuple{T1,T2,T3,T4,T5,T6,T7,T8}}) where {T1,T2,T3,T4,T5,T6,T7,T8}
+  (testvalue(T1),testvalue(T2),testvalue(T3),testvalue(T4),testvalue(T5),testvalue(T6),testvalue(T7),testvalue(T8))
+end
+
+function testvalue(::Type{Tuple{T1,T2,T3,T4,T5,T6,T7}}) where {T1,T2,T3,T4,T5,T6,T7}
+  (testvalue(T1),testvalue(T2),testvalue(T3),testvalue(T4),testvalue(T5),testvalue(T6),testvalue(T7))
+end
+
+function testvalue(::Type{Tuple{T1,T2,T3,T4,T5,T6}}) where {T1,T2,T3,T4,T5,T6}
+  (testvalue(T1),testvalue(T2),testvalue(T3),testvalue(T4),testvalue(T5),testvalue(T6))
+end
+
+function testvalue(::Type{Tuple{T1,T2,T3,T4,T5}}) where {T1,T2,T3,T4,T5}
+  (testvalue(T1),testvalue(T2),testvalue(T3),testvalue(T4),testvalue(T5))
+end
+
+function testvalue(::Type{Tuple{T1,T2,T3,T4}}) where {T1,T2,T3,T4}
+  (testvalue(T1),testvalue(T2),testvalue(T3),testvalue(T4))
+end
+
+function testvalue(::Type{Tuple{T1,T2,T3}}) where {T1,T2,T3}
+  (testvalue(T1),testvalue(T2),testvalue(T3))
+end
+
+function testvalue(::Type{Tuple{T1,T2}}) where {T1,T2}
+  (testvalue(T1),testvalue(T2))
+end
+
+function testvalue(::Type{Tuple{T1}}) where {T1}
+  (testvalue(T1),)
+end
+
+function testvalue(::Type{Tuple{}})
+  ()
+end
+
 """
     get_array(a::AbstractArray)
 

@@ -75,11 +75,8 @@
 #   getindex!(cache,a,i...)
 # end
 
+#@fverdugo: FilterMap -> Filter
 struct FilterMap <: Map end
-
-function return_type(f::FilterMap,x...)
-  typeof(testitem(f,x...))
-end
 
 function return_cache(k::FilterMap,f,a)
   # vals = testitem(a)
@@ -93,7 +90,7 @@ function evaluate!(cache,k::FilterMap,f,a)
   c = cache
   vals = a
   filters = f
-  @assert size(vals) == size(filters) "Local arrays mismatch"
+  @check size(vals) == size(filters) "Local arrays mismatch"
   setsize!(c,(sum(filters),))
   r = c.array
   i = 0

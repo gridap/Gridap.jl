@@ -34,7 +34,7 @@ c = return_cache(∇f,p)
 
 # GenericField (function)
 
-@test return_type(GenericField,Float64) == GenericField{Float64}
+@test return_type(GenericField,1.0) == GenericField{Float64}
 
 q(x) = 2*x
 ∇q = gradient(q)

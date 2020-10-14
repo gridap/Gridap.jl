@@ -10,6 +10,7 @@ using Gridap.Arrays: test_lazy_array
 using Gridap.Arrays: CachedArray
 using Gridap.Arrays: setsize!
 using Gridap.Arrays: get_array
+using Gridap.Arrays: testitem
 
 using Gridap.Helpers: @abstractmethod, @notimplemented
 using Gridap.Helpers: @notimplementedif, @unreachable
@@ -28,8 +29,6 @@ import LinearAlgebra: det, inv, transpose
 import LinearAlgebra: ⋅
 
 import Base: +, -, *, /
-
-import Gridap.Inference: return_type
 
 import Gridap.Arrays: IndexStyle
 import Gridap.Arrays: return_cache

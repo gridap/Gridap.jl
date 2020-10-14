@@ -134,8 +134,8 @@ end
 
 @inline evaluate!(cache,a::GenericField,x) = evaluate!(cache,a.object,x)
 
-@inline return_type(::Type{<:GenericField},::Type{T}) where T<:Field = T
-@inline return_type(::Type{<:GenericField},::Type{T}) where T = GenericField{T}
+@inline return_type(::Type{<:GenericField},::T) where T<:Field = T
+@inline return_type(::Type{<:GenericField},::T) where T = GenericField{T}
 @inline return_type(a::GenericField,x) = return_type(a.object,x)
 
 # Make Field behave like a collection
@@ -199,9 +199,7 @@ const ConstantField{T} = GenericField{T} where T<:Number
 end
 
 function return_type(f::ConstantField,x::AbstractArray{<:Point})
-  nx = length(x)
-  c = zeros(typeof(f.object),nx)
-  typeof(c)
+  typeof(return_cache(f,x).array)
 end
 
 function return_cache(f::ConstantField,x::AbstractArray{<:Point})
@@ -264,9 +262,12 @@ const FunctionField{F} = GenericField{F} where F<:Function
 
 function return_cache(f::FunctionField,x::AbstractArray{<:Point})
   nx = length(x)
-  Te = eltype(x)
-  c = zeros(return_type(f.object,Te),nx)
+  c = zeros(return_type(f.object,testitem(x)),nx)
   CachedArray(c)
+end
+
+function return_type(f::FunctionField,x::AbstractArray{<:Point})
+  typeof(return_cache(f,x).array)
 end
 
 function evaluate!(c,f::FunctionField,x::AbstractArray{<:Point})
@@ -286,8 +287,7 @@ end
 function return_gradient_cache(f::FunctionField,x::AbstractArray{<:Point})
   gf = gradient(f.object)
   nx = length(x)
-  Te = eltype(x)
-  c = zeros(return_type(gf,Te),nx)
+  c = zeros(return_type(gf,testitem(x)),nx)
   # gf, CachedArray(c)
   gf, CachedArray(c)
 end
@@ -353,8 +353,8 @@ struct OperationField{O,F} <: Field
 end
 
 function return_type(c::OperationField,x::Point)
-  _fs = map(f -> evaluate(f,x),c.fields)
-  return_type(c.op,_fs...)
+  fx = map(f -> evaluate(f,x),c.fields)
+  return_type(c.op,fx...)
 end
 
 function return_cache(c::OperationField,x::Point)

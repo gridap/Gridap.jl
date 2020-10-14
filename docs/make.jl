@@ -7,7 +7,6 @@ pages = [
   "Getting Started" => "getting-started.md",
   "Gridap" => "Gridap.md",
   "Gridap.Helpers" => "Helpers.md",
-  "Gridap.Inference" => "Inference.md",
   "Gridap.Algebra" => "Algebra.md",
   "Gridap.Io" => "Io.md",
   "Gridap.TensorValues" => "TensorValues.md",
