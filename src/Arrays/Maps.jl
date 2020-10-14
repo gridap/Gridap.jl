@@ -248,8 +248,8 @@ struct OperationMap{K,L} <: Map
 end
 
 function return_type(c::OperationMap,x...)
-  Ts = map(fi -> return_type(fi,x...),c.l)
-  return_type(c.k, map(testvalue,Ts)...)
+  lx = map(fi -> testitem(fi,x...),c.l)
+  return_type(c.k, lx...)
 end
 
 function return_cache(c::OperationMap,x...)

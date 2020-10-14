@@ -151,7 +151,7 @@ end
 function LazyArray(g::AbstractArray{S}, f::AbstractArray...) where S
   isconcretetype(S) ? gi = testitem(g) : @notimplemented
   fi = map(testitem,f)
-  T = typeof(testitem(gi, fi...))
+  T = return_type(gi, fi...)
   LazyArray(T, g, f...)
 end
 
@@ -162,32 +162,17 @@ IndexStyle(::Type{<:LazyArray{G,T,1} where {G,T}}) = IndexLinear()
 #@fverdugo the signature of the index i... has to be improved
 # so that it is resilient to the different types of indices
 
-@inline array_cache(a::AbstractArray,i...) = nothing
-
-function array_cache(a::LazyArray,i...)
+function array_cache(a::LazyArray)
   @notimplementedif ! all(map(isconcretetype, map(eltype, a.f)))
   if ! (eltype(a.g) <: Function)
     @notimplementedif ! isconcretetype(eltype(a.g))
   end
   gi = testitem(a.g)
-  fi = Tuple(testitem.(a.f))
-  cg = return_cache(a.g,i...)
-  cf = map(fi -> return_cache(fi,i...),a.f)
+  fi = map(testitem,a.f)
+  cg = array_cache(a.g)
+  cf = map(array_cache,a.f)
   cgi = return_cache(gi, fi...)
   cg, cgi, cf
-end
-
-function array_cache(a::LazyArray)
-@notimplementedif ! all(map(isconcretetype, map(eltype, a.f)))
-if ! (eltype(a.g) <: Function)
-  @notimplementedif ! isconcretetype(eltype(a.g))
-end
-gi = testitem(a.g)
-fi = Tuple(testitem.(a.f))
-cg = array_cache(a.g)
-cf = map(array_cache,a.f)
-cgi = return_cache(gi, fi...)
-cg, cgi, cf
 end
 
 # @inline getindex!(c,a::AbstractArray,i...) = a[i...]

@@ -74,6 +74,8 @@ function array_cache(a::AbstractArray)
   _default_array_cache(a,uses_hash(a))
 end
 
+@inline array_cache(a::AbstractArray,i...) = array_cache(a)
+
 function array_cache(hash,a::T) where T
   if uses_hash(T) == Val{true}()
     error("array_cache(::Dict,::$T) not defined")
