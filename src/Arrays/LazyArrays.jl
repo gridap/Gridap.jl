@@ -213,28 +213,16 @@ end
 Base.size(a::LazyArray) = size(a.g)
 
 # Particular implementations for Fill
-#@fverdugo: This seems out-dated
-function lazy_map(f::Fill, a::Fill...)
-  ai = _getvalues(a...)
+
+function lazy_map(::typeof(evaluate),f::Fill, a::Fill...)
+  ai = map(ai->ai.value,a)
   r = evaluate(f.value, ai...)
   s = common_size(f, a...)
   Fill(r, s)
 end
 
-#@fverdugo: This seems out-dated
-function lazy_map(::Type{T}, f::Fill, a::Fill...) where T
-  lazy_map(f, a...)
-end
-
-function _getvalues(a::Fill, b::Fill...)
-  ai = a.value
-  bi = _getvalues(b...)
-  (ai, bi...)
-end
-
-function _getvalues(a::Fill)
-  ai = a.value
-  (ai,)
+function lazy_map(::typeof(evaluate),::Type{T}, f::Fill, a::Fill...) where T
+  lazy_map(evaluate, f, a...)
 end
 
 # @santiagobadia : CompressedArray and Union{CompressedArray,Fill}
