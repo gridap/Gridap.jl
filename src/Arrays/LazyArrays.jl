@@ -151,7 +151,15 @@ end
 function LazyArray(g::AbstractArray{S}, f::AbstractArray...) where S
   isconcretetype(S) ? gi = testitem(g) : @notimplemented
   fi = map(testitem,f)
-  T = return_type(gi, fi...)
+  T = typeof(testitem(gi, fi...))
+  # @fverdugo
+  # If we replace previous line with the following one
+  #     T = return_type(gi, fi...)
+  # a LOT of tests fail. Very counter intuitive!
+  # It shows that there is a fundamental problem somewhere since the implementation of this last line
+  # is simply `typeof(testitem(gi, fi...))`
+  # The problem is that there is type piracy between the modules Gridap.Inference and Gridap.Arrays
+  # In particular, the meaning of return_type in Inference is different and in Arrays
   LazyArray(T, g, f...)
 end
 
