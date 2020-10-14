@@ -47,3 +47,17 @@ macro unreachable(message="This line of code cannot be reached")
     error($(esc(message)))
   end
 end
+
+"""
+  @check condition
+  @check condition "Error message"
+
+Macro used to make sure that condition is fulfilled, like `@assert`
+but the check gets deactivated when running Julia with --boundscheck=no
+"""
+macro check(test,msg="A check failed")
+  quote
+    @boundscheck @assert $(esc(test)) $(esc(msg))
+  end
+end
+
