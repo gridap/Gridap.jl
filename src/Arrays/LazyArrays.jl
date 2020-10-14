@@ -54,7 +54,7 @@ println(c)
 """
 @inline function lazy_map(k,f::AbstractArray...)
   s = common_size(f...)
-  lazy_map(evaluate,Fill(k, s...), f...)
+  lazy_map(evaluate,Fill(k, s), f...)
 end
 
 @inline lazy_map(::typeof(evaluate),k::AbstractArray,f::AbstractArray...) = LazyArray(k,f...)
@@ -67,7 +67,7 @@ of the resulting array in order to circumvent type inference.
 """
 @inline function lazy_map(k,T::Type,f::AbstractArray...)
   s = common_size(f...)
-  lazy_map(evaluate,T,Fill(k, s...), f...)
+  lazy_map(evaluate,T,Fill(k, s), f...)
 end
 
 @inline lazy_map(::typeof(evaluate),T::Type,k::AbstractArray,f::AbstractArray...) = LazyArray(T,k,f...)
@@ -143,7 +143,8 @@ struct LazyArray{G,T,N,F} <: AbstractArray{T,N}
   function LazyArray(::Type{T}, g::AbstractArray, f::AbstractArray...) where T
     G = typeof(g)
     F = typeof(f)
-    new{G,T,ndims(first(f)),F}(g, f)
+    N = ndims(g)
+    new{G,T,N,F}(g, f)
   end
 end
 
@@ -151,40 +152,35 @@ function LazyArray(g::AbstractArray{S}, f::AbstractArray...) where S
   isconcretetype(S) ? gi = testitem(g) : @notimplemented
   fi = map(testitem,f)
   T = typeof(testitem(gi, fi...))
+  # @fverdugo
+  # If we replace previous line with the following one
+  #     T = return_type(gi, fi...)
+  # a LOT of tests fail. Very counter intuitive!
+  # It shows that there is a fundamental problem somewhere since the implementation of this last line
+  # is simply `typeof(testitem(gi, fi...))`
+  # The problem is that there is type piracy between the modules Gridap.Inference and Gridap.Arrays
+  # In particular, the meaning of return_type in Inference is different and in Arrays
   LazyArray(T, g, f...)
 end
 
 IndexStyle(::Type{<:LazyArray}) = IndexCartesian()
 
+IndexStyle(::Type{<:LazyArray{G,T,1} where {G,T}}) = IndexLinear()
+
 #@fverdugo the signature of the index i... has to be improved
 # so that it is resilient to the different types of indices
 
-@inline array_cache(a::AbstractArray,i...) = nothing
-
-function array_cache(a::LazyArray,i...)
+function array_cache(a::LazyArray)
   @notimplementedif ! all(map(isconcretetype, map(eltype, a.f)))
   if ! (eltype(a.g) <: Function)
     @notimplementedif ! isconcretetype(eltype(a.g))
   end
   gi = testitem(a.g)
-  fi = Tuple(testitem.(a.f))
-  cg = return_cache(a.g,i...)
-  cf = map(fi -> return_cache(fi,i...),a.f)
+  fi = map(testitem,a.f)
+  cg = array_cache(a.g)
+  cf = map(array_cache,a.f)
   cgi = return_cache(gi, fi...)
   cg, cgi, cf
-end
-
-function array_cache(a::LazyArray)
-@notimplementedif ! all(map(isconcretetype, map(eltype, a.f)))
-if ! (eltype(a.g) <: Function)
-  @notimplementedif ! isconcretetype(eltype(a.g))
-end
-gi = testitem(a.g)
-fi = Tuple(testitem.(a.f))
-cg = array_cache(a.g)
-cf = map(array_cache,a.f)
-cgi = return_cache(gi, fi...)
-cg, cgi, cf
 end
 
 # @inline getindex!(c,a::AbstractArray,i...) = a[i...]
@@ -207,32 +203,19 @@ function Base.getindex(a::LazyArray, i...)
   getindex!(ca, a, i...)
 end
 
-function Base.size(a::LazyArray)
-  size(first(a.f))
-end
+Base.size(a::LazyArray) = size(a.g)
 
 # Particular implementations for Fill
 
-function lazy_map(f::Fill, a::Fill...)
-  ai = _getvalues(a...)
+function lazy_map(::typeof(evaluate),f::Fill, a::Fill...)
+  ai = map(ai->ai.value,a)
   r = evaluate(f.value, ai...)
   s = common_size(f, a...)
   Fill(r, s)
 end
 
-function lazy_map(::Type{T}, f::Fill, a::Fill...) where T
-  lazy_map(f, a...)
-end
-
-function _getvalues(a::Fill, b::Fill...)
-  ai = a.value
-  bi = _getvalues(b...)
-  (ai, bi...)
-end
-
-function _getvalues(a::Fill)
-  ai = a.value
-  (ai,)
+function lazy_map(::typeof(evaluate),::Type{T}, f::Fill, a::Fill...) where T
+  lazy_map(evaluate, f, a...)
 end
 
 # @santiagobadia : CompressedArray and Union{CompressedArray,Fill}
@@ -244,6 +227,13 @@ end
   # lazy_map(Fill(op,length(first(x))),x...)
 # end
 
+#@fverdugo: I find the grad argument very confusing. It seems very specific for arrays of Maps/Fields
+# whereas LazyArray is something more general.
+# In fact, I don't believe we need this. It seems that it is not used in the tests, right?
+# Perhaps, what you really need is something similar to test_array_of_fields of the old Gridap verison.
+# Moreover, line
+#  ax = lazy_map(a, x)
+#  Seems outdated
 function test_lazy_array(
   a::AbstractArray,
   x::AbstractArray,
@@ -274,12 +264,12 @@ end
 
 function common_size(a::AbstractArray...)
   a1, = a
-  c = all([size(a1) == size(ai) for ai in a])
-  if !c
-    error("Array sizes $(map(size,a)) are not compatible.")
+  @check all(map(ai->length(a1) == length(ai),a)) "Array sizes $(map(size,a)) are not compatible."
+  if all( map(ai->size(a1) == size(ai),a) )
+    size(a1)
+  else
+    (length(a1),)
   end
-  l = size(a1)
-  (l,)
 end
 
 # struct ArrayWithCounter{T,N,A,C} <: AbstractArray{T,N}

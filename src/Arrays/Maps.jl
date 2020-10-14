@@ -92,6 +92,17 @@ end
 # complicate things if the user provides the wrong x the DomainError will
 # arise anyway when evaluating
 #
+#@fverdugo I agree that non-empty arrays will contain values that make sense,
+# but the problem is with empty arrays
+#
+# lazy_map(myf,Int[])
+#
+# Does not work. We need a mechanism that is resilient against empty arrays
+# the trick with testargs fixes it. It is very simple. It does not complicate things.
+# In fact, this is what I am doing in Gridap.Inference with functions. It is quite natural to do it here
+# as well.
+#
+#
 @inline testitem(k,x...) = evaluate(k,x...)
 
 # @fverdugo
@@ -104,6 +115,7 @@ end
 
 evaluate!(cache,f::Function,x...) = f(x...)
 
+# @fverdugo rename to test_map
 # Testing the interface
 """
     test_mapping(f,x::Tuple,y,cmp=(==))
@@ -225,6 +237,8 @@ end
 
 Returns a mapping that represents the result of applying the function `f`
 to the arguments in the tuple `args`.
+That is, `OperationMap(f,args)(x...)` is formally defined as
+`f(map(a->a(x...),args)...)`
 """
 struct OperationMap{K,L} <: Map
   k::K
@@ -235,8 +249,8 @@ struct OperationMap{K,L} <: Map
 end
 
 function return_type(c::OperationMap,x...)
-  Ts = map(fi -> return_type(fi,x...),c.l)
-  return_type(c.k, map(testvalue,Ts)...)
+  lx = map(fi -> testitem(fi,x...),c.l)
+  return_type(c.k, lx...)
 end
 
 function return_cache(c::OperationMap,x...)
@@ -260,15 +274,18 @@ end
 # where operation between fields are defined (and document only
 # Operation for Field arguments). I think this would be much more clear to understand for new users.
 # @santiagobadia : I have corrected the doc but as said above, I would keep it here
+# @fverdugo OK
 """
     Operation(op)
 
 Returns a mapping that, when applied to a tuple `args`, returns a mapping.
+That is `Operation(f)(args)(x...)` is formally defined as
+`f(map(a->a(x...),args)...)`.
 
 # Example
 
 ```jldoctest
-using Gridap.Maps
+using Gridap.Arrays
 
 fa(x) = x.*x
 fb(x) = sqrt.(x)
@@ -288,6 +305,7 @@ struct Operation{T} <: Map
   op::T
 end
 
+#@fverdugo: I would remove this name. It is confusing to have 2 names for the same thing.
 """
     operation(op)
 
@@ -295,4 +313,4 @@ end
 """
 operation(a) = Operation(a)
 
-evaluate!(cache,op::Operation,x...) = OperationMap(op.op,x)
+evaluate!(cache,op::Operation,args...) = OperationMap(op.op,args)
