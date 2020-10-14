@@ -54,7 +54,7 @@ println(c)
 """
 @inline function lazy_map(k,f::AbstractArray...)
   s = common_size(f...)
-  lazy_map(evaluate,Fill(k, s...), f...)
+  lazy_map(evaluate,Fill(k, s), f...)
 end
 
 @inline lazy_map(::typeof(evaluate),k::AbstractArray,f::AbstractArray...) = LazyArray(k,f...)
@@ -67,7 +67,7 @@ of the resulting array in order to circumvent type inference.
 """
 @inline function lazy_map(k,T::Type,f::AbstractArray...)
   s = common_size(f...)
-  lazy_map(evaluate,T,Fill(k, s...), f...)
+  lazy_map(evaluate,T,Fill(k, s), f...)
 end
 
 @inline lazy_map(::typeof(evaluate),T::Type,k::AbstractArray,f::AbstractArray...) = LazyArray(T,k,f...)
@@ -143,7 +143,8 @@ struct LazyArray{G,T,N,F} <: AbstractArray{T,N}
   function LazyArray(::Type{T}, g::AbstractArray, f::AbstractArray...) where T
     G = typeof(g)
     F = typeof(f)
-    new{G,T,ndims(first(f)),F}(g, f)
+    N = ndims(g)
+    new{G,T,N,F}(g, f)
   end
 end
 
@@ -155,6 +156,8 @@ function LazyArray(g::AbstractArray{S}, f::AbstractArray...) where S
 end
 
 IndexStyle(::Type{<:LazyArray}) = IndexCartesian()
+
+IndexStyle(::Type{<:LazyArray{G,T,1} where {G,T}}) = IndexLinear()
 
 #@fverdugo the signature of the index i... has to be improved
 # so that it is resilient to the different types of indices
@@ -207,9 +210,7 @@ function Base.getindex(a::LazyArray, i...)
   getindex!(ca, a, i...)
 end
 
-function Base.size(a::LazyArray)
-  size(first(a.f))
-end
+Base.size(a::LazyArray) = size(a.g)
 
 # Particular implementations for Fill
 #@fverdugo: This seems out-dated
@@ -282,12 +283,12 @@ end
 
 function common_size(a::AbstractArray...)
   a1, = a
-  c = all([size(a1) == size(ai) for ai in a])
-  if !c
-    error("Array sizes $(map(size,a)) are not compatible.")
+  @check all(map(ai->length(a1) == length(ai),a)) "Array sizes $(map(size,a)) are not compatible."
+  if all( map(ai->size(a1) == size(ai),a) )
+    size(a1)
+  else
+    (length(a1),)
   end
-  l = size(a1)
-  (l,)
 end
 
 # struct ArrayWithCounter{T,N,A,C} <: AbstractArray{T,N}
