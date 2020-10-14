@@ -1,22 +1,23 @@
 # Number differentiation
 
-function gradient(f::T) where T <: Number
-  @inline function grad_f(x::P) where P <: Point
-    zero(return_type(outer,T,P))
+function gradient(f::Number)
+  @inline function grad_f(x::Point)
+    zero(return_type(outer,f,x))
   end
 end
 
-function hessian(f::T) where T <: Number
-@inline function hess_f(x::P) where P <: Point
-  zero(return_type(outer,return_type(outer,T,P),P))
-end
+function hessian(f::Number)
+  @inline function hess_f(x::Point)
+    g = gradient(f)(x)
+    gradient(g)(x)
+  end
 end
 
 # Automatic differentiation of functions
 
 function gradient(f::Function)
   function grad_f(x)
-    _grad_f(f,x,zero(return_type(f,typeof(x))))
+    _grad_f(f,x,zero(return_type(f,x)))
   end
 end
 
@@ -42,7 +43,7 @@ end
 
 function laplacian(f::Function)
   function lapl_f(x)
-    _lapl_f(f,x,zero(return_type(f,typeof(x))))
+    _lapl_f(f,x,zero(return_type(f,x)))
   end
 end
 
@@ -62,5 +63,5 @@ function _lapl_f(f,x,fx::MultiValue)
 end
 
 function symmetric_gradient(f::Function)
-    x -> symmetric_part(_grad_f(f,x,zero(return_type(f,typeof(x)))))
+    x -> symmetric_part(_grad_f(f,x,zero(return_type(f,x))))
 end

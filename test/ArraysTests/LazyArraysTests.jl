@@ -212,8 +212,9 @@ g(x) = 1.0*x
 a = lazy_map(g,Int[])
 @test test_array(a,Float64[])
 
-f(x) = sqrt(x-1)
-@test_broken test_array(lazy_map(f,Int[]),Float64[])
+myf(x) = sqrt(x-1)
+Arrays.testargs(::typeof(myf),x) = one(x)
+@test test_array(lazy_map(myf,Int[]),Float64[])
 
 # Fill optimizations
 

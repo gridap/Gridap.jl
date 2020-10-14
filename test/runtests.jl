@@ -4,8 +4,6 @@ using Test
 
 @time @testset "Helpers" begin include("HelpersTests/runtests.jl") end
 
-@time @testset "Inference" begin include("InferenceTests/runtests.jl") end
-
 @time @testset "Io" begin include("IoTests/runtests.jl") end
 
 @time @testset "Algebra" begin include("AlgebraTests/runtests.jl") end
