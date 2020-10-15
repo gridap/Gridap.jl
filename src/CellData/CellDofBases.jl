@@ -27,7 +27,7 @@ at the array `field` element by element.
 
 The result is numerically equivalent to
 
-    map(evaluate_dof, dof_array.array, field_array)
+    map(evaluate, dof_array.array, field_array)
 
 but it is described with a more memory-friendly lazy type.
 """
@@ -61,4 +61,3 @@ end
 function similar_object(cf::CellDofBasis,a::AbstractArray)
   GenericCellDofBasis(RefStyle(cf),a)
 end
-
