@@ -105,9 +105,6 @@ IndexStyle(::Type{<:LazyArray}) = IndexCartesian()
 
 IndexStyle(::Type{<:LazyArray{G,T,1} where {G,T}}) = IndexLinear()
 
-#@fverdugo the signature of the index i... has to be improved
-# so that it is resilient to the different types of indices
-
 function array_cache(a::LazyArray)
   @notimplementedif ! all(map(isconcretetype, map(eltype, a.f)))
   if ! (eltype(a.g) <: Function)
@@ -121,19 +118,12 @@ function array_cache(a::LazyArray)
   cg, cgi, cf
 end
 
-# @inline getindex!(c,a::AbstractArray,i...) = a[i...]
-
-#@fverdugo the signature of the index i... has to be improved
-# so that it is resilient to the different types of indices
-# @santiagobadia : Can you handle this? I am not sure what you
-# have in mind
 @inline function getindex!(cache, a::LazyArray, i...)
   cg, cgi, cf = cache
   gi = getindex!(cg, a.g, i...)
   fi = map((ci,ai) -> getindex!(ci,ai,i...),cf,a.f)
-  # fi = getitems!(cf, a.f, i...)
   vi = evaluate!(cgi, gi, fi...)
-  # vi
+  vi
 end
 
 function Base.getindex(a::LazyArray, i...)
@@ -158,12 +148,6 @@ end
 
 # @santiagobadia : CompressedArray and Union{CompressedArray,Fill}
 # To be done when starting Algebra part
-
-# Operator
-
-# function lazy_map(op::Operation,x::AbstractArray...)
-  # lazy_map(Fill(op,length(first(x))),x...)
-# end
 
 #@fverdugo: I find the grad argument very confusing. It seems very specific for arrays of Maps/Fields
 # whereas LazyArray is something more general.
