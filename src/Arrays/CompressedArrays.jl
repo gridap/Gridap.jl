@@ -48,85 +48,67 @@ function IndexStyle(a::Type{CompressedArray{T,N,A,P}}) where {T,N,A,P}
   IndexStyle(P)
 end
 
-function lazy_map(::typeof(evaluate),f::Fill,g1::CompressedArray,g::CompressedArray...)
-  if all( ( gi.ptrs === g1.ptrs for gi in g ) ) || all( ( gi.ptrs == g1.ptrs for gi in g ) )
-    _lazy_map_fill_compressed(f,g1,g...)
+function lazy_map(::typeof(evaluate),g::CompressedArray...)
+  if _have_same_ptrs(g)
+    _lazy_map_compressed(g...)
   else
-    return LazyArray(f,g1,g...)
+    LazyArray(g...)
   end
 end
 
-function lazy_map(::typeof(evaluate),g1::CompressedArray,g::CompressedArray...)
-  if all( ( gi.ptrs === g1.ptrs for gi in g ) ) || all( ( gi.ptrs == g1.ptrs for gi in g ) )
-    _lazy_map_compressed(g1,g...)
+function lazy_map(::typeof(evaluate),::Type{T},g::CompressedArray...) where T
+  if _have_same_ptrs(g)
+    _lazy_map_compressed(g...)
   else
-    return LazyArray(g1,g...)
+    LazyArray(T,g...)
   end
 end
 
-function lazy_map(::typeof(evaluate),g1::CompressedArray,g::Fill...)
-  f = _fill_to_compressed(g1,g)
-  _lazy_map_compressed(g1,f...)
-end
-
-function lazy_map(::typeof(evaluate),f::Fill,g1::CompressedArray,g::Fill...)
-  h = _fill_to_compressed(g1,g)
-  _lazy_map_fill_compressed(f,g1,h...)
-end
-
-function lazy_map(::typeof(evaluate),f::Fill,g1::CompressedArray)
-  _lazy_map_fill_compressed(f,g1)
-end
-
-function lazy_map(::typeof(evaluate),::Type{T},f::Fill,g1::CompressedArray,g::CompressedArray...) where T
-  if all( ( gi.ptrs === g1.ptrs for gi in g ) ) || all( ( gi.ptrs == g1.ptrs for gi in g ) )
-    _lazy_map_fill_compressed(f,g1,g...)
+function lazy_map(::typeof(evaluate),g::Union{CompressedArray,Fill}...)
+  g_compressed = _find_compressed_ones(g)
+  if _have_same_ptrs(g_compressed)
+    g1 = first(g_compressed)
+    g_all_compressed = map(gi->_compress(gi,g1),g)
+    _lazy_map_compressed(g_all_compressed...)
   else
-    return LazyArray(T,f,g1,g...)
+    LazyArray(g...)
   end
 end
 
-function lazy_map(::typeof(evaluate),::Type{T},g1::CompressedArray,g::CompressedArray...) where T
-  if all( ( gi.ptrs === g1.ptrs for gi in g ) ) || all( ( gi.ptrs == g1.ptrs for gi in g ) )
-    _lazy_map_compressed(g1,g...)
+function lazy_map(::typeof(evaluate),::Type{T},g::Union{CompressedArray,Fill}...) where T
+  g_compressed = _find_compressed_ones(g)
+  if _have_same_ptrs(g_compressed)
+    g1 = first(g_compressed)
+    g_all_compressed = map(gi->_compress(gi,g1),g)
+    _lazy_map_compressed(g_all_compressed...)
   else
-    return LazyArray(T,g1,g...)
+    LazyArray(T,g...)
   end
 end
 
-function lazy_map(::typeof(evaluate),::Type{T},g1::CompressedArray,g::Fill...) where T
-  f = _fill_to_compressed(g1,g)
-  _lazy_map_compressed(g1,f...)
+function _find_compressed_ones(g)
+  g_compressed = ( gi for gi in g if isa(gi,CompressedArray) )
+  g_compressed
 end
 
-function lazy_map(::typeof(evaluate),::Type{T},f::Fill,g1::CompressedArray,g::Fill...) where T
-  h = _fill_to_compressed(g1,g)
-  _lazy_map_fill_compressed(f,g1,h...)
-end
-
-function lazy_map(::typeof(evaluate),::Type{T},f::Fill,g1::CompressedArray) where T
-  _lazy_map_fill_compressed(f,g1)
-end
-
-function _fill_to_compressed(g1,g)
-  ptrs = g1.ptrs
-  l = length(g1.values)
-  f = ( CompressedArray(fill(gi.value,l),ptrs) for gi in g )
-  f
-end
-
-function _lazy_map_fill_compressed(f,g...)
-  k = f.value
+function _lazy_map_compressed(g::CompressedArray...)
+  vals = map(evaluate, map(gi->gi.values,g)...)
   ptrs = first(g).ptrs
-  vals = map(gi->gi.values,g)
-  vk = lazy_map(k,vals...)
-  CompressedArray(collect(vk),ptrs)
+  CompressedArray(vals,ptrs)
 end
 
-function _lazy_map_compressed(g1,g...)
-  ptrs = g1.ptrs
-  vals = map(gi->gi.values,g)
-  vk = lazy_map(evaluate,g1.values,vals...)
-  CompressedArray(collect(vk),ptrs)
+function _have_same_ptrs(g)
+  g1 = first(g)
+  all(map( gi -> gi.ptrs === g1.ptrs ||  gi.ptrs == g1.ptrs, g))
+end
+
+function _compress(a::CompressedArray,b::CompressedArray)
+  @check _have_same_ptrs((a,b))
+  a
+end
+
+function _compress(a::Fill,b::CompressedArray)
+  vals = fill(a.value,length(b.values))
+  CompressedArray(vals,b.ptrs)
 end
 
