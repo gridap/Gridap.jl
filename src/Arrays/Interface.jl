@@ -156,9 +156,8 @@ end
 
 Returns an arbitrary instance of type `T`. It defaults to `zero(T)` for
 non-array types and to an empty array for array types.
-This function is used to compute the default test arguments in
-[`testargs`](@ref).
 It can be overloaded for new types `T` if `zero(T)` does not makes sense.
+This function is used to compute  [`testitem`](@ref) for 0-length arrays.
 """
 function testvalue end
 
@@ -227,17 +226,6 @@ function get_array(a::AbstractArray)
   a
 end
 
-# """
-# """
-# function get_arrays(a,b...)
-#   (get_array(a),get_arrays(b...)...)
-# end
-
-# function get_arrays(a)
-#   (get_array(a),)
-# end
-
-
 # Test the interface
 
 """
@@ -249,15 +237,23 @@ It also stresses the new methods added to the `AbstractArray` interface.
 """
 function test_array(
   a::AbstractArray{T,N}, b::AbstractArray{S,N},cmp=(==)) where {T,S,N}
-  @test cmp(a,b)
-  cache = array_cache(a)
-  t = true
-  for i in eachindex(a)
-    bi = b[i]
-    ai = getindex!(cache,a,i)
-    t = t && cmp(bi,ai)
+
+  function _test_loop(indices)
+    cache = array_cache(a,testitem(indices))
+    t = true
+    for i in indices
+      bi = b[i]
+      ai = getindex!(cache,a,i)
+      t = t && cmp(bi,ai)
+    end
+    @test t
   end
-  @test t
+
+  @test cmp(a,b)
+  _test_loop(eachindex(a))
+  _test_loop(LinearIndices(a))
+  _test_loop(CartesianIndices(a))
+  cache = array_cache(a)
   t = true
   for i in eachindex(a)
     ai = getindex!(cache,a,i)
@@ -265,8 +261,6 @@ function test_array(
     t = t && (typeof(ai) <: T)
   end
   @test t
-  # @santiagobadia : After changes in Field it does not hold
-  # @test IndexStyle(a) == IndexStyle(b)
   @test isa(testitem(a),eltype(a))
   if length(a) > 0
     @test testitem(a) == first(a)
@@ -274,171 +268,4 @@ function test_array(
   true
 end
 
-# Some API
 
-# """
-#     array_caches(a::AbstractArray...) -> Tuple
-
-# Returns a tuple with the cache of each array in `a`.
-# """
-# function array_caches(a::AbstractArray,b::AbstractArray...)
-#   hash = Dict{UInt,Any}()
-#   array_caches(hash,a,b...)
-# end
-
-# function array_caches(hash::Dict,a::AbstractArray,b::AbstractArray...)
-#   ca = array_cache(hash,a)
-#   cb = array_caches(hash,b...)
-#   (ca,cb...)
-# end
-
-# function array_caches(hash::Dict,a::AbstractArray)
-#   ca = array_cache(hash,a)
-#   (ca,)
-# end
-
-# array_caches() = ()
-
-# """
-#     getitems!(c::Tuple,a::Tuple,i...) -> Tuple
-
-# Extracts the `i`-th entry of all arrays in the tuple `a` using the caches in the tuple
-# `c`. The results is a tuple containing each one of the extracted entries.
-
-# # Example
-
-# Iterating over three different arrays simultaneously using `getitems!`
-
-# ```jldoctest
-# using Gridap.Arrays
-
-# a = collect(0:5)
-# b = collect(10:15)
-# c = collect(20:25)
-
-# caches = array_caches(a,b,c)
-# for i in eachindex(a)
-#    s = getitems!(caches,(a,b,c),i)
-#    println("\$i -> \$s")
-# end
-
-# # output
-# 1 -> (0, 10, 20)
-# 2 -> (1, 11, 21)
-# 3 -> (2, 12, 22)
-# 4 -> (3, 13, 23)
-# 5 -> (4, 14, 24)
-# 6 -> (5, 15, 25)
-# ```
-
-# """
-# @inline function getitems!(cf::Tuple,a::Tuple{Vararg{<:AbstractArray}},i...)
-#   _getitems!(cf,i,a...)
-# end
-
-# getitems!(::Tuple{},::Tuple{},i) = ()
-
-# @inline function _getitems!(c,i,a,b...)
-#   ca,cb = _split(c...)
-#   ai = getindex!(ca,a,i...)
-#   bi = getitems!(cb,b,i...)
-#   (ai,bi...)
-# end
-
-# @inline function _getitems!(c,i,a)
-#   ca, = c
-#   ai = getindex!(ca,a,i...)
-#   (ai,)
-# end
-
-# # Hack to fix type-instability (use generated function?)
-# @inline function _getitems!(c,i,a1,a2)
-#   ca1,ca2 = c
-#   a1i = getindex!(ca1,a1,i...)
-#   a2i = getindex!(ca2,a2,i...)
-#   (a1i,a2i)
-# end
-
-# # Hack to fix type-instability (use generated function?)
-# @inline function _getitems!(c,i,a1,a2,a3)
-#   ca1,ca2,ca3 = c
-#   a1i = getindex!(ca1,a1,i...)
-#   a2i = getindex!(ca2,a2,i...)
-#   a3i = getindex!(ca3,a3,i...)
-#   (a1i,a2i,a3i)
-# end
-
-# # Hack to fix type-instability
-# @inline function _getitems!(c,i,a1,a2,a3,a4)
-#   ca1,ca2,ca3,ca4 = c
-#   a1i = getindex!(ca1,a1,i...)
-#   a2i = getindex!(ca2,a2,i...)
-#   a3i = getindex!(ca3,a3,i...)
-#   a4i = getindex!(ca4,a4,i...)
-#   (a1i,a2i,a3i,a4i)
-# end
-
-# @inline function _getitems!(c,i,a1,a2,a3,a4,a5)
-#   ca1,ca2,ca3,ca4,ca5 = c
-#   a1i = getindex!(ca1,a1,i...)
-#   a2i = getindex!(ca2,a2,i...)
-#   a3i = getindex!(ca3,a3,i...)
-#   a4i = getindex!(ca4,a4,i...)
-#   a5i = getindex!(ca5,a5,i...)
-#   (a1i,a2i,a3i,a4i,a5i)
-# end
-
-# @inline function _getitems!(c,i,a1,a2,a3,a4,a5,a6)
-#   ca1,ca2,ca3,ca4,ca5,ca6 = c
-#   a1i = getindex!(ca1,a1,i...)
-#   a2i = getindex!(ca2,a2,i...)
-#   a3i = getindex!(ca3,a3,i...)
-#   a4i = getindex!(ca4,a4,i...)
-#   a5i = getindex!(ca5,a5,i...)
-#   a6i = getindex!(ca6,a6,i...)
-#   (a1i,a2i,a3i,a4i,a5i,a6i)
-# end
-
-# @inline function _getitems!(c,i,a1,a2,a3,a4,a5,a6,a7)
-#   ca1,ca2,ca3,ca4,ca5,ca6,ca7 = c
-#   a1i = getindex!(ca1,a1,i...)
-#   a2i = getindex!(ca2,a2,i...)
-#   a3i = getindex!(ca3,a3,i...)
-#   a4i = getindex!(ca4,a4,i...)
-#   a5i = getindex!(ca5,a5,i...)
-#   a6i = getindex!(ca6,a6,i...)
-#   a7i = getindex!(ca7,a7,i...)
-#   (a1i,a2i,a3i,a4i,a5i,a6i,a7i)
-# end
-
-# """
-# """
-# @inline function getitems(a::Tuple{Vararg{<:AbstractArray}},i...)
-#   _getitems(i,a...)
-# end
-
-# @inline function _getitems(i,a,b...)
-#   ai = a[i...]
-#   bi = getitems(b,i...)
-#   (ai,bi...)
-# end
-
-# @inline function _getitems(i,a)
-#   ai = a[i...]
-#   (ai,)
-# end
-
-# """
-# """
-# function add_to_array!(a::AbstractArray{Ta,N},b::AbstractArray{Tb,N},combine=+) where {Ta,Tb,N}
-#   @assert size(a) == size(b) "Arrays sizes mismatch"
-#   @inbounds for i in eachindex(a)
-#     a[i] = combine(a[i],b[i])
-#   end
-# end
-
-# function add_to_array!(a::AbstractArray,b::Number,combine=+)
-#   @inbounds for i in eachindex(a)
-#     a[i] = combine(a[i],b)
-#   end
-# end

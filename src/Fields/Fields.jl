@@ -6,7 +6,6 @@ using Gridap.Arrays: Operation
 using Gridap.Arrays: Broadcasting
 using Gridap.Arrays: test_mapping
 using Gridap.Arrays: LazyArray
-using Gridap.Arrays: test_lazy_array
 using Gridap.Arrays: CachedArray
 using Gridap.Arrays: setsize!
 using Gridap.Arrays: get_array

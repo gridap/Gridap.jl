@@ -25,7 +25,7 @@ end
 end
 
 function Arrays.return_cache(k::AttachDirichletMap,mat::AbstractMatrix,vals,mask)
-  cm = return_cache(MulMap(),mat,vals)
+  cm = return_cache(*,mat,vals)
   cv = CachedArray(mat*vals)
   fill!(cv.array,zero(eltype(cv)))
   (cm,cv)
@@ -34,7 +34,7 @@ end
 @inline function Arrays.evaluate!(cache,k::AttachDirichletMap,mat::AbstractMatrix,vals,mask)
   cm, cv = cache
   if mask
-    vec_with_bcs = evaluate!(cm,MulMap(),mat,vals)
+    vec_with_bcs = evaluate!(cm,*,mat,vals)
     scale_entries!(vec_with_bcs,-1)
     (mat, vec_with_bcs)
   else

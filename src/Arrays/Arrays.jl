@@ -43,14 +43,12 @@ export return_cache
 export evaluate!
 export evaluate
 export test_mapping
-export test_lazy_array
 export return_type
 export testargs
 
 export Broadcasting
 
 export Operation
-export operation
 
 
 # LazyArray
@@ -95,7 +93,6 @@ export posneg_reindex
 
 export FilterMap
 
-export MulMap
 export MulAddMap
 
 export Table

@@ -11,12 +11,12 @@ end
 struct ConstrainRowsMap <: Map end
 
 function Arrays.return_cache(k::ConstrainRowsMap,array::AbstractArray,constr,mask)
-  return_cache(MulMap(),constr,array)
+  return_cache(*,constr,array)
 end
 
 @inline function Arrays.evaluate!(cache,k::ConstrainRowsMap,array::AbstractArray,constr,mask)
   if mask
-    evaluate!(cache,MulMap(),constr,array)
+    evaluate!(cache,*,constr,array)
   else
     array
   end
@@ -44,12 +44,12 @@ end
 struct ConstrainColsMap <: Map end
 
 function Arrays.return_cache(k::ConstrainColsMap,array::AbstractArray,constr_t,mask)
-  return_cache(MulMap(),array,constr_t)
+  return_cache(*,array,constr_t)
 end
 
 @inline function Arrays.evaluate!(cache,k::ConstrainColsMap,array::AbstractArray,constr_t,mask)
   if mask
-    evaluate!(cache,MulMap(),array,constr_t)
+    evaluate!(cache,*,array,constr_t)
   else
     array
   end

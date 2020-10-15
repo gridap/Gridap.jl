@@ -53,7 +53,7 @@ println(c)
 ```
 """
 @inline function lazy_map(k,f::AbstractArray...)
-  s = common_size(f...)
+  s = _common_size(f...)
   lazy_map(evaluate,Fill(k, s), f...)
 end
 
@@ -66,69 +66,15 @@ Like [`lazy_map(f,a::AbstractArray...)`](@ref), but the user provides the elemen
 of the resulting array in order to circumvent type inference.
 """
 @inline function lazy_map(k,T::Type,f::AbstractArray...)
-  s = common_size(f...)
+  s = _common_size(f...)
   lazy_map(evaluate,T,Fill(k, s), f...)
 end
 
 @inline lazy_map(::typeof(evaluate),T::Type,k::AbstractArray,f::AbstractArray...) = LazyArray(T,k,f...)
 
-# """
-#     lazy_map(f::AbstractArray,a::AbstractArray...) -> AbstractArray
-# Applies the mappings in the array of mappings `f` to the entries in the arrays in `a`.
-
-# The resulting array has the same entries as the one obtained with:
-
-#     map( lazy_map, f, a...)
-
-# See the [`evaluate`](@ref) function for details.
-
-# # Example
-
-# "Evaluating" an array of functions
-
-# ```jldoctest
-# using Gridap.Arrays
-
-# f = [+,-,max,min]
-# a = [1,2,3,4]
-# b = [4,3,2,1]
-
-# c = lazy_map(f,a,b)
-
-# println(c)
-
-# # output
-# [5, -1, 3, 1]
-# ```
-# """
-# function lazy_map(g::AbstractArray,f::AbstractArray...)
-#   LazyArray(g,f...)
-# end
-
-# """
-#     lazy_map(::Type{T},f::AbstractArray,a::AbstractArray...) where T
-
-# Like [`lazy_map(f::AbstractArray,a::AbstractArray...)`](@ref), but the user provides the element type
-# of the resulting array in order to circumvent type inference.
-# """
-# function lazy_map(::Type{T},g::AbstractArray,f::AbstractArray...) where T
-#   LazyArray(T,g,f...)
-# end
-
-# function _lazy_map_mapping(k,f::AbstractArray...)
-#     s = common_size(f...)
-#     lazy_map(Fill(k, s...), f...)
-# end
-
-# function _lazy_map_mapping(::Type{T},k,f::AbstractArray...) where T
-#   s = common_size(f...)
-#   lazy_map(T,Fill(k, s...), f...)
-# end
-
-
 """
 Subtype of `AbstractArray` which is the result of `lazy_map`. It represents the
-result of lazy_maping a mapping / array of mappings to a set of arrays that
+result of lazy_maping a `Map` to a set of arrays that
 contain the mapping arguments. This struct makes use of the cache provided
 by the mapping in order to compute its indices (thus allowing to prevent
 allocation). The array is lazy, i.e., the values are only computed on
@@ -159,9 +105,6 @@ IndexStyle(::Type{<:LazyArray}) = IndexCartesian()
 
 IndexStyle(::Type{<:LazyArray{G,T,1} where {G,T}}) = IndexLinear()
 
-#@fverdugo the signature of the index i... has to be improved
-# so that it is resilient to the different types of indices
-
 function array_cache(a::LazyArray)
   @notimplementedif ! all(map(isconcretetype, map(eltype, a.f)))
   if ! (eltype(a.g) <: Function)
@@ -175,19 +118,12 @@ function array_cache(a::LazyArray)
   cg, cgi, cf
 end
 
-# @inline getindex!(c,a::AbstractArray,i...) = a[i...]
-
-#@fverdugo the signature of the index i... has to be improved
-# so that it is resilient to the different types of indices
-# @santiagobadia : Can you handle this? I am not sure what you
-# have in mind
 @inline function getindex!(cache, a::LazyArray, i...)
   cg, cgi, cf = cache
   gi = getindex!(cg, a.g, i...)
   fi = map((ci,ai) -> getindex!(ci,ai,i...),cf,a.f)
-  # fi = getitems!(cf, a.f, i...)
   vi = evaluate!(cgi, gi, fi...)
-  # vi
+  vi
 end
 
 function Base.getindex(a::LazyArray, i...)
@@ -202,7 +138,7 @@ Base.size(a::LazyArray) = size(a.g)
 function lazy_map(::typeof(evaluate),f::Fill, a::Fill...)
   ai = map(ai->ai.value,a)
   r = evaluate(f.value, ai...)
-  s = common_size(f, a...)
+  s = _common_size(f, a...)
   Fill(r, s)
 end
 
@@ -210,51 +146,7 @@ function lazy_map(::typeof(evaluate),::Type{T}, f::Fill, a::Fill...) where T
   lazy_map(evaluate, f, a...)
 end
 
-# @santiagobadia : CompressedArray and Union{CompressedArray,Fill}
-# To be done when starting Algebra part
-
-# Operator
-
-# function lazy_map(op::Operation,x::AbstractArray...)
-  # lazy_map(Fill(op,length(first(x))),x...)
-# end
-
-#@fverdugo: I find the grad argument very confusing. It seems very specific for arrays of Maps/Fields
-# whereas LazyArray is something more general.
-# In fact, I don't believe we need this. It seems that it is not used in the tests, right?
-# Perhaps, what you really need is something similar to test_array_of_fields of the old Gridap verison.
-# Moreover, line
-#  ax = lazy_map(a, x)
-#  Seems outdated
-function test_lazy_array(
-  a::AbstractArray,
-  x::AbstractArray,
-  v::AbstractArray,
-  cmp::Function=(==);
-  grad=nothing)
-
-  ax = lazy_map(a, x)
-  test_array(ax, v, cmp)
-
-  ca, cfi, cx = array_cache(a, x)
-  t = true
-  for i in 1:length(a)
-    fi = getindex!(ca, a, i)
-    xi = getindex!(cx, x, i)
-    fxi = evaluate!(cfi, fi, xi)
-    vi = v[i]
-    ti = cmp(fxi, vi)
-    t = t && ti
-  end
-  @test t
-
-  if grad != nothing
-    g = lazy_map(gradient, a)
-    test_lazy_array(g, x, grad, cmp)
-  end
-end
-
-function common_size(a::AbstractArray...)
+function _common_size(a::AbstractArray...)
   a1, = a
   @check all(map(ai->length(a1) == length(ai),a)) "Array sizes $(map(size,a)) are not compatible."
   if all( map(ai->size(a1) == size(ai),a) )
