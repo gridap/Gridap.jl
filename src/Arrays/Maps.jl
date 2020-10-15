@@ -50,10 +50,17 @@ evaluate!(cache,f,x...) = @abstractmethod
 
 Returns the type of the result of calling mapping `f` with
 arguments of the types of the objects `x`.
-
-Its default implementation is `typeof(testitem(f,x...))`
 """
-return_type(f,x...) = typeof(testitem(f,x...))
+return_type(f,x...) = typeof(evaluate(f,testargs(f,x...)...))
+
+"""
+    testargs(f,x...)
+
+The default implementation of this function is `testargs(f,x...) = x`.
+One can overload it in order to use `lazy_map` with 0-length array
+and maps with non-trivial domains.
+"""
+testargs(f,x...) = x
 
 """
     evaluate(f,x...)
@@ -72,38 +79,11 @@ end
 
 (m::Map)(x...) = evaluate(m,x...)
 
-#@fverdugo this default implementation should be improved to be more resilient
-# to inputs not defined in the domain of f.
-# For instance we could do
-#
-#     testitem(f,x...) = evaluate(f,testargs(f,x...)...)
-#
-# with the default implementation
-#
-#     testargs(f,x...) = x
-#
-# So that the user can define testargs for functions with non trivial domains:
-#
-#    myf(x) = sqrt(x-1)
-#    testargs(::typeof(myf),x) = zero(x) + 1
-#
-#@santiagobadia : But if x is not in the domain, the error will arise anyway,
-# since the user would have provided a x not in the range... I would not
-# complicate things if the user provides the wrong x the DomainError will
-# arise anyway when evaluating
-#
-@inline testitem(k,x...) = evaluate(k,x...)
-
-# @fverdugo
-# testitem!(cache,k,x...) = evaluate!(cache,k,testargs(k,x...)...)
-@inline function testitem!(cache,k,x...)
-  evaluate!(cache,k,x...)
-end
-
 # Default implementation for Function
 
 evaluate!(cache,f::Function,x...) = f(x...)
 
+# @fverdugo rename to test_map
 # Testing the interface
 """
     test_mapping(f,x::Tuple,y,cmp=(==))
@@ -123,8 +103,6 @@ function test_mapping(f,x::Tuple,y,cmp=(==))
   @test cmp(z,y)
   z = evaluate!(cache,f,x...)
   @test cmp(z,y)
-  z = testitem!(cache,f,x...)
-  @test cmp(typeof(z),typeof(y))
 end
 
 # Broadcast Functions
@@ -161,6 +139,10 @@ return_cache(f::Broadcasting,x...) = nothing
 
 @inline evaluate!(cache,f::Broadcasting,x...) = broadcast(f.f,x...)
 
+function return_type(f::Broadcasting,x...)
+  typeof(broadcast( (y...) -> f.f(testargs(f.f,y...)...), x... ))
+end
+
 @inline function evaluate!(cache,f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
   r = _prepare_cache(cache,x...)
   a = r.array
@@ -173,8 +155,7 @@ function evaluate!(cache,f::Broadcasting,args::Number...)
 end
 
 function return_type(f::Broadcasting,x::Number...)
-  Ts = map(typeof,x)
-  return_type(f.f,Ts...)
+  return_type(f.f,x...)
 end
 
 function return_type(f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
@@ -186,23 +167,17 @@ function return_cache(f::Broadcasting,x::Number...)
 end
 
 function return_cache(f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
-  s = _size.(x)
+  s = map(_size,x)
   bs = Base.Broadcast.broadcast_shape(s...)
-  Te = map(_numbertype,x)
-  T = return_type(f.f,Te...)
+  T = return_type(f.f,map(testitem,x)...)
   N = length(bs)
-  r = Array{T,N}(undef,bs)
-  ri = testvalue(T)
-  fill!(r,ri)
+  r = fill(testvalue(T),bs)
   cache = CachedArray(r)
   _prepare_cache(cache,x...)
 end
 
-@inline _numbertype(a::AbstractArray) = eltype(a)
-@inline _numbertype(a::Number) = typeof(a)
-
 @inline function _prepare_cache(c,x...)
-  s = _size.(x)
+  s = map(_size,x)
   bs = Base.Broadcast.broadcast_shape(s...)
   if bs != size(c)
     setsize!(c,bs)
@@ -213,18 +188,13 @@ end
 @inline _size(a) = size(a)
 @inline _size(a::Number) = (1,)
 
-# OperationMaps
-# @fverdugo I would remove this if it is not used and if we don't expect to use it in the future
-# to avoid confusions and to keep focus only in the parts that are used.
-# @santiagobadia : Let us keep it for the moment... and when we will finish with all this,
-# we decide. If you take a look at the tests, you can see that having Operation
-# at the mapping level allows us to do operations with mapping that will probably
-# needed in some algebra kernels, e.g., composition of kernels.
 """
     OperationMap(f,args)
 
 Returns a mapping that represents the result of applying the function `f`
 to the arguments in the tuple `args`.
+That is, `OperationMap(f,args)(x...)` is formally defined as
+`f(map(a->a(x...),args)...)`
 """
 struct OperationMap{K,L} <: Map
   k::K
@@ -232,11 +202,6 @@ struct OperationMap{K,L} <: Map
   @inline function OperationMap(k,l)
     new{typeof(k),typeof(l)}(k,l)
   end
-end
-
-function return_type(c::OperationMap,x...)
-  Ts = map(fi -> return_type(fi,x...),c.l)
-  return_type(c.k, map(testvalue,Ts)...)
 end
 
 function return_cache(c::OperationMap,x...)
@@ -254,21 +219,17 @@ end
 
 # Operations
 
-#@fverdugo The result is not always an OperationMap, so I would not state this in the documentation.
-# In practice it will be an OperationField.
-# I would remove OperationMap and move Operation to the source file
-# where operation between fields are defined (and document only
-# Operation for Field arguments). I think this would be much more clear to understand for new users.
-# @santiagobadia : I have corrected the doc but as said above, I would keep it here
 """
     Operation(op)
 
 Returns a mapping that, when applied to a tuple `args`, returns a mapping.
+That is `Operation(f)(args)(x...)` is formally defined as
+`f(map(a->a(x...),args)...)`.
 
 # Example
 
 ```jldoctest
-using Gridap.Maps
+using Gridap.Arrays
 
 fa(x) = x.*x
 fb(x) = sqrt.(x)
@@ -288,6 +249,7 @@ struct Operation{T} <: Map
   op::T
 end
 
+#@fverdugo: I would remove this name. It is confusing to have 2 names for the same thing.
 """
     operation(op)
 
@@ -295,4 +257,4 @@ end
 """
 operation(a) = Operation(a)
 
-evaluate!(cache,op::Operation,x...) = OperationMap(op.op,x)
+evaluate!(cache,op::Operation,args...) = OperationMap(op.op,args)

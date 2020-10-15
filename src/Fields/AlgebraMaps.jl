@@ -123,10 +123,8 @@ end
 end
 
 function _integrate_rt(f,w,j)
-  Tf = eltype(f)
-  Tw = eltype(w)
-  Tj = eltype(j)
-  return_type(*,Tf,Tw,return_type(meas,Tj))
+  x = map(testitem,(f,w,j))
+  return_type( (fk,wk,jk)->fk*wk*meas(jk), x...)
 end
 
 function _integrate_checks(f,w,j)

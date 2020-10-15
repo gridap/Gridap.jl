@@ -205,4 +205,69 @@ for i in length(ch)
 end
 # @test nalloc == 0
 
+
+# Empty arrays
+
+g(x) = 1.0*x
+a = lazy_map(g,Int[])
+@test test_array(a,Float64[])
+
+myf(x) = sqrt(x-1)
+Arrays.testargs(::typeof(myf),x) = one(x)
+@test test_array(lazy_map(myf,Int[]),Float64[])
+
+# Fill optimizations
+
+l = 10
+v = 3
+a = lazy_map(g,Fill(v,l))
+test_array(a,Fill(g(v),l))
+@test isa(a,Fill)
+
+a = lazy_map(g,Float64,Fill(v,l))
+test_array(a,Fill(g(v),l))
+@test isa(a,Fill)
+
+# array_cache
+
+a = [rand(3) for i in 1:l]
+b = [rand(3) for i in 1:l]
+c = lazy_map(Broadcasting(+),a,b)
+d = lazy_map(Broadcasting(*),a,c)
+
+cache = array_cache(d)
+@test getindex!(cache,d,1) === getindex!(cache,d,2)
+
+i = 1
+cache = array_cache(d,i)
+@test getindex!(cache,d,i) === getindex!(cache,d,i)
+
+ci = CartesianIndex((1))
+cache = array_cache(d,ci)
+@test getindex!(cache,d,ci) === getindex!(cache,d,ci)
+
+# Shapes and indices
+
+s = (3,4)
+a = rand(s...)
+b = rand(s...)
+c = lazy_map(+,a,b)
+@test size(c) == s
+d = a.+b
+test_array(c,d)
+@test c[1] == d[1]
+@test c[2,3] == d[2,3]
+@test c[CartesianIndex(2,3)] == d[CartesianIndex(2,3)]
+@test c[2,3,1,1,1] == d[2,3,1,1,1]
+@test c[CartesianIndex(2,3),1,1] == d[CartesianIndex(2,3),1,1]
+
+s = (3,4)
+a = rand(s...)
+b = rand(prod(s))
+c = lazy_map(+,a,b)
+d = map(+,a,b)
+@test size(c) == size(d)
+@test  c == d
+
+
 end # module

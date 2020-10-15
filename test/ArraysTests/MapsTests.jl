@@ -3,7 +3,6 @@ module MapInterfacesTests
 using Test
 using Gridap.Arrays
 using Gridap.TensorValues
-using Gridap.Inference
 
 # using BenchmarkTools
 using FillArrays
@@ -38,14 +37,13 @@ c = return_cache(+,a,b)
 evaluate!(c,+,a,b) == a+b
 typeof(z) == typeof(a+b)
 return_type(+,a,b)
-testitem(+,a,b)
 
 
 f = Broadcasting(+)
 a = rand(3,2)
 b = 3
 c = a .+ b
-Arrays.test_mapping(f,(a,b),c)
+test_mapping(f,(a,b),c)
 
 k = Broadcasting(-)
 test_mapping(k,(1,),-1)
@@ -96,6 +94,10 @@ h = Operation(bs)(bm)
 cache = return_cache(h,x,2)
 # @btime evaluate!($cache,$h,$x,$2)
 
+# More exotic functions as Maps
+
+myf(::Type{T}) where T = 1.0*one(T)
+@test return_type(myf,Int) == Float64
 
 # k = -
 

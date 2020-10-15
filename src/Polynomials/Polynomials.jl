@@ -10,7 +10,6 @@ module Polynomials
 using DocStringExtensions
 using LinearAlgebra: mul!
 using Gridap.Helpers
-using Gridap.Inference
 using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Fields

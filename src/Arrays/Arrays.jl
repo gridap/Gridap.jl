@@ -11,7 +11,6 @@ $(EXPORTS)
 module Arrays
 
 using Gridap.Helpers
-using Gridap.Inference
 using Gridap.Algebra
 
 using DocStringExtensions
@@ -45,8 +44,8 @@ export evaluate!
 export evaluate
 export test_mapping
 export test_lazy_array
-import Gridap.Inference: return_type
 export return_type
+export testargs
 
 export Broadcasting
 
@@ -79,6 +78,7 @@ export TwoLevelBlockedUnitRange
 export array_cache
 export getindex!
 export testitem
+export testvalue
 # export uses_hash
 export test_array
 export get_array
