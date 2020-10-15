@@ -253,3 +253,4 @@ struct Operation{T} <: Map
 end
 
 evaluate!(cache,op::Operation,args...) = OperationMap(op.op,args)
+

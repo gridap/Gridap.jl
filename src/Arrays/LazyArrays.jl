@@ -72,63 +72,9 @@ end
 
 @inline lazy_map(::typeof(evaluate),T::Type,k::AbstractArray,f::AbstractArray...) = LazyArray(T,k,f...)
 
-# """
-#     lazy_map(f::AbstractArray,a::AbstractArray...) -> AbstractArray
-# Applies the mappings in the array of mappings `f` to the entries in the arrays in `a`.
-
-# The resulting array has the same entries as the one obtained with:
-
-#     map( lazy_map, f, a...)
-
-# See the [`evaluate`](@ref) function for details.
-
-# # Example
-
-# "Evaluating" an array of functions
-
-# ```jldoctest
-# using Gridap.Arrays
-
-# f = [+,-,max,min]
-# a = [1,2,3,4]
-# b = [4,3,2,1]
-
-# c = lazy_map(f,a,b)
-
-# println(c)
-
-# # output
-# [5, -1, 3, 1]
-# ```
-# """
-# function lazy_map(g::AbstractArray,f::AbstractArray...)
-#   LazyArray(g,f...)
-# end
-
-# """
-#     lazy_map(::Type{T},f::AbstractArray,a::AbstractArray...) where T
-
-# Like [`lazy_map(f::AbstractArray,a::AbstractArray...)`](@ref), but the user provides the element type
-# of the resulting array in order to circumvent type inference.
-# """
-# function lazy_map(::Type{T},g::AbstractArray,f::AbstractArray...) where T
-#   LazyArray(T,g,f...)
-# end
-
-# function _lazy_map_mapping(k,f::AbstractArray...)
-#     s = common_size(f...)
-#     lazy_map(Fill(k, s...), f...)
-# end
-
-# function _lazy_map_mapping(::Type{T},k,f::AbstractArray...) where T
-#   s = common_size(f...)
-#   lazy_map(T,Fill(k, s...), f...)
-# end
-
-
 """
 Subtype of `AbstractArray` which is the result of `lazy_map`. It represents the
-result of lazy_maping a mapping / array of mappings to a set of arrays that
+result of lazy_maping a `Map` to a set of arrays that
 contain the mapping arguments. This struct makes use of the cache provided
 by the mapping in order to compute its indices (thus allowing to prevent
 allocation). The array is lazy, i.e., the values are only computed on
