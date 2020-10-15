@@ -149,41 +149,6 @@ end
 # @santiagobadia : CompressedArray and Union{CompressedArray,Fill}
 # To be done when starting Algebra part
 
-#@fverdugo: I find the grad argument very confusing. It seems very specific for arrays of Maps/Fields
-# whereas LazyArray is something more general.
-# In fact, I don't believe we need this. It seems that it is not used in the tests, right?
-# Perhaps, what you really need is something similar to test_array_of_fields of the old Gridap verison.
-# Moreover, line
-#  ax = lazy_map(a, x)
-#  Seems outdated
-function test_lazy_array(
-  a::AbstractArray,
-  x::AbstractArray,
-  v::AbstractArray,
-  cmp::Function=(==);
-  grad=nothing)
-
-  ax = lazy_map(a, x)
-  test_array(ax, v, cmp)
-
-  ca, cfi, cx = array_cache(a, x)
-  t = true
-  for i in 1:length(a)
-    fi = getindex!(ca, a, i)
-    xi = getindex!(cx, x, i)
-    fxi = evaluate!(cfi, fi, xi)
-    vi = v[i]
-    ti = cmp(fxi, vi)
-    t = t && ti
-  end
-  @test t
-
-  if grad != nothing
-    g = lazy_map(gradient, a)
-    test_lazy_array(g, x, grad, cmp)
-  end
-end
-
 function _common_size(a::AbstractArray...)
   a1, = a
   @check all(map(ai->length(a1) == length(ai),a)) "Array sizes $(map(size,a)) are not compatible."
