@@ -87,7 +87,7 @@ bb = Fill(fb,4)
 r = lazy_map(fb,x)
 @test all([ r[i] ≈ sqrt.(x[i]) for i in 1:4])
 
-aaop = lazy_map(operation,aa)
+aaop = lazy_map(Operation,aa)
 cm = lazy_map(evaluate,aaop,bb)
 r = lazy_map(evaluate,cm,x)
 @test all([ r[i] ≈ 2*(sqrt.(x[i])) for i in 1:4])
@@ -192,7 +192,7 @@ for i in length(cs)
 end
 # @test nalloc == 0
 
-asm = lazy_map(operation,as)
+asm = lazy_map(Operation,as)
 ah = lazy_map(evaluate,asm,ap)
 ch = lazy_map(evaluate,ah,ax,an)
 @test all([ ch[i] ≈ sqrt.(nn*ax[i]) for i in 1:4])

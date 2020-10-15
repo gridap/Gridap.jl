@@ -80,8 +80,11 @@ end
 (m::Map)(x...) = evaluate(m,x...)
 
 # Default implementation for Function
-
 evaluate!(cache,f::Function,x...) = f(x...)
+
+# Default implementation for constructors
+evaluate!(cache,::Type{f},x...) where f = f(x...)
+
 
 # @fverdugo rename to test_map
 # Testing the interface
@@ -248,13 +251,5 @@ println(c)
 struct Operation{T} <: Map
   op::T
 end
-
-#@fverdugo: I would remove this name. It is confusing to have 2 names for the same thing.
-"""
-    operation(op)
-
-    Idem as [`Operation(op)`](@ref)).
-"""
-operation(a) = Operation(a)
 
 evaluate!(cache,op::Operation,args...) = OperationMap(op.op,args)

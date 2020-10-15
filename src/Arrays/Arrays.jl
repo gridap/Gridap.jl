@@ -50,7 +50,6 @@ export testargs
 export Broadcasting
 
 export Operation
-export operation
 
 
 # LazyArray
