@@ -12,6 +12,8 @@ using Test
 
 @testset "Maps" begin include("MapsTests.jl") end
 
+@testset "AlgebraMaps" begin include("AlgebraMapsTests.jl") end
+
 @testset "LazyArrays" begin include("LazyArraysTests.jl") end
 
 @testset "CompressedArrays" begin include("CompressedArraysTests.jl") end

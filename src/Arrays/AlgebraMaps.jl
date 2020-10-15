@@ -1,11 +1,10 @@
-struct MulMap <: Map end
 
-function return_cache(k::MulMap,a,b)
+function return_cache(::typeof(*),a::AbstractArray,b::AbstractArray)
   c = a*b
   CachedArray(c)
 end
 
-@inline function evaluate!(cache,k::MulMap,a::AbstractMatrix,b::AbstractVector)
+@inline function evaluate!(cache,::typeof(*),a::AbstractMatrix,b::AbstractVector)
   m = axes(a,1)
   setaxes!(cache,(m,))
   c = cache.array
@@ -13,7 +12,7 @@ end
   c
 end
 
-@inline function evaluate!(cache,k::MulMap,a::AbstractMatrix,b::AbstractMatrix)
+@inline function evaluate!(cache,::typeof(*),a::AbstractMatrix,b::AbstractMatrix)
   m = axes(a,1)
   n = axes(b,2)
   setaxes!(cache,(m,n))

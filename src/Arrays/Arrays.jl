@@ -93,7 +93,6 @@ export posneg_reindex
 
 export FilterMap
 
-export MulMap
 export MulAddMap
 
 export Table

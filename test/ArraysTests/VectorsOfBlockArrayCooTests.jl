@@ -53,7 +53,7 @@ blockids = [(1,),(2,)]
 ax = Fill((blockedrange([2,3,2]),),l)
 cl = VectorOfBlockArrayCoo(blocks,blockids,ax)
 
-dl = lazy_map(MulMap(),al,bl)
+dl = lazy_map(*,al,bl)
 test_array(dl,[ a*b for (a,b) in zip(al,bl) ])
 
 dl = lazy_map(MulAddMap(2,3),al,bl,cl)
@@ -62,7 +62,7 @@ test_array(dl,[ 2*a*b + 3*c for (a,b,c) in zip(al,bl,cl) ])
 dl = lazy_map(transpose,al)
 test_array(dl,transpose.(al))
 
-dl = lazy_map(MulMap(),al,lazy_map(transpose,al))
+dl = lazy_map(*,al,lazy_map(transpose,al))
 test_array(dl,[ a*transpose(a) for a in al ])
 
 # in-homogeneous case
@@ -86,7 +86,7 @@ ax2 = (blockedrange([3,3]),)
 ax = CompressedArray([ax1,ax2],vcat(fill(1,l1),fill(2,l2)))
 bl = VectorOfBlockArrayCoo(blocks,blockids,ax)
 
-dl = lazy_map(MulMap(),al,bl)
+dl = lazy_map(*,al,bl)
 test_array(dl,[ a*b for (a,b) in zip(al,bl) ])
 
 dl = lazy_map(MulAddMap(2,3),al,bl,bl)
@@ -95,7 +95,7 @@ test_array(dl,[ 2*a*b + 3*c for (a,b,c) in zip(al,bl,bl) ])
 dl = lazy_map(transpose,al)
 test_array(dl,transpose.(al))
 
-dl = lazy_map(MulMap(),al,lazy_map(transpose,al))
+dl = lazy_map(*,al,lazy_map(transpose,al))
 test_array(dl,[ a*transpose(a) for a in al ])
 
 # Blocks of blocks (in-homogeneous case)
@@ -118,13 +118,13 @@ ax2 = (blockedrange([_ax2[1],_ax2[1]]),)
 ax = CompressedArray([ax1,ax2],vcat(fill(1,l1),fill(2,l2)))
 bBl = VectorOfBlockArrayCoo(blocks,blockids,ax)
 
-dl = lazy_map(MulMap(),aBl,bBl)
+dl = lazy_map(*,aBl,bBl)
 test_array(dl,[ a*b for (a,b) in zip(aBl,bBl) ])
 
 dl = lazy_map(MulAddMap(2,3),aBl,bBl,bBl)
 test_array(dl,[ 2*a*b + 3*c for (a,b,c) in zip(aBl,bBl,bBl) ])
 
-dl = lazy_map(MulMap(),aBl,lazy_map(transpose,aBl))
+dl = lazy_map(*,aBl,lazy_map(transpose,aBl))
 test_array(dl,[ a*transpose(a) for a in aBl ])
 
 end # module
