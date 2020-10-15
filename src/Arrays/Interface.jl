@@ -237,15 +237,23 @@ It also stresses the new methods added to the `AbstractArray` interface.
 """
 function test_array(
   a::AbstractArray{T,N}, b::AbstractArray{S,N},cmp=(==)) where {T,S,N}
-  @test cmp(a,b)
-  cache = array_cache(a)
-  t = true
-  for i in eachindex(a)
-    bi = b[i]
-    ai = getindex!(cache,a,i)
-    t = t && cmp(bi,ai)
+
+  function _test_loop(indices)
+    cache = array_cache(a,testitem(indices))
+    t = true
+    for i in indices
+      bi = b[i]
+      ai = getindex!(cache,a,i)
+      t = t && cmp(bi,ai)
+    end
+    @test t
   end
-  @test t
+
+  @test cmp(a,b)
+  _test_loop(eachindex(a))
+  _test_loop(LinearIndices(a))
+  _test_loop(CartesianIndices(a))
+  cache = array_cache(a)
   t = true
   for i in eachindex(a)
     ai = getindex!(cache,a,i)
@@ -259,4 +267,5 @@ function test_array(
   end
   true
 end
+
 

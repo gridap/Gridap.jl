@@ -146,9 +146,6 @@ function lazy_map(::typeof(evaluate),::Type{T}, f::Fill, a::Fill...) where T
   lazy_map(evaluate, f, a...)
 end
 
-# @santiagobadia : CompressedArray and Union{CompressedArray,Fill}
-# To be done when starting Algebra part
-
 function _common_size(a::AbstractArray...)
   a1, = a
   @check all(map(ai->length(a1) == length(ai),a)) "Array sizes $(map(size,a)) are not compatible."

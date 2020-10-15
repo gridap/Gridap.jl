@@ -39,12 +39,7 @@ end
 
 size(a::CompressedArray) = size(a.ptrs)
 
-@propagate_inbounds function getindex(a::CompressedArray,i::Integer)
-  j = a.ptrs[i]
-  a.values[j]
-end
-
-@propagate_inbounds function getindex(a::CompressedArray,i::Integer...)
+@propagate_inbounds function getindex(a::CompressedArray,i...)
   j = a.ptrs[i...]
   a.values[j]
 end
@@ -120,28 +115,18 @@ function _fill_to_compressed(g1,g)
   f
 end
 
-function _lazy_map_fill_compressed(f,g1,g...)
+function _lazy_map_fill_compressed(f,g...)
   k = f.value
-  ptrs = g1.ptrs
-  vals = _getvalues(g1,g...)
+  ptrs = first(g).ptrs
+  vals = map(gi->gi.values,g)
   vk = lazy_map(k,vals...)
   CompressedArray(collect(vk),ptrs)
 end
 
 function _lazy_map_compressed(g1,g...)
   ptrs = g1.ptrs
-  vals = _getvalues(g...)
+  vals = map(gi->gi.values,g)
   vk = lazy_map(evaluate,g1.values,vals...)
   CompressedArray(collect(vk),ptrs)
 end
 
-function _getvalues(a,b...)
-  va = a.values
-  vb = _getvalues(b...)
-  (va,vb...)
-end
-
-function _getvalues(a)
-  va = a.values
-  (va,)
-end
