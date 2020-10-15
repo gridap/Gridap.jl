@@ -53,7 +53,7 @@ println(c)
 ```
 """
 @inline function lazy_map(k,f::AbstractArray...)
-  s = common_size(f...)
+  s = _common_size(f...)
   lazy_map(evaluate,Fill(k, s), f...)
 end
 
@@ -66,7 +66,7 @@ Like [`lazy_map(f,a::AbstractArray...)`](@ref), but the user provides the elemen
 of the resulting array in order to circumvent type inference.
 """
 @inline function lazy_map(k,T::Type,f::AbstractArray...)
-  s = common_size(f...)
+  s = _common_size(f...)
   lazy_map(evaluate,T,Fill(k, s), f...)
 end
 
@@ -138,7 +138,7 @@ Base.size(a::LazyArray) = size(a.g)
 function lazy_map(::typeof(evaluate),f::Fill, a::Fill...)
   ai = map(ai->ai.value,a)
   r = evaluate(f.value, ai...)
-  s = common_size(f, a...)
+  s = _common_size(f, a...)
   Fill(r, s)
 end
 
@@ -184,7 +184,7 @@ function test_lazy_array(
   end
 end
 
-function common_size(a::AbstractArray...)
+function _common_size(a::AbstractArray...)
   a1, = a
   @check all(map(ai->length(a1) == length(ai),a)) "Array sizes $(map(size,a)) are not compatible."
   if all( map(ai->size(a1) == size(ai),a) )

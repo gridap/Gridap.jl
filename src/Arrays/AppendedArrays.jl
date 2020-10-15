@@ -97,8 +97,8 @@ function lazy_map(f,a::AppendedArray...)
     c_b = lazy_map(f,map(ai->ai.b,a)...)
     lazy_append(c_a,c_b)
   else
-    s = common_size(a...)
-    lazy_map(Fill(f,s...),a...)
+    s = _common_size(a...)
+    LazyArray(Fill(f,s...),a...)
   end
 end
 
@@ -110,8 +110,8 @@ function lazy_map(f,::Type{T},a::AppendedArray...) where T
     c_b = lazy_map(f,T,map(ai->ai.b,a)...)
     lazy_append(c_a,c_b)
   else
-    s = common_size(a...)
-    lazy_map(Fill(f,s...),T,a...)
+    s = _common_size(a...)
+    LazyArray(Fill(f,s...),T,a...)
   end
 end
 
