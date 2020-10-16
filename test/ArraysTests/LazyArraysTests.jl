@@ -239,11 +239,11 @@ cache = array_cache(d)
 @test getindex!(cache,d,1) === getindex!(cache,d,2)
 
 i = 1
-cache = array_cache(d,i)
+cache = array_cache(d)
 @test getindex!(cache,d,i) === getindex!(cache,d,i)
 
 ci = CartesianIndex((1))
-cache = array_cache(d,ci)
+cache = array_cache(d)
 @test getindex!(cache,d,ci) === getindex!(cache,d,ci)
 
 # Shapes and indices
