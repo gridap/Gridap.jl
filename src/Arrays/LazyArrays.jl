@@ -105,10 +105,7 @@ IndexStyle(::Type{<:LazyArray}) = IndexCartesian()
 
 IndexStyle(::Type{<:LazyArray{G,T,1} where {G,T}}) = IndexLinear()
 
-function array_cache(a::LazyArray)
-  hash = Dict{UInt,Any}()
-  array_cache(hash,a)
-end
+uses_hash(::Type{<:LazyArray}) = Val{true}()
 
 function array_cache(hash::Dict,a::LazyArray)
   function _getid(hash,cache::T,id) where T
@@ -145,7 +142,13 @@ function _array_cache!(hash::Dict,a::LazyArray)
   (cg, cgi, cf), IndexItemPair(index, item)
 end
 
-@inline function getindex!(cache, a::LazyArray, i...)
+@inline getindex!(cache, a::LazyArray, i::Integer) = _getindex_optimized!(cache,a,i)
+
+@inline function getindex!(cache, a::LazyArray{G,T,N}, i::Vararg{Integer,N}) where {G,T,N}
+  _getindex_optimized!(cache,a,i...)
+end
+
+@inline function _getindex_optimized!(cache, a::LazyArray, i...)
   _cache, index_and_item = cache
   index = LinearIndices(a)[i...]
   if index_and_item.index != index

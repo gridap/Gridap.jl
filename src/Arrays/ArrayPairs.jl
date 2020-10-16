@@ -30,16 +30,23 @@ Base.IndexStyle(::Type{ArrayPair{T,N,A,B}}) where {T,N,A,B} = IndexStyle(A)
 
 uses_hash(::Type{<:ArrayPair}) = Val{true}()
 
-function array_cache(hash,p::ArrayPair)
+function array_cache(hash::Dict,p::ArrayPair)
   ca = array_cache(hash,p.a)
   cb = array_cache(hash,p.b)
   (ca,cb)
 end
 
-@inline function getindex!(cache,p::ArrayPair,i)
+@inline function getindex!(cache,p::ArrayPair,i::Integer)
   ca, cb = cache
   ai = getindex!(ca,p.a,i)
   bi = getindex!(cb,p.b,i)
+  (ai,bi)
+end
+
+@inline function getindex!(cache,p::ArrayPair{T,N},i::Vararg{Integer,N}) where {T,N}
+  ca, cb = cache
+  ai = getindex!(ca,p.a,i...)
+  bi = getindex!(cb,p.b,i...)
   (ai,bi)
 end
 
@@ -91,12 +98,17 @@ end
 
 uses_hash(::Type{<:UnpairedArray}) = Val{true}()
 
-function array_cache(hash,p::UnpairedArray)
+function array_cache(hash::Dict,p::UnpairedArray)
   array_cache(hash,p.pair)
 end
 
-@inline function getindex!(cache,a::UnpairedArray{I},i) where I
+@inline function getindex!(cache,a::UnpairedArray{I},i::Integer) where I
   p = getindex!(cache,a.pair,i)
+  p[I]
+end
+
+@inline function getindex!(cache,a::UnpairedArray{I,T,N},i::Vararg{Integer,N}) where {I,T,N}
+  p = getindex!(cache,a.pair,i...)
   p[I]
 end
 
