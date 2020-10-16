@@ -106,29 +106,69 @@ IndexStyle(::Type{<:LazyArray}) = IndexCartesian()
 IndexStyle(::Type{<:LazyArray{G,T,1} where {G,T}}) = IndexLinear()
 
 function array_cache(a::LazyArray)
-  @notimplementedif ! all(map(isconcretetype, map(eltype, a.f)))
-  if ! (eltype(a.g) <: Function)
-    @notimplementedif ! isconcretetype(eltype(a.g))
+  hash = Dict{UInt,Any}()
+  array_cache(hash,a)
+end
+
+function array_cache(hash::Dict,a::LazyArray)
+  function _getid(hash,cache::T,id) where T
+    value::T = hash[id]
+    value
+  end
+  id = objectid(a)
+  cache = _array_cache!(hash,a)
+  if ! haskey(hash,id)
+    hash[id] = cache
+  end
+  _getid(hash,cache,id)
+end
+
+mutable struct IndexItemPair{T,V}
+  index::T
+  item::V
+end
+
+function _array_cache!(hash::Dict,a::LazyArray)
+  @boundscheck begin
+    @notimplementedif ! all(map(isconcretetype, map(eltype, a.f)))
+    if ! (eltype(a.g) <: Function)
+      @notimplementedif ! isconcretetype(eltype(a.g))
+    end
   end
   gi = testitem(a.g)
   fi = map(testitem,a.f)
-  cg = array_cache(a.g)
-  cf = map(array_cache,a.f)
+  cg = array_cache(hash,a.g)
+  cf = map(fi->array_cache(hash,fi),a.f)
   cgi = return_cache(gi, fi...)
-  cg, cgi, cf
+  index = -1
+  item = evaluate!(cgi,gi,testargs(gi,fi...)...)
+  (cg, cgi, cf), IndexItemPair(index, item)
 end
 
 @inline function getindex!(cache, a::LazyArray, i...)
+  _cache, index_and_item = cache
+  index = LinearIndices(a)[i...]
+  if index_and_item.index != index
+    item = _getindex!(_cache,a,i...)
+    index_and_item.index = index
+    index_and_item.item = item
+  end
+  index_and_item.item
+end
+
+@inline function _getindex!(cache, a::LazyArray, i...)
   cg, cgi, cf = cache
   gi = getindex!(cg, a.g, i...)
-  fi = map((ci,ai) -> getindex!(ci,ai,i...),cf,a.f)
+  fi = map((cj,fj) -> getindex!(cj,fj,i...),cf,a.f)
   vi = evaluate!(cgi, gi, fi...)
   vi
 end
 
 function Base.getindex(a::LazyArray, i...)
-  ca = array_cache(a)
-  getindex!(ca, a, i...)
+  gi = a.g[i...]
+  fi = map(fj -> fj[i...],a.f)
+  vi = evaluate(gi, fi...)
+  vi
 end
 
 Base.size(a::LazyArray) = size(a.g)
@@ -156,29 +196,26 @@ function _common_size(a::AbstractArray...)
   end
 end
 
-# struct ArrayWithCounter{T,N,A,C} <: AbstractArray{T,N}
-#   array::A
-#   counter::C
-#   function ArrayWithCounter(a::AbstractArray{T,N}) where {T,N}
-#     c = zeros(Int,size(a))
-#     c[:] .= 0
-#     new{T,N,typeof(a),typeof(c)}(a,c)
-#   end
-# end
+# Needed only for testing purposes
+struct ArrayWithCounter{T,N,A} <: AbstractArray{T,N}
+  array::A
+  counter::Array{Int,N}
+  function ArrayWithCounter(a::AbstractArray{T,N}) where {T,N}
+    c = zeros(Int,size(a))
+    new{T,N,typeof(a)}(a,c)
+  end
+end
 
-# Base.size(a::ArrayWithCounter) = size(a.array)
+Base.size(a::ArrayWithCounter) = size(a.array)
 
-# function Base.getindex(a::ArrayWithCounter,i::Integer...)
-#   a.counter[i...] += 1
-#   a.array[i...]
-# end
+function Base.getindex(a::ArrayWithCounter,i...)
+  a.counter[i...] += 1
+  a.array[i...]
+end
 
-# Base.IndexStyle(::Type{<:ArrayWithCounter{T,N,A}}) where {T,A,N} = IndexStyle(A)
+Base.IndexStyle(::Type{<:ArrayWithCounter{T,N,A}}) where {T,A,N} = IndexStyle(A)
 
-# function reset_counter!(a::ArrayWithCounter)
-#   a.counter[:] .= 0
-# end
+function resetcounter!(a::ArrayWithCounter)
+  fill!(a.counter,zero(eltype(a.counter)))
+end
 
-# @santiagobadia : Do we want the same names for both ?????
-# @inline array_cache(a::LazyArray,i...) = return_cache(a,i...)
-# @inline get_index!(c,a::LazyArray,i...) = evaluate!(c,a,i...)
