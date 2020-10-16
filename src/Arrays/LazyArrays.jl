@@ -171,6 +171,9 @@ function Base.getindex(a::LazyArray, i...)
   vi
 end
 
+#@fverdugo TODO
+Base.getindex(a::LazyArray,i::AbstractArray) = reindex(a,i)
+
 Base.size(a::LazyArray) = size(a.g)
 
 # Particular implementations for Fill
