@@ -16,22 +16,3 @@ size(c::IdentityVector) = (c.length,)
 
 IndexStyle(::Type{<:IdentityVector}) = IndexLinear()
 
-function lazy_map(k::Reindex{<:AbstractArray}, indices::IdentityVector)
-  @check length(k.values) == length(indices)
-  k.values
-end
-
-#function lazy_map(k::Reindex{<:LazyArray},b::IdentityVector)
-#  @check length(k.values) == length(indices)
-#  k.values
-#end
-
-function lazy_map(k::Reindex{<:Fill},b::IdentityVector)
-  @check length(k.values) == length(indices)
-  k.values
-end
-
-function lazy_map(k::Reindex{<:CompressedArray},b::IdentityVector)
-  @check length(k.values) == length(indices)
-  k.values
-end

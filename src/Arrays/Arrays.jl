@@ -153,9 +153,9 @@ include("Tables.jl")
 
 include("IdentityVectors.jl")
 
-include("Reindex.jl")
-
 include("PosNegReindex.jl")
+
+include("Reindex.jl")
 
 include("FilteredArrays.jl")
 
