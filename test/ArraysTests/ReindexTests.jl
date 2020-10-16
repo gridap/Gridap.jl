@@ -74,7 +74,8 @@ data = [2,3,1,3,4,4,3,2,5,4,3,4]
 ptrs = [1,4,4,7,13]
 gid_to_val = [p, 2*p, 3*p, -p, p]
 lid_to_gid = Table(data,ptrs)
-ca = reindex(gid_to_val,lid_to_gid)
+ca = lazy_map(Broadcasting(Reindex(gid_to_val)),lid_to_gid)
+#ca = reindex(gid_to_val,lid_to_gid)
 a = [ gid_to_val[gids] for gids in lid_to_gid ]
 test_array( ca, a )
 
@@ -87,7 +88,7 @@ i_to_v=[[1, 2], [5, 6], [1, 5], [2, 6], [2, 3], [6, 7], [3, 7], [3, 4], [7, 8], 
 j_to_i=Int64[]
 lid_to_gid=reindex(i_to_v,j_to_i)
 gid_to_val=VectorValue{2,Float64}[(0.0, 0.25), (0.25, 0.25), (0.5, 0.25), (0.75, 0.25), (0.0, 0.5), (0.25, 0.5), (0.5, 0.5), (0.75, 0.5), (0.0, 0.75), (0.25, 0.75), (0.5, 0.75), (0.75, 0.75), (0.0, 1.0), (0.25, 1.0), (0.5, 1.0), (0.75, 1.0)]
-f2 = lazy_map(Reindex(gid_to_val),lid_to_gid)
+f2 = lazy_map(Broadcasting(Reindex(gid_to_val)),lid_to_gid)
 
 test_array(f2,Vector{VectorValue{2,Float64}}[])
 
