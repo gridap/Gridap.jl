@@ -164,15 +164,19 @@ end
   vi
 end
 
-function Base.getindex(a::LazyArray, i...)
+function Base.getindex(a::LazyArray, i::Integer)
+  gi = a.g[i]
+  fi = map(fj -> fj[i],a.f)
+  vi = evaluate(gi, fi...)
+  vi
+end
+
+function Base.getindex(a::LazyArray{G,T,N}, i::Vararg{Integer,N}) where {G,T,N}
   gi = a.g[i...]
   fi = map(fj -> fj[i...],a.f)
   vi = evaluate(gi, fi...)
   vi
 end
-
-#@fverdugo TODO
-Base.getindex(a::LazyArray,i::AbstractArray) = reindex(a,i)
 
 Base.size(a::LazyArray) = size(a.g)
 
