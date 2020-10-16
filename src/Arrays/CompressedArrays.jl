@@ -39,7 +39,12 @@ end
 
 size(a::CompressedArray) = size(a.ptrs)
 
-@propagate_inbounds function getindex(a::CompressedArray,i...)
+@propagate_inbounds function getindex(a::CompressedArray,i::Integer)
+  j = a.ptrs[i]
+  a.values[j]
+end
+
+@propagate_inbounds function getindex(a::CompressedArray{T,N},i::Vararg{Integer,N}) where {T,N}
   j = a.ptrs[i...]
   a.values[j]
 end

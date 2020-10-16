@@ -11,12 +11,12 @@ testargs(k::Reindex,i::Integer...) = map(one,i)
 return_cache(k::Reindex,i...) = array_cache(k.values)
 @inline evaluate!(cache,k::Reindex,i...) = getindex!(cache,k.values,i...)
 
-"""
-    reindex(i_to_v::AbstractArray, j_to_i::AbstractArray)
-"""
-function reindex(i_to_v::AbstractArray, j_to_i::AbstractArray)
-  lazy_map(Reindex(i_to_v),j_to_i)
-end
+#"""
+#    reindex(i_to_v::AbstractArray, j_to_i::AbstractArray)
+#"""
+#function reindex(i_to_v::AbstractArray, j_to_i::AbstractArray)
+#  lazy_map(Reindex(i_to_v),j_to_i)
+#end
 
 function lazy_map(k::Reindex{<:Fill}, j_to_i::AbstractArray)
   v = k.values.value

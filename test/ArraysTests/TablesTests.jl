@@ -35,7 +35,7 @@ perm = Vector{Int64}(undef,12)
 perm[1:3]  .= 10:12
 perm[4:6]  .= 7:9
 perm[7:12] .= 1:6
-data = reindex(data,perm)
+data = lazy_map(Reindex(data),perm)
 b = Table(data,ptrs)
 test_array(a,b)
 

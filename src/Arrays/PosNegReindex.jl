@@ -101,13 +101,13 @@ end
   r
 end
 
-function posneg_reindex(i_to_v_pos::AbstractArray, i_to_v_neg::AbstractArray, j_to_i::AbstractArray)
-  lazy_map(PosNegReindex(i_to_v_pos,i_to_v_neg),j_to_i)
-end
-
-function posneg_reindex(i_to_v_pos::AbstractArray, i_to_v_neg::AbstractArray, j_to_i::AbstractArray{<:AbstractArray})
-  lazy_map(PosNegReindex(i_to_v_pos,i_to_v_neg),j_to_i)
-end
+#function posneg_reindex(i_to_v_pos::AbstractArray, i_to_v_neg::AbstractArray, j_to_i::AbstractArray)
+#  lazy_map(PosNegReindex(i_to_v_pos,i_to_v_neg),j_to_i)
+#end
+#
+#function posneg_reindex(i_to_v_pos::AbstractArray, i_to_v_neg::AbstractArray, j_to_i::AbstractArray{<:AbstractArray})
+#  lazy_map(PosNegReindex(i_to_v_pos,i_to_v_neg),j_to_i)
+#end
 
 # @propagate_inbounds function Base.setindex!(a::LazyArray{<:Fill{<:PosNegReindex}},v,j::Integer)
 #   k = a.g.value
