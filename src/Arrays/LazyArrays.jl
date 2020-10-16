@@ -218,7 +218,12 @@ end
 
 Base.size(a::ArrayWithCounter) = size(a.array)
 
-function Base.getindex(a::ArrayWithCounter,i...)
+function Base.getindex(a::ArrayWithCounter,i::Integer)
+  a.counter[i] += 1
+  a.array[i]
+end
+
+function Base.getindex(a::ArrayWithCounter{T,N},i::Vararg{Integer,N}) where {T,N}
   a.counter[i...] += 1
   a.array[i...]
 end
