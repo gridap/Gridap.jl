@@ -23,8 +23,8 @@ function _lazy_split(f,n)
   @assert n <= l
   ids_a = collect(1:n)
   ids_b = collect((n+1):l)
-  a = reindex(f,ids_a)
-  b = reindex(f,ids_b)
+  a = lazy_map(Reindex(f),ids_a)
+  b = lazy_map(Reindex(f),ids_b)
   a,b
 end
 

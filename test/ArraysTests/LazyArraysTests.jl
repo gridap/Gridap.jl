@@ -239,11 +239,11 @@ cache = array_cache(d)
 @test getindex!(cache,d,1) === getindex!(cache,d,2)
 
 i = 1
-cache = array_cache(d,i)
+cache = array_cache(d)
 @test getindex!(cache,d,i) === getindex!(cache,d,i)
 
 ci = CartesianIndex((1))
-cache = array_cache(d,ci)
+cache = array_cache(d)
 @test getindex!(cache,d,ci) === getindex!(cache,d,ci)
 
 # Shapes and indices
@@ -269,5 +269,24 @@ d = map(+,a,b)
 @test size(c) == size(d)
 @test  c == d
 
+# Test the intermediate results caching mechanism
+
+a = Arrays.ArrayWithCounter(fill(rand(2,3),12))
+b = Arrays.ArrayWithCounter(rand(12))
+c = lazy_map(Broadcasting(-),a,b)
+d = lazy_map(Broadcasting(+),a,c)
+e = lazy_map(Broadcasting(*),d,c)
+r = [ (ai.-bi).*(ai.+(ai.-bi)) for (ai,bi) in zip(a,b)]
+test_array(e,r)
+cache = array_cache(e)
+Arrays.resetcounter!(a)
+Arrays.resetcounter!(b)
+for i in 1:length(e)
+  ei = getindex!(cache,e,i)
+  ei = getindex!(cache,e,i)
+  ei = getindex!(cache,e,i)
+end
+@test all(a.counter .== 2)
+@test all(b.counter .== 1)
 
 end # module

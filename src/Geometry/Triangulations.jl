@@ -149,7 +149,7 @@ end
     get_cell_id(trian::Triangulation)
 """
 function get_cell_id(trian::Triangulation)
-  identity_vector(num_cells(trian))
+  IdentityVector(num_cells(trian))
 end
 
 """

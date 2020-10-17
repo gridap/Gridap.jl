@@ -8,6 +8,12 @@ It defaults to
 
     getindex!(cache,a::AbstractArray,i...) = a[i...]
 
+As for standard Julia arrays, the user needs to implement only one of the following signatures
+depending on the `IndexStyle` of the array.
+
+    getindex!(cache,a::AbstractArray,i::Integer)
+    getindex!(cache,a::AbstractArray{T,N},i::Vararg{Integer,N}) where {T,N}
+
 # Examples
 
 Iterating over an array using the `getindex!` function
@@ -33,7 +39,16 @@ end
 ```
 
 """
-getindex!(cache,a::AbstractArray,i...) = a[i...]
+@inline getindex!(cache,a::AbstractArray,i...) = a[i...]
+@inline getindex!(cache,a::AbstractArray,i::CartesianIndex) = getindex!(cache,a,Tuple(i)...)
+@inline getindex!(cache,a::AbstractArray,i::Integer) = _getindex_1d!(IndexStyle(a),cache,a,i)
+@inline function getindex!(cache,a::AbstractArray{T,N},i::Vararg{Integer,N}) where {T,N}
+  _getindex_nd!(IndexStyle(a),cache,a,CartesianIndex(i))
+end
+@inline _getindex_1d!(s::IndexLinear,cache,a,i) = a[i]
+@inline _getindex_1d!(s::IndexCartesian,cache,a,i) = _getindex_nd!(s,cache,a,CartesianIndices(a)[i])
+@inline _getindex_nd!(s::IndexLinear,cache,a,i) = _getindex_1d!(s,cache,a,LinearIndices(a)[i])
+@inline _getindex_nd!(s::IndexCartesian,cache,a,i) = a[i]
 
 """
     array_cache(a::AbstractArray)
@@ -70,27 +85,12 @@ This mechanism is needed, e.g., to re-use intermediate results in complex lazy o
 In multi-threading computations, a different hash table per thread has to be used in order
 to avoid race conditions.
 """
-function array_cache(a::AbstractArray)
-  _default_array_cache(a,uses_hash(a))
-end
-
-@inline array_cache(a::AbstractArray,i...) = array_cache(a)
-
-function array_cache(hash,a::T) where T
-  if uses_hash(T) == Val{true}()
-    error("array_cache(::Dict,::$T) not defined")
-  end
-  array_cache(a)
-end
-
-function _default_array_cache(a,::Val{false})
-  nothing
-end
-
-function _default_array_cache(a,::Val{true})
-  hash = Dict{UInt,Any}()
-  array_cache(hash,a)
-end
+array_cache(a::AbstractArray) = _default_array_cache(a,uses_hash(a))
+array_cache(hash::Dict,a::AbstractArray) = _default_array_cache(hash,a,uses_hash(a))
+_default_array_cache(a,s::Val{true}) = array_cache(Dict{UInt,Any}(),a)
+_default_array_cache(a,s::Val{false}) = nothing
+_default_array_cache(hash::Dict,a,s::Val{false}) = array_cache(a)
+_default_array_cache(hash::Dict,a,s::Val{true}) = @abstractmethod
 
 """
     uses_hash(::Type{<:AbstractArray})
@@ -106,7 +106,6 @@ be called on instances of `T`.
 
 """
 uses_hash(::Type{<:AbstractArray}) = Val(false)
-
 uses_hash(::T) where T = uses_hash(T)
 
 """
@@ -239,7 +238,7 @@ function test_array(
   a::AbstractArray{T,N}, b::AbstractArray{S,N},cmp=(==)) where {T,S,N}
 
   function _test_loop(indices)
-    cache = array_cache(a,testitem(indices))
+    cache = array_cache(a)
     t = true
     for i in indices
       bi = b[i]

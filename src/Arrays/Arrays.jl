@@ -86,10 +86,10 @@ export get_array
 export CompressedArray
 
 export Reindex
-export reindex
+#export reindex
 
 export PosNegReindex
-export posneg_reindex
+#export posneg_reindex
 
 export FilterMap
 
@@ -115,7 +115,7 @@ export UNSET
 export get_local_item
 export find_local_index
 
-export identity_vector
+export IdentityVector
 
 export SubVector
 export pair_arrays
@@ -153,9 +153,9 @@ include("Tables.jl")
 
 include("IdentityVectors.jl")
 
-include("Reindex.jl")
-
 include("PosNegReindex.jl")
+
+include("Reindex.jl")
 
 include("FilteredArrays.jl")
 

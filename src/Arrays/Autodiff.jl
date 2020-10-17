@@ -10,7 +10,7 @@ function autodiff_array_gradient(a,i_to_x,j_to_i=IdentityVector(length(i_to_x)))
   end
 
   j_to_f = to_array_of_functions(a,i_to_xdual,j_to_i)
-  j_to_x = reindex(i_to_x,j_to_i)
+  j_to_x = lazy_map(Reindex(i_to_x),j_to_i)
 
   k = ForwardDiffGradientMap()
   lazy_map(k,j_to_f,j_to_x)
@@ -43,7 +43,7 @@ function autodiff_array_jacobian(a,i_to_x,j_to_i=IdentityVector(length(i_to_x)))
   end
 
   j_to_f = to_array_of_functions(a,i_to_xdual,j_to_i)
-  j_to_x = reindex(i_to_x,j_to_i)
+  j_to_x = lazy_map(Reindex(i_to_x),j_to_i)
 
   k = ForwardDiffJacobianMap()
   lazy_map(k,j_to_f,j_to_x)

@@ -670,7 +670,7 @@ end
 function get_face_coordinates(p::Polytope,d::Integer)
   vert_to_coord = get_vertex_coordinates(p)
   face_to_vertices = get_faces(p,d,0)
-  collect(reindex(vert_to_coord,face_to_vertices))
+  collect(lazy_map(Broadcasting(Reindex(vert_to_coord)),face_to_vertices))
   # collect(LocalToGlobalArray(face_to_vertices,vert_to_coord))
 end
 

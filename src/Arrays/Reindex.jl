@@ -1,56 +1,101 @@
+# This Map has non-trivial domain, thus we need the define testargs
 """
-    reindex(i_to_v::AbstractArray, j_to_i::AbstractArray)
+    Reindex(values) -> Map
 """
 struct Reindex{A} <: Map
   values::A
 end
 
-@inline return_type(k::Reindex,x...) = typeof(first(k.values))
-
-@inline return_type(k::Reindex,x::AbstractArray...) = typeof(testitem(k,x...))
-
-@inline return_cache(k::Reindex,f) = array_cache(k.values)
-
-@inline function return_cache(k::Reindex,a::AbstractArray)
-  gids = a
-  vals = k.values
-  T = eltype(vals)
-  r = zeros(T,size(gids))
-  c = CachedArray(r)
+function testargs(k::Reindex,i)
+  @check length(k.values) !=0 "This map has empty domain"
+  (one(i),)
 end
-
-@inline evaluate!(cache,k::Reindex,i) = getindex!(cache,k.values,i)
-
-@inline function evaluate!(cache,k::Reindex,gids::AbstractArray)
-  c = cache
-  setsize!(c,size(gids))
-  r = c.array
-  for i in eachindex(gids)
-    @inbounds r[i] = k.values[gids[i]]
-  end
-  r
+function testargs(k::Reindex,i::Integer...)
+  @check length(k.values) !=0 "This map has empty domain"
+  map(one,i)
 end
+return_cache(k::Reindex,i...) = array_cache(k.values)
+@inline evaluate!(cache,k::Reindex,i...) = getindex!(cache,k.values,i...)
 
-function reindex(i_to_v::AbstractArray, j_to_i::AbstractArray)
-  lazy_map(Reindex(i_to_v),j_to_i)
-end
+#"""
+#    reindex(i_to_v::AbstractArray, j_to_i::AbstractArray)
+#"""
+#function reindex(i_to_v::AbstractArray, j_to_i::AbstractArray)
+#  lazy_map(Reindex(i_to_v),j_to_i)
+#end
 
-function reindex(i_to_v::Fill, j_to_i::AbstractArray)
-  v = i_to_v.value
+function lazy_map(k::Reindex{<:Fill}, j_to_i::AbstractArray)
+  v = k.values.value
   Fill(v,size(j_to_i)...)
 end
 
-function reindex(i_to_v::CompressedArray, j_to_i::AbstractArray)
+function lazy_map(k::Reindex{<:CompressedArray}, j_to_i::AbstractArray)
+  i_to_v = k.values
   values = i_to_v.values
-  ptrs = i_to_v.ptrs[j_to_i]
+  ptrs = lazy_map(Reindex(i_to_v.ptrs),j_to_i)
   CompressedArray(values,ptrs)
 end
 
-function reindex(gid_to_val::AbstractArray,lid_to_gid::AbstractArray{<:AbstractArray})
-  lazy_map(Reindex(gid_to_val),lid_to_gid)
+# This optimization is important for surface-coupled problems
+function lazy_map(k::Reindex{<:LazyArray{<:Fill{<:PosNegReindex}}}, j_to_i::AbstractArray)
+  i_to_iposneg = k.values.f[1]
+  ipos_to_value = k.values.g.value.values_pos
+  ineg_to_value = k.values.g.value.values_neg
+  if _aligned_with_pos(i_to_iposneg,j_to_i,length(ipos_to_value))
+    ipos_to_value
+  elseif _aligned_with_neg(i_to_iposneg,j_to_i,length(ineg_to_value))
+    ineg_to_value
+  elseif _all_pos(i_to_iposneg,j_to_i)
+    j_to_ipos = lazy_map(Reindex(i_to_iposneg),j_to_i)
+    j_to_value = lazy_map(Reindex(ipos_to_value),j_to_ipos)
+  elseif _all_neg(i_to_iposneg,j_to_i)
+    j_to_ineg = lazy_map(Reindex(i_to_iposneg),j_to_i)
+    j_to_value = lazy_map(Reindex(ineg_to_value),lazy_map(ineg->-ineg,j_to_ineg))
+  else
+    j_to_iposneg = lazy_map(Reindex(i_to_iposneg),j_to_i)
+    j_to_value = lazy_map(PosNegReindex(ipos_to_value,ineg_to_value),j_to_iposneg)
+  end
 end
 
-Base.getindex(a::LazyArray,i::AbstractArray) = reindex(a,i)
+function _aligned_with_pos(i_to_iposneg,j_to_i,npos)
+  j_to_iposneg = lazy_map(Reindex(i_to_iposneg),j_to_i)
+  j_to_iposneg == 1:npos
+end
+
+function _aligned_with_neg(i_to_iposneg,j_to_i,nneg)
+  j_to_iposneg = lazy_map(Reindex(i_to_iposneg),j_to_i)
+  j_to_iposneg == -(1:nneg)
+end
+
+function _all_pos(i_to_iposneg,j_to_i)
+  j_to_iposneg = lazy_map(Reindex(i_to_iposneg),j_to_i)
+  all( lazy_map(iposneg -> iposneg>0, j_to_iposneg) )
+end
+
+function _all_neg(i_to_iposneg,j_to_i)
+  j_to_iposneg = lazy_map(Reindex(i_to_iposneg),j_to_i)
+  all( lazy_map(iposneg -> iposneg<0, j_to_iposneg) )
+end
+
+function lazy_map(k::Reindex{<:LazyArray{<:PosNegReindex}}, j_to_i::IdentityVector)
+  @check length(k.values) == length(indices)
+  k.values
+end
+
+function lazy_map(k::Reindex{<:AbstractArray}, indices::IdentityVector)
+  @check length(k.values) == length(indices)
+  k.values
+end
+
+function lazy_map(k::Reindex{<:Fill},b::IdentityVector)
+  @check length(k.values) == length(indices)
+  k.values
+end
+
+function lazy_map(k::Reindex{<:CompressedArray},b::IdentityVector)
+  @check length(k.values) == length(indices)
+  k.values
+end
 
 @propagate_inbounds function Base.setindex!(a::LazyArray{<:Fill{<:Reindex}},v,j::Integer)
   k = a.g.value
@@ -60,6 +105,3 @@ Base.getindex(a::LazyArray,i::AbstractArray) = reindex(a,i)
   i_to_v[i]=v
 end
 
-@inline function testitem(k::Reindex,gids)
-  gids == 0 ? testitem(k,1) :  evaluate(k,gids)#testvalue(eltype(k.values))
-end
