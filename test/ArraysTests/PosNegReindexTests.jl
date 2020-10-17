@@ -51,4 +51,10 @@ gid_to_val=VectorValue{2,Float64}[(0.0, 0.25), (0.25, 0.25), (0.5, 0.25), (0.75,
 f2=lazy_map(Broadcasting(PosNegReindex(gid_to_val,gid_to_val)),lid_to_gid)
 test_array(f2,Vector{VectorValue{2,Float64}}[])
 
+indices = Int[]
+values_pos = Float64[]
+values_neg = Float64[]
+c = lazy_map(PosNegReindex(values_pos,values_neg),indices)
+test_array(c,Float64[])
+
 end # module

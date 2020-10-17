@@ -51,7 +51,9 @@ evaluate!(cache,f,x...) = @abstractmethod
 Returns the type of the result of calling mapping `f` with
 arguments of the types of the objects `x`.
 """
-return_type(f,x...) = typeof(evaluate(f,testargs(f,x...)...))
+return_type(f,x...) = typeof(return_value(f,x...))
+
+return_value(f,x...) = evaluate(f,testargs(f,x...)...)
 
 """
     testargs(f,x...)

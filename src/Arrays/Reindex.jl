@@ -14,6 +14,9 @@ function testargs(k::Reindex,i::Integer...)
   @check length(k.values) !=0 "This map has empty domain"
   map(one,i)
 end
+function return_value(k::Reindex,i...)
+  length(k.values)!=0 ? evaluate(k,testargs(k,i...)...) : testitem(k.values)
+end
 return_cache(k::Reindex,i...) = array_cache(k.values)
 @inline evaluate!(cache,k::Reindex,i...) = getindex!(cache,k.values,i...)
 

@@ -138,7 +138,8 @@ function _array_cache!(hash::Dict,a::LazyArray)
   cf = map(fi->array_cache(hash,fi),a.f)
   cgi = return_cache(gi, fi...)
   index = -1
-  item = evaluate!(cgi,gi,testargs(gi,fi...)...)
+  #item = evaluate!(cgi,gi,testargs(gi,fi...)...)
+  item = return_value(gi,fi...)
   (cg, cgi, cf), IndexItemPair(index, item)
 end
 
