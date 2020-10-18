@@ -44,40 +44,20 @@ function lazy_map(k::Reindex{<:LazyArray{<:Fill{<:PosNegReindex}}}, j_to_i::Abst
   i_to_iposneg = k.values.f[1]
   ipos_to_value = k.values.g.value.values_pos
   ineg_to_value = k.values.g.value.values_neg
-  if _aligned_with_pos(i_to_iposneg,j_to_i,length(ipos_to_value))
+  if aligned_with_pos(i_to_iposneg,j_to_i,length(ipos_to_value))
     ipos_to_value
-  elseif _aligned_with_neg(i_to_iposneg,j_to_i,length(ineg_to_value))
+  elseif aligned_with_neg(i_to_iposneg,j_to_i,length(ineg_to_value))
     ineg_to_value
-  elseif _all_pos(i_to_iposneg,j_to_i)
-    j_to_ipos = lazy_map(Reindex(i_to_iposneg),j_to_i)
+  elseif all_pos(i_to_iposneg,j_to_i)
+    j_to_ipos = lazy_map(Reindex(get_array(i_to_iposneg)),j_to_i)
     j_to_value = lazy_map(Reindex(ipos_to_value),j_to_ipos)
-  elseif _all_neg(i_to_iposneg,j_to_i)
-    j_to_ineg = lazy_map(Reindex(i_to_iposneg),j_to_i)
+  elseif all_neg(i_to_iposneg,j_to_i)
+    j_to_ineg = lazy_map(Reindex(get_array(i_to_iposneg)),j_to_i)
     j_to_value = lazy_map(Reindex(ineg_to_value),lazy_map(ineg->-ineg,j_to_ineg))
   else
-    j_to_iposneg = lazy_map(Reindex(i_to_iposneg),j_to_i)
+    j_to_iposneg = lazy_map(Reindex(get_array(i_to_iposneg)),j_to_i)
     j_to_value = lazy_map(PosNegReindex(ipos_to_value,ineg_to_value),j_to_iposneg)
   end
-end
-
-function _aligned_with_pos(i_to_iposneg,j_to_i,npos)
-  j_to_iposneg = lazy_map(Reindex(i_to_iposneg),j_to_i)
-  j_to_iposneg == 1:npos
-end
-
-function _aligned_with_neg(i_to_iposneg,j_to_i,nneg)
-  j_to_iposneg = lazy_map(Reindex(i_to_iposneg),j_to_i)
-  j_to_iposneg == -(1:nneg)
-end
-
-function _all_pos(i_to_iposneg,j_to_i)
-  j_to_iposneg = lazy_map(Reindex(i_to_iposneg),j_to_i)
-  all( lazy_map(iposneg -> iposneg>0, j_to_iposneg) )
-end
-
-function _all_neg(i_to_iposneg,j_to_i)
-  j_to_iposneg = lazy_map(Reindex(i_to_iposneg),j_to_i)
-  all( lazy_map(iposneg -> iposneg<0, j_to_iposneg) )
 end
 
 function lazy_map(k::Reindex{<:LazyArray{<:PosNegReindex}}, j_to_i::IdentityVector)

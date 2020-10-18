@@ -34,6 +34,38 @@ d = lazy_map(Reindex(c),subindices)
 r = [  i>0 ? values_pos[i] : values_neg[-i] for i in indices[subindices] ]
 test_array(d,r)
 
+# Now with PosNegPartition
+
+indices_pos = [1,4,2]
+indices = PosNegPartition(indices_pos,5)
+test_array(indices,collect(indices))
+c = lazy_map(PosNegReindex(values_pos,values_neg),indices)
+r = [  i>0 ? values_pos[i] : values_neg[-i] for i in indices ]
+test_array(c,r)
+
+# This should be for free thanks to the PosNegPartition
+d = lazy_map(Reindex(c),indices.ipos_to_i)
+@test d === values_pos
+
+# This should be for free thanks to the PosNegPartition
+d = lazy_map(Reindex(c),indices.ineg_to_i)
+@test d === values_neg
+
+subindices = [4,2]
+d = lazy_map(Reindex(c),subindices)
+r = [  i>0 ? values_pos[i] : values_neg[-i] for i in indices[subindices] ]
+test_array(d,r)
+
+subindices = [5,]
+d = lazy_map(Reindex(c),subindices)
+r = [  i>0 ? values_pos[i] : values_neg[-i] for i in indices[subindices] ]
+test_array(d,r)
+
+subindices = [1,5,3,4]
+d = lazy_map(Reindex(c),subindices)
+r = [  i>0 ? values_pos[i] : values_neg[-i] for i in indices[subindices] ]
+test_array(d,r)
+
 p = 1
 data = [2,3,-1,3,4,4,3,2,5,4,-3,4]
 ptrs = [1,4,4,7,13]
@@ -56,5 +88,24 @@ values_pos = Float64[]
 values_neg = Float64[]
 c = lazy_map(PosNegReindex(values_pos,values_neg),indices)
 test_array(c,Float64[])
+
+## Testing some cases where PosNegReindex can be type-instable
+#
+#indices = [1,3,-2,2,-1]
+#values_pos = Int[40,30,10]
+#values_neg = -Float64[40,30]
+#c = lazy_map(PosNegReindex(values_pos,values_neg),indices)
+#d = lazy_map(i->Float64(i),c)
+#display(d)
+#
+#d = lazy_map(*,c,ones(Float64,size(c)))
+#display(d)
+#
+#indices = [1,1,-1,1,-1]
+#values_pos = [+]
+#values_neg = [-]
+#c = lazy_map(PosNegReindex(values_pos,values_neg),indices)
+#d = lazy_map(evaluate, c, rand(size(c)), rand(size(c)))
+#display(d)
 
 end # module
