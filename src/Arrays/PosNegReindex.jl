@@ -108,22 +108,46 @@ function lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{<:PosNegReindex}}...)
   end
 end
 
-#
-#function lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{<:PosNegReindex}},b::AbstractArray...)
-#  i_to_iposneg = a.f[1]
-#  Npos = length(a.g.values_pos)
-#  Nneg = length(a.g.values_neg)
-#  if is_exhaustive(i_to_iposneg,Npos,Nneg)
-#    ipos_to_i, ineg_to_i = pos_and_neg_indices(i_to_iposneg)
-#    bpos = map(bi->lazy_map(Reindex(bi),ipos_to_i),b)
-#    bneg = map(bi->lazy_map(Reindex(bi),ineg_to_i),b)
-#    lazy_map(PosNegReindex(bpos,bneg),i_to_iposneg)
-#  else
-#    LazyArray(a,b...)
-#  end
-#end
+function lazy_map(::typeof(evaluate),::Type{T},a::LazyArray{<:Fill{<:PosNegReindex}}...) where T
+  i_to_iposneg = a[1].f[1]
+  if all(map( ai-> is_exhaustive(a[1].f[1]),a)) && all( map( ai-> i_to_iposneg==a[1].f[1],a) )
+    bpos = map(ai->ai.g.value.values_pos,a)
+    bneg = map(ai->ai.g.value.values_neg,a)
+    cpos = lazy_map(evaluate,T,bpos...)
+    cneg = lazy_map(evaluate,T,bneg...)
+    lazy_map(PosNegReindex(cpos,cneg),T,i_to_iposneg)
+  else
+    LazyArray(a...)
+  end
+end
 
+function lazy_map(::typeof(evaluate),b::Fill,a::LazyArray{<:Fill{<:PosNegReindex}}...)
+  i_to_iposneg = a[1].f[1]
+  if all(map( ai-> is_exhaustive(a[1].f[1]),a)) && all( map( ai-> i_to_iposneg==a[1].f[1],a) )
+    k = b.value
+    bpos = map(ai->ai.g.value.values_pos,a)
+    bneg = map(ai->ai.g.value.values_neg,a)
+    cpos = lazy_map(k,bpos...)
+    cneg = lazy_map(k,bneg...)
+    lazy_map(PosNegReindex(cpos,cneg),i_to_iposneg)
+  else
+    LazyArray(b,a...)
+  end
+end
 
+function lazy_map(::typeof(evaluate),::Type{T},b::Fill,a::LazyArray{<:Fill{<:PosNegReindex}}...) where T
+  i_to_iposneg = a[1].f[1]
+  if all(map( ai-> is_exhaustive(a[1].f[1]),a)) && all( map( ai-> i_to_iposneg==a[1].f[1],a) )
+    k = b.value
+    bpos = map(ai->ai.g.value.values_pos,a)
+    bneg = map(ai->ai.g.value.values_neg,a)
+    cpos = lazy_map(k,T,bpos...)
+    cneg = lazy_map(k,T,bneg...)
+    lazy_map(PosNegReindex(cpos,cneg),T,i_to_iposneg)
+  else
+    LazyArray(b,a...)
+  end
+end
 
 # Helper functions to work with arrays representing a binary partition
 

@@ -80,7 +80,6 @@ for indices in ([1,3,-2,2,-1], PosNegPartition([1,4,2],5))
   f_pos = fill(+,3)
   f_neg = fill(-,2)
   f = lazy_map(PosNegReindex(f_pos,f_neg),Function,indices)
-  
   c = lazy_map(evaluate,f,a,b)
   test_array(c,collect(c))
   c_pos = c.g.value.values_pos
@@ -88,9 +87,18 @@ for indices in ([1,3,-2,2,-1], PosNegPartition([1,4,2],5))
   test_array(c_pos,a_pos+b_pos)
   test_array(c_neg,a_neg-b_neg)
 
+  a_pos = Float64[40,30,10]
+  a_neg = -Int[40,30]
+  a = lazy_map(PosNegReindex(a_pos,a_neg),Number,indices)
+  fun(i) = Float64(i) + 3
+  c = lazy_map(fun,a)
+  test_array(c,collect(c))
+  c_pos = c.g.value.values_pos
+  c_neg = c.g.value.values_neg
+  test_array(c_pos,fun.(a_pos))
+  test_array(c_neg,fun.(a_neg))
+
 end
-
-
 
 ## Testing some cases where PosNegReindex can be type-instable
 #
