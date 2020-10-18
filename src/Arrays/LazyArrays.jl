@@ -53,14 +53,16 @@ println(c)
 ```
 """
 @inline function lazy_map(k,f::AbstractArray...)
-  s = _common_size(f...)
-  lazy_map(evaluate,Fill(k, s), f...)
+  fi = map(testitem,f)
+  T = return_type(k, fi...)
+  lazy_map(k,T,f...)
 end
 
-@inline lazy_map(::typeof(evaluate),k::AbstractArray,f::AbstractArray...) = LazyArray(k,f...)
+#@inline lazy_map(::typeof(evaluate),k::AbstractArray,f::AbstractArray...) = LazyArray(k,f...)
 
+# This is the function to be overload to specialize on the Map f
 """
-    lazy_map(::Type{T},f,a::AbstractArray...) where T
+    lazy_map(f,::Type{T},a::AbstractArray...) where T
 
 Like [`lazy_map(f,a::AbstractArray...)`](@ref), but the user provides the element type
 of the resulting array in order to circumvent type inference.
@@ -70,6 +72,7 @@ of the resulting array in order to circumvent type inference.
   lazy_map(evaluate,T,Fill(k, s), f...)
 end
 
+# This is the function to be overload to specialize on the array types
 @inline lazy_map(::typeof(evaluate),T::Type,k::AbstractArray,f::AbstractArray...) = LazyArray(T,k,f...)
 
 """
@@ -94,12 +97,12 @@ struct LazyArray{G,T,N,F} <: AbstractArray{T,N}
   end
 end
 
-function LazyArray(g::AbstractArray{S}, f::AbstractArray...) where S
-  isconcretetype(S) ? gi = testitem(g) : @notimplemented
-  fi = map(testitem,f)
-  T = return_type(gi, fi...)
-  LazyArray(T, g, f...)
-end
+#function LazyArray(g::AbstractArray{S}, f::AbstractArray...) where S
+#  isconcretetype(S) ? gi = testitem(g) : @notimplemented
+#  fi = map(testitem,f)
+#  T = return_type(gi, fi...)
+#  LazyArray(T, g, f...)
+#end
 
 IndexStyle(::Type{<:LazyArray}) = IndexCartesian()
 
@@ -186,15 +189,19 @@ Base.size(a::LazyArray) = size(a.g)
 
 # Particular implementations for Fill
 
-function lazy_map(::typeof(evaluate),f::Fill, a::Fill...)
+#function lazy_map(::typeof(evaluate),f::Fill, a::Fill...)
+#  ai = map(ai->ai.value,a)
+#  r = evaluate(f.value, ai...)
+#  s = _common_size(f, a...)
+#  Fill(r, s)
+#end
+
+function lazy_map(::typeof(evaluate),::Type{T}, f::Fill, a::Fill...) where T
+  #lazy_map(evaluate, f, a...)
   ai = map(ai->ai.value,a)
   r = evaluate(f.value, ai...)
   s = _common_size(f, a...)
   Fill(r, s)
-end
-
-function lazy_map(::typeof(evaluate),::Type{T}, f::Fill, a::Fill...) where T
-  lazy_map(evaluate, f, a...)
 end
 
 function _common_size(a::AbstractArray...)

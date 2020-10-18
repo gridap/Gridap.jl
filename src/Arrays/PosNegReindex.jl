@@ -95,18 +95,18 @@ end
   i>0 ? getindex!(c_p,k.values_pos,i) : getindex!(c_n,k.values_neg,-i)
 end
 
-function lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{<:PosNegReindex}}...)
-  i_to_iposneg = a[1].f[1]
-  if all(map( ai-> is_exhaustive(a[1].f[1]),a)) && all( map( ai-> i_to_iposneg==a[1].f[1],a) )
-    bpos = map(ai->ai.g.value.values_pos,a)
-    bneg = map(ai->ai.g.value.values_neg,a)
-    cpos = lazy_map(evaluate,bpos...)
-    cneg = lazy_map(evaluate,bneg...)
-    lazy_map(PosNegReindex(cpos,cneg),i_to_iposneg)
-  else
-    LazyArray(a...)
-  end
-end
+#function lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{<:PosNegReindex}}...)
+#  i_to_iposneg = a[1].f[1]
+#  if all(map( ai-> is_exhaustive(a[1].f[1]),a)) && all( map( ai-> i_to_iposneg==a[1].f[1],a) )
+#    bpos = map(ai->ai.g.value.values_pos,a)
+#    bneg = map(ai->ai.g.value.values_neg,a)
+#    cpos = lazy_map(evaluate,bpos...)
+#    cneg = lazy_map(evaluate,bneg...)
+#    lazy_map(PosNegReindex(cpos,cneg),i_to_iposneg)
+#  else
+#    LazyArray(a...)
+#  end
+#end
 
 function lazy_map(::typeof(evaluate),::Type{T},a::LazyArray{<:Fill{<:PosNegReindex}}...) where T
   i_to_iposneg = a[1].f[1]
@@ -117,23 +117,23 @@ function lazy_map(::typeof(evaluate),::Type{T},a::LazyArray{<:Fill{<:PosNegReind
     cneg = lazy_map(evaluate,T,bneg...)
     lazy_map(PosNegReindex(cpos,cneg),T,i_to_iposneg)
   else
-    LazyArray(a...)
+    LazyArray(T,a...)
   end
 end
 
-function lazy_map(::typeof(evaluate),b::Fill,a::LazyArray{<:Fill{<:PosNegReindex}}...)
-  i_to_iposneg = a[1].f[1]
-  if all(map( ai-> is_exhaustive(a[1].f[1]),a)) && all( map( ai-> i_to_iposneg==a[1].f[1],a) )
-    k = b.value
-    bpos = map(ai->ai.g.value.values_pos,a)
-    bneg = map(ai->ai.g.value.values_neg,a)
-    cpos = lazy_map(k,bpos...)
-    cneg = lazy_map(k,bneg...)
-    lazy_map(PosNegReindex(cpos,cneg),i_to_iposneg)
-  else
-    LazyArray(b,a...)
-  end
-end
+#function lazy_map(::typeof(evaluate),b::Fill,a::LazyArray{<:Fill{<:PosNegReindex}}...)
+#  i_to_iposneg = a[1].f[1]
+#  if all(map( ai-> is_exhaustive(a[1].f[1]),a)) && all( map( ai-> i_to_iposneg==a[1].f[1],a) )
+#    k = b.value
+#    bpos = map(ai->ai.g.value.values_pos,a)
+#    bneg = map(ai->ai.g.value.values_neg,a)
+#    cpos = lazy_map(k,bpos...)
+#    cneg = lazy_map(k,bneg...)
+#    lazy_map(PosNegReindex(cpos,cneg),i_to_iposneg)
+#  else
+#    LazyArray(b,a...)
+#  end
+#end
 
 function lazy_map(::typeof(evaluate),::Type{T},b::Fill,a::LazyArray{<:Fill{<:PosNegReindex}}...) where T
   i_to_iposneg = a[1].f[1]
@@ -145,7 +145,7 @@ function lazy_map(::typeof(evaluate),::Type{T},b::Fill,a::LazyArray{<:Fill{<:Pos
     cneg = lazy_map(k,T,bneg...)
     lazy_map(PosNegReindex(cpos,cneg),T,i_to_iposneg)
   else
-    LazyArray(b,a...)
+    LazyArray(T,b,a...)
   end
 end
 

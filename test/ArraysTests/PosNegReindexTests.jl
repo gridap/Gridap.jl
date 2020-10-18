@@ -67,6 +67,7 @@ test_array(c,Float64[])
 
 # If we work with PosNegReindex return also PosNegReindex
 
+using InteractiveUtils
 for indices in ([1,3,-2,2,-1], PosNegPartition([1,4,2],5))
 
   a_pos = Float64[40,30,10]

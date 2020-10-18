@@ -27,12 +27,12 @@ return_cache(k::Reindex,i...) = array_cache(k.values)
 #  lazy_map(Reindex(i_to_v),j_to_i)
 #end
 
-function lazy_map(k::Reindex{<:Fill}, j_to_i::AbstractArray)
+function lazy_map(k::Reindex{<:Fill},::Type{T}, j_to_i::AbstractArray) where T
   v = k.values.value
   Fill(v,size(j_to_i)...)
 end
 
-function lazy_map(k::Reindex{<:CompressedArray}, j_to_i::AbstractArray)
+function lazy_map(k::Reindex{<:CompressedArray},::Type{T}, j_to_i::AbstractArray) where T
   i_to_v = k.values
   values = i_to_v.values
   ptrs = lazy_map(Reindex(i_to_v.ptrs),j_to_i)
@@ -40,7 +40,7 @@ function lazy_map(k::Reindex{<:CompressedArray}, j_to_i::AbstractArray)
 end
 
 # This optimization is important for surface-coupled problems
-function lazy_map(k::Reindex{<:LazyArray{<:Fill{<:PosNegReindex}}}, j_to_i::AbstractArray)
+function lazy_map(k::Reindex{<:LazyArray{<:Fill{<:PosNegReindex}}},::Type{T},j_to_i::AbstractArray) where T
   i_to_iposneg = k.values.f[1]
   ipos_to_value = k.values.g.value.values_pos
   ineg_to_value = k.values.g.value.values_neg
@@ -60,22 +60,22 @@ function lazy_map(k::Reindex{<:LazyArray{<:Fill{<:PosNegReindex}}}, j_to_i::Abst
   end
 end
 
-function lazy_map(k::Reindex{<:LazyArray{<:PosNegReindex}}, j_to_i::IdentityVector)
+function lazy_map(k::Reindex{<:LazyArray{<:PosNegReindex}},::Type{T},j_to_i::IdentityVector) where T
   @check length(k.values) == length(indices)
   k.values
 end
 
-function lazy_map(k::Reindex{<:AbstractArray}, indices::IdentityVector)
+function lazy_map(k::Reindex{<:AbstractArray},::Type{T},indices::IdentityVector) where T
   @check length(k.values) == length(indices)
   k.values
 end
 
-function lazy_map(k::Reindex{<:Fill},b::IdentityVector)
+function lazy_map(k::Reindex{<:Fill},::Type{T},b::IdentityVector) where T
   @check length(k.values) == length(indices)
   k.values
 end
 
-function lazy_map(k::Reindex{<:CompressedArray},b::IdentityVector)
+function lazy_map(k::Reindex{<:CompressedArray},::Type{T},b::IdentityVector) where T
   @check length(k.values) == length(indices)
   k.values
 end
