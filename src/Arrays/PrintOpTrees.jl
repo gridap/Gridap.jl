@@ -77,9 +77,9 @@ function get_children(n::TreeNode, a::AppendedArray)
   (similar_tree_node(n,a.a),similar_tree_node(n,a.b))
 end
 
-function get_children(n::TreeNode, a::ArrayPair)
-  (similar_tree_node(n,a.a),similar_tree_node(n,a.b))
-end
+#function get_children(n::TreeNode, a::ArrayPair)
+#  (similar_tree_node(n,a.a),similar_tree_node(n,a.b))
+#end
 
 #function get_children(n::TreeNode, a::LocalToGlobalArray)
 #  (similar_tree_node(n,a.lid_to_gid),similar_tree_node(n,a.gid_to_val))
