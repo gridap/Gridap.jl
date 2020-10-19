@@ -75,7 +75,6 @@
 #   getindex!(cache,a,i...)
 # end
 
-#@fverdugo: FilterMap -> Filter
 struct FilterMap <: Map end
 
 function return_cache(k::FilterMap,f,a)

@@ -103,3 +103,11 @@ end
 #  similar_tree_node(n,a.cell_to_val)
 # )
 #end
+
+function get_children(n::TreeNode, a::VectorWithEntryRemoved)
+  (similar_tree_node(n,a.a),)
+end
+
+function get_children(n::TreeNode, a::VectorWithEntryInserted)
+  (similar_tree_node(n,a.a),)
+end
