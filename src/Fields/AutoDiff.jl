@@ -2,7 +2,7 @@
 
 function gradient(f::Number)
   @inline function grad_f(x::Point)
-    zero(return_type(outer,f,x))
+    zero(return_type(outer,x,f))
   end
 end
 

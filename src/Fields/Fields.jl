@@ -32,6 +32,8 @@ import Base: +, -, *, /
 import Gridap.Arrays: IndexStyle
 import Gridap.Arrays: return_cache
 import Gridap.Arrays: return_type
+import Gridap.Arrays: testargs
+import Gridap.Arrays: return_value
 import Gridap.Arrays: evaluate!
 import Gridap.Arrays: lazy_map
 import Gridap.Arrays: array_cache
@@ -44,6 +46,7 @@ export return_cache
 
 export Field
 export GenericField
+export ConstantField
 export FieldGradient
 export FieldHessian
 export BroadcastField
@@ -61,6 +64,7 @@ export return_hessian_type
 export gradient
 export ∇
 export hessian
+export ∇∇
 
 export test_field
 export test_field_array

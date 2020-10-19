@@ -60,83 +60,136 @@ of scalar, vector or tensor values.
 """
 abstract type Field <: Map end
 
-return_cache(f::Field,x) = _default_return_cache(f,x)
-
-evaluate!(c,f::Field,x) = _default_evaluate!(c,f,x)
-
-@inline _default_return_cache(f::Field,x::Point) = nothing
-
-@inline _default_evaluate!(c,f::Field,x::Point) = @notimplemented
-
-@inline function _default_return_cache(f::Field,x::AbstractArray{<:Point})
-  T = return_type(f,first(x))
-  s = size(x)
-  ab = zeros(T,s)
-  cb = CachedArray(ab)
-  cf = return_cache(f,first(x))
-  cb, cf
-end
-
-@inline function _default_evaluate!(c,f::Field,x::AbstractArray{<:Point})
-  cb, cf = c
-  sx = size(x)
-  setsize!(cb,sx)
-  for i in eachindex(x)
-    @inbounds cb[i] = evaluate!(cf,f,x[i])
-  end
-  cb.array
-end
+evaluate!(c,f::Field,x::Point) = @abstractmethod
 
 # Differentiation
 
 function gradient end
+hessian(f) = gradient(gradient(f))
 
 const ∇ = gradient
+const ∇∇ = hessian
 
-@inline function evaluate_gradient!(cache,f,x)
-  @abstractmethod
+
+# Hook methods used by FieldGradient and FieldHessian
+
+return_gradient_cache(f::Field,x::Point) = nothing
+
+evaluate_gradient!(c,f::Field,x::Point) = @abstractmethod
+
+testargs_gradient(f::Field,x::Point) = testargs(f,x)
+
+function return_gradient_value(f::Field,x::Point)
+  y = testargs_gradient(f,x)
+  c = return_gradient_cache(f,y...)
+  evaluate_gradient!(c,f,y...)
 end
 
-@inline function return_gradient_cache(f,x)
-  nothing
+return_hessian_cache(f::Field,x::Point) = nothing
+
+evaluate_hessian!(c,f::Field,x::Point) = @abstractmethod
+
+testargs_hessian(f::Field,x::Point) = testargs(f,x)
+
+function return_hessian_value(f::Field,x::Point)
+  y = testargs_hessian(f,x)
+  c = return_hessian_cache(f,y...)
+  evaluate_hessian!(c,f,y...)
 end
 
-@inline function evaluate_hessian!(cache,f,x)
-  @abstractmethod
+# Default methods for arrays of points
+
+function testargs(f::Field,x::AbstractArray{<:Point})
+  y = copy(x)
+  broadcast!(xi->first(testargs(f,xi)),y,x)
+  (y,)
 end
 
-@inline function return_hessian_cache(f,x)
-  nothing
+@inline function return_cache(f::Field,x::AbstractArray{<:Point})
+  T = return_type(f,testitem(x))
+  s = size(x)
+  ab = zeros(T,s)
+  cb = CachedArray(ab)
+  cf = return_cache(f,testitem(x))
+  cb, cf
 end
 
-@inline function return_gradient_type(::Type{T},x::Point) where T
-  typeof(outer(zero(x),zero(T)))
+@inline function evaluate!(c,f::Field,x::AbstractArray{<:Point})
+  cb, cf = c
+  sx = size(x)
+  setsize!(cb,sx)
+  r = cb.array
+  for i in eachindex(x)
+    @inbounds r[i] = evaluate!(cf,f,x[i])
+  end
+  r
 end
 
-@inline function return_hessian_type(::Type{T},x::Point) where T
-  typeof(outer(zero(x),zero(return_gradient_type(T,x))))
+# Default methods for arrays of points (gradient)
+
+@inline function return_gradient_cache(f::Field,x::AbstractArray{<:Point})
+  cf = return_gradient_cache(f,testitem(x))
+  T = typeof(return_gradient_value(f,testitem(x)))
+  s = size(x)
+  ab = zeros(T,s)
+  cb = CachedArray(ab)
+  cb, cf
+end
+
+@inline function evaluate_gradient!(c,f::Field,x::AbstractArray{<:Point})
+  cb, cf = c
+  sx = size(x)
+  setsize!(cb,sx)
+  r = cb.array
+  for i in eachindex(x)
+    @inbounds r[i] = evaluate_gradient!(cf,f,x[i])
+  end
+  r
+end
+
+# Default methods for arrays of points (hessian)
+
+@inline function return_hessian_cache(f::Field,x::AbstractArray{<:Point})
+  cf = return_hessian_cache(f,testitem(x))
+  T = typeof(return_hessian_value(f,testitem(x)))
+  s = size(x)
+  ab = zeros(T,s)
+  cb = CachedArray(ab)
+  cb, cf
+end
+
+@inline function evaluate_hessian!(c,f::Field,x::AbstractArray{<:Point})
+  cb, cf = c
+  sx = size(x)
+  setsize!(cb,sx)
+  r = cb.array
+  for i in eachindex(x)
+    @inbounds r[i] = evaluate_hessian!(cf,f,x[i])
+  end
+  r
 end
 
 # GenericField
 
 """
-A wrapper for objects that can act as fields, e.g., functions, numbers, or
-vector or tensor values, which implement the `Field` API.
+A wrapper for objects that can act as fields, e.g., functions which implement the `Field` API.
 """
 struct GenericField{T} <: Field
   object::T
 end
 
-@inline Field(f) = GenericField(f)
+#@inline Field(f) = GenericField(f)
 @inline GenericField(f::Field) = f
 
-@inline return_cache(a::GenericField,x) = return_cache(a.object,x)
+testargs(a::GenericField,x::Point) = testargs(a.object,x)
+return_value(a::GenericField,x::Point) = return_value(a.object,x)
+return_cache(a::GenericField,x::Point) = return_cache(a.object,x)
+@inline evaluate!(cache,a::GenericField,x::Point) = evaluate!(cache,a.object,x)
+gradient(a::GenericField) = GenericField(gradient(a.object))
 
-@inline evaluate!(cache,a::GenericField,x) = evaluate!(cache,a.object,x)
-
-@inline return_type(::Type{<:GenericField},::T) where T<:Field = T
-@inline return_type(::Type{<:GenericField},::T) where T = GenericField{T}
-@inline return_type(a::GenericField,x) = return_type(a.object,x)
+#@inline return_type(::Type{<:GenericField},::T) where T<:Field = T
+#@inline return_type(::Type{<:GenericField},::T) where T = GenericField{T}
+#@inline return_type(a::GenericField,x) = return_type(a.object,x)
 
 # Make Field behave like a collection
 
@@ -159,21 +212,20 @@ struct ZeroField{F} <: Field
   field::F
 end
 
-@inline return_cache(z::ZeroField,x::Point) = zero(return_type(z.field,x))
+return_cache(z::ZeroField,x::Point) = zero(return_type(z.field,x))
+@inline evaluate!(cache,z::ZeroField,x::Point) = cache
 
 function return_cache(z::ZeroField,x::AbstractArray{<:Point})
-  E = return_type(z.field,first(x))
-  c = zeros(E,length(x))
+  E = return_type(z.field,testitem(x))
+  c = zeros(E,size(x))
   CachedArray(c)
 end
 
-@inline evaluate!(cache,z::ZeroField,x::Point) = cache
-
 function evaluate!(c,f::ZeroField,x::AbstractArray{<:Point})
-  nx = length(x)
+  nx = size(x)
   if size(c) != nx
-    setsize!(c,(nx,))
-    c .= zero(eltype(c))
+    setsize!(c,nx)
+    fill!(c.array,zero(eltype(c)))
   end
   c.array
 end
@@ -189,50 +241,63 @@ end
 @inline gradient(z::ZeroField) = ZeroField(gradient(z.field))
 
 # Make Number behave like Field
+#
 
-const ConstantField{T} = GenericField{T} where T<:Number
+#const ConstantField{T} = GenericField{T} where T<:Number
 
-@inline return_type(f::ConstantField,x) = typeof(f.object)
+# Number itself does not implement the Field interface since Number objects are not callable in Julia.
+# Thus, wrapping a Number in a GenericField does not makes sense since the wrapped object
+# is assumed to implement the Field interface.
+# I think it is conceptually better to have ConstantField as struct otherwise we break the invariant
+# "for any object wrapped in a GenericField we can assume that it implements the Field interface"
+struct ConstantField{T<:Number} <: Field
+  object::T
+end
+
+#@inline testargs(a::ConstantField,x) = (x,)
+#@inline return_value(a::ConstantField,x) = evaluate(a,x)
+#@inline return_type(a::ConstantField,x) = typeof(return_value(a,x))
+
+#@inline return_type(f::ConstantField,x) = typeof(f.object)
 
 @inline function evaluate!(c,f::ConstantField,x::Point)
   f.object
 end
 
-function return_type(f::ConstantField,x::AbstractArray{<:Point})
-  typeof(return_cache(f,x).array)
-end
+#function return_type(f::ConstantField,x::AbstractArray{<:Point})
+#  typeof(return_cache(f,x).array)
+#end
 
 function return_cache(f::ConstantField,x::AbstractArray{<:Point})
-  nx = length(x)
-  c = zeros(typeof(f.object),nx)
+  nx = size(x)
+  c = fill(f.object,nx)
   CachedArray(c)
 end
 
 function evaluate!(c,f::ConstantField,x::AbstractArray{<:Point})
-  nx = length(x)
-  setsize!(c,(nx,))
-  r = c.array
-  for i in eachindex(x)
-    @inbounds r[i] = f.object
+  nx = size(x)
+  if size(c) != nx
+    setsize!(c,nx)
+    fill!(c.array,f.object)
   end
-  r
+  c.array
 end
 
 @inline function return_gradient_cache(f::ConstantField,x::Point)
   gradient(f.object)(x)
 end
 
+@inline evaluate_gradient!(c,f::ConstantField,x::Point) = c
+
 @inline function return_gradient_cache(f::ConstantField,x::AbstractArray{<:Point})
   CachedArray(gradient(f.object).(x))
 end
 
-@inline evaluate_gradient!(c,f::ConstantField,x::Point) = c
-
 function evaluate_gradient!(c,f::ConstantField,x::AbstractArray{<:Point})
-  nx = length(x)
+  nx = size(x)
   if size(c) != nx
-    setsize!(c,(nx,))
-    c .= zero(eltype(c))
+    setsize!(c,nx)
+    fill!(c.array,zero(eltype(c)))
   end
   c.array
 end
@@ -248,61 +313,62 @@ end
 @inline evaluate_hessian!(c,f::ConstantField,x::Point) = c
 
 function evaluate_hessian!(c,f::ConstantField,x::AbstractArray{<:Point})
-  nx = length(x)
+  nx = size(x)
   if size(c) != nx
-    setsize!(c,(nx,))
-    c .= zero(eltype(c))
+    setsize!(c,nx)
+    fill!(c.array,zero(eltype(c)))
   end
   c.array
 end
 
-# Make Function behave like Field
-
-const FunctionField{F} = GenericField{F} where F<:Function
-
-function return_cache(f::FunctionField,x::AbstractArray{<:Point})
-  nx = length(x)
-  c = zeros(return_type(f.object,testitem(x)),nx)
-  CachedArray(c)
-end
-
-function return_type(f::FunctionField,x::AbstractArray{<:Point})
-  typeof(return_cache(f,x).array)
-end
-
-function evaluate!(c,f::FunctionField,x::AbstractArray{<:Point})
-  nx = length(x)
-  setsize!(c,(nx,))
-  for i in eachindex(x)
-    c[i] = f.object(x[i])
-  end
-  c.array
-end
-
-@inline function return_gradient_cache(f::FunctionField,x::Point)
-  gradient(f.object)
-
-end
-
-function return_gradient_cache(f::FunctionField,x::AbstractArray{<:Point})
-  gf = gradient(f.object)
-  nx = length(x)
-  c = zeros(return_type(gf,testitem(x)),nx)
-  # gf, CachedArray(c)
-  gf, CachedArray(c)
-end
-
-@inline evaluate_gradient!(c,f::FunctionField,x::Point) = c(x)
-
-function evaluate_gradient!(cache,f::FunctionField,x::AbstractArray{<:Point})
-  gf, c = cache
-  nx = length(x)
-  setsize!(c,(nx,))
-  for i in eachindex(x)
-    c[i] = gf(x[i])
-  end
-  c.array
-end
+# Not needed any more
+## Make Function behave like Field
+#
+#const FunctionField{F} = GenericField{F} where F<:Function
+#
+##function return_cache(f::FunctionField,x::AbstractArray{<:Point})
+#  nx = length(x)
+#  c = zeros(return_type(f.object,testitem(x)),nx)
+#  CachedArray(c)
+#end
+#
+#function return_type(f::FunctionField,x::AbstractArray{<:Point})
+#  typeof(return_cache(f,x).array)
+#end
+#
+#function evaluate!(c,f::FunctionField,x::AbstractArray{<:Point})
+#  nx = length(x)
+#  setsize!(c,(nx,))
+#  for i in eachindex(x)
+#    c[i] = f.object(x[i])
+#  end
+#  c.array
+#end
+#
+#@inline function return_gradient_cache(f::FunctionField,x::Point)
+#  gradient(f.object)
+#
+#end
+#
+#function return_gradient_cache(f::FunctionField,x::AbstractArray{<:Point})
+#  gf = gradient(f.object)
+#  nx = length(x)
+#  c = zeros(return_type(gf,testitem(x)),nx)
+#  # gf, CachedArray(c)
+#  gf, CachedArray(c)
+#end
+#
+#@inline evaluate_gradient!(c,f::FunctionField,x::Point) = c(x)
+#
+#function evaluate_gradient!(cache,f::FunctionField,x::AbstractArray{<:Point})
+#  gf, c = cache
+#  nx = length(x)
+#  setsize!(c,(nx,))
+#  for i in eachindex(x)
+#    c[i] = gf(x[i])
+#  end
+#  c.array
+#end
 
 # Differentiation
 
@@ -315,13 +381,17 @@ struct FieldGradient{F} <: Field
   object::F
 end
 
-@inline gradient(f::Field) = FieldGradient(f)
+gradient(f::Field) = FieldGradient(f)
 
-@inline gradient(f::GenericField{FieldGradient}) = FieldHessian(f.object.object)
+#@inline gradient(f::GenericField{FieldGradient}) = FieldHessian(f.object.object)
 
-@inline evaluate!(cache,f::FieldGradient,x) = evaluate_gradient!(cache,f.object,x)
+testargs(f::FieldGradient,x::Point) = testargs_gradient(f.object,x)
+return_value(f::FieldGradient,x::Point) = return_gradient_value(f.object,x)
+return_cache(f::FieldGradient,x::Point) = return_gradient_cache(f.object,x)
+@inline evaluate!(cache,f::FieldGradient,x::Point) = evaluate_gradient!(cache,f.object,x)
 
-@inline return_cache(f::FieldGradient,x) = return_gradient_cache(f.object,x)
+return_cache(f::FieldGradient,x::AbstractArray{<:Point}) = return_gradient_cache(f.object,x)
+@inline evaluate!(cache,f::FieldGradient,x::AbstractArray{<:Point}) = evaluate_gradient!(cache,f.object,x)
 
 """
 Type that represents the hessian of a field. The wrapped field implements must
@@ -334,13 +404,17 @@ end
 
 gradient(f::FieldGradient) = FieldHessian(f.object)
 
-@inline evaluate!(cache,f::FieldHessian,x) = evaluate_hessian!(cache,f.object,x)
-
-@inline return_cache(f::FieldHessian,x) = return_hessian_cache(f.object,x)
-
 @inline function gradient(f::FieldHessian)
   @unreachable "Default implementation of 3rt order derivatives not available"
 end
+
+testargs(f::FieldHessian,x::Point) = testargs_hessian(f.object,x)
+return_value(f::FieldHessian,x::Point) = return_hessian_value(f.object,x)
+return_cache(f::FieldHessian,x::Point) = return_hessian_cache(f.object,x)
+@inline evaluate!(cache,f::FieldHessian,x::Point) = evaluate_hessian!(cache,f.object,x)
+
+return_cache(f::FieldHessian,x::AbstractArray{<:Point}) = return_hessian_cache(f.object,x)
+@inline evaluate!(cache,f::FieldHessian,x::AbstractArray{<:Point}) = evaluate_hessian!(cache,f.object,x)
 
 # Operations
 
@@ -352,16 +426,22 @@ struct OperationField{O,F} <: Field
   fields::F
 end
 
-function return_type(c::OperationField,x::Point)
-  fx = map(f -> evaluate(f,x),c.fields)
-  return_type(c.op,fx...)
+function return_value(c::OperationField,x::Point)
+  fx = map(f -> return_value(f,x),c.fields)
+  return_value(c.op,fx...)
 end
 
 function return_cache(c::OperationField,x::Point)
   cl = map(fi -> return_cache(fi,x),c.fields)
-  lx = map((ci,fi) -> evaluate!(ci,fi,x),cl,c.fields)
-  ck = return_cache(c.op,lx)
+  lx = map(fi -> return_value(fi,x),c.fields)
+  ck = return_cache(c.op,lx...)
   ck, cl
+end
+
+@inline function evaluate!(cache,c::OperationField,x::Point)
+  ck, cf = cache
+  lx = map((ci,fi) -> evaluate!(ci,fi,x),cf,c.fields)
+  evaluate!(ck,c.op,lx...)
 end
 
 function return_cache(c::OperationField,x::AbstractArray{<:Point})
@@ -369,12 +449,6 @@ function return_cache(c::OperationField,x::AbstractArray{<:Point})
   lx = map((ci,fi) -> evaluate!(ci,fi,x),cl,c.fields)
   ck = CachedArray(zero(c.op.(lx...)))
   ck, cl
-end
-
-@inline function evaluate!(cache,c::OperationField,x::Point)
-  ck, cf = cache
-  lx = map((ci,fi) -> evaluate!(ci,fi,x),cf,c.fields)
-  c.op(lx...)
 end
 
 @inline function evaluate!(cache,c::OperationField,x::AbstractArray{<:Point})
@@ -406,25 +480,27 @@ for op in (:+,:-)
 end
 
 # Some syntactic sugar
-@inline *(A::Number, B::Field) = GenericField(A)*B
-@inline *(A::Field, B::Number) = GenericField(B)*A
+@inline *(A::Number, B::Field) = ConstantField(A)*B
+@inline *(A::Field, B::Number) = ConstantField(B)*A
 @inline *(A::Function, B::Field) = GenericField(A)*B
 @inline *(A::Field, B::Function) = GenericField(B)*A
 
+# This works for inner products of tensors of the same rank
 function gradient(a::OperationField{typeof(⋅)})
   f = a.fields
-  if length(f) != 2 @notimplemented end
+  @notimplementedif length(f) != 2
   f1, f2 = f
   g1, g2 = map(gradient, f)
-  g1⋅f2+f1⋅g2
+  g1⋅f2+g2⋅f1
 end
 
+# This one is for scalar-valued functions
 function gradient(a::OperationField{typeof(*)})
   f = a.fields
-  if length(f) != 2 @notimplemented end
+  @notimplementedif length(f) != 2
   f1, f2 = f
   g1, g2 = map(gradient, f)
-  g1⋅f2+f1⋅g2
+  g1*f2+f1*g2
 end
 
 # Chain rule
@@ -432,9 +508,9 @@ function gradient(f::OperationField{<:Field})
   a = f.op
   @notimplementedif length(f.fields) != 1
   b, = f.fields
-  _x = ∇(a)∘b
-  _y = ∇(b)
-  _x⋅_y
+  x = ∇(a)∘b
+  y = ∇(b)
+  y⋅x
 end
 
 # Composition
@@ -469,50 +545,63 @@ the `cmp` function. For fields objects that support the `gradient` function, the
 argument `grad` can be used. It should contain the result of evaluating `gradient(f)` at x.
 Idem for `hessian`. The checks are performed with the `@test` macro.
 """
-function test_field(
-  f::Union{Field,AbstractArray{<:Field}},
-  x::Tuple,
-  v,
-  cmp=(==);
-  grad=nothing,
-  hessian=nothing)
-
-  x, = x
-
-  @test isa(x,Union{Point,AbstractArray{<:Point}})
-
-  w = evaluate(f,x)
-
-  @test cmp(w,v)
-  @test typeof(w) == return_type(f,x)
-
-  cf = return_cache(f,x)
-  r = evaluate!(cf,f,x)
-  @test cmp(r,v)
-
-  if x isa AbstractArray{<:Point}
-
-    _x = vcat(x,x)
-    _v = vcat(v,v)
-    _w = evaluate!(cf,f,_x)
-    @test cmp(_w,_v)
-  end
-
-  if isa(f,Field)
-    test_mapping(f,(x,),v,cmp)
-  end
-
+function test_field(f::Field, x, v, cmp=(==); grad=nothing, hess=nothing)
+  test_mapping(f,(x,),v,cmp)
   if grad != nothing
-    g = gradient(f)
-    if typeof(f) <: Field
-      @test g isa Field
-    elseif typeof(f) <: AbstractArray{<:Field}
-      @test g isa AbstractArray{<:Field}
-    end
-    test_field(g,(x,),grad,cmp,grad=hessian)
+    test_mapping(gradient(f),(x,),grad,cmp)
+  end
+  if hess != nothing
+    test_mapping(hessian(f),(x,),hess,cmp)
   end
 end
 
-@inline function test_field(f::Union{Field,AbstractArray{<:Field}},x,v,cmp=(==);grad=nothing,hessian=nothing)
-  test_field(f,(x,),v,cmp;grad=grad,hessian=hessian)
-end
+
+
+
+#function test_field(
+#  f::Union{Field,AbstractArray{<:Field}},
+#  x::Tuple,
+#  v,
+#  cmp=(==);
+#  grad=nothing,
+#  hessian=nothing)
+#
+#  x, = x
+#
+#  @test isa(x,Union{Point,AbstractArray{<:Point}})
+#
+#  w = evaluate(f,x)
+#
+#  @test cmp(w,v)
+#  @test typeof(w) == return_type(f,x)
+#
+#  cf = return_cache(f,x)
+#  r = evaluate!(cf,f,x)
+#  @test cmp(r,v)
+#
+#  if x isa AbstractArray{<:Point}
+#
+#    _x = vcat(x,x)
+#    _v = vcat(v,v)
+#    _w = evaluate!(cf,f,_x)
+#    @test cmp(_w,_v)
+#  end
+#
+#  if isa(f,Field)
+#    test_mapping(f,(x,),v,cmp)
+#  end
+#
+#  if grad != nothing
+#    g = gradient(f)
+#    if typeof(f) <: Field
+#      @test g isa Field
+#    elseif typeof(f) <: AbstractArray{<:Field}
+#      @test g isa AbstractArray{<:Field}
+#    end
+#    test_field(g,(x,),grad,cmp,grad=hessian)
+#  end
+#end
+#
+#@inline function test_field(f::Union{Field,AbstractArray{<:Field}},x,v,cmp=(==);grad=nothing,hessian=nothing)
+#  test_field(f,(x,),v,cmp;grad=grad,hessian=hessian)
+#end

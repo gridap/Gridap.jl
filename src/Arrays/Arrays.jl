@@ -44,6 +44,7 @@ export evaluate!
 export evaluate
 export test_mapping
 export return_type
+export return_value
 export testargs
 
 export Broadcasting
