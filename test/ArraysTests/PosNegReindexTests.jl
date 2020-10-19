@@ -34,6 +34,7 @@ for indices in ([1,3,-1,2,-2], PosNegPartition([1,4,2],5))
   d = lazy_map(Reindex(c),subindices)
   r = [  i>0 ? values_pos[i] : values_neg[-i] for i in indices[subindices] ]
   test_array(d,r)
+  #print_op_tree(d)
 
 end
 
@@ -67,7 +68,7 @@ test_array(c,Float64[])
 
 # If we work with PosNegReindex return also PosNegReindex
 
-for indices in ([1,3,-2,2,-1], PosNegPartition([1,4,2],5))
+for indices in ([1,3,-2,2,-1], PosNegPartition([1,4,2],5), lazy_map(PosNegReindex([1,2,3],[-1,-2]),[1,3,-2,2,-1]))
 
   a_pos = Float64[40,30,10]
   a_neg = -Float64[40,30]
@@ -81,6 +82,7 @@ for indices in ([1,3,-2,2,-1], PosNegPartition([1,4,2],5))
   f_neg = fill(-,2)
   f = lazy_map(PosNegReindex(f_pos,f_neg),Function,indices)
   c = lazy_map(evaluate,f,a,b)
+  #print_op_tree(c)
   test_array(c,collect(c))
   c_pos = c.g.value.values_pos
   c_neg = c.g.value.values_neg
@@ -92,6 +94,7 @@ for indices in ([1,3,-2,2,-1], PosNegPartition([1,4,2],5))
   a = lazy_map(PosNegReindex(a_pos,a_neg),Number,indices)
   fun(i) = Float64(i) + 3
   c = lazy_map(fun,a)
+  #print_op_tree(c)
   test_array(c,collect(c))
   c_pos = c.g.value.values_pos
   c_neg = c.g.value.values_neg
