@@ -37,5 +37,18 @@ c = lazy_append(a,b)
 d = lazy_map(i->Float64(i),c)
 r = vcat(Float64.(a),b)
 test_array(d,r)
+#print_op_tree(d)
+
+a1 = [1,2,3]
+b1 = [4,5]
+c1 = lazy_append(a1,b1)
+
+a2 = [1,2]
+b2 = [3,4,5]
+c2 = lazy_append(a2,b2)
+
+d = lazy_map(+,c1,c2)
+test_array(d,c1+c2)
+#print_op_tree(d)
 
 end # module
