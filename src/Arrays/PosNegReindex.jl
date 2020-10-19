@@ -95,6 +95,17 @@ end
   i>0 ? getindex!(c_p,k.values_pos,i) : getindex!(c_n,k.values_neg,-i)
 end
 
+function lazy_map(k::PosNegReindex,::Type{T},i_to_iposneg::AbstractArray) where T
+  if all_pos(i_to_iposneg)
+    lazy_map(Reindex(k.values_pos),get_array(i_to_iposneg))
+  elseif all_neg(i_to_iposneg)
+    lazy_map(Reindex(k.values_neg),lazy_map(iposneg->-iposneg,get_array(i_to_iposneg)))
+  else
+    s = size(i_to_iposneg)
+    lazy_map(evaluate,T,Fill(k, s), i_to_iposneg)
+  end
+end
+
 #function lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{<:PosNegReindex}}...)
 #  i_to_iposneg = a[1].f[1]
 #  if all(map( ai-> is_exhaustive(a[1].f[1]),a)) && all( map( ai-> i_to_iposneg==a[1].f[1],a) )
@@ -191,15 +202,18 @@ function aligned_with_neg(i_to_iposneg,j_to_i,nneg)
   j_to_iposneg == -(1:nneg)
 end
 
-function all_pos(i_to_iposneg,j_to_i)
+function all_in_pos(i_to_iposneg,j_to_i)
   j_to_iposneg = lazy_map(Reindex(i_to_iposneg),j_to_i)
-  all( lazy_map(iposneg -> iposneg>0, j_to_iposneg) )
+  all_pos(j_to_iposneg)
 end
 
-function all_neg(i_to_iposneg,j_to_i)
+function all_in_neg(i_to_iposneg,j_to_i)
   j_to_iposneg = lazy_map(Reindex(i_to_iposneg),j_to_i)
-  all( lazy_map(iposneg -> iposneg<0, j_to_iposneg) )
+  all_neg(j_to_iposneg)
 end
+
+all_pos(i_to_iposneg) = all( lazy_map(iposneg->iposneg>0, i_to_iposneg))
+all_neg(i_to_iposneg) = all( lazy_map(iposneg->iposneg<0, i_to_iposneg))
 
 # This is important to do optimizations associated with ExtendedFESpace
 """
@@ -259,6 +273,8 @@ function aligned_with_neg(a::PosNegPartition,j_to_i,nneg)
   @check length(a.ineg_to_i) == nneg
   a.ineg_to_i === j_to_i || a.ineg_to_i == j_to_i
 end
+all_pos(a::PosNegPartition) = length(a.ineg_to_i)==0
+all_neg(a::PosNegPartition) = length(a.ipos_to_i)==0
 
 #function lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{<:PosNegReindex}},b::AbstractArray...)
 #  bpos = map(bi->lazy_map(Reindex(),bi),b)

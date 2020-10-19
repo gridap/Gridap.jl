@@ -48,10 +48,10 @@ function lazy_map(k::Reindex{<:LazyArray{<:Fill{<:PosNegReindex}}},::Type{T},j_t
     ipos_to_value
   elseif aligned_with_neg(i_to_iposneg,j_to_i,length(ineg_to_value))
     ineg_to_value
-  elseif all_pos(i_to_iposneg,j_to_i)
+  elseif all_in_pos(i_to_iposneg,j_to_i)
     j_to_ipos = lazy_map(Reindex(get_array(i_to_iposneg)),j_to_i)
     j_to_value = lazy_map(Reindex(ipos_to_value),j_to_ipos)
-  elseif all_neg(i_to_iposneg,j_to_i)
+  elseif all_in_neg(i_to_iposneg,j_to_i)
     j_to_ineg = lazy_map(Reindex(get_array(i_to_iposneg)),j_to_i)
     j_to_value = lazy_map(Reindex(ineg_to_value),lazy_map(ineg->-ineg,j_to_ineg))
   else

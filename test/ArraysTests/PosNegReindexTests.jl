@@ -67,7 +67,7 @@ test_array(c,Float64[])
 
 # If we work with PosNegReindex return also PosNegReindex
 
-for indices in ([1,3,-2,2,-1], PosNegPartition([1,4,2],5))
+for indices in ([1,3,-2,2,-1], PosNegPartition([1,4,2],5), lazy_map(PosNegReindex([1,2,3],[-1,-2]),[1,3,-2,2,-1]))
 
   a_pos = Float64[40,30,10]
   a_neg = -Float64[40,30]
