@@ -133,6 +133,9 @@ export autodiff_array_hessian
 export VectorWithEntryRemoved
 export VectorWithEntryInserted
 
+import AbstractTrees
+export print_op_tree
+
 import Gridap.Io: to_dict
 import Gridap.Io: from_dict
 
@@ -173,6 +176,8 @@ include("Autodiff.jl")
 include("VectorsWithEntryRemoved.jl")
 
 include("VectorsWithEntryInserted.jl")
+
+include("PrintOpTrees.jl")
 
 
 end # module

@@ -40,4 +40,6 @@ using Test
 
 @testset "VectorWithEntryInsertedTests" begin include("VectorWithEntryInsertedTests.jl") end
 
+@testset "PrintOpTrees" begin include("PrintOpTreesTests.jl") end
+
 end # module
