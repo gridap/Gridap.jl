@@ -89,6 +89,7 @@ export Reindex
 #export reindex
 
 export PosNegReindex
+export PosNegPartition
 #export posneg_reindex
 
 export FilterMap

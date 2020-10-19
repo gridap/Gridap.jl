@@ -91,4 +91,10 @@ f2 = lazy_map(Broadcasting(Reindex(gid_to_val)),lid_to_gid)
 
 test_array(f2,Vector{VectorValue{2,Float64}}[])
 
+values = Float64[]
+indices = Int[]
+c = lazy_map(Reindex(values),indices)
+test_array(c,Float64[])
+
+
 end # module
