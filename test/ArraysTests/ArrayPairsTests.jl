@@ -15,7 +15,7 @@ _a, _b = unpair_arrays(r)
 test_array(_a,a)
 test_array(_b,b)
 
-print_op_tree(_b)
+#print_op_tree(_b)
 
 _a, _b = unpair_arrays(c)
 @test a === _a

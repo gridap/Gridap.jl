@@ -141,11 +141,7 @@ function array_cache(a::VectorOfBlockArrayCoo)
 
   ca = array_cache(a.axes)
   cb = map(array_cache,a.blocks)
-  # cb = map(array_cache,a.blocks...)
-  # cb = array_caches(a.blocks...)
   cz = map(array_cache,a.zero_blocks)
-  # cz = map(array_cache,a.zero_blocks...)
-  # cz = array_caches(a.zero_blocks...)
   (blocks_i,zero_blocks_i,ca,cb,cz)
 end
 
@@ -153,10 +149,7 @@ end
   blocks_i, zero_blocks_i, ca, cb, cz = cache
   axes_i = getindex!(ca,a.axes,i)
   blocks_i .= map((ci,ai) -> getindex!(ci,ai,i),cb,a.blocks)
-  # blocks_i .= getitems!(cb,a.blocks,i)
   zero_blocks_i .= map((ci,ai) -> getindex!(ci,ai,i),cz,a.zero_blocks)
-  # zero_blocks_i .= map(ai -> getindex!(cz,ai,i),a.zero_blocks)
-  # zero_blocks_i .= getitems!(cz,a.zero_blocks,i)
   BlockArrayCoo(blocks_i,a.blockids,axes_i,a.ptrs,zero_blocks_i)
 end
 
@@ -165,33 +158,34 @@ function Base.getindex(a::VectorOfBlockArrayCoo,i::Integer)
   getindex!(cache,a,i)
 end
 
-function Base.getindex(a::VectorOfBlockArrayCoo,b::Block)
-  _get_block_index(a,b)
-end
-
-function Base.getindex(a::VectorOfBlockVectorCoo,b::Block{1})
-  _get_block_index(a,b)
-end
-
-function _get_block_index(a,b)
-  i = convert(Tuple,b)
-  p = a.ptrs[i...]
-  if p>0
-    a.blocks[p]
-  else
-    a.zero_blocks[-p]
-  end
-end
-
-function Base.getindex(a::VectorOfBlockArrayCoo,b::Block{1}...)
-  a[Block(map(Int,b)...)]
-end
-
-function is_zero_block(a::VectorOfBlockArrayCoo,i::Integer...)
-  p = a.ptrs[i...]
-  @assert p != 0
-  p < 0
-end
+#@fverdugo to be deleted since it is kind of type-piracy
+#function Base.getindex(a::VectorOfBlockArrayCoo,b::Block)
+#  _get_block_index(a,b)
+#end
+#
+#function Base.getindex(a::VectorOfBlockVectorCoo,b::Block{1})
+#  _get_block_index(a,b)
+#end
+#
+#function _get_block_index(a,b)
+#  i = convert(Tuple,b)
+#  p = a.ptrs[i...]
+#  if p>0
+#    a.blocks[p]
+#  else
+#    a.zero_blocks[-p]
+#  end
+#end
+#
+#function Base.getindex(a::VectorOfBlockArrayCoo,b::Block{1}...)
+#  a[Block(map(Int,b)...)]
+#end
+#
+#function is_zero_block(a::VectorOfBlockArrayCoo,i::Integer...)
+#  p = a.ptrs[i...]
+#  @assert p != 0
+#  p < 0
+#end
 
 function lazy_map(::typeof(transpose),a::VectorOfBlockMatrixCoo)
   blocks = [ lazy_map(transpose,block) for block in a.blocks ]

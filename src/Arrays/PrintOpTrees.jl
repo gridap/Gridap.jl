@@ -111,3 +111,7 @@ end
 function get_children(n::TreeNode, a::VectorWithEntryInserted)
   (similar_tree_node(n,a.a),)
 end
+
+function get_children(n::TreeNode, a::VectorOfBlockArrayCoo)
+  map(b->similar_tree_node(n,b),a.blocks)
+end

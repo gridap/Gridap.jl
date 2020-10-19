@@ -15,23 +15,24 @@ blockids = [(1,1),(2,1),(3,2)]
 ax = Fill((blockedrange([2,3,2]), blockedrange([2,4])),l)
 al = VectorOfBlockArrayCoo(blocks,blockids,ax)
 
-@test al[Block(1,1)] === b11
-@test al[Block(2,1)] === b21
-@test al[Block(2),Block(1)] === b21
+#@fverdugo to be deleted since it is kind of type-piracy
+#@test al[Block(1,1)] === b11
+#@test al[Block(2,1)] === b21
+#@test al[Block(2),Block(1)] === b21
 
-@test is_zero_block(al,2,2) == true
-@test is_zero_block(al,2,1) == false
-@test is_nonzero_block(al,2,1) == true
-@test is_zero_block(al,Block(1,2)) == true
-@test is_zero_block(al,Block(1),Block(2)) == true
-
-@test blocksize(al) == (3,2)
-@test blocksize(al,1) == 3
-@test blocksize(al,2) == 2
-
-for (i,b) in enumerateblocks(al)
-  @test al[i] === b
-end
+#@test is_zero_block(al,2,2) == true
+#@test is_zero_block(al,2,1) == false
+#@test is_nonzero_block(al,2,1) == true
+#@test is_zero_block(al,Block(1,2)) == true
+#@test is_zero_block(al,Block(1),Block(2)) == true
+#
+#@test blocksize(al) == (3,2)
+#@test blocksize(al,1) == 3
+#@test blocksize(al,2) == 2
+#
+#for (i,b) in enumerateblocks(al)
+#  @test al[i] === b
+#end
 
 b1 = [  i*[3,4] for i in 1:l]
 b2 = [  i*[3,4,5,6] for i in 1:l]
@@ -64,6 +65,7 @@ test_array(dl,transpose.(al))
 
 dl = lazy_map(*,al,lazy_map(transpose,al))
 test_array(dl,[ a*transpose(a) for a in al ])
+#print_op_tree(dl)
 
 # in-homogeneous case
 
