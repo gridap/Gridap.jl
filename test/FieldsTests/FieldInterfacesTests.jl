@@ -24,10 +24,15 @@ test_field(f,p,fp,grad=∇fp,hess=∇∇fp)
 
 np = 4
 x = fill(p,np)
+z = fill(p,0)
 
 test_field(f,x,f.(x))
 test_field(f,x,f.(x),grad=∇(f).(x))
 test_field(f,x,f.(x),grad=∇(f).(x),hess=∇∇(f).(x))
+
+test_field(f,z,f.(z))
+test_field(f,z,f.(z),grad=∇(f).(z))
+test_field(f,z,f.(z),grad=∇(f).(z),hess=∇∇(f).(z))
 
 #using BenchmarkTools
 #
@@ -48,6 +53,14 @@ test_field(f,x,f.(x),grad=∇(f).(x),hess=∇∇(f).(x))
 #c = return_cache(∇∇f,x)
 #@btime evaluate!($c,$∇∇f,$x)
 
+# Test field as collection
+
+@test f === f[1]
+_f, = f
+@test f === _f
+@test length(f) == 1
+@test size(f) == ()
+@test eltype(f) == typeof(f)
 
 # GenericField (function)
 
@@ -62,6 +75,10 @@ test_field(f,p,q(p),grad=∇(q)(p),hess=∇∇(q)(p))
 test_field(f,x,q.(x))
 test_field(f,x,q.(x),grad=∇(q).(x))
 test_field(f,x,q.(x),grad=∇(q).(x),hess=∇∇(q).(x))
+
+test_field(f,z,f.(z))
+test_field(f,z,f.(z),grad=∇(f).(z))
+test_field(f,z,f.(z),grad=∇(f).(z),hess=∇∇(f).(z))
 
 #using BenchmarkTools
 #
@@ -94,6 +111,10 @@ test_field(f,p,0*q(p),grad=0*∇(q)(p),hess=0*∇∇(q)(p))
 test_field(f,x,0*q.(x))
 test_field(f,x,0*q.(x),grad=0*∇(q).(x))
 test_field(f,x,0*q.(x),grad=0*∇(q).(x),hess=0*∇∇(q).(x))
+
+test_field(f,z,f.(z))
+test_field(f,z,f.(z),grad=∇(f).(z))
+test_field(f,z,f.(z),grad=∇(f).(z),hess=∇∇(f).(z))
 
 #using BenchmarkTools
 #
@@ -146,6 +167,10 @@ test_field(f,x,f.(x))
 test_field(f,x,f.(x),grad=∇(f).(x))
 test_field(f,x,f.(x),grad=∇(f).(x),hess=∇∇(f).(x))
 
+test_field(f,z,f.(z))
+test_field(f,z,f.(z),grad=∇(f).(z))
+test_field(f,z,f.(z),grad=∇(f).(z),hess=∇∇(f).(z))
+
 #using BenchmarkTools
 #
 #c = return_cache(f,p)
@@ -180,6 +205,8 @@ test_field(f,p,cp)
 test_field(f,p,cp,grad=∇cp)
 test_field(f,x,f.(x))
 test_field(f,x,f.(x),grad=∇(f).(x))
+test_field(f,z,f.(z))
+test_field(f,z,f.(z),grad=∇(f).(z))
 
 #using BenchmarkTools
 #
@@ -207,6 +234,8 @@ test_field(f,p,cp)
 test_field(f,p,cp,grad=∇cp)
 test_field(f,x,f.(x))
 test_field(f,x,f.(x),grad=∇(f).(x))
+test_field(f,z,f.(z))
+test_field(f,z,f.(z),grad=∇(f).(z))
 
 #using BenchmarkTools
 #
@@ -234,6 +263,8 @@ test_field(f,p,cp)
 test_field(f,p,cp,grad=∇cp)
 test_field(f,x,f.(x))
 test_field(f,x,f.(x),grad=∇(f).(x))
+test_field(f,z,f.(z))
+test_field(f,z,f.(z),grad=∇(f).(z))
 
 #using BenchmarkTools
 #
@@ -258,7 +289,27 @@ m = GenericField(mfun)
 g = GenericField(gfun)
 
 f = m∘g
+fp = m(g(p))
+∇fp = ∇(g)(p)⋅∇(m)(g(p))
+test_field(f,p,fp)
+test_field(f,p,fp,grad=∇fp)
+test_field(f,x,f.(x))
+test_field(f,x,f.(x),grad=∇(f).(x))
+test_field(f,z,f.(z))
+test_field(f,z,f.(z),grad=∇(f).(z))
 
+#using BenchmarkTools
+#
+#c = return_cache(f,p)
+#@btime evaluate!($c,$f,$p)
+#c = return_cache(f,x)
+#@btime evaluate!($c,$f,$x)
+#
+#∇f = ∇(f)
+#c = return_cache(∇f,p)
+#@btime evaluate!($c,$∇f,$p)
+#c = return_cache(∇f,x)
+#@btime evaluate!($c,$∇f,$x)
 
 #kk
 #

@@ -200,6 +200,7 @@ gradient(a::GenericField) = GenericField(gradient(a.object))
 @inline Base.eltype(::Type{T}) where T<:Field = T
 @inline Base.iterate(a::Field) = (a,nothing)
 @inline Base.iterate(a::Field,::Nothing) = nothing
+@inline Base.getindex(a::Field,i::Integer) =  (@check i == 1; a)
 
 # Zero field
 
@@ -445,21 +446,24 @@ end
 end
 
 function return_cache(c::OperationField,x::AbstractArray{<:Point})
-  cl = map(fi -> return_cache(fi,x),c.fields)
-  lx = map((ci,fi) -> evaluate!(ci,fi,x),cl,c.fields)
-  ck = CachedArray(zero(c.op.(lx...)))
-  ck, cl
+  cf = map(fi -> return_cache(fi,x),c.fields)
+  lx = map((ci,fi) -> evaluate!(ci,fi,x),cf,c.fields)
+  ck = return_cache(c.op,map(testitem,lx)...)
+  r = c.op.(lx...)
+  ca = CachedArray(r)
+  ca, ck, cf
 end
 
 @inline function evaluate!(cache,c::OperationField,x::AbstractArray{<:Point})
-  ck, cf = cache
+  ca, ck, cf = cache
   sx = size(x)
-  setsize!(ck,sx)
+  setsize!(ca,sx)
   lx = map((ci,fi) -> evaluate!(ci,fi,x),cf,c.fields)
+  r = ca.array
   for i in eachindex(x)
-    @inbounds ck.array[i] = c.op(map(lxi -> lxi[i], lx)...)
+    @inbounds r[i] = evaluate!(ck,c.op,map(lxi -> lxi[i], lx)...)
   end
-  ck.array
+  r
 end
 
 @inline evaluate!(cache,op::Operation,x::Field...) = OperationField(op.op,x)
@@ -525,7 +529,7 @@ It returns the composition of two fields, which is just `Operation(f)(g)`
 # Other operations
 
 @inline transpose(f::Field) = f
-@inline Base.copy(f::Field) = f
+#@inline Base.copy(f::Field) = f
 @inline *(f::Field,g::Field) = Operation(*)(f,g)#⋅g
 
 # Testers

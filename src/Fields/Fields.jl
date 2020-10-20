@@ -12,7 +12,7 @@ using Gridap.Arrays: get_array
 using Gridap.Arrays: testitem
 
 using Gridap.Helpers: @abstractmethod, @notimplemented
-using Gridap.Helpers: @notimplementedif, @unreachable
+using Gridap.Helpers: @notimplementedif, @unreachable, @check
 
 using Gridap.Algebra: mul!
 
