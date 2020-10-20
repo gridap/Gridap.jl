@@ -6,7 +6,7 @@ function gradient(f::Number)
   end
 end
 
-function hessian(f::Number)
+function ∇∇(f::Number)
   @inline function hess_f(x::Point)
     g = gradient(f)(x)
     gradient(g)(x)

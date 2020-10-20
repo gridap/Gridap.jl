@@ -18,7 +18,7 @@ fp = v
 ∇∇fp = zero(ThirdOrderTensorValue{2,2,2,Float64,6})
 test_field(f,p,fp)
 test_field(f,p,fp,grad=∇fp)
-test_field(f,p,fp,grad=∇fp,hess=∇∇fp)
+test_field(f,p,fp,grad=∇fp,gradgrad=∇∇fp)
 
 # Testing the default interface at a vector of points
 
@@ -28,11 +28,11 @@ z = fill(p,0)
 
 test_field(f,x,f.(x))
 test_field(f,x,f.(x),grad=∇(f).(x))
-test_field(f,x,f.(x),grad=∇(f).(x),hess=∇∇(f).(x))
+test_field(f,x,f.(x),grad=∇(f).(x),gradgrad=∇∇(f).(x))
 
 test_field(f,z,f.(z))
 test_field(f,z,f.(z),grad=∇(f).(z))
-test_field(f,z,f.(z),grad=∇(f).(z),hess=∇∇(f).(z))
+test_field(f,z,f.(z),grad=∇(f).(z),gradgrad=∇∇(f).(z))
 
 #using BenchmarkTools
 #
@@ -70,15 +70,15 @@ f = GenericField(q)
 
 test_field(f,p,q(p))
 test_field(f,p,q(p),grad=∇(q)(p))
-test_field(f,p,q(p),grad=∇(q)(p),hess=∇∇(q)(p))
+test_field(f,p,q(p),grad=∇(q)(p),gradgrad=∇∇(q)(p))
 
 test_field(f,x,q.(x))
 test_field(f,x,q.(x),grad=∇(q).(x))
-test_field(f,x,q.(x),grad=∇(q).(x),hess=∇∇(q).(x))
+test_field(f,x,q.(x),grad=∇(q).(x),gradgrad=∇∇(q).(x))
 
 test_field(f,z,f.(z))
 test_field(f,z,f.(z),grad=∇(f).(z))
-test_field(f,z,f.(z),grad=∇(f).(z),hess=∇∇(f).(z))
+test_field(f,z,f.(z),grad=∇(f).(z),gradgrad=∇∇(f).(z))
 
 #using BenchmarkTools
 #
@@ -106,15 +106,15 @@ f = zero(f)
 
 test_field(f,p,0*q(p))
 test_field(f,p,0*q(p),grad=0*∇(q)(p))
-test_field(f,p,0*q(p),grad=0*∇(q)(p),hess=0*∇∇(q)(p))
+test_field(f,p,0*q(p),grad=0*∇(q)(p),gradgrad=0*∇∇(q)(p))
 
 test_field(f,x,0*q.(x))
 test_field(f,x,0*q.(x),grad=0*∇(q).(x))
-test_field(f,x,0*q.(x),grad=0*∇(q).(x),hess=0*∇∇(q).(x))
+test_field(f,x,0*q.(x),grad=0*∇(q).(x),gradgrad=0*∇∇(q).(x))
 
 test_field(f,z,f.(z))
 test_field(f,z,f.(z),grad=∇(f).(z))
-test_field(f,z,f.(z),grad=∇(f).(z),hess=∇∇(f).(z))
+test_field(f,z,f.(z),grad=∇(f).(z),gradgrad=∇∇(f).(z))
 
 #using BenchmarkTools
 #
@@ -160,15 +160,15 @@ fp = v
 ∇∇fp = zero(ThirdOrderTensorValue{2,2,2,Float64,6})
 test_field(f,p,fp)
 test_field(f,p,fp,grad=∇fp)
-test_field(f,p,fp,grad=∇fp,hess=∇∇fp)
+test_field(f,p,fp,grad=∇fp,gradgrad=∇∇fp)
 
 test_field(f,x,f.(x))
 test_field(f,x,f.(x),grad=∇(f).(x))
-test_field(f,x,f.(x),grad=∇(f).(x),hess=∇∇(f).(x))
+test_field(f,x,f.(x),grad=∇(f).(x),gradgrad=∇∇(f).(x))
 
 test_field(f,z,f.(z))
 test_field(f,z,f.(z),grad=∇(f).(z))
-test_field(f,z,f.(z),grad=∇(f).(z),hess=∇∇(f).(z))
+test_field(f,z,f.(z),grad=∇(f).(z),gradgrad=∇∇(f).(z))
 
 #using BenchmarkTools
 #

@@ -11,10 +11,10 @@ function evaluate!(c,f::MockField,x::Point)
   f.v
 end
 
-function evaluate_gradient!(cache,f::MockField,x::Point)
-  zero(outer(x,f.v))
+function evaluate!(cache,f::FieldGradient{1,<:MockField},x::Point)
+  zero(outer(x,f.object.v))
 end
 
-function evaluate_hessian!(cache,f::MockField,x::Point)
-  zero(outer(x,outer(x,f.v)))
+function evaluate!(cache,f::FieldGradient{2,<:MockField},x::Point)
+  zero(outer(x,outer(x,f.object.v)))
 end

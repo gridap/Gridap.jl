@@ -63,7 +63,6 @@ export return_hessian_type
 
 export gradient
 export ∇
-export hessian
 export ∇∇
 
 export test_field
@@ -85,7 +84,7 @@ export FieldHessianArray
 export linear_combination
 export integrate
 
-export MatMul
+#export MatMul
 export LinCombVal
 export Integrate
 
@@ -93,12 +92,12 @@ include("FieldsInterfaces.jl")
 
 include("MockFields.jl")
 
-include("FieldArrays.jl")
+#include("FieldArrays.jl")
 
-include("ApplyOptimizations.jl")
+#include("ApplyOptimizations.jl")
 
 include("AutoDiff.jl")
 
-include("AlgebraMaps.jl")
+#include("AlgebraMaps.jl")
 
 end
