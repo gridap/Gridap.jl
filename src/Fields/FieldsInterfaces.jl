@@ -94,6 +94,7 @@ testargs(f::FieldGradient,x::Point) = testargs(f.object,x)
 return_value(f::FieldGradient,x::Point) = evaluate(f,testargs(f,x)...)
 return_cache(f::FieldGradient,x::Point) = nothing
 evaluate!(cache,f::FieldGradient,x::Point) = @abstractmethod
+testvalue(::Type{FieldGradient{N,T}}) where {N,T} = FieldGradient{N}(testvalue(T))
 
 # Default methods for arrays of points
 

@@ -2,10 +2,10 @@
 # Make arrays of field behave like Maps
 
 @inline function return_cache(f::AbstractArray{T},x::Point) where T<:Field
-  S = return_type(first(f),x)
+  S = return_type(testitem(f),x)
   cr = CachedArray(zeros(S,size(f)))
   if isconcretetype(T)
-    cf = return_cache(first(f),x)
+    cf = return_cache(testitem(f),x)
   else
     cf = nothing
   end
@@ -36,10 +36,10 @@ vector of `np` points, it returns a matrix `np` x `nf`.
 end
 
 function return_cache(f::AbstractArray{T},x::AbstractArray{<:Point}) where T<:Field
-  S = return_type(first(f),testitem(x))
+  S = return_type(testitem(f),testitem(x))
   cr = CachedArray(zeros(S,(size(x)...,size(f)...)))
   if isconcretetype(T)
-    cf = return_cache(first(f),testitem(x))
+    cf = return_cache(testitem(f),testitem(x))
   else
     cf = nothing
   end
@@ -67,97 +67,78 @@ function evaluate!(c,f::AbstractArray{T},x::AbstractArray{<:Point}) where T<:Fie
 end
 
 function testargs(f::AbstractArray{T},x::Point) where T<:Field
-  testargs(first(f),x)
+  testargs(testitem(f),x)
 end
 
 function testargs(f::AbstractArray{T},x::AbstractArray{<:Point}) where T<:Field
-  testargs(first(f),x)
+  testargs(testitem(f),x)
 end
 
-# Default implementation of the hook methods for gradient and hessian
-
-function return_gradient_cache(f::AbstractArray{T},x::Point) where T <:Field
-  S = return_gradient_type(first(f),x)
-  cr = CachedArray(zeros(S,size(f)))
-  if isconcretetype(T)
-    cf = return_gradient_cache(first(f),x)
-  else
-    cf = nothing
-  end
-  cr, cf
-end
-
-function evaluate_gradient!(cache,f::AbstractArray{T},x::Point) where T <:Field
-  cr, cf = c
-  setsize!(cr,size(f))
-  r = cr.array
-  if isconcretetype(T)
-    for j in eachindex(f)
-      @inbounds r[j] = evaluate_gradient!(cf,f[j],x)
-    end
-  else
-    for j in eachindex(f)
-      @inbounds r[j] = evaluate_gradient(f[j],x)
-    end
-  end
-  r
-end
-
-function return_gradient_cache(f::AbstractArray{T},x::AbstractArray{<:Point}) where T <:Field
-  S = return_gradient_type(first(f),testitem(x))
-  cr = CachedArray(zeros(S,(size(x)...,size(f)...)))
-  if isconcretetype(T)
-    cf = return_gradient_cache(first(f),testitem(x))
-  else
-    cf = nothing
-  end
-  cr, cf
-end
-
-function evaluate_gradient!(cache,f::AbstractArray{T},x::AbstractArray{<:Point}) where T <:Field
-  cr, cf = c
-  setsize!(cr,(size(x)...,size(f)...))
-  r = cr.array
-  if isconcretetype(T)
-    for j in eachindex(f)
-      for i in eachindex(x)
-        @inbounds r[i,j] = evaluate_gradient!(cf,f[j],x[i])
-      end
-    end
-  else
-    for j in eachindex(f)
-      for i in eachindex(x)
-        @inbounds r[i,j] = evaluate_gradient(f[j],x[i])
-      end
-    end
-  end
-  r
-end
-
-function return_hessian_cache(f::AbstractArray{T},x::Point) where T <:Field
-end
-
-function evaluate_hessian!(cache,f::AbstractArray{T},x::Point) where T <:Field
-end
-
-function return_hessian_cache(f::AbstractArray{T},x::AbstractArray{<:Point}) where T <:Field
-end
-
-function evaluate_hessian!(cache,f::AbstractArray{T},x::AbstractArray{<:Point}) where T <:Field
-end
-
-
-
-
-function test_field(f::AbstractArray{<:Field}, x, v, cmp=(==); grad=nothing, hess=nothing)
+function test_field_array(f::AbstractArray{<:Field}, x, v, cmp=(==); grad=nothing, gradgrad=nothing)
   test_mapping(f,(x,),v,cmp)
   if grad != nothing
-    test_mapping(Broadcasting(gradient)(f),(x,),grad,cmp)
+    test_mapping(Broadcasting(∇)(f),(x,),grad,cmp)
   end
-  if hess != nothing
-    test_mapping(Broadcasting(hessian)(f),(x,),hess,cmp)
+  if gradgrad != nothing
+    test_mapping(Broadcasting(∇∇)(f),(x,),gradgrad,cmp)
   end
 end
+
+# Opening the door to optimize arrays of field gradients
+
+#@inline function evaluate!(cache,k::Broadcasting{typeof(∇)},a::AbstractArray{<:Field})
+#  FieldGradientArray{1}(a)
+#end
+#
+#@inline function evaluate!(cache,k::Broadcasting{typeof(∇)},a::FieldGradientArray{N}) where N
+#  FieldGradientArray{N+1}(a.fa)
+#end
+#
+#@inline function evaluate!(cache,k::Broadcasting{typeof(∇∇)},a::AbstractArray{<:Field})
+#  FieldGradientArray{2}(a)
+#end
+#
+#"""
+#A wrapper that represents the broadcast of `gradient` over an array of fields.
+#Ng is the number of times the gradient is applyed
+#"""
+#struct FieldGradientArray{Ng,A,T,N} <: AbstractArray{T,N}
+#  fa::A
+#  function FieldGradientArray{Ng}(f::AbstractArray{<:Field}) where Ng
+#    s = size(f)
+#    T = typeof(FieldGradient(first(f)))
+#    N = length(s)
+#    A = typeof(f)
+#    new{Ng,A,T,N}(f)
+#  end
+#end
+#
+#@inline Base.size(a::FieldGradientArray) = size(a.fa)
+#@inline Base.axes(a::FieldGradientArray) = axes(a.fa)
+#@inline Base.getindex(a::FieldGradientArray,i::Integer) = FieldGradient(a.fa[i])
+#@inline Base.getindex(a::FieldGradientArray,i::Vararg{Integer,N}) where N = FieldGradient(a.fa[i...])
+#@inline Base.ndims(a::FieldGradientArray{A}) where A = ndims(A)
+#@inline Base.eltype(a::FieldGradientArray{A}) where A = FieldGradient{eltype(A)}
+#@inline Base.IndexStyle(::Type{<:FieldGradientArray{A}}) where A = IndexStyle(A)
+
+#@inline function evaluate!(cache,k::Broadcasting{typeof(gradient)},a::TransposeFieldVector)
+#  transpose(Broadcasting(∇)(a.basis))
+#end
+
+#@inline gradient(f::AbstractArray{<:Field}) = FieldGradientArray(f)
+#
+#@inline return_cache(f::FieldGradientArray,x) = return_gradient_cache(f.fa,x)
+#
+#@inline evaluate!(cache,f::FieldGradientArray,x) = evaluate_gradient!(cache,f.fa,x)
+#
+#@inline return_gradient_cache(fa::AbstractArray{<:Field},x) = return_cache(∇.(fa),x)
+#
+#@inline evaluate_gradient!(cache,f::AbstractArray{<:Field},x) = evaluate!(cache,∇.(f),x)
+
+
+
+
+
 
 ## Broadcasting operations
 #
@@ -422,41 +403,6 @@ end
 #@inline function evaluate!(cache,k::Broadcasting{typeof(gradient)},f::AbstractArray{<:Field})
 #  FieldGradientArray(f)
 #end
-#
-#"""
-#A wrapper that represents the broadcast of `gradient` over an array of fields.
-#"""
-#struct FieldGradientArray{A,T,N} <: AbstractArray{T,N}
-#  fa::A
-#  function FieldGradientArray(f::AbstractArray{<:Field})
-#    s = size(f)
-#    T = typeof(FieldGradient(eltype(f)))
-#    N = length(s)
-#    A = typeof(f)
-#    new{A,T,N}(f)
-#  end
-#end
-#
-#@inline Base.size(a::FieldGradientArray) = size(a.fa)
-#@inline Base.axes(a::FieldGradientArray) = axes(a.fa)
-#@inline Base.getindex(a::FieldGradientArray,i::Integer...) = FieldGradient(a.fa[i...])
-#@inline Base.ndims(a::FieldGradientArray{A}) where A = ndims(A)
-#@inline Base.eltype(a::FieldGradientArray{A}) where A = FieldGradient{eltype(A)}
-#@inline Base.IndexStyle(::Type{<:FieldGradientArray{A}}) where A = IndexStyle(A)
-#
-#@inline function evaluate!(cache,k::Broadcasting{typeof(gradient)},a::TransposeFieldVector)
-#  transpose(Broadcasting(∇)(a.basis))
-#end
-#
-#@inline gradient(f::AbstractArray{<:Field}) = FieldGradientArray(f)
-#
-#@inline return_cache(f::FieldGradientArray,x) = return_gradient_cache(f.fa,x)
-#
-#@inline evaluate!(cache,f::FieldGradientArray,x) = evaluate_gradient!(cache,f.fa,x)
-#
-#@inline return_gradient_cache(fa::AbstractArray{<:Field},x) = return_cache(∇.(fa),x)
-#
-#@inline evaluate_gradient!(cache,f::AbstractArray{<:Field},x) = evaluate!(cache,∇.(f),x)
 #
 ## Hessian
 #

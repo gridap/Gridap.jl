@@ -18,3 +18,5 @@ end
 function evaluate!(cache,f::FieldGradient{2,<:MockField},x::Point)
   zero(outer(x,outer(x,f.object.v)))
 end
+
+testvalue(::Type{MockField{T}}) where T = MockField(zero(T))

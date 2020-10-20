@@ -10,6 +10,7 @@ using Gridap.Arrays: CachedArray
 using Gridap.Arrays: setsize!
 using Gridap.Arrays: get_array
 using Gridap.Arrays: testitem
+using Gridap.Arrays: testvalue
 
 using Gridap.Helpers: @abstractmethod, @notimplemented
 using Gridap.Helpers: @notimplementedif, @unreachable, @check
@@ -48,18 +49,10 @@ export Field
 export GenericField
 export ConstantField
 export FieldGradient
-export FieldHessian
 export BroadcastField
 export ZeroField
 export MockField
 export Point
-
-export evaluate_gradient!
-export return_gradient_type
-export return_gradient_cache
-export evaluate_hessian!
-export return_hessian_cache
-export return_hessian_type
 
 export gradient
 export ∇
@@ -67,10 +60,10 @@ export ∇∇
 
 export test_field
 export test_field_array
-export test_operation_field_array
-export test_broadcast_field_array
+#export test_operation_field_array
+#export test_broadcast_field_array
 
-export mock_field
+#export mock_field
 
 export TransposeFieldVector
 export TransposeFieldIndices
@@ -79,7 +72,7 @@ export DotOpFieldVectors
 export LinearCombinationField
 export CompositionFieldArrayField
 export FieldGradientArray
-export FieldHessianArray
+#export FieldHessianArray
 
 export linear_combination
 export integrate
@@ -92,7 +85,7 @@ include("FieldsInterfaces.jl")
 
 include("MockFields.jl")
 
-#include("FieldArrays.jl")
+include("FieldArrays.jl")
 
 #include("ApplyOptimizations.jl")
 
