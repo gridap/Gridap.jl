@@ -185,7 +185,14 @@ testargs(a::GenericField,x::Point) = testargs(a.object,x)
 return_value(a::GenericField,x::Point) = return_value(a.object,x)
 return_cache(a::GenericField,x::Point) = return_cache(a.object,x)
 @inline evaluate!(cache,a::GenericField,x::Point) = evaluate!(cache,a.object,x)
-gradient(a::GenericField) = GenericField(gradient(a.object))
+
+return_gradient_cache(f::GenericField,x::Point) =  return_gradient_cache(f.object,x)
+@inline evaluate_gradient!(c,f::GenericField,x::Point) = evaluate_gradient!(c,f.object,x)
+
+return_hessian_cache(f::GenericField,x::Point) =  return_hessian_cache(f.object,x)
+@inline evaluate_hessian!(c,f::GenericField,x::Point) = evaluate_hessian!(c,f.object,x)
+
+#gradient(a::GenericField) = GenericField(gradient(a.object))
 
 #@inline return_type(::Type{<:GenericField},::T) where T<:Field = T
 #@inline return_type(::Type{<:GenericField},::T) where T = GenericField{T}
@@ -322,8 +329,14 @@ function evaluate_hessian!(c,f::ConstantField,x::AbstractArray{<:Point})
   c.array
 end
 
-# Not needed any more
 ## Make Function behave like Field
+
+return_gradient_cache(f::Function,x::Point) = gradient(f)
+@inline evaluate_gradient!(c,f::Function,x::Point) = c(x)
+
+return_hessian_cache(f::Function,x::Point) = hessian(f)
+@inline evaluate_hessian!(c,f::Function,x::Point) = c(x)
+
 #
 #const FunctionField{F} = GenericField{F} where F<:Function
 #
@@ -548,7 +561,7 @@ It returns the composition of two fields, which is just `Operation(f)(g)`
 
 @inline transpose(f::Field) = f
 #@inline Base.copy(f::Field) = f
-@inline *(f::Field,g::Field) = Operation(*)(f,g)#⋅g
+#@inline *(f::Field,g::Field) = Operation(*)(f,g)#⋅g
 
 # Testers
 

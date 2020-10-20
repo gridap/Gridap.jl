@@ -144,12 +144,11 @@ f = GenericField(h)
 @test return_value(f,Point(0,0)) == 0.0
 @test return_value(f,fill(Point(0,0),3)) == fill(0.0,3)
 
-# TODO
-#return_value(∇(f),Point(0,0))
-#return_value(∇(f),fill(Point(0,0),3))
-#
-#return_value(∇∇(f),Point(0,0))
-#return_value(∇∇(f),fill(Point(0,0),3))
+return_value(∇(f),Point(0,0))
+return_value(∇(f),fill(Point(0,0),3))
+
+return_value(∇∇(f),Point(0,0))
+return_value(∇∇(f),fill(Point(0,0),3))
 
 # ConstantField
 
