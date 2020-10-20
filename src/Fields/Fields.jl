@@ -10,7 +10,7 @@ using Gridap.Arrays: CachedArray
 using Gridap.Arrays: setsize!
 using Gridap.Arrays: get_array
 using Gridap.Arrays: testitem
-using Gridap.Arrays: testvalue
+import Gridap.Arrays: testvalue
 
 using Gridap.Helpers: @abstractmethod, @notimplemented
 using Gridap.Helpers: @notimplementedif, @unreachable, @check
@@ -29,6 +29,7 @@ import LinearAlgebra: det, inv, transpose
 import LinearAlgebra: ⋅
 
 import Base: +, -, *, /
+import Gridap.TensorValues: ⊗, ⊙
 
 import Gridap.Arrays: IndexStyle
 import Gridap.Arrays: return_cache

@@ -39,7 +39,7 @@ function return_cache(f::AbstractArray{T},x::AbstractArray{<:Point}) where T<:Fi
   S = return_type(testitem(f),testitem(x))
   cr = CachedArray(zeros(S,(size(x)...,size(f)...)))
   if isconcretetype(T)
-    cf = return_cache(testitem(f),testitem(x))
+    cf = return_cache(f,testitem(x))
   else
     cf = nothing
   end
@@ -51,9 +51,10 @@ function evaluate!(c,f::AbstractArray{T},x::AbstractArray{<:Point}) where T<:Fie
   setsize!(cr,(size(x)...,size(f)...))
   r = cr.array
   if isconcretetype(T)
-    for j in eachindex(f)
-      for i in eachindex(x)
-        @inbounds r[i,j] = evaluate!(cf,f[j],x[i])
+    for i in eachindex(x)
+      fxi = evaluate!(cf,f,x[i])
+      for j in eachindex(f)
+        @inbounds r[i,j] = fxi[j]
       end
     end
   else
@@ -86,40 +87,138 @@ end
 
 # Opening the door to optimize arrays of field gradients
 
-#@inline function evaluate!(cache,k::Broadcasting{typeof(∇)},a::AbstractArray{<:Field})
-#  FieldGradientArray{1}(a)
+"""
+A wrapper that represents the broadcast of `gradient` over an array of fields.
+Ng is the number of times the gradient is applyed
+"""
+struct FieldGradientArray{Ng,A,T,N} <: AbstractArray{T,N}
+  fa::A
+  function FieldGradientArray{Ng}(f::AbstractArray{<:Field}) where Ng
+    T = typeof(gradient(testitem(f),Val(Ng)))
+    N = ndims(f)
+    A = typeof(f)
+    new{Ng,A,T,N}(f)
+  end
+end
+
+@inline function evaluate!(cache,k::Broadcasting{typeof(∇)},a::AbstractArray{<:Field})
+  FieldGradientArray{1}(a)
+end
+
+@inline function evaluate!(cache,k::Broadcasting{typeof(∇)},a::FieldGradientArray{N}) where N
+  FieldGradientArray{N+1}(a.fa)
+end
+
+@inline function evaluate!(cache,k::Broadcasting{typeof(∇∇)},a::AbstractArray{<:Field})
+  FieldGradientArray{2}(a)
+end
+
+@inline Base.size(a::FieldGradientArray) = size(a.fa)
+@inline Base.axes(a::FieldGradientArray) = axes(a.fa)
+@inline Base.getindex(a::FieldGradientArray{Ng},i::Integer) where Ng = gradient(a.fa[i],Val(Ng))
+@inline Base.getindex(
+   a::FieldGradientArray{Ng,A,T,N},i::Vararg{Integer,N}) where {Ng,A,T,N} = gradient(a.fa[i...],Val(Ng))
+@inline Base.IndexStyle(::Type{<:FieldGradientArray{Ng,A}}) where {Ng,A} = IndexStyle(A)
+
+# Optimizing linear_combination.
+# More than a performance optimization, this is a type signature optimization
+# The default implementation as transpose(a)*b leads to an arbitrary number of nested types
+# that grows with the length of the vectors.
+
+function linear_combination(a::AbstractVector{<:Number},b::AbstractVector{<:Field}) 
+  LinearCombinationField(a,b)
+end
+
+struct LinearCombinationField{V,F} <: Field
+  values::V
+  fields::F
+end
+
+return_cache(a::LinearCombinationField,x::Point) =  return_cache(a.fields,x)
+
+@inline function evaluate!(cache,a::LinearCombinationField,x::Point)
+  fx = evaluate!(cache,a.fields,x)
+  v = a.values
+  z = zero(return_type(outer,testitem(fx),testitem(v)))
+  @check length(fx) == length(v)
+  @inbounds for i in eachindex(fx)
+    # We need to do the product in this way
+    # so that the gradient also works
+    z += outer(fx[i],v[i]) 
+  end
+  z
+end
+
+function gradient(a::LinearCombinationField)
+  fields = Broadcasting(∇)(a.fields)
+  LinearCombinationField(a.values,fields)
+end
+
+function linear_combination(a::AbstractMatrix{<:Number},b::AbstractVector{<:Field}) 
+  #[ linear_combination(a[:,i],b) for i in 1:size(a,2) ]
+  LinearCombinationFieldArray(a,b)
+end
+
+struct LinearCombinationFieldArray{T,V,F} <: AbstractVector{T}
+  values::V
+  fields::F
+  function LinearCombinationFieldArray(values::AbstractMatrix{<:Number},fields::AbstractVector{<:Field})
+    @check size(values,1) == length(fields)
+    V = typeof(values)
+    F = typeof(fields)
+    T = LinearCombinationField{Vector{eltype(V)},F}
+    new{T,V,F}(values,fields)
+  end
+end
+
+Base.size(a::LinearCombinationFieldArray) = (size(a.values,2),)
+Base.getindex(a::LinearCombinationFieldArray,i::Integer) = LinearCombinationField(a.values[:,i],a.fields)
+Base.IndexStyle(::Type{<:LinearCombinationField}) = IndexLinear()
+
+function return_cache(a::LinearCombinationFieldArray,x::Point)
+  cf = return_cache(a.fields,x)
+  vf = return_value(testitem(a.fields),x)
+  vv = testitem(a.values)
+  T = typeof( vf⊗vv + vf⊗vv )
+  r = zeros(T,size(a))
+  r, cf
+end
+
+@inline function evaluate!(cache,a::LinearCombinationFieldArray,x::Point)
+  r, cf = cache
+  fx = evaluate!(cf,a.fields,x)
+  v = a.values
+  @check length(fx) == size(v,1)
+  @check length(r) == size(v,2)
+  for j in eachindex(r)
+    rj = zero(eltype(r))
+    for i in eachindex(fx)
+      # We need to do the product in this way
+      # so that the gradient also works
+      rj += outer(fx[i],v[i,j]) 
+    end
+    r[j] = rj
+  end
+  r
+end
+
+function evaluate!(cache,k::Broadcasting{typeof(∇)},a::LinearCombinationFieldArray)
+  fields = Broadcasting(∇)(a.fields)
+  LinearCombinationFieldArray(a.values,fields)
+end
+
+### transpose(i_to_f)*ij_to_vals
+#
+#function *(a::Transpose{<:Field,<:AbstractVector},b::AbstractMatrix{<:Number})
+#  transpose([ a*b[:,j] for j in 1:size(b,2) ])
 #end
 #
-#@inline function evaluate!(cache,k::Broadcasting{typeof(∇)},a::FieldGradientArray{N}) where N
-#  FieldGradientArray{N+1}(a.fa)
-#end
+### ij_to_vals*j_to_f
 #
-#@inline function evaluate!(cache,k::Broadcasting{typeof(∇∇)},a::AbstractArray{<:Field})
-#  FieldGradientArray{2}(a)
+#function *(a::Transpose{<:Number,<:AbstractMatrix},b::AbstractVector{<:Field})
+#  [ transpose(a.parent[:,i])*b for i in 1:size(a,1) ]
 #end
-#
-#"""
-#A wrapper that represents the broadcast of `gradient` over an array of fields.
-#Ng is the number of times the gradient is applyed
-#"""
-#struct FieldGradientArray{Ng,A,T,N} <: AbstractArray{T,N}
-#  fa::A
-#  function FieldGradientArray{Ng}(f::AbstractArray{<:Field}) where Ng
-#    s = size(f)
-#    T = typeof(FieldGradient(first(f)))
-#    N = length(s)
-#    A = typeof(f)
-#    new{Ng,A,T,N}(f)
-#  end
-#end
-#
-#@inline Base.size(a::FieldGradientArray) = size(a.fa)
-#@inline Base.axes(a::FieldGradientArray) = axes(a.fa)
-#@inline Base.getindex(a::FieldGradientArray,i::Integer) = FieldGradient(a.fa[i])
-#@inline Base.getindex(a::FieldGradientArray,i::Vararg{Integer,N}) where N = FieldGradient(a.fa[i...])
-#@inline Base.ndims(a::FieldGradientArray{A}) where A = ndims(A)
-#@inline Base.eltype(a::FieldGradientArray{A}) where A = FieldGradient{eltype(A)}
-#@inline Base.IndexStyle(::Type{<:FieldGradientArray{A}}) where A = IndexStyle(A)
+
 
 #@inline function evaluate!(cache,k::Broadcasting{typeof(gradient)},a::TransposeFieldVector)
 #  transpose(Broadcasting(∇)(a.basis))

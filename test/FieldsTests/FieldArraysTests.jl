@@ -9,12 +9,14 @@ using Test
 # Testing the default interface for field arrays
 
 function result(f,x) 
-  if length(f) != 0
-      hcat(map(fi->fi.(x),f)...)
-    else
-      T = return_type(testitem(f),testitem(x))
-      zeros(T,size(x)...,size(f)...)
+  T = return_type(testitem(f),testitem(x))
+  r = zeros(T,size(x)...,size(f)...)
+  for j in CartesianIndices(f)
+    for i in CartesianIndices(x)
+      r[i,j] = evaluate(f[j],x[i])
+    end
   end
+  r
 end
 
 p = Point(1.0,2.0)
@@ -79,7 +81,136 @@ test_field_array(f,z,result(f,z))
 test_field_array(f,z,result(f,z),grad=result(∇.(f),z))
 test_field_array(f,z,result(f,z),grad=result(∇.(f),z),gradgrad=result(∇∇.(f),z))
 
-#test_field_array(f,x,f.(x))
+# Broadcasting operations
+
+afun(x) = x[1]+2
+a = GenericField(afun)
+
+v = VectorValue{2,Float64}[(1,1),(4,2),(3,5)]
+b = MockField.(v)
+
+f = Broadcasting(Operation(*))(a,b)
+
+fp = Broadcasting(*)(a(p),v)
+∇fp = Broadcasting(⊗)(∇(a)(p),v)
+
+test_field_array(f,p,fp)
+test_field_array(f,p,fp,grad=∇fp)
+test_field_array(f,x,result(f,x))
+test_field_array(f,x,result(f,x),grad=result(∇.(f),x))
+test_field_array(f,z,result(f,z))
+test_field_array(f,z,result(f,z),grad=result(∇.(f),z))
+
+#using BenchmarkTools
+#
+#c = return_cache(f,p)
+#@btime evaluate!($c,$f,$p)
+#c = return_cache(f,x)
+#@btime evaluate!($c,$f,$x)
+#
+#∇f = Broadcasting(∇)(f)
+#c = return_cache(∇f,p)
+#@btime evaluate!($c,$∇f,$p)
+#c = return_cache(∇f,x)
+#@btime evaluate!($c,$∇f,$x)
+
+
+# transpose of an array of fields
+
+avals = [1.0,0.5,1.2]
+a = MockField.(avals)
+
+f = transpose(a)
+
+fp = transpose(evaluate(a,p))
+∇fp = transpose(evaluate(Broadcasting(∇)(a),p))
+
+test_field_array(f,p,fp)
+test_field_array(f,p,fp,grad=∇fp)
+test_field_array(f,x,result(f,x))
+test_field_array(f,x,result(f,x),grad=result(∇.(f),x))
+test_field_array(f,z,result(f,z))
+test_field_array(f,z,result(f,z),grad=result(∇.(f),z))
+
+#using BenchmarkTools
+#
+#c = return_cache(f,p)
+#@btime evaluate!($c,$f,$p)
+#c = return_cache(f,x)
+#@btime evaluate!($c,$f,$x)
+#
+#∇f = Broadcasting(∇)(f)
+#c = return_cache(∇f,p)
+#@btime evaluate!($c,$∇f,$p)
+#c = return_cache(∇f,x)
+#@btime evaluate!($c,$∇f,$x)
+
+# transpose(i_to_f)*i_to_vals
+
+avals = [1.0,0.5,1.2,3.9]
+a = MockField.(avals)
+b = VectorValue{2,Float64}[(1,1),(4,2),(3,5),(1,2)]
+
+f = linear_combination(b,a)
+@test isa(f,Fields.LinearCombinationField)
+
+fp = transpose(b)*avals
+∇fp = zero(TensorValue{2,2,Float64,4})
+
+test_field(f,p,fp)
+test_field(f,p,fp,grad=∇fp)
+test_field(f,x,f.(x))
+test_field(f,x,f.(x),grad=∇(f).(x))
+test_field(f,z,f.(z))
+test_field(f,z,f.(z),grad=∇(f).(z))
+
+
+#using BenchmarkTools
+#
+#c = return_cache(f,p)
+#@btime evaluate!($c,$f,$p)
+#c = return_cache(f,x)
+#@btime evaluate!($c,$f,$x)
+#
+#∇f = Broadcasting(∇)(f)
+#c = return_cache(∇f,p)
+#@btime evaluate!($c,$∇f,$p)
+#c = return_cache(∇f,x)
+#@btime evaluate!($c,$∇f,$x)
+#
+# ij_to_vals*j_to_f
+
+avals =rand(4)
+a = MockField.(avals)
+b = zeros(VectorValue{2,Float64},4,3)
+
+f = linear_combination(b,a)
+@test isa(f,Fields.LinearCombinationFieldArray)
+#@show typeof(Broadcasting(∇)(f))
+
+fp = transpose(b)*avals
+∇fp = zeros(TensorValue{2,2,Float64,4},3)
+
+test_field_array(f,p,fp)
+test_field_array(f,p,fp,grad=∇fp)
+test_field_array(f,x,result(f,x))
+test_field_array(f,x,result(f,x),grad=result(∇.(f),x))
+test_field_array(f,z,result(f,z))
+test_field_array(f,z,result(f,z),grad=result(∇.(f),z))
+
+#using BenchmarkTools
+#
+#c = return_cache(f,p)
+#@btime evaluate!($c,$f,$p)
+#c = return_cache(f,x)
+#@btime evaluate!($c,$f,$x)
+#
+#∇f = Broadcasting(∇)(f)
+#c = return_cache(∇f,p)
+#@btime evaluate!($c,$∇f,$p)
+#c = return_cache(∇f,x)
+#@btime evaluate!($c,$∇f,$x)
+
 
 
 ## Test MockField

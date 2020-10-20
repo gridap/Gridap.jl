@@ -173,6 +173,7 @@ end
 
 return_cache(z::ZeroField,x::Point) = zero(return_type(z.field,x))
 @inline evaluate!(cache,z::ZeroField,x::Point) = cache
+testvalue(::Type{ZeroField{F}}) where F = ZeroField(testvalue(F))
 
 function return_cache(z::ZeroField,x::AbstractArray{<:Point})
   E = return_type(z.field,testitem(x))
@@ -202,6 +203,8 @@ end
 struct ConstantField{T<:Number} <: Field
   object::T
 end
+
+Base.zero(::Type{ConstantField{T}}) where T = ConstantField(zero(T))
 
 @inline function evaluate!(c,f::ConstantField,x::Point)
   f.object
@@ -297,11 +300,23 @@ end
 
 @inline evaluate!(cache,op::Operation,x::Field...) = OperationField(op.op,x)
 
-for op in (:+,:-,:*,:⋅,:inv,:det)
+# Define some well known operations
+
+for op in (:+,:-,:*,:⋅,:⊙,:⊗,:inv,:det)
   @eval ($op)(a::Field...) = Operation($op)(a...)
 end
 
-# Operation rules e.g.
+@inline transpose(f::Field) = f
+
+@inline *(A::Number, B::Field) = ConstantField(A)*B
+@inline *(A::Field, B::Number) = A*ConstantField(B)
+@inline ⋅(A::Number, B::Field) = ConstantField(A)⋅B
+@inline ⋅(A::Field, B::Number) = A⋅ConstantField(B)
+
+#@inline *(A::Function, B::Field) = GenericField(A)*B
+#@inline *(A::Field, B::Function) = GenericField(B)*A
+
+# Gradient of the sum
 for op in (:+,:-)
   @eval begin
     function gradient(a::OperationField{typeof($op)})
@@ -312,13 +327,7 @@ for op in (:+,:-)
   end
 end
 
-# Some syntactic sugar
-@inline *(A::Number, B::Field) = ConstantField(A)*B
-@inline *(A::Field, B::Number) = ConstantField(B)*A
-@inline *(A::Function, B::Field) = GenericField(A)*B
-@inline *(A::Field, B::Function) = GenericField(B)*A
-
-# Product rules for the gradient
+# Gradient of the product
 
 function product_rule(fun,f1,f2,∇f1,∇f2)
   msg = "Product rule not implemented for product $fun between types $(typeof(f1)) and $(typeof(f2))"
@@ -329,12 +338,16 @@ function product_rule(::typeof(*),f1::Real,f2::Real,∇f1,∇f2)
   ∇f1*f2 + f1*∇f2
 end
 
-function product_rule(::typeof(*),f1::Real,f2::VectorValue,∇f1,∇f2)
-  ∇f1⊗f2 + ∇f2*f1
-end
-
-function product_rule(::typeof(*),f1::VectorValue,f2::Real,∇f1,∇f2)
-  product_rule(*,f2,f1,∇f2,∇f1)
+for op in (:*,:⋅)
+  @eval begin
+     function product_rule(::typeof($op),f1::Real,f2::VectorValue,∇f1,∇f2)
+       ∇f1⊗f2 + ∇f2*f1
+     end
+     
+     function product_rule(::typeof($op),f1::VectorValue,f2::Real,∇f1,∇f2)
+       product_rule(*,f2,f1,∇f2,∇f1)
+     end
+  end
 end
 
 function product_rule(::typeof(⋅),f1::VectorValue,f2::VectorValue,∇f1,∇f2)
@@ -372,10 +385,6 @@ end
 It returns the composition of two fields, which is just `Operation(f)(g)`
 """
 @inline Base.:∘(f::Field,g::Field) = Operation(f)(g)
-
-# Other operations
-
-@inline transpose(f::Field) = f
 
 # Testers
 
