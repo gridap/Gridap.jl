@@ -489,22 +489,40 @@ end
 @inline *(A::Function, B::Field) = GenericField(A)*B
 @inline *(A::Field, B::Function) = GenericField(B)*A
 
-# This works for inner products of tensors of the same rank
-function gradient(a::OperationField{typeof(⋅)})
-  f = a.fields
-  @notimplementedif length(f) != 2
-  f1, f2 = f
-  g1, g2 = map(gradient, f)
-  g1⋅f2+g2⋅f1
+# Product rules for the gradient
+
+function product_rule(fun,f1,f2,∇f1,∇f2)
+  msg = "Product rule not implemented for product $fun between types $(typeof(f1)) and $(typeof(f2))"
+  @notimplemented msg
 end
 
-# This one is for scalar-valued functions
-function gradient(a::OperationField{typeof(*)})
-  f = a.fields
-  @notimplementedif length(f) != 2
-  f1, f2 = f
-  g1, g2 = map(gradient, f)
-  g1*f2+f1*g2
+function product_rule(::typeof(*),f1::Real,f2::Real,∇f1,∇f2)
+  ∇f1*f2 + f1*∇f2
+end
+
+function product_rule(::typeof(*),f1::Real,f2::VectorValue,∇f1,∇f2)
+  ∇f1⊗f2 + ∇f2*f1
+end
+
+function product_rule(::typeof(*),f1::VectorValue,f2::Real,∇f1,∇f2)
+  product_rule(*,f2,f1,∇f2,∇f1)
+end
+
+function product_rule(::typeof(⋅),f1::VectorValue,f2::VectorValue,∇f1,∇f2)
+  ∇f1⋅f2 + ∇f2⋅f1
+end
+
+for op in (:*,:⋅,:⊙,:⊗)
+  @eval begin
+    function gradient(a::OperationField{typeof($op)})
+      f = a.fields
+      @notimplementedif length(f) != 2
+      f1, f2 = f
+      g1, g2 = map(gradient, f)
+      k(F1,F2,G1,G2) = product_rule($op,F1,F2,G1,G2)
+      Operation(k)(f1,f2,g1,g2)
+    end
+  end
 end
 
 # Chain rule
