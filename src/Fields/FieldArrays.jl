@@ -121,9 +121,6 @@ end
 @inline Base.IndexStyle(::Type{<:FieldGradientArray{Ng,A}}) where {Ng,A} = IndexStyle(A)
 
 # Optimizing linear_combination.
-# More than a performance optimization, this is a type signature optimization
-# The default implementation as transpose(a)*b leads to an arbitrary number of nested types
-# that grows with the length of the vectors.
 
 function linear_combination(a::AbstractVector{<:Number},b::AbstractVector{<:Field}) 
   column = 1
@@ -299,9 +296,44 @@ end
   r
 end
 
+# Optimizing transpose
 
+evaluate!(cache,k::Broadcasting{typeof(∇)},a::Transpose{<:Field}) = transpose(k(a.parent))
+evaluate!(cache,k::Broadcasting{typeof(∇∇)},a::Transpose{<:Field}) = transpose(k(a.parent))
 
+return_cache(k::Transpose{<:Field},x::Point) = return_cache(k.parent,x)
+evaluate!(cache,k::Transpose{<:Field},x::Point) = transpose(evaluate!(cache,k.parent,x))
 
+return_cache(k::Transpose{<:Field},x::AbstractVector{<:Point}) = return_cache(k.parent,x)
+function evaluate!(cache,k::Transpose{<:Field},x::AbstractVector{<:Point})
+  TransposeFieldIndices(evaluate!(cache,k.parent,x))
+end
+
+struct TransposeMap <: Map end
+@inline evaluate!(cache,k::TransposeMap,a::AbstractVector) = transpose(a)
+@inline evaluate!(cache,k::TransposeMap,a::AbstractMatrix) = TransposeFieldIndices(a)
+
+"""
+Given a matrix `np` x `nf1` x `nf2` result of the evaluation of a field vector
+on a vector of points, it returns an array in which the field axes (second and
+third axes) are permuted. It is equivalent as `Base.permutedims(A,(1,3,2)`
+but more performant, since it does not involve allocations.
+"""
+struct TransposeFieldIndices{A,T} <: AbstractArray{T,3}
+  matrix::A
+  @inline function TransposeFieldIndices(matrix::AbstractMatrix{T}) where T
+    A = typeof(matrix)
+    new{A,T}(matrix)
+  end
+end
+
+@inline Base.size(a::TransposeFieldIndices) = (size(a.matrix,1),1,size(a.matrix,2))
+@inline Base.axes(a::TransposeFieldIndices) = (axes(a.matrix,1),Base.OneTo(1),axes(a.matrix,2))
+@inline Base.IndexStyle(::Type{<:TransposeFieldIndices{A}}) where A = IndexStyle(A)
+@inline Base.getindex(a::TransposeFieldIndices,i::Integer,j::Integer,k::Integer) = a.matrix[i,k]
+@inline Base.getindex(a::TransposeFieldIndices,i::Integer) = a.matrix[i]
+@inline Base.setindex!(a::TransposeFieldIndices,v,i::Integer,j::Integer,k::Integer) = (a.matrix[i,k] = v)
+@inline Base.setindex!(a::TransposeFieldIndices,v,i::Integer) = (a.matrix[i] = v)
 
 ### transpose(i_to_f)*ij_to_vals
 #
@@ -685,24 +717,3 @@ end
 #  fba
 #end
 #
-#"""
-#Given a matrix `np` x `nf1` x `nf2` result of the evaluation of a field vector
-#on a vector of points, it returns an array in which the field axes (second and
-#third axes) are permuted. It is equivalent as `Base.permutedims(A,(1,3,2)`
-#but more performant, since it does not involve allocations.
-#"""
-#struct TransposeFieldIndices{A,T} <: AbstractArray{T,3}
-#  matrix::A
-#  @inline function TransposeFieldIndices(matrix::AbstractMatrix{T}) where T
-#    A = typeof(matrix)
-#    new{A,T}(matrix)
-#  end
-#end
-#
-#@inline Base.size(a::TransposeFieldIndices) = (size(a.matrix,1),1,size(a.matrix,2))
-#@inline Base.axes(a::TransposeFieldIndices) = (axes(a.matrix,1),Base.OneTo(1),axes(a.matrix,2))
-#@inline Base.IndexStyle(::Type{<:TransposeFieldIndices{A}}) where A = IndexStyle(A)
-#@inline Base.getindex(a::TransposeFieldIndices,i::Integer,j::Integer,k::Integer) = a.matrix[i,k]
-#@inline Base.getindex(a::TransposeFieldIndices,i::Integer) = a.matrix[i]
-#@inline Base.setindex!(a::TransposeFieldIndices,v,i::Integer,j::Integer,k::Integer) = (a.matrix[i,k] = v)
-#@inline Base.setindex!(a::TransposeFieldIndices,v,i::Integer) = (a.matrix[i] = v)

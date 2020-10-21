@@ -81,6 +81,75 @@ test_field_array(f,z,result(f,z))
 test_field_array(f,z,result(f,z),grad=result(∇.(f),z))
 test_field_array(f,z,result(f,z),grad=result(∇.(f),z),gradgrad=result(∇∇.(f),z))
 
+# Transpose
+
+v = VectorValue{2,Float64}[(1,1),(4,2),(3,5)]
+b = MockField.(v)
+
+f = transpose(b)
+
+fp = transpose(v)
+∇fp = zeros(TensorValue{2,2,Float64,4},1,length(v))
+
+test_field_array(f,p,fp)
+test_field_array(f,p,fp,grad=∇fp)
+test_field_array(f,x,result(f,x))
+test_field_array(f,x,result(f,x),grad=result(∇.(f),x))
+test_field_array(f,z,result(f,z))
+test_field_array(f,z,result(f,z),grad=result(∇.(f),z))
+
+#using BenchmarkTools
+#
+#@btime transpose($b)
+#
+#c = return_cache(f,p)
+#@btime evaluate!($c,$f,$p)
+#c = return_cache(f,x)
+#@btime evaluate!($c,$f,$x)
+#
+#∇f = Broadcasting(∇)(f)
+#c = return_cache(∇f,p)
+#@btime evaluate!($c,$∇f,$p)
+#c = return_cache(∇f,x)
+#@btime evaluate!($c,$∇f,$x)
+
+# Composition
+
+afun(x) = 2*x
+a = GenericField(afun)
+
+nf = 4
+bfun(x) = x[1] + 3
+bi = GenericField(bfun)
+b = fill(bi,nf)
+
+f = Broadcasting(∘)(b,a)
+
+fp = map(i->i(a(p)),b)
+∇fp = map(i->∇(a)(p)⋅∇(i)(a(p)),b)
+
+test_field_array(f,p,fp)
+test_field_array(f,p,fp,grad=∇fp)
+test_field_array(f,x,result(f,x))
+test_field_array(f,x,result(f,x),grad=result(∇.(f),x))
+test_field_array(f,z,result(f,z))
+test_field_array(f,z,result(f,z),grad=result(∇.(f),z))
+
+#using BenchmarkTools
+#
+##@btime Broadcasting(∘)($b,$a)
+#
+#c = return_cache(f,p)
+#@btime evaluate!($c,$f,$p)
+#c = return_cache(f,x)
+#@btime evaluate!($c,$f,$x)
+#
+#∇f = Broadcasting(∇)(f)
+#c = return_cache(∇f,p)
+#@btime evaluate!($c,$∇f,$p)
+#c = return_cache(∇f,x)
+#@btime evaluate!($c,$∇f,$x)
+
 # Broadcasting operations
 
 afun(x) = x[1]+2
@@ -164,20 +233,19 @@ test_field(f,x,f.(x),grad=∇(f).(x))
 test_field(f,z,f.(z))
 test_field(f,z,f.(z),grad=∇(f).(z))
 
-
-using BenchmarkTools
-
-@btime linear_combination($b,$a)
-c = return_cache(f,p)
-@btime evaluate!($c,$f,$p)
-c = return_cache(f,x)
-@btime evaluate!($c,$f,$x)
-
-∇f = Broadcasting(∇)(f)
-c = return_cache(∇f,p)
-@btime evaluate!($c,$∇f,$p)
-c = return_cache(∇f,x)
-@btime evaluate!($c,$∇f,$x)
+#using BenchmarkTools
+#
+#@btime linear_combination($b,$a)
+#c = return_cache(f,p)
+#@btime evaluate!($c,$f,$p)
+#c = return_cache(f,x)
+#@btime evaluate!($c,$f,$x)
+#
+#∇f = Broadcasting(∇)(f)
+#c = return_cache(∇f,p)
+#@btime evaluate!($c,$∇f,$p)
+#c = return_cache(∇f,x)
+#@btime evaluate!($c,$∇f,$x)
 
 # ij_to_vals*j_to_f
 
@@ -186,6 +254,7 @@ a = MockField.(avals)
 b = zeros(VectorValue{2,Float64},4,3)
 
 f = linear_combination(b,a)
+#@show typeof(f)
 @test isa(f,Fields.LinearCombinationFieldVector)
 
 fp = transpose(b)*avals
@@ -198,19 +267,19 @@ test_field_array(f,x,result(f,x),grad=result(∇.(f),x))
 test_field_array(f,z,result(f,z))
 test_field_array(f,z,result(f,z),grad=result(∇.(f),z))
 
-using BenchmarkTools
-@btime linear_combination($b,$a)
-
-c = return_cache(f,p)
-@btime evaluate!($c,$f,$p)
-c = return_cache(f,x)
-@btime evaluate!($c,$f,$x)
-
-∇f = Broadcasting(∇)(f)
-c = return_cache(∇f,p)
-@btime evaluate!($c,$∇f,$p)
-c = return_cache(∇f,x)
-@btime evaluate!($c,$∇f,$x)
+#using BenchmarkTools
+#@btime linear_combination($b,$a)
+#
+#c = return_cache(f,p)
+#@btime evaluate!($c,$f,$p)
+#c = return_cache(f,x)
+#@btime evaluate!($c,$f,$x)
+#
+#∇f = Broadcasting(∇)(f)
+#c = return_cache(∇f,p)
+#@btime evaluate!($c,$∇f,$p)
+#c = return_cache(∇f,x)
+#@btime evaluate!($c,$∇f,$x)
 
 
 
