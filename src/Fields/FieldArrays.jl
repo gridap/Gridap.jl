@@ -126,75 +126,211 @@ end
 # that grows with the length of the vectors.
 
 function linear_combination(a::AbstractVector{<:Number},b::AbstractVector{<:Field}) 
-  LinearCombinationField(a,b)
+  column = 1
+  LinearCombinationField(a,b,column)
 end
 
 struct LinearCombinationField{V,F} <: Field
   values::V
   fields::F
+  column::Int
 end
 
-return_cache(a::LinearCombinationField,x::Point) =  return_cache(a.fields,x)
+function return_cache(a::LinearCombinationField,x::Point)
+  cf = return_cache(a.fields,x)
+  fx = return_value(a.fields,x)
+  v = a.values
+  k = LinearCombinationMap(a.column)
+  ck = return_cache(k,v,fx)
+  cf, ck
+end
 
 @inline function evaluate!(cache,a::LinearCombinationField,x::Point)
-  fx = evaluate!(cache,a.fields,x)
+  cf, ck = cache
+  fx = evaluate!(cf,a.fields,x)
   v = a.values
-  z = zero(return_type(outer,testitem(fx),testitem(v)))
-  @check length(fx) == length(v)
-  @inbounds for i in eachindex(fx)
-    # We need to do the product in this way
-    # so that the gradient also works
-    z += outer(fx[i],v[i]) 
-  end
-  z
+  k = LinearCombinationMap(a.column)
+  evaluate!(ck,k,v,fx)
 end
+
+function return_cache(a::LinearCombinationField,x::AbstractVector{<:Point})
+  cf = return_cache(a.fields,x)
+  fx = return_value(a.fields,x)
+  v = a.values
+  k = LinearCombinationMap(a.column)
+  ck = return_cache(k,v,fx)
+  cf, ck
+end
+
+@inline function evaluate!(cache,a::LinearCombinationField,x::AbstractVector{<:Point})
+  cf, ck = cache
+  fx = evaluate!(cf,a.fields,x)
+  v = a.values
+  k = LinearCombinationMap(a.column)
+  evaluate!(ck,k,v,fx)
+end
+
+#return_cache(a::LinearCombinationField,x::Point) =  return_cache(a.fields,x)
+#
+#@inline function evaluate!(cache,a::LinearCombinationField,x::Point)
+#  fx = evaluate!(cache,a.fields,x)
+#  v = a.values
+#  z = zero(return_type(outer,testitem(fx),testitem(v)))
+#  @check length(fx) == size(v,1)
+#  @inbounds for i in eachindex(fx)
+#    # We need to do the product in this way
+#    # so that the gradient also works
+#    z += outer(fx[i],v[i,a.column]) 
+#  end
+#  z
+#end
 
 function gradient(a::LinearCombinationField)
   fields = Broadcasting(∇)(a.fields)
-  LinearCombinationField(a.values,fields)
+  LinearCombinationField(a.values,fields,a.column)
 end
 
 function linear_combination(a::AbstractMatrix{<:Number},b::AbstractVector{<:Field}) 
-  #[ linear_combination(a[:,i],b) for i in 1:size(a,2) ]
+  #[ linear_combination(a,b,i) for i in 1:size(a,2) ]
   LinearCombinationFieldArray(a,b)
 end
 
-struct LinearCombinationFieldArray{T,V,F} <: AbstractVector{T}
+struct LinearCombinationFieldArray{V,F} <: AbstractVector{LinearCombinationField{V,F}}
   values::V
   fields::F
   function LinearCombinationFieldArray(values::AbstractMatrix{<:Number},fields::AbstractVector{<:Field})
     @check size(values,1) == length(fields)
     V = typeof(values)
     F = typeof(fields)
-    T = LinearCombinationField{Vector{eltype(V)},F}
-    new{T,V,F}(values,fields)
+    new{V,F}(values,fields)
   end
 end
 
 Base.size(a::LinearCombinationFieldArray) = (size(a.values,2),)
-Base.getindex(a::LinearCombinationFieldArray,i::Integer) = LinearCombinationField(a.values[:,i],a.fields)
+Base.getindex(a::LinearCombinationFieldArray,i::Integer) = LinearCombinationField(a.values,a.fields,i)
 Base.IndexStyle(::Type{<:LinearCombinationField}) = IndexLinear()
 
 function return_cache(a::LinearCombinationFieldArray,x::Point)
   cf = return_cache(a.fields,x)
-  vf = return_value(testitem(a.fields),x)
-  vv = testitem(a.values)
-  T = typeof( vf⊗vv + vf⊗vv )
-  r = zeros(T,size(a))
-  r, cf
+  fx = return_value(a.fields,x)
+  v = a.values
+  k = LinearCombinationMap(:)
+  ck = return_cache(k,v,fx)
+  cf, ck
 end
 
 @inline function evaluate!(cache,a::LinearCombinationFieldArray,x::Point)
-  r, cf = cache
+  cf, ck = cache
   fx = evaluate!(cf,a.fields,x)
   v = a.values
+  k = LinearCombinationMap(:)
+  evaluate!(ck,k,v,fx)
+end
+
+function return_cache(a::LinearCombinationFieldArray,x::AbstractVector{<:Point})
+  cf = return_cache(a.fields,x)
+  fx = return_value(a.fields,x)
+  v = a.values
+  k = LinearCombinationMap(:)
+  ck = return_cache(k,v,fx)
+  cf, ck
+end
+
+@inline function evaluate!(cache,a::LinearCombinationFieldArray,x::AbstractVector{<:Point})
+  cf, ck = cache
+  fx = evaluate!(cf,a.fields,x)
+  v = a.values
+  k = LinearCombinationMap(:)
+  evaluate!(ck,k,v,fx)
+end
+
+#function return_cache(a::LinearCombinationFieldArray,x::Point)
+#  cf = return_cache(a.fields,x)
+#  vf = return_value(testitem(a.fields),x)
+#  vv = testitem(a.values)
+#  T = typeof( vf⊗vv + vf⊗vv )
+#  r = zeros(T,size(a))
+#  r, cf
+#end
+#
+#@inline function evaluate!(cache,a::LinearCombinationFieldArray,x::Point)
+#  r, cf = cache
+#  fx = evaluate!(cf,a.fields,x)
+#  v = a.values
+#  @check length(fx) == size(v,1)
+#  @check length(r) == size(v,2)
+#  for j in eachindex(r)
+#    rj = zero(eltype(r))
+#    for i in eachindex(fx)
+#      # We need to do the product in this way
+#      # so that the gradient also works
+#      rj += outer(fx[i],v[i,j]) 
+#    end
+#    r[j] = rj
+#  end
+#  r
+#end
+
+function evaluate!(cache,k::Broadcasting{typeof(∇)},a::LinearCombinationFieldArray)
+  fields = Broadcasting(∇)(a.fields)
+  LinearCombinationFieldArray(a.values,fields)
+end
+
+struct LinearCombinationMap{T} <: Map
+  column::T
+  LinearCombinationMap(column::Integer)  = new{typeof(column)}(column)
+  LinearCombinationMap(column::Colon)  = new{typeof(column)}(column)
+end
+
+@inline function evaluate!(cache,k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::AbstractVector)
+  z = zero(return_type(outer,testitem(fx),testitem(v)))
   @check length(fx) == size(v,1)
-  @check length(r) == size(v,2)
-  for j in eachindex(r)
+  @inbounds for i in eachindex(fx)
+    # We need to do the product in this way
+    # so that the gradient also works
+    z += outer(fx[i],v[i,k.column]) 
+  end
+  z
+end
+
+function return_cache(k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::AbstractMatrix)
+  vf = testitem(fx)
+  vv = testitem(v)
+  T = typeof( vf⊗vv + vf⊗vv )
+  r = zeros(T,size(fx,1))
+  CachedArray(r)
+end
+
+@inline function evaluate!(cache,k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::AbstractMatrix)
+  @check size(fx,2) == size(v,1)
+  setsize!(cache,(size(fx,1),))
+  r = cache.array
+  z = zero(return_type(outer,testitem(fx),testitem(v)))
+  @inbounds for p in 1:size(fx,1)
+    rp = z
+    for i in 1:size(fx,2)
+      rp += outer(fx[p,i],v[i,k.column]) 
+    end
+    r[p] = rp
+  end
+  r
+end
+
+function return_cache(k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractVector)
+  vf = testitem(fx)
+  vv = testitem(v)
+  T = typeof( vf⊗vv + vf⊗vv )
+  r = zeros(T,size(v,2))
+  CachedArray(r)
+end
+
+@inline function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractVector)
+  @check length(fx) == size(v,1)
+  setsize!(cache,(size(v,2),))
+  r = cache.array
+  @inbounds for j in eachindex(r)
     rj = zero(eltype(r))
     for i in eachindex(fx)
-      # We need to do the product in this way
-      # so that the gradient also works
       rj += outer(fx[i],v[i,j]) 
     end
     r[j] = rj
@@ -202,10 +338,33 @@ end
   r
 end
 
-function evaluate!(cache,k::Broadcasting{typeof(∇)},a::LinearCombinationFieldArray)
-  fields = Broadcasting(∇)(a.fields)
-  LinearCombinationFieldArray(a.values,fields)
+function return_cache(k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractMatrix)
+  vf = testitem(fx)
+  vv = testitem(v)
+  T = typeof( vf⊗vv + vf⊗vv )
+  r = zeros(T,size(fx,1),size(v,2))
+  CachedArray(r)
 end
+
+@inline function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractMatrix)
+  @check size(fx,2) == size(v,1)
+  setsize!(cache,(size(fx,1),size(v,2)))
+  r = cache.array
+  @inbounds for p in 1:size(fx,1)
+    for j in size(r,2)
+      rj = zero(eltype(r))
+      for i in size(fx,2)
+        rj += outer(fx[p,i],v[i,j]) 
+      end
+      r[p,j] = rj
+    end
+  end
+  r
+end
+
+
+
+
 
 ### transpose(i_to_f)*ij_to_vals
 #
