@@ -239,7 +239,7 @@ end
   @check size(fx,2) == size(v,1)
   setsize!(cache,(size(fx,1),))
   r = cache.array
-  z = zero(return_type(outer,testitem(fx),testitem(v)))
+  z = zero(eltype(r))
   @inbounds for p in 1:size(fx,1)
     rp = z
     for i in 1:size(fx,2)
@@ -248,6 +248,18 @@ end
     r[p] = rp
   end
   r
+end
+
+@inline function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractVector,fx::AbstractVector)
+  evaluate!(cache,LinearCombinationMap(1),v,fx)
+end
+
+function return_cache(k::LinearCombinationMap{Colon},v::AbstractVector,fx::AbstractMatrix)
+  return_cache(LinearCombinationMap(1),v,fx)
+end
+
+@inline function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractVector,fx::AbstractMatrix)
+  evaluate!(cache,LinearCombinationMap(1),v,fx)
 end
 
 function return_cache(k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractVector)

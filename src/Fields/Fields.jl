@@ -1,5 +1,6 @@
 module Fields
 
+using Gridap.Arrays: print_op_tree
 using Gridap.Arrays: Map
 using Gridap.Arrays: evaluate
 using Gridap.Arrays: Operation
@@ -50,7 +51,7 @@ export Field
 export GenericField
 export ConstantField
 export FieldGradient
-export BroadcastField
+#export BroadcastField
 export ZeroField
 export MockField
 export MockFieldArray
@@ -72,11 +73,15 @@ export TransposeFieldIndices
 #export BroadcastOpFieldArray
 #export DotOpFieldVectors
 #export LinearCombinationField
-export CompositionFieldArrayField
+#export CompositionFieldArrayField
 export FieldGradientArray
 #export FieldHessianArray
 
 export linear_combination
+export TransposeMap
+export LinearCombinationMap
+export LinearCombinationField
+export LinearCombinationFieldVector
 export integrate
 export IntegrationMap
 
@@ -90,7 +95,7 @@ include("FieldArrays.jl")
 
 include("MockFields.jl")
 
-#include("ApplyOptimizations.jl")
+include("ApplyOptimizations.jl")
 
 include("AutoDiff.jl")
 

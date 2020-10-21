@@ -74,6 +74,8 @@ const ∇ = gradient
 gradient(f,::Val{1}) = ∇(f)
 gradient(f,::Val{2}) = ∇∇(f)
 
+evaluate!(cache,::Broadcasting{typeof(∇)},a::Field) = ∇(a)
+evaluate!(cache,::Broadcasting{typeof(∇∇)},a::Field) = ∇∇(a)
 
 """
 Type that represents the gradient of a field. The wrapped field implements must
@@ -385,6 +387,7 @@ end
 It returns the composition of two fields, which is just `Operation(f)(g)`
 """
 @inline Base.:∘(f::Field,g::Field) = Operation(f)(g)
+evaluate!(cache,::Broadcasting{typeof(∘)},f::Field,g::Field) = f∘g
 
 # Integration
 
