@@ -186,7 +186,7 @@ a = MockField.(avals)
 b = zeros(VectorValue{2,Float64},4,3)
 
 f = linear_combination(b,a)
-@test isa(f,Fields.LinearCombinationFieldArray)
+@test isa(f,Fields.LinearCombinationFieldVector)
 
 fp = transpose(b)*avals
 ∇fp = zeros(TensorValue{2,2,Float64,4},3)
