@@ -335,6 +335,25 @@ end
 @inline Base.setindex!(a::TransposeFieldIndices,v,i::Integer,j::Integer,k::Integer) = (a.matrix[i,k] = v)
 @inline Base.setindex!(a::TransposeFieldIndices,v,i::Integer) = (a.matrix[i] = v)
 
+
+# Integration
+
+"""
+Integration of a given array of fields in the "physical" space
+"""
+function integrate(a::AbstractArray{<:Field},x::AbstractVector{<:Point},w::AbstractVector{<:Real})
+  cache = return_cache(integrate,a,x,w)
+  evaluate!(cache,integrate,a,x,w)
+end
+
+"""
+Integration of a given array of fields in the "reference" space
+"""
+function integrate(a::AbstractArray{<:Field},q::AbstractVector{<:Point},w::AbstractVector{<:Real},j::Field)
+  cache = return_cache(integrate,a,q,w,j)
+  evaluate!(cache,integrate,a,q,w,j)
+end
+
 ### transpose(i_to_f)*ij_to_vals
 #
 #function *(a::Transpose{<:Field,<:AbstractVector},b::AbstractMatrix{<:Number})

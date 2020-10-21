@@ -1,12 +1,4 @@
 
-# optimization for
-#
-#    lazy_map(evaluate,cell_to_f,cell_to_x)
-#
-# function lazy_map(::typeof(evaluate),f::AbstractArray,x::AbstractArray)
-  # lazy_map(f,x)
-# end
-
 # Optimization for
 #
 #  g = lazy_map( linear_combination, cell_to_i_to_f, cell_to_i_to_val)

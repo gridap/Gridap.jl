@@ -67,21 +67,22 @@ export test_field_array
 
 #export mock_field
 
-export TransposeFieldVector
+#export TransposeFieldVector
 export TransposeFieldIndices
-export BroadcastOpFieldArray
-export DotOpFieldVectors
-export LinearCombinationField
+#export BroadcastOpFieldArray
+#export DotOpFieldVectors
+#export LinearCombinationField
 export CompositionFieldArrayField
 export FieldGradientArray
 #export FieldHessianArray
 
 export linear_combination
 export integrate
+export IntegrationMap
 
-#export MatMul
-export LinCombVal
-export Integrate
+##export MatMul
+#export LinCombVal
+#export Integrate
 
 include("FieldsInterfaces.jl")
 

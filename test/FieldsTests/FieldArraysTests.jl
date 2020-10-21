@@ -61,6 +61,28 @@ test_field_array(f,z,result(f,z),grad=result(∇.(f),z),gradgrad=result(∇∇.(
 #c = return_cache(∇∇f,x)
 #@btime evaluate!($c,$∇∇f,$x)
 
+# Integration
+
+v = VectorValue{2,Float64}[(1,1),(4,2),(3,5)]
+f = MockField.(v)
+ϕfun(x) = 2*x
+ϕ = GenericField(ϕfun)
+w = ones(size(x))
+
+i = integrate(f,x,w)
+@test i == reshape(sum(evaluate(f,x).*w,dims=1),size(f))
+
+i = integrate(f,x,w,∇(ϕ))
+@test i == reshape(sum(evaluate(f,x).*w.*meas.(∇(ϕ)(x)),dims=1),size(f))
+
+#using BenchmarkTools
+#c = return_cache(integrate,f,x,w)
+#@btime evaluate!($c,$integrate,$f,$x,$w)
+#
+#J = ∇(ϕ)
+#c = return_cache(integrate,f,x,w,J)
+#@btime evaluate!($c,$integrate,$f,$x,$w,$J)
+
 # testing 0-length array of fields
 
 v = VectorValue{2,Float64}[]

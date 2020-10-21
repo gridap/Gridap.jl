@@ -53,6 +53,31 @@ test_field(f,z,f.(z),grad=∇(f).(z),gradgrad=∇∇(f).(z))
 #c = return_cache(∇∇f,x)
 #@btime evaluate!($c,$∇∇f,$x)
 
+
+# integration
+
+fun(x) = 3*x[1]
+f = GenericField(fun)
+ϕfun(x) = 2*x
+ϕ = GenericField(ϕfun)
+
+w = ones(size(x))
+
+i = integrate(f,x,w)
+@test i == sum(f.(x).*w)
+
+i = integrate(f,x,w,∇(ϕ))
+@test i == sum(f.(x).*w.*meas.(∇(ϕ).(x)))
+
+#using BenchmarkTools
+#c = return_cache(integrate,f,x,w)
+#@btime evaluate!($c,$integrate,$f,$x,$w)
+#
+#J = ∇(ϕ)
+#c = return_cache(integrate,f,x,w,J)
+#@btime evaluate!($c,$integrate,$f,$x,$w,$J)
+
+
 # Test field as collection
 
 @test f === f[1]
@@ -309,5 +334,7 @@ test_field(f,z,f.(z),grad=∇(f).(z))
 #@btime evaluate!($c,$∇f,$p)
 #c = return_cache(∇f,x)
 #@btime evaluate!($c,$∇f,$x)
+
+
 
 end # module

@@ -386,6 +386,118 @@ It returns the composition of two fields, which is just `Operation(f)(g)`
 """
 @inline Base.:∘(f::Field,g::Field) = Operation(f)(g)
 
+# Integration
+
+"""
+Integration of a given field in the "physical" space
+"""
+function integrate(a::Field,x::AbstractVector{<:Point},w::AbstractVector{<:Real})
+  cache = return_cache(integrate,a,x,w)
+  evaluate!(cache,integrate,a,x,w)
+end
+
+"""
+Integration of a given field in the "reference" space
+"""
+function integrate(a::Field,q::AbstractVector{<:Point},w::AbstractVector{<:Real},j::Field)
+  cache = return_cache(integrate,a,q,w,j)
+  evaluate!(cache,integrate,a,q,w,j)
+end
+
+function return_cache(::typeof(integrate),a,x,w)
+  ca = return_cache(a,x)
+  ax = return_value(a,x)
+  ck = return_cache(IntegrationMap(),ax,w)
+  ca, ck
+end
+
+@inline function evaluate!(cache,::typeof(integrate),a,x,w)
+  ca, ck = cache
+  ax = evaluate!(ca,a,x)
+  evaluate!(ck,IntegrationMap(),ax,w)
+end
+
+function return_cache(::typeof(integrate),a,q,w,j)
+  ca = return_cache(a,q)
+  cj = return_cache(j,q)
+  aq = return_value(a,q)
+  jq = return_value(j,q)
+  ck = return_cache(IntegrationMap(),aq,w,jq)
+  ca, cj, ck
+end
+
+@inline function evaluate!(cache,::typeof(integrate),a,q,w,j)
+  ca, cj, ck = cache
+  aq = evaluate!(ca,a,q)
+  jq = evaluate!(cj,j,q)
+  evaluate!(ck,IntegrationMap(),aq,w,jq)
+end
+
+struct IntegrationMap <: Map end
+
+@inline function evaluate!(cache,k::IntegrationMap,ax::AbstractVector,w)
+  T = typeof( testitem(ax)*testitem(w) + testitem(ax)*testitem(w) )
+  z = zero(T)
+  r = z
+  @check length(ax) == length(w)
+  @inbounds for i in eachindex(ax)
+    r += ax[i]*w[i]
+  end
+  r
+end
+
+@inline function evaluate!(cache,k::IntegrationMap,aq::AbstractVector,w,jq::AbstractVector)
+  T = typeof( testitem(aq)*testitem(w)*meas(testitem(jq)) + testitem(aq)*testitem(w)*meas(testitem(jq)) )
+  z = zero(T)
+  @check length(aq) == length(w)
+  @check length(aq) == length(jq)
+  @inbounds for i in eachindex(aq)
+    z += aq[i]*w[i]*meas(jq[i])
+  end
+  z
+end
+
+function return_cache(k::IntegrationMap,ax::AbstractArray,w)
+  T = typeof( testitem(ax)*testitem(w) + testitem(ax)*testitem(w) )
+  r = zeros(T,size(ax)[2:end])
+  CachedArray(r)
+end
+
+@inline function evaluate!(cache,k::IntegrationMap,ax::AbstractArray,w)
+  setsize!(cache,size(ax)[2:end])
+  r = cache.array
+  @check size(ax,1) == length(w)
+  @inbounds for j in CartesianIndices(r)
+    rj = zero(eltype(r))
+    for p in 1:length(w)
+      rj += ax[p,j]*w[p]
+    end
+    r[j] = rj
+  end
+  r
+end
+
+function return_cache(k::IntegrationMap,aq::AbstractArray,w,jq::AbstractVector)
+  T = typeof( testitem(aq)*testitem(w)*meas(testitem(jq)) + testitem(aq)*testitem(w)*meas(testitem(jq)) )
+  r = zeros(T,size(aq)[2:end])
+  CachedArray(r)
+end
+
+@inline function evaluate!(cache,k::IntegrationMap,aq::AbstractArray,w,jq::AbstractVector)
+  setsize!(cache,size(aq)[2:end])
+  r = cache.array
+  @check size(aq,1) == length(w)
+  @check size(aq,1) == length(jq)
+  @inbounds for j in CartesianIndices(r)
+    rj = zero(eltype(r))
+    for p in 1:length(w)
+      rj += aq[p,j]*w[p]*meas(jq[p])
+    end
+    r[j] = rj
+  end
+  r
+end
+
 # Testers
 
 """
