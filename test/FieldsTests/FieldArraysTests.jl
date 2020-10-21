@@ -81,6 +81,45 @@ test_field_array(f,z,result(f,z))
 test_field_array(f,z,result(f,z),grad=result(∇.(f),z))
 test_field_array(f,z,result(f,z),grad=result(∇.(f),z),gradgrad=result(∇∇.(f),z))
 
+# MockFieldArray (this mimics how polynomial bases will be implemented)
+
+v = VectorValue{2,Float64}[(1,1),(4,2),(3,5)]
+f = MockFieldArray(v)
+
+fp = v
+∇fp = fill(zero(TensorValue{2,2,Float64}),length(v))
+∇∇fp = fill(zero(ThirdOrderTensorValue{2,2,2,Float64,6}),length(v))
+test_field_array(f,p,fp)
+test_field_array(f,p,fp,grad=∇fp)
+test_field_array(f,p,fp,grad=∇fp,gradgrad=∇∇fp)
+
+test_field_array(f,x,result(f,x))
+test_field_array(f,x,result(f,x),grad=result(∇.(f),x))
+test_field_array(f,x,result(f,x),grad=result(∇.(f),x),gradgrad=result(∇∇.(f),x))
+
+test_field_array(f,z,result(f,z))
+test_field_array(f,z,result(f,z),grad=result(∇.(f),z))
+test_field_array(f,z,result(f,z),grad=result(∇.(f),z),gradgrad=result(∇∇.(f),z))
+
+#using BenchmarkTools
+#
+#c = return_cache(f,p)
+#@btime evaluate!($c,$f,$p)
+#c = return_cache(f,x)
+#@btime evaluate!($c,$f,$x)
+#
+#∇f = Broadcasting(∇)(f)
+#c = return_cache(∇f,p)
+#@btime evaluate!($c,$∇f,$p)
+#c = return_cache(∇f,x)
+#@btime evaluate!($c,$∇f,$x)
+#
+#∇∇f = Broadcasting(∇∇)(f)
+#c = return_cache(∇∇f,p)
+#@btime evaluate!($c,$∇∇f,$p)
+#c = return_cache(∇∇f,x)
+#@btime evaluate!($c,$∇∇f,$x)
+
 # Transpose
 
 v = VectorValue{2,Float64}[(1,1),(4,2),(3,5)]

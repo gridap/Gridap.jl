@@ -53,6 +53,7 @@ export FieldGradient
 export BroadcastField
 export ZeroField
 export MockField
+export MockFieldArray
 export Point
 
 export gradient
@@ -84,9 +85,9 @@ export Integrate
 
 include("FieldsInterfaces.jl")
 
-include("MockFields.jl")
-
 include("FieldArrays.jl")
+
+include("MockFields.jl")
 
 #include("ApplyOptimizations.jl")
 
