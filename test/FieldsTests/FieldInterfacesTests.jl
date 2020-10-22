@@ -245,7 +245,7 @@ test_field(f,z,f.(z),grad=∇(f).(z))
 #c = return_cache(∇f,x)
 #@btime evaluate!($c,$∇f,$x)
 
-afun(x) = x+2
+afun(x) = x.+2
 bfun(x) = 2*x
 
 a = GenericField(afun)
@@ -274,7 +274,7 @@ test_field(f,z,f.(z),grad=∇(f).(z))
 #c = return_cache(∇f,x)
 #@btime evaluate!($c,$∇f,$x)
 
-afun(x) = x+2
+afun(x) = x.+2
 bfun(x) = 2*x
 
 a = GenericField(afun)
