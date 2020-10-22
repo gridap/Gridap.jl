@@ -113,9 +113,7 @@ end
 
 """
 """
-get_value_type(::MonomialBasis{D,T}) where {D,T} = T
-
-get_value_type(::Type{MonomialBasis{D,T}}) where {D,T} = T
+return_type(::MonomialBasis{D,T}) where {D,T} = T
 
 # Field implementation
 

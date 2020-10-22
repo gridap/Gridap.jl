@@ -64,8 +64,6 @@ end
   evaluate!(cache,FieldGradientArray{N}(f.qgrad),x)
 end
 
-get_value_type(::QCurlGradMonomialBasis{D,T}) where {D,T} = T
-
 """
     num_terms(f::QCurlGradMonomialBasis{D,T}) where {D,T}
 """
