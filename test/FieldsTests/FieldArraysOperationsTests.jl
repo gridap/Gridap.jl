@@ -292,6 +292,28 @@ j_to_∇cx = lazy_map(evaluate,j_to_∇c,j_to_x)
 j_to_∇r = fill( ∇(f)(x), length(j_to_cell) )
 test_array(j_to_∇cx,j_to_∇r)
 
+# PosNegReindex
+
+aval = 1.0
+a = MockField(aval)
+ipos_to_cell = [2,5,1]
+cell_to_i = PosNegPartition(ipos_to_cell,ncells)
+npos = length(cell_to_i.ipos_to_i)
+nneg = length(cell_to_i.ineg_to_i)
+
+ipos_to_a = fill(a,npos)
+ineg_to_a = fill(0*a,nneg)
+
+T = Union{eltype(ipos_to_a),eltype(ineg_to_a)}
+cell_to_f = lazy_map(PosNegReindex(ipos_to_a,ineg_to_a),T,cell_to_i)
+cell_to_fx = lazy_map(evaluate,cell_to_f,cell_to_x)
+cell_to_r = [ zeros(np) for cell in 1:ncells]
+cell_to_r[ipos_to_cell] = [ fill(aval,np) for cell in 1:npos]
+#print_op_tree(cell_to_fx)
+
+@test isa(cell_to_fx.g.value,PosNegReindex)
+test_array(cell_to_fx,cell_to_r)
+
 #npp = np #(np,np)
 #
 #v = VectorValue{d}(1.0,1.0)
