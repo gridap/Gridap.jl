@@ -53,14 +53,14 @@ function evaluate!(c,f::AbstractArray{T},x::AbstractArray{<:Point}) where T<:Fie
   if isconcretetype(T)
     for i in eachindex(x)
       fxi = evaluate!(cf,f,x[i])
-      for j in eachindex(f)
-        @inbounds r[i,j] = fxi[j]
+      for j in CartesianIndices(f)
+        r[i,j] = fxi[j]
       end
     end
   else
     for j in eachindex(f)
       for i in eachindex(x)
-        @inbounds r[i,j] = evaluate(f[j],x[i])
+        r[i,j] = evaluate(f[j],x[i])
       end
     end
   end
