@@ -78,9 +78,9 @@ evaluate!(cache,::Broadcasting{typeof(∇)},a::Field) = ∇(a)
 evaluate!(cache,::Broadcasting{typeof(∇∇)},a::Field) = ∇∇(a)
 
 """
-    return_gradient_type(::Type{T},x::Point) where T
+    gradient_type(::Type{T},x::Point) where T
 """
-function return_gradient_type(::Type{T},x::Point) where T
+function gradient_type(::Type{T},x::Point) where T
   typeof(outer(zero(x),zero(T)))
 end
 

@@ -60,7 +60,7 @@ export Point
 export gradient
 export ∇
 export ∇∇
-export return_gradient_type
+export gradient_type
 
 export test_field
 export test_field_array

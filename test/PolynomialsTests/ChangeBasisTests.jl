@@ -11,8 +11,8 @@ nodes = Point{2,Int}[(0,0),(1,0),(0,1),(1,1)]
 
 order = 1
 V = Float64
-G = return_gradient_type(V,xi)
-H = return_gradient_type(G,xi)
+G = gradient_type(V,xi)
+H = gradient_type(G,xi)
 f = MonomialBasis{2}(V,order)
 
 change = inv(evaluate(f,nodes))

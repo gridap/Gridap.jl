@@ -88,7 +88,7 @@ function return_cache(
   n = 1 + f.order+1
   xi = testitem(x)
   V = VectorValue{D,T}
-  G = return_gradient_type(V,xi)
+  G = gradient_type(V,xi)
   r = CachedArray(zeros(G,(np,ndof)))
   v = CachedArray(zeros(G,(ndof,)))
   c = CachedArray(zeros(T,(D,n)))
