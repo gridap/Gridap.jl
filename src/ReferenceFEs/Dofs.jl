@@ -77,7 +77,15 @@ for object `dof`. It also checks if the object `dof`
 when evaluated at the field `field` returns the same
 value as `v`. Comparison is made with the `comp` function.
 """
-function test_dof(dof,field,v,comp::Function=(==))
+function test_dof(dof::Dof,field,v,comp::Function=(==))
+  _test_dof(dof,field,v,comp)
+end
+
+function test_dof_array(dof::AbstractArray{<:Dof},field,v,comp::Function=(==))
+  _test_dof(dof,field,v,comp)
+end
+
+function _test_dof(dof,field,v,comp::Function=(==))
   if isa(dof,Dof)
     test_mapping(dof,(field,),v,comp)
   end
@@ -86,16 +94,16 @@ function test_dof(dof,field,v,comp::Function=(==))
   @test typeof(r) == return_type(dof,field)
 end
 
-struct DofEval <: Map end
-
-function return_cache(k::DofEval,dof,field)
-  return_cache(dof,field)
-end
-
-@inline function evaluate!(cache,k::DofEval,dof,field)
-  evaluate!(cache,dof,field)
-end
-
-function return_type(k::DofEval,dof,field)
-  return_type(dof,field)
-end
+#struct DofEval <: Map end
+#
+#function return_cache(k::DofEval,dof,field)
+#  return_cache(dof,field)
+#end
+#
+#@inline function evaluate!(cache,k::DofEval,dof,field)
+#  evaluate!(cache,dof,field)
+#end
+#
+#function return_type(k::DofEval,dof,field)
+#  return_type(dof,field)
+#end

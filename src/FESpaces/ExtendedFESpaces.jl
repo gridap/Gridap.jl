@@ -191,7 +191,7 @@ end
 
 function field_gradient(f::VoidBasis{T,D}) where {T,D}
   x = zero(Point{D,eltype(T)})
-  G = return_gradient_type(T,x)
+  G = gradient_type(T,x)
   VoidBasis{G,D}()
 end
 

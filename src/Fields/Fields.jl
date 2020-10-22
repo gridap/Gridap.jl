@@ -1,5 +1,6 @@
 module Fields
 
+using Gridap.Arrays: print_op_tree
 using Gridap.Arrays: Map
 using Gridap.Arrays: evaluate
 using Gridap.Arrays: Operation
@@ -10,9 +11,10 @@ using Gridap.Arrays: CachedArray
 using Gridap.Arrays: setsize!
 using Gridap.Arrays: get_array
 using Gridap.Arrays: testitem
+import Gridap.Arrays: testvalue
 
 using Gridap.Helpers: @abstractmethod, @notimplemented
-using Gridap.Helpers: @notimplementedif, @unreachable
+using Gridap.Helpers: @notimplementedif, @unreachable, @check
 
 using Gridap.Algebra: mul!
 
@@ -28,10 +30,13 @@ import LinearAlgebra: det, inv, transpose
 import LinearAlgebra: ⋅
 
 import Base: +, -, *, /
+import Gridap.TensorValues: ⊗, ⊙
 
 import Gridap.Arrays: IndexStyle
 import Gridap.Arrays: return_cache
 import Gridap.Arrays: return_type
+import Gridap.Arrays: testargs
+import Gridap.Arrays: return_value
 import Gridap.Arrays: evaluate!
 import Gridap.Arrays: lazy_map
 import Gridap.Arrays: array_cache
@@ -44,57 +49,57 @@ export return_cache
 
 export Field
 export GenericField
+export ConstantField
 export FieldGradient
-export FieldHessian
-export BroadcastField
+#export BroadcastField
 export ZeroField
 export MockField
+export MockFieldArray
 export Point
-
-export evaluate_gradient!
-export return_gradient_type
-export return_gradient_cache
-export evaluate_hessian!
-export return_hessian_cache
-export return_hessian_type
 
 export gradient
 export ∇
-export hessian
+export ∇∇
+export gradient_type
 
 export test_field
 export test_field_array
-export test_operation_field_array
-export test_broadcast_field_array
+#export test_operation_field_array
+#export test_broadcast_field_array
 
-export mock_field
+#export mock_field
 
-export TransposeFieldVector
+#export TransposeFieldVector
 export TransposeFieldIndices
-export BroadcastOpFieldArray
-export DotOpFieldVectors
-export LinearCombinationField
-export CompositionFieldArrayField
+#export BroadcastOpFieldArray
+#export DotOpFieldVectors
+#export LinearCombinationField
+#export CompositionFieldArrayField
 export FieldGradientArray
-export FieldHessianArray
+#export FieldHessianArray
 
 export linear_combination
+export TransposeMap
+export LinearCombinationMap
+export LinearCombinationField
+export LinearCombinationFieldVector
 export integrate
+export IntegrationMap
 
-export MatMul
-export LinCombVal
-export Integrate
+##export MatMul
+#export LinCombVal
+#export Integrate
 
 include("FieldsInterfaces.jl")
 
-include("MockFields.jl")
-
 include("FieldArrays.jl")
+
+include("MockFields.jl")
 
 include("ApplyOptimizations.jl")
 
 include("AutoDiff.jl")
 
-include("AlgebraMaps.jl")
+#include("AlgebraMaps.jl")
 
 end

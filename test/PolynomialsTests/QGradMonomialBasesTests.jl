@@ -13,7 +13,7 @@ order = 0
 D = 2
 T = Float64
 V = VectorValue{D,T}
-G = return_gradient_type(V,xi)
+G = gradient_type(V,xi)
 b = QGradMonomialBasis{D}(T,order)
 
 @test num_terms(b) == 4
@@ -28,7 +28,7 @@ order = 0
 D = 3
 T = Float64
 V = VectorValue{D,T}
-G = return_gradient_type(V,xi)
+G = gradient_type(V,xi)
 b = QGradMonomialBasis{D}(T,order)
 
 v = V[
@@ -53,7 +53,7 @@ g = G[
 
 bx = repeat(permutedims(v),np)
 ∇bx = repeat(permutedims(g),np)
-test_field(b,x,bx,grad=∇bx)
+test_field_array(b,x,bx,grad=∇bx)
 
 xi = Point(2,3)
 np = 5
@@ -63,7 +63,7 @@ order = 1
 D = 2
 T = Float64
 V = VectorValue{D,T}
-G = return_gradient_type(V,xi)
+G = gradient_type(V,xi)
 b = QGradMonomialBasis{D}(T,order)
 
 v = V[
@@ -79,6 +79,6 @@ g = G[
 
 bx = repeat(permutedims(v),np)
 ∇bx = repeat(permutedims(g),np)
-test_field(b,x,bx,grad=∇bx)
+test_field_array(b,x,bx,grad=∇bx)
 
 end # module

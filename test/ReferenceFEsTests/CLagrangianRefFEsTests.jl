@@ -49,6 +49,7 @@ dofs = LagrangianDofBasis(VectorValue{2,Int},VERTEX,())
 @test dofs.node_and_comp_to_dof == VectorValue{2,Int}[(1,2)]
 
 b = MonomialBasis(VectorValue{2,Int},VERTEX,())
+@test length(b) == 2
 @test evaluate(b,Point{0,Int}[(),()]) == VectorValue{2,Int}[(1, 0) (0, 1); (1, 0) (0, 1)]
 
 reffe = LagrangianRefFE(VectorValue{2,Int},VERTEX,())

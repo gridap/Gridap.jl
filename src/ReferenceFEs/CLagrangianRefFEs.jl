@@ -148,7 +148,7 @@ function to_dict(reffe::GenericLagrangianRefFE{GradConformity})
   else
     dict[:space] = "default"
   end
-  dict[:value] = string(get_value_type(b))
+  dict[:value] = string(return_type(b))
   dict
 end
 
@@ -482,7 +482,7 @@ end
     face_ref_x = get_vertex_coordinates(face)
     face_prebasis = MonomialBasis(Float64,face,1)
     change = inv(evaluate(face_prebasis,face_ref_x))
-    face_shapefuns = change_basis(face_prebasis,change)
+    face_shapefuns = linear_combination(change,face_prebasis)
     face_vertex_ids = get_faces(p,d,0)[iface]
     face_x = x[face_vertex_ids]
     face_orders = compute_face_orders(p,face,iface,orders)
@@ -512,7 +512,7 @@ function _compute_node_permutations(p, interior_nodes)
   vertex_to_coord = get_vertex_coordinates(p)
   lbasis = MonomialBasis(Float64,p,1)
   change = inv(evaluate(lbasis,vertex_to_coord))
-  lshapefuns = change_basis(lbasis,change)
+  lshapefuns = linear_combination(change,lbasis)
   perms = get_vertex_permutations(p)
   map = evaluate(lshapefuns,interior_nodes)
   pvertex_to_coord = similar(vertex_to_coord)

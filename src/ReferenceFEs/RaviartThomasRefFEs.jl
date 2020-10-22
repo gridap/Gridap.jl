@@ -74,7 +74,7 @@ function _ref_face_to_faces_geomap(p,fp)
   fshfs = get_shapefuns(freffe)
   cfshfs = fill(fshfs, nc)
   # fgeomap = lincomb(cfshfs,cfvs)
-  fgeomap = lazy_map(linear_combination,cfshfs,cfvs)
+  fgeomap = lazy_map(linear_combination,cfvs,cfshfs)
 end
 
 function _nfaces_evaluation_points_weights(p, fgeomap, fips, wips)

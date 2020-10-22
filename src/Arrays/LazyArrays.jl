@@ -52,7 +52,7 @@ println(c)
 [10, 12, 14, 16, 18, 20]
 ```
 """
-@inline function lazy_map(k,f::AbstractArray...)
+function lazy_map(k,f::AbstractArray...)
   fi = map(testitem,f)
   T = return_type(k, fi...)
   lazy_map(k,T,f...)

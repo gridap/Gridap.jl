@@ -211,9 +211,9 @@ end
 
 function return_cache(c::OperationMap,x...)
   cl = map(fi -> return_cache(fi,x...),c.l)
-  lx = map((ci,fi) -> evaluate!(ci,fi,x...),cl,c.l)
+  lx = map(fi -> return_value(fi,x...),c.l)
   ck = return_cache(c.k,lx...)
-  (ck,cl)
+  ck, cl
 end
 
 @inline function evaluate!(cache,c::OperationMap,x...)

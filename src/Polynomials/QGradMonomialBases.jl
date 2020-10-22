@@ -17,8 +17,7 @@ struct QGradMonomialBasis{D,T} <: AbstractVector{Monomial}
   end
 end
 
-@inline Base.size(a::QGradMonomialBasis) = (length(a.terms),)
-@inline Base.axes(a::QGradMonomialBasis) = (axes(a.terms,1),)
+@inline Base.size(a::QGradMonomialBasis) = (_ndofs_qgrad(a),)
 # @santiagobadia : Not sure we want to create the monomial machinery
 @inline Base.getindex(a::QGradMonomialBasis,i::Integer) = Monomial()
 @inline Base.IndexStyle(::QGradMonomialBasis) = IndexLinear()
@@ -48,7 +47,7 @@ num_terms(f::QGradMonomialBasis{D,T}) where {D,T} = length(f.terms)*D
 
 get_order(f::QGradMonomialBasis) = f.order
 
-function return_cache(f::QGradMonomialBasis{D,T},x) where {D,T}
+function return_cache(f::QGradMonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = _ndofs_qgrad(f)
@@ -60,7 +59,7 @@ function return_cache(f::QGradMonomialBasis{D,T},x) where {D,T}
   (r, v, c)
 end
 
-function evaluate!(cache,f::QGradMonomialBasis{D,T},x) where {D,T}
+function evaluate!(cache,f::QGradMonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   r, v, c = cache
   np = length(x)
   ndof = _ndofs_qgrad(f)
@@ -78,14 +77,18 @@ function evaluate!(cache,f::QGradMonomialBasis{D,T},x) where {D,T}
   r.array
 end
 
-function return_gradient_cache(f::QGradMonomialBasis{D,T},x) where {D,T}
+function return_cache(
+  fg::FieldGradientArray{1,QGradMonomialBasis{D,T}},
+  x::AbstractVector{<:Point}) where {D,T}
+
+  f = fg.fa
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = _ndofs_qgrad(f)
   n = 1 + f.order+1
   xi = testitem(x)
   V = VectorValue{D,T}
-  G = return_gradient_type(V,xi)
+  G = gradient_type(V,xi)
   r = CachedArray(zeros(G,(np,ndof)))
   v = CachedArray(zeros(G,(ndof,)))
   c = CachedArray(zeros(T,(D,n)))
@@ -93,7 +96,12 @@ function return_gradient_cache(f::QGradMonomialBasis{D,T},x) where {D,T}
   (r, v, c, g)
 end
 
-function evaluate_gradient!(cache,f::QGradMonomialBasis{D,T},x) where {D,T}
+function evaluate!(
+  cache,
+  fg::FieldGradientArray{1,QGradMonomialBasis{D,T}},
+  x::AbstractVector{<:Point}) where {D,T}
+
+  f = fg.fa
   r, v, c, g = cache
   np = length(x)
   ndof = _ndofs_qgrad(f)

@@ -132,6 +132,18 @@ function lazy_map(::typeof(evaluate),::Type{T},a::LazyArray{<:Fill{<:PosNegReind
   end
 end
 
+function lazy_map(::typeof(evaluate),::Type{T},a::LazyArray{<:Fill{<:PosNegReindex}},x::AbstractArray) where T
+  apos = a.g.value.values_pos
+  aneg = a.g.value.values_neg
+  i_to_iposneg = a.f[1]
+  ipos_to_i, ineg_to_i = pos_and_neg_indices(i_to_iposneg)
+  xpos = lazy_map(Reindex(x),ipos_to_i)
+  xneg = lazy_map(Reindex(x),ineg_to_i)
+  cpos = lazy_map(evaluate,apos,xpos)
+  cneg = lazy_map(evaluate,aneg,xneg)
+  lazy_map(PosNegReindex(cpos,cneg),T,i_to_iposneg)
+end
+
 #function lazy_map(::typeof(evaluate),b::Fill,a::LazyArray{<:Fill{<:PosNegReindex}}...)
 #  i_to_iposneg = a[1].f[1]
 #  if all(map( ai-> is_exhaustive(a[1].f[1]),a)) && all( map( ai-> i_to_iposneg==a[1].f[1],a) )

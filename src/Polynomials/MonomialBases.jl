@@ -18,8 +18,7 @@ struct MonomialBasis{D,T} <: AbstractVector{Monomial}
   end
 end
 
-@inline Base.size(a::MonomialBasis) = (length(a.terms),)
-@inline Base.axes(a::MonomialBasis) = (axes(a.terms,1),)
+@inline Base.size(a::MonomialBasis{D,T}) where {D,T} = (length(a.terms)*num_components(T),)
 # @santiagobadia : Not sure we want to create the monomial machinery
 @inline Base.getindex(a::MonomialBasis,i::Integer) = Monomial()
 @inline Base.IndexStyle(::MonomialBasis) = IndexLinear()
@@ -114,13 +113,11 @@ end
 
 """
 """
-get_value_type(::MonomialBasis{D,T}) where {D,T} = T
-
-get_value_type(::Type{MonomialBasis{D,T}}) where {D,T} = T
+return_type(::MonomialBasis{D,T}) where {D,T} = T
 
 # Field implementation
 
-function return_cache(f::MonomialBasis{D,T},x) where {D,T}
+function return_cache(f::MonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = length(f.terms)*num_components(T)
@@ -131,7 +128,7 @@ function return_cache(f::MonomialBasis{D,T},x) where {D,T}
   (r, v, c)
 end
 
-function evaluate!(cache,f::MonomialBasis{D,T},x) where {D,T}
+function evaluate!(cache,f::MonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   r, v, c = cache
   np = length(x)
   ndof = length(f.terms)*num_components(T)
@@ -149,12 +146,16 @@ function evaluate!(cache,f::MonomialBasis{D,T},x) where {D,T}
   r.array
 end
 
-function return_gradient_cache(f::MonomialBasis{D,V},x) where {D,V}
+function return_cache(
+  fg::FieldGradientArray{1,MonomialBasis{D,V}},
+  x::AbstractVector{<:Point}) where {D,V}
+
+  f = fg.fa
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = length(f.terms)*num_components(V)
   xi = testitem(x)
-  T = return_gradient_type(V,xi)
+  T = gradient_type(V,xi)
   n = 1 + _maximum(f.orders)
   r = CachedArray(zeros(T,(np,ndof)))
   v = CachedArray(zeros(T,(ndof,)))
@@ -163,7 +164,12 @@ function return_gradient_cache(f::MonomialBasis{D,V},x) where {D,V}
   (r, v, c, g)
 end
 
-function evaluate_gradient!(cache,f::MonomialBasis{D,T},x) where {D,T}
+function evaluate!(
+  cache,
+  fg::FieldGradientArray{1,MonomialBasis{D,T}},
+  x::AbstractVector{<:Point}) where {D,T}
+
+  f = fg.fa
   r, v, c, g = cache
   np = length(x)
   ndof = length(f.terms) * num_components(T)
@@ -182,12 +188,16 @@ function evaluate_gradient!(cache,f::MonomialBasis{D,T},x) where {D,T}
   r.array
 end
 
-function return_hessian_cache(f::MonomialBasis{D,V},x) where {D,V}
+function return_cache(
+  fg::FieldGradientArray{2,MonomialBasis{D,V}},
+  x::AbstractVector{<:Point}) where {D,V}
+
+  f = fg.fa
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = length(f.terms)*num_components(V)
   xi = testitem(x)
-  T = return_gradient_type(return_gradient_type(V,xi),xi)
+  T = gradient_type(gradient_type(V,xi),xi)
   n = 1 + _maximum(f.orders)
   r = CachedArray(zeros(T,(np,ndof)))
   v = CachedArray(zeros(T,(ndof,)))
@@ -197,7 +207,12 @@ function return_hessian_cache(f::MonomialBasis{D,V},x) where {D,V}
   (r, v, c, g, h)
 end
 
-function evaluate_hessian!(cache,f::MonomialBasis{D,T},x) where {D,T}
+function evaluate!(
+  cache,
+  fg::FieldGradientArray{2,MonomialBasis{D,T}},
+  x::AbstractVector{<:Point}) where {D,T}
+
+  f = fg.fa
   r, v, c, g, h = cache
   np = length(x)
   ndof = length(f.terms) * num_components(T)

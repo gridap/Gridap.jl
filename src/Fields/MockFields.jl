@@ -1,19 +1,56 @@
 
-struct MockField{T,D} <: Field
+struct MockField{T<:Number} <: Field
   v::T
-  function MockField{D}(v::Number) where {T,D}
-    new{typeof(v),D}(v)
+end
+
+#MockField(D::Int,v::Number) = MockField{D}(v)
+
+#mock_field(D::Int,v::Number) = MockField{D}(v)
+
+function evaluate!(c,f::MockField,x::Point)
+  f.v
+end
+
+function evaluate!(cache,f::FieldGradient{1,<:MockField},x::Point)
+  zero(outer(x,f.object.v))
+end
+
+function evaluate!(cache,f::FieldGradient{2,<:MockField},x::Point)
+  zero(outer(x,outer(x,f.object.v)))
+end
+
+testvalue(::Type{MockField{T}}) where T = MockField(zero(T))
+
+struct MockFieldArray{T,N,A} <: AbstractArray{MockField{T},N}
+  values::A
+  function MockFieldArray(values::AbstractArray{<:Number})
+    T = eltype(values)
+    N = ndims(values)
+    A = typeof(values)
+    new{T,N,A}(values)
   end
 end
 
-MockField(D::Int,v::Number) = MockField{D}(v)
+Base.size(a::MockFieldArray) = size(a.values)
+Base.IndexStyle(::Type{<:MockFieldArray}) = IndexLinear()
+@inline Base.getindex(a::MockFieldArray,i::Integer) = MockField(a.values[i])
 
-mock_field(D::Int,v::Number) = MockField{D}(v)
-
-function evaluate!(c,f::MockField,x::Point)
-  f.v*x[1]
+function evaluate!(c,f::MockFieldArray,x::Point)
+  f.values
 end
 
-@inline function evaluate_gradient!(cache,f::MockField{T,D},x::Point{D,S}) where {T,D,S}
-  vg = outer(zero(Point{D,S}),zero(T))
+function return_cache(f::FieldGradientArray{1,<:MockFieldArray},x::Point)
+  T = return_type(outer,x,testitem(f.fa.values))
+  r = zeros(T,size(f.fa.values))
+  CachedArray(r)
 end
+
+function evaluate!(cache,f::FieldGradientArray{1,<:MockFieldArray},x::Point)
+  if size(cache) != size(f.fa.values)
+    setsize!(cache,size(f.fa.values))
+    r = cache.array
+    fill!(r,zero(eltype(r)))
+  end
+  cache.array
+end
+

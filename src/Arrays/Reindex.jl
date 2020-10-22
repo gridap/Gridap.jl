@@ -39,6 +39,14 @@ function lazy_map(k::Reindex{<:CompressedArray},::Type{T}, j_to_i::AbstractArray
   CompressedArray(values,ptrs)
 end
 
+function lazy_map(k::Reindex{<:LazyArray},::Type{T},j_to_i::AbstractArray) where T
+  i_to_g = k.values.g
+  i_to_f = k.values.f
+  j_to_g = lazy_map(Reindex(i_to_g),eltype(i_to_g),j_to_i)
+  j_to_f = map(i_to_fk->lazy_map(Reindex(i_to_fk),eltype(i_to_fk),j_to_i), i_to_f)
+  LazyArray(T,j_to_g,j_to_f...)
+end
+
 # This optimization is important for surface-coupled problems
 function lazy_map(k::Reindex{<:LazyArray{<:Fill{<:PosNegReindex}}},::Type{T},j_to_i::AbstractArray) where T
   i_to_iposneg = k.values.f[1]

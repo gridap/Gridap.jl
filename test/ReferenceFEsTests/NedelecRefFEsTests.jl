@@ -35,14 +35,14 @@ prebasis = get_prebasis(reffe)
 dof_basis = get_dof_basis(reffe)
 
 v = VectorValue(3.0,0.0)
-field = MockField{D}(v)
+field = GenericField(x->v*x[1])
 
 cache = return_cache(dof_basis,field)
 r = evaluate!(cache, dof_basis, field)
-test_dof(dof_basis,field,r)
+test_dof_array(dof_basis,field,r)
 
 cache = return_cache(dof_basis,prebasis)
 r = evaluate!(cache, dof_basis, prebasis)
-test_dof(dof_basis,prebasis,r)
+test_dof_array(dof_basis,prebasis,r)
 
 end # module
