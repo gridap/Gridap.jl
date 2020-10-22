@@ -14,11 +14,11 @@ using Test
 
 @time @testset "Fields" begin include("FieldsTests/runtests.jl") end
 
-@time @testset "Polynomials" begin include("PolynomialsTests/runtests.jl") end
-
-@time @testset "Integration" begin include("IntegrationTests/runtests.jl") end
-
-@time @testset "ReferenceFEs" begin include("ReferenceFEsTests/runtests.jl") end
+#@time @testset "Polynomials" begin include("PolynomialsTests/runtests.jl") end
+#
+#@time @testset "Integration" begin include("IntegrationTests/runtests.jl") end
+#
+#@time @testset "ReferenceFEs" begin include("ReferenceFEsTests/runtests.jl") end
 
 # @time @testset "CellData" begin include("CellDataTests/runtests.jl") end
 
