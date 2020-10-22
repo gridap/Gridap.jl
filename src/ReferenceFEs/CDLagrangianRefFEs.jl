@@ -124,7 +124,7 @@ end
       face_ref_x = get_vertex_coordinates(face)
       face_prebasis = MonomialBasis(Float64,face,1)
       change = inv(evaluate(face_prebasis,face_ref_x))
-      face_shapefuns = change_basis(face_prebasis,change)
+      face_shapefuns = linear_combination(change,face_prebasis)
       face_vertex_ids = get_faces(p,d,0)[iface]
       face_x = x[face_vertex_ids]
       face_orders = compute_face_orders(p,face,iface,orders)

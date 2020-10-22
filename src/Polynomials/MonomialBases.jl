@@ -18,8 +18,7 @@ struct MonomialBasis{D,T} <: AbstractVector{Monomial}
   end
 end
 
-@inline Base.size(a::MonomialBasis) = (length(a.terms),)
-@inline Base.axes(a::MonomialBasis) = (axes(a.terms,1),)
+@inline Base.size(a::MonomialBasis{D,T}) where {D,T} = (length(a.terms)*num_components(T),)
 # @santiagobadia : Not sure we want to create the monomial machinery
 @inline Base.getindex(a::MonomialBasis,i::Integer) = Monomial()
 @inline Base.IndexStyle(::MonomialBasis) = IndexLinear()

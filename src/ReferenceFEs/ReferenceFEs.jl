@@ -89,6 +89,7 @@ export evaluate_dof
 export return_cache
 export return_type
 export test_dof
+export test_dof_array
 # export evaluate_dof_array
 
 export ReferenceFE

@@ -309,11 +309,11 @@ associated with the dof basis `dofs` and the basis `prebasis`.
 It is equivalent to
 
     change = inv(evaluate(dofs,prebasis))
-    change_basis(prebasis,change)
+    linear_combination(change,prebasis) # i.e. transpose(change)*prebasis
 """
 function compute_shapefuns(dofs,prebasis)
   change = inv(evaluate(dofs,prebasis))
-  change_basis(prebasis,change)
+  linear_combination(change,prebasis)
 end
 
 # Concrete implementation

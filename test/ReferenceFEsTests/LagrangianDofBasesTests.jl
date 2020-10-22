@@ -4,10 +4,7 @@ using Test
 
 using Gridap.TensorValues
 using Gridap.Fields
-using Gridap.Fields: MockField #, MockBasis
 using Gridap.ReferenceFEs
-
-MockBasis(v,ndof) = fill(v,ndof)
 
 x1 = Point(0,0)
 x2 = Point(1,0)
@@ -24,15 +21,14 @@ db = LagrangianDofBasis(Float64,x)
 @test db.dof_to_comp == fill(1,np)
 
 v = 3.0
-d = 2
-f = MockField{d}(v)
+f = GenericField(x->v*x[1])
 fx = evaluate(f,x)
-test_dof(db,f,fx)
+test_dof_array(db,f,fx)
 
 ndof = 8
-b = MockBasis(f,ndof)
+b = fill(f,ndof)
 bx = evaluate(b,x)
-test_dof(db,b,bx)
+test_dof_array(db,b,bx)
 
 T = VectorValue{2,Float64}
 db = LagrangianDofBasis(T,x)
@@ -42,17 +38,18 @@ db = LagrangianDofBasis(T,x)
 @test db.dof_to_comp == [1, 1, 1, 1, 2, 2, 2, 2]
 
 v = VectorValue(1,2)
-d = 2
-f = MockField{d}(v)
+f = GenericField(x->v*x[1])
 dbf = [0, 1, 0, 1, 0, 2, 0, 2]
-test_dof(db,f,dbf)
+
+test_dof_array(db,f,dbf)
 
 ndof = 8
-b = MockBasis(f,ndof)
+b = fill(f,ndof)
 bx = evaluate(b,x)
 dbb = [
   0 0 0 0 0 0 0 0; 1 1 1 1 1 1 1 1; 0 0 0 0 0 0 0 0; 1 1 1 1 1 1 1 1;
   0 0 0 0 0 0 0 0; 2 2 2 2 2 2 2 2; 0 0 0 0 0 0 0 0; 2 2 2 2 2 2 2 2]
-test_dof(db,b,dbb)
+
+test_dof_array(db,b,dbb)
 
 end # module

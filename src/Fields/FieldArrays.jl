@@ -188,7 +188,13 @@ struct LinearCombinationFieldVector{V,F} <: AbstractVector{LinearCombinationFiel
   values::V
   fields::F
   function LinearCombinationFieldVector(values::AbstractMatrix{<:Number},fields::AbstractVector{<:Field})
-    @check size(values,1) == length(fields)
+    @check size(values,1) == length(fields) """\n
+    Incompatible sizes for performing the linear combination
+       
+        linear_combination(values,fields) = transpose(values)*fields
+
+    size(values,1) != length(fields)
+    """
     V = typeof(values)
     F = typeof(fields)
     new{V,F}(values,fields)

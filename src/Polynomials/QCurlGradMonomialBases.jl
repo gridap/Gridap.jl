@@ -17,7 +17,6 @@ struct QCurlGradMonomialBasis{D,T} <: AbstractVector{Monomial}
 end
 
 @inline Base.size(a::QCurlGradMonomialBasis) = (length(a.qgrad),)
-@inline Base.axes(a::QCurlGradMonomialBasis) = (axes(a.qgrad,1),)
 # @santiagobadia : Not sure we want to create the monomial machinery
 @inline Base.getindex(a::QCurlGradMonomialBasis,i::Integer) = Monomial()
 @inline Base.IndexStyle(::QCurlGradMonomialBasis) = IndexLinear()
