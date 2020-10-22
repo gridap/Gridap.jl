@@ -40,20 +40,29 @@ function QCurlGradMonomialBasis{D}(::Type{T},order::Int) where {D,T}
   QCurlGradMonomialBasis(T,order,terms,perms)
 end
 
-function return_cache(f::QCurlGradMonomialBasis,x)
+function return_cache(f::QCurlGradMonomialBasis,x::AbstractVector{<:Point})
   return_cache(f.qgrad,x)
 end
 
-@inline function evaluate!(cache,f::QCurlGradMonomialBasis,x)
+@inline function evaluate!(cache,f::QCurlGradMonomialBasis,x::AbstractVector{<:Point})
   evaluate!(cache,f.qgrad,x)
 end
 
-function return_gradient_cache(f::QCurlGradMonomialBasis,x)
-  return_gradient_cache(f.qgrad,x)
+function return_cache(
+  fg::FieldGradientArray{N,<:QCurlGradMonomialBasis},
+  x::AbstractVector{<:Point}) where N
+
+  f = fg.fa
+  return_cache(FieldGradientArray{N}(f.qgrad),x)
 end
 
-@inline function evaluate_gradient!(cache,f::QCurlGradMonomialBasis,x)
-  evaluate_gradient!(cache,f.qgrad,x)
+@inline function evaluate!(
+  cache,
+  fg::FieldGradientArray{N,<:QCurlGradMonomialBasis},
+  x::AbstractVector{<:Point}) where N
+
+  f = fg.fa
+  evaluate!(cache,FieldGradientArray{N}(f.qgrad),x)
 end
 
 get_value_type(::QCurlGradMonomialBasis{D,T}) where {D,T} = T

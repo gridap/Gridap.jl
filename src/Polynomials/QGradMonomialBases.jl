@@ -48,7 +48,7 @@ num_terms(f::QGradMonomialBasis{D,T}) where {D,T} = length(f.terms)*D
 
 get_order(f::QGradMonomialBasis) = f.order
 
-function return_cache(f::QGradMonomialBasis{D,T},x) where {D,T}
+function return_cache(f::QGradMonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = _ndofs_qgrad(f)
@@ -60,7 +60,7 @@ function return_cache(f::QGradMonomialBasis{D,T},x) where {D,T}
   (r, v, c)
 end
 
-function evaluate!(cache,f::QGradMonomialBasis{D,T},x) where {D,T}
+function evaluate!(cache,f::QGradMonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   r, v, c = cache
   np = length(x)
   ndof = _ndofs_qgrad(f)
@@ -78,7 +78,11 @@ function evaluate!(cache,f::QGradMonomialBasis{D,T},x) where {D,T}
   r.array
 end
 
-function return_gradient_cache(f::QGradMonomialBasis{D,T},x) where {D,T}
+function return_cache(
+  fg::FieldGradientArray{1,QGradMonomialBasis{D,T}},
+  x::AbstractVector{<:Point}) where {D,T}
+
+  f = fg.fa
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = _ndofs_qgrad(f)
@@ -93,7 +97,12 @@ function return_gradient_cache(f::QGradMonomialBasis{D,T},x) where {D,T}
   (r, v, c, g)
 end
 
-function evaluate_gradient!(cache,f::QGradMonomialBasis{D,T},x) where {D,T}
+function evaluate!(
+  cache,
+  fg::FieldGradientArray{1,QGradMonomialBasis{D,T}},
+  x::AbstractVector{<:Point}) where {D,T}
+
+  f = fg.fa
   r, v, c, g = cache
   np = length(x)
   ndof = _ndofs_qgrad(f)

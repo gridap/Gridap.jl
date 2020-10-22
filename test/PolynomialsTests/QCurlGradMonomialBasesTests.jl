@@ -44,7 +44,7 @@ g = G[
 
 bx = repeat(permutedims(v),np)
 ∇bx = repeat(permutedims(g),np)
-test_field(b,x,bx,grad=∇bx)
+test_field_array(b,x,bx,grad=∇bx)
 
 xi = Point(2,3)
 np = 5
@@ -72,6 +72,6 @@ g = G[
 
 bx = repeat(permutedims(v),np)
 ∇bx = repeat(permutedims(g),np)
-test_field(b,x,bx,grad=∇bx)
+test_field_array(b,x,bx,grad=∇bx)
 
 end # module

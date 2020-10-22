@@ -40,8 +40,8 @@ include("TensorValues/TensorValues.jl")
 
 include("Fields/Fields.jl")
 
-#include("Polynomials/Polynomials.jl")
-#
+include("Polynomials/Polynomials.jl")
+
 #include("Integration/Integration.jl")
 #
 #include("ReferenceFEs/ReferenceFEs.jl")

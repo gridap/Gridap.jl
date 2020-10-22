@@ -78,6 +78,13 @@ evaluate!(cache,::Broadcasting{typeof(∇)},a::Field) = ∇(a)
 evaluate!(cache,::Broadcasting{typeof(∇∇)},a::Field) = ∇∇(a)
 
 """
+    return_gradient_type(::Type{T},x::Point) where T
+"""
+function return_gradient_type(::Type{T},x::Point) where T
+  typeof(outer(zero(x),zero(T)))
+end
+
+"""
 Type that represents the gradient of a field. The wrapped field implements must
 implement `evaluate_gradient!` and `return_gradient_cache` for this gradient
 to work.
