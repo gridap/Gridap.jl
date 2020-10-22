@@ -125,7 +125,7 @@ size(::Type{<:TensorValue{D1,D2}}) where {D1,D2} = (D1,D2)
 size(::TensorValue{D1,D2}) where {D1,D2} = size(TensorValue{D1,D2})
 
 length(::Type{<:TensorValue{D}}) where {D} = length(TensorValue{D,D})
-length(::Type{<:TensorValue{D1,D2}}) where {D1,D2} = D1*D1
+length(::Type{<:TensorValue{D1,D2}}) where {D1,D2} = D1*D2
 length(::TensorValue{D1,D2}) where {D1,D2} = length(TensorValue{D1,D2})
 
 num_components(::Type{<:TensorValue{D}}) where {D} = length(TensorValue{D,D})
