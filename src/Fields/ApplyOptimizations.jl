@@ -73,7 +73,7 @@ function lazy_map(
 
   fx = map( fi->lazy_map(evaluate,fi,x), a.f)
   op = a.g.value.op
-  lazy_map( op, fx...)
+  lazy_map( Broadcasting(op), fx...)
 end
 
 
@@ -86,8 +86,8 @@ function lazy_map(
   ::typeof(evaluate), a::LazyArray{<:Fill{<:Broadcasting{<:Operation}}}, x::AbstractArray)
 
   fx = map( fi->lazy_map(evaluate,fi,x), a.f)
-  op = Broadcasting(a.g.value.f.op)
-  lazy_map(op,fx...)
+  op = a.g.value.f.op
+  lazy_map(Broadcasting(op),fx...)
 end
 
 # Optimization for
@@ -206,7 +206,7 @@ end
 function lazy_map(
   ::typeof(integrate),f::AbstractArray,x::AbstractArray,w::AbstractArray)
 
-  fx = lazy_map(evaluate,x)
+  fx = lazy_map(evaluate,f,x)
   lazy_map(IntegrationMap(),fx,w)
 end
 
@@ -217,6 +217,20 @@ function lazy_map(
   jx = lazy_map(evaluate,j,x)
   lazy_map(IntegrationMap(),fx,w,jx)
 end
+
+## Reindex
+#
+##  j_to_f = lazy_map(Reindex(i_to_f),j_to_i)
+##  lazy_map(evaluate,j_to_f)
+#function lazy_map(
+#  ::typeof(evaluate), a::LazyArray{<:Fill{<:Reindex}},x::AbstractArray)
+#
+#  i_to_f = a.g.value.values
+#  j_to_i = a.f[1]
+#  i_to_fx = lazy_map(evaluate,i_to_f,i_to_x)
+#  j_to_fx = lazy_map(Reindex(i_to_fx),j_to_i)
+#  j_to_x = lazy_map(Reindex(i_to_fx),j_to_i)
+#end
 
 #function lazy_map(
 #  ::Broadcasting{typeof(gradient)},

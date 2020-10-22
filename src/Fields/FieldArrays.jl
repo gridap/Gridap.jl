@@ -113,6 +113,24 @@ end
   FieldGradientArray{2}(a)
 end
 
+function gradient(a::AbstractArray{<:Field})
+  msg =
+  """\n
+  Function gradient (aka ∇) is not defined for arrays of Field objects.
+  Use Broadcasting(∇) instead.
+  """
+  @unreachable msg
+end
+
+function ∇∇(a::AbstractArray{<:Field})
+  msg =
+  """\n
+  Double gradient application (aka ∇∇) is not defined for arrays of Field objects.
+  Use Broadcasting(∇∇) instead.
+  """
+  @unreachable msg
+end
+
 @inline Base.size(a::FieldGradientArray) = size(a.fa)
 @inline Base.axes(a::FieldGradientArray) = axes(a.fa)
 @inline Base.getindex(a::FieldGradientArray{Ng},i::Integer) where Ng = gradient(a.fa[i],Val(Ng))
@@ -297,9 +315,9 @@ end
   setsize!(cache,(size(fx,1),size(v,2)))
   r = cache.array
   @inbounds for p in 1:size(fx,1)
-    for j in size(r,2)
+    for j in 1:size(r,2)
       rj = zero(eltype(r))
-      for i in size(fx,2)
+      for i in 1:size(fx,2)
         rj += outer(fx[p,i],v[i,j]) 
       end
       r[p,j] = rj
