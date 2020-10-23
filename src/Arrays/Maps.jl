@@ -91,7 +91,7 @@ evaluate!(cache,::Type{f},x...) where f = f(x...)
 # @fverdugo rename to test_map
 # Testing the interface
 """
-    test_mapping(f,x::Tuple,y,cmp=(==))
+    test_mapping(y,f,x...;cmp=(==))
 
 Function used to test if the mapping `f` has been
 implemented correctly. `f` is a `Map` sub-type, `x` is a tuple in the domain of the
@@ -99,7 +99,7 @@ mapping and `y` is the expected result. Function `cmp` is used to compare
 the computed result with the expected one. The checks are done with the `@test`
 macro.
 """
-function test_mapping(f,x::Tuple,y,cmp=(==))
+function test_mapping(y,f,x...;cmp=(==))
   z = evaluate(f,x...)
   @test cmp(z,y)
   @test typeof(z) == return_type(f,x...)
@@ -108,6 +108,7 @@ function test_mapping(f,x::Tuple,y,cmp=(==))
   @test cmp(z,y)
   z = evaluate!(cache,f,x...)
   @test cmp(z,y)
+  true
 end
 
 # Broadcast Functions

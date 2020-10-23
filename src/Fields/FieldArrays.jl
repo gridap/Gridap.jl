@@ -76,12 +76,12 @@ function testargs(f::AbstractArray{T},x::AbstractArray{<:Point}) where T<:Field
 end
 
 function test_field_array(f::AbstractArray{<:Field}, x, v, cmp=(==); grad=nothing, gradgrad=nothing)
-  test_mapping(f,(x,),v,cmp)
+  test_mapping(v,f,x;cmp)
   if grad != nothing
-    test_mapping(Broadcasting(∇)(f),(x,),grad,cmp)
+    test_mapping(grad,Broadcasting(∇)(f),x;cmp)
   end
   if gradgrad != nothing
-    test_mapping(Broadcasting(∇∇)(f),(x,),gradgrad,cmp)
+    test_mapping(gradgrad,Broadcasting(∇∇)(f),x;cmp)
   end
 end
 

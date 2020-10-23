@@ -11,7 +11,7 @@ using FillArrays
 
 a = [3,2]
 b = [2,1]
-test_mapping(+,(a,b),a+b)
+test_mapping(a+b,+,a,b)
 
 bm = Broadcasting(+)
 cache = return_cache(bm,a,b)
@@ -43,24 +43,24 @@ f = Broadcasting(+)
 a = rand(3,2)
 b = 3
 c = a .+ b
-test_mapping(f,(a,b),c)
+test_mapping(c,f,a,b)
 
 k = Broadcasting(-)
-test_mapping(k,(1,),-1)
-test_mapping(k,([1,2],),[-1,-2])
-test_mapping(k,(1,2),-1)
-test_mapping(k,(1.0,2),-1.0)
-test_mapping(k,(1,2.0),-1.0)
-test_mapping(k,([1,2],2),[-1,0])
-test_mapping(k,(2,[1,2]),[1,0])
-test_mapping(k,([3,4],[1,2]),[2,2])
+test_mapping(-1,k,1)
+test_mapping([-1,-2],k,[1,2])
+test_mapping(-1,k,1,2)
+test_mapping(-1.0,k,1.0,2)
+test_mapping(-1.0,k,1,2.0)
+test_mapping([-1,0],k,[1,2],2)
+test_mapping([1,0],k,2,[1,2])
+test_mapping([2,2],k,[3,4],[1,2])
 
 f = Broadcasting(⋅)
 a = fill(TensorValue(2,0,0,0,2,0,0,0,2),2)
 b = VectorValue(1,2,3)
 c = zeros(VectorValue{3,Int},2)
 broadcast!(⋅,c,a,b)
-test_mapping(f,(a,b),c)
+test_mapping(c,f,a,b)
 
 cache = return_cache(f,a,b)
 # @btime evaluate!($cache,$f,$a,$b)
@@ -69,18 +69,18 @@ cache = return_cache(f,a,b)
 x = rand(3,3)
 
 fa(x) = 2*x
-test_mapping(fa,(x,),2*x)
+test_mapping(2*x,fa,x)
 
 fb(x) = sqrt.(x)
-test_mapping(fb,(x,),sqrt.(x))
+test_mapping(sqrt.(x),fb,x)
 
 op = Broadcasting(*)
 cache = return_cache(op,2,x)
 # @btime evaluate!($cache,$op,$2,$x)
-test_mapping(Broadcasting(*),(2,x),2*x)
+test_mapping(2*x,Broadcasting(*),2,x)
 
 fab = Operation(fa)(fb)
-test_mapping(fab,(x,),2*(sqrt.(x)))
+test_mapping(2*(sqrt.(x)),fab,x)
 
 bm = Broadcasting(*)
 cache = return_cache(bm,x,2)

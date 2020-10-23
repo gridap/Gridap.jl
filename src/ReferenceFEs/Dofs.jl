@@ -85,12 +85,12 @@ function test_dof_array(dof::AbstractArray{<:Dof},field,v,comp::Function=(==))
   _test_dof(dof,field,v,comp)
 end
 
-function _test_dof(dof,field,v,comp::Function=(==))
+function _test_dof(dof,field,v,cmp::Function=(==))
   if isa(dof,Dof)
-    test_mapping(dof,(field,),v,comp)
+    test_mapping(v,dof,field;cmp)
   end
   r = evaluate(dof,field)
-  @test comp(r,v)
+  @test cmp(r,v)
   @test typeof(r) == return_type(dof,field)
 end
 

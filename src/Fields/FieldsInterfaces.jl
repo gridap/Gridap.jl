@@ -526,12 +526,12 @@ argument `grad` can be used. It should contain the result of evaluating `gradien
 Idem for `gradgrad`. The checks are performed with the `@test` macro.
 """
 function test_field(f::Field, x, v, cmp=(==); grad=nothing, gradgrad=nothing)
-  test_mapping(f,(x,),v,cmp)
+  test_mapping(v,f,x;cmp)
   if grad != nothing
-    test_mapping(∇(f),(x,),grad,cmp)
+    test_mapping(grad,∇(f),x;cmp)
   end
   if gradgrad != nothing
-    test_mapping(∇∇(f),(x,),gradgrad,cmp)
+    test_mapping(gradgrad,∇∇(f),x;cmp)
   end
 end
 
