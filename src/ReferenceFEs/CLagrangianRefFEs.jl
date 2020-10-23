@@ -104,17 +104,6 @@ function is_first_order(reffe::GenericLagrangianRefFE{GradConformity})
 end
 
 """
-    is_affine(reffe::GenericLagrangianRefFE{GradConformity}) -> Bool
-
-Query if the `reffe` leads to an afine map
-(true only for first order spaces on top of simplices)
-"""
-function is_affine(reffe::GenericLagrangianRefFE{GradConformity})
-  p = get_polytope(reffe)
-  is_first_order(reffe) && is_simplex(p)
-end
-
-"""
     is_P(reffe::GenericLagrangianRefFE{GradConformity})
 """
 function is_P(reffe::GenericLagrangianRefFE{GradConformity})

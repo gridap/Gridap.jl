@@ -73,7 +73,6 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish ReferenceFEs PYRAMID
 @publish ReferenceFEs LagrangianRefFE
 @publish ReferenceFEs is_first_order
-@publish ReferenceFEs is_affine
 @publish ReferenceFEs is_Q
 @publish ReferenceFEs is_P
 @publish ReferenceFEs is_S

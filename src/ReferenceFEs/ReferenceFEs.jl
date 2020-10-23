@@ -127,7 +127,6 @@ export compute_nodes
 export compute_own_nodes_permutations
 export compute_lagrangian_reffaces
 export is_first_order
-export is_affine
 export is_Q
 export is_P
 export is_S

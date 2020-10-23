@@ -59,7 +59,6 @@ using Gridap.Fields: AffineMapGrad
 
 import Gridap.ReferenceFEs: get_node_coordinates
 import Gridap.ReferenceFEs: num_nodes
-import Gridap.ReferenceFEs: is_affine
 import Gridap.ReferenceFEs: is_first_order
 import Gridap.ReferenceFEs: get_faces
 import Gridap.ReferenceFEs: get_face_vertices
