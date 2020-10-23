@@ -80,4 +80,16 @@ topo = UnstructuredGridTopology(m)
 test_grid_topology(topo)
 @test topo === UnstructuredGridTopology(topo)
 
+# Extract grid topology
+
+grid = GridMock()
+topo = GridTopology(grid)
+test_grid_topology(topo)
+
+# Extract grid topology
+
+grid = CartesianGrid(domain,partition)
+topo = GridTopology(grid)
+test_grid_topology(topo)
+
 end # module

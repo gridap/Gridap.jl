@@ -83,6 +83,7 @@ function test_field_array(f::AbstractArray{<:Field}, x, v, cmp=(==); grad=nothin
   if gradgrad != nothing
     test_mapping(gradgrad,Broadcasting(∇∇)(f),x;cmp)
   end
+  true
 end
 
 # Opening the door to optimize arrays of field gradients

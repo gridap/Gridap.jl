@@ -533,5 +533,6 @@ function test_field(f::Field, x, v, cmp=(==); grad=nothing, gradgrad=nothing)
   if gradgrad != nothing
     test_mapping(gradgrad,∇∇(f),x;cmp)
   end
+  true
 end
 

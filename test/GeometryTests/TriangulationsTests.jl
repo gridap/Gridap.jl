@@ -40,6 +40,7 @@ a = lazy_map(x->norm(x[1]-x[2]),get_cell_coordinates(trian))
 test_array(a,collect(a))
 
 cell_map = get_cell_map(trian)
+cell_J = lazy_map(∇,cell_map)
 
 ncells = num_cells(trian)
 @test ncells == 3
@@ -65,29 +66,21 @@ j2 = fill(ji2,np)
 j3 = fill(ji3,np)
 j = [j1,j2,j3]
 
-test_array(cell_map,collect(cell_map))
-
-lazy_map((ai,qi,vi,ji)->test_mapping(ai,(qi,),vi),cell_map,q,x)
-
-lazy_map((ai,qi,vi,ji)->test_mapping(ai,(qi,),vi),cell_map,q,x)
-
-
-lazy_map((ji,qi,vi)->test_mapping(ai,(qi,),vi),cell_map,q,x)
-
-kk
-
-test_field(cell_map,q,x,grad=j)
+@test all(lazy_map(test_mapping,x,cell_map,q))
+@test all(lazy_map(test_mapping,j,cell_J,q))
+test_array(lazy_map(evaluate,cell_map,q),x)
+test_array(lazy_map(evaluate,cell_J,q),j)
 
 @test is_first_order(trian) == true
 
-cf1 = CellField(3,trian)
-cf2 = CellField(identity,trian)
+#cf1 = CellField(3,trian)
+#cf2 = CellField(identity,trian)
 
-x = get_physical_coordinate(trian)
+#x = get_physical_coordinate(trian)
 
 @test get_cell_id(trian) == collect(1:num_cells(trian))
 r = rand(num_cells(trian))
-@test r === reindex(r,trian)
+@test r === lazy_map(Reindex(r),get_cell_id(trian))
 
 #using Gridap.Visualization
 #writevtk(trian,"trian",cellfields=["cf1"=>cf1,"cf2"=>cf2,"x"=>x, "gradx"=>∇(x)])

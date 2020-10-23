@@ -205,11 +205,15 @@ export RestrictedDiscreteModel
 
 export AppendedTriangulation
 
+export GridMock
+
 include("Triangulations.jl")
 
-#include("Grids.jl")
-#
-#include("GridMocks.jl")
+include("Grids.jl")
+
+include("GridMocks.jl")
+
+include("UnstructuredGrids.jl")
 
 
 #include("GridTopologies.jl")
@@ -218,10 +222,6 @@ include("Triangulations.jl")
 #
 #include("UnstructuredGridTopologies.jl")
 #
-##include("SkeletonPairs.jl")
-#
-#include("Triangulations.jl")
-#
 #
 #
 #include("RestrictedTriangulations.jl")
@@ -229,8 +229,6 @@ include("Triangulations.jl")
 #include("TriangulationPortions.jl")
 #
 #include("GridPortions.jl")
-#
-#include("UnstructuredGrids.jl")
 #
 #include("CartesianGrids.jl")
 #

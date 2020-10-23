@@ -87,11 +87,16 @@ r = Vector{Point{2,Float64}}[[(0.25, 0.25)], [(0.75, 0.25)], [(0.25, 0.75)], [(0
 test_array_of_fields(map,ax,r,grad=∇r)
 @test isa(evaluate(∇(map),ax),Fill)
 
-# Extract grid topology
-
+domain = (0,1,0,1,0,1)
+partition = (2,2,2)
 grid = CartesianGrid(domain,partition)
-topo = GridTopology(grid)
-test_grid_topology(topo)
+tgrid = simplexify(grid)
+test_grid(tgrid)
 
+grid = compute_reference_grid(HEX8,4)
+test_grid(grid)
+
+grid = compute_linear_grid(HEX8)
+test_grid(grid)
 
 end # module

@@ -66,6 +66,8 @@ export get_reffaces
 export get_face_type
 export get_bounding_box
 export get_face_vertex_permutations
+export get_order
+export get_orders
 export test_polytope
 export VERTEX
 export SEGMENT

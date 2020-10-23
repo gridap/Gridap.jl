@@ -4,6 +4,10 @@ using Test
 
 @testset "Triangulations" begin include("TriangulationsTests.jl") end
 
+@testset "Grids" begin include("GridsTests.jl") end
+
+@testset "UnstructuredGrids" begin include("UnstructuredGridsTests.jl") end
+
 #@testset "GridTopologies" begin include("GridTopologiesTests.jl") end
 #
 #@testset "UnstructuredGridTopologies" begin include("UnstructuredGridTopologiesTests.jl") end
@@ -13,7 +17,6 @@ using Test
 #@testset "QPointCellFields" begin include("QPointCellFieldsTests.jl") end
 #
 #
-#@testset "Grids" begin include("GridsTests.jl") end
 #
 #@testset "RestrictedTriangulations" begin include("RestrictedTriangulationsTests.jl") end
 #
@@ -29,7 +32,6 @@ using Test
 #
 #@testset "FaceLabelings" begin include("FaceLabelingsTests.jl") end
 #
-#@testset "UnstructuredGrids" begin include("UnstructuredGridsTests.jl") end
 #
 #@testset "CartesianGrids" begin include("CartesianGridsTests.jl") end
 #
