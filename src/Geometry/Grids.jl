@@ -90,11 +90,6 @@ end
 # Some API
 
 """
-    num_nodes(trian::Grid) -> Int
-"""
-num_nodes(trian::Grid) = length(get_node_coordinates(trian))
-
-"""
     is_oriented(::Type{<:Grid}) -> Bool
     is_oriented(a::Grid) -> Bool
 """
@@ -145,20 +140,6 @@ end
 """
 function Grid(::Type{ReferenceFE{d}},p::Polytope) where d
   UnstructuredGrid(ReferenceFE{d},p)
-end
-
-"""
-    GridTopology(grid::Grid)
-    GridTopology(grid::Grid, cell_to_vertices::Table, vertex_to_node::Vector)
-"""
-function GridTopology(grid::Grid)
-  _grid = UnstructuredGrid(grid)
-  UnstructuredGridTopology(_grid)
-end
-
-function GridTopology(grid::Grid, cell_to_vertices::Table, vertex_to_node::AbstractVector)
-  _grid = UnstructuredGrid(grid)
-  UnstructuredGridTopology(_grid,cell_to_vertices,vertex_to_node)
 end
 
 """

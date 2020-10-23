@@ -498,6 +498,20 @@ function compute_cell_permutations(top::GridTopology,d::Integer)
   cell_to_lface_to_pindex
 end
 
+"""
+    GridTopology(grid::Grid)
+    GridTopology(grid::Grid, cell_to_vertices::Table, vertex_to_node::Vector)
+"""
+function GridTopology(grid::Grid)
+  _grid = UnstructuredGrid(grid)
+  UnstructuredGridTopology(_grid)
+end
+
+function GridTopology(grid::Grid, cell_to_vertices::Table, vertex_to_node::AbstractVector)
+  _grid = UnstructuredGrid(grid)
+  UnstructuredGridTopology(_grid,cell_to_vertices,vertex_to_node)
+end
+
 # Helpers
 
 function  _compute_cell_perm_indices!(

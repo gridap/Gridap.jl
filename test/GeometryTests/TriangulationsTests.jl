@@ -9,7 +9,7 @@ using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.ReferenceFEs
-using Gridap.CellData
+#using Gridap.CellData
 
 import Gridap.Geometry: get_cell_type
 import Gridap.Geometry: get_reffes
@@ -36,7 +36,8 @@ end
 trian = MockTriangulation()
 test_triangulation(trian)
 
-_ = collect(lazy_map(x->norm(x[1]-x[2]),get_cell_coordinates(trian)))
+a = lazy_map(x->norm(x[1]-x[2]),get_cell_coordinates(trian))
+test_array(a,collect(a))
 
 cell_map = get_cell_map(trian)
 
@@ -64,7 +65,18 @@ j2 = fill(ji2,np)
 j3 = fill(ji3,np)
 j = [j1,j2,j3]
 
-test_array_of_fields(cell_map,q,x,grad=j)
+test_array(cell_map,collect(cell_map))
+
+lazy_map((ai,qi,vi,ji)->test_mapping(ai,(qi,),vi),cell_map,q,x)
+
+lazy_map((ai,qi,vi,ji)->test_mapping(ai,(qi,),vi),cell_map,q,x)
+
+
+lazy_map((ji,qi,vi)->test_mapping(ai,(qi,),vi),cell_map,q,x)
+
+kk
+
+test_field(cell_map,q,x,grad=j)
 
 @test is_first_order(trian) == true
 
