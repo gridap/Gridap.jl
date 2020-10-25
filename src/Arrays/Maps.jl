@@ -257,3 +257,11 @@ end
 
 evaluate!(cache,op::Operation,args...) = OperationMap(op.op,args)
 
+"""
+"""
+function inverse_map(f)
+  @unreachable """\n
+  Function inverse_map is not implemented yet for objects of type $(typeof(f))
+  """
+end
+

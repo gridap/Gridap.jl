@@ -46,6 +46,7 @@ export test_mapping
 export return_type
 export return_value
 export testargs
+export inverse_map
 
 export Broadcasting
 

@@ -12,6 +12,7 @@ using Gridap.Arrays: setsize!
 using Gridap.Arrays: get_array
 using Gridap.Arrays: testitem
 import Gridap.Arrays: testvalue
+import Gridap.Arrays: inverse_map
 
 using Gridap.Helpers: @abstractmethod, @notimplemented
 using Gridap.Helpers: @notimplementedif, @unreachable, @check
@@ -56,6 +57,9 @@ export ZeroField
 export MockField
 export MockFieldArray
 export Point
+export inverse_map
+
+export AffineMap
 
 export gradient
 export ∇
@@ -95,6 +99,8 @@ include("FieldsInterfaces.jl")
 include("FieldArrays.jl")
 
 include("MockFields.jl")
+
+include("AffineMaps.jl")
 
 include("ApplyOptimizations.jl")
 
