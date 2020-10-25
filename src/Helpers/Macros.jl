@@ -4,9 +4,9 @@
 
 Macro used in generic functions that must be overloaded by derived types.
 """
-macro abstractmethod()
+macro abstractmethod(message="This function belongs to an interface definition and cannot be used.")
   quote
-    error("This function belongs to an interface definition and cannot be used.")
+    error($(esc(message)))
   end
 end
 

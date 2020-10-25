@@ -38,6 +38,7 @@ import Gridap.Arrays: getindex!
 #import Gridap.Arrays: reindex
 import Gridap.Arrays: get_array
 import Gridap.Arrays: lazy_append
+import Gridap.Arrays: lazy_map
 #import Gridap.CellData: CellField
 #import Gridap.CellData: CellQuadrature
 #import Gridap.CellData: QPointCellField
@@ -215,6 +216,7 @@ include("GridMocks.jl")
 
 include("UnstructuredGrids.jl")
 
+include("CartesianGrids.jl")
 
 #include("GridTopologies.jl")
 #
@@ -230,7 +232,6 @@ include("UnstructuredGrids.jl")
 #
 #include("GridPortions.jl")
 #
-#include("CartesianGrids.jl")
 #
 #include("FaceLabelings.jl")
 #

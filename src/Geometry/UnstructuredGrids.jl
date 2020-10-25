@@ -180,3 +180,75 @@ function _refine_grid_connectivity(cell_to_points::Table, ltcell_to_lpoints)
     ltcell_to_lpoints)
   Table(data,ptrs)
 end
+
+function _refine_grid_connectivity(
+  cell_to_points_data::AbstractVector{T},
+  cell_to_points_ptrs::AbstractVector{P},
+  ltcell_to_lpoints) where {T,P}
+
+  nltcells = length(ltcell_to_lpoints)
+  ncells = length(cell_to_points_ptrs) - 1
+  ntcells = ncells * nltcells
+
+  tcell_to_points_ptrs = zeros(P,ntcells+1)
+
+  _refine_grid_connectivity_count!(
+    tcell_to_points_ptrs,
+    ncells,
+    ltcell_to_lpoints)
+
+  length_to_ptrs!(tcell_to_points_ptrs)
+
+  ndata = tcell_to_points_ptrs[end]-1
+
+  tcell_to_points_data = zeros(T,ndata)
+
+  _refine_grid_connectivity!(
+    tcell_to_points_data,
+    cell_to_points_data,
+    cell_to_points_ptrs,
+    ltcell_to_lpoints )
+
+  (tcell_to_points_data, tcell_to_points_ptrs)
+
+end
+
+function  _refine_grid_connectivity_count!(
+    tcell_to_points_ptrs,
+    ncells,
+    ltcell_to_lpoints)
+
+  tcell = 1
+
+  for cell in 1:ncells
+    for lpoints in ltcell_to_lpoints
+      tcell_to_points_ptrs[tcell+1] = length(lpoints)
+      tcell +=1
+    end
+  end
+
+end
+
+function _refine_grid_connectivity!(
+    tcell_to_points_data,
+    cell_to_points_data,
+    cell_to_points_ptrs,
+    ltcell_to_lpoints )
+
+  ncells = length(cell_to_points_ptrs) - 1
+
+  k = 1
+  for cell in 1:ncells
+    a = cell_to_points_ptrs[cell]-1
+    for lpoints in ltcell_to_lpoints
+      for lpoint in lpoints
+        point = cell_to_points_data[a+lpoint]
+        tcell_to_points_data[k] = point
+        k += 1
+      end
+    end
+  end
+
+end
+
+

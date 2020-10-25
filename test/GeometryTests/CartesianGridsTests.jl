@@ -77,15 +77,24 @@ partition = (2,2)
 grid = CartesianGrid(domain,partition)
 
 map = get_cell_map(grid)
+∇map = lazy_map(∇,map)
 
 x = [Point(0.5,0.5),]
-ax = Fill(x,prod(partition))
+ax = Fill(x,partition)
 r = Vector{Point{2,Float64}}[[(0.25, 0.25)], [(0.75, 0.25)], [(0.25, 0.75)], [(0.75, 0.75)]]
 ∇r = Vector{TensorValue{2,2,Float64,4}}[
   [(0.5, 0.0, 0.0, 0.5)], [(0.5, 0.0, 0.0, 0.5)],
   [(0.5, 0.0, 0.0, 0.5)], [(0.5, 0.0, 0.0, 0.5)]]
-test_array_of_fields(map,ax,r,grad=∇r)
-@test isa(evaluate(∇(map),ax),Fill)
+#test_array_of_fields(map,ax,r,grad=∇r)
+@test all(lazy_map(test_field,map,ax,r))
+@test all(lazy_map(test_field,∇map,ax,∇r))
+
+mx = lazy_map(evaluate,map,ax)
+∇mx = lazy_map(evaluate,∇map,ax)
+
+test_array(mx,reshape(r,size(map)))
+test_array(∇mx,reshape(∇r,size(map)))
+@test isa(∇mx,Fill)
 
 domain = (0,1,0,1,0,1)
 partition = (2,2,2)

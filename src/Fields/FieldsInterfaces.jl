@@ -76,6 +76,8 @@ gradient(f,::Val{2}) = ∇∇(f)
 
 evaluate!(cache,::Broadcasting{typeof(∇)},a::Field) = ∇(a)
 evaluate!(cache,::Broadcasting{typeof(∇∇)},a::Field) = ∇∇(a)
+lazy_map(::Broadcasting{typeof(∇)},a::AbstractArray{<:Field}) = lazy_map(∇,a)
+lazy_map(::Broadcasting{typeof(∇∇)},a::AbstractArray{<:Field}) = lazy_map(∇∇,a)
 
 """
     gradient_type(::Type{T},x::Point) where T

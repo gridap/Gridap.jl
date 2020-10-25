@@ -8,6 +8,8 @@ using Test
 
 @testset "UnstructuredGrids" begin include("UnstructuredGridsTests.jl") end
 
+@testset "CartesianGrids" begin include("CartesianGridsTests.jl") end
+
 #@testset "GridTopologies" begin include("GridTopologiesTests.jl") end
 #
 #@testset "UnstructuredGridTopologies" begin include("UnstructuredGridTopologiesTests.jl") end
@@ -33,7 +35,6 @@ using Test
 #@testset "FaceLabelings" begin include("FaceLabelingsTests.jl") end
 #
 #
-#@testset "CartesianGrids" begin include("CartesianGridsTests.jl") end
 #
 #@testset "UnstructuredDiscreteModels" begin include("UnstructuredDiscreteModelsTests.jl") end
 #
