@@ -180,34 +180,37 @@ get_background_triangulation(trian::BoundaryTriangulation) = trian.cell_trian
 get_cell_id(trian::BoundaryTriangulation) = trian.glue.face_to_cell
 
 function get_facet_normal(trian::BoundaryTriangulation)
-  @notimplemented
 
-  #glue = get_face_to_cell_glue(trian)
-  #cell_trian = get_background_triangulation(trian)
+  glue = trian.glue
+  cell_trian = trian.cell_trian
 
   ## Reference normal
-  #f = (r) -> get_facet_normal(get_polytope(r))
-  #ctype_to_lface_to_nref = map(f, get_reffes(cell_trian))
-  #cell_to_ctype = get_cell_type(cell_trian)
-  #face_to_ctype = lazy_map(Reindex(cell_to_ctype),glue.face_to_cell)
-  #face_lface_to_nref = expand_cell_data(ctype_to_lface_to_nref,face_to_ctype)
-  #face_to_nref = lazy_map(getindex,face_lface_to_nref,glue.face_to_lface)
-  #face_s_nref = lazy_map(ConstantField,face_to_nref)
+  function f(r)
+    p = get_polytope(r)
+    lface_to_n = get_facet_normal(p)
+    lface_to_pindex_to_perm = get_face_vertex_permutations(p,num_cell_dims(p))
+    nlfaces = length(lface_to_n)
+    lface_pindex_to_n = [ fill(lface_to_n[lface],length(lface_to_pindex_to_perm)) for lface in 1:nlfaces ]
+    lface_pindex_to_n
+  end
+  ctype_lface_pindex_to_nref = map(f, get_reffes(cell_trian))
+  face_to_nref = FaceCompressedVector(ctype_lface_pindex_to_nref,glue)
+  face_s_nref = lazy_map(ConstantField,face_to_nref)
 
-  ## Inverse of the Jacobian transpose
-  #cell_q_x = get_cell_map(cell_trian)
-  #cell_q_Jt = lazy_map(∇,cell_q_x)
-  #cell_q_invJt = lazy_map(Operation(inv),cell_q_Jt)
-  #face_q_invJt = lazy_map(Reindex(cell_q_invJt),glue.face_to_cell)
+  # Inverse of the Jacobian transpose
+  cell_q_x = get_cell_map(cell_trian)
+  cell_q_Jt = lazy_map(∇,cell_q_x)
+  cell_q_invJt = lazy_map(Operation(inv),cell_q_Jt)
+  face_q_invJt = lazy_map(Reindex(cell_q_invJt),glue.face_to_cell)
 
-  ## Change of domain
-  #face_s_q = get_cell_ref_map(trian)
-  #face_s_invJt = lazy_map(∘,face_q_invJt,face_s_q)
-  #face_s_n = lazy_map(Operation(map),face_s_invJt,face_s_nref)
-  #face_s_n
+  # Change of domain
+  face_s_q = get_cell_ref_map(trian)
+  face_s_invJt = lazy_map(∘,face_q_invJt,face_s_q)
+  face_s_n = lazy_map(Operation(push_normal),face_s_invJt,face_s_nref)
+  face_s_n
 end
 
-@inline function map_normal(invJt::MultiValue{Tuple{D,D},T},n::VectorValue{D,T}) where {D,T}
+@inline function push_normal(invJt::MultiValue{Tuple{D,D}},n::VectorValue{D}) where D
   v = invJt⋅n
   m = sqrt(inner(v,v))
   if m < eps()
@@ -216,7 +219,6 @@ end
     return v/m
   end
 end
-
 
 function get_cell_ref_map(trian::BoundaryTriangulation)
   face_to_q_vertex_coords = _compute_face_to_q_vertex_coords(trian)

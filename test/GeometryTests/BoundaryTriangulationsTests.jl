@@ -31,12 +31,19 @@ face_shapefuns = lazy_map(Reindex(cell_shapefuns),get_cell_id(btrian))
 face_shapefuns_q = lazy_map(evaluate,face_shapefuns,face_to_q)
 @test isa(face_shapefuns_q,Geometry.FaceCompressedVector)
 
+face_to_nvec = get_facet_normal(btrian)
+
+face_to_nvec_s = lazy_map(evaluate,face_to_nvec,face_to_s)
+
+print_op_tree(face_to_nvec_s)
+
+display(face_to_nvec_s)
 
 
 #print_op_tree(face_shapefuns)
 
-print_op_tree(face_to_q)
-print_op_tree(face_shapefuns_q)
+#print_op_tree(face_to_q)
+#print_op_tree(face_shapefuns_q)
 
 kk
 
