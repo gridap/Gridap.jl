@@ -15,6 +15,21 @@ p = Point(1.0,2.0)
 x = fill(p,np)
 cell_to_x = Fill(x,ncells)
 
+
+# ConstantField
+
+
+cell_to_a = rand(ncells)
+cell_to_f = lazy_map(ConstantField,cell_to_a)
+cell_to_fx = lazy_map(evaluate,cell_to_f,cell_to_x)
+test_array(cell_to_fx,map(i->fill(i,np),cell_to_a))
+
+#print_op_tree(cell_to_fx)
+
+#using BenchmarkTools
+#c = array_cache(cell_to_fx)
+#@btime getindex!($c,$cell_to_fx,1)
+
 # linear_combination -> Field
 
 avals = [1.0,0.5,1.2,3.9]

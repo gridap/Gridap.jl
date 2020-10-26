@@ -229,10 +229,12 @@ end
 
 function evaluate!(c,f::ConstantField,x::AbstractArray{<:Point})
   nx = size(x)
-  if size(c) != nx
+  # This optimization is a bug if we include several ConstantField with different states
+  # in the same array and we try to reuse cache between them.
+  #if size(c) != nx
     setsize!(c,nx)
     fill!(c.array,f.object)
-  end
+  #end
   c.array
 end
 
