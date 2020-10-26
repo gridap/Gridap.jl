@@ -275,19 +275,15 @@ end
     is_oriented(::Type{<:GridTopology}) -> Bool
     is_oriented(a::GridTopology) -> Bool
 """
-is_oriented(a::GridTopology) = _is_oriented(OrientationStyle(a))
-is_oriented(a::Type{<:GridTopology}) = _is_oriented(OrientationStyle(a))
-_is_oriented(::Val{true}) = true
-_is_oriented(::Val{false}) = false
+is_oriented(a::GridTopology) = get_val_parameter(OrientationStyle(a))
+is_oriented(a::Type{<:GridTopology}) = get_val_parameter(OrientationStyle(a))
 
 """
     is_regular(::Type{<:GridTopology}) -> Bool
     is_regular(a::GridTopology) -> Bool
 """
-is_regular(a::GridTopology) = _is_regular(RegularityStyle(a))
-is_regular(a::Type{<:GridTopology}) = _is_regular(RegularityStyle(a))
-_is_regular(::Val{true}) = true
-_is_regular(::Val{false}) = false
+is_regular(a::GridTopology) = get_val_parameter(RegularityStyle(a))
+is_regular(a::Type{<:GridTopology}) = get_val_parameter(RegularityStyle(a))
 
 """
     get_reffaces(::Type{Polytope{d}}, g::GridTopology) where d

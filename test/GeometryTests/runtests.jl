@@ -10,9 +10,19 @@ using Test
 
 @testset "CartesianGrids" begin include("CartesianGridsTests.jl") end
 
-#@testset "GridTopologies" begin include("GridTopologiesTests.jl") end
-#
-#@testset "UnstructuredGridTopologies" begin include("UnstructuredGridTopologiesTests.jl") end
+@testset "GridTopologies" begin include("GridTopologiesTests.jl") end
+
+@testset "UnstructuredGridTopologies" begin include("UnstructuredGridTopologiesTests.jl") end
+
+@testset "FaceLabelings" begin include("FaceLabelingsTests.jl") end
+
+@testset "DiscreteModels" begin include("DiscreteModelsTests.jl") end
+
+@testset "UnstructuredDiscreteModels" begin include("UnstructuredDiscreteModelsTests.jl") end
+
+@testset "CartesianDiscreteModels" begin include("CartesianDiscreteModelsTests.jl") end
+
+
 #
 #@testset "CellFields" begin include("CellFieldsTests.jl") end
 #
@@ -26,19 +36,15 @@ using Test
 #
 #@testset "GridPortions" begin include("GridPortionsTests.jl") end
 #
-#@testset "DiscreteModels" begin include("DiscreteModelsTests.jl") end
 #
 #@testset "DiscreteModelPortions" begin include("DiscreteModelPortionsTests.jl") end
 #
 #@testset "RestrictedDiscreteModels" begin include("RestrictedDiscreteModelsTests.jl") end
 #
-#@testset "FaceLabelings" begin include("FaceLabelingsTests.jl") end
 #
 #
 #
-#@testset "UnstructuredDiscreteModels" begin include("UnstructuredDiscreteModelsTests.jl") end
 #
-#@testset "CartesianDiscreteModels" begin include("CartesianDiscreteModelsTests.jl") end
 #
 #@testset "PeriodicBC" begin include("PeriodicBCTests.jl") end
 #
