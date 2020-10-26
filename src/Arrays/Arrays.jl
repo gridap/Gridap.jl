@@ -115,7 +115,6 @@ export append_tables_locally
 export flatten_partition
 export collect1d
 export UNSET
-export get_local_item
 export find_local_index
 
 export IdentityVector
