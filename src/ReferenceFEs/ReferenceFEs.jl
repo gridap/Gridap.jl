@@ -42,9 +42,9 @@ export get_faces
 export get_dimranges
 export get_dimrange
 export get_vertex_coordinates
-export get_facet_normals
+export get_facet_normal
 export get_facet_orientations
-export get_edge_tangents
+export get_edge_tangent
 export get_vertex_permutations
 export get_face_dimranges
 export get_face_coordinates

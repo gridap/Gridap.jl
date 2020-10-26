@@ -234,6 +234,10 @@ function evaluate!(cache,k::Broadcasting{typeof(∇)},a::LinearCombinationFieldV
   LinearCombinationFieldVector(a.values,fields)
 end
 
+function get_children(n::TreeNode, a::LinearCombinationFieldVector)
+  (similar_tree_node(n,a.values),similar_tree_node(n,a.fields))
+end
+
 # This is the map that acts on values
 struct LinearCombinationMap{T} <: Map
   column::T

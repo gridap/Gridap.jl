@@ -140,4 +140,13 @@ ns = get_normal_vector(strian)
 #using Gridap.Visualization
 #writevtk(strian,"strian",cellfields=["normal"=>ns])
 
+sface_to_oldsface = collect(10:45)
+oldstrian = SkeletonTriangulation(oldmodel)
+strian = TriangulationPortion(oldstrian,sface_to_oldsface)
+test_triangulation(strian)
+
+ns = get_normal_vector(strian)
+@test length(ns) == num_cells(strian)
+
+
 end # module

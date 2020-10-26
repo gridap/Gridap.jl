@@ -11,8 +11,11 @@ using Gridap.Arrays: CachedArray
 using Gridap.Arrays: setsize!
 using Gridap.Arrays: get_array
 using Gridap.Arrays: testitem
+using Gridap.Arrays: TreeNode
+using Gridap.Arrays: similar_tree_node
 import Gridap.Arrays: testvalue
 import Gridap.Arrays: inverse_map
+import Gridap.Arrays: get_children
 
 using Gridap.Helpers: @abstractmethod, @notimplemented
 using Gridap.Helpers: @notimplementedif, @unreachable, @check

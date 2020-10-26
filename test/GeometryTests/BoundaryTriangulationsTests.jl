@@ -6,13 +6,44 @@ using Gridap.Fields
 using Gridap.Arrays
 using Gridap.ReferenceFEs
 using Gridap.Geometry
+using FillArrays
 
 domain = (0,4,0,4)
 partition = (2,2)
 model = CartesianDiscreteModel(domain,partition)
 
 btrian = BoundaryTriangulation(model)
-test_boundary_triangulation(btrian)
+
+face_s_q = get_cell_ref_map(btrian)
+
+s1 = Point(0.0)
+s2 = Point(0.5)
+s = [s1,s2]
+face_to_s = Fill(s,length(face_s_q))
+
+face_to_q = lazy_map(evaluate,face_s_q,face_to_s)
+@test isa(face_to_q,Geometry.FaceCompressedVector)
+
+cell_shapefuns = get_cell_shapefuns(btrian.cell_trian)
+
+face_shapefuns = lazy_map(Reindex(cell_shapefuns),get_cell_id(btrian))
+
+face_shapefuns_q = lazy_map(evaluate,face_shapefuns,face_to_q)
+@test isa(face_shapefuns_q,Geometry.FaceCompressedVector)
+
+
+
+#print_op_tree(face_shapefuns)
+
+print_op_tree(face_to_q)
+print_op_tree(face_shapefuns_q)
+
+kk
+
+
+test_triangulation(btrian)
+
+kk
 
 cellids = collect(1:num_cells(model))
 
@@ -56,5 +87,15 @@ x = evaluate(s2x,s)
 @test get_cell_id(btrian) == get_face_to_cell(btrian)
 r = rand(num_cells(trian))
 @test reindex(r,btrian) == r[get_face_to_cell(btrian)]
+
+oldbtrian = BoundaryTriangulation(oldmodel)
+
+bface_to_oldbface = collect(1:32)
+btrian = TriangulationPortion(oldbtrian,bface_to_oldbface)
+test_triangulation(btrian)
+
+nb = get_normal_vector(btrian)
+@test length(nb) == num_cells(btrian)
+
 
 end # module

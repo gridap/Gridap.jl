@@ -22,6 +22,13 @@ using Test
 
 @testset "CartesianDiscreteModels" begin include("CartesianDiscreteModelsTests.jl") end
 
+@testset "TriangulationPortions" begin include("TriangulationPortionsTests.jl") end
+
+#@testset "BoundaryTriangulations" begin include("BoundaryTriangulationsTests.jl") end
+#
+#@testset "GenericBoundaryTriangulations" begin include("GenericBoundaryTriangulationsTests.jl") end
+
+
 
 #
 #@testset "CellFields" begin include("CellFieldsTests.jl") end
@@ -32,7 +39,6 @@ using Test
 #
 #@testset "RestrictedTriangulations" begin include("RestrictedTriangulationsTests.jl") end
 #
-#@testset "TriangulationPortions" begin include("TriangulationPortionsTests.jl") end
 #
 #@testset "GridPortions" begin include("GridPortionsTests.jl") end
 #
@@ -47,10 +53,6 @@ using Test
 #
 #
 #@testset "PeriodicBC" begin include("PeriodicBCTests.jl") end
-#
-#@testset "BoundaryTriangulations" begin include("BoundaryTriangulationsTests.jl") end
-#
-#@testset "GenericBoundaryTriangulations" begin include("GenericBoundaryTriangulationsTests.jl") end
 #
 #@testset "SkeletonPairs" begin include("SkeletonPairsTests.jl") end
 #

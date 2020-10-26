@@ -196,7 +196,7 @@ function LagrangianRefFE(::Type{T},p::Polytope{D},orders;space::Symbol=_default_
   elseif space == :S && is_n_cube(p)
     SerendipityRefFE(T,p,orders)
   else
-    if any(orders.==0) && !all(orders.==0)
+    if any(map(i->i==0,orders)) && !all(map(i->i==0,orders))
       cont = map(i -> i == 0 ? DISC : CONT,orders)
       return _cd_lagrangian_ref_fe(T,p,orders,cont)
     else

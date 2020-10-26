@@ -24,7 +24,7 @@ Optional interface:
 
 For triangulations living in a space of co-dimension 1, the following method can be defined:
 
-- [`get_facet_normals(trian::Triangulation)`]
+- [`get_facet_normal(trian::Triangulation)`]
 
 In some cases, concrete implementations want to override the default implementation of the following methods:
 
@@ -61,15 +61,15 @@ function get_cell_type(trian::Triangulation)
 end
 
 """
-    get_facet_normals(trian::Triangulation)
+    get_facet_normal(trian::Triangulation)
 """
-function get_facet_normals(trian::Triangulation)
+function get_facet_normal(trian::Triangulation)
   Dp = num_point_dims(trian)
   Dc = num_cell_dims(trian)
   if Dp == Dc + 1
     @abstractmethod
   else
-    @unreachable "get_facet_normals does not make sense for this triangulation"
+    @unreachable "get_facet_normal does not make sense for this triangulation"
   end
 end
 

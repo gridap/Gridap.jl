@@ -175,11 +175,11 @@ function get_vertex_coordinates(p::ExtrusionPolytope)
   p.vertex_coords
 end
 
-function get_edge_tangents(p::ExtrusionPolytope)
+function get_edge_tangent(p::ExtrusionPolytope)
   _edge_tangents(Float64,p.dface)
 end
 
-function get_facet_normals(p::ExtrusionPolytope)
+function get_facet_normal(p::ExtrusionPolytope)
   p.face_normals
 end
 

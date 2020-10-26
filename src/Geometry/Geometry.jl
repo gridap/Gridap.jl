@@ -46,6 +46,7 @@ import Gridap.Arrays: lazy_map
 
 import Gridap.Arrays: return_cache
 import Gridap.Arrays: evaluate!
+import Gridap.Arrays: get_children
 #import Gridap.Fields: evaluate_field_array
 #import Gridap.Fields: gradient
 #import Gridap.Fields: grad2curl
@@ -86,7 +87,7 @@ import Gridap.ReferenceFEs: num_dims
 import Gridap.ReferenceFEs: num_cell_dims
 import Gridap.ReferenceFEs: num_point_dims
 import Gridap.ReferenceFEs: simplexify
-import Gridap.ReferenceFEs: get_facet_normals
+import Gridap.ReferenceFEs: get_facet_normal
 
 #import Gridap.Fields: field_array_gradient
 #import Gridap.Fields: lazy_map_lincomb
@@ -127,7 +128,7 @@ export get_reffes
 export get_cell_coordinates
 export get_cell_reffes
 export get_cell_shapefuns
-export get_facet_normals
+export get_facet_normal
 export test_triangulation
 #export restrict
 #export get_physical_coordinate
@@ -234,6 +235,12 @@ include("UnstructuredDiscreteModels.jl")
 
 include("CartesianDiscreteModels.jl")
 
+include("TriangulationPortions.jl")
+
+include("BoundaryTriangulations.jl")
+
+#include("GenericBoundaryTriangulations.jl")
+
 
 
 #include("RestrictedTriangulations.jl")
@@ -250,9 +257,6 @@ include("CartesianDiscreteModels.jl")
 #
 #
 #
-#include("BoundaryTriangulations.jl")
-#
-#include("GenericBoundaryTriangulations.jl")
 #
 #include("SkeletonTriangulations.jl")
 #

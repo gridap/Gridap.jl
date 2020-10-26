@@ -135,7 +135,9 @@ export VectorWithEntryRemoved
 export VectorWithEntryInserted
 
 import AbstractTrees
+export TreeNode
 export print_op_tree
+export similar_tree_node
 
 import Gridap.Io: to_dict
 import Gridap.Io: from_dict

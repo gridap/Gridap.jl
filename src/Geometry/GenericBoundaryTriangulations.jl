@@ -1,15 +1,4 @@
 
-struct FaceToCellGlue{O} <: GridapType
-  orientation::Val{O}
-  face_to_cell::Vector{Int}
-  face_to_lface::Vector{Int8}
-  cell_to_ctype::Vector{Int8}
-  cell_to_lface_to_pindex::Table{Int8,Vector{Int8},Vector{Int32}}
-  ctype_to_lface_to_ftype::Vector{Vector{Int8}}
-end
-
-is_oriented(::FaceToCellGlue{O}) where O = O
-
 """
     struct GenericBoundaryTriangulation{Dc,Dp,Gf,Gc,O} <: BoundaryTriangulation{Dc,Dp}
       face_trian::Gf
@@ -28,6 +17,8 @@ struct GenericBoundaryTriangulation{Dc,Dp,Gf,Gc,O,A} <: BoundaryTriangulation{Dc
     cell_trian::Triangulation,
     glue::FaceToCellGlue{O},
     cell_around=1) where O
+
+    @assert TriangulationStyle(cell_trian) == BackgroundTriangulation()
 
     Dc = num_cell_dims(face_trian)
     Dp = num_point_dims(face_trian)
@@ -382,7 +373,7 @@ function ReferenceNormal(trian::GenericBoundaryTriangulation)
   face_to_cell = trian.glue.face_to_cell
   face_to_lface = trian.glue.face_to_lface
   cell_to_ctype = trian.glue.cell_to_ctype
-  f = (r) -> get_facet_normals(get_polytope(r))
+  f = (r) -> get_facet_normal(get_polytope(r))
   ctype_to_lface_to_qnormal = map(f, get_reffes(trian.cell_trian))
   ReferenceNormal(
     face_to_cell,
