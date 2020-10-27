@@ -158,7 +158,7 @@ function return_type(f::Broadcasting,x...)
 end
 
 @inline function evaluate!(cache,f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
-  r = _prepare_cache(cache,x...)
+  r = _prepare_cache!(cache,x...)
   a = r.array
   broadcast!(f.f,a,x...)
   a
@@ -187,10 +187,11 @@ function return_cache(f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}..
   N = length(bs)
   r = fill(testvalue(T),bs)
   cache = CachedArray(r)
-  _prepare_cache(cache,x...)
+  _prepare_cache!(cache,x...)
+  cache
 end
 
-@inline function _prepare_cache(c,x...)
+@inline function _prepare_cache!(c,x...)
   s = map(_size,x)
   bs = Base.Broadcast.broadcast_shape(s...)
   if bs != size(c)

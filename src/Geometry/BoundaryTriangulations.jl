@@ -188,9 +188,9 @@ function get_facet_normal(trian::BoundaryTriangulation)
   function f(r)
     p = get_polytope(r)
     lface_to_n = get_facet_normal(p)
-    lface_to_pindex_to_perm = get_face_vertex_permutations(p,num_cell_dims(p))
+    lface_to_pindex_to_perm = get_face_vertex_permutations(p,num_cell_dims(p)-1)
     nlfaces = length(lface_to_n)
-    lface_pindex_to_n = [ fill(lface_to_n[lface],length(lface_to_pindex_to_perm)) for lface in 1:nlfaces ]
+    lface_pindex_to_n = [ fill(lface_to_n[lface],length(lface_to_pindex_to_perm[lface])) for lface in 1:nlfaces ]
     lface_pindex_to_n
   end
   ctype_lface_pindex_to_nref = map(f, get_reffes(cell_trian))
@@ -210,7 +210,7 @@ function get_facet_normal(trian::BoundaryTriangulation)
   face_s_n
 end
 
-@inline function push_normal(invJt::MultiValue{Tuple{D,D}},n::VectorValue{D}) where D
+@inline function push_normal(invJt,n)
   v = invJt⋅n
   m = sqrt(inner(v,v))
   if m < eps()
@@ -284,7 +284,6 @@ function Base.getindex(a::FaceCompressedVector,face::Integer)
   value
 end
 
-
 function get_children(n::TreeNode, a::FaceCompressedVector)
   (similar_tree_node(n,a.ctype_lface_pindex_to_value),similar_tree_node(n,a.glue))
 end
@@ -319,35 +318,117 @@ function lazy_map(k::LinearCombinationMap,::Type{T},b::FaceCompressedVector,c::C
   end
 end
 
-function lazy_map(k::typeof(evaluate),::Type{T},b::Fill,c::FaceCompressedVector) where T
-  d = CompressedArray([b.value,],Fill(1,length(b)))
-  lazy_map(evaluate,T,d,c)
-end
-
-function lazy_map(k::typeof(evaluate),::Type{T},a::CompressedArray,b::FaceCompressedVector) where T
-  if a.ptrs == lazy_map(Reindex(b.glue.cell_to_ctype),b.glue.face_to_cell)
-
-    ctype_lface_pindex_to_r = Vector{Vector{Vector{T}}}(undef,length(b.ctype_lface_pindex_to_value))
-    for (ctype, lface_pindex_to_value) in enumerate(b.ctype_lface_pindex_to_value)
-      lface_pindex_to_r = Vector{Vector{T}}(undef,length(lface_pindex_to_value))
-      for (lface, pindex_to_value) in enumerate(lface_pindex_to_value)
-        pindex_to_r = Vector{T}(undef,length(pindex_to_value))
-        ftype = b.glue.ctype_to_lface_to_ftype[ctype][lface]
-        if ftype != UNSET
-          for (pindex, value) in enumerate(pindex_to_value)
-            pindex_to_r[pindex] = evaluate(a.values[ftype],value)
-          end
+function lazy_map(k::typeof(evaluate),::Type{T},a::Fill,b::FaceCompressedVector) where T
+  @check length(a) == length(b)
+  ctype_lface_pindex_to_r = Vector{Vector{Vector{T}}}(undef,length(b.ctype_lface_pindex_to_value))
+  for (ctype, lface_pindex_to_value) in enumerate(b.ctype_lface_pindex_to_value)
+    lface_pindex_to_r = Vector{Vector{T}}(undef,length(lface_pindex_to_value))
+    for (lface, pindex_to_value) in enumerate(lface_pindex_to_value)
+      pindex_to_r = Vector{T}(undef,length(pindex_to_value))
+      ftype = b.glue.ctype_to_lface_to_ftype[ctype][lface]
+      if ftype != UNSET
+        for (pindex, value) in enumerate(pindex_to_value)
+          pindex_to_r[pindex] = evaluate(a.value,value)
         end
-        lface_pindex_to_r[lface] = pindex_to_r
       end
-      ctype_lface_pindex_to_r[ctype] = lface_pindex_to_r
+      lface_pindex_to_r[lface] = pindex_to_r
     end
-    FaceCompressedVector(ctype_lface_pindex_to_r,b.glue)
-
-  else
-    @notimplemented
+    ctype_lface_pindex_to_r[ctype] = lface_pindex_to_r
   end
+  FaceCompressedVector(ctype_lface_pindex_to_r,b.glue)
 end
+
+function lazy_map(
+  k::typeof(evaluate),
+  ::Type{T},
+  a::CompressedArray{<:AbstractVector{<:Field}},
+  b::FaceCompressedVector) where T
+
+  @check length(a) == length(b)
+  ctype_lface_pindex_to_r = Vector{Vector{Vector{T}}}(undef,length(b.ctype_lface_pindex_to_value))
+  for (ctype, lface_pindex_to_value) in enumerate(b.ctype_lface_pindex_to_value)
+    lface_pindex_to_r = Vector{Vector{T}}(undef,length(lface_pindex_to_value))
+    for (lface, pindex_to_value) in enumerate(lface_pindex_to_value)
+      pindex_to_r = Vector{T}(undef,length(pindex_to_value))
+      ftype = b.glue.ctype_to_lface_to_ftype[ctype][lface]
+      if ftype != UNSET
+        for (pindex, value) in enumerate(pindex_to_value)
+          pindex_to_r[pindex] = evaluate(a.values[ctype],value)
+        end
+      end
+      lface_pindex_to_r[lface] = pindex_to_r
+    end
+    ctype_lface_pindex_to_r[ctype] = lface_pindex_to_r
+  end
+  FaceCompressedVector(ctype_lface_pindex_to_r,b.glue)
+end
+
+function lazy_map(k::typeof(evaluate),::Type{T},b::FaceCompressedVector,a::Fill) where T
+  @check length(a) == length(b)
+  ctype_lface_pindex_to_r = Vector{Vector{Vector{T}}}(undef,length(b.ctype_lface_pindex_to_value))
+  for (ctype, lface_pindex_to_value) in enumerate(b.ctype_lface_pindex_to_value)
+    lface_pindex_to_r = Vector{Vector{T}}(undef,length(lface_pindex_to_value))
+    for (lface, pindex_to_value) in enumerate(lface_pindex_to_value)
+      pindex_to_r = Vector{T}(undef,length(pindex_to_value))
+      ftype = b.glue.ctype_to_lface_to_ftype[ctype][lface]
+      if ftype != UNSET
+        for (pindex, value) in enumerate(pindex_to_value)
+          pindex_to_r[pindex] = evaluate(value,a.value)
+        end
+      end
+      lface_pindex_to_r[lface] = pindex_to_r
+    end
+    ctype_lface_pindex_to_r[ctype] = lface_pindex_to_r
+  end
+  FaceCompressedVector(ctype_lface_pindex_to_r,b.glue)
+end
+
+function lazy_map(k::typeof(evaluate),::Type{T},a::Fill,b::FaceCompressedVector,c::FaceCompressedVector) where T
+  @notimplementedif b.glue !== c.glue
+  @check length(a) == length(b)
+  ctype_lface_pindex_to_r = Vector{Vector{Vector{T}}}(undef,length(b.ctype_lface_pindex_to_value))
+  for (ctype, lface_pindex_to_value) in enumerate(b.ctype_lface_pindex_to_value)
+    lface_pindex_to_r = Vector{Vector{T}}(undef,length(lface_pindex_to_value))
+    for (lface, pindex_to_value) in enumerate(lface_pindex_to_value)
+      pindex_to_r = Vector{T}(undef,length(pindex_to_value))
+      ftype = b.glue.ctype_to_lface_to_ftype[ctype][lface]
+      if ftype != UNSET
+        for (pindex, bvalue) in enumerate(pindex_to_value)
+          cvalue = c.ctype_lface_pindex_to_value[ctype][lface][pindex]
+          pindex_to_r[pindex] = evaluate(a.value,bvalue,cvalue)
+        end
+      end
+      lface_pindex_to_r[lface] = pindex_to_r
+    end
+    ctype_lface_pindex_to_r[ctype] = lface_pindex_to_r
+  end
+  FaceCompressedVector(ctype_lface_pindex_to_r,b.glue)
+end
+
+#function lazy_map(k::typeof(evaluate),::Type{T},a::CompressedArray,b::FaceCompressedVector) where T
+#  if a.ptrs == lazy_map(Reindex(b.glue.cell_to_ctype),b.glue.face_to_cell)
+#
+#    ctype_lface_pindex_to_r = Vector{Vector{Vector{T}}}(undef,length(b.ctype_lface_pindex_to_value))
+#    for (ctype, lface_pindex_to_value) in enumerate(b.ctype_lface_pindex_to_value)
+#      lface_pindex_to_r = Vector{Vector{T}}(undef,length(lface_pindex_to_value))
+#      for (lface, pindex_to_value) in enumerate(lface_pindex_to_value)
+#        pindex_to_r = Vector{T}(undef,length(pindex_to_value))
+#        ftype = b.glue.ctype_to_lface_to_ftype[ctype][lface]
+#        if ftype != UNSET
+#          for (pindex, value) in enumerate(pindex_to_value)
+#            pindex_to_r[pindex] = evaluate(a.values[ftype],value)
+#          end
+#        end
+#        lface_pindex_to_r[lface] = pindex_to_r
+#      end
+#      ctype_lface_pindex_to_r[ctype] = lface_pindex_to_r
+#    end
+#    FaceCompressedVector(ctype_lface_pindex_to_r,b.glue)
+#
+#  else
+#    @notimplemented
+#  end
+#end
 
 
 
