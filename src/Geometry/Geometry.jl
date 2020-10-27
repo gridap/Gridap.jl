@@ -247,19 +247,7 @@ include("DiscreteModelPortions.jl")
 
 include("RestrictedDiscreteModels.jl")
 
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#include("AppendedTriangulations.jl")
-#
+include("AppendedTriangulations.jl")
+
 
 end # module

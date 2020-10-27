@@ -18,6 +18,14 @@ struct RestrictedTriangulation{Dc,Dp,G,A} <: Triangulation{Dc,Dp}
   end
 end
 
+function RestrictedTriangulation(
+  parent_trian::Triangulation,
+  parent_cell_to_mask::AbstractVector{Bool})
+
+  cell_to_parent_cell = findall(parent_cell_to_mask)
+  RestrictedTriangulation(parent_trian,cell_to_parent_cell)
+end
+
 TriangulationStyle(::Type{<:RestrictedTriangulation}) = SubTriangulation()
 
 get_background_triangulation(trian::RestrictedTriangulation) = get_background_triangulation(trian.parent_trian)

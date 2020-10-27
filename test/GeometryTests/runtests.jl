@@ -34,7 +34,7 @@ using Test
 
 @testset "RestrictedDiscreteModels" begin include("RestrictedDiscreteModelsTests.jl") end
 
-
+@testset "AppendedTriangulations" begin include("AppendedTriangulationsTests.jl") end
 
 #
 #@testset "CellFields" begin include("CellFieldsTests.jl") end
@@ -45,9 +45,7 @@ using Test
 #
 #@testset "SkeletonPairs" begin include("SkeletonPairsTests.jl") end
 #
-#
 #@testset "CellQuadratures" begin include("CellQuadraturesTests.jl") end
 #
-#@testset "AppendedTriangulations" begin include("AppendedTriangulationsTests.jl") end
 
 end # module
