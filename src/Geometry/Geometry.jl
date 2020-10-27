@@ -193,7 +193,7 @@ export get_face_to_face
 export get_cell_around
 export test_boundary_triangulation
 
-export GenericBoundaryTriangulation
+#export GenericBoundaryTriangulation
 
 export DiscreteModelPortion
 

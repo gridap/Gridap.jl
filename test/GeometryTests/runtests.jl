@@ -24,9 +24,7 @@ using Test
 
 @testset "TriangulationPortions" begin include("TriangulationPortionsTests.jl") end
 
-#@testset "BoundaryTriangulations" begin include("BoundaryTriangulationsTests.jl") end
-#
-#@testset "GenericBoundaryTriangulations" begin include("GenericBoundaryTriangulationsTests.jl") end
+@testset "BoundaryTriangulations" begin include("BoundaryTriangulationsTests.jl") end
 
 
 
