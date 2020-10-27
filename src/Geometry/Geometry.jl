@@ -247,7 +247,7 @@ include("DiscreteModelPortions.jl")
 
 #include("RestrictedTriangulations.jl")
 
-#include("RestrictedDiscreteModels.jl")
+include("RestrictedDiscreteModels.jl")
 
 #
 #

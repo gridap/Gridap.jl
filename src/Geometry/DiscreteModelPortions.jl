@@ -13,15 +13,15 @@ get_grid_topology(model::DiscreteModelPortion) = get_grid_topology(model.model)
 
 get_face_labeling(model::DiscreteModelPortion) = get_face_labeling(model.model)
 
-#get_face_to_parent_face(model::DiscreteModelPortion,d::Integer) = model.d_to_dface_to_parent_dface[d+1]
-#
-#get_cell_to_parent_cell(model::DiscreteModelPortion) = get_face_to_parent_face(model,num_cell_dims(model))
+get_face_to_parent_face(model::DiscreteModelPortion,d::Integer) = model.d_to_dface_to_parent_dface[d+1]
 
-#get_parent_model(model::DiscreteModelPortion) = model.parent_model
+get_cell_to_parent_cell(model::DiscreteModelPortion) = get_face_to_parent_face(model,num_cell_dims(model))
+
+get_parent_model(model::DiscreteModelPortion) = model.parent_model
 
 """
 """
-function DiscreteModelPortion(model::DiscreteModel, cell_to_parent_cell::AbstractArray{Int})
+function DiscreteModelPortion(model::DiscreteModel, cell_to_parent_cell::Vector{Int})
   grid_p =  GridPortion(get_grid(model),cell_to_parent_cell)
   topo_p = GridTopology(grid_p)
   labels_p, d_to_dface_to_parent_dface = _setup_labels_p(model,topo_p,cell_to_parent_cell)

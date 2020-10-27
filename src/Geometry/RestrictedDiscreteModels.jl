@@ -1,25 +1,22 @@
 """
 """
-function DiscreteModel(model::DiscreteModel,cell_to_oldcell::AbstractVector{<:Integer})
-  RestrictedDiscreteModel(model,cell_to_oldcell)
+function DiscreteModel(parent_model::DiscreteModel,cell_to_parent_cell::AbstractVector{<:Integer})
+  RestrictedDiscreteModel(parent_model,cell_to_parent_cell)
 end
 
-function DiscreteModel(model::DiscreteModel,cell_to_mask::AbstractVector{Bool})
-  RestrictedDiscreteModel(model,cell_to_mask)
+function DiscreteModel(parent_model::DiscreteModel,parent_cell_to_mask::AbstractVector{Bool})
+  RestrictedDiscreteModel(parent_model,cell_to_mask)
 end
 
-function DiscreteModel(model::DiscreteModel,labels::FaceLabeling,tags)
-  cell_to_mask = get_face_mask(labels,tags,num_cell_dims(model))
-  DiscreteModel(model,cell_to_mask)
+function DiscreteModel(parent_model::DiscreteModel,labels::FaceLabeling,tags)
+  parent_cell_to_mask = get_face_mask(labels,tags,num_cell_dims(parent_model))
+  DiscreteModel(parent_model,parent_cell_to_mask)
 end
 
-function DiscreteModel(model::DiscreteModel,tags)
-  labels = get_face_labeling(model)
-  DiscreteModel(model,labels,tags)
+function DiscreteModel(parent_model::DiscreteModel,tags)
+  labels = get_face_labeling(parent_model)
+  DiscreteModel(parent_model,labels,tags)
 end
-
-
-
 
 """
 """
@@ -27,13 +24,13 @@ struct RestrictedDiscreteModel{Dc,Dp} <: DiscreteModel{Dc,Dc}
   model::DiscreteModelPortion{Dc,Dp}
 end
 
-function RestrictedDiscreteModel(model::DiscreteModel, cell_to_oldcell::Vector{Int})
-  _model = DiscreteModelPortion(model,cell_to_oldcell)
+function RestrictedDiscreteModel(parent_model::DiscreteModel, cell_to_parent_cell::Vector{Int})
+  _model = DiscreteModelPortion(parent_model,cell_to_parent_cell)
   RestrictedDiscreteModel(_model)
 end
 
-function RestrictedDiscreteModel(model::DiscreteModel, cell_to_mask::Vector{Bool})
-  _model = DiscreteModelPortion(model,cell_to_mask)
+function RestrictedDiscreteModel(parent_model::DiscreteModel, parent_cell_to_mask::Vector{Bool})
+  _model = DiscreteModelPortion(parent_model,parent_cell_to_mask)
   RestrictedDiscreteModel(_model)
 end
 
@@ -43,31 +40,27 @@ get_grid_topology(model::RestrictedDiscreteModel) = get_grid_topology(model.mode
 
 get_face_labeling(model::RestrictedDiscreteModel) = get_face_labeling(model.model)
 
-get_face_to_oldface(model::RestrictedDiscreteModel,d::Integer) = get_face_to_oldface(model.model,d)
+get_face_to_parent_face(model::RestrictedDiscreteModel,d::Integer) = get_face_to_parent_face(model.model,d)
 
-get_cell_to_oldcell(model::RestrictedDiscreteModel) = get_cell_to_oldcell(model.model)
+get_cell_to_parent_cell(model::RestrictedDiscreteModel) = get_cell_to_parent_cell(model.model)
 
-get_oldmodel(model::RestrictedDiscreteModel) = get_oldmodel(model.model)
-
-function RestrictedTriangulation(model::RestrictedDiscreteModel)
-  oldtrian = Triangulation(get_oldmodel(model))
-  cell_to_oldcell = get_cell_to_oldcell(model)
-  RestrictedTriangulation(oldtrian,cell_to_oldcell)
-end
+get_parent_model(model::RestrictedDiscreteModel) = get_parent_model(model.model)
 
 function Triangulation(model::RestrictedDiscreteModel)
-  RestrictedTriangulation(model)
+  parent_trian = Triangulation(get_parent_model(model))
+  cell_to_parent_cell = get_cell_to_parent_cell(model)
+  TriangulationPortion(parent_trian,cell_to_parent_cell)
 end
 
 function get_triangulation(model::RestrictedDiscreteModel)
-  RestrictedTriangulation(model)
+  Triangulation(model)
 end
 
 function Triangulation(::Type{ReferenceFE{d}},model::RestrictedDiscreteModel) where d
   @notimplemented
 end
 
-function Triangulation(model::RestrictedDiscreteModel,cell_to_oldcell::AbstractVector{<:Integer})
+function Triangulation(model::RestrictedDiscreteModel,cell_to_parent_cell::AbstractVector{<:Integer})
   @notimplemented
 end
 
@@ -77,18 +70,18 @@ end
 
 function BoundaryTriangulation(model::RestrictedDiscreteModel,face_to_mask::Vector{Bool},icell_around::Integer)
   d = num_cell_dims(model)-1
-  face_to_oldface = get_face_to_oldface(model,d)
-  oldmodel = get_oldmodel(model)
-  num_oldfaces = num_faces(oldmodel,d)
-  oldface_to_mask = fill(false,num_oldfaces)
-  oldface_to_mask[face_to_oldface] .= face_to_mask
-  BoundaryTriangulation(oldmodel,oldface_to_mask)
+  face_to_parent_face = get_face_to_parent_face(model,d)
+  parent_model = get_parent_model(model)
+  num_parent_faces = num_faces(parent_model,d)
+  parent_face_to_mask = fill(false,num_parent_faces)
+  parent_face_to_mask[face_to_parent_face] .= face_to_mask
+  BoundaryTriangulation(parent_model,parent_face_to_mask)
 end
 
 function InterfaceTriangulation(model_in::RestrictedDiscreteModel,model_out::RestrictedDiscreteModel)
-  cells_in = get_cell_to_oldcell(model_in)
-  cells_out = get_cell_to_oldcell(model_out)
-  model = get_oldmodel(model_in)
+  cells_in = get_cell_to_parent_cell(model_in)
+  cells_out = get_cell_to_parent_cell(model_out)
+  model = get_parent_model(model_in)
   InterfaceTriangulation(model,cells_in,cells_out)
 end
 

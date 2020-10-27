@@ -32,7 +32,7 @@ using Test
 
 @testset "DiscreteModelPortions" begin include("DiscreteModelPortionsTests.jl") end
 
-@testset "RestrictedTriangulations" begin include("RestrictedTriangulationsTests.jl") end
+#@testset "RestrictedTriangulations" begin include("RestrictedTriangulationsTests.jl") end
 
 @testset "RestrictedDiscreteModels" begin include("RestrictedDiscreteModelsTests.jl") end
 
