@@ -235,7 +235,7 @@ include("UnstructuredDiscreteModels.jl")
 
 include("CartesianDiscreteModels.jl")
 
-include("TriangulationPortions.jl")
+include("RestrictedTriangulations.jl")
 
 include("BoundaryTriangulations.jl")
 
@@ -244,8 +244,6 @@ include("SkeletonTriangulations.jl")
 include("GridPortions.jl")
 
 include("DiscreteModelPortions.jl")
-
-#include("RestrictedTriangulations.jl")
 
 include("RestrictedDiscreteModels.jl")
 

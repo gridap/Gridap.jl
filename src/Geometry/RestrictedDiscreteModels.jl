@@ -5,7 +5,7 @@ function DiscreteModel(parent_model::DiscreteModel,cell_to_parent_cell::Abstract
 end
 
 function DiscreteModel(parent_model::DiscreteModel,parent_cell_to_mask::AbstractVector{Bool})
-  RestrictedDiscreteModel(parent_model,cell_to_mask)
+  RestrictedDiscreteModel(parent_model,parent_cell_to_mask)
 end
 
 function DiscreteModel(parent_model::DiscreteModel,labels::FaceLabeling,tags)
@@ -49,7 +49,7 @@ get_parent_model(model::RestrictedDiscreteModel) = get_parent_model(model.model)
 function Triangulation(model::RestrictedDiscreteModel)
   parent_trian = Triangulation(get_parent_model(model))
   cell_to_parent_cell = get_cell_to_parent_cell(model)
-  TriangulationPortion(parent_trian,cell_to_parent_cell)
+  RestrictedTriangulation(parent_trian,cell_to_parent_cell)
 end
 
 function get_triangulation(model::RestrictedDiscreteModel)
@@ -68,14 +68,27 @@ function Triangulation(model::RestrictedDiscreteModel,cell_to_mask::AbstractVect
   @notimplemented
 end
 
-function BoundaryTriangulation(model::RestrictedDiscreteModel,face_to_mask::Vector{Bool},icell_around::Integer)
-  d = num_cell_dims(model)-1
-  face_to_parent_face = get_face_to_parent_face(model,d)
+function BoundaryTriangulation(
+  model::RestrictedDiscreteModel,
+  face_to_bgface::AbstractVector{<:Integer},
+  bgface_to_lcell::AbstractVector{<:Integer})
+
   parent_model = get_parent_model(model)
-  num_parent_faces = num_faces(parent_model,d)
-  parent_face_to_mask = fill(false,num_parent_faces)
-  parent_face_to_mask[face_to_parent_face] .= face_to_mask
-  BoundaryTriangulation(parent_model,parent_face_to_mask)
+  bgface_to_parent_face = get_face_to_parent_face(model,num_cell_dims(model)-1)
+  face_to_parent_face = lazy_map(Reindex(bgface_to_parent_face),face_to_bgface)
+  parent_face_to_lcell = fill(Int8(1),num_facets(parent_model))
+  parent_face_to_lcell[bgface_to_parent_face] .= bgface_to_lcell
+
+  BoundaryTriangulation(parent_model,face_to_parent_face,parent_face_to_lcell)
+end
+
+function BoundaryTriangulation(
+  model::RestrictedDiscreteModel,
+  bgface_to_mask::AbstractVector{Bool},
+  bgface_to_lcell::AbstractVector{<:Integer})
+
+  face_to_bgface = findall(bgface_to_mask)
+  BoundaryTriangulation(model,face_to_bgface,bgface_to_lcell)
 end
 
 function InterfaceTriangulation(model_in::RestrictedDiscreteModel,model_out::RestrictedDiscreteModel)

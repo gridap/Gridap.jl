@@ -22,7 +22,7 @@ using Test
 
 @testset "CartesianDiscreteModels" begin include("CartesianDiscreteModelsTests.jl") end
 
-@testset "TriangulationPortions" begin include("TriangulationPortionsTests.jl") end
+@testset "RestrictedTriangulations" begin include("RestrictedTriangulationsTests.jl") end
 
 @testset "BoundaryTriangulations" begin include("BoundaryTriangulationsTests.jl") end
 
@@ -31,8 +31,6 @@ using Test
 @testset "GridPortions" begin include("GridPortionsTests.jl") end
 
 @testset "DiscreteModelPortions" begin include("DiscreteModelPortionsTests.jl") end
-
-#@testset "RestrictedTriangulations" begin include("RestrictedTriangulationsTests.jl") end
 
 @testset "RestrictedDiscreteModels" begin include("RestrictedDiscreteModelsTests.jl") end
 

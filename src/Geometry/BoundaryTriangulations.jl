@@ -111,13 +111,13 @@ end
 function BoundaryTriangulation(
   model::DiscreteModel,
   face_to_bgface::AbstractVector{<:Integer},
-  bgface_to_lcell::AbstractArray{<:Integer}=Fill(1,num_facets(model)))
+  bgface_to_lcell::AbstractVector{<:Integer})
 
   D = num_cell_dims(model)
   topo = get_grid_topology(model)
   bgface_grid = Grid(ReferenceFE{D-1},model)
 
-  face_trian = TriangulationPortion(bgface_grid,face_to_bgface)
+  face_trian = RestrictedTriangulation(bgface_grid,face_to_bgface)
   cell_trian = Grid(ReferenceFE{D},model)
   glue = FaceToCellGlue(topo,cell_trian,face_trian,face_to_bgface,bgface_to_lcell)
 
@@ -127,14 +127,14 @@ end
 function BoundaryTriangulation(
   model::DiscreteModel,
   bgface_to_mask::AbstractVector{Bool},
-  bgface_to_lcell::AbstractArray{<:Integer}=Fill(1,num_facets(model)))
+  bgface_to_lcell::AbstractVector{<:Integer})
 
   face_to_bgface = findall(bgface_to_mask)
   BoundaryTriangulation(model,face_to_bgface,bgface_to_lcell)
 end
 
 function BoundaryTriangulation(
-  model::DiscreteModel, bgface_to_mask::AbstractVector{Bool}, lcell::Integer)
+  model::DiscreteModel, bgface_to_mask::AbstractVector, lcell::Integer=1)
   BoundaryTriangulation(model,bgface_to_mask, Fill(lcell,num_facets(model)) )
 end
 

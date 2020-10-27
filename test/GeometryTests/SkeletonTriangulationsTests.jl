@@ -130,7 +130,7 @@ oldmodel = CartesianDiscreteModel(domain,partition)
 oldstrian = SkeletonTriangulation(oldmodel)
 
 sface_to_oldsface = collect(1:10)
-strian = TriangulationPortion(oldstrian,sface_to_oldsface)
+strian = RestrictedTriangulation(oldstrian,sface_to_oldsface)
 test_triangulation(strian)
 @test isa(strian,SkeletonTriangulation)
 

@@ -22,7 +22,7 @@ end
     SkeletonTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
     SkeletonTriangulation(model::DiscreteModel)
 """
-function SkeletonTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
+function SkeletonTriangulation(model::DiscreteModel,face_to_mask::AbstractVector{Bool})
   left_cell_around = 1
   left = BoundaryTriangulation(model,face_to_mask,left_cell_around)
   right_cell_around = 2
@@ -148,7 +148,7 @@ function InterfaceTriangulation(model::DiscreteModel,cell_to_inout::AbstractVect
   ifacet_to_facet, facet_to_lcell_left, facet_to_lcell_right = _find_interface_facets(
     cell_to_inout, facet_to_cells)
 
-  ifacet_trian = TriangulationPortion(facet_grid,ifacet_to_facet)
+  ifacet_trian = RestrictedTriangulation(facet_grid,ifacet_to_facet)
 
   glue_left = FaceToCellGlue(topo,cell_grid,ifacet_trian,ifacet_to_facet,facet_to_lcell_left)
   glue_right = FaceToCellGlue(topo,cell_grid,ifacet_trian,ifacet_to_facet,facet_to_lcell_right)
@@ -256,10 +256,10 @@ function get_cell_ref_map(trian::SkeletonTriangulation)
   SkeletonPair(left,right)
 end
 
-function TriangulationPortion(
+function RestrictedTriangulation(
   oldtrian::SkeletonTriangulation,cell_to_oldcell::AbstractVector{<:Integer})
-  left = TriangulationPortion(oldtrian.left,cell_to_oldcell)
-  right = TriangulationPortion(oldtrian.right,cell_to_oldcell)
+  left = RestrictedTriangulation(oldtrian.left,cell_to_oldcell)
+  right = RestrictedTriangulation(oldtrian.right,cell_to_oldcell)
   SkeletonTriangulation(left,right)
 end
 

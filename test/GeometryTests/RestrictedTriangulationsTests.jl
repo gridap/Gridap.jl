@@ -1,4 +1,4 @@
-module TriangulationPortionsTests
+module RestrictedTriangulationsTests
 
 using Gridap.ReferenceFEs
 using Gridap.Geometry
@@ -10,12 +10,12 @@ oldmodel = CartesianDiscreteModel(domain,partition)
 oldtrian = get_triangulation(oldmodel)
 
 cell_to_oldcell = collect(1:34)
-trian = TriangulationPortion(oldtrian,cell_to_oldcell)
+trian = RestrictedTriangulation(oldtrian,cell_to_oldcell)
 test_triangulation(trian)
 
 cell_to_oldcell = [2,9,7]
-trian_portion = TriangulationPortion(oldtrian,cell_to_oldcell)
-trian_portion_portion = TriangulationPortion(trian_portion,[3,1])
+trian_portion = RestrictedTriangulation(oldtrian,cell_to_oldcell)
+trian_portion_portion = RestrictedTriangulation(trian_portion,[3,1])
 test_triangulation(trian_portion_portion)
 @test get_cell_id(trian_portion_portion)==[7,2]
 

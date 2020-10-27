@@ -14,6 +14,7 @@ model = simplexify(CartesianDiscreteModel(domain,partition))
 
 btrian = BoundaryTriangulation(model,[7,8])
 test_triangulation(btrian)
+@test get_background_triangulation(btrian) === get_triangulation(model)
 
 face_s_q = get_cell_ref_map(btrian)
 
@@ -163,7 +164,7 @@ x = lazy_map(evaluate,s2x,s)
 
 oldbtrian = BoundaryTriangulation(model)
 bface_to_oldbface = collect(1:4)
-btrian = TriangulationPortion(oldbtrian,bface_to_oldbface)
+btrian = RestrictedTriangulation(oldbtrian,bface_to_oldbface)
 test_triangulation(btrian)
 
 nb = get_facet_normal(btrian)
