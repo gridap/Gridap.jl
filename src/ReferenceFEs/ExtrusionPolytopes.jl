@@ -680,9 +680,9 @@ function _admissible_permutations(p::DFace{D}) where D
   if D > 3
     @warn "Computing permutations for a polytope of dim > 3 is overkill"
   end
-  if D in (0,1) || all( Tuple(p.extrusion)[2:end] .== TET_AXIS )
+  if D in (0,1) || all( map(i->i==TET_AXIS,Tuple(p.extrusion)[2:end]) )
     perms = _admissible_permutations_simplex(p)
-  elseif all( Tuple(p.extrusion)[2:end] .== HEX_AXIS)
+  elseif all( map(i->i==HEX_AXIS,Tuple(p.extrusion)[2:end]))
     perms = _admissible_permutations_n_cube(p)
   else
     @notimplemented "admissible vertex permutations only implemented for simplices and n-cubes"
