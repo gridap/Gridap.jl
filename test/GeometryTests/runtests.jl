@@ -26,6 +26,16 @@ using Test
 
 @testset "BoundaryTriangulations" begin include("BoundaryTriangulationsTests.jl") end
 
+@testset "SkeletonTriangulations" begin include("SkeletonTriangulationsTests.jl") end
+
+@testset "GridPortions" begin include("GridPortionsTests.jl") end
+
+@testset "DiscreteModelPortions" begin include("DiscreteModelPortionsTests.jl") end
+
+@testset "RestrictedTriangulations" begin include("RestrictedTriangulationsTests.jl") end
+
+@testset "RestrictedDiscreteModels" begin include("RestrictedDiscreteModelsTests.jl") end
+
 
 
 #
@@ -33,28 +43,10 @@ using Test
 #
 #@testset "QPointCellFields" begin include("QPointCellFieldsTests.jl") end
 #
-#
-#
-#@testset "RestrictedTriangulations" begin include("RestrictedTriangulationsTests.jl") end
-#
-#
-#@testset "GridPortions" begin include("GridPortionsTests.jl") end
-#
-#
-#@testset "DiscreteModelPortions" begin include("DiscreteModelPortionsTests.jl") end
-#
-#@testset "RestrictedDiscreteModels" begin include("RestrictedDiscreteModelsTests.jl") end
-#
-#
-#
-#
-#
-#
 #@testset "PeriodicBC" begin include("PeriodicBCTests.jl") end
 #
 #@testset "SkeletonPairs" begin include("SkeletonPairsTests.jl") end
 #
-#@testset "SkeletonTriangulations" begin include("SkeletonTriangulationsTests.jl") end
 #
 #@testset "CellQuadratures" begin include("CellQuadraturesTests.jl") end
 #

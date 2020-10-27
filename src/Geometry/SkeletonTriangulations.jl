@@ -150,8 +150,11 @@ function InterfaceTriangulation(model::DiscreteModel,cell_to_inout::AbstractVect
 
   ifacet_trian = TriangulationPortion(facet_grid,ifacet_to_facet)
 
-  left = GenericBoundaryTriangulation(ifacet_trian,cell_grid,topo,ifacet_to_facet,facet_to_lcell_left)
-  right = GenericBoundaryTriangulation(ifacet_trian,cell_grid,topo,ifacet_to_facet,facet_to_lcell_right)
+  glue_left = FaceToCellGlue(topo,cell_grid,ifacet_trian,ifacet_to_facet,facet_to_lcell_left)
+  glue_right = FaceToCellGlue(topo,cell_grid,ifacet_trian,ifacet_to_facet,facet_to_lcell_right)
+
+  left = BoundaryTriangulation(ifacet_trian,cell_grid,glue_left)
+  right = BoundaryTriangulation(ifacet_trian,cell_grid,glue_right)
 
   SkeletonTriangulation(left,right)
 end
@@ -211,6 +214,14 @@ function get_cell_coordinates(trian::SkeletonTriangulation)
   get_cell_coordinates(trian.left)
 end
 
+function get_node_coordinates(trian::SkeletonTriangulation)
+  get_node_coordinates(trian.left)
+end
+
+function get_cell_nodes(trian::SkeletonTriangulation)
+  get_cell_nodes(trian.left)
+end
+
 function get_reffes(trian::SkeletonTriangulation)
     get_reffes(trian.left)
 end
@@ -219,47 +230,36 @@ function get_cell_type(trian::SkeletonTriangulation)
   get_cell_type(trian.left)
 end
 
+function get_cell_map(trian::SkeletonTriangulation)
+  get_cell_map(trian.left)
+end
+
+function get_facet_normal(trian::SkeletonTriangulation)
+  get_facet_normal(trian.left)
+end
+
+TriangulationStyle(::Type{<:SkeletonTriangulation}) = SubTriangulation()
+
+function get_background_triangulation(trian::SkeletonTriangulation) 
+  get_background_triangulation(trian.left)
+end
+
 function get_cell_id(trian::SkeletonTriangulation)
   left = get_cell_id(trian.left)
   right = get_cell_id(trian.right)
   SkeletonPair(left,right)
 end
 
-function restrict(f::AbstractArray, trian::SkeletonTriangulation)
-  left = restrict(f,trian.left)
-  right = restrict(f,trian.right)
+function get_cell_ref_map(trian::SkeletonTriangulation)
+  left = get_cell_ref_map(trian.left)
+  right = get_cell_ref_map(trian.right)
   SkeletonPair(left,right)
 end
 
-# Delegating into the left side
-
-"""
-    get_volume_triangulation(trian::SkeletonTriangulation)
-"""
-function get_volume_triangulation(trian::SkeletonTriangulation)
-  get_volume_triangulation(trian.left)
-end
-
-"""
-    get_normal_vector(trian::SkeletonTriangulation)
-"""
-function get_normal_vector(trian::SkeletonTriangulation)
-  get_normal_vector(trian.left)
-end
-
-function TriangulationPortion(oldtrian::SkeletonTriangulation,cell_to_oldcell::Vector{Int})
+function TriangulationPortion(
+  oldtrian::SkeletonTriangulation,cell_to_oldcell::AbstractVector{<:Integer})
   left = TriangulationPortion(oldtrian.left,cell_to_oldcell)
   right = TriangulationPortion(oldtrian.right,cell_to_oldcell)
   SkeletonTriangulation(left,right)
 end
-
-# Specific API
-
-"""
-"""
-get_left_boundary(trian::SkeletonTriangulation) = trian.left
-
-"""
-"""
-get_right_boundary(trian::SkeletonTriangulation) = trian.right
 
