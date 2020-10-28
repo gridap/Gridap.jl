@@ -430,7 +430,7 @@ function _generate_cell_to_vertices_from_grid(grid::UnstructuredGrid,
     point_to_vertex[vertex_to_point] = 1:length(vertex_to_point)
     point_to_vertex[slave_point_to_point] = point_to_vertex[slave_point_to_master_point]
 
-    cell_to_vertices = Table(LocalToGlobalArray(nodes,point_to_vertex))
+    cell_to_vertices = Table(lazy_map(Broadcasting(Reindex(point_to_vertex)),nodes))
 
     vertex_to_node = vertex_to_point
     node_to_vertex = point_to_vertex

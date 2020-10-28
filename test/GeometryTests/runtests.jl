@@ -22,6 +22,8 @@ using Test
 
 @testset "CartesianDiscreteModels" begin include("CartesianDiscreteModelsTests.jl") end
 
+@testset "PeriodicBC" begin include("PeriodicBCTests.jl") end
+
 @testset "RestrictedTriangulations" begin include("RestrictedTriangulationsTests.jl") end
 
 @testset "BoundaryTriangulations" begin include("BoundaryTriangulationsTests.jl") end
@@ -36,12 +38,12 @@ using Test
 
 @testset "AppendedTriangulations" begin include("AppendedTriangulationsTests.jl") end
 
+
 #
 #@testset "CellFields" begin include("CellFieldsTests.jl") end
 #
 #@testset "QPointCellFields" begin include("QPointCellFieldsTests.jl") end
 #
-#@testset "PeriodicBC" begin include("PeriodicBCTests.jl") end
 #
 #@testset "SkeletonPairs" begin include("SkeletonPairsTests.jl") end
 #
