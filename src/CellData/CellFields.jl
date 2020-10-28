@@ -3,7 +3,7 @@
 A single point or an array of points on the cells of a Triangulation
 CellField objects can be evaluated efficiently at CellPoint instances.
 """
-struct CellPoint{DS} <: CellData
+struct CellPoint{DS} <: CellDatum
   cell_point::AbstractArray{<:Union{Point,AbstractArray{<:Point}}}
   trian::Triangulation
   domain_style::DS
@@ -38,7 +38,7 @@ end
 
 """
 """
-abstract type CellField <: CellData end
+abstract type CellField <: CellDatum end
 
 function change_domain(a::CellField,::ReferenceDomain,::PhysicalDomain)
   trian = get_triangulation(a)
@@ -156,7 +156,7 @@ function _to_common_domain(f::CellField,x::CellPoint)
     CellField objects defined on a sub-triangulation cannot be evaluated
     on the underlying background mesh.
     """
-  elseif
+  else
     @unreachable """\n
     Your are trying to evaluate a CellField on a CellPoint object defined on incompatible
     triangulations. Verify that either the two objects are defined in the same triangulation
@@ -213,9 +213,9 @@ function evaluate!(cache,k::Operation,a::CellField...)
   GenericCellField(cell_c,trian,domain_style)
 end
 
-function evaluate!(cache,k::Operation,a::Union{Any,CellField}...)
-  @notimplemented
-end
+#function evaluate!(cache,k::Operation,a::Union{Any,CellField}...)
+#  @notimplemented
+#end
 
 #function _to_common_domain(a::CellField,b::CellField)
 #  trian_a = get_triangulation(a)

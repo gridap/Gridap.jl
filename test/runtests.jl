@@ -22,7 +22,7 @@ using Test
 
 @time @testset "Geometry" begin include("GeometryTests/runtests.jl") end
 
-# @time @testset "CellData" begin include("CellDataTests/runtests.jl") end
+@time @testset "CellData" begin include("CellDataTests/runtests.jl") end
 
 
 # @time @testset "FESpaces (1/2)" begin include("FESpacesTests/runtests_1.jl") end

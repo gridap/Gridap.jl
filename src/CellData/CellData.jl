@@ -13,6 +13,7 @@ using Gridap.Helpers
 using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Fields
+using Gridap.Geometry
 using Gridap.Integration
 
 import Gridap.Arrays: get_array
@@ -23,11 +24,11 @@ import Gridap.Integration: get_weights
 export DomainStyle
 export ReferenceDomain
 export PhysicalDomain
-export CellData
+export CellDatum
 export get_cell_data
 export get_triangulation
 export change_domain
-export test_cell_data
+export test_cell_datum
 export CellPoint
 export get_cell_points
 export CellField

@@ -1,7 +1,7 @@
 
 """
 """
-struct CellWeight{DS} <: CellData
+struct CellWeight{DS} <: CellDatum
   cell_point::AbstractArray{<:AbstractArray{<:Point}}
   cell_weight::AbstractArray{<:AbstractArray{<:Real}}
   trian::Triangulation
@@ -31,7 +31,7 @@ end
 
 """
 """
-struct CellQuadrature{DS} <: CellData
+struct CellQuadrature{DS} <: CellDatum
   cell_quad::AbstractArray{<:Quadrature}
   cell_point::AbstractArray{<:AbstractArray{<:Point}}
   cell_weight::AbstractArray{<:AbstractArray{<:Real}}
@@ -52,9 +52,9 @@ function CellQuadrature(trian::Triangulation,degree::Integer)
   CellQuadrature(cell_quad,cell_point,cell_weight,trian,ReferenceDomain())
 end
 
-get_cell_data(f::CellWeight) = f.cell_quad
-get_triangulation(f::CellWeight) = f.trian
-DomainStyle(::Type{CellWeight{DS}}) where DS = DS()
+get_cell_data(f::CellQuadrature) = f.cell_quad
+get_triangulation(f::CellQuadrature) = f.trian
+DomainStyle(::Type{CellQuadrature{DS}}) where DS = DS()
 
 function change_domain(a::CellQuadrature,::ReferenceDomain,::PhysicalDomain)
   @notimplemented

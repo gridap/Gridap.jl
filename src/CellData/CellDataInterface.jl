@@ -1,6 +1,6 @@
 
 """
-Trait that signals if a CellData type is implemented in the physical or the reference domain
+Trait that signals if a CellDatum type is implemented in the physical or the reference domain
 """
 abstract type DomainStyle end
 struct ReferenceDomain <: DomainStyle end
@@ -9,37 +9,37 @@ DomainStyle(::T) where T = DomainStyle(T)
 
 """
 Data associated with the cells of a Triangulation.
-CellData objects behave as if they are defined in the physical space of the triangulation.
+CellDatum objects behave as if they are defined in the physical space of the triangulation.
 But in some cases they are implemented as reference quantities plus some transformation to the physical domain.
 """
-abstract type CellData <: GridapType end
+abstract type CellDatum <: GridapType end
 
 """
 Get the stored array of cell-wise data. It can be defined in the physical or the reference domain.
 """
-get_cell_data(a::CellData) = @abstractmethod
+get_cell_data(a::CellDatum) = @abstractmethod
 
 """
 Tell if the stored array is in the reference or physical domain
 """
-DomainStyle(::Type{<:CellData}) = @abstractmethod
+DomainStyle(::Type{<:CellDatum}) = @abstractmethod
 
 """
 Return the underlying Triangulation object
 """
-get_triangulation(a::CellData) = @abstractmethod
+get_triangulation(a::CellDatum) = @abstractmethod
 
 """
 Change the underlying data to the target domain
 """
-change_domain(a::CellField,target_domain::DomainStyle) = change_domain(a,DomainStyle(a),target_domain)
-change_domain(a::CellField,input_domain::T,target_domain::T) where T<: DomainStyle = a
-change_domain(a::CellField,input_domain::DomainStyle,target_domain::DomainStyle) = @abstractmethod
+change_domain(a::CellDatum,target_domain::DomainStyle) = change_domain(a,DomainStyle(a),target_domain)
+change_domain(a::CellDatum,input_domain::T,target_domain::T) where T<: DomainStyle = a
+change_domain(a::CellDatum,input_domain::DomainStyle,target_domain::DomainStyle) = @abstractmethod
 
 # Tester
 """
 """
-function test_cell_data(a::CellData)
+function test_cell_datum(a::CellDatum)
   @test isa(get_cell_data(a),AbstractArray)
   @test isa(get_triangulation(a),Triangulation)
   @test isa(DomainStyle(a),DomainStyle)
@@ -50,10 +50,10 @@ end
 """
 Get the raw array of cell data defined in the physical space.
 """
-get_array(a::CellData) = get_cell_data(change_domain(a,PhysicalDomain()))
+get_array(a::CellDatum) = get_cell_data(change_domain(a,PhysicalDomain()))
 
 """
 """
-Base.length(a::CellData) = length(get_cell_data(a))
+Base.length(a::CellDatum) = length(get_cell_data(a))
 
 
