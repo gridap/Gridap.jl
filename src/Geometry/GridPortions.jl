@@ -1,30 +1,46 @@
 
 """
     struct GridPortion{Dc,Dp,G} <: Grid{Dc,Dp}
-      oldgrid::G
-      cell_to_oldcell::Vector{Int}
-      node_to_oldnode::Vector{Int}
+      parent_grid::G
+      cell_to_parent_cell::Vector{Int}
+      node_to_parent_node::Vector{Int}
     end
 """
 struct GridPortion{Dc,Dp,G} <: Grid{Dc,Dp}
-  oldgrid::G
-  cell_to_oldcell::Vector{Int}
-  node_to_oldnode::Vector{Int}
+  parent_grid::G
+  cell_to_parent_cell::Vector{Int}
+  node_to_parent_node::Vector{Int}
   cell_to_nodes::Table{Int,Vector{Int},Vector{Int32}}
   @doc """
-      GridPortion(oldgrid::Grid{Dc,Dp},cell_to_oldcell::Vector{Int}) where {Dc,Dp}
+      GridPortion(parent_grid::Grid{Dc,Dp},cell_to_parent_cell::Vector{Int}) where {Dc,Dp}
   """
-  function GridPortion(oldgrid::Grid{Dc,Dp},cell_to_oldcell::Vector{Int}) where {Dc,Dp}
+  function GridPortion(parent_grid::Grid,cell_to_parent_cell::AbstractVector{<:Integer})
 
-    oldcell_to_oldnodes = get_cell_nodes(oldgrid)
-    noldnodes = num_nodes(oldgrid)
-    oldnode_to_coords = get_node_coordinates(oldgrid)
+    Dc = num_cell_dims(parent_grid)
+    Dp = num_point_dims(parent_grid)
 
-    node_to_oldnode, oldnode_to_node = _find_active_nodes(oldcell_to_oldnodes,cell_to_oldcell,noldnodes)
-    cell_to_nodes = _renumber_cell_nodes(oldcell_to_oldnodes,oldnode_to_node,cell_to_oldcell)
+    parent_cell_to_parent_nodes = get_cell_nodes(parent_grid)
+    nparent_nodes = num_nodes(parent_grid)
+    parent_node_to_coords = get_node_coordinates(parent_grid)
 
-    new{Dc,Dp,typeof(oldgrid)}(oldgrid,cell_to_oldcell,node_to_oldnode,cell_to_nodes)
+    node_to_parent_node, parent_node_to_node = _find_active_nodes(
+      parent_cell_to_parent_nodes,cell_to_parent_cell,nparent_nodes)
+
+    cell_to_nodes = _renumber_cell_nodes(
+      parent_cell_to_parent_nodes,parent_node_to_node,cell_to_parent_cell)
+
+    new{Dc,Dp,typeof(parent_grid)}(parent_grid,cell_to_parent_cell,node_to_parent_node,cell_to_nodes)
   end
+end
+
+function GridPortion(parent_grid::Grid,parent_cell_to_mask::AbstractArray{Bool})
+  cell_to_parent_cell = findall(collect1d(parent_cell_to_mask))
+  GridPortion(parent_grid,cell_to_parent_cell)
+end
+
+function GridPortion(parent_grid::Grid,parent_cell_to_mask::AbstractVector{Bool})
+  cell_to_parent_cell = findall(parent_cell_to_mask)
+  GridPortion(parent_grid,cell_to_parent_cell)
 end
 
 function OrientationStyle(::Type{GridPortion{Dc,Dp,G}}) where {Dc,Dp,G}
@@ -36,8 +52,8 @@ function RegularityStyle(::Type{GridPortion{Dc,Dp,G}}) where {Dc,Dp,G}
 end
 
 function get_node_coordinates(grid::GridPortion)
-  oldnode_to_coords = get_node_coordinates(grid.oldgrid)
-  reindex(oldnode_to_coords,grid.node_to_oldnode)
+  parent_node_to_coords = get_node_coordinates(grid.parent_grid)
+  lazy_map(Reindex(parent_node_to_coords),grid.node_to_parent_node)
 end
 
 function get_cell_nodes(grid::GridPortion)
@@ -45,11 +61,11 @@ function get_cell_nodes(grid::GridPortion)
 end
 
 function get_reffes(grid::GridPortion)
-  get_reffes(grid.oldgrid)
+  get_reffes(grid.parent_grid)
 end
 
 function get_cell_type(grid::GridPortion)
-  reindex(get_cell_type(grid.oldgrid),grid.cell_to_oldcell)
+  lazy_map(Reindex(get_cell_type(grid.parent_grid)),grid.cell_to_parent_cell)
 end
 
 # Helpers

@@ -104,17 +104,6 @@ function is_first_order(reffe::GenericLagrangianRefFE{GradConformity})
 end
 
 """
-    is_affine(reffe::GenericLagrangianRefFE{GradConformity}) -> Bool
-
-Query if the `reffe` leads to an afine map
-(true only for first order spaces on top of simplices)
-"""
-function is_affine(reffe::GenericLagrangianRefFE{GradConformity})
-  p = get_polytope(reffe)
-  is_first_order(reffe) && is_simplex(p)
-end
-
-"""
     is_P(reffe::GenericLagrangianRefFE{GradConformity})
 """
 function is_P(reffe::GenericLagrangianRefFE{GradConformity})
@@ -207,7 +196,7 @@ function LagrangianRefFE(::Type{T},p::Polytope{D},orders;space::Symbol=_default_
   elseif space == :S && is_n_cube(p)
     SerendipityRefFE(T,p,orders)
   else
-    if any(orders.==0) && !all(orders.==0)
+    if any(map(i->i==0,orders)) && !all(map(i->i==0,orders))
       cont = map(i -> i == 0 ? DISC : CONT,orders)
       return _cd_lagrangian_ref_fe(T,p,orders,cont)
     else
@@ -239,7 +228,7 @@ function _lagrangian_ref_fe(::Type{T},p::Polytope{D},orders) where {T,D}
   face_own_dofs = _generate_face_own_dofs(face_own_nodes, dofs.node_and_comp_to_dof)
   face_dofs = _generate_face_dofs(ndofs,face_own_dofs,p,_reffaces)
 
-  if all(orders .== 0 ) && D>0
+  if all(map(i->i==0,orders) ) && D>0
     conf = L2Conformity()
   else
     conf = GradConformity()
@@ -426,9 +415,9 @@ end
 # Default implementations
 
 function _compute_nodes(p,orders)
-  if any( orders .== 0)
+  if any( map(i->i==0,orders))
     _compute_constant_nodes(p,orders)
-  elseif all(orders .== 1)
+  elseif all(map(i->i==1,orders))
     _compute_linear_nodes(p)
   else
     _compute_high_order_nodes(p,orders)
@@ -571,7 +560,7 @@ end
 
 function compute_own_nodes(p::ExtrusionPolytope{D},orders) where D
   extrusion = Tuple(p.extrusion)
-  if all(orders .== 0)
+  if all(map(i->i==0,orders))
     _interior_nodes_order_0(p)
   else
     _interior_nodes(extrusion,orders)
@@ -608,7 +597,7 @@ end
 
 function compute_nodes(p::ExtrusionPolytope{D},orders) where D
   _nodes, facenodes = _compute_nodes(p,orders)
-  if any( orders .== 0)
+  if any( map(i->i==0,orders))
     return (_nodes, facenodes)
   end
   terms = _coords_to_terms(_nodes,orders)

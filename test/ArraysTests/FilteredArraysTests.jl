@@ -25,7 +25,7 @@ return_type(k,filters[1],a[1])
 
 evaluate!(cache,k,filters[1],a[1])
 
-test_mapping(k,(filters[1],a[1]),a[1][2:3])
+test_mapping(a[1][2:3],k,filters[1],a[1])
 
 @test lazy_map(k,filters,a) == [a[i][2:3] for i in 1:6]
 

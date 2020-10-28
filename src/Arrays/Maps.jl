@@ -43,7 +43,15 @@ If the result of two or more calls to this function need to be accessed simultan
 (e.g., in multi-threading), create and use several `cache` objects (e.g., one cache
 per thread).
 """
-evaluate!(cache,f,x...) = @abstractmethod
+@noinline function evaluate!(cache,f,x...)
+  @abstractmethod """
+  Method
+
+      Gridap.Arrays.evaluate!(cache,f,x...)
+
+  has not beed defined for the requested types (see stack trace).
+  """
+end
 
 """
     return_type(f,x...)
@@ -91,7 +99,7 @@ evaluate!(cache,::Type{f},x...) where f = f(x...)
 # @fverdugo rename to test_map
 # Testing the interface
 """
-    test_mapping(f,x::Tuple,y,cmp=(==))
+    test_mapping(y,f,x...;cmp=(==))
 
 Function used to test if the mapping `f` has been
 implemented correctly. `f` is a `Map` sub-type, `x` is a tuple in the domain of the
@@ -99,7 +107,7 @@ mapping and `y` is the expected result. Function `cmp` is used to compare
 the computed result with the expected one. The checks are done with the `@test`
 macro.
 """
-function test_mapping(f,x::Tuple,y,cmp=(==))
+function test_mapping(y,f,x...;cmp=(==))
   z = evaluate(f,x...)
   @test cmp(z,y)
   @test typeof(z) == return_type(f,x...)
@@ -108,6 +116,7 @@ function test_mapping(f,x::Tuple,y,cmp=(==))
   @test cmp(z,y)
   z = evaluate!(cache,f,x...)
   @test cmp(z,y)
+  true
 end
 
 # Broadcast Functions
@@ -149,7 +158,7 @@ function return_type(f::Broadcasting,x...)
 end
 
 @inline function evaluate!(cache,f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
-  r = _prepare_cache(cache,x...)
+  r = _prepare_cache!(cache,x...)
   a = r.array
   broadcast!(f.f,a,x...)
   a
@@ -178,10 +187,11 @@ function return_cache(f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}..
   N = length(bs)
   r = fill(testvalue(T),bs)
   cache = CachedArray(r)
-  _prepare_cache(cache,x...)
+  _prepare_cache!(cache,x...)
+  cache
 end
 
-@inline function _prepare_cache(c,x...)
+@inline function _prepare_cache!(c,x...)
   s = map(_size,x)
   bs = Base.Broadcast.broadcast_shape(s...)
   if bs != size(c)
@@ -255,4 +265,12 @@ struct Operation{T} <: Map
 end
 
 evaluate!(cache,op::Operation,args...) = OperationMap(op.op,args)
+
+"""
+"""
+function inverse_map(f)
+  @unreachable """\n
+  Function inverse_map is not implemented yet for objects of type $(typeof(f))
+  """
+end
 

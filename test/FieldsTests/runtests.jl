@@ -8,6 +8,8 @@ using Test
 
 @testset "FieldArrays" begin include("FieldArraysTests.jl") end
 
+@testset "AffineMaps" begin include("AffineMapsTests.jl") end
+
 @testset "FieldArraysOperations" begin include("FieldArraysOperationsTests.jl") end
 
 #@testset "LazyFieldArrays" begin include("LazyFieldArraysTests.jl") end

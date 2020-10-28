@@ -46,6 +46,7 @@ export test_mapping
 export return_type
 export return_value
 export testargs
+export inverse_map
 
 export Broadcasting
 
@@ -114,7 +115,6 @@ export append_tables_locally
 export flatten_partition
 export collect1d
 export UNSET
-export get_local_item
 export find_local_index
 
 export IdentityVector
@@ -135,7 +135,9 @@ export VectorWithEntryRemoved
 export VectorWithEntryInserted
 
 import AbstractTrees
+export TreeNode
 export print_op_tree
+export similar_tree_node
 
 import Gridap.Io: to_dict
 import Gridap.Io: from_dict

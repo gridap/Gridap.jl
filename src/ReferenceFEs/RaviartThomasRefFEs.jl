@@ -98,8 +98,8 @@ function _RT_face_moments(p, fshfs, c_fips, fcips, fwips)
   cfshfs = fill(fshfs, nc)
   cvals = lazy_map(evaluate,cfshfs,c_fips)
   cvals = [fwips[i].*cvals[i] for i in 1:nc]
-  # fns, os = get_facet_normals(p)
-  fns = get_facet_normals(p)
+  # fns, os = get_facet_normal(p)
+  fns = get_facet_normal(p)
   os = get_facet_orientations(p)
   # @santiagobadia : Temporary hack for making it work for structured hex meshes
   cvals = [ _broadcast(typeof(n),n*o,b) for (n,o,b) in zip(fns,os,cvals)]

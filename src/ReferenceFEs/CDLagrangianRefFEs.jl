@@ -22,7 +22,7 @@ end
 
 function _CDLagrangianRefFE(::Type{T},p::ExtrusionPolytope{D},orders,cont) where {T,D}
   cond(c,o) = ( o > 0 || c == DISC )
-  @assert all([cond(c,o) for (c,o) in zip(cont,orders)])
+  @assert all((cond(cont[k],orders[k]) for k in 1:length(orders)))
   _cd_lagrangian_ref_fe(T,p,orders,cont)
 end
 
@@ -63,7 +63,7 @@ function _cd_get_face_own_nodes(reffe,conf::CDConformity)
   orders = get_orders(get_prebasis(reffe))
   cont = conf.cont
   cond(c,o) = ( o > 0 || c == DISC )
-  @assert all([cond(c,o) for (c,o) in zip(cont,orders)])
+  @assert all((cond(cont[k],orders[k]) for k in 1:length(orders)))
   p = get_polytope(reffe)
   dofs = get_dof_basis(reffe)
   @assert is_n_cube(p)
@@ -76,7 +76,7 @@ function _cd_get_face_own_dofs(reffe,conf::CDConformity)
   orders = get_orders(get_prebasis(reffe))
   cont = conf.cont
   cond(c,o) = ( o > 0 || c == DISC )
-  @assert all([cond(c,o) for (c,o) in zip(cont,orders)])
+  @assert all((cond(cont[k],orders[k]) for k in 1:length(orders)))
   p = get_polytope(reffe)
   dofs = get_dof_basis(reffe)
   @assert is_n_cube(p)
@@ -160,7 +160,8 @@ function _compute_cd_face_own_nodes(p::ExtrusionPolytope{D},orders::NTuple{D,<:I
     anc = nf.anchor
     ext = nf.extrusion
     fns = UnitRange{Int64}[]
-    for (i,(e,a,c,o)) in enumerate(zip(ext,anc,cont,orders))
+    for i in 1:length(orders)
+      e,a,c,o = ext[i],anc[i],cont[i],orders[i]
       if e==0 && c == DISC
         push!(fns,0:-1)
         break
@@ -199,7 +200,7 @@ function _active_faces(p::Polytope,orders)
   is_valid = Bool[]
   cond = (o,e,a) -> (o > 0 || (e == 0 && a == 0))
   for nf in nfs
-    isv = all([cond(o,e,a) for (o,e,a) in zip(orders,nf.extrusion,nf.anchor)])
+    isv = all((cond(orders[k],nf.extrusion[k],nf.anchor[k]) for k in 1:length(orders)))
     push!(is_valid,isv)
   end
   is_valid

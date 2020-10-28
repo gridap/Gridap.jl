@@ -28,7 +28,7 @@ test_polytope(p,optional=true)
 @test num_edges(p) == 4
 
 r = Point{2,Float64}[(1, 0), (1, 0), (0, 1), (0, 1)]
-@test get_edge_tangents(p) == r
+@test get_edge_tangent(p) == r
 
 r = [
   [1, 2, 3, 4], [1, 3, 2, 4], [2, 1, 4, 3], [2, 4, 1, 3],
@@ -36,7 +36,7 @@ r = [
 @test get_vertex_permutations(p) == r
 
 r = Point{2,Float64}[(0, -1), (0, 1), (-1, 0), (1, 0)]
-@test get_facet_normals(p) == r
+@test get_facet_normal(p) == r
 
 @test num_faces(p) == 9
 @test num_dims(p) == 2
@@ -53,16 +53,16 @@ x = Point{3,Float64}[(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)]
 p = SEGMENT
 test_polytope(p,optional=true)
 @test get_vertex_coordinates(p) == VectorValue{1,Float64}[(0),(1)]
-@test get_edge_tangents(p) == VectorValue{1,Float64}[(1)]
-@test get_facet_normals(p) == VectorValue{1,Float64}[(-1),(1)]
+@test get_edge_tangent(p) == VectorValue{1,Float64}[(1)]
+@test get_facet_normal(p) == VectorValue{1,Float64}[(-1),(1)]
 perm = get_vertex_permutations(p)
 @test perm == [[1, 2], [2, 1]]
 
 p = VERTEX
 test_polytope(p,optional=true)
 @test get_vertex_coordinates(p) == VectorValue{0,Float64}[()]
-@test get_edge_tangents(p) == VectorValue{0,Float64}[]
-@test get_facet_normals(p) == VectorValue{0,Float64}[]
+@test get_edge_tangent(p) == VectorValue{0,Float64}[]
+@test get_facet_normal(p) == VectorValue{0,Float64}[]
 perm = get_vertex_permutations(p)
 @test perm == [[1]]
 

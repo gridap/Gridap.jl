@@ -25,8 +25,8 @@ The `Polytope` interface is defined by overloading the following functions
 
 And optionally these ones:
 
-- [`get_edge_tangents(p::Polytope)`](@ref)
-- [`get_facet_normals(p::Polytope)`](@ref)
+- [`get_edge_tangent(p::Polytope)`](@ref)
+- [`get_facet_normal(p::Polytope)`](@ref)
 - [`get_facet_orientations(p::Polytope)`](@ref)
 - [`get_vertex_permutations(p::Polytope)`](@ref)
 - [`is_n_cube(p::Polytope)`](@ref)
@@ -159,22 +159,22 @@ end
 # Optional
 
 """
-    get_edge_tangents(p::Polytope) -> Vector{VectorValue{D,Float64}}
+    get_edge_tangent(p::Polytope) -> Vector{VectorValue{D,Float64}}
 
 Given a polytope `p`, returns a vector of `VectorValue` objects
 representing the unit tangent vectors to the polytope edges.
 """
-function get_edge_tangents(p::Polytope)
+function get_edge_tangent(p::Polytope)
   @abstractmethod
 end
 
 """
-    get_facet_normals(p::Polytope) -> Vector{VectorValue{D,Float64}}
+    get_facet_normal(p::Polytope) -> Vector{VectorValue{D,Float64}}
 
 Given a polytope `p`, returns a vector of `VectorValue` objects
 representing the unit outward normal vectors to the polytope facets.
 """
-function get_facet_normals(p::Polytope)
+function get_facet_normal(p::Polytope)
   @abstractmethod
 end
 
@@ -713,13 +713,13 @@ function test_polytope(p::Polytope{D};optional::Bool=false) where D
   @test isa(x,Vector{Point{D,Float64}})
   @test length(x) == num_faces(p,0)
   if optional
-    fn = get_facet_normals(p)
+    fn = get_facet_normal(p)
     @test isa(fn,Vector{VectorValue{D,Float64}})
     @test length(fn) == num_facets(p)
     or = get_facet_orientations(p)
     @test isa(or,Vector{Int})
     @test length(or) == num_facets(p)
-    et = get_edge_tangents(p)
+    et = get_edge_tangent(p)
     @test isa(et,Vector{VectorValue{D,Float64}})
     @test length(et) == num_edges(p)
     @test isa(is_simplex(p),Bool)

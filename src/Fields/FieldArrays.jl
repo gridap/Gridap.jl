@@ -76,13 +76,14 @@ function testargs(f::AbstractArray{T},x::AbstractArray{<:Point}) where T<:Field
 end
 
 function test_field_array(f::AbstractArray{<:Field}, x, v, cmp=(==); grad=nothing, gradgrad=nothing)
-  test_mapping(f,(x,),v,cmp)
+  test_mapping(v,f,x;cmp=cmp)
   if grad != nothing
-    test_mapping(Broadcasting(∇)(f),(x,),grad,cmp)
+    test_mapping(grad,Broadcasting(∇)(f),x;cmp=cmp)
   end
   if gradgrad != nothing
-    test_mapping(Broadcasting(∇∇)(f),(x,),gradgrad,cmp)
+    test_mapping(gradgrad,Broadcasting(∇∇)(f),x;cmp=cmp)
   end
+  true
 end
 
 # Opening the door to optimize arrays of field gradients
@@ -231,6 +232,10 @@ end
 function evaluate!(cache,k::Broadcasting{typeof(∇)},a::LinearCombinationFieldVector)
   fields = Broadcasting(∇)(a.fields)
   LinearCombinationFieldVector(a.values,fields)
+end
+
+function get_children(n::TreeNode, a::LinearCombinationFieldVector)
+  (similar_tree_node(n,a.values),similar_tree_node(n,a.fields))
 end
 
 # This is the map that acts on values

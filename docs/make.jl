@@ -21,14 +21,14 @@ pages = [
   "Gridap.Visualization" => "Visualization.md",
  ]
 
-makedocs(
-    sitename = "Gridap.jl",
-    format = Documenter.HTML(),
-    modules = [Gridap],
-    pages = pages
-)
-
-deploydocs(
-    repo = "github.com/gridap/Gridap.jl.git",
-)
+#makedocs(
+#    sitename = "Gridap.jl",
+#    format = Documenter.HTML(),
+#    modules = [Gridap],
+#    pages = pages
+#)
+#
+#deploydocs(
+#    repo = "github.com/gridap/Gridap.jl.git",
+#)
 

@@ -275,19 +275,15 @@ end
     is_oriented(::Type{<:GridTopology}) -> Bool
     is_oriented(a::GridTopology) -> Bool
 """
-is_oriented(a::GridTopology) = _is_oriented(OrientationStyle(a))
-is_oriented(a::Type{<:GridTopology}) = _is_oriented(OrientationStyle(a))
-_is_oriented(::Val{true}) = true
-_is_oriented(::Val{false}) = false
+is_oriented(a::GridTopology) = get_val_parameter(OrientationStyle(a))
+is_oriented(a::Type{<:GridTopology}) = get_val_parameter(OrientationStyle(a))
 
 """
     is_regular(::Type{<:GridTopology}) -> Bool
     is_regular(a::GridTopology) -> Bool
 """
-is_regular(a::GridTopology) = _is_regular(RegularityStyle(a))
-is_regular(a::Type{<:GridTopology}) = _is_regular(RegularityStyle(a))
-_is_regular(::Val{true}) = true
-_is_regular(::Val{false}) = false
+is_regular(a::GridTopology) = get_val_parameter(RegularityStyle(a))
+is_regular(a::Type{<:GridTopology}) = get_val_parameter(RegularityStyle(a))
 
 """
     get_reffaces(::Type{Polytope{d}}, g::GridTopology) where d
@@ -498,6 +494,20 @@ function compute_cell_permutations(top::GridTopology,d::Integer)
   cell_to_lface_to_pindex
 end
 
+"""
+    GridTopology(grid::Grid)
+    GridTopology(grid::Grid, cell_to_vertices::Table, vertex_to_node::Vector)
+"""
+function GridTopology(grid::Grid)
+  _grid = UnstructuredGrid(grid)
+  UnstructuredGridTopology(_grid)
+end
+
+function GridTopology(grid::Grid, cell_to_vertices::Table, vertex_to_node::AbstractVector)
+  _grid = UnstructuredGrid(grid)
+  UnstructuredGridTopology(_grid,cell_to_vertices,vertex_to_node)
+end
+
 # Helpers
 
 function  _compute_cell_perm_indices!(
@@ -547,7 +557,7 @@ end
 
 function generate_cells_around(
   cell_to_faces::Table,
-  nfaces::Int = maximum(cell_to_faces.data))
+  nfaces::Integer = maximum(cell_to_faces.data))
 
   data, ptrs = _face_to_cells(cell_to_faces.data,cell_to_faces.ptrs,nfaces)
   Table(data,ptrs)
@@ -613,7 +623,7 @@ function generate_face_to_face_type(
   cell_to_faces::Table,
   cell_to_cell_type::AbstractVector{<:Integer},
   cell_type_to_lface_to_face_type::Vector{Vector{T}},
-  nfaces::Int=maximum(cell_to_faces.data)) where T<:Integer
+  nfaces::Integer=maximum(cell_to_faces.data)) where T<:Integer
 
   _generate_face_to_ftype(
     cell_to_faces.data,
@@ -629,7 +639,7 @@ function generate_face_to_vertices(
   cell_to_faces::Table,
   cell_to_ctype::AbstractVector{<:Integer},
   ctype_to_lface_to_lvertices::Vector{Vector{Vector{Int}}},
-  nfaces::Int=maximum(cell_to_faces.data))
+  nfaces::Integer=maximum(cell_to_faces.data))
 
   data, ptrs = _generate_face_to_vertices(
     cell_to_vertices.data,
@@ -727,38 +737,6 @@ function  _generate_face_to_isboundary_from_cells_fill!(
       end
     end
   end
-
-end
-
-function _refine_grid_connectivity(
-  cell_to_points_data::AbstractVector{T},
-  cell_to_points_ptrs::AbstractVector{P},
-  ltcell_to_lpoints) where {T,P}
-
-  nltcells = length(ltcell_to_lpoints)
-  ncells = length(cell_to_points_ptrs) - 1
-  ntcells = ncells * nltcells
-
-  tcell_to_points_ptrs = zeros(P,ntcells+1)
-
-  _refine_grid_connectivity_count!(
-    tcell_to_points_ptrs,
-    ncells,
-    ltcell_to_lpoints)
-
-  length_to_ptrs!(tcell_to_points_ptrs)
-
-  ndata = tcell_to_points_ptrs[end]-1
-
-  tcell_to_points_data = zeros(T,ndata)
-
-  _refine_grid_connectivity!(
-    tcell_to_points_data,
-    cell_to_points_data,
-    cell_to_points_ptrs,
-    ltcell_to_lpoints )
-
-  (tcell_to_points_data, tcell_to_points_ptrs)
 
 end
 
@@ -1547,44 +1525,6 @@ function _face_to_vertices_fill!(
         lvertex = lvertices[lfvertex]
         vertex = cell_to_vertices_data[c+lvertex]
         face_to_vertices_data[v+lfvertex] = vertex
-      end
-    end
-  end
-
-end
-
-function  _refine_grid_connectivity_count!(
-    tcell_to_points_ptrs,
-    ncells,
-    ltcell_to_lpoints)
-
-  tcell = 1
-
-  for cell in 1:ncells
-    for lpoints in ltcell_to_lpoints
-      tcell_to_points_ptrs[tcell+1] = length(lpoints)
-      tcell +=1
-    end
-  end
-
-end
-
-function _refine_grid_connectivity!(
-    tcell_to_points_data,
-    cell_to_points_data,
-    cell_to_points_ptrs,
-    ltcell_to_lpoints )
-
-  ncells = length(cell_to_points_ptrs) - 1
-
-  k = 1
-  for cell in 1:ncells
-    a = cell_to_points_ptrs[cell]-1
-    for lpoints in ltcell_to_lpoints
-      for lpoint in lpoints
-        point = cell_to_points_data[a+lpoint]
-        tcell_to_points_data[k] = point
-        k += 1
       end
     end
   end

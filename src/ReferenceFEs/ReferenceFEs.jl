@@ -42,9 +42,9 @@ export get_faces
 export get_dimranges
 export get_dimrange
 export get_vertex_coordinates
-export get_facet_normals
+export get_facet_normal
 export get_facet_orientations
-export get_edge_tangents
+export get_edge_tangent
 export get_vertex_permutations
 export get_face_dimranges
 export get_face_coordinates
@@ -66,6 +66,8 @@ export get_reffaces
 export get_face_type
 export get_bounding_box
 export get_face_vertex_permutations
+export get_order
+export get_orders
 export test_polytope
 export VERTEX
 export SEGMENT
@@ -127,7 +129,6 @@ export compute_nodes
 export compute_own_nodes_permutations
 export compute_lagrangian_reffaces
 export is_first_order
-export is_affine
 export is_Q
 export is_P
 export is_S

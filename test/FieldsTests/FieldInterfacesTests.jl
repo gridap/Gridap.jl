@@ -195,6 +195,11 @@ test_field(f,z,f.(z))
 test_field(f,z,f.(z),grad=∇(f).(z))
 test_field(f,z,f.(z),grad=∇(f).(z),gradgrad=∇∇(f).(z))
 
+v = [1,2,3]
+f = ConstantField.(v)
+a = lazy_map(evaluate,f,fill([Point(1,2),Point(3,4)],length(v)))
+test_array(a,[[1,1],[2,2],[3,3]])
+
 #using BenchmarkTools
 #
 #c = return_cache(f,p)

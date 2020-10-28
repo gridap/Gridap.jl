@@ -76,6 +76,8 @@ gradient(f,::Val{2}) = ∇∇(f)
 
 evaluate!(cache,::Broadcasting{typeof(∇)},a::Field) = ∇(a)
 evaluate!(cache,::Broadcasting{typeof(∇∇)},a::Field) = ∇∇(a)
+lazy_map(::Broadcasting{typeof(∇)},a::AbstractArray{<:Field}) = lazy_map(∇,a)
+lazy_map(::Broadcasting{typeof(∇∇)},a::AbstractArray{<:Field}) = lazy_map(∇∇,a)
 
 """
     gradient_type(::Type{T},x::Point) where T
@@ -227,10 +229,12 @@ end
 
 function evaluate!(c,f::ConstantField,x::AbstractArray{<:Point})
   nx = size(x)
-  if size(c) != nx
+  # This optimization is a bug if we include several ConstantField with different states
+  # in the same array and we try to reuse cache between them.
+  #if size(c) != nx
     setsize!(c,nx)
     fill!(c.array,f.object)
-  end
+  #end
   c.array
 end
 
@@ -526,12 +530,13 @@ argument `grad` can be used. It should contain the result of evaluating `gradien
 Idem for `gradgrad`. The checks are performed with the `@test` macro.
 """
 function test_field(f::Field, x, v, cmp=(==); grad=nothing, gradgrad=nothing)
-  test_mapping(f,(x,),v,cmp)
+  test_mapping(v,f,x;cmp=cmp)
   if grad != nothing
-    test_mapping(∇(f),(x,),grad,cmp)
+    test_mapping(grad,∇(f),x;cmp=cmp)
   end
   if gradgrad != nothing
-    test_mapping(∇∇(f),(x,),gradgrad,cmp)
+    test_mapping(gradgrad,∇∇(f),x;cmp=cmp)
   end
+  true
 end
 
