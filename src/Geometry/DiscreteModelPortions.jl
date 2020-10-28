@@ -21,7 +21,7 @@ get_parent_model(model::DiscreteModelPortion) = model.parent_model
 
 """
 """
-function DiscreteModelPortion(model::DiscreteModel, cell_to_parent_cell::Vector{Int})
+function DiscreteModelPortion(model::DiscreteModel, cell_to_parent_cell::AbstractVector{<:Integer})
   grid_p =  GridPortion(get_grid(model),cell_to_parent_cell)
   topo_p = GridTopology(grid_p)
   labels_p, d_to_dface_to_parent_dface = _setup_labels_p(model,topo_p,cell_to_parent_cell)
@@ -29,8 +29,8 @@ function DiscreteModelPortion(model::DiscreteModel, cell_to_parent_cell::Vector{
   DiscreteModelPortion(model_p,model,d_to_dface_to_parent_dface)
 end
 
-function DiscreteModelPortion(model::DiscreteModel, cell_to_is_in::Vector{Bool})
-  cell_to_parent_cell = findall(cell_to_is_in)
+function DiscreteModelPortion(model::DiscreteModel, cell_to_is_in::AbstractArray{Bool})
+  cell_to_parent_cell = findall(collect1d(cell_to_is_in))
   DiscreteModelPortion(model,cell_to_parent_cell)
 end
 

@@ -14,7 +14,10 @@ struct GridPortion{Dc,Dp,G} <: Grid{Dc,Dp}
   @doc """
       GridPortion(parent_grid::Grid{Dc,Dp},cell_to_parent_cell::Vector{Int}) where {Dc,Dp}
   """
-  function GridPortion(parent_grid::Grid{Dc,Dp},cell_to_parent_cell::Vector{Int}) where {Dc,Dp}
+  function GridPortion(parent_grid::Grid,cell_to_parent_cell::AbstractVector{<:Integer})
+
+    Dc = num_cell_dims(parent_grid)
+    Dp = num_point_dims(parent_grid)
 
     parent_cell_to_parent_nodes = get_cell_nodes(parent_grid)
     nparent_nodes = num_nodes(parent_grid)
@@ -28,6 +31,11 @@ struct GridPortion{Dc,Dp,G} <: Grid{Dc,Dp}
 
     new{Dc,Dp,typeof(parent_grid)}(parent_grid,cell_to_parent_cell,node_to_parent_node,cell_to_nodes)
   end
+end
+
+function GridPortion(parent_grid::Grid,parent_cell_to_mask::AbstractArray{Bool})
+  cell_to_parent_cell = findall(collect1d(parent_cell_to_mask))
+  GridPortion(parent_grid,cell_to_parent_cell)
 end
 
 function OrientationStyle(::Type{GridPortion{Dc,Dp,G}}) where {Dc,Dp,G}
