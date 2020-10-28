@@ -238,16 +238,25 @@ function is_first_order(trian::Triangulation)
 end
 
 """
-    get_cell_reffes(trian::Triangulation) -> Vector{<:LagrangianRefFE}
+    get_cell_reffe(trian::Triangulation) -> Vector{<:LagrangianRefFE}
 
 It is not desirable to iterate over the resulting array
 for large number of cells if the underlying reference FEs
 are of different Julia type.
 """
-function get_cell_reffes(trian::Triangulation)
+function get_cell_reffe(trian::Triangulation)
   type_to_reffe = get_reffes(trian)
   cell_to_type = get_cell_type(trian)
   expand_cell_data(type_to_reffe,cell_to_type)
+end
+
+"""
+"""
+function get_cell_ref_coordinates(trian::Triangulation)
+  type_to_reffe = get_reffes(trian)
+  type_to_coords = map(get_node_coordinates,type_to_reffe)
+  cell_to_type = get_cell_type(trian)
+  expand_cell_data(type_to_coords,cell_to_type)
 end
 
 """
@@ -315,6 +324,21 @@ function expand_cell_data(type_to_data, cell_to_type::Fill)
   @assert cell_to_type.value == 1 "Only one type of reference element expected"
   data = first(type_to_data)
   Fill(data,ncells)
+end
+
+function compress_cell_data(cell_data::AbstractArray)
+  @unreachable """
+  The given cell data cannot be compressed. Describe your data with
+  a CompressedArray or Fill array types.
+  """
+end
+
+function compress_cell_data(a::CompressedArray)
+  a.values, a.ptrs
+end
+
+function compress_cell_data(a::Fill)
+  Fill(a.value,length(a)), Fill(1,length(a))
 end
 
 #"""
