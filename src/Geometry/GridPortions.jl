@@ -38,6 +38,11 @@ function GridPortion(parent_grid::Grid,parent_cell_to_mask::AbstractArray{Bool})
   GridPortion(parent_grid,cell_to_parent_cell)
 end
 
+function GridPortion(parent_grid::Grid,parent_cell_to_mask::AbstractVector{Bool})
+  cell_to_parent_cell = findall(parent_cell_to_mask)
+  GridPortion(parent_grid,cell_to_parent_cell)
+end
+
 function OrientationStyle(::Type{GridPortion{Dc,Dp,G}}) where {Dc,Dp,G}
   OrientationStyle(G)
 end

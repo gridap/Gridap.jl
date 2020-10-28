@@ -20,8 +20,8 @@ end
 
 oldgrid = get_grid(oldmodel)
 oldcell_to_coods = get_cell_coordinates(oldgrid)
-cell_to_mask = collect1d(lazy_map(is_in,oldcell_to_coods))
-cell_to_oldcell = findall(cell_to_mask)
+cell_to_mask = lazy_map(is_in,oldcell_to_coods)
+cell_to_oldcell = findall(collect1d(cell_to_mask))
 
 labels = get_face_labeling(oldmodel)
 

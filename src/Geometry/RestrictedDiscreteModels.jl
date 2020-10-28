@@ -4,7 +4,7 @@ function DiscreteModel(parent_model::DiscreteModel,cell_to_parent_cell::Abstract
   RestrictedDiscreteModel(parent_model,cell_to_parent_cell)
 end
 
-function DiscreteModel(parent_model::DiscreteModel,parent_cell_to_mask::AbstractVector{Bool})
+function DiscreteModel(parent_model::DiscreteModel,parent_cell_to_mask::AbstractArray{Bool})
   RestrictedDiscreteModel(parent_model,parent_cell_to_mask)
 end
 
@@ -29,7 +29,7 @@ function RestrictedDiscreteModel(parent_model::DiscreteModel, cell_to_parent_cel
   RestrictedDiscreteModel(_model)
 end
 
-function RestrictedDiscreteModel(parent_model::DiscreteModel, parent_cell_to_mask::AbstractVector{Bool})
+function RestrictedDiscreteModel(parent_model::DiscreteModel, parent_cell_to_mask::AbstractArray{Bool})
   _model = DiscreteModelPortion(parent_model,parent_cell_to_mask)
   RestrictedDiscreteModel(_model)
 end
@@ -64,7 +64,7 @@ function Triangulation(model::RestrictedDiscreteModel,cell_to_parent_cell::Abstr
   @notimplemented
 end
 
-function Triangulation(model::RestrictedDiscreteModel,cell_to_mask::AbstractVector{Bool})
+function Triangulation(model::RestrictedDiscreteModel,cell_to_mask::AbstractArray{Bool})
   @notimplemented
 end
 

@@ -28,6 +28,14 @@ function RestrictedTriangulation(
   RestrictedTriangulation(parent_trian,cell_to_parent_cell)
 end
 
+function RestrictedTriangulation(
+  parent_trian::Triangulation,
+  parent_cell_to_mask::AbstractVector{Bool})
+
+  cell_to_parent_cell = findall(parent_cell_to_mask)
+  RestrictedTriangulation(parent_trian,cell_to_parent_cell)
+end
+
 function Triangulation(
   parent_trian::Triangulation,
   cell_to_parent_cell::AbstractVector{<:Integer})
