@@ -263,7 +263,7 @@ end
 """
 function compute_node_face_owner(g::DiscreteModel)
   face_to_own_nodes = Table(get_face_own_nodes(g))
-  node_to_face_owner = zeros(Int,num_nodes(g))
+  node_to_face_owner = zeros(Int32,num_nodes(g))
   _compute_node_face_owner!(node_to_face_owner,face_to_own_nodes)
   node_to_face_owner
 end

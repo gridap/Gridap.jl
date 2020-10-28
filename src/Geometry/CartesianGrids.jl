@@ -125,7 +125,7 @@ end
 
 # Cell nodes
 
-struct CartesianCellNodes{D} <: AbstractArray{Vector{Int},D}
+struct CartesianCellNodes{D} <: AbstractArray{Vector{Int32},D}
   partition::NTuple{D,Int}
   function CartesianCellNodes(partition)
     D = length(partition)
@@ -138,7 +138,7 @@ Base.size(a::CartesianCellNodes) = a.partition
 Base.IndexStyle(::Type{<:CartesianCellNodes}) = IndexCartesian()
 
 function array_cache(a::CartesianCellNodes{D}) where D
-  zeros(Int,2^D)
+  zeros(Int32,2^D)
 end
 
 #@inline function getindex!(cache,a::CartesianCellNodes,i::Integer)
@@ -155,7 +155,7 @@ end
 
 @inline function getindex!(v,a::CartesianCellNodes{D},i::Vararg{Integer,D}) where D
   nodes = LinearIndices(size(a).+1)
-  lnodes = CartesianIndices(tfill(2,Val{D}()))
+  lnodes = CartesianIndices(tfill(Int32(2),Val{D}()))
   j = i .- 1
   for (i,lnode) in enumerate(lnodes)
     k = Tuple(lnode) .+ j

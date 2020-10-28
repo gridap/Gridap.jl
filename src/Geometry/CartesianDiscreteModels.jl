@@ -88,7 +88,7 @@ get_face_labeling(model::CartesianDiscreteModel) = model.face_labeling
 # These needed to be type stable
 
 function get_face_nodes(model::CartesianDiscreteModel,d::Integer)
-  face_nodes::Table{Int,Vector{Int},Vector{Int32}} = compute_face_nodes(model,d)
+  face_nodes::Table{Int32,Vector{Int32},Vector{Int32}} = compute_face_nodes(model,d)
   face_nodes
 end
 
@@ -463,7 +463,7 @@ function _generate_slave_to_master_point(num_nodes_x_dir::Vector{Int},
   end
 
   slave_point_to_point = findall( point_to_isperiodic)
-  slave_point_to_master_point = Array{Int,1}(undef,length(slave_point_to_point))
+  slave_point_to_master_point = Array{Int32,1}(undef,length(slave_point_to_point))
 
   cartesian_indices = CartesianIndices(Tuple(num_nodes_x_dir))
   for (i,point) in enumerate(slave_point_to_point)

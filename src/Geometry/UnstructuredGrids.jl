@@ -9,7 +9,7 @@
 """
 struct UnstructuredGrid{Dc,Dp,Tp,O} <: Grid{Dc,Dp}
   node_coordinates::Vector{Point{Dp,Tp}}
-  cell_nodes::Table{Int,Vector{Int},Vector{Int32}}
+  cell_nodes::Table{Int32,Vector{Int32},Vector{Int32}}
   reffes::Vector{LagrangianRefFE{Dc}}
   cell_types::Vector{Int8}
   @doc """
@@ -110,7 +110,7 @@ end
 function UnstructuredGrid(x::AbstractArray{<:Point})
   np = length(x)
   node_coords = collect1d(x)
-  cell_nodes = identity_table(Int,Int32,np)
+  cell_nodes = identity_table(Int32,Int32,np)
   cell_type = fill(1,np)
   order = 1
   reffes = [LagrangianRefFE(Float64,VERTEX,order),]
@@ -140,7 +140,7 @@ function from_dict(::Type{UnstructuredGrid},dict::Dict{Symbol,Any})
   T = eltype(x)
   Dp = dict[:Dp]
   node_coordinates::Vector{Point{Dp,T}} = reinterpret(Point{Dp,T},x)
-  cell_nodes = from_dict(Table{Int,Vector{Int},Vector{Int32}},dict[:cell_nodes])
+  cell_nodes = from_dict(Table{Int32,Vector{Int32},Vector{Int32}},dict[:cell_nodes])
   reffes = [ from_dict(LagrangianRefFE,reffe) for reffe in dict[:reffes]]
   cell_type::Vector{Int8} = dict[:cell_type]
   O::Bool = dict[:orientation]

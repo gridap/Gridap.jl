@@ -6,7 +6,7 @@
 """
 struct UnstructuredGridTopology{Dc,Dp,T,O} <: GridTopology{Dc,Dp}
   vertex_coordinates::Vector{Point{Dp,T}}
-  n_m_to_nface_to_mfaces::Matrix{Table{Int,Vector{Int},Vector{Int32}}}
+  n_m_to_nface_to_mfaces::Matrix{Table{Int32,Vector{Int32},Vector{Int32}}}
   cell_type::Vector{Int8}
   polytopes::Vector{Polytope{Dc}}
 end
@@ -30,7 +30,7 @@ function UnstructuredGridTopology(
 
   D = num_dims(first(polytopes))
   n = D+1
-  n_m_to_nface_to_mfaces = Matrix{Table{Int,Vector{Int},Vector{Int32}}}(undef,n,n)
+  n_m_to_nface_to_mfaces = Matrix{Table{Int32,Vector{Int32},Vector{Int32}}}(undef,n,n)
   n_m_to_nface_to_mfaces[D+1,0+1] = cell_vertices
   vertex_cells = generate_cells_around(cell_vertices,length(vertex_coordinates))
   n_m_to_nface_to_mfaces[0+1,D+1] = vertex_cells
@@ -64,7 +64,7 @@ function UnstructuredGridTopology(
 
   D = num_dims(first(polytopes))
   n = D+1
-  n_m_to_nface_to_mfaces = Matrix{Table{Int,Vector{Int},Vector{Int32}}}(undef,n,n)
+  n_m_to_nface_to_mfaces = Matrix{Table{Int32,Vector{Int32},Vector{Int32}}}(undef,n,n)
   nvertices = length(vertex_coordinates)
   for d in 0:D
     dface_to_vertices = d_to_dface_vertices[d+1]
@@ -450,7 +450,7 @@ function _setup_face_to_face!(model,d)
   end
 
   nfaces = num_faces(model,d)
-  id = identity_table(Int,Int32,nfaces)
+  id = identity_table(Int32,Int32,nfaces)
   model.n_m_to_nface_to_mfaces[d+1,d+1] = id
 
   return

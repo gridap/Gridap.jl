@@ -557,7 +557,7 @@ end
 
 function generate_cells_around(
   cell_to_faces::Table,
-  nfaces::Int = maximum(cell_to_faces.data))
+  nfaces::Integer = maximum(cell_to_faces.data))
 
   data, ptrs = _face_to_cells(cell_to_faces.data,cell_to_faces.ptrs,nfaces)
   Table(data,ptrs)
@@ -623,7 +623,7 @@ function generate_face_to_face_type(
   cell_to_faces::Table,
   cell_to_cell_type::AbstractVector{<:Integer},
   cell_type_to_lface_to_face_type::Vector{Vector{T}},
-  nfaces::Int=maximum(cell_to_faces.data)) where T<:Integer
+  nfaces::Integer=maximum(cell_to_faces.data)) where T<:Integer
 
   _generate_face_to_ftype(
     cell_to_faces.data,
@@ -639,7 +639,7 @@ function generate_face_to_vertices(
   cell_to_faces::Table,
   cell_to_ctype::AbstractVector{<:Integer},
   ctype_to_lface_to_lvertices::Vector{Vector{Vector{Int}}},
-  nfaces::Int=maximum(cell_to_faces.data))
+  nfaces::Integer=maximum(cell_to_faces.data))
 
   data, ptrs = _generate_face_to_vertices(
     cell_to_vertices.data,
