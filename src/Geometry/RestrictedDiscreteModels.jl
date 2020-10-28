@@ -24,12 +24,12 @@ struct RestrictedDiscreteModel{Dc,Dp} <: DiscreteModel{Dc,Dc}
   model::DiscreteModelPortion{Dc,Dp}
 end
 
-function RestrictedDiscreteModel(parent_model::DiscreteModel, cell_to_parent_cell::Vector{Int})
+function RestrictedDiscreteModel(parent_model::DiscreteModel, cell_to_parent_cell::AbstractVector{<:Integer})
   _model = DiscreteModelPortion(parent_model,cell_to_parent_cell)
   RestrictedDiscreteModel(_model)
 end
 
-function RestrictedDiscreteModel(parent_model::DiscreteModel, parent_cell_to_mask::Vector{Bool})
+function RestrictedDiscreteModel(parent_model::DiscreteModel, parent_cell_to_mask::AbstractVector{Bool})
   _model = DiscreteModelPortion(parent_model,parent_cell_to_mask)
   RestrictedDiscreteModel(_model)
 end

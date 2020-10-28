@@ -18,13 +18,58 @@ struct RestrictedTriangulation{Dc,Dp,G,A} <: Triangulation{Dc,Dp}
   end
 end
 
+# Constructors
+
 function RestrictedTriangulation(
   parent_trian::Triangulation,
-  parent_cell_to_mask::AbstractVector{Bool})
+  parent_cell_to_mask::AbstractArray{Bool})
 
-  cell_to_parent_cell = findall(parent_cell_to_mask)
+  cell_to_parent_cell = findall(collect1d(parent_cell_to_mask))
   RestrictedTriangulation(parent_trian,cell_to_parent_cell)
 end
+
+function Triangulation(
+  parent_trian::Triangulation,
+  cell_to_parent_cell::AbstractVector{<:Integer})
+
+  RestrictedTriangulation(parent_trian,cell_to_parent_cell)
+end
+
+function Triangulation(
+  parent_trian::Triangulation,
+  parent_cell_to_mask::AbstractArray{Bool})
+
+  RestrictedTriangulation(parent_trian,parent_cell_to_mask)
+end
+
+function Triangulation(
+  parent_model::DiscreteModel,
+  cell_to_parent_cell::AbstractVector{<:Integer})
+
+  parent_trian = Triangulation(parent_model)
+  RestrictedTriangulation(parent_trian,cell_to_parent_cell)
+end
+
+function Triangulation(
+  parent_model::DiscreteModel,
+  parent_cell_to_mask::AbstractArray{Bool})
+
+  parent_trian = Triangulation(parent_model)
+  RestrictedTriangulation(parent_trian,parent_cell_to_mask)
+end
+
+function Triangulation(parent_model::DiscreteModel, labels::FaceLabeling, tags)
+  parent_trian = Triangulation(parent_model)
+  parent_cell_to_mask = get_face_mask(labels,tags,num_cell_dims(parent_model))
+  RestrictedTriangulation(parent_trian,parent_cell_to_mask)
+end
+
+function Triangulation(parent_model::DiscreteModel, tags)
+  Triangulation(parent_model,get_face_labeling(parent_model),tags)
+end
+
+# Triangulation API
+
 
 TriangulationStyle(::Type{<:RestrictedTriangulation}) = SubTriangulation()
 
@@ -69,55 +114,3 @@ function get_cell_ref_map(trian::RestrictedTriangulation)
   lazy_map(Reindex(parent_cell_data),trian.cell_to_parent_cell)
 end
 
-#function reindex(trian::Triangulation,indices)
-#  RestrictedTriangulation(trian,collect(Int,indices))
-#end
-#
-#function reindex(trian::Triangulation,indices::Vector{Int})
-#  RestrictedTriangulation(trian,indices)
-#end
-#
-#function reindex(trian::Triangulation,indices::IdentityVector)
-#  trian
-#end
-#
-#"""
-#"""
-#struct RestrictedTriangulation{Dc,Dp,G} <: Triangulation{Dc,Dp}
-#  oldtrian::G
-#  cell_to_oldcell::Vector{Int}
-#  @doc """
-#  """
-#  function RestrictedTriangulation(oldtrian::Triangulation{Dc,Dp},cell_to_oldcell::Vector{Int}) where {Dc,Dp}
-#    new{Dc,Dp,typeof(oldtrian)}(oldtrian,cell_to_oldcell)
-#  end
-#end
-#
-#function get_reffes(trian::RestrictedTriangulation)
-#  get_reffes(trian.oldtrian)
-#end
-#
-#function get_cell_type(trian::RestrictedTriangulation)
-#  reindex(get_cell_type(trian.oldtrian),trian.cell_to_oldcell)
-#end
-#
-#function get_cell_coordinates(trian::RestrictedTriangulation)
-#  reindex(get_cell_coordinates(trian.oldtrian),trian.cell_to_oldcell)
-#end
-#
-#function get_cell_map(trian::RestrictedTriangulation)
-#  cell_map = get_cell_map(trian.oldtrian)
-#  reindex(cell_map,trian.cell_to_oldcell)
-#end
-#
-#function get_cell_id(trian::RestrictedTriangulation)
-#  reindex(get_cell_id(trian.oldtrian),trian.cell_to_oldcell)
-#end
-#
-#function restrict(f::AbstractArray,trian::RestrictedTriangulation)
-#  reindex(restrict(f,trian.oldtrian),trian.cell_to_oldcell)
-#end
-#
-#function get_normal_vector(trian::RestrictedTriangulation)
-#  reindex(get_normal_vector(trian.oldtrian),trian.cell_to_oldcell)
-#end

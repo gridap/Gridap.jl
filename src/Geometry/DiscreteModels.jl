@@ -391,18 +391,6 @@ function Triangulation(model::DiscreteModel)
 end
 
 """
-"""
-function Triangulation(model::DiscreteModel,cell_to_oldcell::AbstractVector{<:Integer})
-  oldtrian = Triangulation(model)
-  RestrictedTriangulation(oldtrian,cell_to_oldcell)
-end
-
-function Triangulation(model::DiscreteModel,cell_to_mask::AbstractVector{Bool})
-  oldtrian = Triangulation(model)
-  RestrictedTriangulation(oldtrian,cell_to_mask)
-end
-
-"""
     get_triangulation(model::DiscreteModel)
 """
 function get_triangulation(model::DiscreteModel)

@@ -1,10 +1,11 @@
 module RestrictedTriangulationsTests
 
+using Gridap.Arrays
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Test
 
-domain = (0,1,0,1)
+domain = (-1,1,-1,1)
 partition = (10,10)
 oldmodel = CartesianDiscreteModel(domain,partition)
 oldtrian = get_triangulation(oldmodel)
@@ -18,6 +19,22 @@ trian_portion = RestrictedTriangulation(oldtrian,cell_to_oldcell)
 trian_portion_portion = RestrictedTriangulation(trian_portion,[3,1])
 test_triangulation(trian_portion_portion)
 @test get_cell_id(trian_portion_portion)==[7,2]
+
+const R = 0.7
+
+function is_in(coords)
+  n = length(coords)
+  x = (1/n)*sum(coords)
+  d = x[1]^2 + x[2]^2 - R^2
+  d < 0
+end
+
+oldcell_to_coods = get_cell_coordinates(oldtrian)
+oldcell_to_mask = lazy_map(is_in,oldcell_to_coods)
+trian = RestrictedTriangulation(oldtrian,oldcell_to_mask)
+trian = Triangulation(oldmodel,oldcell_to_mask)
+trian = Triangulation(oldtrian,oldcell_to_mask)
+trian = Triangulation(oldmodel,"interior")
 
 #using Gridap.Visualization
 #writevtk(oldtrian,"oldtrian")

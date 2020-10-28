@@ -14,12 +14,9 @@ using LinearAlgebra: ⋅
 using Gridap.Helpers
 using Gridap.Arrays
 using Gridap.Fields
-#using Gridap.Polynomials
 using Gridap.ReferenceFEs
 using Gridap.TensorValues
 using Gridap.Io
-#using Gridap.Integration
-#using Gridap.CellData
 
 using Gridap.ReferenceFEs: _num_faces
 using Gridap.ReferenceFEs: _num_facets
@@ -30,35 +27,18 @@ using Gridap.ReferenceFEs: _get_offsets
 using Gridap.ReferenceFEs: _get_offset
 using Gridap.ReferenceFEs: _find_unique_with_indices
 
-#using Gridap.Arrays: Reindexed
-#using Gridap.Arrays: IdentityVector
-
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
-#import Gridap.Arrays: reindex
 import Gridap.Arrays: get_array
 import Gridap.Arrays: lazy_append
 import Gridap.Arrays: lazy_map
-#import Gridap.CellData: CellField
-#import Gridap.CellData: CellQuadrature
-#import Gridap.CellData: QPointCellField
-#import Gridap.CellData: get_cell_map
 
 import Gridap.Arrays: return_cache
 import Gridap.Arrays: evaluate!
 import Gridap.Arrays: get_children
-#import Gridap.Fields: evaluate_field_array
-#import Gridap.Fields: gradient
-#import Gridap.Fields: grad2curl
-#import Gridap.Helpers: operate
-
-#import Gridap.Integration: get_coordinates
-#import Gridap.Integration: get_weights
 
 import Gridap.Io: to_dict
 import Gridap.Io: from_dict
-
-#using Gridap.Fields: AffineMapGrad
 
 import Gridap.ReferenceFEs: get_node_coordinates
 import Gridap.ReferenceFEs: num_nodes
@@ -88,14 +68,6 @@ import Gridap.ReferenceFEs: num_cell_dims
 import Gridap.ReferenceFEs: num_point_dims
 import Gridap.ReferenceFEs: simplexify
 import Gridap.ReferenceFEs: get_facet_normal
-
-#import Gridap.Fields: field_array_gradient
-#import Gridap.Fields: lazy_map_lincomb
-#import Gridap.Fields: evaluate_field_array
-#import Gridap.Fields: kernel_evaluate
-#import Gridap.Fields: evaluate
-#import Gridap.Fields: integrate
-
 
 export GridTopology
 export num_cells
@@ -130,8 +102,6 @@ export get_cell_reffes
 export get_cell_shapefuns
 export get_facet_normal
 export test_triangulation
-#export restrict
-#export get_physical_coordinate
 export get_cell_id
 #export cell_measure
 export get_cell_map
@@ -185,13 +155,13 @@ export UnstructuredDiscreteModel
 export CartesianDiscreteModel
 
 export BoundaryTriangulation
-export get_volume_triangulation
-export get_face_to_cell
-export get_face_to_lface
-export get_face_to_cell_map
-export get_face_to_face
-export get_cell_around
-export test_boundary_triangulation
+#export get_volume_triangulation
+#export get_face_to_cell
+#export get_face_to_lface
+#export get_face_to_cell_map
+#export get_face_to_face
+#export get_cell_around
+#export test_boundary_triangulation
 
 #export GenericBoundaryTriangulation
 
@@ -200,8 +170,8 @@ export DiscreteModelPortion
 export SkeletonPair
 export SkeletonTriangulation
 export InterfaceTriangulation
-export get_left_boundary
-export get_right_boundary
+#export get_left_boundary
+#export get_right_boundary
 
 export RestrictedDiscreteModel
 
@@ -248,6 +218,5 @@ include("DiscreteModelPortions.jl")
 include("RestrictedDiscreteModels.jl")
 
 include("AppendedTriangulations.jl")
-
 
 end # module
