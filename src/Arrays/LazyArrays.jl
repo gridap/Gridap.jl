@@ -73,7 +73,11 @@ of the resulting array in order to circumvent type inference.
 end
 
 # This is the function to be overload to specialize on the array types
-@inline lazy_map(::typeof(evaluate),T::Type,k::AbstractArray,f::AbstractArray...) = LazyArray(T,k,f...)
+@inline function lazy_map(::typeof(evaluate),T::Type,k::AbstractArray,f::AbstractArray...)
+  s = _common_size(k,f...)
+  N = length(s)
+  LazyArray(T,Val(N),k,f...)
+end
 
 """
 Subtype of `AbstractArray` which is the result of `lazy_map`. It represents the
@@ -93,6 +97,12 @@ struct LazyArray{G,T,N,F} <: AbstractArray{T,N}
     G = typeof(g)
     F = typeof(f)
     N = ndims(g)
+    new{G,T,N,F}(g, f)
+  end
+  function LazyArray(::Type{T},::Val{N}, g::AbstractArray, f::AbstractArray...) where {T,N}
+    @check ndims(g) == N || N == 1
+    G = typeof(g)
+    F = typeof(f)
     new{G,T,N,F}(g, f)
   end
 end
@@ -186,6 +196,7 @@ function Base.getindex(a::LazyArray{G,T,N}, i::Vararg{Integer,N}) where {G,T,N}
 end
 
 Base.size(a::LazyArray) = size(a.g)
+Base.size(a::LazyArray{G,T,1} where {G,T}) = (length(a.g),)
 
 # Particular implementations for Fill
 
