@@ -166,11 +166,48 @@ end
     Meta.parse("TensorValue{$D1,$D2}(($str))")
 end
 
-# Double contraction
+# a_ij = b_ijk*c_k
+@generated function dot(a::A, b::B) where {A<:MultiValue{Tuple{D1,D2,D3}},B<:MultiValue{Tuple{D3}}} where {D1,D2,D3}
+  ss = String[]
+  for j in 1:D2
+    for i in 1:D1
+      s = join([ "a[$i,$j,$k]*b[$k]+" for k in 1:D3])
+      push!(ss,s[1:(end-1)]*", ")
+    end
+  end
+  str = join(ss)
+  Meta.parse("TensorValue{$D1,$D2}($str)")
+end
 
-#(::Colon)(a::MultiValue{Tuple{D1,D2}},b::MultiValue{Tuple{D1,D2}}) where {D1,D2} = inner(a,b)
-#(::Colon)(a::MultiValue{Tuple{D1,D2}},b::MultiValue{Tuple{D1,D2,D3,D4}}) where {D1,D2,D3,D4} = inner(a,b)
-#(::Colon)(a::MultiValue{Tuple{D1,D2,D3,D4}},b::MultiValue{Tuple{D1,D2}}) where {D1,D2,D3,D4} = inner(a,b)
+# a_ij = c_k*b_kij
+@generated function dot(a::A, b::B) where {A<:MultiValue{Tuple{D1}},B<:MultiValue{Tuple{D1,D2,D3}}} where {D1,D2,D3}
+  ss = String[]
+  for k in 1:D3
+    for j in 1:D2
+      s = join([ "a[$i]*b[$i,$j,$k]+" for i in 1:D1])
+      push!(ss,s[1:(end-1)]*", ")
+    end
+  end
+  str = join(ss)
+  Meta.parse("TensorValue{$D2,$D3}($str)")
+end
+
+# a_ilm = b_ij*c_jlm
+@generated function dot(a::A,b::B) where {A<:MultiValue{Tuple{D,D}},B<:ThirdOrderTensorValue{D}} where D
+  ss = String[]
+  for m in 1:D
+    for l in 1:D
+      for i in 1:D
+        s = join([ "a[$i,$j]*b[$j,$l,$m]+" for j in 1:D])
+        push!(ss,s[1:(end-1)]*", ")
+      end
+    end
+  end
+  str = join(ss)
+  Meta.parse("ThirdOrderTensorValue{$D}($str)")
+end
+
+const ⋅¹ = dot
 
 ###############################################################
 # Inner product (full contraction)
@@ -221,6 +258,89 @@ function inner(a::SymFourthOrderTensorValue{D},b::MultiValue{Tuple{D,D}}) where 
 end
 
 const ⊙ = inner
+
+###############################################################
+# Double Contractions w/ products
+###############################################################
+
+# a_i = b_ijk*c_jk
+@generated function double_contraction(a::A, b::B) where {A<:MultiValue{Tuple{D1,D2,D3}},B<:MultiValue{Tuple{D2,D3}}} where {D1,D2,D3}
+  ss = String[]
+  for i in 1:D1
+    s = join([ "a[$i,$j,$k]*b[$j,$k]+" for j in 1:D2 for k in 1:D3])
+    push!(ss,s[1:(end-1)]*", ")
+  end
+  str = join(ss)
+  Meta.parse("VectorValue{$D1}(($str))")
+end
+
+# a_ijpm = b_ijkl*c_klpm (3D)
+@generated function double_contraction(a::A, b::B) where {A<:SymFourthOrderTensorValue{3},B<:SymFourthOrderTensorValue{3}}
+
+  Sym4TensorIndexing = [1111, 1121, 1131, 1122, 1132, 1133, 2111, 2121, 2131, 2122, 2132, 2133,
+                        3111, 3121, 3131, 3122, 3132, 3133, 2211, 2221, 2231, 2222, 2232, 2233,
+                        2311, 2321, 2331, 2322, 2332, 2333, 3311, 3321, 3331, 3322, 3332, 3333]
+  ss = String[]
+  for off_index in Sym4TensorIndexing
+    i = parse(Int,string(off_index)[1]); j = parse(Int,string(off_index)[2]);
+    m = parse(Int,string(off_index)[3]); p = parse(Int,string(off_index)[4]);
+    s = join([ "a[$i,$j,$k,$l]*b[$k,$l,$m,$p]+" for k in 1:3 for l in 1:3])
+    push!(ss,s[1:(end-1)]*", ")
+  end
+  str = join(ss)
+  Meta.parse("SymFourthOrderTensorValue{3}($str)")
+end
+
+# a_ijpm = b_ijkl*c_klpm (general case)
+@generated function double_contraction(a::SymFourthOrderTensorValue{D}, b::SymFourthOrderTensorValue{D}) where D
+  str = ""
+  for j in 1:D
+    for i in j:D
+      for m in 1:D
+        for p in m:D
+          s = ""
+          for k in 1:D
+            for l in 1:D
+              s *= " a[$i,$j,$k,$l]*b[$k,$l,$p,$m] +"
+            end
+          end
+          str *= s[1:(end-1)]*", "
+        end
+      end
+    end
+  end
+  Meta.parse("SymFourthOrderTensorValue{D}($str)")
+end
+
+# a_ilm = b_ijk*c_jklm
+@generated function double_contraction(a::A,b::B) where {A<:ThirdOrderTensorValue{D},B<:SymFourthOrderTensorValue{D}} where D
+  ss = String[]
+  for m in 1:D
+    for l in 1:D
+      for i in 1:D
+        s = join([ "a[$i,$j,$k]*b[$j,$k,$l,$m]+" for j in 1:D for k in 1:D])
+        push!(ss,s[1:(end-1)]*", ")
+      end
+    end
+  end
+  str = join(ss)
+  Meta.parse("ThirdOrderTensorValue{$D}($str)")
+end
+
+# a_il = b_ijk*c_jkl
+@generated function double_contraction(a::A,b::B) where {A<:ThirdOrderTensorValue{D},B<:ThirdOrderTensorValue{D}} where D
+  ss = String[]
+  for l in 1:D
+    for i in 1:D
+      s = join([ "a[$i,$j,$k]*b[$j,$k,$l]+" for j in 1:D for k in 1:D])
+      push!(ss,s[1:(end-1)]*", ")
+    end
+  end
+  str = join(ss)
+  Meta.parse("TensorValue{$D}($str)")
+end
+
+const ⋅² = double_contraction
 
 ###############################################################
 # Reductions
@@ -478,7 +598,7 @@ for op in (:symmetric_part,)
     end
 end
 
-for op in (:inner,:outer)#,:(:))
+for op in (:inner,:outer,:double_contraction)#,:(:))
     @eval begin
         ($op)(a::GridapType,b::GridapType) = operate($op,a,b)
         ($op)(a::GridapType,b::Number)     = operate($op,a,b)
@@ -487,3 +607,6 @@ for op in (:inner,:outer)#,:(:))
         ($op)(a::Function,  b::GridapType) = operate($op,a,b)
     end
 end
+
+
+
