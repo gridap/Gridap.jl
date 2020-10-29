@@ -18,6 +18,8 @@ using Gridap.Integration
 
 import Gridap.Arrays: get_array
 import Gridap.Arrays: evaluate!
+import Gridap.Fields: gradient
+import Gridap.Fields: ∇∇
 import Gridap.Integration: get_coordinates
 import Gridap.Integration: get_weights
 

@@ -229,6 +229,31 @@ function _to_common_domain(f::CellField,x::CellPoint)
   f_on_trian_x, x
 end
 
+# Gradient
+
+function gradient(a::CellField)
+  cell_∇a = lazy_map(Broadcasting(∇),get_cell_data(a))
+  if DomainStyle(a) == PhysicalDomain()
+    g = cell_∇a
+  else
+    cell_map = get_cell_map(a.trian)
+    g = lazy_map(Broadcasting(push_∇),cell_∇a,cell_map)
+  end
+  GenericCellField(g,a.trian,DomainStyle(a))
+end
+
+function ∇∇(a::CellField)
+  cell_∇∇a = lazy_map(Broadcasting(∇∇),get_cell_data(a))
+  if DomainStyle(a) == PhysicalDomain()
+    h = cell_∇∇a
+  else
+    cell_map = get_cell_map(a.trian)
+    h = lazy_map(Broadcasting(push_∇∇),cell_∇∇a,cell_map)
+  end
+  GenericCellField(h,a.trian,DomainStyle(a))
+end
+
+
 # Operations between CellField
 
 function evaluate!(cache,k::Operation,a::CellField...)

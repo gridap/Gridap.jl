@@ -39,6 +39,16 @@ r = map(xs->ffun.(xs),get_array(x))
 r = reshape(r,length(r))
 test_array(fx,r,≈)
 
+@test_broken begin
+v = GenericCellField(get_cell_shapefuns(trian),trian,ReferenceDomain())
+∇vx = ∇(v)(x)
+test_array(∇vx,collect(∇vx))
+true
+end
+
+∇fx = ∇(f)(x)
+test_array(∇fx,collect(∇fx))
+
 h = Operation(*)(2,f)
 hx = h(x) 
 test_array(hx,2*fx)
@@ -77,29 +87,6 @@ cell_h = rand(num_cells(trian))
 h = CellField(cell_h,trian)
 test_array(h(x),collect(h(x)))
 test_array(h(x_N),collect(h(x_N)))
-
-
-
-
-
-
-
-#Operation(*)(f_N,g_D)
-
-
-
-
-
-
-
-
-
-
-
-kk
-
-
-f(Point(0,0))
 
 
 #np = 3
