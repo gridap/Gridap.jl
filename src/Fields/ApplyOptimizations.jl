@@ -218,6 +218,18 @@ function lazy_map(
   lazy_map(IntegrationMap(),fx,w,jx)
 end
 
+# Pushing the gradient
+
+function lazy_map(k::typeof(push_∇),cell_∇a::AbstractArray,cell_map::AbstractArray)
+  lazy_map(Broadcasting(push_∇),cell_∇a,cell_map)
+end
+
+function lazy_map(k::Broadcasting{typeof(push_∇)},cell_∇a::AbstractArray,cell_map::AbstractArray)
+  cell_Jt = lazy_map(∇,cell_map)
+  cell_invJt = lazy_map(inv,cell_Jt)
+  lazy_map(Broadcasting(⋅),cell_invJt,cell_∇a)
+end
+
 ## Reindex
 #
 ##  j_to_f = lazy_map(Reindex(i_to_f),j_to_i)

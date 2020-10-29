@@ -68,6 +68,8 @@ export gradient
 export ∇
 export ∇∇
 export gradient_type
+export push_∇
+export push_∇∇
 
 export test_field
 export test_field_array

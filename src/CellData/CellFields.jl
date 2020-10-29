@@ -1,512 +1,362 @@
 
 """
-    abstract type CellField <: GridapType end
-
-This is a plain array of fields plus some metadata.
-It is interpreted as a `Field` object on each cell of a computational
-mesh.
+A single point or an array of points on the cells of a Triangulation
+CellField objects can be evaluated efficiently at CellPoint instances.
 """
-abstract type CellField <: GridapType end
-
-"""
-    get_array(cf::CellField)
-"""
-function get_array(cf::CellField)
-  @abstractmethod
+struct CellPoint{DS} <: CellDatum
+  cell_ref_point::AbstractArray{<:Union{Point,AbstractArray{<:Point}}}
+  cell_phys_point::AbstractArray{<:Union{Point,AbstractArray{<:Point}}}
+  trian::Triangulation
+  domain_style::DS
 end
 
-"""
-    get_cell_map(cf::CellField)
-"""
-function get_cell_map(cf::CellField)
-  @abstractmethod
+function CellPoint(
+  cell_ref_point::AbstractArray{<:Union{Point,AbstractArray{<:Point}}},
+  trian::Triangulation,
+  domain_style::ReferenceDomain)
+
+  cell_map = get_cell_map(trian)
+  cell_phys_point = lazy_map(evaluate,cell_map,cell_ref_point)
+  CellPoint(cell_ref_point,cell_phys_point,trian,domain_style)
 end
 
-"""
-    get_cell_axes(cf::CellField)
-"""
-function get_cell_axes(cf::CellField)
-  @abstractmethod
+function CellPoint(
+  cell_phys_point::AbstractArray{<:Union{Point,AbstractArray{<:Point}}},
+  trian::Triangulation,
+  domain_style::PhysicalDomain)
+  cell_invmap = lazy_map(inverse_map,cell_map)
+
+  cell_map = get_cell_map(trian)
+  cell_invmap = lazy_map(inverse_map,cell_map)
+  cell_ref_point = lazy_map(evaluate,cell_invmap,cell_phys_point)
+  CellPoint(cell_ref_point,cell_phys_point,trian,domain_style)
 end
 
-function get_memo(cf::CellField)
-  @abstractmethod
-end
-
-"""
-This trait returns `Val{true}()` when the `CellField` is defined in a
-reference finite element space, and `Val{false}()` when it is defined in the
-physical space
-"""
-RefStyle(::Type{<:CellField}) = @notimplemented
-
-# We use duck typing here for all types marked with the RefStyle
-RefStyle(::Type) = @notimplemented
-RefStyle(a) = RefStyle(typeof(a))
-is_in_ref_space(::Type{T}) where T = get_val_parameter(RefStyle(T))
-is_in_ref_space(::T) where T = is_in_ref_space(T)
-is_in_physical_space(::Type{T}) where T = !is_in_ref_space(T)
-is_in_physical_space(a::T) where T = !is_in_ref_space(T)
-
-"""
-This trait provides information about the field size at a single
-evaluation point.
-
-For physical fields `MetaSizeStyle(T) == Val( () )`
-For test bases `MetaSizeStyle(T) == Val( (:,) )`
-For trial bases `MetaSizeStyle(T) = Val( (1,:) )`
-For fields representing elemental matrices `MetaSizeStyle(T) = Val( (:,:) )`
-"""
-MetaSizeStyle(::Type{<:CellField}) = @notimplemented
-
-# We use duck typing here for all types marked with the MetaSizeStyle trait
-MetaSizeStyle(::Type) = @notimplemented
-MetaSizeStyle(::T) where T = MetaSizeStyle(T)
-get_metasize(::Type{T}) where T = get_val_parameter(MetaSizeStyle(T))
-get_metasize(::T) where T = get_val_parameter(MetaSizeStyle(T))
-is_test(::Type{T}) where T = get_metasize(T) == (:,)
-is_test(::T) where T = is_test(T)
-is_trial(::Type{T}) where T = get_metasize(T) == (1,:)
-is_trial(::T) where T = is_trial(T)
-is_basis(::Type{T}) where T =  is_test(T) || is_trial(T)
-is_basis(::T) where T = is_basis(T)
-
-# Tester
-
-"""
-    test_cell_field(
-      cf::CellField,
-      x::AbstractArray,
-      b::AbstractArray,
-      pred=(==);
-      grad=nothing)
-"""
-function test_cell_field(cf::CellField,x::AbstractArray,b::AbstractArray,pred=(==);grad=nothing)
-  cell_map = get_cell_map(cf)
-  @test isa(cell_map,AbstractArray)
-  a = evaluate(cf,x)
-  test_array(a,b,pred)
-  if grad != nothing
-    g = evaluate(gradient(cf),x)
-    test_array(g,grad,pred)
-  end
-  rs = RefStyle(cf)
-  @test isa(get_val_parameter(rs),Bool)
-  _cf = change_ref_style(cf)
-  @test get_array(_cf) === get_array(cf)
-  @test is_in_ref_space(cf) == !is_in_ref_space(_cf)
-  @test is_in_physical_space(cf) == !is_in_physical_space(_cf)
-  @test get_metasize(_cf) == get_metasize(cf)
-  @test get_cell_axes(_cf) == get_cell_axes(cf)
-  @test isa(get_cell_axes(cf),AbstractArray{<:Tuple})
-  @test isa(get_metasize(cf),Tuple)
-  @test isa(MetaSizeStyle(cf),Val)
-  @test isa(get_memo(cf),Dict)
-end
-
-# Concrete implementation
-
-"""
-struct GenericCellField{R,S} <: CellField
-  # Private fields
-end
-
-"""
-struct GenericCellField{R,S} <: CellField
-  array::AbstractArray
-  cell_map::AbstractArray
-  ref_trait::Val{R}
-  cell_axes::AbstractArray
-  metasize::Val{S}
-  memo::Dict
-  function GenericCellField(
-    array::AbstractArray,
-    cell_map::AbstractArray,
-    ref_trait::Val{R},
-    cell_axes::AbstractArray,
-    metasize::Val{S}) where {R,S}
-    memo = Dict()
-    new{R,S}(array,cell_map,ref_trait,cell_axes,metasize,memo)
+function get_cell_data(f::CellPoint)
+  if DomainStyle(f) == ReferenceDomain()
+    f.cell_ref_point
+  else
+    f.cell_phys_point
   end
 end
 
-function GenericCellField(array::AbstractArray,cell_map::AbstractArray)
-  GenericCellField(array,cell_map,Val{true}(),Fill((),length(cell_map)))
+get_triangulation(f::CellPoint) = f.trian
+DomainStyle(::Type{CellPoint{DS}}) where DS = DS()
+
+function change_domain(a::CellPoint,::ReferenceDomain,::PhysicalDomain)
+  CellPoint(a.cell_ref_point,a.cell_phys_point,a.trian,PhysicalDomain())
 end
 
-function GenericCellField(array::AbstractArray,cell_map::AbstractArray,ref_trait::Val)
-  GenericCellField(array,cell_map,ref_trait,Fill((),length(cell_map)))
+function change_domain(a::CellPoint,::PhysicalDomain,::ReferenceDomain)
+  CellPoint(a.cell_ref_point,a.cell_phys_point,a.trian,ReferenceDomain())
 end
 
-function GenericCellField(
-  array::AbstractArray,cell_map::AbstractArray,ref_trait::Val,cell_axes::AbstractArray)
-  GenericCellField(array,cell_map,ref_trait,cell_axes,Val(()))
-end
-
-function get_array(cf::GenericCellField)
-  cf.array
-end
-
-function get_cell_map(cf::GenericCellField)
-  cf.cell_map
-end
-
-function get_memo(cf::GenericCellField)
-  cf.memo
-end
-
-function get_cell_axes(cf::GenericCellField)
-  cf.cell_axes
-end
-
-function RefStyle(::Type{<:GenericCellField{R}}) where {R}
-  Val{R}()
-end
-
-function MetaSizeStyle(::Type{<:GenericCellField{R,S}}) where {R,S}
-  Val{S}()
-end
-
-# The rest of the file is some default API using the CellField interface
-
-# Preserving and manipulating the metadata
-
+# Possibly with a different name
 """
-    similar_object(cf::CellField,array::AbstractArray,cell_axes::AbstractArray,msize_style::Val)
 """
-function similar_object(cf::CellField,array::AbstractArray,cell_axes::AbstractArray,msize_style::Val)
-  cm = get_cell_map(cf)
-  similar_object(cf,array,cm,cell_axes,msize_style)
-end
-
-function similar_object(
-  cf::CellField,array::AbstractArray,cell_map::AbstractArray,cell_axes::AbstractArray,msize_style::Val)
-  GenericCellField(array,cell_map,RefStyle(cf),cell_axes,msize_style)
+function get_cell_points(trian::Triangulation)
+  cell_ref_coords = get_cell_ref_coordinates(trian)
+  cell_phys_coords = get_cell_coordinates(trian)
+  CellPoint(cell_ref_coords,cell_phys_coords,trian,ReferenceDomain())
 end
 
 """
-   change_ref_style(cf::CellField)
-
-Return an object with the same array and metadata as in `cf`, except for `RefStyle` which is changed.
 """
-function change_ref_style(cf::CellField)
-  ref_sty = RefStyle(cf)
-  bool = !get_val_parameter(ref_sty)
-  new_sty = Val{bool}()
-  ar = get_array(cf)
-  cm = get_cell_map(cf)
-  GenericCellField(ar,cm,new_sty,get_cell_axes(cf),MetaSizeStyle(cf))
+abstract type CellField <: CellDatum end
+
+function CellField(f::Function,trian::Triangulation,domain_style::DomainStyle)
+  s = size(get_cell_map(trian))
+  cell_field = Fill(GenericField(f),s)
+  GenericCellField(cell_field,trian,PhysicalDomain())
 end
 
-# Move between ref and phys spaces by using the underling cell_map
-
-to_ref_space(a::CellField) = _to_ref_space(a,RefStyle(a))
-_to_ref_space(a,::Val{true}) = a
-function _to_ref_space(a,::Val{false})
-  cell_map = get_cell_map(a)
-  array = compose(  get_array(a), cell_map  )
-  no = similar_object(a,array,get_cell_axes(a),MetaSizeStyle(a))
-  change_ref_style(no)
+function CellField(f::Number,trian::Triangulation,domain_style::DomainStyle)
+  s = size(get_cell_map(trian))
+  cell_field = Fill(ConstantField(f),s)
+  GenericCellField(cell_field,trian,domain_style)
 end
 
-to_physical_space(a::CellField) = _to_physical_space(a,RefStyle(a))
-_to_physical_space(a,::Val{true}) = @notimplemented # and probably not doable in some cases
-_to_physical_space(a,::Val{false}) = a
+function CellField(f::AbstractArray{<:Number},trian::Triangulation,domain_style::DomainStyle)
+  @check length(f)==num_cells(trian)  """\n
+  You are trying to build a CellField from an array of length $(length(f))
+  on a Triangulation with $(num_cells(trian)) cells. The length of the given array
+  and the number of cells should match.
+  """
+  cell_field = lazy_map(ConstantField,f)
+  GenericCellField(cell_field,trian,domain_style)
+end
 
-# Assumption : x ALWAYS defined in the reference space
-# In the future we can also add the RefStyle to x by defining CellPoints
+function CellField(f::CellField,trian::Triangulation,domain_style::DomainStyle)
+  change_domain(f,trian,domain_style)
+end
+
+function CellField(f,trian::Triangulation)
+  CellField(f,trian,ReferenceDomain())
+end
+
+evaluate!(cache,f::Function,x::CellPoint) = CellField(f,get_triangulation(x))(x)
+
+function change_domain(a::CellField,::ReferenceDomain,::PhysicalDomain)
+  trian = get_triangulation(a)
+  cell_map = get_cell_map(trian)
+  cell_invmap = lazy_map(inverse_map,cell_map)
+  cell_field_ref = get_cell_data(cell_field)
+  cell_field_phys = lazy_map(Broadcasting(∘),cell_field_ref,cell_invmap)
+  GenericCellField(cell_field_phys,trian,PhysicalDomain())
+end
+
+function change_domain(a::CellField,::PhysicalDomain,::ReferenceDomain)
+  trian = get_triangulation(a)
+  cell_map = get_cell_map(trian)
+  cell_field_phys = get_cell_data(a)
+  cell_field_ref = lazy_map(Broadcasting(∘),cell_field_phys,cell_map)
+  GenericCellField(cell_field_ref,trian,ReferenceDomain())
+end
+
 """
-    evaluate(cf::CellField,x)
 """
-function evaluate(cf::CellField,x::AbstractArray)
-  key = (:evaluate,objectid(x))
-  memo = get_memo(cf)
-  if !haskey(memo,key)
-    memo[key] = _evaluate(cf,x,RefStyle(cf))
+function change_domain(a::CellField,target_trian::Triangulation,target_domain::DomainStyle)
+  change_domain(a,DomainStyle(a),target_trian,target_domain)
+end
+
+function change_domain(a::CellField,::ReferenceDomain,trian::Triangulation,::ReferenceDomain)
+  trian_a = get_triangulation(a)
+  if trian_a === trian
+    return a
+  elseif trian_a === get_background_triangulation(trian)
+    cell_id = get_cell_id(trian)
+    @notimplementedif isa(cell_id,SkeletonPair)
+    cell_a_q = lazy_map(Reindex(get_cell_data(a)),cell_id)
+    cell_s2q = get_cell_ref_map(trian)
+    cell_field = lazy_map(Broadcasting(∘),cell_a_q,cell_s2q)
+    GenericCellField(cell_field,trian,ReferenceDomain())
+  else
+    @unreachable """\n
+    We cannot move the given CellField to the reference domain of the requested triangulation.
+    Make sure that the given triangulation is either the same as the trianulation on which the
+    CellField is defined, or that the latter triangulation is the background of the former.
+    """
   end
-  memo[key]
 end
 
-function _evaluate(cf::CellField,x::AbstractArray,::Val{true})
-  evaluate_field_array(get_array(cf),x)
-end
-
-function _evaluate(cf::CellField,x::AbstractArray,::Val{false})
-  cm = get_cell_map(cf)
-  _x = evaluate(cm,x)
-  evaluate_field_array(get_array(cf),_x)
-end
-
-"""
-    length(cf::CellField)
-"""
-function Base.length(cf::CellField)
-  a = get_array(cf)
-  length(a)
-end
-
-function Arrays.reindex(cf::CellField,a::AbstractVector)
-  array = reindex(get_array(cf),a)
-  cell_axes = reindex(get_cell_axes(cf),a)
-  cell_map = reindex(get_cell_map(cf),a)
-  similar_object(cf,array,cell_map,cell_axes,MetaSizeStyle(cf))
-end
-
-# Bases-related
-function trialize_cell_basis(test::CellField)
-  _trialize_cell_basis(test,MetaSizeStyle(test))
-end
-
-function _trialize_cell_basis(test,metasize)
-  @unreachable
-end
-
-function _trialize_cell_basis(trial,metasize::Val{(1,:)})
-  trial
-end
-
-function _trialize_cell_basis(test::CellField,metasize::Val{(:,)})
-  array = trialize_array_of_bases(get_array(test))
-  axs = lazy_map(Fields._add_singleton_block,get_cell_axes(test))
-  similar_object(test,array,axs,Val((1,:)))
-end
-
-function Fields.lincomb(a::CellField,b::AbstractArray)
-  @notimplementedif !is_test(a)
-  array = lincomb(get_array(a),b)
-  axs = Fill((),length(b))
-  similar_object(a,array,axs,Val(()))
-end
-
-# Diff ops
-
-"""
-    gradient(cf::CellField)
-"""
-function gradient(cf::CellField)
-  key = :gradient
-  memo = get_memo(cf)
-  if !haskey(memo,key)
-    a = get_array(cf)
-    ag = field_array_gradient(a)
-    memo[key] = similar_object(cf,ag,get_cell_axes(cf),MetaSizeStyle(cf))
+function change_domain(a::CellField,::PhysicalDomain,trian::Triangulation,::PhysicalDomain)
+  trian_a = get_triangulation(a)
+  if trian_a === trian
+    return a
+  elseif trian_a === get_background_triangulation(trian)
+    cell_id = get_cell_id(trian)
+    @notimplementedif isa(cell_id,SkeletonPair)
+    cell_field = lazy_map(Reindex(get_cell_data(a)),cell_id)
+    GenericCellField(cell_field,trian,PhysicalDomain())
+  else
+    @unreachable """\n
+    We cannot move the given CellField to the physical domain of the requested triangulation.
+    Make sure that the given triangulation is either the same as the trianulation on which the
+    CellField is defined, or that the latter triangulation is the background of the former.
+    """
   end
-  memo[key]
 end
 
-# Operations
+function change_domain(a::CellField,::PhysicalDomain,trian::Triangulation,::ReferenceDomain)
+  a_trian = change_domain(a,trian,PhysicalDomain())
+  change_domain(a_trian,ReferenceDomain())
+end
 
-function operate(op,cf::CellField)
-  key = objectid(op)
-  memo = get_memo(cf)
-  if !haskey(memo,key)
-    a = get_array(cf)
-    b = operate_arrays_of_fields(Fields._UnimplementedField,op,a)
-    memo[key] = similar_object(cf,b,get_cell_axes(cf),MetaSizeStyle(cf))
+function change_domain(a::CellField,::ReferenceDomain,trian::Triangulation,::PhysicalDomain)
+  a_phys = change_domain(a,PhysicalDomain())
+  change_domain(a_phys,trian,PhysicalDomain())
+end
+
+"""
+"""
+struct GenericCellField{DS} <: CellField
+  cell_field::AbstractArray{<:Union{Field,AbstractArray{<:Field}}}
+  trian::Triangulation
+  domain_style::DS
+end
+
+get_cell_data(f::GenericCellField) = f.cell_field
+get_triangulation(f::GenericCellField) = f.trian
+DomainStyle(::Type{GenericCellField{DS}}) where DS = DS()
+
+# Evaluation of CellFields
+
+(a::CellField)(x) = evaluate(a,x)
+
+function evaluate!(cache,f::CellField,x::Point)
+  @notimplemented """\n
+  Evaluation of a CellField at a given Point is not implemented yet.
+
+  This is a feature that we want to have at some point in Gridap.
+  If you are ready to help with this implementation, please contact the
+  Gridap administrators.
+  """
+end
+
+function evaluate!(cache,f::CellField,x::CellPoint)
+  _f, _x = _to_common_domain(f,x)
+  cell_field = get_cell_data(_f)
+  cell_point = get_cell_data(_x)
+  lazy_map(evaluate,cell_field,cell_point)
+end
+
+function _to_common_domain(f::CellField,x::CellPoint)
+
+  trian_f = get_triangulation(f)
+  trian_x = get_triangulation(x)
+
+  if trian_f === trian_x
+    nothing
+  elseif trian_f === get_background_triangulation(trian_x)
+    nothing
+  elseif trian_x === get_background_triangulation(trian_f)
+    @unreachable """\n
+    CellField objects defined on a sub-triangulation cannot be evaluated
+    on the underlying background mesh.
+
+    This happens e.g. when trying to evaluate a CellField defined on a Neumann boundary
+    at a CellPoint defined on the underlying background mesh.
+    """
+  else
+    @unreachable """\n
+    Your are trying to evaluate a CellField on a CellPoint object defined on incompatible
+    triangulations. Verify that either the two objects are defined in the same triangulation
+    or that the triangulaiton of the CellField is the background triangulation of the CellPoint.
+    """
   end
-  memo[key]
+
+  f_on_trian_x = change_domain(f,trian_x,DomainStyle(x))
+  f_on_trian_x, x
 end
 
-function operate(op,cf1::CellField,cf2::CellField)
-  @assert length(cf1) == length(cf2)
-  @assert RefStyle(cf1) == RefStyle(cf2)
-  a1 = get_array(cf1)
-  a2 = get_array(cf2)
-  b = operate_arrays_of_fields(Fields._UnimplementedField,op,a1,a2)
-  axs = lazy_map(field_operation_axes,get_cell_axes(cf1),get_cell_axes(cf2))
-  metasize = field_operation_metasize(get_metasize(cf1),get_metasize(cf2))
-  similar_object(cf1,b,axs,Val(metasize))
+# Gradient
+
+function gradient(a::CellField)
+  cell_∇a = lazy_map(Broadcasting(∇),get_cell_data(a))
+  if DomainStyle(a) == PhysicalDomain()
+    g = cell_∇a
+  else
+    cell_map = get_cell_map(a.trian)
+    g = lazy_map(Broadcasting(push_∇),cell_∇a,cell_map)
+  end
+  GenericCellField(g,a.trian,DomainStyle(a))
 end
 
-function operate(op,cf1::CellField,object)
-  cm = get_cell_map(cf1)
-  cf2 = convert_to_cell_field(object,cm,RefStyle(cf1))
-  operate(op,cf1,cf2)
+function ∇∇(a::CellField)
+  cell_∇∇a = lazy_map(Broadcasting(∇∇),get_cell_data(a))
+  if DomainStyle(a) == PhysicalDomain()
+    h = cell_∇∇a
+  else
+    cell_map = get_cell_map(a.trian)
+    h = lazy_map(Broadcasting(push_∇∇),cell_∇∇a,cell_map)
+  end
+  GenericCellField(h,a.trian,DomainStyle(a))
 end
 
-function operate(op,object,cf2::CellField)
-  cm = get_cell_map(cf2)
-  cf1 = convert_to_cell_field(object,cm,RefStyle(cf2))
-  operate(op,cf1,cf2)
+
+# Operations between CellField
+
+function evaluate!(cache,k::Operation,a::CellField...)
+  _operate_cellfields(k,a...)
 end
 
-function operate(op,args::CellField...)
-  a1 = first(args)
-  @assert all( map( a->length(a) == length(a1), args) )
-  @assert all( map( a->RefStyle(a)==RefStyle(a1), args) )
-  arrs = map(get_array,args)
-  m = operate_arrays_of_fields(Fields._UnimplementedField,op,arrs...)
-  axs = lazy_map(field_operation_axes,map(get_cell_axes,args)...)
-  metasize = field_operation_metasize(map(get_metasize,args)...)
-  similar_object(a1,m,axs,Val(metasize))
+function evaluate!(cache,k::Operation,a::Union{Function,CellField}...)
+  _operate_cellfields(k,_convert_to_cellfields(a...)...)
 end
 
-function operate(op,a1::CellField,args...)
-  cm = get_cell_map(a1)
-  rs = RefStyle(cm)
-  cfs = map(obj->convert_to_cell_field(obj,cm,rs),args)
-  operate(op,a1,cfs...)
+function evaluate!(cache,k::Operation,a::Union{Number,CellField}...)
+  _operate_cellfields(k,_convert_to_cellfields(a...)...)
 end
 
-# Conversions
-
-"""
-    convert_to_cell_field(object,cell_map,ref_style)
-"""
-function convert_to_cell_field(object,cell_map,ref_style::Val)
-  @abstractmethod
+function evaluate!(cache,k::Operation,a::Union{AbstractArray{<:Number},CellField}...)
+  _operate_cellfields(k,_convert_to_cellfields(a...)...)
 end
 
-function convert_to_cell_field(object,cell_map)
-  ref_style = Val{true}()
-  convert_to_cell_field(object,cell_map,ref_style)
-end
+# Why julia hangs with this method????
+#
+#function evaluate!(cache,k::Operation,a::Union{Function,Number,AbstractArray,CellField}...)
+#  b = _convert_to_cellfields(a...)
+#  _operate_cellfields(k,b...)
+#end
 
-function convert_to_cell_field(object::CellField,cell_map)
-  @assert length(object) == length(cell_map)
-  object
-end
+function _operate_cellfields(k::Operation,a...)
+  b = _to_common_domain(a...)
+  trian = get_triangulation(first(b))
+  domain_style = DomainStyle(first(b))
+  cell_b = map(get_cell_data,b)
 
-# pre-defined conversions
-
-function convert_to_cell_field(object::CellField,cell_map,ref_style::Val)
-  @assert RefStyle(object) == ref_style
-  object
-end
-
-function convert_to_cell_field(object::AbstractArray,cell_map,ref_style::Val)
-  @assert length(object) == length(cell_map)
-  GenericCellField(object,cell_map,ref_style)
-end
-
-function convert_to_cell_field(object::Function,cell_map,ref_style::Val{true})
-  b = compose(object,cell_map)
-  GenericCellField(b,cell_map,Val{true}())
-end
-
-function convert_to_cell_field(fun::Function,cell_map,ref_style::Val{false})
-  field = function_field(fun)
-  cell_field = Fill(field,length(cell_map))
-  GenericCellField(cell_field,cell_map,Val{false}())
-end
-
-function convert_to_cell_field(object::Number,cell_map,ref_style::Val)
-  a = Fill(object,length(cell_map))
-  GenericCellField(a,cell_map,ref_style)
-end
-
-# Skeleton related
-
-"""
-    struct SkeletonCellField <: GridapType
-      left::CellField
-      right::CellField
+  # Try to catch errors before hiding them deep in the lazy operation tree.
+  if num_cells(trian) != 0
+    bi = map(first,cell_b)
+    ci = Broadcasting(k)(bi...)
+    if domain_style == ReferenceDomain()
+      xi = first(get_cell_ref_coordinates(trian))
+    else
+      xi = first(get_cell_coordinates(trian))
     end
+    try
+      cixi = evaluate(ci,xi)
+    catch
+      @unreachable """\n
+      It is not possible to perform operation $(k.op) on the given cell fields.
 
-Supports the same differential and algebraic operations than [`CellField`](@ref)
-"""
-struct SkeletonCellField <: GridapType
-  left::CellField
-  right::CellField
-end
-
-get_inward(a::SkeletonCellField) = a.left
-
-get_outward(a::SkeletonCellField) = a.right
-
-function Base.getproperty(x::SkeletonCellField, sym::Symbol)
-  if sym in (:inward,:⁺)
-    get_inward(x)
-  elseif sym in (:outward,:⁻)
-    get_outward(x)
-  else
-    getfield(x, sym)
+      See the catched error for more information.
+      """
+    end
   end
+
+  cell_c = lazy_map(Broadcasting(k),cell_b...)
+  GenericCellField(cell_c,trian,domain_style)
 end
 
-"""
-    get_cell_map(a::SkeletonCellField)
-"""
-function get_cell_map(a::SkeletonCellField)
-  get_cell_map(a.left)
+function _convert_to_cellfields(a...)
+  a1 = filter(i->isa(i,CellField),a)
+  a2 = _to_common_domain(a1...)
+  target_domain = DomainStyle(first(a2))
+  target_trian = get_triangulation(first(a2))
+  map(i->CellField(i,target_trian,target_domain),a)
 end
 
-"""
-    jump(sf::SkeletonCellField)
-"""
-function jump(sf::SkeletonCellField)
-  sf.⁺ - sf.⁻
-end
+function _to_common_domain(a::CellField...)
 
-"""
-    mean(sf::SkeletonCellField)
-"""
-function mean(sf::SkeletonCellField)
-  operate(_mean,sf.⁺,sf.⁻)
-end
-
-_mean(x,y) = 0.5*x + 0.5*y
-
-function gradient(cf::SkeletonCellField)
-  left = gradient(cf.left)
-  right = gradient(cf.right)
-  SkeletonCellField(left,right)
-end
-
-function operate(op,cf::SkeletonCellField)
-  left = operate(op,cf.left)
-  right = operate(op,cf.right)
-  SkeletonCellField(left,right)
-end
-
-function operate(op,cf1::SkeletonCellField,cf2::SkeletonCellField)
-  left = operate(op,cf1.left,cf2.left)
-  right = operate(op,cf1.right,cf2.right)
-  SkeletonCellField(left,right)
-end
-
-function operate(op,cf1::SkeletonCellField,cf2::CellField)
-  left = operate(op,cf1.left,cf2)
-  right = operate(op,cf1.right,cf2)
-  SkeletonCellField(left,right)
-end
-
-function operate(op,cf1::CellField,cf2::SkeletonCellField)
-  left = operate(op,cf1,cf2.left)
-  right = operate(op,cf1,cf2.right)
-  SkeletonCellField(left,right)
-end
-
-function operate(op,cf1::SkeletonCellField,object)
-  cm = get_cell_map(cf1)
-  cf2 = convert_to_cell_field(object,cm,RefStyle(cf1.left))
-  operate(op,cf1,cf2)
-end
-
-function operate(op,object,cf2::SkeletonCellField)
-  cm = get_cell_map(cf2)
-  cf1 = convert_to_cell_field(object,cm,RefStyle(cf2.left))
-  operate(op,cf1,cf2)
-end
-
-function merge_cell_dofs_at_skeleton(idsL,idsR,axesL,axesR)
-  blocks = (idsL,idsR)
-  blockids = [(1,),(2,)]
-  axs = create_array_of_blocked_axes(axesL,axesR)
-  VectorOfBlockArrayCoo(blocks,blockids,axs)
-end
-
-function merge_cell_fields_at_skeleton(cfL,cfR)
-  @assert is_basis(cfL) == is_basis(cfR)
-  if !is_basis(cfL)
-    SkeletonCellField(cfL,cfR)
+  # Find a suitable domain style
+  if any( map(i->DomainStyle(i)==ReferenceDomain(),a) )
+    target_domain = ReferenceDomain()
   else
-    ax1 = get_cell_axes(cfL)
-    ax2 = get_cell_axes(cfR)
-    arrL = insert_array_of_bases_in_block(1,get_array(cfL),ax1,ax2)
-    cfSL = similar_object(cfL,arrL,arrL.axes,MetaSizeStyle(cfL))
-    arrR = insert_array_of_bases_in_block(2,get_array(cfR),ax1,ax2)
-    cfSR = similar_object(cfR,arrR,arrR.axes,MetaSizeStyle(cfR))
-    SkeletonCellField(cfSL,cfSR)
+    target_domain = PhysicalDomain()
   end
+
+  # Find a suitable triangulation
+  msg = """\n
+  You are trying to do an operation between CellField objects defined on
+  incompatible triangulations.
+
+  Make sure that all CellField objects are defined on the background triangulation
+  or that the number of different sub-triangulations is equal to one.
+
+  For instace:
+
+  - 3 cell fields 2, two them on the same Neumann boundary and the other on the background mesh is OK.
+
+  - 2 cell fields defined on 2 different Neumann boundaries is NOT OK.
+  """
+  trian_candidates = unique(objectid,map(get_triangulation,a))
+  if length(trian_candidates) == 1
+    target_trian = first(trian_candidates)
+  elseif length(trian_candidates) == 2
+    trian_a, trian_b = trian_candidates
+    if trian_a === trian_b
+      target_trian = trian_a
+    elseif trian_a === get_background_triangulation(trian_b)
+      target_trian = trian_b
+    elseif trian_b === get_background_triangulation(trian_a)
+      target_trian = trian_a
+    else
+      @unreachable msg
+    end
+  else
+    @unreachable msg
+  end
+  map(i->change_domain(i,target_trian,target_domain),a)
 end
+

@@ -56,9 +56,9 @@ end
 #  lazy_append(a,b)
 #end
 
-function get_cell_reffes(trian::AppendedTriangulation)
-  a = get_cell_reffes(trian.a)
-  b = get_cell_reffes(trian.b)
+function get_cell_reffe(trian::AppendedTriangulation)
+  a = get_cell_reffe(trian.a)
+  b = get_cell_reffe(trian.b)
   lazy_append(a,b)
 end
 

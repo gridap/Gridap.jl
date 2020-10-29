@@ -269,6 +269,13 @@ d = map(+,a,b)
 @test size(c) == size(d)
 @test  c == d
 
+a = fill(x->2*x,3,3)
+b = rand(9)
+c = lazy_map(evaluate,a,b)
+@test size(c) == (9,)
+@test ndims(c) == 1
+test_array(c,2*b)
+
 # Test the intermediate results caching mechanism
 
 a = Arrays.ArrayWithCounter(fill(rand(2,3),12))

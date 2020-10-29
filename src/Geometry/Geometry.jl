@@ -89,6 +89,7 @@ export RegularityStyle
 export is_oriented
 export is_regular
 export expand_cell_data
+export compress_cell_data
 
 export UnstructuredGridTopology
 
@@ -98,7 +99,8 @@ export BackgroundTriangulation
 export SubTriangulation
 export get_reffes
 export get_cell_coordinates
-export get_cell_reffes
+export get_cell_ref_coordinates
+export get_cell_reffe
 export get_cell_shapefuns
 export get_facet_normal
 export test_triangulation
