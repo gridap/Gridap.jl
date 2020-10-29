@@ -232,13 +232,27 @@ end
 # Operations between CellField
 
 function evaluate!(cache,k::Operation,a::CellField...)
-  _operate_cellfields(a...)
+  _operate_cellfields(k,a...)
 end
 
-function evaluat!(cache,k::Operation,a::Union{Function,Number,AbstractArray,CellField}...)
-  b = _convert_to_cellfields(a...)
-  _operate_cellfields(k,b...)
+function evaluate!(cache,k::Operation,a::Union{Function,CellField}...)
+  _operate_cellfields(k,_convert_to_cellfields(a...)...)
 end
+
+function evaluate!(cache,k::Operation,a::Union{Number,CellField}...)
+  _operate_cellfields(k,_convert_to_cellfields(a...)...)
+end
+
+function evaluate!(cache,k::Operation,a::Union{AbstractArray{<:Number},CellField}...)
+  _operate_cellfields(k,_convert_to_cellfields(a...)...)
+end
+
+# Why julia hangs with this method????
+#
+#function evaluate!(cache,k::Operation,a::Union{Function,Number,AbstractArray,CellField}...)
+#  b = _convert_to_cellfields(a...)
+#  _operate_cellfields(k,b...)
+#end
 
 function _operate_cellfields(k::Operation,a...)
   b = _to_common_domain(a...)
@@ -275,41 +289,8 @@ function _convert_to_cellfields(a...)
   a2 = _to_common_domain(a1...)
   target_domain = DomainStyle(first(a2))
   target_trian = get_triangulation(first(a2))
-  a3 = map(i->CellField(i,target_trian,target_domain),a)
-  _operate_cellfields(k,a3...)
+  map(i->CellField(i,target_trian,target_domain),a)
 end
-
-#evaluate!(cache,k::Operation,a::Number,b::CellField) = _operate_cellfields(k,a,b)
-#evaluate!(cache,k::Operation,a::CellField,b::Number) = _operate_cellfields(k,a,b)
-#evaluate!(cache,k::Operation,a::Function,b::CellField) = _operate_cellfields(k,a,b)
-#evaluate!(cache,k::Operation,a::CellField,b::Function) = _operate_cellfields(k,a,b)
-#evaluate!(cache,k::Operation,a::AbstractArray,b::CellField) = _operate_cellfields(k,a,b)
-#evaluate!(cache,k::Operation,a::CellField,b::AbstractArray) = _operate_cellfields(k,a,b)
-
-## TODO: Julia hangs if using this signature, why ????
-##function evaluat!(cache,k::Operation,a::Union{Function,Number,AbstractArray,CellField}...)
-#function _operate_cellfields(k::Operation,a::Union{Function,Number,AbstractArray,CellField}...)
-#  a1 = filter(i->isa(i,CellField),a)
-#  a2 = _to_common_domain(a1...)
-#  target_domain = DomainStyle(first(a2))
-#  target_trian = get_triangulation(first(a2))
-#  a3 = map(i->CellField(i,target_trian,target_domain),a)
-#  evaluate(k,a3...)
-#end
-
-
-#function evaluate!(cache,k::Operation,a::Union{Function,Number,AbstractArray,CellField}...)
-#  @show a
-#  a1 = filter(i->isa(i,CellField),a)
-#  @show a1
-#  a2 = _to_common_domain(a1...)
-#  @show a2
-#  target_domain = DomainStyle(first(a2))
-#  target_trian = get_triangulation(first(a2))
-#  a3 = map(i->CellField(i,target_trian,target_domain),a)
-#  @show a3
-#  evaluate(k,a3...)
-#end
 
 function _to_common_domain(a::CellField...)
 

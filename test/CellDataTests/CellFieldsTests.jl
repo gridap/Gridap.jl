@@ -39,17 +39,14 @@ r = map(xs->ffun.(xs),get_array(x))
 r = reshape(r,length(r))
 test_array(fx,r,≈)
 
-@show "jjjj"
-k = Operation(*)
-#a3 = CellData._operate_cellfields(k,2,f)
-@show "kkk"
-a3 = evaluate(k,2,f)
+h = Operation(*)(2,f)
+hx = h(x) 
+test_array(hx,2*fx)
 
-kk
-
-
-
-
+a = fill(2,num_cells(trian))
+h = Operation(*)(a,f)
+hx = h(x) 
+test_array(hx,2*fx)
 
 fx = evaluate(ffun,x)
 test_array(fx,r,≈)
@@ -80,6 +77,10 @@ cell_h = rand(num_cells(trian))
 h = CellField(cell_h,trian)
 test_array(h(x),collect(h(x)))
 test_array(h(x_N),collect(h(x_N)))
+
+
+
+
 
 
 
