@@ -113,15 +113,9 @@ fp = v
 ∇∇fp = fill(zero(ThirdOrderTensorValue{2,2,2,Float64,6}),length(v))
 test_field_array(f,p,fp)
 test_field_array(f,p,fp,grad=∇fp)
-test_field_array(f,p,fp,grad=∇fp,gradgrad=∇∇fp)
 
-test_field_array(f,x,result(f,x))
-test_field_array(f,x,result(f,x),grad=result(∇.(f),x))
-test_field_array(f,x,result(f,x),grad=result(∇.(f),x),gradgrad=result(∇∇.(f),x))
-
-test_field_array(f,z,result(f,z))
-test_field_array(f,z,result(f,z),grad=result(∇.(f),z))
-test_field_array(f,z,result(f,z),grad=result(∇.(f),z),gradgrad=result(∇∇.(f),z))
+test_field_array(f,x,repeat(transpose(v),np))
+test_field_array(f,x,repeat(transpose(v),np),grad=zeros(TensorValue{2,2,Float64},np,length(v)))
 
 #using BenchmarkTools
 #
@@ -244,6 +238,17 @@ test_field_array(f,z,result(f,z),grad=result(∇.(f),z))
 #c = return_cache(∇f,x)
 #@btime evaluate!($c,$∇f,$x)
 
+# MockFieldArray (this mimics how polynomial bases will be implemented)
+
+b = MockFieldArray(v)
+
+f1 = Broadcasting(Operation(*))(a,b)
+test_field_array(f1,p,fp)
+test_field_array(f1,p,fp,grad=∇fp)
+test_field_array(f1,x,result(f,x))
+test_field_array(f1,x,result(f,x),grad=result(∇.(f),x))
+test_field_array(f1,z,result(f,z))
+test_field_array(f1,z,result(f,z),grad=result(∇.(f),z))
 
 # transpose of an array of fields
 
