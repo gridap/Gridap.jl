@@ -4,28 +4,51 @@ A single point or an array of points on the cells of a Triangulation
 CellField objects can be evaluated efficiently at CellPoint instances.
 """
 struct CellPoint{DS} <: CellDatum
-  cell_point::AbstractArray{<:Union{Point,AbstractArray{<:Point}}}
+  cell_ref_point::AbstractArray{<:Union{Point,AbstractArray{<:Point}}}
+  cell_phys_point::AbstractArray{<:Union{Point,AbstractArray{<:Point}}}
   trian::Triangulation
   domain_style::DS
 end
 
-get_cell_data(f::CellPoint) = f.cell_point
+function CellPoint(
+  cell_ref_point::AbstractArray{<:Union{Point,AbstractArray{<:Point}}},
+  trian::Triangulation,
+  domain_style::ReferenceDomain)
+
+  cell_map = get_cell_map(trian)
+  cell_phys_point = lazy_map(evaluate,cell_map,cell_ref_point)
+  CellPoint(cell_ref_point,cell_phys_point,trian,domain_style)
+end
+
+function CellPoint(
+  cell_phys_point::AbstractArray{<:Union{Point,AbstractArray{<:Point}}},
+  trian::Triangulation,
+  domain_style::PhysicalDomain)
+  cell_invmap = lazy_map(inverse_map,cell_map)
+
+  cell_map = get_cell_map(trian)
+  cell_invmap = lazy_map(inverse_map,cell_map)
+  cell_ref_point = lazy_map(evaluate,cell_invmap,cell_phys_point)
+  CellPoint(cell_ref_point,cell_phys_point,trian,domain_style)
+end
+
+function get_cell_data(f::CellPoint)
+  if DomainStyle(f) == ReferenceDomain()
+    f.cell_ref_point
+  else
+    f.cell_phys_point
+  end
+end
+
 get_triangulation(f::CellPoint) = f.trian
 DomainStyle(::Type{CellPoint{DS}}) where DS = DS()
 
 function change_domain(a::CellPoint,::ReferenceDomain,::PhysicalDomain)
-  cell_map = get_cell_map(a.trian)
-  cell_q = a.cell_point
-  cell_x = lazy_map(evaluate,cell_map,cell_q)
-  CellPoint(cell_x,a.trian,PhysicalDomain())
+  CellPoint(a.cell_ref_point,a.cell_phys_point,a.trian,PhysicalDomain())
 end
 
 function change_domain(a::CellPoint,::PhysicalDomain,::ReferenceDomain)
-  cell_map = get_cell_map(a.trian)
-  cell_invmap = lazy_map(inverse_map,cell_map)
-  cell_x = a.cell_point
-  cell_q = lazy_map(evaluate,cell_invmap,cell_x)
-  CellPoint(cell_q,a.trian,ReferenceDomain())
+  CellPoint(a.cell_ref_point,a.cell_phys_point,a.trian,ReferenceDomain())
 end
 
 # Possibly with a different name
@@ -33,12 +56,45 @@ end
 """
 function get_cell_points(trian::Triangulation)
   cell_ref_coords = get_cell_ref_coordinates(trian)
-  CellPoint(cell_ref_coords,trian,ReferenceDomain())
+  cell_phys_coords = get_cell_coordinates(trian)
+  CellPoint(cell_ref_coords,cell_phys_coords,trian,ReferenceDomain())
 end
 
 """
 """
 abstract type CellField <: CellDatum end
+
+function CellField(f::Function,trian::Triangulation,domain_style::DomainStyle)
+  s = size(get_cell_map(trian))
+  cell_field = Fill(GenericField(f),s)
+  GenericCellField(cell_field,trian,PhysicalDomain())
+end
+
+function CellField(f::Number,trian::Triangulation,domain_style::DomainStyle)
+  s = size(get_cell_map(trian))
+  cell_field = Fill(ConstantField(f),s)
+  GenericCellField(cell_field,trian,domain_style)
+end
+
+function CellField(f::AbstractArray{<:Number},trian::Triangulation,domain_style::DomainStyle)
+  @check length(f)==num_cells(trian)  """\n
+  You are trying to build a CellField from an array of length $(length(f))
+  on a Triangulation with $(num_cells(trian)) cells. The length of the given array
+  and the number of cells should match.
+  """
+  cell_field = lazy_map(ConstantField,f)
+  GenericCellField(cell_field,trian,domain_style)
+end
+
+function CellField(f::CellField,trian::Triangulation,domain_style::DomainStyle)
+  change_domain(f,trian,domain_style)
+end
+
+function CellField(f,trian::Triangulation)
+  CellField(f,trian,ReferenceDomain())
+end
+
+evaluate!(cache,f::Function,x::CellPoint) = CellField(f,get_triangulation(x))(x)
 
 function change_domain(a::CellField,::ReferenceDomain,::PhysicalDomain)
   trian = get_triangulation(a)
@@ -52,8 +108,8 @@ end
 function change_domain(a::CellField,::PhysicalDomain,::ReferenceDomain)
   trian = get_triangulation(a)
   cell_map = get_cell_map(trian)
-  cell_field_phys = get_cell_data(cell_field)
-  cell_field_ref = lazy_map(Broadcasting(∘),cell_field_phys,cell_invmap)
+  cell_field_phys = get_cell_data(a)
+  cell_field_ref = lazy_map(Broadcasting(∘),cell_field_phys,cell_map)
   GenericCellField(cell_field_ref,trian,ReferenceDomain())
 end
 
@@ -119,18 +175,20 @@ struct GenericCellField{DS} <: CellField
   domain_style::DS
 end
 
-get_cell_data(f::GenericCellField) = f.cell_point
+get_cell_data(f::GenericCellField) = f.cell_field
 get_triangulation(f::GenericCellField) = f.trian
 DomainStyle(::Type{GenericCellField{DS}}) where DS = DS()
 
 # Evaluation of CellFields
 
+(a::CellField)(x) = evaluate(a,x)
+
 function evaluate!(cache,f::CellField,x::Point)
   @notimplemented """\n
-  Evaluation of CellField objects in a given Point is not yet implemented.
+  Evaluation of a CellField at a given Point is not implemented yet.
 
   This is a feature that we want to have at some point in Gridap.
-  If you are ready to help with this implementation, please contact with the
+  If you are ready to help with this implementation, please contact the
   Gridap administrators.
   """
 end
@@ -155,6 +213,9 @@ function _to_common_domain(f::CellField,x::CellPoint)
     @unreachable """\n
     CellField objects defined on a sub-triangulation cannot be evaluated
     on the underlying background mesh.
+
+    This happens e.g. when trying to evaluate a CellField defined on a Neumann boundary
+    at a CellPoint defined on the underlying background mesh.
     """
   else
     @unreachable """\n
@@ -170,20 +231,16 @@ end
 
 # Operations between CellField
 
-#function evaluate!(cache,k::Operation,a::CellField,b::CellField)
-#  a1, b1 = _to_common_domain(a,b)
-#  @assert DomainStyle(a1) == DomainStyle(b1)
-#  @assert get_triangulation(a1) == get_triangulation(b1)
-#  trian = get_triangulation(a1)
-#  domain_style = DomainStyle(a1)
-#  cell_a = get_cell_data(a1)
-#  cell_b = get_cell_data(a2)
-#  cell_c = lazy_map(Broadcasting(k),cell_a,cell_b)
-#  GenericCellField(cell_c,trian,domain_style)
-#end
-
 function evaluate!(cache,k::Operation,a::CellField...)
+  _operate_cellfields(a...)
+end
 
+function evaluat!(cache,k::Operation,a::Union{Function,Number,AbstractArray,CellField}...)
+  b = _convert_to_cellfields(a...)
+  _operate_cellfields(k,b...)
+end
+
+function _operate_cellfields(k::Operation,a...)
   b = _to_common_domain(a...)
   trian = get_triangulation(first(b))
   domain_style = DomainStyle(first(b))
@@ -213,38 +270,51 @@ function evaluate!(cache,k::Operation,a::CellField...)
   GenericCellField(cell_c,trian,domain_style)
 end
 
-#function evaluate!(cache,k::Operation,a::Union{Any,CellField}...)
-#  @notimplemented
+function _convert_to_cellfields(a...)
+  a1 = filter(i->isa(i,CellField),a)
+  a2 = _to_common_domain(a1...)
+  target_domain = DomainStyle(first(a2))
+  target_trian = get_triangulation(first(a2))
+  a3 = map(i->CellField(i,target_trian,target_domain),a)
+  _operate_cellfields(k,a3...)
+end
+
+#evaluate!(cache,k::Operation,a::Number,b::CellField) = _operate_cellfields(k,a,b)
+#evaluate!(cache,k::Operation,a::CellField,b::Number) = _operate_cellfields(k,a,b)
+#evaluate!(cache,k::Operation,a::Function,b::CellField) = _operate_cellfields(k,a,b)
+#evaluate!(cache,k::Operation,a::CellField,b::Function) = _operate_cellfields(k,a,b)
+#evaluate!(cache,k::Operation,a::AbstractArray,b::CellField) = _operate_cellfields(k,a,b)
+#evaluate!(cache,k::Operation,a::CellField,b::AbstractArray) = _operate_cellfields(k,a,b)
+
+## TODO: Julia hangs if using this signature, why ????
+##function evaluat!(cache,k::Operation,a::Union{Function,Number,AbstractArray,CellField}...)
+#function _operate_cellfields(k::Operation,a::Union{Function,Number,AbstractArray,CellField}...)
+#  a1 = filter(i->isa(i,CellField),a)
+#  a2 = _to_common_domain(a1...)
+#  target_domain = DomainStyle(first(a2))
+#  target_trian = get_triangulation(first(a2))
+#  a3 = map(i->CellField(i,target_trian,target_domain),a)
+#  evaluate(k,a3...)
 #end
 
-#function _to_common_domain(a::CellField,b::CellField)
-#  trian_a = get_triangulation(a)
-#  trian_b = get_triangulation(b)
-#  target_domain =  DomainStyle(a) == DomainStyle(b) ? DomainStyle(a) : ReferenceDomain()
-#  if trian_a === trian_b
-#    target_trian = trian_a
-#  elseif trian_a === get_background_triangulation(trian_b)
-#    target_trian = trian_b
-#  elseif trian_b === get_background_triangulation(trian_a)
-#    target_trian = trian_a
-#  else
-#    @unreachable """\n
-#    You are trying to do an operation between CellField objects defined on
-#    incompatible triangulations.
-#
-#    Make sure that both CellField objects are defined on the same triangulation
-#    or that one triangulation is the background of the other.
-#    """
-#  end
-#  a1 = change_domain(a,target_trian,target_domain)
-#  b1 = change_domain(b,target_trian,target_domain)
-#  a1, b1
+
+#function evaluate!(cache,k::Operation,a::Union{Function,Number,AbstractArray,CellField}...)
+#  @show a
+#  a1 = filter(i->isa(i,CellField),a)
+#  @show a1
+#  a2 = _to_common_domain(a1...)
+#  @show a2
+#  target_domain = DomainStyle(first(a2))
+#  target_trian = get_triangulation(first(a2))
+#  a3 = map(i->CellField(i,target_trian,target_domain),a)
+#  @show a3
+#  evaluate(k,a3...)
 #end
 
 function _to_common_domain(a::CellField...)
 
   # Find a suitable domain style
-  if any( map(i->DomainStyle(a)==ReferenceDomain(),a) )
+  if any( map(i->DomainStyle(i)==ReferenceDomain(),a) )
     target_domain = ReferenceDomain()
   else
     target_domain = PhysicalDomain()
@@ -258,11 +328,11 @@ function _to_common_domain(a::CellField...)
   Make sure that all CellField objects are defined on the background triangulation
   or that the number of different sub-triangulations is equal to one.
 
-  Examples:
+  For instace:
 
-  - Incompatible case: 2 cell fields defined on 2 different Neumann boundaries.
+  - 3 cell fields 2, two them on the same Neumann boundary and the other on the background mesh is OK.
 
-  - Compatible case: 3 cell fields 2, two them on the same Neumann boundary and the other on the background mesh.
+  - 2 cell fields defined on 2 different Neumann boundaries is NOT OK.
   """
   trian_candidates = unique(objectid,map(get_triangulation,a))
   if length(trian_candidates) == 1

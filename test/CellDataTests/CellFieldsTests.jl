@@ -6,10 +6,99 @@ using FillArrays
 using Gridap.Arrays
 using Gridap.Fields
 using Gridap.TensorValues
+using Gridap.Geometry
 using Gridap.CellData
 
+domain = (0,1,0,1)
+cells = (3,3)
+model = CartesianDiscreteModel(domain,cells)
+
+trian = Triangulation(model)
+trian_N =BoundaryTriangulation(model)
+trian_D =BoundaryTriangulation(model,"tag_8")
+
+x = get_cell_points(trian)
+@test DomainStyle(x) == ReferenceDomain()
+@test get_array(x) == get_cell_coordinates(trian)
+@test get_cell_data(x) == get_cell_ref_coordinates(trian)
+
+_x = change_domain(x,PhysicalDomain())
+@test DomainStyle(_x) == PhysicalDomain()
+@test get_array(_x) == get_cell_coordinates(trian)
+@test get_cell_data(_x) == get_cell_coordinates(trian)
+
+_x = change_domain(x,ReferenceDomain())
+@test DomainStyle(_x) == ReferenceDomain()
+@test get_array(x) == get_cell_coordinates(trian)
+@test get_cell_data(x) == get_cell_ref_coordinates(trian)
+
+ffun(x) = 2*x[1]
+f = CellField(ffun,trian)
+fx = f(x)
+r = map(xs->ffun.(xs),get_array(x))
+r = reshape(r,length(r))
+test_array(fx,r,≈)
+
+@show "jjjj"
+k = Operation(*)
+#a3 = CellData._operate_cellfields(k,2,f)
+@show "kkk"
+a3 = evaluate(k,2,f)
+
+kk
 
 
+
+
+
+fx = evaluate(ffun,x)
+test_array(fx,r,≈)
+
+f_N = CellField(ffun,trian_N)
+x_N = get_cell_points(trian_N)
+fx_N = f_N(x_N)
+test_array(fx_N,collect(fx_N))
+
+gfun(x) = 3*x
+g = CellField(gfun,trian)
+
+h = Operation(*)(f,g)
+gx = g(x)
+hx = h(x)
+r = map((i,j)->broadcast(*,i,j),fx,gx)
+test_array(hx,r)
+
+h_N = Operation(*)(f_N,g)
+gx_N = g(x_N)
+r = map((i,j)->broadcast(*,i,j),fx_N,gx_N)
+hx_N = h_N(x_N)
+test_array(hx_N,r)
+
+g_D = CellField(gfun,trian_D)
+
+cell_h = rand(num_cells(trian))
+h = CellField(cell_h,trian)
+test_array(h(x),collect(h(x)))
+test_array(h(x_N),collect(h(x_N)))
+
+
+
+#Operation(*)(f_N,g_D)
+
+
+
+
+
+
+
+
+
+
+
+kk
+
+
+f(Point(0,0))
 
 
 #np = 3

@@ -5,7 +5,6 @@ Trait that signals if a CellDatum type is implemented in the physical or the ref
 abstract type DomainStyle end
 struct ReferenceDomain <: DomainStyle end
 struct PhysicalDomain <: DomainStyle end
-DomainStyle(::T) where T = DomainStyle(T)
 
 """
 Data associated with the cells of a Triangulation.
@@ -46,6 +45,8 @@ function test_cell_datum(a::CellDatum)
 end
 
 # Some API
+
+DomainStyle(::T) where T<:CellDatum = DomainStyle(T)
 
 """
 Get the raw array of cell data defined in the physical space.
