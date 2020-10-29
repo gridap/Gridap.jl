@@ -10,7 +10,11 @@ function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
 
   D = num_dims(p)
 
-  prebasis = QCurlGradMonomialBasis{D}(et,order)
+  if is_n_cube(p)
+    prebasis = QCurlGradMonomialBasis{D}(et,order)
+  else
+    prebasis = PCurlGradMonomialBasis{D}(et,order)
+  end
 
   nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order)
 
@@ -41,8 +45,6 @@ function get_face_own_dofs(reffe::GenericRefFE{DivConformity}, conf::DivConformi
 end
 
 function _RT_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) where et
-
-  @notimplementedif ! is_n_cube(p)
 
   D = num_dims(p)
   ft = VectorValue{D,et}
@@ -147,6 +149,8 @@ function _RT_cell_moments(p, cbasis, ccips, cwips)
   return cwips.*ishfs_iips
 end
 
+_p_filter(e,order) = (sum(e) <= order)
+
 # It provides for every cell the nodes and the moments arrays
 function _RT_cell_values(p,et,order)
   # Compute integration points at interior
@@ -156,7 +160,12 @@ function _RT_cell_values(p,et,order)
   cwips = get_weights(iquad)
 
   # Cell moments, i.e., M(C)_{ab} = q_C^a(xgp_C^b) w_C^b ⋅ ()
-  cbasis = QGradMonomialBasis{num_dims(p)}(et,order-1)
+  if is_n_cube(p)
+    cbasis = QGradMonomialBasis{num_dims(p)}(et,order-1)
+  else
+    T = VectorValue{num_dims(p),et}
+    cbasis = MonomialBasis{num_dims(p)}(T,order-1, _p_filter)
+  end
   cmoments = _RT_cell_moments(p, cbasis, ccips, cwips )
 
   return [ccips], [cmoments]

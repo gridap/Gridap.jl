@@ -44,4 +44,43 @@ cache = dof_cache(dof_basis,prebasis)
 r = evaluate_dof!(cache, dof_basis, prebasis)
 test_dof(dof_basis,prebasis,r)
 
+
+p = TET
+D = num_dims(TET)
+et = Float64
+order = 0
+
+reffe = RaviartThomasRefFE(et,p,order)
+test_reference_fe(reffe)
+@test num_terms(get_prebasis(reffe)) == 4
+@test num_dofs(reffe) == 4
+@test get_order(get_prebasis(reffe)) == 0
+@test get_default_conformity(reffe) == DivConformity()
+
+p = TET
+D = num_dims(TET)
+et = Float64
+order = 2
+
+reffe = RaviartThomasRefFE(et,p,order)
+test_reference_fe(reffe)
+@test num_terms(get_prebasis(reffe)) == 36
+@test num_dofs(reffe) == 36
+@test get_order(get_prebasis(reffe)) == 2
+@test get_default_conformity(reffe) == DivConformity()
+
+prebasis = get_prebasis(reffe)
+dof_basis = get_dof_basis(reffe)
+
+v = VectorValue(0.0,3.0,0.0)
+field = MockField{D}(v)
+
+cache = dof_cache(dof_basis,field)
+r = evaluate_dof!(cache, dof_basis, field)
+test_dof(dof_basis,field,r)
+
+cache = dof_cache(dof_basis,prebasis)
+r = evaluate_dof!(cache, dof_basis, prebasis)
+test_dof(dof_basis,prebasis,r)
+
 end # module
