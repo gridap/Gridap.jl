@@ -6,11 +6,17 @@ The Julia script at hand provides a set of command-line-arguments (CLAs) in orde
 $ julia create_gridap_image.jl -h 
 ```
 
-In order to create the sysimage, the script clones the Git repository of `Gridap.jl` and that of its [Tutorials](https://github.com/gridap/Tutorials), and (currently) runs the `validation.jl` tutorial. By default, the script will generate the sysimage from the code corresponding to the last commit pushed to the `master` branch of both Git repositories. However, via appropriate CLAs (see help message), one may select the particular version of both projects to be cloned by specifying the corresponding Git release tags. For example, if one wants to generate a sysimage of Gridap `v0.10.4` from Tutorials `v0.10.0`, one has to execute the following command:
+In order to create the sysimage, the script clones the Git repository of `Gridap.jl` and that of its [Tutorials](https://github.com/gridap/Tutorials), and runs one of the tutorials as requested by the user (or the `validation.jl` tutorial by default). By default, the script will generate the sysimage from the code corresponding to the last commit pushed to the `master` branch of both Git repositories. However, via appropriate CLAs (see help message), one may select the particular version of both projects to be cloned by specifying the corresponding Git release tags. For example, if one wants to generate a sysimage of Gridap `v0.10.4` from Tutorials `v0.10.0`, one has to execute the following command:
 
 
 ```bash
-$ julia create_gridap_image.jl -g v0.10.4 -t v0.10.0 -n Gridapv0.10.4.so
+$ julia -O3 --check-bounds=no create_gridap_image.jl -g v0.10.4 -t v0.10.0 -n Gridapv0.10.4.so
+```
+
+Another example is:
+
+```bash
+julia -O3 --check-bounds=no create_gridap_image.jl -g v0.14.1 -t v0.13.0 --tutorial-name stokes.jl -n Gridapv0.14.1.so
 ```
 
 Obviously, one has to select a version of the Tutorials package compatible with the version selected for Gridap, **otherwise the image creation process will fail**. Note that in the above command, we are also specifying the name of the image to be generated, which by default, is created in the directory from which the script is executed
@@ -28,37 +34,24 @@ or run an interactive Julia session as:
 $ julia -J Gridapv0.10.4.so
 ```
 
-### Known issues, TO-DO, misc learned lessons, etc.
+### Lessons learned, caveats
 
-1. **The sysimage works and is useful when `Gridap.jl` is being used but not being modified**, e.g., while developing `GridapDistributed.jl` or `GridapODEs.jl`. If you want to develop `Gridap.jl`, use [`Revise.jl`](https://github.com/gridap/Gridap.jl/wiki/REPL-based-workflow#editing-small-parts-of-the-project).  
+1. **The sysimage works and is useful when `Gridap.jl` is being used but not being modified**, e.g., while developing `GridapDistributed.jl` or `GridapODEs.jl`. If you want to develop `Gridap.jl`, use [`Revise.jl`](https://github.com/gridap/Gridap.jl/wiki/REPL-based-workflow#editing-small-parts-of-the-project).  It is also very useful for batch computing environments (e.g., a supercomputer), as you may significantly reduce the amount of CPU time spent by your jobs.
 
 2. Also note the following from the [documentation page](https://julialang.github.io/PackageCompiler.jl/dev/sysimages/) of `PackageCompiler.jl`: *It should be clearly stated that there are some drawbacks to using a custom sysimage, thereby sidestepping the standard Julia package precompilation system. The biggest drawback is that packages that are compiled into a sysimage (including their dependencies!) are "locked" to the version they where at when the sysimage was created. This means that no matter what package version you have installed in your current project, the one in the sysimage will take precedence. This can lead to bugs where you start with a project that needs a specific version of a package, but you have another one compiled into the sysimage.*
 
-3. We have to decide which code to execute in order to create the image. At present, `validation.jl` is chosen just for testing purposes. Ideally it should force the compilation of a large part of the project, but the problem that it solves should take small amount of time to execute once the code is compiled. 
-
-4. We have observed that the resulting image does not contain all the code whose compilation is triggered from `validation.jl`. The code that is compiled during execution time can be spotted with
+ 3. We have observed that the resulting image does not contain all the code whose compilation is triggered from the tutorial. The code that is compiled during execution time can be spotted with, e.g.,
     ```bash
     $ julia --trace-compile=stderr -q -J Gridapv0.10.4.so validation.jl
     ```
-    At present, we have the following:
+    As an example, I got the following on my machine:
     ```
     $ julia --trace-compile=stderr ../../Tutorials/src/validation.jl 2>&1 | wc -l 
     2920   
     $ julia --trace-compile=stderr -J./Gridap.so ../../Tutorials/src/validation.jl 2>&1 | wc -l
     825
     ```
-   An hypothesis (not confirmed): the list of packages provided to `PackageCompiler.create_sysimage` should not only contain direct dependencies of `Gridap.jl`. This is related to the following comment in the script:
-    ```
-    # TODO: reorg project structure (Project.toml) to use
-        # Pkg.dependencies() with PackageCompiler
-        #if VERSION >= v"1.4"
-        #    append!(pkgs, [Symbol(v.name) for v in values(Pkg.dependencies())])
-        #end
-    ```
-    `Pkg.dependencies()` is a brand new method in Julia `v1.4`. From the resulting data structure that it provides one may obtain all the nodes of the dependency graph of the currently loaded project.
+
+4. In most cases, the user is willing to execute a Gridap driver that is not a tutorial (nor a minor modification of it). While he/she may still use the sysimage generated by this script, it may (likely) happen that the user's particular driver triggers the compilation of code that is not within the image. If the amount of code that is compiled on run-time cannot be tolerated, then you can use the approach followed in this repo: https://github.com/fverdugo/Poisson.jl. Essentially, to create an ad-hoc Julia environment for your particular driver, in which you create the sysimage from it. 
 
 5. See also issue [#276](https://github.com/gridap/Gridap.jl/issues/276).
-
-
-
-
