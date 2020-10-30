@@ -43,6 +43,12 @@ v = GenericCellField(get_cell_shapefuns(trian),trian,ReferenceDomain())
 vx = v(x)
 test_array(vx,collect(vx))
 
+u = GenericCellField(lazy_map(transpose,get_cell_data(v)),v.trian,v.domain_style)
+m = v*u
+test_array(m(x),collect(m(x)))
+m = ∇(v)⋅∇(u)
+test_array(m(x),collect(m(x)))
+
 ∇vx = ∇(v)(x)
 test_array(∇vx,collect(∇vx))
 
@@ -87,6 +93,13 @@ cell_h = rand(num_cells(trian))
 h = CellField(cell_h,trian)
 test_array(h(x),collect(h(x)))
 test_array(h(x_N),collect(h(x_N)))
+
+h_N = (2*f_N+g)⋅g
+hx_N = h_N(x_N)
+test_array(hx_N,collect(hx_N))
+
+
+
 
 
 #np = 3

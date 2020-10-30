@@ -20,7 +20,7 @@ export @check
 export tfill
 export get_val_parameter
 export GridapType
-export operate
+#export operate
 
 include("Macros.jl")
 

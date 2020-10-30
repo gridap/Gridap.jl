@@ -23,6 +23,15 @@ import Gridap.Fields: ∇∇
 import Gridap.Integration: get_coordinates
 import Gridap.Integration: get_weights
 
+import Gridap.TensorValues: inner, outer, double_contraction, symmetric_part
+import LinearAlgebra: det, tr, cross, dot
+import Base: inv, abs, abs2, *, +, -, /, adjoint, transpose
+
+export gradient
+export ∇∇
+export inner, outer, double_contraction, symmetric_part
+export det, tr, cross, dot
+
 export DomainStyle
 export ReferenceDomain
 export PhysicalDomain
