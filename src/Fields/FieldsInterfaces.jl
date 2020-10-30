@@ -324,6 +324,7 @@ end
 end
 
 @inline evaluate!(cache,op::Operation,x::Field...) = OperationField(op.op,x)
+return_value(op::Broadcasting{<:Operation},x::Field...) = OperationField(op.f.op,x)
 @inline evaluate!(cache,op::Broadcasting{<:Operation},x::Field...) = OperationField(op.f.op,x)
 
 # Define some well known operations

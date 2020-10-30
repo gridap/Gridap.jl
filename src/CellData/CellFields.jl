@@ -94,6 +94,11 @@ function CellField(f,trian::Triangulation)
   CellField(f,trian,ReferenceDomain())
 end
 
+function get_normal_vector(trian::Triangulation)
+  cell_normal = get_facet_normal(trian)
+  GenericCellField(cell_normal,trian,ReferenceDomain())
+end
+
 evaluate!(cache,f::Function,x::CellPoint) = CellField(f,get_triangulation(x))(x)
 
 function change_domain(a::CellField,::ReferenceDomain,::PhysicalDomain)

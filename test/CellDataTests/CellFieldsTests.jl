@@ -72,6 +72,14 @@ x_N = get_cell_points(trian_N)
 fx_N = f_N(x_N)
 test_array(fx_N,collect(fx_N))
 
+n_N = get_normal_vector(trian_N)
+nx_N = n_N(x_N)
+test_array(nx_N,collect(nx_N))
+
+h = f*n_N
+hx = h(x_N) 
+test_array(hx,collect(hx))
+
 gfun(x) = 3*x
 g = CellField(gfun,trian)
 

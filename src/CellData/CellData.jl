@@ -52,6 +52,7 @@ export CellQuadrature
 export Integrand
 export ∫
 export CellDof
+export get_normal_vector
 
 export DomainContribution
 export num_domains
