@@ -8,6 +8,8 @@ using Test
 
 @testset "DomainContributions" begin include("DomainContributionsTests.jl") end
 
+@testset "CellDofsTests" begin include("CellDofsTests.jl") end
+
 #
 #@testset "QPointCellFields" begin include("QPointCellFieldsTests.jl") end
 #
