@@ -13,6 +13,7 @@ using Gridap.Helpers
 using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Fields
+using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.Integration
 
@@ -20,6 +21,7 @@ import Gridap.Arrays: get_array
 import Gridap.Arrays: evaluate!
 import Gridap.Fields: gradient
 import Gridap.Fields: ∇∇
+import Gridap.Fields: integrate
 import Gridap.Integration: get_coordinates
 import Gridap.Integration: get_weights
 
@@ -46,6 +48,8 @@ export CellField
 export GenericCellField
 export CellWeight
 export CellQuadrature
+export Integrand
+export ∫
 
 include("CellDataInterface.jl")
 

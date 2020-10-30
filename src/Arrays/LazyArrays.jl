@@ -198,6 +198,20 @@ end
 Base.size(a::LazyArray) = size(a.g)
 Base.size(a::LazyArray{G,T,1} where {G,T}) = (length(a.g),)
 
+function Base.sum(a::LazyArray)
+  cache = array_cache(a)
+  _sum_lazy_array(cache,a)
+end
+
+function _sum_lazy_array(cache,a)
+  r = zero(eltype(a))
+  for i in eachindex(a)
+    ai = getindex!(cache,a,i)
+    r += ai
+  end
+  r
+end
+
 # Particular implementations for Fill
 
 #function lazy_map(::typeof(evaluate),f::Fill, a::Fill...)

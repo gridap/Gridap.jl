@@ -397,6 +397,10 @@ end
 
 # Broadcast operations
 
+function return_value(k::Broadcasting{<:Operation},args::Union{Field,AbstractArray{<:Field}}...)
+  BroadcastOpFieldArray(k.f.op,args...)
+end
+
 function evaluate!(cache,k::Broadcasting{<:Operation},args::Union{Field,AbstractArray{<:Field}}...)
   BroadcastOpFieldArray(k.f.op,args...)
 end
