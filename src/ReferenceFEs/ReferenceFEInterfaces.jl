@@ -33,6 +33,17 @@ The interface is tested with
 """
 abstract type ReferenceFE{D} <: GridapType end
 
+# Extensible factory function
+function ReferenceFE(;basis,kwargs...)
+  ReferenceFE(Val(basis);kwargs...)
+end
+
+function  ReferenceFE(::Val{T};kwargs...) where T
+  @unreachable """\n
+  Undefined factory function ReferenceFE for symblol $T
+  """
+end
+
 """
     num_dofs(reffe::ReferenceFE) -> Int
 

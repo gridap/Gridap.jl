@@ -213,6 +213,35 @@ function _default_space(p)
   end
 end
 
+function ReferenceFE(
+  ::Val{:Lagrangian};
+  polytope::Polytope,
+  valuetype::Type{T},
+  order::Union{Nothing,Integer}=nothing,
+  orders::Union{Nothing,Tuple{Vararg{Integer}}}=nothing,
+  space::Symbol=_default_space(polytope)) where T
+
+  if order==nothing && orders==nothing
+    @unreachable """\n
+    Error in ReferenceFE factory function for Lagrangian elements. No interpolation order provided.
+
+    One (and only one) of the key-word arguments `order::Int`, `orders::Tuple{Vararg{Integer}}` should be present.
+    """
+  elseif order!=nothing && orders!==nothing
+    @unreachable """\n
+    Error in ReferenceFE factory function for Lagrangian elements.
+    The key-word arguments `order` and `orders` cannot be provided at the same time.
+    """
+  elseif order != nothing
+    _orders = order
+  else
+    _orders = orders
+  end
+
+  LagrangianRefFE(T,polytope,_orders;space=space)
+end
+
+
 function _lagrangian_ref_fe(::Type{T},p::Polytope{D},orders) where {T,D}
 
   prebasis = compute_monomial_basis(T,p,orders)
