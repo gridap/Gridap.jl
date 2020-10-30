@@ -12,13 +12,14 @@ using Test
 
 @testset "AttachDirichlet" begin include("AttachDirichletTests.jl") end
 
+@testset "AttachConstraints" begin include("AttachConstraintsTests.jl") end
+
 #
 #@testset "QPointCellFields" begin include("QPointCellFieldsTests.jl") end
 #
 #@testset "CellDofBases" begin include("CellDofBasesTests.jl") end
 #
 #
-#@testset "AttachConstraints" begin include("AttachConstraintsTests.jl") end
 #
 #@testset "Law" begin include("LawTests.jl") end
 

@@ -61,6 +61,8 @@ export add_contribution!
 export LebesgueMeasure
 
 export attach_dirichlet
+export attach_constraints_rows
+export attach_constraints_cols
 
 include("CellDataInterface.jl")
 
@@ -73,5 +75,7 @@ include("DomainContributions.jl")
 include("CellDofs.jl")
 
 include("AttachDirichlet.jl")
+
+include("AttachConstraints.jl")
 
 end # module
