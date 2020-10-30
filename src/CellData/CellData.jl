@@ -11,6 +11,7 @@ using FillArrays
 
 using Gridap.Helpers
 using Gridap.Arrays
+using Gridap.Algebra
 using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.ReferenceFEs
@@ -59,6 +60,8 @@ export get_contribution
 export add_contribution!
 export LebesgueMeasure
 
+export attach_dirichlet
+
 include("CellDataInterface.jl")
 
 include("CellFields.jl")
@@ -68,5 +71,7 @@ include("CellQuadratures.jl")
 include("DomainContributions.jl")
 
 include("CellDofs.jl")
+
+include("AttachDirichlet.jl")
 
 end # module
