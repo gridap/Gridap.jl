@@ -34,11 +34,11 @@ The interface is tested with
 abstract type ReferenceFE{D} <: GridapType end
 
 # Extensible factory function
-function ReferenceFE(;basis,kwargs...)
-  ReferenceFE(Val(basis);kwargs...)
+function ReferenceFE(p::Polytope;basis,kwargs...)
+  ReferenceFE(p,Val(basis);kwargs...)
 end
 
-function  ReferenceFE(::Val{T};kwargs...) where T
+function  ReferenceFE(p::Polytope,::Val{T};kwargs...) where T
   @unreachable """\n
   Undefined factory function ReferenceFE for symblol $T
   """

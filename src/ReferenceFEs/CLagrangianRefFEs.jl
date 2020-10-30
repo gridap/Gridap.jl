@@ -214,8 +214,8 @@ function _default_space(p)
 end
 
 function ReferenceFE(
-  ::Val{:Lagrangian};
   polytope::Polytope,
+  ::Val{:Lagrangian};
   valuetype::Type{T},
   order::Union{Nothing,Integer}=nothing,
   orders::Union{Nothing,Tuple{Vararg{Integer}}}=nothing,
