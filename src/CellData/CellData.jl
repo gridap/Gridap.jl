@@ -50,11 +50,23 @@ export CellWeight
 export CellQuadrature
 export Integrand
 export ∫
+export CellDof
+
+export DomainContribution
+export num_domains
+export get_domains
+export get_contribution
+export add_contribution!
+export LebesgueMeasure
 
 include("CellDataInterface.jl")
 
 include("CellFields.jl")
 
 include("CellQuadratures.jl")
+
+include("DomainContributions.jl")
+
+include("CellDofs.jl")
 
 end # module
