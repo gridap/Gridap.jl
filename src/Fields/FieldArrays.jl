@@ -421,6 +421,7 @@ struct BroadcastOpFieldArray{O,T,N,A} <: AbstractArray{T,N}
 end
 
 @inline Base.size(a::BroadcastOpFieldArray) = Base.Broadcast.broadcast_shape(map(size,a.args)...)
+@inline Base.axes(a::BroadcastOpFieldArray) = Base.Broadcast.broadcast_shape(map(axes,a.args)...)
 @inline Base.IndexStyle(::Type{<:BroadcastOpFieldArray}) = IndexLinear()
 @inline Base.getindex(a::BroadcastOpFieldArray,i::Integer) = broadcast(Operation(a.op),a.args...)[i]
 

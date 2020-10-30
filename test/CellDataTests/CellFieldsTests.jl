@@ -39,12 +39,12 @@ r = map(xs->ffun.(xs),get_array(x))
 r = reshape(r,length(r))
 test_array(fx,r,≈)
 
-@test_broken begin
 v = GenericCellField(get_cell_shapefuns(trian),trian,ReferenceDomain())
+vx = v(x)
+test_array(vx,collect(vx))
+
 ∇vx = ∇(v)(x)
 test_array(∇vx,collect(∇vx))
-true
-end
 
 ∇fx = ∇(f)(x)
 test_array(∇fx,collect(∇fx))
