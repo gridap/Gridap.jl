@@ -383,6 +383,12 @@ function _to_common_domain(a::CellField...)
   map(i->change_domain(i,target_trian,target_domain),a)
 end
 
+# Composition (this replaces the @law macro)
+
+Base.:(∘)(f::Function,g::CellField) = Operation(f)(g)
+Base.:(∘)(f::Function,g::Tuple{Vararg{CellField}}) = Operation(f)(g...)
+Base.:(∘)(f::Function,g::Tuple{Vararg{Union{AbstractArray{<:Number},CellField}}}) = Operation(f)(g...)
+
 # Define some of the well known arithmetic ops
 
 # Unary ops
