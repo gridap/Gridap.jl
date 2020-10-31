@@ -99,12 +99,15 @@ function integrate(f::CellField,quad::CellQuadrature)
   end
 
   b = change_domain(f,quad.trian,quad.domain_style)
+  x = get_coordinates(quad)
+  bx = b(x)
   if quad.domain_style == PhysicalDomain()
-    lazy_map(integrate,get_cell_data(b),quad.cell_point,quad.cell_weight)
+    lazy_map(IntegrationMap(),bx,quad.cell_weight)
   else
     cell_map = get_cell_map(quad.trian)
     cell_Jt = lazy_map(∇,cell_map)
-    lazy_map(integrate,get_cell_data(b),quad.cell_point,quad.cell_weight,cell_Jt)
+    cell_Jtx = lazy_map(evaluate,cell_Jt,quad.cell_point)
+    lazy_map(IntegrationMap(),bx,quad.cell_weight,cell_Jtx)
   end
 end
 

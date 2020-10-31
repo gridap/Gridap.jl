@@ -258,7 +258,6 @@ function ∇∇(a::CellField)
   GenericCellField(h,a.trian,DomainStyle(a))
 end
 
-
 # Operations between CellField
 
 function evaluate!(cache,k::Operation,a::CellField...)
@@ -284,34 +283,53 @@ end
 #  _operate_cellfields(k,b...)
 #end
 
+struct OperationCellField{DS} <: CellField
+  op::Operation
+  args::Tuple
+  trian::Triangulation
+  domain_style::DS
+  function OperationCellField(op::Operation,args::CellField...)
+
+    @assert length(args) > 0
+    trian = get_triangulation(first(args))
+    domain_style = DomainStyle(first(args))
+    @check all( map(i->DomainStyle(i)==domain_style,args) )
+    @check all( map(i->get_triangulation(i)===trian,args) )
+
+    if num_cells(trian)>0
+      x = get_cell_points(trian)
+      try
+         ax = map(i->i(x),args)
+         axi = map(first,ax)
+         r = Broadcasting(op.op)(axi...)
+      catch
+        @unreachable """\n
+        It is not possible to perform operation $(op.op) on the given cell fields.
+
+        See the catched error for more information.
+        """
+      end
+    end
+
+    new{typeof(domain_style)}(op,args,trian,domain_style)
+  end
+end
+
+function get_cell_data(f::OperationCellField)
+  a = map(get_cell_data,f.args)
+  lazy_map(Broadcasting(f.op),a...)
+end
+get_triangulation(f::OperationCellField) = f.trian
+DomainStyle(::Type{OperationCellField{DS}}) where DS = DS()
+
+function evaluate!(cache,f::OperationCellField,x::CellPoint)
+  ax = map(i->i(x),f.args)
+  lazy_map(Broadcasting(f.op.op),ax...)
+end
+
 function _operate_cellfields(k::Operation,a...)
   b = _to_common_domain(a...)
-  trian = get_triangulation(first(b))
-  domain_style = DomainStyle(first(b))
-  cell_b = map(get_cell_data,b)
-
-  # Try to catch errors before hiding them deep in the lazy operation tree.
-  if num_cells(trian) != 0
-    bi = map(first,cell_b)
-    ci = Broadcasting(k)(bi...)
-    if domain_style == ReferenceDomain()
-      xi = first(get_cell_ref_coordinates(trian))
-    else
-      xi = first(get_cell_coordinates(trian))
-    end
-    try
-      cixi = evaluate(ci,xi)
-    catch
-      @unreachable """\n
-      It is not possible to perform operation $(k.op) on the given cell fields.
-
-      See the catched error for more information.
-      """
-    end
-  end
-
-  cell_c = lazy_map(Broadcasting(k),cell_b...)
-  GenericCellField(cell_c,trian,domain_style)
+  OperationCellField(k,b...)
 end
 
 function _convert_to_cellfields(a...)

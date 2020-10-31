@@ -49,6 +49,8 @@ test_array(m(x),collect(m(x)))
 m = ∇(v)⋅∇(u)
 test_array(m(x),collect(m(x)))
 
+h = (x->2)*m
+
 ∇vx = ∇(v)(x)
 test_array(∇vx,collect(∇vx))
 
