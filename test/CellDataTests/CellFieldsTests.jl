@@ -39,12 +39,18 @@ r = map(xs->ffun.(xs),get_array(x))
 r = reshape(r,length(r))
 test_array(fx,r,≈)
 
-@test_broken begin
 v = GenericCellField(get_cell_shapefuns(trian),trian,ReferenceDomain())
+vx = v(x)
+test_array(vx,collect(vx))
+
+u = GenericCellField(lazy_map(transpose,get_cell_data(v)),v.trian,v.domain_style)
+m = v*u
+test_array(m(x),collect(m(x)))
+m = ∇(v)⋅∇(u)
+test_array(m(x),collect(m(x)))
+
 ∇vx = ∇(v)(x)
 test_array(∇vx,collect(∇vx))
-true
-end
 
 ∇fx = ∇(f)(x)
 test_array(∇fx,collect(∇fx))
@@ -65,6 +71,14 @@ f_N = CellField(ffun,trian_N)
 x_N = get_cell_points(trian_N)
 fx_N = f_N(x_N)
 test_array(fx_N,collect(fx_N))
+
+n_N = get_normal_vector(trian_N)
+nx_N = n_N(x_N)
+test_array(nx_N,collect(nx_N))
+
+h = f*n_N
+hx = h(x_N) 
+test_array(hx,collect(hx))
 
 gfun(x) = 3*x
 g = CellField(gfun,trian)
@@ -87,6 +101,13 @@ cell_h = rand(num_cells(trian))
 h = CellField(cell_h,trian)
 test_array(h(x),collect(h(x)))
 test_array(h(x_N),collect(h(x_N)))
+
+h_N = (2*f_N+g)⋅g
+hx_N = h_N(x_N)
+test_array(hx_N,collect(hx_N))
+
+
+
 
 
 #np = 3

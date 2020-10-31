@@ -395,6 +395,86 @@ function integrate(a::AbstractArray{<:Field},q::AbstractVector{<:Point},w::Abstr
   evaluate!(cache,integrate,a,q,w,j)
 end
 
+# Broadcast operations
+
+function return_value(k::Broadcasting{<:Operation},args::Union{Field,AbstractArray{<:Field}}...)
+  BroadcastOpFieldArray(k.f.op,args...)
+end
+
+function evaluate!(cache,k::Broadcasting{<:Operation},args::Union{Field,AbstractArray{<:Field}}...)
+  BroadcastOpFieldArray(k.f.op,args...)
+end
+
+"""
+Type that represents a broadcast operation over a set of `AbstractArray{<:Field}`.
+The result is a sub-type of `AbstractArray{<:Field}`
+"""
+struct BroadcastOpFieldArray{O,T,N,A} <: AbstractArray{T,N}
+  op::O
+  args::A
+  function BroadcastOpFieldArray(op,args::Union{Field,AbstractArray{<:Field}}...)
+    fs = map(first,args)
+    T = return_type(Operation(op),fs...)
+    s = map(size,args)
+    bs = Base.Broadcast.broadcast_shape(s...)
+    N = length(bs)
+    A = typeof(args)
+    O = typeof(op)
+    new{O,T,N,A}(op,args)
+  end
+end
+
+@inline Base.size(a::BroadcastOpFieldArray) = Base.Broadcast.broadcast_shape(map(size,a.args)...)
+@inline Base.axes(a::BroadcastOpFieldArray) = Base.Broadcast.broadcast_shape(map(axes,a.args)...)
+@inline Base.IndexStyle(::Type{<:BroadcastOpFieldArray}) = IndexLinear()
+@inline Base.getindex(a::BroadcastOpFieldArray,i::Integer) = broadcast(Operation(a.op),a.args...)[i]
+
+for T in (:(Point),:(AbstractArray{<:Point}))
+  @eval begin
+
+    function return_cache(f::BroadcastOpFieldArray,x::$T)
+      cfs = map(fi -> return_cache(fi,x),f.args)
+      rs = map(fi -> return_value(fi,x),f.args)
+      bm = Broadcasting(f.op)
+      r = return_cache(bm,rs...)
+      r, cfs
+    end
+    
+    function evaluate!(c,f::BroadcastOpFieldArray,x::$T)
+      r, cfs = c
+      rs = map((ci,fi) -> evaluate!(ci,fi,x),cfs,f.args)
+      bm = Broadcasting(f.op)
+      evaluate!(r,bm,rs...)
+    end
+
+  end
+end
+
+# Gradient of the sum
+for op in (:+,:-)
+  @eval begin
+    function evaluate!(cache,::Broadcasting{typeof(∇)},a::BroadcastOpFieldArray{typeof($op)})
+      f = a.args
+      g = map( Broadcasting(∇), f)
+      Broadcasting(Operation($op))(g...)
+    end
+  end
+end
+
+# Gradient of the product
+for op in (:*,:⋅,:⊙,:⊗)
+  @eval begin
+    function evaluate!(cache,::Broadcasting{typeof(∇)},a::BroadcastOpFieldArray{typeof($op)})
+      f = a.args
+      @notimplementedif length(f) != 2
+      f1, f2 = f
+      g1, g2 = map(Broadcasting(∇), f)
+      k(F1,F2,G1,G2) = product_rule($op,F1,F2,G1,G2)
+      Broadcasting(Operation(k))(f1,f2,g1,g2)
+    end
+  end
+end
+
 ### transpose(i_to_f)*ij_to_vals
 #
 #function *(a::Transpose{<:Field,<:AbstractVector},b::AbstractMatrix{<:Number})
@@ -421,9 +501,6 @@ end
 #@inline return_gradient_cache(fa::AbstractArray{<:Field},x) = return_cache(∇.(fa),x)
 #
 #@inline evaluate_gradient!(cache,f::AbstractArray{<:Field},x) = evaluate!(cache,∇.(f),x)
-
-
-
 
 
 
@@ -477,49 +554,6 @@ end
 #
 #@inline transpose_field_indices(M::AbstractVector) = transpose(M)
 #@inline transpose_field_indices(M::AbstractMatrix) = TransposeFieldIndices(M)
-#
-## Broadcast operations
-#
-#@inline (b::Broadcasting{<:Operation})(args::Union{Field,AbstractArray{<:Field}}...) = BroadcastOpFieldArray(b.f.op,args...)
-#
-#"""
-#Type that represents a broadcast operation over a set of `AbstractArray{<:Field}`.
-#The result is a sub-type of `AbstractArray{<:Field}`
-#"""
-#struct BroadcastOpFieldArray{O,T,S<:Field,N} <: AbstractArray{S,N}
-#  op::O
-#  args::T
-#  function BroadcastOpFieldArray(op,args::Union{Field,AbstractArray{<:Field}}...)
-#    fs = map(first,args)
-#    S = typeof(op(fs...))
-#    s = map(size,args)
-#    bs = Base.Broadcast.broadcast_shape(s...)
-#    N = length(bs)
-#    T = typeof(args)
-#    O = typeof(op)
-#    new{O,T,S,N}(op,args)
-#  end
-#end
-#
-#@inline Base.size(a::BroadcastOpFieldArray) = Base.Broadcast.broadcast_shape(map(size,a.args)...)
-#@inline Base.IndexStyle(::Type{<:BroadcastOpFieldArray}) = IndexLinear
-#@inline Base.getindex(a::BroadcastOpFieldArray,I...) = broadcast(a.op,a.args...)[I...]
-#
-#function return_cache(f::BroadcastOpFieldArray,x)
-#  cfs = map(fi -> return_cache(fi,x),f.args)
-#  rs = map((ci,fi) -> evaluate!(ci,fi,x),cfs,f.args)
-#  bm = Broadcasting(f.op)
-#  r = return_cache(bm,rs...)
-#  r, cfs
-#end
-#
-#function evaluate!(c,f::BroadcastOpFieldArray,x)
-#  r, cfs = c
-#  rs = map((ci,fi) -> evaluate!(ci,fi,x),cfs,f.args)
-#  bm = Broadcasting(f.op)
-#  evaluate!(r,bm,rs...)
-#  r.array
-#end
 #
 ## Dot product vectors
 #

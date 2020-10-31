@@ -94,6 +94,11 @@ function CellField(f,trian::Triangulation)
   CellField(f,trian,ReferenceDomain())
 end
 
+function get_normal_vector(trian::Triangulation)
+  cell_normal = get_facet_normal(trian)
+  GenericCellField(cell_normal,trian,ReferenceDomain())
+end
+
 evaluate!(cache,f::Function,x::CellPoint) = CellField(f,get_triangulation(x))(x)
 
 function change_domain(a::CellField,::ReferenceDomain,::PhysicalDomain)
@@ -358,5 +363,29 @@ function _to_common_domain(a::CellField...)
     @unreachable msg
   end
   map(i->change_domain(i,target_trian,target_domain),a)
+end
+
+# Define some of the well known arithmetic ops
+
+# Unary ops
+
+for op in (:symmetric_part,:inv,:det,:abs,:abs2,:+,:-,:tr,:transpose,:adjoint)
+  @eval begin
+    ($op)(a::CellField) = Operation($op)(a)
+  end
+end
+
+# Binary ops
+
+for op in (:inner,:outer,:double_contraction,:+,:-,:*,:cross,:dot,:/)
+  @eval begin
+    ($op)(a::CellField,b::CellField) = Operation($op)(a,b)
+    ($op)(a::CellField,b::Number) = Operation($op)(a,b)
+    ($op)(a::Number,b::CellField) = Operation($op)(a,b)
+    ($op)(a::CellField,b::Function) = Operation($op)(a,b)
+    ($op)(a::Function,b::CellField) = Operation($op)(a,b)
+    ($op)(a::CellField,b::AbstractArray{<:Number}) = Operation($op)(a,b)
+    ($op)(a::AbstractArray{<:Number},b::CellField) = Operation($op)(a,b)
+  end
 end
 

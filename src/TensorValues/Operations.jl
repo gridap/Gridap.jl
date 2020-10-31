@@ -592,21 +592,21 @@ end
 # Define new operations for Gridap types
 ###############################################################
 
-for op in (:symmetric_part,)
-    @eval begin
-        ($op)(a::GridapType) = operate($op,a)
-    end
-end
-
-for op in (:inner,:outer,:double_contraction)#,:(:))
-    @eval begin
-        ($op)(a::GridapType,b::GridapType) = operate($op,a,b)
-        ($op)(a::GridapType,b::Number)     = operate($op,a,b)
-        ($op)(a::Number,    b::GridapType) = operate($op,a,b)
-        ($op)(a::GridapType,b::Function)   = operate($op,a,b)
-        ($op)(a::Function,  b::GridapType) = operate($op,a,b)
-    end
-end
+#for op in (:symmetric_part,)
+#    @eval begin
+#        ($op)(a::GridapType) = operate($op,a)
+#    end
+#end
+#
+#for op in (:inner,:outer,:double_contraction)#,:(:))
+#    @eval begin
+#        ($op)(a::GridapType,b::GridapType) = operate($op,a,b)
+#        ($op)(a::GridapType,b::Number)     = operate($op,a,b)
+#        ($op)(a::Number,    b::GridapType) = operate($op,a,b)
+#        ($op)(a::GridapType,b::Function)   = operate($op,a,b)
+#        ($op)(a::Function,  b::GridapType) = operate($op,a,b)
+#    end
+#end
 
 
 

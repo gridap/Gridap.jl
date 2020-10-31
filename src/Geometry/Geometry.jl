@@ -40,6 +40,7 @@ import Gridap.Arrays: get_children
 import Gridap.Io: to_dict
 import Gridap.Io: from_dict
 
+import Gridap.ReferenceFEs: ReferenceFE
 import Gridap.ReferenceFEs: get_node_coordinates
 import Gridap.ReferenceFEs: num_nodes
 import Gridap.ReferenceFEs: is_first_order

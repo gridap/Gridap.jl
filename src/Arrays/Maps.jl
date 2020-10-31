@@ -153,8 +153,8 @@ return_cache(f::Broadcasting,x...) = nothing
 
 @inline evaluate!(cache,f::Broadcasting,x...) = broadcast(f.f,x...)
 
-function return_type(f::Broadcasting,x...)
-  typeof(broadcast( (y...) -> f.f(testargs(f.f,y...)...), x... ))
+function return_value(f::Broadcasting,x...)
+  broadcast( (y...) -> f.f(testargs(f.f,y...)...), x... )
 end
 
 @inline function evaluate!(cache,f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
@@ -168,12 +168,12 @@ function evaluate!(cache,f::Broadcasting,args::Number...)
   f.f(args...)
 end
 
-function return_type(f::Broadcasting,x::Number...)
-  return_type(f.f,x...)
+function return_value(f::Broadcasting,x::Number...)
+  return_value(f.f,x...)
 end
 
-function return_type(f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
-  typeof(return_cache(f,x...).array)
+function return_value(f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
+  return_cache(f,x...).array
 end
 
 function return_cache(f::Broadcasting,x::Number...)

@@ -207,7 +207,7 @@ function _active_faces(p::Polytope,orders)
 end
 
 function _move_nodes(p::ExtrusionPolytope,orders,act_f,nodes,f_own)
-  if any(orders.==0)
+  if any(map(i->i==0,orders))
     tr = map(i -> i == 0 ? 1 : 0,orders)
     nfs = p.dface.nfaces
     con(ext,anc) = f -> ( f.extrusion == ext && f.anchor == anc )
