@@ -5,12 +5,6 @@ abstract type SingleFieldFESpace <: FESpace end
 
 """
 """
-function get_cell_dof_basis(f::SingleFieldFESpace)
-  @abstractmethod
-end
-
-"""
-"""
 function num_dirichlet_dofs(f::SingleFieldFESpace)
   @abstractmethod
 end

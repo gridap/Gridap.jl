@@ -81,6 +81,15 @@ function Base.zero(f::FESpace)
   FEFunction(f,free_values)
 end
 
+function get_dof_value_type(f::FESpace)
+  get_dof_value_type(get_cell_shapefuns(f),get_cell_dof_basis(f))
+end
+
+function get_dof_value_type(cell_shapefuns::CellField,cell_dof_basis::CellDof)
+  cell_dof_values = cell_dof_basis(cell_shapefuns)
+  eltype(eltype(cell_dof_values))
+end
+
 # Extended FEInterface used by Assemblers
 
 """
@@ -101,6 +110,12 @@ end
 """
 """
 function get_cell_shapefuns(f::FESpace)
+  @abstractmethod
+end
+
+"""
+"""
+function get_cell_dof_basis(f::FESpace)
   @abstractmethod
 end
 
@@ -180,7 +195,7 @@ function attach_constraints_rows(f::FESpace,cellarr,cellids,::Constrained)
   attach_constraints_rows(cellarr,cellconstr,cellmask)
 end
 
-function CellData.attach_constraints_cols(f::FESpace,cellarr,cellids)
+function attach_constraints_cols(f::FESpace,cellarr,cellids)
   attach_constraints_cols(f,cellarr,cellids,ConstraintStyle(f))
 end
 
