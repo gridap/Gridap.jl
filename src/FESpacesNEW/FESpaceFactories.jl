@@ -69,6 +69,11 @@ function FESpace(model::DiscreteModel, reffe::Tuple{Symbol,Any}; kwargs...)
   FESpace(model,cell_reffe;kwargs...)
 end
 
+function FESpace(model::DiscreteModel, reffe::ReferenceFE; kwargs...)
+  cell_reffe = Fill(reffe,num_cells(model))
+  FESpace(model,cell_reffe;kwargs...)
+end
+
 """
 """
 function TestFESpace(args...;kwargs...)

@@ -8,14 +8,14 @@ using Test
 
 @testset "SingleFieldFESpaces" begin include("SingleFieldFESpacesTests.jl") end
 
+@testset "TrialFESpaces" begin include("TrialFESpacesTests.jl") end
+
 #
 #
 #@testset "SingleFieldFEFunctions" begin include("SingleFieldFEFunctionsTests.jl") end
 #
-#@testset "UnconstrainedFESpaces" begin include("UnconstrainedFESpacesTests.jl") end
 #
 #
-#@testset "TrialFESpaces" begin include("TrialFESpacesTests.jl") end
 #
 #@testset "DivConformingFESpaces" begin include("DivConformingFESpacesTests.jl") end
 #

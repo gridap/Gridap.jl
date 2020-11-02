@@ -74,6 +74,12 @@ export compute_dirichlet_values_for_tags!
 
 export UnconstrainedFESpace
 export compute_conforming_cell_dofs
+export compute_cell_space
+
+export TrialFESpace
+export TrialFESpace!
+export HomogeneousTrialFESpace
+export HomogeneousTrialFESpace!
 
 include("FESpaceInterface.jl")
 
@@ -84,5 +90,7 @@ include("UnconstrainedFESpaces.jl")
 include("ConformingFESpaces.jl")
 
 include("FESpaceFactories.jl")
+
+include("TrialFESpaces.jl")
 
 end # module
