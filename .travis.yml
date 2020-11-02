@@ -22,7 +22,7 @@ jobs:
         - echo $PWD
         - julia compile/create_gridap_image.jl --do-not-clone-gridap \
                                                --gridap-path . \
-                                               --user-provided-script-path test/GridapTests/PoissonTests.jli \
+                                               --user-provided-script-path test/GridapTests/PoissonTests.jl \
                                                -n ./Gridap.so
         - julia --project=. --color=yes -e 'using Pkg; Pkg.instantiate()'
         - julia -J ./Gridap.so --project=. --color=yes --check-bounds=yes -e '(1,) .== 1; include("test/GridapTests/runtests.jl")'
