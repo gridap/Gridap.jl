@@ -140,7 +140,7 @@ struct SingleFieldFEFunction{T<:CellField} <: FEFunction
 end
 
 get_cell_data(f::SingleFieldFEFunction) = get_cell_data(f.cell_field)
-get_triangulation(f::GenericCellField) = get_triangulation(f.cell_field)
+get_triangulation(f::SingleFieldFEFunction) = get_triangulation(f.cell_field)
 DomainStyle(::Type{SingleFieldFEFunction{T}}) where T = DomainStyle(T)
 
 get_free_values(f::SingleFieldFEFunction) = f.free_values

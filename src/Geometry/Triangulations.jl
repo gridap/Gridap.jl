@@ -73,6 +73,11 @@ function get_facet_normal(trian::Triangulation)
   end
 end
 
+"""
+If the reference (resp. physical) space is the same for both triangulaitons.
+"""
+have_compatible_domains(a::Triangulation,b::Triangulation) = a===b
+
 # Trait that signals if the triangulation is a sub-mesh of a background triangulation
 
 abstract type TriangulationStyle end
@@ -166,6 +171,20 @@ get_cell_ref_map(trian::Triangulation,::SubTriangulation) = @abstractmethod
 struct SkeletonPair{L,R} <: GridapType
   left::L
   right::R
+end
+
+function Base.getproperty(x::SkeletonPair, sym::Symbol)
+  if sym == :⁺
+    x.left
+  elseif sym == :⁻
+    x.right
+  else
+    getfield(x, sym)
+  end
+end
+
+function Base.propertynames(x::SkeletonPair, private=false)
+  (fieldnames(typeof(x))...,:⁺,:⁻)
 end
 
 """

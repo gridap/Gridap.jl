@@ -16,6 +16,7 @@ model = CartesianDiscreteModel(domain,cells)
 trian = Triangulation(model)
 trian_N =BoundaryTriangulation(model)
 trian_D =BoundaryTriangulation(model,"tag_8")
+trian_S =SkeletonTriangulation(model)
 
 x = get_cell_points(trian)
 @test DomainStyle(x) == ReferenceDomain()
@@ -38,6 +39,17 @@ fx = f(x)
 r = map(xs->ffun.(xs),get_array(x))
 r = reshape(r,length(r))
 test_array(fx,r,≈)
+
+n_S = get_normal_vector(trian_S)
+x_S = get_cell_points(trian_S)
+
+nf_S = n_S⋅∇(f)
+
+@test_broken begin
+jnf_S = jump(n_S⋅∇(f))
+jnf_S(x_S)
+true
+end
 
 aa(f) = 4*f
 test_array((aa∘f)(x),4*r,≈)

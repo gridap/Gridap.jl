@@ -110,6 +110,7 @@ export get_cell_id
 export get_cell_map
 export get_background_triangulation
 export get_cell_ref_map
+export have_compatible_domains
 
 export Grid
 export get_cell_nodes

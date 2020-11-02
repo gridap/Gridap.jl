@@ -23,8 +23,6 @@ import Gridap.Arrays: evaluate!
 import Gridap.Fields: gradient
 import Gridap.Fields: ∇∇
 import Gridap.Fields: integrate
-import Gridap.Integration: get_coordinates
-import Gridap.Integration: get_weights
 import Gridap.Geometry: num_cells
 import Gridap.Geometry: get_triangulation
 
@@ -48,8 +46,9 @@ export test_cell_datum
 export CellPoint
 export get_cell_points
 export CellField
+export jump
+export mean
 export GenericCellField
-export CellWeight
 export CellQuadrature
 export Integrand
 export ∫

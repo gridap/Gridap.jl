@@ -96,7 +96,17 @@ end
 
 function get_normal_vector(trian::Triangulation)
   cell_normal = get_facet_normal(trian)
+  get_normal_vector(trian,cell_normal)
+end
+
+function get_normal_vector(trian::Triangulation,cell_normal::AbstractArray)
   GenericCellField(cell_normal,trian,ReferenceDomain())
+end
+
+function get_normal_vector(trian::Triangulation,cell_normal::SkeletonPair)
+  left = GenericCellField(cell_normal.left,trian.left,ReferenceDomain())
+  right = GenericCellField(cell_normal.right,trian.right,ReferenceDomain())
+  SkeletonPair(left,right)
 end
 
 evaluate!(cache,f::Function,x::CellPoint) = CellField(f,get_triangulation(x))(x)
@@ -126,9 +136,9 @@ end
 
 function change_domain(a::CellField,::ReferenceDomain,trian::Triangulation,::ReferenceDomain)
   trian_a = get_triangulation(a)
-  if trian_a === trian
+  if have_compatible_domains(trian_a,trian)
     return a
-  elseif trian_a === get_background_triangulation(trian)
+  elseif have_compatible_domains(trian_a,get_background_triangulation(trian))
     cell_id = get_cell_id(trian)
     @notimplementedif isa(cell_id,SkeletonPair)
     cell_a_q = lazy_map(Reindex(get_cell_data(a)),cell_id)
@@ -146,9 +156,9 @@ end
 
 function change_domain(a::CellField,::PhysicalDomain,trian::Triangulation,::PhysicalDomain)
   trian_a = get_triangulation(a)
-  if trian_a === trian
+  if have_compatible_domains(trian_a,trian)
     return a
-  elseif trian_a === get_background_triangulation(trian)
+  elseif have_compatible_domains(trian_a,get_background_triangulation(trian))
     cell_id = get_cell_id(trian)
     @notimplementedif isa(cell_id,SkeletonPair)
     cell_field = lazy_map(Reindex(get_cell_data(a)),cell_id)
@@ -210,11 +220,11 @@ function _to_common_domain(f::CellField,x::CellPoint)
   trian_f = get_triangulation(f)
   trian_x = get_triangulation(x)
 
-  if trian_f === trian_x
+  if have_compatible_domains(trian_f,trian_x)
     nothing
-  elseif trian_f === get_background_triangulation(trian_x)
+  elseif have_compatible_domains(trian_f,get_background_triangulation(trian_x))
     nothing
-  elseif trian_x === get_background_triangulation(trian_f)
+  elseif have_compatible_domains(trian_x,get_background_triangulation(trian_f))
     @unreachable """\n
     CellField objects defined on a sub-triangulation cannot be evaluated
     on the underlying background mesh.
@@ -294,7 +304,7 @@ struct OperationCellField{DS} <: CellField
     trian = get_triangulation(first(args))
     domain_style = DomainStyle(first(args))
     @check all( map(i->DomainStyle(i)==domain_style,args) )
-    @check all( map(i->get_triangulation(i)===trian,args) )
+    @check all( map(i->have_compatible_domains(get_triangulation(i),trian),args) )
 
     if num_cells(trian)>0
       x = get_cell_points(trian)
@@ -351,8 +361,7 @@ function _to_common_domain(a::CellField...)
 
   # Find a suitable triangulation
   msg = """\n
-  You are trying to do an operation between CellField objects defined on
-  incompatible triangulations.
+  You are trying to operate CellField objects defined on incompatible triangulations.
 
   Make sure that all CellField objects are defined on the background triangulation
   or that the number of different sub-triangulations is equal to one.
@@ -368,11 +377,11 @@ function _to_common_domain(a::CellField...)
     target_trian = first(trian_candidates)
   elseif length(trian_candidates) == 2
     trian_a, trian_b = trian_candidates
-    if trian_a === trian_b
+    if have_compatible_domains(trian_a,trian_b)
       target_trian = trian_a
-    elseif trian_a === get_background_triangulation(trian_b)
+    elseif have_compatible_domains(trian_a,get_background_triangulation(trian_b))
       target_trian = trian_b
-    elseif trian_b === get_background_triangulation(trian_a)
+    elseif have_compatible_domains(trian_b,get_background_triangulation(trian_a))
       target_trian = trian_a
     else
       @unreachable msg
@@ -413,3 +422,44 @@ for op in (:inner,:outer,:double_contraction,:+,:-,:*,:cross,:dot,:/)
   end
 end
 
+# Skeleton related Operations
+
+for op in (:outer,:*,:dot)
+  @eval begin
+    ($op)(a::CellField,b::SkeletonPair{<:CellField}) = Operation($op)(a,b)
+    ($op)(a::SkeletonPair{<:CellField},b::CellField) = Operation($op)(a,b)
+  end
+end
+
+function evaluate!(cache,k::Operation,a::CellField,b::SkeletonPair{<:CellField})
+  left = k(a,b.left)
+  right = k(a,b.right)
+  SkeletonPair(left,right)
+end
+
+function evaluate!(cache,k::Operation,a::SkeletonPair{<:CellField},b::CellField)
+  left = k(a.left,b)
+  right = k(a.right,b)
+  SkeletonPair(left,right)
+end
+
+jump(a::CellField) = a.⁺ - a.⁻
+jump(a::SkeletonPair{<:CellField}) = a.⁺ + a.⁻ # a.⁻ results from multiplying by n.⁻. Thus we need to sum.
+
+mean(a::CellField,b::CellField) = Operation(_mean)(a,b)
+_mean(x,y) = 0.5*x + 0.5*y
+
+# Just to provide more meaningful error messages
+function (a::SkeletonPair{<:CellField})(x)
+  @unreachable """\n
+  You are trying to evaluate a CellField on a mesh skeleton but you have not specified which of the
+  two sides i.e. left (aka ⁺) or right (aka ⁻) you want to select.
+
+  For instance, if you have extracted the normal vector and the cell points from a SkeletonTriangulation
+
+      x = get_cell_points(strian)
+      n = get_normal_vector(strian)
+
+  Evaluating `n(x)` is not allowed. You need to call either `n.⁺(x)` or `n.⁻(x)`.
+  """
+end

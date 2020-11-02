@@ -72,7 +72,7 @@ export UnconstrainedFESpace
 
 include("FESpaceInterface.jl")
 
-include("SingleFieldFESpace.jl")
+include("SingleFieldFESpaces.jl")
 
 include("UnconstrainedFESpaces.jl")
 

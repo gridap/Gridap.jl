@@ -20,8 +20,8 @@ trian = Triangulation(model)
 degree = 2
 quad = CellQuadrature(trian,degree)
 
-x = get_coordinates(quad)
-w = get_weights(quad)
+x = get_cell_points(quad)
+@test isa(x,CellPoint)
 
 v = GenericCellField(get_cell_shapefuns(trian),trian,ReferenceDomain())
 u = GenericCellField(lazy_map(transpose,get_cell_data(v)),v.trian,v.domain_style)
