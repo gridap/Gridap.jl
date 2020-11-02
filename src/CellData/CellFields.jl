@@ -337,6 +337,11 @@ function evaluate!(cache,f::OperationCellField,x::CellPoint)
   lazy_map(Broadcasting(f.op.op),ax...)
 end
 
+function change_domain(f::OperationCellField,target_trian::Triangulation,target_domain::DomainStyle)
+  args = map(i->change_domain(i,target_trian,target_domain),f.args)
+  OperationCellField(f.op,args...)
+end
+
 function _operate_cellfields(k::Operation,a...)
   b = _to_common_domain(a...)
   OperationCellField(k,b...)
