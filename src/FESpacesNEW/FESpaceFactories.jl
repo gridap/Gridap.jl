@@ -1,7 +1,7 @@
 
 function FESpace(
-  model::DiscreteModel;
-  reffes=AbstractArray{<:ReferenceFE},
+  model::DiscreteModel,
+  reffes::AbstractArray{<:ReferenceFE};
   labels = get_face_labeling(model),
   dof_space=:reference,
   conformity::Conformity=get_default_conformity(first(reffes)),
@@ -66,11 +66,6 @@ function FESpace(
 
   V
 end
-
-
-
-
-
 
 """
 """

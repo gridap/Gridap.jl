@@ -15,7 +15,7 @@ domain =(0,1,0,1)
 partition = (3,3)
 model = CartesianDiscreteModel(domain,partition)
 reffes = ReferenceFE(model,basis=:Lagrangian,order=order,valuetype=Float64)
-V = FESpace(model,reffes=reffes,dirichlet_tags=["tag_1","tag_6"])
+V = FESpace(model,reffes,dirichlet_tags=["tag_1","tag_6"])
 test_fe_space(V)
 
 vh = FEFunction(V,rand(num_free_dofs(V)))
