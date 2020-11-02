@@ -63,6 +63,10 @@ function parse_commandline()
         help = "The name of the Julia script (including the .jl extension) with the tutorial from which the sys image is created."
         default = "validation.jl"
         arg_type = String
+        "--user-provided-script-path"
+        arg_type = String
+        help = "The Julia script from which the image is created is not extracted from the Tutorials.jl Git repo, but the one located at the path provided to this CLA is used instead"
+        default = nothing
     end
     return parse_args(s)
 end
@@ -92,6 +96,8 @@ function main()
     gridap_path = parsed_args["gridap-path"]
     tutorials_path = parsed_args["tutorials-path"]
     tutorial_name = parsed_args["tutorial-name"]
+    user_provided_script_path = parsed_args["user-provided-script-path"]
+
     if (! parsed_args["do-not-clone-gridap"])
       clone_and_checkout_tag(
         "https://github.com/gridap/Gridap.jl",
@@ -99,12 +105,15 @@ function main()
         gridap_tag,
       )
     end
-    if (! parsed_args["do-not-clone-tutorials"])
-      clone_and_checkout_tag(
-       "https://github.com/gridap/Tutorials",
-       tutorials_path,
-       tutorials_tag,
-      )
+
+    if (user_provided_script_path == nothing)
+      if (! parsed_args["do-not-clone-tutorials"])
+        clone_and_checkout_tag(
+        "https://github.com/gridap/Tutorials",
+        tutorials_path,
+        tutorials_tag,
+       )
+      end
     end
 
     @info "Creating system image for Gridap.jl#$(gridap_tag) object file at: '$(image_path)'"
@@ -125,7 +134,12 @@ function main()
         append!(pkgs, [Symbol(name) for name in keys(Pkg.installed())])
     end
 
-    tutorial_script_path=joinpath(tutorials_path,"src",tutorial_name)
+    if ( user_provided_script_path == nothing )
+      tutorial_script_path=joinpath(tutorials_path,"src",tutorial_name)
+    else
+      tutorial_script_path=user_provided_script_path
+    end
+
     if ! isfile(tutorial_script_path)
       @error "$(tutorial_script_path) not found or not a file"
     end
