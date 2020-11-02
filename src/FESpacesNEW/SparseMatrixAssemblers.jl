@@ -84,7 +84,6 @@ function assemble_matrix(a::SparseMatrixAssembler,matdata)
   sparse_from_coo(get_matrix_type(a),I,J,V,m,n)
 end
 
-
 function allocate_matrix_and_vector(a::SparseMatrixAssembler,data)
 
   n = count_matrix_and_vector_nnz_coo(a,data)
@@ -181,7 +180,7 @@ get_assembly_strategy(a::GenericSparseMatrixAssembler) = a.strategy
 
 function assemble_vector_add!(b,a::GenericSparseMatrixAssembler,vecdata)
   for (cellvec, cellids) in zip(vecdata...)
-    rows = get_cell_dofs(a.test,cellids)
+    rows = get_cell_dof_ids(a.test,cellids)
     vals = attach_constraints_rows(a.test,cellvec,cellids)
     rows_cache = array_cache(rows)
     vals_cache = array_cache(vals)
@@ -219,8 +218,8 @@ end
 function count_matrix_nnz_coo(a::GenericSparseMatrixAssembler,matdata)
   n = 0
   for (cellmat_rc,cellidsrows,cellidscols) in zip(matdata...)
-    cell_rows = get_cell_dofs(a.test,cellidsrows)
-    cell_cols = get_cell_dofs(a.trial,cellidscols)
+    cell_rows = get_cell_dof_ids(a.test,cellidsrows)
+    cell_cols = get_cell_dof_ids(a.trial,cellidscols)
     rows_cache = array_cache(cell_rows)
     cols_cache = array_cache(cell_cols)
     cellmat_r = attach_constraints_cols(a.trial,cellmat_rc,cellidscols)
@@ -296,8 +295,8 @@ function fill_matrix_coo_symbolic!(I,J,a::GenericSparseMatrixAssembler,matdata,n
   term_to_cellmat,term_to_cellidsrows, term_to_cellidscols = matdata
   nini = n
   for (cellmat_rc,cellidsrows,cellidscols) in zip(term_to_cellmat,term_to_cellidsrows,term_to_cellidscols)
-    cell_rows = get_cell_dofs(a.test,cellidsrows)
-    cell_cols = get_cell_dofs(a.trial,cellidscols)
+    cell_rows = get_cell_dof_ids(a.test,cellidsrows)
+    cell_cols = get_cell_dof_ids(a.trial,cellidscols)
     rows_cache = array_cache(cell_rows)
     cols_cache = array_cache(cell_cols)
     cellmat_r = attach_constraints_cols(a.trial,cellmat_rc,cellidscols)
@@ -362,8 +361,8 @@ end
 function assemble_matrix_add!(mat,a::GenericSparseMatrixAssembler,matdata)
 
   for (cellmat_rc,cellidsrows,cellidscols) in zip(matdata...)
-    cell_rows = get_cell_dofs(a.test,cellidsrows)
-    cell_cols = get_cell_dofs(a.trial,cellidscols)
+    cell_rows = get_cell_dof_ids(a.test,cellidsrows)
+    cell_cols = get_cell_dof_ids(a.trial,cellidscols)
     cellmat_r = attach_constraints_cols(a.trial,cellmat_rc,cellidscols)
     cell_vals = attach_constraints_rows(a.test,cellmat_r,cellidsrows)
     rows_cache = array_cache(cell_rows)
@@ -412,8 +411,8 @@ end
 function fill_matrix_coo_numeric!(I,J,V,a::GenericSparseMatrixAssembler,matdata,n=0)
   nini = n
   for (cellmat_rc,cellidsrows,cellidscols) in zip(matdata...)
-    cell_rows = get_cell_dofs(a.test,cellidsrows)
-    cell_cols = get_cell_dofs(a.trial,cellidscols)
+    cell_rows = get_cell_dof_ids(a.test,cellidsrows)
+    cell_cols = get_cell_dof_ids(a.trial,cellidscols)
     cellmat_r = attach_constraints_cols(a.trial,cellmat_rc,cellidscols)
     cell_vals = attach_constraints_rows(a.test,cellmat_r,cellidsrows)
     rows_cache = array_cache(cell_rows)
@@ -477,8 +476,8 @@ function assemble_matrix_and_vector_add!(A,b,a::GenericSparseMatrixAssembler, da
   matvecdata, matdata, vecdata = data
 
   for (cellmatvec_rc,cellidsrows,cellidscols) in zip(matvecdata...)
-    cell_rows = get_cell_dofs(a.test,cellidsrows)
-    cell_cols = get_cell_dofs(a.trial,cellidscols)
+    cell_rows = get_cell_dof_ids(a.test,cellidsrows)
+    cell_cols = get_cell_dof_ids(a.trial,cellidscols)
     cellmatvec_r = attach_constraints_cols(a.trial,cellmatvec_rc,cellidscols)
     cellmatvec = attach_constraints_rows(a.test,cellmatvec_r,cellidsrows)
     rows_cache = array_cache(cell_rows)
@@ -510,8 +509,8 @@ function fill_matrix_and_vector_coo_numeric!(I,J,V,b,a::GenericSparseMatrixAssem
   nini = n
 
   for (cellmatvec_rc,cellidsrows,cellidscols) in zip(matvecdata...)
-    cell_rows = get_cell_dofs(a.test,cellidsrows)
-    cell_cols = get_cell_dofs(a.trial,cellidscols)
+    cell_rows = get_cell_dof_ids(a.test,cellidsrows)
+    cell_cols = get_cell_dof_ids(a.trial,cellidscols)
     cellmatvec_r = attach_constraints_cols(a.trial,cellmatvec_rc,cellidscols)
     cellmatvec = attach_constraints_rows(a.test,cellmatvec_r,cellidsrows)
     rows_cache = array_cache(cell_rows)

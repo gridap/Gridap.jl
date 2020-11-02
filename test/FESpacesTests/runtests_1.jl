@@ -10,10 +10,10 @@ using Test
 
 @testset "TrialFESpaces" begin include("TrialFESpacesTests.jl") end
 
-#
-#
-#@testset "SingleFieldFEFunctions" begin include("SingleFieldFEFunctionsTests.jl") end
-#
+@testset "Assemblers" begin include("AssemblersTests.jl") end
+
+@testset "SparseMatrixAssemblers" begin include("SparseMatrixAssemblersTests.jl") end
+
 #
 #
 #
@@ -23,9 +23,6 @@ using Test
 #
 #@testset "DiscontinuousFESpaces" begin include("DiscontinuousFESpacesTests.jl") end
 #
-#@testset "Assemblers" begin include("AssemblersTests.jl") end
-#
-#@testset "SparseMatrixAssemblers" begin include("SparseMatrixAssemblersTests.jl") end
 #
 #@testset "FETerms" begin include("FETermsTests.jl") end
 #
