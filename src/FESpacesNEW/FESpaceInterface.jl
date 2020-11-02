@@ -34,7 +34,7 @@ function test_fe_function(f::FEFunction)
   free_values = get_free_values(f)
   fe_space = get_fe_space(f)
   @test length(free_values) == num_free_dofs(fe_space)
-  cell_values = get_cell_values(f)
+  cell_values = get_cell_dof_values(f)
   trian = get_triangulation(f)
   @test length(cell_values) == num_cells(trian)
 end
@@ -143,7 +143,7 @@ function get_cell_constraints(f::FESpace)
 end
 
 function get_cell_constraints(f,::UnConstrained)
-  cell_axes = lazy_map(axes,get_cell_shapefuns(f))
+  cell_axes = lazy_map(axes,get_cell_data(get_cell_shapefuns(f)))
   identity_constraints(cell_axes)
 end
 
@@ -221,12 +221,10 @@ function test_fe_space(f::FESpace)
   fe_basis = get_cell_shapefuns(f)
   @test isa(has_constraints(f),Bool)
   @test isa(has_constraints(typeof(f)),Bool)
-  @test length(get_cell_dofs(f)) == length(fe_basis)
-  @test length(get_cell_axes(f)) == length(fe_basis)
-  @test length(get_cell_axes_with_constraints(f)) == length(fe_basis)
-  @test length(get_cell_constraints(f)) == length(fe_basis)
-  @test length(get_cell_isconstrained(f)) == length(fe_basis)
-  @test CellField(f,get_cell_dofs(f)) != nothing
+  @test length(get_cell_dof_ids(f)) == num_cells(fe_basis)
+  @test length(get_cell_constraints(f)) == num_cells(fe_basis)
+  @test length(get_cell_isconstrained(f)) == num_cells(fe_basis)
+  @test CellField(f,get_cell_dof_ids(f)) != nothing
 end
 
 function test_fe_space(f::FESpace,matvecdata,matdata,vecdata)

@@ -133,7 +133,7 @@ end
 
 struct SingleFieldFEFunction{T<:CellField} <: FEFunction
   cell_field::T
-  cell_dof_values::AbstractArray{<:AbstractVector{<:Integer}}
+  cell_dof_values::AbstractArray{<:AbstractVector{<:Number}}
   free_values::AbstractVector{<:Number}
   dirichlet_values::AbstractVector{<:Number}
   fe_space::SingleFieldFESpace

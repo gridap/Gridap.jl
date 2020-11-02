@@ -11,11 +11,15 @@ using FillArrays
 using SparseArrays
 
 using Gridap.Helpers
+using Gridap.Algebra
 using Gridap.Arrays
+using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.CellData
 
+import Gridap.Arrays: array_cache
+import Gridap.Arrays: getindex!
 import Gridap.Geometry: get_triangulation
 import Gridap.Geometry: get_cell_shapefuns
 import Gridap.CellData: attach_constraints_rows
@@ -69,6 +73,7 @@ export compute_dirichlet_values_for_tags
 export compute_dirichlet_values_for_tags!
 
 export UnconstrainedFESpace
+export compute_conforming_cell_dofs
 
 include("FESpaceInterface.jl")
 
@@ -77,5 +82,7 @@ include("SingleFieldFESpaces.jl")
 include("UnconstrainedFESpaces.jl")
 
 include("ConformingFESpaces.jl")
+
+include("FESpaceFactories.jl")
 
 end # module

@@ -346,7 +346,7 @@ function expand_cell_data(type_to_data, cell_to_type::Fill)
 end
 
 function compress_cell_data(cell_data::AbstractArray)
-  @unreachable """
+  @unreachable """\n
   The given cell data cannot be compressed. Describe your data with
   a CompressedArray or Fill array types.
   """
@@ -357,7 +357,7 @@ function compress_cell_data(a::CompressedArray)
 end
 
 function compress_cell_data(a::Fill)
-  Fill(a.value,length(a)), Fill(1,length(a))
+  Fill(a.value,1), Fill(1,length(a))
 end
 
 #"""

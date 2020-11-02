@@ -65,6 +65,7 @@ export LebesgueMeasure
 export attach_dirichlet
 export attach_constraints_rows
 export attach_constraints_cols
+export identity_constraints
 
 include("CellDataInterface.jl")
 
