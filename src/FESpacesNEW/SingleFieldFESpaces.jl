@@ -243,6 +243,7 @@ function compute_dirichlet_values_for_tags!(
   for (tag, object) in enumerate(_tag_to_object)
     cell_vals = _cell_vals(f,object)
     fill!(dirichlet_values_scratch,zero(eltype(dirichlet_values_scratch)))
+    gather_dirichlet_values!(dirichlet_values_scratch,f,cell_vals)
     _fill_dirichlet_values_for_tag!(dirichlet_values,dirichlet_values_scratch,tag,dirichlet_dof_to_tag)
   end
   dirichlet_values

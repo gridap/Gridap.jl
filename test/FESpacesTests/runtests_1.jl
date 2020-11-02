@@ -4,11 +4,11 @@ using Test
 
 @testset "ConformingFESpaces" begin include("ConformingFESpacesTests.jl") end
 
-#@testset "FEFunctions" begin include("FEFunctionsTests.jl") end
+@testset "FESpacesInterfaces" begin include("FESpacesInterfacesTests.jl") end
+
+@testset "SingleFieldFESpaces" begin include("SingleFieldFESpacesTests.jl") end
+
 #
-#@testset "FESpacesInterfaces" begin include("FESpacesInterfacesTests.jl") end
-#
-#@testset "SingleFieldFESpaces" begin include("SingleFieldFESpacesTests.jl") end
 #
 #@testset "SingleFieldFEFunctions" begin include("SingleFieldFEFunctionsTests.jl") end
 #

@@ -59,7 +59,7 @@ end
 
 function gather_dirichlet_values!(dirichlet_vals,f::UnconstrainedFESpace,cell_vals)
 
-  cell_dofs = get_cell_dofs(f)
+  cell_dofs = get_cell_dof_ids(f)
   cache_vals = array_cache(cell_vals)
   cache_dofs = array_cache(cell_dofs)
   free_vals = zero_free_values(f)
