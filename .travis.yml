@@ -20,8 +20,12 @@ jobs:
       os: linux
       script:
         - echo $PWD
+        - julia compile/create_gridap_image.jl --do-not-clone-gridap \
+                                               --gridap-path . \
+                                               --user-provided-script-path test/GridapTests/PoissonTests.jli \
+                                               -n ./Gridap.so
         - julia --project=. --color=yes -e 'using Pkg; Pkg.instantiate()'
-        - julia --project=. --color=yes --check-bounds=yes -e '(1,) .== 1; include("test/GridapTests/runtests.jl")'
+        - julia -J ./Gridap.so --project=. --color=yes --check-bounds=yes -e '(1,) .== 1; include("test/GridapTests/runtests.jl")'
       after_success: skip
     - stage: "Documentation"
       julia: 1.5
