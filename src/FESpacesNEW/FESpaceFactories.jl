@@ -13,10 +13,6 @@ function FESpace(
   @assert length(reffes) == num_cells(model) """\n
   The length of the vector provided in the `reffes` argument ($(length(reffes)) entries)
   does not match the number of cells ($(num_cells(model)) cells) in the provided DiscreteModel.
-
-  A safe way of generating this vector is by using the `ReferenceFE` constructor, e.g.:
-
-      reffes = ReferenceFE(model,basis=:Lagrangian,valuetype=Float64,order=3)
   """
 
   if dof_space == :reference
@@ -65,6 +61,12 @@ function FESpace(
   end
 
   V
+end
+
+function FESpace(model::DiscreteModel, reffe::Tuple{Symbol,Any}; kwargs...)
+  basis, reffe_kwargs = reffe
+  cell_reffe = ReferenceFE(model,basis;reffe_kwargs...)
+  FESpace(model,cell_reffe;kwargs...)
 end
 
 """
