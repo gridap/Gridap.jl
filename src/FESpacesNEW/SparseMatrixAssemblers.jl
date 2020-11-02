@@ -156,14 +156,15 @@ end
 
 function SparseMatrixAssembler(mat::Type,trial::FESpace,test::FESpace)
   strategy = DefaultAssemblyStrategy()
-  GenericSparseMatrixAssembler(mat,Vector{Float64},trial,test,strategy)
+  GenericSparseMatrixAssembler(mat,Vector{eltype(mat)},trial,test,strategy)
 end
 
 """
 """
 function SparseMatrixAssembler(trial::FESpace,test::FESpace)
-  matrix_type = SparseMatrixCSC{Float64,Int}
-  vector_type = Vector{Float64}
+  T = get_dof_value_type(trial)
+  matrix_type = SparseMatrixCSC{T,Int}
+  vector_type = Vector{T}
   strategy = DefaultAssemblyStrategy()
   GenericSparseMatrixAssembler(matrix_type,vector_type,trial,test,strategy)
 end

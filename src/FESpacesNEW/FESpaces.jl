@@ -93,6 +93,7 @@ export UnconstrainedFESpace
 export compute_conforming_cell_dofs
 export compute_cell_space
 
+export TestFESpace
 export TrialFESpace
 export TrialFESpace!
 export HomogeneousTrialFESpace
@@ -120,6 +121,9 @@ export allocate_vector
 export allocate_matrix
 export allocate_matrix_and_vector
 export test_assembler
+export collect_cell_matrix
+export collect_cell_vector
+export collect_cell_matrix_and_vector
 export get_matrix_type
 export get_vector_type
 export SparseMatrixAssembler
