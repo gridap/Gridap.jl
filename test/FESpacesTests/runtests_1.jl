@@ -20,6 +20,8 @@ using Test
 
 @testset "FEOperatorsFromWeakForm" begin include("FEOperatorsFromWeakFormTests.jl") end
 
+@testset "FESolvers" begin include("FESolversTests.jl") end
+
 #
 #
 #
@@ -36,7 +38,6 @@ using Test
 #
 #@testset "FEOperatorsFromTerms" begin include("FEOperatorsFromTermsTests.jl") end
 #
-#@testset "FESolvers" begin include("FESolversTests.jl") end
 
 
 end # module

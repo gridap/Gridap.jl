@@ -23,8 +23,6 @@ model = CartesianDiscreteModel(domain,partition)
 
 order = 2
 reffe = ReferenceFE(:Lagrangian,valuetype=Float64,order=order)
-diritag = "boundary"
-
 V = FESpace(model,reffe,dirichlet_tags="boundary")
 U = TrialFESpace(V,u)
 
