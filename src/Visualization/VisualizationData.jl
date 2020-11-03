@@ -173,7 +173,7 @@ end
 function _prepare_cdata(celldata,sub_cell_to_cell)
   cdata = Dict()
   for (k,v) in celldata
-    cell_to_a = collect(v)
+    cell_to_a = collect(get_array(v))
     T = eltype(cell_to_a)
     sub_cell_to_a = zeros(T,length(sub_cell_to_cell))
     _fill_sub_cell_to_a!(sub_cell_to_a,cell_to_a,sub_cell_to_cell)

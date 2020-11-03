@@ -251,10 +251,10 @@ function gradient(a::CellField)
   if DomainStyle(a) == PhysicalDomain()
     g = cell_∇a
   else
-    cell_map = get_cell_map(a.trian)
+    cell_map = get_cell_map(get_triangulation(a))
     g = lazy_map(Broadcasting(push_∇),cell_∇a,cell_map)
   end
-  GenericCellField(g,a.trian,DomainStyle(a))
+  GenericCellField(g,get_triangulation(a),DomainStyle(a))
 end
 
 function ∇∇(a::CellField)
@@ -262,10 +262,10 @@ function ∇∇(a::CellField)
   if DomainStyle(a) == PhysicalDomain()
     h = cell_∇∇a
   else
-    cell_map = get_cell_map(a.trian)
+    cell_map = get_cell_map(get_triangulation(a))
     h = lazy_map(Broadcasting(push_∇∇),cell_∇∇a,cell_map)
   end
-  GenericCellField(h,a.trian,DomainStyle(a))
+  GenericCellField(h,get_triangulation(a),DomainStyle(a))
 end
 
 # Operations between CellField
@@ -402,6 +402,7 @@ end
 Base.:(∘)(f::Function,g::CellField) = Operation(f)(g)
 Base.:(∘)(f::Function,g::Tuple{Vararg{CellField}}) = Operation(f)(g...)
 Base.:(∘)(f::Function,g::Tuple{Vararg{Union{AbstractArray{<:Number},CellField}}}) = Operation(f)(g...)
+Base.:(∘)(f::Function,g::Tuple{Vararg{Union{Function,CellField}}}) = Operation(f)(g...)
 
 # Define some of the well known arithmetic ops
 

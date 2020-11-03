@@ -146,6 +146,7 @@ end
 
 function SparseMatrixAssembler(
   mat::Type,vec::Type,trial::FESpace,test::FESpace,strategy::AssemblyStrategy)
+  @assert ! isa(test,TrialFESpace)
   GenericSparseMatrixAssembler(mat,vec,trial,test,strategy)
 end
 

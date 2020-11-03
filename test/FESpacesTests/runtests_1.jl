@@ -18,6 +18,8 @@ using Test
 
 @testset "AffineFEOperators" begin include("AffineFEOperatorsTests.jl") end
 
+@testset "FEOperatorsFromWeakForm" begin include("FEOperatorsFromWeakFormTests.jl") end
+
 #
 #
 #
