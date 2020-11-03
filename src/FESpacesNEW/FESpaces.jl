@@ -152,4 +152,8 @@ include("Assemblers.jl")
 
 include("SparseMatrixAssemblers.jl")
 
+include("FEOperators.jl")
+
+include("AffineFEOperators.jl")
+
 end # module

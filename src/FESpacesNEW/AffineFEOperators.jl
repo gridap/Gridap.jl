@@ -20,44 +20,31 @@ function AffineFEOperator(trial::FESpace,test::FESpace,matrix::AbstractMatrix,ve
   AffineFEOperator(trial,test,op)
 end
 
-"""
-   AffineFEOperator(test::FESpace,trial::FESpace,assem::Assembler,terms::AffineFETerm...)
-   AffineFEOperator(test::FESpace,trial::FESpace,terms::AffineFETerm...)
-"""
-function AffineFEOperator(trial::FESpace,test::FESpace,assem::Assembler,terms::AffineFETerm...)
+function AffineFEOperator(weakform::Function,assem::Assembler)
 
-  u = get_cell_basis(trial)
-  v = get_cell_basis(test)
-  @assert is_trial(u)
+  trial = get_trial(assem)
+  test = get_test(assem)
+
+  u = get_cell_shapefuns_trial(trial)
+  v = get_cell_shapefuns(test)
 
   uhd = zero(trial)
-
-  data = collect_cell_matrix_and_vector(uhd,u,v,terms)
+  matcontribs, veccontribs = weakform(u,v)
+  data = collect_cell_matrix_and_vector(matcontribs,veccontribs,uhd)
   A,b = assemble_matrix_and_vector(assem,data)
-
-  #matdata = collect_cell_matrix(u,v,terms)
-  #vecdata = collect_cell_vector(uhd,v,terms)
-  #A = assemble_matrix(assem,matdata)
-  #b = assemble_vector(assem,vecdata)
 
   AffineFEOperator(trial,test,A,b)
 end
 
-function AffineFEOperator(trial::FESpace,test::FESpace,terms::AffineFETerm...)
-  assem = SparseMatrixAssembler(trial,test)
-  AffineFEOperator(trial,test,assem,terms...)
+function AffineFEOperator(weakform::Function,args...)
+  assem = SparseMatrixAssembler(args...)
+  AffineFEOperator(weakform,assem)
 end
 
-function AffineFEOperator(
-  mat::Type{<:AbstractSparseMatrix},trial::FESpace,test::FESpace,terms::AffineFETerm...)
-  assem = SparseMatrixAssembler(mat,trial,test)
-  AffineFEOperator(trial,test,assem,terms...)
-end
-
-function AffineFEOperator(
-  mat::Type{<:AbstractSparseMatrix},vec::Type{<:AbstractVector},trial::FESpace,test::FESpace,terms::AffineFETerm...)
-  assem = SparseMatrixAssembler(mat,vec,trial,test)
-  AffineFEOperator(trial,test,assem,terms...)
+function AffineFEOperator(a::Function,ℓ::Function,args...)
+  AffineFEOperator(args...) do u,v
+    a(u,v), ℓ(v)
+  end
 end
 
 get_test(feop::AffineFEOperator) = feop.test
@@ -74,38 +61,32 @@ get_vector(feop::AffineFEOperator) = get_vector(feop.op)
 
 get_algebraic_operator(feop::AffineFEOperator) = feop.op
 
-function allocate_residual(feop::AffineFEOperator,u)
-  @assert is_a_fe_function(u)
+function allocate_residual(feop::AffineFEOperator,u::FEFunction)
   x = get_free_values(u)
   allocate_residual(feop.op,x)
 end
 
-function residual!(b::AbstractVector,feop::AffineFEOperator,u)
-  @assert is_a_fe_function(u)
+function residual!(b::AbstractVector,feop::AffineFEOperator,u::FEFunction)
   x = get_free_values(u)
   residual!(b,feop.op,x)
 end
 
-function residual(feop::AffineFEOperator,u)
-  @assert is_a_fe_function(u)
+function residual(feop::AffineFEOperator,u::FEFunction)
   x = get_free_values(u)
   residual(feop.op,x)
 end
 
-function allocate_jacobian(feop::AffineFEOperator,u)
-  @assert is_a_fe_function(u)
+function allocate_jacobian(feop::AffineFEOperator,u::FEFunction)
   x = get_free_values(u)
   allocate_jacobian(feop.op,x)
 end
 
-function jacobian!(A::AbstractMatrix,feop::AffineFEOperator,u)
-  @assert is_a_fe_function(u)
+function jacobian!(A::AbstractMatrix,feop::AffineFEOperator,u::FEFunction)
   x = get_free_values(u)
   jacobian!(A,feop.op,x)
 end
 
-function jacobian(feop::AffineFEOperator,u)
-  @assert is_a_fe_function(u)
+function jacobian(feop::AffineFEOperator,u::FEFunction)
   x = get_free_values(u)
   jacobian(feop.op,x)
 end

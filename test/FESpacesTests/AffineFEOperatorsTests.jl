@@ -15,6 +15,10 @@ using Gridap.CellData
 domain =(0,1,0,1,0,1)
 partition = (3,3,3)
 model = CartesianDiscreteModel(domain,partition)
+
+
+
+
 trian = get_triangulation(model)
 degree = 4
 quad = CellQuadrature(trian,degree)

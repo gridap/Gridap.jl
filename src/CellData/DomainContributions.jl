@@ -85,11 +85,15 @@ end
 
 LebesgueMeasure(args...) = LebesgueMeasure(CellQuadrature(args...))
 
-function (*)(a::Integrand,b::LebesgueMeasure)
-  c = integrate(a.object,b.quad)
+function integrate(f,b::LebesgueMeasure)
+  c = integrate(f,b.quad)
   cont = DomainContribution()
   add_contribution!(cont,b.quad.trian,c)
   cont
+end
+
+function (*)(a::Integrand,b::LebesgueMeasure)
+  integrate(a.object,b)
 end
 
 (*)(b::LebesgueMeasure,a::Integrand) = a*b
