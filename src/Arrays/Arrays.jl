@@ -11,16 +11,56 @@ $(EXPORTS)
 module Arrays
 
 using Gridap.Helpers
-using Gridap.Inference
 using Gridap.Algebra
 
 using DocStringExtensions
 using Test
 using FillArrays
-using Base: @propagate_inbounds
 using LinearAlgebra
-using ForwardDiff
 using BlockArrays
+using Base: @propagate_inbounds
+using ForwardDiff
+
+import Base: size
+import Base: getindex, setindex!
+import Base: similar
+import Base: IndexStyle
+
+import Gridap.Algebra: scale_entries!
+
+# CachedArray
+
+export CachedArray
+export CachedMatrix
+export CachedVector
+export setsize!
+export setaxes!
+
+# Map
+
+export Map
+export return_cache
+export evaluate!
+export evaluate
+export test_mapping
+export return_type
+export return_value
+export testargs
+export inverse_map
+
+export Broadcasting
+
+export Operation
+
+
+# LazyArray
+
+export LazyArray
+export array_cache
+export getindex!
+export lazy_map
+
+# BlockArrays
 
 export BlockArrayCoo
 export BlockVectorCoo
@@ -37,47 +77,26 @@ export TwoLevelBlockedUnitRange
 
 export array_cache
 export getindex!
-export getitems!
-export getitems
 export testitem
-export uses_hash
+export testvalue
+# export uses_hash
 export test_array
-export testitems
-export array_caches
 export get_array
-export get_arrays
-export add_to_array!
+# # export add_to_array!
 
-export CachedArray
-export CachedMatrix
-export CachedVector
-export setsize!
-export setaxes!
 
 export CompressedArray
-export LocalToGlobalArray
-export LocalToGlobalPosNegArray
-export FilteredCellArray
-export FilterKernel
 
-export kernel_cache
-export kernel_caches
-export apply_kernels!
-export apply_kernel!
-export apply_kernel
-export test_kernel
-export bcast
-export elem
-export contract
-export MulKernel
-export MulAddKernel
-export kernel_return_type
-export kernel_return_types
-export kernel_testitem
-export Kernel
+export Reindex
+#export reindex
 
-export apply
-export apply_all
+export PosNegReindex
+export PosNegPartition
+#export posneg_reindex
+
+export FilterMap
+
+export MulAddMap
 
 export Table
 export identity_table
@@ -99,30 +118,30 @@ export UNSET
 export get_local_item
 export find_local_index
 
-export reindex
-export identity_vector
+export IdentityVector
 
 export SubVector
 export pair_arrays
 export unpair_arrays
 
+export AppendedArray
 export lazy_append
 export lazy_split
-export AppendedArray
 
 export autodiff_array_gradient
 export autodiff_array_jacobian
 export autodiff_array_hessian
 
-import Base: size
-import Base: getindex, setindex!
-import Base: similar
-import Base: IndexStyle
+export VectorWithEntryRemoved
+export VectorWithEntryInserted
+
+import AbstractTrees
+export TreeNode
+export print_op_tree
+export similar_tree_node
 
 import Gridap.Io: to_dict
 import Gridap.Io: from_dict
-
-import Gridap.Algebra: scale_entries!
 
 include("Interface.jl")
 
@@ -130,23 +149,23 @@ include("BlockArraysCoo.jl")
 
 include("CachedArrays.jl")
 
-include("Kernels.jl")
+include("Maps.jl")
 
-include("Apply.jl")
+include("AlgebraMaps.jl")
+
+include("LazyArrays.jl")
 
 include("CompressedArrays.jl")
 
 include("Tables.jl")
 
-include("LocalToGlobalArrays.jl")
+include("IdentityVectors.jl")
 
-include("LocalToGlobalPosNegArrays.jl")
-
-include("FilteredArrays.jl")
+include("PosNegReindex.jl")
 
 include("Reindex.jl")
 
-include("IdentityVectors.jl")
+include("FilteredArrays.jl")
 
 include("SubVectors.jl")
 
@@ -157,5 +176,12 @@ include("AppendedArrays.jl")
 include("VectorsOfBlockArrayCoo.jl")
 
 include("Autodiff.jl")
+
+include("VectorsWithEntryRemoved.jl")
+
+include("VectorsWithEntryInserted.jl")
+
+include("PrintOpTrees.jl")
+
 
 end # module

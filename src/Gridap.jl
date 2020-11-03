@@ -7,7 +7,6 @@ on finite element methods.
 The module is structured in the following sub-modules:
 
 - [`Gridap.Helpers`](@ref)
-- [`Gridap.Inference`](@ref)
 - [`Gridap.Io`](@ref)
 - [`Gridap.Algebra`](@ref)
 - [`Gridap.TensorValues`](@ref)
@@ -31,8 +30,6 @@ using DocStringExtensions
 
 include("Helpers/Helpers.jl")
 
-include("Inference/Inference.jl")
-
 include("Io/Io.jl")
 
 include("Algebra/Algebra.jl")
@@ -49,20 +46,17 @@ include("Integration/Integration.jl")
 
 include("ReferenceFEs/ReferenceFEs.jl")
 
-include("CellData/CellData.jl")
-
 include("Geometry/Geometry.jl")
 
-include("FESpaces/FESpaces.jl")
-
-include("MultiField/MultiField.jl")
+include("CellData/CellData.jl")
 
 include("Visualization/Visualization.jl")
 
-include("Exports.jl")
+include("FESpacesNEW/FESpaces.jl")
 
-include("Mappings/Mappings/Mappings.jl")
+# include("MultiField/MultiField.jl")
 
-include("Mappings/Fields/NewFields.jl")
+
+# include("Exports.jl")
 
 end # module

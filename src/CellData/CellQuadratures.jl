@@ -1,115 +1,98 @@
+
+# Quadrature rule
+
 """
-    struct CellQuadrature <: GridapType
-      array
-    end
 """
-struct CellQuadrature <: GridapType
-  array
-  coords
-  weights
-  @doc """
-      CellQuadrature(array::AbstractArray{<:Quadrature})
-  """
-  function CellQuadrature(array::AbstractArray{<:Quadrature})
-    coords = _get_coordinates(array)
-    weights = _get_weights(array)
-    new(array,coords,weights)
+struct CellQuadrature{DS} <: CellDatum
+  cell_quad::AbstractArray{<:Quadrature}
+  cell_point::AbstractArray{<:AbstractArray{<:Point}}
+  cell_weight::AbstractArray{<:AbstractArray{<:Real}}
+  trian::Triangulation
+  domain_style::DS
+end
+
+"""
+"""
+function CellQuadrature(trian::Triangulation,degree::Integer)
+  ctype_to_reffe, cell_to_ctype = compress_cell_data(get_cell_reffe(trian))
+  ctype_to_quad = map(r->Quadrature(get_polytope(r),degree),ctype_to_reffe)
+  ctype_to_point = map(get_coordinates,ctype_to_quad)
+  ctype_to_weigth = map(get_weights,ctype_to_quad)
+  cell_quad = expand_cell_data(ctype_to_quad,cell_to_ctype)
+  cell_point = expand_cell_data(ctype_to_point,cell_to_ctype)
+  cell_weight = expand_cell_data(ctype_to_weigth,cell_to_ctype)
+  CellQuadrature(cell_quad,cell_point,cell_weight,trian,ReferenceDomain())
+end
+
+get_cell_data(f::CellQuadrature) = f.cell_quad
+get_triangulation(f::CellQuadrature) = f.trian
+DomainStyle(::Type{CellQuadrature{DS}}) where DS = DS()
+
+function change_domain(a::CellQuadrature,::ReferenceDomain,::PhysicalDomain)
+  @notimplemented
+end
+
+function change_domain(a::CellQuadrature,::PhysicalDomain,::ReferenceDomain)
+  @notimplemented
+end
+
+function get_cell_points(a::CellQuadrature)
+  CellPoint(a.cell_point,a.trian,a.domain_style)
+end
+
+function integrate(f::CellField,quad::CellQuadrature)
+
+  trian_f = get_triangulation(f)
+  trian_x = get_triangulation(quad)
+
+  if have_compatible_domains(trian_f,trian_x)
+    nothing
+  elseif have_compatible_domains(trian_f,get_background_triangulation(trian_x))
+    nothing
+  elseif have_compatible_domains(trian_x,get_background_triangulation(trian_f))
+    @unreachable """\n
+    CellField objects defined on a sub-triangulation cannot be integrated
+    with a CellQuadrature defined on the underlying background mesh.
+
+    This happens e.g. when trying to integrate a CellField defined on a Neumann boundary
+    with a CellQuadrature defined on the underlying background mesh.
+    """
+  else
+    @unreachable """\n
+    Your are trying to integrate a CellField using a CellQuadrature defined on incompatible
+    triangulations. Verify that either the two objects are defined in the same triangulation
+    or that the triangulaiton of the CellField is the background triangulation of the CellQuadrature.
+    """
+  end
+
+  b = change_domain(f,quad.trian,quad.domain_style)
+  x = get_cell_points(quad)
+  bx = b(x)
+  if quad.domain_style == PhysicalDomain()
+    lazy_map(IntegrationMap(),bx,quad.cell_weight)
+  else
+    cell_map = get_cell_map(quad.trian)
+    cell_Jt = lazy_map(∇,cell_map)
+    cell_Jtx = lazy_map(evaluate,cell_Jt,quad.cell_point)
+    lazy_map(IntegrationMap(),bx,quad.cell_weight,cell_Jtx)
   end
 end
 
-"""
-    CellQuadrature(degree,polytopes::Vector{<:Polytope}, cell_types::AbstractVector)
-"""
-function CellQuadrature(degree,polytopes::Vector{<:Polytope}, cell_types::AbstractVector)
-  f = (p) -> Quadrature(p,degree)
-  quads = map(f,polytopes)
-  array = CompressedArray(quads,cell_types)
-  CellQuadrature(array)
+function integrate(a,quad::CellQuadrature)
+  b = CellField(a,quad.trian,quad.domain_style)
+  integrate(b,quad)
 end
 
-function CellQuadrature(degree,polytopes::Vector{<:Polytope}, cell_types::Fill)
-  ctype = cell_types.value
-  p = polytopes[ctype]
-  quad = Quadrature(p,degree)
-  array = Fill(quad,length(cell_types))
-  CellQuadrature(array)
+# Some syntactic sugar
+
+struct Integrand
+  object
 end
 
-"""
-    get_array(quad::CellQuadrature)
-"""
-get_array(quad::CellQuadrature) = quad.array
+const ∫ = Integrand
 
-"""
-    get_coordinates(q::CellQuadrature)
-"""
-function get_coordinates(quad::CellQuadrature)
-  quad.coords
-end
+(*)(a::Integrand,b::CellQuadrature) = integrate(a.object,b)
+(*)(b::CellQuadrature,a::Integrand) = integrate(a.object,b)
 
-"""
-    get_weights(q::CellQuadrature)
-"""
-function get_weights(quad::CellQuadrature)
-  quad.weights
-end
 
-function _get_coordinates(q::AbstractArray{<:Quadrature})
-  @notimplemented "Not implemented, since we dont need it"
-end
-
-function _get_coordinates(q::CompressedArray{<:Quadrature})
-  coords = map(get_coordinates,q.values)
-  CompressedArray(coords,q.ptrs)
-end
-
-function _get_coordinates(q::Fill{<:Quadrature})
-  coords = get_coordinates(q.value)
-  Fill(coords,length(q))
-end
-
-function _get_coordinates(q::AppendedArray)
-  a = _get_coordinates(q.a)
-  b = _get_coordinates(q.b)
-  lazy_append(a,b)
-end
-
-function _get_weights(q::AbstractArray{<:Quadrature})
-  @notimplemented "Not implemented, since we dont need it"
-end
-
-function _get_weights(q::CompressedArray{<:Quadrature})
-  w = map(get_weights,q.values)
-  CompressedArray(w,q.ptrs)
-end
-
-function _get_weights(q::Fill{<:Quadrature})
-  w = get_weights(q.value)
-  Fill(w,length(q))
-end
-
-function _get_weights(q::AppendedArray)
-  a = _get_weights(q.a)
-  b = _get_weights(q.b)
-  lazy_append(a,b)
-end
-
-"""
-    integrate(cell_field,cell_map::AbstractArray{<:Field},quad::CellQuadrature)
-"""
-function integrate(cell_field,cell_map::AbstractArray{<:Field},quad::CellQuadrature)
-  q = get_coordinates(quad)
-  w = get_weights(quad)
-  j = gradient(cell_map)
-  _f = convert_to_cell_field(cell_field,cell_map)
-  f = to_ref_space(_f)
-  @assert length(f) == length(cell_map) "Are you using the right triangulation to integrate?"
-  @assert length(f) == length(w) "Are you using the right quadrature to integrate?"
-  integrate(get_array(f),q,w,j)
-end
-
-function lazy_append(quad1::CellQuadrature,quad2::CellQuadrature)
-  array = lazy_append(quad1.array,quad2.array)
-  CellQuadrature(array)
-end
 

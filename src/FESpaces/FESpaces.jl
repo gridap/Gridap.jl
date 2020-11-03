@@ -33,12 +33,12 @@ using Gridap.Arrays: IdentityVector
 import Gridap.Arrays: get_array
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
-import Gridap.Arrays: kernel_cache
-import Gridap.Arrays: apply_kernel!
-import Gridap.Arrays: kernel_return_type
-import Gridap.Arrays: kernel_testitem!
+import Gridap.Arrays: return_cache
+import Gridap.Arrays: evaluate!
+import Gridap.Arrays: return_type
+import Gridap.Arrays: testitem!
 import Gridap.Arrays: reindex
-import Gridap.Arrays: apply
+import Gridap.Arrays: lazy_map
 import Gridap.CellData: get_cell_map
 import Gridap.Geometry: get_reffes
 import Gridap.Geometry: get_cell_type
@@ -55,8 +55,8 @@ import Gridap.Fields: gradient
 import Gridap.Fields: grad2curl
 import Gridap.Fields: evaluate_field_array
 import Gridap.ReferenceFEs: evaluate_dof_array
-import Gridap.Fields: field_cache
-import Gridap.Fields: evaluate_field!
+import Gridap.Fields: return_cache
+import Gridap.Fields: evaluate!
 import Gridap.Fields: field_gradient
 
 import Gridap.Algebra: allocate_residual
@@ -204,7 +204,9 @@ export collect_cell_jacobian
 export collect_cell_jacobian_and_residual
 export collect_cell_residual
 
+export FESpaceWithConstantFixed
 export FESpaceWithLastDofRemoved
+
 export ZeroMeanFESpace
 export CLagrangianFESpace
 export ConformingFESpace
@@ -252,7 +254,7 @@ include("FEOperatorsFromTerms.jl")
 
 include("FESolvers.jl")
 
-include("FESpacesWithLastDofRemoved.jl")
+include("FESpacesWithConstantFixed.jl")
 
 include("ZeroMeanFESpaces.jl")
 

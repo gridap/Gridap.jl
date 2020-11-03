@@ -20,8 +20,8 @@ end
 
 oldgrid = get_grid(oldmodel)
 oldcell_to_coods = get_cell_coordinates(oldgrid)
-cell_to_mask = collect1d(apply(is_in,oldcell_to_coods))
-cell_to_oldcell = findall(cell_to_mask)
+cell_to_mask = lazy_map(is_in,oldcell_to_coods)
+cell_to_oldcell = findall(collect1d(cell_to_mask))
 
 labels = get_face_labeling(oldmodel)
 
@@ -72,16 +72,20 @@ oldtrian = Triangulation(oldmodel)
 trian_s = SkeletonTriangulation(model)
 trian_b = BoundaryTriangulation(model)
 
-meas_K_b = cell_measure(trian_b,oldtrian)
-meas_K_sl = cell_measure(trian_s.left,oldtrian)
-meas_K_sr = cell_measure(trian_s.right,oldtrian)
+@test get_background_triangulation(trian_s) === oldtrian
+@test get_background_triangulation(trian_b) === oldtrian
+@test get_background_triangulation(itrian) === oldtrian
 
-oldcell_to_cell = zeros(Int,num_cells(oldmodel))
-oldcell_to_cell[cell_to_oldcell] .= 1:length(cell_to_oldcell)
-
-@test all( oldcell_to_cell[findall(meas_K_b .!= 0)] .!= 0 )
-@test all( oldcell_to_cell[findall(meas_K_sl .!= 0)] .!= 0 )
-@test all( oldcell_to_cell[findall(meas_K_sr .!= 0)] .!= 0 )
+#meas_K_b = cell_measure(trian_b,oldtrian)
+#meas_K_sl = cell_measure(trian_s.left,oldtrian)
+#meas_K_sr = cell_measure(trian_s.right,oldtrian)
+#
+#oldcell_to_cell = zeros(Int,num_cells(oldmodel))
+#oldcell_to_cell[cell_to_oldcell] .= 1:length(cell_to_oldcell)
+#
+#@test all( oldcell_to_cell[findall(meas_K_b .!= 0)] .!= 0 )
+#@test all( oldcell_to_cell[findall(meas_K_sl .!= 0)] .!= 0 )
+#@test all( oldcell_to_cell[findall(meas_K_sr .!= 0)] .!= 0 )
 
 #using Gridap.Visualization
 #writevtk(trian_b,"trian_b")

@@ -35,7 +35,7 @@ function zero_free_values(f::DirichletFESpace)
 end
 
 function get_cell_dofs(f::DirichletFESpace)
-  apply(elem(-),get_cell_dofs(f.space))
+  lazy_map(elem(-),get_cell_dofs(f.space))
 end
 
 function num_dirichlet_dofs(f::DirichletFESpace)
@@ -75,4 +75,3 @@ end
 function get_cell_dof_basis(f::DirichletFESpace)
   get_cell_dof_basis(f.space)
 end
-

@@ -47,7 +47,7 @@ function is_in(coords)
 end
 
 cell_to_coods = get_cell_coordinates(trian)
-cell_to_is_solid = collect1d(apply(is_in,cell_to_coods))
+cell_to_is_solid = collect1d(lazy_map(is_in,cell_to_coods))
 cell_to_is_fluid = Vector{Bool}(.! cell_to_is_solid)
 
 trian_solid = Triangulation(model, cell_to_is_solid)

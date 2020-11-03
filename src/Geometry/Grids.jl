@@ -84,29 +84,24 @@ end
 function get_cell_coordinates(trian::Grid)
   node_to_coords = get_node_coordinates(trian)
   cell_to_nodes = get_cell_nodes(trian)
-  LocalToGlobalArray(cell_to_nodes,node_to_coords)
+  lazy_map(Broadcasting(Reindex(node_to_coords)),cell_to_nodes)
 end
 
 # Some API
 
 """
-    num_nodes(trian::Grid) -> Int
-"""
-num_nodes(trian::Grid) = length(get_node_coordinates(trian))
-
-"""
     is_oriented(::Type{<:Grid}) -> Bool
     is_oriented(a::Grid) -> Bool
 """
-is_oriented(a::Grid) = _is_oriented(OrientationStyle(a))
-is_oriented(a::Type{<:Grid}) = _is_oriented(OrientationStyle(a))
+is_oriented(a::Grid) = get_val_parameter(OrientationStyle(a))
+is_oriented(a::Type{<:Grid}) = get_val_parameter(OrientationStyle(a))
 
 """
     is_regular(::Type{<:Grid}) -> Bool
     is_regular(a::Grid) -> Bool
 """
-is_regular(a::Grid) = _is_regular(RegularityStyle(a))
-is_regular(a::Type{<:Grid}) = _is_regular(RegularityStyle(a))
+is_regular(a::Grid) = get_val_parameter(RegularityStyle(a))
+is_regular(a::Type{<:Grid}) = get_val_parameter(RegularityStyle(a))
 
 """
     Grid(reffe::LagrangianRefFE)
@@ -145,20 +140,6 @@ end
 """
 function Grid(::Type{ReferenceFE{d}},p::Polytope) where d
   UnstructuredGrid(ReferenceFE{d},p)
-end
-
-"""
-    GridTopology(grid::Grid)
-    GridTopology(grid::Grid, cell_to_vertices::Table, vertex_to_node::Vector)
-"""
-function GridTopology(grid::Grid)
-  _grid = UnstructuredGrid(grid)
-  UnstructuredGridTopology(_grid)
-end
-
-function GridTopology(grid::Grid, cell_to_vertices::Table, vertex_to_node::AbstractVector)
-  _grid = UnstructuredGrid(grid)
-  UnstructuredGridTopology(_grid,cell_to_vertices,vertex_to_node)
 end
 
 """

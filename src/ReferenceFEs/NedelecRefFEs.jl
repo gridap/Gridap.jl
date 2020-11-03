@@ -105,10 +105,10 @@ function _Nedelec_edge_values(p,et,order)
 end
 
 function _Nedelec_edge_moments(p, fshfs, c_fips, fcips, fwips)
-  ts = get_edge_tangents(p)
+  ts = get_edge_tangent(p)
   nc = length(c_fips)
   cfshfs = fill(fshfs, nc)
-  cvals = evaluate(cfshfs,c_fips)
+  cvals = lazy_map(evaluate,cfshfs,c_fips)
   cvals = [fwips[i].*cvals[i] for i in 1:nc]
   # @santiagobadia : Only working for oriented meshes now
   cvals = [ _broadcast(typeof(t),t,b) for (t,b) in zip(ts,cvals)]
@@ -152,7 +152,7 @@ function _Nedelec_face_moments(p, fshfs, c_fips, fcips, fwips)
   # Ref facet FE functions evaluated at the facet integration points (in ref facet)
   cvals = [fwips[i].*cvals[i] for i in 1:nc]
 
-  fns = get_facet_normals(p)
+  fns = get_facet_normal(p)
   os = get_facet_orientations(p)
   # @santiagobadia : Temporary hack for making it work for structured hex meshes
   ft = eltype(fns)

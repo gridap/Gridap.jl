@@ -9,6 +9,7 @@ using Test
 using DocStringExtensions
 using LinearAlgebra
 using Combinatorics
+using FillArrays
 
 using Gridap.Helpers
 using Gridap.Arrays
@@ -17,10 +18,11 @@ using Gridap.Fields
 using Gridap.Polynomials
 using Gridap.Integration
 
-import Gridap.Arrays: kernel_cache
-import Gridap.Arrays: apply_kernel!
-import Gridap.Arrays: kernel_return_type
+import Gridap.Arrays: return_cache
+import Gridap.Arrays: evaluate!
+import Gridap.Arrays: return_type
 import Gridap.Fields: evaluate
+import Gridap.Fields: lazy_map
 import Gridap.Polynomials: MonomialBasis
 
 import Gridap.Polynomials: get_order
@@ -42,9 +44,9 @@ export get_faces
 export get_dimranges
 export get_dimrange
 export get_vertex_coordinates
-export get_facet_normals
+export get_facet_normal
 export get_facet_orientations
-export get_edge_tangents
+export get_edge_tangent
 export get_vertex_permutations
 export get_face_dimranges
 export get_face_coordinates
@@ -66,6 +68,8 @@ export get_reffaces
 export get_face_type
 export get_bounding_box
 export get_face_vertex_permutations
+export get_order
+export get_orders
 export test_polytope
 export VERTEX
 export SEGMENT
@@ -78,17 +82,19 @@ export PYRAMID
 export HEX_AXIS
 export TET_AXIS
 export INVALID_PERM
+export PushForwardMap
 
 export Dof
 export get_nodes
 export get_face_moments
 export get_face_nodes_dofs
 export get_nodes
-export evaluate_dof!
+export evaluate!
 export evaluate_dof
-export dof_cache
-export dof_return_type
+export return_cache
+export return_type
 export test_dof
+export test_dof_array
 # export evaluate_dof_array
 
 export ReferenceFE
@@ -126,7 +132,6 @@ export compute_nodes
 export compute_own_nodes_permutations
 export compute_lagrangian_reffaces
 export is_first_order
-export is_affine
 export is_Q
 export is_P
 export is_S
@@ -163,8 +168,6 @@ include("ExtrusionPolytopes.jl")
 
 include("Dofs.jl")
 
-include("MockDofs.jl")
-
 include("LagrangianDofBases.jl")
 
 include("ReferenceFEInterfaces.jl")
@@ -182,5 +185,7 @@ include("CDLagrangianRefFEs.jl")
 include("RaviartThomasRefFEs.jl")
 
 include("NedelecRefFEs.jl")
+
+include("MockDofs.jl")
 
 end # module

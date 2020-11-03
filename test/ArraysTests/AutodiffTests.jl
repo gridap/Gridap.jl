@@ -11,7 +11,7 @@ function user_cell_energy(cell_u)
     end
     e
   end
-  apply(f,cell_u)
+  lazy_map(f,cell_u)
 end
 
 function user_cell_residual(cell_u)
@@ -25,7 +25,7 @@ function user_cell_residual(cell_u)
     #end
     #r
   end
-  apply(f,cell_u)
+  lazy_map(f,cell_u)
 end
 
 function user_cell_jacobian(cell_u)
@@ -37,7 +37,7 @@ function user_cell_jacobian(cell_u)
     end
     j
   end
-  apply(f,cell_u)
+  lazy_map(f,cell_u)
 end
 
 L = 10
@@ -78,17 +78,17 @@ test_array(cell_h_auto,cell_h)
 ids = [3,4,1,2]
 
 function user_cell_energy_Γ(cell_u)
-  cell_u_Γ = reindex(cell_u,ids)
+  cell_u_Γ = lazy_map(Reindex(cell_u),ids)
   user_cell_energy(cell_u_Γ)
 end
 
 function user_cell_residual_Γ(cell_u)
-  cell_u_Γ = reindex(cell_u,ids)
+  cell_u_Γ = lazy_map(Reindex(cell_u),ids)
   user_cell_residual(cell_u_Γ)
 end
 
 function user_cell_jacobian_Γ(cell_u)
-  cell_u_Γ = reindex(cell_u,ids)
+  cell_u_Γ = lazy_map(Reindex(cell_u),ids)
   user_cell_jacobian(cell_u_Γ)
 end
 

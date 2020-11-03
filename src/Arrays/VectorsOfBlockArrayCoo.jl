@@ -83,7 +83,7 @@ function zeros_like(a::VectorOfBlockArrayCoo{T,N} where T) where N
 end
 
 function _zeros_like(::Type{A},I,axs) where A
-  block = apply(axs) do a
+  block = lazy_map(axs) do a
     laxs = map( local_range, a, I)
     zeros_like(A,laxs)
   end
@@ -91,7 +91,7 @@ function _zeros_like(::Type{A},I,axs) where A
 end
 
 function _zeros_like(::Type{<:BlockArrayCoo{T,N,A} where T},I,axs) where {N,A}
-  axsI = apply(axs) do a
+  axsI = lazy_map(axs) do a
     map(local_range, a, I)
   end
   blocks = ()
@@ -121,7 +121,7 @@ end
 
 Base.IndexStyle(::Type{<:VectorOfBlockArrayCoo}) = IndexLinear()
 
-function Base.size(a::VectorOfBlockArrayCoo) 
+function Base.size(a::VectorOfBlockArrayCoo)
   if length(a.blocks) != 0
     (length(first(a.blocks)),)
   else
@@ -140,16 +140,16 @@ function array_cache(a::VectorOfBlockArrayCoo)
   end
 
   ca = array_cache(a.axes)
-  cb = array_caches(a.blocks...)
-  cz = array_caches(a.zero_blocks...)
+  cb = map(array_cache,a.blocks)
+  cz = map(array_cache,a.zero_blocks)
   (blocks_i,zero_blocks_i,ca,cb,cz)
 end
 
 @inline function getindex!(cache,a::VectorOfBlockArrayCoo,i::Integer)
   blocks_i, zero_blocks_i, ca, cb, cz = cache
   axes_i = getindex!(ca,a.axes,i)
-  blocks_i .= getitems!(cb,a.blocks,i)
-  zero_blocks_i .= getitems!(cz,a.zero_blocks,i)
+  blocks_i .= map((ci,ai) -> getindex!(ci,ai,i),cb,a.blocks)
+  zero_blocks_i .= map((ci,ai) -> getindex!(ci,ai,i),cz,a.zero_blocks)
   BlockArrayCoo(blocks_i,a.blockids,axes_i,a.ptrs,zero_blocks_i)
 end
 
@@ -158,40 +158,40 @@ function Base.getindex(a::VectorOfBlockArrayCoo,i::Integer)
   getindex!(cache,a,i)
 end
 
-function Base.getindex(a::VectorOfBlockArrayCoo,b::Block)
-  _get_block_index(a,b)
-end
+#@fverdugo to be deleted since it is kind of type-piracy
+#function Base.getindex(a::VectorOfBlockArrayCoo,b::Block)
+#  _get_block_index(a,b)
+#end
+#
+#function Base.getindex(a::VectorOfBlockVectorCoo,b::Block{1})
+#  _get_block_index(a,b)
+#end
+#
+#function _get_block_index(a,b)
+#  i = convert(Tuple,b)
+#  p = a.ptrs[i...]
+#  if p>0
+#    a.blocks[p]
+#  else
+#    a.zero_blocks[-p]
+#  end
+#end
+#
+#function Base.getindex(a::VectorOfBlockArrayCoo,b::Block{1}...)
+#  a[Block(map(Int,b)...)]
+#end
+#
+#function is_zero_block(a::VectorOfBlockArrayCoo,i::Integer...)
+#  p = a.ptrs[i...]
+#  @assert p != 0
+#  p < 0
+#end
 
-function Base.getindex(a::VectorOfBlockVectorCoo,b::Block{1})
-  _get_block_index(a,b)
-end
-
-function _get_block_index(a,b)
-  i = convert(Tuple,b)
-  p = a.ptrs[i...]
-  if p>0
-    a.blocks[p]
-  else
-    a.zero_blocks[-p]
-  end
-end
-
-function Base.getindex(a::VectorOfBlockArrayCoo,b::Block{1}...)
-  a[Block(map(Int,b)...)]
-end
-
-function is_zero_block(a::VectorOfBlockArrayCoo,i::Integer...)
-  p = a.ptrs[i...]
-  @assert p != 0
-  p < 0
-end
-
-function apply(::typeof(transpose),a::VectorOfBlockMatrixCoo)
-  blocks = [ apply(transpose,block) for block in a.blocks ]
-  zero_blocks = [ apply(transpose,block) for block in a.zero_blocks ]
+function lazy_map(::typeof(transpose),a::VectorOfBlockMatrixCoo)
+  blocks = [ lazy_map(transpose,block) for block in a.blocks ]
+  zero_blocks = [ lazy_map(transpose,block) for block in a.zero_blocks ]
   blockids = [ (j,i) for (i,j) in a.blockids ]
-  axs = apply( ax->(ax[2],ax[1]), a.axes)
+  axs = lazy_map( ax->(ax[2],ax[1]), a.axes)
   ptrs = collect(Transpose(a.ptrs))
   VectorOfBlockArrayCoo(Tuple(blocks),blockids,axs,ptrs,Tuple(zero_blocks))
 end
-

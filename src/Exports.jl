@@ -29,7 +29,7 @@ export det, inv, tr, cross, dot, norm, ×, ⋅
 @publish Arrays array_cache
 @publish Arrays getindex!
 @publish Arrays get_array
-@publish Arrays apply
+@publish Arrays lazy_map
 @publish Arrays reindex
 
 @publish TensorValues VectorValue
@@ -73,7 +73,6 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish ReferenceFEs PYRAMID
 @publish ReferenceFEs LagrangianRefFE
 @publish ReferenceFEs is_first_order
-@publish ReferenceFEs is_affine
 @publish ReferenceFEs is_Q
 @publish ReferenceFEs is_P
 @publish ReferenceFEs is_S
@@ -145,4 +144,3 @@ using Gridap.FESpaces: @law; export @law
 @publish Visualization writevtk
 @publish Visualization createvtk
 @publish Visualization print_op_tree
-

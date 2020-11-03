@@ -86,18 +86,18 @@ function from_dict(T::Type{UnstructuredDiscreteModel},dict::Dict{Symbol,Any})
   grid = from_dict(UnstructuredGrid,dict[:grid])
   labeling = from_dict(FaceLabeling,dict[:labeling])
   D::Int = dict[:D]
-  vertex_to_node::Vector{Int} = dict[:vertex_node]
+  vertex_to_node::Vector{Int32} = dict[:vertex_node]
   orientation = OrientationStyle(grid)
   polytopes = map(get_polytope, get_reffes(grid))
   cell_type = get_cell_type(grid)
   vertex_coordinates = get_node_coordinates(grid)[vertex_to_node]
 
   nvertices = length(vertex_to_node)
-  d_dface_to_vertices = Vector{Table{Int,Vector{Int},Vector{Int32}}}(undef,D+1)
-  d_dface_to_vertices[0+1] = identity_table(Int,Int32,nvertices)
+  d_dface_to_vertices = Vector{Table{Int32,Vector{Int32},Vector{Int32}}}(undef,D+1)
+  d_dface_to_vertices[0+1] = identity_table(Int32,Int32,nvertices)
   for d in 1:D
     k = Symbol("face_vertices_$d")
-    dface_to_vertices = from_dict(Table{Int,Vector{Int},Vector{Int32}},dict[k])
+    dface_to_vertices = from_dict(Table{Int32,Vector{Int32},Vector{Int32}},dict[k])
     d_dface_to_vertices[d+1] = dface_to_vertices
   end
 
@@ -250,7 +250,7 @@ end
 
 function _generate_tcell_to_cell(ncells,nltcells)
   ntcells = ncells * nltcells
-  tcell_to_cell = Vector{Int}(undef,ntcells)
+  tcell_to_cell = Vector{Int32}(undef,ntcells)
   tcell = 1
   for cell in 1:ncells
     for ltcell in 1:nltcells

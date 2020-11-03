@@ -143,7 +143,7 @@ end
 
 function get_cell_isconstrained(f::FESpace,cellids::SkeletonPair)
   isconstr = reindex(get_cell_isconstrained(f),cellids)
-  apply((l,r)-> l||r,isconstr.left,isconstr.right)
+  lazy_map((l,r)-> l||r,isconstr.left,isconstr.right)
 end
 
 function CellData.attach_constraints_rows(f::FESpace,cellarr,cellids)
@@ -222,4 +222,3 @@ function test_fe_space(f::FESpace,matvecdata,matdata,vecdata)
   end
 
 end
-

@@ -104,17 +104,6 @@ function is_first_order(reffe::GenericLagrangianRefFE{GradConformity})
 end
 
 """
-    is_affine(reffe::GenericLagrangianRefFE{GradConformity}) -> Bool
-
-Query if the `reffe` leads to an afine map
-(true only for first order spaces on top of simplices)
-"""
-function is_affine(reffe::GenericLagrangianRefFE{GradConformity})
-  p = get_polytope(reffe)
-  is_first_order(reffe) && is_simplex(p)
-end
-
-"""
     is_P(reffe::GenericLagrangianRefFE{GradConformity})
 """
 function is_P(reffe::GenericLagrangianRefFE{GradConformity})
@@ -148,7 +137,7 @@ function to_dict(reffe::GenericLagrangianRefFE{GradConformity})
   else
     dict[:space] = "default"
   end
-  dict[:value] = string(get_value_type(b))
+  dict[:value] = string(return_type(b))
   dict
 end
 
@@ -207,7 +196,7 @@ function LagrangianRefFE(::Type{T},p::Polytope{D},orders;space::Symbol=_default_
   elseif space == :S && is_n_cube(p)
     SerendipityRefFE(T,p,orders)
   else
-    if any(orders.==0) && !all(orders.==0)
+    if any(map(i->i==0,orders)) && !all(map(i->i==0,orders))
       cont = map(i -> i == 0 ? DISC : CONT,orders)
       return _cd_lagrangian_ref_fe(T,p,orders,cont)
     else
@@ -224,6 +213,35 @@ function _default_space(p)
   end
 end
 
+function ReferenceFE(
+  polytope::Polytope,
+  ::Val{:Lagrangian};
+  valuetype::Type{T},
+  order::Union{Nothing,Integer}=nothing,
+  orders::Union{Nothing,Tuple{Vararg{Integer}}}=nothing,
+  space::Symbol=_default_space(polytope)) where T
+
+  if order==nothing && orders==nothing
+    @unreachable """\n
+    Error in ReferenceFE factory function for Lagrangian elements. No interpolation order provided.
+
+    One (and only one) of the key-word arguments `order::Int`, `orders::Tuple{Vararg{Integer}}` should be present.
+    """
+  elseif order!=nothing && orders!==nothing
+    @unreachable """\n
+    Error in ReferenceFE factory function for Lagrangian elements.
+    The key-word arguments `order` and `orders` cannot be provided at the same time.
+    """
+  elseif order != nothing
+    _orders = order
+  else
+    _orders = orders
+  end
+
+  LagrangianRefFE(T,polytope,_orders;space=space)
+end
+
+
 function _lagrangian_ref_fe(::Type{T},p::Polytope{D},orders) where {T,D}
 
   prebasis = compute_monomial_basis(T,p,orders)
@@ -239,7 +257,7 @@ function _lagrangian_ref_fe(::Type{T},p::Polytope{D},orders) where {T,D}
   face_own_dofs = _generate_face_own_dofs(face_own_nodes, dofs.node_and_comp_to_dof)
   face_dofs = _generate_face_dofs(ndofs,face_own_dofs,p,_reffaces)
 
-  if all(orders .== 0 ) && D>0
+  if all(map(i->i==0,orders) ) && D>0
     conf = L2Conformity()
   else
     conf = GradConformity()
@@ -426,9 +444,9 @@ end
 # Default implementations
 
 function _compute_nodes(p,orders)
-  if any( orders .== 0)
+  if any( map(i->i==0,orders))
     _compute_constant_nodes(p,orders)
-  elseif all(orders .== 1)
+  elseif all(map(i->i==1,orders))
     _compute_linear_nodes(p)
   else
     _compute_high_order_nodes(p,orders)
@@ -482,7 +500,7 @@ end
     face_ref_x = get_vertex_coordinates(face)
     face_prebasis = MonomialBasis(Float64,face,1)
     change = inv(evaluate(face_prebasis,face_ref_x))
-    face_shapefuns = change_basis(face_prebasis,change)
+    face_shapefuns = linear_combination(change,face_prebasis)
     face_vertex_ids = get_faces(p,d,0)[iface]
     face_x = x[face_vertex_ids]
     face_orders = compute_face_orders(p,face,iface,orders)
@@ -512,7 +530,7 @@ function _compute_node_permutations(p, interior_nodes)
   vertex_to_coord = get_vertex_coordinates(p)
   lbasis = MonomialBasis(Float64,p,1)
   change = inv(evaluate(lbasis,vertex_to_coord))
-  lshapefuns = change_basis(lbasis,change)
+  lshapefuns = linear_combination(change,lbasis)
   perms = get_vertex_permutations(p)
   map = evaluate(lshapefuns,interior_nodes)
   pvertex_to_coord = similar(vertex_to_coord)
@@ -571,7 +589,7 @@ end
 
 function compute_own_nodes(p::ExtrusionPolytope{D},orders) where D
   extrusion = Tuple(p.extrusion)
-  if all(orders .== 0)
+  if all(map(i->i==0,orders))
     _interior_nodes_order_0(p)
   else
     _interior_nodes(extrusion,orders)
@@ -608,7 +626,7 @@ end
 
 function compute_nodes(p::ExtrusionPolytope{D},orders) where D
   _nodes, facenodes = _compute_nodes(p,orders)
-  if any( orders .== 0)
+  if any( map(i->i==0,orders))
     return (_nodes, facenodes)
   end
   terms = _coords_to_terms(_nodes,orders)

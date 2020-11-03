@@ -49,6 +49,7 @@ dofs = LagrangianDofBasis(VectorValue{2,Int},VERTEX,())
 @test dofs.node_and_comp_to_dof == VectorValue{2,Int}[(1,2)]
 
 b = MonomialBasis(VectorValue{2,Int},VERTEX,())
+@test length(b) == 2
 @test evaluate(b,Point{0,Int}[(),()]) == VectorValue{2,Int}[(1, 0) (0, 1); (1, 0) (0, 1)]
 
 reffe = LagrangianRefFE(VectorValue{2,Int},VERTEX,())
@@ -63,6 +64,10 @@ reffe = LagrangianRefFE(VectorValue{2,Float64},SEGMENT,(2,))
 test_lagrangian_reference_fe(reffe)
 
 reffe = LagrangianRefFE(VectorValue{2,Float64},TRI,3)
+@test get_face_own_dofs(reffe) == [[1, 11], [2, 12], [3, 13], [4, 5, 14, 15], [6, 7, 16, 17], [8, 9, 18, 19], [10, 20]]
+test_lagrangian_reference_fe(reffe)
+
+reffe = ReferenceFE(TRI,:Lagrangian,valuetype=VectorValue{2,Float64},order=3)
 @test get_face_own_dofs(reffe) == [[1, 11], [2, 12], [3, 13], [4, 5, 14, 15], [6, 7, 16, 17], [8, 9, 18, 19], [10, 20]]
 test_lagrangian_reference_fe(reffe)
 

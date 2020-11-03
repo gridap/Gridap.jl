@@ -12,18 +12,13 @@ partition = (3,3,3)
 model = CartesianDiscreteModel(domain,partition)
 
 order = 2
-grid_topology = get_grid_topology(model)
-polytopes = get_polytopes(grid_topology)
-reffes = [LagrangianRefFE(Float64,p,order) for p in polytopes]
+reffe = ReferenceFE(:Lagrangian,order=order,valuetype=Float64)
+V0 = FESpace(model,reffe,dirichlet_tags=["tag_24","tag_25"])
 
-dirichlet_tags = ["tag_24","tag_25"]
-V0 = GradConformingFESpace(reffes,model,dirichlet_tags)
 matvecdata = ([],[],[])
 matdata = ([],[],[])
 vecdata = ([],[])
 test_single_field_fe_space(V0,matvecdata,matdata,vecdata)
-
-cell_map = get_cell_map(V0)
 
 f(x) = sin(4*pi*(x[1]-x[2]^2))+1
 

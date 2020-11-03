@@ -17,7 +17,7 @@ struct CompressedArray{T,N,A,P} <: AbstractArray{T,N}
   @doc """
       CompressedArray(values::AbstractArray,ptrs::AbstractArray)
 
-  Creates a `CompressedArray` object by the given arrays of `values` and 
+  Creates a `CompressedArray` object by the given arrays of `values` and
   `ptrs`.
   """
   function CompressedArray(values::AbstractArray,ptrs::AbstractArray)
@@ -44,7 +44,7 @@ size(a::CompressedArray) = size(a.ptrs)
   a.values[j]
 end
 
-@propagate_inbounds function getindex(a::CompressedArray,i::Integer...)
+@propagate_inbounds function getindex(a::CompressedArray{T,N},i::Vararg{Integer,N}) where {T,N}
   j = a.ptrs[i...]
   a.values[j]
 end
@@ -53,97 +53,67 @@ function IndexStyle(a::Type{CompressedArray{T,N,A,P}}) where {T,N,A,P}
   IndexStyle(P)
 end
 
-function apply(f::Fill,g1::CompressedArray,g::CompressedArray...)
-  if all( ( gi.ptrs === g1.ptrs for gi in g ) ) || all( ( gi.ptrs == g1.ptrs for gi in g ) )
-    _apply_fill_compressed(f,g1,g...)
+#function lazy_map(::typeof(evaluate),g::CompressedArray...)
+#  if _have_same_ptrs(g)
+#    _lazy_map_compressed(g...)
+#  else
+#    LazyArray(g...)
+#  end
+#end
+
+function lazy_map(::typeof(evaluate),::Type{T},g::CompressedArray...) where T
+  if _have_same_ptrs(g)
+    _lazy_map_compressed(g...)
   else
-    return AppliedArray(f,g1,g...)
+    LazyArray(T,g...)
   end
 end
 
-function apply(g1::CompressedArray,g::CompressedArray...)
-  if all( ( gi.ptrs === g1.ptrs for gi in g ) ) || all( ( gi.ptrs == g1.ptrs for gi in g ) )
-    _apply_compressed(g1,g...)
+#function lazy_map(::typeof(evaluate),g::Union{CompressedArray,Fill}...)
+#  g_compressed = _find_compressed_ones(g)
+#  if _have_same_ptrs(g_compressed)
+#    g1 = first(g_compressed)
+#    g_all_compressed = map(gi->_compress(gi,g1),g)
+#    _lazy_map_compressed(g_all_compressed...)
+#  else
+#    LazyArray(g...)
+#  end
+#end
+
+function lazy_map(::typeof(evaluate),::Type{T},g::Union{CompressedArray,Fill}...) where T
+  g_compressed = _find_compressed_ones(g)
+  if _have_same_ptrs(g_compressed)
+    g1 = first(g_compressed)
+    g_all_compressed = map(gi->_compress(gi,g1),g)
+    _lazy_map_compressed(g_all_compressed...)
   else
-    return AppliedArray(g1,g...)
+    LazyArray(T,g...)
   end
 end
 
-function apply(g1::CompressedArray,g::Fill...)
-  f = _fill_to_compressed(g1,g)
-  _apply_compressed(g1,f...)
+function _find_compressed_ones(g)
+  g_compressed = ( gi for gi in g if isa(gi,CompressedArray) )
+  g_compressed
 end
 
-function apply(f::Fill,g1::CompressedArray,g::Fill...)
-  h = _fill_to_compressed(g1,g)
-  _apply_fill_compressed(f,g1,h...)
+function _lazy_map_compressed(g::CompressedArray...)
+  vals = map(evaluate, map(gi->gi.values,g)...)
+  ptrs = first(g).ptrs
+  CompressedArray(vals,ptrs)
 end
 
-function apply(f::Fill,g1::CompressedArray)
-  _apply_fill_compressed(f,g1)
+function _have_same_ptrs(g)
+  g1 = first(g)
+  all(map( gi -> gi.ptrs === g1.ptrs ||  gi.ptrs == g1.ptrs, g))
 end
 
-function apply(::Type{T},f::Fill,g1::CompressedArray,g::CompressedArray...) where T
-  if all( ( gi.ptrs === g1.ptrs for gi in g ) ) || all( ( gi.ptrs == g1.ptrs for gi in g ) )
-    _apply_fill_compressed(f,g1,g...)
-  else
-    return AppliedArray(T,f,g1,g...)
-  end
+function _compress(a::CompressedArray,b::CompressedArray)
+  @check _have_same_ptrs((a,b))
+  a
 end
 
-function apply(::Type{T},g1::CompressedArray,g::CompressedArray...) where T
-  if all( ( gi.ptrs === g1.ptrs for gi in g ) ) || all( ( gi.ptrs == g1.ptrs for gi in g ) )
-    _apply_compressed(g1,g...)
-  else
-    return AppliedArray(T,g1,g...)
-  end
+function _compress(a::Fill,b::CompressedArray)
+  vals = fill(a.value,length(b.values))
+  CompressedArray(vals,b.ptrs)
 end
-
-function apply(::Type{T},g1::CompressedArray,g::Fill...) where T
-  f = _fill_to_compressed(g1,g)
-  _apply_compressed(g1,f...)
-end
-
-function apply(::Type{T},f::Fill,g1::CompressedArray,g::Fill...) where T
-  h = _fill_to_compressed(g1,g)
-  _apply_fill_compressed(f,g1,h...)
-end
-
-function apply(::Type{T},f::Fill,g1::CompressedArray) where T
-  _apply_fill_compressed(f,g1)
-end
-
-function _fill_to_compressed(g1,g)
-  ptrs = g1.ptrs
-  l = length(g1.values)
-  f = ( CompressedArray(fill(gi.value,l),ptrs) for gi in g )
-  f
-end
-
-function _apply_fill_compressed(f,g1,g...)
-  k = f.value
-  ptrs = g1.ptrs
-  vals = _getvalues(g1,g...)
-  vk = apply(k,vals...)
-  CompressedArray(collect(vk),ptrs)
-end
-
-function _apply_compressed(g1,g...)
-  ptrs = g1.ptrs
-  vals = _getvalues(g...)
-  vk = apply(g1.values,vals...)
-  CompressedArray(collect(vk),ptrs)
-end
-
-function _getvalues(a,b...)
-  va = a.values
-  vb = _getvalues(b...)
-  (va,vb...)
-end
-
-function _getvalues(a)
-  va = a.values
-  (va,)
-end
-
 

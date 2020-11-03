@@ -32,7 +32,6 @@ test_array
 ## Working with several arrays at once
 
 ```@docs
-getitems!
 getitems(a::Tuple{Vararg{<:AbstractArray}},i...)
 array_caches
 testitems
@@ -41,30 +40,30 @@ testitems
 ## Creating lazy operation trees
 
 ```@docs
-apply(f,a::AbstractArray...)
-apply(::Type{T},f,a::AbstractArray...) where T
-apply(f::AbstractArray,a::AbstractArray...)
-apply(::Type{T},f::AbstractArray,a::AbstractArray...) where T
-apply_all
+lazy_map(f,a::AbstractArray...)
+lazy_map(::Type{T},f,a::AbstractArray...) where T
+lazy_map(f::AbstractArray,a::AbstractArray...)
+lazy_map(::Type{T},f::AbstractArray,a::AbstractArray...) where T
+lazy_map_all
 ```
 
 ### Operation kernels
 
 ```@docs
-Kernel
-apply_kernel!(cache,f,x...)
-kernel_cache(f,x...)
-kernel_return_type(f,x...)
-test_kernel
+Map
+evaluate!(cache,f,x...)
+return_cache(f,x...)
+return_type(f,x...)
+test_mapping
 ```
 
 ### Other functions using kernels
 
 ```@docs
-apply_kernel
-apply_kernels!
-kernel_caches
-kernel_return_types
+evaluate
+evaluates!
+return_caches
+return_types
 ```
 
 ### Built-in kernels
@@ -79,9 +78,7 @@ contract
 ```@docs
 collect1d
 reindex(i_to_v::AbstractArray, j_to_i::AbstractArray)
-add_to_array!(a::AbstractArray{Ta,N},b::AbstractArray{Tb,N},combine=+)  where {Ta,Tb,N} 
 get_array(a::AbstractArray)
-get_arrays(a,b...)
 matvec_muladd!(c::AbstractVector,a::AbstractMatrix,b::AbstractVector)
 pair_arrays(a::AbstractArray,b::AbstractArray)
 unpair_arrays(pair::AbstractArray{<:Tuple})

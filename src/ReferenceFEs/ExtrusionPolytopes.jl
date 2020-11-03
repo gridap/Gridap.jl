@@ -175,11 +175,11 @@ function get_vertex_coordinates(p::ExtrusionPolytope)
   p.vertex_coords
 end
 
-function get_edge_tangents(p::ExtrusionPolytope)
+function get_edge_tangent(p::ExtrusionPolytope)
   _edge_tangents(Float64,p.dface)
 end
 
-function get_facet_normals(p::ExtrusionPolytope)
+function get_facet_normal(p::ExtrusionPolytope)
   p.face_normals
 end
 
@@ -552,7 +552,7 @@ function _nfaces_vertices(::Type{T},p::DFace,d::Integer) where T
   nc = _num_nfaces(p,d)
   verts = _vertices_coordinates(T,p)
   faces_vs = _dimfrom_fs_dimto_fs(p,d,0)
-  cfvs = collect(LocalToGlobalArray(faces_vs,verts))
+  cfvs = collect(lazy_map(Broadcasting(Reindex(verts)),faces_vs))
 end
 
 # Return the n-faces vertices coordinates array for a given n-face dimension
@@ -680,9 +680,9 @@ function _admissible_permutations(p::DFace{D}) where D
   if D > 3
     @warn "Computing permutations for a polytope of dim > 3 is overkill"
   end
-  if D in (0,1) || all( Tuple(p.extrusion)[2:end] .== TET_AXIS )
+  if D in (0,1) || all( map(i->i==TET_AXIS,Tuple(p.extrusion)[2:end]) )
     perms = _admissible_permutations_simplex(p)
-  elseif all( Tuple(p.extrusion)[2:end] .== HEX_AXIS)
+  elseif all( map(i->i==HEX_AXIS,Tuple(p.extrusion)[2:end]))
     perms = _admissible_permutations_n_cube(p)
   else
     @notimplemented "admissible vertex permutations only implemented for simplices and n-cubes"

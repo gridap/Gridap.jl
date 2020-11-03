@@ -45,6 +45,10 @@ reffe = LagrangianRefFE(T,HEX,(0,2,0))
 @test get_default_conformity(reffe) == CDConformity((DISC,CONT,DISC))
 test_lagrangian_reference_fe(reffe)
 
+reffe = ReferenceFE(HEX,:Lagrangian,valuetype=T,orders=(0,2,0))
+@test get_default_conformity(reffe) == CDConformity((DISC,CONT,DISC))
+test_lagrangian_reference_fe(reffe)
+
 reffe = LagrangianRefFE(T,QUAD,(2,2))
 
 end # module
