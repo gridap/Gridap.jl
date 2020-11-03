@@ -260,6 +260,7 @@ function collect_cell_matrix_and_vector(
   biform::DomainContribution,liform::DomainContribution,uhd::FEFunction)
 
   matvec, mat, vec = _pair_contribution_when_possible(biform,liform,uhd)
+
   matvecdata = _collect_cell_matvec(matvec)
   matdata = collect_cell_matrix(mat)
   vecdata = collect_cell_vector(vec)

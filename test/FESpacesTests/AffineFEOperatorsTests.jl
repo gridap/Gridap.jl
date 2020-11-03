@@ -12,51 +12,41 @@ using Gridap.FESpaces
 using LinearAlgebra
 using Gridap.CellData
 
-domain =(0,1,0,1,0,1)
-partition = (3,3,3)
+domain =(0,1,0,1)
+partition = (2,2)
 model = CartesianDiscreteModel(domain,partition)
-
-
-
+order = 1
+reffe = ReferenceFE(:Lagrangian,valuetype=Float64,order=order)
+V = FESpace(model,reffe;dirichlet_tags=[1,10])
+U = V
 
 trian = get_triangulation(model)
 degree = 4
 quad = CellQuadrature(trian,degree)
 
-order = 2
-grid_topology = get_grid_topology(model)
-polytopes = get_polytopes(grid_topology)
-reffes = [LagrangianRefFE(Float64,p,order) for p in polytopes]
-
-dirichlet_tags = [1,10]
-V = GradConformingFESpace(reffes,model,dirichlet_tags)
-
-U = TrialFESpace(V)
-
-f(x) = x[2]
-
-v = get_cell_basis(V)
-u = get_cell_basis(U)
-
-cellmat = integrate(∇(v)⊙∇(u),trian,quad)
-cellvec = integrate(v*f,trian,quad)
-cellids = collect(1:num_cells(trian))
-
-assem = SparseMatrixAssembler(U,V)
-matdata = ([cellmat],[cellids],[cellids])
-vecdata = ([cellvec],[cellids])
-A =  assemble_matrix(assem,matdata)
-b =  assemble_vector(assem,vecdata)
-
-op = AffineFEOperator(U,V,A,b)
-@test A === get_matrix(op)
-@test b === get_vector(op)
-
-x = ones(length(b))
-r = A*x - b
-
-test_fe_operator(op,x,r,≈,jac=A)
-@test isa(get_algebraic_operator(op), AffineOperator)
+#f(x) = x[2]
+#v = get_cell_shapefuns(V)
+#u = get_cell_shapefuns_trial(U)
+#
+#cellmat = integrate(∇(v)⊙∇(u),quad)
+#cellvec = integrate(v*f,quad)
+#cellids = collect(1:num_cells(trian))
+#
+#assem = SparseMatrixAssembler(U,V)
+#matdata = ([cellmat],[cellids],[cellids])
+#vecdata = ([cellvec],[cellids])
+#A =  assemble_matrix(assem,matdata)
+#b =  assemble_vector(assem,vecdata)
+#
+#op = AffineFEOperator(U,V,A,b)
+#@test A === get_matrix(op)
+#@test b === get_vector(op)
+#
+#x = ones(length(b))
+#r = A*x - b
+#
+#test_fe_operator(op,x,r,≈,jac=A)
+#@test isa(get_algebraic_operator(op), AffineOperator)
 
 #
 
@@ -65,25 +55,34 @@ tol = 1.0e-9
 u_sol(x) = x[1]+x[2]
 f_fun(x) = 0
 
-dirichlet_tags = "boundary"
-V = GradConformingFESpace(reffes,model,dirichlet_tags)
+V = FESpace(model,reffe;dirichlet_tags="boundary")
 U = TrialFESpace(V,u_sol)
 
-a(v,u) = ∇(v)⊙∇(u)
-l(v) = v*f_fun
+dΩ = LebesgueMeasure(quad)
 
-t_Ω = AffineFETerm(a,l,trian,quad)
+a(u,v) = ∫(∇(v)⊙∇(u))*dΩ
+l(v) = ∫(v*f_fun)*dΩ
 
-assem = SparseMatrixAssembler(V,U)
+assem = SparseMatrixAssembler(U,V)
 
-op = AffineFEOperator(U,V,assem,t_Ω)
+op = AffineFEOperator(assem) do u,v
+  ∫(∇(v)⊙∇(u))*dΩ, ∫(v*f_fun)*dΩ
+end
 uh = solve(op)
 e = u_sol - uh
-@test sum(integrate(e*e,trian,quad)) < tol
 
-op = AffineFEOperator(U,V,t_Ω)
+@test sum(∫(e*e)*dΩ) < tol
+
+op = AffineFEOperator(U,V) do u,v
+  ∫(∇(v)⊙∇(u))*dΩ, ∫(v*f_fun)*dΩ
+end
 uh = solve(op)
 e = u_sol - uh
-@test sum(integrate(e*e,trian,quad)) < tol
+@test sum(∫(e*e)*dΩ) < tol
+
+op = AffineFEOperator(a,l,U,V)
+uh = solve(op)
+e = u_sol - uh
+@test sum(∫(e*e)*dΩ) < tol
 
 end # module

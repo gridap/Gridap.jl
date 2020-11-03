@@ -14,9 +14,9 @@ using Test
 
 @testset "SparseMatrixAssemblers" begin include("SparseMatrixAssemblersTests.jl") end
 
-#@testset "FEOperators" begin include("FEOperatorsTests.jl") end
-#
-#@testset "AffineFEOperators" begin include("AffineFEOperatorsTests.jl") end
+@testset "FEOperators" begin include("FEOperatorsTests.jl") end
+
+@testset "AffineFEOperators" begin include("AffineFEOperatorsTests.jl") end
 
 #
 #
