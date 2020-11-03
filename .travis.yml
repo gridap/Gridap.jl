@@ -25,7 +25,7 @@ jobs:
           julia compile/create_gridap_image.jl
           --do-not-clone-gridap
           --gridap-path .
-          --user-provided-script-path test/GridapTestsPoissonTests.jl
+          --user-provided-script-path test/GridapTests/PoissonTests.jl
           -n ./Gridap.so
         - julia -J ./Gridap.so --project=. --color=yes --check-bounds=yes -e '(1,) .== 1; include("test/GridapTests/runtests.jl")'
       after_success: skip
