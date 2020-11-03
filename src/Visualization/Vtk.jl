@@ -471,3 +471,13 @@ function _prepare_pdata_for_cell_points(nodaldata)
   end
   pdata
 end
+
+function writevtk(
+  x::CellPoint,filename; cellfields=Dict())
+  nodaldata = Dict((
+    k=>evaluate(CellField(v,get_triangulation(x),DomainStyle(x)),x) for (k,v) in cellfields ))
+  cell_to_points = get_array(x)
+  vtkfile = createvtk(cell_to_points, filename, nodaldata=nodaldata)
+  outfiles = vtk_save(vtkfile)
+end
+

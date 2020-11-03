@@ -36,13 +36,18 @@ function compute_cell_space(cell_reffe,trian::Triangulation,domain_style::Domain
   GenericCellField(cell_shapefuns,trian,domain_style), CellDof(cell_dof_basis,trian,domain_style)
 end
 
-# TODO only for Lagrangian at this moment
 function compute_cell_space(cell_reffe,cell_map::AbstractArray{<:Field},::ReferenceDomain)
   ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
-  ctype_shapefuns = map(get_shapefuns,ctype_reffe)
-  ctype_dof_basis = map(get_dof_basis,ctype_reffe)
-  cell_shapefuns = expand_cell_data(ctype_shapefuns,cell_ctype)
-  cell_dof_basis = expand_cell_data(ctype_dof_basis,cell_ctype)
+  ctype_ref_shapefuns = map(get_shapefuns,ctype_reffe)
+  ctype_ref_dof_basis = map(get_dof_basis,ctype_reffe)
+  cell_ref_shapefuns = expand_cell_data(ctype_ref_shapefuns,cell_ctype)
+  cell_ref_dof_basis = expand_cell_data(ctype_ref_dof_basis,cell_ctype)
+  ctype_k = map(PushForwardMap,ctype_reffe)
+  unique_ks = unique(ctype_k)
+  @notimplementedif length(unique_ks) != 1
+  k = first(unique_ks)
+  cell_shapefuns = lazy_map(k,cell_ref_shapefuns,cell_map)
+  cell_dof_basis = lazy_map(k,cell_ref_dof_basis,cell_map)
   cell_shapefuns, cell_dof_basis
 end
 

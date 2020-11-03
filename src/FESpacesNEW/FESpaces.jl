@@ -136,6 +136,16 @@ export fill_matrix_coo_numeric!
 export fill_matrix_and_vector_coo_numeric!
 export test_sparse_matrix_assembler
 
+export FEOperator
+export AffineFEOperator
+export test_fe_operator
+export get_algebraic_operator
+
+export FESolver
+export test_fe_solver
+export LinearFESolver
+export NonlinearFESolver
+
 include("FESpaceInterface.jl")
 
 include("SingleFieldFESpaces.jl")
@@ -151,5 +161,11 @@ include("TrialFESpaces.jl")
 include("Assemblers.jl")
 
 include("SparseMatrixAssemblers.jl")
+
+include("FEOperators.jl")
+
+include("AffineFEOperators.jl")
+
+include("FESolvers.jl")
 
 end # module

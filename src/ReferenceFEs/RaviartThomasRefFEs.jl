@@ -40,6 +40,7 @@ function get_face_own_dofs(reffe::GenericRefFE{DivConformity}, conf::DivConformi
   get_face_dofs(reffe)
 end
 
+
 function _RT_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) where et
 
   @notimplementedif ! is_n_cube(p)
@@ -300,3 +301,61 @@ function _eval_moment_dof_basis!(dofs,vals::AbstractMatrix,b)
     end
   end
 end
+
+struct ContraVariantPiolaMap <: PushForwardMap end
+
+function evaluate!(cache,::ContraVariantPiolaMap,v::Number,J::Number,detJ::Number)
+  (1/detJ)*J⋅v
+end
+
+function evaluate!(cache,k::ContraVariantPiolaMap,v::AbstractVector{<:Field},phi::Field)
+  Jt = ∇(phi)
+  detJ = Operation(det)(Jt)
+  J = Operation(transpose)(Jt)
+  Broadcasting(Operation(k))(v,J,detJ)
+end
+
+#function lazy_map(
+#  ::typeof(evaluate),
+#  cell_shapefuns::LazyArray{<:Fill{<:ContraVariantPiolaMap}},
+#  cell_qs::AbstractArray)
+#
+#  cell_ref_shapefuns = cell_shapefuns.f[1]
+#  cell_map = cell_shapefuns.f[2]
+#
+#  cell_ref_shapefuns_q = lazy_map(evaluate,cell_ref_shapefuns,cell_qs)
+#  cell_Jt = lazy_map(∇,cell_map)
+#  cell_Jt_q = lazy_map(evaluate,cell_Jt,cell_qs)
+#  cell_detJ_q = lazy_map(Broadcasting(det),cell_Jt_q)
+#  cell_J_q = lazy_map(Broadcasting(transpose),cell_Jt_q)
+#
+#  k = cell_shapefuns.g.value
+#  lazy_map(Broadcasting(k),cell_ref_shapefuns_q,cell_J_q,cell_detJ_q)
+#end
+
+function lazy_map(
+  k::ContraVariantPiolaMap,
+  cell_ref_shapefuns::AbstractArray{<:AbstractArray{<:Field}},
+  cell_map::AbstractArray{<:Field})
+
+  cell_Jt = lazy_map(∇,cell_map)
+  cell_detJ = lazy_map(Operation(det),cell_Jt)
+  cell_J = lazy_map(Operation(transpose),cell_Jt)
+
+  lazy_map(Broadcasting(Operation(k)))(cell_ref_shapefuns,cell_J,cell_detJ)
+end
+
+function evaluate!(cache,::ContraVariantPiolaMap,s::MomentBasedDofBasis,phi::Field)
+  @notimplemented
+  # phi_q = evaluate(phi,s.nodes)
+  #moments = #from s.moments and phi_q
+  #MomentBasedDofBasis(s.nodes,moments)
+  ## More obvious but not so efficient:
+  ##nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order,phi)
+  ##dof_basis = MomentBasedDofBasis(nf_nodes, nf_moments,GenericField(identity))
+end
+
+PushForwardMap(reffe::GenericRefFE{DivConformity}) = ContraVariantPiolaMap()
+
+
+

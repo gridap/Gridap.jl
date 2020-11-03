@@ -9,6 +9,7 @@ using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.Visualization
+using Gridap.CellData
 using WriteVTK
 
 d = mktempdir()
@@ -68,8 +69,7 @@ trian = CartesianGrid(domain,partition)
 
 writevtk(trian,f,nsubcells=5,celldata=["rnd"=>rand(num_cells(trian))])
 
-fun(x) = sin(4*x[1]*pi)*cos(5*x[2]*pi)
-cf = compose(fun, get_cell_map(trian))
+cf(x) = sin(4*x[1]*pi)*cos(5*x[2]*pi)
 
 writevtk(trian,f,nsubcells=10, cellfields=[
   "cf"=>cf,
@@ -86,10 +86,12 @@ p1 = Point{2,Float64}[(0.25,0.25),(0.75,0.75)]
 p2 = Point{2,Float64}[(0.2,0.2),(0.4,0.4)]
 q = CompressedArray([p1,p2], get_cell_type(trian))
 q2x = get_cell_map(trian)
-x = evaluate(q2x,q)
+x = lazy_map(evaluate,q2x,q)
 
 f = joinpath(d,"x")
 writevtk(x,f,celldata=["cellid" => collect(1:num_cells(trian))], nodaldata = ["x" => x])
+
+
 
 f = joinpath(d,"trian")
 writevtk(trian,f)
@@ -107,26 +109,32 @@ writevtk(Grid(LagrangianRefFE(Float64,HEX,3)),joinpath(d,"hex_order1"))
 f = joinpath(d,"collection")
 paraview_collection(f) do pvd
     for i in 1:10
-        pvd[Float64(i)] = createvtk(trian, f*"_$i", celldata=["rnd"=>rand(num_cells(trian))], cellfields=["cf" => compose(fun, get_cell_map(trian))])
+        pvd[Float64(i)] = createvtk(trian, f*"_$i", celldata=["rnd"=>rand(num_cells(trian))], cellfields=["cf" => cf])
         pvd[Float64(10+i)] = createvtk(x,f*"_$(10+i)",celldata=["cellid" => collect(1:num_cells(trian))], nodaldata = ["x" => x])
     end
     vtk_save(pvd)
 end
 
-# Visualize AppendedTriangulation
+f = joinpath(d,"x")
+x = get_cell_points(CellQuadrature(trian,2))
+writevtk(x,f;cellfields=["cf"=>cf])
 
-domain = (0,1,0,1)
-partition = (10,10)
-grid1 = CartesianGrid(domain,partition)
+## Visualize AppendedTriangulation
+#
+#domain = (0,1,0,1)
+#partition = (10,10)
+#grid1 = CartesianGrid(domain,partition)
+#
+#domain = (1,2,0,1)
+#partition = (10,10)
+#grid2 = simplexify(CartesianGrid(domain,partition))
+#
+#trian = lazy_append(grid1,grid2)
+#
+#f = joinpath(d,"trian")
+#writevtk(trian,f)
 
-domain = (1,2,0,1)
-partition = (10,10)
-grid2 = simplexify(CartesianGrid(domain,partition))
 
-trian = lazy_append(grid1,grid2)
-
-f = joinpath(d,"trian")
-writevtk(trian,f)
 rm(d,recursive=true)
 
 end # module

@@ -50,11 +50,12 @@ include("Geometry/Geometry.jl")
 
 include("CellData/CellData.jl")
 
+include("Visualization/Visualization.jl")
+
 include("FESpacesNEW/FESpaces.jl")
 
 # include("MultiField/MultiField.jl")
 
-# include("Visualization/Visualization.jl")
 
 # include("Exports.jl")
 
