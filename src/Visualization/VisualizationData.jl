@@ -18,7 +18,7 @@ function VisualizationGrid(trian::Triangulation, ref_grids::Vector{<:Unstructure
   ctype_to_refpoints = map(get_node_coordinates, ref_grids)
   cell_to_refpoints = CompressedArray(ctype_to_refpoints,cell_to_ctype)
   cell_map = get_cell_map(trian)
-  cell_to_points = evaluate(cell_map, cell_to_refpoints)
+  cell_to_points = lazy_map(evaluate,cell_map, cell_to_refpoints)
 
   node_to_coords, cell_to_offset = _prepare_node_to_coords(cell_to_points)
 
@@ -161,10 +161,11 @@ function _prepare_sub_cell_to_u(
 end
 
 function _prepare_pdata(trian,cellfields,samplingpoints)
+  x = CellPoint(samplingpoints,trian,ReferenceDomain())
   pdata = Dict()
   for (k,v) in cellfields
     _v = CellField(v,trian)
-    pdata[k], = _prepare_node_to_coords(evaluate(_v,samplingpoints))
+    pdata[k], = _prepare_node_to_coords(evaluate(_v,x))
   end
   pdata
 end
