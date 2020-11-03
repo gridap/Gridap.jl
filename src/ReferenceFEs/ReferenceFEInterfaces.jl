@@ -145,6 +145,18 @@ function get_face_dofs(reffe::ReferenceFE)
   @abstractmethod
 end
 
+abstract type PushForwardMap <: Map end
+
+function evaluate!(cache,::PushForwardMap,v::AbstractVector{<:Field},phi::Field)
+  @abstractmethod
+end
+
+function evaluate!(cache,::PushForwardMap,v::AbstractVector{<:Dof},phi::Field)
+  @abstractmethod
+end
+
+PushForwardMap(reffe::ReferenceFE) = @abstractmethod
+
 # Test
 
 """

@@ -9,6 +9,7 @@ using Test
 using DocStringExtensions
 using LinearAlgebra
 using Combinatorics
+using FillArrays
 
 using Gridap.Helpers
 using Gridap.Arrays
@@ -21,6 +22,7 @@ import Gridap.Arrays: return_cache
 import Gridap.Arrays: evaluate!
 import Gridap.Arrays: return_type
 import Gridap.Fields: evaluate
+import Gridap.Fields: lazy_map
 import Gridap.Polynomials: MonomialBasis
 
 import Gridap.Polynomials: get_order
@@ -80,6 +82,7 @@ export PYRAMID
 export HEX_AXIS
 export TET_AXIS
 export INVALID_PERM
+export PushForwardMap
 
 export Dof
 export get_nodes
