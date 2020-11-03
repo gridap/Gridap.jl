@@ -57,7 +57,7 @@ writevtk(model,f)
 
 f = joinpath(d,"model")
 model = DiscreteModelMock()
-writevtk(model,get_face_labeling(model),f)
+writevtk(model,f,labels=get_face_labeling(model))
 
 f = joinpath(d,"trian")
 trian = GridMock()

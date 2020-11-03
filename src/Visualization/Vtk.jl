@@ -1,92 +1,21 @@
 
-#"""
-#"""
-#function writevtk(
-#  trian::Grid, filebase; celldata=Dict(), nodaldata=Dict())
-#  write_vtk_file(trian,filebase,celldata=celldata,nodaldata=nodaldata)
-#end
-
 """
-    writevtk(reffe::LagrangianRefFE,filebase)
 """
-function writevtk(reffe::LagrangianRefFE,filebase)
-
-  p = get_polytope(reffe)
-  writevtk(p,filebase)
-
-  node_coords = get_node_coordinates(reffe)
-  node_comp_to_dof = get_node_and_comp_to_dof(reffe)
-  nodaldata = [
-    "dof" => node_comp_to_dof,
-    "node" => collect(1:num_nodes(reffe))]
-  writevtk(node_coords, "$(filebase)_nodes"; nodaldata = nodaldata)
-
-end
-
-"""
-    writevtk(x::AbstractVector{<:Point}, filebase; kwargs...)
-"""
-function writevtk(x::AbstractVector{<:Point}, filebase; kwargs...)
-  vtkfile = createvtk(x,filebase; kwargs...)
-  outfiles = vtk_save(vtkfile)
-end
-
-"""
-    createvtk(x::AbstractVector{<:Point}, filebase; kwargs...)
-"""
-function createvtk(x::AbstractVector{<:Point}, filebase; kwargs...)
-  grid = UnstructuredGrid(x)
-  create_vtk_file(grid,filebase; kwargs...)
-end
-
-"""
-    writevtk(p::Polytope,filebase)
-"""
-function writevtk(p::Polytope,filebase)
-  for d in 0:(num_dims(p)-1)
-    grid = Grid(ReferenceFE{d},p)
-    write_vtk_file(grid,"$(filebase)_$d")
+function writevtk(args...;kwargs...)
+  map(visualization_data(args...;kwargs...)) do visdata
+    write_vtk_file(
+    visdata.grid,visdata.filebase,celldata=visdata.celldata,nodaldata=visdata.nodaldata)
   end
 end
 
 """
-    writevtk(model::DiscreteModel,filebase)
-    writevtk(model::DiscreteModel, labels::FaceLabeling, filebase)
 """
-function writevtk(model::DiscreteModel,filebase)
-  labels = get_face_labeling(model)
-  writevtk(model,labels,filebase)
-end
-
-function writevtk(model::DiscreteModel, labels::FaceLabeling, filebase)
-  for d in 0:num_cell_dims(model)
-    grid = Grid(ReferenceFE{d},model)
-    cdat = _prepare_cdata_model(labels,d)
-    write_vtk_file(grid,"$(filebase)_$d";celldata=cdat)
-  end
-end
-
-function _prepare_cdata_model(labels,d)
-  dface_to_entity = get_face_entity(labels,d)
-  cdat = []
-  for tag in 1:num_tags(labels)
-    dface_to_isontag = zeros(Int,num_faces(labels,d))
-    for entity in get_tag_entities(labels,tag)
-      _set_entity!(dface_to_isontag,dface_to_entity,entity,tag)
-    end
-    name = get_tag_name(labels,tag)
-    push!(cdat, name => dface_to_isontag )
-  end
-  push!(cdat,"entity" => dface_to_entity)
-  cdat
-end
-
-function _set_entity!(dface_to_isontag,dface_to_entity,entity,tag)
-  for i in 1:length(dface_to_entity)
-    if dface_to_entity[i] == entity
-      dface_to_isontag[i] = tag
-    end
-  end
+function createvtk(args...;kwargs...)
+  v = visualization_data(args...;kwargs...)
+  @notimplementedif length(v) != 1
+  visdata = first(v)
+  create_vtk_file(
+    visdata.grid,visdata.filebase,celldata=visdata.celldata,nodaldata=visdata.nodaldata)
 end
 
 """
@@ -382,102 +311,5 @@ function _vtkcelltypedict()
   d[VTK_LAGRANGE_HEXAHEDRON.vtk_id] = VTK_LAGRANGE_HEXAHEDRON
   #d[VTK_BIQUADRATIC_HEXAHEDRON.vtk_id] = VTK_BIQUADRATIC_HEXAHEDRON
   d
-end
-
-"""
-"""
-function writevtk(trian::Triangulation, filebase; order=-1, nsubcells=-1, celldata=Dict(), cellfields=Dict())
-  vtkfile = createvtk(trian,filebase, order=order, nsubcells=nsubcells, celldata=celldata, cellfields=cellfields)
-  outfiles = vtk_save(vtkfile)
-end
-
-"""
-"""
-function createvtk(trian::Triangulation, filebase; order=-1, nsubcells=-1, celldata=Dict(), cellfields=Dict())
-  visdata = visualization_data(trian; order=order,
-    nsubcells=nsubcells, celldata=celldata, cellfields=cellfields)
-  create_vtk_file(visdata.grid,filebase,celldata=visdata.celldata,nodaldata=visdata.nodaldata)
-end
-
-"""
-    writevtk(
-      cell_to_points::AbstractArray{<:AbstractArray{<:Point}},
-      filename;
-      celldata=Dict(),
-      nodaldata=Dict())
-"""
-function writevtk(
-  cell_to_points::AbstractArray{<:AbstractArray{<:Point}},
-  filename; celldata=Dict(), nodaldata=Dict())
-  vtkfile = createvtk(cell_to_points, filename, celldata=celldata, nodaldata=nodaldata)
-  outfiles = vtk_save(vtkfile)
-end
-
-
-"""
-    createvtk(
-      cell_to_points::AbstractArray{<:AbstractArray{<:Point}},
-      filename;
-      celldata=Dict(),
-      nodaldata=Dict())
-"""
-function createvtk(
-  cell_to_points::AbstractArray{<:AbstractArray{<:Point}},
-  filename; celldata=Dict(), nodaldata=Dict())
-
-  node_to_point, cell_to_offset = _prepare_node_to_coords(cell_to_points)
-  nnodes = length(node_to_point)
-  cell_to_nodes = identity_table(Int,Int32,nnodes)
-  cell_to_ctype = fill(Int8(1),nnodes)
-  ctype_to_reffe = [VERTEX1,]
-
-  node_to_cell = _prepare_node_to_cell(cell_to_offset,nnodes)
-
-  grid = UnstructuredGrid(
-    node_to_point,
-    cell_to_nodes,
-    ctype_to_reffe,
-    cell_to_ctype,
-    Val{true}())
-
-  cdata = _prepare_cdata(celldata,node_to_cell)
-  pdata = _prepare_pdata_for_cell_points(nodaldata)
-
-  create_vtk_file(grid,filename,celldata=cdata,nodaldata=pdata)
-
-end
-
-function _prepare_node_to_cell(cell_to_offset,nnodes)
-  node_to_cell = zeros(Int,nnodes)
-  ncells = length(cell_to_offset)
-  for cell in 1:ncells
-    nini = cell_to_offset[cell]+1
-    if cell < ncells
-      nend = cell_to_offset[cell+1]
-    else
-      nend = nnodes
-    end
-    for node in nini:nend
-      node_to_cell[node] = cell
-    end
-  end
-  node_to_cell
-end
-
-function _prepare_pdata_for_cell_points(nodaldata)
-  pdata = Dict()
-  for (k,v) in nodaldata
-    pdata[k], = _prepare_node_to_coords(v)
-  end
-  pdata
-end
-
-function writevtk(
-  x::CellPoint,filename; cellfields=Dict())
-  nodaldata = Dict((
-    k=>evaluate(CellField(v,get_triangulation(x),DomainStyle(x)),x) for (k,v) in cellfields ))
-  cell_to_points = get_array(x)
-  vtkfile = createvtk(cell_to_points, filename, nodaldata=nodaldata)
-  outfiles = vtk_save(vtkfile)
 end
 
