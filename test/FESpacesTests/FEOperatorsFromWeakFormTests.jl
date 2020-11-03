@@ -22,7 +22,7 @@ partition = (4,4)
 model = CartesianDiscreteModel(domain,partition)
 
 order = 2
-reffe = ReferenceFE(:Lagrangian,valuetype=Float64,order=order)
+reffe = ReferenceFE(:Lagrangian,Float64,order)
 V = FESpace(model,reffe,dirichlet_tags="boundary")
 U = TrialFESpace(V,u)
 

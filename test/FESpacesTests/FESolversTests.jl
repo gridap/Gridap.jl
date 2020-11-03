@@ -21,7 +21,7 @@ quad = CellQuadrature(trian,degree)
 order = 2
 
 order = 2
-reffe = ReferenceFE(:Lagrangian,valuetype=Float64,order=order)
+reffe = ReferenceFE(:Lagrangian,Float64,order)
 V = FESpace(model,reffe,dirichlet_tags=[1,10])
 U = V
 f(x) = x[2]

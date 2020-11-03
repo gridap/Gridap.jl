@@ -12,7 +12,7 @@ partition = (3,3,3)
 model = CartesianDiscreteModel(domain,partition)
 
 order = 2
-reffe = ReferenceFE(:Lagrangian,order=order,valuetype=Float64)
+reffe = ReferenceFE(:Lagrangian,Float64,order)
 V0 = FESpace(model,reffe,dirichlet_tags=["tag_24","tag_25"])
 
 matvecdata = ([],[],[])
