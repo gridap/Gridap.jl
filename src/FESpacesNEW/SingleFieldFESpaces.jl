@@ -5,12 +5,6 @@ abstract type SingleFieldFESpace <: FESpace end
 
 """
 """
-function get_cell_dof_basis(f::SingleFieldFESpace)
-  @abstractmethod
-end
-
-"""
-"""
 function num_dirichlet_dofs(f::SingleFieldFESpace)
   @abstractmethod
 end
@@ -139,14 +133,14 @@ end
 
 struct SingleFieldFEFunction{T<:CellField} <: FEFunction
   cell_field::T
-  cell_dof_values::AbstractArray{<:AbstractVector{<:Integer}}
+  cell_dof_values::AbstractArray{<:AbstractVector{<:Number}}
   free_values::AbstractVector{<:Number}
   dirichlet_values::AbstractVector{<:Number}
   fe_space::SingleFieldFESpace
 end
 
 get_cell_data(f::SingleFieldFEFunction) = get_cell_data(f.cell_field)
-get_triangulation(f::GenericCellField) = get_triangulation(f.cell_field)
+get_triangulation(f::SingleFieldFEFunction) = get_triangulation(f.cell_field)
 DomainStyle(::Type{SingleFieldFEFunction{T}}) where T = DomainStyle(T)
 
 get_free_values(f::SingleFieldFEFunction) = f.free_values
@@ -249,6 +243,7 @@ function compute_dirichlet_values_for_tags!(
   for (tag, object) in enumerate(_tag_to_object)
     cell_vals = _cell_vals(f,object)
     fill!(dirichlet_values_scratch,zero(eltype(dirichlet_values_scratch)))
+    gather_dirichlet_values!(dirichlet_values_scratch,f,cell_vals)
     _fill_dirichlet_values_for_tag!(dirichlet_values,dirichlet_values_scratch,tag,dirichlet_dof_to_tag)
   end
   dirichlet_values

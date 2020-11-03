@@ -34,7 +34,7 @@ function test_fe_function(f::FEFunction)
   free_values = get_free_values(f)
   fe_space = get_fe_space(f)
   @test length(free_values) == num_free_dofs(fe_space)
-  cell_values = get_cell_values(f)
+  cell_values = get_cell_dof_values(f)
   trian = get_triangulation(f)
   @test length(cell_values) == num_cells(trian)
 end
@@ -81,6 +81,15 @@ function Base.zero(f::FESpace)
   FEFunction(f,free_values)
 end
 
+function get_dof_value_type(f::FESpace)
+  get_dof_value_type(get_cell_shapefuns(f),get_cell_dof_basis(f))
+end
+
+function get_dof_value_type(cell_shapefuns::CellField,cell_dof_basis::CellDof)
+  cell_dof_values = cell_dof_basis(cell_shapefuns)
+  eltype(eltype(cell_dof_values))
+end
+
 # Extended FEInterface used by Assemblers
 
 """
@@ -101,6 +110,12 @@ end
 """
 """
 function get_cell_shapefuns(f::FESpace)
+  @abstractmethod
+end
+
+"""
+"""
+function get_cell_dof_basis(f::FESpace)
   @abstractmethod
 end
 
@@ -128,7 +143,7 @@ function get_cell_constraints(f::FESpace)
 end
 
 function get_cell_constraints(f,::UnConstrained)
-  cell_axes = lazy_map(axes,get_cell_shapefuns(f))
+  cell_axes = lazy_map(axes,get_cell_data(get_cell_shapefuns(f)))
   identity_constraints(cell_axes)
 end
 
@@ -180,7 +195,7 @@ function attach_constraints_rows(f::FESpace,cellarr,cellids,::Constrained)
   attach_constraints_rows(cellarr,cellconstr,cellmask)
 end
 
-function CellData.attach_constraints_cols(f::FESpace,cellarr,cellids)
+function attach_constraints_cols(f::FESpace,cellarr,cellids)
   attach_constraints_cols(f,cellarr,cellids,ConstraintStyle(f))
 end
 
@@ -206,12 +221,10 @@ function test_fe_space(f::FESpace)
   fe_basis = get_cell_shapefuns(f)
   @test isa(has_constraints(f),Bool)
   @test isa(has_constraints(typeof(f)),Bool)
-  @test length(get_cell_dofs(f)) == length(fe_basis)
-  @test length(get_cell_axes(f)) == length(fe_basis)
-  @test length(get_cell_axes_with_constraints(f)) == length(fe_basis)
-  @test length(get_cell_constraints(f)) == length(fe_basis)
-  @test length(get_cell_isconstrained(f)) == length(fe_basis)
-  @test CellField(f,get_cell_dofs(f)) != nothing
+  @test length(get_cell_dof_ids(f)) == num_cells(fe_basis)
+  @test length(get_cell_constraints(f)) == num_cells(fe_basis)
+  @test length(get_cell_isconstrained(f)) == num_cells(fe_basis)
+  @test CellField(f,get_cell_dof_ids(f)) != nothing
 end
 
 function test_fe_space(f::FESpace,matvecdata,matdata,vecdata)

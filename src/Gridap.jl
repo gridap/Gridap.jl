@@ -50,7 +50,7 @@ include("Geometry/Geometry.jl")
 
 include("CellData/CellData.jl")
 
-# include("FESpaces/FESpaces.jl")
+include("FESpacesNEW/FESpaces.jl")
 
 # include("MultiField/MultiField.jl")
 

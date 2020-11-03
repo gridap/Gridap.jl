@@ -23,8 +23,8 @@ import Gridap.Arrays: evaluate!
 import Gridap.Fields: gradient
 import Gridap.Fields: ∇∇
 import Gridap.Fields: integrate
-import Gridap.Integration: get_coordinates
-import Gridap.Integration: get_weights
+import Gridap.Geometry: num_cells
+import Gridap.Geometry: get_triangulation
 
 import Gridap.TensorValues: inner, outer, double_contraction, symmetric_part
 import LinearAlgebra: det, tr, cross, dot
@@ -46,8 +46,9 @@ export test_cell_datum
 export CellPoint
 export get_cell_points
 export CellField
+export jump
+export mean
 export GenericCellField
-export CellWeight
 export CellQuadrature
 export Integrand
 export ∫
@@ -64,6 +65,7 @@ export LebesgueMeasure
 export attach_dirichlet
 export attach_constraints_rows
 export attach_constraints_cols
+export identity_constraints
 
 include("CellDataInterface.jl")
 

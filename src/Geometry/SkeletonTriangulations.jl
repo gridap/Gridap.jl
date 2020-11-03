@@ -18,6 +18,24 @@ struct SkeletonTriangulation{Dc,Dp,B} <: Triangulation{Dc,Dp}
   end
 end
 
+function Base.getproperty(x::SkeletonTriangulation, sym::Symbol)
+  if sym == :⁺
+    x.left
+  elseif sym == :⁻
+    x.right
+  else
+    getfield(x, sym)
+  end
+end
+
+function Base.propertynames(x::SkeletonTriangulation, private=false)
+  (fieldnames(typeof(x))...,:⁺,:⁻)
+end
+
+have_compatible_domains(a::SkeletonTriangulation,b::Triangulation) = a.left===b || a.right===b
+have_compatible_domains(a::Triangulation,b::SkeletonTriangulation) = have_compatible_domains(b,a)
+have_compatible_domains(a::SkeletonTriangulation,b::SkeletonTriangulation) = a===b
+
 """
     SkeletonTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
     SkeletonTriangulation(model::DiscreteModel)
@@ -235,7 +253,9 @@ function get_cell_map(trian::SkeletonTriangulation)
 end
 
 function get_facet_normal(trian::SkeletonTriangulation)
-  get_facet_normal(trian.left)
+  left = get_facet_normal(trian.left)
+  right = get_facet_normal(trian.right)
+  SkeletonPair(left,right)
 end
 
 TriangulationStyle(::Type{<:SkeletonTriangulation}) = SubTriangulation()

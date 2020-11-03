@@ -68,7 +68,12 @@ function lazy_map(k::Reindex{<:LazyArray{<:Fill{<:PosNegReindex}}},::Type{T},j_t
   end
 end
 
-function lazy_map(k::Reindex{<:LazyArray{<:PosNegReindex}},::Type{T},j_to_i::IdentityVector) where T
+function lazy_map(k::Reindex{<:LazyArray{<:PosNegReindex}},::Type{T},indices::IdentityVector) where T
+  @check length(k.values) == length(indices)
+  k.values
+end
+
+function lazy_map(k::Reindex{<:LazyArray},::Type{T},indices::IdentityVector) where T
   @check length(k.values) == length(indices)
   k.values
 end
@@ -78,12 +83,12 @@ function lazy_map(k::Reindex{<:AbstractArray},::Type{T},indices::IdentityVector)
   k.values
 end
 
-function lazy_map(k::Reindex{<:Fill},::Type{T},b::IdentityVector) where T
+function lazy_map(k::Reindex{<:Fill},::Type{T},indices::IdentityVector) where T
   @check length(k.values) == length(indices)
   k.values
 end
 
-function lazy_map(k::Reindex{<:CompressedArray},::Type{T},b::IdentityVector) where T
+function lazy_map(k::Reindex{<:CompressedArray},::Type{T},indices::IdentityVector) where T
   @check length(k.values) == length(indices)
   k.values
 end

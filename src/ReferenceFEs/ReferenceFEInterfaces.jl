@@ -34,7 +34,7 @@ The interface is tested with
 abstract type ReferenceFE{D} <: GridapType end
 
 # Extensible factory function
-function ReferenceFE(p::Polytope;basis,kwargs...)
+function ReferenceFE(p::Polytope,basis::Symbol;kwargs...)
   ReferenceFE(p,Val(basis);kwargs...)
 end
 
@@ -43,6 +43,8 @@ function  ReferenceFE(p::Polytope,::Val{T};kwargs...) where T
   Undefined factory function ReferenceFE for symblol $T
   """
 end
+
+ReferenceFE(basis::Symbol;kwargs...) = (basis, kwargs)
 
 """
     num_dofs(reffe::ReferenceFE) -> Int

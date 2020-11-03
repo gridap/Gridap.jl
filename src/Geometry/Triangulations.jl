@@ -73,6 +73,11 @@ function get_facet_normal(trian::Triangulation)
   end
 end
 
+"""
+If the reference (resp. physical) space is the same for both triangulaitons.
+"""
+have_compatible_domains(a::Triangulation,b::Triangulation) = a===b
+
 # Trait that signals if the triangulation is a sub-mesh of a background triangulation
 
 abstract type TriangulationStyle end
@@ -166,6 +171,20 @@ get_cell_ref_map(trian::Triangulation,::SubTriangulation) = @abstractmethod
 struct SkeletonPair{L,R} <: GridapType
   left::L
   right::R
+end
+
+function Base.getproperty(x::SkeletonPair, sym::Symbol)
+  if sym == :⁺
+    x.left
+  elseif sym == :⁻
+    x.right
+  else
+    getfield(x, sym)
+  end
+end
+
+function Base.propertynames(x::SkeletonPair, private=false)
+  (fieldnames(typeof(x))...,:⁺,:⁻)
 end
 
 """
@@ -327,7 +346,7 @@ function expand_cell_data(type_to_data, cell_to_type::Fill)
 end
 
 function compress_cell_data(cell_data::AbstractArray)
-  @unreachable """
+  @unreachable """\n
   The given cell data cannot be compressed. Describe your data with
   a CompressedArray or Fill array types.
   """
@@ -338,7 +357,7 @@ function compress_cell_data(a::CompressedArray)
 end
 
 function compress_cell_data(a::Fill)
-  Fill(a.value,length(a)), Fill(1,length(a))
+  Fill(a.value,1), Fill(1,length(a))
 end
 
 #"""

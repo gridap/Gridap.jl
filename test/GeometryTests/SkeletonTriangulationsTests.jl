@@ -82,6 +82,7 @@ rtrian = itrian.right
 ni = get_facet_normal(itrian)
 nl = get_facet_normal(ltrian)
 nr = get_facet_normal(rtrian)
+@test isa(ni,SkeletonPair)
 
 #using Gridap.Visualization
 #
@@ -119,7 +120,7 @@ face_own_dofs = get_face_own_dofs(reffe,conf)
 strian = SkeletonTriangulation(model,reffe,face_own_dofs)
 test_triangulation(strian)
 ns = get_facet_normal(strian)
-@test length(ns) == num_cells(strian)
+@test length(ns.⁺) == num_cells(strian)
 
 #using Gridap.Visualization
 #writevtk(strian,"strian",cellfields=["normal"=>ns])

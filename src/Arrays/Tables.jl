@@ -337,6 +337,10 @@ function lazy_map(::typeof(getindex),a::Table,b::AbstractArray{<:Integer})
   LocalItemFromTable(a,b)
 end
 
+function get_local_item(a::Table,li::Integer)
+  LocalItemFromTable(a,Fill(li,length(a)))
+end
+
 struct LocalItemFromTable{T,Vd,Vp,A} <: AbstractVector{T}
   a_to_lb_to_b::Table{T,Vd,Vp}
   a_to_lb::A

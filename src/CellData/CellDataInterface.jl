@@ -55,6 +55,7 @@ get_array(a::CellDatum) = get_cell_data(change_domain(a,PhysicalDomain()))
 
 """
 """
-Base.length(a::CellDatum) = length(get_cell_data(a))
+#Base.length(a::CellDatum) = num_cells(get_triangulation(a))
+num_cells(a::CellDatum) = num_cells(get_triangulation(a))
 
 
