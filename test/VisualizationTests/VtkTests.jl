@@ -9,6 +9,7 @@ using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.Visualization
+using Gridap.CellData
 using WriteVTK
 
 d = mktempdir()
@@ -90,6 +91,8 @@ x = lazy_map(evaluate,q2x,q)
 f = joinpath(d,"x")
 writevtk(x,f,celldata=["cellid" => collect(1:num_cells(trian))], nodaldata = ["x" => x])
 
+
+
 f = joinpath(d,"trian")
 writevtk(trian,f)
 
@@ -111,6 +114,10 @@ paraview_collection(f) do pvd
     end
     vtk_save(pvd)
 end
+
+f = joinpath(d,"x")
+x = get_cell_points(CellQuadrature(trian,2))
+writevtk(x,f;cellfields=["cf"=>cf])
 
 ## Visualize AppendedTriangulation
 #
