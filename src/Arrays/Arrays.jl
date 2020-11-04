@@ -74,6 +74,8 @@ export VectorOfBlockVectorCoo
 export VectorOfBlockMatrixCoo
 export zeros_like
 export TwoLevelBlockedUnitRange
+export BlockArrayCooMap
+export append_ranges
 
 export array_cache
 export getindex!

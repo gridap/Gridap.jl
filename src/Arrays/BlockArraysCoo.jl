@@ -461,6 +461,14 @@ end
 
 # For blocks of blocks
 
+function append_ranges(ranges::AbstractVector{<:AbstractUnitRange})
+  blockedrange(map(length,ranges))
+end
+
+function append_ranges(ranges::AbstractVector{<:BlockedUnitRange})
+  TwoLevelBlockedUnitRange(ranges)
+end
+
 struct TwoLevelBlockedUnitRange{CS} <: AbstractUnitRange{Int}
   global_range::BlockedUnitRange{CS}
   local_ranges::Vector{BlockedUnitRange{CS}}
