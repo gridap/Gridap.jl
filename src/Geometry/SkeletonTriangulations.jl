@@ -30,9 +30,9 @@ function Base.propertynames(x::SkeletonTriangulation, private=false)
   (fieldnames(typeof(x))...,:⁺,:⁻)
 end
 
-have_compatible_domains(a::SkeletonTriangulation,b::Triangulation) = a.plus===b || a.minus===b
-have_compatible_domains(a::Triangulation,b::SkeletonTriangulation) = have_compatible_domains(b,a)
-have_compatible_domains(a::SkeletonTriangulation,b::SkeletonTriangulation) = a===b
+#have_compatible_domains(a::SkeletonTriangulation,b::Triangulation) = a.plus===b || a.minus===b
+#have_compatible_domains(a::Triangulation,b::SkeletonTriangulation) = have_compatible_domains(b,a)
+#have_compatible_domains(a::SkeletonTriangulation,b::SkeletonTriangulation) = a===b
 
 """
     SkeletonTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
