@@ -4,8 +4,6 @@
       left::B
       right::B
     end
-
-The inner constructor enforces `B<:BoundaryTriangulation`
 """
 struct SkeletonTriangulation{Dc,Dp,B} <: Triangulation{Dc,Dp}
   left::B
