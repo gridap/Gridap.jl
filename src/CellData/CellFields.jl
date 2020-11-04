@@ -426,17 +426,17 @@ end
 # Skeleton related Operations
 
 function Base.getproperty(x::CellField, sym::Symbol)
-  if sym in (:⁺,:left)
-    CellFieldAt{:left}(x)
-  elseif sym in (:⁻, :right)
-    CellFieldAt{:right}(x)
+  if sym in (:⁺,:plus)
+    CellFieldAt{:plus}(x)
+  elseif sym in (:⁻, :minus)
+    CellFieldAt{:minus}(x)
   else
     getfield(x, sym)
   end
 end
 
 function Base.propertynames(x::CellField, private=false)
-  (fieldnames(typeof(x))...,:⁺,:left,:⁻,:right)
+  (fieldnames(typeof(x))...,:⁺,:plus,:⁻,:minus)
 end
 
 struct CellFieldAt{T,F} <: CellField
@@ -449,8 +449,8 @@ get_triangulation(f::CellFieldAt) = get_triangulation(f.parent)
 DomainStyle(::Type{CellFieldAt{T,F}}) where {T,F} = DomainStyle(F)
 
 function get_normal_vector(trian::SkeletonTriangulation)
-  cell_normal_plus = get_facet_normal(trian.left)
-  cell_normal_minus = get_facet_normal(trian.right)
+  cell_normal_plus = get_facet_normal(trian.plus)
+  cell_normal_minus = get_facet_normal(trian.minus)
   plus = GenericCellField(cell_normal_plus,trian,ReferenceDomain())
   minus = GenericCellField(cell_normal_minus,trian,ReferenceDomain())
   SkeletonPair(plus,minus)
@@ -464,15 +464,15 @@ for op in (:outer,:*,:dot)
 end
 
 function evaluate!(cache,k::Operation,a::CellField,b::SkeletonPair{<:CellField})
-  left = k(a.left,b.left)
-  right = k(a.right,b.right)
-  SkeletonPair(left,right)
+  plus = k(a.plus,b.plus)
+  minus = k(a.minus,b.minus)
+  SkeletonPair(plus,minus)
 end
 
 function evaluate!(cache,k::Operation,a::SkeletonPair{<:CellField},b::CellField)
-  left = k(a.left,b.left)
-  right = k(a.right,b.right)
-  SkeletonPair(left,right)
+  plus = k(a.plus,b.plus)
+  minus = k(a.minus,b.minus)
+  SkeletonPair(plus,minus)
 end
 
 jump(a::CellField) = a.⁺ - a.⁻
@@ -490,7 +490,7 @@ function change_domain(a::CellField,target_trian::SkeletonTriangulation,target_d
   elseif have_compatible_domains(trian_a,get_background_triangulation(target_trian))
     # In this case, we can safely take either plus or minus arbitrarily.
     if isa(a,GenericCellField) && isa(a.cell_field,Fill{<:ConstantField})
-      a_on_target_trian = change_domain(a,target_trian.left,target_domain)
+      a_on_target_trian = change_domain(a,target_trian.plus,target_domain)
       return GenericCellField(get_cell_data(a_on_target_trian),target_trian,target_domain)
     else
       @unreachable """\n
@@ -510,10 +510,10 @@ end
 function change_domain(a::CellFieldAt,trian::SkeletonTriangulation,target_domain::DomainStyle)
   trian_a = get_triangulation(a)
   if have_compatible_domains(trian_a,get_background_triangulation(trian))
-    if isa(a,CellFieldAt{:left})
-      target_trian = trian.left
-    elseif isa(a,CellFieldAt{:right})
-      target_trian = trian.right
+    if isa(a,CellFieldAt{:plus})
+      target_trian = trian.plus
+    elseif isa(a,CellFieldAt{:minus})
+      target_trian = trian.minus
     else
       @unreachable
     end
@@ -537,7 +537,7 @@ end
 function (a::SkeletonPair{<:CellField})(x)
   @unreachable """\n
   You are trying to evaluate a CellField on a mesh skeleton but you have not specified which of the
-  two sides i.e. left (aka ⁺) or right (aka ⁻) you want to select.
+  two sides i.e. plus (aka ⁺) or minus (aka ⁻) you want to select.
 
   For instance, if you have extracted the normal vector and the cell points from a SkeletonTriangulation
 

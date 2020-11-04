@@ -214,8 +214,8 @@ test_array(hx_N,collect(hx_N))
 #afS = merge_cell_fields_at_skeleton(af,2*af)
 #@test isa(afS,SkeletonCellField)
 #
-#afL_x = evaluate(afS.left,xl)
-#afR_x = evaluate(afS.right,xl)
+#afL_x = evaluate(afS.plus,xl)
+#afR_x = evaluate(afS.minus,xl)
 #@test isa(afL_x,VectorOfBlockArrayCoo)
 #@test isa(afR_x,VectorOfBlockArrayCoo)
 #

@@ -56,8 +56,8 @@ test_triangulation(strian)
 #
 #cellids_gamma = reindex(cellids,strian)
 #@test isa(fun_gamma, SkeletonPair)
-#@test cellids_gamma.left == get_face_to_cell(strian.left)
-#@test cellids_gamma.right == get_face_to_cell(strian.right)
+#@test cellids_gamma.plus == get_face_to_cell(strian.plus)
+#@test cellids_gamma.minus == get_face_to_cell(strian.minus)
 #
 #ids = get_cell_id(strian)
 #@test isa(ids,SkeletonPair)
@@ -76,8 +76,10 @@ cell_to_is_left = [true,true,false,true,false]
 
 itrian = InterfaceTriangulation(model,cell_to_is_left)
 
-ltrian = itrian.left
-rtrian = itrian.right
+ltrian = itrian.plus
+rtrian = itrian.minus
+@test itrian.⁺ === ltrian
+@test itrian.⁻ === rtrian
 
 ni = get_facet_normal(itrian)
 nl = get_facet_normal(ltrian)
