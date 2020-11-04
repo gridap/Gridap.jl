@@ -447,6 +447,8 @@ end
 get_cell_data(f::CellFieldAt) = get_cell_data(f.parent)
 get_triangulation(f::CellFieldAt) = get_triangulation(f.parent)
 DomainStyle(::Type{CellFieldAt{T,F}}) where {T,F} = DomainStyle(F)
+gradient(a::CellFieldAt{P}) where P = CellFieldAt{P}(gradient(a.parent))
+∇∇(a::CellFieldAt{P}) where P = CellFieldAt{P}(∇∇(a.parent))
 
 function get_normal_vector(trian::SkeletonTriangulation)
   cell_normal_plus = get_facet_normal(trian.plus)
