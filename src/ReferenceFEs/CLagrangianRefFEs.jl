@@ -215,30 +215,12 @@ end
 
 function ReferenceFE(
   polytope::Polytope,
-  ::Val{:Lagrangian};
-  valuetype::Type{T},
-  order::Union{Nothing,Integer}=nothing,
-  orders::Union{Nothing,Tuple{Vararg{Integer}}}=nothing,
+  ::Val{:Lagrangian},
+  ::Type{T},
+  orders::Union{Integer,Tuple{Vararg{Integer}}};
   space::Symbol=_default_space(polytope)) where T
 
-  if order==nothing && orders==nothing
-    @unreachable """\n
-    Error in ReferenceFE factory function for Lagrangian elements. No interpolation order provided.
-
-    One (and only one) of the key-word arguments `order::Int`, `orders::Tuple{Vararg{Integer}}` should be present.
-    """
-  elseif order!=nothing && orders!==nothing
-    @unreachable """\n
-    Error in ReferenceFE factory function for Lagrangian elements.
-    The key-word arguments `order` and `orders` cannot be provided at the same time.
-    """
-  elseif order != nothing
-    _orders = order
-  else
-    _orders = orders
-  end
-
-  LagrangianRefFE(T,polytope,_orders;space=space)
+  LagrangianRefFE(T,polytope,orders;space=space)
 end
 
 

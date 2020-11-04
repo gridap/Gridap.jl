@@ -166,6 +166,8 @@ include("FEOperators.jl")
 
 include("AffineFEOperators.jl")
 
+include("FEOperatorsFromWeakForm.jl")
+
 include("FESolvers.jl")
 
 end # module

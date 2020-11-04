@@ -15,7 +15,7 @@ partition = (3,3,3)
 model = CartesianDiscreteModel(domain,partition)
 
 order = 2
-reffe = ReferenceFE(:Lagrangian,valuetype=Float64,order=order)
+reffe = ReferenceFE(:Lagrangian,Float64,order)
 V = FESpace(model,reffe,dirichlet_tags=["tag_01","tag_10"])
 
 U = TrialFESpace(V,[4,3])
