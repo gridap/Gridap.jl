@@ -17,10 +17,13 @@ model = simplexify(CartesianDiscreteModel(domain,cells))
 
 Ω = Triangulation(model)
 Γ = BoundaryTriangulation(model)
+Λ = SkeletonTriangulation(model)
+n_Λ = get_normal_vector(Λ)
 
 degree = 2
 dΩ = LebesgueMeasure(Ω,degree)
 dΓ = LebesgueMeasure(Γ,degree)
+dΛ = LebesgueMeasure(Λ,degree)
 
 v = GenericCellField(get_cell_shapefuns(Ω),Ω,ReferenceDomain())
 u = GenericCellField(lazy_map(transpose,get_cell_data(v)),v.trian,v.domain_style)
@@ -33,5 +36,14 @@ a = ∫(u*v)*dΩ + ∫(u*v)*dΓ + ∫(∇(u)⋅∇(v))*dΩ
 
 a = ∫(1)*dΩ + ∫(1)*dΓ
 @test sum(a) ≈ 5
+
+u = CellField(x->2*x[1],Ω)
+v = CellField(x->3*x[2],Ω)
+
+a = ∫(jump(u))*dΛ
+@test sum(a) + 1 ≈ 1
+
+a = ∫( (n_Λ.⁺⋅∇(v.⁻))*jump(n_Λ⋅∇(u)) )*dΛ
+@test sum(a) + 1 ≈ 1
 
 end # module

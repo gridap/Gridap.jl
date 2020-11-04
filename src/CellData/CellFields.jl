@@ -96,17 +96,8 @@ end
 
 function get_normal_vector(trian::Triangulation)
   cell_normal = get_facet_normal(trian)
-  get_normal_vector(trian,cell_normal)
-end
-
-function get_normal_vector(trian::Triangulation,cell_normal::AbstractArray)
+  @assert ! isa(cell_normal,SkeletonPair)
   GenericCellField(cell_normal,trian,ReferenceDomain())
-end
-
-function get_normal_vector(trian::Triangulation,cell_normal::SkeletonPair)
-  left = GenericCellField(cell_normal.left,trian.left,ReferenceDomain())
-  right = GenericCellField(cell_normal.right,trian.right,ReferenceDomain())
-  SkeletonPair(left,right)
 end
 
 evaluate!(cache,f::Function,x::CellPoint) = CellField(f,get_triangulation(x))(x)
@@ -140,7 +131,7 @@ function change_domain(a::CellField,::ReferenceDomain,trian::Triangulation,::Ref
     return a
   elseif have_compatible_domains(trian_a,get_background_triangulation(trian))
     cell_id = get_cell_id(trian)
-    @notimplementedif isa(cell_id,SkeletonPair)
+    @assert ! isa(cell_id,SkeletonPair)
     cell_a_q = lazy_map(Reindex(get_cell_data(a)),cell_id)
     cell_s2q = get_cell_ref_map(trian)
     cell_field = lazy_map(Broadcasting(∘),cell_a_q,cell_s2q)
@@ -160,7 +151,7 @@ function change_domain(a::CellField,::PhysicalDomain,trian::Triangulation,::Phys
     return a
   elseif have_compatible_domains(trian_a,get_background_triangulation(trian))
     cell_id = get_cell_id(trian)
-    @notimplementedif isa(cell_id,SkeletonPair)
+    @assert ! isa(cell_id,SkeletonPair)
     cell_field = lazy_map(Reindex(get_cell_data(a)),cell_id)
     GenericCellField(cell_field,trian,PhysicalDomain())
   else
@@ -193,6 +184,10 @@ end
 get_cell_data(f::GenericCellField) = f.cell_field
 get_triangulation(f::GenericCellField) = f.trian
 DomainStyle(::Type{GenericCellField{DS}}) where DS = DS()
+
+
+
+
 
 # Evaluation of CellFields
 
@@ -430,6 +425,39 @@ end
 
 # Skeleton related Operations
 
+function Base.getproperty(x::CellField, sym::Symbol)
+  if sym in (:⁺,:plus)
+    CellFieldAt{:plus}(x)
+  elseif sym in (:⁻, :minus)
+    CellFieldAt{:minus}(x)
+  else
+    getfield(x, sym)
+  end
+end
+
+function Base.propertynames(x::CellField, private=false)
+  (fieldnames(typeof(x))...,:⁺,:plus,:⁻,:minus)
+end
+
+struct CellFieldAt{T,F} <: CellField
+  parent::F
+  CellFieldAt{T}(parent::CellField) where T = new{T,typeof(parent)}(parent)
+end
+
+get_cell_data(f::CellFieldAt) = get_cell_data(f.parent)
+get_triangulation(f::CellFieldAt) = get_triangulation(f.parent)
+DomainStyle(::Type{CellFieldAt{T,F}}) where {T,F} = DomainStyle(F)
+gradient(a::CellFieldAt{P}) where P = CellFieldAt{P}(gradient(a.parent))
+∇∇(a::CellFieldAt{P}) where P = CellFieldAt{P}(∇∇(a.parent))
+
+function get_normal_vector(trian::SkeletonTriangulation)
+  cell_normal_plus = get_facet_normal(trian.plus)
+  cell_normal_minus = get_facet_normal(trian.minus)
+  plus = GenericCellField(cell_normal_plus,trian,ReferenceDomain())
+  minus = GenericCellField(cell_normal_minus,trian,ReferenceDomain())
+  SkeletonPair(plus,minus)
+end
+
 for op in (:outer,:*,:dot)
   @eval begin
     ($op)(a::CellField,b::SkeletonPair{<:CellField}) = Operation($op)(a,b)
@@ -438,28 +466,80 @@ for op in (:outer,:*,:dot)
 end
 
 function evaluate!(cache,k::Operation,a::CellField,b::SkeletonPair{<:CellField})
-  left = k(a,b.left)
-  right = k(a,b.right)
-  SkeletonPair(left,right)
+  plus = k(a.plus,b.plus)
+  minus = k(a.minus,b.minus)
+  SkeletonPair(plus,minus)
 end
 
 function evaluate!(cache,k::Operation,a::SkeletonPair{<:CellField},b::CellField)
-  left = k(a.left,b)
-  right = k(a.right,b)
-  SkeletonPair(left,right)
+  plus = k(a.plus,b.plus)
+  minus = k(a.minus,b.minus)
+  SkeletonPair(plus,minus)
 end
 
 jump(a::CellField) = a.⁺ - a.⁻
 jump(a::SkeletonPair{<:CellField}) = a.⁺ + a.⁻ # a.⁻ results from multiplying by n.⁻. Thus we need to sum.
 
-mean(a::CellField,b::CellField) = Operation(_mean)(a,b)
+mean(a::CellField) = Operation(_mean)(a.⁺,a.⁻)
 _mean(x,y) = 0.5*x + 0.5*y
+
+# This is the fundamental part to make operations on the skeleton work.
+
+function change_domain(a::CellField,target_trian::SkeletonTriangulation,target_domain::DomainStyle)
+  trian_a = get_triangulation(a)
+  if have_compatible_domains(trian_a,target_trian)
+    return a
+  elseif have_compatible_domains(trian_a,get_background_triangulation(target_trian))
+    # In this case, we can safely take either plus or minus arbitrarily.
+    if isa(a,GenericCellField) && isa(a.cell_field,Fill{<:ConstantField})
+      a_on_target_trian = change_domain(a,target_trian.plus,target_domain)
+      return GenericCellField(get_cell_data(a_on_target_trian),target_trian,target_domain)
+    else
+      @unreachable """\n
+      It is not possible to use the given CellField on a SkeletonTriangulation.
+      Make sure that you are specifying which of the two possible traces,
+      either plus (aka ⁺) or minus (aka ⁻) you want to use.
+      """
+    end
+  else
+    @unreachable """\n
+    We cannot move the given CellField to the requested triangulation.
+    Make sure that the given CellField is defined on the triangulation you want to work with.
+    """
+  end
+end
+
+function change_domain(a::CellFieldAt,trian::SkeletonTriangulation,target_domain::DomainStyle)
+  trian_a = get_triangulation(a)
+  if have_compatible_domains(trian_a,get_background_triangulation(trian))
+    if isa(a,CellFieldAt{:plus})
+      target_trian = trian.plus
+    elseif isa(a,CellFieldAt{:minus})
+      target_trian = trian.minus
+    else
+      @unreachable
+    end
+    a_on_target_trian = change_domain(a.parent,target_trian,target_domain)
+    return GenericCellField(get_cell_data(a_on_target_trian),trian,target_domain)
+  else
+    @unreachable """\n
+    It is not allowd to writte `u.⁺` of `u.⁻` for the given CellField.
+    Make sure that the CellField `u` is either defined on the background mesh
+    or it is a normal vector extracted from a SkeletonTriangulation.
+    """
+  end
+end
+
+function change_domain(f::OperationCellField,target_trian::SkeletonTriangulation,target_domain::DomainStyle)
+  args = map(i->change_domain(i,target_trian,target_domain),f.args)
+  OperationCellField(f.op,args...)
+end
 
 # Just to provide more meaningful error messages
 function (a::SkeletonPair{<:CellField})(x)
   @unreachable """\n
   You are trying to evaluate a CellField on a mesh skeleton but you have not specified which of the
-  two sides i.e. left (aka ⁺) or right (aka ⁻) you want to select.
+  two sides i.e. plus (aka ⁺) or minus (aka ⁻) you want to select.
 
   For instance, if you have extracted the normal vector and the cell points from a SkeletonTriangulation
 

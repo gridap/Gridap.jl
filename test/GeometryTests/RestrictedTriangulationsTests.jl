@@ -40,6 +40,6 @@ trian = Triangulation(oldmodel,"interior")
 #writevtk(oldtrian,"oldtrian")
 #writevtk(btrian,"btrian",cellfields=["normal"=>nb],celldata=["oldcell"=>get_cell_id(btrian)])
 #writevtk(strian,"strian",cellfields=["normal"=>ns],
-#  celldata=["oldcell_left"=>get_cell_id(strian).left,"oldcell_right"=>get_cell_id(strian).right])
+#  celldata=["oldcell_left"=>get_cell_id(strian).plus,"oldcell_right"=>get_cell_id(strian).minus])
 
 end # module

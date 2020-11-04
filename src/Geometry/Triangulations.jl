@@ -164,20 +164,20 @@ get_cell_ref_map(trian::Triangulation,::SubTriangulation) = @abstractmethod
 
 """
     struct SkeletonPair{L,R} <: GridapType
-      left::L
-      right::R
+      plus::L
+      minus::R
     end
 """
 struct SkeletonPair{L,R} <: GridapType
-  left::L
-  right::R
+  plus::L
+  minus::R
 end
 
 function Base.getproperty(x::SkeletonPair, sym::Symbol)
   if sym == :⁺
-    x.left
+    x.plus
   elseif sym == :⁻
-    x.right
+    x.minus
   else
     getfield(x, sym)
   end
@@ -378,10 +378,10 @@ end
 #
 #function _restrict_cell_field(r::SkeletonPair,axs::SkeletonPair,msize_style::Val,trian)
 #  cm = get_cell_map(trian)
-#  la = r.left
-#  ra = r.right
-#  l = GenericCellField(la,cm,Val(true),axs.left,msize_style)
-#  r = GenericCellField(ra,cm,Val(true),axs.right,msize_style)
+#  la = r.plus
+#  ra = r.minus
+#  l = GenericCellField(la,cm,Val(true),axs.plus,msize_style)
+#  r = GenericCellField(ra,cm,Val(true),axs.minus,msize_style)
 #  merge_cell_fields_at_skeleton(l,r)
 #end
 #

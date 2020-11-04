@@ -176,9 +176,9 @@ function get_cell_isconstrained(f::FESpace,cellids::AbstractArray)
 end
 
 function get_cell_isconstrained(f::FESpace,cellids::SkeletonPair)
-  left = get_cell_isconstrained(f,cellids.left)
-  right = get_cell_isconstrained(f,cellids.right)
-  lazy_map((l,r)-> l||r,left,right)
+  plus = get_cell_isconstrained(f,cellids.plus)
+  minus = get_cell_isconstrained(f,cellids.minus)
+  lazy_map((l,r)-> l||r,plus,minus)
 end
 
 function attach_constraints_rows(f::FESpace,cellarr,cellids)
