@@ -6,6 +6,14 @@ using Gridap.Fields
 using Gridap.TensorValues
 using Gridap.Fields: MockField
 using Gridap.ReferenceFEs
+using Gridap.Geometry
+using Gridap.CellData
+using Gridap.CellData
+using Gridap.Arrays
+
+using GridapGmsh
+using Gridap
+using Gridap.FESpaces
 
 p = QUAD
 D = num_dims(QUAD)
@@ -73,14 +81,39 @@ prebasis = get_prebasis(reffe)
 dof_basis = get_dof_basis(reffe)
 
 v = VectorValue(0.0,3.0,0.0)
-field = MockField{D}(v)
+field = GenericField(x->v)
 
-cache = dof_cache(dof_basis,field)
-r = evaluate_dof!(cache, dof_basis, field)
-test_dof(dof_basis,field,r)
+cache = return_cache(dof_basis,field)
+r = evaluate!(cache, dof_basis, field)
+test_dof_array(dof_basis,field,r)
 
-cache = dof_cache(dof_basis,prebasis)
-r = evaluate_dof!(cache, dof_basis, prebasis)
-test_dof(dof_basis,prebasis,r)
+cache = return_cache(dof_basis,prebasis)
+r = evaluate!(cache, dof_basis, prebasis)
+test_dof_array(dof_basis,prebasis,r)
 
+
+model = GmshDiscreteModel("./test_2d.msh")
+labels = get_face_labeling(model)
+dir_tags = Array{Integer}(undef,0)
+trian = Triangulation(model)
+
+quad = CellQuadrature(trian,2*order+1)
+#V = ConformingFESpace([reffe],DivConformity(),model,labels,dir_tags)
+#V = FESpace(model,reffe,conformity=DivConformity())
+#free_values = ones(num_free_dofs(V))
+#uh = FEFunction(V,free_values)
+
+cell_map = get_cell_map(trian)
+#s,vals = compute_cell_space(expand_cell_data([reffe],[1,1,1,1]),cell_map,ReferenceDomain())
+s,vals = compute_cell_space(expand_cell_data([reffe],[1,1,1,1]),trian,ReferenceDomain())
+#=
+#h = lazy_map(evaluate!, s, vals)
+#h = evaluate(s, vals)
+h = s(vals)
+@show h
+
+#writevtk(strian,"test",cellfields=["nv"=>nv])
+
+#I = integrate(uh,trian,quad)
+=#
 end # module

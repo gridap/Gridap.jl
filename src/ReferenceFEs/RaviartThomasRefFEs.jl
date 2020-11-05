@@ -324,23 +324,23 @@ function evaluate!(cache,k::ContraVariantPiolaMap,v::AbstractVector{<:Field},phi
   Broadcasting(Operation(k))(v,J,detJ)
 end
 
-#function lazy_map(
-#  ::typeof(evaluate),
-#  cell_shapefuns::LazyArray{<:Fill{<:ContraVariantPiolaMap}},
-#  cell_qs::AbstractArray)
-#
-#  cell_ref_shapefuns = cell_shapefuns.f[1]
-#  cell_map = cell_shapefuns.f[2]
-#
-#  cell_ref_shapefuns_q = lazy_map(evaluate,cell_ref_shapefuns,cell_qs)
-#  cell_Jt = lazy_map(∇,cell_map)
-#  cell_Jt_q = lazy_map(evaluate,cell_Jt,cell_qs)
-#  cell_detJ_q = lazy_map(Broadcasting(det),cell_Jt_q)
-#  cell_J_q = lazy_map(Broadcasting(transpose),cell_Jt_q)
-#
-#  k = cell_shapefuns.g.value
-#  lazy_map(Broadcasting(k),cell_ref_shapefuns_q,cell_J_q,cell_detJ_q)
-#end
+function lazy_map(
+  ::typeof(evaluate),
+  cell_shapefuns::LazyArray{<:Fill{<:ContraVariantPiolaMap}},
+  cell_qs::AbstractArray)
+
+  cell_ref_shapefuns = cell_shapefuns.f[1]
+  cell_map = cell_shapefuns.f[2]
+
+  cell_ref_shapefuns_q = lazy_map(evaluate,cell_ref_shapefuns,cell_qs)
+  cell_Jt = lazy_map(∇,cell_map)
+  cell_Jt_q = lazy_map(evaluate,cell_Jt,cell_qs)
+  cell_detJ_q = lazy_map(Broadcasting(det),cell_Jt_q)
+  cell_J_q = lazy_map(Broadcasting(transpose),cell_Jt_q)
+
+  k = cell_shapefuns.g.value
+  lazy_map(Broadcasting(k),cell_ref_shapefuns_q,cell_J_q,cell_detJ_q)
+end
 
 function lazy_map(
   k::ContraVariantPiolaMap,
@@ -351,11 +351,11 @@ function lazy_map(
   cell_detJ = lazy_map(Operation(det),cell_Jt)
   cell_J = lazy_map(Operation(transpose),cell_Jt)
 
-  lazy_map(Broadcasting(Operation(k)))(cell_ref_shapefuns,cell_J,cell_detJ)
+  lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_J,cell_detJ)
 end
 
 function evaluate!(cache,::ContraVariantPiolaMap,s::MomentBasedDofBasis,phi::Field)
-  @notimplemented
+  return s #skip Piola maping temporary
   # phi_q = evaluate(phi,s.nodes)
   #moments = #from s.moments and phi_q
   #MomentBasedDofBasis(s.nodes,moments)
@@ -365,6 +365,3 @@ function evaluate!(cache,::ContraVariantPiolaMap,s::MomentBasedDofBasis,phi::Fie
 end
 
 PushForwardMap(reffe::GenericRefFE{DivConformity}) = ContraVariantPiolaMap()
-
-
-

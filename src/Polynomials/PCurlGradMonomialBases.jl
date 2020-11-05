@@ -1,6 +1,6 @@
 
 """
-struct PCurlGradMonomialBasis{...} <: Field
+struct PCurlGradMonomialBasis{...} <: AbstractArray{Monomial}
 
 This type implements a multivariate vector-valued polynomial basis
 spanning the space needed for Raviart-Thomas reference elements on simplices.
@@ -8,7 +8,7 @@ The type parameters and fields of this `struct` are not public.
 This type fully implements the [`Field`](@ref) interface, with up to first order
 derivatives.
 """
-struct PCurlGradMonomialBasis{D,T} <: Field
+struct PCurlGradMonomialBasis{D,T} <: AbstractVector{Monomial}
   order::Int
   pterms::Array{CartesianIndex{D},1}
   sterms::Array{CartesianIndex{D},1}
@@ -20,6 +20,10 @@ struct PCurlGradMonomialBasis{D,T} <: Field
   end
 end
 
+@inline Base.size(a::PCurlGradMonomialBasis) = (_ndofs_pgrad(a),)
+# @santiagobadia : Not sure we want to create the monomial machinery
+@inline Base.getindex(a::PCurlGradMonomialBasis,i::Integer) = Monomial()
+@inline Base.IndexStyle(::PCurlGradMonomialBasis) = IndexLinear()
 
 """
 PCurlGradMonomialBasis{D}(::Type{T},order::Int) where {D,T}
@@ -50,7 +54,7 @@ get_order(f::PCurlGradMonomialBasis{D,T}) where {D,T} = f.order
 
 #get_value_type(::PCurlGradMonomialBasis{D,T}) where {D,T} = T
 
-function field_cache(f::PCurlGradMonomialBasis{D,T},x) where {D,T}
+function return_cache(f::PCurlGradMonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = _ndofs_pgrad(f)
@@ -62,7 +66,7 @@ function field_cache(f::PCurlGradMonomialBasis{D,T},x) where {D,T}
   (r, v, c)
 end
 
-function evaluate_field!(cache,f::PCurlGradMonomialBasis{D,T},x) where {D,T}
+function evaluate!(cache,f::PCurlGradMonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   r, v, c = cache
   np = length(x)
   ndof = _ndofs_pgrad(f)
@@ -80,7 +84,11 @@ function evaluate_field!(cache,f::PCurlGradMonomialBasis{D,T},x) where {D,T}
   r.array
 end
 
-function gradient_cache(f::PCurlGradMonomialBasis{D,T},x)  where {D,T}
+function return_cache(
+  fg::FieldGradientArray{1,PCurlGradMonomialBasis{D,T}},
+  x::AbstractVector{<:Point})  where {D,T}
+
+  f = fg.fa
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = _ndofs_pgrad(f)
@@ -95,7 +103,11 @@ function gradient_cache(f::PCurlGradMonomialBasis{D,T},x)  where {D,T}
   (r, v, c, g)
 end
 
-function evaluate_gradient!(cache,f::PCurlGradMonomialBasis{D,T},x) where {D,T}
+function evaluate!(cache,
+  fg::FieldGradientArray{1,PCurlGradMonomialBasis{D,T}},
+  x::AbstractVector{<:Point}) where {D,T}
+
+  f = fg.fa
   r, v, c, g = cache
   np = length(x)
   ndof = _ndofs_pgrad(f)
