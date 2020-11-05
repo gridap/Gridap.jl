@@ -64,7 +64,11 @@ function add_contribution!(a::DomainContribution,trian::Triangulation,b::Abstrac
   if haskey(a.dict,trian)
     a.dict[trian] = lazy_map(Broadcasting(op),a.dict[trian],b)
   else
+    if op == +
      a.dict[trian] = b
+    else
+     a.dict[trian] = lazy_map(Broadcasting(op),b)
+    end
   end
   a
 end

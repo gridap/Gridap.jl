@@ -5,26 +5,88 @@ using Gridap.Arrays
 using BlockArrays
 using LinearAlgebra
 
+# Check MultiLevelBlockedUnitRange
+
+r1 = Base.OneTo(2)
+r2 = Base.OneTo(3)
+
+r = MultiLevelBlockedUnitRange([r1,r2])
+@test length(r) == 5
+@test r.local_ranges[1] === r1
+@test r.local_ranges[2] === r2
+
+s1 = Base.OneTo(1)
+s2 = Base.OneTo(2)
+s3 = Base.OneTo(0)
+
+s = MultiLevelBlockedUnitRange([s1,s2,s3])
+@test length(s) == 3
+
+o = MultiLevelBlockedUnitRange([r,s])
+@test length(o) == 8
+@test allblocksequal(o,o)
+
+a = MultiLevelBlockedUnitRange([r,s])
+@test allblocksequal(o,a)
+
+b = MultiLevelBlockedUnitRange([s,s])
+@test !allblocksequal(a,b)
+
+r1_axes = (r1,)
+r2_axes = (r2,)
+s1_axes = (s1,)
+s2_axes = (s2,)
+
+r_axes = (MultiLevelBlockedUnitRange(map(first,[r1_axes,r2_axes])),)
+s_axes = (MultiLevelBlockedUnitRange(map(first,[s1_axes,s2_axes])),)
+o_axes = (MultiLevelBlockedUnitRange(map(first,[r_axes,s_axes])),)
+@test allblocksequal(o_axes,o_axes)
+
+# BlockArrayCoo
+
+# Minimal constructor
+
 blocks = Matrix{Float64}[ [1 2; 3 4], [5 6; 7 8; 9 10] ]
 blockids = [(1,1),(2,1)]
 ax = (blockedrange([2,3]), blockedrange([2,4]))
+a = BlockArrayCoo(ax,blockids,blocks)
+a = BlockArrayCoo(ax,blockids,blocks...)
 
-a = BlockArrayCoo(blocks,blockids,ax)
+# Specific API
+
+@test is_zero_block(rand(4,5),1,1) == false
+@test is_zero_block(a,2,2) == true
+@test is_zero_block(a,2,1) == false
+@test is_nonzero_block(a,2,1) == true
+@test is_zero_block(a,Block(1,2)) == true
+@test is_zero_block(a,Block(1),Block(2)) == true
+
+# AbstractBlockArray interface
+
 @test a[Block(1),Block(1)] === blocks[1]
 @test a[Block(1,1)] === blocks[1]
 @test a[Block(1,2)] === a.zero_blocks[1]
+
+c = copy(a[Block(1,1)])
+fill!(c,0)
+
+getblock!(c,a,1,1)
+@test c == a[Block(1,1)]
+@test a[Block(1,1)] === blocks[1]
+
+c = copy(a)
+@test isa(c,BlockArrayCoo)
+@test c == a
+c[Block(1,1)] = a[Block(1,1)]
+@test c[Block(1,1)] === a[Block(1,1)]
+@test a[Block(1,1)] === blocks[1]
+
 @test a[BlockIndex((1,1),(2,1))] === blocks[1][2,1]
 @test a[BlockIndex(1,2),BlockIndex(1,1)] === blocks[1][2,1]
 @test a[2,1] === blocks[1][2,1]
 @test a[3,2] === blocks[2][1,2]
 @test axes(a) === ax
 @test size(a) == (5,6)
-
-@test is_zero_block(a,2,2) == true
-@test is_zero_block(a,2,1) == false
-@test is_nonzero_block(a,2,1) == true
-@test is_zero_block(a,Block(1,2)) == true
-@test is_zero_block(a,Block(1),Block(2)) == true
 
 for (i,b) in enumerateblocks(a)
   @test a[i] === b
@@ -41,7 +103,7 @@ getblock!(b12,a,Block(1,2))
 blocks = Vector{Float64}[ [1,2,3] ]
 blockids = [(2,)]
 ax = (blockedrange([2,3,4]),)
-a = BlockArrayCoo(blocks,blockids,ax)
+a = BlockArrayCoo(ax,blockids,blocks)
 
 @test a[Block(1)] === a.zero_blocks[1]
 @test a[Block(2)] === blocks[1]
@@ -51,17 +113,46 @@ a = BlockArrayCoo(blocks,blockids,ax)
 blocks = Matrix{Float64}[ [1 2; 3 4], [5 6 7 8; 9 10 11 12; 13 14 15 16], [1 2 3 4; 5 6 7 8], [1 2 3; 4 5 6; 7 8 9] ]
 blockids = [(1,1),(2,2),(1,2),(3,3)]
 ax = (blockedrange([2,3,3]), blockedrange([2,4,3]))
-a = BlockArrayCoo(blocks,blockids,ax)
+a = BlockArrayCoo(ax,blockids,blocks)
 
 blocks = Vector{Float64}[ 10*[1,2], 20*[1,2,3] ]
 blockids = [(1,),(3,)]
 ax = (blockedrange([2,4,3]),)
-b = BlockArrayCoo(blocks,blockids,ax)
+b = BlockArrayCoo(ax,blockids,blocks)
+
+# similar
+
+c = similar(a)
+@test typeof(c) == typeof(a)
+@test axes(a) == axes(c)
+@test a.blockids == c.blockids
+
+c = similar(a,Int)
+@test axes(a) == axes(c)
+@test a.blockids == c.blockids
+
+ax = (blockedrange([2,3,3]), blockedrange([2,4,3]))
+c = similar(a,eltype(a),ax)
+@test typeof(c) == typeof(a)
+@test axes(a) == axes(c)
+@test a.blockids == c.blockids
+
+ax = (blockedrange([2,5,3]), blockedrange([2,4,1]))
+c = similar(a,eltype(a),ax)
+@test typeof(c) == typeof(a)
+@test axes(a) != axes(c)
+@test axes(c) == ax
+@test a.blockids != c.blockids
+@test length(c.blockids) == 9
 
 c = a*b
 @test axes(c,1) === axes(a,1)
 @test blocksize(c) == (3,)
 @test Array(a)*Array(b) == c
+
+display(c)
+
+kk
 
 mul!(c,a,b)
 @test axes(c,1) === axes(a,1)
