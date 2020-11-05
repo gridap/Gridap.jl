@@ -2,6 +2,7 @@ module BlockArraysCooTests
 
 using Test
 using Gridap.Arrays
+using Gridap.Algebra
 using BlockArrays
 using LinearAlgebra
 
@@ -31,6 +32,11 @@ a = MultiLevelBlockedUnitRange([r,s])
 
 b = MultiLevelBlockedUnitRange([s,s])
 @test !allblocksequal(a,b)
+
+@show blocksize(a)
+@show blocksize(r)
+@show blocksize(s)
+
 
 r1_axes = (r1,)
 r2_axes = (r2,)
@@ -145,14 +151,32 @@ c = similar(a,eltype(a),ax)
 @test a.blockids != c.blockids
 @test length(c.blockids) == 9
 
+# 
+
+c = similar(a)
+fill_entries!(c,1)
+z = zero(c)
+@test isa(z,BlockArrayCoo)
+@test length(z.blocks) == 0
+
+
+# + and -
+
+c = z + a
+@test isa(c,BlockArrayCoo)
+@test c == a
+
+c = z - a
+@test isa(c,BlockArrayCoo)
+@test c == -a
+
+# mat vec *
+
 c = a*b
+@test isa(c,BlockArrayCoo)
 @test axes(c,1) === axes(a,1)
 @test blocksize(c) == (3,)
 @test Array(a)*Array(b) == c
-
-display(c)
-
-kk
 
 mul!(c,a,b)
 @test axes(c,1) === axes(a,1)
@@ -165,9 +189,12 @@ mul!(d,a,b,2,3)
 @test blocksize(d) == (3,)
 @test 2*Array(a)*Array(b) + 3*Array(c) == d
 
+# mat mat *
+
 b = transpose(a)
 @test isa(b,BlockArrayCoo)
 c = a*b
+@test isa(c,BlockArrayCoo)
 @test axes(c,1) === axes(a,1)
 @test axes(c,2) === axes(a,1)
 @test blocksize(c) == (3,3)
@@ -178,6 +205,10 @@ mul!(c,a,b)
 @test axes(c,2) === axes(a,1)
 @test blocksize(c) == (3,3)
 @test Array(a)*Array(b) == c
+
+
+kk
+
 
 cc = CachedArray(c)
 

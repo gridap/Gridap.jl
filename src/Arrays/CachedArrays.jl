@@ -132,14 +132,11 @@ function similar(::Type{CachedArray{T,N,A}},s::Tuple{Vararg{Int}}) where {T,N,A}
 end
 
 function setaxes!(a::CachedArray,ax)
-  if ! _same_axes(axes(a.array),ax)
+  if ! allblocksequal(axes(a.array),ax)
     s = map(length,ax)
     if haskey(a.buffer,s)
-      a.array = a.buffer[s]
-      if ! _same_axes(axes(a.array),ax)
-        a.array = similar(a.array,ax)
-        a.buffer[s] = a.array
-      end
+      a.array = similar(a.buffer[s],ax)
+      a.buffer[s] = a.array
     else
       a.array = similar(a.array,ax)
       a.buffer[s] = a.array
