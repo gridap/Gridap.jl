@@ -20,7 +20,7 @@ struct DFace{D} <: GridapType
   dimranges::Vector{UnitRange{Int}}
   dims::Vector{Int}
   nf_nfs::Vector{Vector{Int}}
-  nf_dimranges::Vector{Vector{UnitRange{Int64}}}
+  nf_dimranges::Vector{Vector{UnitRange{Int}}}
   nf_dims::Vector{Vector{Int}}
 end
 
@@ -359,7 +359,7 @@ function _polytopenfaces(anchor, extrusion)
   numnfs = length(nf_nfs)
   nfsdim = [_nfdim(nf_nfs[i].extrusion) for i = 1:numnfs]
   dnf = _nfdim(extrusion)
-  dimnfs = Array{UnitRange{Int64},1}(undef, dnf + 1)
+  dimnfs = Array{UnitRange{Int},1}(undef, dnf + 1)
   dim = 0
   i = 1
   for iface = 1:numnfs

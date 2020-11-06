@@ -4,7 +4,7 @@
 
 Type representing a basis of multivariate scalar-valued, vector-valued, or
 tensor-valued, iso- or aniso-tropic monomials. The fields
-of this `struct` are not public  
+of this `struct` are not public
 This type fully implements the [`Field`](@ref) interface, with up to second order
 derivatives.
 """
@@ -83,7 +83,7 @@ exponents = get_exponents(b)
 println(exponents)
 
 # output
-Tuple{Int64,Int64}[(0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1), (0, 2), (1, 2), (2, 2)]
+Tuple{Int,Int}[(0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1), (0, 2), (1, 2), (2, 2)]
 ```
 """
 function get_exponents(b::MonomialBasis)
@@ -418,4 +418,3 @@ end
 
 _maximum(orders::Tuple{}) = 0
 _maximum(orders) = maximum(orders)
-
