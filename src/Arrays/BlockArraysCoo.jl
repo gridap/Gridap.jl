@@ -122,9 +122,29 @@ struct BlockArrayCoo{T,N,A,X} <: AbstractBlockArray{T,N}
     ptrs::Array{Int,N},
     zero_blocks::Vector{A}) where {T,N,A<:AbstractArray{T,N}}
 
+    @assert length(blockids) == length(blocks)
+    @check length(unique(blockids)) == length(blockids) "We cannot built a BlockArrayCoo from repeated blocks"
+    @check _valid_block_sizes(axes,ptrs,blocks) "The given blocks do not match with the given axes"
+
     X = typeof(axes)
     new{T,N,A,X}(axes,blockids,blocks,ptrs,zero_blocks)
   end
+end
+
+function _valid_block_sizes(_axes,ptrs,blocks)
+  s = map(i->first(blocksize(i)),_axes)
+  cis = CartesianIndices(s)
+  for ci in cis
+    p = ptrs[ci]
+    if p>0
+      I = Tuple(ci)
+      laxs = map( local_range, _axes, I)
+      if !blocks_equal(axes(blocks[p]),laxs)
+        return false
+      end
+    end
+  end
+  true
 end
 
 # Minimal constructor
@@ -345,7 +365,7 @@ function Base.similar(a::BlockArrayCoo,::Type{T}) where T
 end
 
 function Base.similar(a::BlockArrayCoo{S,N,A,X},::Type{T}, _axes::X) where {S,A,T,N,X}
-  _similar_block_array_coo(a,T_axes)
+  _similar_block_array_coo(a,T,_axes)
 end
 
 function Base.similar(
@@ -363,7 +383,15 @@ end
 
 # similar preserving zero block structure
 function _similar_block_array_coo_preserving(a,::Type{T},_axes) where T
-  blocks = map(i->similar(i,T,axes(i)),a.blocks)
+  A = eltype(a.blocks)
+  blocks = A[]
+  for i in 1:length(a.blocks)
+    ai = a.blocks[i]
+    I = a.blockids[i]
+    laxs = map( local_range, _axes, I)
+    block = similar(ai,T,laxs)
+    push!(blocks,block)
+  end
   blockids = copy(a.blockids)
   BlockArrayCoo(_axes,blockids,blocks)
 end

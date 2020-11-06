@@ -160,6 +160,7 @@ c = similar(a,eltype(a),ax)
 @test axes(a) != axes(c)
 @test axes(c) === ax
 @test a.blockids == c.blockids
+fill_entries!(c,2)
 
 # In this case, we cannot preserve the zero block structure
 ax = (blockedrange([2,5,3,5]), blockedrange([2,4,1]))
@@ -259,7 +260,7 @@ setaxes!(cc,axs)
 @test map(blocklasts,axes(cc.array)) == map(blocklasts,axs)
 @test cc.array != c
 @test cc.array.blockids == c.blockids
-fill!(cc.array,0)
+scale_entries!(cc.array,2)
 
 # Not compatible axes and different number of blocks
 # we create a new cache without preserving zero block structure
