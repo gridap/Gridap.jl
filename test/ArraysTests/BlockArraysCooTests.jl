@@ -34,6 +34,10 @@ a = append_ranges([r,s])
 @test blocks_equal(o,a)
 @test num_blocks_equal(o,a)
 
+#using BenchmarkTools
+#@btime blocks_equal($o,$a)
+#@btime num_blocks_equal($o,$a)
+
 b = append_ranges([s,s])
 @test !blocks_equal(a,b)
 @test BlockArrays.blocksize(a) == BlockArrays.blocksize(b) # This only refers to the top level blocks
@@ -49,6 +53,10 @@ s_axes = (append_ranges(map(first,[s1_axes,s2_axes])),)
 o_axes = (append_ranges(map(first,[r_axes,s_axes])),)
 @test blocks_equal(o_axes,o_axes)
 @test num_blocks_equal(o_axes,o_axes)
+
+#using BenchmarkTools
+#@btime blocks_equal($o_axes,$o_axes)
+#@btime num_blocks_equal($o_axes,$o_axes)
 
 # BlockArrayCoo
 
@@ -166,6 +174,10 @@ c = similar(a,eltype(a),ax)
 
 c = similar(a)
 fill_entries!(c,1)
+
+#using BenchmarkTools
+#@btime fill_entries!($c,1)
+
 z = zero(c)
 @test isa(z,BlockArrayCoo)
 @test length(z.blocks) == 0
@@ -201,6 +213,10 @@ mul!(d,a,b,2,3)
 @test blocksize(d) == (3,)
 @test 2*Array(a)*Array(b) + 3*Array(c) == d
 
+#using BenchmarkTools
+#@btime mul!($c,$a,$b)
+#@btime mul!($d,$a,$b,2,3)
+
 # mat mat *
 
 b = transpose(a)
@@ -218,6 +234,9 @@ mul!(c,a,b)
 @test blocksize(c) == (3,3)
 @test Array(a)*Array(b) == c
 
+#using BenchmarkTools
+#@btime mul!($c,$a,$b)
+
 # Cached array
 cc = CachedArray(c)
 
@@ -227,6 +246,9 @@ axs = (blockedrange([2,3,3]), blockedrange([2,3,3]))
 setaxes!(cc,axs)
 @test map(blocklasts,axes(cc.array)) == map(blocklasts,axs)
 @test cc.array === c
+
+#using BenchmarkTools
+#@btime setaxes!($cc,$axs)
 
 # Not compatible axes but same number of blocks
 # we create a new cache, but we can preserve the zero block structure
@@ -402,12 +424,17 @@ mul!(rS,aS,bS)
 @test isa(rS,BlockArrayCoo)
 @test isa(rS[Block(2)],BlockArrayCoo)
 
+#using BenchmarkTools
+#@btime mul!($rS,$aS,$bS)
+
 cS = copy(rS)
 mul!(rS,aS,bS,3,2)
 @test rS == 3*Array(aS)*Array(bS) + 2*cS
 @test isa(rS,BlockArrayCoo)
 @test isa(rS[Block(2)],BlockArrayCoo)
 
+#using BenchmarkTools
+#@btime mul!($rS,$aS,$bS,3,2)
 
 #using BenchmarkTools
 #@btime Arrays._same_axes($axsA,$axsA)

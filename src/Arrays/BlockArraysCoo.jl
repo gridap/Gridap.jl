@@ -235,7 +235,7 @@ function is_zero_block(a::AbstractArray,b::CartesianIndex)
 end
 
 function is_zero_block(a::BlockArrayCoo{T,N},i::Vararg{Integer,N}) where {T,N}
-  @boundscheck BlockArrays.blockcheckbounds(a, i...)
+  #@boundscheck BlockArrays.blockcheckbounds(a, i...)
   p = a.ptrs[i...]
   @check p != 0
   p < 0
@@ -257,7 +257,7 @@ enumerateblocks(a) = zip(eachblockid(a),eachblock(a))
 # AbstractBlockArray
 
 @inline function BlockArrays.getblock(a::BlockArrayCoo{T,N}, block::Vararg{Integer, N}) where {T,N}
-  @boundscheck BlockArrays.blockcheckbounds(a, block...)
+  #@boundscheck BlockArrays.blockcheckbounds(a, block...)
   p = a.ptrs[block...]
   if p>0
     a.blocks[p]
@@ -273,7 +273,7 @@ function BlockArrays.getblock!(c,a::BlockArrayCoo{T,N}, block::Vararg{Integer, N
 end
 
 @inline function BlockArrays.setblock!(a::BlockArrayCoo{T, N}, v, block::Vararg{Integer, N}) where {T,N}
-  @boundscheck BlockArrays.blockcheckbounds(a, block...)
+  #@boundscheck BlockArrays.blockcheckbounds(a, block...)
   p = a.ptrs[block...]
   if p>0
     a.blocks[p] = v
