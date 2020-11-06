@@ -99,6 +99,11 @@ c[Block(1,1)] = a[Block(1,1)]
 c[1,2] = 3
 @test c[1,2] == 3
 
+#using BenchmarkTools
+#@btime getindex($c,1,2)
+#bi = BlockIndex((1,1),(1,2))
+#@btime getindex($c,$bi)
+
 @test a[BlockIndex((1,1),(2,1))] === blocks[1][2,1]
 @test a[BlockIndex(1,2),BlockIndex(1,1)] === blocks[1][2,1]
 @test a[2,1] === blocks[1][2,1]
