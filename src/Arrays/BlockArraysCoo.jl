@@ -32,6 +32,17 @@ Base.getindex(a::MultiLevelBlockedUnitRange,i::Integer) = a.global_range[i]
 Base.getindex(a::MultiLevelBlockedUnitRange,i::Block{1}) = a.global_range[i]
 Base.getindex(a::MultiLevelBlockedUnitRange, i::BlockRange{1}) = a.global_range[i]
 Base.axes(a::MultiLevelBlockedUnitRange) = axes(a.global_range)
+Base.Broadcast.axistype(a::T, b::T) where T<:MultiLevelBlockedUnitRange =  Base.Broadcast.axistype(a.global_range,b.global_range)
+Base.Broadcast.axistype(a::MultiLevelBlockedUnitRange, b::MultiLevelBlockedUnitRange) = Base.Broadcast.axistype(a.global_range,b.global_range)
+Base.Broadcast.axistype(a::MultiLevelBlockedUnitRange, b) = Base.Broadcast.axistype(a.global_range,b)
+Base.Broadcast.axistype(a, b::MultiLevelBlockedUnitRange) =Base.Broadcast.axistype(a,b.global_range)
+#Base.print_matrix_row(
+#  io::IO,
+#  X::MultiLevelBlockedUnitRange,
+#  A::Vector,
+#  i::Integer,
+#  cols::AbstractVector,
+#  sep::AbstractString) = print_matrix_row(io,X.global_range,A,i,cols,sep)
 
 local_range(a::AbstractUnitRange,k::Integer) = Base.OneTo(length(a[Block(k)]))
 local_range(a::MultiLevelBlockedUnitRange,k::Integer) = a.local_ranges[k]
@@ -41,14 +52,14 @@ Check if the full multi-level block structure is the same.
 This is in contrast to BlockArrays.blockisequal that only checks
 the top level block structure.
 """
-@inline allblocksequal(a::AbstractUnitRange,b::AbstractUnitRange) = BlockArrays.blockisequal(a,b)
-allblocksequal(a::AbstractUnitRange,b::MultiLevelBlockedUnitRange) = false
-allblocksequal(a::MultiLevelBlockedUnitRange,b::AbstractUnitRange) = false
-function allblocksequal(a::MultiLevelBlockedUnitRange,b::MultiLevelBlockedUnitRange)
+@inline blocks_equal(a::AbstractUnitRange,b::AbstractUnitRange) = BlockArrays.blockisequal(a,b)
+blocks_equal(a::AbstractUnitRange,b::MultiLevelBlockedUnitRange) = false
+blocks_equal(a::MultiLevelBlockedUnitRange,b::AbstractUnitRange) = false
+function blocks_equal(a::MultiLevelBlockedUnitRange,b::MultiLevelBlockedUnitRange)
   if a === b
     return true
   end
-  r = allblocksequal(a.global_range,b.global_range)
+  r = blocks_equal(a.global_range,b.global_range)
   if r == false
     return false
   end
@@ -60,22 +71,40 @@ function allblocksequal(a::MultiLevelBlockedUnitRange,b::MultiLevelBlockedUnitRa
     for i in 1:la
       @inbounds ra = a.local_ranges[i]
       @inbounds rb = b.local_ranges[i]
-      r = r && allblocksequal(ra,rb)
+      r = r && blocks_equal(ra,rb)
     end
     return r
   end
 end
 
-allblocksequal(a::Tuple,b::Tuple) = all(map(allblocksequal,a,b))
 
+"""
+Check if the number ob blocks in all levels is the same.
+"""
+@inline function num_blocks_equal(a::AbstractUnitRange,b::AbstractUnitRange)
+  sa = BlockArrays.blocksize(a)
+  sb = BlockArrays.blocksize(b)
+  sa == sb
+end
+num_blocks_equal(a::AbstractUnitRange,b::MultiLevelBlockedUnitRange) = false
+num_blocks_equal(a::MultiLevelBlockedUnitRange,b::AbstractUnitRange) = false
+function num_blocks_equal(a::MultiLevelBlockedUnitRange,b::MultiLevelBlockedUnitRange)
+  if a === b
+    return true
+  end
+  if length(a.local_ranges) != length(b.local_ranges)
+    return false
+  end
+  for i in 1:length(a.local_ranges)
+    if ! num_blocks_equal(a.local_ranges[i],b.local_ranges[i])
+      return false
+    end
+  end
+  true
+end
 
-
-#@inline allblocksizesequal(a::AbstractUnitRange,b::AbstractUnitRange) = BlockArrays.blocksize(a,b)
-#allblocksizesequal(a::AbstractUnitRange,b::MultiLevelBlockedUnitRange) = false
-#allblocksizesequal(a::MultiLevelBlockedUnitRange,b::AbstractUnitRange) = false
-#function allblocksizesequal(a::MultiLevelBlockedUnitRange,b::MultiLevelBlockedUnitRange)
-
-
+blocks_equal(a::Tuple,b::Tuple) = all(map(blocks_equal,a,b))
+num_blocks_equal(a::Tuple,b::Tuple) = all(map(num_blocks_equal,a,b))
 
 """
 Block array in which some of the blocks are known to be zero
@@ -325,7 +354,7 @@ function Base.similar(
 end
 
 function _similar_block_array_coo(a,::Type{T},_axes) where T
-  if allblocksequal(axes(a),_axes)
+  if num_blocks_equal(axes(a),_axes)
     _similar_block_array_coo_preserving(a,T,_axes)
   else
     _similar_block_array_coo_non_preserving(a,T,_axes)
@@ -339,7 +368,7 @@ function _similar_block_array_coo_preserving(a,::Type{T},_axes) where T
   BlockArrayCoo(_axes,blockids,blocks)
 end
 
-# similar without zero block structure
+# similar without zero block structure (all blocks are assumed to be non-zero)
 function _similar_block_array_coo_non_preserving(a::BlockArrayCoo{S,N,A},::Type{T},_axes) where {S,N,A,T}
   s = map(i->first(blocksize(i)),_axes)
   cis = CartesianIndices(s)
@@ -347,15 +376,15 @@ function _similar_block_array_coo_non_preserving(a::BlockArrayCoo{S,N,A},::Type{
   blockids = NTuple{N,Int}[]
   for ci in cis
     I = Tuple(ci)
-    ablock = a[Block(I...)]
     laxs = map( local_range, _axes, I)
-    block = similar(ablock,T,laxs)
+    block = similar(similar(A,laxs),T,laxs)
     push!(blocks,block)
     push!(blockids,I)
   end
   BlockArrayCoo(_axes,blockids,blocks)
 end
 
+# In this case we can not preserve the zero block structure neither (all blocks are assumed to be non-zero).
 function Base.similar(::Type{<:BlockArrayCoo{S,N,A,X}},_axes::X) where {S,N,A,X}
   s = map(i->first(blocksize(i)),_axes)
   cis = CartesianIndices(s)
@@ -402,7 +431,7 @@ Base.zero(a::BlockArrayCoo) = _zero_block(typeof(a),axes(a))
 for op in (:+,:-)
   @eval begin
     function Base.$op(a::BlockArrayCoo{Ta,N},b::BlockArrayCoo{Tb,N}) where {Ta,Tb,N}
-      @check allblocksequal(axes(a),axes(b))
+      @check blocks_equal(axes(a),axes(b))
       I1 = first(eachblockid(a))
       A = typeof($op(a[I1],b[I1]))
       blocks = A[]

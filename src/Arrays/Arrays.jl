@@ -78,7 +78,8 @@ export TwoLevelBlockedUnitRange
 export BlockArrayCooMap
 export append_ranges
 export MultiLevelBlockedUnitRange
-export allblocksequal
+export blocks_equal
+export num_blocks_equal
 
 export array_cache
 export getindex!
