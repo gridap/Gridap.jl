@@ -96,6 +96,8 @@ c = copy(a)
 c[Block(1,1)] = a[Block(1,1)]
 @test c[Block(1,1)] === a[Block(1,1)]
 @test a[Block(1,1)] === blocks[1]
+c[1,2] = 3
+@test c[1,2] == 3
 
 @test a[BlockIndex((1,1),(2,1))] === blocks[1][2,1]
 @test a[BlockIndex(1,2),BlockIndex(1,1)] === blocks[1][2,1]

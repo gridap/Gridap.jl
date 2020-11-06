@@ -316,7 +316,7 @@ function Base.getindex(a::BlockArrayCoo{T,N},i::Vararg{Integer,N}) where {T,N}
 end
 
 function Base.setindex!(a::BlockArrayCoo{T,N},v,i::Vararg{Integer,N}) where {T,N}
-  s = map(findblockindex,a.axes,(i,))
+  s = map(findblockindex,a.axes,i)
   I = Block(map(i->i.I[1],s)...)
   α = CartesianIndex(map(BlockArrays.blockindex,s))
   a[I][α] = v
@@ -383,7 +383,8 @@ end
 
 # similar preserving zero block structure
 function _similar_block_array_coo_preserving(a,::Type{T},_axes) where T
-  A = eltype(a.blocks)
+  ai = first(eachblock(a))
+  A = typeof(similar(ai,T))
   blocks = A[]
   for i in 1:length(a.blocks)
     ai = a.blocks[i]

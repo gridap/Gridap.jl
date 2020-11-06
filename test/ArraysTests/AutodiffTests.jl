@@ -45,7 +45,7 @@ l = 24 # Do not use a number <13 (too easy for ForwardDiff)
 
 blocksids = [(1,),(2,)]
 axs = (blockedrange([4,4]),)
-cell_u = [ BlockArrayCoo([rand(4),rand(4)],blocksids,axs) for i in 1:L ]
+cell_u = [ BlockArrayCoo(axs,blocksids,[rand(4),rand(4)]) for i in 1:L ]
 
 cell_e = user_cell_energy(cell_u)
 cell_r = user_cell_residual(cell_u)
