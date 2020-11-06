@@ -1,18 +1,20 @@
 module Fields
 
-using Gridap.Arrays: print_op_tree
-using Gridap.Arrays: Map
-using Gridap.Arrays: evaluate
-using Gridap.Arrays: Operation
-using Gridap.Arrays: Broadcasting
-using Gridap.Arrays: test_mapping
-using Gridap.Arrays: LazyArray
-using Gridap.Arrays: CachedArray
-using Gridap.Arrays: setsize!
-using Gridap.Arrays: get_array
-using Gridap.Arrays: testitem
-using Gridap.Arrays: TreeNode
-using Gridap.Arrays: similar_tree_node
+#using Gridap.Arrays: print_op_tree
+#using Gridap.Arrays: Map
+#using Gridap.Arrays: evaluate
+#using Gridap.Arrays: Operation
+#using Gridap.Arrays: Broadcasting
+#using Gridap.Arrays: test_mapping
+#using Gridap.Arrays: LazyArray
+#using Gridap.Arrays: CachedArray
+#using Gridap.Arrays: setsize!
+#using Gridap.Arrays: get_array
+#using Gridap.Arrays: testitem
+#using Gridap.Arrays: TreeNode
+#using Gridap.Arrays: similar_tree_node
+
+using Gridap.Arrays
 import Gridap.Arrays: testvalue
 import Gridap.Arrays: inverse_map
 import Gridap.Arrays: get_children
@@ -21,6 +23,7 @@ using Gridap.Helpers: @abstractmethod, @notimplemented
 using Gridap.Helpers: @notimplementedif, @unreachable, @check
 
 using Gridap.Algebra: mul!
+using Gridap.Algebra: fill_entries!
 
 using Gridap.TensorValues
 
@@ -29,6 +32,7 @@ using LinearAlgebra: mul!, Transpose
 using ForwardDiff
 using FillArrays
 using Test
+using BlockArrays
 
 import LinearAlgebra: det, inv, transpose
 import LinearAlgebra: ⋅
@@ -44,6 +48,7 @@ import Gridap.Arrays: return_value
 import Gridap.Arrays: evaluate!
 import Gridap.Arrays: lazy_map
 import Gridap.Arrays: array_cache
+import Gridap.Arrays: is_zero_block
 # import Gridap.Arrays: uses_hash
 
 export evaluate
@@ -110,6 +115,8 @@ include("AffineMaps.jl")
 include("ApplyOptimizations.jl")
 
 include("AutoDiff.jl")
+
+include("BlockFieldArrays.jl")
 
 #include("AlgebraMaps.jl")
 
