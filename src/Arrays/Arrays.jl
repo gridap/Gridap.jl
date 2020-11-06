@@ -27,6 +27,7 @@ import Base: similar
 import Base: IndexStyle
 
 import Gridap.Algebra: scale_entries!
+import Gridap.Algebra: fill_entries!
 
 # CachedArray
 
@@ -68,12 +69,17 @@ export BlockMatrixCoo
 export is_zero_block
 export is_nonzero_block
 export enumerateblocks
-export eachblockindex
+export eachblockid
 export VectorOfBlockArrayCoo
 export VectorOfBlockVectorCoo
 export VectorOfBlockMatrixCoo
 export zeros_like
 export TwoLevelBlockedUnitRange
+export BlockArrayCooMap
+export append_ranges
+export MultiLevelBlockedUnitRange
+export blocks_equal
+export num_blocks_equal
 
 export array_cache
 export getindex!
@@ -173,7 +179,7 @@ include("ArrayPairs.jl")
 
 include("AppendedArrays.jl")
 
-include("VectorsOfBlockArrayCoo.jl")
+#include("VectorsOfBlockArrayCoo.jl")
 
 include("Autodiff.jl")
 
