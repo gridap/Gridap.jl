@@ -4,7 +4,7 @@
 
 Abstract type representing a polytope (i.e., a polyhedron in arbitrary dimensions).
 `D` is the environment dimension (typically, 0, 1, 2, or 3).
-This type parameter is needed since there are functions in the 
+This type parameter is needed since there are functions in the
 `Polytope` interface that return containers with `Point{D}` objects.
 We adopt the [usual nomenclature](https://en.wikipedia.org/wiki/Polytope) for polytope-related objects.
 All objects in a polytope (from vertices to the polytope itself) are called *n-faces* or simply *faces*.
@@ -53,7 +53,7 @@ to the first 0-face. Consecutive increasing ids are assigned to the other
 0-faces, then to 1-faces, and so on. The polytope itself receives the largest id
 which coincides with `num_faces(p)`. For a face id `iface`, `get_faces(p)[iface]`
 is a vector of face ids, corresponding to the faces that are *incident* with the face
-labeled with `iface`. That is, faces that are either on its boundary or the face itself. 
+labeled with `iface`. That is, faces that are either on its boundary or the face itself.
 In this vector of incident face ids, faces are ordered by dimension, starting with 0-faces.
 Within each dimension, the labels are ordered in a consistent way with the polyope object
 for the face `iface` itself.
@@ -67,14 +67,14 @@ faces = get_faces(SEGMENT)
 println(faces)
 
 # output
-Array{Int64,1}[[1], [2], [1, 2, 3]]
+Array{Int,1}[[1], [2], [1, 2, 3]]
 ```
 
 The constant [`SEGMENT`](@ref) is bound to a predefined instance of polytope
 that represents a segment.
-The face labels associated with a segment are `[1,2,3]`, being `1` and `2` for the vertices and 
+The face labels associated with a segment are `[1,2,3]`, being `1` and `2` for the vertices and
 `3` for the segment itself. In this case, this function returns the vector of vectors
-`[[1],[2],[1,2,3]]` meaning that vertex `1` is incident with vertex `1` (idem for vertex 2), and that 
+`[[1],[2],[1,2,3]]` meaning that vertex `1` is incident with vertex `1` (idem for vertex 2), and that
 the segment (id `3`) is incident with the vertices `1` and `2` and the segment itself.
 
 """
@@ -97,7 +97,7 @@ ranges = get_dimranges(SEGMENT)
 println(ranges)
 
 # output
-UnitRange{Int64}[1:2, 3:3]
+UnitRange{Int}[1:2, 3:3]
 ```
 Face ids for the vertices in the segment range from 1 to 2 (2 vertices),
 the face ids for edges in the segment range from 3 to 3 (only one edge with id 3).
@@ -142,7 +142,7 @@ end
 """
     (==)(a::Polytope{D},b::Polytope{D}) where D
 
-Returns `true` if the polytopes `a` and `b` are equivalent. Otherwise, it 
+Returns `true` if the polytopes `a` and `b` are equivalent. Otherwise, it
 returns `false`.
 Note that the operator `==` returns `false` by default for polytopes
 of different dimensions. Thus, this function has to be overloaded only
@@ -207,7 +207,7 @@ perms = get_vertex_permutations(SEGMENT)
 println(perms)
 
 # output
-Array{Int64,1}[[1, 2], [2, 1]]
+Array{Int,1}[[1, 2], [2, 1]]
 
 ```
 The first admissible permutation for a segment is `[1,2]`,i.e., the identity.
@@ -252,7 +252,7 @@ num_point_dims(::Type{<:Polytope{D}}) where D = D
     num_dims(::Type{<:Polytope{D}}) where D
     num_dims(p::Polytope{D}) where D
 
-Returns `D`. 
+Returns `D`.
 """
 num_dims(p::Polytope) = num_dims(typeof(p))
 
@@ -351,7 +351,7 @@ println(dims)
 
 ```
 
-The first two faces in the segment (the two vertices) have dimension 0 and the 
+The first two faces in the segment (the two vertices) have dimension 0 and the
 third face (the segment itself) has dimension 1
 
 """
@@ -444,8 +444,8 @@ vertex_to_edges_around = get_faces(QUAD,0,1)
 println(vertex_to_edges_around)
 
 # output
-Array{Int64,1}[[1, 2], [3, 4], [1, 3], [2, 4]]
-Array{Int64,1}[[1, 3], [1, 4], [2, 3], [2, 4]]
+Array{Int,1}[[1, 2], [3, 4], [1, 3], [2, 4]]
+Array{Int,1}[[1, 3], [1, 4], [2, 3], [2, 4]]
 ```
 """
 function get_faces(p::Polytope,dimfrom::Integer,dimto::Integer)
@@ -557,7 +557,7 @@ end
     get_face_type(p::Polytope,d::Integer) -> Vector{Int}
 
 Return a vector of integers denoting, for each face of dimension `d`, an index to the
-vector `get_reffaces(Polytope{d},p)` 
+vector `get_reffaces(Polytope{d},p)`
 
 # Examples
 
@@ -741,5 +741,3 @@ function Quadrature(p::Polytope{D},degree) where D
   end
   quad
 end
-
-

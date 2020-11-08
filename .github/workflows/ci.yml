@@ -1,0 +1,44 @@
+name: CI
+on:
+  - push
+  - pull_request
+jobs:
+  test:
+    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        version:
+          - '1.5'
+        os:
+          - ubuntu-latest
+        arch:
+          - x64
+    steps:
+      - uses: actions/checkout@v2
+      - uses: julia-actions/setup-julia@v1
+        with:
+          version: ${{ matrix.version }}
+          arch: ${{ matrix.arch }}
+      - uses: julia-actions/julia-buildpkg@latest
+      - uses: julia-actions/julia-runtest@latest
+#      - uses: julia-actions/julia-uploadcodecov@latest
+#        env:
+#          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+#  docs:
+#    name: Documentation
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v2
+#      - uses: julia-actions/setup-julia@v1
+#        with:
+#          version: '1.5'
+#      - run: |
+#          julia --project=docs -e '
+#            using Pkg
+#            Pkg.develop(PackageSpec(path=pwd()))
+#            Pkg.instantiate()'
+#      - run: julia --project=docs docs/make.jl
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
