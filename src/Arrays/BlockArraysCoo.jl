@@ -196,6 +196,12 @@ function _zero_block(::Type{A},axs::Tuple) where A <: AbstractArray
   a
 end
 
+function _zero_block(::Type{<:Transpose{T,A}},axs::Tuple) where {T,A}
+  a = similar(A,(axs[2],))
+  fill!(a,zero(eltype(a)))
+  Transpose(a)
+end
+
 function _zero_block(::Type{<:BlockArrayCoo{T,N,A}},axs::Tuple) where {T,N,A}
   blocks = A[]
   blockids = NTuple{N,Int}[]
@@ -204,30 +210,35 @@ end
 
 # Minimal constructor (for lazy_map)
 
-function BlockArrayCoo(
-  axes::NTuple{N},
-  blockids::Vector{NTuple{N,Int}},
-  blocks::A...) where {T,N,A<:AbstractArray{T,N}}
+struct BlockArrayCooMap <: Map end
 
-  BlockArrayCoo(axes,blockids,collect(blocks))
-end
+#function BlockArrayCoo(
+#  axes::NTuple{N},
+#  blockids::Vector{NTuple{N,Int}},
+#  blocks::A...) where {T,N,A<:AbstractArray{T,N}}
+#
+#  BlockArrayCoo(axes,blockids,collect(blocks))
+#end
 
 function return_cache(
-  ::Type{<:BlockArrayCoo},
+  ::BlockArrayCooMap,
   axes::NTuple{N},
   blockids::Vector{NTuple{N,Int}},
   blocks::A...) where {T,N,A<:AbstractArray{T,N}}
 
-  r = BlockArrayCoo(axes,blockids,blocks...)
+  r = BlockArrayCoo(axes,blockids,collect(blocks))
   CachedArray(r)
 end
 
 @inline function evaluate!(
   cache,
-  ::Type{<:BlockArrayCoo},
+  ::BlockArrayCooMap,
   axes::NTuple{N},
   blockids::Vector{NTuple{N,Int}},
   blocks::A...) where {T,N,A<:AbstractArray{T,N}}
+
+  # Assumes that the blocksids have not changed for performance
+  # This is true in all our use cases.
                            
   setaxes!(cache,axes)
   r = cache.array

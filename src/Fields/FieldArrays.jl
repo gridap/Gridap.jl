@@ -368,6 +368,9 @@ struct TransposeFieldIndices{A,T} <: AbstractArray{T,3}
   end
 end
 
+function TransposeFieldIndices{A,T}(::UndefInitializer,shape::NTuple{3,Integer}) where {A,T}
+  TransposeFieldIndices(similar(A,(shape[1],shape[3])))
+end
 @inline Base.size(a::TransposeFieldIndices) = (size(a.matrix,1),1,size(a.matrix,2))
 @inline Base.axes(a::TransposeFieldIndices) = (axes(a.matrix,1),Base.OneTo(1),axes(a.matrix,2))
 @inline Base.IndexStyle(::Type{<:TransposeFieldIndices{A}}) where A = IndexStyle(A)
@@ -413,7 +416,7 @@ struct BroadcastOpFieldArray{O,T,N,A} <: AbstractArray{T,N}
   op::O
   args::A
   function BroadcastOpFieldArray(op,args::Union{Field,AbstractArray{<:Field}}...)
-    fs = map(first,args)
+    fs = map(testitem,args)
     T = return_type(Operation(op),fs...)
     s = map(size,args)
     bs = Base.Broadcast.broadcast_shape(s...)
@@ -435,7 +438,7 @@ for T in (:(Point),:(AbstractArray{<:Point}))
     function return_cache(f::BroadcastOpFieldArray,x::$T)
       cfs = map(fi -> return_cache(fi,x),f.args)
       rs = map(fi -> return_value(fi,x),f.args)
-      bm = Broadcasting(f.op)
+      bm = BroadcastingFieldOpMap(f.op)
       r = return_cache(bm,rs...)
       r, cfs
     end
@@ -443,12 +446,23 @@ for T in (:(Point),:(AbstractArray{<:Point}))
     function evaluate!(c,f::BroadcastOpFieldArray,x::$T)
       r, cfs = c
       rs = map((ci,fi) -> evaluate!(ci,fi,x),cfs,f.args)
-      bm = Broadcasting(f.op)
+      bm = BroadcastingFieldOpMap(f.op)
       evaluate!(r,bm,rs...)
     end
 
   end
 end
+
+# With this type we mark that we are doing Broadcasting(op) on the result of evaluating Fields/FieldArrays
+# This allow us to do some optimizations for block arrays that are only true in this context, not in a
+# general Broadcasting operation.
+struct BroadcastingFieldOpMap{F} <: Map
+  op::F
+end
+
+return_value(a::BroadcastingFieldOpMap,args...) = return_value(Broadcasting(a.op),args...)
+return_cache(a::BroadcastingFieldOpMap,args...) = return_cache(Broadcasting(a.op),args...)
+@inline evaluate!(cache,a::BroadcastingFieldOpMap,args...) = evaluate!(cache,Broadcasting(a.op),args...)
 
 # Gradient of the sum
 for op in (:+,:-)

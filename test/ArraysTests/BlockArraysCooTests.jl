@@ -66,7 +66,7 @@ blocks = Matrix{Float64}[ [1 2; 3 4], [5 6; 7 8; 9 10] ]
 blockids = [(1,1),(2,1)]
 ax = (blockedrange([2,3]), blockedrange([2,4]))
 a = BlockArrayCoo(ax,blockids,blocks)
-a = BlockArrayCoo(ax,blockids,blocks...)
+a = BlockArrayCooMap()(ax,blockids,blocks...)
 
 # Specific API
 

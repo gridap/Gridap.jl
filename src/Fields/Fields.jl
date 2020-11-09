@@ -19,6 +19,7 @@ import Gridap.Arrays: testvalue
 import Gridap.Arrays: inverse_map
 import Gridap.Arrays: get_children
 import Gridap.Arrays: is_zero_block
+import Gridap.Arrays: testitem
 
 using Gridap.Helpers: @abstractmethod, @notimplemented
 using Gridap.Helpers: @notimplementedif, @unreachable, @check
@@ -92,6 +93,7 @@ export TransposeFieldIndices
 #export CompositionFieldArrayField
 export FieldGradientArray
 #export FieldHessianArray
+export BroadcastingFieldOpMap
 
 export linear_combination
 export TransposeMap
@@ -102,6 +104,7 @@ export integrate
 export IntegrationMap
 
 export BlockFieldArrayCoo
+export BlockFieldArrayCooMap
 
 ##export MatMul
 #export LinCombVal

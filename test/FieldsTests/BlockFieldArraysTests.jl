@@ -4,6 +4,8 @@ module BlockFieldArrays
 using Gridap.Fields
 using Gridap.Arrays
 using Gridap.TensorValues
+using BlockArrays
+using FillArrays
 #using Gridap.Fields: MaskedField, MaskedFieldArray
 
 using Test
@@ -23,11 +25,106 @@ b1 = BlockFieldArrayCoo(axs,[(1,)],f1)
 b2 = BlockFieldArrayCoo(axs,[(2,)],f2)
 
 b1p = evaluate(b1,p)
-display(b1p)
+r = BlockArrayCoo(axs,[(1,)],[v1,])
+test_array(b1p,r)
 
-using BenchmarkTools
-cache = return_cache(b1,p)
-@btime evaluate!($cache,$b1,$p)
+b2p = evaluate(b2,p)
+r = BlockArrayCoo(axs,[(2,)],[v2,])
+test_array(b2p,r)
+
+b1x = evaluate(b1,x)
+test_array(b1x,collect(b1x))
+
+b2x = evaluate(b2,x)
+test_array(b2x,collect(b2x))
+
+#using BenchmarkTools
+##blockids = [(2,)]
+##@btime BlockFieldArrayCoo($axs,$blockids,$f2)
+##cache = return_cache(b1,p)
+##@btime evaluate!($cache,$b1,$p)
+#cache = return_cache(b1,x)
+#@btime evaluate!($cache,$b1,$x)
+
+∇b2 = Broadcasting(∇)(b2)
+∇b2x = evaluate(∇b2,x)
+@test ∇b2x.blockids == b2x.blockids
+
+b2t = transpose(b2)
+@test b2t.blockids[1][2] == b2.blockids[1][1]
+@test size(b2t) == (1,length(b2))
+
+b2tp = evaluate(b2t,p)
+test_array(b2tp,collect(b2tp))
+
+b2tx = evaluate(b2t,x)
+test_array(b2tx,collect(b2tx))
+
+∇b2t = Broadcasting(∇)(b2t)
+∇b2tx = evaluate(∇b2t,x)
+@test ∇b2tx.blockids == b2tx.blockids
+
+# Block of Blocks
+
+axS = (append_ranges([axs[1],axs[1]]),)
+b1P = BlockFieldArrayCoo(axS,[(1,)],b1)
+b1M = BlockFieldArrayCoo(axS,[(2,)],b1)
+b2P = BlockFieldArrayCoo(axS,[(1,)],b2)
+b2M = BlockFieldArrayCoo(axS,[(2,)],b2)
+
+b2Pp = evaluate(b2P,p)
+@test is_zero_block(b2Pp,2)
+@test is_nonzero_block(b2Pp,1)
+@test is_zero_block(b2Pp[Block(1)],1)
+@test is_nonzero_block(b2Pp[Block(1)],2)
+test_array(b2Pp[Block(1)],b2p)
+
+b2Px = evaluate(b2P,x)
+@test is_zero_block(b2Px,1,2)
+@test is_nonzero_block(b2Px,1,1)
+@test is_zero_block(b2Px[Block(1,1)],1,1)
+@test is_nonzero_block(b2Px[Block(1,1)],1,2)
+test_array(b2Px[Block(1,1)],b2x)
+
+∇b2P = Broadcasting(∇)(b2P)
+∇b2Px = evaluate(∇b2P,x)
+@test ∇b2Px.blockids == b2Px.blockids
+
+b2Pt = transpose(b2P)
+b2Ptp = evaluate(b2Pt,p)
+
+# Global optimizations
+
+ncells = 10
+cell_p = Fill(p,ncells)
+cell_x = Fill(x,ncells)
+
+cell_f1 = Fill(f1,ncells)
+cell_f2 = fill(f2,ncells)
+
+cell_axs = Fill(axs,ncells)
+
+cell_b1 = lazy_map(BlockFieldArrayCooMap(),cell_axs,Fill([(1,)],ncells),cell_f1)
+cell_b2 = lazy_map(BlockFieldArrayCooMap(),cell_axs,Fill([(2,)],ncells),cell_f2)
+
+cell_b1p = lazy_map(evaluate,cell_b1,cell_p)
+cell_b2p = lazy_map(evaluate,cell_b2,cell_p)
+
+print_op_tree(cell_b2p)
+
+display(cell_b1p[1])
+display(cell_b2p[1])
+
+
+#b1 = BlockFieldArrayCoo(axs,[(1,)],f1)
+#b2 = BlockFieldArrayCoo(axs,[(2,)],f2)
+
+
+
+#c = Broadcasting(Operation(*))(b2,b2t)
+#@show typeof(c)
+#display(evaluate(c,p))
+#kk
 
 
 

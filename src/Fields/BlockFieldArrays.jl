@@ -12,94 +12,47 @@ function similar_range(r::MultiLevelBlockedUnitRange,n::Integer)
   append_ranges([r])
 end
 
+# Restricted for a single non zero block
 struct BlockFieldArrayCoo{T,N,A,X} <: AbstractBlockArray{T,N}
   axes::X
   blockids::Vector{NTuple{N,Int}}
-  blocks::Vector{A}
-  ptrs::Array{Int,N}
+  block::A
   function BlockFieldArrayCoo(
-    axes::NTuple{N},
+    _axes::NTuple{N},
     blockids::Vector{NTuple{N,Int}},
-    blocks::Vector{A},
-    ptrs::Array{Int,N}) where {T,N,A<:AbstractArray{T,N}}
+    block::A) where {T,N,A<:AbstractArray{T,N}}
 
-    @assert length(blockids) == length(blocks)
-    @check length(unique(blockids)) == length(blockids) "We cannot built a BlockFieldArrayCoo from repeated blocks"
-    @check Arrays._valid_block_sizes(axes,ptrs,blocks) "The given blocks do not match with the given axes"
+    @assert length(blockids) == 1
+    #I = first(blockids)
+    #@check blocks_equal(axes(block),map(local_range,_axes,I)) "The given block and axes are incompatible."
 
-    X = typeof(axes)
-    new{T,N,A,X}(axes,blockids,blocks,ptrs)
+    X = typeof(_axes)
+    new{T,N,A,X}(_axes,blockids,block)
   end
 end
 
-# Minimal constructor
+struct BlockFieldArrayCooMap <: Map end
 
-function BlockFieldArrayCoo(
-  axes::NTuple{N},
-  blockids::Vector{NTuple{N,Int}},
-  blocks::Vector{A}) where {T,N,A<:AbstractArray{T,N}}
-
-  ptrs = Arrays._compute_ptrs(blockids,axes)
-  BlockFieldArrayCoo(axes,blockids,blocks,ptrs)
+function evaluate!(cache,k::BlockFieldArrayCooMap,axes,blockids,block)
+  BlockFieldArrayCoo(axes,blockids,block)
 end
 
-# Minimal constructor (for lazy_map)
-
-function BlockFieldArrayCoo(
-  axes::NTuple{N},
-  blockids::Vector{NTuple{N,Int}},
-  blocks::A...) where {T,N,A<:AbstractArray{T,N}}
-
-  BlockFieldArrayCoo(axes,blockids,collect(blocks))
-end
-
-function return_cache(
-  ::Type{<:BlockFieldArrayCoo},
-  axes::NTuple{N},
-  blockids::Vector{NTuple{N,Int}},
-  blocks::A...) where {T,N,A<:AbstractArray{T,N}}
-
-  r = BlockFieldArrayCoo(axes,blockids,blocks...)
-  CachedArray(r)
-end
-
-@inline function evaluate!(
-  cache,
-  ::Type{<:BlockFieldArrayCoo},
-  axes::NTuple{N},
-  blockids::Vector{NTuple{N,Int}},
-  blocks::A...) where {T,N,A<:AbstractArray{T,N}}
-                           
-  setaxes!(cache,axes)
-  r = cache.array
-  copyto!(r.blocks,blocks)
-  r
-end
+testitem(a::BlockFieldArrayCoo) = testitem(a.block)
 
 # Specific API
 
 function is_zero_block(a::BlockFieldArrayCoo{T,N},i::Vararg{Integer,N}) where {T,N}
-  p = a.ptrs[i...]
-  @check p != 0
-  p < 0
+  i != first(a.blockids)
 end
 
 # AbstractBlockArray
 
-@inline function BlockArrays.getblock(a::BlockFieldArrayCoo{T,N}, block::Vararg{Integer, N}) where {T,N}
-  #@boundscheck BlockArrays.blockcheckbounds(a, block...)
-  p = a.ptrs[block...]
-  if p>0
-    a.blocks[p]
+@inline function BlockArrays.getblock(a::BlockFieldArrayCoo{T,N}, i::Vararg{Integer, N}) where {T,N}
+  if i == first(a.blockids)
+    a.block
   else
     @notimplemented "Cannot get a zero block from a BlockFieldArrayCoo"
   end
-end
-
-function BlockArrays.getblock!(c,a::BlockFieldArrayCoo{T,N}, block::Vararg{Integer, N}) where {T,N}
-  b = a[Block(block...)]
-  copy!(c,b)
-  c
 end
 
 # AbstractArray
@@ -117,20 +70,79 @@ end
 # Evaluation
 
 function return_cache(a::BlockFieldArrayCoo,x::Point)
-  fc = map(i->return_cache(i,x),a.blocks)
-  fx = map(i->return_value(i,x),a.blocks)
-  cr = return_cache(BlockArrayCoo,a.axes,a.blockids,fx...)
-  (fc,fx,cr)
+  fc = return_cache(a.block,x)
+  fx = return_value(a.block,x)
+  cr = return_cache(BlockArrayCooMap(),a.axes,a.blockids,fx)
+  (fc,cr)
 end
 
 @inline function evaluate!(cache,a::BlockFieldArrayCoo,x::Point)
-  fc,fx, cr = cache
-  #for i in 1:length(a.blocks)
-  #  fx[i] = evaluate!(cr[i],a.blocks[i],x)
-  #end
-  #evaluate!(cr,BlockArrayCoo,a.axes,a.blockids,fx...)
-  cr.array
+  fc,cr = cache
+  fx = evaluate!(fc,a.block,x)
+  evaluate!(cr,BlockArrayCooMap(),a.axes,a.blockids,fx)
 end
+
+function return_cache(a::BlockFieldArrayCoo,x::AbstractVector{<:Point})
+  fc = return_cache(a.block,x)
+  fx = return_value(a.block,x)
+  pr = similar_range(first(a.axes),length(x))
+  axs = (pr,a.axes...)
+  blockids = map(i->(1,i...),a.blockids)
+  cr = return_cache(BlockArrayCooMap(),axs,blockids,fx)
+  (fc,axs,blockids,cr)
+end
+
+@inline function evaluate!(cache,a::BlockFieldArrayCoo,x::AbstractVector{<:Point})
+  fc,axs,blockids,cr = cache
+  fx = evaluate!(fc,a.block,x)
+  evaluate!(cr,BlockArrayCooMap(),axs,blockids,fx)
+end
+
+# Gradient
+
+function evaluate!(cache,k::Broadcasting{typeof(∇)},a::BlockFieldArrayCoo)
+  g = k(a.block)
+  BlockFieldArrayCoo(a.axes,a.blockids,g)
+end
+
+function evaluate!(cache,k::Broadcasting{typeof(∇∇)},a::BlockFieldArrayCoo)
+  g = k(a.block)
+  BlockFieldArrayCoo(a.axes,a.blockids,g)
+end
+
+# Transpose
+
+function Base.transpose(a::BlockFieldArrayCoo{T,1} where T)
+  r = similar_range(first(axes(a)),1)
+  axs = (r,axes(a)...)
+  blockids = map(i->(1,i...),a.blockids)
+  BlockFieldArrayCoo(axs,blockids,transpose(a.block))
+end
+
+# Global optimizations
+
+function lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{}})
+end
+
+
+
+
+
+
+# Operations
+
+#function return_cache(k::Broadcasting,a::BlockArrayCoo)
+#  r = BlockArrayCoo(a.axes,a.blockids,map(k,a.blocks))
+#  CachedArray(r)
+#end
+#
+#function evaluate!(cache,k::Broadcasting,a::BlockArrayCoo)
+#  setaxes!(cache,a.axes)
+#  r = cache.array
+#end
+
+
+
 
 ## The following masted types are needed to achieve type-stability
 ## in order to use BlockVectorCoo with arrays of fields
