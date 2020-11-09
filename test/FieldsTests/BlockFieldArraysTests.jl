@@ -137,9 +137,9 @@ cell_g2 = lazy_map(Broadcasting(Operation(-)),cell_b2)
 cell_g2x = lazy_map(evaluate,cell_g2,cell_x)
 @test cell_g2x.g.value == BlockArrayCooMap()
 
-print_op_tree(cell_g2)
-print_op_tree(cell_g2x)
-display(cell_g2x[1])
+#print_op_tree(cell_g2)
+#print_op_tree(cell_g2x)
+#display(cell_g2x[1])
 
 
 
