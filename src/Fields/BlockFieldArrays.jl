@@ -121,24 +121,112 @@ end
 
 # Global optimizations
 
-function lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{}})
+# Evaluation
+
+function lazy_map(
+  ::typeof(evaluate),
+  a::LazyArray{<:Fill{<:BlockFieldArrayCooMap}},
+  x::AbstractArray{<:Point})
+
+  cell_axs, cell_bids, cell_ai = a.f
+  cell_aix = lazy_map(evaluate,cell_ai,x)
+  lazy_map(BlockArrayCooMap(),cell_axs, cell_bids,cell_aix)
 end
 
+function lazy_map(
+  ::typeof(evaluate),
+  a::LazyArray{<:Fill{<:BlockFieldArrayCooMap}},
+  cell_x::AbstractArray{<:AbstractVector{<:Point}})
 
+  cell_axs, cell_bids, cell_ai = a.f
+  cell_aix = lazy_map(evaluate,cell_ai,cell_x)
 
+  cell_axs_new = lazy_map(cell_axs,cell_x) do axs, x
+    pr = similar_range(first(axs),length(x))
+    axs = (pr,axs...)
+  end
 
+  cell_bids_new = lazy_map(cell_bids) do bids
+    map(i->(1,i...),bids)
+  end
 
+  lazy_map(BlockArrayCooMap(),cell_axs_new, cell_bids_new, cell_aix)
+end
+
+# Gradient
+
+function lazy_map(
+  k::Broadcasting{typeof(∇)}, a::LazyArray{<:Fill{<:BlockFieldArrayCooMap}})
+
+  cell_axs, cell_bids, cell_ai = a.f
+
+  cell_gi = lazy_map(k,cell_ai)
+  lazy_map(BlockFieldArrayCooMap(),cell_axs, cell_bids, cell_gi)
+end
+
+function lazy_map(
+  k::Broadcasting{typeof(∇∇)}, a::LazyArray{<:Fill{<:BlockFieldArrayCooMap}})
+
+  cell_axs, cell_bids, cell_ai = a.f
+  cell_gi = lazy_map(k,cell_ai)
+  lazy_map(BlockFieldArrayCooMap(),cell_axs, cell_bids, cell_gi)
+end
+
+# Composition
+
+function lazy_map(
+  k::Broadcasting{typeof(∘)}, a::LazyArray{<:Fill{<:BlockFieldArrayCooMap}},b::AbstractArray{<:Field})
+
+  cell_axs, cell_bids, cell_ai = a.f
+  cell_gi = lazy_map(k,cell_ai,b)
+  lazy_map(BlockFieldArrayCooMap(),cell_axs, cell_bids, cell_gi)
+end
+
+# Transpose
+
+function lazy_map(
+  k::typeof(transpose), a::LazyArray{<:Fill{<:BlockFieldArrayCooMap}})
+
+  cell_axs, cell_bids, cell_ai = a.f
+
+  cell_ait = lazy_map(transpose,cell_ai)
+
+  cell_axs_new = lazy_map(cell_axs) do axs
+    @check length(axs) == 1
+    r = similar_range(first(axs),1)
+    (r,axs...)
+  end
+
+  cell_bids_new = lazy_map(cell_bids) do bids
+    map(i->(1,i...),bids)
+  end
+
+  lazy_map(BlockFieldArrayCooMap(),cell_axs_new, cell_bids_new, cell_ait)
+end
 
 # Operations
 
-#function return_cache(k::Broadcasting,a::BlockArrayCoo)
-#  r = BlockArrayCoo(a.axes,a.blockids,map(k,a.blocks))
-#  CachedArray(r)
-#end
+function _get_coo_data(f)
+  f[1], f[2], f[3:end]
+end
+
+# Unary operations
+# Assumption: op is linear wrt a
+function lazy_map(
+  k::BroadcastingFieldOpMap, a::LazyArray{<:Fill{<:BlockArrayCooMap}})
+
+  cell_axs, cell_bids, cell_blocks = _get_coo_data(a.f)
+  cell_blocks_new = map(b->lazy_map(k,b),cell_blocks)
+  lazy_map(BlockArrayCooMap(),cell_axs,cell_bids,cell_blocks_new...)
+end
+
+## Binary test/field or trial/field
+## Assumption: op is linear wrt a
+#function lazy_map(k::BroadcastingFieldOpMap,a::LazyArray{<:Fill{<:BlockArrayCooMap}},f::AbstractArray)
 #
-#function evaluate!(cache,k::Broadcasting,a::BlockArrayCoo)
-#  setaxes!(cache,a.axes)
-#  r = cache.array
+#  cell_axs, cell_bids, cell_blocks = _get_coo_data(a.f)
+#  cell_blocks_new = map(b->lazy_map(k,b,f),cell_blocks)
+#  lazy_map(BlockArrayCooMap(),cell_axs,cell_bids,cell_blocks_new...)
 #end
 
 

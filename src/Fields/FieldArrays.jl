@@ -102,6 +102,10 @@ struct FieldGradientArray{Ng,A,T,N} <: AbstractArray{T,N}
   end
 end
 
+function return_value(k::Broadcasting{typeof(∇)},a::AbstractArray{<:Field})
+  evaluate(k,a)
+end
+
 @inline function evaluate!(cache,k::Broadcasting{typeof(∇)},a::AbstractArray{<:Field})
   FieldGradientArray{1}(a)
 end

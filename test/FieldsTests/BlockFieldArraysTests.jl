@@ -109,11 +109,39 @@ cell_b2 = lazy_map(BlockFieldArrayCooMap(),cell_axs,Fill([(2,)],ncells),cell_f2)
 
 cell_b1p = lazy_map(evaluate,cell_b1,cell_p)
 cell_b2p = lazy_map(evaluate,cell_b2,cell_p)
+@test cell_b2p.g.value  == BlockArrayCooMap()
 
-print_op_tree(cell_b2p)
+cell_b1x = lazy_map(evaluate,cell_b1,cell_x)
+cell_b2x = lazy_map(evaluate,cell_b2,cell_x)
+@test cell_b2x.g.value  == BlockArrayCooMap()
 
-display(cell_b1p[1])
-display(cell_b2p[1])
+cell_∇b2 = lazy_map(Broadcasting(∇),cell_b2)
+@test cell_∇b2.g.value  == BlockFieldArrayCooMap()
+
+phi(x) = 2*x
+cell_phi = Fill(GenericField(phi),ncells)
+cell_b2ophi = lazy_map(Broadcasting(∘),cell_b2,cell_phi)
+@test cell_b2ophi.g.value  == BlockFieldArrayCooMap()
+
+face_cell = [3,2,1,2]
+face_b2 = lazy_map(Reindex(cell_b2),face_cell)
+@test face_b2.g.value  == BlockFieldArrayCooMap()
+
+cell_b2t = lazy_map(transpose,cell_b2)
+@test cell_b2t.g.value  == BlockFieldArrayCooMap()
+
+cell_b2tx = lazy_map(evaluate,cell_b2t,cell_x)
+test_array(cell_b2tx,Fill(b2tx,ncells))
+
+cell_g2 = lazy_map(Broadcasting(Operation(-)),cell_b2)
+cell_g2x = lazy_map(evaluate,cell_g2,cell_x)
+@test cell_g2x.g.value == BlockArrayCooMap()
+
+print_op_tree(cell_g2)
+print_op_tree(cell_g2x)
+display(cell_g2x[1])
+
+
 
 
 #b1 = BlockFieldArrayCoo(axs,[(1,)],f1)

@@ -306,7 +306,7 @@ struct OperationCellField{DS} <: CellField
       try
          ax = map(i->i(x),args)
          axi = map(first,ax)
-         r = Broadcasting(op.op)(axi...)
+         r = BroadcastingFieldOpMap(op.op)(axi...)
       catch
         @unreachable """\n
         It is not possible to perform operation $(op.op) on the given cell fields.
@@ -329,7 +329,7 @@ DomainStyle(::Type{OperationCellField{DS}}) where DS = DS()
 
 function evaluate!(cache,f::OperationCellField,x::CellPoint)
   ax = map(i->i(x),f.args)
-  lazy_map(Broadcasting(f.op.op),ax...)
+  lazy_map(BroadcastingFieldOpMap(f.op.op),ax...)
 end
 
 function change_domain(f::OperationCellField,target_trian::Triangulation,target_domain::DomainStyle)
