@@ -18,6 +18,7 @@ using Gridap.Arrays
 import Gridap.Arrays: testvalue
 import Gridap.Arrays: inverse_map
 import Gridap.Arrays: get_children
+import Gridap.Arrays: is_zero_block
 
 using Gridap.Helpers: @abstractmethod, @notimplemented
 using Gridap.Helpers: @notimplementedif, @unreachable, @check
@@ -99,6 +100,8 @@ export LinearCombinationField
 export LinearCombinationFieldVector
 export integrate
 export IntegrationMap
+
+export BlockFieldArrayCoo
 
 ##export MatMul
 #export LinCombVal
