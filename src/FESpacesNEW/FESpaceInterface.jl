@@ -123,7 +123,59 @@ function get_cell_shapefuns_trial(f::FESpace)
   v = get_cell_shapefuns(f)
   cell_v = get_cell_data(v)
   cell_u = lazy_map(transpose,cell_v)
-  GenericCellField(cell_u,get_triangulation(v),DomainStyle(v))
+  FEBasis(cell_u,get_triangulation(v),TrialBasis(),DomainStyle(v))
+end
+
+# Skeleton-related
+
+abstract type BasisStyle end
+struct TrialBasis <: BasisStyle end
+struct TestBasis <: BasisStyle end
+
+struct FEBasis{BS<:BasisStyle,DS<:DomainStyle} <: CellField
+  cell_basis::AbstractArray{<:AbstractArray{<:Field}}
+  trian::Triangulation
+  basis_style::BS
+  domain_style::DS
+end
+
+get_cell_data(f::FEBasis) = f.cell_basis
+get_triangulation(f::FEBasis) = f.trian
+BasisStyle(::Type{FEBasis{BS,DS}}) where {BS,DS} = BS()
+DomainStyle(::Type{FEBasis{BS,DS}}) where {BS,DS} = DS()
+
+function change_domain_skeleton(a::FEBasis,trian::SkeletonTriangulation,target_domain::DomainStyle)
+  a_on_plus_trian = change_domain(a,trian.plus,target_domain)
+  a_on_minus_trian = change_domain(a,trian.minus,target_domain)
+  pair_in = SkeletonPair(get_cell_data(a_on_plus_trian),get_cell_data(a_on_minus_trian))
+  pair_out = _fix_cell_basis_dofs_at_skeleton(pair_in,BasisStyle(a))
+  plus = GenericCellField(pair_out.plus,trian,target_domain)
+  minus = GenericCellField(pair_out.minus,trian,target_domain)
+  plus, minus
+end
+
+function _fix_cell_basis_dofs_at_skeleton(pair,::TestBasis)
+  cell_axes_plus = lazy_map(axes,pair.plus)
+  cell_axes_minus = lazy_map(axes,pair.minus)
+  cell_axes = lazy_map(cell_axes_plus,cell_axes_minus) do axp, axm
+    (append_ranges([axp[1],axm[1]]),)
+  end
+  plus = lazy_map(BlockFieldArrayCooMap((2,),[(1,)]),cell_axes,pair.plus)
+  minus = lazy_map(BlockFieldArrayCooMap((2,),[(2,)]),cell_axes,pair.minus)
+  SkeletonPair(plus,minus)
+end
+
+function _fix_cell_basis_dofs_at_skeleton(pair_in,::TrialBasis)
+  cell_axes_plus = lazy_map(axes,pair.plus)
+  cell_axes_minus = lazy_map(axes,pair.minus)
+  cell_axes = lazy_map(cell_axes_plus,cell_axes_minus) do axp, axm
+    r2 = append_ranges([axp[2],axm[2]])
+    r1 = similar_range(r2,1)
+    (r1,r2)
+  end
+  plus = lazy_map(BlockFieldArrayCooMap((1,2),[(1,1)]),cell_axes,pair.plus)
+  minus = lazy_map(BlockFieldArrayCooMap((1,2),[(1,2)]),cell_axes,pair.minus)
+  SkeletonPair(plus,minus)
 end
 
 # Constraint-related

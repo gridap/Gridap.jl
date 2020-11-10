@@ -185,10 +185,6 @@ get_cell_data(f::GenericCellField) = f.cell_field
 get_triangulation(f::GenericCellField) = f.trian
 DomainStyle(::Type{GenericCellField{DS}}) where DS = DS()
 
-
-
-
-
 # Evaluation of CellFields
 
 (a::CellField)(x) = evaluate(a,x)
@@ -512,15 +508,14 @@ end
 function change_domain(a::CellFieldAt,trian::SkeletonTriangulation,target_domain::DomainStyle)
   trian_a = get_triangulation(a)
   if have_compatible_domains(trian_a,get_background_triangulation(trian))
+    plus, minus = change_domain_skeleton(a.parent,trian,target_domain)
     if isa(a,CellFieldAt{:plus})
-      target_trian = trian.plus
+      return plus
     elseif isa(a,CellFieldAt{:minus})
-      target_trian = trian.minus
+      return minus
     else
       @unreachable
     end
-    a_on_target_trian = change_domain(a.parent,target_trian,target_domain)
-    return GenericCellField(get_cell_data(a_on_target_trian),trian,target_domain)
   else
     @unreachable """\n
     It is not allowd to writte `u.⁺` of `u.⁻` for the given CellField.
@@ -528,6 +523,14 @@ function change_domain(a::CellFieldAt,trian::SkeletonTriangulation,target_domain
     or it is a normal vector extracted from a SkeletonTriangulation.
     """
   end
+end
+
+function change_domain_skeleton(a::CellField,trian::SkeletonTriangulation,target_domain::DomainStyle)
+  a_on_plus_trian = change_domain(a,trian.plus,target_domain)
+  a_on_minus_trian = change_domain(a,trian.minus,target_domain)
+  plus = GenericCellField(get_cell_data(a_on_plus_trian),trian,target_domain)
+  minus = GenericCellField(get_cell_data(a_on_minus_trian),trian,target_domain)
+  plus, minus
 end
 
 function change_domain(f::OperationCellField,target_trian::SkeletonTriangulation,target_domain::DomainStyle)
