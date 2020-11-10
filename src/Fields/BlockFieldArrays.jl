@@ -379,63 +379,120 @@ function _get_cell_block(
   end
 end
 
-## Binary test/trial
-## Assumption: op is a product of a and b
-#
-#function _prod_test_vs_trial(k,a,b)
-#
-#  cell_axs_a, = a.f
-#  cell_axs_b, = b.f
-#
-#  ma = a.g.value
-#  mb = b.g.value
-#
-#
-#  blocks = []
-#  blockids = eltype(ma.blockids)[]
-#  for I in eachblockid(ma)
-#    if is_nonzero_block(ma,I) || is_nonzero_block(mb,I)
-#      aI = _get_cell_block(ma,a,I)
-#      bI = _get_cell_block(mb,b,I)
-#      block = lazy_map(k,aI,bI)
-#      push!(blocks,block)
-#      push!(blockids,I.n)
-#    end
-#  end
-#
-#  @assert length(blocks) > 0
-#  m = BlockArrayCooMap(blocksize(ma),blockids)
-#  lazy_map(m,cell_axs,blocks...)
-#end
-#
+# Binary test/trial
+# Assumption: op is a product of a and b
+
 #function lazy_map(
 #  k::BroadcastingFieldOpMap,
 #  a::LazyArray{<:Fill{BlockArrayCooMap{1}}},
 #  b::LazyArray{<:Fill{BlockArrayCooMap{2}}})
 #
 #end
-#
-#function lazy_map(
-#  k::BroadcastingFieldOpMap,
-#  a::LazyArray{<:Fill{BlockArrayCooMap{2}}},
-#  b::LazyArray{<:Fill{BlockArrayCooMap{3}}})
-#
-#end
-#
+
+function lazy_map(
+  k::BroadcastingFieldOpMap,
+  a::LazyArray{<:Fill{BlockArrayCooMap{2}}},
+  b::LazyArray{<:Fill{BlockArrayCooMap{3}}})
+
+  cell_axs_a, = a.f
+  cell_axs_b, = b.f
+  cell_axs = lazy_map((a1,a2) -> (a1[1],a1[2],a2[3]),cell_axs_a,cell_axs_b)
+  ma = a.g.value
+  mb = b.g.value
+
+  blocks = []
+  blockids = NTuple{3,Int}[]
+  nfield1 = size(ma.ptrs,2)
+  nfield2 = size(mb.ptrs,3)
+  for f1 in 1:nfield1
+    I1 = Block(1,f1)
+    for f2 in 1:nfield2
+      I2 = Block(1,1,f2)
+      if is_nonzero_block(ma,I1) && is_nonzero_block(mb,I2)
+        aI1 = _get_cell_block(ma,a,I1)
+        bI2 = _get_cell_block(mb,b,I2)
+        block = lazy_map(k,aI1,bI2)
+        push!(blocks,block)
+        push!(blockids,(1,f1,f2))
+      end
+    end
+  end
+
+  @assert length(blocks) > 0
+  bs = (ma.blocksize[1],ma.blocksize[2],mb.blocksize[3])
+  m = BlockArrayCooMap(bs,blockids)
+  lazy_map(m,cell_axs,blocks...)
+end
+
 #function lazy_map(
 #  k::BroadcastingFieldOpMap,
 #  a::LazyArray{<:Fill{BlockArrayCooMap{2}}},
 #  b::LazyArray{<:Fill{BlockArrayCooMap{1}}})
 #
 #end
-#
-#function lazy_map(
-#  k::BroadcastingFieldOpMap,
-#  a::LazyArray{<:Fill{BlockArrayCooMap{3}}},
-#  b::LazyArray{<:Fill{BlockArrayCooMap{2}}})
-#
-#end
 
+function lazy_map(
+  k::BroadcastingFieldOpMap,
+  a::LazyArray{<:Fill{BlockArrayCooMap{3}}},
+  b::LazyArray{<:Fill{BlockArrayCooMap{2}}})
+
+  cell_axs_a, = a.f
+  cell_axs_b, = b.f
+  cell_axs = lazy_map((a1,a2) -> (a2[1],a2[2],a1[3]),cell_axs_a,cell_axs_b)
+  ma = a.g.value
+  mb = b.g.value
+
+  blocks = []
+  blockids = NTuple{3,Int}[]
+  nfield1 = size(mb.ptrs,2)
+  nfield2 = size(ma.ptrs,3)
+  for f1 in 1:nfield1
+    I1 = Block(1,f1)
+    for f2 in 1:nfield2
+      I2 = Block(1,1,f2)
+      if is_nonzero_block(mb,I1) && is_nonzero_block(ma,I2)
+        bI1 = _get_cell_block(mb,b,I1)
+        aI2 = _get_cell_block(ma,a,I2)
+        block = lazy_map(k,bI1,aI2)
+        push!(blocks,block)
+        push!(blockids,(1,f1,f2))
+      end
+    end
+  end
+
+  @assert length(blocks) > 0
+  bs = (mb.blocksize[1],mb.blocksize[2],ma.blocksize[3])
+  m = BlockArrayCooMap(bs,blockids)
+  lazy_map(m,cell_axs,blocks...)
+end
+
+# Integration of elem vectors
+function lazy_map(k::IntegrationMap,a::LazyArray{<:Fill{BlockArrayCooMap{2}}},w::AbstractArray,j::AbstractArray)
+  ma = a.g.value
+  cell_axs, cell_blocks = _get_axes_and_blocks(a.f)
+  cell_axs_new = lazy_map(a->(a[2],),cell_axs)
+  blocks = map(block->lazy_map(k,block,w,j),cell_blocks)
+  blockids = [ (ids[2],) for ids in ma.blockids ]
+  m = BlockArrayCooMap(ma.blocksize[2:end],blockids)
+  lazy_map(m,cell_axs_new,blocks...)
+end
+
+## Integration of elem matrices
+function lazy_map(k::IntegrationMap,a::LazyArray{<:Fill{BlockArrayCooMap{3}}},w::AbstractArray,j::AbstractArray)
+  ma = a.g.value
+  cell_axs, cell_blocks = _get_axes_and_blocks(a.f)
+  cell_axs_new = lazy_map(a->(a[2],a[3]),cell_axs)
+  blocks = map(block->lazy_map(k,block,w,j),cell_blocks)
+  blockids = [ (ids[2],ids[3]) for ids in ma.blockids ]
+  m = BlockArrayCooMap(ma.blocksize[2:end],blockids)
+  lazy_map(m,cell_axs_new,blocks...)
+end
+#function lazy_map(k::IntMap,f::VectorOfBlockArrayCoo{T,3} where T,w::AbstractArray,j::AbstractArray)
+#  ax = lazy_map(a->(a[2],a[3]),f.axes)
+#  blocks = map(block->lazy_map(k,block,w,j),f.blocks)
+#  blockids = [ (ids[2], ids[3]) for ids in f.blockids ]
+#  VectorOfBlockArrayCoo(blocks,blockids,ax)
+#end
 
 
 

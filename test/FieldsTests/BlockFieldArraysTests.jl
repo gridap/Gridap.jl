@@ -153,12 +153,26 @@ cell_g = lazy_map(Broadcasting(Operation(-)),cell_g1,cell_g2)
 cell_gx = lazy_map(evaluate,cell_g,cell_x)
 @test isa(cell_gx.g.value,BlockArrayCooMap)
 
+cell_g = lazy_map(Broadcasting(Operation(*)),cell_g1,cell_b2t)
+cell_gx = lazy_map(evaluate,cell_g,cell_x)
+@test isa(cell_gx.g.value,BlockArrayCooMap)
 
-print_op_tree(cell_gx)
-display(cell_gx[1])
+cell_g = lazy_map(Broadcasting(Operation(*)),cell_b2t,cell_g1)
+cell_gx = lazy_map(evaluate,cell_g,cell_x)
+@test isa(cell_gx.g.value,BlockArrayCooMap)
 
-kk
+ϕ = GenericField(x->2*x)
+cell_ϕ = fill(ϕ,ncells)
+cell_J = lazy_map(∇,cell_ϕ)
+w = rand(np)
+cell_w = Fill(w,ncells)
 
+cell_i = lazy_map(integrate,cell_b2,cell_x,cell_w,cell_J)
+@test isa(cell_i.g.value,BlockArrayCooMap)
+
+cell_g = lazy_map(Broadcasting(Operation(*)),cell_g1,cell_b2t)
+cell_i = lazy_map(integrate,cell_g,cell_x,cell_w,cell_J)
+@test isa(cell_i.g.value,BlockArrayCooMap)
 
 #b1 = BlockFieldArrayCoo(axs,[(1,)],f1)
 #b2 = BlockFieldArrayCoo(axs,[(2,)],f2)
