@@ -94,7 +94,6 @@ b2Pt = transpose(b2P)
 b2Ptp = evaluate(b2Pt,p)
 
 # Global optimizations
-
 ncells = 10
 cell_p = Fill(p,ncells)
 cell_x = Fill(x,ncells)
@@ -104,38 +103,38 @@ cell_f2 = fill(f2,ncells)
 
 cell_axs = Fill(axs,ncells)
 
-cell_b1 = lazy_map(BlockFieldArrayCooMap(),cell_axs,Fill([(1,)],ncells),cell_f1)
-cell_b2 = lazy_map(BlockFieldArrayCooMap(),cell_axs,Fill([(2,)],ncells),cell_f2)
+cell_b1 = lazy_map(BlockFieldArrayCooMap((2,),[(1,)]),cell_axs,cell_f1)
+cell_b2 = lazy_map(BlockFieldArrayCooMap((2,),[(2,)]),cell_axs,cell_f2)
 
 cell_b1p = lazy_map(evaluate,cell_b1,cell_p)
 cell_b2p = lazy_map(evaluate,cell_b2,cell_p)
-@test cell_b2p.g.value  == BlockArrayCooMap()
+@test isa(cell_b2p.g.value,BlockArrayCooMap)
 
 cell_b1x = lazy_map(evaluate,cell_b1,cell_x)
 cell_b2x = lazy_map(evaluate,cell_b2,cell_x)
-@test cell_b2x.g.value  == BlockArrayCooMap()
+@test isa(cell_b2x.g.value,BlockArrayCooMap)
 
 cell_∇b2 = lazy_map(Broadcasting(∇),cell_b2)
-@test cell_∇b2.g.value  == BlockFieldArrayCooMap()
+@test isa(cell_∇b2.g.value,BlockFieldArrayCooMap)
 
 phi(x) = 2*x
 cell_phi = Fill(GenericField(phi),ncells)
 cell_b2ophi = lazy_map(Broadcasting(∘),cell_b2,cell_phi)
-@test cell_b2ophi.g.value  == BlockFieldArrayCooMap()
+@test isa(cell_b2ophi.g.value,BlockFieldArrayCooMap)
 
 face_cell = [3,2,1,2]
 face_b2 = lazy_map(Reindex(cell_b2),face_cell)
-@test face_b2.g.value  == BlockFieldArrayCooMap()
+@test isa(face_b2.g.value,BlockFieldArrayCooMap)
 
 cell_b2t = lazy_map(transpose,cell_b2)
-@test cell_b2t.g.value  == BlockFieldArrayCooMap()
+@test isa(cell_b2t.g.value,BlockFieldArrayCooMap)
 
 cell_b2tx = lazy_map(evaluate,cell_b2t,cell_x)
 test_array(cell_b2tx,Fill(b2tx,ncells))
 
-cell_g2 = lazy_map(Broadcasting(Operation(-)),cell_b2)
-cell_g2x = lazy_map(evaluate,cell_g2,cell_x)
-@test cell_g2x.g.value == BlockArrayCooMap()
+#cell_g2 = lazy_map(Broadcasting(Operation(-)),cell_b2)
+#cell_g2x = lazy_map(evaluate,cell_g2,cell_x)
+#@test cell_g2x.g.value == BlockArrayCooMap()
 
 #print_op_tree(cell_g2)
 #print_op_tree(cell_g2x)
