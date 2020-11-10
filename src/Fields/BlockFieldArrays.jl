@@ -34,22 +34,28 @@ end
 struct BlockFieldArrayCooMap{N} <: Map
   blocksize::NTuple{N,Int}
   blockids::Vector{NTuple{N,Int}}
-  mask::Array{Bool,N}
+  ptrs::Array{Int,N}
   function BlockFieldArrayCooMap(blocksize::NTuple{N,Int}, blockids::Vector{NTuple{N,Int}}) where N
-    mask = fill(false,blocksize)
-    for I in blockids
+    ptrs = fill(-1,blocksize)
+    for (p,I) in enumerate(blockids)
+      ptrs[I...] = p
       for i in 1:N
         @check blocksize[i] >= I[i]
-        mask[I...] = true
       end
     end
-    new{N}(blocksize,blockids,mask)
+    new{N}(blocksize,blockids,ptrs)
   end
 end
 
+@inline function lazy_map(k::BlockFieldArrayCooMap,T::Type,f::AbstractArray...)
+  s = Arrays._common_size(f...)
+  N = length(s)
+  LazyArray(T,Val(N),Fill(k,s),f...)
+end
+
 BlockArrays.blocksize(a::BlockFieldArrayCooMap) = a.blocksize
-is_zero_block(a::BlockFieldArrayCooMap,i::Integer) = ! a.mask[i]
-is_zero_block(a::BlockFieldArrayCooMap{N},i::Vararg{Integer,N}) where N = ! a.mask[i...]
+is_zero_block(a::BlockFieldArrayCooMap,i::Integer) = a.ptrs[i] < 0
+is_zero_block(a::BlockFieldArrayCooMap{N},i::Vararg{Integer,N}) where N = a.ptrs[i...] < 0
 is_zero_block(a::BlockFieldArrayCooMap{N},i::Vararg{Block,N}) where N = is_zero_block(a,map(Int,i)...)
 is_zero_block(a::BlockFieldArrayCooMap,i::Block) = is_zero_block(a,convert(Tuple,i)...)
 is_zero_block(a::BlockFieldArrayCooMap,i::CartesianIndex) = is_zero_block(a,Tuple(i)...)
@@ -236,37 +242,203 @@ end
 
 # Operations
 
-#function _get_coo_data(f)
-#  f[1], f[2], f[3:end]
+function _get_axes_and_blocks(f)
+  f[1], f[2:end]
+end
+#
+# Unary operations
+# Assumption: op is a scaling of a
+function lazy_map(
+  k::BroadcastingFieldOpMap, a::LazyArray{<:Fill{<:BlockArrayCooMap}})
+  m = a.g.value
+  cell_axs, cell_blocks = _get_axes_and_blocks(a.f)
+  cell_blocks_new = map(b->lazy_map(k,b),cell_blocks)
+  lazy_map(m,cell_axs,cell_blocks_new...)
+end
+
+# Binary test/field or trial/field
+
+# Assumption: op is a scaling of a
+function _op_basis_vs_field(k,a,f)
+  @check ndims(eltype(a)) > ndims(eltype(f))
+  m = a.g.value
+  cell_axs, cell_blocks = _get_axes_and_blocks(a.f)
+  cell_blocks_new = map(b->lazy_map(k,b,f),cell_blocks)
+  lazy_map(m,cell_axs,cell_blocks_new...)
+end
+
+function lazy_map(
+  k::BroadcastingFieldOpMap,
+  a::LazyArray{<:Fill{BlockArrayCooMap{1}}},
+  f::AbstractArray{<:Number})
+  _op_basis_vs_field(k,a,f)
+end
+
+function lazy_map(
+  k::BroadcastingFieldOpMap,
+  a::LazyArray{<:Fill{BlockArrayCooMap{2}}},
+  f::AbstractArray{<:Number})
+  _op_basis_vs_field(k,a,f)
+end
+
+function lazy_map(
+  k::BroadcastingFieldOpMap,
+  a::LazyArray{<:Fill{BlockArrayCooMap{2}}},
+  f::AbstractArray{<:AbstractVector})
+  _op_basis_vs_field(k,a,f)
+end
+
+function lazy_map(
+  k::BroadcastingFieldOpMap,
+  a::LazyArray{<:Fill{BlockArrayCooMap{3}}},
+  f::AbstractArray{<:AbstractVector})
+  _op_basis_vs_field(k,a,f)
+end
+
+# Assumption: op is a scaling of a
+function _op_field_vs_basis(k,f,a)
+  @check ndims(eltype(a)) > ndims(eltype(f))
+  m = a.g.value
+  cell_axs, cell_blocks = _get_axes_and_blocks(a.f)
+  cell_blocks_new = map(b->lazy_map(k,f,b),cell_blocks)
+  lazy_map(m,cell_axs,cell_blocks_new...)
+end
+
+function lazy_map(
+  k::BroadcastingFieldOpMap,
+  f::AbstractArray{<:Number},
+  a::LazyArray{<:Fill{BlockArrayCooMap{1}}})
+  _op_field_vs_basis(k,f,a)
+end
+
+function lazy_map(
+  k::BroadcastingFieldOpMap,
+  f::AbstractArray{<:Number},
+  a::LazyArray{<:Fill{BlockArrayCooMap{2}}})
+  _op_field_vs_basis(k,f,a)
+end
+
+function lazy_map(
+  k::BroadcastingFieldOpMap,
+  f::AbstractArray{<:AbstractVector},
+  a::LazyArray{<:Fill{BlockArrayCooMap{2}}})
+  _op_field_vs_basis(k,f,a)
+end
+
+function lazy_map(
+  k::BroadcastingFieldOpMap,
+  f::AbstractArray{<:AbstractVector},
+  a::LazyArray{<:Fill{BlockArrayCooMap{3}}})
+  _op_field_vs_basis(k,f,a)
+end
+
+# Binary test/test or trial/trial
+# Assumption: op is a linear combination of a and b
+function lazy_map(
+  k::BroadcastingFieldOpMap,
+  a::LazyArray{<:Fill{BlockArrayCooMap{N}}},
+  b::LazyArray{<:Fill{BlockArrayCooMap{N}}}) where N
+
+  ma = a.g.value
+  mb = b.g.value
+  @assert blocksize(ma) == blocksize(mb)
+
+  cell_axs, = a.f
+
+  blocks = []
+  blockids = eltype(ma.blockids)[]
+  for I in eachblockid(ma)
+    if is_nonzero_block(ma,I) || is_nonzero_block(mb,I)
+      aI = _get_cell_block(ma,a,I)
+      bI = _get_cell_block(mb,b,I)
+      block = lazy_map(k,aI,bI)
+      push!(blocks,block)
+      push!(blockids,I.n)
+    end
+  end
+
+  @assert length(blocks) > 0
+  m = BlockArrayCooMap(blocksize(ma),blockids)
+  lazy_map(m,cell_axs,blocks...)
+end
+
+function _get_cell_block(
+  m::BlockArrayCooMap,
+  a::AbstractArray{<:BlockArrayCoo{T,N,A}},
+  b::Block) where {T,N,A}
+  cell_axs, cell_blocks = _get_axes_and_blocks(a.f)
+  I = convert(Tuple,b)
+  p = m.ptrs[I...]
+  if p>0
+    return cell_blocks[p]
+  else
+    return lazy_map(cell_axs) do axs
+      laxs = map( local_range, axs, I)
+      Arrays._zero_block(A,laxs)
+    end
+  end
+end
+
+## Binary test/trial
+## Assumption: op is a product of a and b
+#
+#function _prod_test_vs_trial(k,a,b)
+#
+#  cell_axs_a, = a.f
+#  cell_axs_b, = b.f
+#
+#  ma = a.g.value
+#  mb = b.g.value
+#
+#
+#  blocks = []
+#  blockids = eltype(ma.blockids)[]
+#  for I in eachblockid(ma)
+#    if is_nonzero_block(ma,I) || is_nonzero_block(mb,I)
+#      aI = _get_cell_block(ma,a,I)
+#      bI = _get_cell_block(mb,b,I)
+#      block = lazy_map(k,aI,bI)
+#      push!(blocks,block)
+#      push!(blockids,I.n)
+#    end
+#  end
+#
+#  @assert length(blocks) > 0
+#  m = BlockArrayCooMap(blocksize(ma),blockids)
+#  lazy_map(m,cell_axs,blocks...)
 #end
 #
-## Unary operations
-## Assumption: op is linear wrt a
 #function lazy_map(
-#  k::BroadcastingFieldOpMap, a::LazyArray{<:Fill{<:BlockArrayCooMap}})
+#  k::BroadcastingFieldOpMap,
+#  a::LazyArray{<:Fill{BlockArrayCooMap{1}}},
+#  b::LazyArray{<:Fill{BlockArrayCooMap{2}}})
 #
-#  cell_axs, cell_bids, cell_blocks = _get_coo_data(a.f)
-#  cell_blocks_new = map(b->lazy_map(k,b),cell_blocks)
-#  lazy_map(BlockArrayCooMap(),cell_axs,cell_bids,cell_blocks_new...)
 #end
 #
-## Binary test/field or trial/field
-## Assumption: op is linear wrt a
-#function lazy_map(k::BroadcastingFieldOpMap,a::LazyArray{<:Fill{<:BlockArrayCooMap}},f::AbstractArray)
-#  @check ndims(eltype(a)) > ndims(eltype(f))
-#  cell_axs, cell_bids, cell_blocks = _get_coo_data(a.f)
-#  cell_blocks_new = map(b->lazy_map(k,b,f),cell_blocks)
-#  lazy_map(BlockArrayCooMap(),cell_axs,cell_bids,cell_blocks_new...)
+#function lazy_map(
+#  k::BroadcastingFieldOpMap,
+#  a::LazyArray{<:Fill{BlockArrayCooMap{2}}},
+#  b::LazyArray{<:Fill{BlockArrayCooMap{3}}})
+#
 #end
 #
-## Binary field/test or field/trial
-## Assumption: op is linear wrt a
-#function lazy_map(k::BroadcastingFieldOpMap,f::AbstractArray,a::LazyArray{<:Fill{<:BlockArrayCooMap}})
-#  @check ndims(eltype(a)) > ndims(eltype(f))
-#  cell_axs, cell_bids, cell_blocks = _get_coo_data(a.f)
-#  cell_blocks_new = map(b->lazy_map(k,f,b),cell_blocks)
-#  lazy_map(BlockArrayCooMap(),cell_axs,cell_bids,cell_blocks_new...)
+#function lazy_map(
+#  k::BroadcastingFieldOpMap,
+#  a::LazyArray{<:Fill{BlockArrayCooMap{2}}},
+#  b::LazyArray{<:Fill{BlockArrayCooMap{1}}})
+#
 #end
+#
+#function lazy_map(
+#  k::BroadcastingFieldOpMap,
+#  a::LazyArray{<:Fill{BlockArrayCooMap{3}}},
+#  b::LazyArray{<:Fill{BlockArrayCooMap{2}}})
+#
+#end
+
+
+
+
 
 
 

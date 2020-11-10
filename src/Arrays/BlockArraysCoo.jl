@@ -213,17 +213,23 @@ end
 struct BlockArrayCooMap{N} <: Map
   blocksize::NTuple{N,Int}
   blockids::Vector{NTuple{N,Int}}
-  mask::Array{Bool,N}
+  ptrs::Array{Int,N}
   function BlockArrayCooMap(blocksize::NTuple{N,Int}, blockids::Vector{NTuple{N,Int}}) where N
-    mask = fill(false,blocksize)
-    for I in blockids
+    ptrs = fill(-1,blocksize)
+    for (p,I) in enumerate(blockids)
+      ptrs[I...] = p
       for i in 1:N
         @check blocksize[i] >= I[i]
-        mask[I...] = true
       end
     end
-    new{N}(blocksize,blockids,mask)
+    new{N}(blocksize,blockids,ptrs)
   end
+end
+
+@inline function lazy_map(k::BlockArrayCooMap,T::Type,f::AbstractArray...)
+  s = _common_size(f...)
+  N = length(s)
+  LazyArray(T,Val(N),Fill(k,s),f...)
 end
 
 #function BlockArrayCoo(
@@ -258,8 +264,8 @@ end
 end
 
 BlockArrays.blocksize(a::BlockArrayCooMap) = a.blocksize
-is_zero_block(a::BlockArrayCooMap,i::Integer) = ! a.mask[i]
-is_zero_block(a::BlockArrayCooMap{N},i::Vararg{Integer,N}) where N = ! a.mask[i...]
+is_zero_block(a::BlockArrayCooMap,i::Integer) = a.ptrs[i] < 0
+is_zero_block(a::BlockArrayCooMap{N},i::Vararg{Integer,N}) where N = a.ptrs[i...] < 0
 is_zero_block(a::BlockArrayCooMap{N},i::Vararg{Block,N}) where N = is_zero_block(a,map(Int,i)...)
 is_zero_block(a::BlockArrayCooMap,i::Block) = is_zero_block(a,convert(Tuple,i)...)
 is_zero_block(a::BlockArrayCooMap,i::CartesianIndex) = is_zero_block(a,Tuple(i)...)

@@ -435,6 +435,10 @@ end
 @inline Base.axes(a::BroadcastOpFieldArray) = Base.Broadcast.broadcast_shape(map(axes,a.args)...)
 @inline Base.IndexStyle(::Type{<:BroadcastOpFieldArray}) = IndexLinear()
 @inline Base.getindex(a::BroadcastOpFieldArray,i::Integer) = broadcast(Operation(a.op),a.args...)[i]
+function testitem(a::BroadcastOpFieldArray)
+  fs = map(testitem,a.args)
+  return_value(Operation(a.op),fs...)
+end
 
 for T in (:(Point),:(AbstractArray{<:Point}))
   @eval begin

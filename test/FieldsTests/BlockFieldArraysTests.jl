@@ -132,15 +132,32 @@ cell_b2t = lazy_map(transpose,cell_b2)
 cell_b2tx = lazy_map(evaluate,cell_b2t,cell_x)
 test_array(cell_b2tx,Fill(b2tx,ncells))
 
-#cell_g2 = lazy_map(Broadcasting(Operation(-)),cell_b2)
-#cell_g2x = lazy_map(evaluate,cell_g2,cell_x)
-#@test cell_g2x.g.value == BlockArrayCooMap()
+cell_g2 = lazy_map(Broadcasting(Operation(-)),cell_b2)
+cell_g2x = lazy_map(evaluate,cell_g2,cell_x)
+@test isa(cell_g2x.g.value,BlockArrayCooMap)
+test_array(cell_g2x,-collect(cell_b2x))
 
-#print_op_tree(cell_g2)
-#print_op_tree(cell_g2x)
-#display(cell_g2x[1])
+cell_f = Fill(ConstantField(2.0),ncells)
+cell_g2 = lazy_map(Broadcasting(Operation(*)),cell_b2,cell_f)
+cell_g2x = lazy_map(evaluate,cell_g2,cell_x)
+@test isa(cell_g2x.g.value,BlockArrayCooMap)
+r = map(i->2.0*i,cell_b2x)
+test_array(cell_g2x,r)
+
+cell_f = Fill(ConstantField(VectorValue(1,1)),ncells)
+cell_g1 = lazy_map(Broadcasting(Operation(⋅)),cell_b1,cell_f)
+cell_g1x = lazy_map(evaluate,cell_g1,cell_x)
+@test isa(cell_g1x.g.value,BlockArrayCooMap)
+
+cell_g = lazy_map(Broadcasting(Operation(-)),cell_g1,cell_g2)
+cell_gx = lazy_map(evaluate,cell_g,cell_x)
+@test isa(cell_gx.g.value,BlockArrayCooMap)
 
 
+print_op_tree(cell_gx)
+display(cell_gx[1])
+
+kk
 
 
 #b1 = BlockFieldArrayCoo(axs,[(1,)],f1)
