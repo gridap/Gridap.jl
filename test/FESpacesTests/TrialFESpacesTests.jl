@@ -59,15 +59,11 @@ uh = zero(U)
 cellidsL = [4,2,1,3]
 cellidsR = [2,4,3,1]
 cellidsS = SkeletonPair(cellidsL,cellidsR)
-@test_broken begin
 cell_vals = get_cell_dof_values(uh,cellidsS)
-isa(cell_vals[1],BlockArrayCoo)
-end
+@test isa(cell_vals[1],BlockArrayCoo)
 
-@test_broken begin
 cell_dofs = get_cell_dof_ids(U,cellidsS)
 @test isa(cell_dofs[1],BlockArrayCoo)
-end
 
 U0 = HomogeneousTrialFESpace(U)
 @test get_dirichlet_values(U0) == zeros(6)

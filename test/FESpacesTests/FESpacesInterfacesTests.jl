@@ -29,10 +29,8 @@ cell_vals = get_cell_dof_values(vh,cellids)
 cellidsL = cellids
 cellidsR = [2,4,3,1]
 cellidsS = SkeletonPair(cellidsL,cellidsR)
-@test_broken begin
 cell_vals = get_cell_dof_values(vh,cellidsS)
-isa(cell_vals[1],BlockArrayCoo)
-end
+@test isa(cell_vals[1],BlockArrayCoo)
 
 zh = zero(V)
 @test isa(zh,FEFunction)
@@ -44,8 +42,8 @@ cellids = [1,3,5,2]
 cellidsL = cellids
 cellidsR = [2,4,3,1]
 cellidsS = SkeletonPair(cellidsL,cellidsR)
-@test_broken isa(get_cell_dof_ids(V,cellidsS)[1],BlockArrayCoo)
-@test_broken get_cell_dof_ids(V,cellidsS)[1] == [-1, 1, 4, 5, 1, 2, 5, 6]
+@test isa(get_cell_dof_ids(V,cellidsS)[1],BlockArrayCoo)
+@test get_cell_dof_ids(V,cellidsS)[1] == [-1, 1, 4, 5, 1, 2, 5, 6]
 
 cell_constr = get_cell_constraints(V)
 @test cell_constr == [Matrix(I,4,4) for cell in 1:num_cells(model)]
@@ -55,10 +53,8 @@ cell_constr = get_cell_constraints(V,cellids)
 
 @test get_cell_isconstrained(V,cellids) == Fill(false,length(cellids))
 
-@test_broken begin
 cell_constr = get_cell_constraints(V,cellidsS)
-isa(cell_constr[1],BlockArrayCoo)
-end
+@test isa(cell_constr[1],BlockArrayCoo)
 
 du = get_cell_shapefuns_trial(V)
 du_data = get_cell_data(du)
