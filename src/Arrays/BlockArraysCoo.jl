@@ -210,7 +210,21 @@ end
 
 # Minimal constructor (for lazy_map)
 
-struct BlockArrayCooMap <: Map end
+struct BlockArrayCooMap{N} <: Map
+  blocksize::NTuple{N,Int}
+  blockids::Vector{NTuple{N,Int}}
+  mask::Array{Bool,N}
+  function BlockArrayCooMap(blocksize::NTuple{N,Int}, blockids::Vector{NTuple{N,Int}}) where N
+    mask = fill(false,blocksize)
+    for I in blockids
+      for i in 1:N
+        @check blocksize[i] >= I[i]
+        mask[I...] = true
+      end
+    end
+    new{N}(blocksize,blockids,mask)
+  end
+end
 
 #function BlockArrayCoo(
 #  axes::NTuple{N},
@@ -221,12 +235,13 @@ struct BlockArrayCooMap <: Map end
 #end
 
 function return_cache(
-  ::BlockArrayCooMap,
+  k::BlockArrayCooMap,
   axes::NTuple{N},
-  blockids::Vector{NTuple{N,Int}},
   blocks::A...) where {T,N,A<:AbstractArray{T,N}}
 
-  r = BlockArrayCoo(axes,blockids,collect(blocks))
+  @check map(i->first(blocksize(i)),axes) == k.blocksize "The given axes are not compatible with the given BlockArrayCooMap"
+
+  r = BlockArrayCoo(axes,k.blockids,collect(blocks))
   CachedArray(r)
 end
 
@@ -234,17 +249,20 @@ end
   cache,
   ::BlockArrayCooMap,
   axes::NTuple{N},
-  blockids::Vector{NTuple{N,Int}},
   blocks::A...) where {T,N,A<:AbstractArray{T,N}}
-
-  # Assumes that the blocksids have not changed for performance
-  # This is true in all our use cases.
                            
   setaxes!(cache,axes)
   r = cache.array
   copyto!(r.blocks,blocks)
   r
 end
+
+BlockArrays.blocksize(a::BlockArrayCooMap) = a.blocksize
+is_zero_block(a::BlockArrayCooMap,i::Integer) = ! a.mask[i]
+is_zero_block(a::BlockArrayCooMap{N},i::Vararg{Integer,N}) where N = ! a.mask[i...]
+is_zero_block(a::BlockArrayCooMap{N},i::Vararg{Block,N}) where N = is_zero_block(a,map(Int,i)...)
+is_zero_block(a::BlockArrayCooMap,i::Block) = is_zero_block(a,convert(Tuple,i)...)
+is_zero_block(a::BlockArrayCooMap,i::CartesianIndex) = is_zero_block(a,Tuple(i)...)
 
 # Specific API
 
