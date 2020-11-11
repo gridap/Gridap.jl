@@ -21,7 +21,7 @@ model = CartesianDiscreteModel(domain,partition)
 
 V = TestFESpace(
   model,
-  ReferenceFE(:Lagrangian,valuetype=Float64,order=1),
+  ReferenceFE(:Lagrangian,Float64,1),
   dirichlet_tags=[1,2,3,4,6,5])
 
 u(x) = x[1]+x[2]

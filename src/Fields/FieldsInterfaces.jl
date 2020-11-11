@@ -182,6 +182,7 @@ end
 @inline Base.iterate(a::Field) = (a,nothing)
 @inline Base.iterate(a::Field,::Nothing) = nothing
 @inline Base.getindex(a::Field,i::Integer) =  (@check i == 1; a)
+testitem(a::Field) = a
 
 # Zero field
 

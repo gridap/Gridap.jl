@@ -21,7 +21,9 @@ function get_contribution(a::DomainContribution,trian::Triangulation)
   end
 end
 
-function add_contribution!(a::DomainContribution,trian::Triangulation,b::AbstractArray)
+Base.getindex(a::DomainContribution,trian::Triangulation) = get_contribution(a,trian)
+
+function add_contribution!(a::DomainContribution,trian::Triangulation,b::AbstractArray,op=+)
 
   S = eltype(b)
   if !(S<:AbstractMatrix || S<:AbstractVector || S<:Number)
@@ -60,9 +62,13 @@ function add_contribution!(a::DomainContribution,trian::Triangulation,b::Abstrac
   end
 
   if haskey(a.dict,trian)
-    a.dict[trian] = lazy_map(Broadcasting(+),a.dict[trian],b)
+    a.dict[trian] = lazy_map(Broadcasting(op),a.dict[trian],b)
   else
+    if op == +
      a.dict[trian] = b
+    else
+     a.dict[trian] = lazy_map(Broadcasting(op),b)
+    end
   end
   a
 end
@@ -77,6 +83,22 @@ function (+)(a::DomainContribution,b::DomainContribution)
     add_contribution!(c,trian,array)
   end
   c
+end
+
+function (-)(a::DomainContribution,b::DomainContribution)
+  c = copy(a)
+  for (trian,array) in b.dict
+    add_contribution!(c,trian,array,-)
+  end
+  c
+end
+
+function get_array(a::DomainContribution)
+  @assert num_domains(a) == 1 """\n
+  Method get_array(a::DomainContribution) can be called only
+  when the DomainContribution object involves just one domain.
+  """
+  a.dict[first(keys(a.dict))]
 end
 
 struct LebesgueMeasure <: GridapType

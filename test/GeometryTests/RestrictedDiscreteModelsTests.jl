@@ -77,8 +77,8 @@ trian_b = BoundaryTriangulation(model)
 @test get_background_triangulation(itrian) === oldtrian
 
 #meas_K_b = cell_measure(trian_b,oldtrian)
-#meas_K_sl = cell_measure(trian_s.left,oldtrian)
-#meas_K_sr = cell_measure(trian_s.right,oldtrian)
+#meas_K_sl = cell_measure(trian_s.plus,oldtrian)
+#meas_K_sr = cell_measure(trian_s.minus,oldtrian)
 #
 #oldcell_to_cell = zeros(Int,num_cells(oldmodel))
 #oldcell_to_cell[cell_to_oldcell] .= 1:length(cell_to_oldcell)

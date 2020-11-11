@@ -15,7 +15,7 @@ partition = (3,3,3)
 model = CartesianDiscreteModel(domain,partition)
 
 order = 2
-reffe = ReferenceFE(:Lagrangian,valuetype=Float64,order=order)
+reffe = ReferenceFE(:Lagrangian,Float64,order)
 V = FESpace(model,reffe,dirichlet_tags=["tag_01","tag_10"])
 
 U = TrialFESpace(V,[4,3])
@@ -59,15 +59,11 @@ uh = zero(U)
 cellidsL = [4,2,1,3]
 cellidsR = [2,4,3,1]
 cellidsS = SkeletonPair(cellidsL,cellidsR)
-@test_broken begin
 cell_vals = get_cell_dof_values(uh,cellidsS)
-isa(cell_vals[1],BlockArrayCoo)
-end
+@test isa(cell_vals[1],BlockArrayCoo)
 
-@test_broken begin
 cell_dofs = get_cell_dof_ids(U,cellidsS)
 @test isa(cell_dofs[1],BlockArrayCoo)
-end
 
 U0 = HomogeneousTrialFESpace(U)
 @test get_dirichlet_values(U0) == zeros(6)

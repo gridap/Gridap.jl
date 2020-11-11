@@ -3,6 +3,7 @@ module FESpacesInterfacesTests
 using FillArrays
 using Test
 using Gridap.Arrays
+using Gridap.Fields
 using Gridap.TensorValues
 using Gridap.ReferenceFEs
 using Gridap.Geometry
@@ -14,13 +15,26 @@ order = 1
 domain =(0,1,0,1)
 partition = (3,3)
 model = CartesianDiscreteModel(domain,partition)
-reffe = ReferenceFE(:Lagrangian,order=order,valuetype=Float64)
+reffe = ReferenceFE(:Lagrangian,Float64,order)
 V = FESpace(model,reffe,dirichlet_tags=["tag_1","tag_6"])
 test_fe_space(V)
+
 
 vh = FEFunction(V,rand(num_free_dofs(V)))
 @test isa(vh,FEFunction)
 test_fe_function(vh)
+
+
+dv = get_cell_shapefuns(V)
+du = get_cell_shapefuns_trial(V)
+
+trian_Γ = SkeletonTriangulation(model)
+x_Γ = get_cell_points(trian_Γ)
+
+@test isa(dv.minus(x_Γ)[1],BlockArrayCoo)
+@test isa(du.plus(x_Γ)[1],BlockArrayCoo)
+@test isa(∇(dv).plus(x_Γ)[1],BlockArrayCoo)
+@test isa(∇(du).minus(x_Γ)[1],BlockArrayCoo)
 
 cellids = [1,3,5,2]
 cell_vals = get_cell_dof_values(vh,cellids)
@@ -29,10 +43,8 @@ cell_vals = get_cell_dof_values(vh,cellids)
 cellidsL = cellids
 cellidsR = [2,4,3,1]
 cellidsS = SkeletonPair(cellidsL,cellidsR)
-@test_broken begin
 cell_vals = get_cell_dof_values(vh,cellidsS)
-isa(cell_vals[1],BlockArrayCoo)
-end
+@test isa(cell_vals[1],BlockArrayCoo)
 
 zh = zero(V)
 @test isa(zh,FEFunction)
@@ -44,8 +56,8 @@ cellids = [1,3,5,2]
 cellidsL = cellids
 cellidsR = [2,4,3,1]
 cellidsS = SkeletonPair(cellidsL,cellidsR)
-@test_broken isa(get_cell_dof_ids(V,cellidsS)[1],BlockArrayCoo)
-@test_broken get_cell_dof_ids(V,cellidsS)[1] == [-1, 1, 4, 5, 1, 2, 5, 6]
+@test isa(get_cell_dof_ids(V,cellidsS)[1],BlockArrayCoo)
+@test get_cell_dof_ids(V,cellidsS)[1] == [-1, 1, 4, 5, 1, 2, 5, 6]
 
 cell_constr = get_cell_constraints(V)
 @test cell_constr == [Matrix(I,4,4) for cell in 1:num_cells(model)]
@@ -55,10 +67,8 @@ cell_constr = get_cell_constraints(V,cellids)
 
 @test get_cell_isconstrained(V,cellids) == Fill(false,length(cellids))
 
-@test_broken begin
 cell_constr = get_cell_constraints(V,cellidsS)
-isa(cell_constr[1],BlockArrayCoo)
-end
+@test isa(cell_constr[1],BlockArrayCoo)
 
 du = get_cell_shapefuns_trial(V)
 du_data = get_cell_data(du)

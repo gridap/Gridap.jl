@@ -63,9 +63,9 @@ function FESpace(
   V
 end
 
-function FESpace(model::DiscreteModel, reffe::Tuple{Symbol,Any}; kwargs...)
-  basis, reffe_kwargs = reffe
-  cell_reffe = ReferenceFE(model,basis;reffe_kwargs...)
+function FESpace(model::DiscreteModel, reffe::Tuple{Symbol,Any,Any}; kwargs...)
+  basis, reffe_args,reffe_kwargs = reffe
+  cell_reffe = ReferenceFE(model,basis,reffe_args...;reffe_kwargs...)
   FESpace(model,cell_reffe;kwargs...)
 end
 

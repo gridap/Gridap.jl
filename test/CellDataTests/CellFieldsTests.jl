@@ -45,11 +45,13 @@ x_S = get_cell_points(trian_S)
 
 nf_S = n_S⋅∇(f)
 
-@test_broken begin
 jnf_S = jump(n_S⋅∇(f))
-jnf_S(x_S)
-true
-end
+jnfx_S = jnf_S(x_S)
+test_array(jnfx_S,0*collect(jnfx_S))
+
+h = 3*mean(f)⋅jump(n_S⋅∇(f))
+hx_S = h(x_S)
+test_array(hx_S,0*collect(hx_S))
 
 aa(f) = 4*f
 test_array((aa∘f)(x),4*r,≈)
@@ -212,8 +214,8 @@ test_array(hx_N,collect(hx_N))
 #afS = merge_cell_fields_at_skeleton(af,2*af)
 #@test isa(afS,SkeletonCellField)
 #
-#afL_x = evaluate(afS.left,xl)
-#afR_x = evaluate(afS.right,xl)
+#afL_x = evaluate(afS.plus,xl)
+#afR_x = evaluate(afS.minus,xl)
 #@test isa(afL_x,VectorOfBlockArrayCoo)
 #@test isa(afR_x,VectorOfBlockArrayCoo)
 #

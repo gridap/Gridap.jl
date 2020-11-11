@@ -1,4 +1,33 @@
 
+
+struct BlockArrayCooMap{N} <: Map
+  blockids::Vector{NTuple{N,Int}}
+end
+
+function return_cache(k::BlockArrayCooMap,axes::Tuple,blocks::AbstractArray...)
+  r = BlockArrayCoo(collect(blocks),k.blockids,axes)
+  CachedArray(r)
+end
+
+@inline function evaluate!(cache,k::BlockArrayCooMap,axes::Tuple,blocks::AbstractArray...)
+  setaxes!(cache,axes)
+  r = cache.array
+  copyto!(r.blocks,blocks)
+  r
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
 struct VectorOfBlockArrayCoo{T,N,B,X,Z} <: AbstractVector{T}
   blocks::B
   blockids::Vector{NTuple{N,Int}}

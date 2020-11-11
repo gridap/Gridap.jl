@@ -87,7 +87,7 @@ function lazy_map(
 
   fx = map( fi->lazy_map(evaluate,fi,x), a.f)
   op = a.g.value.f.op
-  lazy_map(Broadcasting(op),fx...)
+  lazy_map(BroadcastingFieldOpMap(op),fx...)
 end
 
 # Optimization for

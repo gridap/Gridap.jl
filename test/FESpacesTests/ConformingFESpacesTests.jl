@@ -65,7 +65,7 @@ dirichlet_components = [(true,true), (false,true)]
 cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
   cell_reffe, conf, grid_topology, face_labeling, dirichlet_tags, dirichlet_components)
 
-reffe = ReferenceFE(:Lagrangian,valuetype=VectorValue{2,Float64},order=3)
+reffe = ReferenceFE(:Lagrangian,VectorValue{2,Float64},3)
 
 V = FESpace(model,reffe,dirichlet_tags=dirichlet_tags)
 
