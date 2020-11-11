@@ -175,10 +175,12 @@ function lazy_map(
   cell_axs, cell_ai = a.f
   cell_aix = lazy_map(evaluate,cell_ai,cell_x)
 
-  cell_axs_new = lazy_map(cell_axs,cell_x) do axs, x
+  function result_axes_on_point_vector(axs,x)
     pr = similar_range(first(axs),length(x))
     axs = (pr,axs...)
   end
+
+  cell_axs_new = lazy_map(result_axes_on_point_vector,cell_axs,cell_x)
 
   bsize_new = (1,m.blocksize...)
   bids_new = map(i->(1,i...),m.blockids)
@@ -207,6 +209,16 @@ function lazy_map(
   lazy_map(m,cell_axs,cell_gi)
 end
 
+function lazy_map(::typeof(axes),a::LazyArray{<:Fill{Broadcasting{typeof(∇)}}})
+  b = a.f[1]
+  lazy_map(axes,b)
+end
+
+function lazy_map(::typeof(axes),a::LazyArray{<:Fill{Broadcasting{typeof(∇∇)}}})
+  b = a.f[1]
+  lazy_map(axes,b)
+end
+
 # Composition
 
 function lazy_map(
@@ -216,6 +228,11 @@ function lazy_map(
   cell_axs, cell_ai = a.f
   cell_gi = lazy_map(k,cell_ai,b)
   lazy_map(m,cell_axs,cell_gi)
+end
+
+function lazy_map(::typeof(axes),a::LazyArray{<:Fill{Broadcasting{typeof(∘)}}})
+  b = a.f[1]
+  lazy_map(axes,b)
 end
 
 # Transpose

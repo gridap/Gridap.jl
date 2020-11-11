@@ -158,6 +158,14 @@ get_triangulation(f::FEBasis) = f.trian
 BasisStyle(::Type{FEBasis{BS,DS}}) where {BS,DS} = BS()
 BasisStyle(::T) where T <: FEBasis = BasisStyle(T)
 DomainStyle(::Type{FEBasis{BS,DS}}) where {BS,DS} = DS()
+function gradient(a::FEBasis)
+  f = GenericCellField(a.cell_basis,a.trian,a.domain_style)
+  FEBasis(get_cell_data(gradient(f)),a.trian,a.basis_style,a.domain_style)
+end
+function ∇∇(a::FEBasis)
+  f = GenericCellField(a.cell_basis,a.trian,a.domain_style)
+  FEBasis(get_cell_data(∇∇(f)),a.trian,a.basis_style,a.domain_style)
+end
 
 function change_domain_skeleton(a::FEBasis,trian::SkeletonTriangulation,target_domain::DomainStyle)
   a_on_plus_trian = change_domain(a,trian.plus,target_domain)
@@ -172,9 +180,10 @@ end
 function _fix_cell_basis_dofs_at_skeleton(pair,::TestBasis)
   cell_axes_plus = lazy_map(axes,pair.plus)
   cell_axes_minus = lazy_map(axes,pair.minus)
-  cell_axes = lazy_map(cell_axes_plus,cell_axes_minus) do axp, axm
+  function skeleton_axes_test(axp, axm)
     (append_ranges([axp[1],axm[1]]),)
   end
+  cell_axes = lazy_map(skeleton_axes_test,cell_axes_plus,cell_axes_minus)
   plus = lazy_map(BlockFieldArrayCooMap((2,),[(1,)]),cell_axes,pair.plus)
   minus = lazy_map(BlockFieldArrayCooMap((2,),[(2,)]),cell_axes,pair.minus)
   SkeletonPair(plus,minus)
@@ -183,11 +192,12 @@ end
 function _fix_cell_basis_dofs_at_skeleton(pair,::TrialBasis)
   cell_axes_plus = lazy_map(axes,pair.plus)
   cell_axes_minus = lazy_map(axes,pair.minus)
-  cell_axes = lazy_map(cell_axes_plus,cell_axes_minus) do axp, axm
+  function skeleton_axes_trial(axp, axm)
     r2 = append_ranges([axp[2],axm[2]])
     r1 = similar_range(r2,1)
     (r1,r2)
   end
+  cell_axes = lazy_map(skeleton_axes_trial,cell_axes_plus,cell_axes_minus)
   plus = lazy_map(BlockFieldArrayCooMap((1,2),[(1,1)]),cell_axes,pair.plus)
   minus = lazy_map(BlockFieldArrayCooMap((1,2),[(1,2)]),cell_axes,pair.minus)
   SkeletonPair(plus,minus)

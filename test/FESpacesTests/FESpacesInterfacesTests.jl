@@ -3,6 +3,7 @@ module FESpacesInterfacesTests
 using FillArrays
 using Test
 using Gridap.Arrays
+using Gridap.Fields
 using Gridap.TensorValues
 using Gridap.ReferenceFEs
 using Gridap.Geometry
@@ -18,9 +19,22 @@ reffe = ReferenceFE(:Lagrangian,Float64,order)
 V = FESpace(model,reffe,dirichlet_tags=["tag_1","tag_6"])
 test_fe_space(V)
 
+
 vh = FEFunction(V,rand(num_free_dofs(V)))
 @test isa(vh,FEFunction)
 test_fe_function(vh)
+
+
+dv = get_cell_shapefuns(V)
+du = get_cell_shapefuns_trial(V)
+
+trian_Γ = SkeletonTriangulation(model)
+x_Γ = get_cell_points(trian_Γ)
+
+@test isa(dv.minus(x_Γ)[1],BlockArrayCoo)
+@test isa(du.plus(x_Γ)[1],BlockArrayCoo)
+@test isa(∇(dv).plus(x_Γ)[1],BlockArrayCoo)
+@test isa(∇(du).minus(x_Γ)[1],BlockArrayCoo)
 
 cellids = [1,3,5,2]
 cell_vals = get_cell_dof_values(vh,cellids)
