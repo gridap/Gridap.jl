@@ -210,7 +210,7 @@ end
 end
 
 @inline function _assemble_vector_at_cell!(vec,rows::BlockArrayCoo,vals::BlockArrayCoo,strategy)
-  for I in eachblockindex(vals)
+  for I in eachblockid(vals)
     if is_nonzero_block(vals,I)
       _assemble_vector_at_cell!(vec,rows[I],vals[I],strategy)
     end
@@ -245,7 +245,7 @@ function _get_block_layout(a::AbstractMatrix)
 end
 
 function _get_block_layout(a::BlockArrayCoo)
-  [(I,_get_block_layout(a[I])) for I in eachblockindex(a) if is_nonzero_block(a,I) ]
+  [(I,_get_block_layout(a[I])) for I in eachblockid(a) if is_nonzero_block(a,I) ]
 end
 
 @noinline function _count_matrix_entries(::Type{M},rows_cache,cols_cache,cell_rows,cell_cols,strategy,Is) where M
@@ -402,7 +402,7 @@ end
 end
 
 @inline function _assemble_matrix_at_cell!(mat,rows::BlockArrayCoo,cols::BlockArrayCoo,vals::BlockArrayCoo,strategy)
-  for I in eachblockindex(vals)
+  for I in eachblockid(vals)
     if is_nonzero_block(vals,I)
       i,j = I.n
       _assemble_matrix_at_cell!(mat,rows[Block(i)],cols[Block(j)],vals[I],strategy)
@@ -464,7 +464,7 @@ end
 @inline function _fill_matrix_at_cell!(
   ::Type{M},nini,I,J,V,rows::BlockArrayCoo,cols::BlockArrayCoo,vals::BlockArrayCoo,strategy) where M
   n = nini
-  for B in eachblockindex(vals)
+  for B in eachblockid(vals)
     if is_nonzero_block(vals,B)
       i,j = B.n
       n = _fill_matrix_at_cell!(M,n,I,J,V,rows[Block(i)],cols[Block(j)],vals[B],strategy)

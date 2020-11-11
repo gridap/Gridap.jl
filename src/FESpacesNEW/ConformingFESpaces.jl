@@ -33,7 +33,7 @@ end
 function compute_cell_space(cell_reffe,trian::Triangulation,domain_style::DomainStyle)
   cell_map = get_cell_map(trian)
   cell_shapefuns, cell_dof_basis = compute_cell_space(cell_reffe,cell_map,domain_style)
-  GenericCellField(cell_shapefuns,trian,domain_style), CellDof(cell_dof_basis,trian,domain_style)
+  FEBasis(cell_shapefuns,trian,TestBasis(),domain_style), CellDof(cell_dof_basis,trian,domain_style)
 end
 
 function compute_cell_space(cell_reffe,cell_map::AbstractArray{<:Field},::ReferenceDomain)
@@ -51,7 +51,16 @@ function compute_cell_space(cell_reffe,cell_map::AbstractArray{<:Field},::Refere
   cell_shapefuns, cell_dof_basis
 end
 
-# For any reffe whose dof basis implements the DofBasisMap
+#struct PhysicalFEs
+#  cell_prebasis::AbstractArray{<:AbstractVector{<:Field}} # (Compressed/Fill in practice)
+#  cell_shapefuns::AbstractArray{<:AbstractVector{<:Field}} # LazyArray in practice
+#  cell_dof_basis::AbstractArray{<:AbstractVector{<:Dof}} # LazyArray in practice
+#  cell_ownership::AbstractArray{Vector{Vector{Int32}}} # Default ownership (Compressed/Fill in practice)
+#end
+#physfes = PhysicalFEs(model,:Lagrangian,Float64,order) # Extensible for different FEs
+#V = FESpace(model,physfes;dirichlet_tags=[1,10]) # use the ownership given in physfes
+#V = FESpace(model,physfes;dirichlet_tags=[1,10],conformity=:L2) # Discontinuous space
+#V = FESpace(model,physfes;dirichlet_tags=[1,10],conformity=cell_ownership_custom) # Custom ownership
 function compute_cell_space(cell_reffe,cell_map::AbstractArray{<:Field},::PhysicalDomain)
   ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
   ctype_prebasis = map(get_prebasis,ctype_reffe)

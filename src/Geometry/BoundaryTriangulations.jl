@@ -397,7 +397,9 @@ function lazy_map(k::typeof(evaluate),::Type{T},b::FaceCompressedVector,a::Fill)
 end
 
 function lazy_map(k::typeof(evaluate),::Type{T},a::Fill,b::FaceCompressedVector,c::FaceCompressedVector) where T
-  @notimplementedif b.glue !== c.glue
+  if b.glue !== c.glue
+    return LazyArray(T,a,b,c)
+  end
   @check length(a) == length(b)
   ctype_lface_pindex_to_r = Vector{Vector{Vector{T}}}(undef,length(b.ctype_lface_pindex_to_value))
   for (ctype, lface_pindex_to_value) in enumerate(b.ctype_lface_pindex_to_value)

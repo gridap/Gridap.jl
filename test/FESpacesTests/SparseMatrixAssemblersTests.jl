@@ -119,10 +119,15 @@ end
 strian = SkeletonTriangulation(model)
 squad = CellQuadrature(strian,degree)
 
+scellmat = integrate(jump(v)*u.⁻,squad)
+@test isa(scellmat[1],BlockArrayCoo)
+@test is_zero_block(scellmat[1],1,1)
+@test is_zero_block(scellmat[1],2,1)
+@test is_nonzero_block(scellmat[1],1,2)
+@test is_nonzero_block(scellmat[1],2,2)
 
-@test_broken begin
-scellmat = integrate(jump(v)*u.⁻,strian,squad)
-scellvec = integrate(mean(v*3),strian,squad)
+scellvec = integrate(mean(v*3),squad)
+@test isa(scellvec[1],BlockArrayCoo)
 scellmatvec = pair_arrays(scellmat,scellvec)
 scellids = get_cell_id(strian)
 zh = zero(V)
@@ -146,7 +151,5 @@ matdata = ([scellmat],[scellids],[scellids])
 A = assemble_matrix(assem,matdata)
 @test A == zeros(num_free_dofs(V),num_free_dofs(U))
 
-true
-end
 
 end # module

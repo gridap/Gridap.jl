@@ -196,6 +196,12 @@ function _zero_block(::Type{A},axs::Tuple) where A <: AbstractArray
   a
 end
 
+function _zero_block(::Type{<:Transpose{T,A}},axs::Tuple) where {T,A}
+  a = similar(A,(axs[2],))
+  fill!(a,zero(eltype(a)))
+  Transpose(a)
+end
+
 function _zero_block(::Type{<:BlockArrayCoo{T,N,A}},axs::Tuple) where {T,N,A}
   blocks = A[]
   blockids = NTuple{N,Int}[]
@@ -204,29 +210,51 @@ end
 
 # Minimal constructor (for lazy_map)
 
-function BlockArrayCoo(
-  axes::NTuple{N},
-  blockids::Vector{NTuple{N,Int}},
-  blocks::A...) where {T,N,A<:AbstractArray{T,N}}
-
-  BlockArrayCoo(axes,blockids,collect(blocks))
+struct BlockArrayCooMap{N} <: Map
+  blocksize::NTuple{N,Int}
+  blockids::Vector{NTuple{N,Int}}
+  ptrs::Array{Int,N}
+  function BlockArrayCooMap(blocksize::NTuple{N,Int}, blockids::Vector{NTuple{N,Int}}) where N
+    ptrs = fill(-1,blocksize)
+    for (p,I) in enumerate(blockids)
+      ptrs[I...] = p
+      for i in 1:N
+        @check blocksize[i] >= I[i]
+      end
+    end
+    new{N}(blocksize,blockids,ptrs)
+  end
 end
 
+@inline function lazy_map(k::BlockArrayCooMap,T::Type,f::AbstractArray...)
+  s = _common_size(f...)
+  N = length(s)
+  LazyArray(T,Val(N),Fill(k,s),f...)
+end
+
+#function BlockArrayCoo(
+#  axes::NTuple{N},
+#  blockids::Vector{NTuple{N,Int}},
+#  blocks::A...) where {T,N,A<:AbstractArray{T,N}}
+#
+#  BlockArrayCoo(axes,blockids,collect(blocks))
+#end
+
 function return_cache(
-  ::Type{<:BlockArrayCoo},
+  k::BlockArrayCooMap,
   axes::NTuple{N},
-  blockids::Vector{NTuple{N,Int}},
   blocks::A...) where {T,N,A<:AbstractArray{T,N}}
 
-  r = BlockArrayCoo(axes,blockids,blocks...)
+  @check map(i->first(blocksize(i)),axes) == k.blocksize "The given axes are not compatible with the given BlockArrayCooMap"
+
+  r = BlockArrayCoo(axes,k.blockids,collect(blocks))
   CachedArray(r)
 end
 
 @inline function evaluate!(
   cache,
-  ::Type{<:BlockArrayCoo},
+  ::BlockArrayCooMap,
   axes::NTuple{N},
-  blockids::Vector{NTuple{N,Int}},
   blocks::A...) where {T,N,A<:AbstractArray{T,N}}
                            
   setaxes!(cache,axes)
@@ -234,6 +262,13 @@ end
   copyto!(r.blocks,blocks)
   r
 end
+
+BlockArrays.blocksize(a::BlockArrayCooMap) = a.blocksize
+is_zero_block(a::BlockArrayCooMap,i::Integer) = a.ptrs[i] < 0
+is_zero_block(a::BlockArrayCooMap{N},i::Vararg{Integer,N}) where N = a.ptrs[i...] < 0
+is_zero_block(a::BlockArrayCooMap{N},i::Vararg{Block,N}) where N = is_zero_block(a,map(Int,i)...)
+is_zero_block(a::BlockArrayCooMap,i::Block) = is_zero_block(a,convert(Tuple,i)...)
+is_zero_block(a::BlockArrayCooMap,i::CartesianIndex) = is_zero_block(a,Tuple(i)...)
 
 # Specific API
 

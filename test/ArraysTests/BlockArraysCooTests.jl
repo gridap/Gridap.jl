@@ -66,7 +66,16 @@ blocks = Matrix{Float64}[ [1 2; 3 4], [5 6; 7 8; 9 10] ]
 blockids = [(1,1),(2,1)]
 ax = (blockedrange([2,3]), blockedrange([2,4]))
 a = BlockArrayCoo(ax,blockids,blocks)
-a = BlockArrayCoo(ax,blockids,blocks...)
+a = BlockArrayCooMap((2,2),blockids)(ax,blocks...)
+
+k = BlockArrayCooMap((2,2),blockids)
+@test blocksize(k) == (2,2)
+@test is_zero_block(k,1,1) == false
+@test is_zero_block(k,2,1) == false
+@test is_zero_block(k,1,2) == true
+@test is_zero_block(k,2,2) == true
+@test is_nonzero_block(k,1,1) == true
+@test is_nonzero_block(k,first(eachblockid(k)))
 
 # Specific API
 

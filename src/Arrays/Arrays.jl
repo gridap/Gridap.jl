@@ -80,6 +80,8 @@ export append_ranges
 export MultiLevelBlockedUnitRange
 export blocks_equal
 export num_blocks_equal
+export local_range
+export BlockArrayCooMap
 
 export array_cache
 export getindex!
@@ -151,13 +153,13 @@ import Gridap.Io: from_dict
 
 include("Interface.jl")
 
-include("BlockArraysCoo.jl")
-
-include("CachedArrays.jl")
-
 include("Maps.jl")
 
 include("AlgebraMaps.jl")
+
+include("BlockArraysCoo.jl")
+
+include("CachedArrays.jl")
 
 include("LazyArrays.jl")
 

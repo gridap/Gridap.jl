@@ -215,18 +215,21 @@ cell_to_∇r = fill(evaluate(Broadcasting(∇)(f),x),ncells)
 cell_to_f = lazy_map(Broadcasting(Operation(+)),cell_to_b,cell_to_a)
 cell_to_fx = lazy_map(evaluate,cell_to_f,cell_to_x)
 test_array(cell_to_fx,cell_to_r)
-@test cell_to_fx.g.value == Broadcasting(+)
+#@test cell_to_fx.g.value == Broadcasting(+)
+@test cell_to_fx.g.value == BroadcastingFieldOpMap(+)
 
 cell_to_∇f = lazy_map(Broadcasting(∇),cell_to_f)
 cell_to_∇fx = lazy_map(evaluate,cell_to_∇f,cell_to_x)
 test_array(cell_to_∇fx,cell_to_∇r)
-@test cell_to_∇fx.g.value == Broadcasting(+)
+#@test cell_to_∇fx.g.value == Broadcasting(+)
+@test cell_to_∇fx.g.value == BroadcastingFieldOpMap(+)
 
 T = GenericField{Nothing}
 cell_to_f = lazy_map(Broadcasting(Operation(+)),T,cell_to_b,cell_to_a)
 cell_to_fx = lazy_map(evaluate,cell_to_f,cell_to_x)
 test_array(cell_to_fx,cell_to_r)
-@test cell_to_fx.g.value == Broadcasting(+)
+#@test cell_to_fx.g.value == Broadcasting(+)
+@test cell_to_fx.g.value == BroadcastingFieldOpMap(+)
 
 # Operations with Broadcasting (product)
 
