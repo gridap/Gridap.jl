@@ -22,7 +22,7 @@ The `ReferenceFE` interface is defined by overloading these methods:
 - [`get_polytope(reffe::ReferenceFE)`](@ref)
 - [`get_prebasis(reffe::ReferenceFE)`](@ref)
 - [`get_dof_basis(reffe::ReferenceFE)`](@ref)
-- [`get_default_conformity(reffe::ReferenceFE)`](@ref)
+- [`Conformity(reffe::ReferenceFE)`](@ref)
 - [`get_face_own_dofs(reffe::ReferenceFE,conf::Conformity)`](@ref)
 - [`get_face_own_dofs_permutations(reffe::ReferenceFE,conf::Conformity)`](@ref)
 - [`get_face_dofs(reffe::ReferenceFE)`](@ref)
@@ -83,9 +83,9 @@ function get_dof_basis(reffe::ReferenceFE)
 end
 
 """
-    get_default_conformity(reffe::ReferenceFE) -> Conformity
+    Conformity(reffe::ReferenceFE) -> Conformity
 """
-function get_default_conformity(reffe::ReferenceFE)
+function Conformity(reffe::ReferenceFE)
   @abstractmethod
 end
 
@@ -96,11 +96,14 @@ function get_face_own_dofs(reffe::ReferenceFE,conf::Conformity)
   @abstractmethod
 end
 
+function Conformity()
+end
+
 """
     get_face_own_dofs(reffe::ReferenceFE) -> Vector{Vector{Int}}
 """
 function get_face_own_dofs(reffe::ReferenceFE)
-  conf = get_default_conformity(reffe)
+  conf = Conformity(reffe)
   get_face_own_dofs(reffe,conf)
 end
 
@@ -131,7 +134,7 @@ end
     get_face_own_dofs_permutations(reffe::ReferenceFE) -> Vector{Vector{Vector{Int}}}
 """
 function get_face_own_dofs_permutations(reffe::ReferenceFE)
-  conf = get_default_conformity(reffe)
+  conf = Conformity(reffe)
   get_face_own_dofs_permutations(reffe,conf)
 end
 
@@ -165,7 +168,7 @@ PushForwardMap(reffe::ReferenceFE) = @abstractmethod
 Test if the methods in the `ReferenceFE` interface are defined for the object `reffe`.
 """
 function test_reference_fe(reffe::ReferenceFE{D}) where D
-  conf = get_default_conformity(reffe)
+  conf = Conformity(reffe)
   @test isa(conf,Conformity)
   test_reference_fe(reffe,conf)
 end
@@ -267,7 +270,7 @@ end
     get_face_own_dofs(reffe::ReferenceFE,d::Integer)
 """
 function get_face_own_dofs(reffe::ReferenceFE,d::Integer)
-  conf = get_default_conformity(reffe)
+  conf = Conformity(reffe)
   get_face_own_dofs(reffe,conf,d)
 end
 
@@ -293,7 +296,7 @@ end
     get_face_own_dofs_permutations(reffe::ReferenceFE,d::Integer)
 """
 function get_face_own_dofs_permutations(reffe::ReferenceFE,d::Integer)
-  conf = get_default_conformity(reffe)
+  conf = Conformity(reffe)
   get_face_own_dofs_permutations(reffe,conf,d)
 end
 
@@ -309,7 +312,7 @@ end
     get_own_dofs_permutations(reffe::ReferenceFE)
 """
 function get_own_dofs_permutations(reffe::ReferenceFE)
-  conf = get_default_conformity(reffe)
+  conf = Conformity(reffe)
   get_own_dofs_permutations(reffe,conf)
 end
 
@@ -409,7 +412,7 @@ get_prebasis(reffe::GenericRefFE) = reffe.prebasis
 
 get_dof_basis(reffe::GenericRefFE) = reffe.dofs
 
-get_default_conformity(reffe::GenericRefFE) = reffe.conformity
+Conformity(reffe::GenericRefFE) = reffe.conformity
 
 get_face_dofs(reffe::GenericRefFE) = reffe.face_dofs
 

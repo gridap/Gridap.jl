@@ -17,7 +17,7 @@ test_reference_fe(reffe)
 @test num_terms(get_prebasis(reffe)) == 4
 @test get_order(get_prebasis(reffe)) == 0
 @test num_dofs(reffe) == 4
-@test get_default_conformity(reffe) == DivConformity()
+@test Conformity(reffe) == DivConformity()
 
 p = QUAD
 D = num_dims(QUAD)

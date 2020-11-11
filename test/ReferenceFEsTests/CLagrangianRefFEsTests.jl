@@ -128,7 +128,7 @@ reffe = LagrangianRefFE(Float64,QUAD,orders)
 @test num_dofs(reffe) == 1
 @test num_nodes(reffe) == 1
 test_lagrangian_reference_fe(reffe)
-@test get_default_conformity(reffe) == L2Conformity()
+@test Conformity(reffe) == L2Conformity()
 
 @test get_face_own_nodes(reffe) == Vector{Int}[[], [], [], [], [], [], [], [], [1]]
 #@test get_face_own_nodes_permutations(reffe) == Vector{Vector{Int}}[
