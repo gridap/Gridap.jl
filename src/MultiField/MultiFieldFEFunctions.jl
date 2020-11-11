@@ -4,7 +4,7 @@
       # private fields
     end
 """
-struct MultiFieldFEFunction{T<:MultiFieldCellField} <: CellField
+struct MultiFieldFEFunction{T<:MultiFieldCellField} <: FEFunction
   single_fe_functions::Vector{<:SingleFieldFEFunction}
   free_values::AbstractArray
   cell_dof_values::AbstractArray
@@ -19,12 +19,12 @@ struct MultiFieldFEFunction{T<:MultiFieldCellField} <: CellField
     multi_cell_field = MultiFieldCellField(map(i->i.cell_field,single_fe_functions))
     T = typeof(multi_cell_field)
 
-
-    f(i) = get_cell_axes(get_fe_space(i))
-    cell_axes = create_array_of_blocked_axes(map(f,single_fe_functions)...)
-    blocks = Tuple(map(get_cell_values,single_fe_functions))
+    blocks = map(get_cell_dof_values,single_fe_functions)
+    cell_axes_blocks = map(i->lazy_map(axes,i),blocks)
+    cell_axes = lazy_map(_multifield_axes_dofs,cell_axes_blocks...)
     blockids = [(i,) for i in 1:length(single_fe_functions)]
-    cell_dof_values = VectorOfBlockArrayCoo(blocks,blockids,cell_axes)
+    bsize = (length(single_fe_functions),)
+    cell_dof_values = lazy_map(BlockArrayCooMap(bsize,bids),cell_axes,blocks...)
 
     new{T}(
       single_fe_functions,
@@ -35,51 +35,18 @@ struct MultiFieldFEFunction{T<:MultiFieldCellField} <: CellField
   end
 end
 
-#function MultiFieldFEFunction(
-#  space::MultiFieldFESpace,
-#  blocks::Vector{<:SingleFieldFEFunction})
-#  fv = zero_free_values(space)
-#  xh0 = MultiFieldFEFunction(fv,space,blocks)
-#end
-
-Arrays.get_array(a::MultiFieldFEFunction) = get_array(a.multi_cell_field)
-
-CellData.get_memo(a::MultiFieldFEFunction) = get_memo(a.multi_cell_field)
-
-CellData.get_cell_map(a::MultiFieldFEFunction) = get_cell_map(a.multi_cell_field)
-
-CellData.get_cell_axes(a::MultiFieldFEFunction) = get_cell_axes(a.multi_cell_field)
-
-CellData.RefStyle(::Type{<:MultiFieldFEFunction{T}}) where T = RefStyle(T)
-
-CellData.MetaSizeStyle(::Type{<:MultiFieldFEFunction{T}}) where T = MetaSizeStyle(T)
-
-FESpaces.FEFunctionStyle(::Type{<:MultiFieldFEFunction}) = Val{true}()
-
+CellData.get_cell_data(f::MultiFieldFEFunction) = get_cell_data(f.multi_cell_field)
+CellData.get_triangulation(f::MultiFieldFEFunction) = get_triangulation(f.multi_cell_field)
+CellData.DomainStyle(::Type{MultiFieldFEFunction{T}}) where T = DomainStyle(T)
 FESpaces.get_free_values(f::MultiFieldFEFunction) = f.free_values
-
 FESpaces.get_fe_space(f::MultiFieldFEFunction) = f.fe_space
-
-Base.length(f::MultiFieldFEFunction) = length(f.multi_cell_field)
+FESpaces.get_cell_dof_values(f::MultiFieldFEFunction) = f.cell_dof_values
 
 """
     num_fields(m::MultiFieldFEFunction)
 """
 num_fields(m::MultiFieldFEFunction) = length(m.single_fe_functions)
-
 Base.iterate(m::MultiFieldFEFunction) = iterate(m.single_fe_functions)
-
 Base.iterate(m::MultiFieldFEFunction,state) = iterate(m.single_fe_functions,state)
-
 Base.getindex(m::MultiFieldFEFunction,field_id::Integer) = m.single_fe_functions[field_id]
-
-function Geometry.restrict(a::MultiFieldFEFunction,trian::Triangulation)
-  f = (ai) -> restrict(ai,trian)
-  blocks = map(f,a.single_fe_functions)
-  blocks
-end
-
-function FESpaces.get_cell_values(f::MultiFieldFEFunction)
-  f.cell_dof_values
-end
 
