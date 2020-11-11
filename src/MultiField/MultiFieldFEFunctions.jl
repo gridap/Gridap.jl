@@ -24,7 +24,7 @@ struct MultiFieldFEFunction{T<:MultiFieldCellField} <: FEFunction
     cell_axes = lazy_map(_multifield_axes_dofs,cell_axes_blocks...)
     blockids = [(i,) for i in 1:length(single_fe_functions)]
     bsize = (length(single_fe_functions),)
-    cell_dof_values = lazy_map(BlockArrayCooMap(bsize,bids),cell_axes,blocks...)
+    cell_dof_values = lazy_map(BlockArrayCooMap(bsize,blockids),cell_axes,blocks...)
 
     new{T}(
       single_fe_functions,

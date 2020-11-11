@@ -5,6 +5,18 @@ struct CDConformity{D} <: Conformity
   cont::NTuple{D,Int}
 end
 
+function Conformity(reffe::GenericLagrangianRefFE{<:CDConformity},sym::Symbol)
+  if sym == :L2
+    L2Conformity()
+  else
+    @unreachable """\n
+    It is not possible to use conformity = $sym on a LagrangianRefFE with CD conformity.
+
+    Either use conformity = :L2 or pass an instance of CDConformity.
+    """
+  end
+end
+
 function get_face_own_nodes(reffe::GenericLagrangianRefFE{<:CDConformity},conf::CDConformity)
   _cd_get_face_own_nodes(reffe,conf)
 end

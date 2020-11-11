@@ -57,6 +57,8 @@ export test_fe_function
 
 export FESpace
 export ConstraintStyle
+export Constrained
+export UnConstrained
 export num_free_dofs
 export zero_free_values
 export EvaluationFunction

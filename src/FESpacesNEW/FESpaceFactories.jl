@@ -3,8 +3,7 @@ function FESpace(
   model::DiscreteModel,
   reffes::AbstractArray{<:ReferenceFE};
   labels = get_face_labeling(model),
-  dof_space=:reference,
-  conformity::Conformity=get_default_conformity(first(reffes)),
+  conformity=Conformity(first(reffes)),
   dirichlet_tags=Int[],
   dirichlet_masks=nothing,
   constraint=nothing,
@@ -15,19 +14,8 @@ function FESpace(
   does not match the number of cells ($(num_cells(model)) cells) in the provided DiscreteModel.
   """
 
-  if dof_space == :reference
-    domain_style = ReferenceDomain()
-  elseif dof_space == :physical
-    domain_style = PhysicalDomain()
-  else
-    @unreachable """\n
-    The passed option dof_space=$dof_space is not valid.
-    Valid values for dof_space: :reference, :physical
-    """
-  end
-
   trian = get_triangulation(model)
-  shapefuns, dof_basis = compute_cell_space(reffes,trian,domain_style)
+  shapefuns, dof_basis = compute_cell_space(reffes,trian)
 
   if vectortype == nothing
     T = get_dof_value_type(shapefuns,dof_basis)
@@ -38,6 +26,8 @@ function FESpace(
     _vector_type = vectortype
   end
 
+  _conformity = Conformity(first(reffes),conformity)
+
   F = _ConformingFESpace(
     _vector_type,
     model,
@@ -45,7 +35,7 @@ function FESpace(
     reffes,
     shapefuns,
     dof_basis,
-    conformity,
+    _conformity,
     dirichlet_tags,
     dirichlet_masks)
 

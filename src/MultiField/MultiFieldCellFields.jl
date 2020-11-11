@@ -22,7 +22,7 @@ struct MultiFieldCellField{DS<:DomainStyle} <: CellField
   end
 end
 
-function get_cell_data(f::MultiFieldCellField)
+function CellData.get_cell_data(f::MultiFieldCellField)
   s = """
   Function get_cell_data is not implemented for MultiFieldCellField at this moment.
   You need to extract the individual fields and then evaluate them separatelly.
@@ -35,7 +35,7 @@ end
 
 CellData.get_triangulation(f::MultiFieldCellField) = f.trian
 CellData.DomainStyle(::Type{MultiFieldCellField{DS}}) where DS = DS()
-CellData.num_fields(a::MultiFieldCellField) = length(a.single_fields)
+num_fields(a::MultiFieldCellField) = length(a.single_fields)
 Base.getindex(a::MultiFieldCellField,i::Integer) = a.single_fields[i]
 Base.iterate(a::MultiFieldCellField)  = iterate(a.single_fields)
 Base.iterate(a::MultiFieldCellField,state)  = iterate(a.single_fields,state)

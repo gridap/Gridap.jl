@@ -30,7 +30,7 @@ struct MultiFieldFESpace{MS<:MultiFieldStyle,CS<:ConstraintStyle,V} <: FESpace
       constraint_style = UnConstrained()
     end
     CS = typeof(constraint_style)
-    new{MS,CS}(spaces,multi_field_style,constraint_style,V)
+    new{MS,CS,V}(V,spaces,multi_field_style,constraint_style)
   end
 end
 
@@ -47,12 +47,12 @@ function MultiFieldFESpace(::Type{V},spaces::Vector{<:SingleFieldFESpace}) where
   MultiFieldFESpace(V,spaces,ConsecutiveMultiFieldStyle())
 end
 
-MultiFieldStyle(::Type{MultiFieldFESpace{S,B}}) where {S,B} = S()
+MultiFieldStyle(::Type{MultiFieldFESpace{S,B,V}}) where {S,B,V} = S()
 MultiFieldStyle(f::MultiFieldFESpace) = MultiFieldStyle(typeof(f))
 
 # Implementation of FESpace
 
-function FESpaces.get_triangulation(f::MultiFieldFESpace) = get_triangulation(f.cell_shapefuns)
+function FESpaces.get_triangulation(f::MultiFieldFESpace)
   s1 = first(f.spaces)
   trian = get_triangulation(s1)
   @check all(map(i->trian===get_triangulation(i),f.spaces))
@@ -71,7 +71,7 @@ FESpaces.get_dof_value_type(f::MultiFieldFESpace{MS,CS,V}) where {MS,CS,V} = elt
 
 FESpaces.zero_free_values(f::MultiFieldFESpace) = allocate_vector(f.vector_type,num_free_dofs(f))
 
-FESpaces.ConstraintStyle(::Type{MultiFieldFESpace{S,B}}) where {S,B} = B()
+FESpaces.ConstraintStyle(::Type{MultiFieldFESpace{S,B,V}}) where {S,B,V} = B()
 
 function FESpaces.get_cell_shapefuns(f::MultiFieldFESpace)
  
@@ -83,7 +83,7 @@ function FESpaces.get_cell_shapefuns(f::MultiFieldFESpace)
 
   # Compute the underlying single-fields
   nfields = length(f.spaces)
-  all_basis = map(1:nfields) do i
+  all_bases = map(1:nfields) do i
     bsize = (nfields,)
     dv = blocks[i]
     cell_basis = lazy_map(BlockFieldArrayCooMap(bsize,[(i,)]),cell_axes,get_cell_data(dv))
@@ -93,14 +93,14 @@ function FESpaces.get_cell_shapefuns(f::MultiFieldFESpace)
 end
 
 function _multifield_axes_dofs(axs...)
-  rs = map(first,axes)
+  rs = map(first,axs)
   (append_ranges([rs...]),)
 end
 
 function FESpaces.get_cell_shapefuns_trial(f::MultiFieldFESpace)
   blocks = get_cell_shapefuns(f).single_fields
   nfields = length(blocks)
-  all_basis = map(1:nfields) do i
+  all_bases = map(1:nfields) do i
     dv = blocks[i]
     cell_basis = lazy_map(transpose,get_cell_data(dv))
     FEBasis(cell_basis,get_triangulation(dv),TrialBasis(),DomainStyle(dv))
@@ -136,7 +136,7 @@ function CellData.CellField(
   fe::MultiFieldFESpace,cell_values::LazyArray{<:Fill{<:BlockArrayCooMap}})
   single_fields = map(1:length(fe.spaces)) do i
     ma = cell_values.g.value
-    cell_values_field = Arrays._get_cell_block(ma,cell_values,(i,))
+    cell_values_field = Fields._get_cell_block(ma,cell_values,Block(i))
     CellField(fe.spaces[i],cell_values_field)
   end
   MultiFieldCellField(single_fields)
@@ -204,19 +204,19 @@ function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace)
   get_cell_dof_ids(f,MultiFieldStyle(f))
 end
 
-function get_cell_dof_ids(f::MultiFieldFESpace,::MultiFieldStyle)
+function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,::MultiFieldStyle)
   @notimplemented
 end
 
-function get_cell_dof_ids(f::MultiFieldFESpace,::ConsecutiveMultiFieldStyle)
+function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,::ConsecutiveMultiFieldStyle)
   offsets = compute_field_offsets(f)
   spaces = f.spaces
   function fun(i,space)
-    cell_dofs = get_cell_dofs(space)
+    cell_dofs = get_cell_dof_ids(space)
     if i == 1
       return cell_dofs
     end
-    offset = offsets[i]
+    offset = Int32(offsets[i])
     o = Fill(offset,length(cell_dofs))
     lazy_map(Broadcasting(_sum_if_first_positive),cell_dofs,o)
   end

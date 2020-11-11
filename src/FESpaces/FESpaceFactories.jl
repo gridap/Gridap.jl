@@ -153,7 +153,7 @@ function _setup_generic_space(kwargs)
   reffes = [ reffe ]
 
   if conformity in [true, :default]
-    conf = get_default_conformity(reffe)
+    conf = Conformity(reffe)
     V =  ConformingFESpace(reffes,conf,model,labels,diritags,nothing,is_ref)
   elseif isa(conformity,Conformity)
     V =  ConformingFESpace(reffes,conformity,model,labels,diritags,nothing,is_ref)

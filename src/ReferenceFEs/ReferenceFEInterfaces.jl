@@ -96,7 +96,12 @@ function get_face_own_dofs(reffe::ReferenceFE,conf::Conformity)
   @abstractmethod
 end
 
-function Conformity()
+function Conformity(reffe::ReferenceFE,conf::Conformity)
+  conf
+end
+
+function Conformity(reffe::ReferenceFE,sym::Symbol)
+  @abstractmethod
 end
 
 """
