@@ -446,6 +446,11 @@ DomainStyle(::Type{CellFieldAt{T,F}}) where {T,F} = DomainStyle(F)
 gradient(a::CellFieldAt{P}) where P = CellFieldAt{P}(gradient(a.parent))
 ∇∇(a::CellFieldAt{P}) where P = CellFieldAt{P}(∇∇(a.parent))
 
+function CellFieldAt{T}(parent::OperationCellField) where T
+  args = map(i->CellFieldAt{T}(i),parent.args)
+  OperationCellField(parent.op,args...)
+end
+
 function get_normal_vector(trian::SkeletonTriangulation)
   cell_normal_plus = get_facet_normal(trian.plus)
   cell_normal_minus = get_facet_normal(trian.minus)

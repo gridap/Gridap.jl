@@ -156,6 +156,7 @@ end
 get_cell_data(f::FEBasis) = f.cell_basis
 get_triangulation(f::FEBasis) = f.trian
 BasisStyle(::Type{FEBasis{BS,DS}}) where {BS,DS} = BS()
+BasisStyle(::T) where T <: FEBasis = BasisStyle(T)
 DomainStyle(::Type{FEBasis{BS,DS}}) where {BS,DS} = DS()
 
 function change_domain_skeleton(a::FEBasis,trian::SkeletonTriangulation,target_domain::DomainStyle)
@@ -179,7 +180,7 @@ function _fix_cell_basis_dofs_at_skeleton(pair,::TestBasis)
   SkeletonPair(plus,minus)
 end
 
-function _fix_cell_basis_dofs_at_skeleton(pair_in,::TrialBasis)
+function _fix_cell_basis_dofs_at_skeleton(pair,::TrialBasis)
   cell_axes_plus = lazy_map(axes,pair.plus)
   cell_axes_minus = lazy_map(axes,pair.minus)
   cell_axes = lazy_map(cell_axes_plus,cell_axes_minus) do axp, axm

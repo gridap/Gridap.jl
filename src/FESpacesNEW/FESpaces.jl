@@ -8,6 +8,7 @@ module FESpaces
 using DocStringExtensions
 using Test
 using FillArrays
+using BlockArrays
 using SparseArrays
 
 using Gridap.Helpers
@@ -27,6 +28,7 @@ import Gridap.CellData: attach_constraints_cols
 import Gridap.CellData: CellField
 import Gridap.CellData: get_cell_data
 import Gridap.CellData: DomainStyle
+import Gridap.CellData: change_domain_skeleton
 
 import Gridap.Algebra: allocate_residual
 import Gridap.Algebra: allocate_jacobian

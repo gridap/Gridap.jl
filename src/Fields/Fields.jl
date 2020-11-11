@@ -105,6 +105,7 @@ export IntegrationMap
 
 export BlockFieldArrayCoo
 export BlockFieldArrayCooMap
+export similar_range
 
 ##export MatMul
 #export LinCombVal
