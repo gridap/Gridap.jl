@@ -81,6 +81,7 @@ export MultiLevelBlockedUnitRange
 export blocks_equal
 export num_blocks_equal
 export local_range
+export similar_range
 export BlockArrayCooMap
 
 export array_cache
