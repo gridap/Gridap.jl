@@ -244,7 +244,33 @@ function lazy_map(
   lazy_map(BlockFieldArrayCooMap(bsize_new,bids_new),cell_axs_new, cell_ait)
 end
 
-# Operations
+# Operations before evaluating
+
+function lazy_map(
+  k::Broadcasting{<:Operation}, a::LazyArray{<:Fill{<:BlockFieldArrayCooMap}})
+  m = a.g.value
+  cell_axs, cell_ai = a.f
+  cell_aif = lazy_map(k,cell_ai)
+  lazy_map(m,cell_axs,cell_aif)
+end
+
+function lazy_map(
+  k::Broadcasting{<:Operation}, a::LazyArray{<:Fill{<:BlockFieldArrayCooMap}},f::AbstractArray{<:Field})
+  m = a.g.value
+  cell_axs, cell_ai = a.f
+  cell_aif = lazy_map(k,cell_ai,f)
+  lazy_map(m,cell_axs,cell_aif)
+end
+
+function lazy_map(
+  k::Broadcasting{<:Operation}, f::AbstractArray{<:Field}, a::LazyArray{<:Fill{<:BlockFieldArrayCooMap}})
+  m = a.g.value
+  cell_axs, cell_ai = a.f
+  cell_aif = lazy_map(k,f,cell_ai)
+  lazy_map(m,cell_axs,cell_aif)
+end
+
+# Operations on values
 
 function _get_axes_and_blocks(f)
   f[1], f[2:end]

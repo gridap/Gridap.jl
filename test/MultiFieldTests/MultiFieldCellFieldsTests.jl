@@ -111,15 +111,12 @@ test_array(cellmat1,cellmat2,≈)
 @test isa(cellmat2,LazyArray{<:Fill{BlockArrayCooMap{2}}})
 @test_broken isa(cellmat1,LazyArray{<:Fill{BlockArrayCooMap{2}}})
 
-@test_broken begin
 cellmat_Γ = integrate(  jump(n⋅dv)*dp.⁺ + mean(dq)*jump(dp), quad_Γ)
 cellvec_Γ = integrate(  jump(n⋅dv) + mean(dq), quad_Γ)
 L = 1
 R = 2
-@test isa(cellmat_Γ,VectorOfBlockArrayCoo)
-@test isa(cellmat_Γ[Block(L,R)],VectorOfBlockArrayCoo)
-@test isa(cellvec_Γ,VectorOfBlockArrayCoo)
-@test isa(cellvec_Γ[Block(L)],VectorOfBlockArrayCoo)
+@test isa(cellmat_Γ,LazyArray{<:Fill{BlockArrayCooMap{2}}})
+@test isa(cellvec_Γ,LazyArray{<:Fill{BlockArrayCooMap{1}}})
 
 cell = 1
 @test isa(cellmat_Γ[cell][Block(L,R)],BlockArrayCoo)
@@ -128,8 +125,6 @@ cell = 1
 cellmat1_Γ = integrate(((n⋅dv.⁺)-dq.⁻)*((n⋅du.⁺)+dp.⁻),quad_Γ)
 cellmat2_Γ = integrate((n⋅dv.⁺)*(n⋅du.⁺)+(n⋅dv.⁺)*dp.⁻-dq.⁻*(n⋅du.⁺)-dq.⁻*dp.⁻,quad_Γ)
 test_array(cellmat1_Γ,cellmat2_Γ,≈)
-true
-end
 
 
 #a = cellmat_Γ

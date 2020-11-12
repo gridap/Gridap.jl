@@ -8,8 +8,8 @@ using Test
 
 @testset "MultiFieldFEFunctions" begin include("MultiFieldFEFunctionsTests.jl") end
 
-#@testset "MultiFieldSparseMatrixAssemblers" begin include("MultiFieldSparseMatrixAssemblersTests.jl") end
-#
+@testset "MultiFieldSparseMatrixAssemblers" begin include("MultiFieldSparseMatrixAssemblersTests.jl") end
+
 #@testset "MultiFieldFEOperators" begin include("MultiFieldFEOperatorsTests.jl") end
 #
 #@testset "MultiFieldFESpacesWithLinearConstraints" begin include("MultiFieldFESpacesWithLinearConstraintsTests.jl") end
