@@ -69,7 +69,7 @@ end
 
 FESpaces.get_dof_value_type(f::MultiFieldFESpace{MS,CS,V}) where {MS,CS,V} = eltype(V)
 
-FESpaces.zero_free_values(f::MultiFieldFESpace) = allocate_vector(f.vector_type,num_free_dofs(f))
+FESpaces.get_vector_type(f::MultiFieldFESpace) = f.vector_type
 
 FESpaces.ConstraintStyle(::Type{MultiFieldFESpace{S,B,V}}) where {S,B,V} = B()
 
