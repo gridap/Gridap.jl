@@ -43,7 +43,7 @@ export Map
 export return_cache
 export evaluate!
 export evaluate
-export test_mapping
+export test_map
 export return_type
 export return_value
 export testargs

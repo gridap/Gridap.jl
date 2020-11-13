@@ -5,7 +5,7 @@ module Fields
 #using Gridap.Arrays: evaluate
 #using Gridap.Arrays: Operation
 #using Gridap.Arrays: Broadcasting
-#using Gridap.Arrays: test_mapping
+#using Gridap.Arrays: test_map
 #using Gridap.Arrays: LazyArray
 #using Gridap.Arrays: CachedArray
 #using Gridap.Arrays: setsize!

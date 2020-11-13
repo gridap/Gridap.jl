@@ -54,7 +54,7 @@ Map
 evaluate!(cache,f,x...)
 return_cache(f,x...)
 return_type(f,x...)
-test_mapping
+test_map
 ```
 
 ### Other functions using kernels
