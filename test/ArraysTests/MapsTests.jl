@@ -30,7 +30,7 @@ cache = return_cache(bm,a,b)
 # evaluate!(cs,(+,m),a,b) == (a+b,m)
 # evaluate((+,m),a,b) == (a+b,m)
 
-# @test map(op -> return_type(op,a,b),(+,m)) == (Array{Int64,1}, Array{Float64,2})
+# @test map(op -> return_type(op,a,b),(+,m)) == (Array{Int,1}, Array{Float64,2})
 
 z = evaluate(+,a,b)
 c = return_cache(+,a,b)
