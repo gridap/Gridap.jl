@@ -7,27 +7,9 @@ using Gridap.Algebra
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.FESpaces
-using Gridap.FESpaces: ExtendedVector
 using Gridap.Integration
 using Gridap.Fields
 using Gridap.CellData
-
-
-oldcell_to_cell = [1,2,-1,3,-2,-3,-4]
-cell_to_oldcell = [1,2,4]
-void_to_oldcell = [3,5,6,7]
-void_to_val = Float64[-10,-20,-30,-40]
-cell_to_val = Float64[10,20,30]
-a = ExtendedVector(
-  void_to_val,
-  cell_to_val,
-  oldcell_to_cell,
-  void_to_oldcell,
-  cell_to_oldcell)
-
-r = [10.0, 20.0, -10.0, 30.0, -20.0, -30.0, -40.0]
-test_array(a,r)
-
 
 n = 10
 mesh = (n,n)
@@ -49,41 +31,120 @@ end
 oldcell_to_coods = get_cell_coordinates(trian)
 oldcell_to_is_in = collect1d(lazy_map(is_in,oldcell_to_coods))
 
-incell_to_cell = findall(oldcell_to_is_in)
-outcell_to_cell = findall(collect(Bool, .! oldcell_to_is_in))
+model_in = DiscreteModel(model,oldcell_to_is_in)
+@test isa(model_in,RestrictedDiscreteModel)
 
-model_in = DiscreteModel(model,incell_to_cell)
+@test trian === get_triangulation(get_parent_model(model_in))
 
-V = TestFESpace(
-  model=model_in,valuetype=Float64,reffe=:Lagrangian,
-  order=1,conformity=:H1,dof_space=:physical)
-@test isa(V,ExtendedFESpace)
-
-
-
-model_out = DiscreteModel(model,outcell_to_cell)
-
-trian_in = RestrictedTriangulation(trian, incell_to_cell)
-
-trian_Γ = InterfaceTriangulation(model_in,model_out)
-
-quad_in = CellQuadrature(trian_in,2*order)
-
-quad_Γ = CellQuadrature(trian_Γ,2*order)
-
-reffes = [LagrangianRefFE(VectorValue{2,Float64},get_polytope(p),order) for p in get_reffes(trian_in)]
-
-V_in = DiscontinuousFESpace(reffes,trian_in)
-
-V = ExtendedFESpace(V_in, trian_in)
+V = TestFESpace(model_in,ReferenceFE(:Lagrangian,Float64,order),conformity=:H1)
+@test isa(V,FESpaces.ExtendedFESpace)
 test_single_field_fe_space(V)
 
 U = TrialFESpace(V)
 test_single_field_fe_space(U)
 
-u(x) = VectorValue(x[1]+x[2], x[1])
+oldcell_to_is_out = lazy_map(!,oldcell_to_is_in)
+model_out = DiscreteModel(model,oldcell_to_is_out)
 
+Ω = Triangulation(model)
+Ω_in = Triangulation(model_in)
+Ω_out = Triangulation(model_out)
+Γ = InterfaceTriangulation(model_in,model_out)
+
+degree = 2
+dΩ = LebesgueMeasure(Ω,degree)
+dΩ_in = LebesgueMeasure(Ω_in,degree)
+dΩ_out = LebesgueMeasure(Ω_out,degree)
+dΓ = LebesgueMeasure(Γ,degree)
+
+u(x) = x[1]+1
+
+dv = get_cell_shapefuns(V)
+du = get_cell_shapefuns_trial(U)
 uh = interpolate(u,U)
+
+x = get_cell_points(Ω)
+x_in = get_cell_points(Ω_in)
+x_out = get_cell_points(Ω_out)
+x_Γ = get_cell_points(Γ)
+
+r = dv(x)
+test_array(r,collect(r))
+r = dv(x_in)
+test_array(r,collect(r))
+r = dv(x_out)
+test_array(r,collect(r))
+r = dv.⁺(x_Γ)
+test_array(r,collect(r))
+
+r = ∇(dv)(x)
+test_array(r,collect(r))
+r = ∇(dv)(x_in)
+test_array(r,collect(r))
+r = ∇(dv)(x_out)
+test_array(r,collect(r))
+r = ∇(dv).⁺(x_Γ)
+test_array(r,collect(r))
+
+r = du(x)
+test_array(r,collect(r))
+r = du(x_in)
+test_array(r,collect(r))
+r = du(x_out)
+test_array(r,collect(r))
+r = du.⁺(x_Γ)
+test_array(r,collect(r))
+
+r = ∇(du)(x)
+test_array(r,collect(r))
+r = ∇(du)(x_in)
+test_array(r,collect(r))
+r = ∇(du)(x_out)
+test_array(r,collect(r))
+r = ∇(du).⁺(x_Γ)
+test_array(r,collect(r))
+
+r = uh(x)
+test_array(r,collect(r))
+r = uh(x_in)
+test_array(r,collect(r))
+r = uh(x_out)
+test_array(r,collect(r))
+r = uh.⁺(x_Γ)
+test_array(r,collect(r))
+
+r = ∇(uh)(x)
+test_array(r,collect(r))
+r = ∇(uh)(x_in)
+test_array(r,collect(r))
+r = ∇(uh)(x_out)
+test_array(r,collect(r))
+r = ∇(uh).⁺(x_Γ)
+test_array(r,collect(r))
+
+#using Gridap.Visualization
+#writevtk(Ω,"Omega",cellfields=["uh"=>uh])
+#writevtk(Ω_in,"Omega_in",cellfields=["uh"=>uh])
+#writevtk(Ω_out,"Omega_out",cellfields=["uh"=>uh])
+#writevtk(Γ,"gamma",cellfields=["uh"=>uh.plus])
+
+a(u,v) =
+  ∫(v⊙u)*dΩ #+
+  #∫(v⊙u)*dΩ_in +
+  #∫(v⊙u)*dΩ_out# +
+  #∫(jump(v)⊙jump(u) + jump(∇(v))⊙jump(∇(u)))*dΓ
+
+l(v) =
+  ∫(v⊙u)*dΩ #+
+  #∫(v⊙u)*dΩ_in +
+  #∫(v⊙u)*dΩ_out# +
+  #∫(jump(v))*dΓ
+
+op = AffineFEOperator(a,l,U,V)
+
+kk
+
+
 
 
 uh_in = restrict(uh,trian_in)

@@ -18,9 +18,12 @@ using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.CellData
+using Gridap.TensorValues
 
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
+import Gridap.Arrays: return_cache
+import Gridap.Arrays: evaluate!
 import Gridap.Geometry: get_triangulation
 import Gridap.Geometry: get_cell_shapefuns
 import Gridap.CellData: attach_constraints_rows
@@ -154,6 +157,8 @@ export NonlinearFESolver
 
 export FESpaceWithConstantFixed
 export ZeroMeanFESpace
+export CLagrangianFESpace
+export DirichletFESpace
 
 include("FESpaceInterface.jl")
 
@@ -184,5 +189,13 @@ include("DiscontinuousFESpaces.jl")
 include("FESpacesWithConstantFixed.jl")
 
 include("ZeroMeanFESpaces.jl")
+
+include("CLagrangianFESpaces.jl")
+
+include("DirichletFESpaces.jl")
+
+include("ExtendedFESpaces.jl")
+
+include("FESpacesWithLinearConstraints.jl")
 
 end # module

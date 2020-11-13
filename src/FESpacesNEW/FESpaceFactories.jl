@@ -69,6 +69,13 @@ function FESpace(
   V
 end
 
+function FESpace(
+  model::RestrictedDiscreteModel, cell_reffes::AbstractArray{<:ReferenceFE}; kwargs...)
+  model_portion = model.model
+  V_portion = FESpace(model_portion,cell_reffes;kwargs...)
+  ExtendedFESpace(V_portion,model)
+end
+
 function FESpace(model::DiscreteModel, reffe::Tuple{Symbol,Any,Any}; kwargs...)
   basis, reffe_args,reffe_kwargs = reffe
   cell_reffe = ReferenceFE(model,basis,reffe_args...;reffe_kwargs...)

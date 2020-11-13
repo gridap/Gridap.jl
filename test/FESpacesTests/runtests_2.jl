@@ -6,12 +6,12 @@ using Test
 
 @testset "ZeroMeanFESpaces" begin include("ZeroMeanFESpacesTests.jl") end
 
-#@testset "CLagrangianFESpaces" begin include("CLagrangianFESpacesTests.jl") end
-#
-#@testset "DirichletFESpaces" begin include("DirichletFESpacesTests.jl") end
-#
+@testset "CLagrangianFESpaces" begin include("CLagrangianFESpacesTests.jl") end
+
+@testset "DirichletFESpaces" begin include("DirichletFESpacesTests.jl") end
+
 #@testset "ExtendedFESpaces" begin include("ExtendedFESpacesTests.jl") end
-#
+
 #@testset "FESpacesWithLinearConstraints" begin include("FESpacesWithLinearConstraintsTests.jl") end
 #
 #@testset "FEAutodiff" begin include("FEAutodiffTests.jl") end
