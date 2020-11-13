@@ -25,6 +25,7 @@ get_cell_dof_basis(f::UnconstrainedFESpace) = f.cell_dof_basis
 get_cell_dof_ids(f::UnconstrainedFESpace) = f.cell_dofs_ids
 get_triangulation(f::UnconstrainedFESpace) = get_triangulation(f.cell_shapefuns)
 get_dof_value_type(f::UnconstrainedFESpace{V}) where V = eltype(V)
+get_vector_type(f::UnconstrainedFESpace{V}) where V = V
 
 # SingleFieldFESpace interface
 

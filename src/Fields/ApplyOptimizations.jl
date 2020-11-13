@@ -109,9 +109,17 @@ end
 #  lazy_map(Broadcasting(gradient),g)
 #
 function lazy_map(
-  ::Broadcasting{typeof(gradient)}, a::LazyArray{<:Fill{typeof(linear_combination)}})
+  k::Broadcasting{typeof(∇)}, a::LazyArray{<:Fill{typeof(linear_combination)}})
 
-  i_to_basis = lazy_map(Broadcasting(∇),a.f[2])
+  i_to_basis = lazy_map(k,a.f[2])
+  i_to_values = a.f[1]
+  lazy_map(linear_combination,i_to_values,i_to_basis)
+end
+
+function lazy_map(
+  k::Broadcasting{typeof(∇∇)}, a::LazyArray{<:Fill{typeof(linear_combination)}})
+
+  i_to_basis = lazy_map(k,a.f[2])
   i_to_values = a.f[1]
   lazy_map(linear_combination,i_to_values,i_to_basis)
 end
@@ -122,9 +130,16 @@ end
 #  lazy_map(Broadcasting(gradient),g)
 #
 function lazy_map(
-  ::Broadcasting{typeof(gradient)}, a::LazyArray{<:Fill{typeof(transpose)}})
+  k::Broadcasting{typeof(∇)}, a::LazyArray{<:Fill{typeof(transpose)}})
 
-  i_to_basis = lazy_map(gradient,a.f[1])
+  i_to_basis = lazy_map(k,a.f[1])
+  lazy_map( transpose, i_to_basis)
+end
+
+function lazy_map(
+  k::Broadcasting{typeof(∇∇)}, a::LazyArray{<:Fill{typeof(transpose)}})
+
+  i_to_basis = lazy_map(k,a.f[1])
   lazy_map( transpose, i_to_basis)
 end
 

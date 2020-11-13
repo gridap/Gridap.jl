@@ -102,7 +102,7 @@ export GenericRefFE
 export get_polytope
 export get_prebasis
 export get_dof_basis
-export get_default_conformity
+export Conformity
 export get_face_own_dofs
 export get_face_own_dofs_permutations
 export get_face_dofs

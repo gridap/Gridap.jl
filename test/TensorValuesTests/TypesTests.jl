@@ -317,11 +317,11 @@ v = TensorValue{3,2,Float64}(1,2,3,4,5,6)
 s = "(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)"
 @test string(v) == s
 
-v = SymTensorValue{3,Int64}(1, 0, 0, 1, 0, 1)
+v = SymTensorValue{3,Int}(1, 0, 0, 1, 0, 1)
 s = "(1, 0, 0, 1, 0, 1)"
 @test string(v) == s
 
-v = SymFourthOrderTensorValue{2,Int64}(1111,1121,1122, 2111,2121,2122, 2211,2221,2222)
+v = SymFourthOrderTensorValue{2,Int}(1111,1121,1122, 2111,2121,2122, 2211,2221,2222)
 s = "(1111, 1121, 1122, 2111, 2121, 2122, 2211, 2221, 2222)"
 @test string(v) == s
 

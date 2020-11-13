@@ -67,7 +67,7 @@ faces = get_faces(SEGMENT)
 println(faces)
 
 # output
-Array{Int64,1}[[1], [2], [1, 2, 3]]
+Array{Int,1}[[1], [2], [1, 2, 3]]
 ```
 
 The constant [`SEGMENT`](@ref) is bound to a predefined instance of polytope
@@ -97,7 +97,7 @@ ranges = get_dimranges(SEGMENT)
 println(ranges)
 
 # output
-UnitRange{Int64}[1:2, 3:3]
+UnitRange{Int}[1:2, 3:3]
 ```
 Face ids for the vertices in the segment range from 1 to 2 (2 vertices),
 the face ids for edges in the segment range from 3 to 3 (only one edge with id 3).
@@ -207,7 +207,7 @@ perms = get_vertex_permutations(SEGMENT)
 println(perms)
 
 # output
-Array{Int64,1}[[1, 2], [2, 1]]
+Array{Int,1}[[1, 2], [2, 1]]
 
 ```
 The first admissible permutation for a segment is `[1,2]`,i.e., the identity.
@@ -444,8 +444,8 @@ vertex_to_edges_around = get_faces(QUAD,0,1)
 println(vertex_to_edges_around)
 
 # output
-Array{Int64,1}[[1, 2], [3, 4], [1, 3], [2, 4]]
-Array{Int64,1}[[1, 3], [1, 4], [2, 3], [2, 4]]
+Array{Int,1}[[1, 2], [3, 4], [1, 3], [2, 4]]
+Array{Int,1}[[1, 3], [1, 4], [2, 3], [2, 4]]
 ```
 """
 function get_faces(p::Polytope,dimfrom::Integer,dimto::Integer)

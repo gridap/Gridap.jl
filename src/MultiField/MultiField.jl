@@ -12,10 +12,11 @@ using Gridap.Arrays
 using Gridap.FESpaces
 using Gridap.Geometry
 using Gridap.Integration
-using Gridap.Inference
 using Gridap.TensorValues
 using Gridap.CellData
 using Gridap.Fields
+
+using Gridap.FESpaces: FEBasis, TestBasis, TrialBasis
 
 using FillArrays
 using SparseArrays

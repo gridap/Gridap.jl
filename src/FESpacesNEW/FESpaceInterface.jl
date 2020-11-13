@@ -58,7 +58,12 @@ end
 
 """
 """
-function zero_free_values(fs::FESpace)
+function zero_free_values(f::FESpace)
+  V = get_vector_type(f)
+  allocate_vector(V,num_free_dofs(f))
+end
+
+function get_vector_type(fs::FESpace)
   @abstractmethod
 end
 
@@ -306,6 +311,8 @@ function test_fe_space(f::FESpace)
   @test isa(trian,Triangulation)
   free_values = zero_free_values(f)
   @test length(free_values) == num_free_dofs(f)
+  V = get_vector_type(f)
+  @test typeof(free_values) == V
   fe_function = FEFunction(f,free_values)
   test_fe_function(fe_function)
   fe_basis = get_cell_shapefuns(f)

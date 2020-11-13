@@ -5,6 +5,18 @@ struct CDConformity{D} <: Conformity
   cont::NTuple{D,Int}
 end
 
+function Conformity(reffe::GenericLagrangianRefFE{<:CDConformity},sym::Symbol)
+  if sym == :L2
+    L2Conformity()
+  else
+    @unreachable """\n
+    It is not possible to use conformity = $sym on a LagrangianRefFE with CD conformity.
+
+    Either use conformity = :L2 or pass an instance of CDConformity.
+    """
+  end
+end
+
 function get_face_own_nodes(reffe::GenericLagrangianRefFE{<:CDConformity},conf::CDConformity)
   _cd_get_face_own_nodes(reffe,conf)
 end
@@ -153,13 +165,13 @@ function _compute_cd_face_own_nodes(p::ExtrusionPolytope{D},orders::NTuple{D,<:I
   nodes, _ = cd_compute_nodes(p,orders)
   _ord = convert(NTuple{D,Float64},orders)
   _nodes = map(i -> i.data.*_ord,nodes)
-  _nodes = map(i -> convert(NTuple{D,Int64},i),_nodes)
+  _nodes = map(i -> convert(NTuple{D,Int},i),_nodes)
   perm = Dict(_nodes[i] => i for i = 1:length(_nodes))
-  face_owned_nodes = Vector{Int64}[]
+  face_owned_nodes = Vector{Int}[]
   for nf in p.dface.nfaces
     anc = nf.anchor
     ext = nf.extrusion
-    fns = UnitRange{Int64}[]
+    fns = UnitRange{Int}[]
     for i in 1:length(orders)
       e,a,c,o = ext[i],anc[i],cont[i],orders[i]
       if e==0 && c == DISC
@@ -175,7 +187,7 @@ function _compute_cd_face_own_nodes(p::ExtrusionPolytope{D},orders::NTuple{D,<:I
     end
     n_ijk = map(i->i.I,collect(CartesianIndices(Tuple(fns))))
     if length(n_ijk) == 0
-      n_i = Int64[]
+      n_i = Int[]
     else
       n_i = sort(reshape([perm[i] for i in n_ijk],length(n_ijk)))
     end
@@ -211,7 +223,7 @@ function _move_nodes(p::ExtrusionPolytope,orders,act_f,nodes,f_own)
     tr = map(i -> i == 0 ? 1 : 0,orders)
     nfs = p.dface.nfaces
     con(ext,anc) = f -> ( f.extrusion == ext && f.anchor == anc )
-    perm = zeros(Int64,length(nfs))
+    perm = zeros(Int,length(nfs))
     for i in findall(act_f)
       nf  =nfs[i]
       ext = VectorValue(map(+,nf.extrusion,tr))

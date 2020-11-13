@@ -8,6 +8,7 @@ using Gridap.Fields
 using Gridap.Integration
 using Gridap.CellData
 using Gridap.MultiField
+using Gridap.ReferenceFEs
 using Test
 
 order = 2
@@ -19,10 +20,9 @@ model = CartesianDiscreteModel(domain,partition)
 trian = get_triangulation(model)
 degree = order
 quad = CellQuadrature(trian,degree)
-q = get_coordinates(quad)
 
-V = TestFESpace(model=model,order=order,reffe=:Lagrangian,conformity=:H1,valuetype=Float64)
-Q = TestFESpace(model=model,order=order-1,reffe=:Lagrangian,conformity=:L2,valuetype=Float64)
+V = TestFESpace(model,ReferenceFE(:Lagrangian,Float64,order);conformity=:H1)
+Q = TestFESpace(model,ReferenceFE(:Lagrangian,Float64,order-1),conformity=:L2)
 
 U = TrialFESpace(V)
 P = TrialFESpace(Q)
@@ -33,13 +33,9 @@ X = MultiFieldFESpace([U,P])
 free_values = rand(num_free_dofs(X))
 xh = FEFunction(X,free_values)
 test_fe_function(xh)
-@test is_a_fe_function(xh)
 uh, ph = xh
-@test is_a_fe_function(uh)
-@test is_a_fe_function(ph)
 
-cell_values = get_cell_values(xh)
-@test isa(cell_values,VectorOfBlockArrayCoo)
-
+cell_values = get_cell_dof_values(xh)
+@test isa(cell_values[1],BlockArrayCoo)
 
 end # module

@@ -1,17 +1,4 @@
 
-function similar_range(r::Base.OneTo,n::Integer)
-  Base.OneTo(Int(n))
-end
-
-function similar_range(r::BlockedUnitRange,n::Integer)
-  blockedrange([n])
-end
-
-function similar_range(r::MultiLevelBlockedUnitRange,n::Integer)
-  r = similar_range(first(r.local_ranges),n)
-  append_ranges([r])
-end
-
 # Restricted for a single non zero block
 struct BlockFieldArrayCoo{T,N,A,X} <: AbstractBlockArray{T,N}
   axes::X
@@ -257,7 +244,33 @@ function lazy_map(
   lazy_map(BlockFieldArrayCooMap(bsize_new,bids_new),cell_axs_new, cell_ait)
 end
 
-# Operations
+# Operations before evaluating
+
+function lazy_map(
+  k::Broadcasting{<:Operation}, a::LazyArray{<:Fill{<:BlockFieldArrayCooMap}})
+  m = a.g.value
+  cell_axs, cell_ai = a.f
+  cell_aif = lazy_map(k,cell_ai)
+  lazy_map(m,cell_axs,cell_aif)
+end
+
+function lazy_map(
+  k::Broadcasting{<:Operation}, a::LazyArray{<:Fill{<:BlockFieldArrayCooMap}},f::AbstractArray{<:Field})
+  m = a.g.value
+  cell_axs, cell_ai = a.f
+  cell_aif = lazy_map(k,cell_ai,f)
+  lazy_map(m,cell_axs,cell_aif)
+end
+
+function lazy_map(
+  k::Broadcasting{<:Operation}, f::AbstractArray{<:Field}, a::LazyArray{<:Fill{<:BlockFieldArrayCooMap}})
+  m = a.g.value
+  cell_axs, cell_ai = a.f
+  cell_aif = lazy_map(k,f,cell_ai)
+  lazy_map(m,cell_axs,cell_aif)
+end
+
+# Operations on values
 
 function _get_axes_and_blocks(f)
   f[1], f[2:end]
@@ -366,8 +379,16 @@ function lazy_map(
   blockids = eltype(ma.blockids)[]
   for I in eachblockid(ma)
     if is_nonzero_block(ma,I) || is_nonzero_block(mb,I)
-      aI = _get_cell_block(ma,a,I)
-      bI = _get_cell_block(mb,b,I)
+      if is_nonzero_block(ma,I) && is_nonzero_block(mb,I)
+        aI = _get_cell_block(ma,a,I)
+        bI = _get_cell_block(mb,b,I)
+      elseif is_nonzero_block(ma,I)
+        aI = _get_cell_block(ma,a,I)
+        bI = _lazy_array_of_zero_blocks(_block_type(eltype(b)),cell_axs,I,aI)
+      else
+        bI = _get_cell_block(mb,b,I)
+        aI = _lazy_array_of_zero_blocks(_block_type(eltype(a)),cell_axs,I,bI)
+      end
       block = lazy_map(k,aI,bI)
       push!(blocks,block)
       push!(blockids,I.n)
@@ -379,6 +400,10 @@ function lazy_map(
   lazy_map(m,cell_axs,blocks...)
 end
 
+function _block_type(::Type{<:BlockArrayCoo{T,N,A}}) where {T,N,A}
+  A
+end
+
 function _get_cell_block(
   m::BlockArrayCooMap,
   a::AbstractArray{<:BlockArrayCoo{T,N,A}},
@@ -386,14 +411,31 @@ function _get_cell_block(
   cell_axs, cell_blocks = _get_axes_and_blocks(a.f)
   I = convert(Tuple,b)
   p = m.ptrs[I...]
-  if p>0
-    return cell_blocks[p]
-  else
-    return lazy_map(cell_axs) do axs
-      laxs = map( local_range, axs, I)
-      Arrays._zero_block(A,laxs)
+  @assert p > 0
+  cell_blocks[p]
+end
+
+function _lazy_array_of_zero_blocks(::Type{A},cell_axs,I,aI) where A
+  lazy_map(cell_axs) do axs
+    laxs = map( local_range, axs, I.n)
+    Arrays._zero_block(A,laxs)
+  end
+end
+
+function _lazy_array_of_zero_blocks(
+  ::Type{A},cell_axs,I,aI::LazyArray{<:Fill{BlockArrayCooMap{N}}}) where {A,N}
+
+  cell_axsI, = aI.f
+  maI = aI.g.value
+  blocks = []
+  for J in eachblockid(maI)
+    if is_nonzero_block(maI,J)
+      block = _lazy_array_of_zero_blocks(_block_type(A),cell_axsI,J,nothing)
+      push!(blocks,block)
     end
   end
+
+  lazy_map(maI,cell_axsI,blocks...)
 end
 
 # Binary test/trial

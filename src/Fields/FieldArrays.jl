@@ -342,7 +342,7 @@ end
 end
 
 # Optimizing transpose
-
+testitem(a::Transpose{<:Field}) = testitem(a.parent)
 evaluate!(cache,k::Broadcasting{typeof(∇)},a::Transpose{<:Field}) = transpose(k(a.parent))
 evaluate!(cache,k::Broadcasting{typeof(∇∇)},a::Transpose{<:Field}) = transpose(k(a.parent))
 

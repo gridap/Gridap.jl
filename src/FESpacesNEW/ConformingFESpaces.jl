@@ -30,13 +30,13 @@ function _ConformingFESpace(
     ntags)
 end
 
-function compute_cell_space(cell_reffe,trian::Triangulation,domain_style::DomainStyle)
+function compute_cell_space(cell_reffe,trian::Triangulation)
   cell_map = get_cell_map(trian)
-  cell_shapefuns, cell_dof_basis = compute_cell_space(cell_reffe,cell_map,domain_style)
-  FEBasis(cell_shapefuns,trian,TestBasis(),domain_style), CellDof(cell_dof_basis,trian,domain_style)
+  cell_shapefuns, cell_dof_basis = compute_cell_space(cell_reffe,cell_map)
+  FEBasis(cell_shapefuns,trian,TestBasis(),ReferenceDomain()), CellDof(cell_dof_basis,trian,ReferenceDomain())
 end
 
-function compute_cell_space(cell_reffe,cell_map::AbstractArray{<:Field},::ReferenceDomain)
+function compute_cell_space(cell_reffe,cell_map::AbstractArray{<:Field})
   ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
   ctype_ref_shapefuns = map(get_shapefuns,ctype_reffe)
   ctype_ref_dof_basis = map(get_dof_basis,ctype_reffe)
@@ -61,18 +61,18 @@ end
 #V = FESpace(model,physfes;dirichlet_tags=[1,10]) # use the ownership given in physfes
 #V = FESpace(model,physfes;dirichlet_tags=[1,10],conformity=:L2) # Discontinuous space
 #V = FESpace(model,physfes;dirichlet_tags=[1,10],conformity=cell_ownership_custom) # Custom ownership
-function compute_cell_space(cell_reffe,cell_map::AbstractArray{<:Field},::PhysicalDomain)
-  ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
-  ctype_prebasis = map(get_prebasis,ctype_reffe)
-  ctype_ref_dof_basis = map(get_dof_basis,ctype_reffe)
-  cell_prebasis = expand_cell_data(ctype_prebasis,cell_ctype)
-  cell_ref_dof_basis = expand_cell_data(ctype_ref_dof_basis,cell_ctype)
-  cell_dof_basis = lazy_map(DofBasisMap(),cell_ref_dof_basis,cell_map)
-  cell_dof_values = lazy_map(evaluate,cell_dof_basis,cell_prebasis)
-  cell_change = lazy_map(inv,cell_dof_values)
-  cell_shapefuns = lazy_map(linear_combination,cell_change,cell_prebasis)
-  cell_shapefuns, cell_dof_basis
-end
+#function compute_cell_space(cell_reffe,cell_map::AbstractArray{<:Field},::PhysicalDomain)
+#  ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
+#  ctype_prebasis = map(get_prebasis,ctype_reffe)
+#  ctype_ref_dof_basis = map(get_dof_basis,ctype_reffe)
+#  cell_prebasis = expand_cell_data(ctype_prebasis,cell_ctype)
+#  cell_ref_dof_basis = expand_cell_data(ctype_ref_dof_basis,cell_ctype)
+#  cell_dof_basis = lazy_map(DofBasisMap(),cell_ref_dof_basis,cell_map)
+#  cell_dof_values = lazy_map(evaluate,cell_dof_basis,cell_prebasis)
+#  cell_change = lazy_map(inv,cell_dof_values)
+#  cell_shapefuns = lazy_map(linear_combination,cell_change,cell_prebasis)
+#  cell_shapefuns, cell_dof_basis
+#end
 
 """
 The result is the tuple
