@@ -23,7 +23,7 @@ f = MockField{d}(v)
 fx = fill(v,np)
 
 k = Comp(fun)
-test_mapping(k,(v,v),2*v)
+test_map(k,(v,v),2*v)
 
 g = compose(fun,f,f)
 gx = 2*fx

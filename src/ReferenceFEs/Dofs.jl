@@ -87,7 +87,7 @@ end
 
 function _test_dof(dof,field,v,cmp)
   if isa(dof,Dof)
-    test_mapping(v,dof,field;cmp=cmp)
+    test_map(v,dof,field;cmp=cmp)
   end
   r = evaluate(dof,field)
   @test cmp(r,v)

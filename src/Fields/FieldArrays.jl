@@ -76,12 +76,12 @@ function testargs(f::AbstractArray{T},x::AbstractArray{<:Point}) where T<:Field
 end
 
 function test_field_array(f::AbstractArray{<:Field}, x, v, cmp=(==); grad=nothing, gradgrad=nothing)
-  test_mapping(v,f,x;cmp=cmp)
+  test_map(v,f,x;cmp=cmp)
   if grad != nothing
-    test_mapping(grad,Broadcasting(∇)(f),x;cmp=cmp)
+    test_map(grad,Broadcasting(∇)(f),x;cmp=cmp)
   end
   if gradgrad != nothing
-    test_mapping(gradgrad,Broadcasting(∇∇)(f),x;cmp=cmp)
+    test_map(gradgrad,Broadcasting(∇∇)(f),x;cmp=cmp)
   end
   true
 end
@@ -145,7 +145,7 @@ end
 
 # Optimizing linear_combination.
 
-function linear_combination(a::AbstractVector{<:Number},b::AbstractVector{<:Field}) 
+function linear_combination(a::AbstractVector{<:Number},b::AbstractVector{<:Field})
   column = 1
   LinearCombinationField(a,b,column)
 end
@@ -167,7 +167,7 @@ for T in (:(Point),:(AbstractVector{<:Point}))
     ck = return_cache(k,v,fx)
     cf, ck
   end
-  
+
   @inline function evaluate!(cache,a::LinearCombinationField,x::$T)
     cf, ck = cache
     fx = evaluate!(cf,a.fields,x)
@@ -184,7 +184,7 @@ function gradient(a::LinearCombinationField)
   LinearCombinationField(a.values,fields,a.column)
 end
 
-function linear_combination(a::AbstractMatrix{<:Number},b::AbstractVector{<:Field}) 
+function linear_combination(a::AbstractMatrix{<:Number},b::AbstractVector{<:Field})
   #[ LinearCombinationField(a,b,i) for i in 1:size(a,2) ]
   LinearCombinationFieldVector(a,b)
 end
@@ -195,7 +195,7 @@ struct LinearCombinationFieldVector{V,F} <: AbstractVector{LinearCombinationFiel
   function LinearCombinationFieldVector(values::AbstractMatrix{<:Number},fields::AbstractVector{<:Field})
     @check size(values,1) == length(fields) """\n
     Incompatible sizes for performing the linear combination
-       
+
         linear_combination(values,fields) = transpose(values)*fields
 
     size(values,1) != length(fields)
@@ -221,7 +221,7 @@ for T in (:(Point),:(AbstractVector{<:Point}))
       ck = return_cache(k,v,fx)
       cf, ck
     end
-    
+
     @inline function evaluate!(cache,a::LinearCombinationFieldVector,x::$T)
       cf, ck = cache
       fx = evaluate!(cf,a.fields,x)
@@ -255,7 +255,7 @@ end
   @inbounds for i in eachindex(fx)
     # We need to do the product in this way
     # so that the gradient also works
-    z += outer(fx[i],v[i,k.column]) 
+    z += outer(fx[i],v[i,k.column])
   end
   z
 end
@@ -276,7 +276,7 @@ end
   @inbounds for p in 1:size(fx,1)
     rp = z
     for i in 1:size(fx,2)
-      rp += outer(fx[p,i],v[i,k.column]) 
+      rp += outer(fx[p,i],v[i,k.column])
     end
     r[p] = rp
   end
@@ -310,7 +310,7 @@ end
   @inbounds for j in eachindex(r)
     rj = zero(eltype(r))
     for i in eachindex(fx)
-      rj += outer(fx[i],v[i,j]) 
+      rj += outer(fx[i],v[i,j])
     end
     r[j] = rj
   end
@@ -333,7 +333,7 @@ end
     for j in 1:size(r,2)
       rj = zero(eltype(r))
       for i in 1:size(fx,2)
-        rj += outer(fx[p,i],v[i,j]) 
+        rj += outer(fx[p,i],v[i,j])
       end
       r[p,j] = rj
     end
@@ -450,7 +450,7 @@ for T in (:(Point),:(AbstractArray{<:Point}))
       r = return_cache(bm,rs...)
       r, cfs
     end
-    
+
     function evaluate!(c,f::BroadcastOpFieldArray,x::$T)
       r, cfs = c
       rs = map((ci,fi) -> evaluate!(ci,fi,x),cfs,f.args)

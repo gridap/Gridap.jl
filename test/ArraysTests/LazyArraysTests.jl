@@ -296,14 +296,14 @@ end
 @test all(a.counter .== 2)
 @test all(b.counter .== 1)
 
-# using lazy_map and test_mapping at the same time
+# using lazy_map and test_map at the same time
 
 n = 4
 k  = Fill(+,n)
 a = fill(2,n)
 b = fill(4,n)
 c = a + b
-@test all(lazy_map(test_mapping,c,k,a,b))
-@test all(lazy_map((x...)->test_mapping(x...,cmp=≈),c,k,a,b))
+@test all(lazy_map(test_map,c,k,a,b))
+@test all(lazy_map((x...)->test_map(x...,cmp=≈),c,k,a,b))
 
 end # module

@@ -12,7 +12,7 @@ and optionally these ones:
 - [`return_cache(k,x...)`](@ref)
 - [`return_type(k,x...)`](@ref)
 
-The kernel interface can be tested with the [`test_mapping`](@ref) function.
+The kernel interface can be tested with the [`test_map`](@ref) function.
 
 Note that most of the mapping implemented in terms of this interface
 relies in duck typing. That is, it is not strictly needed to work with types
@@ -63,7 +63,7 @@ end
 # Testing the interface
 
 """
-    test_mapping(f,x::Tuple,y,cmp=(==))
+    test_map(f,x::Tuple,y,cmp=(==))
 
 Function used to test if the kernel `f` has been
 implemented correctly. `f` is a kernel object, `x` is a tuple containing the arguments
@@ -71,7 +71,7 @@ of the kernel, and `y` is the expected result. Function `cmp` is used to compare
 the computed result with the expected one. The checks are done with the `@test`
 macro.
 """
-function test_mapping(f,x::Tuple,y,cmp=(==))
+function test_map(f,x::Tuple,y,cmp=(==))
   z = evaluate(f,x...)
   @test cmp(z,y)
   @test typeof(z) == return_type(f,x...)

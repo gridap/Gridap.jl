@@ -11,7 +11,7 @@ and optionally these ones:
 - [`return_cache(k,x...)`](@ref)
 - [`return_type(k,x...)`](@ref)
 
-The mapping interface can be tested with the [`test_mapping`](@ref) function.
+The mapping interface can be tested with the [`test_map`](@ref) function.
 
 Note that most of the functionality implemented in terms of this interface
 relies in duck typing. That is, it is not strictly needed to work with types
@@ -96,10 +96,9 @@ evaluate!(cache,f::Function,x...) = f(x...)
 evaluate!(cache,::Type{f},x...) where f = f(x...)
 
 
-# @fverdugo rename to test_map
 # Testing the interface
 """
-    test_mapping(y,f,x...;cmp=(==))
+    test_map(y,f,x...;cmp=(==))
 
 Function used to test if the mapping `f` has been
 implemented correctly. `f` is a `Map` sub-type, `x` is a tuple in the domain of the
@@ -107,7 +106,7 @@ mapping and `y` is the expected result. Function `cmp` is used to compare
 the computed result with the expected one. The checks are done with the `@test`
 macro.
 """
-function test_mapping(y,f,x...;cmp=(==))
+function test_map(y,f,x...;cmp=(==))
   z = evaluate(f,x...)
   @test cmp(z,y)
   @test typeof(z) == return_type(f,x...)
@@ -237,7 +236,7 @@ end
 """
     Operation(op)
 
-Returns a mapping that, when applied to a tuple `args`, returns a mapping.
+Retuns the map that results after applying an operation `f` over a set of map(s) `args`.
 That is `Operation(f)(args)(x...)` is formally defined as
 `f(map(a->a(x...),args)...)`.
 
@@ -274,4 +273,3 @@ function inverse_map(f)
   Function inverse_map is not implemented yet for objects of type $(typeof(f))
   """
 end
-

@@ -66,8 +66,8 @@ j2 = fill(ji2,np)
 j3 = fill(ji3,np)
 j = [j1,j2,j3]
 
-@test all(lazy_map(test_mapping,x,cell_map,q))
-@test all(lazy_map(test_mapping,j,cell_J,q))
+@test all(lazy_map(test_map,x,cell_map,q))
+@test all(lazy_map(test_map,j,cell_J,q))
 test_array(lazy_map(evaluate,cell_map,q),x)
 test_array(lazy_map(evaluate,cell_J,q),j)
 
