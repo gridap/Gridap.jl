@@ -81,6 +81,8 @@ get_triangulation(f::TrialFESpace) = get_triangulation(f.space)
 
 get_dof_value_type(f::TrialFESpace) = get_dof_value_type(f.space)
 
+get_vector_type(f::TrialFESpace) = get_vector_type(f.space)
+
 get_cell_dof_ids(f::TrialFESpace) = get_cell_dof_ids(f.space)
 
 get_cell_shapefuns(f::TrialFESpace) = get_cell_shapefuns(f.space)

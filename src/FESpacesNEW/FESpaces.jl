@@ -152,6 +152,9 @@ export test_fe_solver
 export LinearFESolver
 export NonlinearFESolver
 
+export FESpaceWithConstantFixed
+export ZeroMeanFESpace
+
 include("FESpaceInterface.jl")
 
 include("SingleFieldFESpaces.jl")
@@ -177,5 +180,9 @@ include("FEOperatorsFromWeakForm.jl")
 include("FESolvers.jl")
 
 include("DiscontinuousFESpaces.jl")
+
+include("FESpacesWithConstantFixed.jl")
+
+include("ZeroMeanFESpaces.jl")
 
 end # module

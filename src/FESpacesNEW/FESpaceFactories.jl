@@ -15,10 +15,10 @@ function FESpace(
   """
 
   trian = get_triangulation(model)
-  shapefuns, dof_basis = compute_cell_space(cell_reffes,trian)
+  cell_shapefuns, cell_dof_basis = compute_cell_space(cell_reffes,trian)
 
   if vectortype == nothing
-    T = get_dof_value_type(shapefuns,dof_basis)
+    T = get_dof_value_type(cell_shapefuns,cell_dof_basis)
     _vector_type = Vector{T}
   else
     @assert vectortype <: AbstractVector """\n
@@ -31,7 +31,7 @@ function FESpace(
   if _conformity == L2Conformity() && dirichlet_tags == Int[]
 
     F = _DiscontinuousFESpace(
-      vector_type,
+      _vector_type,
       trian,
       cell_reffes,
       cell_shapefuns,
@@ -44,8 +44,8 @@ function FESpace(
       model,
       labels,
       cell_reffes,
-      shapefuns,
-      dof_basis,
+      cell_shapefuns,
+      cell_dof_basis,
       _conformity,
       dirichlet_tags,
       dirichlet_masks)
@@ -55,7 +55,10 @@ function FESpace(
   if constraint == nothing
     V = F
   elseif constraint == :zeromean
-    @notimplemented "zeromean option not yet implemented"
+    ctype_reffe, = compress_cell_data(cell_reffes)
+    order = maximum(map(get_order,ctype_reffe))
+    dΩ = LebesgueMeasure(trian,order)
+    V = ZeroMeanFESpace(F,dΩ)
   else
     @unreachable """\n
     The passed option constraint=$constraint is not valid.

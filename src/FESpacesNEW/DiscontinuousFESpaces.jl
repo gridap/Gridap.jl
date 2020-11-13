@@ -12,14 +12,14 @@ function _DiscontinuousFESpace(
 
   ndirichlet = 0
   dirichlet_dof_tag = Int8[]
-  dirichlet_cells = Int[]
+  dirichlet_cells = Int32[]
   ntags = 0
 
   UnconstrainedFESpace(
     vector_type,
     nfree,
     ndirichlet,
-    cell_dofs_ids,
+    cell_dof_ids,
     cell_shapefuns,
     cell_dof_basis,
     dirichlet_dof_tag,

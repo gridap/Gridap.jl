@@ -12,7 +12,8 @@ end
 """
 """
 function zero_dirichlet_values(f::SingleFieldFESpace)
-  @abstractmethod
+  V = get_vector_type(f)
+  allocate_vector(V,num_dirichlet_dofs(f))
 end
 
 """
