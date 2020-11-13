@@ -4,23 +4,16 @@
       space::SingleFieldFESpace
     end
 """
-struct DirichletFESpace{B} <: SingleFieldFESpace
-  space::SingleFieldFESpace
-  constraint_style::Val{B}
+struct DirichletFESpace{S<:SingleFieldFESpace} <: SingleFieldFESpace
+  space::S
   function DirichletFESpace(space::SingleFieldFESpace)
-    cs = constraint_style(space)
-    B = get_val_parameter(cs)
-    new{B}(space,cs)
+    new{typeof(space)}(space)
   end
 end
 
-constraint_style(::Type{DirichletFESpace{B}}) where B = Val{B}()
+ConstraintStyle(::Type{DirichletFESpace{B}}) where B = ConstraintStyle(B)
 
-get_cell_axes(t::DirichletFESpace)= get_cell_axes(t.space)
-
-get_cell_axes_with_constraints(t::DirichletFESpace)= get_cell_axes_with_constraints(t.space)
-
-CellData.CellField(t::DirichletFESpace,cell_vals) = CellField(t.space,cell_vals)
+CellField(t::DirichletFESpace,cell_vals) = CellField(t.space,cell_vals)
 
 get_cell_isconstrained(f::DirichletFESpace) = get_cell_isconstrained(f.space)
 
@@ -30,20 +23,16 @@ function num_free_dofs(f::DirichletFESpace)
   num_dirichlet_dofs(f.space)
 end
 
-function zero_free_values(f::DirichletFESpace)
-  zero_dirichlet_values(f.space)
+function get_vector_type(f::DirichletFESpace)
+  get_vector_type(f.space)
 end
 
-function get_cell_dofs(f::DirichletFESpace)
-  lazy_map(elem(-),get_cell_dofs(f.space))
+function get_cell_dof_ids(f::DirichletFESpace)
+  lazy_map(Broadcasting(-),get_cell_dof_ids(f.space))
 end
 
 function num_dirichlet_dofs(f::DirichletFESpace)
   num_free_dofs(f.space)
-end
-
-function zero_dirichlet_values(f::DirichletFESpace)
-  zero_free_values(f.space)
 end
 
 function num_dirichlet_tags(f::DirichletFESpace)
@@ -68,10 +57,18 @@ function TrialFESpace(f::DirichletFESpace)
   DirichletFESpace(U)
 end
 
-function get_cell_basis(f::DirichletFESpace)
-  get_cell_basis(f.space)
+function get_cell_shapefuns(f::DirichletFESpace)
+  get_cell_shapefuns(f.space)
+end
+
+function get_cell_shapefuns_trial(f::DirichletFESpace)
+  get_cell_shapefuns_trial(f.space)
 end
 
 function get_cell_dof_basis(f::DirichletFESpace)
   get_cell_dof_basis(f.space)
+end
+
+function get_triangulation(f::DirichletFESpace)
+  get_triangulation(f.space)
 end
