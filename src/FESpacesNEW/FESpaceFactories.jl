@@ -1,21 +1,21 @@
 
 function FESpace(
   model::DiscreteModel,
-  reffes::AbstractArray{<:ReferenceFE};
+  cell_reffes::AbstractArray{<:ReferenceFE};
   labels = get_face_labeling(model),
-  conformity=Conformity(first(reffes)),
+  conformity=Conformity(first(cell_reffes)),
   dirichlet_tags=Int[],
   dirichlet_masks=nothing,
   constraint=nothing,
   vectortype::Union{Nothing,Type}=nothing)
 
-  @assert length(reffes) == num_cells(model) """\n
-  The length of the vector provided in the `reffes` argument ($(length(reffes)) entries)
+  @assert length(cell_reffes) == num_cells(model) """\n
+  The length of the vector provided in the `cell_reffes` argument ($(length(cell_reffes)) entries)
   does not match the number of cells ($(num_cells(model)) cells) in the provided DiscreteModel.
   """
 
   trian = get_triangulation(model)
-  shapefuns, dof_basis = compute_cell_space(reffes,trian)
+  shapefuns, dof_basis = compute_cell_space(cell_reffes,trian)
 
   if vectortype == nothing
     T = get_dof_value_type(shapefuns,dof_basis)
@@ -26,18 +26,31 @@ function FESpace(
     _vector_type = vectortype
   end
 
-  _conformity = Conformity(first(reffes),conformity)
+  _conformity = Conformity(first(cell_reffes),conformity)
 
-  F = _ConformingFESpace(
-    _vector_type,
-    model,
-    labels,
-    reffes,
-    shapefuns,
-    dof_basis,
-    _conformity,
-    dirichlet_tags,
-    dirichlet_masks)
+  if _conformity == L2Conformity() && dirichlet_tags == Int[]
+
+    F = _DiscontinuousFESpace(
+      vector_type,
+      trian,
+      cell_reffes,
+      cell_shapefuns,
+      cell_dof_basis)
+
+  else
+
+    F = _ConformingFESpace(
+      _vector_type,
+      model,
+      labels,
+      cell_reffes,
+      shapefuns,
+      dof_basis,
+      _conformity,
+      dirichlet_tags,
+      dirichlet_masks)
+  end
+
 
   if constraint == nothing
     V = F

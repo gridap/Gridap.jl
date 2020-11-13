@@ -176,4 +176,6 @@ include("FEOperatorsFromWeakForm.jl")
 
 include("FESolvers.jl")
 
+include("DiscontinuousFESpaces.jl")
+
 end # module
