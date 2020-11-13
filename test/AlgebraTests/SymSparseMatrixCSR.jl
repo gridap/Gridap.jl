@@ -8,7 +8,7 @@ module SymSparseMatrixCSRTests
     maxnz=5
     maxrows=5
     maxcols=5
-    int_types=(Int32,Int64)
+    int_types=(Int32,Int)
     float_types=(Float32,Float64)
     Bi_types=(0,1)
 

@@ -22,16 +22,16 @@ d = Table(data,ptrs)
 e = [ data[ptrs[i]:ptrs[i+1]-1] for i in 1:length(ptrs)-1]
 test_array(d,e)
 
-data = Int64[2,3,1,3,6,7,3,2,5,6,3,4]
+data = Int[2,3,1,3,6,7,3,2,5,6,3,4]
 ptrs = [1,4,4,7,13]
 a = Table(data,ptrs)
 
-data  = reinterpret(Int64,Vector{Float64}(undef,12))
+data  = reinterpret(Int,Vector{Float64}(undef,12))
 data[1:6] .= a.data[7:12]
 data[7:9] .= a.data[4:6]
 data[10:12] .= a.data[1:3]
 
-perm = Vector{Int64}(undef,12)
+perm = Vector{Int}(undef,12)
 perm[1:3]  .= 10:12
 perm[4:6]  .= 7:9
 perm[7:12] .= 1:6
