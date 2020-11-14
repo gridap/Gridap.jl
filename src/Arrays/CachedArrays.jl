@@ -139,9 +139,11 @@ function setaxes!(a::CachedArray,ax)
       a_cached = a.buffer[s]
       if ! blocks_equal(axes(a_cached),ax)
         a_new = similar(a_cached,ax)
-        a.array = a_new
-        a.buffer[s] = a_new
+      else
+        a_new = a_cached
       end
+      a.array = a_new
+      a.buffer[s] = a_new
     else
       a_new = similar(a_old,ax)
       a.array = a_new
