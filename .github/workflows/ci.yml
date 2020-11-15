@@ -71,7 +71,7 @@ jobs:
             using Pkg; Pkg.instantiate()'
       - run: |
           julia --color=yes --project=. --check-bounds=yes --depwarn=error -e '
-            include("test/GridapTests/runtests.jl")'
+            (1,) .== 1; include("test/GridapTests/runtests.jl")'
 
   docs:
     name: Documentation
