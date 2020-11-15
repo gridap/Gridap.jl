@@ -41,16 +41,17 @@ Pages = [
   "Helpers.md",
   "Io.md",
   "Algebra.md",
-  "TensorValues.md",
   "Arrays.md",
+  "TensorValues.md",
   "Fields.md",
   "Polynomials.md",
   "Integration.md",
   "ReferenceFEs.md",
   "Geometry.md",
+  "CellData.md",
+  "Visualization.md",
   "FESpaces.md",
   "MultiField.md",
-  "Visualization.md",
   ]
 ```
 
