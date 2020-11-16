@@ -18,7 +18,7 @@ using Test
 #
 #@testset "FETermsWithAutodiff" begin include("FETermsWithAutodiffTests.jl") end
 #
-#@testset "CDLagrangianFESpaces" begin include("CDLagrangianFESpacesTests.jl") end
+@testset "CDLagrangianFESpaces" begin include("CDLagrangianFESpacesTests.jl") end
 #
 #@testset "PhysicalBasesTests" begin include("PhysicalBasesTests.jl") end
 #
@@ -26,6 +26,6 @@ using Test
 #
 #@testset "FESpaceFactories" begin include("FESpaceFactoriesTests.jl") end
 #
-#@testset "AppendedTriangulations" begin include("AppendedTriangulationsTests.jl") end
+@testset "AppendedTriangulations" begin include("AppendedTriangulationsTests.jl") end
 
 end # module

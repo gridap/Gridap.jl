@@ -129,6 +129,18 @@ function lazy_map(::typeof(evaluate),::Type{T},b::Fill,a::AppendedArray...) wher
   end
 end
 
+function lazy_map(k::typeof(evaluate),::Type{T},a::AppendedArray...) where T
+  @check all(map(i->length(i)==length(a[1]),a))
+  la = map(ai->length(ai.a),a)
+  if all(la .== first(la))
+    c_a = lazy_map(k,map(ai->ai.a,a)...)
+    c_b = lazy_map(k,map(ai->ai.b,a)...)
+    lazy_append(c_a,c_b)
+  else
+    LazyArray(T,a...)
+  end
+end
+
 # Very important optimization to compute error norms efficiently e.g. in EmbeddedFEM
 function Base.sum(a::AppendedArray)
   sum(a.a) + sum(a.b)

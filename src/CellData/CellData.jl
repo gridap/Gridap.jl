@@ -18,6 +18,7 @@ using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.Integration
 
+import Gridap.Arrays: lazy_append
 import Gridap.Arrays: get_array
 import Gridap.Arrays: evaluate!
 import Gridap.Fields: gradient
