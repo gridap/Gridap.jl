@@ -36,11 +36,11 @@ using FillArrays
 using Test
 using BlockArrays
 
-import LinearAlgebra: det, inv, transpose, tr
-import LinearAlgebra: ⋅
+import LinearAlgebra: det, inv, transpose, tr, cross
+import LinearAlgebra: ⋅, dot
 
 import Base: +, -, *, /
-import Gridap.TensorValues: ⊗, ⊙, symmetric_part
+import Gridap.TensorValues: ⊗, ⊙, symmetric_part, outer
 
 import Gridap.Arrays: IndexStyle
 import Gridap.Arrays: return_cache
