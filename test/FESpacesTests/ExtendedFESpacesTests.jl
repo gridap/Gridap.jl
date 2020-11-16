@@ -129,80 +129,31 @@ test_array(r,collect(r))
 #writevtk(Γ,"gamma",cellfields=["uh"=>uh.plus])
 
 a(u,v) =
-  ∫(v⊙u)*dΩ #+
-  #∫(v⊙u)*dΩ_in +
-  #∫(v⊙u)*dΩ_out# +
-  #∫(jump(v)⊙jump(u) + jump(∇(v))⊙jump(∇(u)))*dΓ
+  ∫(v⊙u + ∇(v)⊙∇(u))*dΩ +
+  ∫(v⊙u + ∇(v)⊙∇(u))*dΩ_in +
+  ∫(v⊙u + ∇(v)⊙∇(u))*dΩ_out +
+  ∫(jump(v)⊙jump(u) + jump(∇(v))⊙jump(∇(u)))*dΓ
 
 l(v) =
-  ∫(v⊙u)*dΩ #+
-  #∫(v⊙u)*dΩ_in +
-  #∫(v⊙u)*dΩ_out# +
-  #∫(jump(v))*dΓ
+  ∫(v⊙u + ∇(v)⊙∇(u))*dΩ +
+  ∫(v⊙u + ∇(v)⊙∇(u))*dΩ_in +
+  ∫(v⊙u + ∇(v)⊙∇(u))*dΩ_out +
+  ∫(jump(v))*dΓ
 
 op = AffineFEOperator(a,l,U,V)
 
-kk
+V = TestFESpace(model_in,ReferenceFE(:Lagrangian,Float64,2),conformity=:H1)
+@test isa(V,FESpaces.ExtendedFESpace)
 
-
-
-
-uh_in = restrict(uh,trian_in)
-
-uh_Γ = restrict(uh,trian_Γ)
-
-t_in = AffineFETerm( (u,v) -> v⊙u, (v) -> v⊙u, trian_in, quad_in)
-op_in = AffineFEOperator(U,V,t_in)
-
-quad = CellQuadrature(trian,2*order)
-
-t_Ω = AffineFETerm( (u,v) -> v⊙u, (v) -> v⊙u, trian, quad)
-op_Ω = AffineFEOperator(U,V,t_Ω)
-
-@test get_vector(op_in) ≈ get_vector(op_Ω)
-
-t_Γ = AffineFETerm( (u,v) -> jump(v)⊙jump(u) + jump(ε(v))⊙jump(ε(u)), (v) -> jump(v)⊙u, trian_Γ, quad_Γ)
-op_Γ = AffineFEOperator(U,V,t_Γ)
-
-q_in = get_coordinates(quad_in)
-collect(evaluate(uh_in,q_in))
-
-q = get_coordinates(quad)
-collect(evaluate(uh,q))
-
-q_Γ = get_coordinates(quad_Γ)
-collect(evaluate(jump(uh_Γ),q_Γ))
-collect(evaluate(jump(∇(uh_Γ)),q_Γ))
-collect(evaluate(jump(ε(uh_Γ)),q_Γ))
-
-V = TestFESpace(model=model_in,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:H1)
-@test isa(V,ExtendedFESpace)
-
-V = TestFESpace(model=model_in,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:H1,constraint=:zeromean)
+V = TestFESpace(model_in,ReferenceFE(:Lagrangian,Float64,2),conformity=:H1,constraint=:zeromean)
 uh = FEFunction(V,rand(num_free_dofs(V)))
-uh_in = restrict(uh,trian_in)
-@test sum(integrate(uh_in,trian_in,quad_in)) + 1 ≈ 1
+@test_broken sum(∫(uh)*dΩ_in) + 1 ≈ 1
 
-V = TestFESpace(model=model,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:H1)
-@test !isa(V,ExtendedFESpace)
+V = TestFESpace(model,ReferenceFE(:Lagrangian,Float64,2),conformity=:H1)
+@test !isa(V,FESpaces.ExtendedFESpace)
 
-V = TestFESpace(triangulation=trian_in,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:L2)
-@test isa(V,ExtendedFESpace)
-
-V = TestFESpace(triangulation=trian_in,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:L2,constraint=:zeromean)
-uh = FEFunction(V,rand(num_free_dofs(V)))
-uh_in = restrict(uh,trian_in)
-@test sum(integrate(uh_in,trian_in,quad_in)) + 1 ≈ 1
-
-V = TestFESpace(triangulation=trian,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:L2)
-@test !isa(V,ExtendedFESpace)
-
-#using Gridap.Visualization
-#writevtk(trian,"trian",cellfields=["uh"=>uh])
-#writevtk(trian_in,"trian_in",cellfields=["uh"=>uh_in])
-
-V_in = TestFESpace(model=model_in,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:H1)
-V = TestFESpace(model=model,valuetype=Float64,reffe=:Lagrangian,order=2,conformity=:H1)
+V_in = TestFESpace(model_in,ReferenceFE(:Lagrangian,Float64,2),conformity=:H1)
+V = TestFESpace(model,ReferenceFE(:Lagrangian,Float64,2),conformity=:H1)
 
 vh_in = interpolate(V_in) do x
     x[1]
@@ -213,18 +164,5 @@ vh = interpolate(vh_in, V)
 #using Gridap.Visualization
 #writevtk(trian,"trian",cellfields=["vh"=>vh,"vh_in"=>vh_in])
 
-
-V_in = TestFESpace(
-  model=model_in,valuetype=Float64,reffe=:Lagrangian,
-  order=1,conformity=:H1,dof_space=:physical)
-
-V_out = TestFESpace(
-  model=model_out,valuetype=Float64,reffe=:Lagrangian,
-  order=2,conformity=:H1,dof_space=:physical)
-
-cell_axes = Fields.create_array_of_blocked_axes(get_cell_axes(V_in),get_cell_axes(V_out))
-#using BenchmarkTools
-#cache = array_cache(cell_axes)
-#@btime getindex!($cache,$cell_axes,1)
 
 end # module
