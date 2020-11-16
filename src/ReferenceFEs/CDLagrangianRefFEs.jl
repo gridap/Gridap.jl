@@ -58,12 +58,14 @@ function _cd_lagrangian_ref_fe(::Type{T},p::ExtrusionPolytope{D},orders,cont) wh
 
   data = nothing
 
-  reffe = GenericRefFE(
+  conf = CDConformity(Tuple(cont))
+
+  reffe = GenericRefFE{typeof(conf)}(
       ndofs,
       p,
       prebasis,
       dofs,
-      CDConformity(Tuple(cont)),
+      conf,
       data,
       face_dofs)
 

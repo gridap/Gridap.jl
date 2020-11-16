@@ -16,12 +16,14 @@ function _PDiscRefFE(::Type{T},p::Polytope,order::Integer) where T
   dofs = get_dof_basis(reffe)
   face_dofs = _generate_face_own_dofs(face_nodes,dofs.node_and_comp_to_dof)
 
-  reffe = GenericRefFE(
+  conf = L2Conformity()
+
+  reffe = GenericRefFE{typeof(conf)}(
     num_dofs(reffe),
     p,
     get_prebasis(reffe),
     get_dof_basis(reffe),
-    L2Conformity(),
+    conf,
     metadata,
     face_dofs)
   GenericLagrangianRefFE(reffe,face_nodes)
