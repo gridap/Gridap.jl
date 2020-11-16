@@ -23,6 +23,7 @@ import Gridap.Arrays: evaluate!
 import Gridap.Fields: gradient
 import Gridap.Fields: ∇∇
 import Gridap.Fields: integrate
+import Gridap.Fields: grad2curl
 import Gridap.Geometry: num_cells
 import Gridap.Geometry: get_triangulation
 

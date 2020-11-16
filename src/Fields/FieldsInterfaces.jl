@@ -330,7 +330,7 @@ return_value(op::Broadcasting{<:Operation},x::Field...) = OperationField(op.f.op
 
 # Define some well known operations
 
-for op in (:+,:-,:*,:⋅,:⊙,:⊗,:inv,:det)
+for op in (:+,:-,:*,:⋅,:⊙,:⊗,:inv,:det,:tr,:grad2curl,:symmetric_part,:transpose)
   @eval ($op)(a::Field...) = Operation($op)(a...)
 end
 

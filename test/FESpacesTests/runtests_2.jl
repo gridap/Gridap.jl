@@ -10,9 +10,9 @@ using Test
 
 @testset "DirichletFESpaces" begin include("DirichletFESpacesTests.jl") end
 
-#@testset "ExtendedFESpaces" begin include("ExtendedFESpacesTests.jl") end
+@testset "ExtendedFESpaces" begin include("ExtendedFESpacesTests.jl") end
 
-#@testset "FESpacesWithLinearConstraints" begin include("FESpacesWithLinearConstraintsTests.jl") end
+@testset "FESpacesWithLinearConstraints" begin include("FESpacesWithLinearConstraintsTests.jl") end
 #
 #@testset "FEAutodiff" begin include("FEAutodiffTests.jl") end
 #
