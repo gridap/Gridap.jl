@@ -25,7 +25,7 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
 
   metadata = nothing
 
-  reffe = GenericRefFE(
+  reffe = GenericRefFE{:Nedelec}(
     ndofs,
     p,
     prebasis,
@@ -37,7 +37,7 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
   reffe
 end
 
-function get_face_own_dofs(reffe::GenericRefFE{CurlConformity}, conf::CurlConformity)
+function get_face_own_dofs(reffe::GenericRefFE{:Nedelec}, conf::CurlConformity)
   get_face_dofs(reffe)
 end
 

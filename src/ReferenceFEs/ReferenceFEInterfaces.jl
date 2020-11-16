@@ -352,7 +352,7 @@ end
 # Concrete implementation
 
 """
-    struct GenericRefFE{C<:Conformity,D} <: ReferenceFE{D}
+    struct GenericRefFE{T,D} <: ReferenceFE{D}
       # + private fields
     end
 
@@ -365,17 +365,17 @@ Note that some fields in this `struct` are type unstable deliberately in order t
 type signature. Don't access them in computationally expensive functions,
 instead extract the required fields before and pass them to the computationally expensive function.
 """
-struct GenericRefFE{C<:Conformity,D} <: ReferenceFE{D}
+struct GenericRefFE{T,D} <: ReferenceFE{D}
   ndofs::Int
   polytope::Polytope{D}
   prebasis::AbstractVector{<:Field}
   dofs::AbstractVector{<:Dof}
-  conformity::C
+  conformity::Conformity
   metadata
   face_dofs::Vector{Vector{Int}}
   shapefuns::AbstractVector{<:Field}
   @doc """
-      GenericRefFE(
+        GenericRefFE{T}(
         ndofs::Int,
         polytope::Polytope{D},
         prebasis::AbstractVector{<:Field},
@@ -383,11 +383,11 @@ struct GenericRefFE{C<:Conformity,D} <: ReferenceFE{D}
         conformity::Conformity,
         metadata,
         face_dofs::Vector{Vector{Int}},
-        shapefuns::AbstractVector{<:Field}=compute_shapefuns(dofs,prebasis)) where D
+        shapefuns::AbstractVector{<:Field}=compute_shapefuns(dofs,prebasis)) where {T,D}
 
   Constructs a `GenericRefFE` object with the provided data.
   """
-  function GenericRefFE(
+  function GenericRefFE{T}(
     ndofs::Int,
     polytope::Polytope{D},
     prebasis::AbstractVector{<:Field},
@@ -395,9 +395,9 @@ struct GenericRefFE{C<:Conformity,D} <: ReferenceFE{D}
     conformity::Conformity,
     metadata,
     face_dofs::Vector{Vector{Int}},
-    shapefuns::AbstractVector{<:Field}=compute_shapefuns(dofs,prebasis)) where D
+    shapefuns::AbstractVector{<:Field}=compute_shapefuns(dofs,prebasis)) where {T,D}
 
-    new{typeof(conformity),D}(
+    new{T,D}(
       ndofs,
       polytope,
       prebasis,

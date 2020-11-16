@@ -273,7 +273,7 @@ function _lagrangian_ref_fe(::Type{T},p::Polytope{D},orders) where {T,D}
     conf = GradConformity()
   end
 
-  reffe = GenericRefFE(
+  reffe = GenericRefFE{typeof(conf)}(
     ndofs,
     p,
     prebasis,
