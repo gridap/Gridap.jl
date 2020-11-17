@@ -106,10 +106,12 @@ dir_tags = Array{Integer}(undef,0)
 trian = Triangulation(model)
 quad = CellQuadrature(trian,2*order+1)
 #V = ConformingFESpace([reffe],DivConformity(),model,labels,dir_tags)
-V = FESpace(model,reffe,conformity=DivConformity())
+V = FESpace(model,reffe,conformity=L2Conformity())
 free_values = ones(num_free_dofs(V))
 uh = FEFunction(V,free_values)
-writevtk(trian,"test",cellfields=["uh"=>uh])
+v = VectorValue(1.0,0.0)
+uh2 = interpolate(v,V)
+writevtk(trian,"test",order=3,cellfields=["uh"=>uh2])
 
 #cell_map = get_cell_map(trian)
 #s,vals = compute_cell_space(expand_cell_data([reffe],[1,1,1,1]),cell_map,ReferenceDomain())
@@ -117,6 +119,7 @@ s,vals = compute_cell_space(expand_cell_data([reffe],[1,1,1,1]),trian,ReferenceD
 
 #h = lazy_map(evaluate!, s, vals)
 #h = evaluate(s, vals)
+#=
 h = vals(s)
 for i in 1:length(h)
   @show h[i]

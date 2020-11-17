@@ -12,8 +12,10 @@ function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
 
   if is_n_cube(p)
     prebasis = QCurlGradMonomialBasis{D}(et,order)
-  else
+  elseif is_simplex(p)
     prebasis = PCurlGradMonomialBasis{D}(et,order)
+  else
+    @notimplemented "H(div) Reference FE only available for cubes and simplices"
   end
 
   nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order)
@@ -85,6 +87,10 @@ function _nfaces_evaluation_points_weights(p, fgeomap, fips, wips)
   c_fips = fill(fips,nc)
   c_wips = fill(wips,nc)
   pquad = lazy_map(evaluate,fgeomap,c_fips)
+  Jt = lazy_map(∇,fgeomap)
+  det_J = lazy_map(Operation(meas),Jt)
+  det_J_c_fips = lazy_map(evaluate,det_J,c_fips)
+  c_wips = collect(lazy_map(Broadcasting(*),c_wips,det_J_c_fips))
   c_fips, pquad, c_wips
 end
 
@@ -107,8 +113,10 @@ function _RT_face_moments(p, fshfs, c_fips, fcips, fwips)
     os = get_facet_orientations(p)
     # @santiagobadia : Temporary hack for making it work for structured hex meshes
     cvals = [ _broadcast(typeof(n),n*o,b) for (n,o,b) in zip(fns,os,cvals)]
-  else
+  elseif is_simplex(p)
     cvals = [ _broadcast(typeof(n),n,b) for (n,b) in zip(fns,cvals)]
+  else
+    @notimplemented
   end
   return cvals
 end
@@ -167,9 +175,11 @@ function _RT_cell_values(p,et,order)
   # Cell moments, i.e., M(C)_{ab} = q_C^a(xgp_C^b) w_C^b ⋅ ()
   if is_n_cube(p)
     cbasis = QGradMonomialBasis{num_dims(p)}(et,order-1)
-  else
+  elseif is_simplex(p)
     T = VectorValue{num_dims(p),et}
     cbasis = MonomialBasis{num_dims(p)}(T,order-1, _p_filter)
+  else
+    @notimplemented
   end
   cmoments = _RT_cell_moments(p, cbasis, ccips, cwips )
 
@@ -316,15 +326,15 @@ end
 
 struct ContraVariantPiolaMap <: PushForwardMap end
 
-function evaluate!(cache,::ContraVariantPiolaMap,v::Number,J::Number,detJ::Number)
-  (1/abs(detJ))*J⋅v
+function evaluate!(cache,::ContraVariantPiolaMap,v::Number,J::Number,absdetJ::Number)
+  (1/absdetJ)*J⋅v
 end
 
 function evaluate!(cache,k::ContraVariantPiolaMap,v::AbstractVector{<:Field},phi::Field)
   Jt = ∇(phi)
-  detJ = Operation(det)(Jt)
+  absdetJ = Operation(meas)(Jt)
   J = Operation(transpose)(Jt)
-  Broadcasting(Operation(k))(v,J,detJ)
+  Broadcasting(Operation(k))(v,J,absdetJ)
 end
 #=
 function lazy_map(
@@ -351,35 +361,48 @@ function lazy_map(
   cell_map::AbstractArray{<:Field})
 
   cell_Jt = lazy_map(∇,cell_map)
-  cell_detJ = lazy_map(Operation(det),cell_Jt)
+  cell_absdetJ = lazy_map(Operation(meas),cell_Jt)
+  #cell_absdetJ = lazy_map(Operation(abs),cell_detJ)
   cell_J = lazy_map(Operation(transpose),cell_Jt)
 
-  lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_J,cell_detJ)
+  lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_J,cell_absdetJ)
+end
+
+function return_cache(::ContraVariantPiolaMap,s::MomentBasedDofBasis,phi::Field)
+  Jt_q_cache = return_cache(∇(phi),s.nodes)
+  face_moments = deepcopy(s.face_moments)
+  cache = (Jt_q_cache,face_moments)
+  cache
 end
 
 function evaluate!(cache,::ContraVariantPiolaMap,s::MomentBasedDofBasis,phi::Field)
-  phi_q = evaluate(∇(phi),s.nodes)
+  Jt_q_cache, face_moments = cache
+  Jt_q = evaluate!(Jt_q_cache,∇(phi),s.nodes)
 
-  # @jbonilla: loop bounds only valid for TRIS
-  for face in 4:length(s.face_moments)-1
-    moments = s.face_moments[face]
+  #face_moments = deepcopy(s.face_moments)
+  for face in 1:length(face_moments)
+    moments = face_moments[face]
     if length(moments) > 0
       num_qpoints, num_moments = size(moments)
       for i in 1:num_qpoints
+        Jt_q_i = Jt_q[s.face_nodes[face][i]]
+        change = sqrt(meas(Jt_q_i)) * meas(Jt_q_i) * inv(transpose(Jt_q_i))
         for j in 1:num_moments
-          s.face_moments[face][i,j] = transpose(phi_q[s.face_nodes[face][i]]) ⋅ moments[i,j]
+          face_moments[face][i,j] =  moments[i,j] ⋅ change
         end
       end
     end
   end
-
+  #face_nodes = deepcopy(s.face_nodes)
+  #nodes = deepcopy(s.nodes)
+  dof_basis = MomentBasedDofBasis(s.nodes,face_moments,s.face_nodes)
   # phi_q = evaluate(phi,s.nodes)
   #moments = #from s.moments and phi_q
   #MomentBasedDofBasis(s.nodes,moments)
   ## More obvious but not so efficient:
   ##nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order,phi)
   ##dof_basis = MomentBasedDofBasis(nf_nodes, nf_moments,GenericField(identity))
-  return s #skip Piola maping temporary
+  return dof_basis
 end
 
 PushForwardMap(reffe::GenericRefFE{DivConformity}) = ContraVariantPiolaMap()
