@@ -13,6 +13,7 @@ function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
   prebasis = QCurlGradMonomialBasis{D}(et,order)
 
   nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order)
+  #nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order,GenericField(identity))
 
   face_own_dofs = _face_own_dofs_from_moments(nf_moments)
 
@@ -22,6 +23,7 @@ function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
 
   ndofs = num_dofs(dof_basis)
 
+  #metadata = (et,order)
   metadata = nothing
 
   reffe = GenericRefFE{:RaviartThomas}(
@@ -40,6 +42,27 @@ function get_face_own_dofs(reffe::GenericRefFE{:RaviartThomas}, conf::DivConform
   get_face_dofs(reffe)
 end
 
+## First implement this:
+#function get_dof_basis(reffe::GenericRefFE{:RaviartThomas},phi::Field)
+#   p = get_polytope(reffe)
+#   et, order = reffe.metadata
+#   nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order,phi)
+#   MomentBasedDofBasis(nf_nodes, nf_moments)
+#end
+
+# Then optimize this:
+#function get_dof_basis(reffe::GenericRefFE{:RaviartThomas},phi::Field)
+#  cache = return_cache(get_dof_basis,reffe,phi)
+#  evaluate!(cache,get_dof_basis,reffe,phi)
+#end
+#
+#function return_cache(::typeof(get_dof_basis),reffe::GenericRefFE{:RaviartThomas},phi::Field)
+#  @notimplemented
+#end
+#
+#function evaluate!(cache,::typeof(get_dof_basis),reffe::GenericRefFE{:RaviartThomas},phi::Field)
+#  @notimplemented
+#end
 
 function _RT_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) where et
 

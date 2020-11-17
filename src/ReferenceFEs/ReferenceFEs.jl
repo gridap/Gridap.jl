@@ -111,6 +111,8 @@ export get_shapefuns
 export compute_shapefuns
 export test_reference_fe
 export num_dofs
+export expand_cell_data
+export compress_cell_data
 
 export LagrangianRefFE
 export GenericLagrangianRefFE

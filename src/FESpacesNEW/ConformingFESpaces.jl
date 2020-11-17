@@ -37,17 +37,19 @@ function compute_cell_space(cell_reffe,trian::Triangulation)
 end
 
 function compute_cell_space(cell_reffe,cell_map::AbstractArray{<:Field})
-  ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
-  ctype_ref_shapefuns = map(get_shapefuns,ctype_reffe)
-  ctype_ref_dof_basis = map(get_dof_basis,ctype_reffe)
-  cell_ref_shapefuns = expand_cell_data(ctype_ref_shapefuns,cell_ctype)
-  cell_ref_dof_basis = expand_cell_data(ctype_ref_dof_basis,cell_ctype)
-  ctype_k = map(PushForwardMap,ctype_reffe)
-  unique_ks = unique(ctype_k)
-  @notimplementedif length(unique_ks) != 1
-  k = first(unique_ks)
-  cell_shapefuns = lazy_map(k,cell_ref_shapefuns,cell_map)
-  cell_dof_basis = lazy_map(k,cell_ref_dof_basis,cell_map)
+  cell_shapefuns = lazy_map(get_shapefuns,cell_reffe,cell_map)
+  cell_dof_basis = lazy_map(get_dof_basis,cell_reffe,cell_map)
+  #ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
+  #ctype_ref_shapefuns = map(get_shapefuns,ctype_reffe)
+  #ctype_ref_dof_basis = map(get_dof_basis,ctype_reffe)
+  #cell_ref_shapefuns = expand_cell_data(ctype_ref_shapefuns,cell_ctype)
+  #cell_ref_dof_basis = expand_cell_data(ctype_ref_dof_basis,cell_ctype)
+  #ctype_k = map(PushForwardMap,ctype_reffe)
+  #unique_ks = unique(ctype_k)
+  #@notimplementedif length(unique_ks) != 1
+  #k = first(unique_ks)
+  #cell_shapefuns = lazy_map(k,cell_ref_shapefuns,cell_map)
+  #cell_dof_basis = lazy_map(k,cell_ref_dof_basis,cell_map)
   cell_shapefuns, cell_dof_basis
 end
 

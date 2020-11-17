@@ -334,22 +334,6 @@ function get_orders(reffe::LagrangianRefFE)
   get_orders(get_prebasis(reffe))
 end
 
-struct IdentityPushForwardMap <: PushForwardMap end
-
-function evaluate!(cache,::IdentityPushForwardMap,v::AbstractVector{<:Field},phi::Field)
-  v
-end
-
-function evaluate!(cache,::IdentityPushForwardMap,s::AbstractVector{<:Dof},phi::Field)
-  s
-end
-
-function lazy_map(::IdentityPushForwardMap,a::AbstractArray,b::AbstractArray)
-  a
-end
-
-PushForwardMap(reffe::LagrangianRefFE) = IdentityPushForwardMap()
-
 # Generic implementation
 """
   struct GenericLagrangianRefFE{C,D} <: LagrangianRefFE{D}

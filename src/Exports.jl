@@ -9,7 +9,6 @@ end
 using LinearAlgebra:  det, inv, tr, cross, dot, norm, ×, ⋅
 export det, inv, tr, cross, dot, norm, ×, ⋅
 
-@publish Helpers operate
 @publish Helpers GridapType
 
 @publish Algebra solve
@@ -30,7 +29,10 @@ export det, inv, tr, cross, dot, norm, ×, ⋅
 @publish Arrays getindex!
 @publish Arrays get_array
 @publish Arrays lazy_map
-@publish Arrays reindex
+@publish Arrays Reindex
+@publish Arrays Broadcasting
+@publish Arrays Operation
+@publish Arrays print_op_tree
 
 @publish TensorValues VectorValue
 @publish TensorValues TensorValue
@@ -43,6 +45,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 
 @publish Fields gradient
 @publish Fields ∇
+@publish Fields ∇∇
 @publish Fields integrate
 @publish Fields Point
 @publish Fields evaluate
@@ -71,7 +74,6 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish ReferenceFEs HEX
 @publish ReferenceFEs WEDGE
 @publish ReferenceFEs PYRAMID
-@publish ReferenceFEs LagrangianRefFE
 @publish ReferenceFEs is_first_order
 @publish ReferenceFEs is_Q
 @publish ReferenceFEs is_P
@@ -82,16 +84,14 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish ReferenceFEs QUAD4
 @publish ReferenceFEs TET4
 @publish ReferenceFEs HEX8
-@publish ReferenceFEs SerendipityRefFE
 @publish ReferenceFEs Polytope
+@publish ReferenceFEs ReferenceFE
 
 @publish Geometry get_triangulation
 @publish Geometry num_cells
 @publish Geometry Triangulation
-@publish Geometry get_normal_vector
 @publish Geometry get_cell_coordinates
-@publish Geometry restrict
-@publish Geometry get_physical_coordinate
+@publish Geometry get_cell_ref_coordinates
 @publish Geometry get_cell_map
 @publish Geometry CartesianGrid
 @publish Geometry CartesianDiscreteModel
@@ -104,24 +104,29 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish Geometry add_tag!
 @publish Geometry add_tag_from_tags!
 @publish Geometry BoundaryTriangulation
-@publish Geometry jump
-@publish Geometry mean
 @publish Geometry SkeletonTriangulation
 @publish Geometry RestrictedTriangulation
 @publish Geometry InterfaceTriangulation
 
 @publish CellData CellQuadrature
-@publish CellData QPointCellField
+@publish CellData LebesgueMeasure
+@publish CellData get_cell_points
 @publish CellData CellField
+@publish CellData CellState
+@publish CellData jump
+@publish CellData mean
+@publish CellData update!
+@publish CellData get_normal_vector
+using Gridap.CellData: ∫; export ∫
 
 @publish FESpaces FESpace
 @publish FESpaces TrialFESpace
 @publish FESpaces TestFESpace
-@publish FESpaces FETerm
-@publish FESpaces FEEnergy
-@publish FESpaces AffineFETerm
-@publish FESpaces LinearFETerm
-@publish FESpaces FESource
+#@publish FESpaces FETerm
+#@publish FESpaces FEEnergy
+#@publish FESpaces AffineFETerm
+#@publish FESpaces LinearFETerm
+#@publish FESpaces FESource
 @publish FESpaces AffineFEOperator
 @publish FESpaces LinearFESolver
 @publish FESpaces get_free_values
@@ -135,12 +140,11 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish FESpaces interpolate_dirichlet
 @publish FESpaces FEOperator
 @publish FESpaces FESolver
-@publish FESpaces update_state_variables!
-
-using Gridap.FESpaces: @law; export @law
+@publish FESpaces SparseMatrixAssembler
 
 @publish MultiField MultiFieldFESpace
+@publish MultiField num_fields
 
 @publish Visualization writevtk
 @publish Visualization createvtk
-@publish Visualization print_op_tree
+
