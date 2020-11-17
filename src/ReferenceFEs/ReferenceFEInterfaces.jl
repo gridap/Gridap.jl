@@ -153,17 +153,102 @@ function get_face_dofs(reffe::ReferenceFE)
   @abstractmethod
 end
 
+# Push forward-related
+
 abstract type PushForwardMap <: Map end
 
 function evaluate!(cache,::PushForwardMap,v::AbstractVector{<:Field},phi::Field)
   @abstractmethod
 end
 
-function evaluate!(cache,::PushForwardMap,v::AbstractVector{<:Dof},phi::Field)
+PushForwardMap(::Type{<:ReferenceFE}) = IdentityPushForwardMap()
+
+PushForwardMap(reffe::T) where T<:ReferenceFE = PushForwardMap(T)
+
+struct IdentityPushForwardMap <: PushForwardMap end
+
+function evaluate!(cache,::IdentityPushForwardMap,v::AbstractVector{<:Field},phi::Field)
+  v
+end
+
+function lazy_map(::IdentityPushForwardMap,a::AbstractArray,b::AbstractArray)
+  a
+end
+
+"""
+"""
+function get_shapefuns(reffe::ReferenceFE,phi::Field)
+  PushForwardMap(reffe)(get_shapefuns(reffe),phi)
+end
+
+"""
+"""
+function get_dof_basis(reffe::ReferenceFE,phi::Field)
+  get_dof_basis(reffe,phi,PushForwardMap(reffe))
+end
+
+function get_dof_basis(reffe::ReferenceFE,phi::Field,::IdentityPushForwardMap)
+  get_dof_basis(reffe)
+end
+
+function get_dof_basis(reffe::ReferenceFE,phi::Field,::PushForwardMap)
   @abstractmethod
 end
 
-PushForwardMap(reffe::ReferenceFE) = @abstractmethod
+function lazy_map(::typeof(get_shapefuns),cell_reffe::AbstractArray,cell_map::AbstractArray)
+  ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
+  ctype_ref_shapefuns = map(get_shapefuns,ctype_reffe)
+  cell_ref_shapefuns = expand_cell_data(ctype_ref_shapefuns,cell_ctype)
+  ctype_k = map(PushForwardMap,ctype_reffe)
+  unique_ks = unique(ctype_k)
+  if length(unique_ks) == 1
+    k = first(unique_ks)
+    lazy_map(k,cell_ref_shapefuns,cell_map)
+  else
+    T = return_type(get_shapefuns, testitem(cell_reffe), testitem(cell_map))
+    lazy_map(get_shapefuns,T,cell_reffe,cell_map)
+  end
+end
+
+function lazy_map(::typeof(get_dof_basis),cell_reffe::AbstractArray,cell_map::AbstractArray)
+  ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
+  if all( map(reffe->PushForwardMap(reffe)==IdentityPushForwardMap(),ctype_reffe) )
+    ctype_dof_basis = map(get_dof_basis,ctype_reffe)
+    expand_cell_data(ctype_dof_basis,cell_ctype)
+  else
+    T = return_type(get_dof_basis, testitem(cell_reffe), testitem(cell_map))
+    lazy_map(get_dof_basis,T,cell_reffe,cell_map)
+  end
+end
+
+"""
+"""
+function expand_cell_data(type_to_data, cell_to_type)
+  CompressedArray(type_to_data,cell_to_type)
+end
+
+function expand_cell_data(type_to_data, cell_to_type::Fill)
+  ncells = length(cell_to_type)
+  @assert length(type_to_data) == 1 "Only one reference element expected"
+  @assert cell_to_type.value == 1 "Only one type of reference element expected"
+  data = first(type_to_data)
+  Fill(data,ncells)
+end
+
+function compress_cell_data(cell_data::AbstractArray)
+  @unreachable """\n
+  The given cell data cannot be compressed. Describe your data with
+  a CompressedArray or Fill array types.
+  """
+end
+
+function compress_cell_data(a::CompressedArray)
+  a.values, a.ptrs
+end
+
+function compress_cell_data(a::Fill)
+  Fill(a.value,1), Fill(1,length(a))
+end
 
 # Test
 
