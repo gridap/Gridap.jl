@@ -14,9 +14,9 @@ using Test
 
 @time @testset "StokesTaylorHood" begin include("StokesTaylorHoodTests.jl") end
 
-# @time @testset "StokesDG" begin include("StokesDGTests.jl") end
+@time @testset "StokesDG" begin include("StokesDGTests.jl") end
 
-# @time @testset "StokesNitsche" begin include("StokesNitscheTests.jl") end
+@time @testset "StokesNitsche" begin include("StokesNitscheTests.jl") end
 
 # @time @testset "Darcy" begin include("DarcyTests.jl") end
 

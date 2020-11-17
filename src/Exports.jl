@@ -89,6 +89,10 @@ using Gridap.TensorValues: ⊗; export ⊗
 
 @publish Geometry get_triangulation
 @publish Geometry num_cells
+@publish Geometry num_facets
+@publish Geometry num_vertices
+@publish Geometry num_edges
+@publish Geometry num_faces
 @publish Geometry Triangulation
 @publish Geometry get_cell_coordinates
 @publish Geometry get_cell_ref_coordinates
