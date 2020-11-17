@@ -1,108 +1,126 @@
 
 """
+This can be used as a CellField as long as one evaluates it
+on the stored CellPoint.
 """
-function QPointCellField(value::Number,cell_map::AbstractArray{<:Field},quad::CellQuadrature)
-  q = get_coordinates(quad)
-  v_q = [ fill(value,size(qi)) for qi in q ]
-  array = ArrayOfEvaluatedFields(v_q,q)
-  GenericCellField(array, cell_map)
-end
-
-"""
-"""
-function CellField(value::Number,cell_map::AbstractArray{<:Field},quad::CellQuadrature)
-  QPointCellField(value,cell_map,quad)
-end
-
-struct EvaluatedField{A<:AbstractArray,P<:AbstractArray} <:Field
-  array::A
+struct CellState{T,P<:CellPoint} <: CellField
   points::P
-end
+  values::AbstractArray
 
-function return_cache(f::EvaluatedField,x)
-  nothing
-end
-
-function evaluate!(cache,f::EvaluatedField,x)
-  @assert length(x) == length(f.array)
-  @assert x === f.points || x == f.points
-  f.array
-end
-
-struct ArrayOfEvaluatedFields{T,N,A,B} <: AbstractArray{EvaluatedField{T},N}
-  array::A
-  points::B
-  function ArrayOfEvaluatedFields(array::AbstractArray{T,N},points::AbstractArray) where {T<:AbstractArray,N}
-    A = typeof(array)
-    B = typeof(points)
-    new{T,N,A,B}(array,points)
+  function CellState{T}(::UndefInitializer,points::CellPoint) where T
+    values = _init_values(T,get_cell_data(points))
+    P = typeof(points)
+    new{T,P}(points,values)
+  end
+  
+  function CellState(v::Number,points::CellPoint)
+    values = _init_values(v,get_cell_data(points))
+    T = typeof(v)
+    P = typeof(points)
+    new{T,P}(points,values)
   end
 end
 
-Base.size(a::ArrayOfEvaluatedFields) = size(a.array)
-
-Base.IndexStyle(::Type{<:ArrayOfEvaluatedFields{T,N,A}}) where {T,N,A} = IndexStyle(A)
-
-@inline function Base.getindex(a::ArrayOfEvaluatedFields,i::Integer)
-  EvaluatedField(a.array[i],a.points[i])
+function _init_values(::Type{T},x::AbstractArray{<:Point}) where T
+  N = ndims(x)
+  Array{T,N}(undef,size(x))
 end
 
-@inline function Base.getindex(a::ArrayOfEvaluatedFields{T,N},i::Vararg{Int,N}) where {T,N}
-  EvaluatedField(a.array[i...],a.points[i...])
+function _init_values(::Type{T},x::AbstractArray{<:AbstractVector{<:Point}}) where T
+  [Vector{T}(undef,length(xi)) for xi in x]
 end
 
-function array_cache(a::ArrayOfEvaluatedFields)
-  ca = array_cache(a.array)
-  cp = array_cache(a.points)
-  (ca,cp)
+function _init_values(v::Number,x::AbstractArray{<:Point})
+  fill(v,size(x))
 end
 
-@inline function getindex!(cache,a::ArrayOfEvaluatedFields,i...)
-  ca, cp = cache
-  array = getindex!(ca,a.array,i...)
-  points = getindex!(ca,a.points,i...)
-  EvaluatedField(array,points)
+function _init_values(v::Number,x::AbstractArray{<:AbstractVector{<:Point}})
+  [fill(v,length(xi)) for xi in x]
 end
 
-function evaluate_field_array(a::ArrayOfEvaluatedFields,x::AbstractArray)
-  @assert a.points === x || a.points == x
-  @assert length(a) == length(x)
-  a.array
+function get_cell_data(f::CellState)
+  @unreachable """\n
+  get_cell_data cannot be called on a CellState
+
+  If you see this error messase it is likelly that you are trying to perform
+  an operation that does not make sense for a CellState. In most cases,
+  to do the wanted operation, you would need first to project the CellState
+  to a FESpace (e.g. via a L2 projection).
+  """
 end
 
-function update_state_variables!(updater::Function,quad::CellQuadrature,f::CellField...)
-  x = get_coordinates(quad)
-  update_state_variables!(updater,x,f...)
+get_triangulation(f::CellState) = get_triangulation(f.points)
+DomainStyle(::Type{CellState{T,P}}) where {T,P} = DomainStyle(P)
+
+function evaluate!(cache,f::CellState,x::CellPoint)
+  if f.points === x
+    f.values
+  else
+    @unreachable """\n
+    It is not possible to evaluate the given CellState on the given CellPoint.
+
+    a CellState can only be evaluated at the CellPoint it was created from.
+    If you want to evaluate at another location, you would need first to project the CellState
+    to a FESpace (e.g. via a L2 projection).
+    """
+  end
 end
 
-function update_state_variables!(updater::Function,x::AbstractArray,f::CellField...)
+function CellState{T}(::UndefInitializer,a) where T
+  points = get_cell_points(a)
+  CellState{T}(undef,points)
+end
+
+function CellState(v::Number,a)
+  points = get_cell_points(a)
+  CellState(v,points)
+end
+
+function update!(updater::Function,f::CellField...)
+  ids = findall(map(i->isa(i,CellState),f))
+  @assert length(ids) > 0 """\n
+  At least one CellState object has to be given to the update! function
+  """
+  a = f[ids]
+  x = first(a).points
+  @assert all(map(i->i.points===x,a)) """\n
+  All the CellState objects given to the update! function need to be
+  defined on the same CellPoint.
+  """
   fx = map(i->evaluate(i,x),f)
-  caches = map(array_cache,fx...)
-  cache_x = array_cache(x)
-  _update_state_variables!(updater,caches,fx,cache_x,x)
-end
+  if num_cells(x) > 0
+    fxi = map(first,fx)
+    fxiq = map(first,fxi)
+    need_to_update, states = updater(fxiq...)
+    @assert isa(need_to_update,Bool) && isa(states,Tuple) """\n
+    Wrong return value of the user-defined updater Function. The signature is
 
-function update_state_variables!(quad::CellQuadrature,updater::Function,f::CellField...)
-  msg =
-  """
-  The method
-      update_state_variables!(quad::CellQuadrature,updater::Function,f::CellField...)
-  has been removed. Use
-      update_state_variables!(updater::Function,quad::CellQuadrature,f::CellField...)
-  instead
-  """
-  error(msg)
+        need_to_update, states = updater(args...)
+
+    where need_to_update is a Bool telling if we need to update and
+    states is a Tuple with the new states.
+    """
+    msg = """\n
+    The number of new states given by the updater Function does not match
+    the number of CellState objects given as arguments in the update! Funciton.
+    """
+    @check length(states) <= length(a) msg
+  end
+  caches = map(array_cache,fx)
+  x_data = get_cell_data(x)
+  cache_x = array_cache(x_data)
+  _update_state_variables!(updater,caches,fx,cache_x,x_data)
+  nothing
 end
 
 @noinline function  _update_state_variables!(updater,caches,fx,cache_x,x)
   ncells = length(x)
   for cell in 1:ncells
-    fxi = getitems!(caches,fx,cell)
+    fxi = map((c,f)->getindex!(c,f,cell),caches,fx)
     xi = getindex!(cache_x,x,cell)
     for q in 1:length(xi)
-      fxiq = getitems(fxi,q)
-      r = updater(fxiq...)
-      need_to_update, states = Arrays._split(r...)
+      fxiq = map(f->f[q],fxi)
+      need_to_update, states = updater(fxiq...)
       if need_to_update
         _update_states!(fxi,q,states,Val{length(states)}())
       end
@@ -121,9 +139,7 @@ end
 end
 
 @inline function _update_state!(b,q,states,::Val{i}) where i
-  m = length(b)
-  n = length(states)
-  o = m-n
-  b[i+o][q] = states[i]
+  b[i][q] = states[i]
   nothing
 end
+

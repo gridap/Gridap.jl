@@ -14,6 +14,8 @@ using Test
 
 @testset "AttachConstraints" begin include("AttachConstraintsTests.jl") end
 
+@testset "CellStates" begin include("QPointCellFieldsTests.jl") end
+
 #
 #@testset "QPointCellFields" begin include("QPointCellFieldsTests.jl") end
 #
