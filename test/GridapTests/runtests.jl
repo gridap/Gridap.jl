@@ -4,7 +4,7 @@ using Test
 
 @time @testset "Poisson" begin include("PoissonTests.jl") end
 
-# @time @testset "PoissonDG" begin include("PoissonDGTests.jl") end
+@time @testset "PoissonDG" begin include("PoissonDGTests.jl") end
 
 # @time @testset "Poisson1D" begin include("Poisson1DTests.jl") end
 
