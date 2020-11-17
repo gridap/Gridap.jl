@@ -2,7 +2,7 @@ module GridapTests
 
 using Test
 
-# @time @testset "Poisson" begin include("PoissonTests.jl") end
+@time @testset "Poisson" begin include("PoissonTests.jl") end
 
 # @time @testset "PoissonDG" begin include("PoissonDGTests.jl") end
 

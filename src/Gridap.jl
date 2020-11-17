@@ -56,6 +56,6 @@ include("FESpacesNEW/FESpaces.jl")
 
 include("MultiField/MultiField.jl")
 
-# include("Exports.jl")
+include("Exports.jl")
 
 end # module

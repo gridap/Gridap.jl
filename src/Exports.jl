@@ -90,7 +90,6 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish Geometry get_triangulation
 @publish Geometry num_cells
 @publish Geometry Triangulation
-@publish Geometry get_normal_vector
 @publish Geometry get_cell_coordinates
 @publish Geometry get_cell_ref_coordinates
 @publish Geometry get_cell_map
@@ -117,6 +116,8 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish CellData jump
 @publish CellData mean
 @publish CellData update!
+@publish CellData get_normal_vector
+using Gridap.CellData: ∫; export ∫
 
 @publish FESpaces FESpace
 @publish FESpaces TrialFESpace
