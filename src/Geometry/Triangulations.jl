@@ -339,35 +339,6 @@ end
 
 # Helpers for Triangulation
 
-"""
-"""
-function expand_cell_data(type_to_data, cell_to_type)
-  CompressedArray(type_to_data,cell_to_type)
-end
-
-function expand_cell_data(type_to_data, cell_to_type::Fill)
-  ncells = length(cell_to_type)
-  @assert length(type_to_data) == 1 "Only one reference element expected"
-  @assert cell_to_type.value == 1 "Only one type of reference element expected"
-  data = first(type_to_data)
-  Fill(data,ncells)
-end
-
-function compress_cell_data(cell_data::AbstractArray)
-  @unreachable """\n
-  The given cell data cannot be compressed. Describe your data with
-  a CompressedArray or Fill array types.
-  """
-end
-
-function compress_cell_data(a::CompressedArray)
-  a.values, a.ptrs
-end
-
-function compress_cell_data(a::Fill)
-  Fill(a.value,1), Fill(1,length(a))
-end
-
 #"""
 #    restrict(cf::CellField,trian::Triangulation)
 #"""

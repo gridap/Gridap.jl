@@ -32,10 +32,10 @@ import Gridap.TensorValues: inner, outer, double_contraction, symmetric_part
 import LinearAlgebra: det, tr, cross, dot
 import Base: inv, abs, abs2, *, +, -, /, adjoint, transpose
 
-export gradient
+export gradient, ∇
 export ∇∇
-export inner, outer, double_contraction, symmetric_part
-export det, tr, cross, dot
+export inner, ⊙, outer, ⊗, double_contraction, ⋅¹, ⋅², symmetric_part
+export det, tr, cross, ×, dot, ⋅
 
 export DomainStyle
 export ReferenceDomain
@@ -69,11 +69,16 @@ export attach_constraints_rows
 export attach_constraints_cols
 export identity_constraints
 
+export CellState
+export update!
+
 include("CellDataInterface.jl")
 
 include("CellFields.jl")
 
 include("CellQuadratures.jl")
+
+include("CellStates.jl")
 
 include("DomainContributions.jl")
 

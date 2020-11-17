@@ -105,6 +105,8 @@ struct LebesgueMeasure <: GridapType
   quad::CellQuadrature
 end
 
+get_cell_points(a::LebesgueMeasure) = get_cell_points(a.quad)
+
 LebesgueMeasure(args...) = LebesgueMeasure(CellQuadrature(args...))
 
 function integrate(f,b::LebesgueMeasure)
