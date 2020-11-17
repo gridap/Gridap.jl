@@ -3,7 +3,7 @@ module GridapTypesTests
 using Test
 using Gridap.Helpers
 
-import Gridap.Helpers: operate
+#import Gridap.Helpers: operate
 
 struct Foo{A} <: GridapType
   bar::A

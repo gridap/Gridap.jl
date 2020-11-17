@@ -36,11 +36,11 @@ using FillArrays
 using Test
 using BlockArrays
 
-import LinearAlgebra: det, inv, transpose
-import LinearAlgebra: ⋅
+import LinearAlgebra: det, inv, transpose, tr, cross
+import LinearAlgebra: ⋅, dot
 
 import Base: +, -, *, /
-import Gridap.TensorValues: ⊗, ⊙
+import Gridap.TensorValues: ⊗, ⊙, symmetric_part, outer
 
 import Gridap.Arrays: IndexStyle
 import Gridap.Arrays: return_cache
@@ -77,6 +77,14 @@ export ∇∇
 export gradient_type
 export push_∇
 export push_∇∇
+
+export curl
+export grad2curl
+export laplacian
+export divergence
+export Δ
+export ε
+export symmetric_gradient
 
 export test_field
 export test_field_array
@@ -120,6 +128,8 @@ include("MockFields.jl")
 include("AffineMaps.jl")
 
 include("ApplyOptimizations.jl")
+
+include("DiffOperators.jl")
 
 include("AutoDiff.jl")
 

@@ -171,7 +171,7 @@ function FESpaceWithLinearConstraints!(DOF_to_DOFs::Table,DOF_to_coeffs::Table,s
   n_fdofs = num_free_dofs(space)
   mDOF_to_DOF, n_fmdofs = _find_master_dofs(DOF_to_DOFs,n_fdofs)
   DOF_to_mDOFs = _renumber_constraints!(DOF_to_DOFs,mDOF_to_DOF)
-  cell_to_ldof_to_dof = Table(get_cell_dofs(space))
+  cell_to_ldof_to_dof = Table(get_cell_dof_ids(space))
   cell_to_lmdof_to_mdof = _setup_cell_to_lmdof_to_mdof(cell_to_ldof_to_dof,DOF_to_mDOFs,n_fdofs,n_fmdofs)
 
   FESpaceWithLinearConstraints(
@@ -459,6 +459,10 @@ function _setup_mdof_to_val!(
 end
 
 # Implementation of FESpace interface
+
+function get_triangulation(f::FESpaceWithLinearConstraints)
+  get_triangulation(f.space)
+end
 
 num_free_dofs(f::FESpaceWithLinearConstraints) = f.n_fmdofs
 

@@ -10,6 +10,7 @@ using Test
 using FillArrays
 using BlockArrays
 using SparseArrays
+using LinearAlgebra
 
 using Gridap.Helpers
 using Gridap.Algebra
@@ -159,6 +160,7 @@ export FESpaceWithConstantFixed
 export ZeroMeanFESpace
 export CLagrangianFESpace
 export DirichletFESpace
+export FESpaceWithLinearConstraints
 
 include("FESpaceInterface.jl")
 

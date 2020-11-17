@@ -29,6 +29,22 @@ test_triangulation(trian_out)
 trian = lazy_append(trian_out,trian_in)
 test_triangulation(trian)
 
+@test isa(get_cell_coordinates(trian),AppendedArray)
+
+@test isa(get_cell_ref_coordinates(trian),AppendedArray)
+
+@test isa(get_cell_map(trian),AppendedArray)
+
+@test isa(get_cell_ref_map(trian),AppendedArray)
+
+@test !isa(get_cell_reffe(trian),AppendedArray)
+
+@test isa(get_cell_shapefuns(trian),AppendedArray)
+
+@test isa(get_cell_type(trian),AppendedArray)
+
+@test isa(get_cell_id(trian),AppendedArray)
+
 #order = 1
 #quad = CellQuadrature(trian,2*order)
 #quad_in = CellQuadrature(trian_in,2*order)
