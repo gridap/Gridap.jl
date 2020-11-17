@@ -419,6 +419,15 @@ for op in (:inner,:outer,:double_contraction,:+,:-,:*,:cross,:dot,:/)
   end
 end
 
+dot(::typeof(∇),f::CellField) = divergence(f)
+function (*)(::typeof(∇),f::CellField)
+  msg = "Syntax ∇*f has been removed, use ∇⋅f (\\nabla \\cdot f) instead"
+  error(msg)
+end
+outer(::typeof(∇),f::CellField) = gradient(f)
+outer(f::CellField,::typeof(∇)) = transpose(gradient(f))
+cross(::typeof(∇),f::CellField) = curl(f)
+
 # Skeleton related Operations
 
 function Base.getproperty(x::CellField, sym::Symbol)
