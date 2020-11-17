@@ -3,7 +3,7 @@
     from_json(::Type{T},s::AbstractString) where T
 """
 function from_json(::Type{T},s::AbstractString) where T
-  json_dict = JSON.parse(s)
+  json_dict = JSON.parse(s;inttype=Int)
   dict = _decode_json_dict(json_dict)
   from_dict(T,dict)
 end
@@ -12,7 +12,7 @@ end
     from_json_file(::Type{T},s::AbstractString) where T
 """
 function from_json_file(::Type{T},s::AbstractString) where T
-  json_dict = JSON.parsefile(s)
+  json_dict = JSON.parsefile(s;inttype=Int)
   dict = _decode_json_dict(json_dict)
   from_dict(T,dict)
 end
