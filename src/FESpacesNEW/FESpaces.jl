@@ -10,6 +10,7 @@ using Test
 using FillArrays
 using BlockArrays
 using SparseArrays
+using LinearAlgebra
 
 using Gridap.Helpers
 using Gridap.Algebra
@@ -18,9 +19,12 @@ using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.CellData
+using Gridap.TensorValues
 
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
+import Gridap.Arrays: return_cache
+import Gridap.Arrays: evaluate!
 import Gridap.Geometry: get_triangulation
 import Gridap.Geometry: get_cell_shapefuns
 import Gridap.CellData: attach_constraints_rows
@@ -57,6 +61,8 @@ export test_fe_function
 
 export FESpace
 export ConstraintStyle
+export Constrained
+export UnConstrained
 export num_free_dofs
 export zero_free_values
 export EvaluationFunction
@@ -150,6 +156,12 @@ export test_fe_solver
 export LinearFESolver
 export NonlinearFESolver
 
+export FESpaceWithConstantFixed
+export ZeroMeanFESpace
+export CLagrangianFESpace
+export DirichletFESpace
+export FESpaceWithLinearConstraints
+
 include("FESpaceInterface.jl")
 
 include("SingleFieldFESpaces.jl")
@@ -173,5 +185,19 @@ include("AffineFEOperators.jl")
 include("FEOperatorsFromWeakForm.jl")
 
 include("FESolvers.jl")
+
+include("DiscontinuousFESpaces.jl")
+
+include("FESpacesWithConstantFixed.jl")
+
+include("ZeroMeanFESpaces.jl")
+
+include("CLagrangianFESpaces.jl")
+
+include("DirichletFESpaces.jl")
+
+include("ExtendedFESpaces.jl")
+
+include("FESpacesWithLinearConstraints.jl")
 
 end # module

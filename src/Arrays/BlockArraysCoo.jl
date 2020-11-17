@@ -47,6 +47,19 @@ Base.Broadcast.axistype(a, b::MultiLevelBlockedUnitRange) =Base.Broadcast.axisty
 local_range(a::AbstractUnitRange,k::Integer) = Base.OneTo(length(a[Block(k)]))
 local_range(a::MultiLevelBlockedUnitRange,k::Integer) = a.local_ranges[k]
 
+function similar_range(r::Base.OneTo,n::Integer)
+  Base.OneTo(Int(n))
+end
+
+function similar_range(r::BlockedUnitRange,n::Integer)
+  blockedrange([n])
+end
+
+function similar_range(r::MultiLevelBlockedUnitRange,n::Integer)
+  r = similar_range(first(r.local_ranges),n)
+  append_ranges([r])
+end
+
 """
 Check if the full multi-level block structure is the same.
 This is in contrast to BlockArrays.blockisequal that only checks
@@ -530,7 +543,7 @@ end
 function Base.:*(a::Number,b::BlockArrayCoo)
   f(block)= a*block
   blocks = f.(b.blocks)
-  BlockArrayCoo(b.axes,b.blockids,blocks,b.ptrs,b.zero_blocks)
+  BlockArrayCoo(b.axes,b.blockids,blocks,b.ptrs,f.(b.zero_blocks))
 end
 
 const BlockMatrixCoo = BlockArrayCoo{T,2} where T

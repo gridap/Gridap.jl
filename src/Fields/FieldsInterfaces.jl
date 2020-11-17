@@ -330,7 +330,7 @@ return_value(op::Broadcasting{<:Operation},x::Field...) = OperationField(op.f.op
 
 # Define some well known operations
 
-for op in (:+,:-,:*,:⋅,:⊙,:⊗,:inv,:det)
+for op in (:+,:-,:*,:⋅,:⊙,:⊗,:inv,:det,:tr,:grad2curl,:symmetric_part,:transpose)
   @eval ($op)(a::Field...) = Operation($op)(a...)
 end
 
@@ -371,7 +371,7 @@ for op in (:*,:⋅)
      function product_rule(::typeof($op),f1::Real,f2::VectorValue,∇f1,∇f2)
        ∇f1⊗f2 + ∇f2*f1
      end
-     
+
      function product_rule(::typeof($op),f1::VectorValue,f2::Real,∇f1,∇f2)
        product_rule(*,f2,f1,∇f2,∇f1)
      end
@@ -545,13 +545,12 @@ argument `grad` can be used. It should contain the result of evaluating `gradien
 Idem for `gradgrad`. The checks are performed with the `@test` macro.
 """
 function test_field(f::Field, x, v, cmp=(==); grad=nothing, gradgrad=nothing)
-  test_mapping(v,f,x;cmp=cmp)
+  test_map(v,f,x;cmp=cmp)
   if grad != nothing
-    test_mapping(grad,∇(f),x;cmp=cmp)
+    test_map(grad,∇(f),x;cmp=cmp)
   end
   if gradgrad != nothing
-    test_mapping(gradgrad,∇∇(f),x;cmp=cmp)
+    test_map(gradgrad,∇∇(f),x;cmp=cmp)
   end
   true
 end
-

@@ -7,6 +7,7 @@ using Gridap.Geometry
 using Gridap.FESpaces
 using Gridap.Fields
 using Gridap.Integration
+using Gridap.ReferenceFEs
 using Gridap.CellData
 using Test
 
@@ -21,91 +22,71 @@ model = CartesianDiscreteModel(domain,partition)
 trian = get_triangulation(model)
 degree = order
 quad = CellQuadrature(trian,degree)
-q = get_coordinates(quad)
 
-ref_style = [:reference,:physical]
+V = TestFESpace(model,ReferenceFE(:Lagrangian,Float64,order);conformity=:H1)
+Q = TestFESpace(model,ReferenceFE(:Lagrangian,Float64,order-1),conformity=:L2)
 
-for ref_st in ref_style
+U = TrialFESpace(V)
+P = TrialFESpace(Q)
 
-  V = TestFESpace(model=model,order=order,reffe=:Lagrangian,conformity=:H1,valuetype=Float64,dof_space=ref_st)
-  Q = TestFESpace(model=model,order=order-1,reffe=:Lagrangian,conformity=:L2,valuetype=Float64,dof_space=ref_st)
+multi_field_style = ConsecutiveMultiFieldStyle()
 
-  U = TrialFESpace(V)
-  P = TrialFESpace(Q)
+Y = MultiFieldFESpace(Vector{Float64},[V,Q],multi_field_style)
+X = MultiFieldFESpace(Vector{Float64},[U,P],multi_field_style)
 
-  multi_field_style = ConsecutiveMultiFieldStyle()
+@test num_free_dofs(X) == num_free_dofs(U) + num_free_dofs(P)
+@test num_free_dofs(X) == num_free_dofs(Y)
 
-  Y = MultiFieldFESpace([V,Q],multi_field_style)
-  X = MultiFieldFESpace([U,P],multi_field_style)
+dy = get_cell_shapefuns(Y)
+dv, dq = dy
 
-  cell_axes = get_cell_axes(Y)
-  @test isa(cell_axes[1][1],BlockedUnitRange)
+dx = get_cell_shapefuns_trial(X)
+du, dp = dx
 
-  cell_axes = get_cell_axes(X)
-  @test isa(cell_axes[1][1],BlockedUnitRange)
+cellmat = integrate(dv*du,quad)
+cellvec = integrate(dv*2,quad)
+cellids = get_cell_id(trian)
+cellmatvec = pair_arrays(cellmat,cellvec)
+@test isa(cellmat, LazyArray{<:Fill{<:BlockArrayCooMap}})
+@test is_nonzero_block(cellmat[1],1,1)
+@test is_zero_block(cellmat[1],1,2)
+@test isa(cellvec, LazyArray{<:Fill{<:BlockArrayCooMap}})
+@test is_nonzero_block(cellvec[1],1)
+@test is_zero_block(cellvec[1],2)
 
-  @test num_free_dofs(X) == num_free_dofs(U) + num_free_dofs(P)
-  @test num_free_dofs(X) == num_free_dofs(Y)
+matvecdata = (cellmatvec,cellids,cellids)
+matdata = (cellmat,cellids,cellids)
+vecdata = (cellvec,cellids)
 
-  dy = get_cell_basis(Y)
-  @test is_test(dy)
-  @test is_a_fe_cell_basis(dy)
-  dv, dq = dy
-  @test is_a_fe_cell_basis(dv)
-  @test is_a_fe_cell_basis(dq)
+free_values = rand(num_free_dofs(X))
+xh = FEFunction(X,free_values)
+test_fe_function(xh)
+@test isa(xh,FEFunction)
+uh, ph = xh
+@test isa(uh,FEFunction)
+@test isa(ph,FEFunction)
 
-  dx = get_cell_basis(X)
-  @test is_a_fe_cell_basis(dx)
-  @test is_trial(dx)
-  du, dp = dx
-  @test is_a_fe_cell_basis(du)
-  @test is_a_fe_cell_basis(dp)
+cell_isconstr = get_cell_isconstrained(X)
+@test cell_isconstr == Fill(false,num_cells(model))
 
-  cellmat = integrate(dv*du,trian,quad)
-  cellvec = integrate(dv*2,trian,quad)
-  cellids = get_cell_id(trian)
-  cellmatvec = pair_arrays(cellmat,cellvec)
-  @test isa(cellmat, VectorOfBlockArrayCoo)
-  @test is_nonzero_block(cellmat,1,1)
-  @test is_zero_block(cellmat,1,2)
-  @test isa(cellvec, VectorOfBlockArrayCoo)
-  @test is_nonzero_block(cellvec,1)
-  @test is_zero_block(cellvec,2)
+cell_constr = get_cell_constraints(X)
+@test isa(cell_constr,LazyArray{<:Fill{<:BlockArrayCooMap}})
 
-  matvecdata = (cellmatvec,cellids,cellids)
-  matdata = (cellmat,cellids,cellids)
-  vecdata = (cellvec,cellids)
+cell_dof_ids = get_cell_dof_ids(X)
+@test isa(cell_dof_ids,LazyArray{<:Fill{<:BlockArrayCooMap}})
 
-  free_values = rand(num_free_dofs(X))
-  xh = FEFunction(X,free_values)
-  test_fe_function(xh)
-  @test is_a_fe_function(xh)
-  uh, ph = xh
-  @test is_a_fe_function(uh)
-  @test is_a_fe_function(ph)
+cf = CellField(X,get_cell_dof_ids(X))
+@test isa(cf,MultiFieldCellField)
 
-  cell_isconstr = get_cell_isconstrained(X)
-  @test cell_isconstr == Fill(false,num_cells(model))
+test_fe_space(X,matvecdata,matdata,vecdata)
+test_fe_space(Y,matvecdata,matdata,vecdata)
 
-  cell_constr = get_cell_constraints(X)
-  @test isa(cell_constr,VectorOfBlockArrayCoo)
+#using Gridap.Visualization
+#writevtk(trian,"trian";nsubcells=30,cellfields=["uh" => uh, "ph"=> ph])
 
-  cell_dof_ids = get_cell_dofs(X)
-  @test isa(cell_dof_ids,VectorOfBlockArrayCoo)
-
-  cf = CellField(X,get_cell_dofs(X))
-  @test isa(cf,MultiFieldCellField)
-
-  test_fe_space(X,matvecdata,matdata,vecdata)
-  test_fe_space(Y,matvecdata,matdata,vecdata)
-
-  #using Gridap.Visualization
-  #writevtk(trian,"trian";nsubcells=30,cellfields=["uh" => uh, "ph"=> ph])
-
-  f(x) = sin(4*pi*(x[1]-x[2]^2))+1
-  fh = interpolate([f,f],X)
-  fh = interpolate_everywhere([f,f],X)
-  fh = interpolate_dirichlet([f,f],X)
-end
+f(x) = sin(4*pi*(x[1]-x[2]^2))+1
+fh = interpolate([f,f],X)
+fh = interpolate_everywhere([f,f],X)
+fh = interpolate_dirichlet([f,f],X)
 
 end # module

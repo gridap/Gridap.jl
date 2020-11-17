@@ -8,6 +8,7 @@ using Gridap.FESpaces
 using Gridap.TensorValues
 using Gridap.MultiField
 using Gridap.CellData
+using Gridap.ReferenceFEs
 using Test
 
 domain = (0,1,0,1)
@@ -20,26 +21,22 @@ add_tag_from_tags!(labels,"neumann_1",[6,7,8])
 add_tag_from_tags!(labels,"dirichlet_2",[1,3,7])
 add_tag_from_tags!(labels,"neumann_2",[5,6,8])
 
-trian = Triangulation(model)
-btrian1 = BoundaryTriangulation(model,"neumann_1")
-btrian2 = BoundaryTriangulation(model,"neumann_2")
-strian = SkeletonTriangulation(model)
+Ω = Triangulation(model)
+Γ1 = BoundaryTriangulation(model,"neumann_1")
+Γ2 = BoundaryTriangulation(model,"neumann_2")
+Λ = SkeletonTriangulation(model)
 
-quad = CellQuadrature(trian,2)
-bquad1 = CellQuadrature(btrian1,2)
-bquad2 = CellQuadrature(btrian2,2)
-squad = CellQuadrature(strian,2)
+dΩ = LebesgueMeasure(Ω,2)
+dΓ1 = LebesgueMeasure(Γ1,2)
+dΓ2 = LebesgueMeasure(Γ2,2)
+dΛ = LebesgueMeasure(Λ,2)
 
-bn1 = get_normal_vector(btrian1)
-bn2 = get_normal_vector(btrian2)
+n_Γ1 = get_normal_vector(Γ1)
+n_Γ2 = get_normal_vector(Γ2)
 
-V1 = FESpace(
-  model=model,valuetype=Float64,reffe=:Lagrangian,order=1,
-  conformity=:H1,dirichlet_tags="dirichlet_1")
-
-V2 = FESpace(
-  model=model,valuetype=Float64,reffe=:Lagrangian,order=1,
-  conformity=:H1,dirichlet_tags="dirichlet_2")
+reffe = ReferenceFE(:Lagrangian,Float64,1)
+V1 = FESpace(model,reffe,conformity=:H1,dirichlet_tags="dirichlet_1")
+V2 = FESpace(model,reffe,conformity=:H1,dirichlet_tags="dirichlet_2")
 
 sDOF_to_dof = [1,5,-2]
 sDOF_to_dofs = Table([[-1,4],[4,6],[-1,-3]])
@@ -66,53 +63,20 @@ test_fe_space(V)
 @test has_constraints(U)
 @test has_constraints(V)
 
-a(u,v) = ∇(v)⋅∇(u)
-b_Γ(v,u,n_Γ) = v*(n_Γ⋅∇(u))
+a((u1,u2),(v1,v2)) =
+  ∫( ∇(v1)⋅∇(u1) + ∇(v2)⋅∇(u2) + v1*u2 )*dΩ +
+  ∫( jump(v1)*jump(u2) + jump(v2)*jump(u2) )*dΛ
 
-function A(u,v)
-  u1,u2 = u
-  v1,v2 = v
-  a(v1,u1) + v1*u2 + a(v2,u2)
-end
+b((v1,v2)) =
+  ∫( v1*f1 )*dΩ +
+  ∫( v1*(n_Γ1⋅∇(u1)) )*dΓ1 +
+  ∫( v2*(n_Γ2⋅∇(u2)) )*dΓ2 +
+  ∫( jump(v2) )*dΛ
 
-function B(v)
-  v1,v2 = v
-  v1*f1
-end
-
-function B1_Γ(v)
-  v1,v2 = v
-  b_Γ(v1,u1,bn1)
-end
-
-function B2_Γ(v)
-  v1,v2 = v
-  b_Γ(v2,u2,bn2)
-end
-
-# This is only to stress skeleton machinery
-# since shape functions are continuous
-function As(u,v)
-  u1,u2 = u
-  v1,v2 = v
-  jump(v1)*jump(u2) + jump(v2)*jump(u2)
-end
-
-function Bs(v)
-  v1,v2 = v
-  jump(v2)
-end
-
-t_Ω = AffineFETerm(A,B,trian,quad)
-t1_Γ = FESource(B1_Γ,btrian1,bquad1)
-t2_Γ = FESource(B2_Γ,btrian2,bquad2)
-t_s = AffineFETerm(As,Bs,strian,squad)
-
-op = AffineFEOperator(U,V,t_Ω,t1_Γ,t2_Γ,t_s)
+op = AffineFEOperator(a,b,U,V)
 uh = solve(op)
 
 uh1, uh2 = uh
-
 e1 = u1 - uh1
 e2 = u2 - uh2
 
@@ -121,14 +85,13 @@ e2 = u2 - uh2
 #v2 = FEFunction(V2,rand(num_free_dofs(V2)))
 #v1c = FEFunction(V1c,rand(num_free_dofs(V1c)))
 #v2c = FEFunction(V2c,rand(num_free_dofs(V2c)))
-#writevtk(trian,"trian",nsubcells=10,cellfields=["v1"=>v1,"v2"=>v2,"v1c"=>v1c,"v2c"=>v2c])
+#writevtk(Ω,"trian",nsubcells=10,cellfields=["v1"=>v1,"v2"=>v2,"v1c"=>v1c,"v2c"=>v2c])
 
 #using Gridap.Visualization
-#writevtk(trian,"trian",nsubcells=10,cellfields=["uh1"=>uh1,"uh2"=>uh2,"e1"=>e1,"e2"=>e2])
+#writevtk(Ω,"trian",nsubcells=10,cellfields=["uh1"=>uh1,"uh2"=>uh2,"e1"=>e1,"e2"=>e2])
 
-l2(u) = u*u
-e1_l2 = sqrt(sum(integrate(l2(e1),trian,quad)))
-e2_l2 = sqrt(sum(integrate(l2(e2),trian,quad)))
+e1_l2 = sqrt(sum(∫(e1*e1)*dΩ))
+e2_l2 = sqrt(sum(∫(e2*e2)*dΩ))
 
 tol = 1.0e-9
 @test e1_l2 < tol

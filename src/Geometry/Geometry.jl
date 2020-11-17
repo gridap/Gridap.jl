@@ -178,6 +178,7 @@ export InterfaceTriangulation
 #export get_right_boundary
 
 export RestrictedDiscreteModel
+export get_parent_model
 
 export AppendedTriangulation
 

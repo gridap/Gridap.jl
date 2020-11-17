@@ -44,7 +44,7 @@ function ConformingFESpace(
   dirichlet_components=nothing,
   is_ref=true)
 
-  conf = get_default_conformity(first(reffes))
+  conf = Conformity(first(reffes))
   ConformingFESpace(
     reffes,
     conf,

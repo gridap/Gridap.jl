@@ -25,7 +25,7 @@ end
     get_face_own_nodes(reffe::LagrangianRefFE)
 """
 function get_face_own_nodes(reffe::LagrangianRefFE)
-  conf = get_default_conformity(reffe)
+  conf = Conformity(reffe)
   get_face_own_nodes(reffe,conf)
 end
 
@@ -52,7 +52,7 @@ end
     get_face_own_nodes_permutations(reffe::LagrangianRefFE)
 """
 function get_face_own_nodes_permutations(reffe::LagrangianRefFE)
-  conf = get_default_conformity(reffe)
+  conf = Conformity(reffe)
   get_face_own_nodes_permutations(reffe,conf)
 end
 
@@ -69,7 +69,7 @@ end
     test_lagrangian_reference_fe(reffe::LagrangianRefFE)
 """
 function test_lagrangian_reference_fe(reffe::LagrangianRefFE)
-  conf = get_default_conformity(reffe)
+  conf = Conformity(reffe)
   @test isa(conf,Conformity)
   test_lagrangian_reference_fe(reffe,conf)
 end
@@ -142,7 +142,7 @@ end
     get_own_nodes_permutations(reffe::LagrangianRefFE)
 """
 function get_own_nodes_permutations(reffe::LagrangianRefFE)
-  conf = get_default_conformity(reffe)
+  conf = Conformity(reffe)
   get_own_nodes_permutations(reffe,conf)
 end
 
@@ -161,7 +161,7 @@ end
     get_vertex_node(reffe::LagrangianRefFE) -> Vector{Int}
 """
 function get_vertex_node(reffe::LagrangianRefFE)
-  conf = get_default_conformity(reffe)
+  conf = Conformity(reffe)
   get_vertex_node(reffe,conf)
 end
 
@@ -178,7 +178,7 @@ end
     get_face_own_nodes(reffe::LagrangianRefFE,d::Integer)
 """
 function get_face_own_nodes(reffe::LagrangianRefFE,d::Integer)
-  conf = get_default_conformity(reffe)
+  conf = Conformity(reffe)
   get_face_own_nodes(reffe,conf,d)
 end
 
@@ -195,7 +195,7 @@ end
     get_face_own_nodes_permutations(reffe::LagrangianRefFE,d::Integer)
 """
 function get_face_own_nodes_permutations(reffe::LagrangianRefFE,d::Integer)
-  conf = get_default_conformity(reffe)
+  conf = Conformity(reffe)
   get_face_own_nodes_permutations(reffe,conf,d)
 end
 
@@ -376,7 +376,7 @@ get_prebasis(reffe::GenericLagrangianRefFE) = get_prebasis(reffe.reffe)
 
 get_dof_basis(reffe::GenericLagrangianRefFE) = get_dof_basis(reffe.reffe)
 
-get_default_conformity(reffe::GenericLagrangianRefFE) = get_default_conformity(reffe.reffe)
+Conformity(reffe::GenericLagrangianRefFE) = Conformity(reffe.reffe)
 
 get_face_dofs(reffe::GenericLagrangianRefFE) = get_face_dofs(reffe.reffe)
 

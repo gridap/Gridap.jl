@@ -18,7 +18,7 @@ test_reference_fe(reffe)
 @test get_order(get_prebasis(reffe)) == 0
 @test num_dofs(reffe) == 4
 
-@test get_default_conformity(reffe) == CurlConformity()
+@test Conformity(reffe) == CurlConformity()
 
 p = QUAD
 D = num_dims(QUAD)

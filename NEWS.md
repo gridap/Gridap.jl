@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added additional tensor operations and new double contraction notation `⋅²`. Implemented a `zero` constructor for `ThirdOrderTensorValues` to allow integration of 3-tensors. Since PR [#415](https://github.com/gridap/Gridap.jl/pull/415/).
+- Added `compile/create_gridap_image.jl` Julia script that lets one to create a custom sysimage of Gridap using the so-called `PackageCompiler.jl` Julia package; see `compile/README.md` for additional details. Since PR [#432](https://github.com/gridap/Gridap.jl/pull/432/).
+
+### Fixed
+ - Bug-fix for 32-bit Julia: Replace all occurences of Int64 by Int. Since PR [#445](https://github.com/gridap/Gridap.jl/pull/445).
 
 ## [0.14.1] - 2020-09-17 
 

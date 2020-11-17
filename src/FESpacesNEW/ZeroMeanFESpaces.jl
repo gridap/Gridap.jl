@@ -4,58 +4,38 @@
       # private fields
     end
 """
-struct ZeroMeanFESpace{B} <: SingleFieldFESpace
-  space::FESpaceWithConstantFixed
+struct ZeroMeanFESpace{CA,S} <: SingleFieldFESpace
+  space::FESpaceWithConstantFixed{CA,S}
   vol_i::Vector{Float64}
   vol::Float64
-  constraint_style::Val{B}
 end
 
 """
-    ZeroMeanFESpace(
-      space::SingleFieldFESpace,
-      trian::Triangulation,
-      quad::CellQuadrature)
 """
-function ZeroMeanFESpace(
-  space::SingleFieldFESpace,trian::Triangulation,quad::CellQuadrature)
-
-  _space = FESpaceWithConstantFixed(space,
-                                    true,
-                                    num_free_dofs(space))
-  vol_i, vol = _setup_vols(space,trian,quad)
-  ZeroMeanFESpace(_space,vol_i,vol,constraint_style(_space))
-end
-
-function _setup_vols(V,trian,quad)
-  U = TrialFESpace(V)
-  assem = SparseMatrixAssembler(U,V)
-  bh = get_cell_basis(V)
-  bh_trian = restrict(bh,trian)
-  cellvec = integrate(bh_trian,trian,quad)
-  cellids = get_cell_id(trian)
-  vecdata = ([cellvec],[cellids])
-  vol_i = assemble_vector(assem,vecdata)
+function ZeroMeanFESpace(space::SingleFieldFESpace,dΩ::LebesgueMeasure)
+  _space = FESpaceWithConstantFixed(space,true,num_free_dofs(space))
+  vol_i = assemble_vector(v->∫(v)*dΩ,space)
   vol = sum(vol_i)
-  (vol_i, vol)
+  ZeroMeanFESpace(_space,vol_i,vol)
 end
 
 # Genuine functions
 
 function TrialFESpace(f::ZeroMeanFESpace)
   U = TrialFESpace(f.space)
-  ZeroMeanFESpace(U,f.vol_i,f.vol,f.constraint_style)
+  ZeroMeanFESpace(U,f.vol_i,f.vol)
 end
 
 function FEFunction(
   f::ZeroMeanFESpace,
   free_values::AbstractVector,
   dirichlet_values::AbstractVector)
-  c = _compute_new_fixedval(free_values,
-                            dirichlet_values,
-                            f.vol_i,
-                            f.vol,
-                            f.space.dof_to_fix)
+  c = _compute_new_fixedval(
+    free_values,
+    dirichlet_values,
+    f.vol_i,
+    f.vol,
+    f.space.dof_to_fix)
   fv = lazy_map(+,free_values,Fill(c,length(free_values)))
   dv = dirichlet_values .+ c
   FEFunction(f.space,fv,dv)
@@ -82,13 +62,11 @@ end
 
 # Delegated functions
 
-constraint_style(::Type{ZeroMeanFESpace{B}}) where B = Val{B}()
+get_triangulation(f::ZeroMeanFESpace) = get_triangulation(f.space)
 
-get_cell_axes(t::ZeroMeanFESpace)= get_cell_axes(t.space)
+ConstraintStyle(::Type{ZeroMeanFESpace{CA,S}}) where {CA,S} = ConstraintStyle(S)
 
-get_cell_axes_with_constraints(t::ZeroMeanFESpace)= get_cell_axes_with_constraints(t.space)
-
-CellData.CellField(t::ZeroMeanFESpace,cell_vals) = CellField(t.space,cell_vals)
+CellField(t::ZeroMeanFESpace,cell_vals) = CellField(t.space,cell_vals)
 
 get_cell_isconstrained(f::ZeroMeanFESpace) = get_cell_isconstrained(f.space)
 
@@ -96,7 +74,9 @@ get_cell_constraints(f::ZeroMeanFESpace) = get_cell_constraints(f.space)
 
 get_dirichlet_values(f::ZeroMeanFESpace) = get_dirichlet_values(f.space)
 
-get_cell_basis(f::ZeroMeanFESpace) = get_cell_basis(f.space)
+get_cell_shapefuns(f::ZeroMeanFESpace) = get_cell_shapefuns(f.space)
+
+get_cell_shapefuns_trial(f::ZeroMeanFESpace) = get_cell_shapefuns_trial(f.space)
 
 get_cell_dof_basis(f::ZeroMeanFESpace) = get_cell_dof_basis(f.space)
 
@@ -104,7 +84,11 @@ num_free_dofs(f::ZeroMeanFESpace) = num_free_dofs(f.space)
 
 zero_free_values(f::ZeroMeanFESpace) = zero_free_values(f.space)
 
-get_cell_dofs(f::ZeroMeanFESpace) = get_cell_dofs(f.space)
+get_vector_type(f::ZeroMeanFESpace) = get_vector_type(f.space)
+
+get_dof_value_type(f::ZeroMeanFESpace) = get_dof_value_type(f.space)
+
+get_cell_dof_ids(f::ZeroMeanFESpace) = get_cell_dof_ids(f.space)
 
 num_dirichlet_dofs(f::ZeroMeanFESpace) = num_dirichlet_dofs(f.space)
 

@@ -1,36 +1,24 @@
 
 function FESpace(
   model::DiscreteModel,
-  reffes::AbstractArray{<:ReferenceFE};
+  cell_reffes::AbstractArray{<:ReferenceFE};
   labels = get_face_labeling(model),
-  dof_space=:reference,
-  conformity::Conformity=get_default_conformity(first(reffes)),
+  conformity=Conformity(first(cell_reffes)),
   dirichlet_tags=Int[],
   dirichlet_masks=nothing,
   constraint=nothing,
   vectortype::Union{Nothing,Type}=nothing)
 
-  @assert length(reffes) == num_cells(model) """\n
-  The length of the vector provided in the `reffes` argument ($(length(reffes)) entries)
+  @assert length(cell_reffes) == num_cells(model) """\n
+  The length of the vector provided in the `cell_reffes` argument ($(length(cell_reffes)) entries)
   does not match the number of cells ($(num_cells(model)) cells) in the provided DiscreteModel.
   """
 
-  if dof_space == :reference
-    domain_style = ReferenceDomain()
-  elseif dof_space == :physical
-    domain_style = PhysicalDomain()
-  else
-    @unreachable """\n
-    The passed option dof_space=$dof_space is not valid.
-    Valid values for dof_space: :reference, :physical
-    """
-  end
-
   trian = get_triangulation(model)
-  shapefuns, dof_basis = compute_cell_space(reffes,trian,domain_style)
+  cell_shapefuns, cell_dof_basis = compute_cell_space(cell_reffes,trian)
 
   if vectortype == nothing
-    T = get_dof_value_type(shapefuns,dof_basis)
+    T = get_dof_value_type(cell_shapefuns,cell_dof_basis)
     _vector_type = Vector{T}
   else
     @assert vectortype <: AbstractVector """\n
@@ -38,21 +26,39 @@ function FESpace(
     _vector_type = vectortype
   end
 
-  F = _ConformingFESpace(
-    _vector_type,
-    model,
-    labels,
-    reffes,
-    shapefuns,
-    dof_basis,
-    conformity,
-    dirichlet_tags,
-    dirichlet_masks)
+  _conformity = Conformity(first(cell_reffes),conformity)
+
+  if _conformity == L2Conformity() && dirichlet_tags == Int[]
+
+    F = _DiscontinuousFESpace(
+      _vector_type,
+      trian,
+      cell_reffes,
+      cell_shapefuns,
+      cell_dof_basis)
+
+  else
+
+    F = _ConformingFESpace(
+      _vector_type,
+      model,
+      labels,
+      cell_reffes,
+      cell_shapefuns,
+      cell_dof_basis,
+      _conformity,
+      dirichlet_tags,
+      dirichlet_masks)
+  end
+
 
   if constraint == nothing
     V = F
   elseif constraint == :zeromean
-    @notimplemented "zeromean option not yet implemented"
+    ctype_reffe, = compress_cell_data(cell_reffes)
+    order = maximum(map(get_order,ctype_reffe))
+    dΩ = LebesgueMeasure(trian,order)
+    V = ZeroMeanFESpace(F,dΩ)
   else
     @unreachable """\n
     The passed option constraint=$constraint is not valid.
@@ -61,6 +67,13 @@ function FESpace(
   end
 
   V
+end
+
+function FESpace(
+  model::RestrictedDiscreteModel, cell_reffes::AbstractArray{<:ReferenceFE}; kwargs...)
+  model_portion = model.model
+  V_portion = FESpace(model_portion,cell_reffes;kwargs...)
+  ExtendedFESpace(V_portion,model)
 end
 
 function FESpace(model::DiscreteModel, reffe::Tuple{Symbol,Any,Any}; kwargs...)

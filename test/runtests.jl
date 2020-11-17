@@ -28,9 +28,9 @@ using Test
 
 @time @testset "FESpaces (1/2)" begin include("FESpacesTests/runtests_1.jl") end
 
-# @time @testset "FESpaces (2/2)" begin include("FESpacesTests/runtests_2.jl") end
+@time @testset "FESpaces (2/2)" begin include("FESpacesTests/runtests_2.jl") end
 
-# @time @testset "MultiField" begin include("MultiFieldTests/runtests.jl") end
+@time @testset "MultiField" begin include("MultiFieldTests/runtests.jl") end
 
 
 end # module

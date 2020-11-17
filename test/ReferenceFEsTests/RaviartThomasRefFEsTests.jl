@@ -25,7 +25,7 @@ test_reference_fe(reffe)
 @test num_terms(get_prebasis(reffe)) == 4
 @test get_order(get_prebasis(reffe)) == 0
 @test num_dofs(reffe) == 4
-@test get_default_conformity(reffe) == DivConformity()
+@test Conformity(reffe) == DivConformity()
 
 p = QUAD
 D = num_dims(QUAD)
@@ -63,7 +63,7 @@ test_reference_fe(reffe)
 @test num_terms(get_prebasis(reffe)) == 4
 @test num_dofs(reffe) == 4
 @test get_order(get_prebasis(reffe)) == 0
-@test get_default_conformity(reffe) == DivConformity()
+@test Conformity(reffe) == DivConformity()
 
 p = TET
 D = num_dims(p)
@@ -75,7 +75,7 @@ test_reference_fe(reffe)
 @test num_terms(get_prebasis(reffe)) == 36
 @test num_dofs(reffe) == 36
 @test get_order(get_prebasis(reffe)) == 2
-@test get_default_conformity(reffe) == DivConformity()
+@test Conformity(reffe) == DivConformity()
 
 prebasis = get_prebasis(reffe)
 dof_basis = get_dof_basis(reffe)
@@ -119,7 +119,7 @@ s,vals = compute_cell_space(expand_cell_data([reffe],[1,1,1,1]),trian,ReferenceD
 
 #h = lazy_map(evaluate!, s, vals)
 #h = evaluate(s, vals)
-#=
+
 h = vals(s)
 for i in 1:length(h)
   @show h[i]

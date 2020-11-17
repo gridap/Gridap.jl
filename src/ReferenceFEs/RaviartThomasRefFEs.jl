@@ -30,7 +30,7 @@ function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
 
   metadata = nothing
 
-  reffe = GenericRefFE(
+  reffe = GenericRefFE{:RaviartThomas}(
     ndofs,
     p,
     prebasis,
@@ -42,7 +42,7 @@ function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
   reffe
 end
 
-function get_face_own_dofs(reffe::GenericRefFE{DivConformity}, conf::DivConformity)
+function get_face_own_dofs(reffe::GenericRefFE{:RaviartThomas}, conf::DivConformity)
   get_face_dofs(reffe)
 end
 
@@ -405,4 +405,4 @@ function evaluate!(cache,::ContraVariantPiolaMap,s::MomentBasedDofBasis,phi::Fie
   return dof_basis
 end
 
-PushForwardMap(reffe::GenericRefFE{DivConformity}) = ContraVariantPiolaMap()
+PushForwardMap(reffe::GenericRefFE{:RaviartThomas}) = ContraVariantPiolaMap()

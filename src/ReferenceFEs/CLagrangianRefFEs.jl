@@ -1,6 +1,34 @@
 struct GradConformity <: Conformity end
 const H1Conformity = GradConformity
 
+
+function Conformity(reffe::GenericLagrangianRefFE{GradConformity},sym::Symbol)
+  h1 = (:H1,:C0,:Hgrad)
+  if sym == :L2
+    L2Conformity()
+  elseif sym in h1
+    H1Conformity()
+  else
+    @unreachable """\n
+    It is not possible to use conformity = $sym on a LagrangianRefFE with H1 conformity.
+
+    Possible values of conformity for this reference fe are $((:L2, h1...)).
+    """
+  end
+end
+
+function Conformity(reffe::GenericLagrangianRefFE{L2Conformity},sym::Symbol)
+  if sym == :L2
+    L2Conformity()
+  else
+    @unreachable """\n
+    It is not possible to use conformity = $sym on a LagrangianRefFE with L2 conformity.
+
+    Only conformity = :L2 allowed for this reference fe.
+    """
+  end
+end
+
 function get_face_own_nodes(reffe::GenericLagrangianRefFE{GradConformity},conf::GradConformity)
   p = get_polytope(reffe)
   orders = get_orders(reffe)
@@ -245,7 +273,7 @@ function _lagrangian_ref_fe(::Type{T},p::Polytope{D},orders) where {T,D}
     conf = GradConformity()
   end
 
-  reffe = GenericRefFE(
+  reffe = GenericRefFE{typeof(conf)}(
     ndofs,
     p,
     prebasis,

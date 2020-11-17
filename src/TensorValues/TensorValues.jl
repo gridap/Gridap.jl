@@ -53,7 +53,6 @@ export change_eltype
 export diagonal_tensor
 export ⊙
 export ⊗
-export ⊡
 export ⋅¹
 export ⋅²
 export double_contraction

@@ -22,6 +22,8 @@ using Test
 
 @testset "FESolvers" begin include("FESolversTests.jl") end
 
+@testset "DiscontinuousFESpaces" begin include("DiscontinuousFESpacesTests.jl") end
+
 #
 #
 #
@@ -29,7 +31,6 @@ using Test
 #
 #@testset "CurlConformingFESpaces" begin include("CurlConformingFESpacesTests.jl") end
 #
-#@testset "DiscontinuousFESpaces" begin include("DiscontinuousFESpacesTests.jl") end
 #
 #
 #@testset "FETerms" begin include("FETermsTests.jl") end

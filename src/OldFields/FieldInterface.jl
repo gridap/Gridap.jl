@@ -230,7 +230,7 @@ function test_field(
   @test cmp(_w,_v)
 
   if isa(f,Field)
-    test_mapping(f,(x,),v,cmp)
+    test_map(f,(x,),v,cmp)
   end
 
   if grad != nothing

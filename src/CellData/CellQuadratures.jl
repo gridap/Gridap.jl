@@ -24,6 +24,28 @@ function CellQuadrature(trian::Triangulation,degree::Integer)
   CellQuadrature(cell_quad,cell_point,cell_weight,trian,ReferenceDomain())
 end
 
+function CellQuadrature(trian::AppendedTriangulation,degree1::Integer,degree2::Integer)
+  quad1 = CellQuadrature(trian.a,degree1)
+  quad2 = CellQuadrature(trian.b,degree2)
+  lazy_append(quad1,quad2,trian)
+end
+
+function CellQuadrature(trian::AppendedTriangulation,degree::Integer)
+  CellQuadrature(trian,degree,degree)
+end
+
+function lazy_append(
+  quad1::CellQuadrature,
+  quad2::CellQuadrature,
+  trian::AppendedTriangulation=lazy_append(quad1.trian,quad2.trian))
+
+  @notimplementedif DomainStyle(quad1) != DomainStyle(quad2)
+  cell_quad = lazy_append(quad1.cell_quad,quad2.cell_quad)
+  cell_point = lazy_append(quad1.cell_point,quad2.cell_point)
+  cell_weight = lazy_append(quad1.cell_weight,quad2.cell_weight)
+  CellQuadrature(cell_quad,cell_point,cell_weight,trian,DomainStyle(quad1))
+end
+
 get_cell_data(f::CellQuadrature) = f.cell_quad
 get_triangulation(f::CellQuadrature) = f.trian
 DomainStyle(::Type{CellQuadrature{DS}}) where DS = DS()

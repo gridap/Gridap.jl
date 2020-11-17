@@ -399,7 +399,7 @@ Base.:(∘)(f::Function,g::Tuple{Vararg{Union{Function,CellField}}}) = Operation
 
 # Unary ops
 
-for op in (:symmetric_part,:inv,:det,:abs,:abs2,:+,:-,:tr,:transpose,:adjoint)
+for op in (:symmetric_part,:inv,:det,:abs,:abs2,:+,:-,:tr,:transpose,:adjoint,:grad2curl)
   @eval begin
     ($op)(a::CellField) = Operation($op)(a)
   end
@@ -492,7 +492,7 @@ function change_domain(a::CellField,target_trian::SkeletonTriangulation,target_d
     return a
   elseif have_compatible_domains(trian_a,get_background_triangulation(target_trian))
     # In this case, we can safely take either plus or minus arbitrarily.
-    if isa(a,GenericCellField) && isa(a.cell_field,Fill{<:ConstantField})
+    if isa(a,GenericCellField) && (isa(a.cell_field,Fill{<:ConstantField}) || isa(a.cell_field,Fill{<:GenericField{<:Function}}))
       a_on_target_trian = change_domain(a,target_trian.plus,target_domain)
       return GenericCellField(get_cell_data(a_on_target_trian),target_trian,target_domain)
     else

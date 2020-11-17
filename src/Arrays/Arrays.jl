@@ -43,7 +43,7 @@ export Map
 export return_cache
 export evaluate!
 export evaluate
-export test_mapping
+export test_map
 export return_type
 export return_value
 export testargs
@@ -81,6 +81,7 @@ export MultiLevelBlockedUnitRange
 export blocks_equal
 export num_blocks_equal
 export local_range
+export similar_range
 export BlockArrayCooMap
 
 export array_cache

@@ -11,18 +11,18 @@ using FillArrays
 
 a = [3,2]
 b = [2,1]
-test_mapping(a+b,+,a,b)
+test_map(a+b,+,a,b)
 
 bm = Broadcasting(+)
 cache = return_cache(bm,a,b)
 # @btime evaluate!($cache,$bm,$a,$b)
 
 # m = rand(2,2)
-# test_mapping(m,(a,b),m)
+# test_map(m,(a,b),m)
 # testitem(m,a,b)
 
 # m = rand(2,2)
-# test_mapping(m,(a,b),m)
+# test_map(m,(a,b),m)
 # testitem(m,a,b)
 
 # cs = map(op -> return_cache(op,a,b),(+,m))
@@ -30,7 +30,7 @@ cache = return_cache(bm,a,b)
 # evaluate!(cs,(+,m),a,b) == (a+b,m)
 # evaluate((+,m),a,b) == (a+b,m)
 
-# @test map(op -> return_type(op,a,b),(+,m)) == (Array{Int64,1}, Array{Float64,2})
+# @test map(op -> return_type(op,a,b),(+,m)) == (Array{Int,1}, Array{Float64,2})
 
 z = evaluate(+,a,b)
 c = return_cache(+,a,b)
@@ -43,24 +43,24 @@ f = Broadcasting(+)
 a = rand(3,2)
 b = 3
 c = a .+ b
-test_mapping(c,f,a,b)
+test_map(c,f,a,b)
 
 k = Broadcasting(-)
-test_mapping(-1,k,1)
-test_mapping([-1,-2],k,[1,2])
-test_mapping(-1,k,1,2)
-test_mapping(-1.0,k,1.0,2)
-test_mapping(-1.0,k,1,2.0)
-test_mapping([-1,0],k,[1,2],2)
-test_mapping([1,0],k,2,[1,2])
-test_mapping([2,2],k,[3,4],[1,2])
+test_map(-1,k,1)
+test_map([-1,-2],k,[1,2])
+test_map(-1,k,1,2)
+test_map(-1.0,k,1.0,2)
+test_map(-1.0,k,1,2.0)
+test_map([-1,0],k,[1,2],2)
+test_map([1,0],k,2,[1,2])
+test_map([2,2],k,[3,4],[1,2])
 
 f = Broadcasting(⋅)
 a = fill(TensorValue(2,0,0,0,2,0,0,0,2),2)
 b = VectorValue(1,2,3)
 c = zeros(VectorValue{3,Int},2)
 broadcast!(⋅,c,a,b)
-test_mapping(c,f,a,b)
+test_map(c,f,a,b)
 
 cache = return_cache(f,a,b)
 # @btime evaluate!($cache,$f,$a,$b)
@@ -69,18 +69,18 @@ cache = return_cache(f,a,b)
 x = rand(3,3)
 
 fa(x) = 2*x
-test_mapping(2*x,fa,x)
+test_map(2*x,fa,x)
 
 fb(x) = sqrt.(x)
-test_mapping(sqrt.(x),fb,x)
+test_map(sqrt.(x),fb,x)
 
 op = Broadcasting(*)
 cache = return_cache(op,2,x)
 # @btime evaluate!($cache,$op,$2,$x)
-test_mapping(2*x,Broadcasting(*),2,x)
+test_map(2*x,Broadcasting(*),2,x)
 
 fab = Operation(fa)(fb)
-test_mapping(2*(sqrt.(x)),fab,x)
+test_map(2*(sqrt.(x)),fab,x)
 
 bm = Broadcasting(*)
 cache = return_cache(bm,x,2)
@@ -117,19 +117,19 @@ myf(::Type{T}) where T = 1.0*one(T)
 # ∇fx = evaluate(∇(f),x)
 # gx = evaluate(k,fx)
 # ∇gx = evaluate(k,∇fx)
-# test_mapping(g,(x,),gx) #,grad=∇gx)
+# test_map(g,(x,),gx) #,grad=∇gx)
 
 # # @santiagobadia : Create the gradient method for composition
 # # using chain rule
 # ∇g = composition(k,∇(f))
-# test_mapping(∇g,(x,),∇gx)
+# test_map(∇g,(x,),∇gx)
 
 
 # g = field_composition(k,f)
 # @test g isa NewField
 # gx = evaluate(g,x)
 # cache = return_cache(g,x)
-# test_mapping(g,(x,),gx) #grad=∇gx)
+# test_map(g,(x,),gx) #grad=∇gx)
 
 # fi = 3.0
 # gi = 4.5
@@ -142,10 +142,10 @@ myf(::Type{T}) where T = 1.0*one(T)
 
 # hx = evaluate(k,evaluate(f,x),evaluate(g,x))
 # ∇hx = evaluate(k,evaluate(∇(f),x),evaluate(∇(g),x))
-# test_mapping(h,(x,),hx) #,grad=∇hx)
+# test_map(h,(x,),hx) #,grad=∇hx)
 
 # ∇h = composition(k,∇(f),∇(g))
-# test_mapping(∇h,(x,),∇hx)
+# test_map(∇h,(x,),∇hx)
 
 # fi = VectorValue(3.0,0.0)
 # gi = VectorValue(4,5)
@@ -156,10 +156,10 @@ myf(::Type{T}) where T = 1.0*one(T)
 
 # hx = evaluate(k,evaluate(f,x),evaluate(g,x))
 # ∇hx = evaluate(k,evaluate(∇(f),x),evaluate(∇(g),x))
-# test_mapping(h,(x,),hx)
+# test_map(h,(x,),hx)
 
 # ∇h = composition(k,∇(f),∇(g))
-# test_mapping(∇h,(x,),∇hx)
+# test_map(∇h,(x,),∇hx)
 
 
 # k = Broadcasting(-)
@@ -178,7 +178,7 @@ myf(::Type{T}) where T = 1.0*one(T)
 # # i.e., a Jacobian for f : Rn -> Rm
 
 # hx = evaluate(k,evaluate(f,x),evaluate(g,x))
-# test_mapping(h,(x,),hx) #,grad=∇hx)
+# test_map(h,(x,),hx) #,grad=∇hx)
 
 # G = ∇(g)
 

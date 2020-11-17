@@ -9,17 +9,17 @@ The module is structured in the following sub-modules:
 - [`Gridap.Helpers`](@ref)
 - [`Gridap.Io`](@ref)
 - [`Gridap.Algebra`](@ref)
-- [`Gridap.TensorValues`](@ref)
 - [`Gridap.Arrays`](@ref)
+- [`Gridap.TensorValues`](@ref)
 - [`Gridap.Fields`](@ref)
 - [`Gridap.Polynomials`](@ref)
 - [`Gridap.Integration`](@ref)
 - [`Gridap.ReferenceFEs`](@ref)
 - [`Gridap.CellData`](@ref)
 - [`Gridap.Geometry`](@ref)
+- [`Gridap.Visualization`](@ref)
 - [`Gridap.FESpaces`](@ref)
 - [`Gridap.MultiField`](@ref)
-- [`Gridap.Visualization`](@ref)
 
 The exported names are:
 $(EXPORTS)
@@ -54,8 +54,7 @@ include("Visualization/Visualization.jl")
 
 include("FESpacesNEW/FESpaces.jl")
 
-# include("MultiField/MultiField.jl")
-
+include("MultiField/MultiField.jl")
 
 # include("Exports.jl")
 

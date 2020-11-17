@@ -22,6 +22,12 @@ function get_cell_coordinates(trian::AppendedTriangulation)
   lazy_append(a,b)
 end
 
+function get_cell_ref_coordinates(trian::AppendedTriangulation)
+  a = get_cell_ref_coordinates(trian.a)
+  b = get_cell_ref_coordinates(trian.b)
+  lazy_append(a,b)
+end
+
 function get_reffes(trian::AppendedTriangulation)
   vcat(get_reffes(trian.a),get_reffes(trian.b))
 end
@@ -56,11 +62,13 @@ end
 #  lazy_append(a,b)
 #end
 
-function get_cell_reffe(trian::AppendedTriangulation)
-  a = get_cell_reffe(trian.a)
-  b = get_cell_reffe(trian.b)
-  lazy_append(a,b)
-end
+# In this case, we do not want a lazy_append since it will become difficult to 
+# compress / expand the reffes.
+#function get_cell_reffe(trian::AppendedTriangulation)
+#  a = get_cell_reffe(trian.a)
+#  b = get_cell_reffe(trian.b)
+#  lazy_append(a,b)
+#end
 
 function get_cell_shapefuns(trian::AppendedTriangulation)
   a = get_cell_shapefuns(trian.a)
