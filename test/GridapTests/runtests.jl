@@ -24,7 +24,7 @@ using Test
 
 @time @testset "SurfaceCoupling" begin include("SurfaceCouplingTests.jl") end
 
-# @time @testset "IsotropicDamage" begin include("IsotropicDamageTests.jl") end
+@time @testset "IsotropicDamage" begin include("IsotropicDamageTests.jl") end
 
 # @time @testset "PhysicalPoisson" begin include("PhysicalPoissonTests.jl") end
 
