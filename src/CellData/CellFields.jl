@@ -307,7 +307,7 @@ struct OperationCellField{DS} <: CellField
     @check all( map(i->have_compatible_domains(get_triangulation(i),trian),args) )
 
     if num_cells(trian)>0
-      x = get_cell_points(trian)
+      x = _get_cell_points(args...)
       try
          ax = map(i->i(x),args)
          axi = map(first,ax)
@@ -323,6 +323,39 @@ struct OperationCellField{DS} <: CellField
 
     new{typeof(domain_style)}(op,args,trian,domain_style)
   end
+end
+
+function _get_cell_points(args::CellField...)
+  k = findfirst(i->isa(i,CellState),args)
+  if k === nothing
+    j = findall(i->isa(i,OperationCellField),args)
+    if length(j) == 0
+      _get_cell_points(first(args))
+    else
+      _get_cell_points(args[j]...)
+    end
+  else
+    args[k].points
+  end
+end
+
+function _get_cell_points(a::CellField)
+  trian = get_triangulation(a)
+  get_cell_points(trian)
+end
+
+function _get_cell_points(a::OperationCellField...)
+  b = []
+  for ai in a
+    for i in ai.args
+      push!(b,i)
+    end
+  end
+  _get_cell_points(b...)
+end
+
+function _get_cell_points(a::OperationCellField)
+  _get_cell_points(a.args...)
 end
 
 function get_cell_data(f::OperationCellField)

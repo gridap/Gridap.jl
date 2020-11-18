@@ -70,7 +70,7 @@ export attach_constraints_cols
 export identity_constraints
 
 export CellState
-export update!
+export update_state!
 
 include("CellDataInterface.jl")
 

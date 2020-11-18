@@ -76,33 +76,34 @@ function CellState(v::Number,a)
   CellState(v,points)
 end
 
-function update!(updater::Function,f::CellField...)
+function update_state!(updater::Function,f::CellField...)
   ids = findall(map(i->isa(i,CellState),f))
   @assert length(ids) > 0 """\n
-  At least one CellState object has to be given to the update! function
+  At least one CellState object has to be given to the update_state! function
   """
   a = f[ids]
   x = first(a).points
   @assert all(map(i->i.points===x,a)) """\n
-  All the CellState objects given to the update! function need to be
+  All the CellState objects given to the update_state! function need to be
   defined on the same CellPoint.
   """
   fx = map(i->evaluate(i,x),f)
   if num_cells(x) > 0
     fxi = map(first,fx)
     fxiq = map(first,fxi)
-    need_to_update, states = updater(fxiq...)
-    @assert isa(need_to_update,Bool) && isa(states,Tuple) """\n
+    need_to_update, states = first_and_tail(updater(fxiq...))
+    @assert isa(need_to_update,Bool) && isa(states,Tuple{Vararg{Number}}) """\n
     Wrong return value of the user-defined updater Function. The signature is
 
-        need_to_update, states = updater(args...)
+        need_to_update, state = first_and_tail(updater(args...))
 
-    where need_to_update is a Bool telling if we need to update and
-    states is a Tuple with the new states.
+    where need_to_update is a Bool telling if we need to update_state and
+    states is a Tuple of Number objects with the new states.
+    See `first_and_tail` for further details.
     """
     msg = """\n
     The number of new states given by the updater Function does not match
-    the number of CellState objects given as arguments in the update! Funciton.
+    the number of CellState objects given as arguments in the update_state! Funciton.
     """
     @check length(states) <= length(a) msg
   end
@@ -120,7 +121,7 @@ end
     xi = getindex!(cache_x,x,cell)
     for q in 1:length(xi)
       fxiq = map(f->f[q],fxi)
-      need_to_update, states = updater(fxiq...)
+      need_to_update, states = first_and_tail(updater(fxiq...))
       if need_to_update
         _update_states!(fxi,q,states,Val{length(states)}())
       end

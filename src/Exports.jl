@@ -119,7 +119,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish CellData CellState
 @publish CellData jump
 @publish CellData mean
-@publish CellData update!
+@publish CellData update_state!
 @publish CellData get_normal_vector
 using Gridap.CellData: ∫; export ∫
 
