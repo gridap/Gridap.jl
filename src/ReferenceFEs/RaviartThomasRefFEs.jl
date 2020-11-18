@@ -38,6 +38,29 @@ function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
   reffe
 end
 
+function ReferenceFE(p::Polytope,::Val{:RaviartThomas}, order)
+  RaviartThomasRefFE(Float64,p,order)
+end
+
+function ReferenceFE(p::Polytope,::Val{:RaviartThomas},::Type{T}, order) where T
+  RaviartThomasRefFE(T,p,order)
+end
+
+function Conformity(reffe::GenericRefFE{:RaviartThomas},sym::Symbol)
+  hdiv = (:Hdiv,:HDiv)
+  if sym == :L2
+    L2Conformity()
+  elseif sym in hdiv
+    DivConformity()
+  else
+    @unreachable """\n
+    It is not possible to use conformity = $sym on a Raviart Thomas reference FE.
+
+    Possible values of conformity for this reference fe are $((:L2, hdiv...)).
+    """
+  end
+end
+
 function get_face_own_dofs(reffe::GenericRefFE{:RaviartThomas}, conf::DivConformity)
   get_face_dofs(reffe)
 end
