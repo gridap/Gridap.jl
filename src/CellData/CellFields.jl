@@ -64,6 +64,15 @@ end
 """
 abstract type CellField <: CellDatum end
 
+function Base.show(io::IO,::MIME"text/plain",f::CellField)
+  show(io,f)
+  print(io,":")
+  print(io,"\n num_cells: $(num_cells(f))")
+  print(io,"\n DomainStyle: $(DomainStyle(f))")
+  print(io,"\n Triangulation: $(get_triangulation(f))")
+  print(io,"\n Triangulation id: $(objectid(get_triangulation(f)))")
+end
+
 function CellField(f::Function,trian::Triangulation,domain_style::DomainStyle)
   s = size(get_cell_map(trian))
   cell_field = Fill(GenericField(f),s)
@@ -298,7 +307,7 @@ struct OperationCellField{DS} <: CellField
     @check all( map(i->have_compatible_domains(get_triangulation(i),trian),args) )
 
     if num_cells(trian)>0
-      x = get_cell_points(trian)
+      x = _get_cell_points(args...)
       try
          ax = map(i->i(x),args)
          axi = map(first,ax)
@@ -314,6 +323,39 @@ struct OperationCellField{DS} <: CellField
 
     new{typeof(domain_style)}(op,args,trian,domain_style)
   end
+end
+
+function _get_cell_points(args::CellField...)
+  k = findfirst(i->isa(i,CellState),args)
+  if k === nothing
+    j = findall(i->isa(i,OperationCellField),args)
+    if length(j) == 0
+      _get_cell_points(first(args))
+    else
+      _get_cell_points(args[j]...)
+    end
+  else
+    args[k].points
+  end
+end
+
+function _get_cell_points(a::CellField)
+  trian = get_triangulation(a)
+  get_cell_points(trian)
+end
+
+function _get_cell_points(a::OperationCellField...)
+  b = []
+  for ai in a
+    for i in ai.args
+      push!(b,i)
+    end
+  end
+  _get_cell_points(b...)
+end
+
+function _get_cell_points(a::OperationCellField)
+  _get_cell_points(a.args...)
 end
 
 function get_cell_data(f::OperationCellField)
@@ -419,6 +461,15 @@ for op in (:inner,:outer,:double_contraction,:+,:-,:*,:cross,:dot,:/)
   end
 end
 
+dot(::typeof(∇),f::CellField) = divergence(f)
+function (*)(::typeof(∇),f::CellField)
+  msg = "Syntax ∇*f has been removed, use ∇⋅f (\\nabla \\cdot f) instead"
+  error(msg)
+end
+outer(::typeof(∇),f::CellField) = gradient(f)
+outer(f::CellField,::typeof(∇)) = transpose(gradient(f))
+cross(::typeof(∇),f::CellField) = curl(f)
+
 # Skeleton related Operations
 
 function Base.getproperty(x::CellField, sym::Symbol)
@@ -489,10 +540,13 @@ _mean(x,y) = 0.5*x + 0.5*y
 function change_domain(a::CellField,target_trian::SkeletonTriangulation,target_domain::DomainStyle)
   trian_a = get_triangulation(a)
   if have_compatible_domains(trian_a,target_trian)
-    return a
+    return change_domain(a,target_domain)
   elseif have_compatible_domains(trian_a,get_background_triangulation(target_trian))
     # In this case, we can safely take either plus or minus arbitrarily.
-    if isa(a,GenericCellField) && (isa(a.cell_field,Fill{<:ConstantField}) || isa(a.cell_field,Fill{<:GenericField{<:Function}}))
+    if isa(a,GenericCellField) && isa(a.cell_field,Fill{<:ConstantField})
+      a_on_target_trian = change_domain(a,target_trian.plus,target_domain)
+      return GenericCellField(get_cell_data(a_on_target_trian),target_trian,target_domain)
+    elseif isa(a,GenericCellField) && isa(a.cell_field,Fill{<:GenericField{<:Function}})
       a_on_target_trian = change_domain(a,target_trian.plus,target_domain)
       return GenericCellField(get_cell_data(a_on_target_trian),target_trian,target_domain)
     else

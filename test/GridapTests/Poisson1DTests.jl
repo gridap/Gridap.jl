@@ -12,47 +12,34 @@ cells = (10,)
 model = CartesianDiscreteModel(domain,cells)
 
 order = 2
-V = FESpace(
-  model=model,
-  reffe=:Lagrangian,
-  order=order,
-  valuetype=Float64,
-  conformity=:H1,
-  dirichlet_tags=2)
-
+V = FESpace(model, ReferenceFE(:Lagrangian,Float64,order),conformity=:H1,dirichlet_tags=2)
 U = TrialFESpace(V,u)
 
+Ω = Triangulation(model) 
+Γ = BoundaryTriangulation(model,1)
+n_Γ = get_normal_vector(Γ)
+
 degree = 2*order
-trian = Triangulation(model) 
-quad = CellQuadrature(trian,degree)
+dΩ = LebesgueMeasure(Ω,degree)
+dΓ = LebesgueMeasure(Γ,degree)
 
-btrian = BoundaryTriangulation(model,1)
-bquad = CellQuadrature(btrian,degree)
-nb = get_normal_vector(btrian)
+a(u,v) = ∫( ∇(v)⋅∇(u) )*dΩ
+l(v) = ∫( v*f )*dΩ + ∫( v*(n_Γ⋅∇u) )*dΓ
 
-a(u,v) = ∇(v)⋅∇(u)
-l(v) = v*f
-t_Ω = AffineFETerm(a,l,trian,quad)
-
-l_b(v) = v*(nb⋅∇u)
-t_b = FESource(l_b,btrian,bquad)
-
-op = AffineFEOperator(U,V,t_Ω,t_b)
+op = AffineFEOperator(a,l,U,V)
 uh = solve(op)
 
 e = u - uh
 
-l2(u) = inner(u,u)
-sh1(u) = a(u,u)
-h1(u) = sh1(u) + l2(u)
+l2(u) = sqrt(sum( ∫( u⊙u )*dΩ ))
+h1(u) = sqrt(sum( ∫( u⊙u + ∇(u)⊙∇(u) )*dΩ ))
 
-el2 = sqrt(sum( integrate(l2(e),trian,quad) ))
-eh1 = sqrt(sum( integrate(h1(e),trian,quad) ))
-ul2 = sqrt(sum( integrate(l2(uh),trian,quad) ))
-uh1 = sqrt(sum( integrate(h1(uh),trian,quad) ))
+el2 = l2(e)
+eh1 = h1(e)
+ul2 = l2(uh)
+uh1 = h1(uh)
 
 @test el2/ul2 < 1.e-8
 @test eh1/uh1 < 1.e-7
-
 
 end # module

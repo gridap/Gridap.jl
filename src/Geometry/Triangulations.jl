@@ -128,14 +128,6 @@ get_cell_ref_map(trian::Triangulation) = get_cell_ref_map(trian,TriangulationSty
 get_cell_ref_map(trian::Triangulation,::BackgroundTriangulation) = Fill(GenericField(identity),num_cells(trian))
 get_cell_ref_map(trian::Triangulation,::SubTriangulation) = @abstractmethod
 
-function Arrays.lazy_map(
-  k::Broadcasting{typeof(∘)},
-  a::AbstractArray,
-  b::Fill{<:GenericField{typeof(identity)}})
-  @assert length(a) == length(b)
-  a
-end
-
 #"""
 #Given an array aligned with the cells in the background triangulation, return another array
 #aligned with the cells of the sub-triangulation. Do nothing if `trian` is already a 

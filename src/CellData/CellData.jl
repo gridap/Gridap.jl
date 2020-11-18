@@ -29,7 +29,7 @@ import Gridap.Geometry: num_cells
 import Gridap.Geometry: get_triangulation
 
 import Gridap.TensorValues: inner, outer, double_contraction, symmetric_part
-import LinearAlgebra: det, tr, cross, dot
+import LinearAlgebra: det, tr, cross, dot, ⋅
 import Base: inv, abs, abs2, *, +, -, /, adjoint, transpose
 
 export gradient, ∇
@@ -70,7 +70,7 @@ export attach_constraints_cols
 export identity_constraints
 
 export CellState
-export update!
+export update_state!
 
 include("CellDataInterface.jl")
 

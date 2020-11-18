@@ -73,9 +73,15 @@ Equivalent to
 
     divergence(f)
 """
-dot(::typeof(∇),f) = divergence(f)
+dot(::typeof(∇),f::Field) = divergence(f)
+dot(::typeof(∇),f::Function) = divergence(f)
 
-function (*)(::typeof(∇),f)
+function (*)(::typeof(∇),f::Field)
+  msg = "Syntax ∇*f has been removed, use ∇⋅f (\\nabla \\cdot f) instead"
+  error(msg)
+end
+
+function (*)(::typeof(∇),f::Function)
   msg = "Syntax ∇*f has been removed, use ∇⋅f (\\nabla \\cdot f) instead"
   error(msg)
 end
@@ -87,7 +93,8 @@ Equivalent to
 
     gradient(f)
 """
-outer(::typeof(∇),f) = gradient(f)
+outer(::typeof(∇),f::Field) = gradient(f)
+outer(::typeof(∇),f::Function) = gradient(f)
 
 """
     outer(f,∇)
@@ -96,7 +103,8 @@ Equivalent to
 
     transpose(gradient(f))
 """
-outer(f,::typeof(∇)) = transpose(gradient(f))
+outer(f::Field,::typeof(∇)) = transpose(gradient(f))
+outer(f::Function,::typeof(∇)) = transpose(gradient(f))
 
 """
     cross(∇,f)
@@ -105,5 +113,6 @@ Equivalent to
     
     curl(f)
 """
-cross(::typeof(∇),f) = curl(f)
+cross(::typeof(∇),f::Field) = curl(f)
+cross(::typeof(∇),f::Function) = curl(f)
 

@@ -89,6 +89,10 @@ using Gridap.TensorValues: ⊗; export ⊗
 
 @publish Geometry get_triangulation
 @publish Geometry num_cells
+@publish Geometry num_facets
+@publish Geometry num_vertices
+@publish Geometry num_edges
+@publish Geometry num_faces
 @publish Geometry Triangulation
 @publish Geometry get_cell_coordinates
 @publish Geometry get_cell_ref_coordinates
@@ -115,7 +119,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish CellData CellState
 @publish CellData jump
 @publish CellData mean
-@publish CellData update!
+@publish CellData update_state!
 @publish CellData get_normal_vector
 using Gridap.CellData: ∫; export ∫
 
@@ -134,6 +138,10 @@ using Gridap.CellData: ∫; export ∫
 @publish FESpaces num_dirichlet_dofs
 @publish FESpaces num_free_dofs
 @publish FESpaces num_dirichlet_tags
+@publish FESpaces get_cell_dof_ids
+@publish FESpaces get_cell_dof_values
+@publish FESpaces get_cell_shapefuns
+@publish FESpaces get_cell_shapefuns_trial
 @publish FESpaces FEFunction
 @publish FESpaces interpolate
 @publish FESpaces interpolate_everywhere

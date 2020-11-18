@@ -245,6 +245,17 @@ function lazy_map(k::Broadcasting{typeof(push_∇)},cell_∇a::AbstractArray,cel
   lazy_map(Broadcasting(Operation(⋅)),cell_invJt,cell_∇a)
 end
 
+# Composing by the identity
+
+function lazy_map(
+  k::Broadcasting{typeof(∘)},
+  ::Type{T},
+  a::AbstractArray,
+  b::Fill{<:GenericField{typeof(identity)}}) where T
+  @assert length(a) == length(b)
+  a
+end
+
 ## Reindex
 #
 ##  j_to_f = lazy_map(Reindex(i_to_f),j_to_i)

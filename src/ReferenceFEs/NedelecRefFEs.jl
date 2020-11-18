@@ -37,6 +37,29 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
   reffe
 end
 
+function ReferenceFE(p::Polytope,::Val{:Nedelec}, order)
+  NedelecRefFE(Float64,p,order)
+end
+
+function ReferenceFE(p::Polytope,::Val{:Nedelec},::Type{T}, order) where T
+  NedelecRefFE(T,p,order)
+end
+
+function Conformity(reffe::GenericRefFE{:Nedelec},sym::Symbol)
+  hcurl = (:Hcurl,:HCurl)
+  if sym == :L2
+    L2Conformity()
+  elseif sym in hcurl
+    CurlConformity()
+  else
+    @unreachable """\n
+    It is not possible to use conformity = $sym on a Nedelec reference FE.
+
+    Possible values of conformity for this reference fe are $((:L2, hcurl...)).
+    """
+  end
+end
+
 function get_face_own_dofs(reffe::GenericRefFE{:Nedelec}, conf::CurlConformity)
   get_face_dofs(reffe)
 end

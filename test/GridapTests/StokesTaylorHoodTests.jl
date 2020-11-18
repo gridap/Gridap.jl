@@ -4,7 +4,7 @@ using Test
 using Gridap
 import Gridap: ∇
 
-using LinearAlgebra: tr, ⋅
+#using LinearAlgebra: tr, ⋅
 
 # Using automatic differentiation
 u(x) = VectorValue( x[1]^2 + 2*x[2]^2, -x[1]^2 )
@@ -36,80 +36,47 @@ add_tag_from_tags!(labels,"neumann",[6,7,8])
 
 order = 2
 
-ref_style = [:reference,:physical]
+reffe_u = ReferenceFE(:Lagrangian,VectorValue{2,Float64},order)
+reffe_p = ReferenceFE(:Lagrangian,Float64,order-1)
 
-for ref_st in ref_style
-  V = TestFESpace(
-  model=model,
-  order=order,
-  reffe=:Lagrangian,
-  labels=labels,
-  valuetype=VectorValue{2,Float64},
-  dirichlet_tags="dirichlet",
-  dof_space=ref_st,
-  conformity=:H1)
+V = TestFESpace(model,reffe_u,labels=labels,dirichlet_tags="dirichlet",conformity=:H1)
+Q = TestFESpace(model,reffe_p,labels=labels,conformity=:H1)
 
-  Q = TestFESpace(
-  model=model,
-  order=order-1,
-  reffe=:Lagrangian,
-  valuetype=Float64,
-  dof_space=ref_st,
-  conformity=:H1)
+U = TrialFESpace(V,u)
+P = TrialFESpace(Q)
 
-  U = TrialFESpace(V,u)
-  P = TrialFESpace(Q)
+Y = MultiFieldFESpace([V,Q])
+X = MultiFieldFESpace([U,P])
 
-  Y = MultiFieldFESpace([V,Q])
-  X = MultiFieldFESpace([U,P])
+Ω = Triangulation(model)
+Γ = BoundaryTriangulation(model,labels,"neumann")
+n_Γ = get_normal_vector(Γ)
 
-  trian = get_triangulation(model)
-  degree = order
-  quad = CellQuadrature(trian,degree)
+degree = order
+dΩ = LebesgueMeasure(Ω,degree)
+dΓ = LebesgueMeasure(Γ,degree)
 
-  btrian = BoundaryTriangulation(model,labels,"neumann")
-  bdegree = order
-  bquad = CellQuadrature(btrian,bdegree)
-  n = get_normal_vector(btrian)
+a((u,p),(v,q)) = ∫( ∇(v)⊙∇(u) - (∇⋅v)*p + q*(∇⋅u) )*dΩ
 
-  function a(x,y)
-    u,p = x
-    v,q = y
-    ∇(v)⊙∇(u) - (∇⋅v)*p + q*(∇⋅u)
-  end
+l((v,q)) = ∫( v⋅f + q*g )*dΩ + ∫( v⋅(n_Γ⋅∇u) - (n_Γ⋅v)*p )*dΓ
 
-  function l(y)
-    v,q = y
-    v⋅f + q*g
-  end
+op = AffineFEOperator(a,l,X,Y)
 
-  function l_Γb(y)
-    v,q = y
-    v⋅(n⋅∇u) - (n⋅v)*p
-  end
+uh, ph = solve(op)
 
-  t_Ω = AffineFETerm(a,l,trian,quad)
-  t_Γb = FESource(l_Γb,btrian,bquad)
+eu = u - uh
+ep = p - ph
 
-  op = AffineFEOperator(X,Y,t_Ω,t_Γb)
+l2(u) = sqrt(sum( ∫( u⊙u )*dΩ ))
+h1(u) = sqrt(sum( ∫( u⊙u + ∇(u)⊙∇(u) )*dΩ ))
 
-  uh, ph = solve(op)
+eu_l2 = l2(eu)
+eu_h1 = h1(eu)
+ep_l2 = l2(ep)
 
-  eu = u - uh
-  ep = p - ph
-
-  l2(v) = v⋅v
-  h1(v) = v⋅v + ∇(v)⊙∇(v)
-
-  eu_l2 = sqrt(sum(integrate(l2(eu),trian,quad)))
-  eu_h1 = sqrt(sum(integrate(h1(eu),trian,quad)))
-  ep_l2 = sqrt(sum(integrate(l2(ep),trian,quad)))
-
-  tol = 1.0e-9
-  @test eu_l2 < tol
-  @test eu_h1 < tol
-  @test ep_l2 < tol
-end
-
+tol = 1.0e-9
+@test eu_l2 < tol
+@test eu_h1 < tol
+@test ep_l2 < tol
 
 end # module
