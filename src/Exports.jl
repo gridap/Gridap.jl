@@ -138,6 +138,10 @@ using Gridap.CellData: ∫; export ∫
 @publish FESpaces num_dirichlet_dofs
 @publish FESpaces num_free_dofs
 @publish FESpaces num_dirichlet_tags
+@publish FESpaces get_cell_dof_ids
+@publish FESpaces get_cell_dof_values
+@publish FESpaces get_cell_shapefuns
+@publish FESpaces get_cell_shapefuns_trial
 @publish FESpaces FEFunction
 @publish FESpaces interpolate
 @publish FESpaces interpolate_everywhere

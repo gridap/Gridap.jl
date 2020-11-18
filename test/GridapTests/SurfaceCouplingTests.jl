@@ -2,8 +2,6 @@ module SurfaceCouplingTests
 
 using Test
 using Gridap
-using Gridap.Arrays
-using Gridap.FESpaces
 import Gridap: ∇
 using LinearAlgebra: tr, ⋅
 
@@ -35,7 +33,7 @@ labels = get_face_labeling(model)
 add_tag_from_tags!(labels,"dirichlet",[1,2,5])
 add_tag_from_tags!(labels,"neumann",[6,7,8])
 
-trian = Triangulation(model)
+Ω = Triangulation(model)
 
 const R = 0.4
 
@@ -46,117 +44,77 @@ function is_in(coords)
   d < 0
 end
 
-cell_to_coods = get_cell_coordinates(trian)
-cell_to_is_solid = collect1d(lazy_map(is_in,cell_to_coods))
-cell_to_is_fluid = Vector{Bool}(.! cell_to_is_solid)
+cell_to_coods = get_cell_coordinates(Ω)
+cell_to_is_solid = lazy_map(is_in,cell_to_coods)
+cell_to_is_fluid = lazy_map(!,cell_to_is_solid)
 
-trian_solid = Triangulation(model, cell_to_is_solid)
-trian_fluid = Triangulation(model, cell_to_is_fluid)
+model_solid = DiscreteModel(model,cell_to_is_solid)
+model_fluid = DiscreteModel(model,cell_to_is_fluid)
+
+Ωs = Triangulation(model_solid)
+Ωf = Triangulation(model_fluid)
+Λ = BoundaryTriangulation(model,labels,"neumann")
+Γ = InterfaceTriangulation(model_fluid,model_solid)
+
+n_Λ = get_normal_vector(Λ)
+n_Γ = get_normal_vector(Γ)
 
 order = 2
-
 degree = 2*order
-quad = CellQuadrature(trian,degree)
-quad_solid = CellQuadrature(trian_solid,degree)
-quad_fluid = CellQuadrature(trian_fluid,degree)
 
-btrian = BoundaryTriangulation(model,labels,"neumann")
-bdegree = 2*order
-bquad = CellQuadrature(btrian,bdegree)
-n = get_normal_vector(btrian)
+dΩ = LebesgueMeasure(Ω,degree)
+dΩs = LebesgueMeasure(Ωs,degree)
+dΩf = LebesgueMeasure(Ωf,degree)
+dΛ = LebesgueMeasure(Λ,degree)
+dΓ = LebesgueMeasure(Γ,degree)
 
-# This returns a SkeletonTriangulation whose normal vector
-# goes outwards to the fluid domain.
-trian_Γ = InterfaceTriangulation(model,cell_to_is_fluid)
-n_Γ = get_normal_vector(trian_Γ)
-quad_Γ = CellQuadrature(trian_Γ,bdegree)
+# FE Spaces
 
-# FESpaces
+reffe_u = ReferenceFE(:Lagrangian,VectorValue{2,Float64},order)
+reffe_p = ReferenceFE(:Lagrangian,Float64,order-1,space=:P)
 
-V = TestFESpace(
-  model=model,
-  valuetype=VectorValue{2,Float64},
-  reffe=:QLagrangian,
-  order=order,
-  conformity =:H1,
-  dirichlet_tags="dirichlet")
-
-Q = TestFESpace(
-  triangulation=trian_fluid,
-  valuetype=Float64,
-  order=order-1,
-  reffe=:PLagrangian,
-  conformity=:L2)
-
+V = TestFESpace(model,reffe_u,conformity=:H1,labels=labels,dirichlet_tags="dirichlet")
+Q = TestFESpace(model_fluid,reffe_p,conformity=:L2)
 U = TrialFESpace(V,u)
-P = TrialFESpace(Q)
+P = Q
 
 Y = MultiFieldFESpace([V,Q])
 X = MultiFieldFESpace([U,P])
 
+#uh, ph = FEFunction(X,rand(num_free_dofs(X)))
+#vh, qh = FEFunction(Y,rand(num_free_dofs(Y)))
+#writevtk(Ω,"trian",cellfields=["uh"=>uh,"ph"=>ph,"vh"=>vh,"qh"=>qh])
+
+# Weak form
+
+a((u,p),(v,q)) =
+  ∫( ∇(v)⊙∇(u) )*dΩs +
+  ∫( ∇(v)⊙∇(u) - (∇⋅v)*p + q*(∇⋅u) )*dΩf
+
+l((v,q)) =
+  ∫( v⋅s )*dΩs +
+  ∫( v⋅f + q*g )*dΩf +
+  ∫( v⋅(n_Λ⋅∇u) - (n_Λ⋅v)*p )*dΛ +
+  ∫( - (n_Γ.⁺⋅v.⁺)*p )*dΓ
+
 # FE problem
 
-function a_solid(x,y)
-  u,p = x
-  v,q = y
-  inner(∇(v),∇(u))
-end
-
-function l_solid(y)
-  v,q = y
-  v⋅s
-end
-
-function a_fluid(x,y)
-  u,p = x
-  v,q = y
-  inner(∇(v),∇(u)) - (∇⋅v)*p + q*(∇⋅u)
-end
-
-function l_fluid(y)
-  v,q = y
-  v⋅f + q*g
-end
-
-function l_Γn_fluid(y)
-  v,q = y
-  v⋅(n⋅∇u) - (n⋅v)*p
-end
-
-# Pressure drop at the interface
-function l_Γ(y)
-  v,q = y
-  - mean(n_Γ⋅v)*p
-end
-
-t_Ω_solid = AffineFETerm(a_solid,l_solid,trian_solid,quad_solid)
-t_Ω_fluid = AffineFETerm(a_fluid,l_fluid,trian_fluid,quad_fluid)
-t_Γn_fluid = FESource(l_Γn_fluid,btrian,bquad)
-t_Γ = FESource(l_Γ,trian_Γ,quad_Γ)
-
-op = AffineFEOperator(X,Y,t_Ω_solid,t_Ω_fluid,t_Γn_fluid,t_Γ)
+op = AffineFEOperator(a,l,X,Y)
 uh, ph = solve(op)
 
 # Visualization
 
-ph_fluid = restrict(ph, trian_fluid)
-
 eu = u - uh
 ep = p - ph
-ep_fluid = p - ph_fluid
 
-#writevtk(trian_fluid,"trian_fluid",cellfields=["ph"=>ph_fluid, "ep"=>ep_fluid])
-#
-#writevtk(trian,"trian", cellfields=["uh" => uh, "ph"=> ph, "eu"=>eu, "ep"=>ep])
+#writevtk(Ω,"trian",cellfields=["uh"=>uh,"ph"=>ph,"eu"=>eu,"ep"=>ep])
+#writevtk(Ωf,"trian_fluid",cellfields=["uh"=>uh,"ph"=>ph,"eu"=>eu,"ep"=>ep])
 
 # Errors
 
-l2(v) = v⋅v
-h1(v) = v⋅v + inner(∇(v),∇(v))
-
-eu_l2 = sqrt(sum(integrate(l2(eu),trian,quad)))
-eu_h1 = sqrt(sum(integrate(h1(eu),trian,quad)))
-ep_l2 = sqrt(sum(integrate(l2(ep_fluid),trian_fluid,quad_fluid)))
+eu_l2 = sqrt(sum(∫( eu⋅eu )*dΩ))
+eu_h1 = sqrt(sum(∫( eu⋅eu + ∇(eu)⊙∇(eu) )*dΩ))
+ep_l2 = sqrt(sum(∫( ep*ep )*dΩf))
 
 tol = 1.0e-9
 @test eu_l2 < tol

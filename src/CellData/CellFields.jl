@@ -64,6 +64,15 @@ end
 """
 abstract type CellField <: CellDatum end
 
+function Base.show(io::IO,::MIME"text/plain",f::CellField)
+  show(io,f)
+  print(io,":")
+  print(io,"\n num_cells: $(num_cells(f))")
+  print(io,"\n DomainStyle: $(DomainStyle(f))")
+  print(io,"\n Triangulation: $(get_triangulation(f))")
+  print(io,"\n Triangulation id: $(objectid(get_triangulation(f)))")
+end
+
 function CellField(f::Function,trian::Triangulation,domain_style::DomainStyle)
   s = size(get_cell_map(trian))
   cell_field = Fill(GenericField(f),s)
@@ -498,10 +507,13 @@ _mean(x,y) = 0.5*x + 0.5*y
 function change_domain(a::CellField,target_trian::SkeletonTriangulation,target_domain::DomainStyle)
   trian_a = get_triangulation(a)
   if have_compatible_domains(trian_a,target_trian)
-    return a
+    return change_domain(a,target_domain)
   elseif have_compatible_domains(trian_a,get_background_triangulation(target_trian))
     # In this case, we can safely take either plus or minus arbitrarily.
-    if isa(a,GenericCellField) && (isa(a.cell_field,Fill{<:ConstantField}) || isa(a.cell_field,Fill{<:GenericField{<:Function}}))
+    if isa(a,GenericCellField) && isa(a.cell_field,Fill{<:ConstantField})
+      a_on_target_trian = change_domain(a,target_trian.plus,target_domain)
+      return GenericCellField(get_cell_data(a_on_target_trian),target_trian,target_domain)
+    elseif isa(a,GenericCellField) && isa(a.cell_field,Fill{<:GenericField{<:Function}})
       a_on_target_trian = change_domain(a,target_trian.plus,target_domain)
       return GenericCellField(get_cell_data(a_on_target_trian),target_trian,target_domain)
     else
