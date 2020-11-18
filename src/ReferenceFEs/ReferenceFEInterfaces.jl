@@ -153,6 +153,10 @@ function get_face_dofs(reffe::ReferenceFE)
   @abstractmethod
 end
 
+function get_dof_to_comp(reffe::ReferenceFE)
+  fill(0,num_dofs(reffe))
+end
+
 # Push forward-related
 
 abstract type PushForwardMap <: Map end
@@ -247,7 +251,7 @@ function compress_cell_data(a::CompressedArray)
 end
 
 function compress_cell_data(a::Fill)
-  Fill(a.value,1), Fill(1,length(a))
+  fill(a.value,1), Fill(1,length(a))
 end
 
 # Test

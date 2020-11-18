@@ -1,63 +1,59 @@
 
 function FESpace(
   model::DiscreteModel,
-  cell_reffes::AbstractArray{<:ReferenceFE};
+  cell_fe::CellFE;
+  conformity=nothing,
   labels = get_face_labeling(model),
-  conformity=Conformity(first(cell_reffes)),
   dirichlet_tags=Int[],
   dirichlet_masks=nothing,
   constraint=nothing,
   vectortype::Union{Nothing,Type}=nothing)
 
-  @assert length(cell_reffes) == num_cells(model) """\n
-  The length of the vector provided in the `cell_reffes` argument ($(length(cell_reffes)) entries)
+  @assert cell_fe.num_cells == num_cells(model) """\n
+  The number of cells provided in the `cell_fe` argument ($(cell_fe.num_cells) cells)
   does not match the number of cells ($(num_cells(model)) cells) in the provided DiscreteModel.
   """
 
-  trian = get_triangulation(model)
-  cell_shapefuns, cell_dof_basis = compute_cell_space(cell_reffes,trian)
+  trian = Triangulation(model)
 
   if vectortype == nothing
+    cell_shapefuns, cell_dof_basis = compute_cell_space(cell_fe,trian)
     T = get_dof_value_type(cell_shapefuns,cell_dof_basis)
     _vector_type = Vector{T}
   else
     @assert vectortype <: AbstractVector """\n
+    The (optional) argument vectortype has to be <: AbstractVector.
     """
     _vector_type = vectortype
   end
 
-  _conformity = Conformity(first(cell_reffes),conformity)
-
-  if _conformity == L2Conformity() && dirichlet_tags == Int[]
-
-    F = _DiscontinuousFESpace(
-      _vector_type,
-      trian,
-      cell_reffes,
-      cell_shapefuns,
-      cell_dof_basis)
-
-  else
-
+  if conformity in (L2Conformity(),:L2)
+    if dirichlet_tags == Int[]
+      F = _DiscontinuousFESpace(_vector_type,trian,cell_fe)
+    else
+      @notimplemented "Discontinuous spaces with strong dirichlet bcs not implemented at this moment."
+    end
+  elseif conformity in (nothing,:default)
     F = _ConformingFESpace(
       _vector_type,
       model,
       labels,
-      cell_reffes,
-      cell_shapefuns,
-      cell_dof_basis,
-      _conformity,
+      cell_fe,
       dirichlet_tags,
       dirichlet_masks)
-  end
+  else
+    @unreachable """\n
+    Invalid option conformity = $(conformity).
 
+    When building a FESpace from a CellFE object, the (optional) conformity
+    argument should be either either :default or :L2.
+    """
+  end
 
   if constraint == nothing
     V = F
   elseif constraint == :zeromean
-    ctype_reffe, = compress_cell_data(cell_reffes)
-    order = maximum(map(get_order,ctype_reffe))
-    dΩ = LebesgueMeasure(trian,order)
+    dΩ = LebesgueMeasure(trian,cell_fe.max_order)
     V = ZeroMeanFESpace(F,dΩ)
   else
     @unreachable """\n
@@ -70,9 +66,23 @@ function FESpace(
 end
 
 function FESpace(
-  model::RestrictedDiscreteModel, cell_reffes::AbstractArray{<:ReferenceFE}; kwargs...)
+  model::DiscreteModel,
+  cell_reffe::AbstractArray{<:ReferenceFE};
+  conformity=Conformity(first(cell_reffe)),
+  kwargs...)
+
+  _conformity = Conformity(first(cell_reffe),conformity)
+  trian = Triangulation(model)
+  cell_map = get_cell_map(trian)
+  cell_fe = CellFE(cell_map,cell_reffe,_conformity)
+  conf = _conformity == L2Conformity() ? :L2 : :default
+  FESpace(model,cell_fe;conformity=conf,kwargs...)
+end
+
+function FESpace(
+  model::RestrictedDiscreteModel, cell_reffe::AbstractArray{<:ReferenceFE}; kwargs...)
   model_portion = model.model
-  V_portion = FESpace(model_portion,cell_reffes;kwargs...)
+  V_portion = FESpace(model_portion,cell_reffe;kwargs...)
   ExtendedFESpace(V_portion,model)
 end
 

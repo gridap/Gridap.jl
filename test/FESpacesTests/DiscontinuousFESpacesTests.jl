@@ -17,6 +17,7 @@ V = FESpace(model,reffe,conformity=:L2)
 @test isa(V,UnconstrainedFESpace)
 @test isa(V.cell_dofs_ids,Table{Int32})
 test_single_field_fe_space(V)
+@test num_free_dofs(V) == num_cells(model)*(order+1)^2
 
 U = V
 f(x) = sin(pi*x[1])*cos(2*pi*x[2])
