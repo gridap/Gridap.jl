@@ -164,6 +164,8 @@ export CLagrangianFESpace
 export DirichletFESpace
 export FESpaceWithLinearConstraints
 
+export FiniteElements
+
 include("FESpaceInterface.jl")
 
 include("SingleFieldFESpaces.jl")
@@ -173,6 +175,8 @@ include("UnconstrainedFESpaces.jl")
 include("ConformingFESpaces.jl")
 
 include("FESpaceFactories.jl")
+
+include("PhysicalFEs.jl")
 
 include("TrialFESpaces.jl")
 

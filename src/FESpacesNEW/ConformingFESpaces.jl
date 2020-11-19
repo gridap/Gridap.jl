@@ -58,7 +58,8 @@ struct CellFE{T} <: GridapType
   cell_conformity::CellConformity{T}
   cell_shapefuns::AbstractArray{<:AbstractVector{<:Field}}
   cell_dof_basis::AbstractArray{<:AbstractVector{<:Dof}}
-  domain_style::DomainStyle
+  cell_shapefuns_domain::DomainStyle
+  cell_dof_basis_domain::DomainStyle
   max_order::Int 
 end
 # If the shapefuns are not polynomials, max_order has to be understood as the order of a
@@ -80,14 +81,14 @@ function CellConformity(cell_fe::CellFE,cell_conf::CellConformity)
   cell_conf
 end
 
-function CellConformity(cell_fe::CellFE,cell_conf::Union{Symbol,Conformity})
+function CellConformity(cell_fe::CellFE,conformity::Union{Symbol,Conformity})
   if conformity in (L2Conformity(),:L2)
     @notimplemented
   elseif conformity == :default
     cell_fe.cell_conformity
   else
     @unreachable """\n
-    Argument cell_conf should be either either :default, :L2, or L2Conformity()
+    Argument conformity should be either :default, :L2, or L2Conformity()
     """
   end
 end
@@ -121,7 +122,8 @@ function CellFE(
   cell_conformity = CellConformity(cell_reffe)
   cell_shapefuns = lazy_map(get_shapefuns,cell_reffe,cell_map)
   cell_dof_basis = lazy_map(get_dof_basis,cell_reffe,cell_map)
-  domain_style = ReferenceDomain()
+  cell_shapefuns_domain = ReferenceDomain()
+  cell_dof_basis_domain = cell_shapefuns_domain
   max_order = maximum(map(get_order,ctype_reffe))
 
   CellFE(
@@ -131,7 +133,8 @@ function CellFE(
     cell_conformity,
     cell_shapefuns,
     cell_dof_basis,
-    domain_style,
+    cell_shapefuns_domain,
+    cell_dof_basis_domain,
     max_order)
 end
 
@@ -168,12 +171,15 @@ function _ConformingFESpace(
 end
 
 function compute_cell_space(cell_fe,trian::Triangulation)
-  cell_shapefuns, cell_dof_basis, domain_style = _compute_cell_space(cell_fe,trian)
-  FEBasis(cell_shapefuns,trian,TestBasis(),domain_style), CellDof(cell_dof_basis,trian,domain_style)
+  cell_shapefuns, cell_dof_basis, d1, d2 = _compute_cell_space(cell_fe,trian)
+  FEBasis(cell_shapefuns,trian,TestBasis(),d1), CellDof(cell_dof_basis,trian,d2)
 end
 
 function _compute_cell_space(cell_fe::CellFE,trian::Triangulation)
-  cell_fe.cell_shapefuns, cell_fe.cell_dof_basis, cell_fe.domain_style
+  ( cell_fe.cell_shapefuns,
+    cell_fe.cell_dof_basis,
+    cell_fe.cell_shapefuns_domain,
+    cell_fe.cell_dof_basis_domain)
 end
 
 function _compute_cell_space(
@@ -182,7 +188,7 @@ function _compute_cell_space(
   cell_map = get_cell_map(trian)
   cell_shapefuns = lazy_map(get_shapefuns,cell_reffe,cell_map)
   cell_dof_basis = lazy_map(get_dof_basis,cell_reffe,cell_map)
-  cell_shapefuns, cell_dof_basis, ReferenceDomain()
+  cell_shapefuns, cell_dof_basis, ReferenceDomain(), ReferenceDomain()
 end
 
 """
