@@ -13,9 +13,9 @@ using Test
 @testset "ExtendedFESpaces" begin include("ExtendedFESpacesTests.jl") end
 
 @testset "FESpacesWithLinearConstraints" begin include("FESpacesWithLinearConstraintsTests.jl") end
-#
-#@testset "FEAutodiff" begin include("FEAutodiffTests.jl") end
-#
+
+@testset "FEAutodiff" begin include("FEAutodiffTests.jl") end
+
 #@testset "FETermsWithAutodiff" begin include("FETermsWithAutodiffTests.jl") end
 #
 @testset "CDLagrangianFESpaces" begin include("CDLagrangianFESpacesTests.jl") end

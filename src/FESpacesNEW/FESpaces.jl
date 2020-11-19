@@ -166,6 +166,10 @@ export FESpaceWithLinearConstraints
 
 export FiniteElements
 
+export autodiff_cell_residual_from_energy
+export autodiff_cell_jacobian_from_energy
+export autodiff_cell_jacobian_from_residual
+
 include("FESpaceInterface.jl")
 
 include("SingleFieldFESpaces.jl")
@@ -191,6 +195,8 @@ include("AffineFEOperators.jl")
 include("FEOperatorsFromWeakForm.jl")
 
 include("FESolvers.jl")
+
+include("FEAutodiff.jl")
 
 include("DiscontinuousFESpaces.jl")
 
