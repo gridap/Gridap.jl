@@ -13,8 +13,6 @@ jobs:
           - ubuntu-latest
         arch:
           - x64
-          - x86
-    if: ${{ github.base_ref == 'ref/head/master' || (github.event_name == 'pull_request' && github.base_ref == 'ref/head/master') }}
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
@@ -37,6 +35,9 @@ jobs:
       - uses: codecov/codecov-action@v1
         with:
           file: lcov.info
+
+        
+        
   drivers:
     name: Drivers ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
