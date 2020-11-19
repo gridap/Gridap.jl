@@ -66,37 +66,40 @@ for data in [ vector_data, scalar_data ]
   u = data[:u]
   f = data[:f]
 
-  reffe = ReferenceFE(:Lagrangian,T,order)
-  V = TestFESpace(model,reffe,dirichlet_tags="dirichlet",labels=labels)
-  U = TrialFESpace(V,u)
+  for domain_style in (ReferenceDomain(),PhysicalDomain())
 
-  uh = interpolate(u, U)
+    cell_fe = FiniteElements(domain_style,model,:Lagrangian,T,order)
+    V = TestFESpace(model,cell_fe,dirichlet_tags="dirichlet",labels=labels)
+    U = TrialFESpace(V,u)
 
-  a(u,v) =
-    ∫( ∇(v)⊙∇(u) )*dΩ +
-    ∫( (γ/h)*v⊙u  - v⊙(nd⋅∇(u)) - (nd⋅∇(v))⊙u )*dΓd
-  
-  l(v) =
-    ∫( v⊙f )*dΩ +
-    ∫( v⊙(nn⋅∇(uh)) )*dΓn +
-    ∫( (γ/h)*v⊙uh - (nd⋅∇(v))⊙u )*dΓd
+    uh = interpolate(u, U)
 
-  op = AffineFEOperator(a,l,U,V)
-  uh = solve(op)
+    a(u,v) =
+      ∫( ∇(v)⊙∇(u) )*dΩ +
+      ∫( (γ/h)*v⊙u  - v⊙(nd⋅∇(u)) - (nd⋅∇(v))⊙u )*dΓd
+    
+    l(v) =
+      ∫( v⊙f )*dΩ +
+      ∫( v⊙(nn⋅∇(uh)) )*dΓn +
+      ∫( (γ/h)*v⊙uh - (nd⋅∇(v))⊙u )*dΓd
 
-  e = u - uh
+    op = AffineFEOperator(a,l,U,V)
+    uh = solve(op)
 
-  l2(u) = sqrt(sum( ∫( u⊙u )*dΩ ))
-  h1(u) = sqrt(sum( ∫( u⊙u + ∇(u)⊙∇(u) )*dΩ ))
+    e = u - uh
 
-  el2 = l2(e)
-  eh1 = h1(e)
-  ul2 = l2(uh)
-  uh1 = h1(uh)
+    l2(u) = sqrt(sum( ∫( u⊙u )*dΩ ))
+    h1(u) = sqrt(sum( ∫( u⊙u + ∇(u)⊙∇(u) )*dΩ ))
 
-  @test el2/ul2 < 1.e-8
-  @test eh1/uh1 < 1.e-7
+    el2 = l2(e)
+    eh1 = h1(e)
+    ul2 = l2(uh)
+    uh1 = h1(uh)
 
+    @test el2/ul2 < 1.e-8
+    @test eh1/uh1 < 1.e-7
+
+  end
 end
 
 end # module

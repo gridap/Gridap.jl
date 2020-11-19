@@ -114,6 +114,9 @@ using Gridap.TensorValues: ⊗; export ⊗
 
 @publish CellData CellQuadrature
 @publish CellData LebesgueMeasure
+@publish CellData DomainStyle
+@publish CellData ReferenceDomain
+@publish CellData PhysicalDomain
 @publish CellData get_cell_points
 @publish CellData CellField
 @publish CellData CellState
@@ -149,6 +152,7 @@ using Gridap.CellData: ∫; export ∫
 @publish FESpaces FEOperator
 @publish FESpaces FESolver
 @publish FESpaces SparseMatrixAssembler
+@publish FESpaces FiniteElements
 
 @publish MultiField MultiFieldFESpace
 @publish MultiField num_fields

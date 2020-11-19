@@ -100,6 +100,8 @@ export compute_dirichlet_values_for_tags
 export compute_dirichlet_values_for_tags!
 
 export UnconstrainedFESpace
+export CellConformity
+export CellFE
 export compute_conforming_cell_dofs
 export compute_cell_space
 
@@ -162,6 +164,8 @@ export CLagrangianFESpace
 export DirichletFESpace
 export FESpaceWithLinearConstraints
 
+export FiniteElements
+
 include("FESpaceInterface.jl")
 
 include("SingleFieldFESpaces.jl")
@@ -171,6 +175,8 @@ include("UnconstrainedFESpaces.jl")
 include("ConformingFESpaces.jl")
 
 include("FESpaceFactories.jl")
+
+include("PhysicalFEs.jl")
 
 include("TrialFESpaces.jl")
 

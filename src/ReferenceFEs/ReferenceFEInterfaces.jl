@@ -100,6 +100,10 @@ function Conformity(reffe::ReferenceFE,conf::Conformity)
   conf
 end
 
+function Conformity(reffe::ReferenceFE,conf::Nothing)
+  Conformity(reffe)
+end
+
 function Conformity(reffe::ReferenceFE,sym::Symbol)
   @abstractmethod
 end
@@ -110,6 +114,10 @@ end
 function get_face_own_dofs(reffe::ReferenceFE)
   conf = Conformity(reffe)
   get_face_own_dofs(reffe,conf)
+end
+
+function get_face_own_dofs(reffe::ReferenceFE,conf::Nothing)
+  get_face_own_dofs(reffe)
 end
 
 function get_face_own_dofs(reffe::ReferenceFE,conf::L2Conformity)
@@ -143,6 +151,10 @@ function get_face_own_dofs_permutations(reffe::ReferenceFE)
   get_face_own_dofs_permutations(reffe,conf)
 end
 
+function get_face_own_dofs_permutations(reffe::ReferenceFE,conf::Nothing)
+  get_face_own_dofs_permutations(reffe)
+end
+
 """
     get_face_dofs(reffe::ReferenceFE) -> Vector{Vector{Int}}
 
@@ -151,6 +163,10 @@ dofids in the closure of the face.
 """
 function get_face_dofs(reffe::ReferenceFE)
   @abstractmethod
+end
+
+function get_dof_to_comp(reffe::ReferenceFE)
+  fill(0,num_dofs(reffe))
 end
 
 # Push forward-related
@@ -247,7 +263,7 @@ function compress_cell_data(a::CompressedArray)
 end
 
 function compress_cell_data(a::Fill)
-  Fill(a.value,1), Fill(1,length(a))
+  fill(a.value,1), Fill(1,length(a))
 end
 
 # Test

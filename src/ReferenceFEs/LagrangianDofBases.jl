@@ -34,6 +34,15 @@ end
 @inline Base.getindex(a::LagrangianDofBasis,i::Integer) = PointValue(a.nodes[i])
 @inline Base.IndexStyle(::LagrangianDofBasis) = IndexLinear()
 
+# This one takes a basis and replaces the nodes
+function LagrangianDofBasis(dofs::LagrangianDofBasis{P},nodes::Vector{P}) where P
+  @check length(nodes) == length(dofs.nodes)
+  LagrangianDofBasis(
+    nodes,
+    dofs.dof_to_node,
+    dofs.dof_to_comp,
+    dofs.node_and_comp_to_dof)
+end
 
 """
     LagrangianDofBasis(::Type{T},nodes::Vector{<:Point}) where T

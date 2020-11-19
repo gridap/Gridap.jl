@@ -26,6 +26,4 @@ using Test
 
 @time @testset "IsotropicDamage" begin include("IsotropicDamageTests.jl") end
 
-# @time @testset "PhysicalPoisson" begin include("PhysicalPoissonTests.jl") end
-
 end # module
