@@ -56,6 +56,13 @@ function FESpace(
   V
 end
 
+function FESpace(
+  model::RestrictedDiscreteModel, cell_fe::CellFE; kwargs...)
+  model_portion = model.model
+  V_portion = FESpace(model_portion,cell_fe;kwargs...)
+  ExtendedFESpace(V_portion,model)
+end
+
 function FESpace(model::DiscreteModel,cell_reffe::AbstractArray{<:ReferenceFE};kwargs...)
   trian = Triangulation(model)
   cell_map = get_cell_map(trian)
@@ -63,12 +70,6 @@ function FESpace(model::DiscreteModel,cell_reffe::AbstractArray{<:ReferenceFE};k
   FESpace(model,cell_fe;kwargs...)
 end
 
-function FESpace(
-  model::RestrictedDiscreteModel, cell_reffe::AbstractArray{<:ReferenceFE}; kwargs...)
-  model_portion = model.model
-  V_portion = FESpace(model_portion,cell_reffe;kwargs...)
-  ExtendedFESpace(V_portion,model)
-end
 
 function FESpace(model::DiscreteModel, reffe::Tuple{Symbol,Any,Any}; kwargs...)
   basis, reffe_args,reffe_kwargs = reffe
