@@ -100,6 +100,10 @@ function Conformity(reffe::ReferenceFE,conf::Conformity)
   conf
 end
 
+function Conformity(reffe::ReferenceFE,conf::Nothing)
+  Conformity(reffe)
+end
+
 function Conformity(reffe::ReferenceFE,sym::Symbol)
   @abstractmethod
 end
@@ -110,6 +114,10 @@ end
 function get_face_own_dofs(reffe::ReferenceFE)
   conf = Conformity(reffe)
   get_face_own_dofs(reffe,conf)
+end
+
+function get_face_own_dofs(reffe::ReferenceFE,conf::Nothing)
+  get_face_own_dofs(reffe)
 end
 
 function get_face_own_dofs(reffe::ReferenceFE,conf::L2Conformity)
@@ -141,6 +149,10 @@ end
 function get_face_own_dofs_permutations(reffe::ReferenceFE)
   conf = Conformity(reffe)
   get_face_own_dofs_permutations(reffe,conf)
+end
+
+function get_face_own_dofs_permutations(reffe::ReferenceFE,conf::Nothing)
+  get_face_own_dofs_permutations(reffe)
 end
 
 """

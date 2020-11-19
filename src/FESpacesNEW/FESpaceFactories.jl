@@ -9,7 +9,7 @@ function FESpace(
   constraint=nothing,
   vectortype::Union{Nothing,Type}=nothing)
 
-  @assert cell_fe.num_cells == num_cells(model) """\n
+  @assert num_cells(cell_fe) == num_cells(model) """\n
   The number of cells provided in the `cell_fe` argument ($(cell_fe.num_cells) cells)
   does not match the number of cells ($(num_cells(model)) cells) in the provided DiscreteModel.
   """
@@ -27,27 +27,18 @@ function FESpace(
     _vector_type = vectortype
   end
 
-  if conformity in (L2Conformity(),:L2)
-    if dirichlet_tags == Int[]
-      F = _DiscontinuousFESpace(_vector_type,trian,cell_fe)
-    else
-      @notimplemented "Discontinuous spaces with strong dirichlet bcs not implemented at this moment."
-    end
-  elseif conformity in (nothing,:default)
+  if conformity in (L2Conformity(),:L2) && dirichlet_tags == Int[]
+    F = _DiscontinuousFESpace(_vector_type,trian,cell_fe)
+  else
+    cell_conformity = CellConformity(cell_fe,conformity)
     F = _ConformingFESpace(
       _vector_type,
       model,
       labels,
       cell_fe,
+      cell_conformity,
       dirichlet_tags,
       dirichlet_masks)
-  else
-    @unreachable """\n
-    Invalid option conformity = $(conformity).
-
-    When building a FESpace from a CellFE object, the (optional) conformity
-    argument should be either either :default or :L2.
-    """
   end
 
   if constraint == nothing
@@ -65,18 +56,11 @@ function FESpace(
   V
 end
 
-function FESpace(
-  model::DiscreteModel,
-  cell_reffe::AbstractArray{<:ReferenceFE};
-  conformity=Conformity(first(cell_reffe)),
-  kwargs...)
-
-  _conformity = Conformity(first(cell_reffe),conformity)
+function FESpace(model::DiscreteModel,cell_reffe::AbstractArray{<:ReferenceFE};kwargs...)
   trian = Triangulation(model)
   cell_map = get_cell_map(trian)
-  cell_fe = CellFE(cell_map,cell_reffe,_conformity)
-  conf = _conformity == L2Conformity() ? :L2 : :default
-  FESpace(model,cell_fe;conformity=conf,kwargs...)
+  cell_fe = CellFE(cell_map,cell_reffe)
+  FESpace(model,cell_fe;kwargs...)
 end
 
 function FESpace(
