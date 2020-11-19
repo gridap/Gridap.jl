@@ -63,11 +63,20 @@ function FESpace(
   ExtendedFESpace(V_portion,model)
 end
 
-function FESpace(model::DiscreteModel,cell_reffe::AbstractArray{<:ReferenceFE};kwargs...)
+function FESpace(
+  model::DiscreteModel,
+  cell_reffe::AbstractArray{<:ReferenceFE};
+  conformity=nothing,
+  kwargs...)
   trian = Triangulation(model)
   cell_map = get_cell_map(trian)
+  if conformity==nothing
+    cell_conformity = nothing
+  else
+    cell_conformity = CellConformity(cell_reffe,conformity)
+  end
   cell_fe = CellFE(cell_map,cell_reffe)
-  FESpace(model,cell_fe;kwargs...)
+  FESpace(model,cell_fe;conformity=cell_conformity,kwargs...)
 end
 
 

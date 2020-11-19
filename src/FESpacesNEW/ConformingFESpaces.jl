@@ -98,8 +98,9 @@ Generate A CellConformity from a vector of reference fes
 """
 function CellConformity(cell_reffe::AbstractArray{<:ReferenceFE},conformity=nothing)
   ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
-  ctype_lface_own_ldofs = map(reffe->get_face_own_dofs(reffe,conformity),ctype_reffe)
-  ctype_lface_pindex_pdofs = map(reffe->get_face_own_dofs_permutations(reffe,conformity),ctype_reffe)
+  conf = Conformity(first(ctype_reffe),conformity)
+  ctype_lface_own_ldofs = map(reffe->get_face_own_dofs(reffe,conf),ctype_reffe)
+  ctype_lface_pindex_pdofs = map(reffe->get_face_own_dofs_permutations(reffe,conf),ctype_reffe)
   D = num_dims(first(ctype_reffe))
   d_ctype_num_dfaces = [ map(reffe->num_faces(get_polytope(reffe),d),ctype_reffe) for d in 0:D]
   CellConformity(

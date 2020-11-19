@@ -20,8 +20,13 @@ order = 3
 V = FESpace(model,QUAD4)
 @test isa(V,UnconstrainedFESpace)
 
+V = FESpace(model,QUAD4,conformity=:H1)
+@test isa(V,UnconstrainedFESpace)
+@test num_free_dofs(V) == 121
+
 V = FESpace(model,QUAD4,conformity=:L2)
 @test isa(V,UnconstrainedFESpace)
+@test num_free_dofs(V) == 400
 
 V = FESpace(model,QUAD4,conformity=:L2,constraint=:zeromean)
 @test isa(V,ZeroMeanFESpace)
@@ -31,6 +36,9 @@ V = FESpace(model,QUAD4,conformity=:L2,constraint=:zeromean)
 reffe = ReferenceFE(:Lagrangian,Float64,order)
 
 V = FESpace(model,reffe)
+@test isa(V,UnconstrainedFESpace)
+
+V = FESpace(model,reffe,conformity=:H1)
 @test isa(V,UnconstrainedFESpace)
 
 V = FESpace(model,reffe,conformity=:L2)
@@ -44,6 +52,9 @@ V = FESpace(model,reffe,conformity=:L2,constraint=:zeromean)
 cell_reffe = ReferenceFE(model,:Lagrangian,Float64,order)
 
 V = FESpace(model,cell_reffe)
+@test isa(V,UnconstrainedFESpace)
+
+V = FESpace(model,cell_reffe,conformity=:H1)
 @test isa(V,UnconstrainedFESpace)
 
 V = FESpace(model,cell_reffe,conformity=:L2)
