@@ -70,13 +70,13 @@ function FESpace(
   kwargs...)
   trian = Triangulation(model)
   cell_map = get_cell_map(trian)
-  if conformity==nothing
-    cell_conformity = nothing
+  if conformity in (nothing, :default, :L2, L2Conformity())
+    conf = conformity
   else
-    cell_conformity = CellConformity(cell_reffe,conformity)
+    conf = CellConformity(cell_reffe,conformity)
   end
   cell_fe = CellFE(cell_map,cell_reffe)
-  FESpace(model,cell_fe;conformity=cell_conformity,kwargs...)
+  FESpace(model,cell_fe;conformity=conf,kwargs...)
 end
 
 
