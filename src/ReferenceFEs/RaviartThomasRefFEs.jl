@@ -18,8 +18,8 @@ function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
     @notimplemented "H(div) Reference FE only available for cubes and simplices"
   end
 
-  nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order)
-  #nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order,GenericField(identity))
+  #nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order)
+  nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order,GenericField(identity))
 
   face_own_dofs = _face_own_dofs_from_moments(nf_moments)
 
@@ -49,12 +49,14 @@ function get_face_own_dofs(reffe::GenericRefFE{:RaviartThomas}, conf::DivConform
 end
 
 ## First implement this:
-#function get_dof_basis(reffe::GenericRefFE{:RaviartThomas},phi::Field)
-#   p = get_polytope(reffe)
-#   et, order = reffe.metadata
-#   nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order,phi)
-#   MomentBasedDofBasis(nf_nodes, nf_moments)
-#end
+function get_dof_basis(reffe::GenericRefFE{:RaviartThomas},phi::Field)
+   p = get_polytope(reffe)
+   prebasis = get_prebasis(reffe)
+   order = get_order(prebasis)
+   et = return_type(prebasis)
+   nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order,phi)
+   MomentBasedDofBasis(nf_nodes, nf_moments)
+end
 
 # Then optimize this:
 #function get_dof_basis(reffe::GenericRefFE{:RaviartThomas},phi::Field)
@@ -70,7 +72,7 @@ end
 #  @notimplemented
 #end
 
-function _RT_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) where et
+function _RT_nodes_and_moments(::Type{et}, p::Polytope, order::Integer, phi::Field) where et
 
   D = num_dims(p)
   ft = VectorValue{D,et}
@@ -79,13 +81,13 @@ function _RT_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) where et
   nf_nodes = [ zeros(pt,0) for face in 1:num_faces(p)]
   nf_moments = [ zeros(ft,0,0) for face in 1:num_faces(p)]
 
-  fcips, fmoments = _RT_face_values(p,et,order)
+  fcips, fmoments = _RT_face_values(p,et,order,phi)
   frange = get_dimrange(p,D-1)
   nf_nodes[frange] = fcips
   nf_moments[frange] = fmoments
 
   if (order > 0)
-    ccips, cmoments = _RT_cell_values(p,et,order)
+    ccips, cmoments = _RT_cell_values(p,et,order,phi)
     crange = get_dimrange(p,D)
     nf_nodes[crange] = ccips
     nf_moments[crange] = cmoments
@@ -105,39 +107,65 @@ function _ref_face_to_faces_geomap(p,fp)
   fgeomap = lazy_map(linear_combination,cfvs,cfshfs)
 end
 
-function _nfaces_evaluation_points_weights(p, fgeomap, fips, wips)
+function _nfaces_evaluation_points_weights(p, fgeomap, fips, wips, phi)
   nc = length(fgeomap)
   c_fips = fill(fips,nc)
   c_wips = fill(wips,nc)
   pquad = lazy_map(evaluate,fgeomap,c_fips)
-  Jt = lazy_map(∇,fgeomap)
-  det_J = lazy_map(Operation(meas),Jt)
-  det_J_c_fips = lazy_map(evaluate,det_J,c_fips)
-  c_wips = collect(lazy_map(Broadcasting(*),c_wips,det_J_c_fips))
+
+  # Must compose s->q->r maps (fgeomap o phi) to get the correct scaling
+  # scaling = det(grad(fgeomap)⋅grad(phi))
+  Jt1 = lazy_map(∇,fgeomap)
+  Jt1_ips = lazy_map(evaluate,Jt1,c_fips)
+  #Jt1_ips_t = lazy_map(transpose,Jt1_ips)
+  Jt2 = fill(∇(phi),nc)
+  Jt2_ips = lazy_map(evaluate,Jt2,pquad)
+  Jt = lazy_map(⋅,Jt1,Jt2)
+  #Jt_ips = lazy_map(evaluate,Jt,c_fips)
+  Jt_ips = lazy_map(⋅, Jt1_ips, Jt2_ips)
+  det_J = lazy_map(meas,Jt_ips)
+
+
+  c_wips = collect(lazy_map(Broadcasting(*),c_wips,det_J))
   c_fips, pquad, c_wips
 end
 
 function _broadcast(::Type{T},n,b) where T
   c = Array{T}(undef,size(b))
   for (ii, i) in enumerate(b)
-    c[ii] = i*n
+    c[ii] = n⋅i
   end
   return c
 end
 
-function _RT_face_moments(p, fshfs, c_fips, fcips, fwips)
+function _RT_face_moments(p, fshfs, c_fips, fcips, fwips,phi)
   nc = length(c_fips)
   cfshfs = fill(fshfs, nc)
   cvals = lazy_map(evaluate,cfshfs,c_fips)
   cvals = [fwips[i].*cvals[i] for i in 1:nc]
   # fns, os = get_facet_normal(p)
   fns = get_facet_normal(p)
+
+  # Must express the normal in terms of the real/reference system of
+  # coordinates (depending if phi≡I or phi is a mapping, resp.)
+  # Hence, J = transpose(grad(phi))
+  # n = n*meas(J)⋅J^-1
+  Jt = fill(∇(phi),nc)
+  #Jt_ips = lazy_map(evaluate,Jt,fcips)
+  J = lazy_map(Operation(transpose),Jt)
+  J_inv = lazy_map(Operation(inv),J)
+  meas_Jt = lazy_map(Operation(meas),Jt)
+  #sqrt_meas_Jt = lazy_map(Operation(sqrt),meas_Jt)
+  #scaling = lazy_map(*,meas_Jt,sqrt_meas_Jt)
+  change = lazy_map(*,meas_Jt,J_inv)
+  change_ips = lazy_map(evaluate,change,fcips)
+
   if is_n_cube(p)
     os = get_facet_orientations(p)
     # @santiagobadia : Temporary hack for making it work for structured hex meshes
     cvals = [ _broadcast(typeof(n),n*o,b) for (n,o,b) in zip(fns,os,cvals)]
   elseif is_simplex(p)
-    cvals = [ _broadcast(typeof(n),n,b) for (n,b) in zip(fns,cvals)]
+    cvals = [ _broadcast(typeof(n),n,J.*b) for (n,b,J) in zip(fns,cvals,change_ips)]
   else
     @notimplemented
   end
@@ -145,7 +173,7 @@ function _RT_face_moments(p, fshfs, c_fips, fcips, fwips)
 end
 
 # It provides for every face the nodes and the moments arrays
-function _RT_face_values(p,et,order)
+function _RT_face_values(p,et,order,phi)
 
   # Reference facet
   @assert is_simplex(p) || is_n_cube(p) "We are assuming that all n-faces of the same n-dim are the same."
@@ -166,14 +194,14 @@ function _RT_face_values(p,et,order)
   fips = get_coordinates(fquad)
   wips = get_weights(fquad)
 
-  c_fips, fcips, fwips = _nfaces_evaluation_points_weights(p, fgeomap, fips, wips)
+  c_fips, fcips, fwips = _nfaces_evaluation_points_weights(p, fgeomap, fips, wips, phi)
 
   # Moments (fmoments)
   # The RT prebasis is expressed in terms of shape function
   fshfs = MonomialBasis(et,fp,order)
 
   # Face moments, i.e., M(Fi)_{ab} = q_RF^a(xgp_RFi^b) w_Fi^b n_Fi ⋅ ()
-  fmoments = _RT_face_moments(p, fshfs, c_fips, fcips, fwips)
+  fmoments = _RT_face_moments(p, fshfs, c_fips, fcips, fwips, phi)
 
   return fcips, fmoments
 
@@ -188,12 +216,20 @@ end
 _p_filter(e,order) = (sum(e) <= order)
 
 # It provides for every cell the nodes and the moments arrays
-function _RT_cell_values(p,et,order)
+function _RT_cell_values(p,et,order,phi)
   # Compute integration points at interior
   degree = 2*(order+1)
   iquad = Quadrature(p,degree)
   ccips = get_coordinates(iquad)
   cwips = get_weights(iquad)
+
+  # Must scale weights using phi map to get the correct integrals
+  # scaling = det(grad(phi))
+  #Jt = lazy_map(∇,phi)
+  #meas_Jt = lazy_map(meas, Jt)
+  #meas_Jt_ccips = lazy_map(evaluate, meas_Jt, ccips)
+  #cwips = collect(lazy_map(Broadcasting(*),cwips,meas_Jt_ccips))
+
 
   # Cell moments, i.e., M(C)_{ab} = q_C^a(xgp_C^b) w_C^b ⋅ ()
   if is_n_cube(p)
@@ -401,7 +437,6 @@ end
 function evaluate!(cache,::ContraVariantPiolaMap,s::MomentBasedDofBasis,phi::Field)
   Jt_q_cache, face_moments = cache
   Jt_q = evaluate!(Jt_q_cache,∇(phi),s.nodes)
-
   #face_moments = deepcopy(s.face_moments)
   for face in 1:length(face_moments)
     moments = face_moments[face]
@@ -409,7 +444,7 @@ function evaluate!(cache,::ContraVariantPiolaMap,s::MomentBasedDofBasis,phi::Fie
       num_qpoints, num_moments = size(moments)
       for i in 1:num_qpoints
         Jt_q_i = Jt_q[s.face_nodes[face][i]]
-        change = sqrt(meas(Jt_q_i)) * meas(Jt_q_i) * inv(transpose(Jt_q_i))
+        change = meas(Jt_q_i) * inv(transpose(Jt_q_i))
         for j in 1:num_moments
           face_moments[face][i,j] =  moments[i,j] ⋅ change
         end
