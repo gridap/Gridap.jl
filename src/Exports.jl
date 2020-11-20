@@ -24,6 +24,8 @@ export det, inv, tr, cross, dot, norm, ×, ⋅
 @publish Algebra get_vector
 @publish Algebra SparseMatrixCSR
 @publish Algebra SymSparseMatrixCSR
+@publish Algebra jacobian
+@publish Algebra hessian
 
 @publish Arrays array_cache
 @publish Arrays getindex!

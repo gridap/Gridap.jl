@@ -14,6 +14,16 @@ function FEOperator(res::Function,jac::Function,args...)
   FEOperator(res,jac,assem)
 end
 
+function FEOperator(res::Function,assem::Assembler)
+  jac(u,du,dv) = jacobian(x->res(x,dv),u)
+  FEOperatorFromWeakForm(res,jac,assem)
+end
+
+function FEOperator(res::Function,args...)
+  assem = SparseMatrixAssembler(args...)
+  FEOperator(res,assem)
+end
+
 get_test(op::FEOperatorFromWeakForm) = get_test(op.assem)
 get_trial(op::FEOperatorFromWeakForm) = get_trial(op.assem)
 
