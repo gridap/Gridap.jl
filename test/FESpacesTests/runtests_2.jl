@@ -16,8 +16,6 @@ using Test
 
 @testset "FEAutodiff" begin include("FEAutodiffTests.jl") end
 
-#@testset "FETermsWithAutodiff" begin include("FETermsWithAutodiffTests.jl") end
-#
 @testset "CDLagrangianFESpaces" begin include("CDLagrangianFESpacesTests.jl") end
 
 @testset "PhysicalFESpaces" begin include("PhysicalFESpacesTests.jl") end
