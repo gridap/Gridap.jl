@@ -151,6 +151,9 @@ using Gridap.CellData: ∫; export ∫
 @publish FESpaces interpolate
 @publish FESpaces interpolate_everywhere
 @publish FESpaces interpolate_dirichlet
+@publish FESpaces assemble_vector
+@publish FESpaces assemble_matrix
+@publish FESpaces assemble_matrix_and_vector
 @publish FESpaces FEOperator
 @publish FESpaces FESolver
 @publish FESpaces SparseMatrixAssembler
