@@ -42,6 +42,7 @@ import Gridap.Algebra: residual!
 import Gridap.Algebra: jacobian!
 import Gridap.Algebra: residual
 import Gridap.Algebra: jacobian
+import Gridap.Algebra: hessian
 import Gridap.Algebra: residual_and_jacobian!
 import Gridap.Algebra: residual_and_jacobian
 import Gridap.Algebra: zero_initial_guess
