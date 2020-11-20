@@ -142,11 +142,26 @@ struct GenericSparseMatrixAssembler{M,V} <: SparseMatrixAssembler
   trial::FESpace
   test::FESpace
   strategy::AssemblyStrategy
+
+  function GenericSparseMatrixAssembler(
+    matrix_type::Type{M},
+    vector_type::Type{V},
+    trial::FESpace,
+    test::FESpace,
+    strategy::AssemblyStrategy) where {M,V}
+
+    @assert ! isa(test,TrialFESpace) """\n
+    It is not allowed to build an Assembler with a test space of type TrialFESpace.
+    
+    Make sure that you are writing first the trial space and then the test space when
+    building an Assembler or a FEOperator.
+    """
+    new{M,V}(matrix_type,vector_type,trial,test,strategy)
+  end
 end
 
 function SparseMatrixAssembler(
   mat::Type,vec::Type,trial::FESpace,test::FESpace,strategy::AssemblyStrategy)
-  @assert ! isa(test,TrialFESpace)
   GenericSparseMatrixAssembler(mat,vec,trial,test,strategy)
 end
 

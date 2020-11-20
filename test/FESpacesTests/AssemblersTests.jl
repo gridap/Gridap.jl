@@ -45,6 +45,9 @@ vec_contribs = ℓ(dv)
 
 assem = SparseMatrixAssembler(U,V)
 
+@test isa(U,TrialFESpace)
+@test_throws AssertionError assem = SparseMatrixAssembler(V,U)
+
 data = collect_cell_matrix(mat_contribs)
 A = assemble_matrix(assem,data)
 @test size(A) == (num_free_dofs(V), num_free_dofs(U))
