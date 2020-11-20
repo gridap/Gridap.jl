@@ -94,3 +94,10 @@ function laplacian(f::Function,x::Point,fx::MultiValue)
   @notimplemented
 end
 
+# Specialization when x::StaticVector
+
+@inline gradient(f::Function,x::SVector) = gradient(f,Point(x))
+@inline symmetric_gradient(f::Function,x::SVector) = symmetric_gradient(f,Point(x))
+@inline divergence(f::Function,x::SVector) = divergence(f,Point(x))
+@inline curl(f::Function,x::SVector) = curl(f,Point(x))
+@inline laplacian(f::Function,x::SVector) = laplacian(f,Point(x))

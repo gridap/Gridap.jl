@@ -21,6 +21,8 @@ using Gridap.Geometry
 using Gridap.CellData
 using Gridap.TensorValues
 
+import Gridap.Fields: gradient
+import Gridap.Fields: ∇∇
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
 import Gridap.Arrays: return_cache
@@ -33,8 +35,6 @@ import Gridap.CellData: CellField
 import Gridap.CellData: get_cell_data
 import Gridap.CellData: DomainStyle
 import Gridap.CellData: change_domain_skeleton
-import Gridap.CellData: gradient
-import Gridap.CellData: ∇∇
 
 import Gridap.Algebra: allocate_residual
 import Gridap.Algebra: allocate_jacobian
