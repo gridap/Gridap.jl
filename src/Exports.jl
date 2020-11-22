@@ -165,3 +165,19 @@ using Gridap.CellData: ∫; export ∫
 @publish Visualization writevtk
 @publish Visualization createvtk
 
+export apply
+function apply(args...)
+  @unreachable """\n
+  Function apply has been removed and replaced by lazy_map.
+  This error message will be deleted in future versions.
+  """
+end
+
+export restrict
+function restrict(args...)
+  @unreachable """\n
+  Function restrict has been removed. The user does not need to explicitly
+  restrict to a given Triangulation any more. The code does it undere the hood.
+  This error message will be deleted in future versions.
+  """
+end
