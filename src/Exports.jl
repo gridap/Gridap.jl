@@ -201,7 +201,7 @@ function FETerm(args...)
 end
 
 export FEEnergy
-function FEEnergy
+function FEEnergy(args...)
   Helpers.@unreachable """\n
   Function FEEnergy has been removed. The API for specifying the weak form has changed significantly.
   See the gridap/Tutorials repo for some examples of how to use the new API.
@@ -210,7 +210,7 @@ function FEEnergy
 end
 
 export AffineFETerm
-function AffineFETerm
+function AffineFETerm(args...)
   Helpers.@unreachable """\n
   Function AffineFETerm has been removed. The API for specifying the weak form has changed significantly.
   See the gridap/Tutorials repo for some examples of how to use the new API.
@@ -219,7 +219,7 @@ function AffineFETerm
 end
 
 export LinearFETerm
-function LinearFETerm
+function LinearFETerm(args...)
   Helpers.@unreachable """\n
   Function LinearFETerm has been removed. The API for specifying the weak form has changed significantly.
   See the gridap/Tutorials repo for some examples of how to use the new API.
@@ -228,7 +228,7 @@ function LinearFETerm
 end
 
 export FESource
-function FESource
+function FESource(args...)
   Helpers.@unreachable """\n
   Function FESource has been removed. The API for specifying the weak form has changed significantly.
   See the gridap/Tutorials repo for some examples of how to use the new API.
