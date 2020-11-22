@@ -35,6 +35,7 @@ using ForwardDiff
 using FillArrays
 using Test
 using BlockArrays
+using StaticArrays
 
 import LinearAlgebra: det, inv, transpose, tr, cross
 import LinearAlgebra: ⋅, dot

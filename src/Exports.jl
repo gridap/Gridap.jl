@@ -24,6 +24,8 @@ export det, inv, tr, cross, dot, norm, ×, ⋅
 @publish Algebra get_vector
 @publish Algebra SparseMatrixCSR
 @publish Algebra SymSparseMatrixCSR
+@publish Algebra jacobian
+@publish Algebra hessian
 
 @publish Arrays array_cache
 @publish Arrays getindex!
@@ -149,6 +151,9 @@ using Gridap.CellData: ∫; export ∫
 @publish FESpaces interpolate
 @publish FESpaces interpolate_everywhere
 @publish FESpaces interpolate_dirichlet
+@publish FESpaces assemble_vector
+@publish FESpaces assemble_matrix
+@publish FESpaces assemble_matrix_and_vector
 @publish FESpaces FEOperator
 @publish FESpaces FESolver
 @publish FESpaces SparseMatrixAssembler

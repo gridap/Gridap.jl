@@ -58,8 +58,18 @@ test_fe_operator(op,y,r,≈,jac=A)
 #using Gridap.Visualization
 #writevtk(trian,"trian",celldata=["e"=>cont])
 
-#el2 = sqrt(sum(    ))
+# Now with autodiff
 
+op = FEOperator(res,U,V)
+test_fe_operator(op,y,r,≈,jac=A)
 
+uh = solve(op)
+e = u - uh
+
+el2 = sqrt(sum(∫( e*e )*dΩ))
+eh1 = sqrt(sum(∫( e*e + ∇(e)⋅∇(e) )*dΩ))
+
+@test el2 < 1.e-8
+@test eh1 < 1.e-7
 
 end # module

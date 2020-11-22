@@ -16,52 +16,88 @@ end
 # Automatic differentiation of functions
 
 function gradient(f::Function)
-  function grad_f(x)
-    _grad_f(f,x,zero(return_type(f,x)))
+  @inline function _gradient(x)
+    gradient(f,x)
   end
 end
 
-function _grad_f(f,x,fx)
-  VectorValue(ForwardDiff.gradient(f,get_array(x)))
-end
-
-function _grad_f(f,x,fx::VectorValue)
-  TensorValue(transpose(ForwardDiff.jacobian(y->get_array(f(y)),get_array(x))))
-end
-
-function _grad_f(f,x,fx::MultiValue)
-  @notimplemented
+function symmetric_gradient(f::Function)
+  @inline function _symmetric_gradient(x)
+    symmetric_gradient(f,x)
+  end
 end
 
 function divergence(f::Function)
-  x -> tr(ForwardDiff.jacobian(y->get_array(f(y)),get_array(x)))
-end
-
-function curl(f::Function)
-  x -> grad2curl(TensorValue(transpose(ForwardDiff.jacobian(y->get_array(f(y)),get_array(x)))))
-end
-
-function laplacian(f::Function)
-  function lapl_f(x)
-    _lapl_f(f,x,zero(return_type(f,x)))
+  @inline function _divergence(x)
+    divergence(f,x)
   end
 end
 
-function _lapl_f(f,x,fx)
+function curl(f::Function)
+  @inline function _curl(x)
+    curl(f,x)
+  end
+end
+
+function laplacian(f::Function)
+  @inline function _laplacian(x)
+    laplacian(f,x)
+  end
+end
+
+# Specialization when x::Point
+
+function gradient(f::Function,x::Point)
+  gradient(f,x,return_value(f,x))
+end
+
+@inline function gradient(f::Function,x::Point,fx::Number)
+  VectorValue(ForwardDiff.gradient(f,get_array(x)))
+end
+
+@inline function gradient(f::Function,x::Point,fx::VectorValue)
+  TensorValue(transpose(ForwardDiff.jacobian(y->get_array(f(y)),get_array(x))))
+end
+
+function gradient(f::Function,x::Point,fx::MultiValue)
+  @notimplemented
+end
+
+function symmetric_gradient(f::Function,x::Point)
+  symmetric_part(gradient(f,x))
+end
+
+function divergence(f::Function,x::Point)
+  tr(gradient(f,x))
+end
+
+function curl(f::Function,x::Point)
+  grad2curl(gradient(f,x))
+end
+
+function laplacian(f::Function,x::Point)
+  laplacian(f,x,return_value(f,x))
+end
+
+@inline function laplacian(f::Function,x::Point,fx::Number)
   tr(ForwardDiff.jacobian(y->ForwardDiff.gradient(f,y), get_array(x)))
 end
 
-function _lapl_f(f,x,fx::VectorValue)
+@inline function laplacian(f::Function,x::Point,fx::VectorValue)
   A = length(x)
   B = length(fx)
   a = ForwardDiff.jacobian(y->transpose(ForwardDiff.jacobian(z->get_array(f(z)),y)), get_array(x))
   tr(ThirdOrderTensorValue{A,A,B}(Tuple(transpose(a))))
 end
 
-function _lapl_f(f,x,fx::MultiValue)
+function laplacian(f::Function,x::Point,fx::MultiValue)
   @notimplemented
 end
 
-function symmetric_gradient(f::Function)
-    x -> symmetric_part(_grad_f(f,x,zero(return_type(f,x))))
-end
+# Specialization when x::StaticVector
+
+@inline gradient(f::Function,x::SVector) = gradient(f,Point(x))
+@inline symmetric_gradient(f::Function,x::SVector) = symmetric_gradient(f,Point(x))
+@inline divergence(f::Function,x::SVector) = divergence(f,Point(x))
+@inline curl(f::Function,x::SVector) = curl(f,Point(x))
+@inline laplacian(f::Function,x::SVector) = laplacian(f,Point(x))
