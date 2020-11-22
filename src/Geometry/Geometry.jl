@@ -106,7 +106,6 @@ export get_cell_shapefuns
 export get_facet_normal
 export test_triangulation
 export get_cell_id
-#export cell_measure
 export get_cell_map
 export get_background_triangulation
 export get_cell_ref_map

@@ -116,5 +116,25 @@ const ∫ = Integrand
 (*)(a::Integrand,b::CellQuadrature) = integrate(a.object,b)
 (*)(b::CellQuadrature,a::Integrand) = integrate(a.object,b)
 
+# Cell measure
+"""
+Contributions added to the cells of the background Triangulation.
+"""
+function get_cell_measure(trian::Triangulation)
+  quad = CellQuadrature(trian,0)
+  cell_to_dV = integrate(1,quad)
+  cell_to_bgcell = get_cell_id(trian)
+  bgtrian = get_background_triangulation(trian)
+  bgcell_to_dV = zeros(num_cells(bgtrian))
+  _meas_K_fill!(bgcell_to_dV,cell_to_dV,cell_to_bgcell)
+  bgcell_to_dV
+end
 
+function _meas_K_fill!(bgcell_to_dV,cell_to_dV,cell_to_bgcell)
+  cache = array_cache(cell_to_dV)
+  for (cell, bgcell) in enumerate(cell_to_bgcell)
+    dV = getindex!(cache,cell_to_dV,cell)
+    bgcell_to_dV[bgcell] += dV
+  end
+end
 
