@@ -127,6 +127,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish CellData update_state!
 @publish CellData get_normal_vector
 using Gridap.CellData: ∫; export ∫
+@publish CellData get_cell_measure
 
 @publish FESpaces FESpace
 @publish FESpaces TrialFESpace
@@ -165,3 +166,72 @@ using Gridap.CellData: ∫; export ∫
 @publish Visualization writevtk
 @publish Visualization createvtk
 
+export apply
+function apply(args...)
+  Helpers.@unreachable """\n
+  Function apply has been removed and replaced by lazy_map.
+  This error message will be deleted in future versions.
+  """
+end
+
+export cell_measure
+function cell_measure(args...)
+  Helpers.@unreachable """\n
+  Function cell_measure(a,b) has been removed and replaced by get_cell_measure(a).
+  This error message will be deleted in future versions.
+  """
+end
+
+export restrict
+function restrict(args...)
+  Helpers.@unreachable """\n
+  Function restrict has been removed. The user does not need to explicitly
+  restrict to a given Triangulation any more. The code does it undere the hood.
+  This error message will be deleted in future versions.
+  """
+end
+
+export FETerm
+function FETerm(args...)
+  Helpers.@unreachable """\n
+  Function FETerm has been removed. The API for specifying the weak form has changed significantly.
+  See the gridap/Tutorials repo for some examples of how to use the new API.
+  This error message will be deleted in future versions.
+  """
+end
+
+export FEEnergy
+function FEEnergy(args...)
+  Helpers.@unreachable """\n
+  Function FEEnergy has been removed. The API for specifying the weak form has changed significantly.
+  See the gridap/Tutorials repo for some examples of how to use the new API.
+  This error message will be deleted in future versions.
+  """
+end
+
+export AffineFETerm
+function AffineFETerm(args...)
+  Helpers.@unreachable """\n
+  Function AffineFETerm has been removed. The API for specifying the weak form has changed significantly.
+  See the gridap/Tutorials repo for some examples of how to use the new API.
+  This error message will be deleted in future versions.
+  """
+end
+
+export LinearFETerm
+function LinearFETerm(args...)
+  Helpers.@unreachable """\n
+  Function LinearFETerm has been removed. The API for specifying the weak form has changed significantly.
+  See the gridap/Tutorials repo for some examples of how to use the new API.
+  This error message will be deleted in future versions.
+  """
+end
+
+export FESource
+function FESource(args...)
+  Helpers.@unreachable """\n
+  Function FESource has been removed. The API for specifying the weak form has changed significantly.
+  See the gridap/Tutorials repo for some examples of how to use the new API.
+  This error message will be deleted in future versions.
+  """
+end
