@@ -16,7 +16,7 @@ V = FESpace(model, ReferenceFE(:Lagrangian,Float64,order),conformity=:H1,dirichl
 U = TrialFESpace(V,u)
 
 Ω = Triangulation(model) 
-Γ = BoundaryTriangulation(model,1)
+Γ = BoundaryTriangulation(model,tags=1)
 n_Γ = get_normal_vector(Γ)
 
 degree = 2*order

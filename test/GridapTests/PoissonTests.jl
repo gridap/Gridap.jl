@@ -19,8 +19,8 @@ add_tag_from_tags!(labels,"neumann",[7,8])
 add_tag_from_tags!(labels,"nitsche",6)
 
 Ω = Triangulation(model)
-Γn = BoundaryTriangulation(model,labels,"neumann")
-Γd = BoundaryTriangulation(model,labels,"nitsche")
+Γn = BoundaryTriangulation(model,labels,tags="neumann")
+Γd = BoundaryTriangulation(model,labels,tags="nitsche")
 
 degree = order
 dΩ = LebesgueMeasure(Ω,degree)

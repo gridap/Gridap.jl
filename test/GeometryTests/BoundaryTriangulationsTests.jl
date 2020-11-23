@@ -12,7 +12,7 @@ domain = (0,4,0,4)
 partition = (2,2)
 model = simplexify(CartesianDiscreteModel(domain,partition))
 
-btrian = BoundaryTriangulation(model,[7,8])
+btrian = BoundaryTriangulation(model,tags=[7,8])
 test_triangulation(btrian)
 @test get_background_triangulation(btrian) === get_triangulation(model)
 
@@ -149,11 +149,11 @@ domain = (0,4,0,4)
 partition = (2,2)
 model = CartesianDiscreteModel(domain,partition)
 
-btrian = BoundaryTriangulation(model,"tag_8")
+btrian = BoundaryTriangulation(model,tags="tag_8")
 test_triangulation(btrian)
 @test all(1 .== btrian.glue.face_to_lcell)
 
-btrian = BoundaryTriangulation(model,get_face_labeling(model),"tag_8")
+btrian = BoundaryTriangulation(model,get_face_labeling(model),tags="tag_8")
 test_triangulation(btrian)
 
 s = CompressedArray([Point{1,Float64}[(0.25,),(0.75,)]],get_cell_type(btrian))
@@ -169,5 +169,8 @@ test_triangulation(btrian)
 
 nb = get_facet_normal(btrian)
 @test length(nb) == num_cells(btrian)
+
+btrian = BoundaryTriangulation(model,tags=["tag_6","tag_7"])
+test_triangulation(btrian)
 
 end # module

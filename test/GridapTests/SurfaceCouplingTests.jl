@@ -53,7 +53,7 @@ model_fluid = DiscreteModel(model,cell_to_is_fluid)
 
 Ωs = Triangulation(model_solid)
 Ωf = Triangulation(model_fluid)
-Λ = BoundaryTriangulation(model,labels,"neumann")
+Λ = BoundaryTriangulation(model,labels,tags="neumann")
 Γ = InterfaceTriangulation(model_fluid,model_solid)
 
 n_Λ = get_normal_vector(Λ)
