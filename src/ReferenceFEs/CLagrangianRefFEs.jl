@@ -621,7 +621,7 @@ function compute_face_orders(p::ExtrusionPolytope,face::ExtrusionPolytope{D},ifa
 end
 
 function _eliminate_zeros(::Val{d},a,o) where d
-  b = zero(mutable(Point{d,Int}))
+  b = zero(Mutable(Point{d,Int}))
   D = num_components(a)
   k = 1
   for i in 1:D
@@ -653,7 +653,7 @@ function _monomial_terms(extrusion::NTuple{D,Int},orders) where D
     return terms
   end
   _check_orders(extrusion,orders)
-  M = mutable(VectorValue{D,Int})
+  M = Mutable(VectorValue{D,Int})
   term = zero(M)
   _orders = M(orders)
   k = 0
@@ -664,7 +664,7 @@ end
 function _interior_nodes(extrusion::NTuple{D,Int},orders) where D
   _check_orders(extrusion,orders)
   terms = CartesianIndex{D}[]
-  M = mutable(VectorValue{D,Int})
+  M = Mutable(VectorValue{D,Int})
   term = zero(M)
   _orders = M(orders)
   k = 1
@@ -712,7 +712,7 @@ function _coords_to_terms(coords::Vector{<:Point{D}},orders) where D
   indexbase = 1
   terms = CartesianIndex{D}[]
   P = Point{D,Int}
-  t = zero(mutable(P))
+  t = zero(Mutable(P))
   for x in coords
     for d in 1:D
       t[d] = round(x[d]*orders[d]) + indexbase
@@ -727,7 +727,7 @@ function  _terms_to_coords(terms::Vector{CartesianIndex{D}},orders) where D
   P = Point{D,Float64}
   indexbase = 1
   nodes = P[]
-  x = zero(mutable(P))
+  x = zero(Mutable(P))
   for t in terms
     for d in 1:D
       x[d] = (t[d] - indexbase) / orders[d]

@@ -415,7 +415,7 @@ function _nfaceboundary!(anchor, extrusion, extend, isanchor, list)
 end
 
 function _newext(newext,i)
-  m = zero(mutable(newext))
+  m = zero(Mutable(newext))
   D = num_components(newext)
   for j in 1:D
     m[j] = j == i ? 0 : newext[j]
@@ -424,7 +424,7 @@ function _newext(newext,i)
 end
 
 function _edim(newext,i)
-  m = zero(mutable(newext))
+  m = zero(Mutable(newext))
   D = num_components(newext)
   for j in 1:D
     m[j] = j == i ? 1 : 0
@@ -433,7 +433,7 @@ function _edim(newext,i)
 end
 
 function _tetp(anchor,i)
-  m = zero(mutable(anchor))
+  m = zero(Mutable(anchor))
   D = num_components(anchor)
   for j in 1:D
     m[j] = j >= i ? anchor[j] : 0
@@ -508,7 +508,7 @@ function DFace{D}(p::DFace{D},iface::Int) where D
 end
 
 function _eliminate_zeros(::Val{d},a) where d
-  b = zero(mutable(Point{d,Int}))
+  b = zero(Mutable(Point{d,Int}))
   D = num_components(a)
   k = 1
   for i in 1:D
@@ -734,7 +734,7 @@ end
 
 function _setup_aux_grads(vertices::Vector{NFace{D}}) where D
   grads = zeros(Point{D,Int},length(vertices))
-  m = zero(mutable(Point{D,Int}))
+  m = zero(Mutable(Point{D,Int}))
   for (i,vertex) in enumerate(vertices)
     x = vertex.anchor
     for di in 1:D
@@ -753,7 +753,7 @@ end
 
 function _setup_aux_jacobian(grads,permuted_vertices::Vector{NFace{D}}) where D
   p0 = zero(Point{D,Int})
-  m = zero(mutable(outer(p0,p0)))
+  m = zero(Mutable(outer(p0,p0)))
   for (i,pvertex) in enumerate(permuted_vertices)
     x = pvertex.anchor
     g = grads[i]

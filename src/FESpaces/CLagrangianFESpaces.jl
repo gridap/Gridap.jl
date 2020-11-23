@@ -152,7 +152,7 @@ function _generate_dof_layout_component_major(z::MultiValue,nnodes::Integer)
   dof_to_comp = zeros(Int8,ndofs)
   dof_to_node = zeros(Int,ndofs)
   node_and_comp_to_dof = zeros(V,nnodes)
-  m = zero(mutable(V))
+  m = zero(Mutable(V))
   for node in 1:nnodes
     o = ncomps*(node-1)
     for comp in 1:ncomps

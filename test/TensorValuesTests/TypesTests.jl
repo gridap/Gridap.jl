@@ -357,7 +357,7 @@ t = ThirdOrderTensorValue{2,2,2,Int}(1,2.0,3,4,5,6,7,8)
 
 # Misc
 
-M = mutable(VectorValue{3,Int})
+M = Mutable(VectorValue{3,Int})
 @test M == MVector{3,Int}
 m = zero(M)
 v = VectorValue(m)

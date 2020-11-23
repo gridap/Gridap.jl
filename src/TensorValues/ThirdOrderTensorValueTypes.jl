@@ -80,8 +80,8 @@ change_eltype(::T,::Type{T2}) where {T<:ThirdOrderTensorValue,T2} = change_eltyp
 zero(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}) where {D1,D2,D3,T} = ThirdOrderTensorValue{D1,D2,D3,T}(tfill(zero(T),Val{D1*D2*D3}()))
 zero(::ThirdOrderTensorValue{D1,D2,D3,T}) where {D1,D2,D3,T} = zero(ThirdOrderTensorValue{D1,D2,D3,T})
 
-mutable(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}) where {D1,D2,D3,T} = MArray{Tuple{D1,D2,D3},T}
-mutable(::ThirdOrderTensorValue{D1,D2,D3,T}) where {D1,D2,D3,T} = mutable(ThirdOrderTensorValue{D1,D2,D3,T})
+Mutable(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}) where {D1,D2,D3,T} = MArray{Tuple{D1,D2,D3},T}
+Mutable(::ThirdOrderTensorValue{D1,D2,D3,T}) where {D1,D2,D3,T} = Mutable(ThirdOrderTensorValue{D1,D2,D3,T})
 
 ###############################################################
 # Introspection (ThirdOrderTensorValue)

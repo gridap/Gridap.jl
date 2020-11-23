@@ -120,8 +120,8 @@ zero(::SymTensorValue{D,T,L}) where {D,T,L} = zero(SymTensorValue{D,T,L})
 end
 one(::SymTensorValue{D,T}) where {D,T} = one(SymTensorValue{D,T})
 
-mutable(::Type{<:SymTensorValue{D,T}}) where {D,T} = MMatrix{D,D,T}
-mutable(::SymTensorValue{D,T}) where {D,T} = mutable(SymTensorValue{D,T})
+Mutable(::Type{<:SymTensorValue{D,T}}) where {D,T} = MMatrix{D,D,T}
+Mutable(::SymTensorValue{D,T}) where {D,T} = Mutable(SymTensorValue{D,T})
 
 change_eltype(::Type{SymTensorValue{D,T1,L}},::Type{T2}) where {D,T1,T2,L} = SymTensorValue{D,T2,L}
 change_eltype(::SymTensorValue{D,T1,L},::Type{T2}) where {D,T1,T2,L} = change_eltype(SymTensorValue{D,T1,L},T2)
