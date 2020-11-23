@@ -66,14 +66,10 @@ function Triangulation(
   RestrictedTriangulation(parent_trian,parent_cell_to_mask)
 end
 
-function Triangulation(parent_model::DiscreteModel, labels::FaceLabeling, tags)
+function Triangulation(parent_model::DiscreteModel, labels::FaceLabeling; tags)
   parent_trian = Triangulation(parent_model)
   parent_cell_to_mask = get_face_mask(labels,tags,num_cell_dims(parent_model))
   RestrictedTriangulation(parent_trian,parent_cell_to_mask)
-end
-
-function Triangulation(parent_model::DiscreteModel, tags)
-  Triangulation(parent_model,get_face_labeling(parent_model),tags)
 end
 
 # Triangulation API

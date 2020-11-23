@@ -386,8 +386,12 @@ function Triangulation(::Type{ReferenceFE{d}},model::DiscreteModel) where d
   Grid(ReferenceFE{d},model)
 end
 
-function Triangulation(model::DiscreteModel)
-  get_triangulation(model)
+function Triangulation(model::DiscreteModel;tags=nothing)
+  if tags == nothing
+    get_triangulation(model)
+  else
+    Triangulation(model,get_face_labeling(model),tags=tags)
+  end
 end
 
 """
