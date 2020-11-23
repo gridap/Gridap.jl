@@ -147,6 +147,8 @@ DomainStyle(::Type{SingleFieldFEFunction{T}}) where T = DomainStyle(T)
 get_free_values(f::SingleFieldFEFunction) = f.free_values
 get_cell_dof_values(f::SingleFieldFEFunction) = f.cell_dof_values
 get_fe_space(f::SingleFieldFEFunction) = f.fe_space
+Base.real(f::SingleFieldFEFunction) = FEFunction(f.fe_space,real(f.free_values),real(f.dirichlet_values))
+Base.imag(f::SingleFieldFEFunction) = FEFunction(f.fe_space,imag(f.free_values),imag(f.dirichlet_values))
 
 """
     FEFunction(

@@ -153,7 +153,7 @@ function _evaluate_nd_qgrad!(
 
   o = one(T)
   k = 1
-  m = zero(mutable(V))
+  m = zero(Mutable(V))
   js = eachindex(m)
   z = zero(T)
 
@@ -196,8 +196,8 @@ function _gradient_nd_qgrad!(
     _gradient_1d!(g,x,order,d)
   end
 
-  z = zero(mutable(V))
-  m = zero(mutable(G))
+  z = zero(Mutable(V))
+  m = zero(Mutable(G))
   js = eachindex(z)
   mjs = eachindex(m)
   o = one(T)

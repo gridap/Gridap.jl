@@ -134,26 +134,24 @@ function BoundaryTriangulation(
 end
 
 function BoundaryTriangulation(
-  model::DiscreteModel, bgface_to_mask::AbstractVector, lcell::Integer=1)
+  model::DiscreteModel, bgface_to_mask::AbstractVector{Bool}, lcell::Integer=1)
   BoundaryTriangulation(model,bgface_to_mask, Fill(lcell,num_facets(model)) )
 end
 
-function BoundaryTriangulation(model::DiscreteModel)
-  topo = get_grid_topology(model)
-  D = num_cell_dims(model)
-  face_to_mask = get_isboundary_face(topo,D-1)
-  BoundaryTriangulation(model,face_to_mask)
-end
-
 """
-    BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling,tags::Vector{Int})
-    BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling,tags::Vector{String})
-    BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling,tag::Int)
-    BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling,tag::String)
+    BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling;tags::Vector{Int})
+    BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling;tags::Vector{String})
+    BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling;tag::Int)
+    BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling;tag::String)
 """
-function BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling,tags)
+function BoundaryTriangulation(model::DiscreteModel,labeling::FaceLabeling;tags=nothing)
   D = num_cell_dims(model)
-  face_to_mask = get_face_mask(labeling,tags,D-1)
+  if tags == nothing
+    topo = get_grid_topology(model)
+    face_to_mask = get_isboundary_face(topo,D-1)
+  else
+    face_to_mask = get_face_mask(labeling,tags,D-1)
+  end
   BoundaryTriangulation(model,face_to_mask)
 end
 
@@ -163,9 +161,9 @@ end
     BoundaryTriangulation(model::DiscreteModel,tag::Int)
     BoundaryTriangulation(model::DiscreteModel,tag::String)
 """
-function BoundaryTriangulation(model::DiscreteModel,tags)
+function BoundaryTriangulation(model::DiscreteModel;tags=nothing)
   labeling = get_face_labeling(model)
-  BoundaryTriangulation(model,labeling,tags)
+  BoundaryTriangulation(model,labeling,tags=tags)
 end
 
 # Triangulation API

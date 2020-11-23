@@ -30,7 +30,7 @@ import Gridap.Geometry: get_triangulation
 
 import Gridap.TensorValues: inner, outer, double_contraction, symmetric_part
 import LinearAlgebra: det, tr, cross, dot, ⋅
-import Base: inv, abs, abs2, *, +, -, /, adjoint, transpose
+import Base: inv, abs, abs2, *, +, -, /, adjoint, transpose, real, imag
 
 export gradient, ∇
 export ∇∇

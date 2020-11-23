@@ -46,6 +46,7 @@ export ThirdOrderTensorValue
 
 export inner, outer, meas
 export mutable
+export Mutable
 export symmetric_part
 export n_components
 export num_components

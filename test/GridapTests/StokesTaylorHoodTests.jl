@@ -49,7 +49,7 @@ Y = MultiFieldFESpace([V,Q])
 X = MultiFieldFESpace([U,P])
 
 Ω = Triangulation(model)
-Γ = BoundaryTriangulation(model,labels,"neumann")
+Γ = BoundaryTriangulation(model,labels,tags="neumann")
 n_Γ = get_normal_vector(Γ)
 
 degree = order

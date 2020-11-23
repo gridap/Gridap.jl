@@ -73,7 +73,7 @@ function _generate_dof_layout_node_major(::Type{T},nnodes::Integer) where T<:Mul
   dof_to_comp = zeros(Int,ndofs)
   dof_to_node = zeros(Int,ndofs)
   node_and_comp_to_dof = zeros(V,nnodes)
-  m = zero(mutable(V))
+  m = zero(Mutable(V))
   for node in 1:nnodes
     for comp in 1:ncomps
       o = nnodes*(comp-1)

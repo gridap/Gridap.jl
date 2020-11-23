@@ -15,7 +15,7 @@ model = CartesianDiscreteModel(domain,cells)
 
 trian = Triangulation(model)
 trian_N =BoundaryTriangulation(model)
-trian_D =BoundaryTriangulation(model,"tag_8")
+trian_D =BoundaryTriangulation(model,tags="tag_8")
 trian_S =SkeletonTriangulation(model)
 
 x = get_cell_points(trian)
