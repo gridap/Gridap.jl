@@ -51,11 +51,11 @@ model = DiscreteModel(oldmodel,cell_to_mask)
 test_discrete_model(model)
 @test isa(model,RestrictedDiscreteModel)
 
-model_fluid = DiscreteModel(oldmodel,"fluid")
+model_fluid = DiscreteModel(oldmodel,tags="fluid")
 test_discrete_model(model_fluid)
 @test isa(model_fluid,RestrictedDiscreteModel)
 
-model_solid = DiscreteModel(oldmodel,"solid")
+model_solid = DiscreteModel(oldmodel,tags="solid")
 test_discrete_model(model_solid)
 @test isa(model_solid,RestrictedDiscreteModel)
 
