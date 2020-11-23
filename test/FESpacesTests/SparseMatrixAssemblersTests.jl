@@ -32,6 +32,9 @@ quad = CellQuadrature(trian,degree)
 btrian = BoundaryTriangulation(model)
 bquad = CellQuadrature(btrian,degree)
 
+b0trian = Triangulation(btrian,Int[])
+b0quad = CellQuadrature(b0trian,degree)
+
 cellmat = integrate(∇(v)⊙∇(u),quad)
 cellvec = integrate(v⊙b,quad)
 cellmatvec = pair_arrays(cellmat,cellvec)
@@ -42,10 +45,16 @@ bcellvec = integrate(v*3,bquad)
 bcellmatvec = pair_arrays(bcellmat,bcellvec)
 bcellids = btrian.glue.face_to_cell
 
-term_to_cellmat = [cellmat, bcellmat]
-term_to_cellvec = [cellvec, bcellvec]
-term_to_cellids = [cellids, bcellids]
-term_to_cellmatvec = [ cellmatvec, bcellmatvec ]
+b0cellmat = integrate(v*u,b0quad)
+b0cellvec = integrate(v*3,b0quad)
+b0cellmatvec = pair_arrays(b0cellmat,b0cellvec)
+b0cellids = get_cell_id(b0trian)
+@test length(b0cellids) == 0
+
+term_to_cellmat = [cellmat, bcellmat, b0cellmat]
+term_to_cellvec = [cellvec, bcellvec, b0cellvec]
+term_to_cellids = [cellids, bcellids, b0cellids]
+term_to_cellmatvec = [ cellmatvec, bcellmatvec, b0cellmatvec ]
 
 mtypes = [
   SparseMatrixCSC,
@@ -150,6 +159,5 @@ scellmat = map(i->zeros(size(i)),scellmat)
 matdata = ([scellmat],[scellids],[scellids])
 A = assemble_matrix(assem,matdata)
 @test A == zeros(num_free_dofs(V),num_free_dofs(U))
-
 
 end # module

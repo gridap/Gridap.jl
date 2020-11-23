@@ -260,6 +260,15 @@ end
   z
 end
 
+function return_value(k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::AbstractMatrix)
+  if size(fx,2) == size(v,1)
+    evaluate(k,v,fx)
+  else
+    c = return_cache(k,v,fx)
+    c.array
+  end
+end
+
 function return_cache(k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::AbstractMatrix)
   vf = testitem(fx)
   vv = testitem(v)
@@ -285,6 +294,10 @@ end
 
 @inline function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractVector,fx::AbstractVector)
   evaluate!(cache,LinearCombinationMap(1),v,fx)
+end
+
+function return_value(k::LinearCombinationMap{Colon},v::AbstractVector,fx::AbstractMatrix)
+  return_value(LinearCombinationMap(1),v,fx)
 end
 
 function return_cache(k::LinearCombinationMap{Colon},v::AbstractVector,fx::AbstractMatrix)

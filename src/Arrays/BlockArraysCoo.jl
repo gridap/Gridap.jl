@@ -260,7 +260,18 @@ function return_cache(
 
   @check map(i->first(blocksize(i)),axes) == k.blocksize "The given axes are not compatible with the given BlockArrayCooMap"
 
-  r = BlockArrayCoo(axes,k.blockids,collect(blocks))
+  if _valid_block_sizes(axes,_compute_ptrs(k.blockids,axes),blocks)
+    goodblocks = collect(blocks)
+  else
+    goodblocks = A[]
+    for (i,I) in enumerate(k.blockids)
+      laxs = map( local_range, axes, I)
+      block = similar(typeof(blocks[i]),laxs)
+      push!(goodblocks,block)
+    end
+  end
+
+  r = BlockArrayCoo(axes,k.blockids,goodblocks)
   CachedArray(r)
 end
 
