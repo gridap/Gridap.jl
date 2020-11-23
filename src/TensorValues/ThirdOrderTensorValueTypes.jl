@@ -82,6 +82,7 @@ zero(::ThirdOrderTensorValue{D1,D2,D3,T}) where {D1,D2,D3,T} = zero(ThirdOrderTe
 
 Mutable(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}) where {D1,D2,D3,T} = MArray{Tuple{D1,D2,D3},T}
 Mutable(::ThirdOrderTensorValue{D1,D2,D3,T}) where {D1,D2,D3,T} = Mutable(ThirdOrderTensorValue{D1,D2,D3,T})
+mutable(a::ThirdOrderTensorValue{D1,D2,D3}) where {D1,D2,D3} = MArray{Tuple{D1,D2,D3}}(a.data)
 
 ###############################################################
 # Introspection (ThirdOrderTensorValue)
