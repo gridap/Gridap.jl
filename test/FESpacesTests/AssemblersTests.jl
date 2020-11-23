@@ -76,4 +76,16 @@ A = assemble_matrix(a(du,dv),U,V)
 b = assemble_vector(ℓ(dv),V)
 A,b = assemble_matrix_and_vector(a(du,dv),ℓ(dv),U,V)
 
+V = TestFESpace(
+  model,
+  ReferenceFE(:Lagrangian,Float64,1),
+  vector_type=Vector{ComplexF64})
+U = V
+
+assem = SparseMatrixAssembler(U,V)
+Ta = get_matrix_type(assem)
+Tb = get_vector_type(assem)
+@test eltype(Ta) == ComplexF64
+@test eltype(Tb) == ComplexF64
+
 end # module

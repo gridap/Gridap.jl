@@ -7,7 +7,7 @@ function FESpace(
   dirichlet_tags=Int[],
   dirichlet_masks=nothing,
   constraint=nothing,
-  vectortype::Union{Nothing,Type}=nothing)
+  vector_type::Union{Nothing,Type}=nothing)
 
   @assert num_cells(cell_fe) == num_cells(model) """\n
   The number of cells provided in the `cell_fe` argument ($(cell_fe.num_cells) cells)
@@ -16,15 +16,15 @@ function FESpace(
 
   trian = Triangulation(model)
 
-  if vectortype == nothing
+  if vector_type == nothing
     cell_shapefuns, cell_dof_basis = compute_cell_space(cell_fe,trian)
     T = get_dof_value_type(cell_shapefuns,cell_dof_basis)
     _vector_type = Vector{T}
   else
-    @assert vectortype <: AbstractVector """\n
-    The (optional) argument vectortype has to be <: AbstractVector.
+    @assert vector_type <: AbstractVector """\n
+    The (optional) argument vector_type has to be <: AbstractVector.
     """
-    _vector_type = vectortype
+    _vector_type = vector_type
   end
 
   if conformity in (L2Conformity(),:L2) && dirichlet_tags == Int[]
