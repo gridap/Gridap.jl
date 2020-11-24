@@ -11,7 +11,7 @@ using Gridap.Fields
 domain =(0,1,0,1)
 partition = (3,3)
 model = CartesianDiscreteModel(domain,partition)
-trian = get_triangulation(model)
+trian = Triangulation(model)
 
 order = 1
 
