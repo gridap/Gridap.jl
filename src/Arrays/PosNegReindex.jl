@@ -71,7 +71,7 @@ end
 
 function lazy_map(::typeof(evaluate),::Type{T},b::Fill,a::LazyArray{<:Fill{<:PosNegReindex}}...) where T
   i_to_iposneg = a[1].f[1]
-  if all(map( ai-> is_exhaustive(a[1].f[1]),a)) && all( map( ai-> i_to_iposneg==a[1].f[1],a) )
+  if all(map( ai-> is_exhaustive(ai.f[1]),a)) && all( map( ai-> i_to_iposneg==ai.f[1],a) )
     k = b.value
     bpos = map(ai->ai.g.value.values_pos,a)
     bneg = map(ai->ai.g.value.values_neg,a)
