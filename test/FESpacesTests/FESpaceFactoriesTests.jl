@@ -101,7 +101,7 @@ V = FESpace(model_in,QUAD4,conformity=:L2)
 @test isa(V,ExtendedFESpace)
 
 V = FESpace(model_in,QUAD4,conformity=:L2,constraint=:zeromean)
-@test isa(V,ExtendedFESpace)
+@test isa(V,ZeroMeanFESpace)
 
 # From parameter list describing the reffe
 
@@ -114,7 +114,7 @@ V = FESpace(model_in,reffe,conformity=:L2)
 @test isa(V,ExtendedFESpace)
 
 V = FESpace(model_in,reffe,conformity=:L2,constraint=:zeromean)
-@test isa(V,ExtendedFESpace)
+@test isa(V,ZeroMeanFESpace)
 
 # From a cell-wise vector of reffes
 
@@ -127,7 +127,7 @@ V = FESpace(model_in,cell_reffe,conformity=:L2)
 @test isa(V,ExtendedFESpace)
 
 V = FESpace(model_in,cell_reffe,conformity=:L2,constraint=:zeromean)
-@test isa(V,ExtendedFESpace)
+@test isa(V,ZeroMeanFESpace)
 
 # From a CellFE
 
@@ -140,6 +140,6 @@ V = FESpace(model_in,cell_fe,conformity=:L2)
 @test isa(V,ExtendedFESpace)
 
 V = FESpace(model_in,cell_fe,conformity=:L2,constraint=:zeromean)
-@test isa(V,ExtendedFESpace)
+@test isa(V,ZeroMeanFESpace)
 
 end # module

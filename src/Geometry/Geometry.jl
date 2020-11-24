@@ -86,7 +86,11 @@ export test_grid_topology
 export get_cell_faces
 export get_isboundary_face
 export OrientationStyle
+export Oriented
+export NonOriented
 export RegularityStyle
+export Regular
+export Irregular
 export is_oriented
 export is_regular
 export expand_cell_data

@@ -73,6 +73,8 @@ function get_prebasis(reffe::ReferenceFE)
   @abstractmethod
 end
 
+get_order(reffe::ReferenceFE) = get_order(get_prebasis(reffe))
+
 """
     get_dof_basis(reffe::ReferenceFE) -> Dof
 

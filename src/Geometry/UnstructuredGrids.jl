@@ -12,13 +12,14 @@ struct UnstructuredGrid{Dc,Dp,Tp,O} <: Grid{Dc,Dp}
   cell_nodes::Table{Int32,Vector{Int32},Vector{Int32}}
   reffes::Vector{LagrangianRefFE{Dc}}
   cell_types::Vector{Int8}
+  orientation_style::O
   @doc """
       function UnstructuredGrid(
         node_coordinates::Vector{Point{Dp,Tp}},
         cell_nodes::Table{Ti},
         reffes::Vector{<:LagrangianRefFE{Dc}},
         cell_types::Vector,
-        ::Val{B}=Val{false}()) where {Dc,Dp,Tp,Ti,B}
+        orientation_style::OrientationStyle=NonOriented()) where {Dc,Dp,Tp,Ti}
       end
 
   Low-level inner constructor.
@@ -28,8 +29,9 @@ struct UnstructuredGrid{Dc,Dp,Tp,O} <: Grid{Dc,Dp}
     cell_nodes::Table{Ti},
     reffes::Vector{<:LagrangianRefFE{Dc}},
     cell_types::Vector,
-    ::Val{B}=Val{false}()) where {Dc,Dp,Tp,Ti,B}
-    new{Dc,Dp,Tp,B}(node_coordinates,cell_nodes,reffes,cell_types)
+    orientation_style::OrientationStyle=NonOriented()) where {Dc,Dp,Tp,Ti}
+    B = typeof(orientation_style)
+    new{Dc,Dp,Tp,B}(node_coordinates,cell_nodes,reffes,cell_types,orientation_style)
   end
 end
 
@@ -51,7 +53,7 @@ function UnstructuredGrid(grid::UnstructuredGrid)
 end
 
 OrientationStyle(
-  ::Type{UnstructuredGrid{Dc,Dp,Tp,B}}) where {Dc,Dp,Tp,B} = Val{B}()
+  ::Type{UnstructuredGrid{Dc,Dp,Tp,B}}) where {Dc,Dp,Tp,B} = B()
 
 get_reffes(g::UnstructuredGrid) = g.reffes
 
@@ -149,7 +151,7 @@ function from_dict(::Type{UnstructuredGrid},dict::Dict{Symbol,Any})
     cell_nodes,
     reffes,
     cell_type,
-    Val(O))
+    O ? Oriented() : NonOriented())
 end
 
 function simplexify(grid::UnstructuredGrid)
@@ -170,7 +172,7 @@ function simplexify(grid::UnstructuredGrid)
     tcell_to_points,
     ctype_to_reffe,
     tcell_to_ctype,
-    Val{true}())
+    Oriented())
 end
 
 function _refine_grid_connectivity(cell_to_points::Table, ltcell_to_lpoints)

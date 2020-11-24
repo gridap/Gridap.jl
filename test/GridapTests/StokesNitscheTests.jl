@@ -69,8 +69,6 @@ l((v,q)) =
   ∫( v⋅f - q*g )*dΩ +
   ∫( (γ/h)*v⋅u - (n_Γ⋅∇(v))⋅u + (q*n_Γ)⋅u )*dΓ + ∫( s0⋅v )*dΓ0
 
-@test_broken begin
-
 # Define the FEOperator
 op = AffineFEOperator(a,l,X,X)
 
@@ -98,8 +96,4 @@ tol = 1.0e-9
 @test eu_h1 < tol
 @test ep_l2 < tol
 
-
-false
-end
-
-end
+end # module

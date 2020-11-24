@@ -41,10 +41,17 @@ function FESpace(
       dirichlet_masks)
   end
 
+  V = _add_constraint(F,cell_fe.max_order,constraint)
+
+  V
+end
+
+function _add_constraint(F,order,constraint)
   if constraint == nothing
     V = F
   elseif constraint == :zeromean
-    dΩ = LebesgueMeasure(trian,cell_fe.max_order)
+    trian = get_triangulation(F)
+    dΩ = LebesgueMeasure(trian,order)
     V = ZeroMeanFESpace(F,dΩ)
   else
     @unreachable """\n
@@ -52,15 +59,16 @@ function FESpace(
     Valid values for constraint: nothing, :zeromean
     """
   end
-
   V
 end
 
 function FESpace(
-  model::RestrictedDiscreteModel, cell_fe::CellFE; kwargs...)
+  model::RestrictedDiscreteModel, cell_fe::CellFE;constraint=nothing,kwargs...)
   model_portion = model.model
-  V_portion = FESpace(model_portion,cell_fe;kwargs...)
-  ExtendedFESpace(V_portion,model)
+  V_portion = FESpace(model_portion,cell_fe;constraint=nothing,kwargs...)
+  F = ExtendedFESpace(V_portion,model)
+  V = _add_constraint(F,cell_fe.max_order,constraint)
+  V
 end
 
 function FESpace(

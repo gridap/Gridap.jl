@@ -128,6 +128,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish CellData get_normal_vector
 using Gridap.CellData: ∫; export ∫
 @publish CellData get_cell_measure
+@publish CellData get_physical_coordinate
 
 @publish FESpaces FESpace
 @publish FESpaces TrialFESpace

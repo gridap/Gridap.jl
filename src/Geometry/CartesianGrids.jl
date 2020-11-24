@@ -191,7 +191,7 @@ struct CartesianGrid{D,T,F} <: Grid{D,D}
   end
 end
 
-OrientationStyle(::Type{<:CartesianGrid}) = Val{true}()
+OrientationStyle(::Type{<:CartesianGrid}) = Oriented()
 
 """
     get_cartesian_descriptor(grid::CartesianGrid)

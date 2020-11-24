@@ -506,6 +506,15 @@ end
   r
 end
 
+function return_value(k::IntegrationMap,aq::AbstractArray,w,jq::AbstractVector)
+  if size(aq,1) == length(w) && size(aq,1) == length(jq)
+    evaluate(k,aq,w,jq)
+  else
+    c = return_cache(k,aq,w,jq)
+    c.array
+  end
+end
+
 function return_cache(k::IntegrationMap,aq::AbstractArray,w,jq::AbstractVector)
   T = typeof( testitem(aq)*testitem(w)*meas(testitem(jq)) + testitem(aq)*testitem(w)*meas(testitem(jq)) )
   r = zeros(T,size(aq)[2:end])

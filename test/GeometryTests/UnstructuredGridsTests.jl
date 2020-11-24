@@ -16,7 +16,7 @@ cell_nodes = get_cell_nodes(trian)
 reffes = get_reffes(trian)
 cell_types = get_cell_type(trian)
 
-grid = UnstructuredGrid(node_coordinates,cell_nodes,reffes,cell_types,Val{true}())
+grid = UnstructuredGrid(node_coordinates,cell_nodes,reffes,cell_types,Oriented())
 test_grid(grid)
 @test is_oriented(grid) == true
 

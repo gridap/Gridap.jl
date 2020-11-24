@@ -212,6 +212,16 @@ function _sum_lazy_array(cache,a)
   r
 end
 
+function testitem(a::LazyArray{A,T} where A) where T
+  if length(a) > 0
+    first(a)
+  else
+    gi = testitem(a.g)
+    fi = map(testitem,a.f)
+    return_value(gi,fi...)
+  end::T
+end
+
 # Particular implementations for Fill
 
 #function lazy_map(::typeof(evaluate),f::Fill, a::Fill...)
