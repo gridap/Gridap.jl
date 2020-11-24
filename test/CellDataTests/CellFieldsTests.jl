@@ -24,6 +24,9 @@ x = get_cell_points(trian)
 @test get_array(x) == get_cell_coordinates(trian)
 @test get_cell_data(x) == get_cell_ref_coordinates(trian)
 
+px = get_physical_coordinate(trian)
+test_array(px(x),collect1d(get_array(x)))
+
 _x = change_domain(x,PhysicalDomain())
 @test DomainStyle(_x) == PhysicalDomain()
 @test get_array(_x) == get_cell_coordinates(trian)

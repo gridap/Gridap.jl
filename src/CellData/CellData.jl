@@ -69,6 +69,7 @@ export attach_dirichlet
 export attach_constraints_rows
 export attach_constraints_cols
 export identity_constraints
+export get_physical_coordinate
 
 export CellState
 export update_state!

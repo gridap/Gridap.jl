@@ -312,22 +312,6 @@ end
 #  convert_to_cell_field(object,cm)
 #end
 #
-#"""
-#    get_physical_coordinate(trian::Triangulation)
-#
-#In contrast to get_cell_map, the returned object:
-#- is a [`CellField`](@ref)
-#- its gradient is the identity tensor
-#"""
-#function get_physical_coordinate(trian::Triangulation)
-#  CellField(_phys_coord,trian)
-#end
-#
-#_phys_coord(x) = x
-#
-#_phys_coord_grad(x) = one(typeof(outer(x,x)))
-#
-#gradient(::typeof(_phys_coord)) = _phys_coord_grad
 
 # Helpers for Triangulation
 
