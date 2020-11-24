@@ -299,12 +299,12 @@ function get_children(n::TreeNode, a::FaceCompressedVector)
   (similar_tree_node(n,a.ctype_lface_pindex_to_value),similar_tree_node(n,a.glue))
 end
 
-function lazy_map(k::LinearCombinationMap,::Type{T},b::FaceCompressedVector,c::Fill) where T
+function lazy_map(k::Fields.LinearCombinationMap,::Type{T},b::FaceCompressedVector,c::Fill) where T
   d = CompressedArray([c.value,],Fill(1,length(c)))
   lazy_map(k,T,a,b,d)
 end
 
-function lazy_map(k::LinearCombinationMap,::Type{T},b::FaceCompressedVector,c::CompressedArray) where T
+function lazy_map(k::Fields.LinearCombinationMap,::Type{T},b::FaceCompressedVector,c::CompressedArray) where T
   if c.ptrs === b.glue.face_to_ftype || c.ptrs == b.glue.face_to_ftype
 
     ctype_lface_pindex_to_r = Vector{Vector{Vector{T}}}(undef,length(b.ctype_lface_pindex_to_value))

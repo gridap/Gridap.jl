@@ -43,13 +43,13 @@ cell_to_r = fill(f(x),ncells)
 
 cell_to_f = lazy_map(linear_combination,cell_to_b,cell_to_a)
 cell_to_fx = lazy_map(evaluate,cell_to_f,cell_to_x)
-@test isa(cell_to_fx.g.value,LinearCombinationMap)
+@test isa(cell_to_fx.g.value,Fields.LinearCombinationMap)
 test_array(cell_to_fx,cell_to_r)
 
 cell_to_∇r = fill(∇(f)(x),ncells)
 cell_to_∇f = lazy_map(∇,cell_to_f)
 cell_to_∇fx = lazy_map(evaluate,cell_to_∇f,cell_to_x)
-@test isa(cell_to_∇fx.g.value,LinearCombinationMap)
+@test isa(cell_to_∇fx.g.value,Fields.LinearCombinationMap)
 test_array(cell_to_∇fx,cell_to_∇r)
 
 #using BenchmarkTools
@@ -69,13 +69,13 @@ cell_to_r = fill( evaluate(linear_combination(b,a),x),ncells)
 
 cell_to_f = lazy_map(linear_combination,cell_to_b,cell_to_a)
 cell_to_fx = lazy_map(evaluate,cell_to_f,cell_to_x)
-@test isa(cell_to_fx.g.value,LinearCombinationMap)
+@test isa(cell_to_fx.g.value,Fields.LinearCombinationMap)
 test_array(cell_to_fx,cell_to_r)
 
 cell_to_∇r = fill(evaluate(Broadcasting(∇)(f),x),ncells)
 cell_to_∇f = lazy_map(Broadcasting(∇),cell_to_f)
 cell_to_∇fx = lazy_map(evaluate,cell_to_∇f,cell_to_x)
-@test isa(cell_to_∇fx.g.value,LinearCombinationMap)
+@test isa(cell_to_∇fx.g.value,Fields.LinearCombinationMap)
 test_array(cell_to_∇fx,cell_to_∇r)
 
 #using BenchmarkTools
@@ -96,13 +96,13 @@ cell_to_c = lazy_map(linear_combination,cell_to_b,cell_to_a)
 
 cell_to_f = lazy_map(transpose,cell_to_c)
 cell_to_fx = lazy_map(evaluate,cell_to_f,cell_to_x)
-@test isa(cell_to_fx.g.value,TransposeMap)
+@test isa(cell_to_fx.g.value,Fields.TransposeMap)
 cell_to_r = fill(evaluate(transpose(c),x),ncells)
 test_array(cell_to_fx,cell_to_r)
 
 cell_to_∇f = lazy_map(Broadcasting(∇),cell_to_f)
 cell_to_∇fx = lazy_map(evaluate,cell_to_∇f,cell_to_x)
-@test isa(cell_to_fx.g.value,TransposeMap)
+@test isa(cell_to_fx.g.value,Fields.TransposeMap)
 cell_to_∇r = fill(evaluate(transpose(∇.(c)),x),ncells)
 test_array(cell_to_∇fx,cell_to_∇r)
 
@@ -216,20 +216,20 @@ cell_to_f = lazy_map(Broadcasting(Operation(+)),cell_to_b,cell_to_a)
 cell_to_fx = lazy_map(evaluate,cell_to_f,cell_to_x)
 test_array(cell_to_fx,cell_to_r)
 #@test cell_to_fx.g.value == Broadcasting(+)
-@test cell_to_fx.g.value == BroadcastingFieldOpMap(+)
+@test cell_to_fx.g.value == Fields.BroadcastingFieldOpMap(+)
 
 cell_to_∇f = lazy_map(Broadcasting(∇),cell_to_f)
 cell_to_∇fx = lazy_map(evaluate,cell_to_∇f,cell_to_x)
 test_array(cell_to_∇fx,cell_to_∇r)
 #@test cell_to_∇fx.g.value == Broadcasting(+)
-@test cell_to_∇fx.g.value == BroadcastingFieldOpMap(+)
+@test cell_to_∇fx.g.value == Fields.BroadcastingFieldOpMap(+)
 
 T = GenericField{Nothing}
 cell_to_f = lazy_map(Broadcasting(Operation(+)),T,cell_to_b,cell_to_a)
 cell_to_fx = lazy_map(evaluate,cell_to_f,cell_to_x)
 test_array(cell_to_fx,cell_to_r)
 #@test cell_to_fx.g.value == Broadcasting(+)
-@test cell_to_fx.g.value == BroadcastingFieldOpMap(+)
+@test cell_to_fx.g.value == Fields.BroadcastingFieldOpMap(+)
 
 # Operations with Broadcasting (product)
 
@@ -301,12 +301,12 @@ j_to_x = Fill(x,length(j_to_cell))
 
 j_to_cx = lazy_map(evaluate,j_to_c,j_to_x)
 j_to_r = fill( f(x), length(j_to_cell) )
-@test isa(j_to_cx.g.value,LinearCombinationMap)
+@test isa(j_to_cx.g.value,Fields.LinearCombinationMap)
 test_array(j_to_cx,j_to_r)
 
 j_to_∇c = lazy_map(Broadcasting(∇),j_to_c)
 j_to_∇cx = lazy_map(evaluate,j_to_∇c,j_to_x)
-@test isa(j_to_∇cx.g.value,LinearCombinationMap)
+@test isa(j_to_∇cx.g.value,Fields.LinearCombinationMap)
 j_to_∇r = fill( ∇(f)(x), length(j_to_cell) )
 test_array(j_to_∇cx,j_to_∇r)
 

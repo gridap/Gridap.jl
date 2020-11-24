@@ -86,7 +86,7 @@ function FESpaces.get_cell_shapefuns(f::MultiFieldFESpace)
   all_bases = map(1:nfields) do i
     bsize = (nfields,)
     dv = blocks[i]
-    cell_basis = lazy_map(BlockFieldArrayCooMap(bsize,[(i,)]),cell_axes,get_cell_data(dv))
+    cell_basis = lazy_map(Fields.BlockFieldArrayCooMap(bsize,[(i,)]),cell_axes,get_cell_data(dv))
     FEBasis(cell_basis,get_triangulation(dv),TestBasis(),DomainStyle(dv))
   end
   MultiFieldCellField(all_bases)

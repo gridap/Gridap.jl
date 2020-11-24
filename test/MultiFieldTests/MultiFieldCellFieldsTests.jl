@@ -13,6 +13,8 @@ using Gridap.MultiField
 using Gridap.TensorValues
 using Test
 
+using Gridap.Arrays: BlockArrayCooMap
+
 domain = (0,1,0,1)
 cells = (2,2)
 model = CartesianDiscreteModel(domain,cells)

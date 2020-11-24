@@ -53,14 +53,6 @@ function IndexStyle(a::Type{CompressedArray{T,N,A,P}}) where {T,N,A,P}
   IndexStyle(P)
 end
 
-#function lazy_map(::typeof(evaluate),g::CompressedArray...)
-#  if _have_same_ptrs(g)
-#    _lazy_map_compressed(g...)
-#  else
-#    LazyArray(g...)
-#  end
-#end
-
 function lazy_map(::typeof(evaluate),::Type{T},g::CompressedArray...) where T
   if _have_same_ptrs(g)
     _lazy_map_compressed(g...)
@@ -68,17 +60,6 @@ function lazy_map(::typeof(evaluate),::Type{T},g::CompressedArray...) where T
     LazyArray(T,g...)
   end
 end
-
-#function lazy_map(::typeof(evaluate),g::Union{CompressedArray,Fill}...)
-#  g_compressed = _find_compressed_ones(g)
-#  if _have_same_ptrs(g_compressed)
-#    g1 = first(g_compressed)
-#    g_all_compressed = map(gi->_compress(gi,g1),g)
-#    _lazy_map_compressed(g_all_compressed...)
-#  else
-#    LazyArray(g...)
-#  end
-#end
 
 function lazy_map(::typeof(evaluate),::Type{T},g::Union{CompressedArray,Fill}...) where T
   g_compressed = _find_compressed_ones(g)

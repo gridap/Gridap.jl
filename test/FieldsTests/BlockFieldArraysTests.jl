@@ -8,6 +8,10 @@ using BlockArrays
 using FillArrays
 #using Gridap.Fields: MaskedField, MaskedFieldArray
 
+using Gridap.Fields: BlockFieldArrayCoo
+using Gridap.Fields: BlockFieldArrayCooMap
+using Gridap.Arrays: BlockArrayCooMap
+
 using Test
 
 p = Point(1.0,2.0)

@@ -189,8 +189,8 @@ function _fix_cell_basis_dofs_at_skeleton(pair,::TestBasis)
     (append_ranges([axp[1],axm[1]]),)
   end
   cell_axes = lazy_map(skeleton_axes_test,cell_axes_plus,cell_axes_minus)
-  plus = lazy_map(BlockFieldArrayCooMap((2,),[(1,)]),cell_axes,pair.plus)
-  minus = lazy_map(BlockFieldArrayCooMap((2,),[(2,)]),cell_axes,pair.minus)
+  plus = lazy_map(Fields.BlockFieldArrayCooMap((2,),[(1,)]),cell_axes,pair.plus)
+  minus = lazy_map(Fields.BlockFieldArrayCooMap((2,),[(2,)]),cell_axes,pair.minus)
   SkeletonPair(plus,minus)
 end
 
@@ -203,8 +203,8 @@ function _fix_cell_basis_dofs_at_skeleton(pair,::TrialBasis)
     (r1,r2)
   end
   cell_axes = lazy_map(skeleton_axes_trial,cell_axes_plus,cell_axes_minus)
-  plus = lazy_map(BlockFieldArrayCooMap((1,2),[(1,1)]),cell_axes,pair.plus)
-  minus = lazy_map(BlockFieldArrayCooMap((1,2),[(1,2)]),cell_axes,pair.minus)
+  plus = lazy_map(Fields.BlockFieldArrayCooMap((1,2),[(1,1)]),cell_axes,pair.plus)
+  minus = lazy_map(Fields.BlockFieldArrayCooMap((1,2),[(1,2)]),cell_axes,pair.minus)
   SkeletonPair(plus,minus)
 end
 
