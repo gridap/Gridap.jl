@@ -9,6 +9,7 @@ struct UnstructuredGridTopology{Dc,Dp,T,O} <: GridTopology{Dc,Dp}
   n_m_to_nface_to_mfaces::Matrix{Table{Int32,Vector{Int32},Vector{Int32}}}
   cell_type::Vector{Int8}
   polytopes::Vector{Polytope{Dc}}
+  orientation_style::O
 end
 
 # Constructors
@@ -19,14 +20,14 @@ end
       cell_vertices::Table,
       cell_type::Vector{<:Integer},
       polytopes::Vector{<:Polytope},
-      orientation::Val{O}=Val{false}()) where O
+      orientation_style::OrientationStyle=NonOriented())
 """
 function UnstructuredGridTopology(
   vertex_coordinates::Vector{<:Point},
   cell_vertices::Table,
   cell_type::Vector{<:Integer},
   polytopes::Vector{<:Polytope},
-  orientation::Val{O}=Val{false}()) where O
+  orientation_style::OrientationStyle=NonOriented())
 
   D = num_dims(first(polytopes))
   n = D+1
@@ -38,12 +39,13 @@ function UnstructuredGridTopology(
   P = eltype(vertex_coordinates)
   Dp = length(P)
   T = eltype(P)
+  O = typeof(orientation_style)
 
   UnstructuredGridTopology{D,Dp,T,O}(
     vertex_coordinates,
     n_m_to_nface_to_mfaces,
     cell_type,
-    polytopes)
+    polytopes,orientation_style)
 
 end
 
@@ -53,14 +55,14 @@ end
       d_to_dface_vertices::Vector{<:Table},
       cell_type::Vector{<:Integer},
       polytopes::Vector{<:Polytope},
-      orientation::Val{O}=Val{false}()) where O
+      orientation_style::OrientationStyle=NonOriented())
 """
 function UnstructuredGridTopology(
   vertex_coordinates::Vector{<:Point},
   d_to_dface_vertices::Vector{<:Table},
   cell_type::Vector{<:Integer},
   polytopes::Vector{<:Polytope},
-  orientation::Val{O}=Val{false}()) where O
+  orientation_style::OrientationStyle=NonOriented())
 
   D = num_dims(first(polytopes))
   n = D+1
@@ -76,12 +78,14 @@ function UnstructuredGridTopology(
   P = eltype(vertex_coordinates)
   Dp = length(P)
   T = eltype(P)
+  O = typeof(orientation_style)
 
   UnstructuredGridTopology{D,Dp,T,O}(
     vertex_coordinates,
     n_m_to_nface_to_mfaces,
     cell_type,
-    polytopes)
+    polytopes,
+    orientation_style)
 
 end
 
@@ -312,7 +316,7 @@ end
 
 # Implementation of abstract API
 
-OrientationStyle(::Type{UnstructuredGridTopology{Dc,Dp,T,O}}) where {Dc,Dp,T,O} = Val{O}()
+OrientationStyle(::Type{UnstructuredGridTopology{Dc,Dp,T,O}}) where {Dc,Dp,T,O} = O()
 
 get_vertex_coordinates(g::UnstructuredGridTopology) = g.vertex_coordinates
 

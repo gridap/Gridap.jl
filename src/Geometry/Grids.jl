@@ -29,23 +29,31 @@ abstract type Grid{Dc,Dp} <: Triangulation{Dc,Dp} end
 
 # Traits
 
-"""
-    OrientationStyle(::Type{<:Grid}) -> Val{Bool}
-    OrientationStyle(::Grid) -> Val{Bool}
+abstract type OrientationStyle end
+struct Oriented <: OrientationStyle end
+struct NonOriented <: OrientationStyle end
 
-`Val{true}()` if has oriented faces, `Val{false}()` otherwise (default).
+"""
+    OrientationStyle(::Type{<:Grid})
+    OrientationStyle(::Grid)
+
+`Oriented()` if has oriented faces, `NonOriented()` otherwise (default).
 """
 OrientationStyle(a::Grid) = OrientationStyle(typeof(a))
-OrientationStyle(::Type{<:Grid}) = Val{false}()
+OrientationStyle(::Type{<:Grid}) = NonOriented()
+
+abstract type RegularityStyle end
+struct Regular <: RegularityStyle end
+struct Irregular <: RegularityStyle end
 
 """
-    RegularityStyle(::Type{<:Grid}) -> Val{Bool}
-    RegularityStyle(::Grid) -> Val{Bool}
+    RegularityStyle(::Type{<:Grid})
+    RegularityStyle(::Grid)
 
-`Val{true}()` if no hanging-nodes (refault), `Val{false}()` otherwise.
+`Regular()` if no hanging-nodes default), `Irregular()` otherwise.
 """
 RegularityStyle(a::Grid) = RegularityStyle(typeof(a))
-RegularityStyle(::Type{<:Grid}) = Val{true}()
+RegularityStyle(::Type{<:Grid}) = Regular()
 
 # Interface
 
@@ -75,8 +83,10 @@ function test_grid(trian::Grid)
   @test num_nodes(trian) == length(nodes_coords)
   @test isa(is_oriented(trian),Bool)
   @test isa(is_regular(trian),Bool)
-  @test OrientationStyle(trian) in (Val{false}(), Val{true}())
-  @test RegularityStyle(trian) in (Val{false}(), Val{true}())
+  @test OrientationStyle(trian) in (Oriented(), NonOriented())
+  @test RegularityStyle(trian) in (Regular(), Irregular())
+  @test is_oriented(trian) == (OrientationStyle(trian) == Oriented())
+  @test is_regular(trian) == (RegularityStyle(trian) == Regular())
 end
 
 # Methods from triangulation
@@ -93,15 +103,15 @@ end
     is_oriented(::Type{<:Grid}) -> Bool
     is_oriented(a::Grid) -> Bool
 """
-is_oriented(a::Grid) = get_val_parameter(OrientationStyle(a))
-is_oriented(a::Type{<:Grid}) = get_val_parameter(OrientationStyle(a))
+is_oriented(a::Grid) = is_oriented(typeof(a))
+is_oriented(a::Type{T}) where T<:Grid = OrientationStyle(T) == Oriented()
 
 """
     is_regular(::Type{<:Grid}) -> Bool
     is_regular(a::Grid) -> Bool
 """
-is_regular(a::Grid) = get_val_parameter(RegularityStyle(a))
-is_regular(a::Type{<:Grid}) = get_val_parameter(RegularityStyle(a))
+is_regular(a::Grid) = is_regular(typeof(a))
+is_regular(a::Type{T}) where T<:Grid = RegularityStyle(T) == Regular()
 
 """
     Grid(reffe::LagrangianRefFE)
