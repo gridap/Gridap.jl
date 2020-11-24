@@ -65,6 +65,11 @@ function get_face_own_dofs(reffe::GenericRefFE{:RaviartThomas}, conf::DivConform
   get_face_dofs(reffe)
 end
 
+# Make it work for quads for the moment
+function get_dof_basis(reffe::GenericRefFE{:RaviartThomas},phi::Field)
+  get_dof_basis(reffe)
+end
+
 ## First implement this:
 #function get_dof_basis(reffe::GenericRefFE{:RaviartThomas},phi::Field)
 #   p = get_polytope(reffe)
@@ -388,7 +393,7 @@ function lazy_map(
   cell_detJ = lazy_map(Operation(det),cell_Jt)
   cell_J = lazy_map(Operation(transpose),cell_Jt)
 
-  lazy_map(Broadcasting(Operation(k)))(cell_ref_shapefuns,cell_J,cell_detJ)
+  lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_J,cell_detJ)
 end
 
 function evaluate!(cache,::ContraVariantPiolaMap,s::MomentBasedDofBasis,phi::Field)
