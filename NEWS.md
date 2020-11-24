@@ -4,11 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.15.0] - Unreleased
+
+This version is a major (backwards-incompatible) refactoring of the project which is not summarized here for the sake of brevity. Most of the functionality of v0.14.0 is available in v0.15.0, but possibly with a significantly different API. See [here](https://github.com/gridap/Tutorials/compare/v0.14.0...v0.15.0) the changes in the sources of the Gridap Tutorials between versions 0.14.0 and 0.15.0 to effectively see the major changes in the API.
+
+## [0.14.2] - 2020-11-24
 
 ### Added
 - Added additional tensor operations and new double contraction notation `⋅²`. Implemented a `zero` constructor for `ThirdOrderTensorValues` to allow integration of 3-tensors. Since PR [#415](https://github.com/gridap/Gridap.jl/pull/415/).
-- Added `compile/create_gridap_image.jl` Julia script that lets one to create a custom sysimage of Gridap using the so-called `PackageCompiler.jl` Julia package; see `compile/README.md` for additional details. Since PR [#432](https://github.com/gridap/Gridap.jl/pull/432/).
 
 ### Fixed
  - Bug-fix for 32-bit Julia: Replace all occurences of Int64 by Int. Since PR [#445](https://github.com/gridap/Gridap.jl/pull/445).

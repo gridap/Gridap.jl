@@ -3,10 +3,6 @@ struct MockField{T<:Number} <: Field
   v::T
 end
 
-#MockField(D::Int,v::Number) = MockField{D}(v)
-
-#mock_field(D::Int,v::Number) = MockField{D}(v)
-
 function evaluate!(c,f::MockField,x::Point)
   f.v
 end

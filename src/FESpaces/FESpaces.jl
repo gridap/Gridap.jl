@@ -21,6 +21,8 @@ using Gridap.Geometry
 using Gridap.CellData
 using Gridap.TensorValues
 
+using Gridap.Arrays: BlockArrayCooMap
+
 import Gridap.Fields: gradient
 import Gridap.Fields: ∇∇
 import Gridap.Arrays: array_cache
@@ -166,10 +168,6 @@ export DirichletFESpace
 export FESpaceWithLinearConstraints
 
 export FiniteElements
-
-export autodiff_cell_residual_from_energy
-export autodiff_cell_jacobian_from_energy
-export autodiff_cell_jacobian_from_residual
 
 include("FESpaceInterface.jl")
 
