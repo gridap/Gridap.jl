@@ -46,6 +46,7 @@ export ThirdOrderTensorValue
 
 export inner, outer, meas
 export mutable
+export Mutable
 export symmetric_part
 export n_components
 export num_components
@@ -53,7 +54,6 @@ export change_eltype
 export diagonal_tensor
 export ⊙
 export ⊗
-export ⊡
 export ⋅¹
 export ⋅²
 export double_contraction
@@ -71,7 +71,6 @@ import Base: CartesianIndices
 import Base: LinearIndices
 import Base: adjoint
 import Base: transpose
-#import Base: :
 
 import LinearAlgebra: det, inv, tr, cross, dot, norm
 # Reexport from LinearAlgebra (just for convenience)

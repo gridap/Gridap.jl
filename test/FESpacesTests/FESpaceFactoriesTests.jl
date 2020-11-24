@@ -8,150 +8,138 @@ using Gridap.TensorValues
 using Gridap.ReferenceFEs
 using Gridap.FESpaces
 using Gridap.CellData
+using Gridap.FESpaces: ExtendedFESpace
 
 domain = (0,1,0,1)
-partition = (3,3)
+partition = (10,10)
 model = CartesianDiscreteModel(domain,partition)
 order = 3
 
-V = FESpace(model=model,reffe=QUAD4,conformity=GradConformity())
-v1 = FEFunction(V,rand(num_free_dofs(V)))
+# From a single reffe
+
+V = FESpace(model,QUAD4)
 @test isa(V,UnconstrainedFESpace)
 
-V = FESpace(model=model,reffe=QUAD4,conformity=L2Conformity())
-v2 = FEFunction(V,rand(num_free_dofs(V)))
+V = FESpace(model,QUAD4,conformity=:H1)
 @test isa(V,UnconstrainedFESpace)
+@test num_free_dofs(V) == 121
 
-V = FESpace(model=model,reffe=QUAD4,conformity=CDConformity((CONT,DISC)))
-v3 = FEFunction(V,rand(num_free_dofs(V)))
+V = FESpace(model,QUAD4,conformity=:L2)
 @test isa(V,UnconstrainedFESpace)
+@test num_free_dofs(V) == 400
 
-#using Gridap.Visualization
-#writevtk(Triangulation(model),"results",cellfields=["v1"=>v1,"v2"=>v2,"v3"=>v3])
-
-V = FESpace(
- model=model,
- valuetype=Float64,
- reffe=:Lagrangian,
- order=order,
- conformity=:L2)
-
-@test isa(V,UnconstrainedFESpace)
-
-V = FESpace(
- triangulation=get_triangulation(model),
- valuetype=Float64,
- reffe=:Lagrangian,
- order=order,
- conformity=:L2)
-
-@test isa(V,UnconstrainedFESpace)
-
-V = FESpace(
- model=model,
- valuetype=Float64,
- reffe=:SLagrangian,
- order=order,
- conformity=:H1)
-
-@test isa(V,UnconstrainedFESpace)
-
-V = FESpace(
- model=model,
- valuetype=Float64,
- reffe=:QLagrangian,
- conformity=:H1,
- order=order,
- dirichlet_tags="boundary")
-
-@test isa(V,UnconstrainedFESpace)
-
-D = num_point_dims(model)
-
-V = FESpace(
- model=model,
- valuetype=VectorValue{D,Float64},
- reffe=:Lagrangian,
- order=order,
- conformity=:H1,
- dirichlet_tags="boundary",
- dirichlet_masks=(true,false))
-
-@test isa(V,UnconstrainedFESpace)
-
-V = FESpace(
- model=model,
- valuetype=VectorValue{D,Float64},
- reffe=:SLagrangian,
- order=order,
- conformity=:H1,
- dirichlet_tags=[1,2],
- dirichlet_masks=[(true,false),(false,true)])
-
-@test isa(V,UnconstrainedFESpace)
-
-V = FESpace(
- model=model,
- valuetype=Float64,
- reffe=:PLagrangian,
- order=order,
- conformity=:L2)
-
-#using Gridap.Visualization
-#uh = FEFunction(V,rand(num_free_dofs(V)))
-#writevtk(get_triangulation(model),"trian",nsubcells=20,cellfields=["uh"=>uh])
-
-@test isa(V,UnconstrainedFESpace)
-
-V = FESpace(
- model=model,
- valuetype=Float64,
- reffe=:PLagrangian,
- order=order,
- conformity=:L2,
- constraint=:zeromean)
-
+V = FESpace(model,QUAD4,conformity=:L2,constraint=:zeromean)
 @test isa(V,ZeroMeanFESpace)
 
-trian = reindex(Triangulation(model),1:4)
-quad = CellQuadrature(trian,order)
+# From parameter list describing the reffe
 
-V = FESpace(
- model=model,
- valuetype=Float64,
- reffe=:PLagrangian,
- order=order,
- conformity=:L2,
- constraint=:zeromean,
- zeromean_trian = trian,
- zeromean_quad = quad)
+reffe = ReferenceFE(:Lagrangian,Float64,order)
 
-@test abs(V.vol - 4/9) < 1.0e-9
+V = FESpace(model,reffe)
+@test isa(V,UnconstrainedFESpace)
 
-V = FESpace(
- model=model,
- valuetype=Float64,
- reffe=:PLagrangian,
- order=order,
- conformity=:L2,
- constraint=:zeromean,
- zeromean_trian = trian)
+V = FESpace(model,reffe,conformity=:H1)
+@test isa(V,UnconstrainedFESpace)
 
-@test abs(V.vol - 4/9) < 1.0e-9
+V = FESpace(model,reffe,conformity=:L2)
+@test isa(V,UnconstrainedFESpace)
 
-@testset "FESpace argchecks" begin
-    model = CartesianDiscreteModel((0, 2), 10)
-    trian = Triangulation(model)
-    TestFESpace(model=model, reffe=:Lagrangian, order=1, valuetype=Float64, dirichlet_tags="boundary")
-    FESpace(model=model, reffe=:Lagrangian, order=1, valuetype=Float64, dirichlet_tags="boundary")
+V = FESpace(model,reffe,conformity=:L2,constraint=:zeromean)
+@test isa(V,ZeroMeanFESpace)
 
-    # dirichlet_tags spelling error!
-    @test_throws ArgumentError TestFESpace(model=model, reffe=:Lagrangian, order=1, valuetype=Float64,
-        dirichlet_tag="boundary"
-    )
-    @test_throws ArgumentError FESpace(model=model, reffe=:Lagrangian, order=1, valuetype=Float64,
-        dirichlet_tag="boundary"
-    )
+# From a cell-wise vector of reffes
+
+cell_reffe = ReferenceFE(model,:Lagrangian,Float64,order)
+
+V = FESpace(model,cell_reffe)
+@test isa(V,UnconstrainedFESpace)
+
+V = FESpace(model,cell_reffe,conformity=:H1)
+@test isa(V,UnconstrainedFESpace)
+
+V = FESpace(model,cell_reffe,conformity=:L2)
+@test isa(V,UnconstrainedFESpace)
+
+V = FESpace(model,cell_reffe,conformity=:L2,constraint=:zeromean)
+@test isa(V,ZeroMeanFESpace)
+
+# From a CellFE
+
+cell_fe = FiniteElements(PhysicalDomain(),model,:Lagrangian,Float64,order)
+
+V = FESpace(model,cell_fe)
+@test isa(V,UnconstrainedFESpace)
+
+V = FESpace(model,cell_fe,conformity=:L2)
+@test isa(V,UnconstrainedFESpace)
+
+V = FESpace(model,cell_fe,conformity=:L2,constraint=:zeromean)
+@test isa(V,ZeroMeanFESpace)
+
+# Now from a restricted model
+
+const R = 0.7
+
+function is_in(coords)
+  n = length(coords)
+  x = (1/n)*sum(coords)
+  d = x[1]^2 + x[2]^2 - R^2
+  d < 0
 end
+
+Ω = Triangulation(model)
+cell_coords = get_cell_coordinates(Ω)
+cell_mask = lazy_map(is_in,cell_coords)
+model_in = DiscreteModel(model,cell_mask)
+
+# From a single reffe
+
+V = FESpace(model_in,QUAD4)
+@test isa(V,ExtendedFESpace)
+
+V = FESpace(model_in,QUAD4,conformity=:L2)
+@test isa(V,ExtendedFESpace)
+
+V = FESpace(model_in,QUAD4,conformity=:L2,constraint=:zeromean)
+@test isa(V,ZeroMeanFESpace)
+
+# From parameter list describing the reffe
+
+reffe = ReferenceFE(:Lagrangian,Float64,order)
+
+V = FESpace(model_in,reffe)
+@test isa(V,ExtendedFESpace)
+
+V = FESpace(model_in,reffe,conformity=:L2)
+@test isa(V,ExtendedFESpace)
+
+V = FESpace(model_in,reffe,conformity=:L2,constraint=:zeromean)
+@test isa(V,ZeroMeanFESpace)
+
+# From a cell-wise vector of reffes
+
+cell_reffe = ReferenceFE(model_in,:Lagrangian,Float64,order)
+
+V = FESpace(model_in,cell_reffe)
+@test isa(V,ExtendedFESpace)
+
+V = FESpace(model_in,cell_reffe,conformity=:L2)
+@test isa(V,ExtendedFESpace)
+
+V = FESpace(model_in,cell_reffe,conformity=:L2,constraint=:zeromean)
+@test isa(V,ZeroMeanFESpace)
+
+# From a CellFE
+
+cell_fe = FiniteElements(PhysicalDomain(),model_in,:Lagrangian,Float64,order)
+
+V = FESpace(model_in,cell_fe)
+@test isa(V,ExtendedFESpace)
+
+V = FESpace(model_in,cell_fe,conformity=:L2)
+@test isa(V,ExtendedFESpace)
+
+V = FESpace(model_in,cell_fe,conformity=:L2,constraint=:zeromean)
+@test isa(V,ZeroMeanFESpace)
 
 end # module

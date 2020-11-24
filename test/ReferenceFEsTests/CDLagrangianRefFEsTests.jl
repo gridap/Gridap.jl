@@ -16,7 +16,7 @@ reffe = _CDLagrangianRefFE(T,QUAD,1,(CONT,DISC))
 test_lagrangian_reference_fe(reffe)
 
 conf = CDConformity( (CONT,DISC) )
-@test conf == get_default_conformity(reffe)
+@test conf == Conformity(reffe)
 @test get_face_own_dofs(QUAD4,conf) == get_face_own_dofs(reffe)
 @test get_face_own_dofs_permutations(QUAD4,conf) == get_face_own_dofs_permutations(reffe)
 
@@ -37,12 +37,16 @@ test_lagrangian_reference_fe(reffe)
 
 T = VectorValue{2,Float64}
 reffe = LagrangianRefFE(T,QUAD,(2,0))
-@test get_default_conformity(reffe) == CDConformity((CONT,DISC))
+@test Conformity(reffe) == CDConformity((CONT,DISC))
 test_lagrangian_reference_fe(reffe)
 
 T = VectorValue{3,Float64}
 reffe = LagrangianRefFE(T,HEX,(0,2,0))
-@test get_default_conformity(reffe) == CDConformity((DISC,CONT,DISC))
+@test Conformity(reffe) == CDConformity((DISC,CONT,DISC))
+test_lagrangian_reference_fe(reffe)
+
+reffe = ReferenceFE(HEX,:Lagrangian,T,(0,2,0))
+@test Conformity(reffe) == CDConformity((DISC,CONT,DISC))
 test_lagrangian_reference_fe(reffe)
 
 reffe = LagrangianRefFE(T,QUAD,(2,2))

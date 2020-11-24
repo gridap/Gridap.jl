@@ -23,8 +23,8 @@ function _lazy_split(f,n)
   @assert n <= l
   ids_a = collect(1:n)
   ids_b = collect((n+1):l)
-  a = reindex(f,ids_a)
-  b = reindex(f,ids_b)
+  a = lazy_map(Reindex(f),ids_a)
+  b = lazy_map(Reindex(f),ids_b)
   a,b
 end
 
@@ -89,32 +89,33 @@ function getindex!(cache,v::AppendedArray,i::Integer)
   end
 end
 
-function apply(f,a::AppendedArray...)
+function lazy_map(::typeof(evaluate),::Type{T},b::Fill,a::AppendedArray...) where T
+  f = b.value
   la = map(ai->length(ai.a),a)
   lb = map(ai->length(ai.b),a)
   if all(la .== first(la)) && all(lb .== first(lb))
-    c_a = apply(f,map(ai->ai.a,a)...)
-    c_b = apply(f,map(ai->ai.b,a)...)
+    c_a = lazy_map(f,map(ai->ai.a,a)...)
+    c_b = lazy_map(f,map(ai->ai.b,a)...)
     lazy_append(c_a,c_b)
   else
-    s = common_size(a...)
-    apply(Fill(f,s...),a...)
+    s = _common_size(a...)
+    LazyArray(T,Fill(f,s...),a...)
   end
 end
 
-function apply(::Type{T},f,a::AppendedArray...) where T
+function lazy_map(k::typeof(evaluate),::Type{T},a::AppendedArray...) where T
+  @check all(map(i->length(i)==length(a[1]),a))
   la = map(ai->length(ai.a),a)
-  lb = map(ai->length(ai.b),a)
-  if all(la .== first(la)) && all(lb .== first(lb))
-    c_a = apply(T,f,map(ai->ai.a,a)...)
-    c_b = apply(T,f,map(ai->ai.b,a)...)
+  if all(la .== first(la))
+    c_a = lazy_map(k,map(ai->ai.a,a)...)
+    c_b = lazy_map(k,map(ai->ai.b,a)...)
     lazy_append(c_a,c_b)
   else
-    s = common_size(a...)
-    apply(T,Fill(f,s...),a...)
+    LazyArray(T,a...)
   end
 end
 
+# Very important optimization to compute error norms efficiently e.g. in EmbeddedFEM
 function Base.sum(a::AppendedArray)
   sum(a.a) + sum(a.b)
 end

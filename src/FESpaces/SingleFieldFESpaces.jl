@@ -5,12 +5,6 @@ abstract type SingleFieldFESpace <: FESpace end
 
 """
 """
-function get_cell_dof_basis(f::SingleFieldFESpace)
-  @abstractmethod
-end
-
-"""
-"""
 function num_dirichlet_dofs(f::SingleFieldFESpace)
   @abstractmethod
 end
@@ -18,7 +12,8 @@ end
 """
 """
 function zero_dirichlet_values(f::SingleFieldFESpace)
-  @abstractmethod
+  V = get_vector_type(f)
+  allocate_vector(V,num_dirichlet_dofs(f))
 end
 
 """
@@ -48,11 +43,10 @@ end
 """
 """
 function test_single_field_fe_space(f::SingleFieldFESpace,pred=(==))
-  fe_basis = get_cell_basis(f)
+  fe_basis = get_cell_shapefuns(f)
   @test isa(fe_basis,CellField)
-  @test is_basis(fe_basis)
   test_fe_space(f)
-  cell_dofs = get_cell_dofs(f)
+  cell_dofs = get_cell_dof_ids(f)
   dirichlet_values = zero_dirichlet_values(f)
   @test length(dirichlet_values) == num_dirichlet_dofs(f)
   free_values = zero_free_values(f)
@@ -75,7 +69,7 @@ function test_single_field_fe_space(f::SingleFieldFESpace,pred=(==))
     @test maximum(get_dirichlet_dof_tag(f)) <= num_dirichlet_tags(f)
   end
   cell_dof_basis = get_cell_dof_basis(f)
-  @test isa(CellField(f,get_cell_dofs(f)),CellField)
+  @test isa(cell_dof_basis,CellDof)
 end
 
 function test_single_field_fe_space(f,matvecdata,matdata,vecdata,pred=(==))
@@ -83,45 +77,7 @@ function test_single_field_fe_space(f,matvecdata,matdata,vecdata,pred=(==))
   test_fe_space(f,matvecdata,matdata,vecdata)
 end
 
-"""
-"""
-function CellData.get_cell_map(fs::SingleFieldFESpace)
-  fe_basis = get_cell_basis(fs)
-  get_cell_map(fe_basis)
-end
-
-function CellData.get_cell_axes(f::SingleFieldFESpace)
-  get_cell_axes(get_cell_basis(f))
-end
-
-"""
-    FEFunction(
-      fs::SingleFieldFESpace, free_values::AbstractVector, dirichlet_values::AbstractVector)
-
-The resulting FEFunction will be in the space if and only if `dirichlet_values`
-are the ones provided by `get_dirichlet_values(fs)`
-"""
-function FEFunction(
-  fs::SingleFieldFESpace, free_values::AbstractVector, dirichlet_values::AbstractVector)
-  cell_vals = scatter_free_and_dirichlet_values(fs,free_values,dirichlet_values)
-  cell_field = CellField(fs,cell_vals)
-  SingleFieldFEFunction(cell_field,cell_vals,free_values,dirichlet_values,fs)
-end
-
-function CellData.CellField(fs::SingleFieldFESpace,cell_vals)
-  _default_cell_field(fs,cell_vals)
-end
-
-function _default_cell_field(fs,cell_vals)
-  cell_basis = get_cell_basis(fs)
-  cell_field = lincomb(cell_basis,cell_vals)
-  cell_field
-end
-
-function FEFunction(fe::SingleFieldFESpace, free_values)
-  diri_values = get_dirichlet_values(fe)
-  FEFunction(fe,free_values,diri_values)
-end
+# Some default API
 
 """
 """
@@ -147,18 +103,18 @@ end
 
 """
 """
-function gather_free_values(f::SingleFieldFESpace,cell_vals)
-  free_values = zero_free_values(f)
-  gather_free_values!(free_values,f,cell_vals)
-  free_values
-end
-
-"""
-"""
 function gather_dirichlet_values!(dirichlet_values,f::SingleFieldFESpace,cell_vals)
   free_values = zero_free_values(f)
   gather_free_and_dirichlet_values!(free_values,dirichlet_values,f,cell_vals)
   dirichlet_values
+end
+
+"""
+"""
+function gather_free_values(f::SingleFieldFESpace,cell_vals)
+  free_values = zero_free_values(f)
+  gather_free_values!(free_values,f,cell_vals)
+  free_values
 end
 
 """
@@ -169,35 +125,49 @@ function gather_free_values!(free_values,f::SingleFieldFESpace,cell_vals)
     free_values
 end
 
-@deprecate(
-  interpolate(fs::SingleFieldFESpace, object),
-  interpolate(object, fs::SingleFieldFESpace)
-)
+function CellField(fs::SingleFieldFESpace,cell_vals)
+  v = get_cell_shapefuns(fs)
+  cell_basis = get_cell_data(v)
+  cell_field = lazy_map(linear_combination,cell_vals,cell_basis)
+  GenericCellField(cell_field,get_triangulation(v),DomainStyle(v))
+end
 
-@deprecate(
-  interpolate!(free_values,fs::SingleFieldFESpace, object),
-  interpolate!(object, free_values,fs::SingleFieldFESpace)
-)
+struct SingleFieldFEFunction{T<:CellField} <: FEFunction
+  cell_field::T
+  cell_dof_values::AbstractArray{<:AbstractVector{<:Number}}
+  free_values::AbstractVector{<:Number}
+  dirichlet_values::AbstractVector{<:Number}
+  fe_space::SingleFieldFESpace
+end
 
-@deprecate(
-  interpolate_everywhere(fs::SingleFieldFESpace, object),
-  interpolate_everywhere(object, fs::SingleFieldFESpace)
-)
+get_cell_data(f::SingleFieldFEFunction) = get_cell_data(f.cell_field)
+get_triangulation(f::SingleFieldFEFunction) = get_triangulation(f.cell_field)
+DomainStyle(::Type{SingleFieldFEFunction{T}}) where T = DomainStyle(T)
 
-@deprecate(
-  interpolate_everywhere!(free_values,dirichlet_values,fs::SingleFieldFESpace, object),
-  interpolate_everywhere!(object, free_values,dirichlet_values,fs::SingleFieldFESpace)
-)
+get_free_values(f::SingleFieldFEFunction) = f.free_values
+get_cell_dof_values(f::SingleFieldFEFunction) = f.cell_dof_values
+get_fe_space(f::SingleFieldFEFunction) = f.fe_space
+Base.real(f::SingleFieldFEFunction) = FEFunction(f.fe_space,real(f.free_values),real(f.dirichlet_values))
+Base.imag(f::SingleFieldFEFunction) = FEFunction(f.fe_space,imag(f.free_values),imag(f.dirichlet_values))
 
-@deprecate(
-  interpolate_dirichlet(fs::SingleFieldFESpace, object),
-  interpolate_dirichlet(object, fs::SingleFieldFESpace)
-)
+"""
+    FEFunction(
+      fs::SingleFieldFESpace, free_values::AbstractVector, dirichlet_values::AbstractVector)
 
-@deprecate(
-  interpolate_dirichlet!(free_values,dirichlet_values,fs::SingleFieldFESpace, object),
-  interpolate_dirichlet!(object, free_values,dirichlet_values,fs::SingleFieldFESpace)
-)
+The resulting FEFunction will be in the space if and only if `dirichlet_values`
+are the ones provided by `get_dirichlet_values(fs)`
+"""
+function FEFunction(
+  fs::SingleFieldFESpace, free_values::AbstractVector, dirichlet_values::AbstractVector)
+  cell_vals = scatter_free_and_dirichlet_values(fs,free_values,dirichlet_values)
+  cell_field = CellField(fs,cell_vals)
+  SingleFieldFEFunction(cell_field,cell_vals,free_values,dirichlet_values,fs)
+end
+
+function FEFunction(fe::SingleFieldFESpace, free_values)
+  diri_values = get_dirichlet_values(fe)
+  FEFunction(fe,free_values,diri_values)
+end
 
 """
 The resulting FE function is in the space (in particular it fulfills Dirichlet BCs
@@ -217,10 +187,10 @@ function interpolate!(object, free_values,fs::SingleFieldFESpace)
 end
 
 function _cell_vals(fs::SingleFieldFESpace,object)
-  cdb = get_cell_dof_basis(fs)
-  cm = get_cell_map(fs)
-  cf = convert_to_cell_field(object,cm,RefStyle(cdb))
-  cell_vals = evaluate(cdb,cf)
+  s = get_cell_dof_basis(fs)
+  trian = get_triangulation(s)
+  f = CellField(object,trian,DomainStyle(s))
+  cell_vals = s(f)
 end
 
 """
@@ -262,16 +232,22 @@ end
 """
 function compute_dirichlet_values_for_tags(f::SingleFieldFESpace,tag_to_object)
   dirichlet_values = zero_dirichlet_values(f)
-  compute_dirichlet_values_for_tags!(dirichlet_values,f,tag_to_object)
+  dirichlet_values_scratch = zero_dirichlet_values(f)
+  compute_dirichlet_values_for_tags!(dirichlet_values,dirichlet_values_scratch,f,tag_to_object)
 end
 
-function compute_dirichlet_values_for_tags!(dirichlet_values,f::SingleFieldFESpace,tag_to_object)
+function compute_dirichlet_values_for_tags!(
+  dirichlet_values,
+  dirichlet_values_scratch,
+  f::SingleFieldFESpace,tag_to_object)
+
   dirichlet_dof_to_tag = get_dirichlet_dof_tag(f)
   _tag_to_object = _convert_to_collectable(tag_to_object,num_dirichlet_tags(f))
   for (tag, object) in enumerate(_tag_to_object)
     cell_vals = _cell_vals(f,object)
-    dv = gather_dirichlet_values(f,cell_vals)
-    _fill_dirichlet_values_for_tag!(dirichlet_values,dv,tag,dirichlet_dof_to_tag)
+    fill!(dirichlet_values_scratch,zero(eltype(dirichlet_values_scratch)))
+    gather_dirichlet_values!(dirichlet_values_scratch,f,cell_vals)
+    _fill_dirichlet_values_for_tag!(dirichlet_values,dirichlet_values_scratch,tag,dirichlet_dof_to_tag)
   end
   dirichlet_values
 end
@@ -290,10 +266,9 @@ function _convert_to_collectable(object,ntags)
 end
 
 function _convert_to_collectable(object::Function,ntags)
-  _convert_to_collectable(fill(object,ntags),ntags)
+  _convert_to_collectable(Fill(object,ntags),ntags)
 end
 
-
 function _convert_to_collectable(object::Number,ntags)
-  _convert_to_collectable(fill(object,ntags),ntags)
+  _convert_to_collectable(Fill(object,ntags),ntags)
 end

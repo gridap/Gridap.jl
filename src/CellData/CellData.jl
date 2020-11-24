@@ -11,91 +11,83 @@ using FillArrays
 
 using Gridap.Helpers
 using Gridap.Arrays
+using Gridap.Algebra
 using Gridap.TensorValues
 using Gridap.Fields
-using Gridap.Polynomials
-using Gridap.Integration
 using Gridap.ReferenceFEs
-using Gridap.Algebra
+using Gridap.Geometry
+using Gridap.Integration
 
-import Gridap.Arrays: get_array
 import Gridap.Arrays: lazy_append
-import Gridap.Fields: evaluate
+import Gridap.Arrays: get_array
+import Gridap.Arrays: evaluate!
 import Gridap.Fields: gradient
+import Gridap.Fields: ∇∇
 import Gridap.Fields: integrate
-import Gridap.Helpers: operate
-import Gridap.Integration: get_coordinates
-import Gridap.Integration: get_weights
-import Gridap.Fields: field_cache
-import Gridap.Fields: evaluate_field!
-import Gridap.Fields: evaluate_field_array
-import Gridap.Arrays: array_cache
-import Gridap.Arrays: getindex!
-import Gridap.Arrays: reindex
+import Gridap.Fields: grad2curl
+import Gridap.Geometry: num_cells
+import Gridap.Geometry: get_triangulation
 
+import Gridap.TensorValues: inner, outer, double_contraction, symmetric_part
+import LinearAlgebra: det, tr, cross, dot, ⋅
+import Base: inv, abs, abs2, *, +, -, /, adjoint, transpose, real, imag
+
+export gradient, ∇
+export ∇∇
+export inner, ⊙, outer, ⊗, double_contraction, ⋅¹, ⋅², symmetric_part
+export det, tr, cross, ×, dot, ⋅
+
+export DomainStyle
+export ReferenceDomain
+export PhysicalDomain
+export CellDatum
+export get_cell_data
+export get_triangulation
+export change_domain
+export test_cell_datum
+export CellPoint
+export get_cell_points
 export CellField
-export get_cell_map
-export get_cell_axes
-export get_memo
-export RefStyle
-export is_in_ref_space
-export is_in_physical_space
-export MetaSizeStyle
-export get_metasize
-export is_basis
-export is_test
-export is_trial
-export test_cell_field
-export GenericCellField
-export similar_object
-export change_ref_style
-export to_ref_space
-export to_physical_space
-export trialize_cell_basis
-export convert_to_cell_field
-export SkeletonCellField
-export get_inward
-export get_outward
 export jump
 export mean
-export merge_cell_dofs_at_skeleton
-export merge_cell_fields_at_skeleton
-
+export GenericCellField
 export CellQuadrature
-export get_coordinates
-export get_weights
+export Integrand
+export ∫
+export CellDof
+export get_normal_vector
+export get_cell_measure
 
-export QPointCellField
-export update_state_variables!
-
-export CellDofBasis
-export test_cell_dof_basis
-export GenericCellDofBasis
+export DomainContribution
+export num_domains
+export get_domains
+export get_contribution
+export add_contribution!
+export LebesgueMeasure
 
 export attach_dirichlet
-
 export attach_constraints_rows
 export attach_constraints_cols
-export merge_cell_constraints_at_skeleton
 export identity_constraints
+export get_physical_coordinate
 
-export @law
-export operate
-export GridapType
+export CellState
+export update_state!
+
+include("CellDataInterface.jl")
 
 include("CellFields.jl")
 
 include("CellQuadratures.jl")
 
-include("QPointCellFields.jl")
+include("CellStates.jl")
 
-include("CellDofBases.jl")
+include("DomainContributions.jl")
+
+include("CellDofs.jl")
 
 include("AttachDirichlet.jl")
 
 include("AttachConstraints.jl")
 
-include("Law.jl")
-
 end # module
-

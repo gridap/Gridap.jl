@@ -2,6 +2,7 @@ module TypesTests
 
 using Gridap.TensorValues
 using Test
+using Gridap.Arrays: get_array
 using StaticArrays
 
 # Constructors (TensorValue)
@@ -357,11 +358,22 @@ t = ThirdOrderTensorValue{2,2,2,Int}(1,2.0,3,4,5,6,7,8)
 
 # Misc
 
-M = mutable(VectorValue{3,Int})
+v = VectorValue(3,2,1)
+m = mutable(v)
+@test m == get_array(v)
+@test isa(m,MVector)
+
+v = TensorValue{2,3}(1,2,3,4,5,6)
+m = mutable(v)
+@test m == get_array(v)
+@test isa(m,MMatrix)
+
+M = Mutable(VectorValue{3,Int})
 @test M == MVector{3,Int}
 m = zero(M)
 v = VectorValue(m)
 @test isa(v,VectorValue{3,Int})
+
 
 @test num_components(Int) == 1
 @test num_components(Float64) == 1

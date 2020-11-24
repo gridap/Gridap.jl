@@ -3,9 +3,6 @@ module StokesDGTests
 using Test
 using Gridap
 import Gridap: ∇
-import LinearAlgebra: tr, ⋅
-
-const T = VectorValue{2,Float64}
 
 u(x) = VectorValue(x[1]*x[1], x[2])
 ∇u(x) = TensorValue(2*x[1],0.0,0.0,1.0)
@@ -32,91 +29,54 @@ const h = L / ncellx
 const γ = order*(order+1)
 const γ0 = 1.0/10.0
 
-V = TestFESpace(
- model=model,
- order=order,
- reffe=:Lagrangian,
- valuetype=VectorValue{2,Float64},
- conformity=:L2)
+reffe_u = ReferenceFE(:Lagrangian,VectorValue{2,Float64},order)
+reffe_p = ReferenceFE(:Lagrangian,Float64,order)
 
-Q = TestFESpace(
- model=model,
- order=order,
- reffe=:Lagrangian,
- valuetype=Float64,
- conformity=:L2,
- constraint=:zeromean)
-
-U = TrialFESpace(V)
-P = TrialFESpace(Q)
-
-Y = MultiFieldFESpace([V,Q])
+U = FESpace(model,reffe_u,conformity=:L2)
+P = FESpace(model,reffe_p,conformity=:L2,constraint=:zeromean)
 X = MultiFieldFESpace([U,P])
 
-trian = get_triangulation(model)
+Ω = Triangulation(model)
+Γ = BoundaryTriangulation(model)
+Λ = SkeletonTriangulation(model)
+
 degree = 2*order
-quad = CellQuadrature(trian,degree)
+dΩ = LebesgueMeasure(Ω,degree)
+dΓ = LebesgueMeasure(Γ,degree)
+dΛ = LebesgueMeasure(Λ,degree)
 
-btrian = BoundaryTriangulation(model)
-bdegree = 2*order
-bquad = CellQuadrature(btrian,bdegree)
-const nb = get_normal_vector(btrian)
+n_Γ = get_normal_vector(Γ)
+n_Λ = get_normal_vector(Λ)
 
-strian = SkeletonTriangulation(model)
-sdegree = 2*order
-squad = CellQuadrature(strian,sdegree)
-const ns = get_normal_vector(strian)
+a((u,p),(v,q)) =
+  ∫( ∇(v)⊙∇(u) - ∇(q)⋅u + v⋅∇(p) )*dΩ +
+  ∫( (γ/h)*v⋅u - v⋅(n_Γ⋅∇(u)) - (n_Γ⋅∇(v))⋅u + 2*(q*n_Γ)⋅u )*dΓ +
+  ∫(  
+    (γ/h)*jump(v⊗n_Λ)⊙jump(u⊗n_Λ) -
+      jump(v⊗n_Λ)⊙mean(∇(u)) -
+      mean(∇(v))⊙jump(u⊗n_Λ)  +
+      (γ0*h)*jump(q*n_Λ)⋅jump(p*n_Λ) +
+      jump(q*n_Λ)⋅mean(u) -
+      mean(v)⋅jump(p*n_Λ)
+   )*dΛ
 
-function A_Ω(x,y)
-  u, p = x
-  v, q = y
-  ∇(v)⊙∇(u) - ∇(q)⋅u + v⋅∇(p)
-end
+l((v,q)) =
+  ∫( v⋅f + q*g )*dΩ +
+  ∫( (γ/h)*v⋅u - (n_Γ⋅∇(v))⋅u + (q*n_Γ)⋅u )*dΓ
 
-function B_Ω(y)
-  v, q = y
-  v⋅f + q*g
-end
-
-function A_∂Ω(x,y)
-  u, p = x
-  v, q = y
-  (γ/h)*v⋅u - v⋅(nb⋅∇(u)) - (nb⋅∇(v))⋅u + 2*(q*nb)⋅u
-end
-
-function B_∂Ω(y)
-  v, q = y
-  (γ/h)*v⋅u - (nb⋅∇(v))⋅u + (q*nb)⋅u
-end
-
-function A_Γ(x,y)
-  u, p = x
-  v, q = y
-  (γ/h)*inner( jump(outer(v,ns)), jump(outer(u,ns))) -
-    inner( jump(outer(v,ns)), mean(∇(u)) ) -
-    inner( mean(∇(v)), jump(outer(u,ns)) ) +
-    (γ0*h)*jump(q*ns)⋅jump(p*ns) +
-    jump(q*ns)⋅mean(u) -
-    mean(v)⋅jump(p*ns)
-end
-
-t_Ω = AffineFETerm(A_Ω,B_Ω,trian,quad)
-t_∂Ω = AffineFETerm(A_∂Ω,B_∂Ω,btrian,bquad)
-t_Γ = LinearFETerm(A_Γ,strian,squad)
-
-op = AffineFEOperator(X,Y,t_Ω,t_∂Ω,t_Γ)
+op = AffineFEOperator(a,l,X,X)
 
 uh, ph = solve(op)
 
 eu = u - uh
 ep = p - ph
 
-l2(v) = v⋅v
-h1(v) = v⋅v + inner(∇(v),∇(v))
+l2(u) = sqrt(sum( ∫( u⊙u )*dΩ ))
+h1(u) = sqrt(sum( ∫( u⊙u + ∇(u)⊙∇(u) )*dΩ ))
 
-eu_l2 = sqrt(sum(integrate(l2(eu),trian,quad)))
-eu_h1 = sqrt(sum(integrate(h1(eu),trian,quad)))
-ep_l2 = sqrt(sum(integrate(l2(ep),trian,quad)))
+eu_l2 = l2(eu)
+eu_h1 = h1(eu)
+ep_l2 = l2(ep)
 
 tol = 1.0e-9
 @test eu_l2 < tol

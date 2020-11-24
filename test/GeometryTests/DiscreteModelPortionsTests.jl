@@ -19,9 +19,10 @@ end
 
 oldgrid = get_grid(oldmodel)
 oldcell_to_coods = get_cell_coordinates(oldgrid)
-cell_to_oldcell = findall(collect1d(apply(is_in,oldcell_to_coods)))
+oldcell_to_mask = lazy_map(is_in,oldcell_to_coods)
 
-model = DiscreteModelPortion(oldmodel,cell_to_oldcell)
+model = DiscreteModelPortion(oldmodel,oldcell_to_mask)
+test_discrete_model(model)
 
 #using Gridap.Visualization
 #

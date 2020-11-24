@@ -1,395 +1,147 @@
 module FieldOperationsTests
 
-using BlockArrays
 using Gridap.Arrays
 using Gridap.Fields
-using Gridap.Fields: IntKernel
-using Gridap.Fields: FieldOpKernel
-using Gridap.Fields: trialize_basis_value
 using Gridap.TensorValues
-using Gridap.Fields: MockField, MockBasis
-
-using Test
 using FillArrays
-using LinearAlgebra
 
-s = field_operation_metasize((),(:,),(1,:))
-@test s == (:,:)
+# using BenchmarkTools
+using Test
 
-s = field_operation_metasize((),(),(:,))
-@test s == (:,)
+# Operations
 
-s = field_operation_metasize((1,:),(1,:))
-@test s == (1,:)
+d = 2
+p = Point(1.0,2.0)
 
-ndofs1 = 5
-ndofs2 = 4
-np = 7
-ax1 = (Base.OneTo(ndofs1),)
-ax2 = (1,Base.OneTo(ndofs2),)
-ax3 = ()
-ax = field_operation_axes(ax1,ax2,ax3)
-@test ax == (Base.OneTo(ndofs1),Base.OneTo(ndofs2))
-
-ax1 = (Base.OneTo(np),Base.OneTo(ndofs1),)
-ax2 = (Base.OneTo(np),1,Base.OneTo(ndofs2),)
-ax3 = (Base.OneTo(np),)
-ax = field_operation_axes(ax3,ax2,ax1)
-@test ax == (Base.OneTo(np),Base.OneTo(ndofs1),Base.OneTo(ndofs2))
-
-ax1 = (blockedrange([ndofs1,ndofs2]),)
-ax2 = (blockedrange([1]),blockedrange([ndofs2,ndofs1]))
-ax3 = ()
-ax = field_operation_axes(ax3,ax2,ax1)
-@test ax == (blockedrange([ndofs1,ndofs2]),blockedrange([ndofs2,ndofs1]))
-
-l = 10
 np = 3
-ndofs = 4
-
-# Operations between fields and array of fields
-
-p = Point(1,2)
 x = fill(p,np)
-z = 2.0
 
-v = VectorValue(3.0,1.5)
-w = VectorValue(3.4,3.5)
-test_basis = MockBasis{2}(v,ndofs)
-test_basis_2 = MockBasis{2}(w,ndofs)
+v = VectorValue{d}(1.0,1.0)
+f = MockField{d}(v)
+fp = evaluate(f,p)
 
-t1x = evaluate(test_basis,x)
-t2x = evaluate(test_basis_2,x)
-∇t1x = evaluate(∇(test_basis),x)
-∇t2x = evaluate(∇(test_basis_2),x)
+df = f+f
+∇fp = 2*evaluate(gradient(f),p)
+test_field(df,p,2*fp,grad=2.0*∇fp)
 
-b = operate_fields(+,test_basis,test_basis_2)
-r = broadcast(+,t1x,t2x)
-∇r = broadcast(+,∇t1x,∇t2x)
-test_field(b,x,r,grad=∇r)
+c = return_cache(df,p)
+# @btime evaluate!($c,$df,$p)
 
-b = operate_fields(-,test_basis,test_basis_2)
-r = broadcast(-,t1x,t2x)
-∇r = broadcast(-,∇t1x,∇t2x)
-test_field(b,x,r,grad=∇r)
+∇df = ∇(df)
+c = return_cache(∇df,p)
+# @btime evaluate!($c,$∇df,$p)
 
-b = operate_fields(⋅,test_basis,test_basis_2)
-r = broadcast(⋅,t1x,t2x)
-∇r = broadcast(⋅,∇t1x,t2x) + broadcast(⋅,t1x,∇t2x)
-test_field(b,x,r,grad=∇r)
+df = f-f
+test_field(df,p,fp-fp,grad=0.0*∇fp)
 
-b = operate_fields(*,test_basis,z)
-r = broadcast(*,t1x,z)
-∇r = broadcast(*,∇t1x,z)
-test_field(b,x,r,grad=∇r)
+df = GenericField(2.0)*f
+test_field(df,p,fp*2.0,grad=2.0*∇fp)
 
-b = operate_fields(+,test_basis,z)
-test_field(b,x,fill(v+z,np,ndofs))
+c = return_cache(df,p)
+# @btime evaluate!($c,$df,$p)
 
-trial_basis = trialize_basis(test_basis)
-r = reshape(evaluate(test_basis,x),(np,1,ndofs))
-∇r = reshape(evaluate(∇(test_basis),x),(np,1,ndofs))
-test_field(trial_basis,x,r,grad=∇r)
+q(x) = 2*x
+∇q = gradient(q)
 
-xl = Fill(x,l)
-fl = [ z for  i in 1:l]
+f = GenericField(q)
+fp = evaluate(f,p)
+∇f = ∇(f)
+∇fp = evaluate(∇f,p)
+@test ∇fp == TensorValue(2.0, 0.0, 0.0, 2.0)
+test_field(f,p,fp,grad=∇fp)
 
-test_basis_array = Fill(test_basis,l)
-test_basis_2_array = fill(test_basis_2,l)
+c = return_cache(f,p)
+# @btime evaluate!($c,$f,$p)
 
-bl = operate_arrays_of_fields(Nothing,*,test_basis_array,fl)
-test_array_of_fields(bl,xl,fill(fill(z*v,np,ndofs),l))
+df = f+f
+test_field(df,p,2*fp,grad=2.0*∇fp)
 
-bl = operate_arrays_of_fields(*,test_basis_array,fl)
-test_array_of_fields(bl,xl,fill(fill(z*v,np,ndofs),l))
+c = return_cache(df,p)
+# @btime evaluate!($c,$df,$p)
 
-bl = operate_arrays_of_fields(+,test_basis_array,test_basis_2_array)
-r = fill(broadcast(+,t1x,t2x),l)
-∇r = fill(broadcast(+,∇t1x,∇t2x),l)
-test_array_of_fields(bl,xl,r,grad=∇r)
+df = f-f
+test_field(df,p,fp-fp,grad=0.0*∇fp)
 
-bl = operate_arrays_of_fields(⋅,test_basis_array,test_basis_2_array)
-r = fill(broadcast(⋅,t1x,t2x),l)
-∇r = fill(broadcast(⋅,∇t1x,t2x) + broadcast(⋅,t1x,∇t2x),l)
-test_array_of_fields(bl,xl,r,grad=∇r)
+df = GenericField(2.0)*f
+evaluate(df,p)
+∇df = ∇(df)
+∇dfp = 2*∇fp
+evaluate(∇df,p)
+test_field(df,p,fp*2.0,grad=∇dfp)
 
-trial_basis_array = trialize_array_of_bases(operate_arrays_of_fields(*,test_basis_array,fl))
+c = return_cache(df,p)
+# @btime evaluate!($c,$df,$p)
+c = return_cache(∇df,p)
+# @btime evaluate!($c,$∇df,$p)
 
-trial_basis_array_x = evaluate(trial_basis_array,xl)
-@test trial_basis_array_x.g.value === trialize_basis_value
 
-bl = operate_arrays_of_fields(⋅,trial_basis_array,test_basis_array)
-r = fill(fill(z*v⋅v,np,ndofs,ndofs),l)
-bl_x = evaluate(bl,xl)
-test_array_of_fields(bl,xl,r)
-@test bl_x.g.value == FieldOpKernel(⋅)
+df = f⋅f
+∇df = ∇(df)
+dfp = (∇fp⋅fp)*2
+test_field(df,p,fp⋅fp,grad=dfp)
 
-# Operations between values
+c = return_cache(df,p)
+# @btime evaluate!($c,$df,$p)
+c = return_cache(∇df,p)
+# @btime evaluate!($c,$∇df,$p)
 
-al = [rand(np,ndofs) for k in 1:l]
-bl = [rand(np) for k in 1:l]
-cl = [rand(np,ndofs) for k in 1:l]
 
-f(a,b) = 2*a-b*a
-dl = apply(FieldOpKernel(f),bl,bl)
-test_array(dl,map((a,b)->f.(a,b),bl,bl))
+bdf = df
+evaluate(bdf,x)
+∇bdf = gradient(bdf)
+evaluate(∇bdf,x)
+bdfp = fill(fp⋅fp,np)
+∇bdfp = fill(dfp,np)
+test_field(bdf,x,bdfp,grad=∇bdfp)
 
-f(a,b) = 2*a-b*a
-dl = apply(FieldOpKernel(f),al,bl)
-test_array(dl,map((a,b)->f.(a,b),al,bl))
+c = return_cache(bdf,x)
+# @btime evaluate!($c,$bdf,$x)
+c = return_cache(∇bdf,x)
+# @btime evaluate!($c,$∇bdf,$x)
 
-f(a,b) = 2*a-b
-dl = apply(FieldOpKernel(f),al,cl)
-test_array(dl,map((a,b)->f.(a,b),al,cl))
+# Composition
 
-f(a,b,c) = b*(2*a-c)
-dl = apply(FieldOpKernel(f),al,bl,cl)
-test_array(dl,map((a,b,c)->f.(a,b,c),al,bl,cl))
+q(x) = VectorValue(x[1]^2,x[2]^2)
 
-dl = apply(trialize_basis_value,al)
-test_array(dl,map(a->reshape(a,(size(a,1),1,size(a,2))),al))
+f = GenericField(q)
+bf = f
+∇bf = ∇(bf)
 
-atl = apply(trialize_basis_value,al)
-ctl = apply(trialize_basis_value,cl)
 
-f(a,b) = 2*a*b
-dl = apply(FieldOpKernel(f),al,atl)
-test_array(dl,map((a,b)->f.(a,b),al,atl))
+evaluate(bf,x)
+bdfx = evaluate(bf,evaluate(bf,x))
+bdf = evaluate(Operation(bf),bf)
+@test evaluate(bdf,x) == bdfx
+test_field(bdf,x,bdfx)#,grad=∇bdfp)
 
-f(a,c,at,ct) = 2*(a+c)*(2*at-ct)
-dl = apply(FieldOpKernel(f),al,cl,atl,ctl)
-test_array(dl,map((a,c,at,ct)->f.(a,c,at,ct),al,cl,atl,ctl))
-
-@test size(dl[1]) == (np,ndofs,ndofs)
-
-
-
-
-
-# Blocks
-
-blocks = (al,)
-blockids = [(1,1)]
-axs_i = (blockedrange([np]),blockedrange([ndofs,ndofs]))
-axs = Fill(axs_i,l)
-aBl = VectorOfBlockArrayCoo(blocks,blockids,axs)
-
-blocks = (cl,)
-blockids = [(1,2)]
-cBl = VectorOfBlockArrayCoo(blocks,blockids,axs)
-
-atBl = apply(trialize_basis_value,aBl)
-ctBl = apply(trialize_basis_value,cBl)
-@test isa(atBl,VectorOfBlockArrayCoo)
-
-f(a) = 2*a
-dl = apply(FieldOpKernel(f),aBl)
-@test isa(dl,VectorOfBlockArrayCoo)
-test_array(dl,map((a)->f.(a),aBl))
-
-f(a,b) = 2*a + a*b
-dl = apply(FieldOpKernel(f),aBl,bl)
-@test isa(dl,VectorOfBlockArrayCoo)
-test_array(dl,map((a,b)->f.(a,b),aBl,bl))
-
-f(b,a) = 2*a + a*b
-dl = apply(FieldOpKernel(f),bl,atBl)
-@test isa(dl,VectorOfBlockArrayCoo)
-test_array(dl,map((a,b)->f.(a,b),bl,atBl))
-
-f(b,a) = 2*a + b
-dl = apply(FieldOpKernel(f),atBl,ctBl)
-@test isa(dl,VectorOfBlockArrayCoo)
-test_array(dl,map((a,b)->f.(a,b),atBl,ctBl))
-
-dl = apply(FieldOpKernel(+),atBl,ctBl)
-@test isa(dl,VectorOfBlockArrayCoo)
-test_array(dl,map((a,b)->a+b,atBl,ctBl))
-
-dl = apply(FieldOpKernel(-),atBl,ctBl)
-@test isa(dl,VectorOfBlockArrayCoo)
-test_array(dl,map((a,b)->a-b,atBl,ctBl))
-
-f(b,a) = 2*a*b
-dl = apply(FieldOpKernel(f),aBl,ctBl)
-@test isa(dl,VectorOfBlockArrayCoo)
-test_array(dl,map((a,b)->f.(a,b),aBl,ctBl))
-
-f(b,a) = 2*a*b
-dl = apply(FieldOpKernel(f),atBl,cBl)
-@test isa(dl,VectorOfBlockArrayCoo)
-test_array(dl,map((a,b)->f.(a,b),atBl,cBl))
-
-# BlockWise integration
-
-cj = [ fill(TensorValue(1,0,0,2),np) for cell in 1:l ]
-cw = [ rand(np) for cell in 1:l ]
-
-f(a,b) = 2*a + a*b
-vl = apply(FieldOpKernel(f),aBl,bl)
-dl = apply(IntKernel(),vl,cw,cj)
-@test isa(dl,VectorOfBlockArrayCoo)
-test_array(dl,map( (v,w,j) -> reshape(sum( broadcast(*,v,w,det.(j)), dims=1),(2*ndofs,)), vl,cw,cj ))
-
-vl = apply(FieldOpKernel(*),aBl,ctBl)
-dl = apply(IntKernel(),vl,cw,cj)
-@test isa(dl,VectorOfBlockArrayCoo)
-test_array(dl,map( (v,w,j) -> reshape(sum( broadcast(*,v,w,det.(j)), dims=1),(2*ndofs,2*ndofs)), vl,cw,cj ))
-
-# Blocks of Blocks
-
-a0Bl = zeros_like(aBl)
-c0Bl = zeros_like(cBl)
-@test isa(a0Bl,VectorOfBlockArrayCoo)
-@test blocksize(a0Bl) == blocksize(aBl)
-@test length(a0Bl.blocks) == 0
-
-blockids = [(1,1)]
-ax1 = blockedrange([np])
-ax2 = blockedrange([ndofs,ndofs])
-axs_i  = (blockedrange([ax1]),blockedrange([ax2,ax2]))
-axs = Fill(axs_i,l)
-aLl = VectorOfBlockArrayCoo((aBl,),blockids,axs,(a0Bl,))
-cLl = VectorOfBlockArrayCoo((cBl,),blockids,axs,(c0Bl,))
-
-@test isa(aLl,VectorOfBlockArrayCoo)
-@test aBl === aLl[Block(1,1)]
-@test al === aLl[Block(1,1)][Block(1,1)]
-@test isa(aLl[Block(1,1)],VectorOfBlockArrayCoo)
-@test isa(aLl[Block(1,2)],VectorOfBlockArrayCoo)
-
-blockids = [(1,2)]
-aRl = VectorOfBlockArrayCoo((aBl,),blockids,axs,(a0Bl,))
-cRl = VectorOfBlockArrayCoo((cBl,),blockids,axs,(c0Bl,))
-
-a0tBl = zeros_like(atBl)
-c0tBl = zeros_like(ctBl)
-
-blockids = [(1,1,1)]
-axs_i  = (blockedrange([ax1]),blockedrange([blockedrange([1])]),blockedrange([ax2,ax2]))
-axs = Fill(axs_i,l)
-atLl = VectorOfBlockArrayCoo((atBl,),blockids,axs,(a0tBl,))
-ctLl = VectorOfBlockArrayCoo((ctBl,),blockids,axs,(c0tBl,))
-
-@test isa(atLl,VectorOfBlockArrayCoo)
-@test atBl === atLl[Block(1,1,1)]
-@test atl === atLl[Block(1,1,1)][Block(1,1,1)]
-@test isa(atLl[Block(1,1,1)],VectorOfBlockArrayCoo)
-@test isa(atLl[Block(1,1,2)],VectorOfBlockArrayCoo)
-
-blockids = [(1,1,2)]
-atRl = VectorOfBlockArrayCoo((atBl,),blockids,axs,(a0tBl,))
-ctRl = VectorOfBlockArrayCoo((ctBl,),blockids,axs,(c0tBl,))
-
-f(a) = 2*a
-dl = apply(FieldOpKernel(f),aLl)
-@test isa(dl,VectorOfBlockArrayCoo)
-@test isa(dl[Block(1,1)],VectorOfBlockArrayCoo)
-@test isa(dl[Block(1,2)],VectorOfBlockArrayCoo)
-@test isa(dl[1][Block(1,1)],BlockArrayCoo)
-@test isa(dl[1][Block(1,2)],BlockArrayCoo)
-test_array(dl,map((a)->f.(a),aLl))
-
-f(a,b) = 2*a + a*b
-dl = apply(FieldOpKernel(f),aRl,bl)
-@test isa(dl,VectorOfBlockArrayCoo)
-@test isa(dl[Block(1,1)],VectorOfBlockArrayCoo)
-@test isa(dl[Block(1,2)],VectorOfBlockArrayCoo)
-@test isa(dl[1][Block(1,1)],BlockArrayCoo)
-@test isa(dl[1][Block(1,2)],BlockArrayCoo)
-test_array(dl,map((a,b)->f.(a,b),aRl,bl))
-
-f(b,a) = 2*a + b
-dl = apply(FieldOpKernel(f),atRl,ctLl)
-@test isa(dl,VectorOfBlockArrayCoo)
-@test isa(dl[Block(1,1,1)],VectorOfBlockArrayCoo)
-@test isa(dl[Block(1,1,2)],VectorOfBlockArrayCoo)
-@test isa(dl[1][Block(1,1,1)],BlockArrayCoo)
-@test isa(dl[1][Block(1,1,2)],BlockArrayCoo)
-test_array(dl,map((a,b)->f.(a,b),atRl,ctLl))
-
-f(b,a) = 2*a + b
-dl = apply(FieldOpKernel(f),aRl,cLl)
-@test isa(dl,VectorOfBlockArrayCoo)
-@test isa(dl[Block(1,1)],VectorOfBlockArrayCoo)
-@test isa(dl[Block(1,2)],VectorOfBlockArrayCoo)
-@test isa(dl[1][Block(1,1)],BlockArrayCoo)
-@test isa(dl[1][Block(1,2)],BlockArrayCoo)
-test_array(dl,map((a,b)->f.(a,b),aRl,cLl))
-
-f(b,a) = 2*a + b
-dl = apply(FieldOpKernel(f),aRl,aRl)
-@test isa(dl,VectorOfBlockArrayCoo)
-@test isa(dl[Block(1,1)],VectorOfBlockArrayCoo)
-@test isa(dl[Block(1,2)],VectorOfBlockArrayCoo)
-@test isa(dl[1][Block(1,1)],BlockArrayCoo)
-@test isa(dl[1][Block(1,2)],BlockArrayCoo)
-test_array(dl,map((a,b)->f.(a,b),aRl,aRl))
-
-f(b,a) = a * b
-dl = apply(FieldOpKernel(f),aLl,ctRl)
-@test isa(dl,VectorOfBlockArrayCoo)
-@test is_zero_block(dl,Block(1,1,1))
-@test is_nonzero_block(dl,Block(1,1,2))
-@test is_zero_block(dl,Block(1,2,1))
-@test is_zero_block(dl,Block(1,2,2))
-@test isa(dl[Block(1,1,1)],VectorOfBlockArrayCoo)
-@test isa(dl[Block(1,1,2)],VectorOfBlockArrayCoo)
-@test isa(dl[Block(1,2,1)],VectorOfBlockArrayCoo)
-@test isa(dl[Block(1,2,2)],VectorOfBlockArrayCoo)
-@test isa(dl[1][Block(1,1,1)],BlockArrayCoo)
-@test isa(dl[1][Block(1,1,2)],BlockArrayCoo)
-@test isa(dl[1][Block(1,2,1)],BlockArrayCoo)
-@test isa(dl[1][Block(1,2,2)],BlockArrayCoo)
-test_array(dl,map((a,b)->f.(a,b),aLl,ctRl))
-
-f(b,a) = a * b
-v = apply(FieldOpKernel(-),ctLl,ctRl)
-dl = apply(FieldOpKernel(f),v,aLl)
-@test isa(dl,VectorOfBlockArrayCoo)
-@test is_nonzero_block(dl,Block(1,1,1))
-@test is_nonzero_block(dl,Block(1,1,2))
-@test is_zero_block(dl,Block(1,2,1))
-@test is_zero_block(dl,Block(1,2,2))
-@test isa(dl[Block(1,1,1)],VectorOfBlockArrayCoo)
-@test isa(dl[Block(1,1,2)],VectorOfBlockArrayCoo)
-@test isa(dl[Block(1,2,1)],VectorOfBlockArrayCoo)
-@test isa(dl[Block(1,2,2)],VectorOfBlockArrayCoo)
-@test isa(dl[1][Block(1,1,1)],BlockArrayCoo)
-@test isa(dl[1][Block(1,1,2)],BlockArrayCoo)
-@test isa(dl[1][Block(1,2,1)],BlockArrayCoo)
-@test isa(dl[1][Block(1,2,2)],BlockArrayCoo)
-test_array(dl,map((a,b)->f.(a,b),v,aLl))
-
-# Integration of Blocks of Blocks
-
-f(a,b) = 2*a + a*b
-vl = apply(FieldOpKernel(f),aRl,bl)
-dl = apply(IntKernel(),vl,cw,cj)
-test_array(dl,map( (v,w,j) -> reshape(sum( broadcast(*,v,w,det.(j)), dims=1),(4*ndofs,)), vl,cw,cj ))
-@test isa(dl,VectorOfBlockArrayCoo)
-@test is_zero_block(dl,Block(1))
-@test is_nonzero_block(dl,Block(2))
-@test isa(dl[Block(1)],VectorOfBlockArrayCoo)
-@test isa(dl[Block(2)],VectorOfBlockArrayCoo)
-
-f(b,a) = a * b
-v = apply(FieldOpKernel(-),ctLl,ctRl)
-vl = apply(FieldOpKernel(f),v,aLl)
-dl = apply(IntKernel(),vl,cw,cj)
-test_array(dl,map( (v,w,j) -> reshape(sum( broadcast(*,v,w,det.(j)), dims=1),(4*ndofs,4*ndofs)), vl,cw,cj ))
-@test isa(dl,VectorOfBlockArrayCoo)
-@test is_nonzero_block(dl,Block(1,1))
-@test is_nonzero_block(dl,Block(1,2))
-@test is_zero_block(dl,Block(2,1))
-@test is_zero_block(dl,Block(2,2))
-@test isa(dl[Block(1,1)],VectorOfBlockArrayCoo)
-@test isa(dl[Block(1,2)],VectorOfBlockArrayCoo)
-@test isa(dl[Block(2,1)],VectorOfBlockArrayCoo)
-@test isa(dl[Block(2,2)],VectorOfBlockArrayCoo)
-
-#using BenchmarkTools
-#cache = array_cache(dl)
-#@btime getindex!($cache,$dl,3)
+bdfx = evaluate(bf+bf,x)
+bdf = evaluate(Operation(+),bf,bf)
+@test evaluate(bdf,x) == bdfx
+test_field(bdf,x,bdfx)#,grad=∇bdfp)
+
+bdfp = evaluate(bf⋅bf,p)
+bdfx = evaluate(bf⋅bf,x)
+bdf = bf⋅bf
+@test evaluate(bdf,x) == bdfx
+test_field(bdf,x,bdfx)#,grad=∇bdfp)
+
+evaluate(bf,x)
+evaluate(∇bf,x)
+evaluate(bdf,x)
+evaluate(∇bdf,x)
+∇bdfx = evaluate(∇bf,x).⋅evaluate(bf,x)*2
+evaluate(∇bdf,x) == ∇bdfx
+test_field(bdf,x,bdfx,grad=∇bdfx)
+
+# Composition
+
+bdf = bf∘bf
+∇bdf = ∇(bdf)
+bdfx = evaluate(bdf,x)
+∇bdfx = evaluate(∇bf,evaluate(bf,x)).⋅evaluate(∇bf,x)
+test_field(bdf,x,bdfx,grad=∇bdfx)
+
+c = return_cache(∇bdf,x)
+# @btime evaluate!(c,∇bdf,x)
 
 end # module

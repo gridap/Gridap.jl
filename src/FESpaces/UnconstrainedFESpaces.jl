@@ -3,67 +3,45 @@
 Generic implementation of an unconstrained single-field FE space
 Private fields and type parameters
 """
-struct UnconstrainedFESpace <: SingleFieldFESpace
+struct UnconstrainedFESpace{V} <: SingleFieldFESpace
+  vector_type::Type{V}
   nfree::Int
   ndirichlet::Int
-  cell_dofs::AbstractArray
-  cell_basis::CellField
-  cell_dof_basis::CellDofBasis
+  cell_dofs_ids::AbstractArray
+  cell_shapefuns::CellField
+  cell_dof_basis::CellDof
   dirichlet_dof_tag::Vector{Int8}
-  dirichlet_cells::Vector{Int}
+  dirichlet_cells::Vector{Int32}
   ntags::Int
 end
 
 # FESpace interface
 
-constraint_style(::Type{<:UnconstrainedFESpace}) = Val{false}()
-
-function num_free_dofs(f::UnconstrainedFESpace)
-  f.nfree
-end
-
-function get_cell_basis(f::UnconstrainedFESpace)
-  f.cell_basis
-end
-
-function zero_free_values(f::UnconstrainedFESpace)
-  zeros(num_free_dofs(f))
-end
+ConstraintStyle(::Type{<:UnconstrainedFESpace}) = UnConstrained()
+num_free_dofs(f::UnconstrainedFESpace) = f.nfree
+zero_free_values(f::UnconstrainedFESpace) = allocate_vector(f.vector_type,num_free_dofs(f))
+get_cell_shapefuns(f::UnconstrainedFESpace) = f.cell_shapefuns
+get_cell_dof_basis(f::UnconstrainedFESpace) = f.cell_dof_basis
+get_cell_dof_ids(f::UnconstrainedFESpace) = f.cell_dofs_ids
+get_triangulation(f::UnconstrainedFESpace) = get_triangulation(f.cell_shapefuns)
+get_dof_value_type(f::UnconstrainedFESpace{V}) where V = eltype(V)
+get_vector_type(f::UnconstrainedFESpace{V}) where V = V
 
 # SingleFieldFESpace interface
 
-function get_cell_dofs(f::UnconstrainedFESpace)
-  f.cell_dofs
-end
-
-function get_cell_dof_basis(f::UnconstrainedFESpace)
-  f.cell_dof_basis
-end
-
-function num_dirichlet_dofs(f::UnconstrainedFESpace)
-  f.ndirichlet
-end
-
-function num_dirichlet_tags(f::UnconstrainedFESpace)
-  f.ntags
-end
-
-function zero_dirichlet_values(f::UnconstrainedFESpace)
-  zeros(num_dirichlet_dofs(f))
-end
-
-function get_dirichlet_dof_tag(f::UnconstrainedFESpace)
-  f.dirichlet_dof_tag
-end
+num_dirichlet_dofs(f::UnconstrainedFESpace) = f.ndirichlet
+num_dirichlet_tags(f::UnconstrainedFESpace) = f.ntags
+zero_dirichlet_values(f::UnconstrainedFESpace) = allocate_vector(f.vector_type,num_dirichlet_dofs(f))
+get_dirichlet_dof_tag(f::UnconstrainedFESpace) = f.dirichlet_dof_tag
 
 function scatter_free_and_dirichlet_values(f::UnconstrainedFESpace,free_values,dirichlet_values)
-  cell_dofs = get_cell_dofs(f)
-  LocalToGlobalPosNegArray(cell_dofs,free_values,dirichlet_values)
+  cell_dof_ids = get_cell_dof_ids(f)
+  lazy_map(Broadcasting(PosNegReindex(free_values,dirichlet_values)),cell_dof_ids)
 end
 
 function gather_free_and_dirichlet_values!(free_vals,dirichlet_vals,f::UnconstrainedFESpace,cell_vals)
 
-  cell_dofs = get_cell_dofs(f)
+  cell_dofs = get_cell_dof_ids(f)
   cache_vals = array_cache(cell_vals)
   cache_dofs = array_cache(cell_dofs)
   cells = 1:length(cell_vals)
@@ -82,7 +60,7 @@ end
 
 function gather_dirichlet_values!(dirichlet_vals,f::UnconstrainedFESpace,cell_vals)
 
-  cell_dofs = get_cell_dofs(f)
+  cell_dofs = get_cell_dof_ids(f)
   cache_vals = array_cache(cell_vals)
   cache_dofs = array_cache(cell_dofs)
   free_vals = zero_free_values(f)

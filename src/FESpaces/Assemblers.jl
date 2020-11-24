@@ -166,3 +166,161 @@ function test_assembler(a::Assembler,matdata,vecdata,data)
   @test num_free_dofs(test_fesp) == length(b)
 end
 
+# Some syntactic sugar for assembling from anonymous functions
+# and objects from which one can collect cell matrices/vectors
+
+function assemble_matrix(f::Function,a::Assembler)
+  v = get_cell_shapefuns(get_test(a))
+  u = get_cell_shapefuns_trial(get_trial(a))
+  assemble_matrix(a,collect_cell_matrix(f(u,v)))
+end
+
+function assemble_vector(f::Function,a::Assembler)
+  v = get_cell_shapefuns(get_test(a))
+  assemble_vector(a,collect_cell_vector(f(v)))
+end
+
+function assemble_matrix_and_vector(f::Function,b::Function,a::Assembler)
+  v = get_cell_shapefuns(get_test(a))
+  u = get_cell_shapefuns_trial(get_trial(a))
+  assemble_matrix_and_vector(a,collect_cell_matrix_and_vector(f(u,v),b(v)))
+end
+
+function assemble_matrix(f,a::Assembler)
+  assemble_matrix(a,collect_cell_matrix(f))
+end
+
+function assemble_vector(f,a::Assembler)
+  assemble_vector(a,collect_cell_vector(f))
+end
+
+function assemble_matrix_and_vector(f,b,a::Assembler)
+  assemble_matrix_and_vector(a,collect_cell_matrix_and_vector(f,b))
+end
+
+function assemble_matrix(f,U::FESpace,V::FESpace)
+  a = SparseMatrixAssembler(U,V)
+  assemble_matrix(f,a)
+end
+
+function assemble_vector(f,V::FESpace)
+  a = SparseMatrixAssembler(V,V)
+  assemble_vector(f,a)
+end
+
+function assemble_matrix_and_vector(f,b,U::FESpace,V::FESpace)
+  a = SparseMatrixAssembler(U,V)
+  assemble_matrix_and_vector(f,b,a)
+end
+
+# Abstract interface for computing the data to be sent to the assembler
+
+function collect_cell_matrix(mat_contributions)
+  @abstractmethod
+end
+
+function collect_cell_vector(vec_contributions)
+  @abstractmethod
+end
+
+function collect_cell_matrix_and_vector(mat_contributions,vec_contributions)
+  @abstractmethod
+end
+
+function collect_cell_matrix_and_vector(mat_contributions,vec_contributions,uhd::FEFunction)
+  @abstractmethod
+end
+
+# Implementation of this interface for DomainContribution
+
+function collect_cell_matrix(a::DomainContribution)
+  w = []
+  r = []
+  for trian in get_domains(a)
+    cell_mat = get_contribution(a,trian) 
+    @assert eltype(cell_mat) <: AbstractMatrix
+    push!(w,cell_mat)
+    push!(r,get_cell_id(trian))
+  end
+  (w,r,r)
+end
+
+function collect_cell_vector(a::DomainContribution)
+  w = []
+  r = []
+  for trian in get_domains(a)
+    cell_vec = get_contribution(a,trian) 
+    @assert eltype(cell_vec) <: AbstractVector
+    push!(w,cell_vec)
+    push!(r,get_cell_id(trian))
+  end
+  (w,r)
+end
+
+function _collect_cell_matvec(a::DomainContribution)
+  w = []
+  r = []
+  for trian in get_domains(a)
+    cell_mat = get_contribution(a,trian) 
+    @assert eltype(cell_mat) <: Tuple
+    push!(w,cell_mat)
+    push!(r,get_cell_id(trian))
+  end
+  (w,r,r)
+end
+
+function collect_cell_matrix_and_vector(
+  biform::DomainContribution,liform::DomainContribution)
+
+  matvec, mat, vec = _pair_contribution_when_possible(biform,liform)
+  matvecdata = _collect_cell_matvec(matvec)
+  matdata = collect_cell_matrix(mat)
+  vecdata = collect_cell_vector(vec)
+  (matvecdata, matdata, vecdata)
+end
+
+function collect_cell_matrix_and_vector(
+  biform::DomainContribution,liform::DomainContribution,uhd::FEFunction)
+
+  matvec, mat, vec = _pair_contribution_when_possible(biform,liform,uhd)
+
+  matvecdata = _collect_cell_matvec(matvec)
+  matdata = collect_cell_matrix(mat)
+  vecdata = collect_cell_vector(vec)
+  (matvecdata, matdata, vecdata)
+end
+
+function _pair_contribution_when_possible(biform,liform)
+  matvec = DomainContribution()
+  mat = DomainContribution()
+  vec = DomainContribution()
+  for (trian,t) in biform.dict
+    if haskey(liform.dict,trian)
+      matvec.dict[trian] = pair_arrays(t,liform.dict[trian])
+    else
+      mat.dict[trian] = t
+    end
+  end
+  for (trian,t) in liform.dict
+    if ! haskey(biform.dict,trian)
+      vec.dict[trian] = t
+    end
+  end
+  matvec, mat, vec
+end
+
+function _pair_contribution_when_possible(biform,liform,uhd)
+  _matvec, _mat, _vec = _pair_contribution_when_possible(biform,liform)
+  matvec = DomainContribution()
+  mat = DomainContribution()
+  for (trian,t) in _matvec.dict
+    cellvals = get_cell_dof_values(uhd,get_cell_id(trian))
+    matvec.dict[trian] = attach_dirichlet(t,cellvals)
+  end
+  for (trian,t) in _mat.dict
+    cellvals = get_cell_dof_values(uhd,get_cell_id(trian))
+    matvec.dict[trian] = attach_dirichlet(t,cellvals)
+  end
+  matvec, mat, _vec
+end
+

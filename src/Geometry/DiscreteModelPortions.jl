@@ -3,8 +3,8 @@
 """
 struct DiscreteModelPortion{Dc,Dp} <: DiscreteModel{Dc,Dc}
   model::DiscreteModel{Dc,Dp}
-  oldmodel::DiscreteModel{Dc,Dp}
-  d_to_dface_to_old_dface::Vector{Vector{Int}}
+  parent_model::DiscreteModel{Dc,Dp}
+  d_to_dface_to_parent_dface::Vector{Vector{Int}}
 end
 
 get_grid(model::DiscreteModelPortion) = get_grid(model.model)
@@ -13,25 +13,30 @@ get_grid_topology(model::DiscreteModelPortion) = get_grid_topology(model.model)
 
 get_face_labeling(model::DiscreteModelPortion) = get_face_labeling(model.model)
 
-get_face_to_oldface(model::DiscreteModelPortion,d::Integer) = model.d_to_dface_to_old_dface[d+1]
+get_face_to_parent_face(model::DiscreteModelPortion,d::Integer) = model.d_to_dface_to_parent_dface[d+1]
 
-get_cell_to_oldcell(model::DiscreteModelPortion) = get_face_to_oldface(model,num_cell_dims(model))
+get_cell_to_parent_cell(model::DiscreteModelPortion) = get_face_to_parent_face(model,num_cell_dims(model))
 
-get_oldmodel(model::DiscreteModelPortion) = model.oldmodel
+get_parent_model(model::DiscreteModelPortion) = model.parent_model
 
 """
 """
-function DiscreteModelPortion(model::DiscreteModel, cell_to_oldcell::Vector{Int})
-  grid_p =  GridPortion(get_grid(model),cell_to_oldcell)
+function DiscreteModelPortion(model::DiscreteModel, cell_to_parent_cell::AbstractVector{<:Integer})
+  grid_p =  GridPortion(get_grid(model),cell_to_parent_cell)
   topo_p = GridTopology(grid_p)
-  labels_p, d_to_dface_to_old_dface = _setup_labels_p(model,topo_p,cell_to_oldcell)
+  labels_p, d_to_dface_to_parent_dface = _setup_labels_p(model,topo_p,cell_to_parent_cell)
   model_p = DiscreteModel(grid_p,topo_p,labels_p)
-  DiscreteModelPortion(model_p,model,d_to_dface_to_old_dface)
+  DiscreteModelPortion(model_p,model,d_to_dface_to_parent_dface)
 end
 
-function DiscreteModelPortion(model::DiscreteModel, cell_to_is_in::Vector{Bool})
-  cell_to_oldcell = findall(cell_to_is_in)
-  DiscreteModelPortion(model,cell_to_oldcell)
+function DiscreteModelPortion(model::DiscreteModel, cell_to_is_in::AbstractArray{Bool})
+  cell_to_parent_cell = findall(collect1d(cell_to_is_in))
+  DiscreteModelPortion(model,cell_to_parent_cell)
+end
+
+function DiscreteModelPortion(model::DiscreteModel, cell_to_is_in::AbstractVector{Bool})
+  cell_to_parent_cell = findall(cell_to_is_in)
+  DiscreteModelPortion(model,cell_to_parent_cell)
 end
 
 function _setup_labels_p(model,topo_p,cell_to_oldcell)

@@ -25,8 +25,9 @@ metadata = nothing
 
 struct MockConformity <: Conformity end
 
-reffe = GenericRefFE(
-  ndofs, polytope, prebasis, dofs, MockConformity(), metadata ,face_dofs)
+conf = MockConformity()
+reffe = GenericRefFE{typeof(conf)}(
+  ndofs, polytope, prebasis, dofs, conf, metadata ,face_dofs)
 
 function ReferenceFEs.get_face_own_dofs(reffe::GenericRefFE{MockConformity},::MockConformity)
   face_own_dofs
