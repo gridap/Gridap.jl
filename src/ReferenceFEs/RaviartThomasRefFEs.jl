@@ -29,7 +29,6 @@ function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
 
   ndofs = num_dofs(dof_basis)
 
-  #metadata = (et,order)
   metadata = nothing
 
   reffe = GenericRefFE{:RaviartThomas}(
@@ -117,24 +116,24 @@ function _nfaces_evaluation_points_weights(p, fgeomap, fips, wips, phi)
   # scaling = det(grad(fgeomap)⋅grad(phi))
   Jt1 = lazy_map(∇,fgeomap)
   Jt1_ips = lazy_map(evaluate,Jt1,c_fips)
-  #Jt1_ips_t = lazy_map(transpose,Jt1_ips)
-  Jt2 = fill(∇(phi),nc)
-  Jt2_ips = lazy_map(evaluate,Jt2,pquad)
-  #Jt = lazy_map(Broadcasting(⋅),Jt1,Jt2)
-  #Jt_ips = lazy_map(evaluate,Jt,c_fips)
-  #det_J = lazy_map(Broadcasting(meas),Jt_ips)
-  Jt_ips = lazy_map(Broadcasting(⋅), Jt1_ips, Jt2_ips)
-  det_J = lazy_map(Broadcasting(meas),Jt_ips)
+  ##Jt1_ips_t = lazy_map(transpose,Jt1_ips)
+  #Jt2 = fill(∇(phi),nc)
+  #Jt2_ips = lazy_map(evaluate,Jt2,pquad)
+  ##Jt = lazy_map(Broadcasting(⋅),Jt1,Jt2)
+  ##Jt_ips = lazy_map(evaluate,Jt,c_fips)
+  ##det_J = lazy_map(Broadcasting(meas),Jt_ips)
+  #Jt_ips = lazy_map(Broadcasting(⋅), Jt1_ips, Jt2_ips)
+  det_J = lazy_map(Broadcasting(meas),Jt1_ips)
 
 
-  c_wips = collect(lazy_map(Broadcasting(*),c_wips,det_J))
-  c_fips, pquad, c_wips
+  c_detwips = collect(lazy_map(Broadcasting(*),c_wips,det_J))
+  c_fips, pquad, c_detwips
 end
 
 function _broadcast(::Type{T},n,b) where T
   c = Array{T}(undef,size(b))
   for (ii, i) in enumerate(b)
-    c[ii] = n⋅i
+    c[ii] = i⋅n
   end
   return c
 end
@@ -146,6 +145,7 @@ function _RT_face_moments(p, fshfs, c_fips, fcips, fwips,phi)
   cvals = [fwips[i].*cvals[i] for i in 1:nc]
   # fns, os = get_facet_normal(p)
   fns = get_facet_normal(p)
+  os = get_facet_orientations(p)
 
   # Must express the normal in terms of the real/reference system of
   # coordinates (depending if phi≡I or phi is a mapping, resp.)
@@ -153,20 +153,19 @@ function _RT_face_moments(p, fshfs, c_fips, fcips, fwips,phi)
   # n = n*meas(J)⋅J^-1
   Jt = fill(∇(phi),nc)
   #Jt_ips = lazy_map(evaluate,Jt,fcips)
-  J = lazy_map(Operation(transpose),Jt)
-  J_inv = lazy_map(Operation(inv),J)
-  meas_Jt = lazy_map(Operation(meas),Jt)
+  #J = lazy_map(Operation(transpose),Jt)
+  Jt_inv = lazy_map(Operation(inv),Jt)
+  det_Jt = lazy_map(Operation(det),Jt)
   #sqrt_meas_Jt = lazy_map(Operation(sqrt),meas_Jt)
-  scaling = lazy_map(inv,meas_Jt)
-  change = lazy_map(*,meas_Jt,J_inv)
+  #scaling = lazy_map(inv,meas_Jt)
+  change = lazy_map(*,det_Jt,Jt_inv)
   change_ips = lazy_map(evaluate,change,fcips)
 
   if is_n_cube(p)
-    os = get_facet_orientations(p)
     # @santiagobadia : Temporary hack for making it work for structured hex meshes
     cvals = [ _broadcast(typeof(n),n*o,b) for (n,o,b) in zip(fns,os,cvals)]
   elseif is_simplex(p)
-    cvals = [ _broadcast(typeof(n),n,J.*b) for (n,b,J) in zip(fns,cvals,change_ips)]
+    cvals = [ _broadcast(typeof(n),n*o,J.*b) for (n,o,b,J) in zip(fns,os,cvals,change_ips)]
   else
     @notimplemented
   end
@@ -211,7 +210,7 @@ end
 function _RT_cell_moments(p, cbasis, ccips, cwips)
   # Interior DOFs-related basis evaluated at interior integration points
   ishfs_iips = evaluate(cbasis,ccips)
-  return cwips.*ishfs_iips
+  return cwips.⋅ishfs_iips
 end
 
 _p_filter(e,order) = (sum(e) <= order)
@@ -226,11 +225,12 @@ function _RT_cell_values(p,et,order,phi)
 
   # Must scale weights using phi map to get the correct integrals
   # scaling = det(grad(phi))
-  #Jt = lazy_map(∇,phi)
-  #meas_Jt = lazy_map(meas, Jt)
-  #meas_Jt_ccips = lazy_map(evaluate, meas_Jt, ccips)
-  #cwips = collect(lazy_map(Broadcasting(*),cwips,meas_Jt_ccips))
 
+  Jt = ∇(phi)
+  Jt_inv = inv(Jt)
+  det_Jt = det(Jt)
+  change = det_Jt*Jt_inv
+  change_ips = evaluate(change,ccips)
 
   # Cell moments, i.e., M(C)_{ab} = q_C^a(xgp_C^b) w_C^b ⋅ ()
   if is_n_cube(p)
@@ -243,7 +243,7 @@ function _RT_cell_values(p,et,order,phi)
   end
   cmoments = _RT_cell_moments(p, cbasis, ccips, cwips )
 
-  return [ccips], [cmoments]
+  return [ccips], [change_ips.⋅cmoments]
 
 end
 
@@ -386,15 +386,15 @@ end
 
 struct ContraVariantPiolaMap <: PushForwardMap end
 
-function evaluate!(cache,::ContraVariantPiolaMap,v::Number,J::Number,absdetJ::Number)
-  (1/absdetJ)*J⋅v
+function evaluate!(cache,::ContraVariantPiolaMap,v::Number,J::Number,detJ::Number)
+  (1/detJ)*J⋅v
 end
 
 function evaluate!(cache,k::ContraVariantPiolaMap,v::AbstractVector{<:Field},phi::Field)
   Jt = ∇(phi)
-  absdetJ = Operation(meas)(Jt)
+  detJ = Operation(det)(Jt)
   J = Operation(transpose)(Jt)
-  Broadcasting(Operation(k))(v,J,absdetJ)
+  Broadcasting(Operation(k))(v,J,detJ)
 end
 #=
 function lazy_map(
@@ -421,13 +421,13 @@ function lazy_map(
   cell_map::AbstractArray{<:Field})
 
   cell_Jt = lazy_map(∇,cell_map)
-  cell_absdetJ = lazy_map(Operation(meas),cell_Jt)
+  cell_detJ = lazy_map(Operation(det),cell_Jt)
   #cell_absdetJ = lazy_map(Operation(abs),cell_detJ)
   cell_J = lazy_map(Operation(transpose),cell_Jt)
 
-  lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_J,cell_absdetJ)
+  lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_J,cell_detJ)
 end
-
+#=
 function return_cache(::ContraVariantPiolaMap,s::MomentBasedDofBasis,phi::Field)
   Jt_q_cache = return_cache(∇(phi),s.nodes)
   face_moments = deepcopy(s.face_moments)
@@ -463,5 +463,5 @@ function evaluate!(cache,::ContraVariantPiolaMap,s::MomentBasedDofBasis,phi::Fie
   ##dof_basis = MomentBasedDofBasis(nf_nodes, nf_moments,GenericField(identity))
   return dof_basis
 end
-
+=#
 PushForwardMap(reffe::GenericRefFE{:RaviartThomas}) = ContraVariantPiolaMap()
