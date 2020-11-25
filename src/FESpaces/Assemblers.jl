@@ -324,3 +324,24 @@ function _pair_contribution_when_possible(biform,liform,uhd)
   matvec, mat, _vec
 end
 
+# allow linear forms like `l(v) = 0
+
+function collect_cell_vector(l::Number)
+  @notimplementedif l != 0
+  w = []
+  r = []
+  (w,r)
+end
+
+function collect_cell_matrix_and_vector(mat_contributions::DomainContribution,l::Number)
+  @notimplementedif l != 0
+  vec_contributions = DomainContribution()
+  collect_cell_matrix_and_vector(mat_contributions,vec_contributions)
+end
+
+function collect_cell_matrix_and_vector(
+  biform::DomainContribution,l::Number,uhd::FEFunction)
+  liform = DomainContribution()
+  collect_cell_matrix_and_vector(biform,liform,uhd)
+end
+
