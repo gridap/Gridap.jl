@@ -11,7 +11,6 @@ using Gridap.CellData
 using Gridap.Arrays
 using Gridap.Visualization
 
-using GridapGmsh
 using Gridap
 using Gridap.FESpaces
 
