@@ -199,7 +199,7 @@ function VisualizationGrid(trian::Triangulation, ref_grids::AbstractArray{<:Unst
     sub_cell_to_nodes,
     sctype_to_reffe,
     sub_cell_to_sctype,
-    Val{false}())
+    NonOriented())
 
   VisualizationGrid(sub_grid,sub_cell_to_cell,cell_to_refpoints)
 
@@ -277,7 +277,7 @@ function visualization_data(
     cell_to_nodes,
     ctype_to_reffe,
     cell_to_ctype,
-    Val{true}())
+    Oriented())
   cdata = _prepare_cdata(celldata,node_to_cell)
   pdata = _prepare_pdata_for_cell_points(nodaldata)
 

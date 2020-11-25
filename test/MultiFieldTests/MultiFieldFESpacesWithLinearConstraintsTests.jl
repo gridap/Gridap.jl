@@ -22,8 +22,8 @@ add_tag_from_tags!(labels,"dirichlet_2",[1,3,7])
 add_tag_from_tags!(labels,"neumann_2",[5,6,8])
 
 Ω = Triangulation(model)
-Γ1 = BoundaryTriangulation(model,"neumann_1")
-Γ2 = BoundaryTriangulation(model,"neumann_2")
+Γ1 = BoundaryTriangulation(model,tags="neumann_1")
+Γ2 = BoundaryTriangulation(model,tags="neumann_2")
 Λ = SkeletonTriangulation(model)
 
 dΩ = LebesgueMeasure(Ω,2)

@@ -213,7 +213,11 @@ const ⋅¹ = dot
 # Inner product (full contraction)
 ###############################################################
 
-inner(a::Real,b::Real) = a*b
+inner(a::Number,b::Number) = a*b
+
+function inner(a::Complex,b::Complex)
+  @notimplemented "What do we want here a*b or a'*b ?"
+end
 
 function inner(a::MultiValue, b::MultiValue)
   @notimplemented
@@ -356,9 +360,10 @@ end
 
 """
 """
-outer(a::Real,b::Real) = a*b
-outer(a::MultiValue,b::Real) = a*b
-outer(a::Real,b::MultiValue) = a*b
+outer(a::Number,b::Number) = a*b
+
+outer(a::MultiValue,b::Number) = a*b
+outer(a::Number,b::MultiValue) = a*b
 
 function outer(a::MultiValue,b::MultiValue)
    @notimplemented
@@ -374,7 +379,7 @@ function outer(a::VectorValue{0,Ta},b::VectorValue{1,Tb}) where {Ta,Tb}
   TensorValue{0,1,T}()
 end
 
-function outer(a::VectorValue{0,Ta},b::Tb) where {Ta,Tb<:Real}
+function outer(a::VectorValue{0,Ta},b::Tb) where {Ta,Tb<:Number}
   T = promote_type(Ta,Tb)
   VectorValue{0,T}()
 end

@@ -24,6 +24,8 @@ export det, inv, tr, cross, dot, norm, ×, ⋅
 @publish Algebra get_vector
 @publish Algebra SparseMatrixCSR
 @publish Algebra SymSparseMatrixCSR
+@publish Algebra jacobian
+@publish Algebra hessian
 
 @publish Arrays array_cache
 @publish Arrays getindex!
@@ -89,8 +91,11 @@ using Gridap.TensorValues: ⊗; export ⊗
 
 @publish Geometry get_triangulation
 @publish Geometry num_cells
+@publish Geometry num_facets
+@publish Geometry num_vertices
+@publish Geometry num_edges
+@publish Geometry num_faces
 @publish Geometry Triangulation
-@publish Geometry get_normal_vector
 @publish Geometry get_cell_coordinates
 @publish Geometry get_cell_ref_coordinates
 @publish Geometry get_cell_map
@@ -111,12 +116,19 @@ using Gridap.TensorValues: ⊗; export ⊗
 
 @publish CellData CellQuadrature
 @publish CellData LebesgueMeasure
+@publish CellData DomainStyle
+@publish CellData ReferenceDomain
+@publish CellData PhysicalDomain
 @publish CellData get_cell_points
 @publish CellData CellField
 @publish CellData CellState
 @publish CellData jump
 @publish CellData mean
-@publish CellData update!
+@publish CellData update_state!
+@publish CellData get_normal_vector
+using Gridap.CellData: ∫; export ∫
+@publish CellData get_cell_measure
+@publish CellData get_physical_coordinate
 
 @publish FESpaces FESpace
 @publish FESpaces TrialFESpace
@@ -133,13 +145,21 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish FESpaces num_dirichlet_dofs
 @publish FESpaces num_free_dofs
 @publish FESpaces num_dirichlet_tags
+@publish FESpaces get_cell_dof_ids
+@publish FESpaces get_cell_dof_values
+@publish FESpaces get_cell_shapefuns
+@publish FESpaces get_cell_shapefuns_trial
 @publish FESpaces FEFunction
 @publish FESpaces interpolate
 @publish FESpaces interpolate_everywhere
 @publish FESpaces interpolate_dirichlet
+@publish FESpaces assemble_vector
+@publish FESpaces assemble_matrix
+@publish FESpaces assemble_matrix_and_vector
 @publish FESpaces FEOperator
 @publish FESpaces FESolver
 @publish FESpaces SparseMatrixAssembler
+@publish FESpaces FiniteElements
 
 @publish MultiField MultiFieldFESpace
 @publish MultiField num_fields
@@ -147,3 +167,72 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish Visualization writevtk
 @publish Visualization createvtk
 
+export apply
+function apply(args...)
+  Helpers.@unreachable """\n
+  Function apply has been removed and replaced by lazy_map.
+  This error message will be deleted in future versions.
+  """
+end
+
+export cell_measure
+function cell_measure(args...)
+  Helpers.@unreachable """\n
+  Function cell_measure(a,b) has been removed and replaced by get_cell_measure(a).
+  This error message will be deleted in future versions.
+  """
+end
+
+export restrict
+function restrict(args...)
+  Helpers.@unreachable """\n
+  Function restrict has been removed. The user does not need to explicitly
+  restrict to a given Triangulation any more. The code does it undere the hood.
+  This error message will be deleted in future versions.
+  """
+end
+
+export FETerm
+function FETerm(args...)
+  Helpers.@unreachable """\n
+  Function FETerm has been removed. The API for specifying the weak form has changed significantly.
+  See the gridap/Tutorials repo for some examples of how to use the new API.
+  This error message will be deleted in future versions.
+  """
+end
+
+export FEEnergy
+function FEEnergy(args...)
+  Helpers.@unreachable """\n
+  Function FEEnergy has been removed. The API for specifying the weak form has changed significantly.
+  See the gridap/Tutorials repo for some examples of how to use the new API.
+  This error message will be deleted in future versions.
+  """
+end
+
+export AffineFETerm
+function AffineFETerm(args...)
+  Helpers.@unreachable """\n
+  Function AffineFETerm has been removed. The API for specifying the weak form has changed significantly.
+  See the gridap/Tutorials repo for some examples of how to use the new API.
+  This error message will be deleted in future versions.
+  """
+end
+
+export LinearFETerm
+function LinearFETerm(args...)
+  Helpers.@unreachable """\n
+  Function LinearFETerm has been removed. The API for specifying the weak form has changed significantly.
+  See the gridap/Tutorials repo for some examples of how to use the new API.
+  This error message will be deleted in future versions.
+  """
+end
+
+export FESource
+function FESource(args...)
+  Helpers.@unreachable """\n
+  Function FESource has been removed. The API for specifying the weak form has changed significantly.
+  See the gridap/Tutorials repo for some examples of how to use the new API.
+  This error message will be deleted in future versions.
+  """
+end

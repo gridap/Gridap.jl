@@ -24,21 +24,8 @@ using Test
 
 @testset "DiscontinuousFESpaces" begin include("DiscontinuousFESpacesTests.jl") end
 
-#
-#
-#
-#@testset "DivConformingFESpaces" begin include("DivConformingFESpacesTests.jl") end
-#
-#@testset "CurlConformingFESpaces" begin include("CurlConformingFESpacesTests.jl") end
-#
-#
-#
-#@testset "FETerms" begin include("FETermsTests.jl") end
-#
-#
-#
-#@testset "FEOperatorsFromTerms" begin include("FEOperatorsFromTermsTests.jl") end
-#
+@testset "DivConformingFESpaces" begin include("DivConformingFESpacesTests.jl") end
 
+@testset "CurlConformingFESpaces" begin include("CurlConformingFESpacesTests.jl") end
 
 end # module

@@ -128,14 +128,6 @@ get_cell_ref_map(trian::Triangulation) = get_cell_ref_map(trian,TriangulationSty
 get_cell_ref_map(trian::Triangulation,::BackgroundTriangulation) = Fill(GenericField(identity),num_cells(trian))
 get_cell_ref_map(trian::Triangulation,::SubTriangulation) = @abstractmethod
 
-function Arrays.lazy_map(
-  k::Broadcasting{typeof(∘)},
-  a::AbstractArray,
-  b::Fill{<:GenericField{typeof(identity)}})
-  @assert length(a) == length(b)
-  a
-end
-
 #"""
 #Given an array aligned with the cells in the background triangulation, return another array
 #aligned with the cells of the sub-triangulation. Do nothing if `trian` is already a 
@@ -320,22 +312,6 @@ end
 #  convert_to_cell_field(object,cm)
 #end
 #
-#"""
-#    get_physical_coordinate(trian::Triangulation)
-#
-#In contrast to get_cell_map, the returned object:
-#- is a [`CellField`](@ref)
-#- its gradient is the identity tensor
-#"""
-#function get_physical_coordinate(trian::Triangulation)
-#  CellField(_phys_coord,trian)
-#end
-#
-#_phys_coord(x) = x
-#
-#_phys_coord_grad(x) = one(typeof(outer(x,x)))
-#
-#gradient(::typeof(_phys_coord)) = _phys_coord_grad
 
 # Helpers for Triangulation
 
@@ -387,24 +363,3 @@ end
 #  CellField(value,get_cell_map(trian),quad)
 #end
 
-#"""
-#"""
-#function cell_measure(trian_Ω1::Triangulation)
-#  trian_cut_1 = trian_Ω1
-#  quad_cut_1 = CellQuadrature(trian_cut_1,0)
-#  subcell1_to_dV = integrate(1,trian_cut_1,quad_cut_1)
-#  subcell1_to_bgcell = get_cell_id(trian_cut_1)
-#  bgcell_to_dV = zeros(n_bgcells)
-#  _meas_K_fill!(bgcell_to_dV,subcell1_to_dV,subcell1_to_bgcell)
-#  bgcell_to_dV
-#end
-#
-#function cell_measure(trian_Ω1::Triangulation,trian::Triangulation)
-#  cell_measure(trian_Ω1,num_cells(trian))
-#end
-#
-#function _meas_K_fill!(bgcell_to_dV,subcell1_to_dV,subcell1_to_bgcell)
-#  for (subcell1, bgcell) in enumerate(subcell1_to_bgcell)
-#    bgcell_to_dV[bgcell] += subcell1_to_dV[subcell1]
-#  end
-#end

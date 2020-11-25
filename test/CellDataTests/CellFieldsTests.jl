@@ -15,13 +15,17 @@ model = CartesianDiscreteModel(domain,cells)
 
 trian = Triangulation(model)
 trian_N =BoundaryTriangulation(model)
-trian_D =BoundaryTriangulation(model,"tag_8")
+trian_D =BoundaryTriangulation(model,tags="tag_8")
 trian_S =SkeletonTriangulation(model)
+trian_0 =Triangulation(trian_D,Int[])
 
 x = get_cell_points(trian)
 @test DomainStyle(x) == ReferenceDomain()
 @test get_array(x) == get_cell_coordinates(trian)
 @test get_cell_data(x) == get_cell_ref_coordinates(trian)
+
+px = get_physical_coordinate(trian)
+test_array(px(x),collect1d(get_array(x)))
 
 _x = change_domain(x,PhysicalDomain())
 @test DomainStyle(_x) == PhysicalDomain()
@@ -39,6 +43,10 @@ fx = f(x)
 r = map(xs->ffun.(xs),get_array(x))
 r = reshape(r,length(r))
 test_array(fx,r,≈)
+
+x_0 = get_cell_points(trian_0)
+fx_0 = f(x_0)
+test_array(fx_0,collect(fx_0))
 
 n_S = get_normal_vector(trian_S)
 x_S = get_cell_points(trian_S)

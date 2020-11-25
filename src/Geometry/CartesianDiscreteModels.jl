@@ -6,7 +6,7 @@
 """
 struct CartesianDiscreteModel{D,T,F} <: DiscreteModel{D,D}
   grid::CartesianGrid{D,T,F}
-  grid_topology::UnstructuredGridTopology{D,D,T,true}
+  grid_topology::UnstructuredGridTopology{D,D,T,Oriented}
   face_labeling::FaceLabeling
   @doc """
       CartesianDiscreteModel(desc::CartesianDescriptor)

@@ -52,10 +52,10 @@ include("CellData/CellData.jl")
 
 include("Visualization/Visualization.jl")
 
-include("FESpacesNEW/FESpaces.jl")
+include("FESpaces/FESpaces.jl")
 
 include("MultiField/MultiField.jl")
 
-# include("Exports.jl")
+include("Exports.jl")
 
 end # module

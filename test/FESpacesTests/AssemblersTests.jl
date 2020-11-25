@@ -2,7 +2,6 @@ module AssemblersTests
 
 using Test
 
-
 using Test
 using Gridap.Arrays
 using Gridap.TensorValues
@@ -46,6 +45,9 @@ vec_contribs = ℓ(dv)
 
 assem = SparseMatrixAssembler(U,V)
 
+@test isa(U,TrialFESpace)
+@test_throws AssertionError assem = SparseMatrixAssembler(V,U)
+
 data = collect_cell_matrix(mat_contribs)
 A = assemble_matrix(assem,data)
 @test size(A) == (num_free_dofs(V), num_free_dofs(U))
@@ -68,7 +70,22 @@ uh = FEFunction(U,x)
 
 A = assemble_matrix(a,U,V)
 b = assemble_vector(ℓ,V)
+A,b = assemble_matrix_and_vector(a,ℓ,U,V)
 
+A = assemble_matrix(a(du,dv),U,V)
+b = assemble_vector(ℓ(dv),V)
+A,b = assemble_matrix_and_vector(a(du,dv),ℓ(dv),U,V)
 
+V = TestFESpace(
+  model,
+  ReferenceFE(:Lagrangian,Float64,1),
+  vector_type=Vector{ComplexF64})
+U = V
+
+assem = SparseMatrixAssembler(U,V)
+Ta = get_matrix_type(assem)
+Tb = get_vector_type(assem)
+@test eltype(Ta) == ComplexF64
+@test eltype(Tb) == ComplexF64
 
 end # module

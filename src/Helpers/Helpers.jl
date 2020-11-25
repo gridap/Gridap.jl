@@ -19,6 +19,7 @@ export @unreachable
 export @check
 export tfill
 export get_val_parameter
+export first_and_tail
 export GridapType
 #export operate
 

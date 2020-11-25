@@ -60,25 +60,8 @@ b = residual(op,xh)
 A = jacobian(op,xh)
 test_fe_operator(op,get_free_values(xh),b)
 
-@test_broken begin
-
-t_Ω = FETerm(r,j,trian,quad)
-t_Ω_auto = FETerm(r,trian,quad)
-
-x = FEFunction(X,rand(num_free_dofs(X)))
-dx = get_cell_basis(X)
-y = get_cell_basis(Y)
-
-cell_r = get_cell_residual(t_Ω,x,y)
-cell_j = get_cell_jacobian(t_Ω,x,dx,y)
-
-cell_r_auto = get_cell_residual(t_Ω_auto,x,y)
-cell_j_auto = get_cell_jacobian(t_Ω_auto,x,dx,y)
-test_array(cell_r_auto,cell_r,≈)
-test_array(cell_j_auto,cell_j,≈)
-
-false
-end
-
+op_auto = FEOperator(r,X,Y)
+A_auto = jacobian(op_auto,xh)
+@test A ≈ A_auto
 
 end # module

@@ -29,8 +29,8 @@ import Gridap.Geometry: num_cells
 import Gridap.Geometry: get_triangulation
 
 import Gridap.TensorValues: inner, outer, double_contraction, symmetric_part
-import LinearAlgebra: det, tr, cross, dot
-import Base: inv, abs, abs2, *, +, -, /, adjoint, transpose
+import LinearAlgebra: det, tr, cross, dot, ⋅
+import Base: inv, abs, abs2, *, +, -, /, adjoint, transpose, real, imag
 
 export gradient, ∇
 export ∇∇
@@ -56,6 +56,7 @@ export Integrand
 export ∫
 export CellDof
 export get_normal_vector
+export get_cell_measure
 
 export DomainContribution
 export num_domains
@@ -68,9 +69,10 @@ export attach_dirichlet
 export attach_constraints_rows
 export attach_constraints_cols
 export identity_constraints
+export get_physical_coordinate
 
 export CellState
-export update!
+export update_state!
 
 include("CellDataInterface.jl")
 

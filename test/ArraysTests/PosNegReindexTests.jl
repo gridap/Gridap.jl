@@ -103,6 +103,21 @@ for indices in ([1,3,-2,2,-1], PosNegPartition([1,4,2],5), lazy_map(PosNegReinde
 
 end
 
+a_i = PosNegPartition([1,],4)
+a_pos = Float64[40]
+a_neg = -Float64[40,30,20]
+a = lazy_map(PosNegReindex(a_pos,a_neg),a_i)
+
+b_i = PosNegPartition([3,2,4],4)
+b_pos = Float64[50,60,30]
+b_neg = -Float64[41]
+b = lazy_map(PosNegReindex(b_pos,b_neg),b_i)
+
+c = lazy_map(+,a,b)
+test_array(c,map(+,a,b))
+
+
+
 ## Testing some cases where PosNegReindex can be type-instable
 #
 #indices = [1,3,-2,2,-1]

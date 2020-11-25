@@ -75,14 +75,12 @@ export VectorOfBlockVectorCoo
 export VectorOfBlockMatrixCoo
 export zeros_like
 export TwoLevelBlockedUnitRange
-export BlockArrayCooMap
 export append_ranges
 export MultiLevelBlockedUnitRange
 export blocks_equal
 export num_blocks_equal
 export local_range
 export similar_range
-export BlockArrayCooMap
 
 export array_cache
 export getindex!
@@ -181,8 +179,6 @@ include("SubVectors.jl")
 include("ArrayPairs.jl")
 
 include("AppendedArrays.jl")
-
-#include("VectorsOfBlockArrayCoo.jl")
 
 include("Autodiff.jl")
 

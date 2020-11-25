@@ -13,6 +13,8 @@ using Gridap.MultiField
 using Gridap.TensorValues
 using Test
 
+using Gridap.Arrays: BlockArrayCooMap
+
 domain = (0,1,0,1)
 cells = (2,2)
 model = CartesianDiscreteModel(domain,cells)
@@ -85,7 +87,7 @@ cellmat2 = integrate( α*(du⋅dv) + ∇(du)⊙∇(dv) , quad)
 test_array(cellmat1,cellmat2,≈)
 
 @test isa(cellmat2,LazyArray{<:Fill{BlockArrayCooMap{2}}})
-@test_broken isa(cellmat1,LazyArray{<:Fill{BlockArrayCooMap{2}}})
+#@test_broken isa(cellmat1,LazyArray{<:Fill{BlockArrayCooMap{2}}})
 
 α = CellField(2,trian)
 op2(u,∇u,α) = α*(∇u⋅u)
@@ -93,7 +95,7 @@ cellmat1 = integrate( dv⋅(op2∘(du,∇(du),α)),quad)
 cellmat2 = integrate( dv⋅(α*(∇(du)⋅du)),quad)
 test_array(cellmat1,cellmat2,≈)
 @test isa(cellmat2,LazyArray{<:Fill{BlockArrayCooMap{2}}})
-@test_broken isa(cellmat1,LazyArray{<:Fill{BlockArrayCooMap{2}}})
+#@test_broken isa(cellmat1,LazyArray{<:Fill{BlockArrayCooMap{2}}})
 
 conv(u,∇u,α) = α*(u⋅∇u)
 dconv(du,∇du,u,∇u,α) = conv(u,∇du,α)+conv(du,∇u,α)
@@ -109,7 +111,7 @@ cellmat1 = integrate( dv⋅(dconv∘(du,∇(du),u,∇(u),α)) , quad)
 cellmat2 = integrate( dv⋅( α*(du⋅∇(u)) + α*(u⋅∇(du))), quad)
 test_array(cellmat1,cellmat2,≈)
 @test isa(cellmat2,LazyArray{<:Fill{BlockArrayCooMap{2}}})
-@test_broken isa(cellmat1,LazyArray{<:Fill{BlockArrayCooMap{2}}})
+#@test_broken isa(cellmat1,LazyArray{<:Fill{BlockArrayCooMap{2}}})
 
 cellmat_Γ = integrate(  jump(n⋅dv)*dp.⁺ + mean(dq)*jump(dp), quad_Γ)
 cellvec_Γ = integrate(  jump(n⋅dv) + mean(dq), quad_Γ)

@@ -386,8 +386,12 @@ function Triangulation(::Type{ReferenceFE{d}},model::DiscreteModel) where d
   Grid(ReferenceFE{d},model)
 end
 
-function Triangulation(model::DiscreteModel)
-  get_triangulation(model)
+function Triangulation(model::DiscreteModel;tags=nothing)
+  if tags == nothing
+    get_triangulation(model)
+  else
+    Triangulation(model,get_face_labeling(model),tags=tags)
+  end
 end
 
 """
@@ -404,10 +408,10 @@ function simplexify(model::DiscreteModel)
   simplexify(UnstructuredDiscreteModel(model))
 end
 
-function ReferenceFE(model::DiscreteModel,basis::Symbol,args...;kwargs...)
+function ReferenceFE(model::DiscreteModel,args...;kwargs...)
   ctype_to_polytope = get_polytopes(model)
   cell_to_ctype = get_cell_type(model)
-  ctype_to_reffe = map(p->ReferenceFE(p,basis,args...;kwargs...),ctype_to_polytope)
+  ctype_to_reffe = map(p->ReferenceFE(p,args...;kwargs...),ctype_to_polytope)
   cell_to_reffe = expand_cell_data(ctype_to_reffe,cell_to_ctype)
   cell_to_reffe
 end

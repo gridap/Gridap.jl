@@ -12,6 +12,7 @@ using Gridap.CellData
 using Test
 
 using Gridap.MultiField
+using Gridap.Arrays: BlockArrayCooMap
 
 order = 2
 

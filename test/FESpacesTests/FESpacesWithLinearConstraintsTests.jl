@@ -55,7 +55,7 @@ v(x) = sin(4*x[1]+0.4)*cos(5*x[2]+0.7)
 vch = interpolate(v,Vc)
 
 Ω = Triangulation(model)
-Γ = BoundaryTriangulation(model,"neumann")
+Γ = BoundaryTriangulation(model,tags="neumann")
 Λ = SkeletonTriangulation(model)
 dΩ = LebesgueMeasure(Ω,2)
 dΓ = LebesgueMeasure(Γ,2)

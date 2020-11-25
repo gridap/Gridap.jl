@@ -114,7 +114,7 @@ Base.size(a::CartesianCoordinates) = a.data.partition .+ 1
 Base.IndexStyle(::Type{<:CartesianCoordinates}) = IndexCartesian()
 
 function Base.getindex(a::CartesianCoordinates{D,T}, I::Vararg{Integer,D}) where {D,T}
-  p = zero(mutable(Point{D,T}))
+  p = zero(Mutable(Point{D,T}))
   x0 = a.data.origin
   dx = a.data.sizes
   @inbounds for d in 1:D
@@ -191,7 +191,7 @@ struct CartesianGrid{D,T,F} <: Grid{D,D}
   end
 end
 
-OrientationStyle(::Type{<:CartesianGrid}) = Val{true}()
+OrientationStyle(::Type{<:CartesianGrid}) = Oriented()
 
 """
     get_cartesian_descriptor(grid::CartesianGrid)
@@ -250,7 +250,7 @@ Base.size(a::CartesianMap) = a.data.partition
 Base.IndexStyle(::Type{<:CartesianMap}) = IndexCartesian()
 
 function Base.getindex(a::CartesianMap{D,T},I::Vararg{Integer,D}) where {D,T}
-  p = zero(mutable(Point{D,T}))
+  p = zero(Mutable(Point{D,T}))
   x0 = a.data.origin
   dx = a.data.sizes
   @inbounds for d in 1:D

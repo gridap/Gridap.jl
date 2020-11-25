@@ -86,7 +86,11 @@ export test_grid_topology
 export get_cell_faces
 export get_isboundary_face
 export OrientationStyle
+export Oriented
+export NonOriented
 export RegularityStyle
+export Regular
+export Irregular
 export is_oriented
 export is_regular
 export expand_cell_data
@@ -106,7 +110,6 @@ export get_cell_shapefuns
 export get_facet_normal
 export test_triangulation
 export get_cell_id
-#export cell_measure
 export get_cell_map
 export get_background_triangulation
 export get_cell_ref_map

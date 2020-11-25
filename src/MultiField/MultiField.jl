@@ -17,6 +17,7 @@ using Gridap.CellData
 using Gridap.Fields
 
 using Gridap.FESpaces: FEBasis, TestBasis, TrialBasis
+using Gridap.Arrays: BlockArrayCooMap
 
 using FillArrays
 using SparseArrays

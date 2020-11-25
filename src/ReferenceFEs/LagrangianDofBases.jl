@@ -34,6 +34,15 @@ end
 @inline Base.getindex(a::LagrangianDofBasis,i::Integer) = PointValue(a.nodes[i])
 @inline Base.IndexStyle(::LagrangianDofBasis) = IndexLinear()
 
+# This one takes a basis and replaces the nodes
+function LagrangianDofBasis(dofs::LagrangianDofBasis{P},nodes::Vector{P}) where P
+  @check length(nodes) == length(dofs.nodes)
+  LagrangianDofBasis(
+    nodes,
+    dofs.dof_to_node,
+    dofs.dof_to_comp,
+    dofs.node_and_comp_to_dof)
+end
 
 """
     LagrangianDofBasis(::Type{T},nodes::Vector{<:Point}) where T
@@ -64,7 +73,7 @@ function _generate_dof_layout_node_major(::Type{T},nnodes::Integer) where T<:Mul
   dof_to_comp = zeros(Int,ndofs)
   dof_to_node = zeros(Int,ndofs)
   node_and_comp_to_dof = zeros(V,nnodes)
-  m = zero(mutable(V))
+  m = zero(Mutable(V))
   for node in 1:nnodes
     for comp in 1:ncomps
       o = nnodes*(comp-1)

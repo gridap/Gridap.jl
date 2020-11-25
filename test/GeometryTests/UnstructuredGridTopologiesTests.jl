@@ -44,7 +44,7 @@ g = UnstructuredGridTopology(
   get_cell_vertices(m),
   get_cell_type(m),
   get_polytopes(m),
-  Val{true}())
+  Oriented())
 
 @test is_oriented(g) == true
 
@@ -71,7 +71,7 @@ g = UnstructuredGridTopology(
   [get_face_vertices(m,d) for d in 0:num_cell_dims(m)],
   get_cell_type(m),
   get_polytopes(m),
-  Val{true}())
+  Oriented())
 
 @test is_oriented(g) == true
 

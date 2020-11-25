@@ -12,7 +12,7 @@ using Gridap.TensorValues
 using Gridap.Geometry
 
 domain = (0,1,0,1,0,1)
-cells = (2,2,2)
+cells = (4,4,4)
 model = simplexify(CartesianDiscreteModel(domain,cells))
 
 trian = Triangulation(model)
@@ -49,6 +49,18 @@ s = ∫(1)*quad_N
 
 s = ∫( x->1 )*quad_N
 @test sum(s) ≈ 6
+
+cell_measure = get_cell_measure(trian)
+cell_measure_N = get_cell_measure(trian_N)
+@test length(cell_measure) == num_cells(model)
+@test length(cell_measure_N) == num_cells(model)
+@test sum(cell_measure) ≈ 1
+@test sum(cell_measure_N) ≈ 6
+
+#using Gridap.Visualization
+#writevtk(trian,"trian",celldata=["a"=>cell_measure,"b"=>cell_measure_N])
+
+
 
 
 #using Gridap.Fields: MockField, MockBasis, OtherMockBasis

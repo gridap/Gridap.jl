@@ -69,40 +69,13 @@ function get_children(n::TreeNode, a::PosNegPartition)
   (similar_tree_node(n,a.i_to_iposneg),similar_tree_node(n,a.ipos_to_i),similar_tree_node(n,a.ineg_to_i))
 end
 
-#function get_children(n::TreeNode, a::Reindexed)
-#  (similar_tree_node(n,a.i_to_v),similar_tree_node(n,a.j_to_i))
-#end
-
 function get_children(n::TreeNode, a::AppendedArray)
   (similar_tree_node(n,a.a),similar_tree_node(n,a.b))
 end
 
-#function get_children(n::TreeNode, a::ArrayPair)
-#  (similar_tree_node(n,a.a),similar_tree_node(n,a.b))
-#end
-
-#function get_children(n::TreeNode, a::LocalToGlobalArray)
-#  (similar_tree_node(n,a.lid_to_gid),similar_tree_node(n,a.gid_to_val))
-#end
-
-#function get_children(n::TreeNode, a::LocalToGlobalPosNegArray)
-# (
-#  similar_tree_node(n,a.lid_to_gid),
-#  similar_tree_node(n,a.gid_to_val_pos),
-#  similar_tree_node(n,a.gid_to_val_neg)
-# )
-#end
-
 function get_children(n::TreeNode, a::Table)
   (similar_tree_node(n,a.data),similar_tree_node(n,a.ptrs))
 end
-
-#function get_children(n::TreeNode, a::FESpaces.ExtendedVector)
-# (
-#  similar_tree_node(n,a.void_to_val),
-#  similar_tree_node(n,a.cell_to_val)
-# )
-#end
 
 function get_children(n::TreeNode, a::VectorWithEntryRemoved)
   (similar_tree_node(n,a.a),)
@@ -112,6 +85,3 @@ function get_children(n::TreeNode, a::VectorWithEntryInserted)
   (similar_tree_node(n,a.a),)
 end
 
-#function get_children(n::TreeNode, a::VectorOfBlockArrayCoo)
-#  map(b->similar_tree_node(n,b),a.blocks)
-#end

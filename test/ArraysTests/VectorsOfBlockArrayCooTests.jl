@@ -5,6 +5,7 @@ using Gridap.Arrays
 using BlockArrays
 using FillArrays
 using LinearAlgebra
+using Gridap.Arrays: BlockArrayCooMap
 
 l = 10
 b11 = [  i*[1 2; 3 4]  for i in 1:l ]

@@ -8,14 +8,14 @@ function DiscreteModel(parent_model::DiscreteModel,parent_cell_to_mask::Abstract
   RestrictedDiscreteModel(parent_model,parent_cell_to_mask)
 end
 
-function DiscreteModel(parent_model::DiscreteModel,labels::FaceLabeling,tags)
+function DiscreteModel(parent_model::DiscreteModel,labels::FaceLabeling;tags)
   parent_cell_to_mask = get_face_mask(labels,tags,num_cell_dims(parent_model))
   DiscreteModel(parent_model,parent_cell_to_mask)
 end
 
-function DiscreteModel(parent_model::DiscreteModel,tags)
+function DiscreteModel(parent_model::DiscreteModel;tags)
   labels = get_face_labeling(parent_model)
-  DiscreteModel(parent_model,labels,tags)
+  DiscreteModel(parent_model,labels,tags=tags)
 end
 
 """

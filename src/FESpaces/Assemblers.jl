@@ -167,7 +167,7 @@ function test_assembler(a::Assembler,matdata,vecdata,data)
 end
 
 # Some syntactic sugar for assembling from anonymous functions
-# that return objects from which one can collect cell matrices/vectors
+# and objects from which one can collect cell matrices/vectors
 
 function assemble_matrix(f::Function,a::Assembler)
   v = get_cell_shapefuns(get_test(a))
@@ -180,14 +180,37 @@ function assemble_vector(f::Function,a::Assembler)
   assemble_vector(a,collect_cell_vector(f(v)))
 end
 
-function assemble_matrix(f::Function,U::FESpace,V::FESpace)
+function assemble_matrix_and_vector(f::Function,b::Function,a::Assembler)
+  v = get_cell_shapefuns(get_test(a))
+  u = get_cell_shapefuns_trial(get_trial(a))
+  assemble_matrix_and_vector(a,collect_cell_matrix_and_vector(f(u,v),b(v)))
+end
+
+function assemble_matrix(f,a::Assembler)
+  assemble_matrix(a,collect_cell_matrix(f))
+end
+
+function assemble_vector(f,a::Assembler)
+  assemble_vector(a,collect_cell_vector(f))
+end
+
+function assemble_matrix_and_vector(f,b,a::Assembler)
+  assemble_matrix_and_vector(a,collect_cell_matrix_and_vector(f,b))
+end
+
+function assemble_matrix(f,U::FESpace,V::FESpace)
   a = SparseMatrixAssembler(U,V)
   assemble_matrix(f,a)
 end
 
-function assemble_vector(f::Function,V::FESpace)
+function assemble_vector(f,V::FESpace)
   a = SparseMatrixAssembler(V,V)
   assemble_vector(f,a)
+end
+
+function assemble_matrix_and_vector(f,b,U::FESpace,V::FESpace)
+  a = SparseMatrixAssembler(U,V)
+  assemble_matrix_and_vector(f,b,a)
 end
 
 # Abstract interface for computing the data to be sent to the assembler

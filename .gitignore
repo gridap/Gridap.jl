@@ -6,3 +6,4 @@
 docs/build/
 Manifest.toml
 tmp/
+.vscode/

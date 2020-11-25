@@ -34,7 +34,8 @@ oldcell_to_mask = lazy_map(is_in,oldcell_to_coods)
 trian = RestrictedTriangulation(oldtrian,oldcell_to_mask)
 trian = Triangulation(oldmodel,oldcell_to_mask)
 trian = Triangulation(oldtrian,oldcell_to_mask)
-trian = Triangulation(oldmodel,"interior")
+trian = Triangulation(oldmodel,tags="interior")
+trian = Triangulation(oldmodel,get_face_labeling(oldmodel),tags="interior")
 
 #using Gridap.Visualization
 #writevtk(oldtrian,"oldtrian")

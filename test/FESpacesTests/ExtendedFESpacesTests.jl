@@ -147,7 +147,7 @@ V = TestFESpace(model_in,ReferenceFE(:Lagrangian,Float64,2),conformity=:H1)
 
 V = TestFESpace(model_in,ReferenceFE(:Lagrangian,Float64,2),conformity=:H1,constraint=:zeromean)
 uh = FEFunction(V,rand(num_free_dofs(V)))
-@test_broken sum(∫(uh)*dΩ_in) + 1 ≈ 1
+@test sum(∫(uh)*dΩ_in) + 1 ≈ 1
 
 V = TestFESpace(model,ReferenceFE(:Lagrangian,Float64,2),conformity=:H1)
 @test !isa(V,FESpaces.ExtendedFESpace)

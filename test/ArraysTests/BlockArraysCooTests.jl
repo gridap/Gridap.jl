@@ -5,6 +5,7 @@ using Gridap.Arrays
 using Gridap.Algebra
 using BlockArrays
 using LinearAlgebra
+using Gridap.Arrays: BlockArrayCooMap
 
 # Check MultiLevelBlockedUnitRange
 
