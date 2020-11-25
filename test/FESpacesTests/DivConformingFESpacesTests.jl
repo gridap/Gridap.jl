@@ -31,10 +31,10 @@ e = u - uh
 dΩ = LebesgueMeasure(Ω,2*order)
 
 el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
-@test_broken el2 < 1.0e-10
+@test el2 < 1.0e-10
 
 #using Gridap.Visualization
 #
-#writevtk(trian,"trian",nsubcells=10,cellfields=["uh"=>uh])
+#writevtk(Ω,"trian",nsubcells=10,cellfields=["uh"=>uh])
 
 end # module

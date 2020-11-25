@@ -90,6 +90,7 @@ cache = return_cache(dof_basis,prebasis)
 r = evaluate!(cache, dof_basis, prebasis)
 test_dof_array(dof_basis,prebasis,r)
 
+#=
 
 p = TRI
 D = num_dims(p)
@@ -128,7 +129,6 @@ writevtk(trian,"test",order=3,cellfields=["vh"=>vh, "uh"=>uh])
 #h = lazy_map(evaluate!, s, vals)
 #h = evaluate(s, vals)
 
-#=
 writevtk(strian,"test",cellfields=["nv"=>nv])
 @show "int"
 I = integrate(uh,quad)

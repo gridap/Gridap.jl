@@ -70,10 +70,6 @@ function get_face_own_dofs(reffe::GenericRefFE{:RaviartThomas}, conf::DivConform
   get_face_dofs(reffe)
 end
 
-# Make it work for quads for the moment
-function get_dof_basis(reffe::GenericRefFE{:RaviartThomas},phi::Field)
-  get_dof_basis(reffe)
-end
 
 ## First implement this:
 function get_dof_basis(reffe::GenericRefFE{:RaviartThomas},phi::Field)
@@ -140,21 +136,18 @@ function _nfaces_evaluation_points_weights(p, fgeomap, fips, wips)
   c_wips = fill(wips,nc)
   pquad = lazy_map(evaluate,fgeomap,c_fips)
 
-  # Must compose s->q->r maps (fgeomap o phi) to get the correct scaling
-  # scaling = det(grad(fgeomap)⋅grad(phi))
-  Jt1 = lazy_map(∇,fgeomap)
-  Jt1_ips = lazy_map(evaluate,Jt1,c_fips)
-  ##Jt1_ips_t = lazy_map(transpose,Jt1_ips)
-  #Jt2 = fill(∇(phi),nc)
-  #Jt2_ips = lazy_map(evaluate,Jt2,pquad)
-  ##Jt = lazy_map(Broadcasting(⋅),Jt1,Jt2)
-  ##Jt_ips = lazy_map(evaluate,Jt,c_fips)
-  ##det_J = lazy_map(Broadcasting(meas),Jt_ips)
-  #Jt_ips = lazy_map(Broadcasting(⋅), Jt1_ips, Jt2_ips)
-  det_J = lazy_map(Broadcasting(meas),Jt1_ips)
+  if is_n_cube(p)
+    c_detwips = c_wips
+  elseif is_simplex(p)
+    # Must account for diagonals in simplex discretizations to get the correct
+    # scaling
+    Jt1 = lazy_map(∇,fgeomap)
+    Jt1_ips = lazy_map(evaluate,Jt1,c_fips)
+    det_J = lazy_map(Broadcasting(meas),Jt1_ips)
 
+    c_detwips = collect(lazy_map(Broadcasting(*),c_wips,det_J))
+  end
 
-  c_detwips = collect(lazy_map(Broadcasting(*),c_wips,det_J))
   c_fips, pquad, c_detwips
 end
 
@@ -189,14 +182,17 @@ function _RT_face_moments(p, fshfs, c_fips, fcips, fwips,phi)
   change = lazy_map(*,det_Jt,Jt_inv)
   change_ips = lazy_map(evaluate,change,fcips)
 
-  if is_n_cube(p)
-    # @santiagobadia : Temporary hack for making it work for structured hex meshes
-    cvals = [ _broadcast(typeof(n),n*o,b) for (n,o,b) in zip(fns,os,cvals)]
-  elseif is_simplex(p)
-    cvals = [ _broadcast(typeof(n),n*o,J.*b) for (n,o,b,J) in zip(fns,os,cvals,change_ips)]
-  else
-    @notimplemented
-  end
+  #if is_n_cube(p)
+  #  # @santiagobadia : Temporary hack for making it work for structured hex meshes
+  #  cvals = [ _broadcast(typeof(n),n*o,J.*b) for (n,o,b,J) in zip(fns,os,cvals,change_ips)]
+  #elseif is_simplex(p)
+  #  cvals = [ _broadcast(typeof(n),n*o,J.*b) for (n,o,b,J) in zip(fns,os,cvals,change_ips)]
+  #else
+  #  @notimplemented
+  #end
+
+  cvals = [ _broadcast(typeof(n),n*o,J.*b) for (n,o,b,J) in zip(fns,os,cvals,change_ips)]
+
   return cvals
 end
 
@@ -251,15 +247,6 @@ function _RT_cell_values(p,et,order,phi)
   ccips = get_coordinates(iquad)
   cwips = get_weights(iquad)
 
-  # Must scale weights using phi map to get the correct integrals
-  # scaling = det(grad(phi))
-
-  Jt = ∇(phi)
-  Jt_inv = inv(Jt)
-  det_Jt = det(Jt)
-  change = det_Jt*Jt_inv
-  change_ips = evaluate(change,ccips)
-
   # Cell moments, i.e., M(C)_{ab} = q_C^a(xgp_C^b) w_C^b ⋅ ()
   if is_n_cube(p)
     cbasis = QGradMonomialBasis{num_dims(p)}(et,order-1)
@@ -269,9 +256,19 @@ function _RT_cell_values(p,et,order,phi)
   else
     @notimplemented
   end
-  cmoments = _RT_cell_moments(p, cbasis, ccips, cwips )
+  cell_moments = _RT_cell_moments(p, cbasis, ccips, cwips )
 
-  return [ccips], [change_ips.⋅cmoments]
+  # Must scale weights using phi map to get the correct integrals
+  # scaling = det(grad(phi))
+  Jt = ∇(phi)
+  Jt_inv = inv(Jt)
+  det_Jt = det(Jt)
+  change = det_Jt*Jt_inv
+  change_ips = evaluate(change,ccips)
+
+  cmoments = change_ips.⋅cell_moments
+
+  return [ccips], [cmoments]
 
 end
 
