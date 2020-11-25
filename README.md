@@ -11,7 +11,7 @@
 | **Citation** |
 | [![DOI](https://joss.theoj.org/papers/10.21105/joss.02520/status.svg)](https://doi.org/10.21105/joss.02520) |
 
-# What
+## What
 
 Gridap provides a set of tools for the grid-based approximation of partial differential equations (PDEs) written in the
 [Julia programming language](https://julialang.org/). The library currently supports linear and nonlinear PDE systems for scalar and vector fields, single and multi-field problems, conforming and nonconforming finite element (FE) discretizations, on structured and unstructured meshes of simplices and n-cubes. Gridap is extensible and modular. One can implement new FE spaces, new reference elements, use external mesh generators, linear solvers, post-processing tools, etc. See, e.g., the list of available [Gridap plugins](https://github.com/gridap/Gridap.jl#plugins).
@@ -20,7 +20,7 @@ Gridap has a very expressive API allowing to solve complex PDEs with very few li
 ```julia
 a(u,v) =
   ∫( ∇(v)⋅∇(u) )*dΩ +
-  ∫( (γ/h)*v*u  - v*(n_Γ⋅∇(u)) - (n_Γ⋅∇(v))*u )*dΓ +
+  ∫( (γ/h)*v*u - v*(n_Γ⋅∇(u)) - (n_Γ⋅∇(v))*u )*dΓ +
   ∫(
     (γ/h)*jump(v*n_Λ)⋅jump(u*n_Λ) -
     jump(v*n_Λ)⋅mean(∇(u)) -
@@ -34,7 +34,7 @@ l(v) =
 See the complete code [here](https://github.com/gridap/Gridap.jl/blob/master/test/GridapTests/PoissonDGTests.jl). As an example for multi-field PDEs, this is how the weak form for the Stokes equation with Neumann boundary conditions can be specified:
 ```julia
 a((u,p),(v,q)) =
-  ∫(∇(v)⊙∇(u)-(∇⋅v)*p + q*(∇⋅u))*dΩ
+  ∫( ∇(v)⊙∇(u) - (∇⋅v)*p + q*(∇⋅u) )*dΩ
 
 l((v,q)) =
   ∫( v⋅f + q*g )*dΩ +
