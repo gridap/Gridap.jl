@@ -7,6 +7,7 @@ using Gridap.FESpaces
 using Gridap.CellData
 using Gridap.TensorValues
 using Gridap.Fields
+using Gridap.Io
 
 domain =(0,1,0,1)
 partition = (3,3)
@@ -36,5 +37,31 @@ el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
 #using Gridap.Visualization
 #
 #writevtk(Ω,"trian",nsubcells=10,cellfields=["uh"=>uh])
+
+order = 1
+
+reffe = ReferenceFE(TET,:RaviartThomas,order)
+
+model = DiscreteModelFromFile("model_3d.json")
+
+labels = get_face_labeling(model)
+dir_tags = Array{Integer}(undef,0)
+
+V = FESpace(model,reffe,conformity=DivConformity())
+
+v(x) = VectorValue(-0.5*x[1]+1.0,-0.5*x[2],-0.5*x[3])
+vh = interpolate(v,V)
+
+e = v - vh
+
+Ω = Triangulation(model)
+dΩ = LebesgueMeasure(Ω,2*order)
+
+el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
+@test el2 < 1.0e-10
+
+#using Gridap.Visualization
+#
+#writevtk(trian,"test",order=3,cellfields=["vh"=>vh])
 
 end # module
