@@ -106,7 +106,7 @@ function _ref_face_to_faces_geomap(p,fp)
   fgeomap = lazy_map(linear_combination,cfvs,cfshfs)
 end
 
-function _nfaces_evaluation_points_weights(p, fgeomap, fips, wips, phi)
+function _nfaces_evaluation_points_weights(p, fgeomap, fips, wips)
   nc = length(fgeomap)
   c_fips = fill(fips,nc)
   c_wips = fill(wips,nc)
@@ -194,7 +194,7 @@ function _RT_face_values(p,et,order,phi)
   fips = get_coordinates(fquad)
   wips = get_weights(fquad)
 
-  c_fips, fcips, fwips = _nfaces_evaluation_points_weights(p, fgeomap, fips, wips, phi)
+  c_fips, fcips, fwips = _nfaces_evaluation_points_weights(p, fgeomap, fips, wips)
 
   # Moments (fmoments)
   # The RT prebasis is expressed in terms of shape function

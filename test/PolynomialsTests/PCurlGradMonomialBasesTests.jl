@@ -4,6 +4,7 @@ using Test
 using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
+using Gridap.Arrays
 
 xi = Point(4,2)
 np = 1
@@ -28,14 +29,14 @@ g = G[
   (0.0, 0.0, 2.0, 4.0), (0.0, 4.0, 0.0, 0.0), (0.0, 0.0, 8.0, 0.0),
   (48.0, 0.0, 16.0, 16.0), (16.0, 16.0, 4.0, 16.0), (4.0, 16.0, 0.0, 12.0)]
 
-  vb = evaluate_field(b,x)
+  vb = evaluate(b,x)
 
   for (vi,vbi) in zip(v,vb)
     @test vi == vbi
   end
 
-  ∇b = field_gradient(b)
-  gvb = evaluate_field(∇b,x)
+  ∇b = Broadcasting(gradient)(b)
+  gvb = evaluate(∇b,x)
   for (vi,vbi) in zip(g,gvb)
     @test vi == vbi
   end
