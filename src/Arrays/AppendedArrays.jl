@@ -11,6 +11,14 @@ function lazy_split(f::AbstractArray,n::Integer)
   _lazy_split(f,n)
 end
 
+function lazy_split(f::Fill,n::Integer)
+  l = length(f)
+  @assert n <= l
+  a = Fill(f.value,n)
+  b = Fill(f.value,l-n)
+  a,b
+end
+
 function lazy_split(f::CompressedArray,n::Integer)
   _a , _b =_lazy_split(f,n)
   a = _compact_values_ptrs(_a)
@@ -113,6 +121,13 @@ function lazy_map(k::typeof(evaluate),::Type{T},a::AppendedArray...) where T
   else
     LazyArray(T,a...)
   end
+end
+
+function lazy_map(k::typeof(evaluate),::Type{T},a::AppendedArray,b::AbstractArray) where T
+  @assert length(a) == length(b)
+  n = length(a.a)
+  c = lazy_append(lazy_split(b,n)...)
+  lazy_map(evaluate,T,a,c)
 end
 
 # Very important optimization to compute error norms efficiently e.g. in EmbeddedFEM
