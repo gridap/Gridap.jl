@@ -411,8 +411,28 @@ end
 
 struct ContraVariantPiolaMap <: PushForwardMap end
 
+function evaluate!(
+  cache,
+  ::Broadcasting{typeof(∇)},
+  a::Fields.BroadcastOpFieldArray{ContraVariantPiolaMap})
+  v, J, detJ = a.args
+  # Assuming J comes from an affine map
+  ∇v = Broadcasting(∇)(v)
+  k = ContraVariantPiolaMap()
+  Broadcasting(Operation(k))(∇v,J,detJ)
+end
+
+function lazy_map(
+  ::Broadcasting{typeof(gradient)},
+  a::LazyArray{<:Fill{Broadcasting{Operation{ContraVariantPiolaMap}}}})
+  v, J, detJ = a.f
+  ∇v = lazy_map(Broadcasting(∇),v)
+  k = ContraVariantPiolaMap()
+  lazy_map(Broadcasting(Operation(k)),∇v,J,detJ)
+end
+
 function evaluate!(cache,::ContraVariantPiolaMap,v::Number,J::Number,detJ::Number)
-  (1/detJ)*J⋅v
+  v⋅transpose((1/detJ)*J)
 end
 
 function evaluate!(cache,k::ContraVariantPiolaMap,v::AbstractVector{<:Field},phi::Field)
