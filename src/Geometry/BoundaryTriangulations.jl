@@ -2,9 +2,11 @@
 """
 """
 struct FaceToCellGlue{A,B,C,D} <: GridapType
-  face_to_cell::A
+  face_to_bgface::A
+  bgface_to_lcell::B
+  face_to_cell::Vector{Int32}
   face_to_lface::Vector{Int8}
-  face_to_lcell::B
+  face_to_lcell::Vector{Int8}
   face_to_ftype::C
   cell_to_ctype::D
   cell_to_lface_to_pindex::Table{Int8,Vector{Int8},Vector{Int32}}
@@ -25,7 +27,8 @@ function FaceToCellGlue(
 
   bgface_to_cell = lazy_map(getindex,bgface_to_cells, bgface_to_lcell)
   bgface_to_lface = find_local_index(bgface_to_cell, cell_to_bgfaces)
-  face_to_cell = collect(Int,lazy_map(Reindex(bgface_to_cell), face_to_bgface))
+
+  face_to_cell = collect(Int32,lazy_map(Reindex(bgface_to_cell), face_to_bgface))
   face_to_lface = collect(Int8,lazy_map(Reindex(bgface_to_lface), face_to_bgface))
   face_to_lcell = collect(Int8,lazy_map(Reindex(bgface_to_lcell), face_to_bgface))
 
@@ -42,6 +45,8 @@ function FaceToCellGlue(
     cell_to_ctype)
 
   FaceToCellGlue(
+    face_to_bgface,
+    bgface_to_lcell,
     face_to_cell,
     face_to_lface,
     face_to_lcell,
@@ -444,71 +449,3 @@ end
 #end
 
 
-
-
-
-
-
-
-"""
-"""
-function get_face_to_cell(trian::BoundaryTriangulation)
-  @abstractmethod
-end
-
-#"""
-#"""
-#function get_face_to_lface(trian::BoundaryTriangulation)
-#  @abstractmethod
-#end
-#
-#"""
-#"""
-#function get_face_to_cell_map(trian::BoundaryTriangulation)
-#  @abstractmethod
-#end
-#
-#"""
-#"""
-#function get_normal_vector(trian::BoundaryTriangulation)
-#  @abstractmethod
-#end
-#
-#"""
-#"""
-#function get_face_to_face(trian::BoundaryTriangulation)
-#  @abstractmethod
-#end
-#
-#"""
-#"""
-#function get_cell_around(trian::BoundaryTriangulation)
-#  @abstractmethod
-#end
-#
-#
-## Default API
-#
-#function restrict(f::AbstractArray, trian::BoundaryTriangulation)
-#  compose_field_arrays(reindex(f,trian), get_face_to_cell_map(trian))
-#end
-#
-#function get_cell_id(trian::BoundaryTriangulation)
-#  get_face_to_cell(trian)
-#end
-#
-#function BoundaryTriangulation(model::DiscreteModel,names::Vector{String})
-#  labeling = get_face_labeling(model)
-#  tags = get_tags_from_names(labeling,names)
-#  BoundaryTriangulation(model,tags)
-#end
-#
-#function BoundaryTriangulation(model::DiscreteModel,tag::Union{Int,String})
-#  tags = [tag,]
-#  BoundaryTriangulation(model,tags)
-#end
-#
-#function _convert_to_face_to_masks(labeling,tags)
-#  D = num_cell_dims(model)
-#  face_to_mask = get_face_mask(labeling,tags,D-1)
-#end

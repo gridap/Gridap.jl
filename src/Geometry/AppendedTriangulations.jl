@@ -84,9 +84,9 @@ end
 
 function get_facet_normal(trian::AppendedTriangulation)
   cm = get_cell_map(trian)
-  a = get_array(get_facet_normal(trian.a))
-  b = get_array(get_facet_normal(trian.b))
-  GenericCellField(lazy_append(a,b),cm)
+  a = get_facet_normal(trian.a)
+  b = get_facet_normal(trian.b)
+  lazy_append(a,b)
 end
 
 #function CellQuadrature(trian::AppendedTriangulation,degree1::Integer,degree2::Integer)
