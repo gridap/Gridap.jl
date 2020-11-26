@@ -2,17 +2,17 @@
 """
     struct GridPortion{Dc,Dp,G} <: Grid{Dc,Dp}
       parent_grid::G
-      cell_to_parent_cell::Vector{Int}
-      node_to_parent_node::Vector{Int}
+      cell_to_parent_cell::Vector{Int32}
+      node_to_parent_node::Vector{Int32}
     end
 """
 struct GridPortion{Dc,Dp,G} <: Grid{Dc,Dp}
   parent_grid::G
-  cell_to_parent_cell::Vector{Int}
-  node_to_parent_node::Vector{Int}
-  cell_to_nodes::Table{Int,Vector{Int},Vector{Int32}}
+  cell_to_parent_cell::Vector{Int32}
+  node_to_parent_node::Vector{Int32}
+  cell_to_nodes::Table{Int32,Vector{Int32},Vector{Int32}}
   @doc """
-      GridPortion(parent_grid::Grid{Dc,Dp},cell_to_parent_cell::Vector{Int}) where {Dc,Dp}
+      GridPortion(parent_grid::Grid{Dc,Dp},cell_to_parent_cell::Vector{Int32}) where {Dc,Dp}
   """
   function GridPortion(parent_grid::Grid,cell_to_parent_cell::AbstractVector{<:Integer})
 
@@ -95,7 +95,7 @@ function _renumber_cell_nodes(oldcell_to_oldnodes,oldnode_to_node,cell_to_oldcel
   end
   length_to_ptrs!(cell_to_nodes_ptrs)
   ndata = cell_to_nodes_ptrs[end]-1
-  cell_to_nodes_data = zeros(Int,ndata)
+  cell_to_nodes_data = zeros(Int32,ndata)
   for (cell,oldcell) in enumerate(cell_to_oldcell)
     oldnodes = getindex!(cache,oldcell_to_oldnodes,oldcell)
     a = cell_to_nodes_ptrs[cell]-1
