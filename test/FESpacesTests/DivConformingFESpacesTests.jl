@@ -42,7 +42,8 @@ order = 1
 
 reffe = ReferenceFE(TET,:RaviartThomas,order)
 
-model = DiscreteModelFromFile("./test/FESpacesTests/model_3d.json")
+model_path = joinpath(@__DIR__,"model_3d.json")
+model = DiscreteModelFromFile(model_path)
 
 labels = get_face_labeling(model)
 dir_tags = Array{Integer}(undef,0)
