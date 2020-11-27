@@ -130,6 +130,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 using Gridap.CellData: ∫; export ∫
 @publish CellData get_cell_measure
 @publish CellData get_physical_coordinate
+@publish CellData DiracDelta
 
 @publish FESpaces FESpace
 @publish FESpaces TrialFESpace

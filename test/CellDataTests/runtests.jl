@@ -8,6 +8,8 @@ using Test
 
 @testset "DomainContributions" begin include("DomainContributionsTests.jl") end
 
+@testset "DiracDeltas" begin include("DiracDeltasTests.jl") end
+
 @testset "CellStates" begin include("CellStatesTests.jl") end
 
 @testset "CellDofsTests" begin include("CellDofsTests.jl") end

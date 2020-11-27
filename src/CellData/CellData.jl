@@ -74,6 +74,8 @@ export get_physical_coordinate
 export CellState
 export update_state!
 
+export DiracDelta
+
 include("CellDataInterface.jl")
 
 include("CellFields.jl")
@@ -83,6 +85,8 @@ include("CellQuadratures.jl")
 include("CellStates.jl")
 
 include("DomainContributions.jl")
+
+include("DiracDeltas.jl")
 
 include("CellDofs.jl")
 

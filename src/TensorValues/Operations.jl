@@ -374,9 +374,9 @@ end
     Meta.parse("TensorValue{$D,$Z}($str)")
 end
 
-function outer(a::VectorValue{0,Ta},b::VectorValue{1,Tb}) where {Ta,Tb}
+function outer(a::VectorValue{0,Ta},b::VectorValue{D,Tb}) where {Ta,Tb,D}
   T = promote_type(Ta,Tb)
-  TensorValue{0,1,T}()
+  TensorValue{0,D,T}()
 end
 
 function outer(a::VectorValue{0,Ta},b::Tb) where {Ta,Tb<:Number}
@@ -483,7 +483,7 @@ end
 """
 meas(a::MultiValue{Tuple{D}}) where D = sqrt(inner(a,a))
 meas(a::MultiValue{Tuple{D,D}}) where D = abs(det(a))
-meas(a::TensorValue{0,1,T}) where T = one(T)
+meas(a::TensorValue{0,D,T}) where {T,D} = one(T)
 
 function meas(v::MultiValue{Tuple{1,2}})
   n1 = v[1,2]
