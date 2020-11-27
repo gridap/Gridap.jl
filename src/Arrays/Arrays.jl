@@ -150,6 +150,8 @@ export similar_tree_node
 import Gridap.Io: to_dict
 import Gridap.Io: from_dict
 
+export ∑
+
 include("Interface.jl")
 
 include("Maps.jl")
@@ -188,5 +190,6 @@ include("VectorsWithEntryInserted.jl")
 
 include("PrintOpTrees.jl")
 
+const ∑ = sum
 
 end # module
