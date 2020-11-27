@@ -21,9 +21,10 @@ function FaceToCellGlue(
   bgface_to_lcell::AbstractVector)
 
   D = num_cell_dims(cell_trian)
-  bgface_to_cells = get_faces(topo,D-1,D)
-  cell_to_bgfaces = get_faces(topo,D,D-1)
-  cell_to_lface_to_pindex = Table(get_cell_permutations(topo,D-1))
+  cD = num_cell_dims(face_trian)
+  bgface_to_cells = get_faces(topo,cD,D)
+  cell_to_bgfaces = get_faces(topo,D,cD)
+  cell_to_lface_to_pindex = Table(get_cell_permutations(topo,cD))
 
   bgface_to_cell = lazy_map(getindex,bgface_to_cells, bgface_to_lcell)
   bgface_to_lface = find_local_index(bgface_to_cell, cell_to_bgfaces)
@@ -32,7 +33,7 @@ function FaceToCellGlue(
   face_to_lface = collect(Int8,lazy_map(Reindex(bgface_to_lface), face_to_bgface))
   face_to_lcell = collect(Int8,lazy_map(Reindex(bgface_to_lcell), face_to_bgface))
 
-  f = (p)->fill(Int8(UNSET),num_faces(p,D-1))
+  f = (p)->fill(Int8(UNSET),num_faces(p,cD))
   ctype_to_lface_to_ftype = map( f, get_reffes(cell_trian) )
   face_to_ftype = get_cell_type(face_trian)
   cell_to_ctype = get_cell_type(cell_trian)
@@ -96,7 +97,7 @@ struct BoundaryTriangulation{Dc,Dp,Gf,Gc,G} <: Triangulation{Dc,Dp}
 
     @assert TriangulationStyle(cell_trian) == BackgroundTriangulation()
     @assert num_point_dims(face_trian) == num_point_dims(cell_trian)
-    @assert num_cell_dims(face_trian) == num_cell_dims(cell_trian) - 1
+    #@assert num_cell_dims(face_trian) == num_cell_dims(cell_trian) - 1
 
     Dc = num_cell_dims(face_trian)
     Dp = num_point_dims(face_trian)
