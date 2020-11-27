@@ -99,6 +99,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish Geometry get_cell_coordinates
 @publish Geometry get_cell_ref_coordinates
 @publish Geometry get_cell_map
+@publish Geometry get_cell_id
 @publish Geometry CartesianGrid
 @publish Geometry CartesianDiscreteModel
 @publish Geometry DiscreteModel

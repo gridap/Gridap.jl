@@ -19,6 +19,22 @@ function change_domain(a::CellDof,::PhysicalDomain,::ReferenceDomain)
   @notimplemented
 end
 
+function change_domain(a::CellDof,target_trian::Triangulation,target_domain::DomainStyle)
+  @notimplemented
+end
+
+function change_domain(a::CellDof,target_trian::RestrictedTriangulation,target_domain::DomainStyle)
+  @notimplementedif DomainStyle(a) != target_domain
+  trian_a = get_triangulation(a)
+  @notimplementedif ! have_compatible_domains(trian_a,get_background_triangulation(target_trian))
+  cell_dof = get_cell_data(a)
+  tcell_to_cell = get_cell_id(target_trian)
+  tcell_dof = lazy_map(Reindex(cell_dof),tcell_to_cell)
+  CellDof(tcell_dof,target_trian,DomainStyle(a))
+end
+
+
+
 # Evaluation of CellDof
 
 (a::CellDof)(f) = evaluate(a,f)

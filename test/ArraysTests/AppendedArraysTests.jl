@@ -1,6 +1,7 @@
 module AppendedArraysTests
 
 using Test
+using FillArrays
 using Gridap.Arrays
 
 a = collect(Float64,11:20)
@@ -50,5 +51,36 @@ c2 = lazy_append(a2,b2)
 d = lazy_map(+,c1,c2)
 test_array(d,c1+c2)
 #print_op_tree(d)
+
+# test when lazy_array leads to an array with an eltype that is not concrete.
+
+struct FooFun{T}
+  f::T
+end
+Arrays.evaluate!(cache,f::FooFun,args...) = f.f(args...)
+
+a1 = Fill(FooFun(+),3)
+b1 = Fill(FooFun(-),2)
+c1 = lazy_append(a1,b1)
+c2a = CompressedArray([3.0],fill(1,3))
+c2b = CompressedArray([3.0],fill(1,2))
+c2 = lazy_append(c2a,c2b)
+d = lazy_map(evaluate,c1,c2)
+test_array(d,[3,3,3,-3,-3])
+
+a1 = Fill(FooFun(+),3)
+b1 = Fill(FooFun(-),2)
+c1 = lazy_append(a1,b1)
+c2 = Fill(3.0,5)
+d = lazy_map(evaluate,c1,c2)
+test_array(d,[3,3,3,-3,-3])
+
+a1 = Fill(FooFun(+),3)
+b1 = Fill(FooFun(-),2)
+c1 = lazy_append(a1,b1)
+c2 = CompressedArray([3.0],fill(1,5))
+d = lazy_map(evaluate,c1,c2)
+test_array(d,[3,3,3,-3,-3])
+
 
 end # module

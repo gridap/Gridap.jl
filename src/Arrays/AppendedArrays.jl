@@ -11,6 +11,14 @@ function lazy_split(f::AbstractArray,n::Integer)
   _lazy_split(f,n)
 end
 
+function lazy_split(f::Fill,n::Integer)
+  l = length(f)
+  @assert n <= l
+  a = Fill(f.value,n)
+  b = Fill(f.value,l-n)
+  a,b
+end
+
 function lazy_split(f::CompressedArray,n::Integer)
   _a , _b =_lazy_split(f,n)
   a = _compact_values_ptrs(_a)
@@ -103,7 +111,10 @@ function lazy_map(::typeof(evaluate),::Type{T},b::Fill,a::AppendedArray...) wher
   end
 end
 
-function lazy_map(k::typeof(evaluate),::Type{T},a::AppendedArray...) where T
+# In that case we don't implement it for ::Type{T} variant since we want to
+# avoid to run type inference since the first entry in a can have non-concrete
+# eltype
+function lazy_map(k::typeof(evaluate),a::AppendedArray...)
   @check all(map(i->length(i)==length(a[1]),a))
   la = map(ai->length(ai.a),a)
   if all(la .== first(la))
@@ -111,8 +122,20 @@ function lazy_map(k::typeof(evaluate),::Type{T},a::AppendedArray...) where T
     c_b = lazy_map(k,map(ai->ai.b,a)...)
     lazy_append(c_a,c_b)
   else
-    LazyArray(T,a...)
+    ai = map(testitem,a)
+    T = return_type(k, ai...)
+    lazy_map(k,T,a...)
   end
+end
+
+# In that case we don't implement it for ::Type{T} variant since we want to
+# avoid to run type inference since a can have non-concrete
+# eltype
+function lazy_map(k::typeof(evaluate),a::AppendedArray,b::AbstractArray)
+  @assert length(a) == length(b)
+  n = length(a.a)
+  c = lazy_append(lazy_split(b,n)...)
+  lazy_map(evaluate,a,c)
 end
 
 # Very important optimization to compute error norms efficiently e.g. in EmbeddedFEM
