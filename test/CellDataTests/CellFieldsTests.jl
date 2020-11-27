@@ -57,6 +57,10 @@ jnf_S = jump(n_S⋅∇(f))
 jnfx_S = jnf_S(x_S)
 test_array(jnfx_S,0*collect(jnfx_S))
 
+h = CellField(rand(num_cells(trian_S)),trian_S)*jump(∇(f))
+hx_S = h(x_S)
+test_array(hx_S,collect(hx_S))
+
 h = 3*mean(f)⋅jump(n_S⋅∇(f))
 hx_S = h(x_S)
 test_array(hx_S,0*collect(hx_S))
