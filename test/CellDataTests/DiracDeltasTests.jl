@@ -1,6 +1,7 @@
 module DiracDeltasTests
 
 using Test
+using Gridap.TensorValues
 using Gridap.Helpers
 using Gridap.Arrays
 using Gridap.ReferenceFEs
@@ -29,6 +30,9 @@ degree = 2
 
 δ = DiracDelta{0}(model,tags=4)
 @test sum(δ(v)) ≈ 4
+
+@test sum(δ(3.0)) ≈ 3.0
+@test sum(δ(x->2*x)) ≈ VectorValue(2,2)
 
 δ = DiracDelta{0}(model,tags=[2,4])
 @test sum(δ(v)) ≈ 5
