@@ -63,11 +63,11 @@ function DiracDelta{0}(model::DiscreteModel;tags)
   DiracDelta{0}(model,degree;tags=tags)
 end
 
-function (d::DiracDelta)(f::CellField)
+function (d::DiracDelta)(f)
   evaluate(d,f)
 end
 
-function evaluate!(cache,d::DiracDelta,f::CellField)
+function evaluate!(cache,d::DiracDelta,f)
   ∫(f)*d.dΓ
 end
 
