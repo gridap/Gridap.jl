@@ -485,6 +485,130 @@ return_value(a::BroadcastingFieldOpMap,args...) = return_value(Broadcasting(a.op
 return_cache(a::BroadcastingFieldOpMap,args...) = return_cache(Broadcasting(a.op),args...)
 @inline evaluate!(cache,a::BroadcastingFieldOpMap,args...) = evaluate!(cache,Broadcasting(a.op),args...)
 
+# Follow optimizations are very important to achieve performance
+
+@inline function evaluate!(
+  cache,
+  f::BroadcastingFieldOpMap,
+  a::AbstractMatrix,
+  b::AbstractArray{S,3} where S)
+
+  @check size(a,1) == size(b,1)
+  @check size(b,2) == 1
+  np, ni = size(a)
+  nj = size(b,3)
+  setsize!(cache,(np,ni,nj))
+  r = cache.array
+  for p in 1:np
+    for j in 1:nj
+      bpj = b[p,1,j]
+      for i in 1:ni
+        r[p,i,j] = f.op(a[p,i],bpj)
+      end
+    end
+  end
+  r
+end
+
+@inline function evaluate!(
+  cache,
+  f::BroadcastingFieldOpMap,
+  b::AbstractArray{S,3} where S,
+  a::AbstractMatrix)
+
+  @check size(a,1) == size(b,1)
+  @check size(b,2) == 1
+  np, ni = size(a)
+  nj = size(b,3)
+  setsize!(cache,(np,ni,nj))
+  r = cache.array
+  for p in 1:np
+    for j in 1:nj
+      bpj = b[p,1,j]
+      for i in 1:ni
+        r[p,i,j] = f.op(bpj,a[p,i])
+      end
+    end
+  end
+  r
+end
+
+@inline function evaluate!(
+  cache,
+  f::BroadcastingFieldOpMap,
+  a::AbstractVector,
+  b::AbstractMatrix)
+
+  @check size(a,1) == size(b,1)
+  np, ni = size(b)
+  setsize!(cache,(np,ni))
+  r = cache.array
+  for p in 1:np
+    ap = a[p]
+    for i in 1:ni
+      r[p,i] = f.op(ap,b[p,i])
+    end
+  end
+  r
+end
+
+@inline function evaluate!(
+  cache,
+  f::BroadcastingFieldOpMap,
+  b::AbstractMatrix,
+  a::AbstractVector)
+
+  @check size(a,1) == size(b,1)
+  np, ni = size(b)
+  setsize!(cache,(np,ni))
+  r = cache.array
+  for p in 1:np
+    ap = a[p]
+    for i in 1:ni
+      r[p,i] = f.op(b[p,i],ap)
+    end
+  end
+  r
+end
+
+@inline function evaluate!(
+  cache,
+  f::BroadcastingFieldOpMap,
+  a::AbstractVector,
+  b::AbstractArray{S,3} where S)
+
+  @check size(a,1) == size(b,1)
+  np, _, ni = size(b)
+  setsize!(cache,(np,1,ni))
+  r = cache.array
+  for p in 1:np
+    ap = a[p]
+    for i in 1:ni
+      r[p,i] = f.op(ap,b[p,1,i])
+    end
+  end
+  r
+end
+
+@inline function evaluate!(
+  cache,
+  f::BroadcastingFieldOpMap,
+  b::AbstractArray{S,3} where S,
+  a::AbstractVector)
+
+  @check size(a,1) == size(b,1)
+  np, _, ni = size(b)
+  setsize!(cache,(np,1,ni))
+  r = cache.array
+  for p in 1:np
+    ap = a[p]
+    for i in 1:ni
+      r[p,i] = f.op(b[p,1,i],ap)
+    end
+  end
+  r
+end
+
 # Gradient of the sum
 for op in (:+,:-)
   @eval begin

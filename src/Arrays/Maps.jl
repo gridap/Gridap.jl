@@ -163,6 +163,15 @@ end
   a
 end
 
+@inline function evaluate!(cache,f::Broadcasting,x::AbstractArray{<:Number})
+  setsize!(cache,size(x))
+  a = cache.array
+  @inbounds for i in eachindex(x)
+    a[i] = f.f(x[i])
+  end
+  a
+end
+
 function evaluate!(cache,f::Broadcasting,args::Number...)
   f.f(args...)
 end

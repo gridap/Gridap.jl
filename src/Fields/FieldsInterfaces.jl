@@ -526,12 +526,47 @@ end
   r = cache.array
   @check size(aq,1) == length(w)
   @check size(aq,1) == length(jq)
-  @inbounds for j in CartesianIndices(r)
-    rj = zero(eltype(r))
-    for p in 1:length(w)
-      rj += aq[p,j]*w[p]*meas(jq[p])
+  fill!(r,zero(eltype(r)))
+  cis = CartesianIndices(r)
+  @inbounds for p in 1:length(w)
+    dV = meas(jq[p])*w[p]
+    for j in cis
+      r[j] += aq[p,j]*dV
     end
-    r[j] = rj
+  end
+  r
+end
+
+@inline function evaluate!(cache,k::IntegrationMap,aq::AbstractArray{S,3} where S, w,jq::AbstractVector)
+  np, ni, nj = size(aq)
+  setsize!(cache,(ni,nj))
+  r = cache.array
+  @check size(aq,1) == length(w)
+  @check size(aq,1) == length(jq)
+  fill!(r,zero(eltype(r)))
+  @inbounds for p in 1:np
+    dV = meas(jq[p])*w[p]
+    for j in 1:nj
+      for i in 1:ni
+        r[i,j] += aq[p,i,j]*dV
+      end
+    end
+  end
+  r
+end
+
+@inline function evaluate!(cache,k::IntegrationMap,aq::AbstractMatrix, w,jq::AbstractVector)
+  np, ni = size(aq)
+  setsize!(cache,(ni))
+  r = cache.array
+  @check size(aq,1) == length(w)
+  @check size(aq,1) == length(jq)
+  fill!(r,zero(eltype(r)))
+  @inbounds for p in 1:np
+    dV = meas(jq[p])*w[p]
+    for i in 1:ni
+      r[i] += aq[p,i]*dV
+    end
   end
   r
 end
