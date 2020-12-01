@@ -23,6 +23,10 @@ test_grid(grid)
 grid = UnstructuredGrid(node_coordinates,cell_nodes,reffes,cell_types)
 test_grid(grid)
 
+cell_map1 = get_cell_map(grid)
+cell_map2 = get_cell_map(grid)
+@test cell_map1 === cell_map2
+
 q1i = Point(0.5,0.5)
 np1 = 4
 q1 = fill(q1i,np1)
