@@ -557,7 +557,7 @@ end
 
 @inline function evaluate!(cache,k::IntegrationMap,aq::AbstractMatrix, w,jq::AbstractVector)
   np, ni = size(aq)
-  setsize!(cache,(ni))
+  setsize!(cache,(ni,))
   r = cache.array
   @check size(aq,1) == length(w)
   @check size(aq,1) == length(jq)

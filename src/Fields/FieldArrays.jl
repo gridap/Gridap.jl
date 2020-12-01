@@ -584,7 +584,7 @@ end
   for p in 1:np
     ap = a[p]
     for i in 1:ni
-      r[p,i] = f.op(ap,b[p,1,i])
+      r[p,1,i] = f.op(ap,b[p,1,i])
     end
   end
   r
@@ -603,7 +603,7 @@ end
   for p in 1:np
     ap = a[p]
     for i in 1:ni
-      r[p,i] = f.op(b[p,1,i],ap)
+      r[p,1,i] = f.op(b[p,1,i],ap)
     end
   end
   r
