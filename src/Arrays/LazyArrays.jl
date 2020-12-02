@@ -81,14 +81,14 @@ end
 
 """
 Subtype of `AbstractArray` which is the result of `lazy_map`. It represents the
-result of lazy_maping a `Map` to a set of arrays that
+result of lazy_mapping a `Map` to a set of arrays that
 contain the mapping arguments. This struct makes use of the cache provided
 by the mapping in order to compute its indices (thus allowing to prevent
 allocation). The array is lazy, i.e., the values are only computed on
 demand. It extends the `AbstractArray` API with two methods:
 
    `array_cache(a::AbstractArray)`
-   `getindex!(a::AbstractArray,i...)`
+   `getindex!(cache,a::AbstractArray,i...)`
 """
 struct LazyArray{G,T,N,F} <: AbstractArray{T,N}
   g::G
@@ -276,4 +276,3 @@ Base.IndexStyle(::Type{<:ArrayWithCounter{T,N,A}}) where {T,A,N} = IndexStyle(A)
 function resetcounter!(a::ArrayWithCounter)
   fill!(a.counter,zero(eltype(a.counter)))
 end
-

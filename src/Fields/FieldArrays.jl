@@ -374,7 +374,7 @@ struct TransposeMap <: Map end
 """
 Given a matrix `np` x `nf1` x `nf2` result of the evaluation of a field vector
 on a vector of points, it returns an array in which the field axes (second and
-third axes) are permuted. It is equivalent as `Base.permutedims(A,(1,3,2)`
+third axes) are permuted. It is equivalent as `Base.permutedims(A,(1,3,2))`
 but more performant, since it does not involve allocations.
 """
 struct TransposeFieldIndices{A,T} <: AbstractArray{T,3}
@@ -509,4 +509,3 @@ for op in (:*,:⋅,:⊙,:⊗)
     end
   end
 end
-

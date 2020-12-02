@@ -24,8 +24,6 @@ function CellPoint(
   cell_phys_point::AbstractArray{<:Union{Point,AbstractArray{<:Point}}},
   trian::Triangulation,
   domain_style::PhysicalDomain)
-  cell_invmap = lazy_map(inverse_map,cell_map)
-
   cell_map = get_cell_map(trian)
   cell_invmap = lazy_map(inverse_map,cell_map)
   cell_ref_point = lazy_map(evaluate,cell_invmap,cell_phys_point)

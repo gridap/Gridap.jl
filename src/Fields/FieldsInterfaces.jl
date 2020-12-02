@@ -99,7 +99,7 @@ function gradient_type(::Type{T},x::Point) where T
 end
 
 """
-Type that represents the gradient of a field. The wrapped field implements must
+Type that represents the gradient of a field. The wrapped field must
 implement `evaluate_gradient!` and `return_gradient_cache` for this gradient
 to work.
 
