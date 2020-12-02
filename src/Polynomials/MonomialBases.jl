@@ -245,7 +245,7 @@ function _define_terms(filter,orders)
   [ ci for ci in cis if filter(Int[Tuple(ci-co)...],maxorder) ]
 end
 
-function _evaluate_1d!(v::AbstractMatrix{T},x,order,d) where T
+@inline function _evaluate_1d!(v::AbstractMatrix{T},x,order,d) where T
   n = order + 1
   z = one(T)
   @inbounds v[d,1] = z

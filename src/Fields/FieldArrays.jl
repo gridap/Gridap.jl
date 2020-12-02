@@ -490,6 +490,21 @@ return_cache(a::BroadcastingFieldOpMap,args...) = return_cache(Broadcasting(a.op
 @inline function evaluate!(
   cache,
   f::BroadcastingFieldOpMap,
+  a::AbstractArray{T,N},
+  b::AbstractArray{S,N}) where {T,S,N}
+
+  @check size(a) == size(b)
+  setsize!(cache,size(a))
+  r = cache.array
+  for i in eachindex(a)
+    r[i] = f.op(a[i],b[i])
+  end
+  r
+end
+
+@inline function evaluate!(
+  cache,
+  f::BroadcastingFieldOpMap,
   a::AbstractMatrix,
   b::AbstractArray{S,3} where S)
 
