@@ -49,7 +49,7 @@ per thread).
 
       Gridap.Arrays.evaluate!(cache,f,x...)
 
-  has not beed defined for the requested types (see stack trace).
+  has not been defined for the requested types (see stack trace).
   """
 end
 
@@ -129,7 +129,7 @@ function `f`.
 # Example
 
 ```jldoctest
-using Gridap.Maps
+using Gridap.Arrays
 
 a = [3,2]
 b = [2,1]

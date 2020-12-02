@@ -17,10 +17,10 @@ function CellQuadrature(trian::Triangulation,degree::Integer)
   ctype_to_reffe, cell_to_ctype = compress_cell_data(get_cell_reffe(trian))
   ctype_to_quad = map(r->Quadrature(get_polytope(r),degree),ctype_to_reffe)
   ctype_to_point = map(get_coordinates,ctype_to_quad)
-  ctype_to_weigth = map(get_weights,ctype_to_quad)
+  ctype_to_weight = map(get_weights,ctype_to_quad)
   cell_quad = expand_cell_data(ctype_to_quad,cell_to_ctype)
   cell_point = expand_cell_data(ctype_to_point,cell_to_ctype)
-  cell_weight = expand_cell_data(ctype_to_weigth,cell_to_ctype)
+  cell_weight = expand_cell_data(ctype_to_weight,cell_to_ctype)
   CellQuadrature(cell_quad,cell_point,cell_weight,trian,ReferenceDomain())
 end
 
@@ -137,4 +137,3 @@ function _meas_K_fill!(bgcell_to_dV,cell_to_dV,cell_to_bgcell)
     bgcell_to_dV[bgcell] += dV
   end
 end
-
