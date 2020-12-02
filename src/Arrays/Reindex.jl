@@ -19,6 +19,7 @@ function return_value(k::Reindex,i...)
 end
 return_cache(k::Reindex,i...) = array_cache(k.values)
 @inline evaluate!(cache,k::Reindex,i...) = getindex!(cache,k.values,i...)
+@inline evaluate(k::Reindex,i...) = k.values[i...]
 
 #"""
 #    reindex(i_to_v::AbstractArray, j_to_i::AbstractArray)
