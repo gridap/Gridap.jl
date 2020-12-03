@@ -215,10 +215,6 @@ const ⋅¹ = dot
 
 inner(a::Number,b::Number) = a*b
 
-function inner(a::Complex,b::Complex)
-  @notimplemented "What do we want here a*b or a'*b ?"
-end
-
 function inner(a::MultiValue, b::MultiValue)
   @notimplemented
 end
