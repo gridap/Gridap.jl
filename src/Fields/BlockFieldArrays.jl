@@ -172,7 +172,7 @@ function lazy_map(
   bsize_new = (1,m.blocksize...)
   bids_new = map(i->(1,i...),m.blockids)
 
-  lazy_map(BlockArrayCooMap(bsize_new,bids_new),cell_axs_new, cell_aix)
+  r = lazy_map(BlockArrayCooMap(bsize_new,bids_new),cell_axs_new, cell_aix)
 end
 
 # Gradient

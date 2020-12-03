@@ -156,29 +156,30 @@ function _array_cache!(hash::Dict,a::LazyArray)
   (cg, cgi, cf), IndexItemPair(index, item)
 end
 
-@inline getindex!(cache, a::LazyArray, i::Integer) = _getindex_optimized!(cache,a,i)
-
-@inline function getindex!(cache, a::LazyArray{G,T,N}, i::Vararg{Integer,N}) where {G,T,N}
-  _getindex_optimized!(cache,a,i...)
-end
-
-@inline function _getindex_optimized!(cache, a::LazyArray, i...)
+@inline function getindex!(cache, a::LazyArray, i::Integer)
   _cache, index_and_item = cache
-  index = LinearIndices(a)[i...]
+  index = LinearIndices(a)[i]
   if index_and_item.index != index
-    item = _getindex!(_cache,a,i...)
+    cg, cgi, cf = _cache
+    gi = getindex!(cg, a.g, i)
+    fi = map((cj,fj) -> getindex!(cj,fj,i),cf,a.f)
     index_and_item.index = index
-    index_and_item.item = item
+    index_and_item.item = evaluate!(cgi, gi, fi...)
   end
   index_and_item.item
 end
 
-@inline function _getindex!(cache, a::LazyArray, i...)
-  cg, cgi, cf = cache
-  gi = getindex!(cg, a.g, i...)
-  fi = map((cj,fj) -> getindex!(cj,fj,i...),cf,a.f)
-  vi = evaluate!(cgi, gi, fi...)
-  vi
+@inline function getindex!(cache, a::LazyArray{G,T,N}, i::Vararg{Integer,N}) where {G,T,N}
+  _cache, index_and_item = cache
+  index = LinearIndices(a)[i...]
+  if index_and_item.index != index
+    cg, cgi, cf = _cache
+    gi = getindex!(cg, a.g, i...)
+    fi = map((cj,fj) -> getindex!(cj,fj,i...),cf,a.f)
+    index_and_item.index = index
+    index_and_item.item = evaluate!(cgi, gi, fi...)
+  end
+  index_and_item.item
 end
 
 function Base.getindex(a::LazyArray, i::Integer)
