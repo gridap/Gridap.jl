@@ -593,13 +593,15 @@ end
   b::AbstractArray{S,3} where S)
 
   @check size(a,1) == size(b,1)
-  np, _, ni = size(b)
-  setsize!(cache,(np,1,ni))
+  np, ni, nj = size(b)
+  setsize!(cache,(np,ni,nj))
   r = cache.array
   for p in 1:np
     ap = a[p]
-    for i in 1:ni
-      r[p,1,i] = f.op(ap,b[p,1,i])
+    for j in 1:nj
+      for i in 1:ni
+        r[p,i,j] = f.op(ap,b[p,i,j])
+      end
     end
   end
   r
@@ -612,13 +614,15 @@ end
   a::AbstractVector)
 
   @check size(a,1) == size(b,1)
-  np, _, ni = size(b)
-  setsize!(cache,(np,1,ni))
+  np, ni, nj = size(b)
+  setsize!(cache,(np,ni,nj))
   r = cache.array
   for p in 1:np
     ap = a[p]
-    for i in 1:ni
-      r[p,1,i] = f.op(b[p,1,i],ap)
+    for j in 1:nj
+      for i in 1:ni
+        r[p,i,j] = f.op(b[p,i,j],ap)
+      end
     end
   end
   r
