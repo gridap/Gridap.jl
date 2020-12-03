@@ -375,12 +375,14 @@ get_triangulation(f::OperationCellField) = f.trian
 DomainStyle(::Type{OperationCellField{DS}}) where DS = DS()
 
 function evaluate!(cache,f::OperationCellField,x::CellPoint)
-  key = (:evaluate,objectid(x))
-  if ! haskey(f.memo,key)
-    ax = map(i->i(x),f.args)
-    f.memo[key] = lazy_map(Fields.BroadcastingFieldOpMap(f.op.op),ax...)
-  end
-  f.memo[key]
+  #key = (:evaluate,objectid(x))
+  #if ! haskey(f.memo,key)
+  #  ax = map(i->i(x),f.args)
+  #  f.memo[key] = lazy_map(Fields.BroadcastingFieldOpMap(f.op.op),ax...)
+  #end
+  #f.memo[key]
+  ax = map(i->i(x),f.args)
+  lazy_map(Fields.BroadcastingFieldOpMap(f.op.op),ax...)
 end
 
 function change_domain(f::OperationCellField,target_trian::Triangulation,target_domain::DomainStyle)
