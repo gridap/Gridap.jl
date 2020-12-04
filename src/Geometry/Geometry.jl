@@ -109,14 +109,14 @@ export get_cell_reffe
 export get_cell_shapefuns
 export get_facet_normal
 export test_triangulation
-export get_cell_id
+export get_cell_to_bgcell
 export get_cell_map
 export get_background_triangulation
 export get_cell_ref_map
 export have_compatible_domains
 
 export Grid
-export get_cell_nodes
+export get_cell_node_ids
 export test_grid
 export compute_linear_grid
 export compute_reference_grid

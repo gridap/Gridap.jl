@@ -29,8 +29,8 @@ face_to_q = lazy_map(evaluate,face_s_q,face_to_s)
 cell_shapefuns = get_cell_shapefuns(btrian.cell_trian)
 cell_grad_shapefuns = lazy_map(Broadcasting(∇),cell_shapefuns)
 
-face_shapefuns = lazy_map(Reindex(cell_shapefuns),get_cell_id(btrian))
-face_grad_shapefuns = lazy_map(Reindex(cell_grad_shapefuns),get_cell_id(btrian))
+face_shapefuns = lazy_map(Reindex(cell_shapefuns),get_cell_to_bgcell(btrian))
+face_grad_shapefuns = lazy_map(Reindex(cell_grad_shapefuns),get_cell_to_bgcell(btrian))
 
 face_shapefuns_q = lazy_map(evaluate,face_shapefuns,face_to_q)
 test_array(face_shapefuns_q,collect(face_shapefuns_q))
@@ -70,8 +70,8 @@ face_to_q = lazy_map(evaluate,face_s_q,face_to_s)
 cell_shapefuns = get_cell_shapefuns(btrian.cell_trian)
 cell_grad_shapefuns = lazy_map(Broadcasting(∇),cell_shapefuns)
 
-face_shapefuns = lazy_map(Reindex(cell_shapefuns),get_cell_id(btrian))
-face_grad_shapefuns = lazy_map(Reindex(cell_grad_shapefuns),get_cell_id(btrian))
+face_shapefuns = lazy_map(Reindex(cell_shapefuns),get_cell_to_bgcell(btrian))
+face_grad_shapefuns = lazy_map(Reindex(cell_grad_shapefuns),get_cell_to_bgcell(btrian))
 
 face_shapefuns_q = lazy_map(evaluate,face_shapefuns,face_to_q)
 test_array(face_shapefuns_q,collect(face_shapefuns_q))
@@ -103,7 +103,7 @@ r = Vector{Point{2,Float64}}[
 test_array(q,r)
 
 q2x = get_cell_map(btrian.cell_trian)
-s2x = lazy_map(∘,lazy_map(Reindex(q2x),get_cell_id(btrian)),s2q)
+s2x = lazy_map(∘,lazy_map(Reindex(q2x),get_cell_to_bgcell(btrian)),s2q)
 
 x = lazy_map(evaluate,s2x,s)
 r = Vector{Point{2,Float64}}[
@@ -125,13 +125,13 @@ test_array(nvec_s,r)
 
 cellids = collect(1:num_cells(model))
 
-face_to_cellid = lazy_map(Reindex(cellids),get_cell_id(btrian))
-@test face_to_cellid == get_cell_id(btrian)
+face_to_cellid = lazy_map(Reindex(cellids),get_cell_to_bgcell(btrian))
+@test face_to_cellid == get_cell_to_bgcell(btrian)
 
 trian = get_background_triangulation(btrian)
 q2x = get_cell_map(trian)
 s2q = get_cell_ref_map(btrian)
-s2x = lazy_map(∘,lazy_map(Reindex(q2x),get_cell_id(btrian)),s2q)
+s2x = lazy_map(∘,lazy_map(Reindex(q2x),get_cell_to_bgcell(btrian)),s2q)
 
 s = CompressedArray([Point{1,Float64}[(0.25,),(0.75,)]],get_cell_type(btrian))
 x = lazy_map(evaluate,s2x,s)

@@ -19,7 +19,7 @@ struct GridPortion{Dc,Dp,G} <: Grid{Dc,Dp}
     Dc = num_cell_dims(parent_grid)
     Dp = num_point_dims(parent_grid)
 
-    parent_cell_to_parent_nodes = get_cell_nodes(parent_grid)
+    parent_cell_to_parent_nodes = get_cell_node_ids(parent_grid)
     nparent_nodes = num_nodes(parent_grid)
     parent_node_to_coords = get_node_coordinates(parent_grid)
 
@@ -56,7 +56,7 @@ function get_node_coordinates(grid::GridPortion)
   lazy_map(Reindex(parent_node_to_coords),grid.node_to_parent_node)
 end
 
-function get_cell_nodes(grid::GridPortion)
+function get_cell_node_ids(grid::GridPortion)
   grid.cell_to_nodes
 end
 
@@ -107,4 +107,3 @@ function _renumber_cell_nodes(oldcell_to_oldnodes,oldnode_to_node,cell_to_oldcel
   end
   Table(cell_to_nodes_data,cell_to_nodes_ptrs)
 end
-

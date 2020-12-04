@@ -39,7 +39,7 @@ JSON = "0.21.0"
 LineSearches = "7.0.1"
 NLsolve = "4.3.0"
 QuadGK = "2.3.1"
-StaticArrays = "0.12.1"
+StaticArrays = "0.12.1, 1.0"
 WriteVTK = "1.7"
 julia = "1.3"
 

@@ -6,7 +6,7 @@ Abstract type representing an arbitrary tiling, tessellation,
 or triangulation of a domain of parametric dimension `Dc` and
 physical dimension `Dp`.
 
-We define a triangulation from two basic ingredients: 
+We define a triangulation from two basic ingredients:
 
 - the cell-wise nodal coordinates of the cells in the triangulation, plus
 - an interpolation of this cell-wise coordinates into the cells interior.
@@ -29,7 +29,7 @@ For triangulations living in a space of co-dimension 1, the following method can
 In some cases, concrete implementations want to override the default implementation of the following methods:
 
 - [`restrict(f::AbstractArray, trian::Triangulation)`]
-- [`get_cell_id(f::AbstractArray, trian::Triangulation)`]
+- [`get_cell_to_bgcell(f::AbstractArray, trian::Triangulation)`]
 
 The (mandatory) `Triangulation` interface can be tested with
 
@@ -101,17 +101,17 @@ get_background_triangulation(trian::Triangulation,::SubTriangulation) = @abstrac
 #    reindex(a::AbstractArray, trian::Triangulation)
 #"""
 #function reindex(a::AbstractArray,trian::Triangulation)
-#  reindex(a,get_cell_id(trian))
+#  reindex(a,get_cell_to_bgcell(trian))
 #end
 
 """
-    get_cell_id(trian::Triangulation)
+    get_cell_to_bgcell(trian::Triangulation)
 
 Map from the indices in the sub-triangulation to the indices in the background triangulation
 """
-get_cell_id(trian::Triangulation) = get_cell_id(trian,TriangulationStyle(trian))
-get_cell_id(trian::Triangulation,::BackgroundTriangulation) = IdentityVector(num_cells(trian))
-get_cell_id(trian::Triangulation,::SubTriangulation) = @abstractmethod
+get_cell_to_bgcell(trian::Triangulation) = get_cell_to_bgcell(trian,TriangulationStyle(trian))
+get_cell_to_bgcell(trian::Triangulation,::BackgroundTriangulation) = IdentityVector(num_cells(trian))
+get_cell_to_bgcell(trian::Triangulation,::SubTriangulation) = @abstractmethod
 
 #"""
 #    restrict(f::AbstractArray, trian::Triangulation)
@@ -130,7 +130,7 @@ get_cell_ref_map(trian::Triangulation,::SubTriangulation) = @abstractmethod
 
 #"""
 #Given an array aligned with the cells in the background triangulation, return another array
-#aligned with the cells of the sub-triangulation. Do nothing if `trian` is already a 
+#aligned with the cells of the sub-triangulation. Do nothing if `trian` is already a
 #background triangulation.
 #"""
 #change_cell_index(a::AbstractArray,trian::Triangulation) = change_cell_index(a,trian,TriangulationStyle(trian))
@@ -141,14 +141,14 @@ get_cell_ref_map(trian::Triangulation,::SubTriangulation) = @abstractmethod
 #function change_cell_index(a::AbstractArray,trian::Triangulation,::SubTriangulation)
 #  bgtrian = get_background_triangulation(trian)
 #  @assert length(a) == num_cells(bgtrian)
-#  lazy_map(Reindex(a),get_cell_id(trian))
+#  lazy_map(Reindex(a),get_cell_to_bgcell(trian))
 #end
 #
 #"""
 #Given an array (of arrays) of Field objects that is aligned with the sub-triangulation but
 #the domain space of those fields corresponds to the reference space of the background triangulation,
 #return another array (of arrays) of Field objects with domain in the sub-triangulation.
-#Do nothing if `trian` is already a background triangulation. 
+#Do nothing if `trian` is already a background triangulation.
 #Note that one typically needs to call `change_cell_index` before calling `change_cell_domain`.
 #"""
 #change_cell_domain(a::AbstractArray,trian::Triangulation) = change_cell_domain(a,trian,TriangulationStyle(trian))
@@ -207,7 +207,7 @@ function test_triangulation(trian::Triangulation{Dc,Dp}) where {Dc,Dp}
   @test isa(TriangulationStyle(trian),TriangulationStyle)
   bgtrian = get_background_triangulation(trian)
   @test isa(bgtrian,Triangulation)
-  cell_id = get_cell_id(trian)
+  cell_id = get_cell_to_bgcell(trian)
   @test isa(cell_id,AbstractArray) || isa(cell_id,SkeletonPair)
   cell_ref_map = get_cell_ref_map(trian)
   @test isa(cell_ref_map,AbstractArray) || isa(cell_ref_map,SkeletonPair)
@@ -301,7 +301,7 @@ function get_node_coordinates(trian::Triangulation)
   @notimplemented
 end
 
-function get_cell_nodes(trian::Triangulation)
+function get_cell_node_ids(trian::Triangulation)
   @notimplemented
 end
 
@@ -362,4 +362,3 @@ end
 #function CellField(value::Number,trian::Triangulation,quad::CellQuadrature)
 #  CellField(value,get_cell_map(trian),quad)
 #end
-

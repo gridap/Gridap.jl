@@ -28,7 +28,7 @@ function change_domain(a::CellDof,target_trian::RestrictedTriangulation,target_d
   trian_a = get_triangulation(a)
   @notimplementedif ! have_compatible_domains(trian_a,get_background_triangulation(target_trian))
   cell_dof = get_cell_data(a)
-  tcell_to_cell = get_cell_id(target_trian)
+  tcell_to_cell = get_cell_to_bgcell(target_trian)
   tcell_dof = lazy_map(Reindex(cell_dof),tcell_to_cell)
   CellDof(tcell_dof,target_trian,DomainStyle(a))
 end
