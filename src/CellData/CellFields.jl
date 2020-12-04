@@ -137,7 +137,7 @@ function change_domain(a::CellField,::ReferenceDomain,trian::Triangulation,::Ref
   if have_compatible_domains(trian_a,trian)
     return a
   elseif have_compatible_domains(trian_a,get_background_triangulation(trian))
-    cell_id = get_cell_id(trian)
+    cell_id = get_cell_to_bgcell(trian)
     @assert ! isa(cell_id,SkeletonPair)
     cell_a_q = lazy_map(Reindex(get_cell_data(a)),cell_id)
     cell_s2q = get_cell_ref_map(trian)
@@ -157,7 +157,7 @@ function change_domain(a::CellField,::PhysicalDomain,trian::Triangulation,::Phys
   if have_compatible_domains(trian_a,trian)
     return a
   elseif have_compatible_domains(trian_a,get_background_triangulation(trian))
-    cell_id = get_cell_id(trian)
+    cell_id = get_cell_to_bgcell(trian)
     @assert ! isa(cell_id,SkeletonPair)
     cell_field = lazy_map(Reindex(get_cell_data(a)),cell_id)
     GenericCellField(cell_field,trian,PhysicalDomain())

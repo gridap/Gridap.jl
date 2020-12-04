@@ -38,7 +38,7 @@ labeling = get_face_labeling(model)
 @test num_facets(model) == 13
 @test num_nodes(model) == 9
 
-@test get_cell_nodes(model) == get_cell_nodes(grid)
+@test get_cell_node_ids(model) == get_cell_node_ids(grid)
 @test get_node_coordinates(model) == get_node_coordinates(grid)
 @test get_cell_type(model) == get_cell_type(grid)
 @test get_reffes(model) == get_reffes(grid)

@@ -123,7 +123,7 @@ Contributions added to the cells of the background Triangulation.
 function get_cell_measure(trian::Triangulation)
   quad = CellQuadrature(trian,0)
   cell_to_dV = integrate(1,quad)
-  cell_to_bgcell = get_cell_id(trian)
+  cell_to_bgcell = get_cell_to_bgcell(trian)
   bgtrian = get_background_triangulation(trian)
   bgcell_to_dV = zeros(num_cells(bgtrian))
   _meas_K_fill!(bgcell_to_dV,cell_to_dV,cell_to_bgcell)

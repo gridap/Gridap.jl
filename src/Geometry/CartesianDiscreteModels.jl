@@ -417,7 +417,7 @@ function _generate_cell_to_vertices_from_grid(grid::UnstructuredGrid,
   isperiodic::NTuple, partition)
 
   if is_first_order(grid)
-    nodes = get_cell_nodes(grid)
+    nodes = get_cell_node_ids(grid)
     cell_to_vertices = copy(nodes)
 
     nnodes = num_nodes(grid)

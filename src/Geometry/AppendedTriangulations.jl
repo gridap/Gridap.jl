@@ -44,9 +44,9 @@ end
 #  lazy_append(a,b)
 #end
 
-function get_cell_id(trian::AppendedTriangulation)
-  a = get_cell_id(trian.a)
-  b = get_cell_id(trian.b)
+function get_cell_to_bgcell(trian::AppendedTriangulation)
+  a = get_cell_to_bgcell(trian.a)
+  b = get_cell_to_bgcell(trian.b)
   lazy_append(a,b)
 end
 
@@ -62,7 +62,7 @@ end
 #  lazy_append(a,b)
 #end
 
-# In this case, we do not want a lazy_append since it will become difficult to 
+# In this case, we do not want a lazy_append since it will become difficult to
 # compress / expand the reffes.
 #function get_cell_reffe(trian::AppendedTriangulation)
 #  a = get_cell_reffe(trian.a)
@@ -98,4 +98,3 @@ end
 #function CellQuadrature(trian::AppendedTriangulation,degree::Integer)
 #  CellQuadrature(trian,degree,degree)
 #end
-

@@ -48,7 +48,7 @@ bcellids = btrian.glue.face_to_cell
 b0cellmat = integrate(v*u,b0quad)
 b0cellvec = integrate(v*3,b0quad)
 b0cellmatvec = pair_arrays(b0cellmat,b0cellvec)
-b0cellids = get_cell_id(b0trian)
+b0cellids = get_cell_to_bgcell(b0trian)
 @test length(b0cellids) == 0
 
 term_to_cellmat = [cellmat, bcellmat, b0cellmat]
@@ -78,21 +78,21 @@ for T in mtypes
 
   assem = SparseMatrixAssembler(T,Vector{Float64},U,V)
   test_sparse_matrix_assembler(assem,matdata,vecdata,data)
-  
+
   matdata = ([cellmat],[cellids],[cellids])
   vecdata = ([cellvec],[cellids])
 
   mat = assemble_matrix(assem,matdata)
   vec = assemble_vector(assem,vecdata)
-  
+
   x = mat \ vec
-  
+
   assemble_matrix!(mat,assem,matdata)
   assemble_vector!(vec,assem,vecdata)
-  
+
   x2 = mat \ vec
   @test x ≈ x2
-  
+
   @test vec ≈ [0.0625, 0.125, 0.0625]
   @test mat[1, 1]  ≈  1.333333333333333
   @test mat[2, 1]  ≈ -0.33333333333333
@@ -138,7 +138,7 @@ scellmat = integrate(jump(v)*u.⁻,squad)
 scellvec = integrate(mean(v*3),squad)
 @test isa(scellvec[1],BlockArrayCoo)
 scellmatvec = pair_arrays(scellmat,scellvec)
-scellids = get_cell_id(strian)
+scellids = get_cell_to_bgcell(strian)
 zh = zero(V)
 scellvals = get_cell_dof_values(zh,scellids)
 scellmatvec = attach_dirichlet(scellmatvec,scellvals)

@@ -18,7 +18,7 @@ cell_to_oldcell = [2,9,7]
 trian_portion = RestrictedTriangulation(oldtrian,cell_to_oldcell)
 trian_portion_portion = RestrictedTriangulation(trian_portion,[3,1])
 test_triangulation(trian_portion_portion)
-@test get_cell_id(trian_portion_portion)==[7,2]
+@test get_cell_to_bgcell(trian_portion_portion)==[7,2]
 
 const R = 0.7
 
@@ -39,8 +39,8 @@ trian = Triangulation(oldmodel,get_face_labeling(oldmodel),tags="interior")
 
 #using Gridap.Visualization
 #writevtk(oldtrian,"oldtrian")
-#writevtk(btrian,"btrian",cellfields=["normal"=>nb],celldata=["oldcell"=>get_cell_id(btrian)])
+#writevtk(btrian,"btrian",cellfields=["normal"=>nb],celldata=["oldcell"=>get_cell_to_bgcell(btrian)])
 #writevtk(strian,"strian",cellfields=["normal"=>ns],
-#  celldata=["oldcell_left"=>get_cell_id(strian).plus,"oldcell_right"=>get_cell_id(strian).minus])
+#  celldata=["oldcell_left"=>get_cell_to_bgcell(strian).plus,"oldcell_right"=>get_cell_to_bgcell(strian).minus])
 
 end # module

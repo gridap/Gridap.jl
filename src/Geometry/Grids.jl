@@ -10,7 +10,7 @@ The interface of `Grid` is defined by overloading the
 methods in `Triangulation` plus the following ones:
 
 - [`get_node_coordinates(trian::Grid)`](@ref)
-- [`get_cell_nodes(trian::Grid)`](@ref)
+- [`get_cell_node_ids(trian::Grid)`](@ref)
 
 From these two methods a default implementation of [`get_cell_coordinates(trian::Triangulation)`](@ref)
 is available.
@@ -65,9 +65,9 @@ function get_node_coordinates(trian::Grid)
 end
 
 """
-    get_cell_nodes(trian::Grid)
+    get_cell_node_ids(trian::Grid)
 """
-function get_cell_nodes(trian::Grid)
+function get_cell_node_ids(trian::Grid)
   @abstractmethod
 end
 
@@ -78,8 +78,8 @@ function test_grid(trian::Grid)
   test_triangulation(trian)
   nodes_coords = get_node_coordinates(trian)
   @test isa(nodes_coords,AbstractArray{<:Point})
-  cell_nodes = get_cell_nodes(trian)
-  @test isa(cell_nodes,AbstractArray{<:AbstractArray{<:Integer}})
+  cell_node_ids = get_cell_node_ids(trian)
+  @test isa(cell_node_ids,AbstractArray{<:AbstractArray{<:Integer}})
   @test num_nodes(trian) == length(nodes_coords)
   @test isa(is_oriented(trian),Bool)
   @test isa(is_regular(trian),Bool)
@@ -93,7 +93,7 @@ end
 
 function get_cell_coordinates(trian::Grid)
   node_to_coords = get_node_coordinates(trian)
-  cell_to_nodes = get_cell_nodes(trian)
+  cell_to_nodes = get_cell_node_ids(trian)
   lazy_map(Broadcasting(Reindex(node_to_coords)),cell_to_nodes)
 end
 
@@ -158,4 +158,3 @@ end
 function simplexify(grid::Grid)
   simplexify(UnstructuredGrid(grid))
 end
-

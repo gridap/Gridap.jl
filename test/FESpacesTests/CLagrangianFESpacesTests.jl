@@ -19,7 +19,7 @@ matdata = ([],[],[])
 vecdata = ([],[])
 test_single_field_fe_space(V,matvecdata,matdata,vecdata)
 
-@test get_cell_dof_ids(V) === get_cell_nodes(grid)
+@test get_cell_dof_ids(V) === get_cell_node_ids(grid)
 @test V.dof_to_node == collect(1:num_nodes(grid))
 @test V.dof_to_comp == ones(Int,num_nodes(grid))
 @test V.node_and_comp_to_dof == V.dof_to_node

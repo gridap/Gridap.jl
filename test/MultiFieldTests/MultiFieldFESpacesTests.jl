@@ -46,7 +46,7 @@ du, dp = dx
 
 cellmat = integrate(dv*du,quad)
 cellvec = integrate(dv*2,quad)
-cellids = get_cell_id(trian)
+cellids = get_cell_to_bgcell(trian)
 cellmatvec = pair_arrays(cellmat,cellvec)
 @test isa(cellmat, LazyArray{<:Fill{<:BlockArrayCooMap}})
 @test is_nonzero_block(cellmat[1],1,1)
