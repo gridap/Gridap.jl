@@ -336,6 +336,11 @@ enumerateblocks(a) = zip(eachblockid(a),eachblock(a))
 
 # AbstractBlockArray
 
+# Avoid the internal copy in BlockArrayCoo 0.13
+@propagate_inbounds Base.getindex( block_arr::BlockArrayCoo{T,N}, block::Block{N}) where {T,N} =  getblock(block_arr, block.n...)
+@propagate_inbounds Base.getindex( block_arr::BlockVectorCoo, block::Block{1}) =  getblock(block_arr, block.n[1])
+@inline Base.getindex(block_arr::BlockArrayCoo{T,N}, block::Vararg{Block{1}, N}) where {T,N} =  getblock(block_arr, (Block(block).n)...)
+
 @inline function BlockArrays.getblock(a::BlockArrayCoo{T,N}, block::Vararg{Integer, N}) where {T,N}
   #@boundscheck BlockArrays.blockcheckbounds(a, block...)
   p = a.ptrs[block...]
