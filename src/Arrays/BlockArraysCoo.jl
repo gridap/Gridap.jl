@@ -145,6 +145,9 @@ struct BlockArrayCoo{T,N,A,X} <: AbstractBlockArray{T,N}
   end
 end
 
+const BlockMatrixCoo = BlockArrayCoo{T,2} where T
+const BlockVectorCoo = BlockArrayCoo{T,1} where T
+
 function _valid_block_sizes(_axes,ptrs,blocks)
   s = map(i->first(blocksize(i)),_axes)
   cis = CartesianIndices(s)
@@ -335,6 +338,11 @@ BlockArrays.eachblock(a::BlockArrayCoo) = ( a[I]  for I in eachblockid(a) )
 enumerateblocks(a) = zip(eachblockid(a),eachblock(a))
 
 # AbstractBlockArray
+
+# Avoid the internal copy in BlockArrayCoo 0.13
+@propagate_inbounds Base.getindex( block_arr::BlockArrayCoo{T,N}, block::Block{N}) where {T,N} =  getblock(block_arr, block.n...)
+@propagate_inbounds Base.getindex( block_arr::BlockVectorCoo, block::Block{1}) =  getblock(block_arr, block.n[1])
+@inline Base.getindex(block_arr::BlockArrayCoo{T,N}, block::Vararg{Block{1}, N}) where {T,N} =  getblock(block_arr, (Block(block).n)...)
 
 @inline function BlockArrays.getblock(a::BlockArrayCoo{T,N}, block::Vararg{Integer, N}) where {T,N}
   #@boundscheck BlockArrays.blockcheckbounds(a, block...)
@@ -557,9 +565,6 @@ function Base.:*(a::Number,b::BlockArrayCoo)
   blocks = f.(b.blocks)
   BlockArrayCoo(b.axes,b.blockids,blocks,b.ptrs,f.(b.zero_blocks))
 end
-
-const BlockMatrixCoo = BlockArrayCoo{T,2} where T
-const BlockVectorCoo = BlockArrayCoo{T,1} where T
 
 function Base.:*(a::BlockMatrixCoo,b::BlockVectorCoo)
   @assert blocksize(a,2) == blocksize(b,1)
