@@ -1,7 +1,10 @@
 
+struct PointValue{P} <: Dof
+  point::P
+end
 
 """
-    struct LagrangianDofBasis{P,V} <: Dof
+    struct LagrangianDofBasis{P,V} <: AbstractArray{<:Dof}
       nodes::Vector{P}
       dof_to_node::Vector{Int}
       dof_to_comp::Vector{Int}
@@ -18,11 +21,27 @@ Fields:
 - `dof_to_comp::Vector{Int}` vector of integers such that `dof_to_comp[dof]` returns the component id associated with dof id `dof`.
 
 """
-struct LagrangianDofBasis{P,V} <: Dof
+struct LagrangianDofBasis{P,V} <: AbstractVector{PointValue{P}}
   nodes::Vector{P}
   dof_to_node::Vector{Int}
   dof_to_comp::Vector{Int}
   node_and_comp_to_dof::Vector{V}
+end
+
+@inline Base.size(a::LagrangianDofBasis) = (length(a.nodes),)
+@inline Base.axes(a::LagrangianDofBasis) = (axes(a.nodes,1),)
+# @santiagobadia : Not sure we want to create the monomial machinery
+@inline Base.getindex(a::LagrangianDofBasis,i::Integer) = PointValue(a.nodes[i])
+@inline Base.IndexStyle(::LagrangianDofBasis) = IndexLinear()
+
+# This one takes a basis and replaces the nodes
+function LagrangianDofBasis(dofs::LagrangianDofBasis{P},nodes::Vector{P}) where P
+  @check length(nodes) == length(dofs.nodes)
+  LagrangianDofBasis(
+    nodes,
+    dofs.dof_to_node,
+    dofs.dof_to_comp,
+    dofs.node_and_comp_to_dof)
 end
 
 """
@@ -54,7 +73,7 @@ function _generate_dof_layout_node_major(::Type{T},nnodes::Integer) where T<:Mul
   dof_to_comp = zeros(Int,ndofs)
   dof_to_node = zeros(Int,ndofs)
   node_and_comp_to_dof = zeros(V,nnodes)
-  m = zero(mutable(V))
+  m = zero(Mutable(V))
   for node in 1:nnodes
     for comp in 1:ncomps
       o = nnodes*(comp-1)
@@ -68,9 +87,9 @@ function _generate_dof_layout_node_major(::Type{T},nnodes::Integer) where T<:Mul
   (dof_to_node, dof_to_comp, node_and_comp_to_dof)
 end
 
-function dof_cache(b::LagrangianDofBasis,field)
-  cf = field_cache(field,b.nodes)
-  vals = evaluate_field!(cf,field,b.nodes)
+function return_cache(b::LagrangianDofBasis,field)
+  cf = return_cache(field,b.nodes)
+  vals = evaluate!(cf,field,b.nodes)
   ndofs = length(b.dof_to_node)
   r = _lagr_dof_cache(vals,ndofs)
   c = CachedArray(r)
@@ -88,12 +107,22 @@ function _lagr_dof_cache(node_pdof_comp_to_val::AbstractMatrix,ndofs)
   r = zeros(eltype(T),ndofs,npdofs)
 end
 
-@inline function evaluate_dof!(cache,b::LagrangianDofBasis,field)
+@inline function evaluate!(cache,b::LagrangianDofBasis,field)
   c, cf = cache
-  vals = evaluate_field!(cf,field,b.nodes)
+  vals = evaluate!(cf,field,b.nodes)
   ndofs = length(b.dof_to_node)
   T = eltype(vals)
   ncomps = num_components(T)
+  @check ncomps == num_components(eltype(b.node_and_comp_to_dof)) """\n
+  Unable to evaluate LagrangianDofBasis. The number of components of the 
+  given Field does not match with the LagrangianDofBasis.
+
+  If you are trying to interpolate a function on a FESpace make sure that
+  both objects have the same value type.
+  
+  For instance, trying to interpolate a vector-valued funciton on a scalar-valued FE space
+  would raise this error.
+  """
   _evaluate_lagr_dof!(c,vals,b.node_and_comp_to_dof,ndofs,ncomps)
 end
 

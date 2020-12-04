@@ -4,7 +4,7 @@
      struct Table{T,Vd<:AbstractVector{T},Vp<:AbstractVector} <: AbstractVector{Vector{T}}
         data::Vd
         ptrs::Vp
-     end   
+     end
 
 Type representing a list of lists (i.e., a table) in
 compressed format.
@@ -14,7 +14,7 @@ struct Table{T,Vd<:AbstractVector{T},Vp<:AbstractVector} <: AbstractVector{Vecto
   ptrs::Vp
   function Table(data::AbstractVector,ptrs::AbstractVector)
     new{eltype(data),typeof(data),typeof(ptrs)}(data,ptrs)
-  end   
+  end
 end
 
 """
@@ -333,35 +333,26 @@ Equivalent to
 """
 collect1d(a) = [a[i] for i in 1:length(a)]
 
-"""
-    get_local_item(a_to_lb_to_b, lb::Integer)
-"""
-function get_local_item(a_to_lb_to_b, lb::Integer)
-  @notimplemented "get_local_item, only implemented for Table"
+function lazy_map(::typeof(getindex),a::Table,b::AbstractArray{<:Integer})
+  LocalItemFromTable(a,b)
 end
 
-function get_local_item(a_to_lb_to_b::Table, lb::Integer)
-  a_to_b = LocalItemFromTable(a_to_lb_to_b,Fill(lb,length(a_to_lb_to_b)))
-  a_to_b
-end
-
-function get_local_item(a_to_lb_to_b::Table, lb::AbstractArray{<:Integer})
-  a_to_b = LocalItemFromTable(a_to_lb_to_b,lb)
-  a_to_b
+function get_local_item(a::Table,li::Integer)
+  LocalItemFromTable(a,Fill(li,length(a)))
 end
 
 struct LocalItemFromTable{T,Vd,Vp,A} <: AbstractVector{T}
   a_to_lb_to_b::Table{T,Vd,Vp}
-  lb::A
+  a_to_lb::A
 end
 
 Base.size(m::LocalItemFromTable) = size(m.a_to_lb_to_b)
 
-Base.IndexStyle(::Type{<:LocalItemFromTable}) = IndexStyle(Table)
+Base.IndexStyle(::Type{<:LocalItemFromTable}) = IndexLinear()
 
 @propagate_inbounds function Base.getindex(m::LocalItemFromTable, a::Integer)
   p = m.a_to_lb_to_b.ptrs[a]-1
-  m.a_to_lb_to_b.data[p+m.lb[a]]
+  m.a_to_lb_to_b.data[p+m.a_to_lb[a]]
 end
 
 """

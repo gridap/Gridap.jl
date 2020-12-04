@@ -9,6 +9,8 @@ using Gridap.Integration
 using LinearAlgebra: ⋅
 using Gridap.CellData
 using Gridap.FESpaces
+using Gridap.ReferenceFEs
+using FillArrays
 
 domain = (0,1,0,1)
 partition = (10,10)
@@ -21,39 +23,44 @@ cell_to_mask[1:nin] .= true
 
 grid = get_grid(model)
 
-trian_in = RestrictedTriangulation(grid,cell_to_mask)
-trian_out = RestrictedTriangulation(grid,collect(Bool, .! cell_to_mask))
-
-trian = lazy_append(trian_out,trian_in)
-test_triangulation(trian)
+Ω_in = RestrictedTriangulation(grid,cell_to_mask)
+Ω_out = RestrictedTriangulation(grid,.! cell_to_mask)
+Ω = lazy_append(Ω_out,Ω_in)
+test_triangulation(Ω)
 
 order = 1
-quad = CellQuadrature(trian,2*order)
-quad_in = CellQuadrature(trian_in,2*order)
-quad_out = CellQuadrature(trian_out,2*order)
+degree = 2*order
+quad_in = CellQuadrature(Ω_in,degree)
+quad_out = CellQuadrature(Ω_out,degree)
+quad = CellQuadrature(Ω,degree)
+@test isa(quad.trian,AppendedTriangulation)
+@test isa(quad.cell_quad,AppendedArray)
+@test isa(quad.cell_point,AppendedArray)
+@test isa(quad.cell_weight,AppendedArray)
 
-q = get_coordinates(quad)
-w = get_weights(quad)
-@test isa(q,AppendedArray)
-@test isa(w,AppendedArray)
+V = TestFESpace(model,ReferenceFE(:Lagrangian,Float64,order),conformity=:H1)
 
-V = TestFESpace(model=model,valuetype=Float64,order=order,reffe=:Lagrangian,conformity=:H1)
+v(x) = x[1]+x[2]
 
-u(x) = x[1]+x[2]
+vh = interpolate(v,V)
 
-_v = interpolate(u,V)
-v = restrict(_v,trian)
-
-e = u - v
-el2 = sqrt(sum(integrate(e*e,trian,quad)))
+e = v - vh
+el2 = sqrt(sum(integrate(e*e,quad)))
 @test el2 < 1.0e-8
 
-_dv = get_cell_basis(V)
-dv = restrict(_dv,trian)
+x = get_cell_points(quad)
 
-cellmat =  integrate(∇(dv)⋅∇(dv),trian,quad)
+dv = get_cell_shapefuns(V)
+du = get_cell_shapefuns_trial(V)
+@test isa(dv(x),AppendedArray)
+@test isa(∇(dv)(x),AppendedArray)
+@test isa(du(x),AppendedArray)
+@test isa(∇(du)(x),AppendedArray)
+
+cellmat = integrate( ∇(dv)⋅∇(du), quad )
+
 @test isa(cellmat,AppendedArray)
-@test isa(cellmat.a,CompressedArray)
-@test isa(cellmat.b,CompressedArray)
+@test isa(cellmat.a,Fill)
+@test isa(cellmat.b,Fill)
 
 end # module

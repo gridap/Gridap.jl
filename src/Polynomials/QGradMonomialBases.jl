@@ -1,14 +1,14 @@
 
 """
-    struct QGradMonomialBasis{...} <: Field
+    struct QGradMonomialBasis{...} <: AbstractVector{Monomial}
 
 This type implements a multivariate vector-valued polynomial basis
 spanning the space needed for Nedelec reference elements on n-cubes.
-The type parameters and fields of this `struct` are not public.  
+The type parameters and fields of this `struct` are not public.
 This type fully implements the [`Field`](@ref) interface, with up to first order
 derivatives.
 """
-struct QGradMonomialBasis{D,T} <: Field
+struct QGradMonomialBasis{D,T} <: AbstractVector{Monomial}
   order::Int
   terms::CartesianIndices{D}
   perms::Matrix{Int}
@@ -16,6 +16,11 @@ struct QGradMonomialBasis{D,T} <: Field
     new{D,T}(order,terms,perms)
   end
 end
+
+@inline Base.size(a::QGradMonomialBasis) = (_ndofs_qgrad(a),)
+# @santiagobadia : Not sure we want to create the monomial machinery
+@inline Base.getindex(a::QGradMonomialBasis,i::Integer) = Monomial()
+@inline Base.IndexStyle(::QGradMonomialBasis) = IndexLinear()
 
 """
     QGradMonomialBasis{D}(::Type{T},order::Int) where {D,T}
@@ -42,7 +47,7 @@ num_terms(f::QGradMonomialBasis{D,T}) where {D,T} = length(f.terms)*D
 
 get_order(f::QGradMonomialBasis) = f.order
 
-function field_cache(f::QGradMonomialBasis{D,T},x) where {D,T}
+function return_cache(f::QGradMonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = _ndofs_qgrad(f)
@@ -54,7 +59,7 @@ function field_cache(f::QGradMonomialBasis{D,T},x) where {D,T}
   (r, v, c)
 end
 
-function evaluate_field!(cache,f::QGradMonomialBasis{D,T},x) where {D,T}
+function evaluate!(cache,f::QGradMonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   r, v, c = cache
   np = length(x)
   ndof = _ndofs_qgrad(f)
@@ -72,7 +77,11 @@ function evaluate_field!(cache,f::QGradMonomialBasis{D,T},x) where {D,T}
   r.array
 end
 
-function gradient_cache(f::QGradMonomialBasis{D,T},x) where {D,T}
+function return_cache(
+  fg::FieldGradientArray{1,QGradMonomialBasis{D,T}},
+  x::AbstractVector{<:Point}) where {D,T}
+
+  f = fg.fa
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = _ndofs_qgrad(f)
@@ -87,7 +96,12 @@ function gradient_cache(f::QGradMonomialBasis{D,T},x) where {D,T}
   (r, v, c, g)
 end
 
-function evaluate_gradient!(cache,f::QGradMonomialBasis{D,T},x) where {D,T}
+function evaluate!(
+  cache,
+  fg::FieldGradientArray{1,QGradMonomialBasis{D,T}},
+  x::AbstractVector{<:Point}) where {D,T}
+
+  f = fg.fa
   r, v, c, g = cache
   np = length(x)
   ndof = _ndofs_qgrad(f)
@@ -139,7 +153,7 @@ function _evaluate_nd_qgrad!(
 
   o = one(T)
   k = 1
-  m = zero(mutable(V))
+  m = zero(Mutable(V))
   js = eachindex(m)
   z = zero(T)
 
@@ -182,8 +196,8 @@ function _gradient_nd_qgrad!(
     _gradient_1d!(g,x,order,d)
   end
 
-  z = zero(mutable(V))
-  m = zero(mutable(G))
+  z = zero(Mutable(V))
+  m = zero(Mutable(G))
   js = eachindex(z)
   mjs = eachindex(m)
   o = one(T)

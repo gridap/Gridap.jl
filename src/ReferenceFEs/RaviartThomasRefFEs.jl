@@ -13,6 +13,7 @@ function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
   prebasis = QCurlGradMonomialBasis{D}(et,order)
 
   nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order)
+  #nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order,GenericField(identity))
 
   face_own_dofs = _face_own_dofs_from_moments(nf_moments)
 
@@ -22,9 +23,10 @@ function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
 
   ndofs = num_dofs(dof_basis)
 
+  #metadata = (et,order)
   metadata = nothing
 
-  reffe = GenericRefFE(
+  reffe = GenericRefFE{:RaviartThomas}(
     ndofs,
     p,
     prebasis,
@@ -36,9 +38,59 @@ function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
   reffe
 end
 
-function get_face_own_dofs(reffe::GenericRefFE{DivConformity}, conf::DivConformity)
+function ReferenceFE(p::Polytope,::Val{:RaviartThomas}, order)
+  RaviartThomasRefFE(Float64,p,order)
+end
+
+function ReferenceFE(p::Polytope,::Val{:RaviartThomas},::Type{T}, order) where T
+  RaviartThomasRefFE(T,p,order)
+end
+
+function Conformity(reffe::GenericRefFE{:RaviartThomas},sym::Symbol)
+  hdiv = (:Hdiv,:HDiv)
+  if sym == :L2
+    L2Conformity()
+  elseif sym in hdiv
+    DivConformity()
+  else
+    @unreachable """\n
+    It is not possible to use conformity = $sym on a Raviart Thomas reference FE.
+
+    Possible values of conformity for this reference fe are $((:L2, hdiv...)).
+    """
+  end
+end
+
+function get_face_own_dofs(reffe::GenericRefFE{:RaviartThomas}, conf::DivConformity)
   get_face_dofs(reffe)
 end
+
+# Make it work for quads for the moment
+function get_dof_basis(reffe::GenericRefFE{:RaviartThomas},phi::Field)
+  get_dof_basis(reffe)
+end
+
+## First implement this:
+#function get_dof_basis(reffe::GenericRefFE{:RaviartThomas},phi::Field)
+#   p = get_polytope(reffe)
+#   et, order = reffe.metadata
+#   nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order,phi)
+#   MomentBasedDofBasis(nf_nodes, nf_moments)
+#end
+
+# Then optimize this:
+#function get_dof_basis(reffe::GenericRefFE{:RaviartThomas},phi::Field)
+#  cache = return_cache(get_dof_basis,reffe,phi)
+#  evaluate!(cache,get_dof_basis,reffe,phi)
+#end
+#
+#function return_cache(::typeof(get_dof_basis),reffe::GenericRefFE{:RaviartThomas},phi::Field)
+#  @notimplemented
+#end
+#
+#function evaluate!(cache,::typeof(get_dof_basis),reffe::GenericRefFE{:RaviartThomas},phi::Field)
+#  @notimplemented
+#end
 
 function _RT_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) where et
 
@@ -73,14 +125,15 @@ function _ref_face_to_faces_geomap(p,fp)
   freffe = LagrangianRefFE(Float64,fp,1)
   fshfs = get_shapefuns(freffe)
   cfshfs = fill(fshfs, nc)
-  fgeomap = lincomb(cfshfs,cfvs)
+  # fgeomap = lincomb(cfshfs,cfvs)
+  fgeomap = lazy_map(linear_combination,cfvs,cfshfs)
 end
 
 function _nfaces_evaluation_points_weights(p, fgeomap, fips, wips)
   nc = length(fgeomap)
   c_fips = fill(fips,nc)
   c_wips = fill(wips,nc)
-  pquad = evaluate(fgeomap,c_fips)
+  pquad = lazy_map(evaluate,fgeomap,c_fips)
   c_fips, pquad, c_wips
 end
 
@@ -95,10 +148,10 @@ end
 function _RT_face_moments(p, fshfs, c_fips, fcips, fwips)
   nc = length(c_fips)
   cfshfs = fill(fshfs, nc)
-  cvals = evaluate(cfshfs,c_fips)
+  cvals = lazy_map(evaluate,cfshfs,c_fips)
   cvals = [fwips[i].*cvals[i] for i in 1:nc]
-  # fns, os = get_facet_normals(p)
-  fns = get_facet_normals(p)
+  # fns, os = get_facet_normal(p)
+  fns = get_facet_normal(p)
   os = get_facet_orientations(p)
   # @santiagobadia : Temporary hack for making it work for structured hex meshes
   cvals = [ _broadcast(typeof(n),n*o,b) for (n,o,b) in zip(fns,os,cvals)]
@@ -175,7 +228,9 @@ function _face_own_dofs_from_moments(f_moments)
   face_dofs
 end
 
-struct MomentBasedDofBasis{P,V} <: Dof
+struct Moment <: Dof end
+
+struct MomentBasedDofBasis{P,V} <: AbstractVector{Moment}
   nodes::Vector{P}
   face_moments::Vector{Array{V}}
   face_nodes::Vector{UnitRange{Int}}
@@ -207,6 +262,12 @@ struct MomentBasedDofBasis{P,V} <: Dof
   end
 end
 
+@inline Base.size(a::MomentBasedDofBasis) = (length(a.nodes),)
+@inline Base.axes(a::MomentBasedDofBasis) = (axes(a.nodes,1),)
+# @santiagobadia : Not sure we want to create the moment dofs
+@inline Base.getindex(a::MomentBasedDofBasis,i::Integer) = Moment()
+@inline Base.IndexStyle(::MomentBasedDofBasis) = IndexLinear()
+
 get_nodes(b::MomentBasedDofBasis) = b.nodes
 get_face_moments(b::MomentBasedDofBasis) = b.face_moments
 get_face_nodes_dofs(b::MomentBasedDofBasis) = b.face_nodes
@@ -219,9 +280,9 @@ function num_dofs(b::MomentBasedDofBasis)
   n
 end
 
-function dof_cache(b::MomentBasedDofBasis,field)
-  cf = field_cache(field,b.nodes)
-  vals = evaluate_field!(cf,field,b.nodes)
+function return_cache(b::MomentBasedDofBasis,field)
+  cf = return_cache(field,b.nodes)
+  vals = evaluate!(cf,field,b.nodes)
   ndofs = num_dofs(b)
   r = _moment_dof_basis_cache(vals,ndofs)
   c = CachedArray(r)
@@ -239,9 +300,9 @@ function _moment_dof_basis_cache(vals::AbstractMatrix,ndofs)
   r = zeros(eltype(T),ndofs,npdofs)
 end
 
-function evaluate_dof!(cache,b::MomentBasedDofBasis,field)
+function evaluate!(cache,b::MomentBasedDofBasis,field)
   c, cf = cache
-  vals = evaluate_field!(cf,field,b.nodes)
+  vals = evaluate!(cf,field,b.nodes)
   dofs = c.array
   _eval_moment_dof_basis!(dofs,vals,b)
   dofs
@@ -291,3 +352,61 @@ function _eval_moment_dof_basis!(dofs,vals::AbstractMatrix,b)
     end
   end
 end
+
+struct ContraVariantPiolaMap <: PushForwardMap end
+
+function evaluate!(cache,::ContraVariantPiolaMap,v::Number,J::Number,detJ::Number)
+  (1/detJ)*J⋅v
+end
+
+function evaluate!(cache,k::ContraVariantPiolaMap,v::AbstractVector{<:Field},phi::Field)
+  Jt = ∇(phi)
+  detJ = Operation(det)(Jt)
+  J = Operation(transpose)(Jt)
+  Broadcasting(Operation(k))(v,J,detJ)
+end
+
+#function lazy_map(
+#  ::typeof(evaluate),
+#  cell_shapefuns::LazyArray{<:Fill{<:ContraVariantPiolaMap}},
+#  cell_qs::AbstractArray)
+#
+#  cell_ref_shapefuns = cell_shapefuns.f[1]
+#  cell_map = cell_shapefuns.f[2]
+#
+#  cell_ref_shapefuns_q = lazy_map(evaluate,cell_ref_shapefuns,cell_qs)
+#  cell_Jt = lazy_map(∇,cell_map)
+#  cell_Jt_q = lazy_map(evaluate,cell_Jt,cell_qs)
+#  cell_detJ_q = lazy_map(Broadcasting(det),cell_Jt_q)
+#  cell_J_q = lazy_map(Broadcasting(transpose),cell_Jt_q)
+#
+#  k = cell_shapefuns.g.value
+#  lazy_map(Broadcasting(k),cell_ref_shapefuns_q,cell_J_q,cell_detJ_q)
+#end
+
+function lazy_map(
+  k::ContraVariantPiolaMap,
+  cell_ref_shapefuns::AbstractArray{<:AbstractArray{<:Field}},
+  cell_map::AbstractArray{<:Field})
+
+  cell_Jt = lazy_map(∇,cell_map)
+  cell_detJ = lazy_map(Operation(det),cell_Jt)
+  cell_J = lazy_map(Operation(transpose),cell_Jt)
+
+  lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_J,cell_detJ)
+end
+
+function evaluate!(cache,::ContraVariantPiolaMap,s::MomentBasedDofBasis,phi::Field)
+  @notimplemented
+  # phi_q = evaluate(phi,s.nodes)
+  #moments = #from s.moments and phi_q
+  #MomentBasedDofBasis(s.nodes,moments)
+  ## More obvious but not so efficient:
+  ##nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order,phi)
+  ##dof_basis = MomentBasedDofBasis(nf_nodes, nf_moments,GenericField(identity))
+end
+
+PushForwardMap(reffe::GenericRefFE{:RaviartThomas}) = ContraVariantPiolaMap()
+
+
+

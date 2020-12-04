@@ -20,7 +20,7 @@ ThirdOrderTensorValue{0,0,0}(data::NTuple{0}) = ThirdOrderTensorValue{0,0,0,Int}
 
 # ThirdOrderTensorValue single NTuple argument constructor
 
-@generated function ThirdOrderTensorValue(data::NTuple{L,T}) where {L,T} 
+@generated function ThirdOrderTensorValue(data::NTuple{L,T}) where {L,T}
   D=Int(cbrt(L))
   quote
     ThirdOrderTensorValue{$D,$D,$D,T}(data)
@@ -47,22 +47,56 @@ ThirdOrderTensorValue{D1,D2,D3}(data...) where {D1,D2,D3} = ThirdOrderTensorValu
 ThirdOrderTensorValue{D1,D2,D3,T1}(data...) where {D1,D2,D3,T1} =  ThirdOrderTensorValue{D1,D2,D3,T1}(data)
 ThirdOrderTensorValue{D1,D2,D3,T1,L}(data...) where {D1,D2,D3,T1,L} =  ThirdOrderTensorValue{D1,D2,D3,T1}(data)
 
-# From an array
+# ThirdOrderTensorValue single AbstractArray{3,T} argument constructor
 
-ThirdOrderTensorValue(data::AbstractArray{T,3}) where {T} = ThirdOrderTensorValue(NTuple{length(data),T}(data))
-ThirdOrderTensorValue{D}(data::AbstractArray{T,3}) where {D,T} = ThirdOrderTensorValue{D}(NTuple{length(data),T}(data))
-ThirdOrderTensorValue{D,T1}(data::AbstractArray{T2,3}) where {D,T1,T2} = ThirdOrderTensorValue{D,T1}(NTuple{length(data),T}(data))
+ThirdOrderTensorValue(data::AbstractArray{T,3}) where {T} = ((D1,D2,D3)=size(data);L=length(data);ThirdOrderTensorValue{D1,D2,D3,T}(NTuple{L,T}(data)))
+ThirdOrderTensorValue{D}(data::AbstractArray{T,3}) where {D,T} = (L=length(data);ThirdOrderTensorValue{D,D,D,T}(NTuple{L,T}(data)))
+ThirdOrderTensorValue{D1,D2,D3}(data::AbstractArray{T,3}) where {D1,D2,D3,T} = (L=length(data);ThirdOrderTensorValue{D1,D2,D3,T}(NTuple{L,T}(data)))
+ThirdOrderTensorValue{D1,D2,D3,T1}(data::AbstractArray{T2,3}) where {D1,D2,D3,T1,T2} = (L=length(data);ThirdOrderTensorValue{D1,D2,D3,T1}(NTuple{L,T1}(data)))
+ThirdOrderTensorValue{D1,D2,D3,T1,L}(data::AbstractArray{T2,3}) where {D1,D2,D3,T1,T2,L} = ThirdOrderTensorValue{D1,D2,D3,T1}(NTuple{L,T1}(data))
+
+###############################################################
+# Conversions (ThirdOrderTensorValue)
+###############################################################
+
+# Direct conversion
+convert(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}, arg::AbstractArray) where {D1,D2,D3,T} = ThirdOrderTensorValue{D1,D2,D3,T}(arg)
+convert(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}, arg::Tuple) where {D1,D2,D3,T} = ThirdOrderTensorValue{D1,D2,D3,T}(arg)
+
+# Inverse conversion
+convert(::Type{<:SMatrix{D1,D2,D3,T}}, arg::ThirdOrderTensorValue) where {D1,D2,D3,T} = SMatrix{D1,D2,D3,T}(Tuple(arg))
+convert(::Type{<:MMatrix{D1,D2,D3,T}}, arg::ThirdOrderTensorValue) where {D1,D2,D3,T} = MMatrix{D1,D2,D3,T}(Tuple(arg))
+convert(::Type{<:NTuple{L,T1}}, arg::ThirdOrderTensorValue) where {L,T1} = NTuple{L,T1}(Tuple(arg))
+
+# Internal conversion
+convert(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}, arg::ThirdOrderTensorValue{D1,D2,D3}) where {D1,D2,D3,T} = ThirdOrderTensorValue{D1,D2,D3,T}(Tuple(arg))
+convert(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}, arg::ThirdOrderTensorValue{D1,D2,D3,T}) where {D1,D2,D3,T} = arg
+
+# other
 
 change_eltype(::Type{ThirdOrderTensorValue{D1,D2,D3,T1,L}},::Type{T2}) where {D1,D2,D3,T1,T2,L} = ThirdOrderTensorValue{D1,D2,D3,T2,L}
 change_eltype(::T,::Type{T2}) where {T<:ThirdOrderTensorValue,T2} = change_eltype(T,T2)
 
-# zero constructors
+zero(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}) where {D1,D2,D3,T} = ThirdOrderTensorValue{D1,D2,D3,T}(tfill(zero(T),Val{D1*D2*D3}()))
+zero(::ThirdOrderTensorValue{D1,D2,D3,T}) where {D1,D2,D3,T} = zero(ThirdOrderTensorValue{D1,D2,D3,T})
 
-@generated function zero(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}) where {D1,D2,D3,T}
-  L=D1*D2*D3
-  quote
-    ThirdOrderTensorValue{D1,D2,D3,T}(tfill(Base.zero(T),Val{$L}()))
-  end
-end
-zero(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T,L}}) where {D1,D2,D3,T,L} = ThirdOrderTensorValue{D1,D2,D3,T}(tfill(Base.zero(T),Val{L}()))
-zero(::ThirdOrderTensorValue{D1,D2,D3,T,L}) where {D1,D2,D3,T,L} = zero(ThirdOrderTensorValue{D1,D2,D3,T,L})
+Mutable(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}) where {D1,D2,D3,T} = MArray{Tuple{D1,D2,D3},T}
+Mutable(::ThirdOrderTensorValue{D1,D2,D3,T}) where {D1,D2,D3,T} = Mutable(ThirdOrderTensorValue{D1,D2,D3,T})
+mutable(a::ThirdOrderTensorValue{D1,D2,D3}) where {D1,D2,D3} = MArray{Tuple{D1,D2,D3}}(a.data)
+
+###############################################################
+# Introspection (ThirdOrderTensorValue)
+###############################################################
+
+eltype(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}) where {D1,D2,D3,T} = T
+eltype(::ThirdOrderTensorValue{D1,D2,D3,T}) where {D1,D2,D3,T} = eltype(ThirdOrderTensorValue{D1,D2,D3,T})
+
+size(::Type{<:ThirdOrderTensorValue{D1,D2,D3}}) where {D1,D2,D3} = (D1,D2,D3)
+size(::ThirdOrderTensorValue{D1,D2,D3}) where {D1,D2,D3} = size(ThirdOrderTensorValue{D1,D2,D3})
+
+length(::Type{<:ThirdOrderTensorValue{D1,D2,D3}}) where {D1,D2,D3} = D1*D2*D3
+length(::ThirdOrderTensorValue{D1,D2,D3}) where {D1,D2,D3} = length(ThirdOrderTensorValue{D1,D2,D3})
+
+num_components(::Type{<:ThirdOrderTensorValue{D1,D2,D3}}) where {D1,D2,D3} = length(ThirdOrderTensorValue{D1,D2,D3})
+num_components(::ThirdOrderTensorValue{D1,D2,D3}) where {D1,D2,D3} = num_components(ThirdOrderTensorValue{D1,D2,D3})
+

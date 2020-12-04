@@ -1,7 +1,5 @@
 name: CI
-on:
-  - push
-  - pull_request
+on: [push, pull_request]
 jobs:
   test:
     name: Tests ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
@@ -15,7 +13,6 @@ jobs:
           - ubuntu-latest
         arch:
           - x64
-          - x86
     steps:
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
@@ -38,7 +35,10 @@ jobs:
       - uses: codecov/codecov-action@v1
         with:
           file: lcov.info
-  divers:
+
+        
+        
+  drivers:
     name: Drivers ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
     strategy:

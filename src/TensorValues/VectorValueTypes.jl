@@ -78,8 +78,9 @@ convert(::Type{<:VectorValue{D,T}}, arg::VectorValue{D,T}) where {D,T} = arg
 zero(::Type{<:VectorValue{D,T}}) where {D,T} = VectorValue{D,T}(tfill(zero(T),Val{D}()))
 zero(::VectorValue{D,T}) where {D,T} = zero(VectorValue{D,T})
 
-mutable(::Type{VectorValue{D,T}}) where {D,T} = MVector{D,T}
-mutable(::VectorValue{D,T}) where {D,T} = mutable(VectorValue{D,T})
+Mutable(::Type{VectorValue{D,T}}) where {D,T} = MVector{D,T}
+Mutable(::VectorValue{D,T}) where {D,T} = Mutable(VectorValue{D,T})
+mutable(a::VectorValue) = MVector(a.data)
 
 change_eltype(::Type{VectorValue{D}},::Type{T}) where {D,T} = VectorValue{D,T}
 change_eltype(::Type{VectorValue{D,T1}},::Type{T2}) where {D,T1,T2} = VectorValue{D,T2}

@@ -113,8 +113,8 @@ Base.size(a::CartesianCoordinates) = a.data.partition .+ 1
 
 Base.IndexStyle(::Type{<:CartesianCoordinates}) = IndexCartesian()
 
-function Base.getindex(a::CartesianCoordinates{D,T}, I::Vararg{Int,D}) where {D,T}
-  p = zero(mutable(Point{D,T}))
+function Base.getindex(a::CartesianCoordinates{D,T}, I::Vararg{Integer,D}) where {D,T}
+  p = zero(Mutable(Point{D,T}))
   x0 = a.data.origin
   dx = a.data.sizes
   @inbounds for d in 1:D
@@ -125,7 +125,7 @@ end
 
 # Cell nodes
 
-struct CartesianCellNodes{D} <: AbstractArray{Vector{Int},D}
+struct CartesianCellNodes{D} <: AbstractArray{Vector{Int32},D}
   partition::NTuple{D,Int}
   function CartesianCellNodes(partition)
     D = length(partition)
@@ -138,24 +138,24 @@ Base.size(a::CartesianCellNodes) = a.partition
 Base.IndexStyle(::Type{<:CartesianCellNodes}) = IndexCartesian()
 
 function array_cache(a::CartesianCellNodes{D}) where D
-  zeros(Int,2^D)
+  zeros(Int32,2^D)
 end
 
-@inline function getindex!(cache,a::CartesianCellNodes,i::Integer)
-  cis = CartesianIndices(size(a))
-  ci = cis[i]
-  getindex!(cache,a,Tuple(ci)...)
-end
+#@inline function getindex!(cache,a::CartesianCellNodes,i::Integer)
+#  cis = CartesianIndices(size(a))
+#  ci = cis[i]
+#  getindex!(cache,a,Tuple(ci)...)
+#end
+#
+#@inline function getindex!(v,a::CartesianCellNodes{1},i::Integer)
+#  v[1] = i
+#  v[2] = i+1
+#  v
+#end
 
-@inline function getindex!(v,a::CartesianCellNodes{1},i::Integer)
-  v[1] = i
-  v[2] = i+1
-  v
-end
-
-@inline function getindex!(v,a::CartesianCellNodes{D},i::Integer...) where D
+@inline function getindex!(v,a::CartesianCellNodes{D},i::Vararg{Integer,D}) where D
   nodes = LinearIndices(size(a).+1)
-  lnodes = CartesianIndices(tfill(2,Val{D}()))
+  lnodes = CartesianIndices(tfill(Int32(2),Val{D}()))
   j = i .- 1
   for (i,lnode) in enumerate(lnodes)
     k = Tuple(lnode) .+ j
@@ -164,7 +164,7 @@ end
   v
 end
 
-function Base.getindex(a::CartesianCellNodes,i::Integer...)
+function Base.getindex(a::CartesianCellNodes{D},i::Vararg{Integer,D}) where D
   cache = array_cache(a)
   getindex!(cache,a,i...)
 end
@@ -191,7 +191,7 @@ struct CartesianGrid{D,T,F} <: Grid{D,D}
   end
 end
 
-OrientationStyle(::Type{<:CartesianGrid}) = Val{true}()
+OrientationStyle(::Type{<:CartesianGrid}) = Oriented()
 
 """
     get_cartesian_descriptor(grid::CartesianGrid)
@@ -207,6 +207,10 @@ get_node_coordinates(g::CartesianGrid) = g.node_coords
 get_cell_type(g::CartesianGrid) = g.cell_type
 
 get_cell_nodes(g::CartesianGrid) = g.cell_nodes
+
+function get_cell_map(grid::CartesianGrid{D,T,typeof(identity)} where {D,T})
+  CartesianMap(grid.node_coords.data)
+end
 
 function get_reffes(g::CartesianGrid{D}) where D
   p = Polytope(tfill(HEX_AXIS,Val{D}()))
@@ -245,109 +249,29 @@ Base.size(a::CartesianMap) = a.data.partition
 
 Base.IndexStyle(::Type{<:CartesianMap}) = IndexCartesian()
 
-function Base.getindex(a::CartesianMap{D,T},I::Vararg{Int,D}) where {D,T}
-  p = zero(mutable(Point{D,T}))
+function Base.getindex(a::CartesianMap{D,T},I::Vararg{Integer,D}) where {D,T}
+  p = zero(Mutable(Point{D,T}))
   x0 = a.data.origin
   dx = a.data.sizes
   @inbounds for d in 1:D
     p[d] =  x0[d] + (I[d]-1)*dx[d]
   end
   origin =  Point(p)
-  jacobian = diagonal_tensor(VectorValue(dx))
-  AffineMap(jacobian,origin)
+  grad = diagonal_tensor(VectorValue(dx))
+  AffineMap(grad,origin)
 end
 
-function field_array_gradient(a::CartesianMap)
+function lazy_map(::typeof(∇),a::CartesianMap)
   dx = a.data.sizes
-  jacobian = diagonal_tensor(VectorValue(dx))
-  j = AffineMapGrad(jacobian)
-  Fill(j,length(a))
+  grad = diagonal_tensor(VectorValue(dx))
+  j = ConstantField(grad)
+  Fill(j,size(a))
 end
 
-function field_array_gradient(a::Reindexed{T,N,A}) where {T,N,A<:CartesianMap}
-  g = field_array_gradient(a.i_to_v)
-  reindex(g,a.j_to_i)
+function lazy_map(::typeof(∇),a::LazyArray{<:Fill{<:Reindex{<:CartesianMap}}})
+  i_to_map = a.g.value.values
+  j_to_i = a.f[1]
+  i_to_grad = lazy_map(∇,i_to_map)
+  lazy_map(Reindex(i_to_grad),j_to_i)
 end
 
-function get_cell_map(grid::CartesianGrid{D,T,typeof(identity)} where {D,T})
-  CartesianMap(grid.node_coords.data)
-end
-
-# Cartesian grid topology with periodic BC
-
-function _cartesian_grid_topology_with_periodic_bcs(grid::UnstructuredGrid,
-  isperiodic::NTuple,
-  partition)
-
-  cell_to_vertices, vertex_to_node =
-    _generate_cell_to_vertices_from_grid(grid, isperiodic, partition)
-  _generate_grid_topology_from_grid(grid,cell_to_vertices,vertex_to_node)
-end
-
-function _generate_cell_to_vertices_from_grid(grid::UnstructuredGrid,
-  isperiodic::NTuple, partition)
-
-  if is_first_order(grid)
-    nodes = get_cell_nodes(grid)
-    cell_to_vertices = copy(nodes)
-
-    nnodes = num_nodes(grid)
-    num_nodes_x_dir = [partition[i]+1 for i in 1:length(partition)]
-    point_to_isperiodic, slave_point_to_point, slave_point_to_master_point =
-      _generate_slave_to_master_point(num_nodes_x_dir,isperiodic, nnodes)
-
-    vertex_to_point = findall( .! point_to_isperiodic)
-    point_to_vertex = fill(-1,length(point_to_isperiodic))
-    point_to_vertex[vertex_to_point] = 1:length(vertex_to_point)
-    point_to_vertex[slave_point_to_point] = point_to_vertex[slave_point_to_master_point]
-
-    cell_to_vertices = Table(LocalToGlobalArray(nodes,point_to_vertex))
-
-    vertex_to_node = vertex_to_point
-    node_to_vertex = point_to_vertex
-  else
-    @notimplemented
-  end
-  (cell_to_vertices,vertex_to_node, node_to_vertex)
-end
-
-function _generate_slave_to_master_point(num_nodes_x_dir::Vector{Int},
-  isperiodic::NTuple, num_nodes::Int)
-
-  point_to_isperiodic = fill(false,num_nodes)
-
-  slave_ijk_bounds = Array{Any,1}(undef,length(isperiodic))
-  master_ijk_bounds = Array{Any,1}(undef,length(isperiodic))
-
-  linear_indices = LinearIndices(Tuple(num_nodes_x_dir))
-  periodic_dirs = findall(x->x==true, isperiodic)
-  for periodic_dir in periodic_dirs
-    for i in 1:length(isperiodic)
-      if i == periodic_dir
-        slave_ijk_bounds[i] = num_nodes_x_dir[i]
-      else
-        slave_ijk_bounds[i] = 1:num_nodes_x_dir[i]
-      end
-    end
-    slave_ijk_set = CartesianIndices(Tuple(slave_ijk_bounds))
-    point_to_isperiodic[linear_indices[slave_ijk_set]] .= true
-  end
-
-  slave_point_to_point = findall( point_to_isperiodic)
-  slave_point_to_master_point = Array{Int,1}(undef,length(slave_point_to_point))
-
-  cartesian_indices = CartesianIndices(Tuple(num_nodes_x_dir))
-  for (i,point) in enumerate(slave_point_to_point)
-    ijk = collect(cartesian_indices[point].I)
-    for i in periodic_dirs
-      if ijk[i] == num_nodes_x_dir[i]
-        ijk[i] = 1
-      end
-    end
-
-    master_point_ijk = CartesianIndex(Tuple(ijk))
-    slave_point_to_master_point[i] = linear_indices[master_point_ijk]
-  end
-
-  point_to_isperiodic, slave_point_to_point, slave_point_to_master_point
-end

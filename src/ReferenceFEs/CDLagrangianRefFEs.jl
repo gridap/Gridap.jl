@@ -5,6 +5,18 @@ struct CDConformity{D} <: Conformity
   cont::NTuple{D,Int}
 end
 
+function Conformity(reffe::GenericLagrangianRefFE{<:CDConformity},sym::Symbol)
+  if sym == :L2
+    L2Conformity()
+  else
+    @unreachable """\n
+    It is not possible to use conformity = $sym on a LagrangianRefFE with CD conformity.
+
+    Either use conformity = :L2 or pass an instance of CDConformity.
+    """
+  end
+end
+
 function get_face_own_nodes(reffe::GenericLagrangianRefFE{<:CDConformity},conf::CDConformity)
   _cd_get_face_own_nodes(reffe,conf)
 end
@@ -22,7 +34,7 @@ end
 
 function _CDLagrangianRefFE(::Type{T},p::ExtrusionPolytope{D},orders,cont) where {T,D}
   cond(c,o) = ( o > 0 || c == DISC )
-  @assert all([cond(c,o) for (c,o) in zip(cont,orders)])
+  @assert all((cond(cont[k],orders[k]) for k in 1:length(orders)))
   _cd_lagrangian_ref_fe(T,p,orders,cont)
 end
 
@@ -46,12 +58,14 @@ function _cd_lagrangian_ref_fe(::Type{T},p::ExtrusionPolytope{D},orders,cont) wh
 
   data = nothing
 
-  reffe = GenericRefFE(
+  conf = CDConformity(Tuple(cont))
+
+  reffe = GenericRefFE{typeof(conf)}(
       ndofs,
       p,
       prebasis,
       dofs,
-      CDConformity(Tuple(cont)),
+      conf,
       data,
       face_dofs)
 
@@ -63,7 +77,7 @@ function _cd_get_face_own_nodes(reffe,conf::CDConformity)
   orders = get_orders(get_prebasis(reffe))
   cont = conf.cont
   cond(c,o) = ( o > 0 || c == DISC )
-  @assert all([cond(c,o) for (c,o) in zip(cont,orders)])
+  @assert all((cond(cont[k],orders[k]) for k in 1:length(orders)))
   p = get_polytope(reffe)
   dofs = get_dof_basis(reffe)
   @assert is_n_cube(p)
@@ -76,7 +90,7 @@ function _cd_get_face_own_dofs(reffe,conf::CDConformity)
   orders = get_orders(get_prebasis(reffe))
   cont = conf.cont
   cond(c,o) = ( o > 0 || c == DISC )
-  @assert all([cond(c,o) for (c,o) in zip(cont,orders)])
+  @assert all((cond(cont[k],orders[k]) for k in 1:length(orders)))
   p = get_polytope(reffe)
   dofs = get_dof_basis(reffe)
   @assert is_n_cube(p)
@@ -124,7 +138,7 @@ end
       face_ref_x = get_vertex_coordinates(face)
       face_prebasis = MonomialBasis(Float64,face,1)
       change = inv(evaluate(face_prebasis,face_ref_x))
-      face_shapefuns = change_basis(face_prebasis,change)
+      face_shapefuns = linear_combination(change,face_prebasis)
       face_vertex_ids = get_faces(p,d,0)[iface]
       face_x = x[face_vertex_ids]
       face_orders = compute_face_orders(p,face,iface,orders)
@@ -160,7 +174,8 @@ function _compute_cd_face_own_nodes(p::ExtrusionPolytope{D},orders::NTuple{D,<:I
     anc = nf.anchor
     ext = nf.extrusion
     fns = UnitRange{Int}[]
-    for (i,(e,a,c,o)) in enumerate(zip(ext,anc,cont,orders))
+    for i in 1:length(orders)
+      e,a,c,o = ext[i],anc[i],cont[i],orders[i]
       if e==0 && c == DISC
         push!(fns,0:-1)
         break
@@ -199,14 +214,14 @@ function _active_faces(p::Polytope,orders)
   is_valid = Bool[]
   cond = (o,e,a) -> (o > 0 || (e == 0 && a == 0))
   for nf in nfs
-    isv = all([cond(o,e,a) for (o,e,a) in zip(orders,nf.extrusion,nf.anchor)])
+    isv = all((cond(orders[k],nf.extrusion[k],nf.anchor[k]) for k in 1:length(orders)))
     push!(is_valid,isv)
   end
   is_valid
 end
 
 function _move_nodes(p::ExtrusionPolytope,orders,act_f,nodes,f_own)
-  if any(orders.==0)
+  if any(map(i->i==0,orders))
     tr = map(i -> i == 0 ? 1 : 0,orders)
     nfs = p.dface.nfaces
     con(ext,anc) = f -> ( f.extrusion == ext && f.anchor == anc )

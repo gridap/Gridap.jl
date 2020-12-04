@@ -9,16 +9,18 @@
 """
 struct UnstructuredGrid{Dc,Dp,Tp,O} <: Grid{Dc,Dp}
   node_coordinates::Vector{Point{Dp,Tp}}
-  cell_nodes::Table{Int,Vector{Int},Vector{Int32}}
+  cell_nodes::Table{Int32,Vector{Int32},Vector{Int32}}
   reffes::Vector{LagrangianRefFE{Dc}}
   cell_types::Vector{Int8}
+  orientation_style::O
+  cell_map
   @doc """
       function UnstructuredGrid(
         node_coordinates::Vector{Point{Dp,Tp}},
         cell_nodes::Table{Ti},
         reffes::Vector{<:LagrangianRefFE{Dc}},
         cell_types::Vector,
-        ::Val{B}=Val{false}()) where {Dc,Dp,Tp,Ti,B}
+        orientation_style::OrientationStyle=NonOriented()) where {Dc,Dp,Tp,Ti}
       end
 
   Low-level inner constructor.
@@ -28,30 +30,48 @@ struct UnstructuredGrid{Dc,Dp,Tp,O} <: Grid{Dc,Dp}
     cell_nodes::Table{Ti},
     reffes::Vector{<:LagrangianRefFE{Dc}},
     cell_types::Vector,
-    ::Val{B}=Val{false}()) where {Dc,Dp,Tp,Ti,B}
-    new{Dc,Dp,Tp,B}(node_coordinates,cell_nodes,reffes,cell_types)
+    orientation_style::OrientationStyle=NonOriented()) where {Dc,Dp,Tp,Ti}
+
+    cell_map = _compute_cell_map(node_coordinates,cell_nodes,reffes,cell_types)
+    B = typeof(orientation_style)
+    new{Dc,Dp,Tp,B}(
+      node_coordinates,
+      cell_nodes,
+      reffes,
+      cell_types,
+      orientation_style,
+      cell_map)
   end
 end
 
+function _compute_cell_map(node_coords,cell_nodes,ctype_reffe,cell_ctype)
+  cell_coords = lazy_map(Broadcasting(Reindex(node_coords)),cell_nodes)
+  ctype_shapefuns = map(get_shapefuns,ctype_reffe)
+  cell_shapefuns = expand_cell_data(ctype_shapefuns,cell_ctype)
+  cell_map = lazy_map(linear_combination,cell_coords,cell_shapefuns)
+  Fields.MemoArray(cell_map)
+  #cell_map
+end
+
 """
-    UnstructuredGrid(trian::Grid)
+    UnstructuredGrid(grid::Grid)
 """
-function UnstructuredGrid(trian::Grid)
-  @assert is_regular(trian) "UnstructuredGrid constructor only for regular grids"
-  node_coordinates = collect1d(get_node_coordinates(trian))
-  cell_nodes = Table(get_cell_nodes(trian))
-  reffes = get_reffes(trian)
-  cell_types = collect1d(get_cell_type(trian))
-  orien = OrientationStyle(trian)
+function UnstructuredGrid(grid::Grid)
+  @assert is_regular(grid) "UnstructuredGrid constructor only for regular grids"
+  node_coordinates = collect1d(get_node_coordinates(grid))
+  cell_nodes = Table(get_cell_nodes(grid))
+  reffes = get_reffes(grid)
+  cell_types = collect1d(get_cell_type(grid))
+  orien = OrientationStyle(grid)
   UnstructuredGrid(node_coordinates,cell_nodes,reffes,cell_types,orien)
 end
 
-function UnstructuredGrid(trian::UnstructuredGrid)
-  trian
+function UnstructuredGrid(grid::UnstructuredGrid)
+  grid
 end
 
 OrientationStyle(
-  ::Type{UnstructuredGrid{Dc,Dp,Tp,B}}) where {Dc,Dp,Tp,B} = Val{B}()
+  ::Type{UnstructuredGrid{Dc,Dp,Tp,B}}) where {Dc,Dp,Tp,B} = B()
 
 get_reffes(g::UnstructuredGrid) = g.reffes
 
@@ -61,6 +81,7 @@ get_node_coordinates(g::UnstructuredGrid) = g.node_coordinates
 
 get_cell_nodes(g::UnstructuredGrid) = g.cell_nodes
 
+get_cell_map(g::UnstructuredGrid) = g.cell_map
 
 # From ReferenceFE
 
@@ -110,7 +131,7 @@ end
 function UnstructuredGrid(x::AbstractArray{<:Point})
   np = length(x)
   node_coords = collect1d(x)
-  cell_nodes = identity_table(Int,Int32,np)
+  cell_nodes = identity_table(Int32,Int32,np)
   cell_type = fill(1,np)
   order = 1
   reffes = [LagrangianRefFE(Float64,VERTEX,order),]
@@ -140,7 +161,7 @@ function from_dict(::Type{UnstructuredGrid},dict::Dict{Symbol,Any})
   T = eltype(x)
   Dp = dict[:Dp]
   node_coordinates::Vector{Point{Dp,T}} = reinterpret(Point{Dp,T},x)
-  cell_nodes = from_dict(Table{Int,Vector{Int},Vector{Int32}},dict[:cell_nodes])
+  cell_nodes = from_dict(Table{Int32,Vector{Int32},Vector{Int32}},dict[:cell_nodes])
   reffes = [ from_dict(LagrangianRefFE,reffe) for reffe in dict[:reffes]]
   cell_type::Vector{Int8} = dict[:cell_type]
   O::Bool = dict[:orientation]
@@ -149,169 +170,7 @@ function from_dict(::Type{UnstructuredGrid},dict::Dict{Symbol,Any})
     cell_nodes,
     reffes,
     cell_type,
-    Val(O))
-end
-
-# Extract grid topology
-
-"""
-    UnstructuredGridTopology(grid::UnstructuredGrid)
-
-    UnstructuredGridTopology(
-      grid::UnstructuredGrid,
-      cell_to_vertices::Table,
-      vertex_to_node::AbstractVector)
-"""
-function UnstructuredGridTopology(grid::UnstructuredGrid)
-  cell_to_vertices, vertex_to_node, = _generate_cell_to_vertices_from_grid(grid)
-  _generate_grid_topology_from_grid(grid,cell_to_vertices,vertex_to_node)
-end
-
-function UnstructuredGridTopology(grid::UnstructuredGrid, cell_to_vertices::Table, vertex_to_node::AbstractVector)
-  _generate_grid_topology_from_grid(grid,cell_to_vertices,vertex_to_node)
-end
-
-function _generate_grid_topology_from_grid(grid::UnstructuredGrid,cell_to_vertices,vertex_to_node)
-
-  @notimplementedif (! is_regular(grid)) "Extrtacting the GridTopology form a Grid only implemented for the regular case"
-
-  node_to_coords = get_node_coordinates(grid)
-  if vertex_to_node == 1:num_nodes(grid)
-    vertex_to_coords = node_to_coords
-  else
-    vertex_to_coords = node_to_coords[vertex_to_node]
-  end
-
-  cell_to_type = get_cell_type(grid)
-  polytopes = map(get_polytope, get_reffes(grid))
-
-  UnstructuredGridTopology(
-    vertex_to_coords,
-    cell_to_vertices,
-    cell_to_type,
-    polytopes,
-    OrientationStyle(grid))
-
-end
-
-function _generate_cell_to_vertices_from_grid(grid::UnstructuredGrid)
-  if is_first_order(grid)
-    cell_to_vertices = Table(get_cell_nodes(grid))
-    vertex_to_node = collect(1:num_nodes(grid))
-    node_to_vertex = vertex_to_node
-  else
-    cell_to_nodes = get_cell_nodes(grid)
-    cell_to_cell_type = get_cell_type(grid)
-    reffes = get_reffes(grid)
-    cell_type_to_lvertex_to_lnode = map(get_vertex_node, reffes)
-    cell_to_vertices, vertex_to_node, node_to_vertex = _generate_cell_to_vertices(
-      cell_to_nodes,
-      cell_to_cell_type,
-      cell_type_to_lvertex_to_lnode,
-      num_nodes(grid))
-  end
-  (cell_to_vertices, vertex_to_node, node_to_vertex)
-end
-
-
-function _generate_cell_to_vertices(
-  cell_to_nodes::Table,
-  cell_to_cell_type::AbstractVector{<:Integer},
-  cell_type_to_lvertex_to_lnode::Vector{Vector{Int}},
-  nnodes::Int=maximum(cell_to_nodes.data))
-
-  data, ptrs, vertex_to_node, node_to_vertex = _generate_cell_to_vertices(
-    cell_to_nodes.data,
-    cell_to_nodes.ptrs,
-    cell_to_cell_type,
-    cell_type_to_lvertex_to_lnode,
-    nnodes)
-
-  (Table(data,ptrs), vertex_to_node)
-end
-
-function _generate_cell_to_vertices(
-  cell_to_nodes_data,
-  cell_to_nodes_ptrs,
-  cell_to_cell_type,
-  cell_type_to_lvertex_to_lnode,
-  nnodes)
-
-  cell_to_vertices_ptrs = similar(cell_to_nodes_ptrs)
-
-  cell_type_to_nlvertices = map(length,cell_type_to_lvertex_to_lnode)
-
-  _generate_cell_to_vertices_count!(
-    cell_to_vertices_ptrs,
-    cell_to_cell_type,
-    cell_type_to_nlvertices)
-
-  T = eltype(cell_to_nodes_data)
-
-  node_to_vertex = fill(T(UNSET),nnodes)
-
-  length_to_ptrs!(cell_to_vertices_ptrs)
-
-  ndata = cell_to_vertices_ptrs[end]-1
-  cell_to_vertices_data = zeros(T,ndata)
-
-  _generate_cell_to_vertices_fill!(
-    cell_to_vertices_data,
-    cell_to_vertices_ptrs,
-    cell_to_nodes_data,
-    cell_to_nodes_ptrs,
-    node_to_vertex,
-    cell_to_cell_type,
-    cell_type_to_lvertex_to_lnode)
-
-  vertex_to_node = find_inverse_index_map(node_to_vertex)
-
-  (cell_to_vertices_data, cell_to_vertices_ptrs, vertex_to_node, node_to_vertex)
-
-end
-
-function  _generate_cell_to_vertices_count!(
-    cell_to_vertices_ptrs,
-    cell_to_cell_type,
-    cell_type_to_nlvertices)
-
-  cells = 1:length(cell_to_cell_type)
-  for cell in cells
-    cell_type = cell_to_cell_type[cell]
-    nlvertices = cell_type_to_nlvertices[cell_type]
-    cell_to_vertices_ptrs[1+cell] = nlvertices
-  end
-end
-
-function  _generate_cell_to_vertices_fill!(
-    cell_to_vertices_data,
-    cell_to_vertices_ptrs,
-    cell_to_nodes_data,
-    cell_to_nodes_ptrs,
-    node_to_vertex,
-    cell_to_cell_type,
-    cell_type_to_lvertex_to_lnode)
-
-  cells = 1:length(cell_to_cell_type)
-
-  vertex = 1
-
-  for cell in cells
-    cell_type = cell_to_cell_type[cell]
-    a = cell_to_nodes_ptrs[cell]-1
-    b = cell_to_vertices_ptrs[cell]-1
-
-    lvertex_to_lnode = cell_type_to_lvertex_to_lnode[cell_type]
-    for (lvertex, lnode) in enumerate(lvertex_to_lnode)
-      node = cell_to_nodes_data[a+lnode]
-      if node_to_vertex[node] == UNSET
-        node_to_vertex[node] = vertex
-        vertex += 1
-      end
-      cell_to_vertices_data[b+lvertex] = node_to_vertex[node]
-    end
-
-  end
+    O ? Oriented() : NonOriented())
 end
 
 function simplexify(grid::UnstructuredGrid)
@@ -332,7 +191,7 @@ function simplexify(grid::UnstructuredGrid)
     tcell_to_points,
     ctype_to_reffe,
     tcell_to_ctype,
-    Val{true}())
+    Oriented())
 end
 
 function _refine_grid_connectivity(cell_to_points::Table, ltcell_to_lpoints)
@@ -342,3 +201,75 @@ function _refine_grid_connectivity(cell_to_points::Table, ltcell_to_lpoints)
     ltcell_to_lpoints)
   Table(data,ptrs)
 end
+
+function _refine_grid_connectivity(
+  cell_to_points_data::AbstractVector{T},
+  cell_to_points_ptrs::AbstractVector{P},
+  ltcell_to_lpoints) where {T,P}
+
+  nltcells = length(ltcell_to_lpoints)
+  ncells = length(cell_to_points_ptrs) - 1
+  ntcells = ncells * nltcells
+
+  tcell_to_points_ptrs = zeros(P,ntcells+1)
+
+  _refine_grid_connectivity_count!(
+    tcell_to_points_ptrs,
+    ncells,
+    ltcell_to_lpoints)
+
+  length_to_ptrs!(tcell_to_points_ptrs)
+
+  ndata = tcell_to_points_ptrs[end]-1
+
+  tcell_to_points_data = zeros(T,ndata)
+
+  _refine_grid_connectivity!(
+    tcell_to_points_data,
+    cell_to_points_data,
+    cell_to_points_ptrs,
+    ltcell_to_lpoints )
+
+  (tcell_to_points_data, tcell_to_points_ptrs)
+
+end
+
+function  _refine_grid_connectivity_count!(
+    tcell_to_points_ptrs,
+    ncells,
+    ltcell_to_lpoints)
+
+  tcell = 1
+
+  for cell in 1:ncells
+    for lpoints in ltcell_to_lpoints
+      tcell_to_points_ptrs[tcell+1] = length(lpoints)
+      tcell +=1
+    end
+  end
+
+end
+
+function _refine_grid_connectivity!(
+    tcell_to_points_data,
+    cell_to_points_data,
+    cell_to_points_ptrs,
+    ltcell_to_lpoints )
+
+  ncells = length(cell_to_points_ptrs) - 1
+
+  k = 1
+  for cell in 1:ncells
+    a = cell_to_points_ptrs[cell]-1
+    for lpoints in ltcell_to_lpoints
+      for lpoint in lpoints
+        point = cell_to_points_data[a+lpoint]
+        tcell_to_points_data[k] = point
+        k += 1
+      end
+    end
+  end
+
+end
+
+

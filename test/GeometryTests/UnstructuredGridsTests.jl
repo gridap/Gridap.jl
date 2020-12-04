@@ -5,7 +5,6 @@ using Gridap.Arrays
 using Gridap.Geometry
 using Gridap.Fields
 using Gridap.ReferenceFEs
-using Gridap.Geometry: GridMock
 using Gridap.Io
 
 # Unstructured grid from raw data
@@ -17,12 +16,16 @@ cell_nodes = get_cell_nodes(trian)
 reffes = get_reffes(trian)
 cell_types = get_cell_type(trian)
 
-grid = UnstructuredGrid(node_coordinates,cell_nodes,reffes,cell_types,Val{true}())
+grid = UnstructuredGrid(node_coordinates,cell_nodes,reffes,cell_types,Oriented())
 test_grid(grid)
 @test is_oriented(grid) == true
 
 grid = UnstructuredGrid(node_coordinates,cell_nodes,reffes,cell_types)
 test_grid(grid)
+
+cell_map1 = get_cell_map(grid)
+cell_map2 = get_cell_map(grid)
+@test cell_map1 === cell_map2
 
 q1i = Point(0.5,0.5)
 np1 = 4
@@ -35,7 +38,7 @@ q2 = fill(q2i,np2)
 q = CompressedArray([q1,q2],get_cell_type(grid))
 
 cell_map = get_cell_map(grid)
-x = evaluate(cell_map,q)
+x = lazy_map(evaluate,cell_map,q)
 
 x1i = Point(0.5, 0.5)
 x2i = Point(1.25, 0.25)

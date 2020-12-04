@@ -16,46 +16,45 @@ domain =(0,1,0,1)
 partition = (2,2)
 model = CartesianDiscreteModel(domain,partition)
 
-order = 1
-grid_topology = get_grid_topology(model)
-polytopes = get_polytopes(grid_topology)
-reffes = [LagrangianRefFE(Float64,p,order) for p in polytopes]
-
-dirichlet_tags = [1,2,3,4,6,5]
-V = GradConformingFESpace(reffes,model,dirichlet_tags)
-
-U = TrialFESpace(V)
+reffe = ReferenceFE(:Lagrangian,Float64,1)
+V = FESpace(model,reffe,dirichlet_tags=[1,2,3,4,6,5])
+U = V
 
 b(x) = x[2]
 
-v = get_cell_basis(V)
-u = get_cell_basis(U)
+v = get_cell_shapefuns(V)
+u = get_cell_shapefuns_trial(U)
 
-trian = get_triangulation(model)
 degree = 2
+trian = get_triangulation(model)
 quad = CellQuadrature(trian,degree)
 
 btrian = BoundaryTriangulation(model)
 bquad = CellQuadrature(btrian,degree)
 
-bu = restrict(u,btrian)
-bv = restrict(v,btrian)
+b0trian = Triangulation(btrian,Int[])
+b0quad = CellQuadrature(b0trian,degree)
 
-cellmat = integrate(∇(v)⊙∇(u),trian,quad)
-cellvec = integrate(v⊙b,trian,quad)
+cellmat = integrate(∇(v)⊙∇(u),quad)
+cellvec = integrate(v⊙b,quad)
 cellmatvec = pair_arrays(cellmat,cellvec)
 cellids = collect(1:num_cells(trian))
 
-bcellmat = integrate(bv*bu,btrian,bquad)
-bcellvec = integrate(bv*3,btrian,bquad)
+bcellmat = integrate(v*u,bquad)
+bcellvec = integrate(v*3,bquad)
 bcellmatvec = pair_arrays(bcellmat,bcellvec)
-bcellids = get_face_to_cell(btrian)
+bcellids = btrian.glue.face_to_cell
 
-term_to_cellmat = [cellmat, bcellmat]
-term_to_cellvec = [cellvec, bcellvec]
-term_to_cellids = [cellids, bcellids]
-term_to_cellmatvec = [ cellmatvec, bcellmatvec ]
+b0cellmat = integrate(v*u,b0quad)
+b0cellvec = integrate(v*3,b0quad)
+b0cellmatvec = pair_arrays(b0cellmat,b0cellvec)
+b0cellids = get_cell_id(b0trian)
+@test length(b0cellids) == 0
 
+term_to_cellmat = [cellmat, bcellmat, b0cellmat]
+term_to_cellvec = [cellvec, bcellvec, b0cellvec]
+term_to_cellids = [cellids, bcellids, b0cellids]
+term_to_cellmatvec = [ cellmatvec, bcellmatvec, b0cellmatvec ]
 
 mtypes = [
   SparseMatrixCSC,
@@ -129,15 +128,19 @@ end
 strian = SkeletonTriangulation(model)
 squad = CellQuadrature(strian,degree)
 
-su = restrict(u,strian)
-sv = restrict(v,strian)
+scellmat = integrate(jump(v)*u.⁻,squad)
+@test isa(scellmat[1],BlockArrayCoo)
+@test is_zero_block(scellmat[1],1,1)
+@test is_zero_block(scellmat[1],2,1)
+@test is_nonzero_block(scellmat[1],1,2)
+@test is_nonzero_block(scellmat[1],2,2)
 
-scellmat = integrate(jump(sv)*su.⁻,strian,squad)
-scellvec = integrate(mean(sv*3),strian,squad)
+scellvec = integrate(mean(v*3),squad)
+@test isa(scellvec[1],BlockArrayCoo)
 scellmatvec = pair_arrays(scellmat,scellvec)
 scellids = get_cell_id(strian)
 zh = zero(V)
-scellvals = get_cell_values(zh,scellids)
+scellvals = get_cell_dof_values(zh,scellids)
 scellmatvec = attach_dirichlet(scellmatvec,scellvals)
 
 matvecdata = ([scellmatvec],[scellids],[scellids])

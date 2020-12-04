@@ -41,7 +41,7 @@ degree = 2
 quad = CellQuadrature(trian,degree)
 
 neumanntags = [7,8]
-btrian = BoundaryTriangulation(model,neumanntags)
+btrian = BoundaryTriangulation(model,tags=neumanntags)
 degree = 2*(order+1)
 bquad = CellQuadrature(btrian,degree)
 nb = get_normal_vector(btrian)
