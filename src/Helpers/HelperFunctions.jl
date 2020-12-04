@@ -29,3 +29,12 @@ function get_val_parameter(::Type{Val{T}}) where T
   T
 end
 
+"""
+    first_and_tail(a::Tuple)
+
+Equivalent to `(first(a), Base.tail(a))`.
+"""
+function first_and_tail(a::Tuple)
+  first(a), Base.tail(a)
+end
+

@@ -6,9 +6,10 @@
 """
 struct UnstructuredGridTopology{Dc,Dp,T,O} <: GridTopology{Dc,Dp}
   vertex_coordinates::Vector{Point{Dp,T}}
-  n_m_to_nface_to_mfaces::Matrix{Table{Int,Vector{Int},Vector{Int32}}}
+  n_m_to_nface_to_mfaces::Matrix{Table{Int32,Vector{Int32},Vector{Int32}}}
   cell_type::Vector{Int8}
   polytopes::Vector{Polytope{Dc}}
+  orientation_style::O
 end
 
 # Constructors
@@ -19,18 +20,18 @@ end
       cell_vertices::Table,
       cell_type::Vector{<:Integer},
       polytopes::Vector{<:Polytope},
-      orientation::Val{O}=Val{false}()) where O
+      orientation_style::OrientationStyle=NonOriented())
 """
 function UnstructuredGridTopology(
   vertex_coordinates::Vector{<:Point},
   cell_vertices::Table,
   cell_type::Vector{<:Integer},
   polytopes::Vector{<:Polytope},
-  orientation::Val{O}=Val{false}()) where O
+  orientation_style::OrientationStyle=NonOriented())
 
   D = num_dims(first(polytopes))
   n = D+1
-  n_m_to_nface_to_mfaces = Matrix{Table{Int,Vector{Int},Vector{Int32}}}(undef,n,n)
+  n_m_to_nface_to_mfaces = Matrix{Table{Int32,Vector{Int32},Vector{Int32}}}(undef,n,n)
   n_m_to_nface_to_mfaces[D+1,0+1] = cell_vertices
   vertex_cells = generate_cells_around(cell_vertices,length(vertex_coordinates))
   n_m_to_nface_to_mfaces[0+1,D+1] = vertex_cells
@@ -38,12 +39,13 @@ function UnstructuredGridTopology(
   P = eltype(vertex_coordinates)
   Dp = length(P)
   T = eltype(P)
+  O = typeof(orientation_style)
 
   UnstructuredGridTopology{D,Dp,T,O}(
     vertex_coordinates,
     n_m_to_nface_to_mfaces,
     cell_type,
-    polytopes)
+    polytopes,orientation_style)
 
 end
 
@@ -53,18 +55,18 @@ end
       d_to_dface_vertices::Vector{<:Table},
       cell_type::Vector{<:Integer},
       polytopes::Vector{<:Polytope},
-      orientation::Val{O}=Val{false}()) where O
+      orientation_style::OrientationStyle=NonOriented())
 """
 function UnstructuredGridTopology(
   vertex_coordinates::Vector{<:Point},
   d_to_dface_vertices::Vector{<:Table},
   cell_type::Vector{<:Integer},
   polytopes::Vector{<:Polytope},
-  orientation::Val{O}=Val{false}()) where O
+  orientation_style::OrientationStyle=NonOriented())
 
   D = num_dims(first(polytopes))
   n = D+1
-  n_m_to_nface_to_mfaces = Matrix{Table{Int,Vector{Int},Vector{Int32}}}(undef,n,n)
+  n_m_to_nface_to_mfaces = Matrix{Table{Int32,Vector{Int32},Vector{Int32}}}(undef,n,n)
   nvertices = length(vertex_coordinates)
   for d in 0:D
     dface_to_vertices = d_to_dface_vertices[d+1]
@@ -76,12 +78,14 @@ function UnstructuredGridTopology(
   P = eltype(vertex_coordinates)
   Dp = length(P)
   T = eltype(P)
+  O = typeof(orientation_style)
 
   UnstructuredGridTopology{D,Dp,T,O}(
     vertex_coordinates,
     n_m_to_nface_to_mfaces,
     cell_type,
-    polytopes)
+    polytopes,
+    orientation_style)
 
 end
 
@@ -108,6 +112,166 @@ end
 
 function UnstructuredGridTopology(topo::UnstructuredGridTopology)
   topo
+end
+
+"""
+    UnstructuredGridTopology(grid::UnstructuredGrid)
+
+    UnstructuredGridTopology(
+      grid::UnstructuredGrid,
+      cell_to_vertices::Table,
+      vertex_to_node::AbstractVector)
+"""
+function UnstructuredGridTopology(grid::UnstructuredGrid)
+  cell_to_vertices, vertex_to_node, = _generate_cell_to_vertices_from_grid(grid)
+  _generate_grid_topology_from_grid(grid,cell_to_vertices,vertex_to_node)
+end
+
+function UnstructuredGridTopology(grid::UnstructuredGrid, cell_to_vertices::Table, vertex_to_node::AbstractVector)
+  _generate_grid_topology_from_grid(grid,cell_to_vertices,vertex_to_node)
+end
+
+function _generate_grid_topology_from_grid(grid::UnstructuredGrid,cell_to_vertices,vertex_to_node)
+
+  @notimplementedif (! is_regular(grid)) "Extrtacting the GridTopology form a Grid only implemented for the regular case"
+
+  node_to_coords = get_node_coordinates(grid)
+  if vertex_to_node == 1:num_nodes(grid)
+    vertex_to_coords = node_to_coords
+  else
+    vertex_to_coords = node_to_coords[vertex_to_node]
+  end
+
+  cell_to_type = get_cell_type(grid)
+  polytopes = map(get_polytope, get_reffes(grid))
+
+  UnstructuredGridTopology(
+    vertex_to_coords,
+    cell_to_vertices,
+    cell_to_type,
+    polytopes,
+    OrientationStyle(grid))
+
+end
+
+function _generate_cell_to_vertices_from_grid(grid::UnstructuredGrid)
+  if is_first_order(grid)
+    cell_to_vertices = Table(get_cell_node_ids(grid))
+    vertex_to_node = collect(1:num_nodes(grid))
+    node_to_vertex = vertex_to_node
+  else
+    cell_to_nodes = get_cell_node_ids(grid)
+    cell_to_cell_type = get_cell_type(grid)
+    reffes = get_reffes(grid)
+    cell_type_to_lvertex_to_lnode = map(get_vertex_node, reffes)
+    cell_to_vertices, vertex_to_node, node_to_vertex = _generate_cell_to_vertices(
+      cell_to_nodes,
+      cell_to_cell_type,
+      cell_type_to_lvertex_to_lnode,
+      num_nodes(grid))
+  end
+  (cell_to_vertices, vertex_to_node, node_to_vertex)
+end
+
+
+function _generate_cell_to_vertices(
+  cell_to_nodes::Table,
+  cell_to_cell_type::AbstractVector{<:Integer},
+  cell_type_to_lvertex_to_lnode::Vector{Vector{Int}},
+  nnodes::Int=maximum(cell_to_nodes.data))
+
+  data, ptrs, vertex_to_node, node_to_vertex = _generate_cell_to_vertices(
+    cell_to_nodes.data,
+    cell_to_nodes.ptrs,
+    cell_to_cell_type,
+    cell_type_to_lvertex_to_lnode,
+    nnodes)
+
+  (Table(data,ptrs), vertex_to_node)
+end
+
+function _generate_cell_to_vertices(
+  cell_to_nodes_data,
+  cell_to_nodes_ptrs,
+  cell_to_cell_type,
+  cell_type_to_lvertex_to_lnode,
+  nnodes)
+
+  cell_to_vertices_ptrs = similar(cell_to_nodes_ptrs)
+
+  cell_type_to_nlvertices = map(length,cell_type_to_lvertex_to_lnode)
+
+  _generate_cell_to_vertices_count!(
+    cell_to_vertices_ptrs,
+    cell_to_cell_type,
+    cell_type_to_nlvertices)
+
+  T = eltype(cell_to_nodes_data)
+
+  node_to_vertex = fill(T(UNSET),nnodes)
+
+  length_to_ptrs!(cell_to_vertices_ptrs)
+
+  ndata = cell_to_vertices_ptrs[end]-1
+  cell_to_vertices_data = zeros(T,ndata)
+
+  _generate_cell_to_vertices_fill!(
+    cell_to_vertices_data,
+    cell_to_vertices_ptrs,
+    cell_to_nodes_data,
+    cell_to_nodes_ptrs,
+    node_to_vertex,
+    cell_to_cell_type,
+    cell_type_to_lvertex_to_lnode)
+
+  vertex_to_node = find_inverse_index_map(node_to_vertex)
+
+  (cell_to_vertices_data, cell_to_vertices_ptrs, vertex_to_node, node_to_vertex)
+
+end
+
+function  _generate_cell_to_vertices_count!(
+    cell_to_vertices_ptrs,
+    cell_to_cell_type,
+    cell_type_to_nlvertices)
+
+  cells = 1:length(cell_to_cell_type)
+  for cell in cells
+    cell_type = cell_to_cell_type[cell]
+    nlvertices = cell_type_to_nlvertices[cell_type]
+    cell_to_vertices_ptrs[1+cell] = nlvertices
+  end
+end
+
+function  _generate_cell_to_vertices_fill!(
+    cell_to_vertices_data,
+    cell_to_vertices_ptrs,
+    cell_to_nodes_data,
+    cell_to_nodes_ptrs,
+    node_to_vertex,
+    cell_to_cell_type,
+    cell_type_to_lvertex_to_lnode)
+
+  cells = 1:length(cell_to_cell_type)
+
+  vertex = 1
+
+  for cell in cells
+    cell_type = cell_to_cell_type[cell]
+    a = cell_to_nodes_ptrs[cell]-1
+    b = cell_to_vertices_ptrs[cell]-1
+
+    lvertex_to_lnode = cell_type_to_lvertex_to_lnode[cell_type]
+    for (lvertex, lnode) in enumerate(lvertex_to_lnode)
+      node = cell_to_nodes_data[a+lnode]
+      if node_to_vertex[node] == UNSET
+        node_to_vertex[node] = vertex
+        vertex += 1
+      end
+      cell_to_vertices_data[b+lvertex] = node_to_vertex[node]
+    end
+
+  end
 end
 
 function GridTopology(::Type{<:Polytope{D}},topo::GridTopology{D}) where D
@@ -152,7 +316,7 @@ end
 
 # Implementation of abstract API
 
-OrientationStyle(::Type{UnstructuredGridTopology{Dc,Dp,T,O}}) where {Dc,Dp,T,O} = Val{O}()
+OrientationStyle(::Type{UnstructuredGridTopology{Dc,Dp,T,O}}) where {Dc,Dp,T,O} = O()
 
 get_vertex_coordinates(g::UnstructuredGridTopology) = g.vertex_coordinates
 
@@ -290,7 +454,7 @@ function _setup_face_to_face!(model,d)
   end
 
   nfaces = num_faces(model,d)
-  id = identity_table(Int,Int32,nfaces)
+  id = identity_table(Int32,Int32,nfaces)
   model.n_m_to_nface_to_mfaces[d+1,d+1] = id
 
   return

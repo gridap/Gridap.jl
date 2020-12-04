@@ -9,6 +9,8 @@ using Gridap.Integration
 using SparseArrays
 using Gridap.CellData
 using Gridap.MultiField
+using Gridap.ReferenceFEs
+using Gridap.TensorValues
 
 using Test
 
@@ -25,8 +27,8 @@ quad = CellQuadrature(trian,degree)
 trian_Γ = SkeletonTriangulation(model)
 quad_Γ = CellQuadrature(trian_Γ,degree)
 
-V = TestFESpace(model=model,order=order,reffe=:Lagrangian,conformity=:H1,valuetype=Float64)
-Q = TestFESpace(model=model,order=order-1,reffe=:Lagrangian,conformity=:L2,valuetype=Float64)
+V = TestFESpace(model,ReferenceFE(:Lagrangian,Float64,order);conformity=:H1)
+Q = TestFESpace(model,ReferenceFE(:Lagrangian,Float64,order-1),conformity=:L2)
 
 U = TrialFESpace(V)
 P = TrialFESpace(Q)
@@ -38,24 +40,24 @@ free_values = rand(num_free_dofs(X))
 xh = FEFunction(X,free_values)
 uh, ph = xh
 
-dy = get_cell_basis(Y)
-dx = get_cell_basis(X)
+dy = get_cell_shapefuns(Y)
+dx = get_cell_shapefuns_trial(X)
 dv, dq = dy
 du, dp = dx
 
-cellmat = integrate(dv*du,trian,quad)
-cellvec = integrate(dv*2,trian,quad)
-cellids = get_cell_id(trian)
+cellmat = integrate(dv*du,quad)
+cellvec = integrate(dv*2,quad)
+cellids = get_cell_to_bgcell(trian)
 cellmatvec = pair_arrays(cellmat,cellvec)
 
-dv_Γ, dq_Γ = restrict(get_cell_basis(Y), trian_Γ)
-du_Γ, dp_Γ = restrict(get_cell_basis(X), trian_Γ)
-cellmat_Γ = integrate(  jump(dv_Γ)*dp_Γ.⁺ + mean(dq_Γ)*jump(dp_Γ), trian_Γ,quad_Γ)
-cellvec_Γ = integrate(  jump(dv_Γ) + mean(dq_Γ), trian_Γ,quad_Γ)
-cellmatvec_Γ = pair_arrays(cellmat_Γ,cellvec_Γ)
-cellids_Γ = get_cell_id(trian_Γ)
+#cellmat_Γ = integrate(  jump(dv)*dp.⁺ + mean(dq)*jump(dp), quad_Γ)
+cellmat_Γ = integrate(  jump(dv)*mean(du) + jump(∇(dq))⋅jump(∇(dp)), quad_Γ)
 
-assem = SparseMatrixAssembler(SparseMatrixCSR{0},X,Y)
+cellvec_Γ = integrate(  jump(dv) + mean(dq),quad_Γ)
+cellmatvec_Γ = pair_arrays(cellmat_Γ,cellvec_Γ)
+cellids_Γ = get_cell_to_bgcell(trian_Γ)
+
+assem = SparseMatrixAssembler(SparseMatrixCSR{0,Float64,Int},X,Y)
 
 matvecdata = ([cellmatvec,cellmatvec_Γ],[cellids,cellids_Γ],[cellids,cellids_Γ])
 matdata = ([cellmat,cellmat_Γ],[cellids,cellids_Γ],[cellids,cellids_Γ])

@@ -6,6 +6,8 @@ using Gridap.TensorValues
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.FESpaces
+using Gridap.CellData
+using Gridap.Fields
 
 # testing compute_conforming_cell_dofs
 
@@ -17,13 +19,17 @@ order = 2
 grid_topology = get_grid_topology(model)
 polytopes = get_polytopes(grid_topology)
 reffes = [LagrangianRefFE(Float64,p,order) for p in polytopes]
-conf = GradConformity()
+cell_reffe = expand_cell_data(reffes,get_cell_type(grid_topology))
 
 face_labeling = get_face_labeling(model)
 dirichlet_tags = ["tag_1","tag_6"]
 
+trian = Triangulation(model)
+cell_map = get_cell_map(trian)
+cell_fe = CellFE(cell_map,cell_reffe)
+
 cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
-  reffes,conf,grid_topology, face_labeling, dirichlet_tags)
+  cell_fe,CellConformity(cell_fe),grid_topology, face_labeling, dirichlet_tags)
 
 r = [
   [-1,1,4,5,14,15,16,17,35],[1,2,5,6,18,19,17,20,36],[2,3,6,7,21,22,20,23,37],
@@ -37,11 +43,14 @@ test_array(cell_dofs,r)
 
 order = 1
 reffes = [LagrangianRefFE(VectorValue{2,Float64},p,order) for p in polytopes]
+cell_reffe = expand_cell_data(reffes,get_cell_type(grid_topology))
 
 dirichlet_components = [(true,true), (false,true)]
 
+cell_fe = CellFE(cell_map,cell_reffe)
+
 cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
-  reffes,conf,grid_topology, face_labeling, dirichlet_tags, dirichlet_components)
+  cell_fe,CellConformity(cell_fe),grid_topology, face_labeling, dirichlet_tags, dirichlet_components)
 
 r = [
   [-1,1,7,9,-2,2,8,10],[1,3,9,11,2,4,10,12],[3,5,11,13,4,6,12,14],
@@ -56,13 +65,18 @@ test_array(cell_dofs,r)
 
 order = 3
 reffes = [LagrangianRefFE(VectorValue{2,Float64},p,order) for p in polytopes]
+cell_reffe = expand_cell_data(reffes,get_cell_type(grid_topology))
 
 dirichlet_components = [(true,true), (false,true)]
+cell_fe = CellFE(cell_map,cell_reffe)
 
 cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
-  reffes, conf, grid_topology, face_labeling, dirichlet_tags, dirichlet_components)
+  cell_fe,CellConformity(cell_fe), grid_topology, face_labeling, dirichlet_tags, dirichlet_components)
 
-V = GradConformingFESpace(reffes,model,dirichlet_tags)
+reffe = ReferenceFE(:Lagrangian,VectorValue{2,Float64},3)
+
+V = FESpace(model,reffe,dirichlet_tags=dirichlet_tags)
+
 test_single_field_fe_space(V)
 
 matvecdata = ([],[],[])
@@ -70,10 +84,7 @@ matdata = ([],[],[])
 vecdata = ([],[])
 test_single_field_fe_space(V,matvecdata,matdata,vecdata)
 
-V = GradConformingFESpace(reffes,model,dirichlet_tags,dirichlet_components)
-test_single_field_fe_space(V)
-
-V = ConformingFESpace(reffes,model,get_face_labeling(model),dirichlet_tags,dirichlet_components)
+V = FESpace(model,reffe,dirichlet_tags=dirichlet_tags,dirichlet_masks=dirichlet_components)
 test_single_field_fe_space(V)
 
 end  # module

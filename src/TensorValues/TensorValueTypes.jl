@@ -95,8 +95,9 @@ zero(::TensorValue{D1,D2,T}) where {D1,D2,T} = zero(TensorValue{D1,D2,T})
 end
 one(::TensorValue{D1,D2,T}) where {D1,D2,T} = one(TensorValue{D1,D2,T})
 
-mutable(::Type{<:TensorValue{D1,D2,T}}) where {D1,D2,T} = MMatrix{D1,D2,T}
-mutable(::TensorValue{D1,D2,T}) where {D1,D2,T} = mutable(TensorValue{D1,D2,T})
+Mutable(::Type{<:TensorValue{D1,D2,T}}) where {D1,D2,T} = MMatrix{D1,D2,T}
+Mutable(::TensorValue{D1,D2,T}) where {D1,D2,T} = Mutable(TensorValue{D1,D2,T})
+mutable(a::TensorValue{D1,D2}) where {D1,D2} = MMatrix{D1,D2}(a.data)
 
 change_eltype(::Type{TensorValue{D1,D2,T1,L}},::Type{T2}) where {D1,D2,T1,T2,L} = TensorValue{D1,D2,T2,L}
 change_eltype(::TensorValue{D1,D2,T1,L},::Type{T2}) where {D1,D2,T1,T2,L} = change_eltype(TensorValue{D1,D2,T1,L},T2)
@@ -125,7 +126,7 @@ size(::Type{<:TensorValue{D1,D2}}) where {D1,D2} = (D1,D2)
 size(::TensorValue{D1,D2}) where {D1,D2} = size(TensorValue{D1,D2})
 
 length(::Type{<:TensorValue{D}}) where {D} = length(TensorValue{D,D})
-length(::Type{<:TensorValue{D1,D2}}) where {D1,D2} = D1*D1
+length(::Type{<:TensorValue{D1,D2}}) where {D1,D2} = D1*D2
 length(::TensorValue{D1,D2}) where {D1,D2} = length(TensorValue{D1,D2})
 
 num_components(::Type{<:TensorValue{D}}) where {D} = length(TensorValue{D,D})

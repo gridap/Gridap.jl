@@ -213,7 +213,7 @@ const ⋅¹ = dot
 # Inner product (full contraction)
 ###############################################################
 
-inner(a::Real,b::Real) = a*b
+inner(a::Number,b::Number) = a*b
 
 function inner(a::MultiValue, b::MultiValue)
   @notimplemented
@@ -356,9 +356,10 @@ end
 
 """
 """
-outer(a::Real,b::Real) = a*b
-outer(a::MultiValue,b::Real) = a*b
-outer(a::Real,b::MultiValue) = a*b
+outer(a::Number,b::Number) = a*b
+
+outer(a::MultiValue,b::Number) = a*b
+outer(a::Number,b::MultiValue) = a*b
 
 function outer(a::MultiValue,b::MultiValue)
    @notimplemented
@@ -369,12 +370,12 @@ end
     Meta.parse("TensorValue{$D,$Z}($str)")
 end
 
-function outer(a::VectorValue{0,Ta},b::VectorValue{1,Tb}) where {Ta,Tb}
+function outer(a::VectorValue{0,Ta},b::VectorValue{D,Tb}) where {Ta,Tb,D}
   T = promote_type(Ta,Tb)
-  TensorValue{0,1,T}()
+  TensorValue{0,D,T}()
 end
 
-function outer(a::VectorValue{0,Ta},b::Tb) where {Ta,Tb<:Real}
+function outer(a::VectorValue{0,Ta},b::Tb) where {Ta,Tb<:Number}
   T = promote_type(Ta,Tb)
   VectorValue{0,T}()
 end
@@ -478,7 +479,7 @@ end
 """
 meas(a::MultiValue{Tuple{D}}) where D = sqrt(inner(a,a))
 meas(a::MultiValue{Tuple{D,D}}) where D = abs(det(a))
-meas(a::TensorValue{0,1,T}) where T = one(T)
+meas(a::TensorValue{0,D,T}) where {T,D} = one(T)
 
 function meas(v::MultiValue{Tuple{1,2}})
   n1 = v[1,2]
@@ -592,21 +593,21 @@ end
 # Define new operations for Gridap types
 ###############################################################
 
-for op in (:symmetric_part,)
-    @eval begin
-        ($op)(a::GridapType) = operate($op,a)
-    end
-end
-
-for op in (:inner,:outer,:double_contraction)#,:(:))
-    @eval begin
-        ($op)(a::GridapType,b::GridapType) = operate($op,a,b)
-        ($op)(a::GridapType,b::Number)     = operate($op,a,b)
-        ($op)(a::Number,    b::GridapType) = operate($op,a,b)
-        ($op)(a::GridapType,b::Function)   = operate($op,a,b)
-        ($op)(a::Function,  b::GridapType) = operate($op,a,b)
-    end
-end
+#for op in (:symmetric_part,)
+#    @eval begin
+#        ($op)(a::GridapType) = operate($op,a)
+#    end
+#end
+#
+#for op in (:inner,:outer,:double_contraction)#,:(:))
+#    @eval begin
+#        ($op)(a::GridapType,b::GridapType) = operate($op,a,b)
+#        ($op)(a::GridapType,b::Number)     = operate($op,a,b)
+#        ($op)(a::Number,    b::GridapType) = operate($op,a,b)
+#        ($op)(a::GridapType,b::Function)   = operate($op,a,b)
+#        ($op)(a::Function,  b::GridapType) = operate($op,a,b)
+#    end
+#end
 
 
 

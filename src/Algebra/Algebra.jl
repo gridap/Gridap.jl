@@ -63,6 +63,8 @@ export residual!
 export residual
 export jacobian!
 export jacobian
+export hessian
+export hessian!
 export residual_and_jacobian!
 export residual_and_jacobian
 export allocate_residual

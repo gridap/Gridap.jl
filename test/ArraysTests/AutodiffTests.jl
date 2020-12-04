@@ -11,7 +11,7 @@ function user_cell_energy(cell_u)
     end
     e
   end
-  apply(f,cell_u)
+  lazy_map(f,cell_u)
 end
 
 function user_cell_residual(cell_u)
@@ -25,7 +25,7 @@ function user_cell_residual(cell_u)
     #end
     #r
   end
-  apply(f,cell_u)
+  lazy_map(f,cell_u)
 end
 
 function user_cell_jacobian(cell_u)
@@ -37,7 +37,7 @@ function user_cell_jacobian(cell_u)
     end
     j
   end
-  apply(f,cell_u)
+  lazy_map(f,cell_u)
 end
 
 L = 10
@@ -45,7 +45,7 @@ l = 24 # Do not use a number <13 (too easy for ForwardDiff)
 
 blocksids = [(1,),(2,)]
 axs = (blockedrange([4,4]),)
-cell_u = [ BlockArrayCoo([rand(4),rand(4)],blocksids,axs) for i in 1:L ]
+cell_u = [ BlockArrayCoo(axs,blocksids,[rand(4),rand(4)]) for i in 1:L ]
 
 cell_e = user_cell_energy(cell_u)
 cell_r = user_cell_residual(cell_u)
@@ -78,17 +78,17 @@ test_array(cell_h_auto,cell_h)
 ids = [3,4,1,2]
 
 function user_cell_energy_Γ(cell_u)
-  cell_u_Γ = reindex(cell_u,ids)
+  cell_u_Γ = lazy_map(Reindex(cell_u),ids)
   user_cell_energy(cell_u_Γ)
 end
 
 function user_cell_residual_Γ(cell_u)
-  cell_u_Γ = reindex(cell_u,ids)
+  cell_u_Γ = lazy_map(Reindex(cell_u),ids)
   user_cell_residual(cell_u_Γ)
 end
 
 function user_cell_jacobian_Γ(cell_u)
-  cell_u_Γ = reindex(cell_u,ids)
+  cell_u_Γ = lazy_map(Reindex(cell_u),ids)
   user_cell_jacobian(cell_u_Γ)
 end
 

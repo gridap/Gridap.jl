@@ -19,22 +19,18 @@ degree = 4
 quad = CellQuadrature(trian,degree)
 
 order = 2
-grid_topology = get_grid_topology(model)
-polytopes = get_polytopes(grid_topology)
-reffes = [LagrangianRefFE(Float64,p,order) for p in polytopes]
 
-dirichlet_tags = [1,10]
-V = GradConformingFESpace(reffes,model,dirichlet_tags)
-
-U = TrialFESpace(V)
-
+order = 2
+reffe = ReferenceFE(:Lagrangian,Float64,order)
+V = FESpace(model,reffe,dirichlet_tags=[1,10])
+U = V
 f(x) = x[2]
 
-v = get_cell_basis(V)
-u = get_cell_basis(U)
+v = get_cell_shapefuns(V)
+u = get_cell_shapefuns_trial(U)
 
-cellmat = integrate(∇(v)⊙∇(u),trian,quad)
-cellvec = integrate(v⊙f,trian,quad)
+cellmat = integrate(∇(v)⊙∇(u),quad)
+cellvec = integrate(v⊙f,quad)
 cellids = collect(1:num_cells(trian))
 
 assem = SparseMatrixAssembler(U,V)

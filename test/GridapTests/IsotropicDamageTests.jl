@@ -17,7 +17,6 @@ const μ = E/(2*(1+ν))
 σe(ε) = λ*tr(ε)*one(ε) + 2*μ*ε # Pa
 τ(ε) = sqrt(inner(ε,σe(ε))) # Pa^(1/2)
 
-
 # Damage model
 const σ_u = 5.5 # Pa
 const r_0 = σ_u / sqrt(E) # Pa^(1/2)
@@ -31,7 +30,7 @@ function q(r)
   r_0 + H*(r-r_0)
 end
 
-@law function update(ε_in,r_in,d_in)
+function new_state(r_in,d_in,ε_in)
   τ_in = τ(ε_in)
   if τ_in <= r_in
     r_out = r_in
@@ -45,25 +44,18 @@ end
   damaged, r_out, d_out
 end
 
-@law function σ(ε_in,r_in,d_in)
-
-  _, _, d_out = update(ε_in,r_in,d_in)
-
+function σ(ε_in,r_in,d_in)
+  _, _, d_out = new_state(r_in,d_in,ε_in)
   (1-d_out)*σe(ε_in)
-
 end
 
-@law function dσ(dε_in,ε_in,state)
-
+function dσ(dε_in,ε_in,state)
   damaged, r_out, d_out = state
-
   if ! damaged
     return (1-d_out)*σe(dε_in)
-
   else
     c_inc = ((q(r_out) - H*r_out)*inner(σe(ε_in),dε_in))/(r_out^3)
     return (1-d_out)*σe(dε_in) - c_inc*σe(ε_in)
-
   end
 end
 
@@ -84,18 +76,18 @@ function main(;n,nsteps)
   order = 1
 
   V = TestFESpace(
-    reffe=:Lagrangian, valuetype=VectorValue{3,Float64}, order=order,
-    model=model,
+    model,
+    ReferenceFE(:Lagrangian,VectorValue{3,Float64},order),
     labels = labeling,
     dirichlet_tags=["ux0","ux1","uxyz0","uxz0"],
     dirichlet_masks=[(true,false,false),(true,false,false),(true,true,true),(true,false,true)])
 
-  trian = Triangulation(model)
   degree = 2*order
-  quad = CellQuadrature(trian,degree)
+  Ω = Triangulation(model)
+  dΩ = LebesgueMeasure(Ω,degree)
 
-  r = CellField(r_0,trian,quad)
-  d = CellField(0.0,trian,quad)
+  r = CellState(r_0,dΩ)
+  d = CellState(0.0,dΩ)
 
   nls = NLSolver(show_trace=false, method=:newton)
   solver = FESolver(nls)
@@ -107,20 +99,17 @@ function main(;n,nsteps)
     ud = VectorValue(udx,0.0,0.0)
     U = TrialFESpace(V,[u0,ud,u0,u0])
 
-    res(u,v) = inner( ε(v), σ(ε(u),r,d) )
-    function jac(u,du,v)
-      state = update(ε(u),r,d)
-      inner( ε(v), dσ(ε(du),ε(u),state) )
-    end
-    t_Ω = FETerm(res,jac,trian,quad)
-    op = FEOperator(U,V,t_Ω)
+    res(u,v) = ∫( inner( ε(v), σ∘(ε(u),r,d) ) )*dΩ
+    jac(u,du,v) = ∫( inner( ε(v), dσ∘(ε(du),ε(u),new_state∘(r,d,ε(u))) ) )*dΩ
+
+    op = FEOperator(res,jac,U,V)
 
     free_values = get_free_values(uh_in)
     uh0 = FEFunction(U,free_values)
 
     uh_out, = solve!(uh0,solver,op)
 
-    update_state_variables!(update,quad,ε(uh_out),r,d)
+    update_state!(new_state,r,d,ε(uh_out))
 
     uh_out
   end
@@ -129,14 +118,12 @@ function main(;n,nsteps)
   uh = zero(V)
 
   for (istep,factor) in enumerate(factors)
-
     uh = step(uh,factor)
-
   end
 
   e = uh - u
 
-  e_l2 = sqrt(sum(integrate(e⋅e,trian,quad)))
+  e_l2 = sqrt(sum(∫(e⋅e)*dΩ))
   @test e_l2 < 1.0e-9
 
 end

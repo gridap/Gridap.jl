@@ -39,19 +39,19 @@ Here, one can find a list of resources to get started with this programming lang
 Pages = [
   "Gridap.md",
   "Helpers.md",
-  "Inference.md",
   "Io.md",
   "Algebra.md",
-  "TensorValues.md",
   "Arrays.md",
+  "TensorValues.md",
   "Fields.md",
   "Polynomials.md",
   "Integration.md",
   "ReferenceFEs.md",
   "Geometry.md",
+  "CellData.md",
+  "Visualization.md",
   "FESpaces.md",
   "MultiField.md",
-  "Visualization.md",
   ]
 ```
 

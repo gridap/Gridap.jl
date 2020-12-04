@@ -44,7 +44,7 @@ g = UnstructuredGridTopology(
   get_cell_vertices(m),
   get_cell_type(m),
   get_polytopes(m),
-  Val{true}())
+  Oriented())
 
 @test is_oriented(g) == true
 
@@ -71,7 +71,7 @@ g = UnstructuredGridTopology(
   [get_face_vertices(m,d) for d in 0:num_cell_dims(m)],
   get_cell_type(m),
   get_polytopes(m),
-  Val{true}())
+  Oriented())
 
 @test is_oriented(g) == true
 
@@ -79,5 +79,19 @@ m = GridTopologyMock()
 topo = UnstructuredGridTopology(m)
 test_grid_topology(topo)
 @test topo === UnstructuredGridTopology(topo)
+
+# Extract grid topology
+
+grid = GridMock()
+topo = GridTopology(grid)
+test_grid_topology(topo)
+
+# Extract grid topology
+
+domain = (1,2,1,2)
+partition = (3,3)
+grid = CartesianGrid(domain,partition)
+topo = GridTopology(grid)
+test_grid_topology(topo)
 
 end # module

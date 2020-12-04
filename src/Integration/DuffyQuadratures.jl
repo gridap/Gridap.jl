@@ -53,7 +53,7 @@ end
 
 # Duffy map from the n-cube in [0,1]^d to the n-simplex in [0,1]^d
 function _duffy_map(q::Point{D,T}) where {D,T}
-  m = zero(mutable(Point{D,T}))
+  m = zero(Mutable(Point{D,T}))
   m[1] = q[1]
   a = one(T)
   for i in 2:D
@@ -99,7 +99,7 @@ function _tensor_product_duffy(
   xs = zeros(Point{D,T},n)
   ws = zeros(W,n)
   cis = CartesianIndices(tuple(dim_to_n...))
-  m = zero(mutable(Point{D,T}))
+  m = zero(Mutable(Point{D,T}))
   _tensor_product_duffy!(xs,ws,dim_to_xs_1d,dim_to_ws_1d,cis,m)
   (xs,ws)
 end
