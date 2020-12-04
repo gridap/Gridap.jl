@@ -5,7 +5,7 @@ using Gridap.Arrays
 using Gridap.Geometry
 using Gridap.Fields
 using Gridap.ReferenceFEs
-using Gridap.CellData
+#using Gridap.CellData
 
 using Gridap.Geometry: GridMock
 
@@ -23,7 +23,6 @@ q2 = fill(q2i,np2)
 q = CompressedArray([q1,q2],get_cell_type(trian))
 
 cell_map = get_cell_map(trian)
-x = evaluate(cell_map,q)
 
 x1i = Point(0.5, 0.5)
 x2i = Point(1.25, 0.25)
@@ -37,19 +36,15 @@ x4 = fill(x4i,np1)
 x5 = fill(x5i,np1)
 x = [x1,x2,x3,x4,x5]
 
-test_array_of_fields(cell_map,q,x)
+@test all(lazy_map(test_field,cell_map,q,x))
+_x = lazy_map(evaluate,cell_map,q)
+test_array(_x,x)
 
 # from LagrangianRefFE
 
 quad8 = LagrangianRefFE(Float64,QUAD,2)
 grid = Grid(quad8)
 @test num_nodes(grid) == num_nodes(quad8)
-
-grid = compute_reference_grid(HEX8,4)
-test_grid(grid)
-
-grid = compute_linear_grid(HEX8)
-test_grid(grid)
 
 # from Polytope
 
@@ -63,20 +58,9 @@ grid = Grid(ReferenceFE{3},WEDGE)
 @test num_cell_dims(grid) == 3
 @test num_point_dims(grid) == 3
 
-# Extract grid topology
-
-grid = GridMock()
-topo = GridTopology(grid)
-test_grid_topology(topo)
-
 ## get low dim grid
 #
 #grid = Grid(ReferenceFE{1},trian)
 
-domain = (0,1,0,1,0,1)
-partition = (2,2,2)
-grid = CartesianGrid(domain,partition)
-tgrid = simplexify(grid)
-test_grid(tgrid)
 
 end # module

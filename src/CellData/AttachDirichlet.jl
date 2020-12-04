@@ -1,40 +1,40 @@
 
 function attach_dirichlet(cellmatvec,cellvals,cellmask=Fill(true,length(cellvals)))
-  k = AttachDirichletKernel()
-  apply(k,cellmatvec,cellvals,cellmask)
+  k = AttachDirichletMap()
+  lazy_map(k,cellmatvec,cellvals,cellmask)
 end
 
-struct AttachDirichletKernel <: Kernel
-  muladd::MulAddKernel{Int}
-  AttachDirichletKernel() = new(MulAddKernel(-1,1))
+struct AttachDirichletMap <: Map
+  muladd::MulAddMap{Int}
+  AttachDirichletMap() = new(MulAddMap(-1,1))
 end
 
-function Arrays.kernel_cache(k::AttachDirichletKernel,matvec::Tuple,vals,mask)
+function Arrays.return_cache(k::AttachDirichletMap,matvec::Tuple,vals,mask)
   mat, vec = matvec
-  kernel_cache(k.muladd,mat,vals,vec)
+  return_cache(k.muladd,mat,vals,vec)
 end
 
-@inline function Arrays.apply_kernel!(cache,k::AttachDirichletKernel,matvec::Tuple,vals,mask)
+@inline function Arrays.evaluate!(cache,k::AttachDirichletMap,matvec::Tuple,vals,mask)
   if mask
     mat, vec = matvec
-    vec_with_bcs = apply_kernel!(cache,k.muladd,mat,vals,vec)
+    vec_with_bcs = evaluate!(cache,k.muladd,mat,vals,vec)
     (mat, vec_with_bcs)
   else
     matvec
   end
 end
 
-function Arrays.kernel_cache(k::AttachDirichletKernel,mat::AbstractMatrix,vals,mask)
-  cm = kernel_cache(MulKernel(),mat,vals)
+function Arrays.return_cache(k::AttachDirichletMap,mat::AbstractMatrix,vals,mask)
+  cm = return_cache(*,mat,vals)
   cv = CachedArray(mat*vals)
   fill!(cv.array,zero(eltype(cv)))
   (cm,cv)
 end
 
-@inline function Arrays.apply_kernel!(cache,k::AttachDirichletKernel,mat::AbstractMatrix,vals,mask)
+@inline function Arrays.evaluate!(cache,k::AttachDirichletMap,mat::AbstractMatrix,vals,mask)
   cm, cv = cache
   if mask
-    vec_with_bcs = apply_kernel!(cm,MulKernel(),mat,vals)
+    vec_with_bcs = evaluate!(cm,*,mat,vals)
     scale_entries!(vec_with_bcs,-1)
     (mat, vec_with_bcs)
   else

@@ -26,17 +26,15 @@ module Geometry
 using Test
 using DocStringExtensions
 using FillArrays
+
 using LinearAlgebra: ⋅
 
 using Gridap.Helpers
 using Gridap.Arrays
 using Gridap.Fields
-using Gridap.Polynomials
 using Gridap.ReferenceFEs
 using Gridap.TensorValues
 using Gridap.Io
-using Gridap.Integration
-using Gridap.CellData
 
 using Gridap.ReferenceFEs: _num_faces
 using Gridap.ReferenceFEs: _num_facets
@@ -47,37 +45,22 @@ using Gridap.ReferenceFEs: _get_offsets
 using Gridap.ReferenceFEs: _get_offset
 using Gridap.ReferenceFEs: _find_unique_with_indices
 
-using Gridap.Arrays: Reindexed
-using Gridap.Arrays: IdentityVector
-
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
-import Gridap.Arrays: reindex
 import Gridap.Arrays: get_array
 import Gridap.Arrays: lazy_append
-import Gridap.CellData: CellField
-import Gridap.CellData: CellQuadrature
-import Gridap.CellData: QPointCellField
-import Gridap.CellData: get_cell_map
+import Gridap.Arrays: lazy_map
 
-import Gridap.Fields: field_cache
-import Gridap.Fields: evaluate_field!
-import Gridap.Fields: evaluate_field_array
-import Gridap.Fields: gradient
-import Gridap.Fields: grad2curl
-import Gridap.Helpers: operate
-
-import Gridap.Integration: get_coordinates
-import Gridap.Integration: get_weights
+import Gridap.Arrays: return_cache
+import Gridap.Arrays: evaluate!
+import Gridap.Arrays: get_children
 
 import Gridap.Io: to_dict
 import Gridap.Io: from_dict
 
-using Gridap.Fields: AffineMapGrad
-
+import Gridap.ReferenceFEs: ReferenceFE
 import Gridap.ReferenceFEs: get_node_coordinates
 import Gridap.ReferenceFEs: num_nodes
-import Gridap.ReferenceFEs: is_affine
 import Gridap.ReferenceFEs: is_first_order
 import Gridap.ReferenceFEs: get_faces
 import Gridap.ReferenceFEs: get_face_vertices
@@ -103,15 +86,7 @@ import Gridap.ReferenceFEs: num_dims
 import Gridap.ReferenceFEs: num_cell_dims
 import Gridap.ReferenceFEs: num_point_dims
 import Gridap.ReferenceFEs: simplexify
-
-import Gridap.Fields: field_array_gradient
-import Gridap.Fields: apply_lincomb
-import Gridap.Fields: evaluate_field_array
-import Gridap.Fields: kernel_evaluate
-import Gridap.Fields: evaluate
-import Gridap.Fields: integrate
-
-import Gridap.Arrays: apply_kernel!
+import Gridap.ReferenceFEs: get_facet_normal
 
 export GridTopology
 export num_cells
@@ -129,27 +104,37 @@ export test_grid_topology
 export get_cell_faces
 export get_isboundary_face
 export OrientationStyle
+export Oriented
+export NonOriented
 export RegularityStyle
+export Regular
+export Irregular
 export is_oriented
 export is_regular
+export expand_cell_data
+export compress_cell_data
 
 export UnstructuredGridTopology
 
 export Triangulation
+export TriangulationStyle
+export BackgroundTriangulation
+export SubTriangulation
 export get_reffes
 export get_cell_coordinates
-export get_cell_reffes
+export get_cell_ref_coordinates
+export get_cell_reffe
 export get_cell_shapefuns
-export get_normal_vector
+export get_facet_normal
 export test_triangulation
-export restrict
-export get_physical_coordinate
-export get_cell_id
-export cell_measure
+export get_cell_to_bgcell
 export get_cell_map
+export get_background_triangulation
+export get_cell_ref_map
+export have_compatible_domains
 
 export Grid
-export get_cell_nodes
+export get_cell_node_ids
 export test_grid
 export compute_linear_grid
 export compute_reference_grid
@@ -195,35 +180,20 @@ export UnstructuredDiscreteModel
 export CartesianDiscreteModel
 
 export BoundaryTriangulation
-export get_volume_triangulation
-export get_face_to_cell
-export get_face_to_lface
-export get_face_to_cell_map
-export get_face_to_face
-export get_cell_around
-export test_boundary_triangulation
-
-export GenericBoundaryTriangulation
-
 export DiscreteModelPortion
 
 export SkeletonPair
 export SkeletonTriangulation
 export InterfaceTriangulation
-export get_left_boundary
-export get_right_boundary
+#export get_left_boundary
+#export get_right_boundary
 
 export RestrictedDiscreteModel
+export get_parent_model
 
 export AppendedTriangulation
 
-include("GridTopologies.jl")
-
-include("GridTopologyMocks.jl")
-
-include("UnstructuredGridTopologies.jl")
-
-include("SkeletonPairs.jl")
+export GridMock
 
 include("Triangulations.jl")
 
@@ -231,21 +201,19 @@ include("Grids.jl")
 
 include("GridMocks.jl")
 
-include("RestrictedTriangulations.jl")
-
-include("TriangulationPortions.jl")
-
-include("GridPortions.jl")
-
 include("UnstructuredGrids.jl")
 
 include("CartesianGrids.jl")
 
+include("GridTopologies.jl")
+
+include("GridTopologyMocks.jl")
+
+include("UnstructuredGridTopologies.jl")
+
 include("FaceLabelings.jl")
 
 include("DiscreteModels.jl")
-
-include("DiscreteModelPortions.jl")
 
 include("DiscreteModelMocks.jl")
 
@@ -253,14 +221,18 @@ include("UnstructuredDiscreteModels.jl")
 
 include("CartesianDiscreteModels.jl")
 
-include("BoundaryTriangulations.jl")
+include("RestrictedTriangulations.jl")
 
-include("GenericBoundaryTriangulations.jl")
+include("BoundaryTriangulations.jl")
 
 include("SkeletonTriangulations.jl")
 
-include("AppendedTriangulations.jl")
+include("GridPortions.jl")
+
+include("DiscreteModelPortions.jl")
 
 include("RestrictedDiscreteModels.jl")
+
+include("AppendedTriangulations.jl")
 
 end # module

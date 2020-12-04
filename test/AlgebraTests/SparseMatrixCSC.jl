@@ -9,7 +9,7 @@ module SparseMatrixCSCTests
     maxrows=5
     maxcols=5
 
-    for T in (Int32,Int64,Float32,Float64)
+    for T in (Int32,Int,Float32,Float64)
         I = Vector{Int}()
         J = Vector{Int}()
         V = Vector{T}()
@@ -69,5 +69,5 @@ module SparseMatrixCSCTests
 
 
     end
-    
+
 end

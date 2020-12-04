@@ -2,6 +2,7 @@ module TypesTests
 
 using Gridap.TensorValues
 using Test
+using Gridap.Arrays: get_array
 using StaticArrays
 
 # Constructors (TensorValue)
@@ -240,6 +241,10 @@ z = zero(SymTensorValue{3,Int})
 @test isa(z,SymTensorValue{3,Int,6})
 @test convert(SMatrix{3,3,Int},z) == zeros(Int,(3,3))
 
+z = zero(ThirdOrderTensorValue{3,3,3,Int,27})
+@test isa(z,ThirdOrderTensorValue{3,3,3,Int,27})
+@test Tuple(z) == Tuple(zeros(Int,(27)))
+
 z = zero(SymFourthOrderTensorValue{2,Int})
 @test isa(z,SymFourthOrderTensorValue{2,Int,9})
 @test Tuple(z) == Tuple(zeros(Int,(9)))
@@ -313,11 +318,11 @@ v = TensorValue{3,2,Float64}(1,2,3,4,5,6)
 s = "(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)"
 @test string(v) == s
 
-v = SymTensorValue{3,Int64}(1, 0, 0, 1, 0, 1)
+v = SymTensorValue{3,Int}(1, 0, 0, 1, 0, 1)
 s = "(1, 0, 0, 1, 0, 1)"
 @test string(v) == s
 
-v = SymFourthOrderTensorValue{2,Int64}(1111,1121,1122, 2111,2121,2122, 2211,2221,2222)
+v = SymFourthOrderTensorValue{2,Int}(1111,1121,1122, 2111,2121,2122, 2211,2221,2222)
 s = "(1111, 1121, 1122, 2111, 2121, 2122, 2211, 2221, 2222)"
 @test string(v) == s
 
@@ -353,11 +358,22 @@ t = ThirdOrderTensorValue{2,2,2,Int}(1,2.0,3,4,5,6,7,8)
 
 # Misc
 
-M = mutable(VectorValue{3,Int})
+v = VectorValue(3,2,1)
+m = mutable(v)
+@test m == get_array(v)
+@test isa(m,MVector)
+
+v = TensorValue{2,3}(1,2,3,4,5,6)
+m = mutable(v)
+@test m == get_array(v)
+@test isa(m,MMatrix)
+
+M = Mutable(VectorValue{3,Int})
 @test M == MVector{3,Int}
 m = zero(M)
 v = VectorValue(m)
 @test isa(v,VectorValue{3,Int})
+
 
 @test num_components(Int) == 1
 @test num_components(Float64) == 1

@@ -4,9 +4,9 @@
 
 Macro used in generic functions that must be overloaded by derived types.
 """
-macro abstractmethod()
+macro abstractmethod(message="This function belongs to an interface definition and cannot be used.")
   quote
-    error("This function belongs to an interface definition and cannot be used.")
+    error($(esc(message)))
   end
 end
 
@@ -47,3 +47,17 @@ macro unreachable(message="This line of code cannot be reached")
     error($(esc(message)))
   end
 end
+
+"""
+  @check condition
+  @check condition "Error message"
+
+Macro used to make sure that condition is fulfilled, like `@assert`
+but the check gets deactivated when running Julia with --boundscheck=no
+"""
+macro check(test,msg="A check failed")
+  quote
+    @boundscheck @assert $(esc(test)) $(esc(msg))
+  end
+end
+

@@ -22,7 +22,7 @@ The `ReferenceFE` interface is defined by overloading these methods:
 - [`get_polytope(reffe::ReferenceFE)`](@ref)
 - [`get_prebasis(reffe::ReferenceFE)`](@ref)
 - [`get_dof_basis(reffe::ReferenceFE)`](@ref)
-- [`get_default_conformity(reffe::ReferenceFE)`](@ref)
+- [`Conformity(reffe::ReferenceFE)`](@ref)
 - [`get_face_own_dofs(reffe::ReferenceFE,conf::Conformity)`](@ref)
 - [`get_face_own_dofs_permutations(reffe::ReferenceFE,conf::Conformity)`](@ref)
 - [`get_face_dofs(reffe::ReferenceFE)`](@ref)
@@ -32,6 +32,19 @@ The interface is tested with
 
 """
 abstract type ReferenceFE{D} <: GridapType end
+
+# Extensible factory function
+function ReferenceFE(p::Polytope,basis::Symbol,args...;kwargs...)
+  ReferenceFE(p,Val(basis),args...;kwargs...)
+end
+
+function  ReferenceFE(p::Polytope,::Val{T},args...;kwargs...) where T
+  @unreachable """\n
+  Undefined factory function ReferenceFE for symbol $T
+  """
+end
+
+ReferenceFE(basis::Symbol,args...;kwargs...) = (basis, args, kwargs)
 
 """
     num_dofs(reffe::ReferenceFE) -> Int
@@ -60,19 +73,21 @@ function get_prebasis(reffe::ReferenceFE)
   @abstractmethod
 end
 
+get_order(reffe::ReferenceFE) = get_order(get_prebasis(reffe))
+
 """
     get_dof_basis(reffe::ReferenceFE) -> Dof
 
-Returns the underlying dof basis encoded in a `Dof` object. 
+Returns the underlying dof basis encoded in a `Dof` object.
 """
 function get_dof_basis(reffe::ReferenceFE)
   @abstractmethod
 end
 
 """
-    get_default_conformity(reffe::ReferenceFE) -> Conformity
+    Conformity(reffe::ReferenceFE) -> Conformity
 """
-function get_default_conformity(reffe::ReferenceFE)
+function Conformity(reffe::ReferenceFE)
   @abstractmethod
 end
 
@@ -83,12 +98,28 @@ function get_face_own_dofs(reffe::ReferenceFE,conf::Conformity)
   @abstractmethod
 end
 
+function Conformity(reffe::ReferenceFE,conf::Conformity)
+  conf
+end
+
+function Conformity(reffe::ReferenceFE,conf::Nothing)
+  Conformity(reffe)
+end
+
+function Conformity(reffe::ReferenceFE,sym::Symbol)
+  @abstractmethod
+end
+
 """
     get_face_own_dofs(reffe::ReferenceFE) -> Vector{Vector{Int}}
 """
 function get_face_own_dofs(reffe::ReferenceFE)
-  conf = get_default_conformity(reffe)
+  conf = Conformity(reffe)
   get_face_own_dofs(reffe,conf)
+end
+
+function get_face_own_dofs(reffe::ReferenceFE,conf::Nothing)
+  get_face_own_dofs(reffe)
 end
 
 function get_face_own_dofs(reffe::ReferenceFE,conf::L2Conformity)
@@ -118,8 +149,12 @@ end
     get_face_own_dofs_permutations(reffe::ReferenceFE) -> Vector{Vector{Vector{Int}}}
 """
 function get_face_own_dofs_permutations(reffe::ReferenceFE)
-  conf = get_default_conformity(reffe)
+  conf = Conformity(reffe)
   get_face_own_dofs_permutations(reffe,conf)
+end
+
+function get_face_own_dofs_permutations(reffe::ReferenceFE,conf::Nothing)
+  get_face_own_dofs_permutations(reffe)
 end
 
 """
@@ -132,6 +167,107 @@ function get_face_dofs(reffe::ReferenceFE)
   @abstractmethod
 end
 
+function get_dof_to_comp(reffe::ReferenceFE)
+  fill(0,num_dofs(reffe))
+end
+
+# Push forward-related
+
+abstract type PushForwardMap <: Map end
+
+function evaluate!(cache,::PushForwardMap,v::AbstractVector{<:Field},phi::Field)
+  @abstractmethod
+end
+
+PushForwardMap(::Type{<:ReferenceFE}) = IdentityPushForwardMap()
+
+PushForwardMap(reffe::T) where T<:ReferenceFE = PushForwardMap(T)
+
+struct IdentityPushForwardMap <: PushForwardMap end
+
+function evaluate!(cache,::IdentityPushForwardMap,v::AbstractVector{<:Field},phi::Field)
+  v
+end
+
+function lazy_map(::IdentityPushForwardMap,a::AbstractArray,b::AbstractArray)
+  a
+end
+
+"""
+"""
+function get_shapefuns(reffe::ReferenceFE,phi::Field)
+  PushForwardMap(reffe)(get_shapefuns(reffe),phi)
+end
+
+"""
+"""
+function get_dof_basis(reffe::ReferenceFE,phi::Field)
+  get_dof_basis(reffe,phi,PushForwardMap(reffe))
+end
+
+function get_dof_basis(reffe::ReferenceFE,phi::Field,::IdentityPushForwardMap)
+  get_dof_basis(reffe)
+end
+
+function get_dof_basis(reffe::ReferenceFE,phi::Field,::PushForwardMap)
+  @abstractmethod
+end
+
+function lazy_map(::typeof(get_shapefuns),cell_reffe::AbstractArray,cell_map::AbstractArray)
+  ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
+  ctype_ref_shapefuns = map(get_shapefuns,ctype_reffe)
+  cell_ref_shapefuns = expand_cell_data(ctype_ref_shapefuns,cell_ctype)
+  ctype_k = map(PushForwardMap,ctype_reffe)
+  unique_ks = unique(ctype_k)
+  if length(unique_ks) == 1
+    k = first(unique_ks)
+    lazy_map(k,cell_ref_shapefuns,cell_map)
+  else
+    T = return_type(get_shapefuns, testitem(cell_reffe), testitem(cell_map))
+    lazy_map(get_shapefuns,T,cell_reffe,cell_map)
+  end
+end
+
+function lazy_map(::typeof(get_dof_basis),cell_reffe::AbstractArray,cell_map::AbstractArray)
+  ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
+  if all( map(reffe->PushForwardMap(reffe)==IdentityPushForwardMap(),ctype_reffe) )
+    ctype_dof_basis = map(get_dof_basis,ctype_reffe)
+    expand_cell_data(ctype_dof_basis,cell_ctype)
+  else
+    T = return_type(get_dof_basis, testitem(cell_reffe), testitem(cell_map))
+    lazy_map(get_dof_basis,T,cell_reffe,cell_map)
+  end
+end
+
+"""
+"""
+function expand_cell_data(type_to_data, cell_to_type)
+  CompressedArray(type_to_data,cell_to_type)
+end
+
+function expand_cell_data(type_to_data, cell_to_type::Fill)
+  ncells = length(cell_to_type)
+  @assert length(type_to_data) == 1 "Only one reference element expected"
+  @assert cell_to_type.value == 1 "Only one type of reference element expected"
+  data = first(type_to_data)
+  Fill(data,ncells)
+end
+
+function compress_cell_data(cell_data::AbstractArray)
+  @unreachable """\n
+  The given cell data cannot be compressed. Describe your data with
+  a CompressedArray or Fill array types.
+  """
+end
+
+function compress_cell_data(a::CompressedArray)
+  a.values, a.ptrs
+end
+
+function compress_cell_data(a::Fill)
+  fill(a.value,1), Fill(1,length(a))
+end
+
 # Test
 
 """
@@ -140,7 +276,7 @@ end
 Test if the methods in the `ReferenceFE` interface are defined for the object `reffe`.
 """
 function test_reference_fe(reffe::ReferenceFE{D}) where D
-  conf = get_default_conformity(reffe)
+  conf = Conformity(reffe)
   @test isa(conf,Conformity)
   test_reference_fe(reffe,conf)
 end
@@ -150,9 +286,9 @@ function test_reference_fe(reffe::ReferenceFE{D},conf::Conformity) where D
   p = get_polytope(reffe)
   @test isa(p,Polytope{D})
   basis = get_prebasis(reffe)
-  @test isa(basis,Field)
+  @test isa(basis,AbstractArray{<:Field})
   dofs = get_dof_basis(reffe)
-  @test isa(dofs,Dof)
+  @test isa(dofs,AbstractArray{<:Dof})
   facedofs = get_face_own_dofs(reffe,conf)
   @test isa(facedofs,Vector{Vector{Int}})
   @test length(facedofs) == num_faces(p)
@@ -163,7 +299,7 @@ function test_reference_fe(reffe::ReferenceFE{D},conf::Conformity) where D
   @test isa(facedofs,Vector{Vector{Int}})
   @test length(facedofs) == num_faces(p)
   shapefuns = get_shapefuns(reffe)
-  @test isa(shapefuns,Field)
+  @test isa(shapefuns,AbstractVector{<:Field})
   ndofs = num_dofs(reffe)
   m = evaluate(dofs,basis)
   @test ndofs == size(m,1)
@@ -242,7 +378,7 @@ end
     get_face_own_dofs(reffe::ReferenceFE,d::Integer)
 """
 function get_face_own_dofs(reffe::ReferenceFE,d::Integer)
-  conf = get_default_conformity(reffe)
+  conf = Conformity(reffe)
   get_face_own_dofs(reffe,conf,d)
 end
 
@@ -268,7 +404,7 @@ end
     get_face_own_dofs_permutations(reffe::ReferenceFE,d::Integer)
 """
 function get_face_own_dofs_permutations(reffe::ReferenceFE,d::Integer)
-  conf = get_default_conformity(reffe)
+  conf = Conformity(reffe)
   get_face_own_dofs_permutations(reffe,conf,d)
 end
 
@@ -284,7 +420,7 @@ end
     get_own_dofs_permutations(reffe::ReferenceFE)
 """
 function get_own_dofs_permutations(reffe::ReferenceFE)
-  conf = get_default_conformity(reffe)
+  conf = Conformity(reffe)
   get_own_dofs_permutations(reffe,conf)
 end
 
@@ -309,21 +445,21 @@ associated with the dof basis `dofs` and the basis `prebasis`.
 It is equivalent to
 
     change = inv(evaluate(dofs,prebasis))
-    change_basis(prebasis,change)
+    linear_combination(change,prebasis) # i.e. transpose(change)*prebasis
 """
 function compute_shapefuns(dofs,prebasis)
   change = inv(evaluate(dofs,prebasis))
-  change_basis(prebasis,change)
+  linear_combination(change,prebasis)
 end
 
 # Concrete implementation
 
 """
-    struct GenericRefFE{C<:Conformity,D} <: ReferenceFE{D}
+    struct GenericRefFE{T,D} <: ReferenceFE{D}
       # + private fields
     end
 
-This type is a *materialization* of the `ReferenceFE` interface. That is, it is a 
+This type is a *materialization* of the `ReferenceFE` interface. That is, it is a
 `struct` that stores the values of all abstract methods in the `ReferenceFE` interface.
 This type is useful to build reference FEs from the underlying ingredients without
 the need to create a new type.
@@ -332,39 +468,39 @@ Note that some fields in this `struct` are type unstable deliberately in order t
 type signature. Don't access them in computationally expensive functions,
 instead extract the required fields before and pass them to the computationally expensive function.
 """
-struct GenericRefFE{C<:Conformity,D} <: ReferenceFE{D}
+struct GenericRefFE{T,D} <: ReferenceFE{D}
   ndofs::Int
   polytope::Polytope{D}
-  prebasis::Field
-  dofs::Dof
-  conformity::C
+  prebasis::AbstractVector{<:Field}
+  dofs::AbstractVector{<:Dof}
+  conformity::Conformity
   metadata
   face_dofs::Vector{Vector{Int}}
-  shapefuns::Field
+  shapefuns::AbstractVector{<:Field}
   @doc """
-      GenericRefFE(
+        GenericRefFE{T}(
         ndofs::Int,
         polytope::Polytope{D},
-        prebasis::Field,
-        dofs::Dof,
+        prebasis::AbstractVector{<:Field},
+        dofs::AbstractVector{<:Dof},
         conformity::Conformity,
         metadata,
         face_dofs::Vector{Vector{Int}},
-        shapefuns::Field=compute_shapefuns(dofs,prebasis)) where D
+        shapefuns::AbstractVector{<:Field}=compute_shapefuns(dofs,prebasis)) where {T,D}
 
   Constructs a `GenericRefFE` object with the provided data.
   """
-  function GenericRefFE(
+  function GenericRefFE{T}(
     ndofs::Int,
     polytope::Polytope{D},
-    prebasis::Field,
-    dofs::Dof,
+    prebasis::AbstractVector{<:Field},
+    dofs::AbstractVector{<:Dof},
     conformity::Conformity,
     metadata,
     face_dofs::Vector{Vector{Int}},
-    shapefuns::Field=compute_shapefuns(dofs,prebasis)) where D
+    shapefuns::AbstractVector{<:Field}=compute_shapefuns(dofs,prebasis)) where {T,D}
 
-    new{typeof(conformity),D}(
+    new{T,D}(
       ndofs,
       polytope,
       prebasis,
@@ -384,9 +520,8 @@ get_prebasis(reffe::GenericRefFE) = reffe.prebasis
 
 get_dof_basis(reffe::GenericRefFE) = reffe.dofs
 
-get_default_conformity(reffe::GenericRefFE) = reffe.conformity
+Conformity(reffe::GenericRefFE) = reffe.conformity
 
 get_face_dofs(reffe::GenericRefFE) = reffe.face_dofs
 
 get_shapefuns(reffe::GenericRefFE) = reffe.shapefuns
-

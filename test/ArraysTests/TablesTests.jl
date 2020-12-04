@@ -22,20 +22,20 @@ d = Table(data,ptrs)
 e = [ data[ptrs[i]:ptrs[i+1]-1] for i in 1:length(ptrs)-1]
 test_array(d,e)
 
-data = Int64[2,3,1,3,6,7,3,2,5,6,3,4]
+data = Int[2,3,1,3,6,7,3,2,5,6,3,4]
 ptrs = [1,4,4,7,13]
 a = Table(data,ptrs)
 
-data  = reinterpret(Int64,Vector{Float64}(undef,12))
+data  = reinterpret(Int,Vector{Float64}(undef,12))
 data[1:6] .= a.data[7:12]
 data[7:9] .= a.data[4:6]
 data[10:12] .= a.data[1:3]
 
-perm = Vector{Int64}(undef,12)
+perm = Vector{Int}(undef,12)
 perm[1:3]  .= 10:12
 perm[4:6]  .= 7:9
 perm[7:12] .= 1:6
-data = reindex(data,perm)
+data = lazy_map(Reindex(data),perm)
 b = Table(data,ptrs)
 test_array(a,b)
 
@@ -106,9 +106,9 @@ table4 = append_tables_locally((0,5),(table1,table2))
 
 a_to_lb_to_b = [[1,2,3],[2,3],[5,8],[2],[1,2,4]]
 a_to_lb_to_b = Table(a_to_lb_to_b)
-lb = 1
-a_to_b = get_local_item(a_to_lb_to_b,lb)
-r = [ lb_to_b[lb] for lb_to_b in a_to_lb_to_b ]
+a_to_lb = fill(1,length(a_to_lb_to_b))
+a_to_b = lazy_map(getindex,a_to_lb_to_b,a_to_lb)
+r = [ lb_to_b[a_to_lb[a]] for (a,lb_to_b) in enumerate(a_to_lb_to_b) ]
 test_array(a_to_b,r)
 
 b_to_la_to_a = [[5,1,4,2,3],[1,2,3],[5,4],[2,4,5,3],[5,1,2,4]]

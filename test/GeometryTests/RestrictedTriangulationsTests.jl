@@ -1,52 +1,46 @@
 module RestrictedTriangulationsTests
 
-using Test
-using Gridap.ReferenceFEs
 using Gridap.Arrays
+using Gridap.ReferenceFEs
 using Gridap.Geometry
+using Test
 
-domain = (0,1,0,1)
+domain = (-1,1,-1,1)
 partition = (10,10)
-oldgrid = CartesianGrid(domain,partition)
+oldmodel = CartesianDiscreteModel(domain,partition)
+oldtrian = get_triangulation(oldmodel)
 
 cell_to_oldcell = collect(1:34)
-trian = RestrictedTriangulation(oldgrid,cell_to_oldcell)
+trian = RestrictedTriangulation(oldtrian,cell_to_oldcell)
 test_triangulation(trian)
 
-n_cells = num_cells(trian)
+cell_to_oldcell = [2,9,7]
+trian_portion = RestrictedTriangulation(oldtrian,cell_to_oldcell)
+trian_portion_portion = RestrictedTriangulation(trian_portion,[3,1])
+test_triangulation(trian_portion_portion)
+@test get_cell_to_bgcell(trian_portion_portion)==[7,2]
 
-@test restrict(collect(1:n_cells),trian) == cell_to_oldcell
-@test reindex(collect(1:n_cells),trian) == cell_to_oldcell
-@test get_cell_id(trian) == cell_to_oldcell
+const R = 0.7
 
-oldcell_to_mask = fill(false,num_cells(oldgrid))
-oldcell_to_mask[cell_to_oldcell] .= true
+function is_in(coords)
+  n = length(coords)
+  x = (1/n)*sum(coords)
+  d = x[1]^2 + x[2]^2 - R^2
+  d < 0
+end
 
-trian = RestrictedTriangulation(oldgrid,oldcell_to_mask)
-test_triangulation(trian)
-
-@test restrict(collect(1:n_cells),trian) == cell_to_oldcell
-@test reindex(collect(1:n_cells),trian) == cell_to_oldcell
-@test get_cell_id(trian) == cell_to_oldcell
-
-oldmodel = CartesianDiscreteModel(domain,partition)
-
+oldcell_to_coods = get_cell_coordinates(oldtrian)
+oldcell_to_mask = lazy_map(is_in,oldcell_to_coods)
+trian = RestrictedTriangulation(oldtrian,oldcell_to_mask)
 trian = Triangulation(oldmodel,oldcell_to_mask)
-@test isa(trian,RestrictedTriangulation)
-test_triangulation(trian)
+trian = Triangulation(oldtrian,oldcell_to_mask)
+trian = Triangulation(oldmodel,tags="interior")
+trian = Triangulation(oldmodel,get_face_labeling(oldmodel),tags="interior")
 
-@test restrict(collect(1:n_cells),trian) == cell_to_oldcell
-@test reindex(collect(1:n_cells),trian) == cell_to_oldcell
-@test get_cell_id(trian) == cell_to_oldcell
-
-trian = Triangulation(oldmodel,cell_to_oldcell)
-@test isa(trian,RestrictedTriangulation)
-test_triangulation(trian)
-
-@test restrict(collect(1:n_cells),trian) == cell_to_oldcell
-@test reindex(collect(1:n_cells),trian) == cell_to_oldcell
-@test get_cell_id(trian) == cell_to_oldcell
+#using Gridap.Visualization
+#writevtk(oldtrian,"oldtrian")
+#writevtk(btrian,"btrian",cellfields=["normal"=>nb],celldata=["oldcell"=>get_cell_to_bgcell(btrian)])
+#writevtk(strian,"strian",cellfields=["normal"=>ns],
+#  celldata=["oldcell_left"=>get_cell_to_bgcell(strian).plus,"oldcell_right"=>get_cell_to_bgcell(strian).minus])
 
 end # module
-
-

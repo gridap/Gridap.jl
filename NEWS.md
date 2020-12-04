@@ -4,13 +4,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.14.0] - Unreleased
+## [0.15.0] - Unreleased
+
+This version is a major (backwards-incompatible) refactoring of the project which is not summarized here for the sake of brevity. Most of the functionality of v0.14.0 is available in v0.15.0, but possibly with a significantly different API. See [here](https://github.com/gridap/Tutorials/compare/v0.14.0...v0.15.0) the changes in the sources of the Gridap Tutorials between versions 0.14.0 and 0.15.0 to effectively see the major changes in the API.
+
+## [0.14.2] - 2020-11-24
+
+### Added
+- Added additional tensor operations and new double contraction notation `⋅²`. Implemented a `zero` constructor for `ThirdOrderTensorValues` to allow integration of 3-tensors. Since PR [#415](https://github.com/gridap/Gridap.jl/pull/415/).
+
+### Fixed
+ - Bug-fix for 32-bit Julia: Replace all occurences of Int64 by Int. Since PR [#445](https://github.com/gridap/Gridap.jl/pull/445).
+ - Bug-fix for 32-bit Julia. Using inttype=Int keyword argument for JSON parsing. Since PR [#456](https://github.com/gridap/Gridap.jl/pull/456).
+
+## [0.14.1] - 2020-09-17 
+
+### Added
+ - Added VectorWithEntryInserted and VectorWithEntryRemoved. Since PR [#401](https://github.com/gridap/Gridap.jl/pull/401/).
+ - Added missing get_constant_approach() getter to FESpaceWithConstantFixed. Since PR [#409](https://github.com/gridap/Gridap.jl/pull/409).
+
+### Deprecated
+ - The name FESpaceWithLastDofRemoved has been deprecated in favor of its generalization FESpaceWithConstantFixed. Since PR [#396](https://github.com/gridap/Gridap.jl/pull/396) and PR [#404](https://github.com/gridap/Gridap.jl/pull/404).
+
+## [0.14.0] - 2020-08-27
+
+### Removed
+ - Support for Julia v1.0. Now, the minimum supported is Julia v1.3. Since PR [#376](https://github.com/gridap/Gridap.jl/pull/376/).
 
 ### Changed
  - Major refactoring associated with the handling of elemental matrices and vectors in multi-field computations and also on the skeleton. Since PR [#376](https://github.com/gridap/Gridap.jl/pull/376/).
  - First and second argument switch in `update_state_variables!` in order to have function-first style. Since PR [#376](https://github.com/gridap/Gridap.jl/pull/376/).
  - Table struct has been generalized such that data and ptrs arrays can be of an arbitrary type extending AbstractArray. Since PR [#310](https://github.com/gridap/Gridap.jl/pull/310/)
  - `interpolate, interpolate!, interpolate_dirichlet...` switched argument order to function first style. For instance `interpolate(u, V)` instead of `interpolate(V, u)`
+ 
+### Added
+ - Allowing the construction of an `HomogeneousTrialFESpace` from a `TrialFESpace`. Since PR [#384](https://github.com/gridap/Gridap.jl/pull/384).
+ - Support for automatic differentiation of residuals and Jacobians in multi-field computations since PR [#383](https://github.com/gridap/Gridap.jl/pull/383/).
+ - New `FilterKernel` since PR [#379](https://github.com/gridap/Gridap.jl/pull/379/).
+
+### Fixed
+ - Bug associated with boundary triangulation in 1D discrete models. Since PR [#393](https://github.com/gridap/Gridap.jl/pull/393).
 
 ## [0.13.4] - 2020-08-23
 

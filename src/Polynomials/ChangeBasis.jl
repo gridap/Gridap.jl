@@ -30,11 +30,11 @@ function change_basis(basis,changeofbasis::AbstractMatrix)
   BasisFromChangeOfBasis(basis,changeofbasis)
 end
 
-function kernel_return_type(::typeof(change_basis),prebasis,matrix_inv)
+function return_type(::typeof(change_basis),prebasis,matrix_inv)
   typeof(change_basis(prebasis,matrix_inv))
 end
 
-struct BasisFromChangeOfBasis{B,M} <: Field
+struct BasisFromChangeOfBasis{B,M} <: AbstractVector{Field}
   basis::B
   change::M
   function BasisFromChangeOfBasis(basis,change::AbstractMatrix)
@@ -44,23 +44,31 @@ struct BasisFromChangeOfBasis{B,M} <: Field
   end
 end
 
-function field_cache(b::BasisFromChangeOfBasis,x)
-  cb = field_cache(b.basis,x)
-  bx = evaluate_field!(cb,b.basis,x)
+struct BasisTermFromChangeOfBasis end
+
+@inline Base.size(a::BasisFromChangeOfBasis) = (length(a.basis),)
+@inline Base.axes(a::BasisFromChangeOfBasis) = (axes(a.basis,1),)
+# @santiagobadia : Not sure we want to create the real computation here
+@inline Base.getindex(a::BasisFromChangeOfBasis,i::Integer) = BasisTermFromChangeOfBasis()
+@inline Base.IndexStyle(::BasisFromChangeOfBasis) = IndexLinear()
+
+function return_cache(b::BasisFromChangeOfBasis,x)
+  cb = return_cache(b.basis,x)
+  bx = evaluate!(cb,b.basis,x)
   c = CachedArray(bx*b.change)
   (c,cb)
 end
 
-function evaluate_field!(cache,b::BasisFromChangeOfBasis,x)
+function evaluate!(cache,b::BasisFromChangeOfBasis,x)
   c, cb = cache
-  bx = evaluate_field!(cb,b.basis,x)
+  bx = evaluate!(cb,b.basis,x)
   setsize!(c,size(bx))
   mul!(c.array,bx,b.change)
   c.array
 end
 
-function gradient_cache(b::BasisFromChangeOfBasis,x)
-  cb = gradient_cache(b.basis,x)
+function return_gradient_cache(b::BasisFromChangeOfBasis,x)
+  cb = return_gradient_cache(b.basis,x)
   bx = evaluate_gradient!(cb,b.basis,x)
   c = CachedArray(bx*b.change)
   (c,cb)
@@ -74,8 +82,8 @@ function evaluate_gradient!(cache,b::BasisFromChangeOfBasis,x)
   c.array
 end
 
-function hessian_cache(b::BasisFromChangeOfBasis,x)
-  cb = hessian_cache(b.basis,x)
+function return_hessian_cache(b::BasisFromChangeOfBasis,x)
+  cb = return_hessian_cache(b.basis,x)
   bx = evaluate_hessian!(cb,b.basis,x)
   c = CachedArray(bx*b.change)
   (c,cb)
@@ -88,4 +96,3 @@ function evaluate_hessian!(cache,b::BasisFromChangeOfBasis,x)
   mul!(c.array,bx,b.change)
   c.array
 end
-

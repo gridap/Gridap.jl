@@ -2,7 +2,7 @@ module FESpacesTests2
 
 using Test
 
-@testset "FESpacesWithLastDofRemoved" begin include("FESpacesWithLastDofRemovedTests.jl") end
+@testset "FESpacesWithConstantFixed" begin include("FESpacesWithConstantFixedTests.jl") end
 
 @testset "ZeroMeanFESpaces" begin include("ZeroMeanFESpacesTests.jl") end
 
@@ -16,15 +16,7 @@ using Test
 
 @testset "FEAutodiff" begin include("FEAutodiffTests.jl") end
 
-@testset "FETermsWithAutodiff" begin include("FETermsWithAutodiffTests.jl") end
-
-@testset "CellDofBases" begin include("CellDofBasesTests.jl") end
-
-@testset "Law" begin include("LawTests.jl") end
-
 @testset "CDLagrangianFESpaces" begin include("CDLagrangianFESpacesTests.jl") end
-
-@testset "PhysicalBasesTests" begin include("PhysicalBasesTests.jl") end
 
 @testset "PhysicalFESpaces" begin include("PhysicalFESpacesTests.jl") end
 

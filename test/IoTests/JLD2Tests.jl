@@ -19,7 +19,7 @@ to_jld2_file(foo,f)
 @test foo == from_jld2_file(typeof(foo),f)
 
 f = joinpath(d,"dict.jld2")
-foo = Dict("a"=>Int32(1),2=>Int64(3),4.0=>Float32(5),"six"=>Float64(7),:s=>"Symbol")
+foo = Dict("a"=>Int32(1),2=>Int(3),4.0=>Float32(5),"six"=>Float64(7),:s=>"Symbol")
 
 to_jld2_file(foo,f)
 @test foo == from_jld2_file(typeof(foo),f)
@@ -27,7 +27,3 @@ to_jld2_file(foo,f)
 rm(d,recursive=true)
 
 end # module
-
-
-
-

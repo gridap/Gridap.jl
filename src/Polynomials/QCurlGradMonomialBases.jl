@@ -1,6 +1,6 @@
 
 """
-    struct QCurlGradMonomialBasis{...} <: Field
+    struct QCurlGradMonomialBasis{...} <: AbstractArray{Monomial}
 
 This type implements a multivariate vector-valued polynomial basis
 spanning the space needed for Raviart-Thomas reference elements on n-cubes.
@@ -8,13 +8,18 @@ The type parameters and fields of this `struct` are not public.
 This type fully implements the [`Field`](@ref) interface, with up to first order
 derivatives.
 """
-struct QCurlGradMonomialBasis{D,T} <: Field
+struct QCurlGradMonomialBasis{D,T} <: AbstractVector{Monomial}
   qgrad::QGradMonomialBasis{D,T}
   function QCurlGradMonomialBasis(::Type{T},order::Int,terms::CartesianIndices{D},perms::Matrix{Int}) where {D,T}
     qgrad = QGradMonomialBasis(T,order,terms,perms)
     new{D,T}(qgrad)
   end
 end
+
+@inline Base.size(a::QCurlGradMonomialBasis) = (length(a.qgrad),)
+# @santiagobadia : Not sure we want to create the monomial machinery
+@inline Base.getindex(a::QCurlGradMonomialBasis,i::Integer) = Monomial()
+@inline Base.IndexStyle(::QCurlGradMonomialBasis) = IndexLinear()
 
 """
     QCurlGradMonomialBasis{D}(::Type{T},order::Int) where {D,T}
@@ -34,23 +39,30 @@ function QCurlGradMonomialBasis{D}(::Type{T},order::Int) where {D,T}
   QCurlGradMonomialBasis(T,order,terms,perms)
 end
 
-function field_cache(f::QCurlGradMonomialBasis,x)
-  field_cache(f.qgrad,x)
+function return_cache(f::QCurlGradMonomialBasis,x::AbstractVector{<:Point})
+  return_cache(f.qgrad,x)
 end
 
-@inline function evaluate_field!(cache,f::QCurlGradMonomialBasis,x)
-  evaluate_field!(cache,f.qgrad,x)
+@inline function evaluate!(cache,f::QCurlGradMonomialBasis,x::AbstractVector{<:Point})
+  evaluate!(cache,f.qgrad,x)
 end
 
-function gradient_cache(f::QCurlGradMonomialBasis,x)
-  gradient_cache(f.qgrad,x)
+function return_cache(
+  fg::FieldGradientArray{N,<:QCurlGradMonomialBasis},
+  x::AbstractVector{<:Point}) where N
+
+  f = fg.fa
+  return_cache(FieldGradientArray{N}(f.qgrad),x)
 end
 
-@inline function evaluate_gradient!(cache,f::QCurlGradMonomialBasis,x)
-  evaluate_gradient!(cache,f.qgrad,x)
-end
+@inline function evaluate!(
+  cache,
+  fg::FieldGradientArray{N,<:QCurlGradMonomialBasis},
+  x::AbstractVector{<:Point}) where N
 
-get_value_type(::QCurlGradMonomialBasis{D,T}) where {D,T} = T
+  f = fg.fa
+  evaluate!(cache,FieldGradientArray{N}(f.qgrad),x)
+end
 
 """
     num_terms(f::QCurlGradMonomialBasis{D,T}) where {D,T}
@@ -58,4 +70,3 @@ get_value_type(::QCurlGradMonomialBasis{D,T}) where {D,T} = T
 num_terms(f::QCurlGradMonomialBasis{D,T}) where {D,T} = length(f.qgrad.terms)*D
 
 get_order(f::QCurlGradMonomialBasis{D,T}) where {D,T} = get_order(f.qgrad)
-

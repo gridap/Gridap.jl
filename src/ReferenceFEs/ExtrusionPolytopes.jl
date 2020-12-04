@@ -20,7 +20,7 @@ struct DFace{D} <: GridapType
   dimranges::Vector{UnitRange{Int}}
   dims::Vector{Int}
   nf_nfs::Vector{Vector{Int}}
-  nf_dimranges::Vector{Vector{UnitRange{Int64}}}
+  nf_dimranges::Vector{Vector{UnitRange{Int}}}
   nf_dims::Vector{Vector{Int}}
 end
 
@@ -175,11 +175,11 @@ function get_vertex_coordinates(p::ExtrusionPolytope)
   p.vertex_coords
 end
 
-function get_edge_tangents(p::ExtrusionPolytope)
+function get_edge_tangent(p::ExtrusionPolytope)
   _edge_tangents(Float64,p.dface)
 end
 
-function get_facet_normals(p::ExtrusionPolytope)
+function get_facet_normal(p::ExtrusionPolytope)
   p.face_normals
 end
 
@@ -359,7 +359,7 @@ function _polytopenfaces(anchor, extrusion)
   numnfs = length(nf_nfs)
   nfsdim = [_nfdim(nf_nfs[i].extrusion) for i = 1:numnfs]
   dnf = _nfdim(extrusion)
-  dimnfs = Array{UnitRange{Int64},1}(undef, dnf + 1)
+  dimnfs = Array{UnitRange{Int},1}(undef, dnf + 1)
   dim = 0
   i = 1
   for iface = 1:numnfs
@@ -415,7 +415,7 @@ function _nfaceboundary!(anchor, extrusion, extend, isanchor, list)
 end
 
 function _newext(newext,i)
-  m = zero(mutable(newext))
+  m = zero(Mutable(newext))
   D = num_components(newext)
   for j in 1:D
     m[j] = j == i ? 0 : newext[j]
@@ -424,7 +424,7 @@ function _newext(newext,i)
 end
 
 function _edim(newext,i)
-  m = zero(mutable(newext))
+  m = zero(Mutable(newext))
   D = num_components(newext)
   for j in 1:D
     m[j] = j == i ? 1 : 0
@@ -433,7 +433,7 @@ function _edim(newext,i)
 end
 
 function _tetp(anchor,i)
-  m = zero(mutable(anchor))
+  m = zero(Mutable(anchor))
   D = num_components(anchor)
   for j in 1:D
     m[j] = j >= i ? anchor[j] : 0
@@ -508,7 +508,7 @@ function DFace{D}(p::DFace{D},iface::Int) where D
 end
 
 function _eliminate_zeros(::Val{d},a) where d
-  b = zero(mutable(Point{d,Int}))
+  b = zero(Mutable(Point{d,Int}))
   D = num_components(a)
   k = 1
   for i in 1:D
@@ -552,7 +552,7 @@ function _nfaces_vertices(::Type{T},p::DFace,d::Integer) where T
   nc = _num_nfaces(p,d)
   verts = _vertices_coordinates(T,p)
   faces_vs = _dimfrom_fs_dimto_fs(p,d,0)
-  cfvs = collect(LocalToGlobalArray(faces_vs,verts))
+  cfvs = collect(lazy_map(Broadcasting(Reindex(verts)),faces_vs))
 end
 
 # Return the n-faces vertices coordinates array for a given n-face dimension
@@ -680,9 +680,9 @@ function _admissible_permutations(p::DFace{D}) where D
   if D > 3
     @warn "Computing permutations for a polytope of dim > 3 is overkill"
   end
-  if D in (0,1) || all( Tuple(p.extrusion)[2:end] .== TET_AXIS )
+  if D in (0,1) || all( map(i->i==TET_AXIS,Tuple(p.extrusion)[2:end]) )
     perms = _admissible_permutations_simplex(p)
-  elseif all( Tuple(p.extrusion)[2:end] .== HEX_AXIS)
+  elseif all( map(i->i==HEX_AXIS,Tuple(p.extrusion)[2:end]))
     perms = _admissible_permutations_n_cube(p)
   else
     @notimplemented "admissible vertex permutations only implemented for simplices and n-cubes"
@@ -734,7 +734,7 @@ end
 
 function _setup_aux_grads(vertices::Vector{NFace{D}}) where D
   grads = zeros(Point{D,Int},length(vertices))
-  m = zero(mutable(Point{D,Int}))
+  m = zero(Mutable(Point{D,Int}))
   for (i,vertex) in enumerate(vertices)
     x = vertex.anchor
     for di in 1:D
@@ -753,7 +753,7 @@ end
 
 function _setup_aux_jacobian(grads,permuted_vertices::Vector{NFace{D}}) where D
   p0 = zero(Point{D,Int})
-  m = zero(mutable(outer(p0,p0)))
+  m = zero(Mutable(outer(p0,p0)))
   for (i,pvertex) in enumerate(permuted_vertices)
     x = pvertex.anchor
     g = grads[i]

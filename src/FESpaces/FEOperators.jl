@@ -22,8 +22,7 @@ end
 
 """
 """
-function allocate_residual(op::FEOperator,u)
-  @assert is_a_fe_function(u)
+function allocate_residual(op::FEOperator,u::FEFunction)
   @abstractmethod
 end
 
@@ -32,8 +31,7 @@ end
 
 Inplace version of [`residual`](@ref).
 """
-function residual!(b::AbstractVector,op::FEOperator,u)
-  @assert is_a_fe_function(u)
+function residual!(b::AbstractVector,op::FEOperator,u::FEFunction)
   @abstractmethod
 end
 
@@ -42,8 +40,7 @@ end
 
 Compute the residual of `op` at `u`. See also [`residual_and_jacobian`](@ref)
 """
-function residual(op::FEOperator,u)
-  @assert is_a_fe_function(u)
+function residual(op::FEOperator,u::FEFunction)
   b = allocate_residual(op,u)
   residual!(b,op,u)
   b
@@ -51,8 +48,7 @@ end
 
 """
 """
-function allocate_jacobian(op::FEOperator,u)
-  @assert is_a_fe_function(u)
+function allocate_jacobian(op::FEOperator,u::FEFunction)
   @abstractmethod
 end
 
@@ -61,8 +57,7 @@ end
 
 Inplace version of [`jacobian`](@ref).
 """
-function jacobian!(A::AbstractMatrix,op::FEOperator,u)
-  @assert is_a_fe_function(u)
+function jacobian!(A::AbstractMatrix,op::FEOperator,u::FEFunction)
   @abstractmethod
 end
 
@@ -72,8 +67,7 @@ end
 Compute the jacobian of an operator `op`.
 See also [`get_algebraic_operator`](@ref), [`residual_and_jacobian!`](@ref).
 """
-function jacobian(op::FEOperator,u)
-  @assert is_a_fe_function(u)
+function jacobian(op::FEOperator,u::FEFunction)
   A = allocate_jacobian(op,u)
   jacobian!(A,op,u)
   A
@@ -84,7 +78,7 @@ end
 
 Inplace version of [`residual_and_jacobian`](@ref).
 """
-function residual_and_jacobian!(b::AbstractVector,A::AbstractMatrix,op::FEOperator,u)
+function residual_and_jacobian!(b::AbstractVector,A::AbstractMatrix,op::FEOperator,u::FEFunction)
   residual!(b,op,u)
   jacobian!(A,op,u)
   (b,A)
@@ -98,7 +92,7 @@ Depending on the nature of `op` the point `u` can either be a plain array or a `
 
 See also [`jacobian`](@ref), [`residual`](@ref), [`get_algebraic_operator`](@ref).
 """
-function residual_and_jacobian(op::FEOperator,u)
+function residual_and_jacobian(op::FEOperator,u::FEFunction)
   b = residual(op,u)
   A = jacobian(op,u)
   (b,A)
@@ -112,7 +106,6 @@ function test_fe_operator(op::FEOperator,args...;kwargs...)
   @test isa(test,FESpace)
   @test isa(trial,FESpace)
   u = zero(trial)
-  @test is_a_fe_function(u)
   b = allocate_residual(op,u)
   @test isa(b,AbstractVector)
   residual!(b,op,u)

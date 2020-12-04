@@ -49,12 +49,13 @@ dofs = LagrangianDofBasis(VectorValue{2,Int},VERTEX,())
 @test dofs.node_and_comp_to_dof == VectorValue{2,Int}[(1,2)]
 
 b = MonomialBasis(VectorValue{2,Int},VERTEX,())
+@test length(b) == 2
 @test evaluate(b,Point{0,Int}[(),()]) == VectorValue{2,Int}[(1, 0) (0, 1); (1, 0) (0, 1)]
 
 reffe = LagrangianRefFE(VectorValue{2,Int},VERTEX,())
 @test get_face_own_nodes(reffe) == [[1]]
 @test get_face_own_dofs(reffe) == [[1,2]]
-@test get_face_own_dofs_permutations(reffe) == [[[1, 2]]] 
+@test get_face_own_dofs_permutations(reffe) == [[[1, 2]]]
 test_lagrangian_reference_fe(reffe)
 @test ReferenceFE{0}(reffe,1) === reffe
 
@@ -63,6 +64,10 @@ reffe = LagrangianRefFE(VectorValue{2,Float64},SEGMENT,(2,))
 test_lagrangian_reference_fe(reffe)
 
 reffe = LagrangianRefFE(VectorValue{2,Float64},TRI,3)
+@test get_face_own_dofs(reffe) == [[1, 11], [2, 12], [3, 13], [4, 5, 14, 15], [6, 7, 16, 17], [8, 9, 18, 19], [10, 20]]
+test_lagrangian_reference_fe(reffe)
+
+reffe = ReferenceFE(TRI,:Lagrangian,VectorValue{2,Float64},3)
 @test get_face_own_dofs(reffe) == [[1, 11], [2, 12], [3, 13], [4, 5, 14, 15], [6, 7, 16, 17], [8, 9, 18, 19], [10, 20]]
 test_lagrangian_reference_fe(reffe)
 
@@ -79,11 +84,11 @@ refface = ReferenceFE{1}(reffe,8)
 orders = (4,)
 reffe = LagrangianRefFE(VectorValue{2,Float64},SEGMENT,orders)
 @test get_own_nodes_permutations(reffe) == [[1, 2, 3], [3, 2, 1]]
-@test get_own_dofs_permutations(reffe) == [[1, 2, 3, 4, 5, 6], [3, 2, 1, 6, 5, 4]] 
+@test get_own_dofs_permutations(reffe) == [[1, 2, 3, 4, 5, 6], [3, 2, 1, 6, 5, 4]]
 
 orders = (2,3)
 reffe = LagrangianRefFE(VectorValue{2,Float64},QUAD,orders)
-@test get_own_nodes_permutations(reffe) ==[[1, 2], [0, 0], [1, 2], [0, 0], [0, 0], [2, 1], [0, 0], [2, 1]] 
+@test get_own_nodes_permutations(reffe) ==[[1, 2], [0, 0], [1, 2], [0, 0], [0, 0], [2, 1], [0, 0], [2, 1]]
 @test get_own_dofs_permutations(reffe) == [
   [1, 2, 3, 4], [0, 0, 0, 0], [1, 2, 3, 4], [0, 0, 0, 0],
   [0, 0, 0, 0], [2, 1, 4, 3], [0, 0, 0, 0], [2, 1, 4, 3]]
@@ -123,7 +128,7 @@ reffe = LagrangianRefFE(Float64,QUAD,orders)
 @test num_dofs(reffe) == 1
 @test num_nodes(reffe) == 1
 test_lagrangian_reference_fe(reffe)
-@test get_default_conformity(reffe) == L2Conformity()
+@test Conformity(reffe) == L2Conformity()
 
 @test get_face_own_nodes(reffe) == Vector{Int}[[], [], [], [], [], [], [], [], [1]]
 #@test get_face_own_nodes_permutations(reffe) == Vector{Vector{Int}}[
@@ -138,7 +143,7 @@ reffe = LagrangianRefFE(VectorValue{2,Float64},QUAD,orders)
 @test num_nodes(reffe) == 1
 test_lagrangian_reference_fe(reffe)
 
-@test get_face_own_dofs(reffe) == Array{Int64,1}[[], [], [], [], [], [], [], [], [1, 2]] 
+@test get_face_own_dofs(reffe) == Array{Int,1}[[], [], [], [], [], [], [], [], [1, 2]]
 #@test get_face_own_dofs_permutations(reffe) == [
 #  [[]],[[]],[[]],[[]],[[],[]],[[],[]],[[],[]],[[],[]],[[1,2],[1,2],[1,2],[1,2],[1,2],[1,2],[1,2],[1,2]]]
 @test get_face_own_dofs_permutations(reffe) == [

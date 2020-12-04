@@ -1,6 +1,7 @@
 module DiffOperatorsTests
 
 using Test
+using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Fields: MockField
@@ -12,8 +13,7 @@ p = Point(1,2)
 x = fill(p,np)
 
 v = 3.0
-d = 2
-f = MockField{d}(v)
+f = MockField(v)
 
 @test ∇(f) == gradient(f)
 
@@ -43,29 +43,9 @@ f = MockField{d}(v)
 l = 10
 f = Fill(f,l)
 
-@test ∇(f) == gradient(f)
-
-@test divergence(f) == operate_arrays_of_fields(tr,gradient(f))
-
-@test curl(f) == operate_arrays_of_fields(grad2curl,gradient(f))
-
-@test ε(f) == operate_arrays_of_fields(symmetric_part,gradient(f))
-
-@test ∇⋅f == divergence(f)
-
-@test cross(∇,f) == curl(f)
-
-@test ∇×f == curl(f)
-
-@test outer(∇,f) == ∇(f)
-
-@test ∇⊗f == ∇(f)
-
-@test outer(f,∇) == transpose(∇(f))
-
-@test f⊗∇ == transpose(∇(f))
-
-@test Δ(f) == ∇⋅∇(f)
+@test Broadcasting(divergence)(f) == Broadcasting(Operation(tr))(Broadcasting(∇)(f))
+@test Broadcasting(curl)(f) == Broadcasting(Operation(grad2curl))(Broadcasting(∇)(f))
+@test Broadcasting(ε)(f) == Broadcasting(Operation(symmetric_part))(Broadcasting(∇)(f))
 
 # Test automatic differentiation
 
