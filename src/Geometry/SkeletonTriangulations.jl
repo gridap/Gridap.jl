@@ -234,8 +234,8 @@ function get_node_coordinates(trian::SkeletonTriangulation)
   get_node_coordinates(trian.plus)
 end
 
-function get_cell_nodes(trian::SkeletonTriangulation)
-  get_cell_nodes(trian.plus)
+function get_cell_node_ids(trian::SkeletonTriangulation)
+  get_cell_node_ids(trian.plus)
 end
 
 function get_reffes(trian::SkeletonTriangulation)
@@ -258,7 +258,7 @@ end
 
 TriangulationStyle(::Type{<:SkeletonTriangulation}) = SubTriangulation()
 
-function get_background_triangulation(trian::SkeletonTriangulation) 
+function get_background_triangulation(trian::SkeletonTriangulation)
   get_background_triangulation(trian.plus)
 end
 
@@ -280,4 +280,3 @@ function RestrictedTriangulation(
   minus = RestrictedTriangulation(oldtrian.minus,cell_to_oldcell)
   SkeletonTriangulation(plus,minus)
 end
-

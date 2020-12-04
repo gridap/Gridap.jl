@@ -116,7 +116,7 @@ export get_cell_ref_map
 export have_compatible_domains
 
 export Grid
-export get_cell_nodes
+export get_cell_node_ids
 export test_grid
 export compute_linear_grid
 export compute_reference_grid

@@ -6,7 +6,7 @@ Abstract type representing an arbitrary tiling, tessellation,
 or triangulation of a domain of parametric dimension `Dc` and
 physical dimension `Dp`.
 
-We define a triangulation from two basic ingredients: 
+We define a triangulation from two basic ingredients:
 
 - the cell-wise nodal coordinates of the cells in the triangulation, plus
 - an interpolation of this cell-wise coordinates into the cells interior.
@@ -130,7 +130,7 @@ get_cell_ref_map(trian::Triangulation,::SubTriangulation) = @abstractmethod
 
 #"""
 #Given an array aligned with the cells in the background triangulation, return another array
-#aligned with the cells of the sub-triangulation. Do nothing if `trian` is already a 
+#aligned with the cells of the sub-triangulation. Do nothing if `trian` is already a
 #background triangulation.
 #"""
 #change_cell_index(a::AbstractArray,trian::Triangulation) = change_cell_index(a,trian,TriangulationStyle(trian))
@@ -148,7 +148,7 @@ get_cell_ref_map(trian::Triangulation,::SubTriangulation) = @abstractmethod
 #Given an array (of arrays) of Field objects that is aligned with the sub-triangulation but
 #the domain space of those fields corresponds to the reference space of the background triangulation,
 #return another array (of arrays) of Field objects with domain in the sub-triangulation.
-#Do nothing if `trian` is already a background triangulation. 
+#Do nothing if `trian` is already a background triangulation.
 #Note that one typically needs to call `change_cell_index` before calling `change_cell_domain`.
 #"""
 #change_cell_domain(a::AbstractArray,trian::Triangulation) = change_cell_domain(a,trian,TriangulationStyle(trian))
@@ -301,7 +301,7 @@ function get_node_coordinates(trian::Triangulation)
   @notimplemented
 end
 
-function get_cell_nodes(trian::Triangulation)
+function get_cell_node_ids(trian::Triangulation)
   @notimplemented
 end
 
@@ -362,4 +362,3 @@ end
 #function CellField(value::Number,trian::Triangulation,quad::CellQuadrature)
 #  CellField(value,get_cell_map(trian),quad)
 #end
-

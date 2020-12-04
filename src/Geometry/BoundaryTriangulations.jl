@@ -72,7 +72,7 @@ function _fill_ctype_to_lface_to_ftype!(
 end
 
 function get_children(n::TreeNode, a::FaceToCellGlue)
-  ( 
+  (
     similar_tree_node(n,a.face_to_cell),
     similar_tree_node(n,a.face_to_lface),
     similar_tree_node(n,a.face_to_lcell),
@@ -184,7 +184,7 @@ get_cell_type(trian::BoundaryTriangulation) = get_cell_type(trian.face_trian)
 
 get_node_coordinates(trian::BoundaryTriangulation) = get_node_coordinates(trian.face_trian)
 
-get_cell_nodes(trian::BoundaryTriangulation) = get_cell_nodes(trian.face_trian)
+get_cell_node_ids(trian::BoundaryTriangulation) = get_cell_node_ids(trian.face_trian)
 
 get_cell_map(trian::BoundaryTriangulation) = get_cell_map(trian.face_trian)
 
@@ -448,5 +448,3 @@ end
 #    @notimplemented
 #  end
 #end
-
-

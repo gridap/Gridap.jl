@@ -156,11 +156,11 @@ end
 
 function _generate_cell_to_vertices_from_grid(grid::UnstructuredGrid)
   if is_first_order(grid)
-    cell_to_vertices = Table(get_cell_nodes(grid))
+    cell_to_vertices = Table(get_cell_node_ids(grid))
     vertex_to_node = collect(1:num_nodes(grid))
     node_to_vertex = vertex_to_node
   else
-    cell_to_nodes = get_cell_nodes(grid)
+    cell_to_nodes = get_cell_node_ids(grid)
     cell_to_cell_type = get_cell_type(grid)
     reffes = get_reffes(grid)
     cell_type_to_lvertex_to_lnode = map(get_vertex_node, reffes)
