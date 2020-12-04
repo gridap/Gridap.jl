@@ -13,6 +13,7 @@ struct UnstructuredGrid{Dc,Dp,Tp,O} <: Grid{Dc,Dp}
   reffes::Vector{LagrangianRefFE{Dc}}
   cell_types::Vector{Int8}
   orientation_style::O
+  cell_map
   @doc """
       function UnstructuredGrid(
         node_coordinates::Vector{Point{Dp,Tp}},
@@ -30,9 +31,26 @@ struct UnstructuredGrid{Dc,Dp,Tp,O} <: Grid{Dc,Dp}
     reffes::Vector{<:LagrangianRefFE{Dc}},
     cell_types::Vector,
     orientation_style::OrientationStyle=NonOriented()) where {Dc,Dp,Tp,Ti}
+
+    cell_map = _compute_cell_map(node_coordinates,cell_nodes,reffes,cell_types)
     B = typeof(orientation_style)
-    new{Dc,Dp,Tp,B}(node_coordinates,cell_nodes,reffes,cell_types,orientation_style)
+    new{Dc,Dp,Tp,B}(
+      node_coordinates,
+      cell_nodes,
+      reffes,
+      cell_types,
+      orientation_style,
+      cell_map)
   end
+end
+
+function _compute_cell_map(node_coords,cell_nodes,ctype_reffe,cell_ctype)
+  cell_coords = lazy_map(Broadcasting(Reindex(node_coords)),cell_nodes)
+  ctype_shapefuns = map(get_shapefuns,ctype_reffe)
+  cell_shapefuns = expand_cell_data(ctype_shapefuns,cell_ctype)
+  cell_map = lazy_map(linear_combination,cell_coords,cell_shapefuns)
+  Fields.MemoArray(cell_map)
+  #cell_map
 end
 
 """
@@ -63,6 +81,7 @@ get_node_coordinates(g::UnstructuredGrid) = g.node_coordinates
 
 get_cell_nodes(g::UnstructuredGrid) = g.cell_nodes
 
+get_cell_map(g::UnstructuredGrid) = g.cell_map
 
 # From ReferenceFE
 

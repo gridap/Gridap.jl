@@ -639,4 +639,11 @@ t2 = TensorValue(v2)
 @test (t1 ⋅ t2)[2,3] == sum(v1[2,j] .* v2[j,3] for j in 1:3)
 @test (t1 ⋅ t2)[3,3] == sum(v1[3,j] .* v2[j,3] for j in 1:3)
 
+# Complex
+
+a = 1.0 + 3.0*im
+b = 4.0 - 3.0*im
+@test outer(a,b) == a*b
+@test inner(a,b) == a*b
+
 end # module OperationsTests

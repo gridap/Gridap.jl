@@ -256,7 +256,7 @@ function compute_conforming_cell_dofs(
     d_to_dface_to_tag,
     d_to_cell_to_dfaces)
 
-  (cell_dofs, nfree, ndiri, diri_dof_tag, diri_cells)
+  (Table(cell_dofs), nfree, ndiri, diri_dof_tag, diri_cells)
 end
 
 function _convert_dirichlet_components(dirichlet_tags::AbstractArray,dirichlet_components)

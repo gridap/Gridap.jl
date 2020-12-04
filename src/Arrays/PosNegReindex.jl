@@ -33,6 +33,10 @@ end
   i>0 ? getindex!(c_p,k.values_pos,i) : getindex!(c_n,k.values_neg,-i)
 end
 
+@inline function evaluate(k::PosNegReindex,i::Integer)
+  i>0 ? k.values_pos[i] : k.values_neg[-i]
+end
+
 function lazy_map(k::PosNegReindex,::Type{T},i_to_iposneg::AbstractArray) where T
   if all_pos(i_to_iposneg)
     lazy_map(Reindex(k.values_pos),get_array(i_to_iposneg))

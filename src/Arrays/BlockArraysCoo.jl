@@ -68,6 +68,7 @@ the top level block structure.
 @inline blocks_equal(a::AbstractUnitRange,b::AbstractUnitRange) = BlockArrays.blockisequal(a,b)
 blocks_equal(a::AbstractUnitRange,b::MultiLevelBlockedUnitRange) = false
 blocks_equal(a::MultiLevelBlockedUnitRange,b::AbstractUnitRange) = false
+blocks_equal(a::Base.OneTo,b::Base.OneTo) = a==b
 function blocks_equal(a::MultiLevelBlockedUnitRange,b::MultiLevelBlockedUnitRange)
   if a === b
     return true

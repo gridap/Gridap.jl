@@ -24,8 +24,6 @@ function CellPoint(
   cell_phys_point::AbstractArray{<:Union{Point,AbstractArray{<:Point}}},
   trian::Triangulation,
   domain_style::PhysicalDomain)
-  cell_invmap = lazy_map(inverse_map,cell_map)
-
   cell_map = get_cell_map(trian)
   cell_invmap = lazy_map(inverse_map,cell_map)
   cell_ref_point = lazy_map(evaluate,cell_invmap,cell_phys_point)
@@ -188,6 +186,14 @@ struct GenericCellField{DS} <: CellField
   cell_field::AbstractArray{<:Union{Field,AbstractArray{<:Field}}}
   trian::Triangulation
   domain_style::DS
+  function GenericCellField(
+    cell_field::AbstractArray{<:Union{Field,AbstractArray{<:Field}}},
+    trian::Triangulation,
+    domain_style::DomainStyle)
+
+    DS = typeof(domain_style)
+    new{DS}(Fields.MemoArray(cell_field),trian,domain_style)
+  end
 end
 
 get_cell_data(f::GenericCellField) = f.cell_field
@@ -298,6 +304,7 @@ struct OperationCellField{DS} <: CellField
   args::Tuple
   trian::Triangulation
   domain_style::DS
+  memo::Dict{Any,Any}
   function OperationCellField(op::Operation,args::CellField...)
 
     @assert length(args) > 0
@@ -321,7 +328,7 @@ struct OperationCellField{DS} <: CellField
       end
     end
 
-    new{typeof(domain_style)}(op,args,trian,domain_style)
+    new{typeof(domain_style)}(op,args,trian,domain_style,Dict())
   end
 end
 
@@ -366,6 +373,12 @@ get_triangulation(f::OperationCellField) = f.trian
 DomainStyle(::Type{OperationCellField{DS}}) where DS = DS()
 
 function evaluate!(cache,f::OperationCellField,x::CellPoint)
+  #key = (:evaluate,objectid(x))
+  #if ! haskey(f.memo,key)
+  #  ax = map(i->i(x),f.args)
+  #  f.memo[key] = lazy_map(Fields.BroadcastingFieldOpMap(f.op.op),ax...)
+  #end
+  #f.memo[key]
   ax = map(i->i(x),f.args)
   lazy_map(Fields.BroadcastingFieldOpMap(f.op.op),ax...)
 end
@@ -560,10 +573,10 @@ function change_domain(a::CellField,target_trian::SkeletonTriangulation,target_d
     return change_domain(a,target_domain)
   elseif have_compatible_domains(trian_a,get_background_triangulation(target_trian))
     # In this case, we can safely take either plus or minus arbitrarily.
-    if isa(a,GenericCellField) && isa(a.cell_field,Fill{<:ConstantField})
+    if isa(a,GenericCellField) && isa(get_array(a.cell_field),Fill{<:ConstantField})
       a_on_target_trian = change_domain(a,target_trian.plus,target_domain)
       return GenericCellField(get_cell_data(a_on_target_trian),target_trian,target_domain)
-    elseif isa(a,GenericCellField) && isa(a.cell_field,Fill{<:GenericField{<:Function}})
+    elseif isa(a,GenericCellField) && isa(get_array(a.cell_field),Fill{<:GenericField{<:Function}})
       a_on_target_trian = change_domain(a,target_trian.plus,target_domain)
       return GenericCellField(get_cell_data(a_on_target_trian),target_trian,target_domain)
     else

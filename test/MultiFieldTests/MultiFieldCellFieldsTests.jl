@@ -69,8 +69,8 @@ n = VectorValue(1,2)
 
 cellmat = integrate( (n⋅dv)*dp + dq*dp, quad)
 cellvec = integrate( n⋅dv, quad)
-@test isa(cellmat,LazyArray{<:Fill{BlockArrayCooMap{2}}})
 @test isa(cellvec,LazyArray{<:Fill{BlockArrayCooMap{1}}})
+@test isa(cellmat,LazyArray{<:Fill{BlockArrayCooMap{2}}})
 
 cellmat1 = integrate( ((n⋅dv) - dq)*((n⋅du) + dp), quad)
 cellmat2 = integrate( (n⋅dv)*(n⋅du) + (n⋅dv)*dp - dq*(n⋅du) - dq*dp, quad)

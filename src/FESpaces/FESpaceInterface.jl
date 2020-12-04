@@ -156,6 +156,16 @@ struct FEBasis{BS<:BasisStyle,DS<:DomainStyle} <: CellField
   trian::Triangulation
   basis_style::BS
   domain_style::DS
+  function FEBasis(
+    cell_basis::AbstractArray{<:AbstractArray{<:Field}},
+    trian::Triangulation,
+    basis_style::BasisStyle,
+    domain_style::DomainStyle)
+
+    BS = typeof(basis_style)
+    DS = typeof(domain_style)
+    new{BS,DS}(Fields.MemoArray(cell_basis),trian,basis_style,domain_style)
+  end
 end
 
 get_cell_data(f::FEBasis) = f.cell_basis

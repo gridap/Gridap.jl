@@ -5,7 +5,7 @@ struct Monomial <: Field end
 
 Type representing a basis of multivariate scalar-valued, vector-valued, or
 tensor-valued, iso- or aniso-tropic monomials. The fields
-of this `struct` are not public
+of this `struct` are not public.
 This type fully implements the [`Field`](@ref) interface, with up to second order
 derivatives.
 """
@@ -28,7 +28,7 @@ end
 
 This version of the constructor allows to pass a tuple `orders` containing the
 polynomial order to be used in each of the `D` dimensions in order to  construct
-and anisotropic tensor-product space.
+an anisotropic tensor-product space.
 """
 function MonomialBasis{D}(
   ::Type{T}, orders::NTuple{D,Int}, filter::Function=_q_filter) where {D,T}
@@ -245,7 +245,7 @@ function _define_terms(filter,orders)
   [ ci for ci in cis if filter(Int[Tuple(ci-co)...],maxorder) ]
 end
 
-function _evaluate_1d!(v::AbstractMatrix{T},x,order,d) where T
+@inline function _evaluate_1d!(v::AbstractMatrix{T},x,order,d) where T
   n = order + 1
   z = one(T)
   @inbounds v[d,1] = z
