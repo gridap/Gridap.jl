@@ -262,9 +262,9 @@ function get_background_triangulation(trian::SkeletonTriangulation)
   get_background_triangulation(trian.plus)
 end
 
-function get_cell_id(trian::SkeletonTriangulation)
-  plus = get_cell_id(trian.plus)
-  minus = get_cell_id(trian.minus)
+function get_cell_to_bgcell(trian::SkeletonTriangulation)
+  plus = get_cell_to_bgcell(trian.plus)
+  minus = get_cell_to_bgcell(trian.minus)
   SkeletonPair(plus,minus)
 end
 

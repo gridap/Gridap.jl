@@ -237,10 +237,10 @@ function collect_cell_matrix(a::DomainContribution)
   w = []
   r = []
   for trian in get_domains(a)
-    cell_mat = get_contribution(a,trian) 
+    cell_mat = get_contribution(a,trian)
     @assert eltype(cell_mat) <: AbstractMatrix
     push!(w,cell_mat)
-    push!(r,get_cell_id(trian))
+    push!(r,get_cell_to_bgcell(trian))
   end
   (w,r,r)
 end
@@ -249,10 +249,10 @@ function collect_cell_vector(a::DomainContribution)
   w = []
   r = []
   for trian in get_domains(a)
-    cell_vec = get_contribution(a,trian) 
+    cell_vec = get_contribution(a,trian)
     @assert eltype(cell_vec) <: AbstractVector
     push!(w,cell_vec)
-    push!(r,get_cell_id(trian))
+    push!(r,get_cell_to_bgcell(trian))
   end
   (w,r)
 end
@@ -261,10 +261,10 @@ function _collect_cell_matvec(a::DomainContribution)
   w = []
   r = []
   for trian in get_domains(a)
-    cell_mat = get_contribution(a,trian) 
+    cell_mat = get_contribution(a,trian)
     @assert eltype(cell_mat) <: Tuple
     push!(w,cell_mat)
-    push!(r,get_cell_id(trian))
+    push!(r,get_cell_to_bgcell(trian))
   end
   (w,r,r)
 end
@@ -314,11 +314,11 @@ function _pair_contribution_when_possible(biform,liform,uhd)
   matvec = DomainContribution()
   mat = DomainContribution()
   for (trian,t) in _matvec.dict
-    cellvals = get_cell_dof_values(uhd,get_cell_id(trian))
+    cellvals = get_cell_dof_values(uhd,get_cell_to_bgcell(trian))
     matvec.dict[trian] = attach_dirichlet(t,cellvals)
   end
   for (trian,t) in _mat.dict
-    cellvals = get_cell_dof_values(uhd,get_cell_id(trian))
+    cellvals = get_cell_dof_values(uhd,get_cell_to_bgcell(trian))
     matvec.dict[trian] = attach_dirichlet(t,cellvals)
   end
   matvec, mat, _vec
@@ -344,4 +344,3 @@ function collect_cell_matrix_and_vector(
   liform = DomainContribution()
   collect_cell_matrix_and_vector(biform,liform,uhd)
 end
-

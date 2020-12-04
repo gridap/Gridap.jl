@@ -103,8 +103,8 @@ function get_cell_map(trian::RestrictedTriangulation)
   lazy_map(Reindex(parent_cell_data),trian.cell_to_parent_cell)
 end
 
-function get_cell_id(trian::RestrictedTriangulation)
-  parent_cell_data = get_cell_id(trian.parent_trian)
+function get_cell_to_bgcell(trian::RestrictedTriangulation)
+  parent_cell_data = get_cell_to_bgcell(trian.parent_trian)
   lazy_map(Reindex(parent_cell_data),trian.cell_to_parent_cell)
 end
 

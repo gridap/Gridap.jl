@@ -59,7 +59,7 @@ test_triangulation(strian)
 #@test cellids_gamma.plus == get_face_to_cell(strian.plus)
 #@test cellids_gamma.minus == get_face_to_cell(strian.minus)
 #
-#ids = get_cell_id(strian)
+#ids = get_cell_to_bgcell(strian)
 #@test isa(ids,SkeletonPair)
 #
 ##using Gridap.Visualization

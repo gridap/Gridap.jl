@@ -29,7 +29,7 @@ For triangulations living in a space of co-dimension 1, the following method can
 In some cases, concrete implementations want to override the default implementation of the following methods:
 
 - [`restrict(f::AbstractArray, trian::Triangulation)`]
-- [`get_cell_id(f::AbstractArray, trian::Triangulation)`]
+- [`get_cell_to_bgcell(f::AbstractArray, trian::Triangulation)`]
 
 The (mandatory) `Triangulation` interface can be tested with
 
@@ -101,17 +101,17 @@ get_background_triangulation(trian::Triangulation,::SubTriangulation) = @abstrac
 #    reindex(a::AbstractArray, trian::Triangulation)
 #"""
 #function reindex(a::AbstractArray,trian::Triangulation)
-#  reindex(a,get_cell_id(trian))
+#  reindex(a,get_cell_to_bgcell(trian))
 #end
 
 """
-    get_cell_id(trian::Triangulation)
+    get_cell_to_bgcell(trian::Triangulation)
 
 Map from the indices in the sub-triangulation to the indices in the background triangulation
 """
-get_cell_id(trian::Triangulation) = get_cell_id(trian,TriangulationStyle(trian))
-get_cell_id(trian::Triangulation,::BackgroundTriangulation) = IdentityVector(num_cells(trian))
-get_cell_id(trian::Triangulation,::SubTriangulation) = @abstractmethod
+get_cell_to_bgcell(trian::Triangulation) = get_cell_to_bgcell(trian,TriangulationStyle(trian))
+get_cell_to_bgcell(trian::Triangulation,::BackgroundTriangulation) = IdentityVector(num_cells(trian))
+get_cell_to_bgcell(trian::Triangulation,::SubTriangulation) = @abstractmethod
 
 #"""
 #    restrict(f::AbstractArray, trian::Triangulation)
@@ -141,7 +141,7 @@ get_cell_ref_map(trian::Triangulation,::SubTriangulation) = @abstractmethod
 #function change_cell_index(a::AbstractArray,trian::Triangulation,::SubTriangulation)
 #  bgtrian = get_background_triangulation(trian)
 #  @assert length(a) == num_cells(bgtrian)
-#  lazy_map(Reindex(a),get_cell_id(trian))
+#  lazy_map(Reindex(a),get_cell_to_bgcell(trian))
 #end
 #
 #"""
@@ -207,7 +207,7 @@ function test_triangulation(trian::Triangulation{Dc,Dp}) where {Dc,Dp}
   @test isa(TriangulationStyle(trian),TriangulationStyle)
   bgtrian = get_background_triangulation(trian)
   @test isa(bgtrian,Triangulation)
-  cell_id = get_cell_id(trian)
+  cell_id = get_cell_to_bgcell(trian)
   @test isa(cell_id,AbstractArray) || isa(cell_id,SkeletonPair)
   cell_ref_map = get_cell_ref_map(trian)
   @test isa(cell_ref_map,AbstractArray) || isa(cell_ref_map,SkeletonPair)

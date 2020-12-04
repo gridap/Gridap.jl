@@ -73,7 +73,7 @@ get_reffes(g::DiscreteModel) = get_reffes(get_grid(g))
 
 get_background_triangulation(g::DiscreteModel) = get_background_triangulation(get_grid(g))
 
-get_cell_id(g::DiscreteModel) = get_cell_id(get_grid(g))
+get_cell_to_bgcell(g::DiscreteModel) = get_cell_to_bgcell(get_grid(g))
 
 get_cell_ref_map(g::DiscreteModel) = get_cell_ref_map(get_grid(g))
 

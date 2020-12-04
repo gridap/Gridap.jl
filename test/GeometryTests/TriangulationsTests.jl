@@ -78,9 +78,9 @@ test_array(lazy_map(evaluate,cell_J,q),j)
 
 #x = get_physical_coordinate(trian)
 
-@test get_cell_id(trian) == collect(1:num_cells(trian))
+@test get_cell_to_bgcell(trian) == collect(1:num_cells(trian))
 r = rand(num_cells(trian))
-@test r === lazy_map(Reindex(r),get_cell_id(trian))
+@test r === lazy_map(Reindex(r),get_cell_to_bgcell(trian))
 
 #using Gridap.Visualization
 #writevtk(trian,"trian",cellfields=["cf1"=>cf1,"cf2"=>cf2,"x"=>x, "gradx"=>∇(x)])

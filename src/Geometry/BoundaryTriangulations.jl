@@ -194,7 +194,7 @@ TriangulationStyle(::Type{<:BoundaryTriangulation}) = SubTriangulation()
 
 get_background_triangulation(trian::BoundaryTriangulation) = trian.cell_trian
 
-get_cell_id(trian::BoundaryTriangulation) = trian.glue.face_to_cell
+get_cell_to_bgcell(trian::BoundaryTriangulation) = trian.glue.face_to_cell
 
 function get_facet_normal(trian::BoundaryTriangulation)
 
