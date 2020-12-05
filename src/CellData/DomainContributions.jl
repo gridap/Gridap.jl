@@ -38,14 +38,14 @@ function add_contribution!(a::DomainContribution,trian::Triangulation,b::Abstrac
   if length(a.dict) > 0
     T = eltype(first(values(a.dict)))
     if T <: AbstractMatrix
-      @assert S<:AbstractMatrix """\n
+      @assert (S<:AbstractMatrix || (S<:Number && op == *)) """\n
       You are trying to add a contribution with eltype $(S) to a DomainContribution that
       stores cell-wise matrices.
 
       Make sure that you are defining the terms in your weak form correclty.
       """
     elseif T <: AbstractVector
-      @assert S<:AbstractVector """\n
+      @assert (S<:AbstractVector || (S<:Number && op == *)) """\n
       You are trying to add a contribution with eltype $(S) to a DomainContribution that
       stores cell-wise vectors.
 
