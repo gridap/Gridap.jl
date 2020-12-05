@@ -36,6 +36,8 @@ a = ∫(u*v)*dΩ + ∫(u*v)*dΓ + ∫(∇(u)⋅∇(v))*dΩ
 
 a = ∫(1)*dΩ + ∫(1)*dΓ
 @test sum(a) ≈ 5
+@test sum(2*a) ≈ 10
+@test sum(a*2) ≈ 10
 
 u = CellField(x->2*x[1],Ω)
 v = CellField(x->3*x[2],Ω)

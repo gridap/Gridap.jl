@@ -93,6 +93,18 @@ function (-)(a::DomainContribution,b::DomainContribution)
   c
 end
 
+function (*)(a::Number,b::DomainContribution)
+  c = copy(b)
+  for (trian,array) in b.dict
+    s = size(get_cell_map(trian))
+    constant_array = Fill(a,s)
+    add_contribution!(c,trian,constant_array,*)
+  end
+  c
+end
+
+(*)(a::DomainContribution,b::Number) = b*a
+
 function get_array(a::DomainContribution)
   @assert num_domains(a) == 1 """\n
   Method get_array(a::DomainContribution) can be called only
@@ -121,5 +133,3 @@ function (*)(a::Integrand,b::LebesgueMeasure)
 end
 
 (*)(b::LebesgueMeasure,a::Integrand) = a*b
-
-
