@@ -27,7 +27,7 @@ U = TrialFESpace(V,u)
 Ω = Triangulation(model)
 
 degree = 2*order
-dΩ = LebesgueMeasure(Ω,degree)
+dΩ = Measure(Ω,degree)
 
 res(u,v) = ∫( ∇(v)⋅(flux∘∇(u)) )*dΩ
 jac(u,du,v) = ∫( ∇(v)⋅(dflux∘(∇(du),∇(u))) )*dΩ

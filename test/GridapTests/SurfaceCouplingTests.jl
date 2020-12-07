@@ -62,11 +62,11 @@ n_Γ = get_normal_vector(Γ)
 order = 2
 degree = 2*order
 
-dΩ = LebesgueMeasure(Ω,degree)
-dΩs = LebesgueMeasure(Ωs,degree)
-dΩf = LebesgueMeasure(Ωf,degree)
-dΛ = LebesgueMeasure(Λ,degree)
-dΓ = LebesgueMeasure(Γ,degree)
+dΩ = Measure(Ω,degree)
+dΩs = Measure(Ωs,degree)
+dΩf = Measure(Ωf,degree)
+dΛ = Measure(Λ,degree)
+dΓ = Measure(Γ,degree)
 
 # FE Spaces
 

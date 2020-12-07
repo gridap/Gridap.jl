@@ -54,7 +54,7 @@ f_real(x) = real(f(x))
 f_imag(x) = imag(f(x))
 
 Ω = Triangulation(model)
-dΩ = LebesgueMeasure(Ω,2)
+dΩ = Measure(Ω,2)
 
 tol = 1e-9
 @test sqrt(sum(∫( abs2(f - fh) )*dΩ)) < tol

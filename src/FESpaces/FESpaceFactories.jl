@@ -51,7 +51,7 @@ function _add_constraint(F,order,constraint)
     V = F
   elseif constraint == :zeromean
     trian = get_triangulation(F)
-    dΩ = LebesgueMeasure(trian,order)
+    dΩ = Measure(trian,order)
     V = ZeroMeanFESpace(F,dΩ)
   else
     @unreachable """\n

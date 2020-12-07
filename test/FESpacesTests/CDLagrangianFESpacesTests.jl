@@ -17,7 +17,7 @@ orders = (2,1)
 order = 2*max(orders...)
 
 Ω = Triangulation(model)
-dΩ = LebesgueMeasure(Ω,order)
+dΩ = Measure(Ω,order)
 
 T = VectorValue{2,Float64}
 

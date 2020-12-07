@@ -1,7 +1,7 @@
 
 struct DiracDelta{D} <: GridapType
   Γ::Triangulation{D}
-  dΓ::LebesgueMeasure
+  dΓ::Measure
 end
 
 function DiracDelta{D}(
@@ -21,7 +21,7 @@ function DiracDelta{D}(
   bgface_to_lcell = Fill(1,num_faces(model,D))
   glue = Geometry.FaceToCellGlue(topo,cell_trian,face_trian,face_to_bgface,bgface_to_lcell)
   Γ = BoundaryTriangulation(face_trian,cell_trian,glue)
-  dΓ = LebesgueMeasure(Γ,degree)
+  dΓ = Measure(Γ,degree)
   DiracDelta(Γ,dΓ)
 end
 
@@ -46,7 +46,7 @@ function DiracDelta{D}(
   """
   face_to_mask = get_face_mask(labeling,tags,D)
   DiracDelta{D}(model,face_to_mask,degree)
-end 
+end
 
 function DiracDelta{D}(model::DiscreteModel,degree::Integer;tags) where D
   labeling = get_face_labeling(model)
@@ -74,4 +74,3 @@ end
 function get_triangulation(d::DiracDelta)
   d.Γ
 end
-
