@@ -28,7 +28,7 @@ U = TrialFESpace(V,u)
 
 degree = 3*order-1
 trian = get_triangulation(model)
-dΩ = LebesgueMeasure(trian,degree)
+dΩ = Measure(trian,degree)
 
 a(u,du,v) = ∫( ∇(v)⋅(ν∘(u,identity)*∇(du)) )*dΩ
 res(u,v) = a(u,v,u) - ∫(v*f)*dΩ

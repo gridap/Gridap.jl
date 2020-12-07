@@ -10,7 +10,7 @@ function _gradient(f,uh,fuh::AbstractArray)
   In order to perform AD on a Function taking a FEFunction as argument, such Function
   has to return a DomainContribution.
 
-  Make sure that you are using a LebesgueMeasure instead of a CellQuadrature to perform integration.
+  Make sure that you are using a Measure instead of a CellQuadrature to perform integration.
   """
 end
 
@@ -36,7 +36,7 @@ function _jacobian(f,uh,fuh::AbstractArray)
   In order to perform AD on a Function taking a FEFunction as argument, such Function
   has to return a DomainContribution.
 
-  Make sure that you are using a LebesgueMeasure instead of a CellQuadrature to perform integration.
+  Make sure that you are using a Measure instead of a CellQuadrature to perform integration.
   """
 end
 
@@ -62,7 +62,7 @@ function _hessian(f,uh,fuh::AbstractArray)
   In order to perform AD on a Function taking a FEFunction as argument, such Function
   has to return a DomainContribution.
 
-  Make sure that you are using a LebesgueMeasure instead of a CellQuadrature to perform integration.
+  Make sure that you are using a Measure instead of a CellQuadrature to perform integration.
   """
 end
 

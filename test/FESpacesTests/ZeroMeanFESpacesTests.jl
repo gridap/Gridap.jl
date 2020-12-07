@@ -16,7 +16,7 @@ order = 2
 
 trian = get_triangulation(model)
 degree = order
-dΩ = LebesgueMeasure(trian,degree)
+dΩ = Measure(trian,degree)
 
 _V = FESpace(model,ReferenceFE(:Lagrangian,Float64,order);conformity=:L2)
 

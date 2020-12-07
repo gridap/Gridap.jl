@@ -22,9 +22,9 @@ const γ = 10
 Λ = SkeletonTriangulation(model)
 
 degree = order
-dΩ = LebesgueMeasure(Ω,degree)
-dΓ = LebesgueMeasure(Γ,degree)
-dΛ = LebesgueMeasure(Λ,degree)
+dΩ = Measure(Ω,degree)
+dΓ = Measure(Γ,degree)
+dΛ = Measure(Λ,degree)
 
 n_Γ = get_normal_vector(Γ)
 n_Λ = get_normal_vector(Λ)

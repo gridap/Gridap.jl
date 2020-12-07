@@ -32,10 +32,10 @@ du = get_cell_shapefuns_trial(U)
 
 degree = 2
 Ω = Triangulation(model)
-dΩ = LebesgueMeasure(Ω,degree)
+dΩ = Measure(Ω,degree)
 
 Γ = BoundaryTriangulation(model)
-dΓ = LebesgueMeasure(Γ,degree)
+dΓ = Measure(Γ,degree)
 
 a(u,v) = ∫(∇(u)⋅∇(v))*dΩ + ∫(u*v)*dΓ
 ℓ(v) = ∫(v)*dΩ

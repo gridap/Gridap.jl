@@ -101,25 +101,23 @@ function get_array(a::DomainContribution)
   a.dict[first(keys(a.dict))]
 end
 
-struct LebesgueMeasure <: GridapType
+struct Measure <: GridapType
   quad::CellQuadrature
 end
 
-get_cell_points(a::LebesgueMeasure) = get_cell_points(a.quad)
+get_cell_points(a::Measure) = get_cell_points(a.quad)
 
-LebesgueMeasure(args...) = LebesgueMeasure(CellQuadrature(args...))
+Measure(args...) = Measure(CellQuadrature(args...))
 
-function integrate(f,b::LebesgueMeasure)
+function integrate(f,b::Measure)
   c = integrate(f,b.quad)
   cont = DomainContribution()
   add_contribution!(cont,b.quad.trian,c)
   cont
 end
 
-function (*)(a::Integrand,b::LebesgueMeasure)
+function (*)(a::Integrand,b::Measure)
   integrate(a.object,b)
 end
 
-(*)(b::LebesgueMeasure,a::Integrand) = a*b
-
-
+(*)(b::Measure,a::Integrand) = a*b
