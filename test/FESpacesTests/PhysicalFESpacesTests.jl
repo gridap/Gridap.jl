@@ -18,7 +18,7 @@ model = CartesianDiscreteModel(domain,partition)
 order = 1
 
 Ω = Triangulation(model)
-dΩ = LebesgueMeasure(Ω,order)
+dΩ = Measure(Ω,order)
 
 cell_fe = FiniteElements(ReferenceDomain(),model,:Lagrangian,Float64,order)
 V = FESpace(model,cell_fe)

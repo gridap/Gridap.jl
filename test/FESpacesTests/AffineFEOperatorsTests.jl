@@ -58,7 +58,7 @@ f_fun(x) = 0
 V = FESpace(model,reffe;dirichlet_tags="boundary")
 U = TrialFESpace(V,u_sol)
 
-dΩ = LebesgueMeasure(quad)
+dΩ = Measure(quad)
 
 a(u,v) = ∫(∇(v)⊙∇(u))*dΩ
 l(v) = ∫(v*f_fun)*dΩ

@@ -57,9 +57,9 @@ vch = interpolate(v,Vc)
 Ω = Triangulation(model)
 Γ = BoundaryTriangulation(model,tags="neumann")
 Λ = SkeletonTriangulation(model)
-dΩ = LebesgueMeasure(Ω,2)
-dΓ = LebesgueMeasure(Γ,2)
-dΛ = LebesgueMeasure(Λ,2)
+dΩ = Measure(Ω,2)
+dΓ = Measure(Γ,2)
+dΛ = Measure(Λ,2)
 
 #using Gridap.Visualization
 #writevtk(Ω,"trian",nsubcells=10,cellfields=["vh"=>vh,"vch"=>vch])

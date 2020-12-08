@@ -116,7 +116,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish Geometry InterfaceTriangulation
 
 @publish CellData CellQuadrature
-@publish CellData LebesgueMeasure
+@publish CellData Measure
 @publish CellData DomainStyle
 @publish CellData ReferenceDomain
 @publish CellData PhysicalDomain

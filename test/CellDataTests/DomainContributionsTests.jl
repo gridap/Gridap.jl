@@ -21,9 +21,9 @@ model = simplexify(CartesianDiscreteModel(domain,cells))
 n_Λ = get_normal_vector(Λ)
 
 degree = 2
-dΩ = LebesgueMeasure(Ω,degree)
-dΓ = LebesgueMeasure(Γ,degree)
-dΛ = LebesgueMeasure(Λ,degree)
+dΩ = Measure(Ω,degree)
+dΓ = Measure(Γ,degree)
+dΛ = Measure(Λ,degree)
 
 v = GenericCellField(get_cell_shapefuns(Ω),Ω,ReferenceDomain())
 u = GenericCellField(lazy_map(transpose,get_cell_data(v)),v.trian,v.domain_style)

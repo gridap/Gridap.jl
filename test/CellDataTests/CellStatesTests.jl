@@ -15,7 +15,7 @@ cells = (3,3)
 model = CartesianDiscreteModel(domain,cells)
 
 Ω = Triangulation(model)
-dΩ = LebesgueMeasure(Ω,2)
+dΩ = Measure(Ω,2)
 
 f = CellState{Float64}(undef,dΩ)
 @test f.values[1] !== f.values[2]

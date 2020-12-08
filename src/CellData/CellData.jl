@@ -63,7 +63,7 @@ export num_domains
 export get_domains
 export get_contribution
 export add_contribution!
-export LebesgueMeasure
+export Measure
 
 export attach_dirichlet
 export attach_constraints_rows
