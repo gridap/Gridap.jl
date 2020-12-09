@@ -32,7 +32,7 @@ uh = interpolate(u,U)
 e = u - uh
 
 Ω = Triangulation(model)
-dΩ = LebesgueMeasure(Ω,order)
+dΩ = Measure(Ω,order)
 
 el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
 @test el2 < 1.0e-10

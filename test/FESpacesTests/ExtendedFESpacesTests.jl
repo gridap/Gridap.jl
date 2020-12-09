@@ -52,10 +52,10 @@ model_out = DiscreteModel(model,oldcell_to_is_out)
 Γ = InterfaceTriangulation(model_in,model_out)
 
 degree = 2
-dΩ = LebesgueMeasure(Ω,degree)
-dΩ_in = LebesgueMeasure(Ω_in,degree)
-dΩ_out = LebesgueMeasure(Ω_out,degree)
-dΓ = LebesgueMeasure(Γ,degree)
+dΩ = Measure(Ω,degree)
+dΩ_in = Measure(Ω_in,degree)
+dΩ_out = Measure(Ω_out,degree)
+dΓ = Measure(Γ,degree)
 
 u(x) = x[1]+1
 

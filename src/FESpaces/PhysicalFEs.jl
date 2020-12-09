@@ -45,9 +45,9 @@ function FiniteElements(
   ctype_ref_dof_basis = map(get_dof_basis,ctype_reffe)
   ctype_ref_nodes = map(i->i.nodes,ctype_ref_dof_basis)
   cell_ref_nodes = expand_cell_data(ctype_ref_nodes,cell_ctype)
-  cell_nodes = lazy_map(evaluate,cell_map,cell_ref_nodes)
+  cell_node_ids = lazy_map(evaluate,cell_map,cell_ref_nodes)
   cell_ref_dof_basis = expand_cell_data(ctype_ref_dof_basis,cell_ctype)
-  cell_dof_basis = lazy_map(LagrangianDofBasis,cell_ref_dof_basis,cell_nodes)
+  cell_dof_basis = lazy_map(LagrangianDofBasis,cell_ref_dof_basis,cell_node_ids)
 
   # Shape functions
   cell_dof_values = lazy_map(evaluate,cell_dof_basis,cell_prebasis)
@@ -73,4 +73,3 @@ function FiniteElements(
     cell_dof_basis_domain,
     max_order)
 end
-

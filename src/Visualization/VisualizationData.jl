@@ -172,7 +172,7 @@ get_cell_type(g::VisualizationGrid) = get_cell_type(g.sub_grid)
 
 get_node_coordinates(g::VisualizationGrid) = get_node_coordinates(g.sub_grid)
 
-get_cell_nodes(g::VisualizationGrid) = get_cell_nodes(g.sub_grid)
+get_cell_node_ids(g::VisualizationGrid) = get_cell_node_ids(g.sub_grid)
 
 function VisualizationGrid(trian::Triangulation, ref_grids::AbstractArray{<:UnstructuredGrid})
 
@@ -184,7 +184,7 @@ function VisualizationGrid(trian::Triangulation, ref_grids::AbstractArray{<:Unst
 
   node_to_coords, cell_to_offset = _prepare_node_to_coords(cell_to_points)
 
-  ctype_to_scell_to_snodes = map(get_cell_nodes,ref_grids)
+  ctype_to_scell_to_snodes = map(get_cell_node_ids,ref_grids)
 
   sub_cell_to_nodes, sub_cell_to_cell = _prepare_sub_cell_to_nodes(
     cell_to_ctype,ctype_to_scell_to_snodes,cell_to_offset)
@@ -315,4 +315,3 @@ function visualization_data(x::CellPoint,filename; cellfields=Dict())
   cell_to_points = get_array(x)
   visualization_data(cell_to_points, filename, nodaldata=nodaldata)
 end
-

@@ -2,9 +2,11 @@
 """
 """
 struct FaceToCellGlue{A,B,C,D} <: GridapType
-  face_to_cell::A
+  face_to_bgface::A
+  bgface_to_lcell::B
+  face_to_cell::Vector{Int32}
   face_to_lface::Vector{Int8}
-  face_to_lcell::B
+  face_to_lcell::Vector{Int8}
   face_to_ftype::C
   cell_to_ctype::D
   cell_to_lface_to_pindex::Table{Int8,Vector{Int8},Vector{Int32}}
@@ -19,17 +21,19 @@ function FaceToCellGlue(
   bgface_to_lcell::AbstractVector)
 
   D = num_cell_dims(cell_trian)
-  bgface_to_cells = get_faces(topo,D-1,D)
-  cell_to_bgfaces = get_faces(topo,D,D-1)
-  cell_to_lface_to_pindex = Table(get_cell_permutations(topo,D-1))
+  cD = num_cell_dims(face_trian)
+  bgface_to_cells = get_faces(topo,cD,D)
+  cell_to_bgfaces = get_faces(topo,D,cD)
+  cell_to_lface_to_pindex = Table(get_cell_permutations(topo,cD))
 
   bgface_to_cell = lazy_map(getindex,bgface_to_cells, bgface_to_lcell)
   bgface_to_lface = find_local_index(bgface_to_cell, cell_to_bgfaces)
-  face_to_cell = collect(Int,lazy_map(Reindex(bgface_to_cell), face_to_bgface))
+
+  face_to_cell = collect(Int32,lazy_map(Reindex(bgface_to_cell), face_to_bgface))
   face_to_lface = collect(Int8,lazy_map(Reindex(bgface_to_lface), face_to_bgface))
   face_to_lcell = collect(Int8,lazy_map(Reindex(bgface_to_lcell), face_to_bgface))
 
-  f = (p)->fill(Int8(UNSET),num_faces(p,D-1))
+  f = (p)->fill(Int8(UNSET),num_faces(p,cD))
   ctype_to_lface_to_ftype = map( f, get_reffes(cell_trian) )
   face_to_ftype = get_cell_type(face_trian)
   cell_to_ctype = get_cell_type(cell_trian)
@@ -42,6 +46,8 @@ function FaceToCellGlue(
     cell_to_ctype)
 
   FaceToCellGlue(
+    face_to_bgface,
+    bgface_to_lcell,
     face_to_cell,
     face_to_lface,
     face_to_lcell,
@@ -66,7 +72,7 @@ function _fill_ctype_to_lface_to_ftype!(
 end
 
 function get_children(n::TreeNode, a::FaceToCellGlue)
-  ( 
+  (
     similar_tree_node(n,a.face_to_cell),
     similar_tree_node(n,a.face_to_lface),
     similar_tree_node(n,a.face_to_lcell),
@@ -91,7 +97,7 @@ struct BoundaryTriangulation{Dc,Dp,Gf,Gc,G} <: Triangulation{Dc,Dp}
 
     @assert TriangulationStyle(cell_trian) == BackgroundTriangulation()
     @assert num_point_dims(face_trian) == num_point_dims(cell_trian)
-    @assert num_cell_dims(face_trian) == num_cell_dims(cell_trian) - 1
+    #@assert num_cell_dims(face_trian) == num_cell_dims(cell_trian) - 1
 
     Dc = num_cell_dims(face_trian)
     Dp = num_point_dims(face_trian)
@@ -178,7 +184,7 @@ get_cell_type(trian::BoundaryTriangulation) = get_cell_type(trian.face_trian)
 
 get_node_coordinates(trian::BoundaryTriangulation) = get_node_coordinates(trian.face_trian)
 
-get_cell_nodes(trian::BoundaryTriangulation) = get_cell_nodes(trian.face_trian)
+get_cell_node_ids(trian::BoundaryTriangulation) = get_cell_node_ids(trian.face_trian)
 
 get_cell_map(trian::BoundaryTriangulation) = get_cell_map(trian.face_trian)
 
@@ -188,7 +194,7 @@ TriangulationStyle(::Type{<:BoundaryTriangulation}) = SubTriangulation()
 
 get_background_triangulation(trian::BoundaryTriangulation) = trian.cell_trian
 
-get_cell_id(trian::BoundaryTriangulation) = trian.glue.face_to_cell
+get_cell_to_bgcell(trian::BoundaryTriangulation) = trian.glue.face_to_cell
 
 function get_facet_normal(trian::BoundaryTriangulation)
 
@@ -441,74 +447,4 @@ end
 #  else
 #    @notimplemented
 #  end
-#end
-
-
-
-
-
-
-
-
-"""
-"""
-function get_face_to_cell(trian::BoundaryTriangulation)
-  @abstractmethod
-end
-
-#"""
-#"""
-#function get_face_to_lface(trian::BoundaryTriangulation)
-#  @abstractmethod
-#end
-#
-#"""
-#"""
-#function get_face_to_cell_map(trian::BoundaryTriangulation)
-#  @abstractmethod
-#end
-#
-#"""
-#"""
-#function get_normal_vector(trian::BoundaryTriangulation)
-#  @abstractmethod
-#end
-#
-#"""
-#"""
-#function get_face_to_face(trian::BoundaryTriangulation)
-#  @abstractmethod
-#end
-#
-#"""
-#"""
-#function get_cell_around(trian::BoundaryTriangulation)
-#  @abstractmethod
-#end
-#
-#
-## Default API
-#
-#function restrict(f::AbstractArray, trian::BoundaryTriangulation)
-#  compose_field_arrays(reindex(f,trian), get_face_to_cell_map(trian))
-#end
-#
-#function get_cell_id(trian::BoundaryTriangulation)
-#  get_face_to_cell(trian)
-#end
-#
-#function BoundaryTriangulation(model::DiscreteModel,names::Vector{String})
-#  labeling = get_face_labeling(model)
-#  tags = get_tags_from_names(labeling,names)
-#  BoundaryTriangulation(model,tags)
-#end
-#
-#function BoundaryTriangulation(model::DiscreteModel,tag::Union{Int,String})
-#  tags = [tag,]
-#  BoundaryTriangulation(model,tags)
-#end
-#
-#function _convert_to_face_to_masks(labeling,tags)
-#  D = num_cell_dims(model)
-#  face_to_mask = get_face_mask(labeling,tags,D-1)
 #end

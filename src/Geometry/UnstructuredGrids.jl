@@ -2,21 +2,22 @@
 """
     struct UnstructuredGrid{Dc,Dp,Tp,Ti,O} <: Grid{Dc,Dp}
       node_coordinates::Vector{Point{Dp,Tp}}
-      cell_nodes::Table{Ti,Int32}
+      cell_node_ids::Table{Ti,Int32}
       reffes::Vector{<:LagrangianRefFE{Dc}}
       cell_types::Vector{Int8}
     end
 """
 struct UnstructuredGrid{Dc,Dp,Tp,O} <: Grid{Dc,Dp}
   node_coordinates::Vector{Point{Dp,Tp}}
-  cell_nodes::Table{Int32,Vector{Int32},Vector{Int32}}
+  cell_node_ids::Table{Int32,Vector{Int32},Vector{Int32}}
   reffes::Vector{LagrangianRefFE{Dc}}
   cell_types::Vector{Int8}
   orientation_style::O
+  cell_map
   @doc """
       function UnstructuredGrid(
         node_coordinates::Vector{Point{Dp,Tp}},
-        cell_nodes::Table{Ti},
+        cell_node_ids::Table{Ti},
         reffes::Vector{<:LagrangianRefFE{Dc}},
         cell_types::Vector,
         orientation_style::OrientationStyle=NonOriented()) where {Dc,Dp,Tp,Ti}
@@ -26,13 +27,30 @@ struct UnstructuredGrid{Dc,Dp,Tp,O} <: Grid{Dc,Dp}
   """
   function UnstructuredGrid(
     node_coordinates::Vector{Point{Dp,Tp}},
-    cell_nodes::Table{Ti},
+    cell_node_ids::Table{Ti},
     reffes::Vector{<:LagrangianRefFE{Dc}},
     cell_types::Vector,
     orientation_style::OrientationStyle=NonOriented()) where {Dc,Dp,Tp,Ti}
+
+    cell_map = _compute_cell_map(node_coordinates,cell_node_ids,reffes,cell_types)
     B = typeof(orientation_style)
-    new{Dc,Dp,Tp,B}(node_coordinates,cell_nodes,reffes,cell_types,orientation_style)
+    new{Dc,Dp,Tp,B}(
+      node_coordinates,
+      cell_node_ids,
+      reffes,
+      cell_types,
+      orientation_style,
+      cell_map)
   end
+end
+
+function _compute_cell_map(node_coords,cell_node_ids,ctype_reffe,cell_ctype)
+  cell_coords = lazy_map(Broadcasting(Reindex(node_coords)),cell_node_ids)
+  ctype_shapefuns = map(get_shapefuns,ctype_reffe)
+  cell_shapefuns = expand_cell_data(ctype_shapefuns,cell_ctype)
+  cell_map = lazy_map(linear_combination,cell_coords,cell_shapefuns)
+  Fields.MemoArray(cell_map)
+  #cell_map
 end
 
 """
@@ -41,11 +59,11 @@ end
 function UnstructuredGrid(grid::Grid)
   @assert is_regular(grid) "UnstructuredGrid constructor only for regular grids"
   node_coordinates = collect1d(get_node_coordinates(grid))
-  cell_nodes = Table(get_cell_nodes(grid))
+  cell_node_ids = Table(get_cell_node_ids(grid))
   reffes = get_reffes(grid)
   cell_types = collect1d(get_cell_type(grid))
   orien = OrientationStyle(grid)
-  UnstructuredGrid(node_coordinates,cell_nodes,reffes,cell_types,orien)
+  UnstructuredGrid(node_coordinates,cell_node_ids,reffes,cell_types,orien)
 end
 
 function UnstructuredGrid(grid::UnstructuredGrid)
@@ -61,8 +79,9 @@ get_cell_type(g::UnstructuredGrid) = g.cell_types
 
 get_node_coordinates(g::UnstructuredGrid) = g.node_coordinates
 
-get_cell_nodes(g::UnstructuredGrid) = g.cell_nodes
+get_cell_node_ids(g::UnstructuredGrid) = g.cell_node_ids
 
+get_cell_map(g::UnstructuredGrid) = g.cell_map
 
 # From ReferenceFE
 
@@ -73,10 +92,10 @@ Build a grid with a single cell that is the given reference FE itself
 """
 function UnstructuredGrid(reffe::LagrangianRefFE)
   node_coordinates = get_node_coordinates(reffe)
-  cell_nodes = Table([collect(1:num_nodes(reffe)),])
+  cell_node_ids = Table([collect(1:num_nodes(reffe)),])
   reffes = [reffe,]
   cell_types = [1,]
-  UnstructuredGrid(node_coordinates,cell_nodes,reffes,cell_types)
+  UnstructuredGrid(node_coordinates,cell_node_ids,reffes,cell_types)
 end
 
 # From Polytope
@@ -92,14 +111,14 @@ end
 """
 function UnstructuredGrid(::Type{ReferenceFE{d}},p::Polytope) where d
   node_coordinates = get_vertex_coordinates(p)
-  cell_nodes = Table(get_faces(p,d,0))
+  cell_node_ids = Table(get_faces(p,d,0))
   reffaces = get_reffaces(Polytope{d},p)
   cell_type = get_face_type(p,d)
   order = 1
   reffes = map( (f)-> LagrangianRefFE(Float64,f,order), reffaces)
   UnstructuredGrid(
     node_coordinates,
-    cell_nodes,
+    cell_node_ids,
     reffes,
     cell_type)
 end
@@ -112,13 +131,13 @@ end
 function UnstructuredGrid(x::AbstractArray{<:Point})
   np = length(x)
   node_coords = collect1d(x)
-  cell_nodes = identity_table(Int32,Int32,np)
+  cell_node_ids = identity_table(Int32,Int32,np)
   cell_type = fill(1,np)
   order = 1
   reffes = [LagrangianRefFE(Float64,VERTEX,order),]
   UnstructuredGrid(
     node_coords,
-    cell_nodes,
+    cell_node_ids,
     reffes,
     cell_type)
 end
@@ -130,7 +149,7 @@ function to_dict(grid::UnstructuredGrid)
   x = get_node_coordinates(grid)
   dict[:node_coordinates] = reinterpret(eltype(eltype(x)),x)
   dict[:Dp] = num_point_dims(grid)
-  dict[:cell_nodes] = to_dict(get_cell_nodes(grid))
+  dict[:cell_node_ids] = to_dict(get_cell_node_ids(grid))
   dict[:reffes] = map(to_dict, get_reffes(grid))
   dict[:cell_type] = get_cell_type(grid)
   dict[:orientation] = is_oriented(grid)
@@ -142,13 +161,13 @@ function from_dict(::Type{UnstructuredGrid},dict::Dict{Symbol,Any})
   T = eltype(x)
   Dp = dict[:Dp]
   node_coordinates::Vector{Point{Dp,T}} = reinterpret(Point{Dp,T},x)
-  cell_nodes = from_dict(Table{Int32,Vector{Int32},Vector{Int32}},dict[:cell_nodes])
+  cell_node_ids = from_dict(Table{Int32,Vector{Int32},Vector{Int32}},dict[:cell_node_ids])
   reffes = [ from_dict(LagrangianRefFE,reffe) for reffe in dict[:reffes]]
   cell_type::Vector{Int8} = dict[:cell_type]
   O::Bool = dict[:orientation]
   UnstructuredGrid(
     node_coordinates,
-    cell_nodes,
+    cell_node_ids,
     reffes,
     cell_type,
     O ? Oriented() : NonOriented())
@@ -162,7 +181,7 @@ function simplexify(grid::UnstructuredGrid)
   @notimplementedif get_order(reffe) != order
   p = get_polytope(reffe)
   ltcell_to_lpoints, simplex = simplexify(p)
-  cell_to_points = get_cell_nodes(grid)
+  cell_to_points = get_cell_node_ids(grid)
   tcell_to_points = _refine_grid_connectivity(cell_to_points, ltcell_to_lpoints)
   ctype_to_reffe = [LagrangianRefFE(Float64,simplex,order),]
   tcell_to_ctype = fill(Int8(1),length(tcell_to_points))
@@ -252,5 +271,3 @@ function _refine_grid_connectivity!(
   end
 
 end
-
-

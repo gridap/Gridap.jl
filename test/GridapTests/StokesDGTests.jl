@@ -41,9 +41,9 @@ X = MultiFieldFESpace([U,P])
 Λ = SkeletonTriangulation(model)
 
 degree = 2*order
-dΩ = LebesgueMeasure(Ω,degree)
-dΓ = LebesgueMeasure(Γ,degree)
-dΛ = LebesgueMeasure(Λ,degree)
+dΩ = Measure(Ω,degree)
+dΓ = Measure(Γ,degree)
+dΛ = Measure(Λ,degree)
 
 n_Γ = get_normal_vector(Γ)
 n_Λ = get_normal_vector(Λ)
@@ -51,7 +51,7 @@ n_Λ = get_normal_vector(Λ)
 a((u,p),(v,q)) =
   ∫( ∇(v)⊙∇(u) - ∇(q)⋅u + v⋅∇(p) )*dΩ +
   ∫( (γ/h)*v⋅u - v⋅(n_Γ⋅∇(u)) - (n_Γ⋅∇(v))⋅u + 2*(q*n_Γ)⋅u )*dΓ +
-  ∫(  
+  ∫(
     (γ/h)*jump(v⊗n_Λ)⊙jump(u⊗n_Λ) -
       jump(v⊗n_Λ)⊙mean(∇(u)) -
       mean(∇(v))⊙jump(u⊗n_Λ)  +

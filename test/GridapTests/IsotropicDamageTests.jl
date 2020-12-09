@@ -84,7 +84,7 @@ function main(;n,nsteps)
 
   degree = 2*order
   Ω = Triangulation(model)
-  dΩ = LebesgueMeasure(Ω,degree)
+  dΩ = Measure(Ω,degree)
 
   r = CellState(r_0,dΩ)
   d = CellState(0.0,dΩ)

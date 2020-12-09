@@ -81,14 +81,14 @@ end
 
 """
 Subtype of `AbstractArray` which is the result of `lazy_map`. It represents the
-result of lazy_maping a `Map` to a set of arrays that
+result of lazy_mapping a `Map` to a set of arrays that
 contain the mapping arguments. This struct makes use of the cache provided
 by the mapping in order to compute its indices (thus allowing to prevent
 allocation). The array is lazy, i.e., the values are only computed on
 demand. It extends the `AbstractArray` API with two methods:
 
    `array_cache(a::AbstractArray)`
-   `getindex!(a::AbstractArray,i...)`
+   `getindex!(cache,a::AbstractArray,i...)`
 """
 struct LazyArray{G,T,N,F} <: AbstractArray{T,N}
   g::G
@@ -156,29 +156,30 @@ function _array_cache!(hash::Dict,a::LazyArray)
   (cg, cgi, cf), IndexItemPair(index, item)
 end
 
-@inline getindex!(cache, a::LazyArray, i::Integer) = _getindex_optimized!(cache,a,i)
-
-@inline function getindex!(cache, a::LazyArray{G,T,N}, i::Vararg{Integer,N}) where {G,T,N}
-  _getindex_optimized!(cache,a,i...)
-end
-
-@inline function _getindex_optimized!(cache, a::LazyArray, i...)
+@inline function getindex!(cache, a::LazyArray, i::Integer)
   _cache, index_and_item = cache
-  index = LinearIndices(a)[i...]
+  index = LinearIndices(a)[i]
   if index_and_item.index != index
-    item = _getindex!(_cache,a,i...)
+    cg, cgi, cf = _cache
+    gi = getindex!(cg, a.g, i)
+    fi = map((cj,fj) -> getindex!(cj,fj,i),cf,a.f)
     index_and_item.index = index
-    index_and_item.item = item
+    index_and_item.item = evaluate!(cgi, gi, fi...)
   end
   index_and_item.item
 end
 
-@inline function _getindex!(cache, a::LazyArray, i...)
-  cg, cgi, cf = cache
-  gi = getindex!(cg, a.g, i...)
-  fi = map((cj,fj) -> getindex!(cj,fj,i...),cf,a.f)
-  vi = evaluate!(cgi, gi, fi...)
-  vi
+@inline function getindex!(cache, a::LazyArray{G,T,N}, i::Vararg{Integer,N}) where {G,T,N}
+  _cache, index_and_item = cache
+  index = LinearIndices(a)[i...]
+  if index_and_item.index != index
+    cg, cgi, cf = _cache
+    gi = getindex!(cg, a.g, i...)
+    fi = map((cj,fj) -> getindex!(cj,fj,i...),cf,a.f)
+    index_and_item.index = index
+    index_and_item.item = evaluate!(cgi, gi, fi...)
+  end
+  index_and_item.item
 end
 
 function Base.getindex(a::LazyArray, i::Integer)
@@ -276,4 +277,3 @@ Base.IndexStyle(::Type{<:ArrayWithCounter{T,N,A}}) where {T,A,N} = IndexStyle(A)
 function resetcounter!(a::ArrayWithCounter)
   fill!(a.counter,zero(eltype(a.counter)))
 end
-

@@ -9,8 +9,8 @@ function _gradient(f,uh,fuh::AbstractArray)
   @unreachable """\n
   In order to perform AD on a Function taking a FEFunction as argument, such Function
   has to return a DomainContribution.
-  
-  Make sure that you are using a LebesgueMeasure instead of a CellQuadrature to perform integration.
+
+  Make sure that you are using a Measure instead of a CellQuadrature to perform integration.
   """
 end
 
@@ -19,7 +19,7 @@ function _gradient(f,uh,fuh::DomainContribution)
   for trian in get_domains(fuh)
     g = _change_argument(f,trian,uh)
     cell_u = get_cell_dof_values(uh)
-    cell_id = get_cell_id(trian)
+    cell_id = get_cell_to_bgcell(trian)
     cell_grad = autodiff_array_gradient(g,cell_u,cell_id)
     add_contribution!(terms,trian,cell_grad)
   end
@@ -35,8 +35,8 @@ function _jacobian(f,uh,fuh::AbstractArray)
   @unreachable """\n
   In order to perform AD on a Function taking a FEFunction as argument, such Function
   has to return a DomainContribution.
-  
-  Make sure that you are using a LebesgueMeasure instead of a CellQuadrature to perform integration.
+
+  Make sure that you are using a Measure instead of a CellQuadrature to perform integration.
   """
 end
 
@@ -45,7 +45,7 @@ function _jacobian(f,uh,fuh::DomainContribution)
   for trian in get_domains(fuh)
     g = _change_argument(f,trian,uh)
     cell_u = get_cell_dof_values(uh)
-    cell_id = get_cell_id(trian)
+    cell_id = get_cell_to_bgcell(trian)
     cell_grad = autodiff_array_jacobian(g,cell_u,cell_id)
     add_contribution!(terms,trian,cell_grad)
   end
@@ -61,8 +61,8 @@ function _hessian(f,uh,fuh::AbstractArray)
   @unreachable """\n
   In order to perform AD on a Function taking a FEFunction as argument, such Function
   has to return a DomainContribution.
-  
-  Make sure that you are using a LebesgueMeasure instead of a CellQuadrature to perform integration.
+
+  Make sure that you are using a Measure instead of a CellQuadrature to perform integration.
   """
 end
 
@@ -71,7 +71,7 @@ function _hessian(f,uh,fuh::DomainContribution)
   for trian in get_domains(fuh)
     g = _change_argument(f,trian,uh)
     cell_u = get_cell_dof_values(uh)
-    cell_id = get_cell_id(trian)
+    cell_id = get_cell_to_bgcell(trian)
     cell_grad = autodiff_array_hessian(g,cell_u,cell_id)
     add_contribution!(terms,trian,cell_grad)
   end
@@ -87,5 +87,3 @@ function _change_argument(f,trian,uh)
   end
   g
 end
-
-

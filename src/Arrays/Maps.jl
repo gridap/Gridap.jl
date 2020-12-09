@@ -49,7 +49,7 @@ per thread).
 
       Gridap.Arrays.evaluate!(cache,f,x...)
 
-  has not beed defined for the requested types (see stack trace).
+  has not been defined for the requested types (see stack trace).
   """
 end
 
@@ -129,7 +129,7 @@ function `f`.
 # Example
 
 ```jldoctest
-using Gridap.Maps
+using Gridap.Arrays
 
 a = [3,2]
 b = [2,1]
@@ -160,6 +160,15 @@ end
   r = _prepare_cache!(cache,x...)
   a = r.array
   broadcast!(f.f,a,x...)
+  a
+end
+
+@inline function evaluate!(cache,f::Broadcasting,x::AbstractArray{<:Number})
+  setsize!(cache,size(x))
+  a = cache.array
+  @inbounds for i in eachindex(x)
+    a[i] = f.f(x[i])
+  end
   a
 end
 

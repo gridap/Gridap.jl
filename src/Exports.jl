@@ -99,6 +99,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish Geometry get_cell_coordinates
 @publish Geometry get_cell_ref_coordinates
 @publish Geometry get_cell_map
+@publish Geometry get_cell_to_bgcell
 @publish Geometry CartesianGrid
 @publish Geometry CartesianDiscreteModel
 @publish Geometry DiscreteModel
@@ -115,7 +116,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish Geometry InterfaceTriangulation
 
 @publish CellData CellQuadrature
-@publish CellData LebesgueMeasure
+@publish CellData Measure
 @publish CellData DomainStyle
 @publish CellData ReferenceDomain
 @publish CellData PhysicalDomain
@@ -129,6 +130,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 using Gridap.CellData: ∫; export ∫
 @publish CellData get_cell_measure
 @publish CellData get_physical_coordinate
+@publish CellData DiracDelta
 
 @publish FESpaces FESpace
 @publish FESpaces TrialFESpace

@@ -53,8 +53,8 @@ X = MultiFieldFESpace([U,P])
 n_Γ = get_normal_vector(Γ)
 
 degree = order
-dΩ = LebesgueMeasure(Ω,degree)
-dΓ = LebesgueMeasure(Γ,degree)
+dΩ = Measure(Ω,degree)
+dΓ = Measure(Γ,degree)
 
 a((u,p),(v,q)) = ∫( ∇(v)⊙∇(u) - (∇⋅v)*p + q*(∇⋅u) )*dΩ
 

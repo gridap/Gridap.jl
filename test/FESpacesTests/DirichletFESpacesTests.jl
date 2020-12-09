@@ -32,7 +32,7 @@ test_single_field_fe_space(Ud,matvecdata,matdata,vecdata)
 
 trian = Triangulation(model)
 degree = 2*order
-dΩ = LebesgueMeasure(trian,degree)
+dΩ = Measure(trian,degree)
 
 a(u,v) = ∫( u*v )*dΩ
 l(v) = ∫( v*0 )*dΩ

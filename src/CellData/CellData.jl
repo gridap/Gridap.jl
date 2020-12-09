@@ -63,7 +63,7 @@ export num_domains
 export get_domains
 export get_contribution
 export add_contribution!
-export LebesgueMeasure
+export Measure
 
 export attach_dirichlet
 export attach_constraints_rows
@@ -74,6 +74,8 @@ export get_physical_coordinate
 export CellState
 export update_state!
 
+export DiracDelta
+
 include("CellDataInterface.jl")
 
 include("CellFields.jl")
@@ -83,6 +85,8 @@ include("CellQuadratures.jl")
 include("CellStates.jl")
 
 include("DomainContributions.jl")
+
+include("DiracDeltas.jl")
 
 include("CellDofs.jl")
 

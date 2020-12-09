@@ -55,9 +55,9 @@ n_Γ = get_normal_vector(Γ)
 
 # Lebesgue measures
 degree = 2*order
-dΩ = LebesgueMeasure(Ω,degree)
-dΓ = LebesgueMeasure(Γ,degree)
-dΓ0 = LebesgueMeasure(Γ0,degree)
+dΩ = Measure(Ω,degree)
+dΓ = Measure(Γ,degree)
+dΓ0 = Measure(Γ0,degree)
 
 # Weak form
 

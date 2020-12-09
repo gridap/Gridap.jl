@@ -43,7 +43,7 @@ test_triangulation(trian)
 
 @test isa(get_cell_type(trian),AppendedArray)
 
-@test isa(get_cell_id(trian),AppendedArray)
+@test isa(get_cell_to_bgcell(trian),AppendedArray)
 
 #order = 1
 #quad = CellQuadrature(trian,2*order)

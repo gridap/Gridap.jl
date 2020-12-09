@@ -32,10 +32,10 @@ du = get_cell_shapefuns_trial(U)
 
 degree = 2
 Ω = Triangulation(model)
-dΩ = LebesgueMeasure(Ω,degree)
+dΩ = Measure(Ω,degree)
 
 Γ = BoundaryTriangulation(model)
-dΓ = LebesgueMeasure(Γ,degree)
+dΓ = Measure(Γ,degree)
 
 a(u,v) = ∫(∇(u)⋅∇(v))*dΩ + ∫(u*v)*dΓ
 ℓ(v) = ∫(v)*dΩ
@@ -87,5 +87,33 @@ Ta = get_matrix_type(assem)
 Tb = get_vector_type(assem)
 @test eltype(Ta) == ComplexF64
 @test eltype(Tb) == ComplexF64
+
+# Now with an homogeneous linear form
+
+a(u,v) = ∫(∇(u)⋅∇(v))*dΩ + ∫(u*v)*dΓ
+ℓ(v) = 0
+
+mat_contribs = a(du,dv)
+vec_contribs = ℓ(dv)
+
+data = collect_cell_matrix(mat_contribs)
+A = assemble_matrix(assem,data)
+@test size(A) == (num_free_dofs(V), num_free_dofs(U))
+
+data = collect_cell_vector(vec_contribs)
+b = assemble_vector(assem,data)
+x = A\b
+@test x ≈ b
+
+data = collect_cell_matrix_and_vector(mat_contribs,vec_contribs)
+A,b = assemble_matrix_and_vector(assem,data)
+x = A\b
+@test x ≈ b
+
+uhd = zero(U)
+data = collect_cell_matrix_and_vector(mat_contribs,vec_contribs,uhd)
+A,b = assemble_matrix_and_vector(assem,data)
+x = A\b
+@test x ≈ b
 
 end # module
