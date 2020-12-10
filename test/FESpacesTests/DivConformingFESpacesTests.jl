@@ -42,8 +42,9 @@ order = 1
 
 reffe = ReferenceFE(TET,:RaviartThomas,order)
 
-model_path = joinpath(@__DIR__,"model_3d.json")
-model = DiscreteModelFromFile(model_path)
+domain =(0,1,0,1,0,1)
+partition = (3,3,3)
+model = simplexify(CartesianDiscreteModel(domain,partition))
 
 labels = get_face_labeling(model)
 dir_tags = Array{Integer}(undef,0)
