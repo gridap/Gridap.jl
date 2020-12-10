@@ -16,9 +16,9 @@ using Test
 
 @time @testset "StokesNitsche" begin include("StokesNitscheTests.jl") end
 
-# @time @testset "Darcy" begin include("DarcyTests.jl") end
+@time @testset "Darcy" begin include("DarcyTests.jl") end
 
-# @time @testset "PeriodicDarcy" begin include("PeriodicDarcyTests.jl") end
+@time @testset "PeriodicDarcy" begin include("PeriodicDarcyTests.jl") end
 
 @time @testset "SurfaceCoupling" begin include("SurfaceCouplingTests.jl") end
 

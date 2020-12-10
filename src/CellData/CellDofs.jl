@@ -53,3 +53,12 @@ function evaluate!(cache,s::CellDof,f::CellField)
   b = change_domain(f,s.domain_style)
   lazy_map(evaluate,get_cell_data(s),get_cell_data(b))
 end
+
+function evaluate!(cache, ::CellField, ::CellDof)
+  @unreachable """\n
+  CellField (f) objects cannot be evaluated at CellDof (s) objects.
+  However, CellDofs objects can be evaluated at CellField objects.
+  Did you mean evaluate(f,s) instead of evaluate(s,f), i.e.
+  f(s) instead of s(f)?
+  """
+end

@@ -591,7 +591,7 @@ function _facet_normal(::Type{T},p::DFace{D}, nf_vs, vs, i_f) where {D,T}
         v[i-1,d] = vi[d]
       end
     end
-    _n = nullspace(v)
+    _n = _nullspace(v)
     n = Point{D,T}(_n)
     n = n * 1 / sqrt(dot(n, n))
     ext_v = _vertex_not_in_facet(p, i_f, nf_vs)
@@ -610,6 +610,14 @@ function _facet_normal(::Type{T},p::DFace{D}, nf_vs, vs, i_f) where {D,T}
     @unreachable "O-dim polytopes do not have properly define outward facet normals"
   end
   n, f_or
+end
+
+function _nullspace(v)
+  if size(v,1) == 1
+    return [-v[2],v[1]]
+  else
+    return nullspace(v)
+  end
 end
 
 function _vertex_not_in_facet(p::DFace, i_f, nf_vs)

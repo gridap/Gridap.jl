@@ -8,6 +8,8 @@ using Test
 
 @testset "QCurlGradMonomialBases" begin include("QCurlGradMonomialBasesTests.jl") end
 
+@testset "PCurlGradMonomialBases" begin include("PCurlGradMonomialBasesTests.jl") end
+
 #@testset "ChangeBasis" begin include("ChangeBasisTests.jl") end
 
 end # module

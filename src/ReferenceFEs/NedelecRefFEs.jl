@@ -167,7 +167,7 @@ end
 function _Nedelec_face_moments(p, fshfs, c_fips, fcips, fwips)
   nc = length(c_fips)
   cfshfs = fill(fshfs, nc)
-  cvals = evaluate(cfshfs,c_fips)
+  cvals = lazy_map(evaluate,cfshfs,c_fips)
 
   fvs = _nfaces_vertices(Float64,p,num_dims(p)-1)
   fts = [hcat([vs[2]-vs[1]...],[vs[3]-vs[1]...]) for vs in fvs]

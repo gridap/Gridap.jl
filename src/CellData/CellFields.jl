@@ -323,7 +323,9 @@ struct OperationCellField{DS} <: CellField
         @unreachable """\n
         It is not possible to perform operation $(op.op) on the given cell fields.
 
-        See the catched error for more information.
+        See the catched error for more information. (If you are using Visual
+          Studio Code REPL you might not see the catched error, please use the
+          command-line REPL).
         """
       end
     end
