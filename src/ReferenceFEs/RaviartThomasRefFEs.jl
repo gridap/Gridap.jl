@@ -18,7 +18,6 @@ function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
     @notimplemented "H(div) Reference FE only available for cubes and simplices"
   end
 
-  #nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order)
   nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order,GenericField(identity))
 
   face_own_dofs = _face_own_dofs_from_moments(nf_moments)
@@ -70,30 +69,45 @@ function get_face_own_dofs(reffe::GenericRefFE{:RaviartThomas}, conf::DivConform
   get_face_dofs(reffe)
 end
 
-
-## First implement this:
 function get_dof_basis(reffe::GenericRefFE{:RaviartThomas},phi::Field)
-   p = get_polytope(reffe)
-   prebasis = get_prebasis(reffe)
-   order = get_order(prebasis)
-   et = return_type(prebasis)
-   nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order,phi)
-   MomentBasedDofBasis(nf_nodes, nf_moments)
+  cache = return_cache(get_dof_basis,reffe,phi)
+  evaluate!(cache,get_dof_basis,reffe,phi)
 end
 
-# Then optimize this:
-#function get_dof_basis(reffe::GenericRefFE{:RaviartThomas},phi::Field)
-#  cache = return_cache(get_dof_basis,reffe,phi)
-#  evaluate!(cache,get_dof_basis,reffe,phi)
-#end
-#
-#function return_cache(::typeof(get_dof_basis),reffe::GenericRefFE{:RaviartThomas},phi::Field)
-#  @notimplemented
-#end
-#
-#function evaluate!(cache,::typeof(get_dof_basis),reffe::GenericRefFE{:RaviartThomas},phi::Field)
-#  @notimplemented
-#end
+function return_cache(::typeof(get_dof_basis),reffe::GenericRefFE{:RaviartThomas},phi::Field)
+  p = get_polytope(reffe)
+  prebasis = get_prebasis(reffe)
+  order = get_order(prebasis)
+  et = return_type(prebasis)
+  nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order,GenericField(identity))
+  db = MomentBasedDofBasis(nf_nodes, nf_moments)
+
+  face_moments = deepcopy(nf_moments)
+  Jt_q_cache = return_cache(∇(phi),db.nodes)
+  cache = (db.nodes, db.face_nodes, nf_moments, face_moments, Jt_q_cache)
+  cache
+end
+
+
+function evaluate!(cache,::typeof(get_dof_basis),reffe::GenericRefFE{:RaviartThomas},phi::Field)
+  nodes, nf_nodes, nf_moments, face_moments, Jt_q_cache = cache
+
+  Jt_q = evaluate!(Jt_q_cache,∇(phi),nodes)
+  for face in 1:length(face_moments)
+    moments = nf_moments[face]
+    if length(moments) > 0
+      num_qpoints, num_moments = size(moments)
+      for i in 1:num_qpoints
+        Jt_q_i = Jt_q[nf_nodes[face][i]]
+        change = det(Jt_q_i) * inv(transpose(Jt_q_i))
+        for j in 1:num_moments
+          face_moments[face][i,j] = nf_moments[face][i,j] ⋅ change
+        end
+      end
+    end
+  end
+  MomentBasedDofBasis(nodes,face_moments,nf_nodes)
+end
 
 function _RT_nodes_and_moments(::Type{et}, p::Polytope, order::Integer, phi::Field) where et
 
@@ -126,7 +140,6 @@ function _ref_face_to_faces_geomap(p,fp)
   freffe = LagrangianRefFE(Float64,fp,1)
   fshfs = get_shapefuns(freffe)
   cfshfs = fill(fshfs, nc)
-  # fgeomap = lincomb(cfshfs,cfvs)
   fgeomap = lazy_map(linear_combination,cfvs,cfshfs)
 end
 
@@ -171,25 +184,12 @@ function _RT_face_moments(p, fshfs, c_fips, fcips, fwips,phi)
   # Must express the normal in terms of the real/reference system of
   # coordinates (depending if phi≡I or phi is a mapping, resp.)
   # Hence, J = transpose(grad(phi))
-  # n = n*meas(J)⋅J^-1
+
   Jt = fill(∇(phi),nc)
-  #Jt_ips = lazy_map(evaluate,Jt,fcips)
-  #J = lazy_map(Operation(transpose),Jt)
   Jt_inv = lazy_map(Operation(inv),Jt)
   det_Jt = lazy_map(Operation(det),Jt)
-  #sqrt_meas_Jt = lazy_map(Operation(sqrt),meas_Jt)
-  #scaling = lazy_map(inv,meas_Jt)
   change = lazy_map(*,det_Jt,Jt_inv)
   change_ips = lazy_map(evaluate,change,fcips)
-
-  #if is_n_cube(p)
-  #  # @santiagobadia : Temporary hack for making it work for structured hex meshes
-  #  cvals = [ _broadcast(typeof(n),n*o,J.*b) for (n,o,b,J) in zip(fns,os,cvals,change_ips)]
-  #elseif is_simplex(p)
-  #  cvals = [ _broadcast(typeof(n),n*o,J.*b) for (n,o,b,J) in zip(fns,os,cvals,change_ips)]
-  #else
-  #  @notimplemented
-  #end
 
   cvals = [ _broadcast(typeof(n),n*o,J.*b) for (n,o,b,J) in zip(fns,os,cvals,change_ips)]
 
@@ -440,25 +440,7 @@ function evaluate!(cache,k::ContraVariantPiolaMap,v::AbstractVector{<:Field},phi
   detJ = Operation(det)(Jt)
   Broadcasting(Operation(k))(v,Jt,detJ)
 end
-#=
-function lazy_map(
-  ::typeof(evaluate),
-  cell_shapefuns::LazyArray{<:Fill{<:ContraVariantPiolaMap}},
-  cell_qs::AbstractArray)
 
-  cell_ref_shapefuns = cell_shapefuns.f[1]
-  cell_map = cell_shapefuns.f[2]
-
-  cell_ref_shapefuns_q = lazy_map(evaluate,cell_ref_shapefuns,cell_qs)
-  cell_Jt = lazy_map(∇,cell_map)
-  cell_Jt_q = lazy_map(evaluate,cell_Jt,cell_qs)
-  cell_detJ_q = lazy_map(Broadcasting(det),cell_Jt_q)
-  cell_J_q = lazy_map(Broadcasting(transpose),cell_Jt_q)
-
-  k = cell_shapefuns.g.value
-  lazy_map(Broadcasting(k),cell_ref_shapefuns_q,cell_J_q,cell_detJ_q)
-end
-=#
 function lazy_map(
   k::ContraVariantPiolaMap,
   cell_ref_shapefuns::AbstractArray{<:AbstractArray{<:Field}},
@@ -466,46 +448,8 @@ function lazy_map(
 
   cell_Jt = lazy_map(∇,cell_map)
   cell_detJ = lazy_map(Operation(det),cell_Jt)
-  #cell_absdetJ = lazy_map(Operation(abs),cell_detJ)
-  #cell_J = lazy_map(Operation(transpose),cell_Jt)
 
   lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_Jt,cell_detJ)
 end
-#=
-function return_cache(::ContraVariantPiolaMap,s::MomentBasedDofBasis,phi::Field)
-  Jt_q_cache = return_cache(∇(phi),s.nodes)
-  face_moments = deepcopy(s.face_moments)
-  cache = (Jt_q_cache,face_moments)
-  cache
-end
 
-function evaluate!(cache,::ContraVariantPiolaMap,s::MomentBasedDofBasis,phi::Field)
-  Jt_q_cache, face_moments = cache
-  Jt_q = evaluate!(Jt_q_cache,∇(phi),s.nodes)
-  #face_moments = deepcopy(s.face_moments)
-  for face in 1:length(face_moments)
-    moments = face_moments[face]
-    if length(moments) > 0
-      num_qpoints, num_moments = size(moments)
-      for i in 1:num_qpoints
-        Jt_q_i = Jt_q[s.face_nodes[face][i]]
-        change = meas(Jt_q_i) * inv(transpose(Jt_q_i))
-        for j in 1:num_moments
-          face_moments[face][i,j] =  moments[i,j] ⋅ change
-        end
-      end
-    end
-  end
-  #face_nodes = deepcopy(s.face_nodes)
-  #nodes = deepcopy(s.nodes)
-  dof_basis = MomentBasedDofBasis(s.nodes,face_moments,s.face_nodes)
-  # phi_q = evaluate(phi,s.nodes)
-  #moments = #from s.moments and phi_q
-  #MomentBasedDofBasis(s.nodes,moments)
-  ## More obvious but not so efficient:
-  ##nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order,phi)
-  ##dof_basis = MomentBasedDofBasis(nf_nodes, nf_moments,GenericField(identity))
-  return dof_basis
-end
-=#
 PushForwardMap(reffe::GenericRefFE{:RaviartThomas}) = ContraVariantPiolaMap()
