@@ -93,6 +93,18 @@ function (-)(a::DomainContribution,b::DomainContribution)
   c
 end
 
+function (*)(a::Number,b::DomainContribution)
+  c = DomainContribution()
+  for (trian,array_old) in b.dict
+    s = size(get_cell_map(trian))
+    array_new = lazy_map(Broadcasting(*),Fill(a,s),array_old)
+    add_contribution!(c,trian,array_new)
+  end
+  c
+end
+
+(*)(a::DomainContribution,b::Number) = b*a
+
 function get_array(a::DomainContribution)
   @assert num_domains(a) == 1 """\n
   Method get_array(a::DomainContribution) can be called only
