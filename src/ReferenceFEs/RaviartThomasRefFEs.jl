@@ -415,31 +415,30 @@ function evaluate!(
   cache,
   ::Broadcasting{typeof(∇)},
   a::Fields.BroadcastOpFieldArray{ContraVariantPiolaMap})
-  v, J, detJ = a.args
+  v, Jt, detJ = a.args
   # Assuming J comes from an affine map
   ∇v = Broadcasting(∇)(v)
   k = ContraVariantPiolaMap()
-  Broadcasting(Operation(k))(∇v,J,detJ)
+  Broadcasting(Operation(k))(∇v,Jt,detJ)
 end
 
 function lazy_map(
   ::Broadcasting{typeof(gradient)},
   a::LazyArray{<:Fill{Broadcasting{Operation{ContraVariantPiolaMap}}}})
-  v, J, detJ = a.f
+  v, Jt, detJ = a.f
   ∇v = lazy_map(Broadcasting(∇),v)
   k = ContraVariantPiolaMap()
-  lazy_map(Broadcasting(Operation(k)),∇v,J,detJ)
+  lazy_map(Broadcasting(Operation(k)),∇v,Jt,detJ)
 end
 
-function evaluate!(cache,::ContraVariantPiolaMap,v::Number,J::Number,detJ::Number)
-  v⋅transpose((1/detJ)*J)
+function evaluate!(cache,::ContraVariantPiolaMap,v::Number,Jt::Number,detJ::Number)
+  v⋅((1/detJ)*Jt)
 end
 
 function evaluate!(cache,k::ContraVariantPiolaMap,v::AbstractVector{<:Field},phi::Field)
   Jt = ∇(phi)
   detJ = Operation(det)(Jt)
-  J = Operation(transpose)(Jt)
-  Broadcasting(Operation(k))(v,J,detJ)
+  Broadcasting(Operation(k))(v,Jt,detJ)
 end
 #=
 function lazy_map(
@@ -468,9 +467,9 @@ function lazy_map(
   cell_Jt = lazy_map(∇,cell_map)
   cell_detJ = lazy_map(Operation(det),cell_Jt)
   #cell_absdetJ = lazy_map(Operation(abs),cell_detJ)
-  cell_J = lazy_map(Operation(transpose),cell_Jt)
+  #cell_J = lazy_map(Operation(transpose),cell_Jt)
 
-  lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_J,cell_detJ)
+  lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_Jt,cell_detJ)
 end
 #=
 function return_cache(::ContraVariantPiolaMap,s::MomentBasedDofBasis,phi::Field)
