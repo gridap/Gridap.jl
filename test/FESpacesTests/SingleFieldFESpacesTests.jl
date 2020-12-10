@@ -47,11 +47,9 @@ fh = interpolate(f, V0)
 fh = interpolate_dirichlet(f, V0)
 fh = interpolate_everywhere(f, V0)
 
-@test isa(real(fh),FEFunction)
-@test isa(imag(fh),FEFunction)
-
 f_real(x) = real(f(x))
 f_imag(x) = imag(f(x))
+f_conj(x) = conj(f(x))
 
 Ω = Triangulation(model)
 dΩ = Measure(Ω,2)
@@ -60,8 +58,10 @@ tol = 1e-9
 @test sqrt(sum(∫( abs2(f - fh) )*dΩ)) < tol
 @test sqrt(sum(∫( abs2(f_imag - imag(fh)) )*dΩ)) < tol
 @test sqrt(sum(∫( abs2(f_real - real(fh)) )*dΩ)) < tol
+@test sqrt(sum(∫( abs2(f_conj - conj(fh)) )*dΩ)) < tol
 @test sqrt(sum(∫( abs2(real(f - fh)) )*dΩ)) < tol
 @test sqrt(sum(∫( abs2(imag(f - fh)) )*dΩ)) < tol
+@test sqrt(sum(∫( abs2(conj(f - fh)) )*dΩ)) < tol
 
 zh = zero(V0)
 @test isa(get_free_values(zh),Vector{ComplexF64})
