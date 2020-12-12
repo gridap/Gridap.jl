@@ -35,6 +35,7 @@ export det, inv, tr, cross, dot, norm, ×, ⋅
 @publish Arrays Broadcasting
 @publish Arrays Operation
 @publish Arrays print_op_tree
+@publish Arrays ∑
 
 @publish TensorValues VectorValue
 @publish TensorValues TensorValue

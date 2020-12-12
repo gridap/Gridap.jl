@@ -72,6 +72,7 @@ uh = solve(op)
 e = u_sol - uh
 
 @test sum(∫(e*e)*dΩ) < tol
+@test ∑(∫(e*e)*dΩ) < tol
 
 op = AffineFEOperator(U,V) do u,v
   ∫(∇(v)⊙∇(u))*dΩ, ∫(v*f_fun)*dΩ
