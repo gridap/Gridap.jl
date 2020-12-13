@@ -73,7 +73,7 @@ cell_fe = CellFE(cell_map,cell_reffe)
 cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
   cell_fe,CellConformity(cell_fe), grid_topology, face_labeling, dirichlet_tags, dirichlet_components)
 
-reffe = ReferenceFE(:Lagrangian,VectorValue{2,Float64},3)
+reffe = ReferenceFE(lagrangian,VectorValue{2,Float64},3)
 
 V = FESpace(model,reffe,dirichlet_tags=dirichlet_tags)
 

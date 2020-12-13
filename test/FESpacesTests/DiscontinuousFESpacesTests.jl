@@ -12,7 +12,7 @@ model = CartesianDiscreteModel(domain,partition)
 
 order = 3
 
-reffe = ReferenceFE(:Lagrangian,Float64,order)
+reffe = ReferenceFE(lagrangian,Float64,order)
 V = FESpace(model,reffe,conformity=:L2)
 @test isa(V,UnconstrainedFESpace)
 @test isa(V.cell_dofs_ids,Table{Int32})
@@ -24,7 +24,7 @@ f(x) = sin(pi*x[1])*cos(2*pi*x[2])
 fh = interpolate(f,U)
 uh = FEFunction(V,rand(num_free_dofs(V)))
 
-reffe = ReferenceFE(:Lagrangian,Float64,order;space=:S)
+reffe = ReferenceFE(lagrangian,Float64,order;space=:S)
 V = FESpace(model,reffe,conformity=:L2)
 @test isa(V,UnconstrainedFESpace)
 @test isa(V.cell_dofs_ids,Table{Int32})

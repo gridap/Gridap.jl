@@ -13,7 +13,7 @@ trian = get_triangulation(model)
 
 order = 2
 
-V = FESpace(model,ReferenceFE(:Lagrangian,Float64,order);conformity=:L2)
+V = FESpace(model,ReferenceFE(lagrangian,Float64,order);conformity=:L2)
 
 V0 = FESpaceWithConstantFixed(V,true,rand(1:num_free_dofs(V)))
 test_single_field_fe_space(V0)

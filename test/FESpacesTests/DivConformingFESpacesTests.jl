@@ -17,7 +17,7 @@ order = 1
 
 u(x) = x
 
-reffe = ReferenceFE(:RaviartThomas,order)
+reffe = ReferenceFE(raviart_thomas,order)
 
 V = TestFESpace(model,reffe,dirichlet_tags = [1,6])
 test_single_field_fe_space(V)
@@ -40,7 +40,7 @@ el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
 
 order = 1
 
-reffe = ReferenceFE(TET,:RaviartThomas,order)
+reffe = ReferenceFE(TET,raviart_thomas,order)
 
 domain =(0,1,0,1,0,1)
 partition = (3,3,3)

@@ -18,7 +18,7 @@ order = 2
 u(x) = VectorValue(x[1]*x[1],x[1]*x[1]*x[1],0.0)
 # u(x) = x
 
-reffe = ReferenceFE(:Nedelec,order)
+reffe = ReferenceFE(nedelec,order)
 
 
 V = TestFESpace(model,reffe,dirichlet_tags = [21,22])

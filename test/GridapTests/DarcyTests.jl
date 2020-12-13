@@ -22,10 +22,10 @@ partition = (4,4)
 order = 1
 model = CartesianDiscreteModel(domain,partition)
 
-V = FESpace(model,ReferenceFE(:RaviartThomas,Float64,order),conformity=:Hdiv,
+V = FESpace(model,ReferenceFE(raviart_thomas,Float64,order),conformity=:Hdiv,
   dirichlet_tags=[5,6])
 
-Q = FESpace(model,ReferenceFE(:Lagrangian,Float64,order); conformity=:L2)
+Q = FESpace(model,ReferenceFE(lagrangian,Float64,order); conformity=:L2)
 
 U = TrialFESpace(V,u)
 P = TrialFESpace(Q)

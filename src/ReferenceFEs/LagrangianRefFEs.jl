@@ -14,6 +14,10 @@ plus the following ones
 """
 abstract type LagrangianRefFE{D} <: ReferenceFE{D} end
 
+struct Lagrangian <: ReferenceFEName end
+
+const lagrangian = Lagrangian()
+
 """
     get_face_own_nodes(reffe::LagrangianRefFE,conf::Conformity)
 """

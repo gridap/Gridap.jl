@@ -70,8 +70,8 @@ dΓ = Measure(Γ,degree)
 
 # FE Spaces
 
-reffe_u = ReferenceFE(:Lagrangian,VectorValue{2,Float64},order)
-reffe_p = ReferenceFE(:Lagrangian,Float64,order-1,space=:P)
+reffe_u = ReferenceFE(lagrangian,VectorValue{2,Float64},order)
+reffe_p = ReferenceFE(lagrangian,Float64,order-1,space=:P)
 
 V = TestFESpace(model,reffe_u,conformity=:H1,labels=labels,dirichlet_tags="dirichlet")
 Q = TestFESpace(model_fluid,reffe_p,conformity=:L2)

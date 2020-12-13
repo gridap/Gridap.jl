@@ -1,22 +1,12 @@
 
-function FiniteElements(
-  domain::DomainStyle,
-  model::DiscreteModel,
-  basis::Symbol,
-  args...;
-  kwargs...)
-
-  FiniteElements(domain,model,Val(basis),args...;kwargs...)
-end
-
-function FiniteElements(::DomainStyle,model::DiscreteModel,::Val,args...;kwargs...)
+function FiniteElements(::DomainStyle,model::DiscreteModel,basis::ReferenceFEName,args...;kwargs...)
   @abstractmethod "The factory function FiniteElements has not been defined for the given arguments"
 end
 
 function FiniteElements(
   ::ReferenceDomain,
   model::DiscreteModel,
-  basis::Val,
+  basis::ReferenceFEName,
   args...;
   kwargs...)
 
@@ -28,7 +18,7 @@ end
 function FiniteElements(
   ::PhysicalDomain,
   model::DiscreteModel,
-  basis::Val{:Lagrangian},
+  basis::Lagrangian,
   args...;
   kwargs...)
 
