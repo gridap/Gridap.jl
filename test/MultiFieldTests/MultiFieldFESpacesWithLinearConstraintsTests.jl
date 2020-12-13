@@ -34,7 +34,7 @@ dΛ = Measure(Λ,2)
 n_Γ1 = get_normal_vector(Γ1)
 n_Γ2 = get_normal_vector(Γ2)
 
-reffe = ReferenceFE(:Lagrangian,Float64,1)
+reffe = ReferenceFE(Lagrangian,Float64,1)
 V1 = FESpace(model,reffe,conformity=:H1,dirichlet_tags="dirichlet_1")
 V2 = FESpace(model,reffe,conformity=:H1,dirichlet_tags="dirichlet_2")
 

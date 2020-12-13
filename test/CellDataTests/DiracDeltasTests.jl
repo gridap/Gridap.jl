@@ -40,7 +40,7 @@ degree = 2
 #using Gridap
 #
 #order = 2
-#reffe = ReferenceFE(:Lagrangian,VectorValue{2,Float64},order)
+#reffe = ReferenceFE(Lagrangian,VectorValue{2,Float64},order)
 #V = FESpace(model,reffe,dirichlet_tags=[1,2,5])
 #
 #dΩ = Measure(Ω,2*order)

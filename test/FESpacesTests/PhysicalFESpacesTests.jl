@@ -20,7 +20,7 @@ order = 1
 Ω = Triangulation(model)
 dΩ = Measure(Ω,order)
 
-cell_fe = FiniteElements(ReferenceDomain(),model,:Lagrangian,Float64,order)
+cell_fe = FiniteElements(ReferenceDomain(),model,Lagrangian,Float64,order)
 V = FESpace(model,cell_fe)
 @test num_free_dofs(V) == 9
 V = FESpace(model,cell_fe,conformity=:L2)
@@ -31,11 +31,19 @@ V = FESpace(model,cell_fe,conformity=CellConformity(cell_fe))
 @test DomainStyle(get_cell_shapefuns(V)) == ReferenceDomain()
 @test DomainStyle(get_cell_dof_basis(V)) == ReferenceDomain()
 
+cell_fe = FiniteElements(ReferenceDomain(),model,Lagrangian(),Float64,order)
+V = FESpace(model,cell_fe)
+@test num_free_dofs(V) == 9
+V = FESpace(model,cell_fe,conformity=:L2)
+@test num_free_dofs(V) == 16
+V = FESpace(model,cell_fe,conformity=CellConformity(cell_fe))
+@test num_free_dofs(V) == 9
+
 uh = interpolate(u,V)
 e = u - uh
 @test sqrt(sum(∫(e*e)*dΩ)) < 10e-8
 
-cell_fe = FiniteElements(PhysicalDomain(),model,:Lagrangian,Float64,order)
+cell_fe = FiniteElements(PhysicalDomain(),model,Lagrangian,Float64,order)
 V = FESpace(model,cell_fe)
 @test num_free_dofs(V) == 9
 V = FESpace(model,cell_fe,conformity=:L2)
@@ -49,5 +57,13 @@ V = FESpace(model,cell_fe,conformity=CellConformity(cell_fe))
 uh = interpolate(u,V)
 e = u - uh
 @test sqrt(sum(∫(e*e)*dΩ)) < 10e-8
+
+cell_fe = FiniteElements(PhysicalDomain(),model,Lagrangian(),Float64,order)
+V = FESpace(model,cell_fe)
+@test num_free_dofs(V) == 9
+V = FESpace(model,cell_fe,conformity=:L2)
+@test num_free_dofs(V) == 16
+V = FESpace(model,cell_fe,conformity=CellConformity(cell_fe))
+@test num_free_dofs(V) == 9
 
 end #module

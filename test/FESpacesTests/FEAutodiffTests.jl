@@ -17,7 +17,7 @@ model = CartesianDiscreteModel(domain,partition)
 Ω = Triangulation(model)
 dΩ = Measure(Ω,2)
 
-V = FESpace(model,ReferenceFE(:Lagrangian,Float64,2),conformity=:H1)
+V = FESpace(model,ReferenceFE(Lagrangian,Float64,2),conformity=:H1)
 U = V
 
 dv = get_cell_shapefuns(V)

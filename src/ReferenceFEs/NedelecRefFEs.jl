@@ -1,5 +1,7 @@
 struct CurlConformity <: Conformity end
 
+struct Nedelec <: ReferenceFEName end
+
 """
     NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
 
@@ -25,7 +27,7 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
 
   metadata = nothing
 
-  reffe = GenericRefFE{:Nedelec}(
+  reffe = GenericRefFE{Nedelec}(
     ndofs,
     p,
     prebasis,
@@ -37,15 +39,15 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
   reffe
 end
 
-function ReferenceFE(p::Polytope,::Val{:Nedelec}, order)
+function ReferenceFE(p::Polytope,::Type{Nedelec}, order)
   NedelecRefFE(Float64,p,order)
 end
 
-function ReferenceFE(p::Polytope,::Val{:Nedelec},::Type{T}, order) where T
+function ReferenceFE(p::Polytope,::Type{Nedelec},::Type{T}, order) where T
   NedelecRefFE(T,p,order)
 end
 
-function Conformity(reffe::GenericRefFE{:Nedelec},sym::Symbol)
+function Conformity(reffe::GenericRefFE{Nedelec},sym::Symbol)
   hcurl = (:Hcurl,:HCurl)
   if sym == :L2
     L2Conformity()
@@ -60,7 +62,7 @@ function Conformity(reffe::GenericRefFE{:Nedelec},sym::Symbol)
   end
 end
 
-function get_face_own_dofs(reffe::GenericRefFE{:Nedelec}, conf::CurlConformity)
+function get_face_own_dofs(reffe::GenericRefFE{Nedelec}, conf::CurlConformity)
   get_face_dofs(reffe)
 end
 

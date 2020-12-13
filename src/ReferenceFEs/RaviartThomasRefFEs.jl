@@ -1,5 +1,7 @@
 struct DivConformity <: Conformity end
 
+struct RaviartThomas <: ReferenceFEName end
+
 """
     RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
 
@@ -30,7 +32,7 @@ function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
 
   metadata = nothing
 
-  reffe = GenericRefFE{:RaviartThomas}(
+  reffe = GenericRefFE{RaviartThomas}(
     ndofs,
     p,
     prebasis,
@@ -42,15 +44,15 @@ function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
   reffe
 end
 
-function ReferenceFE(p::Polytope,::Val{:RaviartThomas}, order)
+function ReferenceFE(p::Polytope,::Type{RaviartThomas}, order)
   RaviartThomasRefFE(Float64,p,order)
 end
 
-function ReferenceFE(p::Polytope,::Val{:RaviartThomas},::Type{T}, order) where T
+function ReferenceFE(p::Polytope,::Type{RaviartThomas},::Type{T}, order) where T
   RaviartThomasRefFE(T,p,order)
 end
 
-function Conformity(reffe::GenericRefFE{:RaviartThomas},sym::Symbol)
+function Conformity(reffe::GenericRefFE{RaviartThomas},sym::Symbol)
   hdiv = (:Hdiv,:HDiv)
   if sym == :L2
     L2Conformity()
@@ -65,16 +67,16 @@ function Conformity(reffe::GenericRefFE{:RaviartThomas},sym::Symbol)
   end
 end
 
-function get_face_own_dofs(reffe::GenericRefFE{:RaviartThomas}, conf::DivConformity)
+function get_face_own_dofs(reffe::GenericRefFE{RaviartThomas}, conf::DivConformity)
   get_face_dofs(reffe)
 end
 
-function get_dof_basis(reffe::GenericRefFE{:RaviartThomas},phi::Field)
+function get_dof_basis(reffe::GenericRefFE{RaviartThomas},phi::Field)
   cache = return_cache(get_dof_basis,reffe,phi)
   evaluate!(cache,get_dof_basis,reffe,phi)
 end
 
-function return_cache(::typeof(get_dof_basis),reffe::GenericRefFE{:RaviartThomas},phi::Field)
+function return_cache(::typeof(get_dof_basis),reffe::GenericRefFE{RaviartThomas},phi::Field)
   p = get_polytope(reffe)
   prebasis = get_prebasis(reffe)
   order = get_order(prebasis)
@@ -89,7 +91,7 @@ function return_cache(::typeof(get_dof_basis),reffe::GenericRefFE{:RaviartThomas
 end
 
 
-function evaluate!(cache,::typeof(get_dof_basis),reffe::GenericRefFE{:RaviartThomas},phi::Field)
+function evaluate!(cache,::typeof(get_dof_basis),reffe::GenericRefFE{RaviartThomas},phi::Field)
   nodes, nf_nodes, nf_moments, face_moments, Jt_q_cache = cache
 
   Jt_q = evaluate!(Jt_q_cache,∇(phi),nodes)
@@ -452,4 +454,4 @@ function lazy_map(
   lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_Jt,cell_detJ)
 end
 
-PushForwardMap(reffe::GenericRefFE{:RaviartThomas}) = ContraVariantPiolaMap()
+PushForwardMap(reffe::GenericRefFE{RaviartThomas}) = ContraVariantPiolaMap()

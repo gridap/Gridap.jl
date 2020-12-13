@@ -14,11 +14,11 @@ order = 1
 partition = (4,4)
 model = CartesianDiscreteModel(domain,partition; isperiodic=(true,false))
 
-V = FESpace(model,ReferenceFE(:RaviartThomas,Float64,order),conformity=:Hdiv,
+V = FESpace(model,ReferenceFE(RaviartThomas,Float64,order),conformity=:Hdiv,
       dirichlet_tags=collect(1:6))
 
 
-Q = FESpace(model,ReferenceFE(:Lagrangian,Float64,order);
+Q = FESpace(model,ReferenceFE(Lagrangian,Float64,order);
       conformity=:L2, constraint=:zeromean)
 
 U = TrialFESpace(V,u)

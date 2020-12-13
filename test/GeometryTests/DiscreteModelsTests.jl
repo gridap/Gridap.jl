@@ -98,7 +98,10 @@ test_discrete_model(tmodel)
 model2 = DiscreteModel(grid,topo,labeling)
 test_discrete_model(model2)
 
-reffes = ReferenceFE(model,:Lagrangian,Float64,1)
+reffes = ReferenceFE(model,Lagrangian(),Float64,1)
+@test isa(reffes,AbstractVector{<:ReferenceFE})
+
+reffes = ReferenceFE(model,Lagrangian,Float64,1)
 @test isa(reffes,AbstractVector{<:ReferenceFE})
 
 d = mktempdir()

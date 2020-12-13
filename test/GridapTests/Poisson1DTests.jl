@@ -12,7 +12,7 @@ cells = (10,)
 model = CartesianDiscreteModel(domain,cells)
 
 order = 2
-V = FESpace(model, ReferenceFE(:Lagrangian,Float64,order),conformity=:H1,dirichlet_tags=2)
+V = FESpace(model, ReferenceFE(Lagrangian,Float64,order),conformity=:H1,dirichlet_tags=2)
 U = TrialFESpace(V,u)
 
 Ω = Triangulation(model)

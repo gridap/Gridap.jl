@@ -33,18 +33,21 @@ The interface is tested with
 """
 abstract type ReferenceFE{D} <: GridapType end
 
-# Extensible factory function
-function ReferenceFE(p::Polytope,basis::Symbol,args...;kwargs...)
-  ReferenceFE(p,Val(basis),args...;kwargs...)
-end
+abstract type ReferenceFEName end
 
-function  ReferenceFE(p::Polytope,::Val{T},args...;kwargs...) where T
+# Extensible factory function
+function  ReferenceFE(p::Polytope,basis::Type{<:ReferenceFEName},args...;kwargs...)
   @unreachable """\n
-  Undefined factory function ReferenceFE for symbol $T
+  Undefined factory function ReferenceFE for basis name of type $basis
   """
 end
 
-ReferenceFE(basis::Symbol,args...;kwargs...) = (basis, args, kwargs)
+function  ReferenceFE(p::Polytope,basis::T,args...;kwargs...) where T<:ReferenceFEName
+  ReferenceFE(p,T,args...;kwargs...)
+end
+
+ReferenceFE(basis::Type{T},args...;kwargs...) where T<:ReferenceFEName = (T, args, kwargs)
+ReferenceFE(basis::ReferenceFEName,args...;kwargs...) = (basis, args, kwargs)
 
 """
     num_dofs(reffe::ReferenceFE) -> Int

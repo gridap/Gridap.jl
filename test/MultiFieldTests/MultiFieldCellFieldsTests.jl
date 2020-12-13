@@ -53,8 +53,8 @@ trian_Γ = SkeletonTriangulation(model)
 quad_Γ = CellQuadrature(trian_Γ,degree)
 x_Γ = get_cell_points(quad_Γ)
 
-V = TestFESpace(model,ReferenceFE(:Lagrangian,VectorValue{2,Float64},order);conformity=:H1)
-Q = TestFESpace(model,ReferenceFE(:Lagrangian,Float64,order-1),conformity=:L2)
+V = TestFESpace(model,ReferenceFE(Lagrangian,VectorValue{2,Float64},order);conformity=:H1)
+Q = TestFESpace(model,ReferenceFE(Lagrangian,Float64,order-1),conformity=:L2)
 
 U = TrialFESpace(V)
 P = TrialFESpace(Q)

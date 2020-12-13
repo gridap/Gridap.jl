@@ -89,6 +89,9 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish ReferenceFEs HEX8
 @publish ReferenceFEs Polytope
 @publish ReferenceFEs ReferenceFE
+@publish ReferenceFEs Lagrangian
+@publish ReferenceFEs RaviartThomas
+@publish ReferenceFEs Nedelec
 
 @publish Geometry get_triangulation
 @publish Geometry num_cells
