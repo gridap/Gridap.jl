@@ -140,7 +140,7 @@ end
 
 function get_cell_shapefuns_trial(f::FESpace)
   v = get_cell_shapefuns(f)
-  cell_v = get_cell_data(v)
+  cell_v = get_data(v)
   cell_u = lazy_map(transpose,cell_v)
   FEBasis(cell_u,get_triangulation(v),TrialBasis(),DomainStyle(v))
 end
@@ -168,24 +168,24 @@ struct FEBasis{BS<:BasisStyle,DS<:DomainStyle} <: CellField
   end
 end
 
-get_cell_data(f::FEBasis) = f.cell_basis
+get_data(f::FEBasis) = f.cell_basis
 get_triangulation(f::FEBasis) = f.trian
 BasisStyle(::Type{FEBasis{BS,DS}}) where {BS,DS} = BS()
 BasisStyle(::T) where T <: FEBasis = BasisStyle(T)
 DomainStyle(::Type{FEBasis{BS,DS}}) where {BS,DS} = DS()
 function gradient(a::FEBasis)
   f = GenericCellField(a.cell_basis,a.trian,a.domain_style)
-  FEBasis(get_cell_data(gradient(f)),a.trian,a.basis_style,a.domain_style)
+  FEBasis(get_data(gradient(f)),a.trian,a.basis_style,a.domain_style)
 end
 function ∇∇(a::FEBasis)
   f = GenericCellField(a.cell_basis,a.trian,a.domain_style)
-  FEBasis(get_cell_data(∇∇(f)),a.trian,a.basis_style,a.domain_style)
+  FEBasis(get_data(∇∇(f)),a.trian,a.basis_style,a.domain_style)
 end
 
 function change_domain_skeleton(a::FEBasis,trian::SkeletonTriangulation,target_domain::DomainStyle)
   a_on_plus_trian = change_domain(a,trian.plus,target_domain)
   a_on_minus_trian = change_domain(a,trian.minus,target_domain)
-  pair_in = SkeletonPair(get_cell_data(a_on_plus_trian),get_cell_data(a_on_minus_trian))
+  pair_in = SkeletonPair(get_data(a_on_plus_trian),get_data(a_on_minus_trian))
   pair_out = _fix_cell_basis_dofs_at_skeleton(pair_in,BasisStyle(a))
   plus = GenericCellField(pair_out.plus,trian,target_domain)
   minus = GenericCellField(pair_out.minus,trian,target_domain)
@@ -235,7 +235,7 @@ function get_cell_constraints(f::FESpace)
 end
 
 function get_cell_constraints(f,::UnConstrained)
-  cell_axes = lazy_map(axes,get_cell_data(get_cell_shapefuns(f)))
+  cell_axes = lazy_map(axes,get_data(get_cell_shapefuns(f)))
   identity_constraints(cell_axes)
 end
 
@@ -364,4 +364,3 @@ function test_fe_space(f::FESpace,matvecdata,matdata,vecdata)
   end
 
 end
-

@@ -24,7 +24,7 @@ x = get_cell_points(quad)
 @test isa(x,CellPoint)
 
 v = GenericCellField(get_cell_shapefuns(trian),trian,ReferenceDomain())
-u = GenericCellField(lazy_map(transpose,get_cell_data(v)),v.trian,v.domain_style)
+u = GenericCellField(lazy_map(transpose,get_data(v)),v.trian,v.domain_style)
 
 m = ∇(v)⋅∇(u)
 test_array(m(x),collect(m(x)))

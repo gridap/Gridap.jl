@@ -41,7 +41,7 @@ export DomainStyle
 export ReferenceDomain
 export PhysicalDomain
 export CellDatum
-export get_cell_data
+export get_data
 export get_triangulation
 export change_domain
 export test_cell_datum

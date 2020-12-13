@@ -8,13 +8,13 @@ struct CellState{T,P<:CellPoint} <: CellField
   values::AbstractArray
 
   function CellState{T}(::UndefInitializer,points::CellPoint) where T
-    values = _init_values(T,get_cell_data(points))
+    values = _init_values(T,get_data(points))
     P = typeof(points)
     new{T,P}(points,values)
   end
-  
+
   function CellState(v::Number,points::CellPoint)
-    values = _init_values(v,get_cell_data(points))
+    values = _init_values(v,get_data(points))
     T = typeof(v)
     P = typeof(points)
     new{T,P}(points,values)
@@ -38,9 +38,9 @@ function _init_values(v::Number,x::AbstractArray{<:AbstractVector{<:Point}})
   [fill(v,length(xi)) for xi in x]
 end
 
-function get_cell_data(f::CellState)
+function get_data(f::CellState)
   @unreachable """\n
-  get_cell_data cannot be called on a CellState
+  get_data cannot be called on a CellState
 
   If you see this error messase it is likelly that you are trying to perform
   an operation that does not make sense for a CellState. In most cases,
@@ -108,7 +108,7 @@ function update_state!(updater::Function,f::CellField...)
     @check length(states) <= length(a) msg
   end
   caches = map(array_cache,fx)
-  x_data = get_cell_data(x)
+  x_data = get_data(x)
   cache_x = array_cache(x_data)
   _update_state_variables!(updater,caches,fx,cache_x,x_data)
   nothing
@@ -143,4 +143,3 @@ end
   b[i][q] = states[i]
   nothing
 end
-

@@ -29,7 +29,7 @@ end
 function get_cell_shapefuns(f::ExtendedFESpace)
   nfull, nvoid = Arrays.pos_and_neg_length(f.partition)
   dv = get_cell_shapefuns(f.space)
-  data = get_cell_data(dv)
+  data = get_data(dv)
   fullcell_shapefuns = lazy_map(VoidBasisMap(false),data)
   @check length(fullcell_shapefuns) == nfull
   voidcell_shapefuns = Fill(VoidBasis(testitem(data),true),nvoid)
@@ -40,7 +40,7 @@ end
 function get_cell_dof_basis(f::ExtendedFESpace)
   nfull, nvoid = Arrays.pos_and_neg_length(f.partition)
   s = get_cell_dof_basis(f.space)
-  data = get_cell_data(s)
+  data = get_data(s)
   fullcell_dof_basis = lazy_map(VoidBasisMap(false),data)
   @check length(fullcell_dof_basis) == nfull
   voidcell_dof_basis = Fill(VoidBasis(testitem(data),true),nvoid)
@@ -124,28 +124,28 @@ end
 
 Arrays.testitem(a::VoidBasis) = testitem(a.basis)
 
-function Fields.return_cache(a::VoidBasis,x::Point) 
+function Fields.return_cache(a::VoidBasis,x::Point)
   cb = return_cache(a.basis,x)
   bx = return_value(a.basis,x)
   r = similar(bx,(0,))
   cb,r
 end
 
-function Fields.return_cache(a::VoidBasis,x::Field) 
+function Fields.return_cache(a::VoidBasis,x::Field)
   cb = return_cache(a.basis,x)
   bx = return_value(a.basis,x)
   r = similar(bx,(0,))
   cb,r
 end
 
-function Fields.return_cache(a::VoidBasis,x::AbstractVector{<:Point}) 
+function Fields.return_cache(a::VoidBasis,x::AbstractVector{<:Point})
   cb = return_cache(a.basis,x)
   bx = return_value(a.basis,x)
   r = similar(bx,(length(x),0))
   cb,r
 end
 
-function Fields.return_cache(a::VoidBasis,v::AbstractVector{<:Field}) 
+function Fields.return_cache(a::VoidBasis,v::AbstractVector{<:Field})
   cb = return_cache(a.basis,v)
   bx = return_value(a.basis,v)
   r = similar(bx,(0,length(v)))
@@ -174,4 +174,3 @@ end
 function Fields.evaluate!(cache,k::Broadcasting{typeof(∇∇)},a::VoidBasis)
   VoidBasis(k(a.basis),a.isvoid)
 end
-
