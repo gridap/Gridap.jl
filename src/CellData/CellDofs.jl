@@ -7,7 +7,7 @@ struct CellDof{DS} <: CellDatum
   domain_style::DS
 end
 
-get_cell_data(f::CellDof) = f.cell_dof
+get_data(f::CellDof) = f.cell_dof
 get_triangulation(f::CellDof) = f.trian
 DomainStyle(::Type{CellDof{DS}}) where DS = DS()
 
@@ -27,7 +27,7 @@ function change_domain(a::CellDof,target_trian::RestrictedTriangulation,target_d
   @notimplementedif DomainStyle(a) != target_domain
   trian_a = get_triangulation(a)
   @notimplementedif ! have_compatible_domains(trian_a,get_background_triangulation(target_trian))
-  cell_dof = get_cell_data(a)
+  cell_dof = get_data(a)
   tcell_to_cell = get_cell_to_bgcell(target_trian)
   tcell_dof = lazy_map(Reindex(cell_dof),tcell_to_cell)
   CellDof(tcell_dof,target_trian,DomainStyle(a))
@@ -51,7 +51,7 @@ function evaluate!(cache,s::CellDof,f::CellField)
   end
 
   b = change_domain(f,s.domain_style)
-  lazy_map(evaluate,get_cell_data(s),get_cell_data(b))
+  lazy_map(evaluate,get_data(s),get_data(b))
 end
 
 function evaluate!(cache, ::CellField, ::CellDof)

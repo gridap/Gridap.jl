@@ -71,7 +71,7 @@ cell_constr = get_cell_constraints(V,cellidsS)
 @test isa(cell_constr[1],BlockArrayCoo)
 
 du = get_cell_shapefuns_trial(V)
-du_data = get_cell_data(du)
+du_data = get_data(du)
 @test size(du_data[1]) == (1,4)
 
 @test get_cell_isconstrained(V,cellidsS) == Fill(false,length(cellids))

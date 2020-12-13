@@ -35,7 +35,7 @@ struct MultiFieldFEFunction{T<:MultiFieldCellField} <: FEFunction
   end
 end
 
-CellData.get_cell_data(f::MultiFieldFEFunction) = get_cell_data(f.multi_cell_field)
+CellData.get_data(f::MultiFieldFEFunction) = get_data(f.multi_cell_field)
 CellData.get_triangulation(f::MultiFieldFEFunction) = get_triangulation(f.multi_cell_field)
 CellData.DomainStyle(::Type{MultiFieldFEFunction{T}}) where T = DomainStyle(T)
 FESpaces.get_free_values(f::MultiFieldFEFunction) = f.free_values
@@ -49,4 +49,3 @@ num_fields(m::MultiFieldFEFunction) = length(m.single_fe_functions)
 Base.iterate(m::MultiFieldFEFunction) = iterate(m.single_fe_functions)
 Base.iterate(m::MultiFieldFEFunction,state) = iterate(m.single_fe_functions,state)
 Base.getindex(m::MultiFieldFEFunction,field_id::Integer) = m.single_fe_functions[field_id]
-

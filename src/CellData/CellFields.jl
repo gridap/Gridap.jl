@@ -30,7 +30,7 @@ function CellPoint(
   CellPoint(cell_ref_point,cell_phys_point,trian,domain_style)
 end
 
-function get_cell_data(f::CellPoint)
+function get_data(f::CellPoint)
   if DomainStyle(f) == ReferenceDomain()
     f.cell_ref_point
   else
@@ -113,7 +113,7 @@ function change_domain(a::CellField,::ReferenceDomain,::PhysicalDomain)
   trian = get_triangulation(a)
   cell_map = get_cell_map(trian)
   cell_invmap = lazy_map(inverse_map,cell_map)
-  cell_field_ref = get_cell_data(cell_field)
+  cell_field_ref = get_data(cell_field)
   cell_field_phys = lazy_map(Broadcasting(∘),cell_field_ref,cell_invmap)
   GenericCellField(cell_field_phys,trian,PhysicalDomain())
 end
@@ -121,7 +121,7 @@ end
 function change_domain(a::CellField,::PhysicalDomain,::ReferenceDomain)
   trian = get_triangulation(a)
   cell_map = get_cell_map(trian)
-  cell_field_phys = get_cell_data(a)
+  cell_field_phys = get_data(a)
   cell_field_ref = lazy_map(Broadcasting(∘),cell_field_phys,cell_map)
   GenericCellField(cell_field_ref,trian,ReferenceDomain())
 end
@@ -139,7 +139,7 @@ function change_domain(a::CellField,::ReferenceDomain,trian::Triangulation,::Ref
   elseif have_compatible_domains(trian_a,get_background_triangulation(trian))
     cell_id = get_cell_to_bgcell(trian)
     @assert ! isa(cell_id,SkeletonPair)
-    cell_a_q = lazy_map(Reindex(get_cell_data(a)),cell_id)
+    cell_a_q = lazy_map(Reindex(get_data(a)),cell_id)
     cell_s2q = get_cell_ref_map(trian)
     cell_field = lazy_map(Broadcasting(∘),cell_a_q,cell_s2q)
     GenericCellField(cell_field,trian,ReferenceDomain())
@@ -159,7 +159,7 @@ function change_domain(a::CellField,::PhysicalDomain,trian::Triangulation,::Phys
   elseif have_compatible_domains(trian_a,get_background_triangulation(trian))
     cell_id = get_cell_to_bgcell(trian)
     @assert ! isa(cell_id,SkeletonPair)
-    cell_field = lazy_map(Reindex(get_cell_data(a)),cell_id)
+    cell_field = lazy_map(Reindex(get_data(a)),cell_id)
     GenericCellField(cell_field,trian,PhysicalDomain())
   else
     @unreachable """\n
@@ -196,7 +196,7 @@ struct GenericCellField{DS} <: CellField
   end
 end
 
-get_cell_data(f::GenericCellField) = f.cell_field
+get_data(f::GenericCellField) = f.cell_field
 get_triangulation(f::GenericCellField) = f.trian
 DomainStyle(::Type{GenericCellField{DS}}) where DS = DS()
 
@@ -216,8 +216,8 @@ end
 
 function evaluate!(cache,f::CellField,x::CellPoint)
   _f, _x = _to_common_domain(f,x)
-  cell_field = get_cell_data(_f)
-  cell_point = get_cell_data(_x)
+  cell_field = get_data(_f)
+  cell_point = get_data(_x)
   lazy_map(evaluate,cell_field,cell_point)
 end
 
@@ -253,7 +253,7 @@ end
 # Gradient
 
 function gradient(a::CellField)
-  cell_∇a = lazy_map(Broadcasting(∇),get_cell_data(a))
+  cell_∇a = lazy_map(Broadcasting(∇),get_data(a))
   if DomainStyle(a) == PhysicalDomain()
     g = cell_∇a
   else
@@ -264,7 +264,7 @@ function gradient(a::CellField)
 end
 
 function ∇∇(a::CellField)
-  cell_∇∇a = lazy_map(Broadcasting(∇∇),get_cell_data(a))
+  cell_∇∇a = lazy_map(Broadcasting(∇∇),get_data(a))
   if DomainStyle(a) == PhysicalDomain()
     h = cell_∇∇a
   else
@@ -367,8 +367,8 @@ function _get_cell_points(a::OperationCellField)
   _get_cell_points(a.args...)
 end
 
-function get_cell_data(f::OperationCellField)
-  a = map(get_cell_data,f.args)
+function get_data(f::OperationCellField)
+  a = map(get_data,f.args)
   lazy_map(Broadcasting(f.op),a...)
 end
 get_triangulation(f::OperationCellField) = f.trian
@@ -523,7 +523,7 @@ struct CellFieldAt{T,F} <: CellField
   CellFieldAt{T}(parent::CellField) where T = new{T,typeof(parent)}(parent)
 end
 
-get_cell_data(f::CellFieldAt) = get_cell_data(f.parent)
+get_data(f::CellFieldAt) = get_data(f.parent)
 get_triangulation(f::CellFieldAt) = get_triangulation(f.parent)
 DomainStyle(::Type{CellFieldAt{T,F}}) where {T,F} = DomainStyle(F)
 gradient(a::CellFieldAt{P}) where P = CellFieldAt{P}(gradient(a.parent))
@@ -577,10 +577,10 @@ function change_domain(a::CellField,target_trian::SkeletonTriangulation,target_d
     # In this case, we can safely take either plus or minus arbitrarily.
     if isa(a,GenericCellField) && isa(get_array(a.cell_field),Fill{<:ConstantField})
       a_on_target_trian = change_domain(a,target_trian.plus,target_domain)
-      return GenericCellField(get_cell_data(a_on_target_trian),target_trian,target_domain)
+      return GenericCellField(get_data(a_on_target_trian),target_trian,target_domain)
     elseif isa(a,GenericCellField) && isa(get_array(a.cell_field),Fill{<:GenericField{<:Function}})
       a_on_target_trian = change_domain(a,target_trian.plus,target_domain)
-      return GenericCellField(get_cell_data(a_on_target_trian),target_trian,target_domain)
+      return GenericCellField(get_data(a_on_target_trian),target_trian,target_domain)
     else
       @unreachable """\n
       It is not possible to use the given CellField on a SkeletonTriangulation.
@@ -619,8 +619,8 @@ end
 function change_domain_skeleton(a::CellField,trian::SkeletonTriangulation,target_domain::DomainStyle)
   a_on_plus_trian = change_domain(a,trian.plus,target_domain)
   a_on_minus_trian = change_domain(a,trian.minus,target_domain)
-  plus = GenericCellField(get_cell_data(a_on_plus_trian),trian,target_domain)
-  minus = GenericCellField(get_cell_data(a_on_minus_trian),trian,target_domain)
+  plus = GenericCellField(get_data(a_on_plus_trian),trian,target_domain)
+  minus = GenericCellField(get_data(a_on_minus_trian),trian,target_domain)
   plus, minus
 end
 

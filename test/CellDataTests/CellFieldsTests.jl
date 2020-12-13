@@ -22,7 +22,7 @@ trian_0 =Triangulation(trian_D,Int[])
 x = get_cell_points(trian)
 @test DomainStyle(x) == ReferenceDomain()
 @test get_array(x) == get_cell_coordinates(trian)
-@test get_cell_data(x) == get_cell_ref_coordinates(trian)
+@test get_data(x) == get_cell_ref_coordinates(trian)
 
 px = get_physical_coordinate(trian)
 test_array(px(x),collect1d(get_array(x)))
@@ -30,12 +30,12 @@ test_array(px(x),collect1d(get_array(x)))
 _x = change_domain(x,PhysicalDomain())
 @test DomainStyle(_x) == PhysicalDomain()
 @test get_array(_x) == get_cell_coordinates(trian)
-@test get_cell_data(_x) == get_cell_coordinates(trian)
+@test get_data(_x) == get_cell_coordinates(trian)
 
 _x = change_domain(x,ReferenceDomain())
 @test DomainStyle(_x) == ReferenceDomain()
 @test get_array(x) == get_cell_coordinates(trian)
-@test get_cell_data(x) == get_cell_ref_coordinates(trian)
+@test get_data(x) == get_cell_ref_coordinates(trian)
 
 ffun(x) = 2*x[1]
 f = CellField(ffun,trian)
@@ -80,7 +80,7 @@ v = GenericCellField(get_cell_shapefuns(trian),trian,ReferenceDomain())
 vx = v(x)
 test_array(vx,collect(vx))
 
-u = GenericCellField(lazy_map(transpose,get_cell_data(v)),v.trian,v.domain_style)
+u = GenericCellField(lazy_map(transpose,get_data(v)),v.trian,v.domain_style)
 m = v*u
 test_array(m(x),collect(m(x)))
 m = ∇(v)⋅∇(u)
@@ -93,12 +93,12 @@ test_array(∇vx,collect(∇vx))
 test_array(∇fx,collect(∇fx))
 
 h = Operation(*)(2,f)
-hx = h(x) 
+hx = h(x)
 test_array(hx,2*fx)
 
 a = fill(2,num_cells(trian))
 h = Operation(*)(a,f)
-hx = h(x) 
+hx = h(x)
 test_array(hx,2*fx)
 
 fx = evaluate(ffun,x)
@@ -114,7 +114,7 @@ nx_N = n_N(x_N)
 test_array(nx_N,collect(nx_N))
 
 h = f*n_N
-hx = h(x_N) 
+hx = h(x_N)
 test_array(hx,collect(hx))
 
 gfun(x) = 3*x
@@ -246,4 +246,3 @@ test_array(hx_N,collect(hx_N))
 #@test isa(cell_field_x[1],AbstractVector)
 
 end # module
-
