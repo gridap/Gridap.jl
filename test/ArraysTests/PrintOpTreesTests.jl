@@ -44,7 +44,7 @@ data = read(seekstart(io), String)
 #
 #uq = evaluate(cf,q)
 #
-#V = FESpace(model,ReferenceFE(Lagrangian,Float64,order),conformity=:H1)
+#V = FESpace(model,ReferenceFE(lagrangian,Float64,order),conformity=:H1)
 #
 #vh = FEFunction(V,rand(num_free_dofs(V)))
 #

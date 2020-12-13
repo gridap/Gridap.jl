@@ -68,7 +68,7 @@ for data in [ vector_data, scalar_data ]
 
   for domain_style in (ReferenceDomain(),PhysicalDomain())
 
-    cell_fe = FiniteElements(domain_style,model,Lagrangian,T,order)
+    cell_fe = FiniteElements(domain_style,model,lagrangian,T,order)
     V = TestFESpace(model,cell_fe,dirichlet_tags="dirichlet",labels=labels)
     U = TrialFESpace(V,u)
 

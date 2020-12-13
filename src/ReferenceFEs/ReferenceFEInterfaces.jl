@@ -36,17 +36,12 @@ abstract type ReferenceFE{D} <: GridapType end
 abstract type ReferenceFEName end
 
 # Extensible factory function
-function  ReferenceFE(p::Polytope,basis::Type{<:ReferenceFEName},args...;kwargs...)
+function  ReferenceFE(p::Polytope,basis::ReferenceFEName,args...;kwargs...)
   @unreachable """\n
-  Undefined factory function ReferenceFE for basis name of type $basis
+  Undefined factory function ReferenceFE for basis $basis
   """
 end
 
-function  ReferenceFE(p::Polytope,basis::T,args...;kwargs...) where T<:ReferenceFEName
-  ReferenceFE(p,T,args...;kwargs...)
-end
-
-ReferenceFE(basis::Type{T},args...;kwargs...) where T<:ReferenceFEName = (T, args, kwargs)
 ReferenceFE(basis::ReferenceFEName,args...;kwargs...) = (basis, args, kwargs)
 
 """

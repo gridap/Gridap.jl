@@ -1,20 +1,16 @@
 
-function FiniteElements(::DomainStyle,model::DiscreteModel,basis::Type{<:ReferenceFEName},args...;kwargs...)
+function FiniteElements(::DomainStyle,model::DiscreteModel,basis::ReferenceFEName,args...;kwargs...)
   @abstractmethod "The factory function FiniteElements has not been defined for the given arguments"
-end
-
-function FiniteElements(ds::DomainStyle,model::DiscreteModel,basis::T,args...;kwargs...) where T<:ReferenceFEName
-  FiniteElements(ds,model,T,args...;kwargs...)
 end
 
 function FiniteElements(
   ::ReferenceDomain,
   model::DiscreteModel,
-  basis::Type{T},
+  basis::ReferenceFEName,
   args...;
-  kwargs...) where T<:ReferenceFEName
+  kwargs...)
 
-  cell_reffe = ReferenceFE(model,T,args...;kwargs...)
+  cell_reffe = ReferenceFE(model,basis,args...;kwargs...)
   cell_map = get_cell_map(Triangulation(model))
   CellFE(cell_map,cell_reffe)
 end
@@ -22,12 +18,12 @@ end
 function FiniteElements(
   ::PhysicalDomain,
   model::DiscreteModel,
-  basis::Type{Lagrangian},
+  basis::Lagrangian,
   args...;
   kwargs...)
 
   # Reference FEs and cell_map
-  cell_reffe = ReferenceFE(model,Lagrangian,args...;kwargs...)
+  cell_reffe = ReferenceFE(model,basis,args...;kwargs...)
   cell_map = get_cell_map(Triangulation(model))
   ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
 

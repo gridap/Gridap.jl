@@ -36,7 +36,7 @@ model_in = DiscreteModel(model,oldcell_to_is_in)
 
 @test trian === get_triangulation(get_parent_model(model_in))
 
-V = TestFESpace(model_in,ReferenceFE(Lagrangian,Float64,order),conformity=:H1)
+V = TestFESpace(model_in,ReferenceFE(lagrangian,Float64,order),conformity=:H1)
 @test isa(V,FESpaces.ExtendedFESpace)
 test_single_field_fe_space(V)
 
@@ -142,18 +142,18 @@ l(v) =
 
 op = AffineFEOperator(a,l,U,V)
 
-V = TestFESpace(model_in,ReferenceFE(Lagrangian,Float64,2),conformity=:H1)
+V = TestFESpace(model_in,ReferenceFE(lagrangian,Float64,2),conformity=:H1)
 @test isa(V,FESpaces.ExtendedFESpace)
 
-V = TestFESpace(model_in,ReferenceFE(Lagrangian,Float64,2),conformity=:H1,constraint=:zeromean)
+V = TestFESpace(model_in,ReferenceFE(lagrangian,Float64,2),conformity=:H1,constraint=:zeromean)
 uh = FEFunction(V,rand(num_free_dofs(V)))
 @test sum(∫(uh)*dΩ_in) + 1 ≈ 1
 
-V = TestFESpace(model,ReferenceFE(Lagrangian,Float64,2),conformity=:H1)
+V = TestFESpace(model,ReferenceFE(lagrangian,Float64,2),conformity=:H1)
 @test !isa(V,FESpaces.ExtendedFESpace)
 
-V_in = TestFESpace(model_in,ReferenceFE(Lagrangian,Float64,2),conformity=:H1)
-V = TestFESpace(model,ReferenceFE(Lagrangian,Float64,2),conformity=:H1)
+V_in = TestFESpace(model_in,ReferenceFE(lagrangian,Float64,2),conformity=:H1)
+V = TestFESpace(model,ReferenceFE(lagrangian,Float64,2),conformity=:H1)
 
 vh_in = interpolate(V_in) do x
     x[1]

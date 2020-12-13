@@ -169,6 +169,10 @@ export Lagrangian
 export RaviartThomas
 export Nedelec
 
+export lagrangian
+export raviart_thomas
+export nedelec
+
 include("Polytopes.jl")
 
 include("ExtrusionPolytopes.jl")

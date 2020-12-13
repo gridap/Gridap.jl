@@ -38,8 +38,8 @@ h = L / ncellx
 
 s0(x) = VectorValue(2.0*x[1],2.0)
 
-reffe_u = ReferenceFE(Lagrangian,VectorValue{2,Float64},order)
-reffe_p = ReferenceFE(Lagrangian,Float64,order-1,space=:P)
+reffe_u = ReferenceFE(lagrangian,VectorValue{2,Float64},order)
+reffe_p = ReferenceFE(lagrangian,Float64,order-1,space=:P)
 
 U = FESpace(model,reffe_u,conformity=:H1)
 P = FESpace(model,reffe_p,conformity=:L2,constraint=:zeromean)

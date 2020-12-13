@@ -35,7 +35,7 @@ u(x) = x[1]^2 + x[2]
 f(x) = - Δu(x)
 ∇(::typeof(u)) = ∇u
 
-V = TestFESpace(model,ReferenceFE(Lagrangian,Float64,order),conformity=:L2)
+V = TestFESpace(model,ReferenceFE(lagrangian,Float64,order),conformity=:L2)
 U = TrialFESpace(V,u)
 
 a(u,v) =

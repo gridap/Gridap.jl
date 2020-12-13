@@ -20,7 +20,7 @@ model = CartesianDiscreteModel(domain,partition)
 
 V = TestFESpace(
   model,
-  ReferenceFE(Lagrangian,Float64,1),
+  ReferenceFE(lagrangian,Float64,1),
   dirichlet_tags=[1,2,3,4,6,5])
 
 u(x) = x[1]+x[2]
@@ -78,7 +78,7 @@ A,b = assemble_matrix_and_vector(a(du,dv),ℓ(dv),U,V)
 
 V = TestFESpace(
   model,
-  ReferenceFE(Lagrangian,Float64,1),
+  ReferenceFE(lagrangian,Float64,1),
   vector_type=Vector{ComplexF64})
 U = V
 

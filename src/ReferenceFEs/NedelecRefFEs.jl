@@ -2,6 +2,8 @@ struct CurlConformity <: Conformity end
 
 struct Nedelec <: ReferenceFEName end
 
+const nedelec = Nedelec()
+
 """
     NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
 
@@ -39,11 +41,11 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
   reffe
 end
 
-function ReferenceFE(p::Polytope,::Type{Nedelec}, order)
+function ReferenceFE(p::Polytope,::Nedelec, order)
   NedelecRefFE(Float64,p,order)
 end
 
-function ReferenceFE(p::Polytope,::Type{Nedelec},::Type{T}, order) where T
+function ReferenceFE(p::Polytope,::Nedelec,::Type{T}, order) where T
   NedelecRefFE(T,p,order)
 end
 

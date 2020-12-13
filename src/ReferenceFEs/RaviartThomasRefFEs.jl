@@ -2,6 +2,8 @@ struct DivConformity <: Conformity end
 
 struct RaviartThomas <: ReferenceFEName end
 
+const raviart_thomas = RaviartThomas()
+
 """
     RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
 
@@ -44,11 +46,11 @@ function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
   reffe
 end
 
-function ReferenceFE(p::Polytope,::Type{RaviartThomas}, order)
+function ReferenceFE(p::Polytope,::RaviartThomas, order)
   RaviartThomasRefFE(Float64,p,order)
 end
 
-function ReferenceFE(p::Polytope,::Type{RaviartThomas},::Type{T}, order) where T
+function ReferenceFE(p::Polytope,::RaviartThomas,::Type{T}, order) where T
   RaviartThomasRefFE(T,p,order)
 end
 

@@ -29,8 +29,8 @@ const h = L / ncellx
 const γ = order*(order+1)
 const γ0 = 1.0/10.0
 
-reffe_u = ReferenceFE(Lagrangian,VectorValue{2,Float64},order)
-reffe_p = ReferenceFE(Lagrangian,Float64,order)
+reffe_u = ReferenceFE(lagrangian,VectorValue{2,Float64},order)
+reffe_p = ReferenceFE(lagrangian,Float64,order)
 
 U = FESpace(model,reffe_u,conformity=:L2)
 P = FESpace(model,reffe_p,conformity=:L2,constraint=:zeromean)
