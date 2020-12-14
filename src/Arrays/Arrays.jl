@@ -73,8 +73,6 @@ export eachblockid
 export VectorOfBlockArrayCoo
 export VectorOfBlockVectorCoo
 export VectorOfBlockMatrixCoo
-export zeros_like
-export TwoLevelBlockedUnitRange
 export append_ranges
 export MultiLevelBlockedUnitRange
 export blocks_equal
