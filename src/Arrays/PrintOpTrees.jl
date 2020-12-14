@@ -50,7 +50,7 @@ function get_children(n::TreeNode, a::CompressedArray)
 end
 
 function get_children(n::TreeNode, a::LazyArray)
-  (similar_tree_node(n,a.g),map(i->similar_tree_node(n,i),a.f)...)
+  (similar_tree_node(n,a.maps),map(i->similar_tree_node(n,i),a.args)...)
 end
 
 function get_children(n::TreeNode, a::SubVector)
@@ -84,4 +84,3 @@ end
 function get_children(n::TreeNode, a::VectorWithEntryInserted)
   (similar_tree_node(n,a.a),)
 end
-

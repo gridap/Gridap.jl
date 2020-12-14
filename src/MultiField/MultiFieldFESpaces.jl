@@ -135,7 +135,7 @@ end
 function CellData.CellField(
   fe::MultiFieldFESpace,cell_values::LazyArray{<:Fill{<:BlockArrayCooMap}})
   single_fields = map(1:length(fe.spaces)) do i
-    ma = cell_values.g.value
+    ma = cell_values.maps.value
     cell_values_field = Fields._get_cell_block(ma,cell_values,Block(i))
     CellField(fe.spaces[i],cell_values_field)
   end
