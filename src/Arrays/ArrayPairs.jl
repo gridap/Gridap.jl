@@ -15,6 +15,5 @@ end
 second(x) = x[2]
 
 function unpair_arrays(pair::LazyArray{<:Fill{typeof(tuple)}})
-  pair.f
+  pair.args
 end
-

@@ -269,8 +269,8 @@ function lazy_map(::typeof(∇),a::CartesianMap)
 end
 
 function lazy_map(::typeof(∇),a::LazyArray{<:Fill{<:Reindex{<:CartesianMap}}})
-  i_to_map = a.g.value.values
-  j_to_i = a.f[1]
+  i_to_map = a.maps.value.values
+  j_to_i = a.args[1]
   i_to_grad = lazy_map(∇,i_to_map)
   lazy_map(Reindex(i_to_grad),j_to_i)
 end

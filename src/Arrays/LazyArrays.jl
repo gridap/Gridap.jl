@@ -197,7 +197,7 @@ function Base.getindex(a::LazyArray{G,T,N}, i::Vararg{Integer,N}) where {G,T,N}
 end
 
 Base.size(a::LazyArray) = size(a.maps)
-Base.size(a::LazyArray{G,T,1} where {G,T}) = (length(a.g),)
+Base.size(a::LazyArray{G,T,1} where {G,T}) = (length(a.maps),)
 
 function Base.sum(a::LazyArray)
   cache = array_cache(a)
@@ -217,8 +217,8 @@ function testitem(a::LazyArray{A,T} where A) where T
   if length(a) > 0
     first(a)
   else
-    gi = testitem(a.g)
-    fi = map(testitem,a.f)
+    gi = testitem(a.maps)
+    fi = map(testitem,a.args)
     return_value(gi,fi...)
   end::T
 end

@@ -112,58 +112,58 @@ cell_b2 = lazy_map(BlockFieldArrayCooMap((2,),[(2,)]),cell_axs,cell_f2)
 
 cell_b1p = lazy_map(evaluate,cell_b1,cell_p)
 cell_b2p = lazy_map(evaluate,cell_b2,cell_p)
-@test isa(cell_b2p.g.value,BlockArrayCooMap)
+@test isa(cell_b2p.maps.value,BlockArrayCooMap)
 
 cell_b1x = lazy_map(evaluate,cell_b1,cell_x)
 cell_b2x = lazy_map(evaluate,cell_b2,cell_x)
-@test isa(cell_b2x.g.value,BlockArrayCooMap)
+@test isa(cell_b2x.maps.value,BlockArrayCooMap)
 
 cell_∇b2 = lazy_map(Broadcasting(∇),cell_b2)
-@test isa(cell_∇b2.g.value,BlockFieldArrayCooMap)
+@test isa(cell_∇b2.maps.value,BlockFieldArrayCooMap)
 
 phi(x) = 2*x
 cell_phi = Fill(GenericField(phi),ncells)
 cell_b2ophi = lazy_map(Broadcasting(∘),cell_b2,cell_phi)
-@test isa(cell_b2ophi.g.value,BlockFieldArrayCooMap)
+@test isa(cell_b2ophi.maps.value,BlockFieldArrayCooMap)
 
 face_cell = [3,2,1,2]
 face_b2 = lazy_map(Reindex(cell_b2),face_cell)
-@test isa(face_b2.g.value,BlockFieldArrayCooMap)
+@test isa(face_b2.maps.value,BlockFieldArrayCooMap)
 
 cell_b2t = lazy_map(transpose,cell_b2)
-@test isa(cell_b2t.g.value,BlockFieldArrayCooMap)
+@test isa(cell_b2t.maps.value,BlockFieldArrayCooMap)
 
 cell_b2tx = lazy_map(evaluate,cell_b2t,cell_x)
 test_array(cell_b2tx,Fill(b2tx,ncells))
 
 cell_g2 = lazy_map(Broadcasting(Operation(-)),cell_b2)
 cell_g2x = lazy_map(evaluate,cell_g2,cell_x)
-@test isa(cell_g2x.g.value,BlockArrayCooMap)
+@test isa(cell_g2x.maps.value,BlockArrayCooMap)
 test_array(cell_g2x,-collect(cell_b2x))
 
 cell_f = Fill(ConstantField(2.0),ncells)
 cell_g2 = lazy_map(Broadcasting(Operation(*)),cell_b2,cell_f)
 cell_g2x = lazy_map(evaluate,cell_g2,cell_x)
-@test isa(cell_g2x.g.value,BlockArrayCooMap)
+@test isa(cell_g2x.maps.value,BlockArrayCooMap)
 r = map(i->2.0*i,cell_b2x)
 test_array(cell_g2x,r)
 
 cell_f = Fill(ConstantField(VectorValue(1,1)),ncells)
 cell_g1 = lazy_map(Broadcasting(Operation(⋅)),cell_b1,cell_f)
 cell_g1x = lazy_map(evaluate,cell_g1,cell_x)
-@test isa(cell_g1x.g.value,BlockArrayCooMap)
+@test isa(cell_g1x.maps.value,BlockArrayCooMap)
 
 cell_g = lazy_map(Broadcasting(Operation(-)),cell_g1,cell_g2)
 cell_gx = lazy_map(evaluate,cell_g,cell_x)
-@test isa(cell_gx.g.value,BlockArrayCooMap)
+@test isa(cell_gx.maps.value,BlockArrayCooMap)
 
 cell_g = lazy_map(Broadcasting(Operation(*)),cell_g1,cell_b2t)
 cell_gx = lazy_map(evaluate,cell_g,cell_x)
-@test isa(cell_gx.g.value,BlockArrayCooMap)
+@test isa(cell_gx.maps.value,BlockArrayCooMap)
 
 cell_g = lazy_map(Broadcasting(Operation(*)),cell_b2t,cell_g1)
 cell_gx = lazy_map(evaluate,cell_g,cell_x)
-@test isa(cell_gx.g.value,BlockArrayCooMap)
+@test isa(cell_gx.maps.value,BlockArrayCooMap)
 
 ϕ = GenericField(x->2*x)
 cell_ϕ = fill(ϕ,ncells)
@@ -172,16 +172,16 @@ w = rand(np)
 cell_w = Fill(w,ncells)
 
 cell_i = lazy_map(integrate,cell_b2,cell_x,cell_w,cell_J)
-@test isa(cell_i.g.value,BlockArrayCooMap)
+@test isa(cell_i.maps.value,BlockArrayCooMap)
 
 cell_g = lazy_map(Broadcasting(Operation(*)),cell_g1,cell_b2t)
 cell_i = lazy_map(integrate,cell_g,cell_x,cell_w,cell_J)
-@test isa(cell_i.g.value,BlockArrayCooMap)
+@test isa(cell_i.maps.value,BlockArrayCooMap)
 
 f(a) = 2*a
 cell_g = lazy_map(Broadcasting(Operation(f)),cell_b1)
 cell_gx = lazy_map(evaluate,cell_g,cell_x)
-@test isa(cell_gx.g.value,BlockArrayCooMap)
+@test isa(cell_gx.maps.value,BlockArrayCooMap)
 test_array(cell_gx,map((a)->f.(a),cell_b1x))
 
 cell_f = Fill(ConstantField(3),ncells)
@@ -189,13 +189,13 @@ cell_fx = lazy_map(evaluate,cell_f,cell_x)
 f(a,b) = 2*a + a*b
 cell_g = lazy_map(Broadcasting(Operation(f)),cell_b2,cell_f)
 cell_gx = lazy_map(evaluate,cell_g,cell_x)
-@test isa(cell_gx.g.value,BlockArrayCooMap)
+@test isa(cell_gx.maps.value,BlockArrayCooMap)
 test_array(cell_gx,map((a,b)->f.(a,b),cell_b2x,cell_fx))
 
 f(b,a) = 2*a + a*b
 cell_g = lazy_map(Broadcasting(Operation(f)),cell_f,cell_b2)
 cell_gx = lazy_map(evaluate,cell_g,cell_x)
-@test isa(cell_gx.g.value,BlockArrayCooMap)
+@test isa(cell_gx.maps.value,BlockArrayCooMap)
 r = map((a,b)->f.(a,b),cell_fx,cell_b2x)
 test_array(cell_gx,r)
 
@@ -214,8 +214,8 @@ cell_b1Lx = lazy_map(evaluate,cell_b1L,cell_x)
 cell_b1Rx = lazy_map(evaluate,cell_b1R,cell_x)
 cell_b2Lx = lazy_map(evaluate,cell_b2L,cell_x)
 cell_b2Rx = lazy_map(evaluate,cell_b2R,cell_x)
-@test isa(cell_b1Lx.g.value,BlockArrayCooMap)
-@test isa(cell_b2Rx.g.value,BlockArrayCooMap)
+@test isa(cell_b1Lx.maps.value,BlockArrayCooMap)
+@test isa(cell_b2Rx.maps.value,BlockArrayCooMap)
 @test is_zero_block(cell_b1Lx[1],1,1) == false
 @test is_zero_block(cell_b1Lx[1],1,2) == true
 @test is_zero_block(cell_b1Lx[1][Block(1,1)],1,1) == false
@@ -229,8 +229,8 @@ cell_∇b1R = lazy_map(Broadcasting(∇),cell_b1R)
 cell_∇b2L = lazy_map(Broadcasting(∇),cell_b2L)
 cell_∇b1Rx = lazy_map(evaluate,cell_∇b1R,cell_x)
 cell_∇b2Lx = lazy_map(evaluate,cell_∇b2L,cell_x)
-@test isa(cell_∇b1Rx.g.value,BlockArrayCooMap)
-@test isa(cell_∇b2Lx.g.value,BlockArrayCooMap)
+@test isa(cell_∇b1Rx.maps.value,BlockArrayCooMap)
+@test isa(cell_∇b2Lx.maps.value,BlockArrayCooMap)
 @test is_zero_block(cell_∇b1Rx[1],1,1) == true
 @test is_zero_block(cell_∇b1Rx[1],1,2) == false
 @test is_zero_block(cell_∇b1Rx[1][Block(1,2)],1,1) == false
@@ -246,8 +246,8 @@ cell_b2Rt = lazy_map(transpose,cell_b2R)
 cell_b1Rtx = lazy_map(evaluate,cell_b1Rt,cell_x)
 cell_b2Ltx = lazy_map(evaluate,cell_b2Lt,cell_x)
 cell_b2Rtx = lazy_map(evaluate,cell_b2Rt,cell_x)
-@test isa(cell_b1Rtx.g.value,BlockArrayCooMap)
-@test isa(cell_b2Ltx.g.value,BlockArrayCooMap)
+@test isa(cell_b1Rtx.maps.value,BlockArrayCooMap)
+@test isa(cell_b2Ltx.maps.value,BlockArrayCooMap)
 @test is_zero_block(cell_b1Rtx[1],1,1,1) == true
 @test is_zero_block(cell_b1Rtx[1],1,1,2) == false
 @test is_zero_block(cell_b1Rtx[1][Block(1,1,2)],1,1,1) == false
@@ -261,8 +261,8 @@ cell_∇b1Rt = lazy_map(Broadcasting(∇),cell_b1Rt)
 cell_∇b2Lt = lazy_map(Broadcasting(∇),cell_b2Lt)
 cell_∇b1Rtx = lazy_map(evaluate,cell_∇b1Rt,cell_x)
 cell_∇b2Ltx = lazy_map(evaluate,cell_∇b2Lt,cell_x)
-@test isa(cell_∇b1Rtx.g.value,BlockArrayCooMap)
-@test isa(cell_∇b2Ltx.g.value,BlockArrayCooMap)
+@test isa(cell_∇b1Rtx.maps.value,BlockArrayCooMap)
+@test isa(cell_∇b2Ltx.maps.value,BlockArrayCooMap)
 @test is_zero_block(cell_∇b1Rtx[1],1,1,1) == true
 @test is_zero_block(cell_∇b1Rtx[1],1,1,2) == false
 @test is_zero_block(cell_∇b1Rtx[1][Block(1,1,2)],1,1,1) == false
@@ -275,7 +275,7 @@ cell_∇b2Ltx = lazy_map(evaluate,cell_∇b2Lt,cell_x)
 f(a) = 3*a
 cell_g = lazy_map(Broadcasting(Operation(f)),cell_b2Lt)
 cell_gx = lazy_map(evaluate,cell_g,cell_x)
-@test isa(cell_gx.g.value,BlockArrayCooMap)
+@test isa(cell_gx.maps.value,BlockArrayCooMap)
 @test is_zero_block(cell_gx[1],1,1,1) == false
 @test is_zero_block(cell_gx[1],1,1,2) == true
 @test is_zero_block(cell_gx[1][Block(1,1,1)],1,1,1) == true
@@ -287,7 +287,7 @@ cell_f = Fill(ConstantField(3),ncells)
 cell_fx = lazy_map(evaluate,cell_f,cell_x)
 cell_g = lazy_map(Broadcasting(Operation(*)),cell_b2Lt,cell_f)
 cell_gx = lazy_map(evaluate,cell_g,cell_x)
-@test isa(cell_gx.g.value,BlockArrayCooMap)
+@test isa(cell_gx.maps.value,BlockArrayCooMap)
 @test is_zero_block(cell_gx[1],1,1,1) == false
 @test is_zero_block(cell_gx[1],1,1,2) == true
 @test is_zero_block(cell_gx[1][Block(1,1,1)],1,1,1) == true
@@ -299,7 +299,7 @@ cell_f = Fill(ConstantField(3),ncells)
 cell_fx = lazy_map(evaluate,cell_f,cell_x)
 cell_g = lazy_map(Broadcasting(Operation(*)),cell_f,cell_b2Lt)
 cell_gx = lazy_map(evaluate,cell_g,cell_x)
-@test isa(cell_gx.g.value,BlockArrayCooMap)
+@test isa(cell_gx.maps.value,BlockArrayCooMap)
 @test is_zero_block(cell_gx[1],1,1,1) == false
 @test is_zero_block(cell_gx[1],1,1,2) == true
 @test is_zero_block(cell_gx[1][Block(1,1,1)],1,1,1) == true
@@ -309,7 +309,7 @@ test_array(cell_gx,r)
 
 cell_g = lazy_map(Broadcasting(Operation(-)),cell_b2Lt,cell_b2Rt)
 cell_gx = lazy_map(evaluate,cell_g,cell_x)
-@test isa(cell_gx.g.value,BlockArrayCooMap)
+@test isa(cell_gx.maps.value,BlockArrayCooMap)
 @test is_zero_block(cell_gx[1],1,1,1) == false
 @test is_zero_block(cell_gx[1],1,1,2) == false
 @test is_zero_block(cell_gx[1][Block(1,1,1)],1,1,1) == true
@@ -321,7 +321,7 @@ test_array(cell_gx,r)
 
 cell_g = lazy_map(Broadcasting(Operation(*)),cell_b2Lt,cell_b2R)
 cell_gx = lazy_map(evaluate,cell_g,cell_x)
-@test isa(cell_gx.g.value,BlockArrayCooMap)
+@test isa(cell_gx.maps.value,BlockArrayCooMap)
 @test is_zero_block(cell_gx[1],1,1,1) == true
 @test is_zero_block(cell_gx[1],1,1,2) == true
 @test is_zero_block(cell_gx[1],1,2,1) == false
