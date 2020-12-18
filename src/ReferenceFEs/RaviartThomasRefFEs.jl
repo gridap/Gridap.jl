@@ -429,7 +429,7 @@ end
 function lazy_map(
   ::Broadcasting{typeof(gradient)},
   a::LazyArray{<:Fill{Broadcasting{Operation{ContraVariantPiolaMap}}}})
-  v, Jt, detJ = a.f
+  v, Jt, detJ = a.args
   ∇v = lazy_map(Broadcasting(∇),v)
   k = ContraVariantPiolaMap()
   lazy_map(Broadcasting(Operation(k)),∇v,Jt,detJ)
