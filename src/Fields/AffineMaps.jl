@@ -59,3 +59,13 @@ function lazy_map(
   cell_invJt = lazy_map(Operation(inv),cell_Jt)
   lazy_map(Broadcasting(Operation(push_∇∇)),cell_∇∇a,cell_invJt)
 end
+
+function lazy_map(
+  k::Broadcasting{typeof(push_∇∇)},
+  cell_∇∇at::LazyArray{<:Fill{typeof(transpose)}},
+  cell_map::AbstractArray{<:AffineMap})
+  cell_∇∇a = cell_∇∇at.args[1]
+  cell_∇∇b = lazy_map(k,cell_∇∇a,cell_map)
+  cell_∇∇bt = lazy_map(transpose,cell_∇∇b)
+  cell_∇∇bt
+end
