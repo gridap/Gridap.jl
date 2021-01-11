@@ -83,12 +83,12 @@ push_∇(∇a::Field,ϕ::Field) = inv(∇(ϕ))⋅∇a
 
 function push_∇∇(∇∇a::Field,ϕ::Field)
   @notimplemented """\n
-  # Second order derivatives of quantities defined in the reference domain not implemented yet.
+  Second order derivatives of quantities defined in the reference domain not implemented yet.
 
-  # This is a feature that we want to have at some point in Gridap.
-  # If you are ready to help with this implementation, please contact the
-  # Gridap administrators.
-  # """
+  This is a feature that we want to have at some point in Gridap.
+  If you are ready to help with this implementation, please contact the
+  Gridap administrators.
+  """
 end
 
 """
