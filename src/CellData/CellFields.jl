@@ -274,6 +274,9 @@ function ∇∇(a::CellField)
   GenericCellField(h,get_triangulation(a),DomainStyle(a))
 end
 
+# This function has to be removed when ∇⋅∇(a) is implemented
+laplacian(a::CellField) = tr(∇∇(a))
+
 # Operations between CellField
 
 function evaluate!(cache,k::Operation,a::CellField...)

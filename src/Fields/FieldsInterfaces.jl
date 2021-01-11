@@ -82,11 +82,7 @@ lazy_map(::Broadcasting{typeof(∇∇)},a::AbstractArray{<:Field}) = lazy_map(�
 push_∇(∇a::Field,ϕ::Field) = inv(∇(ϕ))⋅∇a
 
 function push_∇∇(∇∇a::Field,ϕ::Field)
-  Jt = ∇(ϕ)
-  Jt_inv = inv(Jt)
-  J_inv = transpose(Jt_inv)
-  Jt_inv⋅∇∇a⋅J_inv
-  # @notimplemented """\n
+  @notimplemented """\n
   # Second order derivatives of quantities defined in the reference domain not implemented yet.
 
   # This is a feature that we want to have at some point in Gridap.
