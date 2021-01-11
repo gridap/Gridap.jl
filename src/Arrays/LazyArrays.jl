@@ -205,7 +205,7 @@ function Base.sum(a::LazyArray)
 end
 
 function _sum_lazy_array(cache,a)
-  r = zero(eltype(a))
+  r = zero(testitem(a))
   for i in eachindex(a)
     ai = getindex!(cache,a,i)
     r += ai
