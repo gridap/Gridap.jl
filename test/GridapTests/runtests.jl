@@ -24,4 +24,6 @@ using Test
 
 @time @testset "IsotropicDamage" begin include("IsotropicDamageTests.jl") end
 
+@time @testset "Biharmonic" begin include("BiharmonicTests.jl") end
+
 end # module
