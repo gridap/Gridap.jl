@@ -16,7 +16,7 @@ model = CartesianDiscreteModel(domain, mesh)
 labels = get_face_labeling(model)
 add_tag_from_tags!(labels,"dirichlet",dirichlet_tags)
 
-reffe = ReferenceFE(:Lagrangian,Float64,order)
+reffe = ReferenceFE(lagrangian,Float64,order)
 Vf = TestFESpace( model,reffe; conformity=:H1, labels=labels, dirichlet_tags="dirichlet")
 
 Vd = DirichletFESpace(Vf)
@@ -32,7 +32,7 @@ test_single_field_fe_space(Ud,matvecdata,matdata,vecdata)
 
 trian = Triangulation(model)
 degree = 2*order
-dΩ = LebesgueMeasure(trian,degree)
+dΩ = Measure(trian,degree)
 
 a(u,v) = ∫( u*v )*dΩ
 l(v) = ∫( v*0 )*dΩ

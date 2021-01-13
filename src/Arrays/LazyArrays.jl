@@ -91,8 +91,8 @@ demand. It extends the `AbstractArray` API with two methods:
    `getindex!(cache,a::AbstractArray,i...)`
 """
 struct LazyArray{G,T,N,F} <: AbstractArray{T,N}
-  g::G
-  f::F
+  maps::G
+  args::F
   function LazyArray(::Type{T}, g::AbstractArray, f::AbstractArray...) where T
     G = typeof(g)
     F = typeof(f)
@@ -140,15 +140,15 @@ end
 
 function _array_cache!(hash::Dict,a::LazyArray)
   @boundscheck begin
-    @notimplementedif ! all(map(isconcretetype, map(eltype, a.f)))
-    if ! (eltype(a.g) <: Function)
-      @notimplementedif ! isconcretetype(eltype(a.g))
+    @notimplementedif ! all(map(isconcretetype, map(eltype, a.args)))
+    if ! (eltype(a.maps) <: Function)
+      @notimplementedif ! isconcretetype(eltype(a.maps))
     end
   end
-  gi = testitem(a.g)
-  fi = map(testitem,a.f)
-  cg = array_cache(hash,a.g)
-  cf = map(fi->array_cache(hash,fi),a.f)
+  gi = testitem(a.maps)
+  fi = map(testitem,a.args)
+  cg = array_cache(hash,a.maps)
+  cf = map(fi->array_cache(hash,fi),a.args)
   cgi = return_cache(gi, fi...)
   index = -1
   #item = evaluate!(cgi,gi,testargs(gi,fi...)...)
@@ -161,8 +161,8 @@ end
   index = LinearIndices(a)[i]
   if index_and_item.index != index
     cg, cgi, cf = _cache
-    gi = getindex!(cg, a.g, i)
-    fi = map((cj,fj) -> getindex!(cj,fj,i),cf,a.f)
+    gi = getindex!(cg, a.maps, i)
+    fi = map((cj,fj) -> getindex!(cj,fj,i),cf,a.args)
     index_and_item.index = index
     index_and_item.item = evaluate!(cgi, gi, fi...)
   end
@@ -174,8 +174,8 @@ end
   index = LinearIndices(a)[i...]
   if index_and_item.index != index
     cg, cgi, cf = _cache
-    gi = getindex!(cg, a.g, i...)
-    fi = map((cj,fj) -> getindex!(cj,fj,i...),cf,a.f)
+    gi = getindex!(cg, a.maps, i...)
+    fi = map((cj,fj) -> getindex!(cj,fj,i...),cf,a.args)
     index_and_item.index = index
     index_and_item.item = evaluate!(cgi, gi, fi...)
   end
@@ -183,21 +183,21 @@ end
 end
 
 function Base.getindex(a::LazyArray, i::Integer)
-  gi = a.g[i]
-  fi = map(fj -> fj[i],a.f)
+  gi = a.maps[i]
+  fi = map(fj -> fj[i],a.args)
   vi = evaluate(gi, fi...)
   vi
 end
 
 function Base.getindex(a::LazyArray{G,T,N}, i::Vararg{Integer,N}) where {G,T,N}
-  gi = a.g[i...]
-  fi = map(fj -> fj[i...],a.f)
+  gi = a.maps[i...]
+  fi = map(fj -> fj[i...],a.args)
   vi = evaluate(gi, fi...)
   vi
 end
 
-Base.size(a::LazyArray) = size(a.g)
-Base.size(a::LazyArray{G,T,1} where {G,T}) = (length(a.g),)
+Base.size(a::LazyArray) = size(a.maps)
+Base.size(a::LazyArray{G,T,1} where {G,T}) = (length(a.maps),)
 
 function Base.sum(a::LazyArray)
   cache = array_cache(a)
@@ -205,7 +205,7 @@ function Base.sum(a::LazyArray)
 end
 
 function _sum_lazy_array(cache,a)
-  r = zero(eltype(a))
+  r = zero(testitem(a))
   for i in eachindex(a)
     ai = getindex!(cache,a,i)
     r += ai
@@ -217,8 +217,8 @@ function testitem(a::LazyArray{A,T} where A) where T
   if length(a) > 0
     first(a)
   else
-    gi = testitem(a.g)
-    fi = map(testitem,a.f)
+    gi = testitem(a.maps)
+    fi = map(testitem,a.args)
     return_value(gi,fi...)
   end::T
 end

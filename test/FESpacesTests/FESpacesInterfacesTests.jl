@@ -15,7 +15,7 @@ order = 1
 domain =(0,1,0,1)
 partition = (3,3)
 model = CartesianDiscreteModel(domain,partition)
-reffe = ReferenceFE(:Lagrangian,Float64,order)
+reffe = ReferenceFE(lagrangian,Float64,order)
 V = FESpace(model,reffe,dirichlet_tags=["tag_1","tag_6"])
 test_fe_space(V)
 
@@ -71,7 +71,7 @@ cell_constr = get_cell_constraints(V,cellidsS)
 @test isa(cell_constr[1],BlockArrayCoo)
 
 du = get_cell_shapefuns_trial(V)
-du_data = get_cell_data(du)
+du_data = get_data(du)
 @test size(du_data[1]) == (1,4)
 
 @test get_cell_isconstrained(V,cellidsS) == Fill(false,length(cellids))

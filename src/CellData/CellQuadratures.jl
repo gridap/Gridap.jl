@@ -46,7 +46,7 @@ function lazy_append(
   CellQuadrature(cell_quad,cell_point,cell_weight,trian,DomainStyle(quad1))
 end
 
-get_cell_data(f::CellQuadrature) = f.cell_quad
+get_data(f::CellQuadrature) = f.cell_quad
 get_triangulation(f::CellQuadrature) = f.trian
 DomainStyle(::Type{CellQuadrature{DS}}) where DS = DS()
 

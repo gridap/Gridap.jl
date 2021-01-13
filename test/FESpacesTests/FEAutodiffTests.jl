@@ -6,7 +6,7 @@ using Gridap.FESpaces
 using Gridap.Arrays
 using Gridap.Fields
 using Gridap.Geometry
-using Gridap.TensorValues 
+using Gridap.TensorValues
 using Gridap.CellData
 using Gridap.ReferenceFEs
 
@@ -15,9 +15,9 @@ partition = (2,2)
 model = CartesianDiscreteModel(domain,partition)
 
 Ω = Triangulation(model)
-dΩ = LebesgueMeasure(Ω,2)
+dΩ = Measure(Ω,2)
 
-V = FESpace(model,ReferenceFE(:Lagrangian,Float64,2),conformity=:H1)
+V = FESpace(model,ReferenceFE(lagrangian,Float64,2),conformity=:H1)
 U = V
 
 dv = get_cell_shapefuns(V)
@@ -41,7 +41,7 @@ test_array(cell_j_auto,cell_j,≈)
 test_array(cell_h_auto,cell_h,≈)
 
 Γ = BoundaryTriangulation(model)
-dΓ = LebesgueMeasure(Γ,2)
+dΓ = Measure(Γ,2)
 
 ener(uh) = ∫( 0.5*∇(uh)⋅∇(uh) )*dΓ
 res(uh) = ∫( ∇(uh)⋅∇(dv) )*dΓ

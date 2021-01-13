@@ -67,9 +67,11 @@ reffe = LagrangianRefFE(VectorValue{2,Float64},TRI,3)
 @test get_face_own_dofs(reffe) == [[1, 11], [2, 12], [3, 13], [4, 5, 14, 15], [6, 7, 16, 17], [8, 9, 18, 19], [10, 20]]
 test_lagrangian_reference_fe(reffe)
 
-reffe = ReferenceFE(TRI,:Lagrangian,VectorValue{2,Float64},3)
+reffe = ReferenceFE(TRI,lagrangian,VectorValue{2,Float64},3)
 @test get_face_own_dofs(reffe) == [[1, 11], [2, 12], [3, 13], [4, 5, 14, 15], [6, 7, 16, 17], [8, 9, 18, 19], [10, 20]]
 test_lagrangian_reference_fe(reffe)
+
+@test Lagrangian() == lagrangian
 
 reffe = LagrangianRefFE(Float64,HEX,2)
 test_lagrangian_reference_fe(reffe)

@@ -16,12 +16,14 @@ using Test
 
 @time @testset "StokesNitsche" begin include("StokesNitscheTests.jl") end
 
-# @time @testset "Darcy" begin include("DarcyTests.jl") end
+@time @testset "Darcy" begin include("DarcyTests.jl") end
 
-# @time @testset "PeriodicDarcy" begin include("PeriodicDarcyTests.jl") end
+@time @testset "PeriodicDarcy" begin include("PeriodicDarcyTests.jl") end
 
 @time @testset "SurfaceCoupling" begin include("SurfaceCouplingTests.jl") end
 
 @time @testset "IsotropicDamage" begin include("IsotropicDamageTests.jl") end
+
+@time @testset "Biharmonic" begin include("BiharmonicTests.jl") end
 
 end # module

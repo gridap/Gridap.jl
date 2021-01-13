@@ -12,7 +12,7 @@ end
 
 """
 """
-function ZeroMeanFESpace(space::SingleFieldFESpace,dΩ::LebesgueMeasure)
+function ZeroMeanFESpace(space::SingleFieldFESpace,dΩ::Measure)
   _space = FESpaceWithConstantFixed(space,true,num_free_dofs(space))
   vol_i = assemble_vector(v->∫(v)*dΩ,space)
   vol = sum(vol_i)

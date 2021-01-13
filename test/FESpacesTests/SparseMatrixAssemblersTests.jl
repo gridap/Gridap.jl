@@ -16,7 +16,7 @@ domain =(0,1,0,1)
 partition = (2,2)
 model = CartesianDiscreteModel(domain,partition)
 
-reffe = ReferenceFE(:Lagrangian,Float64,1)
+reffe = ReferenceFE(lagrangian,Float64,1)
 V = FESpace(model,reffe,dirichlet_tags=[1,2,3,4,6,5])
 U = V
 

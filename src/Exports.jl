@@ -35,6 +35,7 @@ export det, inv, tr, cross, dot, norm, ×, ⋅
 @publish Arrays Broadcasting
 @publish Arrays Operation
 @publish Arrays print_op_tree
+using Gridap.Arrays: ∑; export ∑
 
 @publish TensorValues VectorValue
 @publish TensorValues TensorValue
@@ -88,6 +89,12 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish ReferenceFEs HEX8
 @publish ReferenceFEs Polytope
 @publish ReferenceFEs ReferenceFE
+@publish ReferenceFEs Lagrangian
+@publish ReferenceFEs RaviartThomas
+@publish ReferenceFEs Nedelec
+@publish ReferenceFEs lagrangian
+@publish ReferenceFEs raviart_thomas
+@publish ReferenceFEs nedelec
 
 @publish Geometry get_triangulation
 @publish Geometry num_cells
@@ -116,7 +123,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish Geometry InterfaceTriangulation
 
 @publish CellData CellQuadrature
-@publish CellData LebesgueMeasure
+@publish CellData Measure
 @publish CellData DomainStyle
 @publish CellData ReferenceDomain
 @publish CellData PhysicalDomain

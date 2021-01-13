@@ -243,7 +243,7 @@ end
 
 function ReferenceFE(
   polytope::Polytope,
-  ::Val{:Lagrangian},
+  ::Lagrangian,
   ::Type{T},
   orders::Union{Integer,Tuple{Vararg{Integer}}};
   space::Symbol=_default_space(polytope)) where T

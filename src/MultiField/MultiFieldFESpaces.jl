@@ -74,10 +74,10 @@ FESpaces.get_vector_type(f::MultiFieldFESpace) = f.vector_type
 FESpaces.ConstraintStyle(::Type{MultiFieldFESpace{S,B,V}}) where {S,B,V} = B()
 
 function FESpaces.get_cell_shapefuns(f::MultiFieldFESpace)
- 
+
   # Compute the cell axes
   blocks = map(get_cell_shapefuns,f.spaces)
-  blocks_data = map(get_cell_data,blocks)
+  blocks_data = map(get_data,blocks)
   cell_axes_blocks = map(i->lazy_map(axes,i),blocks_data)
   cell_axes = lazy_map(_multifield_axes_dofs,cell_axes_blocks...)
 
@@ -86,7 +86,7 @@ function FESpaces.get_cell_shapefuns(f::MultiFieldFESpace)
   all_bases = map(1:nfields) do i
     bsize = (nfields,)
     dv = blocks[i]
-    cell_basis = lazy_map(Fields.BlockFieldArrayCooMap(bsize,[(i,)]),cell_axes,get_cell_data(dv))
+    cell_basis = lazy_map(Fields.BlockFieldArrayCooMap(bsize,[(i,)]),cell_axes,get_data(dv))
     FEBasis(cell_basis,get_triangulation(dv),TestBasis(),DomainStyle(dv))
   end
   MultiFieldCellField(all_bases)
@@ -102,7 +102,7 @@ function FESpaces.get_cell_shapefuns_trial(f::MultiFieldFESpace)
   nfields = length(blocks)
   all_bases = map(1:nfields) do i
     dv = blocks[i]
-    cell_basis = lazy_map(transpose,get_cell_data(dv))
+    cell_basis = lazy_map(transpose,get_data(dv))
     FEBasis(cell_basis,get_triangulation(dv),TrialBasis(),DomainStyle(dv))
   end
   MultiFieldCellField(all_bases)
@@ -135,7 +135,7 @@ end
 function CellData.CellField(
   fe::MultiFieldFESpace,cell_values::LazyArray{<:Fill{<:BlockArrayCooMap}})
   single_fields = map(1:length(fe.spaces)) do i
-    ma = cell_values.g.value
+    ma = cell_values.maps.value
     cell_values_field = Fields._get_cell_block(ma,cell_values,Block(i))
     CellField(fe.spaces[i],cell_values_field)
   end

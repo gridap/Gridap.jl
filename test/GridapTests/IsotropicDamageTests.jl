@@ -77,14 +77,14 @@ function main(;n,nsteps)
 
   V = TestFESpace(
     model,
-    ReferenceFE(:Lagrangian,VectorValue{3,Float64},order),
+    ReferenceFE(lagrangian,VectorValue{3,Float64},order),
     labels = labeling,
     dirichlet_tags=["ux0","ux1","uxyz0","uxz0"],
     dirichlet_masks=[(true,false,false),(true,false,false),(true,true,true),(true,false,true)])
 
   degree = 2*order
   Ω = Triangulation(model)
-  dΩ = LebesgueMeasure(Ω,degree)
+  dΩ = Measure(Ω,degree)
 
   r = CellState(r_0,dΩ)
   d = CellState(0.0,dΩ)

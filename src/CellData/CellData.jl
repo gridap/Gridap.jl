@@ -30,7 +30,7 @@ import Gridap.Geometry: get_triangulation
 
 import Gridap.TensorValues: inner, outer, double_contraction, symmetric_part
 import LinearAlgebra: det, tr, cross, dot, ⋅
-import Base: inv, abs, abs2, *, +, -, /, adjoint, transpose, real, imag
+import Base: inv, abs, abs2, *, +, -, /, adjoint, transpose, real, imag, conj
 
 export gradient, ∇
 export ∇∇
@@ -41,7 +41,7 @@ export DomainStyle
 export ReferenceDomain
 export PhysicalDomain
 export CellDatum
-export get_cell_data
+export get_data
 export get_triangulation
 export change_domain
 export test_cell_datum
@@ -63,7 +63,7 @@ export num_domains
 export get_domains
 export get_contribution
 export add_contribution!
-export LebesgueMeasure
+export Measure
 
 export attach_dirichlet
 export attach_constraints_rows

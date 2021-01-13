@@ -22,9 +22,9 @@ const γ = 10
 Λ = SkeletonTriangulation(model)
 
 degree = order
-dΩ = LebesgueMeasure(Ω,degree)
-dΓ = LebesgueMeasure(Γ,degree)
-dΛ = LebesgueMeasure(Λ,degree)
+dΩ = Measure(Ω,degree)
+dΓ = Measure(Γ,degree)
+dΛ = Measure(Λ,degree)
 
 n_Γ = get_normal_vector(Γ)
 n_Λ = get_normal_vector(Λ)
@@ -35,7 +35,7 @@ u(x) = x[1]^2 + x[2]
 f(x) = - Δu(x)
 ∇(::typeof(u)) = ∇u
 
-V = TestFESpace(model,ReferenceFE(:Lagrangian,Float64,order),conformity=:L2)
+V = TestFESpace(model,ReferenceFE(lagrangian,Float64,order),conformity=:L2)
 U = TrialFESpace(V,u)
 
 a(u,v) =

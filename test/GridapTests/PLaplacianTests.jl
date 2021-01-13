@@ -21,13 +21,13 @@ dflux(∇du,∇u) = (p-2)*norm(∇u)^(p-4)*inner(∇u,∇du)*∇u + norm(∇u)^(
 order = 3
 T = Float64
 
-V = TestFESpace(model,ReferenceFE(:Lagrangian,Float64,order),dirichlet_tags="boundary")
+V = TestFESpace(model,ReferenceFE(lagrangian,Float64,order),dirichlet_tags="boundary")
 U = TrialFESpace(V,u)
 
 Ω = Triangulation(model)
 
 degree = 2*order
-dΩ = LebesgueMeasure(Ω,degree)
+dΩ = Measure(Ω,degree)
 
 res(u,v) = ∫( ∇(v)⋅(flux∘∇(u)) )*dΩ
 jac(u,du,v) = ∫( ∇(v)⋅(dflux∘(∇(du),∇(u))) )*dΩ

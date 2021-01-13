@@ -29,8 +29,8 @@ const h = L / ncellx
 const γ = order*(order+1)
 const γ0 = 1.0/10.0
 
-reffe_u = ReferenceFE(:Lagrangian,VectorValue{2,Float64},order)
-reffe_p = ReferenceFE(:Lagrangian,Float64,order)
+reffe_u = ReferenceFE(lagrangian,VectorValue{2,Float64},order)
+reffe_p = ReferenceFE(lagrangian,Float64,order)
 
 U = FESpace(model,reffe_u,conformity=:L2)
 P = FESpace(model,reffe_p,conformity=:L2,constraint=:zeromean)
@@ -41,9 +41,9 @@ X = MultiFieldFESpace([U,P])
 Λ = SkeletonTriangulation(model)
 
 degree = 2*order
-dΩ = LebesgueMeasure(Ω,degree)
-dΓ = LebesgueMeasure(Γ,degree)
-dΛ = LebesgueMeasure(Λ,degree)
+dΩ = Measure(Ω,degree)
+dΓ = Measure(Γ,degree)
+dΛ = Measure(Λ,degree)
 
 n_Γ = get_normal_vector(Γ)
 n_Λ = get_normal_vector(Λ)
@@ -51,7 +51,7 @@ n_Λ = get_normal_vector(Λ)
 a((u,p),(v,q)) =
   ∫( ∇(v)⊙∇(u) - ∇(q)⋅u + v⋅∇(p) )*dΩ +
   ∫( (γ/h)*v⋅u - v⋅(n_Γ⋅∇(u)) - (n_Γ⋅∇(v))⋅u + 2*(q*n_Γ)⋅u )*dΓ +
-  ∫(  
+  ∫(
     (γ/h)*jump(v⊗n_Λ)⊙jump(u⊗n_Λ) -
       jump(v⊗n_Λ)⊙mean(∇(u)) -
       mean(∇(v))⊙jump(u⊗n_Λ)  +

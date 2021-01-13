@@ -11,6 +11,7 @@ r = vcat(a,b)
 test_array(c,r)
 
 @test sum(c) == sum(r)
+@test ∑(c) == sum(r)
 
 d = lazy_map(-,c)
 r = -c

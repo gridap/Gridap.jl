@@ -1,5 +1,9 @@
 struct CurlConformity <: Conformity end
 
+struct Nedelec <: ReferenceFEName end
+
+const nedelec = Nedelec()
+
 """
     NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
 
@@ -25,7 +29,7 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
 
   metadata = nothing
 
-  reffe = GenericRefFE{:Nedelec}(
+  reffe = GenericRefFE{Nedelec}(
     ndofs,
     p,
     prebasis,
@@ -37,15 +41,15 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
   reffe
 end
 
-function ReferenceFE(p::Polytope,::Val{:Nedelec}, order)
+function ReferenceFE(p::Polytope,::Nedelec, order)
   NedelecRefFE(Float64,p,order)
 end
 
-function ReferenceFE(p::Polytope,::Val{:Nedelec},::Type{T}, order) where T
+function ReferenceFE(p::Polytope,::Nedelec,::Type{T}, order) where T
   NedelecRefFE(T,p,order)
 end
 
-function Conformity(reffe::GenericRefFE{:Nedelec},sym::Symbol)
+function Conformity(reffe::GenericRefFE{Nedelec},sym::Symbol)
   hcurl = (:Hcurl,:HCurl)
   if sym == :L2
     L2Conformity()
@@ -60,7 +64,7 @@ function Conformity(reffe::GenericRefFE{:Nedelec},sym::Symbol)
   end
 end
 
-function get_face_own_dofs(reffe::GenericRefFE{:Nedelec}, conf::CurlConformity)
+function get_face_own_dofs(reffe::GenericRefFE{Nedelec}, conf::CurlConformity)
   get_face_dofs(reffe)
 end
 
@@ -167,7 +171,7 @@ end
 function _Nedelec_face_moments(p, fshfs, c_fips, fcips, fwips)
   nc = length(c_fips)
   cfshfs = fill(fshfs, nc)
-  cvals = evaluate(cfshfs,c_fips)
+  cvals = lazy_map(evaluate,cfshfs,c_fips)
 
   fvs = _nfaces_vertices(Float64,p,num_dims(p)-1)
   fts = [hcat([vs[2]-vs[1]...],[vs[3]-vs[1]...]) for vs in fvs]

@@ -23,14 +23,14 @@ model = CartesianDiscreteModel(domain,partition)
 
 degree = order
 Ω = get_triangulation(model)
-dΩ = LebesgueMeasure(Ω,degree)
+dΩ = Measure(Ω,degree)
 
 sdegree = order
 Γ = SkeletonTriangulation(model)
-dΓ = LebesgueMeasure(Γ,sdegree)
+dΓ = Measure(Γ,sdegree)
 
-V = TestFESpace(model,ReferenceFE(:Lagrangian,Float64,order);conformity=:H1)
-Q = TestFESpace(model,ReferenceFE(:Lagrangian,Float64,order-1),conformity=:L2)
+V = TestFESpace(model,ReferenceFE(lagrangian,Float64,order);conformity=:H1)
+Q = TestFESpace(model,ReferenceFE(lagrangian,Float64,order-1),conformity=:L2)
 
 U = TrialFESpace(V)
 P = TrialFESpace(Q)

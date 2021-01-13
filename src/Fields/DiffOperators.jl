@@ -62,8 +62,9 @@ const Δ = laplacian
     laplacian(f)
 """
 function laplacian(f)
-  g = gradient(f)
-  divergence(g)
+  # g = gradient(f)
+  # divergence(g)
+  tr(∇∇(f))
 end
 
 """
@@ -110,9 +111,8 @@ outer(f::Function,::typeof(∇)) = transpose(gradient(f))
     cross(∇,f)
 
 Equivalent to
-    
+
     curl(f)
 """
 cross(::typeof(∇),f::Field) = curl(f)
 cross(::typeof(∇),f::Function) = curl(f)
-

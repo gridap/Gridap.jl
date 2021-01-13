@@ -16,9 +16,9 @@ order = 2
 
 trian = get_triangulation(model)
 degree = order
-dΩ = LebesgueMeasure(trian,degree)
+dΩ = Measure(trian,degree)
 
-_V = FESpace(model,ReferenceFE(:Lagrangian,Float64,order);conformity=:L2)
+_V = FESpace(model,ReferenceFE(lagrangian,Float64,order);conformity=:L2)
 
 V = ZeroMeanFESpace(_V,dΩ)
 
@@ -39,7 +39,7 @@ mean1 = sum(∫(uh)*dΩ)
 tol = 1.0e-10
 @test abs(mean1) < tol
 
-V = FESpace(model,ReferenceFE(:Lagrangian,Float64,order);conformity=:L2,constraint=:zeromean)
+V = FESpace(model,ReferenceFE(lagrangian,Float64,order);conformity=:L2,constraint=:zeromean)
 @test isa(V,ZeroMeanFESpace)
 
 end # module

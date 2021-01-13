@@ -36,8 +36,8 @@ add_tag_from_tags!(labels,"neumann",[6,7,8])
 
 order = 2
 
-reffe_u = ReferenceFE(:Lagrangian,VectorValue{2,Float64},order)
-reffe_p = ReferenceFE(:Lagrangian,Float64,order-1)
+reffe_u = ReferenceFE(lagrangian,VectorValue{2,Float64},order)
+reffe_p = ReferenceFE(lagrangian,Float64,order-1)
 
 V = TestFESpace(model,reffe_u,labels=labels,dirichlet_tags="dirichlet",conformity=:H1)
 Q = TestFESpace(model,reffe_p,labels=labels,conformity=:H1)
@@ -53,8 +53,8 @@ X = MultiFieldFESpace([U,P])
 n_Γ = get_normal_vector(Γ)
 
 degree = order
-dΩ = LebesgueMeasure(Ω,degree)
-dΓ = LebesgueMeasure(Γ,degree)
+dΩ = Measure(Ω,degree)
+dΓ = Measure(Γ,degree)
 
 a((u,p),(v,q)) = ∫( ∇(v)⊙∇(u) - (∇⋅v)*p + q*(∇⋅u) )*dΩ
 

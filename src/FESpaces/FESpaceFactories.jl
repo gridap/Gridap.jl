@@ -51,7 +51,7 @@ function _add_constraint(F,order,constraint)
     V = F
   elseif constraint == :zeromean
     trian = get_triangulation(F)
-    dΩ = LebesgueMeasure(trian,order)
+    dΩ = Measure(trian,order)
     V = ZeroMeanFESpace(F,dΩ)
   else
     @unreachable """\n
@@ -88,7 +88,7 @@ function FESpace(
 end
 
 
-function FESpace(model::DiscreteModel, reffe::Tuple{Symbol,Any,Any}; kwargs...)
+function FESpace(model::DiscreteModel, reffe::Tuple{<:ReferenceFEName,Any,Any}; kwargs...)
   basis, reffe_args,reffe_kwargs = reffe
   cell_reffe = ReferenceFE(model,basis,reffe_args...;reffe_kwargs...)
   FESpace(model,cell_reffe;kwargs...)

@@ -7,8 +7,8 @@
 function lazy_map(
   ::typeof(evaluate), a::LazyArray{<:Fill{typeof(linear_combination)}}, x::AbstractArray)
 
-  i_to_values = a.f[1]
-  i_to_basis = a.f[2]
+  i_to_values = a.args[1]
+  i_to_basis = a.args[2]
   i_to_basis_x = lazy_map(evaluate,i_to_basis,x)
   lazy_map(LinearCombinationMap(:),i_to_values,i_to_basis_x)
 end
@@ -30,7 +30,7 @@ end
 function lazy_map(
   ::typeof(evaluate), a::LazyArray{<:Fill{typeof(transpose)}}, x::AbstractArray)
 
-  i_to_basis_x = lazy_map(evaluate,a.f[1],x)
+  i_to_basis_x = lazy_map(evaluate,a.args[1],x)
   lazy_map(TransposeMap(),i_to_basis_x)
 end
 
@@ -42,8 +42,8 @@ end
 function lazy_map(
   ::typeof(evaluate), a::LazyArray{<:Fill{typeof(∘)}}, x::AbstractArray)
 
-  f = a.f[1]
-  g = a.f[2]
+  f = a.args[1]
+  g = a.args[2]
   gx = lazy_map(evaluate,g,x)
   fx = lazy_map(evaluate,f,gx)
   fx
@@ -57,8 +57,8 @@ end
 function lazy_map(
   ::typeof(evaluate), a::LazyArray{<:Fill{Broadcasting{typeof(∘)}}}, x::AbstractArray)
 
-  f = a.f[1]
-  g = a.f[2]
+  f = a.args[1]
+  g = a.args[2]
   gx = lazy_map(evaluate,g,x)
   fx = lazy_map(evaluate,f,gx)
   fx
@@ -74,8 +74,8 @@ function lazy_map(
   a::LazyArray{<:Fill{<:Operation}},
   x::AbstractArray)
 
-  fx = map( fi->lazy_map(evaluate,fi,x), a.f)
-  op = a.g.value.op
+  fx = map( fi->lazy_map(evaluate,fi,x), a.args)
+  op = a.maps.value.op
   lazy_map( Broadcasting(op), fx...)
 end
 
@@ -87,8 +87,8 @@ end
 function lazy_map(
   ::typeof(evaluate), a::LazyArray{<:Fill{<:Broadcasting{<:Operation}}}, x::AbstractArray)
 
-  fx = map( fi->lazy_map(evaluate,fi,x), a.f)
-  op = a.g.value.f.op
+  fx = map( fi->lazy_map(evaluate,fi,x), a.args)
+  op = a.maps.value.f.op
   lazy_map(BroadcastingFieldOpMap(op),fx...)
 end
 
@@ -100,8 +100,8 @@ end
 function lazy_map(
   ::typeof(gradient), a::LazyArray{<:Fill{typeof(linear_combination)}})
 
-  i_to_basis = lazy_map(Broadcasting(∇),a.f[2])
-  i_to_values = a.f[1]
+  i_to_basis = lazy_map(Broadcasting(∇),a.args[2])
+  i_to_values = a.args[1]
   lazy_map(linear_combination,i_to_values,i_to_basis)
 end
 
@@ -113,16 +113,16 @@ end
 function lazy_map(
   k::Broadcasting{typeof(∇)}, a::LazyArray{<:Fill{typeof(linear_combination)}})
 
-  i_to_basis = lazy_map(k,a.f[2])
-  i_to_values = a.f[1]
+  i_to_basis = lazy_map(k,a.args[2])
+  i_to_values = a.args[1]
   lazy_map(linear_combination,i_to_values,i_to_basis)
 end
 
 function lazy_map(
   k::Broadcasting{typeof(∇∇)}, a::LazyArray{<:Fill{typeof(linear_combination)}})
 
-  i_to_basis = lazy_map(k,a.f[2])
-  i_to_values = a.f[1]
+  i_to_basis = lazy_map(k,a.args[2])
+  i_to_values = a.args[1]
   lazy_map(linear_combination,i_to_values,i_to_basis)
 end
 
@@ -134,14 +134,14 @@ end
 function lazy_map(
   k::Broadcasting{typeof(∇)}, a::LazyArray{<:Fill{typeof(transpose)}})
 
-  i_to_basis = lazy_map(k,a.f[1])
+  i_to_basis = lazy_map(k,a.args[1])
   lazy_map( transpose, i_to_basis)
 end
 
 function lazy_map(
   k::Broadcasting{typeof(∇∇)}, a::LazyArray{<:Fill{typeof(transpose)}})
 
-  i_to_basis = lazy_map(k,a.f[1])
+  i_to_basis = lazy_map(k,a.args[1])
   lazy_map( transpose, i_to_basis)
 end
 
@@ -152,7 +152,7 @@ for op in (:+,:-)
     function lazy_map(
       ::typeof(gradient), a::LazyArray{<:Fill{Operation{typeof($op)}}})
 
-      f = a.f
+      f = a.args
       g = map(i->lazy_map(gradient,i),f)
       lazy_map(Operation($op),g...)
     end
@@ -160,7 +160,7 @@ for op in (:+,:-)
     function lazy_map(
       ::Broadcasting{typeof(gradient)}, a::LazyArray{<:Fill{Broadcasting{Operation{typeof($op)}}}})
 
-      f = a.f
+      f = a.args
       g = map(i->lazy_map(Broadcasting(∇),i),f)
       lazy_map(Broadcasting(Operation($op)),g...)
     end
@@ -174,7 +174,7 @@ for op in (:*,:⋅,:⊙,:⊗)
     function lazy_map(
       ::typeof(gradient), a::LazyArray{<:Fill{Operation{typeof($op)}}})
 
-      f = a.f
+      f = a.args
       @notimplementedif length(f) != 2
       g = map(i->lazy_map(gradient,i),f)
       k(F1,F2,G1,G2) = product_rule($op,F1,F2,G1,G2)
@@ -184,7 +184,7 @@ for op in (:*,:⋅,:⊙,:⊗)
     function lazy_map(
       ::Broadcasting{typeof(gradient)}, a::LazyArray{<:Fill{Broadcasting{Operation{typeof($op)}}}})
 
-      f = a.f
+      f = a.args
       @notimplementedif length(f) != 2
       g = map(i->lazy_map(Broadcasting(∇),i),f)
       k(F1,F2,G1,G2) = product_rule($op,F1,F2,G1,G2)
@@ -197,8 +197,8 @@ end
 function lazy_map(
   ::Broadcasting{typeof(gradient)}, a::LazyArray{<:Fill{Broadcasting{typeof(∘)}}})
 
-  f = a.f[1]
-  g = a.f[2]
+  f = a.args[1]
+  g = a.args[2]
   ∇f = lazy_map(Broadcasting(∇),f)
   h = lazy_map(Broadcasting(∘),∇f,g)
   ∇g = lazy_map(Broadcasting(∇),g)
@@ -209,8 +209,8 @@ end
 function lazy_map(
   ::typeof(gradient), a::LazyArray{<:Fill{typeof(∘)}})
 
-  f = a.f[1]
-  g = a.f[2]
+  f = a.args[1]
+  g = a.args[2]
   ∇f = lazy_map(∇,f)
   h = lazy_map(∘,∇f,g)
   ∇g = lazy_map(∇,g)
@@ -247,15 +247,19 @@ function lazy_map(k::Broadcasting{typeof(push_∇)},cell_∇a::AbstractArray,cel
   lazy_map(Broadcasting(Operation(⋅)),cell_invJt,cell_∇a)
 end
 
-function lazy_map(
-  k::Broadcasting{typeof(push_∇)},
-  cell_∇at::LazyArray{<:Fill{typeof(transpose)}},
-  cell_map::AbstractArray)
+for op in (:push_∇,:push_∇∇)
+  @eval begin
+    function lazy_map(
+      k::Broadcasting{typeof($op)},
+      cell_∇at::LazyArray{<:Fill{typeof(transpose)}},
+      cell_map::AbstractArray)
 
-  cell_∇a = cell_∇at.f[1]
-  cell_∇b = lazy_map(k,cell_∇a,cell_map)
-  cell_∇bt = lazy_map(transpose,cell_∇b)
-  cell_∇bt
+      cell_∇a = cell_∇at.args[1]
+      cell_∇b = lazy_map(k,cell_∇a,cell_map)
+      cell_∇bt = lazy_map(transpose,cell_∇b)
+      cell_∇bt
+    end
+  end
 end
 
 # Composing by the identity
@@ -383,4 +387,3 @@ MemoArray(a) = a
 #  end
 #  a.memo[key]
 #end
-

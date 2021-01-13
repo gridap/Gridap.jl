@@ -34,7 +34,7 @@ import Gridap.Geometry: get_cell_shapefuns
 import Gridap.CellData: attach_constraints_rows
 import Gridap.CellData: attach_constraints_cols
 import Gridap.CellData: CellField
-import Gridap.CellData: get_cell_data
+import Gridap.CellData: get_data
 import Gridap.CellData: DomainStyle
 import Gridap.CellData: change_domain_skeleton
 

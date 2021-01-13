@@ -26,15 +26,15 @@ add_tag_from_tags!(labels,"neumann_2",[5,6,8])
 Γ2 = BoundaryTriangulation(model,tags="neumann_2")
 Λ = SkeletonTriangulation(model)
 
-dΩ = LebesgueMeasure(Ω,2)
-dΓ1 = LebesgueMeasure(Γ1,2)
-dΓ2 = LebesgueMeasure(Γ2,2)
-dΛ = LebesgueMeasure(Λ,2)
+dΩ = Measure(Ω,2)
+dΓ1 = Measure(Γ1,2)
+dΓ2 = Measure(Γ2,2)
+dΛ = Measure(Λ,2)
 
 n_Γ1 = get_normal_vector(Γ1)
 n_Γ2 = get_normal_vector(Γ2)
 
-reffe = ReferenceFE(:Lagrangian,Float64,1)
+reffe = ReferenceFE(lagrangian,Float64,1)
 V1 = FESpace(model,reffe,conformity=:H1,dirichlet_tags="dirichlet_1")
 V2 = FESpace(model,reffe,conformity=:H1,dirichlet_tags="dirichlet_2")
 

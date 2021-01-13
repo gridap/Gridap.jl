@@ -127,7 +127,7 @@ end
 
 function CellField(fs::SingleFieldFESpace,cell_vals)
   v = get_cell_shapefuns(fs)
-  cell_basis = get_cell_data(v)
+  cell_basis = get_data(v)
   cell_field = lazy_map(linear_combination,cell_vals,cell_basis)
   GenericCellField(cell_field,get_triangulation(v),DomainStyle(v))
 end
@@ -140,15 +140,13 @@ struct SingleFieldFEFunction{T<:CellField} <: FEFunction
   fe_space::SingleFieldFESpace
 end
 
-get_cell_data(f::SingleFieldFEFunction) = get_cell_data(f.cell_field)
+get_data(f::SingleFieldFEFunction) = get_data(f.cell_field)
 get_triangulation(f::SingleFieldFEFunction) = get_triangulation(f.cell_field)
 DomainStyle(::Type{SingleFieldFEFunction{T}}) where T = DomainStyle(T)
 
 get_free_values(f::SingleFieldFEFunction) = f.free_values
 get_cell_dof_values(f::SingleFieldFEFunction) = f.cell_dof_values
 get_fe_space(f::SingleFieldFEFunction) = f.fe_space
-Base.real(f::SingleFieldFEFunction) = FEFunction(f.fe_space,real(f.free_values),real(f.dirichlet_values))
-Base.imag(f::SingleFieldFEFunction) = FEFunction(f.fe_space,imag(f.free_values),imag(f.dirichlet_values))
 
 """
     FEFunction(

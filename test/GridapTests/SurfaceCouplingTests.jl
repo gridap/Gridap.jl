@@ -62,16 +62,16 @@ n_Γ = get_normal_vector(Γ)
 order = 2
 degree = 2*order
 
-dΩ = LebesgueMeasure(Ω,degree)
-dΩs = LebesgueMeasure(Ωs,degree)
-dΩf = LebesgueMeasure(Ωf,degree)
-dΛ = LebesgueMeasure(Λ,degree)
-dΓ = LebesgueMeasure(Γ,degree)
+dΩ = Measure(Ω,degree)
+dΩs = Measure(Ωs,degree)
+dΩf = Measure(Ωf,degree)
+dΛ = Measure(Λ,degree)
+dΓ = Measure(Γ,degree)
 
 # FE Spaces
 
-reffe_u = ReferenceFE(:Lagrangian,VectorValue{2,Float64},order)
-reffe_p = ReferenceFE(:Lagrangian,Float64,order-1,space=:P)
+reffe_u = ReferenceFE(lagrangian,VectorValue{2,Float64},order)
+reffe_p = ReferenceFE(lagrangian,Float64,order-1,space=:P)
 
 V = TestFESpace(model,reffe_u,conformity=:H1,labels=labels,dirichlet_tags="dirichlet")
 Q = TestFESpace(model_fluid,reffe_p,conformity=:L2)

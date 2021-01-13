@@ -18,9 +18,9 @@ model = CartesianDiscreteModel(domain,partition)
 order = 1
 
 Ω = Triangulation(model)
-dΩ = LebesgueMeasure(Ω,order)
+dΩ = Measure(Ω,order)
 
-cell_fe = FiniteElements(ReferenceDomain(),model,:Lagrangian,Float64,order)
+cell_fe = FiniteElements(ReferenceDomain(),model,lagrangian,Float64,order)
 V = FESpace(model,cell_fe)
 @test num_free_dofs(V) == 9
 V = FESpace(model,cell_fe,conformity=:L2)
@@ -35,7 +35,7 @@ uh = interpolate(u,V)
 e = u - uh
 @test sqrt(sum(∫(e*e)*dΩ)) < 10e-8
 
-cell_fe = FiniteElements(PhysicalDomain(),model,:Lagrangian,Float64,order)
+cell_fe = FiniteElements(PhysicalDomain(),model,lagrangian,Float64,order)
 V = FESpace(model,cell_fe)
 @test num_free_dofs(V) == 9
 V = FESpace(model,cell_fe,conformity=:L2)

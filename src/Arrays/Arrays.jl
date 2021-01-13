@@ -73,8 +73,6 @@ export eachblockid
 export VectorOfBlockArrayCoo
 export VectorOfBlockVectorCoo
 export VectorOfBlockMatrixCoo
-export zeros_like
-export TwoLevelBlockedUnitRange
 export append_ranges
 export MultiLevelBlockedUnitRange
 export blocks_equal
@@ -150,6 +148,8 @@ export similar_tree_node
 import Gridap.Io: to_dict
 import Gridap.Io: from_dict
 
+export ∑
+
 include("Interface.jl")
 
 include("Maps.jl")
@@ -188,5 +188,6 @@ include("VectorsWithEntryInserted.jl")
 
 include("PrintOpTrees.jl")
 
+const ∑ = sum
 
 end # module

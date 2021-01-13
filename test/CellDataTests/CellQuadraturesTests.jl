@@ -24,7 +24,7 @@ x = get_cell_points(quad)
 @test isa(x,CellPoint)
 
 v = GenericCellField(get_cell_shapefuns(trian),trian,ReferenceDomain())
-u = GenericCellField(lazy_map(transpose,get_cell_data(v)),v.trian,v.domain_style)
+u = GenericCellField(lazy_map(transpose,get_data(v)),v.trian,v.domain_style)
 
 m = ∇(v)⋅∇(u)
 test_array(m(x),collect(m(x)))
@@ -37,6 +37,7 @@ test_array(s,collect(s))
 
 s = ∫(1)*quad
 @test sum(s) ≈ 1
+@test ∑(s) ≈ 1
 
 trian_N = BoundaryTriangulation(model)
 quad_N = CellQuadrature(trian_N,degree)
@@ -46,9 +47,11 @@ test_array(s,collect(s))
 
 s = ∫(1)*quad_N
 @test sum(s) ≈ 6
+@test ∑(s) ≈ 6
 
 s = ∫( x->1 )*quad_N
 @test sum(s) ≈ 6
+@test ∑(s) ≈ 6
 
 cell_measure = get_cell_measure(trian)
 cell_measure_N = get_cell_measure(trian_N)
