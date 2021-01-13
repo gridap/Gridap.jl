@@ -179,9 +179,13 @@ for T in (:(Point),:(AbstractVector{<:Point}))
   end
 end
 
-function gradient(a::LinearCombinationField)
-  fields = Broadcasting(∇)(a.fields)
-  LinearCombinationField(a.values,fields,a.column)
+for op in (:∇,:∇∇)
+  @eval begin
+    function $op(a::LinearCombinationField)
+      fields = Broadcasting($op)(a.fields)
+      LinearCombinationField(a.values,fields,a.column)
+    end
+  end
 end
 
 function linear_combination(a::AbstractMatrix{<:Number},b::AbstractVector{<:Field})
@@ -233,9 +237,13 @@ for T in (:(Point),:(AbstractVector{<:Point}))
   end
 end
 
-function evaluate!(cache,k::Broadcasting{typeof(∇)},a::LinearCombinationFieldVector)
-  fields = Broadcasting(∇)(a.fields)
-  LinearCombinationFieldVector(a.values,fields)
+for op in (:∇,:∇∇)
+  @eval begin
+    function evaluate!(cache,k::Broadcasting{typeof($op)},a::LinearCombinationFieldVector)
+      fields = Broadcasting($op)(a.fields)
+      LinearCombinationFieldVector(a.values,fields)
+    end
+  end
 end
 
 function get_children(n::TreeNode, a::LinearCombinationFieldVector)

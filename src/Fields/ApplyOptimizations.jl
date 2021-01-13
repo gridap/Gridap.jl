@@ -247,15 +247,19 @@ function lazy_map(k::Broadcasting{typeof(push_∇)},cell_∇a::AbstractArray,cel
   lazy_map(Broadcasting(Operation(⋅)),cell_invJt,cell_∇a)
 end
 
-function lazy_map(
-  k::Broadcasting{typeof(push_∇)},
-  cell_∇at::LazyArray{<:Fill{typeof(transpose)}},
-  cell_map::AbstractArray)
+for op in (:push_∇,:push_∇∇)
+  @eval begin
+    function lazy_map(
+      k::Broadcasting{typeof($op)},
+      cell_∇at::LazyArray{<:Fill{typeof(transpose)}},
+      cell_map::AbstractArray)
 
-  cell_∇a = cell_∇at.args[1]
-  cell_∇b = lazy_map(k,cell_∇a,cell_map)
-  cell_∇bt = lazy_map(transpose,cell_∇b)
-  cell_∇bt
+      cell_∇a = cell_∇at.args[1]
+      cell_∇b = lazy_map(k,cell_∇a,cell_map)
+      cell_∇bt = lazy_map(transpose,cell_∇b)
+      cell_∇bt
+    end
+  end
 end
 
 # Composing by the identity
