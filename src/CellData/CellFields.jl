@@ -113,7 +113,7 @@ function change_domain(a::CellField,::ReferenceDomain,::PhysicalDomain)
   trian = get_triangulation(a)
   cell_map = get_cell_map(trian)
   cell_invmap = lazy_map(inverse_map,cell_map)
-  cell_field_ref = get_data(cell_field)
+  cell_field_ref = get_data(a)
   cell_field_phys = lazy_map(Broadcasting(∘),cell_field_ref,cell_invmap)
   GenericCellField(cell_field_phys,trian,PhysicalDomain())
 end
