@@ -147,7 +147,7 @@ for dim in 0:5
     @test is_simplex(SD)
 
     vss,p = simplexify(QD)
-    @test length(vss) == 24
+    @test length(vss) == factorial(dim)
     for vs in vss
         @test allunique(vs)
         @test all(1 ≤ v ≤ 2^dim for v in vs)
