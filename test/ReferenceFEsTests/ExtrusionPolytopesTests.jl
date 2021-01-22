@@ -141,8 +141,8 @@ v,p = simplexify(VERTEX)
 @test is_simplex(p)
 
 for dim in 0:5
-    QD = Polytope(ntuple(d->TET_AXIS, dim))
-    SD = Polytope(ntuple(d->HEX_AXIS, dim))
+    QD = Polytope(ntuple(d->HEX_AXIS, dim))
+    SD = Polytope(ntuple(d->TET_AXIS, dim))
     @test is_n_cube(QD)
     @test is_simplex(SD)
 
