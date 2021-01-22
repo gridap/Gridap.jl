@@ -225,10 +225,6 @@ function is_n_cube(p::ExtrusionPolytope{1})
   true
 end
 
-function simplexify(p::ExtrusionPolytope)
-  @notimplemented
-end
-
 function simplexify(p::ExtrusionPolytope{0})
   [[1,],], VERTEX
 end
