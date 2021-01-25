@@ -160,6 +160,7 @@ for dim in 0:5
     @test length(vss) == 1
     for vs in vss
         @test allunique(vs)
+        @test issorted(vs)
         @test all(1 ≤ v ≤ dim+1 for v in vs)
     end
     @test p == SD
