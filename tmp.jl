@@ -2,7 +2,7 @@ using Gridap
 using Gridap.FESpaces
 
 domain = (0,2,0,1)
-partition = (4,4)
+partition = (2,2)
 model = CartesianDiscreteModel(domain,partition)
 labels = get_face_labeling(model)
 add_tag_from_tags!(labels,"bottom",[1,2,5])
@@ -15,7 +15,7 @@ writevtk(model,"tmp")
 model_1d = DiscreteModel(Polytope{1},model)
 model_fs = DiscreteModel(model_1d,tags="free_surface")
 
-reffe =  ReferenceFE(:Lagrangian,Float64,1)
+reffe =  ReferenceFE(lagrangian,Float64,1)
 V = TestFESpace(
         model,
         reffe,
@@ -23,19 +23,19 @@ V = TestFESpace(
 )
 U = TrialFESpace(V)
 V_η = TestFESpace(
-        model,
+        model_fs,
         reffe,
         conformity = :H1,
-        dirichlet_tags=["water","inlet","bottom","outlet"]
+        #dirichlet_tags=["water","inlet","bottom","outlet"]
 )
-U_η = TrialFESpace(V_η,0.0)
+U_η = TrialFESpace(V_η)
 
 Y = MultiFieldFESpace([V,V_η])
 X = MultiFieldFESpace([U,U_η])
 
 degree = 2
 Ω = Triangulation(model)
-dΩ = LebesgueMeasure(Ω, degree)
+dΩ = Measure(Ω, degree)
 
 # Neumann BCs
 Ninlet = "inlet"
@@ -44,16 +44,16 @@ Noutlet = "outlet"
 FS = "free_surface"
 
 Γᵢ = BoundaryTriangulation(model, tags=Ninlet)
-dΓᵢ = LebesgueMeasure(Γᵢ, degree)
+dΓᵢ = Measure(Γᵢ, degree)
 
 Γb = BoundaryTriangulation(model, tags=Nbottom)
-dΓb = LebesgueMeasure(Γb, degree)
+dΓb = Measure(Γb, degree)
 
 Γₒ = BoundaryTriangulation(model, tags=Noutlet)
-dΓₒ = LebesgueMeasure(Γₒ, degree)
+dΓₒ = Measure(Γₒ, degree)
 
 Γfs = BoundaryTriangulation(model, tags=FS)
-dΓfs = LebesgueMeasure(Γfs, degree)
+dΓfs = Measure(Γfs, degree)
 
 U0 = 2.0
 hInlet(x) = U0
