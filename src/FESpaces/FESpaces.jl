@@ -169,6 +169,8 @@ export FESpaceWithLinearConstraints
 
 export FiniteElements
 
+export AdjointFEOperator
+
 include("FESpaceInterface.jl")
 
 include("SingleFieldFESpaces.jl")
@@ -210,5 +212,7 @@ include("DirichletFESpaces.jl")
 include("ExtendedFESpaces.jl")
 
 include("FESpacesWithLinearConstraints.jl")
+
+include("AdjointFEOperator.jl")
 
 end # module
