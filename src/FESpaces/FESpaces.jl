@@ -10,7 +10,10 @@ using Test
 using FillArrays
 using BlockArrays
 using SparseArrays
+using StaticArrays
 using LinearAlgebra
+using NearestNeighbors
+using Bernstein
 
 using Gridap.Helpers
 using Gridap.Algebra
