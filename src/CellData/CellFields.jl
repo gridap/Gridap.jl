@@ -205,13 +205,79 @@ DomainStyle(::Type{GenericCellField{DS}}) where DS = DS()
 (a::CellField)(x) = evaluate(a,x)
 
 function evaluate!(cache,f::CellField,x::Point)
-  @notimplemented """\n
-  Evaluation of a CellField at a given Point is not implemented yet.
+    # Create k-d tree for mesh
+    trian = get_triangulation(f)
+    node_coordinates = get_node_coordinates(trian)
+    @assert !isempty(node_coordinates)
+    sample_coord = node_coordinates[1]
+    D = length(sample_coord)
+    T = eltype(sample_coord)
+    @assert D > 0
+    kdtree = KDTree(map(nc -> SVector(nc.data), node_coordinates))
+    kdtree::KDTree{SVector{D,T},Euclidean,T}
+    
+    # Find neighbouring cells
+    id,dist = nn(kdtree, SVector(x.data))
+    cells = Int[]
+    # TODO: Use better algorithm
+    # Francesc Verdugo @fverdugo 14:07
+    # You have to start with a DiscreteModel, then
+    # topo=get_grid_topology(model)
+    # vertex_to_cells = get_faces(topo,0,num_cell_dims(model))
+    for (c,ids) in enumerate(trian.cell_node_ids)
+        id ∈ ids && push!(cells, c)
+    end
+    @assert !isempty(cells)
 
-  This is a feature that we want to have at some point in Gridap.
-  If you are ready to help with this implementation, please contact the
-  Gridap administrators.
-  """
+    # Find polytope
+    reffes = trian.reffes
+    @assert length(reffes) == 1
+    reffe = reffes[1].reffe
+    polytope = reffe.polytope
+    extrusion = polytope.extrusion
+    @assert length(extrusion) == D
+
+    # Loop over neighbouring cells and calculate distances
+    dists = T[]
+    
+    if all(e == TET_AXIS for e in extrusion)
+        # Calculate barycentric coordinates for a point x in the given cell
+        function bary(cell, x)
+            local ids = trian.cell_node_ids[cell]
+            @assert length(ids) == D+1 "simplex has correct number of vertices"
+            local ys = zero(SVector{D+1,SVector{D,T}})
+            for (n,id) in enumerate(ids)
+                local y = SVector(node_coordinates[id].data)
+                ys = setindex(ys, y, n)
+            end
+            local λ = cartesian2barycentric(ys, SVector(x.data))
+            return λ
+        end
+
+        for c in cells
+            λ = bary(c, x)
+            # Negative distances are outside, positive distance are
+            # inside the simplex
+            dist = min(minimum(λ), 1 - maximum(λ))
+            push!(dists, dist)
+        end
+
+        dist, m = findmax(dists)
+        cell = cells[m]
+        λ = bary(cell, x)
+
+        # Ensure the point is inside one of the cells, up to round-off errors
+        @assert dist ≥ -1000 * eps(T) "Point is not inside a cell"
+
+        # TODO: Actually evaluate basis functions
+        values = f.cell_dof_values[cell]
+        fx = sum(λ[n] * values[n] for n in 1:D+1)
+
+    else
+        @assert false "Unsupported polytope"
+    end
+
+    return fx
 end
 
 function evaluate!(cache,f::CellField,x::CellPoint)
@@ -324,11 +390,11 @@ struct OperationCellField{DS} <: CellField
          r = Fields.BroadcastingFieldOpMap(op.op)(axi...)
       catch
         @unreachable """\n
-        It is not possible to perform operation $(op.op) on the given cell fields.
+        It is not possible to perform the operation "$(op.op)" on the given cell fields.
 
-        See the catched error for more information. (If you are using Visual
-          Studio Code REPL you might not see the catched error, please use the
-          command-line REPL).
+        See the caught error for more information. (If you are using the Visual
+          Studio Code REPL you might not see the caught error, please use the
+          command-line REPL instead).
         """
       end
     end

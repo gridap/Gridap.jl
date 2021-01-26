@@ -8,6 +8,9 @@ module CellData
 using Test
 using DocStringExtensions
 using FillArrays
+using Bernstein
+using NearestNeighbors
+using StaticArrays
 
 using Gridap.Helpers
 using Gridap.Arrays
