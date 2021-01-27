@@ -105,7 +105,7 @@ convert(::Type{<:SymTensorValue{D,T}}, arg::SymTensorValue{D,T}) where {D,T} = a
 ###############################################################
 
 @generated function zero(::Type{<:SymTensorValue{D,T}}) where {D,T}
-  L=Int(D*(D+1)÷2)
+  L=D*(D+1)÷2
   quote
     SymTensorValue{D,T}(tfill(zero(T),Val{$L}()))
   end

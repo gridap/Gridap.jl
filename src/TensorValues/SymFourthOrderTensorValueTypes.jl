@@ -71,7 +71,7 @@ convert(::Type{<:SymFourthOrderTensorValue{D,T}}, arg::SymFourthOrderTensorValue
 ###############################################################
 
 @generated function zero(::Type{<:SymFourthOrderTensorValue{D,T}}) where {D,T}
-  L=Int((D*(D+1)÷2)^2)
+  L=(D*(D+1)÷2)^2
   quote
     SymFourthOrderTensorValue{D,T}(tfill(zero(T),Val{$L}()))
   end
