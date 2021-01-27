@@ -297,6 +297,41 @@ function evaluate!(cache,f::CellField,x::Point)
   return fx
 end
 
+"""
+    λ = cartesian2barycentric(s, p)
+
+Convert Cartesian to barycentric coordinates.
+
+# Arguments
+- `s`: Simplex vertices in Cartesian coordinates. `s` has `N ≤ D + 1`
+  vertices in `D` dimensions.
+- `p`: Point in Cartesian coordinates
+
+# Result
+- `λ`: Point in barycentric coordinates
+"""
+function cartesian2barycentric(s::SMatrix{N,D,T}, p::SVector{D,T}) where {N,D,T}
+  @assert N ≤ D + 1
+  # Algorithm as described on
+  # <https://en.wikipedia.org/wiki/Barycentric_coordinate_system>,
+  # section "Conversion between barycentric and Cartesian coordinates"
+  A = SMatrix{D+1,N}(i == D+1 ? T(1) : s[j, i] for i in 1:D+1, j in 1:N)
+  b = SVector{D+1}(p..., T(1))
+  return A \ b
+end
+
+function cartesian2barycentric(s::SVector{N,SVector{D,T}},
+                               p::SVector{D,T}) where {D,N,T}
+  return cartesian2barycentric(SMatrix{N,D,T}(s[i][j] for i in 1:N, j in 1:D),
+                               p)
+end
+
+function barycentric2cartesian(s::SVector{N,SVector{D,T}},
+                               λ::SVector{N,T}) where {D,N,T}
+  @assert N ≤ D + 1
+  return SVector{D,T}(sum(s[i][j] * λ[i] for i in 1:N) for j in 1:D)
+end
+
 function evaluate!(cache,f::CellField,x::CellPoint)
   _f, _x = _to_common_domain(f,x)
   cell_field = get_data(_f)
