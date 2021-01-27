@@ -257,8 +257,6 @@ function evaluate!(cache,f::CellField,x::Point)
   @assert length(extrusion) == D
 
   # Loop over neighbouring cells and calculate distances
-  dists = T[]
-  
   if all(e == TET_AXIS for e in extrusion)
     # Calculate barycentric coordinates for a point x in the given cell
     function bary(cell, x)
@@ -281,16 +279,22 @@ function evaluate!(cache,f::CellField,x::Point)
     # near vertices. In this case, choose the cell with the smallest
     # distance, and check that the distance (if positive) is at most
     # at round-off level.
+    mindist = T(Inf)
+    minc = 0
+    minλ = zero(SVector{D+1,T})
     for c in cells
       λ = bary(c, x)
-      # Positive distances are outside, negative distance are inside the simplex
-      dist = min(-minimum(λ), maximum(λ) - 1)
-      push!(dists, dist)
+      dist = max(-minimum(λ), maximum(λ) - 1)
+      if dist < mindist
+        minc = c
+        minλ = λ
+        mindist = dist
+      end
     end
-
-    dist, m = findmin(dists)
-    cell = cells[m]
-    λ = bary(cell, x)
+    @assert 1 ≤ minc
+    cell = minc
+    λ = minλ
+    dist = mindist
 
     # Ensure the point is inside one of the cells, up to round-off errors
     @assert dist ≤ 1000 * eps(T) "Point is not inside a cell"
