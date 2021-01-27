@@ -235,7 +235,7 @@ function evaluate!(cache,f::CellField,x::Point)
   @assert D > 0
   kdtree = cache.kdtree::KDTree{SVector{D,T},Euclidean,T}
   
-  # Find neighbouring cells
+  # Find all neighbouring cells
   id,dist = nn(kdtree, SVector(x.data))
   cells = Int[]
   # TODO: Use better algorithm
@@ -273,19 +273,27 @@ function evaluate!(cache,f::CellField,x::Point)
       return λ
     end
 
+    # Calculate the distance from the point to all the cells. Without
+    # round-off, and with non-overlapping cells, the distance would be
+    # negative for exactly one cell and positive for all other ones.
+    # Due to round-off, the distance can be slightly negative or
+    # slightly positive for points near cell boundaries, in particular
+    # near vertices. In this case, choose the cell with the smallest
+    # distance, and check that the distance (if positive) is at most
+    # at round-off level.
     for c in cells
       λ = bary(c, x)
-      # Negative distances are outside, positive distance are inside the simplex
-      dist = min(minimum(λ), 1 - maximum(λ))
+      # Positive distances are outside, negative distance are inside the simplex
+      dist = min(-minimum(λ), maximum(λ) - 1)
       push!(dists, dist)
     end
 
-    dist, m = findmax(dists)
+    dist, m = findmin(dists)
     cell = cells[m]
     λ = bary(cell, x)
 
     # Ensure the point is inside one of the cells, up to round-off errors
-    @assert dist ≥ -1000 * eps(T) "Point is not inside a cell"
+    @assert dist ≤ 1000 * eps(T) "Point is not inside a cell"
 
     # TODO: Actually evaluate basis functions
     values = f.cell_dof_values[cell]
