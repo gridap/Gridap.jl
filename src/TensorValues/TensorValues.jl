@@ -36,6 +36,7 @@ using Base: @propagate_inbounds, @pure
 using Gridap.Helpers
 using Gridap.Arrays
 using LinearAlgebra
+using Random
 
 export MultiValue
 export VectorValue
@@ -71,6 +72,7 @@ import Base: CartesianIndices
 import Base: LinearIndices
 import Base: adjoint
 import Base: transpose
+import Base: rand
 
 import LinearAlgebra: det, inv, tr, cross, dot, norm
 # Reexport from LinearAlgebra (just for convenience)

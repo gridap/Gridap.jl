@@ -87,6 +87,16 @@ zero(::SymFourthOrderTensorValue{D,T,L}) where {D,T,L} = zero(SymFourthOrderTens
 end
 one(::SymFourthOrderTensorValue{D,T}) where {D,T} = one(SymFourthOrderTensorValue{D,T})
 
+@generated function rand(rng::AbstractRNG,
+                         ::Random.SamplerType{<:SymFourthOrderTensorValue{D,T}}) where {D,T}
+  L=(D*(D+1)÷2)^2
+  quote
+    rand(rng, SymFourthOrderTensorValue{D,T,$L})
+  end
+end
+rand(rng::AbstractRNG,::Random.SamplerType{<:SymFourthOrderTensorValue{D,T,L}}) where {D,T,L} =
+  SymFourthOrderTensorValue{D,T}(Tuple(rand(rng, SVector{L,T})))
+
 change_eltype(::Type{SymFourthOrderTensorValue{D,T1,L}},::Type{T2}) where {D,T1,T2,L} = SymFourthOrderTensorValue{D,T2,L}
 change_eltype(::SymFourthOrderTensorValue{D,T1,L},::Type{T2}) where {D,T1,T2,L} = change_eltype(SymFourthOrderTensorValue{D,T1,L},T2)
 

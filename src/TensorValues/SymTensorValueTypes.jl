@@ -120,6 +120,16 @@ zero(::SymTensorValue{D,T,L}) where {D,T,L} = zero(SymTensorValue{D,T,L})
 end
 one(::SymTensorValue{D,T}) where {D,T} = one(SymTensorValue{D,T})
 
+@generated function rand(rng::AbstractRNG,
+                         ::Random.SamplerType{<:SymTensorValue{D,T}}) where {D,T}
+  L=D*(D+1)÷2
+  quote
+    rand(rng, SymTensorValue{D,T,$L})
+  end
+end
+rand(rng::AbstractRNG,::Random.SamplerType{<:SymTensorValue{D,T,L}}) where {D,T,L} =
+  SymTensorValue{D,T}(Tuple(rand(rng, SVector{L,T})))
+
 Mutable(::Type{<:SymTensorValue{D,T}}) where {D,T} = MMatrix{D,D,T}
 Mutable(::SymTensorValue{D,T}) where {D,T} = Mutable(SymTensorValue{D,T})
 mutable(a::SymTensorValue{D}) where D = MMatrix{D,D}(Tuple(get_array(a)))
