@@ -204,28 +204,16 @@ DomainStyle(::Type{GenericCellField{DS}}) where DS = DS()
 
 (a::CellField)(x) = evaluate(a,x)
 
-struct CellFieldCache
-  kdtree::KDTree{SVector{D,T},Euclidean,T} where {D,T}
+mutable struct CellFieldCache
+  kdtree::Union{Nothing, KDTree{SVector{D,T},Euclidean,T} where {D,T}}
 end
 
-function return_cache(f::CellField,x::Point)
-  # Create k-d tree for mesh
-  trian = get_triangulation(f)
-  node_coordinates = get_node_coordinates(trian)
-  @assert !isempty(node_coordinates)
-  sample_coord = node_coordinates[1]
-  D = length(sample_coord)
-  T = eltype(sample_coord)
-  @assert D > 0
-  kdtree = KDTree(map(nc -> SVector(nc.data), node_coordinates))
-  kdtree::KDTree{SVector{D,T},Euclidean,T}
-  return CellFieldCache(kdtree)
-end
+return_cache(f::CellField,x::Point) = CellFieldCache(nothing)
 
 function evaluate!(cache,f::CellField,x::Point)
   cache::CellFieldCache
 
-  # Get k-d tree for mesh from cache
+  # Examine triangulation
   trian = get_triangulation(f)
   node_coordinates = get_node_coordinates(trian)
   @assert !isempty(node_coordinates)
@@ -233,20 +221,6 @@ function evaluate!(cache,f::CellField,x::Point)
   D = length(sample_coord)
   T = eltype(sample_coord)
   @assert D > 0
-  kdtree = cache.kdtree::KDTree{SVector{D,T},Euclidean,T}
-  
-  # Find all neighbouring cells
-  id,dist = nn(kdtree, SVector(x.data))
-  cells = Int[]
-  # TODO: Use better algorithm
-  # Francesc Verdugo @fverdugo 14:07
-  # You have to start with a DiscreteModel, then
-  # topo=get_grid_topology(model)
-  # vertex_to_cells = get_faces(topo,0,num_cell_dims(model))
-  for (c,ids) in enumerate(trian.cell_node_ids)
-    id ∈ ids && push!(cells, c)
-  end
-  @assert !isempty(cells)
 
   # Find polytope
   reffes = trian.reffes
@@ -256,8 +230,27 @@ function evaluate!(cache,f::CellField,x::Point)
   extrusion = polytope.extrusion
   @assert length(extrusion) == D
 
-  # Loop over neighbouring cells and calculate distances
   if all(e == TET_AXIS for e in extrusion)
+
+    # Get k-d tree for mesh from cache
+    if cache.kdtree === nothing
+      cache.kdtree = KDTree(map(nc -> SVector(nc.data), node_coordinates))
+    end
+    kdtree = cache.kdtree::KDTree{SVector{D,T},Euclidean,T}
+
+    # Find all neighbouring cells
+    id,dist = nn(kdtree, SVector(x.data))
+    cells = Int[]
+    # TODO: Use better algorithm
+    # Francesc Verdugo @fverdugo 14:07
+    # You have to start with a DiscreteModel, then
+    # topo=get_grid_topology(model)
+    # vertex_to_cells = get_faces(topo,0,num_cell_dims(model))
+    for (c,ids) in enumerate(trian.cell_node_ids)
+      id ∈ ids && push!(cells, c)
+    end
+    @assert !isempty(cells)
+
     # Calculate barycentric coordinates for a point x in the given cell
     function bary(cell, x)
       local ids = trian.cell_node_ids[cell]
@@ -302,8 +295,16 @@ function evaluate!(cache,f::CellField,x::Point)
     # TODO: Actually evaluate basis functions
     values = f.cell_dof_values[cell]
     fx = sum(λ[n] * values[n] for n in 1:D+1)
+
+  elseif all(e == HEX_AXIS for e in extrusion)
+
+    # Find cell
+    @assert false "n-cube not implemented"
+
   else
+
     @assert false "Unsupported polytope"
+
   end
 
   return fx
