@@ -146,7 +146,7 @@ function change_domain(a::CellField,::ReferenceDomain,trian::Triangulation,::Ref
   else
     @unreachable """\n
     We cannot move the given CellField to the reference domain of the requested triangulation.
-    Make sure that the given triangulation is either the same as the trianulation on which the
+    Make sure that the given triangulation is either the same as the triangulation on which the
     CellField is defined, or that the latter triangulation is the background of the former.
     """
   end
@@ -164,7 +164,7 @@ function change_domain(a::CellField,::PhysicalDomain,trian::Triangulation,::Phys
   else
     @unreachable """\n
     We cannot move the given CellField to the physical domain of the requested triangulation.
-    Make sure that the given triangulation is either the same as the trianulation on which the
+    Make sure that the given triangulation is either the same as the triangulation on which the
     CellField is defined, or that the latter triangulation is the background of the former.
     """
   end
@@ -326,8 +326,8 @@ struct OperationCellField{DS} <: CellField
         @unreachable """\n
         It is not possible to perform operation $(op.op) on the given cell fields.
 
-        See the catched error for more information. (If you are using Visual
-          Studio Code REPL you might not see the catched error, please use the
+        See the caught error for more information. (If you are using Visual
+          Studio Code REPL you might not see the caught error, please use the
           command-line REPL).
         """
       end

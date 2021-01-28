@@ -225,10 +225,6 @@ function is_n_cube(p::ExtrusionPolytope{1})
   true
 end
 
-function simplexify(p::ExtrusionPolytope)
-  @notimplemented
-end
-
 function simplexify(p::ExtrusionPolytope{0})
   [[1,],], VERTEX
 end
@@ -259,6 +255,83 @@ function simplexify(p::ExtrusionPolytope{3})
   else
      @notimplemented
   end
+end
+
+function simplexify(p::ExtrusionPolytope{D}) where {D}
+  # This function works for all dimensions. It could replace the
+  # special cases above, but this might change the shape and order of
+  # simplices.
+  SD = Polytope(ntuple(d->TET_AXIS, D))
+  QD = Polytope(ntuple(d->HEX_AXIS, D))
+  if p == QD
+    simplices = simplexify_hypercube(D)
+    (simplices, SD)
+  elseif p == SD
+    simplices = [collect(1:D+1)]
+    (simplices, SD)
+  else
+     @notimplemented
+  end
+end
+
+function simplexify_hypercube(dim::Int)
+    @assert dim ≥ 0
+    # Determine simplices recursively
+    simplices = Vector{Int}[]
+    corner = 0
+    vertices = [corner]
+    next_corner!(simplices, dim, vertices, corner)
+    # Correct vertex numbering
+    for s in simplices
+        s .+= 1
+    end
+    # Check output
+    @assert length(simplices) == factorial(dim)
+    for s in simplices
+        @assert length(s) == dim+1
+        for v in s
+            @assert 1 ≤ v ≤ 2^dim
+        end
+    end
+    return simplices
+end
+
+"""
+Sweep through the `dim`-dimensional hypercube recursively, collecting
+all simplices.
+
+We represent vertices as bit patterns. In `dim` dimensions, the
+lowermost `dim` bits are either zero or one. Interpreted as integer,
+this labels the vertices of the hypercube from the origin ("bottom")
+`0` to the diagonally opposite vertex ("top") `2^dim-1`.
+
+Each simplex contains both the bottom vertex `0` as well as the top
+vertex `2^dim-1`. Its other vertices trace a path from the bottom to
+the top. The algorithm below finds all possible paths.
+
+- `simplices` is the accumulator where the simplices are collected.
+- `vertices` is the current set of vertices as we sweep from the
+  origin to the diagonally opposide vertex.
+- `corner` is the current corner.
+"""
+function next_corner!(simplices::Vector{Vector{Int}}, dim::Int,
+                      vertices::Vector{Int}, corner::Int)
+    @assert count_ones(corner) == length(vertices) - 1
+    if length(vertices) == dim + 1
+        # We have all vertices; save the simplex
+        push!(simplices, vertices)
+        return
+    end
+    # Loop over all neighbouring corners
+    for d in 1:dim
+        bit = 1 << (d-1)
+        if (corner & bit) == 0
+            new_corner = corner | bit
+            new_vertices = [vertices; new_corner]
+            next_corner!(simplices, dim, new_vertices, new_corner)
+        end
+    end
+    return
 end
 
 function Base.show(io::IO,p::ExtrusionPolytope)
