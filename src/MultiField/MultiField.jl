@@ -16,13 +16,19 @@ using Gridap.TensorValues
 using Gridap.CellData
 using Gridap.Fields
 
-using Gridap.FESpaces: FEBasis, TestBasis, TrialBasis
+using Gridap.FESpaces: FEBasis, TestBasis, TrialBasis, get_cell_dof_values
 using Gridap.Arrays: BlockArrayCooMap
+using Gridap.ReferenceFEs: HEX_AXIS, TET_AXIS, get_node_coordinates
 
 using FillArrays
 using SparseArrays
 using LinearAlgebra
 using BlockArrays
+using NearestNeighbors
+using StaticArrays
+
+import Gridap.Arrays: evaluate!
+import Gridap.Arrays: return_cache
 
 export num_fields
 export compute_field_offsets

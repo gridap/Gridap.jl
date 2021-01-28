@@ -4,10 +4,12 @@ using Test
 using BlockArrays
 using FillArrays
 using Gridap.Arrays
-using Gridap.Fields
 using Gridap.TensorValues
+using Gridap.Fields
+using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.CellData
+using Gridap.FESpaces
 
 domain = (0,1,0,1)
 cells = (3,3)
@@ -142,8 +144,6 @@ test_array(h(x_N),collect(h(x_N)))
 h_N = (2*f_N+g)⋅g
 hx_N = h_N(x_N)
 test_array(hx_N,collect(hx_N))
-
-
 
 
 
