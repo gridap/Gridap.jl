@@ -131,25 +131,16 @@ function evaluate!(cache,f::CellField,x::Point)
     dist = mindist
 
     # Ensure the point is inside one of the cells, up to round-off errors
+    # TODO: Add proper run-time check
     @assert dist ≤ 1000 * eps(T) "Point is not inside a cell"
 
     # TODO: Actually evaluate basis functions
-    # if f isa FESpaces.SingleFieldFEFunction
-    #   values = f.cell_dof_values[cell]
-    # elseif f isa CellData.GenericCellField
-    #   f.cell_field::AbstractArray{<:Field}
-    #   values = f.cell_field[cell]
-    # else
-    #   @assert false "unkonwn CellField type"
-    # end
     values = get_cell_dof_values(f)[cell]
     fx = sum(λ[n] * values[n] for n in 1:D+1)
 
   elseif all(e == HEX_AXIS for e in extrusion)
 
-    # Find cell
-    # x - 
-
+    # TOOD
     @assert false "n-cube not implemented"
 
   else
