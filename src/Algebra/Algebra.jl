@@ -80,8 +80,11 @@ export NewtonRaphsonSolver
 export NLSolver
 
 export AffineOperator
+export AffineOperatorWithAdjoint
 export get_matrix
 export get_vector
+export get_adjoint_matrix
+export get_adjoint_vector
 
 export SparseMatrixCSR
 export SymSparseMatrixCSR
@@ -105,5 +108,7 @@ include("NonlinearSolvers.jl")
 include("LinearSolvers.jl")
 
 include("NLSolvers.jl")
+
+include("AdjointOperator.jl")
 
 end # module
