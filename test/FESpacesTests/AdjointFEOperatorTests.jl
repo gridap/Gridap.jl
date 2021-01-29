@@ -3,8 +3,8 @@ module AdjointFEOperatorTests
 using Test
 using Gridap
 using Gridap.FESpaces
-import Gridap: ∇
-#using LinearAlgebra
+using Gridap.Algebra
+using SparseArrays: sparse
 
 domain = (0,1,0,1)
 partition = (4,4)
@@ -72,23 +72,37 @@ for data in [ vector_data, scalar_data ]
       ∫( v⊙(nn⋅∇(uh)) )*dΓn +
       ∫( (γ/h)*v⊙uh - (nd⋅∇(v))⊙u )*dΓd
 
-    res(u,v) = a(u,v) - l(v)
+    ld(u) = ∫(u⋅u)dΩ
 
-    op = AffineFEOperator(a,l,U,V)
-    op_AD = FEOperator(res,U,V)
+    op = AffineFEOperatorWithAdjoint(a,l,ld,U,V)
+    op_forward = get_forward(op)
+    op_adjoint = get_adjoint(op)
 
-    uh = solve(op)
-    uh_AD = solve(op_AD)
-
-    adj_op = AdjointFEOperator(op,uh)
-    adj_op_AD = AdjointFEOperator(op_AD,uh_AD)
+    uh,ψh = solve(op)
+    uh_forward = solve(op_forward)
+    ψh_adjoint = solve(op_adjoint)
 
     cellmat = get_matrix(op)
-    cellmat_adj = get_matrix(adj_op)
-    cellmat_adj_AD = get_matrix(adj_op_AD)
+    cellmat_adj = get_adjoint_matrix(op)
 
-    @test cellmat_adj == transpose(cellmat)
-    @test cellmat_adj ≈ cellmat_adj_AD
+    @test cellmat_adj == sparse(transpose(cellmat))
+
+    l2(w) = √(∑(∫(w⊙w)dΩ))
+    @time l2uh = l2(uh)
+    @time l2ψh = l2(ψh)
+    @time l2uh_forward = l2(uh_forward)
+    @time l2ψh_adjoint = l2(ψh_adjoint)
+    @test l2uh ≈ l2uh_forward
+    @test l2ψh ≈ l2ψh_adjoint
+
+
+    #res(u,v) = a(u,v) - l(v)
+    #op_AD = FEOperator(res,U,V)
+    #uh_AD = solve(op_AD)
+    #adj_op = AdjointFEOperator(op,uh)
+    #adj_op_AD = AdjointFEOperator(op_AD,uh_AD)
+    #cellmat_adj_AD = get_matrix(adj_op_AD)
+    #@test cellmat_adj ≈ cellmat_adj_AD
   end
 end
 
