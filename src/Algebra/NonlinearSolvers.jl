@@ -21,6 +21,9 @@ The returned `cache` object can be used in subsequent solves:
 function solve!(x::AbstractVector,nls::NonlinearSolver,op::NonlinearOperator)
   solve!(x,nls,op,nothing)
 end
+function solve!(x::Tuple{AbstractVector,AbstractVector},nls::NonlinearSolver,op::NonlinearOperator)
+  solve!(x,nls,op,nothing)
+end
 
 """
     solve!(x::AbstractVector,nls::NonlinearSolver,op::NonlinearOperator,cache)
@@ -71,5 +74,3 @@ function test_nonlinear_solver(
   @test pred(x1,x)
 
 end
-
-

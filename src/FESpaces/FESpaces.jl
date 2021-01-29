@@ -50,6 +50,8 @@ import Gridap.Algebra: residual_and_jacobian
 import Gridap.Algebra: zero_initial_guess
 import Gridap.Algebra: get_matrix
 import Gridap.Algebra: get_vector
+import Gridap.Algebra: get_adjoint_matrix
+import Gridap.Algebra: get_adjoint_vector
 import Gridap.Algebra: solve!
 import Gridap.Algebra: solve
 import Gridap.Algebra: allocate_vector
@@ -169,7 +171,9 @@ export FESpaceWithLinearConstraints
 
 export FiniteElements
 
-export AdjointFEOperator
+export AffineFEOperatorWithAdjoint
+export get_forward
+export get_adjoint
 
 include("FESpaceInterface.jl")
 
@@ -193,6 +197,8 @@ include("FEOperators.jl")
 
 include("AffineFEOperators.jl")
 
+include("AdjointFEOperator.jl")
+
 include("FEOperatorsFromWeakForm.jl")
 
 include("FESolvers.jl")
@@ -212,7 +218,5 @@ include("DirichletFESpaces.jl")
 include("ExtendedFESpaces.jl")
 
 include("FESpacesWithLinearConstraints.jl")
-
-include("AdjointFEOperator.jl")
 
 end # module

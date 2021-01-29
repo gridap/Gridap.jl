@@ -14,6 +14,10 @@ function solve!(uh::FEFunction,solver::FESolver,op::FEOperator)
   solve!(uh,solver,op,nothing)
 end
 
+function solve!(xh::Tuple{FEFunction,FEFunction},solver::FESolver,op::FEOperator)
+  solve!(xh,solver,op,nothing)
+end
+
 """
     uh, cache = solve!(uh,solver,op,cache)
 
@@ -36,7 +40,20 @@ function solve(nls::FESolver,op::FEOperator)
   vh
 end
 
+function solve(nls::FESolver,op::AffineFEOperatorWithAdjoint)
+  U = get_trial(op)
+  V = get_test(op)
+  xh = (zero(U),zero(V))
+  yh, cache = solve!(xh,nls,op)
+  yh
+end
+
 function solve(op::AffineFEOperator)
+  solver = LinearFESolver()
+  solve(solver,op)
+end
+
+function solve(op::AffineFEOperatorWithAdjoint)
   solver = LinearFESolver()
   solve(solver,op)
 end
@@ -100,6 +117,20 @@ function solve!(u::FEFunction,solver::LinearFESolver,feop::AffineFEOperator,cach
   (u_new, cache)
 end
 
+function solve!(
+  u::Tuple{FEFunction,FEFunction},
+  solver::LinearFESolver,
+  feop::AffineFEOperatorWithAdjoint,
+  cache::Nothing)
+  x = (get_free_values(u[1]), get_free_values(u[2]))
+  op = get_algebraic_operator(feop)
+  cache = solve!(x,solver.ls,op)
+  trial = get_trial(feop)
+  test = get_test(feop)
+  u_new = (FEFunction(trial,x[1]),FEFunction(test,x[2]))
+  (u_new, cache)
+end
+
 function solve!(u::FEFunction,solver::LinearFESolver,feop::AffineFEOperator, cache)
   x = get_free_values(u)
   op = get_algebraic_operator(feop)
@@ -107,6 +138,20 @@ function solve!(u::FEFunction,solver::LinearFESolver,feop::AffineFEOperator, cac
   trial = get_trial(feop)
   u_new = FEFunction(trial,x)
   (u_new,cache)
+end
+
+function solve!(
+  u::Tuple{FEFunction,FEFunction},
+  solver::LinearFESolver,
+  feop::AffineFEOperatorWithAdjoint,
+  cache)
+  x = (get_free_values(u[1]), get_free_values(u[2]))
+  op = get_algebraic_operator(feop)
+  cache = solve!(x,solver.ls,op,cache)
+  trial = get_trial(feop)
+  test = get_test(feop)
+  u_new = (FEFunction(trial,x[1]),FEFunction(test,x[2]))
+  (u_new, cache)
 end
 
 """
@@ -150,4 +195,3 @@ function solve!(u::FEFunction,solver::NonlinearFESolver,feop::FEOperator,cache)
   u_new = FEFunction(trial,x)
   (u_new,cache)
 end
-

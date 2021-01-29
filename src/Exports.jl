@@ -148,6 +148,7 @@ using Gridap.CellData: ∫; export ∫
 #@publish FESpaces LinearFETerm
 #@publish FESpaces FESource
 @publish FESpaces AffineFEOperator
+@publish FESpaces AffineFEOperatorWithAdjoint
 @publish FESpaces LinearFESolver
 @publish FESpaces get_free_values
 @publish FESpaces get_dirichlet_values
@@ -169,7 +170,6 @@ using Gridap.CellData: ∫; export ∫
 @publish FESpaces FESolver
 @publish FESpaces SparseMatrixAssembler
 @publish FESpaces FiniteElements
-@publish FESpaces AdjointFEOperator
 
 @publish MultiField MultiFieldFESpace
 @publish MultiField num_fields
