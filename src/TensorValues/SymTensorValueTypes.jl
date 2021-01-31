@@ -8,7 +8,7 @@ Type representing a symmetric second-order tensor
 struct SymTensorValue{D,T,L} <: MultiValue{Tuple{D,D},T,2,L}
     data::NTuple{L,T}
     function SymTensorValue{D,T}(data::NTuple{L,T}) where {D,T,L}
-        @assert L == D*(D+1)/2
+        @assert L == D*(D+1)÷2
         new{D,T,L}(data)
     end
 end
@@ -105,7 +105,7 @@ convert(::Type{<:SymTensorValue{D,T}}, arg::SymTensorValue{D,T}) where {D,T} = a
 ###############################################################
 
 @generated function zero(::Type{<:SymTensorValue{D,T}}) where {D,T}
-  L=Int(D*(D+1)/2)
+  L=D*(D+1)÷2
   quote
     SymTensorValue{D,T}(tfill(zero(T),Val{$L}()))
   end
