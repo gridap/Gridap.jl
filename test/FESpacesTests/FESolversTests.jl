@@ -45,13 +45,13 @@ op = AffineFEOperator(U,V,A,b)
 solver = LinearFESolver()
 test_fe_solver(solver,op,x0,x)
 uh = solve(solver,op)
-@test get_free_values(uh) ≈ x
+@test get_free_dof_values(uh) ≈ x
 uh = solve(op)
-@test get_free_values(uh) ≈ x
+@test get_free_dof_values(uh) ≈ x
 
 solver = NonlinearFESolver()
 test_fe_solver(solver,op,x0,x)
 uh = solve(solver,op)
-@test get_free_values(uh) ≈ x
+@test get_free_dof_values(uh) ≈ x
 
 end # module

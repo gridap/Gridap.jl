@@ -57,7 +57,7 @@ import Gridap.Algebra: allocate_matrix
 import Gridap.Algebra: allocate_matrix_and_vector
 
 export FEFunction
-export get_free_values
+export get_free_dof_values
 export get_cell_dof_values
 export get_fe_space
 export test_fe_function
