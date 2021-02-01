@@ -18,8 +18,7 @@ function get_vector_type(a::SparseMatrixAssembler)
 end
 
 function allocate_vector(a::SparseMatrixAssembler,vecdata)
-  n = num_free_dofs(get_test(a))
-  allocate_vector(get_vector_type(a),n)
+  allocate_vector(get_vector_type(a),num_rows(a))
 end
 
 function assemble_vector!(b,a::SparseMatrixAssembler,vecdata)
@@ -53,8 +52,8 @@ function allocate_matrix(a::SparseMatrixAssembler,matdata)
   n = count_matrix_nnz_coo(a,matdata)
   I,J,V = allocate_coo_vectors(get_matrix_type(a),n)
   fill_matrix_coo_symbolic!(I,J,a,matdata)
-  m = num_free_dofs(get_test(a))
-  n = num_free_dofs(get_trial(a))
+  m = num_rows(a)
+  n = num_cols(a)
   finalize_coo!(get_matrix_type(a),I,J,V,m,n)
   sparse_from_coo(get_matrix_type(a),I,J,V,m,n)
 end
@@ -78,8 +77,8 @@ function assemble_matrix(a::SparseMatrixAssembler,matdata)
 
   fill_matrix_coo_numeric!(I,J,V,a,matdata)
 
-  m = num_free_dofs(get_test(a))
-  n = num_free_dofs(get_trial(a))
+  m = num_rows(a)
+  n = num_cols(a)
   finalize_coo!(get_matrix_type(a),I,J,V,m,n)
   sparse_from_coo(get_matrix_type(a),I,J,V,m,n)
 end
@@ -90,8 +89,8 @@ function allocate_matrix_and_vector(a::SparseMatrixAssembler,data)
 
   I,J,V = allocate_coo_vectors(get_matrix_type(a),n)
   fill_matrix_and_vector_coo_symbolic!(I,J,a,data)
-  m = num_free_dofs(get_test(a))
-  n = num_free_dofs(get_trial(a))
+  m = num_rows(a)
+  n = num_cols(a)
   finalize_coo!(get_matrix_type(a),I,J,V,m,n)
   A = sparse_from_coo(get_matrix_type(a),I,J,V,m,n)
 
@@ -117,13 +116,13 @@ function assemble_matrix_and_vector(a::SparseMatrixAssembler, data)
 
   n = count_matrix_and_vector_nnz_coo(a,data)
   I,J,V = allocate_coo_vectors(get_matrix_type(a),n)
-  n = num_free_dofs(get_test(a))
+  n = num_rows(a)
   b = allocate_vector(get_vector_type(a),n)
 
   fill_matrix_and_vector_coo_numeric!(I,J,V,b,a,data)
 
-  m = num_free_dofs(get_test(a))
-  n = num_free_dofs(get_trial(a))
+  m = num_rows(a)
+  n = num_cols(a)
   finalize_coo!(get_matrix_type(a),I,J,V,m,n)
   A = sparse_from_coo(get_matrix_type(a),I,J,V,m,n)
 
@@ -139,40 +138,46 @@ end
 struct GenericSparseMatrixAssembler{M,V} <: SparseMatrixAssembler
   matrix_type::Type{M}
   vector_type::Type{V}
-  trial::FESpace
-  test::FESpace
+  rows::AbstractUnitRange,
+  cols::AbstractUnitRange,
   strategy::AssemblyStrategy
 
   function GenericSparseMatrixAssembler(
     matrix_type::Type{M},
     vector_type::Type{V},
-    trial::FESpace,
-    test::FESpace,
+    rows::AbstractUnitRange,
+    cols::AbstractUnitRange,
     strategy::AssemblyStrategy) where {M,V}
 
-    @assert ! isa(test,TrialFESpace) """\n
-    It is not allowed to build an Assembler with a test space of type TrialFESpace.
+    # @assert ! isa(test,TrialFESpace) """\n
+    # It is not allowed to build an Assembler with a test space of type TrialFESpace.
     
-    Make sure that you are writing first the trial space and then the test space when
-    building an Assembler or a FEOperator.
-    """
-    new{M,V}(matrix_type,vector_type,trial,test,strategy)
+    # Make sure that you are writing first the trial space and then the test space when
+    # building an Assembler or a FEOperator.
+    # """
+    new{M,V}(matrix_type,vector_type,rows,cols,strategy)
   end
 end
 
 function SparseMatrixAssembler(
   mat::Type,vec::Type,trial::FESpace,test::FESpace,strategy::AssemblyStrategy)
-  GenericSparseMatrixAssembler(mat,vec,trial,test,strategy)
+  rows = get_free_dof_ids(test)
+  cols = get_free_dof_ids(trial)
+  GenericSparseMatrixAssembler(mat,vec,rows,cols,strategy)
 end
 
 function SparseMatrixAssembler(mat::Type,vec::Type,trial::FESpace,test::FESpace)
   strategy = DefaultAssemblyStrategy()
-  GenericSparseMatrixAssembler(mat,vec,trial,test,strategy)
+  rows = get_free_dof_ids(test)
+  cols = get_free_dof_ids(trial)
+  GenericSparseMatrixAssembler(mat,vec,rows,cols,strategy)
 end
 
 function SparseMatrixAssembler(mat::Type,trial::FESpace,test::FESpace)
   strategy = DefaultAssemblyStrategy()
-  GenericSparseMatrixAssembler(mat,Vector{eltype(mat)},trial,test,strategy)
+  rows = get_free_dof_ids(test)
+  cols = get_free_dof_ids(trial)
+  GenericSparseMatrixAssembler(mat,Vector{eltype(mat)},rows,cols,strategy)
 end
 
 """
@@ -182,12 +187,14 @@ function SparseMatrixAssembler(trial::FESpace,test::FESpace)
   matrix_type = SparseMatrixCSC{T,Int}
   vector_type = Vector{T}
   strategy = DefaultAssemblyStrategy()
-  GenericSparseMatrixAssembler(matrix_type,vector_type,trial,test,strategy)
+  rows = get_free_dof_ids(test)
+  cols = get_free_dof_ids(trial)
+  GenericSparseMatrixAssembler(matrix_type,vector_type,rows,cols,strategy)
 end
 
-get_test(a::GenericSparseMatrixAssembler) = a.test
+get_rows(a::GenericSparseMatrixAssembler) = a.rows
 
-get_trial(a::GenericSparseMatrixAssembler) = a.trial
+get_cols(a::GenericSparseMatrixAssembler) = a.cols
 
 get_matrix_type(a::GenericSparseMatrixAssembler) = a.matrix_type
 

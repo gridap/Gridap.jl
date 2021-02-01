@@ -43,15 +43,21 @@ abstract type Assembler <: GridapType end
 
 """
 """
-function get_test(a::Assembler)
+function get_rows(a::Assembler)
   @abstractmethod
 end
 
 """
 """
-function get_trial(a::Assembler)
+function get_cols(a::Assembler)
   @abstractmethod
 end
+
+num_rows(a::Assembler) = length(get_rows(a))
+num_cols(a::Assembler) = length(get_cols(a)) 
+
+Base.axes(a::Assembler) = (get_rows(a),get_cols(a))
+Base.size(a::Assembler) = (num_rows(a),num_cols(a))
 
 """
 """
@@ -138,32 +144,30 @@ end
 """
 """
 function test_assembler(a::Assembler,matdata,vecdata,data)
-  trial_fesp = get_trial(a)
-  test_fesp = get_test(a)
   A = allocate_matrix(a,matdata)
-  @test num_free_dofs(trial_fesp) == size(A,2)
-  @test num_free_dofs(test_fesp) == size(A,1)
+  @test num_cols(a) == size(A,2)
+  @test num_rows(a) == size(A,1)
   assemble_matrix!(A,a,matdata)
   assemble_matrix_add!(A,a,matdata)
   A = assemble_matrix(a,matdata)
-  @test num_free_dofs(trial_fesp) == size(A,2)
-  @test num_free_dofs(test_fesp) == size(A,1)
+  @test num_cols(a) == size(A,2)
+  @test num_rows(a) == size(A,1)
   b = allocate_vector(a,vecdata)
-  @test num_free_dofs(test_fesp) == length(b)
+  @test num_rows(a) == length(b)
   assemble_vector!(b,a,vecdata)
   assemble_vector_add!(b,a,vecdata)
   b = assemble_vector(a,vecdata)
-  @test num_free_dofs(test_fesp) == length(b)
+  @test num_rows(a) == length(b)
   A, b = allocate_matrix_and_vector(a,data)
   assemble_matrix_and_vector!(A,b,a,data)
   assemble_matrix_and_vector_add!(A,b,a,data)
-  @test num_free_dofs(trial_fesp) == size(A,2)
-  @test num_free_dofs(test_fesp) == size(A,1)
-  @test num_free_dofs(test_fesp) == length(b)
+  @test num_cols(a) == size(A,2)
+  @test num_rows(a) == size(A,1)
+  @test num_rows(a) == length(b)
   A, b = assemble_matrix_and_vector(a,data)
-  @test num_free_dofs(trial_fesp) == size(A,2)
-  @test num_free_dofs(test_fesp) == size(A,1)
-  @test num_free_dofs(test_fesp) == length(b)
+  @test num_cols(a) == size(A,2)
+  @test num_rows(a) == size(A,1)
+  @test num_rows(a) == length(b)
 end
 
 # Some syntactic sugar for assembling from anonymous functions
