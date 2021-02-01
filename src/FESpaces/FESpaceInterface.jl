@@ -52,9 +52,13 @@ abstract type FESpace <: GridapType end
 
 """
 """
-function num_free_dofs(f::FESpace)
+function get_free_dof_ids(f::FESpace)
   @abstractmethod
 end
+
+"""
+"""
+num_free_dofs(f::FESpace) = length(get_free_dof_ids(f))
 
 """
 """

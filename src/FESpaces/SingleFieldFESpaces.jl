@@ -5,9 +5,13 @@ abstract type SingleFieldFESpace <: FESpace end
 
 """
 """
-function num_dirichlet_dofs(f::SingleFieldFESpace)
+function get_dirichlet_dof_ids(f::SingleFieldFESpace)
   @abstractmethod
 end
+
+"""
+"""
+num_dirichlet_dofs(f::SingleFieldFESpace) = length(get_dirichlet_dof_ids(f))
 
 """
 """

@@ -29,8 +29,8 @@ end
 
 ConstraintStyle(::Type{<:CLagrangianFESpace}) = UnConstrained()
 
-function num_free_dofs(f::CLagrangianFESpace)
-  num_free_dofs(f.space)
+function get_free_dof_ids(f::CLagrangianFESpace)
+  get_free_dof_ids(f.space)
 end
 
 function get_cell_shapefuns(f::CLagrangianFESpace)
@@ -57,8 +57,8 @@ function get_cell_dof_basis(f::CLagrangianFESpace)
   get_cell_dof_basis(f.space)
 end
 
-function num_dirichlet_dofs(f::CLagrangianFESpace)
-  num_dirichlet_dofs(f.space)
+function get_dirichlet_dof_ids(f::CLagrangianFESpace)
+  get_dirichlet_dof_ids(f.space)
 end
 
 function num_dirichlet_tags(f::CLagrangianFESpace)

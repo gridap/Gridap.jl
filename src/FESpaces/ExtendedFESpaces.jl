@@ -64,16 +64,16 @@ end
 
 # Delegated functions
 
-function num_free_dofs(f::ExtendedFESpace)
-  num_free_dofs(f.space)
+function get_free_dof_ids(f::ExtendedFESpace)
+  get_free_dof_ids(f.space)
 end
 
 function get_vector_type(f::ExtendedFESpace)
   get_vector_type(f.space)
 end
 
-function num_dirichlet_dofs(f::ExtendedFESpace)
-  num_dirichlet_dofs(f.space)
+function get_dirichlet_dof_ids(f::ExtendedFESpace)
+  get_dirichlet_dof_ids(f.space)
 end
 
 function num_dirichlet_tags(f::ExtendedFESpace)

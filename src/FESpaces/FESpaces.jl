@@ -67,6 +67,7 @@ export ConstraintStyle
 export Constrained
 export UnConstrained
 export num_free_dofs
+export get_free_dof_ids
 export zero_free_values
 export EvaluationFunction
 export get_cell_dof_ids
@@ -82,6 +83,7 @@ export SingleFieldFESpace
 export SingleFieldFEFunction
 export get_cell_dof_basis
 export num_dirichlet_dofs
+export get_dirichlet_dof_ids
 export zero_dirichlet_values
 export num_dirichlet_tags
 export get_dirichlet_dof_tag

@@ -18,7 +18,7 @@ end
 # FESpace interface
 
 ConstraintStyle(::Type{<:UnconstrainedFESpace}) = UnConstrained()
-num_free_dofs(f::UnconstrainedFESpace) = f.nfree
+get_free_dof_ids(f::UnconstrainedFESpace) = Base.OneTo(f.nfree)
 zero_free_values(f::UnconstrainedFESpace) = allocate_vector(f.vector_type,num_free_dofs(f))
 get_cell_shapefuns(f::UnconstrainedFESpace) = f.cell_shapefuns
 get_cell_dof_basis(f::UnconstrainedFESpace) = f.cell_dof_basis
@@ -29,7 +29,7 @@ get_vector_type(f::UnconstrainedFESpace{V}) where V = V
 
 # SingleFieldFESpace interface
 
-num_dirichlet_dofs(f::UnconstrainedFESpace) = f.ndirichlet
+get_dirichlet_dof_ids(f::UnconstrainedFESpace) = Base.OneTo(f.ndirichlet)
 num_dirichlet_tags(f::UnconstrainedFESpace) = f.ntags
 zero_dirichlet_values(f::UnconstrainedFESpace) = allocate_vector(f.vector_type,num_dirichlet_dofs(f))
 get_dirichlet_dof_tag(f::UnconstrainedFESpace) = f.dirichlet_dof_tag
