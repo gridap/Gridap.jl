@@ -38,6 +38,8 @@ using Test
 
 @testset "AppendedTriangulations" begin include("AppendedTriangulationsTests.jl") end
 
+@testset "CompressedCellArrays" begin include("CompressedCellArraysTests.jl") end
+
 
 #
 #@testset "CellFields" begin include("CellFieldsTests.jl") end

@@ -218,4 +218,6 @@ include("RestrictedDiscreteModels.jl")
 
 include("AppendedTriangulations.jl")
 
+include("CompressedCellArrays.jl")
+
 end # module
