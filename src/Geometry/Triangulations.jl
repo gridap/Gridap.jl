@@ -305,6 +305,10 @@ function get_cell_node_ids(trian::Triangulation)
   @notimplemented
 end
 
+function compress(cell_mat,trian::Triangulation)
+  cell_mat, get_cell_to_bgcell(trian)
+end
+
 #"""
 #"""
 #function CellField(object,trian::Triangulation)
