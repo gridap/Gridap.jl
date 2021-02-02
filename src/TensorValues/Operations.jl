@@ -497,6 +497,7 @@ function meas(v::MultiValue{Tuple{2,3}})
 end
 
 @inline norm(u::MultiValue{Tuple{D}}) where D = sqrt(inner(u,u))
+@inline norm(u::MultiValue{Tuple{D1,D2}}) where {D1,D2} = sqrt(inner(u,u))
 @inline norm(u::MultiValue{Tuple{0},T}) where T = sqrt(zero(T))
 
 ###############################################################
