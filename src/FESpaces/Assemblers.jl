@@ -239,8 +239,9 @@ function collect_cell_matrix(a::DomainContribution)
   for trian in get_domains(a)
     cell_mat = get_contribution(a,trian)
     @assert eltype(cell_mat) <: AbstractMatrix
-    push!(w,cell_mat)
-    push!(r,get_cell_to_bgcell(trian))
+    ccell_mat, ccell_bgcell = compress(cell_mat,trian)
+    push!(w,ccell_mat)
+    push!(r,ccell_bgcell)
   end
   (w,r,r)
 end
@@ -261,10 +262,11 @@ function _collect_cell_matvec(a::DomainContribution)
   w = []
   r = []
   for trian in get_domains(a)
-    cell_mat = get_contribution(a,trian)
-    @assert eltype(cell_mat) <: Tuple
-    push!(w,cell_mat)
-    push!(r,get_cell_to_bgcell(trian))
+    cell_matvec = get_contribution(a,trian)
+    @assert eltype(cell_matvec) <: Tuple
+    ccell_matvec, ccell_bgcell = compress(cell_matvec,trian)
+    push!(w,ccell_matvec)
+    push!(r,ccell_bgcell)
   end
   (w,r,r)
 end
