@@ -28,8 +28,8 @@ function compress(
   ccell_to_first_cell::AbstractVector{<:Integer}=compress(cell_to_bgcell))
 
   nccells = length(ccell_to_first_cell)-1
-  ccell_to_cell = view(ccell_to_first_cell,1:nccells)
-  ccell_to_bgcell = view(cell_to_bgcell,ccell_to_cell)
+  ccell_to_cell = lazy_map(Reindex(ccell_to_first_cell),1:nccells)
+  ccell_to_bgcell = lazy_map(Reindex(cell_to_bgcell),ccell_to_cell)
   ccell_to_mat = CompressedCellArray(cell_to_mat,ccell_to_first_cell)
   ccell_to_mat, ccell_to_bgcell
 end
