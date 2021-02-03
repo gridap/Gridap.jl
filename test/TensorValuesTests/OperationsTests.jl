@@ -432,6 +432,9 @@ v = VectorValue(2.0,3.0)
 @test dot(u,v) ≈ inner(u,v)
 @test norm(u) ≈ sqrt(inner(u,u))
 
+a = TensorValue(1,2,3,4)
+@test norm(a) ≈ sqrt(inner(a,a))
+
 a = VectorValue(1.0,2.0)
 b = VectorValue(2.0,3.0)
 @test [a,b] ≈ [a,b]
