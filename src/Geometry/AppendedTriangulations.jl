@@ -98,3 +98,7 @@ end
 #function CellQuadrature(trian::AppendedTriangulation,degree::Integer)
 #  CellQuadrature(trian,degree,degree)
 #end
+
+function compress(cell_mat,trian::AppendedTriangulation)
+  compress(cell_mat,get_cell_to_bgcell(trian))
+end
