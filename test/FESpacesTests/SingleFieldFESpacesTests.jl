@@ -64,7 +64,7 @@ tol = 1e-9
 @test sqrt(sum(∫( abs2(conj(f - fh)) )*dΩ)) < tol
 
 zh = zero(V0)
-@test isa(get_free_values(zh),Vector{ComplexF64})
+@test isa(get_free_dof_values(zh),Vector{ComplexF64})
 
 
 #using Gridap.Visualization

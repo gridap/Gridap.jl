@@ -127,6 +127,12 @@ b = a[r]
 @test isa(u,Table)
 test_array(u,b)
 
+r = [2,1,3]
+u = t[r]
+b = a[r]
+@test isa(u,Table)
+test_array(u,b)
+
 t = empty_table(3)
 r = Vector{Int}[[], [], []]
 test_array(t,r)

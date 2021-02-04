@@ -38,7 +38,7 @@ end
 CellData.get_data(f::MultiFieldFEFunction) = get_data(f.multi_cell_field)
 CellData.get_triangulation(f::MultiFieldFEFunction) = get_triangulation(f.multi_cell_field)
 CellData.DomainStyle(::Type{MultiFieldFEFunction{T}}) where T = DomainStyle(T)
-FESpaces.get_free_values(f::MultiFieldFEFunction) = f.free_values
+FESpaces.get_free_dof_values(f::MultiFieldFEFunction) = f.free_values
 FESpaces.get_fe_space(f::MultiFieldFEFunction) = f.fe_space
 FESpaces.get_cell_dof_values(f::MultiFieldFEFunction) = f.cell_dof_values
 

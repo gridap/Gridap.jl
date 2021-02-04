@@ -67,6 +67,14 @@ function FESpaces.num_free_dofs(f::MultiFieldFESpace)
   n
 end
 
+function FESpaces.get_free_dof_ids(f::MultiFieldFESpace)
+  block_dof_ids = AbstractUnitRange[]
+  for U in f.spaces
+    push!(block_dof_ids,get_free_dof_ids(U))
+  end
+  MultiLevelBlockedUnitRange(block_dof_ids)
+end
+
 FESpaces.get_dof_value_type(f::MultiFieldFESpace{MS,CS,V}) where {MS,CS,V} = eltype(V)
 
 FESpaces.get_vector_type(f::MultiFieldFESpace) = f.vector_type

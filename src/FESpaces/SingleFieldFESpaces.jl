@@ -5,9 +5,13 @@ abstract type SingleFieldFESpace <: FESpace end
 
 """
 """
-function num_dirichlet_dofs(f::SingleFieldFESpace)
+function get_dirichlet_dof_ids(f::SingleFieldFESpace)
   @abstractmethod
 end
+
+"""
+"""
+num_dirichlet_dofs(f::SingleFieldFESpace) = length(get_dirichlet_dof_ids(f))
 
 """
 """
@@ -144,7 +148,7 @@ get_data(f::SingleFieldFEFunction) = get_data(f.cell_field)
 get_triangulation(f::SingleFieldFEFunction) = get_triangulation(f.cell_field)
 DomainStyle(::Type{SingleFieldFEFunction{T}}) where T = DomainStyle(T)
 
-get_free_values(f::SingleFieldFEFunction) = f.free_values
+get_free_dof_values(f::SingleFieldFEFunction) = f.free_values
 get_cell_dof_values(f::SingleFieldFEFunction) = f.cell_dof_values
 get_fe_space(f::SingleFieldFEFunction) = f.fe_space
 

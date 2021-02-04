@@ -46,24 +46,24 @@ vec_contribs = ℓ(dv)
 assem = SparseMatrixAssembler(U,V)
 
 @test isa(U,TrialFESpace)
-@test_throws AssertionError assem = SparseMatrixAssembler(V,U)
+#@test_throws AssertionError assem = SparseMatrixAssembler(V,U)
 
-data = collect_cell_matrix(mat_contribs)
+data = collect_cell_matrix(U,V,mat_contribs)
 A = assemble_matrix(assem,data)
 @test size(A) == (num_free_dofs(V), num_free_dofs(U))
 
-data = collect_cell_vector(vec_contribs)
+data = collect_cell_vector(V,vec_contribs)
 b = assemble_vector(assem,data)
 x = A\b
 uh = FEFunction(U,x)
 
-data = collect_cell_matrix_and_vector(mat_contribs,vec_contribs)
+data = collect_cell_matrix_and_vector(U,V,mat_contribs,vec_contribs)
 A,b = assemble_matrix_and_vector(assem,data)
 x = A\b
 uh = FEFunction(U,x)
 
 uhd = zero(U)
-data = collect_cell_matrix_and_vector(mat_contribs,vec_contribs,uhd)
+data = collect_cell_matrix_and_vector(U,V,mat_contribs,vec_contribs,uhd)
 A,b = assemble_matrix_and_vector(assem,data)
 x = A\b
 uh = FEFunction(U,x)
@@ -96,22 +96,22 @@ a(u,v) = ∫(∇(u)⋅∇(v))*dΩ + ∫(u*v)*dΓ
 mat_contribs = a(du,dv)
 vec_contribs = ℓ(dv)
 
-data = collect_cell_matrix(mat_contribs)
+data = collect_cell_matrix(U,V,mat_contribs)
 A = assemble_matrix(assem,data)
 @test size(A) == (num_free_dofs(V), num_free_dofs(U))
 
-data = collect_cell_vector(vec_contribs)
+data = collect_cell_vector(V,vec_contribs)
 b = assemble_vector(assem,data)
 x = A\b
 @test x ≈ b
 
-data = collect_cell_matrix_and_vector(mat_contribs,vec_contribs)
+data = collect_cell_matrix_and_vector(U,V,mat_contribs,vec_contribs)
 A,b = assemble_matrix_and_vector(assem,data)
 x = A\b
 @test x ≈ b
 
 uhd = zero(U)
-data = collect_cell_matrix_and_vector(mat_contribs,vec_contribs,uhd)
+data = collect_cell_matrix_and_vector(U,V,mat_contribs,vec_contribs,uhd)
 A,b = assemble_matrix_and_vector(assem,data)
 x = A\b
 @test x ≈ b

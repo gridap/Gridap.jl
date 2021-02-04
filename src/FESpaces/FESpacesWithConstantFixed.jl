@@ -27,12 +27,12 @@ end
 ConstantApproach(::FESpaceWithConstantFixed{CA}) where CA = CA()
 
 # Genuine functions
-function num_free_dofs(f::FESpaceWithConstantFixed{FixConstant})
-  num_free_dofs(f.space)-1
+function get_free_dof_ids(f::FESpaceWithConstantFixed{FixConstant})
+  Base.OneTo(num_free_dofs(f.space)-1)
 end
 
-function num_free_dofs(f::FESpaceWithConstantFixed{DoNotFixConstant})
-  num_free_dofs(f.space)
+function get_free_dof_ids(f::FESpaceWithConstantFixed{DoNotFixConstant})
+  get_free_dof_ids(f.space)
 end
 
 function get_cell_dof_ids(f::FESpaceWithConstantFixed{FixConstant})
@@ -44,9 +44,9 @@ function get_cell_dof_ids(f::FESpaceWithConstantFixed{DoNotFixConstant})
   get_cell_dof_ids(f.space)
 end
 
-num_dirichlet_dofs(f::FESpaceWithConstantFixed{FixConstant}) = 1
+get_dirichlet_dof_ids(f::FESpaceWithConstantFixed{FixConstant}) = Base.OneTo(1)
 
-num_dirichlet_dofs(f::FESpaceWithConstantFixed{DoNotFixConstant}) = 0
+get_dirichlet_dof_ids(f::FESpaceWithConstantFixed{DoNotFixConstant}) = Base.OneTo(0)
 
 num_dirichlet_tags(f::FESpaceWithConstantFixed{FixConstant}) = 1
 

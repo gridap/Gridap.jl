@@ -32,10 +32,15 @@ u = get_cell_shapefuns_trial(U)
 cellmat = integrate(∇(v)⊙∇(u),quad)
 cellvec = integrate(v⊙f,quad)
 cellids = collect(1:num_cells(trian))
+rows = get_cell_dof_ids(V,cellids)
+cols = get_cell_dof_ids(U,cellids)
+cellmat_c = attach_constraints_cols(U,cellmat,cellids)
+cellmat_rc = attach_constraints_rows(V,cellmat_c,cellids)
+cellvec_r = attach_constraints_rows(V,cellvec,cellids)
 
 assem = SparseMatrixAssembler(U,V)
-matdata = ([cellmat],[cellids],[cellids])
-vecdata = ([cellvec],[cellids])
+matdata = ([cellmat_rc],[rows],[cols])
+vecdata = ([cellvec_r],[rows])
 A =  assemble_matrix(assem,matdata)
 b =  assemble_vector(assem,vecdata)
 x = A \ b
@@ -45,13 +50,13 @@ op = AffineFEOperator(U,V,A,b)
 solver = LinearFESolver()
 test_fe_solver(solver,op,x0,x)
 uh = solve(solver,op)
-@test get_free_values(uh) ≈ x
+@test get_free_dof_values(uh) ≈ x
 uh = solve(op)
-@test get_free_values(uh) ≈ x
+@test get_free_dof_values(uh) ≈ x
 
 solver = NonlinearFESolver()
 test_fe_solver(solver,op,x0,x)
 uh = solve(solver,op)
-@test get_free_values(uh) ≈ x
+@test get_free_dof_values(uh) ≈ x
 
 end # module

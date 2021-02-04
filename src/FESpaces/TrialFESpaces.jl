@@ -73,7 +73,7 @@ get_dirichlet_values(f::TrialFESpace) = f.dirichlet_values
 
 # Delegated functions
 
-num_free_dofs(f::TrialFESpace) = num_free_dofs(f.space)
+get_free_dof_ids(f::TrialFESpace) = get_free_dof_ids(f.space)
 
 zero_free_values(f::TrialFESpace) = zero_free_values(f.space)
 
@@ -97,7 +97,7 @@ get_cell_isconstrained(f::TrialFESpace) = get_cell_isconstrained(f.space)
 
 get_cell_constraints(f::TrialFESpace) = get_cell_constraints(f.space)
 
-num_dirichlet_dofs(f::TrialFESpace) = num_dirichlet_dofs(f.space)
+get_dirichlet_dof_ids(f::TrialFESpace) = get_dirichlet_dof_ids(f.space)
 
 zero_dirichlet_values(f::TrialFESpace) = zero_dirichlet_values(f.space)
 
@@ -118,4 +118,3 @@ gather_dirichlet_values!(dv,f::TrialFESpace,cv) = gather_dirichlet_values!(dv,f.
 gather_free_values(f::TrialFESpace,cv) = gather_free_values(f.space,cv)
 
 gather_free_values!(fv,f::TrialFESpace,cv) = gather_free_values!(fv,f.space,cv)
-
