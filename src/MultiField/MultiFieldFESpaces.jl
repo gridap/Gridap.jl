@@ -68,7 +68,7 @@ function FESpaces.num_free_dofs(f::MultiFieldFESpace)
 end
 
 function FESpaces.get_free_dof_ids(f::MultiFieldFESpace)
-  block_dof_ids = []
+  block_dof_ids = AbstractUnitRange[]
   for U in f.spaces
     push!(block_dof_ids,get_free_dof_ids(U))
   end
