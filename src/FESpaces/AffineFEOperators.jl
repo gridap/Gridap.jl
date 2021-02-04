@@ -20,17 +20,15 @@ function AffineFEOperator(trial::FESpace,test::FESpace,matrix::AbstractMatrix,ve
   AffineFEOperator(trial,test,op)
 end
 
-function AffineFEOperator(weakform::Function,assem::Assembler)
-
-  trial = get_trial(assem)
-  test = get_test(assem)
+function AffineFEOperator(
+  weakform::Function,trial::FESpace,test::FESpace,assem::Assembler)
 
   u = get_cell_shapefuns_trial(trial)
   v = get_cell_shapefuns(test)
 
   uhd = zero(trial)
   matcontribs, veccontribs = weakform(u,v)
-  data = collect_cell_matrix_and_vector(matcontribs,veccontribs,uhd)
+  data = collect_cell_matrix_and_vector(trial,test,matcontribs,veccontribs,uhd)
   A,b = assemble_matrix_and_vector(assem,data)
 
   AffineFEOperator(trial,test,A,b)
@@ -38,7 +36,8 @@ end
 
 function AffineFEOperator(weakform::Function,args...)
   assem = SparseMatrixAssembler(args...)
-  AffineFEOperator(weakform,assem)
+  trial, test, = args
+  AffineFEOperator(weakform,trial,test,assem)
 end
 
 function AffineFEOperator(a::Function,ℓ::Function,args...)
