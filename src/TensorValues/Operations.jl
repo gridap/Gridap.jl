@@ -193,20 +193,6 @@ end
 end
 
 # a_ilm = b_ij*c_jlm
-@generated function dot(a::A,b::B) where {A<:MultiValue{Tuple{D,D}},B<:ThirdOrderTensorValue{D}} where D
-  ss = String[]
-  for m in 1:D
-    for l in 1:D
-      for i in 1:D
-        s = join([ "a[$i,$j]*b[$j,$l,$m]+" for j in 1:D])
-        push!(ss,s[1:(end-1)]*", ")
-      end
-    end
-  end
-  str = join(ss)
-  Meta.parse("ThirdOrderTensorValue{$D}($str)")
-end
-
 @generated function dot(a::A,b::B) where {A<:MultiValue{Tuple{D,D}},B<:ThirdOrderTensorValue{D,D,L}} where {D,L}
   ss = String[]
   for m in 1:L
