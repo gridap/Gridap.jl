@@ -5,6 +5,20 @@ struct FEOperatorFromWeakForm <: FEOperator
   trial::FESpace
   test::FESpace
   assem::Assembler
+  function FEOperatorFromWeakForm(
+    res::Function,
+    jac::Function,
+    trial::FESpace,
+    test::FESpace,
+    assem::Assembler)
+    @assert ! isa(test,TrialFESpace) """\n
+    It is not allowed to build a FEOperator with a test space of type TrialFESpace.
+
+    Make sure that you are writing first the trial space and then the test space when
+    building an AffineFEOperator or a FEOperatorFromWeakForm.
+    """
+    new(res,jac,trial,test,assem)
+  end
 end
 
 function FEOperator(

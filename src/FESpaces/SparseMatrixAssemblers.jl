@@ -148,13 +148,6 @@ struct GenericSparseMatrixAssembler{M,V} <: SparseMatrixAssembler
     rows::AbstractUnitRange,
     cols::AbstractUnitRange,
     strategy::AssemblyStrategy) where {M,V}
-
-    # @assert ! isa(test,TrialFESpace) """\n
-    # It is not allowed to build an Assembler with a test space of type TrialFESpace.
-
-    # Make sure that you are writing first the trial space and then the test space when
-    # building an Assembler or a FEOperator.
-    # """
     new{M,V}(matrix_type,vector_type,rows,cols,strategy)
   end
 end

@@ -22,6 +22,12 @@ end
 
 function AffineFEOperator(
   weakform::Function,trial::FESpace,test::FESpace,assem::Assembler)
+  @assert ! isa(test,TrialFESpace) """\n
+  It is not allowed to build an AffineFEOperator with a test space of type TrialFESpace.
+
+  Make sure that you are writing first the trial space and then the test space when
+  building an AffineFEOperator or a FEOperator.
+  """
 
   u = get_cell_shapefuns_trial(trial)
   v = get_cell_shapefuns(test)
