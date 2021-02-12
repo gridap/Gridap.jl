@@ -243,7 +243,7 @@ end
 
 function lazy_map(k::Broadcasting{typeof(push_∇)},cell_∇a::AbstractArray,cell_map::AbstractArray)
   cell_Jt = lazy_map(∇,cell_map)
-  cell_invJt = lazy_map(Operation(inv),cell_Jt)
+  cell_invJt = lazy_map(Operation(pinvJt),cell_Jt)
   lazy_map(Broadcasting(Operation(⋅)),cell_invJt,cell_∇a)
 end
 

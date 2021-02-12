@@ -11,7 +11,7 @@ struct SkeletonTriangulation{Dc,Dp,B} <: Triangulation{Dc,Dp}
   function SkeletonTriangulation(plus::B,minus::B) where B<:Triangulation
     Dc = num_cell_dims(plus)
     Dp = num_point_dims(plus)
-    @assert Dc + 1 == Dp
+    #@assert Dc + 1 == Dp
     new{Dc,Dp,B}(plus,minus)
   end
 end

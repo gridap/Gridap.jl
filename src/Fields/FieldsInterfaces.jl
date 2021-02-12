@@ -79,7 +79,17 @@ evaluate!(cache,::Broadcasting{typeof(∇∇)},a::Field) = ∇∇(a)
 lazy_map(::Broadcasting{typeof(∇)},a::AbstractArray{<:Field}) = lazy_map(∇,a)
 lazy_map(::Broadcasting{typeof(∇∇)},a::AbstractArray{<:Field}) = lazy_map(∇∇,a)
 
-push_∇(∇a::Field,ϕ::Field) = inv(∇(ϕ))⋅∇a
+push_∇(∇a::Field,ϕ::Field) = pinvJt(∇(ϕ))⋅∇a
+
+@inline function pinvJt(Jt::MultiValue{Tuple{D,D}}) where D
+  inv(Jt)
+end
+
+@inline function pinvJt(Jt::MultiValue{Tuple{D1,D2}}) where {D1,D2}
+  @check D1 < D2
+  J = transpose(Jt)
+  transpose(inv(Jt⋅J)⋅Jt)
+end
 
 function push_∇∇(∇∇a::Field,ϕ::Field)
   @notimplemented """\n

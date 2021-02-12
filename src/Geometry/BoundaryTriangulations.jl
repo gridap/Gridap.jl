@@ -95,7 +95,7 @@ struct BoundaryTriangulation{Dc,Dp,Gf,Gc,G} <: Triangulation{Dc,Dp}
     cell_trian::Triangulation,
     glue::FaceToCellGlue)
 
-    @assert TriangulationStyle(cell_trian) == BackgroundTriangulation()
+    #@assert TriangulationStyle(cell_trian) == BackgroundTriangulation()
     @assert num_point_dims(face_trian) == num_point_dims(cell_trian)
     #@assert num_cell_dims(face_trian) == num_cell_dims(cell_trian) - 1
 
@@ -124,7 +124,8 @@ function BoundaryTriangulation(
   bgface_grid = Grid(ReferenceFE{D-1},model)
 
   face_trian = RestrictedTriangulation(bgface_grid,face_to_bgface)
-  cell_trian = Grid(ReferenceFE{D},model)
+  #cell_trian = Grid(ReferenceFE{D},model)
+  cell_trian = Triangulation(model)
   glue = FaceToCellGlue(topo,cell_trian,face_trian,face_to_bgface,bgface_to_lcell)
 
   BoundaryTriangulation(face_trian,cell_trian,glue)
@@ -217,7 +218,7 @@ function get_facet_normal(trian::BoundaryTriangulation)
   # Inverse of the Jacobian transpose
   cell_q_x = get_cell_map(cell_trian)
   cell_q_Jt = lazy_map(∇,cell_q_x)
-  cell_q_invJt = lazy_map(Operation(inv),cell_q_Jt)
+  cell_q_invJt = lazy_map(Operation(pinvJt),cell_q_Jt)
   face_q_invJt = lazy_map(Reindex(cell_q_invJt),glue.face_to_cell)
 
   # Change of domain

@@ -43,7 +43,7 @@ end
 function push_∇∇(∇∇a::Field,ϕ::AffineMap)
   # Assuming ϕ is affine map
   Jt = ∇(ϕ)
-  Jt_inv = inv(Jt)
+  Jt_inv = pinvJt(Jt)
   Operation(push_∇∇)(∇∇a, Jt_inv)
 end
 
@@ -56,7 +56,7 @@ function lazy_map(
   cell_∇∇a::AbstractArray,
   cell_map::AbstractArray{<:AffineMap})
   cell_Jt = lazy_map(∇,cell_map)
-  cell_invJt = lazy_map(Operation(inv),cell_Jt)
+  cell_invJt = lazy_map(Operation(pinvJt),cell_Jt)
   lazy_map(Broadcasting(Operation(push_∇∇)),cell_∇∇a,cell_invJt)
 end
 
@@ -69,3 +69,4 @@ function lazy_map(
   cell_∇∇bt = lazy_map(transpose,cell_∇∇b)
   cell_∇∇bt
 end
+
