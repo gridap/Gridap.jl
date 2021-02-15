@@ -46,6 +46,23 @@ end
 
 """
 """
+function get_cell_dof_ids(V::SingleFieldFESpace,trian::Triangulation)
+  trian_V = get_triangulation(V)
+  if have_compatible_domains(trian_V,trian)
+    get_cell_dof_ids(V)
+  elseif have_compatible_domains(trian_V,get_background_triangulation(trian))
+    get_cell_dof_ids(V,get_cell_to_bgcell(trian))
+  elseif have_compatible_domains(
+    get_background_triangulation(trian_V),get_background_triangulation(trian))
+    cell_to_Vcell = get_cell_to_bgcell(trian,trian_V)
+    get_cell_dof_ids(V,cell_to_Vcell)
+  else
+    @unreachable
+  end
+end
+
+"""
+"""
 function test_single_field_fe_space(f::SingleFieldFESpace,pred=(==))
   fe_basis = get_cell_shapefuns(f)
   @test isa(fe_basis,CellField)

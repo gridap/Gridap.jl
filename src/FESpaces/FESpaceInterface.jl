@@ -304,6 +304,21 @@ function attach_constraints_rows(f::FESpace,cellarr,cellids,::Constrained)
   attach_constraints_rows(cellarr,cellconstr,cellmask)
 end
 
+function attach_constraints_rows(V::FESpace,cell_mat,trian::Triangulation)
+  trian_V = get_triangulation(V)
+  if have_compatible_domains(trian_V,trian)
+    attach_constraints_rows(V,cell_mat,IdentityVector(num_cells(trian)))
+  elseif have_compatible_domains(trian_V,get_background_triangulation(trian))
+    attach_constraints_rows(V,cell_mat,get_cell_to_bgcell(trian))
+  elseif have_compatible_domains(
+    get_background_triangulation(trian_V),get_background_triangulation(trian))
+    cell_to_Vcell = get_cell_to_bgcell(trian,trian_V)
+    attach_constraints_rows(V,cell_mat,cell_to_Vcell)
+  else
+    @unreachable
+  end
+end
+
 function attach_constraints_cols(f::FESpace,cellarr,cellids)
   attach_constraints_cols(f,cellarr,cellids,ConstraintStyle(f))
 end
@@ -316,6 +331,21 @@ function attach_constraints_cols(f::FESpace,cellarr,cellids,::Constrained)
   cellconstr = get_cell_constraints(f,cellids)
   cellmask = get_cell_isconstrained(f,cellids)
   attach_constraints_cols(cellarr,cellconstr,cellmask)
+end
+
+function attach_constraints_cols(V::FESpace,cell_mat,trian::Triangulation)
+  trian_V = get_triangulation(V)
+  if have_compatible_domains(trian_V,trian)
+    attach_constraints_cols(V,cell_mat,IdentityVector(num_cells(trian)))
+  elseif have_compatible_domains(trian_V,get_background_triangulation(trian))
+    attach_constraints_cols(V,cell_mat,get_cell_to_bgcell(trian))
+  elseif have_compatible_domains(
+    get_background_triangulation(trian_V),get_background_triangulation(trian))
+    cell_to_Vcell = get_cell_to_bgcell(trian,trian_V)
+    attach_constraints_cols(V,cell_mat,cell_to_Vcell)
+  else
+    @unreachable
+  end
 end
 
 """

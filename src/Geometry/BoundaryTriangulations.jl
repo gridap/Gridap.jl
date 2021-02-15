@@ -197,6 +197,29 @@ get_background_triangulation(trian::BoundaryTriangulation) = trian.cell_trian
 
 get_cell_to_bgcell(trian::BoundaryTriangulation) = trian.glue.face_to_cell
 
+function get_cell_to_bgcell(
+  trian_in::BoundaryTriangulation,
+  trian_out::BoundaryTriangulation)
+
+  if have_compatible_domains(trian_out,get_background_triangulation(trian_in))
+    return get_cell_to_bgcell(trian_in)
+  end
+
+  @check have_compatible_domains(
+    get_background_triangulation(trian_in),
+    get_background_triangulation(trian_out))
+
+  face_in_to_bgface = trian_in.glue.face_to_bgface
+  face_out_to_bgface = trian_out.glue.face_to_bgface
+
+  nbgfaces = length(trian_in.glue.bgface_to_lcell)
+  bgface_to_face_out = zeros(Int32,nbgfaces)
+  bgface_to_face_out[face_out_to_bgface] .= 1:length(face_out_to_bgface)
+  face_in_to_face_out = bgface_to_face_out[face_in_to_bgface]
+  @check all( face_in_to_face_out .!= 0) "the first triangulation is not a subset of the second"
+  face_in_to_face_out
+end
+
 function get_facet_normal(trian::BoundaryTriangulation)
 
   glue = trian.glue
@@ -244,6 +267,21 @@ function get_cell_ref_map(trian::BoundaryTriangulation)
   ftype_to_shapefuns = map( f, get_reffes(trian) )
   face_to_shapefuns = expand_cell_data(ftype_to_shapefuns,trian.glue.face_to_ftype)
   face_s_q = lazy_map(linear_combination,face_to_q_vertex_coords,face_to_shapefuns)
+end
+
+function get_cell_ref_map(
+  trian_in::BoundaryTriangulation,
+  trian_out::BoundaryTriangulation)
+
+  if have_compatible_domains(trian_out,get_background_triangulation(trian_in))
+    return get_cell_ref_map(trian_in)
+  end
+
+  @check have_compatible_domains(
+    get_background_triangulation(trian_in),
+    get_background_triangulation(trian_out))
+
+  Fill(GenericField(identity),num_cells(trian))
 end
 
 function _compute_face_to_q_vertex_coords(trian::BoundaryTriangulation)
