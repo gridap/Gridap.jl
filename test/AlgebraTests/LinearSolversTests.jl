@@ -29,6 +29,15 @@ b = A*x
 op = AffineOperator(A,b)
 test_nonlinear_operator(op,x,zeros(size(x)),jac=A)
 
+using SymRCM: symrcm
+ls = LUSolver(reorder=symrcm)
+test_linear_solver(ls,A,b,x)
+
+#using UnicodePlots
+#display(spy(A))
+#p = symrcm(A)
+#display(spy(A[p,p]))
+
 ls = LUSolver()
 test_linear_solver(ls,A,b,x)
 

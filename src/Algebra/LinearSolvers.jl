@@ -232,27 +232,69 @@ end
 
 Wrapper of the LU solver available in julia
 """
-struct LUSolver <: LinearSolver end
+struct LUSolver{F} <: LinearSolver
+  reorder::F
+  function LUSolver(;reorder=nothing)
+    new{typeof(reorder)}(reorder)
+  end
+end
 
-struct LUSymbolicSetup <: SymbolicSetup end
+struct LUSymbolicSetup <: SymbolicSetup
+  perm::Vector{Int}
+end
 
 mutable struct LUNumericalSetup{F} <: NumericalSetup
+  perm::Vector{Int}
   factors::F
 end
 
-symbolic_setup(::LUSolver,mat::AbstractMatrix) = LUSymbolicSetup()
+function symbolic_setup(solver::LUSolver,mat::AbstractMatrix)
+  if solver.reorder !== nothing
+    p = solver.reorder(mat)
+  else
+    p = Int[]
+  end
+  LUSymbolicSetup(p)
+end
 
-numerical_setup(::LUSymbolicSetup,mat::AbstractMatrix) = LUNumericalSetup(lu(mat))
+function numerical_setup(ss::LUSymbolicSetup,mat::AbstractMatrix)
+  p = ss.perm
+  if length(p) == 0
+    LUNumericalSetup(p,lu(mat))
+  else
+    LUNumericalSetup(p,lu(mat[p,p]))
+  end
+end
 
 function numerical_setup!(ns::LUNumericalSetup, mat::AbstractMatrix)
-  fac = lu(mat)
+  p = ns.perm
+  if length(p) == 0
+    fac = lu(mat)
+  else
+    fac = lu(mat[p,p])
+  end
   ns.factors = fac
+  ns
+end
+
+function numerical_setup!(ns::LUNumericalSetup, mat::SparseMatrixCSC)
+  p = ns.perm
+  if length(p) == 0
+    lu!(ns.factors,mat)
+  else
+    lu!(ns.factors,mat[p,p])
+  end
+  ns
 end
 
 function solve!(
   x::AbstractVector,ns::LUNumericalSetup,b::AbstractVector)
-  y = ns.factors\b # the allocation of y can be avoided
-  copy_entries!(x,y)
+  p = ns.perm
+  if length(p) == 0
+    ldiv!(x,ns.factors,b)
+  else
+    x[p] .= ns.factors\b[p]
+  end
   x
 end
 

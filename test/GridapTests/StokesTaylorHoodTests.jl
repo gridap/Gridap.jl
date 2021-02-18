@@ -3,6 +3,7 @@ module StokesTaylorHoodTests
 using Test
 using Gridap
 import Gridap: ∇
+using SymRCM
 
 #using LinearAlgebra: tr, ⋅
 
@@ -62,7 +63,8 @@ l((v,q)) = ∫( v⋅f + q*g )*dΩ + ∫( v⋅(n_Γ⋅∇u) - (n_Γ⋅v)*p )*dΓ
 
 op = AffineFEOperator(a,l,X,Y)
 
-uh, ph = solve(op)
+solver = LinearFESolver(LUSolver(reorder=symrcm))
+uh, ph = solve(solver,op)
 
 eu = u - uh
 ep = p - ph
