@@ -82,23 +82,56 @@ FESpaces.get_vector_type(f::MultiFieldFESpace) = f.vector_type
 FESpaces.ConstraintStyle(::Type{MultiFieldFESpace{S,B,V}}) where {S,B,V} = B()
 
 function FESpaces.get_cell_shapefuns(f::MultiFieldFESpace)
-
-  # Compute the cell axes
-  blocks = map(get_cell_shapefuns,f.spaces)
-  blocks_data = map(get_data,blocks)
-  cell_axes_blocks = map(i->lazy_map(axes,i),blocks_data)
-  cell_axes = lazy_map(_multifield_axes_dofs,cell_axes_blocks...)
-
-  # Compute the underlying single-fields
+  field_to_febasis = map(get_cell_shapefuns,f.spaces)
   nfields = length(f.spaces)
-  all_bases = map(1:nfields) do i
+  fields =1:nfields
+  all_febases = map(fields) do field_i
+    V_i = f.spaces[field_i]
+    trian_i = get_triangulation(V_i)
+    field_to_cell_axes = map(fields) do field_j
+      V_j = f.spaces[field_j]
+      trian_j = get_triangulation(V_j)
+      if have_compatible_domains(trian_j,trian_i) ||
+        have_compatible_domains(
+        trian_j,get_background_triangulation(trian_i)) #||
+        # have_compatible_domains(
+        #   get_background_triangulation(trian_j),
+        #   get_background_triangulation(trian_i))
+        cell_dofs_j = get_cell_dof_ids(V_j,trian_i)
+        lazy_map(axes,cell_dofs_j)
+      else
+        cell_dofs_i = get_cell_dof_ids(V_i)
+        cell_axes_i = lazy_map(axes,cell_dofs_i)
+        lazy_map(axs->(similar_range(first(axs),0),),cell_axes_i)
+      end
+    end
     bsize = (nfields,)
-    dv = blocks[i]
-    cell_basis = lazy_map(Fields.BlockFieldArrayCooMap(bsize,[(i,)]),cell_axes,get_data(dv))
+    dv = field_to_febasis[field_i]
+    cell_axes = lazy_map(_multifield_axes_dofs,field_to_cell_axes...)
+    cell_basis = lazy_map(Fields.BlockFieldArrayCooMap(bsize,[(field_i,)]),cell_axes,get_data(dv))
     FEBasis(cell_basis,get_triangulation(dv),TestBasis(),DomainStyle(dv))
   end
-  MultiFieldCellField(all_bases)
+  MultiFieldCellField(all_febases)
 end
+
+# function FESpaces.get_cell_shapefuns(f::MultiFieldFESpace)
+
+#   # Compute the cell axes
+#   blocks = map(get_cell_shapefuns,f.spaces)
+#   blocks_data = map(get_data,blocks)
+#   cell_axes_blocks = map(i->lazy_map(axes,i),blocks_data)
+#   cell_axes = lazy_map(_multifield_axes_dofs,cell_axes_blocks...)
+
+#   # Compute the underlying single-fields
+#   nfields = length(f.spaces)
+#   all_bases = map(1:nfields) do i
+#     bsize = (nfields,)
+#     dv = blocks[i]
+#     cell_basis = lazy_map(Fields.BlockFieldArrayCooMap(bsize,[(i,)]),cell_axes,get_data(dv))
+#     FEBasis(cell_basis,get_triangulation(dv),TestBasis(),DomainStyle(dv))
+#   end
+#   MultiFieldCellField(all_bases)
+# end
 
 function _multifield_axes_dofs(axs...)
   rs = map(first,axs)
