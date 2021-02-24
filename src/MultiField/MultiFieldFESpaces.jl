@@ -60,7 +60,7 @@ function CellData.get_data(f::MultiFieldFEBasis)
   cell_basis = lazy_map(Fields.BlockFieldArrayCooMap(bsize,blockids),cell_axes,get_data(dv))
 end
 
-function change_domain(
+function CellData.change_domain(
   f::MultiFieldFEBasis,trian::Triangulation,domain::DomainStyle)
   nfields = length(f.spaces)
   field_i = f.field
@@ -68,7 +68,7 @@ function change_domain(
   trian_i = get_triangulation(V_i)
   cell_axes_test = _get_cell_axes(f,trian)
   bsize = (nfields,)
-  dv = change_domain(f.basis,trian,domain)
+  dv = CellData.change_domain(f.basis,trian,domain)
   if BasisStyle(f) == TestBasis()
     bsize = (nfields,)
     blockids = [(field_i,)]
@@ -87,7 +87,7 @@ function change_domain(
   SingleFieldFEBasis(cell_basis,get_triangulation(dv),BasisStyle(f),DomainStyle(dv))
 end
 
-function change_domain(
+function CellData.change_domain(
   f::MultiFieldFEBasis,trian::SkeletonTriangulation,target_domain::DomainStyle)
   @unreachable """\n
   It is not possible to use the given MultiFieldFEBasis on a SkeletonTriangulation.
