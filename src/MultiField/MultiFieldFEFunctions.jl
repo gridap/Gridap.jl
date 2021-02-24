@@ -7,7 +7,6 @@
 struct MultiFieldFEFunction{T<:MultiFieldCellField} <: FEFunction
   single_fe_functions::Vector{<:SingleFieldFEFunction}
   free_values::AbstractArray
-  cell_dof_values::AbstractArray
   fe_space::MultiFieldFESpace
   multi_cell_field::T
 
@@ -19,17 +18,9 @@ struct MultiFieldFEFunction{T<:MultiFieldCellField} <: FEFunction
     multi_cell_field = MultiFieldCellField(map(i->i.cell_field,single_fe_functions))
     T = typeof(multi_cell_field)
 
-    blocks = map(get_cell_dof_values,single_fe_functions)
-    cell_axes_blocks = map(i->lazy_map(axes,i),blocks)
-    cell_axes = lazy_map(_multifield_axes_dofs,cell_axes_blocks...)
-    blockids = [(i,) for i in 1:length(single_fe_functions)]
-    bsize = (length(single_fe_functions),)
-    cell_dof_values = lazy_map(BlockArrayCooMap(bsize,blockids),cell_axes,blocks...)
-
     new{T}(
       single_fe_functions,
       free_values,
-      cell_dof_values,
       space,
       multi_cell_field)
   end
@@ -40,7 +31,38 @@ CellData.get_triangulation(f::MultiFieldFEFunction) = get_triangulation(f.multi_
 CellData.DomainStyle(::Type{MultiFieldFEFunction{T}}) where T = DomainStyle(T)
 FESpaces.get_free_dof_values(f::MultiFieldFEFunction) = f.free_values
 FESpaces.get_fe_space(f::MultiFieldFEFunction) = f.fe_space
-FESpaces.get_cell_dof_values(f::MultiFieldFEFunction) = f.cell_dof_values
+
+function FESpaces.get_cell_dof_values(f::MultiFieldFEFunction)
+  msg = """\n
+  This method does not make sense for multi-field
+  since each field can be defined on a different triangulation.
+  Pass a triangulation in the second argument to get the DOF values
+  on top of the corresponding cells.
+  """
+  @unreachable msg
+end
+
+function FESpaces.get_cell_dof_values(f::MultiFieldFEFunction,trian::Triangulation)
+  function fun(uh)
+    trian_i = get_triangulation(uh)
+    if have_compatible_domains(trian_i,trian) ||
+      have_compatible_domains(trian_i,get_background_triangulation(trian))
+      cell_dofs = get_cell_dof_values(uh,trian)
+    else
+      cell_dofs_i = get_cell_dof_values(uh)
+      T = eltype(eltype(cell_dofs_i))
+      cell_dofs = Fill(T[],num_cells(trian))
+    end
+    cell_dofs
+  end
+  uhs = f.single_fe_functions
+  blocks = [ fun(uh) for uh in uhs ]
+  bids = [ (i,) for i in 1:length(uhs)]
+  bsize = (length(uhs),)
+  cell_axes_blocks = map(i->lazy_map(axes,i),blocks)
+  cell_axes = lazy_map(_multifield_axes_dofs,cell_axes_blocks...)
+  lazy_map(BlockArrayCooMap(bsize,bids),cell_axes,blocks...)
+end
 
 """
     num_fields(m::MultiFieldFEFunction)

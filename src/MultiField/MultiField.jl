@@ -16,7 +16,7 @@ using Gridap.TensorValues
 using Gridap.CellData
 using Gridap.Fields
 
-using Gridap.FESpaces: FEBasis, TestBasis, TrialBasis
+using Gridap.FESpaces: SingleFieldFEBasis, TestBasis, TrialBasis
 using Gridap.Arrays: BlockArrayCooMap
 
 using FillArrays

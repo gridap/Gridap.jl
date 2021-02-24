@@ -34,7 +34,7 @@ function get_cell_shapefuns(f::ExtendedFESpace)
   @check length(fullcell_shapefuns) == nfull
   voidcell_shapefuns = Fill(VoidBasis(testitem(data),true),nvoid)
   a = lazy_map( PosNegReindex(fullcell_shapefuns,voidcell_shapefuns),f.partition)
-  FEBasis(a,get_triangulation(f),TestBasis(),DomainStyle(dv))
+  SingleFieldFEBasis(a,get_triangulation(f),TestBasis(),DomainStyle(dv))
 end
 
 function get_cell_dof_basis(f::ExtendedFESpace)

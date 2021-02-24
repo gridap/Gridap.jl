@@ -5,6 +5,7 @@ using Gridap.Geometry
 domain = (0,2,0,1)
 partition = (2,2)
 model = CartesianDiscreteModel(domain,partition)
+labels = get_face_labeling(model)
 
 bgface_to_mask = get_face_mask(labels,[3,4,6],1)
 model_fs =BoundaryDiscreteModel(Polytope{1},model,bgface_to_mask)
@@ -48,4 +49,5 @@ l((w,v)) = 0.0
 opϕη = AffineFEOperator(a, l, X, Y)
 sol = solve(opϕη)
 
-writevtk(Ω,"restmp",cellfields=["phi"=>sol[1],"eta"=>sol[2]])
+writevtk(Ω,"restmp_vol",cellfields=["phi"=>sol[1]])
+writevtk(Γfs,"restmp_surf",cellfields=["phi"=>sol[1],"eta"=>sol[2]])

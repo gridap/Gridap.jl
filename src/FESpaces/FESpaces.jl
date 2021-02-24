@@ -116,6 +116,9 @@ export TrialFESpace!
 export HomogeneousTrialFESpace
 export HomogeneousTrialFESpace!
 
+export FEBasis
+export BasisStyle
+
 export Assembler
 export AssemblyStrategy
 export row_map
