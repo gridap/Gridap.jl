@@ -49,6 +49,8 @@ mutable struct CellFieldCache
   kdtree::Union{Nothing, KDTree{SVector{D,T},Euclidean,T} where {D,T}}
 end
 
+# TODO: Should this return the cache already in `f` instead of
+# creating a new one?
 return_cache(f::CellField,x::Point) = CellFieldCache(nothing)
 
 function evaluate!(cache,f::CellField,x::Point)
@@ -59,6 +61,7 @@ function evaluate!(cache,f::CellField,x::Point)
   node_coordinates = get_node_coordinates(trian)
   @assert !isempty(node_coordinates)
   sample_coord = node_coordinates[1]
+  # TODO: call Gridap.ReferenceFEs.num_cell_dims instead?
   D = length(sample_coord)
   T = eltype(sample_coord)
   @assert D > 0
@@ -83,6 +86,12 @@ function evaluate!(cache,f::CellField,x::Point)
     id,dist = nn(kdtree, SVector(Tuple(x)))
     cells = Int[]
     # TODO: Use better algorithm
+    #
+    # Francesc Verdugo @fverdugo Dec 13 2020 12:46
+    # vertex_to_cells = get_faces(get_grid_topology(model),0,num_cell_dims(model))
+    # This will provide cells around each vertex (vertex == node for
+    # linear meshes)
+    #
     # Francesc Verdugo @fverdugo 14:07
     # You have to start with a DiscreteModel, then
     # topo=get_grid_topology(model)
@@ -135,8 +144,26 @@ function evaluate!(cache,f::CellField,x::Point)
     @assert dist ≤ 1000 * eps(T) "Point is not inside a cell"
 
     # TODO: Actually evaluate basis functions
+    # Francesc Verdugo @fverdugo Dec 09 2020 13:06
+    # for 2., take a look at the functions in this file https://github.com/gridap/Gridap.jl/blob/master/src/Geometry/FaceLabelings.jl
+    # In particular this one:
+    # https://github.com/gridap/Gridap.jl/blob/4342137dfbe635867f39e64ecb01e8dbbc5fa6e7/src/Geometry/FaceLabelings.jl#L289
     values = get_cell_dof_values(f)[cell]
     fx = sum(λ[n] * values[n] for n in 1:D+1)
+
+    # you can just evaluate the (finite element) solution at this
+    # point at this cell.
+
+    # TODO: If you define the finite element space in the physical
+    # space, i.e., DomainStyle being PhysicalDomain(), that is all.
+    # However, if DomainStyle equal to ReferenceDomain() one needs the
+    # inverse geometrical map that takes the physical cell and maps it
+    # to the reference one (in which we evaluate shape functions)
+
+    # TODO: are these lines useful?
+    # v = get_cell_shapefuns(V)
+    # u = get_cell_shapefuns_trial(U)
+    # cellmat = get_array( ∫( ∇(u)⋅∇(v) )dΩ )
 
   elseif all(e == HEX_AXIS for e in extrusion)
 

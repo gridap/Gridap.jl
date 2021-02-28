@@ -151,6 +151,13 @@ Random.seed!(0)
     coeff0 = rand(Float64)
     coeffs = rand(SVector{D,Float64})
     f(x) = coeffs ⋅ SVector(Tuple(x)) + coeff0
+    # TODO: use this mechanism instead to project
+    # Francesc Verdugo @fverdugo 13:11
+    # a(u,v) = ∫( u*v )dΩ
+    # l(v) = a(f,v)
+    # Solve a fe problem with this weak form
+    # See also tutorial 10, "Isotropic damage model", section "L2
+    # projection", function "project"
     fh = interpolate_everywhere(f, V)
     fhcache = return_cache(fh, VectorValue(zeros(D)...))
 
