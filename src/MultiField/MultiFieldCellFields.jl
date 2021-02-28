@@ -123,20 +123,17 @@ function evaluate!(cache,f::CellField,x::Point)
     # distance, and check that the distance (if positive) is at most
     # at round-off level.
     mindist = T(Inf)
-    minc = 0
-    minλ = zero(SVector{D+1,T})
+    minc,minλ = 0, zero(SVector{D+1,T})
     for c in cells
       λ = bary(c, x)
       dist = max(-minimum(λ), maximum(λ) - 1)
       if dist < mindist
-        minc = c
-        minλ = λ
+        minc,minλ = c,λ
         mindist = dist
       end
     end
     @assert 1 ≤ minc
-    cell = minc
-    λ = minλ
+    cell,λ = minc,minλ
     dist = mindist
 
     # Ensure the point is inside one of the cells, up to round-off errors
