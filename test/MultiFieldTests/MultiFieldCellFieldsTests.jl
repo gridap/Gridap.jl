@@ -135,6 +135,7 @@ test_array(cellmat1_Γ,cellmat2_Γ,≈)
 # Set reproducible random number seed
 Random.seed!(0)
 @testset "evaluating functions" for D in 1:5
+    @show "evaluating functions" D
     xmin = 0
     xmax = 1
     domain = repeat([xmin, xmax], D)
