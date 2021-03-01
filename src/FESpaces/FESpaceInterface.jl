@@ -239,7 +239,7 @@ has_constraints(::Type{T}) where T <:FESpace = ConstraintStyle(T) == Constrained
 has_constraints(::T) where T <: FESpace = has_constraints(T)
 
 function get_cell_constraints(f::FESpace)
-  get_cell_constraints(f,get_triangulation(f))
+  get_cell_constraints(f,get_triangulation(f),ConstraintStyle(f))
 end
 
 function get_cell_constraints(f::FESpace,trian::Triangulation)
@@ -279,7 +279,7 @@ end
 
 function get_cell_isconstrained(f::FESpace)
   trian = get_triangulation(f)
-  get_cell_isconstrained(f,trian)
+  get_cell_isconstrained(f,trian,ConstraintStyle(f))
 end
 
 function get_cell_isconstrained(f::FESpace,trian::Triangulation)
