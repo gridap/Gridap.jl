@@ -38,11 +38,11 @@ end
 """
 """
 function test_fe_function(f::FEFunction)
-  free_values = get_free_dof_values(f)
+  trian = get_triangulation(f)
+  free_values = get_free_dof_values(f,trian)
   fe_space = get_fe_space(f)
   @test length(free_values) == num_free_dofs(fe_space)
   cell_values = get_cell_dof_values(f)
-  trian = get_triangulation(f)
   @test length(cell_values) == num_cells(trian)
 end
 
@@ -346,10 +346,10 @@ function test_fe_space(f::FESpace)
   fe_basis = get_cell_shapefuns(f)
   @test isa(has_constraints(f),Bool)
   @test isa(has_constraints(typeof(f)),Bool)
-  @test length(get_cell_dof_ids(f)) == num_cells(fe_basis)
-  @test length(get_cell_constraints(f)) == num_cells(fe_basis)
-  @test length(get_cell_isconstrained(f)) == num_cells(fe_basis)
-  @test CellField(f,get_cell_dof_ids(f)) != nothing
+  @test length(get_cell_dof_ids(f,trian)) == num_cells(fe_basis)
+  @test length(get_cell_constraints(f,trian)) == num_cells(fe_basis)
+  @test length(get_cell_isconstrained(f,trian)) == num_cells(fe_basis)
+  @test CellField(f,get_cell_dof_ids(f,trian)) != nothing
 end
 
 function test_fe_space(f::FESpace,matvecdata,matdata,vecdata)
