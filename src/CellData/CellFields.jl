@@ -443,8 +443,6 @@ function _to_common_domain(a::CellField...)
     elseif have_compatible_domains(trian_b,get_background_triangulation(trian_a))
       target_trian = trian_a
     elseif have_compatible_domains(get_background_triangulation(trian_a),get_background_triangulation(trian_b))
-      println(get_cell_to_bgcell(trian_a))
-      println(get_cell_to_bgcell(trian_b))
       @unreachable msg
     else
       @unreachable msg

@@ -62,6 +62,13 @@ end
 
 function CellData.change_domain(
   f::MultiFieldFEBasis,trian::Triangulation,domain::DomainStyle)
+  if have_compatible_domains(get_triangulation(f),trian)
+    if DomainStyle(f) == domain
+      return change_domain(f,domain)
+    else
+      @notimplemented
+    end
+  end
   nfields = length(f.spaces)
   field_i = f.field
   V_i = f.spaces[field_i]
