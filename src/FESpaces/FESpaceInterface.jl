@@ -39,10 +39,10 @@ end
 """
 function test_fe_function(f::FEFunction)
   trian = get_triangulation(f)
-  free_values = get_free_dof_values(f,trian)
+  free_values = get_free_dof_values(f)
   fe_space = get_fe_space(f)
   @test length(free_values) == num_free_dofs(fe_space)
-  cell_values = get_cell_dof_values(f)
+  cell_values = get_cell_dof_values(f,trian)
   @test length(cell_values) == num_cells(trian)
 end
 

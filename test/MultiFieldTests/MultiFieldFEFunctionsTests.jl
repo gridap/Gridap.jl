@@ -35,7 +35,7 @@ xh = FEFunction(X,free_values)
 test_fe_function(xh)
 uh, ph = xh
 
-cell_values = get_cell_dof_values(xh)
+cell_values = get_cell_dof_values(xh,trian)
 @test isa(cell_values[1],BlockArrayCoo)
 
 end # module

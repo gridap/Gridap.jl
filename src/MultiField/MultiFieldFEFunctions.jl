@@ -64,6 +64,17 @@ function FESpaces.get_cell_dof_values(f::MultiFieldFEFunction,trian::Triangulati
   lazy_map(BlockArrayCooMap(bsize,bids),cell_axes,blocks...)
 end
 
+function FESpaces.get_cell_dof_values(f::MultiFieldFEFunction,trian::SkeletonTriangulation)
+  cell_values_plus = get_cell_dof_values(f,trian.plus)
+  cell_values_minus = get_cell_dof_values(f,trian.minus)
+  cell_axes_plus = lazy_map(axes,cell_values_plus)
+  cell_axes_minus = lazy_map(axes,cell_values_minus)
+  cell_axes = lazy_map(cell_axes_plus,cell_axes_minus) do axp, axm
+    (append_ranges([axp[1],axm[1]]),)
+  end
+  lazy_map(BlockArrayCooMap((2,),[(1,),(2,)]),cell_axes,cell_values_plus,cell_values_minus)
+end
+
 """
     num_fields(m::MultiFieldFEFunction)
 """
