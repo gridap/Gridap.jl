@@ -27,11 +27,13 @@ degree = 2*order
 Γ = Triangulation(model_Γ)
 dΩ = Measure(Ω,degree)
 dΓ = Measure(Γ,degree)
+n = get_normal_vector(Γ)
 
 uₑ(x) = x[1]^2 + x[2]^2
 f(x) = -Δ(uₑ)(x)
 
-a((u,λ),(v,η)) = ∫( ∇(u)⋅∇(v) )dΩ + ∫( u*η + λ*v )dΓ
+# Weak form. Additional non needed terms are added for testing purposes
+a((u,λ),(v,η)) = ∫( ∇(u)⋅∇(v) )dΩ + ∫( (u+λ)*(η+v) - u*v - η*λ + 0.0*(n⋅∇(u)-λ)*(n⋅∇(v)-η) )dΓ
 l((v,η)) = ∫( f*v )dΩ + ∫( uₑ*η )dΓ
 
 op = AffineFEOperator(a,l,X,Y)
