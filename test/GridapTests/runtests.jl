@@ -26,4 +26,6 @@ using Test
 
 @time @testset "Biharmonic" begin include("BiharmonicTests.jl") end
 
+@time @testset "PoissonLagrangeMultiplier" begin include("PoissonLagrangeMultiplierTests.jl") end
+
 end # module
