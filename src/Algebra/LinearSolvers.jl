@@ -247,12 +247,17 @@ numerical_setup(::LUSymbolicSetup,mat::AbstractMatrix) = LUNumericalSetup(lu(mat
 function numerical_setup!(ns::LUNumericalSetup, mat::AbstractMatrix)
   fac = lu(mat)
   ns.factors = fac
+  ns
+end
+
+function numerical_setup!(ns::LUNumericalSetup, mat::SparseMatrixCSC)
+  lu!(ns.factors,mat)
+  ns
 end
 
 function solve!(
   x::AbstractVector,ns::LUNumericalSetup,b::AbstractVector)
-  y = ns.factors\b # the allocation of y can be avoided
-  copy_entries!(x,y)
+  ldiv!(x,ns.factors,b)
   x
 end
 
