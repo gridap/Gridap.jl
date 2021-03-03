@@ -39,7 +39,10 @@ function FESpaces.get_cell_dof_values(f::MultiFieldFEFunction)
   Pass a triangulation in the second argument to get the DOF values
   on top of the corresponding cells.
   """
-  @unreachable msg
+  trians = map(get_triangulation,f.fe_space.spaces)
+  trian = first(trians)
+  @check all(map(t->have_compatible_domains(t,trian),trians)) msg
+  get_cell_dof_values(f,trian)
 end
 
 function FESpaces.get_cell_dof_values(f::MultiFieldFEFunction,trian::Triangulation)
