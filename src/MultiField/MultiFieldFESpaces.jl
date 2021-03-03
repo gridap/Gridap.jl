@@ -293,6 +293,12 @@ function FESpaces.get_cell_isconstrained(f::MultiFieldFESpace,trian::Triangulati
   lazy_map( (args...) -> +(args...)>0,  data...)
 end
 
+function FESpaces.get_cell_isconstrained(f::MultiFieldFESpace,trian::SkeletonTriangulation)
+  plus = get_cell_isconstrained(f,trian.plus)
+  minus = get_cell_isconstrained(f,trian.minus)
+  lazy_map((l,r)-> l||r,plus,minus)
+end
+
 function FESpaces.get_cell_constraints(f::MultiFieldFESpace)
   msg = """\n
   This method does not make sense for multi-field
@@ -331,6 +337,23 @@ function FESpaces.get_cell_constraints(f::MultiFieldFESpace,trian::Triangulation
   lazy_map(BlockArrayCooMap(bsize,blockids),cell_axes,blocks...)
 end
 
+function FESpaces.get_cell_constraints(f::MultiFieldFESpace,trian::SkeletonTriangulation)
+  cell_constraints_plus = get_cell_constraints(f,trian.plus)
+  cell_constraints_minus = get_cell_constraints(f,trian.minus)
+  cell_axes_plus = lazy_map(axes,cell_constraints_plus)
+  cell_axes_minus = lazy_map(axes,cell_constraints_minus)
+  cell_axes = lazy_map(cell_axes_plus,cell_axes_minus) do axp, axm
+    r1 = append_ranges([axp[1],axm[1]])
+    r2 = append_ranges([axp[2],axm[2]])
+    (r1,r2)
+  end
+  lazy_map(
+    BlockArrayCooMap((2,2),[(1,1),(2,2)]),
+    cell_axes,
+    cell_constraints_plus,
+    cell_constraints_minus)
+end
+
 function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace)
   msg = """\n
   This method does not make sense for multi-field
@@ -343,6 +366,17 @@ end
 
 function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,trian::Triangulation)
   get_cell_dof_ids(f,trian,MultiFieldStyle(f))
+end
+
+function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,trian::SkeletonTriangulation)
+  cell_ids_plus = get_cell_dof_ids(f,trian.plus)
+  cell_ids_minus = get_cell_dof_ids(f,trian.minus)
+  cell_axes_plus = lazy_map(axes,cell_ids_plus)
+  cell_axes_minus = lazy_map(axes,cell_ids_minus)
+  cell_axes = lazy_map(cell_axes_plus,cell_axes_minus) do axp, axm
+    (append_ranges([axp[1],axm[1]]),)
+  end
+  lazy_map(BlockArrayCooMap((2,),[(1,),(2,)]),cell_axes,cell_ids_plus,cell_ids_minus)
 end
 
 function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,::Triangulation,::MultiFieldStyle)
