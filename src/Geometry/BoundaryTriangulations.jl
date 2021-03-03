@@ -220,6 +220,11 @@ function get_cell_to_bgcell(
   face_in_to_face_out
 end
 
+function get_cell_to_bgcell(trian::RestrictedTriangulation,bgtrian::BoundaryTriangulation)
+  parent_cell_data = get_cell_to_bgcell(trian.parent_trian,bgtrian)
+  lazy_map(Reindex(parent_cell_data),trian.cell_to_parent_cell)
+end
+
 function get_facet_normal(trian::BoundaryTriangulation)
 
   glue = trian.glue
@@ -281,7 +286,12 @@ function get_cell_ref_map(
     get_background_triangulation(trian_in),
     get_background_triangulation(trian_out))
 
-  Fill(GenericField(identity),num_cells(trian))
+  Fill(GenericField(identity),num_cells(trian_out))
+end
+
+function get_cell_ref_map(trian::RestrictedTriangulation,bgtrian::BoundaryTriangulation)
+  parent_cell_data = get_cell_ref_map(trian.parent_trian,bgtrian)
+  lazy_map(Reindex(parent_cell_data),trian.cell_to_parent_cell)
 end
 
 function _compute_face_to_q_vertex_coords(trian::BoundaryTriangulation)
