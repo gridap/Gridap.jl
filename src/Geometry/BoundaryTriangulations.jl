@@ -133,6 +133,12 @@ end
 
 function BoundaryTriangulation(
   model::DiscreteModel,
+  face_to_bgface::AbstractVector{<:Integer})
+  BoundaryTriangulation(model,face_to_bgface,Fill(1,num_facets(model)))
+end
+
+function BoundaryTriangulation(
+  model::DiscreteModel,
   bgface_to_mask::AbstractVector{Bool},
   bgface_to_lcell::AbstractVector{<:Integer})
 
@@ -220,9 +226,26 @@ function get_cell_to_bgcell(
   face_in_to_face_out
 end
 
-function get_cell_to_bgcell(trian::RestrictedTriangulation,bgtrian::BoundaryTriangulation)
-  parent_cell_data = get_cell_to_bgcell(trian.parent_trian,bgtrian)
-  lazy_map(Reindex(parent_cell_data),trian.cell_to_parent_cell)
+function is_included(
+  trian_in::BoundaryTriangulation,
+  trian_out::BoundaryTriangulation)
+
+  if have_compatible_domains(trian_out,get_background_triangulation(trian_in))
+    return true
+  end
+
+  @check have_compatible_domains(
+    get_background_triangulation(trian_in),
+    get_background_triangulation(trian_out))
+
+  face_in_to_bgface = trian_in.glue.face_to_bgface
+  face_out_to_bgface = trian_out.glue.face_to_bgface
+
+  nbgfaces = length(trian_in.glue.bgface_to_lcell)
+  bgface_to_face_out = zeros(Int32,nbgfaces)
+  bgface_to_face_out[face_out_to_bgface] .= 1:length(face_out_to_bgface)
+  face_in_to_face_out = bgface_to_face_out[face_in_to_bgface]
+  all( face_in_to_face_out .!= 0)
 end
 
 function get_facet_normal(trian::BoundaryTriangulation)
@@ -286,12 +309,7 @@ function get_cell_ref_map(
     get_background_triangulation(trian_in),
     get_background_triangulation(trian_out))
 
-  Fill(GenericField(identity),num_cells(trian_out))
-end
-
-function get_cell_ref_map(trian::RestrictedTriangulation,bgtrian::BoundaryTriangulation)
-  parent_cell_data = get_cell_ref_map(trian.parent_trian,bgtrian)
-  lazy_map(Reindex(parent_cell_data),trian.cell_to_parent_cell)
+  Fill(GenericField(identity),num_cells(trian_in))
 end
 
 function _compute_face_to_q_vertex_coords(trian::BoundaryTriangulation)

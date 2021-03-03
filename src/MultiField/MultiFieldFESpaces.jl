@@ -21,10 +21,8 @@ function _get_cell_axes(f::MultiFieldFEBasis,trian::Triangulation)
     trian_j = get_triangulation(V_j)
     if have_compatible_domains(trian_j,trian) ||
       have_compatible_domains(
-      trian_j,get_background_triangulation(trian)) #||
-      # have_compatible_domains(
-      #   get_background_triangulation(trian_j),
-      #   get_background_triangulation(trian))
+      trian_j,get_background_triangulation(trian)) ||
+      Geometry.is_included(trian,trian_j)
       cell_dofs_j = get_cell_dof_ids(V_j,trian)
       lazy_map(axes,cell_dofs_j)
     else
@@ -313,7 +311,8 @@ function FESpaces.get_cell_constraints(f::MultiFieldFESpace,trian::Triangulation
   blocks = map(f.spaces) do space
     trian_i = get_triangulation(space)
     if have_compatible_domains(trian_i,trian) ||
-      have_compatible_domains(trian_i,get_background_triangulation(trian))
+      have_compatible_domains(trian_i,get_background_triangulation(trian)) ||
+      Geometry.is_included(trian,trian_i)
       cell_constrs = get_cell_constraints(space,trian)
     else
       cell_constrs_i = get_cell_constraints(space)
@@ -389,7 +388,8 @@ function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,trian::Triangulation,::C
   function fun(i,space)
     trian_i = get_triangulation(space)
     if have_compatible_domains(trian_i,trian) ||
-      have_compatible_domains(trian_i,get_background_triangulation(trian))
+      have_compatible_domains(trian_i,get_background_triangulation(trian)) ||
+      Geometry.is_included(trian,trian_i)
       cell_dofs = get_cell_dof_ids(space,trian)
     else
       cell_dofs_i = get_cell_dof_ids(space)

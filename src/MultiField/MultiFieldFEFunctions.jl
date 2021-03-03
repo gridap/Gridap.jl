@@ -46,7 +46,8 @@ function FESpaces.get_cell_dof_values(f::MultiFieldFEFunction,trian::Triangulati
   function fun(uh)
     trian_i = get_triangulation(uh)
     if have_compatible_domains(trian_i,trian) ||
-      have_compatible_domains(trian_i,get_background_triangulation(trian))
+      have_compatible_domains(trian_i,get_background_triangulation(trian)) ||
+      Geometry.is_included(trian,trian_i)
       cell_dofs = get_cell_dof_values(uh,trian)
     else
       cell_dofs_i = get_cell_dof_values(uh)

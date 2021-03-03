@@ -119,6 +119,15 @@ function get_cell_to_bgcell(trian::Triangulation,bgtrian::Triangulation)
     @notimplemented
   end
 end
+
+function is_included(trian::Triangulation,bgtrian::Triangulation)
+  if have_compatible_domains(get_background_triangulation(trian),bgtrian)
+    true
+  else
+    false
+  end
+end
+
 #"""
 #    restrict(f::AbstractArray, trian::Triangulation)
 #"""
