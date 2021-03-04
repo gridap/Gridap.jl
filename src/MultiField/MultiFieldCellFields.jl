@@ -45,134 +45,74 @@ Base.iterate(a::MultiFieldCellField,state)  = iterate(a.single_fields,state)
 # This code lives here (instead of in the CellData module) because we
 # need access to MultiField functionality.
 
-mutable struct CellFieldCache
-  kdtree::Union{Nothing, KDTree{SVector{D,T},Euclidean,T} where {D,T}}
-end
-
-# TODO: Should this return the cache already in `f` instead of
-# creating a new one?
-return_cache(f::CellField,x::Point) = CellFieldCache(nothing)
-
-function evaluate!(cache,f::CellField,x::Point)
-  cache::CellFieldCache
-
-  # Examine triangulation
+function return_cache(f::CellField,x::Point)
   trian = get_triangulation(f)
   node_coordinates = get_node_coordinates(trian)
-  @assert !isempty(node_coordinates)
-  sample_coord = node_coordinates[1]
-  # TODO: call Gridap.ReferenceFEs.num_cell_dims instead?
-  D = length(sample_coord)
-  T = eltype(sample_coord)
-  @assert D > 0
+  node_coordinates = reshape(node_coordinates, length(node_coordinates))
+  kdtree = KDTree(map(nc -> SVector(Tuple(nc)), node_coordinates))
+  cell_f = get_array(f)
+  c1 = array_cache(cell_f)
+  f = testitem(cell_f)
+  @show typeof(f) typeof(x) typeof(cell_f)
+  c2 = return_cache(f,x)
+  return kdtree, c1, c2, cell_f, f
+end
 
-  # Find polytope
-  reffes = trian.reffes
-  @assert length(reffes) == 1
-  reffe = reffes[1].reffe
-  polytope = reffe.polytope
-  extrusion = polytope.extrusion
-  @assert length(extrusion) == D
-
-  if all(e == TET_AXIS for e in extrusion)
-
-    # Get k-d tree for mesh from cache
-    if cache.kdtree === nothing
-      cache.kdtree = KDTree(map(nc -> SVector(Tuple(nc)), node_coordinates))
-    end
-    kdtree = cache.kdtree::KDTree{SVector{D,T},Euclidean,T}
-
-    # Find all neighbouring cells
-    id,dist = nn(kdtree, SVector(Tuple(x)))
-    cells = Int[]
-    # TODO: Use better algorithm
-    #
-    # Francesc Verdugo @fverdugo Dec 13 2020 12:46
-    # vertex_to_cells = get_faces(get_grid_topology(model),0,num_cell_dims(model))
-    # This will provide cells around each vertex (vertex == node for
-    # linear meshes)
-    #
-    # Francesc Verdugo @fverdugo 14:07
-    # You have to start with a DiscreteModel, then
-    # topo=get_grid_topology(model)
-    # vertex_to_cells = get_faces(topo,0,num_cell_dims(model))
-    for (c,ids) in enumerate(trian.cell_node_ids)
-      id ∈ ids && push!(cells, c)
-    end
-    @assert !isempty(cells)
-
-    # Calculate barycentric coordinates for a point x in the given cell
-    function bary(cell, x)
-      local ids = trian.cell_node_ids[cell]
-      @assert length(ids) == D+1 "simplex has correct number of vertices"
-      local ys = zero(SVector{D+1,SVector{D,T}})
-      for (n,id) in enumerate(ids)
-        local y = SVector(Tuple(node_coordinates[id]))
-        ys = setindex(ys, y, n)
-      end
-      local λ = cartesian2barycentric(ys, SVector{D,T}(Tuple(x)))
-      return λ
-    end
-
-    # Calculate the distance from the point to all the cells. Without
-    # round-off, and with non-overlapping cells, the distance would be
-    # negative for exactly one cell and positive for all other ones.
-    # Due to round-off, the distance can be slightly negative or
-    # slightly positive for points near cell boundaries, in particular
-    # near vertices. In this case, choose the cell with the smallest
-    # distance, and check that the distance (if positive) is at most
-    # at round-off level.
-    mindist = T(Inf)
-    minc,minλ = 0, zero(SVector{D+1,T})
-    for c in cells
-      λ = bary(c, x)
-      dist = max(-minimum(λ), maximum(λ) - 1)
-      if dist < mindist
-        minc,minλ = c,λ
-        mindist = dist
-      end
-    end
-    @assert 1 ≤ minc
-    cell,λ = minc,minλ
-    dist = mindist
-
-    # Ensure the point is inside one of the cells, up to round-off errors
-    # TODO: Add proper run-time check
-    @assert dist ≤ 1000 * eps(T) "Point is not inside a cell"
-
-    # TODO: Actually evaluate basis functions
-    # Francesc Verdugo @fverdugo Dec 09 2020 13:06
-    # for 2., take a look at the functions in this file https://github.com/gridap/Gridap.jl/blob/master/src/Geometry/FaceLabelings.jl
-    # In particular this one:
-    # https://github.com/gridap/Gridap.jl/blob/4342137dfbe635867f39e64ecb01e8dbbc5fa6e7/src/Geometry/FaceLabelings.jl#L289
-    values = get_cell_dof_values(f)[cell]
-    fx = sum(λ[n] * values[n] for n in 1:D+1)
-
-    # you can just evaluate the (finite element) solution at this
-    # point at this cell.
-
-    # TODO: If you define the finite element space in the physical
-    # space, i.e., DomainStyle being PhysicalDomain(), that is all.
-    # However, if DomainStyle equal to ReferenceDomain() one needs the
-    # inverse geometrical map that takes the physical cell and maps it
-    # to the reference one (in which we evaluate shape functions)
-
-    # TODO: are these lines useful?
-    # v = get_cell_shapefuns(V)
-    # u = get_cell_shapefuns_trial(U)
-    # cellmat = get_array( ∫( ∇(u)⋅∇(v) )dΩ )
-
-  elseif all(e == HEX_AXIS for e in extrusion)
-
-    # TOOD
-    @assert false "n-cube not implemented"
-
+# function evaluate!(cache,f::CellField,x::Point)
+function evaluate!(cache,f::SingleFieldFEFunction,x::Point)
+  kdtree, c1, c2, cell_g, g = cache
+  if f === g
+    cell_f = cell_g
   else
-
-    @assert false "Unsupported polytope"
-
+    cell_f = get_array(f)
   end
 
+  # Find nearest vertex
+  id,dist = nn(kdtree, SVector(Tuple(x)))
+
+  # Find all neighbouring cells
+  trian = get_triangulation(f)
+  # topo = get_grid_topology(trian)
+  topo = GridTopology(trian)
+  vertex_to_cells = get_faces(topo,0,num_cell_dims(model))
+  cells = vertex_to_cells[id]
+
+  # Calculate the distance from the point to all the cells. Without
+  # round-off, and with non-overlapping cells, the distance would be
+  # negative for exactly one cell and positive for all other ones. Due
+  # to round-off, the distance can be slightly negative or slightly
+  # positive for points near cell boundaries, in particular near
+  # vertices. In this case, choose the cell with the smallest
+  # distance, and check that the distance (if positive) is at most at
+  # round-off level.
+  mindist = T(Inf)
+  minc,minλ = 0,zero(SVector{D+1,T})
+  for c in cells
+    # Calculate barycentric coordinates λ for x in cell c
+    ids = trian.cell_node_ids[c]
+    @assert length(ids) == D+1 "simplex has correct number of vertices"
+    ys = zero(SVector{D+1,SVector{D,T}})
+    for (n,id) in enumerate(ids)
+      y = SVector(Tuple(node_coordinates[id]))
+      ys = setindex(ys, y, n)
+    end
+    λ = cartesian2barycentric(ys, SVector{D,T}(Tuple(x)))
+    dist = max(-minimum(λ), maximum(λ) - 1)
+    if dist < mindist
+      minc,minλ = c,λ
+      mindist = dist
+    end
+  end
+  @assert 1 ≤ minc
+  cell,λ = minc,minλ
+  dist = mindist
+
+  # Ensure the point is inside one of the cells, up to round-off errors
+  # TODO: Add proper run-time check
+  @assert dist ≤ 1000 * eps(T) "Point is not inside a cell"
+
+  f = getindex!(c1,cell_f,cell)
+  fx = evaluate!(c2,f,x)
   return fx
 end
 
