@@ -68,6 +68,7 @@ function lazy_map(
   cell_∇∇b = lazy_map(k,cell_∇∇a,cell_map)
   cell_∇∇bt = lazy_map(transpose,cell_∇∇b)
   cell_∇∇bt
+end
 
 function inverse_map(f::AffineMap)
   Jt = f.gradient

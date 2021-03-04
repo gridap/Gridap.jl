@@ -13,6 +13,8 @@ h = AffineMap(g,origin)
 @test isa(∇(h),ConstantField)
 @test isa(Broadcasting(∇)(h),ConstantField)
 
+hinv = inverse_map(h)
+
 x1 = Point(0,0)
 x2 = Point(1,1)
 x3 = Point(2,1)
@@ -24,6 +26,7 @@ r = Point{2,Int}[(1, 1), (3, 3), (5, 3)]
 ∇r = TensorValue{2,2,Int,4}[(2, 0, 0, 2), (2, 0, 0, 2), (2, 0, 0, 2)]
 test_field(h,x,r,grad=∇r)
 test_field(h,x1,x1⋅g+origin,grad=g)
+test_field(hinv,r,x,grad=inv.(∇r))
 
 ncells = 10
 cell_to_h = fill(h,ncells)
