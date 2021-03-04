@@ -232,6 +232,48 @@ function evaluate!(
   r.array
 end
 
+# Optimizing evaluation at a single point
+
+function return_cache(f::MonomialBasis{D,T},x::Point) where {D,T}
+  ndof = length(f.terms)*num_components(T)
+  r = CachedArray(zeros(T,(ndof,)))
+  xs = [x]
+  cf = return_cache(f,xs)
+  r, cf, xs
+end
+
+function evaluate!(cache,f::MonomialBasis{D,T},x::Point) where {D,T}
+  r, cf, xs = cache
+  xs[1] = x
+  v = evaluate!(cf,f,xs)
+  ndof = size(v,2)
+  setsize!(r,(ndof,))
+  a = r.array
+  copyto!(a,v)
+  a
+end
+
+function return_cache(
+  f::FieldGradientArray{N,MonomialBasis{D,V}}, x::Point) where {N,D,V}
+  xs = [x]
+  cf = return_cache(f,xs)
+  v = evaluate!(cf,f,xs)
+  r = CachedArray(zeros(eltype(v),(size(v,2),)))
+  r, cf, xs
+end
+
+function evaluate!(
+  cache, f::FieldGradientArray{N,MonomialBasis{D,V}}, x::Point) where {N,D,V}
+  r, cf, xs = cache
+  xs[1] = x
+  v = evaluate!(cf,f,xs)
+  ndof = size(v,2)
+  setsize!(r,(ndof,))
+  a = r.array
+  copyto!(a,v)
+  a
+end
+
 # Helpers
 
 _q_filter(e,o) = true
