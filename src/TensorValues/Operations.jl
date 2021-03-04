@@ -133,10 +133,15 @@ dot(a::MultiValue,b::MultiValue) = @notimplemented
         bk = data_index(B,i,j)
         s *= "a.data[$ak]*b.data[$bk]+"
       end
-        push!(ss,s[1:(end-1)]*", ")
+      push!(ss,s[1:(end-1)]*", ")
     end
     str = join(ss)
     Meta.parse("VectorValue{$D2}($str)")
+end
+
+function dot(a::A,b::B) where {A<:MultiValue{Tuple{0}},B<:MultiValue{Tuple{0,D2}}} where D2
+  T = eltype(zero(eltype(a))*zero(eltype(b)))
+  zero(VectorValue{D2,T})
 end
 
 @generated function dot(a::A,b::B) where {A<:MultiValue{Tuple{D1,D2}},B<:MultiValue{Tuple{D2}}} where {D1,D2}

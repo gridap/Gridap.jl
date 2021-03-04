@@ -251,6 +251,10 @@ c = t3 ⋅ t1
 r = ThirdOrderTensorValue{2,2,1}(1,2,3,6)
 @test c == r
 
+x = VectorValue{0,Float64}()
+G = TensorValue{0,2,Float64,0}()
+@test x⋅G == VectorValue(0,0)
+
 # Inner product (full contraction)
 
 c = 2 ⊙ 3

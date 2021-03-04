@@ -3,13 +3,18 @@
 A Field with this form
 y = x⋅G + y0
 """
-struct AffineMap{D,T,L} <:Field
-  gradient::TensorValue{D,D,T,L}
-  origin::Point{D,T}
-  function AffineMap(gradient::TensorValue{D,D,T,L}, origin::Point{D,T}) where {D,T,L}
-    new{D,T,L}(gradient,origin)
+struct AffineMap{D1,D2,T,L} <:Field
+  gradient::TensorValue{D1,D2,T,L}
+  origin::Point{D2,T}
+  function AffineMap(
+    gradient::TensorValue{D1,D2,T,L},
+    origin::Point{D2,T}) where {D1,D2,T,L}
+
+    new{D1,D2,T,L}(gradient,origin)
   end
 end
+
+@inline affine_map(gradient,origin) = AffineMap(gradient,origin)
 
 @inline function evaluate!(cache,f::AffineMap,x::Point)
   G = f.gradient
