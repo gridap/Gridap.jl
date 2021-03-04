@@ -19,6 +19,13 @@ trian_D =BoundaryTriangulation(model,tags="tag_8")
 trian_S =SkeletonTriangulation(model)
 trian_0 =Triangulation(trian_D,Int[])
 
+ϕ = GenericCellField(get_cell_map(trian),trian,ReferenceDomain())
+ϕinv = GenericCellField(lazy_map(inverse_map,get_cell_map(trian)),trian,PhysicalDomain())
+xref = get_cell_points(trian)
+xphy = CellPoint(get_array(xref),trian,PhysicalDomain())
+test_array(ϕ(xref),collect1d(ϕ(xphy)),(i,j)->all(map(≈,i,j)))
+test_array(ϕinv(xref),collect1d(ϕinv(xphy)),(i,j)->all(map(≈,i,j)))
+
 x = get_cell_points(trian)
 @test DomainStyle(x) == ReferenceDomain()
 @test get_array(x) == get_cell_coordinates(trian)
@@ -142,6 +149,7 @@ test_array(h(x_N),collect(h(x_N)))
 h_N = (2*f_N+g)⋅g
 hx_N = h_N(x_N)
 test_array(hx_N,collect(hx_N))
+
 
 
 

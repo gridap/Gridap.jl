@@ -33,7 +33,10 @@ function change_domain(a::CellDof,target_trian::RestrictedTriangulation,target_d
   CellDof(tcell_dof,target_trian,DomainStyle(a))
 end
 
-
+function get_cell_points(dofs::CellDof)
+  cell_to_x = lazy_map(get_nodes,get_data(dofs))
+  CellPoint(cell_to_x,get_triangulation(dofs),DomainStyle(dofs))
+end
 
 # Evaluation of CellDof
 

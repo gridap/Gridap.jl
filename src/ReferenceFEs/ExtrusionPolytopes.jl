@@ -230,7 +230,7 @@ function simplexify(p::ExtrusionPolytope{0})
 end
 
 function simplexify(p::ExtrusionPolytope{1})
-  [[1,2],], SEGMENT
+  [[1,2],], Polytope(TET_AXIS)
 end
 
 function simplexify(p::ExtrusionPolytope{2})

@@ -224,6 +224,33 @@ c = a ⋅ st
 r = VectorValue(14,30,42)
 @test c == r
 
+a1 = VectorValue(1,0)
+b1 = VectorValue(1,2)
+
+t1 = ThirdOrderTensorValue{2,2,1}(1,2,3,4)
+t2 = TensorValue(1,0,0,1)
+t3 = TensorValue(1,2,0,0)
+
+c = a1 ⋅ t1
+@test isa(c,TensorValue{2,1,Int})
+r = TensorValue{2,1}(1,3)
+@test c == r
+
+c = b1 ⋅ t1
+@test isa(c,TensorValue{2,1,Int})
+r = TensorValue{2,1}(5,11)
+@test c == r
+
+c = t2 ⋅ t1
+@test isa(c,ThirdOrderTensorValue{2,2,1,Int,4})
+r = ThirdOrderTensorValue{2,2,1}(1,2,3,4)
+@test c == r
+
+c = t3 ⋅ t1
+@test isa(c,ThirdOrderTensorValue{2,2,1,Int,4})
+r = ThirdOrderTensorValue{2,2,1}(1,2,3,6)
+@test c == r
+
 # Inner product (full contraction)
 
 c = 2 ⊙ 3
@@ -431,6 +458,9 @@ u = VectorValue(1.0,2.0)
 v = VectorValue(2.0,3.0)
 @test dot(u,v) ≈ inner(u,v)
 @test norm(u) ≈ sqrt(inner(u,u))
+
+a = TensorValue(1,2,3,4)
+@test norm(a) ≈ sqrt(inner(a,a))
 
 a = VectorValue(1.0,2.0)
 b = VectorValue(2.0,3.0)

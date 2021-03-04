@@ -70,3 +70,10 @@ function lazy_map(
   cell_∇∇bt
 end
 
+function inverse_map(f::AffineMap)
+  Jt = f.gradient
+  y0 = f.origin
+  invJt = inv(Jt)
+  x0 = -y0⋅invJt
+  AffineMap(invJt,x0)
+end

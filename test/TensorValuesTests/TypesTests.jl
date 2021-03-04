@@ -263,6 +263,26 @@ z = one(SymFourthOrderTensorValue{2,Int})
 @test isa(z,SymFourthOrderTensorValue{2})
 @test Tuple(z) == (1.,0.,0., 0.,0.5,0., 0.,0.,1.)
 
+r = rand(VectorValue{3,Int})
+@test isa(r,VectorValue{3,Int})
+@test r ≠ rand(typeof(r))
+
+r = rand(TensorValue{3,3,Int})
+@test isa(r,TensorValue{3,3,Int,9})
+@test r ≠ rand(typeof(r))
+
+r = rand(ThirdOrderTensorValue{3,3,3,Int})
+@test isa(r,ThirdOrderTensorValue{3,3,3,Int,27})
+@test r ≠ rand(typeof(r))
+
+r = rand(SymTensorValue{3,Int})
+@test isa(r,SymTensorValue{3,Int,6})
+@test r ≠ rand(typeof(r))
+
+r = rand(SymFourthOrderTensorValue{3,Int})
+@test isa(r,SymFourthOrderTensorValue{3,Int,36})
+@test r ≠ rand(typeof(r))
+
 # Conversions
 
 a = @SVector ones(Int,3)
