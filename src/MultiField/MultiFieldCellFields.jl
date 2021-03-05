@@ -133,11 +133,11 @@ function evaluate!(cache,f::CellField,x::Point)
   cell = zero(eltype(cells))
   dist = T(Inf)
   for jcell in cells
-      jdist = cell_distance(jcell)
-      if jdist < dist
-          cell = jcell
-          dist = jdist
-      end
+    jdist = cell_distance(jcell)
+    if jdist < dist
+      cell = jcell
+      dist = jdist
+    end
   end
   # Ensure the point is inside one of the cells, up to round-off errors
   @assert dist ≤ 1000 * eps(T) "Point is not inside any cell"
