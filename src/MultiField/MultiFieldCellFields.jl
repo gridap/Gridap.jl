@@ -131,11 +131,11 @@ function evaluate!(cache,f::CellField,x::Point)
     cell_distances[i] = distance(polytope, inv_cmap, x)
   end
   # Ensure at most one cell contains the point
-  @assert count(<(1000 * eps(T)), cell_distances) ≤ 1
+  @assert count(<(-1000 * eps(T)), cell_distances) ≤ 1
   i = argmin(cell_distances)
   dist = cell_distances[i]
   # Ensure the point is inside one of the cells, up to round-off errors
-  @assert dist ≤ -1000 * eps(T) "Point is not inside any cell"
+  @assert dist ≤ 1000 * eps(T) "Point is not inside any cell"
   cell = cells[i]
 
   f = getindex!(c1, cell_f, cell)
