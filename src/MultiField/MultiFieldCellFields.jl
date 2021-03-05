@@ -122,7 +122,7 @@ function evaluate!(cache,f::CellField,x::Point)
   # distance, and check that the distance (if positive) is at most at
   # round-off level.
   T = eltype(dist)
-  function cell_distance(cell::Int32)
+  function cell_distance(cell::Integer)
     ctype = cell_to_ctype[cell]
     polytope = ctype_to_polytope[ctype]
     cmap = cell_map[cell]
@@ -130,7 +130,7 @@ function evaluate!(cache,f::CellField,x::Point)
     return distance(polytope, inv_cmap, x)
   end
   # findmin, without allocating an array
-  cell = Int32(0)
+  cell = zero(eltype(cells))
   dist = T(Inf)
   for jcell in cells
       jdist = cell_distance(jcell)
