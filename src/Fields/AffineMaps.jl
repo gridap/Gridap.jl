@@ -56,6 +56,10 @@ function push_∇∇(∇∇a::Number,Jt_inv::MultiValue{Tuple{D,D}} where D)
   Jt_inv⋅Jt_inv⋅∇∇a
 end
 
+function push_∇∇(∇∇a::Number,Jt_inv::MultiValue{Tuple{D1,D2}} where {D1,D2})
+  Jt_inv⋅∇∇a⋅transpose(Jt_inv)
+end
+
 function lazy_map(
   k::Broadcasting{typeof(push_∇∇)},
   cell_∇∇a::AbstractArray,
