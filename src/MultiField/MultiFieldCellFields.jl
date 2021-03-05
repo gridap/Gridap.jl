@@ -122,21 +122,25 @@ function evaluate!(cache,f::CellField,x::Point)
   # distance, and check that the distance (if positive) is at most at
   # round-off level.
   T = eltype(dist)
-  cell_distances = similar(cells, T)
-  for (i, cell) in enumerate(cells)
+  function cell_distance(cell::Int32)
     ctype = cell_to_ctype[cell]
     polytope = ctype_to_polytope[ctype]
     cmap = cell_map[cell]
     inv_cmap = inverse_map(cmap)
-    cell_distances[i] = distance(polytope, inv_cmap, x)
+    return distance(polytope, inv_cmap, x)
   end
-  # Ensure at most one cell contains the point
-  @assert count(<(-1000 * eps(T)), cell_distances) ≤ 1
-  i = argmin(cell_distances)
-  dist = cell_distances[i]
+  # findmin, without allocating an array
+  cell = Int32(0)
+  dist = T(Inf)
+  for jcell in cells
+      jdist = cell_distance(jcell)
+      if jdist < dist
+          cell = jcell
+          dist = jdist
+      end
+  end
   # Ensure the point is inside one of the cells, up to round-off errors
   @assert dist ≤ 1000 * eps(T) "Point is not inside any cell"
-  cell = cells[i]
 
   f = getindex!(c1, cell_f, cell)
   fx = evaluate!(c2, f, x)
