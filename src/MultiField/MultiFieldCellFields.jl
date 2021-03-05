@@ -96,37 +96,6 @@ function evaluate!(cache,f::CellField,x::Point)
     cell_f = get_array(f)
   end
 
-  # Left-over comments from discussing with @fverdugo:
-
-  # TODO: check contained-ness in a helper function; keep this
-  # function here independent of the topology type
-  # e.g. is_inside(reffe::LagrangianRefFE,xs,x)
-  # xs: physical nodes; x: point to check
-  #
-  # maybe better this instead:
-  # pass cell map instead, convert to reference space, check there
-  # e.g. is_inside(polytope,cell_map,x)
-  # or pass inverse cell map instead? maybe it is already computed?
-  # e.g. is_inside(polytope,invcell_map,x)
-  #
-  # cell_map = get_cell_map(trian)
-  # cell_map[cell]
-  # inverse_map(cell_map[cell])
-  # cell_to_ctype = get_cell_type(trian)
-  # ctype = cell_to_ctype[cell]
-  # poly = ctype_to_poly[ctype]
-  #
-  # Find polytope
-  # TODO: this only works for simplices, not for hypercubes
-  # type CartesianGrid has no field reffes
-  #
-  # TODO: ctype_to_reffe = get_reffes(trian)
-  # TODO: ctype_to_poly = map(get_polytope, ctype_to_reffe)
-  # TODO: @assert length(ctype_to_poly) == 1
-  # TODO: poly = first(ctype_to_poly)
-  #
-  # End of left-over comments.
-
   # Find nearest vertex
   id,dist = nn(kdtree, SVector(Tuple(x)))
 
@@ -173,38 +142,3 @@ function evaluate!(cache,f::CellField,x::Point)
   fx = evaluate!(c2, f, x)
   return fx
 end
-
-# """
-#     λ = cartesian2barycentric(s, p)
-# 
-# Convert Cartesian to barycentric coordinates.
-# 
-# # Arguments
-# - `s`: Simplex vertices in Cartesian coordinates. `s` has `N ≤ D + 1`
-#   vertices in `D` dimensions.
-# - `p`: Point in Cartesian coordinates
-# 
-# # Result
-# - `λ`: Point in barycentric coordinates
-# """
-# function cartesian2barycentric(s::SMatrix{N,D,T}, p::SVector{D,T}) where {N,D,T}
-#   @assert N ≤ D + 1
-#   # Algorithm as described on
-#   # <https://en.wikipedia.org/wiki/Barycentric_coordinate_system>,
-#   # section "Conversion between barycentric and Cartesian coordinates"
-#   A = SMatrix{D+1,N}(i == D+1 ? T(1) : s[j, i] for i in 1:D+1, j in 1:N)
-#   b = SVector{D+1}(p..., T(1))
-#   return A \ b
-# end
-# 
-# function cartesian2barycentric(s::SVector{N,SVector{D,T}},
-#                                p::SVector{D,T}) where {D,N,T}
-#   return cartesian2barycentric(SMatrix{N,D,T}(s[i][j] for i in 1:N, j in 1:D),
-#                                p)
-# end
-# 
-# function barycentric2cartesian(s::SVector{N,SVector{D,T}},
-#                                λ::SVector{N,T}) where {D,N,T}
-#   @assert N ≤ D + 1
-#   return SVector{D,T}(sum(s[i][j] * λ[i] for i in 1:N) for j in 1:D)
-# end
