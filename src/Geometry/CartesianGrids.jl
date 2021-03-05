@@ -237,7 +237,7 @@ end
 
 # Cell map
 
-struct CartesianMap{D,T,L} <: AbstractArray{AffineMap{D,T,L},D}
+struct CartesianMap{D,T,L} <: AbstractArray{AffineMap{D,D,T,L},D}
   data::CartesianDescriptor{D,T,typeof(identity)}
   function CartesianMap(des::CartesianDescriptor{D,T}) where {D,T}
     L = D*D
