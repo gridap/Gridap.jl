@@ -44,8 +44,8 @@ function is_in(coords)
   d < 0
 end
 
-cell_to_coods = get_cell_coordinates(Ω)
-cell_to_is_solid = lazy_map(is_in,cell_to_coods)
+cell_to_coords = get_cell_coordinates(Ω)
+cell_to_is_solid = lazy_map(is_in,cell_to_coords)
 cell_to_is_fluid = lazy_map(!,cell_to_is_solid)
 
 model_solid = DiscreteModel(model,cell_to_is_solid)
