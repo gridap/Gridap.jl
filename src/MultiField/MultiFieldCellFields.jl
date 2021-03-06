@@ -78,9 +78,9 @@ end
 
 function return_cache(f::CellField,x::Point)
   trian = get_triangulation(f)
-  node_coordinates = get_node_coordinates(trian)
-  node_coordinates = reshape(node_coordinates, length(node_coordinates))
-  kdtree = KDTree(map(nc -> SVector(Tuple(nc)), node_coordinates))
+  topo = GridTopology(trian)    # TODO: this is expensive
+  vertex_coordinates = Geometry.get_vertex_coordinates(topo)
+  kdtree = KDTree(map(nc -> SVector(Tuple(nc)), vertex_coordinates))
   cell_f = get_array(f)
   c1 = array_cache(cell_f)
   f = testitem(cell_f)
