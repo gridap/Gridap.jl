@@ -7,7 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
-- `rand` function for `MultiValue` objects.
+- Method `inverse_map` for `AffineMap`. Since PR [#552](https://github.com/gridap/Gridap.jl/pull/552).
+- Method `get_cell_points` for `CellDof`. Since PR [#551](https://github.com/gridap/Gridap.jl/pull/551).
+- Evaluation of `MonomialBasis` objects at a single point. Since PR [#550](https://github.com/gridap/Gridap.jl/pull/550).
+- `rand` function for `MultiValue` objects. Since PR [#530](https://github.com/gridap/Gridap.jl/pull/530).
+
+### Fixed
+- Bug in `return_value` for `Broadcasting(∇∇)`. Since PR [#554](https://github.com/gridap/Gridap.jl/pull/554).
+- Bug in `dot` for third order tensors. Since PR [#544](https://github.com/gridap/Gridap.jl/pull/544).
 
 ## [0.15.1] - 2021-01-22
 
