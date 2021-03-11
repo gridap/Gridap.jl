@@ -46,6 +46,11 @@ Base.Broadcast.axistype(a, b::MultiLevelBlockedUnitRange) =Base.Broadcast.axisty
 
 local_range(a::AbstractUnitRange,k::Integer) = Base.OneTo(length(a[Block(k)]))
 local_range(a::MultiLevelBlockedUnitRange,k::Integer) = a.local_ranges[k]
+function Base.similar(
+  t::Type{Array{T,N}},shape::NTuple{N,MultiLevelBlockedUnitRange}) where {T,N}
+  sizes = map(length,shape)
+  similar(t,sizes)
+end
 
 function similar_range(r::Base.OneTo,n::Integer)
   Base.OneTo(Int(n))
