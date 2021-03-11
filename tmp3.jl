@@ -1,7 +1,6 @@
 using Gridap
 using Gridap.Geometry
 
-function run()
 
   domain = (0,1,0,1)
   partition = (3,1)
@@ -13,8 +12,8 @@ function run()
   Γface_to_bgface = findall(bgface_to_mask)
   model_Γ = BoundaryDiscreteModel(Polytope{1},model_Ω,Γface_to_bgface)
   Γ = Triangulation(model_Γ)
-  Λb = SkeletonTriangulation(model_Γ)
-  dΛb = Measure(Λb,2*order)
+  Λ = SkeletonTriangulation(model_Γ)
+  dΛ = Measure(Λ,2*order)
 
   reffe = ReferenceFE(lagrangian,Float64,order)
   V_Ω = TestFESpace(model_Ω,reffe,conformity=:H1)
@@ -25,9 +24,9 @@ function run()
   Y = MultiFieldFESpace([V_Ω,V_Γ])
 
   # Weak form
-  a((ϕ,η),(w,v)) = ∫( v.⁺*η.⁺ )dΛb
+  a((ϕ,η),(w,v)) = ∫( v.⁺*η.⁺ )dΛ
   l((w,v)) = 0.0
+
   op = AffineFEOperator(a,l,X,Y)
   sol = solve(op)
 
-end

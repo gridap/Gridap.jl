@@ -27,8 +27,10 @@ function _get_cell_axes(f::MultiFieldFEBasis,trian::Triangulation)
       lazy_map(axes,cell_dofs_j)
     else
       cell_dofs_i = get_cell_dof_ids(V_i)
-      cell_axes_i = lazy_map(axes,cell_dofs_i)
-      lazy_map(axs->(similar_range(first(axs),0),),cell_axes_i)
+      dofs_i = testitem(cell_dofs_i)
+      axes_i = axes(dofs_i)
+      axes_i_empty = (similar_range(first(axes_i),0),)
+      Fill(axes_i_empty,num_cells(trian))
     end
   end
   lazy_map(_multifield_axes_dofs,cell_axes...)
