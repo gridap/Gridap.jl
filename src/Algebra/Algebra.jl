@@ -25,6 +25,12 @@ export allocate_in_range
 export add_entries!
 export scale_entries!
 export muladd!
+export nz_counter
+export nz_allocation
+export create_from_nz
+export LoopStyle
+export Loop
+export DoNotLoop
 
 export push_coo!
 export is_entry_stored

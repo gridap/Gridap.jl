@@ -148,12 +148,18 @@ export get_matrix_type
 export get_vector_type
 export SparseMatrixAssembler
 export GenericSparseMatrixAssembler
-export count_matrix_nnz_coo
-export count_matrix_and_vector_nnz_coo
-export fill_matrix_coo_symbolic!
-export fill_matrix_and_vector_coo_symbolic!
-export fill_matrix_coo_numeric!
-export fill_matrix_and_vector_coo_numeric!
+export symbolic_loop_matrix!
+export symbolic_loop_vector!
+export symbolic_loop_matrix_and_vector!
+export numeric_loop_matrix!
+export numeric_loop_vector!
+export numeric_loop_matrix_and_vector!
+#export count_matrix_nnz_coo
+#export count_matrix_and_vector_nnz_coo
+#export fill_matrix_coo_symbolic!
+#export fill_matrix_and_vector_coo_symbolic!
+#export fill_matrix_coo_numeric!
+#export fill_matrix_and_vector_coo_numeric!
 export test_sparse_matrix_assembler
 
 export FEOperator

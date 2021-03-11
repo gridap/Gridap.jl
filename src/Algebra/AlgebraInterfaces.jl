@@ -78,7 +78,7 @@ end
 
 Add an entry given its position and the operation to perform.
 """
-function add_entry!(A,v,i::Integer,j::Integer,combine=+)
+function add_entry!(A::AbstractArray,v,i::Integer,j::Integer,combine=+)
   aij = A[i,j]
   A[i,j] = combine(aij,v)
 end
@@ -88,7 +88,7 @@ end
 
 Add an entry given its position and the operation to perform.
 """
-function add_entry!(A,v,i::Integer,combine=+)
+function add_entry!(A::AbstractArray,v,i::Integer,combine=+)
   ai = A[i]
   A[i] = combine(ai,v)
 end
@@ -132,3 +132,145 @@ else
     end
   end
 end
+
+#
+# Some API associated with assembly routines
+#
+# Generate a counter to count the nz values
+# for an array type A
+#
+#    a = nz_counter(A,(rows,cols))
+#
+# Do a loop to count the number of nz values
+# Do the loop only when needed by using the LoopStyle
+# For instance, when assembling a dense vector the loop
+# is not needed
+# A nz value is counted by calling add_entry!
+#
+#    if LoopStyle(a) == Loop()
+#      add_entry!(a,nothing,i,j)
+#      add_entry!(a,v,i,j)
+#    end
+#
+# Now we can allocate the nz values
+# This can be the vectors in coo format or
+# it can already be the final array for dense vectors
+#
+#    b = nz_allocation(a)
+#
+# Do a loop to set entries
+# We can use nothing if we want to add an entry to the sparsity
+# pattern but we don't want to set a value to it yet
+#
+#    add_entry!(b,nothing,i,j)
+#    add_entry!(b,v,i,j)
+#
+# Create the final array
+# from the nz values
+#
+#    c = create_from_nz(b)
+#
+# We can also do a loop and update
+# the entries of c
+#
+#    fill_entries!(c,0)
+#    add_entry!(c,nothing,i,j)
+#    add_entry!(c,v,i,j)
+#
+
+struct Loop end
+struct DoNotLoop end
+LoopStyle(::Type) = DoNotLoop()
+LoopStyle(::T) where T = LoopStyle(T)
+
+# For dense arrays
+
+struct ArrayCounter{T,A}
+  axes::A
+  function ArrayCounter{T}(axes::A) where {T,A<:Tuple{Vararg{AbstractUnitRange}}}
+    new{T,A}(axes)
+  end
+end
+
+LoopStyle(::Type{<:ArrayCounter}) = DoNotLoop()
+
+@inline add_entry!(a::ArrayCounter,args...) = nothing
+
+nz_counter(::Type{T},axes) where T = ArrayCounter{T}(axes)
+
+nz_allocation(a::ArrayCounter{T}) where T = fill!(similar(T,a.axes),zero(eltype(T)))
+
+create_from_nz(a::AbstractArray) = a
+
+# For sparse matrices
+
+mutable struct SparseMatrixCounter{T,A}
+  nnz::Int
+  axes::A
+  function SparseMatrixCounter{T}(axes::A) where {T,A<:NTuple{2,AbstractUnitRange}}
+    nnz = 0
+    new{T,A}(nnz,axes)
+  end
+end
+
+LoopStyle(::Type{<:SparseMatrixCounter}) = Loop()
+
+@inline function add_entry!(a::SparseMatrixCounter{T},::Nothing,i,j) where T
+  if is_entry_stored(T,i,j)
+    a.nnz = a.nnz + 1
+  end
+  nothing
+end
+
+@inline function add_entry!(a::SparseMatrixCounter{T},v,i,j) where T
+  if is_entry_stored(T,i,j)
+    a.nnz = a.nnz + 1
+  end
+  nothing
+end
+
+struct CooAllocation{T,A,B,C}
+  counter::SparseMatrixCounter{T,A}
+  I::B
+  J::B
+  V::C
+end
+
+LoopStyle(::Type{<:CooAllocation}) = Loop()
+
+@inline function add_entry!(a::CooAllocation{T},::Nothing,i,j) where T
+  if is_entry_stored(T,i,j)
+    a.counter.nnz = a.counter.nnz + 1
+    k = a.counter.nnz
+    a.I[k] = i
+    a.J[k] = j
+  end
+  nothing
+end
+
+@inline function add_entry!(a::CooAllocation{T},v,i,j) where T
+  if is_entry_stored(T,i,j)
+    a.counter.nnz = a.counter.nnz + 1
+    k = a.counter.nnz
+    a.I[k] = i
+    a.J[k] = j
+    a.V[k] = v
+  end
+  nothing
+end
+function nz_counter(::Type{T},axes) where T<:AbstractSparseMatrix
+  SparseMatrixCounter{T}(axes)
+end
+
+function nz_allocation(a::SparseMatrixCounter{T}) where T
+  counter = SparseMatrixCounter{T}(a.axes)
+  I,J,V = allocate_coo_vectors(T,a.nnz)
+  CooAllocation(counter,I,J,V)
+end
+
+function create_from_nz(a::CooAllocation{T}) where T
+  m,n = map(length,a.counter.axes)
+  finalize_coo!(T,a.I,a.J,a.V,m,n)
+  sparse_from_coo(T,a.I,a.J,a.V,m,n)
+end
+
