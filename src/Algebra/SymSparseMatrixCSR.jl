@@ -48,8 +48,8 @@ function finalize_coo!(T::Type{<:SymSparseMatrixCSR},
     end
 end
 
-add_entry!(A::SymSparseMatrixCSR{Bi,Tv,Ti},v::Number,i::Integer,j::Integer,combine::Function=+) where {Bi,Tv,Ti<:Integer} =
-        return i>j ? A : add_entry!(A.uppertrian,v,i,j,combine)
+add_entry!(combine::Function,A::SymSparseMatrixCSR{Bi,Tv,Ti},v::Number,i::Integer,j::Integer) where {Bi,Tv,Ti<:Integer} =
+        return i>j ? A : add_entry!(combine,A.uppertrian,v,i,j)
 
 function copy_entries!(a::SymSparseMatrixCSR,b::SymSparseMatrixCSR)
   _copy_entries_sparse!(a,b)

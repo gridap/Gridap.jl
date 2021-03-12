@@ -99,7 +99,7 @@ module SparseMatrixCSRTests
                 end
 
                 vold = getindex(CSR,maxrows,maxcols)
-                add_entry!(CSR,1,maxrows,maxcols,+)
+                add_entry!(+,CSR,1,maxrows,maxcols)
                 @test getindex(CSR,maxrows,maxcols) == vold+1
 
                 fill_entries!(CSR,0)

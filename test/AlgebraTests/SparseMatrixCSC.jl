@@ -60,7 +60,7 @@ module SparseMatrixCSCTests
         @test nnz(CSC) == count(!iszero, CSC) <= maxnz
 
         vold = getindex(CSC,maxrows,maxcols)
-        add_entry!(CSC,1,maxrows,maxcols,+)
+        add_entry!(+,CSC,1,maxrows,maxcols)
         @test getindex(CSC,maxrows,maxcols) == vold+1
 
         fill_entries!(CSC,0)

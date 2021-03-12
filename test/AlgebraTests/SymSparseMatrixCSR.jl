@@ -92,7 +92,7 @@ module SymSparseMatrixCSRTests
                 end
 
                 vold = getindex(SYMCSR,maxrows,maxcols)
-                add_entry!(SYMCSR,1,maxrows,maxcols,+)
+                add_entry!(+,SYMCSR,1,maxrows,maxcols)
                 @test getindex(SYMCSR,maxrows,maxcols) == vold+1
 
                 fill_entries!(SYMCSR,0)

@@ -60,37 +60,87 @@ function copy_entries!(a,b)
 end
 
 """
-    add_entries!(a,b,combine=+)
+    add_entry!(combine::Function,A,v,i...)
+    add_entry!(A,v,i...)
 
-Perform the operation `combine` element-wise in the entries of arrays `a` and `b`
-and store the result in array `a`. Returns `a`.
+Add an entry. Returns A.
 """
-function add_entries!(a,b,combine=+)
-  @assert length(a) == length(b)
-  @inbounds for i in eachindex(a)
-    a[i] = combine(a[i],b[i])
-  end
-  a
+@inline function add_entry!(combine::Function,args...)
+  @abstractmethod
 end
 
-"""
-    add_entry!(A,v,i,j,combine=+)
+@inline function add_entry!(args...)
+  add_entry!(+,args...)
+end
 
-Add an entry given its position and the operation to perform.
-"""
-function add_entry!(A::AbstractArray,v,i::Integer,j::Integer,combine=+)
+@inline function add_entry!(combine::Function,A::AbstractMatrix,v,i,j)
   aij = A[i,j]
   A[i,j] = combine(aij,v)
+  A
+end
+
+@inline function add_entry!(combine::Function,A::AbstractVector,v,i)
+  ai = A[i]
+  A[i] = combine(ai,v)
+  A
+end
+
+@inline function add_entry!(combine::Function,A::AbstractMatrix,v::Nothing,i,j)
+  A
+end
+
+@inline function add_entry!(combine::Function,A::AbstractVector,v::Nothing,i)
+  A
 end
 
 """
-    add_entry!(A,v,i,combine=+)
+    add_entries!(combine::Function,A,vs,is...)
 
-Add an entry given its position and the operation to perform.
+Add several entries only for positive input indices. Returns A.
 """
-function add_entry!(A::AbstractArray,v,i::Integer,combine=+)
-  ai = A[i]
-  A[i] = combine(ai,v)
+@inline function add_entries!(combine::Function,args...)
+  @abstractmethod
+end
+
+@inline function add_entries!(args...)
+  add_entries!(+,args...)
+end
+
+@inline function add_entries!(combine::Function,A,vs,is,js)
+  @inline _vij(vs,i,j) = vs[i,j]
+  @inline _vij(vs::Nothing,i,j) = vs
+  for (lj,j) in enumerate(js)
+    if j>0
+      for (li,i) in enumerate(is)
+        if i>0
+          vij = _vij(vs,li,lj)
+          add_entry!(combine,A,vij,i,j)
+        end
+      end
+    end
+  end
+  A
+end
+
+
+@inline function add_entries!(combine::Function,A,vs,is)
+  @inline _vi(vs,i) = vs[i]
+  @inline _vi(vs::Nothing,i) = vs
+  for (li, i) in enumerate(is)
+    if i>0
+      vi = _vi(vs,li)
+      add_entry!(A,vi,i)
+    end
+  end
+  A
+end
+
+@inline function add_entries!(combine::Function,A::AbstractMatrix,vs::Nothing,is,js)
+  A
+end
+
+@inline function add_entries!(combine::Function,A::AbstractVector,vs::Nothing,is)
+  A
 end
 
 """
@@ -150,6 +200,8 @@ end
 #    if LoopStyle(a) == Loop()
 #      add_entry!(a,nothing,i,j)
 #      add_entry!(a,v,i,j)
+#      add_entries!(a,nothing,is,js)
+#      add_entries!(a,vs,is,js)
 #    end
 #
 # Now we can allocate the nz values
@@ -164,6 +216,8 @@ end
 #
 #    add_entry!(b,nothing,i,j)
 #    add_entry!(b,v,i,j)
+#    add_entries!(b,nothing,is,js)
+#    add_entries!(b,vs,is,js)
 #
 # Create the final array
 # from the nz values
@@ -174,8 +228,8 @@ end
 # the entries of c
 #
 #    fill_entries!(c,0)
-#    add_entry!(c,nothing,i,j)
 #    add_entry!(c,v,i,j)
+#    add_entries!(c,vs,is,js)
 #
 
 struct Loop end
@@ -194,7 +248,8 @@ end
 
 LoopStyle(::Type{<:ArrayCounter}) = DoNotLoop()
 
-@inline add_entry!(a::ArrayCounter,args...) = nothing
+@inline add_entry!(c::Function,a::ArrayCounter,args...) = a
+@inline add_entries!(c::Function,a::ArrayCounter,args...) = a
 
 nz_counter(::Type{T},axes) where T = ArrayCounter{T}(axes)
 
@@ -215,18 +270,11 @@ end
 
 LoopStyle(::Type{<:SparseMatrixCounter}) = Loop()
 
-@inline function add_entry!(a::SparseMatrixCounter{T},::Nothing,i,j) where T
+@inline function add_entry!(::Function,a::SparseMatrixCounter{T},v,i,j) where T
   if is_entry_stored(T,i,j)
     a.nnz = a.nnz + 1
   end
-  nothing
-end
-
-@inline function add_entry!(a::SparseMatrixCounter{T},v,i,j) where T
-  if is_entry_stored(T,i,j)
-    a.nnz = a.nnz + 1
-  end
-  nothing
+  a
 end
 
 struct CooAllocation{T,A,B,C}
@@ -238,7 +286,7 @@ end
 
 LoopStyle(::Type{<:CooAllocation}) = Loop()
 
-@inline function add_entry!(a::CooAllocation{T},::Nothing,i,j) where T
+@inline function add_entry!(::typeof(+),a::CooAllocation{T},::Nothing,i,j) where T
   if is_entry_stored(T,i,j)
     a.counter.nnz = a.counter.nnz + 1
     k = a.counter.nnz
@@ -248,7 +296,7 @@ LoopStyle(::Type{<:CooAllocation}) = Loop()
   nothing
 end
 
-@inline function add_entry!(a::CooAllocation{T},v,i,j) where T
+@inline function add_entry!(::typeof(+),a::CooAllocation{T},v,i,j) where T
   if is_entry_stored(T,i,j)
     a.counter.nnz = a.counter.nnz + 1
     k = a.counter.nnz
@@ -258,6 +306,7 @@ end
   end
   nothing
 end
+
 function nz_counter(::Type{T},axes) where T<:AbstractSparseMatrix
   SparseMatrixCounter{T}(axes)
 end

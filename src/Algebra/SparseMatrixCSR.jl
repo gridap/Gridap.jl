@@ -180,7 +180,7 @@ function finalize_coo!(::Type{<:SparseMatrixCSR},
     I::Vector,J::Vector,V::Vector,m::Integer,n::Integer)
 end
 
-function add_entry!(A::SparseMatrixCSR{Bi,Tv,Ti},v::Number,i::Integer,j::Integer,combine::Function=+) where {Bi,Tv,Ti<:Integer}
+function add_entry!(combine::Function,A::SparseMatrixCSR{Bi,Tv,Ti},v::Number,i::Integer,j::Integer) where {Bi,Tv,Ti<:Integer}
     cv = convert(Tv, v)
     ci = convert(Ti, i)
     cj = convert(Ti, j+A.offset)

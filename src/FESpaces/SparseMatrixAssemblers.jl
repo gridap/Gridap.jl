@@ -50,40 +50,6 @@ function numeric_loop_matrix_and_vector!(A,b,a::SparseMatrixAssembler,data)
   @abstractmethod
 end
 
-#"""
-#"""
-#function count_matrix_nnz_coo(a::SparseMatrixAssembler,matdata)
-#  @abstractmethod
-#end
-#
-#"""
-#"""
-#function count_matrix_and_vector_nnz_coo(a::SparseMatrixAssembler,data)
-#  @abstractmethod
-#end
-#
-#"""
-#"""
-#function fill_matrix_coo_symbolic!(I,J,a::SparseMatrixAssembler,matdata,n=0)
-#  @abstractmethod
-#end
-#
-#function fill_matrix_and_vector_coo_symbolic!(I,J,a::SparseMatrixAssembler,data,n=0)
-#  @abstractmethod
-#end
-#
-#"""
-#"""
-#function fill_matrix_coo_numeric!(I,J,V,a::SparseMatrixAssembler,matdata,n=0)
-#  @abstractmethod
-#end
-#
-#"""
-#"""
-#function fill_matrix_and_vector_coo_numeric!(I,J,V,b,a::SparseMatrixAssembler,data,n=0)
-#  @abstractmethod
-#end
-
 function allocate_vector(a::SparseMatrixAssembler,vecdata)
   v1 = nz_counter(get_vector_type(a),(get_rows(a),))
   symbolic_loop_vector!(v1,a,vecdata)

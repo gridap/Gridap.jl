@@ -32,14 +32,14 @@ a = rand(6)
 c = copy(a)
 b = rand(6)
 
-add_entries!(a,b)
+a .+= b
 @test all( a .== ( c .+ b) )
 
 a = rand(6)
 c = copy(a)
 b = rand(6)
 
-add_entries!(a,b,-)
+a .-= b
 @test all( a .== ( c .- b) )
 
 a = rand(6)
@@ -63,6 +63,8 @@ rows = Base.OneTo(n)
 a = nz_counter(A,(rows,))
 @test LoopStyle(a) == DoNotLoop()
 add_entry!(a,1.0,1)
+add_entries!(a,[1.0,-1.0],[1,1])
+add_entries!(a,nothing,[1,1])
 b = nz_allocation(a)
 @test LoopStyle(b) == DoNotLoop()
 @test isa(b,Vector{Float64})
@@ -70,12 +72,16 @@ b = nz_allocation(a)
 add_entry!(b,1.0,1)
 add_entry!(b,1.0,1)
 add_entry!(b,1.0,4)
+add_entries!(b,[1.0,-1.0],[1,1])
+add_entries!(b,nothing,[1,1])
 r = zeros(n)
 r[1] = 2
 r[4] = 1
 @test b == r
 c = create_from_nz(b)
 @test c === b
+add_entries!(c,[1.0,-1.0],[1,1])
+add_entries!(c,nothing,[1,1])
 
 using SparseArrays
 A = SparseMatrixCSC{Float64,Int}
@@ -106,8 +112,20 @@ I,J,V = findnz(c)
 @test I == [1,3,4]
 @test J == [1,1,9]
 @test V == Float64[1,0,3]
+add_entry!(c,1.0,1,1)
+add_entry!(c,nothing,1,1)
+add_entry!(c,nothing,3,1)
+add_entry!(c,3.0,4,9)
 
-
+a = nz_counter(A,(rows,cols))
+add_entries!(a,[1.0 -1.0; -1.0 1.0],[1,1],[1,1])
+add_entries!(a,nothing,[1,1],[1,1])
+b = nz_allocation(a)
+add_entries!(b,[1.0 -1.0; -1.0 1.0],[1,1],[1,1])
+add_entries!(b,nothing,[1,1],[1,1])
+c = create_from_nz(b)
+add_entries!(c,[1.0 -1.0; -1.0 1.0],[1,1],[1,1])
+add_entries!(c,nothing,[1,1],[1,1])
 
 
 end # module
