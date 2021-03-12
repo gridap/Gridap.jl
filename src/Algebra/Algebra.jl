@@ -10,6 +10,7 @@ using DocStringExtensions
 using SparseArrays
 using LinearAlgebra
 using Test
+using SparseMatricesCSR
 
 using Gridap.Helpers
 

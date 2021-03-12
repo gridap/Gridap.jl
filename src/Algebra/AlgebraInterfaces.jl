@@ -41,6 +41,7 @@ end
     fill_entries!(a,v)
 
 Fill the entries of array `a` with the value `v`. Returns `a`.
+For sparse matrices it only fills the non-zero entries.
 """
 function fill_entries!(a,v)
   fill!(a,v)
@@ -321,5 +322,63 @@ function create_from_nz(a::CooAllocation{T}) where T
   m,n = map(length,a.counter.axes)
   finalize_coo!(T,a.I,a.J,a.V,m,n)
   sparse_from_coo(T,a.I,a.J,a.V,m,n)
+end
+
+# The following methods can be implemented for sparse matrices
+# instead of nz_counter, nz_allocation, and create_from_nz
+
+"""
+    sparse_from_coo(::Type where T,I,J,V,m,n)
+"""
+function sparse_from_coo(::Type,I,J,V,m,n)
+  @abstractmethod
+end
+
+"""
+    is_entry_stored(::Type,i,j) -> Bool
+
+Tells if the entry with coordinates `[i,j]` will be stored in the coo vectors.
+"""
+function is_entry_stored(::Type,i,j)
+  @abstractmethod
+end
+
+"""
+    finalize_coo!(::Type,I,J,V,m,n)
+
+Check and insert diagonal entries in COO vectors if needed.
+"""
+function finalize_coo!(::Type,I,J,V,m,n)
+  @abstractmethod
+end
+
+function nzindex(A::AbstractSparseMatrix,i,j)
+  @abstractmethod
+end
+
+function add_entry!(combine::Function,A::AbstractSparseMatrix,v::Number,i,j)
+  k = nzindex(A,i,j)
+  nz = nonzeros(A)
+  Aij = nz[k]
+  nz[k] = combine(v,Aij)
+  A
+end
+
+function copy_entries!(a::T,b::T) where T<:AbstractSparseMatrix
+  na = nonzeros(a)
+  nb = nonzeros(b)
+  if na !== nb
+    copyto!(na,nb)
+  end
+end
+
+function fill_entries!(A::AbstractSparseMatrix,v)
+  nonzeros(A) .= v
+  A
+end
+
+function allocate_coo_vectors(
+  ::Type{M},n::Integer) where {Tv,Ti,M<:AbstractSparseMatrix{Tv,Ti}}
+  (zeros(Ti,n), zeros(Ti,n), zeros(Tv,n))
 end
 
