@@ -27,6 +27,84 @@ function col_mask(a::AssemblyStrategy,col)
   @abstractmethod
 end
 
+@inline function map_rows!(gids,a::AssemblyStrategy,rows)
+  u = -one(eltype(gids))
+  for i in eachindex(rows)
+    ri = rows[i]
+    if ri>0 && row_mask(a,ri) 
+      gids[i] = row_map(a,ri)
+    else
+      gids[i] = u
+    end
+  end
+  nothing
+end
+
+@inline function map_rows!(
+  gids::BlockArrayCoo,a::AssemblyStrategy,rows::BlockArrayCoo)
+  for I in eachblockid(rows)
+    map_rows!(gids[I],a,rows[I])
+  end
+  nothing
+end
+
+@inline function map_cols!(gids,a::AssemblyStrategy,cols)
+  u = -one(eltype(gids))
+  for i in eachindex(cols)
+    ri = cols[i]
+    if ri>0 && col_mask(a,ri) 
+      gids[i] = col_map(a,ri)
+    else
+      gids[i] = u
+    end
+  end
+  nothing
+end
+
+@inline function map_cols!(
+  gids::BlockArrayCoo,a::AssemblyStrategy,cols::BlockArrayCoo)
+  for I in eachblockid(cols)
+    map_cols!(gids[I],a,cols[I])
+  end
+  nothing
+end
+
+function map_cell_rows(strategy::AssemblyStrategy,cell_ids)
+  k = AssemblyStrategyMap{:rows}(strategy)
+  lazy_map(k,cell_ids)
+end
+
+function map_cell_cols(strategy::AssemblyStrategy,cell_ids)
+  k = AssemblyStrategyMap{:cols}(strategy)
+  lazy_map(k,cell_ids)
+end
+
+struct AssemblyStrategyMap{S,T} <: Map
+  strategy::T
+  function AssemblyStrategyMap{S}(strategy::T) where {S,T}
+    new{S,T}(strategy)
+  end
+end
+
+function Arrays.return_cache(a::AssemblyStrategyMap,ids)
+  gids = similar(ids,Int,axes(ids))
+  CachedArray(gids)
+end
+
+function Arrays.evaluate!(cache,a::AssemblyStrategyMap{:cols},ids)
+  setaxes!(cache,axes(ids))
+  gids = cache.array
+  map_cols!(gids,a.strategy,ids)
+  gids
+end
+
+function Arrays.evaluate!(cache,a::AssemblyStrategyMap{:rows},ids)
+  setaxes!(cache,axes(ids))
+  gids = cache.array
+  map_rows!(gids,a.strategy,ids)
+  gids
+end
+
 struct DefaultAssemblyStrategy <: AssemblyStrategy end
 
 row_map(a::DefaultAssemblyStrategy,row) = row

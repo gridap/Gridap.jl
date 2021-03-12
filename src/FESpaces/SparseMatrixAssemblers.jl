@@ -212,14 +212,16 @@ function symbolic_loop_matrix!(A,a::GenericSparseMatrixAssembler,matdata)
   if LoopStyle(A) == DoNotLoop()
     return A
   end
-  for (cellmat,cellidsrows,cellidscols) in zip(matdata...)
+  for (cellmat,_cellidsrows,_cellidscols) in zip(matdata...)
+    cellidsrows = map_cell_rows(a.strategy,_cellidsrows)
+    cellidscols = map_cell_cols(a.strategy,_cellidscols)
     rows_cache = array_cache(cellidsrows)
     cols_cache = array_cache(cellidscols)
     @assert length(cellidscols) == length(cellidsrows)
     if length(cellidscols) > 0
       mat = first(cellmat)
       Is = _get_block_layout(mat)
-      _symbolic_loop_matrix!(A,rows_cache,cols_cache,cellidsrows,cellidscols,a.strategy,Is)
+      _symbolic_loop_matrix!(A,rows_cache,cols_cache,cellidsrows,cellidscols,Is)
     end
   end
   A
@@ -237,78 +239,61 @@ function _get_block_layout(a::BlockArrayCoo)
   [(I,_get_block_layout(a[I])) for I in eachblockid(a) if is_nonzero_block(a,I) ]
 end
 
-@noinline function _symbolic_loop_matrix!(A,rows_cache,cols_cache,cell_rows,cell_cols,strategy,Is)
+@noinline function _symbolic_loop_matrix!(A,rows_cache,cols_cache,cell_rows,cell_cols,Is)
   for cell in 1:length(cell_cols)
     rows = getindex!(rows_cache,cell_rows,cell)
     cols = getindex!(cols_cache,cell_cols,cell)
-    _symbolic_matrix_entries_at_cell!(A,rows,cols,strategy,Is)
+    _symbolic_matrix_entries_at_cell!(A,rows,cols,Is)
   end
 end
 
-@inline function _symbolic_matrix_entries_at_cell!(A,rows,cols,strategy,Is)
-  for gidcol in cols
-    if gidcol > 0 && col_mask(strategy,gidcol)
-      _gidcol = col_map(strategy,gidcol)
-      for gidrow in rows
-        if gidrow > 0 && row_mask(strategy,gidrow)
-          _gidrow = row_map(strategy,gidrow)
-          add_entry!(A,nothing,_gidrow,_gidcol)
-        end
-      end
-    end
-  end
+@inline function _symbolic_matrix_entries_at_cell!(A,rows,cols,Is)
+  add_entries!(A,nothing,rows,cols)
 end
 
 @inline function _symbolic_matrix_entries_at_cell!(
-  A,rows::BlockArrayCoo,cols::BlockArrayCoo,strategy,Is::AbstractArray)
+  A,rows::BlockArrayCoo,cols::BlockArrayCoo,Is::AbstractArray)
   for (I,Is_next) in Is
     i,j = I.n
-    _symbolic_matrix_entries_at_cell!(A,rows[Block(i)],cols[Block(j)],strategy,Is_next)
+    _symbolic_matrix_entries_at_cell!(A,rows[Block(i)],cols[Block(j)],Is_next)
   end
 end
 
 function numeric_loop_matrix!(A,a::GenericSparseMatrixAssembler,matdata)
-  for (cellmat,cellidsrows,cellidscols) in zip(matdata...)
+  for (cellmat,_cellidsrows,_cellidscols) in zip(matdata...)
+    cellidsrows = map_cell_rows(a.strategy,_cellidsrows)
+    cellidscols = map_cell_cols(a.strategy,_cellidscols)
     rows_cache = array_cache(cellidsrows)
     cols_cache = array_cache(cellidscols)
     vals_cache = array_cache(cellmat)
     @assert length(cellidscols) == length(cellidsrows)
     @assert length(cellmat) == length(cellidsrows)
-    _numeric_loop_matrix!(A,vals_cache,rows_cache,cols_cache,cellmat,cellidsrows,cellidscols,a.strategy)
+    _numeric_loop_matrix!(
+      A,vals_cache,rows_cache,cols_cache,cellmat,cellidsrows,cellidscols)
   end
   A
 end
 
-@noinline function _numeric_loop_matrix!(mat,vals_cache,rows_cache,cols_cache,cell_vals,cell_rows,cell_cols,strategy)
+@noinline function _numeric_loop_matrix!(
+  mat,vals_cache,rows_cache,cols_cache,cell_vals,cell_rows,cell_cols)
   for cell in 1:length(cell_cols)
     rows = getindex!(rows_cache,cell_rows,cell)
     cols = getindex!(cols_cache,cell_cols,cell)
     vals = getindex!(vals_cache,cell_vals,cell)
-    _numeric_matrix_entries_at_cell!(mat,rows,cols,vals,strategy)
+    _numeric_matrix_entries_at_cell!(mat,rows,cols,vals)
   end
 end
 
-@inline function _numeric_matrix_entries_at_cell!(mat,rows,cols,vals,strategy)
-  for (j,gidcol) in enumerate(cols)
-    if gidcol > 0 && col_mask(strategy,gidcol)
-      _gidcol = col_map(strategy,gidcol)
-      for (i,gidrow) in enumerate(rows)
-        if gidrow > 0 && row_mask(strategy,gidrow)
-          _gidrow = row_map(strategy,gidrow)
-          v = vals[i,j]
-          add_entry!(mat,v,_gidrow,_gidcol) # TODO reduce the granularity here
-        end
-      end
-    end
-  end
+@inline function _numeric_matrix_entries_at_cell!(mat,rows,cols,vals)
+  add_entries!(mat,vals,rows,cols)
 end
 
 @inline function _numeric_matrix_entries_at_cell!(
-  mat,rows::BlockArrayCoo,cols::BlockArrayCoo,vals::BlockArrayCoo,strategy)
+  mat,rows::BlockArrayCoo,cols::BlockArrayCoo,vals::BlockArrayCoo)
   for I in eachblockid(vals)
     if is_nonzero_block(vals,I)
       i,j = I.n
-      _numeric_matrix_entries_at_cell!(mat,rows[Block(i)],cols[Block(j)],vals[I],strategy)
+      _numeric_matrix_entries_at_cell!(mat,rows[Block(i)],cols[Block(j)],vals[I])
     end
   end
 end
@@ -319,36 +304,32 @@ function symbolic_loop_vector!(b,a::GenericSparseMatrixAssembler,vecdata)
 end
 
 function numeric_loop_vector!(b,a::GenericSparseMatrixAssembler,vecdata)
-  for (cellvec, cellids) in zip(vecdata...)
+  for (cellvec, _cellids) in zip(vecdata...)
+    cellids = map_cell_rows(a.strategy,_cellids)
     rows_cache = array_cache(cellids)
     vals_cache = array_cache(cellvec)
-    _numeric_loop_vector!(b,vals_cache,rows_cache,cellvec,cellids,a.strategy)
+    _numeric_loop_vector!(b,vals_cache,rows_cache,cellvec,cellids)
   end
   b
 end
 
-@noinline function _numeric_loop_vector!(vec,vals_cache,rows_cache,cell_vals,cell_rows,strategy)
+@noinline function _numeric_loop_vector!(vec,vals_cache,rows_cache,cell_vals,cell_rows)
   @assert length(cell_vals) == length(cell_rows)
   for cell in 1:length(cell_rows)
     rows = getindex!(rows_cache,cell_rows,cell)
     vals = getindex!(vals_cache,cell_vals,cell)
-    _numeric_vector_entries_at_cell!(vec,rows,vals,strategy)
+    _numeric_vector_entries_at_cell!(vec,rows,vals)
   end
 end
 
-@inline function _numeric_vector_entries_at_cell!(vec,rows,vals,strategy)
-  for (i,gid) in enumerate(rows)
-    if gid > 0 && row_mask(strategy,gid)
-      _gid = row_map(strategy,gid)
-      add_entry!(vec,vals[i],_gid)
-    end
-  end
+@inline function _numeric_vector_entries_at_cell!(vec,rows,vals)
+  add_entries!(vec,vals,rows)
 end
 
-@inline function _numeric_vector_entries_at_cell!(vec,rows::BlockArrayCoo,vals::BlockArrayCoo,strategy)
+@inline function _numeric_vector_entries_at_cell!(vec,rows::BlockArrayCoo,vals::BlockArrayCoo)
   for I in eachblockid(vals)
     if is_nonzero_block(vals,I)
-      _numeric_vector_entries_at_cell!(vec,rows[I],vals[I],strategy)
+      _numeric_vector_entries_at_cell!(vec,rows[I],vals[I])
     end
   end
 end
@@ -363,27 +344,30 @@ end
 
 function numeric_loop_matrix_and_vector!(A,b,a::GenericSparseMatrixAssembler,data)
   matvecdata, matdata, vecdata = data
-  for (cellmatvec,cellidsrows,cellidscols) in zip(matvecdata...)
+  for (cellmatvec,_cellidsrows,_cellidscols) in zip(matvecdata...)
+    cellidsrows = map_cell_rows(a.strategy,_cellidsrows)
+    cellidscols = map_cell_cols(a.strategy,_cellidscols)
     rows_cache = array_cache(cellidsrows)
     cols_cache = array_cache(cellidscols)
     vals_cache = array_cache(cellmatvec)
     @assert length(cellidscols) == length(cellidsrows)
     @assert length(cellmatvec) == length(cellidsrows)
-    _numeric_loop_mavec!(A,b,vals_cache,rows_cache,cols_cache,cellmatvec,cellidsrows,cellidscols,a.strategy)
+    _numeric_loop_mavec!(A,b,vals_cache,rows_cache,cols_cache,cellmatvec,cellidsrows,cellidscols)
   end
   numeric_loop_matrix!(A,a,matdata)
   numeric_loop_vector!(b,a,vecdata)
   A, b
 end
 
-@noinline function _numeric_loop_mavec!(A,b,vals_cache,rows_cache,cols_cache,cell_vals,cell_rows,cell_cols,strategy)
+@noinline function _numeric_loop_mavec!(
+  A,b,vals_cache,rows_cache,cols_cache,cell_vals,cell_rows,cell_cols)
   for cell in 1:length(cell_cols)
     rows = getindex!(rows_cache,cell_rows,cell)
     cols = getindex!(cols_cache,cell_cols,cell)
     vals = getindex!(vals_cache,cell_vals,cell)
     matvals, vecvals = vals
-    _numeric_matrix_entries_at_cell!(A,rows,cols,matvals,strategy)
-    _numeric_vector_entries_at_cell!(b,rows,vecvals,strategy)
+    _numeric_matrix_entries_at_cell!(A,rows,cols,matvals)
+    _numeric_vector_entries_at_cell!(b,rows,vecvals)
   end
 end
 
