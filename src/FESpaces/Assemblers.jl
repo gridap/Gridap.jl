@@ -115,6 +115,10 @@ row_mask(a::DefaultAssemblyStrategy,row) = true
 
 col_mask(a::DefaultAssemblyStrategy,col) = true
 
+map_cell_rows(strategy::DefaultAssemblyStrategy,cell_ids) = cell_ids
+
+map_cell_cols(strategy::DefaultAssemblyStrategy,cell_ids) = cell_ids
+
 """
 """
 abstract type Assembler <: GridapType end
