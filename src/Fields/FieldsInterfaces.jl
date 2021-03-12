@@ -228,6 +228,8 @@ struct ConstantField{T<:Number} <: Field
   object::T
 end
 
+@inline constant_field(a) = ConstantField(a)
+
 Base.zero(::Type{ConstantField{T}}) where T = ConstantField(zero(T))
 
 @inline function evaluate!(c,f::ConstantField,x::Point)
@@ -268,6 +270,12 @@ function evaluate!(c,f::FieldGradient{N,<:ConstantField},x::AbstractArray{<:Poin
     fill!(c.array,zero(eltype(c)))
   end
   c.array
+end
+
+function lazy_map(::Operation{typeof(inv)},a::LazyArray{<:Fill{typeof(constant_field)}})
+  v = a.args[1]
+  vinv = lazy_map(inv,v)
+  lazy_map(constant_field,vinv)
 end
 
 ## Make Function behave like Field
