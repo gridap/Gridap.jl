@@ -35,7 +35,7 @@ isless(a::Number,b::MultiValue) where {D,T} = all(isless.(a, b.data))
 # Addition / subtraction
 ###############################################################
 
-Base.iszero(a::MultiValue) = all(iszero.(a))
+Base.iszero(a::MultiValue) = all(iszero.(a.data))
 
 for op in (:+,:-)
   @eval begin
