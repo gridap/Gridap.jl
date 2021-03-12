@@ -212,7 +212,7 @@ function get_facet_normal(trian::BoundaryTriangulation)
   end
   ctype_lface_pindex_to_nref = map(f, get_reffes(cell_trian))
   face_to_nref = FaceCompressedVector(ctype_lface_pindex_to_nref,glue)
-  face_s_nref = lazy_map(ConstantField,face_to_nref)
+  face_s_nref = lazy_map(constant_field,face_to_nref)
 
   # Inverse of the Jacobian transpose
   cell_q_x = get_cell_map(cell_trian)
