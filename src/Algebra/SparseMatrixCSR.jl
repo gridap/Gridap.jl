@@ -11,7 +11,7 @@ function finalize_coo!(::Type{<:SparseMatrixCSR},I,J,V,m,n)
   nothing
 end
 
-function nzindex(A::SparseMatrixCSR,i0,i1)
+function nz_index(A::SparseMatrixCSR,i0,i1)
   if !(1 <= i0 <= size(A, 1) && 1 <= i1 <= size(A, 2)); throw(BoundsError()); end
   o = getoffset(A)
   Bi = getBi(A)
@@ -21,4 +21,11 @@ function nzindex(A::SparseMatrixCSR,i0,i1)
   i1o = i1-o
   k = searchsortedfirst(colvals(A), i1o, r1, r2, Base.Order.Forward)
   ((k > r2) || (colvals(A)[k] != i1o)) ? -1 : k
+end
+
+@inline function push_coo!(::Type{<:SparseMatrixCSR},I,J,V,i,j,v)
+ push!(I,i)
+ push!(J,j)
+ push!(V,v)
+ nothing
 end

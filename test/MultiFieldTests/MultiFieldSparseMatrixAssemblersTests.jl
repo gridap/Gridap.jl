@@ -7,6 +7,7 @@ using Gridap.FESpaces
 using Gridap.Fields
 using Gridap.Integration
 using SparseArrays
+using SparseMatricesCSR
 using Gridap.CellData
 using Gridap.MultiField
 using Gridap.ReferenceFEs

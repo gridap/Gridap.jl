@@ -56,7 +56,6 @@ muladd!(c,a,b)
 
 @test all( c .≈ (d .+ a*b ) )
 
-
 A = Vector{Float64}
 n = 10
 rows = Base.OneTo(n)
@@ -84,6 +83,7 @@ add_entries!(c,[1.0,-1.0],[1,1])
 add_entries!(c,nothing,[1,1])
 
 using SparseArrays
+using SparseMatricesCSR
 for A in (
   SparseMatrixCSC{Float64,Int},
   SparseMatrixCSR{1,Float64,Int},
@@ -133,5 +133,61 @@ for A in (
   add_entries!(c,nothing,[1,1],[1,-1])
 end
 
+for A in (
+  SymSparseMatrixCSR{1,Float64,Int},
+  SymSparseMatrixCSR{0,Float64,Int})
+
+  m = 6
+  n = 6
+  rows = Base.OneTo(m)
+  cols = Base.OneTo(n)
+  a = nz_counter(A,(rows,cols))
+  @test LoopStyle(a) == Loop()
+  add_entry!(a,1.0,1,1)
+  add_entry!(a,nothing,1,1)
+  add_entry!(a,nothing,3,1)
+  add_entry!(a,nothing,1,3)
+  add_entry!(a,3.0,2,2)
+  add_entry!(a,3.0,2,6)
+  add_entry!(a,3.0,6,2)
+  @test a.nnz == 5
+  b = nz_allocation(a)
+  add_entry!(b,1.0,1,1)
+  add_entry!(b,nothing,1,1)
+  add_entry!(b,nothing,3,1)
+  add_entry!(b,nothing,1,3)
+  add_entry!(b,3.0,2,2)
+  add_entry!(b,3.0,2,6)
+  add_entry!(b,3.0,6,2)
+  @test LoopStyle(b) == Loop()
+  @test length(b.I) == a.nnz
+  @test length(b.J) == a.nnz
+  @test length(b.V) == a.nnz
+  c = create_from_nz(b)
+  @test LoopStyle(c) == DoNotLoop()
+  @test isa(c,A)
+  I,J,V = findnz(c)
+  @test I == [1,1,2,2,3,4,5,6]
+  @test J == [1,3,2,6,3,4,5,6]
+  @test V == Float64[1,0,3,3,0,0,0,0]
+  add_entry!(c,1.0,1,1)
+  add_entry!(c,nothing,1,1)
+  add_entry!(c,nothing,3,1)
+  add_entry!(c,nothing,1,3)
+  add_entry!(c,3.0,2,2)
+  add_entry!(c,3.0,2,6)
+  add_entry!(c,3.0,6,2)
+  
+  a = nz_counter(A,(rows,cols))
+  add_entries!(a,[1.0 -1.0; -1.0 1.0],[1,-1],[-1,1])
+  add_entries!(a,nothing,[1,1],[1,-1])
+  @test a.nnz == 3
+  b = nz_allocation(a)
+  add_entries!(b,[1.0 -1.0; -1.0 1.0],[1,-1],[-1,1])
+  add_entries!(b,nothing,[1,1],[1,-1])
+  c = create_from_nz(b)
+  add_entries!(c,[1.0 -1.0; -1.0 1.0],[1,-1],[-1,1])
+  add_entries!(c,nothing,[1,1],[1,-1])
+end
 
 end # module

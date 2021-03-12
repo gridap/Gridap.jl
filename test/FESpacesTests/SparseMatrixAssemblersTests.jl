@@ -9,6 +9,7 @@ using Gridap.Integration
 using Gridap.Fields
 using Gridap.Algebra
 using SparseArrays
+using SparseMatricesCSR
 using Gridap.FESpaces
 using Gridap.CellData
 
@@ -85,17 +86,11 @@ FESpaces.row_mask(a::AssemblyStrategyMock,row) = true
 FESpaces.col_mask(a::AssemblyStrategyMock,col) = true
 
 mtypes = [
-  SparseMatrixCSC,
-  SparseMatrixCSR,
-  SparseMatrixCSR{0},
-  SparseMatrixCSR{1},
-  SparseMatrixCSR{0,Float64, Int},
-  SparseMatrixCSR{1,Float64, Int},
-  SymSparseMatrixCSR,
-  SymSparseMatrixCSR{0},
-  SymSparseMatrixCSR{1},
-  SymSparseMatrixCSR{0, Float64, Int},
-  SymSparseMatrixCSR{1, Float64, Int}]
+  SparseMatrixCSC{Float64,Int},
+  SparseMatrixCSR{0,Float64,Int},
+  SparseMatrixCSR{1,Float64,Int},
+  SymSparseMatrixCSR{0,Float64,Int},
+  SymSparseMatrixCSR{1,Float64,Int}]
 
 for T in mtypes
 

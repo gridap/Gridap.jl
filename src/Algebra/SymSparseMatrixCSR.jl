@@ -1,5 +1,6 @@
+
 function sparse_from_coo(::Type{<:SymSparseMatrixCSR{Bi}}, I,J,V,m,n) where Bi
-  symsparsecsr(Val(Bi),M,I,J,V,m,n)
+  symsparsecsr(Val(Bi),I,J,V,m,n)
 end
 
 @inline function is_entry_stored(::Type{<:SymSparseMatrixCSR},i,j)
@@ -25,11 +26,25 @@ function finalize_coo!(T::Type{<:SymSparseMatrixCSR},I,J,V,m,n)
   end
 end
 
-function nzindex(A::SparseMatrixCSR,i,j)
-  if i<j
-    nzindex(A.uppertrian,i,j)
-  else
-    nzindex(A.uppertrian,j,i)
+function nz_index(A::SymSparseMatrixCSR,i,j)
+  nz_index(A.uppertrian,i,j)
+end
+
+function add_entry!(combine::Function,A::SymSparseMatrixCSR,v::Number,i,j)
+  if i<=j
+    k = nz_index(A,i,j)
+    nz = nonzeros(A)
+    Aij = nz[k]
+    nz[k] = combine(v,Aij)
   end
+  A
+end
+
+@inline function push_coo!(::Type{<:SymSparseMatrixCSR},I,J,V,i,j,v)
+  (i>j) && return nothing
+  push!(I,i)
+  push!(J,j)
+  push!(V,v)
+  nothing
 end
 

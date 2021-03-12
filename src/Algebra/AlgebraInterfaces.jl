@@ -328,7 +328,7 @@ end
 # instead of nz_counter, nz_allocation, and create_from_nz
 
 """
-    sparse_from_coo(::Type where T,I,J,V,m,n)
+    sparse_from_coo(::Type,I,J,V,m,n)
 """
 function sparse_from_coo(::Type,I,J,V,m,n)
   @abstractmethod
@@ -352,12 +352,20 @@ function finalize_coo!(::Type,I,J,V,m,n)
   @abstractmethod
 end
 
-function nzindex(A::AbstractSparseMatrix,i,j)
+function nz_index(A::AbstractSparseMatrix,i,j)
+  @abstractmethod
+end
+
+"""
+    push_coo!(::Type, I,J,V,i,j,v)
+Inserts entries in COO vectors for further building a sparse matrix of type T.
+"""
+function push_coo!(::Type,I,J,V,i,j,v)
   @abstractmethod
 end
 
 function add_entry!(combine::Function,A::AbstractSparseMatrix,v::Number,i,j)
-  k = nzindex(A,i,j)
+  k = nz_index(A,i,j)
   nz = nonzeros(A)
   Aij = nz[k]
   nz[k] = combine(v,Aij)
@@ -378,7 +386,7 @@ function fill_entries!(A::AbstractSparseMatrix,v)
 end
 
 function allocate_coo_vectors(
-  ::Type{M},n::Integer) where {Tv,Ti,M<:AbstractSparseMatrix{Tv,Ti}}
+   ::Type{<:AbstractSparseMatrix{Tv,Ti}},n::Integer) where {Tv,Ti}
   (zeros(Ti,n), zeros(Ti,n), zeros(Tv,n))
 end
 

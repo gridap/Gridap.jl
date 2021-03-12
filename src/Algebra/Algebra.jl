@@ -33,24 +33,15 @@ export LoopStyle
 export Loop
 export DoNotLoop
 
-export push_coo!
+export nz_index
 export is_entry_stored
 export finalize_coo!
 export sparse_from_coo
 export add_entry!
 export fill_entries!
 export copy_entries!
-export create_coo_vectors
 export allocate_coo_vectors
-export sparsecsr
-export symsparsecsr
-export hasrowmajororder
-export hascolmajororder
-export colvals
-export getptr
-export getindices
-export SparseMatrixCSR
-export SymSparseMatrixCSR
+export push_coo!
 
 export LinearSolver
 export SymbolicSetup
@@ -90,14 +81,7 @@ export AffineOperator
 export get_matrix
 export get_vector
 
-export SparseMatrixCSR
-export SymSparseMatrixCSR
-
 include("AlgebraInterfaces.jl")
-
-include("SparseMatrices.jl")
-
-include("CompressedSparseMatrices.jl")
 
 include("SparseMatrixCSC.jl")
 
