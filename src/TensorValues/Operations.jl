@@ -2,8 +2,9 @@
 # Comparison
 ###############################################################
 
-(==)(a::MultiValue,b::MultiValue) = a.data == b.data
-(≈)(a::MultiValue,b::MultiValue) = isapprox(get_array(a), get_array(b))
+(==)(a::MultiValue,b::MultiValue) = false
+(==)(a::MultiValue{S},b::MultiValue{S}) where {S} = a.data == b.data
+(≈)(a::MultiValue{S},b::MultiValue{S}) where {S} = isapprox(get_array(a), get_array(b))
 (≈)(a::MultiValue{S,T1,N,0} where T1,b::MultiValue{S,T2,N,0} where T2) where {S,N} = true
 
 function (≈)(
@@ -17,9 +18,9 @@ end
 
 function isless(a::MultiValue{Tuple{L}},b::MultiValue{Tuple{L}}) where L
   for d in L:-1:1
-    if a[d] < b[d]
+    if isless(a[d], b[d])
       return true
-    elseif a[d] > b[d]
+    elseif isless(b[d], a[d])
       return false
     else
       continue
@@ -28,11 +29,13 @@ function isless(a::MultiValue{Tuple{L}},b::MultiValue{Tuple{L}}) where L
   false
 end
 
-isless(a::Number,b::MultiValue) where {D,T} = all(a .< b.data)
+isless(a::Number,b::MultiValue) where {D,T} = all(isless.(a, b.data))
 
 ###############################################################
 # Addition / subtraction
 ###############################################################
+
+Base.iszero(a::MultiValue) = all(iszero.(a))
 
 for op in (:+,:-)
   @eval begin
