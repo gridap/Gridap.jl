@@ -79,7 +79,7 @@ end
 
 function CellField(f::Number,trian::Triangulation,domain_style::DomainStyle)
   s = size(get_cell_map(trian))
-  cell_field = Fill(ConstantField(f),s)
+  cell_field = Fill(constant_field(f),s)
   GenericCellField(cell_field,trian,domain_style)
 end
 
@@ -89,7 +89,7 @@ function CellField(f::AbstractArray{<:Number},trian::Triangulation,domain_style:
   on a Triangulation with $(num_cells(trian)) cells. The length of the given array
   and the number of cells should match.
   """
-  cell_field = lazy_map(ConstantField,f)
+  cell_field = lazy_map(constant_field,f)
   GenericCellField(cell_field,trian,domain_style)
 end
 

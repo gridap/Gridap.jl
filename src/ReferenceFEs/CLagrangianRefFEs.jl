@@ -127,7 +127,7 @@ function is_first_order(reffe::GenericLagrangianRefFE{GradConformity})
   p = get_polytope(reffe)
   r = true
   r = r && num_vertices(p) == num_nodes(reffe)
-  r = r && get_vertex_node(reffe) == collect(1:num_nodes(reffe))
+  r = r && get_vertex_node(reffe) == 1:num_nodes(reffe)
   r
 end
 
