@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Experimental support for mixed dimensional PDEs. Since PR [#567](https://github.com/gridap/Gridap.jl/pull/567).
 
 ### Changed
+- Refactoring in `SparseMatrixAssembler` to make it more extensible and efficient. Since PR [#568](https://github.com/gridap/Gridap.jl/pull/568).
 - Renamed `get_free_values` -> `get_free_dof_values`. Since PR [#567](https://github.com/gridap/Gridap.jl/pull/567).
 - Miscellaneous changes in the FE assembly to allow the solution of mixed dimensional problems. Since PR [#567](https://github.com/gridap/Gridap.jl/pull/567).
 
