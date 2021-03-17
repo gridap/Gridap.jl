@@ -259,13 +259,17 @@ f = transpose(a)
 
 fp = transpose(evaluate(a,p))
 ∇fp = transpose(evaluate(Broadcasting(∇)(a),p))
+∇∇fp = transpose(evaluate(Broadcasting(∇∇)(a),p))
 
 test_field_array(f,p,fp)
-test_field_array(f,p,fp,grad=∇fp)
+test_field_array(f,p,fp,grad=∇fp,gradgrad=∇∇fp)
 test_field_array(f,x,result(f,x))
-test_field_array(f,x,result(f,x),grad=result(∇.(f),x))
+test_field_array(f,x,result(f,x),grad=result(∇.(f),x),gradgrad=result(∇∇.(f),x))
 test_field_array(f,z,result(f,z))
-test_field_array(f,z,result(f,z),grad=result(∇.(f),z))
+test_field_array(f,z,result(f,z),grad=result(∇.(f),z),gradgrad=result(∇∇.(f),z))
+
+test_map(evaluate(Broadcasting(∇),a),Broadcasting(∇),a)
+test_map(evaluate(Broadcasting(∇∇),a),Broadcasting(∇∇),a)
 
 #using BenchmarkTools
 #

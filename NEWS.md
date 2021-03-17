@@ -4,10 +4,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [0.16.0] - Unreleased
 
 ### Added
-- `rand` function for `MultiValue` objects.
+- Experimental support for mixed dimensional PDEs. Since PR [#567](https://github.com/gridap/Gridap.jl/pull/567).
+
+### Changed
+- Renamed `get_free_values` -> `get_free_dof_values`. Since PR [#567](https://github.com/gridap/Gridap.jl/pull/567).
+- Miscellaneous changes in the FE assembly to allow the solution of mixed dimensional problems. Since PR [#567](https://github.com/gridap/Gridap.jl/pull/567).
+
+## [0.15.3] - 2021-03-16
+
+### Added 
+- `get_cell_map` now returns array of `AffineMap` for linear grids of simplices. Needed to compute Laplacian operator, inverse maps etc. Since PR [#553](https://github.com/gridap/Gridap.jl/pull/553).
+
+### Fixed
+- Bug in `print_op_tree`. Since PR [#563](https://github.com/gridap/Gridap.jl/pull/563)
+
+## [0.15.2] - 2021-03-08
+
+### Added
+- Method `inverse_map` for `AffineMap`. Since PR [#552](https://github.com/gridap/Gridap.jl/pull/552).
+- Method `get_cell_points` for `CellDof`. Since PR [#551](https://github.com/gridap/Gridap.jl/pull/551).
+- Evaluation of `MonomialBasis` objects at a single point. Since PR [#550](https://github.com/gridap/Gridap.jl/pull/550).
+- `rand` function for `MultiValue` objects. Since PR [#530](https://github.com/gridap/Gridap.jl/pull/530).
+
+### Fixed
+- Bug in `return_value` for `Broadcasting(∇∇)`. Since PR [#554](https://github.com/gridap/Gridap.jl/pull/554).
+- Bug in `dot` for third order tensors. Since PR [#544](https://github.com/gridap/Gridap.jl/pull/544).
 
 ## [0.15.1] - 2021-01-22
 
