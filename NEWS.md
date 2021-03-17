@@ -6,11 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.16.0] - Unreleased
 
-# Added
-- Experimental support for mixed dimensional PDEs.
+### Added
+- Experimental support for mixed dimensional PDEs. Since PR [#567](https://github.com/gridap/Gridap.jl/pull/567).
 
-# Changed
-- Miscellaneous changes in the FE assembly to allow the solution of mixed dimensional problems.
+### Changed
+- Renamed `get_free_values` -> `get_free_dof_values`. Since PR [#567](https://github.com/gridap/Gridap.jl/pull/567).
+- Miscellaneous changes in the FE assembly to allow the solution of mixed dimensional problems. Since PR [#567](https://github.com/gridap/Gridap.jl/pull/567).
 
 ## [0.15.3] - 2021-03-16
 
