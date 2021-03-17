@@ -136,11 +136,14 @@ function change_domain(a::CellField,::ReferenceDomain,trian::Triangulation,::Ref
   trian_a = get_triangulation(a)
   if have_compatible_domains(trian_a,trian)
     return a
-  elseif have_compatible_domains(trian_a,get_background_triangulation(trian))
-    cell_id = get_cell_to_bgcell(trian)
+  elseif have_compatible_domains(
+    trian_a,get_background_triangulation(trian)) || have_compatible_domains(
+    get_background_triangulation(trian_a),get_background_triangulation(trian))
+
+    cell_id = get_cell_to_bgcell(trian,trian_a)
     @assert ! isa(cell_id,SkeletonPair)
     cell_a_q = lazy_map(Reindex(get_data(a)),cell_id)
-    cell_s2q = get_cell_ref_map(trian)
+    cell_s2q = get_cell_ref_map(trian,trian_a)
     cell_field = lazy_map(Broadcasting(∘),cell_a_q,cell_s2q)
     GenericCellField(cell_field,trian,ReferenceDomain())
   else
@@ -439,6 +442,8 @@ function _to_common_domain(a::CellField...)
       target_trian = trian_b
     elseif have_compatible_domains(trian_b,get_background_triangulation(trian_a))
       target_trian = trian_a
+    elseif have_compatible_domains(get_background_triangulation(trian_a),get_background_triangulation(trian_b))
+      @unreachable msg
     else
       @unreachable msg
     end

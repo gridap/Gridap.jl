@@ -297,7 +297,7 @@ function get_cell_dof_basis(f::FESpaceWithLinearConstraints)
   get_cell_dof_basis(f.space)
 end
 
-num_dirichlet_dofs(f::FESpaceWithLinearConstraints) = length(f.mDOF_to_DOF) - f.n_fmdofs
+get_dirichlet_dof_ids(f::FESpaceWithLinearConstraints) = Base.OneTo(length(f.mDOF_to_DOF) - f.n_fmdofs)
 
 num_dirichlet_tags(f::FESpaceWithLinearConstraints) = num_dirichlet_tags(f.space)
 
@@ -464,7 +464,7 @@ function get_triangulation(f::FESpaceWithLinearConstraints)
   get_triangulation(f.space)
 end
 
-num_free_dofs(f::FESpaceWithLinearConstraints) = f.n_fmdofs
+get_free_dof_ids(f::FESpaceWithLinearConstraints) = Base.OneTo(f.n_fmdofs)
 
 function get_vector_type(f::FESpaceWithLinearConstraints)
   get_vector_type(f.space)

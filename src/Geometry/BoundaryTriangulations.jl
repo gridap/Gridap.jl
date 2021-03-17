@@ -95,7 +95,7 @@ struct BoundaryTriangulation{Dc,Dp,Gf,Gc,G} <: Triangulation{Dc,Dp}
     cell_trian::Triangulation,
     glue::FaceToCellGlue)
 
-    @assert TriangulationStyle(cell_trian) == BackgroundTriangulation()
+    #@assert TriangulationStyle(cell_trian) == BackgroundTriangulation()
     @assert num_point_dims(face_trian) == num_point_dims(cell_trian)
     #@assert num_cell_dims(face_trian) == num_cell_dims(cell_trian) - 1
 
@@ -124,10 +124,17 @@ function BoundaryTriangulation(
   bgface_grid = Grid(ReferenceFE{D-1},model)
 
   face_trian = RestrictedTriangulation(bgface_grid,face_to_bgface)
-  cell_trian = Grid(ReferenceFE{D},model)
+  #cell_trian = Grid(ReferenceFE{D},model)
+  cell_trian = Triangulation(model)
   glue = FaceToCellGlue(topo,cell_trian,face_trian,face_to_bgface,bgface_to_lcell)
 
   BoundaryTriangulation(face_trian,cell_trian,glue)
+end
+
+function BoundaryTriangulation(
+  model::DiscreteModel,
+  face_to_bgface::AbstractVector{<:Integer})
+  BoundaryTriangulation(model,face_to_bgface,Fill(1,num_facets(model)))
 end
 
 function BoundaryTriangulation(
@@ -196,6 +203,51 @@ get_background_triangulation(trian::BoundaryTriangulation) = trian.cell_trian
 
 get_cell_to_bgcell(trian::BoundaryTriangulation) = trian.glue.face_to_cell
 
+function get_cell_to_bgcell(
+  trian_in::BoundaryTriangulation,
+  trian_out::BoundaryTriangulation)
+
+  if have_compatible_domains(trian_out,get_background_triangulation(trian_in))
+    return get_cell_to_bgcell(trian_in)
+  end
+
+  @check have_compatible_domains(
+    get_background_triangulation(trian_in),
+    get_background_triangulation(trian_out))
+
+  face_in_to_bgface = trian_in.glue.face_to_bgface
+  face_out_to_bgface = trian_out.glue.face_to_bgface
+
+  nbgfaces = length(trian_in.glue.bgface_to_lcell)
+  bgface_to_face_out = zeros(Int32,nbgfaces)
+  bgface_to_face_out[face_out_to_bgface] .= 1:length(face_out_to_bgface)
+  face_in_to_face_out = bgface_to_face_out[face_in_to_bgface]
+  @check all( face_in_to_face_out .!= 0) "the first triangulation is not a subset of the second"
+  face_in_to_face_out
+end
+
+function is_included(
+  trian_in::BoundaryTriangulation,
+  trian_out::BoundaryTriangulation)
+
+  if have_compatible_domains(trian_out,get_background_triangulation(trian_in))
+    return true
+  end
+
+  @check have_compatible_domains(
+    get_background_triangulation(trian_in),
+    get_background_triangulation(trian_out))
+
+  face_in_to_bgface = trian_in.glue.face_to_bgface
+  face_out_to_bgface = trian_out.glue.face_to_bgface
+
+  nbgfaces = length(trian_in.glue.bgface_to_lcell)
+  bgface_to_face_out = zeros(Int32,nbgfaces)
+  bgface_to_face_out[face_out_to_bgface] .= 1:length(face_out_to_bgface)
+  face_in_to_face_out = bgface_to_face_out[face_in_to_bgface]
+  all( face_in_to_face_out .!= 0)
+end
+
 function get_facet_normal(trian::BoundaryTriangulation)
 
   glue = trian.glue
@@ -217,7 +269,7 @@ function get_facet_normal(trian::BoundaryTriangulation)
   # Inverse of the Jacobian transpose
   cell_q_x = get_cell_map(cell_trian)
   cell_q_Jt = lazy_map(∇,cell_q_x)
-  cell_q_invJt = lazy_map(Operation(inv),cell_q_Jt)
+  cell_q_invJt = lazy_map(Operation(pinvJt),cell_q_Jt)
   face_q_invJt = lazy_map(Reindex(cell_q_invJt),glue.face_to_cell)
 
   # Change of domain
@@ -243,6 +295,21 @@ function get_cell_ref_map(trian::BoundaryTriangulation)
   ftype_to_shapefuns = map( f, get_reffes(trian) )
   face_to_shapefuns = expand_cell_data(ftype_to_shapefuns,trian.glue.face_to_ftype)
   face_s_q = lazy_map(linear_combination,face_to_q_vertex_coords,face_to_shapefuns)
+end
+
+function get_cell_ref_map(
+  trian_in::BoundaryTriangulation,
+  trian_out::BoundaryTriangulation)
+
+  if have_compatible_domains(trian_out,get_background_triangulation(trian_in))
+    return get_cell_ref_map(trian_in)
+  end
+
+  @check have_compatible_domains(
+    get_background_triangulation(trian_in),
+    get_background_triangulation(trian_out))
+
+  Fill(GenericField(identity),num_cells(trian_in))
 end
 
 function _compute_face_to_q_vertex_coords(trian::BoundaryTriangulation)

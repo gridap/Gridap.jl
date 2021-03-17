@@ -504,6 +504,11 @@ function meas(v::MultiValue{Tuple{2,3}})
   sqrt(n ⋅ n)
 end
 
+function meas(Jt::MultiValue{Tuple{D1,D2}}) where {D1,D2}
+  J = transpose(Jt)
+  sqrt(det(Jt⋅J))
+end
+
 @inline norm(u::MultiValue{Tuple{D}}) where D = sqrt(inner(u,u))
 @inline norm(u::MultiValue{Tuple{D1,D2}}) where {D1,D2} = sqrt(inner(u,u))
 @inline norm(u::MultiValue{Tuple{0},T}) where T = sqrt(zero(T))
