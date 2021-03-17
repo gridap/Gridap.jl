@@ -7,6 +7,7 @@ using Gridap.FESpaces
 using Gridap.Fields
 using Gridap.Integration
 using SparseArrays
+using SparseMatricesCSR
 using Gridap.CellData
 using Gridap.MultiField
 using Gridap.ReferenceFEs
@@ -85,6 +86,20 @@ A = assemble_matrix(assem,matdata)
 A = allocate_matrix(assem,matdata)
 
 assem = SparseMatrixAssembler(X,Y)
+test_assembler(assem,matdata,vecdata,data)
+
+struct AssemblyStrategyMock <: AssemblyStrategy end
+FESpaces.row_map(a::AssemblyStrategyMock,row) = row
+FESpaces.col_map(a::AssemblyStrategyMock,col) = col
+FESpaces.row_mask(a::AssemblyStrategyMock,row) = true
+FESpaces.col_mask(a::AssemblyStrategyMock,col) = true
+
+assem = SparseMatrixAssembler(
+  SparseMatrixCSC{Float64,Int},
+  Vector{Float64},
+  X,
+  Y,
+  AssemblyStrategyMock())
 test_assembler(assem,matdata,vecdata,data)
 
 end # module

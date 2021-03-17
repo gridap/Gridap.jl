@@ -28,7 +28,7 @@ get_vector(op::AffineOperator) = op.vector
 
 function residual!(b::AbstractVector,op::AffineOperator,x::AbstractVector)
   mul!(b,op.matrix,x)
-  add_entries!(b,op.vector,-)
+  b .-= op.vector
   b
 end
 

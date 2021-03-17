@@ -22,8 +22,6 @@ export det, inv, tr, cross, dot, norm, ×, ⋅
 @publish Algebra NLSolver
 @publish Algebra get_matrix
 @publish Algebra get_vector
-@publish Algebra SparseMatrixCSR
-@publish Algebra SymSparseMatrixCSR
 @publish Algebra jacobian
 @publish Algebra hessian
 

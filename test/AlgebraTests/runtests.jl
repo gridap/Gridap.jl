@@ -4,11 +4,11 @@ using Test
 
 @testset "AlgebraInterfaces" begin include("AlgebraInterfacesTests.jl") end
 
-@testset "SparseMatrixCSC" begin include("SparseMatrixCSC.jl") end
+@testset "SparseMatrixCSC" begin include("SparseMatrixCSCTests.jl") end
 
-@testset "SparseMatrixCSR" begin include("SparseMatrixCSR.jl") end
+@testset "SparseMatrixCSR" begin include("SparseMatrixCSRTests.jl") end
 
-@testset "SymSparseMatrixCSR" begin include("SymSparseMatrixCSR.jl") end
+@testset "SymSparseMatrixCSR" begin include("SymSparseMatrixCSRTests.jl") end
 
 @testset "NonlinearOperators" begin include("NonlinearOperatorsTests.jl") end
 
