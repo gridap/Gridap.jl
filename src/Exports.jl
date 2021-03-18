@@ -22,8 +22,6 @@ export det, inv, tr, cross, dot, norm, ×, ⋅
 @publish Algebra NLSolver
 @publish Algebra get_matrix
 @publish Algebra get_vector
-@publish Algebra SparseMatrixCSR
-@publish Algebra SymSparseMatrixCSR
 @publish Algebra jacobian
 @publish Algebra hessian
 
@@ -149,11 +147,13 @@ using Gridap.CellData: ∫; export ∫
 #@publish FESpaces FESource
 @publish FESpaces AffineFEOperator
 @publish FESpaces LinearFESolver
-@publish FESpaces get_free_values
+@publish FESpaces get_free_dof_values
 @publish FESpaces get_dirichlet_values
 @publish FESpaces num_dirichlet_dofs
 @publish FESpaces num_free_dofs
 @publish FESpaces num_dirichlet_tags
+@publish FESpaces get_free_dof_ids
+@publish FESpaces get_dirichlet_dof_ids
 @publish FESpaces get_cell_dof_ids
 @publish FESpaces get_cell_dof_values
 @publish FESpaces get_cell_shapefuns

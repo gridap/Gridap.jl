@@ -78,6 +78,10 @@ convert(::Type{<:VectorValue{D,T}}, arg::VectorValue{D,T}) where {D,T} = arg
 zero(::Type{<:VectorValue{D,T}}) where {D,T} = VectorValue{D,T}(tfill(zero(T),Val{D}()))
 zero(::VectorValue{D,T}) where {D,T} = zero(VectorValue{D,T})
 
+function rand(rng::AbstractRNG, ::Random.SamplerType{VectorValue{D,T}}) where {D,T}
+  return VectorValue{D,T}(Tuple(rand(rng, SVector{D,T})))
+end
+
 Mutable(::Type{VectorValue{D,T}}) where {D,T} = MVector{D,T}
 Mutable(::VectorValue{D,T}) where {D,T} = Mutable(VectorValue{D,T})
 mutable(a::VectorValue) = MVector(a.data)

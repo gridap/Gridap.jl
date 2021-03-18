@@ -67,16 +67,16 @@ uh, ph = xh
 @test isa(uh,FEFunction)
 @test isa(ph,FEFunction)
 
-cell_isconstr = get_cell_isconstrained(X)
+cell_isconstr = get_cell_isconstrained(X,trian)
 @test cell_isconstr == Fill(false,num_cells(model))
 
-cell_constr = get_cell_constraints(X)
+cell_constr = get_cell_constraints(X,trian)
 @test isa(cell_constr,LazyArray{<:Fill{<:BlockArrayCooMap}})
 
-cell_dof_ids = get_cell_dof_ids(X)
+cell_dof_ids = get_cell_dof_ids(X,trian)
 @test isa(cell_dof_ids,LazyArray{<:Fill{<:BlockArrayCooMap}})
 
-cf = CellField(X,get_cell_dof_ids(X))
+cf = CellField(X,get_cell_dof_ids(X,trian))
 @test isa(cf,MultiFieldCellField)
 
 test_fe_space(X,matvecdata,matdata,vecdata)

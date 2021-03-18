@@ -2,8 +2,9 @@
 # Comparison
 ###############################################################
 
-(==)(a::MultiValue,b::MultiValue) = a.data == b.data
-(≈)(a::MultiValue,b::MultiValue) = isapprox(get_array(a), get_array(b))
+(==)(a::MultiValue,b::MultiValue) = false
+(==)(a::MultiValue{S},b::MultiValue{S}) where {S} = a.data == b.data
+(≈)(a::MultiValue{S},b::MultiValue{S}) where {S} = isapprox(get_array(a), get_array(b))
 (≈)(a::MultiValue{S,T1,N,0} where T1,b::MultiValue{S,T2,N,0} where T2) where {S,N} = true
 
 function (≈)(
@@ -17,9 +18,9 @@ end
 
 function isless(a::MultiValue{Tuple{L}},b::MultiValue{Tuple{L}}) where L
   for d in L:-1:1
-    if a[d] < b[d]
+    if isless(a[d], b[d])
       return true
-    elseif a[d] > b[d]
+    elseif isless(b[d], a[d])
       return false
     else
       continue
@@ -28,11 +29,13 @@ function isless(a::MultiValue{Tuple{L}},b::MultiValue{Tuple{L}}) where L
   false
 end
 
-isless(a::Number,b::MultiValue) where {D,T} = all(a .< b.data)
+isless(a::Number,b::MultiValue) where {D,T} = all(isless.(a, b.data))
 
 ###############################################################
 # Addition / subtraction
 ###############################################################
+
+Base.iszero(a::MultiValue) = all(iszero.(a.data))
 
 for op in (:+,:-)
   @eval begin
@@ -133,10 +136,15 @@ dot(a::MultiValue,b::MultiValue) = @notimplemented
         bk = data_index(B,i,j)
         s *= "a.data[$ak]*b.data[$bk]+"
       end
-        push!(ss,s[1:(end-1)]*", ")
+      push!(ss,s[1:(end-1)]*", ")
     end
     str = join(ss)
     Meta.parse("VectorValue{$D2}($str)")
+end
+
+function dot(a::A,b::B) where {A<:MultiValue{Tuple{0}},B<:MultiValue{Tuple{0,D2}}} where D2
+  T = eltype(zero(eltype(a))*zero(eltype(b)))
+  zero(VectorValue{D2,T})
 end
 
 @generated function dot(a::A,b::B) where {A<:MultiValue{Tuple{D1,D2}},B<:MultiValue{Tuple{D2}}} where {D1,D2}
@@ -193,9 +201,9 @@ end
 end
 
 # a_ilm = b_ij*c_jlm
-@generated function dot(a::A,b::B) where {A<:MultiValue{Tuple{D,D}},B<:ThirdOrderTensorValue{D}} where D
+@generated function dot(a::A,b::B) where {A<:MultiValue{Tuple{D,D}},B<:ThirdOrderTensorValue{D,D,L}} where {D,L}
   ss = String[]
-  for m in 1:D
+  for m in 1:L
     for l in 1:D
       for i in 1:D
         s = join([ "a[$i,$j]*b[$j,$l,$m]+" for j in 1:D])
@@ -204,8 +212,8 @@ end
     end
   end
   str = join(ss)
-  Meta.parse("ThirdOrderTensorValue{$D}($str)")
-end
+  Meta.parse("ThirdOrderTensorValue{$D,$D,$L}($str)")
+end 
 
 const ⋅¹ = dot
 
@@ -496,7 +504,13 @@ function meas(v::MultiValue{Tuple{2,3}})
   sqrt(n ⋅ n)
 end
 
+function meas(Jt::MultiValue{Tuple{D1,D2}}) where {D1,D2}
+  J = transpose(Jt)
+  sqrt(det(Jt⋅J))
+end
+
 @inline norm(u::MultiValue{Tuple{D}}) where D = sqrt(inner(u,u))
+@inline norm(u::MultiValue{Tuple{D1,D2}}) where {D1,D2} = sqrt(inner(u,u))
 @inline norm(u::MultiValue{Tuple{0},T}) where T = sqrt(zero(T))
 
 ###############################################################

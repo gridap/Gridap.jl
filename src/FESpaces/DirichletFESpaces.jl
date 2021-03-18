@@ -19,8 +19,8 @@ get_cell_isconstrained(f::DirichletFESpace) = get_cell_isconstrained(f.space)
 
 get_cell_constraints(f::DirichletFESpace) = get_cell_constraints(f.space)
 
-function num_free_dofs(f::DirichletFESpace)
-  num_dirichlet_dofs(f.space)
+function get_free_dof_ids(f::DirichletFESpace)
+  get_dirichlet_dof_ids(f.space)
 end
 
 function get_vector_type(f::DirichletFESpace)
@@ -31,8 +31,8 @@ function get_cell_dof_ids(f::DirichletFESpace)
   lazy_map(Broadcasting(-),get_cell_dof_ids(f.space))
 end
 
-function num_dirichlet_dofs(f::DirichletFESpace)
-  num_free_dofs(f.space)
+function get_dirichlet_dof_ids(f::DirichletFESpace)
+  get_free_dof_ids(f.space)
 end
 
 function num_dirichlet_tags(f::DirichletFESpace)

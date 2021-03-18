@@ -225,15 +225,14 @@ end
 
 # Particular implementations for Fill
 
-#function lazy_map(::typeof(evaluate),f::Fill, a::Fill...)
-#  ai = map(ai->ai.value,a)
-#  r = evaluate(f.value, ai...)
-#  s = _common_size(f, a...)
-#  Fill(r, s)
-#end
+function lazy_map(::typeof(evaluate),f::Fill, a::Fill...)
+  ai = map(ai->ai.value,a)
+  r = evaluate(f.value, ai...)
+  s = _common_size(f, a...)
+  Fill(r, s)
+end
 
 function lazy_map(::typeof(evaluate),::Type{T}, f::Fill, a::Fill...) where T
-  #lazy_map(evaluate, f, a...)
   ai = map(ai->ai.value,a)
   r = evaluate(f.value, ai...)
   s = _common_size(f, a...)
@@ -242,7 +241,7 @@ end
 
 function _common_size(a::AbstractArray...)
   a1, = a
-  @check all(map(ai->length(a1) == length(ai),a)) "Array sizes $(map(size,a)) are not compatible."
+  #@check all(map(ai->length(a1) == length(ai),a)) "Array sizes $(map(size,a)) are not compatible."
   if all( map(ai->size(a1) == size(ai),a) )
     size(a1)
   else

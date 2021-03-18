@@ -79,7 +79,7 @@ end
 
 function CellField(f::Number,trian::Triangulation,domain_style::DomainStyle)
   s = size(get_cell_map(trian))
-  cell_field = Fill(ConstantField(f),s)
+  cell_field = Fill(constant_field(f),s)
   GenericCellField(cell_field,trian,domain_style)
 end
 
@@ -89,7 +89,7 @@ function CellField(f::AbstractArray{<:Number},trian::Triangulation,domain_style:
   on a Triangulation with $(num_cells(trian)) cells. The length of the given array
   and the number of cells should match.
   """
-  cell_field = lazy_map(ConstantField,f)
+  cell_field = lazy_map(constant_field,f)
   GenericCellField(cell_field,trian,domain_style)
 end
 
@@ -113,7 +113,7 @@ function change_domain(a::CellField,::ReferenceDomain,::PhysicalDomain)
   trian = get_triangulation(a)
   cell_map = get_cell_map(trian)
   cell_invmap = lazy_map(inverse_map,cell_map)
-  cell_field_ref = get_data(cell_field)
+  cell_field_ref = get_data(a)
   cell_field_phys = lazy_map(Broadcasting(∘),cell_field_ref,cell_invmap)
   GenericCellField(cell_field_phys,trian,PhysicalDomain())
 end
@@ -136,11 +136,14 @@ function change_domain(a::CellField,::ReferenceDomain,trian::Triangulation,::Ref
   trian_a = get_triangulation(a)
   if have_compatible_domains(trian_a,trian)
     return a
-  elseif have_compatible_domains(trian_a,get_background_triangulation(trian))
-    cell_id = get_cell_to_bgcell(trian)
+  elseif have_compatible_domains(
+    trian_a,get_background_triangulation(trian)) || have_compatible_domains(
+    get_background_triangulation(trian_a),get_background_triangulation(trian))
+
+    cell_id = get_cell_to_bgcell(trian,trian_a)
     @assert ! isa(cell_id,SkeletonPair)
     cell_a_q = lazy_map(Reindex(get_data(a)),cell_id)
-    cell_s2q = get_cell_ref_map(trian)
+    cell_s2q = get_cell_ref_map(trian,trian_a)
     cell_field = lazy_map(Broadcasting(∘),cell_a_q,cell_s2q)
     GenericCellField(cell_field,trian,ReferenceDomain())
   else
@@ -439,6 +442,8 @@ function _to_common_domain(a::CellField...)
       target_trian = trian_b
     elseif have_compatible_domains(trian_b,get_background_triangulation(trian_a))
       target_trian = trian_a
+    elseif have_compatible_domains(get_background_triangulation(trian_a),get_background_triangulation(trian_b))
+      @unreachable msg
     else
       @unreachable msg
     end

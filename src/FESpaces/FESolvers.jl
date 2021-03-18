@@ -61,15 +61,15 @@ function test_fe_solver(
 
   u = FEFunction(trial,copy(x0))
   u, cache = solve!(u,nls,op)
-  @test pred(get_free_values(u),x)
+  @test pred(get_free_dof_values(u),x)
 
   u = FEFunction(trial,copy(x0))
   u,cache = solve!(u,nls,op,cache)
-  @test pred(get_free_values(u),x)
+  @test pred(get_free_dof_values(u),x)
 
   u = FEFunction(trial,copy(x0))
   u,cache = solve!(u,nls,op,cache)
-  @test pred(get_free_values(u),x)
+  @test pred(get_free_dof_values(u),x)
 
 end
 
@@ -92,7 +92,7 @@ function solve!(uh::FEFunction,solver::LinearFESolver,op::FEOperator, cache)
 end
 
 function solve!(u::FEFunction,solver::LinearFESolver,feop::AffineFEOperator,cache::Nothing)
-  x = get_free_values(u)
+  x = get_free_dof_values(u)
   op = get_algebraic_operator(feop)
   cache = solve!(x,solver.ls,op)
   trial = get_trial(feop)
@@ -101,7 +101,7 @@ function solve!(u::FEFunction,solver::LinearFESolver,feop::AffineFEOperator,cach
 end
 
 function solve!(u::FEFunction,solver::LinearFESolver,feop::AffineFEOperator, cache)
-  x = get_free_values(u)
+  x = get_free_dof_values(u)
   op = get_algebraic_operator(feop)
   cache = solve!(x,solver.ls,op,cache)
   trial = get_trial(feop)
@@ -134,7 +134,7 @@ function NonlinearFESolver()
 end
 
 function solve!(u::FEFunction,solver::NonlinearFESolver,feop::FEOperator,cache::Nothing)
-  x = get_free_values(u)
+  x = get_free_dof_values(u)
   op = get_algebraic_operator(feop)
   cache = solve!(x,solver.nls,op)
   trial = get_trial(feop)
@@ -143,7 +143,7 @@ function solve!(u::FEFunction,solver::NonlinearFESolver,feop::FEOperator,cache::
 end
 
 function solve!(u::FEFunction,solver::NonlinearFESolver,feop::FEOperator,cache)
-  x = get_free_values(u)
+  x = get_free_dof_values(u)
   op = get_algebraic_operator(feop)
   cache = solve!(x,solver.nls,op,cache)
   trial = get_trial(feop)

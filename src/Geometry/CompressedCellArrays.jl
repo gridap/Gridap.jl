@@ -1,5 +1,5 @@
 
-function compress(cell_to_bgcell::AbstractVector{<:Integer})
+function compress_ids(cell_to_bgcell::AbstractVector{<:Integer})
   nccells = 0
   c = -1
   for bgcell in cell_to_bgcell
@@ -22,16 +22,15 @@ function compress(cell_to_bgcell::AbstractVector{<:Integer})
   ccell_to_first_cell
 end
 
-function compress(
+function compress_contributions(
   cell_to_mat,
   cell_to_bgcell::AbstractVector{<:Integer},
-  ccell_to_first_cell::AbstractVector{<:Integer}=compress(cell_to_bgcell))
+  ccell_to_first_cell::AbstractVector{<:Integer}=compress_ids(cell_to_bgcell))
 
   nccells = length(ccell_to_first_cell)-1
-  ccell_to_cell = lazy_map(Reindex(ccell_to_first_cell),1:nccells)
-  ccell_to_bgcell = lazy_map(Reindex(cell_to_bgcell),ccell_to_cell)
+  ccell_to_cell = view(ccell_to_first_cell,1:nccells)
   ccell_to_mat = CompressedCellArray(cell_to_mat,ccell_to_first_cell)
-  ccell_to_mat, ccell_to_bgcell
+  ccell_to_mat
 end
 
 struct CompressedCellArray{T,A,B} <: AbstractVector{T}

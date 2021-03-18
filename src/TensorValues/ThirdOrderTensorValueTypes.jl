@@ -80,6 +80,18 @@ change_eltype(::T,::Type{T2}) where {T<:ThirdOrderTensorValue,T2} = change_eltyp
 zero(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}) where {D1,D2,D3,T} = ThirdOrderTensorValue{D1,D2,D3,T}(tfill(zero(T),Val{D1*D2*D3}()))
 zero(::ThirdOrderTensorValue{D1,D2,D3,T}) where {D1,D2,D3,T} = zero(ThirdOrderTensorValue{D1,D2,D3,T})
 
+@generated function rand(rng::AbstractRNG,
+                         ::Random.SamplerType{<:ThirdOrderTensorValue{D1,D2,D3,T}}) where {D1,D2,D3,T}
+  L=D1*D2*D3
+  quote
+    rand(rng, ThirdOrderTensorValue{D1,D2,D3,T,$L})
+  end
+end
+function rand(rng::AbstractRNG,
+              ::Random.SamplerType{<:ThirdOrderTensorValue{D1,D2,D3,T,L}}) where {D1,D2,D3,T,L}
+  return ThirdOrderTensorValue{D1,D2,D3,T,L}(Tuple(rand(rng, SVector{L,T})))
+end
+
 Mutable(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}) where {D1,D2,D3,T} = MArray{Tuple{D1,D2,D3},T}
 Mutable(::ThirdOrderTensorValue{D1,D2,D3,T}) where {D1,D2,D3,T} = Mutable(ThirdOrderTensorValue{D1,D2,D3,T})
 mutable(a::ThirdOrderTensorValue{D1,D2,D3}) where {D1,D2,D3} = MArray{Tuple{D1,D2,D3}}(a.data)

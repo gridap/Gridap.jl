@@ -17,13 +17,11 @@ cell_vec = [ones(3) for cell in 1:num_cells(Γ)]
 cell_matvec = pair_arrays(cell_mat,cell_vec)
 
 cell_to_bgcell = get_cell_to_bgcell(Γ)
-ccell_to_first_cell = compress(cell_to_bgcell)
+ccell_to_first_cell = compress_ids(cell_to_bgcell)
 @test ccell_to_first_cell == [1, 3, 4, 6, 7, 8, 10, 11, 13]
 
-ccell_to_mat, ccell_to_bgcell = compress(cell_mat,cell_to_bgcell,ccell_to_first_cell)
-@test length(ccell_to_mat) == length(ccell_to_bgcell)
+ccell_to_mat= compress_contributions(cell_mat,cell_to_bgcell,ccell_to_first_cell)
 @test length(ccell_to_mat) == 8
-@test ccell_to_bgcell == cell_to_bgcell[ccell_to_first_cell[1:end-1]]
 @test ccell_to_mat[1] == 2*ones(3,3)
 @test ccell_to_mat[1] == 2*ones(3,3)
 @test ccell_to_mat[2] == ones(3,3)
@@ -36,8 +34,7 @@ cache = array_cache(ccell_to_mat)
 @test getindex!(cache,ccell_to_mat,1) == 2*ones(3,3)
 @test getindex!(cache,ccell_to_mat,2) == ones(3,3)
 
-ccell_to_vec, ccell_to_bgcell = compress(cell_vec,cell_to_bgcell,ccell_to_first_cell)
-@test ccell_to_bgcell == cell_to_bgcell[ccell_to_first_cell[1:end-1]]
+ccell_to_vec = compress_contributions(cell_vec,cell_to_bgcell,ccell_to_first_cell)
 @test ccell_to_vec[1] == 2*ones(3)
 @test ccell_to_vec[1] == 2*ones(3)
 @test ccell_to_vec[2] == ones(3)
@@ -50,8 +47,7 @@ cache = array_cache(ccell_to_vec)
 @test getindex!(cache,ccell_to_vec,1) == 2*ones(3)
 @test getindex!(cache,ccell_to_vec,2) == ones(3)
 
-ccell_to_matvec, ccell_to_bgcell = compress(cell_matvec,cell_to_bgcell,ccell_to_first_cell)
-@test ccell_to_bgcell == cell_to_bgcell[ccell_to_first_cell[1:end-1]]
+ccell_to_matvec = compress_contributions(cell_matvec,cell_to_bgcell,ccell_to_first_cell)
 @test ccell_to_matvec[1] == (2*ones(3,3), 2*ones(3))
 @test ccell_to_matvec[1] == (2*ones(3,3), 2*ones(3))
 @test ccell_to_matvec[2] == (ones(3,3)  , ones(3)  )

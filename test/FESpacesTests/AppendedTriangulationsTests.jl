@@ -63,4 +63,8 @@ cellmat = integrate( ∇(dv)⋅∇(du), quad )
 @test isa(cellmat.a,Fill)
 @test isa(cellmat.b,Fill)
 
+dΩ = Measure(Ω,2)
+a(u,v) = ∫(u*v)dΩ
+A = assemble_matrix(a,V,V)
+
 end # module

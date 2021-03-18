@@ -40,6 +40,7 @@ using Test
 
 @testset "CompressedCellArrays" begin include("CompressedCellArraysTests.jl") end
 
+@testset "BoundaryDiscreteModels" begin include("BoundaryDiscreteModelsTests.jl") end
 
 #
 #@testset "CellFields" begin include("CellFieldsTests.jl") end

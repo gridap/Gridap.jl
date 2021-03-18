@@ -95,7 +95,8 @@ export is_oriented
 export is_regular
 export expand_cell_data
 export compress_cell_data
-export compress
+export compress_contributions
+export compress_ids
 
 export UnstructuredGridTopology
 
@@ -161,6 +162,7 @@ export get_triangulation
 
 export UnstructuredDiscreteModel
 export CartesianDiscreteModel
+export BoundaryDiscreteModel
 
 export BoundaryTriangulation
 export DiscreteModelPortion
@@ -219,5 +221,7 @@ include("RestrictedDiscreteModels.jl")
 include("AppendedTriangulations.jl")
 
 include("CompressedCellArrays.jl")
+
+include("BoundaryDiscreteModel.jl")
 
 end # module
