@@ -77,7 +77,7 @@ function CellConformity(cell_fe::CellFE,cell_conf::Nothing)
 end
 
 function CellConformity(cell_fe::CellFE,cell_conf::CellConformity)
-  @assert length(cell_fe.cell_ctype) == length(cell_fe.cell_ctype)
+  @assert length(cell_fe.cell_ctype) == length(cell_conf.cell_ctype)
   cell_conf
 end
 
