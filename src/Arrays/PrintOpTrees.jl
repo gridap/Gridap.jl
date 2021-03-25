@@ -31,7 +31,7 @@ function print_node(io,n::TreeNode,a)
 end
 
 function print_op_tree(a,args...;kwargs...)
-  print_op_tree(stdin,a,args...;kwargs...)
+  print_op_tree(stdout,a,args...;kwargs...)
 end
 
 function print_op_tree(io::IO,a,args...;showid=false,kwargs...)

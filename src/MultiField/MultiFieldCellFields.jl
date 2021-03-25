@@ -16,7 +16,7 @@ struct MultiFieldCellField{DS<:DomainStyle} <: CellField
     end
 
     trian = get_triangulation(f1)
-    @check all(map(i-> get_triangulation(i) === trian,single_fields))
+    #@check all(map(i-> get_triangulation(i) === trian,single_fields))
 
     new{typeof(domain_style)}(single_fields,trian,domain_style)
   end

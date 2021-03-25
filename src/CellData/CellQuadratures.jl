@@ -71,6 +71,8 @@ function integrate(f::CellField,quad::CellQuadrature)
     nothing
   elseif have_compatible_domains(trian_f,get_background_triangulation(trian_x))
     nothing
+  elseif have_compatible_domains(get_background_triangulation(trian_f),get_background_triangulation(trian_x))
+    nothing
   elseif have_compatible_domains(trian_x,get_background_triangulation(trian_f))
     @unreachable """\n
     CellField objects defined on a sub-triangulation cannot be integrated

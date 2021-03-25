@@ -77,7 +77,7 @@ function CellConformity(cell_fe::CellFE,cell_conf::Nothing)
 end
 
 function CellConformity(cell_fe::CellFE,cell_conf::CellConformity)
-  @assert length(cell_fe.cell_ctype) == length(cell_fe.cell_ctype)
+  @assert length(cell_fe.cell_ctype) == length(cell_conf.cell_ctype)
   cell_conf
 end
 
@@ -173,7 +173,7 @@ end
 
 function compute_cell_space(cell_fe,trian::Triangulation)
   cell_shapefuns, cell_dof_basis, d1, d2 = _compute_cell_space(cell_fe,trian)
-  FEBasis(cell_shapefuns,trian,TestBasis(),d1), CellDof(cell_dof_basis,trian,d2)
+  SingleFieldFEBasis(cell_shapefuns,trian,TestBasis(),d1), CellDof(cell_dof_basis,trian,d2)
 end
 
 function _compute_cell_space(cell_fe::CellFE,trian::Triangulation)

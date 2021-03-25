@@ -49,7 +49,7 @@ op = AffineFEOperator(a,l,X,Y)
 xh = zero(X)
 b = residual(op,xh)
 A = jacobian(op,xh)
-test_fe_operator(op,get_free_values(xh),b)
+test_fe_operator(op,get_free_dof_values(xh),b)
 
 r((u,p),(v,q)) = ∫( v*(u*u) + v*p*u - q*p - v*4 + q )*dΩ
 j((u,p),(du,dp),(v,q)) = ∫(2*v*u*du + v*dp*u + v*p*du - q*dp)*dΩ
@@ -58,7 +58,7 @@ op = FEOperator(r,j,X,Y)
 xh = zero(X)
 b = residual(op,xh)
 A = jacobian(op,xh)
-test_fe_operator(op,get_free_values(xh),b)
+test_fe_operator(op,get_free_dof_values(xh),b)
 
 op_auto = FEOperator(r,X,Y)
 A_auto = jacobian(op_auto,xh)

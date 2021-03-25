@@ -79,7 +79,17 @@ evaluate!(cache,::Broadcasting{typeof(∇∇)},a::Field) = ∇∇(a)
 lazy_map(::Broadcasting{typeof(∇)},a::AbstractArray{<:Field}) = lazy_map(∇,a)
 lazy_map(::Broadcasting{typeof(∇∇)},a::AbstractArray{<:Field}) = lazy_map(∇∇,a)
 
-push_∇(∇a::Field,ϕ::Field) = inv(∇(ϕ))⋅∇a
+push_∇(∇a::Field,ϕ::Field) = pinvJt(∇(ϕ))⋅∇a
+
+@inline function pinvJt(Jt::MultiValue{Tuple{D,D}}) where D
+  inv(Jt)
+end
+
+@inline function pinvJt(Jt::MultiValue{Tuple{D1,D2}}) where {D1,D2}
+  @check D1 < D2
+  J = transpose(Jt)
+  transpose(inv(Jt⋅J)⋅Jt)
+end
 
 function push_∇∇(∇∇a::Field,ϕ::Field)
   @notimplemented """\n
@@ -228,6 +238,8 @@ struct ConstantField{T<:Number} <: Field
   object::T
 end
 
+@inline constant_field(a) = ConstantField(a)
+
 Base.zero(::Type{ConstantField{T}}) where T = ConstantField(zero(T))
 
 @inline function evaluate!(c,f::ConstantField,x::Point)
@@ -268,6 +280,12 @@ function evaluate!(c,f::FieldGradient{N,<:ConstantField},x::AbstractArray{<:Poin
     fill!(c.array,zero(eltype(c)))
   end
   c.array
+end
+
+function lazy_map(::Operation{typeof(inv)},a::LazyArray{<:Fill{typeof(constant_field)}})
+  v = a.args[1]
+  vinv = lazy_map(inv,v)
+  lazy_map(constant_field,vinv)
 end
 
 ## Make Function behave like Field

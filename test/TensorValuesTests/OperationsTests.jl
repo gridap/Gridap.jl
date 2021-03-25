@@ -16,6 +16,14 @@ b = VectorValue(1,3,3)
 @test (a >= b) == false
 @test (a > b) == false
 
+@test VectorValue(1,2,3) == VectorValue(1.0,2.0,3.0)
+@test VectorValue(1,2,3) == VectorValue(1+0im, 2+0im, 3+0im)
+@test VectorValue(1,2,3) ≠ VectorValue(1,2)
+@test VectorValue(1,2,3) ≠ SymTensorValue(1,2,3)
+@test iszero(VectorValue(1,2,3) - VectorValue(1.0,2.0,3.0))
+@test iszero(zero(VectorValue(1,2,3)))
+@test isapprox(VectorValue(1,2,3), VectorValue(1.0,2.0,3.0))
+
 a = VectorValue(1,2,3)
 b = VectorValue(2,1,6)
 

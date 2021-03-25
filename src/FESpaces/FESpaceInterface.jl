@@ -3,7 +3,7 @@ abstract type FEFunction <: CellField end
 
 """
 """
-function get_free_values(f::FEFunction)
+function get_free_dof_values(f::FEFunction)
   @abstractmethod
 end
 
@@ -38,11 +38,11 @@ end
 """
 """
 function test_fe_function(f::FEFunction)
-  free_values = get_free_values(f)
+  trian = get_triangulation(f)
+  free_values = get_free_dof_values(f)
   fe_space = get_fe_space(f)
   @test length(free_values) == num_free_dofs(fe_space)
-  cell_values = get_cell_dof_values(f)
-  trian = get_triangulation(f)
+  cell_values = get_cell_dof_values(f,trian)
   @test length(cell_values) == num_cells(trian)
 end
 
@@ -52,9 +52,13 @@ abstract type FESpace <: GridapType end
 
 """
 """
-function num_free_dofs(f::FESpace)
+function get_free_dof_ids(f::FESpace)
   @abstractmethod
 end
+
+"""
+"""
+num_free_dofs(f::FESpace) = length(get_free_dof_ids(f))
 
 """
 """
@@ -142,7 +146,7 @@ function get_cell_shapefuns_trial(f::FESpace)
   v = get_cell_shapefuns(f)
   cell_v = get_data(v)
   cell_u = lazy_map(transpose,cell_v)
-  FEBasis(cell_u,get_triangulation(v),TrialBasis(),DomainStyle(v))
+  SingleFieldFEBasis(cell_u,get_triangulation(v),TrialBasis(),DomainStyle(v))
 end
 
 # Skeleton-related
@@ -151,12 +155,16 @@ abstract type BasisStyle end
 struct TrialBasis <: BasisStyle end
 struct TestBasis <: BasisStyle end
 
-struct FEBasis{BS<:BasisStyle,DS<:DomainStyle} <: CellField
+abstract type FEBasis <: CellField end
+BasisStyle(::T) where T <: FEBasis = BasisStyle(T)
+DomainStyle(::T) where T <: FEBasis = DomainStyle(T)
+
+struct SingleFieldFEBasis{BS<:BasisStyle,DS<:DomainStyle} <: FEBasis
   cell_basis::AbstractArray{<:AbstractArray{<:Field}}
   trian::Triangulation
   basis_style::BS
   domain_style::DS
-  function FEBasis(
+  function SingleFieldFEBasis(
     cell_basis::AbstractArray{<:AbstractArray{<:Field}},
     trian::Triangulation,
     basis_style::BasisStyle,
@@ -168,20 +176,20 @@ struct FEBasis{BS<:BasisStyle,DS<:DomainStyle} <: CellField
   end
 end
 
-get_data(f::FEBasis) = f.cell_basis
-get_triangulation(f::FEBasis) = f.trian
-BasisStyle(::Type{FEBasis{BS,DS}}) where {BS,DS} = BS()
-BasisStyle(::T) where T <: FEBasis = BasisStyle(T)
-DomainStyle(::Type{FEBasis{BS,DS}}) where {BS,DS} = DS()
-function gradient(a::FEBasis)
+get_data(f::SingleFieldFEBasis) = f.cell_basis
+get_triangulation(f::SingleFieldFEBasis) = f.trian
+BasisStyle(::Type{SingleFieldFEBasis{BS,DS}}) where {BS,DS} = BS()
+DomainStyle(::Type{SingleFieldFEBasis{BS,DS}}) where {BS,DS} = DS()
+function gradient(a::SingleFieldFEBasis)
   f = GenericCellField(a.cell_basis,a.trian,a.domain_style)
-  FEBasis(get_data(gradient(f)),a.trian,a.basis_style,a.domain_style)
+  SingleFieldFEBasis(get_data(gradient(f)),a.trian,a.basis_style,a.domain_style)
 end
-function ∇∇(a::FEBasis)
+function ∇∇(a::SingleFieldFEBasis)
   f = GenericCellField(a.cell_basis,a.trian,a.domain_style)
-  FEBasis(get_data(∇∇(f)),a.trian,a.basis_style,a.domain_style)
+  SingleFieldFEBasis(get_data(∇∇(f)),a.trian,a.basis_style,a.domain_style)
 end
 
+# We implement this for FEBasis since MultiFieldFEBasis will use this code
 function change_domain_skeleton(a::FEBasis,trian::SkeletonTriangulation,target_domain::DomainStyle)
   a_on_plus_trian = change_domain(a,trian.plus,target_domain)
   a_on_minus_trian = change_domain(a,trian.minus,target_domain)
@@ -231,15 +239,20 @@ has_constraints(::Type{T}) where T <:FESpace = ConstraintStyle(T) == Constrained
 has_constraints(::T) where T <: FESpace = has_constraints(T)
 
 function get_cell_constraints(f::FESpace)
-  get_cell_constraints(f,ConstraintStyle(f))
+  get_cell_constraints(f,get_triangulation(f),ConstraintStyle(f))
 end
 
-function get_cell_constraints(f,::UnConstrained)
-  cell_axes = lazy_map(axes,get_data(get_cell_shapefuns(f)))
+function get_cell_constraints(f::FESpace,trian::Triangulation)
+  get_cell_constraints(f,trian,ConstraintStyle(f))
+end
+
+function get_cell_constraints(f,trian::Triangulation,::UnConstrained)
+  cell_ids = get_cell_dof_ids(f,trian)
+  cell_axes = lazy_map(axes,cell_ids)
   identity_constraints(cell_axes)
 end
 
-function get_cell_constraints(f,::Constrained)
+function get_cell_constraints(f,::Triangulation,::Constrained)
   @abstractmethod
 end
 
@@ -265,14 +278,19 @@ function get_cell_constraints(f::FESpace,cellids::SkeletonPair)
 end
 
 function get_cell_isconstrained(f::FESpace)
-  get_cell_isconstrained(f,ConstraintStyle(f))
+  trian = get_triangulation(f)
+  get_cell_isconstrained(f,trian,ConstraintStyle(f))
 end
 
-function get_cell_isconstrained(f,::UnConstrained)
-  Fill(false,length(get_cell_dof_ids(f)))
+function get_cell_isconstrained(f::FESpace,trian::Triangulation)
+  get_cell_isconstrained(f,trian,ConstraintStyle(f))
 end
 
-function get_cell_isconstrained(f,::Constrained)
+function get_cell_isconstrained(f,trian::Triangulation,::UnConstrained)
+  Fill(false,num_cells(trian))
+end
+
+function get_cell_isconstrained(f,trian::Triangulation,::Constrained)
   @abstractmethod
 end
 
@@ -328,10 +346,10 @@ function test_fe_space(f::FESpace)
   fe_basis = get_cell_shapefuns(f)
   @test isa(has_constraints(f),Bool)
   @test isa(has_constraints(typeof(f)),Bool)
-  @test length(get_cell_dof_ids(f)) == num_cells(fe_basis)
-  @test length(get_cell_constraints(f)) == num_cells(fe_basis)
-  @test length(get_cell_isconstrained(f)) == num_cells(fe_basis)
-  @test CellField(f,get_cell_dof_ids(f)) != nothing
+  @test length(get_cell_dof_ids(f,trian)) == num_cells(fe_basis)
+  @test length(get_cell_constraints(f,trian)) == num_cells(fe_basis)
+  @test length(get_cell_isconstrained(f,trian)) == num_cells(fe_basis)
+  @test CellField(f,get_cell_dof_ids(f,trian)) != nothing
 end
 
 function test_fe_space(f::FESpace,matvecdata,matdata,vecdata)

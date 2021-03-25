@@ -48,7 +48,7 @@ end
 function push_∇∇(∇∇a::Field,ϕ::AffineMap)
   # Assuming ϕ is affine map
   Jt = ∇(ϕ)
-  Jt_inv = inv(Jt)
+  Jt_inv = pinvJt(Jt)
   Operation(push_∇∇)(∇∇a, Jt_inv)
 end
 
@@ -56,12 +56,16 @@ function push_∇∇(∇∇a::Number,Jt_inv::MultiValue{Tuple{D,D}} where D)
   Jt_inv⋅Jt_inv⋅∇∇a
 end
 
+function push_∇∇(∇∇a::Number,Jt_inv::MultiValue{Tuple{D1,D2}} where {D1,D2})
+  Jt_inv⋅∇∇a⋅transpose(Jt_inv)
+end
+
 function lazy_map(
   k::Broadcasting{typeof(push_∇∇)},
   cell_∇∇a::AbstractArray,
   cell_map::AbstractArray{<:AffineMap})
   cell_Jt = lazy_map(∇,cell_map)
-  cell_invJt = lazy_map(Operation(inv),cell_Jt)
+  cell_invJt = lazy_map(Operation(pinvJt),cell_Jt)
   lazy_map(Broadcasting(Operation(push_∇∇)),cell_∇∇a,cell_invJt)
 end
 
@@ -82,3 +86,9 @@ function inverse_map(f::AffineMap)
   x0 = -y0⋅invJt
   AffineMap(invJt,x0)
 end
+
+function lazy_map(::typeof(∇),a::LazyArray{<:Fill{typeof(affine_map)}})
+  gradients = a.args[1]
+  lazy_map(constant_field,gradients)
+end
+

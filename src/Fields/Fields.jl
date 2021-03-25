@@ -48,6 +48,7 @@ export return_cache
 export Field
 export GenericField
 export ConstantField
+export constant_field
 export FieldGradient
 export FieldGradientArray
 export ZeroField
@@ -57,6 +58,7 @@ export Point
 export inverse_map
 
 export AffineMap
+export affine_map
 
 export gradient
 export ∇
@@ -64,6 +66,7 @@ export ∇∇
 export gradient_type
 export push_∇
 export push_∇∇
+export pinvJt
 
 export curl
 export grad2curl

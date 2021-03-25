@@ -57,7 +57,7 @@ import Gridap.Algebra: allocate_matrix
 import Gridap.Algebra: allocate_matrix_and_vector
 
 export FEFunction
-export get_free_values
+export get_free_dof_values
 export get_cell_dof_values
 export get_fe_space
 export test_fe_function
@@ -67,6 +67,7 @@ export ConstraintStyle
 export Constrained
 export UnConstrained
 export num_free_dofs
+export get_free_dof_ids
 export zero_free_values
 export EvaluationFunction
 export get_cell_dof_ids
@@ -82,6 +83,7 @@ export SingleFieldFESpace
 export SingleFieldFEFunction
 export get_cell_dof_basis
 export num_dirichlet_dofs
+export get_dirichlet_dof_ids
 export zero_dirichlet_values
 export num_dirichlet_tags
 export get_dirichlet_dof_tag
@@ -114,6 +116,9 @@ export TrialFESpace!
 export HomogeneousTrialFESpace
 export HomogeneousTrialFESpace!
 
+export FEBasis
+export BasisStyle
+
 export Assembler
 export AssemblyStrategy
 export row_map
@@ -143,12 +148,12 @@ export get_matrix_type
 export get_vector_type
 export SparseMatrixAssembler
 export GenericSparseMatrixAssembler
-export count_matrix_nnz_coo
-export count_matrix_and_vector_nnz_coo
-export fill_matrix_coo_symbolic!
-export fill_matrix_and_vector_coo_symbolic!
-export fill_matrix_coo_numeric!
-export fill_matrix_and_vector_coo_numeric!
+export symbolic_loop_matrix!
+export symbolic_loop_vector!
+export symbolic_loop_matrix_and_vector!
+export numeric_loop_matrix!
+export numeric_loop_vector!
+export numeric_loop_matrix_and_vector!
 export test_sparse_matrix_assembler
 
 export FEOperator
