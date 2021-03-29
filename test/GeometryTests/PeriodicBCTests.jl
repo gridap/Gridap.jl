@@ -5,7 +5,6 @@ using Gridap.Geometry
 
 using Test
 
-@test_broken begin
 
 ## 2D mesh with periodic BC in x
 model = CartesianDiscreteModel((0,1,0,1),(3,3);isperiodic=(true,false))
@@ -139,6 +138,4 @@ model = CartesianDiscreteModel((0,1,0,1),(3,3);isperiodic=(true,true))
    [4, 7], [4, 6], [4, 5], [5, 8], [5, 6], [6, 9],
    [7, 9], [7, 8], [8, 9]]
 
-true
-end
 end #module
