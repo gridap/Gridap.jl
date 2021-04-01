@@ -104,7 +104,7 @@ function  _free_and_dirichlet_values_fill!(
       elseif dof < 0
         dirichlet_vals[-dof] = val
       else
-        @unreachable "dof ids either positibe or negative, not zero"
+        @unreachable "dof ids either positive or negative, not zero"
       end
     end
   end
