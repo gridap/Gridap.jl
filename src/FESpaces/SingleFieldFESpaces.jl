@@ -228,9 +228,9 @@ function get_cell_dof_values(f::SingleFieldFEFunction,trian::Triangulation)
     cell_to_Vcell = get_cell_to_bgcell(trian,trian_f)
     get_cell_dof_values(f,cell_to_Vcell)
   elseif have_compatible_domains(
-    trian_V,get_background_triangulation(get_background_triangulation(trian)))
+    trian_f,get_background_triangulation(get_background_triangulation(trian)))
     bg_trian = get_background_triangulation(trian)
-    bg_cell_dof_values = get_cell_dof_values(V,bg_trian)
+    bg_cell_dof_values = get_cell_dof_values(f,bg_trian)
     cell_to_bgcell = get_cell_to_bgcell(trian)
     get_cell_dof_values(bg_cell_dof_values,cell_to_bgcell)
   else
