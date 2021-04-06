@@ -4,10 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.5] - 2021-04-06
+
+### Fixed
+- Spurious run-time dispatch in `LazyArray` with important performance implications. Since commit [0498a16](https://github.com/gridap/Gridap.jl/commit/0498a16cc264c7c7c1cff4ea471e51bf0786fb06).
+
 ## [0.15.4] - 2021-03-29
 
 ### Fixed
-- Bug in `CartesianDiscreteModel` with periodic boundary conditions that shows up in Julia 1.6 but not in Julia 1.5. Since commit [da005cf](https://github.com/gridap/Gridap.jl/commit/da005cf4cde68617f92d76744e307798ef7e8340)
+- Bug in `CartesianDiscreteModel` with periodic boundary conditions that shows up in Julia 1.6 but not in Julia 1.5. Since commit [da005cf](https://github.com/gridap/Gridap.jl/commit/da005cf4cde68617f92d76744e307798ef7e8340).
 
 ## [0.15.3] - 2021-03-16
 
