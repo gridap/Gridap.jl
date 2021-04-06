@@ -27,3 +27,44 @@ end
  push!(V,v)
  nothing
 end
+
+@inline function add_entries!(
+  combine::Function,
+  A::SparseMatrixCSC,
+  vs::AbstractMatrix{<:Number},
+  is,js)
+
+  if issorted(is)
+    nz = A.nzval
+    ptrs = A.colptr
+    rows = A.rowval
+    for (lj,j) in enumerate(js)
+      if j>0
+        pini = ptrs[j]
+        pend = ptrs[j+1]-1
+        li = 1
+        for p in pini:pend
+          _i = rows[p]
+          if _i == is[li]
+            vij = vs[li,lj]
+            Aij = nz[p]
+            nz[p] = combine(Aij,vij)
+            li += 1
+          end
+        end
+      end
+    end
+  else
+    for (lj,j) in enumerate(js)
+      if j>0
+        for (li,i) in enumerate(is)
+          if i>0
+            vij = vs[li,lj]
+            add_entry!(combine,A,vij,i,j)
+          end
+        end
+      end
+    end
+  end
+  A
+end
