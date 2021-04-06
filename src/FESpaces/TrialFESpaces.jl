@@ -99,6 +99,8 @@ get_cell_constraints(f::TrialFESpace) = get_cell_constraints(f.space)
 
 get_dirichlet_dof_ids(f::TrialFESpace) = get_dirichlet_dof_ids(f.space)
 
+get_cell_is_dirichlet(f::TrialFESpace) = get_cell_is_dirichlet(f.space)
+
 zero_dirichlet_values(f::TrialFESpace) = zero_dirichlet_values(f.space)
 
 num_dirichlet_tags(f::TrialFESpace) = num_dirichlet_tags(f.space)
