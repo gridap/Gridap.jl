@@ -109,6 +109,32 @@ function get_cell_constraints(V::SingleFieldFESpace,trian::Triangulation)
   end
 end
 
+function get_cell_is_dirichlet(V::SingleFieldFESpace,trian::Triangulation)
+  trian_V = get_triangulation(V)
+  if have_compatible_domains(trian_V,trian)
+    get_cell_is_dirichlet(V)
+  elseif have_compatible_domains(trian_V,get_background_triangulation(trian))
+    get_cell_is_dirichlet(V,get_cell_to_bgcell(trian))
+  elseif have_compatible_domains(
+    get_background_triangulation(trian_V),get_background_triangulation(trian))
+    cell_to_Vcell = get_cell_to_bgcell(trian,trian_V)
+    get_cell_is_dirichlet(V,cell_to_Vcell)
+  elseif have_compatible_domains(
+    trian_V,get_background_triangulation(get_background_triangulation(trian)))
+    bg_trian = get_background_triangulation(trian)
+    bg_cell_is_dirichlet = get_cell_is_dirichlet(V,bg_trian)
+    cell_to_bgcell = get_cell_to_bgcell(trian)
+    get_cell_is_dirichlet(bg_cell_is_dirichlet,cell_to_bgcell)
+  else
+    @unreachable
+  end
+end
+
+function get_cell_is_dirichlet(V::SingleFieldFESpace)
+  trian = get_triangulation(V)
+  Fill(true,num_cells(trian))
+end
+
 """
 """
 function test_single_field_fe_space(f::SingleFieldFESpace,pred=(==))
