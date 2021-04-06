@@ -17,8 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Types `SparseMatrixCSR` and `SymSparseMatrixCSR` have been moved to the registered package [`SparseMatricesCSR`](https://github.com/gridap/SparseMatricesCSR.jl). To use them simply add `SparseMatricesCSR` into your environment and type `using SparseMatricesCSR`. Since  Since PR [#568](https://github.com/gridap/Gridap.jl/pull/568).
 
-## [0.15.5] - 2021-04-06
-
 ### Fixed
 - Spurious run-time dispatch in `LazyArray` with important performance implications. Since commit [0498a16](https://github.com/gridap/Gridap.jl/commit/0498a16cc264c7c7c1cff4ea471e51bf0786fb06).
 
