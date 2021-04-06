@@ -13,20 +13,27 @@ function get_cell_dof_values(f::FEFunction)
   @abstractmethod
 end
 
-function get_cell_dof_values(f::FEFunction,cellids::AbstractArray)
-  cell_values = get_cell_dof_values(f)
-  lazy_map(Reindex(cell_values),cellids)
+function get_cell_dof_entries(cell_entries::AbstractArray,cellids::AbstractArray)
+  lazy_map(Reindex(cell_entries),cellids)
 end
 
-function get_cell_dof_values(f::FEFunction,cellids::SkeletonPair)
-  cell_values_plus = get_cell_dof_values(f,cellids.plus)
-  cell_values_minus = get_cell_dof_values(f,cellids.minus)
-  cell_axes_plus = lazy_map(axes,cell_values_plus)
-  cell_axes_minus = lazy_map(axes,cell_values_minus)
+function get_cell_dof_entries(cell_entries::AbstractArray,cellids::SkeletonPair)
+  cell_entries_plus = get_cell_dof_entries(cell_entries,cellids.plus)
+  cell_entries_minus = get_cell_dof_entries(cell_entries,cellids.minus)
+  cell_axes_plus = lazy_map(axes,cell_entries_plus)
+  cell_axes_minus = lazy_map(axes,cell_entries_minus)
   cell_axes = lazy_map(cell_axes_plus,cell_axes_minus) do axp, axm
     (append_ranges([axp[1],axm[1]]),)
   end
-  lazy_map(BlockArrayCooMap((2,),[(1,),(2,)]),cell_axes,cell_values_plus,cell_values_minus)
+  lazy_map(BlockArrayCooMap((2,),[(1,),(2,)]),cell_axes,cell_entries_plus,cell_entries_minus)
+end
+
+function get_cell_dof_values(f::FEFunction,cellids)
+  get_cell_dof_entries(get_cell_dof_values(f),cellids)
+end
+
+function get_cell_dof_values(cell_entries::AbstractArray,cellids)
+  get_cell_dof_entries(cell_entries,cellids)
 end
 
 """
@@ -114,20 +121,12 @@ function get_cell_dof_ids(f::FESpace)
   @abstractmethod
 end
 
-function get_cell_dof_ids(f::FESpace,cellids::AbstractArray)
-  cell_dof_ids = get_cell_dof_ids(f)
-  lazy_map(Reindex(cell_dof_ids),cellids)
+function get_cell_dof_ids(f::FESpace,cellids)
+  get_cell_dof_entries(get_cell_dof_ids(f),cellids)
 end
 
-function get_cell_dof_ids(f::FESpace,cellids::SkeletonPair)
-  cell_ids_plus = get_cell_dof_ids(f,cellids.plus)
-  cell_ids_minus = get_cell_dof_ids(f,cellids.minus)
-  cell_axes_plus = lazy_map(axes,cell_ids_plus)
-  cell_axes_minus = lazy_map(axes,cell_ids_minus)
-  cell_axes = lazy_map(cell_axes_plus,cell_axes_minus) do axp, axm
-    (append_ranges([axp[1],axm[1]]),)
-  end
-  lazy_map(BlockArrayCooMap((2,),[(1,),(2,)]),cell_axes,cell_ids_plus,cell_ids_minus)
+function get_cell_dof_ids(cell_entries::AbstractArray,cellids)
+  get_cell_dof_entries(cell_entries,cellids)
 end
 
 """
@@ -257,12 +256,16 @@ function get_cell_constraints(f,::Triangulation,::Constrained)
 end
 
 function get_cell_constraints(f::FESpace,cellids::AbstractArray)
-  lazy_map(Reindex(get_cell_constraints(f)),cellids)
+  get_cell_dof_entries(get_cell_constraints(f),cellids)
 end
 
-function get_cell_constraints(f::FESpace,cellids::SkeletonPair)
-  cell_constraints_plus = get_cell_constraints(f,cellids.plus)
-  cell_constraints_minus = get_cell_constraints(f,cellids.minus)
+function get_cell_constraints(cell_entries::AbstractArray,cellids::AbstractArray)
+  get_cell_dof_entries(cell_entries,cellids)
+end
+
+function get_cell_constraints(cell_entries::AbstractArray,cellids::SkeletonPair)
+  cell_constraints_plus = get_cell_constraints(cell_entries,cellids.plus)
+  cell_constraints_minus = get_cell_constraints(cell_entries,cellids.minus)
   cell_axes_plus = lazy_map(axes,cell_constraints_plus)
   cell_axes_minus = lazy_map(axes,cell_constraints_minus)
   cell_axes = lazy_map(cell_axes_plus,cell_axes_minus) do axp, axm
@@ -275,6 +278,10 @@ function get_cell_constraints(f::FESpace,cellids::SkeletonPair)
     cell_axes,
     cell_constraints_plus,
     cell_constraints_minus)
+end
+
+function get_cell_constraints(f::FESpace,cellids::SkeletonPair)
+  get_cell_constraints(get_cell_constraints(f),cellids)
 end
 
 function get_cell_isconstrained(f::FESpace)
@@ -294,13 +301,17 @@ function get_cell_isconstrained(f,trian::Triangulation,::Constrained)
   @abstractmethod
 end
 
-function get_cell_isconstrained(f::FESpace,cellids::AbstractArray)
-  lazy_map(Reindex(get_cell_isconstrained(f)),cellids)
+function get_cell_isconstrained(f::FESpace,cellids)
+  get_cell_isconstrained(get_cell_isconstrained(f),cellids)
 end
 
-function get_cell_isconstrained(f::FESpace,cellids::SkeletonPair)
-  plus = get_cell_isconstrained(f,cellids.plus)
-  minus = get_cell_isconstrained(f,cellids.minus)
+function get_cell_isconstrained(cell_entries::AbstractArray,cellids::AbstractArray)
+  get_cell_dof_entries(cell_entries,cellids)
+end
+
+function get_cell_isconstrained(cell_entries::AbstractArray,cellids::SkeletonPair)
+  plus = get_cell_isconstrained(cell_entries,cellids.plus)
+  minus = get_cell_isconstrained(cell_entries,cellids.minus)
   lazy_map((l,r)-> l||r,plus,minus)
 end
 

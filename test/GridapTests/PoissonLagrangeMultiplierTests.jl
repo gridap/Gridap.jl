@@ -27,6 +27,8 @@ model_Γ = BoundaryDiscreteModel(Polytope{1},model,Γface_to_bgface)
 Γl = BoundaryTriangulation(model,view(Γface_to_bgface,Γlface_Γface))
 Γr = BoundaryTriangulation(model,view(Γface_to_bgface,Γrface_Γface))
 
+Λ = SkeletonTriangulation(model_Γ)
+
 order = 2
 reffe_u = ReferenceFE(lagrangian,Float64,order)
 reffe_λ = ReferenceFE(lagrangian,Float64,order-1)
@@ -42,7 +44,9 @@ degree = 2*order
 dΩ = Measure(Ω,degree)
 dΓl = Measure(Γl,degree)
 dΓr = Measure(Γr,degree)
+dΛ = Measure(Λ,degree)
 n = get_normal_vector(Γ)
+nΛ = get_normal_vector(Λ)
 
 uₑ(x) = x[1]^2 + x[2]^2
 f(x) = -Δ(uₑ)(x)
@@ -50,7 +54,8 @@ f(x) = -Δ(uₑ)(x)
 # Weak form. Additional non needed terms are added for testing purposes
 a((u,λ),(v,η)) = ∫( ∇(u)⋅∇(v) )dΩ +
                ∫( (u+λ)*(η+v) - u*v - η*λ + 0.0*(n⋅∇(u)-λ)*(n⋅∇(v)-η) )dΓl +
-               ∫( (u+λ)*(η+v) - u*v - η*λ + 0.0*(n⋅∇(u)-λ)*(n⋅∇(v)-η) )dΓr
+               ∫( (u+λ)*(η+v) - u*v - η*λ + 0.0*(n⋅∇(u)-λ)*(n⋅∇(v)-η) )dΓr +
+               ∫( 0.0*jump(n⋅∇(u))*mean(η) )dΛ
 l((v,η)) = ∫( f*v )dΩ + ∫( uₑ*η )dΓl + ∫( uₑ*η )dΓr
 
 op = AffineFEOperator(a,l,X,Y)
