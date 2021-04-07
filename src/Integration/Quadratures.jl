@@ -125,7 +125,13 @@ function Quadrature(p::Polytope,degree)
   if is_n_cube(p)
     quad = Quadrature(p,tensor_product,degree)
   elseif is_simplex(p)
-    quad = Quadrature(p,duffy,degree)
+    D = num_dims(p)
+    if (D==2 && degree in keys(_strang_tri_k2n)) ||
+       (D==3 && degree in keys(_strang_tet_k2n))
+      quad = Quadrature(p,strang,degree)
+    else
+      quad = Quadrature(p,duffy,degree)
+    end
   else
     @notimplemented "Quadratures only implemented for n-cubes and simplices"
   end

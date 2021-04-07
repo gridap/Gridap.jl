@@ -33,6 +33,7 @@ export num_point_dims
 export test_quadrature
 export tensor_product
 export duffy
+export strang
 
 include("Quadratures.jl")
 
@@ -40,6 +41,6 @@ include("TensorProductQuadratures.jl")
 
 include("DuffyQuadratures.jl")
 
-#include("SymLegendreQuadratures.jl")
+include("StrangQuadratures.jl")
 
 end # module
