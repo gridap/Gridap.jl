@@ -60,6 +60,11 @@ cell_measure_N = get_cell_measure(trian_N)
 @test sum(cell_measure) ≈ 1
 @test sum(cell_measure_N) ≈ 6
 
+quad = CellQuadrature(trian,Quadrature(duffy,2))
+s = ∫(1)*quad
+@test sum(s) ≈ 1
+@test ∑(s) ≈ 1
+
 #using Gridap.Visualization
 #writevtk(trian,"trian",celldata=["a"=>cell_measure,"b"=>cell_measure_N])
 

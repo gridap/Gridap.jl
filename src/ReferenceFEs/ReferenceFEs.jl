@@ -16,7 +16,6 @@ using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
-using Gridap.Integration
 
 import Gridap.Arrays: return_cache
 import Gridap.Arrays: evaluate!
@@ -27,10 +26,6 @@ import Gridap.Polynomials: MonomialBasis
 
 import Gridap.Polynomials: get_order
 import Gridap.Polynomials: get_orders
-
-import Gridap.Integration: Quadrature
-import Gridap.Integration: num_dims
-import Gridap.Integration: num_point_dims
 
 import Gridap.Io: to_dict
 import Gridap.Io: from_dict
@@ -60,6 +55,8 @@ export num_vertices
 export num_faces
 export num_facets
 export num_edges
+export num_dims
+export num_point_dims
 export get_facedims
 export get_offsets
 export get_offset

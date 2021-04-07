@@ -24,6 +24,13 @@ function get_weights(q::Quadrature)
   @abstractmethod
 end
 
+"""
+    get_name(q::Quadrature)
+"""
+function get_name(q::Quadrature)
+  @abstractmethod
+end
+
 # Default API
 
 """
@@ -76,16 +83,52 @@ end
 struct GenericQuadrature{D,T} <: Quadrature{D,T}
   coordinates::Vector{Point{D,T}}
   weights::Vector{T}
+  name::String
+end
+
+function GenericQuadrature(
+  coordinates::Vector{Point{D,T}}, weights::Vector{T}) where {D,T}
+  name = "Unknown"
+  GenericQuadrature(coordinates,weights,name)
 end
 
 get_coordinates(q::GenericQuadrature) = q.coordinates
 
 get_weights(q::GenericQuadrature) = q.weights
 
+get_name(q::GenericQuadrature) = q.name
+
 function GenericQuadrature(a::Quadrature)
-  GenericQuadrature(get_coordinates(q),get_weights(a))
+  GenericQuadrature(get_coordinates(q),get_weights(a),get_name(q))
 end
 
 function GenericQuadrature(a::GenericQuadrature)
   a
 end
+
+# Quadrature factory
+
+abstract type QuadratureName end
+
+@noinline function Quadrature(p::Polytope,name::QuadratureName,args...;kwargs...)
+  @unreachable """\n
+  Undefined factory function Quadrature for name $name and the given arguments.
+  """
+end
+
+Quadrature(name::QuadratureName,args...;kwargs...) = (name, args, kwargs)
+
+"""
+    Quadrature(polytope::Polytope{D},degree) where D
+"""
+function Quadrature(p::Polytope,degree)
+  if is_n_cube(p)
+    quad = Quadrature(p,tensor_product,degree)
+  elseif is_simplex(p)
+    quad = Quadrature(p,duffy,degree)
+  else
+    @notimplemented "Quadratures only implemented for n-cubes and simplices"
+  end
+  quad
+end
+
