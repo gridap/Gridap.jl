@@ -82,3 +82,10 @@ get_coordinates(q::GenericQuadrature) = q.coordinates
 
 get_weights(q::GenericQuadrature) = q.weights
 
+function GenericQuadrature(a::Quadrature)
+  GenericQuadrature(get_coordinates(q),get_weights(a))
+end
+
+function GenericQuadrature(a::GenericQuadrature)
+  a
+end
