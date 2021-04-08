@@ -71,4 +71,12 @@ dΩ = Measure(Ω,q1,q2)
 @test isa(dΩ.quad.cell_point,AppendedArray)
 @test isa(dΩ.quad.cell_weight,AppendedArray)
 
+q1 = Quadrature(QUAD,tensor_product,1)
+q2 = Quadrature(QUAD,tensor_product,2)
+dΩ = Measure(Ω,q1,q2)
+@test isa(dΩ.quad.trian,AppendedTriangulation)
+@test isa(dΩ.quad.cell_quad,AppendedArray)
+@test isa(dΩ.quad.cell_point,AppendedArray)
+@test isa(dΩ.quad.cell_weight,AppendedArray)
+
 end # module

@@ -23,6 +23,11 @@ function CellQuadrature(trian::Triangulation,degree::Integer)
   CellQuadrature(trian,cell_quad)
 end
 
+function CellQuadrature(trian::Triangulation,quad::Quadrature)
+  cell_quad = expand_cell_data([quad],get_cell_type(trian))
+  CellQuadrature(trian,cell_quad)
+end
+
 function CellQuadrature(trian::Triangulation,cell_quad::AbstractVector{<:Quadrature})
   ctype_to_quad, cell_to_ctype = compress_cell_data(cell_quad)
   ctype_to_point = map(get_coordinates,ctype_to_quad)
@@ -43,6 +48,10 @@ function CellQuadrature(trian::AppendedTriangulation,degree::Integer)
 end
 
 function CellQuadrature(trian::AppendedTriangulation,quad::Tuple{<:QuadratureName,Any,Any})
+  CellQuadrature(trian,quad,quad)
+end
+
+function CellQuadrature(trian::AppendedTriangulation,quad::Quadrature)
   CellQuadrature(trian,quad,quad)
 end
 
