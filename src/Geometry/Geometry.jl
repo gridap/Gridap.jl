@@ -27,8 +27,6 @@ using Gridap.ReferenceFEs: _get_offsets
 using Gridap.ReferenceFEs: _get_offset
 using Gridap.ReferenceFEs: _find_unique_with_indices
 
-using Gridap.Integration
-
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
 import Gridap.Arrays: get_array
@@ -71,7 +69,7 @@ import Gridap.ReferenceFEs: num_cell_dims
 import Gridap.ReferenceFEs: num_point_dims
 import Gridap.ReferenceFEs: simplexify
 import Gridap.ReferenceFEs: get_facet_normal
-import Gridap.Integration: Quadrature
+import Gridap.ReferenceFEs: Quadrature
 
 export GridTopology
 export num_cells

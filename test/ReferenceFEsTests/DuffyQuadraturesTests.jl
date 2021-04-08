@@ -1,7 +1,6 @@
 module DuffyQuadraturesTests
 
 using Test
-using Gridap.Integration
 using Gridap.ReferenceFEs
 
 degree = 1

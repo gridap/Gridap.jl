@@ -16,7 +16,6 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry
-using Gridap.Integration
 
 import Gridap.Arrays: lazy_append
 import Gridap.Arrays: get_array

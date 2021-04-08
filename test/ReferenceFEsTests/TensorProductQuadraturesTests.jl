@@ -1,6 +1,5 @@
 module TensorProductQuadraturesTests
 
-using Gridap.Integration
 using Gridap.ReferenceFEs
 
 using Test

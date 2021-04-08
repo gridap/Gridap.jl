@@ -7,7 +7,6 @@ using Gridap.Fields
 using Gridap.CellData
 using Gridap.TensorValues
 using Gridap.ReferenceFEs
-using Gridap.Integration
 using Gridap.Geometry
 
 domain = (0,1,0,1)

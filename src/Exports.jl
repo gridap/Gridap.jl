@@ -58,9 +58,6 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish Fields ε
 @publish Fields symmetric_gradient
 
-@publish Integration get_coordinates
-@publish Integration get_weights
-
 @publish ReferenceFEs is_simplex
 @publish ReferenceFEs is_n_cube
 @publish ReferenceFEs simplexify
@@ -140,11 +137,6 @@ using Gridap.CellData: ∫; export ∫
 @publish FESpaces FESpace
 @publish FESpaces TrialFESpace
 @publish FESpaces TestFESpace
-#@publish FESpaces FETerm
-#@publish FESpaces FEEnergy
-#@publish FESpaces AffineFETerm
-#@publish FESpaces LinearFETerm
-#@publish FESpaces FESource
 @publish FESpaces AffineFEOperator
 @publish FESpaces LinearFESolver
 @publish FESpaces get_free_dof_values

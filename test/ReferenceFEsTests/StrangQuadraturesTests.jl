@@ -3,9 +3,8 @@ module StrangQuadraturesTests
 using Test
 using Gridap.Fields
 using Gridap.ReferenceFEs
-using Gridap.Integration
 
-for k in keys(Integration._strang_tri_k2n)
+for k in keys(ReferenceFEs._strang_tri_k2n)
   reffe = ReferenceFE(TRI,lagrangian,Float64,k)
   quad1 = Quadrature(TRI,strang,k)
   quad2 = Quadrature(TRI,duffy,k)
@@ -17,7 +16,7 @@ for k in keys(Integration._strang_tri_k2n)
   #@show (2,k,err)
 end
 
-for k in keys(Integration._strang_tet_k2n)
+for k in keys(ReferenceFEs._strang_tet_k2n)
   reffe = ReferenceFE(TET,lagrangian,Float64,k)
   quad1 = Quadrature(TET,strang,k)
   quad2 = Quadrature(TET,duffy,k)

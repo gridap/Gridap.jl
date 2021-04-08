@@ -17,6 +17,10 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
 
+using QuadGK: gauss
+using FastGaussQuadrature: gaussjacobi
+using FastGaussQuadrature: gausslegendre
+
 import Gridap.Arrays: return_cache
 import Gridap.Arrays: evaluate!
 import Gridap.Arrays: return_type
@@ -170,6 +174,20 @@ export lagrangian
 export raviart_thomas
 export nedelec
 
+export Quadrature
+export QuadratureName
+export GenericQuadrature
+export num_points
+export get_coordinates
+export get_weights
+export get_name
+export num_dims
+export num_point_dims
+export test_quadrature
+export tensor_product
+export duffy
+export strang
+
 include("Polytopes.jl")
 
 include("ExtrusionPolytopes.jl")
@@ -189,6 +207,14 @@ include("SerendipityRefFEs.jl")
 include("PDiscRefFEs.jl")
 
 include("CDLagrangianRefFEs.jl")
+
+include("Quadratures.jl")
+
+include("TensorProductQuadratures.jl")
+
+include("DuffyQuadratures.jl")
+
+include("StrangQuadratures.jl")
 
 include("RaviartThomasRefFEs.jl")
 
