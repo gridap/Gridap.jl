@@ -22,6 +22,14 @@ function compress_ids(cell_to_bgcell::AbstractVector{<:Integer})
   ccell_to_first_cell
 end
 
+function compress_ids(cell_ids,cell_to_bgcell::AbstractVector{<:Integer})
+  ccell_to_first_cell = compress_ids(cell_to_bgcell)
+  nccells = length(ccell_to_first_cell)-1
+  ccell_to_cell = view(ccell_to_first_cell,1:nccells)
+  ccell_ids = view(cell_ids,ccell_to_cell)
+  ccell_ids
+end
+
 function compress_contributions(
   cell_to_mat,
   cell_to_bgcell::AbstractVector{<:Integer},
