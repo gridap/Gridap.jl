@@ -126,8 +126,12 @@ function Quadrature(p::Polytope,degree)
     quad = Quadrature(p,tensor_product,degree)
   elseif is_simplex(p)
     D = num_dims(p)
-    if (D==2 && degree in keys(_strang_tri_k2n)) ||
-       (D==3 && degree in keys(_strang_tet_k2n))
+    #if (D==2 && degree in keys(_strang_tri_k2n)) ||
+    #   (D==3 && degree in keys(_strang_tet_k2n))
+    # For the moment strang only in 3d since
+    # there are some 2d strang quadratures that are not accurate
+    # as implemented here (to investigate why)
+    if (D==3 && degree in keys(_strang_tet_k2n))
       quad = Quadrature(p,strang,degree)
     else
       quad = Quadrature(p,duffy,degree)

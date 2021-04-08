@@ -12,7 +12,9 @@ for k in keys(Integration._strang_tri_k2n)
   f = get_shapefuns(reffe)
   f1 = integrate(f,get_coordinates(quad1),get_weights(quad1))
   f2 = integrate(f,get_coordinates(quad2),get_weights(quad2))
-  @test maximum(f1 .- f2)/maximum(f1) < 1.0e-7
+  err = maximum(abs.(f1 .- f2))/maximum(abs.(f1))
+  @test err < 1.0e-7
+  #@show (2,k,err)
 end
 
 for k in keys(Integration._strang_tet_k2n)
@@ -22,7 +24,9 @@ for k in keys(Integration._strang_tet_k2n)
   f = get_shapefuns(reffe)
   f1 = integrate(f,get_coordinates(quad1),get_weights(quad1))
   f2 = integrate(f,get_coordinates(quad2),get_weights(quad2))
-  @test maximum(f1 .- f2)/maximum(f1) < 1.0e-7
+  err = maximum(abs.(f1 .- f2))/maximum(abs.(f1))
+  @test err < 1.0e-13
+  #@show (3,k,err)
 end
 
 end # module
