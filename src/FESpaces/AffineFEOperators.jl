@@ -36,6 +36,7 @@ function AffineFEOperator(
   matcontribs, veccontribs = weakform(u,v)
   data = collect_cell_matrix_and_vector(trial,test,matcontribs,veccontribs,uhd)
   A,b = assemble_matrix_and_vector(assem,data)
+  GC.gc()
 
   AffineFEOperator(trial,test,A,b)
 end
