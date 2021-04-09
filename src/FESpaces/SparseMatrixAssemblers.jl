@@ -190,7 +190,7 @@ end
 """
 function SparseMatrixAssembler(trial::FESpace,test::FESpace)
   T = get_dof_value_type(trial)
-  matrix_type = SparseMatrixCSC{T,Int}
+  matrix_type = SparseMatrixCSC{T,Int32}
   vector_type = Vector{T}
   strategy = DefaultAssemblyStrategy()
   rows = get_free_dof_ids(test)
