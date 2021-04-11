@@ -91,7 +91,7 @@ function return_cache(::typeof(get_dof_basis),reffe::GenericRefFE{RaviartThomas}
   # element type of the face_moments array.
   D = num_dims(reffe)
   pt = Point{D,et}
-  T=Gridap.Fields.return_type(phi,zero(pt))
+  T=return_type(phi,zero(pt))
   face_moments = [ similar(i,T)  for i in nf_moments ]
 
   Jt_q_cache = return_cache(∇(phi),db.nodes)
