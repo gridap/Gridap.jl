@@ -173,7 +173,7 @@ end
 
 abstract type PushForwardMap <: Map end
 
-function evaluate!(cache,::PushForwardMap,v::AbstractVector{<:Field},phi::Field)
+function evaluate!(cache,::PushForwardMap,v::AbstractVector{<:Field},phi::Field,orientation::Field)
   @abstractmethod
 end
 
@@ -183,18 +183,24 @@ PushForwardMap(reffe::T) where T<:ReferenceFE = PushForwardMap(T)
 
 struct IdentityPushForwardMap <: PushForwardMap end
 
-function evaluate!(cache,::IdentityPushForwardMap,v::AbstractVector{<:Field},phi::Field)
+function evaluate!(cache,::IdentityPushForwardMap,
+                   v::AbstractVector{<:Field},
+                   phi::Field,
+                   orientation::Field)
   v
 end
 
-function lazy_map(::IdentityPushForwardMap,a::AbstractArray,b::AbstractArray)
+function lazy_map(::IdentityPushForwardMap,
+                  a::AbstractArray,
+                  b::AbstractArray,
+                  orientation::Field)
   a
 end
 
 """
 """
-function get_shapefuns(reffe::ReferenceFE,phi::Field)
-  PushForwardMap(reffe)(get_shapefuns(reffe),phi)
+function get_shapefuns(reffe::ReferenceFE,phi::Field,orientation::Field)
+  PushForwardMap(reffe)(get_shapefuns(reffe),phi,orientation)
 end
 
 """
@@ -211,7 +217,10 @@ function get_dof_basis(reffe::ReferenceFE,phi::Field,::PushForwardMap)
   @abstractmethod
 end
 
-function lazy_map(::typeof(get_shapefuns),cell_reffe::AbstractArray,cell_map::AbstractArray)
+function lazy_map(::typeof(get_shapefuns),
+  cell_reffe::AbstractArray,
+  cell_map::AbstractArray,
+  cell_orientation::AbstractArray)
   ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
   ctype_ref_shapefuns = map(get_shapefuns,ctype_reffe)
   cell_ref_shapefuns = expand_cell_data(ctype_ref_shapefuns,cell_ctype)
@@ -219,10 +228,13 @@ function lazy_map(::typeof(get_shapefuns),cell_reffe::AbstractArray,cell_map::Ab
   unique_ks = unique(ctype_k)
   if length(unique_ks) == 1
     k = first(unique_ks)
-    lazy_map(k,cell_ref_shapefuns,cell_map)
+    lazy_map(k,cell_ref_shapefuns,cell_map,cell_orientation)
   else
-    T = return_type(get_shapefuns, testitem(cell_reffe), testitem(cell_map))
-    lazy_map(get_shapefuns,T,cell_reffe,cell_map)
+    T = return_type(get_shapefuns,
+                    testitem(cell_reffe),
+                    testitem(cell_map),
+                    tesitem(cell_orientation))
+    lazy_map(get_shapefuns,T,cell_reffe,cell_map,cell_orientation)
   end
 end
 
