@@ -205,15 +205,15 @@ end
 
 """
 """
-function get_dof_basis(reffe::ReferenceFE,phi::Field)
-  get_dof_basis(reffe,phi,PushForwardMap(reffe))
+function get_dof_basis(reffe::ReferenceFE,phi::Field,orientation::Field)
+  get_dof_basis(reffe,phi,PushForwardMap(reffe),orientation)
 end
 
-function get_dof_basis(reffe::ReferenceFE,phi::Field,::IdentityPushForwardMap)
+function get_dof_basis(reffe::ReferenceFE,phi::Field,::IdentityPushForwardMap,::Field)
   get_dof_basis(reffe)
 end
 
-function get_dof_basis(reffe::ReferenceFE,phi::Field,::PushForwardMap)
+function get_dof_basis(reffe::ReferenceFE,phi::Field,::PushForwardMap,::Field)
   @abstractmethod
 end
 
@@ -238,14 +238,24 @@ function lazy_map(::typeof(get_shapefuns),
   end
 end
 
-function lazy_map(::typeof(get_dof_basis),cell_reffe::AbstractArray,cell_map::AbstractArray)
+function lazy_map(::typeof(get_dof_basis),
+  cell_reffe::AbstractArray,
+  cell_map::AbstractArray,
+  cell_orientation::AbstractArray)
   ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
   if all( map(reffe->PushForwardMap(reffe)==IdentityPushForwardMap(),ctype_reffe) )
     ctype_dof_basis = map(get_dof_basis,ctype_reffe)
     expand_cell_data(ctype_dof_basis,cell_ctype)
   else
-    T = return_type(get_dof_basis, testitem(cell_reffe), testitem(cell_map))
-    lazy_map(get_dof_basis,T,cell_reffe,cell_map)
+    T = return_type(get_dof_basis,
+                    testitem(cell_reffe),
+                    testitem(cell_map),
+                    testitem(cell_orientation))
+    lazy_map(get_dof_basis,
+             T,
+             cell_reffe,
+             cell_map,
+             cell_orientation)
   end
 end
 

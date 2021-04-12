@@ -98,7 +98,7 @@ function FESpace(
     cell_orientation = Fill(ConstantField(false),length(cell_map))
   end
 
-  cell_fe = CellFE(cell_map,cell_reffe)
+  cell_fe = CellFE(cell_map,cell_reffe,cell_orientation)
   FESpace(model,cell_fe;conformity=conf,kwargs...)
 end
 

@@ -73,12 +73,15 @@ function get_face_own_dofs(reffe::GenericRefFE{RaviartThomas}, conf::DivConformi
   get_face_dofs(reffe)
 end
 
-function get_dof_basis(reffe::GenericRefFE{RaviartThomas},phi::Field)
-  cache = return_cache(get_dof_basis,reffe,phi)
-  evaluate!(cache,get_dof_basis,reffe,phi)
+function get_dof_basis(reffe::GenericRefFE{RaviartThomas},phi::Field,orientation::Field)
+  cache = return_cache(get_dof_basis,reffe,phi,orientation)
+  evaluate!(cache,get_dof_basis,reffe,phi,orientation)
 end
 
-function return_cache(::typeof(get_dof_basis),reffe::GenericRefFE{RaviartThomas},phi::Field)
+function return_cache(::typeof(get_dof_basis),
+                      reffe::GenericRefFE{RaviartThomas},
+                      phi::Field,
+                      orientation::Field)
   p = get_polytope(reffe)
   prebasis = get_prebasis(reffe)
   order = get_order(prebasis)
@@ -95,22 +98,29 @@ function return_cache(::typeof(get_dof_basis),reffe::GenericRefFE{RaviartThomas}
   face_moments = [ similar(i,T)  for i in nf_moments ]
 
   Jt_q_cache = return_cache(∇(phi),db.nodes)
-  cache = (db.nodes, db.face_nodes, nf_moments, face_moments, Jt_q_cache)
+  o_q_cache = return_cache(orientation,db.nodes)
+  cache = (db.nodes, db.face_nodes, nf_moments, face_moments, Jt_q_cache,o_q_cache)
   cache
 end
 
 
-function evaluate!(cache,::typeof(get_dof_basis),reffe::GenericRefFE{RaviartThomas},phi::Field)
-  nodes, nf_nodes, nf_moments, face_moments, Jt_q_cache = cache
+function evaluate!(cache,
+                   ::typeof(get_dof_basis),
+                   reffe::GenericRefFE{RaviartThomas},
+                   phi::Field,
+                   orientation::Field)
+  nodes, nf_nodes, nf_moments, face_moments, Jt_q_cache, o_q_cache = cache
 
   Jt_q = evaluate!(Jt_q_cache,∇(phi),nodes)
+  o_q  = evaluate!(o_q_cache,orientation,nodes)
   for face in 1:length(face_moments)
     moments = nf_moments[face]
     if length(moments) > 0
       num_qpoints, num_moments = size(moments)
       for i in 1:num_qpoints
         Jt_q_i = Jt_q[nf_nodes[face][i]]
-        change = meas(Jt_q_i) * pinvJt(Jt_q_i)
+        sign   = (-1)^o_q[nf_nodes[face][i]]
+        change = sign * meas(Jt_q_i) * pinvJt(Jt_q_i)
         for j in 1:num_moments
           face_moments[face][i,j] = change ⋅ nf_moments[face][i,j]
         end
