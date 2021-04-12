@@ -12,7 +12,7 @@ using Test
 
 @time @testset "StokesTaylorHood" begin include("StokesTaylorHoodTests.jl") end
 
-@time @testset "StokesDG" begin @test_broken false end #begin include("StokesDGTests.jl") end
+@time @testset "StokesDG" begin include("StokesDGTests.jl") end
 
 @time @testset "StokesNitsche" begin include("StokesNitscheTests.jl") end
 
@@ -26,6 +26,6 @@ using Test
 
 @time @testset "Biharmonic" begin include("BiharmonicTests.jl") end
 
-@time @testset "PoissonLagrangeMultiplier" begin @test_broken false end #begin include("PoissonLagrangeMultiplierTests.jl") end
+@time @testset "PoissonLagrangeMultiplier" begin include("PoissonLagrangeMultiplierTests.jl") end
 
 end # module
