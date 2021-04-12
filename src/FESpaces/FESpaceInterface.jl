@@ -17,6 +17,11 @@ function get_cell_dof_entries(cell_entries::AbstractArray,cellids::AbstractArray
   lazy_map(Reindex(cell_entries),cellids)
 end
 
+function get_cell_is_dirichlet(f::FEFunction,args...)
+  V = get_fe_space(f)
+  get_cell_is_dirichlet(V,args...)
+end
+
 function get_cell_dof_entries(cell_entries::AbstractArray,cellids::SkeletonPair)
   cell_entries_plus = get_cell_dof_entries(cell_entries,cellids.plus)
   cell_entries_minus = get_cell_dof_entries(cell_entries,cellids.minus)
@@ -341,6 +346,24 @@ function attach_constraints_cols(f::FESpace,cellarr,cellids,::Constrained)
   cellconstr = get_cell_constraints(f,cellids)
   cellmask = get_cell_isconstrained(f,cellids)
   attach_constraints_cols(cellarr,cellconstr,cellmask)
+end
+
+function get_cell_is_dirichlet(f::FESpace,trian::Triangulation)
+  @abstractmethod
+end
+
+function get_cell_is_dirichlet(f::FESpace,cellids)
+  get_cell_is_dirichlet(get_cell_is_dirichlet(f),cellids)
+end
+
+function get_cell_is_dirichlet(cell_entries::AbstractArray,cellids::AbstractArray)
+  get_cell_dof_entries(cell_entries,cellids)
+end
+
+function get_cell_is_dirichlet(cell_entries::AbstractArray,cellids::SkeletonPair)
+  plus = get_cell_is_dirichlet(cell_entries,cellids.plus)
+  minus = get_cell_is_dirichlet(cell_entries,cellids.minus)
+  lazy_map((l,r)-> l||r,plus,minus)
 end
 
 """

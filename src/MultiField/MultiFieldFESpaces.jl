@@ -294,13 +294,59 @@ function FESpaces.get_cell_isconstrained(f::MultiFieldFESpace)
 end
 
 function FESpaces.get_cell_isconstrained(f::MultiFieldFESpace,trian::Triangulation)
-  data = map(space->get_cell_isconstrained(space,trian),f.spaces)
+  data = map(f.spaces) do space
+    trian_i = get_triangulation(space)
+    if have_compatible_domains(trian_i,trian) ||
+      have_compatible_domains(trian_i,get_background_triangulation(trian)) ||
+      have_compatible_domains(
+        trian_i,get_background_triangulation(get_background_triangulation(trian))) ||
+      Geometry.is_included(trian,trian_i)
+      get_cell_isconstrained(space,trian)
+    else
+      Fill(false,num_cells(trian))
+    end
+  end
   lazy_map( (args...) -> +(args...)>0,  data...)
 end
 
 function FESpaces.get_cell_isconstrained(f::MultiFieldFESpace,trian::SkeletonTriangulation)
   plus = get_cell_isconstrained(f,trian.plus)
   minus = get_cell_isconstrained(f,trian.minus)
+  lazy_map((l,r)-> l||r,plus,minus)
+end
+
+function FESpaces.get_cell_is_dirichlet(f::MultiFieldFESpace)
+  msg = """\n
+  This method does not make sense for multi-field
+  since each field can be defined on a different triangulation.
+  Pass a triangulation in the second argument to get
+  the constrain flag for the corresponding cells.
+  """
+  trians = map(get_triangulation,f.spaces)
+  trian = first(trians)
+  @check all(map(t->have_compatible_domains(t,trian),trians)) msg
+  get_cell_is_dirichlet(f,trian)
+end
+
+function FESpaces.get_cell_is_dirichlet(f::MultiFieldFESpace,trian::Triangulation)
+  data = map(f.spaces) do space
+    trian_i = get_triangulation(space)
+    if have_compatible_domains(trian_i,trian) ||
+      have_compatible_domains(trian_i,get_background_triangulation(trian)) ||
+      have_compatible_domains(
+        trian_i,get_background_triangulation(get_background_triangulation(trian))) ||
+      Geometry.is_included(trian,trian_i)
+      get_cell_is_dirichlet(space,trian)
+    else
+      Fill(false,num_cells(trian))
+    end
+  end
+  lazy_map( (args...) -> +(args...)>0,  data...)
+end
+
+function FESpaces.get_cell_is_dirichlet(f::MultiFieldFESpace,trian::SkeletonTriangulation)
+  plus = get_cell_is_dirichlet(f,trian.plus)
+  minus = get_cell_is_dirichlet(f,trian.minus)
   lazy_map((l,r)-> l||r,plus,minus)
 end
 

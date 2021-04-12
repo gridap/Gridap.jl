@@ -5,7 +5,6 @@ using Gridap.Algebra
 using Gridap.Geometry
 using Gridap.FESpaces
 using Gridap.Fields
-using Gridap.Integration
 using Gridap.MultiField
 using Gridap.CellData
 using SparseArrays

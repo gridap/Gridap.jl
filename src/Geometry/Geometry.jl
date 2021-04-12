@@ -69,6 +69,7 @@ import Gridap.ReferenceFEs: num_cell_dims
 import Gridap.ReferenceFEs: num_point_dims
 import Gridap.ReferenceFEs: simplexify
 import Gridap.ReferenceFEs: get_facet_normal
+import Gridap.ReferenceFEs: Quadrature
 
 export GridTopology
 export num_cells
