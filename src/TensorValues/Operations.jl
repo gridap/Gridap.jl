@@ -479,6 +479,17 @@ function inv(a::MultiValue{Tuple{3,3}})
  TensorValue{3}(data)
 end
 
+# Hadamard product (i.e., entry-wise product)
+
+function hadamard(a::VectorValue{D},b::VectorValue{D})  where D
+  r = broadcast(*,a.data,b.data)
+  T = _eltype(*,r,a,b)
+  M = change_eltype(a,T)
+  M(r)
+end
+
+const ⊚ = hadamard
+
 ###############################################################
 # Measure
 ###############################################################

@@ -58,6 +58,8 @@ export ⊗
 export ⋅¹
 export ⋅²
 export double_contraction
+export hadamard
+export ⊚
 
 import Base: show
 import Base: zero, one
