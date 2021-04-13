@@ -116,3 +116,23 @@ Equivalent to
 """
 cross(::typeof(∇),f::Field) = curl(f)
 cross(::typeof(∇),f::Function) = curl(f)
+
+struct ShiftedNabla{N,T}
+  v::VectorValue{N,T}
+end
+
+(+)(::typeof(∇),v::VectorValue) = ShiftedNabla(v)
+(+)(v::VectorValue,::typeof(∇)) = ShiftedNabla(v)
+(-)(::typeof(∇),v::VectorValue) = ShiftedNabla(-v)
+
+function (s::ShiftedNabla)(f)
+  Operation((a,b)->a+s.v⊗b)(gradient(f),f)
+end
+(s::ShiftedNabla)(f::Function) = s(GenericField(f))
+function evaluate!(cache,k::Broadcasting{<:ShiftedNabla},f)
+  s = k.f
+  g = Broadcasting(∇)(f)
+  Broadcasting(Operation((a,b)->a+s.v⊗b))(g,f)
+end
+
+

@@ -344,10 +344,15 @@ end
 
 @inline transpose(f::Field) = f
 
-@inline *(A::Number, B::Field) = ConstantField(A)*B
-@inline *(A::Field, B::Number) = A*ConstantField(B)
-@inline ⋅(A::Number, B::Field) = ConstantField(A)⋅B
-@inline ⋅(A::Field, B::Number) = A⋅ConstantField(B)
+for op in (:+,:-,:*,:⋅,:⊙,:⊗)
+  @eval ($op)(a::Field,b::Number) = Operation($op)(a,ConstantField(b))
+  @eval ($op)(a::Number,b::Field) = Operation($op)(ConstantField(a),b)
+end
+
+#@inline *(A::Number, B::Field) = ConstantField(A)*B
+#@inline *(A::Field, B::Number) = A*ConstantField(B)
+#@inline ⋅(A::Number, B::Field) = ConstantField(A)⋅B
+#@inline ⋅(A::Field, B::Number) = A⋅ConstantField(B)
 
 #@inline *(A::Function, B::Field) = GenericField(A)*B
 #@inline *(A::Field, B::Function) = GenericField(B)*A

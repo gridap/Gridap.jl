@@ -12,7 +12,7 @@ np = 4
 p = Point(1,2)
 x = fill(p,np)
 
-v = 3.0
+v = VectorValue(3.0,2.0)
 f = MockField(v)
 
 @test ∇(f) == gradient(f)
@@ -39,6 +39,12 @@ f = MockField(v)
 
 @test Δ(f) == ∇⋅∇(f)
 
+@test ((∇+p)(f))(x) == (∇(f) + p⊗f)(x)
+
+g(x) = 2*x[2]
+
+@test ((∇+p)(g))(x) == (∇(GenericField(g)) + p⊗GenericField(g))(x)
+
 
 l = 10
 f = Fill(f,l)
@@ -46,6 +52,8 @@ f = Fill(f,l)
 @test Broadcasting(divergence)(f) == Broadcasting(Operation(tr))(Broadcasting(∇)(f))
 @test Broadcasting(curl)(f) == Broadcasting(Operation(grad2curl))(Broadcasting(∇)(f))
 @test Broadcasting(ε)(f) == Broadcasting(Operation(symmetric_part))(Broadcasting(∇)(f))
+
+@test evaluate(Broadcasting(∇+p)(f),x) == evaluate( Broadcasting(Operation((g,f)->g+p⊗f))(Broadcasting(∇)(f),f)  ,x)
 
 # Test automatic differentiation
 

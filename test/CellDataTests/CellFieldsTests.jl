@@ -99,6 +99,21 @@ test_array(∇vx,collect(∇vx))
 ∇fx = ∇(f)(x)
 test_array(∇fx,collect(∇fx))
 
+
+k = VectorValue(1.0,2.0)
+∇kfx = ((∇+k)(f))(x)
+test_array(∇kfx,collect(∇kfx))
+
+∇kvx = ((∇+k)(v))(x)
+test_array(∇kvx,collect(∇kvx))
+
+β(x) = 2*x[1]
+α = CellField(x->2*x,trian)
+ax = ((∇+k)(β*α))(x)
+test_array(ax,collect(ax))
+
+#σ(x) = diagonal_tensor(VectorValue(3.2*x[1],1.5))
+
 h = Operation(*)(2,f)
 hx = h(x)
 test_array(hx,2*fx)
