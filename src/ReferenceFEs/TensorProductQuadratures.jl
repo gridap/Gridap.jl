@@ -1,39 +1,25 @@
 
-"""
-    struct TensorProductQuadrature{D,T} <: Quadrature{D,T}
-      coordinates::Vector{Point{D,T}}
-      weights::Vector{T}
-    end
+struct TensorProduct <: QuadratureName end
 
-Tensor product quadrature rule (nodes and weights) on a hyper cube [0,1]^D
-"""
-struct TensorProductQuadrature{D,T} <: Quadrature{D,T}
-  coordinates::Vector{Point{D,T}}
-  weights::Vector{T}
+const tensor_product = TensorProduct()
+
+function Quadrature(p::Polytope,::TensorProduct,degrees)
+  @assert is_n_cube(p) """\n
+  Tensor product quadrature rule only for n-cubes.
+  """
+  @assert length(degrees) == num_dims(p)
+  _tensor_product_legendre(degrees)
 end
 
-get_coordinates(q::TensorProductQuadrature) = q.coordinates
-
-get_weights(q::TensorProductQuadrature) = q.weights
-
-"""
-    TensorProductQuadrature(degrees::NTuple{D}) where D
-    TensorProductQuadrature(degrees::Point{D}) where D
-"""
-function TensorProductQuadrature(degrees::NTuple{D,Int}) where D
-  TensorProductQuadrature{D}(degrees)
+function Quadrature(p::Polytope,name::TensorProduct,degree::Integer)
+  degrees = ntuple(i->degree,Val(num_dims(p)))
+  Quadrature(p,name,degrees)
 end
 
-function TensorProductQuadrature(degrees::Point{D}) where D
-  TensorProductQuadrature{D}(degrees)
-end
+# Low level constructor
 
-"""
-    TensorProductQuadrature{D}(degree::Integer) where D
-    TensorProductQuadrature{D}(degrees) where D
-"""
-function TensorProductQuadrature{D}(degrees) where D
-    @assert D == length(degrees)
+function _tensor_product_legendre(degrees)
+    D = length(degrees)
     T = Float64
     npoints = [ ceil(Int,(degrees[i]+1.0)/2.0) for i in 1:D ]
     quads = [ gauss( eltype(Point{D,T}), npoints[i] ) for i in 1:D ]
@@ -43,12 +29,7 @@ function TensorProductQuadrature{D}(degrees) where D
       quads[i][2] .*= 1.0/2.0
     end
     (coords, weights) = _tensor_product(Point{D,T},quads,npoints)
-    TensorProductQuadrature(coords,weights)
-end
-
-function TensorProductQuadrature{D}(degree::Integer) where D
-  degrees = tfill(degree,Val{D}())
-  TensorProductQuadrature(degrees)
+    GenericQuadrature(coords,weights,"Tensor product of 1d Gauss-Legendre quadratures of degrees $degrees")
 end
 
 # Helpers

@@ -168,6 +168,9 @@ function _ConformingFESpace(
   trian = Triangulation(model)
   cell_shapefuns, cell_dof_basis = compute_cell_space(cell_fe,trian)
 
+  cell_is_dirichlet = fill(false,num_cells(trian))
+  cell_is_dirichlet[dirichlet_cells] .= true
+
   UnconstrainedFESpace(
     vector_type,
     nfree,
@@ -175,6 +178,7 @@ function _ConformingFESpace(
     cell_dofs_ids,
     cell_shapefuns,
     cell_dof_basis,
+    cell_is_dirichlet,
     dirichlet_dof_tag,
     dirichlet_cells,
     ntags)

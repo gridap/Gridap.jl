@@ -11,6 +11,7 @@ function _DiscontinuousFESpace(
   ndirichlet = 0
   dirichlet_dof_tag = Int8[]
   dirichlet_cells = Int32[]
+  cell_is_dirichlet = Fill(false,num_cells(trian))
   ntags = 0
 
   UnconstrainedFESpace(
@@ -20,6 +21,7 @@ function _DiscontinuousFESpace(
     cell_dof_ids,
     cell_shapefuns,
     cell_dof_basis,
+    cell_is_dirichlet,
     dirichlet_dof_tag,
     dirichlet_cells,
     ntags)

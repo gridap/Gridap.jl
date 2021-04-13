@@ -76,6 +76,7 @@ export get_cell_shapefuns_trial
 export has_constraints
 export get_cell_constraints
 export get_cell_isconstrained
+export get_cell_is_dirichlet
 export get_dof_value_type
 export test_fe_space
 

@@ -130,30 +130,6 @@ end
 # Helper functions related with Tables
 
 """
-    rewind_ptrs!(ptrs)
-
-Rewind the given vector of pointers.
-"""
-function rewind_ptrs!(ptrs::AbstractVector{<:Integer})
-  @inbounds for i in (length(ptrs)-1):-1:1
-    ptrs[i+1] = ptrs[i]
-  end
-  ptrs[1] = 1
-end
-
-"""
-    length_to_ptrs!(ptrs)
-
-Given a vector of integers, mutate it from length state to pointer state.
-"""
-function length_to_ptrs!(ptrs::AbstractArray{<:Integer})
-  ptrs[1] = 1
-  @inbounds for i in 1:(length(ptrs)-1)
-    ptrs[i+1] += ptrs[i]
-  end
-end
-
-"""
     data, ptrs = generate_data_and_ptrs(vv)
 
 Given a vector of vectors, compress it and return the corresponding data and and ptrs
