@@ -77,7 +77,7 @@ function CellConformity(cell_fe::CellFE,cell_conf::Nothing)
 end
 
 function CellConformity(cell_fe::CellFE,cell_conf::CellConformity)
-  @assert length(cell_fe.cell_ctype) == length(cell_fe.cell_ctype)
+  @assert length(cell_fe.cell_ctype) == length(cell_conf.cell_ctype)
   cell_conf
 end
 
@@ -159,6 +159,9 @@ function _ConformingFESpace(
   trian = Triangulation(model)
   cell_shapefuns, cell_dof_basis = compute_cell_space(cell_fe,trian)
 
+  cell_is_dirichlet = fill(false,num_cells(trian))
+  cell_is_dirichlet[dirichlet_cells] .= true
+
   UnconstrainedFESpace(
     vector_type,
     nfree,
@@ -166,6 +169,7 @@ function _ConformingFESpace(
     cell_dofs_ids,
     cell_shapefuns,
     cell_dof_basis,
+    cell_is_dirichlet,
     dirichlet_dof_tag,
     dirichlet_cells,
     ntags)

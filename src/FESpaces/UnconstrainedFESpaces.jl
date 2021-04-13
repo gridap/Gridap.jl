@@ -10,6 +10,7 @@ struct UnconstrainedFESpace{V} <: SingleFieldFESpace
   cell_dofs_ids::AbstractArray
   cell_shapefuns::CellField
   cell_dof_basis::CellDof
+  cell_is_dirichlet::AbstractArray{Bool}
   dirichlet_dof_tag::Vector{Int8}
   dirichlet_cells::Vector{Int32}
   ntags::Int
@@ -26,6 +27,7 @@ get_cell_dof_ids(f::UnconstrainedFESpace) = f.cell_dofs_ids
 get_triangulation(f::UnconstrainedFESpace) = get_triangulation(f.cell_shapefuns)
 get_dof_value_type(f::UnconstrainedFESpace{V}) where V = eltype(V)
 get_vector_type(f::UnconstrainedFESpace{V}) where V = V
+get_cell_is_dirichlet(f::UnconstrainedFESpace) = f.cell_is_dirichlet
 
 # SingleFieldFESpace interface
 
@@ -104,7 +106,7 @@ function  _free_and_dirichlet_values_fill!(
       elseif dof < 0
         dirichlet_vals[-dof] = val
       else
-        @unreachable "dof ids either positibe or negative, not zero"
+        @unreachable "dof ids either positive or negative, not zero"
       end
     end
   end

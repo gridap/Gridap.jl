@@ -146,6 +146,11 @@ function change_domain(a::CellField,::ReferenceDomain,trian::Triangulation,::Ref
     cell_s2q = get_cell_ref_map(trian,trian_a)
     cell_field = lazy_map(Broadcasting(∘),cell_a_q,cell_s2q)
     GenericCellField(cell_field,trian,ReferenceDomain())
+  elseif have_compatible_domains(
+      trian_a,get_background_triangulation(get_background_triangulation(trian)))
+      bg_trian = get_background_triangulation(trian)
+      bg_a = change_domain(a,bg_trian,DomainStyle(a))
+      change_domain(bg_a,trian,DomainStyle(a))
   else
     @unreachable """\n
     We cannot move the given CellField to the reference domain of the requested triangulation.
@@ -442,6 +447,8 @@ function _to_common_domain(a::CellField...)
       target_trian = trian_b
     elseif have_compatible_domains(trian_b,get_background_triangulation(trian_a))
       target_trian = trian_a
+    elseif have_compatible_domains(trian_a,get_background_triangulation(get_background_triangulation(trian_b)))
+      target_trian = trian_b
     elseif have_compatible_domains(get_background_triangulation(trian_a),get_background_triangulation(trian_b))
       @unreachable msg
     else
@@ -606,7 +613,8 @@ end
 
 function change_domain(a::CellFieldAt,trian::SkeletonTriangulation,target_domain::DomainStyle)
   trian_a = get_triangulation(a)
-  if have_compatible_domains(trian_a,get_background_triangulation(trian))
+  if have_compatible_domains(trian_a,get_background_triangulation(trian)) ||
+    have_compatible_domains(trian_a,get_background_triangulation(get_background_triangulation(trian)))
     plus, minus = change_domain_skeleton(a.parent,trian,target_domain)
     if isa(a,CellFieldAt{:plus})
       return plus

@@ -3,7 +3,6 @@ module ZeroMeanFESpacesTests
 using Test
 using Gridap.Geometry
 using Gridap.Fields
-using Gridap.Integration
 using Gridap.FESpaces
 using Gridap.CellData
 using Gridap.ReferenceFEs
