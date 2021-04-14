@@ -395,6 +395,10 @@ function product_rule(::typeof(⋅),f1::VectorValue,f2::VectorValue,∇f1,∇f2)
   ∇f1⋅f2 + ∇f2⋅f1
 end
 
+function product_rule(::typeof(⋅),f1::TensorValue,f2::VectorValue,∇f1,∇f2)
+  ∇f1⋅f2 + ∇f2⋅transpose(f1)
+end
+
 for op in (:*,:⋅,:⊙,:⊗)
   @eval begin
     function gradient(a::OperationField{typeof($op)})

@@ -125,7 +125,10 @@ test_array(ax,collect(ax))
 ax =(ν⊗(∇-k))(x)
 test_array(ax,collect(ax))
 
-#σ(x) = diagonal_tensor(VectorValue(3.2*x[1],1.5))
+σ(x) = diagonal_tensor(VectorValue(1*x[1],2*x[2]))
+Fields.gradient(::typeof(σ)) = x-> ThirdOrderTensorValue{2,2,2,Float64}(1,0,0,0,0,0,0,2)
+ax = ((∇+k)(σ⋅α))(x)
+test_array(ax,collect(ax))
 
 h = Operation(*)(2,f)
 hx = h(x)
