@@ -83,7 +83,10 @@ function FESpace(
   else
     conf = CellConformity(cell_reffe,conformity)
   end
-  cell_fe = CellFE(cell_map,cell_reffe)
+  dof_basis_info = lazy_map(DofBasisPhysicalCellInfo(model),
+                            cell_reffe,
+                            get_cell_to_bgcell(trian))
+  cell_fe = CellFE(cell_map,cell_reffe,dof_basis_info)
   FESpace(model,cell_fe;conformity=conf,kwargs...)
 end
 

@@ -12,7 +12,10 @@ function FiniteElements(
 
   cell_reffe = ReferenceFE(model,basis,args...;kwargs...)
   cell_map = get_cell_map(Triangulation(model))
-  CellFE(cell_map,cell_reffe)
+  dof_basis_info = lazy_map(DofBasisPhysicalCellInfo(model),
+                            cell_reffe,
+                            get_cell_to_bgcell(trian))
+  CellFE(cell_map,cell_reffe,dof_basis_info)
 end
 
 function FiniteElements(

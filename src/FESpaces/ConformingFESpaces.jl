@@ -47,6 +47,76 @@ function _d_ctype_ldface_own_ldofs(a::CellConformity)
 end
 
 """
+A Map which is though to return whatever info
+get_dof_basis needs in order to compute the DoFs
+of a finite element space on top of a physical cell.
+"""
+struct DofBasisPhysicalCellInfo{M} <: Map
+  model::M
+end
+
+function return_cache(phys_cell_info::DofBasisPhysicalCellInfo,
+                      reffe::ReferenceFE,
+                      cell_id::Integer)
+ nothing
+end
+
+function return_cache(phys_cell_info::DofBasisPhysicalCellInfo,
+                      reffe::GenericRefFE{RaviartThomas},
+                      cell_id::Integer)
+ model=phys_cell_info.model
+ D=num_cell_dims(model)
+ gtopo=get_grid_topology(model)
+
+ # Extract composition among cells and facets
+ cell_wise_facets_ids=get_faces(gtopo,D,D-1)
+ cache_cell_wise_facets_ids=array_cache(cell_wise_facets_ids)
+
+ # Extract cells around facets
+ cells_around_facets=get_faces(gtopo,D-1,D)
+ cache_cells_around_facets=array_cache(cells_around_facets)
+
+ (cell_wise_facets_ids,
+ cache_cell_wise_facets_ids,
+ cells_around_facets,
+ cache_cells_around_facets,
+ CachedVector(Bool))
+end
+
+function evaluate!(cache,
+                  phys_cell_info::DofBasisPhysicalCellInfo{M},
+                  reffe::GenericRefFE{RaviartThomas},
+                  cell_id::Integer) where M
+
+ cell_wise_facets_ids,
+ cache_cell_wise_facets_ids,
+ cells_around_facets,
+ cache_cells_around_facets,
+ cell_is_slave = cache
+
+ cell_facets_ids=getindex!(cache_cell_wise_facets_ids,
+                            cell_wise_facets_ids,
+                            cell_id)
+
+ setsize!(cell_is_slave,(num_faces(reffe),))
+
+ cell_is_slave .= false
+
+ D=num_cell_dims(phys_cell_info.model)
+
+ current=get_offsets(get_polytope(reffe))[D]+1
+ for facet_gid in cell_facets_ids
+   facet_cells_around=getindex!(cache_cells_around_facets,
+                                 cells_around_facets,
+                                 facet_gid)
+   cell_is_slave[current]=
+       (findfirst((x)->(x==cell_id),facet_cells_around) == 2)
+   current=current+1
+ end
+ cell_is_slave
+end
+
+"""
 Minimum data required to build a conforming FE space.
 At this moment, the some cell-wise info is compressed on cell types.
 This can be relaxed in the future, and have an arbitrary cell-wise data.
@@ -60,10 +130,10 @@ struct CellFE{T} <: GridapType
   cell_dof_basis::AbstractArray{<:AbstractVector{<:Dof}}
   cell_shapefuns_domain::DomainStyle
   cell_dof_basis_domain::DomainStyle
-  max_order::Int 
+  max_order::Int
 end
 # If the shapefuns are not polynomials, max_order has to be understood as the order of a
-# reasonable quadrature rule to integrate the shape functions. Only used by FESpace 
+# reasonable quadrature rule to integrate the shape functions. Only used by FESpace
 # constructors that need to integrate the shape functions (e.g., ZeroMeanFESpace).
 
 Geometry.num_cells(cell_fe::CellFE) = length(cell_fe.cell_ctype)
@@ -115,14 +185,15 @@ Generate a CellFE from a vector of reference fes
 """
 function CellFE(
   cell_map::AbstractArray{<:Field},
-  cell_reffe::AbstractArray{<:ReferenceFE})
+  cell_reffe::AbstractArray{<:ReferenceFE},
+  dof_basis_info::AbstractArray)
 
   ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
   ctype_num_dofs = map(num_dofs,ctype_reffe)
   ctype_ldof_comp = map(reffe->get_dof_to_comp(reffe),ctype_reffe)
   cell_conformity = CellConformity(cell_reffe)
   cell_shapefuns = lazy_map(get_shapefuns,cell_reffe,cell_map)
-  cell_dof_basis = lazy_map(get_dof_basis,cell_reffe,cell_map)
+  cell_dof_basis = lazy_map(get_dof_basis,cell_reffe,cell_map,dof_basis_info)
   cell_shapefuns_domain = ReferenceDomain()
   cell_dof_basis_domain = cell_shapefuns_domain
   max_order = maximum(map(get_order,ctype_reffe))

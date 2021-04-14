@@ -73,12 +73,17 @@ function get_face_own_dofs(reffe::GenericRefFE{RaviartThomas}, conf::DivConformi
   get_face_dofs(reffe)
 end
 
-function get_dof_basis(reffe::GenericRefFE{RaviartThomas},phi::Field)
-  cache = return_cache(get_dof_basis,reffe,phi)
-  evaluate!(cache,get_dof_basis,reffe,phi)
+function get_dof_basis(reffe::GenericRefFE{RaviartThomas},
+                       phi::Field,
+                       cell_is_slave::AbstractVector{Bool})
+  cache = return_cache(get_dof_basis,reffe,phi,cell_is_slave)
+  evaluate!(cache,get_dof_basis,reffe,phi,cell_is_slave)
 end
 
-function return_cache(::typeof(get_dof_basis),reffe::GenericRefFE{RaviartThomas},phi::Field)
+function return_cache(::typeof(get_dof_basis),
+                      reffe::GenericRefFE{RaviartThomas},
+                      phi::Field,
+                      ::AbstractVector{Bool})
   p = get_polytope(reffe)
   prebasis = get_prebasis(reffe)
   order = get_order(prebasis)
@@ -93,7 +98,11 @@ function return_cache(::typeof(get_dof_basis),reffe::GenericRefFE{RaviartThomas}
 end
 
 
-function evaluate!(cache,::typeof(get_dof_basis),reffe::GenericRefFE{RaviartThomas},phi::Field)
+function evaluate!(cache,
+                   ::typeof(get_dof_basis),
+                   reffe::GenericRefFE{RaviartThomas},
+                   phi::Field,
+                   cell_is_slave::AbstractVector{Bool})
   nodes, nf_nodes, nf_moments, face_moments, Jt_q_cache = cache
 
   Jt_q = evaluate!(Jt_q_cache,∇(phi),nodes)
@@ -103,7 +112,7 @@ function evaluate!(cache,::typeof(get_dof_basis),reffe::GenericRefFE{RaviartThom
       num_qpoints, num_moments = size(moments)
       for i in 1:num_qpoints
         Jt_q_i = Jt_q[nf_nodes[face][i]]
-        change = det(Jt_q_i) * inv(transpose(Jt_q_i))
+        change = (-1)^cell_is_slave[face] * meas(Jt_q_i) * inv(transpose(Jt_q_i))
         for j in 1:num_moments
           face_moments[face][i,j] = nf_moments[face][i,j] ⋅ change
         end
@@ -181,9 +190,7 @@ function _RT_face_moments(p, fshfs, c_fips, fcips, fwips,phi)
   cfshfs = fill(fshfs, nc)
   cvals = lazy_map(evaluate,cfshfs,c_fips)
   cvals = [fwips[i].*cvals[i] for i in 1:nc]
-  # fns, os = get_facet_normal(p)
   fns = get_facet_normal(p)
-  os = get_facet_orientations(p)
 
   # Must express the normal in terms of the real/reference system of
   # coordinates (depending if phi≡I or phi is a mapping, resp.)
@@ -195,7 +202,7 @@ function _RT_face_moments(p, fshfs, c_fips, fcips, fwips,phi)
   change = lazy_map(*,det_Jt,Jt_inv)
   change_ips = lazy_map(evaluate,change,fcips)
 
-  cvals = [ _broadcast(typeof(n),n*o,J.*b) for (n,o,b,J) in zip(fns,os,cvals,change_ips)]
+  cvals = [ _broadcast(typeof(n),n,J.*b) for (n,b,J) in zip(fns,cvals,change_ips)]
 
   return cvals
 end
