@@ -128,11 +128,22 @@ end
 function (s::ShiftedNabla)(f)
   Operation((a,b)->a+s.v⊗b)(gradient(f),f)
 end
+
 (s::ShiftedNabla)(f::Function) = s(GenericField(f))
+
 function evaluate!(cache,k::Broadcasting{<:ShiftedNabla},f)
   s = k.f
   g = Broadcasting(∇)(f)
   Broadcasting(Operation((a,b)->a+s.v⊗b))(g,f)
 end
 
+dot(s::ShiftedNabla,f) = Operation(tr)(s(f))
+outer(s::ShiftedNabla,f) = s(f)
+outer(f,s::ShiftedNabla) = transpose(gradient(f))
+cross(s::ShiftedNabla,f) = Operation(grad2curl)(s(f))
+
+dot(s::ShiftedNabla,f::Function) = dot(s,GenericField(f))
+outer(s::ShiftedNabla,f::Function) = outer(s,GenericField(f))
+outer(f::Function,s::ShiftedNabla) = outer(GenericField(f),s)
+cross(s::ShiftedNabla,f::Function) = cross(s,GenericField(f))
 

@@ -45,6 +45,10 @@ g(x) = 2*x[2]
 
 @test ((∇+p)(g))(x) == (∇(GenericField(g)) + p⊗GenericField(g))(x)
 
+@test (∇+p)⋅f != nothing
+@test (∇+p)×f != nothing
+@test (∇+p)⊗f != nothing
+@test f⊗(∇+p) != nothing
 
 l = 10
 f = Fill(f,l)

@@ -112,6 +112,19 @@ test_array(∇kvx,collect(∇kvx))
 ax = ((∇+k)(β*α))(x)
 test_array(ax,collect(ax))
 
+ν = CellField(x->2*x,trian)
+ax =((∇-k)⋅ν)(x)
+test_array(ax,collect(ax))
+
+ax =((∇-k)×ν)(x)
+test_array(ax,collect(ax))
+
+ax =((∇-k)⊗ν)(x)
+test_array(ax,collect(ax))
+
+ax =(ν⊗(∇-k))(x)
+test_array(ax,collect(ax))
+
 #σ(x) = diagonal_tensor(VectorValue(3.2*x[1],1.5))
 
 h = Operation(*)(2,f)
