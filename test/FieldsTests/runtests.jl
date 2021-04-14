@@ -18,4 +18,6 @@ using Test
 
 @testset "BlockFieldArrays" begin include("BlockFieldArraysTests.jl") end
 
+@testset "Blocks" begin include("BlocksTests.jl") end
+
 end

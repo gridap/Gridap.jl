@@ -153,4 +153,9 @@ function setaxes!(a::CachedArray,ax)
   nothing
 end
 
+Base.convert(::Type{CachedArray{T,N,A}},a::CachedArray{T,N,A}) where {T,N,A} = a
 
+function Base.convert(::Type{CachedArray{T,N,A}},a::CachedArray) where {T,N,A}
+  array = convert(A,a.array)
+  CachedArray(array)
+end

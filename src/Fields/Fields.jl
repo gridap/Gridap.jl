@@ -99,4 +99,6 @@ include("AutoDiff.jl")
 
 include("BlockFieldArrays.jl")
 
+include("Blocks.jl")
+
 end
