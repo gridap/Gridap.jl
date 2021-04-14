@@ -688,11 +688,4 @@ b = 4.0 - 3.0*im
 @test outer(a,b) == a*b
 @test inner(a,b) == a*b
 
-# Hadamard product
-
-a = VectorValue(1,2)
-b = VectorValue(3.0,2.0)
-c = VectorValue(a[1]*b[1],a[2]*b[2])
-@test a ⊚ b == c
-
 end # module OperationsTests
