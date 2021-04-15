@@ -162,9 +162,8 @@ end
   if index_and_item.index != index
     cg, cgi, cf = _cache
     gi = getindex!(cg, a.maps, i)
-    fi = map((cj,fj) -> getindex!(cj,fj,i),cf,a.args)
+    index_and_item.item = _getindex_and_call!(cgi,gi,cf,a.args,i)
     index_and_item.index = index
-    index_and_item.item = evaluate!(cgi, gi, fi...)
   end
   index_and_item.item
 end
@@ -175,11 +174,15 @@ end
   if index_and_item.index != index
     cg, cgi, cf = _cache
     gi = getindex!(cg, a.maps, i...)
-    fi = map((cj,fj) -> getindex!(cj,fj,i...),cf,a.args)
+    index_and_item.item = _getindex_and_call!(cgi,gi,cf,a.args,i...)
     index_and_item.index = index
-    index_and_item.item = evaluate!(cgi, gi, fi...)
   end
   index_and_item.item
+end
+
+@inline function _getindex_and_call!(cgi,gi,cf,args,i...)
+  fi = map((cj,fj) -> getindex!(cj,fj,i...),cf,args)
+  evaluate!(cgi, gi, fi...)
 end
 
 function Base.getindex(a::LazyArray, i::Integer)
@@ -276,3 +279,89 @@ Base.IndexStyle(::Type{<:ArrayWithCounter{T,N,A}}) where {T,A,N} = IndexStyle(A)
 function resetcounter!(a::ArrayWithCounter)
   fill!(a.counter,zero(eltype(a.counter)))
 end
+
+
+# These extra methods are introduced to circumvent an unwanted run-time dispatch with julia 0.15 and 0.16
+# see https://discourse.julialang.org/t/performance-depends-dramatically-on-compilation-order/58425
+# Hopefully, they can be removed in the future
+
+#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any},i...)
+#  f1 = getindex!(cf[1],args[1],i...)
+#  evaluate!(cgi,gi,f1)
+#end
+#
+#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any},i...)
+#  f1 = getindex!(cf[1],args[1],i...)
+#  f2 = getindex!(cf[2],args[2],i...)
+#  evaluate!(cgi,gi,f1,f2)
+#end
+#
+#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any},i...)
+#  f1 = getindex!(cf[1],args[1],i...)
+#  f2 = getindex!(cf[2],args[2],i...)
+#  f3 = getindex!(cf[3],args[3],i...)
+#  evaluate!(cgi,gi,f1,f2,f3)
+#end
+#
+#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any},i...)
+#  f1 = getindex!(cf[1],args[1],i...)
+#  f2 = getindex!(cf[2],args[2],i...)
+#  f3 = getindex!(cf[3],args[3],i...)
+#  f4 = getindex!(cf[4],args[4],i...)
+#  evaluate!(cgi,gi,f1,f2,f3,f4)
+#end
+#
+#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any},i...)
+#  f1 = getindex!(cf[1],args[1],i...)
+#  f2 = getindex!(cf[2],args[2],i...)
+#  f3 = getindex!(cf[3],args[3],i...)
+#  f4 = getindex!(cf[4],args[4],i...)
+#  f5 = getindex!(cf[5],args[5],i...)
+#  evaluate!(cgi,gi,f1,f2,f3,f4,f5)
+#end
+#
+#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any,Any},i...)
+#  f1 = getindex!(cf[1],args[1],i...)
+#  f2 = getindex!(cf[2],args[2],i...)
+#  f3 = getindex!(cf[3],args[3],i...)
+#  f4 = getindex!(cf[4],args[4],i...)
+#  f5 = getindex!(cf[5],args[5],i...)
+#  f6 = getindex!(cf[6],args[6],i...)
+#  evaluate!(cgi,gi,f1,f2,f3,f4,f5,f6)
+#end
+#
+#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any,Any,Any},i...)
+#  f1 = getindex!(cf[1],args[1],i...)
+#  f2 = getindex!(cf[2],args[2],i...)
+#  f3 = getindex!(cf[3],args[3],i...)
+#  f4 = getindex!(cf[4],args[4],i...)
+#  f5 = getindex!(cf[5],args[5],i...)
+#  f6 = getindex!(cf[6],args[6],i...)
+#  f7 = getindex!(cf[7],args[7],i...)
+#  evaluate!(cgi,gi,f1,f2,f3,f4,f5,f6,f7)
+#end
+#
+#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any,Any,Any,Any},i...)
+#  f1 = getindex!(cf[1],args[1],i...)
+#  f2 = getindex!(cf[2],args[2],i...)
+#  f3 = getindex!(cf[3],args[3],i...)
+#  f4 = getindex!(cf[4],args[4],i...)
+#  f5 = getindex!(cf[5],args[5],i...)
+#  f6 = getindex!(cf[6],args[6],i...)
+#  f7 = getindex!(cf[7],args[7],i...)
+#  f8 = getindex!(cf[8],args[8],i...)
+#  evaluate!(cgi,gi,f1,f2,f3,f4,f5,f6,f7,f8)
+#end
+#
+#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any,Any,Any,Any,Any},i...)
+#  f1 = getindex!(cf[1],args[1],i...)
+#  f2 = getindex!(cf[2],args[2],i...)
+#  f3 = getindex!(cf[3],args[3],i...)
+#  f4 = getindex!(cf[4],args[4],i...)
+#  f5 = getindex!(cf[5],args[5],i...)
+#  f6 = getindex!(cf[6],args[6],i...)
+#  f7 = getindex!(cf[7],args[7],i...)
+#  f8 = getindex!(cf[8],args[8],i...)
+#  f9 = getindex!(cf[9],args[9],i...)
+#  evaluate!(cgi,gi,f1,f2,f3,f4,f5,f6,f7,f8,f9)
+#end

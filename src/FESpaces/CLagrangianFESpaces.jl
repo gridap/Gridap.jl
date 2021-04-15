@@ -116,6 +116,7 @@ function _generate_clagrangian_fespace(z,grid)
 
   dirichlet_dof_tag = Int8[]
   dirichlet_cells = Int32[]
+  cell_is_dirichlet = Fill(false,num_cells(grid))
   ntags = 0
   vector_type = Vector{_dof_type(z)}
 
@@ -126,6 +127,7 @@ function _generate_clagrangian_fespace(z,grid)
     cell_dofs_ids,
     cell_shapefuns,
     cell_dof_basis,
+    cell_is_dirichlet,
     dirichlet_dof_tag,
     dirichlet_cells,
     ntags)

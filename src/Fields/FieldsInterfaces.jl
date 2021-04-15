@@ -555,19 +555,33 @@ end
   r
 end
 
+function return_cache(k::IntegrationMap,aq::AbstractArray{S,3} where S,w,jq::AbstractVector)
+  T = typeof( testitem(aq)*testitem(w)*meas(testitem(jq)) + testitem(aq)*testitem(w)*meas(testitem(jq)) )
+  r = zeros(T,size(aq)[2:end])
+  s = zeros(typeof(meas(testitem(jq))),length(jq))
+  CachedArray(r), CachedArray(s)
+end
+
 @inline function evaluate!(cache,k::IntegrationMap,aq::AbstractArray{S,3} where S, w,jq::AbstractVector)
+  cache_r, cache_s = cache
   np, ni, nj = size(aq)
-  setsize!(cache,(ni,nj))
-  r = cache.array
+  setsize!(cache_r,(ni,nj))
+  setsize!(cache_s,(np,))
+  r = cache_r.array
+  dV = cache_s.array
   @check size(aq,1) == length(w)
   @check size(aq,1) == length(jq)
-  fill!(r,zero(eltype(r)))
   @inbounds for p in 1:np
-    dV = meas(jq[p])*w[p]
-    for j in 1:nj
-      for i in 1:ni
-        r[i,j] += aq[p,i,j]*dV
+    dV[p] = meas(jq[p])*w[p]
+  end
+  #fill!(r,zero(eltype(r)))
+  @inbounds for j in 1:nj
+    for i in 1:ni
+      rij = zero(eltype(aq))
+      for p in 1:np
+        rij += aq[p,i,j]*dV[p]
       end
+      r[i,j] = rij
     end
   end
   r

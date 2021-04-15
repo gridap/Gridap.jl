@@ -6,7 +6,6 @@ using Gridap.Helpers
 using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Arrays
-using Gridap.Integration
 using Gridap.CellData
 using Gridap.TensorValues
 using Gridap.Geometry
@@ -59,6 +58,16 @@ cell_measure_N = get_cell_measure(trian_N)
 @test length(cell_measure_N) == num_cells(model)
 @test sum(cell_measure) ≈ 1
 @test sum(cell_measure_N) ≈ 6
+
+quad = CellQuadrature(trian,Quadrature(duffy,2))
+s = ∫(1)*quad
+@test sum(s) ≈ 1
+@test ∑(s) ≈ 1
+
+quad = CellQuadrature(trian,Quadrature(TET,duffy,2))
+s = ∫(1)*quad
+@test sum(s) ≈ 1
+@test ∑(s) ≈ 1
 
 #using Gridap.Visualization
 #writevtk(trian,"trian",celldata=["a"=>cell_measure,"b"=>cell_measure_N])

@@ -6,7 +6,6 @@ using Gridap.Arrays
 using Gridap.Geometry
 using Gridap.FESpaces
 using Gridap.Fields
-using Gridap.Integration
 using Gridap.ReferenceFEs
 using Gridap.CellData
 using Test

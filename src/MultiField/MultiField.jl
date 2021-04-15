@@ -11,7 +11,6 @@ using Gridap.Algebra
 using Gridap.Arrays
 using Gridap.FESpaces
 using Gridap.Geometry
-using Gridap.Integration
 using Gridap.TensorValues
 using Gridap.CellData
 using Gridap.Fields
