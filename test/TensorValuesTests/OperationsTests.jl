@@ -3,8 +3,12 @@ module OperationsTests
 using Test
 using Gridap.TensorValues
 using Gridap.Arrays
+using Gridap.Fields
+using Gridap.Geometry
 using Gridap.CellData
 using LinearAlgebra
+using BlockArrays
+using FillArrays
 
 # Comparison
 
