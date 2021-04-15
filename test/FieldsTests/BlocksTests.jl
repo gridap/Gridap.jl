@@ -83,5 +83,16 @@ collect(cell_rx)
 @test cell_rx[1][2] == cell_fx[1][2]
 @test cell_rx[1][3] == cell_fx[1][3] - cell_hx[1][3]
 
+cell_mx =  lazy_map(BroadcastingFieldOpMap(*),cell_rx,cell_ftx)
+collect(cell_mx)
+@test cell_mx[end][1,1] == nothing
+@test cell_mx[end][2,1] == nothing
+@test cell_mx[end][3,1] == nothing
+
+cell_mx =  lazy_map(BroadcastingFieldOpMap(*),cell_ftx,cell_rx)
+collect(cell_mx)
+@test cell_mx[end][1,1] == nothing
+@test cell_mx[end][2,1] == nothing
+@test cell_mx[end][3,1] == nothing
 
 end # module

@@ -20,6 +20,7 @@
 # uh⁺[f][np]
 # uh [c][lf][np]
 
+
 # TODO rename it to GBlock when we don't need to depend on BlockArrays
 struct GBlock{A,N}
   array::Array{A,N}
@@ -72,6 +73,32 @@ function Arrays.testvalue(::Type{GBlock{A,N}}) where {A,N}
   array = Array{A,N}(undef,s)
   touched = Array{Bool,N}(undef,s)
   GBlock(array,touched)
+end
+
+struct ZeroBlockMap <: Map end
+
+function return_cache(::ZeroBlockMap,a::AbstractArray,b::AbstractArray)
+  CachedArray(similar(a,eltype(a),size(b)))
+end
+
+function evaluate!(cache,::ZeroBlockMap,a,b::AbstractArray)
+  setsize!(cache,size(b))
+  r = cache.array
+  fill!(r,zero(eltype(r)))
+  r
+end
+
+function return_cache(::ZeroBlockMap,a::GBlock,b::GBlock)
+  A = eltype(a)
+  N = ndims(b)
+  array = Array{A,N}(undef,size(b))
+  touched = fill(false,size(b))
+  GBlock(array,touched)
+end
+
+function evaluate!(cache,::ZeroBlockMap,a,b::GBlock)
+  @check size(cache) == size(b)
+  cache
 end
 
 function return_cache(f::GBlock{A,N},x) where {A,N}
@@ -274,11 +301,11 @@ function evaluate!(cache,k::Broadcasting{typeof(∘)},f::GBlock,h::Field)
   g
 end
 
-function Fields.return_value(k::BroadcastingFieldOpMap,f::GBlock,g::AbstractArray)
+function return_value(k::BroadcastingFieldOpMap,f::GBlock,g::AbstractArray)
   evaluate(k,f,g)
 end
 
-function Fields.return_cache(
+function return_cache(
   k::BroadcastingFieldOpMap,f::GBlock{A,N},g::AbstractArray) where {A,N}
   fi = testitem(f)
   li = return_cache(k,fi,g)
@@ -293,7 +320,7 @@ function Fields.return_cache(
   GBlock(h,f.touched),l
 end
 
-function Fields.evaluate!(cache,k::BroadcastingFieldOpMap,f::GBlock,g::AbstractArray)
+function evaluate!(cache,k::BroadcastingFieldOpMap,f::GBlock,g::AbstractArray)
   h,l = cache
   @check h.touched == f.touched
   for i in eachindex(f.array)
@@ -304,11 +331,11 @@ function Fields.evaluate!(cache,k::BroadcastingFieldOpMap,f::GBlock,g::AbstractA
   h
 end
 
-function Fields.return_value(k::BroadcastingFieldOpMap,g::AbstractArray,f::GBlock)
+function return_value(k::BroadcastingFieldOpMap,g::AbstractArray,f::GBlock)
   evaluate(k,g,f)
 end
 
-function Fields.return_cache(
+function return_cache(
   k::BroadcastingFieldOpMap,g::AbstractArray,f::GBlock{A,N}) where {A,N}
   fi = testitem(f)
   li = return_cache(k,g,fi)
@@ -323,7 +350,7 @@ function Fields.return_cache(
   GBlock(h,f.touched),l
 end
 
-function Fields.evaluate!(cache,k::BroadcastingFieldOpMap,g::AbstractArray,f::GBlock)
+function evaluate!(cache,k::BroadcastingFieldOpMap,g::AbstractArray,f::GBlock)
   h,l = cache
   @check h.touched == f.touched
   for i in eachindex(f.array)
@@ -334,54 +361,140 @@ function Fields.evaluate!(cache,k::BroadcastingFieldOpMap,g::AbstractArray,f::GB
   h
 end
 
-function Fields.return_value(k::BroadcastingFieldOpMap,f::GBlock,g::GBlock)
+function return_value(k::BroadcastingFieldOpMap,f::GBlock,g::GBlock)
   evaluate(k,f,g)
 end
 
-function Fields.return_cache(k::BroadcastingFieldOpMap,f::GBlock,g::GBlock)
+function return_cache(k::BroadcastingFieldOpMap,f::GBlock,g::GBlock)
   @notimplemented
 end
 
-function Fields.evaluate!(cache,k::BroadcastingFieldOpMap,f::GBlock,g::GBlock)
+function evaluate!(cache,k::BroadcastingFieldOpMap,f::GBlock,g::GBlock)
   @notimplemented
 end
 
-function Fields.return_cache(
+function return_cache(
   k::BroadcastingFieldOpMap,f::GBlock{A,N},g::GBlock{B,N}) where {A,B,N}
-  @notimplementedif (k.op != +) && (k.op != -)
-  @check size(f) == size(g)
+  @notimplementedif size(f) != size(g)
   fi = testvalue(A)
   gi = testvalue(B)
   ci = return_cache(k,fi,gi)
   hi = evaluate!(ci,k,fi,gi)
+  m = ZeroBlockMap()
   a = Array{typeof(hi),N}(undef,size(f.array))
   b = Array{typeof(ci),N}(undef,size(f.array))
+  zf = Array{typeof(return_cache(m,fi,gi))}(undef,size(f.array))
+  zg = Array{typeof(return_cache(m,gi,fi))}(undef,size(f.array))
   t = map(|,f.touched,g.touched)
   for i in eachindex(f.array)
     if f.touched[i] && g.touched[i]
       b[i] = return_cache(k,f.array[i],g.array[i])
     elseif f.touched[i]
-      b[i] = return_cache(BroadcastingFieldOpMap(+),f.array[i])
+      _fi = f.array[i]
+      zg[i] = return_cache(m,gi,_fi)
+      _gi = evaluate!(zg[i],m,gi,_fi)
+      b[i] = return_cache(k,_fi,_gi)
     elseif g.touched[i]
-      b[i] = return_cache(k,g.array[i])
+      _gi = g.array[i]
+      zf[i] = return_cache(m,fi,_gi)
+      _fi = evaluate!(zf[i],m,fi,_gi)
+      b[i] = return_cache(k,_fi,_gi)
+    end
+  end
+  GBlock(a,t), b, zf, zg
+end
+
+function evaluate!(
+  cache,k::BroadcastingFieldOpMap,f::GBlock{A,N},g::GBlock{B,N}) where {A,B,N}
+  a,b, zf, zg = cache
+  @check size(f) == size(g)
+  @check size(a) == size(g)
+  m = ZeroBlockMap()
+  for i in eachindex(f.array)
+    if f.touched[i] && g.touched[i]
+      a.array[i] = evaluate!(b[i],k,f.array[i],g.array[i])
+    elseif f.touched[i]
+      fi = f.array[i]
+      gi = evaluate!(zg[i],m,nothing,fi)
+      a.array[i] = evaluate!(b[i],k,fi,gi)
+    elseif g.touched[i]
+      gi = g.array[i]
+      fi = evaluate!(zf[i],m,nothing,gi)
+      a.array[i] = evaluate!(b[i],k,fi,gi)
+    end
+  end
+  a
+end
+
+function return_cache(
+  k::BroadcastingFieldOpMap,f::GBlock{A,1},g::GBlock{B,2}) where {A,B}
+  fi = testvalue(A)
+  gi = testvalue(B)
+  ci = return_cache(k,fi,gi)
+  hi = evaluate!(ci,k,fi,gi)
+  @check size(g.array,1) == 1
+  s = (size(f.array,1),size(g.array,2))
+  a = Array{typeof(hi),2}(undef,s)
+  b = Array{typeof(ci),2}(undef,s)
+  t = fill(false,s)
+  for j in 1:s[2]
+    for i in 1:s[1]
+      if f.touched[i] && g.touched[1,j]
+        t[i,j] = true
+        b[i,j] = return_cache(k,f.array[i],g.array[1,j])
+      end
     end
   end
   GBlock(a,t), b
 end
 
-function Fields.evaluate!(
-  cache,k::BroadcastingFieldOpMap,f::GBlock{A,N},g::GBlock{B,N}) where {A,B,N}
+function return_cache(
+  k::BroadcastingFieldOpMap,f::GBlock{A,2},g::GBlock{B,1}) where {A,B}
+  fi = testvalue(A)
+  gi = testvalue(B)
+  ci = return_cache(k,fi,gi)
+  hi = evaluate!(ci,k,fi,gi)
+  @check size(f.array,1) == 1
+  s = (size(g.array,1),size(f.array,2))
+  a = Array{typeof(hi),2}(undef,s)
+  b = Array{typeof(ci),2}(undef,s)
+  t = fill(false,s)
+  for j in 1:s[2]
+    for i in 1:s[1]
+      if f.touched[1,j] && g.touched[i]
+        t[i,j] = true
+        b[i,j] = return_cache(k,f.array[1,j],g.array[i])
+      end
+    end
+  end
+  GBlock(a,t), b
+end
+
+function evaluate!(
+  cache,k::BroadcastingFieldOpMap,f::GBlock{A,1},g::GBlock{B,2}) where {A,B}
+  @check size(g.array,1) == 1
   a,b = cache
-  @notimplementedif (k.op != +) && (k.op != -)
-  @check size(f) == size(g)
-  @check size(a) == size(g)
-  for i in eachindex(f.array)
-    if f.touched[i] && g.touched[i]
-      a.array[i] = evaluate!(b[i],k,f.array[i],g.array[i])
-    elseif f.touched[i]
-      a.array[i] = evaluate!(b[i],BroadcastingFieldOpMap(+),f.array[i])
-    elseif g.touched[i]
-      a.array[i] = evaluate!(b[i],k,g.array[i])
+  s = size(a.array)
+  for j in 1:s[2]
+    for i in 1:s[1]
+      if f.touched[i] && g.touched[1,j]
+        a.array[i,j] = evaluate!(b[i,j],k,f.array[i],g.array[1,j])
+      end
+    end
+  end
+  a
+end
+
+function evaluate!(
+  cache,k::BroadcastingFieldOpMap,f::GBlock{A,2},g::GBlock{B,1}) where {A,B}
+  @check size(f.array,1) == 1
+  a,b = cache
+  s = size(a.array)
+  for j in 1:s[2]
+    for i in 1:s[1]
+      if f.touched[1,j] && g.touched[i]
+        a.array[i,j] = evaluate!(b[i,j],k,f.array[1,j],g.array[i])
+      end
     end
   end
   a
