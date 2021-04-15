@@ -3,7 +3,7 @@ module BlocksTests
 using Gridap.TensorValues
 using Gridap.Arrays
 using Gridap.Fields
-using Gridap.Fields: GBlock, MockFieldArray, MockField, BroadcastingFieldOpMap
+using Gridap.Fields: GBlock, MockFieldArray, MockField, BroadcastingFieldOpMap, BlockMap
 using Test
 using FillArrays
 #using Gridap.ReferenceFEs
@@ -94,5 +94,45 @@ collect(cell_mx)
 @test cell_mx[end][1,1] == nothing
 @test cell_mx[end][2,1] == nothing
 @test cell_mx[end][3,1] == nothing
+
+nfields = 2
+dv = f_basis
+dq = h_basis
+cell_dv_sf = Fill(dv,ncells)
+cell_dq_sf = Fill(dq,ncells)
+cell_dv = lazy_map(BlockMap(nfields,1),cell_dv_sf)
+cell_dq = lazy_map(BlockMap(nfields,2),cell_dq_sf)
+@test cell_dv[end][1] === dv
+@test cell_dv[end][2] === nothing
+@test cell_dq[end][1] === nothing
+@test cell_dq[end][2] === dq
+cell_du = lazy_map(transpose,cell_dv)
+cell_dp = lazy_map(transpose,cell_dq)
+
+cell_dv⁺ = lazy_map(BlockMap(2,1),cell_dv)
+cell_dv⁻ = lazy_map(BlockMap(2,2),cell_dv)
+cell_dq⁺ = lazy_map(BlockMap(2,1),cell_dq)
+cell_dq⁻ = lazy_map(BlockMap(2,2),cell_dq)
+
+cell_du⁺ = lazy_map(BlockMap((1,2),1),cell_du)
+cell_du⁻ = lazy_map(BlockMap((1,2),2),cell_du)
+cell_dp⁺ = lazy_map(BlockMap((1,2),1),cell_dp)
+cell_dp⁻ = lazy_map(BlockMap((1,2),2),cell_dp)
+
+cell_dvx⁺ = lazy_map(evaluate,cell_dv⁺,cell_x)
+cell_dvx⁻ = lazy_map(evaluate,cell_dv⁻,cell_x)
+cell_dqx⁺ = lazy_map(evaluate,cell_dq⁺,cell_x)
+cell_dqx⁻ = lazy_map(evaluate,cell_dq⁻,cell_x)
+
+cell_dux⁺ = lazy_map(evaluate,cell_du⁺,cell_x)
+cell_dux⁻ = lazy_map(evaluate,cell_du⁻,cell_x)
+cell_dpx⁺ = lazy_map(evaluate,cell_dp⁺,cell_x)
+cell_dpx⁻ = lazy_map(evaluate,cell_dp⁻,cell_x)
+
+cell_dux_jump = lazy_map(BroadcastingFieldOpMap(-),cell_dux⁺,cell_dux⁻)
+collect(cell_dux_jump)
+
+cell_int_du⁺ = lazy_map(integrate,cell_du⁺,cell_x,cell_w)
+collect(cell_int_du⁺)
 
 end # module

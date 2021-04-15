@@ -101,6 +101,41 @@ function evaluate!(cache,::ZeroBlockMap,a,b::GBlock)
   cache
 end
 
+struct BlockMap{N}
+  size::NTuple{N,Int}
+  indices::Vector{CartesianIndex{N}}
+end
+
+function BlockMap(l::Integer,i::Integer)
+  s = (l,)
+  ci = CartesianIndex((i,))
+  BlockMap(s,[ci])
+end
+
+function BlockMap(s::NTuple,i::Integer)
+  cis = CartesianIndices(s)
+  ci = cis[i]
+  BlockMap(s,[ci])
+end
+
+function return_cache(k::BlockMap{N},a::A...) where {A,N}
+  array = Array{A,N}(undef,k.size)
+  touched = fill(false,k.size)
+  for (t,i) in enumerate(k.indices)
+    array[i] = a[t]
+    touched[i] = true
+  end
+  GBlock(array,touched)
+end
+
+function evaluate!(cache,k::BlockMap{N},a::A...) where {A,N}
+  @check size(cache) == k.size
+  for (t,i) in enumerate(k.indices)
+    cache.array[i] = a[t]
+  end
+  cache
+end
+
 function return_cache(f::GBlock{A,N},x) where {A,N}
   fi = testitem(f)
   li = return_cache(fi,x)
@@ -218,8 +253,7 @@ end
 
 function return_cache(
   k::IntegrationMap,fx::GBlock{A,N} where A,args...) where N
-  i::Int = findfirst(fx.touched)
-  fxi = fx.array[i]
+  fxi = testitem(fx)
   li = return_cache(k,fxi,args...)
   ufxi = evaluate!(li,k,fxi,args...)
   l = Array{typeof(li),N}(undef,size(fx.array))
