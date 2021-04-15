@@ -626,6 +626,18 @@ end
 ###############################################################
 # General Tensor Operations
 ###############################################################
+import Gridap.TensorValues: data_index
+"""
+  Contract A and B where A and B are of a MultiValue type given indexing 
+  `A_ind` and `B_ind` which are vectors of symbols and `new_ind` is the resulting indexing.
+    eg.
+      ```
+      t2 = SymFourthOrderTensorValue(1:36 ...)
+      contract(t2,[:i,:j,:k,:l],t2,[:k,:l,:m,:n],[:i,:j,:m,:n])
+      ```
+  We assume that a contraction resulting in a 4-tensor will be such that the result is 
+  a symmetric 4-tensor to adhere to Gridap `SymFourthOrderTensorValue` typing.
+"""
 function contract(A::MultiValue, A_ind::Vector{Symbol}, B::MultiValue, B_ind::Vector{Symbol}, new_ind::Vector{Symbol})
   A_array = Array(get_array(A));
   B_array = Array(get_array(B));
@@ -641,7 +653,7 @@ function contract(A::MultiValue, A_ind::Vector{Symbol}, B::MultiValue, B_ind::Ve
     D = size(C,1)
     data_tuple = Array{Union{Nothing,Float64}}(undef, (D*(D+1)÷2)^2)
     for j=1:D,i=j:D,l=1:D,k=l:D
-      p = _4d_sym_tensor_linear_index(D,i,j,k,l)
+      p = data_index(SymFourthOrderTensorValue{D},i,j,k,l)
       data_tuple[p] = C[i,j,k,l]
     end
     return SymFourthOrderTensorValue(data_tuple...)
@@ -650,6 +662,19 @@ function contract(A::MultiValue, A_ind::Vector{Symbol}, B::MultiValue, B_ind::Ve
   return C
 end
 
+"""
+  `@GTensor` is macro which is similar to the `@Tensor` macro in TensorOperations.jl.
+  `@GTensor` macro-ises the above and allows for the computation with CellFields
+  via creating temporary operations function. The notation is almost identical to
+  TensorOperations.jl: @Tensor. 
+    eg.
+      ```
+      t1 = ThirdOrderTensorValue(1:27 ...)
+      t2 = SymFourthOrderTensorValue(1:36 ...)
+      @GTensor res[i,l,m]=t1[i,j,k]*t2[j,k,l,m]
+      ````
+  will compute `res` and create a new `res` variable of type `ThirdOrderTensorValue`.
+"""
 macro GTensor(expr)
     @assert expr.head == :(=)
     out_args = expr.args[1]
