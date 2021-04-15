@@ -35,6 +35,7 @@ using StaticArrays: SVector, MVector, SMatrix, MMatrix, SArray, MArray
 using Base: @propagate_inbounds, @pure
 using Gridap.Helpers
 using Gridap.Arrays
+using Gridap.CellData
 using LinearAlgebra
 using Random
 using TensorOperations
