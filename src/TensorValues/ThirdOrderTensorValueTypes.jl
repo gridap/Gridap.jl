@@ -77,6 +77,8 @@ convert(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}, arg::ThirdOrderTensorValue{
 change_eltype(::Type{ThirdOrderTensorValue{D1,D2,D3,T1,L}},::Type{T2}) where {D1,D2,D3,T1,T2,L} = ThirdOrderTensorValue{D1,D2,D3,T2,L}
 change_eltype(::T,::Type{T2}) where {T<:ThirdOrderTensorValue,T2} = change_eltype(T,T2)
 
+get_array(A::ThirdOrderTensorValue{D1,D2,D3,T}) where {D1,D2,D3,T} = SArray{Tuple{D1,D2,D3},T}(Tuple(A))
+
 zero(::Type{<:ThirdOrderTensorValue{D1,D2,D3,T}}) where {D1,D2,D3,T} = ThirdOrderTensorValue{D1,D2,D3,T}(tfill(zero(T),Val{D1*D2*D3}()))
 zero(::ThirdOrderTensorValue{D1,D2,D3,T}) where {D1,D2,D3,T} = zero(ThirdOrderTensorValue{D1,D2,D3,T})
 
@@ -111,4 +113,3 @@ length(::ThirdOrderTensorValue{D1,D2,D3}) where {D1,D2,D3} = length(ThirdOrderTe
 
 num_components(::Type{<:ThirdOrderTensorValue{D1,D2,D3}}) where {D1,D2,D3} = length(ThirdOrderTensorValue{D1,D2,D3})
 num_components(::ThirdOrderTensorValue{D1,D2,D3}) where {D1,D2,D3} = num_components(ThirdOrderTensorValue{D1,D2,D3})
-

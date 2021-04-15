@@ -17,6 +17,21 @@ end
 # Constructors (SymTensorValue)
 ###############################################################
 
+@generated function _SymFourthOrderTensorValue_to_array(arg::SymFourthOrderTensorValue{D,T}) where {D,T}
+  str = ""
+  for l in 1:D
+    for k in 1:D
+      for j in 1:D
+        for i in 1:D
+          p = _4d_sym_tensor_linear_index(D,i,j,k,l)
+          str *= "arg.data[$p], "
+        end
+      end
+    end
+  end
+  Meta.parse("SArray{Tuple{D,D,D,D},T}(($str))")
+end
+
 # Empty SymTensorValue constructor
 
 SymFourthOrderTensorValue()                   = SymFourthOrderTensorValue{0,Int}(NTuple{0,Int}())
@@ -100,6 +115,8 @@ rand(rng::AbstractRNG,::Random.SamplerType{<:SymFourthOrderTensorValue{D,T,L}}) 
 change_eltype(::Type{SymFourthOrderTensorValue{D,T1,L}},::Type{T2}) where {D,T1,T2,L} = SymFourthOrderTensorValue{D,T2,L}
 change_eltype(::SymFourthOrderTensorValue{D,T1,L},::Type{T2}) where {D,T1,T2,L} = change_eltype(SymFourthOrderTensorValue{D,T1,L},T2)
 
+get_array(A::SymFourthOrderTensorValue{D,T}) where {D,T} = _SymFourthOrderTensorValue_to_array(A)
+
 ###############################################################
 # Introspection (SymTensorValue)
 ###############################################################
@@ -115,4 +132,3 @@ length(::SymFourthOrderTensorValue{D}) where {D} = length(SymFourthOrderTensorVa
 
 num_components(::Type{<:SymFourthOrderTensorValue{D}}) where {D} = length(SymFourthOrderTensorValue{D})
 num_components(::SymFourthOrderTensorValue{D}) where {D} = num_components(SymFourthOrderTensorValue{D})
-

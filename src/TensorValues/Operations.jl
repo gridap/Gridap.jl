@@ -213,7 +213,7 @@ end
   end
   str = join(ss)
   Meta.parse("ThirdOrderTensorValue{$D,$D,$L}($str)")
-end 
+end
 
 const ⋅¹ = dot
 
@@ -436,7 +436,7 @@ det(a::MultiValue{Tuple{1,1}}) = a[1]
 function det(a::MultiValue{Tuple{2,2}})
   a_11 = a[1,1]; a_12 = a[1,2]
   a_21 = a[2,1]; a_22 = a[2,2]
-  a_11*a_22 - a_12*a_21 
+  a_11*a_22 - a_12*a_21
 end
 
 function det(a::MultiValue{Tuple{3,3}})
@@ -623,5 +623,67 @@ end
 #    end
 #end
 
+###############################################################
+# General Tensor Operations
+###############################################################
+function contract(A::MultiValue, A_ind::Vector{Symbol}, B::MultiValue, B_ind::Vector{Symbol}, new_ind::Vector{Symbol})
+  A_array = Array(get_array(A));
+  B_array = Array(get_array(B));
+  C = tensorcontract(A_array,A_ind,B_array,B_ind,new_ind)
+  if ndims(C) == 1
+    return VectorValue(C)
+  elseif ndims(C) == 2
+    return TensorValue(C)
+  elseif ndims(C) == 3
+    return ThirdOrderTensorValue(C)
+  elseif ndims(C) == 4
+    # @warn "Assuming C is symmetric 4-tensor"
+    D = size(C,1)
+    data_tuple = Array{Union{Nothing,Float64}}(undef, (D*(D+1)÷2)^2)
+    for j=1:D,i=j:D,l=1:D,k=l:D
+      p = _4d_sym_tensor_linear_index(D,i,j,k,l)
+      data_tuple[p] = C[i,j,k,l]
+    end
+    return SymFourthOrderTensorValue(data_tuple...)
+  end
+  @warn "No general MultiValue type for ndims(C)>4. Output of type Array."
+  return C
+end
 
-
+macro GTensor(expr)
+    @assert expr.head == :(=)
+    out_args = expr.args[1]
+    out_args = typeof(out_args) == Symbol ? [out_args] : out_args.args
+    in_args = expr.args[2]
+    @assert in_args.args[1] == :*
+    A_in_args = in_args.args[2].args
+    B_in_args = in_args.args[3].args
+    result = begin quote
+        if typeof($(A_in_args[1])) <: Array && typeof($(B_in_args[1])) <: Array
+            contract.($(A_in_args[1]),([$A_in_args[2:end]...],),
+                            $(B_in_args[1]),([$B_in_args[2:end]...],),([$out_args[2:end]...],))
+        elseif typeof($(A_in_args[1])) <: Array && typeof($(B_in_args[1])) <: Number
+            contract.($(A_in_args[1]),([$A_in_args[2:end]...],),
+                            ($(B_in_args[1]),),([$B_in_args[2:end]...],),([$out_args[2:end]...],))
+        elseif typeof($(A_in_args[1])) <: Number && typeof($(B_in_args[1])) <: Array
+            contract.(($(A_in_args[1]),),([$A_in_args[2:end]...],),
+                            $(B_in_args[1]),([$B_in_args[2:end]...],),([$out_args[2:end]...],))
+        elseif typeof($(A_in_args[1])) <: Number && typeof($(B_in_args[1])) <: Number
+            contract($(A_in_args[1]),[$A_in_args[2:end]...],
+                            $(B_in_args[1]),[$B_in_args[2:end]...],[$out_args[2:end]...])
+        else
+            function tmp_operation(a::A,b::B) where {A<:MultiValue, B<:MultiValue}
+                contract(a,[$A_in_args[2:end]...],
+                                b,[$B_in_args[2:end]...],[$out_args[2:end]...])
+            end
+            tmp_operation(a::CellField,b::Number) = Operation(tmp_operation)(a,b)
+            tmp_operation(a::Number,b::CellField) = Operation(tmp_operation)(a,b)
+            tmp_operation(a::CellField,b::CellField) = Operation(tmp_operation)(a,b)
+            tmp_operation(a::CellField,b::AbstractArray{<:Number}) = Operation(tmp_operation)(a,b)
+            tmp_operation(a::AbstractArray{<:Number},b::CellField) = Operation(tmp_operation)(a,b)
+            tmp_operation($(A_in_args[1]),$(B_in_args[1]))
+        end
+    end
+    end
+    @eval $(out_args[1]) = $result
+end

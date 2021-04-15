@@ -37,6 +37,7 @@ using Gridap.Helpers
 using Gridap.Arrays
 using LinearAlgebra
 using Random
+using TensorOperations
 
 export MultiValue
 export VectorValue
@@ -58,6 +59,8 @@ export ⊗
 export ⋅¹
 export ⋅²
 export double_contraction
+export contract
+export GTensor
 
 import Base: show
 import Base: zero, one

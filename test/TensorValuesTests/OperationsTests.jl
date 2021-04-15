@@ -688,4 +688,76 @@ b = 4.0 - 3.0*im
 @test outer(a,b) == a*b
 @test inner(a,b) == a*b
 
+## General Tensor Operations
+# contract function
+t1 = ThirdOrderTensorValue(1:27 ...)
+t2 = SymFourthOrderTensorValue(1:36 ...)
+t3 = TensorValue(1:9 ...)
+t4 = VectorValue(1:3 ...)
+@test contract(t1,[:i,:j,:k],t2,[:j,:k,:l,:m],[:i,:l,:m]) == t1 ⋅² t2
+@test contract(t2,[:i,:j,:k,:l],t2,[:k,:l,:m,:n],[:i,:j,:m,:n]) == t2 ⋅² t2
+@test contract(t3,[:i,:j],t4,[:j],[:i]) == t3 ⋅ t4
+@test contract(t1,[:i,:j,:k],t4,[:k],[:i,:j]) == t1 ⋅ t4
+@test contract(t3,[:i,:j],t1,[:j,:k,:l],[:i,:k,:l]) == t3 ⋅ t1
+@test contract(t1,[:i,:j,:k],t1,[:j,:k,:l],[:i,:l]) == t1 ⋅² t1
+# GTensor macro
+t1 = ThirdOrderTensorValue(1:27 ...)
+t2 = SymFourthOrderTensorValue(1:36 ...)
+t3 = TensorValue(1:9 ...)
+t4 = VectorValue(1:3 ...)
+t1_vec = fill(t1,3)
+t2_vec = fill(t2,3)
+t3_vec = fill(t3,3)
+t4_vec = fill(t4,3)
+@test t1 ⋅² t2 == @GTensor _tmp[i,l,m]=t1[i,j,k]*t2[j,k,l,m]
+@test t2 ⋅² t2 == @GTensor _tmp[i,j,m,n]=t2[i,j,k,l]*t2[k,l,m,n]
+@test t3 ⋅ t4 == @GTensor _tmp[i]=t3[i,j]*t4[j]
+@test t1 ⋅ t4 == @GTensor _tmp[i,j]=t1[i,j,k]*t4[k]
+@test t3 ⋅ t1 == @GTensor _tmp[i,k,l]=t3[i,j]*t1[j,k,l]
+@test t1 ⋅² t1 == @GTensor _tmp[i,l]=t1[i,j,k]*t1[j,k,l]
+@test t1 .⋅² t2_vec == @GTensor _tmp[i,l,m]=t1[i,j,k]*t2_vec[j,k,l,m]
+@test t1_vec .⋅² t2 == @GTensor _tmp[i,l,m]=t1_vec[i,j,k]*t2[j,k,l,m]
+@test t1_vec .⋅² t2_vec == @GTensor _tmp[i,l,m]=t1_vec[i,j,k]*t2[j,k,l,m]
+@test t2_vec .⋅² t2 == @GTensor _tmp[i,j,m,n]=t2_vec[i,j,k,l]*t2[k,l,m,n]
+@test t2 .⋅² t2_vec == @GTensor _tmp[i,j,m,n]=t2[i,j,k,l]*t2_vec[k,l,m,n]
+@test t2_vec .⋅² t2_vec == @GTensor _tmp[i,j,m,n]=t2_vec[i,j,k,l]*t2_vec[k,l,m,n]
+@test t3_vec .⋅ (t4,) == @GTensor _tmp[i]=t3_vec[i,j]*t4[j]
+@test t3 .⋅ t4_vec == @GTensor _tmp[i]=t3[i,j]*t4_vec[j]
+@test t3_vec .⋅ t4_vec == @GTensor _tmp[i]=t3[i,j]*t4_vec[j]
+@test t1_vec .⋅ (t4,) == @GTensor _tmp[i,j]=t1_vec[i,j,k]*t4[k]
+@test (t1,) .⋅ t4_vec == @GTensor _tmp[i,j]=t1[i,j,k]*t4_vec[k]
+@test t1_vec .⋅ t4_vec == @GTensor _tmp[i,j]=t1_vec[i,j,k]*t4_vec[k]
+@test t3_vec .⋅ (t1,) == @GTensor _tmp[i,k,l]=t3_vec[i,j]*t1[j,k,l]
+@test t3 .⋅ t1_vec == @GTensor _tmp[i,k,l]=t3[i,j]*t1_vec[j,k,l]
+@test t3_vec .⋅ t1_vec == @GTensor _tmp[i,k,l]=t3_vec[i,j]*t1_vec[j,k,l]
+@test t1_vec .⋅² t1 == @GTensor _tmp[i,l]=t1_vec[i,j,k]*t1[j,k,l]
+@test t1 .⋅² t1_vec == @GTensor _tmp[i,l]=t1[i,j,k]*t1_vec[j,k,l]
+@test t1_vec .⋅² t1_vec == @GTensor _tmp[i,l]=t1_vec[i,j,k]*t1_vec[j,k,l]
+
+domain = (0,1,0,1)
+cells = (3,3)
+model = CartesianDiscreteModel(domain,cells)
+trian = Triangulation(model)
+dΩ = Measure(trian,2)
+t1_fun(x) = t1*x[1]; t2_fun(x) = t2*x[1];
+t1_f = CellField(t1_fun,trian); t2_f = CellField(t2_fun,trian);
+@GTensor _tmp[i,m,n] = t1_f[i,k,l]*t2_f[k,l,m,n]
+@GTensor _res[i,m,n] = t1[i,k,l]*t2[k,l,m,n]
+@test sum(get_array(∫(_tmp)dΩ)) ≈ _res/3
+
+@GTensor _tmp[i,m,n] = t1_f[i,k,l]*t2[k,l,m,n]
+@GTensor _res[i,m,n] = t1[i,k,l]*t2[k,l,m,n]
+@test sum(get_array(∫(_tmp)dΩ)) ≈ _res/2
+
+t2_vec = fill(t2, 9);
+@GTensor _tmp[i,m,n] = t1_f[i,k,l]*t2_vec[k,l,m,n]
+@GTensor _res[i,m,n] = t1[i,k,l]*t2[k,l,m,n]
+@test sum(get_array(∫(_tmp)dΩ)) ≈ _res/2
+
+t1_vec = fill(t1, 9);
+@GTensor _tmp[i,m,n] = t1_vec[i,k,l]*t2_f[k,l,m,n]
+@GTensor _res[i,m,n] = t1[i,k,l]*t2[k,l,m,n]
+@test sum(get_array(∫(_tmp)dΩ)) ≈ _res/2
+
+
 end # module OperationsTests
