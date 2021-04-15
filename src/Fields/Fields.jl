@@ -83,6 +83,8 @@ export linear_combination
 export integrate
 export IntegrationMap
 
+export GBlock
+
 include("FieldsInterfaces.jl")
 
 include("FieldArrays.jl")

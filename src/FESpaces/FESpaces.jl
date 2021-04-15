@@ -8,7 +8,6 @@ module FESpaces
 using DocStringExtensions
 using Test
 using FillArrays
-using BlockArrays
 using SparseArrays
 using LinearAlgebra
 
@@ -21,7 +20,7 @@ using Gridap.Geometry
 using Gridap.CellData
 using Gridap.TensorValues
 
-using Gridap.Arrays: BlockArrayCooMap
+using Gridap.Fields: GBlock, BlockMap
 
 import Gridap.Fields: gradient
 import Gridap.Fields: ∇∇

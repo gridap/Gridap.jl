@@ -112,10 +112,21 @@ function BlockMap(l::Integer,i::Integer)
   BlockMap(s,[ci])
 end
 
+function BlockMap(l::Integer,inds::Vector{<:Integer})
+  s = (l,)
+  cis = [CartesianIndex((i,)) for i in inds]
+  BlockMap(s,cis)
+end
+
 function BlockMap(s::NTuple,i::Integer)
   cis = CartesianIndices(s)
   ci = cis[i]
   BlockMap(s,[ci])
+end
+
+function BlockMap(s::NTuple,inds::Vector{<:NTuple})
+  cis = [CartesianIndex(i) for i in inds]
+  BlockMap(s,cis)
 end
 
 function return_cache(k::BlockMap{N},a::A...) where {A,N}
@@ -466,7 +477,7 @@ function return_cache(
   gi = testvalue(B)
   ci = return_cache(k,fi,gi)
   hi = evaluate!(ci,k,fi,gi)
-  @check size(g.array,1) == 1
+  @check size(g.array,1) == 1 || size(g.array,2) == 0
   s = (size(f.array,1),size(g.array,2))
   a = Array{typeof(hi),2}(undef,s)
   b = Array{typeof(ci),2}(undef,s)
@@ -488,7 +499,7 @@ function return_cache(
   gi = testvalue(B)
   ci = return_cache(k,fi,gi)
   hi = evaluate!(ci,k,fi,gi)
-  @check size(f.array,1) == 1
+  @check size(f.array,1) == 1 || size(f.array,2) == 0
   s = (size(g.array,1),size(f.array,2))
   a = Array{typeof(hi),2}(undef,s)
   b = Array{typeof(ci),2}(undef,s)
@@ -506,7 +517,6 @@ end
 
 function evaluate!(
   cache,k::BroadcastingFieldOpMap,f::GBlock{A,1},g::GBlock{B,2}) where {A,B}
-  @check size(g.array,1) == 1
   a,b = cache
   s = size(a.array)
   for j in 1:s[2]
@@ -521,7 +531,6 @@ end
 
 function evaluate!(
   cache,k::BroadcastingFieldOpMap,f::GBlock{A,2},g::GBlock{B,1}) where {A,B}
-  @check size(f.array,1) == 1
   a,b = cache
   s = size(a.array)
   for j in 1:s[2]
@@ -532,5 +541,88 @@ function evaluate!(
     end
   end
   a
+end
+
+function Base.:+(a::GBlock,b::GBlock)
+  BroadcastingFieldOpMap(+)(a,b)
+end
+
+function Base.:-(a::GBlock,b::GBlock)
+  BroadcastingFieldOpMap(-)(a,b)
+end
+
+function Base.:*(a::GBlock{A,2},b::GBlock{B,1}) where {A,B}
+  @check size(a.array,2) == size(b.array,1)
+  ai = testvalue(A)
+  bi = testvalue(B)
+  ri = ai*bi
+  array = Vector{typeof(ri)}(undef,size(a.array,1))
+  touched = fill(false,size(a.array,1))
+  ni,nj = size(a.array)
+  for i in 1:ni
+    for j in nj
+      if a.touched[i,j] && b.touched[j]
+        if !touched[j]
+          array[i] = a.array[i,j]*b.array[j]
+          touched[i] = true
+        else
+          array[i] = array[i] + a.array[i,j]*b.array[j]
+        end
+      end
+    end
+  end
+  GBlock(array,touched)
+end
+
+function Base.:*(a::GBlock{A,2},b::GBlock{B,2}) where {A,B}
+  @check size(a.array,2) == size(b.array,1)
+  ai = testvalue(A)
+  bi = testvalue(B)
+  ri = ai*bi
+  ni = size(a.array,1)
+  nj = size(b.array,2)
+  nk = size(a.array,2)
+  s = (ni,nj)
+  array = Matrix{typeof(ri)}(undef,s)
+  touched = fill(false,s)
+  ni,nj = size(a.array)
+  for i in 1:ni
+    for j in 1:nj
+      for k in nk
+        if a.touched[i,k] && b.touched[k,j]
+          if !touched[i,j]
+            array[i,j] = a.array[i,k]*b.array[k,j]
+            touched[i,j] = true
+          else
+            array[i,j] = array[i,j] + a.array[i,k]*b.array[k,j]
+          end
+        end
+      end
+    end
+  end
+  GBlock(array,touched)
+end
+
+function LinearAlgebra.mul!(
+  c::GBlock{C,1} where C,
+  a::GBlock{A,2} where A,
+  b::GBlock{B,1} where B,
+  α::Number,β::Number)
+
+  ni, nj = size(a)
+  for i in 1:ni
+    if β!=1 && c.touched[i]
+      scale_entries!(c.array[i],β)
+    end
+    for j in 1:nj
+      if a.touched[i,j] && b.touched
+        ci = c.touched[i]
+        aij = a.array[i,j]
+        bj = b.array[j]
+        mul!(ci,aij,bj,α,1)
+      end
+    end
+  end
+  c
 end
 

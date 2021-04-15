@@ -135,4 +135,17 @@ collect(cell_dux_jump)
 cell_int_du⁺ = lazy_map(integrate,cell_du⁺,cell_x,cell_w)
 collect(cell_int_du⁺)
 
+cell_int_dv⁺ = lazy_map(integrate,cell_dv⁺,cell_x,cell_w)
+collect(cell_int_dv⁺)
+
+#@show cell_dux_jump[end][1,1][1,1]
+
+cell_matp = lazy_map(BroadcastingFieldOpMap(*),cell_dqx⁺,cell_dux_jump)
+cell_mat = lazy_map(IntegrationMap(),cell_matp,cell_w)
+
+A = cell_mat[end]
+b = cell_int_dv⁺[end]
+c = A*b
+c = A*A
+
 end # module

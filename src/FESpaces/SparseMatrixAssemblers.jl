@@ -219,43 +219,35 @@ function symbolic_loop_matrix!(A,a::GenericSparseMatrixAssembler,matdata)
     cols_cache = array_cache(cellidscols)
     @assert length(cellidscols) == length(cellidsrows)
     if length(cellidscols) > 0
-      mat = first(cellmat)
-      Is = _get_block_layout(mat)
-      _symbolic_loop_matrix!(A,rows_cache,cols_cache,cellidsrows,cellidscols,Is)
+      mat1 = first(cellmat)
+      _symbolic_loop_matrix!(A,rows_cache,cols_cache,cellidsrows,cellidscols,mat1)
     end
   end
   A
 end
 
-function _get_block_layout(a::Tuple)
-  _get_block_layout(a[1])
-end
-
-function _get_block_layout(a::AbstractMatrix)
-  nothing
-end
-
-function _get_block_layout(a::BlockArrayCoo)
-  [(I,_get_block_layout(a[I])) for I in eachblockid(a) if is_nonzero_block(a,I) ]
-end
-
-@noinline function _symbolic_loop_matrix!(A,rows_cache,cols_cache,cell_rows,cell_cols,Is)
+@noinline function _symbolic_loop_matrix!(A,rows_cache,cols_cache,cell_rows,cell_cols,mat1)
   for cell in 1:length(cell_cols)
     rows = getindex!(rows_cache,cell_rows,cell)
     cols = getindex!(cols_cache,cell_cols,cell)
-    _symbolic_matrix_entries_at_cell!(A,rows,cols,Is)
+    _symbolic_matrix_entries_at_cell!(A,rows,cols,mat1)
   end
 end
 
-@inline function _symbolic_matrix_entries_at_cell!(A,rows,cols,Is)
+@inline function _symbolic_matrix_entries_at_cell!(A,rows,cols,mat1)
   add_entries!(A,nothing,rows,cols)
 end
 
 @inline function _symbolic_matrix_entries_at_cell!(
-  A,rows::BlockArrayCoo,cols::BlockArrayCoo,Is::AbstractArray)
-  for (I,Is_next) in Is
-    i,j = I.n
-    _symbolic_matrix_entries_at_cell!(A,rows[Block(i)],cols[Block(j)],Is_next)
+  A,rows::GBlock,cols::GBlock,mat1::GBlock)
+  ni,nj = size(mat1.touched)
+  for j in 1:nj
+    for i in 1:ni
+      if mat1.touched[i,j]
+        _symbolic_matrix_entries_at_cell!(
+          A,rows.array[i],cols.array[j],mat1.array[i,j])
+      end
+    end
   end
 end
 
@@ -289,11 +281,14 @@ end
 end
 
 @inline function _numeric_matrix_entries_at_cell!(
-  mat,rows::BlockArrayCoo,cols::BlockArrayCoo,vals::BlockArrayCoo)
-  for I in eachblockid(vals)
-    if is_nonzero_block(vals,I)
-      i,j = I.n
-      _numeric_matrix_entries_at_cell!(mat,rows[Block(i)],cols[Block(j)],vals[I])
+  mat,rows::GBlock,cols::GBlock,vals::GBlock)
+  ni, nj = size(vals.touched)
+  for j in 1:nj
+    for i in 1:ni
+      if vals.touched[i,j]
+        _numeric_matrix_entries_at_cell!(
+          mat,rows.array[i],cols.array[j],vals.array[i,j])
+      end
     end
   end
 end
@@ -326,10 +321,11 @@ end
   add_entries!(vec,vals,rows)
 end
 
-@inline function _numeric_vector_entries_at_cell!(vec,rows::BlockArrayCoo,vals::BlockArrayCoo)
-  for I in eachblockid(vals)
-    if is_nonzero_block(vals,I)
-      _numeric_vector_entries_at_cell!(vec,rows[I],vals[I])
+@inline function _numeric_vector_entries_at_cell!(
+  vec,rows::GBlock,vals::GBlock)
+  for i in 1:length(vals.touched)
+    if vals.touched[i]
+      _numeric_vector_entries_at_cell!(vec,rows.array[i],vals.array[i])
     end
   end
 end

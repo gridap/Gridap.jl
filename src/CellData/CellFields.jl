@@ -191,11 +191,11 @@ end
 """
 """
 struct GenericCellField{DS} <: CellField
-  cell_field::AbstractArray{<:Union{Field,AbstractArray{<:Field}}}
+  cell_field::AbstractArray
   trian::Triangulation
   domain_style::DS
   function GenericCellField(
-    cell_field::AbstractArray{<:Union{Field,AbstractArray{<:Field}}},
+    cell_field::AbstractArray,
     trian::Triangulation,
     domain_style::DomainStyle)
 

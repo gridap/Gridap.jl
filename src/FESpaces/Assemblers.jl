@@ -40,14 +40,6 @@ end
   nothing
 end
 
-@inline function map_rows!(
-  gids::BlockArrayCoo,a::AssemblyStrategy,rows::BlockArrayCoo)
-  for I in eachblockid(rows)
-    map_rows!(gids[I],a,rows[I])
-  end
-  nothing
-end
-
 @inline function map_cols!(gids,a::AssemblyStrategy,cols)
   u = -one(eltype(gids))
   for i in eachindex(cols)
@@ -57,14 +49,6 @@ end
     else
       gids[i] = u
     end
-  end
-  nothing
-end
-
-@inline function map_cols!(
-  gids::BlockArrayCoo,a::AssemblyStrategy,cols::BlockArrayCoo)
-  for I in eachblockid(cols)
-    map_cols!(gids[I],a,cols[I])
   end
   nothing
 end
@@ -86,23 +70,47 @@ struct AssemblyStrategyMap{S,T} <: Map
   end
 end
 
-function Arrays.return_cache(a::AssemblyStrategyMap,ids)
+function Arrays.return_cache(a::AssemblyStrategyMap,ids::AbstractArray)
   gids = similar(ids,Int,axes(ids))
   CachedArray(gids)
 end
 
-function Arrays.evaluate!(cache,a::AssemblyStrategyMap{:cols},ids)
+function Arrays.evaluate!(cache,a::AssemblyStrategyMap{:cols},ids::AbstractArray)
   setaxes!(cache,axes(ids))
   gids = cache.array
   map_cols!(gids,a.strategy,ids)
   gids
 end
 
-function Arrays.evaluate!(cache,a::AssemblyStrategyMap{:rows},ids)
+function Arrays.evaluate!(cache,a::AssemblyStrategyMap{:rows},ids::AbstractArray)
   setaxes!(cache,axes(ids))
   gids = cache.array
   map_rows!(gids,a.strategy,ids)
   gids
+end
+
+function Arrays.return_cache(a::AssemblyStrategyMap,ids::GBlock)
+  fi = testitem(ids)
+  ci = return_cache(a,fi)
+  gi = evaluate!(ci,a,fi)
+  a = Array{typeof(gi),ndims(ids)}(undef,size(ids))
+  b = Array{typeof(ci),ndims(ids)}(undef,size(ids))
+  for i in eachindex(ids.array)
+    if ids.touched[i]
+      b[i] = return_cache(a,ids.array[i])
+    end
+  end
+  GBlock(a,ids.touched), b
+end
+
+function Arrays.evaluate!(cache,a::AssemblyStrategyMap,ids::GBlock)
+  a,b = cache
+  for i in eachindex(ids.array)
+    if ids.touched[i]
+      a.array[i] = evaluate!(b[i],a,ids.array[i])
+    end
+  end
+  a
 end
 
 struct DefaultAssemblyStrategy <: AssemblyStrategy end

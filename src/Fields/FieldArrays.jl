@@ -521,7 +521,7 @@ end
   b::AbstractArray{S,3} where S)
 
   @check size(a,1) == size(b,1)
-  @check size(b,2) == 1
+  @check size(b,2) == 1 || size(b,1) == 0
   np, ni = size(a)
   nj = size(b,3)
   setsize!(cache,(np,ni,nj))

@@ -25,12 +25,7 @@ end
 function get_cell_dof_entries(cell_entries::AbstractArray,cellids::SkeletonPair)
   cell_entries_plus = get_cell_dof_entries(cell_entries,cellids.plus)
   cell_entries_minus = get_cell_dof_entries(cell_entries,cellids.minus)
-  cell_axes_plus = lazy_map(axes,cell_entries_plus)
-  cell_axes_minus = lazy_map(axes,cell_entries_minus)
-  cell_axes = lazy_map(cell_axes_plus,cell_axes_minus) do axp, axm
-    (append_ranges([axp[1],axm[1]]),)
-  end
-  lazy_map(BlockArrayCooMap((2,),[(1,),(2,)]),cell_axes,cell_entries_plus,cell_entries_minus)
+  lazy_map(BlockMap(2,[1,2]),cell_entries_plus,cell_entries_minus)
 end
 
 function get_cell_dof_values(f::FEFunction,cellids)
@@ -164,12 +159,12 @@ BasisStyle(::T) where T <: FEBasis = BasisStyle(T)
 DomainStyle(::T) where T <: FEBasis = DomainStyle(T)
 
 struct SingleFieldFEBasis{BS<:BasisStyle,DS<:DomainStyle} <: FEBasis
-  cell_basis::AbstractArray{<:AbstractArray{<:Field}}
+  cell_basis::AbstractArray
   trian::Triangulation
   basis_style::BS
   domain_style::DS
   function SingleFieldFEBasis(
-    cell_basis::AbstractArray{<:AbstractArray{<:Field}},
+    cell_basis::AbstractArray,
     trian::Triangulation,
     basis_style::BasisStyle,
     domain_style::DomainStyle)
@@ -205,28 +200,14 @@ function change_domain_skeleton(a::FEBasis,trian::SkeletonTriangulation,target_d
 end
 
 function _fix_cell_basis_dofs_at_skeleton(pair,::TestBasis)
-  cell_axes_plus = lazy_map(axes,pair.plus)
-  cell_axes_minus = lazy_map(axes,pair.minus)
-  function skeleton_axes_test(axp, axm)
-    (append_ranges([axp[1],axm[1]]),)
-  end
-  cell_axes = lazy_map(skeleton_axes_test,cell_axes_plus,cell_axes_minus)
-  plus = lazy_map(Fields.BlockFieldArrayCooMap((2,),[(1,)]),cell_axes,pair.plus)
-  minus = lazy_map(Fields.BlockFieldArrayCooMap((2,),[(2,)]),cell_axes,pair.minus)
+  plus = lazy_map(BlockMap(2,1),pair.plus)
+  minus = lazy_map(BlockMap(2,2),pair.minus)
   SkeletonPair(plus,minus)
 end
 
 function _fix_cell_basis_dofs_at_skeleton(pair,::TrialBasis)
-  cell_axes_plus = lazy_map(axes,pair.plus)
-  cell_axes_minus = lazy_map(axes,pair.minus)
-  function skeleton_axes_trial(axp, axm)
-    r2 = append_ranges([axp[2],axm[2]])
-    r1 = similar_range(r2,1)
-    (r1,r2)
-  end
-  cell_axes = lazy_map(skeleton_axes_trial,cell_axes_plus,cell_axes_minus)
-  plus = lazy_map(Fields.BlockFieldArrayCooMap((1,2),[(1,1)]),cell_axes,pair.plus)
-  minus = lazy_map(Fields.BlockFieldArrayCooMap((1,2),[(1,2)]),cell_axes,pair.minus)
+  plus = lazy_map(BlockMap((1,2),1),pair.plus)
+  minus = lazy_map(BlockMap((1,2),2),pair.minus)
   SkeletonPair(plus,minus)
 end
 
@@ -271,16 +252,8 @@ end
 function get_cell_constraints(cell_entries::AbstractArray,cellids::SkeletonPair)
   cell_constraints_plus = get_cell_constraints(cell_entries,cellids.plus)
   cell_constraints_minus = get_cell_constraints(cell_entries,cellids.minus)
-  cell_axes_plus = lazy_map(axes,cell_constraints_plus)
-  cell_axes_minus = lazy_map(axes,cell_constraints_minus)
-  cell_axes = lazy_map(cell_axes_plus,cell_axes_minus) do axp, axm
-    r1 = append_ranges([axp[1],axm[1]])
-    r2 = append_ranges([axp[2],axm[2]])
-    (r1,r2)
-  end
   lazy_map(
-    BlockArrayCooMap((2,2),[(1,1),(2,2)]),
-    cell_axes,
+    BlockMap((2,2),[(1,1),(2,2)]),
     cell_constraints_plus,
     cell_constraints_minus)
 end
