@@ -19,7 +19,7 @@ add_tag_from_tags!(labels,"dirichlet",[1,2,5])
 add_tag_from_tags!(labels,"neumann",[6,7,8])
 
 V = FESpace(
-  model,ReferenceFE(:Lagrangian,Float64,1), conformity=:H1, dirichlet_tags="dirichlet")
+  model,ReferenceFE(lagrangian,Float64,1), conformity=:H1, dirichlet_tags="dirichlet")
 test_single_field_fe_space(V)
 
 fdof_to_val = collect(Float64,1:num_free_dofs(V))
@@ -57,9 +57,9 @@ vch = interpolate(v,Vc)
 Ω = Triangulation(model)
 Γ = BoundaryTriangulation(model,tags="neumann")
 Λ = SkeletonTriangulation(model)
-dΩ = LebesgueMeasure(Ω,2)
-dΓ = LebesgueMeasure(Γ,2)
-dΛ = LebesgueMeasure(Λ,2)
+dΩ = Measure(Ω,2)
+dΓ = Measure(Γ,2)
+dΛ = Measure(Λ,2)
 
 #using Gridap.Visualization
 #writevtk(Ω,"trian",nsubcells=10,cellfields=["vh"=>vh,"vch"=>vch])

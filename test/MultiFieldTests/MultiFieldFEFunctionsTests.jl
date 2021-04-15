@@ -5,7 +5,6 @@ using Gridap.Arrays
 using Gridap.Geometry
 using Gridap.FESpaces
 using Gridap.Fields
-using Gridap.Integration
 using Gridap.CellData
 using Gridap.MultiField
 using Gridap.ReferenceFEs
@@ -21,8 +20,8 @@ trian = get_triangulation(model)
 degree = order
 quad = CellQuadrature(trian,degree)
 
-V = TestFESpace(model,ReferenceFE(:Lagrangian,Float64,order);conformity=:H1)
-Q = TestFESpace(model,ReferenceFE(:Lagrangian,Float64,order-1),conformity=:L2)
+V = TestFESpace(model,ReferenceFE(lagrangian,Float64,order);conformity=:H1)
+Q = TestFESpace(model,ReferenceFE(lagrangian,Float64,order-1),conformity=:L2)
 
 U = TrialFESpace(V)
 P = TrialFESpace(Q)
@@ -35,7 +34,7 @@ xh = FEFunction(X,free_values)
 test_fe_function(xh)
 uh, ph = xh
 
-cell_values = get_cell_dof_values(xh)
+cell_values = get_cell_dof_values(xh,trian)
 @test isa(cell_values[1],BlockArrayCoo)
 
 end # module

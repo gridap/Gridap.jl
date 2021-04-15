@@ -56,8 +56,8 @@ further defined and clarified by project maintainers.
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
 reported by contacting the project administrators, either 
-[Santiago Badia](santiago.badia@monash.edu) or 
-[Francesc Verdugo](fverdugo@cimne.upc.edu). All
+[Santiago Badia](mailto:santiago.badia@monash.edu) or 
+[Francesc Verdugo](mailto:fverdugo@cimne.upc.edu). All
 complaints will be reviewed and investigated and will result in a response that
 is deemed necessary and appropriate to the circumstances. The project team is
 obligated to maintain confidentiality with regard to the reporter of an incident.
@@ -69,5 +69,5 @@ members of the project's leadership.
 
 ## Attribution
 
-This Code of Conduct is adapted from the [Contributor Covenant][homepage], version 1.4,
+This Code of Conduct is adapted from the [Contributor Covenant](https://www.contributor-covenant.org/), version 1.4,
 available at https://www.contributor-covenant.org/version/1/4/code-of-conduct.html

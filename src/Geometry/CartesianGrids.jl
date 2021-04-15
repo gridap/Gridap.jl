@@ -178,16 +178,16 @@ end
 """
 struct CartesianGrid{D,T,F} <: Grid{D,D}
   node_coords::CartesianCoordinates{D,T,F}
-  cell_nodes::CartesianCellNodes{D}
+  cell_node_ids::CartesianCellNodes{D}
   cell_type::Fill{Int8,1,Tuple{Base.OneTo{Int}}}
   @doc """
       CartesianGrid(desc::CartesianDescriptor)
   """
   function CartesianGrid(desc::CartesianDescriptor{D,T,F}) where {D,T,F}
     node_coords = CartesianCoordinates(desc)
-    cell_nodes = CartesianCellNodes(desc.partition)
-    cell_type = Fill(Int8(1),length(cell_nodes))
-    new{D,T,F}(node_coords,cell_nodes,cell_type)
+    cell_node_ids = CartesianCellNodes(desc.partition)
+    cell_type = Fill(Int8(1),length(cell_node_ids))
+    new{D,T,F}(node_coords,cell_node_ids,cell_type)
   end
 end
 
@@ -206,7 +206,7 @@ get_node_coordinates(g::CartesianGrid) = g.node_coords
 
 get_cell_type(g::CartesianGrid) = g.cell_type
 
-get_cell_nodes(g::CartesianGrid) = g.cell_nodes
+get_cell_node_ids(g::CartesianGrid) = g.cell_node_ids
 
 function get_cell_map(grid::CartesianGrid{D,T,typeof(identity)} where {D,T})
   CartesianMap(grid.node_coords.data)
@@ -237,7 +237,7 @@ end
 
 # Cell map
 
-struct CartesianMap{D,T,L} <: AbstractArray{AffineMap{D,T,L},D}
+struct CartesianMap{D,T,L} <: AbstractArray{AffineMap{D,D,T,L},D}
   data::CartesianDescriptor{D,T,typeof(identity)}
   function CartesianMap(des::CartesianDescriptor{D,T}) where {D,T}
     L = D*D
@@ -269,9 +269,8 @@ function lazy_map(::typeof(∇),a::CartesianMap)
 end
 
 function lazy_map(::typeof(∇),a::LazyArray{<:Fill{<:Reindex{<:CartesianMap}}})
-  i_to_map = a.g.value.values
-  j_to_i = a.f[1]
+  i_to_map = a.maps.value.values
+  j_to_i = a.args[1]
   i_to_grad = lazy_map(∇,i_to_map)
   lazy_map(Reindex(i_to_grad),j_to_i)
 end
-

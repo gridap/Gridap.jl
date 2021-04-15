@@ -108,31 +108,26 @@ function Base.getindex(a::Table,i::UnitRange)
   Table(data,ptrs)
 end
 
+function Base.getindex(a::Table,ids::AbstractVector{<:Integer})
+  ptrs = similar(a.ptrs,eltype(a.ptrs),length(ids)+1)
+  for (i,id) in enumerate(ids)
+    ptrs[i+1] = a.ptrs[id+1]-a.ptrs[id]
+  end
+  length_to_ptrs!(ptrs)
+  ndata = ptrs[end]-1
+  data = similar(a.data,eltype(a.data),ndata)
+  for (i,id) in enumerate(ids)
+    n = a.ptrs[id+1]-a.ptrs[id]
+    p1 = ptrs[i]-1
+    p2 = a.ptrs[id]-1
+    for j in 1:n
+      data[p1+j] = a.data[p2+j]
+    end
+  end
+  Table(data,ptrs)
+end
+
 # Helper functions related with Tables
-
-"""
-    rewind_ptrs!(ptrs)
-
-Rewind the given vector of pointers.
-"""
-function rewind_ptrs!(ptrs::AbstractVector{<:Integer})
-  @inbounds for i in (length(ptrs)-1):-1:1
-    ptrs[i+1] = ptrs[i]
-  end
-  ptrs[1] = 1
-end
-
-"""
-    length_to_ptrs!(ptrs)
-
-Given a vector of integers, mutate it from length state to pointer state.
-"""
-function length_to_ptrs!(ptrs::AbstractArray{<:Integer})
-  ptrs[1] = 1
-  @inbounds for i in 1:(length(ptrs)-1)
-    ptrs[i+1] += ptrs[i]
-  end
-end
 
 """
     data, ptrs = generate_data_and_ptrs(vv)

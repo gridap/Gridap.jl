@@ -81,18 +81,18 @@ end
 
 """
 Subtype of `AbstractArray` which is the result of `lazy_map`. It represents the
-result of lazy_maping a `Map` to a set of arrays that
+result of lazy_mapping a `Map` to a set of arrays that
 contain the mapping arguments. This struct makes use of the cache provided
 by the mapping in order to compute its indices (thus allowing to prevent
 allocation). The array is lazy, i.e., the values are only computed on
 demand. It extends the `AbstractArray` API with two methods:
 
    `array_cache(a::AbstractArray)`
-   `getindex!(a::AbstractArray,i...)`
+   `getindex!(cache,a::AbstractArray,i...)`
 """
 struct LazyArray{G,T,N,F} <: AbstractArray{T,N}
-  g::G
-  f::F
+  maps::G
+  args::F
   function LazyArray(::Type{T}, g::AbstractArray, f::AbstractArray...) where T
     G = typeof(g)
     F = typeof(f)
@@ -140,15 +140,15 @@ end
 
 function _array_cache!(hash::Dict,a::LazyArray)
   @boundscheck begin
-    @notimplementedif ! all(map(isconcretetype, map(eltype, a.f)))
-    if ! (eltype(a.g) <: Function)
-      @notimplementedif ! isconcretetype(eltype(a.g))
+    @notimplementedif ! all(map(isconcretetype, map(eltype, a.args)))
+    if ! (eltype(a.maps) <: Function)
+      @notimplementedif ! isconcretetype(eltype(a.maps))
     end
   end
-  gi = testitem(a.g)
-  fi = map(testitem,a.f)
-  cg = array_cache(hash,a.g)
-  cf = map(fi->array_cache(hash,fi),a.f)
+  gi = testitem(a.maps)
+  fi = map(testitem,a.args)
+  cg = array_cache(hash,a.maps)
+  cf = map(fi->array_cache(hash,fi),a.args)
   cgi = return_cache(gi, fi...)
   index = -1
   #item = evaluate!(cgi,gi,testargs(gi,fi...)...)
@@ -156,47 +156,51 @@ function _array_cache!(hash::Dict,a::LazyArray)
   (cg, cgi, cf), IndexItemPair(index, item)
 end
 
-@inline getindex!(cache, a::LazyArray, i::Integer) = _getindex_optimized!(cache,a,i)
-
-@inline function getindex!(cache, a::LazyArray{G,T,N}, i::Vararg{Integer,N}) where {G,T,N}
-  _getindex_optimized!(cache,a,i...)
-end
-
-@inline function _getindex_optimized!(cache, a::LazyArray, i...)
+@inline function getindex!(cache, a::LazyArray, i::Integer)
   _cache, index_and_item = cache
-  index = LinearIndices(a)[i...]
+  index = LinearIndices(a)[i]
   if index_and_item.index != index
-    item = _getindex!(_cache,a,i...)
+    cg, cgi, cf = _cache
+    gi = getindex!(cg, a.maps, i)
+    index_and_item.item = _getindex_and_call!(cgi,gi,cf,a.args,i)
     index_and_item.index = index
-    index_and_item.item = item
   end
   index_and_item.item
 end
 
-@inline function _getindex!(cache, a::LazyArray, i...)
-  cg, cgi, cf = cache
-  gi = getindex!(cg, a.g, i...)
-  fi = map((cj,fj) -> getindex!(cj,fj,i...),cf,a.f)
-  vi = evaluate!(cgi, gi, fi...)
-  vi
+@inline function getindex!(cache, a::LazyArray{G,T,N}, i::Vararg{Integer,N}) where {G,T,N}
+  _cache, index_and_item = cache
+  index = LinearIndices(a)[i...]
+  if index_and_item.index != index
+    cg, cgi, cf = _cache
+    gi = getindex!(cg, a.maps, i...)
+    index_and_item.item = _getindex_and_call!(cgi,gi,cf,a.args,i...)
+    index_and_item.index = index
+  end
+  index_and_item.item
+end
+
+@inline function _getindex_and_call!(cgi,gi,cf,args,i...)
+  fi = map((cj,fj) -> getindex!(cj,fj,i...),cf,args)
+  evaluate!(cgi, gi, fi...)
 end
 
 function Base.getindex(a::LazyArray, i::Integer)
-  gi = a.g[i]
-  fi = map(fj -> fj[i],a.f)
+  gi = a.maps[i]
+  fi = map(fj -> fj[i],a.args)
   vi = evaluate(gi, fi...)
   vi
 end
 
 function Base.getindex(a::LazyArray{G,T,N}, i::Vararg{Integer,N}) where {G,T,N}
-  gi = a.g[i...]
-  fi = map(fj -> fj[i...],a.f)
+  gi = a.maps[i...]
+  fi = map(fj -> fj[i...],a.args)
   vi = evaluate(gi, fi...)
   vi
 end
 
-Base.size(a::LazyArray) = size(a.g)
-Base.size(a::LazyArray{G,T,1} where {G,T}) = (length(a.g),)
+Base.size(a::LazyArray) = size(a.maps)
+Base.size(a::LazyArray{G,T,1} where {G,T}) = (length(a.maps),)
 
 function Base.sum(a::LazyArray)
   cache = array_cache(a)
@@ -204,7 +208,7 @@ function Base.sum(a::LazyArray)
 end
 
 function _sum_lazy_array(cache,a)
-  r = zero(eltype(a))
+  r = zero(testitem(a))
   for i in eachindex(a)
     ai = getindex!(cache,a,i)
     r += ai
@@ -216,23 +220,22 @@ function testitem(a::LazyArray{A,T} where A) where T
   if length(a) > 0
     first(a)
   else
-    gi = testitem(a.g)
-    fi = map(testitem,a.f)
+    gi = testitem(a.maps)
+    fi = map(testitem,a.args)
     return_value(gi,fi...)
   end::T
 end
 
 # Particular implementations for Fill
 
-#function lazy_map(::typeof(evaluate),f::Fill, a::Fill...)
-#  ai = map(ai->ai.value,a)
-#  r = evaluate(f.value, ai...)
-#  s = _common_size(f, a...)
-#  Fill(r, s)
-#end
+function lazy_map(::typeof(evaluate),f::Fill, a::Fill...)
+  ai = map(ai->ai.value,a)
+  r = evaluate(f.value, ai...)
+  s = _common_size(f, a...)
+  Fill(r, s)
+end
 
 function lazy_map(::typeof(evaluate),::Type{T}, f::Fill, a::Fill...) where T
-  #lazy_map(evaluate, f, a...)
   ai = map(ai->ai.value,a)
   r = evaluate(f.value, ai...)
   s = _common_size(f, a...)
@@ -241,7 +244,7 @@ end
 
 function _common_size(a::AbstractArray...)
   a1, = a
-  @check all(map(ai->length(a1) == length(ai),a)) "Array sizes $(map(size,a)) are not compatible."
+  #@check all(map(ai->length(a1) == length(ai),a)) "Array sizes $(map(size,a)) are not compatible."
   if all( map(ai->size(a1) == size(ai),a) )
     size(a1)
   else
@@ -277,3 +280,88 @@ function resetcounter!(a::ArrayWithCounter)
   fill!(a.counter,zero(eltype(a.counter)))
 end
 
+
+# These extra methods are introduced to circumvent an unwanted run-time dispatch with julia 0.15 and 0.16
+# see https://discourse.julialang.org/t/performance-depends-dramatically-on-compilation-order/58425
+# Hopefully, they can be removed in the future
+
+#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any},i...)
+#  f1 = getindex!(cf[1],args[1],i...)
+#  evaluate!(cgi,gi,f1)
+#end
+#
+#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any},i...)
+#  f1 = getindex!(cf[1],args[1],i...)
+#  f2 = getindex!(cf[2],args[2],i...)
+#  evaluate!(cgi,gi,f1,f2)
+#end
+#
+#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any},i...)
+#  f1 = getindex!(cf[1],args[1],i...)
+#  f2 = getindex!(cf[2],args[2],i...)
+#  f3 = getindex!(cf[3],args[3],i...)
+#  evaluate!(cgi,gi,f1,f2,f3)
+#end
+#
+#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any},i...)
+#  f1 = getindex!(cf[1],args[1],i...)
+#  f2 = getindex!(cf[2],args[2],i...)
+#  f3 = getindex!(cf[3],args[3],i...)
+#  f4 = getindex!(cf[4],args[4],i...)
+#  evaluate!(cgi,gi,f1,f2,f3,f4)
+#end
+#
+#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any},i...)
+#  f1 = getindex!(cf[1],args[1],i...)
+#  f2 = getindex!(cf[2],args[2],i...)
+#  f3 = getindex!(cf[3],args[3],i...)
+#  f4 = getindex!(cf[4],args[4],i...)
+#  f5 = getindex!(cf[5],args[5],i...)
+#  evaluate!(cgi,gi,f1,f2,f3,f4,f5)
+#end
+#
+#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any,Any},i...)
+#  f1 = getindex!(cf[1],args[1],i...)
+#  f2 = getindex!(cf[2],args[2],i...)
+#  f3 = getindex!(cf[3],args[3],i...)
+#  f4 = getindex!(cf[4],args[4],i...)
+#  f5 = getindex!(cf[5],args[5],i...)
+#  f6 = getindex!(cf[6],args[6],i...)
+#  evaluate!(cgi,gi,f1,f2,f3,f4,f5,f6)
+#end
+#
+#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any,Any,Any},i...)
+#  f1 = getindex!(cf[1],args[1],i...)
+#  f2 = getindex!(cf[2],args[2],i...)
+#  f3 = getindex!(cf[3],args[3],i...)
+#  f4 = getindex!(cf[4],args[4],i...)
+#  f5 = getindex!(cf[5],args[5],i...)
+#  f6 = getindex!(cf[6],args[6],i...)
+#  f7 = getindex!(cf[7],args[7],i...)
+#  evaluate!(cgi,gi,f1,f2,f3,f4,f5,f6,f7)
+#end
+#
+#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any,Any,Any,Any},i...)
+#  f1 = getindex!(cf[1],args[1],i...)
+#  f2 = getindex!(cf[2],args[2],i...)
+#  f3 = getindex!(cf[3],args[3],i...)
+#  f4 = getindex!(cf[4],args[4],i...)
+#  f5 = getindex!(cf[5],args[5],i...)
+#  f6 = getindex!(cf[6],args[6],i...)
+#  f7 = getindex!(cf[7],args[7],i...)
+#  f8 = getindex!(cf[8],args[8],i...)
+#  evaluate!(cgi,gi,f1,f2,f3,f4,f5,f6,f7,f8)
+#end
+#
+#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any,Any,Any,Any,Any},i...)
+#  f1 = getindex!(cf[1],args[1],i...)
+#  f2 = getindex!(cf[2],args[2],i...)
+#  f3 = getindex!(cf[3],args[3],i...)
+#  f4 = getindex!(cf[4],args[4],i...)
+#  f5 = getindex!(cf[5],args[5],i...)
+#  f6 = getindex!(cf[6],args[6],i...)
+#  f7 = getindex!(cf[7],args[7],i...)
+#  f8 = getindex!(cf[8],args[8],i...)
+#  f9 = getindex!(cf[9],args[9],i...)
+#  evaluate!(cgi,gi,f1,f2,f3,f4,f5,f6,f7,f8,f9)
+#end

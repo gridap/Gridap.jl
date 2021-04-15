@@ -1,27 +1,14 @@
-"""
-    struct DuffyQuadrature{D,T} <: Quadrature{D,T}
-      coordinates::Vector{Point{D,T}}
-      weights::Vector{T}
-    end
 
-Duffy quadrature for simplices in [0,1]^D
-"""
-struct DuffyQuadrature{D,T} <: Quadrature{D,T}
-  coordinates::Vector{Point{D,T}}
-  weights::Vector{T}
-end
+struct Duffy <: QuadratureName end
 
-get_coordinates(q::DuffyQuadrature) = q.coordinates
+const duffy = Duffy()
 
-get_weights(q::DuffyQuadrature) = q.weights
-
-
-"""
-    DuffyQuadrature{D}(degree::Integer) where D
-"""
-function DuffyQuadrature{D}(order::Integer) where D
-  x,w = _duffy_quad_data(order,D)
-  DuffyQuadrature(x,w)
+function Quadrature(p::Polytope,name::Duffy,degree::Integer)
+  @assert is_simplex(p)
+  D = num_dims(p)
+  x,w = _duffy_quad_data(degree,D)
+  msg = "Simplex quadrature of degree $degree obtained with Duffy transformation and tensor product of 1d Gauss-Jacobi and Gauss-Legendre rules."
+  GenericQuadrature(x,w,msg)
 end
 
 function _duffy_quad_data(order::Integer,D::Int)
@@ -123,3 +110,6 @@ function _tensor_product_duffy!(
     k += 1
   end
 end
+
+
+

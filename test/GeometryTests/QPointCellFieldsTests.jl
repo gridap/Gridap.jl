@@ -2,7 +2,7 @@ module QPointCellFields
 
 using Gridap.Geometry
 using Gridap.Fields
-using Gridap.Integration
+using Gridap.ReferenceFEs
 using Gridap.CellData
 
 domain = (0,1,0,1)

@@ -93,6 +93,18 @@ function (-)(a::DomainContribution,b::DomainContribution)
   c
 end
 
+function (*)(a::Number,b::DomainContribution)
+  c = DomainContribution()
+  for (trian,array_old) in b.dict
+    s = size(get_cell_map(trian))
+    array_new = lazy_map(Broadcasting(*),Fill(a,s),array_old)
+    add_contribution!(c,trian,array_new)
+  end
+  c
+end
+
+(*)(a::DomainContribution,b::Number) = b*a
+
 function get_array(a::DomainContribution)
   @assert num_domains(a) == 1 """\n
   Method get_array(a::DomainContribution) can be called only
@@ -101,25 +113,23 @@ function get_array(a::DomainContribution)
   a.dict[first(keys(a.dict))]
 end
 
-struct LebesgueMeasure <: GridapType
+struct Measure <: GridapType
   quad::CellQuadrature
 end
 
-get_cell_points(a::LebesgueMeasure) = get_cell_points(a.quad)
+get_cell_points(a::Measure) = get_cell_points(a.quad)
 
-LebesgueMeasure(args...) = LebesgueMeasure(CellQuadrature(args...))
+Measure(args...) = Measure(CellQuadrature(args...))
 
-function integrate(f,b::LebesgueMeasure)
+function integrate(f,b::Measure)
   c = integrate(f,b.quad)
   cont = DomainContribution()
   add_contribution!(cont,b.quad.trian,c)
   cont
 end
 
-function (*)(a::Integrand,b::LebesgueMeasure)
+function (*)(a::Integrand,b::Measure)
   integrate(a.object,b)
 end
 
-(*)(b::LebesgueMeasure,a::Integrand) = a*b
-
-
+(*)(b::Measure,a::Integrand) = a*b

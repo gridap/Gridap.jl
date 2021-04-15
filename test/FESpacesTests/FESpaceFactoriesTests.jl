@@ -33,7 +33,7 @@ V = FESpace(model,QUAD4,conformity=:L2,constraint=:zeromean)
 
 # From parameter list describing the reffe
 
-reffe = ReferenceFE(:Lagrangian,Float64,order)
+reffe = ReferenceFE(lagrangian,Float64,order)
 
 V = FESpace(model,reffe)
 @test isa(V,UnconstrainedFESpace)
@@ -49,7 +49,7 @@ V = FESpace(model,reffe,conformity=:L2,constraint=:zeromean)
 
 # From a cell-wise vector of reffes
 
-cell_reffe = ReferenceFE(model,:Lagrangian,Float64,order)
+cell_reffe = ReferenceFE(model,lagrangian,Float64,order)
 
 V = FESpace(model,cell_reffe)
 @test isa(V,UnconstrainedFESpace)
@@ -65,7 +65,7 @@ V = FESpace(model,cell_reffe,conformity=:L2,constraint=:zeromean)
 
 # From a CellFE
 
-cell_fe = FiniteElements(PhysicalDomain(),model,:Lagrangian,Float64,order)
+cell_fe = FiniteElements(PhysicalDomain(),model,lagrangian,Float64,order)
 
 V = FESpace(model,cell_fe)
 @test isa(V,UnconstrainedFESpace)
@@ -105,7 +105,7 @@ V = FESpace(model_in,QUAD4,conformity=:L2,constraint=:zeromean)
 
 # From parameter list describing the reffe
 
-reffe = ReferenceFE(:Lagrangian,Float64,order)
+reffe = ReferenceFE(lagrangian,Float64,order)
 
 V = FESpace(model_in,reffe)
 @test isa(V,ExtendedFESpace)
@@ -118,7 +118,7 @@ V = FESpace(model_in,reffe,conformity=:L2,constraint=:zeromean)
 
 # From a cell-wise vector of reffes
 
-cell_reffe = ReferenceFE(model_in,:Lagrangian,Float64,order)
+cell_reffe = ReferenceFE(model_in,lagrangian,Float64,order)
 
 V = FESpace(model_in,cell_reffe)
 @test isa(V,ExtendedFESpace)
@@ -131,7 +131,7 @@ V = FESpace(model_in,cell_reffe,conformity=:L2,constraint=:zeromean)
 
 # From a CellFE
 
-cell_fe = FiniteElements(PhysicalDomain(),model_in,:Lagrangian,Float64,order)
+cell_fe = FiniteElements(PhysicalDomain(),model_in,lagrangian,Float64,order)
 
 V = FESpace(model_in,cell_fe)
 @test isa(V,ExtendedFESpace)

@@ -21,6 +21,7 @@ import Gridap.Arrays: return_type
 export MonomialBasis
 export QGradMonomialBasis
 export QCurlGradMonomialBasis
+export PCurlGradMonomialBasis
 export get_exponents
 
 export get_order
@@ -32,5 +33,7 @@ include("MonomialBases.jl")
 include("QGradMonomialBases.jl")
 
 include("QCurlGradMonomialBases.jl")
+
+include("PCurlGradMonomialBases.jl")
 
 end # module

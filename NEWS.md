@@ -4,7 +4,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.15.0] - Unreleased
+## [0.16.0] - Unreleased
+
+### Added
+- User API to select specific quadrature rules.
+- Experimental support for mixed dimensional PDEs. Since PR [#567](https://github.com/gridap/Gridap.jl/pull/567).
+
+### Changed
+- The default quadrature rule for tets has changed.
+- Refactoring in `SparseMatrixAssembler` to make it more extensible and efficient. Since PR [#568](https://github.com/gridap/Gridap.jl/pull/568).
+- Renamed `get_free_values` -> `get_free_dof_values`. Since PR [#567](https://github.com/gridap/Gridap.jl/pull/567).
+- Miscellaneous changes in the FE assembly to allow the solution of mixed dimensional problems. Since PR [#567](https://github.com/gridap/Gridap.jl/pull/567).
+
+### Removed
+- Module `Gridap.Integration` has been deleted and its contents have been merged into `Gridap.ReferenceFEs` module.
+- Types `SparseMatrixCSR` and `SymSparseMatrixCSR` have been moved to the registered package [`SparseMatricesCSR`](https://github.com/gridap/SparseMatricesCSR.jl). To use them simply add `SparseMatricesCSR` into your environment and type `using SparseMatricesCSR`. Since  Since PR [#568](https://github.com/gridap/Gridap.jl/pull/568).
+
+## [0.15.4] - 2021-03-29
+
+### Fixed
+- Bug in `CartesianDiscreteModel` with periodic boundary conditions that shows up in Julia 1.6 but not in Julia 1.5. Since commit [da005cf](https://github.com/gridap/Gridap.jl/commit/da005cf4cde68617f92d76744e307798ef7e8340).
+
+## [0.15.3] - 2021-03-16
+
+### Added 
+- `get_cell_map` now returns array of `AffineMap` for linear grids of simplices. Needed to compute Laplacian operator, inverse maps etc. Since PR [#553](https://github.com/gridap/Gridap.jl/pull/553).
+
+### Fixed
+- Bug in `print_op_tree`. Since PR [#563](https://github.com/gridap/Gridap.jl/pull/563)
+
+## [0.15.2] - 2021-03-08
+
+### Added
+- Method `inverse_map` for `AffineMap`. Since PR [#552](https://github.com/gridap/Gridap.jl/pull/552).
+- Method `get_cell_points` for `CellDof`. Since PR [#551](https://github.com/gridap/Gridap.jl/pull/551).
+- Evaluation of `MonomialBasis` objects at a single point. Since PR [#550](https://github.com/gridap/Gridap.jl/pull/550).
+- `rand` function for `MultiValue` objects. Since PR [#530](https://github.com/gridap/Gridap.jl/pull/530).
+
+### Fixed
+- Bug in `return_value` for `Broadcasting(∇∇)`. Since PR [#554](https://github.com/gridap/Gridap.jl/pull/554).
+- Bug in `dot` for third order tensors. Since PR [#544](https://github.com/gridap/Gridap.jl/pull/544).
+
+## [0.15.1] - 2021-01-22
+
+### Added
+- Added support for Hessian and Laplacian operators. Only implemented for Finite Elements with an `AffineMap`. Since  PR [#514](https://github.com/gridap/Gridap.jl/pull/514).
+
+### Fixed
+- Bug in `RestrictedDiscreteModel` for periodic boundary conditions. Since  PR [#517](https://github.com/gridap/Gridap.jl/pull/517).
+- Bug in `sum(a::LazyArray)` when  `eltype(a) <: AbstractArray`. Since PR [#513](https://github.com/gridap/Gridap.jl/pull/513).
+
+## [0.15.0] - 2020-12-14
 
 This version is a major (backwards-incompatible) refactoring of the project which is not summarized here for the sake of brevity. Most of the functionality of v0.14.0 is available in v0.15.0, but possibly with a significantly different API. See [here](https://github.com/gridap/Tutorials/compare/v0.14.0...v0.15.0) the changes in the sources of the Gridap Tutorials between versions 0.14.0 and 0.15.0 to effectively see the major changes in the API.
 

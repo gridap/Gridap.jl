@@ -14,13 +14,12 @@ order = 1
 partition = (4,4)
 model = CartesianDiscreteModel(domain,partition; isperiodic=(true,false))
 
-V = FESpace(
-reffe=:RaviartThomas, order=order, valuetype=VectorValue{2,Float64},
-conformity=:Hdiv, model=model,dirichlet_tags=collect(1:6))
+V = FESpace(model,ReferenceFE(raviart_thomas,Float64,order),conformity=:Hdiv,
+      dirichlet_tags=collect(1:6))
 
-Q = FESpace(
-reffe=:QLagrangian, order=order, valuetype=Float64,
-conformity=:L2, model=model, constraint=:zeromean)
+
+Q = FESpace(model,ReferenceFE(lagrangian,Float64,order);
+      conformity=:L2, constraint=:zeromean)
 
 U = TrialFESpace(V,u)
 P = TrialFESpace(Q)
@@ -30,31 +29,24 @@ X = MultiFieldFESpace([U, P])
 
 trian = Triangulation(model)
 degree = 2*(order)
-quad = CellQuadrature(trian,degree)
+dΩ = Measure(trian,degree)
 x = get_physical_coordinate(trian)
 
-function a(x,y)
-  u, p = x
-  v, q = y
-  v⋅u - p*(∇⋅v) + q*(∇⋅u)
-end
+a((u, p),(v, q)) = ∫( u⋅v - (∇⋅v)*p + q*(∇⋅u) )*dΩ
 
-function l(y)
-  v, q = y
-  v⋅f + q*g
-end
+b(( v, q)) = ∫( v⋅f + q*g)*dΩ
 
-t_Ω = AffineFETerm(a,l,trian,quad)
-op = AffineFEOperator(X,Y,t_Ω)
+
+op = AffineFEOperator(a,b,X,Y)
 xh = solve(op)
 uh, ph = xh
 
 eu = u - uh
 ep = p - ph
 
-l2(v) = v⋅v
-eu_l2 = sum(integrate(l2(eu),trian,quad))
-ep_l2 = sum(integrate(l2(ep),trian,quad))
+l2(v) = sqrt(sum(∫(v⋅v)*dΩ))
+eu_l2 = l2(eu)
+ep_l2 = l2(ep)
 
 tol = 1.0e-9
 @test eu_l2 < tol

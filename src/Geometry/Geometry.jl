@@ -69,6 +69,7 @@ import Gridap.ReferenceFEs: num_cell_dims
 import Gridap.ReferenceFEs: num_point_dims
 import Gridap.ReferenceFEs: simplexify
 import Gridap.ReferenceFEs: get_facet_normal
+import Gridap.ReferenceFEs: Quadrature
 
 export GridTopology
 export num_cells
@@ -109,14 +110,14 @@ export get_cell_reffe
 export get_cell_shapefuns
 export get_facet_normal
 export test_triangulation
-export get_cell_id
+export get_cell_to_bgcell
 export get_cell_map
 export get_background_triangulation
 export get_cell_ref_map
 export have_compatible_domains
 
 export Grid
-export get_cell_nodes
+export get_cell_node_ids
 export test_grid
 export compute_linear_grid
 export compute_reference_grid
@@ -160,18 +161,9 @@ export get_triangulation
 
 export UnstructuredDiscreteModel
 export CartesianDiscreteModel
+export BoundaryDiscreteModel
 
 export BoundaryTriangulation
-#export get_volume_triangulation
-#export get_face_to_cell
-#export get_face_to_lface
-#export get_face_to_cell_map
-#export get_face_to_face
-#export get_cell_around
-#export test_boundary_triangulation
-
-#export GenericBoundaryTriangulation
-
 export DiscreteModelPortion
 
 export SkeletonPair
@@ -226,5 +218,7 @@ include("DiscreteModelPortions.jl")
 include("RestrictedDiscreteModels.jl")
 
 include("AppendedTriangulations.jl")
+
+include("BoundaryDiscreteModel.jl")
 
 end # module

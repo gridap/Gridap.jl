@@ -5,9 +5,7 @@ using Gridap.ReferenceFEs
 using Gridap.Arrays
 using Gridap.Geometry
 using Gridap.Fields
-using Gridap.Integration
 using LinearAlgebra: ⋅
-#using Gridap.CellData
 
 domain = (0,1,0,1)
 partition = (10,10)
@@ -43,7 +41,7 @@ test_triangulation(trian)
 
 @test isa(get_cell_type(trian),AppendedArray)
 
-@test isa(get_cell_id(trian),AppendedArray)
+@test isa(get_cell_to_bgcell(trian),AppendedArray)
 
 #order = 1
 #quad = CellQuadrature(trian,2*order)

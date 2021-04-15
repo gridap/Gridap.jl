@@ -16,7 +16,7 @@ abstract type CellDatum <: GridapType end
 """
 Get the stored array of cell-wise data. It can be defined in the physical or the reference domain.
 """
-get_cell_data(a::CellDatum) = @abstractmethod
+get_data(a::CellDatum) = @abstractmethod
 
 """
 Tell if the stored array is in the reference or physical domain
@@ -39,7 +39,7 @@ change_domain(a::CellDatum,input_domain::DomainStyle,target_domain::DomainStyle)
 """
 """
 function test_cell_datum(a::CellDatum)
-  @test isa(get_cell_data(a),AbstractArray)
+  @test isa(get_data(a),AbstractArray)
   @test isa(get_triangulation(a),Triangulation)
   @test isa(DomainStyle(a),DomainStyle)
 end
@@ -51,11 +51,9 @@ DomainStyle(::T) where T<:CellDatum = DomainStyle(T)
 """
 Get the raw array of cell data defined in the physical space.
 """
-get_array(a::CellDatum) = get_cell_data(change_domain(a,PhysicalDomain()))
+get_array(a::CellDatum) = get_data(change_domain(a,PhysicalDomain()))
 
 """
 """
 #Base.length(a::CellDatum) = num_cells(get_triangulation(a))
 num_cells(a::CellDatum) = num_cells(get_triangulation(a))
-
-

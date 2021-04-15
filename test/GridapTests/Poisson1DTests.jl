@@ -12,16 +12,16 @@ cells = (10,)
 model = CartesianDiscreteModel(domain,cells)
 
 order = 2
-V = FESpace(model, ReferenceFE(:Lagrangian,Float64,order),conformity=:H1,dirichlet_tags=2)
+V = FESpace(model, ReferenceFE(lagrangian,Float64,order),conformity=:H1,dirichlet_tags=2)
 U = TrialFESpace(V,u)
 
-Ω = Triangulation(model) 
+Ω = Triangulation(model)
 Γ = BoundaryTriangulation(model,tags=1)
 n_Γ = get_normal_vector(Γ)
 
 degree = 2*order
-dΩ = LebesgueMeasure(Ω,degree)
-dΓ = LebesgueMeasure(Γ,degree)
+dΩ = Measure(Ω,degree)
+dΓ = Measure(Γ,degree)
 
 a(u,v) = ∫( ∇(v)⋅∇(u) )*dΩ
 l(v) = ∫( v*f )*dΩ + ∫( v*(n_Γ⋅∇u) )*dΓ

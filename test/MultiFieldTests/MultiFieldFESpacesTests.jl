@@ -6,7 +6,6 @@ using Gridap.Arrays
 using Gridap.Geometry
 using Gridap.FESpaces
 using Gridap.Fields
-using Gridap.Integration
 using Gridap.ReferenceFEs
 using Gridap.CellData
 using Test
@@ -24,8 +23,8 @@ trian = get_triangulation(model)
 degree = order
 quad = CellQuadrature(trian,degree)
 
-V = TestFESpace(model,ReferenceFE(:Lagrangian,Float64,order);conformity=:H1)
-Q = TestFESpace(model,ReferenceFE(:Lagrangian,Float64,order-1),conformity=:L2)
+V = TestFESpace(model,ReferenceFE(lagrangian,Float64,order);conformity=:H1)
+Q = TestFESpace(model,ReferenceFE(lagrangian,Float64,order-1),conformity=:L2)
 
 U = TrialFESpace(V)
 P = TrialFESpace(Q)
@@ -46,7 +45,7 @@ du, dp = dx
 
 cellmat = integrate(dv*du,quad)
 cellvec = integrate(dv*2,quad)
-cellids = get_cell_id(trian)
+cellids = get_cell_to_bgcell(trian)
 cellmatvec = pair_arrays(cellmat,cellvec)
 @test isa(cellmat, LazyArray{<:Fill{<:BlockArrayCooMap}})
 @test is_nonzero_block(cellmat[1],1,1)
@@ -67,16 +66,16 @@ uh, ph = xh
 @test isa(uh,FEFunction)
 @test isa(ph,FEFunction)
 
-cell_isconstr = get_cell_isconstrained(X)
+cell_isconstr = get_cell_isconstrained(X,trian)
 @test cell_isconstr == Fill(false,num_cells(model))
 
-cell_constr = get_cell_constraints(X)
+cell_constr = get_cell_constraints(X,trian)
 @test isa(cell_constr,LazyArray{<:Fill{<:BlockArrayCooMap}})
 
-cell_dof_ids = get_cell_dof_ids(X)
+cell_dof_ids = get_cell_dof_ids(X,trian)
 @test isa(cell_dof_ids,LazyArray{<:Fill{<:BlockArrayCooMap}})
 
-cf = CellField(X,get_cell_dof_ids(X))
+cf = CellField(X,get_cell_dof_ids(X,trian))
 @test isa(cf,MultiFieldCellField)
 
 test_fe_space(X,matvecdata,matdata,vecdata)

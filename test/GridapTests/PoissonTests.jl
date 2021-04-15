@@ -23,9 +23,9 @@ add_tag_from_tags!(labels,"nitsche",6)
 Γd = BoundaryTriangulation(model,labels,tags="nitsche")
 
 degree = order
-dΩ = LebesgueMeasure(Ω,degree)
-dΓn = LebesgueMeasure(Γn,degree)
-dΓd = LebesgueMeasure(Γd,degree)
+dΩ = Measure(Ω,degree)
+dΓn = Measure(Γn,degree)
+dΓd = Measure(Γd,degree)
 
 nn = get_normal_vector(Γn)
 nd = get_normal_vector(Γd)
@@ -68,7 +68,7 @@ for data in [ vector_data, scalar_data ]
 
   for domain_style in (ReferenceDomain(),PhysicalDomain())
 
-    cell_fe = FiniteElements(domain_style,model,:Lagrangian,T,order)
+    cell_fe = FiniteElements(domain_style,model,lagrangian,T,order)
     V = TestFESpace(model,cell_fe,dirichlet_tags="dirichlet",labels=labels)
     U = TrialFESpace(V,u)
 
@@ -77,7 +77,7 @@ for data in [ vector_data, scalar_data ]
     a(u,v) =
       ∫( ∇(v)⊙∇(u) )*dΩ +
       ∫( (γ/h)*v⊙u  - v⊙(nd⋅∇(u)) - (nd⋅∇(v))⊙u )*dΓd
-    
+
     l(v) =
       ∫( v⊙f )*dΩ +
       ∫( v⊙(nn⋅∇(uh)) )*dΓn +

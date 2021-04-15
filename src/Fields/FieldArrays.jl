@@ -106,6 +106,10 @@ function return_value(k::Broadcasting{typeof(∇)},a::AbstractArray{<:Field})
   evaluate(k,a)
 end
 
+function return_value(k::Broadcasting{typeof(∇∇)},a::AbstractArray{<:Field})
+  evaluate(k,a)
+end
+
 @inline function evaluate!(cache,k::Broadcasting{typeof(∇)},a::AbstractArray{<:Field})
   FieldGradientArray{1}(a)
 end
@@ -179,9 +183,13 @@ for T in (:(Point),:(AbstractVector{<:Point}))
   end
 end
 
-function gradient(a::LinearCombinationField)
-  fields = Broadcasting(∇)(a.fields)
-  LinearCombinationField(a.values,fields,a.column)
+for op in (:∇,:∇∇)
+  @eval begin
+    function $op(a::LinearCombinationField)
+      fields = Broadcasting($op)(a.fields)
+      LinearCombinationField(a.values,fields,a.column)
+    end
+  end
 end
 
 function linear_combination(a::AbstractMatrix{<:Number},b::AbstractVector{<:Field})
@@ -233,9 +241,13 @@ for T in (:(Point),:(AbstractVector{<:Point}))
   end
 end
 
-function evaluate!(cache,k::Broadcasting{typeof(∇)},a::LinearCombinationFieldVector)
-  fields = Broadcasting(∇)(a.fields)
-  LinearCombinationFieldVector(a.values,fields)
+for op in (:∇,:∇∇)
+  @eval begin
+    function evaluate!(cache,k::Broadcasting{typeof($op)},a::LinearCombinationFieldVector)
+      fields = Broadcasting($op)(a.fields)
+      LinearCombinationFieldVector(a.values,fields)
+    end
+  end
 end
 
 function get_children(n::TreeNode, a::LinearCombinationFieldVector)
@@ -374,7 +386,7 @@ struct TransposeMap <: Map end
 """
 Given a matrix `np` x `nf1` x `nf2` result of the evaluation of a field vector
 on a vector of points, it returns an array in which the field axes (second and
-third axes) are permuted. It is equivalent as `Base.permutedims(A,(1,3,2)`
+third axes) are permuted. It is equivalent as `Base.permutedims(A,(1,3,2))`
 but more performant, since it does not involve allocations.
 """
 struct TransposeFieldIndices{A,T} <: AbstractArray{T,3}
@@ -485,6 +497,149 @@ return_value(a::BroadcastingFieldOpMap,args...) = return_value(Broadcasting(a.op
 return_cache(a::BroadcastingFieldOpMap,args...) = return_cache(Broadcasting(a.op),args...)
 @inline evaluate!(cache,a::BroadcastingFieldOpMap,args...) = evaluate!(cache,Broadcasting(a.op),args...)
 
+# Follow optimizations are very important to achieve performance
+
+@inline function evaluate!(
+  cache,
+  f::BroadcastingFieldOpMap,
+  a::AbstractArray{T,N},
+  b::AbstractArray{S,N}) where {T,S,N}
+
+  @check size(a) == size(b)
+  setsize!(cache,size(a))
+  r = cache.array
+  for i in eachindex(a)
+    r[i] = f.op(a[i],b[i])
+  end
+  r
+end
+
+@inline function evaluate!(
+  cache,
+  f::BroadcastingFieldOpMap,
+  a::AbstractMatrix,
+  b::AbstractArray{S,3} where S)
+
+  @check size(a,1) == size(b,1)
+  @check size(b,2) == 1
+  np, ni = size(a)
+  nj = size(b,3)
+  setsize!(cache,(np,ni,nj))
+  r = cache.array
+  for j in 1:nj
+    for p in 1:np
+      bpj = b[p,1,j]
+      for i in 1:ni
+        r[p,i,j] = f.op(a[p,i],bpj)
+      end
+    end
+  end
+  r
+end
+
+@inline function evaluate!(
+  cache,
+  f::BroadcastingFieldOpMap,
+  b::AbstractArray{S,3} where S,
+  a::AbstractMatrix)
+
+  @check size(a,1) == size(b,1)
+  @check size(b,2) == 1
+  np, ni = size(a)
+  nj = size(b,3)
+  setsize!(cache,(np,ni,nj))
+  r = cache.array
+  for p in 1:np
+    for j in 1:nj
+      bpj = b[p,1,j]
+      for i in 1:ni
+        r[p,i,j] = f.op(bpj,a[p,i])
+      end
+    end
+  end
+  r
+end
+
+@inline function evaluate!(
+  cache,
+  f::BroadcastingFieldOpMap,
+  a::AbstractVector,
+  b::AbstractMatrix)
+
+  @check size(a,1) == size(b,1)
+  np, ni = size(b)
+  setsize!(cache,(np,ni))
+  r = cache.array
+  for p in 1:np
+    ap = a[p]
+    for i in 1:ni
+      r[p,i] = f.op(ap,b[p,i])
+    end
+  end
+  r
+end
+
+@inline function evaluate!(
+  cache,
+  f::BroadcastingFieldOpMap,
+  b::AbstractMatrix,
+  a::AbstractVector)
+
+  @check size(a,1) == size(b,1)
+  np, ni = size(b)
+  setsize!(cache,(np,ni))
+  r = cache.array
+  for p in 1:np
+    ap = a[p]
+    for i in 1:ni
+      r[p,i] = f.op(b[p,i],ap)
+    end
+  end
+  r
+end
+
+@inline function evaluate!(
+  cache,
+  f::BroadcastingFieldOpMap,
+  a::AbstractVector,
+  b::AbstractArray{S,3} where S)
+
+  @check size(a,1) == size(b,1)
+  np, ni, nj = size(b)
+  setsize!(cache,(np,ni,nj))
+  r = cache.array
+  for p in 1:np
+    ap = a[p]
+    for j in 1:nj
+      for i in 1:ni
+        r[p,i,j] = f.op(ap,b[p,i,j])
+      end
+    end
+  end
+  r
+end
+
+@inline function evaluate!(
+  cache,
+  f::BroadcastingFieldOpMap,
+  b::AbstractArray{S,3} where S,
+  a::AbstractVector)
+
+  @check size(a,1) == size(b,1)
+  np, ni, nj = size(b)
+  setsize!(cache,(np,ni,nj))
+  r = cache.array
+  for p in 1:np
+    ap = a[p]
+    for j in 1:nj
+      for i in 1:ni
+        r[p,i,j] = f.op(b[p,i,j],ap)
+      end
+    end
+  end
+  r
+end
+
 # Gradient of the sum
 for op in (:+,:-)
   @eval begin
@@ -509,4 +664,3 @@ for op in (:*,:⋅,:⊙,:⊗)
     end
   end
 end
-

@@ -10,6 +10,7 @@ struct UnconstrainedFESpace{V} <: SingleFieldFESpace
   cell_dofs_ids::AbstractArray
   cell_shapefuns::CellField
   cell_dof_basis::CellDof
+  cell_is_dirichlet::AbstractArray{Bool}
   dirichlet_dof_tag::Vector{Int8}
   dirichlet_cells::Vector{Int32}
   ntags::Int
@@ -18,7 +19,7 @@ end
 # FESpace interface
 
 ConstraintStyle(::Type{<:UnconstrainedFESpace}) = UnConstrained()
-num_free_dofs(f::UnconstrainedFESpace) = f.nfree
+get_free_dof_ids(f::UnconstrainedFESpace) = Base.OneTo(f.nfree)
 zero_free_values(f::UnconstrainedFESpace) = allocate_vector(f.vector_type,num_free_dofs(f))
 get_cell_shapefuns(f::UnconstrainedFESpace) = f.cell_shapefuns
 get_cell_dof_basis(f::UnconstrainedFESpace) = f.cell_dof_basis
@@ -26,15 +27,23 @@ get_cell_dof_ids(f::UnconstrainedFESpace) = f.cell_dofs_ids
 get_triangulation(f::UnconstrainedFESpace) = get_triangulation(f.cell_shapefuns)
 get_dof_value_type(f::UnconstrainedFESpace{V}) where V = eltype(V)
 get_vector_type(f::UnconstrainedFESpace{V}) where V = V
+get_cell_is_dirichlet(f::UnconstrainedFESpace) = f.cell_is_dirichlet
 
 # SingleFieldFESpace interface
 
-num_dirichlet_dofs(f::UnconstrainedFESpace) = f.ndirichlet
+get_dirichlet_dof_ids(f::UnconstrainedFESpace) = Base.OneTo(f.ndirichlet)
 num_dirichlet_tags(f::UnconstrainedFESpace) = f.ntags
 zero_dirichlet_values(f::UnconstrainedFESpace) = allocate_vector(f.vector_type,num_dirichlet_dofs(f))
 get_dirichlet_dof_tag(f::UnconstrainedFESpace) = f.dirichlet_dof_tag
 
 function scatter_free_and_dirichlet_values(f::UnconstrainedFESpace,free_values,dirichlet_values)
+  @check eltype(free_values) == eltype(dirichlet_values) """\n
+  The entries stored in free_values and dirichlet_values should be of the same type.
+
+  This error shows up e.g. when trying to build a FEFunction from a vector of integers
+  if the Dirichlet values of the underlying space are of type Float64, or when the
+  given free values are Float64 and the Dirichlet values ComplexF64.
+  """
   cell_dof_ids = get_cell_dof_ids(f)
   lazy_map(Broadcasting(PosNegReindex(free_values,dirichlet_values)),cell_dof_ids)
 end
@@ -97,7 +106,7 @@ function  _free_and_dirichlet_values_fill!(
       elseif dof < 0
         dirichlet_vals[-dof] = val
       else
-        @unreachable "dof ids either positibe or negative, not zero"
+        @unreachable "dof ids either positive or negative, not zero"
       end
     end
   end

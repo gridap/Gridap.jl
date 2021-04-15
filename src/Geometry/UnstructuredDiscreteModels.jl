@@ -1,5 +1,5 @@
 
-const version = "v0.7"
+const version = "v0.15"
 
 """
     struct UnstructuredDiscreteModel{Dc,Dp,Tp,B} <: DiscreteModel{Dc,Dp}
@@ -74,7 +74,11 @@ function check_dict(::Type{UnstructuredDiscreteModel},dict::Dict{Symbol,Any})
 
   v = VersionNumber(dict[:version])
   if v < VersionNumber(version)
-    @unreachable "Cannot convert Dict to UnstructuredDiscreteModel for outdated format"
+    @unreachable """\n
+    Cannot convert Dict to UnstructuredDiscreteModel for outdated format $(dict[:version]).
+    The required format is $version. Regenerate your dictiorary (typically a json file)
+    holding the DiscreteModel with the Gridap version you are currenlty using.
+    """
   end
 
 end

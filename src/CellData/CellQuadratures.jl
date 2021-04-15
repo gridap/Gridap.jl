@@ -11,20 +11,33 @@ struct CellQuadrature{DS} <: CellDatum
   domain_style::DS
 end
 
-"""
-"""
+
+function CellQuadrature(trian::Triangulation,quad::Tuple{<:QuadratureName,Any,Any})
+  name, args, kwargs = quad
+  cell_quad = Quadrature(trian,name,args...;kwargs...)
+  CellQuadrature(trian,cell_quad)
+end
+
 function CellQuadrature(trian::Triangulation,degree::Integer)
-  ctype_to_reffe, cell_to_ctype = compress_cell_data(get_cell_reffe(trian))
-  ctype_to_quad = map(r->Quadrature(get_polytope(r),degree),ctype_to_reffe)
+  cell_quad = Quadrature(trian,degree)
+  CellQuadrature(trian,cell_quad)
+end
+
+function CellQuadrature(trian::Triangulation,quad::Quadrature)
+  cell_quad = expand_cell_data([quad],get_cell_type(trian))
+  CellQuadrature(trian,cell_quad)
+end
+
+function CellQuadrature(trian::Triangulation,cell_quad::AbstractVector{<:Quadrature})
+  ctype_to_quad, cell_to_ctype = compress_cell_data(cell_quad)
   ctype_to_point = map(get_coordinates,ctype_to_quad)
-  ctype_to_weigth = map(get_weights,ctype_to_quad)
-  cell_quad = expand_cell_data(ctype_to_quad,cell_to_ctype)
+  ctype_to_weight = map(get_weights,ctype_to_quad)
   cell_point = expand_cell_data(ctype_to_point,cell_to_ctype)
-  cell_weight = expand_cell_data(ctype_to_weigth,cell_to_ctype)
+  cell_weight = expand_cell_data(ctype_to_weight,cell_to_ctype)
   CellQuadrature(cell_quad,cell_point,cell_weight,trian,ReferenceDomain())
 end
 
-function CellQuadrature(trian::AppendedTriangulation,degree1::Integer,degree2::Integer)
+function CellQuadrature(trian::AppendedTriangulation,degree1,degree2)
   quad1 = CellQuadrature(trian.a,degree1)
   quad2 = CellQuadrature(trian.b,degree2)
   lazy_append(quad1,quad2,trian)
@@ -32,6 +45,14 @@ end
 
 function CellQuadrature(trian::AppendedTriangulation,degree::Integer)
   CellQuadrature(trian,degree,degree)
+end
+
+function CellQuadrature(trian::AppendedTriangulation,quad::Tuple{<:QuadratureName,Any,Any})
+  CellQuadrature(trian,quad,quad)
+end
+
+function CellQuadrature(trian::AppendedTriangulation,quad::Quadrature)
+  CellQuadrature(trian,quad,quad)
 end
 
 function lazy_append(
@@ -46,7 +67,7 @@ function lazy_append(
   CellQuadrature(cell_quad,cell_point,cell_weight,trian,DomainStyle(quad1))
 end
 
-get_cell_data(f::CellQuadrature) = f.cell_quad
+get_data(f::CellQuadrature) = f.cell_quad
 get_triangulation(f::CellQuadrature) = f.trian
 DomainStyle(::Type{CellQuadrature{DS}}) where DS = DS()
 
@@ -70,6 +91,8 @@ function integrate(f::CellField,quad::CellQuadrature)
   if have_compatible_domains(trian_f,trian_x)
     nothing
   elseif have_compatible_domains(trian_f,get_background_triangulation(trian_x))
+    nothing
+  elseif have_compatible_domains(get_background_triangulation(trian_f),get_background_triangulation(trian_x))
     nothing
   elseif have_compatible_domains(trian_x,get_background_triangulation(trian_f))
     @unreachable """\n
@@ -123,7 +146,7 @@ Contributions added to the cells of the background Triangulation.
 function get_cell_measure(trian::Triangulation)
   quad = CellQuadrature(trian,0)
   cell_to_dV = integrate(1,quad)
-  cell_to_bgcell = get_cell_id(trian)
+  cell_to_bgcell = get_cell_to_bgcell(trian)
   bgtrian = get_background_triangulation(trian)
   bgcell_to_dV = zeros(num_cells(bgtrian))
   _meas_K_fill!(bgcell_to_dV,cell_to_dV,cell_to_bgcell)
@@ -137,4 +160,3 @@ function _meas_K_fill!(bgcell_to_dV,cell_to_dV,cell_to_bgcell)
     bgcell_to_dV[bgcell] += dV
   end
 end
-

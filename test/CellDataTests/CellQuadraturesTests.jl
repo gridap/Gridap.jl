@@ -6,7 +6,6 @@ using Gridap.Helpers
 using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Arrays
-using Gridap.Integration
 using Gridap.CellData
 using Gridap.TensorValues
 using Gridap.Geometry
@@ -24,7 +23,7 @@ x = get_cell_points(quad)
 @test isa(x,CellPoint)
 
 v = GenericCellField(get_cell_shapefuns(trian),trian,ReferenceDomain())
-u = GenericCellField(lazy_map(transpose,get_cell_data(v)),v.trian,v.domain_style)
+u = GenericCellField(lazy_map(transpose,get_data(v)),v.trian,v.domain_style)
 
 m = ∇(v)⋅∇(u)
 test_array(m(x),collect(m(x)))
@@ -37,6 +36,7 @@ test_array(s,collect(s))
 
 s = ∫(1)*quad
 @test sum(s) ≈ 1
+@test ∑(s) ≈ 1
 
 trian_N = BoundaryTriangulation(model)
 quad_N = CellQuadrature(trian_N,degree)
@@ -46,9 +46,11 @@ test_array(s,collect(s))
 
 s = ∫(1)*quad_N
 @test sum(s) ≈ 6
+@test ∑(s) ≈ 6
 
 s = ∫( x->1 )*quad_N
 @test sum(s) ≈ 6
+@test ∑(s) ≈ 6
 
 cell_measure = get_cell_measure(trian)
 cell_measure_N = get_cell_measure(trian_N)
@@ -56,6 +58,16 @@ cell_measure_N = get_cell_measure(trian_N)
 @test length(cell_measure_N) == num_cells(model)
 @test sum(cell_measure) ≈ 1
 @test sum(cell_measure_N) ≈ 6
+
+quad = CellQuadrature(trian,Quadrature(duffy,2))
+s = ∫(1)*quad
+@test sum(s) ≈ 1
+@test ∑(s) ≈ 1
+
+quad = CellQuadrature(trian,Quadrature(TET,duffy,2))
+s = ∫(1)*quad
+@test sum(s) ≈ 1
+@test ∑(s) ≈ 1
 
 #using Gridap.Visualization
 #writevtk(trian,"trian",celldata=["a"=>cell_measure,"b"=>cell_measure_N])

@@ -29,8 +29,8 @@ end
 
 ConstraintStyle(::Type{<:CLagrangianFESpace}) = UnConstrained()
 
-function num_free_dofs(f::CLagrangianFESpace)
-  num_free_dofs(f.space)
+function get_free_dof_ids(f::CLagrangianFESpace)
+  get_free_dof_ids(f.space)
 end
 
 function get_cell_shapefuns(f::CLagrangianFESpace)
@@ -57,8 +57,8 @@ function get_cell_dof_basis(f::CLagrangianFESpace)
   get_cell_dof_basis(f.space)
 end
 
-function num_dirichlet_dofs(f::CLagrangianFESpace)
-  num_dirichlet_dofs(f.space)
+function get_dirichlet_dof_ids(f::CLagrangianFESpace)
+  get_dirichlet_dof_ids(f.space)
 end
 
 function num_dirichlet_tags(f::CLagrangianFESpace)
@@ -99,11 +99,11 @@ function _generate_clagrangian_fespace(z,grid)
   nnodes = num_nodes(grid)
   dof_to_node, dof_to_comp, node_and_comp_to_dof = _generate_dof_layout_component_major(z,nnodes)
 
-  cell_nodes = get_cell_nodes(grid)
+  cell_node_ids = get_cell_node_ids(grid)
 
   cell_dofs_ids = _generate_cell_dofs_clagrangian_fespace(
     z,
-    cell_nodes,
+    cell_node_ids,
     ctype_to_reffe,
     cell_to_ctype,
     node_and_comp_to_dof)
@@ -116,6 +116,7 @@ function _generate_clagrangian_fespace(z,grid)
 
   dirichlet_dof_tag = Int8[]
   dirichlet_cells = Int32[]
+  cell_is_dirichlet = Fill(false,num_cells(grid))
   ntags = 0
   vector_type = Vector{_dof_type(z)}
 
@@ -126,6 +127,7 @@ function _generate_clagrangian_fespace(z,grid)
     cell_dofs_ids,
     cell_shapefuns,
     cell_dof_basis,
+    cell_is_dirichlet,
     dirichlet_dof_tag,
     dirichlet_cells,
     ntags)
@@ -168,17 +170,17 @@ end
 
 function _generate_cell_dofs_clagrangian_fespace(
   z,
-  cell_nodes,
+  cell_node_ids,
   reffes,
   cell_to_ctype,
   node_and_comp_to_dof)
 
-  cell_nodes
+  cell_node_ids
 end
 
 function _generate_cell_dofs_clagrangian_fespace(
   z::MultiValue,
-  cell_nodes,
+  cell_node_ids,
   reffes,
   cell_to_ctype,
   node_and_comp_to_dof)
@@ -190,11 +192,11 @@ function _generate_cell_dofs_clagrangian_fespace(
 
   cell_dofs = _allocate_cell_dofs_clagrangian_fespace(ctype_to_num_ldofs,cell_to_ctype)
 
-  cache = array_cache(cell_nodes)
+  cache = array_cache(cell_node_ids)
   _fill_cell_dofs_clagrangian_fespace!(
     cell_dofs,
     cache,
-    cell_nodes,
+    cell_node_ids,
     ctype_to_lnode_to_comp_to_ldof,
     cell_to_ctype,
     node_and_comp_to_dof,
@@ -220,7 +222,7 @@ end
 function _fill_cell_dofs_clagrangian_fespace!(
   cell_dofs,
   cache,
-  cell_nodes,
+  cell_node_ids,
   ctype_to_lnode_and_comp_to_ldof,
   cell_to_ctype,
   node_and_comp_to_dof,
@@ -229,7 +231,7 @@ function _fill_cell_dofs_clagrangian_fespace!(
   ncells = length(cell_to_ctype)
 
   for cell in 1:ncells
-    nodes = getindex!(cache,cell_nodes,cell)
+    nodes = getindex!(cache,cell_node_ids,cell)
     ctype = cell_to_ctype[cell]
     lnode_and_comp_to_ldof = ctype_to_lnode_and_comp_to_ldof[ctype]
     p = cell_dofs.ptrs[cell]-1

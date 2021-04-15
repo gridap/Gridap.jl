@@ -18,12 +18,11 @@ order = 2
 u(x) = VectorValue(x[1]*x[1],x[1]*x[1]*x[1],0.0)
 # u(x) = x
 
-reffe = ReferenceFE(:Nedelec,order)
+reffe = ReferenceFE(nedelec,order)
 
-@test_broken begin
 
 V = TestFESpace(model,reffe,dirichlet_tags = [21,22])
-  # dirichlet_tags = "boundary")
+# dirichlet_tags = "boundary")
 test_single_field_fe_space(V)
 
 U = TrialFESpace(V,u)
@@ -33,11 +32,11 @@ uh = interpolate(u,U)
 e = u - uh
 
 Ω = Triangulation(model)
-dΩ = LebesgueMeasure(Ω,order)
+dΩ = Measure(Ω,order)
 
 el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
-el2 < 1.0e-10
-end
+@test el2 < 1.0e-10
+
 
 # using Gridap.Visualization
 

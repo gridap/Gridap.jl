@@ -84,37 +84,36 @@ get_node_coordinates(trian::RestrictedTriangulation) = get_node_coordinates(tria
 get_reffes(trian::RestrictedTriangulation) = get_reffes(trian.parent_trian)
 
 function get_cell_coordinates(trian::RestrictedTriangulation)
-  parent_cell_data = get_cell_coordinates(trian.parent_trian) 
+  parent_cell_data = get_cell_coordinates(trian.parent_trian)
   lazy_map(Reindex(parent_cell_data),trian.cell_to_parent_cell)
 end
 
 function get_cell_type(trian::RestrictedTriangulation)
-  parent_cell_data = get_cell_type(trian.parent_trian) 
+  parent_cell_data = get_cell_type(trian.parent_trian)
   lazy_map(Reindex(parent_cell_data),trian.cell_to_parent_cell)
 end
 
-function get_cell_nodes(trian::RestrictedTriangulation)
-  parent_cell_data = get_cell_nodes(trian.parent_trian) 
+function get_cell_node_ids(trian::RestrictedTriangulation)
+  parent_cell_data = get_cell_node_ids(trian.parent_trian)
   lazy_map(Reindex(parent_cell_data),trian.cell_to_parent_cell)
 end
 
 function get_cell_map(trian::RestrictedTriangulation)
-  parent_cell_data = get_cell_map(trian.parent_trian) 
+  parent_cell_data = get_cell_map(trian.parent_trian)
   lazy_map(Reindex(parent_cell_data),trian.cell_to_parent_cell)
 end
 
-function get_cell_id(trian::RestrictedTriangulation)
-  parent_cell_data = get_cell_id(trian.parent_trian) 
+function get_cell_to_bgcell(trian::RestrictedTriangulation)
+  parent_cell_data = get_cell_to_bgcell(trian.parent_trian)
   lazy_map(Reindex(parent_cell_data),trian.cell_to_parent_cell)
 end
 
 function get_facet_normal(trian::RestrictedTriangulation)
-  parent_cell_data = get_facet_normal(trian.parent_trian) 
+  parent_cell_data = get_facet_normal(trian.parent_trian)
   lazy_map(Reindex(parent_cell_data),trian.cell_to_parent_cell)
 end
 
 function get_cell_ref_map(trian::RestrictedTriangulation)
-  parent_cell_data = get_cell_ref_map(trian.parent_trian) 
+  parent_cell_data = get_cell_ref_map(trian.parent_trian)
   lazy_map(Reindex(parent_cell_data),trian.cell_to_parent_cell)
 end
-

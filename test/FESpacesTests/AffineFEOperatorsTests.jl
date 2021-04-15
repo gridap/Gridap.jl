@@ -6,7 +6,6 @@ using Gridap.Algebra
 using Gridap.TensorValues
 using Gridap.ReferenceFEs
 using Gridap.Geometry
-using Gridap.Integration
 using Gridap.Fields
 using Gridap.FESpaces
 using LinearAlgebra
@@ -16,7 +15,7 @@ domain =(0,1,0,1)
 partition = (2,2)
 model = CartesianDiscreteModel(domain,partition)
 order = 1
-reffe = ReferenceFE(:Lagrangian,Float64,order)
+reffe = ReferenceFE(lagrangian,Float64,order)
 V = FESpace(model,reffe;dirichlet_tags=[1,10])
 U = V
 
@@ -58,20 +57,21 @@ f_fun(x) = 0
 V = FESpace(model,reffe;dirichlet_tags="boundary")
 U = TrialFESpace(V,u_sol)
 
-dΩ = LebesgueMeasure(quad)
+dΩ = Measure(quad)
 
 a(u,v) = ∫(∇(v)⊙∇(u))*dΩ
 l(v) = ∫(v*f_fun)*dΩ
 
 assem = SparseMatrixAssembler(U,V)
 
-op = AffineFEOperator(assem) do u,v
+op = AffineFEOperator(U,V,assem) do u,v
   ∫(∇(v)⊙∇(u))*dΩ, ∫(v*f_fun)*dΩ
 end
 uh = solve(op)
 e = u_sol - uh
 
 @test sum(∫(e*e)*dΩ) < tol
+@test ∑(∫(e*e)*dΩ) < tol
 
 op = AffineFEOperator(U,V) do u,v
   ∫(∇(v)⊙∇(u))*dΩ, ∫(v*f_fun)*dΩ

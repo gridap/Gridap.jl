@@ -77,7 +77,7 @@ function _vtkcells(trian)
   cell_to_type = get_cell_type(trian)
   type_to_vtkid = map(get_vtkid, type_to_reffe)
   type_to_vtknodes = map(get_vtknodes, type_to_reffe)
-  cell_to_nodes = get_cell_nodes(trian)
+  cell_to_nodes = get_cell_node_ids(trian)
   cache = array_cache(cell_to_nodes)
 
   _generate_vtk_cells(
@@ -312,4 +312,3 @@ function _vtkcelltypedict()
   #d[VTK_BIQUADRATIC_HEXAHEDRON.vtk_id] = VTK_BIQUADRATIC_HEXAHEDRON
   d
 end
-

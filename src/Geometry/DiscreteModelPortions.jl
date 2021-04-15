@@ -22,9 +22,11 @@ get_parent_model(model::DiscreteModelPortion) = model.parent_model
 """
 """
 function DiscreteModelPortion(model::DiscreteModel, cell_to_parent_cell::AbstractVector{<:Integer})
+  topo = get_grid_topology(model)
+  labels = get_face_labeling(model)
   grid_p =  GridPortion(get_grid(model),cell_to_parent_cell)
-  topo_p = GridTopology(grid_p)
-  labels_p, d_to_dface_to_parent_dface = _setup_labels_p(model,topo_p,cell_to_parent_cell)
+  topo_p, d_to_dface_to_parent_dface = _grid_topology_portion(topo,cell_to_parent_cell)
+  labels_p = _setup_labels_p(labels,d_to_dface_to_parent_dface)
   model_p = DiscreteModel(grid_p,topo_p,labels_p)
   DiscreteModelPortion(model_p,model,d_to_dface_to_parent_dface)
 end
@@ -39,63 +41,97 @@ function DiscreteModelPortion(model::DiscreteModel, cell_to_is_in::AbstractVecto
   DiscreteModelPortion(model,cell_to_parent_cell)
 end
 
-function _setup_labels_p(model,topo_p,cell_to_oldcell)
+function _grid_topology_portion(topo,cell_to_parent_cell)
+  D = num_cell_dims(topo)
 
-  topo = get_grid_topology(model)
-  labels = get_face_labeling(model)
-  D = num_cell_dims(model)
+  n_m_to_parent_nface_to_parent_mface = [
+    Table(get_faces(topo,n,m)) for n in 0:D, m in 0:D ]
 
-  T = eltype(cell_to_oldcell)
-  d_to_dface_to_old_dface = Vector{Vector{T}}(undef,D+1)
-  for d in 0:(D-1)
-    cell_lface_to_face = Table(get_faces(topo_p,D,d))
-    ocell_lface_to_oface = Table(get_faces(topo,D,d))
-    nfaces = num_faces(topo_p,d)
-    d_to_dface_to_old_dface[d+1] = _find_face_to_oldface(
-      cell_lface_to_face,
-      ocell_lface_to_oface,
-      cell_to_oldcell,
-      nfaces)
+  d_to_dface_to_parent_dface = [
+    _setup_dface_to_parent_dface(
+      n_m_to_parent_nface_to_parent_mface[D+1,d+1],
+      num_faces(topo,d),
+      cell_to_parent_cell) for d in 0:D]
+
+  d_to_dface_to_vertices  = [
+    _setup_connectivities_d(
+    n_m_to_parent_nface_to_parent_mface[d+1,0+1],
+    d_to_dface_to_parent_dface[d+1],
+    d_to_dface_to_parent_dface[0+1],
+    num_faces(topo,0)) for d in 0:D]
+
+  D = num_cell_dims(topo)
+  vertex_coordinates = get_vertex_coordinates(topo)[d_to_dface_to_parent_dface[0+1]]
+  cell_type = get_cell_type(topo)[d_to_dface_to_parent_dface[D+1]]
+  polytopes = get_polytopes(topo)
+  orientation_style = OrientationStyle(topo)
+
+  topo_p = UnstructuredGridTopology(
+    vertex_coordinates,
+    d_to_dface_to_vertices,
+    cell_type,
+    polytopes,
+    orientation_style)
+
+  topo_p, d_to_dface_to_parent_dface
+end
+
+function _setup_dface_to_parent_dface(
+  parent_cell_to_parent_dface::Table,
+  num_parent_dfaces,
+  cell_to_parent_cell)
+
+  parent_dface_touched = fill(false,num_parent_dfaces)
+  dface = 0
+  for parent_cell in cell_to_parent_cell
+    pini = parent_cell_to_parent_dface.ptrs[parent_cell]
+    pend = parent_cell_to_parent_dface.ptrs[parent_cell+1]-1
+    for p in pini:pend
+      parent_dface = parent_cell_to_parent_dface.data[p]
+      parent_dface_touched[parent_dface] = true
+    end
   end
-  d_to_dface_to_old_dface[D+1] = cell_to_oldcell
+  dface_to_parent_dface = findall(parent_dface_touched)
+  dface_to_parent_dface
+end
 
+function _setup_connectivities_d(
+  parent_nface_parent_mface::Table,
+  nface_to_parent_nface,
+  mface_to_parent_mface,
+  num_parent_mfaces)
+
+  parent_mface_to_mface = fill(-1,num_parent_mfaces)
+  parent_mface_to_mface[mface_to_parent_mface] .= 1:length(mface_to_parent_mface)
+
+  nface_to_mface = parent_nface_parent_mface[nface_to_parent_nface]
+  for p in 1:length(nface_to_mface.data)
+    parent_mface = nface_to_mface.data[p]
+    mface = parent_mface_to_mface[parent_mface]
+    @check mface > 0
+    nface_to_mface.data[p] = mface
+  end
+  nface_to_mface
+end
+
+function _setup_labels_p(labels,d_to_dface_to_parent_dface)
+
+  D = length(d_to_dface_to_parent_dface)-1
 
   d_to_dface_to_entity = [
-    zeros(eltype(labels.d_to_dface_to_entity[d+1]),num_faces(topo_p,d)) for  d in 0:D]
+    zeros(
+      eltype(labels.d_to_dface_to_entity[d+1]),
+      length(d_to_dface_to_parent_dface[d+1]))
+    for  d in 0:D]
+
   for d in 0:D
     face_to_label = d_to_dface_to_entity[d+1]
     oface_to_label = labels.d_to_dface_to_entity[d+1]
-    face_to_oface = d_to_dface_to_old_dface[d+1]
+    face_to_oface = d_to_dface_to_parent_dface[d+1]
     _update_labels_dim!(face_to_label,oface_to_label,face_to_oface)
   end
 
-  labels_p = FaceLabeling(d_to_dface_to_entity,labels.tag_to_entities,labels.tag_to_name)
-
-  labels_p, d_to_dface_to_old_dface
-end
-
-function _find_face_to_oldface(
-  cell_lface_to_face::Table, ocell_lface_to_oface::Table, cell_to_ocell, nfaces)
-
-  # Assumes that the local faces have the same order in new and old
-
-  T = eltype(cell_to_ocell)
-  face_to_oface = zeros(T,nfaces)
-
-  for cell in 1:length(cell_lface_to_face)
-    ocell = cell_to_ocell[cell]
-    a = cell_lface_to_face.ptrs[cell]-1
-    b = cell_lface_to_face.ptrs[cell+1]
-    nlfaces = b - (a+1)
-    c = ocell_lface_to_oface.ptrs[ocell]-1
-    for lface in 1:nlfaces
-      face = cell_lface_to_face.data[a+lface]
-      oface = ocell_lface_to_oface.data[c+lface]
-      face_to_oface[face] = oface
-    end
-  end
-
-  face_to_oface
+  FaceLabeling(d_to_dface_to_entity,labels.tag_to_entities,labels.tag_to_name)
 end
 
 function _update_labels_dim!(face_to_label,oface_to_label,face_to_oface)

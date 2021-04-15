@@ -16,6 +16,14 @@ b = VectorValue(1,3,3)
 @test (a >= b) == false
 @test (a > b) == false
 
+@test VectorValue(1,2,3) == VectorValue(1.0,2.0,3.0)
+@test VectorValue(1,2,3) == VectorValue(1+0im, 2+0im, 3+0im)
+@test VectorValue(1,2,3) ≠ VectorValue(1,2)
+@test VectorValue(1,2,3) ≠ SymTensorValue(1,2,3)
+@test iszero(VectorValue(1,2,3) - VectorValue(1.0,2.0,3.0))
+@test iszero(zero(VectorValue(1,2,3)))
+@test isapprox(VectorValue(1,2,3), VectorValue(1.0,2.0,3.0))
+
 a = VectorValue(1,2,3)
 b = VectorValue(2,1,6)
 
@@ -223,6 +231,37 @@ c = a ⋅ st
 @test isa(c,VectorValue{3,Int})
 r = VectorValue(14,30,42)
 @test c == r
+
+a1 = VectorValue(1,0)
+b1 = VectorValue(1,2)
+
+t1 = ThirdOrderTensorValue{2,2,1}(1,2,3,4)
+t2 = TensorValue(1,0,0,1)
+t3 = TensorValue(1,2,0,0)
+
+c = a1 ⋅ t1
+@test isa(c,TensorValue{2,1,Int})
+r = TensorValue{2,1}(1,3)
+@test c == r
+
+c = b1 ⋅ t1
+@test isa(c,TensorValue{2,1,Int})
+r = TensorValue{2,1}(5,11)
+@test c == r
+
+c = t2 ⋅ t1
+@test isa(c,ThirdOrderTensorValue{2,2,1,Int,4})
+r = ThirdOrderTensorValue{2,2,1}(1,2,3,4)
+@test c == r
+
+c = t3 ⋅ t1
+@test isa(c,ThirdOrderTensorValue{2,2,1,Int,4})
+r = ThirdOrderTensorValue{2,2,1}(1,2,3,6)
+@test c == r
+
+x = VectorValue{0,Float64}()
+G = TensorValue{0,2,Float64,0}()
+@test x⋅G == VectorValue(0,0)
 
 # Inner product (full contraction)
 
@@ -432,6 +471,9 @@ v = VectorValue(2.0,3.0)
 @test dot(u,v) ≈ inner(u,v)
 @test norm(u) ≈ sqrt(inner(u,u))
 
+a = TensorValue(1,2,3,4)
+@test norm(a) ≈ sqrt(inner(a,a))
+
 a = VectorValue(1.0,2.0)
 b = VectorValue(2.0,3.0)
 @test [a,b] ≈ [a,b]
@@ -638,5 +680,12 @@ t2 = TensorValue(v2)
 @test (t1 ⋅ t2)[1,3] == sum(v1[1,j] .* v2[j,3] for j in 1:3)
 @test (t1 ⋅ t2)[2,3] == sum(v1[2,j] .* v2[j,3] for j in 1:3)
 @test (t1 ⋅ t2)[3,3] == sum(v1[3,j] .* v2[j,3] for j in 1:3)
+
+# Complex
+
+a = 1.0 + 3.0*im
+b = 4.0 - 3.0*im
+@test outer(a,b) == a*b
+@test inner(a,b) == a*b
 
 end # module OperationsTests

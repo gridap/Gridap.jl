@@ -19,10 +19,17 @@ trian_D =BoundaryTriangulation(model,tags="tag_8")
 trian_S =SkeletonTriangulation(model)
 trian_0 =Triangulation(trian_D,Int[])
 
+ϕ = GenericCellField(get_cell_map(trian),trian,ReferenceDomain())
+ϕinv = GenericCellField(lazy_map(inverse_map,get_cell_map(trian)),trian,PhysicalDomain())
+xref = get_cell_points(trian)
+xphy = CellPoint(get_array(xref),trian,PhysicalDomain())
+test_array(ϕ(xref),collect1d(ϕ(xphy)),(i,j)->all(map(≈,i,j)))
+test_array(ϕinv(xref),collect1d(ϕinv(xphy)),(i,j)->all(map(≈,i,j)))
+
 x = get_cell_points(trian)
 @test DomainStyle(x) == ReferenceDomain()
 @test get_array(x) == get_cell_coordinates(trian)
-@test get_cell_data(x) == get_cell_ref_coordinates(trian)
+@test get_data(x) == get_cell_ref_coordinates(trian)
 
 px = get_physical_coordinate(trian)
 test_array(px(x),collect1d(get_array(x)))
@@ -30,12 +37,12 @@ test_array(px(x),collect1d(get_array(x)))
 _x = change_domain(x,PhysicalDomain())
 @test DomainStyle(_x) == PhysicalDomain()
 @test get_array(_x) == get_cell_coordinates(trian)
-@test get_cell_data(_x) == get_cell_coordinates(trian)
+@test get_data(_x) == get_cell_coordinates(trian)
 
 _x = change_domain(x,ReferenceDomain())
 @test DomainStyle(_x) == ReferenceDomain()
 @test get_array(x) == get_cell_coordinates(trian)
-@test get_cell_data(x) == get_cell_ref_coordinates(trian)
+@test get_data(x) == get_cell_ref_coordinates(trian)
 
 ffun(x) = 2*x[1]
 f = CellField(ffun,trian)
@@ -57,6 +64,10 @@ jnf_S = jump(n_S⋅∇(f))
 jnfx_S = jnf_S(x_S)
 test_array(jnfx_S,0*collect(jnfx_S))
 
+h = CellField(rand(num_cells(trian_S)),trian_S)*jump(∇(f))
+hx_S = h(x_S)
+test_array(hx_S,collect(hx_S))
+
 h = 3*mean(f)⋅jump(n_S⋅∇(f))
 hx_S = h(x_S)
 test_array(hx_S,0*collect(hx_S))
@@ -76,7 +87,7 @@ v = GenericCellField(get_cell_shapefuns(trian),trian,ReferenceDomain())
 vx = v(x)
 test_array(vx,collect(vx))
 
-u = GenericCellField(lazy_map(transpose,get_cell_data(v)),v.trian,v.domain_style)
+u = GenericCellField(lazy_map(transpose,get_data(v)),v.trian,v.domain_style)
 m = v*u
 test_array(m(x),collect(m(x)))
 m = ∇(v)⋅∇(u)
@@ -89,12 +100,12 @@ test_array(∇vx,collect(∇vx))
 test_array(∇fx,collect(∇fx))
 
 h = Operation(*)(2,f)
-hx = h(x) 
+hx = h(x)
 test_array(hx,2*fx)
 
 a = fill(2,num_cells(trian))
 h = Operation(*)(a,f)
-hx = h(x) 
+hx = h(x)
 test_array(hx,2*fx)
 
 fx = evaluate(ffun,x)
@@ -110,7 +121,7 @@ nx_N = n_N(x_N)
 test_array(nx_N,collect(nx_N))
 
 h = f*n_N
-hx = h(x_N) 
+hx = h(x_N)
 test_array(hx,collect(hx))
 
 gfun(x) = 3*x
@@ -138,6 +149,7 @@ test_array(h(x_N),collect(h(x_N)))
 h_N = (2*f_N+g)⋅g
 hx_N = h_N(x_N)
 test_array(hx_N,collect(hx_N))
+
 
 
 
@@ -242,4 +254,3 @@ test_array(hx_N,collect(hx_N))
 #@test isa(cell_field_x[1],AbstractVector)
 
 end # module
-

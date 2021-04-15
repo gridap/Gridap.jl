@@ -38,7 +38,7 @@ labeling = get_face_labeling(model)
 @test num_facets(model) == 13
 @test num_nodes(model) == 9
 
-@test get_cell_nodes(model) == get_cell_nodes(grid)
+@test get_cell_node_ids(model) == get_cell_node_ids(grid)
 @test get_node_coordinates(model) == get_node_coordinates(grid)
 @test get_cell_type(model) == get_cell_type(grid)
 @test get_reffes(model) == get_reffes(grid)
@@ -98,7 +98,7 @@ test_discrete_model(tmodel)
 model2 = DiscreteModel(grid,topo,labeling)
 test_discrete_model(model2)
 
-reffes = ReferenceFE(model,:Lagrangian,Float64,1)
+reffes = ReferenceFE(model,lagrangian,Float64,1)
 @test isa(reffes,AbstractVector{<:ReferenceFE})
 
 d = mktempdir()

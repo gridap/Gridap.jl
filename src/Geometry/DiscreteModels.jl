@@ -1,7 +1,7 @@
 """
     abstract type DiscreteModel{Dc,Dp} <: Grid
 
-Abstract type holding information about a physical grid, 
+Abstract type holding information about a physical grid,
 the underlying grid topology, and a labeling of
 the grid faces. This is the information that typically provides a mesh
 generator, and it is what one needs to perform a simulation.
@@ -63,7 +63,7 @@ end
 
 # Delegators to the underlying grid
 
-get_cell_nodes(g::DiscreteModel) = get_cell_nodes(get_grid(g))
+get_cell_node_ids(g::DiscreteModel) = get_cell_node_ids(get_grid(g))
 
 get_node_coordinates(g::DiscreteModel) = get_node_coordinates(get_grid(g))
 
@@ -73,7 +73,7 @@ get_reffes(g::DiscreteModel) = get_reffes(get_grid(g))
 
 get_background_triangulation(g::DiscreteModel) = get_background_triangulation(get_grid(g))
 
-get_cell_id(g::DiscreteModel) = get_cell_id(get_grid(g))
+get_cell_to_bgcell(g::DiscreteModel) = get_cell_to_bgcell(get_grid(g))
 
 get_cell_ref_map(g::DiscreteModel) = get_cell_ref_map(get_grid(g))
 
@@ -154,12 +154,12 @@ end
 function compute_face_nodes(model::DiscreteModel,d::Integer)
 
   if d == num_cell_dims(model)
-    return get_cell_nodes(model)
+    return get_cell_node_ids(model)
   end
 
   topo = get_grid_topology(model)
   D = num_cell_dims(topo)
-  cell_to_nodes = Table(get_cell_nodes(model))
+  cell_to_nodes = Table(get_cell_node_ids(model))
   cell_to_faces = Table(get_faces(topo,D,d))
   cell_to_ctype = get_cell_type(model)
   reffes = get_reffes(model)
@@ -208,7 +208,7 @@ function compute_face_own_nodes(model::DiscreteModel,d::Integer)
 
   topo = get_grid_topology(model)
   D = num_cell_dims(topo)
-  cell_to_nodes = Table(get_cell_nodes(model))
+  cell_to_nodes = Table(get_cell_node_ids(model))
   cell_to_faces = Table(get_faces(topo,D,d))
   cell_to_ctype = get_cell_type(model)
   reffes = get_reffes(model)
@@ -486,4 +486,3 @@ end
 function GridTopology(::Type{<:Polytope{D}},model::DiscreteModel) where D
   GridTopology(Polytope{D},get_grid_topology(model))
 end
-

@@ -147,8 +147,8 @@ function lazy_map(
   a::LazyArray{<:Fill{<:BlockFieldArrayCooMap}},
   x::AbstractArray{<:Point})
 
-  m = a.g.value
-  cell_axs, cell_ai = a.f
+  m = a.maps.value
+  cell_axs, cell_ai = a.args
   cell_aix = lazy_map(evaluate,cell_ai,x)
   lazy_map(BlockArrayCooMap(m.blocksize,m.blockids),cell_axs,cell_aix)
 end
@@ -158,8 +158,8 @@ function lazy_map(
   a::LazyArray{<:Fill{<:BlockFieldArrayCooMap}},
   cell_x::AbstractArray{<:AbstractVector{<:Point}})
 
-  m = a.g.value
-  cell_axs, cell_ai = a.f
+  m = a.maps.value
+  cell_axs, cell_ai = a.args
   cell_aix = lazy_map(evaluate,cell_ai,cell_x)
 
   function result_axes_on_point_vector(axs,x)
@@ -172,7 +172,7 @@ function lazy_map(
   bsize_new = (1,m.blocksize...)
   bids_new = map(i->(1,i...),m.blockids)
 
-  lazy_map(BlockArrayCooMap(bsize_new,bids_new),cell_axs_new, cell_aix)
+  r = lazy_map(BlockArrayCooMap(bsize_new,bids_new),cell_axs_new, cell_aix)
 end
 
 # Gradient
@@ -180,8 +180,8 @@ end
 function lazy_map(
   k::Broadcasting{typeof(∇)}, a::LazyArray{<:Fill{<:BlockFieldArrayCooMap}})
 
-  m = a.g.value
-  cell_axs, cell_ai = a.f
+  m = a.maps.value
+  cell_axs, cell_ai = a.args
 
   cell_gi = lazy_map(k,cell_ai)
   lazy_map(m,cell_axs, cell_gi)
@@ -190,19 +190,19 @@ end
 function lazy_map(
   k::Broadcasting{typeof(∇∇)}, a::LazyArray{<:Fill{<:BlockFieldArrayCooMap}})
 
-  m = a.g.value
-  cell_axs, cell_ai = a.f
+  m = a.maps.value
+  cell_axs, cell_ai = a.args
   cell_gi = lazy_map(k,cell_ai)
   lazy_map(m,cell_axs,cell_gi)
 end
 
 function lazy_map(::typeof(axes),a::LazyArray{<:Fill{Broadcasting{typeof(∇)}}})
-  b = a.f[1]
+  b = a.args[1]
   lazy_map(axes,b)
 end
 
 function lazy_map(::typeof(axes),a::LazyArray{<:Fill{Broadcasting{typeof(∇∇)}}})
-  b = a.f[1]
+  b = a.args[1]
   lazy_map(axes,b)
 end
 
@@ -211,14 +211,14 @@ end
 function lazy_map(
   k::Broadcasting{typeof(∘)}, a::LazyArray{<:Fill{<:BlockFieldArrayCooMap}},b::AbstractArray{<:Field})
 
-  m = a.g.value
-  cell_axs, cell_ai = a.f
+  m = a.maps.value
+  cell_axs, cell_ai = a.args
   cell_gi = lazy_map(k,cell_ai,b)
   lazy_map(m,cell_axs,cell_gi)
 end
 
 function lazy_map(::typeof(axes),a::LazyArray{<:Fill{Broadcasting{typeof(∘)}}})
-  b = a.f[1]
+  b = a.args[1]
   lazy_map(axes,b)
 end
 
@@ -227,8 +227,8 @@ end
 function lazy_map(
   k::typeof(transpose), a::LazyArray{<:Fill{<:BlockFieldArrayCooMap}})
 
-  m = a.g.value
-  cell_axs, cell_ai = a.f
+  m = a.maps.value
+  cell_axs, cell_ai = a.args
 
   cell_ait = lazy_map(transpose,cell_ai)
 
@@ -248,24 +248,24 @@ end
 
 function lazy_map(
   k::Broadcasting{<:Operation}, a::LazyArray{<:Fill{<:BlockFieldArrayCooMap}})
-  m = a.g.value
-  cell_axs, cell_ai = a.f
+  m = a.maps.value
+  cell_axs, cell_ai = a.args
   cell_aif = lazy_map(k,cell_ai)
   lazy_map(m,cell_axs,cell_aif)
 end
 
 function lazy_map(
   k::Broadcasting{<:Operation}, a::LazyArray{<:Fill{<:BlockFieldArrayCooMap}},f::AbstractArray{<:Field})
-  m = a.g.value
-  cell_axs, cell_ai = a.f
+  m = a.maps.value
+  cell_axs, cell_ai = a.args
   cell_aif = lazy_map(k,cell_ai,f)
   lazy_map(m,cell_axs,cell_aif)
 end
 
 function lazy_map(
   k::Broadcasting{<:Operation}, f::AbstractArray{<:Field}, a::LazyArray{<:Fill{<:BlockFieldArrayCooMap}})
-  m = a.g.value
-  cell_axs, cell_ai = a.f
+  m = a.maps.value
+  cell_axs, cell_ai = a.args
   cell_aif = lazy_map(k,f,cell_ai)
   lazy_map(m,cell_axs,cell_aif)
 end
@@ -280,8 +280,8 @@ end
 # Assumption: op is a scaling of a
 function lazy_map(
   k::BroadcastingFieldOpMap, a::LazyArray{<:Fill{<:BlockArrayCooMap}})
-  m = a.g.value
-  cell_axs, cell_blocks = _get_axes_and_blocks(a.f)
+  m = a.maps.value
+  cell_axs, cell_blocks = _get_axes_and_blocks(a.args)
   cell_blocks_new = map(b->lazy_map(k,b),cell_blocks)
   lazy_map(m,cell_axs,cell_blocks_new...)
 end
@@ -291,8 +291,8 @@ end
 # Assumption: op is a scaling of a
 function _op_basis_vs_field(k,a,f)
   @check ndims(eltype(a)) > ndims(eltype(f))
-  m = a.g.value
-  cell_axs, cell_blocks = _get_axes_and_blocks(a.f)
+  m = a.maps.value
+  cell_axs, cell_blocks = _get_axes_and_blocks(a.args)
   cell_blocks_new = map(b->lazy_map(k,b,f),cell_blocks)
   lazy_map(m,cell_axs,cell_blocks_new...)
 end
@@ -328,8 +328,8 @@ end
 # Assumption: op is a scaling of a
 function _op_field_vs_basis(k,f,a)
   @check ndims(eltype(a)) > ndims(eltype(f))
-  m = a.g.value
-  cell_axs, cell_blocks = _get_axes_and_blocks(a.f)
+  m = a.maps.value
+  cell_axs, cell_blocks = _get_axes_and_blocks(a.args)
   cell_blocks_new = map(b->lazy_map(k,f,b),cell_blocks)
   lazy_map(m,cell_axs,cell_blocks_new...)
 end
@@ -369,11 +369,11 @@ function lazy_map(
   a::LazyArray{<:Fill{BlockArrayCooMap{N}}},
   b::LazyArray{<:Fill{BlockArrayCooMap{N}}}) where N
 
-  ma = a.g.value
-  mb = b.g.value
+  ma = a.maps.value
+  mb = b.maps.value
   @assert blocksize(ma) == blocksize(mb)
 
-  cell_axs, = a.f
+  cell_axs, = a.args
 
   blocks = []
   blockids = eltype(ma.blockids)[]
@@ -408,7 +408,7 @@ function _get_cell_block(
   m::BlockArrayCooMap,
   a::AbstractArray{<:BlockArrayCoo{T,N,A}},
   b::Block) where {T,N,A}
-  cell_axs, cell_blocks = _get_axes_and_blocks(a.f)
+  cell_axs, cell_blocks = _get_axes_and_blocks(a.args)
   I = convert(Tuple,b)
   p = m.ptrs[I...]
   @assert p > 0
@@ -425,8 +425,8 @@ end
 function _lazy_array_of_zero_blocks(
   ::Type{A},cell_axs,I,aI::LazyArray{<:Fill{BlockArrayCooMap{N}}}) where {A,N}
 
-  cell_axsI, = aI.f
-  maI = aI.g.value
+  cell_axsI, = aI.args
+  maI = aI.maps.value
   blocks = []
   for J in eachblockid(maI)
     if is_nonzero_block(maI,J)
@@ -453,11 +453,11 @@ function lazy_map(
   a::LazyArray{<:Fill{BlockArrayCooMap{2}}},
   b::LazyArray{<:Fill{BlockArrayCooMap{3}}})
 
-  cell_axs_a, = a.f
-  cell_axs_b, = b.f
+  cell_axs_a, = a.args
+  cell_axs_b, = b.args
   cell_axs = lazy_map((a1,a2) -> (a1[1],a1[2],a2[3]),cell_axs_a,cell_axs_b)
-  ma = a.g.value
-  mb = b.g.value
+  ma = a.maps.value
+  mb = b.maps.value
 
   blocks = []
   blockids = NTuple{3,Int}[]
@@ -495,11 +495,11 @@ function lazy_map(
   a::LazyArray{<:Fill{BlockArrayCooMap{3}}},
   b::LazyArray{<:Fill{BlockArrayCooMap{2}}})
 
-  cell_axs_a, = a.f
-  cell_axs_b, = b.f
+  cell_axs_a, = a.args
+  cell_axs_b, = b.args
   cell_axs = lazy_map((a1,a2) -> (a2[1],a2[2],a1[3]),cell_axs_a,cell_axs_b)
-  ma = a.g.value
-  mb = b.g.value
+  ma = a.maps.value
+  mb = b.maps.value
 
   blocks = []
   blockids = NTuple{3,Int}[]
@@ -527,8 +527,8 @@ end
 
 # Integration of elem vectors
 function lazy_map(k::IntegrationMap,a::LazyArray{<:Fill{BlockArrayCooMap{2}}},w::AbstractArray,j::AbstractArray)
-  ma = a.g.value
-  cell_axs, cell_blocks = _get_axes_and_blocks(a.f)
+  ma = a.maps.value
+  cell_axs, cell_blocks = _get_axes_and_blocks(a.args)
   cell_axs_new = lazy_map(a->(a[2],),cell_axs)
   blocks = map(block->lazy_map(k,block,w,j),cell_blocks)
   blockids = [ (ids[2],) for ids in ma.blockids ]
@@ -538,8 +538,8 @@ end
 
 ## Integration of elem matrices
 function lazy_map(k::IntegrationMap,a::LazyArray{<:Fill{BlockArrayCooMap{3}}},w::AbstractArray,j::AbstractArray)
-  ma = a.g.value
-  cell_axs, cell_blocks = _get_axes_and_blocks(a.f)
+  ma = a.maps.value
+  cell_axs, cell_blocks = _get_axes_and_blocks(a.args)
   cell_axs_new = lazy_map(a->(a[2],a[3]),cell_axs)
   blocks = map(block->lazy_map(k,block,w,j),cell_blocks)
   blockids = [ (ids[2],ids[3]) for ids in ma.blockids ]
@@ -552,5 +552,3 @@ end
 #  blockids = [ (ids[2], ids[3]) for ids in f.blockids ]
 #  VectorOfBlockArrayCoo(blocks,blockids,ax)
 #end
-
-

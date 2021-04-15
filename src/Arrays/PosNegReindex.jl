@@ -33,6 +33,10 @@ end
   i>0 ? getindex!(c_p,k.values_pos,i) : getindex!(c_n,k.values_neg,-i)
 end
 
+@inline function evaluate(k::PosNegReindex,i::Integer)
+  i>0 ? k.values_pos[i] : k.values_neg[-i]
+end
+
 function lazy_map(k::PosNegReindex,::Type{T},i_to_iposneg::AbstractArray) where T
   if all_pos(i_to_iposneg)
     lazy_map(Reindex(k.values_pos),get_array(i_to_iposneg))
@@ -45,10 +49,10 @@ function lazy_map(k::PosNegReindex,::Type{T},i_to_iposneg::AbstractArray) where 
 end
 
 function lazy_map(::typeof(evaluate),::Type{T},a::LazyArray{<:Fill{<:PosNegReindex}}...) where T
-  i_to_iposneg = a[1].f[1]
-  if all(map( ai-> is_exhaustive(a[1].f[1]),a)) && all( map( ai-> i_to_iposneg==a[1].f[1],a) )
-    bpos = map(ai->ai.g.value.values_pos,a)
-    bneg = map(ai->ai.g.value.values_neg,a)
+  i_to_iposneg = a[1].args[1]
+  if all(map( ai-> is_exhaustive(a[1].args[1]),a)) && all( map( ai-> i_to_iposneg==a[1].args[1],a) )
+    bpos = map(ai->ai.maps.value.values_pos,a)
+    bneg = map(ai->ai.maps.value.values_neg,a)
     cpos = lazy_map(evaluate,T,bpos...)
     cneg = lazy_map(evaluate,T,bneg...)
     lazy_map(PosNegReindex(cpos,cneg),T,i_to_iposneg)
@@ -58,9 +62,9 @@ function lazy_map(::typeof(evaluate),::Type{T},a::LazyArray{<:Fill{<:PosNegReind
 end
 
 function lazy_map(::typeof(evaluate),::Type{T},a::LazyArray{<:Fill{<:PosNegReindex}},x::AbstractArray) where T
-  apos = a.g.value.values_pos
-  aneg = a.g.value.values_neg
-  i_to_iposneg = a.f[1]
+  apos = a.maps.value.values_pos
+  aneg = a.maps.value.values_neg
+  i_to_iposneg = a.args[1]
   ipos_to_i, ineg_to_i = pos_and_neg_indices(i_to_iposneg)
   xpos = lazy_map(Reindex(x),ipos_to_i)
   xneg = lazy_map(Reindex(x),ineg_to_i)
@@ -70,11 +74,11 @@ function lazy_map(::typeof(evaluate),::Type{T},a::LazyArray{<:Fill{<:PosNegReind
 end
 
 function lazy_map(::typeof(evaluate),::Type{T},b::Fill,a::LazyArray{<:Fill{<:PosNegReindex}}...) where T
-  i_to_iposneg = a[1].f[1]
-  if all(map( ai-> is_exhaustive(ai.f[1]),a)) && all( map( ai-> i_to_iposneg==ai.f[1],a) )
+  i_to_iposneg = a[1].args[1]
+  if all(map( ai-> is_exhaustive(ai.args[1]),a)) && all( map( ai-> i_to_iposneg==ai.args[1],a) )
     k = b.value
-    bpos = map(ai->ai.g.value.values_pos,a)
-    bneg = map(ai->ai.g.value.values_neg,a)
+    bpos = map(ai->ai.maps.value.values_pos,a)
+    bneg = map(ai->ai.maps.value.values_neg,a)
     cpos = lazy_map(k,T,bpos...)
     cneg = lazy_map(k,T,bneg...)
     lazy_map(PosNegReindex(cpos,cneg),T,i_to_iposneg)
@@ -200,10 +204,9 @@ all_pos(a::PosNegPartition) = length(a.ineg_to_i)==0
 all_neg(a::PosNegPartition) = length(a.ipos_to_i)==0
 
 # @propagate_inbounds function Base.setindex!(a::LazyArray{<:Fill{<:PosNegReindex}},v,j::Integer)
-#   k = a.g.value
+#   k = a.map.value
 #   i_to_v = k.values
 #   j_to_i, = a.f
 #   i = j_to_i[j]
 #   i_to_v[i]=v
 # end
-

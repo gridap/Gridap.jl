@@ -8,7 +8,7 @@ Type representing a symmetric fourth-order tensor
 struct SymFourthOrderTensorValue{D,T,L} <: MultiValue{Tuple{D,D,D,D},T,4,L}
   data::NTuple{L,T}
   function SymFourthOrderTensorValue{D,T}(data::NTuple{L,T}) where {D,T,L}
-    @assert L == (D*(D+1)/2)^2
+    @assert L == (D*(D+1)÷2)^2
     new{D,T,L}(data)
   end
 end
@@ -71,7 +71,7 @@ convert(::Type{<:SymFourthOrderTensorValue{D,T}}, arg::SymFourthOrderTensorValue
 ###############################################################
 
 @generated function zero(::Type{<:SymFourthOrderTensorValue{D,T}}) where {D,T}
-  L=Int((D*(D+1)/2)^2)
+  L=(D*(D+1)÷2)^2
   quote
     SymFourthOrderTensorValue{D,T}(tfill(zero(T),Val{$L}()))
   end
@@ -86,6 +86,16 @@ zero(::SymFourthOrderTensorValue{D,T,L}) where {D,T,L} = zero(SymFourthOrderTens
   Meta.parse("SymFourthOrderTensorValue{D,$S}(($str))")
 end
 one(::SymFourthOrderTensorValue{D,T}) where {D,T} = one(SymFourthOrderTensorValue{D,T})
+
+@generated function rand(rng::AbstractRNG,
+                         ::Random.SamplerType{<:SymFourthOrderTensorValue{D,T}}) where {D,T}
+  L=(D*(D+1)÷2)^2
+  quote
+    rand(rng, SymFourthOrderTensorValue{D,T,$L})
+  end
+end
+rand(rng::AbstractRNG,::Random.SamplerType{<:SymFourthOrderTensorValue{D,T,L}}) where {D,T,L} =
+  SymFourthOrderTensorValue{D,T}(Tuple(rand(rng, SVector{L,T})))
 
 change_eltype(::Type{SymFourthOrderTensorValue{D,T1,L}},::Type{T2}) where {D,T1,T2,L} = SymFourthOrderTensorValue{D,T2,L}
 change_eltype(::SymFourthOrderTensorValue{D,T1,L},::Type{T2}) where {D,T1,T2,L} = change_eltype(SymFourthOrderTensorValue{D,T1,L},T2)

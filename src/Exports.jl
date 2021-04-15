@@ -22,8 +22,6 @@ export det, inv, tr, cross, dot, norm, ×, ⋅
 @publish Algebra NLSolver
 @publish Algebra get_matrix
 @publish Algebra get_vector
-@publish Algebra SparseMatrixCSR
-@publish Algebra SymSparseMatrixCSR
 @publish Algebra jacobian
 @publish Algebra hessian
 
@@ -35,6 +33,7 @@ export det, inv, tr, cross, dot, norm, ×, ⋅
 @publish Arrays Broadcasting
 @publish Arrays Operation
 @publish Arrays print_op_tree
+using Gridap.Arrays: ∑; export ∑
 
 @publish TensorValues VectorValue
 @publish TensorValues TensorValue
@@ -58,9 +57,6 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish Fields Δ
 @publish Fields ε
 @publish Fields symmetric_gradient
-
-@publish Integration get_coordinates
-@publish Integration get_weights
 
 @publish ReferenceFEs is_simplex
 @publish ReferenceFEs is_n_cube
@@ -88,6 +84,12 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish ReferenceFEs HEX8
 @publish ReferenceFEs Polytope
 @publish ReferenceFEs ReferenceFE
+@publish ReferenceFEs Lagrangian
+@publish ReferenceFEs RaviartThomas
+@publish ReferenceFEs Nedelec
+@publish ReferenceFEs lagrangian
+@publish ReferenceFEs raviart_thomas
+@publish ReferenceFEs nedelec
 
 @publish Geometry get_triangulation
 @publish Geometry num_cells
@@ -99,6 +101,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish Geometry get_cell_coordinates
 @publish Geometry get_cell_ref_coordinates
 @publish Geometry get_cell_map
+@publish Geometry get_cell_to_bgcell
 @publish Geometry CartesianGrid
 @publish Geometry CartesianDiscreteModel
 @publish Geometry DiscreteModel
@@ -115,7 +118,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish Geometry InterfaceTriangulation
 
 @publish CellData CellQuadrature
-@publish CellData LebesgueMeasure
+@publish CellData Measure
 @publish CellData DomainStyle
 @publish CellData ReferenceDomain
 @publish CellData PhysicalDomain
@@ -129,22 +132,20 @@ using Gridap.TensorValues: ⊗; export ⊗
 using Gridap.CellData: ∫; export ∫
 @publish CellData get_cell_measure
 @publish CellData get_physical_coordinate
+@publish CellData DiracDelta
 
 @publish FESpaces FESpace
 @publish FESpaces TrialFESpace
 @publish FESpaces TestFESpace
-#@publish FESpaces FETerm
-#@publish FESpaces FEEnergy
-#@publish FESpaces AffineFETerm
-#@publish FESpaces LinearFETerm
-#@publish FESpaces FESource
 @publish FESpaces AffineFEOperator
 @publish FESpaces LinearFESolver
-@publish FESpaces get_free_values
+@publish FESpaces get_free_dof_values
 @publish FESpaces get_dirichlet_values
 @publish FESpaces num_dirichlet_dofs
 @publish FESpaces num_free_dofs
 @publish FESpaces num_dirichlet_tags
+@publish FESpaces get_free_dof_ids
+@publish FESpaces get_dirichlet_dof_ids
 @publish FESpaces get_cell_dof_ids
 @publish FESpaces get_cell_dof_values
 @publish FESpaces get_cell_shapefuns

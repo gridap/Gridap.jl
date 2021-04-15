@@ -17,11 +17,11 @@ orders = (2,1)
 order = 2*max(orders...)
 
 Ω = Triangulation(model)
-dΩ = LebesgueMeasure(Ω,order)
+dΩ = Measure(Ω,order)
 
 T = VectorValue{2,Float64}
 
-V = FESpace(model,ReferenceFE(:Lagrangian,T,orders),conformity=CDConformity((DISC,CONT)))
+V = FESpace(model,ReferenceFE(lagrangian,T,orders),conformity=CDConformity((DISC,CONT)))
 test_single_field_fe_space(V)
 u(x) = x
 U = TrialFESpace(V,u)
@@ -31,14 +31,14 @@ el2 = sqrt(sum(∫(e⋅e)*dΩ))
 @test el2 < 1.0e-10
 
 reffe = LagrangianRefFE(T,QUAD,2)
-V = FESpace(model,ReferenceFE(:Lagrangian,T,2),conformity=CDConformity((CONT,DISC)))
+V = FESpace(model,ReferenceFE(lagrangian,T,2),conformity=CDConformity((CONT,DISC)))
 U = TrialFESpace(V,u)
 uh = interpolate(u,U)
 e = u - uh
 el2 = sqrt(sum(∫(e⋅e)*dΩ))
 @test el2 < 1.0e-10
 
-V = FESpace(model,ReferenceFE(:Lagrangian,T,(2,0)),conformity=CDConformity((CONT,DISC)))
+V = FESpace(model,ReferenceFE(lagrangian,T,(2,0)),conformity=CDConformity((CONT,DISC)))
 u(x) = VectorValue(x[1],0.0)
 U = TrialFESpace(V,u)
 uh = interpolate(u,U)
@@ -46,7 +46,7 @@ e = u - uh
 el2 = sqrt(sum(∫(e⋅e)*dΩ))
 @test el2 < 1.0e-10
 
-V = FESpace(model,ReferenceFE(:Lagrangian,T,(2,0)),conformity=CDConformity((DISC,DISC)))
+V = FESpace(model,ReferenceFE(lagrangian,T,(2,0)),conformity=CDConformity((DISC,DISC)))
 u(x) = VectorValue(x[1],0.0)
 U = TrialFESpace(V,u)
 uh = interpolate(u,U)

@@ -7,7 +7,6 @@ using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.ReferenceFEs
 using Gridap.Geometry
-using Gridap.Integration
 using Gridap.Fields
 using Gridap.Algebra
 using SparseArrays
@@ -20,7 +19,7 @@ model = CartesianDiscreteModel(domain,partition)
 
 V = TestFESpace(
   model,
-  ReferenceFE(:Lagrangian,Float64,1),
+  ReferenceFE(lagrangian,Float64,1),
   dirichlet_tags=[1,2,3,4,6,5])
 
 u(x) = x[1]+x[2]
@@ -32,10 +31,10 @@ du = get_cell_shapefuns_trial(U)
 
 degree = 2
 Ω = Triangulation(model)
-dΩ = LebesgueMeasure(Ω,degree)
+dΩ = Measure(Ω,degree)
 
 Γ = BoundaryTriangulation(model)
-dΓ = LebesgueMeasure(Γ,degree)
+dΓ = Measure(Γ,degree)
 
 a(u,v) = ∫(∇(u)⋅∇(v))*dΩ + ∫(u*v)*dΓ
 ℓ(v) = ∫(v)*dΩ
@@ -46,24 +45,24 @@ vec_contribs = ℓ(dv)
 assem = SparseMatrixAssembler(U,V)
 
 @test isa(U,TrialFESpace)
-@test_throws AssertionError assem = SparseMatrixAssembler(V,U)
+#@test_throws AssertionError assem = SparseMatrixAssembler(V,U)
 
-data = collect_cell_matrix(mat_contribs)
+data = collect_cell_matrix(U,V,mat_contribs)
 A = assemble_matrix(assem,data)
 @test size(A) == (num_free_dofs(V), num_free_dofs(U))
 
-data = collect_cell_vector(vec_contribs)
+data = collect_cell_vector(V,vec_contribs)
 b = assemble_vector(assem,data)
 x = A\b
 uh = FEFunction(U,x)
 
-data = collect_cell_matrix_and_vector(mat_contribs,vec_contribs)
+data = collect_cell_matrix_and_vector(U,V,mat_contribs,vec_contribs)
 A,b = assemble_matrix_and_vector(assem,data)
 x = A\b
 uh = FEFunction(U,x)
 
 uhd = zero(U)
-data = collect_cell_matrix_and_vector(mat_contribs,vec_contribs,uhd)
+data = collect_cell_matrix_and_vector(U,V,mat_contribs,vec_contribs,uhd)
 A,b = assemble_matrix_and_vector(assem,data)
 x = A\b
 uh = FEFunction(U,x)
@@ -78,7 +77,7 @@ A,b = assemble_matrix_and_vector(a(du,dv),ℓ(dv),U,V)
 
 V = TestFESpace(
   model,
-  ReferenceFE(:Lagrangian,Float64,1),
+  ReferenceFE(lagrangian,Float64,1),
   vector_type=Vector{ComplexF64})
 U = V
 
@@ -87,5 +86,33 @@ Ta = get_matrix_type(assem)
 Tb = get_vector_type(assem)
 @test eltype(Ta) == ComplexF64
 @test eltype(Tb) == ComplexF64
+
+# Now with an homogeneous linear form
+
+a(u,v) = ∫(∇(u)⋅∇(v))*dΩ + ∫(u*v)*dΓ
+ℓ(v) = 0
+
+mat_contribs = a(du,dv)
+vec_contribs = ℓ(dv)
+
+data = collect_cell_matrix(U,V,mat_contribs)
+A = assemble_matrix(assem,data)
+@test size(A) == (num_free_dofs(V), num_free_dofs(U))
+
+data = collect_cell_vector(V,vec_contribs)
+b = assemble_vector(assem,data)
+x = A\b
+@test x ≈ b
+
+data = collect_cell_matrix_and_vector(U,V,mat_contribs,vec_contribs)
+A,b = assemble_matrix_and_vector(assem,data)
+x = A\b
+@test x ≈ b
+
+uhd = zero(U)
+data = collect_cell_matrix_and_vector(U,V,mat_contribs,vec_contribs,uhd)
+A,b = assemble_matrix_and_vector(assem,data)
+x = A\b
+@test x ≈ b
 
 end # module

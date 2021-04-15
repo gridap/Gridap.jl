@@ -7,7 +7,6 @@ using Gridap.Geometry
 using Gridap.FESpaces
 using Gridap.ReferenceFEs
 using Gridap.Fields
-using Gridap.Integration
 using Gridap.CellData
 using Gridap.MultiField
 using Gridap.TensorValues
@@ -53,8 +52,8 @@ trian_Γ = SkeletonTriangulation(model)
 quad_Γ = CellQuadrature(trian_Γ,degree)
 x_Γ = get_cell_points(quad_Γ)
 
-V = TestFESpace(model,ReferenceFE(:Lagrangian,VectorValue{2,Float64},order);conformity=:H1)
-Q = TestFESpace(model,ReferenceFE(:Lagrangian,Float64,order-1),conformity=:L2)
+V = TestFESpace(model,ReferenceFE(lagrangian,VectorValue{2,Float64},order);conformity=:H1)
+Q = TestFESpace(model,ReferenceFE(lagrangian,Float64,order-1),conformity=:L2)
 
 U = TrialFESpace(V)
 P = TrialFESpace(Q)
@@ -69,8 +68,8 @@ n = VectorValue(1,2)
 
 cellmat = integrate( (n⋅dv)*dp + dq*dp, quad)
 cellvec = integrate( n⋅dv, quad)
-@test isa(cellmat,LazyArray{<:Fill{BlockArrayCooMap{2}}})
 @test isa(cellvec,LazyArray{<:Fill{BlockArrayCooMap{1}}})
+@test isa(cellmat,LazyArray{<:Fill{BlockArrayCooMap{2}}})
 
 cellmat1 = integrate( ((n⋅dv) - dq)*((n⋅du) + dp), quad)
 cellmat2 = integrate( (n⋅dv)*(n⋅du) + (n⋅dv)*dp - dq*(n⋅du) - dq*dp, quad)
