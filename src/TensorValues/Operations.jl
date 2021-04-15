@@ -658,19 +658,20 @@ macro GTensor(expr)
     @assert in_args.args[1] == :*
     A_in_args = in_args.args[2].args
     B_in_args = in_args.args[3].args
-    result = begin quote
-        if typeof($(A_in_args[1])) <: Array && typeof($(B_in_args[1])) <: Array
-            contract.($(A_in_args[1]),([$A_in_args[2:end]...],),
-                            $(B_in_args[1]),([$B_in_args[2:end]...],),([$out_args[2:end]...],))
-        elseif typeof($(A_in_args[1])) <: Array && typeof($(B_in_args[1])) <: Number
-            contract.($(A_in_args[1]),([$A_in_args[2:end]...],),
-                            ($(B_in_args[1]),),([$B_in_args[2:end]...],),([$out_args[2:end]...],))
-        elseif typeof($(A_in_args[1])) <: Number && typeof($(B_in_args[1])) <: Array
-            contract.(($(A_in_args[1]),),([$A_in_args[2:end]...],),
-                            $(B_in_args[1]),([$B_in_args[2:end]...],),([$out_args[2:end]...],))
-        elseif typeof($(A_in_args[1])) <: Number && typeof($(B_in_args[1])) <: Number
-            contract($(A_in_args[1]),[$A_in_args[2:end]...],
-                            $(B_in_args[1]),[$B_in_args[2:end]...],[$out_args[2:end]...])
+    # result =
+    begin quote
+        if typeof($(esc(A_in_args[1]))) <: Array && typeof($(esc(B_in_args[1]))) <: Array
+            $(esc(out_args[1])) = contract.($(esc(A_in_args[1])),([$A_in_args[2:end]...],),
+                            $(esc(B_in_args[1])),([$B_in_args[2:end]...],),([$out_args[2:end]...],))
+        elseif typeof($(esc(A_in_args[1]))) <: Array && typeof($(esc(B_in_args[1]))) <: Number
+            $(esc(out_args[1])) = contract.($(esc(A_in_args[1])),([$A_in_args[2:end]...],),
+                            ($(esc(B_in_args[1])),),([$B_in_args[2:end]...],),([$out_args[2:end]...],))
+        elseif typeof($(esc(A_in_args[1]))) <: Number && typeof($(esc(B_in_args[1]))) <: Array
+            $(esc(out_args[1])) = contract.(($(esc(A_in_args[1])),),([$A_in_args[2:end]...],),
+                            $(esc(B_in_args[1])),([$B_in_args[2:end]...],),([$out_args[2:end]...],))
+        elseif typeof($(esc(A_in_args[1]))) <: Number && typeof($(esc(B_in_args[1]))) <: Number
+            $(esc(out_args[1])) = contract($(esc(A_in_args[1])),[$A_in_args[2:end]...],
+                            $(esc(B_in_args[1])),[$B_in_args[2:end]...],[$out_args[2:end]...])
         else
             function tmp_operation(a::A,b::B) where {A<:MultiValue, B<:MultiValue}
                 contract(a,[$A_in_args[2:end]...],
@@ -681,9 +682,8 @@ macro GTensor(expr)
             tmp_operation(a::CellField,b::CellField) = Operation(tmp_operation)(a,b)
             tmp_operation(a::CellField,b::AbstractArray{<:Number}) = Operation(tmp_operation)(a,b)
             tmp_operation(a::AbstractArray{<:Number},b::CellField) = Operation(tmp_operation)(a,b)
-            tmp_operation($(A_in_args[1]),$(B_in_args[1]))
+            $(esc(out_args[1])) = tmp_operation($(esc(A_in_args[1])),$(esc(B_in_args[1])))
         end
     end
     end
-    @eval $(out_args[1]) = $result
 end

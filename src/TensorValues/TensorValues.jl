@@ -60,7 +60,7 @@ export ⋅¹
 export ⋅²
 export double_contraction
 export contract
-export GTensor
+export @GTensor
 
 import Base: show
 import Base: zero, one
