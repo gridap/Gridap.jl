@@ -252,7 +252,8 @@ end
 
 function get_facet_normal(trian::SkeletonTriangulation)
   plus = get_facet_normal(trian.plus)
-  minus = get_facet_normal(trian.minus)
+  #minus = get_facet_normal(trian.minus)
+  minus = lazy_map(Broadcasting(Operation(-)),plus)
   SkeletonPair(plus,minus)
 end
 

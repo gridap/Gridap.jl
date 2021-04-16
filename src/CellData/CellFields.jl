@@ -551,7 +551,8 @@ end
 
 function get_normal_vector(trian::SkeletonTriangulation)
   cell_normal_plus = get_facet_normal(trian.plus)
-  cell_normal_minus = get_facet_normal(trian.minus)
+  #cell_normal_minus = get_facet_normal(trian.minus)
+  cell_normal_minus = lazy_map(Broadcasting(Operation(-)),cell_normal_plus)
   plus = GenericCellField(cell_normal_plus,trian,ReferenceDomain())
   minus = GenericCellField(cell_normal_minus,trian,ReferenceDomain())
   SkeletonPair(plus,minus)
