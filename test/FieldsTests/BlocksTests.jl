@@ -159,4 +159,14 @@ k = MulAddMap(2.0,1.5)
 cache = return_cache(k,A,b,c)
 d = evaluate!(cache,k,A,b,c)
 
+@test d == d - d + d
+
+@test transpose(A) != nothing
+
+A11 = A[1,1]
+A11t = transpose(A11)
+
+@test A11*A11t != nothing
+@test A*transpose(A) != nothing
+
 end # module

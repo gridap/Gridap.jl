@@ -190,10 +190,4 @@ test_sparse_matrix_assembler(assem,matdata,vecdata,data)
 A = assemble_matrix(assem,matdata)
 @test A == zeros(num_free_dofs(V),num_free_dofs(U))
 
-# Allowing a non-blocked matrix in a context where you would expect a blocked one.
-scellmat = map(i->zeros(size(i)),scellmat)
-matdata = ([scellmat],[srows],[scols])
-A = assemble_matrix(assem,matdata)
-@test A == zeros(num_free_dofs(V),num_free_dofs(U))
-
 end # module

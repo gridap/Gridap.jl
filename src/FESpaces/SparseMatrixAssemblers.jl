@@ -209,6 +209,8 @@ get_vector_type(a::GenericSparseMatrixAssembler) = a.vector_type
 get_assembly_strategy(a::GenericSparseMatrixAssembler) = a.strategy
 
 function symbolic_loop_matrix!(A,a::GenericSparseMatrixAssembler,matdata)
+  get_mat(a::Tuple) = a[1]
+  get_mat(a) = a
   if LoopStyle(A) == DoNotLoop()
     return A
   end
@@ -219,7 +221,7 @@ function symbolic_loop_matrix!(A,a::GenericSparseMatrixAssembler,matdata)
     cols_cache = array_cache(cellidscols)
     @assert length(cellidscols) == length(cellidsrows)
     if length(cellidscols) > 0
-      mat1 = first(cellmat)
+      mat1 = get_mat(first(cellmat))
       _symbolic_loop_matrix!(A,rows_cache,cols_cache,cellidsrows,cellidscols,mat1)
     end
   end

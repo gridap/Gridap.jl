@@ -38,11 +38,49 @@ end
     scale_entries!(vec_with_bcs,-1)
     (mat, vec_with_bcs)
   else
-    if size(mat,1) != size(cv,1)
-      m = axes(mat,1)
-      setaxes!(cv,(m,))
-      fill!(cv.array,zero(eltype(cv)))
-    end
+    _zero_if_needed!(cv,mat)
     (mat, cv.array)
   end
 end
+
+function Arrays.return_cache(k::AttachDirichletMap,mat::GBlock,vals,mask)
+  cm = return_cache(*,mat,vals)
+  cv = mat*vals
+  (cm,cv)
+end
+
+@inline function Arrays.evaluate!(cache,k::AttachDirichletMap,mat::GBlock,vals,mask)
+  cm, cv = cache
+  if mask
+    vec_with_bcs = evaluate!(cm,*,mat,vals)
+    scale_entries!(vec_with_bcs,-1)
+    (mat, vec_with_bcs)
+  else
+    _zero_if_needed!(cv,mat)
+    (mat, cv)
+  end
+end
+
+function _zero_if_needed!(cv::CachedVector,mat::AbstractMatrix)
+  if size(mat,1) != size(cv,1)
+    m = axes(mat,1)
+    setaxes!(cv,(m,))
+    fill!(cv.array,zero(eltype(cv)))
+  end
+  nothing
+end
+
+function _zero_if_needed!(cv::GBlock,mat::GBlock)
+  ni, nj = size(mat.array)
+  for i in 1:ni
+    for j in 1:nj
+      if a.touched[i,j]
+        _zero_if_needed!(cv.array[i],mat.array[i,j])
+        break
+      end
+    end
+  end
+  nothing
+end
+
+

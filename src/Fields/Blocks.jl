@@ -147,6 +147,13 @@ function evaluate!(cache,k::BlockMap{N},a::A...) where {A,N}
   cache
 end
 
+function lazy_map(k::BlockMap,a::LazyArray{<:Fill{<:Broadcasting{typeof(∘)}}})
+  b = a.args[1]
+  ϕ = a.args[2]
+  c = lazy_map(k,b)
+  lazy_map(Broadcasting(∘),c,ϕ)
+end
+
 function return_cache(f::GBlock{A,N},x) where {A,N}
   fi = testitem(f)
   li = return_cache(fi,x)
@@ -220,6 +227,21 @@ function Base.transpose(f::GBlock{A,1} where A)
   for i in eachindex(f.touched)
     if f.touched[i]
       g[i] = transpose(f.array[i])
+    end
+  end
+  GBlock(g,collect(transpose(f.touched)))
+end
+
+function Base.transpose(f::GBlock{A,2} where A)
+  fi = testitem(f)
+  fit = transpose(fi)
+  ni,nj = size(f)
+  g = Matrix{typeof(fit)}(undef,(nj,ni))
+  for i in 1:ni
+    for j in 1:nj
+      if f.touched[i,j]
+        g[j,i] = transpose(f.array[i,j])
+      end
     end
   end
   GBlock(g,collect(transpose(f.touched)))
@@ -562,7 +584,7 @@ function Base.:*(a::GBlock{A,2},b::GBlock{B,1}) where {A,B}
   for i in 1:ni
     for j in 1:nj
       if a.touched[i,j] && b.touched[j]
-        if !touched[j]
+        if !touched[i]
           array[i] = a.array[i,j]*b.array[j]
           touched[i] = true
         else
@@ -591,6 +613,12 @@ function Base.:*(a::GBlock{A,2},b::GBlock{B,2}) where {A,B}
       for k in 1:nk
         if a.touched[i,k] && b.touched[k,j]
           if !touched[i,j]
+
+            a.array[i,k]
+
+            b.array[k,j]
+
+
             array[i,j] = a.array[i,k]*b.array[k,j]
             touched[i,j] = true
           else
@@ -719,6 +747,24 @@ function Base.copyto!(d::GBlock,c::GBlock)
     end
   end
   d
+end
+
+function Base.:(==)(a::GBlock,b::GBlock)
+  if size(a) != size(b)
+    return false
+  end
+  for i in eachindex(a.array)
+    if a.touched[i] && b.touched[i]
+      if a.array[i] != b.array[i]
+        return false
+      end
+    elseif a.touched[i]
+      return false
+    elseif b.touched[i]
+      return false
+    end
+  end
+  true
 end
 
 
