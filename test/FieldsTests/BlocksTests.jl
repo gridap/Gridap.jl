@@ -6,6 +6,7 @@ using Gridap.Fields
 using Gridap.Fields: GBlock, MockFieldArray, MockField, BroadcastingFieldOpMap, BlockMap
 using Test
 using FillArrays
+using LinearAlgebra
 #using Gridap.ReferenceFEs
 
 b = GBlock([Int[],[1,2,3,4]],Bool[0,1])
@@ -146,6 +147,16 @@ cell_mat = lazy_map(IntegrationMap(),cell_matp,cell_w)
 A = cell_mat[end]
 b = cell_int_dv⁺[end]
 c = A*b
+mul!(c,A,b)
+
 c = A*A
+mul!(c,A,A)
+
+cache = return_cache(*,A,b)
+c = evaluate!(cache,*,A,b)
+
+k = MulAddMap(2.0,1.5)
+cache = return_cache(k,A,b,c)
+d = evaluate!(cache,k,A,b,c)
 
 end # module

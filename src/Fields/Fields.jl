@@ -15,6 +15,7 @@ using Gridap.Algebra: mul!
 using Gridap.Algebra: fill_entries!
 
 using Gridap.TensorValues
+using Gridap.Algebra
 
 using LinearAlgebra: mul!, Transpose
 
@@ -23,6 +24,7 @@ using FillArrays
 using Test
 using BlockArrays
 using StaticArrays
+using LinearAlgebra
 
 import LinearAlgebra: det, inv, transpose, tr, cross
 import LinearAlgebra: ⋅, dot

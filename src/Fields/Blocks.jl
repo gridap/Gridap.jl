@@ -560,7 +560,7 @@ function Base.:*(a::GBlock{A,2},b::GBlock{B,1}) where {A,B}
   touched = fill(false,size(a.array,1))
   ni,nj = size(a.array)
   for i in 1:ni
-    for j in nj
+    for j in 1:nj
       if a.touched[i,j] && b.touched[j]
         if !touched[j]
           array[i] = a.array[i,j]*b.array[j]
@@ -588,7 +588,7 @@ function Base.:*(a::GBlock{A,2},b::GBlock{B,2}) where {A,B}
   ni,nj = size(a.array)
   for i in 1:ni
     for j in 1:nj
-      for k in nk
+      for k in 1:nk
         if a.touched[i,k] && b.touched[k,j]
           if !touched[i,j]
             array[i,j] = a.array[i,k]*b.array[k,j]
@@ -603,6 +603,31 @@ function Base.:*(a::GBlock{A,2},b::GBlock{B,2}) where {A,B}
   GBlock(array,touched)
 end
 
+function Algebra.scale_entries!(a::GBlock,β)
+  for i in eachindex(a.touched)
+    if a.touched[i]
+      scale_entries!(a.array[i],β)
+    end
+  end
+end
+
+function _zero_entries!(a::AbstractArray)
+  fill!(a,zero(eltype(a)))
+end
+
+function _zero_entries!(a::GBlock)
+  for i in eachindex(a.touched)
+    if a.touched[i]
+      _zero_entries!(a.array[i])
+    end
+  end
+end
+
+function LinearAlgebra.mul!(c::GBlock,a::GBlock,b::GBlock)
+  _zero_entries!(c)
+  mul!(c,a,b,1,0)
+end
+
 function LinearAlgebra.mul!(
   c::GBlock{C,1} where C,
   a::GBlock{A,2} where A,
@@ -610,13 +635,14 @@ function LinearAlgebra.mul!(
   α::Number,β::Number)
 
   ni, nj = size(a)
+  @check nj == size(b.array,1)
   for i in 1:ni
     if β!=1 && c.touched[i]
       scale_entries!(c.array[i],β)
     end
     for j in 1:nj
-      if a.touched[i,j] && b.touched
-        ci = c.touched[i]
+      if a.touched[i,j] && b.touched[j]
+        ci = c.array[i]
         aij = a.array[i,j]
         bj = b.array[j]
         mul!(ci,aij,bj,α,1)
@@ -625,4 +651,74 @@ function LinearAlgebra.mul!(
   end
   c
 end
+
+function LinearAlgebra.mul!(
+  c::GBlock{C,2} where C,
+  a::GBlock{A,2} where A,
+  b::GBlock{B,2} where B,
+  α::Number,β::Number)
+
+  ni, nk = size(a.array)
+  nj = size(b.array,2)
+  @check nk == size(b.array,1)
+  @check (ni,nj) == size(c.array)
+  
+  for i in 1:ni
+    for j in 1:nj
+      if β!=1 && c.touched[i,j]
+        scale_entries!(c.array[i,j],β)
+      end
+      for k in 1:nk
+        if a.touched[i,k] && b.touched[k,j]
+          cij = c.array[i,j]
+          aik = a.array[i,k]
+          bkj = b.array[k,j]
+          Arrays.mymul!(cij,aik,bkj,α)
+          # hack to avoid allocations
+          #mul!(cij,aik,bkj,α,1)
+        end
+      end
+    end
+  end
+  c
+end
+
+# hack to avoid allocations
+function Arrays.mymul!(
+  c::GBlock{C,2} where C,
+  a::GBlock{A,2} where A,
+  b::GBlock{B,2} where B,
+  α::Number)
+  mul!(c,a,b,α,1)
+end
+
+function return_cache(::typeof(*),a::GBlock,b::GBlock)
+  a*b
+end
+
+function evaluate!(c,::typeof(*),a::GBlock,b::GBlock)
+  mul!(c,a,b)
+  c
+end
+
+function return_cache(k::MulAddMap,a::GBlock,b::GBlock,c::GBlock)
+  d = a*b+c
+  d
+end
+
+function evaluate!(d,k::MulAddMap,a::GBlock,b::GBlock,c::GBlock)
+  copyto!(d,c)
+  mul!(d,a,b,k.α,k.β)
+  d
+end
+
+function Base.copyto!(d::GBlock,c::GBlock)
+  for i in eachindex(c.array)
+    if c.touched[i]
+      copyto!(d.array[i],c.array[i])
+    end
+  end
+  d
+end
+
 
