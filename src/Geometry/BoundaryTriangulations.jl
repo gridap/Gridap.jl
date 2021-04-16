@@ -425,7 +425,7 @@ end
 function lazy_map(
   k::typeof(evaluate),
   ::Type{T},
-  a::CompressedArray{<:AbstractVector{<:Field}},
+  a::CompressedArray,
   b::FaceCompressedVector) where T
 
   @check length(a) == length(b)

@@ -154,6 +154,21 @@ function lazy_map(k::BlockMap,a::LazyArray{<:Fill{<:Broadcasting{typeof(∘)}}})
   lazy_map(Broadcasting(∘),c,ϕ)
 end
 
+function lazy_map(k::BlockMap,a::LazyArray{<:Fill{typeof(transpose)}})
+  @notimplementedif k.size[1] != 1
+  lis = LinearIndices(k.size)
+  k2 = BlockMap(k.size[2],[ lis[i] for i in k.indices])
+  b = a.args[1]
+  c = lazy_map(k2,b)
+  lazy_map(transpose,c)
+end
+
+function lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{<:BlockMap}},x::AbstractArray)
+  args = map(i->lazy_map(evaluate,i,x),a.args)
+  k = a.maps.value
+  lazy_map(k,args...)
+end
+
 function return_cache(f::GBlock{A,N},x) where {A,N}
   fi = testitem(f)
   li = return_cache(fi,x)
