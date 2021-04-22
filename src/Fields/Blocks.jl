@@ -33,8 +33,10 @@ end
 
 Base.size(b::GBlock) = size(b.array)
 Base.length(b::GBlock) = length(b.array)
+Base.eltype(::Type{<:GBlock{A}}) where A = A
 Base.eltype(b::GBlock{A}) where A = A
 Base.ndims(b::GBlock{A,N}) where {A,N} = N
+Base.ndims(::Type{GBlock{A,N}}) where {A,N} = N
 @inline function Base.getindex(b::GBlock,i...)
   if !b.touched[i...]
     return nothing
@@ -73,6 +75,46 @@ function Arrays.testvalue(::Type{GBlock{A,N}}) where {A,N}
   array = Array{A,N}(undef,s)
   touched = Array{Bool,N}(undef,s)
   GBlock(array,touched)
+end
+
+#LinearAlgebra.promote_leaf_eltypes(a::GBlock) = LinearAlgebra.promote_leaf_eltypes(a.array)
+
+function Base.:≈(a::AbstractArray{<:GBlock},b::AbstractArray{<:GBlock})
+  all(z->z[1]≈z[2],zip(a,b))
+end
+
+function Base.:≈(a::GBlock,b::GBlock)
+  if size(a) != size(b)
+    return false
+  end
+  if a.touched != b.touched
+    return false
+  end
+  for i in eachindex(a.array)
+    if a.touched[i]
+      if !(a.array[i] ≈ b.array[i])
+        return false
+      end
+    end
+  end
+  true
+end
+
+function Base.:(==)(a::GBlock,b::GBlock)
+  if size(a) != size(b)
+    return false
+  end
+  if a.touched != b.touched
+    return false
+  end
+  for i in eachindex(a.array)
+    if a.touched[i]
+      if a.array[i] != b.array[i]
+        return false
+      end
+    end
+  end
+  true
 end
 
 struct ZeroBlockMap <: Map end

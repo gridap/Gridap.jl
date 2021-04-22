@@ -86,6 +86,7 @@ export integrate
 export IntegrationMap
 
 export GBlock
+export BlockMap
 
 include("FieldsInterfaces.jl")
 

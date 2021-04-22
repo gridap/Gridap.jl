@@ -505,7 +505,7 @@ return_cache(a::BroadcastingFieldOpMap,args...) = return_cache(Broadcasting(a.op
   a::AbstractArray{T,N},
   b::AbstractArray{S,N}) where {T,S,N}
 
-  @check size(a) == size(b)
+  @check size(a) == size(b) || (length(a)==0 && length(b)==0)
   setsize!(cache,size(a))
   r = cache.array
   for i in eachindex(a)

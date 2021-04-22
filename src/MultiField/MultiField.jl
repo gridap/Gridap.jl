@@ -16,12 +16,10 @@ using Gridap.CellData
 using Gridap.Fields
 
 using Gridap.FESpaces: SingleFieldFEBasis, TestBasis, TrialBasis
-using Gridap.Arrays: BlockArrayCooMap
 
 using FillArrays
 using SparseArrays
 using LinearAlgebra
-using BlockArrays
 
 export num_fields
 export compute_field_offsets

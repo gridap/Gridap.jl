@@ -335,7 +335,7 @@ function collect_cell_matrix(trial::FESpace,test::FESpace,a::DomainContribution)
   c = []
   for trian in get_domains(a)
     cell_mat = get_contribution(a,trian)
-    @assert eltype(cell_mat) <: AbstractMatrix
+    @assert ndims(eltype(cell_mat)) == 2
     cell_mat_c = attach_constraints_cols(trial,cell_mat,trian)
     cell_mat_rc = attach_constraints_rows(test,cell_mat_c,trian)
     rows = get_cell_dof_ids(test,trian)
@@ -352,7 +352,7 @@ function collect_cell_vector(test::FESpace,a::DomainContribution)
   r = []
   for trian in get_domains(a)
     cell_vec = get_contribution(a,trian)
-    @assert eltype(cell_vec) <: AbstractVector
+    @assert ndims(eltype(cell_vec)) == 1
     cell_vec_r = attach_constraints_rows(test,cell_vec,trian)
     rows = get_cell_dof_ids(test,trian)
     push!(w,cell_vec_r)
