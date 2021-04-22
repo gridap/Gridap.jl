@@ -45,7 +45,14 @@ function scatter_free_and_dirichlet_values(f::UnconstrainedFESpace,free_values,d
   given free values are Float64 and the Dirichlet values ComplexF64.
   """
   cell_dof_ids = get_cell_dof_ids(f)
-  lazy_map(Broadcasting(PosNegReindex(free_values,dirichlet_values)),cell_dof_ids)
+  cell_reffes=_get_cell_reffes(f)
+  phys_cell_info=_get_dof_basis_physical_cell_info(f)
+
+  cell_global_dofs=lazy_map(Broadcasting(PosNegReindex(free_values,dirichlet_values)),cell_dof_ids)
+  lazy_map(get_cell_local_dofs_from_global_dofs,
+           cell_reffes,
+           cell_global_dofs,
+           phys_cell_info)
 end
 
 function gather_free_and_dirichlet_values!(free_vals,dirichlet_vals,f::UnconstrainedFESpace,cell_vals)
@@ -111,4 +118,71 @@ function  _free_and_dirichlet_values_fill!(
     end
   end
 
+end
+
+# TEMPORARY PRIVATE FUNCTION
+function _get_cell_reffes(f::UnconstrainedFESpace)
+  get_data(f.cell_dof_basis).args[1]
+end
+
+# TEMPORARY PRIVATE FUNCTION
+function _get_dof_basis_physical_cell_info(f::UnconstrainedFESpace)
+  get_data(f.cell_dof_basis).args[3]
+end
+
+# TEMPORARY PRIVATE FUNCTION
+function _get_model(f::UnconstrainedFESpace)
+  get_data(f.cell_dof_basis).args[3].maps[1].model
+end
+
+function get_cell_local_dofs_from_global_dofs(reffe,
+  cell_global_dofs::AbstractVector,
+  cell_is_slave::AbstractVector{Bool})
+
+  cache = return_cache(get_cell_local_dofs_from_global_dofs,
+                       cell_global_dofs,
+                       cell_is_slave)
+  evaluate!(cache,
+            get_cell_local_dofs_from_global_dofs,
+            cell_global_dofs,
+            cell_is_slave)
+end
+
+function evaluate!(cache,
+  ::typeof(get_cell_local_dofs_from_global_dofs),
+  reffe::ReferenceFE,
+  cell_global_dofs::AbstractVector,
+  cell_is_slave::AbstractVector{Bool})
+  cell_global_dofs
+end
+
+function return_cache(::typeof(get_cell_local_dofs_from_global_dofs),
+                      reffe::GenericRefFE{RaviartThomas},
+                      cell_global_dofs::AbstractVector,
+                      cell_is_slave::AbstractVector{Bool})
+    CachedVector(eltype(cell_global_dofs))
+end
+
+function evaluate!(cache,
+                   ::typeof(get_cell_local_dofs_from_global_dofs),
+                   reffe::GenericRefFE{RaviartThomas},
+                   cell_global_dofs::AbstractVector,
+                   cell_is_slave::AbstractVector{Bool})
+
+  cell_local_dofs=cache
+  setsize!(cell_local_dofs,(num_dofs(reffe),))
+  cell_local_dofs .= cell_global_dofs
+
+  D=num_dims(reffe)
+  current=get_offsets(get_polytope(reffe))[D]+1
+  face_own_dofs=get_face_own_dofs(reffe)
+  for i=1:num_facets(get_polytope(reffe))
+     if cell_is_slave[current]
+        for dof in face_own_dofs[current]
+           cell_local_dofs[dof]=-cell_local_dofs[dof]
+        end
+     end
+     current=current+1
+  end
+  cell_local_dofs
 end
