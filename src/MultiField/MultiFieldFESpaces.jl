@@ -291,8 +291,8 @@ function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,trian::Triangulation)
 end
 
 function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,trian::SkeletonTriangulation)
-  cell_values_plus = get_cell_dof_values(f,trian.plus)
-  cell_values_minus = get_cell_dof_values(f,trian.minus)
+  cell_values_plus = get_cell_dof_ids(f,trian.plus)
+  cell_values_minus = get_cell_dof_ids(f,trian.minus)
   lazy_map(BlockMap(2,[1,2]),cell_values_plus,cell_values_minus)
 end
 

@@ -89,25 +89,26 @@ function Arrays.evaluate!(cache,a::AssemblyStrategyMap{:rows},ids::AbstractArray
   gids
 end
 
-function Arrays.return_cache(a::AssemblyStrategyMap,ids::GBlock)
+function Arrays.return_cache(k::AssemblyStrategyMap,ids::GBlock)
   fi = testitem(ids)
-  ci = return_cache(a,fi)
-  gi = evaluate!(ci,a,fi)
-  a = Array{typeof(gi),ndims(ids)}(undef,size(ids))
+  ci = return_cache(k,fi)
+  gi = evaluate!(ci,k,fi)
   b = Array{typeof(ci),ndims(ids)}(undef,size(ids))
   for i in eachindex(ids.array)
     if ids.touched[i]
-      b[i] = return_cache(a,ids.array[i])
+      ki = return_cache(k,ids.array[i])
+      b[i] = return_cache(k,ids.array[i])
     end
   end
-  GBlock(a,ids.touched), b
+  array = Array{typeof(gi),ndims(ids)}(undef,size(ids))
+  GBlock(array,ids.touched), b
 end
 
-function Arrays.evaluate!(cache,a::AssemblyStrategyMap,ids::GBlock)
+function Arrays.evaluate!(cache,k::AssemblyStrategyMap,ids::GBlock)
   a,b = cache
   for i in eachindex(ids.array)
     if ids.touched[i]
-      a.array[i] = evaluate!(b[i],a,ids.array[i])
+      a.array[i] = evaluate!(b[i],k,ids.array[i])
     end
   end
   a

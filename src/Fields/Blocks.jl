@@ -104,14 +104,15 @@ function Base.:(==)(a::GBlock,b::GBlock)
   if size(a) != size(b)
     return false
   end
-  if a.touched != b.touched
-    return false
-  end
   for i in eachindex(a.array)
-    if a.touched[i]
+    if a.touched[i] && b.touched[i]
       if a.array[i] != b.array[i]
         return false
       end
+    elseif a.touched[i]
+      return false
+    elseif b.touched[i]
+      return false
     end
   end
   true
@@ -423,6 +424,76 @@ function evaluate!(cache,k::Broadcasting{typeof(∘)},f::GBlock,h::Field)
     end
   end
   g
+end
+
+function return_value(k::Broadcasting{<:Operation},f::GBlock,h::Field)
+  evaluate(k,f,h)
+end
+
+function return_cache(k::Broadcasting{<:Operation},f::GBlock{A,N},h::Field) where {A,N}
+  fi = testitem(f)
+  li = return_cache(k,fi,h)
+  fix = evaluate!(li,k,fi,h)
+  l = Array{typeof(li),N}(undef,size(f.array))
+  g = Array{typeof(fix),N}(undef,size(f.array))
+  for i in eachindex(f.array)
+    if f.touched[i]
+      l[i] = return_cache(k,f.array[i],h)
+    end
+  end
+  GBlock(g,f.touched),l
+end
+
+function evaluate!(cache,k::Broadcasting{<:Operation},f::GBlock,h::Field)
+  g,l = cache
+  @check g.touched == f.touched
+  for i in eachindex(f.array)
+    if f.touched[i]
+      g.array[i] = evaluate!(l[i],k,f.array[i],h)
+    end
+  end
+  g
+end
+
+function return_value(k::Broadcasting{<:Operation},h::Field,f::GBlock)
+  evaluate(k,h,f)
+end
+
+function return_cache(k::Broadcasting{<:Operation},h::Field,f::GBlock{A,N}) where {A,N}
+  fi = testitem(f)
+  li = return_cache(k,h,fi)
+  fix = evaluate!(li,k,h,fi)
+  l = Array{typeof(li),N}(undef,size(f.array))
+  g = Array{typeof(fix),N}(undef,size(f.array))
+  for i in eachindex(f.array)
+    if f.touched[i]
+      l[i] = return_cache(k,h,f.array[i])
+    end
+  end
+  GBlock(g,f.touched),l
+end
+
+function evaluate!(cache,k::Broadcasting{<:Operation},h::Field,f::GBlock)
+  g,l = cache
+  @check g.touched == f.touched
+  for i in eachindex(f.array)
+    if f.touched[i]
+      g.array[i] = evaluate!(l[i],k,h,f.array[i])
+    end
+  end
+  g
+end
+
+function return_value(k::Broadcasting{<:Operation},h::GBlock,f::GBlock)
+  evaluate(k,h,f)
+end
+
+function return_cache(k::Broadcasting{<:Operation},h::GBlock,f::GBlock{A,N}) where {A,N}
+  @notimplemented
+end
+
+function evaluate!(cache,k::Broadcasting{<:Operation},h::GBlock,f::GBlock)
+  @notimplemented
 end
 
 function return_value(k::BroadcastingFieldOpMap,f::GBlock,g::AbstractArray)
@@ -804,24 +875,6 @@ function Base.copyto!(d::GBlock,c::GBlock)
     end
   end
   d
-end
-
-function Base.:(==)(a::GBlock,b::GBlock)
-  if size(a) != size(b)
-    return false
-  end
-  for i in eachindex(a.array)
-    if a.touched[i] && b.touched[i]
-      if a.array[i] != b.array[i]
-        return false
-      end
-    elseif a.touched[i]
-      return false
-    elseif b.touched[i]
-      return false
-    end
-  end
-  true
 end
 
 

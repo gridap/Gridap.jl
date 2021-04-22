@@ -36,6 +36,7 @@ ft = transpose(f)
 ftx = evaluate(ft,x)
 uhx = evaluate(uh,x)
 ∇f = Broadcasting(∇)(f)
+∇ft = Broadcasting(∇)(ft)
 ∇fx = evaluate(∇f,x)
 ∇uh = Broadcasting(∇)(uh)
 ∇uhx = evaluate(∇uh,x)
@@ -49,6 +50,10 @@ h_array[1] = h_basis
 h_array[3] = h_basis
 h_touched = [true,false,true]
 h = GBlock(h_array,h_touched)
+Jt = ∇(ϕ)
+invJt = Operation(Fields.pinvJt)(Jt)
+Broadcasting(Operation(⋅))(invJt,∇f)
+Broadcasting(Operation(⋅))(invJt,∇ft)
 
 ncells = 10
 cell_x = Fill(x,ncells)
@@ -129,6 +134,16 @@ cell_dux⁺ = lazy_map(evaluate,cell_du⁺,cell_x)
 cell_dux⁻ = lazy_map(evaluate,cell_du⁻,cell_x)
 cell_dpx⁺ = lazy_map(evaluate,cell_dp⁺,cell_x)
 cell_dpx⁻ = lazy_map(evaluate,cell_dp⁻,cell_x)
+
+cell_∇v⁺ = lazy_map(Broadcasting(∇),cell_dv⁺)
+cell_∇xv⁺ = lazy_map(Broadcasting(Fields.push_∇),cell_∇v⁺,cell_ϕ)
+cell_∇xvx⁺ = lazy_map(evaluate,cell_∇xv⁺,cell_x)
+collect(cell_∇xvx⁺)
+
+cell_∇u⁺ = lazy_map(Broadcasting(∇),cell_du⁺)
+cell_∇xu⁺ = lazy_map(Broadcasting(Fields.push_∇),cell_∇u⁺,cell_ϕ)
+cell_∇xux⁺ = lazy_map(evaluate,cell_∇xu⁺,cell_x)
+collect(cell_∇xux⁺)
 
 cell_dux_jump = lazy_map(BroadcastingFieldOpMap(-),cell_dux⁺,cell_dux⁻)
 collect(cell_dux_jump)

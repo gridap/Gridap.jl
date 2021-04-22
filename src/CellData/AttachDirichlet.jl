@@ -45,8 +45,23 @@ end
 
 function Arrays.return_cache(k::AttachDirichletMap,mat::GBlock,vals,mask)
   cm = return_cache(*,mat,vals)
-  cv = mat*vals
-  (cm,cv)
+  ai = testvalue(eltype(mat))
+  vi = testvalue(eltype(vals))
+  _, cvi = return_cache(k,ai,vi,mask)
+  array = Vector{typeof(cvi)}(undef,length(cm))
+  touched = fill(false,length(cm))
+  for i in 1:size(mat.array,1)
+    for j in 1:size(mat.array,2)
+      if mat.touched[i,j] && vals.touched[j]
+        if !touched[i]
+          _, cvi = return_cache(k,mat.array[i,j],vals.array[j],mask)
+          array[i] = cvi
+          touched[i] = true
+        end
+      end
+    end
+  end
+  (cm,GBlock(array,touched))
 end
 
 @inline function Arrays.evaluate!(cache,k::AttachDirichletMap,mat::GBlock,vals,mask)
@@ -74,7 +89,7 @@ function _zero_if_needed!(cv::GBlock,mat::GBlock)
   ni, nj = size(mat.array)
   for i in 1:ni
     for j in 1:nj
-      if a.touched[i,j]
+      if mat.touched[i,j]
         _zero_if_needed!(cv.array[i],mat.array[i,j])
         break
       end
