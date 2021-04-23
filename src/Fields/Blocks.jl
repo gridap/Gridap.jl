@@ -593,6 +593,24 @@ function evaluate!(cache,k::BroadcastingFieldOpMap,g::AbstractArray,f::ArrayBloc
   h
 end
 
+for op in (:+,:-,:*)
+  @eval begin
+
+    function return_value(k::Broadcasting{typeof($op)},f::ArrayBlock,g::ArrayBlock)
+      evaluate(k,f,g)
+    end
+    
+    function return_cache(k::Broadcasting{typeof($op)},f::ArrayBlock,g::ArrayBlock)
+      return_cache(BroadcastingFieldOpMap($op),f,g)
+    end
+    
+    function evaluate!(cache,k::Broadcasting{typeof($op)},f::ArrayBlock,g::ArrayBlock)
+      evaluate!(cache,BroadcastingFieldOpMap($op),f,g)
+    end
+
+  end
+end
+
 function return_value(k::BroadcastingFieldOpMap,f::ArrayBlock,g::ArrayBlock)
   evaluate(k,f,g)
 end

@@ -238,6 +238,8 @@ function _to_common_domain(f::CellField,x::CellPoint)
     nothing
   elseif have_compatible_domains(trian_f,get_background_triangulation(trian_x))
     nothing
+  elseif have_compatible_domains(trian_f,get_background_triangulation(get_background_triangulation(trian_x)))
+    nothing
   elseif have_compatible_domains(trian_x,get_background_triangulation(trian_f))
     @unreachable """\n
     CellField objects defined on a sub-triangulation cannot be evaluated
@@ -449,6 +451,8 @@ function _to_common_domain(a::CellField...)
       target_trian = trian_a
     elseif have_compatible_domains(trian_a,get_background_triangulation(get_background_triangulation(trian_b)))
       target_trian = trian_b
+    elseif have_compatible_domains(trian_b,get_background_triangulation(get_background_triangulation(trian_a)))
+      target_trian = trian_a
     elseif have_compatible_domains(get_background_triangulation(trian_a),get_background_triangulation(trian_b))
       @unreachable msg
     else
@@ -604,6 +608,12 @@ function change_domain(a::CellField,target_trian::SkeletonTriangulation,target_d
       either plus (aka ⁺) or minus (aka ⁻) you want to use.
       """
     end
+  elseif have_compatible_domains(trian_a,get_background_triangulation(get_background_triangulation(target_trian)))
+    @unreachable """\n
+    It is not possible to use the given CellField on a SkeletonTriangulation.
+    Make sure that you are specifying which of the two possible traces,
+    either plus (aka ⁺) or minus (aka ⁻) you want to use.
+    """
   else
     @unreachable """\n
     We cannot move the given CellField to the requested triangulation.
@@ -644,6 +654,13 @@ end
 function change_domain(f::OperationCellField,target_trian::SkeletonTriangulation,target_domain::DomainStyle)
   args = map(i->change_domain(i,target_trian,target_domain),f.args)
   OperationCellField(f.op,args...)
+end
+
+function change_domain_skeleton(f::OperationCellField,target_trian::SkeletonTriangulation,target_domain::DomainStyle)
+  args = map(i->change_domain_skeleton(i,target_trian,target_domain),f.args)
+  plus = map(i->i[1],args)
+  minus = map(i->i[2],args)
+  OperationCellField(f.op,plus...), OperationCellField(f.op,minus...)
 end
 
 # Just to provide more meaningful error messages

@@ -187,6 +187,11 @@ function ∇∇(a::SingleFieldFEBasis)
   f = GenericCellField(a.cell_basis,a.trian,a.domain_style)
   SingleFieldFEBasis(get_data(∇∇(f)),a.trian,a.basis_style,a.domain_style)
 end
+function change_domain(a::SingleFieldFEBasis,trian::Triangulation,target_domain::DomainStyle)
+  f = GenericCellField(a.cell_basis,a.trian,a.domain_style)
+  g = change_domain(f,trian,target_domain)
+  SingleFieldFEBasis(get_data(g),trian,a.basis_style,target_domain)
+end
 
 # We implement this for FEBasis since MultiFieldFEBasis will use this code
 function change_domain_skeleton(a::FEBasis,trian::SkeletonTriangulation,target_domain::DomainStyle)
