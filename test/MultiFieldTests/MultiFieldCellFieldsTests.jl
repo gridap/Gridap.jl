@@ -65,8 +65,8 @@ n = VectorValue(1,2)
 
 cellmat = integrate( (n⋅dv)*dp + dq*dp, quad)
 cellvec = integrate( n⋅dv, quad)
-@test isa(cellvec[end],GBlock)
-@test isa(cellmat[end],GBlock)
+@test isa(cellvec[end],ArrayBlock)
+@test isa(cellmat[end],ArrayBlock)
 
 cellmat1 = integrate( ((n⋅dv) - dq)*((n⋅du) + dp), quad)
 cellmat2 = integrate( (n⋅dv)*(n⋅du) + (n⋅dv)*dp - dq*(n⋅du) - dq*dp, quad)
@@ -112,12 +112,12 @@ cellmat_Γ = integrate(  jump(n⋅dv)*dp.⁺ + mean(dq)*jump(dp), quad_Γ)
 cellvec_Γ = integrate(  jump(n⋅dv) + mean(dq), quad_Γ)
 L = 1
 R = 2
-@test isa(cellmat_Γ[end],GBlock)
-@test isa(cellvec_Γ[end],GBlock)
+@test isa(cellmat_Γ[end],ArrayBlock)
+@test isa(cellvec_Γ[end],ArrayBlock)
 
 cell = 1
-@test isa(cellmat_Γ[cell][L,R],GBlock)
-@test isa(cellvec_Γ[cell][L],GBlock)
+@test isa(cellmat_Γ[cell][L,R],ArrayBlock)
+@test isa(cellvec_Γ[cell][L],ArrayBlock)
 
 cellmat1_Γ = integrate(((n⋅dv.⁺)-dq.⁻)*((n⋅du.⁺)+dp.⁻),quad_Γ)
 cellmat2_Γ = integrate((n⋅dv.⁺)*(n⋅du.⁺)+(n⋅dv.⁺)*dp.⁻-dq.⁻*(n⋅du.⁺)-dq.⁻*dp.⁻,quad_Γ)

@@ -34,6 +34,6 @@ test_fe_function(xh)
 uh, ph = xh
 
 cell_values = get_cell_dof_values(xh,trian)
-@test isa(cell_values[1],GBlock)
+@test isa(cell_values[1],ArrayBlock)
 
 end # module

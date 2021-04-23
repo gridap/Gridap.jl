@@ -43,7 +43,7 @@ end
   end
 end
 
-function Arrays.return_cache(k::AttachDirichletMap,mat::GBlock,vals,mask)
+function Arrays.return_cache(k::AttachDirichletMap,mat::ArrayBlock,vals,mask)
   cm = return_cache(*,mat,vals)
   ai = testvalue(eltype(mat))
   vi = testvalue(eltype(vals))
@@ -61,10 +61,10 @@ function Arrays.return_cache(k::AttachDirichletMap,mat::GBlock,vals,mask)
       end
     end
   end
-  (cm,GBlock(array,touched))
+  (cm,ArrayBlock(array,touched))
 end
 
-@inline function Arrays.evaluate!(cache,k::AttachDirichletMap,mat::GBlock,vals,mask)
+@inline function Arrays.evaluate!(cache,k::AttachDirichletMap,mat::ArrayBlock,vals,mask)
   cm, cv = cache
   if mask
     vec_with_bcs = evaluate!(cm,*,mat,vals)
@@ -85,7 +85,7 @@ function _zero_if_needed!(cv::CachedVector,mat::AbstractMatrix)
   nothing
 end
 
-function _zero_if_needed!(cv::GBlock,mat::GBlock)
+function _zero_if_needed!(cv::ArrayBlock,mat::ArrayBlock)
   ni, nj = size(mat.array)
   for i in 1:ni
     for j in 1:nj

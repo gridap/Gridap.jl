@@ -85,7 +85,9 @@ export linear_combination
 export integrate
 export IntegrationMap
 
-export GBlock
+export ArrayBlock
+export VectorBlock
+export MatrixBlock
 export BlockMap
 
 include("FieldsInterfaces.jl")

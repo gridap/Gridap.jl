@@ -45,10 +45,10 @@ cellmat = integrate(dv*du,quad)
 cellvec = integrate(dv*2,quad)
 cellids = get_cell_to_bgcell(trian)
 cellmatvec = pair_arrays(cellmat,cellvec)
-@test isa(cellmat[end],GBlock)
+@test isa(cellmat[end],ArrayBlock)
 @test cellmat[1][1,1] != nothing
 @test cellmat[1][1,2] == nothing
-@test isa(cellvec[end], GBlock)
+@test isa(cellvec[end], ArrayBlock)
 @test cellvec[1][1] != nothing
 @test cellvec[1][2] == nothing
 

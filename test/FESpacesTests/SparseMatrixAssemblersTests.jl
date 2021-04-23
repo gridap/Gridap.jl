@@ -163,14 +163,14 @@ strian = SkeletonTriangulation(model)
 squad = CellQuadrature(strian,degree)
 
 scellmat = integrate(jump(v)*u.⁻,squad)
-@test isa(scellmat[1],GBlock)
+@test isa(scellmat[1],ArrayBlock)
 @test scellmat[1][1,1] === nothing
 @test scellmat[1][2,1] === nothing
 @test scellmat[1][1,2] !== nothing
 @test scellmat[1][2,2] !== nothing
 
 scellvec = integrate(mean(v*3),squad)
-@test isa(scellvec[1],GBlock)
+@test isa(scellvec[1],ArrayBlock)
 scellmatvec = pair_arrays(scellmat,scellvec)
 scellids = get_cell_to_bgcell(strian)
 srows = get_cell_dof_ids(V,scellids)

@@ -89,7 +89,7 @@ function Arrays.evaluate!(cache,a::AssemblyStrategyMap{:rows},ids::AbstractArray
   gids
 end
 
-function Arrays.return_cache(k::AssemblyStrategyMap,ids::GBlock)
+function Arrays.return_cache(k::AssemblyStrategyMap,ids::ArrayBlock)
   fi = testitem(ids)
   ci = return_cache(k,fi)
   gi = evaluate!(ci,k,fi)
@@ -101,10 +101,10 @@ function Arrays.return_cache(k::AssemblyStrategyMap,ids::GBlock)
     end
   end
   array = Array{typeof(gi),ndims(ids)}(undef,size(ids))
-  GBlock(array,ids.touched), b
+  ArrayBlock(array,ids.touched), b
 end
 
-function Arrays.evaluate!(cache,k::AssemblyStrategyMap,ids::GBlock)
+function Arrays.evaluate!(cache,k::AssemblyStrategyMap,ids::ArrayBlock)
   a,b = cache
   for i in eachindex(ids.array)
     if ids.touched[i]

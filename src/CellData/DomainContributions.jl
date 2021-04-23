@@ -26,7 +26,7 @@ Base.getindex(a::DomainContribution,trian::Triangulation) = get_contribution(a,t
 function add_contribution!(a::DomainContribution,trian::Triangulation,b::AbstractArray,op=+)
 
   S = eltype(b)
-  if !(S<:AbstractMatrix || S<:AbstractVector || S<:Number || S<:GBlock)
+  if !(S<:AbstractMatrix || S<:AbstractVector || S<:Number || S<:ArrayBlock)
     @unreachable """\n
     You are trying to add a contribution with eltype $(S).
     Only cell-wise matrices, vectors, or numbers are accepted.
@@ -37,15 +37,15 @@ function add_contribution!(a::DomainContribution,trian::Triangulation,b::Abstrac
 
   if length(a.dict) > 0
     T = eltype(first(values(a.dict)))
-    if T <: AbstractMatrix || S<:(GBlock{A,2} where A)
-      @assert S<:AbstractMatrix || S<:(GBlock{A,2} where A) """\n
+    if T <: AbstractMatrix || S<:(ArrayBlock{A,2} where A)
+      @assert S<:AbstractMatrix || S<:(ArrayBlock{A,2} where A) """\n
       You are trying to add a contribution with eltype $(S) to a DomainContribution that
       stores cell-wise matrices.
 
       Make sure that you are defining the terms in your weak form correclty.
       """
-    elseif T <: AbstractVector || S<:(GBlock{A,1} where A)
-      @assert S<:AbstractVector || S<:(GBlock{A,1} where A) """\n
+    elseif T <: AbstractVector || S<:(ArrayBlock{A,1} where A)
+      @assert S<:AbstractVector || S<:(ArrayBlock{A,1} where A) """\n
       You are trying to add a contribution with eltype $(S) to a DomainContribution that
       stores cell-wise vectors.
 

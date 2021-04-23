@@ -3,19 +3,19 @@ module BlocksTests
 using Gridap.TensorValues
 using Gridap.Arrays
 using Gridap.Fields
-using Gridap.Fields: GBlock, MockFieldArray, MockField, BroadcastingFieldOpMap, BlockMap
+using Gridap.Fields: ArrayBlock, MockFieldArray, MockField, BroadcastingFieldOpMap, BlockMap
 using Test
 using FillArrays
 using LinearAlgebra
 #using Gridap.ReferenceFEs
 
-b = GBlock([Int[],[1,2,3,4]],Bool[0,1])
+b = ArrayBlock([Int[],[1,2,3,4]],Bool[0,1])
 @test length(b) == 2
 @test size(b) == (2,)
 @test ndims(b) == 1
 @test b[1] == nothing
 @test b[2] == [1,2,3,4]
-b2 = GBlock([ rand(2,3) for i in 1:4, j in 1:3],rand([true,false],4,3))
+b2 = ArrayBlock([ rand(2,3) for i in 1:4, j in 1:3],rand([true,false],4,3))
 
 #@show b
 #display(b)
@@ -35,9 +35,9 @@ f_array = Vector{typeof(f_basis)}(undef,3)
 f_array[2] = f_basis
 f_array[3] = f_basis
 f_touched = [false,true,true]
-f = GBlock(f_array,f_touched)
+f = ArrayBlock(f_array,f_touched)
 ts = fill(true,length(f_touched))
-u = GBlock([rand(length(f_basis)),rand(length(f_basis)),rand(length(f_basis))],ts)
+u = ArrayBlock([rand(length(f_basis)),rand(length(f_basis)),rand(length(f_basis))],ts)
 uh = linear_combination(u,f)
 fx = evaluate(f,x)
 ft = transpose(f)
@@ -57,7 +57,7 @@ h_array = Vector{typeof(h_basis)}(undef,3)
 h_array[1] = h_basis
 h_array[3] = h_basis
 h_touched = [true,false,true]
-h = GBlock(h_array,h_touched)
+h = ArrayBlock(h_array,h_touched)
 Jt = ∇(ϕ)
 invJt = Operation(Fields.pinvJt)(Jt)
 Broadcasting(Operation(⋅))(invJt,∇f)
@@ -75,7 +75,7 @@ collect(cell_∇fx)
 cell_ft = lazy_map(transpose,cell_f)
 cell_ftx = lazy_map(evaluate,cell_ft,cell_x)
 collect(cell_ftx)
-cell_u = [GBlock([rand(length(f_basis)),rand(length(f_basis)),rand(length(f_basis))],ts) for i in 1:ncells]
+cell_u = [ArrayBlock([rand(length(f_basis)),rand(length(f_basis)),rand(length(f_basis))],ts) for i in 1:ncells]
 cell_uh = lazy_map(linear_combination,cell_u,cell_f)
 cell_uhx = lazy_map(evaluate,cell_uh,cell_x)
 collect(cell_uhx)
@@ -192,6 +192,9 @@ A11t = transpose(A11)
 @test A11*A11t != nothing
 @test A*transpose(A) != nothing
 
-display(A)
-display(c)
+#display(A)
+#display(c)
+#display(A[1,1])
+#display(c[1])
+#display(c[1][2])
 end # module

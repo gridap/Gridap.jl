@@ -241,7 +241,7 @@ end
 end
 
 @inline function _symbolic_matrix_entries_at_cell!(
-  A,rows::GBlock,cols::GBlock,mat1::GBlock)
+  A,rows::ArrayBlock,cols::ArrayBlock,mat1::ArrayBlock)
   ni,nj = size(mat1.touched)
   for j in 1:nj
     for i in 1:ni
@@ -283,7 +283,7 @@ end
 end
 
 @inline function _numeric_matrix_entries_at_cell!(
-  mat,rows::GBlock,cols::GBlock,vals::GBlock)
+  mat,rows::ArrayBlock,cols::ArrayBlock,vals::ArrayBlock)
   ni, nj = size(vals.touched)
   for j in 1:nj
     for i in 1:ni
@@ -324,7 +324,7 @@ end
 end
 
 @inline function _numeric_vector_entries_at_cell!(
-  vec,rows::GBlock,vals::GBlock)
+  vec,rows::ArrayBlock,vals::ArrayBlock)
   for i in 1:length(vals.touched)
     if vals.touched[i]
       _numeric_vector_entries_at_cell!(vec,rows.array[i],vals.array[i])

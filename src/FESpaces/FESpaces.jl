@@ -20,7 +20,7 @@ using Gridap.Geometry
 using Gridap.CellData
 using Gridap.TensorValues
 
-using Gridap.Fields: GBlock, BlockMap
+using Gridap.Fields: ArrayBlock, BlockMap
 
 import Gridap.Fields: gradient
 import Gridap.Fields: ∇∇
