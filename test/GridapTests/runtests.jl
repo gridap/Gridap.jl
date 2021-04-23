@@ -24,7 +24,7 @@ using Test
 
 @time @testset "IsotropicDamage" begin include("IsotropicDamageTests.jl") end
 
-@time @testset "Biharmonic" begin @test_broken false end # begin include("BiharmonicTests.jl") end
+@time @testset "Biharmonic" begin include("BiharmonicTests.jl") end
 
 @time @testset "PoissonLagrangeMultiplier" begin include("PoissonLagrangeMultiplierTests.jl") end
 

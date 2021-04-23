@@ -36,6 +36,7 @@ import Gridap.CellData: CellField
 import Gridap.CellData: get_data
 import Gridap.CellData: DomainStyle
 import Gridap.CellData: change_domain_skeleton
+import Gridap.CellData: change_domain
 
 import Gridap.Algebra: allocate_residual
 import Gridap.Algebra: allocate_jacobian
