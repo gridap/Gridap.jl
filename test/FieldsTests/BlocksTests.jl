@@ -15,6 +15,14 @@ b = GBlock([Int[],[1,2,3,4]],Bool[0,1])
 @test ndims(b) == 1
 @test b[1] == nothing
 @test b[2] == [1,2,3,4]
+b2 = GBlock([ rand(2,3) for i in 1:4, j in 1:3],rand([true,false],4,3))
+
+#@show b
+#display(b)
+#@show b2
+#display(b2)
+#display(rand(3,4))
+#display(rand(3))
 
 @test typeof(testvalue(typeof(b))) == typeof(b)
 
@@ -184,4 +192,6 @@ A11t = transpose(A11)
 @test A11*A11t != nothing
 @test A*transpose(A) != nothing
 
+display(A)
+display(c)
 end # module

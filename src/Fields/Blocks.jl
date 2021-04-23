@@ -50,9 +50,35 @@ end
 function Base.show(io::IO,o::GBlock)
   print(io,"GBlock($(o.array), $(o.touched))")
 end
-#function Base.show(io::IO,k::MIME"text/plain",o::GBlock)
-#  show(io,k, map((a,b)->b ? a : nothing,o.array,o.touched))
-#end
+function Base.show(io::IO,k::MIME"text/plain",o::GBlock)
+  println(io,"$(_sub_block_str(o)):")
+  lis = LinearIndices(o.array)
+  for i in CartesianIndices(o.array)
+    if ndims(o) == 1
+      s = "[$(lis[i])]"
+    else
+      s = replace(replace("$(Tuple(i))","("=>"["),")"=>"]")
+    end
+    if lis[i] != 1
+      print(io,"\n")
+    end
+    print(io," $s = $(_sub_block_str(o[i]))")
+  end
+  #show(io,k, map((a,b)->b ? a : nothing,o.array,o.touched))
+end
+function _sub_block_str(a)
+  if isa(a,AbstractArray) || isa(a,GBlock)
+    n = replace("$(typeof(a))","Gridap.Fields."=>"")
+    if ndims(a) == 1
+      "$(length(a))-element $n"
+    else
+      s = replace(replace(replace("$(size(a))",", "=>"x"),"("=>""),")"=>"")
+      "$s $n"
+    end
+  else
+    "$a"
+  end
+end
 
 function Arrays.testitem(f::GBlock{A,1}) where A
   @notimplementedif !isconcretetype(A)
