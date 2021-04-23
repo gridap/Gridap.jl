@@ -790,12 +790,6 @@ function Base.:*(a::ArrayBlock{A,2},b::ArrayBlock{B,2}) where {A,B}
       for k in 1:nk
         if a.touched[i,k] && b.touched[k,j]
           if !touched[i,j]
-
-            a.array[i,k]
-
-            b.array[k,j]
-
-
             array[i,j] = a.array[i,k]*b.array[k,j]
             touched[i,j] = true
           else
@@ -918,6 +912,7 @@ function evaluate!(d,k::MulAddMap,a::ArrayBlock,b::ArrayBlock,c::ArrayBlock)
 end
 
 function Base.copyto!(d::ArrayBlock,c::ArrayBlock)
+  _zero_entries!(d)
   for i in eachindex(c.array)
     if c.touched[i]
       copyto!(d.array[i],c.array[i])
