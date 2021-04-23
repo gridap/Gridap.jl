@@ -91,20 +91,14 @@ function Base.show(io::IO,k::MIME"text/plain",o::ArrayBlock)
   end
 end
 
-function Arrays.testitem(f::ArrayBlock{A,1}) where A
+function Arrays.testitem(f::ArrayBlock{A}) where A
   @notimplementedif !isconcretetype(A)
-  @notimplementedif length(f.array) == 0
-  i::Int = findfirst(f.touched)
-  fi = f.array[i]
-  fi
-end
-
-function Arrays.testitem(f::ArrayBlock{A,N}) where {A,N}
-  @notimplementedif !isconcretetype(A)
-  @notimplementedif length(f.array) == 0
-  i::CartesianIndex{N} = findfirst(f.touched)
-  fi = f.array[i]
-  fi
+  i = findall(f.touched)
+  if length(i) != 0
+    f.array[i[1]]
+  else
+    testvalue(A)
+  end
 end
 
 function Arrays.testvalue(::Type{ArrayBlock{A,N}}) where {A,N}
