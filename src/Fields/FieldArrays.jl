@@ -493,6 +493,10 @@ struct BroadcastingFieldOpMap{F} <: Map
   op::F
 end
 
+return_value(a::BroadcastingFieldOpMap,args...) = return_value(Broadcasting(a.op),args...)
+return_cache(a::BroadcastingFieldOpMap,args...) = return_cache(Broadcasting(a.op),args...)
+@inline evaluate!(cache,a::BroadcastingFieldOpMap,args...) = evaluate!(cache,Broadcasting(a.op),args...)
+
 return_value(a::BroadcastingFieldOpMap,args::AbstractArray...) = return_value(Broadcasting(a.op),args...)
 return_cache(a::BroadcastingFieldOpMap,args::AbstractArray...) = return_cache(Broadcasting(a.op),args...)
 @inline evaluate!(cache,a::BroadcastingFieldOpMap,args::AbstractArray...) = evaluate!(cache,Broadcasting(a.op),args...)
