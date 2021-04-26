@@ -20,6 +20,7 @@ using LinearAlgebra: mul!, Transpose
 
 using ForwardDiff
 using FillArrays
+using NLsolve
 using Test
 using BlockArrays
 using StaticArrays
