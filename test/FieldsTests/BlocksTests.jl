@@ -85,6 +85,7 @@ collect(cell_∇uhx)
 cell_intuh = lazy_map(integrate,cell_uh,cell_x,cell_w)
 collect(cell_intuh)
 cell_ϕ = fill(ϕ,ncells)
+cell_ϕx = lazy_map(evaluate,cell_ϕ,cell_x)
 cell_g = lazy_map(Broadcasting(∘),cell_f,cell_ϕ)
 cell_gx = lazy_map(evaluate,cell_g,cell_x)
 collect(cell_gx)
@@ -108,6 +109,21 @@ collect(cell_mx)
 @test cell_mx[end][1,1] == nothing
 @test cell_mx[end][2,1] == nothing
 @test cell_mx[end][3,1] == nothing
+
+# Multiple args with same size and non-zero block structure
+cell_rx = lazy_map(BroadcastingFieldOpMap((i,j,k)->i-j-k),cell_fx,cell_fx,cell_fx)
+collect(cell_rx)
+@test cell_rx[1][1] == nothing
+@test cell_rx[1][2] == -cell_fx[1][2]
+@test cell_rx[1][3] == -cell_fx[1][3]
+
+# Multiple args with same size and non-zero block structure combined with
+# plain arrays
+cell_rx = lazy_map(BroadcastingFieldOpMap((i,j,k)->i*j*k),cell_fx,cell_ϕx,cell_fx)
+collect(cell_rx)
+@test cell_rx[1][1] == nothing
+@test cell_rx[1][2] == cell_fx[1][2].*cell_ϕx[1].*cell_fx[1][2]
+@test cell_rx[1][3] == cell_fx[1][3].*cell_ϕx[1].*cell_fx[1][3]
 
 nfields = 2
 dv = f_basis

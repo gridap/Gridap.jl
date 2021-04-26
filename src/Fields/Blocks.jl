@@ -742,6 +742,95 @@ function evaluate!(
   a
 end
 
+function return_value(k::BroadcastingFieldOpMap,a::ArrayBlock...)
+  evaluate(k,a...)
+end
+
+function return_cache(k::BroadcastingFieldOpMap,a::ArrayBlock...)
+  a1 = first(a)
+  @notimplementedif any(ai->size(ai)!=size(a1),a)
+  N = ndims(a1)
+  ais = map(ai->testvalue(eltype(ai)),a)
+  ci = return_cache(k,ais...)
+  bi = evaluate!(ci,k,ais...)
+  c = Array{typeof(ci),N}(undef,size(a1))
+  array = Array{typeof(bi),N}(undef,size(a1))
+  for i in eachindex(a1.array)
+    @notimplementedif any(ai->ai.touched[i]!=a1.touched[i],a)
+    if a1.touched[i]
+      _ais = map(ai->ai.array[i],a)
+      c[i] = return_cache(k,_ais...)
+    end
+  end
+  ArrayBlock(array,a1.touched), c
+end
+
+function evaluate!(cache,k::BroadcastingFieldOpMap,a::ArrayBlock...)
+  a1 = first(a)
+  @notimplementedif any(ai->size(ai)!=size(a1),a)
+  r,c = cache
+  for i in eachindex(a1.array)
+    @notimplementedif any(ai->ai.touched[i]!=a1.touched[i],a)
+    if a1.touched[i]
+      ais = map(ai->ai.array[i],a)
+      r.array[i] = evaluate!(c[i],k,ais...)
+    end
+  end
+  r
+end
+
+function return_value(
+  k::BroadcastingFieldOpMap,a::Union{ArrayBlock,AbstractArray}...)
+  evaluate(k,a...)
+end
+
+function return_cache(
+  k::BroadcastingFieldOpMap,a::Union{ArrayBlock,AbstractArray}...)
+
+  function _replace_nz_blocks(a::ArrayBlock,bi::AbstractArray)
+    N = ndims(a.array)
+    array = Array{typeof(bi),N}(undef,size(a))
+    for i in eachindex(a.array)
+      if a.touched[i]
+        array[i] = bi
+      end
+    end
+    ArrayBlock(array,a.touched)
+  end
+
+  function _replace_nz_blocks(a::ArrayBlock,bi::ArrayBlock)
+    bi
+  end
+
+  inds = findall(ai->isa(ai,ArrayBlock),a)
+  @notimplementedif length(inds) == 0
+  a1 = a[inds[1]]
+  b = map(ai->_replace_nz_blocks(a1,ai),a)
+  c = return_cache(k,b...)
+  c,b
+end
+
+function evaluate!(
+  cache,k::BroadcastingFieldOpMap,a::Union{ArrayBlock,AbstractArray}...)
+
+  function _replace_nz_blocks!(a::ArrayBlock,bi::AbstractArray)
+    for i in eachindex(a.array)
+      if a.touched[i]
+        a.array[i] = bi
+      end
+    end
+    a
+  end
+
+  function _replace_nz_blocks!(a::ArrayBlock,bi::ArrayBlock)
+    bi
+  end
+
+  c, b = cache
+  d = map((i,j)->_replace_nz_blocks!(i,j),b,a)
+  evaluate!(c,k,d...)
+end
+
 function Base.:+(a::ArrayBlock,b::ArrayBlock)
   BroadcastingFieldOpMap(+)(a,b)
 end

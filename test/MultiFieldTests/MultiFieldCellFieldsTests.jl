@@ -84,6 +84,9 @@ cellmat1 = integrate( op∘(du,∇(du),dv,∇(dv),α) , quad)
 cellmat2 = integrate( α*(du⋅dv) + ∇(du)⊙∇(dv) , quad)
 test_array(cellmat1,cellmat2,≈)
 
+true
+end
+
 α = CellField(2,trian)
 op2(u,∇u,α) = α*(∇u⋅u)
 cellmat1 = integrate( dv⋅(op2∘(du,∇(du),α)),quad)
@@ -101,12 +104,6 @@ test_array(cellvec1,cellvec2,≈)
 cellmat1 = integrate( dv⋅(dconv∘(du,∇(du),u,∇(u),α)) , quad)
 cellmat2 = integrate( dv⋅( α*(du⋅∇(u)) + α*(u⋅∇(du))), quad)
 test_array(cellmat1,cellmat2,≈)
-
-true
-end
-
-
-
 
 cellmat_Γ = integrate(  jump(n⋅dv)*dp.⁺ + mean(dq)*jump(dp), quad_Γ)
 cellvec_Γ = integrate(  jump(n⋅dv) + mean(dq), quad_Γ)
