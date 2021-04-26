@@ -60,10 +60,10 @@ struct CellFE{T} <: GridapType
   cell_dof_basis::AbstractArray{<:AbstractVector{<:Dof}}
   cell_shapefuns_domain::DomainStyle
   cell_dof_basis_domain::DomainStyle
-  max_order::Int 
+  max_order::Int
 end
 # If the shapefuns are not polynomials, max_order has to be understood as the order of a
-# reasonable quadrature rule to integrate the shape functions. Only used by FESpace 
+# reasonable quadrature rule to integrate the shape functions. Only used by FESpace
 # constructors that need to integrate the shape functions (e.g., ZeroMeanFESpace).
 
 Geometry.num_cells(cell_fe::CellFE) = length(cell_fe.cell_ctype)
