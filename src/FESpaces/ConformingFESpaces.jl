@@ -21,7 +21,7 @@ function Base.getproperty(a::CellConformity, sym::Symbol)
   end
 end
 
-function Base.propertynames(x::CellConformity, private=false)
+function Base.propertynames(x::CellConformity, private::Bool=false)
   (fieldnames(typeof(x))...,:d_ctype_offset,:d_ctype_ldface_own_ldofs)
 end
 

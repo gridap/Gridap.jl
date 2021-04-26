@@ -26,7 +26,7 @@ function Base.getproperty(x::SkeletonTriangulation, sym::Symbol)
   end
 end
 
-function Base.propertynames(x::SkeletonTriangulation, private=false)
+function Base.propertynames(x::SkeletonTriangulation, private::Bool=false)
   (fieldnames(typeof(x))...,:⁺,:⁻)
 end
 
