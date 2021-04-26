@@ -76,16 +76,12 @@ cellmat1 = integrate( (n⋅dv)*2, quad)
 cellmat2 = integrate( (n⋅dv)*fill(2,num_cells(trian)), quad)
 test_array(cellmat1,cellmat2,≈)
 
-@test_broken begin
-
-α = CellField(2,trian)
-op(u,∇u,v,∇v,α) = α*(u⋅v) + ∇u⊙∇v
-cellmat1 = integrate( op∘(du,∇(du),dv,∇(dv),α) , quad)
-cellmat2 = integrate( α*(du⋅dv) + ∇(du)⊙∇(dv) , quad)
-test_array(cellmat1,cellmat2,≈)
-
-true
-end
+# This is not supported anymore
+#α = CellField(2,trian)
+#op(u,∇u,v,∇v,α) = α*(u⋅v) + ∇u⊙∇v
+#cellmat1 = integrate( op∘(du,∇(du),dv,∇(dv),α) , quad)
+#cellmat2 = integrate( α*(du⋅dv) + ∇(du)⊙∇(dv) , quad)
+#test_array(cellmat1,cellmat2,≈)
 
 α = CellField(2,trian)
 op2(u,∇u,α) = α*(∇u⋅u)

@@ -742,14 +742,15 @@ function evaluate!(
   a
 end
 
-function return_value(k::BroadcastingFieldOpMap,a::ArrayBlock...)
+function return_value(
+  k::BroadcastingFieldOpMap,a::(ArrayBlock{A,N} where A)...) where N
   evaluate(k,a...)
 end
 
-function return_cache(k::BroadcastingFieldOpMap,a::ArrayBlock...)
+function return_cache(
+  k::BroadcastingFieldOpMap,a::(ArrayBlock{A,N} where A)...) where N
   a1 = first(a)
   @notimplementedif any(ai->size(ai)!=size(a1),a)
-  N = ndims(a1)
   ais = map(ai->testvalue(eltype(ai)),a)
   ci = return_cache(k,ais...)
   bi = evaluate!(ci,k,ais...)
@@ -765,7 +766,8 @@ function return_cache(k::BroadcastingFieldOpMap,a::ArrayBlock...)
   ArrayBlock(array,a1.touched), c
 end
 
-function evaluate!(cache,k::BroadcastingFieldOpMap,a::ArrayBlock...)
+function evaluate!(
+  cache,k::BroadcastingFieldOpMap,a::(ArrayBlock{A,N} where A)...) where N
   a1 = first(a)
   @notimplementedif any(ai->size(ai)!=size(a1),a)
   r,c = cache
@@ -777,6 +779,18 @@ function evaluate!(cache,k::BroadcastingFieldOpMap,a::ArrayBlock...)
     end
   end
   r
+end
+
+function return_value(k::BroadcastingFieldOpMap,a::ArrayBlock...)
+  evaluate(k,a...)
+end
+
+function return_cache(k::BroadcastingFieldOpMap,a::ArrayBlock...)
+  @notimplemented
+end
+
+function evaluate!(cache,k::BroadcastingFieldOpMap,a::ArrayBlock...)
+  @notimplemented
 end
 
 function return_value(
