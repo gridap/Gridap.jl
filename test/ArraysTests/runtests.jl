@@ -34,7 +34,7 @@ using Test
 
 @testset "AppendedArrays" begin include("AppendedArraysTests.jl") end
 
-@testset "AutodiffTests" begin @test_broken false end # begin include("AutodiffTests.jl") end
+@testset "AutodiffTests" begin include("AutodiffTests.jl") end
 
 @testset "VectorWithEntryRemovedTests" begin include("VectorWithEntryRemovedTests.jl") end
 
