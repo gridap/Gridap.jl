@@ -204,7 +204,7 @@ function Base.getproperty(x::SkeletonPair, sym::Symbol)
   end
 end
 
-function Base.propertynames(x::SkeletonPair, private=false)
+function Base.propertynames(x::SkeletonPair, private::Bool=false)
   (fieldnames(typeof(x))...,:⁺,:⁻)
 end
 
