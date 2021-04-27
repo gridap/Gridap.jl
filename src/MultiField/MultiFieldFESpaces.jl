@@ -142,7 +142,7 @@ end
 
 function CellData.CellField(fe::MultiFieldFESpace,cell_values)
   single_fields = map(1:length(fe.spaces)) do i
-    cell_values_field = lazy_map(a->a[i],cell_values)
+    cell_values_field = lazy_map(a->a.array[i],cell_values)
     CellField(fe.spaces[i],cell_values_field)
   end
   MultiFieldCellField(single_fields)

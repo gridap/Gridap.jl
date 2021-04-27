@@ -36,4 +36,6 @@ include("MultiFieldFESpaces.jl")
 
 include("MultiFieldFEFunctions.jl")
 
+include("MultiFieldFEAutodiff.jl")
+
 end # module

@@ -1040,3 +1040,111 @@ function Base.copyto!(d::ArrayBlock,c::ArrayBlock)
   d
 end
 
+# Autodiff related
+
+function return_cache(k::Arrays.ConfigMap{typeof(ForwardDiff.gradient)},x::VectorBlock)
+  xi = testitem(x)
+  fi = return_cache(k,xi)
+  array = Vector{typeof(fi)}(undef,length(x.array))
+  for i in eachindex(x.array)
+    if x.touched[i]
+      array[i] = return_cache(k,x.array[i])
+    end
+  end
+  ArrayBlock(array,x.touched)
+end
+
+function return_cache(k::Arrays.ConfigMap{typeof(ForwardDiff.jacobian)},x::VectorBlock)
+  xi = testitem(x)
+  fi = return_cache(k,xi)
+  array = Vector{typeof(fi)}(undef,length(x.array))
+  for i in eachindex(x.array)
+    if x.touched[i]
+      array[i] = return_cache(k,x.array[i])
+    end
+  end
+  ArrayBlock(array,x.touched)
+end
+
+function return_cache(k::Arrays.DualizeMap,x::VectorBlock)
+  cfg = return_cache(Arrays.ConfigMap(k.f),x)
+  i = first(findall(x.touched))
+  xi = x.array[i]
+  cfgi = cfg.array[i]
+  xidual = evaluate!(cfgi,k,xi)
+  array = Vector{typeof(xidual)}(undef,length(x.array))
+  cfg, ArrayBlock(array,x.touched)
+end
+
+function evaluate!(cache,k::Arrays.DualizeMap,x::VectorBlock)
+  cfg, xdual = cache
+  for i in eachindex(x.array)
+    if x.touched[i]
+      xdual.array[i] = evaluate!(cfg.array[i],k,x.array[i])
+    end
+  end
+  xdual
+end
+
+function return_cache(k::Arrays.AutoDiffMap,ydual::VectorBlock,x,cfg::VectorBlock)
+  i = first(findall(ydual.touched))
+  yidual = ydual.array[i]
+  xi = x.array[i]
+  cfgi = cfg.array[i]
+  ci = return_cache(k,yidual,xi,cfgi)
+  ri = evaluate!(ci,k,yidual,xi,cfgi)
+  c = Vector{typeof(ci)}(undef,length(ydual.array))
+  array = Vector{typeof(ri)}(undef,length(ydual.array))
+  for i in eachindex(ydual.array)
+    if ydual.touched[i]
+      c[i] = return_cache(k,ydual.array[i],x.array[i],cfg.array[i])
+    end
+  end
+  ArrayBlock(array,ydual.touched), c
+end
+
+function evaluate!(cache,k::Arrays.AutoDiffMap,ydual::VectorBlock,x,cfg::VectorBlock)
+  r,c = cache
+  for i in eachindex(ydual.array)
+    if ydual.touched[i]
+      r.array[i] = evaluate!(c[i],k,ydual.array[i],x.array[i],cfg.array[i])
+    end
+  end
+  r
+end
+
+function return_cache(k::Arrays.AutoDiffMap,ydual::MatrixBlock,x,cfg::VectorBlock)
+  ci = first(findall(ydual.touched))
+  i, j = Tuple(ci)
+  yidual = ydual.array[ci]
+  xi = x.array[j]
+  cfgi = cfg.array[j]
+  ci = return_cache(k,yidual,xi,cfgi)
+  ri = evaluate!(ci,k,yidual,xi,cfgi)
+  c = Matrix{typeof(ci)}(undef,size(ydual))
+  array = Matrix{typeof(ri)}(undef,size(ydual))
+  ni,nj = size(ydual)
+  for j in 1:nj
+    for i in 1:ni
+      if ydual.touched[i,j]
+        c[i,j] = return_cache(k,ydual.array[i,j],x.array[j],cfg.array[j])
+      end
+    end
+  end
+  ArrayBlock(array,ydual.touched), c
+end
+
+function evaluate!(cache,k::Arrays.AutoDiffMap,ydual::MatrixBlock,x,cfg::VectorBlock)
+  r,c = cache
+  ni,nj = size(ydual)
+  for j in 1:nj
+    for i in 1:ni
+      if ydual.touched[i,j]
+        r.array[i,j] = evaluate!(c[i,j],k,ydual.array[i,j],x.array[j],cfg.array[j])
+      end
+    end
+  end
+  r
+end
+
+
