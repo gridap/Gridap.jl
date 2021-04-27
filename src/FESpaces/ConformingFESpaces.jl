@@ -112,26 +112,17 @@ end
 
 """
 Generate a CellFE from a vector of reference fes
-
-cell_orientation is an array with as many entries as cells.
-true means that the coordinate system of the cell in physical
-space is flipped w.r.t. coordinate system of reference cell.
-
 """
 function CellFE(
   cell_map::AbstractArray{<:Field},
-  cell_reffe::AbstractArray{<:ReferenceFE},
-  cell_orientation::AbstractArray{<:Field}=Fill(ConstantField(false),length(cell_map)))
+  cell_reffe::AbstractArray{<:ReferenceFE})
 
   ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
   ctype_num_dofs = map(num_dofs,ctype_reffe)
   ctype_ldof_comp = map(reffe->get_dof_to_comp(reffe),ctype_reffe)
   cell_conformity = CellConformity(cell_reffe)
-  cell_shapefuns = lazy_map(get_shapefuns,
-                            cell_reffe,
-                            cell_map,
-                            cell_orientation)
-  cell_dof_basis = lazy_map(get_dof_basis,cell_reffe,cell_map,cell_orientation)
+  cell_shapefuns = lazy_map(get_shapefuns,cell_reffe,cell_map)
+  cell_dof_basis = lazy_map(get_dof_basis,cell_reffe,cell_map)
   cell_shapefuns_domain = ReferenceDomain()
   cell_dof_basis_domain = cell_shapefuns_domain
   max_order = maximum(map(get_order,ctype_reffe))

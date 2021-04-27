@@ -83,22 +83,7 @@ function FESpace(
   else
     conf = CellConformity(cell_reffe,conformity)
   end
-
-  if ( num_cell_dims(model) == num_point_dims(model) )
-    Jt=lazy_map(∇,cell_map)
-    detJt=lazy_map(Operation(det),Jt)
-    isnegative(x) = x < zero(x)
-    cell_orientation = lazy_map(Operation(isnegative),detJt)
-  else
-    # TO-DO: for num_cells_dims(model) < num_points_dims(model)
-    #        there is no other alternative but extracting
-    #        cell_orientation out of model. In the meantime,
-    #        let us assume that cell_orientation is false for all
-    #        cells.
-    cell_orientation = Fill(ConstantField(false),length(cell_map))
-  end
-
-  cell_fe = CellFE(cell_map,cell_reffe,cell_orientation)
+  cell_fe = CellFE(cell_map,cell_reffe)
   FESpace(model,cell_fe;conformity=conf,kwargs...)
 end
 
