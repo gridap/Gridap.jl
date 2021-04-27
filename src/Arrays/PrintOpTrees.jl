@@ -85,11 +85,3 @@ function get_children(n::TreeNode, a::VectorWithEntryInserted)
   (similar_tree_node(n,a.a),)
 end
 
-function get_children(n::TreeNode, a::VariableArray)
-  (similar_tree_node(n,a.variables),)
-end
-
-function get_children(n::TreeNode, a::FunctorVector)
-  (similar_tree_node(n,a.array),)
-end
-
