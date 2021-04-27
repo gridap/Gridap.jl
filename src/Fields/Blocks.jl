@@ -175,7 +175,7 @@ function evaluate!(cache,::ZeroBlockMap,a,b::ArrayBlock)
   cache
 end
 
-struct BlockMap{N}
+struct BlockMap{N} <: Map
   size::NTuple{N,Int}
   indices::Vector{CartesianIndex{N}}
 end
@@ -853,6 +853,22 @@ function Base.:-(a::ArrayBlock,b::ArrayBlock)
   BroadcastingFieldOpMap(-)(a,b)
 end
 
+function Base.:*(a::Number,b::ArrayBlock)
+  bi = testitem(b)
+  ci = a*bi
+  array = Array{typeof(ci),ndims(b)}(undef,size(b))
+  for i in eachindex(b.array)
+    if b.touched[i]
+      array[i] = a*b.array[i]
+    end
+  end
+  ArrayBlock(array,b.touched)
+end
+
+function Base.:*(a::ArrayBlock,b::Number)
+  b*a
+end
+
 function Base.:*(a::ArrayBlock{A,2},b::ArrayBlock{B,1}) where {A,B}
   @check size(a.array,2) == size(b.array,1)
   ai = testvalue(A)
@@ -1023,5 +1039,4 @@ function Base.copyto!(d::ArrayBlock,c::ArrayBlock)
   end
   d
 end
-
 
