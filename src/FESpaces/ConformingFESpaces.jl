@@ -46,75 +46,7 @@ function _d_ctype_ldface_own_ldofs(a::CellConformity)
     for d in 1:num_ds ]
 end
 
-"""
-A Map which is though to return whatever info
-get_dof_basis needs in order to compute the DoFs
-of a finite element space on top of a physical cell.
-"""
-struct DofBasisPhysicalCellInfo{M} <: Map
-  model::M
-end
 
-function return_cache(phys_cell_info::DofBasisPhysicalCellInfo,
-                      reffe::ReferenceFE,
-                      cell_id::Integer)
- nothing
-end
-
-function return_cache(phys_cell_info::DofBasisPhysicalCellInfo,
-                      reffe::GenericRefFE{RaviartThomas},
-                      cell_id::Integer)
- model=phys_cell_info.model
- D=num_cell_dims(model)
- gtopo=get_grid_topology(model)
-
- # Extract composition among cells and facets
- cell_wise_facets_ids=get_faces(gtopo,D,D-1)
- cache_cell_wise_facets_ids=array_cache(cell_wise_facets_ids)
-
- # Extract cells around facets
- cells_around_facets=get_faces(gtopo,D-1,D)
- cache_cells_around_facets=array_cache(cells_around_facets)
-
- (cell_wise_facets_ids,
- cache_cell_wise_facets_ids,
- cells_around_facets,
- cache_cells_around_facets,
- CachedVector(Bool))
-end
-
-function evaluate!(cache,
-                  phys_cell_info::DofBasisPhysicalCellInfo{M},
-                  reffe::GenericRefFE{RaviartThomas},
-                  cell_id::Integer) where M
-
- cell_wise_facets_ids,
- cache_cell_wise_facets_ids,
- cells_around_facets,
- cache_cells_around_facets,
- cell_is_slave = cache
-
- cell_facets_ids=getindex!(cache_cell_wise_facets_ids,
-                            cell_wise_facets_ids,
-                            cell_id)
-
- setsize!(cell_is_slave,(num_faces(reffe),))
-
- cell_is_slave .= false
-
- D=num_cell_dims(phys_cell_info.model)
-
- current=get_offsets(get_polytope(reffe))[D]+1
- for facet_gid in cell_facets_ids
-   facet_cells_around=getindex!(cache_cells_around_facets,
-                                 cells_around_facets,
-                                 facet_gid)
-   cell_is_slave[current]=
-       (findfirst((x)->(x==cell_id),facet_cells_around) == 2)
-   current=current+1
- end
- cell_is_slave
-end
 
 """
 Minimum data required to build a conforming FE space.
@@ -184,16 +116,15 @@ end
 Generate a CellFE from a vector of reference fes
 """
 function CellFE(
-  cell_map::AbstractArray{<:Field},
+  model::DiscreteModel,
   cell_reffe::AbstractArray{<:ReferenceFE},
-  dof_basis_info::AbstractArray)
-
+ )
   ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
   ctype_num_dofs = map(num_dofs,ctype_reffe)
   ctype_ldof_comp = map(reffe->get_dof_to_comp(reffe),ctype_reffe)
   cell_conformity = CellConformity(cell_reffe)
-  cell_shapefuns = lazy_map(get_shapefuns,cell_reffe,cell_map)
-  cell_dof_basis = lazy_map(get_dof_basis,cell_reffe,cell_map,dof_basis_info)
+  cell_shapefuns = get_shapefuns(model,cell_reffe)
+  cell_dof_basis = get_dof_basis(model,cell_reffe)
   cell_shapefuns_domain = ReferenceDomain()
   cell_dof_basis_domain = cell_shapefuns_domain
   max_order = maximum(map(get_order,ctype_reffe))
@@ -208,6 +139,119 @@ function CellFE(
     cell_shapefuns_domain,
     cell_dof_basis_domain,
     max_order)
+end
+
+function get_dof_basis(model::DiscreteModel,
+                       cell_reffe::AbstractArray{<:ReferenceFE})
+  lazy_map(get_dof_basis,
+           cell_reffe,
+           get_cell_map(Triangulation(model)))
+end
+
+function get_dof_basis(model::DiscreteModel,
+                       cell_reffe::AbstractArray{<:GenericRefFE{RaviartThomas}})
+
+    sign_flip=get_sign_flip(model,cell_reffe)
+    lazy_map(get_dof_basis,
+             cell_reffe,
+             get_cell_map(Triangulation(model)),
+             sign_flip)
+end
+
+function get_sign_flip(model::DiscreteModel,
+                       cell_reffe::AbstractArray{<:GenericRefFE{RaviartThomas}})
+
+   lazy_map(get_sign_flip,
+            Fill(model,length(cell_reffe)),
+            cell_reffe,
+            get_cell_to_bgcell(model))
+end
+
+function get_shapefuns(model::DiscreteModel,cell_reffe::AbstractArray{<:ReferenceFE})
+  lazy_map(get_shapefuns,
+           cell_reffe,
+           get_cell_map(Triangulation(model)))
+end
+
+function get_shapefuns(model::DiscreteModel,
+                       cell_reffe::AbstractArray{<:GenericRefFE{RaviartThomas}})
+
+  sign_flip=get_sign_flip(model,cell_reffe)
+  lazy_map(get_shapefuns,
+           cell_reffe,
+           get_cell_map(Triangulation(model)),
+           lazy_map(Broadcasting(ConstantField),sign_flip))
+end
+
+function get_sign_flip(model::DiscreteModel,
+  reffe::GenericRefFE{RaviartThomas},
+  cell_id::Integer)
+
+  cache = return_cache(get_sign_flip,
+                       reffe,
+                       cell_id)
+  evaluate!(cache,
+            get_sign_flip,
+            reffe,
+            cell_id)
+end
+
+function return_cache(::typeof(get_sign_flip),
+                      model::DiscreteModel,
+                      reffe::GenericRefFE{RaviartThomas},
+                      cell_id::Integer)
+   D=num_cell_dims(model)
+   gtopo=get_grid_topology(model)
+
+   # Extract composition among cells and facets
+   cell_wise_facets_ids=get_faces(gtopo,D,D-1)
+   cache_cell_wise_facets_ids=array_cache(cell_wise_facets_ids)
+
+   # Extract cells around facets
+   cells_around_facets=get_faces(gtopo,D-1,D)
+   cache_cells_around_facets=array_cache(cells_around_facets)
+
+   (cell_wise_facets_ids,
+    cache_cell_wise_facets_ids,
+    cells_around_facets,
+    cache_cells_around_facets,
+    CachedVector(Bool))
+end
+
+function evaluate!(cache,
+                   ::typeof(get_sign_flip),
+                   model::DiscreteModel,
+                   reffe::GenericRefFE{RaviartThomas},
+                   cell_id::Integer)
+
+  cell_wise_facets_ids,
+  cache_cell_wise_facets_ids,
+  cells_around_facets,
+  cache_cells_around_facets,
+  sign_flip = cache
+
+  setsize!(sign_flip,(num_dofs(reffe),))
+  sign_flip .= false
+
+  D=num_dims(reffe)
+  face_own_dofs=get_face_own_dofs(reffe)
+  facet_lid=get_offsets(get_polytope(reffe))[D]+1
+  cell_facets_ids=getindex!(cache_cell_wise_facets_ids,
+                            cell_wise_facets_ids,
+                            cell_id)
+  for facet_gid in cell_facets_ids
+     facet_cells_around=getindex!(cache_cells_around_facets,
+                                  cells_around_facets,
+                                  facet_gid)
+     is_slave=(findfirst((x)->(x==cell_id),facet_cells_around) == 2)
+     if is_slave
+       for dof in face_own_dofs[facet_lid]
+        sign_flip[dof]=true
+       end
+     end
+     facet_lid=facet_lid+1
+  end
+  sign_flip
 end
 
 # Low level conforming FE Space constructor

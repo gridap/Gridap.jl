@@ -9,6 +9,25 @@ const raviart_thomas = RaviartThomas()
 
 The `order` argument has the following meaning: the divergence of the  functions in this basis
 is in the Q space of degree `order`.
+
+Two key ingredients in the implementation of this type of ReferenceFE are the
+get_shapefuns(model,cell_reffes) and get_dof_basis(mode,cell_reffes) overloads.
+These are written such that, for each cell K, they return the shape functions
+and dof values in the *global* RT space. For a dof owned by a face which is shared by
+two cells, there is a master and a slave cell. The slave cell first computes the
+shape functions and dof values using local-to-cell data structures, but then flips the
+sign of both in order to get their corresponding counterparts in the **global**
+RT space. As as result we have the following:
+
+* When we interpolate a function into the global FE space, and we perform the cell-wise
+  DoF values to global DoF values gather operation, we can either extract the global DoF value from
+  the master or slave cell without worrying about the sign.
+* When we evaluate a global FE function, and we perform the global DoF values to
+  cell-wise DoF values scatter operation, we don't have to worry about the sign either.
+  On the slave cell, we will have both the sign of the DoF value, and the sign of the
+  shape function corresponding to the global DoF.
+* We do NOT have to use the signed determinant, but its absolute value, in the Piola Map.
+
 """
 function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
 
@@ -75,9 +94,9 @@ end
 
 function get_dof_basis(reffe::GenericRefFE{RaviartThomas},
                        phi::Field,
-                       cell_is_slave::AbstractVector{Bool})
-  cache = return_cache(get_dof_basis,reffe,phi,cell_is_slave)
-  evaluate!(cache,get_dof_basis,reffe,phi,cell_is_slave)
+                       sign_flip::AbstractVector{Bool})
+  cache = return_cache(get_dof_basis,reffe,phi,sign_flip)
+  evaluate!(cache,get_dof_basis,reffe,phi,sign_flip)
 end
 
 function return_cache(::typeof(get_dof_basis),
@@ -102,17 +121,19 @@ function evaluate!(cache,
                    ::typeof(get_dof_basis),
                    reffe::GenericRefFE{RaviartThomas},
                    phi::Field,
-                   cell_is_slave::AbstractVector{Bool})
+                   sign_flip::AbstractVector{Bool})
   nodes, nf_nodes, nf_moments, face_moments, Jt_q_cache = cache
 
   Jt_q = evaluate!(Jt_q_cache,∇(phi),nodes)
+  face_own_dofs=get_face_own_dofs(reffe)
   for face in 1:length(face_moments)
     moments = nf_moments[face]
     if length(moments) > 0
+      sign = (-1)^sign_flip[face_own_dofs[face][1]]
       num_qpoints, num_moments = size(moments)
       for i in 1:num_qpoints
         Jt_q_i = Jt_q[nf_nodes[face][i]]
-        change = (-1)^cell_is_slave[face] * meas(Jt_q_i) * inv(transpose(Jt_q_i))
+        change = sign * meas(Jt_q_i) * inv(transpose(Jt_q_i))
         for j in 1:num_moments
           face_moments[face][i,j] = nf_moments[face][i,j] ⋅ change
         end
@@ -426,41 +447,56 @@ function evaluate!(
   cache,
   ::Broadcasting{typeof(∇)},
   a::Fields.BroadcastOpFieldArray{ContraVariantPiolaMap})
-  v, Jt, detJ = a.args
+  v, Jt, detJ,sign_flip = a.args
   # Assuming J comes from an affine map
   ∇v = Broadcasting(∇)(v)
   k = ContraVariantPiolaMap()
-  Broadcasting(Operation(k))(∇v,Jt,detJ)
+  Broadcasting(Operation(k))(∇v,Jt,detJ,sign_flip)
 end
 
 function lazy_map(
   ::Broadcasting{typeof(gradient)},
   a::LazyArray{<:Fill{Broadcasting{Operation{ContraVariantPiolaMap}}}})
-  v, Jt, detJ = a.args
+  v, Jt, detJ,sign_flip = a.args
   ∇v = lazy_map(Broadcasting(∇),v)
   k = ContraVariantPiolaMap()
-  lazy_map(Broadcasting(Operation(k)),∇v,Jt,detJ)
+  lazy_map(Broadcasting(Operation(k)),∇v,Jt,detJ,sign_flip)
 end
 
-function evaluate!(cache,::ContraVariantPiolaMap,v::Number,Jt::Number,detJ::Number)
-  v⋅((1/detJ)*Jt)
+function evaluate!(cache,::ContraVariantPiolaMap,
+                   v::Number,
+                   Jt::Number,
+                   detJ::Number,
+                   sign_flip::Bool)
+  ((-1)^sign_flip*v)⋅((1/abs(detJ))*Jt)
 end
 
-function evaluate!(cache,k::ContraVariantPiolaMap,v::AbstractVector{<:Field},phi::Field)
+function evaluate!(cache,
+                   k::ContraVariantPiolaMap,
+                   v::AbstractVector{<:Field},
+                   phi::Field,
+                   sign_flip::AbstractVector{<:Field})
   Jt = ∇(phi)
   detJ = Operation(det)(Jt)
-  Broadcasting(Operation(k))(v,Jt,detJ)
+  Broadcasting(Operation(k))(v,Jt,detJ,sign_flip)
 end
 
 function lazy_map(
   k::ContraVariantPiolaMap,
   cell_ref_shapefuns::AbstractArray{<:AbstractArray{<:Field}},
-  cell_map::AbstractArray{<:Field})
+  cell_map::AbstractArray{<:Field},
+  sign_flip::AbstractArray{<:AbstractArray{<:Field}})
 
   cell_Jt = lazy_map(∇,cell_map)
   cell_detJ = lazy_map(Operation(det),cell_Jt)
 
-  lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_Jt,cell_detJ)
+  lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_Jt,cell_detJ,sign_flip)
 end
 
 PushForwardMap(reffe::GenericRefFE{RaviartThomas}) = ContraVariantPiolaMap()
+
+function get_shapefuns(reffe::GenericRefFE{RaviartThomas},
+                       phi::Field,
+                       sign_flip::AbstractVector{<:Field})
+  PushForwardMap(reffe)(get_shapefuns(reffe),phi,sign_flip)
+end

@@ -76,17 +76,12 @@ function FESpace(
   cell_reffe::AbstractArray{<:ReferenceFE};
   conformity=nothing,
   kwargs...)
-  trian = Triangulation(model)
-  cell_map = get_cell_map(trian)
   if conformity in (nothing, :default, :L2, L2Conformity())
     conf = conformity
   else
     conf = CellConformity(cell_reffe,conformity)
   end
-  dof_basis_info = lazy_map(DofBasisPhysicalCellInfo(model),
-                            cell_reffe,
-                            get_cell_to_bgcell(trian))
-  cell_fe = CellFE(cell_map,cell_reffe,dof_basis_info)
+  cell_fe = CellFE(model,cell_reffe)
   FESpace(model,cell_fe;conformity=conf,kwargs...)
 end
 

@@ -55,6 +55,8 @@ import Gridap.Algebra: solve
 import Gridap.Algebra: allocate_vector
 import Gridap.Algebra: allocate_matrix
 import Gridap.Algebra: allocate_matrix_and_vector
+import Gridap.ReferenceFEs: get_shapefuns
+import Gridap.ReferenceFEs: get_dof_basis
 
 export FEFunction
 export get_free_dof_values
