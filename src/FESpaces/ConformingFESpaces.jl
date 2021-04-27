@@ -21,7 +21,7 @@ function Base.getproperty(a::CellConformity, sym::Symbol)
   end
 end
 
-function Base.propertynames(x::CellConformity, private=false)
+function Base.propertynames(x::CellConformity, private::Bool=false)
   (fieldnames(typeof(x))...,:d_ctype_offset,:d_ctype_ldface_own_ldofs)
 end
 
@@ -60,10 +60,10 @@ struct CellFE{T} <: GridapType
   cell_dof_basis::AbstractArray{<:AbstractVector{<:Dof}}
   cell_shapefuns_domain::DomainStyle
   cell_dof_basis_domain::DomainStyle
-  max_order::Int 
+  max_order::Int
 end
 # If the shapefuns are not polynomials, max_order has to be understood as the order of a
-# reasonable quadrature rule to integrate the shape functions. Only used by FESpace 
+# reasonable quadrature rule to integrate the shape functions. Only used by FESpace
 # constructors that need to integrate the shape functions (e.g., ZeroMeanFESpace).
 
 Geometry.num_cells(cell_fe::CellFE) = length(cell_fe.cell_ctype)
@@ -159,6 +159,9 @@ function _ConformingFESpace(
   trian = Triangulation(model)
   cell_shapefuns, cell_dof_basis = compute_cell_space(cell_fe,trian)
 
+  cell_is_dirichlet = fill(false,num_cells(trian))
+  cell_is_dirichlet[dirichlet_cells] .= true
+
   UnconstrainedFESpace(
     vector_type,
     nfree,
@@ -166,6 +169,7 @@ function _ConformingFESpace(
     cell_dofs_ids,
     cell_shapefuns,
     cell_dof_basis,
+    cell_is_dirichlet,
     dirichlet_dof_tag,
     dirichlet_cells,
     ntags)

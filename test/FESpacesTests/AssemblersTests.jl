@@ -7,7 +7,6 @@ using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.ReferenceFEs
 using Gridap.Geometry
-using Gridap.Integration
 using Gridap.Fields
 using Gridap.Algebra
 using SparseArrays

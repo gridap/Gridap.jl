@@ -526,8 +526,8 @@ end
   nj = size(b,3)
   setsize!(cache,(np,ni,nj))
   r = cache.array
-  for p in 1:np
-    for j in 1:nj
+  for j in 1:nj
+    for p in 1:np
       bpj = b[p,1,j]
       for i in 1:ni
         r[p,i,j] = f.op(a[p,i],bpj)

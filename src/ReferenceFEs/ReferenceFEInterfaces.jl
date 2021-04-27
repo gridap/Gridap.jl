@@ -38,7 +38,7 @@ abstract type ReferenceFEName end
 # Extensible factory function
 function  ReferenceFE(p::Polytope,basis::ReferenceFEName,args...;kwargs...)
   @unreachable """\n
-  Undefined factory function ReferenceFE for basis $basis
+  Undefined factory function ReferenceFE for basis $basis and the given arguments.
   """
 end
 
