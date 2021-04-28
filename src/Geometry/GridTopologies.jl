@@ -1402,7 +1402,7 @@ function _generate_face_to_ftype(
   ctype_to_lface_to_ftype::Vector{Vector{T}},
   nfaces) where T
 
-  face_to_ftype = fill(T(UNSET),nfaces)
+  face_to_ftype = fill(Int8(UNSET),nfaces)
   _face_to_ftype_fill!(
     face_to_ftype,
     cell_to_faces_data,

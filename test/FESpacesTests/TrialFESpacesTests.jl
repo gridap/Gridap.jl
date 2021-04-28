@@ -5,7 +5,6 @@ using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.ReferenceFEs
 using Gridap.Geometry
-using Gridap.Integration
 using Gridap.Fields
 using Gridap.FESpaces
 using Gridap.CellData
@@ -19,6 +18,7 @@ reffe = ReferenceFE(lagrangian,Float64,order)
 V = FESpace(model,reffe,dirichlet_tags=["tag_01","tag_10"])
 
 U = TrialFESpace(V,[4,3])
+@test get_cell_is_dirichlet(U) === U.space.cell_is_dirichlet
 @test U.dirichlet_values == compute_dirichlet_values_for_tags(V,[4,3])
 v = copy(U.dirichlet_values)
 v .= 0

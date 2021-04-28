@@ -187,7 +187,7 @@ function _generate_cell_to_vertices(
     cell_type_to_lvertex_to_lnode,
     nnodes)
 
-  (Table(data,ptrs), vertex_to_node)
+  (Table(data,ptrs), vertex_to_node, node_to_vertex)
 end
 
 function _generate_cell_to_vertices(

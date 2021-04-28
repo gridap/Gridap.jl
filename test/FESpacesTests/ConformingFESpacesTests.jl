@@ -76,6 +76,7 @@ cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells = compute_conforming
 reffe = ReferenceFE(lagrangian,VectorValue{2,Float64},3)
 
 V = FESpace(model,reffe,dirichlet_tags=dirichlet_tags)
+@test get_cell_is_dirichlet(V) === V.cell_is_dirichlet
 
 test_single_field_fe_space(V)
 

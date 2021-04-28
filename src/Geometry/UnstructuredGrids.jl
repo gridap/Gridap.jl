@@ -48,9 +48,22 @@ function _compute_cell_map(node_coords,cell_node_ids,ctype_reffe,cell_ctype)
   cell_coords = lazy_map(Broadcasting(Reindex(node_coords)),cell_node_ids)
   ctype_shapefuns = map(get_shapefuns,ctype_reffe)
   cell_shapefuns = expand_cell_data(ctype_shapefuns,cell_ctype)
-  cell_map = lazy_map(linear_combination,cell_coords,cell_shapefuns)
+  default_cell_map = lazy_map(linear_combination,cell_coords,cell_shapefuns)
+  ctype_poly = map(get_polytope,ctype_reffe)
+  has_affine_map =
+    all(map(is_first_order,ctype_reffe)) &&
+    ( all(map(is_simplex,ctype_poly)) || all(map(p->num_dims(p)==1,ctype_poly)) )
+  if has_affine_map
+    ctype_q0 = map(p->zero(first(get_vertex_coordinates(p))),ctype_poly)
+    cell_q0 = expand_cell_data(ctype_q0,cell_ctype)
+    default_cell_grad = lazy_map(∇,default_cell_map)
+    origins = lazy_map(evaluate,default_cell_map,cell_q0)
+    gradients = lazy_map(evaluate,default_cell_grad,cell_q0)
+    cell_map = lazy_map(Fields.affine_map,gradients,origins)
+  else
+    cell_map = default_cell_map
+  end
   Fields.MemoArray(cell_map)
-  #cell_map
 end
 
 """

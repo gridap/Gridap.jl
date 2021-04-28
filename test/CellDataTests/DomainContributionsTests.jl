@@ -6,7 +6,6 @@ using Gridap.Helpers
 using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Arrays
-using Gridap.Integration
 using Gridap.CellData
 using Gridap.TensorValues
 using Gridap.Geometry
@@ -47,5 +46,10 @@ a = ∫(jump(u))*dΛ
 
 a = ∫( (n_Λ.⁺⋅∇(v.⁻))*jump(n_Λ⋅∇(u)) )*dΛ
 @test sum(a) + 1 ≈ 1
+
+quad = Quadrature(duffy,2)
+dΩ = Measure(Ω,quad)
+s = ∫(1)dΩ
+@test sum(s) ≈ 1
 
 end # module

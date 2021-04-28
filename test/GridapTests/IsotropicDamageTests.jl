@@ -104,7 +104,7 @@ function main(;n,nsteps)
 
     op = FEOperator(res,jac,U,V)
 
-    free_values = get_free_values(uh_in)
+    free_values = get_free_dof_values(uh_in)
     uh0 = FEFunction(U,free_values)
 
     uh_out, = solve!(uh0,solver,op)

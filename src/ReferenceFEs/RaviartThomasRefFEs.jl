@@ -83,8 +83,11 @@ function return_cache(::typeof(get_dof_basis),reffe::GenericRefFE{RaviartThomas}
   prebasis = get_prebasis(reffe)
   order = get_order(prebasis)
   et = return_type(prebasis)
-  nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order,GenericField(identity))
-  db = MomentBasedDofBasis(nf_nodes, nf_moments)
+  dofs = get_dof_basis(reffe)
+  nodes, nf_nodes, nf_moments =  get_nodes(dofs),
+                                 get_face_nodes_dofs(dofs),
+                                 get_face_moments(dofs)
+  db = MomentBasedDofBasis(nodes,nf_moments,nf_nodes)
 
   face_moments = deepcopy(nf_moments)
   Jt_q_cache = return_cache(∇(phi),db.nodes)

@@ -6,7 +6,6 @@ using Gridap.Algebra
 using Gridap.TensorValues
 using Gridap.ReferenceFEs
 using Gridap.Geometry
-using Gridap.Integration
 using Gridap.Fields
 using Gridap.FESpaces
 using LinearAlgebra
@@ -65,7 +64,7 @@ l(v) = ∫(v*f_fun)*dΩ
 
 assem = SparseMatrixAssembler(U,V)
 
-op = AffineFEOperator(assem) do u,v
+op = AffineFEOperator(U,V,assem) do u,v
   ∫(∇(v)⊙∇(u))*dΩ, ∫(v*f_fun)*dΩ
 end
 uh = solve(op)

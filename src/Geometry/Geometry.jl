@@ -69,6 +69,7 @@ import Gridap.ReferenceFEs: num_cell_dims
 import Gridap.ReferenceFEs: num_point_dims
 import Gridap.ReferenceFEs: simplexify
 import Gridap.ReferenceFEs: get_facet_normal
+import Gridap.ReferenceFEs: Quadrature
 
 export GridTopology
 export num_cells
@@ -160,6 +161,7 @@ export get_triangulation
 
 export UnstructuredDiscreteModel
 export CartesianDiscreteModel
+export BoundaryDiscreteModel
 
 export BoundaryTriangulation
 export DiscreteModelPortion
@@ -216,5 +218,7 @@ include("DiscreteModelPortions.jl")
 include("RestrictedDiscreteModels.jl")
 
 include("AppendedTriangulations.jl")
+
+include("BoundaryDiscreteModel.jl")
 
 end # module

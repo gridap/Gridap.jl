@@ -16,6 +16,14 @@ b = VectorValue(1,3,3)
 @test (a >= b) == false
 @test (a > b) == false
 
+@test VectorValue(1,2,3) == VectorValue(1.0,2.0,3.0)
+@test VectorValue(1,2,3) == VectorValue(1+0im, 2+0im, 3+0im)
+@test VectorValue(1,2,3) ≠ VectorValue(1,2)
+@test VectorValue(1,2,3) ≠ SymTensorValue(1,2,3)
+@test iszero(VectorValue(1,2,3) - VectorValue(1.0,2.0,3.0))
+@test iszero(zero(VectorValue(1,2,3)))
+@test isapprox(VectorValue(1,2,3), VectorValue(1.0,2.0,3.0))
+
 a = VectorValue(1,2,3)
 b = VectorValue(2,1,6)
 
@@ -250,6 +258,10 @@ c = t3 ⋅ t1
 @test isa(c,ThirdOrderTensorValue{2,2,1,Int,4})
 r = ThirdOrderTensorValue{2,2,1}(1,2,3,6)
 @test c == r
+
+x = VectorValue{0,Float64}()
+G = TensorValue{0,2,Float64,0}()
+@test x⋅G == VectorValue(0,0)
 
 # Inner product (full contraction)
 

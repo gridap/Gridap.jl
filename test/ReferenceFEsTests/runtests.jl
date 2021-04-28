@@ -22,6 +22,14 @@ using Test
 
 @testset "PDiscRefFEs" begin include("PDiscRefFEsTests.jl") end
 
+@testset "Quadratures" begin include("QuadraturesTests.jl") end
+
+@testset "TensorProductQuadratures" begin include("TensorProductQuadraturesTests.jl") end
+
+@testset "DuffyQuadratures" begin include("DuffyQuadraturesTests.jl") end
+
+@testset "StrangQuadratures" begin include("StrangQuadraturesTests.jl") end
+
 @testset "RaviartThomasRefFEs" begin include("RaviartThomasRefFEsTests.jl") end
 
 @testset "NedelecRefFEs" begin include("NedelecRefFEsTests.jl") end

@@ -26,7 +26,7 @@ test_single_field_fe_space(V,matvecdata,matdata,vecdata)
 
 u(x) = x[1]+x[2]
 uh = interpolate(u,V)
-uhx = get_free_values(uh)
+uhx = get_free_dof_values(uh)
 ux = u.(x)
 @test uhx ≈ ux
 
@@ -40,7 +40,7 @@ test_single_field_fe_space(V,matvecdata,matdata,vecdata)
 
 u(x) = VectorValue(x[1]+x[2],x[2])
 uh = interpolate(u,V)
-uhx = get_free_values(uh)
+uhx = get_free_dof_values(uh)
 ux = u.(x)
 @test uhx ≈ collect1d(reinterpret(ux))
 

@@ -7,7 +7,6 @@ using Gridap.Algebra
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.FESpaces
-using Gridap.Integration
 using Gridap.Fields
 using Gridap.CellData
 
