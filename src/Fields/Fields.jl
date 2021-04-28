@@ -16,7 +16,7 @@ using Gridap.Algebra: fill_entries!
 
 using Gridap.TensorValues
 
-using LinearAlgebra: mul!, Transpose
+using LinearAlgebra: mul!, Transpose, diag
 
 using ForwardDiff
 using FillArrays

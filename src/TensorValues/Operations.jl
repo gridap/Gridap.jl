@@ -599,6 +599,26 @@ transpose(a::SymTensorValue) = a
 end
 
 ###############################################################
+# diag
+###############################################################
+
+function LinearAlgebra.diag(a::TensorValue{1,1})
+  VectorValue(a.data[1])
+end
+
+function LinearAlgebra.diag(a::TensorValue{2,2})
+  VectorValue(a.data[1],a.data[4])
+end
+
+function LinearAlgebra.diag(a::TensorValue{3,3})
+  VectorValue(a.data[1],a.data[5],a.data[9])
+end
+
+function LinearAlgebra.diag(a::TensorValue)
+  @notimplemented
+end
+
+###############################################################
 # Broadcast
 ###############################################################
 # TODO more cases need to be added

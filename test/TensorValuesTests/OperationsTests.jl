@@ -701,5 +701,7 @@ c = a .* b
 @test isa(c,TensorValue)
 @test c.data == map(*,a.data,b.data)
 
+@test diag(a) == VectorValue(1,4)
+
 
 end # module OperationsTests

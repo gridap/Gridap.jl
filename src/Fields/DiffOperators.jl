@@ -117,6 +117,18 @@ Equivalent to
 cross(::typeof(∇),f::Field) = curl(f)
 cross(::typeof(∇),f::Function) = curl(f)
 
+_extract_grad_diag(x::TensorValue) = diag(x)
+_extract_grad_diag(x) = @notimplemented
+
+function Base.broadcasted(::typeof(*),::typeof(∇),f)
+  g = ∇(f)
+  Operation(_extract_grad_diag)(g)
+end
+
+function Base.broadcasted(::typeof(*),::typeof(∇),f::Function)
+  broadcasted(*,∇,GenericField(f))
+end
+
 struct ShiftedNabla{N,T}
   v::VectorValue{N,T}
 end
@@ -147,3 +159,11 @@ outer(s::ShiftedNabla,f::Function) = outer(s,GenericField(f))
 outer(f::Function,s::ShiftedNabla) = outer(GenericField(f),s)
 cross(s::ShiftedNabla,f::Function) = cross(s,GenericField(f))
 
+function Base.broadcasted(::typeof(*),s::ShiftedNabla,f)
+  g = s(f)
+  Operation(_extract_grad_diag)(g)
+end
+
+function Base.broadcasted(::typeof(*),s::ShiftedNabla,f::Function)
+  broadcasted(*,s,GenericField(f))
+end

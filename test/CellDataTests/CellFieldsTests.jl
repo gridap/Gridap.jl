@@ -122,6 +122,12 @@ test_array(ax,collect(ax))
 ax =((∇-k)⊗ν)(x)
 test_array(ax,collect(ax))
 
+ax =(∇.*ν)(x)
+test_array(ax,collect(ax))
+
+ax =((∇-k).*ν)(x)
+test_array(ax,collect(ax))
+
 ax =(ν⊗(∇-k))(x)
 test_array(ax,collect(ax))
 

@@ -39,6 +39,10 @@ f = MockField(v)
 
 @test Δ(f) == ∇⋅∇(f)
 
+@test (∇.*f)(x) != nothing
+
+@test ((∇+p).*f)(x) != nothing
+
 @test ((∇+p)(f))(x) == (∇(f) + p⊗f)(x)
 
 g(x) = 2*x[2]
