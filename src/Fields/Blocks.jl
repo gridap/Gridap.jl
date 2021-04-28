@@ -108,6 +108,51 @@ function Arrays.testvalue(::Type{ArrayBlock{A,N}}) where {A,N}
   ArrayBlock(array,touched)
 end
 
+function Arrays.CachedArray(a::ArrayBlock)
+  ai = testitem(a)
+  ci = CachedArray(ai)
+  array = Array{typeof(ci),ndims(a)}(undef,size(a))
+  for i in eachindex(a.array)
+    if a.touched[i]
+      array[i] = CachedArray(a.array[i])
+    end
+  end
+  ArrayBlock(array,a.touched)
+end
+
+function unwrap_cached_array(a::CachedArray)
+  a.array
+end
+
+function unwrap_cached_array(a::ArrayBlock)
+  cache = return_cache(unwrap_cached_array,a)
+  evaluate!(cache,unwrap_cached_array,a)
+end
+
+function return_cache(::typeof(unwrap_cached_array),a::ArrayBlock)
+  ai = testitem(a)
+  ci = return_cache(unwrap_cached_array,ai)
+  ri = evaluate!(ci,unwrap_cached_array,ai)
+  c = Array{typeof(ci),ndims(a)}(undef,size(a))
+  array = Array{typeof(ri),ndims(a)}(undef,size(a))
+  for i in eachindex(a.array)
+    if a.touched[i]
+      c[i] = return_cache(unwrap_cached_array,a.array[i])
+    end
+  end
+  ArrayBlock(array,a.touched), c
+end
+
+function evaluate!(cache,::typeof(unwrap_cached_array),a::ArrayBlock)
+  r,c = cache
+  for i in eachindex(a.array)
+    if a.touched[i]
+      r.array[i] = evaluate!(c[i],unwrap_cached_array,a.array[i])
+    end
+  end
+  r
+end
+
 #LinearAlgebra.promote_leaf_eltypes(a::ArrayBlock) = LinearAlgebra.promote_leaf_eltypes(a.array)
 
 function Base.:≈(a::AbstractArray{<:ArrayBlock},b::AbstractArray{<:ArrayBlock})
@@ -1010,21 +1055,91 @@ function Arrays.mymul!(
   mul!(c,a,b,α,1)
 end
 
-function return_cache(::typeof(*),a::ArrayBlock,b::ArrayBlock)
-  a*b
+function  _setsize_mul!(c,a::AbstractMatrix,b::AbstractVector)
+  ni = size(a,1)
+  @check length(b) == size(a,2)
+  setsize!(c,(ni,))
+  c
 end
 
-function evaluate!(c,::typeof(*),a::ArrayBlock,b::ArrayBlock)
+function  _setsize_mul!(c,a::AbstractMatrix,b::AbstractMatrix)
+  ni = size(a,1)
+  nj = size(b,2)
+  @check size(a,2) == size(b,1)
+  setsize!(c,(ni,nj))
+  c
+end
+
+function  _setsize_mul!(c,a::MatrixBlock,b::VectorBlock)
+  ni,nj = size(a)
+  @check length(b) == nj
+  @check length(c) == ni
+  for i in 1:ni
+    for j in 1:nj
+      if a.touched[i,j] && b.touched[j]
+        _setsize_mul!(c.array[i],a.array[i,j],b.array[j])
+      end
+    end
+  end
+  c
+end
+
+function  _setsize_mul!(c,a::MatrixBlock,b::MatrixBlock)
+  ni,nk = size(a)
+  nk2,nj = size(b)
+  @check nk == nk2
+  @check size(c) == (ni,nj)
+  for i in 1:ni
+    for j in 1:nj
+      for k in 1:nk
+        if a.touched[i,k] && b.touched[k,j]
+          _setsize_mul!(c.array[i,j],a.array[i,k],b.array[k,j])
+        end
+      end
+    end
+  end
+  c
+end
+
+function return_cache(::typeof(*),a::ArrayBlock,b::ArrayBlock)
+  c1 = CachedArray(a*b)
+  c2 = return_cache(unwrap_cached_array,c1)
+  (c1,c2)
+end
+
+function evaluate!(cache,::typeof(*),a::ArrayBlock,b::ArrayBlock)
+  c1,c2 = cache
+  _setsize_mul!(c1,a,b)
+  c = evaluate!(c2,unwrap_cached_array,c1)
   mul!(c,a,b)
   c
 end
 
-function return_cache(k::MulAddMap,a::ArrayBlock,b::ArrayBlock,c::ArrayBlock)
-  d = a*b+c
+function  _setsize_as!(d,a::AbstractArray)
+  setsize!(d,size(a))
+end
+
+function  _setsize_as!(d,a::ArrayBlock)
+  @check size(d) == size(a)
+  for i in eachindex(a.array)
+    if a.touched[i]
+      _setsize_as!(d.array[i],a.array[i])
+    end
+  end
   d
 end
 
-function evaluate!(d,k::MulAddMap,a::ArrayBlock,b::ArrayBlock,c::ArrayBlock)
+function return_cache(k::MulAddMap,a::ArrayBlock,b::ArrayBlock,c::ArrayBlock)
+  c1 = CachedArray(a*b+c)
+  c2 = return_cache(unwrap_cached_array,c1)
+  (c1,c2)
+end
+
+function evaluate!(cache,k::MulAddMap,a::ArrayBlock,b::ArrayBlock,c::ArrayBlock)
+  c1,c2 = cache
+  _setsize_as!(c1,c)
+  _setsize_mul!(c1,a,b)
+  d = evaluate!(c2,unwrap_cached_array,c1)
   copyto!(d,c)
   mul!(d,a,b,k.α,k.β)
   d
