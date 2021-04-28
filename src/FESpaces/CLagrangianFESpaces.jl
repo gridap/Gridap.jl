@@ -53,8 +53,8 @@ function get_cell_dof_ids(f::CLagrangianFESpace)
   get_cell_dof_ids(f.space)
 end
 
-function get_cell_dof_basis(f::CLagrangianFESpace)
-  get_cell_dof_basis(f.space)
+function get_fe_basis(f::CLagrangianFESpace)
+  get_fe_basis(f.space)
 end
 
 function get_dirichlet_dof_ids(f::CLagrangianFESpace)

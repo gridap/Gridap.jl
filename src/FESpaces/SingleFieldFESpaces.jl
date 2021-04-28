@@ -163,7 +163,7 @@ function test_single_field_fe_space(f::SingleFieldFESpace,pred=(==))
   if length(get_dirichlet_dof_tag(f)) != 0
     @test maximum(get_dirichlet_dof_tag(f)) <= num_dirichlet_tags(f)
   end
-  cell_dof_basis = get_cell_dof_basis(f)
+  cell_dof_basis = get_fe_basis(f)
   @test isa(cell_dof_basis,CellDof)
 end
 
@@ -301,7 +301,7 @@ function interpolate!(object, free_values,fs::SingleFieldFESpace)
 end
 
 function _cell_vals(fs::SingleFieldFESpace,object)
-  s = get_cell_dof_basis(fs)
+  s = get_fe_basis(fs)
   trian = get_triangulation(s)
   f = CellField(object,trian,DomainStyle(s))
   cell_vals = s(f)
