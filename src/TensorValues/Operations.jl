@@ -599,6 +599,19 @@ transpose(a::SymTensorValue) = a
 end
 
 ###############################################################
+# Broadcast
+###############################################################
+# TODO more cases need to be added
+
+function Base.broadcasted(f,a::VectorValue,b::VectorValue)
+  VectorValue(map(f,a.data,b.data))
+end
+
+function Base.broadcasted(f,a::TensorValue,b::TensorValue)
+  TensorValue(map(f,a.data,b.data))
+end
+
+###############################################################
 # Define new operations for Gridap types
 ###############################################################
 
