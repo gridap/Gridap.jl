@@ -100,4 +100,6 @@ include("AutoDiff.jl")
 
 include("BlockFieldArrays.jl")
 
+include("InverseFields.jl")
+
 end
