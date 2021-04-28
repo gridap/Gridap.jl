@@ -185,6 +185,8 @@ include("UnconstrainedFESpaces.jl")
 
 include("ConformingFESpaces.jl")
 
+include("DivConformingFESpaces.jl")
+
 include("FESpaceFactories.jl")
 
 include("PhysicalFEs.jl")
