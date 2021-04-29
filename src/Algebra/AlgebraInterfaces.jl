@@ -131,9 +131,20 @@ end
   add_entries!(+,args...)
 end
 
+# Warning: the usage of @inline and @noinline seems to have dramatic performance
+# implications. Do not change it.
+
+@noinline function add_entries!(A,vs,is,js)
+  add_entries!(+,A,vs,is,js)
+end
+
+@noinline function add_entries!(A,vs,is)
+  add_entries!(+,A,vs,is)
+end
+
 @inline function add_entries!(combine::Function,A,vs,is,js)
-  @inline _vij(vs,i,j) = vs[i,j]
-  @inline _vij(vs::Nothing,i,j) = vs
+  @noinline _vij(vs,i,j) = vs[i,j]
+  @noinline _vij(vs::Nothing,i,j) = vs
   for (lj,j) in enumerate(js)
     if j>0
       for (li,i) in enumerate(is)
@@ -149,8 +160,8 @@ end
 
 
 @inline function add_entries!(combine::Function,A,vs,is)
-  @inline _vi(vs,i) = vs[i]
-  @inline _vi(vs::Nothing,i) = vs
+  @noinline _vi(vs,i) = vs[i]
+  @noinline _vi(vs::Nothing,i) = vs
   for (li, i) in enumerate(is)
     if i>0
       vi = _vi(vs,li)
