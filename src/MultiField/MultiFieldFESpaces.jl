@@ -79,14 +79,14 @@ function FESpaces.num_free_dofs(f::MultiFieldFESpace)
 end
 
 function FESpaces.get_free_dof_ids(f::MultiFieldFESpace)
-  get_free_dof_ids(f,MultiFieldStyle(s))
+  get_free_dof_ids(f,MultiFieldStyle(f))
 end
 
 function FESpaces.get_free_dof_ids(f::MultiFieldFESpace,::MultiFieldStyle)
   @abstractmethod
 end
 
-function FESpaces.get_free_dof_ids(f::MultiFieldFESpace,::ConstraintStyle)
+function FESpaces.get_free_dof_ids(f::MultiFieldFESpace,::ConsecutiveMultiFieldStyle)
   block_num_dofs = Int[]
   for U in f.spaces
     push!(block_num_dofs,num_free_dofs(U))

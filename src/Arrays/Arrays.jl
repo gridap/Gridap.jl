@@ -17,7 +17,6 @@ using DocStringExtensions
 using Test
 using FillArrays
 using LinearAlgebra
-using BlockArrays
 using Base: @propagate_inbounds
 using ForwardDiff
 
