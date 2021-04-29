@@ -18,4 +18,6 @@ using Test
 
 @testset "ArrayBlocks" begin include("ArrayBlocksTests.jl") end
 
+@testset "InverseFields" begin include("InverseFieldsTests.jl") end
+
 end
