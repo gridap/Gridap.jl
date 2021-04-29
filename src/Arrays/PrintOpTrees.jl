@@ -84,3 +84,4 @@ end
 function get_children(n::TreeNode, a::VectorWithEntryInserted)
   (similar_tree_node(n,a.a),)
 end
+

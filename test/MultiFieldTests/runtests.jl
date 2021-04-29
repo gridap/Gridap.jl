@@ -14,4 +14,6 @@ using Test
 
 @testset "MultiFieldFESpacesWithLinearConstraints" begin include("MultiFieldFESpacesWithLinearConstraintsTests.jl") end
 
+@testset "MultiFieldFEAutodiff" begin include("MultiFieldFEAutodiffTests.jl") end
+
 end # module

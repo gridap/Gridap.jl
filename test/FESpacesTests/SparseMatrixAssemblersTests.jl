@@ -163,14 +163,14 @@ strian = SkeletonTriangulation(model)
 squad = CellQuadrature(strian,degree)
 
 scellmat = integrate(jump(v)*u.⁻,squad)
-@test isa(scellmat[1],BlockArrayCoo)
-@test is_zero_block(scellmat[1],1,1)
-@test is_zero_block(scellmat[1],2,1)
-@test is_nonzero_block(scellmat[1],1,2)
-@test is_nonzero_block(scellmat[1],2,2)
+@test isa(scellmat[1],ArrayBlock)
+@test scellmat[1][1,1] === nothing
+@test scellmat[1][2,1] === nothing
+@test scellmat[1][1,2] !== nothing
+@test scellmat[1][2,2] !== nothing
 
 scellvec = integrate(mean(v*3),squad)
-@test isa(scellvec[1],BlockArrayCoo)
+@test isa(scellvec[1],ArrayBlock)
 scellmatvec = pair_arrays(scellmat,scellvec)
 scellids = get_cell_to_bgcell(strian)
 srows = get_cell_dof_ids(V,scellids)
@@ -187,12 +187,6 @@ data = (matvecdata,matdata,vecdata)
 assem = SparseMatrixAssembler(U,V)
 test_sparse_matrix_assembler(assem,matdata,vecdata,data)
 
-A = assemble_matrix(assem,matdata)
-@test A == zeros(num_free_dofs(V),num_free_dofs(U))
-
-# Allowing a non-blocked matrix in a context where you would expect a blocked one.
-scellmat = map(i->zeros(size(i)),scellmat)
-matdata = ([scellmat],[srows],[scols])
 A = assemble_matrix(assem,matdata)
 @test A == zeros(num_free_dofs(V),num_free_dofs(U))
 

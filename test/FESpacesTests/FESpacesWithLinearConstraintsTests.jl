@@ -40,7 +40,7 @@ test_single_field_fe_space(Vc)
 @test has_constraints(Vc)
 
 scellids = SkeletonPair([1,2,1,3],[2,4,3,4])
-@test isa(get_cell_constraints(Vc,scellids)[1],BlockArrayCoo)
+@test isa(get_cell_constraints(Vc,scellids)[1],ArrayBlock)
 
 @test Vc.n_fdofs == 6
 @test Vc.n_fmdofs == 4
