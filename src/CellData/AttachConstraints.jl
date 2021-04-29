@@ -70,15 +70,6 @@ end
   end
 end
 
-function merge_cell_constraints_at_skeleton(cL,cR,axesL_rows,axesR_rows,axesL_cols,axesR_cols)
-  blocks = (cL,cR)
-  blockids = [(1,1),(2,2)]
-  axs_rows = create_array_of_blocked_axes(axesL_rows,axesR_rows)
-  axs_cols = create_array_of_blocked_axes(axesL_cols,axesR_cols)
-  axs = lazy_map((r,c) -> (r[1],c[1]),axs_rows,axs_cols)
-  VectorOfBlockArrayCoo(blocks,blockids,axs)
-end
-
 function identity_constraints(cell_axes)
   lazy_map(IdentityConstraintMap(),cell_axes)
 end
