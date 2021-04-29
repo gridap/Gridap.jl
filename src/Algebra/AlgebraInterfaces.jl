@@ -118,19 +118,6 @@ end
   A
 end
 
-"""
-    add_entries!(combine::Function,A,vs,is...)
-
-Add several entries only for positive input indices. Returns A.
-"""
-@inline function add_entries!(combine::Function,args...)
-  @abstractmethod
-end
-
-@inline function add_entries!(args...)
-  add_entries!(+,args...)
-end
-
 # Warning: the usage of @inline and @noinline seems to have dramatic performance
 # implications. Do not change it.
 
@@ -142,14 +129,34 @@ end
   add_entries!(+,A,vs,is)
 end
 
+"""
+    add_entries!(combine::Function,A,vs,is,js)
+
+Add several entries only for positive input indices. Returns A.
+"""
 @inline function add_entries!(combine::Function,A,vs,is,js)
-  @noinline _vij(vs,i,j) = vs[i,j]
-  @noinline _vij(vs::Nothing,i,j) = vs
+  _add_entries!(combine,A,vs,is,js)
+end
+
+@inline function _add_entries!(combine::Function,A,vs::Nothing,is,js)
   for (lj,j) in enumerate(js)
     if j>0
       for (li,i) in enumerate(is)
         if i>0
-          vij = _vij(vs,li,lj)
+          add_entry!(combine,A,nothing,i,j)
+        end
+      end
+    end
+  end
+  A
+end
+
+@inline function _add_entries!(combine::Function,A,vs,is,js)
+  for (lj,j) in enumerate(js)
+    if j>0
+      for (li,i) in enumerate(is)
+        if i>0
+          vij = vs[li,lj]
           add_entry!(combine,A,vij,i,j)
         end
       end
@@ -158,13 +165,23 @@ end
   A
 end
 
-
 @inline function add_entries!(combine::Function,A,vs,is)
-  @noinline _vi(vs,i) = vs[i]
-  @noinline _vi(vs::Nothing,i) = vs
+  _add_entries!(combine,A,vs,is)
+end
+
+@inline function _add_entries!(combine::Function,A,vs::Nothing,is)
   for (li, i) in enumerate(is)
     if i>0
-      vi = _vi(vs,li)
+      add_entry!(A,nothing,i)
+    end
+  end
+  A
+end
+
+@inline function _add_entries!(combine::Function,A,vs,is)
+  for (li, i) in enumerate(is)
+    if i>0
+      vi = vs[li]
       add_entry!(A,vi,i)
     end
   end
@@ -284,8 +301,10 @@ end
 
 LoopStyle(::Type{<:ArrayCounter}) = DoNotLoop()
 
-@inline add_entry!(c::Function,a::ArrayCounter,args...) = a
-@inline add_entries!(c::Function,a::ArrayCounter,args...) = a
+@inline add_entry!(c::Function,a::ArrayCounter,v,i,j) = a
+@inline add_entry!(c::Function,a::ArrayCounter,v,i) = a
+@inline add_entries!(c::Function,a::ArrayCounter,v,i,j) = a
+@inline add_entries!(c::Function,a::ArrayCounter,v,i) = a
 
 nz_counter(::Type{T},axes) where T = ArrayCounter{T}(axes)
 
