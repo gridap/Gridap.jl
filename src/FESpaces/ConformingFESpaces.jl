@@ -199,10 +199,8 @@ end
 
 function _compute_cell_space(
   cell_reffe::AbstractArray{<:ReferenceFE}, trian::Triangulation)
-
-  cell_map = get_cell_map(trian)
-  cell_shapefuns = lazy_map(get_shapefuns,cell_reffe,cell_map)
-  cell_dof_basis = lazy_map(get_dof_basis,cell_reffe,cell_map)
+  cell_shapefuns = lazy_map(get_shapefuns,cell_reffe)
+  cell_dof_basis = lazy_map(get_dof_basis,cell_reffe)
   cell_shapefuns, cell_dof_basis, ReferenceDomain(), ReferenceDomain()
 end
 
