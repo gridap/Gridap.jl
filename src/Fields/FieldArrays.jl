@@ -497,6 +497,10 @@ return_value(a::BroadcastingFieldOpMap,args...) = return_value(Broadcasting(a.op
 return_cache(a::BroadcastingFieldOpMap,args...) = return_cache(Broadcasting(a.op),args...)
 @inline evaluate!(cache,a::BroadcastingFieldOpMap,args...) = evaluate!(cache,Broadcasting(a.op),args...)
 
+return_value(a::BroadcastingFieldOpMap,args::AbstractArray...) = return_value(Broadcasting(a.op),args...)
+return_cache(a::BroadcastingFieldOpMap,args::AbstractArray...) = return_cache(Broadcasting(a.op),args...)
+@inline evaluate!(cache,a::BroadcastingFieldOpMap,args::AbstractArray...) = evaluate!(cache,Broadcasting(a.op),args...)
+
 # Follow optimizations are very important to achieve performance
 
 @inline function evaluate!(
@@ -505,7 +509,7 @@ return_cache(a::BroadcastingFieldOpMap,args...) = return_cache(Broadcasting(a.op
   a::AbstractArray{T,N},
   b::AbstractArray{S,N}) where {T,S,N}
 
-  @check size(a) == size(b)
+  @check size(a) == size(b) || (length(a)==0 && length(b)==0)
   setsize!(cache,size(a))
   r = cache.array
   for i in eachindex(a)
@@ -521,7 +525,7 @@ end
   b::AbstractArray{S,3} where S)
 
   @check size(a,1) == size(b,1)
-  @check size(b,2) == 1
+  @check size(b,2) == 1 || size(b,1) == 0
   np, ni = size(a)
   nj = size(b,3)
   setsize!(cache,(np,ni,nj))
@@ -544,7 +548,7 @@ end
   a::AbstractMatrix)
 
   @check size(a,1) == size(b,1)
-  @check size(b,2) == 1
+  @check size(b,2) == 1 || size(b,1) == 0
   np, ni = size(a)
   nj = size(b,3)
   setsize!(cache,(np,ni,nj))

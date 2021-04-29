@@ -116,7 +116,7 @@ c_r = array_cache(res_brbasisfield_a)
 
 # Linear Combination basis values (vector values)
 
-vxbasis_a = lazy_map(linear_combination,basis_a,v_a)
+vxbasis_a = lazy_map(linear_combination,v_a,basis_a)
 res_vxbasis_a = lazy_map(evaluate,vxbasis_a,x_a)
 
 for j in 1:na
@@ -130,7 +130,7 @@ c_r = array_cache(res_vxbasis_a)
 
 # Linear Combination basis values (matrix values)
 
-vmxbasis_a = lazy_map(linear_combination,basis_a,vm_a)
+vmxbasis_a = lazy_map(linear_combination,vm_a,basis_a)
 res_vmxbasis_a = lazy_map(evaluate,vmxbasis_a,x_a)
 
 for j in 1:na
@@ -185,63 +185,39 @@ c_r = array_cache(res_compbasisfield_a)
 # @btime getindex!($c_r,$res_compbasisfield_a,1);
 
 
-# transpose(basis)*basis
-
-tbasisxbasis_a = lazy_map(*,tbasis_a,basis_a)
-res_tbasisxbasis_a = lazy_map(evaluate,tbasisxbasis_a,x_a)
-for j in 1:na
-  for i in 1:np
-    res_tbasisxbasis_a[j][i] == res_tbasis_a[j][i,1,:] ⋅ res_basis_a[j][i,:]
-  end
-end
-
-c_r = array_cache(res_tbasisxbasis_a)
-# @btime getindex!($c_r,$res_tbasisxbasis_a,1);
+## transpose(basis)*basis
+#
+#tbasisxbasis_a = lazy_map(*,tbasis_a,basis_a)
+#res_tbasisxbasis_a = lazy_map(evaluate,tbasisxbasis_a,x_a)
+#for j in 1:na
+#  for i in 1:np
+#    res_tbasisxbasis_a[j][i] == res_tbasis_a[j][i,1,:] ⋅ res_basis_a[j][i,:]
+#  end
+#end
+#
+#c_r = array_cache(res_tbasisxbasis_a)
+## @btime getindex!($c_r,$res_tbasisxbasis_a,1);
 
 # integration (field)
 
 w = rand(np)
 w_a = fill(w,na)
-jac = GenericField(TensorValue(4.0,0.0,0.0,4.0))
+jac = ConstantField(TensorValue(4.0,0.0,0.0,4.0))
 jac_a = fill(jac,na)
 res_jac_a = lazy_map(evaluate,jac_a,x_a)
 
 field_a
-integrate_a = lazy_map(integrate,field_a,w_a,jac_a,x_a)
-res_integrate_a = lazy_map(evaluate,integrate_a)
+integrate_a = lazy_map(integrate,field_a,x_a,w_a,jac_a)
 
-meas_a = lazy_map(Broadcasting(meas),res_jac_a)
-wmeas_a = lazy_map(Broadcasting(*),w_a,meas_a)
-for i in 1:length(x_a)
-  @test transpose(res_field_a[i])*wmeas_a[i] == res_integrate_a[i]
-end
-i = 1
-
-transpose(res_field_a[i])*wmeas_a[i]
-res_integrate_a[i]
-
-
-c = array_cache(res_integrate_a)
-# @btime getindex!($c,$res_integrate_a,1)
 
 # integration (basis)
 
 # w_a = v_a
-jac = GenericField(TensorValue(4.0,0.0,0.0,4.0))
+jac = ConstantField(TensorValue(4.0,0.0,0.0,4.0))
 jac_a = fill(jac,na)
 res_jac_a = lazy_map(evaluate,jac_a,x_a)
 
-integrate_a = lazy_map(integrate,basis_a,w_a,jac_a,x_a)
-res_integrate_a = lazy_map(evaluate,integrate_a)
-
-meas_a = lazy_map(Broadcasting(meas),res_jac_a)
-wmeas_a = lazy_map(Broadcasting(*),w_a,meas_a)
-for i in 1:length(x_a)
-  @test transpose(res_basis_a[i])*wmeas_a[i] == res_integrate_a[i]
-end
-
-c = array_cache(res_integrate_a)
-# @btime getindex!(c,res_integrate_a,1)
+integrate_a = lazy_map(integrate,basis_a,x_a,w_a,jac_a)
 
 # Gradient
 
@@ -249,7 +225,7 @@ c = array_cache(res_integrate_a)
 res_∇field_a = lazy_map(evaluate,∇field_a,x_a)
 @test res_∇field_a[1][1] == TensorValue(0.5, 0.0, 0.0, 0.35355339059327373)
 
-∇basis_a = lazy_map(gradient,basis_a)
+∇basis_a = lazy_map(Broadcasting(∇),basis_a)
 res_∇basis_a = lazy_map(evaluate,∇basis_a,x_a)
 @test all(res_∇basis_a[1] .== TensorValue(2.0, 0.0, 0.0, 2.0))
 
