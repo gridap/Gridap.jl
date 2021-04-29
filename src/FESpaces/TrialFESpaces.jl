@@ -89,7 +89,7 @@ get_fe_basis(f::TrialFESpace) = get_fe_basis(f.space)
 
 get_trial_fe_basis(f::TrialFESpace) = get_trial_fe_basis(f.space)
 
-get_cell_dof_basis(f::TrialFESpace) = get_cell_dof_basis(f.space)
+get_fe_dof_basis(f::TrialFESpace) = get_fe_dof_basis(f.space)
 
 ConstraintStyle(::Type{<:TrialFESpace{B}}) where B = ConstraintStyle(B)
 

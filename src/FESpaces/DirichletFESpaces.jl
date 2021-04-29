@@ -65,8 +65,8 @@ function get_trial_fe_basis(f::DirichletFESpace)
   get_trial_fe_basis(f.space)
 end
 
-function get_cell_dof_basis(f::DirichletFESpace)
-  get_cell_dof_basis(f.space)
+function get_fe_dof_basis(f::DirichletFESpace)
+  get_fe_dof_basis(f.space)
 end
 
 function get_triangulation(f::DirichletFESpace)

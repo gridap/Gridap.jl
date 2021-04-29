@@ -110,7 +110,7 @@ function Base.zero(f::FESpace)
 end
 
 function get_dof_value_type(f::FESpace)
-  get_dof_value_type(get_fe_basis(f),get_cell_dof_basis(f))
+  get_dof_value_type(get_fe_basis(f),get_fe_dof_basis(f))
 end
 
 function get_dof_value_type(cell_shapefuns::CellField,cell_dof_basis::CellDof)
@@ -142,7 +142,7 @@ end
 
 """
 """
-function get_cell_dof_basis(f::FESpace)
+function get_fe_dof_basis(f::FESpace)
   @abstractmethod
 end
 

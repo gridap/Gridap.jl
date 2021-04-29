@@ -84,7 +84,7 @@ export test_fe_space
 
 export SingleFieldFESpace
 export SingleFieldFEFunction
-export get_cell_dof_basis
+export get_fe_dof_basis
 export num_dirichlet_dofs
 export get_dirichlet_dof_ids
 export zero_dirichlet_values
