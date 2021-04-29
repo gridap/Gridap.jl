@@ -100,6 +100,6 @@ include("DiffOperators.jl")
 
 include("AutoDiff.jl")
 
-include("Blocks.jl")
+include("ArrayBlocks.jl")
 
 end

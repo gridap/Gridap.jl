@@ -16,6 +16,6 @@ using Test
 
 #@testset "LazyFieldArrays" begin include("LazyFieldArraysTests.jl") end
 
-@testset "Blocks" begin include("BlocksTests.jl") end
+@testset "ArrayBlocks" begin include("ArrayBlocksTests.jl") end
 
 end

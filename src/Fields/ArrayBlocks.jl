@@ -21,7 +21,6 @@
 # uh [c][lf][np]
 
 
-# TODO rename it to ArrayBlock when we don't need to depend on BlockArrays
 struct ArrayBlock{A,N}
   array::Array{A,N}
   touched::Array{Bool,N}
