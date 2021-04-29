@@ -17,7 +17,6 @@ using Gridap.Fields
 
 using Gridap.FESpaces: FEBasis, TestBasis, TrialBasis, get_cell_dof_values
 using Gridap.FESpaces: SingleFieldFEBasis, TestBasis, TrialBasis
-using Gridap.Arrays: BlockArrayCooMap
 using Gridap.ReferenceFEs: HEX_AXIS, TET_AXIS, ExtrusionPolytope,
                            get_faces, get_node_coordinates, get_polytope,
                            num_cell_dims
