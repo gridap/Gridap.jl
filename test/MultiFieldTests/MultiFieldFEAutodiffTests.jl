@@ -27,8 +27,8 @@ e((uh,ph)) = ∫( uh*uh + uh*ph + ph*ph )dΩ
 g(xh,dy) = gradient(xh->e(xh),xh)
 #h(xh,dx,dy) = hessian(xh->e(xh),xh)
 
-dx = get_cell_shapefuns_trial(Y)
-dy = get_cell_shapefuns(Y)
+dx = get_fe_basis_trial(Y)
+dy = get_fe_basis(Y)
 xh = FEFunction(Y,rand(num_free_dofs(Y)))
 
 #display(r(xh,dy)[Ω][end])
@@ -48,8 +48,8 @@ V1 = FESpace(model,ReferenceFE(lagrangian,Float64,2))
 V2 = FESpace(model,ReferenceFE(lagrangian,Float64,1))
 Y = MultiFieldFESpace([V1,V2])
 
-dx = get_cell_shapefuns_trial(Y)
-dy = get_cell_shapefuns(Y)
+dx = get_fe_basis_trial(Y)
+dy = get_fe_basis(Y)
 xh = FEFunction(Y,rand(num_free_dofs(Y)))
 
 @test_broken j(xh,dx,dy)[Ω][end][1,1] != nothing
