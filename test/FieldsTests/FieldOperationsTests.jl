@@ -17,7 +17,7 @@ np = 3
 x = fill(p,np)
 
 v = VectorValue{d}(1.0,1.0)
-f = MockField{d}(v)
+f = MockField(v)
 fp = evaluate(f,p)
 
 df = f+f
@@ -34,7 +34,7 @@ c = return_cache(∇df,p)
 df = f-f
 test_field(df,p,fp-fp,grad=0.0*∇fp)
 
-df = GenericField(2.0)*f
+df = ConstantField(2.0)*f
 test_field(df,p,fp*2.0,grad=2.0*∇fp)
 
 c = return_cache(df,p)
@@ -62,7 +62,7 @@ c = return_cache(df,p)
 df = f-f
 test_field(df,p,fp-fp,grad=0.0*∇fp)
 
-df = GenericField(2.0)*f
+df = ConstantField(2.0)*f
 evaluate(df,p)
 ∇df = ∇(df)
 ∇dfp = 2*∇fp
