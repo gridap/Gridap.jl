@@ -37,8 +37,8 @@ function get_cell_shapefuns(f::CLagrangianFESpace)
   get_cell_shapefuns(f.space)
 end
 
-function get_cell_shapefuns_trial(f::CLagrangianFESpace)
-  get_cell_shapefuns_trial(f.space)
+function get_trial_fe_basis(f::CLagrangianFESpace)
+  get_trial_fe_basis(f.space)
 end
 
 get_vector_type(f::CLagrangianFESpace) = get_vector_type(f.space)

@@ -202,8 +202,8 @@ function _multifield_axes_dofs(axs...)
   (append_ranges([rs...]),)
 end
 
-function FESpaces.get_cell_shapefuns_trial(f::MultiFieldFESpace)
-  field_to_febasis = map(get_cell_shapefuns_trial,f.spaces)
+function FESpaces.get_trial_fe_basis(f::MultiFieldFESpace)
+  field_to_febasis = map(get_trial_fe_basis,f.spaces)
   nfields = length(f.spaces)
   fields =1:nfields
   all_febases = map(fields) do field_i

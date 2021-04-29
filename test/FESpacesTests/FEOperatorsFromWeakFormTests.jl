@@ -34,7 +34,7 @@ res(u,v) = a(u,v,u) - ∫(v*f)*dΩ
 jac(u,du,v) = a(u,du,v) + ∫( ∇(v)⋅(dν∘(du,identity)*∇(u)) )*dΩ
 
 v = get_cell_shapefuns(V)
-du = get_cell_shapefuns_trial(U)
+du = get_trial_fe_basis(U)
 uh = zero(U)
 
 op = FEOperator(res,jac,U,V)

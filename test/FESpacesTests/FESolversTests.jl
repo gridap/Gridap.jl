@@ -26,7 +26,7 @@ U = V
 f(x) = x[2]
 
 v = get_cell_shapefuns(V)
-u = get_cell_shapefuns_trial(U)
+u = get_trial_fe_basis(U)
 
 cellmat = integrate(∇(v)⊙∇(u),quad)
 cellvec = integrate(v⊙f,quad)

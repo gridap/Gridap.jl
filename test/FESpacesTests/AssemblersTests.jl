@@ -27,7 +27,7 @@ u(x) = x[1]+x[2]
 U = TrialFESpace(u,V)
 
 dv = get_cell_shapefuns(V)
-du = get_cell_shapefuns_trial(U)
+du = get_trial_fe_basis(U)
 
 degree = 2
 Ω = Triangulation(model)

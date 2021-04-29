@@ -23,7 +23,7 @@ U = V
 b(x) = x[2]
 
 v = get_cell_shapefuns(V)
-u = get_cell_shapefuns_trial(U)
+u = get_trial_fe_basis(U)
 
 degree = 2
 trian = get_triangulation(model)

@@ -29,7 +29,7 @@ function AffineFEOperator(
   building an AffineFEOperator or a FEOperator.
   """
 
-  u = get_cell_shapefuns_trial(trial)
+  u = get_trial_fe_basis(trial)
   v = get_cell_shapefuns(test)
 
   uhd = zero(trial)

@@ -74,7 +74,7 @@ export zero_free_values
 export EvaluationFunction
 export get_cell_dof_ids
 export get_cell_shapefuns
-export get_cell_shapefuns_trial
+export get_trial_fe_basis
 export has_constraints
 export get_cell_constraints
 export get_cell_isconstrained

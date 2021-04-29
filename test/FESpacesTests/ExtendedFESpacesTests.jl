@@ -59,7 +59,7 @@ dΓ = Measure(Γ,degree)
 u(x) = x[1]+1
 
 dv = get_cell_shapefuns(V)
-du = get_cell_shapefuns_trial(U)
+du = get_trial_fe_basis(U)
 uh = interpolate(u,U)
 
 x = get_cell_points(Ω)

@@ -31,7 +31,7 @@ end
   u = -one(eltype(gids))
   for i in eachindex(rows)
     ri = rows[i]
-    if ri>0 && row_mask(a,ri) 
+    if ri>0 && row_mask(a,ri)
       gids[i] = row_map(a,ri)
     else
       gids[i] = u
@@ -52,7 +52,7 @@ end
   u = -one(eltype(gids))
   for i in eachindex(cols)
     ri = cols[i]
-    if ri>0 && col_mask(a,ri) 
+    if ri>0 && col_mask(a,ri)
       gids[i] = col_map(a,ri)
     else
       gids[i] = u
@@ -257,7 +257,7 @@ end
 
 function assemble_matrix(f::Function,a::Assembler,U::FESpace,V::FESpace)
   v = get_cell_shapefuns(V)
-  u = get_cell_shapefuns_trial(U)
+  u = get_trial_fe_basis(U)
   assemble_matrix(a,collect_cell_matrix(U,V,f(u,v)))
 end
 
@@ -268,7 +268,7 @@ end
 
 function assemble_matrix_and_vector(f::Function,b::Function,a::Assembler,U::FESpace,V::FESpace)
   v = get_cell_shapefuns(V)
-  u = get_cell_shapefuns_trial(U)
+  u = get_trial_fe_basis(U)
   assemble_matrix_and_vector(a,collect_cell_matrix_and_vector(U,V,f(u,v),b(v)))
 end
 

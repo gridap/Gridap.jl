@@ -474,8 +474,8 @@ function get_cell_shapefuns(f::FESpaceWithLinearConstraints)
   get_cell_shapefuns(f.space)
 end
 
-function get_cell_shapefuns_trial(f::FESpaceWithLinearConstraints)
-  get_cell_shapefuns_trial(f.space)
+function get_trial_fe_basis(f::FESpaceWithLinearConstraints)
+  get_trial_fe_basis(f.space)
 end
 
 function CellField(f::FESpaceWithLinearConstraints,cellvals)

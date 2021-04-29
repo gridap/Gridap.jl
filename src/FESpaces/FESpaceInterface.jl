@@ -146,7 +146,7 @@ function get_fe_basis(f::FESpace)
   @abstractmethod
 end
 
-function get_cell_shapefuns_trial(f::FESpace)
+function get_trial_fe_basis(f::FESpace)
   v = get_cell_shapefuns(f)
   cell_v = get_data(v)
   cell_u = lazy_map(transpose,cell_v)

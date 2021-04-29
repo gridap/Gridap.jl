@@ -40,7 +40,7 @@ X = MultiFieldFESpace(Vector{Float64},[U,P],multi_field_style)
 dy = get_cell_shapefuns(Y)
 dv, dq = dy
 
-dx = get_cell_shapefuns_trial(X)
+dx = get_trial_fe_basis(X)
 du, dp = dx
 
 cellmat = integrate(dv*du,quad)
