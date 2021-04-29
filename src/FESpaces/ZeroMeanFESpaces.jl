@@ -78,7 +78,7 @@ get_cell_shapefuns(f::ZeroMeanFESpace) = get_cell_shapefuns(f.space)
 
 get_cell_shapefuns_trial(f::ZeroMeanFESpace) = get_cell_shapefuns_trial(f.space)
 
-get_fe_basis(f::ZeroMeanFESpace) = get_fe_basis(f.space)
+get_cell_dof_basis(f::ZeroMeanFESpace) = get_cell_dof_basis(f.space)
 
 get_free_dof_ids(f::ZeroMeanFESpace) = get_free_dof_ids(f.space)
 
