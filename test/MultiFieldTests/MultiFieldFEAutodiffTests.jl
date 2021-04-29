@@ -27,7 +27,7 @@ e((uh,ph)) = ∫( uh*uh + uh*ph + ph*ph )dΩ
 g(xh,dy) = gradient(xh->e(xh),xh)
 #h(xh,dx,dy) = hessian(xh->e(xh),xh)
 
-dx = get_fe_basis_trial(Y)
+dx = get_trial_fe_basis(Y)
 dy = get_fe_basis(Y)
 xh = FEFunction(Y,rand(num_free_dofs(Y)))
 
@@ -48,7 +48,7 @@ V1 = FESpace(model,ReferenceFE(lagrangian,Float64,2))
 V2 = FESpace(model,ReferenceFE(lagrangian,Float64,1))
 Y = MultiFieldFESpace([V1,V2])
 
-dx = get_fe_basis_trial(Y)
+dx = get_trial_fe_basis(Y)
 dy = get_fe_basis(Y)
 xh = FEFunction(Y,rand(num_free_dofs(Y)))
 
