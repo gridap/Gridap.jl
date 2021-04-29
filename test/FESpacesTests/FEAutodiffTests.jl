@@ -20,7 +20,7 @@ dΩ = Measure(Ω,2)
 V = FESpace(model,ReferenceFE(lagrangian,Float64,2),conformity=:H1)
 U = V
 
-dv = get_cell_shapefuns(V)
+dv = get_fe_basis(V)
 du = get_trial_fe_basis(U)
 uh = FEFunction(U,rand(num_free_dofs(U)))
 

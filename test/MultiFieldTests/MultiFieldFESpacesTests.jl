@@ -37,7 +37,7 @@ X = MultiFieldFESpace(Vector{Float64},[U,P],multi_field_style)
 @test num_free_dofs(X) == num_free_dofs(U) + num_free_dofs(P)
 @test num_free_dofs(X) == num_free_dofs(Y)
 
-dy = get_cell_shapefuns(Y)
+dy = get_fe_basis(Y)
 dv, dq = dy
 
 dx = get_trial_fe_basis(X)

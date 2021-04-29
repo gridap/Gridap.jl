@@ -138,7 +138,7 @@ end
 """
 """
 function test_single_field_fe_space(f::SingleFieldFESpace,pred=(==))
-  fe_basis = get_cell_shapefuns(f)
+  fe_basis = get_fe_basis(f)
   @test isa(fe_basis,CellField)
   test_fe_space(f)
   cell_dofs = get_cell_dof_ids(f)
@@ -221,7 +221,7 @@ function gather_free_values!(free_values,f::SingleFieldFESpace,cell_vals)
 end
 
 function CellField(fs::SingleFieldFESpace,cell_vals)
-  v = get_cell_shapefuns(fs)
+  v = get_fe_basis(fs)
   cell_basis = get_data(v)
   cell_field = lazy_map(linear_combination,cell_vals,cell_basis)
   GenericCellField(cell_field,get_triangulation(v),DomainStyle(v))

@@ -21,7 +21,7 @@ end
 ConstraintStyle(::Type{<:UnconstrainedFESpace}) = UnConstrained()
 get_free_dof_ids(f::UnconstrainedFESpace) = Base.OneTo(f.nfree)
 zero_free_values(f::UnconstrainedFESpace) = allocate_vector(f.vector_type,num_free_dofs(f))
-get_cell_shapefuns(f::UnconstrainedFESpace) = f.cell_shapefuns
+get_fe_basis(f::UnconstrainedFESpace) = f.cell_shapefuns
 get_cell_dof_basis(f::UnconstrainedFESpace) = f.cell_dof_basis
 get_cell_dof_ids(f::UnconstrainedFESpace) = f.cell_dofs_ids
 get_triangulation(f::UnconstrainedFESpace) = get_triangulation(f.cell_shapefuns)

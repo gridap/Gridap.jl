@@ -30,7 +30,7 @@ function AffineFEOperator(
   """
 
   u = get_trial_fe_basis(trial)
-  v = get_cell_shapefuns(test)
+  v = get_fe_basis(test)
 
   uhd = zero(trial)
   matcontribs, veccontribs = weakform(u,v)

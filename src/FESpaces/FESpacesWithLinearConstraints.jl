@@ -470,8 +470,8 @@ function get_vector_type(f::FESpaceWithLinearConstraints)
   get_vector_type(f.space)
 end
 
-function get_cell_shapefuns(f::FESpaceWithLinearConstraints)
-  get_cell_shapefuns(f.space)
+function get_fe_basis(f::FESpaceWithLinearConstraints)
+  get_fe_basis(f.space)
 end
 
 function get_trial_fe_basis(f::FESpaceWithLinearConstraints)

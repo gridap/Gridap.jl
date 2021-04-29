@@ -85,7 +85,7 @@ get_vector_type(f::TrialFESpace) = get_vector_type(f.space)
 
 get_cell_dof_ids(f::TrialFESpace) = get_cell_dof_ids(f.space)
 
-get_cell_shapefuns(f::TrialFESpace) = get_cell_shapefuns(f.space)
+get_fe_basis(f::TrialFESpace) = get_fe_basis(f.space)
 
 get_trial_fe_basis(f::TrialFESpace) = get_trial_fe_basis(f.space)
 

@@ -22,7 +22,7 @@ U = V
 
 b(x) = x[2]
 
-v = get_cell_shapefuns(V)
+v = get_fe_basis(V)
 u = get_trial_fe_basis(U)
 
 degree = 2

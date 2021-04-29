@@ -74,7 +74,7 @@ get_cell_constraints(f::ZeroMeanFESpace) = get_cell_constraints(f.space)
 
 get_dirichlet_values(f::ZeroMeanFESpace) = get_dirichlet_values(f.space)
 
-get_cell_shapefuns(f::ZeroMeanFESpace) = get_cell_shapefuns(f.space)
+get_fe_basis(f::ZeroMeanFESpace) = get_fe_basis(f.space)
 
 get_trial_fe_basis(f::ZeroMeanFESpace) = get_trial_fe_basis(f.space)
 

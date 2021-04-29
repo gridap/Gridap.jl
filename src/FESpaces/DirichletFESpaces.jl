@@ -57,8 +57,8 @@ function TrialFESpace(f::DirichletFESpace)
   DirichletFESpace(U)
 end
 
-function get_cell_shapefuns(f::DirichletFESpace)
-  get_cell_shapefuns(f.space)
+function get_fe_basis(f::DirichletFESpace)
+  get_fe_basis(f.space)
 end
 
 function get_trial_fe_basis(f::DirichletFESpace)

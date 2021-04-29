@@ -70,9 +70,9 @@ end
 #  lazy_append(a,b)
 #end
 
-function get_cell_shapefuns(trian::AppendedTriangulation)
-  a = get_cell_shapefuns(trian.a)
-  b = get_cell_shapefuns(trian.b)
+function get_fe_basis(trian::AppendedTriangulation)
+  a = get_fe_basis(trian.a)
+  b = get_fe_basis(trian.b)
   lazy_append(a,b)
 end
 

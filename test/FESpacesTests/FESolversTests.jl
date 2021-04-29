@@ -25,7 +25,7 @@ V = FESpace(model,reffe,dirichlet_tags=[1,10])
 U = V
 f(x) = x[2]
 
-v = get_cell_shapefuns(V)
+v = get_fe_basis(V)
 u = get_trial_fe_basis(U)
 
 cellmat = integrate(∇(v)⊙∇(u),quad)

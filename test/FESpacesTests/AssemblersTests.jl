@@ -26,7 +26,7 @@ u(x) = x[1]+x[2]
 
 U = TrialFESpace(u,V)
 
-dv = get_cell_shapefuns(V)
+dv = get_fe_basis(V)
 du = get_trial_fe_basis(U)
 
 degree = 2

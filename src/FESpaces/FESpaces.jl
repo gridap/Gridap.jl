@@ -30,7 +30,7 @@ import Gridap.Arrays: getindex!
 import Gridap.Arrays: return_cache
 import Gridap.Arrays: evaluate!
 import Gridap.Geometry: get_triangulation
-import Gridap.Geometry: get_cell_shapefuns
+import Gridap.Geometry: get_fe_basis
 import Gridap.CellData: attach_constraints_rows
 import Gridap.CellData: attach_constraints_cols
 import Gridap.CellData: CellField
@@ -73,7 +73,7 @@ export get_free_dof_ids
 export zero_free_values
 export EvaluationFunction
 export get_cell_dof_ids
-export get_cell_shapefuns
+export get_fe_basis
 export get_trial_fe_basis
 export has_constraints
 export get_cell_constraints

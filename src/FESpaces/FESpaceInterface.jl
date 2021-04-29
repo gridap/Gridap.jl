@@ -110,7 +110,7 @@ function Base.zero(f::FESpace)
 end
 
 function get_dof_value_type(f::FESpace)
-  get_dof_value_type(get_cell_shapefuns(f),get_cell_dof_basis(f))
+  get_dof_value_type(get_fe_basis(f),get_cell_dof_basis(f))
 end
 
 function get_dof_value_type(cell_shapefuns::CellField,cell_dof_basis::CellDof)
@@ -136,18 +136,18 @@ end
 
 """
 """
-function get_cell_shapefuns(f::FESpace)
-  @abstractmethod
-end
-
-"""
-"""
 function get_fe_basis(f::FESpace)
   @abstractmethod
 end
 
+"""
+"""
+function get_cell_dof_basis(f::FESpace)
+  @abstractmethod
+end
+
 function get_trial_fe_basis(f::FESpace)
-  v = get_cell_shapefuns(f)
+  v = get_fe_basis(f)
   cell_v = get_data(v)
   cell_u = lazy_map(transpose,cell_v)
   SingleFieldFEBasis(cell_u,get_triangulation(v),TrialBasis(),DomainStyle(v))
@@ -377,7 +377,7 @@ function test_fe_space(f::FESpace)
   @test typeof(free_values) == V
   fe_function = FEFunction(f,free_values)
   test_fe_function(fe_function)
-  fe_basis = get_cell_shapefuns(f)
+  fe_basis = get_fe_basis(f)
   @test isa(has_constraints(f),Bool)
   @test isa(has_constraints(typeof(f)),Bool)
   @test length(get_cell_dof_ids(f,trian)) == num_cells(fe_basis)

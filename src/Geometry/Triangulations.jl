@@ -300,9 +300,9 @@ function get_cell_ref_coordinates(trian::Triangulation)
 end
 
 """
-    get_cell_shapefuns(trian::Triangulation) -> Vector{<:Field}
+    get_fe_basis(trian::Triangulation) -> Vector{<:Field}
 """
-function get_cell_shapefuns(trian::Triangulation)
+function get_fe_basis(trian::Triangulation)
   type_to_reffes = get_reffes(trian)
   cell_to_type = get_cell_type(trian)
   type_to_shapefuns = map(get_shapefuns, type_to_reffes)
@@ -314,7 +314,7 @@ end
 """
 function get_cell_map(trian::Triangulation)
   cell_to_coords = get_cell_coordinates(trian)
-  cell_to_shapefuns = get_cell_shapefuns(trian)
+  cell_to_shapefuns = get_fe_basis(trian)
   lazy_map(linear_combination,cell_to_coords,cell_to_shapefuns)
 end
 

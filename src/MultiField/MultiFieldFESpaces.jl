@@ -187,8 +187,8 @@ FESpaces.get_vector_type(f::MultiFieldFESpace) = f.vector_type
 
 FESpaces.ConstraintStyle(::Type{MultiFieldFESpace{S,B,V}}) where {S,B,V} = B()
 
-function FESpaces.get_cell_shapefuns(f::MultiFieldFESpace)
-  field_to_febasis = map(get_cell_shapefuns,f.spaces)
+function FESpaces.get_fe_basis(f::MultiFieldFESpace)
+  field_to_febasis = map(get_fe_basis,f.spaces)
   nfields = length(f.spaces)
   fields =1:nfields
   all_febases = map(fields) do field_i

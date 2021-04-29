@@ -40,7 +40,7 @@ free_values = rand(num_free_dofs(X))
 xh = FEFunction(X,free_values)
 uh, ph = xh
 
-dy = get_cell_shapefuns(Y)
+dy = get_fe_basis(Y)
 dx = get_trial_fe_basis(X)
 dv, dq = dy
 du, dp = dx

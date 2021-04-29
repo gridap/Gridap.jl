@@ -256,18 +256,18 @@ end
 # and objects from which one can collect cell matrices/vectors
 
 function assemble_matrix(f::Function,a::Assembler,U::FESpace,V::FESpace)
-  v = get_cell_shapefuns(V)
+  v = get_fe_basis(V)
   u = get_trial_fe_basis(U)
   assemble_matrix(a,collect_cell_matrix(U,V,f(u,v)))
 end
 
 function assemble_vector(f::Function,a::Assembler,V::FESpace)
-  v = get_cell_shapefuns(V)
+  v = get_fe_basis(V)
   assemble_vector(a,collect_cell_vector(V,f(v)))
 end
 
 function assemble_matrix_and_vector(f::Function,b::Function,a::Assembler,U::FESpace,V::FESpace)
-  v = get_cell_shapefuns(V)
+  v = get_fe_basis(V)
   u = get_trial_fe_basis(U)
   assemble_matrix_and_vector(a,collect_cell_matrix_and_vector(U,V,f(u,v),b(v)))
 end

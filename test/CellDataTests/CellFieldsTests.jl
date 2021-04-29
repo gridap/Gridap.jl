@@ -83,7 +83,7 @@ test_array((b∘(f1,f2))(x),3*r,≈)
 f2 = ones(num_cells(trian))
 test_array((b∘(f1,f2))(x),map(i->i.+1,r),≈)
 
-v = GenericCellField(get_cell_shapefuns(trian),trian,ReferenceDomain())
+v = GenericCellField(get_fe_basis(trian),trian,ReferenceDomain())
 vx = v(x)
 test_array(vx,collect(vx))
 

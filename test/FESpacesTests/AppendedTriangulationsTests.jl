@@ -49,7 +49,7 @@ el2 = sqrt(sum(integrate(e*e,quad)))
 
 x = get_cell_points(quad)
 
-dv = get_cell_shapefuns(V)
+dv = get_fe_basis(V)
 du = get_trial_fe_basis(V)
 @test isa(dv(x),AppendedArray)
 @test isa(∇(dv)(x),AppendedArray)

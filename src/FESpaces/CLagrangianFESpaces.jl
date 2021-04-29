@@ -33,8 +33,8 @@ function get_free_dof_ids(f::CLagrangianFESpace)
   get_free_dof_ids(f.space)
 end
 
-function get_cell_shapefuns(f::CLagrangianFESpace)
-  get_cell_shapefuns(f.space)
+function get_fe_basis(f::CLagrangianFESpace)
+  get_fe_basis(f.space)
 end
 
 function get_trial_fe_basis(f::CLagrangianFESpace)

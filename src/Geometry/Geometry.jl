@@ -107,7 +107,7 @@ export get_reffes
 export get_cell_coordinates
 export get_cell_ref_coordinates
 export get_cell_reffe
-export get_cell_shapefuns
+export get_fe_basis
 export get_facet_normal
 export test_triangulation
 export get_cell_to_bgcell

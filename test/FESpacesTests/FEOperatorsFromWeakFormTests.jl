@@ -33,7 +33,7 @@ a(u,du,v) = ∫( ∇(v)⋅(ν∘(u,identity)*∇(du)) )*dΩ
 res(u,v) = a(u,v,u) - ∫(v*f)*dΩ
 jac(u,du,v) = a(u,du,v) + ∫( ∇(v)⋅(dν∘(du,identity)*∇(u)) )*dΩ
 
-v = get_cell_shapefuns(V)
+v = get_fe_basis(V)
 du = get_trial_fe_basis(U)
 uh = zero(U)
 
