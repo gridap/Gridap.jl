@@ -35,7 +35,6 @@ export CachedArray
 export CachedMatrix
 export CachedVector
 export setsize!
-export setaxes!
 
 # Map
 
@@ -60,25 +59,6 @@ export LazyArray
 export array_cache
 export getindex!
 export lazy_map
-
-# BlockArrays
-
-export BlockArrayCoo
-export BlockVectorCoo
-export BlockMatrixCoo
-export is_zero_block
-export is_nonzero_block
-export enumerateblocks
-export eachblockid
-export VectorOfBlockArrayCoo
-export VectorOfBlockVectorCoo
-export VectorOfBlockMatrixCoo
-export append_ranges
-export MultiLevelBlockedUnitRange
-export blocks_equal
-export num_blocks_equal
-export local_range
-export similar_range
 
 export array_cache
 export getindex!
@@ -155,8 +135,6 @@ include("Interface.jl")
 include("Maps.jl")
 
 include("AlgebraMaps.jl")
-
-include("BlockArraysCoo.jl")
 
 include("CachedArrays.jl")
 

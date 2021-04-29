@@ -76,14 +76,14 @@ function Arrays.return_cache(a::AssemblyStrategyMap,ids::AbstractArray)
 end
 
 function Arrays.evaluate!(cache,a::AssemblyStrategyMap{:cols},ids::AbstractArray)
-  setaxes!(cache,axes(ids))
+  setsize!(cache,size(ids))
   gids = cache.array
   map_cols!(gids,a.strategy,ids)
   gids
 end
 
 function Arrays.evaluate!(cache,a::AssemblyStrategyMap{:rows},ids::AbstractArray)
-  setaxes!(cache,axes(ids))
+  setsize!(cache,size(ids))
   gids = cache.array
   map_rows!(gids,a.strategy,ids)
   gids

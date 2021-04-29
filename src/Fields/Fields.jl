@@ -4,9 +4,7 @@ using Gridap.Arrays
 import Gridap.Arrays: testvalue
 import Gridap.Arrays: inverse_map
 import Gridap.Arrays: get_children
-import Gridap.Arrays: is_zero_block
 import Gridap.Arrays: testitem
-using Gridap.Arrays: BlockArrayCooMap
 
 using Gridap.Helpers: @abstractmethod, @notimplemented
 using Gridap.Helpers: @notimplementedif, @unreachable, @check
@@ -22,7 +20,6 @@ using LinearAlgebra: mul!, Transpose
 using ForwardDiff
 using FillArrays
 using Test
-using BlockArrays
 using StaticArrays
 using LinearAlgebra
 
@@ -40,7 +37,6 @@ import Gridap.Arrays: return_value
 import Gridap.Arrays: evaluate!
 import Gridap.Arrays: lazy_map
 import Gridap.Arrays: array_cache
-import Gridap.Arrays: is_zero_block
 
 export evaluate
 export evaluate!
@@ -103,8 +99,6 @@ include("ApplyOptimizations.jl")
 include("DiffOperators.jl")
 
 include("AutoDiff.jl")
-
-include("BlockFieldArrays.jl")
 
 include("Blocks.jl")
 

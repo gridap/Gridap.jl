@@ -20,6 +20,7 @@ using Gridap.FESpaces: SingleFieldFEBasis, TestBasis, TrialBasis
 using FillArrays
 using SparseArrays
 using LinearAlgebra
+import BlockArrays
 
 export num_fields
 export compute_field_offsets

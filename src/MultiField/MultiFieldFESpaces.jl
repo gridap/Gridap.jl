@@ -79,11 +79,19 @@ function FESpaces.num_free_dofs(f::MultiFieldFESpace)
 end
 
 function FESpaces.get_free_dof_ids(f::MultiFieldFESpace)
-  block_dof_ids = AbstractUnitRange[]
+  get_free_dof_ids(f,MultiFieldStyle(s))
+end
+
+function FESpaces.get_free_dof_ids(f::MultiFieldFESpace,::MultiFieldStyle)
+  @abstractmethod
+end
+
+function FESpaces.get_free_dof_ids(f::MultiFieldFESpace,::ConstraintStyle)
+  block_num_dofs = Int[]
   for U in f.spaces
-    push!(block_dof_ids,get_free_dof_ids(U))
+    push!(block_num_dofs,num_free_dofs(U))
   end
-  MultiLevelBlockedUnitRange(block_dof_ids)
+  BlockArrays.blockedrange(block_num_dofs)
 end
 
 FESpaces.get_dof_value_type(f::MultiFieldFESpace{MS,CS,V}) where {MS,CS,V} = eltype(V)

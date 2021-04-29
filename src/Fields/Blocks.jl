@@ -1036,7 +1036,7 @@ function LinearAlgebra.mul!(
           cij = c.array[i,j]
           aik = a.array[i,k]
           bkj = b.array[k,j]
-          Arrays.mymul!(cij,aik,bkj,α)
+          _mymul!(cij,aik,bkj,α)
           # hack to avoid allocations
           #mul!(cij,aik,bkj,α,1)
         end
@@ -1044,15 +1044,6 @@ function LinearAlgebra.mul!(
     end
   end
   c
-end
-
-# hack to avoid allocations
-function Arrays.mymul!(
-  c::ArrayBlock{C,2} where C,
-  a::ArrayBlock{A,2} where A,
-  b::ArrayBlock{B,2} where B,
-  α::Number)
-  mul!(c,a,b,α,1)
 end
 
 function  _setsize_mul!(c,a::AbstractMatrix,b::AbstractVector)
@@ -1262,4 +1253,27 @@ function evaluate!(cache,k::Arrays.AutoDiffMap,ydual::MatrixBlock,x,cfg::VectorB
   r
 end
 
+# hack to avoid allocations
+function _mymul!(
+  c::ArrayBlock{C,2} where C,
+  a::ArrayBlock{A,2} where A,
+  b::ArrayBlock{B,2} where B,
+  α::Number)
+  mul!(c,a,b,α,1)
+end
+
+@inline function _mymul!(cIJ,aIK,bKJ,α)
+  @boundscheck begin
+    @assert size(cIJ,1) == size(aIK,1)
+    @assert size(cIJ,2) == size(bKJ,2)
+    @assert size(aIK,2) == size(bKJ,1)
+  end
+  for i in 1:size(cIJ,1)
+    for j in 1:size(bKJ,2)
+      for k in 1:size(bKJ,1)
+        @inbounds cIJ[i,j] += α*aIK[i,k]*bKJ[k,j]
+      end
+    end
+  end
+end
 
