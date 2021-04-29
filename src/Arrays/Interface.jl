@@ -168,6 +168,11 @@ function testvalue(::Type{T}) where T<:AbstractArray{E,N} where {E,N}
    similar(T,tfill(0,Val(N))...)
 end
 
+function testvalue(::Type{T}) where T<:Transpose{E,A} where {E,A}
+  a = testvalue(A)
+  Transpose(a)
+end
+
 testvalue(::Type{Base.OneTo{T}}) where T = Base.OneTo(zero(T))
 
 testvalue(::Type{Base.UnitRange{T}}) where T = UnitRange(one(T),zero(T))
