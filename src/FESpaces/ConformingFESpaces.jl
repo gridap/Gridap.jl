@@ -186,11 +186,11 @@ function _ConformingFESpace(
 end
 
 function compute_cell_space(cell_fe,trian::Triangulation)
-  cell_shapefuns, cell_dof_basis, d1, d2 = _compute_cell_space(cell_fe,trian)
+  cell_shapefuns, cell_dof_basis, d1, d2 = _compute_cell_space(cell_fe)
   SingleFieldFEBasis(cell_shapefuns,trian,TestBasis(),d1), CellDof(cell_dof_basis,trian,d2)
 end
 
-function _compute_cell_space(cell_fe::CellFE,trian::Triangulation)
+function _compute_cell_space(cell_fe::CellFE)
   ( cell_fe.cell_shapefuns,
     cell_fe.cell_dof_basis,
     cell_fe.cell_shapefuns_domain,
@@ -198,7 +198,7 @@ function _compute_cell_space(cell_fe::CellFE,trian::Triangulation)
 end
 
 function _compute_cell_space(
-  cell_reffe::AbstractArray{<:ReferenceFE}, trian::Triangulation)
+  cell_reffe::AbstractArray{<:ReferenceFE})
   cell_shapefuns = lazy_map(get_shapefuns,cell_reffe)
   cell_dof_basis = lazy_map(get_dof_basis,cell_reffe)
   cell_shapefuns, cell_dof_basis, ReferenceDomain(), ReferenceDomain()
