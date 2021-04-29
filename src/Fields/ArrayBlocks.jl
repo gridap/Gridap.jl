@@ -272,6 +272,12 @@ function lazy_map(k::BlockMap,a::LazyArray{<:Fill{<:Broadcasting{typeof(∘)}}})
   lazy_map(Broadcasting(∘),c,ϕ)
 end
 
+function lazy_map(k::BlockMap,a::MemoArray)
+  b = a.parent
+  c = lazy_map(k,b)
+  MemoArray(c)
+end
+
 function lazy_map(k::BlockMap,a::LazyArray{<:Fill{typeof(transpose)}})
   @notimplementedif k.size[1] != 1
   lis = LinearIndices(k.size)
