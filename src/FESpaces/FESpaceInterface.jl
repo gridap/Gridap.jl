@@ -135,10 +135,20 @@ function get_fe_basis(f::FESpace)
   @abstractmethod
 end
 
+function get_cell_shapefuns(f::FESpace)
+  msg = "get_cell_shapefuns has been removed, use get_fe_basis instead"
+  error(msg)
+end
+
 """
 """
 function get_fe_dof_basis(f::FESpace)
   @abstractmethod
+end
+
+function get_cell_dof_basis(f::FESpace)
+  msg = "get_cell_dof_basis has been removed, use get_fe_dof_basis instead"
+  error(msg)
 end
 
 function get_trial_fe_basis(f::FESpace)
@@ -146,6 +156,11 @@ function get_trial_fe_basis(f::FESpace)
   cell_v = get_data(v)
   cell_u = lazy_map(transpose,cell_v)
   SingleFieldFEBasis(cell_u,get_triangulation(v),TrialBasis(),DomainStyle(v))
+end
+
+function get_cell_shapefuns_trial(f::FESpace)
+  msg = "get_cell_shapefuns_trial has been removed, use get_trial_fe_basis instead"
+  error(msg)
 end
 
 # Skeleton-related
