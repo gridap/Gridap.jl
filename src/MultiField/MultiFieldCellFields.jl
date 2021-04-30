@@ -78,40 +78,35 @@ end
 
 function return_cache(f::CellField,x::Point)
   trian = get_triangulation(f)
-  topo = GridTopology(trian)    # TODO: this is expensive
+  topo = GridTopology(trian)    # Note: this is expensive
   vertex_coordinates = Geometry.get_vertex_coordinates(topo)
   kdtree = KDTree(map(nc -> SVector(Tuple(nc)), vertex_coordinates))
+
+  D = num_cell_dims(trian)
+  vertex_to_cells = get_faces(topo,0,D)
+  cell_to_ctype = get_cell_type(trian)
+  ctype_to_reffe = get_reffes(trian)
+  ctype_to_polytope = map(get_polytope, ctype_to_reffe)
+  cell_map = get_cell_map(trian)
+
   cell_f = get_array(f)
-  c1 = array_cache(cell_f)
-  f = testitem(cell_f)
-  c2 = return_cache(f,x)
-  return kdtree, c1, c2, cell_f, f
+  cell_f_cache = array_cache(cell_f)
+  cf = testitem(cell_f)
+  f_cache = return_cache(cf,x)
+
+  return kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map, cell_f_cache, f_cache, cell_f, f
 end
 
 function evaluate!(cache,f::CellField,x::Point)
-  kdtree, c1, c2, cell_g, g = cache
-  if f === g
-    cell_f = cell_g
-  else
-    cell_f = get_array(f)
-  end
+  kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map, cell_f_cache, f_cache, cell_f, f₀ = cache
+  @check f === f₀ "Wrong cache"
 
   # Find nearest vertex
   id,dist = nn(kdtree, SVector(Tuple(x)))
 
   # Find all neighbouring cells
-  trian = get_triangulation(f)
-  topo = GridTopology(trian)    # TODO: this is expensive
-  D = num_cell_dims(trian)
-  vertex_to_cells = get_faces(topo,0,D)
   cells = vertex_to_cells[id]
   @assert !isempty(cells)
-
-  cell_to_ctype = get_cell_type(trian)
-  ctype_to_reffe = get_reffes(trian)
-  ctype_to_polytope = map(get_polytope, ctype_to_reffe)
-
-  cell_map = get_cell_map(trian)
 
   # Calculate the distance from the point to all the cells. Without
   # round-off, and with non-overlapping cells, the distance would be
@@ -140,9 +135,9 @@ function evaluate!(cache,f::CellField,x::Point)
     end
   end
   # Ensure the point is inside one of the cells, up to round-off errors
-  @assert dist ≤ 1000 * eps(T) "Point is not inside any cell"
+  @check dist ≤ 1000eps(T) "Point is not inside any cell"
 
-  f = getindex!(c1, cell_f, cell)
-  fx = evaluate!(c2, f, x)
+  cf = getindex!(cell_f_cache, cell_f, cell)
+  fx = evaluate!(f_cache, cf, x)
   return fx
 end
