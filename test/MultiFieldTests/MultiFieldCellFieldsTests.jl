@@ -149,12 +149,15 @@ Random.seed!(0)
     fh = interpolate_everywhere(f, V)
     fhcache = return_cache(fh, VectorValue(zeros(D)...))
 
-    for i in 1:10
+    xs = [VectorValue(rand(D)...) for i in 1:10]
+    for x in xs
         x = VectorValue(rand(D)...)
         fx = f(x)
         fhx = evaluate!(fhcache, fh, x)
         @test fhx ≈ fx
     end
+    fhxs = fh(xs)
+    @test fhxs ≈ f.(xs)
 end
 
 

@@ -141,3 +141,9 @@ function evaluate!(cache,f::CellField,x::Point)
   fx = evaluate!(f_cache, cf, x)
   return fx
 end
+
+# Simple version:
+function evaluate!(::Nothing,f::CellField,xs::AbstractVector{<:Point})
+  cache = return_cache(f,testitem(xs))
+  return map(x->evaluate!(cache,f,x), xs)
+end
