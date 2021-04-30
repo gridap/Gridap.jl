@@ -129,6 +129,8 @@ export col_mask
 export DefaultAssemblyStrategy
 export get_test
 export get_trial
+export get_rows
+export get_cols
 export assemble_matrix!
 export assemble_matrix_add!
 export assemble_matrix

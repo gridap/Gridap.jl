@@ -311,6 +311,10 @@ nz_counter(::Type{T},axes) where T = ArrayCounter{T}(axes)
 nz_allocation(a::ArrayCounter{T}) where T = fill!(similar(T,a.axes),zero(eltype(T)))
 
 create_from_nz(a::AbstractArray) = a
+function create_from_nz!(a::AbstractArray,b::AbstractArray)
+  @assert a === b
+  a
+end
 
 # For sparse matrices
 
