@@ -80,7 +80,7 @@ function FESpace(
   conf = Conformity(reffe,conformity)
   cell_conformity = CellConformity(cell_reffe,conf)
   cell_fe = CellFE(model,cell_reffe,cell_conformity)
-  FESpace(model,cell_fe,cell_conformity;kwargs...)
+  FESpace(model,cell_fe;kwargs...)
 end
 
 
