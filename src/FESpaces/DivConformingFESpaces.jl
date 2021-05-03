@@ -24,7 +24,8 @@
 # * We do NOT have to use the signed determinant, but its absolute value, in the Piola Map.
 
 function get_cell_dof_basis(model::DiscreteModel,
-                       cell_reffe::AbstractArray{<:GenericRefFE{RaviartThomas}})
+                       cell_reffe::AbstractArray{<:GenericRefFE{RaviartThomas}},
+                       ::DivConformity)
     sign_flip = get_sign_flip(model, cell_reffe)
     lazy_map(_transform_rt_dof_basis,
              cell_reffe,
@@ -33,7 +34,8 @@ function get_cell_dof_basis(model::DiscreteModel,
 end
 
 function get_cell_shapefuns(model::DiscreteModel,
-                            cell_reffe::AbstractArray{<:GenericRefFE{RaviartThomas}})
+                            cell_reffe::AbstractArray{<:GenericRefFE{RaviartThomas}},
+                            ::DivConformity)
     sign_flip = get_sign_flip(model, cell_reffe)
     lazy_map(_transform_rt_shapefuns,
              cell_reffe,

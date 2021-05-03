@@ -108,8 +108,11 @@ function _generate_clagrangian_fespace(z,grid)
     cell_to_ctype,
     node_and_comp_to_dof)
 
-  cell_map = get_cell_map(grid)
-  cell_shapefuns, cell_dof_basis = compute_cell_space(cell_to_reffe, grid)
+  cell_shapefuns = lazy_map(get_shapefuns,cell_to_reffe)
+  cell_dof_basis = lazy_map(get_dof_basis,cell_to_reffe)
+
+  cell_shapefuns, cell_dof_basis =
+    compute_cell_space(cell_shapefuns, cell_dof_basis, ReferenceDomain(), ReferenceDomain(),grid)
 
   nfree = length(dof_to_node)
   ndirichlet = 0

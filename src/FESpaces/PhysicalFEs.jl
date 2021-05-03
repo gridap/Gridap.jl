@@ -8,11 +8,13 @@ function FiniteElements(
   model::DiscreteModel,
   basis::ReferenceFEName,
   args...;
+  conformity=nothing,
   kwargs...)
 
   cell_reffe = ReferenceFE(model,basis,args...;kwargs...)
-  cell_map = get_cell_map(Triangulation(model))
-  CellFE(model,cell_reffe)
+  conf = Conformity(testitem(cell_reffe),conformity)
+  cell_conformity = CellConformity(cell_reffe,conf)
+  CellFE(model,cell_reffe,cell_conformity)
 end
 
 function FiniteElements(
@@ -20,6 +22,7 @@ function FiniteElements(
   model::DiscreteModel,
   basis::Lagrangian,
   args...;
+  conformity=nothing,
   kwargs...)
 
   # Reference FEs and cell_map
@@ -47,7 +50,8 @@ function FiniteElements(
   # Build the CellFE
   ctype_num_dofs = map(num_dofs,ctype_reffe)
   ctype_ldof_comp = map(reffe->get_dof_to_comp(reffe),ctype_reffe)
-  cell_conformity = CellConformity(cell_reffe)
+  conf = Conformity(testitem(cell_reffe),conformity)
+  cell_conformity = CellConformity(cell_reffe,conf)
   cell_shapefuns_domain = PhysicalDomain()
   cell_dof_basis_domain = cell_shapefuns_domain
   max_order = maximum(map(get_order,ctype_reffe))

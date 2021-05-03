@@ -2,7 +2,6 @@
 function FESpace(
   model::DiscreteModel,
   cell_fe::CellFE;
-  conformity=nothing,
   labels = get_face_labeling(model),
   dirichlet_tags=Int[],
   dirichlet_masks=nothing,
@@ -27,16 +26,14 @@ function FESpace(
     _vector_type = vector_type
   end
 
-  if conformity in (L2Conformity(),:L2) && dirichlet_tags == Int[]
+  if CellConformity(cell_fe).conformity == L2Conformity() && dirichlet_tags == Int[]
     F = _DiscontinuousFESpace(_vector_type,trian,cell_fe)
   else
-    cell_conformity = CellConformity(cell_fe,conformity)
     F = _ConformingFESpace(
       _vector_type,
       model,
       labels,
       cell_fe,
-      cell_conformity,
       dirichlet_tags,
       dirichlet_masks)
   end
@@ -63,7 +60,9 @@ function _add_constraint(F,order,constraint)
 end
 
 function FESpace(
-  model::RestrictedDiscreteModel, cell_fe::CellFE;constraint=nothing,kwargs...)
+  model::RestrictedDiscreteModel,
+  cell_fe::CellFE;
+  constraint=nothing,kwargs...)
   model_portion = model.model
   V_portion = FESpace(model_portion,cell_fe;constraint=nothing,kwargs...)
   F = ExtendedFESpace(V_portion,model)
@@ -76,13 +75,12 @@ function FESpace(
   cell_reffe::AbstractArray{<:ReferenceFE};
   conformity=nothing,
   kwargs...)
-  if conformity in (nothing, :default, :L2, L2Conformity())
-    conf = conformity
-  else
-    conf = CellConformity(cell_reffe,conformity)
-  end
-  cell_fe = CellFE(model,cell_reffe)
-  FESpace(model,cell_fe;conformity=conf,kwargs...)
+  trian = Triangulation(model)
+  reffe = testitem(cell_reffe)
+  conf = Conformity(reffe,conformity)
+  cell_conformity = CellConformity(cell_reffe,conf)
+  cell_fe = CellFE(model,cell_reffe,cell_conformity)
+  FESpace(model,cell_fe,cell_conformity;kwargs...)
 end
 
 
