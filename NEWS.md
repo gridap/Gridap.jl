@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - User API to select specific quadrature rules. Since PR [#578](https://github.com/gridap/Gridap.jl/pull/578).
 - Experimental support for mixed dimensional PDEs. Since PR [#567](https://github.com/gridap/Gridap.jl/pull/567).
-- Added `get_cell_dof_basis(model,cell_reffes)` and `get_cell_shapefuns(model,cell_reffes)`. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
+- Added `get_cell_dof_basis(model,cell_reffes,::Conformity)` and `get_cell_shapefuns(model,cell_reffes,::Conformity)`. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
 - Implemented `get_cell_dof_basis` and `get_cell_shapefuns` for global RT FE spaces in a new file `DivConformingFESpaces.jl`. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
 
 ### Changed

@@ -6,7 +6,6 @@ This can be relaxed in the future, to have an arbitrary cell-wise dof ownership.
 """
 struct CellConformity{T} <: GridapType
   cell_ctype::T
-  conformity::Conformity
   ctype_lface_own_ldofs::Vector{Vector{Vector{Int}}}
   ctype_lface_pindex_pdofs::Vector{Vector{Vector{Vector{Int}}}}
   d_ctype_num_dfaces::Vector{Vector{Int}}
@@ -47,8 +46,6 @@ function _d_ctype_ldface_own_ldofs(a::CellConformity)
     for d in 1:num_ds ]
 end
 
-
-
 """
 Minimum data required to build a conforming FE space.
 At this moment, the some cell-wise info is compressed on cell types.
@@ -75,14 +72,14 @@ function CellConformity(cell_fe::CellFE)
   cell_fe.cell_conformity
 end
 
-# function CellConformity(cell_fe::CellFE,cell_conf::Nothing)
-#   cell_fe.cell_conformity
-# end
+function CellConformity(cell_fe::CellFE,cell_conf::Nothing)
+  cell_fe.cell_conformity
+end
 
-# function CellConformity(cell_fe::CellFE,cell_conf::CellConformity)
-#   @assert length(cell_fe.cell_ctype) == length(cell_conf.cell_ctype)
-#   cell_conf
-# end
+function CellConformity(cell_fe::CellFE,cell_conf::CellConformity)
+  @assert length(cell_fe.cell_ctype) == length(cell_conf.cell_ctype)
+  cell_conf
+end
 
 # function CellConformity(cell_fe::CellFE,conformity::Union{Symbol,Conformity})
 #   if conformity in (L2Conformity(),:L2)
@@ -107,7 +104,6 @@ function CellConformity(cell_reffe::AbstractArray{<:ReferenceFE},conf::Conformit
   d_ctype_num_dfaces = [ map(reffe->num_faces(get_polytope(reffe),d),ctype_reffe) for d in 0:D]
   CellConformity(
     cell_ctype,
-    conf,
     ctype_lface_own_ldofs,
     ctype_lface_pindex_pdofs,
     d_ctype_num_dfaces)
@@ -119,13 +115,15 @@ Generate a CellFE from a vector of reference fes
 function CellFE(
   model::DiscreteModel,
   cell_reffe::AbstractArray{<:ReferenceFE},
-  cell_conformity::CellConformity
+  conformity=nothing
  )
+  conf = Conformity(testitem(cell_reffe),conformity)
+  cell_conformity = CellConformity(cell_reffe,conf)
   ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
   ctype_num_dofs = map(num_dofs,ctype_reffe)
   ctype_ldof_comp = map(reffe->get_dof_to_comp(reffe),ctype_reffe)
-  cell_shapefuns = get_cell_shapefuns(model,cell_reffe,cell_conformity.conformity)
-  cell_dof_basis = get_cell_dof_basis(model,cell_reffe,cell_conformity.conformity)
+  cell_shapefuns = get_cell_shapefuns(model,cell_reffe,conf)
+  cell_dof_basis = get_cell_dof_basis(model,cell_reffe,conf)
   cell_shapefuns_domain = ReferenceDomain()
   cell_dof_basis_domain = cell_shapefuns_domain
   max_order = maximum(map(get_order,ctype_reffe))
@@ -161,6 +159,7 @@ function _ConformingFESpace(
   model::DiscreteModel,
   face_labeling::FaceLabeling,
   cell_fe::CellFE,
+  cell_conformity::CellConformity,
   dirichlet_tags,
   dirichlet_components)
 
@@ -168,7 +167,7 @@ function _ConformingFESpace(
   ntags = length(dirichlet_tags)
 
   cell_dofs_ids, nfree, ndirichlet, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
-    cell_fe,CellConformity(cell_fe),grid_topology,face_labeling,dirichlet_tags,dirichlet_components)
+    cell_fe,cell_conformity,grid_topology,face_labeling,dirichlet_tags,dirichlet_components)
 
   trian = Triangulation(model)
   cell_shapefuns, cell_dof_basis = compute_cell_space(cell_fe,trian)

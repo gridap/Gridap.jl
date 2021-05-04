@@ -12,9 +12,7 @@ function FiniteElements(
   kwargs...)
 
   cell_reffe = ReferenceFE(model,basis,args...;kwargs...)
-  conf = Conformity(testitem(cell_reffe),conformity)
-  cell_conformity = CellConformity(cell_reffe,conf)
-  CellFE(model,cell_reffe,cell_conformity)
+  CellFE(model,cell_reffe,conformity)
 end
 
 function FiniteElements(
