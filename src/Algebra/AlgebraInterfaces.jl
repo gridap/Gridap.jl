@@ -308,9 +308,12 @@ LoopStyle(::Type{<:ArrayCounter}) = DoNotLoop()
 
 nz_counter(::Type{T},axes) where T = ArrayCounter{T}(axes)
 
-nz_allocation(a::ArrayCounter{T}) where T = fill!(similar(T,a.axes),zero(eltype(T)))
+nz_allocation(a::ArrayCounter{T}) where T = fill!(similar(T,map(length,a.axes)),zero(eltype(T)))
+
+nz_allocation!(b::T,a::ArrayCounter{T}) where T = fill!(b,zero(eltype(T)))
 
 create_from_nz(a::AbstractArray) = a
+
 function create_from_nz!(a::AbstractArray,b::AbstractArray)
   @assert a === b
   a
