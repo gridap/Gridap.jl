@@ -902,7 +902,7 @@ function _face_to_cells_fill!(
       face = cell_to_faces_data[p]
       q = face_to_cells_ptrs[face]
       face_to_cells_data[q] = cell
-      face_to_cells_ptrs[face] += 1
+      face_to_cells_ptrs[face] = q + one(typeof(q))
     end
   end
 
