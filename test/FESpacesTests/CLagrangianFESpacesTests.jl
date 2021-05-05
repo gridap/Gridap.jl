@@ -44,4 +44,28 @@ uhx = get_free_dof_values(uh)
 ux = u.(x)
 @test uhx ≈ collect1d(reinterpret(ux))
 
+model = CartesianDiscreteModel(domain,partition)
+grid = get_grid(model)
+labels = get_face_labeling(model)
+tags = [1,2,4,5,8]
+node_to_tag = get_face_tag_index(labels,tags,0)
+masks = Bool[true,true,false,true,true]
+V = CLagrangianFESpace(Float64,grid,Vector{Float64},node_to_tag,masks)
+@test get_cell_dof_ids(V) == [[-1, -2, 1, 2], [-2, -3, 2, -4], [1, 2, 3, 4], [2, -4, 4, 5]]
+@test V.glue.free_dof_to_node == [4, 5, 7, 8, 9]
+@test V.glue.free_dof_to_comp == [1, 1, 1, 1, 1]
+@test V.glue.dirichlet_dof_to_node == [1,2,3,6]
+@test V.glue.dirichlet_dof_to_comp == [1,1,1,1]
+@test V.glue.node_and_comp_to_dof == [-1, -2, -3, 1, 2, -4, 3, 4, 5]
+
+masks = [(true,true),(true,false),(false,false),(false,true),(true,true)]
+V = CLagrangianFESpace(VectorValue{2,Float64},grid,Vector{Float64},node_to_tag,masks)
+@test get_cell_dof_ids(V) == [[-1, 1, 3, 5, -2, -3, 4, 6], [1, -4, 5, -5, -3, 2, 6, -6], [3, 5, 7, 9, 4, 6, 8, 10], [5, -5, 9, 11, 6, -6, 10, 12]]
+@test V.glue.free_dof_to_node == [2, 3, 4, 4, 5, 5, 7, 7, 8, 8, 9, 9]
+@test V.glue.free_dof_to_comp == [1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2]
+@test V.glue.dirichlet_dof_to_node == [1, 1, 2, 3, 6, 6]
+@test V.glue.dirichlet_dof_to_comp == [1, 2, 2, 1, 1, 2]
+@test V.glue.node_and_comp_to_dof == VectorValue{2, Int32}[(-1, -2), (1, -3), (-4, 2), (3, 4), (5, 6), (-5, -6), (7, 8), (9, 10), (11, 12)]
+
+
 end # module

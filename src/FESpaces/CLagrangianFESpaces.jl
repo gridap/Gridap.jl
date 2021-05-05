@@ -238,7 +238,9 @@ function _generate_node_to_dof_glue_component_major(
         m[comp] = nfree_dofs
       end
     else
-      for (comp,mask) in tag_to_masks[tag]
+      masks = tag_to_masks[tag]
+      for comp in 1:ncomps
+        mask = masks[comp]
         if mask
           ndiri_dofs += 1
           diri_dof_to_node[ndiri_dofs] = node
