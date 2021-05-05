@@ -158,7 +158,6 @@ function _ConformingFESpace(
   model::DiscreteModel,
   face_labeling::FaceLabeling,
   cell_fe::CellFE,
-  cell_conformity::CellConformity,
   dirichlet_tags,
   dirichlet_components)
 
@@ -166,7 +165,7 @@ function _ConformingFESpace(
   ntags = length(dirichlet_tags)
 
   cell_dofs_ids, nfree, ndirichlet, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
-    cell_fe,cell_conformity,grid_topology,face_labeling,dirichlet_tags,dirichlet_components)
+    cell_fe,CellConformity(cell_fe),grid_topology,face_labeling,dirichlet_tags,dirichlet_components)
 
   trian = Triangulation(model)
   cell_shapefuns, cell_dof_basis = compute_cell_space(cell_fe,trian)

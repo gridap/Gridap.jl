@@ -1,8 +1,7 @@
 
 function FESpace(
   model::DiscreteModel,
-  cell_fe::CellFE,
-  cell_conformity::CellConformity=CellConformity(cell_fe);
+  cell_fe::CellFE;
   labels = get_face_labeling(model),
   dirichlet_tags=Int[],
   dirichlet_masks=nothing,
@@ -20,7 +19,6 @@ function FESpace(
       model,
       labels,
       cell_fe,
-      cell_conformity,
       dirichlet_tags,
       dirichlet_masks)
   V = _add_constraint(F,cell_fe.max_order,constraint)
@@ -73,11 +71,10 @@ end
 
 function FESpace(
   model::RestrictedDiscreteModel,
-  cell_fe::CellFE,
-  cell_conformity::CellConformity=CellConformity(cell_fe);
+  cell_fe::CellFE;
   constraint=nothing,kwargs...)
   model_portion = model.model
-  V_portion = FESpace(model_portion,cell_fe,cell_conformity;constraint=nothing,kwargs...)
+  V_portion = FESpace(model_portion,cell_fe;constraint=nothing,kwargs...)
   F = ExtendedFESpace(V_portion,model)
   V = _add_constraint(F,cell_fe.max_order,constraint)
   V
