@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Renamed `get_cell_shapefuns` by `get_fe_basis`. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
 - Renamed `get_cell_shapefuns_trial` by `get_trial_fe_basis`. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
 - Renamed `get_cell_dof_basis` by `get_fe_dof_basis`. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
+- Removed `conformity` optional keyword argument from `FESpace(::DiscreteModel,::CellFE; kwargs...)` constructor. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
+- Replaced `CellFE(::AbstractArray{<:Field},::AbstractArray{<:ReferenceFE})` by `CellFE(::DiscreteModel,::AbstractArray{<:ReferenceFE},::Conformity)`. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
+
 
 ### Removed
 - All code associated with with `BlockArrayCoo`. Since PR [#583](https://github.com/gridap/Gridap.jl/pull/583).

@@ -6,7 +6,8 @@
 # for those sitting on facets of the slave cell of the facet.
 
 # Two key ingredients in the implementation of this type of ReferenceFE are the
-# get_fe_basis(model,cell_reffes) and get_cell_dof_basis(mode,cell_reffes) overloads.
+# get_cell_shapefuns(model,cell_reffes,::Conformity) and
+# get_cell_dof_basis(mode,cell_reffes,::Conformity) overloads.
 # These are written such that, for each cell K, they return the shape functions
 # and dof values in the *global* RT space. For a dof owned by a face which is shared by
 # two cells, there is a master and a slave cell. The slave cell first computes the
