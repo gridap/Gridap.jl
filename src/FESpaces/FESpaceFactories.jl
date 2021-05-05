@@ -63,7 +63,8 @@ function FESpace(
   conformity=nothing,
   constraint=nothing,kwargs...)
   model_portion = model.model
-  cell_fe = CellFE(model,cell_reffe,conformity)
+  conf = Conformity(testitem(cell_reffe),conformity)
+  cell_fe = CellFE(model,cell_reffe,conf)
   V_portion = FESpace(model_portion,cell_fe;constraint=nothing,kwargs...)
   F = ExtendedFESpace(V_portion,model)
   V = _add_constraint(F,cell_fe.max_order,constraint)
@@ -93,7 +94,8 @@ function FESpace(
   vector_type::Union{Nothing,Type}=nothing)
 
   trian = Triangulation(model)
-  cell_fe = CellFE(model,cell_reffe,conformity)
+  conf = Conformity(testitem(cell_reffe),conformity)
+  cell_fe = CellFE(model,cell_reffe,conf)
   _vector_type = _get_vector_type(vector_type,cell_fe,trian)
   if conformity in (L2Conformity(),:L2) && dirichlet_tags == Int[]
     F = _DiscontinuousFESpace(_vector_type,trian,cell_fe)
