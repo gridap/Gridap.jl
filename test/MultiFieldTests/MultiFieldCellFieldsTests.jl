@@ -58,7 +58,7 @@ P = TrialFESpace(Q)
 Y = MultiFieldFESpace([V,Q])
 X = MultiFieldFESpace([U,P])
 
-dv, dq = get_cell_shapefuns(Y)
+dv, dq = get_fe_basis(Y)
 du, dp = get_trial_fe_basis(X)
 
 n = VectorValue(1,2)

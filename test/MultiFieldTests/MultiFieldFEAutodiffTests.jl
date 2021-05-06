@@ -28,7 +28,7 @@ g(xh,dy) = gradient(xh->e(xh),xh)
 #h(xh,dx,dy) = hessian(xh->e(xh),xh)
 
 dx = get_trial_fe_basis(Y)
-dy = get_cell_shapefuns(Y)
+dy = get_fe_basis(Y)
 xh = FEFunction(Y,rand(num_free_dofs(Y)))
 
 #display(r(xh,dy)[Ω][end])
