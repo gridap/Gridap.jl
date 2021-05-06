@@ -225,7 +225,10 @@ end
 
 function _collect_lazy_array!(r,cache,a)
   for i in eachindex(r)
-    r[i] = getindex!(cache,a,i)
+    ai = getindex!(cache,a,i)
+    # Do not forget copy, otherwise all the entries
+    # in r will point the data stored in cache
+    r[i] = copy(ai)
   end
 end
 
