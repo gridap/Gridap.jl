@@ -78,7 +78,7 @@ function _use_clagrangian(trian,cell_reffe,conf)
   false
 end
 
-function _use_clagrangian(trian,cell_reffe,conf::H1Conformity)
+function _use_clagrangian(trian::Grid,cell_reffe,conf::H1Conformity)
   ctype_reffe1, cell_ctype1 = compress_cell_data(cell_reffe)
   ctype_reffe2 = get_reffes(trian)
   if length(ctype_reffe1) != 1 || length(ctype_reffe2) != 1
