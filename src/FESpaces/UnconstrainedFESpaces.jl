@@ -3,7 +3,7 @@
 Generic implementation of an unconstrained single-field FE space
 Private fields and type parameters
 """
-struct UnconstrainedFESpace{V} <: SingleFieldFESpace
+struct UnconstrainedFESpace{V,M} <: SingleFieldFESpace
   vector_type::Type{V}
   nfree::Int
   ndirichlet::Int
@@ -14,6 +14,34 @@ struct UnconstrainedFESpace{V} <: SingleFieldFESpace
   dirichlet_dof_tag::Vector{Int8}
   dirichlet_cells::Vector{Int32}
   ntags::Int
+  metadata::M
+end
+
+function UnconstrainedFESpace(
+  vector_type::Type{V},
+  nfree::Integer,
+  ndirichlet::Integer,
+  cell_dofs_ids::AbstractArray,
+  fe_basis::CellField,
+  fe_dof_basis::CellDof,
+  cell_is_dirichlet::AbstractArray,
+  dirichlet_dof_tag::AbstractArray,
+  dirichlet_cells::AbstractArray,
+  ntags::Integer) where V
+
+  metadata = nothing
+  UnconstrainedFESpace(
+    V,
+    nfree,
+    ndirichlet,
+    cell_dofs_ids,
+    fe_basis,
+    fe_dof_basis,
+    cell_is_dirichlet,
+    dirichlet_dof_tag,
+    dirichlet_cells,
+    ntags,
+    metadata)
 end
 
 # FESpace interface
