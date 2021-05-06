@@ -37,7 +37,7 @@ test_triangulation(trian)
 
 @test !isa(get_cell_reffe(trian),AppendedArray)
 
-@test isa(get_fe_basis(trian),AppendedArray)
+@test isa(get_cell_shapefuns(trian),AppendedArray)
 
 @test isa(get_cell_type(trian),AppendedArray)
 

@@ -29,7 +29,7 @@ import Gridap.Arrays: getindex!
 import Gridap.Arrays: return_cache
 import Gridap.Arrays: evaluate!
 import Gridap.Geometry: get_triangulation
-import Gridap.Geometry: get_fe_basis
+import Gridap.Geometry: get_cell_shapefuns
 import Gridap.CellData: attach_constraints_rows
 import Gridap.CellData: attach_constraints_cols
 import Gridap.CellData: CellField

@@ -26,7 +26,7 @@ face_to_s = Fill(s,length(face_s_q))
 face_to_q = lazy_map(evaluate,face_s_q,face_to_s)
 @test isa(face_to_q,Geometry.FaceCompressedVector)
 
-cell_shapefuns = get_fe_basis(btrian.cell_trian)
+cell_shapefuns = get_cell_shapefuns(btrian.cell_trian)
 cell_grad_shapefuns = lazy_map(Broadcasting(∇),cell_shapefuns)
 
 face_shapefuns = lazy_map(Reindex(cell_shapefuns),get_cell_to_bgcell(btrian))
@@ -67,7 +67,7 @@ face_to_s = Fill(s,length(face_s_q))
 face_to_q = lazy_map(evaluate,face_s_q,face_to_s)
 @test isa(face_to_q,Geometry.FaceCompressedVector)
 
-cell_shapefuns = get_fe_basis(btrian.cell_trian)
+cell_shapefuns = get_cell_shapefuns(btrian.cell_trian)
 cell_grad_shapefuns = lazy_map(Broadcasting(∇),cell_shapefuns)
 
 face_shapefuns = lazy_map(Reindex(cell_shapefuns),get_cell_to_bgcell(btrian))
