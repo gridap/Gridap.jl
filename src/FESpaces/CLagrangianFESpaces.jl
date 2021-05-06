@@ -17,19 +17,6 @@ struct NodeToDofGlue{T}
 end
 
 """
-    struct CLagrangianFESpace{T} <: SingleFieldFESpace
-      grid::Grid
-      glue::NodeToDofGlue{T}
-      # + private fields
-    end
-"""
-struct CLagrangianFESpace{S} <: SingleFieldFESpace
-  space::UnconstrainedFESpace
-  grid::Grid
-  glue::NodeToDofGlue{S}
-end
-
-"""
     CLagrangianFESpace(::Type{T},grid::Grid) where T
 """
 function CLagrangianFESpace(::Type{T},grid::Grid) where T
@@ -80,65 +67,10 @@ function CLagrangianFESpace(
     cell_is_dirichlet,
     dirichlet_dof_tag,
     dirichlet_cells,
-    ntags)
+    ntags,
+    glue)
 
-  CLagrangianFESpace(space,grid,glue)
-end
-
-# FESpace interface
-
-ConstraintStyle(::Type{<:CLagrangianFESpace}) = UnConstrained()
-
-function get_free_dof_ids(f::CLagrangianFESpace)
-  get_free_dof_ids(f.space)
-end
-
-function get_fe_basis(f::CLagrangianFESpace)
-  get_fe_basis(f.space)
-end
-
-function get_trial_fe_basis(f::CLagrangianFESpace)
-  get_trial_fe_basis(f.space)
-end
-
-get_vector_type(f::CLagrangianFESpace) = get_vector_type(f.space)
-
-get_dof_value_type(f::CLagrangianFESpace) = get_dof_value_type(f.space)
-
-get_triangulation(f::CLagrangianFESpace) = get_triangulation(f.space)
-
-# SingleFieldFESpace interface
-
-function get_cell_dof_ids(f::CLagrangianFESpace)
-  get_cell_dof_ids(f.space)
-end
-
-function get_fe_dof_basis(f::CLagrangianFESpace)
-  get_fe_dof_basis(f.space)
-end
-
-function get_dirichlet_dof_ids(f::CLagrangianFESpace)
-  get_dirichlet_dof_ids(f.space)
-end
-
-function num_dirichlet_tags(f::CLagrangianFESpace)
-  num_dirichlet_tags(f.space)
-end
-
-function get_dirichlet_dof_tag(f::CLagrangianFESpace)
-  get_dirichlet_dof_tag(f.space)
-end
-
-function scatter_free_and_dirichlet_values(f::CLagrangianFESpace,free_values,dirichlet_values)
-  scatter_free_and_dirichlet_values(f.space,free_values,dirichlet_values)
-end
-
-function gather_free_and_dirichlet_values!(free_values,dirichlet_values,f::CLagrangianFESpace,cell_vals)
-  gather_free_and_dirichlet_values!(free_values,dirichlet_values,f.space,cell_vals)
-end
-
-function gather_dirichlet_values!(dirichlet_vals,f::CLagrangianFESpace,cell_vals)
-    gather_dirichlet_values!(dirichlet_vals,f.space,cell_vals)
+  space
 end
 
 # Helpers
