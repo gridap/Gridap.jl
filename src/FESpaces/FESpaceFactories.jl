@@ -92,6 +92,18 @@ function FESpace(
 
   trian = Triangulation(model)
   conf = Conformity(testitem(cell_reffe),conformity)
+
+  if _use_clagrangian(trian,cell_reffe,conf) && constraint === nothing
+    V = _unsafe_clagrangian(
+      cell_reffe,
+      trian,
+      labels,
+      vector_type,
+      dirichlet_tags,
+      dirichlet_masks)
+    return V
+  end
+
   cell_fe = CellFE(model,cell_reffe,conf)
   _vector_type = _get_vector_type(vector_type,cell_fe,trian)
   if conformity in (L2Conformity(),:L2) && dirichlet_tags == Int[]
@@ -99,11 +111,11 @@ function FESpace(
     V = _add_constraint(F,cell_fe.max_order,constraint)
   else
     V = FESpace(model,cell_fe;
-                labels=labels,
-                dirichlet_tags=dirichlet_tags,
-                dirichlet_masks=dirichlet_masks,
-                constraint=constraint,
-                vector_type=_vector_type)
+      labels=labels,
+      dirichlet_tags=dirichlet_tags,
+      dirichlet_masks=dirichlet_masks,
+      constraint=constraint,
+      vector_type=_vector_type)
   end
   return V
 end
