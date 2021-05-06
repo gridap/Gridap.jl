@@ -72,27 +72,6 @@ function CellConformity(cell_fe::CellFE)
   cell_fe.cell_conformity
 end
 
-function CellConformity(cell_fe::CellFE,cell_conf::Nothing)
-  cell_fe.cell_conformity
-end
-
-function CellConformity(cell_fe::CellFE,cell_conf::CellConformity)
-  @assert length(cell_fe.cell_ctype) == length(cell_conf.cell_ctype)
-  cell_conf
-end
-
-# function CellConformity(cell_fe::CellFE,conformity::Union{Symbol,Conformity})
-#   if conformity in (L2Conformity(),:L2)
-#     @notimplemented
-#   elseif conformity == :default
-#     cell_fe.cell_conformity
-#   else
-#     @unreachable """\n
-#     Argument conformity should be either :default, :L2, or L2Conformity()
-#     """
-#   end
-# end
-
 """
 Generate A CellConformity from a vector of reference fes
 """
