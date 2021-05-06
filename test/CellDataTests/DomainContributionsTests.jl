@@ -24,7 +24,7 @@ dΩ = Measure(Ω,degree)
 dΓ = Measure(Γ,degree)
 dΛ = Measure(Λ,degree)
 
-v = GenericCellField(get_fe_basis(Ω),Ω,ReferenceDomain())
+v = GenericCellField(get_cell_shapefuns(Ω),Ω,ReferenceDomain())
 u = GenericCellField(lazy_map(transpose,get_data(v)),v.trian,v.domain_style)
 
 a = ∫(u*v)*dΩ + ∫(u*v)*dΓ + ∫(∇(u)⋅∇(v))*dΩ
