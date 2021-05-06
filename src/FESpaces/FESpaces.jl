@@ -55,6 +55,8 @@ import Gridap.Algebra: solve
 import Gridap.Algebra: allocate_vector
 import Gridap.Algebra: allocate_matrix
 import Gridap.Algebra: allocate_matrix_and_vector
+import Gridap.ReferenceFEs: get_shapefuns
+import Gridap.ReferenceFEs: get_dof_basis
 
 export FEFunction
 export get_free_dof_values
@@ -71,8 +73,8 @@ export get_free_dof_ids
 export zero_free_values
 export EvaluationFunction
 export get_cell_dof_ids
-export get_cell_shapefuns
-export get_cell_shapefuns_trial
+export get_fe_basis
+export get_trial_fe_basis
 export has_constraints
 export get_cell_constraints
 export get_cell_isconstrained
@@ -82,7 +84,7 @@ export test_fe_space
 
 export SingleFieldFESpace
 export SingleFieldFEFunction
-export get_cell_dof_basis
+export get_fe_dof_basis
 export num_dirichlet_dofs
 export get_dirichlet_dof_ids
 export zero_dirichlet_values
@@ -182,6 +184,8 @@ include("SingleFieldFESpaces.jl")
 include("UnconstrainedFESpaces.jl")
 
 include("ConformingFESpaces.jl")
+
+include("DivConformingFESpaces.jl")
 
 include("FESpaceFactories.jl")
 
