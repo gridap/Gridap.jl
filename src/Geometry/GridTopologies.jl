@@ -897,7 +897,7 @@ function _face_to_cells_fill!(
   ncells = length(cell_to_faces_ptrs) - 1
   for cell in 1:ncells
     a = cell_to_faces_ptrs[cell]
-    b = cell_to_faces_ptrs[cell+1]-1
+    b = cell_to_faces_ptrs[cell+1]-one(typeof(a))
     for p in a:b
       face = cell_to_faces_data[p]
       q = face_to_cells_ptrs[face]
