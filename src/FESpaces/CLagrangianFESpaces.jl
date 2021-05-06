@@ -44,7 +44,8 @@ function CLagrangianFESpace(
   z = zero(T)
   glue, dirichlet_dof_tag = _generate_node_to_dof_glue_component_major(
     z,node_to_tag,tag_to_masks)
-  cell_dofs_ids, cell_reffe = _generate_cell_data_clagrangian(z,grid,glue)
+  cell_reffe = _generate_cell_reffe_clagrangian(z,grid)
+  cell_dofs_ids = _generate_cell_dofs_clagrangian(z,grid,glue,cell_reffe)
   cell_shapefuns = lazy_map(get_shapefuns,cell_reffe)
   cell_dof_basis = lazy_map(get_dof_basis,cell_reffe)
   rd = ReferenceDomain()
@@ -71,6 +72,45 @@ function CLagrangianFESpace(
     glue)
 
   space
+end
+
+function _use_clagrangian(trian,cell_reffe,conf)
+  false
+end
+
+function _use_clagrangian(trian,cell_reffe,conf::H1Conformity)
+  ctype_reffe1, cell_ctype1 = compress_cell_data(cell_reffe)
+  ctype_reffe2 = get_reffes(trian)
+  if length(ctype_reffe1) != 1 || length(ctype_reffe2) != 1
+    return false
+  end
+  reffe1 = first(ctype_reffe1)
+  reffe2 = first(ctype_reffe2)
+  if get_orders(reffe1) != get_orders(reffe2)
+    return false
+  end
+  if get_order(reffe1) != 1 # This can be relaxed in the future
+    return false
+  end
+  return true
+end
+
+function _unsafe_clagrangian(
+  cell_reffe,
+  grid,
+  labels,
+  vector_type,
+  dirichlet_tags,
+  dirichlet_masks)
+
+  ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
+  prebasis = get_prebasis(first(ctype_reffe))
+  T = return_type(prebasis)
+  # Next line assumes linear grids
+  node_to_tag = get_face_tag_index(labels,dirichlet_tags,0)
+  _vector_type = vector_type === nothing ? Vector{Float64} : vector_type
+  tag_to_mask = dirichlet_masks === nothing ? fill(_default_mask(T),length(dirichlet_tags)) : dirichlet_masks
+  CLagrangianFESpace(T,grid,_vector_type,node_to_tag,tag_to_mask)
 end
 
 # Helpers
@@ -203,7 +243,7 @@ function _generate_node_to_dof_glue_component_major(
   glue, diri_dof_to_tag
 end
 
-function _generate_cell_data_clagrangian(z,grid,glue)
+function _generate_cell_reffe_clagrangian(z,grid)
   ctype_to_reffe = get_reffes(grid)
   cell_to_ctype = get_cell_type(grid)
   function fun(reffe)
@@ -214,16 +254,18 @@ function _generate_cell_data_clagrangian(z,grid,glue)
   # using map instead of lazy_map seems to kill the compiler.
   ctype_to_reffe = collect(lazy_map(fun,ctype_to_reffe))
   cell_to_reffe = expand_cell_data(ctype_to_reffe,cell_to_ctype)
-  cell_to_nodes = get_cell_node_ids(grid)
+end
 
+function _generate_cell_dofs_clagrangian(z,grid,glue,cell_to_reffe)
+  ctype_to_reffe, cell_to_ctype = compress_cell_data(cell_to_reffe)
+  cell_to_nodes = get_cell_node_ids(grid)
   cell_to_dofs = _generate_cell_dofs_clagrangian(
     z,
     cell_to_nodes,
     ctype_to_reffe,
     cell_to_ctype,
     glue.node_and_comp_to_dof)
-
-  cell_to_dofs, cell_to_reffe
+  cell_to_dofs
 end
 
 function _generate_cell_dofs_clagrangian(
