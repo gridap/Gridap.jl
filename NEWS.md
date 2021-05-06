@@ -7,16 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.16.0] - Unreleased
 
 ### Added
-- User API to select specific quadrature rules.
+- User API to select specific quadrature rules. Since PR [#578](https://github.com/gridap/Gridap.jl/pull/578).
 - Experimental support for mixed dimensional PDEs. Since PR [#567](https://github.com/gridap/Gridap.jl/pull/567).
 
 ### Changed
-- The default quadrature rule for tets has changed.
+- Major refactoring in the handling of blocks (e.g. in multi-field and skeleton terms). The new code follows a much more simple approach based in the new type `ArrayBlock`. Since PR [#583](https://github.com/gridap/Gridap.jl/pull/583).
+- The default quadrature rule for tets has changed. Since PR [#578](https://github.com/gridap/Gridap.jl/pull/578).
 - Refactoring in `SparseMatrixAssembler` to make it more extensible and efficient. Since PR [#568](https://github.com/gridap/Gridap.jl/pull/568).
 - Renamed `get_free_values` -> `get_free_dof_values`. Since PR [#567](https://github.com/gridap/Gridap.jl/pull/567).
 - Miscellaneous changes in the FE assembly to allow the solution of mixed dimensional problems. Since PR [#567](https://github.com/gridap/Gridap.jl/pull/567).
 
 ### Removed
+- All code associated with with `BlockArrayCoo`. Since PR [#583](https://github.com/gridap/Gridap.jl/pull/583).
 - Module `Gridap.Integration` has been deleted and its contents have been merged into `Gridap.ReferenceFEs` module.
 - Types `SparseMatrixCSR` and `SymSparseMatrixCSR` have been moved to the registered package [`SparseMatricesCSR`](https://github.com/gridap/SparseMatricesCSR.jl). To use them simply add `SparseMatricesCSR` into your environment and type `using SparseMatricesCSR`. Since  Since PR [#568](https://github.com/gridap/Gridap.jl/pull/568).
 

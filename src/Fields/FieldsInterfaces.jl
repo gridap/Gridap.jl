@@ -542,8 +542,8 @@ end
 @inline function evaluate!(cache,k::IntegrationMap,aq::AbstractArray,w,jq::AbstractVector)
   setsize!(cache,size(aq)[2:end])
   r = cache.array
-  @check size(aq,1) == length(w)
-  @check size(aq,1) == length(jq)
+  @check size(aq,1) == length(w) || size(aq,1) == 0
+  @check size(aq,1) == length(jq) || size(aq,1) == 0
   fill!(r,zero(eltype(r)))
   cis = CartesianIndices(r)
   @inbounds for p in 1:length(w)
@@ -569,8 +569,8 @@ end
   setsize!(cache_s,(np,))
   r = cache_r.array
   dV = cache_s.array
-  @check size(aq,1) == length(w)
-  @check size(aq,1) == length(jq)
+  @check np == length(w) || np == 0
+  @check np == length(jq) || np == 0
   @inbounds for p in 1:np
     dV[p] = meas(jq[p])*w[p]
   end
@@ -591,8 +591,8 @@ end
   np, ni = size(aq)
   setsize!(cache,(ni,))
   r = cache.array
-  @check size(aq,1) == length(w)
-  @check size(aq,1) == length(jq)
+  @check np == length(w) || np == 0
+  @check np == length(jq) || np == 0
   fill!(r,zero(eltype(r)))
   @inbounds for p in 1:np
     dV = meas(jq[p])*w[p]

@@ -275,8 +275,8 @@ function get_facet_normal(trian::BoundaryTriangulation)
   # Change of domain
   face_s_q = get_cell_ref_map(trian)
   face_s_invJt = lazy_map(∘,face_q_invJt,face_s_q)
-  face_s_n = lazy_map(Operation(push_normal),face_s_invJt,face_s_nref)
-  face_s_n
+  face_s_n = lazy_map(Broadcasting(Operation(push_normal)),face_s_invJt,face_s_nref)
+  Fields.MemoArray(face_s_n)
 end
 
 @inline function push_normal(invJt,n)
@@ -425,7 +425,7 @@ end
 function lazy_map(
   k::typeof(evaluate),
   ::Type{T},
-  a::CompressedArray{<:AbstractVector{<:Field}},
+  a::CompressedArray,
   b::FaceCompressedVector) where T
 
   @check length(a) == length(b)

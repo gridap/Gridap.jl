@@ -285,83 +285,83 @@ end
 # see https://discourse.julialang.org/t/performance-depends-dramatically-on-compilation-order/58425
 # Hopefully, they can be removed in the future
 
-#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any},i...)
-#  f1 = getindex!(cf[1],args[1],i...)
-#  evaluate!(cgi,gi,f1)
-#end
-#
-#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any},i...)
-#  f1 = getindex!(cf[1],args[1],i...)
-#  f2 = getindex!(cf[2],args[2],i...)
-#  evaluate!(cgi,gi,f1,f2)
-#end
-#
-#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any},i...)
-#  f1 = getindex!(cf[1],args[1],i...)
-#  f2 = getindex!(cf[2],args[2],i...)
-#  f3 = getindex!(cf[3],args[3],i...)
-#  evaluate!(cgi,gi,f1,f2,f3)
-#end
-#
-#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any},i...)
-#  f1 = getindex!(cf[1],args[1],i...)
-#  f2 = getindex!(cf[2],args[2],i...)
-#  f3 = getindex!(cf[3],args[3],i...)
-#  f4 = getindex!(cf[4],args[4],i...)
-#  evaluate!(cgi,gi,f1,f2,f3,f4)
-#end
-#
-#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any},i...)
-#  f1 = getindex!(cf[1],args[1],i...)
-#  f2 = getindex!(cf[2],args[2],i...)
-#  f3 = getindex!(cf[3],args[3],i...)
-#  f4 = getindex!(cf[4],args[4],i...)
-#  f5 = getindex!(cf[5],args[5],i...)
-#  evaluate!(cgi,gi,f1,f2,f3,f4,f5)
-#end
-#
-#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any,Any},i...)
-#  f1 = getindex!(cf[1],args[1],i...)
-#  f2 = getindex!(cf[2],args[2],i...)
-#  f3 = getindex!(cf[3],args[3],i...)
-#  f4 = getindex!(cf[4],args[4],i...)
-#  f5 = getindex!(cf[5],args[5],i...)
-#  f6 = getindex!(cf[6],args[6],i...)
-#  evaluate!(cgi,gi,f1,f2,f3,f4,f5,f6)
-#end
-#
-#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any,Any,Any},i...)
-#  f1 = getindex!(cf[1],args[1],i...)
-#  f2 = getindex!(cf[2],args[2],i...)
-#  f3 = getindex!(cf[3],args[3],i...)
-#  f4 = getindex!(cf[4],args[4],i...)
-#  f5 = getindex!(cf[5],args[5],i...)
-#  f6 = getindex!(cf[6],args[6],i...)
-#  f7 = getindex!(cf[7],args[7],i...)
-#  evaluate!(cgi,gi,f1,f2,f3,f4,f5,f6,f7)
-#end
-#
-#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any,Any,Any,Any},i...)
-#  f1 = getindex!(cf[1],args[1],i...)
-#  f2 = getindex!(cf[2],args[2],i...)
-#  f3 = getindex!(cf[3],args[3],i...)
-#  f4 = getindex!(cf[4],args[4],i...)
-#  f5 = getindex!(cf[5],args[5],i...)
-#  f6 = getindex!(cf[6],args[6],i...)
-#  f7 = getindex!(cf[7],args[7],i...)
-#  f8 = getindex!(cf[8],args[8],i...)
-#  evaluate!(cgi,gi,f1,f2,f3,f4,f5,f6,f7,f8)
-#end
-#
-#@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any,Any,Any,Any,Any},i...)
-#  f1 = getindex!(cf[1],args[1],i...)
-#  f2 = getindex!(cf[2],args[2],i...)
-#  f3 = getindex!(cf[3],args[3],i...)
-#  f4 = getindex!(cf[4],args[4],i...)
-#  f5 = getindex!(cf[5],args[5],i...)
-#  f6 = getindex!(cf[6],args[6],i...)
-#  f7 = getindex!(cf[7],args[7],i...)
-#  f8 = getindex!(cf[8],args[8],i...)
-#  f9 = getindex!(cf[9],args[9],i...)
-#  evaluate!(cgi,gi,f1,f2,f3,f4,f5,f6,f7,f8,f9)
-#end
+@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any},i...)
+  f1 = getindex!(cf[1],args[1],i...)
+  evaluate!(cgi,gi,f1)
+end
+
+@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any},i...)
+  f1 = getindex!(cf[1],args[1],i...)
+  f2 = getindex!(cf[2],args[2],i...)
+  evaluate!(cgi,gi,f1,f2)
+end
+
+@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any},i...)
+  f1 = getindex!(cf[1],args[1],i...)
+  f2 = getindex!(cf[2],args[2],i...)
+  f3 = getindex!(cf[3],args[3],i...)
+  evaluate!(cgi,gi,f1,f2,f3)
+end
+
+@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any},i...)
+  f1 = getindex!(cf[1],args[1],i...)
+  f2 = getindex!(cf[2],args[2],i...)
+  f3 = getindex!(cf[3],args[3],i...)
+  f4 = getindex!(cf[4],args[4],i...)
+  evaluate!(cgi,gi,f1,f2,f3,f4)
+end
+
+@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any},i...)
+  f1 = getindex!(cf[1],args[1],i...)
+  f2 = getindex!(cf[2],args[2],i...)
+  f3 = getindex!(cf[3],args[3],i...)
+  f4 = getindex!(cf[4],args[4],i...)
+  f5 = getindex!(cf[5],args[5],i...)
+  evaluate!(cgi,gi,f1,f2,f3,f4,f5)
+end
+
+@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any,Any},i...)
+  f1 = getindex!(cf[1],args[1],i...)
+  f2 = getindex!(cf[2],args[2],i...)
+  f3 = getindex!(cf[3],args[3],i...)
+  f4 = getindex!(cf[4],args[4],i...)
+  f5 = getindex!(cf[5],args[5],i...)
+  f6 = getindex!(cf[6],args[6],i...)
+  evaluate!(cgi,gi,f1,f2,f3,f4,f5,f6)
+end
+
+@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any,Any,Any},i...)
+  f1 = getindex!(cf[1],args[1],i...)
+  f2 = getindex!(cf[2],args[2],i...)
+  f3 = getindex!(cf[3],args[3],i...)
+  f4 = getindex!(cf[4],args[4],i...)
+  f5 = getindex!(cf[5],args[5],i...)
+  f6 = getindex!(cf[6],args[6],i...)
+  f7 = getindex!(cf[7],args[7],i...)
+  evaluate!(cgi,gi,f1,f2,f3,f4,f5,f6,f7)
+end
+
+@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any,Any,Any,Any},i...)
+  f1 = getindex!(cf[1],args[1],i...)
+  f2 = getindex!(cf[2],args[2],i...)
+  f3 = getindex!(cf[3],args[3],i...)
+  f4 = getindex!(cf[4],args[4],i...)
+  f5 = getindex!(cf[5],args[5],i...)
+  f6 = getindex!(cf[6],args[6],i...)
+  f7 = getindex!(cf[7],args[7],i...)
+  f8 = getindex!(cf[8],args[8],i...)
+  evaluate!(cgi,gi,f1,f2,f3,f4,f5,f6,f7,f8)
+end
+
+@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any,Any,Any,Any,Any},i...)
+  f1 = getindex!(cf[1],args[1],i...)
+  f2 = getindex!(cf[2],args[2],i...)
+  f3 = getindex!(cf[3],args[3],i...)
+  f4 = getindex!(cf[4],args[4],i...)
+  f5 = getindex!(cf[5],args[5],i...)
+  f6 = getindex!(cf[6],args[6],i...)
+  f7 = getindex!(cf[7],args[7],i...)
+  f8 = getindex!(cf[8],args[8],i...)
+  f9 = getindex!(cf[9],args[9],i...)
+  evaluate!(cgi,gi,f1,f2,f3,f4,f5,f6,f7,f8,f9)
+end
