@@ -51,7 +51,7 @@ function CLagrangianFESpace(
   rd = ReferenceDomain()
   fe_basis, fe_dof_basis = compute_cell_space(
     cell_shapefuns,cell_dof_basis,rd,rd,grid)
-  cell_is_dirichlet = collect(lazy_map(dofs->any(dof->dof<0,dofs),cell_dofs_ids))
+  cell_is_dirichlet = _generate_cell_is_dirichlet(cell_dofs_ids)
 
   nfree = length(glue.free_dof_to_node)
   ndirichlet = length(glue.dirichlet_dof_to_node)
@@ -78,7 +78,7 @@ function _use_clagrangian(trian,cell_reffe,conf)
   false
 end
 
-function _use_clagrangian(trian,cell_reffe,conf::H1Conformity)
+function _use_clagrangian(trian::Grid,cell_reffe,conf::H1Conformity)
   ctype_reffe1, cell_ctype1 = compress_cell_data(cell_reffe)
   ctype_reffe2 = get_reffes(trian)
   if length(ctype_reffe1) != 1 || length(ctype_reffe2) != 1
@@ -120,6 +120,17 @@ _default_mask(::Type{T}) where T <: MultiValue = ntuple(i->true,Val{length(T)}()
 
 _dof_type(::Type{T}) where T = T
 _dof_type(::Type{T}) where T<:MultiValue = eltype(T)
+
+function _generate_cell_is_dirichlet(cell_dofs)
+  cell_is_dirichlet = Vector{Bool}(undef,length(cell_dofs))
+  cache = array_cache(cell_dofs)
+  isnegative(dof) = dof<0
+  for cell in 1:length(cell_dofs)
+    dofs = getindex!(cache,cell_dofs,cell)
+    cell_is_dirichlet[cell] = any(isnegative,dofs)
+  end
+  cell_is_dirichlet
+end
 
 function _generate_node_to_dof_glue_component_major(z,node_to_tag,tag_to_mask)
   @notimplementedif length(z) != 1
