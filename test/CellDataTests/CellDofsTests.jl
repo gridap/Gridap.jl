@@ -17,7 +17,7 @@ model = simplexify(CartesianDiscreteModel(domain,cells))
 
 trian = Triangulation(model)
 
-v = GenericCellField(get_fe_basis(trian),trian,ReferenceDomain())
+v = GenericCellField(get_cell_shapefuns(trian),trian,ReferenceDomain())
 
 ctype_to_reffe, cell_to_ctype = compress_cell_data(get_cell_reffe(trian))
 ctype_to_dofbasis = map(get_dof_basis,ctype_to_reffe)
