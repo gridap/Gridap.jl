@@ -100,11 +100,11 @@ FESpaces.get_vector_type(f::MultiFieldFESpace) = f.vector_type
 
 FESpaces.ConstraintStyle(::Type{MultiFieldFESpace{S,B,V}}) where {S,B,V} = B()
 
-function FESpaces.get_cell_shapefuns(f::MultiFieldFESpace)
+function FESpaces.get_fe_basis(f::MultiFieldFESpace)
   nfields = length(f.spaces)
   all_febases = SingleFieldFEBasis[]
   for field_i in 1:nfields
-    dv_i = get_cell_shapefuns(f.spaces[field_i])
+    dv_i = get_fe_basis(f.spaces[field_i])
     cell_basis = lazy_map(BlockMap(nfields,field_i),get_data(dv_i))
     trian = get_triangulation(dv_i)
     bs = BasisStyle(dv_i)
@@ -116,11 +116,11 @@ function FESpaces.get_cell_shapefuns(f::MultiFieldFESpace)
   MultiFieldCellField(all_febases)
 end
 
-function FESpaces.get_cell_shapefuns_trial(f::MultiFieldFESpace)
+function FESpaces.get_trial_fe_basis(f::MultiFieldFESpace)
   nfields = length(f.spaces)
   all_febases = SingleFieldFEBasis[]
   for field_i in 1:nfields
-    du_i = get_cell_shapefuns_trial(f.spaces[field_i])
+    du_i = get_trial_fe_basis(f.spaces[field_i])
     cell_basis = lazy_map(BlockMap((1,nfields),field_i),get_data(du_i))
     trian = get_triangulation(du_i)
     bs = BasisStyle(du_i)

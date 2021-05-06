@@ -58,7 +58,11 @@ function CLagrangianFESpace(
   glue, dirichlet_dof_tag = _generate_node_to_dof_glue_component_major(
     z,node_to_tag,tag_to_masks)
   cell_dofs_ids, cell_reffe = _generate_cell_data_clagrangian(z,grid,glue)
-  cell_shapefuns, cell_dof_basis = compute_cell_space(cell_reffe, grid)
+  cell_shapefuns = lazy_map(get_shapefuns,cell_reffe)
+  cell_dof_basis = lazy_map(get_dof_basis,cell_reffe)
+  rd = ReferenceDomain()
+  fe_basis, fe_dof_basis = compute_cell_space(
+    cell_shapefuns,cell_dof_basis,rd,rd,grid)
   cell_is_dirichlet = collect(lazy_map(dofs->any(dof->dof<0,dofs),cell_dofs_ids))
 
   nfree = length(glue.free_dof_to_node)
@@ -71,8 +75,8 @@ function CLagrangianFESpace(
     nfree,
     ndirichlet,
     cell_dofs_ids,
-    cell_shapefuns,
-    cell_dof_basis,
+    fe_basis,
+    fe_dof_basis,
     cell_is_dirichlet,
     dirichlet_dof_tag,
     dirichlet_cells,
@@ -89,12 +93,12 @@ function get_free_dof_ids(f::CLagrangianFESpace)
   get_free_dof_ids(f.space)
 end
 
-function get_cell_shapefuns(f::CLagrangianFESpace)
-  get_cell_shapefuns(f.space)
+function get_fe_basis(f::CLagrangianFESpace)
+  get_fe_basis(f.space)
 end
 
-function get_cell_shapefuns_trial(f::CLagrangianFESpace)
-  get_cell_shapefuns_trial(f.space)
+function get_trial_fe_basis(f::CLagrangianFESpace)
+  get_trial_fe_basis(f.space)
 end
 
 get_vector_type(f::CLagrangianFESpace) = get_vector_type(f.space)
@@ -109,8 +113,8 @@ function get_cell_dof_ids(f::CLagrangianFESpace)
   get_cell_dof_ids(f.space)
 end
 
-function get_cell_dof_basis(f::CLagrangianFESpace)
-  get_cell_dof_basis(f.space)
+function get_fe_dof_basis(f::CLagrangianFESpace)
+  get_fe_dof_basis(f.space)
 end
 
 function get_dirichlet_dof_ids(f::CLagrangianFESpace)
