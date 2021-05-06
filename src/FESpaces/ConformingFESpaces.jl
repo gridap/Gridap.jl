@@ -21,7 +21,7 @@ function Base.getproperty(a::CellConformity, sym::Symbol)
   end
 end
 
-function Base.propertynames(x::CellConformity, private=false)
+function Base.propertynames(x::CellConformity, private::Bool=false)
   (fieldnames(typeof(x))...,:d_ctype_offset,:d_ctype_ldface_own_ldofs)
 end
 
@@ -60,10 +60,10 @@ struct CellFE{T} <: GridapType
   cell_dof_basis::AbstractArray{<:AbstractVector{<:Dof}}
   cell_shapefuns_domain::DomainStyle
   cell_dof_basis_domain::DomainStyle
-  max_order::Int 
+  max_order::Int
 end
 # If the shapefuns are not polynomials, max_order has to be understood as the order of a
-# reasonable quadrature rule to integrate the shape functions. Only used by FESpace 
+# reasonable quadrature rule to integrate the shape functions. Only used by FESpace
 # constructors that need to integrate the shape functions (e.g., ZeroMeanFESpace).
 
 Geometry.num_cells(cell_fe::CellFE) = length(cell_fe.cell_ctype)
@@ -72,33 +72,11 @@ function CellConformity(cell_fe::CellFE)
   cell_fe.cell_conformity
 end
 
-function CellConformity(cell_fe::CellFE,cell_conf::Nothing)
-  cell_fe.cell_conformity
-end
-
-function CellConformity(cell_fe::CellFE,cell_conf::CellConformity)
-  @assert length(cell_fe.cell_ctype) == length(cell_conf.cell_ctype)
-  cell_conf
-end
-
-function CellConformity(cell_fe::CellFE,conformity::Union{Symbol,Conformity})
-  if conformity in (L2Conformity(),:L2)
-    @notimplemented
-  elseif conformity == :default
-    cell_fe.cell_conformity
-  else
-    @unreachable """\n
-    Argument conformity should be either :default, :L2, or L2Conformity()
-    """
-  end
-end
-
 """
 Generate A CellConformity from a vector of reference fes
 """
-function CellConformity(cell_reffe::AbstractArray{<:ReferenceFE},conformity=nothing)
+function CellConformity(cell_reffe::AbstractArray{<:ReferenceFE},conf::Conformity)
   ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
-  conf = Conformity(first(ctype_reffe),conformity)
   ctype_lface_own_ldofs = map(reffe->get_face_own_dofs(reffe,conf),ctype_reffe)
   ctype_lface_pindex_pdofs = map(reffe->get_face_own_dofs_permutations(reffe,conf),ctype_reffe)
   D = num_dims(first(ctype_reffe))
@@ -114,15 +92,16 @@ end
 Generate a CellFE from a vector of reference fes
 """
 function CellFE(
-  cell_map::AbstractArray{<:Field},
-  cell_reffe::AbstractArray{<:ReferenceFE})
-
+  model::DiscreteModel,
+  cell_reffe::AbstractArray{<:ReferenceFE},
+  conformity::Conformity
+ )
+  cell_conformity = CellConformity(cell_reffe,conformity)
   ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
   ctype_num_dofs = map(num_dofs,ctype_reffe)
   ctype_ldof_comp = map(reffe->get_dof_to_comp(reffe),ctype_reffe)
-  cell_conformity = CellConformity(cell_reffe)
-  cell_shapefuns = lazy_map(get_shapefuns,cell_reffe,cell_map)
-  cell_dof_basis = lazy_map(get_dof_basis,cell_reffe,cell_map)
+  cell_shapefuns = get_cell_shapefuns(model,cell_reffe,conformity)
+  cell_dof_basis = get_cell_dof_basis(model,cell_reffe,conformity)
   cell_shapefuns_domain = ReferenceDomain()
   cell_dof_basis_domain = cell_shapefuns_domain
   max_order = maximum(map(get_order,ctype_reffe))
@@ -139,6 +118,18 @@ function CellFE(
     max_order)
 end
 
+function get_cell_dof_basis(model::DiscreteModel,
+                            cell_reffe::AbstractArray{<:ReferenceFE},
+                            ::Conformity)
+  lazy_map(get_dof_basis,cell_reffe)
+end
+
+function get_cell_shapefuns(model::DiscreteModel,
+                            cell_reffe::AbstractArray{<:ReferenceFE},
+                            ::Conformity)
+  lazy_map(get_shapefuns,cell_reffe)
+end
+
 # Low level conforming FE Space constructor
 # The user is not expected to call this function. Use the factory function instead
 function _ConformingFESpace(
@@ -146,7 +137,6 @@ function _ConformingFESpace(
   model::DiscreteModel,
   face_labeling::FaceLabeling,
   cell_fe::CellFE,
-  cell_conformity::CellConformity,
   dirichlet_tags,
   dirichlet_components)
 
@@ -154,7 +144,7 @@ function _ConformingFESpace(
   ntags = length(dirichlet_tags)
 
   cell_dofs_ids, nfree, ndirichlet, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
-    cell_fe,cell_conformity,grid_topology,face_labeling,dirichlet_tags,dirichlet_components)
+    cell_fe,CellConformity(cell_fe),grid_topology,face_labeling,dirichlet_tags,dirichlet_components)
 
   trian = Triangulation(model)
   cell_shapefuns, cell_dof_basis = compute_cell_space(cell_fe,trian)
@@ -175,12 +165,29 @@ function _ConformingFESpace(
     ntags)
 end
 
+function compute_cell_space(cell_shapefuns::AbstractArray{<:AbstractArray{<:Field}},
+                            cell_dof_basis::AbstractArray{<:AbstractArray{<:Dof}},
+                            cell_shapefuns_domain::DomainStyle,
+                            cell_dof_basis_domain::DomainStyle,
+                            trian::Triangulation)
+    SingleFieldFEBasis(cell_shapefuns,trian,TestBasis(),cell_shapefuns_domain),
+    CellDof(cell_dof_basis,trian,cell_dof_basis_domain)
+end
+
+function compute_cell_space(cellfe::CellFE,trian::Triangulation)
+    compute_cell_space(cellfe.cell_shapefuns,
+                       cellfe.cell_dof_basis,
+                       cellfe.cell_shapefuns_domain,
+                       cellfe.cell_dof_basis_domain,
+                       trian)
+end
+
 function compute_cell_space(cell_fe,trian::Triangulation)
-  cell_shapefuns, cell_dof_basis, d1, d2 = _compute_cell_space(cell_fe,trian)
+  cell_shapefuns, cell_dof_basis, d1, d2 = _compute_cell_space(cell_fe)
   SingleFieldFEBasis(cell_shapefuns,trian,TestBasis(),d1), CellDof(cell_dof_basis,trian,d2)
 end
 
-function _compute_cell_space(cell_fe::CellFE,trian::Triangulation)
+function _compute_cell_space(cell_fe::CellFE)
   ( cell_fe.cell_shapefuns,
     cell_fe.cell_dof_basis,
     cell_fe.cell_shapefuns_domain,
@@ -188,11 +195,9 @@ function _compute_cell_space(cell_fe::CellFE,trian::Triangulation)
 end
 
 function _compute_cell_space(
-  cell_reffe::AbstractArray{<:ReferenceFE}, trian::Triangulation)
-
-  cell_map = get_cell_map(trian)
-  cell_shapefuns = lazy_map(get_shapefuns,cell_reffe,cell_map)
-  cell_dof_basis = lazy_map(get_dof_basis,cell_reffe,cell_map)
+  cell_reffe::AbstractArray{<:ReferenceFE})
+  cell_shapefuns = lazy_map(get_shapefuns,cell_reffe)
+  cell_dof_basis = lazy_map(get_dof_basis,cell_reffe)
   cell_shapefuns, cell_dof_basis, ReferenceDomain(), ReferenceDomain()
 end
 

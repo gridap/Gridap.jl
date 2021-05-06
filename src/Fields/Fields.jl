@@ -19,6 +19,7 @@ using LinearAlgebra: mul!, Transpose
 
 using ForwardDiff
 using FillArrays
+using NLsolve
 using Test
 using StaticArrays
 using LinearAlgebra
@@ -101,5 +102,7 @@ include("DiffOperators.jl")
 include("AutoDiff.jl")
 
 include("ArrayBlocks.jl")
+
+include("InverseFields.jl")
 
 end

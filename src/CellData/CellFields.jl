@@ -533,7 +533,7 @@ function Base.getproperty(x::CellField, sym::Symbol)
   end
 end
 
-function Base.propertynames(x::CellField, private=false)
+function Base.propertynames(x::CellField, private::Bool=false)
   (fieldnames(typeof(x))...,:⁺,:plus,:⁻,:minus)
 end
 

@@ -293,8 +293,8 @@ function get_cell_dof_ids(f::FESpaceWithLinearConstraints)
   f.cell_to_lmdof_to_mdof
 end
 
-function get_cell_dof_basis(f::FESpaceWithLinearConstraints)
-  get_cell_dof_basis(f.space)
+function get_fe_dof_basis(f::FESpaceWithLinearConstraints)
+  get_fe_dof_basis(f.space)
 end
 
 get_dirichlet_dof_ids(f::FESpaceWithLinearConstraints) = Base.OneTo(length(f.mDOF_to_DOF) - f.n_fmdofs)
@@ -470,12 +470,12 @@ function get_vector_type(f::FESpaceWithLinearConstraints)
   get_vector_type(f.space)
 end
 
-function get_cell_shapefuns(f::FESpaceWithLinearConstraints)
-  get_cell_shapefuns(f.space)
+function get_fe_basis(f::FESpaceWithLinearConstraints)
+  get_fe_basis(f.space)
 end
 
-function get_cell_shapefuns_trial(f::FESpaceWithLinearConstraints)
-  get_cell_shapefuns_trial(f.space)
+function get_trial_fe_basis(f::FESpaceWithLinearConstraints)
+  get_trial_fe_basis(f.space)
 end
 
 function CellField(f::FESpaceWithLinearConstraints,cellvals)
