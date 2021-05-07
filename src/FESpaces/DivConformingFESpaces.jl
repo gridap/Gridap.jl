@@ -137,7 +137,14 @@ function return_cache(::typeof(_transform_rt_dof_basis),
                                  get_face_moments(dofs)
   db = MomentBasedDofBasis(nodes,nf_moments,nf_nodes)
 
-  face_moments = deepcopy(nf_moments)
+  # Determine the type of the elements
+  # in the range of Field. This is the
+  # element type of the face_moments array.
+  D = num_dims(reffe)
+  pt = Point{D,et}
+  T=return_type(phi,zero(pt))
+  face_moments = [ similar(i,T)  for i in nf_moments ]
+
   Jt_q_cache = return_cache(∇(phi),db.nodes)
   cache = (db.nodes, db.face_nodes, nf_moments, face_moments, Jt_q_cache)
   cache
@@ -160,9 +167,9 @@ function evaluate!(cache,
       num_qpoints, num_moments = size(moments)
       for i in 1:num_qpoints
         Jt_q_i = Jt_q[nf_nodes[face][i]]
-        change = sign * meas(Jt_q_i) * inv(transpose(Jt_q_i))
+        change = sign * meas(Jt_q_i) * pinvJt(Jt_q_i)
         for j in 1:num_moments
-          face_moments[face][i,j] = nf_moments[face][i,j] ⋅ change
+          face_moments[face][i,j] = change ⋅ nf_moments[face][i,j]
         end
       end
     end

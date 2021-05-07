@@ -28,7 +28,7 @@ import LinearAlgebra: det, inv, transpose, tr, cross
 import LinearAlgebra: ⋅, dot
 
 import Base: +, -, *, /
-import Gridap.TensorValues: ⊗, ⊙, symmetric_part, outer
+import Gridap.TensorValues: ⊗, ⊙, symmetric_part, outer, meas
 
 import Gridap.Arrays: IndexStyle
 import Gridap.Arrays: return_cache

@@ -149,8 +149,8 @@ function _RT_face_moments(p, fshfs, c_fips, fcips, fwips,phi)
   # Hence, J = transpose(grad(phi))
 
   Jt = fill(∇(phi),nc)
-  Jt_inv = lazy_map(Operation(inv),Jt)
-  det_Jt = lazy_map(Operation(det),Jt)
+  Jt_inv = lazy_map(Operation(pinvJt),Jt)
+  det_Jt = lazy_map(Operation(meas),Jt)
   change = lazy_map(*,det_Jt,Jt_inv)
   change_ips = lazy_map(evaluate,change,fcips)
 
@@ -222,10 +222,10 @@ function _RT_cell_values(p,et,order,phi)
   cell_moments = _RT_cell_moments(p, cbasis, ccips, cwips )
 
   # Must scale weights using phi map to get the correct integrals
-  # scaling = det(grad(phi))
+  # scaling = meas(grad(phi))
   Jt = ∇(phi)
-  Jt_inv = inv(Jt)
-  det_Jt = det(Jt)
+  Jt_inv = pinvJt(Jt)
+  det_Jt = meas(Jt)
   change = det_Jt*Jt_inv
   change_ips = evaluate(change,ccips)
 
@@ -399,7 +399,7 @@ function evaluate!(cache,::ContraVariantPiolaMap,
                    Jt::Number,
                    detJ::Number,
                    sign_flip::Bool)
-  ((-1)^sign_flip*v)⋅((1/abs(detJ))*Jt)
+  ((-1)^sign_flip*v)⋅((1/detJ)*Jt)
 end
 
 function evaluate!(cache,
@@ -408,7 +408,7 @@ function evaluate!(cache,
                    phi::Field,
                    sign_flip::AbstractVector{<:Field})
   Jt = ∇(phi)
-  detJ = Operation(det)(Jt)
+  detJ = Operation(meas)(Jt)
   Broadcasting(Operation(k))(v,Jt,detJ,sign_flip)
 end
 
@@ -419,7 +419,7 @@ function lazy_map(
   sign_flip::AbstractArray{<:AbstractArray{<:Field}})
 
   cell_Jt = lazy_map(∇,cell_map)
-  cell_detJ = lazy_map(Operation(det),cell_Jt)
+  cell_detJ = lazy_map(Operation(meas),cell_Jt)
 
   lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_Jt,cell_detJ,sign_flip)
 end
