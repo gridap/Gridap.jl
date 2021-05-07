@@ -126,7 +126,7 @@ function Base.broadcasted(::typeof(*),::typeof(∇),f)
 end
 
 function Base.broadcasted(::typeof(*),::typeof(∇),f::Function)
-  broadcasted(*,∇,GenericField(f))
+  Base.broadcasted(*,∇,GenericField(f))
 end
 
 struct ShiftedNabla{N,T}
@@ -165,5 +165,5 @@ function Base.broadcasted(::typeof(*),s::ShiftedNabla,f)
 end
 
 function Base.broadcasted(::typeof(*),s::ShiftedNabla,f::Function)
-  broadcasted(*,s,GenericField(f))
+  Base.broadcasted(*,s,GenericField(f))
 end
