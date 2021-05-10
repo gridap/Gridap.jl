@@ -100,18 +100,17 @@ LoopStyle(::Type{<:InserterCSC}) = Loop()
   p = searchsortedfirst(a.rowval,i,pini,pend,Base.Order.Forward)
   if (p>pend)
     # add new entry
-    a.colnnz[j]+=1
+    a.colnnz[j] += 1
     a.rowval[p] = i
   elseif a.rowval[p] != i
     # shift one forward from p to pend
     @check  pend+1 < Int(a.colptr[j+1])
     for k in pend:-1:p
-      o = k + one(Ti)
-      a.rowval[o] = a.rowvals[k]
-      a.nzval[o] = a.nzval[k]
+      o = k + 1
+      a.rowval[o] = a.rowval[k]
     end
     # add new entry
-    a.colnnz[j]+=1
+    a.colnnz[j] += 1
     a.rowval[p] = i
   end
   nothing
