@@ -96,22 +96,27 @@ for A in (SparseMatrixCSC{Float64,Int},SparseMatrixCSC{Float64,Int32})
   add_entry!(a,1.0,1,1)
   add_entry!(a,nothing,1,1)
   add_entry!(a,nothing,3,1)
+  add_entry!(a,nothing,2,1)
   add_entry!(a,3.0,4,9)
-  @test a.rowptrs == [0, 2, 0, 1, 1, 0, 0]
+  @test a.colnnzmax == [4, 0, 0, 0, 0, 0, 0, 0, 1]
   b = nz_allocation(a)
   @test LoopStyle(b) == Loop()
-  @test b.rowptrs == [1, 3, 3, 4, 5, 5, 5]
+  @test b.colnnz == [0, 0, 0, 0, 0, 0, 0, 0, 0]
+  @test b.colptr == [1, 5, 5, 5, 5, 5, 5, 5, 5, 6]
   add_entry!(b,1.0,1,1)
   add_entry!(b,nothing,1,1)
-  add_entry!(b,nothing,3,1)
+  add_entry!(b,4.0,3,1)
+  add_entry!(b,2.0,3,1)
+  add_entry!(b,8.0,2,1)
   add_entry!(b,3.0,4,9)
+  @test b.colnnz == [3, 0, 0, 0, 0, 0, 0, 0, 1]
   c = create_from_nz(b)
   @test LoopStyle(c) == DoNotLoop()
   @test isa(c,A)
   I,J,V = findnz(c)
-  @test I == [1,3,4]
-  @test J == [1,1,9]
-  @test V == Float64[1,0,3]
+  @test I == [1,2,3,4]
+  @test J == [1,1,1,9]
+  @test V == Float64[1,8,6,3]
   add_entry!(c,1.0,1,1)
   add_entry!(c,nothing,1,1)
   add_entry!(c,nothing,3,1)
@@ -120,14 +125,12 @@ for A in (SparseMatrixCSC{Float64,Int},SparseMatrixCSC{Float64,Int32})
   a = nz_counter(A,(rows,cols))
   add_entries!(a,[1.0 -1.0; -1.0 1.0],[1,-1],[-1,1])
   add_entries!(a,nothing,[1,1],[1,-1])
-  @test a.rowptrs == [0, 3, 0, 0, 0, 0, 0]
   b = nz_allocation(a)
   add_entries!(b,[1.0 -1.0; -1.0 1.0],[1,-1],[-1,1])
   add_entries!(b,nothing,[1,1],[1,-1])
   c = create_from_nz(b)
   add_entries!(c,[1.0 -1.0; -1.0 1.0],[1,-1],[-1,1])
   add_entries!(c,nothing,[1,1],[1,-1])
-
 end
 
 for A in (
