@@ -117,19 +117,13 @@ function nz_counter(::Type{SparseMatrixCSC{Tv,Ti}},axes) where {Tv,Ti}
 end
 
 function nz_allocation(a::CounterCSRR{Tv,Ti}) where {Tv,Ti}
-  rowptrs = copy(a.rowptrs)
+  rowptrs = a.rowptrs
   length_to_ptrs!(rowptrs)
   ndata = rowptrs[end]-1
   colvals = Vector{Ti}(undef,ndata)
   nzvals = zeros(Tv,ndata)
   work = Vector{Ti}(undef,a.ncols)
   CSRR(a.nrows,a.ncols,rowptrs,colvals,nzvals,work)
-end
-
-function nz_allocation!(b::CSRR,a::CounterCSRR{Tv,Ti}) where {Tv,Ti}
-  b.rowptrs .= a.rowptrs
-  length_to_ptrs!(b.rowptrs)
-  b
 end
 
 function create_from_nz(a::CSRR{Tv,Ti}) where {Tv,Ti}
@@ -140,18 +134,6 @@ function create_from_nz(a::CSRR{Tv,Ti}) where {Tv,Ti}
   nzvalscsc = Vector{Tv}(undef,cscnnz)
   _csrr_to_csc_fill!(colptrs,rowvals,nzvalscsc,a.rowptrs,a.colvals,a.nzvals)
   SparseMatrixCSC(a.nrows,a.ncols,colptrs,rowvals,nzvalscsc)
-end
-
-function create_from_nz!(A::SparseMatrixCSC,a::CSRR{Tv,Ti}) where {Tv,Ti}
-  rewind_ptrs!(a.rowptrs)
-  colptrs = A.colptr
-  cscnnz = _csrr_to_csc_count!(colptrs,a.rowptrs,a.colvals,a.nzvals,a.work)
-  rowvals = A.rowval
-  nzvalscsc = A.nzval
-  @assert length(rowvals) == cscnnz
-  @assert length(nzvalscsc) == cscnnz
-  _csrr_to_csc_fill!(colptrs,rowvals,nzvalscsc,a.rowptrs,a.colvals,a.nzvals)
-  A
 end
 
 # Notation

@@ -158,22 +158,6 @@ for T in mtypes
   @test mat[1, 1]  ≈  1.333333333333333
   @test mat[2, 1]  ≈ -0.33333333333333
 
-  if T <: SparseMatrixCSC
-    c1 = nz_counter(T,(get_rows(assem),get_cols(assem)))
-    symbolic_loop_matrix!(c1,assem,matdata)
-    c2 = nz_allocation(c1)
-    numeric_loop_matrix!(c2,assem,matdata)
-    c3 = create_from_nz(c2)
-    c4 = copy(c3)
-    c3.nzval .= 0
-    c3.rowval .= 0
-    c3.colptr .= 0
-    nz_allocation!(c2,c1)
-    numeric_loop_matrix!(c2,assem,matdata)
-    create_from_nz!(c3,c2)
-    @test c3 == c4
-  end
-
 end
 
 strian = SkeletonTriangulation(model)

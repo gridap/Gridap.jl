@@ -128,13 +128,6 @@ for A in (SparseMatrixCSC{Float64,Int},SparseMatrixCSC{Float64,Int32})
   add_entries!(c,[1.0 -1.0; -1.0 1.0],[1,-1],[-1,1])
   add_entries!(c,nothing,[1,1],[1,-1])
 
-  nz_allocation!(b,a)
-  add_entries!(b,[1.0 -1.0; -1.0 1.0],[1,-1],[-1,1])
-  add_entries!(b,nothing,[1,1],[1,-1])
-  create_from_nz!(c,b)
-  add_entries!(c,[1.0 -1.0; -1.0 1.0],[1,-1],[-1,1])
-  add_entries!(c,nothing,[1,1],[1,-1])
-
 end
 
 for A in (
