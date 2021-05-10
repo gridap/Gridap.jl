@@ -117,25 +117,25 @@ LoopStyle(::Type{<:InserterCSC}) = Loop()
   nothing
 end
 
-@inline function add_entry!(::typeof(+),a::InserterCSC{Tv,Ti},v,i,j) where {Tv,Ti}
+@noinline function add_entry!(::typeof(+),a::InserterCSC{Tv,Ti},v,i,j) where {Tv,Ti}
   pini = Int(a.colptr[j])
   pend = pini + Int(a.colnnz[j]) - 1
   p = searchsortedfirst(a.rowval,i,pini,pend,Base.Order.Forward)
   if (p>pend)
     # add new entry
-    a.colnnz[j]+=1
+    a.colnnz[j] += 1
     a.rowval[p] = i
     a.nzval[p] = v
   elseif a.rowval[p] != i
     # shift one forward from p to pend
     @check  pend+1 < Int(a.colptr[j+1])
     for k in pend:-1:p
-      o = k + one(Ti)
+      o = k + 1
       a.rowval[o] = a.rowval[k]
       a.nzval[o] = a.nzval[k]
     end
     # add new entry
-    a.colnnz[j]+=1
+    a.colnnz[j] += 1
     a.rowval[p] = i
     a.nzval[p] = v
   else 
@@ -144,6 +144,68 @@ end
   end
   nothing
 end
+
+## index of the first value of vector a that is greater than or equal to x;
+## returns length(v)+1 if x is greater than all values in v.
+#function _searchsortedfirst(v, x, lo::T, hi::T) where T<:Integer
+#  if x <= v[lo]
+#    return lo
+#  end
+#  u = one(T)
+#  if x > v[hi]
+#    return hi + u
+#  end
+#  d = T(10) - u
+#  @inbounds while lo < hi - d
+#    m = Base.Sort.midpoint(lo, hi)
+#    if v[m] < x
+#      lo = m
+#    else
+#      hi = m
+#    end
+#  end
+#  i = lo
+#  if x<=v[i]
+#    return i
+#  end
+#  i += u
+#  if x<=v[i]
+#    return i
+#  end
+#  i += u
+#  if x<=v[i]
+#    return i
+#  end
+#  i += u
+#  if x<=v[i]
+#    return i
+#  end
+#  i += u
+#  if x<=v[i]
+#    return i
+#  end
+#  i += u
+#  if x<=v[i]
+#    return i
+#  end
+#  i += u
+#  if x<=v[i]
+#    return i
+#  end
+#  i += u
+#  if x<=v[i]
+#    return i
+#  end
+#  i += u
+#  if x<=v[i]
+#    return i
+#  end
+#  i += u
+#  if x<=v[i]
+#    return i
+#  end
+#  return hi + u
+#end
 
 function nz_counter(::Type{SparseMatrixCSC{Tv,Ti}},axes) where {Tv,Ti}
   nrows = length(axes[1])
