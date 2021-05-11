@@ -292,6 +292,7 @@ LoopStyle(::T) where T = LoopStyle(T)
 
 # For dense arrays
 
+
 struct ArrayCounter{T,A}
   axes::A
   function ArrayCounter{T}(axes::A) where {T,A<:Tuple{Vararg{AbstractUnitRange}}}
@@ -313,6 +314,22 @@ nz_allocation(a::ArrayCounter{T}) where T = fill!(similar(T,map(length,a.axes)),
 create_from_nz(a::AbstractArray) = a
 
 # For sparse matrices
+
+struct MinCPU end
+
+struct MinMemory{T}
+  maxnnz::T
+end
+
+MinMemory() = MinMemory(nothing)
+
+struct SparseMatrixBuilder{T,A}
+  matrix_type::Type{T}
+  approach::A
+end
+
+get_array_type(::Type{T}) where T<:AbstractArray = T
+get_array_type(::SparseMatrixBuilder{T}) where T<:AbstractArray = T
 
 mutable struct SparseMatrixCounter{T,A}
   nnz::Int
