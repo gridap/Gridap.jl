@@ -4,13 +4,13 @@ abstract type SparseMatrixAssembler <: Assembler end
 
 """
 """
-function get_matrix_type(a::SparseMatrixAssembler)
+function get_matrix_builder(a::SparseMatrixAssembler)
   @abstractmethod
 end
 
 """
 """
-function get_vector_type(a::SparseMatrixAssembler)
+function get_vector_builder(a::SparseMatrixAssembler)
   @abstractmethod
 end
 
@@ -50,8 +50,11 @@ function numeric_loop_matrix_and_vector!(A,b,a::SparseMatrixAssembler,data)
   @abstractmethod
 end
 
+get_matrix_type(a::SparseMatrixAssembler) = get_array_type(get_matrix_builder(a))
+get_vector_type(a::SparseMatrixAssembler) = get_array_type(get_vector_builder(a))
+
 function allocate_vector(a::SparseMatrixAssembler,vecdata)
-  v1 = nz_counter(get_vector_type(a),(get_rows(a),))
+  v1 = nz_counter(get_vector_builder(a),(get_rows(a),))
   symbolic_loop_vector!(v1,a,vecdata)
   v2 = nz_allocation(v1)
   symbolic_loop_vector!(v2,a,vecdata)
@@ -70,7 +73,7 @@ function assemble_vector_add!(b,a::SparseMatrixAssembler,vecdata)
 end
 
 function assemble_vector(a::SparseMatrixAssembler,vecdata)
-  v1 = nz_counter(get_vector_type(a),(get_rows(a),))
+  v1 = nz_counter(get_vector_builder(a),(get_rows(a),))
   symbolic_loop_vector!(v1,a,vecdata)
   v2 = nz_allocation(v1)
   numeric_loop_vector!(v2,a,vecdata)
@@ -79,7 +82,7 @@ function assemble_vector(a::SparseMatrixAssembler,vecdata)
 end
 
 function allocate_matrix(a::SparseMatrixAssembler,matdata)
-  m1 = nz_counter(get_matrix_type(a),(get_rows(a),get_cols(a)))
+  m1 = nz_counter(get_matrix_builder(a),(get_rows(a),get_cols(a)))
   symbolic_loop_matrix!(m1,a,matdata)
   m2 = nz_allocation(m1)
   symbolic_loop_matrix!(m2,a,matdata)
@@ -98,7 +101,7 @@ function assemble_matrix_add!(mat,a::SparseMatrixAssembler,matdata)
 end
 
 function assemble_matrix(a::SparseMatrixAssembler,matdata)
-  m1 = nz_counter(get_matrix_type(a),(get_rows(a),get_cols(a)))
+  m1 = nz_counter(get_matrix_builder(a),(get_rows(a),get_cols(a)))
   symbolic_loop_matrix!(m1,a,matdata)
   m2 = nz_allocation(m1)
   numeric_loop_matrix!(m2,a,matdata)
@@ -107,8 +110,8 @@ function assemble_matrix(a::SparseMatrixAssembler,matdata)
 end
 
 function allocate_matrix_and_vector(a::SparseMatrixAssembler,data)
-  m1 = nz_counter(get_matrix_type(a),(get_rows(a),get_cols(a)))
-  v1 = nz_counter(get_vector_type(a),(get_rows(a),))
+  m1 = nz_counter(get_matrix_builder(a),(get_rows(a),get_cols(a)))
+  v1 = nz_counter(get_vector_builder(a),(get_rows(a),))
   symbolic_loop_matrix_and_vector!(m1,v1,a,data)
   m2 = nz_allocation(m1)
   v2 = nz_allocation(v1)
@@ -131,8 +134,8 @@ function assemble_matrix_and_vector_add!(A,b,a::SparseMatrixAssembler,data)
 end
 
 function assemble_matrix_and_vector(a::SparseMatrixAssembler, data)
-  m1 = nz_counter(get_matrix_type(a),(get_rows(a),get_cols(a)))
-  v1 = nz_counter(get_vector_type(a),(get_rows(a),))
+  m1 = nz_counter(get_matrix_builder(a),(get_rows(a),get_cols(a)))
+  v1 = nz_counter(get_vector_builder(a),(get_rows(a),))
   symbolic_loop_matrix_and_vector!(m1,v1,a,data)
   m2 = nz_allocation(m1)
   v2 = nz_allocation(v1)
@@ -144,46 +147,39 @@ end
 
 function test_sparse_matrix_assembler(a::SparseMatrixAssembler,matdata,vecdata,data)
   test_assembler(a,matdata,vecdata,data)
-  _ = get_matrix_type(a)
-  _ = get_vector_type(a)
+  _ = get_matrix_builder(a)
+  _ = get_vector_builder(a)
 end
 
-struct GenericSparseMatrixAssembler{M,V} <: SparseMatrixAssembler
-  matrix_type::Type{M}
-  vector_type::Type{V}
+struct GenericSparseMatrixAssembler <: SparseMatrixAssembler
+  matrix_builder
+  vector_builder
   rows::AbstractUnitRange
   cols::AbstractUnitRange
   strategy::AssemblyStrategy
-
-  function GenericSparseMatrixAssembler(
-    matrix_type::Type{M},
-    vector_type::Type{V},
-    rows::AbstractUnitRange,
-    cols::AbstractUnitRange,
-    strategy::AssemblyStrategy) where {M,V}
-    new{M,V}(matrix_type,vector_type,rows,cols,strategy)
-  end
 end
 
 function SparseMatrixAssembler(
-  mat::Type,vec::Type,trial::FESpace,test::FESpace,strategy::AssemblyStrategy)
+  mat,
+  vec,
+  trial::FESpace,
+  test::FESpace,
+  strategy::AssemblyStrategy=DefaultAssemblyStrategy())
+
   rows = get_free_dof_ids(test)
   cols = get_free_dof_ids(trial)
-  GenericSparseMatrixAssembler(mat,vec,rows,cols,strategy)
+  GenericSparseMatrixAssembler(
+    SparseMatrixBuilder(mat),
+    ArrayBuilder(vec),
+    rows,
+    cols,
+    strategy)
 end
 
-function SparseMatrixAssembler(mat::Type,vec::Type,trial::FESpace,test::FESpace)
-  strategy = DefaultAssemblyStrategy()
-  rows = get_free_dof_ids(test)
-  cols = get_free_dof_ids(trial)
-  GenericSparseMatrixAssembler(mat,vec,rows,cols,strategy)
-end
-
-function SparseMatrixAssembler(mat::Type,trial::FESpace,test::FESpace)
-  strategy = DefaultAssemblyStrategy()
-  rows = get_free_dof_ids(test)
-  cols = get_free_dof_ids(trial)
-  GenericSparseMatrixAssembler(mat,Vector{eltype(mat)},rows,cols,strategy)
+function SparseMatrixAssembler(mat,trial::FESpace,test::FESpace)
+  mat_builder = SparseMatrixBuilder(mat)
+  T = eltype(get_array_type(mat_builder))
+  SparseMatrixAssembler(mat_builder,Vector{T},trial,test)
 end
 
 """
@@ -192,19 +188,16 @@ function SparseMatrixAssembler(trial::FESpace,test::FESpace)
   T = get_dof_value_type(trial)
   matrix_type = SparseMatrixCSC{T,Int}
   vector_type = Vector{T}
-  strategy = DefaultAssemblyStrategy()
-  rows = get_free_dof_ids(test)
-  cols = get_free_dof_ids(trial)
-  GenericSparseMatrixAssembler(matrix_type,vector_type,rows,cols,strategy)
+  SparseMatrixAssembler(matrix_type,vector_type,trial,test)
 end
 
 get_rows(a::GenericSparseMatrixAssembler) = a.rows
 
 get_cols(a::GenericSparseMatrixAssembler) = a.cols
 
-get_matrix_type(a::GenericSparseMatrixAssembler) = a.matrix_type
+get_matrix_builder(a::GenericSparseMatrixAssembler) = a.matrix_builder
 
-get_vector_type(a::GenericSparseMatrixAssembler) = a.vector_type
+get_vector_builder(a::GenericSparseMatrixAssembler) = a.vector_builder
 
 get_assembly_strategy(a::GenericSparseMatrixAssembler) = a.strategy
 

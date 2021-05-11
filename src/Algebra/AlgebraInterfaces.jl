@@ -299,7 +299,7 @@ end
 
 ArrayBuilder(a::ArrayBuilder) = a
 
-get_array_type(::ArrayBuilder{T}) where T<:AbstractArray = T
+get_array_type(::ArrayBuilder{T}) where T = T
 
 struct ArrayCounter{T,A}
   axes::A
@@ -337,10 +337,10 @@ struct SparseMatrixBuilder{T,A}
   approach::A
 end
 
-SparseMatrixBuilder(::Type{T}) where T<:AbstractArray = SparseMatrixBuilder(T,MinMemory())
+SparseMatrixBuilder(::Type{T}) where T< = SparseMatrixBuilder(T,MinMemory())
 SparseMatrixBuilder(a::SparseMatrixBuilder) = a
 
-get_array_type(::SparseMatrixBuilder{T}) where T<:AbstractArray = T
+get_array_type(::SparseMatrixBuilder{T}) where T = T
 
 mutable struct SparseMatrixCounter{T,A}
   nnz::Int

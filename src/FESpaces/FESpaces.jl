@@ -149,6 +149,8 @@ export test_assembler
 export collect_cell_matrix
 export collect_cell_vector
 export collect_cell_matrix_and_vector
+export get_matrix_builder
+export get_vector_builder
 export get_matrix_type
 export get_vector_type
 export SparseMatrixAssembler
