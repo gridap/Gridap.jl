@@ -242,10 +242,10 @@ function nz_counter(
   CounterCSRR(Tv,nrows,ncols,rowptrs)
 end
 
-function nz_counter(::Type{SparseMatrixCSC{Tv,Ti}},axes) where {Tv,Ti}
-  builder = SparseMatrixBuilder(SparseMatrixCSC{Tv,Ti},MinMemory())
-  nz_counter(builder,axes)
-end
+#function nz_counter(::Type{SparseMatrixCSC{Tv,Ti}},axes) where {Tv,Ti}
+#  builder = SparseMatrixBuilder(SparseMatrixCSC{Tv,Ti},MinMemory())
+#  nz_counter(builder,axes)
+#end
 
 function nz_allocation(a::CounterCSC{Tv,Ti}) where {Tv,Ti}
   colptr = Vector{Ti}(undef,a.ncols+1)
