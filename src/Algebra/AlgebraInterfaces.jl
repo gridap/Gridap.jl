@@ -290,7 +290,16 @@ struct DoNotLoop end
 LoopStyle(::Type) = DoNotLoop()
 LoopStyle(::T) where T = LoopStyle(T)
 
+
 # For dense arrays
+
+struct ArrayBuilder{T}
+  array_type::Type{T}
+end
+
+ArrayBuilder(a::ArrayBuilder) = a
+
+get_array_type(::ArrayBuilder{T}) where T = T
 
 struct ArrayCounter{T,A}
   axes::A
@@ -306,13 +315,32 @@ LoopStyle(::Type{<:ArrayCounter}) = DoNotLoop()
 @inline add_entries!(c::Function,a::ArrayCounter,v,i,j) = a
 @inline add_entries!(c::Function,a::ArrayCounter,v,i) = a
 
-nz_counter(::Type{T},axes) where T = ArrayCounter{T}(axes)
+#nz_counter(::Type{T},axes) where T = ArrayCounter{T}(axes)
+nz_counter(::ArrayBuilder{T},axes) where T = ArrayCounter{T}(axes)
 
-nz_allocation(a::ArrayCounter{T}) where T = fill!(similar(T,a.axes),zero(eltype(T)))
+nz_allocation(a::ArrayCounter{T}) where T = fill!(similar(T,map(length,a.axes)),zero(eltype(T)))
 
 create_from_nz(a::AbstractArray) = a
 
 # For sparse matrices
+
+struct MinCPU end
+
+struct MinMemory{T}
+  maxnnz::T
+end
+
+MinMemory() = MinMemory(nothing)
+
+struct SparseMatrixBuilder{T,A}
+  matrix_type::Type{T}
+  approach::A
+end
+
+SparseMatrixBuilder(::Type{T}) where T = SparseMatrixBuilder(T,MinMemory())
+SparseMatrixBuilder(a::SparseMatrixBuilder) = a
+
+get_array_type(::SparseMatrixBuilder{T}) where T = T
 
 mutable struct SparseMatrixCounter{T,A}
   nnz::Int
@@ -362,7 +390,11 @@ end
   nothing
 end
 
-function nz_counter(::Type{T},axes) where T<:AbstractSparseMatrix
+#function nz_counter(::Type{T},axes) where T<:AbstractSparseMatrix
+#  SparseMatrixCounter{T}(axes)
+#end
+
+function nz_counter(::SparseMatrixBuilder{T},axes) where T<:AbstractSparseMatrix
   SparseMatrixCounter{T}(axes)
 end
 

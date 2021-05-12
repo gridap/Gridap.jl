@@ -11,6 +11,7 @@ using SparseArrays
 using SparseMatricesCSR
 using Gridap.FESpaces
 using Gridap.CellData
+using Gridap.Algebra
 
 domain =(0,1,0,1)
 partition = (2,2)
@@ -189,5 +190,13 @@ test_sparse_matrix_assembler(assem,matdata,vecdata,data)
 
 A = assemble_matrix(assem,matdata)
 @test A == zeros(num_free_dofs(V),num_free_dofs(U))
+
+assem = SparseMatrixAssembler(
+  SparseMatrixBuilder(SparseMatrixCSC{Float64,Int},MinCPU()),U,V)
+test_sparse_matrix_assembler(assem,matdata,vecdata,data)
+
+assem = SparseMatrixAssembler(
+  SparseMatrixBuilder(SparseMatrixCSC{Float64,Int},MinMemory()),U,V)
+test_sparse_matrix_assembler(assem,matdata,vecdata,data)
 
 end # module
