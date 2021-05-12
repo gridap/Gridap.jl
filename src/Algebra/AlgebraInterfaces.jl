@@ -337,7 +337,7 @@ struct SparseMatrixBuilder{T,A}
   approach::A
 end
 
-SparseMatrixBuilder(::Type{T}) where T< = SparseMatrixBuilder(T,MinMemory())
+SparseMatrixBuilder(::Type{T}) where T = SparseMatrixBuilder(T,MinMemory())
 SparseMatrixBuilder(a::SparseMatrixBuilder) = a
 
 get_array_type(::SparseMatrixBuilder{T}) where T = T
