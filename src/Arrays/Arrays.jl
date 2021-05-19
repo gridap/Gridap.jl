@@ -127,6 +127,9 @@ export similar_tree_node
 import Gridap.Io: to_dict
 import Gridap.Io: from_dict
 
+export AddEntriesMap
+export TouchEntriesMap
+
 export ∑
 
 include("Interface.jl")
