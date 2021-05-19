@@ -208,7 +208,7 @@ function change_domain(a::SingleFieldFEBasis,trian::Triangulation,target_domain:
   SingleFieldFEBasis(get_data(g),trian,a.basis_style,target_domain)
 end
 
-# We implement this for FEBasis since MultiFieldFEBasis will use this code
+# We implement this for FEBasis since extensions of FEBasis might want to re-use this code
 function change_domain_skeleton(a::FEBasis,trian::SkeletonTriangulation,target_domain::DomainStyle)
   a_on_plus_trian = change_domain(a,trian.plus,target_domain)
   a_on_minus_trian = change_domain(a,trian.minus,target_domain)
