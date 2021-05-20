@@ -69,7 +69,7 @@ end
 
 function assemble_vector_add!(b,a::SparseMatrixAssembler,vecdata)
   numeric_loop_vector!(b,a,vecdata)
-  b
+  create_from_nz(b)
 end
 
 function assemble_vector(a::SparseMatrixAssembler,vecdata)
@@ -97,7 +97,7 @@ end
 
 function assemble_matrix_add!(mat,a::SparseMatrixAssembler,matdata)
   numeric_loop_matrix!(mat,a,matdata)
-  mat
+  create_from_nz(mat)
 end
 
 function assemble_matrix(a::SparseMatrixAssembler,matdata)
@@ -125,12 +125,11 @@ function assemble_matrix_and_vector!(A,b,a::SparseMatrixAssembler, data)
   fill_entries!(A,zero(eltype(A)))
   fill_entries!(b,zero(eltype(b)))
   assemble_matrix_and_vector_add!(A,b,a,data)
-  A, b
 end
 
 function assemble_matrix_and_vector_add!(A,b,a::SparseMatrixAssembler,data)
   numeric_loop_matrix_and_vector!(A,b,a,data)
-  A, b
+  create_from_nz(A), create_from_nz(b)
 end
 
 function assemble_matrix_and_vector(a::SparseMatrixAssembler, data)
