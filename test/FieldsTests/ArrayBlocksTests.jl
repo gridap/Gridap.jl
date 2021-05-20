@@ -208,6 +208,25 @@ A11t = transpose(A11)
 @test A11*A11t != nothing
 @test A*transpose(A) != nothing
 
+I11 = ArrayBlock([[1,2,2,1],[3,1,6,2]],[true,true])
+J11 = ArrayBlock([[3,2,1,5],[6,1,3,4]],[true,true])
+I = ArrayBlock([I11,I11],[true,true])
+J = ArrayBlock([J11,J11],[true,true])
+c11 = c[1,1]
+
+mat = zeros(ComplexF64,6,6)
+vec = zeros(ComplexF64,6)
+k! = AddEntriesMap(+)
+k!(mat,A11,I11,J11)
+k!(vec,c11,I11)
+k!(mat,A,I,J)
+k!(vec,c,I)
+k! = TouchEntriesMap()
+k!(mat,A11,I11,J11)
+k!(vec,c11,I11)
+k!(mat,A,I,J)
+k!(vec,c,I)
+
 #display(A)
 #display(c)
 #display(A[1,1])

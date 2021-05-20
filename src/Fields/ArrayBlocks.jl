@@ -1321,3 +1321,69 @@ end
     end
   end
 end
+
+# Assembly related
+
+for T in (:AddEntriesMap,:TouchEntriesMap)
+  @eval begin
+
+    function return_cache(
+      k::$T,A,v::MatrixBlock,I::VectorBlock,J::VectorBlock)
+    
+      qs = findall(v.touched)
+      i, j = Tuple(first(qs))
+      cij = return_cache(k,A,v.array[i,j],I.array[i],J.array[j])
+      ni,nj = size(v.touched)
+      cache = Matrix{typeof(cij)}(undef,ni,nj)
+      for j in 1:nj
+        for i in 1:ni
+          if v.touched[i,j]
+            cache[i,j] = return_cache(k,A,v.array[i,j],I.array[i],J.array[j])
+          end
+        end
+      end
+      cache
+    end
+    
+    function evaluate!(
+      cache, k::$T,A,v::MatrixBlock,I::VectorBlock,J::VectorBlock)
+      ni,nj = size(v.touched)
+      for j in 1:nj
+        for i in 1:ni
+          if v.touched[i,j]
+            evaluate!(cache[i,j],k,A,v.array[i,j],I.array[i],J.array[j])
+          end
+        end
+      end
+    end
+    
+    function return_cache(
+      k::$T,A,v::VectorBlock,I::VectorBlock)
+    
+      qs = findall(v.touched)
+      i = first(qs)
+      ci = return_cache(k,A,v.array[i],I.array[i])
+      ni = length(v.touched)
+      cache = Vector{typeof(ci)}(undef,ni)
+      for i in 1:ni
+        if v.touched[i]
+          cache[i] = return_cache(k,A,v.array[i],I.array[i])
+        end
+      end
+      cache
+    end
+    
+    function evaluate!(
+      cache, k::$T,A,v::VectorBlock,I::VectorBlock)
+      ni = length(v.touched)
+      for i in 1:ni
+        if v.touched[i]
+          evaluate!(cache[i],k,A,v.array[i],I.array[i])
+        end
+      end
+    end
+
+  end
+end
+
+

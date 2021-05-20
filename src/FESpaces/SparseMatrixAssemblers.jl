@@ -215,34 +215,24 @@ function symbolic_loop_matrix!(A,a::GenericSparseMatrixAssembler,matdata)
     @assert length(cellidscols) == length(cellidsrows)
     if length(cellidscols) > 0
       mat1 = get_mat(first(cellmat))
-      _symbolic_loop_matrix!(A,rows_cache,cols_cache,cellidsrows,cellidscols,mat1)
+      rows1 = getindex!(rows_cache,cellidsrows,1)
+      cols1 = getindex!(cols_cache,cellidscols,1)
+      touch! = TouchEntriesMap()
+      touch_cache = return_cache(touch!,A,mat1,rows1,cols1)
+      caches = touch_cache, rows_cache, cols_cache
+      _symbolic_loop_matrix!(A,caches,cellidsrows,cellidscols,mat1)
     end
   end
   A
 end
 
-@noinline function _symbolic_loop_matrix!(A,rows_cache,cols_cache,cell_rows,cell_cols,mat1)
+@noinline function _symbolic_loop_matrix!(A,caches,cell_rows,cell_cols,mat1)
+  touch_cache, rows_cache, cols_cache = caches
+  touch! = TouchEntriesMap()
   for cell in 1:length(cell_cols)
     rows = getindex!(rows_cache,cell_rows,cell)
     cols = getindex!(cols_cache,cell_cols,cell)
-    _symbolic_matrix_entries_at_cell!(A,rows,cols,mat1)
-  end
-end
-
-@inline function _symbolic_matrix_entries_at_cell!(A,rows,cols,mat1)
-  add_entries!(A,nothing,rows,cols)
-end
-
-@inline function _symbolic_matrix_entries_at_cell!(
-  A,rows::ArrayBlock,cols::ArrayBlock,mat1::ArrayBlock)
-  ni,nj = size(mat1.touched)
-  for j in 1:nj
-    for i in 1:ni
-      if mat1.touched[i,j]
-        _symbolic_matrix_entries_at_cell!(
-          A,rows.array[i],cols.array[j],mat1.array[i,j])
-      end
-    end
+    evaluate!(touch_cache,touch!,A,mat1,rows,cols)
   end
 end
 
@@ -255,36 +245,27 @@ function numeric_loop_matrix!(A,a::GenericSparseMatrixAssembler,matdata)
     vals_cache = array_cache(cellmat)
     @assert length(cellidscols) == length(cellidsrows)
     @assert length(cellmat) == length(cellidsrows)
-    _numeric_loop_matrix!(
-      A,vals_cache,rows_cache,cols_cache,cellmat,cellidsrows,cellidscols)
+    if length(cellmat) > 0
+      mat1 = getindex!(vals_cache,cellmat,1)
+      rows1 = getindex!(rows_cache,cellidsrows,1)
+      cols1 = getindex!(cols_cache,cellidscols,1)
+      add! = AddEntriesMap(+)
+      add_cache = return_cache(add!,A,mat1,rows1,cols1)
+      caches = add_cache, vals_cache, rows_cache, cols_cache
+      _numeric_loop_matrix!(A,caches,cellmat,cellidsrows,cellidscols)
+    end
   end
   A
 end
 
-@noinline function _numeric_loop_matrix!(
-  mat,vals_cache,rows_cache,cols_cache,cell_vals,cell_rows,cell_cols)
+@noinline function _numeric_loop_matrix!(mat,caches,cell_vals,cell_rows,cell_cols)
+  add_cache, vals_cache, rows_cache, cols_cache = caches
+  add! = AddEntriesMap(+)
   for cell in 1:length(cell_cols)
     rows = getindex!(rows_cache,cell_rows,cell)
     cols = getindex!(cols_cache,cell_cols,cell)
     vals = getindex!(vals_cache,cell_vals,cell)
-    _numeric_matrix_entries_at_cell!(mat,rows,cols,vals)
-  end
-end
-
-@inline function _numeric_matrix_entries_at_cell!(mat,rows,cols,vals)
-  add_entries!(mat,vals,rows,cols)
-end
-
-@inline function _numeric_matrix_entries_at_cell!(
-  mat,rows::ArrayBlock,cols::ArrayBlock,vals::ArrayBlock)
-  ni, nj = size(vals.touched)
-  for j in 1:nj
-    for i in 1:ni
-      if vals.touched[i,j]
-        _numeric_matrix_entries_at_cell!(
-          mat,rows.array[i],cols.array[j],vals.array[i,j])
-      end
-    end
+    evaluate!(add_cache,add!,mat,vals,rows,cols)
   end
 end
 
@@ -298,30 +279,26 @@ function numeric_loop_vector!(b,a::GenericSparseMatrixAssembler,vecdata)
     cellids = map_cell_rows(a.strategy,_cellids)
     rows_cache = array_cache(cellids)
     vals_cache = array_cache(cellvec)
-    _numeric_loop_vector!(b,vals_cache,rows_cache,cellvec,cellids)
+    if length(cellvec) > 0
+      vals1 = getindex!(vals_cache,cellvec,1)
+      rows1 = getindex!(rows_cache,cellids,1)
+      add! = AddEntriesMap(+)
+      add_cache = return_cache(add!,b,vals1,rows1)
+      caches = add_cache, vals_cache, rows_cache
+      _numeric_loop_vector!(b,caches,cellvec,cellids)
+    end
   end
   b
 end
 
-@noinline function _numeric_loop_vector!(vec,vals_cache,rows_cache,cell_vals,cell_rows)
+@noinline function _numeric_loop_vector!(vec,caches,cell_vals,cell_rows)
+  add_cache, vals_cache, rows_cache = caches
   @assert length(cell_vals) == length(cell_rows)
+  add! = AddEntriesMap(+)
   for cell in 1:length(cell_rows)
     rows = getindex!(rows_cache,cell_rows,cell)
     vals = getindex!(vals_cache,cell_vals,cell)
-    _numeric_vector_entries_at_cell!(vec,rows,vals)
-  end
-end
-
-@inline function _numeric_vector_entries_at_cell!(vec,rows,vals)
-  add_entries!(vec,vals,rows)
-end
-
-@inline function _numeric_vector_entries_at_cell!(
-  vec,rows::ArrayBlock,vals::ArrayBlock)
-  for i in 1:length(vals.touched)
-    if vals.touched[i]
-      _numeric_vector_entries_at_cell!(vec,rows.array[i],vals.array[i])
-    end
+    evaluate!(add_cache,add!,vec,vals,rows)
   end
 end
 
@@ -343,22 +320,32 @@ function numeric_loop_matrix_and_vector!(A,b,a::GenericSparseMatrixAssembler,dat
     vals_cache = array_cache(cellmatvec)
     @assert length(cellidscols) == length(cellidsrows)
     @assert length(cellmatvec) == length(cellidsrows)
-    _numeric_loop_mavec!(A,b,vals_cache,rows_cache,cols_cache,cellmatvec,cellidsrows,cellidscols)
+    if length(cellmatvec) > 0
+      mat1, vec1 = getindex!(vals_cache,cellmatvec,1)
+      rows1 = getindex!(rows_cache,cellidsrows,1)
+      cols1 = getindex!(cols_cache,cellidscols,1)
+      add! = AddEntriesMap(+)
+      add_mat_cache = return_cache(add!,A,mat1,rows1,cols1)
+      add_vec_cache = return_cache(add!,b,vec1,rows1)
+      caches = add_mat_cache, add_vec_cache, vals_cache, rows_cache, cols_cache
+      _numeric_loop_matvec!(A,b,caches,cellmatvec,cellidsrows,cellidscols)
+    end
   end
   numeric_loop_matrix!(A,a,matdata)
   numeric_loop_vector!(b,a,vecdata)
   A, b
 end
 
-@noinline function _numeric_loop_mavec!(
-  A,b,vals_cache,rows_cache,cols_cache,cell_vals,cell_rows,cell_cols)
+@noinline function _numeric_loop_matvec!(A,b,caches,cell_vals,cell_rows,cell_cols)
+  add_mat_cache, add_vec_cache, vals_cache, rows_cache, cols_cache = caches
+  add! = AddEntriesMap(+)
   for cell in 1:length(cell_cols)
     rows = getindex!(rows_cache,cell_rows,cell)
     cols = getindex!(cols_cache,cell_cols,cell)
     vals = getindex!(vals_cache,cell_vals,cell)
     matvals, vecvals = vals
-    _numeric_matrix_entries_at_cell!(A,rows,cols,matvals)
-    _numeric_vector_entries_at_cell!(b,rows,vecvals)
+    evaluate!(add_mat_cache,add!,A,matvals,rows,cols)
+    evaluate!(add_vec_cache,add!,b,vecvals,rows)
   end
 end
 
