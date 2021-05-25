@@ -79,7 +79,17 @@ evaluate!(cache,::Broadcasting{typeof(∇∇)},a::Field) = ∇∇(a)
 lazy_map(::Broadcasting{typeof(∇)},a::AbstractArray{<:Field}) = lazy_map(∇,a)
 lazy_map(::Broadcasting{typeof(∇∇)},a::AbstractArray{<:Field}) = lazy_map(∇∇,a)
 
-push_∇(∇a::Field,ϕ::Field) = inv(∇(ϕ))⋅∇a
+push_∇(∇a::Field,ϕ::Field) = pinvJt(∇(ϕ))⋅∇a
+
+@inline function pinvJt(Jt::MultiValue{Tuple{D,D}}) where D
+  inv(Jt)
+end
+
+@inline function pinvJt(Jt::MultiValue{Tuple{D1,D2}}) where {D1,D2}
+  @check D1 < D2
+  J = transpose(Jt)
+  transpose(inv(Jt⋅J)⋅Jt)
+end
 
 function push_∇∇(∇∇a::Field,ϕ::Field)
   @notimplemented """\n
@@ -338,7 +348,7 @@ return_value(op::Broadcasting{<:Operation},x::Field...) = OperationField(op.f.op
 
 # Define some well known operations
 
-for op in (:+,:-,:*,:⋅,:⊙,:⊗,:inv,:det,:tr,:grad2curl,:symmetric_part,:transpose)
+for op in (:+,:-,:*,:⋅,:⊙,:⊗,:inv,:det,:meas,:pinvJt,:tr,:grad2curl,:symmetric_part,:transpose)
   @eval ($op)(a::Field...) = Operation($op)(a...)
 end
 
@@ -541,8 +551,8 @@ end
 @inline function evaluate!(cache,k::IntegrationMap,aq::AbstractArray,w,jq::AbstractVector)
   setsize!(cache,size(aq)[2:end])
   r = cache.array
-  @check size(aq,1) == length(w)
-  @check size(aq,1) == length(jq)
+  @check size(aq,1) == length(w) || size(aq,1) == 0
+  @check size(aq,1) == length(jq) || size(aq,1) == 0
   fill!(r,zero(eltype(r)))
   cis = CartesianIndices(r)
   @inbounds for p in 1:length(w)
@@ -554,19 +564,33 @@ end
   r
 end
 
+function return_cache(k::IntegrationMap,aq::AbstractArray{S,3} where S,w,jq::AbstractVector)
+  T = typeof( testitem(aq)*testitem(w)*meas(testitem(jq)) + testitem(aq)*testitem(w)*meas(testitem(jq)) )
+  r = zeros(T,size(aq)[2:end])
+  s = zeros(typeof(meas(testitem(jq))),length(jq))
+  CachedArray(r), CachedArray(s)
+end
+
 @inline function evaluate!(cache,k::IntegrationMap,aq::AbstractArray{S,3} where S, w,jq::AbstractVector)
+  cache_r, cache_s = cache
   np, ni, nj = size(aq)
-  setsize!(cache,(ni,nj))
-  r = cache.array
-  @check size(aq,1) == length(w)
-  @check size(aq,1) == length(jq)
-  fill!(r,zero(eltype(r)))
+  setsize!(cache_r,(ni,nj))
+  setsize!(cache_s,(np,))
+  r = cache_r.array
+  dV = cache_s.array
+  @check np == length(w) || np == 0
+  @check np == length(jq) || np == 0
   @inbounds for p in 1:np
-    dV = meas(jq[p])*w[p]
-    for j in 1:nj
-      for i in 1:ni
-        r[i,j] += aq[p,i,j]*dV
+    dV[p] = meas(jq[p])*w[p]
+  end
+  #fill!(r,zero(eltype(r)))
+  @inbounds for j in 1:nj
+    for i in 1:ni
+      rij = zero(eltype(aq))
+      for p in 1:np
+        rij += aq[p,i,j]*dV[p]
       end
+      r[i,j] = rij
     end
   end
   r
@@ -576,8 +600,8 @@ end
   np, ni = size(aq)
   setsize!(cache,(ni,))
   r = cache.array
-  @check size(aq,1) == length(w)
-  @check size(aq,1) == length(jq)
+  @check np == length(w) || np == 0
+  @check np == length(jq) || np == 0
   fill!(r,zero(eltype(r)))
   @inbounds for p in 1:np
     dV = meas(jq[p])*w[p]

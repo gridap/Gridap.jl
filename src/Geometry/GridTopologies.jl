@@ -897,12 +897,12 @@ function _face_to_cells_fill!(
   ncells = length(cell_to_faces_ptrs) - 1
   for cell in 1:ncells
     a = cell_to_faces_ptrs[cell]
-    b = cell_to_faces_ptrs[cell+1]-1
+    b = cell_to_faces_ptrs[cell+1]-one(typeof(a))
     for p in a:b
       face = cell_to_faces_data[p]
       q = face_to_cells_ptrs[face]
       face_to_cells_data[q] = cell
-      face_to_cells_ptrs[face] += 1
+      face_to_cells_ptrs[face] = q + one(typeof(q))
     end
   end
 
@@ -1402,7 +1402,7 @@ function _generate_face_to_ftype(
   ctype_to_lface_to_ftype::Vector{Vector{T}},
   nfaces) where T
 
-  face_to_ftype = fill(T(UNSET),nfaces)
+  face_to_ftype = fill(Int8(UNSET),nfaces)
   _face_to_ftype_fill!(
     face_to_ftype,
     cell_to_faces_data,

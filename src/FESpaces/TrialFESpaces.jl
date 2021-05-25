@@ -73,7 +73,7 @@ get_dirichlet_values(f::TrialFESpace) = f.dirichlet_values
 
 # Delegated functions
 
-num_free_dofs(f::TrialFESpace) = num_free_dofs(f.space)
+get_free_dof_ids(f::TrialFESpace) = get_free_dof_ids(f.space)
 
 zero_free_values(f::TrialFESpace) = zero_free_values(f.space)
 
@@ -85,11 +85,11 @@ get_vector_type(f::TrialFESpace) = get_vector_type(f.space)
 
 get_cell_dof_ids(f::TrialFESpace) = get_cell_dof_ids(f.space)
 
-get_cell_shapefuns(f::TrialFESpace) = get_cell_shapefuns(f.space)
+get_fe_basis(f::TrialFESpace) = get_fe_basis(f.space)
 
-get_cell_shapefuns_trial(f::TrialFESpace) = get_cell_shapefuns_trial(f.space)
+get_trial_fe_basis(f::TrialFESpace) = get_trial_fe_basis(f.space)
 
-get_cell_dof_basis(f::TrialFESpace) = get_cell_dof_basis(f.space)
+get_fe_dof_basis(f::TrialFESpace) = get_fe_dof_basis(f.space)
 
 ConstraintStyle(::Type{<:TrialFESpace{B}}) where B = ConstraintStyle(B)
 
@@ -97,7 +97,9 @@ get_cell_isconstrained(f::TrialFESpace) = get_cell_isconstrained(f.space)
 
 get_cell_constraints(f::TrialFESpace) = get_cell_constraints(f.space)
 
-num_dirichlet_dofs(f::TrialFESpace) = num_dirichlet_dofs(f.space)
+get_dirichlet_dof_ids(f::TrialFESpace) = get_dirichlet_dof_ids(f.space)
+
+get_cell_is_dirichlet(f::TrialFESpace) = get_cell_is_dirichlet(f.space)
 
 zero_dirichlet_values(f::TrialFESpace) = zero_dirichlet_values(f.space)
 
@@ -118,4 +120,3 @@ gather_dirichlet_values!(dv,f::TrialFESpace,cv) = gather_dirichlet_values!(dv,f.
 gather_free_values(f::TrialFESpace,cv) = gather_free_values(f.space,cv)
 
 gather_free_values!(fv,f::TrialFESpace,cv) = gather_free_values!(fv,f.space,cv)
-

@@ -7,7 +7,6 @@
 struct MultiFieldFEFunction{T<:MultiFieldCellField} <: FEFunction
   single_fe_functions::Vector{<:SingleFieldFEFunction}
   free_values::AbstractArray
-  cell_dof_values::AbstractArray
   fe_space::MultiFieldFESpace
   multi_cell_field::T
 
@@ -19,17 +18,9 @@ struct MultiFieldFEFunction{T<:MultiFieldCellField} <: FEFunction
     multi_cell_field = MultiFieldCellField(map(i->i.cell_field,single_fe_functions))
     T = typeof(multi_cell_field)
 
-    blocks = map(get_cell_dof_values,single_fe_functions)
-    cell_axes_blocks = map(i->lazy_map(axes,i),blocks)
-    cell_axes = lazy_map(_multifield_axes_dofs,cell_axes_blocks...)
-    blockids = [(i,) for i in 1:length(single_fe_functions)]
-    bsize = (length(single_fe_functions),)
-    cell_dof_values = lazy_map(BlockArrayCooMap(bsize,blockids),cell_axes,blocks...)
-
     new{T}(
       single_fe_functions,
       free_values,
-      cell_dof_values,
       space,
       multi_cell_field)
   end
@@ -38,9 +29,36 @@ end
 CellData.get_data(f::MultiFieldFEFunction) = get_data(f.multi_cell_field)
 CellData.get_triangulation(f::MultiFieldFEFunction) = get_triangulation(f.multi_cell_field)
 CellData.DomainStyle(::Type{MultiFieldFEFunction{T}}) where T = DomainStyle(T)
-FESpaces.get_free_values(f::MultiFieldFEFunction) = f.free_values
+FESpaces.get_free_dof_values(f::MultiFieldFEFunction) = f.free_values
 FESpaces.get_fe_space(f::MultiFieldFEFunction) = f.fe_space
-FESpaces.get_cell_dof_values(f::MultiFieldFEFunction) = f.cell_dof_values
+
+function FESpaces.get_cell_dof_values(f::MultiFieldFEFunction)
+  msg = """\n
+  This method does not make sense for multi-field
+  since each field can be defined on a different triangulation.
+  Pass a triangulation in the second argument to get the DOF values
+  on top of the corresponding cells.
+  """
+  trians = map(get_triangulation,f.fe_space.spaces)
+  trian = first(trians)
+  @check all(map(t->have_compatible_domains(t,trian),trians)) msg
+  get_cell_dof_values(f,trian)
+end
+
+function FESpaces.get_cell_dof_values(f::MultiFieldFEFunction,trian::Triangulation)
+  uhs = f.single_fe_functions
+  blockmask = [ _can_be_restricted_to(get_triangulation(uh),trian) for uh in uhs ]
+  active_block_ids = findall(blockmask)
+  active_block_data = Any[ get_cell_dof_values(uhs[i],trian) for i in active_block_ids ]
+  nblocks = length(uhs)
+  lazy_map(BlockMap(nblocks,active_block_ids),active_block_data...)
+end
+
+function FESpaces.get_cell_dof_values(f::MultiFieldFEFunction,trian::SkeletonTriangulation)
+  cell_values_plus = get_cell_dof_values(f,trian.plus)
+  cell_values_minus = get_cell_dof_values(f,trian.minus)
+  lazy_map(BlockMap(2,[1,2]),cell_values_plus,cell_values_minus)
+end
 
 """
     num_fields(m::MultiFieldFEFunction)

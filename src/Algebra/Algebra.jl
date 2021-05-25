@@ -10,6 +10,7 @@ using DocStringExtensions
 using SparseArrays
 using LinearAlgebra
 using Test
+using SparseMatricesCSR
 
 using Gridap.Helpers
 
@@ -17,6 +18,8 @@ import Base: convert, size, getindex, show, count, *
 import LinearAlgebra: mul!
 import SparseArrays: nnz, nonzeros, nzrange, findnz, rowvals
 
+export length_to_ptrs!
+export rewind_ptrs!
 export allocate_vector
 export allocate_matrix
 export allocate_matrix_and_vector
@@ -25,25 +28,27 @@ export allocate_in_range
 export add_entries!
 export scale_entries!
 export muladd!
+export nz_counter
+export nz_allocation
+export create_from_nz
+export LoopStyle
+export Loop
+export DoNotLoop
+export ArrayBuilder
+export SparseMatrixBuilder
+export MinMemory
+export MinCPU
+export get_array_type
 
-export push_coo!
+export nz_index
 export is_entry_stored
 export finalize_coo!
 export sparse_from_coo
 export add_entry!
 export fill_entries!
 export copy_entries!
-export create_coo_vectors
 export allocate_coo_vectors
-export sparsecsr
-export symsparsecsr
-export hasrowmajororder
-export hascolmajororder
-export colvals
-export getptr
-export getindices
-export SparseMatrixCSR
-export SymSparseMatrixCSR
+export push_coo!
 
 export LinearSolver
 export SymbolicSetup
@@ -83,14 +88,7 @@ export AffineOperator
 export get_matrix
 export get_vector
 
-export SparseMatrixCSR
-export SymSparseMatrixCSR
-
 include("AlgebraInterfaces.jl")
-
-include("SparseMatrices.jl")
-
-include("CompressedSparseMatrices.jl")
 
 include("SparseMatrixCSC.jl")
 

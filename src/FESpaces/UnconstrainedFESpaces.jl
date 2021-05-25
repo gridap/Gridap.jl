@@ -3,33 +3,63 @@
 Generic implementation of an unconstrained single-field FE space
 Private fields and type parameters
 """
-struct UnconstrainedFESpace{V} <: SingleFieldFESpace
+struct UnconstrainedFESpace{V,M} <: SingleFieldFESpace
   vector_type::Type{V}
   nfree::Int
   ndirichlet::Int
   cell_dofs_ids::AbstractArray
-  cell_shapefuns::CellField
-  cell_dof_basis::CellDof
+  fe_basis::CellField
+  fe_dof_basis::CellDof
+  cell_is_dirichlet::AbstractArray{Bool}
   dirichlet_dof_tag::Vector{Int8}
   dirichlet_cells::Vector{Int32}
   ntags::Int
+  metadata::M
+end
+
+function UnconstrainedFESpace(
+  vector_type::Type{V},
+  nfree::Integer,
+  ndirichlet::Integer,
+  cell_dofs_ids::AbstractArray,
+  fe_basis::CellField,
+  fe_dof_basis::CellDof,
+  cell_is_dirichlet::AbstractArray,
+  dirichlet_dof_tag::AbstractArray,
+  dirichlet_cells::AbstractArray,
+  ntags::Integer) where V
+
+  metadata = nothing
+  UnconstrainedFESpace(
+    V,
+    nfree,
+    ndirichlet,
+    cell_dofs_ids,
+    fe_basis,
+    fe_dof_basis,
+    cell_is_dirichlet,
+    dirichlet_dof_tag,
+    dirichlet_cells,
+    ntags,
+    metadata)
 end
 
 # FESpace interface
 
 ConstraintStyle(::Type{<:UnconstrainedFESpace}) = UnConstrained()
-num_free_dofs(f::UnconstrainedFESpace) = f.nfree
+get_free_dof_ids(f::UnconstrainedFESpace) = Base.OneTo(f.nfree)
 zero_free_values(f::UnconstrainedFESpace) = allocate_vector(f.vector_type,num_free_dofs(f))
-get_cell_shapefuns(f::UnconstrainedFESpace) = f.cell_shapefuns
-get_cell_dof_basis(f::UnconstrainedFESpace) = f.cell_dof_basis
+get_fe_basis(f::UnconstrainedFESpace) = f.fe_basis
+get_fe_dof_basis(f::UnconstrainedFESpace) = f.fe_dof_basis
 get_cell_dof_ids(f::UnconstrainedFESpace) = f.cell_dofs_ids
-get_triangulation(f::UnconstrainedFESpace) = get_triangulation(f.cell_shapefuns)
+get_triangulation(f::UnconstrainedFESpace) = get_triangulation(f.fe_basis)
 get_dof_value_type(f::UnconstrainedFESpace{V}) where V = eltype(V)
 get_vector_type(f::UnconstrainedFESpace{V}) where V = V
+get_cell_is_dirichlet(f::UnconstrainedFESpace) = f.cell_is_dirichlet
 
 # SingleFieldFESpace interface
 
-num_dirichlet_dofs(f::UnconstrainedFESpace) = f.ndirichlet
+get_dirichlet_dof_ids(f::UnconstrainedFESpace) = Base.OneTo(f.ndirichlet)
 num_dirichlet_tags(f::UnconstrainedFESpace) = f.ntags
 zero_dirichlet_values(f::UnconstrainedFESpace) = allocate_vector(f.vector_type,num_dirichlet_dofs(f))
 get_dirichlet_dof_tag(f::UnconstrainedFESpace) = f.dirichlet_dof_tag
@@ -104,7 +134,7 @@ function  _free_and_dirichlet_values_fill!(
       elseif dof < 0
         dirichlet_vals[-dof] = val
       else
-        @unreachable "dof ids either positibe or negative, not zero"
+        @unreachable "dof ids either positive or negative, not zero"
       end
     end
   end

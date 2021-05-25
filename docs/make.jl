@@ -13,7 +13,6 @@ pages = [
   "Gridap.TensorValues" => "TensorValues.md",
   "Gridap.Fields" => "Fields.md",
   "Gridap.Polynomials" => "Polynomials.md",
-  "Gridap.Integration" => "Integration.md",
   "Gridap.ReferenceFEs" => "ReferenceFEs.md",
   "Gridap.Geometry" => "Geometry.md",
   "Gridap.CellData" => "CellData.md",

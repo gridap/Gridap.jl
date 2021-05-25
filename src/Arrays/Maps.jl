@@ -192,7 +192,6 @@ function return_cache(f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}..
   s = map(_size,x)
   bs = Base.Broadcast.broadcast_shape(s...)
   T = return_type(f.f,map(testitem,x)...)
-  N = length(bs)
   r = fill(testvalue(T),bs)
   cache = CachedArray(r)
   _prepare_cache!(cache,x...)

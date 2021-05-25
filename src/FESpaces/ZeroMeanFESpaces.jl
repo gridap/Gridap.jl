@@ -74,13 +74,13 @@ get_cell_constraints(f::ZeroMeanFESpace) = get_cell_constraints(f.space)
 
 get_dirichlet_values(f::ZeroMeanFESpace) = get_dirichlet_values(f.space)
 
-get_cell_shapefuns(f::ZeroMeanFESpace) = get_cell_shapefuns(f.space)
+get_fe_basis(f::ZeroMeanFESpace) = get_fe_basis(f.space)
 
-get_cell_shapefuns_trial(f::ZeroMeanFESpace) = get_cell_shapefuns_trial(f.space)
+get_trial_fe_basis(f::ZeroMeanFESpace) = get_trial_fe_basis(f.space)
 
-get_cell_dof_basis(f::ZeroMeanFESpace) = get_cell_dof_basis(f.space)
+get_fe_dof_basis(f::ZeroMeanFESpace) = get_fe_dof_basis(f.space)
 
-num_free_dofs(f::ZeroMeanFESpace) = num_free_dofs(f.space)
+get_free_dof_ids(f::ZeroMeanFESpace) = get_free_dof_ids(f.space)
 
 zero_free_values(f::ZeroMeanFESpace) = zero_free_values(f.space)
 
@@ -90,7 +90,7 @@ get_dof_value_type(f::ZeroMeanFESpace) = get_dof_value_type(f.space)
 
 get_cell_dof_ids(f::ZeroMeanFESpace) = get_cell_dof_ids(f.space)
 
-num_dirichlet_dofs(f::ZeroMeanFESpace) = num_dirichlet_dofs(f.space)
+get_dirichlet_dof_ids(f::ZeroMeanFESpace) = get_dirichlet_dof_ids(f.space)
 
 zero_dirichlet_values(f::ZeroMeanFESpace) = zero_dirichlet_values(f.space)
 

@@ -1,11 +1,9 @@
 module MultiFieldFEFunctionsTests
 
-using BlockArrays
 using Gridap.Arrays
 using Gridap.Geometry
 using Gridap.FESpaces
 using Gridap.Fields
-using Gridap.Integration
 using Gridap.CellData
 using Gridap.MultiField
 using Gridap.ReferenceFEs
@@ -35,7 +33,7 @@ xh = FEFunction(X,free_values)
 test_fe_function(xh)
 uh, ph = xh
 
-cell_values = get_cell_dof_values(xh)
-@test isa(cell_values[1],BlockArrayCoo)
+cell_values = get_cell_dof_values(xh,trian)
+@test isa(cell_values[1],ArrayBlock)
 
 end # module

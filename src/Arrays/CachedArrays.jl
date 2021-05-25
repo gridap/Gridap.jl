@@ -131,26 +131,9 @@ function similar(::Type{CachedArray{T,N,A}},s::Tuple{Vararg{Int}}) where {T,N,A}
   CachedArray(a)
 end
 
-function setaxes!(a::CachedArray,ax)
-  a_old = a.array
-  if ! blocks_equal(axes(a_old),ax)
-    s = map(length,ax)
-    if haskey(a.buffer,s)
-      a_cached = a.buffer[s]
-      if ! blocks_equal(axes(a_cached),ax)
-        a_new = similar(a_cached,ax)
-      else
-        a_new = a_cached
-      end
-      a.array = a_new
-      a.buffer[s] = a_new
-    else
-      a_new = similar(a_old,ax)
-      a.array = a_new
-      a.buffer[s] = a_new
-    end
-  end
-  nothing
+Base.convert(::Type{CachedArray{T,N,A}},a::CachedArray{T,N,A}) where {T,N,A} = a
+
+function Base.convert(::Type{CachedArray{T,N,A}},a::CachedArray) where {T,N,A}
+  array = convert(A,a.array)
+  CachedArray(array)
 end
-
-

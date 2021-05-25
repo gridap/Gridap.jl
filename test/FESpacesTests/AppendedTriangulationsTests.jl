@@ -5,7 +5,6 @@ using Gridap.ReferenceFEs
 using Gridap.Arrays
 using Gridap.Geometry
 using Gridap.Fields
-using Gridap.Integration
 using LinearAlgebra: ⋅
 using Gridap.CellData
 using Gridap.FESpaces
@@ -50,8 +49,8 @@ el2 = sqrt(sum(integrate(e*e,quad)))
 
 x = get_cell_points(quad)
 
-dv = get_cell_shapefuns(V)
-du = get_cell_shapefuns_trial(V)
+dv = get_fe_basis(V)
+du = get_trial_fe_basis(V)
 @test isa(dv(x),AppendedArray)
 @test isa(∇(dv)(x),AppendedArray)
 @test isa(du(x),AppendedArray)
@@ -62,5 +61,21 @@ cellmat = integrate( ∇(dv)⋅∇(du), quad )
 @test isa(cellmat,AppendedArray)
 @test isa(cellmat.a,Fill)
 @test isa(cellmat.b,Fill)
+
+q1 = Quadrature(tensor_product,1)
+q2 = Quadrature(tensor_product,2)
+dΩ = Measure(Ω,q1,q2)
+@test isa(dΩ.quad.trian,AppendedTriangulation)
+@test isa(dΩ.quad.cell_quad,AppendedArray)
+@test isa(dΩ.quad.cell_point,AppendedArray)
+@test isa(dΩ.quad.cell_weight,AppendedArray)
+
+q1 = Quadrature(QUAD,tensor_product,1)
+q2 = Quadrature(QUAD,tensor_product,2)
+dΩ = Measure(Ω,q1,q2)
+@test isa(dΩ.quad.trian,AppendedTriangulation)
+@test isa(dΩ.quad.cell_quad,AppendedArray)
+@test isa(dΩ.quad.cell_point,AppendedArray)
+@test isa(dΩ.quad.cell_weight,AppendedArray)
 
 end # module

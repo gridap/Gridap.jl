@@ -56,7 +56,7 @@ function _solve_nr!(x,A,b,dx,ns,nls,op)
     # Solve linearized problem
     scale_entries!(b,-1)
     solve!(dx,ns,b)
-    add_entries!(x,dx)
+    x .+= dx
 
     # Check convergence for the current residual
     residual!(b, op, x)

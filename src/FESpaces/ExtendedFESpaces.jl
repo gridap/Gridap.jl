@@ -26,20 +26,20 @@ function get_cell_dof_ids(f::ExtendedFESpace)
   lazy_map( PosNegReindex(fullcell_to_ids,voidcell_to_ids), f.partition)
 end
 
-function get_cell_shapefuns(f::ExtendedFESpace)
+function get_fe_basis(f::ExtendedFESpace)
   nfull, nvoid = Arrays.pos_and_neg_length(f.partition)
-  dv = get_cell_shapefuns(f.space)
+  dv = get_fe_basis(f.space)
   data = get_data(dv)
   fullcell_shapefuns = lazy_map(VoidBasisMap(false),data)
   @check length(fullcell_shapefuns) == nfull
   voidcell_shapefuns = Fill(VoidBasis(testitem(data),true),nvoid)
   a = lazy_map( PosNegReindex(fullcell_shapefuns,voidcell_shapefuns),f.partition)
-  FEBasis(a,get_triangulation(f),TestBasis(),DomainStyle(dv))
+  SingleFieldFEBasis(a,get_triangulation(f),TestBasis(),DomainStyle(dv))
 end
 
-function get_cell_dof_basis(f::ExtendedFESpace)
+function get_fe_dof_basis(f::ExtendedFESpace)
   nfull, nvoid = Arrays.pos_and_neg_length(f.partition)
-  s = get_cell_dof_basis(f.space)
+  s = get_fe_dof_basis(f.space)
   data = get_data(s)
   fullcell_dof_basis = lazy_map(VoidBasisMap(false),data)
   @check length(fullcell_dof_basis) == nfull
@@ -64,16 +64,16 @@ end
 
 # Delegated functions
 
-function num_free_dofs(f::ExtendedFESpace)
-  num_free_dofs(f.space)
+function get_free_dof_ids(f::ExtendedFESpace)
+  get_free_dof_ids(f.space)
 end
 
 function get_vector_type(f::ExtendedFESpace)
   get_vector_type(f.space)
 end
 
-function num_dirichlet_dofs(f::ExtendedFESpace)
-  num_dirichlet_dofs(f.space)
+function get_dirichlet_dof_ids(f::ExtendedFESpace)
+  get_dirichlet_dof_ids(f.space)
 end
 
 function num_dirichlet_tags(f::ExtendedFESpace)

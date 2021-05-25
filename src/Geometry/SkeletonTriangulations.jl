@@ -11,7 +11,7 @@ struct SkeletonTriangulation{Dc,Dp,B} <: Triangulation{Dc,Dp}
   function SkeletonTriangulation(plus::B,minus::B) where B<:Triangulation
     Dc = num_cell_dims(plus)
     Dp = num_point_dims(plus)
-    @assert Dc + 1 == Dp
+    #@assert Dc + 1 == Dp
     new{Dc,Dp,B}(plus,minus)
   end
 end
@@ -26,7 +26,7 @@ function Base.getproperty(x::SkeletonTriangulation, sym::Symbol)
   end
 end
 
-function Base.propertynames(x::SkeletonTriangulation, private=false)
+function Base.propertynames(x::SkeletonTriangulation, private::Bool=false)
   (fieldnames(typeof(x))...,:⁺,:⁻)
 end
 
@@ -252,7 +252,8 @@ end
 
 function get_facet_normal(trian::SkeletonTriangulation)
   plus = get_facet_normal(trian.plus)
-  minus = get_facet_normal(trian.minus)
+  #minus = get_facet_normal(trian.minus)
+  minus = lazy_map(Broadcasting(Operation(-)),plus)
   SkeletonPair(plus,minus)
 end
 

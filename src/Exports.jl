@@ -22,8 +22,6 @@ export det, inv, tr, cross, dot, norm, ×, ⋅
 @publish Algebra NLSolver
 @publish Algebra get_matrix
 @publish Algebra get_vector
-@publish Algebra SparseMatrixCSR
-@publish Algebra SymSparseMatrixCSR
 @publish Algebra jacobian
 @publish Algebra hessian
 
@@ -59,9 +57,6 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish Fields Δ
 @publish Fields ε
 @publish Fields symmetric_gradient
-
-@publish Integration get_coordinates
-@publish Integration get_weights
 
 @publish ReferenceFEs is_simplex
 @publish ReferenceFEs is_n_cube
@@ -142,22 +137,19 @@ using Gridap.CellData: ∫; export ∫
 @publish FESpaces FESpace
 @publish FESpaces TrialFESpace
 @publish FESpaces TestFESpace
-#@publish FESpaces FETerm
-#@publish FESpaces FEEnergy
-#@publish FESpaces AffineFETerm
-#@publish FESpaces LinearFETerm
-#@publish FESpaces FESource
 @publish FESpaces AffineFEOperator
 @publish FESpaces LinearFESolver
-@publish FESpaces get_free_values
+@publish FESpaces get_free_dof_values
 @publish FESpaces get_dirichlet_values
 @publish FESpaces num_dirichlet_dofs
 @publish FESpaces num_free_dofs
 @publish FESpaces num_dirichlet_tags
+@publish FESpaces get_free_dof_ids
+@publish FESpaces get_dirichlet_dof_ids
 @publish FESpaces get_cell_dof_ids
 @publish FESpaces get_cell_dof_values
-@publish FESpaces get_cell_shapefuns
-@publish FESpaces get_cell_shapefuns_trial
+@publish FESpaces get_fe_basis
+@publish FESpaces get_trial_fe_basis
 @publish FESpaces FEFunction
 @publish FESpaces interpolate
 @publish FESpaces interpolate_everywhere

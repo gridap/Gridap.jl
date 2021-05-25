@@ -4,7 +4,7 @@ using Test
 
 @testset "Fields" begin include("FieldInterfacesTests.jl") end
 
-#@testset "FieldOperations" begin include("FieldOperationsTests.jl") end
+@testset "FieldOperations" begin include("FieldOperationsTests.jl") end
 
 @testset "FieldArrays" begin include("FieldArraysTests.jl") end
 
@@ -14,8 +14,10 @@ using Test
 
 @testset "FieldArraysOperations" begin include("FieldArraysOperationsTests.jl") end
 
-#@testset "LazyFieldArrays" begin include("LazyFieldArraysTests.jl") end
+@testset "LazyFieldArrays" begin include("LazyFieldArraysTests.jl") end
 
-@testset "BlockFieldArrays" begin include("BlockFieldArraysTests.jl") end
+@testset "ArrayBlocks" begin include("ArrayBlocksTests.jl") end
+
+@testset "InverseFields" begin include("InverseFieldsTests.jl") end
 
 end

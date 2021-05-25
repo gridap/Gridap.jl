@@ -7,7 +7,6 @@ using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.ReferenceFEs
 using Gridap.Geometry
-using Gridap.Integration
 using Gridap.Fields
 using Gridap.Algebra
 using SparseArrays
@@ -27,8 +26,8 @@ u(x) = x[1]+x[2]
 
 U = TrialFESpace(u,V)
 
-dv = get_cell_shapefuns(V)
-du = get_cell_shapefuns_trial(U)
+dv = get_fe_basis(V)
+du = get_trial_fe_basis(U)
 
 degree = 2
 Ω = Triangulation(model)
@@ -46,24 +45,24 @@ vec_contribs = ℓ(dv)
 assem = SparseMatrixAssembler(U,V)
 
 @test isa(U,TrialFESpace)
-@test_throws AssertionError assem = SparseMatrixAssembler(V,U)
+#@test_throws AssertionError assem = SparseMatrixAssembler(V,U)
 
-data = collect_cell_matrix(mat_contribs)
+data = collect_cell_matrix(U,V,mat_contribs)
 A = assemble_matrix(assem,data)
 @test size(A) == (num_free_dofs(V), num_free_dofs(U))
 
-data = collect_cell_vector(vec_contribs)
+data = collect_cell_vector(V,vec_contribs)
 b = assemble_vector(assem,data)
 x = A\b
 uh = FEFunction(U,x)
 
-data = collect_cell_matrix_and_vector(mat_contribs,vec_contribs)
+data = collect_cell_matrix_and_vector(U,V,mat_contribs,vec_contribs)
 A,b = assemble_matrix_and_vector(assem,data)
 x = A\b
 uh = FEFunction(U,x)
 
 uhd = zero(U)
-data = collect_cell_matrix_and_vector(mat_contribs,vec_contribs,uhd)
+data = collect_cell_matrix_and_vector(U,V,mat_contribs,vec_contribs,uhd)
 A,b = assemble_matrix_and_vector(assem,data)
 x = A\b
 uh = FEFunction(U,x)
@@ -96,22 +95,22 @@ a(u,v) = ∫(∇(u)⋅∇(v))*dΩ + ∫(u*v)*dΓ
 mat_contribs = a(du,dv)
 vec_contribs = ℓ(dv)
 
-data = collect_cell_matrix(mat_contribs)
+data = collect_cell_matrix(U,V,mat_contribs)
 A = assemble_matrix(assem,data)
 @test size(A) == (num_free_dofs(V), num_free_dofs(U))
 
-data = collect_cell_vector(vec_contribs)
+data = collect_cell_vector(V,vec_contribs)
 b = assemble_vector(assem,data)
 x = A\b
 @test x ≈ b
 
-data = collect_cell_matrix_and_vector(mat_contribs,vec_contribs)
+data = collect_cell_matrix_and_vector(U,V,mat_contribs,vec_contribs)
 A,b = assemble_matrix_and_vector(assem,data)
 x = A\b
 @test x ≈ b
 
 uhd = zero(U)
-data = collect_cell_matrix_and_vector(mat_contribs,vec_contribs,uhd)
+data = collect_cell_matrix_and_vector(U,V,mat_contribs,vec_contribs,uhd)
 A,b = assemble_matrix_and_vector(assem,data)
 x = A\b
 @test x ≈ b

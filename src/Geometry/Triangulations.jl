@@ -112,6 +112,21 @@ Map from the indices in the sub-triangulation to the indices in the background t
 get_cell_to_bgcell(trian::Triangulation) = get_cell_to_bgcell(trian,TriangulationStyle(trian))
 get_cell_to_bgcell(trian::Triangulation,::BackgroundTriangulation) = IdentityVector(num_cells(trian))
 get_cell_to_bgcell(trian::Triangulation,::SubTriangulation) = @abstractmethod
+function get_cell_to_bgcell(trian::Triangulation,bgtrian::Triangulation)
+  if have_compatible_domains(get_background_triangulation(trian),bgtrian)
+    return get_cell_to_bgcell(trian)
+  else
+    @notimplemented
+  end
+end
+
+function is_included(trian::Triangulation,bgtrian::Triangulation)
+  if have_compatible_domains(get_background_triangulation(trian),bgtrian)
+    true
+  else
+    false
+  end
+end
 
 #"""
 #    restrict(f::AbstractArray, trian::Triangulation)
@@ -127,7 +142,13 @@ the reference space of the background triangulation
 get_cell_ref_map(trian::Triangulation) = get_cell_ref_map(trian,TriangulationStyle(trian))
 get_cell_ref_map(trian::Triangulation,::BackgroundTriangulation) = Fill(GenericField(identity),num_cells(trian))
 get_cell_ref_map(trian::Triangulation,::SubTriangulation) = @abstractmethod
-
+function get_cell_ref_map(trian::Triangulation,bgtrian::Triangulation)
+  if have_compatible_domains(get_background_triangulation(trian),bgtrian)
+    return get_cell_ref_map(trian)
+  else
+    @notimplemented
+  end
+end
 #"""
 #Given an array aligned with the cells in the background triangulation, return another array
 #aligned with the cells of the sub-triangulation. Do nothing if `trian` is already a
@@ -183,7 +204,7 @@ function Base.getproperty(x::SkeletonPair, sym::Symbol)
   end
 end
 
-function Base.propertynames(x::SkeletonPair, private=false)
+function Base.propertynames(x::SkeletonPair, private::Bool=false)
   (fieldnames(typeof(x))...,:⁺,:⁻)
 end
 
@@ -303,6 +324,13 @@ end
 
 function get_cell_node_ids(trian::Triangulation)
   @notimplemented
+end
+
+function Quadrature(trian::Triangulation,args...;kwargs...)
+  cell_ctype = get_cell_type(trian)
+  ctype_polytope = map(get_polytope,get_reffes(trian))
+  ctype_quad = map(p->Quadrature(p,args...;kwargs...),ctype_polytope)
+  cell_quad = expand_cell_data(ctype_quad,cell_ctype)
 end
 
 #"""

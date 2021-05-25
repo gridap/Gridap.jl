@@ -5,9 +5,7 @@ using Gridap.ReferenceFEs
 using Gridap.Arrays
 using Gridap.Geometry
 using Gridap.Fields
-using Gridap.Integration
 using LinearAlgebra: ⋅
-#using Gridap.CellData
 
 domain = (0,1,0,1)
 partition = (10,10)
