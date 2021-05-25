@@ -116,3 +116,54 @@ Equivalent to
 """
 cross(::typeof(∇),f::Field) = curl(f)
 cross(::typeof(∇),f::Function) = curl(f)
+
+_extract_grad_diag(x::TensorValue) = diag(x)
+_extract_grad_diag(x) = @notimplemented
+
+function Base.broadcasted(::typeof(*),::typeof(∇),f)
+  g = ∇(f)
+  Operation(_extract_grad_diag)(g)
+end
+
+function Base.broadcasted(::typeof(*),::typeof(∇),f::Function)
+  Base.broadcasted(*,∇,GenericField(f))
+end
+
+struct ShiftedNabla{N,T}
+  v::VectorValue{N,T}
+end
+
+(+)(::typeof(∇),v::VectorValue) = ShiftedNabla(v)
+(+)(v::VectorValue,::typeof(∇)) = ShiftedNabla(v)
+(-)(::typeof(∇),v::VectorValue) = ShiftedNabla(-v)
+
+function (s::ShiftedNabla)(f)
+  Operation((a,b)->a+s.v⊗b)(gradient(f),f)
+end
+
+(s::ShiftedNabla)(f::Function) = s(GenericField(f))
+
+function evaluate!(cache,k::Broadcasting{<:ShiftedNabla},f)
+  s = k.f
+  g = Broadcasting(∇)(f)
+  Broadcasting(Operation((a,b)->a+s.v⊗b))(g,f)
+end
+
+dot(s::ShiftedNabla,f) = Operation(tr)(s(f))
+outer(s::ShiftedNabla,f) = s(f)
+outer(f,s::ShiftedNabla) = transpose(gradient(f))
+cross(s::ShiftedNabla,f) = Operation(grad2curl)(s(f))
+
+dot(s::ShiftedNabla,f::Function) = dot(s,GenericField(f))
+outer(s::ShiftedNabla,f::Function) = outer(s,GenericField(f))
+outer(f::Function,s::ShiftedNabla) = outer(GenericField(f),s)
+cross(s::ShiftedNabla,f::Function) = cross(s,GenericField(f))
+
+function Base.broadcasted(::typeof(*),s::ShiftedNabla,f)
+  g = s(f)
+  Operation(_extract_grad_diag)(g)
+end
+
+function Base.broadcasted(::typeof(*),s::ShiftedNabla,f::Function)
+  Base.broadcasted(*,s,GenericField(f))
+end

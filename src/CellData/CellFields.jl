@@ -479,6 +479,14 @@ for op in (:inner,:outer,:double_contraction,:+,:-,:*,:cross,:dot,:/)
   end
 end
 
+Base.broadcasted(f,a::CellField,b::CellField) = Operation((i,j)->f.(i,j))(a,b)
+Base.broadcasted(f,a::Number,b::CellField) = Operation((i,j)->f.(i,j))(a,b)
+Base.broadcasted(f,a::CellField,b::Number) = Operation((i,j)->f.(i,j))(a,b)
+Base.broadcasted(f,a::Function,b::CellField) = Operation((i,j)->f.(i,j))(a,b)
+Base.broadcasted(f,a::CellField,b::Function) = Operation((i,j)->f.(i,j))(a,b)
+Base.broadcasted(::typeof(*),::typeof(∇),f::CellField) = Operation(Fields._extract_grad_diag)(∇(f))
+Base.broadcasted(::typeof(*),s::Fields.ShiftedNabla,f::CellField) = Operation(Fields._extract_grad_diag)(s(f))
+
 dot(::typeof(∇),f::CellField) = divergence(f)
 function (*)(::typeof(∇),f::CellField)
   msg = "Syntax ∇*f has been removed, use ∇⋅f (\\nabla \\cdot f) instead"

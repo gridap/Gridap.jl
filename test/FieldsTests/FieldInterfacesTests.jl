@@ -250,6 +250,22 @@ test_field(f,z,f.(z),grad=∇(f).(z))
 #c = return_cache(∇f,x)
 #@btime evaluate!($c,$∇f,$x)
 
+Tfun(x) = diagonal_tensor(VectorValue(1*x[1],2*x[2]))
+bfun(x) = VectorValue(x[2],x[1])
+Fields.gradient(::typeof(Tfun)) = x-> ThirdOrderTensorValue{2,2,2,Float64}(1,0,0,0,0,0,0,2)
+a = GenericField(Tfun)
+b = GenericField(bfun)
+
+f = Operation(⋅)(a,b)
+cp = Tfun(p)⋅bfun(p)
+∇cp = ∇(Tfun)(p)⋅bfun(p) + ∇(bfun)(p)⋅transpose(Tfun(p))
+test_field(f,p,cp)
+test_field(f,p,cp,grad=∇cp)
+test_field(f,x,f.(x))
+test_field(f,x,f.(x),grad=∇(f).(x))
+test_field(f,z,f.(z))
+test_field(f,z,f.(z),grad=∇(f).(z))
+
 afun(x) = x.+2
 bfun(x) = 2*x
 
