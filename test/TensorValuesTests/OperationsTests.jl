@@ -688,4 +688,20 @@ b = 4.0 - 3.0*im
 @test outer(a,b) == a*b
 @test inner(a,b) == a*b
 
+# Broadcast
+a = VectorValue(1,2,3)
+b = VectorValue(1.,2.,3.)
+c = a .* b
+@test isa(c,VectorValue)
+@test c.data == map(*,a.data,b.data)
+
+a = TensorValue(1,2,3,4)
+b = TensorValue(1.,2.,3.,4.)
+c = a .* b
+@test isa(c,TensorValue)
+@test c.data == map(*,a.data,b.data)
+
+@test diag(a) == VectorValue(1,4)
+
+
 end # module OperationsTests

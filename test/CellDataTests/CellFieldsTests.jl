@@ -99,6 +99,46 @@ test_array(∇vx,collect(∇vx))
 ∇fx = ∇(f)(x)
 test_array(∇fx,collect(∇fx))
 
+
+k = VectorValue(1.0,2.0)
+∇kfx = ((∇+k)(f))(x)
+test_array(∇kfx,collect(∇kfx))
+
+∇kvx = ((∇+k)(v))(x)
+test_array(∇kvx,collect(∇kvx))
+
+β(x) = 2*x[1]
+α = CellField(x->2*x,trian)
+ax = ((∇+k)(β*α))(x)
+test_array(ax,collect(ax))
+
+ν = CellField(x->2*x,trian)
+ax =((∇-k)⋅ν)(x)
+test_array(ax,collect(ax))
+
+ax =((∇-k)×ν)(x)
+test_array(ax,collect(ax))
+
+ax =((∇-k)⊗ν)(x)
+test_array(ax,collect(ax))
+
+ax =(∇.*ν)(x)
+test_array(ax,collect(ax))
+
+ax =(ν.*ν)(x)
+test_array(ax,collect(ax))
+
+ax =((∇-k).*ν)(x)
+test_array(ax,collect(ax))
+
+ax =(ν⊗(∇-k))(x)
+test_array(ax,collect(ax))
+
+σ(x) = diagonal_tensor(VectorValue(1*x[1],2*x[2]))
+Fields.gradient(::typeof(σ)) = x-> ThirdOrderTensorValue{2,2,2,Float64}(1,0,0,0,0,0,0,2)
+ax = ((∇+k)(σ⋅α))(x)
+test_array(ax,collect(ax))
+
 h = Operation(*)(2,f)
 hx = h(x)
 test_array(hx,2*fx)

@@ -24,13 +24,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed `conformity` optional keyword argument from `FESpace(::DiscreteModel,::CellFE; kwargs...)` constructor. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
 - Replaced `CellFE(::AbstractArray{<:Field},::AbstractArray{<:ReferenceFE})` by `CellFE(::DiscreteModel,::AbstractArray{<:ReferenceFE},::Conformity)`. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
 
-
 ### Removed
 - All code associated with with `BlockArrayCoo`. Since PR [#583](https://github.com/gridap/Gridap.jl/pull/583).
 - Module `Gridap.Integration` has been deleted and its contents have been merged into `Gridap.ReferenceFEs` module.
 - Types `SparseMatrixCSR` and `SymSparseMatrixCSR` have been moved to the registered package [`SparseMatricesCSR`](https://github.com/gridap/SparseMatricesCSR.jl). To use them simply add `SparseMatricesCSR` into your environment and type `using SparseMatricesCSR`. Since  Since PR [#568](https://github.com/gridap/Gridap.jl/pull/568).
 - Removed `PushForwardMap` and all code depending upon it. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579). 
 
+## [0.15.5] - 2021-05-25
+
+### Added
+- Differential operators `(∇+k)(u)`, `(∇+k)⋅u`, `(∇+k)×u`, `(∇+k)⊗u`, and `u⊗(∇+k)` for some `u::CellField` and `k::VectorValue`. Since PR [#597](https://github.com/gridap/Gridap.jl/pull/597).
+- Definition of `u.*v` between instances of vector-valued `CellField` objects `u` and `v`. Also differential operators `∇.*u`  and `(∇+k).*u`. Since PR [#597](https://github.com/gridap/Gridap.jl/pull/597).
 
 ## [0.15.4] - 2021-03-29
 
