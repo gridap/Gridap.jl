@@ -83,6 +83,16 @@ function solve(ls::LinearSolver,A::AbstractMatrix,b::AbstractVector)
 end
 
 """
+    solve!(x::AbstractVector,ls::LinearSolver,A::AbstractMatrix,b::AbstractVector)
+"""
+function solve!(x::AbstractVector,ls::LinearSolver,A::AbstractMatrix,b::AbstractVector)
+  ss = symbolic_setup(ls,A)
+  ns = numerical_setup(ss,A)
+  solve!(x,ns,b)
+  x
+end
+
+"""
     abstract type SymbolicSetup <: GridapType end
 
 - [`numerical_setup(::SymbolicSetup,mat::AbstractMatrix)`](@ref)
@@ -138,6 +148,10 @@ function test_linear_solver(
   ns = numerical_setup(ss,A)
   numerical_setup!(ns,A)
   solve!(y,ns,b)
+  @test x ≈ y
+
+  y .= zero(eltype(y))
+  solve!(y,ls,A,b)
   @test x ≈ y
 
   op = AffineOperator(A,b)
