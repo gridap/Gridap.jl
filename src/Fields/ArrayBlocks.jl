@@ -400,7 +400,7 @@ function  return_cache(k::TransposeMap,f::ArrayBlock{A,1} where A)
   ArrayBlock(g,collect(transpose(f.touched))),l
 end
 
-function  evaluate!(cache,k::TransposeMap,f::ArrayBlock)
+function  evaluate!(cache,k::TransposeMap,f::ArrayBlock{A,1} where A)
   g,l = cache
   @check g.touched == transpose(f.touched)
   for i in eachindex(f.array)
