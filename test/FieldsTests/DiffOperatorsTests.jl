@@ -93,6 +93,9 @@ for x in xs
   @test (∇×u)(x) == grad2curl(∇u(x))
   @test Δ(u)(x) == Δu(x)
   @test ε(u)(x) == εu(x)
+  @test ∇(u)(x) == ∇u(x)
+  @test Δ(u)(x) == (∇⋅∇u)(x)
+  @test (∇⋅εu)(x) == VectorValue(4.,-1.)
 end
 
 u(x) = VectorValue( x[1]^2 + 2*x[2]^2, 0 )
@@ -105,6 +108,24 @@ for x in xs
   @test (∇×u)(x) == grad2curl(∇u(x))
   @test Δ(u)(x) == Δu(x)
   @test ε(u)(x) == εu(x)
+  @test Δ(u)(x) == (∇⋅∇u)(x)
+  @test (∇⋅εu)(x) == VectorValue(4.,0.)
+end
+
+u(x) = VectorValue( x[1]^2 + 2*x[3]^2, -x[1]^2, -x[2]^2 + x[3]^2 )
+∇u(x) = TensorValue( 2*x[1],0,4*x[3],  -2*x[1],0,0,  0,-2*x[2],2*x[3] )
+Δu(x) = VectorValue( 6, -2, 0 )
+εu(x) = symmetric_part(∇u(x))
+
+xs = [ Point(1.,1.,2.0), Point(2.,0.,1.), Point(0.,3.,0.), Point(-1.,3.,2.)]
+for x in xs
+  @test ∇(u)(x) == ∇u(x)
+  @test (∇⋅u)(x) == tr(∇u(x)) 
+  @test (∇×u)(x) == grad2curl(∇u(x))
+  @test Δ(u)(x) == Δu(x)
+  @test ε(u)(x) == εu(x)
+  @test Δ(u)(x) == (∇⋅∇u)(x)
+  @test (∇⋅εu)(x) == VectorValue(4.,-1.,1.)
 end
 
 end # module
