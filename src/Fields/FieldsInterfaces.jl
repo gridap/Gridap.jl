@@ -348,16 +348,21 @@ return_value(op::Broadcasting{<:Operation},x::Field...) = OperationField(op.f.op
 
 # Define some well known operations
 
-for op in (:+,:-,:*,:⋅,:⊙,:⊗,:inv,:det,:tr,:grad2curl,:symmetric_part,:transpose)
+for op in (:+,:-,:*,:⋅,:⊙,:⊗,:inv,:det,:meas,:pinvJt,:tr,:grad2curl,:symmetric_part,:transpose)
   @eval ($op)(a::Field...) = Operation($op)(a...)
 end
 
 @inline transpose(f::Field) = f
 
-@inline *(A::Number, B::Field) = ConstantField(A)*B
-@inline *(A::Field, B::Number) = A*ConstantField(B)
-@inline ⋅(A::Number, B::Field) = ConstantField(A)⋅B
-@inline ⋅(A::Field, B::Number) = A⋅ConstantField(B)
+for op in (:+,:-,:*,:⋅,:⊙,:⊗)
+  @eval ($op)(a::Field,b::Number) = Operation($op)(a,ConstantField(b))
+  @eval ($op)(a::Number,b::Field) = Operation($op)(ConstantField(a),b)
+end
+
+#@inline *(A::Number, B::Field) = ConstantField(A)*B
+#@inline *(A::Field, B::Number) = A*ConstantField(B)
+#@inline ⋅(A::Number, B::Field) = ConstantField(A)⋅B
+#@inline ⋅(A::Field, B::Number) = A⋅ConstantField(B)
 
 #@inline *(A::Function, B::Field) = GenericField(A)*B
 #@inline *(A::Field, B::Function) = GenericField(B)*A
@@ -398,6 +403,10 @@ end
 
 function product_rule(::typeof(⋅),f1::VectorValue,f2::VectorValue,∇f1,∇f2)
   ∇f1⋅f2 + ∇f2⋅f1
+end
+
+function product_rule(::typeof(⋅),f1::TensorValue,f2::VectorValue,∇f1,∇f2)
+  ∇f1⋅f2 + ∇f2⋅transpose(f1)
 end
 
 for op in (:*,:⋅,:⊙,:⊗)

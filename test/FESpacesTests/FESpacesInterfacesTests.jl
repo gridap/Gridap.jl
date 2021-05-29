@@ -25,8 +25,8 @@ vh = FEFunction(V,rand(num_free_dofs(V)))
 test_fe_function(vh)
 
 
-dv = get_cell_shapefuns(V)
-du = get_cell_shapefuns_trial(V)
+dv = get_fe_basis(V)
+du = get_trial_fe_basis(V)
 
 trian_Γ = SkeletonTriangulation(model)
 x_Γ = get_cell_points(trian_Γ)
@@ -71,7 +71,7 @@ cell_constr = get_cell_constraints(V,cellids)
 cell_constr = get_cell_constraints(V,cellidsS)
 @test isa(cell_constr[1],ArrayBlock)
 
-du = get_cell_shapefuns_trial(V)
+du = get_trial_fe_basis(V)
 du_data = get_data(du)
 @test size(du_data[1]) == (1,4)
 

@@ -99,16 +99,16 @@ end
 
 # Delegated functions
 
-function get_cell_shapefuns(f::FESpaceWithConstantFixed)
-  get_cell_shapefuns(f.space)
+function get_fe_basis(f::FESpaceWithConstantFixed)
+  get_fe_basis(f.space)
 end
 
-function get_cell_shapefuns_trial(f::FESpaceWithConstantFixed)
-  get_cell_shapefuns_trial(f.space)
+function get_trial_fe_basis(f::FESpaceWithConstantFixed)
+  get_trial_fe_basis(f.space)
 end
 
-function get_cell_dof_basis(f::FESpaceWithConstantFixed)
-  get_cell_dof_basis(f.space)
+function get_fe_dof_basis(f::FESpaceWithConstantFixed)
+  get_fe_dof_basis(f.space)
 end
 
 get_vector_type(f::FESpaceWithConstantFixed) = get_vector_type(f.space)

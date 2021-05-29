@@ -26,9 +26,9 @@ function get_cell_dof_ids(f::ExtendedFESpace)
   lazy_map( PosNegReindex(fullcell_to_ids,voidcell_to_ids), f.partition)
 end
 
-function get_cell_shapefuns(f::ExtendedFESpace)
+function get_fe_basis(f::ExtendedFESpace)
   nfull, nvoid = Arrays.pos_and_neg_length(f.partition)
-  dv = get_cell_shapefuns(f.space)
+  dv = get_fe_basis(f.space)
   data = get_data(dv)
   fullcell_shapefuns = lazy_map(VoidBasisMap(false),data)
   @check length(fullcell_shapefuns) == nfull
@@ -37,9 +37,9 @@ function get_cell_shapefuns(f::ExtendedFESpace)
   SingleFieldFEBasis(a,get_triangulation(f),TestBasis(),DomainStyle(dv))
 end
 
-function get_cell_dof_basis(f::ExtendedFESpace)
+function get_fe_dof_basis(f::ExtendedFESpace)
   nfull, nvoid = Arrays.pos_and_neg_length(f.partition)
-  s = get_cell_dof_basis(f.space)
+  s = get_fe_dof_basis(f.space)
   data = get_data(s)
   fullcell_dof_basis = lazy_map(VoidBasisMap(false),data)
   @check length(fullcell_dof_basis) == nfull

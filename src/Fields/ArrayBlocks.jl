@@ -9,12 +9,12 @@
 # v⁺[f][lc,  ][bv,  ][np,nv,  ]
 # u [c][lf][1 ,lF][1 ,bu][np,1 ,nu]
 # v [c][lf][lF,  ][bv,  ][np,nv,  ]
-# 
+#
 # λ [f][1 , 1][1 ,bλ][np,1 ,nλ]
 # μ [f][1 ,  ][bμ,  ][np,nμ,  ]
 # λ [c][lf][1 ,lf][1 ,bλ][np,1 ,nλ]
 # μ [c][lf][lf,  ][bμ,  ][np,nμ,  ]
-# 
+#
 # uh [c][np]
 # uh [f][lc][np]
 # uh⁺[f][np]
@@ -400,7 +400,7 @@ function  return_cache(k::TransposeMap,f::ArrayBlock{A,1} where A)
   ArrayBlock(g,collect(transpose(f.touched))),l
 end
 
-function  evaluate!(cache,k::TransposeMap,f::ArrayBlock)
+function  evaluate!(cache,k::TransposeMap,f::ArrayBlock{A,1} where A)
   g,l = cache
   @check g.touched == transpose(f.touched)
   for i in eachindex(f.array)
@@ -643,16 +643,56 @@ for op in (:+,:-,:*)
     function return_value(k::Broadcasting{typeof($op)},f::ArrayBlock,g::ArrayBlock)
       evaluate(k,f,g)
     end
-    
+
     function return_cache(k::Broadcasting{typeof($op)},f::ArrayBlock,g::ArrayBlock)
       return_cache(BroadcastingFieldOpMap($op),f,g)
     end
-    
+
     function evaluate!(cache,k::Broadcasting{typeof($op)},f::ArrayBlock,g::ArrayBlock)
       evaluate!(cache,BroadcastingFieldOpMap($op),f,g)
     end
 
   end
+end
+
+function return_value(k::Broadcasting{typeof(*)},f::Number,g::ArrayBlock)
+  evaluate(k,f,g)
+end
+
+function return_cache(k::Broadcasting{typeof(*)},f::Number,g::ArrayBlock)
+  gi = testitem(g)
+  ci = return_cache(k,f,gi)
+  hi = evaluate!(ci,k,f,gi)
+  array = Array{typeof(hi),ndims(g.array)}(undef,size(g.array))
+  c = Array{typeof(ci),ndims(g.array)}(undef,size(g.array))
+  for i in eachindex(g.array)
+    if g.touched[i]
+      c[i] = return_cache(k,f,g.array[i])
+    end
+  end
+  ArrayBlock(array,g.touched), c
+end
+
+function evaluate!(cache,k::Broadcasting{typeof(*)},f::Number,g::ArrayBlock)
+  r, c = cache
+  for i in eachindex(g.array)
+    if g.touched[i]
+      r.array[i] = evaluate!(c[i],k,f,g.array[i])
+    end
+  end
+  r
+end
+
+function return_value(k::Broadcasting{typeof(*)},f::ArrayBlock,g::Number)
+  evaluate(k,f,g)
+end
+
+function return_cache(k::Broadcasting{typeof(*)},f::ArrayBlock,g::Number)
+  return_cache(k,g,f)
+end
+
+function evaluate!(cache,k::Broadcasting{typeof(*)},f::ArrayBlock,g::Number)
+  evaluate!(cache,k,g,f)
 end
 
 function return_value(k::BroadcastingFieldOpMap,f::ArrayBlock,g::ArrayBlock)
@@ -1030,7 +1070,7 @@ function LinearAlgebra.mul!(
   nj = size(b.array,2)
   @check nk == size(b.array,1)
   @check (ni,nj) == size(c.array)
-  
+
   for i in 1:ni
     for j in 1:nj
       if β!=1 && c.touched[i,j]
@@ -1281,4 +1321,69 @@ end
     end
   end
 end
+
+# Assembly related
+
+for T in (:AddEntriesMap,:TouchEntriesMap)
+  @eval begin
+
+    function return_cache(
+      k::$T,A,v::MatrixBlock,I::VectorBlock,J::VectorBlock)
+    
+      qs = findall(v.touched)
+      i, j = Tuple(first(qs))
+      cij = return_cache(k,A,v.array[i,j],I.array[i],J.array[j])
+      ni,nj = size(v.touched)
+      cache = Matrix{typeof(cij)}(undef,ni,nj)
+      for j in 1:nj
+        for i in 1:ni
+          if v.touched[i,j]
+            cache[i,j] = return_cache(k,A,v.array[i,j],I.array[i],J.array[j])
+          end
+        end
+      end
+      cache
+    end
+    
+    function evaluate!(
+      cache, k::$T,A,v::MatrixBlock,I::VectorBlock,J::VectorBlock)
+      ni,nj = size(v.touched)
+      for j in 1:nj
+        for i in 1:ni
+          if v.touched[i,j]
+            evaluate!(cache[i,j],k,A,v.array[i,j],I.array[i],J.array[j])
+          end
+        end
+      end
+    end
+    
+    function return_cache(
+      k::$T,A,v::VectorBlock,I::VectorBlock)
+    
+      qs = findall(v.touched)
+      i = first(qs)
+      ci = return_cache(k,A,v.array[i],I.array[i])
+      ni = length(v.touched)
+      cache = Vector{typeof(ci)}(undef,ni)
+      for i in 1:ni
+        if v.touched[i]
+          cache[i] = return_cache(k,A,v.array[i],I.array[i])
+        end
+      end
+      cache
+    end
+    
+    function evaluate!(
+      cache, k::$T,A,v::VectorBlock,I::VectorBlock)
+      ni = length(v.touched)
+      for i in 1:ni
+        if v.touched[i]
+          evaluate!(cache[i],k,A,v.array[i],I.array[i])
+        end
+      end
+    end
+
+  end
+end
+
 

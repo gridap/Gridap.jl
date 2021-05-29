@@ -29,3 +29,47 @@ end
  push!(V,v)
  nothing
 end
+
+function nz_counter(
+  builder::SparseMatrixBuilder{SparseMatrixCSR{Bi,Tv,Ti}},axes) where {Bi,Tv,Ti}
+
+  builder_csc = SparseMatrixBuilder(SparseMatrixCSC{Tv,Ti},builder.approach)
+  csc =  nz_counter(builder_csc,(axes[2],axes[1]))
+  bi = Val{Bi}()
+  NzCounterCSR(bi,csc)
+end
+
+struct NzCounterCSR{Bi,T}
+  bi::Val{Bi}
+  csc::T
+end
+
+LoopStyle(::Type{NzCounterCSR{Bi,T}}) where {Bi,T} = LoopStyle(T)
+
+@inline function add_entry!(::typeof(+),a::NzCounterCSR,v,i,j)
+  add_entry!(+,a.csc,v,j,i)
+end
+
+function nz_allocation(a::NzCounterCSR)
+  csc = nz_allocation(a.csc)
+  NzAllocationCSR(a.bi,csc)
+end
+
+struct NzAllocationCSR{Bi,T}
+  bi::Val{Bi}
+  csc::T
+end
+
+LoopStyle(::Type{NzAllocationCSR{Bi,T}}) where {Bi,T} = LoopStyle(T)
+
+@inline function add_entry!(::typeof(+),a::NzAllocationCSR,v,i,j)
+  add_entry!(+,a.csc,v,j,i)
+end
+
+function create_from_nz(a::NzAllocationCSR{Bi}) where Bi
+  Atcsc = create_from_nz(a.csc)
+  Acsc = transpose(Atcsc)
+  Acsr = SparseMatrixCSR{Bi}(Acsc)
+  Acsr
+end
+

@@ -70,10 +70,12 @@ cell_fe = FiniteElements(PhysicalDomain(),model,lagrangian,Float64,order)
 V = FESpace(model,cell_fe)
 @test isa(V,UnconstrainedFESpace)
 
-V = FESpace(model,cell_fe,conformity=:L2)
+
+cell_fe = FiniteElements(PhysicalDomain(),model,lagrangian,Float64,order,conformity=:L2)
+V = FESpace(model,cell_fe)
 @test isa(V,UnconstrainedFESpace)
 
-V = FESpace(model,cell_fe,conformity=:L2,constraint=:zeromean)
+V = FESpace(model,cell_fe,constraint=:zeromean)
 @test isa(V,ZeroMeanFESpace)
 
 # Now from a restricted model
@@ -136,10 +138,11 @@ cell_fe = FiniteElements(PhysicalDomain(),model_in,lagrangian,Float64,order)
 V = FESpace(model_in,cell_fe)
 @test isa(V,ExtendedFESpace)
 
-V = FESpace(model_in,cell_fe,conformity=:L2)
+cell_fe = FiniteElements(PhysicalDomain(),model_in,lagrangian,Float64,order,conformity=:L2)
+V = FESpace(model_in,cell_fe)
 @test isa(V,ExtendedFESpace)
 
-V = FESpace(model_in,cell_fe,conformity=:L2,constraint=:zeromean)
+V = FESpace(model_in,cell_fe,constraint=:zeromean)
 @test isa(V,ZeroMeanFESpace)
 
 end # module

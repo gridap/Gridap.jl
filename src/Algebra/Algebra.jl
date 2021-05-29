@@ -34,6 +34,11 @@ export create_from_nz
 export LoopStyle
 export Loop
 export DoNotLoop
+export ArrayBuilder
+export SparseMatrixBuilder
+export MinMemory
+export MinCPU
+export get_array_type
 
 export nz_index
 export is_entry_stored
