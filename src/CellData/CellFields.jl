@@ -209,9 +209,6 @@ DomainStyle(::Type{GenericCellField{DS}}) where DS = DS()
 
 # Evaluation of CellFields
 
-# This code lives here (instead of in the CellData module) because we
-# need access to MultiField functionality.
-
 """
    dist = distance(polytope::ExtrusionPolytope,
                    inv_cmap::Field,
