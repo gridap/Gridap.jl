@@ -7,18 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.16.0] - Unreleased
 
 ### Added
-- User API to select specific quadrature rules.
+- User API to select specific quadrature rules. Since PR [#578](https://github.com/gridap/Gridap.jl/pull/578).
 - Experimental support for mixed dimensional PDEs. Since PR [#567](https://github.com/gridap/Gridap.jl/pull/567).
+- Added `get_cell_dof_basis(model,cell_reffes,::Conformity)` and `get_cell_shapefuns(model,cell_reffes,::Conformity)`. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
+- Implemented `get_cell_dof_basis` and `get_cell_shapefuns` for global RT FE spaces in a new file `DivConformingFESpaces.jl`. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
 
 ### Changed
-- The default quadrature rule for tets has changed.
+- Major refactoring in the handling of blocks (e.g. in multi-field and skeleton terms). The new code follows a much more simple approach based in the new type `ArrayBlock`. Since PR [#583](https://github.com/gridap/Gridap.jl/pull/583).
+- The default quadrature rule for tets has changed. Since PR [#578](https://github.com/gridap/Gridap.jl/pull/578).
 - Refactoring in `SparseMatrixAssembler` to make it more extensible and efficient. Since PR [#568](https://github.com/gridap/Gridap.jl/pull/568).
 - Renamed `get_free_values` -> `get_free_dof_values`. Since PR [#567](https://github.com/gridap/Gridap.jl/pull/567).
 - Miscellaneous changes in the FE assembly to allow the solution of mixed dimensional problems. Since PR [#567](https://github.com/gridap/Gridap.jl/pull/567).
+- Renamed `get_cell_shapefuns` by `get_fe_basis`. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
+- Renamed `get_cell_shapefuns_trial` by `get_trial_fe_basis`. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
+- Renamed `get_cell_dof_basis` by `get_fe_dof_basis`. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
+- Removed `conformity` optional keyword argument from `FESpace(::DiscreteModel,::CellFE; kwargs...)` constructor. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
+- Replaced `CellFE(::AbstractArray{<:Field},::AbstractArray{<:ReferenceFE})` by `CellFE(::DiscreteModel,::AbstractArray{<:ReferenceFE},::Conformity)`. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
 
 ### Removed
+- All code associated with with `BlockArrayCoo`. Since PR [#583](https://github.com/gridap/Gridap.jl/pull/583).
 - Module `Gridap.Integration` has been deleted and its contents have been merged into `Gridap.ReferenceFEs` module.
 - Types `SparseMatrixCSR` and `SymSparseMatrixCSR` have been moved to the registered package [`SparseMatricesCSR`](https://github.com/gridap/SparseMatricesCSR.jl). To use them simply add `SparseMatricesCSR` into your environment and type `using SparseMatricesCSR`. Since  Since PR [#568](https://github.com/gridap/Gridap.jl/pull/568).
+- Removed `PushForwardMap` and all code depending upon it. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579). 
+
+## [0.15.5] - 2021-05-25
+
+### Added
+- Differential operators `(∇+k)(u)`, `(∇+k)⋅u`, `(∇+k)×u`, `(∇+k)⊗u`, and `u⊗(∇+k)` for some `u::CellField` and `k::VectorValue`. Since PR [#597](https://github.com/gridap/Gridap.jl/pull/597).
+- Definition of `u.*v` between instances of vector-valued `CellField` objects `u` and `v`. Also differential operators `∇.*u`  and `(∇+k).*u`. Since PR [#597](https://github.com/gridap/Gridap.jl/pull/597).
 
 ## [0.15.4] - 2021-03-29
 

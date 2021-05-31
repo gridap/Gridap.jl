@@ -16,12 +16,11 @@ using Gridap.CellData
 using Gridap.Fields
 
 using Gridap.FESpaces: SingleFieldFEBasis, TestBasis, TrialBasis
-using Gridap.Arrays: BlockArrayCooMap
 
 using FillArrays
 using SparseArrays
 using LinearAlgebra
-using BlockArrays
+import BlockArrays
 
 export num_fields
 export compute_field_offsets
@@ -37,5 +36,7 @@ include("MultiFieldCellFields.jl")
 include("MultiFieldFESpaces.jl")
 
 include("MultiFieldFEFunctions.jl")
+
+include("MultiFieldFEAutodiff.jl")
 
 end # module

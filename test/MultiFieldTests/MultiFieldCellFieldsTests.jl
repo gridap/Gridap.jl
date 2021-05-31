@@ -1,6 +1,5 @@
 module MultiFieldCellFieldsTests
 
-using BlockArrays
 using FillArrays
 using Gridap.Arrays
 using Gridap.Geometry
@@ -11,8 +10,6 @@ using Gridap.CellData
 using Gridap.MultiField
 using Gridap.TensorValues
 using Test
-
-using Gridap.Arrays: BlockArrayCooMap
 
 domain = (0,1,0,1)
 cells = (2,2)
@@ -61,15 +58,15 @@ P = TrialFESpace(Q)
 Y = MultiFieldFESpace([V,Q])
 X = MultiFieldFESpace([U,P])
 
-dv, dq = get_cell_shapefuns(Y)
-du, dp = get_cell_shapefuns_trial(X)
+dv, dq = get_fe_basis(Y)
+du, dp = get_trial_fe_basis(X)
 
 n = VectorValue(1,2)
 
 cellmat = integrate( (n⋅dv)*dp + dq*dp, quad)
 cellvec = integrate( n⋅dv, quad)
-@test isa(cellvec,LazyArray{<:Fill{BlockArrayCooMap{1}}})
-@test isa(cellmat,LazyArray{<:Fill{BlockArrayCooMap{2}}})
+@test isa(cellvec[end],ArrayBlock)
+@test isa(cellmat[end],ArrayBlock)
 
 cellmat1 = integrate( ((n⋅dv) - dq)*((n⋅du) + dp), quad)
 cellmat2 = integrate( (n⋅dv)*(n⋅du) + (n⋅dv)*dp - dq*(n⋅du) - dq*dp, quad)
@@ -79,22 +76,18 @@ cellmat1 = integrate( (n⋅dv)*2, quad)
 cellmat2 = integrate( (n⋅dv)*fill(2,num_cells(trian)), quad)
 test_array(cellmat1,cellmat2,≈)
 
-α = CellField(2,trian)
-op(u,∇u,v,∇v,α) = α*(u⋅v) + ∇u⊙∇v
-cellmat1 = integrate( op∘(du,∇(du),dv,∇(dv),α) , quad)
-cellmat2 = integrate( α*(du⋅dv) + ∇(du)⊙∇(dv) , quad)
-test_array(cellmat1,cellmat2,≈)
-
-@test isa(cellmat2,LazyArray{<:Fill{BlockArrayCooMap{2}}})
-#@test_broken isa(cellmat1,LazyArray{<:Fill{BlockArrayCooMap{2}}})
+# This is not supported anymore
+#α = CellField(2,trian)
+#op(u,∇u,v,∇v,α) = α*(u⋅v) + ∇u⊙∇v
+#cellmat1 = integrate( op∘(du,∇(du),dv,∇(dv),α) , quad)
+#cellmat2 = integrate( α*(du⋅dv) + ∇(du)⊙∇(dv) , quad)
+#test_array(cellmat1,cellmat2,≈)
 
 α = CellField(2,trian)
 op2(u,∇u,α) = α*(∇u⋅u)
 cellmat1 = integrate( dv⋅(op2∘(du,∇(du),α)),quad)
 cellmat2 = integrate( dv⋅(α*(∇(du)⋅du)),quad)
 test_array(cellmat1,cellmat2,≈)
-@test isa(cellmat2,LazyArray{<:Fill{BlockArrayCooMap{2}}})
-#@test_broken isa(cellmat1,LazyArray{<:Fill{BlockArrayCooMap{2}}})
 
 conv(u,∇u,α) = α*(u⋅∇u)
 dconv(du,∇du,u,∇u,α) = conv(u,∇du,α)+conv(du,∇u,α)
@@ -103,30 +96,25 @@ u = zero(U)
 cellvec2 = integrate(dv⊙(α*(u⋅∇(u))),quad)
 cellvec1 = integrate(dv⊙(conv∘(u,∇(u),α)),quad)
 test_array(cellvec1,cellvec2,≈)
-@test isa(cellvec2,LazyArray{<:Fill{BlockArrayCooMap{1}}})
-@test isa(cellvec1,LazyArray{<:Fill{BlockArrayCooMap{1}}})
 
 cellmat1 = integrate( dv⋅(dconv∘(du,∇(du),u,∇(u),α)) , quad)
 cellmat2 = integrate( dv⋅( α*(du⋅∇(u)) + α*(u⋅∇(du))), quad)
 test_array(cellmat1,cellmat2,≈)
-@test isa(cellmat2,LazyArray{<:Fill{BlockArrayCooMap{2}}})
-#@test_broken isa(cellmat1,LazyArray{<:Fill{BlockArrayCooMap{2}}})
 
 cellmat_Γ = integrate(  jump(n⋅dv)*dp.⁺ + mean(dq)*jump(dp), quad_Γ)
 cellvec_Γ = integrate(  jump(n⋅dv) + mean(dq), quad_Γ)
 L = 1
 R = 2
-@test isa(cellmat_Γ,LazyArray{<:Fill{BlockArrayCooMap{2}}})
-@test isa(cellvec_Γ,LazyArray{<:Fill{BlockArrayCooMap{1}}})
+@test isa(cellmat_Γ[end],ArrayBlock)
+@test isa(cellvec_Γ[end],ArrayBlock)
 
 cell = 1
-@test isa(cellmat_Γ[cell][Block(L,R)],BlockArrayCoo)
-@test isa(cellvec_Γ[cell][Block(L)],BlockArrayCoo)
+@test isa(cellmat_Γ[cell][L,R],ArrayBlock)
+@test isa(cellvec_Γ[cell][L],ArrayBlock)
 
 cellmat1_Γ = integrate(((n⋅dv.⁺)-dq.⁻)*((n⋅du.⁺)+dp.⁻),quad_Γ)
 cellmat2_Γ = integrate((n⋅dv.⁺)*(n⋅du.⁺)+(n⋅dv.⁺)*dp.⁻-dq.⁻*(n⋅du.⁺)-dq.⁻*dp.⁻,quad_Γ)
 test_array(cellmat1_Γ,cellmat2_Γ,≈)
-
 
 #a = cellmat_Γ
 #using BenchmarkTools

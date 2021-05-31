@@ -118,27 +118,45 @@ end
   A
 end
 
+# Warning: the usage of @inline and @noinline seems to have dramatic performance
+# implications. Do not change it.
+
+@noinline function add_entries!(A,vs,is,js)
+  add_entries!(+,A,vs,is,js)
+end
+
+@noinline function add_entries!(A,vs,is)
+  add_entries!(+,A,vs,is)
+end
+
 """
-    add_entries!(combine::Function,A,vs,is...)
+    add_entries!(combine::Function,A,vs,is,js)
 
 Add several entries only for positive input indices. Returns A.
 """
-@inline function add_entries!(combine::Function,args...)
-  @abstractmethod
-end
-
-@inline function add_entries!(args...)
-  add_entries!(+,args...)
-end
-
 @inline function add_entries!(combine::Function,A,vs,is,js)
-  @inline _vij(vs,i,j) = vs[i,j]
-  @inline _vij(vs::Nothing,i,j) = vs
+  _add_entries!(combine,A,vs,is,js)
+end
+
+@inline function _add_entries!(combine::Function,A,vs::Nothing,is,js)
   for (lj,j) in enumerate(js)
     if j>0
       for (li,i) in enumerate(is)
         if i>0
-          vij = _vij(vs,li,lj)
+          add_entry!(combine,A,nothing,i,j)
+        end
+      end
+    end
+  end
+  A
+end
+
+@inline function _add_entries!(combine::Function,A,vs,is,js)
+  for (lj,j) in enumerate(js)
+    if j>0
+      for (li,i) in enumerate(is)
+        if i>0
+          vij = vs[li,lj]
           add_entry!(combine,A,vij,i,j)
         end
       end
@@ -147,13 +165,23 @@ end
   A
 end
 
-
 @inline function add_entries!(combine::Function,A,vs,is)
-  @inline _vi(vs,i) = vs[i]
-  @inline _vi(vs::Nothing,i) = vs
+  _add_entries!(combine,A,vs,is)
+end
+
+@inline function _add_entries!(combine::Function,A,vs::Nothing,is)
   for (li, i) in enumerate(is)
     if i>0
-      vi = _vi(vs,li)
+      add_entry!(A,nothing,i)
+    end
+  end
+  A
+end
+
+@inline function _add_entries!(combine::Function,A,vs,is)
+  for (li, i) in enumerate(is)
+    if i>0
+      vi = vs[li]
       add_entry!(A,vi,i)
     end
   end
@@ -262,7 +290,16 @@ struct DoNotLoop end
 LoopStyle(::Type) = DoNotLoop()
 LoopStyle(::T) where T = LoopStyle(T)
 
+
 # For dense arrays
+
+struct ArrayBuilder{T}
+  array_type::Type{T}
+end
+
+ArrayBuilder(a::ArrayBuilder) = a
+
+get_array_type(::ArrayBuilder{T}) where T = T
 
 struct ArrayCounter{T,A}
   axes::A
@@ -273,16 +310,37 @@ end
 
 LoopStyle(::Type{<:ArrayCounter}) = DoNotLoop()
 
-@inline add_entry!(c::Function,a::ArrayCounter,args...) = a
-@inline add_entries!(c::Function,a::ArrayCounter,args...) = a
+@inline add_entry!(c::Function,a::ArrayCounter,v,i,j) = a
+@inline add_entry!(c::Function,a::ArrayCounter,v,i) = a
+@inline add_entries!(c::Function,a::ArrayCounter,v,i,j) = a
+@inline add_entries!(c::Function,a::ArrayCounter,v,i) = a
 
-nz_counter(::Type{T},axes) where T = ArrayCounter{T}(axes)
+#nz_counter(::Type{T},axes) where T = ArrayCounter{T}(axes)
+nz_counter(::ArrayBuilder{T},axes) where T = ArrayCounter{T}(axes)
 
-nz_allocation(a::ArrayCounter{T}) where T = fill!(similar(T,a.axes),zero(eltype(T)))
+nz_allocation(a::ArrayCounter{T}) where T = fill!(similar(T,map(length,a.axes)),zero(eltype(T)))
 
 create_from_nz(a::AbstractArray) = a
 
 # For sparse matrices
+
+struct MinCPU end
+
+struct MinMemory{T}
+  maxnnz::T
+end
+
+MinMemory() = MinMemory(nothing)
+
+struct SparseMatrixBuilder{T,A}
+  matrix_type::Type{T}
+  approach::A
+end
+
+SparseMatrixBuilder(::Type{T}) where T = SparseMatrixBuilder(T,MinMemory())
+SparseMatrixBuilder(a::SparseMatrixBuilder) = a
+
+get_array_type(::SparseMatrixBuilder{T}) where T = T
 
 mutable struct SparseMatrixCounter{T,A}
   nnz::Int
@@ -332,7 +390,11 @@ end
   nothing
 end
 
-function nz_counter(::Type{T},axes) where T<:AbstractSparseMatrix
+#function nz_counter(::Type{T},axes) where T<:AbstractSparseMatrix
+#  SparseMatrixCounter{T}(axes)
+#end
+
+function nz_counter(::SparseMatrixBuilder{T},axes) where T<:AbstractSparseMatrix
   SparseMatrixCounter{T}(axes)
 end
 

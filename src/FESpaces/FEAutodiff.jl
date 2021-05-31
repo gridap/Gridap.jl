@@ -17,7 +17,7 @@ end
 function _gradient(f,uh,fuh::DomainContribution)
   terms = DomainContribution()
   for trian in get_domains(fuh)
-    g = _change_argument(f,trian,uh)
+    g = _change_argument(gradient,f,trian,uh)
     cell_u = get_cell_dof_values(uh)
     cell_id = get_cell_to_bgcell(trian)
     cell_grad = autodiff_array_gradient(g,cell_u,cell_id)
@@ -43,7 +43,7 @@ end
 function _jacobian(f,uh,fuh::DomainContribution)
   terms = DomainContribution()
   for trian in get_domains(fuh)
-    g = _change_argument(f,trian,uh)
+    g = _change_argument(jacobian,f,trian,uh)
     cell_u = get_cell_dof_values(uh)
     cell_id = get_cell_to_bgcell(trian)
     cell_grad = autodiff_array_jacobian(g,cell_u,cell_id)
@@ -69,7 +69,7 @@ end
 function _hessian(f,uh,fuh::DomainContribution)
   terms = DomainContribution()
   for trian in get_domains(fuh)
-    g = _change_argument(f,trian,uh)
+    g = _change_argument(hessian,f,trian,uh)
     cell_u = get_cell_dof_values(uh)
     cell_id = get_cell_to_bgcell(trian)
     cell_grad = autodiff_array_hessian(g,cell_u,cell_id)
@@ -78,7 +78,7 @@ function _hessian(f,uh,fuh::DomainContribution)
   terms
 end
 
-function _change_argument(f,trian,uh)
+function _change_argument(op,f,trian,uh::SingleFieldFEFunction)
   U = get_fe_space(uh)
   function g(cell_u)
     cf = CellField(U,cell_u)
@@ -87,3 +87,4 @@ function _change_argument(f,trian,uh)
   end
   g
 end
+

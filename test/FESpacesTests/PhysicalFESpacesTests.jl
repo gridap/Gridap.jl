@@ -23,13 +23,12 @@ dΩ = Measure(Ω,order)
 cell_fe = FiniteElements(ReferenceDomain(),model,lagrangian,Float64,order)
 V = FESpace(model,cell_fe)
 @test num_free_dofs(V) == 9
-V = FESpace(model,cell_fe,conformity=:L2)
+cell_fe = FiniteElements(ReferenceDomain(),model,lagrangian,Float64,order,conformity=:L2)
+V = FESpace(model,cell_fe)
 @test num_free_dofs(V) == 16
-V = FESpace(model,cell_fe,conformity=CellConformity(cell_fe))
-@test num_free_dofs(V) == 9
 
-@test DomainStyle(get_cell_shapefuns(V)) == ReferenceDomain()
-@test DomainStyle(get_cell_dof_basis(V)) == ReferenceDomain()
+@test DomainStyle(get_fe_basis(V)) == ReferenceDomain()
+@test DomainStyle(get_fe_dof_basis(V)) == ReferenceDomain()
 
 uh = interpolate(u,V)
 e = u - uh
@@ -38,13 +37,13 @@ e = u - uh
 cell_fe = FiniteElements(PhysicalDomain(),model,lagrangian,Float64,order)
 V = FESpace(model,cell_fe)
 @test num_free_dofs(V) == 9
-V = FESpace(model,cell_fe,conformity=:L2)
-@test num_free_dofs(V) == 16
-V = FESpace(model,cell_fe,conformity=CellConformity(cell_fe))
-@test num_free_dofs(V) == 9
 
-@test DomainStyle(get_cell_shapefuns(V)) == PhysicalDomain()
-@test DomainStyle(get_cell_dof_basis(V)) == PhysicalDomain()
+cell_fe = FiniteElements(PhysicalDomain(),model,lagrangian,Float64,order,conformity=:L2)
+V = FESpace(model,cell_fe)
+@test num_free_dofs(V) == 16
+
+@test DomainStyle(get_fe_basis(V)) == PhysicalDomain()
+@test DomainStyle(get_fe_dof_basis(V)) == PhysicalDomain()
 
 uh = interpolate(u,V)
 e = u - uh

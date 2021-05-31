@@ -46,7 +46,7 @@ for op in (:+,:-)
     end
 
     function ($op)(a::MultiValue{S},b::MultiValue{S})  where S
-      r = broadcast(($op), a.data, b.data)
+      r = map(($op), a.data, b.data)
       T = _eltype($op,r,a,b)
       M = change_eltype(a,T)
       M(r)
@@ -77,17 +77,35 @@ end
 # Operations with other numbers
 ###############################################################
 
+@generated function _bc(f,a::NTuple{N},b::Number) where N
+  s = "("
+  for i in 1:N
+    s *= "f(a[$i],b), "
+  end
+  s *= ")"
+  Meta.parse(s)
+end
+
+@generated function _bc(f,b::Number,a::NTuple{N}) where N
+  s = "("
+  for i in 1:N
+    s *= "f(b,a[$i]), "
+  end
+  s *= ")"
+  Meta.parse(s)
+end
+
 for op in (:+,:-,:*)
   @eval begin
     function ($op)(a::MultiValue,b::Number)
-        r = broadcast($op,a.data,b)
+        r = _bc($op,a.data,b)
         T = _eltype($op,r,a,b)
         M  = change_eltype(a,T)
         M(r)
     end
 
     function ($op)(a::Number,b::MultiValue)
-        r = broadcast($op,a,b.data)
+        r = _bc($op,a,b.data)
         T = _eltype($op,r,a,b)
         M  = change_eltype(b,T)
         M(r)
@@ -96,7 +114,7 @@ for op in (:+,:-,:*)
 end
 
 function (/)(a::MultiValue,b::Number)
-    r = broadcast(/,a.data,b)
+    r = _bc(/,a.data,b)
     T = _eltype(/,r,a,b)
     P  = change_eltype(a,T)
     P(r)
@@ -601,6 +619,39 @@ transpose(a::SymTensorValue) = a
     end
     str *= ")"
     Meta.parse("SymTensorValue{D}($str)")
+end
+
+###############################################################
+# diag
+###############################################################
+
+function LinearAlgebra.diag(a::TensorValue{1,1})
+  VectorValue(a.data[1])
+end
+
+function LinearAlgebra.diag(a::TensorValue{2,2})
+  VectorValue(a.data[1],a.data[4])
+end
+
+function LinearAlgebra.diag(a::TensorValue{3,3})
+  VectorValue(a.data[1],a.data[5],a.data[9])
+end
+
+function LinearAlgebra.diag(a::TensorValue)
+  @notimplemented
+end
+
+###############################################################
+# Broadcast
+###############################################################
+# TODO more cases need to be added
+
+function Base.broadcasted(f,a::VectorValue,b::VectorValue)
+  VectorValue(map(f,a.data,b.data))
+end
+
+function Base.broadcasted(f,a::TensorValue,b::TensorValue)
+  TensorValue(map(f,a.data,b.data))
 end
 
 ###############################################################

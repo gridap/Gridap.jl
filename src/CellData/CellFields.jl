@@ -191,11 +191,11 @@ end
 """
 """
 struct GenericCellField{DS} <: CellField
-  cell_field::AbstractArray{<:Union{Field,AbstractArray{<:Field}}}
+  cell_field::AbstractArray
   trian::Triangulation
   domain_style::DS
   function GenericCellField(
-    cell_field::AbstractArray{<:Union{Field,AbstractArray{<:Field}}},
+    cell_field::AbstractArray,
     trian::Triangulation,
     domain_style::DomainStyle)
 
@@ -237,6 +237,8 @@ function _to_common_domain(f::CellField,x::CellPoint)
   if have_compatible_domains(trian_f,trian_x)
     nothing
   elseif have_compatible_domains(trian_f,get_background_triangulation(trian_x))
+    nothing
+  elseif have_compatible_domains(trian_f,get_background_triangulation(get_background_triangulation(trian_x)))
     nothing
   elseif have_compatible_domains(trian_x,get_background_triangulation(trian_f))
     @unreachable """\n
@@ -449,6 +451,8 @@ function _to_common_domain(a::CellField...)
       target_trian = trian_a
     elseif have_compatible_domains(trian_a,get_background_triangulation(get_background_triangulation(trian_b)))
       target_trian = trian_b
+    elseif have_compatible_domains(trian_b,get_background_triangulation(get_background_triangulation(trian_a)))
+      target_trian = trian_a
     elseif have_compatible_domains(get_background_triangulation(trian_a),get_background_triangulation(trian_b))
       @unreachable msg
     else
@@ -491,6 +495,14 @@ for op in (:inner,:outer,:double_contraction,:+,:-,:*,:cross,:dot,:/)
   end
 end
 
+Base.broadcasted(f,a::CellField,b::CellField) = Operation((i,j)->f.(i,j))(a,b)
+Base.broadcasted(f,a::Number,b::CellField) = Operation((i,j)->f.(i,j))(a,b)
+Base.broadcasted(f,a::CellField,b::Number) = Operation((i,j)->f.(i,j))(a,b)
+Base.broadcasted(f,a::Function,b::CellField) = Operation((i,j)->f.(i,j))(a,b)
+Base.broadcasted(f,a::CellField,b::Function) = Operation((i,j)->f.(i,j))(a,b)
+Base.broadcasted(::typeof(*),::typeof(∇),f::CellField) = Operation(Fields._extract_grad_diag)(∇(f))
+Base.broadcasted(::typeof(*),s::Fields.ShiftedNabla,f::CellField) = Operation(Fields._extract_grad_diag)(s(f))
+
 dot(::typeof(∇),f::CellField) = divergence(f)
 function (*)(::typeof(∇),f::CellField)
   msg = "Syntax ∇*f has been removed, use ∇⋅f (\\nabla \\cdot f) instead"
@@ -529,7 +541,7 @@ function Base.getproperty(x::CellField, sym::Symbol)
   end
 end
 
-function Base.propertynames(x::CellField, private=false)
+function Base.propertynames(x::CellField, private::Bool=false)
   (fieldnames(typeof(x))...,:⁺,:plus,:⁻,:minus)
 end
 
@@ -551,7 +563,8 @@ end
 
 function get_normal_vector(trian::SkeletonTriangulation)
   cell_normal_plus = get_facet_normal(trian.plus)
-  cell_normal_minus = get_facet_normal(trian.minus)
+  #cell_normal_minus = get_facet_normal(trian.minus)
+  cell_normal_minus = lazy_map(Broadcasting(Operation(-)),cell_normal_plus)
   plus = GenericCellField(cell_normal_plus,trian,ReferenceDomain())
   minus = GenericCellField(cell_normal_minus,trian,ReferenceDomain())
   SkeletonPair(plus,minus)
@@ -603,6 +616,12 @@ function change_domain(a::CellField,target_trian::SkeletonTriangulation,target_d
       either plus (aka ⁺) or minus (aka ⁻) you want to use.
       """
     end
+  elseif have_compatible_domains(trian_a,get_background_triangulation(get_background_triangulation(target_trian)))
+    @unreachable """\n
+    It is not possible to use the given CellField on a SkeletonTriangulation.
+    Make sure that you are specifying which of the two possible traces,
+    either plus (aka ⁺) or minus (aka ⁻) you want to use.
+    """
   else
     @unreachable """\n
     We cannot move the given CellField to the requested triangulation.
@@ -643,6 +662,13 @@ end
 function change_domain(f::OperationCellField,target_trian::SkeletonTriangulation,target_domain::DomainStyle)
   args = map(i->change_domain(i,target_trian,target_domain),f.args)
   OperationCellField(f.op,args...)
+end
+
+function change_domain_skeleton(f::OperationCellField,target_trian::SkeletonTriangulation,target_domain::DomainStyle)
+  args = map(i->change_domain_skeleton(i,target_trian,target_domain),f.args)
+  plus = map(i->i[1],args)
+  minus = map(i->i[2],args)
+  OperationCellField(f.op,plus...), OperationCellField(f.op,minus...)
 end
 
 # Just to provide more meaningful error messages

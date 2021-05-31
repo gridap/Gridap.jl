@@ -1,108 +1,13 @@
 
-struct MultiFieldFEBasis{BS,DS} <: FESpaces.FEBasis
-  field::Int
-  basis::SingleFieldFEBasis{BS,DS}
-  spaces::Vector{<:SingleFieldFESpace}
-end
-
-Geometry.get_triangulation(f::MultiFieldFEBasis) = get_triangulation(f.basis)
-FESpaces.BasisStyle(::Type{MultiFieldFEBasis{BS,DS}}) where {BS,DS} = BS()
-CellData.DomainStyle(::Type{MultiFieldFEBasis{BS,DS}}) where {BS,DS} = DS()
-Fields.gradient(a::MultiFieldFEBasis) =  MultiFieldFEBasis(a.field,∇(a.basis),a.spaces)
-Fields.∇∇(a::MultiFieldFEBasis) =  MultiFieldFEBasis(a.field,∇∇(a.basis),a.spaces)
-
-function _get_cell_axes(f::MultiFieldFEBasis,trian::Triangulation)
-  nfields = length(f.spaces)
-  fields =1:nfields
-  field_i = f.field
-  V_i = f.spaces[field_i]
-  cell_axes = map(fields) do field_j
-    V_j = f.spaces[field_j]
-    trian_j = get_triangulation(V_j)
-    if have_compatible_domains(trian_j,trian) ||
-      have_compatible_domains(
-      trian_j,get_background_triangulation(trian)) ||
-      have_compatible_domains(
-        trian_j,get_background_triangulation(get_background_triangulation(trian))) ||
-      Geometry.is_included(trian,trian_j)
-      cell_dofs_j = get_cell_dof_ids(V_j,trian)
-      lazy_map(axes,cell_dofs_j)
-    else
-      cell_dofs_i = get_cell_dof_ids(V_i)
-      dofs_i = testitem(cell_dofs_i)
-      axes_i = axes(dofs_i)
-      axes_i_empty = (similar_range(first(axes_i),0),)
-      Fill(axes_i_empty,num_cells(trian))
-    end
-  end
-  lazy_map(_multifield_axes_dofs,cell_axes...)
-end
-
-function CellData.get_data(f::MultiFieldFEBasis)
-  nfields = length(f.spaces)
-  field_i = f.field
-  V_i = f.spaces[field_i]
-  trian_i = get_triangulation(V_i)
-  cell_axes_test = _get_cell_axes(f,trian_i)
-  dv = f.basis
-  if BasisStyle(f) == TestBasis()
-    bsize = (nfields,)
-    blockids = [(field_i,)]
-    cell_axes = cell_axes_test
-  elseif BasisStyle(f) == TrialBasis()
-    bsize = (1,nfields)
-    blockids = [(1,field_i)]
-    cell_axes = lazy_map(cell_axes_test) do axs
-      r = similar_range(first(axs),1)
-      (r,axs...)
-    end
+function _can_be_restricted_to(trian_i,trian)
+  if have_compatible_domains(trian_i,trian) ||
+    have_compatible_domains(trian_i,get_background_triangulation(trian)) ||
+    have_compatible_domains(trian_i,get_background_triangulation(get_background_triangulation(trian))) ||
+    Geometry.is_included(trian,trian_i)
+    true
   else
-    @unreachable
+    false
   end
-  cell_basis = lazy_map(Fields.BlockFieldArrayCooMap(bsize,blockids),cell_axes,get_data(dv))
-end
-
-function CellData.change_domain(
-  f::MultiFieldFEBasis,trian::Triangulation,domain::DomainStyle)
-  if have_compatible_domains(get_triangulation(f),trian)
-    if DomainStyle(f) == domain
-      return change_domain(f,domain)
-    else
-      @notimplemented
-    end
-  end
-  nfields = length(f.spaces)
-  field_i = f.field
-  V_i = f.spaces[field_i]
-  trian_i = get_triangulation(V_i)
-  cell_axes_test = _get_cell_axes(f,trian)
-  bsize = (nfields,)
-  dv = CellData.change_domain(f.basis,trian,domain)
-  if BasisStyle(f) == TestBasis()
-    bsize = (nfields,)
-    blockids = [(field_i,)]
-    cell_axes = cell_axes_test
-  elseif BasisStyle(f) == TrialBasis()
-    bsize = (1,nfields)
-    blockids = [(1,field_i)]
-    cell_axes = lazy_map(cell_axes_test) do axs
-      r = similar_range(first(axs),1)
-      (r,axs...)
-    end
-  else
-    @unreachable
-  end
-  cell_basis = lazy_map(Fields.BlockFieldArrayCooMap(bsize,blockids),cell_axes,get_data(dv))
-  SingleFieldFEBasis(cell_basis,get_triangulation(dv),BasisStyle(f),DomainStyle(dv))
-end
-
-function CellData.change_domain(
-  f::MultiFieldFEBasis,trian::SkeletonTriangulation,target_domain::DomainStyle)
-  @unreachable """\n
-  It is not possible to use the given MultiFieldFEBasis on a SkeletonTriangulation.
-  Make sure that you are specifying which of the two possible traces,
-  either plus (aka ⁺) or minus (aka ⁻) you want to use.
-  """
 end
 
 abstract type MultiFieldStyle end
@@ -174,11 +79,19 @@ function FESpaces.num_free_dofs(f::MultiFieldFESpace)
 end
 
 function FESpaces.get_free_dof_ids(f::MultiFieldFESpace)
-  block_dof_ids = AbstractUnitRange[]
+  get_free_dof_ids(f,MultiFieldStyle(f))
+end
+
+function FESpaces.get_free_dof_ids(f::MultiFieldFESpace,::MultiFieldStyle)
+  @abstractmethod
+end
+
+function FESpaces.get_free_dof_ids(f::MultiFieldFESpace,::ConsecutiveMultiFieldStyle)
+  block_num_dofs = Int[]
   for U in f.spaces
-    push!(block_dof_ids,get_free_dof_ids(U))
+    push!(block_num_dofs,num_free_dofs(U))
   end
-  MultiLevelBlockedUnitRange(block_dof_ids)
+  BlockArrays.blockedrange(block_num_dofs)
 end
 
 FESpaces.get_dof_value_type(f::MultiFieldFESpace{MS,CS,V}) where {MS,CS,V} = eltype(V)
@@ -187,27 +100,34 @@ FESpaces.get_vector_type(f::MultiFieldFESpace) = f.vector_type
 
 FESpaces.ConstraintStyle(::Type{MultiFieldFESpace{S,B,V}}) where {S,B,V} = B()
 
-function FESpaces.get_cell_shapefuns(f::MultiFieldFESpace)
-  field_to_febasis = map(get_cell_shapefuns,f.spaces)
+function FESpaces.get_fe_basis(f::MultiFieldFESpace)
   nfields = length(f.spaces)
-  fields =1:nfields
-  all_febases = map(fields) do field_i
-    MultiFieldFEBasis(field_i,field_to_febasis[field_i],f.spaces)
+  all_febases = SingleFieldFEBasis[]
+  for field_i in 1:nfields
+    dv_i = get_fe_basis(f.spaces[field_i])
+    cell_basis = lazy_map(BlockMap(nfields,field_i),get_data(dv_i))
+    trian = get_triangulation(dv_i)
+    bs = BasisStyle(dv_i)
+    @assert bs == TestBasis()
+    ds = DomainStyle(dv_i)
+    dv_i_b = SingleFieldFEBasis(cell_basis,trian,bs,ds)
+    push!(all_febases,dv_i_b)
   end
   MultiFieldCellField(all_febases)
 end
 
-function _multifield_axes_dofs(axs...)
-  rs = map(first,axs)
-  (append_ranges([rs...]),)
-end
-
-function FESpaces.get_cell_shapefuns_trial(f::MultiFieldFESpace)
-  field_to_febasis = map(get_cell_shapefuns_trial,f.spaces)
+function FESpaces.get_trial_fe_basis(f::MultiFieldFESpace)
   nfields = length(f.spaces)
-  fields =1:nfields
-  all_febases = map(fields) do field_i
-    MultiFieldFEBasis(field_i,field_to_febasis[field_i],f.spaces)
+  all_febases = SingleFieldFEBasis[]
+  for field_i in 1:nfields
+    du_i = get_trial_fe_basis(f.spaces[field_i])
+    cell_basis = lazy_map(BlockMap((1,nfields),field_i),get_data(du_i))
+    trian = get_triangulation(du_i)
+    bs = BasisStyle(du_i)
+    @assert bs == TrialBasis()
+    ds = DomainStyle(du_i)
+    du_i_b = SingleFieldFEBasis(cell_basis,trian,bs,ds)
+    push!(all_febases,du_i_b)
   end
   MultiFieldCellField(all_febases)
 end
@@ -230,17 +150,7 @@ end
 
 function CellData.CellField(fe::MultiFieldFESpace,cell_values)
   single_fields = map(1:length(fe.spaces)) do i
-    cell_values_field = lazy_map(a->a[Block(i)],cell_values)
-    CellField(fe.spaces[i],cell_values_field)
-  end
-  MultiFieldCellField(single_fields)
-end
-
-function CellData.CellField(
-  fe::MultiFieldFESpace,cell_values::LazyArray{<:Fill{<:BlockArrayCooMap}})
-  single_fields = map(1:length(fe.spaces)) do i
-    ma = cell_values.maps.value
-    cell_values_field = Fields._get_cell_block(ma,cell_values,Block(i))
+    cell_values_field = lazy_map(a->a.array[i],cell_values)
     CellField(fe.spaces[i],cell_values_field)
   end
   MultiFieldCellField(single_fields)
@@ -296,11 +206,7 @@ end
 function FESpaces.get_cell_isconstrained(f::MultiFieldFESpace,trian::Triangulation)
   data = map(f.spaces) do space
     trian_i = get_triangulation(space)
-    if have_compatible_domains(trian_i,trian) ||
-      have_compatible_domains(trian_i,get_background_triangulation(trian)) ||
-      have_compatible_domains(
-        trian_i,get_background_triangulation(get_background_triangulation(trian))) ||
-      Geometry.is_included(trian,trian_i)
+    if _can_be_restricted_to(trian_i,trian)
       get_cell_isconstrained(space,trian)
     else
       Fill(false,num_cells(trian))
@@ -331,11 +237,7 @@ end
 function FESpaces.get_cell_is_dirichlet(f::MultiFieldFESpace,trian::Triangulation)
   data = map(f.spaces) do space
     trian_i = get_triangulation(space)
-    if have_compatible_domains(trian_i,trian) ||
-      have_compatible_domains(trian_i,get_background_triangulation(trian)) ||
-      have_compatible_domains(
-        trian_i,get_background_triangulation(get_background_triangulation(trian))) ||
-      Geometry.is_included(trian,trian_i)
+    if _can_be_restricted_to(trian_i,trian)
       get_cell_is_dirichlet(space,trian)
     else
       Fill(false,num_cells(trian))
@@ -364,51 +266,19 @@ function FESpaces.get_cell_constraints(f::MultiFieldFESpace)
 end
 
 function FESpaces.get_cell_constraints(f::MultiFieldFESpace,trian::Triangulation)
-  blocks = map(f.spaces) do space
-    trian_i = get_triangulation(space)
-    if have_compatible_domains(trian_i,trian) ||
-      have_compatible_domains(trian_i,get_background_triangulation(trian)) ||
-      have_compatible_domains(
-        trian_i,get_background_triangulation(get_background_triangulation(trian))) ||
-      Geometry.is_included(trian,trian_i)
-      cell_constrs = get_cell_constraints(space,trian)
-    else
-      cell_constrs_i = get_cell_constraints(space)
-      T = eltype(eltype(cell_constrs_i))
-      cell_constrs = Fill(Matrix{T}(undef,0,0),num_cells(trian))
-    end
-    cell_constrs
-  end
-  blockids = [ (i,i) for i in 1:length(f.spaces)]
   nfields = length(f.spaces)
-  bsize = (nfields,nfields)
-  blocks_axes = map( i->lazy_map(axes,i), blocks)
-  function multifield_axes_constraints(axs...)
-    rs1 = map(j->j[1],axs)
-    rs2 = map(j->j[2],axs)
-    r1 = append_ranges([rs1...])
-    r2 = append_ranges([rs2...])
-    (r1,r2)
-  end
-  cell_axes = lazy_map(multifield_axes_constraints,blocks_axes...)
-  lazy_map(BlockArrayCooMap(bsize,blockids),cell_axes,blocks...)
+  blockmask = [ _can_be_restricted_to(get_triangulation(Vi),trian) for Vi in f.spaces ]
+  active_block_ids = findall(blockmask)
+  active_block_data = Any[ get_cell_constraints(f.spaces[i],trian) for i in active_block_ids ]
+  blockshape = (nfields,nfields)
+  blockindices = [(i,i) for i in active_block_ids]
+  lazy_map(BlockMap(blockshape,blockindices),active_block_data...)
 end
 
 function FESpaces.get_cell_constraints(f::MultiFieldFESpace,trian::SkeletonTriangulation)
-  cell_constraints_plus = get_cell_constraints(f,trian.plus)
-  cell_constraints_minus = get_cell_constraints(f,trian.minus)
-  cell_axes_plus = lazy_map(axes,cell_constraints_plus)
-  cell_axes_minus = lazy_map(axes,cell_constraints_minus)
-  cell_axes = lazy_map(cell_axes_plus,cell_axes_minus) do axp, axm
-    r1 = append_ranges([axp[1],axm[1]])
-    r2 = append_ranges([axp[2],axm[2]])
-    (r1,r2)
-  end
-  lazy_map(
-    BlockArrayCooMap((2,2),[(1,1),(2,2)]),
-    cell_axes,
-    cell_constraints_plus,
-    cell_constraints_minus)
+  cell_values_plus = get_cell_constraints(f,trian.plus)
+  cell_values_minus = get_cell_constraints(f,trian.minus)
+  lazy_map(BlockMap((2,2),[(1,1),(2,2)]),cell_values_plus,cell_values_minus)
 end
 
 function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace)
@@ -429,14 +299,9 @@ function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,trian::Triangulation)
 end
 
 function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,trian::SkeletonTriangulation)
-  cell_ids_plus = get_cell_dof_ids(f,trian.plus)
-  cell_ids_minus = get_cell_dof_ids(f,trian.minus)
-  cell_axes_plus = lazy_map(axes,cell_ids_plus)
-  cell_axes_minus = lazy_map(axes,cell_ids_minus)
-  cell_axes = lazy_map(cell_axes_plus,cell_axes_minus) do axp, axm
-    (append_ranges([axp[1],axm[1]]),)
-  end
-  lazy_map(BlockArrayCooMap((2,),[(1,),(2,)]),cell_axes,cell_ids_plus,cell_ids_minus)
+  cell_values_plus = get_cell_dof_ids(f,trian.plus)
+  cell_values_minus = get_cell_dof_ids(f,trian.minus)
+  lazy_map(BlockMap(2,[1,2]),cell_values_plus,cell_values_minus)
 end
 
 function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,::Triangulation,::MultiFieldStyle)
@@ -445,33 +310,22 @@ end
 
 function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,trian::Triangulation,::ConsecutiveMultiFieldStyle)
   offsets = compute_field_offsets(f)
-  spaces = f.spaces
-  function fun(i,space)
-    trian_i = get_triangulation(space)
-    if have_compatible_domains(trian_i,trian) ||
-      have_compatible_domains(trian_i,get_background_triangulation(trian)) ||
-      have_compatible_domains(
-        trian_i,get_background_triangulation(get_background_triangulation(trian))) ||
-      Geometry.is_included(trian,trian_i)
-      cell_dofs = get_cell_dof_ids(space,trian)
-    else
-      cell_dofs_i = get_cell_dof_ids(space)
-      T = eltype(eltype(cell_dofs_i))
-      cell_dofs = Fill(T[],num_cells(trian))
-    end
+  nfields = length(f.spaces)
+  blockmask = [ _can_be_restricted_to(get_triangulation(Vi),trian) for Vi in f.spaces ]
+  active_block_ids = findall(blockmask)
+  active_block_data = Any[]
+  for i in active_block_ids
+    cell_dofs_i = get_cell_dof_ids(f.spaces[i],trian)
     if i == 1
-      return cell_dofs
+      push!(active_block_data,cell_dofs_i)
+    else
+      offset = Int32(offsets[i])
+      o = Fill(offset,length(cell_dofs_i))
+      cell_dofs_i_b = lazy_map(Broadcasting(_sum_if_first_positive),cell_dofs_i,o)
+      push!(active_block_data,cell_dofs_i_b)
     end
-    offset = Int32(offsets[i])
-    o = Fill(offset,length(cell_dofs))
-    lazy_map(Broadcasting(_sum_if_first_positive),cell_dofs,o)
   end
-  blocks = [ fun(i,space) for (i,space) in enumerate(spaces) ]
-  bids = [ (i,) for i in 1:length(spaces)]
-  bsize = (length(f.spaces),)
-  cell_axes_blocks = map(i->lazy_map(axes,i),blocks)
-  cell_axes = lazy_map(_multifield_axes_dofs,cell_axes_blocks...)
-  lazy_map(BlockArrayCooMap(bsize,bids),cell_axes,blocks...)
+  lazy_map(BlockMap(nfields,active_block_ids),active_block_data...)
 end
 
 function _sum_if_first_positive(a,b)

@@ -1,6 +1,5 @@
 module MultiFieldFESpacesTests
 
-using BlockArrays
 using FillArrays
 using Gridap.Arrays
 using Gridap.Geometry
@@ -11,7 +10,6 @@ using Gridap.CellData
 using Test
 
 using Gridap.MultiField
-using Gridap.Arrays: BlockArrayCooMap
 
 order = 2
 
@@ -37,22 +35,22 @@ X = MultiFieldFESpace(Vector{Float64},[U,P],multi_field_style)
 @test num_free_dofs(X) == num_free_dofs(U) + num_free_dofs(P)
 @test num_free_dofs(X) == num_free_dofs(Y)
 
-dy = get_cell_shapefuns(Y)
+dy = get_fe_basis(Y)
 dv, dq = dy
 
-dx = get_cell_shapefuns_trial(X)
+dx = get_trial_fe_basis(X)
 du, dp = dx
 
 cellmat = integrate(dv*du,quad)
 cellvec = integrate(dv*2,quad)
 cellids = get_cell_to_bgcell(trian)
 cellmatvec = pair_arrays(cellmat,cellvec)
-@test isa(cellmat, LazyArray{<:Fill{<:BlockArrayCooMap}})
-@test is_nonzero_block(cellmat[1],1,1)
-@test is_zero_block(cellmat[1],1,2)
-@test isa(cellvec, LazyArray{<:Fill{<:BlockArrayCooMap}})
-@test is_nonzero_block(cellvec[1],1)
-@test is_zero_block(cellvec[1],2)
+@test isa(cellmat[end],ArrayBlock)
+@test cellmat[1][1,1] != nothing
+@test cellmat[1][1,2] == nothing
+@test isa(cellvec[end], ArrayBlock)
+@test cellvec[1][1] != nothing
+@test cellvec[1][2] == nothing
 
 matvecdata = (cellmatvec,cellids,cellids)
 matdata = (cellmat,cellids,cellids)
@@ -70,10 +68,10 @@ cell_isconstr = get_cell_isconstrained(X,trian)
 @test cell_isconstr == Fill(false,num_cells(model))
 
 cell_constr = get_cell_constraints(X,trian)
-@test isa(cell_constr,LazyArray{<:Fill{<:BlockArrayCooMap}})
+@test isa(cell_constr,LazyArray{<:Fill{<:BlockMap}})
 
 cell_dof_ids = get_cell_dof_ids(X,trian)
-@test isa(cell_dof_ids,LazyArray{<:Fill{<:BlockArrayCooMap}})
+@test isa(cell_dof_ids,LazyArray{<:Fill{<:BlockMap}})
 
 cf = CellField(X,get_cell_dof_ids(X,trian))
 @test isa(cf,MultiFieldCellField)

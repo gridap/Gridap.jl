@@ -8,7 +8,6 @@ module FESpaces
 using DocStringExtensions
 using Test
 using FillArrays
-using BlockArrays
 using SparseArrays
 using LinearAlgebra
 
@@ -21,7 +20,7 @@ using Gridap.Geometry
 using Gridap.CellData
 using Gridap.TensorValues
 
-using Gridap.Arrays: BlockArrayCooMap
+using Gridap.Fields: ArrayBlock, BlockMap
 
 import Gridap.Fields: gradient
 import Gridap.Fields: ∇∇
@@ -37,6 +36,7 @@ import Gridap.CellData: CellField
 import Gridap.CellData: get_data
 import Gridap.CellData: DomainStyle
 import Gridap.CellData: change_domain_skeleton
+import Gridap.CellData: change_domain
 
 import Gridap.Algebra: allocate_residual
 import Gridap.Algebra: allocate_jacobian
@@ -55,6 +55,8 @@ import Gridap.Algebra: solve
 import Gridap.Algebra: allocate_vector
 import Gridap.Algebra: allocate_matrix
 import Gridap.Algebra: allocate_matrix_and_vector
+import Gridap.ReferenceFEs: get_shapefuns
+import Gridap.ReferenceFEs: get_dof_basis
 
 export FEFunction
 export get_free_dof_values
@@ -71,8 +73,8 @@ export get_free_dof_ids
 export zero_free_values
 export EvaluationFunction
 export get_cell_dof_ids
-export get_cell_shapefuns
-export get_cell_shapefuns_trial
+export get_fe_basis
+export get_trial_fe_basis
 export has_constraints
 export get_cell_constraints
 export get_cell_isconstrained
@@ -82,7 +84,7 @@ export test_fe_space
 
 export SingleFieldFESpace
 export SingleFieldFEFunction
-export get_cell_dof_basis
+export get_fe_dof_basis
 export num_dirichlet_dofs
 export get_dirichlet_dof_ids
 export zero_dirichlet_values
@@ -129,6 +131,8 @@ export col_mask
 export DefaultAssemblyStrategy
 export get_test
 export get_trial
+export get_rows
+export get_cols
 export assemble_matrix!
 export assemble_matrix_add!
 export assemble_matrix
@@ -145,6 +149,8 @@ export test_assembler
 export collect_cell_matrix
 export collect_cell_vector
 export collect_cell_matrix_and_vector
+export get_matrix_builder
+export get_vector_builder
 export get_matrix_type
 export get_vector_type
 export SparseMatrixAssembler
@@ -182,6 +188,8 @@ include("SingleFieldFESpaces.jl")
 include("UnconstrainedFESpaces.jl")
 
 include("ConformingFESpaces.jl")
+
+include("DivConformingFESpaces.jl")
 
 include("FESpaceFactories.jl")
 

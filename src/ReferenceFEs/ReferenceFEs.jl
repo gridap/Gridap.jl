@@ -83,7 +83,8 @@ export PYRAMID
 export HEX_AXIS
 export TET_AXIS
 export INVALID_PERM
-export PushForwardMap
+
+export ContraVariantPiolaMap
 
 export Dof
 export get_nodes

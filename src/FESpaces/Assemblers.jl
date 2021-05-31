@@ -31,7 +31,7 @@ end
   u = -one(eltype(gids))
   for i in eachindex(rows)
     ri = rows[i]
-    if ri>0 && row_mask(a,ri) 
+    if ri>0 && row_mask(a,ri)
       gids[i] = row_map(a,ri)
     else
       gids[i] = u
@@ -40,31 +40,15 @@ end
   nothing
 end
 
-@inline function map_rows!(
-  gids::BlockArrayCoo,a::AssemblyStrategy,rows::BlockArrayCoo)
-  for I in eachblockid(rows)
-    map_rows!(gids[I],a,rows[I])
-  end
-  nothing
-end
-
 @inline function map_cols!(gids,a::AssemblyStrategy,cols)
   u = -one(eltype(gids))
   for i in eachindex(cols)
     ri = cols[i]
-    if ri>0 && col_mask(a,ri) 
+    if ri>0 && col_mask(a,ri)
       gids[i] = col_map(a,ri)
     else
       gids[i] = u
     end
-  end
-  nothing
-end
-
-@inline function map_cols!(
-  gids::BlockArrayCoo,a::AssemblyStrategy,cols::BlockArrayCoo)
-  for I in eachblockid(cols)
-    map_cols!(gids[I],a,cols[I])
   end
   nothing
 end
@@ -86,23 +70,48 @@ struct AssemblyStrategyMap{S,T} <: Map
   end
 end
 
-function Arrays.return_cache(a::AssemblyStrategyMap,ids)
+function Arrays.return_cache(a::AssemblyStrategyMap,ids::AbstractArray)
   gids = similar(ids,Int,axes(ids))
   CachedArray(gids)
 end
 
-function Arrays.evaluate!(cache,a::AssemblyStrategyMap{:cols},ids)
-  setaxes!(cache,axes(ids))
+function Arrays.evaluate!(cache,a::AssemblyStrategyMap{:cols},ids::AbstractArray)
+  setsize!(cache,size(ids))
   gids = cache.array
   map_cols!(gids,a.strategy,ids)
   gids
 end
 
-function Arrays.evaluate!(cache,a::AssemblyStrategyMap{:rows},ids)
-  setaxes!(cache,axes(ids))
+function Arrays.evaluate!(cache,a::AssemblyStrategyMap{:rows},ids::AbstractArray)
+  setsize!(cache,size(ids))
   gids = cache.array
   map_rows!(gids,a.strategy,ids)
   gids
+end
+
+function Arrays.return_cache(k::AssemblyStrategyMap,ids::ArrayBlock)
+  fi = testitem(ids)
+  ci = return_cache(k,fi)
+  gi = evaluate!(ci,k,fi)
+  b = Array{typeof(ci),ndims(ids)}(undef,size(ids))
+  for i in eachindex(ids.array)
+    if ids.touched[i]
+      ki = return_cache(k,ids.array[i])
+      b[i] = return_cache(k,ids.array[i])
+    end
+  end
+  array = Array{typeof(gi),ndims(ids)}(undef,size(ids))
+  ArrayBlock(array,ids.touched), b
+end
+
+function Arrays.evaluate!(cache,k::AssemblyStrategyMap,ids::ArrayBlock)
+  a,b = cache
+  for i in eachindex(ids.array)
+    if ids.touched[i]
+      a.array[i] = evaluate!(b[i],k,ids.array[i])
+    end
+  end
+  a
 end
 
 struct DefaultAssemblyStrategy <: AssemblyStrategy end
@@ -256,19 +265,19 @@ end
 # and objects from which one can collect cell matrices/vectors
 
 function assemble_matrix(f::Function,a::Assembler,U::FESpace,V::FESpace)
-  v = get_cell_shapefuns(V)
-  u = get_cell_shapefuns_trial(U)
+  v = get_fe_basis(V)
+  u = get_trial_fe_basis(U)
   assemble_matrix(a,collect_cell_matrix(U,V,f(u,v)))
 end
 
 function assemble_vector(f::Function,a::Assembler,V::FESpace)
-  v = get_cell_shapefuns(V)
+  v = get_fe_basis(V)
   assemble_vector(a,collect_cell_vector(V,f(v)))
 end
 
 function assemble_matrix_and_vector(f::Function,b::Function,a::Assembler,U::FESpace,V::FESpace)
-  v = get_cell_shapefuns(V)
-  u = get_cell_shapefuns_trial(U)
+  v = get_fe_basis(V)
+  u = get_trial_fe_basis(U)
   assemble_matrix_and_vector(a,collect_cell_matrix_and_vector(U,V,f(u,v),b(v)))
 end
 
@@ -327,7 +336,7 @@ function collect_cell_matrix(trial::FESpace,test::FESpace,a::DomainContribution)
   c = []
   for trian in get_domains(a)
     cell_mat = get_contribution(a,trian)
-    @assert eltype(cell_mat) <: AbstractMatrix
+    @assert ndims(eltype(cell_mat)) == 2
     cell_mat_c = attach_constraints_cols(trial,cell_mat,trian)
     cell_mat_rc = attach_constraints_rows(test,cell_mat_c,trian)
     rows = get_cell_dof_ids(test,trian)
@@ -344,7 +353,7 @@ function collect_cell_vector(test::FESpace,a::DomainContribution)
   r = []
   for trian in get_domains(a)
     cell_vec = get_contribution(a,trian)
-    @assert eltype(cell_vec) <: AbstractVector
+    @assert ndims(eltype(cell_vec)) == 1
     cell_vec_r = attach_constraints_rows(test,cell_vec,trian)
     rows = get_cell_dof_ids(test,trian)
     push!(w,compress_contributions(cell_vec_r,trian))
