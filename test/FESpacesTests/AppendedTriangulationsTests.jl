@@ -62,6 +62,10 @@ cellmat = integrate( ∇(dv)⋅∇(du), quad )
 @test isa(cellmat.a,Fill)
 @test isa(cellmat.b,Fill)
 
+dΩ = Measure(Ω,2)
+a(u,v) = ∫(u*v)dΩ
+A = assemble_matrix(a,V,V)
+
 q1 = Quadrature(tensor_product,1)
 q2 = Quadrature(tensor_product,2)
 dΩ = Measure(Ω,q1,q2)

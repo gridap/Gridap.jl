@@ -98,3 +98,34 @@ end
 #function CellQuadrature(trian::AppendedTriangulation,degree::Integer)
 #  CellQuadrature(trian,degree,degree)
 #end
+
+#function compress_contributions(cell_mat::AppendedArray,trian::AppendedTriangulation)
+#  if length(cell_mat.a) == num_cells(trian.a) && length(cell_mat.b) == num_cells(trian.b)
+#    a = compress_contributions(cell_mat.a,trian.a)
+#    b = compress_contributions(cell_mat.b,trian.b)
+#    return lazy_append(a,b)
+#  else
+#    return cell_mat
+#  end
+#end
+#
+#function compress_ids(cell_ids::AppendedArray,trian::AppendedTriangulation)
+#  if length(cell_ids.a) == num_cells(trian.a) && length(cell_ids.b) == num_cells(trian.b)
+#    a = compress_ids(cell_ids.a,trian.a)
+#    b = compress_ids(cell_ids.b,trian.b)
+#    return lazy_append(a,b)
+#  else
+#    return cell_ids
+#  end
+#end
+
+function compress_contributions(cell_mat,trian::AppendedTriangulation)
+  cell_to_bgcell = get_cell_to_bgcell(trian)
+  ccell_mat = compress_contributions(cell_mat,cell_to_bgcell)
+  ccell_mat
+end
+
+function compress_ids(cell_ids,trian::AppendedTriangulation)
+  cell_to_bgcell = get_cell_to_bgcell(trian)
+  compress_ids(cell_ids,cell_to_bgcell)
+end
