@@ -262,7 +262,7 @@ Random.seed!(0)
         # Test with CellPoint
         cache1,cache2 = fhcache
         ncells = num_cells(model)
-        x_to_cell(x) = point_to_cell!(cache1, fh, x)
+        x_to_cell(x) = point_to_cell!(cache1, x)
         point_to_cell = map(x_to_cell, xs)
         cell_to_points, point_to_lpoint = make_inverse_table(point_to_cell, ncells)
         cell_to_xs = lazy_map(Broadcasting(Reindex(xs)), cell_to_points)
