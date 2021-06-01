@@ -38,5 +38,3 @@ num_fields(a::MultiFieldCellField) = length(a.single_fields)
 Base.getindex(a::MultiFieldCellField,i::Integer) = a.single_fields[i]
 Base.iterate(a::MultiFieldCellField)  = iterate(a.single_fields)
 Base.iterate(a::MultiFieldCellField,state)  = iterate(a.single_fields,state)
-
-# Evaluation of CellFields
