@@ -207,7 +207,6 @@ get_data(f::GenericCellField) = f.cell_field
 get_triangulation(f::GenericCellField) = f.trian
 DomainStyle(::Type{GenericCellField{DS}}) where DS = DS()
 
-# Evaluation of CellFields
 
 """
    dist = distance(polytope::ExtrusionPolytope,
@@ -351,7 +350,7 @@ end
 
 # Efficient version:
 function evaluate!(cache,f::CellField,point_to_x::AbstractVector{<:Point})
-  cache1,cache2 = return_cache(f,testitem(point_to_x))
+  cache1,cache2 = cache
   kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map = cache1
   cell_f_cache, f_cache, cell_f, f₀ = cache2
   @check f === f₀ "Wrong cache"

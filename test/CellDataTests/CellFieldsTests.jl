@@ -239,7 +239,7 @@ Random.seed!(0)
 
         nv = num_vertices(model) # Number of vertices
         nf = num_faces(model,D-1) # Number of faces
-
+        trian = Triangulation(model)
         topo = GridTopology(model)
 
         pts = get_vertex_coordinates(topo) # Vertex coordinates
@@ -258,6 +258,21 @@ Random.seed!(0)
         pt = face_coord ⋅ λ # Point on the face
         fhpt = evaluate!(fhcache, fh, pt)
         @test fhpt .≈ f(pt)
+
+        # Test with CellPoint
+        cache1,cache2 = fhcache
+        ncells = num_cells(model)
+        x_to_cell(x) = point_to_cell!(cache1, fh, x)
+        point_to_cell = map(x_to_cell, xs)
+        cell_to_points, point_to_lpoint = make_inverse_table(point_to_cell, ncells)
+        cell_to_xs = lazy_map(Broadcasting(Reindex(xs)), cell_to_points)
+        cell_to_f = get_array(fh)
+        cell_to_fxs = lazy_map(evaluate, cell_to_f, cell_to_xs)
+        # Now build CellPoint with cell_to_xs map
+        cell_point_xs = CellPoint(cell_to_xs, trian, PhysicalDomain())
+        cell_point_fxs = evaluate(fh, cell_point_xs)
+        @test cell_point_fxs ≈ cell_to_fxs
+
     end
 end
 
