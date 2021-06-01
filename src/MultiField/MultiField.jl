@@ -1,4 +1,4 @@
-."""
+"""
 
 The exported names are
 $(EXPORTS)
