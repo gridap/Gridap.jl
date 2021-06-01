@@ -204,36 +204,61 @@ Random.seed!(0)
     domain = repeat([xmin, xmax], D)
     ncells = 3
     partition = repeat([ncells], D)
-    model = CartesianDiscreteModel(domain, partition)
-    # TODO: test both with and without this
-    model = simplexify(model)
-
+    base_model = CartesianDiscreteModel(domain, partition)
     order = 2
     reffe = ReferenceFE(lagrangian, Float64, order)
-    V = FESpace(model, reffe)
 
-    coeff0 = rand(Float64)
-    coeffs = rand(SVector{D,Float64})
-    f(x) = coeffs ⋅ SVector(Tuple(x)) + coeff0
-    # TODO: use this mechanism instead to project
-    # Francesc Verdugo @fverdugo 13:11
-    # a(u,v) = ∫( u*v )dΩ
-    # l(v) = a(f,v)
-    # Solve a fe problem with this weak form
-    # See also tutorial 10, "Isotropic damage model", section "L2
-    # projection", function "project"
-    fh = interpolate_everywhere(f, V)
-    fhcache = return_cache(fh, VectorValue(zeros(D)...))
+    for M ∈ ["Hypercubes", "Simplices"]
+        model = (M == "Hypercubes") ? base_model : simplexify(base_model)
 
-    xs = [VectorValue(rand(D)...) for i in 1:10]
-    for x in xs
-        x = VectorValue(rand(D)...)
-        fx = f(x)
-        fhx = evaluate!(fhcache, fh, x)
-        @test fhx ≈ fx
+        V = FESpace(model, reffe)
+
+        coeff0 = rand(Float64)
+        coeffs = rand(SVector{D,Float64})
+        f(x) = coeffs ⋅ SVector(Tuple(x)) + coeff0
+        # TODO: use this mechanism instead to project
+        # Francesc Verdugo @fverdugo 13:11
+        # a(u,v) = ∫( u*v )dΩ
+        # l(v) = a(f,v)
+        # Solve a fe problem with this weak form
+        # See also tutorial 10, "Isotropic damage model", section "L2
+        # projection", function "project"
+        fh = interpolate_everywhere(f, V)
+        fhcache = return_cache(fh, VectorValue(zeros(D)...))
+
+        # Test Random points
+        xs = [VectorValue(rand(D)...) for i in 1:10]
+        for x in xs
+            x = VectorValue(rand(D)...)
+            fx = f(x)
+            fhx = evaluate!(fhcache, fh, x)
+            @test fhx ≈ fx
+        end
+        fhxs = fh(xs)
+        @test fhxs ≈ f.(xs)
+
+        nv = num_vertices(model) # Number of vertices
+        nf = num_faces(model,D-1) # Number of faces
+
+        topo = GridTopology(model)
+
+        pts = get_vertex_coordinates(topo) # Vertex coordinates
+        face_nodes = get_face_nodes(model, D-1) # face-to-node numbering
+        face_coords = lazy_map(Broadcasting(Reindex(pts)), face_nodes) # Get LazyArray of coordinates of face
+
+        # Test a random vertex from the triangulation
+        pt = pts[rand(1:nv)]
+        fhpt = evaluate!(fhcache, fh, pt)
+        @test fhpt .≈ f(pt)
+
+        # Test a random point lying on the face of the polytope
+        face_coord = face_coords[rand(1:nf)]
+        λ = rand(length(face_coord));
+        λ = (D > 1) ? λ./sum(λ) : λ
+        pt = face_coord ⋅ λ # Point on the face
+        fhpt = evaluate!(fhcache, fh, pt)
+        @test fhpt .≈ f(pt)
     end
-    fhxs = fh(xs)
-    @test fhxs ≈ f.(xs)
 end
 
 #np = 3
