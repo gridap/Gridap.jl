@@ -68,7 +68,49 @@ function symmetric_gradient(f::Function,x::Point)
 end
 
 function divergence(f::Function,x::Point)
-  tr(gradient(f,x))
+  divergence(f,x,return_value(f,x))
+end
+
+function divergence(f::Function,x::Point,fx)
+  tr(gradient(f,x,fx))
+end
+
+function divergence(f::Function,x::Point,fx::TensorValue{2,2})
+  g(x) = SVector(f(x).data)
+  a = ForwardDiff.jacobian(g,get_array(x))
+  VectorValue(
+    a[1,1]+a[2,2],
+    a[3,1]+a[4,2],
+  )
+end
+
+function divergence(f::Function,x::Point,fx::TensorValue{3,3})
+  g(x) = SVector(f(x).data)
+  a = ForwardDiff.jacobian(g,get_array(x))
+  VectorValue(
+    a[1,1]+a[2,2]+a[3,3],
+    a[4,1]+a[5,2]+a[6,3],
+    a[7,1]+a[8,2]+a[9,3],
+   )
+end
+
+function divergence(f::Function,x::Point,fx::SymTensorValue{2})
+  g(x) = SVector(f(x).data)
+  a = ForwardDiff.jacobian(g,get_array(x))
+  VectorValue(
+    a[1,1]+a[2,2],
+    a[2,1]+a[3,2],
+  )
+end
+
+function divergence(f::Function,x::Point,fx::SymTensorValue{3})
+  g(x) = SVector(f(x).data)
+  a = ForwardDiff.jacobian(g,get_array(x))
+  VectorValue(
+    a[1,1]+a[2,2]+a[3,3],
+    a[2,1]+a[4,2]+a[5,3],
+    a[3,1]+a[5,2]+a[6,3],
+   )
 end
 
 function curl(f::Function,x::Point)

@@ -26,7 +26,8 @@ dirichlet_tags = ["tag_1","tag_6"]
 
 trian = Triangulation(model)
 cell_map = get_cell_map(trian)
-cell_fe = CellFE(cell_map,cell_reffe)
+conf = Conformity(testitem(cell_reffe))
+cell_fe = CellFE(model,cell_reffe,conf)
 
 cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
   cell_fe,CellConformity(cell_fe),grid_topology, face_labeling, dirichlet_tags)
@@ -47,7 +48,8 @@ cell_reffe = expand_cell_data(reffes,get_cell_type(grid_topology))
 
 dirichlet_components = [(true,true), (false,true)]
 
-cell_fe = CellFE(cell_map,cell_reffe)
+conf = Conformity(testitem(cell_reffe))
+cell_fe = CellFE(model,cell_reffe,conf)
 
 cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
   cell_fe,CellConformity(cell_fe),grid_topology, face_labeling, dirichlet_tags, dirichlet_components)
@@ -68,7 +70,8 @@ reffes = [LagrangianRefFE(VectorValue{2,Float64},p,order) for p in polytopes]
 cell_reffe = expand_cell_data(reffes,get_cell_type(grid_topology))
 
 dirichlet_components = [(true,true), (false,true)]
-cell_fe = CellFE(cell_map,cell_reffe)
+conf = Conformity(testitem(cell_reffe))
+cell_fe = CellFE(model,cell_reffe,conf)
 
 cell_dofs, nfree, ndiri, dirichlet_dof_tag, dirichlet_cells = compute_conforming_cell_dofs(
   cell_fe,CellConformity(cell_fe), grid_topology, face_labeling, dirichlet_tags, dirichlet_components)

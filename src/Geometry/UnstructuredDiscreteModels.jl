@@ -210,7 +210,8 @@ function  _fill_dim_to_tface_to_label!(
       dface_to_jfaces = get_faces(tgrid_topology,d,j)
       dface_to_label = dim_to_tface_to_label[d+1]
       jface_to_label = dim_to_tface_to_label[j+1]
-      _fix_dface_to_label!(dface_to_label,jface_to_label,dface_to_jfaces)
+      cache = array_cache(dface_to_jfaces)
+      _fix_dface_to_label!(dface_to_label,jface_to_label,dface_to_jfaces,cache)
 
     end
 
@@ -218,7 +219,7 @@ function  _fill_dim_to_tface_to_label!(
 
 end
 
-function _fix_dface_to_label!(dface_to_label,jface_to_label,dface_to_jfaces)
+function _fix_dface_to_label!(dface_to_label,jface_to_label,dface_to_jfaces,cache)
 
   ndfaces = length(dface_to_label)
   @assert ndfaces == length(dface_to_jfaces)
@@ -230,7 +231,7 @@ function _fix_dface_to_label!(dface_to_label,jface_to_label,dface_to_jfaces)
       continue
     end
 
-    jfaces = dface_to_jfaces[dface]
+    jfaces = getindex!(cache,dface_to_jfaces,dface)
     for jface in jfaces
       jlabel = jface_to_label[jface]
       if jlabel != UNSET_ID

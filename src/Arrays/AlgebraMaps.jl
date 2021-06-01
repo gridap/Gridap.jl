@@ -38,3 +38,30 @@ end
   mul!(d,a,b,k.α,k.β)
   d
 end
+
+struct AddEntriesMap{F} <: Map
+  combine::F
+end
+
+function evaluate!(cache,k::AddEntriesMap,A,v,i,j)
+  add_entries!(k.combine,A,v,i,j)
+end
+
+function evaluate!(cache,k::AddEntriesMap,A,v,i)
+  add_entries!(k.combine,A,v,i)
+end
+
+struct TouchEntriesMap <: Map end
+
+function evaluate!(cache,k::TouchEntriesMap,A,v,i,j)
+  add_entries!(+,A,nothing,i,j)
+end
+
+function evaluate!(cache,k::TouchEntriesMap,A,v,i)
+  add_entries!(+,A,nothing,i)
+end
+
+
+
+
+

@@ -20,6 +20,4 @@ using Test
 
 @testset "InverseFields" begin include("InverseFieldsTests.jl") end
 
-@testset "InverseFields" begin include("InverseFieldsTests.jl") end
-
 end

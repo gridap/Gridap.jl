@@ -10,6 +10,8 @@ using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.CellData
 using Gridap.FESpaces
+using Random
+using StaticArrays
 
 domain = (0,1,0,1)
 cells = (3,3)
@@ -101,6 +103,46 @@ test_array(∇vx,collect(∇vx))
 ∇fx = ∇(f)(x)
 test_array(∇fx,collect(∇fx))
 
+
+k = VectorValue(1.0,2.0)
+∇kfx = ((∇+k)(f))(x)
+test_array(∇kfx,collect(∇kfx))
+
+∇kvx = ((∇+k)(v))(x)
+test_array(∇kvx,collect(∇kvx))
+
+β(x) = 2*x[1]
+α = CellField(x->2*x,trian)
+ax = ((∇+k)(β*α))(x)
+test_array(ax,collect(ax))
+
+ν = CellField(x->2*x,trian)
+ax =((∇-k)⋅ν)(x)
+test_array(ax,collect(ax))
+
+ax =((∇-k)×ν)(x)
+test_array(ax,collect(ax))
+
+ax =((∇-k)⊗ν)(x)
+test_array(ax,collect(ax))
+
+ax =(∇.*ν)(x)
+test_array(ax,collect(ax))
+
+ax =(ν.*ν)(x)
+test_array(ax,collect(ax))
+
+ax =((∇-k).*ν)(x)
+test_array(ax,collect(ax))
+
+ax =(ν⊗(∇-k))(x)
+test_array(ax,collect(ax))
+
+σ(x) = diagonal_tensor(VectorValue(1*x[1],2*x[2]))
+Fields.gradient(::typeof(σ)) = x-> ThirdOrderTensorValue{2,2,2,Float64}(1,0,0,0,0,0,0,2)
+ax = ((∇+k)(σ⋅α))(x)
+test_array(ax,collect(ax))
+
 h = Operation(*)(2,f)
 hx = h(x)
 test_array(hx,2*fx)
@@ -152,7 +194,47 @@ h_N = (2*f_N+g)⋅g
 hx_N = h_N(x_N)
 test_array(hx_N,collect(hx_N))
 
+# Test function evaluation
 
+# Set reproducible random number seed
+Random.seed!(0)
+@testset "evaluating functions" for D in 1:3
+    xmin = 0
+    xmax = 1
+    domain = repeat([xmin, xmax], D)
+    ncells = 3
+    partition = repeat([ncells], D)
+    model = CartesianDiscreteModel(domain, partition)
+    # TODO: test both with and without this
+    model = simplexify(model)
+
+    order = 2
+    reffe = ReferenceFE(lagrangian, Float64, order)
+    V = FESpace(model, reffe)
+
+    coeff0 = rand(Float64)
+    coeffs = rand(SVector{D,Float64})
+    f(x) = coeffs ⋅ SVector(Tuple(x)) + coeff0
+    # TODO: use this mechanism instead to project
+    # Francesc Verdugo @fverdugo 13:11
+    # a(u,v) = ∫( u*v )dΩ
+    # l(v) = a(f,v)
+    # Solve a fe problem with this weak form
+    # See also tutorial 10, "Isotropic damage model", section "L2
+    # projection", function "project"
+    fh = interpolate_everywhere(f, V)
+    fhcache = return_cache(fh, VectorValue(zeros(D)...))
+
+    xs = [VectorValue(rand(D)...) for i in 1:10]
+    for x in xs
+        x = VectorValue(rand(D)...)
+        fx = f(x)
+        fhx = evaluate!(fhcache, fh, x)
+        @test fhx ≈ fx
+    end
+    fhxs = fh(xs)
+    @test fhxs ≈ f.(xs)
+end
 
 #np = 3
 #ndofs = 4

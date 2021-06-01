@@ -69,6 +69,219 @@ end
 #  A
 #end
 
+struct CounterCSC{Tv,Ti,L}
+  tv::Type{Tv}
+  nrows::Int
+  ncols::Int
+  colnnzmax::Vector{Ti}
+  loop_style::L
+end
+
+LoopStyle(::Type{CounterCSC{Tv,Ti,L}}) where {Tv,Ti,L} = L()
+
+@inline function add_entry!(::typeof(+),a::CounterCSC{Tv,Ti,Loop},v,i,j) where {Tv,Ti}
+  a.colnnzmax[j] += Ti(1)
+  nothing
+end
+
+@inline function add_entry!(::typeof(+),a::CounterCSC{Tv,Ti,DoNotLoop},v,i,j) where {Tv,Ti}
+  nothing
+end
+
+struct InserterCSC{Tv,Ti}
+  nrows::Int
+  ncols::Int
+  colptr::Vector{Ti}
+  colnnz::Vector{Ti}
+  rowval::Vector{Ti}
+  nzval::Vector{Tv}
+end
+
+LoopStyle(::Type{<:InserterCSC}) = Loop()
+
+@inline function add_entry!(::typeof(+),a::InserterCSC{Tv,Ti},v::Nothing,i,j) where {Tv,Ti}
+  pini = Int(a.colptr[j])
+  pend = pini + Int(a.colnnz[j]) - 1
+  p = searchsortedfirst(a.rowval,i,pini,pend,Base.Order.Forward)
+  if (p>pend)
+    # add new entry
+    a.colnnz[j] += 1
+    a.rowval[p] = i
+  elseif a.rowval[p] != i
+    # shift one forward from p to pend
+    @check  pend+1 < Int(a.colptr[j+1])
+    for k in pend:-1:p
+      o = k + 1
+      a.rowval[o] = a.rowval[k]
+    end
+    # add new entry
+    a.colnnz[j] += 1
+    a.rowval[p] = i
+  end
+  nothing
+end
+
+@noinline function add_entry!(::typeof(+),a::InserterCSC{Tv,Ti},v,i,j) where {Tv,Ti}
+  pini = Int(a.colptr[j])
+  pend = pini + Int(a.colnnz[j]) - 1
+  p = searchsortedfirst(a.rowval,i,pini,pend,Base.Order.Forward)
+  if (p>pend)
+    # add new entry
+    a.colnnz[j] += 1
+    a.rowval[p] = i
+    a.nzval[p] = v
+  elseif a.rowval[p] != i
+    # shift one forward from p to pend
+    @check  pend+1 < Int(a.colptr[j+1])
+    for k in pend:-1:p
+      o = k + 1
+      a.rowval[o] = a.rowval[k]
+      a.nzval[o] = a.nzval[k]
+    end
+    # add new entry
+    a.colnnz[j] += 1
+    a.rowval[p] = i
+    a.nzval[p] = v
+  else 
+    # update existing entry
+    a.nzval[p] += v 
+  end
+  nothing
+end
+
+## index of the first value of vector a that is greater than or equal to x;
+## returns length(v)+1 if x is greater than all values in v.
+#function _searchsortedfirst(v, x, lo::T, hi::T) where T<:Integer
+#  if x <= v[lo]
+#    return lo
+#  end
+#  u = one(T)
+#  if x > v[hi]
+#    return hi + u
+#  end
+#  d = T(10) - u
+#  @inbounds while lo < hi - d
+#    m = Base.Sort.midpoint(lo, hi)
+#    if v[m] < x
+#      lo = m
+#    else
+#      hi = m
+#    end
+#  end
+#  i = lo
+#  if x<=v[i]
+#    return i
+#  end
+#  i += u
+#  if x<=v[i]
+#    return i
+#  end
+#  i += u
+#  if x<=v[i]
+#    return i
+#  end
+#  i += u
+#  if x<=v[i]
+#    return i
+#  end
+#  i += u
+#  if x<=v[i]
+#    return i
+#  end
+#  i += u
+#  if x<=v[i]
+#    return i
+#  end
+#  i += u
+#  if x<=v[i]
+#    return i
+#  end
+#  i += u
+#  if x<=v[i]
+#    return i
+#  end
+#  i += u
+#  if x<=v[i]
+#    return i
+#  end
+#  i += u
+#  if x<=v[i]
+#    return i
+#  end
+#  return hi + u
+#end
+
+function nz_counter(
+  builder::SparseMatrixBuilder{SparseMatrixCSC{Tv,Ti},<:MinMemory},
+  axes) where {Tv,Ti}
+  nrows = length(axes[1])
+  ncols = length(axes[2])
+  maxnnz = builder.approach.maxnnz
+  if isa(maxnnz,Nothing)
+    colnnzmax = zeros(Ti,ncols)
+    CounterCSC(Tv,nrows,ncols,colnnzmax,Loop())
+  elseif isa(maxnnz,Integer)
+    colnnzmax = fill(Ti(maxnnz),ncols)
+    CounterCSC(Tv,nrows,ncols,colnnzmax,DoNotLoop())
+  elseif isa(maxnnz,Vector{<:Integer})
+    colnnzmax = maxnnz
+    @assert length(colnnzmax) == ncols
+    CounterCSC(Tv,nrows,ncols,colnnzmax,DoNotLoop())
+  else
+    @notimplemented
+  end
+end
+
+function nz_counter(
+  builder::SparseMatrixBuilder{SparseMatrixCSC{Tv,Ti},<:MinCPU},
+  axes) where {Tv,Ti}
+
+  nrows = length(axes[1])
+  ncols = length(axes[2])
+  rowptrs = zeros(Ti,nrows+1)
+  CounterCSRR(Tv,nrows,ncols,rowptrs)
+end
+
+#function nz_counter(::Type{SparseMatrixCSC{Tv,Ti}},axes) where {Tv,Ti}
+#  builder = SparseMatrixBuilder(SparseMatrixCSC{Tv,Ti},MinMemory())
+#  nz_counter(builder,axes)
+#end
+
+function nz_allocation(a::CounterCSC{Tv,Ti}) where {Tv,Ti}
+  colptr = Vector{Ti}(undef,a.ncols+1)
+  @inbounds for i in 1:a.ncols
+    colptr[i+1] = a.colnnzmax[i]
+  end
+  length_to_ptrs!(colptr)
+  ndata = colptr[end] - one(Ti)
+  rowval = Vector{Ti}(undef,ndata)
+  nzval = zeros(Tv,ndata)
+  colnnz = a.colnnzmax
+  fill!(colnnz,zero(Ti))
+  InserterCSC(a.nrows,a.ncols,colptr,colnnz,rowval,nzval)
+end
+
+function create_from_nz(a::InserterCSC{Tv,Ti}) where {Tv,Ti}
+  k = 1
+  for j in 1:a.ncols
+    pini = Int(a.colptr[j])
+    pend = pini + Int(a.colnnz[j]) - 1
+    for p in pini:pend
+      a.nzval[k] = a.nzval[p]
+      a.rowval[k] = a.rowval[p]
+      k += 1
+    end
+  end
+  @inbounds for j in 1:a.ncols
+    a.colptr[j+1] = a.colnnz[j]
+  end
+  length_to_ptrs!(a.colptr)
+  nnz = a.colptr[end]-1
+  resize!(a.rowval,nnz)
+  resize!(a.nzval,nnz)
+  SparseMatrixCSC(a.nrows,a.ncols,a.colptr,a.rowval,a.nzval)
+end
+
 struct CounterCSRR{Tv,Ti}
   tv::Type{Tv}
   nrows::Int
@@ -89,6 +302,7 @@ struct CSRR{Tv,Ti}
   rowptrs::Vector{Ti}
   colvals::Vector{Ti}
   nzvals::Vector{Tv}
+  work::Vector{Ti}
 end
 
 LoopStyle(::Type{<:CSRR}) = Loop()
@@ -108,43 +322,24 @@ end
   nothing
 end
 
-function nz_counter(::Type{SparseMatrixCSC{Tv,Ti}},axes) where {Tv,Ti}
-  nrows = length(axes[1])
-  ncols = length(axes[2])
-  rowptrs = zeros(Ti,nrows+1)
-  CounterCSRR(Tv,nrows,ncols,rowptrs)
-end
-
 function nz_allocation(a::CounterCSRR{Tv,Ti}) where {Tv,Ti}
   rowptrs = a.rowptrs
   length_to_ptrs!(rowptrs)
   ndata = rowptrs[end]-1
-  colvals = zeros(Ti,ndata)
+  colvals = Vector{Ti}(undef,ndata)
   nzvals = zeros(Tv,ndata)
-  CSRR(a.nrows,a.ncols,rowptrs,colvals,nzvals)
+  work = Vector{Ti}(undef,a.ncols)
+  CSRR(a.nrows,a.ncols,rowptrs,colvals,nzvals,work)
 end
 
 function create_from_nz(a::CSRR{Tv,Ti}) where {Tv,Ti}
   rewind_ptrs!(a.rowptrs)
-  A = _csrr_to_csc!(a)
-  A
-end
-
-function _csrr_to_csc!(csrr::CSRR{Tv,Ti}) where {Tv,Ti}
-  nrows = csrr.nrows
-  ncols = csrr.ncols
-  rowptrs = csrr.rowptrs
-  colvals = csrr.colvals
-  nzvalscsr = csrr.nzvals
-
-  @assert nrows == length(rowptrs)-1
-  colptrs = Vector{Ti}(undef,ncols+1)
-  work = Vector{Ti}(undef,ncols)
-  cscnnz = _csrr_to_csc_count!(colptrs,rowptrs,colvals,nzvalscsr,work)
+  colptrs = Vector{Ti}(undef,a.ncols+1)
+  cscnnz = _csrr_to_csc_count!(colptrs,a.rowptrs,a.colvals,a.nzvals,a.work)
   rowvals = Vector{Ti}(undef,cscnnz)
   nzvalscsc = Vector{Tv}(undef,cscnnz)
-  _csrr_to_csc_fill!(colptrs,rowvals,nzvalscsc,rowptrs,colvals,nzvalscsr)
-  SparseMatrixCSC(nrows,ncols,colptrs,rowvals,nzvalscsc)
+  _csrr_to_csc_fill!(colptrs,rowvals,nzvalscsc,a.rowptrs,a.colvals,a.nzvals)
+  SparseMatrixCSC(a.nrows,a.ncols,colptrs,rowvals,nzvalscsc)
 end
 
 # Notation

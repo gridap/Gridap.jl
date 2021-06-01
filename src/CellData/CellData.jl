@@ -17,6 +17,9 @@ using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 
+using NearestNeighbors
+using StaticArrays
+
 import Gridap.Arrays: lazy_append
 import Gridap.Arrays: get_array
 import Gridap.Arrays: evaluate!
