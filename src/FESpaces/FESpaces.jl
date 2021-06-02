@@ -97,7 +97,7 @@ export gather_dirichlet_values!
 export gather_free_values
 export gather_free_values!
 export test_single_field_fe_space
-export get_dirichlet_values
+export get_dirichlet_dof_values
 export interpolate
 export interpolate!
 export interpolate_everywhere

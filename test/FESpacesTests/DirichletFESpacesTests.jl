@@ -41,7 +41,7 @@ op_ff = AffineFEOperator(a,l,Uf,Vf)
 op_fd = AffineFEOperator(a,l,Ud,Vf)
 op_df = AffineFEOperator(a,l,Uf,Vd)
 
-xd = get_dirichlet_values(Uf)
+xd = get_dirichlet_dof_values(Uf)
 
 @test maximum(abs.(get_vector(op_ff) + get_matrix(op_fd)*xd)) < 1.0e-10
 

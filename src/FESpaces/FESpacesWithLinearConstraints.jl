@@ -332,8 +332,8 @@ function _setup_ddof_to_tag!(
   end
 end
 
-function get_dirichlet_values(f::FESpaceWithLinearConstraints)
-  ddof_to_tag = get_dirichlet_values(f.space)
+function get_dirichlet_dof_values(f::FESpaceWithLinearConstraints)
+  ddof_to_tag = get_dirichlet_dof_values(f.space)
   dmdof_to_tag = zeros(eltype(ddof_to_tag),num_dirichlet_dofs(f))
   _setup_ddof_to_tag!(
     dmdof_to_tag,
