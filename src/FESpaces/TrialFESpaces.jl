@@ -35,7 +35,7 @@ end
 """
 """
 function TrialFESpace!(space::TrialFESpace,objects)
-  dir_values = get_dirichlet_values(space)
+  dir_values = get_dirichlet_dof_values(space)
   dir_values_scratch = zero_dirichlet_values(space)
   dir_values = compute_dirichlet_values_for_tags!(dir_values,dir_values_scratch,space,objects)
   space
@@ -69,7 +69,7 @@ end
 
 # Genuine functions
 
-get_dirichlet_values(f::TrialFESpace) = f.dirichlet_values
+get_dirichlet_dof_values(f::TrialFESpace) = f.dirichlet_values
 
 # Delegated functions
 

@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The default quadrature rule for tets has changed. Since PR [#578](https://github.com/gridap/Gridap.jl/pull/578).
 - Refactoring in `SparseMatrixAssembler` to make it more extensible and efficient. Since PR [#568](https://github.com/gridap/Gridap.jl/pull/568).
 - Renamed `get_free_values` -> `get_free_dof_values`. Since PR [#567](https://github.com/gridap/Gridap.jl/pull/567).
+- Renamed `get_dirichlet_values` -> `get_dirichlet_dof_values`. Since PR [#606](https://github.com/gridap/Gridap.jl/pull/606).
+- Renamed `object` -> `value` the variable in `ConstantField`. Since PR [#606](https://github.com/gridap/Gridap.jl/pull/606).
 - Miscellaneous changes in the FE assembly to allow the solution of mixed dimensional problems. Since PR [#567](https://github.com/gridap/Gridap.jl/pull/567).
 - Renamed `get_cell_shapefuns` by `get_fe_basis`. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
 - Renamed `get_cell_shapefuns_trial` by `get_trial_fe_basis`. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).

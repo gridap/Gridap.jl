@@ -33,17 +33,17 @@ matdata = ([],[],[])
 vecdata = ([],[])
 test_single_field_fe_space(U,matvecdata,matdata,vecdata)
 
-@test get_dirichlet_values(U) == [4.0, 3.0, 3.0, 3.0, 3.0, 3.0]
+@test get_dirichlet_dof_values(U) == [4.0, 3.0, 3.0, 3.0, 3.0, 3.0]
 TrialFESpace!(U,[1,2])
-@test get_dirichlet_values(U) == [1.0, 2.0, 2.0, 2.0, 2.0, 2.0]
+@test get_dirichlet_dof_values(U) == [1.0, 2.0, 2.0, 2.0, 2.0, 2.0]
 
 U0 = HomogeneousTrialFESpace(V)
-@test get_dirichlet_values(U0) == zeros(6)
+@test get_dirichlet_dof_values(U0) == zeros(6)
 
 U0 = HomogeneousTrialFESpace!(v,V)
-@test v === get_dirichlet_values(U0)
+@test v === get_dirichlet_dof_values(U0)
 @test v == zeros(6)
-@test get_dirichlet_values(U0) == zeros(6)
+@test get_dirichlet_dof_values(U0) == zeros(6)
 
 u(x) = x[1]
 U = TrialFESpace(V,u)
@@ -66,7 +66,7 @@ cell_dofs = get_cell_dof_ids(U,cellidsS)
 @test isa(cell_dofs[1],ArrayBlock)
 
 U0 = HomogeneousTrialFESpace(U)
-@test get_dirichlet_values(U0) == zeros(6)
+@test get_dirichlet_dof_values(U0) == zeros(6)
 
 #trian = get_triangulation(model)
 #

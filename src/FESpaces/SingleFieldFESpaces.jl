@@ -176,7 +176,7 @@ end
 
 """
 """
-function get_dirichlet_values(f::SingleFieldFESpace)
+function get_dirichlet_dof_values(f::SingleFieldFESpace)
   zero_dirichlet_values(f)
 end
 
@@ -269,7 +269,7 @@ end
       fs::SingleFieldFESpace, free_values::AbstractVector, dirichlet_values::AbstractVector)
 
 The resulting FEFunction will be in the space if and only if `dirichlet_values`
-are the ones provided by `get_dirichlet_values(fs)`
+are the ones provided by `get_dirichlet_dof_values(fs)`
 """
 function FEFunction(
   fs::SingleFieldFESpace, free_values::AbstractVector, dirichlet_values::AbstractVector)
@@ -279,7 +279,7 @@ function FEFunction(
 end
 
 function FEFunction(fe::SingleFieldFESpace, free_values)
-  diri_values = get_dirichlet_values(fe)
+  diri_values = get_dirichlet_dof_values(fe)
   FEFunction(fe,free_values,diri_values)
 end
 
