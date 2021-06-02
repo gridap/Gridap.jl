@@ -265,7 +265,7 @@ function _point_to_cell_cache(trian::Triangulation)
   cache1 = kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map
 end
 
-function point_to_cell!(cache, x::Point)
+function _point_to_cell!(cache, x::Point)
   kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map = cache
 
   # Find nearest vertex
@@ -312,7 +312,7 @@ function evaluate!(cache,f::CellField,x::Point)
   cell_f_cache, f_cache, cell_f, f₀ = cache2
   @check f === f₀ "Wrong cache"
 
-  cell = point_to_cell!(cache1, x)
+  cell = _point_to_cell!(cache1, x)
   cf = getindex!(cell_f_cache, cell_f, cell)
   fx = evaluate!(f_cache, cf, x)
   return fx
@@ -360,7 +360,7 @@ function evaluate!(cache,f::CellField,point_to_x::AbstractVector{<:Point})
   @check f === f₀ "Wrong cache"
 
   ncells = length(cell_map)
-  x_to_cell(x) = point_to_cell!(cache1,x)
+  x_to_cell(x) = _point_to_cell!(cache1,x)
   point_to_cell = map(x_to_cell,point_to_x)
   cell_to_points,point_to_lpoint = make_inverse_table(point_to_cell,ncells)
   cell_to_xs = lazy_map(Broadcasting(Reindex(point_to_x)),cell_to_points)
@@ -373,7 +373,7 @@ end
 
 function compute_cell_points_from_vector_of_points(xs::AbstractVector{<:Point}, trian::Triangulation, domain_style::PhysicalDomain)
     cache1 = _point_to_cell_cache(trian)
-    x_to_cell(x) = point_to_cell!(cache1, x)
+    x_to_cell(x) = _point_to_cell!(cache1, x)
     point_to_cell = map(x_to_cell, xs)
     ncells = num_cells(trian)
     cell_to_points, point_to_lpoint = make_inverse_table(point_to_cell, ncells)
