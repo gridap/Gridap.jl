@@ -9,6 +9,8 @@ using Gridap.Fields
 using Gridap.CellData
 using Gridap.MultiField
 using Gridap.TensorValues
+using Random
+using StaticArrays
 using Test
 
 domain = (0,1,0,1)
@@ -115,6 +117,7 @@ cell = 1
 cellmat1_Γ = integrate(((n⋅dv.⁺)-dq.⁻)*((n⋅du.⁺)+dp.⁻),quad_Γ)
 cellmat2_Γ = integrate((n⋅dv.⁺)*(n⋅du.⁺)+(n⋅dv.⁺)*dp.⁻-dq.⁻*(n⋅du.⁺)-dq.⁻*dp.⁻,quad_Γ)
 test_array(cellmat1_Γ,cellmat2_Γ,≈)
+
 
 #a = cellmat_Γ
 #using BenchmarkTools

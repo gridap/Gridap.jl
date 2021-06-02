@@ -1,4 +1,3 @@
-
 struct MultiFieldCellField{DS<:DomainStyle} <: CellField
   single_fields::Vector{<:CellField}
   trian::Triangulation

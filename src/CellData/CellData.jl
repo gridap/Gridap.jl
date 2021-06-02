@@ -10,16 +10,20 @@ using DocStringExtensions
 using FillArrays
 
 using Gridap.Helpers
-using Gridap.Arrays
 using Gridap.Algebra
+using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 
+using NearestNeighbors
+using StaticArrays
+
 import Gridap.Arrays: lazy_append
 import Gridap.Arrays: get_array
 import Gridap.Arrays: evaluate!
+import Gridap.Arrays: return_cache
 import Gridap.Fields: gradient
 import Gridap.Fields: ∇∇
 import Gridap.Fields: integrate
@@ -56,6 +60,10 @@ export ∫
 export CellDof
 export get_normal_vector
 export get_cell_measure
+
+export make_inverse_table
+export point_to_cell!
+export compute_cell_points_from_vector_of_points
 
 export DomainContribution
 export num_domains

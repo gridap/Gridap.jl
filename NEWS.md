@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Experimental support for mixed dimensional PDEs. Since PR [#567](https://github.com/gridap/Gridap.jl/pull/567).
 - Added `get_cell_dof_basis(model,cell_reffes,::Conformity)` and `get_cell_shapefuns(model,cell_reffes,::Conformity)`. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
 - Implemented `get_cell_dof_basis` and `get_cell_shapefuns` for global RT FE spaces in a new file `DivConformingFESpaces.jl`. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
+- Added support to allow evaluation of FE functions at arbitrary points. Since PR [#523](https://github.com/gridap/Gridap.jl/pull/523).
+- Implemented `compute_cell_points_from_vector_of_points` to build `CellPoint` from a vector of points. Since PR [#523](https://github.com/gridap/Gridap.jl/pull/523).
 
 ### Changed
 - Major refactoring in the handling of blocks (e.g. in multi-field and skeleton terms). The new code follows a much more simple approach based in the new type `ArrayBlock`. Since PR [#583](https://github.com/gridap/Gridap.jl/pull/583).
@@ -30,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All code associated with with `BlockArrayCoo`. Since PR [#583](https://github.com/gridap/Gridap.jl/pull/583).
 - Module `Gridap.Integration` has been deleted and its contents have been merged into `Gridap.ReferenceFEs` module.
 - Types `SparseMatrixCSR` and `SymSparseMatrixCSR` have been moved to the registered package [`SparseMatricesCSR`](https://github.com/gridap/SparseMatricesCSR.jl). To use them simply add `SparseMatricesCSR` into your environment and type `using SparseMatricesCSR`. Since  Since PR [#568](https://github.com/gridap/Gridap.jl/pull/568).
-- Removed `PushForwardMap` and all code depending upon it. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579). 
+- Removed `PushForwardMap` and all code depending upon it. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
 
 ## [0.15.5] - 2021-05-25
 
@@ -45,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.15.3] - 2021-03-16
 
-### Added 
+### Added
 - `get_cell_map` now returns array of `AffineMap` for linear grids of simplices. Needed to compute Laplacian operator, inverse maps etc. Since PR [#553](https://github.com/gridap/Gridap.jl/pull/553).
 
 ### Fixed
@@ -85,7 +87,7 @@ This version is a major (backwards-incompatible) refactoring of the project whic
  - Bug-fix for 32-bit Julia: Replace all occurences of Int64 by Int. Since PR [#445](https://github.com/gridap/Gridap.jl/pull/445).
  - Bug-fix for 32-bit Julia. Using inttype=Int keyword argument for JSON parsing. Since PR [#456](https://github.com/gridap/Gridap.jl/pull/456).
 
-## [0.14.1] - 2020-09-17 
+## [0.14.1] - 2020-09-17
 
 ### Added
  - Added VectorWithEntryInserted and VectorWithEntryRemoved. Since PR [#401](https://github.com/gridap/Gridap.jl/pull/401/).
@@ -104,7 +106,7 @@ This version is a major (backwards-incompatible) refactoring of the project whic
  - First and second argument switch in `update_state_variables!` in order to have function-first style. Since PR [#376](https://github.com/gridap/Gridap.jl/pull/376/).
  - Table struct has been generalized such that data and ptrs arrays can be of an arbitrary type extending AbstractArray. Since PR [#310](https://github.com/gridap/Gridap.jl/pull/310/)
  - `interpolate, interpolate!, interpolate_dirichlet...` switched argument order to function first style. For instance `interpolate(u, V)` instead of `interpolate(V, u)`
- 
+
 ### Added
  - Allowing the construction of an `HomogeneousTrialFESpace` from a `TrialFESpace`. Since PR [#384](https://github.com/gridap/Gridap.jl/pull/384).
  - Support for automatic differentiation of residuals and Jacobians in multi-field computations since PR [#383](https://github.com/gridap/Gridap.jl/pull/383/).
@@ -115,7 +117,7 @@ This version is a major (backwards-incompatible) refactoring of the project whic
 
 ## [0.13.4] - 2020-08-23
 
-### Added 
+### Added
   - New `FilteredCellArray` since PR [#372](https://github.com/gridap/Gridap.jl/pull/372/).
 
 ## [0.13.3] - 2020-08-12

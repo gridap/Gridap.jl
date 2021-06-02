@@ -15,12 +15,13 @@ using Gridap.TensorValues
 using Gridap.CellData
 using Gridap.Fields
 
+using Gridap.FESpaces: FEBasis, TestBasis, TrialBasis, get_cell_dof_values
 using Gridap.FESpaces: SingleFieldFEBasis, TestBasis, TrialBasis
 
 using FillArrays
 using SparseArrays
 using LinearAlgebra
-import BlockArrays
+using BlockArrays
 
 export num_fields
 export compute_field_offsets
