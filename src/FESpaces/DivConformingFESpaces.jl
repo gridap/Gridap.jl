@@ -41,7 +41,7 @@ function get_cell_shapefuns(model::DiscreteModel,
     lazy_map(_transform_rt_shapefuns,
              cell_reffe,
              get_cell_map(Triangulation(model)),
-             lazy_map(Broadcasting(ConstantField), sign_flip))
+             lazy_map(Broadcasting(constant_field), sign_flip))
 end
 
 struct SignFlipMap{T} <: Map
