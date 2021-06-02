@@ -341,9 +341,9 @@ function collect_cell_matrix(trial::FESpace,test::FESpace,a::DomainContribution)
     cell_mat_rc = attach_constraints_rows(test,cell_mat_c,trian)
     rows = get_cell_dof_ids(test,trian)
     cols = get_cell_dof_ids(trial,trian)
-    push!(w,cell_mat_rc)
-    push!(r,rows)
-    push!(c,cols)
+    push!(w,compress_contributions(cell_mat_rc,trian))
+    push!(r,compress_ids(rows,trian))
+    push!(c,compress_ids(cols,trian))
   end
   (w,r,c)
 end
@@ -356,8 +356,8 @@ function collect_cell_vector(test::FESpace,a::DomainContribution)
     @assert ndims(eltype(cell_vec)) == 1
     cell_vec_r = attach_constraints_rows(test,cell_vec,trian)
     rows = get_cell_dof_ids(test,trian)
-    push!(w,cell_vec_r)
-    push!(r,rows)
+    push!(w,compress_contributions(cell_vec_r,trian))
+    push!(r,compress_ids(rows,trian))
   end
   (w,r)
 end
@@ -373,9 +373,9 @@ function _collect_cell_matvec(trial::FESpace,test::FESpace,a::DomainContribution
     cell_mat_rc = attach_constraints_rows(test,cell_mat_c,trian)
     rows = get_cell_dof_ids(test,trian)
     cols = get_cell_dof_ids(trial,trian)
-    push!(w,cell_mat_rc)
-    push!(r,rows)
-    push!(c,cols)
+    push!(w,compress_contributions(cell_mat_rc,trian))
+    push!(r,compress_ids(rows,trian))
+    push!(c,compress_ids(cols,trian))
   end
   (w,r,c)
 end

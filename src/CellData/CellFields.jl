@@ -207,7 +207,6 @@ get_data(f::GenericCellField) = f.cell_field
 get_triangulation(f::GenericCellField) = f.trian
 DomainStyle(::Type{GenericCellField{DS}}) where DS = DS()
 
-# Evaluation of CellFields
 
 """
    dist = distance(polytope::ExtrusionPolytope,
@@ -242,16 +241,7 @@ end
 
 function return_cache(f::CellField,x::Point)
   trian = get_triangulation(f)
-  topo = GridTopology(trian)    # Note: this is expensive
-  vertex_coordinates = Geometry.get_vertex_coordinates(topo)
-  kdtree = KDTree(map(nc -> SVector(Tuple(nc)), vertex_coordinates))
-  D = num_cell_dims(trian)
-  vertex_to_cells = get_faces(topo,0,D)
-  cell_to_ctype = get_cell_type(trian)
-  ctype_to_reffe = get_reffes(trian)
-  ctype_to_polytope = map(get_polytope, ctype_to_reffe)
-  cell_map = get_cell_map(trian)
-  cache1 = kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map
+  cache1 = _point_to_cell_cache(trian)
 
   cell_f = get_array(f)
   cell_f_cache = array_cache(cell_f)
@@ -262,7 +252,20 @@ function return_cache(f::CellField,x::Point)
   return cache1,cache2
 end
 
-function point_to_cell!(cache,f::CellField,x::Point)
+function _point_to_cell_cache(trian::Triangulation)
+  topo = GridTopology(trian)
+  vertex_coordinates = Geometry.get_vertex_coordinates(topo)
+  kdtree = KDTree(map(nc -> SVector(Tuple(nc)), vertex_coordinates))
+  D = num_cell_dims(trian)
+  vertex_to_cells = get_faces(topo, 0, D)
+  cell_to_ctype = get_cell_type(trian)
+  ctype_to_reffe = get_reffes(trian)
+  ctype_to_polytope = map(get_polytope, ctype_to_reffe)
+  cell_map = get_cell_map(trian)
+  cache1 = kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map
+end
+
+function point_to_cell!(cache, x::Point)
   kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map = cache
 
   # Find nearest vertex
@@ -309,7 +312,7 @@ function evaluate!(cache,f::CellField,x::Point)
   cell_f_cache, f_cache, cell_f, f₀ = cache2
   @check f === f₀ "Wrong cache"
 
-  cell = point_to_cell!(cache1,f,x)
+  cell = point_to_cell!(cache1, x)
   cf = getindex!(cell_f_cache, cell_f, cell)
   fx = evaluate!(f_cache, cf, x)
   return fx
@@ -351,13 +354,13 @@ end
 
 # Efficient version:
 function evaluate!(cache,f::CellField,point_to_x::AbstractVector{<:Point})
-  cache1,cache2 = return_cache(f,testitem(point_to_x))
+  cache1,cache2 = cache
   kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map = cache1
   cell_f_cache, f_cache, cell_f, f₀ = cache2
   @check f === f₀ "Wrong cache"
 
   ncells = length(cell_map)
-  x_to_cell(x) = point_to_cell!(cache1,f,x)
+  x_to_cell(x) = point_to_cell!(cache1,x)
   point_to_cell = map(x_to_cell,point_to_x)
   cell_to_points,point_to_lpoint = make_inverse_table(point_to_cell,ncells)
   cell_to_xs = lazy_map(Broadcasting(Reindex(point_to_x)),cell_to_points)
@@ -368,6 +371,15 @@ function evaluate!(cache,f::CellField,point_to_x::AbstractVector{<:Point})
   collect(point_to_fx)          # Collect into a plain array
 end
 
+function compute_cell_points_from_vector_of_points(xs::AbstractVector{<:Point}, trian::Triangulation, domain_style::PhysicalDomain)
+    cache1 = _point_to_cell_cache(trian)
+    x_to_cell(x) = point_to_cell!(cache1, x)
+    point_to_cell = map(x_to_cell, xs)
+    ncells = num_cells(trian)
+    cell_to_points, point_to_lpoint = make_inverse_table(point_to_cell, ncells)
+    cell_to_xs = lazy_map(Broadcasting(Reindex(xs)), cell_to_points)
+    cell_point_xs = CellPoint(cell_to_xs, trian, PhysicalDomain())
+end
 
 (a::CellField)(x) = evaluate(a,x)
 
