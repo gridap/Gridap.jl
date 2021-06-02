@@ -271,7 +271,7 @@ Random.seed!(0)
         cell_to_fxs = lazy_map(evaluate, cell_to_f, cell_to_xs)
 
         # Now build CellPoint with xs instead of building cell_to_xs
-        cell_point_xs = CellPoint(xs, trian, PhysicalDomain())
+        cell_point_xs = compute_cell_points_from_vector_of_points(xs, trian, PhysicalDomain())
         cell_point_fxs = evaluate(fh, cell_point_xs)
         @test cell_point_fxs ≈ cell_to_fxs
 

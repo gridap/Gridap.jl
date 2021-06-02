@@ -63,6 +63,7 @@ export get_cell_measure
 
 export make_inverse_table
 export point_to_cell!
+export compute_cell_points_from_vector_of_points
 
 export DomainContribution
 export num_domains

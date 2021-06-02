@@ -241,7 +241,7 @@ end
 
 function return_cache(f::CellField,x::Point)
   trian = get_triangulation(f)
-  cache1 = my_trian_data(trian)
+  cache1 = _point_to_cell_cache(trian)
 
   cell_f = get_array(f)
   cell_f_cache = array_cache(cell_f)
@@ -252,7 +252,7 @@ function return_cache(f::CellField,x::Point)
   return cache1,cache2
 end
 
-function my_trian_data(trian::Triangulation)
+function _point_to_cell_cache(trian::Triangulation)
   topo = GridTopology(trian)
   vertex_coordinates = Geometry.get_vertex_coordinates(topo)
   kdtree = KDTree(map(nc -> SVector(Tuple(nc)), vertex_coordinates))
@@ -371,16 +371,13 @@ function evaluate!(cache,f::CellField,point_to_x::AbstractVector{<:Point})
   collect(point_to_fx)          # Collect into a plain array
 end
 
-# New CellPoint implementation
-function CellPoint(xs::AbstractVector{<:Point}, trian::Triangulation, domain_style::PhysicalDomain)
-    #Find the location of the point in the triangulation
-    cache1 = my_trian_data(trian)
+function compute_cell_points_from_vector_of_points(xs::AbstractVector{<:Point}, trian::Triangulation, domain_style::PhysicalDomain)
+    cache1 = _point_to_cell_cache(trian)
     x_to_cell(x) = point_to_cell!(cache1, x)
     point_to_cell = map(x_to_cell, xs)
     ncells = num_cells(trian)
     cell_to_points, point_to_lpoint = make_inverse_table(point_to_cell, ncells)
     cell_to_xs = lazy_map(Broadcasting(Reindex(xs)), cell_to_points)
-    #Create CellPoint
     cell_point_xs = CellPoint(cell_to_xs, trian, PhysicalDomain())
 end
 
