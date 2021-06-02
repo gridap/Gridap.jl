@@ -235,7 +235,7 @@ end
 # I think it is conceptually better to have ConstantField as struct otherwise we break the invariant
 # "for any object wrapped in a GenericField we can assume that it implements the Field interface"
 struct ConstantField{T<:Number} <: Field
-  object::T
+  value::T
 end
 
 @inline constant_field(a) = ConstantField(a)
@@ -243,12 +243,12 @@ end
 Base.zero(::Type{ConstantField{T}}) where T = ConstantField(zero(T))
 
 @inline function evaluate!(c,f::ConstantField,x::Point)
-  f.object
+  f.value
 end
 
 function return_cache(f::ConstantField,x::AbstractArray{<:Point})
   nx = size(x)
-  c = fill(f.object,nx)
+  c = fill(f.value,nx)
   CachedArray(c)
 end
 
@@ -258,19 +258,19 @@ function evaluate!(c,f::ConstantField,x::AbstractArray{<:Point})
   # in the same array and we try to reuse cache between them.
   #if size(c) != nx
     setsize!(c,nx)
-    fill!(c.array,f.object)
+    fill!(c.array,f.value)
   #end
   c.array
 end
 
 @inline function return_cache(f::FieldGradient{N,<:ConstantField},x::Point) where N
-  gradient(f.object.object,Val(N))(x)
+  gradient(f.object.value,Val(N))(x)
 end
 
 @inline evaluate!(c,f::FieldGradient{N,<:ConstantField},x::Point) where N = c
 
 @inline function return_cache(f::FieldGradient{N,<:ConstantField},x::AbstractArray{<:Point}) where N
-  CachedArray(gradient(f.object.object,Val(N)).(x))
+  CachedArray(gradient(f.object.value,Val(N)).(x))
 end
 
 function evaluate!(c,f::FieldGradient{N,<:ConstantField},x::AbstractArray{<:Point}) where N
