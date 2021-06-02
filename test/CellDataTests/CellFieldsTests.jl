@@ -208,8 +208,8 @@ Random.seed!(0)
     order = 2
     reffe = ReferenceFE(lagrangian, Float64, order)
 
-    for M ∈ ["Hypercubes", "Simplices"]
-        model = (M == "Hypercubes") ? base_model : simplexify(base_model)
+    for M ∈ [:hypercubes, :simplices]
+        model = (M == :hypercubes) ? base_model : simplexify(base_model)
 
         V = FESpace(model, reffe)
 

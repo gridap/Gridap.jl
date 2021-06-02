@@ -241,7 +241,7 @@ end
 
 function return_cache(f::CellField,x::Point)
   trian = get_triangulation(f)
-  cache1 = return_cache(trian)
+  cache1 = my_trian_data(trian)
 
   cell_f = get_array(f)
   cell_f_cache = array_cache(cell_f)
@@ -252,7 +252,7 @@ function return_cache(f::CellField,x::Point)
   return cache1,cache2
 end
 
-function return_cache(trian::Triangulation)
+function my_trian_data(trian::Triangulation)
   topo = GridTopology(trian)
   vertex_coordinates = Geometry.get_vertex_coordinates(topo)
   kdtree = KDTree(map(nc -> SVector(Tuple(nc)), vertex_coordinates))
@@ -374,7 +374,7 @@ end
 # New CellPoint implementation
 function CellPoint(xs::AbstractVector{<:Point}, trian::Triangulation, domain_style::PhysicalDomain)
     #Find the location of the point in the triangulation
-    cache1 = return_cache(trian)
+    cache1 = my_trian_data(trian)
     x_to_cell(x) = point_to_cell!(cache1, x)
     point_to_cell = map(x_to_cell, xs)
     ncells = num_cells(trian)
