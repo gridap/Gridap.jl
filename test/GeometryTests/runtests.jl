@@ -38,6 +38,8 @@ using Test
 
 @testset "AppendedTriangulations" begin include("AppendedTriangulationsTests.jl") end
 
+@testset "CompressedCellArrays" begin include("CompressedCellArraysTests.jl") end
+
 @testset "BoundaryDiscreteModels" begin include("BoundaryDiscreteModelsTests.jl") end
 
 #
