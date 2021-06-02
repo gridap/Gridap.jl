@@ -260,6 +260,7 @@ Random.seed!(0)
         @test fhpt .≈ f(pt)
 
         # Test with CellPoint
+        # Build cell_to_fxs manually
         cache1,cache2 = fhcache
         ncells = num_cells(model)
         x_to_cell(x) = point_to_cell!(cache1, x)
@@ -268,8 +269,9 @@ Random.seed!(0)
         cell_to_xs = lazy_map(Broadcasting(Reindex(xs)), cell_to_points)
         cell_to_f = get_array(fh)
         cell_to_fxs = lazy_map(evaluate, cell_to_f, cell_to_xs)
-        # Now build CellPoint with cell_to_xs map
-        cell_point_xs = CellPoint(cell_to_xs, trian, PhysicalDomain())
+
+        # Now build CellPoint with xs instead of building cell_to_xs
+        cell_point_xs = CellPoint(xs, trian, PhysicalDomain())
         cell_point_fxs = evaluate(fh, cell_point_xs)
         @test cell_point_fxs ≈ cell_to_fxs
 
