@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implemented `get_cell_dof_basis` and `get_cell_shapefuns` for global RT FE spaces in a new file `DivConformingFESpaces.jl`. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
 - Added support to allow evaluation of FE functions at arbitrary points. Since PR [#523](https://github.com/gridap/Gridap.jl/pull/523).
 - Implemented `compute_cell_points_from_vector_of_points` to build `CellPoint` from a vector of points. Since PR [#523](https://github.com/gridap/Gridap.jl/pull/523).
+- Added `compile/create_gridap_image.jl` Julia script that lets one to create a custom sysimage of Gridap using the so-called `PackageCompiler.jl` Julia package; see `compile/README.md` for additional details. Since PR [#436](https://github.com/gridap/Gridap.jl/pull/436/).
 
 ### Changed
 - Major refactoring in the handling of blocks (e.g. in multi-field and skeleton terms). The new code follows a much more simple approach based in the new type `ArrayBlock`. Since PR [#583](https://github.com/gridap/Gridap.jl/pull/583).
