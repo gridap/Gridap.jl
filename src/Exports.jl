@@ -168,6 +168,8 @@ using Gridap.CellData: ∫; export ∫
 @publish Visualization writevtk
 @publish Visualization createvtk
 
+# Deprecated / removed
+
 export apply
 function apply(args...)
   Helpers.@unreachable """\n
@@ -237,3 +239,6 @@ function FESource(args...)
   This error message will be deleted in future versions.
   """
 end
+
+@publish FESpaces get_free_values
+@publish FESpaces get_dirichlet_values
