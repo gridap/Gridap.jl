@@ -28,7 +28,7 @@ get_vector(op::AffineOperator) = op.vector
 
 function residual!(b::AbstractVector,op::AffineOperator,x::AbstractVector)
   mul!(b,op.matrix,x)
-  add_entries!(b,op.vector,-)
+  b .-= op.vector
   b
 end
 
@@ -78,6 +78,16 @@ function solve(ls::LinearSolver,A::AbstractMatrix,b::AbstractVector)
   ss = symbolic_setup(ls,A)
   ns = numerical_setup(ss,A)
   x = similar(b)
+  solve!(x,ns,b)
+  x
+end
+
+"""
+    solve!(x::AbstractVector,ls::LinearSolver,A::AbstractMatrix,b::AbstractVector)
+"""
+function solve!(x::AbstractVector,ls::LinearSolver,A::AbstractMatrix,b::AbstractVector)
+  ss = symbolic_setup(ls,A)
+  ns = numerical_setup(ss,A)
   solve!(x,ns,b)
   x
 end
@@ -138,6 +148,10 @@ function test_linear_solver(
   ns = numerical_setup(ss,A)
   numerical_setup!(ns,A)
   solve!(y,ns,b)
+  @test x ≈ y
+
+  y .= zero(eltype(y))
+  solve!(y,ls,A,b)
   @test x ≈ y
 
   op = AffineOperator(A,b)
@@ -247,12 +261,17 @@ numerical_setup(::LUSymbolicSetup,mat::AbstractMatrix) = LUNumericalSetup(lu(mat
 function numerical_setup!(ns::LUNumericalSetup, mat::AbstractMatrix)
   fac = lu(mat)
   ns.factors = fac
+  ns
+end
+
+function numerical_setup!(ns::LUNumericalSetup, mat::SparseMatrixCSC)
+  lu!(ns.factors,mat)
+  ns
 end
 
 function solve!(
   x::AbstractVector,ns::LUNumericalSetup,b::AbstractVector)
-  y = ns.factors\b # the allocation of y can be avoided
-  copy_entries!(x,y)
+  ldiv!(x,ns.factors,b)
   x
 end
 

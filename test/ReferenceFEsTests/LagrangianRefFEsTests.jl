@@ -25,9 +25,10 @@ metadata = nothing
 
 struct MockConformity <: Conformity end
 
-reffe = GenericRefFE(
+conf = MockConformity()
+reffe = GenericRefFE{typeof(conf)}(
   ndofs, polytope, prebasis, dofs,
-  MockConformity(), metadata, face_dofs)
+  conf, metadata, face_dofs)
 
 node_coordinates = Point{2,Float64}[(0,0),(1,0),(0,1),(1,1)]
 node_and_comp_to_dof = [1,2,3,4]

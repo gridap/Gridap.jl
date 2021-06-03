@@ -1,5 +1,5 @@
 
-const version = "v0.7"
+const version = "v0.15"
 
 """
     struct UnstructuredDiscreteModel{Dc,Dp,Tp,B} <: DiscreteModel{Dc,Dp}
@@ -74,7 +74,11 @@ function check_dict(::Type{UnstructuredDiscreteModel},dict::Dict{Symbol,Any})
 
   v = VersionNumber(dict[:version])
   if v < VersionNumber(version)
-    @unreachable "Cannot convert Dict to UnstructuredDiscreteModel for outdated format"
+    @unreachable """\n
+    Cannot convert Dict to UnstructuredDiscreteModel for outdated format $(dict[:version]).
+    The required format is $version. Regenerate your dictiorary (typically a json file)
+    holding the DiscreteModel with the Gridap version you are currenlty using.
+    """
   end
 
 end
@@ -86,18 +90,18 @@ function from_dict(T::Type{UnstructuredDiscreteModel},dict::Dict{Symbol,Any})
   grid = from_dict(UnstructuredGrid,dict[:grid])
   labeling = from_dict(FaceLabeling,dict[:labeling])
   D::Int = dict[:D]
-  vertex_to_node::Vector{Int} = dict[:vertex_node]
+  vertex_to_node::Vector{Int32} = dict[:vertex_node]
   orientation = OrientationStyle(grid)
   polytopes = map(get_polytope, get_reffes(grid))
   cell_type = get_cell_type(grid)
   vertex_coordinates = get_node_coordinates(grid)[vertex_to_node]
 
   nvertices = length(vertex_to_node)
-  d_dface_to_vertices = Vector{Table{Int,Vector{Int},Vector{Int32}}}(undef,D+1)
-  d_dface_to_vertices[0+1] = identity_table(Int,Int32,nvertices)
+  d_dface_to_vertices = Vector{Table{Int32,Vector{Int32},Vector{Int32}}}(undef,D+1)
+  d_dface_to_vertices[0+1] = identity_table(Int32,Int32,nvertices)
   for d in 1:D
     k = Symbol("face_vertices_$d")
-    dface_to_vertices = from_dict(Table{Int,Vector{Int},Vector{Int32}},dict[k])
+    dface_to_vertices = from_dict(Table{Int32,Vector{Int32},Vector{Int32}},dict[k])
     d_dface_to_vertices[d+1] = dface_to_vertices
   end
 
@@ -206,7 +210,8 @@ function  _fill_dim_to_tface_to_label!(
       dface_to_jfaces = get_faces(tgrid_topology,d,j)
       dface_to_label = dim_to_tface_to_label[d+1]
       jface_to_label = dim_to_tface_to_label[j+1]
-      _fix_dface_to_label!(dface_to_label,jface_to_label,dface_to_jfaces)
+      cache = array_cache(dface_to_jfaces)
+      _fix_dface_to_label!(dface_to_label,jface_to_label,dface_to_jfaces,cache)
 
     end
 
@@ -214,7 +219,7 @@ function  _fill_dim_to_tface_to_label!(
 
 end
 
-function _fix_dface_to_label!(dface_to_label,jface_to_label,dface_to_jfaces)
+function _fix_dface_to_label!(dface_to_label,jface_to_label,dface_to_jfaces,cache)
 
   ndfaces = length(dface_to_label)
   @assert ndfaces == length(dface_to_jfaces)
@@ -226,7 +231,7 @@ function _fix_dface_to_label!(dface_to_label,jface_to_label,dface_to_jfaces)
       continue
     end
 
-    jfaces = dface_to_jfaces[dface]
+    jfaces = getindex!(cache,dface_to_jfaces,dface)
     for jface in jfaces
       jlabel = jface_to_label[jface]
       if jlabel != UNSET_ID
@@ -250,7 +255,7 @@ end
 
 function _generate_tcell_to_cell(ncells,nltcells)
   ntcells = ncells * nltcells
-  tcell_to_cell = Vector{Int}(undef,ntcells)
+  tcell_to_cell = Vector{Int32}(undef,ntcells)
   tcell = 1
   for cell in 1:ncells
     for ltcell in 1:nltcells

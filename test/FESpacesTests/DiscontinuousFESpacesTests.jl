@@ -1,6 +1,7 @@
 module DiscontinuousFESpacesTests
 
 using Test
+using Gridap.Arrays
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.FESpaces
@@ -10,29 +11,27 @@ partition = (3,3)
 model = CartesianDiscreteModel(domain,partition)
 
 order = 3
-grid_topology = get_grid_topology(model)
-polytopes = get_polytopes(grid_topology)
-reffes = [LagrangianRefFE(Float64,p,order) for p in polytopes]
 
-trian = get_triangulation(model)
-
-V = DiscontinuousFESpace(reffes,trian)
+reffe = ReferenceFE(lagrangian,Float64,order)
+V = FESpace(model,reffe,conformity=:L2)
+@test isa(V,UnconstrainedFESpace)
+@test isa(V.cell_dofs_ids,Table{Int32})
 test_single_field_fe_space(V)
+@test num_free_dofs(V) == num_cells(model)*(order+1)^2
 
-U = TrialFESpace(V)
-
+U = V
 f(x) = sin(pi*x[1])*cos(2*pi*x[2])
-
 fh = interpolate(f,U)
-
 uh = FEFunction(V,rand(num_free_dofs(V)))
 
-#using Gridap.Visualization
-#
-#writevtk(trian,"trian",nsubcells=40,cellfields=["fh"=>fh, "uh"=>uh])
-
-reffes = [LagrangianRefFE(Float64,p,order,space=:P) for p in polytopes]
-V = DiscontinuousFESpace(reffes,trian)
+reffe = ReferenceFE(lagrangian,Float64,order;space=:S)
+V = FESpace(model,reffe,conformity=:L2)
+@test isa(V,UnconstrainedFESpace)
+@test isa(V.cell_dofs_ids,Table{Int32})
 test_single_field_fe_space(V)
+
+U = V
+fh = interpolate(f,U)
+uh = FEFunction(V,rand(num_free_dofs(V)))
 
 end # module

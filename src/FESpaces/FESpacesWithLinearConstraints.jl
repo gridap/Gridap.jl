@@ -12,7 +12,7 @@
 #
 #  - We can add constraints to Dirichlet dofs but their masters have to be Dirichlet as well.
 #    However, free dofs can be constrained both by free and Dirichlet.
-# 
+#
 # Notation in this file:
 #
 #  - dof: a dof (either free or Dirichlet) in the original space.
@@ -54,8 +54,8 @@
 
 # TODO we can optimize memory by only storing info about slave DOFs
 # The fields of this struct are private
-struct FESpaceWithLinearConstraints <: SingleFieldFESpace
-  space::SingleFieldFESpace
+struct FESpaceWithLinearConstraints{S<:SingleFieldFESpace} <: SingleFieldFESpace
+  space::S
   n_fdofs::Int
   n_fmdofs::Int
   mDOF_to_DOF::Vector
@@ -171,7 +171,7 @@ function FESpaceWithLinearConstraints!(DOF_to_DOFs::Table,DOF_to_coeffs::Table,s
   n_fdofs = num_free_dofs(space)
   mDOF_to_DOF, n_fmdofs = _find_master_dofs(DOF_to_DOFs,n_fdofs)
   DOF_to_mDOFs = _renumber_constraints!(DOF_to_DOFs,mDOF_to_DOF)
-  cell_to_ldof_to_dof = Table(get_cell_dofs(space))
+  cell_to_ldof_to_dof = Table(get_cell_dof_ids(space))
   cell_to_lmdof_to_mdof = _setup_cell_to_lmdof_to_mdof(cell_to_ldof_to_dof,DOF_to_mDOFs,n_fdofs,n_fmdofs)
 
   FESpaceWithLinearConstraints(
@@ -289,20 +289,15 @@ end
 
 # Implementation of the SingleFieldFESpace interface
 
-function get_cell_dofs(f::FESpaceWithLinearConstraints)
+function get_cell_dof_ids(f::FESpaceWithLinearConstraints)
   f.cell_to_lmdof_to_mdof
 end
 
-function get_cell_dof_basis(f::FESpaceWithLinearConstraints)
-  get_cell_dof_basis(f.space)
+function get_fe_dof_basis(f::FESpaceWithLinearConstraints)
+  get_fe_dof_basis(f.space)
 end
 
-num_dirichlet_dofs(f::FESpaceWithLinearConstraints) = length(f.mDOF_to_DOF) - f.n_fmdofs
-
-function zero_dirichlet_values(f::FESpaceWithLinearConstraints)
-  # TODO
-  zeros(Float64,num_dirichlet_dofs(f))
-end
+get_dirichlet_dof_ids(f::FESpaceWithLinearConstraints) = Base.OneTo(length(f.mDOF_to_DOF) - f.n_fmdofs)
 
 num_dirichlet_tags(f::FESpaceWithLinearConstraints) = num_dirichlet_tags(f.space)
 
@@ -337,8 +332,8 @@ function _setup_ddof_to_tag!(
   end
 end
 
-function get_dirichlet_values(f::FESpaceWithLinearConstraints)
-  ddof_to_tag = get_dirichlet_values(f.space)
+function get_dirichlet_dof_values(f::FESpaceWithLinearConstraints)
+  ddof_to_tag = get_dirichlet_dof_values(f.space)
   dmdof_to_tag = zeros(eltype(ddof_to_tag),num_dirichlet_dofs(f))
   _setup_ddof_to_tag!(
     dmdof_to_tag,
@@ -465,42 +460,39 @@ end
 
 # Implementation of FESpace interface
 
-num_free_dofs(f::FESpaceWithLinearConstraints) = f.n_fmdofs
-
-function get_cell_basis(f::FESpaceWithLinearConstraints)
-  get_cell_basis(f.space)
+function get_triangulation(f::FESpaceWithLinearConstraints)
+  get_triangulation(f.space)
 end
 
-function CellData.CellField(f::FESpaceWithLinearConstraints,cellvals)
+get_free_dof_ids(f::FESpaceWithLinearConstraints) = Base.OneTo(f.n_fmdofs)
+
+function get_vector_type(f::FESpaceWithLinearConstraints)
+  get_vector_type(f.space)
+end
+
+function get_fe_basis(f::FESpaceWithLinearConstraints)
+  get_fe_basis(f.space)
+end
+
+function get_trial_fe_basis(f::FESpaceWithLinearConstraints)
+  get_trial_fe_basis(f.space)
+end
+
+function CellField(f::FESpaceWithLinearConstraints,cellvals)
   CellField(f.space,cellvals)
 end
 
-function get_cell_axes(f::FESpaceWithLinearConstraints)
-  get_cell_axes(f.space)
-end
-
-function get_cell_axes_with_constraints(f::FESpaceWithLinearConstraints)
-  # In some situations this can be compressed
-  ptrs = f.cell_to_lmdof_to_mdof.ptrs
-  ncells = length(get_cell_basis(f))
-  apply(i->(Base.OneTo(ptrs[i+1]-ptrs[i]),),IdentityVector(ncells))
-end
-
-function zero_free_values(f::FESpaceWithLinearConstraints) where T
-  zeros(num_free_dofs(f))
-end
-
-constraint_style(::Type{<:FESpaceWithLinearConstraints}) = Val{true}()
+ConstraintStyle(::Type{<:FESpaceWithLinearConstraints}) = Constrained()
 
 function get_cell_isconstrained(f::FESpaceWithLinearConstraints)
   #TODO this can be heavily optimized
-  n = length(get_cell_dofs(f))
+  n = length(get_cell_dof_ids(f))
   Fill(true,n)
 end
 
 function get_cell_constraints(f::FESpaceWithLinearConstraints)
 
-  k = LinearConstraintsKernel(
+  k = LinearConstraintsMap(
     f.DOF_to_mDOFs,
     f.DOF_to_coeffs,
     length(f.mDOF_to_DOF),
@@ -508,11 +500,11 @@ function get_cell_constraints(f::FESpaceWithLinearConstraints)
     f.n_fdofs)
 
   cell_to_mat = get_cell_constraints(f.space)
-  apply(k,f.cell_to_lmdof_to_mdof,f.cell_to_ldof_to_dof,cell_to_mat)
+  lazy_map(k,f.cell_to_lmdof_to_mdof,f.cell_to_ldof_to_dof,cell_to_mat)
 
 end
 
-struct LinearConstraintsKernel{A,B} <: Kernel
+struct LinearConstraintsMap{A,B} <: Map
   DOF_to_mDOFs::A
   DOF_to_coeffs::B
   n_mDOFs::Int
@@ -520,7 +512,7 @@ struct LinearConstraintsKernel{A,B} <: Kernel
   n_fdofs::Int
 end
 
-function kernel_cache(k::LinearConstraintsKernel,lmdof_to_mdof,ldof_to_dof,mat)
+function return_cache(k::LinearConstraintsMap,lmdof_to_mdof,ldof_to_dof,mat)
   n_lmdofs = length(lmdof_to_mdof)
   n_ldofs = length(ldof_to_dof)
   n_ludofs = size(mat,2)
@@ -531,7 +523,7 @@ function kernel_cache(k::LinearConstraintsKernel,lmdof_to_mdof,ldof_to_dof,mat)
   m1, m2, mDOF_to_lmdof
 end
 
-function apply_kernel!(cache,k::LinearConstraintsKernel,lmdof_to_mdof,ldof_to_dof,mat)
+function evaluate!(cache,k::LinearConstraintsMap,lmdof_to_mdof,ldof_to_dof,mat)
   m1, m2, mDOF_to_lmdof = cache
   n_lmdofs = length(lmdof_to_mdof)
   n_ldofs = length(ldof_to_dof)
@@ -564,4 +556,3 @@ function apply_kernel!(cache,k::LinearConstraintsKernel,lmdof_to_mdof,ldof_to_do
   mul!(a2,a1,mat)
   a2
 end
-

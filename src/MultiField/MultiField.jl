@@ -11,11 +11,12 @@ using Gridap.Algebra
 using Gridap.Arrays
 using Gridap.FESpaces
 using Gridap.Geometry
-using Gridap.Integration
-using Gridap.Inference
 using Gridap.TensorValues
 using Gridap.CellData
 using Gridap.Fields
+
+using Gridap.FESpaces: FEBasis, TestBasis, TrialBasis, get_cell_dof_values
+using Gridap.FESpaces: SingleFieldFEBasis, TestBasis, TrialBasis
 
 using FillArrays
 using SparseArrays
@@ -36,5 +37,7 @@ include("MultiFieldCellFields.jl")
 include("MultiFieldFESpaces.jl")
 
 include("MultiFieldFEFunctions.jl")
+
+include("MultiFieldFEAutodiff.jl")
 
 end # module

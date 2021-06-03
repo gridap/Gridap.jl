@@ -2,11 +2,10 @@
 """
     divergence(f)
 """
-divergence(f) = tr(gradient(f))
+divergence(f) = Operation(tr)(∇(f))
 
-function divergence(a::AbstractArray{<:Field})
-  ag = gradient(a)
-  operate_arrays_of_fields(tr,ag)
+function evaluate!(cache,::Broadcasting{typeof(divergence)},f)
+  Broadcasting(Operation(tr))(Broadcasting(∇)(f))
 end
 
 function symmetric_gradient end
@@ -14,11 +13,10 @@ function symmetric_gradient end
 """
     symmetric_gradient(f)
 """
-symmetric_gradient(f) = symmetric_part(gradient(f))
+symmetric_gradient(f) = Operation(symmetric_part)(gradient(f))
 
-function symmetric_gradient(a::AbstractArray{<:Field})
-  ag = gradient(a)
-  operate_arrays_of_fields(symmetric_part,ag)
+function evaluate!(cache,::Broadcasting{typeof(symmetric_gradient)},f)
+  Broadcasting(Operation(symmetric_part))(Broadcasting(∇)(f))
 end
 
 """
@@ -31,24 +29,15 @@ const ε = symmetric_gradient
 """
     curl(f)
 """
-curl(f) = grad2curl(gradient(f))
+curl(f) = Operation(grad2curl)(∇(f))
 
-function curl(a::AbstractArray{<:Field})
-  ag = gradient(a)
-  operate_arrays_of_fields(grad2curl,ag)
+function evaluate!(cache,::Broadcasting{typeof(curl)},f)
+  Broadcasting(Operation(grad2curl))(Broadcasting(∇)(f))
 end
 
 """
     grad2curl(∇f)
 """
-function grad2curl(f)
-  @abstractmethod
-end
-
-grad2curl(a::GridapType) = operate(grad2curl,a)
-
-grad2curl(f::Field) = operate_fields(grad2curl,f)
-
 @inline function grad2curl(∇u::TensorValue{2})
   ∇u[1,2] - ∇u[2,1]
 end
@@ -73,8 +62,9 @@ const Δ = laplacian
     laplacian(f)
 """
 function laplacian(f)
-  g = gradient(f)
-  divergence(g)
+  # g = gradient(f)
+  # divergence(g)
+  tr(∇∇(f))
 end
 
 """
@@ -84,15 +74,15 @@ Equivalent to
 
     divergence(f)
 """
-dot(::typeof(∇),f) = divergence(f)
-dot(::typeof(∇),f::GridapType) = divergence(f)
+dot(::typeof(∇),f::Field) = divergence(f)
+dot(::typeof(∇),f::Function) = divergence(f)
 
-function (*)(::typeof(∇),f)
+function (*)(::typeof(∇),f::Field)
   msg = "Syntax ∇*f has been removed, use ∇⋅f (\\nabla \\cdot f) instead"
   error(msg)
 end
 
-function (*)(::typeof(∇),f::GridapType)
+function (*)(::typeof(∇),f::Function)
   msg = "Syntax ∇*f has been removed, use ∇⋅f (\\nabla \\cdot f) instead"
   error(msg)
 end
@@ -104,8 +94,8 @@ Equivalent to
 
     gradient(f)
 """
-outer(::typeof(∇),f) = gradient(f)
-outer(::typeof(∇),f::GridapType) = gradient(f)
+outer(::typeof(∇),f::Field) = gradient(f)
+outer(::typeof(∇),f::Function) = gradient(f)
 
 """
     outer(f,∇)
@@ -114,69 +104,66 @@ Equivalent to
 
     transpose(gradient(f))
 """
-outer(f,::typeof(∇)) = transpose(gradient(f))
-outer(f::GridapType,::typeof(∇)) = transpose(gradient(f))
+outer(f::Field,::typeof(∇)) = transpose(gradient(f))
+outer(f::Function,::typeof(∇)) = transpose(gradient(f))
 
 """
     cross(∇,f)
 
 Equivalent to
-    
+
     curl(f)
 """
-cross(::typeof(∇),f) = curl(f)
-cross(::typeof(∇),f::GridapType) = curl(f)
+cross(::typeof(∇),f::Field) = curl(f)
+cross(::typeof(∇),f::Function) = curl(f)
 
-# Automatic differentiation of functions
+_extract_grad_diag(x::TensorValue) = diag(x)
+_extract_grad_diag(x) = @notimplemented
 
-function gradient(f::Function)
-  function grad_f(x)
-    _grad_f(f,x,zero(return_type(f,typeof(x))))
-  end
+function Base.broadcasted(::typeof(*),::typeof(∇),f)
+  g = ∇(f)
+  Operation(_extract_grad_diag)(g)
 end
 
-function _grad_f(f,x,fx)
-  VectorValue(ForwardDiff.gradient(f,get_array(x)))
+function Base.broadcasted(::typeof(*),::typeof(∇),f::Function)
+  Base.broadcasted(*,∇,GenericField(f))
 end
 
-function _grad_f(f,x,fx::VectorValue)
-  TensorValue(transpose(ForwardDiff.jacobian(y->get_array(f(y)),get_array(x))))
+struct ShiftedNabla{N,T}
+  v::VectorValue{N,T}
 end
 
-function _grad_f(f,x,fx::MultiValue)
-  @notimplemented
+(+)(::typeof(∇),v::VectorValue) = ShiftedNabla(v)
+(+)(v::VectorValue,::typeof(∇)) = ShiftedNabla(v)
+(-)(::typeof(∇),v::VectorValue) = ShiftedNabla(-v)
+
+function (s::ShiftedNabla)(f)
+  Operation((a,b)->a+s.v⊗b)(gradient(f),f)
 end
 
-function divergence(f::Function)
-  x -> tr(ForwardDiff.jacobian(y->get_array(f(y)),get_array(x)))
+(s::ShiftedNabla)(f::Function) = s(GenericField(f))
+
+function evaluate!(cache,k::Broadcasting{<:ShiftedNabla},f)
+  s = k.f
+  g = Broadcasting(∇)(f)
+  Broadcasting(Operation((a,b)->a+s.v⊗b))(g,f)
 end
 
-function curl(f::Function)
-  x -> grad2curl(TensorValue(transpose(ForwardDiff.jacobian(y->get_array(f(y)),get_array(x)))))
+dot(s::ShiftedNabla,f) = Operation(tr)(s(f))
+outer(s::ShiftedNabla,f) = s(f)
+outer(f,s::ShiftedNabla) = transpose(gradient(f))
+cross(s::ShiftedNabla,f) = Operation(grad2curl)(s(f))
+
+dot(s::ShiftedNabla,f::Function) = dot(s,GenericField(f))
+outer(s::ShiftedNabla,f::Function) = outer(s,GenericField(f))
+outer(f::Function,s::ShiftedNabla) = outer(GenericField(f),s)
+cross(s::ShiftedNabla,f::Function) = cross(s,GenericField(f))
+
+function Base.broadcasted(::typeof(*),s::ShiftedNabla,f)
+  g = s(f)
+  Operation(_extract_grad_diag)(g)
 end
 
-function laplacian(f::Function)
-  function lapl_f(x)
-    _lapl_f(f,x,zero(return_type(f,typeof(x))))
-  end
+function Base.broadcasted(::typeof(*),s::ShiftedNabla,f::Function)
+  Base.broadcasted(*,s,GenericField(f))
 end
-
-function _lapl_f(f,x,fx)
-  tr(ForwardDiff.jacobian(y->ForwardDiff.gradient(f,y), get_array(x)))
-end
-
-function _lapl_f(f,x,fx::VectorValue)
-  A = length(x)
-  B = length(fx)
-  a = ForwardDiff.jacobian(y->transpose(ForwardDiff.jacobian(z->get_array(f(z)),y)), get_array(x))
-  tr(ThirdOrderTensorValue{A,A,B}(Tuple(transpose(a))))
-end
-
-function _lapl_f(f,x,fx::MultiValue)
-  @notimplemented
-end
-
-function symmetric_gradient(f::Function)
-    x -> symmetric_part(_grad_f(f,x,zero(return_type(f,typeof(x)))))
-end
-

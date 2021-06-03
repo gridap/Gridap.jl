@@ -4,7 +4,7 @@
 
 Abstract type representing a polytope (i.e., a polyhedron in arbitrary dimensions).
 `D` is the environment dimension (typically, 0, 1, 2, or 3).
-This type parameter is needed since there are functions in the 
+This type parameter is needed since there are functions in the
 `Polytope` interface that return containers with `Point{D}` objects.
 We adopt the [usual nomenclature](https://en.wikipedia.org/wiki/Polytope) for polytope-related objects.
 All objects in a polytope (from vertices to the polytope itself) are called *n-faces* or simply *faces*.
@@ -25,8 +25,8 @@ The `Polytope` interface is defined by overloading the following functions
 
 And optionally these ones:
 
-- [`get_edge_tangents(p::Polytope)`](@ref)
-- [`get_facet_normals(p::Polytope)`](@ref)
+- [`get_edge_tangent(p::Polytope)`](@ref)
+- [`get_facet_normal(p::Polytope)`](@ref)
 - [`get_facet_orientations(p::Polytope)`](@ref)
 - [`get_vertex_permutations(p::Polytope)`](@ref)
 - [`is_n_cube(p::Polytope)`](@ref)
@@ -53,7 +53,7 @@ to the first 0-face. Consecutive increasing ids are assigned to the other
 0-faces, then to 1-faces, and so on. The polytope itself receives the largest id
 which coincides with `num_faces(p)`. For a face id `iface`, `get_faces(p)[iface]`
 is a vector of face ids, corresponding to the faces that are *incident* with the face
-labeled with `iface`. That is, faces that are either on its boundary or the face itself. 
+labeled with `iface`. That is, faces that are either on its boundary or the face itself.
 In this vector of incident face ids, faces are ordered by dimension, starting with 0-faces.
 Within each dimension, the labels are ordered in a consistent way with the polyope object
 for the face `iface` itself.
@@ -67,14 +67,14 @@ faces = get_faces(SEGMENT)
 println(faces)
 
 # output
-Array{Int64,1}[[1], [2], [1, 2, 3]]
+Array{Int,1}[[1], [2], [1, 2, 3]]
 ```
 
 The constant [`SEGMENT`](@ref) is bound to a predefined instance of polytope
 that represents a segment.
-The face labels associated with a segment are `[1,2,3]`, being `1` and `2` for the vertices and 
+The face labels associated with a segment are `[1,2,3]`, being `1` and `2` for the vertices and
 `3` for the segment itself. In this case, this function returns the vector of vectors
-`[[1],[2],[1,2,3]]` meaning that vertex `1` is incident with vertex `1` (idem for vertex 2), and that 
+`[[1],[2],[1,2,3]]` meaning that vertex `1` is incident with vertex `1` (idem for vertex 2), and that
 the segment (id `3`) is incident with the vertices `1` and `2` and the segment itself.
 
 """
@@ -97,7 +97,7 @@ ranges = get_dimranges(SEGMENT)
 println(ranges)
 
 # output
-UnitRange{Int64}[1:2, 3:3]
+UnitRange{Int}[1:2, 3:3]
 ```
 Face ids for the vertices in the segment range from 1 to 2 (2 vertices),
 the face ids for edges in the segment range from 3 to 3 (only one edge with id 3).
@@ -142,7 +142,7 @@ end
 """
     (==)(a::Polytope{D},b::Polytope{D}) where D
 
-Returns `true` if the polytopes `a` and `b` are equivalent. Otherwise, it 
+Returns `true` if the polytopes `a` and `b` are equivalent. Otherwise, it
 returns `false`.
 Note that the operator `==` returns `false` by default for polytopes
 of different dimensions. Thus, this function has to be overloaded only
@@ -159,22 +159,22 @@ end
 # Optional
 
 """
-    get_edge_tangents(p::Polytope) -> Vector{VectorValue{D,Float64}}
+    get_edge_tangent(p::Polytope) -> Vector{VectorValue{D,Float64}}
 
 Given a polytope `p`, returns a vector of `VectorValue` objects
 representing the unit tangent vectors to the polytope edges.
 """
-function get_edge_tangents(p::Polytope)
+function get_edge_tangent(p::Polytope)
   @abstractmethod
 end
 
 """
-    get_facet_normals(p::Polytope) -> Vector{VectorValue{D,Float64}}
+    get_facet_normal(p::Polytope) -> Vector{VectorValue{D,Float64}}
 
 Given a polytope `p`, returns a vector of `VectorValue` objects
 representing the unit outward normal vectors to the polytope facets.
 """
-function get_facet_normals(p::Polytope)
+function get_facet_normal(p::Polytope)
   @abstractmethod
 end
 
@@ -207,7 +207,7 @@ perms = get_vertex_permutations(SEGMENT)
 println(perms)
 
 # output
-Array{Int64,1}[[1, 2], [2, 1]]
+Array{Int,1}[[1, 2], [2, 1]]
 
 ```
 The first admissible permutation for a segment is `[1,2]`,i.e., the identity.
@@ -252,7 +252,7 @@ num_point_dims(::Type{<:Polytope{D}}) where D = D
     num_dims(::Type{<:Polytope{D}}) where D
     num_dims(p::Polytope{D}) where D
 
-Returns `D`. 
+Returns `D`.
 """
 num_dims(p::Polytope) = num_dims(typeof(p))
 
@@ -351,7 +351,7 @@ println(dims)
 
 ```
 
-The first two faces in the segment (the two vertices) have dimension 0 and the 
+The first two faces in the segment (the two vertices) have dimension 0 and the
 third face (the segment itself) has dimension 1
 
 """
@@ -444,8 +444,8 @@ vertex_to_edges_around = get_faces(QUAD,0,1)
 println(vertex_to_edges_around)
 
 # output
-Array{Int64,1}[[1, 2], [3, 4], [1, 3], [2, 4]]
-Array{Int64,1}[[1, 3], [1, 4], [2, 3], [2, 4]]
+Array{Int,1}[[1, 2], [3, 4], [1, 3], [2, 4]]
+Array{Int,1}[[1, 3], [1, 4], [2, 3], [2, 4]]
 ```
 """
 function get_faces(p::Polytope,dimfrom::Integer,dimto::Integer)
@@ -557,7 +557,7 @@ end
     get_face_type(p::Polytope,d::Integer) -> Vector{Int}
 
 Return a vector of integers denoting, for each face of dimension `d`, an index to the
-vector `get_reffaces(Polytope{d},p)` 
+vector `get_reffaces(Polytope{d},p)`
 
 # Examples
 
@@ -670,7 +670,8 @@ end
 function get_face_coordinates(p::Polytope,d::Integer)
   vert_to_coord = get_vertex_coordinates(p)
   face_to_vertices = get_faces(p,d,0)
-  collect(LocalToGlobalArray(face_to_vertices,vert_to_coord))
+  collect(lazy_map(Broadcasting(Reindex(vert_to_coord)),face_to_vertices))
+  # collect(LocalToGlobalArray(face_to_vertices,vert_to_coord))
 end
 
 # Testers
@@ -712,34 +713,17 @@ function test_polytope(p::Polytope{D};optional::Bool=false) where D
   @test isa(x,Vector{Point{D,Float64}})
   @test length(x) == num_faces(p,0)
   if optional
-    fn = get_facet_normals(p)
+    fn = get_facet_normal(p)
     @test isa(fn,Vector{VectorValue{D,Float64}})
     @test length(fn) == num_facets(p)
     or = get_facet_orientations(p)
     @test isa(or,Vector{Int})
     @test length(or) == num_facets(p)
-    et = get_edge_tangents(p)
+    et = get_edge_tangent(p)
     @test isa(et,Vector{VectorValue{D,Float64}})
     @test length(et) == num_edges(p)
     @test isa(is_simplex(p),Bool)
     @test isa(is_n_cube(p),Bool)
   end
 end
-
-"""
-    Quadrature(polytope::Polytope{D},degree) where D
-"""
-function Quadrature(p::Polytope{D},degree) where D
-  if is_n_cube(p)
-    q = TensorProductQuadrature{D}(degree)
-    quad = GenericQuadrature(q.coordinates,q.weights)
-  elseif is_simplex(p)
-    q = DuffyQuadrature{D}(degree)
-    quad = GenericQuadrature(q.coordinates,q.weights)
-  else
-    @notimplemented "Quadratures only implemented for n-cubes and simplices"
-  end
-  quad
-end
-
 

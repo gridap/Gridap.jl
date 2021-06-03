@@ -4,7 +4,7 @@
      struct Table{T,Vd<:AbstractVector{T},Vp<:AbstractVector} <: AbstractVector{Vector{T}}
         data::Vd
         ptrs::Vp
-     end   
+     end
 
 Type representing a list of lists (i.e., a table) in
 compressed format.
@@ -14,7 +14,7 @@ struct Table{T,Vd<:AbstractVector{T},Vp<:AbstractVector} <: AbstractVector{Vecto
   ptrs::Vp
   function Table(data::AbstractVector,ptrs::AbstractVector)
     new{eltype(data),typeof(data),typeof(ptrs)}(data,ptrs)
-  end   
+  end
 end
 
 """
@@ -108,31 +108,26 @@ function Base.getindex(a::Table,i::UnitRange)
   Table(data,ptrs)
 end
 
+function Base.getindex(a::Table,ids::AbstractVector{<:Integer})
+  ptrs = similar(a.ptrs,eltype(a.ptrs),length(ids)+1)
+  for (i,id) in enumerate(ids)
+    ptrs[i+1] = a.ptrs[id+1]-a.ptrs[id]
+  end
+  length_to_ptrs!(ptrs)
+  ndata = ptrs[end]-1
+  data = similar(a.data,eltype(a.data),ndata)
+  for (i,id) in enumerate(ids)
+    n = a.ptrs[id+1]-a.ptrs[id]
+    p1 = ptrs[i]-1
+    p2 = a.ptrs[id]-1
+    for j in 1:n
+      data[p1+j] = a.data[p2+j]
+    end
+  end
+  Table(data,ptrs)
+end
+
 # Helper functions related with Tables
-
-"""
-    rewind_ptrs!(ptrs)
-
-Rewind the given vector of pointers.
-"""
-function rewind_ptrs!(ptrs::AbstractVector{<:Integer})
-  @inbounds for i in (length(ptrs)-1):-1:1
-    ptrs[i+1] = ptrs[i]
-  end
-  ptrs[1] = 1
-end
-
-"""
-    length_to_ptrs!(ptrs)
-
-Given a vector of integers, mutate it from length state to pointer state.
-"""
-function length_to_ptrs!(ptrs::AbstractArray{<:Integer})
-  ptrs[1] = 1
-  @inbounds for i in 1:(length(ptrs)-1)
-    ptrs[i+1] += ptrs[i]
-  end
-end
 
 """
     data, ptrs = generate_data_and_ptrs(vv)
@@ -333,35 +328,26 @@ Equivalent to
 """
 collect1d(a) = [a[i] for i in 1:length(a)]
 
-"""
-    get_local_item(a_to_lb_to_b, lb::Integer)
-"""
-function get_local_item(a_to_lb_to_b, lb::Integer)
-  @notimplemented "get_local_item, only implemented for Table"
+function lazy_map(::typeof(getindex),a::Table,b::AbstractArray{<:Integer})
+  LocalItemFromTable(a,b)
 end
 
-function get_local_item(a_to_lb_to_b::Table, lb::Integer)
-  a_to_b = LocalItemFromTable(a_to_lb_to_b,Fill(lb,length(a_to_lb_to_b)))
-  a_to_b
-end
-
-function get_local_item(a_to_lb_to_b::Table, lb::AbstractArray{<:Integer})
-  a_to_b = LocalItemFromTable(a_to_lb_to_b,lb)
-  a_to_b
+function get_local_item(a::Table,li::Integer)
+  LocalItemFromTable(a,Fill(li,length(a)))
 end
 
 struct LocalItemFromTable{T,Vd,Vp,A} <: AbstractVector{T}
   a_to_lb_to_b::Table{T,Vd,Vp}
-  lb::A
+  a_to_lb::A
 end
 
 Base.size(m::LocalItemFromTable) = size(m.a_to_lb_to_b)
 
-Base.IndexStyle(::Type{<:LocalItemFromTable}) = IndexStyle(Table)
+Base.IndexStyle(::Type{<:LocalItemFromTable}) = IndexLinear()
 
 @propagate_inbounds function Base.getindex(m::LocalItemFromTable, a::Integer)
   p = m.a_to_lb_to_b.ptrs[a]-1
-  m.a_to_lb_to_b.data[p+m.lb[a]]
+  m.a_to_lb_to_b.data[p+m.a_to_lb[a]]
 end
 
 """

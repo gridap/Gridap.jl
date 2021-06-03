@@ -10,8 +10,6 @@ using Test
 
 @time @testset "PLaplacian" begin include("PLaplacianTests.jl") end
 
-@time @testset "PLaplacianWithAutodiff" begin include("PLaplacianWithAutodiffTests.jl") end
-
 @time @testset "StokesTaylorHood" begin include("StokesTaylorHoodTests.jl") end
 
 @time @testset "StokesDG" begin include("StokesDGTests.jl") end
@@ -26,6 +24,8 @@ using Test
 
 @time @testset "IsotropicDamage" begin include("IsotropicDamageTests.jl") end
 
-@time @testset "PhysicalPoisson" begin include("PhysicalPoissonTests.jl") end
+@time @testset "Biharmonic" begin include("BiharmonicTests.jl") end
+
+@time @testset "PoissonLagrangeMultiplier" begin include("PoissonLagrangeMultiplierTests.jl") end
 
 end # module

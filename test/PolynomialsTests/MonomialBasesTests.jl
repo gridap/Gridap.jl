@@ -26,7 +26,8 @@ h = H[(0.0, 0.0, 0.0, 0.0),]
 bx = repeat(permutedims(v),np)
 ∇bx = repeat(permutedims(g),np)
 Hbx = repeat(permutedims(h),np)
-test_field(b,x,bx,grad=∇bx,hessian=Hbx)
+test_field_array(b,x,bx,grad=∇bx,gradgrad=Hbx)
+test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
 
 # Real-valued Q space with isotropic order
 
@@ -43,7 +44,8 @@ h = H[(0.0, 0.0, 0.0, 0.0), (0.0, 0.0, 0.0, 0.0), (0.0, 0.0, 0.0, 0.0), (0.0, 1.
 bx = repeat(permutedims(v),np)
 ∇bx = repeat(permutedims(g),np)
 Hbx = repeat(permutedims(h),np)
-test_field(b,x,bx,grad=∇bx,hessian=Hbx)
+test_field_array(b,x,bx,grad=∇bx,gradgrad=Hbx)
+test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
 
 # Real-valued Q space with an isotropic order
 
@@ -57,7 +59,8 @@ g = G[(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (3.0, 2.0), (0.0, 6.0), (9.0, 12.0)]
 
 bx = repeat(permutedims(v),np)
 ∇bx = repeat(permutedims(g),np)
-test_field(b,x,bx,grad=∇bx)
+test_field_array(b,x,bx,grad=∇bx)
+test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:])
 
 # Vector-valued Q space with isotropic order
 
@@ -96,7 +99,8 @@ h = H[
 bx = repeat(permutedims(v),np)
 ∇bx = repeat(permutedims(g),np)
 Hbx = repeat(permutedims(h),np)
-test_field(b,x,bx,grad=∇bx,hessian=Hbx)
+test_field_array(b,x,bx,grad=∇bx,gradgrad=Hbx)
+test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:],gradgrad=Hbx[1,:])
 
 # Vector-valued Q space with an-isotropic order
 
@@ -120,7 +124,8 @@ g = G[
 
 bx = repeat(permutedims(v),np)
 ∇bx = repeat(permutedims(g),np)
-test_field(b,x,bx,grad=∇bx)
+test_field_array(b,x,bx,grad=∇bx)
+test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:])
 
 # Real-valued P space
 
@@ -135,7 +140,8 @@ g = G[[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]]
 
 bx = repeat(permutedims(v),np)
 ∇bx = repeat(permutedims(g),np)
-test_field(b,x,bx,grad=∇bx)
+test_field_array(b,x,bx,grad=∇bx)
+test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:])
 
 # Vector-valued P space
 
@@ -157,13 +163,14 @@ g = G[[0.0 0.0 0.0; 0.0 0.0 0.0], [0.0 0.0 0.0; 0.0 0.0 0.0],
 
 bx = repeat(permutedims(v),np)
 ∇bx = repeat(permutedims(g),np)
-test_field(b,x,bx,grad=∇bx)
+test_field_array(b,x,bx,grad=∇bx)
+test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:])
 
 order = 1
 b = MonomialBasis{1}(Float64,order)
 @test evaluate(b,Point{1,Float64}[(0,),(1,)]) == [1.0 0.0; 1.0 1.0]
 
 b = MonomialBasis{0}(VectorValue{2,Float64},order)
-@test evaluate(b,Point{0,Float64}[(),()]) == VectorValue{2,Float64}[(1.0, 0.0) (0.0, 1.0); (1.0, 0.0) (0.0, 1.0)] 
+@test evaluate(b,Point{0,Float64}[(),()]) == VectorValue{2,Float64}[(1.0, 0.0) (0.0, 1.0); (1.0, 0.0) (0.0, 1.0)]
 
 end # module

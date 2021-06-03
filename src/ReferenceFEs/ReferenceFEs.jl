@@ -9,26 +9,27 @@ using Test
 using DocStringExtensions
 using LinearAlgebra
 using Combinatorics
+using FillArrays
 
 using Gridap.Helpers
 using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
-using Gridap.Integration
 
-import Gridap.Arrays: kernel_cache
-import Gridap.Arrays: apply_kernel!
-import Gridap.Arrays: kernel_return_type
+using QuadGK: gauss
+using FastGaussQuadrature: gaussjacobi
+using FastGaussQuadrature: gausslegendre
+
+import Gridap.Arrays: return_cache
+import Gridap.Arrays: evaluate!
+import Gridap.Arrays: return_type
 import Gridap.Fields: evaluate
+import Gridap.Fields: lazy_map
 import Gridap.Polynomials: MonomialBasis
 
 import Gridap.Polynomials: get_order
 import Gridap.Polynomials: get_orders
-
-import Gridap.Integration: Quadrature
-import Gridap.Integration: num_dims
-import Gridap.Integration: num_point_dims
 
 import Gridap.Io: to_dict
 import Gridap.Io: from_dict
@@ -42,9 +43,9 @@ export get_faces
 export get_dimranges
 export get_dimrange
 export get_vertex_coordinates
-export get_facet_normals
+export get_facet_normal
 export get_facet_orientations
-export get_edge_tangents
+export get_edge_tangent
 export get_vertex_permutations
 export get_face_dimranges
 export get_face_coordinates
@@ -58,6 +59,8 @@ export num_vertices
 export num_faces
 export num_facets
 export num_edges
+export num_dims
+export num_point_dims
 export get_facedims
 export get_offsets
 export get_offset
@@ -66,6 +69,8 @@ export get_reffaces
 export get_face_type
 export get_bounding_box
 export get_face_vertex_permutations
+export get_order
+export get_orders
 export test_polytope
 export VERTEX
 export SEGMENT
@@ -79,24 +84,28 @@ export HEX_AXIS
 export TET_AXIS
 export INVALID_PERM
 
+export ContraVariantPiolaMap
+
 export Dof
 export get_nodes
 export get_face_moments
 export get_face_nodes_dofs
 export get_nodes
-export evaluate_dof!
+export evaluate!
 export evaluate_dof
-export dof_cache
-export dof_return_type
+export return_cache
+export return_type
 export test_dof
+export test_dof_array
 # export evaluate_dof_array
 
 export ReferenceFE
+export ReferenceFEName
 export GenericRefFE
 export get_polytope
 export get_prebasis
 export get_dof_basis
-export get_default_conformity
+export Conformity
 export get_face_own_dofs
 export get_face_own_dofs_permutations
 export get_face_dofs
@@ -105,6 +114,8 @@ export get_shapefuns
 export compute_shapefuns
 export test_reference_fe
 export num_dofs
+export expand_cell_data
+export compress_cell_data
 
 export LagrangianRefFE
 export GenericLagrangianRefFE
@@ -126,7 +137,6 @@ export compute_nodes
 export compute_own_nodes_permutations
 export compute_lagrangian_reffaces
 export is_first_order
-export is_affine
 export is_Q
 export is_P
 export is_S
@@ -157,13 +167,33 @@ export SerendipityRefFE
 export RaviartThomasRefFE
 export NedelecRefFE
 
+export Lagrangian
+export RaviartThomas
+export Nedelec
+
+export lagrangian
+export raviart_thomas
+export nedelec
+
+export Quadrature
+export QuadratureName
+export GenericQuadrature
+export num_points
+export get_coordinates
+export get_weights
+export get_name
+export num_dims
+export num_point_dims
+export test_quadrature
+export tensor_product
+export duffy
+export strang
+
 include("Polytopes.jl")
 
 include("ExtrusionPolytopes.jl")
 
 include("Dofs.jl")
-
-include("MockDofs.jl")
 
 include("LagrangianDofBases.jl")
 
@@ -179,8 +209,18 @@ include("PDiscRefFEs.jl")
 
 include("CDLagrangianRefFEs.jl")
 
+include("Quadratures.jl")
+
+include("TensorProductQuadratures.jl")
+
+include("DuffyQuadratures.jl")
+
+include("StrangQuadratures.jl")
+
 include("RaviartThomasRefFEs.jl")
 
 include("NedelecRefFEs.jl")
+
+include("MockDofs.jl")
 
 end # module

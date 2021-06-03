@@ -4,10 +4,9 @@
       # private fields
     end
 """
-struct MultiFieldFEFunction{T<:MultiFieldCellField} <: CellField
+struct MultiFieldFEFunction{T<:MultiFieldCellField} <: FEFunction
   single_fe_functions::Vector{<:SingleFieldFEFunction}
   free_values::AbstractArray
-  cell_dof_values::AbstractArray
   fe_space::MultiFieldFESpace
   multi_cell_field::T
 
@@ -19,67 +18,52 @@ struct MultiFieldFEFunction{T<:MultiFieldCellField} <: CellField
     multi_cell_field = MultiFieldCellField(map(i->i.cell_field,single_fe_functions))
     T = typeof(multi_cell_field)
 
-
-    f(i) = get_cell_axes(get_fe_space(i))
-    cell_axes = create_array_of_blocked_axes(map(f,single_fe_functions)...)
-    blocks = Tuple(map(get_cell_values,single_fe_functions))
-    blockids = [(i,) for i in 1:length(single_fe_functions)]
-    cell_dof_values = VectorOfBlockArrayCoo(blocks,blockids,cell_axes)
-
     new{T}(
       single_fe_functions,
       free_values,
-      cell_dof_values,
       space,
       multi_cell_field)
   end
 end
 
-#function MultiFieldFEFunction(
-#  space::MultiFieldFESpace,
-#  blocks::Vector{<:SingleFieldFEFunction})
-#  fv = zero_free_values(space)
-#  xh0 = MultiFieldFEFunction(fv,space,blocks)
-#end
-
-Arrays.get_array(a::MultiFieldFEFunction) = get_array(a.multi_cell_field)
-
-CellData.get_memo(a::MultiFieldFEFunction) = get_memo(a.multi_cell_field)
-
-CellData.get_cell_map(a::MultiFieldFEFunction) = get_cell_map(a.multi_cell_field)
-
-CellData.get_cell_axes(a::MultiFieldFEFunction) = get_cell_axes(a.multi_cell_field)
-
-CellData.RefStyle(::Type{<:MultiFieldFEFunction{T}}) where T = RefStyle(T)
-
-CellData.MetaSizeStyle(::Type{<:MultiFieldFEFunction{T}}) where T = MetaSizeStyle(T)
-
-FESpaces.FEFunctionStyle(::Type{<:MultiFieldFEFunction}) = Val{true}()
-
-FESpaces.get_free_values(f::MultiFieldFEFunction) = f.free_values
-
+CellData.get_data(f::MultiFieldFEFunction) = get_data(f.multi_cell_field)
+CellData.get_triangulation(f::MultiFieldFEFunction) = get_triangulation(f.multi_cell_field)
+CellData.DomainStyle(::Type{MultiFieldFEFunction{T}}) where T = DomainStyle(T)
+FESpaces.get_free_dof_values(f::MultiFieldFEFunction) = f.free_values
 FESpaces.get_fe_space(f::MultiFieldFEFunction) = f.fe_space
 
-Base.length(f::MultiFieldFEFunction) = length(f.multi_cell_field)
+function FESpaces.get_cell_dof_values(f::MultiFieldFEFunction)
+  msg = """\n
+  This method does not make sense for multi-field
+  since each field can be defined on a different triangulation.
+  Pass a triangulation in the second argument to get the DOF values
+  on top of the corresponding cells.
+  """
+  trians = map(get_triangulation,f.fe_space.spaces)
+  trian = first(trians)
+  @check all(map(t->have_compatible_domains(t,trian),trians)) msg
+  get_cell_dof_values(f,trian)
+end
+
+function FESpaces.get_cell_dof_values(f::MultiFieldFEFunction,trian::Triangulation)
+  uhs = f.single_fe_functions
+  blockmask = [ _can_be_restricted_to(get_triangulation(uh),trian) for uh in uhs ]
+  active_block_ids = findall(blockmask)
+  active_block_data = Any[ get_cell_dof_values(uhs[i],trian) for i in active_block_ids ]
+  nblocks = length(uhs)
+  lazy_map(BlockMap(nblocks,active_block_ids),active_block_data...)
+end
+
+function FESpaces.get_cell_dof_values(f::MultiFieldFEFunction,trian::SkeletonTriangulation)
+  cell_values_plus = get_cell_dof_values(f,trian.plus)
+  cell_values_minus = get_cell_dof_values(f,trian.minus)
+  lazy_map(BlockMap(2,[1,2]),cell_values_plus,cell_values_minus)
+end
 
 """
     num_fields(m::MultiFieldFEFunction)
 """
 num_fields(m::MultiFieldFEFunction) = length(m.single_fe_functions)
-
 Base.iterate(m::MultiFieldFEFunction) = iterate(m.single_fe_functions)
-
 Base.iterate(m::MultiFieldFEFunction,state) = iterate(m.single_fe_functions,state)
-
 Base.getindex(m::MultiFieldFEFunction,field_id::Integer) = m.single_fe_functions[field_id]
-
-function Geometry.restrict(a::MultiFieldFEFunction,trian::Triangulation)
-  f = (ai) -> restrict(ai,trian)
-  blocks = map(f,a.single_fe_functions)
-  blocks
-end
-
-function FESpaces.get_cell_values(f::MultiFieldFEFunction)
-  f.cell_dof_values
-end
-

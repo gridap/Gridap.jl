@@ -7,19 +7,18 @@ pages = [
   "Getting Started" => "getting-started.md",
   "Gridap" => "Gridap.md",
   "Gridap.Helpers" => "Helpers.md",
-  "Gridap.Inference" => "Inference.md",
-  "Gridap.Algebra" => "Algebra.md",
   "Gridap.Io" => "Io.md",
-  "Gridap.TensorValues" => "TensorValues.md",
+  "Gridap.Algebra" => "Algebra.md",
   "Gridap.Arrays" => "Arrays.md",
+  "Gridap.TensorValues" => "TensorValues.md",
   "Gridap.Fields" => "Fields.md",
   "Gridap.Polynomials" => "Polynomials.md",
-  "Gridap.Integration" => "Integration.md",
   "Gridap.ReferenceFEs" => "ReferenceFEs.md",
   "Gridap.Geometry" => "Geometry.md",
+  "Gridap.CellData" => "CellData.md",
+  "Gridap.Visualization" => "Visualization.md",
   "Gridap.FESpaces" => "FESpaces.md",
   "Gridap.MultiField" => "MultiField.md",
-  "Gridap.Visualization" => "Visualization.md",
  ]
 
 makedocs(

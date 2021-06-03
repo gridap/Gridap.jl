@@ -16,6 +16,14 @@ b = VectorValue(1,3,3)
 @test (a >= b) == false
 @test (a > b) == false
 
+@test VectorValue(1,2,3) == VectorValue(1.0,2.0,3.0)
+@test VectorValue(1,2,3) == VectorValue(1+0im, 2+0im, 3+0im)
+@test VectorValue(1,2,3) ≠ VectorValue(1,2)
+@test VectorValue(1,2,3) ≠ SymTensorValue(1,2,3)
+@test iszero(VectorValue(1,2,3) - VectorValue(1.0,2.0,3.0))
+@test iszero(zero(VectorValue(1,2,3)))
+@test isapprox(VectorValue(1,2,3), VectorValue(1.0,2.0,3.0))
+
 a = VectorValue(1,2,3)
 b = VectorValue(2,1,6)
 
@@ -224,6 +232,37 @@ c = a ⋅ st
 r = VectorValue(14,30,42)
 @test c == r
 
+a1 = VectorValue(1,0)
+b1 = VectorValue(1,2)
+
+t1 = ThirdOrderTensorValue{2,2,1}(1,2,3,4)
+t2 = TensorValue(1,0,0,1)
+t3 = TensorValue(1,2,0,0)
+
+c = a1 ⋅ t1
+@test isa(c,TensorValue{2,1,Int})
+r = TensorValue{2,1}(1,3)
+@test c == r
+
+c = b1 ⋅ t1
+@test isa(c,TensorValue{2,1,Int})
+r = TensorValue{2,1}(5,11)
+@test c == r
+
+c = t2 ⋅ t1
+@test isa(c,ThirdOrderTensorValue{2,2,1,Int,4})
+r = ThirdOrderTensorValue{2,2,1}(1,2,3,4)
+@test c == r
+
+c = t3 ⋅ t1
+@test isa(c,ThirdOrderTensorValue{2,2,1,Int,4})
+r = ThirdOrderTensorValue{2,2,1}(1,2,3,6)
+@test c == r
+
+x = VectorValue{0,Float64}()
+G = TensorValue{0,2,Float64,0}()
+@test x⋅G == VectorValue(0,0)
+
 # Inner product (full contraction)
 
 c = 2 ⊙ 3
@@ -355,7 +394,7 @@ v = TensorValue{2,3}(1,0,0,1,0,0)
 
 v = TensorValue{2,3}(1,0,0,1,1,0)
 @test meas(v) ≈ sqrt(2)
- 
+
 # Broadcasted operations
 
 a = VectorValue(1,2,3)
@@ -432,6 +471,9 @@ v = VectorValue(2.0,3.0)
 @test dot(u,v) ≈ inner(u,v)
 @test norm(u) ≈ sqrt(inner(u,u))
 
+a = TensorValue(1,2,3,4)
+@test norm(a) ≈ sqrt(inner(a,a))
+
 a = VectorValue(1.0,2.0)
 b = VectorValue(2.0,3.0)
 @test [a,b] ≈ [a,b]
@@ -503,7 +545,7 @@ Sym4TensorIndexing = [1111, 1121, 1131, 1122, 1132, 1133, 2111, 2121, 2131, 2122
                       3111, 3121, 3131, 3122, 3132, 3133, 2211, 2221, 2231, 2222, 2232, 2233,
                       2311, 2321, 2331, 2322, 2332, 2333, 3311, 3321, 3331, 3322, 3332, 3333]
 test1 = test2 = SymFourthOrderTensorValue(1:36...)
-result = Int64[]
+result = Int[]
 for off_index in Sym4TensorIndexing
   i = parse(Int,string(off_index)[1]); j = parse(Int,string(off_index)[2]);
   m = parse(Int,string(off_index)[3]); p = parse(Int,string(off_index)[4]);
@@ -638,5 +680,28 @@ t2 = TensorValue(v2)
 @test (t1 ⋅ t2)[1,3] == sum(v1[1,j] .* v2[j,3] for j in 1:3)
 @test (t1 ⋅ t2)[2,3] == sum(v1[2,j] .* v2[j,3] for j in 1:3)
 @test (t1 ⋅ t2)[3,3] == sum(v1[3,j] .* v2[j,3] for j in 1:3)
+
+# Complex
+
+a = 1.0 + 3.0*im
+b = 4.0 - 3.0*im
+@test outer(a,b) == a*b
+@test inner(a,b) == a*b
+
+# Broadcast
+a = VectorValue(1,2,3)
+b = VectorValue(1.,2.,3.)
+c = a .* b
+@test isa(c,VectorValue)
+@test c.data == map(*,a.data,b.data)
+
+a = TensorValue(1,2,3,4)
+b = TensorValue(1.,2.,3.,4.)
+c = a .* b
+@test isa(c,TensorValue)
+@test c.data == map(*,a.data,b.data)
+
+@test diag(a) == VectorValue(1,4)
+
 
 end # module OperationsTests

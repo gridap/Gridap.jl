@@ -4,14 +4,90 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.16.0] - Unreleased
+
+### Added
+- User API to select specific quadrature rules. Since PR [#578](https://github.com/gridap/Gridap.jl/pull/578).
+- Experimental support for mixed dimensional PDEs. Since PR [#567](https://github.com/gridap/Gridap.jl/pull/567).
+- Added `get_cell_dof_basis(model,cell_reffes,::Conformity)` and `get_cell_shapefuns(model,cell_reffes,::Conformity)`. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
+- Implemented `get_cell_dof_basis` and `get_cell_shapefuns` for global RT FE spaces in a new file `DivConformingFESpaces.jl`. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
+- Added support to allow evaluation of FE functions at arbitrary points. Since PR [#523](https://github.com/gridap/Gridap.jl/pull/523).
+- Implemented `compute_cell_points_from_vector_of_points` to build `CellPoint` from a vector of points. Since PR [#523](https://github.com/gridap/Gridap.jl/pull/523).
+
+### Changed
+- Major refactoring in the handling of blocks (e.g. in multi-field and skeleton terms). The new code follows a much more simple approach based in the new type `ArrayBlock`. Since PR [#583](https://github.com/gridap/Gridap.jl/pull/583).
+- The default quadrature rule for tets has changed. Since PR [#578](https://github.com/gridap/Gridap.jl/pull/578).
+- Refactoring in `SparseMatrixAssembler` to make it more extensible and efficient. Since PR [#568](https://github.com/gridap/Gridap.jl/pull/568).
+- Renamed `get_free_values` -> `get_free_dof_values`. Since PR [#567](https://github.com/gridap/Gridap.jl/pull/567).
+- Renamed `get_dirichlet_values` -> `get_dirichlet_dof_values`. Since PR [#606](https://github.com/gridap/Gridap.jl/pull/606).
+- Renamed `object` -> `value` the variable in `ConstantField`. Since PR [#606](https://github.com/gridap/Gridap.jl/pull/606).
+- Miscellaneous changes in the FE assembly to allow the solution of mixed dimensional problems. Since PR [#567](https://github.com/gridap/Gridap.jl/pull/567).
+- Renamed `get_cell_shapefuns` by `get_fe_basis`. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
+- Renamed `get_cell_shapefuns_trial` by `get_trial_fe_basis`. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
+- Renamed `get_cell_dof_basis` by `get_fe_dof_basis`. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
+- Removed `conformity` optional keyword argument from `FESpace(::DiscreteModel,::CellFE; kwargs...)` constructor. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
+- Replaced `CellFE(::AbstractArray{<:Field},::AbstractArray{<:ReferenceFE})` by `CellFE(::DiscreteModel,::AbstractArray{<:ReferenceFE},::Conformity)`. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
+
+### Removed
+- All code associated with with `BlockArrayCoo`. Since PR [#583](https://github.com/gridap/Gridap.jl/pull/583).
+- Module `Gridap.Integration` has been deleted and its contents have been merged into `Gridap.ReferenceFEs` module.
+- Types `SparseMatrixCSR` and `SymSparseMatrixCSR` have been moved to the registered package [`SparseMatricesCSR`](https://github.com/gridap/SparseMatricesCSR.jl). To use them simply add `SparseMatricesCSR` into your environment and type `using SparseMatricesCSR`. Since  Since PR [#568](https://github.com/gridap/Gridap.jl/pull/568).
+- Removed `PushForwardMap` and all code depending upon it. Since PR [#579](https://github.com/gridap/Gridap.jl/pull/579).
+
+## [0.15.5] - 2021-05-25
+
+### Added
+- Differential operators `(∇+k)(u)`, `(∇+k)⋅u`, `(∇+k)×u`, `(∇+k)⊗u`, and `u⊗(∇+k)` for some `u::CellField` and `k::VectorValue`. Since PR [#597](https://github.com/gridap/Gridap.jl/pull/597).
+- Definition of `u.*v` between instances of vector-valued `CellField` objects `u` and `v`. Also differential operators `∇.*u`  and `(∇+k).*u`. Since PR [#597](https://github.com/gridap/Gridap.jl/pull/597).
+
+## [0.15.4] - 2021-03-29
+
+### Fixed
+- Bug in `CartesianDiscreteModel` with periodic boundary conditions that shows up in Julia 1.6 but not in Julia 1.5. Since commit [da005cf](https://github.com/gridap/Gridap.jl/commit/da005cf4cde68617f92d76744e307798ef7e8340).
+
+## [0.15.3] - 2021-03-16
+
+### Added
+- `get_cell_map` now returns array of `AffineMap` for linear grids of simplices. Needed to compute Laplacian operator, inverse maps etc. Since PR [#553](https://github.com/gridap/Gridap.jl/pull/553).
+
+### Fixed
+- Bug in `print_op_tree`. Since PR [#563](https://github.com/gridap/Gridap.jl/pull/563)
+
+## [0.15.2] - 2021-03-08
+
+### Added
+- Method `inverse_map` for `AffineMap`. Since PR [#552](https://github.com/gridap/Gridap.jl/pull/552).
+- Method `get_cell_points` for `CellDof`. Since PR [#551](https://github.com/gridap/Gridap.jl/pull/551).
+- Evaluation of `MonomialBasis` objects at a single point. Since PR [#550](https://github.com/gridap/Gridap.jl/pull/550).
+- `rand` function for `MultiValue` objects. Since PR [#530](https://github.com/gridap/Gridap.jl/pull/530).
+
+### Fixed
+- Bug in `return_value` for `Broadcasting(∇∇)`. Since PR [#554](https://github.com/gridap/Gridap.jl/pull/554).
+- Bug in `dot` for third order tensors. Since PR [#544](https://github.com/gridap/Gridap.jl/pull/544).
+
+## [0.15.1] - 2021-01-22
+
+### Added
+- Added support for Hessian and Laplacian operators. Only implemented for Finite Elements with an `AffineMap`. Since  PR [#514](https://github.com/gridap/Gridap.jl/pull/514).
+
+### Fixed
+- Bug in `RestrictedDiscreteModel` for periodic boundary conditions. Since  PR [#517](https://github.com/gridap/Gridap.jl/pull/517).
+- Bug in `sum(a::LazyArray)` when  `eltype(a) <: AbstractArray`. Since PR [#513](https://github.com/gridap/Gridap.jl/pull/513).
+
+## [0.15.0] - 2020-12-14
+
+This version is a major (backwards-incompatible) refactoring of the project which is not summarized here for the sake of brevity. Most of the functionality of v0.14.0 is available in v0.15.0, but possibly with a significantly different API. See [here](https://github.com/gridap/Tutorials/compare/v0.14.0...v0.15.0) the changes in the sources of the Gridap Tutorials between versions 0.14.0 and 0.15.0 to effectively see the major changes in the API.
+
+## [0.14.2] - 2020-11-24
 
 ### Added
 - Added additional tensor operations and new double contraction notation `⋅²`. Implemented a `zero` constructor for `ThirdOrderTensorValues` to allow integration of 3-tensors. Since PR [#415](https://github.com/gridap/Gridap.jl/pull/415/).
-- Added `compile/create_gridap_image.jl` Julia script that lets one to create a custom sysimage of Gridap using the so-called `PackageCompiler.jl` Julia package; see `compile/README.md` for additional details. Since PR [#432](https://github.com/gridap/Gridap.jl/pull/432/).
 
+### Fixed
+ - Bug-fix for 32-bit Julia: Replace all occurences of Int64 by Int. Since PR [#445](https://github.com/gridap/Gridap.jl/pull/445).
+ - Bug-fix for 32-bit Julia. Using inttype=Int keyword argument for JSON parsing. Since PR [#456](https://github.com/gridap/Gridap.jl/pull/456).
 
-## [0.14.1] - 2020-09-17 
+## [0.14.1] - 2020-09-17
 
 ### Added
  - Added VectorWithEntryInserted and VectorWithEntryRemoved. Since PR [#401](https://github.com/gridap/Gridap.jl/pull/401/).
@@ -30,7 +106,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - First and second argument switch in `update_state_variables!` in order to have function-first style. Since PR [#376](https://github.com/gridap/Gridap.jl/pull/376/).
  - Table struct has been generalized such that data and ptrs arrays can be of an arbitrary type extending AbstractArray. Since PR [#310](https://github.com/gridap/Gridap.jl/pull/310/)
  - `interpolate, interpolate!, interpolate_dirichlet...` switched argument order to function first style. For instance `interpolate(u, V)` instead of `interpolate(V, u)`
- 
+
 ### Added
  - Allowing the construction of an `HomogeneousTrialFESpace` from a `TrialFESpace`. Since PR [#384](https://github.com/gridap/Gridap.jl/pull/384).
  - Support for automatic differentiation of residuals and Jacobians in multi-field computations since PR [#383](https://github.com/gridap/Gridap.jl/pull/383/).
@@ -41,7 +117,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.13.4] - 2020-08-23
 
-### Added 
+### Added
   - New `FilteredCellArray` since PR [#372](https://github.com/gridap/Gridap.jl/pull/372/).
 
 ## [0.13.3] - 2020-08-12

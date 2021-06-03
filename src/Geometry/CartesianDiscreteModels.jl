@@ -6,7 +6,7 @@
 """
 struct CartesianDiscreteModel{D,T,F} <: DiscreteModel{D,D}
   grid::CartesianGrid{D,T,F}
-  grid_topology::UnstructuredGridTopology{D,D,T,true}
+  grid_topology::UnstructuredGridTopology{D,D,T,Oriented}
   face_labeling::FaceLabeling
   @doc """
       CartesianDiscreteModel(desc::CartesianDescriptor)
@@ -88,7 +88,7 @@ get_face_labeling(model::CartesianDiscreteModel) = model.face_labeling
 # These needed to be type stable
 
 function get_face_nodes(model::CartesianDiscreteModel,d::Integer)
-  face_nodes::Table{Int,Vector{Int},Vector{Int32}} = compute_face_nodes(model,d)
+  face_nodes::Table{Int32,Vector{Int32},Vector{Int32}} = compute_face_nodes(model,d)
   face_nodes
 end
 
@@ -400,4 +400,75 @@ function _find_ncube_face_neighbor_delta(p::ExtrusionPolytope{D}, face_lid) wher
     end
   end
   return CartesianIndex(Tuple(result))
+end
+
+# Cartesian grid topology with periodic BC
+
+function _cartesian_grid_topology_with_periodic_bcs(grid::UnstructuredGrid,
+  isperiodic::NTuple,
+  partition)
+
+  cell_to_vertices, vertex_to_node, =
+    _generate_cell_to_vertices_from_grid(grid, isperiodic, partition)
+  _generate_grid_topology_from_grid(grid,cell_to_vertices,vertex_to_node)
+end
+
+function _generate_cell_to_vertices_from_grid(grid::UnstructuredGrid,
+  isperiodic::NTuple, partition)
+
+  if is_first_order(grid)
+    nodes = get_cell_node_ids(grid)
+    nnodes = num_nodes(grid)
+    num_nodes_x_dir = [partition[i]+1 for i in 1:length(partition)]
+    point_to_isperiodic, slave_point_to_point, slave_point_to_master_point =
+      _generate_slave_to_master_point(num_nodes_x_dir,isperiodic, nnodes)
+
+    vertex_to_point = findall( .! point_to_isperiodic)
+    point_to_vertex = fill(-1,length(point_to_isperiodic))
+    point_to_vertex[vertex_to_point] = 1:length(vertex_to_point)
+    point_to_vertex[slave_point_to_point] = point_to_vertex[slave_point_to_master_point]
+
+    cell_to_vertices = Table(lazy_map(Broadcasting(Reindex(point_to_vertex)),nodes))
+
+    vertex_to_node = vertex_to_point
+    node_to_vertex = point_to_vertex
+  else
+    @notimplemented
+  end
+  (cell_to_vertices,vertex_to_node, node_to_vertex)
+end
+
+function _generate_slave_to_master_point(num_nodes_x_dir::Vector{Int},
+  isperiodic::NTuple, num_nodes::Int)
+
+  periodic_dirs = findall(x->x==true, isperiodic)
+  linear_indices = LinearIndices(Tuple(num_nodes_x_dir))
+  cartesian_indices = CartesianIndices(Tuple(num_nodes_x_dir))
+
+  point_to_isperiodic = fill(false,num_nodes)
+  for point in 1:length(point_to_isperiodic)
+    ci = Tuple(cartesian_indices[point])
+    for dir in periodic_dirs
+      if ci[dir] == num_nodes_x_dir[dir]
+        point_to_isperiodic[point] = true
+      end
+    end
+  end
+
+  slave_point_to_point = findall(point_to_isperiodic)
+  slave_point_to_master_point = Array{Int32,1}(undef,length(slave_point_to_point))
+
+  ijk = zeros(Int,length(isperiodic))
+  for (i,point) in enumerate(slave_point_to_point)
+    ijk .= Tuple(cartesian_indices[point])
+    for i in periodic_dirs
+      if ijk[i] == num_nodes_x_dir[i]
+        ijk[i] = 1
+      end
+    end
+    master_point_ijk = CartesianIndex(Tuple(ijk))
+    slave_point_to_master_point[i] = linear_indices[master_point_ijk]
+  end
+
+  point_to_isperiodic, slave_point_to_point, slave_point_to_master_point
 end

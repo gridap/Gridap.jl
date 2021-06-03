@@ -20,16 +20,18 @@ end
 
 oldcell_to_coods = get_cell_coordinates(oldgrid)
 
-cell_to_oldcell = findall(collect1d(apply(is_in,oldcell_to_coods)))
+oldcell_to_mask = lazy_map(is_in,oldcell_to_coods)
 
-grid = GridPortion(oldgrid,cell_to_oldcell)
+grid = GridPortion(oldgrid,oldcell_to_mask)
 test_grid(grid)
 
 topo = GridTopology(grid)
+test_grid_topology(topo)
 
 labels = FaceLabeling(topo)
 
 model = DiscreteModel(grid,topo,labels)
+test_discrete_model(model)
 
 #using Gridap.Visualization
 

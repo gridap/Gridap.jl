@@ -8,7 +8,7 @@ Type representing a symmetric second-order tensor
 struct SymTensorValue{D,T,L} <: MultiValue{Tuple{D,D},T,2,L}
     data::NTuple{L,T}
     function SymTensorValue{D,T}(data::NTuple{L,T}) where {D,T,L}
-        @assert L == D*(D+1)/2
+        @assert L == D*(D+1)÷2
         new{D,T,L}(data)
     end
 end
@@ -105,7 +105,7 @@ convert(::Type{<:SymTensorValue{D,T}}, arg::SymTensorValue{D,T}) where {D,T} = a
 ###############################################################
 
 @generated function zero(::Type{<:SymTensorValue{D,T}}) where {D,T}
-  L=Int(D*(D+1)/2)
+  L=D*(D+1)÷2
   quote
     SymTensorValue{D,T}(tfill(zero(T),Val{$L}()))
   end
@@ -120,8 +120,19 @@ zero(::SymTensorValue{D,T,L}) where {D,T,L} = zero(SymTensorValue{D,T,L})
 end
 one(::SymTensorValue{D,T}) where {D,T} = one(SymTensorValue{D,T})
 
-mutable(::Type{<:SymTensorValue{D,T}}) where {D,T} = MMatrix{D,D,T}
-mutable(::SymTensorValue{D,T}) where {D,T} = mutable(SymTensorValue{D,T})
+@generated function rand(rng::AbstractRNG,
+                         ::Random.SamplerType{<:SymTensorValue{D,T}}) where {D,T}
+  L=D*(D+1)÷2
+  quote
+    rand(rng, SymTensorValue{D,T,$L})
+  end
+end
+rand(rng::AbstractRNG,::Random.SamplerType{<:SymTensorValue{D,T,L}}) where {D,T,L} =
+  SymTensorValue{D,T}(Tuple(rand(rng, SVector{L,T})))
+
+Mutable(::Type{<:SymTensorValue{D,T}}) where {D,T} = MMatrix{D,D,T}
+Mutable(::SymTensorValue{D,T}) where {D,T} = Mutable(SymTensorValue{D,T})
+mutable(a::SymTensorValue{D}) where D = MMatrix{D,D}(Tuple(get_array(a)))
 
 change_eltype(::Type{SymTensorValue{D,T1,L}},::Type{T2}) where {D,T1,T2,L} = SymTensorValue{D,T2,L}
 change_eltype(::SymTensorValue{D,T1,L},::Type{T2}) where {D,T1,T2,L} = change_eltype(SymTensorValue{D,T1,L},T2)

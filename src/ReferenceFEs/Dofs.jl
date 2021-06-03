@@ -1,162 +1,109 @@
+abstract type Dof <: Map end
 
-"""
-    abstract type Dof <: Kernel
+# """
+#     abstract type Dof <: Map
 
-Abstract type representing a degree of freedom (DOF), a basis of DOFs, and related objects.
-These different cases are distinguished by the return type obtained when evaluating the `Dof`
-object on a `Field` object. See function [`evaluate_dof!`](@ref) for more details.
+# Abstract type representing a degree of freedom (DOF), a basis of DOFs, and related objects.
+# These different cases are distinguished by the return type obtained when evaluating the `Dof`
+# object on a `Field` object. See function [`evaluate_dof!`](@ref) for more details.
 
-The following functions needs to be overloaded
+# The following functions needs to be overloaded
 
-- [`dof_cache`](@ref)
-- [`evaluate_dof!`](@ref)
+# - [`dof_cache`](@ref)
+# - [`evaluate_dof!`](@ref)
 
-The following functions can be overloaded optionally
+# The following functions can be overloaded optionally
 
-- [`dof_return_type`](@ref)
+# - [`dof_return_type`](@ref)
 
-The interface is tested with
+# The interface is tested with
 
-- [`test_dof`](@ref)
+# - [`test_dof`](@ref)
 
-In most of the cases it is not strictly needed that types that implement this interface
-inherit from `Dof`. However, we recommend to inherit from `Dof`, when possible.
+# In most of the cases it is not strictly needed that types that implement this interface
+# inherit from `Dof`. However, we recommend to inherit from `Dof`, when possible.
 
 
-"""
-abstract type Dof <: Kernel end
+# """
+# abstract type Dof <: Map end
 
-"""
-    dof_cache(dof,field)
+# """
+#     return_cache(dof,field)
 
-Returns the cache needed to call `evaluate_dof!(cache,dof,field)`
-"""
-function dof_cache(dof,field)
-  @abstractmethod
-end
+# Returns the cache needed to call `evaluate_dof!(cache,dof,field)`
+# """
+# function return_cache(dof::Dof,field)
+#   @abstractmethod
+# end
 
-"""
-    evaluate_dof!(cache,dof,field)
+# """
+#     evaluate_dof!(cache,dof,field)
 
-Evaluates the dof `dof` with the field `field`. It can return either an scalar value or
-an array of scalar values depending the case. The `cache` object is computed with function
-[`dof_cache`](@ref).
+# Evaluates the dof `dof` with the field `field`. It can return either an scalar value or
+# an array of scalar values depending the case. The `cache` object is computed with function
+# [`dof_cache`](@ref).
 
-When a mathematical dof is evaluated on a physical field, a scalar number is returned. If either
-the `Dof` object is a basis of DOFs, or the `Field` object is a basis of fields,
-or both objects are bases, then the returned object is an array of scalar numbers. The first
-dimensions in the resulting array are for the `Dof` object and the last ones for the `Field`
-object. E.g, a basis of `nd` DOFs evaluated at physical field returns a vector of `nd` entries.
-A basis of `nd` DOFs evaluated at a basis of `nf` fields returns a matrix of size `(nd,nf)`.
-"""
-function evaluate_dof!(cache,dof,field)
-  @abstractmethod
-end
+# When a mathematical dof is evaluated on a physical field, a scalar number is returned. If either
+# the `Dof` object is a basis of DOFs, or the `Field` object is a basis of fields,
+# or both objects are bases, then the returned object is an array of scalar numbers. The first
+# dimensions in the resulting array are for the `Dof` object and the last ones for the `Field`
+# object. E.g, a basis of `nd` DOFs evaluated at physical field returns a vector of `nd` entries.
+# A basis of `nd` DOFs evaluated at a basis of `nf` fields returns a matrix of size `(nd,nf)`.
+# """
+# function evaluate!(cache,dof::Dof,field)
+#   @abstractmethod
+# end
 
-"""
-    dof_return_type(dof,field)
+# """
+#     dof_return_type(dof,field)
 
-Returns the type for the value obtained with evaluating `dof` with `field`.
+# Returns the type for the value obtained with evaluating `dof` with `field`.
 
-It defaults to
+# It defaults to
 
-    typeof(evaluate_dof(dof,field))
-"""
-function dof_return_type(dof,field)
-  typeof(evaluate_dof(dof,field))
-end
+#     typeof(evaluate_dof(dof,field))
+# """
+# function return_type(dof::Dof,field)
+#   typeof(evaluate(dof,field))
+# end
 
 # Testers
 
 """
-    test_dof(dof,field,v,comp::Function=(==))
+    test_dof(dof,field,v;cmp::Function=(==))
 
 Test that the `Dof` interface is properly implemented
 for object `dof`. It also checks if the object `dof`
 when evaluated at the field `field` returns the same
 value as `v`. Comparison is made with the `comp` function.
 """
-function test_dof(dof,field,v,comp::Function=(==))
+function test_dof(dof::Dof,field,v;cmp::Function=(==))
+  _test_dof(dof,field,v,cmp)
+end
+
+function test_dof_array(dof::AbstractArray{<:Dof},field,v;cmp::Function=(==))
+  _test_dof(dof,field,v,cmp)
+end
+
+function _test_dof(dof,field,v,cmp)
   if isa(dof,Dof)
-    test_kernel(dof,(field,),v,comp)
+    test_map(v,dof,field;cmp=cmp)
   end
-  r = evaluate_dof(dof,field)
-  @test comp(r,v)
-  @test typeof(r) == dof_return_type(dof,field)
+  r = evaluate(dof,field)
+  @test cmp(r,v)
+  @test typeof(r) == return_type(dof,field)
 end
 
-# Implement Kernel interface
-
-@inline kernel_cache(dof::Dof,field) = dof_cache(dof,field)
-
-@inline apply_kernel!(cache,dof::Dof,field) = evaluate_dof!(cache,dof,field)
-
-@inline kernel_return_type(dof::Dof,field) = dof_return_type(dof,field)
-
-# Some API
-
-"""
-    evaluate_dof(dof,field)
-
-Equivalent to
-
-    cache = dof_cache(dof,field)
-    evaluate_dof!(cache,dof,field)
-"""
-function evaluate_dof(dof,field)
-  cache = dof_cache(dof,field)
-  evaluate_dof!(cache,dof,field)
-end
-
-"""
-    evaluate(dof::Dof,field)
-
-Equivalent to `evaluate_dof(dof,field)`.
-"""
-evaluate(dof::Dof,field) = evaluate_dof(dof,field)
-
-# Working with arrays of Dofs
-
-"""
-    evaluate_dof_array(dof::AbstractArray,field::AbstractArray)
-
-Evaluates the `Dof` objects in the array `dof` at the `Field` objects
-at the array `field` element by element.
-
-The result is numerically equivalent to
-
-    map(evaluate_dof, dof, field)
-
-but it is described with a more memory-friendly lazy type.
-"""
-function evaluate_dof_array(dof::AbstractArray,field::AbstractArray)
-  k = DofEval()
-  apply(k,dof,field)
-end
-
-function evaluate_dof_array(dof::AbstractArray{<:Dof},field::AbstractArray)
-  apply(dof,field)
-end
-
-"""
-    evaluate(dof::AbstractArray{<:Dof},field::AbstractArray)
-
-Equivalent to `evaluate_dof_array(dof,field)`
-"""
-function evaluate(dof::AbstractArray{<:Dof},field::AbstractArray)
-  evaluate_dof_array(dof,field)
-end
-
-struct DofEval <: Kernel end
-
-function kernel_cache(k::DofEval,dof,field)
-  dof_cache(dof,field)
-end
-
-@inline function apply_kernel!(cache,k::DofEval,dof,field)
-  evaluate_dof!(cache,dof,field)
-end
-
-function kernel_return_type(k::DofEval,dof,field)
-  dof_return_type(dof,field)
-end
+#struct DofEval <: Map end
+#
+#function return_cache(k::DofEval,dof,field)
+#  return_cache(dof,field)
+#end
+#
+#@inline function evaluate!(cache,k::DofEval,dof,field)
+#  evaluate!(cache,dof,field)
+#end
+#
+#function return_type(k::DofEval,dof,field)
+#  return_type(dof,field)
+#end

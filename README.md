@@ -5,16 +5,43 @@
 |:------------ |
 | [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://gridap.github.io/Gridap.jl/stable) [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://gridap.github.io/Gridap.jl/dev) |
 |**Build Status** |
-| [![Build Status](https://travis-ci.com/gridap/Gridap.jl.svg?branch=master)](https://travis-ci.com/gridap/Gridap.jl) [![Codecov](https://codecov.io/gh/gridap/Gridap.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/gridap/Gridap.jl) |
+| [![Build Status](https://github.com/gridap/Gridap.jl/workflows/CI/badge.svg?branch=master)](https://github.com/gridap/Gridap.jl/actions?query=workflow%3ACI) [![Codecov](https://codecov.io/gh/gridap/Gridap.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/gridap/Gridap.jl) |
 | **Community** |
 | [![Join the chat at https://gitter.im/Gridap-jl/community](https://badges.gitter.im/Gridap-jl/community.svg)](https://gitter.im/Gridap-jl/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) |
 | **Citation** |
 | [![DOI](https://joss.theoj.org/papers/10.21105/joss.02520/status.svg)](https://doi.org/10.21105/joss.02520) |
 
-
+## What
 
 Gridap provides a set of tools for the grid-based approximation of partial differential equations (PDEs) written in the
-[Julia programming language](https://julialang.org/). The main motivation behind the development of this library is to provide an easy-to-use framework for the development of complex PDE solvers in a dynamically typed style without sacrificing the performance of statically typed languages. The library currently supports linear and nonlinear PDE systems for scalar and vector fields, single and multi-field problems, conforming and nonconforming finite element discretizations, on structured and unstructured meshes of simplices and hexahedra.
+[Julia programming language](https://julialang.org/). The library currently supports linear and nonlinear PDE systems for scalar and vector fields, single and multi-field problems, conforming and nonconforming finite element (FE) discretizations, on structured and unstructured meshes of simplices and n-cubes. Gridap is extensible and modular. One can implement new FE spaces, new reference elements, use external mesh generators, linear solvers, post-processing tools, etc. See, e.g., the list of available [Gridap plugins](https://github.com/gridap/Gridap.jl#plugins).
+
+Gridap has a very expressive API allowing to solve complex PDEs with very few lines of code. The user can write the underlying weak form with a syntax almost 1:1 to the mathematical notation, and Gridap generates an efficient FE assembly loop automatically by leveraging the Julia JIT compiler. For instance, the weak form for an interior penalty DG method for the Poisson equation can be specified simply as: 
+```julia
+a(u,v) =
+  ∫( ∇(v)⋅∇(u) )*dΩ +
+  ∫( (γ/h)*v*u - v*(n_Γ⋅∇(u)) - (n_Γ⋅∇(v))*u )*dΓ +
+  ∫(
+    (γ/h)*jump(v*n_Λ)⋅jump(u*n_Λ) -
+    jump(v*n_Λ)⋅mean(∇(u)) -
+    mean(∇(v))⋅jump(u*n_Λ)
+    )*dΛ
+
+l(v) =
+  ∫( v*f )*dΩ +
+  ∫( (γ/h)*v*u - (n_Γ⋅∇(v))*u )*dΓ
+```
+See the complete code [here](https://github.com/gridap/Gridap.jl/blob/master/test/GridapTests/PoissonDGTests.jl). As an example for multi-field PDEs, this is how the weak form for the Stokes equation with Neumann boundary conditions can be specified:
+```julia
+a((u,p),(v,q)) =
+  ∫( ∇(v)⊙∇(u) - (∇⋅v)*p + q*(∇⋅u) )*dΩ
+
+l((v,q)) =
+  ∫( v⋅f + q*g )*dΩ +
+  ∫( v⋅(n_Γ⋅∇u) - (n_Γ⋅v)*p )*dΓ
+```
+See the complete code [here](https://github.com/gridap/Gridap.jl/blob/master/test/GridapTests/StokesTaylorHoodTests.jl).
+
 
 ## Documentation
 

@@ -1,97 +1,88 @@
 
 function attach_constraints_rows(cellvec,cellconstr,cellmask=Fill(true,length(cellconstr)))
-  apply(ConstrainRowsKernel(),cellvec,cellconstr,cellmask)
+  lazy_map(ConstrainRowsMap(),cellvec,cellconstr,cellmask)
 end
 
 function attach_constraints_cols(cellmat,cellconstr,cellmask=Fill(true,length(cellconstr)))
-  cellconstr_t = apply(transpose,cellconstr)
-  apply(ConstrainColsKernel(),cellmat,cellconstr_t,cellmask)
+  cellconstr_t = lazy_map(transpose,cellconstr)
+  lazy_map(ConstrainColsMap(),cellmat,cellconstr_t,cellmask)
 end
 
-struct ConstrainRowsKernel <: Kernel end
+struct ConstrainRowsMap <: Map end
 
-function Arrays.kernel_cache(k::ConstrainRowsKernel,array::AbstractArray,constr,mask)
-  kernel_cache(MulKernel(),constr,array)
+function Arrays.return_cache(k::ConstrainRowsMap,array,constr,mask)
+  return_cache(*,constr,array)
 end
 
-@inline function Arrays.apply_kernel!(cache,k::ConstrainRowsKernel,array::AbstractArray,constr,mask)
+@inline function Arrays.evaluate!(cache,k::ConstrainRowsMap,array,constr,mask)
   if mask
-    apply_kernel!(cache,MulKernel(),constr,array)
+    evaluate!(cache,*,constr,array)
   else
     array
   end
 end
 
-function Arrays.kernel_cache(k::ConstrainRowsKernel,matvec::Tuple,constr,mask)
+function Arrays.return_cache(k::ConstrainRowsMap,matvec::Tuple,constr,mask)
   mat, vec = matvec
-  cmat = kernel_cache(k,mat,constr,mask)
-  cvec = kernel_cache(k,vec,constr,mask)
+  cmat = return_cache(k,mat,constr,mask)
+  cvec = return_cache(k,vec,constr,mask)
   (cmat,cvec)
 end
 
-@inline function Arrays.apply_kernel!(cache,k::ConstrainRowsKernel,matvec::Tuple,constr,mask)
+@inline function Arrays.evaluate!(cache,k::ConstrainRowsMap,matvec::Tuple,constr,mask)
   if mask
     cmat, cvec = cache
     mat, vec = matvec
-    _mat = apply_kernel!(cmat,k,mat,constr,mask)
-    _vec = apply_kernel!(cvec,k,vec,constr,mask)
+    _mat = evaluate!(cmat,k,mat,constr,mask)
+    _vec = evaluate!(cvec,k,vec,constr,mask)
     (_mat,_vec)
   else
     matvec
   end
 end
 
-struct ConstrainColsKernel <: Kernel end
+struct ConstrainColsMap <: Map end
 
-function Arrays.kernel_cache(k::ConstrainColsKernel,array::AbstractArray,constr_t,mask)
-  kernel_cache(MulKernel(),array,constr_t)
+function Arrays.return_cache(k::ConstrainColsMap,array,constr_t,mask)
+  return_cache(*,array,constr_t)
 end
 
-@inline function Arrays.apply_kernel!(cache,k::ConstrainColsKernel,array::AbstractArray,constr_t,mask)
+@inline function Arrays.evaluate!(cache,k::ConstrainColsMap,array,constr_t,mask)
   if mask
-    apply_kernel!(cache,MulKernel(),array,constr_t)
+    evaluate!(cache,*,array,constr_t)
   else
     array
   end
 end
 
-function Arrays.kernel_cache(k::ConstrainColsKernel,matvec::Tuple,constr_t,mask)
+function Arrays.return_cache(k::ConstrainColsMap,matvec::Tuple,constr_t,mask)
   mat, vec = matvec
-  kernel_cache(k,mat,constr_t,mask)
+  return_cache(k,mat,constr_t,mask)
 end
 
-@inline function Arrays.apply_kernel!(cache,k::ConstrainColsKernel,matvec::Tuple,constr_t,mask)
+@inline function Arrays.evaluate!(cache,k::ConstrainColsMap,matvec::Tuple,constr_t,mask)
   if mask
     mat, vec = matvec
-    _mat = apply_kernel!(cache,k,mat,constr_t,mask)
+    _mat = evaluate!(cache,k,mat,constr_t,mask)
     (_mat,vec)
   else
     matvec
   end
 end
 
-function merge_cell_constraints_at_skeleton(cL,cR,axesL_rows,axesR_rows,axesL_cols,axesR_cols)
-  blocks = (cL,cR)
-  blockids = [(1,1),(2,2)]
-  axs_rows = create_array_of_blocked_axes(axesL_rows,axesR_rows)
-  axs_cols = create_array_of_blocked_axes(axesL_cols,axesR_cols)
-  axs = apply((r,c) -> (r[1],c[1]),axs_rows,axs_cols)
-  VectorOfBlockArrayCoo(blocks,blockids,axs)
-end
-
 function identity_constraints(cell_axes)
-  apply(IdentityConstraintKernel(),cell_axes)
+  lazy_map(IdentityConstraintMap(),cell_axes)
 end
 
-struct IdentityConstraintKernel <: Kernel end
+struct IdentityConstraintMap <: Map end
 
-function Arrays.kernel_cache(k::IdentityConstraintKernel,axs)
+function Arrays.return_cache(k::IdentityConstraintMap,axs)
   n = length(axs[1])
   a = zeros(n,n)
   CachedArray(a)
 end
 
-function Arrays.apply_kernel!(cache,k::IdentityConstraintKernel,axs)
+function Arrays.evaluate!(cache,k::IdentityConstraintMap,axs)
   n = length(axs[1])
   setsize!(cache,(n,n))
   a = cache.array

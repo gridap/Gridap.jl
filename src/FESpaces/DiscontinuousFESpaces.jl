@@ -1,44 +1,33 @@
 
-"""
-    DiscontinuousFESpace(reffes::Vector{<:ReferenceFE}, trian::Triangulation)
-"""
-function DiscontinuousFESpace(reffes::Vector{<:ReferenceFE}, trian::Triangulation, is_ref=true)
+function _DiscontinuousFESpace(
+  vector_type::Type,
+  trian::Triangulation,
+  cell_fe::CellFE)
 
-  cell_to_ctype = get_cell_type(trian)
-  cell_map = get_cell_map(trian)
+  cell_shapefuns, cell_dof_basis = compute_cell_space(cell_fe,trian)
 
-  cell_dofs, nfree = compute_discontinuous_cell_dofs(reffes,cell_to_ctype)
+  cell_dof_ids, nfree = compute_discontinuous_cell_dofs(cell_fe.cell_ctype,cell_fe.ctype_num_dofs)
 
   ndirichlet = 0
   dirichlet_dof_tag = Int8[]
-  dirichlet_cells = Int[]
+  dirichlet_cells = Int32[]
+  cell_is_dirichlet = Fill(false,num_cells(trian))
   ntags = 0
 
-  cell_shapefuns, cell_dof_basis = compute_cell_space(reffes, cell_to_ctype, cell_map,Val(is_ref))
-
   UnconstrainedFESpace(
+    vector_type,
     nfree,
     ndirichlet,
-    cell_dofs,
+    cell_dof_ids,
     cell_shapefuns,
     cell_dof_basis,
+    cell_is_dirichlet,
     dirichlet_dof_tag,
     dirichlet_cells,
     ntags)
-
 end
 
-"""
-"""
-function compute_discontinuous_cell_dofs(reffes,cell_type)
-
-  ctype_to_nldofs = map(num_dofs,reffes)
-
-  _compute_discontinuous_cell_dofs(cell_type,ctype_to_nldofs)
-
-end
-
-function _compute_discontinuous_cell_dofs(cell_to_ctype,ctype_to_nldofs)
+function compute_discontinuous_cell_dofs(cell_to_ctype,ctype_to_nldofs)
 
   ncells = length(cell_to_ctype)
   ptrs = zeros(Int32,ncells+1)
@@ -50,7 +39,7 @@ function _compute_discontinuous_cell_dofs(cell_to_ctype,ctype_to_nldofs)
   length_to_ptrs!(ptrs)
 
   ndata = ptrs[end]-1
-  data = collect(Int,1:ndata)
+  data = collect(Int32,1:ndata)
 
   (Table(data,ptrs), ndata)
 

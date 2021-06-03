@@ -3,7 +3,7 @@ module PoissonTests
 using Test
 using Gridap
 import Gridap: ∇
-using LinearAlgebra
+#using LinearAlgebra
 
 domain = (0,1,0,1)
 partition = (4,4)
@@ -18,19 +18,17 @@ add_tag_from_tags!(labels,"dirichlet",[1,2,5])
 add_tag_from_tags!(labels,"neumann",[7,8])
 add_tag_from_tags!(labels,"nitsche",6)
 
-trian = get_triangulation(model)
+Ω = Triangulation(model)
+Γn = BoundaryTriangulation(model,labels,tags="neumann")
+Γd = BoundaryTriangulation(model,labels,tags="nitsche")
+
 degree = order
-quad = CellQuadrature(trian,degree)
+dΩ = Measure(Ω,degree)
+dΓn = Measure(Γn,degree)
+dΓd = Measure(Γd,degree)
 
-ntrian = BoundaryTriangulation(model,labels,"neumann")
-ndegree = order
-nquad = CellQuadrature(ntrian,ndegree)
-const nn = get_normal_vector(ntrian)
-
-dtrian = BoundaryTriangulation(model,labels,"nitsche")
-ddegree = order
-dquad = CellQuadrature(dtrian,ddegree)
-const dn = get_normal_vector(dtrian)
+nn = get_normal_vector(Γn)
+nd = get_normal_vector(Γd)
 
 # Using automatic differentiation
 u_scal(x) = x[1]^2 + x[2]
@@ -68,50 +66,40 @@ for data in [ vector_data, scalar_data ]
   u = data[:u]
   f = data[:f]
 
-  V = TestFESpace(
-   model=model,
-   order=order,
-   reffe=:Lagrangian,
-   labels=labels,
-   valuetype=T,
-   dirichlet_tags="dirichlet")
+  for domain_style in (ReferenceDomain(),PhysicalDomain())
 
-  U = TrialFESpace(V,u)
+    cell_fe = FiniteElements(domain_style,model,lagrangian,T,order)
+    V = TestFESpace(model,cell_fe,dirichlet_tags="dirichlet",labels=labels)
+    U = TrialFESpace(V,u)
 
-  uh = interpolate(u, U)
+    uh = interpolate(u, U)
 
-  a(u,v) = ∇(v)⊙∇(u)
-  l(v) = v⊙f
-  t_Ω = AffineFETerm(a,l,trian,quad)
+    a(u,v) =
+      ∫( ∇(v)⊙∇(u) )*dΩ +
+      ∫( (γ/h)*v⊙u  - v⊙(nd⋅∇(u)) - (nd⋅∇(v))⊙u )*dΓd
 
-  uh_Γn = restrict(uh,ntrian)
-  uh_Γd = restrict(uh,dtrian)
+    l(v) =
+      ∫( v⊙f )*dΩ +
+      ∫( v⊙(nn⋅∇(uh)) )*dΓn +
+      ∫( (γ/h)*v⊙uh - (nd⋅∇(v))⊙u )*dΓd
 
-  l_Γn(v) = v⊙(nn⋅∇(uh_Γn))
-  t_Γn = FESource(l_Γn,ntrian,nquad)
+    op = AffineFEOperator(a,l,U,V)
+    uh = solve(op)
 
-  a_Γd(u,v) = (γ/h)*v⊙u  - v⊙(dn⋅∇(u)) - (dn⋅∇(v))⊙u
-  l_Γd(v) = (γ/h)*v⊙uh_Γd - (dn⋅∇(v))⊙u
-  t_Γd = AffineFETerm(a_Γd,l_Γd,dtrian,dquad)
+    e = u - uh
 
-  op = AffineFEOperator(U,V,t_Ω,t_Γn,t_Γd)
+    l2(u) = sqrt(sum( ∫( u⊙u )*dΩ ))
+    h1(u) = sqrt(sum( ∫( u⊙u + ∇(u)⊙∇(u) )*dΩ ))
 
-  uh = solve(op)
+    el2 = l2(e)
+    eh1 = h1(e)
+    ul2 = l2(uh)
+    uh1 = h1(uh)
 
-  e = u - uh
+    @test el2/ul2 < 1.e-8
+    @test eh1/uh1 < 1.e-7
 
-  l2(u) = inner(u,u)
-  sh1(u) = a(u,u)
-  h1(u) = sh1(u) + l2(u)
-
-  el2 = sqrt(sum( integrate(l2(e),trian,quad) ))
-  eh1 = sqrt(sum( integrate(h1(e),trian,quad) ))
-  ul2 = sqrt(sum( integrate(l2(uh),trian,quad) ))
-  uh1 = sqrt(sum( integrate(h1(uh),trian,quad) ))
-
-  @test el2/ul2 < 1.e-8
-  @test eh1/uh1 < 1.e-7
-
+  end
 end
 
 end # module

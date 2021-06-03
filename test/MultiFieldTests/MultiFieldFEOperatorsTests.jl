@@ -5,12 +5,12 @@ using Gridap.Algebra
 using Gridap.Geometry
 using Gridap.FESpaces
 using Gridap.Fields
-using Gridap.Integration
 using Gridap.MultiField
 using Gridap.CellData
 using SparseArrays
 using Test
 using LinearAlgebra
+using Gridap.ReferenceFEs
 
 using Gridap.MultiField
 
@@ -20,16 +20,16 @@ domain = (0,1,0,1)
 partition = (3,3)
 model = CartesianDiscreteModel(domain,partition)
 
-trian = get_triangulation(model)
 degree = order
-quad = CellQuadrature(trian,degree)
+Ω = get_triangulation(model)
+dΩ = Measure(Ω,degree)
 
-strian = SkeletonTriangulation(model)
 sdegree = order
-squad = CellQuadrature(strian,sdegree)
+Γ = SkeletonTriangulation(model)
+dΓ = Measure(Γ,sdegree)
 
-V = TestFESpace(model=model,order=order,reffe=:Lagrangian,conformity=:H1,valuetype=Float64)
-Q = TestFESpace(model=model,order=order-1,reffe=:Lagrangian,conformity=:L2,valuetype=Float64)
+V = TestFESpace(model,ReferenceFE(lagrangian,Float64,order);conformity=:H1)
+Q = TestFESpace(model,ReferenceFE(lagrangian,Float64,order-1),conformity=:L2)
 
 U = TrialFESpace(V)
 P = TrialFESpace(Q)
@@ -37,69 +37,38 @@ P = TrialFESpace(Q)
 Y = MultiFieldFESpace([V,Q])
 X = MultiFieldFESpace([U,P])
 
-function a(x,y)
-  u,p = x
-  v,q = y
-  v*u + v*p - q*p
-end
+a((u,p),(v,q)) =
+  ∫( v*u + v*p - q*p )*dΩ +
+  ∫( jump(v)*mean(u) + jump(∇(q))⋅jump(∇(p)) )*dΓ
 
-function l(y)
-  v,q = y
-  v*4 + q
-end
+l((v,q)) = ∫( v*4 + q )*dΩ
 
-function a_Γ(x,y)
-  u,p = x
-  v,q = y
-  jump(v)*mean(u) + jump(∇(q))⋅jump(∇(p)) - mean(v)*mean(p)
-end
+op = AffineFEOperator(a,l,X,Y)
 
-t_Ω = AffineFETerm(a,l,trian,quad)
-t_Γ = LinearFETerm(a_Γ,strian,squad)
-
-op = AffineFEOperator(X,Y,t_Ω,t_Γ)
-
-op = AffineFEOperator(SparseMatrixCSR,X,Y,t_Ω,t_Γ)
-
-op = FEOperator(X,Y,t_Ω,t_Γ)
 xh = zero(X)
 b = residual(op,xh)
 A = jacobian(op,xh)
-test_fe_operator(op,get_free_values(xh),b)
+test_fe_operator(op,get_free_dof_values(xh),b)
 
-function r(x,y)
-  u,p = x
-  v,q = y
-  v*(u*u) + v*p*u - q*p - v*4 + q
-end
+r((u,p),(v,q)) = ∫( v*(u*u) + v*p*u - q*p - v*4 + q )*dΩ
+j((u,p),(du,dp),(v,q)) = ∫(2*v*u*du + v*dp*u + v*p*du - q*dp)*dΩ
 
-function j(x,dx,y)
-  u,p = x
-  du,dp = dx
-  v,q = y
-  2*v*u*du + v*dp*u + v*p*du - q*dp
-end
-
-t_Ω = FETerm(r,j,trian,quad)
-t_Ω_auto = FETerm(r,trian,quad)
-
-x = FEFunction(X,rand(num_free_dofs(X)))
-dx = get_cell_basis(X)
-y = get_cell_basis(Y)
-
-cell_r = get_cell_residual(t_Ω,x,y)
-cell_j = get_cell_jacobian(t_Ω,x,dx,y)
-
-cell_r_auto = get_cell_residual(t_Ω_auto,x,y)
-cell_j_auto = get_cell_jacobian(t_Ω_auto,x,dx,y)
-test_array(cell_r_auto,cell_r,≈)
-test_array(cell_j_auto,cell_j,≈)
-
-op = FEOperator(X,Y,t_Ω_auto)
+op = FEOperator(r,j,X,Y)
 xh = zero(X)
 b = residual(op,xh)
 A = jacobian(op,xh)
-test_fe_operator(op,get_free_values(xh),b)
+test_fe_operator(op,get_free_dof_values(xh),b)
 
+@test_broken begin
+op_auto = FEOperator(r,X,Y)
+A_auto = jacobian(op_auto,xh)
+@test A ≈ A_auto
+true
+end
+
+r_const((u,p),(v,q)) = -1.0 * (∫( v*1.0 )*dΩ)
+op_const = FEOperator(r_const,j,X,Y)
+b_const = residual(op_const,xh)
+test_fe_operator(op_const,get_free_dof_values(xh),b_const)
 
 end # module

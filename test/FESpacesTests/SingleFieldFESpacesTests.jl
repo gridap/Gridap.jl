@@ -5,6 +5,7 @@ using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.ReferenceFEs
 using Gridap.Geometry
+using Gridap.CellData
 using Gridap.FESpaces
 
 domain =(0,1,0,1,0,1)
@@ -12,18 +13,13 @@ partition = (3,3,3)
 model = CartesianDiscreteModel(domain,partition)
 
 order = 2
-grid_topology = get_grid_topology(model)
-polytopes = get_polytopes(grid_topology)
-reffes = [LagrangianRefFE(Float64,p,order) for p in polytopes]
+reffe = ReferenceFE(lagrangian,Float64,order)
+V0 = FESpace(model,reffe,dirichlet_tags=["tag_24","tag_25"])
 
-dirichlet_tags = ["tag_24","tag_25"]
-V0 = GradConformingFESpace(reffes,model,dirichlet_tags)
 matvecdata = ([],[],[])
 matdata = ([],[],[])
 vecdata = ([],[])
 test_single_field_fe_space(V0,matvecdata,matdata,vecdata)
-
-cell_map = get_cell_map(V0)
 
 f(x) = sin(4*pi*(x[1]-x[2]^2))+1
 
@@ -42,6 +38,39 @@ dirichlet_values = compute_dirichlet_values_for_tags(V0,2)
 
 free_values = zero_free_values(V0)
 uh = FEFunction(V0,free_values,dirichlet_values)
+
+# With complex dofs values
+V0 = FESpace(model,reffe,dirichlet_tags=["tag_24","tag_25"],vector_type=Vector{ComplexF64})
+@test get_vector_type(V0) == Vector{ComplexF64}
+f(x) = x[1] + x[2]*im
+fh = interpolate(f, V0)
+fh = interpolate_dirichlet(f, V0)
+fh = interpolate_everywhere(f, V0)
+
+f_real(x) = real(f(x))
+f_imag(x) = imag(f(x))
+f_conj(x) = conj(f(x))
+
+Ω = Triangulation(model)
+dΩ = Measure(Ω,2)
+
+tol = 1e-9
+@test sqrt(sum(∫( abs2(f - fh) )*dΩ)) < tol
+@test sqrt(sum(∫( abs2(f_imag - imag(fh)) )*dΩ)) < tol
+@test sqrt(sum(∫( abs2(f_real - real(fh)) )*dΩ)) < tol
+@test sqrt(sum(∫( abs2(f_conj - conj(fh)) )*dΩ)) < tol
+@test sqrt(sum(∫( abs2(real(f - fh)) )*dΩ)) < tol
+@test sqrt(sum(∫( abs2(imag(f - fh)) )*dΩ)) < tol
+@test sqrt(sum(∫( abs2(conj(f - fh)) )*dΩ)) < tol
+
+zh = zero(V0)
+@test isa(get_free_dof_values(zh),Vector{ComplexF64})
+
+
+#using Gridap.Visualization
+#trian = get_triangulation(model)
+#writevtk(trian,"trian",cellfields=["fh_real"=>real(fh),"fh_imag"=>imag(fh)])
+
 
 
 #using Gridap.Visualization

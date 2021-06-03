@@ -20,7 +20,7 @@ struct DFace{D} <: GridapType
   dimranges::Vector{UnitRange{Int}}
   dims::Vector{Int}
   nf_nfs::Vector{Vector{Int}}
-  nf_dimranges::Vector{Vector{UnitRange{Int64}}}
+  nf_dimranges::Vector{Vector{UnitRange{Int}}}
   nf_dims::Vector{Vector{Int}}
 end
 
@@ -175,11 +175,11 @@ function get_vertex_coordinates(p::ExtrusionPolytope)
   p.vertex_coords
 end
 
-function get_edge_tangents(p::ExtrusionPolytope)
+function get_edge_tangent(p::ExtrusionPolytope)
   _edge_tangents(Float64,p.dface)
 end
 
-function get_facet_normals(p::ExtrusionPolytope)
+function get_facet_normal(p::ExtrusionPolytope)
   p.face_normals
 end
 
@@ -225,16 +225,12 @@ function is_n_cube(p::ExtrusionPolytope{1})
   true
 end
 
-function simplexify(p::ExtrusionPolytope)
-  @notimplemented
-end
-
 function simplexify(p::ExtrusionPolytope{0})
   [[1,],], VERTEX
 end
 
 function simplexify(p::ExtrusionPolytope{1})
-  [[1,2],], SEGMENT
+  [[1,2],], Polytope(TET_AXIS)
 end
 
 function simplexify(p::ExtrusionPolytope{2})
@@ -259,6 +255,83 @@ function simplexify(p::ExtrusionPolytope{3})
   else
      @notimplemented
   end
+end
+
+function simplexify(p::ExtrusionPolytope{D}) where {D}
+  # This function works for all dimensions. It could replace the
+  # special cases above, but this might change the shape and order of
+  # simplices.
+  SD = Polytope(ntuple(d->TET_AXIS, D))
+  QD = Polytope(ntuple(d->HEX_AXIS, D))
+  if p == QD
+    simplices = simplexify_hypercube(D)
+    (simplices, SD)
+  elseif p == SD
+    simplices = [collect(1:D+1)]
+    (simplices, SD)
+  else
+     @notimplemented
+  end
+end
+
+function simplexify_hypercube(dim::Int)
+    @assert dim ≥ 0
+    # Determine simplices recursively
+    simplices = Vector{Int}[]
+    corner = 0
+    vertices = [corner]
+    next_corner!(simplices, dim, vertices, corner)
+    # Correct vertex numbering
+    for s in simplices
+        s .+= 1
+    end
+    # Check output
+    @assert length(simplices) == factorial(dim)
+    for s in simplices
+        @assert length(s) == dim+1
+        for v in s
+            @assert 1 ≤ v ≤ 2^dim
+        end
+    end
+    return simplices
+end
+
+"""
+Sweep through the `dim`-dimensional hypercube recursively, collecting
+all simplices.
+
+We represent vertices as bit patterns. In `dim` dimensions, the
+lowermost `dim` bits are either zero or one. Interpreted as integer,
+this labels the vertices of the hypercube from the origin ("bottom")
+`0` to the diagonally opposite vertex ("top") `2^dim-1`.
+
+Each simplex contains both the bottom vertex `0` as well as the top
+vertex `2^dim-1`. Its other vertices trace a path from the bottom to
+the top. The algorithm below finds all possible paths.
+
+- `simplices` is the accumulator where the simplices are collected.
+- `vertices` is the current set of vertices as we sweep from the
+  origin to the diagonally opposide vertex.
+- `corner` is the current corner.
+"""
+function next_corner!(simplices::Vector{Vector{Int}}, dim::Int,
+                      vertices::Vector{Int}, corner::Int)
+    @assert count_ones(corner) == length(vertices) - 1
+    if length(vertices) == dim + 1
+        # We have all vertices; save the simplex
+        push!(simplices, vertices)
+        return
+    end
+    # Loop over all neighbouring corners
+    for d in 1:dim
+        bit = 1 << (d-1)
+        if (corner & bit) == 0
+            new_corner = corner | bit
+            new_vertices = [vertices; new_corner]
+            next_corner!(simplices, dim, new_vertices, new_corner)
+        end
+    end
+    return
 end
 
 function Base.show(io::IO,p::ExtrusionPolytope)
@@ -359,7 +432,7 @@ function _polytopenfaces(anchor, extrusion)
   numnfs = length(nf_nfs)
   nfsdim = [_nfdim(nf_nfs[i].extrusion) for i = 1:numnfs]
   dnf = _nfdim(extrusion)
-  dimnfs = Array{UnitRange{Int64},1}(undef, dnf + 1)
+  dimnfs = Array{UnitRange{Int},1}(undef, dnf + 1)
   dim = 0
   i = 1
   for iface = 1:numnfs
@@ -415,7 +488,7 @@ function _nfaceboundary!(anchor, extrusion, extend, isanchor, list)
 end
 
 function _newext(newext,i)
-  m = zero(mutable(newext))
+  m = zero(Mutable(newext))
   D = num_components(newext)
   for j in 1:D
     m[j] = j == i ? 0 : newext[j]
@@ -424,7 +497,7 @@ function _newext(newext,i)
 end
 
 function _edim(newext,i)
-  m = zero(mutable(newext))
+  m = zero(Mutable(newext))
   D = num_components(newext)
   for j in 1:D
     m[j] = j == i ? 1 : 0
@@ -433,7 +506,7 @@ function _edim(newext,i)
 end
 
 function _tetp(anchor,i)
-  m = zero(mutable(anchor))
+  m = zero(Mutable(anchor))
   D = num_components(anchor)
   for j in 1:D
     m[j] = j >= i ? anchor[j] : 0
@@ -508,7 +581,7 @@ function DFace{D}(p::DFace{D},iface::Int) where D
 end
 
 function _eliminate_zeros(::Val{d},a) where d
-  b = zero(mutable(Point{d,Int}))
+  b = zero(Mutable(Point{d,Int}))
   D = num_components(a)
   k = 1
   for i in 1:D
@@ -552,7 +625,7 @@ function _nfaces_vertices(::Type{T},p::DFace,d::Integer) where T
   nc = _num_nfaces(p,d)
   verts = _vertices_coordinates(T,p)
   faces_vs = _dimfrom_fs_dimto_fs(p,d,0)
-  cfvs = collect(LocalToGlobalArray(faces_vs,verts))
+  cfvs = collect(lazy_map(Broadcasting(Reindex(verts)),faces_vs))
 end
 
 # Return the n-faces vertices coordinates array for a given n-face dimension
@@ -591,7 +664,7 @@ function _facet_normal(::Type{T},p::DFace{D}, nf_vs, vs, i_f) where {D,T}
         v[i-1,d] = vi[d]
       end
     end
-    _n = nullspace(v)
+    _n = _nullspace(v)
     n = Point{D,T}(_n)
     n = n * 1 / sqrt(dot(n, n))
     ext_v = _vertex_not_in_facet(p, i_f, nf_vs)
@@ -610,6 +683,14 @@ function _facet_normal(::Type{T},p::DFace{D}, nf_vs, vs, i_f) where {D,T}
     @unreachable "O-dim polytopes do not have properly define outward facet normals"
   end
   n, f_or
+end
+
+function _nullspace(v)
+  if size(v,1) == 1
+    return [-v[2],v[1]]
+  else
+    return nullspace(v)
+  end
 end
 
 function _vertex_not_in_facet(p::DFace, i_f, nf_vs)
@@ -680,9 +761,9 @@ function _admissible_permutations(p::DFace{D}) where D
   if D > 3
     @warn "Computing permutations for a polytope of dim > 3 is overkill"
   end
-  if D in (0,1) || all( Tuple(p.extrusion)[2:end] .== TET_AXIS )
+  if D in (0,1) || all( map(i->i==TET_AXIS,Tuple(p.extrusion)[2:end]) )
     perms = _admissible_permutations_simplex(p)
-  elseif all( Tuple(p.extrusion)[2:end] .== HEX_AXIS)
+  elseif all( map(i->i==HEX_AXIS,Tuple(p.extrusion)[2:end]))
     perms = _admissible_permutations_n_cube(p)
   else
     @notimplemented "admissible vertex permutations only implemented for simplices and n-cubes"
@@ -734,7 +815,7 @@ end
 
 function _setup_aux_grads(vertices::Vector{NFace{D}}) where D
   grads = zeros(Point{D,Int},length(vertices))
-  m = zero(mutable(Point{D,Int}))
+  m = zero(Mutable(Point{D,Int}))
   for (i,vertex) in enumerate(vertices)
     x = vertex.anchor
     for di in 1:D
@@ -753,7 +834,7 @@ end
 
 function _setup_aux_jacobian(grads,permuted_vertices::Vector{NFace{D}}) where D
   p0 = zero(Point{D,Int})
-  m = zero(mutable(outer(p0,p0)))
+  m = zero(Mutable(outer(p0,p0)))
   for (i,pvertex) in enumerate(permuted_vertices)
     x = pvertex.anchor
     g = grads[i]

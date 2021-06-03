@@ -10,8 +10,7 @@ This function changes the state of the input and can render it in a corrupted st
 It is recommended to rewrite the input `uh` with the output as illustrated to prevent any
 issue.
 """
-function solve!(uh,solver::FESolver,op::FEOperator)
-  @assert is_a_fe_function(uh)
+function solve!(uh::FEFunction,solver::FESolver,op::FEOperator)
   solve!(uh,solver,op,nothing)
 end
 
@@ -22,8 +21,7 @@ This function changes the state of the input and can render it in a corrupted st
 It is recommended to rewrite the input `uh` with the output as illustrated to prevent any
 issue. If `cache===nothing`, then it creates a new cache object.
 """
-function solve!(uh,solver::FESolver,op::FEOperator,cache)
-  @assert is_a_fe_function(uh)
+function solve!(uh::FEFunction,solver::FESolver,op::FEOperator,cache)
   @abstractmethod
 end
 
@@ -63,18 +61,15 @@ function test_fe_solver(
 
   u = FEFunction(trial,copy(x0))
   u, cache = solve!(u,nls,op)
-  @assert is_a_fe_function(u)
-  @test pred(get_free_values(u),x)
+  @test pred(get_free_dof_values(u),x)
 
   u = FEFunction(trial,copy(x0))
   u,cache = solve!(u,nls,op,cache)
-  @assert is_a_fe_function(u)
-  @test pred(get_free_values(u),x)
+  @test pred(get_free_dof_values(u),x)
 
   u = FEFunction(trial,copy(x0))
   u,cache = solve!(u,nls,op,cache)
-  @assert is_a_fe_function(u)
-  @test pred(get_free_values(u),x)
+  @test pred(get_free_dof_values(u),x)
 
 end
 
@@ -92,13 +87,12 @@ function LinearFESolver()
   LinearFESolver(ls)
 end
 
-function solve!(uh,solver::LinearFESolver,op::FEOperator, cache)
+function solve!(uh::FEFunction,solver::LinearFESolver,op::FEOperator, cache)
   @unreachable "Cannot solve a generic FEOperator with a LinearFESolver"
 end
 
-function solve!(u,solver::LinearFESolver,feop::AffineFEOperator,cache::Nothing)
-  @assert is_a_fe_function(u)
-  x = get_free_values(u)
+function solve!(u::FEFunction,solver::LinearFESolver,feop::AffineFEOperator,cache::Nothing)
+  x = get_free_dof_values(u)
   op = get_algebraic_operator(feop)
   cache = solve!(x,solver.ls,op)
   trial = get_trial(feop)
@@ -106,9 +100,8 @@ function solve!(u,solver::LinearFESolver,feop::AffineFEOperator,cache::Nothing)
   (u_new, cache)
 end
 
-function solve!(u,solver::LinearFESolver,feop::AffineFEOperator, cache)
-  @assert is_a_fe_function(u)
-  x = get_free_values(u)
+function solve!(u::FEFunction,solver::LinearFESolver,feop::AffineFEOperator, cache)
+  x = get_free_dof_values(u)
   op = get_algebraic_operator(feop)
   cache = solve!(x,solver.ls,op,cache)
   trial = get_trial(feop)
@@ -140,9 +133,8 @@ function NonlinearFESolver()
   NonlinearFESolver(nls)
 end
 
-function solve!(u,solver::NonlinearFESolver,feop::FEOperator,cache::Nothing)
-  @assert is_a_fe_function(u)
-  x = get_free_values(u)
+function solve!(u::FEFunction,solver::NonlinearFESolver,feop::FEOperator,cache::Nothing)
+  x = get_free_dof_values(u)
   op = get_algebraic_operator(feop)
   cache = solve!(x,solver.nls,op)
   trial = get_trial(feop)
@@ -150,13 +142,11 @@ function solve!(u,solver::NonlinearFESolver,feop::FEOperator,cache::Nothing)
   (u_new, cache)
 end
 
-function solve!(u,solver::NonlinearFESolver,feop::FEOperator,cache)
-  @assert is_a_fe_function(u)
-  x = get_free_values(u)
+function solve!(u::FEFunction,solver::NonlinearFESolver,feop::FEOperator,cache)
+  x = get_free_dof_values(u)
   op = get_algebraic_operator(feop)
   cache = solve!(x,solver.nls,op,cache)
   trial = get_trial(feop)
   u_new = FEFunction(trial,x)
   (u_new,cache)
 end
-

@@ -1,6 +1,7 @@
 module DiffOperatorsTests
 
 using Test
+using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Fields: MockField
@@ -11,9 +12,8 @@ np = 4
 p = Point(1,2)
 x = fill(p,np)
 
-v = 3.0
-d = 2
-f = MockField{d}(v)
+v = VectorValue(3.0,2.0)
+f = MockField(v)
 
 @test ∇(f) == gradient(f)
 
@@ -39,33 +39,29 @@ f = MockField{d}(v)
 
 @test Δ(f) == ∇⋅∇(f)
 
+@test (∇.*f)(x) != nothing
+
+@test ((∇+p).*f)(x) != nothing
+
+@test ((∇+p)(f))(x) == (∇(f) + p⊗f)(x)
+
+g(x) = 2*x[2]
+
+@test ((∇+p)(g))(x) == (∇(GenericField(g)) + p⊗GenericField(g))(x)
+
+@test (∇+p)⋅f != nothing
+@test (∇+p)×f != nothing
+@test (∇+p)⊗f != nothing
+@test f⊗(∇+p) != nothing
 
 l = 10
 f = Fill(f,l)
 
-@test ∇(f) == gradient(f)
+@test Broadcasting(divergence)(f) == Broadcasting(Operation(tr))(Broadcasting(∇)(f))
+@test Broadcasting(curl)(f) == Broadcasting(Operation(grad2curl))(Broadcasting(∇)(f))
+@test Broadcasting(ε)(f) == Broadcasting(Operation(symmetric_part))(Broadcasting(∇)(f))
 
-@test divergence(f) == operate_arrays_of_fields(tr,gradient(f))
-
-@test curl(f) == operate_arrays_of_fields(grad2curl,gradient(f))
-
-@test ε(f) == operate_arrays_of_fields(symmetric_part,gradient(f))
-
-@test ∇⋅f == divergence(f)
-
-@test cross(∇,f) == curl(f)
-
-@test ∇×f == curl(f)
-
-@test outer(∇,f) == ∇(f)
-
-@test ∇⊗f == ∇(f)
-
-@test outer(f,∇) == transpose(∇(f))
-
-@test f⊗∇ == transpose(∇(f))
-
-@test Δ(f) == ∇⋅∇(f)
+@test evaluate(Broadcasting(∇+p)(f),x) == evaluate( Broadcasting(Operation((g,f)->g+p⊗f))(Broadcasting(∇)(f),f)  ,x)
 
 # Test automatic differentiation
 
@@ -97,6 +93,9 @@ for x in xs
   @test (∇×u)(x) == grad2curl(∇u(x))
   @test Δ(u)(x) == Δu(x)
   @test ε(u)(x) == εu(x)
+  @test ∇(u)(x) == ∇u(x)
+  @test Δ(u)(x) == (∇⋅∇u)(x)
+  @test (∇⋅εu)(x) == VectorValue(4.,-1.)
 end
 
 u(x) = VectorValue( x[1]^2 + 2*x[2]^2, 0 )
@@ -109,6 +108,24 @@ for x in xs
   @test (∇×u)(x) == grad2curl(∇u(x))
   @test Δ(u)(x) == Δu(x)
   @test ε(u)(x) == εu(x)
+  @test Δ(u)(x) == (∇⋅∇u)(x)
+  @test (∇⋅εu)(x) == VectorValue(4.,0.)
+end
+
+u(x) = VectorValue( x[1]^2 + 2*x[3]^2, -x[1]^2, -x[2]^2 + x[3]^2 )
+∇u(x) = TensorValue( 2*x[1],0,4*x[3],  -2*x[1],0,0,  0,-2*x[2],2*x[3] )
+Δu(x) = VectorValue( 6, -2, 0 )
+εu(x) = symmetric_part(∇u(x))
+
+xs = [ Point(1.,1.,2.0), Point(2.,0.,1.), Point(0.,3.,0.), Point(-1.,3.,2.)]
+for x in xs
+  @test ∇(u)(x) == ∇u(x)
+  @test (∇⋅u)(x) == tr(∇u(x)) 
+  @test (∇×u)(x) == grad2curl(∇u(x))
+  @test Δ(u)(x) == Δu(x)
+  @test ε(u)(x) == εu(x)
+  @test Δ(u)(x) == (∇⋅∇u)(x)
+  @test (∇⋅εu)(x) == VectorValue(4.,-1.,1.)
 end
 
 end # module
