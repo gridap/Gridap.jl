@@ -30,13 +30,14 @@ jobs:
             ${{ runner.os }}-test-
             ${{ runner.os }}-
       - uses: julia-actions/julia-buildpkg@v1
-      - uses: julia-actions/julia-runtest@v1
+#      - uses: julia-actions/julia-runtest@v1
+      - run: |
+         julia compile/create_gridap_image.jl --do-not-clone-gridap --gridap-path . --user-provided-script-path test/GridapTests/PoissonTests.jl  -n ./Gridap.so
+         julia -J ./Gridap.so --project=. --color=yes --check-bounds=yes -e '(1,) .== 1; include("test/GridapTests/runtests.jl")' 
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v1
         with:
           file: lcov.info
-
-        
         
   drivers:
     name: Drivers ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
