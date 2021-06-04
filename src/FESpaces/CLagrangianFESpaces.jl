@@ -74,11 +74,15 @@ function CLagrangianFESpace(
   space
 end
 
-function _use_clagrangian(trian,cell_reffe,conf)
+function _use_clagrangian(model,cell_reffe,conf)
   false
 end
 
-function _use_clagrangian(trian::Grid,cell_reffe,conf::H1Conformity)
+function _use_clagrangian(model::DiscreteModel,cell_reffe,conf::H1Conformity)
+  if num_vertices(model) != num_nodes(model)
+    return false
+  end
+  trian = get_triangulation(model)
   ctype_reffe1, cell_ctype1 = compress_cell_data(cell_reffe)
   ctype_reffe2 = get_reffes(trian)
   if length(ctype_reffe1) != 1 || length(ctype_reffe2) != 1

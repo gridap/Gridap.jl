@@ -75,7 +75,7 @@ reffe = ReferenceFE(lagrangian,Float64,1)
 V = FESpace(model,reffe,conformity=:L2)
 @test V.metadata === nothing
 
-# Check that the factory usus clagrangian when possible
+# Check that the factory uses clagrangian when possible
 
 V = FESpace(model,reffe)
 @test V.metadata.node_and_comp_to_dof == [1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -96,5 +96,13 @@ V = FESpace(model,reffe,dirichlet_tags=tags)
 V = FESpace(model,reffe,dirichlet_tags=tags,dirichlet_masks=masks2)
 @test V.metadata.node_and_comp_to_dof == VectorValue{2, Int32}[(-1, -2), (1, -3), (-4, 2), (3, 4), (5, 6), (-5, -6), (7, 8), (9, 10), (11, 12)]
 
+# Do not use CLagrangian for models with periodic boundary conditions
+
+domain = (0,1,0,1)
+partition = (3,3)
+model = CartesianDiscreteModel(domain,partition,isperiodic=(false,true))
+reffe = ReferenceFE(lagrangian,Float64,1)
+V = FESpace(model,reffe)
+@test V.metadata === nothing
 
 end # module
