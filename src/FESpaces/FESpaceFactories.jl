@@ -93,7 +93,11 @@ function FESpace(
   trian = Triangulation(model)
   conf = Conformity(testitem(cell_reffe),conformity)
 
-  if _use_clagrangian(trian,cell_reffe,conf) && constraint === nothing
+
+  if _use_clagrangian(trian,cell_reffe,conf) &&
+    constraint === nothing &&
+    num_vertices(model) == num_nodes(model)
+
     V = _unsafe_clagrangian(
       cell_reffe,
       trian,

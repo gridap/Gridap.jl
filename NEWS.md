@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.1] - 2021-06-04
+
+### Fixed
+- Bug for 1st order FE spaces in combination of 1st order models with periodic BCs. Since PR [#611](https://github.com/gridap/Gridap.jl/pull/611).
+
 ## [0.16.0] - 2021-06-04
 
 ### Added
