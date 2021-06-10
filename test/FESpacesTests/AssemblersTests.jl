@@ -1,8 +1,6 @@
 module AssemblersTests
 
 using Test
-
-using Test
 using Gridap.Arrays
 using Gridap.TensorValues
 using Gridap.ReferenceFEs
