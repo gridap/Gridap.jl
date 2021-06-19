@@ -193,6 +193,8 @@ function Base.:(==)(a::ArrayBlock,b::ArrayBlock)
   true
 end
 
+Base.copy(a::ArrayBlock) = ArrayBlock(copy(a.array),copy(a.touched))
+
 struct ZeroBlockMap <: Map end
 
 function return_cache(::ZeroBlockMap,a::AbstractArray,b::AbstractArray)
