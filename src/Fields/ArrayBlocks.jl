@@ -194,6 +194,7 @@ function Base.:(==)(a::ArrayBlock,b::ArrayBlock)
 end
 
 Base.copy(a::ArrayBlock) = ArrayBlock(copy(a.array),copy(a.touched))
+Base.eachindex(a::ArrayBlock) = eachindex(a.array)
 
 struct ZeroBlockMap <: Map end
 
