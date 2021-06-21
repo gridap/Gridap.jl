@@ -45,10 +45,10 @@ Base.ndims(::Type{ArrayBlock{A,N}}) where {A,N} = N
   end
   b.array[i...]
 end
-#@inline function Base.setindex!(b::ArrayBlock,v,i...)
-#  @check b.touched[i...] "Only touched entries can be set"
-#  b.array[i...] = v
-#end
+@inline function Base.setindex!(b::ArrayBlock,v,i...)
+ @check b.touched[i...] "Only touched entries can be set"
+ b.array[i...] = v
+end
 function Base.show(io::IO,o::ArrayBlock)
   print(io,"ArrayBlock($(o.array), $(o.touched))")
 end
@@ -192,6 +192,9 @@ function Base.:(==)(a::ArrayBlock,b::ArrayBlock)
   end
   true
 end
+
+Base.copy(a::ArrayBlock) = ArrayBlock(copy(a.array),copy(a.touched))
+Base.eachindex(a::ArrayBlock) = eachindex(a.array)
 
 struct ZeroBlockMap <: Map end
 
