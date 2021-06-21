@@ -152,6 +152,18 @@ function evaluate!(cache,::typeof(unwrap_cached_array),a::ArrayBlock)
   r
 end
 
+Arrays.setsize!(a::ArrayBlock,s::NTuple{N,<:Integer}) where {N} = @notimplemented
+
+function Arrays.setsize!(a::ArrayBlock,b::ArrayBlock)
+  @assert size(a) == size(b)
+  for i in eachindex(a.array)
+    if a.touched[i]
+      Arrays.setsize!(a.array[i],size(b.array[i]))
+    end
+  end
+  a
+end
+
 #LinearAlgebra.promote_leaf_eltypes(a::ArrayBlock) = LinearAlgebra.promote_leaf_eltypes(a.array)
 
 function Base.:≈(a::AbstractArray{<:ArrayBlock},b::AbstractArray{<:ArrayBlock})
@@ -1332,7 +1344,7 @@ for T in (:AddEntriesMap,:TouchEntriesMap)
 
     function return_cache(
       k::$T,A,v::MatrixBlock,I::VectorBlock,J::VectorBlock)
-    
+
       qs = findall(v.touched)
       i, j = Tuple(first(qs))
       cij = return_cache(k,A,v.array[i,j],I.array[i],J.array[j])
@@ -1347,7 +1359,7 @@ for T in (:AddEntriesMap,:TouchEntriesMap)
       end
       cache
     end
-    
+
     function evaluate!(
       cache, k::$T,A,v::MatrixBlock,I::VectorBlock,J::VectorBlock)
       ni,nj = size(v.touched)
@@ -1359,10 +1371,10 @@ for T in (:AddEntriesMap,:TouchEntriesMap)
         end
       end
     end
-    
+
     function return_cache(
       k::$T,A,v::VectorBlock,I::VectorBlock)
-    
+
       qs = findall(v.touched)
       i = first(qs)
       ci = return_cache(k,A,v.array[i],I.array[i])
@@ -1375,7 +1387,7 @@ for T in (:AddEntriesMap,:TouchEntriesMap)
       end
       cache
     end
-    
+
     function evaluate!(
       cache, k::$T,A,v::VectorBlock,I::VectorBlock)
       ni = length(v.touched)
@@ -1388,5 +1400,3 @@ for T in (:AddEntriesMap,:TouchEntriesMap)
 
   end
 end
-
-
