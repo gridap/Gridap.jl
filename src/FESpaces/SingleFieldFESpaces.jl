@@ -1,4 +1,3 @@
-
 """
 """
 abstract type SingleFieldFESpace <: FESpace end
@@ -303,8 +302,19 @@ end
 function _cell_vals(fs::SingleFieldFESpace,object)
   s = get_fe_dof_basis(fs)
   trian = get_triangulation(s)
-  f = CellField(object,trian,DomainStyle(s))
-  cell_vals = s(f)
+  if(object isa CellField)
+      if(have_compatible_domains(trian, get_triangulation(object)))
+          f = CellField(object,trian,DomainStyle(s))
+          cell_vals = s(f)
+      else
+          phys_point = get_cell_points(s).cell_phys_point
+          object_phys_coords(x) = evaluate(object, x)
+          cell_vals = lazy_map(object_phys_coords, phys_point)
+      end
+  else
+      f = CellField(object,trian,DomainStyle(s))
+      cell_vals = s(f)
+  end
 end
 
 """
