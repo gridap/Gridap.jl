@@ -275,8 +275,6 @@ end
 
 # Memoization
 
-MemoArray(a) = a
-
 struct MemoArray{T,N,A} <: AbstractArray{T,N}
   parent::A
   memo::Dict{Any,Any}
@@ -287,6 +285,8 @@ struct MemoArray{T,N,A} <: AbstractArray{T,N}
     #new{T,N,A}(parent,memo)
   end
 end
+
+MemoArray(a) = a
 
 # Do not wrap twice.
 MemoArray(parent::MemoArray) = parent
