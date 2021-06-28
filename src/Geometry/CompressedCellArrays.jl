@@ -88,18 +88,6 @@ end
   (rm,rv)
 end
 
-@inline function _compress!(matvec::Tuple{ArrayBlock,ArrayBlock},cell_to_matvec,cell_range)
-  mat, vec = matvec
-  rm = copy(mat)
-  rv = copy(vec)
-  for cell in cell_range
-    cmat, cvec = cell_to_matvec[cell]
-    rm = rm + cmat
-    rv = rv + cvec
-  end
-  (rm,rv)
-end
-
 function array_cache(a::CompressedCellArray)
   array = testitem(a.cell_to_array)
   _compress_cache(array,a)
@@ -154,23 +142,6 @@ end
     for i in eachindex(vec)
       rv[i] = rv[i] + cvec[i]
     end
-  end
-  (rm, rv)
-end
-
-@inline function _compress!(c,matvec::Tuple{ArrayBlock,ArrayBlock},ccache,cell_to_matvec,cell_range)
-  cm, cv = c
-  mat, vec = matvec
-  setsize!(cm,mat)
-  setsize!(cv,vec)
-  rm = unwrap_cached_array(cm)
-  rv = unwrap_cached_array(cv)
-  copyto!(rm,mat)
-  copyto!(rv,vec)
-  for cell in cell_range
-    cmat, cvec = getindex!(ccache,cell_to_matvec,cell)
-    rm = rm + cmat
-    rv = rv + cvec
   end
   (rm, rv)
 end

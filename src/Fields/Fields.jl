@@ -86,7 +86,6 @@ export ArrayBlock
 export VectorBlock
 export MatrixBlock
 export BlockMap
-export unwrap_cached_array
 
 include("FieldsInterfaces.jl")
 
