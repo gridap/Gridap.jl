@@ -275,17 +275,18 @@ end
 
 # Memoization
 
-#MemoArray(a) = a
-
 struct MemoArray{T,N,A} <: AbstractArray{T,N}
   parent::A
   memo::Dict{Any,Any}
   function MemoArray(parent::AbstractArray{T,N}) where {T,N}
-    A = typeof(parent)
-    memo = Dict()
-    new{T,N,A}(parent,memo)
+    parent
+    #A = typeof(parent)
+    #memo = Dict()
+    #new{T,N,A}(parent,memo)
   end
 end
+
+MemoArray(a) = a
 
 # Do not wrap twice.
 MemoArray(parent::MemoArray) = parent
