@@ -65,9 +65,7 @@ end
   r = copy(array)
   for cell in cell_range
     carray = cell_to_array[cell]
-    for k in eachindex(r)
-      r[k] = r[k] + carray[k]
-    end
+    _addto!(r,carray)
   end
   r
 end
@@ -78,29 +76,49 @@ end
   rv = copy(vec)
   for cell in cell_range
     cmat, cvec = cell_to_matvec[cell]
-    for k in eachindex(mat)
-      rm[k] = rm[k] + cmat[k]
-    end
-    for i in eachindex(vec)
-      rv[i] = rv[i] + cvec[i]
-    end
+    _addto!(rm,cmat)
+    _addto!(rv,cvec)
   end
   (rm,rv)
 end
 
+function _addto!(a,b)
+  @check size(a) == size(b)
+  for k in eachindex(a)
+    a[k] = a[k] + b[k]
+  end
+  a
+end
+
+function _addto!(a::ArrayBlock,b::ArrayBlock)
+  @check size(a) == size(b)
+  for k in eachindex(a.array)
+    @check a.touched[k] == b.touched[k]
+    if a.touched[k]
+      _addto!(a.array[k],b.array[k])
+    end
+  end
+  a
+end
+
 function array_cache(a::CompressedCellArray)
   array = testitem(a.cell_to_array)
-  _compress_cache(array,a)
+  c = _compress_cache(array)
+  ccache = array_cache(a.cell_to_array)
+  c,ccache
 end
 
-function _compress_cache(array,a)
-  CachedArray(copy(array)), array_cache(a.cell_to_array)
+function _compress_cache(array)
+  c1 = CachedArray(copy(array))
+  c2 = return_cache(Fields.unwrap_cached_array,c1)
+  c1,c2
 end
 
-function _compress_cache(matvec::Tuple,a)
+function _compress_cache(matvec::Tuple)
   mat, vec = matvec
-  cmatvec = (CachedArray(copy(mat)), CachedArray(copy(vec)))
-  cmatvec, array_cache(a.cell_to_array)
+  cmat = _compress_cache(mat)
+  cvec = _compress_cache(vec)
+  cmat, cvec
 end
 
 function getindex!(cache,a::CompressedCellArray,ccell::Integer)
@@ -113,35 +131,48 @@ function getindex!(cache,a::CompressedCellArray,ccell::Integer)
 end
 
 @inline function _compress!(c,array,ccache,cell_to_array,cell_range)
-  setsize!(c,size(array))
-  r = c.array
+  c1,c2 = c
+  _setsize_compress!(c1,array)
+  r = evaluate!(c2,Fields.unwrap_cached_array,c1)
   copyto!(r,array)
   for cell in cell_range
     carray = getindex!(ccache,cell_to_array,cell)
-    for k in eachindex(array)
-      r[k] = r[k] + carray[k]
-    end
+    _addto!(r,carray)
   end
   r
 end
 
 @inline function _compress!(c,matvec::Tuple,ccache,cell_to_matvec,cell_range)
   cm, cv = c
+  cm1,cm2 = cm
+  cv1,cv2 = cv
   mat, vec = matvec
-  setsize!(cm,size(mat))
-  setsize!(cv,size(vec))
-  rm = cm.array
-  rv = cv.array
+  _setsize_compress!(cm1,mat)
+  _setsize_compress!(cv1,vec)
+  rm = evaluate!(cm2,Fields.unwrap_cached_array,cm1)
+  rv = evaluate!(cv2,Fields.unwrap_cached_array,cv1)
   copyto!(rm,mat)
   copyto!(rv,vec)
   for cell in cell_range
     cmat, cvec = getindex!(ccache,cell_to_matvec,cell)
-    for k in eachindex(mat)
-      rm[k] = rm[k] + cmat[k]
-    end
-    for i in eachindex(vec)
-      rv[i] = rv[i] + cvec[i]
-    end
+    _addto!(rm,cmat)
+    _addto!(rv,cvec)
   end
   (rm, rv)
 end
+
+function _setsize_compress!(a::CachedArray,b::AbstractArray)
+  setsize!(a,size(b))
+end
+
+function _setsize_compress!(a::ArrayBlock,b::ArrayBlock)
+  @check size(a) == size(b)
+  for k in eachindex(a.array)
+    @check a.touched[k] == b.touched[k]
+    if a.touched[k]
+    _setsize_compress!(a.array[k],b.array[k])
+    end
+  end
+end
+
+
