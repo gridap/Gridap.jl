@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.3] - 2021-06-28
+
+### Fixed
+- Deactivating optimizations related with `MemoArray` since they are not reliable. Since PR [#624](https://github.com/gridap/Gridap.jl/pull/624).
+- Bug related with `ArrayBlock`. Since PR [#623](https://github.com/gridap/Gridap.jl/pull/623).
+
 ## [0.16.2] - 2021-06-21
 
 ### Fixed
