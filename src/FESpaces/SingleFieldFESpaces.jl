@@ -305,16 +305,16 @@ function _cell_vals(fs::SingleFieldFESpace,object)
   if(object isa CellField)
       if(have_compatible_domains(trian, get_triangulation(object)))
           f = CellField(object,trian,DomainStyle(s))
-          cell_vals = s(f)
       else
           phys_point = get_cell_points(s).cell_phys_point
           object_phys_coords(x) = evaluate(object, x)
           cell_vals = lazy_map(object_phys_coords, phys_point)
+          f = CellField(fs, cell_vals)
       end
   else
       f = CellField(object,trian,DomainStyle(s))
-      cell_vals = s(f)
   end
+  cell_vals = s(f)
 end
 
 """

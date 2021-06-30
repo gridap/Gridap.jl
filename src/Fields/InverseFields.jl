@@ -1,4 +1,3 @@
-
 # Inverse fields
 
 struct InverseField{F} <: Field
@@ -27,7 +26,7 @@ function evaluate!(caches,a::InverseField,x::Point)
   j!(J,y) = J .= SMatrix{D,D}(Tuple(evaluate!(∇cache,∇(a.original),P(y))))
   df = OnceDifferentiable(f!,j!,y₀,F₀)
   # Solve
-  res = nlsolve(df,y₀)
+  res = nlsolve(df,y₀,method=:newton,linesearch=BackTracking())
   @check converged(res) "InverseField evaluation did not converge"
   # Extract solution
   y = res.zero
