@@ -8,7 +8,7 @@ The type parameters and fields of this `struct` are not public.
 This type fully implements the [`Field`](@ref) interface, with up to first order
 derivatives.
 """
-struct PCurlGradMonomialBasis{D,T} <: AbstractVector{Monomial}
+struct PCurlGradMonomialBasis{D,T} <: AbstractVector{Monomial{D,T}}
   order::Int
   pterms::Array{CartesianIndex{D},1}
   sterms::Array{CartesianIndex{D},1}
@@ -22,7 +22,7 @@ end
 
 @inline Base.size(a::PCurlGradMonomialBasis) = (_ndofs_pgrad(a),)
 # @santiagobadia : Not sure we want to create the monomial machinery
-@inline Base.getindex(a::PCurlGradMonomialBasis,i::Integer) = Monomial()
+@inline Base.getindex(a::PCurlGradMonomialBasis{D,T},i::Integer) where {D,T} = Monomial{D,T}()
 @inline Base.IndexStyle(::PCurlGradMonomialBasis) = IndexLinear()
 
 """
