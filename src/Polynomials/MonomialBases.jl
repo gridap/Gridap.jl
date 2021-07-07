@@ -1,7 +1,7 @@
-struct Monomial{D,T} <: Field end
+struct Monomial <: Field end
 
 """
-    struct MonomialBasis{D,T} <: AbstractVector{Monomial{D,T}}
+    struct MonomialBasis{D,T} <: AbstractVector{Monomial}
 
 Type representing a basis of multivariate scalar-valued, vector-valued, or
 tensor-valued, iso- or aniso-tropic monomials. The fields
@@ -9,7 +9,7 @@ of this `struct` are not public.
 This type fully implements the [`Field`](@ref) interface, with up to second order
 derivatives.
 """
-struct MonomialBasis{D,T} <: AbstractVector{Monomial{D,T}}
+struct MonomialBasis{D,T} <: AbstractVector{Monomial}
   orders::NTuple{D,Int}
   terms::Vector{CartesianIndex{D}}
   function MonomialBasis{D}(
@@ -20,7 +20,7 @@ end
 
 @inline Base.size(a::MonomialBasis{D,T}) where {D,T} = (length(a.terms)*num_components(T),)
 # @santiagobadia : Not sure we want to create the monomial machinery
-@inline Base.getindex(a::MonomialBasis{D,T},i::Integer) where {D,T} = Monomial{D,T}()
+@inline Base.getindex(a::MonomialBasis,i::Integer) = Monomial()
 @inline Base.IndexStyle(::MonomialBasis) = IndexLinear()
 
 """
@@ -234,7 +234,7 @@ end
 
 # Optimizing evaluation at a single point
 
-function return_cache(f::AbstractVector{Monomial{D,T}},x::Point) where {D,T}
+function return_cache(f::AbstractVector{Monomial},x::Point)
   xs = [x]
   cf = return_cache(f,xs)
   v = evaluate!(cf,f,xs)
@@ -242,7 +242,7 @@ function return_cache(f::AbstractVector{Monomial{D,T}},x::Point) where {D,T}
   r, cf, xs
 end
 
-function evaluate!(cache,f::AbstractVector{Monomial{D,T}},x::Point) where {D,T}
+function evaluate!(cache,f::AbstractVector{Monomial},x::Point)
   r, cf, xs = cache
   xs[1] = x
   v = evaluate!(cf,f,xs)
@@ -254,7 +254,7 @@ function evaluate!(cache,f::AbstractVector{Monomial{D,T}},x::Point) where {D,T}
 end
 
 function return_cache(
-  f::FieldGradientArray{N,<:AbstractVector{Monomial{D,V}}}, x::Point) where {N,D,V}
+  f::FieldGradientArray{N,<:AbstractVector{Monomial}}, x::Point) where {N}
   xs = [x]
   cf = return_cache(f,xs)
   v = evaluate!(cf,f,xs)
@@ -263,7 +263,7 @@ function return_cache(
 end
 
 function evaluate!(
-  cache, f::FieldGradientArray{N,<:AbstractVector{Monomial{D,V}}}, x::Point) where {N,D,V}
+  cache, f::FieldGradientArray{N,<:AbstractVector{Monomial}}, x::Point) where {N}
   r, cf, xs = cache
   xs[1] = x
   v = evaluate!(cf,f,xs)

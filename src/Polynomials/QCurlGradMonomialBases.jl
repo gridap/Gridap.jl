@@ -8,7 +8,7 @@ The type parameters and fields of this `struct` are not public.
 This type fully implements the [`Field`](@ref) interface, with up to first order
 derivatives.
 """
-struct QCurlGradMonomialBasis{D,T} <: AbstractVector{Monomial{D,T}}
+struct QCurlGradMonomialBasis{D,T} <: AbstractVector{Monomial}
   qgrad::QGradMonomialBasis{D,T}
   function QCurlGradMonomialBasis(::Type{T},order::Int,terms::CartesianIndices{D},perms::Matrix{Int}) where {D,T}
     qgrad = QGradMonomialBasis(T,order,terms,perms)
@@ -18,7 +18,7 @@ end
 
 @inline Base.size(a::QCurlGradMonomialBasis) = (length(a.qgrad),)
 # @santiagobadia : Not sure we want to create the monomial machinery
-@inline Base.getindex(a::QCurlGradMonomialBasis{D,T},i::Integer) where {D,T} = Monomial{D,T}()
+@inline Base.getindex(a::QCurlGradMonomialBasis,i::Integer) = Monomial()
 @inline Base.IndexStyle(::QCurlGradMonomialBasis) = IndexLinear()
 
 """

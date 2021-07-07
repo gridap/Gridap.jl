@@ -1,6 +1,6 @@
 
 """
-    struct QGradMonomialBasis{...} <: AbstractVector{Monomial{D,T}}
+    struct QGradMonomialBasis{...} <: AbstractVector{Monomial}
 
 This type implements a multivariate vector-valued polynomial basis
 spanning the space needed for Nedelec reference elements on n-cubes.
@@ -8,7 +8,7 @@ The type parameters and fields of this `struct` are not public.
 This type fully implements the [`Field`](@ref) interface, with up to first order
 derivatives.
 """
-struct QGradMonomialBasis{D,T} <: AbstractVector{Monomial{D,T}}
+struct QGradMonomialBasis{D,T} <: AbstractVector{Monomial}
   order::Int
   terms::CartesianIndices{D}
   perms::Matrix{Int}
@@ -19,7 +19,7 @@ end
 
 @inline Base.size(a::QGradMonomialBasis) = (_ndofs_qgrad(a),)
 # @santiagobadia : Not sure we want to create the monomial machinery
-@inline Base.getindex(a::QGradMonomialBasis{D,T},i::Integer) where {D,T} = Monomial{D,T}()
+@inline Base.getindex(a::QGradMonomialBasis,i::Integer) = Monomial()
 @inline Base.IndexStyle(::QGradMonomialBasis) = IndexLinear()
 
 """
