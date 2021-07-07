@@ -74,5 +74,6 @@ g = G[
 bx = repeat(permutedims(v),np)
 ∇bx = repeat(permutedims(g),np)
 test_field_array(b,x,bx,grad=∇bx)
+test_field_array(b,x[1],bx[1,:],grad=∇bx[1,:])
 
 end # module
