@@ -83,6 +83,8 @@ get_node_coordinates(trian::RestrictedTriangulation) = get_node_coordinates(tria
 
 get_reffes(trian::RestrictedTriangulation) = get_reffes(trian.parent_trian)
 
+GridTopology(trian::RestrictedTriangulation) = GridTopology(trian.parent_trian)
+
 function get_cell_coordinates(trian::RestrictedTriangulation)
   parent_cell_data = get_cell_coordinates(trian.parent_trian)
   lazy_map(Reindex(parent_cell_data),trian.cell_to_parent_cell)
