@@ -195,6 +195,8 @@ get_cell_node_ids(trian::BoundaryTriangulation) = get_cell_node_ids(trian.face_t
 
 get_cell_map(trian::BoundaryTriangulation) = get_cell_map(trian.face_trian)
 
+GridTopology(trian::BoundaryTriangulation) = GridTopology(trian.face_trian)
+
 # Genuine methods
 
 TriangulationStyle(::Type{<:BoundaryTriangulation}) = SubTriangulation()
