@@ -234,15 +234,15 @@ end
 
 # Optimizing evaluation at a single point
 
-function return_cache(f::MonomialBasis{D,T},x::Point) where {D,T}
-  ndof = length(f.terms)*num_components(T)
-  r = CachedArray(zeros(T,(ndof,)))
+function return_cache(f::AbstractVector{Monomial},x::Point)
   xs = [x]
   cf = return_cache(f,xs)
+  v = evaluate!(cf,f,xs)
+  r = CachedArray(zeros(eltype(v),(size(v,2),)))
   r, cf, xs
 end
 
-function evaluate!(cache,f::MonomialBasis{D,T},x::Point) where {D,T}
+function evaluate!(cache,f::AbstractVector{Monomial},x::Point)
   r, cf, xs = cache
   xs[1] = x
   v = evaluate!(cf,f,xs)
@@ -254,7 +254,7 @@ function evaluate!(cache,f::MonomialBasis{D,T},x::Point) where {D,T}
 end
 
 function return_cache(
-  f::FieldGradientArray{N,MonomialBasis{D,V}}, x::Point) where {N,D,V}
+  f::FieldGradientArray{N,<:AbstractVector{Monomial}}, x::Point) where {N}
   xs = [x]
   cf = return_cache(f,xs)
   v = evaluate!(cf,f,xs)
@@ -263,7 +263,7 @@ function return_cache(
 end
 
 function evaluate!(
-  cache, f::FieldGradientArray{N,MonomialBasis{D,V}}, x::Point) where {N,D,V}
+  cache, f::FieldGradientArray{N,<:AbstractVector{Monomial}}, x::Point) where {N}
   r, cf, xs = cache
   xs[1] = x
   v = evaluate!(cf,f,xs)
