@@ -35,11 +35,17 @@ g = G[
     @test vi == vbi
   end
 
+  vb = evaluate(b,xi)
+  @test vb == v
+
   ∇b = Broadcasting(gradient)(b)
   gvb = evaluate(∇b,x)
   for (vi,vbi) in zip(g,gvb)
     @test vi == vbi
   end
+
+  gvb = evaluate(∇b,xi)
+  @test gvb == g
 
   @test num_terms(b) == 15
   @test get_order(b) == 2
