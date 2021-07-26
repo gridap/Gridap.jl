@@ -301,6 +301,21 @@ source_model = CartesianDiscreteModel((0,1,0,1),(10,10))
   for pt in pts
     @test gh(pt) ≈ fh(pt)
   end
+
+  # Vector Valued Lagrangian
+  f(x) = VectorValue(x[1], x[1]+x[2])
+  reffe = ReferenceFE(lagrangian, VectorValue{2, et}, 1)
+  V₁ = FESpace(source_model, reffe, conformity=:H1)
+  fh = interpolate_everywhere(f, V₁)
+  # Target Lagrangian Space
+  reffe = ReferenceFE(lagrangian, VectorValue{2,et}, 2)
+  V₂ = FESpace(model, reffe, conformity=:H1)
+
+  gh = interpolate_everywhere_non_compatible_trian(fh, V₂)
+  pts = [VectorValue(rand(2)) for i=1:10]
+  for pt in pts
+    @test gh(pt) ≈ fh(pt)
+  end
 end
 
 @testset "Test interpolation RT" begin
