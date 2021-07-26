@@ -1,4 +1,3 @@
-
 function _can_be_restricted_to(trian_i,trian)
   if have_compatible_domains(trian_i,trian) ||
     have_compatible_domains(trian_i,get_background_triangulation(trian)) ||
@@ -415,4 +414,14 @@ function FESpaces.interpolate_dirichlet(objects, fe::MultiFieldFESpace)
     push!(blocks,uhi)
   end
   MultiFieldFEFunction(free_values,fe,blocks)
+end
+
+function FESpaces.interpolate_everywhere_non_compatible_trian(fh::FEFunction, V::MultiFieldFESpace)
+  free_values = zero_free_values(V)
+  blocks = SingleFieldFEFunction[]
+  for (field, Vhi) in zip(fh, V)
+    uhi = interpolate_everywhere_non_compatible_trian(field, Vhi)
+    push!(blocks, uhi)
+  end
+  MultiFieldFEFunction(free_values, V, blocks)
 end

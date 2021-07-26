@@ -181,6 +181,8 @@ export FESpaceWithLinearConstraints
 
 export FiniteElements
 
+export interpolate_everywhere_non_compatible_trian
+
 include("FESpaceInterface.jl")
 
 include("SingleFieldFESpaces.jl")

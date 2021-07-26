@@ -327,6 +327,14 @@ function evaluate!(cache,b::MomentBasedDofBasis,field)
   dofs
 end
 
+function evaluate!(cache, b::MomentBasedDofBasis, field, points)
+  c, cf = cache
+  vals = evaluate!(cf, field, points)
+  dofs = c.array
+  _eval_moment_dof_basis!(dofs, vals, b)
+  dofs
+end
+
 function _eval_moment_dof_basis!(dofs,vals::AbstractVector,b)
   o = 1
   z = zero(eltype(dofs))
