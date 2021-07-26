@@ -328,6 +328,7 @@ function evaluate!(cache,b::MomentBasedDofBasis,field)
 end
 
 function evaluate!(cache, b::MomentBasedDofBasis, field, points)
+  @assert length(points) == length(b.nodes)
   c, cf = cache
   vals = evaluate!(cf, field, points)
   dofs = c.array

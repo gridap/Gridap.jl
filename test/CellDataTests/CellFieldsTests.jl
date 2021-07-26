@@ -303,7 +303,7 @@ source_model = CartesianDiscreteModel((0,1,0,1),(10,10))
   end
 
   # Vector Valued Lagrangian
-  f(x) = VectorValue(x[1], x[1]+x[2])
+  f(x) = VectorValue([x[1], x[1]+x[2]])
   reffe = ReferenceFE(lagrangian, VectorValue{2, et}, 1)
   V₁ = FESpace(source_model, reffe, conformity=:H1)
   fh = interpolate_everywhere(f, V₁)
