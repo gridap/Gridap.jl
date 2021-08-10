@@ -80,8 +80,7 @@ These are some popular PDEs solved with the Gridap library. Examples taken from 
 
  ## Gridap community
 
-You can ask questions on the Julia Slack channel #gridap (see [here](https://julialang.org/slack/) how to join). 
-You can also join our [gitter](https://gitter.im/Gridap-jl/community) chat to ask questions and interact with the Gridap community.
+You can ask questions and interact with the Gridap community on the Julia Slack channel #gridap (see [here](https://julialang.org/slack/) how to join). or our [gitter](https://gitter.im/Gridap-jl/community).
 
 ## Contributing to Gridap
 
