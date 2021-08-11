@@ -60,6 +60,7 @@ export ∫
 export CellDof
 export get_normal_vector
 export get_cell_measure
+export Interpolable
 
 export make_inverse_table
 export compute_cell_points_from_vector_of_points

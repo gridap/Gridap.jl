@@ -278,11 +278,10 @@ Random.seed!(0)
     end
 end
 
-# --- Some tests to check the Interpolation module
 p = QUAD
 D = num_dims(QUAD)
 et = Float64
-source_model = CartesianDiscreteModel((0,1,0,1),(10,10))
+source_model = CartesianDiscreteModel((0,1,0,1),(2,2))
 
 @testset "Test interpolation Lagrangian" begin
   # Lagrangian space -> Lagrangian space
@@ -292,26 +291,31 @@ source_model = CartesianDiscreteModel((0,1,0,1),(10,10))
   fh = interpolate_everywhere(f, V₁)
   # Target Lagrangian Space
   reffe = LagrangianRefFE(et, p, 2)
-  model = CartesianDiscreteModel((0,1,0,1),(40,40))
+  model = CartesianDiscreteModel((0,1,0,1),(4,4))
   V₂ = FESpace(model, reffe, conformity=:H1)
 
-  gh = interpolate_everywhere_non_compatible_trian(fh, V₂)
-
-  pts = [VectorValue(rand(2)) for i=1:10]
-  for pt in pts
-    @test gh(pt) ≈ fh(pt)
+  ifh = Interpolable(fh)
+  try
+    interpolate_everywhere(fh, V₂)
+  catch
+    gh = interpolate_everywhere(ifh, V₂)
+    pts = [VectorValue(rand(2)) for i=1:10]
+    for pt in pts
+      @test gh(pt) ≈ fh(pt)
+    end
   end
 
-  # Vector Valued Lagrangian
-  f(x) = VectorValue([x[1], x[1]+x[2]])
-  reffe = ReferenceFE(lagrangian, VectorValue{2, et}, 1)
+  # VectorValued Lagrangian
+  fᵥ(x) = VectorValue([x[1], x[1]+x[2]])
+  reffe = ReferenceFE(lagrangian, VectorValue{2,et}, 1)
   V₁ = FESpace(source_model, reffe, conformity=:H1)
-  fh = interpolate_everywhere(f, V₁)
-  # Target Lagrangian Space
-  reffe = ReferenceFE(lagrangian, VectorValue{2,et}, 2)
+  fh = interpolate_everywhere(fᵥ, V₁)
+  # Target
+  reffe = ReferenceFE(lagrangian, VectorValue{2,et},  2)
   V₂ = FESpace(model, reffe, conformity=:H1)
 
-  gh = interpolate_everywhere_non_compatible_trian(fh, V₂)
+  ifh = Interpolable(fh);
+  gh = interpolate_everywhere(ifh, V₂)
   pts = [VectorValue(rand(2)) for i=1:10]
   for pt in pts
     @test gh(pt) ≈ fh(pt)
@@ -325,17 +329,18 @@ end
   V₁ = FESpace(source_model, reffe, conformity=:HDiv)
   fh = interpolate_everywhere(f, V₁);
   # Target RT Space
-  reffe = RaviartThomasRefFE(et, p, 2)
+  reffe = RaviartThomasRefFE(et, p, 1)
   model = CartesianDiscreteModel((0,1,0,1),(40,40))
   V₂ = FESpace(model, reffe, conformity=:HDiv)
 
-  gh = interpolate_everywhere_non_compatible_trian(fh, V₂)
-
+  ifh = Interpolable(fh)
+  gh = interpolate_everywhere(ifh, V₂)
   pts = [VectorValue(rand(2)) for i=1:10]
   for pt in pts
     @test gh(pt) ≈ fh(pt)
   end
 end
+
 
 #np = 3
 #ndofs = 4

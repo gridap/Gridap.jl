@@ -125,25 +125,6 @@ end
   _evaluate_lagr_dof!(c,vals,b.node_and_comp_to_dof,ndofs,ncomps)
 end
 
-function evaluate!(cache, b::LagrangianDofBasis, field, points)
-  @assert length(points) == length(b.nodes)
-  c, cf = cache
-  vals = evaluate!(cf,field,points)
-  ndofs = length(b.dof_to_node)
-  T = eltype(vals)
-  ncomps = num_components(T)
-  @check ncomps == num_components(eltype(b.node_and_comp_to_dof)) """\n
-  Unable to evaluate LagrangianDofBasis. The number of components of the
-  given Field does not match with the LagrangianDofBasis.
-
-  If you are trying to interpolate a function on a FESpace make sure that
-  both objects have the same value type.
-
-  For instance, trying to interpolate a vector-valued funciton on a scalar-valued FE space
-  would raise this error.
-  """
-  _evaluate_lagr_dof!(c,vals,b.node_and_comp_to_dof,ndofs,ncomps)
-end
 
 function _evaluate_lagr_dof!(c::AbstractVector,node_comp_to_val,node_and_comp_to_dof,ndofs,ncomps)
   setsize!(c,(ndofs,))
@@ -176,4 +157,27 @@ function _evaluate_lagr_dof!(c::AbstractMatrix,node_pdof_comp_to_val,node_and_co
     end
   end
   r
+end
+
+# Local implementations for LagrangianDofBasis
+function Arrays.return_cache(::PushDofMap,f::LagrangianDofBasis,m::Field)
+  q = f.nodes
+  return_cache(m,q)
+end
+function replace_nodes(f::LagrangianDofBasis,x)
+  LagrangianDofBasis(x, f.dof_to_node, f.dof_to_comp, f.node_and_comp_to_dof)
+end
+function evaluate!(cache,::PushDofMap,f::LagrangianDofBasis,m::Field)
+  q = f.nodes
+  x = evaluate!(cache,m,q)
+  LagrangianDofBasis(x, f.dof_to_node, f.dof_to_comp, f.node_and_comp_to_dof)
+end
+function lazy_map(
+  ::PushDofMap,
+  cell_f::AbstractArray{<:LagrangianDofBasis},
+  cell_m::AbstractArray{<:Field})
+
+  cell_q = lazy_map(f->f.nodes,cell_f)
+  cell_x = lazy_map(evaluate,cell_m,cell_q)
+  lazy_map(LagrangianDofBasis,cell_f,cell_x)
 end

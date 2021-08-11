@@ -1,4 +1,3 @@
-
 """
 """
 struct CellDof{DS} <: CellDatum
@@ -12,7 +11,11 @@ get_triangulation(f::CellDof) = f.trian
 DomainStyle(::Type{CellDof{DS}}) where DS = DS()
 
 function change_domain(a::CellDof,::ReferenceDomain,::PhysicalDomain)
-  @notimplemented
+  trian = get_triangulation(a)
+  cell_m = get_cell_map(trian)
+  cell_f_ref = get_data(a)
+  cell_f_phys = lazy_map(PushDofMap(),cell_f_ref,cell_m)
+  CellDof(cell_f_phys,trian,DomainStyle(a))
 end
 
 function change_domain(a::CellDof,::PhysicalDomain,::ReferenceDomain)

@@ -130,7 +130,7 @@ D = num_dims(QUAD)
 et = Float64
 source_model = CartesianDiscreteModel((0,1,0,1),(10,10))
 
-@testset "Test interpolation Vector Lagrangian" begin
+@testset "Test interpolation Multifield" begin
   f₁(x) = x[1]+x[2]
   f₂(x) = x[1]
   # Source FESpace
@@ -145,14 +145,19 @@ source_model = CartesianDiscreteModel((0,1,0,1),(10,10))
   V₂ = FESpace(model, reffe, conformity=:H1)
   V₂² = MultiFieldFESpace([V₂,V₂])
 
-  gh = interpolate_everywhere_non_compatible_trian(fh, V₂²)
+  fh₁,fh₂ = fh
+  ifh₁ = Interpolable(fh₁)
+  ifh₂ = Interpolable(fh₂)
+
+  gh = interpolate_everywhere([ifh₁,ifh₂], V₂²)
 
   pts = [VectorValue(rand(2)) for i=1:10]
-  fh₁,fh₂ = fh
   gh₁,gh₂ = gh
   for pt in pts
     @test gh₁(pt) ≈ fh₁(pt)
     @test gh₂(pt) ≈ fh₂(pt)
   end
 end
+
+
 end # module

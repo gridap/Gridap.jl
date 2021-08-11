@@ -299,26 +299,21 @@ function interpolate!(object, free_values,fs::SingleFieldFESpace)
     FEFunction(fs,free_values)
 end
 
-function CellField(V::SingleFieldFESpace, fh::FEFunction)
-  trian = get_triangulation(V)
-  b = get_fe_dof_basis(V)
-  cell_vals = _cell_vals(b, fh)
-  CellField(V, cell_vals)
-end
-
-function _cell_vals(b::CellDof, fh::CellField)
-  bs = get_data(b)
-  trian = get_triangulation(b)
-  cache = return_cache(testitem(bs), fh)
-  cell_coords = get_cell_points(b).cell_phys_point
-  cell_vals = lazy_map(i -> evaluate!(cache, bs[i], fh, cell_coords[i]), 1:num_cells(trian))
-end
 
 function _cell_vals(fs::SingleFieldFESpace,object)
   s = get_fe_dof_basis(fs)
   trian = get_triangulation(s)
   f = CellField(object,trian,DomainStyle(s))
   cell_vals = s(f)
+end
+
+function _cell_vals(V::SingleFieldFESpace, f::Interpolable)
+  fe_basis = get_fe_dof_basis(V)
+  trian = get_triangulation(V)
+  cache = return_cache(f, Point(rand(2)))
+  b = change_domain(fe_basis, ReferenceDomain(), PhysicalDomain())
+  cf = CellField(x->evaluate!(cache, f, x), trian, ReferenceDomain())
+  lazy_map(evaluate, get_data(b), get_data(cf))
 end
 
 """
@@ -337,11 +332,6 @@ function interpolate_everywhere!(object, free_values,dirichlet_values,fs::Single
   cell_vals = _cell_vals(fs,object)
   gather_free_and_dirichlet_values!(free_values,dirichlet_values,fs,cell_vals)
   FEFunction(fs,free_values,dirichlet_values)
-end
-
-function interpolate_everywhere_non_compatible_trian(fh::FEFunction, V::SingleFieldFESpace)
-  cell_field = CellField(V, fh)
-  gh = interpolate_everywhere(cell_field, V)
 end
 
 """

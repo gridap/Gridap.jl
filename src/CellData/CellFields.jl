@@ -846,3 +846,38 @@ function (a::SkeletonPair{<:CellField})(x)
   Evaluating `n(x)` is not allowed. You need to call either `n.⁺(x)` or `n.⁻(x)`.
   """
 end
+
+# Interpolable struct
+struct Interpolable{A} <: Function
+  uh::A
+  tol::Float64
+  cache
+  searchmethod
+  function Interpolable(uh, cache; tol=1e-6, searchmethod=:kdtree)
+    new{typeof(uh)}(uh, tol, cache, searchmethod)
+  end
+end
+
+function Interpolable(uh::CellField; tol=1e-6, searchmethod=:kdtree)
+  if(searchmethod != :kdtree)
+    @notimplemented
+  end
+  trian = get_triangulation(uh)
+  cache1 = CellData._point_to_cell_cache(trian)
+
+  cell_f = get_array(uh)
+  cell_f_cache = array_cache(cell_f)
+  cf = testitem(cell_f)
+  T = eltype(testitem(trian.node_coords))
+  dim = num_point_dims(trian)
+  f_cache = return_cache(cf,VectorValue(rand(T,dim)))
+  cache2 = cell_f_cache, f_cache, cell_f, uh
+  cache = cache1, cache2
+
+  Interpolable(uh, cache; tol, searchmethod)
+end
+
+return_cache(f::Interpolable, x::Point) = f.cache
+return_cache(f::Interpolable, xs::AbstractVector{<:Point}) = f.cache
+evaluate!(cache, f::Interpolable, x::Point) = evaluate!(cache, f.uh, x)
+evaluate!(cache, f::Interpolable, xs::AbstractVector{<:Point}) = evaluate!(cache, f.uh, xs)
