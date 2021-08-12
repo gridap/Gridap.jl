@@ -71,7 +71,7 @@ function CellQuadrature(trian::AppendedTriangulation,degree::Integer)
 end
 
 function CellQuadrature(trian::AppendedTriangulation,degree::Integer,ids::DomainStyle)
-  CellQuadrature(trian,degree,degree)
+  CellQuadrature(trian,degree,degree,ids)
 end
 
 function CellQuadrature(trian::AppendedTriangulation,
@@ -101,12 +101,12 @@ function lazy_append(
   cell_quad = lazy_append(quad1.cell_quad,quad2.cell_quad)
   cell_point = lazy_append(quad1.cell_point,quad2.cell_point)
   cell_weight = lazy_append(quad1.cell_weight,quad2.cell_weight)
-  CellQuadrature(cell_quad,cell_point,cell_weight,trian,DomainStyle(quad1))
+  CellQuadrature(cell_quad,cell_point,cell_weight,trian,DomainStyle(quad1),PhysicalDomain())
 end
 
 get_data(f::CellQuadrature) = f.cell_quad
 get_triangulation(f::CellQuadrature) = f.trian
-DomainStyle(::Type{CellQuadrature{DDS}}) where DDS = DDS()
+DomainStyle(::Type{CellQuadrature{DDS,IDS}}) where {DDS,IDS} = DDS()
 
 function change_domain(a::CellQuadrature,::ReferenceDomain,::PhysicalDomain)
   @notimplemented
