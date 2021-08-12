@@ -9,7 +9,7 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Io
 
-function test_div_v_q_trick(U,V,P,Q,Ω)
+function test_div_v_q_equiv(U,V,P,Q,Ω)
   v=get_fe_basis(V)
   u=get_trial_fe_basis(U)
 
@@ -17,8 +17,7 @@ function test_div_v_q_trick(U,V,P,Q,Ω)
   p=get_trial_fe_basis(P)
 
   dΩ=Measure(Ω,1)
-  Ωᵣ=ReferenceTriangulation(Ω)
-  dΩᵣ=Measure(Ωᵣ,1)
+  dΩᵣ=Measure(Ω,1,ReferenceDomain())
 
   a1(p,v)=∫(divergence(v)*p)dΩ
   a2(p,v)=∫(DIV(v)*p)dΩᵣ
@@ -69,7 +68,7 @@ dΩ = Measure(Ω,2*order)
 el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
 @test el2 < 1.0e-10
 
-test_div_v_q_trick(U,V,P,Q,Ω)
+test_div_v_q_equiv(U,V,P,Q,Ω)
 
 #using Gridap.Visualization
 #
@@ -104,7 +103,7 @@ dΩ = Measure(Ω,2*order)
 el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
 @test el2 < 1.0e-10
 
-test_div_v_q_trick(U,V,P,Q,Ω)
+test_div_v_q_equiv(U,V,P,Q,Ω)
 
 #using Gridap.Visualization
 #
@@ -140,7 +139,7 @@ dΩ = Measure(Ω,2*order)
 e=sqrt(sum(∫((uh-vh)⋅(uh-vh))dΩ))
 @test e < 1.0e-12
 
-test_div_v_q_trick(U,V,P,Q,Ω)
+test_div_v_q_equiv(U,V,P,Q,Ω)
 
 
 end # module

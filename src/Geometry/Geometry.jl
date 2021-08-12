@@ -125,7 +125,6 @@ export compute_linear_grid
 export compute_reference_grid
 
 export RestrictedTriangulation
-export ReferenceTriangulation
 export GridPortion
 export UnstructuredGrid
 
@@ -212,8 +211,6 @@ include("RestrictedTriangulations.jl")
 include("BoundaryTriangulations.jl")
 
 include("SkeletonTriangulations.jl")
-
-include("ReferenceTriangulations.jl")
 
 include("GridPortions.jl")
 
