@@ -8,6 +8,14 @@ function evaluate!(cache,::Broadcasting{typeof(divergence)},f)
   Broadcasting(Operation(tr))(Broadcasting(∇)(f))
 end
 
+"""
+    DIV(f)
+    Reference space divergence
+"""
+function DIV(f)
+  @notimplemented "DIV operator is only defined for certain type of operands"
+end
+
 function symmetric_gradient end
 
 """

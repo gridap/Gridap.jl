@@ -71,6 +71,7 @@ export curl
 export grad2curl
 export laplacian
 export divergence
+export DIV
 export Δ
 export ε
 export symmetric_gradient
