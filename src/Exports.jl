@@ -54,6 +54,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish Fields curl
 @publish Fields laplacian
 @publish Fields divergence
+@publish Fields DIV
 @publish Fields Δ
 @publish Fields ε
 @publish Fields symmetric_gradient

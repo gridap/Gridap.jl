@@ -2,7 +2,7 @@ module DarcyTests
 
 using Test
 using Gridap
-import Gridap: ∇, divergence
+import Gridap: ∇, divergence, DIV
 using LinearAlgebra
 
 u(x) = VectorValue(2*x[1],x[1]+x[2])
@@ -36,6 +36,7 @@ X = MultiFieldFESpace([U, P])
 trian = Triangulation(model)
 degree = 2
 dΩ = Measure(trian,degree)
+dω = Measure(trian,degree,ReferenceDomain())
 
 neumanntags = [7,8]
 btrian = BoundaryTriangulation(model,tags=neumanntags)
@@ -43,8 +44,7 @@ degree = 2*(order+1)
 dΓ = Measure(btrian,degree)
 nb = get_normal_vector(btrian)
 
-
-a((u, p),(v, q)) = ∫( u⋅v - (∇⋅v)*p + q*(∇⋅u) )*dΩ
+a((u, p),(v, q)) = ∫( u⋅v + q*(∇⋅u) )*dΩ - ∫(DIV(v)*p)*dω
 
 b(( v, q)) = ∫( v⋅f + q*(∇⋅u))*dΩ - ∫((v⋅nb)*p )*dΓ
 
