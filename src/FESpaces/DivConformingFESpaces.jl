@@ -38,8 +38,10 @@ function get_cell_shapefuns(model::DiscreteModel,
                             cell_reffe::AbstractArray{<:GenericRefFE{RaviartThomas}},
                             ::DivConformity)
     sign_flip = get_sign_flip(model, cell_reffe)
-    lazy_map(_transform_rt_shapefuns,
-             cell_reffe,
+    cell_reffe_shapefuns=lazy_map(get_shapefuns,cell_reffe)
+    k=ContraVariantPiolaMap()
+    lazy_map(k,
+             cell_reffe_shapefuns,
              get_cell_map(Triangulation(model)),
              lazy_map(Broadcasting(constant_field), sign_flip))
 end
@@ -108,12 +110,6 @@ function get_sign_flip(model::DiscreteModel,
     lazy_map(SignFlipMap(model),
             cell_reffe,
             get_cell_to_bgcell(model))
-end
-
-function _transform_rt_shapefuns(reffe::GenericRefFE{RaviartThomas},
-                                 phi::Field,
-                                 sign_flip::AbstractVector{<:Field})
-  ContraVariantPiolaMap()(get_shapefuns(reffe),phi,sign_flip)
 end
 
 function _transform_rt_dof_basis(reffe::GenericRefFE{RaviartThomas},
