@@ -12,6 +12,16 @@ struct CellQuadrature{DDS,IDS} <: CellDatum
   integration_domain_style::IDS
 end
 
+# Old constructor (for backward compatibility)
+function CellQuadrature(
+  cell_quad::AbstractArray{<:Quadrature},
+  cell_point::AbstractArray{<:AbstractArray{<:Point}},
+  cell_weight::AbstractArray{<:AbstractArray{<:Real}},
+  trian::Triangulation,
+  data_domain_style::DomainStyle)
+  CellQuadrature(cell_quad,cell_point,cell_weight,trian,data_domain_style,PhysicalDomain())
+end
+
 function CellQuadrature(trian::Triangulation,quad::Tuple{<:QuadratureName,Any,Any})
   CellQuadrature(trian,quad,PhysicalDomain())
 end
