@@ -846,3 +846,20 @@ function (a::SkeletonPair{<:CellField})(x)
   Evaluating `n(x)` is not allowed. You need to call either `n.⁺(x)` or `n.⁻(x)`.
   """
 end
+
+# Interpolable struct
+struct KDTreeSearch end
+
+struct Interpolable{M,A} <: Function
+  uh::A
+  tol::Float64
+  searchmethod::M
+  function Interpolable(uh; tol=1e-6, searchmethod=KDTreeSearch())
+    new{typeof(searchmethod),typeof(uh)}(uh, tol,searchmethod)
+  end
+end
+
+return_cache(a::Interpolable,x::Point) = return_cache(a.uh,x)
+return_cache(a::Interpolable,x::AbstractVector{<:Point}) = return_cache(a.uh,x)
+evaluate!(cache,a::Interpolable,x::Point) = evaluate!(cache,a.uh,x)
+evaluate!(cache,a::Interpolable,x::AbstractVector{<:Point}) = evaluate!(cache,a.uh,x)
