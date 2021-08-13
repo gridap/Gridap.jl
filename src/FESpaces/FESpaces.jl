@@ -24,6 +24,7 @@ using Gridap.Fields: ArrayBlock, BlockMap
 
 import Gridap.Fields: gradient
 import Gridap.Fields: ∇∇
+import Gridap.Fields: DIV
 import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
 import Gridap.Arrays: return_cache

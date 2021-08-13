@@ -10,6 +10,15 @@ using Gridap.CellData
 using Gridap.TensorValues
 using Gridap.Geometry
 
+function test_old_constructor(trian::Triangulation,degree::Int)
+  cell_quad = CellQuadrature(trian,degree)
+  CellQuadrature(cell_quad.cell_quad,
+             cell_quad.cell_point,
+             cell_quad.cell_weight,
+             cell_quad.trian,
+             cell_quad.data_domain_style)
+end
+
 domain = (0,1,0,1,0,1)
 cells = (4,4,4)
 model = simplexify(CartesianDiscreteModel(domain,cells))
@@ -17,7 +26,7 @@ model = simplexify(CartesianDiscreteModel(domain,cells))
 trian = Triangulation(model)
 
 degree = 2
-quad = CellQuadrature(trian,degree)
+quad = test_old_constructor(trian,degree)
 
 x = get_cell_points(quad)
 @test isa(x,CellPoint)

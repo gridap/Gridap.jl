@@ -202,6 +202,10 @@ function ∇∇(a::SingleFieldFEBasis)
   f = GenericCellField(a.cell_basis,a.trian,a.domain_style)
   SingleFieldFEBasis(get_data(∇∇(f)),a.trian,a.basis_style,a.domain_style)
 end
+function DIV(f::SingleFieldFEBasis)
+  df=_DIV(get_data(f))
+  SingleFieldFEBasis(df,f.trian,f.basis_style,f.domain_style)
+end
 function change_domain(a::SingleFieldFEBasis,trian::Triangulation,target_domain::DomainStyle)
   f = GenericCellField(a.cell_basis,a.trian,a.domain_style)
   g = change_domain(f,trian,target_domain)
