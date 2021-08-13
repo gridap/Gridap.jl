@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added a new trait to CellQuadrature to support the evaluation of integrals on the reference domain. Since PR [#636](https://github.com/gridap/Gridap.jl/pull/636).
-
+- Optimization to RT FEs. Since PR [#638](https://github.com/gridap/Gridap.jl/pull/638).
 
 ## [0.16.3] - 2021-06-28
 
