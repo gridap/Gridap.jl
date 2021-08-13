@@ -423,26 +423,3 @@ function lazy_map(
 
   lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_Jt,cell_detJ,sign_flip)
 end
-
-# Local implementations for MomentBasedDofBasis
-function Arrays.return_cache(::PushDofMap,f::MomentBasedDofBasis,m::Field)
-  q = f.nodes
-  return_cache(m,q)
-end
-function replace_nodes(f::MomentBasedDofBasis,x)
-  MomentBasedDofBasis(x, f.face_moments, f.face_nodes)
-end
-function Arrays.evaluate!(cache,::PushDofMap,f::MomentBasedDofBasis,m::Field)
-  q = f.nodes
-  x = evaluate!(cache,m,q)
-  MomentBasedDofBasis(x, f.face_moments, f.face_nodes)
-end
-function Arrays.lazy_map(
-  ::PushDofMap,
-  cell_f::AbstractArray{<:MomentBasedDofBasis},
-  cell_m::AbstractArray{<:Field})
-
-  cell_q = lazy_map(f->f.nodes,cell_f)
-  cell_x = lazy_map(evaluate,cell_m,cell_q)
-  lazy_map(replace_nodes,cell_f,cell_x)
-end

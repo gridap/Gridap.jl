@@ -848,36 +848,18 @@ function (a::SkeletonPair{<:CellField})(x)
 end
 
 # Interpolable struct
-struct Interpolable{A} <: Function
+struct KDTreeSearch end
+
+struct Interpolable{M,A} <: Function
   uh::A
   tol::Float64
-  cache
-  searchmethod
-  function Interpolable(uh, cache; tol=1e-6, searchmethod=:kdtree)
-    new{typeof(uh)}(uh, tol, cache, searchmethod)
+  searchmethod::M
+  function Interpolable(uh; tol=1e-6, searchmethod=KDTreeSearch())
+    new{typeof(searchmethod),typeof(uh)}(uh, tol,searchmethod)
   end
 end
 
-function Interpolable(uh::CellField; tol=1e-6, searchmethod=:kdtree)
-  if(searchmethod != :kdtree)
-    @notimplemented
-  end
-  trian = get_triangulation(uh)
-  cache1 = CellData._point_to_cell_cache(trian)
-
-  cell_f = get_array(uh)
-  cell_f_cache = array_cache(cell_f)
-  cf = testitem(cell_f)
-  T = eltype(testitem(trian.node_coords))
-  dim = num_point_dims(trian)
-  f_cache = return_cache(cf,VectorValue(rand(T,dim)))
-  cache2 = cell_f_cache, f_cache, cell_f, uh
-  cache = cache1, cache2
-
-  Interpolable(uh, cache; tol, searchmethod)
-end
-
-return_cache(f::Interpolable, x::Point) = f.cache
-return_cache(f::Interpolable, xs::AbstractVector{<:Point}) = f.cache
-evaluate!(cache, f::Interpolable, x::Point) = evaluate!(cache, f.uh, x)
-evaluate!(cache, f::Interpolable, xs::AbstractVector{<:Point}) = evaluate!(cache, f.uh, xs)
+return_cache(a::Interpolable,x::Point) = return_cache(a.uh,x)
+return_cache(a::Interpolable,x::AbstractVector{<:Point}) = return_cache(a.uh,x)
+evaluate!(cache,a::Interpolable,x::Point) = evaluate!(cache,a.uh,x)
+evaluate!(cache,a::Interpolable,x::AbstractVector{<:Point}) = evaluate!(cache,a.uh,x)

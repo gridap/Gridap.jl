@@ -85,7 +85,6 @@ export TET_AXIS
 export INVALID_PERM
 
 export ContraVariantPiolaMap
-export PushDofMap
 
 export Dof
 export get_nodes

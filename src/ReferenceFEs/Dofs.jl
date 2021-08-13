@@ -107,13 +107,3 @@ end
 #function return_type(k::DofEval,dof,field)
 #  return_type(dof,field)
 #end
-
-struct PushDofMap <: Map end
-
-function Arrays.evaluate!(cache,::PushDofMap,f::Dof,m::Field)
-  @abstractmethod
-end
-
-function Arrays.evaluate!(cache,::PushDofMap,f::AbstractArray{<:Dof},m::Field)
-  @abstractmethod
-end

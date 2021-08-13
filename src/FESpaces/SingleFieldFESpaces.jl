@@ -307,15 +307,6 @@ function _cell_vals(fs::SingleFieldFESpace,object)
   cell_vals = s(f)
 end
 
-function _cell_vals(V::SingleFieldFESpace, f::Interpolable)
-  fe_basis = get_fe_dof_basis(V)
-  trian = get_triangulation(V)
-  cache = return_cache(f, Point(rand(2)))
-  b = change_domain(fe_basis, ReferenceDomain(), PhysicalDomain())
-  cf = CellField(x->evaluate!(cache, f, x), trian, ReferenceDomain())
-  lazy_map(evaluate, get_data(b), get_data(cf))
-end
-
 """
 like interpolate, but also compute new degrees of freedom for the dirichlet component.
 The resulting FEFunction does not necessary belongs to the underlying space
