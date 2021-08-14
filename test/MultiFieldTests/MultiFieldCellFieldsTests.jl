@@ -124,5 +124,40 @@ test_array(cellmat1_Γ,cellmat2_Γ,≈)
 #cache = array_cache(a)
 #@btime getindex!($cache,$a,2)
 
+# --- Some tests to check the Interpolation module
+p = QUAD
+D = num_dims(QUAD)
+et = Float64
+source_model = CartesianDiscreteModel((0,1,0,1),(10,10))
+
+@testset "Test interpolation Multifield" begin
+  f₁(x) = x[1]+x[2]
+  f₂(x) = x[1]
+  # Source FESpace
+  reffe = LagrangianRefFE(et, p, 1)
+  V₁ = FESpace(source_model, reffe, conformity=:H1)
+  V₁² = MultiFieldFESpace([V₁,V₁])
+  fh = interpolate_everywhere([f₁, f₂], V₁²)
+
+  # Target Lagrangian FESpace
+  reffe = LagrangianRefFE(et, p, 2)
+  model = CartesianDiscreteModel((0,1,0,1), (40,40))
+  V₂ = FESpace(model, reffe, conformity=:H1)
+  V₂² = MultiFieldFESpace([V₂,V₂])
+
+  fh₁,fh₂ = fh
+  ifh₁ = Interpolable(fh₁)
+  ifh₂ = Interpolable(fh₂)
+
+  gh = interpolate_everywhere([ifh₁,ifh₂], V₂²)
+
+  pts = [VectorValue(rand(2)) for i=1:10]
+  gh₁,gh₂ = gh
+  for pt in pts
+    @test gh₁(pt) ≈ fh₁(pt)
+    @test gh₂(pt) ≈ fh₂(pt)
+  end
+end
+
 
 end # module

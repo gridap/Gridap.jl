@@ -262,17 +262,18 @@ function _point_to_cell_cache(trian::Triangulation)
   ctype_to_reffe = get_reffes(trian)
   ctype_to_polytope = map(get_polytope, ctype_to_reffe)
   cell_map = get_cell_map(trian)
-  cache1 = kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map
+  table_cache = array_cache(vertex_to_cells)
+  cache1 = kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map, table_cache
 end
 
 function _point_to_cell!(cache, x::Point)
-  kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map = cache
+  kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map, table_cache = cache
 
   # Find nearest vertex
   id,dist = nn(kdtree, SVector(Tuple(x)))
 
   # Find all neighbouring cells
-  cells = vertex_to_cells[id]
+  cells = getindex!(table_cache,vertex_to_cells,id)
   @assert !isempty(cells)
 
   # Calculate the distance from the point to all the cells. Without
@@ -846,3 +847,18 @@ function (a::SkeletonPair{<:CellField})(x)
   Evaluating `n(x)` is not allowed. You need to call either `n.⁺(x)` or `n.⁻(x)`.
   """
 end
+
+# Interpolable struct
+struct KDTreeSearch end
+
+struct Interpolable{M,A} <: Function
+  uh::A
+  tol::Float64
+  searchmethod::M
+  function Interpolable(uh; tol=1e-6, searchmethod=KDTreeSearch())
+    new{typeof(searchmethod),typeof(uh)}(uh, tol,searchmethod)
+  end
+end
+
+return_cache(a::Interpolable,x::Point) = return_cache(a.uh,x)
+evaluate!(cache,a::Interpolable,x::Point) = evaluate!(cache,a.uh,x)

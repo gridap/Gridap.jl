@@ -1,4 +1,3 @@
-
 struct PointValue{P} <: Dof
   point::P
 end
@@ -114,17 +113,18 @@ end
   T = eltype(vals)
   ncomps = num_components(T)
   @check ncomps == num_components(eltype(b.node_and_comp_to_dof)) """\n
-  Unable to evaluate LagrangianDofBasis. The number of components of the 
+  Unable to evaluate LagrangianDofBasis. The number of components of the
   given Field does not match with the LagrangianDofBasis.
 
   If you are trying to interpolate a function on a FESpace make sure that
   both objects have the same value type.
-  
+
   For instance, trying to interpolate a vector-valued funciton on a scalar-valued FE space
   would raise this error.
   """
   _evaluate_lagr_dof!(c,vals,b.node_and_comp_to_dof,ndofs,ncomps)
 end
+
 
 function _evaluate_lagr_dof!(c::AbstractVector,node_comp_to_val,node_and_comp_to_dof,ndofs,ncomps)
   setsize!(c,(ndofs,))

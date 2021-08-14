@@ -278,6 +278,70 @@ Random.seed!(0)
     end
 end
 
+p = QUAD
+D = num_dims(QUAD)
+et = Float64
+source_model = CartesianDiscreteModel((0,1,0,1),(2,2))
+
+@testset "Test interpolation Lagrangian" begin
+  # Lagrangian space -> Lagrangian space
+  f(x) = x[1] + x[2]
+  reffe = LagrangianRefFE(et, p, 1)
+  V₁ = FESpace(source_model, reffe, conformity=:H1)
+  fh = interpolate_everywhere(f, V₁)
+  # Target Lagrangian Space
+  reffe = LagrangianRefFE(et, p, 2)
+  model = CartesianDiscreteModel((0,1,0,1),(4,4))
+  V₂ = FESpace(model, reffe, conformity=:H1)
+
+  ifh = Interpolable(fh)
+  try
+    interpolate_everywhere(fh, V₂)
+  catch
+    gh = interpolate_everywhere(ifh, V₂)
+    pts = [VectorValue(rand(2)) for i=1:10]
+    for pt in pts
+      @test gh(pt) ≈ fh(pt)
+    end
+  end
+
+  # VectorValued Lagrangian
+  fᵥ(x) = VectorValue([x[1], x[1]+x[2]])
+  reffe = ReferenceFE(lagrangian, VectorValue{2,et}, 1)
+  V₁ = FESpace(source_model, reffe, conformity=:H1)
+  fh = interpolate_everywhere(fᵥ, V₁)
+  # Target
+  reffe = ReferenceFE(lagrangian, VectorValue{2,et},  2)
+  V₂ = FESpace(model, reffe, conformity=:H1)
+
+  ifh = Interpolable(fh);
+  gh = interpolate_everywhere(ifh, V₂)
+  pts = [VectorValue(rand(2)) for i=1:10]
+  for pt in pts
+    @test gh(pt) ≈ fh(pt)
+  end
+end
+
+@testset "Test interpolation RT" begin
+  # RT Space -> RT Space
+  f(x) = VectorValue([x[1], x[2]])
+  reffe = RaviartThomasRefFE(et, p, 0)
+  V₁ = FESpace(source_model, reffe, conformity=:HDiv)
+  fh = interpolate_everywhere(f, V₁);
+  # Target RT Space
+  reffe = RaviartThomasRefFE(et, p, 1)
+  model = CartesianDiscreteModel((0,1,0,1),(40,40))
+  V₂ = FESpace(model, reffe, conformity=:HDiv)
+
+  ifh = Interpolable(fh)
+  gh = interpolate_everywhere(ifh, V₂)
+  pts = [VectorValue(rand(2)) for i=1:10]
+  for pt in pts
+    @test gh(pt) ≈ fh(pt)
+  end
+end
+
+
 #np = 3
 #ndofs = 4
 #

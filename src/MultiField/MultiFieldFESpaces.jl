@@ -1,4 +1,3 @@
-
 function _can_be_restricted_to(trian_i,trian)
   if have_compatible_domains(trian_i,trian) ||
     have_compatible_domains(trian_i,get_background_triangulation(trian)) ||
