@@ -44,7 +44,7 @@ degree = 2*(order+1)
 dΓ = Measure(btrian,degree)
 nb = get_normal_vector(btrian)
 
-a((u, p),(v, q)) = ∫( u⋅v + q*(∇⋅u) )*dΩ - ∫(DIV(v)*p)*dω
+a((u, p),(v, q)) = ∫( u⋅v )*dΩ + ∫(q*DIV(u)-DIV(v)*p)*dω
 
 b(( v, q)) = ∫( v⋅f + q*(∇⋅u))*dΩ - ∫((v⋅nb)*p )*dΓ
 
