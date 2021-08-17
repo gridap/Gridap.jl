@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.16.4] - 2021-08-17
 
 ### Added
 - Trait to CellQuadrature to support the evaluation of integrals on the reference domain. Since PR [#636](https://github.com/gridap/Gridap.jl/pull/636).
