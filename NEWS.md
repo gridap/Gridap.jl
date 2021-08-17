@@ -7,8 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Added a new trait to CellQuadrature to support the evaluation of integrals on the reference domain. Since PR [#636](https://github.com/gridap/Gridap.jl/pull/636).
-
+- Trait to CellQuadrature to support the evaluation of integrals on the reference domain. Since PR [#636](https://github.com/gridap/Gridap.jl/pull/636).
+- Type `Interpolable` allowing to interpolate data from two independent meshes. Since PR [#632](https://github.com/gridap/Gridap.jl/pull/632).
 
 ## [0.16.3] - 2021-06-28
 
