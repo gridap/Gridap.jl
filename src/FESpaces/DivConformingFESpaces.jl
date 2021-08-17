@@ -178,6 +178,11 @@ function evaluate!(cache,
 end
 
 # Support for DIV operator
+function _DIV(f::LazyArray{<:Fill{T}}) where T
+  df=_DIV(f.args[1])
+  k=f.maps.value
+  lazy_map(k,df)
+end
 function _DIV(f::LazyArray{<:Fill{typeof(_transform_rt_shapefuns)}})
   reffe_rt=f.args[1][1] # Assuming that we only have one type of cell
   fsign_flip=f.args[3]
@@ -187,8 +192,4 @@ function _DIV(f::LazyArray{<:Fill{typeof(_transform_rt_shapefuns)}})
   div_ϕrgₖ = Fill(div_ϕrg,length(f))
   fsign_flip=lazy_map(Broadcasting(Operation(x->(-1)^x)), fsign_flip)
   lazy_map(Broadcasting(Operation(*)),fsign_flip,div_ϕrgₖ)
-end
-function _DIV(f::LazyArray{<:Fill{typeof(transpose)}})
-  df=_DIV(f.args[1])
-  lazy_map(transpose,df)
 end
