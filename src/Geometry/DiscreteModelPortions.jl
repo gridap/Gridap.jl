@@ -1,7 +1,7 @@
 
 """
 """
-struct DiscreteModelPortion{Dc,Dp} <: DiscreteModel{Dc,Dc}
+struct DiscreteModelPortion{Dc,Dp} <: DiscreteModel{Dc,Dp}
   model::DiscreteModel{Dc,Dp}
   parent_model::DiscreteModel{Dc,Dp}
   d_to_dface_to_parent_dface::Vector{Vector{Int}}
