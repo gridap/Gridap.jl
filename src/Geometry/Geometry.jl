@@ -222,6 +222,6 @@ include("AppendedTriangulations.jl")
 
 include("CompressedCellArrays.jl")
 
-include("BoundaryDiscreteModel.jl")
+include("BoundaryDiscreteModels.jl")
 
 end # module
