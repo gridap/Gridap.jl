@@ -296,13 +296,13 @@ function lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{<:BlockMap}},x::Abstrac
   lazy_map(k,args...)
 end
 
-function lazy_map(k::Broadcasting,a::LazyArray{<:Fill{<:BlockMap}})
+# This lazy_map is triggered from function gradient(a::CellField) with optimization
+# purposes. See https://github.com/gridap/Gridap.jl/pull/638 for more details.
+function lazy_map(k::Broadcasting{typeof(gradient)},a::LazyArray{<:Fill{<:BlockMap}})
   args = map(i->lazy_map(k,i),a.args)
   bm = a.maps.value
   lazy_map(bm,args...)
 end
-
-
 
 function return_cache(f::ArrayBlock{A,N},x) where {A,N}
   fi = testitem(f)
