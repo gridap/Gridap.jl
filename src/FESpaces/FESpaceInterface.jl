@@ -203,7 +203,7 @@ function ∇∇(a::SingleFieldFEBasis)
   SingleFieldFEBasis(get_data(∇∇(f)),a.trian,a.basis_style,a.domain_style)
 end
 function DIV(f::SingleFieldFEBasis)
-  df=_DIV(get_data(f))
+  df=DIV(get_data(f))
   SingleFieldFEBasis(df,f.trian,f.basis_style,f.domain_style)
 end
 function change_domain(a::SingleFieldFEBasis,trian::Triangulation,target_domain::DomainStyle)
