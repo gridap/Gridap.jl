@@ -436,7 +436,7 @@ function gradient(a::CellField)
 end
 
 function DIV(a::CellField)
-  DIVa = lazy_map(Broadcasting(DIV),get_data(a))
+  DIVa = DIV(get_data(a))
   if DomainStyle(a) == PhysicalDomain()
     @notimplemented
   end

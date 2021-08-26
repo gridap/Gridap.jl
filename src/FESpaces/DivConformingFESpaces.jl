@@ -193,3 +193,9 @@ function DIV(f::LazyArray{<:Fill{typeof(_transform_rt_shapefuns)}})
   fsign_flip=lazy_map(Broadcasting(Operation(x->(-1)^x)), fsign_flip)
   lazy_map(Broadcasting(Operation(*)),fsign_flip,div_ϕrgₖ)
 end
+
+function DIV(a::LazyArray{<:Fill{typeof(linear_combination)}})
+  i_to_basis = DIV(a.args[2])
+  i_to_values = a.args[1]
+  lazy_map(linear_combination,i_to_values,i_to_basis)
+end

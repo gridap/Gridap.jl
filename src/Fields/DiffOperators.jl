@@ -16,14 +16,6 @@ function DIV(f)
   @notimplemented "DIV operator is only defined for certain type of operands"
 end
 
-function lazy_map(
-  k::Broadcasting{typeof(DIV)}, a::LazyArray{<:Fill{typeof(linear_combination)}})
-
-  i_to_basis = DIV(a.args[2])
-  i_to_values = a.args[1]
-  lazy_map(linear_combination,i_to_values,i_to_basis)
-end
-
 function symmetric_gradient end
 
 """
