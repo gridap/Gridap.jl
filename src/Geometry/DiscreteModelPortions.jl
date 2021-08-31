@@ -49,6 +49,8 @@ function _grid_topology_portion(topo,cell_to_parent_cell)
 
   d_to_dface_to_parent_dface = [
     _setup_dface_to_parent_dface(
+      Val{d}(),
+      Val{D}(),
       n_m_to_parent_nface_to_parent_mface[D+1,d+1],
       num_faces(topo,d),
       cell_to_parent_cell) for d in 0:D]
@@ -77,12 +79,34 @@ function _grid_topology_portion(topo,cell_to_parent_cell)
 end
 
 function _setup_dface_to_parent_dface(
+  ::Val{Dc},
+  ::Val{Dc},
   parent_cell_to_parent_dface::Table,
   num_parent_dfaces,
-  cell_to_parent_cell)
-
+  cell_to_parent_cell) where Dc
+  dface_to_parent_dface=Int[]
   parent_dface_touched = fill(false,num_parent_dfaces)
-  dface = 0
+  for parent_cell in cell_to_parent_cell
+    pini = parent_cell_to_parent_dface.ptrs[parent_cell]
+    pend = parent_cell_to_parent_dface.ptrs[parent_cell+1]-1
+    for p in pini:pend
+      parent_dface = parent_cell_to_parent_dface.data[p]
+      if (!parent_dface_touched[parent_dface])
+         push!(dface_to_parent_dface,parent_dface)
+         parent_dface_touched[parent_dface] = true
+      end
+    end
+  end
+  dface_to_parent_dface
+end
+
+function _setup_dface_to_parent_dface(
+  ::Val{Df},
+  ::Val{Dc},
+  parent_cell_to_parent_dface::Table,
+  num_parent_dfaces,
+  cell_to_parent_cell) where {Df,Dc}
+  parent_dface_touched = fill(false,num_parent_dfaces)
   for parent_cell in cell_to_parent_cell
     pini = parent_cell_to_parent_dface.ptrs[parent_cell]
     pend = parent_cell_to_parent_dface.ptrs[parent_cell+1]-1
@@ -92,7 +116,6 @@ function _setup_dface_to_parent_dface(
     end
   end
   dface_to_parent_dface = findall(parent_dface_touched)
-  dface_to_parent_dface
 end
 
 function _setup_connectivities_d(
@@ -141,4 +164,3 @@ function _update_labels_dim!(face_to_label,oface_to_label,face_to_oface)
     face_to_label[face] = label
   end
 end
-
