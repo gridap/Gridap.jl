@@ -66,10 +66,10 @@ bgmodel  = CartesianDiscreteModel(domain,cells)
 model    = BoundaryDiscreteModel(Polytope{2},bgmodel,Int32[3,4,5,6,1,2])
 topo     = get_grid_topology(model)
 cell_vertices = get_faces(topo,2,0)
-@test_broken cell_vertices[5] == [1,2,3,4]
-@test_broken cell_vertices[6] == [5,6,7,8]
-@test_broken cell_vertices[1] == [1,2,5,6]
-@test_broken cell_vertices[2] == [3,4,7,8]
-@test_broken cell_vertices[3] == [1,3,5,7]
-@test_broken cell_vertices[4] == [2,4,6,8]
+@test cell_vertices[5] == [1,2,3,4]
+@test cell_vertices[6] == [5,6,7,8]
+@test cell_vertices[1] == [1,2,5,6]
+@test cell_vertices[2] == [3,4,7,8]
+@test cell_vertices[3] == [1,3,5,7]
+@test cell_vertices[4] == [2,4,6,8]
 end
