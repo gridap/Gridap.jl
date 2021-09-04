@@ -119,12 +119,21 @@ return_type(::MonomialBasis{D,T}) where {D,T} = T
 
 function return_cache(f::MonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   @assert D == length(eltype(x)) "Incorrect number of point components"
+
+  point_primitive_type = eltype(eltype(x))
+
+  if isempty(T.parameters)
+        Tp = point_primitive_type
+  else
+        Tp = VectorValue{T.parameters[1],point_primitive_type}
+  end
+  
   np = length(x)
   ndof = length(f.terms)*num_components(T)
   n = 1 + _maximum(f.orders)
-  r = CachedArray(zeros(T,(np,ndof)))
-  v = CachedArray(zeros(T,(ndof,)))
-  c = CachedArray(zeros(eltype(T),(D,n)))
+  r = CachedArray(zeros(Tp,(np,ndof)))
+  v = CachedArray(zeros(Tp,(ndof,)))
+  c = CachedArray(zeros(eltype(Tp),(D,n)))
   (r, v, c)
 end
 
@@ -381,6 +390,7 @@ function _gradient_nd!(
   end
 
   z = zero(Mutable(VectorValue{D,T}))
+
   o = one(T)
   k = 1
 

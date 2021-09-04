@@ -51,23 +51,13 @@ function CellQuadrature(trian::Triangulation,quad::Quadrature,ids::DomainStyle)
   CellQuadrature(trian,cell_quad,ids)
 end
 
-function CellQuadrature(trian::Triangulation,
-  cell_quad::AbstractVector{<:Quadrature})
-  CellQuadrature(trian,cell_quad,PhysicalDomain())
-end
-
-function CellQuadrature(trian::Triangulation,
-                        cell_quad::AbstractVector{<:Quadrature},ids::DomainStyle)
+function CellQuadrature(trian::Triangulation,cell_quad::AbstractVector{<:Quadrature})
   ctype_to_quad, cell_to_ctype = compress_cell_data(cell_quad)
   ctype_to_point = map(get_coordinates,ctype_to_quad)
   ctype_to_weight = map(get_weights,ctype_to_quad)
   cell_point = expand_cell_data(ctype_to_point,cell_to_ctype)
   cell_weight = expand_cell_data(ctype_to_weight,cell_to_ctype)
-  CellQuadrature(cell_quad,cell_point,cell_weight,trian,ReferenceDomain(),ids)
-end
-
-function CellQuadrature(trian::AppendedTriangulation,degree1,degree2)
-  CellQuadrature(trian,degree1,degree2,PhysicalDomain())
+  CellQuadrature(cell_quad,cell_point,cell_weight,trian,ReferenceDomain())
 end
 
 function CellQuadrature(trian::AppendedTriangulation,degree1,degree2,ids::DomainStyle)
@@ -204,7 +194,16 @@ function get_cell_measure(trian::Triangulation)
   cell_to_dV = integrate(1,quad)
   cell_to_bgcell = get_cell_to_bgcell(trian)
   bgtrian = get_background_triangulation(trian)
-  bgcell_to_dV = zeros(num_cells(bgtrian))
+  
+  if typeof(trian) <: AppendedTriangulation
+    T = eltype(eltype(trian.a.subcells.point_to_coords))
+  else
+    T = eltype(cell_to_dV)
+  end
+  
+  bgcell_to_dV = zeros(T,num_cells(bgtrian))
+
+
   _meas_K_fill!(bgcell_to_dV,cell_to_dV,cell_to_bgcell)
   bgcell_to_dV
 end
@@ -216,3 +215,4 @@ function _meas_K_fill!(bgcell_to_dV,cell_to_dV,cell_to_bgcell)
     bgcell_to_dV[bgcell] += dV
   end
 end
+
