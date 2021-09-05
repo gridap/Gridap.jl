@@ -65,13 +65,40 @@ A,b = assemble_matrix_and_vector(assem,data)
 x = A\b
 uh = FEFunction(U,x)
 
-A = assemble_matrix(a,U,V)
-b = assemble_vector(ℓ,V)
-A,b = assemble_matrix_and_vector(a,ℓ,U,V)
+A1 = assemble_matrix(a,U,V)
+b1 = assemble_vector(ℓ,V)
+A2,b2 = assemble_matrix_and_vector(a,ℓ,U,V)
 
-A = assemble_matrix(a(du,dv),U,V)
-b = assemble_vector(ℓ(dv),V)
-A,b = assemble_matrix_and_vector(a(du,dv),ℓ(dv),U,V)
+A12 = copy(A1); A12[1,1]=rand()
+b12 = copy(b1); b12[1]=rand()
+A22 = copy(A2); A22[1,1]=rand()
+b22 = copy(b2); b22[1]=rand()
+
+tol = 1.e-14
+assemble_matrix!(A12,a,U,V)
+assemble_vector!(b12,ℓ,V)
+assemble_matrix_and_vector!(A22,b22,a,ℓ,U,V)
+@test norm(A12-A1) < tol
+@test norm(b12-b1) < tol
+@test norm(A22-A2) < tol
+@test norm(b22-b2) < tol
+
+A1 = assemble_matrix(a(du,dv),U,V)
+b1 = assemble_vector(ℓ(dv),V)
+A2,b2 = assemble_matrix_and_vector(a(du,dv),ℓ(dv),U,V)
+
+A12 = copy(A1); A12[1,1]=rand()
+b12 = copy(b1); b12[1]=rand()
+A22 = copy(A2); A22[1,1]=rand()
+b22 = copy(b2); b22[1]=rand()
+
+assemble_matrix!(A12,a(du,dv),U,V)
+assemble_vector!(b12,ℓ(dv),V)
+assemble_matrix_and_vector!(A22,b22,a(du,dv),ℓ(dv),U,V)
+@test norm(A12-A1) < tol
+@test norm(b12-b1) < tol
+@test norm(A22-A2) < tol
+@test norm(b22-b2) < tol
 
 V = TestFESpace(
   model,
