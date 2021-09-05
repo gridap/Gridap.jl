@@ -51,13 +51,23 @@ function CellQuadrature(trian::Triangulation,quad::Quadrature,ids::DomainStyle)
   CellQuadrature(trian,cell_quad,ids)
 end
 
-function CellQuadrature(trian::Triangulation,cell_quad::AbstractVector{<:Quadrature})
+function CellQuadrature(trian::Triangulation,
+  cell_quad::AbstractVector{<:Quadrature})
+  CellQuadrature(trian,cell_quad,PhysicalDomain())
+end
+
+function CellQuadrature(trian::Triangulation,
+                        cell_quad::AbstractVector{<:Quadrature},ids::DomainStyle)
   ctype_to_quad, cell_to_ctype = compress_cell_data(cell_quad)
   ctype_to_point = map(get_coordinates,ctype_to_quad)
   ctype_to_weight = map(get_weights,ctype_to_quad)
   cell_point = expand_cell_data(ctype_to_point,cell_to_ctype)
   cell_weight = expand_cell_data(ctype_to_weight,cell_to_ctype)
-  CellQuadrature(cell_quad,cell_point,cell_weight,trian,ReferenceDomain())
+  CellQuadrature(cell_quad,cell_point,cell_weight,trian,ReferenceDomain(),ids)
+end
+
+function CellQuadrature(trian::AppendedTriangulation,degree1,degree2)
+  CellQuadrature(trian,degree1,degree2,PhysicalDomain())
 end
 
 function CellQuadrature(trian::AppendedTriangulation,degree1,degree2,ids::DomainStyle)
