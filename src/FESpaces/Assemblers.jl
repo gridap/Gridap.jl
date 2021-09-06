@@ -318,7 +318,7 @@ function assemble_matrix_and_vector(f,b,a::Assembler,U::FESpace,V::FESpace)
   assemble_matrix_and_vector(a,collect_cell_matrix_and_vector(U,V,f,b))
 end
 
-function assemble_matrix_and_vector!(M,r,f,b,a::Assembler,U::FESpace,V::FESpace)
+function assemble_matrix_and_vector!(M::AbstractMatrix,r::AbstractVector,f,b,a::Assembler,U::FESpace,V::FESpace)
   assemble_matrix_and_vector!(M,r,a,collect_cell_matrix_and_vector(U,V,f,b))
 end
 
@@ -327,7 +327,7 @@ function assemble_matrix(f,U::FESpace,V::FESpace)
   assemble_matrix(f,a,U,V)
 end
 
-function assemble_matrix!(A,f,U::FESpace,V::FESpace)
+function assemble_matrix!(A::AbstractMatrix,f,U::FESpace,V::FESpace)
   a = SparseMatrixAssembler(U,V)
   assemble_matrix!(A,f,a,U,V)
 end
@@ -337,7 +337,7 @@ function assemble_vector(f,V::FESpace)
   assemble_vector(f,a,V)
 end
 
-function assemble_vector!(b,f,V::FESpace)
+function assemble_vector!(b::AbstractVector,f,V::FESpace)
   a = SparseMatrixAssembler(V,V)
   assemble_vector!(b,f,a,V)
 end
@@ -347,7 +347,7 @@ function assemble_matrix_and_vector(f,b,U::FESpace,V::FESpace)
   assemble_matrix_and_vector(f,b,a,U,V)
 end
 
-function assemble_matrix_and_vector!(M,r,f,b,U::FESpace,V::FESpace)
+function assemble_matrix_and_vector!(M::AbstractMatrix,r::AbstractVector,f,b,U::FESpace,V::FESpace)
   a = SparseMatrixAssembler(U,V)
   assemble_matrix_and_vector!(M,r,f,b,a,U,V)
 end
