@@ -41,11 +41,11 @@ ThirdOrderTensorValue{D1,D2,D3,T1,L}(data::Tuple) where {D1,D2,D3,T1,L}  = Third
 
 # ThirdOrderTensorValue Vararg constructor
 
-ThirdOrderTensorValue(data...) = ThirdOrderTensorValue(data)
-ThirdOrderTensorValue{D}(data...) where {D} = ThirdOrderTensorValue{D}(data)
-ThirdOrderTensorValue{D1,D2,D3}(data...) where {D1,D2,D3} = ThirdOrderTensorValue{D1,D2,D3}(data)
-ThirdOrderTensorValue{D1,D2,D3,T1}(data...) where {D1,D2,D3,T1} =  ThirdOrderTensorValue{D1,D2,D3,T1}(data)
-ThirdOrderTensorValue{D1,D2,D3,T1,L}(data...) where {D1,D2,D3,T1,L} =  ThirdOrderTensorValue{D1,D2,D3,T1}(data)
+ThirdOrderTensorValue(data::Number...) = ThirdOrderTensorValue(data)
+ThirdOrderTensorValue{D}(data::Number...) where {D} = ThirdOrderTensorValue{D}(data)
+ThirdOrderTensorValue{D1,D2,D3}(data::Number...) where {D1,D2,D3} = ThirdOrderTensorValue{D1,D2,D3}(data)
+ThirdOrderTensorValue{D1,D2,D3,T1}(data::Number...) where {D1,D2,D3,T1} =  ThirdOrderTensorValue{D1,D2,D3,T1}(data)
+ThirdOrderTensorValue{D1,D2,D3,T1,L}(data::Number...) where {D1,D2,D3,T1,L} =  ThirdOrderTensorValue{D1,D2,D3,T1}(data)
 
 # ThirdOrderTensorValue single AbstractArray{3,T} argument constructor
 
