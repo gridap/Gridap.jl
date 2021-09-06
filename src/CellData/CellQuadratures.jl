@@ -212,8 +212,6 @@ function get_cell_measure(trian::Triangulation)
   end
   
   bgcell_to_dV = zeros(T,num_cells(bgtrian))
-
-
   _meas_K_fill!(bgcell_to_dV,cell_to_dV,cell_to_bgcell)
   bgcell_to_dV
 end
