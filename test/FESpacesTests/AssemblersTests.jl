@@ -75,9 +75,9 @@ A22 = copy(A2); A22[1,1]=rand()
 b22 = copy(b2); b22[1]=rand()
 
 tol = 1.e-14
-assemble_matrix!(A12,a,U,V)
-assemble_vector!(b12,ℓ,V)
-assemble_matrix_and_vector!(A22,b22,a,ℓ,U,V)
+assemble_matrix!(a,A12,U,V)
+assemble_vector!(ℓ,b12,V)
+assemble_matrix_and_vector!(a,ℓ,A22,b22,U,V)
 @test norm(A12-A1) < tol
 @test norm(b12-b1) < tol
 @test norm(A22-A2) < tol

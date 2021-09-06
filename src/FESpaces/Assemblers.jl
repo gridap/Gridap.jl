@@ -270,7 +270,7 @@ function assemble_matrix(f::Function,a::Assembler,U::FESpace,V::FESpace)
   assemble_matrix(a,collect_cell_matrix(U,V,f(u,v)))
 end
 
-function assemble_matrix!(A,f::Function,a::Assembler,U::FESpace,V::FESpace)
+function assemble_matrix!(f::Function,A::AbstractMatrix,a::Assembler,U::FESpace,V::FESpace)
   v = get_fe_basis(V)
   u = get_trial_fe_basis(U)
   assemble_matrix!(A,a,collect_cell_matrix(U,V,f(u,v)))
@@ -281,7 +281,7 @@ function assemble_vector(f::Function,a::Assembler,V::FESpace)
   assemble_vector(a,collect_cell_vector(V,f(v)))
 end
 
-function assemble_vector!(b,f::Function,a::Assembler,V::FESpace)
+function assemble_vector!(f::Function,b::AbstractVector,a::Assembler,V::FESpace)
   v = get_fe_basis(V)
   assemble_vector!(b,a,collect_cell_vector(V,f(v)))
 end
@@ -292,7 +292,7 @@ function assemble_matrix_and_vector(f::Function,b::Function,a::Assembler,U::FESp
   assemble_matrix_and_vector(a,collect_cell_matrix_and_vector(U,V,f(u,v),b(v)))
 end
 
-function assemble_matrix_and_vector!(M,r,f::Function,b::Function,a::Assembler,U::FESpace,V::FESpace)
+function assemble_matrix_and_vector!(f::Function,b::Function,M::AbstractMatrix,r::AbstractVector,a::Assembler,U::FESpace,V::FESpace)
   v = get_fe_basis(V)
   u = get_trial_fe_basis(U)
   assemble_matrix_and_vector!(M,r,a,collect_cell_matrix_and_vector(U,V,f(u,v),b(v)))
@@ -302,7 +302,7 @@ function assemble_matrix(f,a::Assembler,U::FESpace,V::FESpace)
   assemble_matrix(a,collect_cell_matrix(U,V,f))
 end
 
-function assemble_matrix!(A,f,a::Assembler,U::FESpace,V::FESpace)
+function assemble_matrix!(A::AbstractMatrix,f,a::Assembler,U::FESpace,V::FESpace)
   assemble_matrix!(A,a,collect_cell_matrix(U,V,f))
 end
 
@@ -310,7 +310,7 @@ function assemble_vector(f,a::Assembler,V::FESpace)
   assemble_vector(a,collect_cell_vector(V,f))
 end
 
-function assemble_vector!(b,f,a::Assembler,V::FESpace)
+function assemble_vector!(b::AbstractVector,f,a::Assembler,V::FESpace)
   assemble_vector!(b,a,collect_cell_vector(V,f))
 end
 
