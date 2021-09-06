@@ -390,7 +390,6 @@ function _gradient_nd!(
   end
 
   z = zero(Mutable(VectorValue{D,T}))
-
   o = one(T)
   k = 1
 
