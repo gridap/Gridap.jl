@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `GenericAssemblyStrategy`. Since PR [#654](https://github.com/gridap/Gridap.jl/pull/654).
+- `GenericAssemblyStrategy`. Since PR [#655](https://github.com/gridap/Gridap.jl/pull/655).
 
 ### Fixed
 - Inheritance relationship for DiscreteModelPortion. Since PR [#645](https://github.com/gridap/Gridap.jl/pull/645).
