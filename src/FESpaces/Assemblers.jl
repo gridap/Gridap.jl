@@ -128,6 +128,21 @@ map_cell_rows(strategy::DefaultAssemblyStrategy,cell_ids) = cell_ids
 
 map_cell_cols(strategy::DefaultAssemblyStrategy,cell_ids) = cell_ids
 
+struct GenericAssemblyStrategy{A,B,C,D} <: AssemblyStrategy
+  row_map::A
+  col_map::B
+  row_mask::C
+  col_mask::D
+end
+
+row_map(a::GenericAssemblyStrategy,row) = a.row_map(row)
+
+col_map(a::GenericAssemblyStrategy,col) = a.col_map(col)
+
+row_mask(a::GenericAssemblyStrategy,row) = a.row_mask(row)
+
+col_mask(a::GenericAssemblyStrategy,col) = a.col_mask(col)
+
 """
 """
 abstract type Assembler <: GridapType end

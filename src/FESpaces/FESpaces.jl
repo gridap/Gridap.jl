@@ -130,6 +130,7 @@ export col_map
 export row_mask
 export col_mask
 export DefaultAssemblyStrategy
+export GenericAssemblyStrategy
 export get_test
 export get_trial
 export get_rows
