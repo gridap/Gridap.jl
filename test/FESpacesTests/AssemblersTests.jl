@@ -92,9 +92,9 @@ b12 = copy(b1); b12[1]=rand()
 A22 = copy(A2); A22[1,1]=rand()
 b22 = copy(b2); b22[1]=rand()
 
-assemble_matrix!(A12,a(du,dv),U,V)
-assemble_vector!(b12,ℓ(dv),V)
-assemble_matrix_and_vector!(A22,b22,a(du,dv),ℓ(dv),U,V)
+assemble_matrix!(a(du,dv),A12,U,V)
+assemble_vector!(ℓ(dv),b12,V)
+assemble_matrix_and_vector!(a(du,dv),ℓ(dv),A22,b22,U,V)
 @test norm(A12-A1) < tol
 @test norm(b12-b1) < tol
 @test norm(A22-A2) < tol

@@ -302,7 +302,7 @@ function assemble_matrix(f,a::Assembler,U::FESpace,V::FESpace)
   assemble_matrix(a,collect_cell_matrix(U,V,f))
 end
 
-function assemble_matrix!(A::AbstractMatrix,f,a::Assembler,U::FESpace,V::FESpace)
+function assemble_matrix!(f,A::AbstractMatrix,a::Assembler,U::FESpace,V::FESpace)
   assemble_matrix!(A,a,collect_cell_matrix(U,V,f))
 end
 
@@ -310,7 +310,7 @@ function assemble_vector(f,a::Assembler,V::FESpace)
   assemble_vector(a,collect_cell_vector(V,f))
 end
 
-function assemble_vector!(b::AbstractVector,f,a::Assembler,V::FESpace)
+function assemble_vector!(f,b::AbstractVector,a::Assembler,V::FESpace)
   assemble_vector!(b,a,collect_cell_vector(V,f))
 end
 
@@ -318,7 +318,7 @@ function assemble_matrix_and_vector(f,b,a::Assembler,U::FESpace,V::FESpace)
   assemble_matrix_and_vector(a,collect_cell_matrix_and_vector(U,V,f,b))
 end
 
-function assemble_matrix_and_vector!(M::AbstractMatrix,r::AbstractVector,f,b,a::Assembler,U::FESpace,V::FESpace)
+function assemble_matrix_and_vector!(f,b,M::AbstractMatrix,r::AbstractVector,a::Assembler,U::FESpace,V::FESpace)
   assemble_matrix_and_vector!(M,r,a,collect_cell_matrix_and_vector(U,V,f,b))
 end
 
@@ -327,9 +327,9 @@ function assemble_matrix(f,U::FESpace,V::FESpace)
   assemble_matrix(f,a,U,V)
 end
 
-function assemble_matrix!(A::AbstractMatrix,f,U::FESpace,V::FESpace)
+function assemble_matrix!(f,A::AbstractMatrix,U::FESpace,V::FESpace)
   a = SparseMatrixAssembler(U,V)
-  assemble_matrix!(A,f,a,U,V)
+  assemble_matrix!(f,A,a,U,V)
 end
 
 function assemble_vector(f,V::FESpace)
@@ -337,9 +337,9 @@ function assemble_vector(f,V::FESpace)
   assemble_vector(f,a,V)
 end
 
-function assemble_vector!(b::AbstractVector,f,V::FESpace)
+function assemble_vector!(f,b::AbstractVector,V::FESpace)
   a = SparseMatrixAssembler(V,V)
-  assemble_vector!(b,f,a,V)
+  assemble_vector!(f,b,a,V)
 end
 
 function assemble_matrix_and_vector(f,b,U::FESpace,V::FESpace)
@@ -347,9 +347,9 @@ function assemble_matrix_and_vector(f,b,U::FESpace,V::FESpace)
   assemble_matrix_and_vector(f,b,a,U,V)
 end
 
-function assemble_matrix_and_vector!(M::AbstractMatrix,r::AbstractVector,f,b,U::FESpace,V::FESpace)
+function assemble_matrix_and_vector!(f,b,M::AbstractMatrix,r::AbstractVector,U::FESpace,V::FESpace)
   a = SparseMatrixAssembler(U,V)
-  assemble_matrix_and_vector!(M,r,f,b,a,U,V)
+  assemble_matrix_and_vector!(f,b,M,r,a,U,V)
 end
 
 # Abstract interface for computing the data to be sent to the assembler
