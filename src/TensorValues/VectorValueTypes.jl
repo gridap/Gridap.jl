@@ -41,12 +41,12 @@ VectorValue{D,T1}(data::Tuple) where {D,T1} = VectorValue{D,T1}(NTuple{D,T1}(dat
 
 # VectorValue Vararg constructor
 
-VectorValue(data...)                    = VectorValue(data)
-VectorValue{D}(data...)    where {D}    = VectorValue{D}(data)
-VectorValue{D,T1}(data...) where {D,T1} = VectorValue{D,T1}(data)
+VectorValue(data::Number...)                    = VectorValue(data)
+VectorValue{D}(data::Number...)    where {D}    = VectorValue{D}(data)
+VectorValue{D,T1}(data::Number...) where {D,T1} = VectorValue{D,T1}(data)
 
 # Fix for julia 1.0.4
-VectorValue{D}(data::T...)    where {D,T}    = VectorValue{D,T}(data)
+VectorValue{D}(data::T...)    where {D,T<:Number}    = VectorValue{D,T}(data)
 
 # VectorValue single AbstractVector argument constructor
 

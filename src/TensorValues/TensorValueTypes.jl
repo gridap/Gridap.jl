@@ -51,11 +51,11 @@ TensorValue{D1,D2,T1,L}(data::Tuple) where {D1,D2,T1,L}  = TensorValue{D1,D2,T1}
 
 # TensorValue Vararg constructor
 
-TensorValue(data...)                            = TensorValue(data)
-TensorValue{D}(data...)        where {D}        = TensorValue{D}(data)
-TensorValue{D1,D2}(data...)    where {D1,D2}    = TensorValue{D1,D2}(data)
-TensorValue{D1,D2,T1}(data...) where {D1,D2,T1} = TensorValue{D1,D2,T1}(data)
-TensorValue{D1,D2,T1,L}(data...) where {D1,D2,T1,L} = TensorValue{D1,D2,T1}(data)
+TensorValue(data::Number...)                            = TensorValue(data)
+TensorValue{D}(data::Number...)        where {D}        = TensorValue{D}(data)
+TensorValue{D1,D2}(data::Number...)    where {D1,D2}    = TensorValue{D1,D2}(data)
+TensorValue{D1,D2,T1}(data::Number...) where {D1,D2,T1} = TensorValue{D1,D2,T1}(data)
+TensorValue{D1,D2,T1,L}(data::Number...) where {D1,D2,T1,L} = TensorValue{D1,D2,T1}(data)
 
 # TensorValue single AbstractMatrix argument constructor
 
