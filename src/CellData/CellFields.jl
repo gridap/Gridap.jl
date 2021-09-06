@@ -16,7 +16,6 @@ function CellPoint(
 
   cell_map = get_cell_map(trian)
   cell_phys_point = lazy_map(evaluate,cell_map,cell_ref_point)
-
   CellPoint(cell_ref_point,cell_phys_point,trian,domain_style)
 end
 
@@ -213,11 +212,14 @@ DomainStyle(::Type{GenericCellField{DS}}) where DS = DS()
    dist = distance(polytope::ExtrusionPolytope,
                    inv_cmap::Field,
                    x::Point)
+
 Calculate distance from point `x` to the polytope. The polytope is
 given by its type and by the inverse cell map, i.e. by the map from
 the physical to the reference space.
+
 Positive distances are outside the polytope, negative distances are
 inside the polytope.
+
 The distance is measured in an unspecified norm, currently the L∞
 norm.
 """
@@ -404,6 +406,7 @@ function _to_common_domain(f::CellField,x::CellPoint)
     @unreachable """\n
     CellField objects defined on a sub-triangulation cannot be evaluated
     on the underlying background mesh.
+
     This happens e.g. when trying to evaluate a CellField defined on a Neumann boundary
     at a CellPoint defined on the underlying background mesh.
     """
@@ -494,6 +497,7 @@ struct OperationCellField{DS} <: CellField
       catch
         @unreachable """\n
         It is not possible to perform the operation "$(op.op)" on the given cell fields.
+
         See the caught error for more information. (If you are using the Visual
           Studio Code REPL you might not see the caught error, please use the
           command-line REPL instead).
@@ -586,10 +590,14 @@ function _to_common_domain(a::CellField...)
   # Find a suitable triangulation
   msg = """\n
   You are trying to operate CellField objects defined on incompatible triangulations.
+
   Make sure that all CellField objects are defined on the background triangulation
   or that the number of different sub-triangulations is equal to one.
+
   For instace:
+
   - 3 cell fields 2, two them on the same Neumann boundary and the other on the background mesh is OK.
+
   - 2 cell fields defined on 2 different Neumann boundaries is NOT OK.
   """
   trian_candidates = unique(objectid,map(get_triangulation,a))
@@ -668,6 +676,7 @@ cross(::typeof(∇),f::CellField) = curl(f)
 
 """
     get_physical_coordinate(trian::Triangulation)
+
 In contrast to get_cell_map, the returned object:
 - is a [`CellField`](@ref)
 - its gradient is the identity tensor
@@ -829,9 +838,12 @@ function (a::SkeletonPair{<:CellField})(x)
   @unreachable """\n
   You are trying to evaluate a CellField on a mesh skeleton but you have not specified which of the
   two sides i.e. plus (aka ⁺) or minus (aka ⁻) you want to select.
+
   For instance, if you have extracted the normal vector and the cell points from a SkeletonTriangulation
+
       x = get_cell_points(strian)
       n = get_normal_vector(strian)
+
   Evaluating `n(x)` is not allowed. You need to call either `n.⁺(x)` or `n.⁻(x)`.
   """
 end
