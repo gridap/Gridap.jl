@@ -389,7 +389,13 @@ function _gradient_nd!(
     _gradient_1d!(g,x,orders[d],d)
   end
 
-  z = zero(Mutable(VectorValue{D,T}))
+  #z = zero(Mutable(VectorValue{D,T}))
+  if isbitstype(T)
+    z = zero(Mutable(VectorValue{D,T}))
+  else 
+    z = zeros(T,D)
+  end
+  
   o = one(T)
   k = 1
 
