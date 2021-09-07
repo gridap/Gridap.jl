@@ -296,6 +296,14 @@ function lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{<:BlockMap}},x::Abstrac
   lazy_map(k,args...)
 end
 
+# This lazy_map is triggered from function gradient(a::CellField) with optimization
+# purposes. See https://github.com/gridap/Gridap.jl/pull/638 for more details.
+function lazy_map(k::Broadcasting{typeof(gradient)},a::LazyArray{<:Fill{<:BlockMap}})
+  args = map(i->lazy_map(k,i),a.args)
+  bm = a.maps.value
+  lazy_map(bm,args...)
+end
+
 function return_cache(f::ArrayBlock{A,N},x) where {A,N}
   fi = testitem(f)
   li = return_cache(fi,x)
@@ -1332,7 +1340,7 @@ for T in (:AddEntriesMap,:TouchEntriesMap)
 
     function return_cache(
       k::$T,A,v::MatrixBlock,I::VectorBlock,J::VectorBlock)
-    
+
       qs = findall(v.touched)
       i, j = Tuple(first(qs))
       cij = return_cache(k,A,v.array[i,j],I.array[i],J.array[j])
@@ -1347,7 +1355,7 @@ for T in (:AddEntriesMap,:TouchEntriesMap)
       end
       cache
     end
-    
+
     function evaluate!(
       cache, k::$T,A,v::MatrixBlock,I::VectorBlock,J::VectorBlock)
       ni,nj = size(v.touched)
@@ -1359,10 +1367,10 @@ for T in (:AddEntriesMap,:TouchEntriesMap)
         end
       end
     end
-    
+
     function return_cache(
       k::$T,A,v::VectorBlock,I::VectorBlock)
-    
+
       qs = findall(v.touched)
       i = first(qs)
       ci = return_cache(k,A,v.array[i],I.array[i])
@@ -1375,7 +1383,7 @@ for T in (:AddEntriesMap,:TouchEntriesMap)
       end
       cache
     end
-    
+
     function evaluate!(
       cache, k::$T,A,v::VectorBlock,I::VectorBlock)
       ni = length(v.touched)
@@ -1388,5 +1396,3 @@ for T in (:AddEntriesMap,:TouchEntriesMap)
 
   end
 end
-
-

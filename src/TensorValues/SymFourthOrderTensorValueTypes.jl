@@ -48,9 +48,9 @@ SymFourthOrderTensorValue{D,T1}(data::Tuple) where {D,T1} = SymFourthOrderTensor
 
 # SymTensorValue Vararg constructor
 
-SymFourthOrderTensorValue(data...) = SymFourthOrderTensorValue(data)
-SymFourthOrderTensorValue{D}(data...) where {D} = SymFourthOrderTensorValue{D}(data)
-SymFourthOrderTensorValue{D,T1}(data...) where {D,T1} = SymFourthOrderTensorValue{D,T1}(data)
+SymFourthOrderTensorValue(data::Number...) = SymFourthOrderTensorValue(data)
+SymFourthOrderTensorValue{D}(data::Number...) where {D} = SymFourthOrderTensorValue{D}(data)
+SymFourthOrderTensorValue{D,T1}(data::Number...) where {D,T1} = SymFourthOrderTensorValue{D,T1}(data)
 
 ###############################################################
 # Conversions (SymTensorValue)
