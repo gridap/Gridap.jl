@@ -79,12 +79,6 @@ term_to_rows = [rows, brows, b0rows]
 term_to_cols = [cols, bcols, b0cols]
 term_to_cellmatvec = [ cellmatvec, bcellmatvec, b0cellmatvec ]
 
-struct AssemblyStrategyMock <: AssemblyStrategy end
-FESpaces.row_map(a::AssemblyStrategyMock,row) = row
-FESpaces.col_map(a::AssemblyStrategyMock,col) = col
-FESpaces.row_mask(a::AssemblyStrategyMock,row) = true
-FESpaces.col_mask(a::AssemblyStrategyMock,col) = true
-
 mtypes = [
   SparseMatrixCSC{Float64,Int},
   SparseMatrixCSR{0,Float64,Int},
@@ -102,7 +96,9 @@ for T in mtypes
   assem = SparseMatrixAssembler(T,Vector{Float64},U,V)
   test_sparse_matrix_assembler(assem,matdata,vecdata,data)
 
-  assem2 = SparseMatrixAssembler(T,Vector{Float64},U,V,AssemblyStrategyMock())
+  strategy = GenericAssemblyStrategy(row->row,col->col,row->true,col->true)
+
+  assem2 = SparseMatrixAssembler(T,Vector{Float64},U,V,strategy)
   test_sparse_matrix_assembler(assem2,matdata,vecdata,data)
 
   matdata = ([cellmat],[rows],[cols])

@@ -8,13 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Implemented DIV operator for FE functions in RT space. Since PR [#650](https://github.com/gridap/Gridap.jl/pull/650).
+- `GenericAssemblyStrategy`. Since PR [#655](https://github.com/gridap/Gridap.jl/pull/655).
+- Additional high level API assembly functions. Since PR [#652](https://github.com/gridap/Gridap.jl/pull/652).
 
 ### Fixed
 - Inheritance relationship for DiscreteModelPortion. Since PR [#645](https://github.com/gridap/Gridap.jl/pull/645).
 - Optimization to RT FEs. Since PR [#638](https://github.com/gridap/Gridap.jl/pull/638).
-
-### Added
-- Additional high level API assembly functions. Since PR [#652](https://github.com/gridap/Gridap.jl/pull/652).
 
 ## [0.16.4] - 2021-08-17
 
