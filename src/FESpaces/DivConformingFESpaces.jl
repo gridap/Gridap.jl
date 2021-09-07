@@ -24,22 +24,34 @@
 #   shape function corresponding to the global DoF.
 # * We do NOT have to use the signed determinant, but its absolute value, in the Piola Map.
 
+struct TransformRTDofBasis{Dc,Dp} <: Map end ;
+
 function get_cell_dof_basis(model::DiscreteModel,
-                       cell_reffe::AbstractArray{<:GenericRefFE{RaviartThomas}},
-                       ::DivConformity)
+                            cell_reffe::AbstractArray{<:GenericRefFE{RaviartThomas}},
+                            ::DivConformity)
     sign_flip = get_sign_flip(model, cell_reffe)
-    lazy_map(_transform_rt_dof_basis,
-             cell_reffe,
-             get_cell_map(Triangulation(model)),
-             sign_flip)
+    cell_map  = get_cell_map(Triangulation(model))
+    phi       = cell_map[1]
+    Jt        = lazy_map(Broadcasting(∇),cell_map)
+    x         = lazy_map(get_nodes,lazy_map(get_dof_basis,cell_reffe))
+    Jtx       = lazy_map(evaluate,Jt,x)
+    reffe     = cell_reffe[1]
+    Dc        = num_dims(reffe)
+    et        = return_type(get_prebasis(reffe))
+    pt        = Point{Dc,et}
+    Dp        = first(size(return_type(phi,zero(pt))))
+    k         = TransformRTDofBasis{Dc,Dp}()
+    lazy_map(k,cell_reffe,Jtx,sign_flip)
 end
 
 function get_cell_shapefuns(model::DiscreteModel,
                             cell_reffe::AbstractArray{<:GenericRefFE{RaviartThomas}},
                             ::DivConformity)
     sign_flip = get_sign_flip(model, cell_reffe)
-    lazy_map(_transform_rt_shapefuns,
-             cell_reffe,
+    cell_reffe_shapefuns=lazy_map(get_shapefuns,cell_reffe)
+    k=ContraVariantPiolaMap()
+    lazy_map(k,
+             cell_reffe_shapefuns,
              get_cell_map(Triangulation(model)),
              lazy_map(Broadcasting(constant_field), sign_flip))
 end
@@ -110,23 +122,10 @@ function get_sign_flip(model::DiscreteModel,
             get_cell_to_bgcell(model))
 end
 
-function _transform_rt_shapefuns(reffe::GenericRefFE{RaviartThomas},
-                                 phi::Field,
-                                 sign_flip::AbstractVector{<:Field})
-  ContraVariantPiolaMap()(get_shapefuns(reffe),phi,sign_flip)
-end
-
-function _transform_rt_dof_basis(reffe::GenericRefFE{RaviartThomas},
-                       phi::Field,
-                       sign_flip::AbstractVector{Bool})
-  cache = return_cache(_transform_rt_dof_basis,reffe,phi,sign_flip)
-  evaluate!(cache,_transform_rt_dof_basis,reffe,phi,sign_flip)
-end
-
-function return_cache(::typeof(_transform_rt_dof_basis),
+function return_cache(::TransformRTDofBasis{Dc,Dp},
                       reffe::GenericRefFE{RaviartThomas},
-                      phi::Field,
-                      ::AbstractVector{Bool})
+                      Jtx,
+                      ::AbstractVector{Bool}) where {Dc,Dp}
   p = get_polytope(reffe)
   prebasis = get_prebasis(reffe)
   order = get_order(prebasis)
@@ -136,40 +135,30 @@ function return_cache(::typeof(_transform_rt_dof_basis),
                                  get_face_nodes_dofs(dofs),
                                  get_face_moments(dofs)
   db = MomentBasedDofBasis(nodes,nf_moments,nf_nodes)
+  face_moments = [ similar(i,VectorValue{Dp,et})  for i in nf_moments ]
 
-  # Determine the type of the elements
-  # in the range of Field. This is the
-  # element type of the face_moments array.
-  D = num_dims(reffe)
-  pt = Point{D,et}
-  T=return_type(phi,zero(pt))
-  face_moments = [ similar(i,T)  for i in nf_moments ]
-
-  Jt_q_cache = return_cache(∇(phi),db.nodes)
-  cache = (db.nodes, db.face_nodes, nf_moments, face_moments, Jt_q_cache)
+  cache = (db.nodes, db.face_nodes, nf_moments, face_moments)
   cache
 end
 
-
 function evaluate!(cache,
-                   ::typeof(_transform_rt_dof_basis),
+                   ::TransformRTDofBasis,
                    reffe::GenericRefFE{RaviartThomas},
-                   phi::Field,
+                   Jt_q,
                    sign_flip::AbstractVector{Bool})
-  nodes, nf_nodes, nf_moments, face_moments, Jt_q_cache = cache
-
-  Jt_q = evaluate!(Jt_q_cache,∇(phi),nodes)
+  nodes, nf_nodes, nf_moments, face_moments = cache
   face_own_dofs=get_face_own_dofs(reffe)
   for face in 1:length(face_moments)
-    moments = nf_moments[face]
-    if length(moments) > 0
+    nf_moments_face   = nf_moments[face]
+    face_moments_face = face_moments[face]
+    if length(nf_moments_face) > 0
       sign = (-1)^sign_flip[face_own_dofs[face][1]]
-      num_qpoints, num_moments = size(moments)
+      num_qpoints, num_moments = size(nf_moments_face)
       for i in 1:num_qpoints
         Jt_q_i = Jt_q[nf_nodes[face][i]]
         change = sign * meas(Jt_q_i) * pinvJt(Jt_q_i)
         for j in 1:num_moments
-          face_moments[face][i,j] = change ⋅ nf_moments[face][i,j]
+          face_moments_face[i,j] = change ⋅ nf_moments_face[i,j]
         end
       end
     end
@@ -177,19 +166,17 @@ function evaluate!(cache,
   MomentBasedDofBasis(nodes,face_moments,nf_nodes)
 end
 
+
 # Support for DIV operator
 function _DIV(f::LazyArray{<:Fill{T}}) where T
   df=_DIV(f.args[1])
   k=f.maps.value
   lazy_map(k,df)
 end
-function _DIV(f::LazyArray{<:Fill{typeof(_transform_rt_shapefuns)}})
-  reffe_rt=f.args[1][1] # Assuming that we only have one type of cell
-  fsign_flip=f.args[3]
-  ϕrg  = get_shapefuns(reffe_rt)
-  ϕrgₖ = Fill(ϕrg,length(f))
-  div_ϕrg = Broadcasting(divergence)(ϕrg)
-  div_ϕrgₖ = Fill(div_ϕrg,length(f))
+function _DIV(f::LazyArray{<:Fill{Broadcasting{Operation{ContraVariantPiolaMap}}}})
+  ϕrgₖ       = f.args[1]
+  fsign_flip = f.args[4]
+  div_ϕrgₖ = lazy_map(Broadcasting(divergence),ϕrgₖ)
   fsign_flip=lazy_map(Broadcasting(Operation(x->(-1)^x)), fsign_flip)
   lazy_map(Broadcasting(Operation(*)),fsign_flip,div_ϕrgₖ)
 end
