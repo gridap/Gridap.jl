@@ -24,7 +24,7 @@ import Gridap.Arrays: lazy_append
 import Gridap.Arrays: get_array
 import Gridap.Arrays: evaluate!
 import Gridap.Arrays: return_cache
-import Gridap.Fields: gradient
+import Gridap.Fields: gradient, DIV
 import Gridap.Fields: ∇∇
 import Gridap.Fields: integrate
 import Gridap.Fields: grad2curl

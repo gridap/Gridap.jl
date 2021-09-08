@@ -38,6 +38,13 @@ function test_div_v_q_equiv(U,V,P,Q,Ω)
   data = collect_cell_matrix(U,Q,a4(u,q))
   A4 = assemble_matrix(assem,data)
   @test norm(A3-A4) < tol
+
+  uh=FEFunction(U,rand(num_free_dofs(U)))
+  l1(q)=∫(q*divergence(uh))dΩ
+  l2(q)=∫(q*DIV(uh))dΩᵣ
+  v1=assemble_vector(l1,Q)
+  v2=assemble_vector(l2,Q)
+  @test norm(v1-v2) < tol
 end
 
 domain =(0,1,0,1)

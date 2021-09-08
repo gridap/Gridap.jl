@@ -435,6 +435,15 @@ function gradient(a::CellField)
   GenericCellField(g,get_triangulation(a),DomainStyle(a))
 end
 
+function DIV(a::CellField)
+  DIVa = DIV(get_data(a))
+  if DomainStyle(a) == PhysicalDomain()
+    @notimplemented
+  end
+  GenericCellField(DIVa,get_triangulation(a),DomainStyle(a))
+end
+
+
 function ∇∇(a::CellField)
   cell_∇∇a = lazy_map(Broadcasting(∇∇),get_data(a))
   if DomainStyle(a) == PhysicalDomain()
