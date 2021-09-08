@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Inheritance relationship for DiscreteModelPortion. Since PR [#645](https://github.com/gridap/Gridap.jl/pull/645).
 - Optimization to RT FEs. Since PR [#638](https://github.com/gridap/Gridap.jl/pull/638).
+- Bug in boundary discrete model. Since PR [#651](https://github.com/gridap/Gridap.jl/pull/651).
 
 ## [0.16.4] - 2021-08-17
 
