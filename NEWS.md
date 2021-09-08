@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.16.5] - 2021-09-08
 
 ### Added
 - Implemented DIV operator for FE functions in RT space. Since PR [#650](https://github.com/gridap/Gridap.jl/pull/650).
@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Additional high level API assembly functions. Since PR [#652](https://github.com/gridap/Gridap.jl/pull/652).
 
 ### Fixed
+- Bug related with the release of ChainRulesCore version 1.3.1. Since [#654](https://github.com/gridap/Gridap.jl/pull/654).
 - Inheritance relationship for DiscreteModelPortion. Since PR [#645](https://github.com/gridap/Gridap.jl/pull/645).
 - Optimization to RT FEs. Since PR [#638](https://github.com/gridap/Gridap.jl/pull/638).
 - Bug in boundary discrete model. Since PR [#651](https://github.com/gridap/Gridap.jl/pull/651).
