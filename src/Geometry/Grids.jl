@@ -1,19 +1,16 @@
 
 """
-    abstract type Grid{Dc,Dp} <: Triangulation{Dc,Dp}
+    abstract type Grid{Dc,Dp}
 
-Abstract type that represents conforming triangulations, whose cell-wise
-nodal coordinates are defined with a vector of nodal coordinates, plus
-a cell-wise vector of node ids.
+Abstract type that represents mesh of a domain of parametric dimension `Dc` and
+physical dimension `Dp`.
 
-The interface of `Grid` is defined by overloading the
-methods in `Triangulation` plus the following ones:
+The interface of `Grid` is defined by overloading:
 
 - [`get_node_coordinates(trian::Grid)`](@ref)
 - [`get_cell_node_ids(trian::Grid)`](@ref)
-
-From these two methods a default implementation of [`get_cell_coordinates(trian::Triangulation)`](@ref)
-is available.
+- [`get_reffes(trian::Grid)`](@ref)
+- [`get_cell_type(trian::Grid)`](@ref)
 
 The `Grid`  interface has the following traits
 
@@ -25,7 +22,7 @@ The interface of `Grid` is tested with
 - [`test_grid`](@ref)
 
 """
-abstract type Grid{Dc,Dp} <: Triangulation{Dc,Dp} end
+abstract type Grid{Dc,Dp} <: GridapType end
 
 # Traits
 
@@ -72,10 +69,49 @@ function get_cell_node_ids(trian::Grid)
 end
 
 """
+    get_reffes(trian::Grid) -> Vector{LagrangianRefFE}
+"""
+function get_reffes(trian::Grid)
+  @abstractmethod
+end
+
+"""
+    get_cell_type(trian::Grid) -> AbstractVector{<:Integer}
+"""
+function get_cell_type(trian::Grid)
+  @abstractmethod
+end
+
+"""
+    get_facet_normal(trian::Grid)
+"""
+function get_facet_normal(trian::Grid)
+  Dp = num_point_dims(trian)
+  Dc = num_cell_dims(trian)
+  if Dp == Dc + 1
+    @abstractmethod
+  else
+    @unreachable "get_facet_normal does not make sense for this grid"
+  end
+end
+
+"""
     test_grid(trian::Grid)
 """
-function test_grid(trian::Grid)
-  test_triangulation(trian)
+function test_grid(trian::Grid{Dc,Dp}) where {Dc,Dp}
+  @test num_cell_dims(trian) == Dc
+  @test num_point_dims(trian) == Dp
+  @test num_cell_dims(typeof(trian)) == Dc
+  @test num_point_dims(typeof(trian)) == Dp
+  cell_coords = get_cell_coordinates(trian)
+  @test isa(cell_coords,AbstractArray{<:AbstractVector{<:Point}})
+  reffes = get_reffes(trian)
+  @test isa(reffes,AbstractVector{<:LagrangianRefFE{Dc}})
+  cell_types = get_cell_type(trian)
+  @test isa(cell_types,AbstractArray{<:Integer})
+  ncells = num_cells(trian)
+  @test ncells == length(cell_coords)
+  @test ncells == length(cell_types)
   nodes_coords = get_node_coordinates(trian)
   @test isa(nodes_coords,AbstractArray{<:Point})
   cell_node_ids = get_cell_node_ids(trian)
@@ -89,7 +125,89 @@ function test_grid(trian::Grid)
   @test is_regular(trian) == (RegularityStyle(trian) == Regular())
 end
 
-# Methods from triangulation
+# Some API
+
+"""
+    num_cells(trian::Grid) -> Int
+"""
+num_cells(trian::Grid) = length(get_cell_type(trian))
+
+"""
+    num_nodes(trian::Grid) -> Int
+"""
+num_nodes(trian::Grid) = length(get_node_coordinates(trian))
+
+"""
+    num_cell_dims(::Grid) -> Int
+    num_cell_dims(::Type{<:Grid}) -> Int
+"""
+num_cell_dims(::Grid{Dc,Dp}) where {Dc,Dp} = Dc
+num_cell_dims(::Type{<:Grid{Dc,Dp}}) where {Dc,Dp} = Dc
+
+"""
+    num_point_dims(::Grid) -> Int
+    num_point_dims(::Type{<:Grid}) -> Int
+"""
+num_point_dims(::Grid{Dc,Dp}) where {Dc,Dp} = Dp
+num_point_dims(::Type{<:Grid{Dc,Dp}}) where {Dc,Dp} = Dp
+
+"""
+    num_dims(::Grid) -> Int
+    num_dims(::Type{<:Grid}) -> Int
+
+Equivalent to `num_cell_dims`.
+"""
+num_dims(g::Grid{Dc}) where Dc = Dc
+num_dims(::Type{<:Grid{Dc}}) where Dc = Dc
+
+"""
+    is_first_order(trian::Grid) -> Bool
+"""
+function is_first_order(trian::Grid)
+  reffes = get_reffes(trian)
+  all(map(is_first_order,reffes))
+end
+
+"""
+    get_cell_reffe(trian::Grid) -> Vector{<:LagrangianRefFE}
+
+It is not desirable to iterate over the resulting array
+for large number of cells if the underlying reference FEs
+are of different Julia type.
+"""
+function get_cell_reffe(trian::Grid)
+  type_to_reffe = get_reffes(trian)
+  cell_to_type = get_cell_type(trian)
+  expand_cell_data(type_to_reffe,cell_to_type)
+end
+
+"""
+"""
+function get_cell_ref_coordinates(trian::Grid)
+  type_to_reffe = get_reffes(trian)
+  type_to_coords = map(get_node_coordinates,type_to_reffe)
+  cell_to_type = get_cell_type(trian)
+  expand_cell_data(type_to_coords,cell_to_type)
+end
+
+"""
+    get_cell_shapefuns(trian::Grid) -> Vector{<:Field}
+"""
+function get_cell_shapefuns(trian::Grid)
+  type_to_reffes = get_reffes(trian)
+  cell_to_type = get_cell_type(trian)
+  type_to_shapefuns = map(get_shapefuns, type_to_reffes)
+  expand_cell_data(type_to_shapefuns,cell_to_type)
+end
+
+"""
+    get_cell_map(trian::Grid) -> Vector{<:Field}
+"""
+function get_cell_map(trian::Grid)
+  cell_to_coords = get_cell_coordinates(trian)
+  cell_to_shapefuns = get_cell_shapefuns(trian)
+  lazy_map(linear_combination,cell_to_coords,cell_to_shapefuns)
+end
 
 function get_cell_coordinates(trian::Grid)
   node_to_coords = get_node_coordinates(trian)
@@ -97,7 +215,12 @@ function get_cell_coordinates(trian::Grid)
   lazy_map(Broadcasting(Reindex(node_to_coords)),cell_to_nodes)
 end
 
-# Some API
+function Quadrature(trian::Grid,args...;kwargs...)
+  cell_ctype = get_cell_type(trian)
+  ctype_polytope = map(get_polytope,get_reffes(trian))
+  ctype_quad = map(p->Quadrature(p,args...;kwargs...),ctype_polytope)
+  cell_quad = expand_cell_data(ctype_quad,cell_ctype)
+end
 
 """
     is_oriented(::Type{<:Grid}) -> Bool
