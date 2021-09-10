@@ -26,10 +26,7 @@ using Test
 
 @testset "DiscreteModelPortions" begin include("DiscreteModelPortionsTests.jl") end
 
-
-
-
-
+@testset "Triangulations" begin include("TriangulationsTestsNEW.jl") end
 
 
 

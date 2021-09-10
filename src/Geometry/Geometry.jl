@@ -118,6 +118,10 @@ export get_background_triangulation
 export get_cell_ref_map
 export have_compatible_domains
 
+export get_discrete_model
+export get_grid
+export get_glue
+
 export Grid
 export get_cell_node_ids
 export test_grid
@@ -208,11 +212,9 @@ include("GridPortions.jl")
 
 include("DiscreteModelPortions.jl")
 
+include("TriangulationsNEW.jl")
 
 
-
-
-#include("Triangulations.jl")
 #
 #
 #

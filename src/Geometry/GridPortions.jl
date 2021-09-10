@@ -68,6 +68,10 @@ function get_cell_type(grid::GridPortion)
   lazy_map(Reindex(get_cell_type(grid.parent_grid)),grid.cell_to_parent_cell)
 end
 
+function get_facet_normal(grid::GridPortion)
+  lazy_map(Reindex(get_facet_normal(grid.parent_grid)),grid.cell_to_parent_cell)
+end
+
 # Helpers
 
 function _find_active_nodes(oldcell_to_oldnodes,cell_to_oldcell,noldnodes)
