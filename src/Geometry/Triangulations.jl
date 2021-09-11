@@ -93,6 +93,13 @@ function get_glue(trian::BodyFittedTriangulation{Dt},::Val{Dm}) where {Dt,Dm}
   @notimplemented
 end
 
+function Base.view(t::BodyFittedTriangulation,ids::AbstractArray)
+  model = t.model
+  grid = view(t.grid,ids)
+  tface_to_mface = lazy_map(Reindex(t.tface_to_mface),ids)
+  BodyFittedTriangulation(model,grid,tface_to_mface)
+end
+
 get_triangulation(model) = Triangulation(model)
 
 function Triangulation(
@@ -136,3 +143,4 @@ function Triangulation(model::DiscreteModel;kwargs...)
   labels = get_face_labeling(model)
   Triangulation(ReferenceFE{d},model,labels;kwargs...)
 end
+

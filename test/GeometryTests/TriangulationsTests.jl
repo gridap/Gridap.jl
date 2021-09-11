@@ -54,6 +54,14 @@ glue = get_glue(Ω1,Val(2))
 @test isa(glue.mface_to_tface,PosNegPartition)
 @test glue.mface_to_tface[glue.tface_to_mface] == 1:length(glue.tface_to_mface)
 
+Ω1 = view(Ω,cell_mcell)
+glue = get_glue(Ω1,Val(2))
+@test glue.tface_to_mface == cell_mcell
+@test isa(glue.tface_to_mface_map,Fill)
+@test model === get_discrete_model(Ω)
+@test isa(glue.mface_to_tface,PosNegPartition)
+@test glue.mface_to_tface[glue.tface_to_mface] == 1:length(glue.tface_to_mface)
+
 labels = get_face_labeling(model)
 entity = num_entities(labels)+1
 labels.d_to_dface_to_entity[end][cell_mcell] .= entity
