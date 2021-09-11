@@ -214,6 +214,7 @@ include("DiscreteModelPortions.jl")
 
 include("Triangulations.jl")
 
+#include("BoundaryTriangulations.jl")
 
 #
 #
@@ -228,7 +229,6 @@ include("Triangulations.jl")
 #
 #include("RestrictedTriangulations.jl")
 #
-#include("BoundaryTriangulations.jl")
 #
 #include("SkeletonTriangulations.jl")
 #

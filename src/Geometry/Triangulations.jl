@@ -51,9 +51,10 @@ get_cell_reffe(trian::Triangulation) = get_cell_reffe(get_grid(trian))
 is_first_order(trian::Triangulation) = is_first_order(get_grid(trian))
 
 # This is the most used glue, but others are possible, see e.g. SkeletonGlue.
-struct FaceToFaceGlue{A,B}
+struct FaceToFaceGlue{A,B,C}
   tface_to_mface::A
   tface_to_mface_map::B
+  mface_to_tface::C
 end
 
 # This is the most basic Triangulation
@@ -77,8 +78,14 @@ get_discrete_model(trian::BodyFittedTriangulation) = trian.model
 get_grid(trian::BodyFittedTriangulation) = trian.grid
 
 function get_glue(trian::BodyFittedTriangulation{Dt},::Val{Dt}) where Dt
+  tface_to_mface = trian.tface_to_mface
   tface_to_mface_map = Fill(GenericField(identity),num_cells(trian))
-  FaceToFaceGlue(trian.tface_to_mface,tface_to_mface_map)
+  if isa(tface_to_mface,IdentityVector) && num_faces(trian.model,Dt) == num_cells(trian)
+    mface_to_tface = tface_to_mface
+  else
+    mface_to_tface = PosNegPartition(tface_to_mface,num_faces(trian.model,Dt))
+  end
+  FaceToFaceGlue(tface_to_mface,tface_to_mface_map,mface_to_tface)
 end
 
 function get_glue(trian::BodyFittedTriangulation{Dt},::Val{Dm}) where {Dt,Dm}
