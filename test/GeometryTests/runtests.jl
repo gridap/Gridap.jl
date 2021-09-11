@@ -32,6 +32,8 @@ using Test
 
 @testset "SkeletonTriangulations" begin include("SkeletonTriangulationsTests.jl") end
 
+@testset "AppendedTriangulations" begin include("AppendedTriangulationsTests.jl") end
+
 
 
 
@@ -45,7 +47,6 @@ using Test
 #
 #@testset "RestrictedDiscreteModels" begin include("RestrictedDiscreteModelsTests.jl") end
 #
-#@testset "AppendedTriangulations" begin include("AppendedTriangulationsTests.jl") end
 #
 #@testset "CompressedCellArrays" begin include("CompressedCellArraysTests.jl") end
 #

@@ -45,6 +45,7 @@ get_facet_normal(trian::Triangulation) = get_facet_normal(get_grid(trian))
 # The following are not strictly needed, sine there is a default implementation for them.
 # In any case, we delegate just in case the underlying grid defines more performant versions
 get_cell_coordinates(trian::Triangulation) = get_cell_coordinates(get_grid(trian))
+get_cell_ref_coordinates(trian::Triangulation) = get_cell_ref_coordinates(get_grid(trian))
 get_cell_shapefuns(trian::Triangulation) = get_cell_shapefuns(get_grid(trian))
 get_cell_map(trian::Triangulation) = get_cell_map(get_grid(trian))
 get_cell_reffe(trian::Triangulation) = get_cell_reffe(get_grid(trian))

@@ -18,10 +18,10 @@ cell_to_mask[1:nin] .= true
 
 grid = get_grid(model)
 
-trian_in = RestrictedTriangulation(grid,cell_to_mask)
+trian_in = Triangulation(model,cell_to_mask)
 test_triangulation(trian_in)
 
-trian_out = RestrictedTriangulation(grid,.! cell_to_mask)
+trian_out = Triangulation(model,.! cell_to_mask)
 test_triangulation(trian_out)
 
 trian = lazy_append(trian_out,trian_in)
@@ -33,15 +33,15 @@ test_triangulation(trian)
 
 @test isa(get_cell_map(trian),AppendedArray)
 
-@test isa(get_cell_ref_map(trian),AppendedArray)
-
 @test !isa(get_cell_reffe(trian),AppendedArray)
 
 @test isa(get_cell_shapefuns(trian),AppendedArray)
 
 @test isa(get_cell_type(trian),AppendedArray)
 
-@test isa(get_cell_to_bgcell(trian),AppendedArray)
+glue = get_glue(trian,Val(2))
+@test isa(glue.tface_to_mface,AppendedArray)
+@test isa(glue.tface_to_mface_map,AppendedArray)
 
 #order = 1
 #quad = CellQuadrature(trian,2*order)

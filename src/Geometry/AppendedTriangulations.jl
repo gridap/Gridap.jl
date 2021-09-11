@@ -1,103 +1,137 @@
 
-function lazy_append(a::Triangulation,b::Triangulation)
-  AppendedTriangulation(a,b)
+function lazy_append(a::Grid,b::Grid)
+  AppendedGrid(a,b)
 end
 
-struct AppendedTriangulation{Dc,Dp} <: Triangulation{Dc,Dp}
-  a::Triangulation{Dc,Dp}
-  b::Triangulation{Dc,Dp}
-  function AppendedTriangulation(a::Triangulation{Dc,Dp},b::Triangulation{Dc,Dp}) where {Dc,Dp}
-    @assert get_background_triangulation(a) === get_background_triangulation(b)
-    new{Dc,Dp}(a,b)
+struct AppendedGrid{Dc,Dp,A,B} <: Grid{Dc,Dp}
+  a::A
+  b::B
+  function AppendedGrid( a::Grid{Dc,Dp}, b::Grid{Dc,Dp}) where {Dc,Dp}
+    new{Dc,Dp,typeof(a),typeof(b)}(a,b)
   end
 end
 
-TriangulationStyle(::Type{<:AppendedTriangulation}) = SubTriangulation()
+function get_node_coordinates(t::AppendedGrid)
+  xa = get_node_coordinates(t.a)
+  xb = get_node_coordinates(t.b)
+  if xa === xb
+    xa
+  else
+    lazy_append(xa,xb)
+  end
+end
 
-get_background_triangulation(trian::AppendedTriangulation) = get_background_triangulation(trian.a)
+function get_cell_node_ids(t::AppendedGrid)
+  xa = get_node_coordinates(t.a)
+  xb = get_node_coordinates(t.b)
+  idsa = get_cell_node_ids(t.a)
+  idsb = get_cell_node_ids(t.b)
+  if xa === xb
+    lazy_append(idsa,idsb)
+  else
+    nxa = Int32(length(xa))
+    idsc = lazy_map(Broadcasting(i->i+nxa),idsb)
+    lazy_append(idsa,idsc)
+  end
+end
 
-function get_cell_coordinates(trian::AppendedTriangulation)
+function get_reffes(t::AppendedGrid)
+  ra = get_reffes(t.a)
+  rb = get_reffes(t.b)
+  if ra === rb
+    ra
+  else
+    vcat(ra,rb)
+  end
+end
+
+function get_cell_type(t::AppendedGrid)
+  ra = get_reffes(t.a)
+  rb = get_reffes(t.b)
+  a = get_cell_type(t.a)
+  b = get_cell_type(t.b)
+  if ra === rb
+    lazy_append(a,b)
+  else
+    nra = Int8(length(ra))
+    c = lazy_map(i->i+nra,b)
+    lazy_append(a,c)
+  end
+end
+
+function get_cell_coordinates(trian::AppendedGrid)
   a = get_cell_coordinates(trian.a)
   b = get_cell_coordinates(trian.b)
   lazy_append(a,b)
 end
 
-function get_cell_ref_coordinates(trian::AppendedTriangulation)
+function get_cell_ref_coordinates(trian::AppendedGrid)
   a = get_cell_ref_coordinates(trian.a)
   b = get_cell_ref_coordinates(trian.b)
   lazy_append(a,b)
 end
 
-function get_reffes(trian::AppendedTriangulation)
-  vcat(get_reffes(trian.a),get_reffes(trian.b))
-end
-
-function get_cell_type(trian::AppendedTriangulation)
-  a = get_cell_type(trian.a)
-  b = get_cell_type(trian.b) .+ Int8(length(get_reffes(trian.a)))
-  lazy_append(a,b)
-end
-
-#function reindex(f::AbstractArray,trian::AppendedTriangulation)
-#  a = reindex(f,trian.a)
-#  b = reindex(f,trian.b)
-#  lazy_append(a,b)
-#end
-
-function get_cell_to_bgcell(trian::AppendedTriangulation)
-  a = get_cell_to_bgcell(trian.a)
-  b = get_cell_to_bgcell(trian.b)
-  lazy_append(a,b)
-end
-
-function get_cell_ref_map(trian::AppendedTriangulation)
-  a = get_cell_ref_map(trian.a)
-  b = get_cell_ref_map(trian.b)
-  lazy_append(a,b)
-end
-
-#function restrict(f::AbstractArray,trian::AppendedTriangulation)
-#  a = restrict(f,trian.a)
-#  b = restrict(f,trian.b)
-#  lazy_append(a,b)
-#end
-
 # In this case, we do not want a lazy_append since it will become difficult to
 # compress / expand the reffes.
-#function get_cell_reffe(trian::AppendedTriangulation)
+#function get_cell_reffe(trian::AppendedGrid)
 #  a = get_cell_reffe(trian.a)
 #  b = get_cell_reffe(trian.b)
 #  lazy_append(a,b)
 #end
 
-function get_cell_shapefuns(trian::AppendedTriangulation)
+function get_cell_shapefuns(trian::AppendedGrid)
   a = get_cell_shapefuns(trian.a)
   b = get_cell_shapefuns(trian.b)
   lazy_append(a,b)
 end
 
-function get_cell_map(trian::AppendedTriangulation)
+function get_cell_map(trian::AppendedGrid)
   a = get_cell_map(trian.a)
   b = get_cell_map(trian.b)
   lazy_append(a,b)
 end
 
-function get_facet_normal(trian::AppendedTriangulation)
+function get_facet_normal(trian::AppendedGrid)
   cm = get_cell_map(trian)
   a = get_facet_normal(trian.a)
   b = get_facet_normal(trian.b)
   lazy_append(a,b)
 end
 
-#function CellQuadrature(trian::AppendedTriangulation,degree1::Integer,degree2::Integer)
-#  quad1 = CellQuadrature(trian.a,degree1)
-#  quad2 = CellQuadrature(trian.b,degree2)
-#  lazy_append(quad1,quad2)
-#end
-#
-#function CellQuadrature(trian::AppendedTriangulation,degree::Integer)
-#  CellQuadrature(trian,degree,degree)
-#end
+function lazy_append(a::Triangulation,b::Triangulation)
+  AppendedTriangulation(a,b)
+end
+
+struct AppendedTriangulation{Dc,Dp,A,B} <: Triangulation{Dc,Dp}
+  a::A
+  b::B
+  function AppendedTriangulation(
+    a::Triangulation{Dc,Dp}, b::Triangulation{Dc,Dp}) where {Dc,Dp}
+    @assert get_discrete_model(a) === get_discrete_model(b)
+    new{Dc,Dp,typeof(a),typeof(b)}(a,b)
+  end
+end
+
+get_discrete_model(t::AppendedTriangulation) = get_discrete_model(t.a)
+
+function get_grid(t::AppendedTriangulation)
+  a = get_grid(t.a)
+  b = get_grid(t.b)
+  lazy_append(a,b)
+end
+
+function get_glue(t::AppendedTriangulation,::Val{D}) where D 
+  a = get_glue(t.a,Val(D))
+  b = get_glue(t.b,Val(D))
+  lazy_append(a,b)
+end
+
+function lazy_append(a::FaceToFaceGlue,b::FaceToFaceGlue)
+  tface_to_mface = lazy_append(a.tface_to_mface,b.tface_to_mface)
+  tface_to_mface_map = lazy_append(a.tface_to_mface_map,b.tface_to_mface_map)
+  mface_to_tface = nothing
+  FaceToFaceGlue(tface_to_mface,tface_to_mface_map,mface_to_tface)
+end
 
 #function compress_contributions(cell_mat::AppendedArray,trian::AppendedTriangulation)
 #  if length(cell_mat.a) == num_cells(trian.a) && length(cell_mat.b) == num_cells(trian.b)
@@ -118,14 +152,3 @@ end
 #    return cell_ids
 #  end
 #end
-
-function compress_contributions(cell_mat,trian::AppendedTriangulation)
-  cell_to_bgcell = get_cell_to_bgcell(trian)
-  ccell_mat = compress_contributions(cell_mat,cell_to_bgcell)
-  ccell_mat
-end
-
-function compress_ids(cell_ids,trian::AppendedTriangulation)
-  cell_to_bgcell = get_cell_to_bgcell(trian)
-  compress_ids(cell_ids,cell_to_bgcell)
-end

@@ -218,6 +218,8 @@ include("BoundaryTriangulations.jl")
 
 include("SkeletonTriangulations.jl")
 
+include("AppendedTriangulations.jl")
+
 #
 #
 #
@@ -237,7 +239,6 @@ include("SkeletonTriangulations.jl")
 #
 #include("RestrictedDiscreteModels.jl")
 #
-#include("AppendedTriangulations.jl")
 #
 #include("CompressedCellArrays.jl")
 #
