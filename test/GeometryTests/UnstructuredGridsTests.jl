@@ -6,6 +6,7 @@ using Gridap.Geometry
 using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Io
+using Gridap.TensorValues
 
 # Unstructured grid from raw data
 
@@ -15,6 +16,12 @@ node_coordinates = get_node_coordinates(trian)
 cell_node_ids = get_cell_node_ids(trian)
 reffes = get_reffes(trian)
 cell_types = get_cell_type(trian)
+facet_normal = fill(VectorValue(0,1),num_cells(trian)) #dummy value
+
+grid = UnstructuredGrid(node_coordinates,cell_node_ids,reffes,cell_types,Oriented(),facet_normal)
+test_grid(grid)
+@test is_oriented(grid) == true
+@test get_facet_normal(grid) === facet_normal
 
 grid = UnstructuredGrid(node_coordinates,cell_node_ids,reffes,cell_types,Oriented())
 test_grid(grid)
