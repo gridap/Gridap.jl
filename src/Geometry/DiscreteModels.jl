@@ -71,10 +71,6 @@ get_cell_type(g::DiscreteModel) = get_cell_type(get_grid(g))
 
 get_reffes(g::DiscreteModel) = get_reffes(get_grid(g))
 
-get_cell_to_bgcell(g::DiscreteModel) = get_cell_to_bgcell(get_grid(g))
-
-get_cell_ref_map(g::DiscreteModel) = get_cell_ref_map(get_grid(g))
-
 # Default API
 
 """
