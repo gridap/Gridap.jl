@@ -1,3 +1,27 @@
+"""
+    struct SkeletonPair{L,R} <: GridapType
+      plus::L
+      minus::R
+    end
+"""
+struct SkeletonPair{L,R} <: GridapType
+  plus::L
+  minus::R
+end
+
+function Base.getproperty(x::SkeletonPair, sym::Symbol)
+  if sym == :⁺
+    x.plus
+  elseif sym == :⁻
+    x.minus
+  else
+    getfield(x, sym)
+  end
+end
+
+function Base.propertynames(x::SkeletonPair, private::Bool=false)
+  (fieldnames(typeof(x))...,:⁺,:⁻)
+end
 
 """
     struct SkeletonTriangulation{Dc,Dp,B} <: Triangulation{Dc,Dp}
@@ -30,9 +54,25 @@ function Base.propertynames(x::SkeletonTriangulation, private::Bool=false)
   (fieldnames(typeof(x))...,:⁺,:⁻)
 end
 
-#have_compatible_domains(a::SkeletonTriangulation,b::Triangulation) = a.plus===b || a.minus===b
-#have_compatible_domains(a::Triangulation,b::SkeletonTriangulation) = have_compatible_domains(b,a)
-#have_compatible_domains(a::SkeletonTriangulation,b::SkeletonTriangulation) = a===b
+# Triangulation interface
+
+get_discrete_model(t::SkeletonTriangulation) = get_discrete_model(t.plus)
+get_grid(t::SkeletonTriangulation) = get_grid(t.plus)
+get_glue(t::SkeletonTriangulation{D},::Val{D}) where D = get_glue(t.plus,Val(D))
+
+function get_glue(trian::SkeletonTriangulation{Dc,Dp},::Val{Dp}) where {Dc,Dp}
+  plus = get_glue(trian.plus,Val(Dp))
+  minus = get_glue(trian.minus,Val(Dp))
+  SkeletonPair(plus,minus)
+end
+
+function get_facet_normal(trian::SkeletonTriangulation)
+  plus = get_facet_normal(trian.plus)
+  minus = get_facet_normal(trian.minus)
+  SkeletonPair(plus,minus)
+end
+
+# Constructors
 
 """
     SkeletonTriangulation(model::DiscreteModel,face_to_mask::Vector{Bool})
@@ -164,13 +204,14 @@ function InterfaceTriangulation(model::DiscreteModel,cell_to_inout::AbstractVect
   ifacet_to_facet, facet_to_lcell_left, facet_to_lcell_right = _find_interface_facets(
     cell_to_inout, facet_to_cells)
 
-  ifacet_trian = RestrictedTriangulation(facet_grid,ifacet_to_facet)
+  ifacet_grid = view(facet_grid,ifacet_to_facet)
 
-  glue_left = FaceToCellGlue(topo,cell_grid,ifacet_trian,ifacet_to_facet,facet_to_lcell_left)
-  glue_right = FaceToCellGlue(topo,cell_grid,ifacet_trian,ifacet_to_facet,facet_to_lcell_right)
+  glue_left = FaceToCellGlue(topo,cell_grid,ifacet_grid,ifacet_to_facet,facet_to_lcell_left)
+  glue_right = FaceToCellGlue(topo,cell_grid,ifacet_grid,ifacet_to_facet,facet_to_lcell_right)
 
-  plus = BoundaryTriangulation(ifacet_trian,cell_grid,glue_left)
-  minus = BoundaryTriangulation(ifacet_trian,cell_grid,glue_right)
+  trian = BodyFittedTriangulation(model,ifacet_grid,ifacet_to_facet)
+  plus = BoundaryTriangulation(trian,glue_left)
+  minus = BoundaryTriangulation(trian,glue_right)
 
   SkeletonTriangulation(plus,minus)
 end
@@ -224,59 +265,3 @@ function _find_interface_facets( cell_to_inout, facet_to_cells::Table)
    ifacet_to_facet, facet_to_lcell_left, facet_to_lcell_right
  end
 
-# Triangulation interface
-
-function get_cell_coordinates(trian::SkeletonTriangulation)
-  get_cell_coordinates(trian.plus)
-end
-
-function get_node_coordinates(trian::SkeletonTriangulation)
-  get_node_coordinates(trian.plus)
-end
-
-function get_cell_node_ids(trian::SkeletonTriangulation)
-  get_cell_node_ids(trian.plus)
-end
-
-function get_reffes(trian::SkeletonTriangulation)
-    get_reffes(trian.plus)
-end
-
-function get_cell_type(trian::SkeletonTriangulation)
-  get_cell_type(trian.plus)
-end
-
-function get_cell_map(trian::SkeletonTriangulation)
-  get_cell_map(trian.plus)
-end
-
-function get_facet_normal(trian::SkeletonTriangulation)
-  plus = get_facet_normal(trian.plus)
-  minus = get_facet_normal(trian.minus)
-  SkeletonPair(plus,minus)
-end
-
-TriangulationStyle(::Type{<:SkeletonTriangulation}) = SubTriangulation()
-
-function get_background_triangulation(trian::SkeletonTriangulation)
-  get_background_triangulation(trian.plus)
-end
-
-function get_cell_to_bgcell(trian::SkeletonTriangulation)
-  plus = get_cell_to_bgcell(trian.plus)
-  minus = get_cell_to_bgcell(trian.minus)
-  SkeletonPair(plus,minus)
-end
-
-function get_cell_ref_map(trian::SkeletonTriangulation)
-  plus = get_cell_ref_map(trian.plus)
-  minus = get_cell_ref_map(trian.minus)
-  SkeletonPair(plus,minus)
-end
-
-function RestrictedTriangulation(
-  oldtrian::SkeletonTriangulation,cell_to_oldcell::AbstractVector{<:Integer})
-  plus = RestrictedTriangulation(oldtrian.plus,cell_to_oldcell)
-  minus = RestrictedTriangulation(oldtrian.minus,cell_to_oldcell)
-  SkeletonTriangulation(plus,minus)
-end

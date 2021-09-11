@@ -216,6 +216,8 @@ include("Triangulations.jl")
 
 include("BoundaryTriangulations.jl")
 
+include("SkeletonTriangulations.jl")
+
 #
 #
 #
@@ -230,7 +232,6 @@ include("BoundaryTriangulations.jl")
 #include("RestrictedTriangulations.jl")
 #
 #
-#include("SkeletonTriangulations.jl")
 #
 #
 #
