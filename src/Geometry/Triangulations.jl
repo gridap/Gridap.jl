@@ -21,7 +21,7 @@ end
 
 # See possible types of glue below
 function get_glue(t::Triangulation,::Val{d}) where d
-  @abstractmethod
+  nothing
 end
 
 """
@@ -58,6 +58,41 @@ struct FaceToFaceGlue{A,B,C}
   mface_to_tface::C
 end
 
+function is_change_possible(strian::Triangulation,ttrian::Triangulation)
+  @check strian !== ttrian "This function is not meant to be called on the same object"
+  D = num_cell_dims(strian)
+  sglue = get_glue(strian,Val(D))
+  tglue = get_glue(ttrian,Val(D))
+  is_change_possible(sglue,tglue)
+end
+
+function is_change_possible(strian,ttrian)
+  false
+end
+
+function is_change_possible(sglue::FaceToFaceGlue,tglue::FaceToFaceGlue)
+  sglue.mface_to_tface != nothing
+end
+
+function best_target(trian1::Triangulation,trian2::Triangulation)
+  @check is_change_possible(trian1,trian2)
+  @check is_change_possible(trian2,trian1)
+  D1 = num_cell_dims(trian1)
+  D2 = num_cell_dims(trian2)
+  glue1 = get_glue(trian1,Val(D2))
+  glue2 = get_glue(trian2,Val(D1))
+  best_target(trian1,trian2,glue1,glue2)
+end
+
+function best_target(
+  trian1::Triangulation,trian2::Triangulation,glue1::FaceToFaceGlue,glue2::FaceToFaceGlue)
+  # Return the background
+  model = get_discrete_model(trian1)
+  D = num_cell_dims(trian1)
+  @assert num_cell_dims(trian2) == D
+  Triangulation(ReferenceFE{D},model)
+end
+
 # This is the most basic Triangulation
 # It represents a physical domain built using the faces of a DiscreteModel
 struct BodyFittedTriangulation{Dt,Dp,A,B,C} <: Triangulation{Dt,Dp}
@@ -84,14 +119,15 @@ function get_glue(trian::BodyFittedTriangulation{Dt},::Val{Dt}) where Dt
   if isa(tface_to_mface,IdentityVector) && num_faces(trian.model,Dt) == num_cells(trian)
     mface_to_tface = tface_to_mface
   else
-    mface_to_tface = PosNegPartition(tface_to_mface,num_faces(trian.model,Dt))
+    ntfaces = num_faces(trian.model,Dt)
+    mface_to_tface = PosNegPartition(tface_to_mface,Int32(ntfaces))
   end
   FaceToFaceGlue(tface_to_mface,tface_to_mface_map,mface_to_tface)
 end
 
-function get_glue(trian::BodyFittedTriangulation{Dt},::Val{Dm}) where {Dt,Dm}
-  @notimplemented
-end
+#function get_glue(trian::BodyFittedTriangulation{Dt},::Val{Dm}) where {Dt,Dm}
+#  @notimplemented
+#end
 
 function Base.view(t::BodyFittedTriangulation,ids::AbstractArray)
   model = t.model
@@ -183,6 +219,4 @@ function _pos_neg_data_basis(ipos_to_val,i_to_iposneg)
   ineg_to_v = Fill(VoidBasis(testitem(ipos_to_val),true),nineg)
   ipos_to_v, ineg_to_v
 end
-
-
 

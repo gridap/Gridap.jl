@@ -66,6 +66,10 @@ function get_glue(trian::SkeletonTriangulation{Dc,Dp},::Val{Dp}) where {Dc,Dp}
   SkeletonPair(plus,minus)
 end
 
+function is_change_possible(sglue::FaceToFaceGlue,tglue::SkeletonPair)
+  is_change_possible(sglue,tglue.plus) && is_change_possible(sglue,tglue.minus)
+end
+
 function get_facet_normal(trian::SkeletonTriangulation)
   plus = get_facet_normal(trian.plus)
   minus = get_facet_normal(trian.minus)

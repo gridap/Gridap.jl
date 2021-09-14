@@ -87,4 +87,12 @@ tface_to_data = get_cell_shapefuns(Ω1)
 mface_to_data = extend(tface_to_data,glue.mface_to_tface)
 @test mface_to_data[glue.tface_to_mface] == tface_to_data
 
+@test is_change_possible(Ω,Ω1)
+@test is_change_possible(Ω1,Ω)
+
+Ω2 = best_target(Ω1,Ω)
+glue = get_glue(Ω2,Val(2))
+@test isa(glue.tface_to_mface,IdentityVector)
+@test isa(glue.mface_to_tface,IdentityVector)
+
 end # module

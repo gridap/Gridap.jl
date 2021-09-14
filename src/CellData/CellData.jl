@@ -87,9 +87,9 @@ include("CellDataInterface.jl")
 
 include("CellFields.jl")
 
-#include("CellQuadratures.jl")
-#
-#include("CellStates.jl")
+include("CellQuadratures.jl")
+
+include("CellStates.jl")
 #
 #include("DomainContributions.jl")
 #

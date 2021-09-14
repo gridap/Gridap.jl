@@ -186,6 +186,9 @@ export GridMock
 
 export extend
 export pos_neg_data
+export is_change_possible
+export best_target
+export FaceToFaceGlue
 
 include("Grids.jl")
 
