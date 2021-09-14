@@ -184,6 +184,9 @@ export AppendedTriangulation
 
 export GridMock
 
+export extend
+export pos_neg_data
+
 include("Grids.jl")
 
 include("GridMocks.jl")
@@ -220,28 +223,6 @@ include("SkeletonTriangulations.jl")
 
 include("AppendedTriangulations.jl")
 
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#include("RestrictedTriangulations.jl")
-#
-#
-#
-#
-#
-#include("RestrictedDiscreteModels.jl")
-#
-#
 #include("CompressedCellArrays.jl")
-#
-#include("BoundaryDiscreteModels.jl")
 
 end # module

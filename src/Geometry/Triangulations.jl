@@ -144,3 +144,45 @@ function Triangulation(model::DiscreteModel;kwargs...)
   Triangulation(ReferenceFE{d},model,labels;kwargs...)
 end
 
+# This is the low-level functionallity to move from one Triangulation to another
+
+function extend(tface_to_val,mface_to_tface)
+  @notimplemented
+end
+
+function extend(tface_to_val,mface_to_tface::IdentityVector)
+  tface_to_val
+end
+
+function extend(tface_to_val,mface_to_tface::PosNegPartition)
+  ipos_to_val, ineg_to_val = pos_neg_data(tface_to_val,mface_to_tface)
+  i_to_iposneg = mface_to_tface
+  lazy_map(PosNegReindex(ipos_to_val,ineg_to_val),i_to_iposneg)
+end
+
+function pos_neg_data(
+  ipos_to_val::AbstractArray{<:Number},i_to_iposneg::PosNegPartition)
+  nineg = length(i_to_iposneg.ineg_to_i)
+  ineg_to_val = Fill(zero(eltype(ipos_to_val)),nineg)
+  ipos_to_val, ineg_to_val
+end
+
+function pos_neg_data(
+  ipos_to_val::AbstractArray{<:AbstractArray{<:Field}},i_to_iposneg::PosNegPartition)
+  _pos_neg_data_basis(ipos_to_val,i_to_iposneg)
+end
+
+function pos_neg_data(
+  ipos_to_val::AbstractArray{<:AbstractArray{<:Dof}},i_to_iposneg::PosNegPartition)
+  _pos_neg_data_basis(ipos_to_val,i_to_iposneg)
+end
+
+function _pos_neg_data_basis(ipos_to_val,i_to_iposneg)
+  nineg = length(i_to_iposneg.ineg_to_i)
+  ipos_to_v = lazy_map(VoidBasisMap(false),ipos_to_val)
+  ineg_to_v = Fill(VoidBasis(testitem(ipos_to_val),true),nineg)
+  ipos_to_v, ineg_to_v
+end
+
+
+

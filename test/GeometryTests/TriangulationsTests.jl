@@ -74,4 +74,17 @@ glue = get_glue(Ω1,Val(2))
 @test isa(glue.mface_to_tface,PosNegPartition)
 @test glue.mface_to_tface[glue.tface_to_mface] == 1:length(glue.tface_to_mface)
 
+glue = get_glue(Ω,Val(2))
+tface_to_data = rand(num_cells(Ω))
+mface_to_data = extend(tface_to_data,glue.mface_to_tface)
+@test tface_to_data === mface_to_data
+
+glue = get_glue(Ω1,Val(2))
+tface_to_data = rand(num_cells(Ω1))
+mface_to_data = extend(tface_to_data,glue.mface_to_tface)
+@test mface_to_data[glue.tface_to_mface] == tface_to_data
+tface_to_data = get_cell_shapefuns(Ω1)
+mface_to_data = extend(tface_to_data,glue.mface_to_tface)
+@test mface_to_data[glue.tface_to_mface] == tface_to_data
+
 end # module

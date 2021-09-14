@@ -210,3 +210,4 @@ all_neg(a::PosNegPartition) = length(a.ipos_to_i)==0
 #   i = j_to_i[j]
 #   i_to_v[i]=v
 # end
+

@@ -639,3 +639,88 @@ function test_field(f::Field, x, v, cmp=(==); grad=nothing, gradgrad=nothing)
   end
   true
 end
+
+struct VoidBasisMap <: Map
+  isvoid::Bool
+end
+
+@inline Arrays.evaluate!(cache,k::VoidBasisMap,b) = VoidBasis(b,k.isvoid)
+
+struct VoidBasis{T,A} <: AbstractVector{T}
+  basis::A
+  isvoid::Bool
+  function VoidBasis(basis::AbstractVector{T},isvoid::Bool) where T
+    new{T,typeof(basis)}(basis,isvoid)
+  end
+end
+
+function Base.size(a::VoidBasis)
+  if a.isvoid
+    (0,)
+  else
+    size(a.basis)
+  end
+end
+
+Base.IndexStyle(::Type{<:VoidBasis}) = IndexLinear()
+
+function Base.getindex(a::VoidBasis,i::Integer)
+  if a.isvoid
+    @unreachable "Unable to access 0-length array"
+  else
+    a.basis[i]
+  end
+end
+
+Arrays.testitem(a::VoidBasis) = testitem(a.basis)
+
+function Fields.return_cache(a::VoidBasis,x::Point)
+  cb = return_cache(a.basis,x)
+  bx = return_value(a.basis,x)
+  r = similar(bx,(0,))
+  cb,r
+end
+
+function Fields.return_cache(a::VoidBasis,x::Field)
+  cb = return_cache(a.basis,x)
+  bx = return_value(a.basis,x)
+  r = similar(bx,(0,))
+  cb,r
+end
+
+function Fields.return_cache(a::VoidBasis,x::AbstractVector{<:Point})
+  cb = return_cache(a.basis,x)
+  bx = return_value(a.basis,x)
+  r = similar(bx,(length(x),0))
+  cb,r
+end
+
+function Fields.return_cache(a::VoidBasis,v::AbstractVector{<:Field})
+  cb = return_cache(a.basis,v)
+  bx = return_value(a.basis,v)
+  r = similar(bx,(0,length(v)))
+  cb,r
+end
+
+for T in (:Point,:Field,:(AbstractVector{<:Point}),:(AbstractVector{<:Field}))
+  @eval begin
+
+    @inline function Fields.evaluate!(cache,a::VoidBasis,x::$T)
+      cb, r = cache
+      if a.isvoid
+        r
+      else
+        evaluate!(cb,a.basis,x)
+      end
+    end
+
+  end
+end
+
+function Fields.evaluate!(cache,k::Broadcasting{typeof(∇)},a::VoidBasis)
+  VoidBasis(k(a.basis),a.isvoid)
+end
+
+function Fields.evaluate!(cache,k::Broadcasting{typeof(∇∇)},a::VoidBasis)
+  VoidBasis(k(a.basis),a.isvoid)
+end

@@ -102,8 +102,17 @@ end
 
 function get_normal_vector(trian::Triangulation)
   cell_normal = get_facet_normal(trian)
-  @assert ! isa(cell_normal,SkeletonPair)
+  get_normal_vector(trian,cell_normal)
+end
+
+function get_normal_vector(trian::Triangulation,cell_normal::AbstractArray)
   GenericCellField(cell_normal,trian,ReferenceDomain())
+end
+
+function get_normal_vector(trian::Triangulation,cell_normal::SkeletonPair)
+  plus = get_normal_vector(trian,cell_normal.plus)
+  minus = get_normal_vector(trian,cell_normal.minus)
+  SkeletonPair(plus,minus)
 end
 
 evaluate!(cache,f::Function,x::CellPoint) = CellField(f,get_triangulation(x))(x)
@@ -125,56 +134,24 @@ function change_domain(a::CellField,::PhysicalDomain,::ReferenceDomain)
   GenericCellField(cell_field_ref,trian,ReferenceDomain())
 end
 
-"""
-"""
 function change_domain(a::CellField,target_trian::Triangulation,target_domain::DomainStyle)
   change_domain(a,DomainStyle(a),target_trian,target_domain)
 end
 
-function change_domain(a::CellField,::ReferenceDomain,trian::Triangulation,::ReferenceDomain)
-  trian_a = get_triangulation(a)
-  if have_compatible_domains(trian_a,trian)
-    return a
-  elseif have_compatible_domains(
-    trian_a,get_background_triangulation(trian)) || have_compatible_domains(
-    get_background_triangulation(trian_a),get_background_triangulation(trian))
-
-    cell_id = get_cell_to_bgcell(trian,trian_a)
-    @assert ! isa(cell_id,SkeletonPair)
-    cell_a_q = lazy_map(Reindex(get_data(a)),cell_id)
-    cell_s2q = get_cell_ref_map(trian,trian_a)
-    cell_field = lazy_map(Broadcasting(∘),cell_a_q,cell_s2q)
-    GenericCellField(cell_field,trian,ReferenceDomain())
-  elseif have_compatible_domains(
-      trian_a,get_background_triangulation(get_background_triangulation(trian)))
-      bg_trian = get_background_triangulation(trian)
-      bg_a = change_domain(a,bg_trian,DomainStyle(a))
-      change_domain(bg_a,trian,DomainStyle(a))
-  else
-    @unreachable """\n
-    We cannot move the given CellField to the reference domain of the requested triangulation.
-    Make sure that the given triangulation is either the same as the triangulation on which the
-    CellField is defined, or that the latter triangulation is the background of the former.
-    """
-  end
+function change_domain(a::CellField,::ReferenceDomain,ttrian::Triangulation,::ReferenceDomain)
+  strian = get_triangulation(a)
+  D = num_cell_dims(strian)
+  sglue = get_glue(strian,Val(D))
+  tglue = get_glue(ttrian,Val(D))
+  change_domain_ref_ref(a,ttrian,sglue,tglue)
 end
 
 function change_domain(a::CellField,::PhysicalDomain,trian::Triangulation,::PhysicalDomain)
-  trian_a = get_triangulation(a)
-  if have_compatible_domains(trian_a,trian)
-    return a
-  elseif have_compatible_domains(trian_a,get_background_triangulation(trian))
-    cell_id = get_cell_to_bgcell(trian)
-    @assert ! isa(cell_id,SkeletonPair)
-    cell_field = lazy_map(Reindex(get_data(a)),cell_id)
-    GenericCellField(cell_field,trian,PhysicalDomain())
-  else
-    @unreachable """\n
-    We cannot move the given CellField to the physical domain of the requested triangulation.
-    Make sure that the given triangulation is either the same as the triangulation on which the
-    CellField is defined, or that the latter triangulation is the background of the former.
-    """
-  end
+  strian = get_triangulation(a)
+  D = num_cell_dims(strian)
+  sglue = get_glue(strian,Val(D))
+  tglue = get_glue(ttrian,Val(D))
+  change_domain_phys_phys(a,ttrian,sglue,tglue)
 end
 
 function change_domain(a::CellField,::PhysicalDomain,trian::Triangulation,::ReferenceDomain)
@@ -186,6 +163,73 @@ function change_domain(a::CellField,::ReferenceDomain,trian::Triangulation,::Phy
   a_phys = change_domain(a,PhysicalDomain())
   change_domain(a_phys,trian,PhysicalDomain())
 end
+
+function change_domain_ref_ref(
+  a::CellField,ttrian::Triangulation,sglue::FaceToFaceGlue,tglue::FaceToFaceGlue)
+  sface_to_field = get_data(a)
+  mface_to_sface = sglue.mface_to_tface
+  tface_to_mface = tglue.tface_to_mface
+  tface_to_mface_map = tglue.tface_to_mface_map
+  mface_to_field = extend(sface_to_field,mface_to_sface)
+  tface_to_field_s = lazy_map(Reindex(mface_to_field),tface_to_mface)
+  tface_to_field_t = lazy_map(Broadcasting(∘),tface_to_field_s,tface_to_mface_map)
+  GenericCellField(tface_to_field_t,ttrian,ReferenceDomain())
+end
+
+function change_domain_phys_phys(
+  a::CellField,ttrian::Triangulation,sglue::FaceToFaceGlue,tglue::FaceToFaceGlue)
+  sface_to_field = get_data(a)
+  mface_to_sface = sglue.mface_to_tface
+  tface_to_mface = tglue.tface_to_mface
+  mface_to_field = extend(sface_to_field,mface_to_sface)
+  tface_to_field = lazy_map(Reindex(mface_to_field),tface_to_mface)
+  GenericCellField(tface_to_field,ttrian,PhysicalDomain())
+end
+
+#  trian_a = get_triangulation(a)
+#  if have_compatible_domains(trian_a,trian)
+#    return a
+#  elseif have_compatible_domains(
+#    trian_a,get_background_triangulation(trian)) || have_compatible_domains(
+#    get_background_triangulation(trian_a),get_background_triangulation(trian))
+#
+#    cell_id = get_cell_to_bgcell(trian,trian_a)
+#    @assert ! isa(cell_id,SkeletonPair)
+#    cell_a_q = lazy_map(Reindex(get_data(a)),cell_id)
+#    cell_s2q = get_cell_ref_map(trian,trian_a)
+#    cell_field = lazy_map(Broadcasting(∘),cell_a_q,cell_s2q)
+#    GenericCellField(cell_field,trian,ReferenceDomain())
+#  elseif have_compatible_domains(
+#      trian_a,get_background_triangulation(get_background_triangulation(trian)))
+#      bg_trian = get_background_triangulation(trian)
+#      bg_a = change_domain(a,bg_trian,DomainStyle(a))
+#      change_domain(bg_a,trian,DomainStyle(a))
+#  else
+#    @unreachable """\n
+#    We cannot move the given CellField to the reference domain of the requested triangulation.
+#    Make sure that the given triangulation is either the same as the triangulation on which the
+#    CellField is defined, or that the latter triangulation is the background of the former.
+#    """
+#  end
+#end
+#
+#function change_domain(a::CellField,::PhysicalDomain,trian::Triangulation,::PhysicalDomain)
+#  trian_a = get_triangulation(a)
+#  if have_compatible_domains(trian_a,trian)
+#    return a
+#  elseif have_compatible_domains(trian_a,get_background_triangulation(trian))
+#    cell_id = get_cell_to_bgcell(trian)
+#    @assert ! isa(cell_id,SkeletonPair)
+#    cell_field = lazy_map(Reindex(get_data(a)),cell_id)
+#    GenericCellField(cell_field,trian,PhysicalDomain())
+#  else
+#    @unreachable """\n
+#    We cannot move the given CellField to the physical domain of the requested triangulation.
+#    Make sure that the given triangulation is either the same as the triangulation on which the
+#    CellField is defined, or that the latter triangulation is the background of the former.
+#    """
+#  end
+#end
 
 """
 """
