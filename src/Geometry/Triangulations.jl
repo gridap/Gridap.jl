@@ -206,6 +206,15 @@ function pos_neg_data(
 end
 
 function pos_neg_data(
+  ipos_to_val::AbstractArray{<:AbstractArray{<:Number}},i_to_iposneg::PosNegPartition)
+  nineg = length(i_to_iposneg.ineg_to_i)
+  val = testitem(ipos_to_val)
+  void = similar(val,eltype(val),0)
+  ineg_to_val = Fill(void,nineg)
+  ipos_to_val, ineg_to_val
+end
+
+function pos_neg_data(
   ipos_to_val::AbstractArray{<:AbstractArray{<:Field}},i_to_iposneg::PosNegPartition)
   _pos_neg_data_basis(ipos_to_val,i_to_iposneg)
 end

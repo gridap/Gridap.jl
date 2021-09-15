@@ -61,6 +61,10 @@ end
 """
 abstract type CellField <: CellDatum end
 
+function similar_cell_field(f::CellField,cell_data,trian,ds)
+  @abstractmethod
+end
+
 function Base.show(io::IO,::MIME"text/plain",f::CellField)
   show(io,f)
   print(io,":")
@@ -117,7 +121,7 @@ function change_domain(a::CellField,::ReferenceDomain,::PhysicalDomain)
   cell_invmap = lazy_map(inverse_map,cell_map)
   cell_field_ref = get_data(a)
   cell_field_phys = lazy_map(Broadcasting(∘),cell_field_ref,cell_invmap)
-  GenericCellField(cell_field_phys,trian,PhysicalDomain())
+  similar_cell_field(a,cell_field_phys,trian,PhysicalDomain())
 end
 
 function change_domain(a::CellField,::PhysicalDomain,::ReferenceDomain)
@@ -125,7 +129,7 @@ function change_domain(a::CellField,::PhysicalDomain,::ReferenceDomain)
   cell_map = get_cell_map(trian)
   cell_field_phys = get_data(a)
   cell_field_ref = lazy_map(Broadcasting(∘),cell_field_phys,cell_map)
-  GenericCellField(cell_field_ref,trian,ReferenceDomain())
+  similar_cell_field(a,cell_field_ref,trian,ReferenceDomain())
 end
 
 function change_domain(a::CellField,target_trian::Triangulation,target_domain::DomainStyle)
@@ -185,7 +189,7 @@ function change_domain_ref_ref(
   mface_to_field = extend(sface_to_field,mface_to_sface)
   tface_to_field_s = lazy_map(Reindex(mface_to_field),tface_to_mface)
   tface_to_field_t = lazy_map(Broadcasting(∘),tface_to_field_s,tface_to_mface_map)
-  GenericCellField(tface_to_field_t,ttrian,ReferenceDomain())
+  similar_cell_field(a,tface_to_field_t,ttrian,ReferenceDomain())
 end
 
 function change_domain_phys_phys(
@@ -195,7 +199,7 @@ function change_domain_phys_phys(
   tface_to_mface = tglue.tface_to_mface
   mface_to_field = extend(sface_to_field,mface_to_sface)
   tface_to_field = lazy_map(Reindex(mface_to_field),tface_to_mface)
-  GenericCellField(tface_to_field,ttrian,PhysicalDomain())
+  similar_cell_field(a,tface_to_field,ttrian,PhysicalDomain())
 end
 
 """
@@ -217,6 +221,9 @@ end
 get_data(f::GenericCellField) = f.cell_field
 get_triangulation(f::GenericCellField) = f.trian
 DomainStyle(::Type{GenericCellField{DS}}) where DS = DS()
+function similar_cell_field(f::GenericCellField,cell_data,trian,ds)
+  GenericCellField(cell_data,trian,ds)
+end
 
 """
    dist = distance(polytope::ExtrusionPolytope,
@@ -419,7 +426,7 @@ function gradient(a::CellField)
     cell_map = get_cell_map(get_triangulation(a))
     g = lazy_map(Broadcasting(push_∇),cell_∇a,cell_map)
   end
-  GenericCellField(g,get_triangulation(a),DomainStyle(a))
+  similar_cell_field(a,g,get_triangulation(a),DomainStyle(a))
 end
 
 function DIV(a::CellField)
@@ -427,7 +434,7 @@ function DIV(a::CellField)
   if DomainStyle(a) == PhysicalDomain()
     @notimplemented
   end
-  GenericCellField(DIVa,get_triangulation(a),DomainStyle(a))
+  similar_cell_field(a,DIVa,get_triangulation(a),DomainStyle(a))
 end
 
 function ∇∇(a::CellField)
@@ -438,7 +445,7 @@ function ∇∇(a::CellField)
     cell_map = get_cell_map(get_triangulation(a))
     h = lazy_map(Broadcasting(push_∇∇),cell_∇∇a,cell_map)
   end
-  GenericCellField(h,get_triangulation(a),DomainStyle(a))
+  similar_cell_field(a,h,get_triangulation(a),DomainStyle(a))
 end
 
 # This function has to be removed when ∇⋅∇(a) is implemented
