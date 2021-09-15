@@ -28,4 +28,6 @@ using Test
 
 @testset "CurlConformingFESpaces" begin include("CurlConformingFESpacesTests.jl") end
 
+@testset "CellFields" begin include("CellFieldsTests.jl") end
+
 end # module
