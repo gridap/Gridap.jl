@@ -19,7 +19,7 @@ function change_domain(a::CellDof,::PhysicalDomain,::ReferenceDomain)
 end
 
 function change_domain(a::CellDof,ttrian::Triangulation,target_domain::DomainStyle)
-  change_domain(a,DomainStyle(a),target_trian,target_domain)
+  change_domain(a,DomainStyle(a),ttrian,target_domain)
 end
 
 function change_domain(a::CellDof,::ReferenceDomain,ttrian::Triangulation,::ReferenceDomain)
@@ -68,24 +68,24 @@ end
 
 function change_domain_ref_ref(
   a::CellDof,ttrian::Triangulation,sglue::FaceToFaceGlue,tglue::FaceToFaceGlue)
-  sface_to_field = get_data(a)
+  sface_to_dof = get_data(a)
   mface_to_sface = sglue.mface_to_tface
   tface_to_mface = tglue.tface_to_mface
   tface_to_mface_map = tglue.tface_to_mface_map
-  mface_to_field = extend(sface_to_field,mface_to_sface)
-  tface_to_field = lazy_map(Reindex(mface_to_field),tface_to_mface)
-  @notimplementedif ! isa(tface_to_mface_map,AbstractArray{<:GenericField{typeof(indentity)}})
-  CellDof(tface_to_field,ttrian,ReferenceDomain())
+  mface_to_dof = extend(sface_to_dof,mface_to_sface)
+  tface_to_dof = lazy_map(Reindex(mface_to_dof),tface_to_mface)
+  @notimplementedif ! isa(tface_to_mface_map,AbstractArray{<:GenericField{typeof(identity)}})
+  CellDof(tface_to_dof,ttrian,ReferenceDomain())
 end
 
 function change_domain_phys_phys(
   a::CellDof,ttrian::Triangulation,sglue::FaceToFaceGlue,tglue::FaceToFaceGlue)
-  sface_to_field = get_data(a)
+  sface_to_dof = get_data(a)
   mface_to_sface = sglue.mface_to_tface
   tface_to_mface = tglue.tface_to_mface
-  mface_to_field = extend(sface_to_field,mface_to_sface)
-  tface_to_field = lazy_map(Reindex(mface_to_field),tface_to_mface)
-  CellDof(tface_to_field,ttrian,PhysicalDomain())
+  mface_to_dof = extend(sface_to_dof,mface_to_sface)
+  tface_to_dof = lazy_map(Reindex(mface_to_dof),tface_to_mface)
+  CellDof(tface_to_dof,ttrian,PhysicalDomain())
 end
 
 function get_cell_points(dofs::CellDof)
