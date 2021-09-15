@@ -47,8 +47,8 @@ include("Geometry/Geometry.jl")
 
 include("CellData/CellData.jl")
 
-#include("Visualization/Visualization.jl")
-#
+include("Visualization/Visualization.jl")
+
 #include("FESpaces/FESpaces.jl")
 #
 #include("MultiField/MultiField.jl")

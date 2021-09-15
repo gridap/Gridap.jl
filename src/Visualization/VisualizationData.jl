@@ -19,6 +19,10 @@ end
 
 # Visualizing Triangulation, cellfields, etc.
 
+function visualization_data(grid::Grid, filebase::AbstractString;celldata=Dict(),nodaldata=Dict())
+  (VisualizationData(grid,filebase;celldata=celldata,nodaldata=nodaldata),)
+end
+
 function visualization_data(
   trian::Triangulation, filebase::AbstractString;
   order=-1, nsubcells=-1, celldata=Dict(), cellfields=Dict())
