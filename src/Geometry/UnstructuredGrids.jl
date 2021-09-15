@@ -102,7 +102,7 @@ get_cell_map(g::UnstructuredGrid) = g.cell_map
 
 function get_facet_normal(g::UnstructuredGrid)
   @assert g.facet_normal != nothing "This Grid does not have information about normals."
-  f.facet_normal
+  g.facet_normal
 end
 
 # From ReferenceFE

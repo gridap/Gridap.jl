@@ -59,7 +59,9 @@ struct FaceToFaceGlue{A,B,C}
 end
 
 function is_change_possible(strian::Triangulation,ttrian::Triangulation)
-  @check strian !== ttrian "This function is not meant to be called on the same object"
+  if strian === ttrian
+    return true
+  end
   D = num_cell_dims(strian)
   sglue = get_glue(strian,Val(D))
   tglue = get_glue(ttrian,Val(D))

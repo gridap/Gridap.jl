@@ -90,15 +90,15 @@ include("CellFields.jl")
 include("CellQuadratures.jl")
 
 include("CellStates.jl")
-#
-#include("DomainContributions.jl")
-#
-#include("DiracDeltas.jl")
-#
-#include("CellDofs.jl")
-#
-#include("AttachDirichlet.jl")
-#
-#include("AttachConstraints.jl")
+
+include("DomainContributions.jl")
+
+include("DiracDeltas.jl")
+
+include("CellDofs.jl")
+
+include("AttachDirichlet.jl")
+
+include("AttachConstraints.jl")
 
 end # module
