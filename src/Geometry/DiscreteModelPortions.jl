@@ -1,34 +1,4 @@
 
-function get_active_model(t::Triangulation)
-  compute_active_model(t)
-end
-
-function compute_active_model(t::Triangulation)
-  D = num_cell_dims(t)
-  glue = get_glue(t,Val(D))
-  @assert glue.mface_to_tface !== nothing
-  bgmodel = get_background_model(t)
-  model = DiscreteModel(Polytope{D},model)
-  _restrict_model(model,get_grid(t),glue.tface_to_mface)
-end
-
-function _restrict_model(model,grid::Grid,tface_to_mface)
-  _restrict_model(model,tface_to_mface)
-end
-
-function _restrict_model(model,grid::GridPortion,tface_to_mface)
-  @check grid.cell_to_parent_cell == tface_to_mface
-  DiscreteModelPortion(model,grid)
-end
-
-function _restrict_model(model,tface_to_mface)
-  DiscreteModelPortion(model,tface_to_mface)
-end
-
-function _restrict_model(model,tface_to_mface::IdentityVector)
-  model
-end
-
 """
 """
 struct DiscreteModelPortion{Dc,Dp} <: DiscreteModel{Dc,Dp}

@@ -13,6 +13,7 @@ model = CartesianDiscreteModel(domain,cells)
 test_triangulation(Ω)
 
 @test model === get_background_model(Ω)
+@test model === get_active_model(Ω)
 @test get_grid(Ω) === get_grid(model)
 glue = get_glue(Ω,Val(2))
 @test isa(glue.tface_to_mface,IdentityVector)
@@ -38,6 +39,8 @@ cell_mask = lazy_map(cell_xs) do xs
 end
 
 Ω1 = Triangulation(model,cell_mask)
+@test model === get_background_model(Ω1)
+@test model !== get_active_model(Ω1)
 glue = get_glue(Ω1,Val(2))
 @test glue.tface_to_mface == findall(collect1d(cell_mask))
 @test isa(glue.tface_to_mface_map,Fill)

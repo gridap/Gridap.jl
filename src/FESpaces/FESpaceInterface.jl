@@ -159,7 +159,7 @@ function get_trial_fe_basis(f::FESpace)
   v = get_fe_basis(f)
   cell_v = get_data(v)
   cell_u = lazy_map(transpose,cell_v)
-  similar_fe_basis(f,cell_u,get_triangulation(v),TrialBasis(),DomainStyle(v))
+  similar_fe_basis(v,cell_u,get_triangulation(v),TrialBasis(),DomainStyle(v))
 end
 
 function get_cell_shapefuns_trial(f::FESpace)
@@ -198,7 +198,7 @@ get_data(f::SingleFieldFEBasis) = f.cell_basis
 get_triangulation(f::SingleFieldFEBasis) = f.trian
 BasisStyle(::Type{SingleFieldFEBasis{BS,DS}}) where {BS,DS} = BS()
 DomainStyle(::Type{SingleFieldFEBasis{BS,DS}}) where {BS,DS} = DS()
-function similar_cell_field(f::SingleFieldFEBasis,cell_data,trian,ds::DomainStyle)
+function CellData.similar_cell_field(f::SingleFieldFEBasis,cell_data,trian,ds::DomainStyle)
   SingleFieldFEBasis(cell_data,trian,BasisStyle(f),ds)
 end
 function similar_fe_basis(f::SingleFieldFEBasis,cell_data,trian,bs::BasisStyle,ds::DomainStyle)
@@ -209,15 +209,15 @@ for fun in (:change_domain_ref_ref,:change_domain_phys_phys)
   @eval begin
 
     function $fun(
-      a::CellFieldAt{S,<:FEBasis} where S,ttrian::Triangulation,sglue::FaceToFaceGlue,tglue::SkeletonPair)
+      a::CellData.CellFieldAt{S,<:FEBasis} where S,ttrian::Triangulation,sglue::FaceToFaceGlue,tglue::SkeletonPair)
       a_on_plus_trian = $fun(a.parent,ttrian,sglue,tglue.plus)
       a_on_minus_trian = $fun(a.parent,ttrian,sglue,tglue.minus)
       pair_in = SkeletonPair(get_data(a_on_plus_trian),get_data(a_on_minus_trian))
-      pair_out = _fix_cell_basis_dofs_at_skeleton(pair_in,BasisStyle(a))
-      if isa(a,CellFieldAt{:plus})
-          return similar_cell_field(a.parent,pair_out.plus,trian,target_domain)
-      elseif isa(a,CellFieldAt{:minus})
-          return similar_cell_field(a.parent,pair_out.minus,trian,target_domain)
+      pair_out = _fix_cell_basis_dofs_at_skeleton(pair_in,BasisStyle(a.parent))
+      if isa(a,CellData.CellFieldAt{:plus})
+        return CellData.similar_cell_field(a.parent,pair_out.plus,ttrian,DomainStyle(a.parent))
+      elseif isa(a,CellData.CellFieldAt{:minus})
+        return CellData.similar_cell_field(a.parent,pair_out.minus,ttrian,DomainStyle(a.parent))
       else
         @unreachable
       end
