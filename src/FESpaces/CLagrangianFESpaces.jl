@@ -17,9 +17,9 @@ struct NodeToDofGlue{T}
 end
 
 """
-    CLagrangianFESpace(::Type{T},grid::Grid) where T
+    CLagrangianFESpace(::Type{T},grid::Triangulation) where T
 """
-function CLagrangianFESpace(::Type{T},grid::Grid) where T
+function CLagrangianFESpace(::Type{T},grid::Triangulation) where T
   vector_type = Vector{_dof_type(T)}
   node_to_tag = fill(Int8(UNSET),num_nodes(grid))
   tag_to_mask = fill(_default_mask(T),0)
@@ -29,14 +29,14 @@ end
 """
     CLagrangianFESpace(
     ::Type{T},
-    grid::Grid,
+    grid::Triangulation,
     vector_type::Type,
     node_to_tag::AbstractVector,
     tag_to_mask::AbstractVector) where T
 """
 function CLagrangianFESpace(
   ::Type{T},
-  grid::Grid,
+  grid::Triangulation,
   vector_type::Type,
   node_to_tag::AbstractVector{<:Integer},
   tag_to_masks::AbstractVector) where T
@@ -78,7 +78,7 @@ function _use_clagrangian(trian,cell_reffe,conf)
   false
 end
 
-function _use_clagrangian(trian::Grid,cell_reffe,conf::H1Conformity)
+function _use_clagrangian(trian::Triangulation,cell_reffe,conf::H1Conformity)
   ctype_reffe1, cell_ctype1 = compress_cell_data(cell_reffe)
   ctype_reffe2 = get_reffes(trian)
   if length(ctype_reffe1) != 1 || length(ctype_reffe2) != 1
