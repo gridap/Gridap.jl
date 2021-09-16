@@ -12,7 +12,7 @@ model = CartesianDiscreteModel(domain,cells)
 Ω = Triangulation(model)
 test_triangulation(Ω)
 
-@test model === get_discrete_model(Ω)
+@test model === get_background_model(Ω)
 @test get_grid(Ω) === get_grid(model)
 glue = get_glue(Ω,Val(2))
 @test isa(glue.tface_to_mface,IdentityVector)
@@ -21,7 +21,7 @@ glue.mface_to_tface === glue.tface_to_mface
 @test isa(glue.tface_to_mface_map,Fill)
 
 Γ = Triangulation(ReferenceFE{1},model)
-@test model === get_discrete_model(Γ)
+@test model === get_background_model(Γ)
 glue = get_glue(Γ,Val(1))
 @test isa(glue.tface_to_mface,IdentityVector)
 @test isa(glue.mface_to_tface,IdentityVector)
@@ -41,7 +41,7 @@ end
 glue = get_glue(Ω1,Val(2))
 @test glue.tface_to_mface == findall(collect1d(cell_mask))
 @test isa(glue.tface_to_mface_map,Fill)
-@test model === get_discrete_model(Ω)
+@test model === get_background_model(Ω)
 @test isa(glue.mface_to_tface,PosNegPartition)
 @test glue.mface_to_tface[glue.tface_to_mface] == 1:length(glue.tface_to_mface)
 
@@ -50,7 +50,7 @@ cell_mcell = findall(collect1d(cell_mask))
 glue = get_glue(Ω1,Val(2))
 @test glue.tface_to_mface == cell_mcell
 @test isa(glue.tface_to_mface_map,Fill)
-@test model === get_discrete_model(Ω)
+@test model === get_background_model(Ω)
 @test isa(glue.mface_to_tface,PosNegPartition)
 @test glue.mface_to_tface[glue.tface_to_mface] == 1:length(glue.tface_to_mface)
 
@@ -58,7 +58,7 @@ glue = get_glue(Ω1,Val(2))
 glue = get_glue(Ω1,Val(2))
 @test glue.tface_to_mface == cell_mcell
 @test isa(glue.tface_to_mface_map,Fill)
-@test model === get_discrete_model(Ω)
+@test model === get_background_model(Ω)
 @test isa(glue.mface_to_tface,PosNegPartition)
 @test glue.mface_to_tface[glue.tface_to_mface] == 1:length(glue.tface_to_mface)
 
@@ -70,7 +70,7 @@ add_tag!(labels,"Ω1",[entity])
 glue = get_glue(Ω1,Val(2))
 @test glue.tface_to_mface == cell_mcell
 @test isa(glue.tface_to_mface_map,Fill)
-@test model === get_discrete_model(Ω)
+@test model === get_background_model(Ω)
 @test isa(glue.mface_to_tface,PosNegPartition)
 @test glue.mface_to_tface[glue.tface_to_mface] == 1:length(glue.tface_to_mface)
 

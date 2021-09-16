@@ -14,7 +14,7 @@ model = simplexify(CartesianDiscreteModel(domain,partition))
 
 btrian = BoundaryTriangulation(model,tags=[7,8])
 test_triangulation(btrian)
-@test get_discrete_model(btrian) === model
+@test get_background_model(btrian) === model
 glue = get_glue(btrian,Val(1))
 @test glue.tface_to_mface === btrian.glue.face_to_bgface
 glue = get_glue(btrian,Val(2))
@@ -30,7 +30,7 @@ face_to_s = Fill(s,length(face_s_q))
 face_to_q = lazy_map(evaluate,face_s_q,face_to_s)
 @test isa(face_to_q,Geometry.FaceCompressedVector)
 
-cell_grid = get_grid(get_discrete_model(btrian))
+cell_grid = get_grid(get_background_model(btrian))
 cell_shapefuns = get_cell_shapefuns(cell_grid)
 cell_grad_shapefuns = lazy_map(Broadcasting(∇),cell_shapefuns)
 
@@ -61,7 +61,7 @@ model = CartesianDiscreteModel(domain,partition)
 
 btrian = BoundaryTriangulation(model)
 test_triangulation(btrian)
-@test get_discrete_model(btrian) === model
+@test get_background_model(btrian) === model
 glue = get_glue(btrian,Val(1))
 @test glue.tface_to_mface === btrian.glue.face_to_bgface
 glue = get_glue(btrian,Val(2))
@@ -77,7 +77,7 @@ face_to_s = Fill(s,length(face_s_q))
 face_to_q = lazy_map(evaluate,face_s_q,face_to_s)
 @test isa(face_to_q,Geometry.FaceCompressedVector)
 
-cell_grid = get_grid(get_discrete_model(btrian))
+cell_grid = get_grid(get_background_model(btrian))
 cell_shapefuns = get_cell_shapefuns(cell_grid)
 cell_grad_shapefuns = lazy_map(Broadcasting(∇),cell_shapefuns)
 

@@ -13,7 +13,7 @@ model = DiscreteModelMock()
 
 strian = SkeletonTriangulation(model)
 test_triangulation(strian)
-@test get_discrete_model(strian) === model
+@test get_background_model(strian) === model
 glue = get_glue(strian,Val(1))
 @test glue.tface_to_mface === strian.plus.glue.face_to_bgface
 glue = get_glue(strian,Val(2))
@@ -26,7 +26,7 @@ model = CartesianDiscreteModel(domain,partition)
 
 strian = SkeletonTriangulation(model)
 test_triangulation(strian)
-@test get_discrete_model(strian) === model
+@test get_background_model(strian) === model
 glue = get_glue(strian,Val(2))
 @test glue.tface_to_mface === strian.plus.glue.face_to_bgface
 glue = get_glue(strian,Val(3))

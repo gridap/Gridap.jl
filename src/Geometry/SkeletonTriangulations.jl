@@ -56,7 +56,7 @@ end
 
 # Triangulation interface
 
-get_discrete_model(t::SkeletonTriangulation) = get_discrete_model(t.plus)
+get_background_model(t::SkeletonTriangulation) = get_background_model(t.plus)
 get_grid(t::SkeletonTriangulation) = get_grid(t.plus)
 get_glue(t::SkeletonTriangulation{D},::Val{D}) where D = get_glue(t.plus,Val(D))
 

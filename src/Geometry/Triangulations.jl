@@ -11,7 +11,7 @@ The (mandatory) `Triangulation` interface can be tested with
 """
 abstract type Triangulation{Dc,Dp} <: Grid{Dc,Dp} end
 
-function get_discrete_model(t::Triangulation)
+function get_background_model(t::Triangulation)
   @abstractmethod
 end
 
@@ -29,7 +29,7 @@ end
 """
 function test_triangulation(trian::Triangulation{Dc,Dp}) where {Dc,Dp}
   test_grid(trian)
-  model = get_discrete_model(trian)
+  model = get_background_model(trian)
   @assert isa(model,DiscreteModel)
   grid = get_grid(trian)
   test_grid(grid)
@@ -89,7 +89,7 @@ end
 function best_target(
   trian1::Triangulation,trian2::Triangulation,glue1::FaceToFaceGlue,glue2::FaceToFaceGlue)
   # Return the background
-  model = get_discrete_model(trian1)
+  model = get_background_model(trian1)
   D = num_cell_dims(trian1)
   @assert num_cell_dims(trian2) == D
   Triangulation(ReferenceFE{D},model)
@@ -112,7 +112,7 @@ struct BodyFittedTriangulation{Dt,Dp,A,B,C} <: Triangulation{Dt,Dp}
   end
 end
 
-get_discrete_model(trian::BodyFittedTriangulation) = trian.model
+get_background_model(trian::BodyFittedTriangulation) = trian.model
 get_grid(trian::BodyFittedTriangulation) = trian.grid
 
 function get_glue(trian::BodyFittedTriangulation{Dt},::Val{Dt}) where Dt

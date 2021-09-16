@@ -187,7 +187,7 @@ Contributions added to the cells of the background Triangulation.
 function get_cell_measure(trian::Triangulation)
   quad = CellQuadrature(trian,0)
   cell_to_dV = integrate(1,quad)
-  model = get_discrete_model(trian)
+  model = get_background_model(trian)
   bgtrian = Triangulation(model)
   D = num_cell_dims(model)
   glue = get_glue(trian,Val(D))

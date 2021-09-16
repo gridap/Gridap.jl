@@ -270,7 +270,7 @@ function return_cache(f::CellField,x::Point)
 end
 
 function _point_to_cell_cache(trian::Triangulation)
-  model = get_discrete_model(trian)
+  model = get_background_model(trian)
   topo = get_grid_topology(model)
   vertex_coordinates = Geometry.get_vertex_coordinates(topo)
   kdtree = KDTree(map(nc -> SVector(Tuple(nc)), vertex_coordinates))

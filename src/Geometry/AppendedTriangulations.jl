@@ -107,12 +107,12 @@ struct AppendedTriangulation{Dc,Dp,A,B} <: Triangulation{Dc,Dp}
   b::B
   function AppendedTriangulation(
     a::Triangulation{Dc,Dp}, b::Triangulation{Dc,Dp}) where {Dc,Dp}
-    @assert get_discrete_model(a) === get_discrete_model(b)
+    @assert get_background_model(a) === get_background_model(b)
     new{Dc,Dp,typeof(a),typeof(b)}(a,b)
   end
 end
 
-get_discrete_model(t::AppendedTriangulation) = get_discrete_model(t.a)
+get_background_model(t::AppendedTriangulation) = get_background_model(t.a)
 
 function get_grid(t::AppendedTriangulation)
   a = get_grid(t.a)

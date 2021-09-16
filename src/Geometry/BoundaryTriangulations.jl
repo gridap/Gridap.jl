@@ -171,7 +171,7 @@ end
 
 # API
 
-get_discrete_model(t::BoundaryTriangulation) = get_discrete_model(t.trian)
+get_background_model(t::BoundaryTriangulation) = get_background_model(t.trian)
 get_grid(t::BoundaryTriangulation) = get_grid(t.trian)
 get_glue(t::BoundaryTriangulation{D},::Val{D}) where D = get_glue(t.trian,Val(D))
 
@@ -190,7 +190,7 @@ end
 function get_facet_normal(trian::BoundaryTriangulation)
 
   glue = trian.glue
-  cell_grid = get_grid(get_discrete_model(trian.trian))
+  cell_grid = get_grid(get_background_model(trian.trian))
 
   ## Reference normal
   function f(r)
@@ -232,7 +232,7 @@ end
 
 function _compute_face_to_q_vertex_coords(trian::BoundaryTriangulation)
     d = num_cell_dims(trian)
-    cell_grid = get_grid(get_discrete_model(trian.trian))
+    cell_grid = get_grid(get_background_model(trian.trian))
     polytopes = map(get_polytope, get_reffes(cell_grid))
     cell_to_ctype = trian.glue.cell_to_ctype
     ctype_to_lvertex_to_qcoords = map(get_vertex_coordinates, polytopes)
