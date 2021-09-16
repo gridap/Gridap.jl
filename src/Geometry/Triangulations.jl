@@ -95,6 +95,7 @@ function best_target(
   Triangulation(ReferenceFE{D},model)
 end
 
+
 # This is the most basic Triangulation
 # It represents a physical domain built using the faces of a DiscreteModel
 struct BodyFittedTriangulation{Dt,Dp,A,B,C} <: Triangulation{Dt,Dp}

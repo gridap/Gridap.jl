@@ -8,6 +8,9 @@ using Test
 domain = (0,2,0,2,0,2)
 partition = (10,10,10)
 oldmodel = CartesianDiscreteModel(domain,partition)
+Ω = Triangulation(oldmodel)
+@test oldmodel === get_background_model(Ω)
+@test oldmodel === get_active_model(Ω)
 
 const R = 0.7
 
@@ -24,6 +27,10 @@ oldcell_to_mask = lazy_map(is_in,oldcell_to_coods)
 
 model = DiscreteModelPortion(oldmodel,oldcell_to_mask)
 test_discrete_model(model)
+
+Ω1 = Triangulation(model,oldcell_to_mask)
+@test oldmodel === get_background_model(Ω1)
+@test oldmodel !== get_active_model(Ω1)
 
 model=DiscreteModel(Polytope{2},oldmodel)
 labels=get_face_labeling(oldmodel)

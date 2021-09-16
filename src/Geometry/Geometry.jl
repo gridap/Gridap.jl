@@ -119,6 +119,7 @@ export get_cell_ref_map
 export have_compatible_domains
 
 export get_background_model
+export get_active_model
 export get_grid
 export get_glue
 
