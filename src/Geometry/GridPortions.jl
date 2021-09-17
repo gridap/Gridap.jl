@@ -72,6 +72,24 @@ function get_facet_normal(grid::GridPortion)
   lazy_map(Reindex(get_facet_normal(grid.parent_grid)),grid.cell_to_parent_cell)
 end
 
+# The following are not strictly needed, sine there is a default implementation for them.
+# In any case, we delegate just in case the underlying grid defines more performant versions
+function get_cell_coordinates(grid::GridPortion)
+  lazy_map(Reindex(get_cell_coordinates(grid.parent_grid)),grid.cell_to_parent_cell)
+end
+function get_cell_ref_coordinates(grid::GridPortion)
+  lazy_map(Reindex(get_cell_ref_coordinates(grid.parent_grid)),grid.cell_to_parent_cell)
+end
+function get_cell_shapefuns(grid::GridPortion)
+  lazy_map(Reindex(get_cell_shapefuns(grid.parent_grid)),grid.cell_to_parent_cell)
+end
+function get_cell_map(grid::GridPortion)
+  lazy_map(Reindex(get_cell_map(grid.parent_grid)),grid.cell_to_parent_cell)
+end
+function get_cell_reffe(grid::GridPortion)
+  lazy_map(Reindex(get_cell_reffe(grid.parent_grid)),grid.cell_to_parent_cell)
+end
+
 # Helpers
 
 function _find_active_nodes(oldcell_to_oldnodes,cell_to_oldcell,noldnodes)
