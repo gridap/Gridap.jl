@@ -640,6 +640,60 @@ function test_field(f::Field, x, v, cmp=(==); grad=nothing, gradgrad=nothing)
   true
 end
 
+struct VoidFieldMap <: Map
+  isvoid::Bool
+end
+
+@inline Arrays.evaluate!(cache,k::VoidFieldMap,b) = VoidField(b,k.isvoid)
+
+struct VoidField{F} <: Field
+  field::F
+  isvoid::Bool
+end
+
+function return_cache(f::VoidField,x::Point)
+  c = return_cache(f.field,x)
+  fx = evaluate!(c,f.field,x)
+  c, zero(fx)
+end
+
+function evaluate!(cache,f::VoidField,x::Point)
+  c,z = cache
+  if f.isvoid
+    z
+  else
+    evaluate!(c,f.field,x)
+  end
+end
+
+function return_cache(f::VoidField,x::AbstractVector{<:Point})
+  c = return_cache(f.field,x)
+  fx = evaluate!(c,f.field,x)
+  z = similar(fx)
+  c, CachedArray(z)
+end
+
+function evaluate!(cache,f::VoidField,x::AbstractVector{<:Point})
+  c,z = cache
+  if f.isvoid
+    setsize!(z,size(x))
+    fill!(z,zero(eltype(z)))
+    z.array
+  else
+    evaluate!(c,f.field,x)
+  end
+end
+
+testvalue(::Type{VoidField{F}}) where F = VoidField(testvalue(F),false)
+
+@inline gradient(z::VoidField) = VoidField(gradient(z.field),z.isvoid)
+
+function lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{VoidFieldMap}},x::AbstractArray)
+  p = a.maps.value
+  @notimplementedif p.isvoid
+  lazy_map(evaluate,a.args[1],x)
+end
+
 struct VoidBasisMap <: Map
   isvoid::Bool
 end
@@ -723,4 +777,10 @@ end
 
 function Fields.evaluate!(cache,k::Broadcasting{typeof(∇∇)},a::VoidBasis)
   VoidBasis(k(a.basis),a.isvoid)
+end
+
+function lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{VoidBasisMap}},x::AbstractArray)
+  p = a.maps.value
+  @notimplementedif p.isvoid
+  lazy_map(evaluate,a.args[1],x)
 end

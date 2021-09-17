@@ -10,14 +10,15 @@ using Gridap.CellData
 
 domain = (0,1,0,1)
 partition = (2,2)
-grid = CartesianGrid(domain,partition)
+model = CartesianDiscreteModel(domain,partition)
+grid = Triangulation(model)
 x = collect1d(get_node_coordinates(grid))
 
 V = CLagrangianFESpace(Float64,grid)
-matvecdata = ([],[],[])
-matdata = ([],[],[])
-vecdata = ([],[])
-test_single_field_fe_space(V,matvecdata,matdata,vecdata)
+cellmat = [rand(4,4) for cell in 1:num_cells(model)]
+cellvec = [rand(4) for cell in 1:num_cells(model)]
+cellmatvec = pair_arrays(cellmat,cellvec)
+test_single_field_fe_space(V,cellmatvec,cellmat,cellvec,grid)
 
 @test get_cell_dof_ids(V) == collect1d(get_cell_node_ids(grid))
 @test V.metadata.free_dof_to_node == collect(1:num_nodes(grid))
@@ -31,7 +32,10 @@ ux = u.(x)
 @test uhx ≈ ux
 
 V = CLagrangianFESpace(VectorValue{2,Float64},grid)
-test_single_field_fe_space(V,matvecdata,matdata,vecdata)
+cellmat = [rand(8,8) for cell in 1:num_cells(model)]
+cellvec = [rand(8) for cell in 1:num_cells(model)]
+cellmatvec = pair_arrays(cellmat,cellvec)
+test_single_field_fe_space(V,cellmatvec,cellmat,cellvec,grid)
 
 @test get_cell_dof_ids(V) == [[1,3,7,9,2,4,8,10], [3,5,9,11,4,6,10,12], [7,9,13,15,8,10,14,16], [9,11,15,17,10,12,16,18]]
 @test V.metadata.free_dof_to_node == [1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9]
@@ -45,7 +49,7 @@ ux = u.(x)
 @test uhx ≈ collect1d(reinterpret(ux))
 
 model = CartesianDiscreteModel(domain,partition)
-grid = get_grid(model)
+grid = Triangulation(model)
 labels = get_face_labeling(model)
 tags = [1,2,4,5,8]
 node_to_tag = get_face_tag_index(labels,tags,0)

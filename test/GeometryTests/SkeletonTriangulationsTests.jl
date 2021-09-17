@@ -69,6 +69,9 @@ itrian = InterfaceTriangulation(model,cell_to_inout)
 
 itrian = InterfaceTriangulation(model,1:13,14:34)
 @test num_cells(itrian) == 11
+Ω_in = Triangulation(model,findall(i->i==IN,cell_to_inout))
+Ω_out = Triangulation(model,findall(i->i==OUT,cell_to_inout))
+itrian = InterfaceTriangulation(Ω_in,Ω_out)
 
 #ltrian = get_left_boundary(itrian)
 #rtrian = get_right_boundary(itrian)

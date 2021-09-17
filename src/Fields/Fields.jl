@@ -88,6 +88,8 @@ export VectorBlock
 export MatrixBlock
 export BlockMap
 
+export VoidField
+export VoidFieldMap
 export VoidBasis
 export VoidBasisMap
 

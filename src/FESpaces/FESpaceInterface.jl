@@ -335,7 +335,7 @@ function attach_constraints_cols(f::FESpace,cellarr,ttrian,::Constrained)
 end
 
 function get_cell_is_dirichlet(f::FESpace)
-  trian = get_triangulation(V)
+  trian = get_triangulation(f)
   Fill(true,num_cells(trian))
 end
 

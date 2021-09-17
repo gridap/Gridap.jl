@@ -16,7 +16,7 @@ domain = (0,1,0,1) .- 1
 order = 1
 model = CartesianDiscreteModel(domain, mesh)
 
-trian = Triangulation(model)
+Ω = Triangulation(model)
 
 const R = 0.7
 
@@ -27,28 +27,24 @@ function is_in(coords)
   d < 0
 end
 
-oldcell_to_coods = get_cell_coordinates(trian)
+oldcell_to_coods = get_cell_coordinates(Ω)
 oldcell_to_is_in = collect1d(lazy_map(is_in,oldcell_to_coods))
 
-model_in = DiscreteModel(model,oldcell_to_is_in)
-@test isa(model_in,RestrictedDiscreteModel)
+Ω_in = Triangulation(model,oldcell_to_is_in)
+@test isa(Ω_in,BodyFittedTriangulation)
 
-@test trian === get_triangulation(get_parent_model(model_in))
+@test model === get_background_model(Ω_in)
 
-V = TestFESpace(model_in,ReferenceFE(lagrangian,Float64,order),conformity=:H1)
-@test isa(V,FESpaces.ExtendedFESpace)
+V = TestFESpace(Ω_in,ReferenceFE(lagrangian,Float64,order),conformity=:H1)
 test_single_field_fe_space(V)
 
 U = TrialFESpace(V)
 test_single_field_fe_space(U)
 
 oldcell_to_is_out = lazy_map(!,oldcell_to_is_in)
-model_out = DiscreteModel(model,oldcell_to_is_out)
+Ω_out = Triangulation(model,oldcell_to_is_out)
 
-Ω = Triangulation(model)
-Ω_in = Triangulation(model_in)
-Ω_out = Triangulation(model_out)
-Γ = InterfaceTriangulation(model_in,model_out)
+Γ = InterfaceTriangulation(Ω_in,Ω_out)
 
 degree = 2
 dΩ = Measure(Ω,degree)
@@ -141,18 +137,16 @@ l(v) =
 
 op = AffineFEOperator(a,l,U,V)
 
-V = TestFESpace(model_in,ReferenceFE(lagrangian,Float64,2),conformity=:H1)
-@test isa(V,FESpaces.ExtendedFESpace)
+V = TestFESpace(Ω_in,ReferenceFE(lagrangian,Float64,2),conformity=:H1)
 
-V = TestFESpace(model_in,ReferenceFE(lagrangian,Float64,2),conformity=:H1,constraint=:zeromean)
+V = TestFESpace(Ω_in,ReferenceFE(lagrangian,Float64,2),conformity=:H1,constraint=:zeromean)
 uh = FEFunction(V,rand(num_free_dofs(V)))
 @test sum(∫(uh)*dΩ_in) + 1 ≈ 1
 
-V = TestFESpace(model,ReferenceFE(lagrangian,Float64,2),conformity=:H1)
-@test !isa(V,FESpaces.ExtendedFESpace)
+V = TestFESpace(Ω,ReferenceFE(lagrangian,Float64,2),conformity=:H1)
 
-V_in = TestFESpace(model_in,ReferenceFE(lagrangian,Float64,2),conformity=:H1)
-V = TestFESpace(model,ReferenceFE(lagrangian,Float64,2),conformity=:H1)
+V_in = TestFESpace(Ω_in,ReferenceFE(lagrangian,Float64,2),conformity=:H1)
+V = TestFESpace(Ω,ReferenceFE(lagrangian,Float64,2),conformity=:H1)
 
 vh_in = interpolate(V_in) do x
     x[1]
@@ -161,7 +155,7 @@ vh_in = interpolate(vh_in, V_in)
 vh = interpolate(vh_in, V)
 
 #using Gridap.Visualization
-#writevtk(trian,"trian",cellfields=["vh"=>vh,"vh_in"=>vh_in])
+#writevtk(Ω,"Ω",cellfields=["vh"=>vh,"vh_in"=>vh_in])
 
 
 end # module

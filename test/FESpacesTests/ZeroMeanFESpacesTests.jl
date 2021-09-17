@@ -1,6 +1,7 @@
 module ZeroMeanFESpacesTests
 
 using Test
+using Gridap.Arrays
 using Gridap.Geometry
 using Gridap.Fields
 using Gridap.FESpaces
@@ -21,13 +22,13 @@ _V = FESpace(model,ReferenceFE(lagrangian,Float64,order);conformity=:L2)
 
 V = ZeroMeanFESpace(_V,dΩ)
 
-matvecdata = ([],[],[])
-matdata = ([],[],[])
-vecdata = ([],[])
-test_single_field_fe_space(V,matvecdata,matdata,vecdata)
+cellmat = [rand(4,4) for cell in 1:num_cells(model)]
+cellvec = [rand(4) for cell in 1:num_cells(model)]
+cellmatvec = pair_arrays(cellmat,cellvec)
+test_single_field_fe_space(V,cellmatvec,cellmat,cellvec,trian)
 
 U = TrialFESpace(V)
-test_single_field_fe_space(U,matvecdata,matdata,vecdata)
+test_single_field_fe_space(U,cellmatvec,cellmat,cellvec,trian)
 @test isa(U,ZeroMeanFESpace)
 
 fun(x) = sin(4*pi*(x[1]+x[2]^2)) + 3

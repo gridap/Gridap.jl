@@ -197,6 +197,18 @@ function InterfaceTriangulation(model::DiscreteModel,cells_in,cells_out)
   InterfaceTriangulation(model,cell_to_inout)
 end
 
+function InterfaceTriangulation(trian_in::Triangulation,trian_out::Triangulation)
+  D = num_cell_dims(trian_in)
+  @assert D == num_cell_dims(trian_out)
+  glue_in = get_glue(trian_in,Val(D))
+  glue_out = get_glue(trian_out,Val(D))
+  cells_in = glue_in.tface_to_mface
+  cells_out = glue_out.tface_to_mface
+  model = get_background_model(trian_in)
+  @check model === get_background_model(trian_out)
+  InterfaceTriangulation(model,cells_in,cells_out)
+end
+
 function InterfaceTriangulation(model::DiscreteModel,cell_to_inout::AbstractVector{<:Integer})
 
   D = num_cell_dims(model)
