@@ -62,7 +62,7 @@ end
 abstract type CellField <: CellDatum end
 
 function similar_cell_field(f::CellField,cell_data,trian,ds)
-  @abstractmethod
+  GenericCellField(cell_data,trian,ds)
 end
 
 function Base.show(io::IO,::MIME"text/plain",f::CellField)
@@ -719,6 +719,10 @@ get_triangulation(f::CellFieldAt) = get_triangulation(f.parent)
 DomainStyle(::Type{CellFieldAt{T,F}}) where {T,F} = DomainStyle(F)
 gradient(a::CellFieldAt{P}) where P = CellFieldAt{P}(gradient(a.parent))
 ∇∇(a::CellFieldAt{P}) where P = CellFieldAt{P}(∇∇(a.parent))
+function similar_cell_field(f::CellFieldAt{T},cell_data,trian,ds) where T
+  parent = similar_cell_field(f.parent,cell_data,trian,ds)
+  CellFieldAt{T}(parent)
+end
 
 function CellFieldAt{T}(parent::OperationCellField) where T
   args = map(i->CellFieldAt{T}(i),parent.args)

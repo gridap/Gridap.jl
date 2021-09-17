@@ -62,6 +62,7 @@ function is_change_possible(strian::Triangulation,ttrian::Triangulation)
   if strian === ttrian
     return true
   end
+  @check get_background_model(strian) === get_background_model(ttrian) "Triangulations do not point to the same background discrete model!"
   D = num_cell_dims(strian)
   sglue = get_glue(strian,Val(D))
   tglue = get_glue(ttrian,Val(D))

@@ -50,6 +50,14 @@ function get_fe_space(f::FEFunction)
   @abstractmethod
 end
 
+function get_cell_is_dirichlet(f::FEFunction)
+  get_cell_is_dirichlet(get_fe_space(f))
+end
+
+function get_cell_is_dirichlet(f::FEFunction,ttrian::Triangulation)
+  get_cell_is_dirichlet(get_fe_space(f),ttrian)
+end
+
 """
 """
 function test_fe_function(f::FEFunction)

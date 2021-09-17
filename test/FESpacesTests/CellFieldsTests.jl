@@ -9,7 +9,7 @@ using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.CellData
-#using Gridap.FESpaces
+using Gridap.FESpaces
 using Random
 using StaticArrays
 
