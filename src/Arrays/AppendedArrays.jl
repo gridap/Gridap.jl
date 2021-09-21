@@ -63,9 +63,7 @@ struct AppendedArray{T,A,B} <: AbstractVector{T}
     B = typeof(b)
     ai = testitem(a)
     bi = testitem(b)
-    #T = eltype(collect((ai,bi)))
-    #new{T,A,B}(a,b)
-    T = Union{typeof(ai),typeof(bi)}
+    T = typeof(ai) 
     new{T,A,B}(a,b)
   end
 end
