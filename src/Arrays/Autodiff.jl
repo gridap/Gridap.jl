@@ -21,7 +21,8 @@ function autodiff_array_hessian(a,i_to_x)
 end
 
 function autodiff_array_gradient(a,i_to_x,j_to_i)
-  i_to_xdual = lazy_map(DualizeMap(ForwardDiff.gradient),i_to_x)
+  T = Vector{ForwardDiff.Dual{Nothing, Float64, 4}} #,Vector{ForwardDiff.Dual{Nothing, Float64, 0}}}
+  i_to_xdual = lazy_map(DualizeMap(ForwardDiff.gradient),T,i_to_x)
   j_to_ydual = a(i_to_xdual)
   j_to_x = lazy_map(Reindex(i_to_x),j_to_i)
   j_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient),j_to_x)
