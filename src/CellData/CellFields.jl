@@ -610,7 +610,7 @@ function _to_common_domain(a::CellField...)
     sa_tb = is_change_possible(trian_a,trian_b)
     sb_ta = is_change_possible(trian_b,trian_a)
     if sa_tb && sb_ta
-      best_target(trian_a,trian_b)
+      target_trian = best_target(trian_a,trian_b)
     elseif !sa_tb && sb_ta
       target_trian = trian_a
     elseif sa_tb && !sb_ta
