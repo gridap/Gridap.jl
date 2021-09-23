@@ -18,6 +18,13 @@ labels = get_face_labeling(model)
 add_tag_from_tags!(labels,"dirichlet",[1,2,5])
 add_tag_from_tags!(labels,"neumann",[6,7,8])
 
+Ω = Triangulation(model)
+Γ = BoundaryTriangulation(model,tags="neumann")
+Λ = SkeletonTriangulation(model)
+dΩ = Measure(Ω,2)
+dΓ = Measure(Γ,2)
+dΛ = Measure(Λ,2)
+
 V = FESpace(
   model,ReferenceFE(lagrangian,Float64,1), conformity=:H1, dirichlet_tags="dirichlet")
 test_single_field_fe_space(V)
@@ -39,8 +46,7 @@ Vc = FESpaceWithLinearConstraints(
 test_single_field_fe_space(Vc)
 @test has_constraints(Vc)
 
-scellids = SkeletonPair([1,2,1,3],[2,4,3,4])
-@test isa(get_cell_constraints(Vc,scellids)[1],ArrayBlock)
+@test isa(get_cell_constraints(Vc,Λ)[1],ArrayBlock)
 
 @test Vc.n_fdofs == 6
 @test Vc.n_fmdofs == 4
@@ -54,12 +60,6 @@ r = [[-1.0, -1.5, 1.0, 1.0], [-1.5, -2.0, 1.0, 2.0], [1.0, 1.0, 3.0, 3.5], [1.0,
 v(x) = sin(4*x[1]+0.4)*cos(5*x[2]+0.7)
 vch = interpolate(v,Vc)
 
-Ω = Triangulation(model)
-Γ = BoundaryTriangulation(model,tags="neumann")
-Λ = SkeletonTriangulation(model)
-dΩ = Measure(Ω,2)
-dΓ = Measure(Γ,2)
-dΛ = Measure(Λ,2)
 
 #using Gridap.Visualization
 #writevtk(Ω,"trian",nsubcells=10,cellfields=["vh"=>vh,"vch"=>vch])
