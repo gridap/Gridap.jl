@@ -55,6 +55,17 @@ test_array(face_to_nvec_s,collect(face_to_nvec_s))
 #print_op_tree(face_grad_shapefuns_q)
 #print_op_tree(face_to_nvec_s)
 
+Ω = Triangulation(model)
+Γ = btrian
+∂Γ = BoundaryTriangulation(Γ)
+test_triangulation(∂Γ)
+@test ∂Γ.rtrian === Γ
+@test isa(∂Γ.dtrian,BoundaryTriangulation)
+glue = get_glue(∂Γ,Val(2))
+glue = get_glue(∂Γ,Val(1))
+@test is_change_possible(Ω,∂Γ)
+@test is_change_possible(Γ,∂Γ)
+
 domain = (0,4,0,4)
 partition = (2,2)
 model = CartesianDiscreteModel(domain,partition)

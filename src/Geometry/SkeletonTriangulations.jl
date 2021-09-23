@@ -60,9 +60,19 @@ get_background_model(t::SkeletonTriangulation) = get_background_model(t.plus)
 get_grid(t::SkeletonTriangulation) = get_grid(t.plus)
 get_glue(t::SkeletonTriangulation{D},::Val{D}) where D = get_glue(t.plus,Val(D))
 
-function get_glue(trian::SkeletonTriangulation{Dc,Dp},::Val{Dp}) where {Dc,Dp}
-  plus = get_glue(trian.plus,Val(Dp))
-  minus = get_glue(trian.minus,Val(Dp))
+function get_glue(trian::SkeletonTriangulation,::Val{Dp}) where Dp
+  model = get_background_model(trian)
+  Dm = num_cell_dims(model)
+  get_glue(trian,Val(Dp),Val(Dm))
+end
+
+function get_glue(trian::SkeletonTriangulation,::Val{Dp},::Val{Dm}) where {Dp,Dm}
+  nothing
+end
+
+function get_glue(trian::SkeletonTriangulation,::Val{D},::Val{D}) where D
+  plus = get_glue(trian.plus,Val(D))
+  minus = get_glue(trian.minus,Val(D))
   SkeletonPair(plus,minus)
 end
 
@@ -73,6 +83,13 @@ end
 function get_facet_normal(trian::SkeletonTriangulation)
   plus = get_facet_normal(trian.plus)
   minus = get_facet_normal(trian.minus)
+  SkeletonPair(plus,minus)
+end
+
+# Related with CompositeTriangulation
+function _compose_glues(rglue::FaceToFaceGlue,dglue::SkeletonPair)
+  plus = _compose_glues(rglue,dglue.plus)
+  minus = _compose_glues(rglue,dglue.minus)
   SkeletonPair(plus,minus)
 end
 
@@ -95,6 +112,12 @@ function SkeletonTriangulation(model::DiscreteModel)
   D = num_cell_dims(model)
   face_to_mask = collect(Bool, .!get_isboundary_face(topo,D-1))
   SkeletonTriangulation(model,face_to_mask)
+end
+
+function SkeletonTriangulation(rtrian::Triangulation,args...;kwargs...)
+  rmodel = get_active_model(rtrian)
+  dtrian = SkeletonTriangulation(rmodel,args...;kwargs...)
+  CompositeTriangulation(rtrian,dtrian)
 end
 
 function SkeletonTriangulation(
@@ -206,6 +229,7 @@ function InterfaceTriangulation(trian_in::Triangulation,trian_out::Triangulation
   cells_out = glue_out.tface_to_mface
   model = get_background_model(trian_in)
   @check model === get_background_model(trian_out)
+  @notimplementedif D != num_cell_dims(model) "Not implemented, but it should be easy to implement."
   InterfaceTriangulation(model,cells_in,cells_out)
 end
 

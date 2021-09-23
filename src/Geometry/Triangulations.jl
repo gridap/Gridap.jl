@@ -288,3 +288,47 @@ function _pos_neg_data_basis(ipos_to_val,i_to_iposneg)
   ipos_to_v, ineg_to_v
 end
 
+
+# "Compose" triangulations
+
+struct CompositeTriangulation{Dc,Dp,A,B} <: Triangulation{Dc,Dp}
+  rtrian::A
+  dtrian::B
+  function CompositeTriangulation(
+    rtrian::Triangulation, dtrian::Triangulation)
+    @assert num_point_dims(rtrian) == num_point_dims(dtrian)
+    Dp = num_point_dims(rtrian)
+    Dc = num_cell_dims(dtrian)
+    #@assert get_active_model(rtrian) === get_background_model(dtrian)
+    A = typeof(rtrian)
+    B = typeof(dtrian)
+    new{Dc,Dp,A,B}(rtrian,dtrian)
+  end
+end
+
+get_background_model(t::CompositeTriangulation) = get_background_model(t.rtrian)
+get_active_model(t::CompositeTriangulation) = get_active_model(t.dtrian)
+get_grid(t::CompositeTriangulation) = get_grid(t.dtrian)
+function get_glue(t::CompositeTriangulation,::Val{D}) where D
+  Dr = num_cell_dims(t.rtrian)
+  rglue = get_glue(t.rtrian,Val(D))
+  dglue = get_glue(t.dtrian,Val(Dr))
+  _compose_glues(rglue,dglue)
+end
+
+function _compose_glues(rglue,dglue)
+  @notimplemented
+end
+
+function _compose_glues(rglue::FaceToFaceGlue,dglue::FaceToFaceGlue)
+  rface_to_mface = rglue.tface_to_mface
+  dface_to_rface = dglue.tface_to_mface
+  dface_to_mface = collect(lazy_map(Reindex(rface_to_mface),dface_to_rface))
+  rface_to_mface_map = rglue.tface_to_mface_map
+  dface_to_rface_map = dglue.tface_to_mface_map
+  dface_to_mface_map1 = lazy_map(Reindex(rface_to_mface_map),dface_to_rface)
+  dface_to_mface_map = lazy_map(∘,dface_to_mface_map1,dface_to_rface_map)
+  mface_to_dface = nothing
+  FaceToFaceGlue(dface_to_mface,dface_to_mface_map,mface_to_dface)
+end
+

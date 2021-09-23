@@ -33,6 +33,16 @@ glue = get_glue(strian,Val(3))
 @test glue.plus.tface_to_mface === strian.plus.glue.face_to_cell
 @test glue.minus.tface_to_mface === strian.minus.glue.face_to_cell
 
+Ω = Triangulation(model)
+Γ = BoundaryTriangulation(model)
+Λ = SkeletonTriangulation(Γ)
+@test Λ.rtrian === Γ
+@test isa(Λ.dtrian,SkeletonTriangulation)
+glue = get_glue(Λ,Val(3))
+glue = get_glue(Λ,Val(2))
+@test is_change_possible(Ω,Λ)
+@test is_change_possible(Γ,Λ)
+
 model = DiscreteModelMock()
 
 trian = Triangulation(model)

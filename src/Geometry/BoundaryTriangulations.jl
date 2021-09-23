@@ -1,3 +1,4 @@
+
 struct FaceToCellGlue{A,B,C,D} <: GridapType
   face_to_bgface::A
   bgface_to_lcell::B
@@ -169,13 +170,29 @@ function BoundaryTriangulation(model::DiscreteModel;tags=nothing)
   BoundaryTriangulation(model,labeling,tags=tags)
 end
 
+function BoundaryTriangulation(rtrian::Triangulation,args...;kwargs...)
+  rmodel = get_active_model(rtrian)
+  dtrian = BoundaryTriangulation(rmodel,args...;kwargs...)
+  CompositeTriangulation(rtrian,dtrian)
+end
+
 # API
 
 get_background_model(t::BoundaryTriangulation) = get_background_model(t.trian)
 get_grid(t::BoundaryTriangulation) = get_grid(t.trian)
 get_glue(t::BoundaryTriangulation{D},::Val{D}) where D = get_glue(t.trian,Val(D))
 
-function get_glue(trian::BoundaryTriangulation{Dc,Dp},::Val{Dp}) where {Dc,Dp}
+function get_glue(trian::BoundaryTriangulation,::Val{Dp}) where Dp
+  model = get_background_model(trian)
+  Dm = num_cell_dims(model)
+  get_glue(trian,Val(Dp),Val(Dm))
+end
+
+function get_glue(trian::BoundaryTriangulation,::Val{Dp},::Val{Dm}) where {Dp,Dm}
+  nothing
+end
+
+function get_glue(trian::BoundaryTriangulation,::Val{D},::Val{D}) where D
   tface_to_mface = trian.glue.face_to_cell
   face_to_q_vertex_coords = _compute_face_to_q_vertex_coords(trian)
   f(p) = get_shapefuns(LagrangianRefFE(Float64,get_polytope(p),1))
