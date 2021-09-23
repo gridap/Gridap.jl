@@ -309,6 +309,7 @@ end
 get_background_model(t::CompositeTriangulation) = get_background_model(t.rtrian)
 get_active_model(t::CompositeTriangulation) = get_active_model(t.dtrian)
 get_grid(t::CompositeTriangulation) = get_grid(t.dtrian)
+get_facet_normal(t::CompositeTriangulation) = get_facet_normal(t.dtrian)
 function get_glue(t::CompositeTriangulation,::Val{D}) where D
   Dr = num_cell_dims(t.rtrian)
   rglue = get_glue(t.rtrian,Val(D))
