@@ -51,8 +51,8 @@ include("Visualization/Visualization.jl")
 
 include("FESpaces/FESpaces.jl")
 
-#include("MultiField/MultiField.jl")
-#
-#include("Exports.jl")
+include("MultiField/MultiField.jl")
+
+include("Exports.jl")
 
 end # module
