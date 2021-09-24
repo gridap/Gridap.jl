@@ -728,10 +728,19 @@ end
 
 Arrays.testitem(a::VoidBasis) = testitem(a.basis)
 
+function _zero_size(a::VoidBasis{T,1} where T)
+  (0,)
+end
+
+function _zero_size(a::VoidBasis{T,2} where T)
+  @check size(a,1) == 1
+  (1,0)
+end
+
 function Fields.return_cache(a::VoidBasis,x::Point)
   cb = return_cache(a.basis,x)
   bx = return_value(a.basis,x)
-  zs = 0 .* size(bx)
+  zs = _zero_size(a)
   r = similar(bx,zs)
   cb,r
 end
@@ -747,7 +756,7 @@ end
 function Fields.return_cache(a::VoidBasis,x::AbstractVector{<:Point})
   cb = return_cache(a.basis,x)
   bx = return_value(a.basis,x)
-  zs = 0 .* size(bx)
+  zs = _zero_size(a)
   r = similar(bx,(length(x),zs...))
   cb,r
 end
