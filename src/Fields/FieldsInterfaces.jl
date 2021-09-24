@@ -700,17 +700,17 @@ end
 
 @inline Arrays.evaluate!(cache,k::VoidBasisMap,b) = VoidBasis(b,k.isvoid)
 
-struct VoidBasis{T,A} <: AbstractVector{T}
+struct VoidBasis{T,N,A} <: AbstractArray{T,N}
   basis::A
   isvoid::Bool
-  function VoidBasis(basis::AbstractVector{T},isvoid::Bool) where T
-    new{T,typeof(basis)}(basis,isvoid)
+  function VoidBasis(basis::AbstractArray{T,N},isvoid::Bool) where {T,N}
+    new{T,N,typeof(basis)}(basis,isvoid)
   end
 end
 
 function Base.size(a::VoidBasis)
   if a.isvoid
-    (0,)
+    0 .* size(a.basis)
   else
     size(a.basis)
   end
@@ -731,11 +731,13 @@ Arrays.testitem(a::VoidBasis) = testitem(a.basis)
 function Fields.return_cache(a::VoidBasis,x::Point)
   cb = return_cache(a.basis,x)
   bx = return_value(a.basis,x)
-  r = similar(bx,(0,))
+  zs = 0 .* size(bx)
+  r = similar(bx,zs)
   cb,r
 end
 
 function Fields.return_cache(a::VoidBasis,x::Field)
+  @notimplementedif ndims(a) != 1
   cb = return_cache(a.basis,x)
   bx = return_value(a.basis,x)
   r = similar(bx,(0,))
@@ -745,11 +747,13 @@ end
 function Fields.return_cache(a::VoidBasis,x::AbstractVector{<:Point})
   cb = return_cache(a.basis,x)
   bx = return_value(a.basis,x)
-  r = similar(bx,(length(x),0))
+  zs = 0 .* size(bx)
+  r = similar(bx,(length(x),zs...))
   cb,r
 end
 
 function Fields.return_cache(a::VoidBasis,v::AbstractVector{<:Field})
+  @notimplementedif ndims(a) != 1
   cb = return_cache(a.basis,v)
   bx = return_value(a.basis,v)
   r = similar(bx,(0,length(v)))

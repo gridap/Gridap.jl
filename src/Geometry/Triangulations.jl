@@ -318,7 +318,7 @@ function get_glue(t::CompositeTriangulation,::Val{D}) where D
 end
 
 function _compose_glues(rglue,dglue)
-  @notimplemented
+  nothing
 end
 
 function _compose_glues(rglue::FaceToFaceGlue,dglue::FaceToFaceGlue)
