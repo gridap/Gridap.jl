@@ -15,18 +15,15 @@ partition = (3,3)
 model = CartesianDiscreteModel(domain,partition)
 
 Ω = Triangulation(model)
-Γ = BoundaryTriangulation(model)
-Λ = SkeletonTriangulation(Γ)
+Γ = Boundary(model)
+Λ = Skeleton(Γ)
 
-D = num_cell_dims(Ω)
-glue = get_glue(Γ,Val(D-1))
-Γface_to_face = glue.tface_to_mface
 Γface_to_coords = get_cell_coordinates(Γ)
 Γface_mask = lazy_map(is_left,Γface_to_coords)
 Γlface_Γface = findall(Γface_mask)
 Γrface_Γface = findall(!,Γface_mask)
-Γl = BoundaryTriangulation(model,view(Γface_to_face,Γlface_Γface))
-Γr = BoundaryTriangulation(model,view(Γface_to_face,Γrface_Γface))
+Γl = Triangulation(Γ,Γlface_Γface)
+Γr = Triangulation(Γ,Γrface_Γface)
 
 order = 2
 reffe_u = ReferenceFE(lagrangian,Float64,order)

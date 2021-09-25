@@ -99,6 +99,10 @@ struct BoundaryTriangulation{Dc,Dp,A,B} <: Triangulation{Dc,Dp}
   end
 end
 
+function Boundary(args...;kwargs...)
+  BoundaryTriangulation(args...;kwargs...)
+end
+
 # Constructors
 
 """

@@ -172,6 +172,10 @@ export BoundaryDiscreteModel
 export BoundaryTriangulation
 export DiscreteModelPortion
 
+export Boundary
+export Skeleton
+export Interface
+
 export SkeletonPair
 export SkeletonTriangulation
 export InterfaceTriangulation

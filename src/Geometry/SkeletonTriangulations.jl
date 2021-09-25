@@ -40,6 +40,10 @@ struct SkeletonTriangulation{Dc,Dp,B} <: Triangulation{Dc,Dp}
   end
 end
 
+function Skeleton(args...;kwargs...)
+  SkeletonTriangulation(args...;kwargs...)
+end
+
 function Base.getproperty(x::SkeletonTriangulation, sym::Symbol)
   if sym == :⁺
     x.plus
@@ -211,6 +215,10 @@ function InterfaceTriangulation(model::DiscreteModel,cell_to_is_in::Vector{Bool}
   cell_to_inout = fill(Int8(OUT),length(cell_to_is_in))
   cell_to_inout[cell_to_is_in] .= IN
   InterfaceTriangulation(model,cell_to_inout)
+end
+
+function Interface(args...;kwargs...)
+  InterfaceTriangulation(args...;kwargs...)
 end
 
 function InterfaceTriangulation(model::DiscreteModel,cells_in,cells_out)

@@ -174,7 +174,7 @@ get_triangulation(model) = Triangulation(model)
 function Triangulation(
   ::Type{ReferenceFE{d}},model::DiscreteModel,filter::AbstractArray) where d
   mgrid = Grid(ReferenceFE{d},model)
-  # Grid portion is OK here since this is usally used to
+  # Grid portion is OK here since this is usually used to
   # define a FE space
   tgrid = GridPortion(mgrid,filter)
   tface_to_mface = tgrid.cell_to_parent_cell
@@ -213,7 +213,13 @@ function Triangulation(model::DiscreteModel;kwargs...)
   Triangulation(ReferenceFE{d},model,labels;kwargs...)
 end
 
-# This is the low-level functionallity to move from one Triangulation to another
+function Triangulation(trian::Triangulation,args...;kwargs...)
+  amodel = get_active_model(trian)
+  dtrian = Triangulation(amodel,args...;kwargs...)
+  CompositeTriangulation(trian,dtrian)
+end
+
+# This is the low-level functionality to move from one Triangulation to another
 
 function extend(tface_to_val,mface_to_tface)
   @notimplemented
