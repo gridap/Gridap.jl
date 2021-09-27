@@ -80,10 +80,10 @@ end
 
 function _change_argument(op,f,trian,uh::SingleFieldFEFunction)
   U = get_fe_space(uh)
-  function g(cell_u,T)
+  function g(cell_u)
     v = get_fe_basis(U)
     cell_basis = get_data(v)
-    #T=typeof(cell_u)
+    T=typeof(cell_u)
     cell_field = lazy_map(linear_combination,T,cell_u,cell_basis)
     cf = GenericCellField(cell_field,get_triangulation(v),DomainStyle(v))
     cell_grad = f(cf)
