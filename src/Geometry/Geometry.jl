@@ -102,9 +102,6 @@ export compress_ids
 export UnstructuredGridTopology
 
 export Triangulation
-export TriangulationStyle
-export BackgroundTriangulation
-export SubTriangulation
 export get_reffes
 export get_cell_coordinates
 export get_cell_ref_coordinates
@@ -112,11 +109,7 @@ export get_cell_reffe
 export get_cell_shapefuns
 export get_facet_normal
 export test_triangulation
-export get_cell_to_bgcell
 export get_cell_map
-export get_background_triangulation
-export get_cell_ref_map
-export have_compatible_domains
 
 export get_background_model
 export get_active_model

@@ -266,7 +266,7 @@ function FESpaces.get_cell_isconstrained(f::MultiFieldFESpace)
   """
   trians = map(get_triangulation,f.spaces)
   trian = first(trians)
-  @check all(map(t->have_compatible_domains(t,trian),trians)) msg
+  @check all(map(t->t===trian,trians)) msg
   get_cell_isconstrained(f,trian)
 end
 
@@ -297,7 +297,7 @@ function FESpaces.get_cell_is_dirichlet(f::MultiFieldFESpace)
   """
   trians = map(get_triangulation,f.spaces)
   trian = first(trians)
-  @check all(map(t->have_compatible_domains(t,trian),trians)) msg
+  @check all(map(t->t===trian,trians)) msg
   get_cell_is_dirichlet(f,trian)
 end
 
@@ -328,7 +328,7 @@ function FESpaces.get_cell_constraints(f::MultiFieldFESpace)
   """
   trians = map(get_triangulation,f.spaces)
   trian = first(trians)
-  @check all(map(t->have_compatible_domains(t,trian),trians)) msg
+  @check all(map(t->t===trian,trians)) msg
   get_cell_constraints(f,trian)
 end
 
@@ -357,7 +357,7 @@ function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace)
   """
   trians = map(get_triangulation,f.spaces)
   trian = first(trians)
-  @check all(map(t->have_compatible_domains(t,trian),trians)) msg
+  @check all(map(t->t===trian,trians)) msg
   get_cell_dof_ids(f,trian)
 end
 

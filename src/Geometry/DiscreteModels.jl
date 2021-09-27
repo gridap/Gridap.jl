@@ -459,28 +459,3 @@ function GridTopology(::Type{<:Polytope{D}},model::DiscreteModel) where D
   GridTopology(Polytope{D},get_grid_topology(model))
 end
 
-#get_background_triangulation(g::DiscreteModel) = get_background_triangulation(get_grid(g))
-#
-#"""
-#    Triangulation(::Type{ReferenceFE{d}},model::DiscreteModel) where d
-#    Triangulation(model::DiscreteModel)
-#"""
-#function Triangulation(::Type{ReferenceFE{d}},model::DiscreteModel) where d
-#  Grid(ReferenceFE{d},model)
-#end
-#
-#function Triangulation(model::DiscreteModel;tags=nothing)
-#  if tags == nothing
-#    get_triangulation(model)
-#  else
-#    Triangulation(model,get_face_labeling(model),tags=tags)
-#  end
-#end
-#
-#"""
-#    get_triangulation(model::DiscreteModel)
-#"""
-#function get_triangulation(model::DiscreteModel)
-#  get_grid(model)
-#end
-
