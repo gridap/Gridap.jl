@@ -23,11 +23,10 @@ end
 function FESpaces._change_argument(
   op::typeof(gradient),f,trian,uh::MultiFieldFEFunction)
   U = get_fe_space(uh)
-  function g(cell_u)
+  function g(cell_u,T)
     single_fields = GenericCellField[]
     nfields = length(U.spaces)
     for i in 1:nfields
-      T =  eltype(eltype(cell_u))
       cell_values_field = lazy_map(a->a.array[i],T,cell_u)
       v = get_fe_basis(U.spaces[i])
       cell_basis = get_data(v)

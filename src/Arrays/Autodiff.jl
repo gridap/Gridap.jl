@@ -29,11 +29,12 @@ function autodiff_array_gradient(a,i_to_x,j_to_i)
     T0=T
   end
   i_to_xdual = lazy_map(DualizeMap(ForwardDiff.gradient),T,i_to_x)
-  j_to_ydual = a(i_to_xdual)
+  j_to_ydual = a(i_to_xdual,T0)
   j_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient),j_to_x)
   j_to_result = lazy_map(AutoDiffMap(ForwardDiff.gradient),j_to_ydual,j_to_x,j_to_cfg)
   j_to_result
 end
+
 
 function autodiff_array_jacobian(a,i_to_x,j_to_i)
   i_to_xdual = lazy_map(DualizeMap(ForwardDiff.jacobian),i_to_x)
