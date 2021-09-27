@@ -1,14 +1,3 @@
-function _can_be_restricted_to(trian_i,trian)
-  if have_compatible_domains(trian_i,trian) ||
-    have_compatible_domains(trian_i,get_background_triangulation(trian)) ||
-    have_compatible_domains(trian_i,get_background_triangulation(get_background_triangulation(trian))) ||
-    Geometry.is_included(trian,trian_i)
-    true
-  else
-    false
-  end
-end
-
 abstract type MultiFieldStyle end
 
 struct ConsecutiveMultiFieldStyle <: MultiFieldStyle end
@@ -99,17 +88,100 @@ FESpaces.get_vector_type(f::MultiFieldFESpace) = f.vector_type
 
 FESpaces.ConstraintStyle(::Type{MultiFieldFESpace{S,B,V}}) where {S,B,V} = B()
 
+struct MultiFieldFEBasisComponent{B} <: FEBasis
+  cell_basis::AbstractArray
+  single_field::B
+  fieldid::Int
+  nfields::Int
+  function MultiFieldFEBasisComponent(
+    single_field::SingleFieldFEBasis,fieldid::Integer,nfields::Integer)
+    function block_dofs(cell_bs,::TestBasis,fieldid,nfields)
+      cell_basis = lazy_map(BlockMap(nfields,fieldid),cell_bs)
+    end
+    function block_dofs(cell_bs,::TrialBasis,fieldid,nfields)
+      cell_basis = lazy_map(BlockMap((1,nfields),fieldid),cell_bs)
+    end
+    B = typeof(single_field)
+    cell_bs = get_data(single_field)
+    bsty = BasisStyle(single_field)
+    cell_basis = block_dofs(cell_bs,bsty,fieldid,nfields)
+    new{B}(cell_basis,single_field,fieldid,nfields)
+  end
+end
+
+CellData.get_data(f::MultiFieldFEBasisComponent) = f.cell_basis
+CellData.get_triangulation(f::MultiFieldFEBasisComponent) = get_triangulation(f.single_field)
+FESpaces.BasisStyle(::Type{<:MultiFieldFEBasisComponent{B}}) where B = BasisStyle(B)
+CellData.DomainStyle(::Type{<:MultiFieldFEBasisComponent{B}}) where B = DomainStyle(B)
+function FESpaces.CellData.similar_cell_field(
+  f::MultiFieldFEBasisComponent,cell_data,trian,ds::DomainStyle)
+  @notimplemented
+end
+function FESpaces.similar_fe_basis(
+  f::MultiFieldFEBasisComponent,cell_data,trian,bs::BasisStyle,ds::DomainStyle)
+  @notimplemented
+end
+
+for fun in (:gradient,:DIV,:∇∇)
+  @eval begin
+    function $fun(f::MultiFieldFEBasisComponent)
+      g = $fun(f.single_field)
+      MultiFieldFEBasisComponent(g,f.fieldid,f.nfields)
+    end
+  end
+end
+
+function CellData.change_domain(
+  a::MultiFieldFEBasisComponent,
+  tdomain::DomainStyle)
+  sf = change_domain(a.single_field,tdomain)
+  MultiFieldFEBasisComponent(sf,a.fieldid,a.nfields)
+end
+
+function CellData.change_domain(
+  a::MultiFieldFEBasisComponent,
+  ttrian::Triangulation,
+  tdomain::DomainStyle)
+  sf = change_domain(a.single_field,ttrian,tdomain)
+  MultiFieldFEBasisComponent(sf,a.fieldid,a.nfields)
+end
+
+function MultiFieldFEBasisComponent(
+  single_field::CellFieldAt{S,<:SingleFieldFEBasis},
+  fieldid::Integer,
+  nfields::Integer) where S
+
+  sf = single_field.parent
+  mf = MultiFieldFEBasisComponent(sf,fieldid,nfields)
+  CellFieldAt{S}(mf)
+end
+
+function CellData.change_domain(
+  a::CellFieldAt{S,<:MultiFieldFEBasisComponent},
+  tdomain::DomainStyle) where S
+  mf = a.parent
+  sfin = CellFieldAt{S}(mf.single_field)
+  sfout = change_domain(sfin,tdomain)
+  MultiFieldFEBasisComponent(sfout,mf.fieldid,mf.nfields)
+end
+
+function CellData.change_domain(
+  a::CellFieldAt{S,<:MultiFieldFEBasisComponent},
+  ttrian::Triangulation,
+  tdomain::DomainStyle) where S
+  mf = a.parent
+  sfin = CellFieldAt{S}(mf.single_field)
+  sfout = change_domain(sfin,ttrian,tdomain)
+  MultiFieldFEBasisComponent(sfout,mf.fieldid,mf.nfields)
+end
+
 function FESpaces.get_fe_basis(f::MultiFieldFESpace)
   nfields = length(f.spaces)
-  all_febases = SingleFieldFEBasis[]
+  all_febases = MultiFieldFEBasisComponent[]
   for field_i in 1:nfields
     dv_i = get_fe_basis(f.spaces[field_i])
-    cell_basis = lazy_map(BlockMap(nfields,field_i),get_data(dv_i))
-    trian = get_triangulation(dv_i)
-    bs = BasisStyle(dv_i)
-    @assert bs == TestBasis()
-    ds = DomainStyle(dv_i)
-    dv_i_b = SingleFieldFEBasis(cell_basis,trian,bs,ds)
+    @assert BasisStyle(dv_i) == TestBasis()
+    dv_i_b = MultiFieldFEBasisComponent(dv_i,field_i,nfields)
     push!(all_febases,dv_i_b)
   end
   MultiFieldCellField(all_febases)
@@ -117,15 +189,11 @@ end
 
 function FESpaces.get_trial_fe_basis(f::MultiFieldFESpace)
   nfields = length(f.spaces)
-  all_febases = SingleFieldFEBasis[]
+  all_febases = MultiFieldFEBasisComponent[]
   for field_i in 1:nfields
     du_i = get_trial_fe_basis(f.spaces[field_i])
-    cell_basis = lazy_map(BlockMap((1,nfields),field_i),get_data(du_i))
-    trian = get_triangulation(du_i)
-    bs = BasisStyle(du_i)
-    @assert bs == TrialBasis()
-    ds = DomainStyle(du_i)
-    du_i_b = SingleFieldFEBasis(cell_basis,trian,bs,ds)
+    @assert BasisStyle(du_i) == TrialBasis()
+    du_i_b = MultiFieldFEBasisComponent(du_i,field_i,nfields)
     push!(all_febases,du_i_b)
   end
   MultiFieldCellField(all_febases)
@@ -198,14 +266,14 @@ function FESpaces.get_cell_isconstrained(f::MultiFieldFESpace)
   """
   trians = map(get_triangulation,f.spaces)
   trian = first(trians)
-  @check all(map(t->have_compatible_domains(t,trian),trians)) msg
+  @check all(map(t->t===trian,trians)) msg
   get_cell_isconstrained(f,trian)
 end
 
 function FESpaces.get_cell_isconstrained(f::MultiFieldFESpace,trian::Triangulation)
   data = map(f.spaces) do space
     trian_i = get_triangulation(space)
-    if _can_be_restricted_to(trian_i,trian)
+    if is_change_possible(trian_i,trian)
       get_cell_isconstrained(space,trian)
     else
       Fill(false,num_cells(trian))
@@ -214,11 +282,11 @@ function FESpaces.get_cell_isconstrained(f::MultiFieldFESpace,trian::Triangulati
   lazy_map( (args...) -> +(args...)>0,  data...)
 end
 
-function FESpaces.get_cell_isconstrained(f::MultiFieldFESpace,trian::SkeletonTriangulation)
-  plus = get_cell_isconstrained(f,trian.plus)
-  minus = get_cell_isconstrained(f,trian.minus)
-  lazy_map((l,r)-> l||r,plus,minus)
-end
+#function FESpaces.get_cell_isconstrained(f::MultiFieldFESpace,trian::SkeletonTriangulation)
+#  plus = get_cell_isconstrained(f,trian.plus)
+#  minus = get_cell_isconstrained(f,trian.minus)
+#  lazy_map((l,r)-> l||r,plus,minus)
+#end
 
 function FESpaces.get_cell_is_dirichlet(f::MultiFieldFESpace)
   msg = """\n
@@ -229,14 +297,14 @@ function FESpaces.get_cell_is_dirichlet(f::MultiFieldFESpace)
   """
   trians = map(get_triangulation,f.spaces)
   trian = first(trians)
-  @check all(map(t->have_compatible_domains(t,trian),trians)) msg
+  @check all(map(t->t===trian,trians)) msg
   get_cell_is_dirichlet(f,trian)
 end
 
 function FESpaces.get_cell_is_dirichlet(f::MultiFieldFESpace,trian::Triangulation)
   data = map(f.spaces) do space
     trian_i = get_triangulation(space)
-    if _can_be_restricted_to(trian_i,trian)
+    if is_change_possible(trian_i,trian)
       get_cell_is_dirichlet(space,trian)
     else
       Fill(false,num_cells(trian))
@@ -245,11 +313,11 @@ function FESpaces.get_cell_is_dirichlet(f::MultiFieldFESpace,trian::Triangulatio
   lazy_map( (args...) -> +(args...)>0,  data...)
 end
 
-function FESpaces.get_cell_is_dirichlet(f::MultiFieldFESpace,trian::SkeletonTriangulation)
-  plus = get_cell_is_dirichlet(f,trian.plus)
-  minus = get_cell_is_dirichlet(f,trian.minus)
-  lazy_map((l,r)-> l||r,plus,minus)
-end
+#function FESpaces.get_cell_is_dirichlet(f::MultiFieldFESpace,trian::SkeletonTriangulation)
+#  plus = get_cell_is_dirichlet(f,trian.plus)
+#  minus = get_cell_is_dirichlet(f,trian.minus)
+#  lazy_map((l,r)-> l||r,plus,minus)
+#end
 
 function FESpaces.get_cell_constraints(f::MultiFieldFESpace)
   msg = """\n
@@ -260,13 +328,13 @@ function FESpaces.get_cell_constraints(f::MultiFieldFESpace)
   """
   trians = map(get_triangulation,f.spaces)
   trian = first(trians)
-  @check all(map(t->have_compatible_domains(t,trian),trians)) msg
+  @check all(map(t->t===trian,trians)) msg
   get_cell_constraints(f,trian)
 end
 
 function FESpaces.get_cell_constraints(f::MultiFieldFESpace,trian::Triangulation)
   nfields = length(f.spaces)
-  blockmask = [ _can_be_restricted_to(get_triangulation(Vi),trian) for Vi in f.spaces ]
+  blockmask = [ is_change_possible(get_triangulation(Vi),trian) for Vi in f.spaces ]
   active_block_ids = findall(blockmask)
   active_block_data = Any[ get_cell_constraints(f.spaces[i],trian) for i in active_block_ids ]
   blockshape = (nfields,nfields)
@@ -274,11 +342,11 @@ function FESpaces.get_cell_constraints(f::MultiFieldFESpace,trian::Triangulation
   lazy_map(BlockMap(blockshape,blockindices),active_block_data...)
 end
 
-function FESpaces.get_cell_constraints(f::MultiFieldFESpace,trian::SkeletonTriangulation)
-  cell_values_plus = get_cell_constraints(f,trian.plus)
-  cell_values_minus = get_cell_constraints(f,trian.minus)
-  lazy_map(BlockMap((2,2),[(1,1),(2,2)]),cell_values_plus,cell_values_minus)
-end
+#function FESpaces.get_cell_constraints(f::MultiFieldFESpace,trian::SkeletonTriangulation)
+#  cell_values_plus = get_cell_constraints(f,trian.plus)
+#  cell_values_minus = get_cell_constraints(f,trian.minus)
+#  lazy_map(BlockMap((2,2),[(1,1),(2,2)]),cell_values_plus,cell_values_minus)
+#end
 
 function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace)
   msg = """\n
@@ -289,7 +357,7 @@ function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace)
   """
   trians = map(get_triangulation,f.spaces)
   trian = first(trians)
-  @check all(map(t->have_compatible_domains(t,trian),trians)) msg
+  @check all(map(t->t===trian,trians)) msg
   get_cell_dof_ids(f,trian)
 end
 
@@ -297,11 +365,11 @@ function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,trian::Triangulation)
   get_cell_dof_ids(f,trian,MultiFieldStyle(f))
 end
 
-function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,trian::SkeletonTriangulation)
-  cell_values_plus = get_cell_dof_ids(f,trian.plus)
-  cell_values_minus = get_cell_dof_ids(f,trian.minus)
-  lazy_map(BlockMap(2,[1,2]),cell_values_plus,cell_values_minus)
-end
+#function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,trian::SkeletonTriangulation)
+#  cell_values_plus = get_cell_dof_ids(f,trian.plus)
+#  cell_values_minus = get_cell_dof_ids(f,trian.minus)
+#  lazy_map(BlockMap(2,[1,2]),cell_values_plus,cell_values_minus)
+#end
 
 function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,::Triangulation,::MultiFieldStyle)
   @notimplemented
@@ -310,7 +378,7 @@ end
 function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,trian::Triangulation,::ConsecutiveMultiFieldStyle)
   offsets = compute_field_offsets(f)
   nfields = length(f.spaces)
-  blockmask = [ _can_be_restricted_to(get_triangulation(Vi),trian) for Vi in f.spaces ]
+  blockmask = [ is_change_possible(get_triangulation(Vi),trian) for Vi in f.spaces ]
   active_block_ids = findall(blockmask)
   active_block_data = Any[]
   for i in active_block_ids
@@ -333,6 +401,35 @@ function _sum_if_first_positive(a,b)
   else
     return a
   end
+end
+
+function Arrays.return_value(k::Broadcasting{typeof(_sum_if_first_positive)},dofs::VectorBlock,o)
+  evaluate(k,dofs,o)
+end
+
+function Arrays.return_cache(k::Broadcasting{typeof(_sum_if_first_positive)},dofs::VectorBlock,o)
+  i = first(findall(dofs.touched))
+  dofsi = dofs.array[i]
+  ci = return_cache(k,dofsi,o)
+  odofsi = evaluate!(ci,k,dofsi,o)
+  array = Vector{typeof(odofsi)}(undef,length(dofs.array))
+  c = Vector{typeof(ci)}(undef,length(dofs.array))
+  for i in 1:length(dofs.array)
+    if dofs.touched[i]
+      c[i] = return_cache(k,dofs.array[i],o)
+    end
+  end
+  ArrayBlock(array,dofs.touched), c
+end
+
+function Arrays.evaluate!(cache,k::Broadcasting{typeof(_sum_if_first_positive)},dofs::VectorBlock,o)
+  r,c = cache
+  for i in 1:length(dofs.array)
+    if dofs.touched[i]
+      r[i] = evaluate!(c[i],k,dofs.array[i],o)
+    end
+  end
+  r
 end
 
 # API for multi field case

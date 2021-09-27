@@ -373,7 +373,6 @@ function compute_reffaces(g::GridTopology)
   (collect(vcat(d_to_refdfaces...)), vcat(d_to_dface_to_ftype...), d_to_offset)
 end
 
-
 """
     get_isboundary_face(g::GridTopology)
 """

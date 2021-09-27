@@ -8,6 +8,7 @@ using Test
 domain = (0,2,0,2,0,2)
 partition = (10,10,10)
 oldmodel = CartesianDiscreteModel(domain,partition)
+Ω = Triangulation(oldmodel)
 
 const R = 0.7
 

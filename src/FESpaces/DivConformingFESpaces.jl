@@ -119,7 +119,7 @@ function get_sign_flip(model::DiscreteModel,
                        cell_reffe::AbstractArray{<:GenericRefFE{RaviartThomas}})
     lazy_map(SignFlipMap(model),
             cell_reffe,
-            get_cell_to_bgcell(model))
+            IdentityVector(Int32(num_cells(model))))
 end
 
 function return_cache(::TransformRTDofBasis{Dc,Dp},

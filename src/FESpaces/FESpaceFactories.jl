@@ -1,18 +1,24 @@
 
+function FESpace(t::Triangulation,reffes;trian=nothing, kwargs...)
+  @assert trian === nothing
+  model = get_active_model(t)
+  FESpace(model,reffes;trian=t,kwargs...)
+end
+
 function FESpace(
   model::DiscreteModel,
   cell_fe::CellFE;
+  trian = Triangulation(model),
   labels = get_face_labeling(model),
   dirichlet_tags=Int[],
   dirichlet_masks=nothing,
   constraint=nothing,
-  vector_type::Union{Nothing,Type}=nothing)
+  vector_type=nothing)
 
   @assert num_cells(cell_fe) == num_cells(model) """\n
   The number of cells provided in the `cell_fe` argument ($(cell_fe.num_cells) cells)
   does not match the number of cells ($(num_cells(model)) cells) in the provided DiscreteModel.
   """
-  trian = Triangulation(model)
   _vector_type = _get_vector_type(vector_type,cell_fe,trian)
   F = _ConformingFESpace(
       _vector_type,
@@ -20,7 +26,8 @@ function FESpace(
       labels,
       cell_fe,
       dirichlet_tags,
-      dirichlet_masks)
+      dirichlet_masks,
+      trian)
   V = _add_constraint(F,cell_fe.max_order,constraint)
   V
 end
@@ -56,43 +63,29 @@ function _add_constraint(F,order,constraint)
 end
 
 function FESpace(
-  model::RestrictedDiscreteModel,
+  t::Triangulation,
   cell_reffe::AbstractArray{<:ReferenceFE};
-  conformity=nothing,
-  constraint=nothing,kwargs...)
-  model_portion = model.model
-  conf = Conformity(testitem(cell_reffe),conformity)
-  cell_fe = CellFE(model,cell_reffe,conf)
-  V_portion = FESpace(model_portion,cell_fe;constraint=nothing,kwargs...)
-  F = ExtendedFESpace(V_portion,model)
-  V = _add_constraint(F,cell_fe.max_order,constraint)
-  V
-end
-
-function FESpace(
-  model::RestrictedDiscreteModel,
-  cell_fe::CellFE;
-  constraint=nothing,kwargs...)
-  model_portion = model.model
-  V_portion = FESpace(model_portion,cell_fe;constraint=nothing,kwargs...)
-  F = ExtendedFESpace(V_portion,model)
-  V = _add_constraint(F,cell_fe.max_order,constraint)
-  V
+  trian=nothing,
+  kwargs...)
+  @assert trian === nothing
+  # TODO for L2 conformity and no dirichlet conditions
+  # no needed to build the active model
+  model = get_active_model(t)
+  FESpace(model,cell_reffe;trian=t,kwargs...)
 end
 
 function FESpace(
   model::DiscreteModel,
   cell_reffe::AbstractArray{<:ReferenceFE};
   conformity=nothing,
+  trian = Triangulation(model),
   labels = get_face_labeling(model),
   dirichlet_tags=Int[],
   dirichlet_masks=nothing,
   constraint=nothing,
-  vector_type::Union{Nothing,Type}=nothing)
+  vector_type=nothing)
 
-  trian = Triangulation(model)
   conf = Conformity(testitem(cell_reffe),conformity)
-
 
   if _use_clagrangian(trian,cell_reffe,conf) &&
     constraint === nothing &&
@@ -115,6 +108,7 @@ function FESpace(
     V = _add_constraint(F,cell_fe.max_order,constraint)
   else
     V = FESpace(model,cell_fe;
+      trian=trian,
       labels=labels,
       dirichlet_tags=dirichlet_tags,
       dirichlet_masks=dirichlet_masks,
@@ -123,7 +117,6 @@ function FESpace(
   end
   return V
 end
-
 
 function FESpace(model::DiscreteModel, reffe::Tuple{<:ReferenceFEName,Any,Any}; kwargs...)
   basis, reffe_args,reffe_kwargs = reffe

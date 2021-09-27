@@ -41,24 +41,24 @@ function FESpaces.get_cell_dof_values(f::MultiFieldFEFunction)
   """
   trians = map(get_triangulation,f.fe_space.spaces)
   trian = first(trians)
-  @check all(map(t->have_compatible_domains(t,trian),trians)) msg
+  @check all(map(t->is_change_possible(t,trian),trians)) msg
   get_cell_dof_values(f,trian)
 end
 
 function FESpaces.get_cell_dof_values(f::MultiFieldFEFunction,trian::Triangulation)
   uhs = f.single_fe_functions
-  blockmask = [ _can_be_restricted_to(get_triangulation(uh),trian) for uh in uhs ]
+  blockmask = [ is_change_possible(get_triangulation(uh),trian) for uh in uhs ]
   active_block_ids = findall(blockmask)
   active_block_data = Any[ get_cell_dof_values(uhs[i],trian) for i in active_block_ids ]
   nblocks = length(uhs)
   lazy_map(BlockMap(nblocks,active_block_ids),active_block_data...)
 end
 
-function FESpaces.get_cell_dof_values(f::MultiFieldFEFunction,trian::SkeletonTriangulation)
-  cell_values_plus = get_cell_dof_values(f,trian.plus)
-  cell_values_minus = get_cell_dof_values(f,trian.minus)
-  lazy_map(BlockMap(2,[1,2]),cell_values_plus,cell_values_minus)
-end
+#function FESpaces.get_cell_dof_values(f::MultiFieldFEFunction,trian::SkeletonTriangulation)
+#  cell_values_plus = get_cell_dof_values(f,trian.plus)
+#  cell_values_minus = get_cell_dof_values(f,trian.minus)
+#  lazy_map(BlockMap(2,[1,2]),cell_values_plus,cell_values_minus)
+#end
 
 """
     num_fields(m::MultiFieldFEFunction)

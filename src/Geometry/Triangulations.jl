@@ -1,400 +1,341 @@
-
 """
-    abstract type Triangulation{Dc,Dp}
+    abstract type Triangulation{Dt,Dp}
 
-Abstract type representing an arbitrary tiling, tessellation,
-or triangulation of a domain of parametric dimension `Dc` and
-physical dimension `Dp`.
+A discredited physical domain associated with a `DiscreteModel{Dm,Dp}`.
 
-We define a triangulation from two basic ingredients:
-
-- the cell-wise nodal coordinates of the cells in the triangulation, plus
-- an interpolation of this cell-wise coordinates into the cells interior.
-
-Note that this type represents general triangulations (not necessarily conforming),
-which is the minimum geometrical information needed to perform cell-wise numerical integration.
-
-The `Triangulation` interface is defined by overloading these methods:
-
-- [`get_cell_coordinates(trian::Triangulation)`](@ref)
-- [`get_reffes(trian::Triangulation)`](@ref)
-- [`get_cell_type(trian::Triangulation)`](@ref)
-
-Optional interface:
-
-For triangulations living in a space of co-dimension 1, the following method can be defined:
-
-- [`get_facet_normal(trian::Triangulation)`]
-
-In some cases, concrete implementations want to override the default implementation of the following methods:
-
-- [`restrict(f::AbstractArray, trian::Triangulation)`]
-- [`get_cell_to_bgcell(f::AbstractArray, trian::Triangulation)`]
+`Dt` and `Dm` can be different.
 
 The (mandatory) `Triangulation` interface can be tested with
 
 - [`test_triangulation`](@ref)
-
-
 """
-abstract type Triangulation{Dc,Dp} <: GridapType end
+abstract type Triangulation{Dc,Dp} <: Grid{Dc,Dp} end
 
-"""
-    get_cell_coordinates(trian::Triangulation) -> AbstractArray{Vector{<:Point{Dp}}}
-"""
-function get_cell_coordinates(trian::Triangulation)
+function get_background_model(t::Triangulation)
   @abstractmethod
 end
 
-"""
-    get_reffes(trian::Triangulation) -> Vector{LagrangianRefFE}
-"""
-function get_reffes(trian::Triangulation)
+function get_grid(t::Triangulation)
   @abstractmethod
 end
 
-"""
-    get_cell_type(trian::Triangulation) -> AbstractVector{<:Integer}
-"""
-function get_cell_type(trian::Triangulation)
-  @abstractmethod
-end
-
-"""
-    get_facet_normal(trian::Triangulation)
-"""
-function get_facet_normal(trian::Triangulation)
-  Dp = num_point_dims(trian)
-  Dc = num_cell_dims(trian)
-  if Dp == Dc + 1
-    @abstractmethod
-  else
-    @unreachable "get_facet_normal does not make sense for this triangulation"
-  end
-end
-
-"""
-If the reference (resp. physical) space is the same for both triangulaitons.
-"""
-have_compatible_domains(a::Triangulation,b::Triangulation) = a===b
-
-# Trait that signals if the triangulation is a sub-mesh of a background triangulation
-
-abstract type TriangulationStyle end
-struct BackgroundTriangulation <: TriangulationStyle end
-struct SubTriangulation <: TriangulationStyle end
-
-TriangulationStyle(::Type{<:Triangulation}) = BackgroundTriangulation()
-TriangulationStyle(::T) where T<:Triangulation = TriangulationStyle(T)
-
-# Default methods needed to be overloaded by Triangulations that are integration sub-meshes
-
-"""
-Returns the background triangulation.
-"""
-get_background_triangulation(trian::Triangulation) =
-  get_background_triangulation(trian,TriangulationStyle(trian))
-get_background_triangulation(trian::Triangulation,::BackgroundTriangulation) = trian
-get_background_triangulation(trian::Triangulation,::SubTriangulation) = @abstractmethod
-
-#"""
-#    reindex(a::AbstractArray, trian::Triangulation)
-#"""
-#function reindex(a::AbstractArray,trian::Triangulation)
-#  reindex(a,get_cell_to_bgcell(trian))
-#end
-
-"""
-    get_cell_to_bgcell(trian::Triangulation)
-
-Map from the indices in the sub-triangulation to the indices in the background triangulation
-"""
-get_cell_to_bgcell(trian::Triangulation) = get_cell_to_bgcell(trian,TriangulationStyle(trian))
-get_cell_to_bgcell(trian::Triangulation,::BackgroundTriangulation) = IdentityVector(num_cells(trian))
-get_cell_to_bgcell(trian::Triangulation,::SubTriangulation) = @abstractmethod
-function get_cell_to_bgcell(trian::Triangulation,bgtrian::Triangulation)
-  if have_compatible_domains(get_background_triangulation(trian),bgtrian)
-    return get_cell_to_bgcell(trian)
-  else
-    @notimplemented
-  end
-end
-
-function is_included(trian::Triangulation,bgtrian::Triangulation)
-  if have_compatible_domains(get_background_triangulation(trian),bgtrian)
-    true
-  else
-    false
-  end
-end
-
-#"""
-#    restrict(f::AbstractArray, trian::Triangulation)
-#"""
-#function restrict(f::AbstractArray,trian::Triangulation)
-#  f
-#end
-
-"""
-Return the cell-wise map that goes from the reference space of the sub-triangulation to
-the reference space of the background triangulation
-"""
-get_cell_ref_map(trian::Triangulation) = get_cell_ref_map(trian,TriangulationStyle(trian))
-get_cell_ref_map(trian::Triangulation,::BackgroundTriangulation) = Fill(GenericField(identity),num_cells(trian))
-get_cell_ref_map(trian::Triangulation,::SubTriangulation) = @abstractmethod
-function get_cell_ref_map(trian::Triangulation,bgtrian::Triangulation)
-  if have_compatible_domains(get_background_triangulation(trian),bgtrian)
-    return get_cell_ref_map(trian)
-  else
-    @notimplemented
-  end
-end
-#"""
-#Given an array aligned with the cells in the background triangulation, return another array
-#aligned with the cells of the sub-triangulation. Do nothing if `trian` is already a
-#background triangulation.
-#"""
-#change_cell_index(a::AbstractArray,trian::Triangulation) = change_cell_index(a,trian,TriangulationStyle(trian))
-#function change_cell_index(a::AbstractArray,trian::Triangulation,::BackgroundTriangulation)
-#  @assert length(a) == num_cells(trian)
-#  a
-#end
-#function change_cell_index(a::AbstractArray,trian::Triangulation,::SubTriangulation)
-#  bgtrian = get_background_triangulation(trian)
-#  @assert length(a) == num_cells(bgtrian)
-#  lazy_map(Reindex(a),get_cell_to_bgcell(trian))
-#end
-#
-#"""
-#Given an array (of arrays) of Field objects that is aligned with the sub-triangulation but
-#the domain space of those fields corresponds to the reference space of the background triangulation,
-#return another array (of arrays) of Field objects with domain in the sub-triangulation.
-#Do nothing if `trian` is already a background triangulation.
-#Note that one typically needs to call `change_cell_index` before calling `change_cell_domain`.
-#"""
-#change_cell_domain(a::AbstractArray,trian::Triangulation) = change_cell_domain(a,trian,TriangulationStyle(trian))
-#function change_cell_domain(a::AbstractArray,trian::Triangulation,::BackgroundTriangulation)
-#  @assert length(a) == num_cells(trian)
-#  a
-#end
-#function change_cell_domain(a::AbstractArray,trian::Triangulation,::SubTriangulation)
-#  @assert length(a) == num_cells(trian)
-#  cell_ref_map = get_cell_ref_map(trian)
-#  lazy_map(Broadcasting(∘),a,cell_map)
-#end
-
-"""
-    struct SkeletonPair{L,R} <: GridapType
-      plus::L
-      minus::R
-    end
-"""
-struct SkeletonPair{L,R} <: GridapType
-  plus::L
-  minus::R
-end
-
-function Base.getproperty(x::SkeletonPair, sym::Symbol)
-  if sym == :⁺
-    x.plus
-  elseif sym == :⁻
-    x.minus
-  else
-    getfield(x, sym)
-  end
-end
-
-function Base.propertynames(x::SkeletonPair, private::Bool=false)
-  (fieldnames(typeof(x))...,:⁺,:⁻)
+# See possible types of glue below
+function get_glue(t::Triangulation,::Val{d}) where d
+  nothing
 end
 
 """
     test_triangulation(trian::Triangulation)
 """
 function test_triangulation(trian::Triangulation{Dc,Dp}) where {Dc,Dp}
-  @test num_cell_dims(trian) == Dc
-  @test num_point_dims(trian) == Dp
-  @test num_cell_dims(typeof(trian)) == Dc
-  @test num_point_dims(typeof(trian)) == Dp
-  cell_coords = get_cell_coordinates(trian)
-  @test isa(cell_coords,AbstractArray{<:AbstractVector{<:Point}})
-  reffes = get_reffes(trian)
-  @test isa(reffes,AbstractVector{<:LagrangianRefFE{Dc}})
-  cell_types = get_cell_type(trian)
-  @test isa(cell_types,AbstractArray{<:Integer})
-  ncells = num_cells(trian)
-  @test ncells == length(cell_coords)
-  @test ncells == length(cell_types)
-  @test isa(TriangulationStyle(trian),TriangulationStyle)
-  bgtrian = get_background_triangulation(trian)
-  @test isa(bgtrian,Triangulation)
-  cell_id = get_cell_to_bgcell(trian)
-  @test isa(cell_id,AbstractArray) || isa(cell_id,SkeletonPair)
-  cell_ref_map = get_cell_ref_map(trian)
-  @test isa(cell_ref_map,AbstractArray) || isa(cell_ref_map,SkeletonPair)
+  test_grid(trian)
+  model = get_background_model(trian)
+  @assert isa(model,DiscreteModel)
+  grid = get_grid(trian)
+  test_grid(grid)
 end
 
-# Some API
+# Grid interface
+get_node_coordinates(trian::Triangulation) = get_node_coordinates(get_grid(trian))
+get_cell_node_ids(trian::Triangulation) = get_cell_node_ids(get_grid(trian))
+get_reffes(trian::Triangulation) = get_reffes(get_grid(trian))
+get_cell_type(trian::Triangulation) = get_cell_type(get_grid(trian))
+get_facet_normal(trian::Triangulation) = get_facet_normal(get_grid(trian))
 
-"""
-    num_cells(trian::Triangulation) -> Int
-"""
-num_cells(trian::Triangulation) = length(get_cell_type(trian))
+# The following are not strictly needed, sine there is a default implementation for them.
+# In any case, we delegate just in case the underlying grid defines more performant versions
+get_cell_coordinates(trian::Triangulation) = get_cell_coordinates(get_grid(trian))
+get_cell_ref_coordinates(trian::Triangulation) = get_cell_ref_coordinates(get_grid(trian))
+get_cell_shapefuns(trian::Triangulation) = get_cell_shapefuns(get_grid(trian))
+get_cell_map(trian::Triangulation) = get_cell_map(get_grid(trian))
+get_cell_reffe(trian::Triangulation) = get_cell_reffe(get_grid(trian))
+is_first_order(trian::Triangulation) = is_first_order(get_grid(trian))
 
-"""
-    num_nodes(trian::Triangulation) -> Int
-"""
-num_nodes(trian::Triangulation) = length(get_node_coordinates(trian))
-
-"""
-    num_cell_dims(::Triangulation) -> Int
-    num_cell_dims(::Type{<:Triangulation}) -> Int
-"""
-num_cell_dims(::Triangulation{Dc,Dp}) where {Dc,Dp} = Dc
-num_cell_dims(::Type{<:Triangulation{Dc,Dp}}) where {Dc,Dp} = Dc
-
-"""
-    num_point_dims(::Triangulation) -> Int
-    num_point_dims(::Type{<:Triangulation}) -> Int
-"""
-num_point_dims(::Triangulation{Dc,Dp}) where {Dc,Dp} = Dp
-num_point_dims(::Type{<:Triangulation{Dc,Dp}}) where {Dc,Dp} = Dp
-
-"""
-    num_dims(::Triangulation) -> Int
-    num_dims(::Type{<:Triangulation}) -> Int
-
-Equivalent to `num_cell_dims`.
-"""
-num_dims(g::Triangulation{Dc}) where Dc = Dc
-num_dims(::Type{<:Triangulation{Dc}}) where Dc = Dc
-
-"""
-    is_first_order(trian::Triangulation) -> Bool
-"""
-function is_first_order(trian::Triangulation)
-  reffes = get_reffes(trian)
-  all(map(is_first_order,reffes))
+# This is the most used glue, but others are possible, see e.g. SkeletonGlue.
+struct FaceToFaceGlue{A,B,C}
+  tface_to_mface::A
+  tface_to_mface_map::B
+  mface_to_tface::C
 end
 
-"""
-    get_cell_reffe(trian::Triangulation) -> Vector{<:LagrangianRefFE}
-
-It is not desirable to iterate over the resulting array
-for large number of cells if the underlying reference FEs
-are of different Julia type.
-"""
-function get_cell_reffe(trian::Triangulation)
-  type_to_reffe = get_reffes(trian)
-  cell_to_type = get_cell_type(trian)
-  expand_cell_data(type_to_reffe,cell_to_type)
+function is_change_possible(strian::Triangulation,ttrian::Triangulation)
+  if strian === ttrian
+    return true
+  end
+  @check get_background_model(strian) === get_background_model(ttrian) "Triangulations do not point to the same background discrete model!"
+  D = num_cell_dims(strian)
+  sglue = get_glue(strian,Val(D))
+  tglue = get_glue(ttrian,Val(D))
+  is_change_possible(sglue,tglue)
 end
 
-"""
-"""
-function get_cell_ref_coordinates(trian::Triangulation)
-  type_to_reffe = get_reffes(trian)
-  type_to_coords = map(get_node_coordinates,type_to_reffe)
-  cell_to_type = get_cell_type(trian)
-  expand_cell_data(type_to_coords,cell_to_type)
+function is_change_possible(strian,ttrian)
+  false
 end
 
-"""
-    get_cell_shapefuns(trian::Triangulation) -> Vector{<:Field}
-"""
-function get_cell_shapefuns(trian::Triangulation)
-  type_to_reffes = get_reffes(trian)
-  cell_to_type = get_cell_type(trian)
-  type_to_shapefuns = map(get_shapefuns, type_to_reffes)
-  expand_cell_data(type_to_shapefuns,cell_to_type)
+function is_change_possible(sglue::FaceToFaceGlue,tglue::FaceToFaceGlue)
+  sglue.mface_to_tface != nothing
 end
 
-"""
-    get_cell_map(trian::Triangulation) -> Vector{<:Field}
-"""
-function get_cell_map(trian::Triangulation)
-  cell_to_coords = get_cell_coordinates(trian)
-  cell_to_shapefuns = get_cell_shapefuns(trian)
-  lazy_map(linear_combination,cell_to_coords,cell_to_shapefuns)
+function best_target(trian1::Triangulation,trian2::Triangulation)
+  @check is_change_possible(trian1,trian2)
+  @check is_change_possible(trian2,trian1)
+  D1 = num_cell_dims(trian1)
+  D2 = num_cell_dims(trian2)
+  glue1 = get_glue(trian1,Val(D2))
+  glue2 = get_glue(trian2,Val(D1))
+  best_target(trian1,trian2,glue1,glue2)
 end
 
-function get_node_coordinates(trian::Triangulation)
+function best_target(
+  trian1::Triangulation,trian2::Triangulation,glue1::FaceToFaceGlue,glue2::FaceToFaceGlue)
+  # Return the background
+  model = get_background_model(trian1)
+  D = num_cell_dims(trian1)
+  @assert num_cell_dims(trian2) == D
+  Triangulation(ReferenceFE{D},model)
+end
+
+function get_active_model(t::Triangulation)
+  compute_active_model(t)
+end
+
+function compute_active_model(t::Triangulation)
+  D = num_cell_dims(t)
+  glue = get_glue(t,Val(D))
+  @assert glue.mface_to_tface !== nothing
+  bgmodel = get_background_model(t)
+  model = DiscreteModel(Polytope{D},bgmodel)
+  _restrict_model(model,get_grid(t),glue.tface_to_mface)
+end
+
+function _restrict_model(model,grid::Grid,tface_to_mface)
+  _restrict_model(model,tface_to_mface)
+end
+
+function _restrict_model(model,grid::GridPortion,tface_to_mface)
+  @check grid.cell_to_parent_cell == tface_to_mface
+  DiscreteModelPortion(model,grid)
+end
+
+function _restrict_model(model,tface_to_mface)
+  DiscreteModelPortion(model,tface_to_mface)
+end
+
+function _restrict_model(model,tface_to_mface::IdentityVector)
+  model
+end
+
+# This is the most basic Triangulation
+# It represents a physical domain built using the faces of a DiscreteModel
+struct BodyFittedTriangulation{Dt,Dp,A,B,C} <: Triangulation{Dt,Dp}
+  model::A
+  grid::B
+  tface_to_mface::C
+  function BodyFittedTriangulation(model::DiscreteModel,grid::Grid,tface_to_mface)
+    Dp = num_point_dims(model)
+    @assert Dp == num_point_dims(grid)
+    Dt = num_cell_dims(grid)
+    A = typeof(model)
+    B = typeof(grid)
+    C = typeof(tface_to_mface)
+    new{Dt,Dp,A,B,C}(model,grid,tface_to_mface)
+  end
+end
+
+get_background_model(trian::BodyFittedTriangulation) = trian.model
+get_grid(trian::BodyFittedTriangulation) = trian.grid
+
+function get_glue(trian::BodyFittedTriangulation{Dt},::Val{Dt}) where Dt
+  tface_to_mface = trian.tface_to_mface
+  tface_to_mface_map = Fill(GenericField(identity),num_cells(trian))
+  if isa(tface_to_mface,IdentityVector) && num_faces(trian.model,Dt) == num_cells(trian)
+    mface_to_tface = tface_to_mface
+  else
+    ntfaces = num_faces(trian.model,Dt)
+    mface_to_tface = PosNegPartition(tface_to_mface,Int32(ntfaces))
+  end
+  FaceToFaceGlue(tface_to_mface,tface_to_mface_map,mface_to_tface)
+end
+
+#function get_glue(trian::BodyFittedTriangulation{Dt},::Val{Dm}) where {Dt,Dm}
+#  @notimplemented
+#end
+
+function Base.view(t::BodyFittedTriangulation,ids::AbstractArray)
+  model = t.model
+  grid = view(t.grid,ids)
+  tface_to_mface = lazy_map(Reindex(t.tface_to_mface),ids)
+  BodyFittedTriangulation(model,grid,tface_to_mface)
+end
+
+get_triangulation(model) = Triangulation(model)
+
+function Triangulation(
+  ::Type{ReferenceFE{d}},model::DiscreteModel,filter::AbstractArray) where d
+  mgrid = Grid(ReferenceFE{d},model)
+  # Grid portion is OK here since this is usually used to
+  # define a FE space
+  tgrid = GridPortion(mgrid,filter)
+  tface_to_mface = tgrid.cell_to_parent_cell
+  BodyFittedTriangulation(model,tgrid,tface_to_mface)
+end
+
+function Triangulation(model::DiscreteModel,filter::AbstractArray)
+  d = num_cell_dims(model)
+  Triangulation(ReferenceFE{d},model,filter)
+end
+
+function Triangulation(
+  ::Type{ReferenceFE{d}},
+  model::DiscreteModel,
+  labels::FaceLabeling;tags=nothing) where d
+
+  if tags === nothing
+    grid = Grid(ReferenceFE{d},model)
+    tface_to_mface = IdentityVector(num_cells(grid))
+    BodyFittedTriangulation(model,grid,tface_to_mface)
+  else
+    mface_to_mask = get_face_mask(labels,tags,d)
+    Triangulation(ReferenceFE{d},model,mface_to_mask)
+  end
+end
+
+function Triangulation(
+  ::Type{ReferenceFE{d}},model::DiscreteModel;kwargs...) where d
+  labels = get_face_labeling(model)
+  Triangulation(ReferenceFE{d},model,labels;kwargs...)
+end
+
+function Triangulation(model::DiscreteModel;kwargs...)
+  d = num_cell_dims(model)
+  labels = get_face_labeling(model)
+  Triangulation(ReferenceFE{d},model,labels;kwargs...)
+end
+
+function Triangulation(trian::Triangulation,args...;kwargs...)
+  amodel = get_active_model(trian)
+  dtrian = Triangulation(amodel,args...;kwargs...)
+  CompositeTriangulation(trian,dtrian)
+end
+
+# This is the low-level functionality to move from one Triangulation to another
+
+function extend(tface_to_val,mface_to_tface)
   @notimplemented
 end
 
-function get_cell_node_ids(trian::Triangulation)
-  @notimplemented
+function extend(tface_to_val,mface_to_tface::IdentityVector)
+  tface_to_val
 end
 
-function compress_contributions(cell_mat,trian::Triangulation)
-  cell_mat
+function extend(tface_to_val,mface_to_tface::PosNegPartition)
+  ipos_to_val, ineg_to_val = pos_neg_data(tface_to_val,mface_to_tface)
+  i_to_iposneg = mface_to_tface
+  lazy_map(PosNegReindex(ipos_to_val,ineg_to_val),i_to_iposneg)
 end
 
-function compress_ids(cell_ids,trian::Triangulation)
-  cell_ids
+function extend(a::LazyArray{<:Fill{typeof(transpose)}},b::PosNegPartition)
+  c = a.args[1]
+  d = extend(c,b)
+  lazy_map(transpose,d)
 end
 
-function Quadrature(trian::Triangulation,args...;kwargs...)
-  cell_ctype = get_cell_type(trian)
-  ctype_polytope = map(get_polytope,get_reffes(trian))
-  ctype_quad = map(p->Quadrature(p,args...;kwargs...),ctype_polytope)
-  cell_quad = expand_cell_data(ctype_quad,cell_ctype)
+function extend(a::LazyArray{<:Fill{typeof(linear_combination)}},b::PosNegPartition)
+  d1 = extend(a.args[1],b)
+  d2 = extend(a.args[2],b)
+  lazy_map(linear_combination,d1,d2)
 end
 
-#"""
-#"""
-#function CellField(object,trian::Triangulation)
-#  cm = get_cell_map(trian)
-#  convert_to_cell_field(object,cm)
+#function extend(a::LazyArray{<:Fill},b::PosNegPartition)
+#  k = a.maps.value
+#  args = map(i->extend(i,b),a.args)
+#  lazy_map(k,args...)
 #end
-#
 
-# Helpers for Triangulation
+function pos_neg_data(
+  ipos_to_val::AbstractArray{<:Number},i_to_iposneg::PosNegPartition)
+  nineg = length(i_to_iposneg.ineg_to_i)
+  ineg_to_val = Fill(zero(eltype(ipos_to_val)),nineg)
+  ipos_to_val, ineg_to_val
+end
 
-#"""
-#    restrict(cf::CellField,trian::Triangulation)
-#"""
-#function restrict(cf::CellField,trian::Triangulation)
-#  _cf = to_ref_space(cf)
-#  a = get_array(_cf)
-#  r = restrict(a,trian)
-#  axs = reindex(get_cell_axes(cf),trian)
-#  _restrict_cell_field(r,axs,MetaSizeStyle(cf),trian)
-#end
-#
-#function _restrict_cell_field(r::AbstractArray,axs::AbstractArray,msize_style::Val,trian)
-#  cm = get_cell_map(trian)
-#  GenericCellField(r,cm,Val(true),axs,msize_style)
-#end
-#
-#function _restrict_cell_field(r::SkeletonPair,axs::SkeletonPair,msize_style::Val,trian)
-#  cm = get_cell_map(trian)
-#  la = r.plus
-#  ra = r.minus
-#  l = GenericCellField(la,cm,Val(true),axs.plus,msize_style)
-#  r = GenericCellField(ra,cm,Val(true),axs.minus,msize_style)
-#  merge_cell_fields_at_skeleton(l,r)
-#end
-#
-#"""
-#    CellQuadrature(trian::Triangulation, degree::Integer)
-#"""
-#function CellQuadrature(trian::Triangulation, degree::Integer)
-#  polytopes = map(get_polytope,get_reffes(trian))
-#  cell_type = get_cell_type(trian)
-#  CellQuadrature(degree,polytopes,cell_type)
-#end
-#
-#"""
-#    integrate(cell_field,trian::Triangulation,quad::CellQuadrature)
-#
-#The `cell_field` is aligned with the cells in `trian`
-#"""
-#function integrate(cell_field,trian::Triangulation,quad::CellQuadrature)
-#  cell_map = get_cell_map(trian)
-#  integrate(cell_field,cell_map,quad)
-#end
-#
-#function CellField(value::Number,trian::Triangulation,quad::CellQuadrature)
-#  CellField(value,get_cell_map(trian),quad)
-#end
+function pos_neg_data(
+  ipos_to_val::AbstractArray{<:AbstractArray{<:Number}},i_to_iposneg::PosNegPartition)
+  nineg = length(i_to_iposneg.ineg_to_i)
+  val = testitem(ipos_to_val)
+  void = similar(val,eltype(val),0)
+  ineg_to_val = Fill(void,nineg)
+  ipos_to_val, ineg_to_val
+end
+
+function pos_neg_data(
+  ipos_to_val::AbstractArray{<:Field},i_to_iposneg::PosNegPartition)
+  nineg = length(i_to_iposneg.ineg_to_i)
+  ipos_to_v = lazy_map(VoidFieldMap(false),ipos_to_val)
+  ineg_to_v = Fill(VoidField(testitem(ipos_to_val),true),nineg)
+  ipos_to_v, ineg_to_v
+end
+
+function pos_neg_data(
+  ipos_to_val::AbstractArray{<:AbstractArray{<:Field}},i_to_iposneg::PosNegPartition)
+  _pos_neg_data_basis(ipos_to_val,i_to_iposneg)
+end
+
+function pos_neg_data(
+  ipos_to_val::AbstractArray{<:AbstractArray{<:Dof}},i_to_iposneg::PosNegPartition)
+  _pos_neg_data_basis(ipos_to_val,i_to_iposneg)
+end
+
+function _pos_neg_data_basis(ipos_to_val,i_to_iposneg)
+  nineg = length(i_to_iposneg.ineg_to_i)
+  ipos_to_v = lazy_map(VoidBasisMap(false),ipos_to_val)
+  ineg_to_v = Fill(VoidBasis(testitem(ipos_to_val),true),nineg)
+  ipos_to_v, ineg_to_v
+end
+
+
+# "Compose" triangulations
+
+struct CompositeTriangulation{Dc,Dp,A,B} <: Triangulation{Dc,Dp}
+  rtrian::A
+  dtrian::B
+  function CompositeTriangulation(
+    rtrian::Triangulation, dtrian::Triangulation)
+    @assert num_point_dims(rtrian) == num_point_dims(dtrian)
+    Dp = num_point_dims(rtrian)
+    Dc = num_cell_dims(dtrian)
+    #@assert get_active_model(rtrian) === get_background_model(dtrian)
+    A = typeof(rtrian)
+    B = typeof(dtrian)
+    new{Dc,Dp,A,B}(rtrian,dtrian)
+  end
+end
+
+get_background_model(t::CompositeTriangulation) = get_background_model(t.rtrian)
+get_active_model(t::CompositeTriangulation) = get_active_model(t.dtrian)
+get_grid(t::CompositeTriangulation) = get_grid(t.dtrian)
+get_facet_normal(t::CompositeTriangulation) = get_facet_normal(t.dtrian)
+function get_glue(t::CompositeTriangulation,::Val{D}) where D
+  Dr = num_cell_dims(t.rtrian)
+  rglue = get_glue(t.rtrian,Val(D))
+  dglue = get_glue(t.dtrian,Val(Dr))
+  _compose_glues(rglue,dglue)
+end
+
+function _compose_glues(rglue,dglue)
+  nothing
+end
+
+function _compose_glues(rglue::FaceToFaceGlue,dglue::FaceToFaceGlue)
+  rface_to_mface = rglue.tface_to_mface
+  dface_to_rface = dglue.tface_to_mface
+  dface_to_mface = collect(lazy_map(Reindex(rface_to_mface),dface_to_rface))
+  rface_to_mface_map = rglue.tface_to_mface_map
+  dface_to_rface_map = dglue.tface_to_mface_map
+  dface_to_mface_map1 = lazy_map(Reindex(rface_to_mface_map),dface_to_rface)
+  dface_to_mface_map = lazy_map(∘,dface_to_mface_map1,dface_to_rface_map)
+  mface_to_dface = nothing
+  FaceToFaceGlue(dface_to_mface,dface_to_mface_map,mface_to_dface)
+end
+

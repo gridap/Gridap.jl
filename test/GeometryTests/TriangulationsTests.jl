@@ -1,88 +1,101 @@
 module TriangulationsTests
 
-using Test
-using FillArrays
-using LinearAlgebra: norm
-
 using Gridap.Geometry
 using Gridap.Arrays
-using Gridap.TensorValues
-using Gridap.Fields
 using Gridap.ReferenceFEs
-#using Gridap.CellData
+using Test
+using FillArrays
 
-import Gridap.Geometry: get_cell_type
-import Gridap.Geometry: get_reffes
-import Gridap.Geometry: get_cell_coordinates
+domain = (-1,1,-1,1)
+cells = (10,10)
+model = CartesianDiscreteModel(domain,cells)
+Ω = Triangulation(model)
+test_triangulation(Ω)
 
-struct MockTriangulation <: Triangulation{2,2} end
+@test model === get_background_model(Ω)
+@test model === get_active_model(Ω)
+@test get_grid(Ω) === get_grid(model)
+glue = get_glue(Ω,Val(2))
+@test isa(glue.tface_to_mface,IdentityVector)
+@test isa(glue.mface_to_tface,IdentityVector)
+glue.mface_to_tface === glue.tface_to_mface
+@test isa(glue.tface_to_mface_map,Fill)
 
-function get_cell_coordinates(::MockTriangulation)
-  c1 = Point{2,Float64}[(0,0), (2,0), (0,2)]
-  c2 = Point{2,Float64}[(2,0), (2,2), (1,1)]
-  c3 = Point{2,Float64}[(2,2), (0,2), (1,1)]
-  [c1,c2,c3]
+Γ = Triangulation(ReferenceFE{1},model)
+@test model === get_background_model(Γ)
+glue = get_glue(Γ,Val(1))
+@test isa(glue.tface_to_mface,IdentityVector)
+@test isa(glue.mface_to_tface,IdentityVector)
+glue.mface_to_tface === glue.tface_to_mface
+@test isa(glue.tface_to_mface_map,Fill)
+
+cell_xs = get_cell_coordinates(Ω)
+cell_mask = lazy_map(cell_xs) do xs
+  R = 0.7
+  n = length(xs)
+  x = (1/n)*sum(xs)
+  d = x[1]^2 + x[2]^2 - R^2
+  d < 0
 end
 
-function get_cell_type(::MockTriangulation)
-  ncells = 3
-  Fill(Int8(1),ncells)
-end
+Ω1 = Triangulation(model,cell_mask)
+@test model === get_background_model(Ω1)
+@test model !== get_active_model(Ω1)
+glue = get_glue(Ω1,Val(2))
+@test glue.tface_to_mface == findall(collect1d(cell_mask))
+@test isa(glue.tface_to_mface_map,Fill)
+@test model === get_background_model(Ω)
+@test isa(glue.mface_to_tface,PosNegPartition)
+@test glue.mface_to_tface[glue.tface_to_mface] == 1:length(glue.tface_to_mface)
 
-function get_reffes(::MockTriangulation)
-  [TRI3,]
-end
+cell_mcell = findall(collect1d(cell_mask))
+Ω1 = Triangulation(model,cell_mcell)
+glue = get_glue(Ω1,Val(2))
+@test glue.tface_to_mface == cell_mcell
+@test isa(glue.tface_to_mface_map,Fill)
+@test model === get_background_model(Ω)
+@test isa(glue.mface_to_tface,PosNegPartition)
+@test glue.mface_to_tface[glue.tface_to_mface] == 1:length(glue.tface_to_mface)
 
-trian = MockTriangulation()
-test_triangulation(trian)
+Ω1 = view(Ω,cell_mcell)
+glue = get_glue(Ω1,Val(2))
+@test glue.tface_to_mface == cell_mcell
+@test isa(glue.tface_to_mface_map,Fill)
+@test model === get_background_model(Ω)
+@test isa(glue.mface_to_tface,PosNegPartition)
+@test glue.mface_to_tface[glue.tface_to_mface] == 1:length(glue.tface_to_mface)
 
-a = lazy_map(x->norm(x[1]-x[2]),get_cell_coordinates(trian))
-test_array(a,collect(a))
+labels = get_face_labeling(model)
+entity = num_entities(labels)+1
+labels.d_to_dface_to_entity[end][cell_mcell] .= entity
+add_tag!(labels,"Ω1",[entity])
+Ω1 = Triangulation(model,tags="Ω1")
+glue = get_glue(Ω1,Val(2))
+@test glue.tface_to_mface == cell_mcell
+@test isa(glue.tface_to_mface_map,Fill)
+@test model === get_background_model(Ω)
+@test isa(glue.mface_to_tface,PosNegPartition)
+@test glue.mface_to_tface[glue.tface_to_mface] == 1:length(glue.tface_to_mface)
 
-cell_map = get_cell_map(trian)
-cell_J = lazy_map(∇,cell_map)
+glue = get_glue(Ω,Val(2))
+tface_to_data = rand(num_cells(Ω))
+mface_to_data = extend(tface_to_data,glue.mface_to_tface)
+@test tface_to_data === mface_to_data
 
-ncells = num_cells(trian)
-@test ncells == 3
+glue = get_glue(Ω1,Val(2))
+tface_to_data = rand(num_cells(Ω1))
+mface_to_data = extend(tface_to_data,glue.mface_to_tface)
+@test mface_to_data[glue.tface_to_mface] == tface_to_data
+tface_to_data = get_cell_shapefuns(Ω1)
+mface_to_data = extend(tface_to_data,glue.mface_to_tface)
+@test mface_to_data[glue.tface_to_mface] == tface_to_data
 
-qi = Point(0.5,0.5)
-np = 4
-qe = fill(qi,np)
-q = Fill(qe,ncells)
+@test is_change_possible(Ω,Ω1)
+@test is_change_possible(Ω1,Ω)
 
-xi1 = Point(1.0, 1.0)
-xi2 = Point(1.5, 1.5)
-xi3 = Point(0.5, 1.5)
-x1 = fill(xi1,np)
-x2 = fill(xi2,np)
-x3 = fill(xi3,np)
-x = [x1,x2,x3]
-
-ji1 = TensorValue(2.0, 0.0, 0.0, 2.0)
-ji2 = TensorValue(0.0, -1.0, 2.0, 1.0)
-ji3 = TensorValue(-2.0, -1.0, 0.0, -1.0)
-j1 = fill(ji1,np)
-j2 = fill(ji2,np)
-j3 = fill(ji3,np)
-j = [j1,j2,j3]
-
-@test all(lazy_map(test_map,x,cell_map,q))
-@test all(lazy_map(test_map,j,cell_J,q))
-test_array(lazy_map(evaluate,cell_map,q),x)
-test_array(lazy_map(evaluate,cell_J,q),j)
-
-@test is_first_order(trian) == true
-
-#cf1 = CellField(3,trian)
-#cf2 = CellField(identity,trian)
-
-#x = get_physical_coordinate(trian)
-
-@test get_cell_to_bgcell(trian) == collect(1:num_cells(trian))
-r = rand(num_cells(trian))
-@test r === lazy_map(Reindex(r),get_cell_to_bgcell(trian))
-
-#using Gridap.Visualization
-#writevtk(trian,"trian",cellfields=["cf1"=>cf1,"cf2"=>cf2,"x"=>x, "gradx"=>∇(x)])
+Ω2 = best_target(Ω1,Ω)
+glue = get_glue(Ω2,Val(2))
+@test isa(glue.tface_to_mface,IdentityVector)
+@test isa(glue.mface_to_tface,IdentityVector)
 
 end # module

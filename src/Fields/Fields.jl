@@ -88,6 +88,11 @@ export VectorBlock
 export MatrixBlock
 export BlockMap
 
+export VoidField
+export VoidFieldMap
+export VoidBasis
+export VoidBasisMap
+
 include("FieldsInterfaces.jl")
 
 include("FieldArrays.jl")

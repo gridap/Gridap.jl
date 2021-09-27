@@ -102,7 +102,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish Geometry get_cell_coordinates
 @publish Geometry get_cell_ref_coordinates
 @publish Geometry get_cell_map
-@publish Geometry get_cell_to_bgcell
+@publish Geometry get_glue
 @publish Geometry CartesianGrid
 @publish Geometry CartesianDiscreteModel
 @publish Geometry DiscreteModel
@@ -115,8 +115,10 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish Geometry add_tag_from_tags!
 @publish Geometry BoundaryTriangulation
 @publish Geometry SkeletonTriangulation
-@publish Geometry RestrictedTriangulation
 @publish Geometry InterfaceTriangulation
+@publish Geometry Boundary
+@publish Geometry Skeleton
+@publish Geometry Interface
 
 @publish CellData CellQuadrature
 @publish CellData Measure

@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.17.0] - Unreleased
 
+### Added
+
+- Aliases `Boundary`, `Skeleton`, and `Interface` for the `BoundaryTriangulation`, `SkeletonTriangulation`, and `InterfaceTriangulation` constructors. Since PR [#662](https://github.com/gridap/Gridap.jl/pull/662).
+
+### Changed
+
+- Major refactoring in the `Triangulation` interface to properly support the solution of PDEs defined on domains of different dimension. The major change from the user perspective is that `Triangulation` objects can be used both to integrate the weak form (as before) but also to define FE spaces (except for unfitted triangulations obviously). It is still possible to define FE spaces from `DiscreteModels`, but it is safer and more idiomatic (closer to the math notation) to use `Triangulation` objects from now on. Since PR [#662](https://github.com/gridap/Gridap.jl/pull/662).
+
+### Removed
+
+- `BoundaryDiscreteModel`, `RestrictedDiscreteMdeol`, `RestrictedTriangulation`, `TriangulationStyle`, `BackgroundTriangulation`, `SubTriangulation`, `get_cell_to_bgcell`, `get_cell_ref_map`, `get_background_triangulation`, and `have_compatible_domains`. Since PR [#662](https://github.com/gridap/Gridap.jl/pull/662). 
+
 ## [0.16.5] - 2021-09-08
 
 ### Added

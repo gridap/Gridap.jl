@@ -123,11 +123,11 @@ domain = (0,1,0,1,0,1)
 cells  = (2,2,2)
 model  = CartesianDiscreteModel(domain,cells)
 
-# Restrict model to cube surface (using new BoundaryDiscreteModel)
+# Restrict model to cube surface
 labels = get_face_labeling(model)
 bgface_to_mask = get_face_mask(labels,"boundary",2)
 Γface_to_bgface = findall(bgface_to_mask)
-Dc2Dp3model = BoundaryDiscreteModel(Polytope{2},model,Γface_to_bgface)
+Dc2Dp3model = DiscreteModelPortion(DiscreteModel(Polytope{2},model),Γface_to_bgface)
 
 order  = 0
 degree = 1
