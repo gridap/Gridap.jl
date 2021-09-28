@@ -43,6 +43,13 @@ glue = get_glue(trian,Val(2))
 @test isa(glue.tface_to_mface,AppendedArray)
 @test isa(glue.tface_to_mface_map,AppendedArray)
 
+btrian1 = Boundary(model,tags=5)
+btrian2 = Boundary(model,tags=2)
+btrian = lazy_append(btrian1,btrian2)
+test_triangulation(btrian)
+@test get_facet_normal(btrian) !== nothing
+
+
 #order = 1
 #quad = CellQuadrature(trian,2*order)
 #quad_in = CellQuadrature(trian_in,2*order)

@@ -123,6 +123,9 @@ end
 function get_glue(t::AppendedTriangulation,::Val{D}) where D 
   a = get_glue(t.a,Val(D))
   b = get_glue(t.b,Val(D))
+  if a==nothing || b==nothing
+    return nothing
+  end
   lazy_append(a,b)
 end
 
@@ -131,6 +134,25 @@ function lazy_append(a::FaceToFaceGlue,b::FaceToFaceGlue)
   tface_to_mface_map = lazy_append(a.tface_to_mface_map,b.tface_to_mface_map)
   mface_to_tface = nothing
   FaceToFaceGlue(tface_to_mface,tface_to_mface_map,mface_to_tface)
+end
+
+function get_cell_shapefuns(trian::AppendedTriangulation)
+  a = get_cell_shapefuns(trian.a)
+  b = get_cell_shapefuns(trian.b)
+  lazy_append(a,b)
+end
+
+function get_cell_map(trian::AppendedTriangulation)
+  a = get_cell_map(trian.a)
+  b = get_cell_map(trian.b)
+  lazy_append(a,b)
+end
+
+function get_facet_normal(trian::AppendedTriangulation)
+  cm = get_cell_map(trian)
+  a = get_facet_normal(trian.a)
+  b = get_facet_normal(trian.b)
+  lazy_append(a,b)
 end
 
 #function compress_contributions(cell_mat::AppendedArray,trian::AppendedTriangulation)
