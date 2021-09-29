@@ -48,6 +48,10 @@ glue = get_glue(Ω1,Val(2))
 @test isa(glue.mface_to_tface,PosNegPartition)
 @test glue.mface_to_tface[glue.tface_to_mface] == 1:length(glue.tface_to_mface)
 
+tface_to_val = [ rand(3,4) for i in 1:num_cells(Ω1) ]
+mface_to_val = extend(tface_to_val,glue.mface_to_tface)
+@test mface_to_val[glue.tface_to_mface] == tface_to_val
+
 cell_mcell = findall(collect1d(cell_mask))
 Ω1 = Triangulation(model,cell_mcell)
 glue = get_glue(Ω1,Val(2))
