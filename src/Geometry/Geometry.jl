@@ -188,6 +188,7 @@ export is_change_possible
 export best_target
 export FaceToFaceGlue
 export BodyFittedTriangulation
+export move_contributions
 
 include("Grids.jl")
 
@@ -225,6 +226,6 @@ include("SkeletonTriangulations.jl")
 
 include("AppendedTriangulations.jl")
 
-#include("CompressedCellArrays.jl")
+include("CompressedCellArrays.jl")
 
 end # module

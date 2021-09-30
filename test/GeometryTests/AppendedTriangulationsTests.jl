@@ -49,6 +49,13 @@ btrian = lazy_append(btrian1,btrian2)
 test_triangulation(btrian)
 @test get_facet_normal(btrian) !== nothing
 
+cell1_to_mat = [ones(3,3) for i in 1:num_cells(btrian1)]
+cell2_to_mat = [ones(3,3) for i in 1:num_cells(btrian2)]
+cell_to_mat = lazy_append(cell1_to_mat,cell2_to_mat)
+tcell_to_mat, ttrian = move_contributions(cell_to_mat,btrian)
+@test tcell_to_mat == cell_to_mat
+tcell_to_mat, ttrian = move_contributions(collect(cell_to_mat),btrian)
+@test tcell_to_mat == cell_to_mat
 
 #order = 1
 #quad = CellQuadrature(trian,2*order)

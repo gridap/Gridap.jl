@@ -181,26 +181,37 @@ const ∫ = Integrand
 (*)(b::CellQuadrature,a::Integrand) = integrate(a.object,b)
 
 # Cell measure
-"""
-Contributions added to the cells of the background Triangulation.
-"""
+
 function get_cell_measure(trian::Triangulation)
   quad = CellQuadrature(trian,0)
   cell_to_dV = integrate(1,quad)
-  model = get_background_model(trian)
-  bgtrian = Triangulation(model)
-  D = num_cell_dims(model)
-  glue = get_glue(trian,Val(D))
-  cell_to_bgcell = glue.tface_to_mface
-  bgcell_to_dV = zeros(num_cells(bgtrian))
-  _meas_K_fill!(bgcell_to_dV,cell_to_dV,cell_to_bgcell)
-  bgcell_to_dV
 end
 
-function _meas_K_fill!(bgcell_to_dV,cell_to_dV,cell_to_bgcell)
-  cache = array_cache(cell_to_dV)
-  for (cell, bgcell) in enumerate(cell_to_bgcell)
-    dV = getindex!(cache,cell_to_dV,cell)
-    bgcell_to_dV[bgcell] += dV
-  end
+function get_cell_measure(strian::Triangulation,ttrian::Triangulation)
+  scell_measure = get_cell_measure(strian)
+  move_contributions(scell_measure,strian,ttrian) |> collect
 end
+
+#"""
+#Contributions added to the cells of the background Triangulation.
+#"""
+#function get_cell_measure(trian::Triangulation)
+#  quad = CellQuadrature(trian,0)
+#  cell_to_dV = integrate(1,quad)
+#  model = get_background_model(trian)
+#  bgtrian = Triangulation(model)
+#  D = num_cell_dims(model)
+#  glue = get_glue(trian,Val(D))
+#  cell_to_bgcell = glue.tface_to_mface
+#  bgcell_to_dV = zeros(num_cells(bgtrian))
+#  _meas_K_fill!(bgcell_to_dV,cell_to_dV,cell_to_bgcell)
+#  bgcell_to_dV
+#end
+#
+#function _meas_K_fill!(bgcell_to_dV,cell_to_dV,cell_to_bgcell)
+#  cache = array_cache(cell_to_dV)
+#  for (cell, bgcell) in enumerate(cell_to_bgcell)
+#    dV = getindex!(cache,cell_to_dV,cell)
+#    bgcell_to_dV[bgcell] += dV
+#  end
+#end

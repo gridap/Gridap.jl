@@ -155,6 +155,18 @@ function get_facet_normal(trian::AppendedTriangulation)
   lazy_append(a,b)
 end
 
+function move_contributions(
+  cell_mat::AppendedArray, trian::AppendedTriangulation)
+
+  if length(cell_mat.a) == num_cells(trian.a) && length(cell_mat.b) == num_cells(trian.b)
+    a,ta = move_contributions(cell_mat.a,trian.a)
+    b,tb = move_contributions(cell_mat.b,trian.b)
+    return lazy_append(a,b), lazy_append(ta,tb)
+  else
+    return cell_mat, trian
+  end
+end
+
 #function compress_contributions(cell_mat::AppendedArray,trian::AppendedTriangulation)
 #  if length(cell_mat.a) == num_cells(trian.a) && length(cell_mat.b) == num_cells(trian.b)
 #    a = compress_contributions(cell_mat.a,trian.a)
