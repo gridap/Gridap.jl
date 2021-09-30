@@ -34,22 +34,6 @@ using Test
 
 @testset "AppendedTriangulations" begin include("AppendedTriangulationsTests.jl") end
 
-
-
-
-#@testset "Triangulations" begin include("TriangulationsTests.jl") end
-#
-#
-#@testset "RestrictedTriangulations" begin include("RestrictedTriangulationsTests.jl") end
-#
-#
-#
-#
-#@testset "RestrictedDiscreteModels" begin include("RestrictedDiscreteModelsTests.jl") end
-#
-#
-#@testset "CompressedCellArrays" begin include("CompressedCellArraysTests.jl") end
-#
-#@testset "BoundaryDiscreteModels" begin include("BoundaryDiscreteModelsTests.jl") end
+@testset "CompressedCellArrays" begin include("CompressedCellArraysTests.jl") end
 
 end # module

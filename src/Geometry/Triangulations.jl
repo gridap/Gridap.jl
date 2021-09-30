@@ -295,6 +295,46 @@ function _pos_neg_data_basis(ipos_to_val,i_to_iposneg)
   ipos_to_v, ineg_to_v
 end
 
+function pos_neg_data(
+  ipos_to_val::AbstractArray{<:ArrayBlock},i_to_iposneg::PosNegPartition)
+  nineg = length(i_to_iposneg.ineg_to_i)
+  val = testitem(ipos_to_val)
+  void = _similar_empty(val)
+  ineg_to_val = Fill(void,nineg)
+  ipos_to_val, ineg_to_val
+end
+
+function pos_neg_data(
+  ipos_to_val::AbstractArray{<:Tuple{<:Any,<:Any}},i_to_iposneg::PosNegPartition)
+  nineg = length(i_to_iposneg.ineg_to_i)
+  val = testitem(ipos_to_val)
+  void = _similar_empty(val)
+  ineg_to_val = Fill(void,nineg)
+  ipos_to_val, ineg_to_val
+end
+
+function _similar_empty(val::AbstractArray)
+  zs = 0 .* size(val)
+  void = similar(val,eltype(val),zs)
+end
+
+function _similar_empty(val::ArrayBlock)
+  a = deepcopy(val)
+  for i in eachindex(a)
+    if a.touched[i]
+      a.array[i] = _similar_empty(a.array[i])
+    end
+  end
+  a
+end
+
+function _similar_empty(val::Tuple)
+  a, b = val
+  a1 = _similar_empty(a)
+  b1 = _similar_empty(b)
+  (a1,b1)
+end
+
 
 # "Compose" triangulations
 
