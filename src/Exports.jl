@@ -120,6 +120,8 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish Geometry Skeleton
 @publish Geometry Interface
 @publish Geometry move_contributions
+@publish Geometry get_background_model
+@publish Geometry get_active_model
 
 @publish CellData CellQuadrature
 @publish CellData Measure
