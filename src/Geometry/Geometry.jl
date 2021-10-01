@@ -162,6 +162,7 @@ export UnstructuredDiscreteModel
 export CartesianDiscreteModel
 export BoundaryDiscreteModel
 
+export GenericTriangulation
 export BoundaryTriangulation
 export DiscreteModelPortion
 

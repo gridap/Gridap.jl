@@ -380,3 +380,27 @@ function _compose_glues(rglue::FaceToFaceGlue,dglue::FaceToFaceGlue)
   FaceToFaceGlue(dface_to_mface,dface_to_mface_map,mface_to_dface)
 end
 
+struct GenericTriangulation{Dc,Dp,A,B,C} <: Triangulation{Dc,Dp}
+  grid::A
+  model::B
+  glue::C
+  function GenericTriangulation(
+    grid::Grid,
+    model=nothing,
+    glue=ntuple(i->nothing,num_cell_dims(grid)+1))
+    Dc = num_cell_dims(grid)
+    Dp = num_point_dims(grid)
+    A = typeof(grid)
+    B = typeof(model)
+    C = typeof(glue)
+    new{Dc,Dp,A,B,C}(grid,model,glue)
+  end
+end
+
+get_grid(a::GenericTriangulation) = a.grid
+get_glue(a::GenericTriangulation,::Val{D}) where D = a.glue[D+1]
+function get_background_model(a::GenericTriangulation)
+  @notimplementedif a.model === nothing "This triangulation object cannot be used to define a FE Space"
+  a.model
+end
+

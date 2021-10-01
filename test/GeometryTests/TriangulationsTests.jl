@@ -21,6 +21,27 @@ glue = get_glue(Ω,Val(2))
 glue.mface_to_tface === glue.tface_to_mface
 @test isa(glue.tface_to_mface_map,Fill)
 
+glue_0 = get_glue(Ω,Val(0))
+glue_1 = get_glue(Ω,Val(1))
+glue_2 = get_glue(Ω,Val(2))
+
+Θ = GenericTriangulation(
+  get_grid(Ω),
+  get_background_model(Ω),
+  (glue_0,glue_1,glue_2))
+test_triangulation(Θ)
+@test get_glue(Θ,Val(0)) === glue_0
+@test get_glue(Θ,Val(1)) === glue_1
+@test get_glue(Θ,Val(2)) === glue_2
+
+Θ = GenericTriangulation(
+  get_grid(Ω),
+  get_background_model(Ω))
+test_triangulation(Θ)
+
+Θ = GenericTriangulation(get_grid(Ω))
+@test isa(Θ,Triangulation)
+
 Γ = Triangulation(ReferenceFE{1},model)
 @test model === get_background_model(Γ)
 glue = get_glue(Γ,Val(1))
