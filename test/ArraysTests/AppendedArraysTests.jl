@@ -83,5 +83,12 @@ c2 = CompressedArray([3.0],fill(1,5))
 d = lazy_map(evaluate,c1,c2)
 test_array(d,[3,3,3,-3,-3])
 
+r1 = [1,2,3,4]
+r2 = [5,6]
+r = lazy_append(r1,r2)
+v = rand(6)
+w = lazy_map(Reindex(v),r)
+@test isa(w,AppendedArray)
+@test w == v[r]
 
 end # module
