@@ -97,6 +97,10 @@ function _compose_glues(rglue::FaceToFaceGlue,dglue::SkeletonPair)
   SkeletonPair(plus,minus)
 end
 
+function Base.view(glue::SkeletonPair{<:FaceToFaceGlue},ids::AbstractArray)
+  SkeletonPair(view(glue.plus,ids),view(glue.minus,ids))
+end
+
 # Constructors
 
 """
