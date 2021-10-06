@@ -186,4 +186,15 @@ x = lazy_map(evaluate,s2x,s)
 btrian = BoundaryTriangulation(model,tags=["tag_6","tag_7"])
 test_triangulation(btrian)
 
+ids = [1,3,4]
+vtrian = view(btrian,ids)
+test_triangulation(vtrian)
+@test num_cells(vtrian) == 3
+bglue = get_glue(btrian,Val(1))
+vglue = get_glue(vtrian,Val(1))
+@test vglue.tface_to_mface == bglue.tface_to_mface[ids]
+bglue = get_glue(btrian,Val(2))
+vglue = get_glue(vtrian,Val(2))
+@test vglue.tface_to_mface == bglue.tface_to_mface[ids]
+
 end # module

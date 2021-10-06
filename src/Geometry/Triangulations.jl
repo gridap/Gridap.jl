@@ -152,8 +152,8 @@ function get_glue(trian::BodyFittedTriangulation{Dt},::Val{Dt}) where Dt
   if isa(tface_to_mface,IdentityVector) && num_faces(trian.model,Dt) == num_cells(trian)
     mface_to_tface = tface_to_mface
   else
-    ntfaces = num_faces(trian.model,Dt)
-    mface_to_tface = PosNegPartition(tface_to_mface,Int32(ntfaces))
+    nmfaces = num_faces(trian.model,Dt)
+    mface_to_tface = PosNegPartition(tface_to_mface,Int32(nmfaces))
   end
   FaceToFaceGlue(tface_to_mface,tface_to_mface_map,mface_to_tface)
 end
@@ -404,3 +404,59 @@ function get_background_model(a::GenericTriangulation)
   a.model
 end
 
+struct TriangulationView{Dc,Dp,A,B} <: Triangulation{Dc,Dp}
+  parent::A
+  cell_to_parent_cell::B
+  function TriangulationView(parent::Triangulation,cell_to_parent_cell::AbstractArray)
+    Dc = num_cell_dims(parent)
+    Dp = num_point_dims(parent)
+    A = typeof(parent)
+    B = typeof(cell_to_parent_cell)
+    new{Dc,Dp,A,B}(parent,cell_to_parent_cell)
+  end
+end
+
+Base.view(a::Triangulation,b::AbstractArray) = TriangulationView(a,b)
+
+function TriangulationView(parent::Triangulation,parent_cell_to_mask::AbstractArray{Bool})
+  cell_to_parent_cell = findall(collect1d(parent_cell_to_mask))
+  TriangulationView(parent,cell_to_parent_cell)
+end
+
+function TriangulationView(parent::Triangulation,parent_cell_to_mask::AbstractVector{Bool})
+  cell_to_parent_cell = findall(parent_cell_to_mask)
+  TriangulationView(parent,cell_to_parent_cell)
+end
+
+function get_background_model(trian::TriangulationView)
+  get_background_model(trian.parent)
+end
+
+function get_grid(trian::TriangulationView)
+  view(get_grid(trian.parent),trian.cell_to_parent_cell)
+end
+
+function get_glue(t::TriangulationView,::Val{d}) where d
+  parent = get_glue(t.parent,Val(d))
+  view(parent,t.cell_to_parent_cell)
+end
+
+function Base.view(glue::FaceToFaceGlue,ids::AbstractArray)
+  tface_to_mface = lazy_map(Reindex(glue.tface_to_mface),ids)
+  tface_to_mface_map = lazy_map(Reindex(glue.tface_to_mface_map),ids)
+  if glue.mface_to_tface === nothing
+    mface_to_tface = nothing
+  else
+    nmfaces = length(glue.mface_to_tface)
+    mface_to_tface = PosNegPartition(glue.tface_to_mface,Int32(nmfaces))
+  end
+  FaceToFaceGlue(tface_to_mface,tface_to_mface_map,mface_to_tface)
+end
+
+function get_facet_normal(trian::TriangulationView)
+  lazy_map(Reindex(get_facet_normal(trian.parent)),trian.cell_to_parent_cell)
+end
+
+function get_cell_map(trian::TriangulationView)
+  lazy_map(Reindex(get_cell_map(trian.parent)),trian.cell_to_parent_cell)
+end

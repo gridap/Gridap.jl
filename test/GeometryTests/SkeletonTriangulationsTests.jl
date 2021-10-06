@@ -33,6 +33,18 @@ glue = get_glue(strian,Val(3))
 @test glue.plus.tface_to_mface === strian.plus.glue.face_to_cell
 @test glue.minus.tface_to_mface === strian.minus.glue.face_to_cell
 
+ids = [1,3,4]
+vtrian = view(strian,ids)
+test_triangulation(vtrian)
+@test num_cells(vtrian) == 3
+sglue = get_glue(strian,Val(2))
+vglue = get_glue(vtrian,Val(2))
+@test vglue.tface_to_mface == sglue.tface_to_mface[ids]
+sglue = get_glue(strian,Val(3))
+vglue = get_glue(vtrian,Val(3))
+@test vglue.plus.tface_to_mface == sglue.plus.tface_to_mface[ids]
+@test vglue.minus.tface_to_mface == sglue.minus.tface_to_mface[ids]
+
 Ω = Triangulation(model)
 Γ = BoundaryTriangulation(model)
 Λ = SkeletonTriangulation(Γ)
