@@ -93,6 +93,8 @@ export VoidFieldMap
 export VoidBasis
 export VoidBasisMap
 
+export DensifyInnerMostBlockLevelMap
+
 include("FieldsInterfaces.jl")
 
 include("FieldArrays.jl")
@@ -110,5 +112,7 @@ include("AutoDiff.jl")
 include("ArrayBlocks.jl")
 
 include("InverseFields.jl")
+
+include("DensifyInnerMostBlockLevelMaps.jl")
 
 end
