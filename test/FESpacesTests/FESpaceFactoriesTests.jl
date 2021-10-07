@@ -151,4 +151,13 @@ V = FESpace(model_in,cell_fe,trian=Ω_in,constraint=:zeromean)
 @test isa(V,ZeroMeanFESpace)
 @test Ω_in === get_triangulation(V)
 
+Γ = Boundary(model)
+reffe = ReferenceFE(lagrangian,Float64,1)
+V = FESpace(Γ,reffe)
+@test get_triangulation(V) === Γ
+V = FESpace(Γ,reffe,conformity=:H1)
+@test get_triangulation(V) === Γ
+V = FESpace(Γ,reffe,conformity=:L2)
+@test get_triangulation(V) === Γ
+
 end # module

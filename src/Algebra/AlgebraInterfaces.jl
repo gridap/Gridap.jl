@@ -342,18 +342,18 @@ SparseMatrixBuilder(a::SparseMatrixBuilder) = a
 
 get_array_type(::SparseMatrixBuilder{T}) where T = T
 
-mutable struct SparseMatrixCounter{T,A}
+mutable struct CounterCOO{T,A}
   nnz::Int
   axes::A
-  function SparseMatrixCounter{T}(axes::A) where {T,A<:NTuple{2,AbstractUnitRange}}
+  function CounterCOO{T}(axes::A) where {T,A<:NTuple{2,AbstractUnitRange}}
     nnz = 0
     new{T,A}(nnz,axes)
   end
 end
 
-LoopStyle(::Type{<:SparseMatrixCounter}) = Loop()
+LoopStyle(::Type{<:CounterCOO}) = Loop()
 
-@inline function add_entry!(::Function,a::SparseMatrixCounter{T},v,i,j) where T
+@inline function add_entry!(::Function,a::CounterCOO{T},v,i,j) where T
   if is_entry_stored(T,i,j)
     a.nnz = a.nnz + 1
   end
@@ -361,7 +361,7 @@ LoopStyle(::Type{<:SparseMatrixCounter}) = Loop()
 end
 
 struct CooAllocation{T,A,B,C}
-  counter::SparseMatrixCounter{T,A}
+  counter::CounterCOO{T,A}
   I::B
   J::B
   V::C
@@ -391,15 +391,15 @@ end
 end
 
 #function nz_counter(::Type{T},axes) where T<:AbstractSparseMatrix
-#  SparseMatrixCounter{T}(axes)
+#  CounterCOO{T}(axes)
 #end
 
 function nz_counter(::SparseMatrixBuilder{T},axes) where T<:AbstractSparseMatrix
-  SparseMatrixCounter{T}(axes)
+  CounterCOO{T}(axes)
 end
 
-function nz_allocation(a::SparseMatrixCounter{T}) where T
-  counter = SparseMatrixCounter{T}(a.axes)
+function nz_allocation(a::CounterCOO{T}) where T
+  counter = CounterCOO{T}(a.axes)
   I,J,V = allocate_coo_vectors(T,a.nnz)
   CooAllocation(counter,I,J,V)
 end

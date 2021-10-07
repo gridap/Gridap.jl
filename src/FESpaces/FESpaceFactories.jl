@@ -93,11 +93,12 @@ function FESpace(
 
     V = _unsafe_clagrangian(
       cell_reffe,
-      trian,
+      Triangulation(model),
       labels,
       vector_type,
       dirichlet_tags,
-      dirichlet_masks)
+      dirichlet_masks,
+      trian)
     return V
   end
 
