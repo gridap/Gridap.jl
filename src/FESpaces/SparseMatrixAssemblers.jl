@@ -116,9 +116,7 @@ function allocate_matrix_and_vector(a::SparseMatrixAssembler,data)
   m2 = nz_allocation(m1)
   v2 = nz_allocation(v1)
   symbolic_loop_matrix_and_vector!(m2,v2,a,data)
-  m3 = create_from_nz(m2)
-  v3 = create_from_nz(v2)
-  m3,v3
+  create_from_nz(m2,v2)
 end
 
 function assemble_matrix_and_vector!(A,b,a::SparseMatrixAssembler, data)
@@ -129,7 +127,7 @@ end
 
 function assemble_matrix_and_vector_add!(A,b,a::SparseMatrixAssembler,data)
   numeric_loop_matrix_and_vector!(A,b,a,data)
-  create_from_nz(A), create_from_nz(b)
+  create_from_nz(A,b)
 end
 
 function assemble_matrix_and_vector(a::SparseMatrixAssembler, data)
@@ -139,9 +137,7 @@ function assemble_matrix_and_vector(a::SparseMatrixAssembler, data)
   m2 = nz_allocation(m1)
   v2 = nz_allocation(v1)
   numeric_loop_matrix_and_vector!(m2,v2,a,data)
-  m3 = create_from_nz(m2)
-  v3 = create_from_nz(v2)
-  m3,v3
+  create_from_nz(m2,v2)
 end
 
 function test_sparse_matrix_assembler(a::SparseMatrixAssembler,matdata,vecdata,data)
