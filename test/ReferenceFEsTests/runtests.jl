@@ -36,4 +36,6 @@ using Test
 
 @testset "CDLagrangianRefFEs" begin include("CDLagrangianRefFEsTests.jl") end
 
+@testset "BezierRefFEs" begin include("BezierRefFEsTests.jl") end
+
 end # module
