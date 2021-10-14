@@ -91,9 +91,8 @@ end
 
 function pos_and_neg_length(i_to_iposneg)
   Npos = maximum(i_to_iposneg)
-  Nneg = minimum(i_to_iposneg)
-  Nneg = Nneg ==  1  ? 0 : -Nneg
-  Npos == -1  ? 0 : Npos , Nneg
+  Nneg = -minimum(i_to_iposneg)
+  Npos, Nneg
 end
 
 function is_exhaustive(i_to_iposneg)
