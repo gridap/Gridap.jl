@@ -20,4 +20,6 @@ using Test
 
 @testset "InverseFields" begin include("InverseFieldsTests.jl") end
 
+@testset "DensifyInnerMostBlockLevelMapsTests" begin include("DensifyInnerMostBlockLevelMapsTests.jl") end
+
 end
