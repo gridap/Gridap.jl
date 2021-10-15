@@ -14,12 +14,21 @@ function BezierRefFE(::Type{T},p::Polytope{D},orders) where {D,T}
   nodes = get_node_coordinates(reffe)
   prebasis = get_prebasis(reffe)
   node_to_own_node = compute_node_to_bezier_node(prebasis,nodes)
-  shapefuns = berstein_basis(prebasis)
-  shapefuns = lazy_map(Reindex(shapefuns),node_to_own_node)
+  shapefuns = berstein_basis(prebasis,p)
+  shapefuns = collect(lazy_map(Reindex(shapefuns),node_to_own_node))
   lagreffaces = reffe.reffe.metadata
   reffaces = _convert_reffaces(T,lagreffaces)
   tuple( reffaces ... )
   BezierRefFE(reffe,node_to_own_node,shapefuns,reffaces)
+end
+
+function ReferenceFE(
+  polytope::Polytope,
+  ::Bezier,
+  ::Type{T},
+  orders::Union{Integer,Tuple{Vararg{Integer}}}) where T
+
+  BezierRefFE(T,polytope,orders)
 end
 
 get_node_coordinates(reffe::BezierRefFE) = get_node_coordinates(reffe.reffe)
@@ -29,6 +38,21 @@ get_node_to_own_node(reffe::BezierRefFE) = reffe.node_to_own_node
 get_metadata(reffe::BezierRefFE) = reffe.metadata
 
 get_shapefuns(reffe::BezierRefFE) = reffe.shapefuns
+
+get_prebasis(reffe::BezierRefFE) = reffe.prebasis
+
+function (==)(a::BezierRefFE{D},b::BezierRefFE{D}) where D
+  t = true
+  a.reffe == b.reffe
+  na = get_node_to_own_node(a)
+  nb = get_node_to_own_node(a)
+  t = t && (na == nb)
+  t
+end
+
+function (==)(a::BezierRefFE,b::BezierRefFE)
+  false
+end
 
 function _convert_reffaces(::Type{T},reffaces) where T
   _reffaces = []
@@ -50,10 +74,6 @@ function compute_node_to_bezier_node(prebasis::MonomialBasis{D,T},nodes) where {
   _exps = get_exponents(_prebasis)
   exps = get_exponents(prebasis)
   [ findfirst( isequal(i), exps) for i in _exps ]
-end
-
-function compute_shapefuns(reffe::BezierRefFE)
-  berstein_basis(prebasis)
 end
 
 ## Bernstein Basis
@@ -109,7 +129,7 @@ function _berstein_matrix(prebasis)
   p = get_order(prebasis)
   e = get_exponents(prebasis)
   M = CartesianIndices( (length(e),length(e)) )
-  lazy_map( i-> _bernstein_term(p,e[i.I[1]],e[i.I[2]]), M)
+  collect(lazy_map( i-> _bernstein_term(p,e[i.I[1]],e[i.I[2]]), M))
 end
 
 function berstein_basis(prebasis)
@@ -124,7 +144,7 @@ function berstein_basis_hex(prebasis::MonomialBasis{2,T}) where {T}
   p2 = MonomialBasis{1}(T,o[2])
   b1 = berstein_basis(p1)
   b2 = berstein_basis(p2)
-  lazy_map( i->b1[i[1]]*b2[i[2]], e)
+  collect(lazy_map( i->b1[i[1]]*b2[i[2]], e))
 end
 
 function berstein_basis_hex(prebasis::MonomialBasis{3,T}) where {T}
@@ -136,7 +156,7 @@ function berstein_basis_hex(prebasis::MonomialBasis{3,T}) where {T}
   b1 = berstein_basis(p1)
   b2 = berstein_basis(p2)
   b3 = berstein_basis(p3)
-  lazy_map( i->b1[i[1]]*b2[i[2]]*b3[i[3]], e)
+  collect(lazy_map( i->b1[i[1]]*b2[i[2]]*b3[i[3]], e))
 end
 
 berstein_basis(::MonomialBasis{0}) = [ConstantField(1)]

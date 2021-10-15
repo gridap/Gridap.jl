@@ -40,7 +40,7 @@ Xi = lazy_map( evaluate, Ψ, ξ )
 @test Xi == [ Point(0.0,0.0), Point(0.5,0.25), Point(1.0,0.0) ]
 
 p = 3
-prebasis_seg =MonomialBasis{1}(Float64,p,p_filter)
+prebasis_seg = MonomialBasis{1}(Float64,p,p_filter)
 C = _berstein_matrix(prebasis_seg)
 C13 =
 [
@@ -64,7 +64,7 @@ Xi = lazy_map( evaluate, Ψ, ξ )
 # 2D
 
 p = 2
-prebasis_tri =MonomialBasis{2}(Float64,p,p_filter)
+prebasis_tri = MonomialBasis{2}(Float64,p,p_filter)
 C = _berstein_matrix(prebasis_tri)
 C22 =
 [
@@ -88,7 +88,7 @@ Xi = lazy_map( evaluate, Ψ, ξ )
 @test Xi == ξ
 
 p = 3
-prebasis_tri =MonomialBasis{2}(Float64,p,p_filter)
+prebasis_tri = MonomialBasis{2}(Float64,p,p_filter)
 C = _berstein_matrix(prebasis_tri)
 C23 =
 [
@@ -190,5 +190,10 @@ w = get_weights(q)
 J = ∇(ψ)
 
 @test integrate(f,p,w,J) ≈ (5*5*5)/6
+
+tri = ReferenceFE(TRI,bezier,Float64,(3,3))
+_tri = BezierRefFE(Float64,TRI,(3,3))
+
+@test tri == _tri
 
 end # module
