@@ -157,3 +157,7 @@ end
 
 berstein_basis(::MonomialBasis{0},::Polytope) = [ConstantField(1)]
 
+function rationalize_bernstein_basis(basis,weights)
+  ( basis .* weights ) ./ ( basis ⋅ weights )
+end
+

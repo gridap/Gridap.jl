@@ -12,6 +12,7 @@ using Test
 
 using Gridap.ReferenceFEs: _berstein_matrix
 using Gridap.ReferenceFEs: berstein_basis
+using Gridap.ReferenceFEs: rationalize_bernstein_basis
 
 ## Test Bernstein basis
 
@@ -231,5 +232,18 @@ tri = ReferenceFE(TRI,bezier,Float64,(3,3))
 _tri = BezierRefFE(Float64,TRI,(3,3))
 
 @test tri == _tri
+
+
+tri = BezierRefFE(Float64,TRI,(3,3))
+ϕ = get_shapefuns(tri)
+w = ones(length(ϕ))
+ϕr = rationalize_bernstein_basis(ϕ,w)
+nodes = get_node_coordinates(tri)
+ψ = linear_combination(nodes,ϕr)
+ξ = [Point(0.0,0.0),Point(0.0,0.5),Point(0.5,0.5),Point(1.0,0.0),Point(0.0,1.0)]
+Ψ = Fill(ψ,length(ξ))
+Xi = lazy_map( evaluate, Ψ, ξ )
+
+@test Xi == ξ
 
 end # module
