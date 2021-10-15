@@ -348,13 +348,13 @@ return_value(op::Broadcasting{<:Operation},x::Field...) = OperationField(op.f.op
 
 # Define some well known operations
 
-for op in (:+,:-,:*,:⋅,:⊙,:⊗,:inv,:det,:meas,:pinvJt,:tr,:grad2curl,:symmetric_part,:transpose)
+for op in (:+,:-,:*,:/,:⋅,:⊙,:⊗,:inv,:det,:meas,:pinvJt,:tr,:grad2curl,:symmetric_part,:transpose)
   @eval ($op)(a::Field...) = Operation($op)(a...)
 end
 
 @inline transpose(f::Field) = f
 
-for op in (:+,:-,:*,:⋅,:⊙,:⊗)
+for op in (:+,:-,:*,:/,:⋅,:⊙,:⊗)
   @eval ($op)(a::Field,b::Number) = Operation($op)(a,ConstantField(b))
   @eval ($op)(a::Number,b::Field) = Operation($op)(ConstantField(a),b)
 end
