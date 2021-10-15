@@ -78,7 +78,7 @@ end
 
 ## Bernstein Basis
 
-function _bernstein_term(p,a,i,::Val{1})
+function _bernstein_term(p,a,i)
   @assert i ≤ p
   @assert a ≤ p
   if ( i ≤ a ≤ p )
@@ -91,7 +91,7 @@ function _bernstein_term(p,a,i,::Val{1})
   end
 end
 
-function _bernstein_term(p,a,b,i,j,::Val{2})
+function _bernstein_term(p,a,b,i,j)
   @assert i+j ≤ p
   @assert a+b ≤ p
   if ( i ≤ a ≤ p-j ) && ( j ≤ b ≤ p-a )
@@ -105,7 +105,7 @@ function _bernstein_term(p,a,b,i,j,::Val{2})
   end
 end
 
-function _bernstein_term(p,a,b,c,i,j,k,::Val{3})
+function _bernstein_term(p,a,b,c,i,j,k)
   @assert i+j+k ≤ p
   @assert a+b+c ≤ p
   if ( i ≤ a ≤ p-j-k ) && ( j ≤ b ≤ p-a-k ) && ( k ≤ c ≤ p-a-b )
@@ -121,53 +121,41 @@ function _bernstein_term(p,a,b,c,i,j,k,::Val{3})
   end
 end
 
-function _bernstein_term(p,a::NTuple{<:N},i::NTuple{<:N}) where N
-  _bernstein_term(p,a...,i...,Val{N}())
+function _bernstein_term_n_cube(p,a,b,i,j)
+  _bernstein_term(p,a,i)*_bernstein_term(p,b,j)
 end
 
-function _berstein_matrix(prebasis)
-  p = get_order(prebasis)
+function _bernstein_term_n_cube(p,a,b,c,i,j,k)
+  _bernstein_term(p,a,i)*_bernstein_term(p,b,j)*_bernstein_term(p,c,k)
+end
+
+function _bernstein_term(
+  p::Polytope,
+  order::Integer,
+  a::NTuple{<:N},
+  i::NTuple{<:N}) where N
+
+  args = (order,a...,i...)
+  if is_simplex(p)
+    _bernstein_term(args...)
+  else
+    _bernstein_term_n_cube(args...)
+  end
+end
+
+function _berstein_matrix(prebasis,p::Polytope)
+  o = get_order(prebasis)
   e = get_exponents(prebasis)
   M = CartesianIndices( (length(e),length(e)) )
-  collect(lazy_map( i-> _bernstein_term(p,e[i.I[1]],e[i.I[2]]), M))
+  collect(lazy_map( i-> _bernstein_term(p,o,e[i.I[1]],e[i.I[2]]), M))
 end
 
-function berstein_basis(prebasis)
-  C = _berstein_matrix(prebasis)
+function berstein_basis(prebasis,polytope::Polytope)
+  C = _berstein_matrix(prebasis,polytope)
   linear_combination( C, prebasis )
 end
 
-function berstein_basis_hex(prebasis::MonomialBasis{2,T}) where {T}
-  o = get_orders(prebasis)
-  e = get_exponents(prebasis)
-  p1 = MonomialBasis{1}(T,o[1])
-  p2 = MonomialBasis{1}(T,o[2])
-  b1 = berstein_basis(p1)
-  b2 = berstein_basis(p2)
-  collect(lazy_map( i->b1[i[1]]*b2[i[2]], e))
-end
-
-function berstein_basis_hex(prebasis::MonomialBasis{3,T}) where {T}
-  o = get_orders(prebasis)
-  e = get_exponents(prebasis)
-  p1 = MonomialBasis{1}(T,o[1])
-  p2 = MonomialBasis{1}(T,o[2])
-  p3 = MonomialBasis{1}(T,o[3])
-  b1 = berstein_basis(p1)
-  b2 = berstein_basis(p2)
-  b3 = berstein_basis(p3)
-  collect(lazy_map( i->b1[i[1]]*b2[i[2]]*b3[i[3]], e))
-end
-
-berstein_basis(::MonomialBasis{0}) = [ConstantField(1)]
-
-function berstein_basis(prebasis,polytope::Polytope)
-  if is_simplex(polytope)
-    berstein_basis(prebasis)
-  else
-    berstein_basis_hex(prebasis)
-  end
-end
+berstein_basis(::MonomialBasis{0},::Polytope) = [ConstantField(1)]
 
 function rationalize_bernstein_basis(basis,weights)
   basis .* weights ./ ( weights ⋅ basis )

@@ -20,7 +20,7 @@ p_filter(e,o) = sum(e) ≤ o
 # 1D
 p = 2
 prebasis_seg = MonomialBasis{1}(Float64,p,p_filter)
-C = _berstein_matrix(prebasis_seg)
+C = _berstein_matrix(prebasis_seg,SEGMENT)
 C12 =
 [
  1  -2   1
@@ -30,7 +30,7 @@ C12 =
 
 @test transpose(C) == C12
 
-ϕ = berstein_basis(prebasis_seg)
+ϕ = berstein_basis(prebasis_seg,SEGMENT)
 X = [ Point(0.0,0.0), Point(0.5,0.5), Point(1.0,0.0) ]
 ψ = linear_combination(X,ϕ)
 ξ = [Point(0.0),Point(0.5),Point(1.0)]
@@ -41,7 +41,7 @@ Xi = lazy_map( evaluate, Ψ, ξ )
 
 p = 3
 prebasis_seg = MonomialBasis{1}(Float64,p,p_filter)
-C = _berstein_matrix(prebasis_seg)
+C = _berstein_matrix(prebasis_seg,SEGMENT)
 C13 =
 [
  1  -3   3  -1
@@ -52,7 +52,7 @@ C13 =
 
 @test transpose(C) == C13
 
-ϕ = berstein_basis(prebasis_seg)
+ϕ = berstein_basis(prebasis_seg,SEGMENT)
 X = [ Point(0.0,0.0), Point(0.25,0.5), Point(0.75,0.5), Point(1.0,0.0) ]
 ψ = linear_combination(X,ϕ)
 ξ = [Point(0.0),Point(0.5),Point(1.0)]
@@ -65,7 +65,7 @@ Xi = lazy_map( evaluate, Ψ, ξ )
 
 p = 2
 prebasis_tri = MonomialBasis{2}(Float64,p,p_filter)
-C = _berstein_matrix(prebasis_tri)
+C = _berstein_matrix(prebasis_tri,TRI)
 C22 =
 [
  1  -2   1  -2   2   1
@@ -78,7 +78,7 @@ C22 =
 
 @test transpose(C) == C22
 
-ϕ = berstein_basis(prebasis_tri)
+ϕ = berstein_basis(prebasis_tri,TRI)
 X = [ Point(0.0,0.0), Point(0.5,0.0), Point(1.0,0.0), Point(0.0,0.5), Point(0.5,0.5), Point(0.0,1.0) ]
 ψ = linear_combination(X,ϕ)
 ξ = [Point(0.0,0.0),Point(0.0,0.5),Point(0.3,0.3),Point(1.0,0.0),Point(0.0,1.0)]
@@ -89,7 +89,7 @@ Xi = lazy_map( evaluate, Ψ, ξ )
 
 p = 3
 prebasis_tri = MonomialBasis{2}(Float64,p,p_filter)
-C = _berstein_matrix(prebasis_tri)
+C = _berstein_matrix(prebasis_tri,TRI)
 C23 =
 [
  1  -3   3  -1  -3   6  -3   3  -3  -1
@@ -112,7 +112,7 @@ X = [
   Point(0.0,0.25), Point(0.25,0.25), Point(0.75,0.25),
   Point(0.0,0.75), Point(0.25,0.75),
   Point(0.0,1.0) ]
-ϕ = berstein_basis(prebasis_tri)
+ϕ = berstein_basis(prebasis_tri,TRI)
 ψ = linear_combination(X,ϕ)
 ξ = [Point(0.0,0.0),Point(0.0,0.5),Point(0.5,0.5),Point(1.0,0.0),Point(0.0,1.0)]
 Ψ = Fill(ψ,length(ξ))
@@ -133,7 +133,7 @@ Xi = lazy_map( evaluate, Ψ, ξ )
 @test Xi == ξ.*5
 
 f = ConstantField(1)
-q = Quadrature(TRI,3)
+q = Quadrature(TRI,3*2)
 p = get_coordinates(q)
 w = get_weights(q)
 J = ∇(ψ)
@@ -152,7 +152,7 @@ Xi = lazy_map( evaluate, Ψ, ξ )
 @test Xi == ξ
 
 f = ConstantField(1)
-q = Quadrature(TRI,3)
+q = Quadrature(TRI,3*2)
 p = get_coordinates(q)
 w = get_weights(q)
 J = ∇(ψ)
@@ -166,7 +166,7 @@ nodes[5] = Point(2/3,-0.1)
 ϕ = get_shapefuns(tri)
 ψ = linear_combination(nodes,ϕ)
 f = ConstantField(1)
-q = Quadrature(TRI,3)
+q = Quadrature(TRI,3*2)
 p = get_coordinates(q)
 w = get_weights(q)
 J = ∇(ψ)
@@ -184,12 +184,48 @@ Xi = lazy_map( evaluate, Ψ, ξ )
 @test Xi == ξ .* 5
 
 f = ConstantField(1)
-q = Quadrature(TET,3)
+q = Quadrature(TET,3*2)
 p = get_coordinates(q)
 w = get_weights(q)
 J = ∇(ψ)
 
 @test integrate(f,p,w,J) ≈ (5*5*5)/6
+
+quad = BezierRefFE(Float64,QUAD,(3,3))
+nodes = get_node_coordinates(quad) .* 5
+ϕ = get_shapefuns(quad)
+ψ = linear_combination(nodes,ϕ)
+ξ = [Point(0.0,0.0),Point(0.0,0.5),Point(1.0,0.5),Point(1.0,0.0),Point(0.0,1.0)]
+Ψ = Fill(ψ,length(ξ))
+Xi = lazy_map( evaluate, Ψ, ξ )
+
+@test Xi == ξ .* 5
+
+f = ConstantField(1)
+q = Quadrature(QUAD,3*2)
+p = get_coordinates(q)
+w = get_weights(q)
+J = ∇(ψ)
+
+@test integrate(f,p,w,J) ≈ (5*5)
+
+hex = BezierRefFE(Float64,HEX,(3,3,3))
+nodes = get_node_coordinates(hex) .* 5
+ϕ = get_shapefuns(hex)
+ψ = linear_combination(nodes,ϕ)
+ξ = [Point(0.0,0.0,0.0),Point(0.0,0.0,0.5),Point(0.5,1.0,0.5),Point(1.0,0.0,0.0),Point(0.0,1.0,0.0)]
+Ψ = Fill(ψ,length(ξ))
+Xi = lazy_map( evaluate, Ψ, ξ )
+
+@test Xi == ξ .* 5
+
+f = ConstantField(1)
+q = Quadrature(HEX,3*2)
+p = get_coordinates(q)
+w = get_weights(q)
+J = ∇(ψ)
+
+@test integrate(f,p,w,J) ≈ (5*5*5)
 
 tri = ReferenceFE(TRI,bezier,Float64,(3,3))
 _tri = BezierRefFE(Float64,TRI,(3,3))
