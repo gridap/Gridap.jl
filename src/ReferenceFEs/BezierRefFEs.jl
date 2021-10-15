@@ -132,8 +132,8 @@ end
 function _bernstein_term(
   p::Polytope,
   order::Integer,
-  a::NTuple{<:N},
-  i::NTuple{<:N}) where N
+  a::NTuple{N},
+  i::NTuple{N}) where N
 
   args = (order,a...,i...)
   if is_simplex(p)
