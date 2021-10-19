@@ -290,7 +290,7 @@ struct DoNotLoop end
 LoopStyle(::Type) = DoNotLoop()
 LoopStyle(::T) where T = LoopStyle(T)
 
-# By default process, matrix and vector separatelly
+# By default process, matrix and vector separately
 # but, in some situations, create_from_nz of the vector
 # can reuse data from the one computed in
 # create_from_nz for the matrix (e.g., GridapDistributed)
@@ -298,6 +298,11 @@ function create_from_nz(a,b)
   A = create_from_nz(a)
   B = create_from_nz(b)
   A,B
+end
+# See comment above for create_from_nz. The same applies here
+# for nz_allocation.
+function nz_allocation(a,b)
+  nz_allocation(a),nz_allocation(b)
 end
 
 # For dense arrays
@@ -484,4 +489,3 @@ function allocate_coo_vectors(
    ::Type{<:AbstractSparseMatrix{Tv,Ti}},n::Integer) where {Tv,Ti}
   (zeros(Ti,n), zeros(Ti,n), zeros(Tv,n))
 end
-
