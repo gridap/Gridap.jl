@@ -263,8 +263,33 @@ end
 end
 
 function symbolic_loop_vector!(b,a::GenericSparseMatrixAssembler,vecdata)
-  @notimplementedif LoopStyle(b) == Loop()
+  get_vec(a::Tuple) = a[1]
+  get_vec(a) = a
+  if LoopStyle(b) == DoNotLoop()
+    return b
+  end
+  for (cellvec,_cellids) in zip(vecdata...)
+    cellids = map_cell_rows(a.strategy,_cellids)
+    rows_cache = array_cache(cellids)
+    if length(cellids) > 0
+      vec1 = get_vec(first(cellvec))
+      rows1 = getindex!(rows_cache,cellids,1)
+      touch! = TouchEntriesMap()
+      touch_cache = return_cache(touch!,b,vec1,rows1)
+      caches = touch_cache, rows_cache
+      _symbolic_loop_vector!(b,caches,cellids,vec1)
+    end
+  end
   b
+end
+
+@noinline function _symbolic_loop_vector!(A,caches,cellids,vec1)
+  touch_cache, rows_cache = caches
+  touch! = TouchEntriesMap()
+  for cell in 1:length(cellids)
+    rows = getindex!(rows_cache,cellids,cell)
+    evaluate!(touch_cache,touch!,A,vec1,rows)
+  end
 end
 
 function numeric_loop_vector!(b,a::GenericSparseMatrixAssembler,vecdata)
