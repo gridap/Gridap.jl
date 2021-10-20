@@ -120,17 +120,44 @@ IndexStyle(::Type{<:LazyArray{G,T,1} where {G,T}}) = IndexLinear()
 
 uses_hash(::Type{<:LazyArray}) = Val{true}()
 
-function array_cache(hash::Dict,a::LazyArray)
-  function _getid(hash,cache::T,id) where T
-    value::T = hash[id]
+function same_branch(a,b)
+  a === b
+end
+
+function same_branch(a::Fill,b::Fill)
+  size(a) == size(b) || return false
+  a.value == b.value
+end
+
+function same_branch(a::LazyArray,b::LazyArray)
+  typeof(a) != typeof(b) || return false
+  length(a.args) == length(b.args) || return false
+  same_branch(a.maps,b.maps) && all(same_branch,a.args,b.args)
+end
+
+struct ArrayCacheKey
+  val::AbstractArray
+end
+Base.hash(a::ArrayCacheKey, h::UInt) = hash(a.val, hash(:ArrayCacheKey, h))
+Base.isequal(a::ArrayCacheKey, b::ArrayCacheKey) = same_branch(a.val,b.val) && true
+
+function array_cache(dict::Dict,a::LazyArray)
+  function _get_cache(dict,cache::T,key) where T
+    value::T = dict[hash(key)]
     value
   end
-  id = objectid(a)
-  cache = _array_cache!(hash,a)
-  if ! haskey(hash,id)
-    hash[id] = cache
+  #id = objectid(a)
+  cache = _array_cache!(dict,a)
+  key = ArrayCacheKey(a)
+  print_op_tree(a,showid=true)
+  @show objectid(a), hash(key), "A"
+  @show haskey(dict,hash(key))
+  @show dict
+  if ! haskey(dict,hash(key))
+    @show objectid(a), hash(key), "B"
+    dict[hash(key)] = cache
   end
-  _getid(hash,cache,id)
+  _get_cache(dict,cache,key)
 end
 
 mutable struct IndexItemPair{T,V}
@@ -138,7 +165,7 @@ mutable struct IndexItemPair{T,V}
   item::V
 end
 
-function _array_cache!(hash::Dict,a::LazyArray)
+function _array_cache!(dict::Dict,a::LazyArray)
   @boundscheck begin
     @notimplementedif ! all(map(isconcretetype, map(eltype, a.args)))
     if ! (eltype(a.maps) <: Function)
@@ -147,8 +174,8 @@ function _array_cache!(hash::Dict,a::LazyArray)
   end
   gi = testitem(a.maps)
   fi = map(testitem,a.args)
-  cg = array_cache(hash,a.maps)
-  cf = map(fi->array_cache(hash,fi),a.args)
+  cg = array_cache(dict,a.maps)
+  cf = map(fi->array_cache(dict,fi),a.args)
   cgi = return_cache(gi, fi...)
   index = -1
   #item = evaluate!(cgi,gi,testargs(gi,fi...)...)

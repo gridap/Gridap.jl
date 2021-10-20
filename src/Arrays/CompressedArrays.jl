@@ -98,3 +98,6 @@ function _compress(a::Fill,b::CompressedArray)
   CompressedArray(vals,b.ptrs)
 end
 
+function same_branch(a::CompressedArray,b::CompressedArray)
+  a.ptrs === b.ptrs && a.values == b.values
+end
