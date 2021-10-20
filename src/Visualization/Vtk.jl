@@ -64,6 +64,23 @@ function create_vtk_file(
   return vtkfile
 end
 
+function create_pvtk_file(
+  trian::Grid, filebase; pvtkargs, celldata=Dict(), nodaldata=Dict())
+
+  points = _vtkpoints(trian)
+  cells = _vtkcells(trian)
+  vtkfile = pvtk_grid(filebase, points, cells,pvtkargs=pvtkargs, compress=false)
+
+  for (k,v) in celldata
+    vtkfile[k,VTKCellData()] = _prepare_data(v)
+  end
+  for (k,v) in nodaldata
+    vtkfile[k,VTKPointData()] = _prepare_data(v)
+  end
+
+  return vtkfile
+end
+
 function _vtkpoints(trian)
   D = num_point_dims(trian)
   x = get_node_coordinates(trian)
