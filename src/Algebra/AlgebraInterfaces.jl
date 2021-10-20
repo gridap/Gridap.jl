@@ -185,19 +185,6 @@ end
   A
 end
 
-"""
-    scale_entries!(a,v)
-
-Scale the entries of array `a` with the value `v`. Returns `a`.
-"""
-function scale_entries!(a,b)
-  @inbounds for i in eachindex(a)
-    a[i] = b*a[i]
-  end
-  a
-end
-
-# Base.mul!
 
 """
     muladd!(c,a,b)

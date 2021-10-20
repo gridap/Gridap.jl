@@ -179,7 +179,7 @@ function solve!(x::AbstractVector,
   A = jacobian(op, x)
   ss = symbolic_setup(ls, A)
   ns = numerical_setup(ss,A)
-  scale_entries!(b,-1)
+  rmul!(b,-1)
   solve!(x,ns,b)
   LinearSolverCache(A,b,ns)
 end
@@ -194,7 +194,7 @@ function solve!(x::AbstractVector,
   ns = cache.ns
   residual!(b, op, x)
   numerical_setup!(ns,A)
-  scale_entries!(b,-1)
+  ruml!(b,-1)
   solve!(x,ns,b)
   cache
 end

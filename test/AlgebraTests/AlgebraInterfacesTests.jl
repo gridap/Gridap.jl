@@ -44,7 +44,7 @@ a .-= b
 
 a = rand(6)
 c = copy(a)
-scale_entries!(a,10)
+rmul!(a,10)
 @test all( a .== 10*c)
 
 a = rand(4,6)

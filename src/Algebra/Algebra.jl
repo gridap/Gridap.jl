@@ -26,7 +26,6 @@ export allocate_matrix_and_vector
 export allocate_in_domain
 export allocate_in_range
 export add_entries!
-export scale_entries!
 export muladd!
 export nz_counter
 export nz_allocation
