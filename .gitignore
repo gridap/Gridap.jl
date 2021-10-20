@@ -4,6 +4,6 @@
 *.code-workspace
 .DS_Store
 docs/build/
-#Manifest.toml
+Manifest.toml
 tmp/
 .vscode/
