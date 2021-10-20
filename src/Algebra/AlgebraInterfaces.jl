@@ -62,17 +62,6 @@ function allocate_in_domain(::Type{V},matrix) where V
 end
 
 """
-    fill_entries!(a,v)
-
-Fill the entries of array `a` with the value `v`. Returns `a`.
-For sparse matrices it only fills the non-zero entries.
-"""
-function fill_entries!(a,v)
-  fill!(a,v)
-  a
-end
-
-"""
     copy_entries!(a,b)
 
 Copy the entries of array `b` into array `a`. Returns `a`.
@@ -280,7 +269,7 @@ end
 # We can also do a loop and update
 # the entries of c
 #
-#    fill_entries!(c,0)
+#    fill!(c,0) or LinearAlgebra.fillstored!(c,0)
 #    add_entry!(c,v,i,j)
 #    add_entries!(c,vs,is,js)
 #
@@ -466,13 +455,7 @@ function copy_entries!(a::T,b::T) where T<:AbstractSparseMatrix
   end
 end
 
-function fill_entries!(A::AbstractSparseMatrix,v)
-  nonzeros(A) .= v
-  A
-end
-
 function allocate_coo_vectors(
    ::Type{<:AbstractSparseMatrix{Tv,Ti}},n::Integer) where {Tv,Ti}
   (zeros(Ti,n), zeros(Ti,n), zeros(Tv,n))
 end
-

@@ -56,7 +56,7 @@ for T in (Int32,Int,Float32,Float64)
   add_entry!(+,CSC,1,maxrows,maxcols)
   @test getindex(CSC,maxrows,maxcols) == vold+1
 
-  fill_entries!(CSC,0)
+  LinearAlgebra.fillstored!(CSC,0)
   @test all(x->x==0, nonzeros(CSC))
 
 end

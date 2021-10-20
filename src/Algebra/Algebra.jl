@@ -45,7 +45,6 @@ export is_entry_stored
 export finalize_coo!
 export sparse_from_coo
 export add_entry!
-export fill_entries!
 export copy_entries!
 export allocate_coo_vectors
 export push_coo!
