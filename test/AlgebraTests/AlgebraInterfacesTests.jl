@@ -1,6 +1,7 @@
 module AlgebraInterfacesTests
 
 using Gridap.Algebra
+using LinearAlgebra
 using Test
 
 a = allocate_vector(Vector{Int},10)
