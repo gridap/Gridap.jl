@@ -26,7 +26,6 @@ import Base: similar
 import Base: IndexStyle
 
 import Gridap.Algebra: scale_entries!
-import Gridap.Algebra: fill_entries!
 
 # CachedArray
 

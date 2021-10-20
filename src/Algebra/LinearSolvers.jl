@@ -43,7 +43,7 @@ end
 
 function zero_initial_guess(op::AffineOperator)
   x = allocate_in_domain(typeof(op.vector),op.matrix)
-  fill_entries!(x,zero(eltype(x)))
+  fill!(x,zero(eltype(x)))
   x
 end
 
@@ -174,12 +174,12 @@ function solve!(x::AbstractVector,
                 ls::LinearSolver,
                 op::NonlinearOperator,
                 cache::Nothing)
-  fill_entries!(x,zero(eltype(x)))
+  fill!(x,zero(eltype(x)))
   b = residual(op, x)
   A = jacobian(op, x)
   ss = symbolic_setup(ls, A)
   ns = numerical_setup(ss,A)
-  scale_entries!(b,-1)
+  rmul!(b,-1)
   solve!(x,ns,b)
   LinearSolverCache(A,b,ns)
 end
@@ -188,13 +188,13 @@ function solve!(x::AbstractVector,
                 ls::LinearSolver,
                 op::NonlinearOperator,
                 cache)
-  fill_entries!(x,zero(eltype(x)))
+  fill!(x,zero(eltype(x)))
   b = cache.b
   A = cache.A
   ns = cache.ns
   residual!(b, op, x)
   numerical_setup!(ns,A)
-  scale_entries!(b,-1)
+  ruml!(b,-1)
   solve!(x,ns,b)
   cache
 end

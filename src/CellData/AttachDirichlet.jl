@@ -83,11 +83,9 @@ end
   cm, cv = cache
   if mask
     vec_with_bcs = evaluate!(cm,*,mat,vals)
-    scale_entries!(vec_with_bcs,-1)
+    rmul!(vec_with_bcs,-1)
   else
     vec_with_bcs = evaluate!(cv,ZeroVectorMap(),mat)
   end
   (mat, vec_with_bcs)
 end
-
-

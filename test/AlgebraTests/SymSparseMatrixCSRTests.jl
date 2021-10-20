@@ -57,7 +57,7 @@ for Ti in int_types
       add_entry!(+,SYMCSR,1,maxrows,maxcols)
       @test getindex(SYMCSR,maxrows,maxcols) == vold+1
 
-      fill_entries!(SYMCSR,0)
+      LinearAlgebra.fillstored!(SYMCSR,0)
       @test all(x->x==0, nonzeros(SYMCSR))
 
     end

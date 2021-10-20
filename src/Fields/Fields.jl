@@ -10,7 +10,6 @@ using Gridap.Helpers: @abstractmethod, @notimplemented
 using Gridap.Helpers: @notimplementedif, @unreachable, @check
 
 using Gridap.Algebra: mul!
-using Gridap.Algebra: fill_entries!
 
 using Gridap.TensorValues
 using Gridap.Algebra
