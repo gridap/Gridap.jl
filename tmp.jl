@@ -1,24 +1,38 @@
-#module tmp
-
 using Gridap
+using Gridap.ReferenceFEs
+using Gridap.Fields
+using Gridap.CellData
+using FillArrays
 
-model = CartesianDiscreteModel((0,1,0,1),(2,2))
-Ω = Triangulation(model)
-dΩ = Measure(Ω,2)
+L = 2 # Domain length in each space dimension
+D = 2 # Number of spatial dimensions
+n = 4 # Partition (i.e., number of cells per space dimension)
 
-reffe = ReferenceFE(lagrangian,Float64,1)
-V = TestFESpace(model,reffe)
-U = TrialFESpace(V)
+pmin = Point(Fill(0,D))
+pmax = Point(Fill(L,D))
+partition = Tuple(Fill(n,D))
+model = simplexify(CartesianDiscreteModel(pmin,pmax,partition))
 
-a(u,v) = ∫(∇(v)⋅∇(u))dΩ
-l(v) = 0
-# op = AffineFEOperator(a,l,U,V)
+T = Float64
+order = 1
+pol = Polytope(Fill(HEX_AXIS,D)...)
+reffe = LagrangianRefFE(T,pol,order)
 
-dv = get_fe_basis(V)
-du = get_trial_fe_basis(U)
+Vₕ = FESpace(model,reffe;conformity=:H1,dirichlet_tags="boundary")
+u(x) = x[1]
+Uₕ = TrialFESpace(Vₕ,u)
 
-vh = FEFunction(V,rand(num_free_dofs(V)))
-∇vh_q = lazy_map(Broadcasting(⋅),dv,dv)
+dv = get_fe_basis(Vₕ)
+du = get_trial_fe_basis(Uₕ)
 
-# contribution = a(du,dv)
-print_op_tree(∇vh_q,showid=true)
+grad_dv = ∇(dv)
+grad_du = ∇(du)
+
+grad_dv_array = get_data(grad_dv)
+grad_du_array = get_data(grad_du)
+
+Iₖ = lazy_map(Broadcasting(Operation(⋅)),grad_du_array,grad_dv_array)
+
+println("******************")
+array_cache(Iₖ)
+print_op_tree(Iₖ,showid=true)
