@@ -432,9 +432,7 @@ uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
 [[WriteVTK]]
 deps = ["Base64", "CodecZlib", "FillArrays", "LightXML", "TranscodingStreams"]
-git-tree-sha1 = "9345fe8d0bf4f789bb1305f248595ceb7dd97d1b"
-repo-rev = "master"
-repo-url = "https://github.com/gridap/WriteVTK.jl"
+git-tree-sha1 = "c3403143cecb391ea51fc133be82b024e4ce720b"
 uuid = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 version = "1.11.0"
 
