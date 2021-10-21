@@ -19,7 +19,6 @@ function _gradient(f,uh,fuh::DomainContribution)
   for trian in get_domains(fuh)
     g = _change_argument(gradient,f,trian,uh)
     cell_u = get_cell_dof_values(uh)
-    strian =
     glue = get_glue(trian,Val(num_cell_dims(get_triangulation(uh))))
     cell_id = _compute_cell_ids(uh,trian)
     cell_grad = autodiff_array_gradient(g,cell_u,cell_id)
@@ -106,4 +105,3 @@ function _change_argument(op,f,trian,uh::SingleFieldFEFunction)
   end
   g
 end
-
