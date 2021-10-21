@@ -146,14 +146,9 @@ function array_cache(dict::Dict,a::LazyArray)
     value::T = dict[hash(key)]
     value
   end
-  #id = objectid(a)
   cache = _array_cache!(dict,a)
   key = ArrayCacheKey(a)
-  print_op_tree(a,showid=true)
-  @show objectid(a), hash(key), "A"
-  @show haskey(dict,hash(key))
   if ! haskey(dict,hash(key))
-    @show objectid(a), hash(key), "B"
     dict[hash(key)] = cache
   end
   _get_cache(dict,cache,key)
