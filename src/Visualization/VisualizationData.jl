@@ -34,7 +34,7 @@ function visualization_data(
     # Use cells of given order as visualization cells
     f = (reffe) -> UnstructuredGrid(LagrangianRefFE(Float64,get_polytope(reffe),order))
   elseif order == -1 && nsubcells != -1
-    # Use use linear sub-cells with nsubcells per direction
+    # Use linear sub-cells with nsubcells per direction
     f = (reffe) -> UnstructuredGrid(compute_reference_grid(reffe,nsubcells))
   else
     @unreachable "order and nsubcells kw-arguments can not be given at the same time"
