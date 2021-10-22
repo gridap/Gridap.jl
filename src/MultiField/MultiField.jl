@@ -20,6 +20,7 @@ using Gridap.FESpaces: SingleFieldFEBasis, TestBasis, TrialBasis
 using Gridap.CellData: CellFieldAt
 import Gridap.Fields: gradient, DIV, ∇∇
 
+using ForwardDiff
 using FillArrays
 using SparseArrays
 using LinearAlgebra

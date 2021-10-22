@@ -56,7 +56,28 @@ xh = FEFunction(Y,rand(num_free_dofs(Y)))
 @test_broken j(xh,dx,dy)[Ω][end][2,1] != nothing
 @test_broken j(xh,dx,dy)[Ω][end][1,2] == nothing
 @test_broken j(xh,dx,dy)[Ω][end][2,2] != nothing
-@test_broken g(xh,dy)[Ω][end][1] != nothing
-@test_broken g(xh,dy)[Ω][end][2] != nothing
+@test g(xh,dy)[Ω][end][1] != nothing
+@test g(xh,dy)[Ω][end][2] != nothing
+
+eu(uh) = ∫( uh*uh )dΩ
+ep(ph) = ∫( ph*ph )dΩ
+eup((uh,ph)) = ∫( uh*uh + ph*ph )dΩ
+geu(xh,dy) = gradient(xh->eu(xh),xh)
+gep(xh,dy) = gradient(xh->ep(xh),xh)
+geup(xh,dy) = gradient(xh->eup(xh),xh)
+
+uh,ph=xh
+geu_uh=geu(uh,dy)
+gep_ph=gep(ph,dy)
+geup_uh_ph=geup(xh,dy)
+
+a=geu_uh[Ω]
+b=gep_ph[Ω]
+c=geup_uh_ph[Ω]
+
+@test all(a .== map(x->x.array[1],c))
+@test all(b .== map(x->x.array[2],c))
+
+
 
 end # module
