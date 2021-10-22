@@ -1,4 +1,10 @@
 
+
+## TODO this needs to be deleted
+# once WriteVTK provides the pvtk_grid function
+include("pvtk_grid.jl")
+
+
 """
 """
 function writevtk(args...;kwargs...)
@@ -59,6 +65,23 @@ function create_vtk_file(
   end
   for (k,v) in nodaldata
     vtk_point_data(vtkfile, _prepare_data(v), k)
+  end
+
+  return vtkfile
+end
+
+function create_pvtk_file(
+  trian::Grid, filebase; pvtkargs, celldata=Dict(), nodaldata=Dict())
+
+  points = _vtkpoints(trian)
+  cells = _vtkcells(trian)
+  vtkfile = TMP.pvtk_grid(filebase, points, cells,pvtkargs=pvtkargs, compress=false)
+
+  for (k,v) in celldata
+    vtkfile[k,VTKCellData()] = _prepare_data(v)
+  end
+  for (k,v) in nodaldata
+    vtkfile[k,VTKPointData()] = _prepare_data(v)
   end
 
   return vtkfile

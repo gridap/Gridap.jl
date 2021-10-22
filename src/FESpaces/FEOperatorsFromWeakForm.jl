@@ -47,14 +47,14 @@ end
 get_test(op::FEOperatorFromWeakForm) = op.test
 get_trial(op::FEOperatorFromWeakForm) = op.trial
 
-function allocate_residual(op::FEOperatorFromWeakForm,uh::FEFunction)
+function allocate_residual(op::FEOperatorFromWeakForm,uh)
   V = get_test(op)
   v = get_fe_basis(V)
   vecdata = collect_cell_vector(V,op.res(uh,v))
   allocate_vector(op.assem, vecdata)
 end
 
-function residual!(b::AbstractVector,op::FEOperatorFromWeakForm,uh::FEFunction)
+function residual!(b::AbstractVector,op::FEOperatorFromWeakForm,uh)
   V = get_test(op)
   v = get_fe_basis(V)
   vecdata = collect_cell_vector(V,op.res(uh,v))
@@ -62,7 +62,7 @@ function residual!(b::AbstractVector,op::FEOperatorFromWeakForm,uh::FEFunction)
   b
 end
 
-function allocate_jacobian(op::FEOperatorFromWeakForm,uh::FEFunction)
+function allocate_jacobian(op::FEOperatorFromWeakForm,uh)
   U = get_trial(op)
   V = get_test(op)
   du = get_trial_fe_basis(U)
@@ -71,7 +71,7 @@ function allocate_jacobian(op::FEOperatorFromWeakForm,uh::FEFunction)
   allocate_matrix(op.assem, matdata)
 end
 
-function jacobian!(A::AbstractMatrix,op::FEOperatorFromWeakForm,uh::FEFunction)
+function jacobian!(A::AbstractMatrix,op::FEOperatorFromWeakForm,uh)
   U = get_trial(op)
   V = get_test(op)
   du = get_trial_fe_basis(U)
@@ -82,7 +82,7 @@ function jacobian!(A::AbstractMatrix,op::FEOperatorFromWeakForm,uh::FEFunction)
 end
 
 function residual_and_jacobian!(
-  b::AbstractVector,A::AbstractMatrix,op::FEOperatorFromWeakForm,uh::FEFunction)
+  b::AbstractVector,A::AbstractMatrix,op::FEOperatorFromWeakForm,uh)
   U = get_trial(op)
   V = get_test(op)
   du = get_trial_fe_basis(U)
@@ -92,7 +92,7 @@ function residual_and_jacobian!(
   (b,A)
 end
 
-function residual_and_jacobian(op::FEOperatorFromWeakForm,uh::FEFunction)
+function residual_and_jacobian(op::FEOperatorFromWeakForm,uh)
   U = get_trial(op)
   V = get_test(op)
   du = get_trial_fe_basis(U)

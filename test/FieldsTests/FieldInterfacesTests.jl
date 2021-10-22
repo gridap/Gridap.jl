@@ -236,6 +236,10 @@ test_field(f,x,f.(x),grad=∇(f).(x))
 test_field(f,z,f.(z))
 test_field(f,z,f.(z),grad=∇(f).(z))
 
+f = Operation(/)(a,b)
+cp = afun(p) / bfun(p)
+test_field(f,p,cp)
+
 #using BenchmarkTools
 #
 #c = return_cache(f,p)
