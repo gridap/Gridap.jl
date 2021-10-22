@@ -48,13 +48,11 @@ cell_to_coords = get_cell_coordinates(Ω)
 cell_to_is_solid = lazy_map(is_in,cell_to_coords)
 cell_to_is_fluid = lazy_map(!,cell_to_is_solid)
 
-model_solid = DiscreteModel(model,cell_to_is_solid)
-model_fluid = DiscreteModel(model,cell_to_is_fluid)
+Ωs = Triangulation(model,cell_to_is_solid)
+Ωf = Triangulation(model,cell_to_is_fluid)
 
-Ωs = Triangulation(model_solid)
-Ωf = Triangulation(model_fluid)
 Λ = BoundaryTriangulation(model,labels,tags="neumann")
-Γ = InterfaceTriangulation(model_fluid,model_solid)
+Γ = InterfaceTriangulation(Ωf,Ωs)
 
 n_Λ = get_normal_vector(Λ)
 n_Γ = get_normal_vector(Γ)
@@ -73,8 +71,8 @@ dΓ = Measure(Γ,degree)
 reffe_u = ReferenceFE(lagrangian,VectorValue{2,Float64},order)
 reffe_p = ReferenceFE(lagrangian,Float64,order-1,space=:P)
 
-V = TestFESpace(model,reffe_u,conformity=:H1,labels=labels,dirichlet_tags="dirichlet")
-Q = TestFESpace(model_fluid,reffe_p,conformity=:L2)
+V = TestFESpace(Ω,reffe_u,conformity=:H1,labels=labels,dirichlet_tags="dirichlet")
+Q = TestFESpace(Ωf,reffe_p,conformity=:L2)
 U = TrialFESpace(V,u)
 P = Q
 
@@ -107,8 +105,11 @@ uh, ph = solve(op)
 eu = u - uh
 ep = p - ph
 
-#writevtk(Ω,"trian",cellfields=["uh"=>uh,"ph"=>ph,"eu"=>eu,"ep"=>ep])
-#writevtk(Ωf,"trian_fluid",cellfields=["uh"=>uh,"ph"=>ph,"eu"=>eu,"ep"=>ep])
+#writevtk(Ω,"trian_Ω",cellfields=["uh"=>uh,"ph"=>ph,"eu"=>eu,"ep"=>ep])
+#writevtk(Ωs,"trian_Ωs",cellfields=["uh"=>uh,"ph"=>ph,"eu"=>eu,"ep"=>ep])
+#writevtk(Γ,"trian_Γ",cellfields=["uh+"=>uh.⁺,"p"=>p,"n+"=>n_Γ.⁺])
+#writevtk(Λ,"trian_Λ",cellfields=["uh"=>uh,"ph"=>ph,"eu"=>eu,"ep"=>ep,"n"=>n_Λ])
+#writevtk(Ωf,"trian_Ωf",cellfields=["uh"=>uh,"ph"=>ph,"eu"=>eu,"ep"=>ep])
 
 # Errors
 

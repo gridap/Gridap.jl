@@ -29,6 +29,13 @@ write_vtk_file(
   nodaldata=["nodeid"=>node_ids],
   celldata=["cellid"=>cell_ids,"centers"=>cell_center])
 
+pvtk = Visualization.create_pvtk_file(
+  trian,f,
+  pvtkargs = [:part=>1,:nparts=>1],
+  nodaldata=["nodeid"=>node_ids],
+  celldata=["cellid"=>cell_ids,"centers"=>cell_center])
+vtk_save(pvtk)
+
 reffe = LagrangianRefFE(VectorValue{3,Float64},WEDGE,(3,3,4))
 f = joinpath(d,"reffe")
 writevtk(reffe,f)
@@ -60,12 +67,12 @@ model = DiscreteModelMock()
 writevtk(model,f,labels=get_face_labeling(model))
 
 f = joinpath(d,"trian")
-trian = GridMock()
+trian = Triangulation(model)
 writevtk(trian,f,order=2)
 
 domain = (0,1,0,1)
 partition = (2,4)
-trian = CartesianGrid(domain,partition)
+trian = Triangulation(CartesianDiscreteModel(domain,partition))
 
 writevtk(trian,f,nsubcells=5,celldata=["rnd"=>rand(num_cells(trian))])
 
@@ -92,10 +99,6 @@ f = joinpath(d,"x")
 writevtk(x,f,celldata=["cellid" => collect(1:num_cells(trian))], nodaldata = ["x" => x])
 
 
-
-f = joinpath(d,"trian")
-writevtk(trian,f)
-
 # Write VTK_LAGRANGE_* FE elements
 writevtk(Grid(LagrangianRefFE(Float64,TRI,3)),joinpath(d,"tri_order3"))
 writevtk(Grid(LagrangianRefFE(Float64,TRI,4)),joinpath(d,"tri_order4"))
@@ -106,6 +109,8 @@ writevtk(Grid(LagrangianRefFE(Float64,TET,3)),joinpath(d,"tet_order1"))
 writevtk(Grid(LagrangianRefFE(Float64,HEX,3)),joinpath(d,"hex_order1"))
 
 # Paraview collections
+model = DiscreteModelMock()
+trian = Triangulation(model)
 f = joinpath(d,"collection")
 paraview_collection(f) do pvd
     for i in 1:10

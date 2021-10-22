@@ -33,8 +33,8 @@ x = get_cell_points(s)
 vx = v(x)
 test_array(vx,r)
 
-acell_to_cell = [1,3,5,3]
-atrian = Triangulation(trian,acell_to_cell)
+acell_to_cell = [1,3,5,2]
+atrian = Triangulation(model,acell_to_cell)
 s_a = change_domain(s,atrian,DomainStyle(s))
 v_a = change_domain(v,atrian,DomainStyle(v))
 

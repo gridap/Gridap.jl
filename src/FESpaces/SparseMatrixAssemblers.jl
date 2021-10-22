@@ -63,7 +63,7 @@ function allocate_vector(a::SparseMatrixAssembler,vecdata)
 end
 
 function assemble_vector!(b,a::SparseMatrixAssembler,vecdata)
-  fill_entries!(b,zero(eltype(b)))
+  fill!(b,zero(eltype(b)))
   assemble_vector_add!(b,a,vecdata)
 end
 
@@ -91,7 +91,7 @@ function allocate_matrix(a::SparseMatrixAssembler,matdata)
 end
 
 function assemble_matrix!(mat,a::SparseMatrixAssembler,matdata)
-  fill_entries!(mat,zero(eltype(mat)))
+  LinearAlgebra.fillstored!(mat,zero(eltype(mat)))
   assemble_matrix_add!(mat,a,matdata)
 end
 
@@ -113,35 +113,29 @@ function allocate_matrix_and_vector(a::SparseMatrixAssembler,data)
   m1 = nz_counter(get_matrix_builder(a),(get_rows(a),get_cols(a)))
   v1 = nz_counter(get_vector_builder(a),(get_rows(a),))
   symbolic_loop_matrix_and_vector!(m1,v1,a,data)
-  m2 = nz_allocation(m1)
-  v2 = nz_allocation(v1)
+  m2,v2 = nz_allocation(m1,v1)
   symbolic_loop_matrix_and_vector!(m2,v2,a,data)
-  m3 = create_from_nz(m2)
-  v3 = create_from_nz(v2)
-  m3,v3
+  create_from_nz(m2,v2)
 end
 
 function assemble_matrix_and_vector!(A,b,a::SparseMatrixAssembler, data)
-  fill_entries!(A,zero(eltype(A)))
-  fill_entries!(b,zero(eltype(b)))
+  LinearAlgebra.fillstored!(A,zero(eltype(A)))
+  fill!(b,zero(eltype(b)))
   assemble_matrix_and_vector_add!(A,b,a,data)
 end
 
 function assemble_matrix_and_vector_add!(A,b,a::SparseMatrixAssembler,data)
   numeric_loop_matrix_and_vector!(A,b,a,data)
-  create_from_nz(A), create_from_nz(b)
+  create_from_nz(A,b)
 end
 
 function assemble_matrix_and_vector(a::SparseMatrixAssembler, data)
   m1 = nz_counter(get_matrix_builder(a),(get_rows(a),get_cols(a)))
   v1 = nz_counter(get_vector_builder(a),(get_rows(a),))
   symbolic_loop_matrix_and_vector!(m1,v1,a,data)
-  m2 = nz_allocation(m1)
-  v2 = nz_allocation(v1)
+  m2,v2 = nz_allocation(m1,v1)
   numeric_loop_matrix_and_vector!(m2,v2,a,data)
-  m3 = create_from_nz(m2)
-  v3 = create_from_nz(v2)
-  m3,v3
+  create_from_nz(m2,v2)
 end
 
 function test_sparse_matrix_assembler(a::SparseMatrixAssembler,matdata,vecdata,data)
@@ -269,8 +263,33 @@ end
 end
 
 function symbolic_loop_vector!(b,a::GenericSparseMatrixAssembler,vecdata)
-  @notimplementedif LoopStyle(b) == Loop()
+  get_vec(a::Tuple) = a[1]
+  get_vec(a) = a
+  if LoopStyle(b) == DoNotLoop()
+    return b
+  end
+  for (cellvec,_cellids) in zip(vecdata...)
+    cellids = map_cell_rows(a.strategy,_cellids)
+    rows_cache = array_cache(cellids)
+    if length(cellids) > 0
+      vec1 = get_vec(first(cellvec))
+      rows1 = getindex!(rows_cache,cellids,1)
+      touch! = TouchEntriesMap()
+      touch_cache = return_cache(touch!,b,vec1,rows1)
+      caches = touch_cache, rows_cache
+      _symbolic_loop_vector!(b,caches,cellids,vec1)
+    end
+  end
   b
+end
+
+@noinline function _symbolic_loop_vector!(A,caches,cellids,vec1)
+  touch_cache, rows_cache = caches
+  touch! = TouchEntriesMap()
+  for cell in 1:length(cellids)
+    rows = getindex!(rows_cache,cellids,cell)
+    evaluate!(touch_cache,touch!,A,vec1,rows)
+  end
 end
 
 function numeric_loop_vector!(b,a::GenericSparseMatrixAssembler,vecdata)
@@ -347,4 +366,3 @@ end
     evaluate!(add_vec_cache,add!,b,vecvals,rows)
   end
 end
-

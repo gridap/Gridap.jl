@@ -54,7 +54,7 @@ function _solve_nr!(x,A,b,dx,ns,nls,op)
   for nliter in 1:nls.max_nliters
 
     # Solve linearized problem
-    scale_entries!(b,-1)
+    rmul!(b,-1)
     solve!(dx,ns,b)
     x .+= dx
 
@@ -183,5 +183,3 @@ function _update_nlsolve_cache!(cache,x0,op)
   numerical_setup!(ns,j0)
   NLSolversCache(f0,j0,df,ns,nothing)
 end
-
-

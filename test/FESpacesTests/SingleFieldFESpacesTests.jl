@@ -11,15 +11,16 @@ using Gridap.FESpaces
 domain =(0,1,0,1,0,1)
 partition = (3,3,3)
 model = CartesianDiscreteModel(domain,partition)
+Ω = Triangulation(model)
 
 order = 2
 reffe = ReferenceFE(lagrangian,Float64,order)
 V0 = FESpace(model,reffe,dirichlet_tags=["tag_24","tag_25"])
 
-matvecdata = ([],[],[])
-matdata = ([],[],[])
-vecdata = ([],[])
-test_single_field_fe_space(V0,matvecdata,matdata,vecdata)
+cellmat = [rand(4,4) for cell in 1:num_cells(model)]
+cellvec = [rand(4) for cell in 1:num_cells(model)]
+cellmatvec = pair_arrays(cellmat,cellvec)
+test_single_field_fe_space(V0,cellmatvec,cellmat,cellvec,Ω)
 
 f(x) = sin(4*pi*(x[1]-x[2]^2))+1
 
@@ -51,7 +52,6 @@ f_real(x) = real(f(x))
 f_imag(x) = imag(f(x))
 f_conj(x) = conj(f(x))
 
-Ω = Triangulation(model)
 dΩ = Measure(Ω,2)
 
 tol = 1e-9

@@ -36,8 +36,9 @@ import Gridap.CellData: attach_constraints_cols
 import Gridap.CellData: CellField
 import Gridap.CellData: get_data
 import Gridap.CellData: DomainStyle
-import Gridap.CellData: change_domain_skeleton
 import Gridap.CellData: change_domain
+import Gridap.CellData: change_domain_ref_ref
+import Gridap.CellData: change_domain_phys_phys
 
 import Gridap.Algebra: allocate_residual
 import Gridap.Algebra: allocate_jacobian
@@ -223,7 +224,7 @@ include("CLagrangianFESpaces.jl")
 
 include("DirichletFESpaces.jl")
 
-include("ExtendedFESpaces.jl")
+#include("ExtendedFESpaces.jl")
 
 include("FESpacesWithLinearConstraints.jl")
 

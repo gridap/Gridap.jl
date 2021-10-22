@@ -62,7 +62,7 @@ s = ∫( x->1 )*quad_N
 @test ∑(s) ≈ 6
 
 cell_measure = get_cell_measure(trian)
-cell_measure_N = get_cell_measure(trian_N)
+cell_measure_N = get_cell_measure(trian_N,trian)
 @test length(cell_measure) == num_cells(model)
 @test length(cell_measure_N) == num_cells(model)
 @test sum(cell_measure) ≈ 1

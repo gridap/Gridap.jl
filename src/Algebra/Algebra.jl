@@ -26,7 +26,6 @@ export allocate_matrix_and_vector
 export allocate_in_domain
 export allocate_in_range
 export add_entries!
-export scale_entries!
 export muladd!
 export nz_counter
 export nz_allocation
@@ -45,7 +44,6 @@ export is_entry_stored
 export finalize_coo!
 export sparse_from_coo
 export add_entry!
-export fill_entries!
 export copy_entries!
 export allocate_coo_vectors
 export push_coo!

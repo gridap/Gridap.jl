@@ -14,13 +14,15 @@ function DiracDelta{D}(
 
   D should be in [0,$(num_cell_dims(model))).
   """
+
   topo = get_grid_topology(model)
   bgface_grid = Grid(ReferenceFE{D},model)
-  face_trian = RestrictedTriangulation(bgface_grid,face_to_bgface)
-  cell_trian = Triangulation(model)
+  face_grid = view(bgface_grid,face_to_bgface)
+  cell_grid = get_grid(model)
   bgface_to_lcell = Fill(1,num_faces(model,D))
-  glue = Geometry.FaceToCellGlue(topo,cell_trian,face_trian,face_to_bgface,bgface_to_lcell)
-  Γ = BoundaryTriangulation(face_trian,cell_trian,glue)
+  glue = Geometry.FaceToCellGlue(topo,cell_grid,face_grid,face_to_bgface,bgface_to_lcell)
+  trian = BodyFittedTriangulation(model,face_grid,face_to_bgface)
+  Γ = BoundaryTriangulation(trian,glue)
   dΓ = Measure(Γ,degree)
   DiracDelta(Γ,dΓ)
 end

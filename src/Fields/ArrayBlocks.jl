@@ -1022,10 +1022,10 @@ function Base.:*(a::ArrayBlock{A,2},b::ArrayBlock{B,2}) where {A,B}
   ArrayBlock(array,touched)
 end
 
-function Algebra.scale_entries!(a::ArrayBlock,β)
+function LinearAlgebra.rmul!(a::ArrayBlock,β)
   for i in eachindex(a.touched)
     if a.touched[i]
-      scale_entries!(a.array[i],β)
+      rmul!(a.array[i],β)
     end
   end
 end
@@ -1057,7 +1057,7 @@ function LinearAlgebra.mul!(
   @check nj == size(b.array,1)
   for i in 1:ni
     if β!=1 && c.touched[i]
-      scale_entries!(c.array[i],β)
+      rmul!(c.array[i],β)
     end
     for j in 1:nj
       if a.touched[i,j] && b.touched[j]
@@ -1085,7 +1085,7 @@ function LinearAlgebra.mul!(
   for i in 1:ni
     for j in 1:nj
       if β!=1 && c.touched[i,j]
-        scale_entries!(c.array[i,j],β)
+        rmul!(c.array[i,j],β)
       end
       for k in 1:nk
         if a.touched[i,k] && b.touched[k,j]

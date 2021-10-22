@@ -1,6 +1,4 @@
 
-"""
-"""
 struct FaceToCellGlue{A,B,C,D} <: GridapType
   face_to_bgface::A
   bgface_to_lcell::B
@@ -15,13 +13,13 @@ end
 
 function FaceToCellGlue(
   topo::GridTopology,
-  cell_trian::Triangulation,
-  face_trian::Triangulation,
+  cell_grid::Grid,
+  face_grid::Grid,
   face_to_bgface::AbstractVector,
   bgface_to_lcell::AbstractVector)
 
-  D = num_cell_dims(cell_trian)
-  cD = num_cell_dims(face_trian)
+  D = num_cell_dims(cell_grid)
+  cD = num_cell_dims(face_grid)
   bgface_to_cells = get_faces(topo,cD,D)
   cell_to_bgfaces = get_faces(topo,D,cD)
   cell_to_lface_to_pindex = Table(get_cell_permutations(topo,cD))
@@ -34,9 +32,9 @@ function FaceToCellGlue(
   face_to_lcell = collect(Int8,lazy_map(Reindex(bgface_to_lcell), face_to_bgface))
 
   f = (p)->fill(Int8(UNSET),num_faces(p,cD))
-  ctype_to_lface_to_ftype = map( f, get_reffes(cell_trian) )
-  face_to_ftype = get_cell_type(face_trian)
-  cell_to_ctype = get_cell_type(cell_trian)
+  ctype_to_lface_to_ftype = map( f, get_reffes(cell_grid) )
+  face_to_ftype = get_cell_type(face_grid)
+  cell_to_ctype = get_cell_type(cell_grid)
 
   _fill_ctype_to_lface_to_ftype!(
     ctype_to_lface_to_ftype,
@@ -85,27 +83,24 @@ end
 
 """
 """
-struct BoundaryTriangulation{Dc,Dp,Gf,Gc,G} <: Triangulation{Dc,Dp}
-  face_trian::Gf
-  cell_trian::Gc
-  glue::G
+struct BoundaryTriangulation{Dc,Dp,A,B} <: Triangulation{Dc,Dp}
+  trian::A
+  glue::B
 
   function BoundaryTriangulation(
-    face_trian::Triangulation,
-    cell_trian::Triangulation,
+    trian::BodyFittedTriangulation,
     glue::FaceToCellGlue)
 
-    #@assert TriangulationStyle(cell_trian) == BackgroundTriangulation()
-    @assert num_point_dims(face_trian) == num_point_dims(cell_trian)
-    #@assert num_cell_dims(face_trian) == num_cell_dims(cell_trian) - 1
-
-    Dc = num_cell_dims(face_trian)
-    Dp = num_point_dims(face_trian)
-    Gf = typeof(face_trian)
-    Gc = typeof(cell_trian)
-    G = typeof(glue)
-    new{Dc,Dp,Gf,Gc,G}(face_trian, cell_trian, glue)
+    Dc = num_cell_dims(trian)
+    Dp = num_point_dims(trian)
+    A = typeof(trian)
+    B = typeof(glue)
+    new{Dc,Dp,A,B}(trian,glue)
   end
+end
+
+function Boundary(args...;kwargs...)
+  BoundaryTriangulation(args...;kwargs...)
 end
 
 # Constructors
@@ -123,12 +118,12 @@ function BoundaryTriangulation(
   topo = get_grid_topology(model)
   bgface_grid = Grid(ReferenceFE{D-1},model)
 
-  face_trian = RestrictedTriangulation(bgface_grid,face_to_bgface)
-  #cell_trian = Grid(ReferenceFE{D},model)
-  cell_trian = Triangulation(model)
-  glue = FaceToCellGlue(topo,cell_trian,face_trian,face_to_bgface,bgface_to_lcell)
+  face_grid = view(bgface_grid,face_to_bgface)
+  cell_grid = get_grid(model)
+  glue = FaceToCellGlue(topo,cell_grid,face_grid,face_to_bgface,bgface_to_lcell)
+  trian = BodyFittedTriangulation(model,face_grid,face_to_bgface)
 
-  BoundaryTriangulation(face_trian,cell_trian,glue)
+  BoundaryTriangulation(trian,glue)
 end
 
 function BoundaryTriangulation(
@@ -179,79 +174,44 @@ function BoundaryTriangulation(model::DiscreteModel;tags=nothing)
   BoundaryTriangulation(model,labeling,tags=tags)
 end
 
-# Triangulation API
-
-# Delegating to the underlying face Triangulation
-
-get_cell_coordinates(trian::BoundaryTriangulation) = get_cell_coordinates(trian.face_trian)
-
-get_reffes(trian::BoundaryTriangulation) = get_reffes(trian.face_trian)
-
-get_cell_type(trian::BoundaryTriangulation) = get_cell_type(trian.face_trian)
-
-get_node_coordinates(trian::BoundaryTriangulation) = get_node_coordinates(trian.face_trian)
-
-get_cell_node_ids(trian::BoundaryTriangulation) = get_cell_node_ids(trian.face_trian)
-
-get_cell_map(trian::BoundaryTriangulation) = get_cell_map(trian.face_trian)
-
-# Genuine methods
-
-TriangulationStyle(::Type{<:BoundaryTriangulation}) = SubTriangulation()
-
-get_background_triangulation(trian::BoundaryTriangulation) = trian.cell_trian
-
-get_cell_to_bgcell(trian::BoundaryTriangulation) = trian.glue.face_to_cell
-
-function get_cell_to_bgcell(
-  trian_in::BoundaryTriangulation,
-  trian_out::BoundaryTriangulation)
-
-  if have_compatible_domains(trian_out,get_background_triangulation(trian_in))
-    return get_cell_to_bgcell(trian_in)
-  end
-
-  @check have_compatible_domains(
-    get_background_triangulation(trian_in),
-    get_background_triangulation(trian_out))
-
-  face_in_to_bgface = trian_in.glue.face_to_bgface
-  face_out_to_bgface = trian_out.glue.face_to_bgface
-
-  nbgfaces = length(trian_in.glue.bgface_to_lcell)
-  bgface_to_face_out = zeros(Int32,nbgfaces)
-  bgface_to_face_out[face_out_to_bgface] .= 1:length(face_out_to_bgface)
-  face_in_to_face_out = bgface_to_face_out[face_in_to_bgface]
-  @check all( face_in_to_face_out .!= 0) "the first triangulation is not a subset of the second"
-  face_in_to_face_out
+function BoundaryTriangulation(rtrian::Triangulation,args...;kwargs...)
+  rmodel = get_active_model(rtrian)
+  dtrian = BoundaryTriangulation(rmodel,args...;kwargs...)
+  CompositeTriangulation(rtrian,dtrian)
 end
 
-function is_included(
-  trian_in::BoundaryTriangulation,
-  trian_out::BoundaryTriangulation)
+# API
 
-  if have_compatible_domains(trian_out,get_background_triangulation(trian_in))
-    return true
-  end
+get_background_model(t::BoundaryTriangulation) = get_background_model(t.trian)
+get_grid(t::BoundaryTriangulation) = get_grid(t.trian)
+get_glue(t::BoundaryTriangulation{D},::Val{D}) where D = get_glue(t.trian,Val(D))
 
-  @check have_compatible_domains(
-    get_background_triangulation(trian_in),
-    get_background_triangulation(trian_out))
+function get_glue(trian::BoundaryTriangulation,::Val{Dp}) where Dp
+  model = get_background_model(trian)
+  Dm = num_cell_dims(model)
+  get_glue(trian,Val(Dp),Val(Dm))
+end
 
-  face_in_to_bgface = trian_in.glue.face_to_bgface
-  face_out_to_bgface = trian_out.glue.face_to_bgface
+function get_glue(trian::BoundaryTriangulation,::Val{Dp},::Val{Dm}) where {Dp,Dm}
+  nothing
+end
 
-  nbgfaces = length(trian_in.glue.bgface_to_lcell)
-  bgface_to_face_out = zeros(Int32,nbgfaces)
-  bgface_to_face_out[face_out_to_bgface] .= 1:length(face_out_to_bgface)
-  face_in_to_face_out = bgface_to_face_out[face_in_to_bgface]
-  all( face_in_to_face_out .!= 0)
+function get_glue(trian::BoundaryTriangulation,::Val{D},::Val{D}) where D
+  tface_to_mface = trian.glue.face_to_cell
+  face_to_q_vertex_coords = _compute_face_to_q_vertex_coords(trian)
+  f(p) = get_shapefuns(LagrangianRefFE(Float64,get_polytope(p),1))
+  ftype_to_shapefuns = map( f, get_reffes(trian) )
+  face_to_shapefuns = expand_cell_data(ftype_to_shapefuns,trian.glue.face_to_ftype)
+  face_s_q = lazy_map(linear_combination,face_to_q_vertex_coords,face_to_shapefuns)
+  tface_to_mface_map = face_s_q
+  mface_to_tface = nothing
+  FaceToFaceGlue(tface_to_mface,tface_to_mface_map,mface_to_tface)
 end
 
 function get_facet_normal(trian::BoundaryTriangulation)
 
   glue = trian.glue
-  cell_trian = trian.cell_trian
+  cell_grid = get_grid(get_background_model(trian.trian))
 
   ## Reference normal
   function f(r)
@@ -262,18 +222,20 @@ function get_facet_normal(trian::BoundaryTriangulation)
     lface_pindex_to_n = [ fill(lface_to_n[lface],length(lface_to_pindex_to_perm[lface])) for lface in 1:nlfaces ]
     lface_pindex_to_n
   end
-  ctype_lface_pindex_to_nref = map(f, get_reffes(cell_trian))
+  ctype_lface_pindex_to_nref = map(f, get_reffes(cell_grid))
   face_to_nref = FaceCompressedVector(ctype_lface_pindex_to_nref,glue)
   face_s_nref = lazy_map(constant_field,face_to_nref)
 
   # Inverse of the Jacobian transpose
-  cell_q_x = get_cell_map(cell_trian)
+  cell_q_x = get_cell_map(cell_grid)
   cell_q_Jt = lazy_map(∇,cell_q_x)
   cell_q_invJt = lazy_map(Operation(pinvJt),cell_q_Jt)
   face_q_invJt = lazy_map(Reindex(cell_q_invJt),glue.face_to_cell)
 
   # Change of domain
-  face_s_q = get_cell_ref_map(trian)
+  D = num_cell_dims(cell_grid)
+  glue = get_glue(trian,Val(D))
+  face_s_q = glue.tface_to_mface_map
   face_s_invJt = lazy_map(∘,face_q_invJt,face_s_q)
   face_s_n = lazy_map(Broadcasting(Operation(push_normal)),face_s_invJt,face_s_nref)
   Fields.MemoArray(face_s_n)
@@ -289,32 +251,10 @@ end
   end
 end
 
-function get_cell_ref_map(trian::BoundaryTriangulation)
-  face_to_q_vertex_coords = _compute_face_to_q_vertex_coords(trian)
-  f(p) = get_shapefuns(LagrangianRefFE(Float64,get_polytope(p),1))
-  ftype_to_shapefuns = map( f, get_reffes(trian) )
-  face_to_shapefuns = expand_cell_data(ftype_to_shapefuns,trian.glue.face_to_ftype)
-  face_s_q = lazy_map(linear_combination,face_to_q_vertex_coords,face_to_shapefuns)
-end
-
-function get_cell_ref_map(
-  trian_in::BoundaryTriangulation,
-  trian_out::BoundaryTriangulation)
-
-  if have_compatible_domains(trian_out,get_background_triangulation(trian_in))
-    return get_cell_ref_map(trian_in)
-  end
-
-  @check have_compatible_domains(
-    get_background_triangulation(trian_in),
-    get_background_triangulation(trian_out))
-
-  Fill(GenericField(identity),num_cells(trian_in))
-end
-
 function _compute_face_to_q_vertex_coords(trian::BoundaryTriangulation)
     d = num_cell_dims(trian)
-    polytopes = map(get_polytope, get_reffes(trian.cell_trian))
+    cell_grid = get_grid(get_background_model(trian.trian))
+    polytopes = map(get_polytope, get_reffes(cell_grid))
     cell_to_ctype = trian.glue.cell_to_ctype
     ctype_to_lvertex_to_qcoords = map(get_vertex_coordinates, polytopes)
     ctype_to_lface_to_lvertices = map((p)->get_faces(p,d,0), polytopes)
@@ -491,27 +431,3 @@ function lazy_map(k::typeof(evaluate),::Type{T},a::Fill,b::FaceCompressedVector,
   FaceCompressedVector(ctype_lface_pindex_to_r,b.glue)
 end
 
-#function lazy_map(k::typeof(evaluate),::Type{T},a::CompressedArray,b::FaceCompressedVector) where T
-#  if a.ptrs == lazy_map(Reindex(b.glue.cell_to_ctype),b.glue.face_to_cell)
-#
-#    ctype_lface_pindex_to_r = Vector{Vector{Vector{T}}}(undef,length(b.ctype_lface_pindex_to_value))
-#    for (ctype, lface_pindex_to_value) in enumerate(b.ctype_lface_pindex_to_value)
-#      lface_pindex_to_r = Vector{Vector{T}}(undef,length(lface_pindex_to_value))
-#      for (lface, pindex_to_value) in enumerate(lface_pindex_to_value)
-#        pindex_to_r = Vector{T}(undef,length(pindex_to_value))
-#        ftype = b.glue.ctype_to_lface_to_ftype[ctype][lface]
-#        if ftype != UNSET
-#          for (pindex, value) in enumerate(pindex_to_value)
-#            pindex_to_r[pindex] = evaluate(a.values[ftype],value)
-#          end
-#        end
-#        lface_pindex_to_r[lface] = pindex_to_r
-#      end
-#      ctype_lface_pindex_to_r[ctype] = lface_pindex_to_r
-#    end
-#    FaceCompressedVector(ctype_lface_pindex_to_r,b.glue)
-#
-#  else
-#    @notimplemented
-#  end
-#end

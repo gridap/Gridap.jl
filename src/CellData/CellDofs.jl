@@ -18,18 +18,74 @@ function change_domain(a::CellDof,::PhysicalDomain,::ReferenceDomain)
   @notimplemented
 end
 
-function change_domain(a::CellDof,target_trian::Triangulation,target_domain::DomainStyle)
-  @notimplemented
+function change_domain(a::CellDof,ttrian::Triangulation,target_domain::DomainStyle)
+  change_domain(a,DomainStyle(a),ttrian,target_domain)
 end
 
-function change_domain(a::CellDof,target_trian::RestrictedTriangulation,target_domain::DomainStyle)
-  @notimplementedif DomainStyle(a) != target_domain
-  trian_a = get_triangulation(a)
-  @notimplementedif ! have_compatible_domains(trian_a,get_background_triangulation(target_trian))
-  cell_dof = get_data(a)
-  tcell_to_cell = get_cell_to_bgcell(target_trian)
-  tcell_dof = lazy_map(Reindex(cell_dof),tcell_to_cell)
-  CellDof(tcell_dof,target_trian,DomainStyle(a))
+function change_domain(a::CellDof,::ReferenceDomain,ttrian::Triangulation,::ReferenceDomain)
+  msg = """\n
+  We cannot move the given CellDof to the reference domain of the requested triangulation.
+  Make sure that the given triangulation is either the same as the triangulation on which the
+  CellDof is defined, or that the latter triangulation is the background of the former.
+  """
+  strian = get_triangulation(a)
+  if strian === ttrian
+    return a
+  end
+  @assert is_change_possible(strian,ttrian) msg
+  D = num_cell_dims(strian)
+  sglue = get_glue(strian,Val(D))
+  tglue = get_glue(ttrian,Val(D))
+  change_domain_ref_ref(a,ttrian,sglue,tglue)
+end
+
+function change_domain(a::CellDof,::PhysicalDomain,ttrian::Triangulation,::PhysicalDomain)
+  msg = """\n
+  We cannot move the given CellDof to the physical domain of the requested triangulation.
+  Make sure that the given triangulation is either the same as the triangulation on which the
+  CellDof is defined, or that the latter triangulation is the background of the former.
+  """
+  strian = get_triangulation(a)
+  if strian === ttrian
+    return a
+  end
+  @assert is_change_possible(strian,ttrian) msg
+  D = num_cell_dims(strian)
+  sglue = get_glue(strian,Val(D))
+  tglue = get_glue(ttrian,Val(D))
+  change_domain_phys_phys(a,ttrian,sglue,tglue)
+end
+
+function change_domain(a::CellDof,::PhysicalDomain,trian::Triangulation,::ReferenceDomain)
+  a_trian = change_domain(a,trian,PhysicalDomain())
+  change_domain(a_trian,ReferenceDomain())
+end
+
+function change_domain(a::CellDof,::ReferenceDomain,trian::Triangulation,::PhysicalDomain)
+  a_phys = change_domain(a,PhysicalDomain())
+  change_domain(a_phys,trian,PhysicalDomain())
+end
+
+function change_domain_ref_ref(
+  a::CellDof,ttrian::Triangulation,sglue::FaceToFaceGlue,tglue::FaceToFaceGlue)
+  sface_to_dof = get_data(a)
+  mface_to_sface = sglue.mface_to_tface
+  tface_to_mface = tglue.tface_to_mface
+  tface_to_mface_map = tglue.tface_to_mface_map
+  mface_to_dof = extend(sface_to_dof,mface_to_sface)
+  tface_to_dof = lazy_map(Reindex(mface_to_dof),tface_to_mface)
+  @notimplementedif ! isa(tface_to_mface_map,AbstractArray{<:GenericField{typeof(identity)}})
+  CellDof(tface_to_dof,ttrian,ReferenceDomain())
+end
+
+function change_domain_phys_phys(
+  a::CellDof,ttrian::Triangulation,sglue::FaceToFaceGlue,tglue::FaceToFaceGlue)
+  sface_to_dof = get_data(a)
+  mface_to_sface = sglue.mface_to_tface
+  tface_to_mface = tglue.tface_to_mface
+  mface_to_dof = extend(sface_to_dof,mface_to_sface)
+  tface_to_dof = lazy_map(Reindex(mface_to_dof),tface_to_mface)
+  CellDof(tface_to_dof,ttrian,PhysicalDomain())
 end
 
 function get_cell_points(dofs::CellDof)

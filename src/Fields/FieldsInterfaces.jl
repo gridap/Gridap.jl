@@ -639,3 +639,161 @@ function test_field(f::Field, x, v, cmp=(==); grad=nothing, gradgrad=nothing)
   end
   true
 end
+
+struct VoidFieldMap <: Map
+  isvoid::Bool
+end
+
+@inline Arrays.evaluate!(cache,k::VoidFieldMap,b) = VoidField(b,k.isvoid)
+
+struct VoidField{F} <: Field
+  field::F
+  isvoid::Bool
+end
+
+function return_cache(f::VoidField,x::Point)
+  c = return_cache(f.field,x)
+  fx = evaluate!(c,f.field,x)
+  c, zero(fx)
+end
+
+function evaluate!(cache,f::VoidField,x::Point)
+  c,z = cache
+  if f.isvoid
+    z
+  else
+    evaluate!(c,f.field,x)
+  end
+end
+
+function return_cache(f::VoidField,x::AbstractVector{<:Point})
+  c = return_cache(f.field,x)
+  fx = evaluate!(c,f.field,x)
+  z = similar(fx)
+  c, CachedArray(z)
+end
+
+function evaluate!(cache,f::VoidField,x::AbstractVector{<:Point})
+  c,z = cache
+  if f.isvoid
+    setsize!(z,size(x))
+    fill!(z,zero(eltype(z)))
+    z.array
+  else
+    evaluate!(c,f.field,x)
+  end
+end
+
+testvalue(::Type{VoidField{F}}) where F = VoidField(testvalue(F),false)
+
+@inline gradient(z::VoidField) = VoidField(gradient(z.field),z.isvoid)
+
+function lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{VoidFieldMap}},x::AbstractArray)
+  p = a.maps.value
+  @notimplementedif p.isvoid
+  lazy_map(evaluate,a.args[1],x)
+end
+
+struct VoidBasisMap <: Map
+  isvoid::Bool
+end
+
+@inline Arrays.evaluate!(cache,k::VoidBasisMap,b) = VoidBasis(b,k.isvoid)
+
+struct VoidBasis{T,N,A} <: AbstractArray{T,N}
+  basis::A
+  isvoid::Bool
+  function VoidBasis(basis::AbstractArray{T,N},isvoid::Bool) where {T,N}
+    new{T,N,typeof(basis)}(basis,isvoid)
+  end
+end
+
+function Base.size(a::VoidBasis)
+  if a.isvoid
+    0 .* size(a.basis)
+  else
+    size(a.basis)
+  end
+end
+
+Base.IndexStyle(::Type{<:VoidBasis}) = IndexLinear()
+
+function Base.getindex(a::VoidBasis,i::Integer)
+  if a.isvoid
+    @unreachable "Unable to access 0-length array"
+  else
+    a.basis[i]
+  end
+end
+
+Arrays.testitem(a::VoidBasis) = testitem(a.basis)
+
+function _zero_size(a::VoidBasis{T,1} where T)
+  (0,)
+end
+
+function _zero_size(a::VoidBasis{T,2} where T)
+  @check size(a,1) == 1
+  (1,0)
+end
+
+function Fields.return_cache(a::VoidBasis,x::Point)
+  cb = return_cache(a.basis,x)
+  bx = return_value(a.basis,x)
+  zs = _zero_size(a)
+  r = similar(bx,zs)
+  cb,r
+end
+
+function Fields.return_cache(a::VoidBasis,x::Field)
+  @notimplementedif ndims(a) != 1
+  cb = return_cache(a.basis,x)
+  bx = return_value(a.basis,x)
+  r = similar(bx,(0,))
+  cb,r
+end
+
+function Fields.return_cache(a::VoidBasis,x::AbstractVector{<:Point})
+  cb = return_cache(a.basis,x)
+  bx = return_value(a.basis,x)
+  zs = _zero_size(a)
+  r = similar(bx,(length(x),zs...))
+  cb,r
+end
+
+function Fields.return_cache(a::VoidBasis,v::AbstractVector{<:Field})
+  @notimplementedif ndims(a) != 1
+  cb = return_cache(a.basis,v)
+  bx = return_value(a.basis,v)
+  r = similar(bx,(0,length(v)))
+  cb,r
+end
+
+for T in (:Point,:Field,:(AbstractVector{<:Point}),:(AbstractVector{<:Field}))
+  @eval begin
+
+    @inline function Fields.evaluate!(cache,a::VoidBasis,x::$T)
+      cb, r = cache
+      if a.isvoid
+        r
+      else
+        evaluate!(cb,a.basis,x)
+      end
+    end
+
+  end
+end
+
+function Fields.evaluate!(cache,k::Broadcasting{typeof(∇)},a::VoidBasis)
+  VoidBasis(k(a.basis),a.isvoid)
+end
+
+function Fields.evaluate!(cache,k::Broadcasting{typeof(∇∇)},a::VoidBasis)
+  VoidBasis(k(a.basis),a.isvoid)
+end
+
+function lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{VoidBasisMap}},x::AbstractArray)
+  p = a.maps.value
+  @notimplementedif p.isvoid
+  lazy_map(evaluate,a.args[1],x)
+end

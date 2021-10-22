@@ -1,6 +1,5 @@
 struct MultiFieldCellField{DS<:DomainStyle} <: CellField
   single_fields::Vector{<:CellField}
-  trian::Triangulation
   domain_style::DS
 
   function MultiFieldCellField(single_fields::Vector{<:CellField})
@@ -14,10 +13,7 @@ struct MultiFieldCellField{DS<:DomainStyle} <: CellField
       domain_style = PhysicalDomain()
     end
 
-    trian = get_triangulation(f1)
-    #@check all(map(i-> get_triangulation(i) === trian,single_fields))
-
-    new{typeof(domain_style)}(single_fields,trian,domain_style)
+    new{typeof(domain_style)}(single_fields,domain_style)
   end
 end
 
@@ -32,7 +28,12 @@ function CellData.get_data(f::MultiFieldCellField)
   @notimplemented s
 end
 
-CellData.get_triangulation(f::MultiFieldCellField) = f.trian
+function CellData.get_triangulation(f::MultiFieldCellField)
+  s1 = first(f.single_fields)
+  trian = get_triangulation(s1)
+  @check all(map(i->trian===get_triangulation(i),f.single_fields))
+  trian
+end
 CellData.DomainStyle(::Type{MultiFieldCellField{DS}}) where DS = DS()
 num_fields(a::MultiFieldCellField) = length(a.single_fields)
 Base.getindex(a::MultiFieldCellField,i::Integer) = a.single_fields[i]

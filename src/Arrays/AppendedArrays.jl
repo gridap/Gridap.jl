@@ -111,6 +111,19 @@ function lazy_map(::typeof(evaluate),::Type{T},b::Fill,a::AppendedArray...) wher
   end
 end
 
+function lazy_map(::typeof(evaluate),::Type{T},b::Fill,a::AppendedArray) where T
+  f = b.value
+  ra = lazy_map(f,a.a)
+  rb = lazy_map(f,a.b)
+  lazy_append(ra,rb)
+end
+
+function lazy_map(k::Reindex{<:LazyArray},j_to_i::AppendedArray)
+  a = lazy_map(k,j_to_i.a)
+  b = lazy_map(k,j_to_i.b)
+  lazy_append(a,b)
+end
+
 # In that case we don't implement it for ::Type{T} variant since we want to
 # avoid to run type inference since the first entry in a can have non-concrete
 # eltype
