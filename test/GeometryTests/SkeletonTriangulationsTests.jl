@@ -44,6 +44,10 @@ sglue = get_glue(strian,Val(3))
 vglue = get_glue(vtrian,Val(3))
 @test vglue.plus.tface_to_mface == sglue.plus.tface_to_mface[ids]
 @test vglue.minus.tface_to_mface == sglue.minus.tface_to_mface[ids]
+vn = get_facet_normal(vtrian)
+@test isa(vn,SkeletonPair)
+@test isa(vn.plus,AbstractArray)
+@test isa(vn.minus,AbstractArray)
 
 Ω = Triangulation(model)
 Γ = BoundaryTriangulation(model)

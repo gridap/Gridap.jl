@@ -1,7 +1,6 @@
 module CellFieldsTests
 
 using Test
-using BlockArrays
 using FillArrays
 using Gridap.Arrays
 using Gridap.TensorValues
@@ -11,7 +10,6 @@ using Gridap.Geometry
 using Gridap.CellData
 #using Gridap.FESpaces
 using Random
-using StaticArrays
 
 domain = (0,1,0,1)
 cells = (3,3)
@@ -22,6 +20,12 @@ trian_N =BoundaryTriangulation(model)
 trian_D =BoundaryTriangulation(model,tags="tag_8")
 trian_S =SkeletonTriangulation(model)
 trian_0 =Triangulation(model,Int32[])
+
+trian_sv = view(trian_S,[1,5,4,2])
+nv = get_normal_vector(trian_sv)
+@test isa(nv,SkeletonPair)
+@test isa(nv.plus,CellField)
+@test isa(nv.minus,CellField)
 
 ϕ = GenericCellField(get_cell_map(trian),trian,ReferenceDomain())
 ϕinv = GenericCellField(lazy_map(inverse_map,get_cell_map(trian)),trian,PhysicalDomain())

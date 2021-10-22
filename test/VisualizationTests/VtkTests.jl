@@ -29,6 +29,13 @@ write_vtk_file(
   nodaldata=["nodeid"=>node_ids],
   celldata=["cellid"=>cell_ids,"centers"=>cell_center])
 
+pvtk = Visualization.create_pvtk_file(
+  trian,f,
+  pvtkargs = [:part=>1,:nparts=>1],
+  nodaldata=["nodeid"=>node_ids],
+  celldata=["cellid"=>cell_ids,"centers"=>cell_center])
+vtk_save(pvtk)
+
 reffe = LagrangianRefFE(VectorValue{3,Float64},WEDGE,(3,3,4))
 f = joinpath(d,"reffe")
 writevtk(reffe,f)
