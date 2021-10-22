@@ -266,6 +266,20 @@ struct DoNotLoop end
 LoopStyle(::Type) = DoNotLoop()
 LoopStyle(::T) where T = LoopStyle(T)
 
+# By default process, matrix and vector separately
+# but, in some situations, create_from_nz of the vector
+# can reuse data from the one computed in
+# create_from_nz for the matrix (e.g., GridapDistributed)
+function create_from_nz(a,b)
+  A = create_from_nz(a)
+  B = create_from_nz(b)
+  A,B
+end
+# See comment above for create_from_nz. The same applies here
+# for nz_allocation.
+function nz_allocation(a,b)
+  nz_allocation(a),nz_allocation(b)
+end
 
 # For dense arrays
 
@@ -336,16 +350,16 @@ LoopStyle(::Type{<:CounterCOO}) = Loop()
   a
 end
 
-struct CooAllocation{T,A,B,C}
+struct AllocationCOO{T,A,B,C}
   counter::CounterCOO{T,A}
   I::B
   J::B
   V::C
 end
 
-LoopStyle(::Type{<:CooAllocation}) = Loop()
+LoopStyle(::Type{<:AllocationCOO}) = Loop()
 
-@inline function add_entry!(::typeof(+),a::CooAllocation{T},::Nothing,i,j) where T
+@inline function add_entry!(::typeof(+),a::AllocationCOO{T},::Nothing,i,j) where T
   if is_entry_stored(T,i,j)
     a.counter.nnz = a.counter.nnz + 1
     k = a.counter.nnz
@@ -355,7 +369,7 @@ LoopStyle(::Type{<:CooAllocation}) = Loop()
   nothing
 end
 
-@inline function add_entry!(::typeof(+),a::CooAllocation{T},v,i,j) where T
+@inline function add_entry!(::typeof(+),a::AllocationCOO{T},v,i,j) where T
   if is_entry_stored(T,i,j)
     a.counter.nnz = a.counter.nnz + 1
     k = a.counter.nnz
@@ -377,10 +391,10 @@ end
 function nz_allocation(a::CounterCOO{T}) where T
   counter = CounterCOO{T}(a.axes)
   I,J,V = allocate_coo_vectors(T,a.nnz)
-  CooAllocation(counter,I,J,V)
+  AllocationCOO(counter,I,J,V)
 end
 
-function create_from_nz(a::CooAllocation{T}) where T
+function create_from_nz(a::AllocationCOO{T}) where T
   m,n = map(length,a.counter.axes)
   finalize_coo!(T,a.I,a.J,a.V,m,n)
   sparse_from_coo(T,a.I,a.J,a.V,m,n)

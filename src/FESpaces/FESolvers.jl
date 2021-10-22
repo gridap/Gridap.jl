@@ -10,7 +10,7 @@ This function changes the state of the input and can render it in a corrupted st
 It is recommended to rewrite the input `uh` with the output as illustrated to prevent any
 issue.
 """
-function solve!(uh::FEFunction,solver::FESolver,op::FEOperator)
+function solve!(uh,solver::FESolver,op::FEOperator)
   solve!(uh,solver,op,nothing)
 end
 
@@ -21,7 +21,7 @@ This function changes the state of the input and can render it in a corrupted st
 It is recommended to rewrite the input `uh` with the output as illustrated to prevent any
 issue. If `cache===nothing`, then it creates a new cache object.
 """
-function solve!(uh::FEFunction,solver::FESolver,op::FEOperator,cache)
+function solve!(uh,solver::FESolver,op::FEOperator,cache)
   @abstractmethod
 end
 
@@ -87,11 +87,11 @@ function LinearFESolver()
   LinearFESolver(ls)
 end
 
-function solve!(uh::FEFunction,solver::LinearFESolver,op::FEOperator, cache)
+function solve!(uh,solver::LinearFESolver,op::FEOperator, cache)
   @unreachable "Cannot solve a generic FEOperator with a LinearFESolver"
 end
 
-function solve!(u::FEFunction,solver::LinearFESolver,feop::AffineFEOperator,cache::Nothing)
+function solve!(u,solver::LinearFESolver,feop::AffineFEOperator,cache::Nothing)
   x = get_free_dof_values(u)
   op = get_algebraic_operator(feop)
   cache = solve!(x,solver.ls,op)
@@ -100,7 +100,7 @@ function solve!(u::FEFunction,solver::LinearFESolver,feop::AffineFEOperator,cach
   (u_new, cache)
 end
 
-function solve!(u::FEFunction,solver::LinearFESolver,feop::AffineFEOperator, cache)
+function solve!(u,solver::LinearFESolver,feop::AffineFEOperator, cache)
   x = get_free_dof_values(u)
   op = get_algebraic_operator(feop)
   cache = solve!(x,solver.ls,op,cache)
@@ -133,7 +133,7 @@ function NonlinearFESolver()
   NonlinearFESolver(nls)
 end
 
-function solve!(u::FEFunction,solver::NonlinearFESolver,feop::FEOperator,cache::Nothing)
+function solve!(u,solver::NonlinearFESolver,feop::FEOperator,cache::Nothing)
   x = get_free_dof_values(u)
   op = get_algebraic_operator(feop)
   cache = solve!(x,solver.nls,op)
@@ -142,7 +142,7 @@ function solve!(u::FEFunction,solver::NonlinearFESolver,feop::FEOperator,cache::
   (u_new, cache)
 end
 
-function solve!(u::FEFunction,solver::NonlinearFESolver,feop::FEOperator,cache)
+function solve!(u,solver::NonlinearFESolver,feop::FEOperator,cache)
   x = get_free_dof_values(u)
   op = get_algebraic_operator(feop)
   cache = solve!(x,solver.nls,op,cache)

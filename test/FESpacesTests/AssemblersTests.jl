@@ -140,4 +140,35 @@ A,b = assemble_matrix_and_vector(assem,data)
 x = A\b
 @test x ≈ b
 
+
+mutable struct MyArrayCounter
+  count
+  MyArrayCounter()=new(0)
+end
+function Algebra.LoopStyle(::Type{<:MyArrayCounter})
+  Loop()
+end
+
+function Algebra.add_entry!(c::Function,a::MyArrayCounter,v,i,j)
+  a.count=a.count+1
+end
+function Algebra.add_entry!(c::Function,a::MyArrayCounter,v,i)
+  a.count=a.count+1
+end
+function Algebra.add_entries!(c::Function,a::MyArrayCounter,v,i,j)
+  a.count=a.count+length(i)
+end
+function Algebra.add_entries!(c::Function,a::MyArrayCounter,v,i)
+  a.count=a.count+length(i)
+end
+
+mac=MyArrayCounter()
+vec_contribs = ∫(1*dv)*dΩ
+data = collect_cell_vector(V,vec_contribs)
+symbolic_loop_vector!(mac,assem,data)
+@test mac.count == num_cells(Ω)*4
+
+
+
+
 end # module

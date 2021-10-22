@@ -60,8 +60,3 @@ end
 function evaluate!(cache,k::TouchEntriesMap,A,v,i)
   add_entries!(+,A,nothing,i)
 end
-
-
-
-
-
