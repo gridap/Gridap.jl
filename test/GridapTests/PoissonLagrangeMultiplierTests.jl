@@ -14,7 +14,7 @@ domain = (0,1,0,1)
 partition = (3,3)
 model = CartesianDiscreteModel(domain,partition)
 
-Ω = Triangulation(model)
+Ω = Interior(model)
 Γ = Boundary(model)
 Λ = Skeleton(Γ)
 

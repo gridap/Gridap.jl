@@ -219,6 +219,19 @@ function Triangulation(trian::Triangulation,args...;kwargs...)
   CompositeTriangulation(trian,dtrian)
 end
 
+function Triangulation(trian::Triangulation,x::AbstractArray{<:Integer})
+  view(trian,x)
+end
+
+function Triangulation(trian::Triangulation,x::AbstractArray{<:Bool})
+  y = findall(collect1d(x))
+  view(trian,y)
+end
+
+function Interior(args...;kwargs...)
+  Triangulation(args...;kwargs...)
+end
+
 # This is the low-level functionality to move from one Triangulation to another
 
 function extend(tface_to_val,mface_to_tface)
