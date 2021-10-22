@@ -142,16 +142,23 @@ Base.hash(a::ArrayCacheKey, h::UInt) = hash(a.val, hash(:ArrayCacheKey, h))
 Base.isequal(a::ArrayCacheKey, b::ArrayCacheKey) = same_branch(a.val,b.val) && true
 
 function array_cache(dict::Dict,a::LazyArray)
-  function _get_cache(dict,cache::T,key) where T
-    value::T = dict[hash(key)]
+  # OC: not sure why we need cache::T in this function. Fails when cache for the same object have different types
+  # function _get_cache(dict,cache::T,key) where T
+  #   value::T = dict[hash(key)]
+  #   value
+  # end
+  function _get_cache(dict,cache,key)
+    value = dict[hash(key)]
     value
   end
-  cache = _array_cache!(dict,a)
+  #cache = _array_cache!(dict,a) # OC: Why do we get cache allways? what if its in dict already?
   key = ArrayCacheKey(a)
+  hash(key)
   if ! haskey(dict,hash(key))
-    dict[hash(key)] = cache
+    dict[hash(key)] = _array_cache!(dict,a)#cache
   end
-  _get_cache(dict,cache,key)
+  #_get_cache(dict,cache,key)
+  dict[hash(key)]
 end
 
 mutable struct IndexItemPair{T,V}
