@@ -10,7 +10,6 @@ using Gridap.Helpers: @abstractmethod, @notimplemented
 using Gridap.Helpers: @notimplementedif, @unreachable, @check
 
 using Gridap.Algebra: mul!
-using Gridap.Algebra: fill_entries!
 
 using Gridap.TensorValues
 using Gridap.Algebra
@@ -93,6 +92,8 @@ export VoidFieldMap
 export VoidBasis
 export VoidBasisMap
 
+export DensifyInnerMostBlockLevelMap
+
 include("FieldsInterfaces.jl")
 
 include("FieldArrays.jl")
@@ -110,5 +111,7 @@ include("AutoDiff.jl")
 include("ArrayBlocks.jl")
 
 include("InverseFields.jl")
+
+include("DensifyInnerMostBlockLevelMaps.jl")
 
 end

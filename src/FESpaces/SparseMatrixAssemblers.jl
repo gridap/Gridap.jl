@@ -63,7 +63,7 @@ function allocate_vector(a::SparseMatrixAssembler,vecdata)
 end
 
 function assemble_vector!(b,a::SparseMatrixAssembler,vecdata)
-  fill_entries!(b,zero(eltype(b)))
+  fill!(b,zero(eltype(b)))
   assemble_vector_add!(b,a,vecdata)
 end
 
@@ -91,7 +91,7 @@ function allocate_matrix(a::SparseMatrixAssembler,matdata)
 end
 
 function assemble_matrix!(mat,a::SparseMatrixAssembler,matdata)
-  fill_entries!(mat,zero(eltype(mat)))
+  LinearAlgebra.fillstored!(mat,zero(eltype(mat)))
   assemble_matrix_add!(mat,a,matdata)
 end
 
@@ -119,8 +119,8 @@ function allocate_matrix_and_vector(a::SparseMatrixAssembler,data)
 end
 
 function assemble_matrix_and_vector!(A,b,a::SparseMatrixAssembler, data)
-  fill_entries!(A,zero(eltype(A)))
-  fill_entries!(b,zero(eltype(b)))
+  LinearAlgebra.fillstored!(A,zero(eltype(A)))
+  fill!(b,zero(eltype(b)))
   assemble_matrix_and_vector_add!(A,b,a,data)
 end
 

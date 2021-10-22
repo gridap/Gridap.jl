@@ -1,6 +1,7 @@
 module AlgebraInterfacesTests
 
 using Gridap.Algebra
+using LinearAlgebra
 using Test
 
 a = allocate_vector(Vector{Int},10)
@@ -19,7 +20,7 @@ b = allocate_in_range(Vector{Int},a)
 b = allocate_in_domain(Vector{Int},a)
 @test length(b) == 6
 
-fill_entries!(b,4)
+fill!(b,4)
 @test all( b .== 4 )
 
 a = rand(6)
@@ -44,7 +45,7 @@ a .-= b
 
 a = rand(6)
 c = copy(a)
-scale_entries!(a,10)
+rmul!(a,10)
 @test all( a .== 10*c)
 
 a = rand(4,6)
@@ -139,7 +140,7 @@ for A in (SparseMatrixCSC{Float64,Int},SparseMatrixCSC{Float64,Int32})
   add_entry!(c,nothing,1,1)
   add_entry!(c,nothing,3,1)
   add_entry!(c,3.0,4,9)
-  
+
   a = nz_counter(builder,(rows,cols))
   add_entries!(a,[1.0 -1.0; -1.0 1.0],[1,-1],[-1,1])
   add_entries!(a,nothing,[1,1],[1,-1])
@@ -188,7 +189,7 @@ for A in (SparseMatrixCSC{Float64,Int},SparseMatrixCSC{Float64,Int32})
   add_entry!(c,nothing,1,1)
   add_entry!(c,nothing,3,1)
   add_entry!(c,3.0,4,9)
-  
+
   a = nz_counter(builder,(rows,cols))
   add_entries!(a,[1.0 -1.0; -1.0 1.0],[1,-1],[-1,1])
   add_entries!(a,nothing,[1,1],[1,-1])
@@ -256,7 +257,7 @@ for A in (SparseMatrixCSR{1,Float64,Int},SparseMatrixCSR{0,Float64,Int32})
   add_entry!(c,nothing,1,1)
   add_entry!(c,nothing,1,3)
   add_entry!(c,3.0,9,4)
-  
+
   a = nz_counter(builder,(rows,cols))
   add_entries!(a,[1.0 -1.0; -1.0 1.0],[1,-1],[-1,1])
   add_entries!(a,nothing,[1,1],[1,-1])
@@ -305,7 +306,7 @@ for A in (SparseMatrixCSR{0,Float64,Int},SparseMatrixCSR{1,Float64,Int32})
   add_entry!(c,nothing,1,1)
   add_entry!(c,nothing,3,1)
   add_entry!(c,3.0,9,4)
-  
+
   a = nz_counter(builder,(rows,cols))
   add_entries!(a,[1.0 -1.0; -1.0 1.0],[1,-1],[-1,1])
   add_entries!(a,nothing,[1,1],[1,-1])
@@ -362,7 +363,7 @@ for A in (
   add_entry!(c,3.0,2,2)
   add_entry!(c,3.0,2,6)
   add_entry!(c,3.0,6,2)
-  
+
   a = nz_counter(builder,(rows,cols))
   add_entries!(a,[1.0 -1.0; -1.0 1.0],[1,-1],[-1,1])
   add_entries!(a,nothing,[1,1],[1,-1])
