@@ -81,7 +81,6 @@ struct AutoDiffMap{F} <: Map
 end
 
 function return_cache(k::AutoDiffMap,ydual,x,cfg::ForwardDiff.GradientConfig{T}) where T
-
   ydual isa Real || throw(ForwardDiff.GRAD_ERROR)
   result = similar(x, ForwardDiff.valtype(ydual))
   result
