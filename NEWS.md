@@ -4,19 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.17.0] - Unreleased
+## [0.17.0] - 2021-10-22
 
 ### Added
 
-- Aliases `Boundary`, `Skeleton`, and `Interface` for the `BoundaryTriangulation`, `SkeletonTriangulation`, and `InterfaceTriangulation` constructors. Since PR [#662](https://github.com/gridap/Gridap.jl/pull/662).
+- Aliases `Interior`, `Boundary`, `Skeleton`, and `Interface` for the `Triangulation`, `BoundaryTriangulation`, `SkeletonTriangulation`, and `InterfaceTriangulation` constructors. Since PR [#662](https://github.com/gridap/Gridap.jl/pull/662).
+- Function `create_pvtk_file` for exporting results in `pvtu` format. Since PR [#685](https://github.com/gridap/Gridap.jl/pull/685).
 
 ### Changed
 
 - Major refactoring in the `Triangulation` interface to properly support the solution of PDEs defined on domains of different dimension. The major change from the user perspective is that `Triangulation` objects can be used both to integrate the weak form (as before) but also to define FE spaces (except for unfitted triangulations obviously). It is still possible to define FE spaces from `DiscreteModels`, but it is safer and more idiomatic (closer to the math notation) to use `Triangulation` objects from now on. Since PR [#662](https://github.com/gridap/Gridap.jl/pull/662).
+- Changes in assembly interface to allow optimization when assembling matrices and vectors simultaneously. Since PR [#685](https://github.com/gridap/Gridap.jl/pull/685).
 
 ### Removed
 
 - `BoundaryDiscreteModel`, `RestrictedDiscreteMdeol`, `RestrictedTriangulation`, `TriangulationStyle`, `BackgroundTriangulation`, `SubTriangulation`, `get_cell_to_bgcell`, `get_cell_ref_map`, `get_background_triangulation`, and `have_compatible_domains`. Since PR [#662](https://github.com/gridap/Gridap.jl/pull/662). 
+- Functions `scale_entries!` and `fill_entries!`. Replaced by Julia functions `LinearAlgebra.rmul!` and `LinearAlgebra.fillstored!`. Since PR [#680](https://github.com/gridap/Gridap.jl/pull/680).
 
 ## [0.16.5] - 2021-09-08
 

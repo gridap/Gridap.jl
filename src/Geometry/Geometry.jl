@@ -166,6 +166,7 @@ export GenericTriangulation
 export BoundaryTriangulation
 export DiscreteModelPortion
 
+export Interior
 export Boundary
 export Skeleton
 export Interface

@@ -101,6 +101,10 @@ function Base.view(glue::SkeletonPair{<:FaceToFaceGlue},ids::AbstractArray)
   SkeletonPair(view(glue.plus,ids),view(glue.minus,ids))
 end
 
+function restrict(a::SkeletonPair,b::AbstractArray)
+  SkeletonPair(restrict(a.plus,b),restrict(a.minus,b))
+end
+
 # Constructors
 
 """

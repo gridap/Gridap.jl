@@ -474,6 +474,10 @@ even in the case that the given cell field does not fulfill them)
 """
 function FESpaces.interpolate(objects, fe::MultiFieldFESpace)
   free_values = zero_free_values(fe)
+  interpolate!(objects,free_values,fe)
+end
+
+function FESpaces.interpolate!(objects,free_values::AbstractVector,fe::MultiFieldFESpace)
   blocks = SingleFieldFEFunction[]
   for (field, (U,object)) in enumerate(zip(fe.spaces,objects))
     free_values_i = restrict_to_field(fe,free_values,field)
