@@ -194,7 +194,7 @@ function solve!(x::AbstractVector,
   ns = cache.ns
   residual!(b, op, x)
   numerical_setup!(ns,A)
-  ruml!(b,-1)
+  rmul!(b,-1)
   solve!(x,ns,b)
   cache
 end
