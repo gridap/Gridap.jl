@@ -53,7 +53,8 @@ function push_∇∇(∇∇a::Field,ϕ::AffineMap)
 end
 
 function push_∇∇(∇∇a::Number,Jt_inv::MultiValue{Tuple{D,D}} where D)
-  Jt_inv⋅Jt_inv⋅∇∇a
+  #Jt_inv⋅Jt_inv⋅∇∇a
+  Jt_inv⋅∇∇a⋅transpose(Jt_inv)
 end
 
 function push_∇∇(∇∇a::Number,Jt_inv::MultiValue{Tuple{D1,D2}} where {D1,D2})
