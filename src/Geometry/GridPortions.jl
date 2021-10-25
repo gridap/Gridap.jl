@@ -180,6 +180,10 @@ function get_cell_type(grid::GridView)
   lazy_map(Reindex(get_cell_type(grid.parent)),grid.cell_to_parent_cell)
 end
 
+function get_cell_map(grid::GridView)
+  lazy_map(Reindex(get_cell_map(grid.parent)),grid.cell_to_parent_cell)
+end
+
 function get_facet_normal(grid::GridView)
   lazy_map(Reindex(get_facet_normal(grid.parent)),grid.cell_to_parent_cell)
 end
