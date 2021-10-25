@@ -27,9 +27,10 @@ function main(transf,T)
   qh = interpolate(u,Q)
   Δ_Γ(f) = x->∇∇(f)(x)[1,1]
 
-  @test sqrt(sum( ∫( abs2( Δ(u) - Δ(uh) )  )dΩ ))
-  @test sqrt(sum( ∫( abs2( Δ(u) - Δ(uh) )  )dΓ ))
-  @test sqrt(sum( ∫( abs2( Δ_Γ(u) - Δ(qh) )  )dΓ ))
+  tol = 1.0e-9
+  @test sqrt(sum( ∫( abs2( Δ(u) - Δ(uh) )  )dΩ )) < tol
+  @test sqrt(sum( ∫( abs2( Δ(u) - Δ(uh) )  )dΓ )) < tol
+  @test sqrt(sum( ∫( abs2( Δ_Γ(u) - Δ(qh) )  )dΓ )) < tol
 
 end
 
