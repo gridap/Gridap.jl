@@ -25,6 +25,12 @@ model = CartesianDiscreteModel(domain,partition)
 Γl = Triangulation(Γ,Γlface_Γface)
 Γr = Triangulation(Γ,Γrface_Γface)
 
+get_glue(Ω,Val(0))
+get_glue(Γ,Val(0))
+get_glue(Λ,Val(0))
+get_glue(Γl,Val(0))
+get_glue(Γr,Val(0))
+
 order = 2
 reffe_u = ReferenceFE(lagrangian,Float64,order)
 reffe_λ = ReferenceFE(lagrangian,Float64,order-1)
