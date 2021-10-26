@@ -455,6 +455,7 @@ end
 
 function get_glue(t::TriangulationView,::Val{d}) where d
   parent = get_glue(t.parent,Val(d))
+  parent === nothing && return nothing
   view(parent,t.cell_to_parent_cell)
 end
 
