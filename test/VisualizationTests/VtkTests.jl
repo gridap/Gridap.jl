@@ -30,8 +30,7 @@ write_vtk_file(
   celldata=["cellid"=>cell_ids,"centers"=>cell_center])
 
 pvtk = Visualization.create_pvtk_file(
-  trian,f,
-  pvtkargs = [:part=>1,:nparts=>1],
+  trian,f; part=1, nparts=1,
   nodaldata=["nodeid"=>node_ids],
   celldata=["cellid"=>cell_ids,"centers"=>cell_center])
 vtk_save(pvtk)
