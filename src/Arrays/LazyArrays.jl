@@ -129,36 +129,44 @@ function same_branch(a::Fill,b::Fill)
   a.value == b.value
 end
 
+function all_same_branch(a::Tuple,b::Tuple)
+  for i in 1:length(a)
+    if same_branch(a[i],b[i]) == false
+      return false
+    end
+  end
+  true
+end
+
 function same_branch(a::LazyArray,b::LazyArray)
   typeof(a) != typeof(b) || return false
   length(a.args) == length(b.args) || return false
-  same_branch(a.maps,b.maps) && all(same_branch,a.args,b.args)
+  same_branch(a.maps,b.maps) && all_same_branch(a.args,b.args)
 end
 
-struct ArrayCacheKey
-  val::AbstractArray
+function _get_cache(dict,a)
+  id = objectid(a)
+  if haskey(dict,id)
+    o,c = dict[id]
+    return c
+  end
+  for (o,c) in values(dict)
+    if same_branch(a,o)
+      return c
+    end
+  end
+  return nothing
 end
-Base.hash(a::ArrayCacheKey, h::UInt) = hash(a.val, hash(:ArrayCacheKey, h))
-Base.isequal(a::ArrayCacheKey, b::ArrayCacheKey) = same_branch(a.val,b.val) && true
 
 function array_cache(dict::Dict,a::LazyArray)
-  # OC: not sure why we need cache::T in this function. Fails when cache for the same object have different types
-  # function _get_cache(dict,cache::T,key) where T
-  #   value::T = dict[hash(key)]
-  #   value
-  # end
-  function _get_cache(dict,cache,key)
-    value = dict[hash(key)]
-    value
+  cache = _get_cache(dict,a)
+  if cache === nothing
+    _cache = _array_cache!(dict,a)
+    dict[objectid(a)] = (a,_cache)
+  else
+    _cache = cache
   end
-  #cache = _array_cache!(dict,a) # OC: Why do we get cache allways? what if its in dict already?
-  key = ArrayCacheKey(a)
-  hash(key)
-  if ! haskey(dict,hash(key))
-    dict[hash(key)] = _array_cache!(dict,a)#cache
-  end
-  #_get_cache(dict,cache,key)
-  dict[hash(key)]
+  _cache
 end
 
 mutable struct IndexItemPair{T,V}
