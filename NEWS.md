@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.3] - 2021-10-27
+
+### Fixed
+ - Adding a newer version of WriteVTK in the [compat] section.  Since PR [#698](https://github.com/gridap/Gridap.jl/pull/698).
 ## [0.17.2] - 2021-10-26
 
 ### Fixed
