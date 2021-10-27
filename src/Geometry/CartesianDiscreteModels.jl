@@ -102,6 +102,17 @@ function get_reffaces(::Type{ReferenceFE{d}},model::CartesianDiscreteModel) wher
   reffaces
 end
 
+
+# Grid specialization for CartesianDiscreteModel
+
+function Grid(::Type{ReferenceFE{d}},model::CartesianDiscreteModel) where d
+  node_coordinates = collect1d(get_node_coordinates(model))
+  cell_to_nodes = Table(get_face_nodes(model,d))
+  cell_to_type = collect1d(get_face_type(model,d))
+  reffes = get_reffaces(ReferenceFE{d},model)
+  UnstructuredGrid(node_coordinates, cell_to_nodes, reffes, cell_to_type, has_affine_map=true)
+end
+
 # Helpers
 
 function _fill_cartesian_face_labeling!(labels,topo)
