@@ -1,6 +1,7 @@
 module DirichletFESpacesTests
 
 using Test
+using Gridap.Arrays
 using Gridap.Algebra
 using Gridap.Geometry
 using Gridap.FESpaces
@@ -13,6 +14,7 @@ domain = (0,1,0,1)
 order = 1
 dirichlet_tags = [1,3,4,6,7]
 model = CartesianDiscreteModel(domain, mesh)
+Ω = Triangulation(model)
 labels = get_face_labeling(model)
 add_tag_from_tags!(labels,"dirichlet",dirichlet_tags)
 
@@ -20,15 +22,15 @@ reffe = ReferenceFE(lagrangian,Float64,order)
 Vf = TestFESpace( model,reffe; conformity=:H1, labels=labels, dirichlet_tags="dirichlet")
 
 Vd = DirichletFESpace(Vf)
-matvecdata = ([],[],[])
-matdata = ([],[],[])
-vecdata = ([],[])
-test_single_field_fe_space(Vd,matvecdata,matdata,vecdata)
+cellmat = [rand(4,4) for cell in 1:num_cells(model)]
+cellvec = [rand(4) for cell in 1:num_cells(model)]
+cellmatvec = pair_arrays(cellmat,cellvec)
+test_single_field_fe_space(Vd,cellmatvec,cellmat,cellvec,Ω)
 
 Uf = TrialFESpace(Vf,1)
 
 Ud = TrialFESpace(Vd)
-test_single_field_fe_space(Ud,matvecdata,matdata,vecdata)
+test_single_field_fe_space(Ud,cellmatvec,cellmat,cellvec,Ω)
 
 trian = Triangulation(model)
 degree = 2*order

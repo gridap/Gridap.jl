@@ -5,6 +5,10 @@ using Gridap
 using Gridap.Arrays
 using Gridap.TensorValues
 
+i_to_iposneg = PosNegPartition(Int32[],Int32(10))
+@test length(i_to_iposneg.ipos_to_i) == 0
+@test length(i_to_iposneg.ineg_to_i) == 10
+
 for indices in ([1,3,-1,2,-2], PosNegPartition([1,4,2],5))
 
   values_pos = Float64[40,30,10]

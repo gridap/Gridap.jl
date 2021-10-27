@@ -1,4 +1,9 @@
 
+## In the code related with FEOperators we cannot
+#qualify u with ::FEFunction since it would prevent to
+# reuse this code in GridapDistributed because of lack
+# of multiple inheritence in Julia. We just use duck typing.
+
 """
     abstract type FEOperator <: GridapType
 
@@ -22,7 +27,7 @@ end
 
 """
 """
-function allocate_residual(op::FEOperator,u::FEFunction)
+function allocate_residual(op::FEOperator,u)
   @abstractmethod
 end
 
@@ -31,7 +36,7 @@ end
 
 Inplace version of [`residual`](@ref).
 """
-function residual!(b::AbstractVector,op::FEOperator,u::FEFunction)
+function residual!(b::AbstractVector,op::FEOperator,u)
   @abstractmethod
 end
 
@@ -40,7 +45,7 @@ end
 
 Compute the residual of `op` at `u`. See also [`residual_and_jacobian`](@ref)
 """
-function residual(op::FEOperator,u::FEFunction)
+function residual(op::FEOperator,u)
   b = allocate_residual(op,u)
   residual!(b,op,u)
   b
@@ -48,7 +53,7 @@ end
 
 """
 """
-function allocate_jacobian(op::FEOperator,u::FEFunction)
+function allocate_jacobian(op::FEOperator,u)
   @abstractmethod
 end
 
@@ -57,7 +62,7 @@ end
 
 Inplace version of [`jacobian`](@ref).
 """
-function jacobian!(A::AbstractMatrix,op::FEOperator,u::FEFunction)
+function jacobian!(A::AbstractMatrix,op::FEOperator,u)
   @abstractmethod
 end
 
@@ -67,7 +72,7 @@ end
 Compute the jacobian of an operator `op`.
 See also [`get_algebraic_operator`](@ref), [`residual_and_jacobian!`](@ref).
 """
-function jacobian(op::FEOperator,u::FEFunction)
+function jacobian(op::FEOperator,u)
   A = allocate_jacobian(op,u)
   jacobian!(A,op,u)
   A
@@ -78,7 +83,7 @@ end
 
 Inplace version of [`residual_and_jacobian`](@ref).
 """
-function residual_and_jacobian!(b::AbstractVector,A::AbstractMatrix,op::FEOperator,u::FEFunction)
+function residual_and_jacobian!(b::AbstractVector,A::AbstractMatrix,op::FEOperator,u)
   residual!(b,op,u)
   jacobian!(A,op,u)
   (b,A)
@@ -92,7 +97,7 @@ Depending on the nature of `op` the point `u` can either be a plain array or a `
 
 See also [`jacobian`](@ref), [`residual`](@ref), [`get_algebraic_operator`](@ref).
 """
-function residual_and_jacobian(op::FEOperator,u::FEFunction)
+function residual_and_jacobian(op::FEOperator,u)
   b = residual(op,u)
   A = jacobian(op,u)
   (b,A)

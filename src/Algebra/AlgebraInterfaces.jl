@@ -62,17 +62,6 @@ function allocate_in_domain(::Type{V},matrix) where V
 end
 
 """
-    fill_entries!(a,v)
-
-Fill the entries of array `a` with the value `v`. Returns `a`.
-For sparse matrices it only fills the non-zero entries.
-"""
-function fill_entries!(a,v)
-  fill!(a,v)
-  a
-end
-
-"""
     copy_entries!(a,b)
 
 Copy the entries of array `b` into array `a`. Returns `a`.
@@ -196,19 +185,6 @@ end
   A
 end
 
-"""
-    scale_entries!(a,v)
-
-Scale the entries of array `a` with the value `v`. Returns `a`.
-"""
-function scale_entries!(a,b)
-  @inbounds for i in eachindex(a)
-    a[i] = b*a[i]
-  end
-  a
-end
-
-# Base.mul!
 
 """
     muladd!(c,a,b)
@@ -280,7 +256,7 @@ end
 # We can also do a loop and update
 # the entries of c
 #
-#    fill_entries!(c,0)
+#    fill!(c,0) or LinearAlgebra.fillstored!(c,0)
 #    add_entry!(c,v,i,j)
 #    add_entries!(c,vs,is,js)
 #
@@ -290,6 +266,20 @@ struct DoNotLoop end
 LoopStyle(::Type) = DoNotLoop()
 LoopStyle(::T) where T = LoopStyle(T)
 
+# By default process, matrix and vector separately
+# but, in some situations, create_from_nz of the vector
+# can reuse data from the one computed in
+# create_from_nz for the matrix (e.g., GridapDistributed)
+function create_from_nz(a,b)
+  A = create_from_nz(a)
+  B = create_from_nz(b)
+  A,B
+end
+# See comment above for create_from_nz. The same applies here
+# for nz_allocation.
+function nz_allocation(a,b)
+  nz_allocation(a),nz_allocation(b)
+end
 
 # For dense arrays
 
@@ -342,34 +332,34 @@ SparseMatrixBuilder(a::SparseMatrixBuilder) = a
 
 get_array_type(::SparseMatrixBuilder{T}) where T = T
 
-mutable struct SparseMatrixCounter{T,A}
+mutable struct CounterCOO{T,A}
   nnz::Int
   axes::A
-  function SparseMatrixCounter{T}(axes::A) where {T,A<:NTuple{2,AbstractUnitRange}}
+  function CounterCOO{T}(axes::A) where {T,A<:NTuple{2,AbstractUnitRange}}
     nnz = 0
     new{T,A}(nnz,axes)
   end
 end
 
-LoopStyle(::Type{<:SparseMatrixCounter}) = Loop()
+LoopStyle(::Type{<:CounterCOO}) = Loop()
 
-@inline function add_entry!(::Function,a::SparseMatrixCounter{T},v,i,j) where T
+@inline function add_entry!(::Function,a::CounterCOO{T},v,i,j) where T
   if is_entry_stored(T,i,j)
     a.nnz = a.nnz + 1
   end
   a
 end
 
-struct CooAllocation{T,A,B,C}
-  counter::SparseMatrixCounter{T,A}
+struct AllocationCOO{T,A,B,C}
+  counter::CounterCOO{T,A}
   I::B
   J::B
   V::C
 end
 
-LoopStyle(::Type{<:CooAllocation}) = Loop()
+LoopStyle(::Type{<:AllocationCOO}) = Loop()
 
-@inline function add_entry!(::typeof(+),a::CooAllocation{T},::Nothing,i,j) where T
+@inline function add_entry!(::typeof(+),a::AllocationCOO{T},::Nothing,i,j) where T
   if is_entry_stored(T,i,j)
     a.counter.nnz = a.counter.nnz + 1
     k = a.counter.nnz
@@ -379,7 +369,7 @@ LoopStyle(::Type{<:CooAllocation}) = Loop()
   nothing
 end
 
-@inline function add_entry!(::typeof(+),a::CooAllocation{T},v,i,j) where T
+@inline function add_entry!(::typeof(+),a::AllocationCOO{T},v,i,j) where T
   if is_entry_stored(T,i,j)
     a.counter.nnz = a.counter.nnz + 1
     k = a.counter.nnz
@@ -391,20 +381,20 @@ end
 end
 
 #function nz_counter(::Type{T},axes) where T<:AbstractSparseMatrix
-#  SparseMatrixCounter{T}(axes)
+#  CounterCOO{T}(axes)
 #end
 
 function nz_counter(::SparseMatrixBuilder{T},axes) where T<:AbstractSparseMatrix
-  SparseMatrixCounter{T}(axes)
+  CounterCOO{T}(axes)
 end
 
-function nz_allocation(a::SparseMatrixCounter{T}) where T
-  counter = SparseMatrixCounter{T}(a.axes)
+function nz_allocation(a::CounterCOO{T}) where T
+  counter = CounterCOO{T}(a.axes)
   I,J,V = allocate_coo_vectors(T,a.nnz)
-  CooAllocation(counter,I,J,V)
+  AllocationCOO(counter,I,J,V)
 end
 
-function create_from_nz(a::CooAllocation{T}) where T
+function create_from_nz(a::AllocationCOO{T}) where T
   m,n = map(length,a.counter.axes)
   finalize_coo!(T,a.I,a.J,a.V,m,n)
   sparse_from_coo(T,a.I,a.J,a.V,m,n)
@@ -466,13 +456,7 @@ function copy_entries!(a::T,b::T) where T<:AbstractSparseMatrix
   end
 end
 
-function fill_entries!(A::AbstractSparseMatrix,v)
-  nonzeros(A) .= v
-  A
-end
-
 function allocate_coo_vectors(
    ::Type{<:AbstractSparseMatrix{Tv,Ti}},n::Integer) where {Tv,Ti}
   (zeros(Ti,n), zeros(Ti,n), zeros(Tv,n))
 end
-

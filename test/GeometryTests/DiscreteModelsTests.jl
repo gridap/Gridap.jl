@@ -73,16 +73,6 @@ test_grid(grid2)
 @test num_dims(grid1) == 1
 @test num_dims(grid2) == 2
 
-grid0 = Triangulation(ReferenceFE{0},model)
-grid1 = Triangulation(ReferenceFE{1},model)
-grid2 = Triangulation(ReferenceFE{2},model)
-test_triangulation(grid0)
-test_triangulation(grid1)
-test_triangulation(grid2)
-@test num_dims(grid0) == 0
-@test num_dims(grid1) == 1
-@test num_dims(grid2) == 2
-
 model = DiscreteModelMock()
 dict = to_dict(model)
 model2 = from_dict(DiscreteModel,dict)

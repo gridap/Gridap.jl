@@ -1,4 +1,3 @@
-
 """
 """
 function writevtk(args...;kwargs...)
@@ -59,6 +58,25 @@ function create_vtk_file(
   end
   for (k,v) in nodaldata
     vtk_point_data(vtkfile, _prepare_data(v), k)
+  end
+
+  return vtkfile
+end
+
+function create_pvtk_file(
+  trian::Grid, filebase;
+  part, nparts, ismain=(part==1), celldata=Dict(), nodaldata=Dict())
+
+  points = _vtkpoints(trian)
+  cells = _vtkcells(trian)
+  vtkfile = pvtk_grid(filebase, points, cells, compress=false;
+                      part=part, nparts=nparts, ismain=ismain)
+
+  for (k,v) in celldata
+    vtkfile[k,VTKCellData()] = _prepare_data(v)
+  end
+  for (k,v) in nodaldata
+    vtkfile[k,VTKPointData()] = _prepare_data(v)
   end
 
   return vtkfile

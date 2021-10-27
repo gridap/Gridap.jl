@@ -102,9 +102,6 @@ export compress_ids
 export UnstructuredGridTopology
 
 export Triangulation
-export TriangulationStyle
-export BackgroundTriangulation
-export SubTriangulation
 export get_reffes
 export get_cell_coordinates
 export get_cell_ref_coordinates
@@ -112,11 +109,12 @@ export get_cell_reffe
 export get_cell_shapefuns
 export get_facet_normal
 export test_triangulation
-export get_cell_to_bgcell
 export get_cell_map
-export get_background_triangulation
-export get_cell_ref_map
-export have_compatible_domains
+
+export get_background_model
+export get_active_model
+export get_grid
+export get_glue
 
 export Grid
 export get_cell_node_ids
@@ -164,8 +162,14 @@ export UnstructuredDiscreteModel
 export CartesianDiscreteModel
 export BoundaryDiscreteModel
 
+export GenericTriangulation
 export BoundaryTriangulation
 export DiscreteModelPortion
+
+export Interior
+export Boundary
+export Skeleton
+export Interface
 
 export SkeletonPair
 export SkeletonTriangulation
@@ -180,7 +184,13 @@ export AppendedTriangulation
 
 export GridMock
 
-include("Triangulations.jl")
+export extend
+export pos_neg_data
+export is_change_possible
+export best_target
+export FaceToFaceGlue
+export BodyFittedTriangulation
+export move_contributions
 
 include("Grids.jl")
 
@@ -206,22 +216,18 @@ include("UnstructuredDiscreteModels.jl")
 
 include("CartesianDiscreteModels.jl")
 
-include("RestrictedTriangulations.jl")
+include("GridPortions.jl")
+
+include("DiscreteModelPortions.jl")
+
+include("Triangulations.jl")
 
 include("BoundaryTriangulations.jl")
 
 include("SkeletonTriangulations.jl")
 
-include("GridPortions.jl")
-
-include("DiscreteModelPortions.jl")
-
-include("RestrictedDiscreteModels.jl")
-
 include("AppendedTriangulations.jl")
 
 include("CompressedCellArrays.jl")
-
-include("BoundaryDiscreteModels.jl")
 
 end # module

@@ -7,12 +7,13 @@
       cell_types::Vector{Int8}
     end
 """
-struct UnstructuredGrid{Dc,Dp,Tp,O} <: Grid{Dc,Dp}
+struct UnstructuredGrid{Dc,Dp,Tp,O,Tn} <: Grid{Dc,Dp}
   node_coordinates::Vector{Point{Dp,Tp}}
   cell_node_ids::Table{Int32,Vector{Int32},Vector{Int32}}
   reffes::Vector{LagrangianRefFE{Dc}}
   cell_types::Vector{Int8}
   orientation_style::O
+  facet_normal::Tn
   cell_map
   @doc """
       function UnstructuredGrid(
@@ -30,16 +31,19 @@ struct UnstructuredGrid{Dc,Dp,Tp,O} <: Grid{Dc,Dp}
     cell_node_ids::Table{Ti},
     reffes::Vector{<:LagrangianRefFE{Dc}},
     cell_types::Vector,
-    orientation_style::OrientationStyle=NonOriented()) where {Dc,Dp,Tp,Ti}
+    orientation_style::OrientationStyle=NonOriented(),
+    facet_normal=nothing) where {Dc,Dp,Tp,Ti}
 
     cell_map = _compute_cell_map(node_coordinates,cell_node_ids,reffes,cell_types)
     B = typeof(orientation_style)
-    new{Dc,Dp,Tp,B}(
+    Tn = typeof(facet_normal)
+    new{Dc,Dp,Tp,B,Tn}(
       node_coordinates,
       cell_node_ids,
       reffes,
       cell_types,
       orientation_style,
+      facet_normal,
       cell_map)
   end
 end
@@ -84,7 +88,7 @@ function UnstructuredGrid(grid::UnstructuredGrid)
 end
 
 OrientationStyle(
-  ::Type{UnstructuredGrid{Dc,Dp,Tp,B}}) where {Dc,Dp,Tp,B} = B()
+  ::Type{<:UnstructuredGrid{Dc,Dp,Tp,B}}) where {Dc,Dp,Tp,B} = B()
 
 get_reffes(g::UnstructuredGrid) = g.reffes
 
@@ -95,6 +99,11 @@ get_node_coordinates(g::UnstructuredGrid) = g.node_coordinates
 get_cell_node_ids(g::UnstructuredGrid) = g.cell_node_ids
 
 get_cell_map(g::UnstructuredGrid) = g.cell_map
+
+function get_facet_normal(g::UnstructuredGrid)
+  @assert g.facet_normal != nothing "This Grid does not have information about normals."
+  g.facet_normal
+end
 
 # From ReferenceFE
 

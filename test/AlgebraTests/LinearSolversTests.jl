@@ -2,6 +2,7 @@ module LinearSolversTests
 
 using Test
 using Gridap.Algebra
+using Gridap.Algebra: NonlinearOperatorMock
 
 using LinearAlgebra
 using SparseArrays
@@ -79,5 +80,15 @@ cache = solve!(x0,ls,op2,cache,false)
 @test all(2*x .≈ x0)
 cache = solve!(x0,ls,op2,nothing,false)
 @test all(2*x .≈ x0)
+
+nlop = NonlinearOperatorMock()
+x = [1.0, 3.0]
+b = [0.0,0.0]
+A = [-1.0 0.0; 0.0 1.0]
+test_nonlinear_operator(nlop,x,b,jac=A)
+x0 = copy(x)
+nl_cache = solve!(x0,ls,nlop,nothing)
+nl_cache = solve!(x0,ls,nlop,nl_cache)
+
 
 end # module

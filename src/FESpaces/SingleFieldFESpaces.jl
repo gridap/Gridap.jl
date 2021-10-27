@@ -45,97 +45,6 @@ end
 
 """
 """
-function get_cell_dof_ids(V::SingleFieldFESpace,trian::Triangulation)
-  trian_V = get_triangulation(V)
-  if have_compatible_domains(trian_V,trian)
-    get_cell_dof_ids(V)
-  elseif have_compatible_domains(trian_V,get_background_triangulation(trian))
-    get_cell_dof_ids(V,get_cell_to_bgcell(trian))
-  elseif have_compatible_domains(
-    get_background_triangulation(trian_V),get_background_triangulation(trian))
-    cell_to_Vcell = get_cell_to_bgcell(trian,trian_V)
-    get_cell_dof_ids(V,cell_to_Vcell)
-  elseif have_compatible_domains(
-    trian_V,get_background_triangulation(get_background_triangulation(trian)))
-    bg_trian = get_background_triangulation(trian)
-    bg_cell_dof_ids = get_cell_dof_ids(V,bg_trian)
-    cell_to_bgcell = get_cell_to_bgcell(trian)
-    get_cell_dof_ids(bg_cell_dof_ids,cell_to_bgcell)
-  else
-    @unreachable
-  end
-end
-
-function get_cell_isconstrained(V::SingleFieldFESpace,trian::Triangulation)
-  trian_V = get_triangulation(V)
-  if have_compatible_domains(trian_V,trian)
-    get_cell_isconstrained(V)
-  elseif have_compatible_domains(trian_V,get_background_triangulation(trian))
-    get_cell_isconstrained(V,get_cell_to_bgcell(trian))
-  elseif have_compatible_domains(
-    get_background_triangulation(trian_V),get_background_triangulation(trian))
-    cell_to_Vcell = get_cell_to_bgcell(trian,trian_V)
-    get_cell_isconstrained(V,cell_to_Vcell)
-  elseif have_compatible_domains(
-    trian_V,get_background_triangulation(get_background_triangulation(trian)))
-    bg_trian = get_background_triangulation(trian)
-    bg_cell_isconstrained = get_cell_isconstrained(V,bg_trian)
-    cell_to_bgcell = get_cell_to_bgcell(trian)
-    get_cell_isconstrained(bg_cell_isconstrained,cell_to_bgcell)
-  else
-    @unreachable
-  end
-end
-
-function get_cell_constraints(V::SingleFieldFESpace,trian::Triangulation)
-  trian_V = get_triangulation(V)
-  if have_compatible_domains(trian_V,trian)
-    get_cell_constraints(V)
-  elseif have_compatible_domains(trian_V,get_background_triangulation(trian))
-    get_cell_constraints(V,get_cell_to_bgcell(trian))
-  elseif have_compatible_domains(
-    get_background_triangulation(trian_V),get_background_triangulation(trian))
-    cell_to_Vcell = get_cell_to_bgcell(trian,trian_V)
-    get_cell_constraints(V,cell_to_Vcell)
-  elseif have_compatible_domains(
-    trian_V,get_background_triangulation(get_background_triangulation(trian)))
-    bg_trian = get_background_triangulation(trian)
-    bg_cell_constraints = get_cell_constraints(V,bg_trian)
-    cell_to_bgcell = get_cell_to_bgcell(trian)
-    get_cell_constraints(bg_cell_constraints,cell_to_bgcell)
-  else
-    @unreachable
-  end
-end
-
-function get_cell_is_dirichlet(V::SingleFieldFESpace,trian::Triangulation)
-  trian_V = get_triangulation(V)
-  if have_compatible_domains(trian_V,trian)
-    get_cell_is_dirichlet(V)
-  elseif have_compatible_domains(trian_V,get_background_triangulation(trian))
-    get_cell_is_dirichlet(V,get_cell_to_bgcell(trian))
-  elseif have_compatible_domains(
-    get_background_triangulation(trian_V),get_background_triangulation(trian))
-    cell_to_Vcell = get_cell_to_bgcell(trian,trian_V)
-    get_cell_is_dirichlet(V,cell_to_Vcell)
-  elseif have_compatible_domains(
-    trian_V,get_background_triangulation(get_background_triangulation(trian)))
-    bg_trian = get_background_triangulation(trian)
-    bg_cell_is_dirichlet = get_cell_is_dirichlet(V,bg_trian)
-    cell_to_bgcell = get_cell_to_bgcell(trian)
-    get_cell_is_dirichlet(bg_cell_is_dirichlet,cell_to_bgcell)
-  else
-    @unreachable
-  end
-end
-
-function get_cell_is_dirichlet(V::SingleFieldFESpace)
-  trian = get_triangulation(V)
-  Fill(true,num_cells(trian))
-end
-
-"""
-"""
 function test_single_field_fe_space(f::SingleFieldFESpace,pred=(==))
   fe_basis = get_fe_basis(f)
   @test isa(fe_basis,CellField)
@@ -166,9 +75,9 @@ function test_single_field_fe_space(f::SingleFieldFESpace,pred=(==))
   @test isa(cell_dof_basis,CellDof)
 end
 
-function test_single_field_fe_space(f,matvecdata,matdata,vecdata,pred=(==))
+function test_single_field_fe_space(f,cell_matvec,cell_mat,cell_vec,trian,pred=(==))
   test_single_field_fe_space(f,pred)
-  test_fe_space(f,matvecdata,matdata,vecdata)
+  test_fe_space(f,cell_matvec,cell_mat,cell_vec,trian)
 end
 
 # Some default API
@@ -242,27 +151,6 @@ get_free_dof_values(f::SingleFieldFEFunction) = f.free_values
 get_cell_dof_values(f::SingleFieldFEFunction) = f.cell_dof_values
 get_fe_space(f::SingleFieldFEFunction) = f.fe_space
 
-function get_cell_dof_values(f::SingleFieldFEFunction,trian::Triangulation)
-  trian_f = get_triangulation(f)
-  if have_compatible_domains(trian_f,trian)
-    get_cell_dof_values(f)
-  elseif have_compatible_domains(trian_f,get_background_triangulation(trian))
-    get_cell_dof_values(f,get_cell_to_bgcell(trian))
-  elseif have_compatible_domains(
-    get_background_triangulation(trian_f),get_background_triangulation(trian))
-    cell_to_Vcell = get_cell_to_bgcell(trian,trian_f)
-    get_cell_dof_values(f,cell_to_Vcell)
-  elseif have_compatible_domains(
-    trian_f,get_background_triangulation(get_background_triangulation(trian)))
-    bg_trian = get_background_triangulation(trian)
-    bg_cell_dof_values = get_cell_dof_values(f,bg_trian)
-    cell_to_bgcell = get_cell_to_bgcell(trian)
-    get_cell_dof_values(bg_cell_dof_values,cell_to_bgcell)
-  else
-    @unreachable
-  end
-end
-
 """
     FEFunction(
       fs::SingleFieldFESpace, free_values::AbstractVector, dirichlet_values::AbstractVector)
@@ -298,7 +186,6 @@ function interpolate!(object, free_values,fs::SingleFieldFESpace)
     gather_free_values!(free_values,fs,cell_vals)
     FEFunction(fs,free_values)
 end
-
 
 function _cell_vals(fs::SingleFieldFESpace,object)
   s = get_fe_dof_basis(fs)

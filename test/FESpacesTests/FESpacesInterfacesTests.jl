@@ -28,6 +28,8 @@ test_fe_function(vh)
 dv = get_fe_basis(V)
 du = get_trial_fe_basis(V)
 
+Ω = Triangulation(model)
+∂Ω = BoundaryTriangulation(model)
 trian_Γ = SkeletonTriangulation(model)
 x_Γ = get_cell_points(trian_Γ)
 
@@ -36,14 +38,12 @@ x_Γ = get_cell_points(trian_Γ)
 @test isa(∇(dv).plus(x_Γ)[1],ArrayBlock)
 @test isa(∇(du).minus(x_Γ)[1],ArrayBlock)
 
-cellids = [1,3,5,2]
-cell_vals = get_cell_dof_values(vh,cellids)
+glue = get_glue(∂Ω,Val(num_cell_dims(model)))
+cellids = glue.tface_to_mface
+cell_vals = get_cell_dof_values(vh,∂Ω)
 @test cell_vals == get_cell_dof_values(vh)[cellids]
 
-cellidsL = cellids
-cellidsR = [2,4,3,1]
-cellidsS = SkeletonPair(cellidsL,cellidsR)
-cell_vals = get_cell_dof_values(vh,cellidsS)
+cell_vals = get_cell_dof_values(vh,trian_Γ)
 @test isa(cell_vals[1],ArrayBlock)
 
 zh = zero(V)
@@ -51,42 +51,36 @@ zh = zero(V)
 @test has_constraints(V) == false
 
 cellids = [1,3,5,2]
-@test get_cell_dof_ids(V,cellids) == [[-1, 1, 4, 5], [2, 3, 6, 7], [5, 6, 9, 10], [1, 2, 5, 6]]
+Ω1 = Triangulation(model,cellids)
+@test get_cell_dof_ids(V,Ω1) == [[-1, 1, 4, 5], [2, 3, 6, 7], [5, 6, 9, 10], [1, 2, 5, 6]]
 
-cellidsL = cellids
-cellidsR = [2,4,3,1]
-cellidsS = SkeletonPair(cellidsL,cellidsR)
-@test isa(get_cell_dof_ids(V,cellidsS)[1],ArrayBlock)
-@test get_cell_dof_ids(V,cellidsS)[1][1] == [-1, 1, 4, 5]
-@test get_cell_dof_ids(V,cellidsS)[1][2] == [1, 2, 5, 6]
+@test isa(get_cell_dof_ids(V,trian_Γ)[1],ArrayBlock)
+@test get_cell_dof_ids(V,trian_Γ)[1][1] == [-1, 1, 4, 5]
+@test get_cell_dof_ids(V,trian_Γ)[1][2] == [4, 5, 8, 9]
 
 cell_constr = get_cell_constraints(V)
 @test cell_constr == [Matrix(I,4,4) for cell in 1:num_cells(model)]
 
-cell_constr = get_cell_constraints(V,cellids)
+cell_constr = get_cell_constraints(V,Ω1)
 @test cell_constr == [Matrix(I,4,4) for cell in 1:length(cellids)]
 
-@test get_cell_isconstrained(V,cellids) == Fill(false,length(cellids))
+@test get_cell_isconstrained(V,Ω1) == Fill(false,length(cellids))
 
-cell_constr = get_cell_constraints(V,cellidsS)
+cell_constr = get_cell_constraints(V,trian_Γ)
 @test isa(cell_constr[1],ArrayBlock)
 
 du = get_trial_fe_basis(V)
 du_data = get_data(du)
 @test size(du_data[1]) == (1,4)
 
-@test get_cell_isconstrained(V,cellidsS) == Fill(false,length(cellids))
+@test get_cell_isconstrained(V,trian_Γ) == Fill(false,num_cells(trian_Γ))
 
 cellmat = [rand(4,4) for cell in 1:num_cells(model)]
 cellvec = [rand(4) for cell in 1:num_cells(model)]
 cellmatvec = pair_arrays(cellmat,cellvec)
-cellids = IdentityVector(num_cells(model))
-matdata = (cellmat,cellids,cellids)
-vecdata = (cellvec,cellids)
-matvecdata = (cellmatvec,cellids,cellids)
 
-@test cellmat === attach_constraints_rows(V,cellmat,cellids)
-@test cellmat === attach_constraints_cols(V,cellmat,cellids)
-test_fe_space(V,matvecdata,matdata,vecdata)
+@test cellmat === attach_constraints_rows(V,cellmat,Ω)
+@test cellmat === attach_constraints_cols(V,cellmat,Ω)
+test_fe_space(V,cellmatvec,cellmat,cellvec,Ω)
 
 end # module

@@ -13,33 +13,49 @@ function get_cell_dof_values(f::FEFunction)
   @abstractmethod
 end
 
-function get_cell_dof_entries(cell_entries::AbstractArray,cellids::AbstractArray)
-  lazy_map(Reindex(cell_entries),cellids)
+function get_cell_dof_values(f::FEFunction,ttrian::Triangulation)
+  get_cell_fe_data(get_cell_dof_values,f,ttrian)
 end
 
-function get_cell_is_dirichlet(f::FEFunction,args...)
-  V = get_fe_space(f)
-  get_cell_is_dirichlet(V,args...)
+function get_cell_fe_data(fun,f,ttrian)
+  sface_to_data = fun(f)
+  strian = get_triangulation(f)
+  if strian === ttrian
+    return sface_to_data
+  end
+  @assert is_change_possible(strian,ttrian)
+  D = num_cell_dims(strian)
+  sglue = get_glue(strian,Val(D))
+  tglue = get_glue(ttrian,Val(D))
+  get_cell_fe_data(fun,sface_to_data,sglue,tglue)
 end
 
-function get_cell_dof_entries(cell_entries::AbstractArray,cellids::SkeletonPair)
-  cell_entries_plus = get_cell_dof_entries(cell_entries,cellids.plus)
-  cell_entries_minus = get_cell_dof_entries(cell_entries,cellids.minus)
-  lazy_map(BlockMap(2,[1,2]),cell_entries_plus,cell_entries_minus)
+function get_cell_fe_data(fun,sface_to_data,sglue::FaceToFaceGlue,tglue::FaceToFaceGlue)
+  mface_to_sface = sglue.mface_to_tface
+  tface_to_mface = tglue.tface_to_mface
+  mface_to_data = extend(sface_to_data,mface_to_sface)
+  tface_to_data = lazy_map(Reindex(mface_to_data),tface_to_mface)
+  tface_to_data
 end
 
-function get_cell_dof_values(f::FEFunction,cellids)
-  get_cell_dof_entries(get_cell_dof_values(f),cellids)
-end
-
-function get_cell_dof_values(cell_entries::AbstractArray,cellids)
-  get_cell_dof_entries(cell_entries,cellids)
+function get_cell_fe_data(fun,sface_to_data,sglue::FaceToFaceGlue,tglue::SkeletonPair)
+  plus = get_cell_fe_data(fun,sface_to_data,sglue,tglue.plus)
+  minus = get_cell_fe_data(fun,sface_to_data,sglue,tglue.minus)
+  lazy_map(BlockMap(2,[1,2]),plus,minus)
 end
 
 """
 """
 function get_fe_space(f::FEFunction)
   @abstractmethod
+end
+
+function get_cell_is_dirichlet(f::FEFunction)
+  get_cell_is_dirichlet(get_fe_space(f))
+end
+
+function get_cell_is_dirichlet(f::FEFunction,ttrian::Triangulation)
+  get_cell_is_dirichlet(get_fe_space(f),ttrian)
 end
 
 """
@@ -121,12 +137,8 @@ function get_cell_dof_ids(f::FESpace)
   @abstractmethod
 end
 
-function get_cell_dof_ids(f::FESpace,cellids)
-  get_cell_dof_entries(get_cell_dof_ids(f),cellids)
-end
-
-function get_cell_dof_ids(cell_entries::AbstractArray,cellids)
-  get_cell_dof_entries(cell_entries,cellids)
+function get_cell_dof_ids(f::FESpace,ttrian::Triangulation)
+  get_cell_fe_data(get_cell_dof_ids,f,ttrian)
 end
 
 """
@@ -155,7 +167,7 @@ function get_trial_fe_basis(f::FESpace)
   v = get_fe_basis(f)
   cell_v = get_data(v)
   cell_u = lazy_map(transpose,cell_v)
-  SingleFieldFEBasis(cell_u,get_triangulation(v),TrialBasis(),DomainStyle(v))
+  similar_fe_basis(v,cell_u,get_triangulation(v),TrialBasis(),DomainStyle(v))
 end
 
 function get_cell_shapefuns_trial(f::FESpace)
@@ -163,7 +175,7 @@ function get_cell_shapefuns_trial(f::FESpace)
   error(msg)
 end
 
-# Skeleton-related
+# Basis related
 
 abstract type BasisStyle end
 struct TrialBasis <: BasisStyle end
@@ -194,33 +206,32 @@ get_data(f::SingleFieldFEBasis) = f.cell_basis
 get_triangulation(f::SingleFieldFEBasis) = f.trian
 BasisStyle(::Type{SingleFieldFEBasis{BS,DS}}) where {BS,DS} = BS()
 DomainStyle(::Type{SingleFieldFEBasis{BS,DS}}) where {BS,DS} = DS()
-function gradient(a::SingleFieldFEBasis)
-  f = GenericCellField(a.cell_basis,a.trian,a.domain_style)
-  SingleFieldFEBasis(get_data(gradient(f)),a.trian,a.basis_style,a.domain_style)
+function CellData.similar_cell_field(f::SingleFieldFEBasis,cell_data,trian,ds::DomainStyle)
+  SingleFieldFEBasis(cell_data,trian,BasisStyle(f),ds)
 end
-function ∇∇(a::SingleFieldFEBasis)
-  f = GenericCellField(a.cell_basis,a.trian,a.domain_style)
-  SingleFieldFEBasis(get_data(∇∇(f)),a.trian,a.basis_style,a.domain_style)
-end
-function DIV(f::SingleFieldFEBasis)
-  df=DIV(get_data(f))
-  SingleFieldFEBasis(df,f.trian,f.basis_style,f.domain_style)
-end
-function change_domain(a::SingleFieldFEBasis,trian::Triangulation,target_domain::DomainStyle)
-  f = GenericCellField(a.cell_basis,a.trian,a.domain_style)
-  g = change_domain(f,trian,target_domain)
-  SingleFieldFEBasis(get_data(g),trian,a.basis_style,target_domain)
+function similar_fe_basis(f::SingleFieldFEBasis,cell_data,trian,bs::BasisStyle,ds::DomainStyle)
+  SingleFieldFEBasis(cell_data,trian,bs,ds)
 end
 
-# We implement this for FEBasis since extensions of FEBasis might want to re-use this code
-function change_domain_skeleton(a::FEBasis,trian::SkeletonTriangulation,target_domain::DomainStyle)
-  a_on_plus_trian = change_domain(a,trian.plus,target_domain)
-  a_on_minus_trian = change_domain(a,trian.minus,target_domain)
-  pair_in = SkeletonPair(get_data(a_on_plus_trian),get_data(a_on_minus_trian))
-  pair_out = _fix_cell_basis_dofs_at_skeleton(pair_in,BasisStyle(a))
-  plus = GenericCellField(pair_out.plus,trian,target_domain)
-  minus = GenericCellField(pair_out.minus,trian,target_domain)
-  plus, minus
+for fun in (:change_domain_ref_ref,:change_domain_phys_phys)
+  @eval begin
+
+    function $fun(
+      a::CellData.CellFieldAt{S,<:FEBasis} where S,ttrian::Triangulation,sglue::FaceToFaceGlue,tglue::SkeletonPair)
+      a_on_plus_trian = $fun(a.parent,ttrian,sglue,tglue.plus)
+      a_on_minus_trian = $fun(a.parent,ttrian,sglue,tglue.minus)
+      pair_in = SkeletonPair(get_data(a_on_plus_trian),get_data(a_on_minus_trian))
+      pair_out = _fix_cell_basis_dofs_at_skeleton(pair_in,BasisStyle(a.parent))
+      if isa(a,CellData.CellFieldAt{:plus})
+        return CellData.similar_cell_field(a.parent,pair_out.plus,ttrian,DomainStyle(a.parent))
+      elseif isa(a,CellData.CellFieldAt{:minus})
+        return CellData.similar_cell_field(a.parent,pair_out.minus,ttrian,DomainStyle(a.parent))
+      else
+        @unreachable
+      end
+    end
+
+  end
 end
 
 function _fix_cell_basis_dofs_at_skeleton(pair,::TestBasis)
@@ -248,118 +259,94 @@ has_constraints(::Type{T}) where T <:FESpace = ConstraintStyle(T) == Constrained
 has_constraints(::T) where T <: FESpace = has_constraints(T)
 
 function get_cell_constraints(f::FESpace)
-  get_cell_constraints(f,get_triangulation(f),ConstraintStyle(f))
+  get_cell_constraints(f,ConstraintStyle(f))
 end
 
-function get_cell_constraints(f::FESpace,trian::Triangulation)
-  get_cell_constraints(f,trian,ConstraintStyle(f))
-end
-
-function get_cell_constraints(f,trian::Triangulation,::UnConstrained)
-  cell_ids = get_cell_dof_ids(f,trian)
+function get_cell_constraints(f::FESpace,::UnConstrained)
+  cell_ids = get_cell_dof_ids(f)
   cell_axes = lazy_map(axes,cell_ids)
   identity_constraints(cell_axes)
 end
 
-function get_cell_constraints(f,::Triangulation,::Constrained)
+function get_cell_constraints(f::FESpace,::Constrained)
   @abstractmethod
 end
 
-function get_cell_constraints(f::FESpace,cellids::AbstractArray)
-  get_cell_dof_entries(get_cell_constraints(f),cellids)
+function get_cell_constraints(f::FESpace,ttrian::Triangulation)
+  get_cell_fe_data(get_cell_constraints,f,ttrian)
 end
 
-function get_cell_constraints(cell_entries::AbstractArray,cellids::AbstractArray)
-  get_cell_dof_entries(cell_entries,cellids)
-end
-
-function get_cell_constraints(cell_entries::AbstractArray,cellids::SkeletonPair)
-  cell_constraints_plus = get_cell_constraints(cell_entries,cellids.plus)
-  cell_constraints_minus = get_cell_constraints(cell_entries,cellids.minus)
-  lazy_map(
-    BlockMap((2,2),[(1,1),(2,2)]),
-    cell_constraints_plus,
-    cell_constraints_minus)
-end
-
-function get_cell_constraints(f::FESpace,cellids::SkeletonPair)
-  get_cell_constraints(get_cell_constraints(f),cellids)
+function get_cell_fe_data(fun::typeof(get_cell_constraints),sface_to_data,sglue::FaceToFaceGlue,tglue::SkeletonPair)
+  plus = get_cell_fe_data(fun,sface_to_data,sglue,tglue.plus)
+  minus = get_cell_fe_data(fun,sface_to_data,sglue,tglue.minus)
+  lazy_map(BlockMap((2,2),[(1,1),(2,2)]),plus,minus)
 end
 
 function get_cell_isconstrained(f::FESpace)
+  get_cell_isconstrained(f,ConstraintStyle(f))
+end
+
+function get_cell_isconstrained(f::FESpace,::UnConstrained)
   trian = get_triangulation(f)
-  get_cell_isconstrained(f,trian,ConstraintStyle(f))
-end
-
-function get_cell_isconstrained(f::FESpace,trian::Triangulation)
-  get_cell_isconstrained(f,trian,ConstraintStyle(f))
-end
-
-function get_cell_isconstrained(f,trian::Triangulation,::UnConstrained)
   Fill(false,num_cells(trian))
 end
 
-function get_cell_isconstrained(f,trian::Triangulation,::Constrained)
+function get_cell_isconstrained(f::FESpace,::Constrained)
   @abstractmethod
 end
 
-function get_cell_isconstrained(f::FESpace,cellids)
-  get_cell_isconstrained(get_cell_isconstrained(f),cellids)
+function get_cell_isconstrained(f::FESpace,ttrian::Triangulation)
+  get_cell_fe_data(get_cell_isconstrained,f,ttrian)
 end
 
-function get_cell_isconstrained(cell_entries::AbstractArray,cellids::AbstractArray)
-  get_cell_dof_entries(cell_entries,cellids)
-end
-
-function get_cell_isconstrained(cell_entries::AbstractArray,cellids::SkeletonPair)
-  plus = get_cell_isconstrained(cell_entries,cellids.plus)
-  minus = get_cell_isconstrained(cell_entries,cellids.minus)
+function get_cell_fe_data(
+  fun::typeof(get_cell_isconstrained),sface_to_data,sglue::FaceToFaceGlue,tglue::SkeletonPair)
+  plus = get_cell_fe_data(fun,sface_to_data,sglue,tglue.plus)
+  minus = get_cell_fe_data(fun,sface_to_data,sglue,tglue.minus)
   lazy_map((l,r)-> l||r,plus,minus)
 end
 
-function attach_constraints_rows(f::FESpace,cellarr,cellids)
-  attach_constraints_rows(f,cellarr,cellids,ConstraintStyle(f))
+function attach_constraints_rows(f::FESpace,cellarr,ttrian::Triangulation)
+  attach_constraints_rows(f,cellarr,ttrian,ConstraintStyle(f))
 end
 
-function attach_constraints_rows(f::FESpace,cellarr,cellids,::UnConstrained)
+function attach_constraints_rows(f::FESpace,cellarr,ttrian,::UnConstrained)
   cellarr
 end
 
-function attach_constraints_rows(f::FESpace,cellarr,cellids,::Constrained)
-  cellconstr = get_cell_constraints(f,cellids)
-  cellmask = get_cell_isconstrained(f,cellids)
+function attach_constraints_rows(f::FESpace,cellarr,ttrian,::Constrained)
+  cellconstr = get_cell_constraints(f,ttrian)
+  cellmask = get_cell_isconstrained(f,ttrian)
   attach_constraints_rows(cellarr,cellconstr,cellmask)
 end
 
-function attach_constraints_cols(f::FESpace,cellarr,cellids)
-  attach_constraints_cols(f,cellarr,cellids,ConstraintStyle(f))
+function attach_constraints_cols(f::FESpace,cellarr,ttrian::Triangulation)
+  attach_constraints_cols(f,cellarr,ttrian,ConstraintStyle(f))
 end
 
-function attach_constraints_cols(f::FESpace,cellarr,cellids,::UnConstrained)
+function attach_constraints_cols(f::FESpace,cellarr,ttrian,::UnConstrained)
   cellarr
 end
 
-function attach_constraints_cols(f::FESpace,cellarr,cellids,::Constrained)
-  cellconstr = get_cell_constraints(f,cellids)
-  cellmask = get_cell_isconstrained(f,cellids)
+function attach_constraints_cols(f::FESpace,cellarr,ttrian,::Constrained)
+  cellconstr = get_cell_constraints(f,ttrian)
+  cellmask = get_cell_isconstrained(f,ttrian)
   attach_constraints_cols(cellarr,cellconstr,cellmask)
 end
 
-function get_cell_is_dirichlet(f::FESpace,trian::Triangulation)
-  @abstractmethod
+function get_cell_is_dirichlet(f::FESpace)
+  trian = get_triangulation(f)
+  Fill(true,num_cells(trian))
 end
 
-function get_cell_is_dirichlet(f::FESpace,cellids)
-  get_cell_is_dirichlet(get_cell_is_dirichlet(f),cellids)
+function get_cell_is_dirichlet(f::FESpace,ttrian::Triangulation)
+  get_cell_fe_data(get_cell_is_dirichlet,f,ttrian)
 end
 
-function get_cell_is_dirichlet(cell_entries::AbstractArray,cellids::AbstractArray)
-  get_cell_dof_entries(cell_entries,cellids)
-end
-
-function get_cell_is_dirichlet(cell_entries::AbstractArray,cellids::SkeletonPair)
-  plus = get_cell_is_dirichlet(cell_entries,cellids.plus)
-  minus = get_cell_is_dirichlet(cell_entries,cellids.minus)
+function get_cell_fe_data(
+  fun::typeof(get_cell_is_dirichlet),sface_to_data,sglue::FaceToFaceGlue,tglue::SkeletonPair)
+  plus = get_cell_fe_data(fun,sface_to_data,sglue,tglue.plus)
+  minus = get_cell_fe_data(fun,sface_to_data,sglue,tglue.minus)
   lazy_map((l,r)-> l||r,plus,minus)
 end
 
@@ -383,33 +370,30 @@ function test_fe_space(f::FESpace)
   @test CellField(f,get_cell_dof_ids(f,trian)) != nothing
 end
 
-function test_fe_space(f::FESpace,matvecdata,matdata,vecdata)
+function test_fe_space(f::FESpace,cell_matvec,cell_mat,cell_vec,trian)
   test_fe_space(f)
 
-  cellmat, cellidsrows, cellidscols = matdata
-  cm = attach_constraints_cols(f,cellmat,cellidscols)
+  cm = attach_constraints_cols(f,cell_mat,trian)
   if ! has_constraints(f)
-    @test cm === cellmat
+    @test cm === cell_mat
   end
-  cm = attach_constraints_rows(f,cellmat,cellidsrows)
+  cm = attach_constraints_rows(f,cell_mat,trian)
   if ! has_constraints(f)
-    @test cm === cellmat
-  end
-
-  cellvec, cellidsrows = vecdata
-  cv = attach_constraints_rows(f,cellvec,cellidsrows)
-  if ! has_constraints(f)
-    @test cv === cellvec
+    @test cm === cell_mat
   end
 
-  cellmatvec, cellidsrows, cellidscols = matvecdata
-  cmv = attach_constraints_cols(f,cellmatvec,cellidscols)
+  cv = attach_constraints_rows(f,cell_vec,trian)
   if ! has_constraints(f)
-    @test cmv === cellmatvec
+    @test cv === cell_vec
   end
-  cmv = attach_constraints_rows(f,cellmatvec,cellidsrows)
+
+  cmv = attach_constraints_cols(f,cell_matvec,trian)
   if ! has_constraints(f)
-    @test cmv === cellmatvec
+    @test cmv === cell_matvec
+  end
+  cmv = attach_constraints_rows(f,cell_matvec,trian)
+  if ! has_constraints(f)
+    @test cmv === cell_matvec
   end
 
 end
