@@ -44,7 +44,7 @@ NLsolve = "4.3.0"
 NearestNeighbors = "0.4.8"
 QuadGK = "2.3.1, 2.4"
 StaticArrays = "0.12.1, 1.0"
-WriteVTK = "1.11.0,1.12.0"
+WriteVTK = "1.12.0"
 SparseMatricesCSR = "0.6.4"
 julia = "1.3"
 
