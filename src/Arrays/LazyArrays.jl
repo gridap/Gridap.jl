@@ -125,6 +125,7 @@ function same_branch(a,b)
 end
 
 function same_branch(a::Fill,b::Fill)
+  typeof(a) != typeof(b) || return false
   size(a) == size(b) || return false
   a.value == b.value
 end
