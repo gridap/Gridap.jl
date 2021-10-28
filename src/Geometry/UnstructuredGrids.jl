@@ -32,7 +32,7 @@ struct UnstructuredGrid{Dc,Dp,Tp,O,Tn} <: Grid{Dc,Dp}
     reffes::Vector{<:LagrangianRefFE{Dc}},
     cell_types::Vector,
     orientation_style::OrientationStyle=NonOriented(),
-    facet_normal=nothing,
+    facet_normal=nothing;
     has_affine_map=nothing) where {Dc,Dp,Tp,Ti}
 
     if has_affine_map === nothing

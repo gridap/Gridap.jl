@@ -88,7 +88,7 @@ get_face_labeling(model::CartesianDiscreteModel) = model.face_labeling
 # These needed to be type stable
 
 function get_face_nodes(model::CartesianDiscreteModel,d::Integer)
-  face_nodes::Table{Int32,Vector{Int32},Vector{Int32}} = compute_face_nodes(model,d)
+  face_nodes::Table{Int32,Vector{Int32},Vector{Int32}} = Table(compute_face_nodes(model,d))
   face_nodes
 end
 
