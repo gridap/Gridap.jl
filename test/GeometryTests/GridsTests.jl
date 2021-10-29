@@ -5,7 +5,7 @@ using Gridap.Arrays
 using Gridap.Geometry
 using Gridap.Fields
 using Gridap.ReferenceFEs
-#using Gridap.CellData
+using Gridap.CellData
 
 using Gridap.Geometry: GridMock
 
@@ -62,5 +62,23 @@ grid = Grid(ReferenceFE{3},WEDGE)
 #
 #grid = Grid(ReferenceFE{1},trian)
 
+
+# Test linear grid
+
+grid = compute_reference_grid(TRI,5)
+Ω = Triangulation(UnstructuredDiscreteModel(grid))
+dΩ = Measure(Ω,2)
+
+test_grid(grid)
+
+@test sum( ∫(1)dΩ ) ≈ 1/2
+
+grid = compute_reference_grid(TET,5)
+Ω = Triangulation(UnstructuredDiscreteModel(grid))
+dΩ = Measure(Ω,2)
+
+test_grid(grid)
+
+@test sum( ∫(1)dΩ ) ≈ 1/6
 
 end # module

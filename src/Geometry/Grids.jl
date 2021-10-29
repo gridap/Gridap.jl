@@ -247,14 +247,14 @@ end
     compute_linear_grid(reffe::LagrangianRefFE)
 """
 function compute_linear_grid(reffe::LagrangianRefFE)
-  p = get_polytope(p)
+  p = get_polytope(reffe)
   if get_order(reffe) == 0
     D = num_cell_dims(reffe)
     partition = tfill(1,Val{D}())
   else
     partition = get_orders(reffe)
   end
-  compute_linear_grid(p,partition)
+  compute_reference_grid(p,partition)
 end
 
 """
@@ -262,7 +262,7 @@ end
 """
 function compute_reference_grid(reffe::LagrangianRefFE, nelems::Integer)
   p = get_polytope(reffe)
-  compute_linear_grid(p,nelems)
+  compute_reference_grid(p,nelems)
 end
 
 """
