@@ -309,8 +309,12 @@ function _compute_linear_grid_from_simplex(p::Polytope,nelems::Integer)
 end
 
 function _compute_linear_grid_coords_from_simplex(p::Polytope{2},n::Integer)
-  @assert is_simplex(p)
   tri_num(n) = n*(n+1)÷2
+  v(n,i,j) = tri_num(n) - tri_num(n-i+1) + j
+  @assert is_simplex(p)
+  D = 2
+  quad_to_tris = ((1,2,3),(2,4,3))
+  quad = CartesianIndices( (0:1,0:1) )
   Tp = eltype(get_vertex_coordinates(p))
   n_verts = tri_num(n+1)
   n_cells = tri_num(n)+tri_num(n-1)
@@ -319,20 +323,18 @@ function _compute_linear_grid_coords_from_simplex(p::Polytope{2},n::Integer)
   T = [ zeros(Int,n_verts_x_cell) for i in 1:n_cells ]
   for i in 1:n+1
     for j in 1:n+1-i+1
-      v = tri_num(n+1) - tri_num(n+1-i+1) + j
-      X[v] = Point(i/n,j/n)
+      vert = v(n+1,i,j)
+      X[vert] = Point((i-1)/n,(j-1)/n)
     end
   end
   for i in 1:n
     for j in 1:n-i+1
-      v0 = tri_num(n+1) - tri_num(n+1-i+1) + j
-      v2 = v0+n+1-i+1
-      v = ( v0, v0+1, v2, v2+1 )
-      k = tri_num(n) - tri_num(n-i+1) + j
-      T[k] .= (v[1],v[2],v[3])
-      if j < n-i+1
-        k = tri_num(n) + tri_num(n-1) - tri_num(n-1-i+1) + j
-        T[k] .= (v[3],v[2],v[4])
+      verts = ntuple( lv-> v(n+1, (i,j).+quad[lv].I ...), Val{2^D}() )
+      cell = v(n,i,j)
+      T[cell] .= map(Reindex(verts),quad_to_tris[1])
+      if (i-1)+(j-1) < n-1
+        cell = tri_num(n) + v(n-1,i,j)
+        T[cell] .= map(Reindex(verts),quad_to_tris[2])
       end
     end
   end
