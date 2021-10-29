@@ -2,7 +2,7 @@ struct Bezier <: ReferenceFEName end
 
 const bezier = Bezier()
 
-struct BezierRefFE{D} <: ReferenceFE{D}
+struct BezierRefFE{D} <: LagrangianRefFE{D}
   reffe::ReferenceFE{D}
   node_to_own_node::Vector{Int}
   shapefuns::AbstractVector{<:Field}
@@ -31,15 +31,29 @@ function ReferenceFE(
   BezierRefFE(T,polytope,orders)
 end
 
-get_node_coordinates(reffe::BezierRefFE) = get_node_coordinates(reffe.reffe)
-
 get_node_to_own_node(reffe::BezierRefFE) = reffe.node_to_own_node
 
 get_metadata(reffe::BezierRefFE) = reffe.metadata
 
 get_shapefuns(reffe::BezierRefFE) = reffe.shapefuns
 
-get_prebasis(reffe::BezierRefFE) = reffe.prebasis
+get_prebasis(reffe::BezierRefFE) = get_prebasis(reffe.reffe)
+
+get_node_coordinates(reffe::BezierRefFE) = get_node_coordinates(reffe.reffe)
+
+get_vertex_node(reffe::BezierRefFE) = get_vertex_node(reffe.reffe)
+
+get_face_nodes(reffe::BezierRefFE) = get_face_nodes(reffe.reffe)
+
+get_polytope(reffe::BezierRefFE) = get_polytope(reffe.reffe)
+
+get_orders(reffe::BezierRefFE) = get_orders(reffe.reffe)
+
+get_order(reffe::BezierRefFE) = get_order(reffe.reffe)
+
+is_first_order(reffe::BezierRefFE) = is_first_order(reffe.reffe)
+
+Conformity(reffe::BezierRefFE) = Conformity(reffe.reffe)
 
 function (==)(a::BezierRefFE{D},b::BezierRefFE{D}) where D
   t = true
