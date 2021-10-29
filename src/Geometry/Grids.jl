@@ -247,16 +247,14 @@ end
     compute_linear_grid(reffe::LagrangianRefFE)
 """
 function compute_linear_grid(reffe::LagrangianRefFE)
-  @notimplementedif ! is_n_cube(get_polytope(reffe)) "linear grid only implemented for n-cubes at the moment"
+  p = get_polytope(p)
   if get_order(reffe) == 0
     D = num_cell_dims(reffe)
     partition = tfill(1,Val{D}())
   else
     partition = get_orders(reffe)
   end
-  pmin, pmax = get_bounding_box(get_polytope(reffe))
-  desc = CartesianDescriptor(pmin,pmax,partition)
-  CartesianGrid(desc)
+  compute_linear_grid(p,partition)
 end
 
 """
@@ -264,9 +262,90 @@ end
 """
 function compute_reference_grid(reffe::LagrangianRefFE, nelems::Integer)
   p = get_polytope(reffe)
-  r = LagrangianRefFE(Float64,p,nelems)
-  compute_linear_grid(r)
+  compute_linear_grid(p,nelems)
 end
+
+"""
+    compute_reference_grid(p::Polytope,nelems)
+"""
+function compute_reference_grid(p::Polytope,nelems)
+  if is_n_cube(p)
+    _compute_linear_grid_from_n_cube(p,nelems)
+  else
+    _compute_linear_grid_from_simplex(p,nelems)
+  end
+end
+
+function _compute_linear_grid_from_n_cube(p::Polytope{D},partition::NTuple{D,Integer}) where D
+  @assert is_n_cube(p)
+  pmin, pmax = get_bounding_box(p)
+  desc = CartesianDescriptor(pmin,pmax,partition)
+  CartesianGrid(desc)
+end
+
+function _compute_linear_grid_from_n_cube(p::Polytope{D},nelems::Integer) where D
+  partition = tfill(nelems,Val{D}())
+  _compute_linear_grid_from_n_cube(p,partition)
+end
+
+function _compute_linear_grid_from_simplex(p::Polytope,partition::NTuple{D,Integer}) where D
+  @assert minimum(partition) == maximum(partition) >= 1
+  nelems = partition[1]
+  _compute_linear_grid_from_simplex(p,nelems)
+end
+
+function _compute_linear_grid_from_simplex(p::Polytope{1},nelems::Integer)
+  @assert is_simplex(p)
+  _compute_linear_grid_coords_from_n_cube(p,nelems)
+end
+
+function _compute_linear_grid_from_simplex(p::Polytope,nelems::Integer)
+  @assert is_simplex(p)
+  X,T = _compute_linear_grid_coords_from_simplex(p,nelems)
+  reffes = [ LagrangianRefFE(Float64,p,1) ]
+  cell_types = ones(Int8,length(T))
+  T = Table(T)
+  UnstructuredGrid(X,T,reffes,cell_types)
+end
+
+function _compute_linear_grid_coords_from_simplex(p::Polytope{2},n::Integer)
+  @assert is_simplex(p)
+  tri_num(n) = n*(n+1)÷2
+  Tp = eltype(get_vertex_coordinates(p))
+  n_verts = tri_num(n+1)
+  n_cells = tri_num(n)+tri_num(n-1)
+  n_verts_x_cell = num_vertices(p)
+  X = zeros(Tp,n_verts)
+  T = [ zeros(Int,n_verts_x_cell) for i in 1:n_cells ]
+  for i in 1:n+1
+    for j in 1:n+1-i+1
+      v = tri_num(n+1) - tri_num(n+1-i+1) + j
+      X[v] = Point(i/n,j/n)
+    end
+  end
+  for i in 1:n
+    for j in 1:n-i+1
+      v0 = tri_num(n+1) - tri_num(n+1-i+1) + j
+      v2 = v0+n+1-i+1
+      v = ( v0, v0+1, v2, v2+1 )
+      k = tri_num(n) - tri_num(n-i+1) + j
+      T[k] .= (v[1],v[2],v[3])
+      if j < n-i+1
+        k = tri_num(n) + tri_num(n-1) - tri_num(n-1-i+1) + j
+        T[k] .= (v[3],v[2],v[4])
+      end
+    end
+  end
+  X,T
+end
+
+function _compute_linear_grid_coords_from_simplex(p::Polytope{3},n::Integer)
+  @assert is_simplex(p)
+  tri_num(n) = n*(n+1)÷2
+  tet_num(n) = n*(n+1)*(n+2)÷6
+  @notimplemented
+end
+
 
 """
     Grid(::Type{ReferenceFE{d}},p::Polytope) where d
