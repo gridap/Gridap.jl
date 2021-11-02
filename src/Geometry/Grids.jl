@@ -337,7 +337,7 @@ function _compute_linear_grid_coords_from_simplex(p::Polytope{2},n::Integer)
     end
   end
   for i in 1:n
-    for j in 1:n-i+1
+    for j in 1:n-(i-1)
       verts = ntuple( lv-> v(n+1, (i,j).+quad[lv].I ...), Val{2^D}() )
       cell = v(n,i,j)
       T[cell] .= map(Reindex(verts),quad_to_tris[1])
@@ -367,16 +367,16 @@ function _compute_linear_grid_coords_from_simplex(p::Polytope{3},n::Integer)
   X = zeros(Tp,n_verts)
   T = [ zeros(Int,n_verts_x_cell) for i in 1:n_cells ]
   for i in 1:n+1
-    for j in 1:n+1-i+1
-      for k in 1:n+1-i+1-j+1
+    for j in 1:n+1-(i-1)
+      for k in 1:n+1-(i-1)-(j-1)
         vert = v(n+1,i,j,k)
         X[vert] = Point((i-1)/n,(j-1)/n,(k-1)/n)
       end
     end
   end
   for i in 1:n
-    for j in 1:n-i+1
-      for k in 1:n-i+1-j+1
+    for j in 1:n-(i-1)
+      for k in 1:n-(i-1)-(j-1)
         verts = ntuple( lv-> v(n+1, (i,j,k).+cube[lv].I ...), Val{2^D}() )
         cell = v(n,i,j,k)
         T[cell] .= map(Reindex(verts),cube_to_tets[1])
