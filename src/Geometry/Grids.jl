@@ -276,19 +276,28 @@ function compute_reference_grid(p::Polytope,nelems)
   end
 end
 
-function _compute_linear_grid_from_n_cube(p::Polytope{D},partition::NTuple{D,Integer}) where D
+function _compute_linear_grid_from_n_cube(
+  p::Polytope{D},
+  partition::NTuple{D,Integer}) where D
+
   @assert is_n_cube(p)
   pmin, pmax = get_bounding_box(p)
   desc = CartesianDescriptor(pmin,pmax,partition)
   CartesianGrid(desc)
 end
 
-function _compute_linear_grid_from_n_cube(p::Polytope{D},nelems::Integer) where D
+function _compute_linear_grid_from_n_cube(
+  p::Polytope{D},
+  nelems::Integer) where D
+
   partition = tfill(nelems,Val{D}())
   _compute_linear_grid_from_n_cube(p,partition)
 end
 
-function _compute_linear_grid_from_simplex(p::Polytope,partition::NTuple{D,Integer}) where D
+function _compute_linear_grid_from_simplex(
+  p::Polytope{D},
+  partition::NTuple{D,Integer}) where D
+
   @assert minimum(partition) == maximum(partition) >= 1
   nelems = partition[1]
   _compute_linear_grid_from_simplex(p,nelems)
