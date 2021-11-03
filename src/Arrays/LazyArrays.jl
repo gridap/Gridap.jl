@@ -125,6 +125,7 @@ function same_branch(a,b)
 end
 
 function same_branch(a::Fill,b::Fill)
+  typeof(a) != typeof(b) || return false
   size(a) == size(b) || return false
   a.value == b.value
 end
@@ -150,9 +151,9 @@ function _get_cache(dict,a)
     o,c = dict[id]
     return c
   end
-  for (o,c) in values(dict)
-    if same_branch(a,o)
-      return c
+  for item in dict
+    if same_branch(a,second(item)[1])
+      return second(item)[2]
     end
   end
   return nothing
