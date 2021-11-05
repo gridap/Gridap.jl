@@ -71,6 +71,12 @@ quad8 = LagrangianRefFE(Float64,QUAD,2)
 grid = UnstructuredGrid(quad8)
 @test num_nodes(grid) == num_nodes(quad8)
 
+# UnstructuredGrid from BezierRefFE
+
+tri10 = BezierRefFE(Float64,TRI,3)
+grid = UnstructuredGrid(tri10)
+@test num_nodes(grid) == num_nodes(tri10)
+
 # UnstructuredGrid from Polytope
 
 grid = UnstructuredGrid(ReferenceFE{2},WEDGE)
