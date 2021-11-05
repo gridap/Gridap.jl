@@ -14,6 +14,14 @@ function solve!(uh,solver::FESolver,op::FEOperator)
   solve!(uh,solver,op,nothing)
 end
 
+function solve!(uh,solver::NonlinearSolver,op::FEOperator)
+  solve!(uh,NonlinearFESolver(solver),op)
+end
+
+function solve!(uh,solver::LinearSolver,op::FEOperator)
+  solve!(uh,LinearFESolver(solver),op)
+end
+
 """
     uh, cache = solve!(uh,solver,op,cache)
 
@@ -25,6 +33,14 @@ function solve!(uh,solver::FESolver,op::FEOperator,cache)
   @abstractmethod
 end
 
+function solve!(uh,solver::NonlinearSolver,op::FEOperator,cache)
+  solve!(uh,NonlinearFESolver(solver),op,cache)
+end
+
+function solve!(uh,solver::LinearSolver,op::FEOperator,cache)
+  solve!(uh,LinearFESolver(solver),op,cache)
+end
+
 """
 Solve that allocates, and sets initial guess to zero
 and returns the solution
@@ -34,6 +50,14 @@ function solve(nls::FESolver,op::FEOperator)
   uh = zero(U)
   vh, cache = solve!(uh,nls,op)
   vh
+end
+
+function solve(nls::NonlinearSolver,op::FEOperator)
+  solve(NonlinearFESolver(nls),op)
+end
+
+function solve(nls::LinearSolver,op::FEOperator)
+  solve(LinearFESolver(nls),op)
 end
 
 function solve(op::AffineFEOperator)
