@@ -57,4 +57,24 @@ test_fe_solver(solver,op,x0,x)
 uh = solve(solver,op)
 @test get_free_dof_values(uh) ≈ x
 
+# Now using algebraic solvers directly
+solver = LUSolver()
+uh = solve(solver,op)
+@test get_free_dof_values(uh) ≈ x
+uh = solve(op)
+@test get_free_dof_values(uh) ≈ x
+uh,cache = solve!(uh,solver,op)
+@test get_free_dof_values(uh) ≈ x
+uh, = solve!(uh,solver,op,cache)
+
+solver = NLSolver(LUSolver(),show_trace=false,method=:newton)
+uh = solve(solver,op)
+@test get_free_dof_values(uh) ≈ x
+uh = solve(op)
+@test get_free_dof_values(uh) ≈ x
+uh,cache = solve!(uh,solver,op)
+@test get_free_dof_values(uh) ≈ x
+uh, = solve!(uh,solver,op,cache)
+
+
 end # module
