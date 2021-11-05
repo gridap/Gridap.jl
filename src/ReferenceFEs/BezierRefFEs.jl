@@ -55,6 +55,16 @@ is_first_order(reffe::BezierRefFE) = is_first_order(reffe.reffe)
 
 Conformity(reffe::BezierRefFE) = Conformity(reffe.reffe)
 
+get_dof_basis(reffe::BezierRefFE) = get_dof_basis(reffe.reffe)
+
+function get_face_own_nodes(reffe::BezierRefFE,conf::GradConformity)
+  get_face_own_nodes(reffe.reffe,conf)
+end
+
+get_face_dofs(reffe::BezierRefFE) = get_face_dofs(reffe.reffe)
+
+num_dofs(reffe::BezierRefFE) = num_dofs(reffe.reffe)
+
 function (==)(a::BezierRefFE{D},b::BezierRefFE{D}) where D
   t = true
   a.reffe == b.reffe

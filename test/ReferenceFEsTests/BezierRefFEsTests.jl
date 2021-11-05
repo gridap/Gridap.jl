@@ -246,4 +246,14 @@ Xi = lazy_map( evaluate, Ψ, ξ )
 
 @test Xi == ξ
 
+
+reffe = BezierRefFE(Float64,SEGMENT,(3,))
+test_lagrangian_reference_fe(reffe)
+
+reffe = BezierRefFE(Float64,TRI,(3,3))
+test_lagrangian_reference_fe(reffe)
+
+reffe = BezierRefFE(Float64,TET,(3,3,3))
+test_lagrangian_reference_fe(reffe)
+
 end # module
