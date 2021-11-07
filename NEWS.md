@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
-- Hiding the creation of `FESolver` and `LinearFESolver` from user code.
+- Hiding the creation of `FESolver` and `LinearFESolver` from user code. Since PR [#59](https://github.com/gridap/GridapODEs.jl/pull/59).
 
 ## [0.17.4] - 2021-10-27
 
