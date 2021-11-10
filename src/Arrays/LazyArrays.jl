@@ -125,8 +125,8 @@ function same_branch(a,b)
 end
 
 function same_branch(a::Fill,b::Fill)
-  typeof(a) != typeof(b) || return false
-  size(a) == size(b) || return false
+  typeof(a) != typeof(b) && return false
+  size(a) != size(b) && return false
   a.value == b.value
 end
 
@@ -140,8 +140,8 @@ function all_same_branch(a::Tuple,b::Tuple)
 end
 
 function same_branch(a::LazyArray,b::LazyArray)
-  typeof(a) != typeof(b) || return false
-  length(a.args) == length(b.args) || return false
+  typeof(a) != typeof(b) && return false
+  length(a.args) != length(b.args) && return false
   same_branch(a.maps,b.maps) && all_same_branch(a.args,b.args)
 end
 
