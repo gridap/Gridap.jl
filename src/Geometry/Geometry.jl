@@ -122,7 +122,6 @@ export test_grid
 export compute_linear_grid
 export compute_reference_grid
 
-export RestrictedTriangulation
 export GridPortion
 export UnstructuredGrid
 
@@ -160,7 +159,6 @@ export get_triangulation
 
 export UnstructuredDiscreteModel
 export CartesianDiscreteModel
-export BoundaryDiscreteModel
 
 export GenericTriangulation
 export BoundaryTriangulation
@@ -177,7 +175,6 @@ export InterfaceTriangulation
 #export get_left_boundary
 #export get_right_boundary
 
-export RestrictedDiscreteModel
 export get_parent_model
 
 export AppendedTriangulation
