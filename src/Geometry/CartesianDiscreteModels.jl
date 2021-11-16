@@ -113,6 +113,10 @@ function Grid(::Type{ReferenceFE{d}},model::CartesianDiscreteModel) where d
   UnstructuredGrid(node_coordinates, cell_to_nodes, reffes, cell_to_type, has_affine_map=true)
 end
 
+function Grid(::Type{ReferenceFE{d}},model::CartesianDiscreteModel{d}) where d
+  get_grid(model)
+end
+
 # Helpers
 
 function _fill_cartesian_face_labeling!(labels,topo)
