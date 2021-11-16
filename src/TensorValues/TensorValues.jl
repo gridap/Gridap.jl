@@ -58,6 +58,7 @@ export ⊗
 export ⋅¹
 export ⋅²
 export double_contraction
+export data_index
 
 import Base: show
 import Base: zero, one
