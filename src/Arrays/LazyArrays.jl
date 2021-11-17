@@ -131,23 +131,12 @@ function same_branch(a::Fill,b::Fill)
 end
 
 function all_same_branch(a::Tuple,b::Tuple)
-  a1,at = first_and_tail(a)
-  b1,bt = first_and_tail(b)
-  flag = same_branch(a1,b1)
-  flag || return false
-  all_same_branch(at,bt)
-end
-
-function all_same_branch(a::Tuple{Any,Any},b::Tuple{Any,Any})
-  a1,a2 = a
-  b1,b2 = b
-  same_branch(a2,b2) && same_branch(a1,b1)
-end
-
-function all_same_branch(a::Tuple{Any},b::Tuple{Any})
-  a1, = a
-  b1, = b
-  same_branch(a1,b1)
+  for i in 1:length(a)
+    if same_branch(a[i],b[i]) == false
+      return false
+    end
+  end
+  true
 end
 
 function same_branch(a::LazyArray,b::LazyArray)
