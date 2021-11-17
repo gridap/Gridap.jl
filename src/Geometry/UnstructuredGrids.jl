@@ -32,9 +32,15 @@ struct UnstructuredGrid{Dc,Dp,Tp,O,Tn} <: Grid{Dc,Dp}
     reffes::Vector{<:LagrangianRefFE{Dc}},
     cell_types::Vector,
     orientation_style::OrientationStyle=NonOriented(),
-    facet_normal=nothing) where {Dc,Dp,Tp,Ti}
+    facet_normal=nothing;
+    has_affine_map=nothing) where {Dc,Dp,Tp,Ti}
 
-    cell_map = _compute_cell_map(node_coordinates,cell_node_ids,reffes,cell_types)
+    if has_affine_map === nothing
+      _has_affine_map = get_has_affine_map(reffes)
+    else
+      _has_affine_map = has_affine_map
+    end
+    cell_map = _compute_cell_map(node_coordinates,cell_node_ids,reffes,cell_types,_has_affine_map)
     B = typeof(orientation_style)
     Tn = typeof(facet_normal)
     new{Dc,Dp,Tp,B,Tn}(
@@ -48,15 +54,19 @@ struct UnstructuredGrid{Dc,Dp,Tp,O,Tn} <: Grid{Dc,Dp}
   end
 end
 
-function _compute_cell_map(node_coords,cell_node_ids,ctype_reffe,cell_ctype)
+function get_has_affine_map(ctype_reffe)
+  ctype_poly = map(get_polytope,ctype_reffe)
+  has_affine_map =
+    all(map(is_first_order,ctype_reffe)) &&
+    ( all(map(is_simplex,ctype_poly)) || all(map(p->num_dims(p)==1,ctype_poly)) )
+end
+
+function _compute_cell_map(node_coords,cell_node_ids,ctype_reffe,cell_ctype, has_affine_map)
   cell_coords = lazy_map(Broadcasting(Reindex(node_coords)),cell_node_ids)
   ctype_shapefuns = map(get_shapefuns,ctype_reffe)
   cell_shapefuns = expand_cell_data(ctype_shapefuns,cell_ctype)
   default_cell_map = lazy_map(linear_combination,cell_coords,cell_shapefuns)
   ctype_poly = map(get_polytope,ctype_reffe)
-  has_affine_map =
-    all(map(is_first_order,ctype_reffe)) &&
-    ( all(map(is_simplex,ctype_poly)) || all(map(p->num_dims(p)==1,ctype_poly)) )
   if has_affine_map
     ctype_q0 = map(p->zero(first(get_vertex_coordinates(p))),ctype_poly)
     cell_q0 = expand_cell_data(ctype_q0,cell_ctype)
