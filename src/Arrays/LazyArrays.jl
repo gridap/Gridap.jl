@@ -120,17 +120,54 @@ IndexStyle(::Type{<:LazyArray{G,T,1} where {G,T}}) = IndexLinear()
 
 uses_hash(::Type{<:LazyArray}) = Val{true}()
 
-function array_cache(hash::Dict,a::LazyArray)
-  function _getid(hash,cache::T,id) where T
-    value::T = hash[id]
-    value
+function same_branch(a,b)
+  a === b
+end
+
+function same_branch(a::Fill,b::Fill)
+  typeof(a) != typeof(b) && return false
+  size(a) != size(b) && return false
+  a.value == b.value
+end
+
+function all_same_branch(a::Tuple,b::Tuple)
+  for i in 1:length(a)
+    if same_branch(a[i],b[i]) == false
+      return false
+    end
   end
+  true
+end
+
+function same_branch(a::LazyArray,b::LazyArray)
+  typeof(a) != typeof(b) && return false
+  length(a.args) != length(b.args) && return false
+  same_branch(a.maps,b.maps) && all_same_branch(a.args,b.args)
+end
+
+function _get_cache(dict,a)
   id = objectid(a)
-  cache = _array_cache!(hash,a)
-  if ! haskey(hash,id)
-    hash[id] = cache
+  if haskey(dict,id)
+    o,c = dict[id]
+    return c
   end
-  _getid(hash,cache,id)
+  for item in dict
+    if same_branch(a,second(item)[1])
+      return second(item)[2]
+    end
+  end
+  return nothing
+end
+
+function array_cache(dict::Dict,a::LazyArray)
+  cache = _get_cache(dict,a)
+  if cache === nothing
+    _cache = _array_cache!(dict,a)
+    dict[objectid(a)] = (a,_cache)
+  else
+    _cache = cache
+  end
+  _cache
 end
 
 mutable struct IndexItemPair{T,V}
@@ -138,7 +175,7 @@ mutable struct IndexItemPair{T,V}
   item::V
 end
 
-function _array_cache!(hash::Dict,a::LazyArray)
+function _array_cache!(dict::Dict,a::LazyArray)
   @boundscheck begin
     @notimplementedif ! all(map(isconcretetype, map(eltype, a.args)))
     if ! (eltype(a.maps) <: Function)
@@ -147,8 +184,8 @@ function _array_cache!(hash::Dict,a::LazyArray)
   end
   gi = testitem(a.maps)
   fi = map(testitem,a.args)
-  cg = array_cache(hash,a.maps)
-  cf = map(fi->array_cache(hash,fi),a.args)
+  cg = array_cache(dict,a.maps)
+  cf = map(fi->array_cache(dict,fi),a.args)
   cgi = return_cache(gi, fi...)
   index = -1
   #item = evaluate!(cgi,gi,testargs(gi,fi...)...)
