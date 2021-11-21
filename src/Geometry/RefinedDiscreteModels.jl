@@ -1,12 +1,17 @@
+function get_midpoint(x::AbstractVector, y::AbstractVector)
+    (x + y) / 2.0
+end
+
+
 # setp 1
 function newest_vertex_bisection(grid::Grid,cell_mask::AbstractVector{<:Bool})
     #get_faces(top
     cell_coords = get_cell_coordinates(grid)
     @show typeof(cell_coords)
     #@show new_val = VectorValue{2, Float64}(1.5, 1.5, 1.5)
-    @show new_val = [VectorValue(1.5, 1.5, 1.5)]
+    #new_val = LazyArray([VectorValue(1.5, 1.5), VectorValue(1.2, 2), VectorValue(3.2, 3.1)])
+    @show new_val = lazy_map(get_midpoint, cell_coords[1:2], 0*cell_coords[1:2])
     cell_coords = lazy_append(cell_coords, new_val)
-    @show cell_coords 
   # tod
   #ref_grid
 end

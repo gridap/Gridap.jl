@@ -16,7 +16,7 @@ cell_map = get_cell_map(get_triangulation(model))
 @show num_cells = length(cell_map)
 cell_mask = fill(true, num_cells)
 model_ref = newest_vertex_bisection(model, cell_mask)
-@test model_ref isa DiscreteModel
+model_ref isa DiscreteModel
 
 
 end # module
