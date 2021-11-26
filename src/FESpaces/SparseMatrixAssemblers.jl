@@ -220,6 +220,7 @@ function symbolic_loop_matrix!(A,a::GenericSparseMatrixAssembler,matdata)
 end
 
 @noinline function _symbolic_loop_matrix!(A,caches,cell_rows,cell_cols,mat1)
+  @nospecialize cell_rows, cell_cols
   touch_cache, rows_cache, cols_cache = caches
   touch! = TouchEntriesMap()
   for cell in 1:length(cell_cols)
@@ -252,6 +253,7 @@ function numeric_loop_matrix!(A,a::GenericSparseMatrixAssembler,matdata)
 end
 
 @noinline function _numeric_loop_matrix!(mat,caches,cell_vals,cell_rows,cell_cols)
+  @nospecialize cell_vals, cell_rows, cell_cols
   add_cache, vals_cache, rows_cache, cols_cache = caches
   add! = AddEntriesMap(+)
   for cell in 1:length(cell_cols)
@@ -284,6 +286,7 @@ function symbolic_loop_vector!(b,a::GenericSparseMatrixAssembler,vecdata)
 end
 
 @noinline function _symbolic_loop_vector!(A,caches,cellids,vec1)
+  @nospecialize cell_ids
   touch_cache, rows_cache = caches
   touch! = TouchEntriesMap()
   for cell in 1:length(cellids)
@@ -310,6 +313,7 @@ function numeric_loop_vector!(b,a::GenericSparseMatrixAssembler,vecdata)
 end
 
 @noinline function _numeric_loop_vector!(vec,caches,cell_vals,cell_rows)
+  @nospecialize cell_vals, cell_rows
   add_cache, vals_cache, rows_cache = caches
   @assert length(cell_vals) == length(cell_rows)
   add! = AddEntriesMap(+)
@@ -355,6 +359,7 @@ function numeric_loop_matrix_and_vector!(A,b,a::GenericSparseMatrixAssembler,dat
 end
 
 @noinline function _numeric_loop_matvec!(A,b,caches,cell_vals,cell_rows,cell_cols)
+  @nospecialize cell_vals, cell_rows, cell_cols
   add_mat_cache, add_vec_cache, vals_cache, rows_cache, cols_cache = caches
   add! = AddEntriesMap(+)
   for cell in 1:length(cell_cols)
