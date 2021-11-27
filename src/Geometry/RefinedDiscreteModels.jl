@@ -2,28 +2,37 @@ function get_midpoint(x::AbstractVector, y::AbstractVector)
     (x + y) ./ 2.0
 end
 
+function build_edges(elem::Matrix{T}) where {T <: Integer}
+    edge = [elem[:,[1,2]]; elem[:,[1,3]]; elem[:,[2,3]]]
+    unique(sort!(edge, dims=2), dims=1)
+end
+
+function test_construction(edge::Matrix{S}, top::GridTopology, d::T) where {S, T <: Integer}
+    edge_vec = [edge[i,:] for i in 1:size(edge,1)]
+    edge_top = get_faces(top, d, 0)
+    @assert issetequal(edge_vec, edge_top)
+end
+
 """
 node_coords == node, cell_node_ids == elem in Long Chen's notation
 """
-function newest_vertex_bisection(node_coords::Vector, cell_node_ids::Arrays.Table)
+function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_node_ids::Arrays.Table)
     @show elem = vcat(cell_node_ids'...)
-    edge = [elem[:,[1,2]]; elem[:,[1,3]]; elem[:,[2,3]]]
-    edge = unique(sort!(edge, dims=2), dims=1)
-    #edge = sort!(edge, dims=2)
-    @show length(edge)
-    #edge = unique(sort(edge,2), "rows")
+    test_construction(elem, top, 2)
+    edge = build_edges(elem)
+    test_construction(edge, top, 1)
     node_coords, cell_node_ids
 end
 
 # setp 1
-function newest_vertex_bisection(grid::Grid,cell_mask::AbstractVector{<:Bool})
+function newest_vertex_bisection(grid::Grid, top::GridTopology, cell_mask::AbstractVector{<:Bool})
     #get_faces(top
     #@show cell_coords = get_cell_coordinates(grid)
     node_coords = get_node_coordinates(grid)
     cell_node_ids = get_cell_node_ids(grid)
     # TODO: Modify node__coords and cell_node_ids
     typeof(node_coords)
-    node_coords, cell_node_ids = newest_vertex_bisection(node_coords, cell_node_ids)
+    node_coords, cell_node_ids = newest_vertex_bisection(top, node_coords, cell_node_ids)
     reffes = get_reffes(grid)
     cell_types = get_cell_type(grid)
     UnstructuredGrid(node_coords, cell_node_ids, reffes, cell_types)
@@ -39,7 +48,8 @@ end
 # step 2
 function newest_vertex_bisection(model::DiscreteModel,cell_mask::AbstractVector{<:Bool})
   grid  = get_grid(model)
-  ref_grid = newest_vertex_bisection(grid,cell_mask)
+  top = get_grid_topology(model)
+  ref_grid = newest_vertex_bisection(grid, top, cell_mask)
   #ref_topo = GridTopology(grid)
   #labels = get_face_labelling(model)
   #ref_labels = # Compute them from the original labels (This is perhaps the most tedious part)
