@@ -14,13 +14,50 @@ function sort_elem_for_labeling(node::Vector, elem::Matrix)
     #elem[[I==3],[1 2 3]]=elem[[I==3], [3 1 2]]
 end
 
+function setup_markers(NT, NE, node, elem, d2p, dualedge, θ)
+    # No estimator for now
+    η = fill(1, NT)
+    @show total = sum(η)
+    @show ix = sortperm(-η)
+    current = 0
+    marker = zeros(NE,1)
+    for t = 1:NT
+        @show t
+        if (current > θ*total)
+            break
+        end
+        index=1
+        ct=ix[t]
+        while (index==1)
+            @show ct
+            #@show elem[ct,2],elem[ct,3]
+            base = d2p[elem[ct,2],elem[ct,3]]
+            if marker[base]>0
+                index=0
+
+            else
+                current = current + η[ct];
+                N = size(node,1)+1;
+                marker[d2p[elem[ct,2],elem[ct,3]]] = N;
+                @show typeof(node[elem[ct,[2 3],:]])
+                @show node[elem[ct,[2 3],:]]
+                node = [node; get_midpoint(get_midpoint(node[elem[ct,[2 3],:]]))]
+                @show node
+                @show ct = dualedge[elem[ct,3],elem[ct,2]]
+                if ct==0
+                    index=0
+                end
+            end
+        end
+    end
+end
+
 function divide(elem,t,p)
     #elem[size(elem,1)+1,:]=[p[4],p[3],p[1]]
     elem = [elem; [p[4] p[3] p[1]]]
     elem[t,:]=[p[4] p[1] p[2]]
     elem
 end
-
 
 function refine(NE, d2p, elem)
     # TODO: for now everything marked for refinement
@@ -32,12 +69,12 @@ function refine(NE, d2p, elem)
         if (marker[base]>0)
             p = vcat(elem[t,:], marker[base])
             elem=divide(elem,t,p)
-            left=d2p[p[1],p[2]]; right=d2p[p[3],p[1]];
+            left=d2p[p[1],p[2]]; right=d2p[p[3],p[1]]
             if (marker[right]>0)
-                elem=divide(elem,size(elem,1), [p[4],p[3],p[1],marker[right]]);
+                elem=divide(elem,size(elem,1), [p[4],p[3],p[1],marker[right]])
             end
             if (marker[left]>0)
-                elem=divide(elem,t,[p[4],p[1],p[2],marker[left]]);
+                elem=divide(elem,t,[p[4],p[1],p[2],marker[left]])
             end
         end
     end
@@ -48,7 +85,7 @@ function build_edges(elem::Matrix{T}) where {T <: Integer}
     unique(sort!(edge, dims=2), dims=1)
 end
 
-function build_directed_dual_edge(elem::Matrix{Ti}, N::T, NT::T) where {Ti, T <: Integer}
+function build_directed_dualedge(elem::Matrix{Ti}, N::T, NT::T) where {Ti, T <: Integer}
     dualedge = spzeros(Int64, N, N)
     for t=1:NT
         dualedge[elem[t,1],elem[t,2]]=t
@@ -88,17 +125,18 @@ function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_no
     test_against_top(elem, top, 2)
     edge = build_edges(elem)
     NE = size(edge, 1)
-    dual_edge = build_directed_dual_edge(elem, N, NT)
+    dualedge = build_directed_dualedge(elem, N, NT)
     d2p = dual_to_primal(edge, NE, N)
     test_against_top(edge, top, 1)
     # TODO: Mark largest edge
     #sort_elem_for_labeling(node_coords, elem)
+    setup_markers(NT, NE, node_coords, elem, d2p, dualedge, 0)
     refine(NE, d2p, elem)
     node_coords, cell_node_ids
 end
 
 
-function get_midpoint(ngon::Vector)
+function get_midpoint(ngon)
     return sum(ngon)/length(ngon)
 end
 
