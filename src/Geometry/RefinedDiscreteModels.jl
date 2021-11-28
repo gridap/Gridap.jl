@@ -40,20 +40,21 @@ end
 
 function test_against_top(face::Matrix{Ti}, top::GridTopology, d::T) where {Ti, T <: Integer}
     face_vec = [face[i,:] for i in 1:size(face,1)]
-    @show face_top = get_faces(top, d, 0)
-    @show face_top
-    @assert issetequal(face_vec, face_top)
+    face_top = get_faces(top, d, 0)
+    issetequal_bitvec = issetequal.(sort(face_vec), sort(face_top))
+    @assert all(issetequal_bitvec)
 end
 
 """
 node_coords == node, cell_node_ids == elem in Long Chen's notation
 """
-function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_node_ids::Table)
+function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_node_ids::Matrix)
     N = size(node_coords, 1)
-    @show elem = vcat(cell_node_ids'...)
+    #@show elem = vcat(cell_node_ids'...)
+    elem = cell_node_ids
     test_against_top(elem, top, 2)
     edge = build_edges(elem)
-    NE = size(edge, 1)
+    @show NE = size(edge, 1)
     @show dual_edge = build_directed_dual_edge(elem, N)
     d2p = dual_to_primal(edge, NE, N)
     test_against_top(edge, top, 1)
@@ -81,11 +82,10 @@ end
 
 function sort_cell_node_ids_ccw(cell_node_ids, node_coords)
     cell_node_ids_ccw = vcat(cell_node_ids'...)
-    @show cell_node_ids_ccw
+    #@show cell_node_ids_ccw
     for (i, cell) in enumerate(cell_node_ids)
         cell_coords = node_coords[cell]
         perm = sort_ccw(cell_coords)
-        @show typeof(cell_node_ids_ccw)
         cell_node_ids_ccw[i,:] = cell[perm]
     end
     cell_node_ids_ccw
@@ -96,11 +96,11 @@ function newest_vertex_bisection(grid::Grid, top::GridTopology, cell_mask::Abstr
     #get_faces(top
     #@show cell_coords = get_cell_coordinates(grid)
     node_coords = get_node_coordinates(grid)
-    @show cell_node_ids = get_cell_node_ids(grid)
-    @show ccw_cell_node_ids = sort_cell_node_ids_ccw(cell_node_ids, node_coords)
+    cell_node_ids = get_cell_node_ids(grid)
+    @show cell_node_ids_ccw = sort_cell_node_ids_ccw(cell_node_ids, node_coords)
     # TODO: Modify node__coords and cell_node_ids
     typeof(node_coords)
-    #node_coords, cell_node_ids = newest_vertex_bisection(top, node_coords, cell_node_ids)
+    newest_vertex_bisection(top, node_coords, cell_node_ids_ccw)
     reffes = get_reffes(grid)
     cell_types = get_cell_type(grid)
     UnstructuredGrid(node_coords, cell_node_ids, reffes, cell_types)
