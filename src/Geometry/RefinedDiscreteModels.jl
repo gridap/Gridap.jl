@@ -1,26 +1,58 @@
 using Gridap.Arrays
 using SparseArrays
-using Printf
+
+# TODO: under construction for longest side in non-uniform mesh
+function sort_elem_for_labeling(node::Vector, elem::Matrix)
+    #@show node[elem[:,3],1]-node[elem[:,2],1].^2
+    #+[node[elem[:,3],2]-node[elem[:,2],2]].ˆ2
+    #edgelength[:,2]=[node[elem[:,1],1]-node[elem[:,3],1]].^2
+    #+[node[elem[:,1],2]-node[elem[:,3],2]].ˆ2
+    #edgelength[:,3]=[node[elem[:,3],1]-node[elem[:,2],1]].^2
+    #+[node[elem[:,3],2]-node[elem[:,2],2]].ˆ2
+    #(temp,I)=max(edgelength,[],2)
+    #elem[[I==2],[1 2 3]]=elem[[I==2], [2 3 1]]
+    #elem[[I==3],[1 2 3]]=elem[[I==3], [3 1 2]]
+end
+
+function divide(elem,t,p)
+    #elem[size(elem,1)+1,:]=[p[4],p[3],p[1]]
+    elem = [elem; [p[4] p[3] p[1]]]
+    elem[t,:]=[p[4] p[1] p[2]]
+    elem
+end
+
+
+function refine(NE, d2p, elem)
+    # TODO: for now everything marked for refinement
+    marker = fill(1, NE)
+    for t=1:2
+        @show t
+        @show elem
+        base=d2p[elem[t,2],elem[t,3]]
+        if (marker[base]>0)
+            p = vcat(elem[t,:], marker[base])
+            elem=divide(elem,t,p)
+            left=d2p[p[1],p[2]]; right=d2p[p[3],p[1]];
+            if (marker[right]>0)
+                elem=divide(elem,size(elem,1), [p[4],p[3],p[1],marker[right]]);
+            end
+            if (marker[left]>0)
+                elem=divide(elem,t,[p[4],p[1],p[2],marker[left]]);
+            end
+        end
+    end
+end
 
 function build_edges(elem::Matrix{T}) where {T <: Integer}
     edge = [elem[:,[1,2]]; elem[:,[1,3]]; elem[:,[2,3]]]
     unique(sort!(edge, dims=2), dims=1)
 end
 
-function build_directed_dual_edge(elem::Matrix{Ti}, N::T) where {Ti, T <: Integer}
-    NT = size(elem, 1)
-    # TODO: Make sparse?
-    #@show elem[:,[1,2,3]]
-    #sparse(elem[:,[1,2,3]],elem[:,[2,3,1]], [1:NT,1:NT,1:NT])
-    #elem[2, :] = [2, 4, 3]
+function build_directed_dual_edge(elem::Matrix{Ti}, N::T, NT::T) where {Ti, T <: Integer}
     dualedge = spzeros(Int64, N, N)
     for t=1:NT
-        #@show t
-        #@show elem[t,1],elem[t,2]
         dualedge[elem[t,1],elem[t,2]]=t
-        #show elem[t,2],elem[t,3]
         dualedge[elem[t,2],elem[t,3]]=t
-        #@show elem[t,3],elem[t,1]
         dualedge[elem[t,3],elem[t,1]]=t
     end
     #@show nnz(dualedge)
@@ -52,12 +84,16 @@ function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_no
     N = size(node_coords, 1)
     #@show elem = vcat(cell_node_ids'...)
     elem = cell_node_ids
+    NT = size(elem, 1)
     test_against_top(elem, top, 2)
     edge = build_edges(elem)
-    @show NE = size(edge, 1)
-    @show dual_edge = build_directed_dual_edge(elem, N)
+    NE = size(edge, 1)
+    dual_edge = build_directed_dual_edge(elem, N, NT)
     d2p = dual_to_primal(edge, NE, N)
     test_against_top(edge, top, 1)
+    # TODO: Mark largest edge
+    #sort_elem_for_labeling(node_coords, elem)
+    refine(NE, d2p, elem)
     node_coords, cell_node_ids
 end
 
@@ -97,7 +133,7 @@ function newest_vertex_bisection(grid::Grid, top::GridTopology, cell_mask::Abstr
     #@show cell_coords = get_cell_coordinates(grid)
     node_coords = get_node_coordinates(grid)
     cell_node_ids = get_cell_node_ids(grid)
-    @show cell_node_ids_ccw = sort_cell_node_ids_ccw(cell_node_ids, node_coords)
+    cell_node_ids_ccw = sort_cell_node_ids_ccw(cell_node_ids, node_coords)
     # TODO: Modify node__coords and cell_node_ids
     typeof(node_coords)
     newest_vertex_bisection(top, node_coords, cell_node_ids_ccw)
