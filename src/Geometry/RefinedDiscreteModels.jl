@@ -74,17 +74,21 @@ function sort_ccw(cell_coords)
     offset_coords = cell_coords .- midpoint
     #@show midpoint_zero = get_midpoint(offset_coords)
     sorted_perm = sortperm(offset_coords, by=atan)
-    @show offset_coords[sorted_perm] .+ midpoint
+    #@show offset_coords[sorted_perm] .+ midpoint
     return sorted_perm
 end
 
 
-function resort_cell_node_ids(cell_node_ids, node_coords)
-    for cell in cell_node_ids
-        @show cell_coords = node_coords[cell]
-        @show perm = sort_ccw(cell_coords)
-        @show cell[perm]
+function sort_cell_node_ids_ccw(cell_node_ids, node_coords)
+    cell_node_ids_ccw = vcat(cell_node_ids'...)
+    @show cell_node_ids_ccw
+    for (i, cell) in enumerate(cell_node_ids)
+        cell_coords = node_coords[cell]
+        perm = sort_ccw(cell_coords)
+        @show typeof(cell_node_ids_ccw)
+        cell_node_ids_ccw[i,:] = cell[perm]
     end
+    cell_node_ids_ccw
 end
 
 # setp 1
@@ -92,8 +96,8 @@ function newest_vertex_bisection(grid::Grid, top::GridTopology, cell_mask::Abstr
     #get_faces(top
     #@show cell_coords = get_cell_coordinates(grid)
     node_coords = get_node_coordinates(grid)
-    cell_node_ids = get_cell_node_ids(grid)
-    ccw_cell_node_ids = resort_cell_node_ids(cell_node_ids, node_coords)
+    @show cell_node_ids = get_cell_node_ids(grid)
+    @show ccw_cell_node_ids = sort_cell_node_ids_ccw(cell_node_ids, node_coords)
     # TODO: Modify node__coords and cell_node_ids
     typeof(node_coords)
     #node_coords, cell_node_ids = newest_vertex_bisection(top, node_coords, cell_node_ids)
