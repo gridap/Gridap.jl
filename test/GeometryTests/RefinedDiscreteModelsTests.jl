@@ -9,7 +9,7 @@ using Gridap.Geometry: DiscreteModelMock
 using Gridap.Io
 
 domain = (0,1,0,1)
-partition = (4,4)
+partition = (1,1)
 model = CartesianDiscreteModel(domain,partition)
 model = simplexify(model)
 cell_map = get_cell_map(get_triangulation(model))

@@ -1,4 +1,5 @@
 using Gridap.Arrays
+using SparseArrays
 
 function get_midpoint(x::AbstractVector, y::AbstractVector)
     (x + y) ./ 2.0
@@ -11,13 +12,38 @@ end
 
 function build_dual_edge(elem::Matrix{Ti}, N::T) where {Ti, T <: Integer}
     NT = size(elem, 1)
-    [elem[:,[1,2,3]],elem[:,[2,3,1]], [1:NT,1:NT,1:NT],N,N]
+    # TODO: Make sparse?
+    #@show elem[:,[1,2,3]]
+    #sparse(elem[:,[1,2,3]],elem[:,[2,3,1]], [1:NT,1:NT,1:NT])
+    dualedge = spzeros(Int64, N, N)
+    for t=1:NT
+        @show t
+        @show elem[t,1],elem[t,2]
+        dualedge[elem[t,1],elem[t,2]]=t
+        @show elem[t,2],elem[t,3]
+        dualedge[elem[t,2],elem[t,3]]=t
+        @show elem[t,3],elem[t,1]
+        dualedge[elem[t,3],elem[t,1]]=t
+    end
+    dualedge
 end
 
-function test_against_top(edge::Matrix{Ti}, top::GridTopology, d::T) where {Ti, T <: Integer}
-    edge_vec = [edge[i,:] for i in 1:size(edge,1)]
-    edge_top = get_faces(top, d, 0)
-    @assert issetequal(edge_vec, edge_top)
+function dual_to_primal(edge::Matrix{Ti}, NE::T, N::T) where {Ti, T <: Integer}
+    d2p = spzeros(Int64, N, N)
+    for k=1:NE
+        i=edge[k,1]
+        j=edge[k,2]
+        d2p[i,j]=k
+        d2p[j,i]=k
+    end
+    d2p
+end
+
+function test_against_top(face::Matrix{Ti}, top::GridTopology, d::T) where {Ti, T <: Integer}
+    face_vec = [face[i,:] for i in 1:size(face,1)]
+    face_top = get_faces(top, d, 0)
+    @show face_top
+    @assert issetequal(face_vec, face_top)
 end
 
 """
@@ -28,7 +54,9 @@ function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_no
     elem = vcat(cell_node_ids'...)
     test_against_top(elem, top, 2)
     edge = build_edges(elem)
+    NE = size(edge, 1)
     @show dual_edge = build_dual_edge(elem, N)
+    @show d2p = dual_to_primal(edge, NE, N)
     test_against_top(edge, top, 1)
     node_coords, cell_node_ids
 end
