@@ -20,7 +20,10 @@ function setup_markers(NT, NE, node, elem, d2p, dualedge, θ)
     @show total = sum(η)
     @show ix = sortperm(-η)
     current = 0
-    marker = zeros(NE,1)
+    @show NE
+    marker = zeros(Int32, NE,1)
+    @show d2p
+    @show dualedge
     for t = 1:NT
         @show t
         if (current > θ*total)
@@ -29,27 +32,26 @@ function setup_markers(NT, NE, node, elem, d2p, dualedge, θ)
         index=1
         ct=ix[t]
         while (index==1)
-            @show ct
             #@show elem[ct,2],elem[ct,3]
-            base = d2p[elem[ct,2],elem[ct,3]]
+            @show base = d2p[elem[ct,2],elem[ct,3]]
             if marker[base]>0
+                @show marker[base]
                 index=0
-
             else
                 current = current + η[ct];
                 N = size(node,1)+1;
                 marker[d2p[elem[ct,2],elem[ct,3]]] = N;
-                @show typeof(node[elem[ct,[2 3],:]])
-                @show node[elem[ct,[2 3],:]]
-                node = [node; get_midpoint(get_midpoint(node[elem[ct,[2 3],:]]))]
-                @show node
-                @show ct = dualedge[elem[ct,3],elem[ct,2]]
+                node = [node; get_midpoint(node[elem[ct,[2 3],:]])]
+                @show elem[ct,3],elem[ct,2]
+                @show ct = dualedge[elem[ct,2],elem[ct,3]]
                 if ct==0
                     index=0
                 end
             end
         end
     end
+    @show node
+    @show marker
 end
 
 function divide(elem,t,p)
@@ -123,15 +125,15 @@ function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_no
     elem = cell_node_ids
     NT = size(elem, 1)
     test_against_top(elem, top, 2)
-    edge = build_edges(elem)
+    @show edge = build_edges(elem)
     NE = size(edge, 1)
     dualedge = build_directed_dualedge(elem, N, NT)
     d2p = dual_to_primal(edge, NE, N)
     test_against_top(edge, top, 1)
     # TODO: Mark largest edge
     #sort_elem_for_labeling(node_coords, elem)
-    setup_markers(NT, NE, node_coords, elem, d2p, dualedge, 0)
-    refine(NE, d2p, elem)
+    setup_markers(NT, NE, node_coords, elem, d2p, dualedge, 1)
+    #refine(NE, d2p, elem)
     node_coords, cell_node_ids
 end
 
