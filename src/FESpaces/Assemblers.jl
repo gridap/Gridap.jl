@@ -27,7 +27,7 @@ function col_mask(a::AssemblyStrategy,col)
   @abstractmethod
 end
 
-@inline function map_rows!(gids,a::AssemblyStrategy,rows)
+function map_rows!(gids,a::AssemblyStrategy,rows)
   u = -one(eltype(gids))
   for i in eachindex(rows)
     ri = rows[i]
@@ -40,7 +40,7 @@ end
   nothing
 end
 
-@inline function map_cols!(gids,a::AssemblyStrategy,cols)
+function map_cols!(gids,a::AssemblyStrategy,cols)
   u = -one(eltype(gids))
   for i in eachindex(cols)
     ri = cols[i]

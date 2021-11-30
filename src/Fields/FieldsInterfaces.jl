@@ -81,11 +81,11 @@ lazy_map(::Broadcasting{typeof(∇∇)},a::AbstractArray{<:Field}) = lazy_map(�
 
 push_∇(∇a::Field,ϕ::Field) = pinvJt(∇(ϕ))⋅∇a
 
-@inline function pinvJt(Jt::MultiValue{Tuple{D,D}}) where D
+function pinvJt(Jt::MultiValue{Tuple{D,D}}) where D
   inv(Jt)
 end
 
-@inline function pinvJt(Jt::MultiValue{Tuple{D1,D2}}) where {D1,D2}
+function pinvJt(Jt::MultiValue{Tuple{D1,D2}}) where {D1,D2}
   @check D1 < D2
   J = transpose(Jt)
   transpose(inv(Jt⋅J)⋅Jt)
@@ -137,7 +137,7 @@ function testargs(f::Field,x::AbstractArray{<:Point})
   (y,)
 end
 
-@inline function return_cache(f::Field,x::AbstractArray{<:Point})
+function return_cache(f::Field,x::AbstractArray{<:Point})
   T = return_type(f,testitem(x))
   s = size(x)
   ab = zeros(T,s)
@@ -146,7 +146,7 @@ end
   cb, cf
 end
 
-@inline function evaluate!(c,f::Field,x::AbstractArray{<:Point})
+function evaluate!(c,f::Field,x::AbstractArray{<:Point})
   cb, cf = c
   sx = size(x)
   setsize!(cb,sx)
@@ -166,37 +166,37 @@ struct GenericField{T} <: Field
   object::T
 end
 
-#@inline Field(f) = GenericField(f)
-@inline GenericField(f::Field) = f
+#Field(f) = GenericField(f)
+GenericField(f::Field) = f
 
 testargs(a::GenericField,x::Point) = testargs(a.object,x)
 return_value(a::GenericField,x::Point) = return_value(a.object,x)
 return_cache(a::GenericField,x::Point) = return_cache(a.object,x)
-@inline evaluate!(cache,a::GenericField,x::Point) = evaluate!(cache,a.object,x)
+evaluate!(cache,a::GenericField,x::Point) = evaluate!(cache,a.object,x)
 
 function return_cache(f::FieldGradient{N,<:GenericField},x::Point) where N
   return_cache(FieldGradient{N}(f.object.object),x)
 end
 
-@inline function evaluate!(c,f::FieldGradient{N,<:GenericField},x::Point) where N
+function evaluate!(c,f::FieldGradient{N,<:GenericField},x::Point) where N
   evaluate!(c,FieldGradient{N}(f.object.object),x)
 end
 
 # Make Field behave like a collection
 
-@inline Base.length(::Field) = 1
-@inline Base.size(::Field) = ()
-@inline Base.axes(::Field) = ()
-@inline Base.IteratorSize(::Type{<:Field}) = Base.HasShape{0}()
-@inline Base.eltype(::Type{T}) where T<:Field = T
-@inline Base.iterate(a::Field) = (a,nothing)
-@inline Base.iterate(a::Field,::Nothing) = nothing
-@inline Base.getindex(a::Field,i::Integer) =  (@check i == 1; a)
+Base.length(::Field) = 1
+Base.size(::Field) = ()
+Base.axes(::Field) = ()
+Base.IteratorSize(::Type{<:Field}) = Base.HasShape{0}()
+Base.eltype(::Type{T}) where T<:Field = T
+Base.iterate(a::Field) = (a,nothing)
+Base.iterate(a::Field,::Nothing) = nothing
+Base.getindex(a::Field,i::Integer) =  (@check i == 1; a)
 testitem(a::Field) = a
 
 # Zero field
 
-@inline Base.zero(a::Field) = ZeroField(a)
+Base.zero(a::Field) = ZeroField(a)
 
 """
 It represents `0.0*f` for a field `f`.
@@ -206,7 +206,7 @@ struct ZeroField{F} <: Field
 end
 
 return_cache(z::ZeroField,x::Point) = zero(return_type(z.field,x))
-@inline evaluate!(cache,z::ZeroField,x::Point) = cache
+evaluate!(cache,z::ZeroField,x::Point) = cache
 testvalue(::Type{ZeroField{F}}) where F = ZeroField(testvalue(F))
 
 function return_cache(z::ZeroField,x::AbstractArray{<:Point})
@@ -224,7 +224,7 @@ function evaluate!(c,f::ZeroField,x::AbstractArray{<:Point})
   c.array
 end
 
-@inline gradient(z::ZeroField) = ZeroField(gradient(z.field))
+gradient(z::ZeroField) = ZeroField(gradient(z.field))
 
 # Make Number behave like Field
 #
@@ -238,11 +238,11 @@ struct ConstantField{T<:Number} <: Field
   value::T
 end
 
-@inline constant_field(a) = ConstantField(a)
+constant_field(a) = ConstantField(a)
 
 Base.zero(::Type{ConstantField{T}}) where T = ConstantField(zero(T))
 
-@inline function evaluate!(c,f::ConstantField,x::Point)
+function evaluate!(c,f::ConstantField,x::Point)
   f.value
 end
 
@@ -263,13 +263,13 @@ function evaluate!(c,f::ConstantField,x::AbstractArray{<:Point})
   c.array
 end
 
-@inline function return_cache(f::FieldGradient{N,<:ConstantField},x::Point) where N
+function return_cache(f::FieldGradient{N,<:ConstantField},x::Point) where N
   gradient(f.object.value,Val(N))(x)
 end
 
-@inline evaluate!(c,f::FieldGradient{N,<:ConstantField},x::Point) where N = c
+evaluate!(c,f::FieldGradient{N,<:ConstantField},x::Point) where N = c
 
-@inline function return_cache(f::FieldGradient{N,<:ConstantField},x::AbstractArray{<:Point}) where N
+function return_cache(f::FieldGradient{N,<:ConstantField},x::AbstractArray{<:Point}) where N
   CachedArray(gradient(f.object.value,Val(N)).(x))
 end
 
@@ -291,7 +291,7 @@ end
 ## Make Function behave like Field
 
 return_cache(f::FieldGradient{N,<:Function},x::Point) where N = gradient(f.object,Val(N))
-@inline evaluate!(c,f::FieldGradient{N,<:Function},x::Point) where N = c(x)
+evaluate!(c,f::FieldGradient{N,<:Function},x::Point) where N = c(x)
 
 # Operations
 
@@ -315,7 +315,7 @@ function return_cache(c::OperationField,x::Point)
   ck, cl
 end
 
-@inline function evaluate!(cache,c::OperationField,x::Point)
+function evaluate!(cache,c::OperationField,x::Point)
   ck, cf = cache
   lx = map((ci,fi) -> evaluate!(ci,fi,x),cf,c.fields)
   evaluate!(ck,c.op,lx...)
@@ -330,7 +330,7 @@ function return_cache(c::OperationField,x::AbstractArray{<:Point})
   ca, ck, cf
 end
 
-@inline function evaluate!(cache,c::OperationField,x::AbstractArray{<:Point})
+function evaluate!(cache,c::OperationField,x::AbstractArray{<:Point})
   ca, ck, cf = cache
   sx = size(x)
   setsize!(ca,sx)
@@ -342,9 +342,9 @@ end
   r
 end
 
-@inline evaluate!(cache,op::Operation,x::Field...) = OperationField(op.op,x)
+evaluate!(cache,op::Operation,x::Field...) = OperationField(op.op,x)
 return_value(op::Broadcasting{<:Operation},x::Field...) = OperationField(op.f.op,x)
-@inline evaluate!(cache,op::Broadcasting{<:Operation},x::Field...) = OperationField(op.f.op,x)
+evaluate!(cache,op::Broadcasting{<:Operation},x::Field...) = OperationField(op.f.op,x)
 
 # Define some well known operations
 
@@ -352,20 +352,20 @@ for op in (:+,:-,:*,:/,:⋅,:⊙,:⊗,:inv,:det,:meas,:pinvJt,:tr,:grad2curl,:sy
   @eval ($op)(a::Field...) = Operation($op)(a...)
 end
 
-@inline transpose(f::Field) = f
+transpose(f::Field) = f
 
 for op in (:+,:-,:*,:/,:⋅,:⊙,:⊗)
   @eval ($op)(a::Field,b::Number) = Operation($op)(a,ConstantField(b))
   @eval ($op)(a::Number,b::Field) = Operation($op)(ConstantField(a),b)
 end
 
-#@inline *(A::Number, B::Field) = ConstantField(A)*B
-#@inline *(A::Field, B::Number) = A*ConstantField(B)
-#@inline ⋅(A::Number, B::Field) = ConstantField(A)⋅B
-#@inline ⋅(A::Field, B::Number) = A⋅ConstantField(B)
+#*(A::Number, B::Field) = ConstantField(A)*B
+#*(A::Field, B::Number) = A*ConstantField(B)
+#⋅(A::Number, B::Field) = ConstantField(A)⋅B
+#⋅(A::Field, B::Number) = A⋅ConstantField(B)
 
-#@inline *(A::Function, B::Field) = GenericField(A)*B
-#@inline *(A::Field, B::Function) = GenericField(B)*A
+#*(A::Function, B::Field) = GenericField(A)*B
+#*(A::Field, B::Function) = GenericField(B)*A
 
 # Gradient of the sum
 for op in (:+,:-)
@@ -439,7 +439,7 @@ end
 
 It returns the composition of two fields, which is just `Operation(f)(g)`
 """
-@inline Base.:∘(f::Field,g::Field) = Operation(f)(g)
+Base.:∘(f::Field,g::Field) = Operation(f)(g)
 evaluate!(cache,::Broadcasting{typeof(∘)},f::Field,g::Field) = f∘g
 
 # Integration
@@ -467,7 +467,7 @@ function return_cache(::typeof(integrate),a,x,w)
   ca, ck
 end
 
-@inline function evaluate!(cache,::typeof(integrate),a,x,w)
+function evaluate!(cache,::typeof(integrate),a,x,w)
   ca, ck = cache
   ax = evaluate!(ca,a,x)
   evaluate!(ck,IntegrationMap(),ax,w)
@@ -482,7 +482,7 @@ function return_cache(::typeof(integrate),a,q,w,j)
   ca, cj, ck
 end
 
-@inline function evaluate!(cache,::typeof(integrate),a,q,w,j)
+function evaluate!(cache,::typeof(integrate),a,q,w,j)
   ca, cj, ck = cache
   aq = evaluate!(ca,a,q)
   jq = evaluate!(cj,j,q)
@@ -491,7 +491,7 @@ end
 
 struct IntegrationMap <: Map end
 
-@inline function evaluate!(cache,k::IntegrationMap,ax::AbstractVector,w)
+function evaluate!(cache,k::IntegrationMap,ax::AbstractVector,w)
   T = typeof( testitem(ax)*testitem(w) + testitem(ax)*testitem(w) )
   z = zero(T)
   r = z
@@ -502,7 +502,7 @@ struct IntegrationMap <: Map end
   r
 end
 
-@inline function evaluate!(cache,k::IntegrationMap,aq::AbstractVector,w,jq::AbstractVector)
+function evaluate!(cache,k::IntegrationMap,aq::AbstractVector,w,jq::AbstractVector)
   T = typeof( testitem(aq)*testitem(w)*meas(testitem(jq)) + testitem(aq)*testitem(w)*meas(testitem(jq)) )
   z = zero(T)
   @check length(aq) == length(w)
@@ -519,7 +519,7 @@ function return_cache(k::IntegrationMap,ax::AbstractArray,w)
   CachedArray(r)
 end
 
-@inline function evaluate!(cache,k::IntegrationMap,ax::AbstractArray,w)
+function evaluate!(cache,k::IntegrationMap,ax::AbstractArray,w)
   setsize!(cache,size(ax)[2:end])
   r = cache.array
   @check size(ax,1) == length(w)
@@ -548,7 +548,7 @@ function return_cache(k::IntegrationMap,aq::AbstractArray,w,jq::AbstractVector)
   CachedArray(r)
 end
 
-@inline function evaluate!(cache,k::IntegrationMap,aq::AbstractArray,w,jq::AbstractVector)
+function evaluate!(cache,k::IntegrationMap,aq::AbstractArray,w,jq::AbstractVector)
   setsize!(cache,size(aq)[2:end])
   r = cache.array
   @check size(aq,1) == length(w) || size(aq,1) == 0
@@ -571,7 +571,7 @@ function return_cache(k::IntegrationMap,aq::AbstractArray{S,3} where S,w,jq::Abs
   CachedArray(r), CachedArray(s)
 end
 
-@inline function evaluate!(cache,k::IntegrationMap,aq::AbstractArray{S,3} where S, w,jq::AbstractVector)
+function evaluate!(cache,k::IntegrationMap,aq::AbstractArray{S,3} where S, w,jq::AbstractVector)
   cache_r, cache_s = cache
   np, ni, nj = size(aq)
   setsize!(cache_r,(ni,nj))
@@ -596,7 +596,7 @@ end
   r
 end
 
-@inline function evaluate!(cache,k::IntegrationMap,aq::AbstractMatrix, w,jq::AbstractVector)
+function evaluate!(cache,k::IntegrationMap,aq::AbstractMatrix, w,jq::AbstractVector)
   np, ni = size(aq)
   setsize!(cache,(ni,))
   r = cache.array
@@ -644,7 +644,7 @@ struct VoidFieldMap <: Map
   isvoid::Bool
 end
 
-@inline Arrays.evaluate!(cache,k::VoidFieldMap,b) = VoidField(b,k.isvoid)
+Arrays.evaluate!(cache,k::VoidFieldMap,b) = VoidField(b,k.isvoid)
 
 struct VoidField{F} <: Field
   field::F
@@ -686,7 +686,7 @@ end
 
 testvalue(::Type{VoidField{F}}) where F = VoidField(testvalue(F),false)
 
-@inline gradient(z::VoidField) = VoidField(gradient(z.field),z.isvoid)
+gradient(z::VoidField) = VoidField(gradient(z.field),z.isvoid)
 
 function lazy_map(::typeof(evaluate),a::LazyArray{<:Fill{VoidFieldMap}},x::AbstractArray)
   p = a.maps.value
@@ -698,7 +698,7 @@ struct VoidBasisMap <: Map
   isvoid::Bool
 end
 
-@inline Arrays.evaluate!(cache,k::VoidBasisMap,b) = VoidBasis(b,k.isvoid)
+Arrays.evaluate!(cache,k::VoidBasisMap,b) = VoidBasis(b,k.isvoid)
 
 struct VoidBasis{T,N,A} <: AbstractArray{T,N}
   basis::A
@@ -772,7 +772,7 @@ end
 for T in (:Point,:Field,:(AbstractVector{<:Point}),:(AbstractVector{<:Field}))
   @eval begin
 
-    @inline function Fields.evaluate!(cache,a::VoidBasis,x::$T)
+    function Fields.evaluate!(cache,a::VoidBasis,x::$T)
       cb, r = cache
       if a.isvoid
         r

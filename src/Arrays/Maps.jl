@@ -150,20 +150,20 @@ end
 
 return_cache(f::Broadcasting,x...) = nothing
 
-@inline evaluate!(cache,f::Broadcasting,x...) = broadcast(f.f,x...)
+evaluate!(cache,f::Broadcasting,x...) = broadcast(f.f,x...)
 
 function return_value(f::Broadcasting,x...)
   broadcast( (y...) -> f.f(testargs(f.f,y...)...), x... )
 end
 
-@inline function evaluate!(cache,f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
+function evaluate!(cache,f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
   r = _prepare_cache!(cache,x...)
   a = r.array
   broadcast!(f.f,a,x...)
   a
 end
 
-@inline function evaluate!(cache,f::Broadcasting,x::AbstractArray{<:Number})
+function evaluate!(cache,f::Broadcasting,x::AbstractArray{<:Number})
   setsize!(cache,size(x))
   a = cache.array
   @inbounds for i in eachindex(x)
@@ -198,7 +198,7 @@ function return_cache(f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}..
   cache
 end
 
-@inline function _prepare_cache!(c,x...)
+function _prepare_cache!(c,x...)
   s = map(_size,x)
   bs = Base.Broadcast.broadcast_shape(s...)
   if bs != size(c)
@@ -207,8 +207,8 @@ end
   c
 end
 
-@inline _size(a) = size(a)
-@inline _size(a::Number) = (1,)
+_size(a) = size(a)
+_size(a::Number) = (1,)
 
 """
     OperationMap(f,args)
@@ -221,7 +221,7 @@ That is, `OperationMap(f,args)(x...)` is formally defined as
 struct OperationMap{K,L} <: Map
   k::K
   l::L
-  @inline function OperationMap(k,l)
+  function OperationMap(k,l)
     new{typeof(k),typeof(l)}(k,l)
   end
 end
@@ -233,7 +233,7 @@ function return_cache(c::OperationMap,x...)
   ck, cl
 end
 
-@inline function evaluate!(cache,c::OperationMap,x...)
+function evaluate!(cache,c::OperationMap,x...)
   ck, cf = cache
   lx = map((ci,fi) -> evaluate!(ci,fi,x...),cf,c.l)
   evaluate!(ck,c.k,lx...)

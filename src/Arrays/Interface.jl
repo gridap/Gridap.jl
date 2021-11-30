@@ -39,16 +39,16 @@ end
 ```
 
 """
-@inline getindex!(cache,a::AbstractArray,i...) = a[i...]
-@inline getindex!(cache,a::AbstractArray,i::CartesianIndex) = getindex!(cache,a,Tuple(i)...)
-@inline getindex!(cache,a::AbstractArray,i::Integer) = _getindex_1d!(IndexStyle(a),cache,a,i)
-@inline function getindex!(cache,a::AbstractArray{T,N},i::Vararg{Integer,N}) where {T,N}
+getindex!(cache,a::AbstractArray,i...) = a[i...]
+getindex!(cache,a::AbstractArray,i::CartesianIndex) = getindex!(cache,a,Tuple(i)...)
+getindex!(cache,a::AbstractArray,i::Integer) = _getindex_1d!(IndexStyle(a),cache,a,i)
+function getindex!(cache,a::AbstractArray{T,N},i::Vararg{Integer,N}) where {T,N}
   _getindex_nd!(IndexStyle(a),cache,a,CartesianIndex(i))
 end
-@inline _getindex_1d!(s::IndexLinear,cache,a,i) = a[i]
-@inline _getindex_1d!(s::IndexCartesian,cache,a,i) = _getindex_nd!(s,cache,a,CartesianIndices(a)[i])
-@inline _getindex_nd!(s::IndexLinear,cache,a,i) = _getindex_1d!(s,cache,a,LinearIndices(a)[i])
-@inline _getindex_nd!(s::IndexCartesian,cache,a,i) = a[i]
+_getindex_1d!(s::IndexLinear,cache,a,i) = a[i]
+_getindex_1d!(s::IndexCartesian,cache,a,i) = _getindex_nd!(s,cache,a,CartesianIndices(a)[i])
+_getindex_nd!(s::IndexLinear,cache,a,i) = _getindex_1d!(s,cache,a,LinearIndices(a)[i])
+_getindex_nd!(s::IndexCartesian,cache,a,i) = a[i]
 
 """
     array_cache(a::AbstractArray)
@@ -161,8 +161,8 @@ This function is used to compute  [`testitem`](@ref) for 0-length arrays.
 """
 function testvalue end
 
-@inline testvalue(::Type{T}) where T = zero(T)
-@inline testvalue(v) = testvalue(typeof(v))
+testvalue(::Type{T}) where T = zero(T)
+testvalue(v) = testvalue(typeof(v))
 
 function testvalue(::Type{T}) where T<:AbstractArray{E,N} where {E,N}
    similar(T,tfill(0,Val(N))...)

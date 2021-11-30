@@ -141,19 +141,19 @@ function array_cache(a::CartesianCellNodes{D}) where D
   zeros(Int32,2^D)
 end
 
-#@inline function getindex!(cache,a::CartesianCellNodes,i::Integer)
+#function getindex!(cache,a::CartesianCellNodes,i::Integer)
 #  cis = CartesianIndices(size(a))
 #  ci = cis[i]
 #  getindex!(cache,a,Tuple(ci)...)
 #end
 #
-#@inline function getindex!(v,a::CartesianCellNodes{1},i::Integer)
+#function getindex!(v,a::CartesianCellNodes{1},i::Integer)
 #  v[1] = i
 #  v[2] = i+1
 #  v
 #end
 
-@inline function getindex!(v,a::CartesianCellNodes{D},i::Vararg{Integer,D}) where D
+function getindex!(v,a::CartesianCellNodes{D},i::Vararg{Integer,D}) where D
   nodes = LinearIndices(size(a).+1)
   lnodes = CartesianIndices(tfill(Int32(2),Val{D}()))
   j = i .- 1

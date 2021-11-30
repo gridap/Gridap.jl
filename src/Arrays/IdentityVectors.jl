@@ -5,7 +5,7 @@ struct IdentityVector{T<:Integer} <: AbstractVector{T}
   length::T
 end
 
-@inline function getindex(c::IdentityVector{T},i::Integer) where T
+function getindex(c::IdentityVector{T},i::Integer) where T
   @check i > 0
   @check i <= c.length
   j::T = i

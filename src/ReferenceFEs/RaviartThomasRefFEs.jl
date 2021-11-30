@@ -281,11 +281,11 @@ struct MomentBasedDofBasis{P,V} <: AbstractVector{Moment}
   end
 end
 
-@inline Base.size(a::MomentBasedDofBasis) = (length(a.nodes),)
-@inline Base.axes(a::MomentBasedDofBasis) = (axes(a.nodes,1),)
+Base.size(a::MomentBasedDofBasis) = (length(a.nodes),)
+Base.axes(a::MomentBasedDofBasis) = (axes(a.nodes,1),)
 # @santiagobadia : Not sure we want to create the moment dofs
-@inline Base.getindex(a::MomentBasedDofBasis,i::Integer) = Moment()
-@inline Base.IndexStyle(::MomentBasedDofBasis) = IndexLinear()
+Base.getindex(a::MomentBasedDofBasis,i::Integer) = Moment()
+Base.IndexStyle(::MomentBasedDofBasis) = IndexLinear()
 
 get_nodes(b::MomentBasedDofBasis) = b.nodes
 get_face_moments(b::MomentBasedDofBasis) = b.face_moments

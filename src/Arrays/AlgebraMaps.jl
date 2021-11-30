@@ -4,7 +4,7 @@ function return_cache(::typeof(*),a::AbstractArray{<:Number},b::AbstractArray{<:
   CachedArray(c)
 end
 
-@inline function evaluate!(cache,::typeof(*),a::AbstractMatrix{<:Number},b::AbstractVector{<:Number})
+function evaluate!(cache,::typeof(*),a::AbstractMatrix{<:Number},b::AbstractVector{<:Number})
   m = size(a,1)
   setsize!(cache,(m,))
   c = cache.array
@@ -12,7 +12,7 @@ end
   c
 end
 
-@inline function evaluate!(cache,::typeof(*),a::AbstractMatrix{<:Number},b::AbstractMatrix{<:Number})
+function evaluate!(cache,::typeof(*),a::AbstractMatrix{<:Number},b::AbstractMatrix{<:Number})
   m = size(a,1)
   n = size(b,2)
   setsize!(cache,(m,n))
@@ -31,7 +31,7 @@ function return_cache(k::MulAddMap,a,b,c)
   CachedArray(d)
 end
 
-@inline function evaluate!(cache,k::MulAddMap,a,b,c)
+function evaluate!(cache,k::MulAddMap,a,b,c)
   setsize!(cache,size(c))
   d = cache.array
   copyto!(d,c)
