@@ -59,6 +59,11 @@ Gridap is a registered package in the official [Julia package registry](https://
 pkg> add Gridap
 ```
 
+## Known issues
+
+Since Julia 1.6 ownwards we have noticed large first call latencies of Gridap.jl codes with the default compiler optimization level (i.e., `-O2`). 
+In general, while developing code, but specially if you are noting high first call latencies, we recommend to run `julia` with the `-O1` flag. For production runs use `-O2` or `-O3`.  
+
 ## Plugins
 
 - [GridapGmsh](https://github.com/gridap/GridapGmsh.jl) Generate a FE mesh with [GMSH](www.gmsh.info) and use it in Gridap.
