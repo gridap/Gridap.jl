@@ -321,7 +321,7 @@ function _point_to_cell!(cache, x::Point)
     end
   end
   # Ensure the point is inside one of the cells, up to round-off errors
-  @check dist ≤ 1000eps(T) "Point $x is not inside any cell"
+  @check dist ≤ 1000eps(T) "Point $x is not inside any cell by a distance $dist"
 
   return cell
 end
