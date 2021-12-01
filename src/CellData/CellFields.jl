@@ -321,7 +321,7 @@ function _point_to_cell!(cache, x::Point)
     end
   end
   # Ensure the point is inside one of the cells, up to round-off errors
-  @check dist ≤ 1000eps(T) "Point is not inside any cell"
+  @check dist ≤ 1000eps(T) "Point $x is not inside any cell"
 
   return cell
 end
@@ -623,7 +623,7 @@ function _to_common_domain(a::CellField...)
     Cannote operate cellfields defined over more than 2 different
     triangulations at this moment.
     """
-    @notimplemented 
+    @notimplemented
   end
   map(i->change_domain(i,target_trian,target_domain),a)
 end
