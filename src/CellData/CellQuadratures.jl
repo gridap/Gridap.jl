@@ -134,27 +134,12 @@ function integrate(f::CellField,quad::CellQuadrature) where DDS
   trian_f = get_triangulation(f)
   trian_x = get_triangulation(quad)
 
-  if have_compatible_domains(trian_f,trian_x)
-    nothing
-  elseif have_compatible_domains(trian_f,get_background_triangulation(trian_x))
-    nothing
-  elseif have_compatible_domains(get_background_triangulation(trian_f),get_background_triangulation(trian_x))
-    nothing
-  elseif have_compatible_domains(trian_x,get_background_triangulation(trian_f))
-    @unreachable """\n
-    CellField objects defined on a sub-triangulation cannot be integrated
-    with a CellQuadrature defined on the underlying background mesh.
-
-    This happens e.g. when trying to integrate a CellField defined on a Neumann boundary
-    with a CellQuadrature defined on the underlying background mesh.
-    """
-  else
-    @unreachable """\n
+  msg = """\n
     Your are trying to integrate a CellField using a CellQuadrature defined on incompatible
     triangulations. Verify that either the two objects are defined in the same triangulation
     or that the triangulaiton of the CellField is the background triangulation of the CellQuadrature.
     """
-  end
+  @check is_change_possible(trian_f,trian_x) msg
 
   b = change_domain(f,quad.trian,quad.data_domain_style)
   x = get_cell_points(quad)
@@ -196,31 +181,37 @@ const ∫ = Integrand
 (*)(b::CellQuadrature,a::Integrand) = integrate(a.object,b)
 
 # Cell measure
-"""
-Contributions added to the cells of the background Triangulation.
-"""
+
 function get_cell_measure(trian::Triangulation)
   quad = CellQuadrature(trian,0)
   cell_to_dV = integrate(1,quad)
-  cell_to_bgcell = get_cell_to_bgcell(trian)
-  bgtrian = get_background_triangulation(trian)
-  
-  if typeof(trian) <: AppendedTriangulation
-    T = eltype(eltype(trian.a.subcells.point_to_coords))
-  else
-    T = eltype(cell_to_dV)
-  end
-  
-  bgcell_to_dV = zeros(T,num_cells(bgtrian))
-  _meas_K_fill!(bgcell_to_dV,cell_to_dV,cell_to_bgcell)
-  bgcell_to_dV
 end
 
-function _meas_K_fill!(bgcell_to_dV,cell_to_dV,cell_to_bgcell)
-  cache = array_cache(cell_to_dV)
-  for (cell, bgcell) in enumerate(cell_to_bgcell)
-    dV = getindex!(cache,cell_to_dV,cell)
-    bgcell_to_dV[bgcell] += dV
-  end
+function get_cell_measure(strian::Triangulation,ttrian::Triangulation)
+  scell_measure = get_cell_measure(strian)
+  move_contributions(scell_measure,strian,ttrian) |> collect
 end
 
+#"""
+#Contributions added to the cells of the background Triangulation.
+#"""
+#function get_cell_measure(trian::Triangulation)
+#  quad = CellQuadrature(trian,0)
+#  cell_to_dV = integrate(1,quad)
+#  model = get_background_model(trian)
+#  bgtrian = Triangulation(model)
+#  D = num_cell_dims(model)
+#  glue = get_glue(trian,Val(D))
+#  cell_to_bgcell = glue.tface_to_mface
+#  bgcell_to_dV = zeros(num_cells(bgtrian))
+#  _meas_K_fill!(bgcell_to_dV,cell_to_dV,cell_to_bgcell)
+#  bgcell_to_dV
+#end
+#
+#function _meas_K_fill!(bgcell_to_dV,cell_to_dV,cell_to_bgcell)
+#  cache = array_cache(cell_to_dV)
+#  for (cell, bgcell) in enumerate(cell_to_bgcell)
+#    dV = getindex!(cache,cell_to_dV,cell)
+#    bgcell_to_dV[bgcell] += dV
+#  end
+#end

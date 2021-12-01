@@ -4,15 +4,72 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.17.6] - 2021-12-01
 
 ### Added
+- Implemented `Base.unaliascopy(A::SubVector)`. Since PR [#715](https://github.com/gridap/Gridap.jl/pull/715).
+
+### Fixed
+- Bugfix in  `Base.view(glue::FaceToFaceGlue,ids::AbstractArray)`. Since PR [#724](https://github.com/gridap/Gridap.jl/pull/724).
+
+
+## [0.17.5] - 2021-11-08
+
+### Added
+- Hiding the creation of `FESolver` and `LinearFESolver` from user code. Since PR [#705](https://github.com/gridap/Gridap.jl/pull/705).
+
+## [0.17.4] - 2021-10-27
+
+### Fixed
+ - Using implementation of `pvtk_grid` provided in WriteVTK.  Since PR [#699](https://github.com/gridap/Gridap.jl/pull/699).
+
+## [0.17.3] - 2021-10-27
+
+### Fixed
+ - Adding a newer version of WriteVTK in the [compat] section.  Since PR [#698](https://github.com/gridap/Gridap.jl/pull/698).
+
+## [0.17.2] - 2021-10-26
+
+### Fixed
+- AD with multi-field residuals with different num dofs per field. Since PR [#687](https://github.com/gridap/Gridap.jl/pull/687).
+
+## [0.17.1] - 2021-10-26
+
+### Fixed
+
+- Laplacian `Δ` operator on unstructured linear grids for quantities defined in the reference space (i.e. shape funcitons in standard FEM). Since PR [#691](https://github.com/gridap/Gridap.jl/pull/691).
+- Laplacian `Δ` operator on triangulations using `GridView` (e.g., when interpolating functions in a sub-domain or on the boundary). Since PR [#691](https://github.com/gridap/Gridap.jl/pull/691).
+- Fixed typo in , function `solve! of `LinearSolvers.jl`. Since PR [#692](https://github.com/gridap/Gridap.jl/pull/692).
+
+## [0.17.0] - 2021-10-22
+
+### Added
+
+- Aliases `Interior`, `Boundary`, `Skeleton`, and `Interface` for the `Triangulation`, `BoundaryTriangulation`, `SkeletonTriangulation`, and `InterfaceTriangulation` constructors. Since PR [#662](https://github.com/gridap/Gridap.jl/pull/662).
+- Function `create_pvtk_file` for exporting results in `pvtu` format. Since PR [#685](https://github.com/gridap/Gridap.jl/pull/685).
+
+### Changed
+
+- Major refactoring in the `Triangulation` interface to properly support the solution of PDEs defined on domains of different dimension. The major change from the user perspective is that `Triangulation` objects can be used both to integrate the weak form (as before) but also to define FE spaces (except for unfitted triangulations obviously). It is still possible to define FE spaces from `DiscreteModels`, but it is safer and more idiomatic (closer to the math notation) to use `Triangulation` objects from now on. Since PR [#662](https://github.com/gridap/Gridap.jl/pull/662).
+- Changes in assembly interface to allow optimization when assembling matrices and vectors simultaneously. Since PR [#685](https://github.com/gridap/Gridap.jl/pull/685).
+
+### Removed
+
+- `BoundaryDiscreteModel`, `RestrictedDiscreteMdeol`, `RestrictedTriangulation`, `TriangulationStyle`, `BackgroundTriangulation`, `SubTriangulation`, `get_cell_to_bgcell`, `get_cell_ref_map`, `get_background_triangulation`, and `have_compatible_domains`. Since PR [#662](https://github.com/gridap/Gridap.jl/pull/662). 
+- Functions `scale_entries!` and `fill_entries!`. Replaced by Julia functions `LinearAlgebra.rmul!` and `LinearAlgebra.fillstored!`. Since PR [#680](https://github.com/gridap/Gridap.jl/pull/680).
+
+## [0.16.5] - 2021-09-08
+
+### Added
+- Implemented DIV operator for FE functions in RT space. Since PR [#650](https://github.com/gridap/Gridap.jl/pull/650).
 - `GenericAssemblyStrategy`. Since PR [#655](https://github.com/gridap/Gridap.jl/pull/655).
 - Additional high level API assembly functions. Since PR [#652](https://github.com/gridap/Gridap.jl/pull/652).
 
 ### Fixed
+- Bug related with the release of ChainRulesCore version 1.3.1. Since [#654](https://github.com/gridap/Gridap.jl/pull/654).
 - Inheritance relationship for DiscreteModelPortion. Since PR [#645](https://github.com/gridap/Gridap.jl/pull/645).
 - Optimization to RT FEs. Since PR [#638](https://github.com/gridap/Gridap.jl/pull/638).
+- Bug in boundary discrete model. Since PR [#651](https://github.com/gridap/Gridap.jl/pull/651).
 
 ## [0.16.4] - 2021-08-17
 

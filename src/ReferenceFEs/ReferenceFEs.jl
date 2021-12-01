@@ -166,14 +166,17 @@ export CDConformity
 export SerendipityRefFE
 export RaviartThomasRefFE
 export NedelecRefFE
+export BezierRefFE
 
 export Lagrangian
 export RaviartThomas
 export Nedelec
+export Bezier
 
 export lagrangian
 export raviart_thomas
 export nedelec
+export bezier
 
 export Quadrature
 export QuadratureName
@@ -222,5 +225,7 @@ include("RaviartThomasRefFEs.jl")
 include("NedelecRefFEs.jl")
 
 include("MockDofs.jl")
+
+include("BezierRefFEs.jl")
 
 end # module

@@ -231,7 +231,7 @@ end
   end
   str = join(ss)
   Meta.parse("ThirdOrderTensorValue{$D,$D,$L}($str)")
-end 
+end
 
 const ⋅¹ = dot
 
@@ -454,7 +454,7 @@ det(a::MultiValue{Tuple{1,1}}) = a[1]
 function det(a::MultiValue{Tuple{2,2}})
   a_11 = a[1,1]; a_12 = a[1,2]
   a_21 = a[2,1]; a_22 = a[2,2]
-  a_11*a_22 - a_12*a_21 
+  a_11*a_22 - a_12*a_21
 end
 
 function det(a::MultiValue{Tuple{3,3}})
@@ -507,11 +507,9 @@ meas(a::MultiValue{Tuple{D}}) where D = sqrt(inner(a,a))
 meas(a::MultiValue{Tuple{D,D}}) where D = abs(det(a))
 meas(a::TensorValue{0,D,T}) where {T,D} = one(T)
 
-function meas(v::MultiValue{Tuple{1,2}})
-  n1 = v[1,2]
-  n2 = -1*v[1,1]
-  n = VectorValue(n1,n2)
-  sqrt(n ⋅ n)
+function meas(v::MultiValue{Tuple{1,D}}) where D
+  t = VectorValue(v.data)
+  sqrt(t ⋅ t)
 end
 
 function meas(v::MultiValue{Tuple{2,3}})

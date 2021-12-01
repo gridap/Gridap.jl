@@ -16,7 +16,7 @@
 Gridap provides a set of tools for the grid-based approximation of partial differential equations (PDEs) written in the
 [Julia programming language](https://julialang.org/). The library currently supports linear and nonlinear PDE systems for scalar and vector fields, single and multi-field problems, conforming and nonconforming finite element (FE) discretizations, on structured and unstructured meshes of simplices and n-cubes. Gridap is extensible and modular. One can implement new FE spaces, new reference elements, use external mesh generators, linear solvers, post-processing tools, etc. See, e.g., the list of available [Gridap plugins](https://github.com/gridap/Gridap.jl#plugins).
 
-Gridap has a very expressive API allowing to solve complex PDEs with very few lines of code. The user can write the underlying weak form with a syntax almost 1:1 to the mathematical notation, and Gridap generates an efficient FE assembly loop automatically by leveraging the Julia JIT compiler. For instance, the weak form for an interior penalty DG method for the Poisson equation can be specified simply as: 
+Gridap has a very expressive API allowing one to solve complex PDEs with very few lines of code. The user can write the underlying weak form with a syntax almost 1:1 to the mathematical notation, and Gridap generates an efficient FE assembly loop automatically by leveraging the Julia JIT compiler. For instance, the weak form for an interior penalty DG method for the Poisson equation can be simply specified as: 
 ```julia
 a(u,v) =
   ∫( ∇(v)⋅∇(u) )*dΩ +
@@ -78,6 +78,11 @@ These are some popular PDEs solved with the Gridap library. Examples taken from 
 | ![](https://gridap.github.io/Tutorials/dev/assets/dg_discretization/jump_u.png) | ![](https://gridap.github.io/Tutorials/dev/assets/darcy/darcy_results.png) |![](https://gridap.github.io/Tutorials/dev/assets/inc_navier_stokes/ins_solution.png) | ![](https://gridap.github.io/Tutorials/dev/assets/isotropic_damage/damage_end.png) |
 | [Poisson eq. with DG](https://gridap.github.io/Tutorials/dev/pages/t006_dg_discretization/)  |  [Darcy eq. with RT](https://gridap.github.io/Tutorials/dev/pages/t007_darcy/)  |  [Incompressible Navier-Stokes](https://gridap.github.io/Tutorials/dev/pages/t008_inc_navier_stokes/)  | [Isotropic damage](https://gridap.github.io/Tutorials/dev/pages/t010_isotropic_damage/)  |
 
+## Known issues
+
+Since Julia 1.6 ownwards we have noticed large first call latencies of Gridap.jl codes with the default compiler optimization level (i.e., `-O2`). 
+In general, while developing code, but specially if you are noting high first call latencies, we recommend to run `julia` with the `-O1` flag. For production runs use `-O2` or `-O3`.  
+
  ## Gridap community
 
 You can ask questions and interact with the Gridap community on the Julia Slack channel #gridap (see [here](https://julialang.org/slack/) how to join). or our [gitter](https://gitter.im/Gridap-jl/community).
@@ -96,7 +101,7 @@ Want to help? We have a number of [issues waiting for help](https://github.com/g
 
 ## How to cite Gridap
 
-In order to give credit to the `Gridap` contributors, we simply ask you to cite the refence below in any publication in which you have made use of `Gridap` packages:
+In order to give credit to the `Gridap` contributors, we simply ask you to cite the reference below in any publication in which you have made use of the `Gridap` project. If you are using other `Gridap` sub-packages, please cite them as indicated in their repositories.
 
 ```
 @article{Badia2020,

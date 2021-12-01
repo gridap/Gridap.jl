@@ -1,8 +1,13 @@
 module PosNegReindexTests
 
 using Test
+using Gridap
 using Gridap.Arrays
 using Gridap.TensorValues
+
+i_to_iposneg = PosNegPartition(Int32[],Int32(10))
+@test length(i_to_iposneg.ipos_to_i) == 0
+@test length(i_to_iposneg.ineg_to_i) == 10
 
 for indices in ([1,3,-1,2,-2], PosNegPartition([1,4,2],5))
 
@@ -116,7 +121,7 @@ b = lazy_map(PosNegReindex(b_pos,b_neg),b_i)
 c = lazy_map(+,a,b)
 test_array(c,map(+,a,b))
 
-
+@test Gridap.Arrays.pos_and_neg_indices([1,2,3,4]) == ([1,2,3,4],Int[])
 
 ## Testing some cases where PosNegReindex can be type-instable
 #

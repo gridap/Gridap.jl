@@ -273,6 +273,15 @@ function lazy_map(
   a
 end
 
+function lazy_map(
+  k::typeof(∘),
+  ::Type{T},
+  a::AbstractArray,
+  b::Fill{<:GenericField{typeof(identity)}}) where T
+  @assert length(a) == length(b)
+  a
+end
+
 # Memoization
 
 struct MemoArray{T,N,A} <: AbstractArray{T,N}

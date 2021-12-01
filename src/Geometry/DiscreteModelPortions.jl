@@ -41,6 +41,16 @@ function DiscreteModelPortion(model::DiscreteModel, cell_to_is_in::AbstractVecto
   DiscreteModelPortion(model,cell_to_parent_cell)
 end
 
+function DiscreteModelPortion(model::DiscreteModel,grid_p::GridPortion)
+  topo = get_grid_topology(model)
+  labels = get_face_labeling(model)
+  cell_to_parent_cell = grid_p.cell_to_parent_cell
+  topo_p, d_to_dface_to_parent_dface = _grid_topology_portion(topo,cell_to_parent_cell)
+  labels_p = _setup_labels_p(labels,d_to_dface_to_parent_dface)
+  model_p = DiscreteModel(grid_p,topo_p,labels_p)
+  DiscreteModelPortion(model_p,model,d_to_dface_to_parent_dface)
+end
+
 function _grid_topology_portion(topo,cell_to_parent_cell)
   D = num_cell_dims(topo)
 

@@ -24,7 +24,7 @@ import Gridap.Arrays: lazy_append
 import Gridap.Arrays: get_array
 import Gridap.Arrays: evaluate!
 import Gridap.Arrays: return_cache
-import Gridap.Fields: gradient
+import Gridap.Fields: gradient, DIV
 import Gridap.Fields: ∇∇
 import Gridap.Fields: integrate
 import Gridap.Fields: grad2curl
@@ -32,8 +32,8 @@ import Gridap.Geometry: num_cells
 import Gridap.Geometry: get_triangulation
 
 import Gridap.TensorValues: inner, outer, double_contraction, symmetric_part
-import LinearAlgebra: det, tr, cross, dot, ⋅
-import Base: inv, abs, abs2, *, +, -, /, adjoint, transpose, real, imag, conj, exp
+import LinearAlgebra: det, tr, cross, dot, ⋅, rmul!
+import Base: inv, abs, abs2, *, +, -, /, adjoint, transpose, real, imag, conj
 
 export gradient, ∇
 export ∇∇

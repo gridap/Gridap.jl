@@ -83,12 +83,15 @@ V = FESpace(model,reffe,dirichlet_tags=dirichlet_tags)
 
 test_single_field_fe_space(V)
 
-matvecdata = ([],[],[])
-matdata = ([],[],[])
-vecdata = ([],[])
-test_single_field_fe_space(V,matvecdata,matdata,vecdata)
+matvecdata = []
+matdata = []
+vecdata = []
+test_single_field_fe_space(V,matvecdata,matdata,vecdata,trian)
 
 V = FESpace(model,reffe,dirichlet_tags=dirichlet_tags,dirichlet_masks=dirichlet_components)
+test_single_field_fe_space(V)
+
+V = FESpace(trian,reffe,dirichlet_tags=dirichlet_tags,dirichlet_masks=dirichlet_components)
 test_single_field_fe_space(V)
 
 end  # module

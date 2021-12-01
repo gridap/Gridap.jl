@@ -88,7 +88,7 @@ get_face_labeling(model::CartesianDiscreteModel) = model.face_labeling
 # These needed to be type stable
 
 function get_face_nodes(model::CartesianDiscreteModel,d::Integer)
-  face_nodes::Table{Int32,Vector{Int32},Vector{Int32}} = compute_face_nodes(model,d)
+  face_nodes::Table{Int32,Vector{Int32},Vector{Int32}} = Table(compute_face_nodes(model,d))
   face_nodes
 end
 
@@ -100,6 +100,21 @@ end
 function get_reffaces(::Type{ReferenceFE{d}},model::CartesianDiscreteModel) where d
   reffaces::Vector{LagrangianRefFE{d}},_ = compute_reffaces(ReferenceFE{d},model)
   reffaces
+end
+
+
+# Grid specialization for CartesianDiscreteModel
+
+function Grid(::Type{ReferenceFE{d}},model::CartesianDiscreteModel) where d
+  node_coordinates = collect1d(get_node_coordinates(model))
+  cell_to_nodes = Table(get_face_nodes(model,d))
+  cell_to_type = collect1d(get_face_type(model,d))
+  reffes = get_reffaces(ReferenceFE{d},model)
+  UnstructuredGrid(node_coordinates, cell_to_nodes, reffes, cell_to_type, has_affine_map=true)
+end
+
+function Grid(::Type{ReferenceFE{d}},model::CartesianDiscreteModel{d}) where d
+  get_grid(model)
 end
 
 # Helpers

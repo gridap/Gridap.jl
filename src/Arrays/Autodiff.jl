@@ -106,4 +106,3 @@ function evaluate!(result,k::AutoDiffMap,ydual,x,cfg::ForwardDiff.JacobianConfig
   ForwardDiff.extract_value!(T, result, ydual)
   return result
 end
-

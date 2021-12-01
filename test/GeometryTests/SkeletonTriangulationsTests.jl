@@ -13,17 +13,12 @@ model = DiscreteModelMock()
 
 strian = SkeletonTriangulation(model)
 test_triangulation(strian)
-@test get_background_triangulation(strian) === get_triangulation(model)
-
-#function polar(q)
-#  r, t, z = q
-#  x = r*cos(t)
-#  y = r*sin(t)
-#  Point(x,y,z)
-#end
-#domain = (1,2,0,pi,0,0.5)
-#partition = (10,30,4)
-#model = CartesianDiscreteModel(domain,partition,polar)
+@test get_background_model(strian) === model
+glue = get_glue(strian,Val(1))
+@test glue.tface_to_mface === strian.plus.glue.face_to_bgface
+glue = get_glue(strian,Val(2))
+@test glue.plus.tface_to_mface === strian.plus.glue.face_to_cell
+@test glue.minus.tface_to_mface === strian.minus.glue.face_to_cell
 
 domain = (0,1,0,1,0,1)
 partition = (3,3,3)
@@ -31,42 +26,38 @@ model = CartesianDiscreteModel(domain,partition)
 
 strian = SkeletonTriangulation(model)
 test_triangulation(strian)
-@test get_background_triangulation(strian) === get_triangulation(model)
+@test get_background_model(strian) === model
+glue = get_glue(strian,Val(2))
+@test glue.tface_to_mface === strian.plus.glue.face_to_bgface
+glue = get_glue(strian,Val(3))
+@test glue.plus.tface_to_mface === strian.plus.glue.face_to_cell
+@test glue.minus.tface_to_mface === strian.minus.glue.face_to_cell
 
-#s = CompressedArray([Point{2,Float64}[(0.25,0.25),(0.75,0.75)]],get_cell_type(strian))
-#
-#s2x = get_cell_map(strian)
-#x = laevaluate(s2x,s)
-#
-#nvec = get_normal_vector(strian)
-#nx = evaluate(nvec,s)
-#collect(nx)
-#
-#fun(x) = sin(pi*x[1])*cos(pi*x[2])
-#
-#q2x = get_cell_map(trian)
-#
-#funq = compose(fun,q2x)
-#
-#fun_gamma = restrict(funq,strian)
-#
-#@test isa(fun_gamma, SkeletonPair)
-#
-#cellids = collect(1:num_cells(trian))
-#
-#cellids_gamma = reindex(cellids,strian)
-#@test isa(fun_gamma, SkeletonPair)
-#@test cellids_gamma.plus == get_face_to_cell(strian.plus)
-#@test cellids_gamma.minus == get_face_to_cell(strian.minus)
-#
-#ids = get_cell_to_bgcell(strian)
-#@test isa(ids,SkeletonPair)
-#
-##using Gridap.Visualization
-##
-##writevtk(trian,"trian")
-##writevtk(strian,"strian")
-##writevtk(x,"x",nodaldata=["nvec" => nx])
+ids = [1,3,4]
+vtrian = view(strian,ids)
+test_triangulation(vtrian)
+@test num_cells(vtrian) == 3
+sglue = get_glue(strian,Val(2))
+vglue = get_glue(vtrian,Val(2))
+@test vglue.tface_to_mface == sglue.tface_to_mface[ids]
+sglue = get_glue(strian,Val(3))
+vglue = get_glue(vtrian,Val(3))
+@test vglue.plus.tface_to_mface == sglue.plus.tface_to_mface[ids]
+@test vglue.minus.tface_to_mface == sglue.minus.tface_to_mface[ids]
+vn = get_facet_normal(vtrian)
+@test isa(vn,SkeletonPair)
+@test isa(vn.plus,AbstractArray)
+@test isa(vn.minus,AbstractArray)
+
+Ω = Triangulation(model)
+Γ = BoundaryTriangulation(model)
+Λ = SkeletonTriangulation(Γ)
+@test Λ.rtrian === Γ
+@test isa(Λ.dtrian,SkeletonTriangulation)
+glue = get_glue(Λ,Val(3))
+glue = get_glue(Λ,Val(2))
+@test is_change_possible(Ω,Λ)
+@test is_change_possible(Γ,Λ)
 
 model = DiscreteModelMock()
 
@@ -104,6 +95,9 @@ itrian = InterfaceTriangulation(model,cell_to_inout)
 
 itrian = InterfaceTriangulation(model,1:13,14:34)
 @test num_cells(itrian) == 11
+Ω_in = Triangulation(model,findall(i->i==IN,cell_to_inout))
+Ω_out = Triangulation(model,findall(i->i==OUT,cell_to_inout))
+itrian = InterfaceTriangulation(Ω_in,Ω_out)
 
 #ltrian = get_left_boundary(itrian)
 #rtrian = get_right_boundary(itrian)
@@ -131,12 +125,5 @@ domain = (0,1,0,1,0,1)
 partition = (3,3,3)
 oldmodel = CartesianDiscreteModel(domain,partition)
 oldstrian = SkeletonTriangulation(oldmodel)
-
-sface_to_oldsface = collect(1:10)
-strian = RestrictedTriangulation(oldstrian,sface_to_oldsface)
-test_triangulation(strian)
-@test isa(strian,SkeletonTriangulation)
-
-
 
 end # module

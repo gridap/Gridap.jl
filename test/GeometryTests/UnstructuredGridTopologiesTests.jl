@@ -94,4 +94,11 @@ grid = CartesianGrid(domain,partition)
 topo = GridTopology(grid)
 test_grid_topology(topo)
 
+# Extract grid topology
+
+tri10 = BezierRefFE(Float64,TRI,3)
+grid = Grid(tri10)
+topo = GridTopology(grid)
+test_grid_topology(topo)
+
 end # module

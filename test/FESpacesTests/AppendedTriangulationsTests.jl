@@ -20,10 +20,8 @@ nin = ceil(Int,2*ncells/3)
 cell_to_mask = fill(false,ncells)
 cell_to_mask[1:nin] .= true
 
-grid = get_grid(model)
-
-Ω_in = RestrictedTriangulation(grid,cell_to_mask)
-Ω_out = RestrictedTriangulation(grid,.! cell_to_mask)
+Ω_in = Triangulation(model,cell_to_mask)
+Ω_out = Triangulation(model,.! cell_to_mask)
 Ω = lazy_append(Ω_out,Ω_in)
 test_triangulation(Ω)
 

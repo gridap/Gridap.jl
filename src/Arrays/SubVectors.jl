@@ -24,3 +24,4 @@ end
 
 Base.IndexStyle(::Type{SubVector{T,A}}) where {T,A} = IndexLinear()
 
+Base.unaliascopy(A::SubVector) = typeof(A)(unaliascopy(A.vector), A.pini, A.pend)

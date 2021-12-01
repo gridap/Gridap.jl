@@ -53,7 +53,6 @@ test_field(f,z,f.(z),grad=∇(f).(z),gradgrad=∇∇(f).(z))
 #c = return_cache(∇∇f,x)
 #@btime evaluate!($c,$∇∇f,$x)
 
-
 # integration
 
 fun(x) = 3*x[1]
@@ -237,6 +236,10 @@ test_field(f,x,f.(x),grad=∇(f).(x))
 test_field(f,z,f.(z))
 test_field(f,z,f.(z),grad=∇(f).(z))
 
+f = Operation(/)(a,b)
+cp = afun(p) / bfun(p)
+test_field(f,p,cp)
+
 #using BenchmarkTools
 #
 #c = return_cache(f,p)
@@ -356,6 +359,21 @@ test_field(f,z,f.(z),grad=∇(f).(z))
 #c = return_cache(∇f,x)
 #@btime evaluate!($c,$∇f,$x)
 
-
+vfun(x) = 2*x[1]+x[2]
+v = GenericField(vfun)
+vt = VoidFieldMap(true)(v)
+vf = VoidFieldMap(false)(v)
+test_field(vt,p,zero(v(p)))
+test_field(vf,p,v(p))
+test_field(vt,p,zero(v(p)),grad=zero(∇(v)(p)))
+test_field(vf,p,v(p),grad=∇(v)(p))
+test_field(vt,p,zero(v(p)),grad=zero(∇(v)(p)),gradgrad=zero(∇∇(v)(p)))
+test_field(vf,p,v(p),grad=∇(v)(p),gradgrad=∇∇(v)(p))
+test_field(vt,x,zero.(v(x)))
+test_field(vf,x,v(x))
+test_field(vt,x,zero.(v(x)),grad=zero.(∇(v)(x)))
+test_field(vf,x,v(x),grad=∇(v)(x))
+test_field(vt,x,zero.(v(x)),grad=zero.(∇(v)(x)),gradgrad=zero.(∇∇(v)(x)))
+test_field(vf,x,v(x),grad=∇(v)(x),gradgrad=∇∇(v)(x))
 
 end # module

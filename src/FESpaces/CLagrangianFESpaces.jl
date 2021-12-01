@@ -17,29 +17,31 @@ struct NodeToDofGlue{T}
 end
 
 """
-    CLagrangianFESpace(::Type{T},grid::Grid) where T
+    CLagrangianFESpace(::Type{T},grid::Triangulation) where T
 """
-function CLagrangianFESpace(::Type{T},grid::Grid) where T
+function CLagrangianFESpace(::Type{T},grid::Triangulation,trian::Triangulation=grid) where T
   vector_type = Vector{_dof_type(T)}
   node_to_tag = fill(Int8(UNSET),num_nodes(grid))
   tag_to_mask = fill(_default_mask(T),0)
-  CLagrangianFESpace(T,grid,vector_type,node_to_tag,tag_to_mask)
+  CLagrangianFESpace(T,grid,vector_type,node_to_tag,tag_to_mask,trian)
 end
 
 """
     CLagrangianFESpace(
     ::Type{T},
-    grid::Grid,
+    grid::Triangulation,
     vector_type::Type,
     node_to_tag::AbstractVector,
     tag_to_mask::AbstractVector) where T
 """
 function CLagrangianFESpace(
   ::Type{T},
-  grid::Grid,
+  grid::Triangulation,
   vector_type::Type,
   node_to_tag::AbstractVector{<:Integer},
-  tag_to_masks::AbstractVector) where T
+  tag_to_masks::AbstractVector,
+  trian::Triangulation=grid
+  ) where T
 
   z = zero(T)
   glue, dirichlet_dof_tag = _generate_node_to_dof_glue_component_major(
@@ -50,7 +52,7 @@ function CLagrangianFESpace(
   cell_dof_basis = lazy_map(get_dof_basis,cell_reffe)
   rd = ReferenceDomain()
   fe_basis, fe_dof_basis = compute_cell_space(
-    cell_shapefuns,cell_dof_basis,rd,rd,grid)
+    cell_shapefuns,cell_dof_basis,rd,rd,trian)
   cell_is_dirichlet = _generate_cell_is_dirichlet(cell_dofs_ids)
 
   nfree = length(glue.free_dof_to_node)
@@ -78,7 +80,7 @@ function _use_clagrangian(trian,cell_reffe,conf)
   false
 end
 
-function _use_clagrangian(trian::Grid,cell_reffe,conf::H1Conformity)
+function _use_clagrangian(trian::Triangulation,cell_reffe,conf::H1Conformity)
   ctype_reffe1, cell_ctype1 = compress_cell_data(cell_reffe)
   ctype_reffe2 = get_reffes(trian)
   if length(ctype_reffe1) != 1 || length(ctype_reffe2) != 1
@@ -101,7 +103,8 @@ function _unsafe_clagrangian(
   labels,
   vector_type,
   dirichlet_tags,
-  dirichlet_masks)
+  dirichlet_masks,
+  trian=grid)
 
   ctype_reffe, cell_ctype = compress_cell_data(cell_reffe)
   prebasis = get_prebasis(first(ctype_reffe))
@@ -110,7 +113,7 @@ function _unsafe_clagrangian(
   node_to_tag = get_face_tag_index(labels,dirichlet_tags,0)
   _vector_type = vector_type === nothing ? Vector{Float64} : vector_type
   tag_to_mask = dirichlet_masks === nothing ? fill(_default_mask(T),length(dirichlet_tags)) : dirichlet_masks
-  CLagrangianFESpace(T,grid,_vector_type,node_to_tag,tag_to_mask)
+  CLagrangianFESpace(T,grid,_vector_type,node_to_tag,tag_to_mask,trian)
 end
 
 # Helpers

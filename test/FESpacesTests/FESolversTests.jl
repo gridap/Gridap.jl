@@ -30,12 +30,11 @@ u = get_trial_fe_basis(U)
 
 cellmat = integrate(∇(v)⊙∇(u),quad)
 cellvec = integrate(v⊙f,quad)
-cellids = collect(1:num_cells(trian))
-rows = get_cell_dof_ids(V,cellids)
-cols = get_cell_dof_ids(U,cellids)
-cellmat_c = attach_constraints_cols(U,cellmat,cellids)
-cellmat_rc = attach_constraints_rows(V,cellmat_c,cellids)
-cellvec_r = attach_constraints_rows(V,cellvec,cellids)
+rows = get_cell_dof_ids(V,trian)
+cols = get_cell_dof_ids(U,trian)
+cellmat_c = attach_constraints_cols(U,cellmat,trian)
+cellmat_rc = attach_constraints_rows(V,cellmat_c,trian)
+cellvec_r = attach_constraints_rows(V,cellvec,trian)
 
 assem = SparseMatrixAssembler(U,V)
 matdata = ([cellmat_rc],[rows],[cols])
@@ -57,5 +56,25 @@ solver = NonlinearFESolver()
 test_fe_solver(solver,op,x0,x)
 uh = solve(solver,op)
 @test get_free_dof_values(uh) ≈ x
+
+# Now using algebraic solvers directly
+solver = LUSolver()
+uh = solve(solver,op)
+@test get_free_dof_values(uh) ≈ x
+uh = solve(op)
+@test get_free_dof_values(uh) ≈ x
+uh,cache = solve!(uh,solver,op)
+@test get_free_dof_values(uh) ≈ x
+uh, = solve!(uh,solver,op,cache)
+
+solver = NLSolver(LUSolver(),show_trace=false,method=:newton)
+uh = solve(solver,op)
+@test get_free_dof_values(uh) ≈ x
+uh = solve(op)
+@test get_free_dof_values(uh) ≈ x
+uh,cache = solve!(uh,solver,op)
+@test get_free_dof_values(uh) ≈ x
+uh, = solve!(uh,solver,op,cache)
+
 
 end # module

@@ -43,7 +43,6 @@ du, dp = dx
 
 cellmat = integrate(dv*du,quad)
 cellvec = integrate(dv*2,quad)
-cellids = get_cell_to_bgcell(trian)
 cellmatvec = pair_arrays(cellmat,cellvec)
 @test isa(cellmat[end],ArrayBlock)
 @test cellmat[1][1,1] != nothing
@@ -51,10 +50,6 @@ cellmatvec = pair_arrays(cellmat,cellvec)
 @test isa(cellvec[end], ArrayBlock)
 @test cellvec[1][1] != nothing
 @test cellvec[1][2] == nothing
-
-matvecdata = (cellmatvec,cellids,cellids)
-matdata = (cellmat,cellids,cellids)
-vecdata = (cellvec,cellids)
 
 free_values = rand(num_free_dofs(X))
 xh = FEFunction(X,free_values)
@@ -76,8 +71,8 @@ cell_dof_ids = get_cell_dof_ids(X,trian)
 cf = CellField(X,get_cell_dof_ids(X,trian))
 @test isa(cf,MultiFieldCellField)
 
-test_fe_space(X,matvecdata,matdata,vecdata)
-test_fe_space(Y,matvecdata,matdata,vecdata)
+test_fe_space(X,cellmatvec,cellmat,cellvec,trian)
+test_fe_space(Y,cellmatvec,cellmat,cellvec,trian)
 
 #using Gridap.Visualization
 #writevtk(trian,"trian";nsubcells=30,cellfields=["uh" => uh, "ph"=> ph])

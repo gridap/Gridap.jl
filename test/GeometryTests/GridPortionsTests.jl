@@ -3,7 +3,7 @@ module GridPortionsTests
 using Gridap.Arrays
 using Gridap.ReferenceFEs
 using Gridap.Geometry
-
+using Test
 
 domain = (-1,1,-1,1)
 partition = (10,10)
@@ -32,6 +32,16 @@ labels = FaceLabeling(topo)
 
 model = DiscreteModel(grid,topo,labels)
 test_discrete_model(model)
+
+grid = view(oldgrid,oldcell_to_mask)
+@test isa(grid,Geometry.GridView)
+test_grid(grid)
+@test num_cells(grid) == count(oldcell_to_mask)
+
+grid = view(oldgrid,findall(collect1d(oldcell_to_mask)))
+@test isa(grid,Geometry.GridView)
+test_grid(grid)
+@test num_cells(grid) == count(oldcell_to_mask)
 
 #using Gridap.Visualization
 
