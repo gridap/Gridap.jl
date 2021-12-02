@@ -64,19 +64,21 @@ end
 
 function FESpace(
   t::Triangulation,
-  cell_reffe::AbstractArray{<:ReferenceFE};
+  cell_reffe::AbstractArray{<:ReferenceFE},
+  cell_fe_args...;
   trian=nothing,
   kwargs...)
   @assert trian === nothing
   # TODO for L2 conformity and no dirichlet conditions
   # no needed to build the active model
   model = get_active_model(t)
-  FESpace(model,cell_reffe;trian=t,kwargs...)
+  FESpace(model,cell_reffe,cell_fe_args...;trian=t,kwargs...)
 end
 
 function FESpace(
   model::DiscreteModel,
-  cell_reffe::AbstractArray{<:ReferenceFE};
+  cell_reffe::AbstractArray{<:ReferenceFE},
+  cell_fe_args...;
   conformity=nothing,
   trian = Triangulation(model),
   labels = get_face_labeling(model),
@@ -102,7 +104,7 @@ function FESpace(
     return V
   end
 
-  cell_fe = CellFE(model,cell_reffe,conf)
+  cell_fe = CellFE(model,cell_reffe,conf,cell_fe_args...)
   _vector_type = _get_vector_type(vector_type,cell_fe,trian)
   if conformity in (L2Conformity(),:L2) && dirichlet_tags == Int[]
     F = _DiscontinuousFESpace(_vector_type,trian,cell_fe)
@@ -119,15 +121,19 @@ function FESpace(
   return V
 end
 
-function FESpace(model::DiscreteModel, reffe::Tuple{<:ReferenceFEName,Any,Any}; kwargs...)
+function FESpace(model::DiscreteModel,
+                 reffe::Tuple{<:ReferenceFEName,Any,Any},
+                 cell_fe_args...; kwargs...)
   basis, reffe_args,reffe_kwargs = reffe
   cell_reffe = ReferenceFE(model,basis,reffe_args...;reffe_kwargs...)
-  FESpace(model,cell_reffe;kwargs...)
+  FESpace(model,cell_reffe,cell_fe_args...;kwargs...)
 end
 
-function FESpace(model::DiscreteModel, reffe::ReferenceFE; kwargs...)
+function FESpace(model::DiscreteModel,
+                 reffe::ReferenceFE,
+                 cell_fe_args...; kwargs...)
   cell_reffe = Fill(reffe,num_cells(model))
-  FESpace(model,cell_reffe;kwargs...)
+  FESpace(model,cell_reffe,cell_fe_args...;kwargs...)
 end
 
 """
