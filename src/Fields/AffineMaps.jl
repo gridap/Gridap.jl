@@ -14,9 +14,9 @@ struct AffineMap{D1,D2,T,L} <:Field
   end
 end
 
-@inline affine_map(gradient,origin) = AffineMap(gradient,origin)
+affine_map(gradient,origin) = AffineMap(gradient,origin)
 
-@inline function evaluate!(cache,f::AffineMap,x::Point)
+function evaluate!(cache,f::AffineMap,x::Point)
   G = f.gradient
   y0 = f.origin
   x⋅G + y0
@@ -28,7 +28,7 @@ function return_cache(f::AffineMap,x::AbstractVector{<:Point})
   CachedArray(y)
 end
 
-@inline function evaluate!(cache,f::AffineMap,x::AbstractVector{<:Point})
+function evaluate!(cache,f::AffineMap,x::AbstractVector{<:Point})
   setsize!(cache,size(x))
   y = cache.array
   G = f.gradient
