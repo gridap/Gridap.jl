@@ -100,7 +100,7 @@ end
 #  return_cache(dof,field)
 #end
 #
-#@inline function evaluate!(cache,k::DofEval,dof,field)
+#function evaluate!(cache,k::DofEval,dof,field)
 #  evaluate!(cache,dof,field)
 #end
 #

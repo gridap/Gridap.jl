@@ -29,7 +29,7 @@ end
 
 Base.size(a::MockFieldArray) = size(a.values)
 Base.IndexStyle(::Type{<:MockFieldArray}) = IndexLinear()
-@inline Base.getindex(a::MockFieldArray,i::Integer) = GenericField(nothing)
+Base.getindex(a::MockFieldArray,i::Integer) = GenericField(nothing)
 
 function return_cache(f::MockFieldArray,x::Point)
   nothing

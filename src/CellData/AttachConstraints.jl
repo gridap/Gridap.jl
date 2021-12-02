@@ -14,7 +14,7 @@ function Arrays.return_cache(k::ConstrainRowsMap,array,constr,mask)
   return_cache(*,constr,array)
 end
 
-@inline function Arrays.evaluate!(cache,k::ConstrainRowsMap,array,constr,mask)
+function Arrays.evaluate!(cache,k::ConstrainRowsMap,array,constr,mask)
   if mask
     evaluate!(cache,*,constr,array)
   else
@@ -29,7 +29,7 @@ function Arrays.return_cache(k::ConstrainRowsMap,matvec::Tuple,constr,mask)
   (cmat,cvec)
 end
 
-@inline function Arrays.evaluate!(cache,k::ConstrainRowsMap,matvec::Tuple,constr,mask)
+function Arrays.evaluate!(cache,k::ConstrainRowsMap,matvec::Tuple,constr,mask)
   if mask
     cmat, cvec = cache
     mat, vec = matvec
@@ -47,7 +47,7 @@ function Arrays.return_cache(k::ConstrainColsMap,array,constr_t,mask)
   return_cache(*,array,constr_t)
 end
 
-@inline function Arrays.evaluate!(cache,k::ConstrainColsMap,array,constr_t,mask)
+function Arrays.evaluate!(cache,k::ConstrainColsMap,array,constr_t,mask)
   if mask
     evaluate!(cache,*,array,constr_t)
   else
@@ -60,7 +60,7 @@ function Arrays.return_cache(k::ConstrainColsMap,matvec::Tuple,constr_t,mask)
   return_cache(k,mat,constr_t,mask)
 end
 
-@inline function Arrays.evaluate!(cache,k::ConstrainColsMap,matvec::Tuple,constr_t,mask)
+function Arrays.evaluate!(cache,k::ConstrainColsMap,matvec::Tuple,constr_t,mask)
   if mask
     mat, vec = matvec
     _mat = evaluate!(cache,k,mat,constr_t,mask)

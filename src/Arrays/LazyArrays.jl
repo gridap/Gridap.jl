@@ -58,7 +58,7 @@ function lazy_map(k,f::AbstractArray...)
   lazy_map(k,T,f...)
 end
 
-#@inline lazy_map(::typeof(evaluate),k::AbstractArray,f::AbstractArray...) = LazyArray(k,f...)
+#lazy_map(::typeof(evaluate),k::AbstractArray,f::AbstractArray...) = LazyArray(k,f...)
 
 # This is the function to be overload to specialize on the Map f
 """
@@ -67,13 +67,13 @@ end
 Like [`lazy_map(f,a::AbstractArray...)`](@ref), but the user provides the element type
 of the resulting array in order to circumvent type inference.
 """
-@inline function lazy_map(k,T::Type,f::AbstractArray...)
+function lazy_map(k,T::Type,f::AbstractArray...)
   s = _common_size(f...)
   lazy_map(evaluate,T,Fill(k, s), f...)
 end
 
 # This is the function to be overload to specialize on the array types
-@inline function lazy_map(::typeof(evaluate),T::Type,k::AbstractArray,f::AbstractArray...)
+function lazy_map(::typeof(evaluate),T::Type,k::AbstractArray,f::AbstractArray...)
   s = _common_size(k,f...)
   N = length(s)
   LazyArray(T,Val(N),k,f...)
@@ -193,7 +193,7 @@ function _array_cache!(dict::Dict,a::LazyArray)
   (cg, cgi, cf), IndexItemPair(index, item)
 end
 
-@inline function getindex!(cache, a::LazyArray, i::Integer)
+function getindex!(cache, a::LazyArray, i::Integer)
   _cache, index_and_item = cache
   index = LinearIndices(a)[i]
   if index_and_item.index != index
@@ -205,7 +205,7 @@ end
   index_and_item.item
 end
 
-@inline function getindex!(cache, a::LazyArray{G,T,N}, i::Vararg{Integer,N}) where {G,T,N}
+function getindex!(cache, a::LazyArray{G,T,N}, i::Vararg{Integer,N}) where {G,T,N}
   _cache, index_and_item = cache
   index = LinearIndices(a)[i...]
   if index_and_item.index != index
@@ -217,7 +217,7 @@ end
   index_and_item.item
 end
 
-@inline function _getindex_and_call!(cgi,gi,cf,args,i...)
+function _getindex_and_call!(cgi,gi,cf,args,i...)
   fi = map((cj,fj) -> getindex!(cj,fj,i...),cf,args)
   evaluate!(cgi, gi, fi...)
 end
@@ -322,25 +322,25 @@ end
 # see https://discourse.julialang.org/t/performance-depends-dramatically-on-compilation-order/58425
 # Hopefully, they can be removed in the future
 
-@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any},i...)
+function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any},i...)
   f1 = getindex!(cf[1],args[1],i...)
   evaluate!(cgi,gi,f1)
 end
 
-@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any},i...)
+function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any},i...)
   f1 = getindex!(cf[1],args[1],i...)
   f2 = getindex!(cf[2],args[2],i...)
   evaluate!(cgi,gi,f1,f2)
 end
 
-@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any},i...)
+function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any},i...)
   f1 = getindex!(cf[1],args[1],i...)
   f2 = getindex!(cf[2],args[2],i...)
   f3 = getindex!(cf[3],args[3],i...)
   evaluate!(cgi,gi,f1,f2,f3)
 end
 
-@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any},i...)
+function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any},i...)
   f1 = getindex!(cf[1],args[1],i...)
   f2 = getindex!(cf[2],args[2],i...)
   f3 = getindex!(cf[3],args[3],i...)
@@ -348,7 +348,7 @@ end
   evaluate!(cgi,gi,f1,f2,f3,f4)
 end
 
-@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any},i...)
+function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any},i...)
   f1 = getindex!(cf[1],args[1],i...)
   f2 = getindex!(cf[2],args[2],i...)
   f3 = getindex!(cf[3],args[3],i...)
@@ -357,7 +357,7 @@ end
   evaluate!(cgi,gi,f1,f2,f3,f4,f5)
 end
 
-@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any,Any},i...)
+function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any,Any},i...)
   f1 = getindex!(cf[1],args[1],i...)
   f2 = getindex!(cf[2],args[2],i...)
   f3 = getindex!(cf[3],args[3],i...)
@@ -367,7 +367,7 @@ end
   evaluate!(cgi,gi,f1,f2,f3,f4,f5,f6)
 end
 
-@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any,Any,Any},i...)
+function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any,Any,Any},i...)
   f1 = getindex!(cf[1],args[1],i...)
   f2 = getindex!(cf[2],args[2],i...)
   f3 = getindex!(cf[3],args[3],i...)
@@ -378,7 +378,7 @@ end
   evaluate!(cgi,gi,f1,f2,f3,f4,f5,f6,f7)
 end
 
-@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any,Any,Any,Any},i...)
+function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any,Any,Any,Any},i...)
   f1 = getindex!(cf[1],args[1],i...)
   f2 = getindex!(cf[2],args[2],i...)
   f3 = getindex!(cf[3],args[3],i...)
@@ -390,7 +390,7 @@ end
   evaluate!(cgi,gi,f1,f2,f3,f4,f5,f6,f7,f8)
 end
 
-@inline function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any,Any,Any,Any,Any},i...)
+function _getindex_and_call!(cgi,gi,cf,args::Tuple{Any,Any,Any,Any,Any,Any,Any,Any,Any},i...)
   f1 = getindex!(cf[1],args[1],i...)
   f2 = getindex!(cf[2],args[2],i...)
   f3 = getindex!(cf[3],args[3],i...)

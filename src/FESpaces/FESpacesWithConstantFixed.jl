@@ -145,7 +145,7 @@ function array_cache(a::CellDofIdsWithDofFixed)
   (c, cache)
 end
 
-@inline function getindex!(d,a::CellDofIdsWithDofFixed,i::Integer)
+function getindex!(d,a::CellDofIdsWithDofFixed,i::Integer)
   c, cache = d
   b = getindex!(cache,a.cell_dofs,i)
   setsize!(c,size(b))

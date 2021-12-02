@@ -16,10 +16,10 @@ struct QCurlGradMonomialBasis{D,T} <: AbstractVector{Monomial}
   end
 end
 
-@inline Base.size(a::QCurlGradMonomialBasis) = (length(a.qgrad),)
+Base.size(a::QCurlGradMonomialBasis) = (length(a.qgrad),)
 # @santiagobadia : Not sure we want to create the monomial machinery
-@inline Base.getindex(a::QCurlGradMonomialBasis,i::Integer) = Monomial()
-@inline Base.IndexStyle(::QCurlGradMonomialBasis) = IndexLinear()
+Base.getindex(a::QCurlGradMonomialBasis,i::Integer) = Monomial()
+Base.IndexStyle(::QCurlGradMonomialBasis) = IndexLinear()
 
 """
     QCurlGradMonomialBasis{D}(::Type{T},order::Int) where {D,T}
@@ -45,7 +45,7 @@ function return_cache(f::QCurlGradMonomialBasis,x::AbstractVector{<:Point})
   return_cache(f.qgrad,x)
 end
 
-@inline function evaluate!(cache,f::QCurlGradMonomialBasis,x::AbstractVector{<:Point})
+function evaluate!(cache,f::QCurlGradMonomialBasis,x::AbstractVector{<:Point})
   evaluate!(cache,f.qgrad,x)
 end
 
@@ -57,7 +57,7 @@ function return_cache(
   return_cache(FieldGradientArray{N}(f.qgrad),x)
 end
 
-@inline function evaluate!(
+function evaluate!(
   cache,
   fg::FieldGradientArray{N,<:QCurlGradMonomialBasis},
   x::AbstractVector{<:Point}) where N
