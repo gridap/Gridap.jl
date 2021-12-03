@@ -287,39 +287,47 @@ end
 function _point_to_cell!(cache, x::Point)
   kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map, table_cache = cache
 
-  # Find nearest vertex
-  id,dist = nn(kdtree, SVector(Tuple(x)))
+  # Loop over the first 3 nearest vertex
+  for (id,dist) in knn(kdtree, SVector(Tuple(x)), 3, sortres=true)
 
-  # Find all neighbouring cells
-  cells = getindex!(table_cache,vertex_to_cells,id)
-  @assert !isempty(cells)
+    # Find all neighbouring cells
+    cells = getindex!(table_cache,vertex_to_cells,id)
+    @assert !isempty(cells)
 
-  # Calculate the distance from the point to all the cells. Without
-  # round-off, and with non-overlapping cells, the distance would be
-  # negative for exactly one cell and positive for all other ones. Due
-  # to round-off, the distance can be slightly negative or slightly
-  # positive for points near cell boundaries, in particular near
-  # vertices. In this case, choose the cell with the smallest
-  # distance, and check that the distance (if positive) is at most at
-  # round-off level.
-  T = eltype(dist)
-  function cell_distance(cell::Integer)
-    ctype = cell_to_ctype[cell]
-    polytope = ctype_to_polytope[ctype]
-    cmap = cell_map[cell]
-    inv_cmap = inverse_map(cmap)
-    return distance(polytope, inv_cmap, x)
-  end
-  # findmin, without allocating an array
-  cell = zero(eltype(cells))
-  dist = T(Inf)
-  for jcell in cells
-    jdist = cell_distance(jcell)
-    if jdist < dist
-      cell = jcell
-      dist = jdist
+    # Calculate the distance from the point to all the cells. Without
+    # round-off, and with non-overlapping cells, the distance would be
+    # negative for exactly one cell and positive for all other ones. Due
+    # to round-off, the distance can be slightly negative or slightly
+    # positive for points near cell boundaries, in particular near
+    # vertices. In this case, choose the cell with the smallest
+    # distance, and check that the distance (if positive) is at most at
+    # round-off level.
+    T = eltype(dist)
+    function cell_distance(cell::Integer)
+      ctype = cell_to_ctype[cell]
+      polytope = ctype_to_polytope[ctype]
+      cmap = cell_map[cell]
+      inv_cmap = inverse_map(cmap)
+      return distance(polytope, inv_cmap, x)
     end
+    # findmin, without allocating an array
+    cell = zero(eltype(cells))
+    dist = T(Inf)
+    println("++++++++++++++ ",x)
+    println(" cells ",cells)
+    for jcell in cells
+      jdist = cell_distance(jcell)
+      if jdist < dist
+        println(cell, " ", jdist, " ", dist)
+        cell = jcell
+        dist = jdist
+      end
+    end
+
+    dist ≤ 1000eps(T) && return cell
+
   end
+
   # Ensure the point is inside one of the cells, up to round-off errors
   @check dist ≤ 1000eps(T) "Point $x is not inside any cell by a distance $dist"
 
