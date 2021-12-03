@@ -288,7 +288,7 @@ function _point_to_cell!(cache, x::Point)
   kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map, table_cache = cache
 
   # Loop over the first 3 nearest vertex
-  for (id,dist) in knn(kdtree, SVector(Tuple(x)), 3, sortres=true)
+  for (id,dist) in zip(knn(kdtree, SVector(Tuple(x)), 3, true)...)
 
     # Find all neighbouring cells
     cells = getindex!(table_cache,vertex_to_cells,id)
@@ -313,12 +313,9 @@ function _point_to_cell!(cache, x::Point)
     # findmin, without allocating an array
     cell = zero(eltype(cells))
     dist = T(Inf)
-    println("++++++++++++++ ",x)
-    println(" cells ",cells)
     for jcell in cells
       jdist = cell_distance(jcell)
       if jdist < dist
-        println(cell, " ", jdist, " ", dist)
         cell = jcell
         dist = jdist
       end
