@@ -241,7 +241,7 @@ function get_facet_normal(trian::BoundaryTriangulation)
   Fields.MemoArray(face_s_n)
 end
 
-@inline function push_normal(invJt,n)
+function push_normal(invJt,n)
   v = invJt⋅n
   m = sqrt(inner(v,v))
   if m < eps()

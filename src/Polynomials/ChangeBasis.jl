@@ -46,11 +46,11 @@ end
 
 struct BasisTermFromChangeOfBasis end
 
-@inline Base.size(a::BasisFromChangeOfBasis) = (length(a.basis),)
-@inline Base.axes(a::BasisFromChangeOfBasis) = (axes(a.basis,1),)
+Base.size(a::BasisFromChangeOfBasis) = (length(a.basis),)
+Base.axes(a::BasisFromChangeOfBasis) = (axes(a.basis,1),)
 # @santiagobadia : Not sure we want to create the real computation here
-@inline Base.getindex(a::BasisFromChangeOfBasis,i::Integer) = BasisTermFromChangeOfBasis()
-@inline Base.IndexStyle(::BasisFromChangeOfBasis) = IndexLinear()
+Base.getindex(a::BasisFromChangeOfBasis,i::Integer) = BasisTermFromChangeOfBasis()
+Base.IndexStyle(::BasisFromChangeOfBasis) = IndexLinear()
 
 function return_cache(b::BasisFromChangeOfBasis,x)
   cb = return_cache(b.basis,x)

@@ -271,7 +271,7 @@ function _setup_cell_to_lmdof_to_mdof(cell_to_ldof_to_dof,DOF_to_mDOFs,n_fdofs,n
   Table(cell_to_lmdof_to_mdof_data,cell_to_lmdof_to_mdof_ptrs)
 end
 
-@inline function _dof_to_DOF(dof,n_fdofs)
+function _dof_to_DOF(dof,n_fdofs)
   if dof > 0
     DOF = dof
   else
@@ -279,7 +279,7 @@ end
   end
 end
 
-@inline function _DOF_to_dof(DOF,n_fdofs)
+function _DOF_to_dof(DOF,n_fdofs)
   if DOF > n_fdofs
     dof = -(DOF-n_fdofs)
   else

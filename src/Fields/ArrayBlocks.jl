@@ -39,13 +39,13 @@ Base.eltype(::Type{<:ArrayBlock{A}}) where A = A
 Base.eltype(b::ArrayBlock{A}) where A = A
 Base.ndims(b::ArrayBlock{A,N}) where {A,N} = N
 Base.ndims(::Type{ArrayBlock{A,N}}) where {A,N} = N
-@inline function Base.getindex(b::ArrayBlock,i...)
+function Base.getindex(b::ArrayBlock,i...)
   if !b.touched[i...]
     return nothing
   end
   b.array[i...]
 end
-@inline function Base.setindex!(b::ArrayBlock,v,i...)
+function Base.setindex!(b::ArrayBlock,v,i...)
  @check b.touched[i...] "Only touched entries can be set"
  b.array[i...] = v
 end
@@ -1318,7 +1318,7 @@ function _mymul!(
   mul!(c,a,b,α,1)
 end
 
-@inline function _mymul!(cIJ,aIK,bKJ,α)
+function _mymul!(cIJ,aIK,bKJ,α)
   @boundscheck begin
     @assert size(cIJ,1) == size(aIK,1)
     @assert size(cIJ,2) == size(bKJ,2)
