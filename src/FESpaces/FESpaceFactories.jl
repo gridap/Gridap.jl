@@ -119,13 +119,15 @@ function FESpace(
   return V
 end
 
-function FESpace(model::DiscreteModel, reffe::Tuple{<:ReferenceFEName,Any,Any}; kwargs...)
+function FESpace(model::DiscreteModel,
+                 reffe::Tuple{<:ReferenceFEName,Any,Any}; kwargs...)
   basis, reffe_args,reffe_kwargs = reffe
   cell_reffe = ReferenceFE(model,basis,reffe_args...;reffe_kwargs...)
   FESpace(model,cell_reffe;kwargs...)
 end
 
-function FESpace(model::DiscreteModel, reffe::ReferenceFE; kwargs...)
+function FESpace(model::DiscreteModel,
+                 reffe::ReferenceFE; kwargs...)
   cell_reffe = Fill(reffe,num_cells(model))
   FESpace(model,cell_reffe;kwargs...)
 end
