@@ -40,7 +40,7 @@ function setup_markers(NT, NE, node, elem, d2p, dualedge, θ)
             else
                 current = current + η[ct];
                 N = size(node,1)+1;
-                marker[d2p[elem[ct,2],elem[ct,3]]] = N;
+                marker[d2p[elem[ct,2],elem[ct,3]]] = N
                 node = [node; get_midpoint(node[elem[ct,[2 3],:]])]
                 @show elem[ct,3],elem[ct,2]
                 @show ct = dualedge[elem[ct,2],elem[ct,3]]
@@ -50,8 +50,7 @@ function setup_markers(NT, NE, node, elem, d2p, dualedge, θ)
             end
         end
     end
-    @show node
-    @show marker
+    node, marker
 end
 
 function divide(elem,t,p)
@@ -61,9 +60,8 @@ function divide(elem,t,p)
     elem
 end
 
-function refine(NE, d2p, elem)
+function refine(d2p, elem, marker)
     # TODO: for now everything marked for refinement
-    marker = fill(1, NE)
     for t=1:2
         @show t
         @show elem
@@ -80,6 +78,7 @@ function refine(NE, d2p, elem)
             end
         end
     end
+    elem
 end
 
 function build_edges(elem::Matrix{T}) where {T <: Integer}
@@ -116,27 +115,6 @@ function test_against_top(face::Matrix{Ti}, top::GridTopology, d::T) where {Ti, 
     @assert all(issetequal_bitvec)
 end
 
-"""
-node_coords == node, cell_node_ids == elem in Long Chen's notation
-"""
-function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_node_ids::Matrix)
-    N = size(node_coords, 1)
-    #@show elem = vcat(cell_node_ids'...)
-    elem = cell_node_ids
-    NT = size(elem, 1)
-    test_against_top(elem, top, 2)
-    @show edge = build_edges(elem)
-    NE = size(edge, 1)
-    dualedge = build_directed_dualedge(elem, N, NT)
-    d2p = dual_to_primal(edge, NE, N)
-    test_against_top(edge, top, 1)
-    # TODO: Mark largest edge
-    #sort_elem_for_labeling(node_coords, elem)
-    setup_markers(NT, NE, node_coords, elem, d2p, dualedge, 1)
-    #refine(NE, d2p, elem)
-    node_coords, cell_node_ids
-end
-
 
 function get_midpoint(ngon)
     return sum(ngon)/length(ngon)
@@ -166,6 +144,29 @@ function sort_cell_node_ids_ccw(cell_node_ids, node_coords)
     end
     cell_node_ids_ccw
 end
+
+"""
+node_coords == node, cell_node_ids == elem in Long Chen's notation
+"""
+function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_node_ids::Matrix)
+    N = size(node_coords, 1)
+    #@show elem = vcat(cell_node_ids'...)
+    elem = cell_node_ids
+    NT = size(elem, 1)
+    test_against_top(elem, top, 2)
+    @show edge = build_edges(elem)
+    NE = size(edge, 1)
+    dualedge = build_directed_dualedge(elem, N, NT)
+    d2p = dual_to_primal(edge, NE, N)
+    test_against_top(edge, top, 1)
+    # TODO: Mark largest edge
+    #sort_elem_for_labeling(node_coords, elem)
+    node, marker = setup_markers(NT, NE, node_coords, elem, d2p, dualedge, 1)
+    elem = refine(d2p, elem, marker)
+    @show elem
+    node_coords, cell_node_ids
+end
+
 
 # setp 1
 function newest_vertex_bisection(grid::Grid, top::GridTopology, cell_mask::AbstractVector{<:Bool})
