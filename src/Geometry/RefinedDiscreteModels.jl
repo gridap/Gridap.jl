@@ -172,36 +172,32 @@ end
 
 # step 1
 function newest_vertex_bisection(grid::Grid, top::GridTopology, cell_mask::AbstractVector{<:Bool})
-    #get_faces(top
-    #@show cell_coords = get_cell_coordinates(grid)
     node_coords = get_node_coordinates(grid)
-    @show typeof(node_coords)
     cell_node_ids = get_cell_node_ids(grid)
-    @show cell_node_ids 
-    @show typeof(cell_node_ids)
     cell_node_ids_ccw = sort_cell_node_ids_ccw(cell_node_ids, node_coords)
     typeof(node_coords)
-    # TODO: Modify node__coords and cell_node_ids
     node_coords_ref, cell_node_ids_ref = newest_vertex_bisection(top, node_coords, cell_node_ids_ccw)
-    @show typeof(node_coords_ref)
-    @show cell_node_ids_ref = [c for c in eachrow(cell_node_ids_ref)]
-    @show typeof(cell_node_ids_ref)
-    #cell_node_ids_ref = Table(cell_node_ids_ref)
+    # TODO: Should not convert to matrix and back to Table
+    cell_node_ids_ref = [c for c in eachrow(cell_node_ids_ref)]
+    typeof(cell_node_ids_ref)
     cell_node_ids_ref = Table(cell_node_ids_ref)
-    #newest_vertex_bisection(top, node_coords, cell_node_ids_ccw)
     reffes = get_reffes(grid)
     cell_types = get_cell_type(grid)
+    # TODO : Gracefully handle cell_types
+    new_cell_types = fill(1, length(cell_node_ids_ref) - length(cell_node_ids))
+    append!(cell_types, new_cell_types)
     UnstructuredGrid(node_coords_ref, cell_node_ids_ref, reffes, cell_types)
 end
 
 # step 2
 function newest_vertex_bisection(model::DiscreteModel,cell_mask::AbstractVector{<:Bool})
-  grid  = get_grid(model)
+  grid = get_grid(model)
   top = get_grid_topology(model)
   ref_grid = newest_vertex_bisection(grid, top, cell_mask)
-  ref_topo = GridTopology(grid)
-  ref_labels = get_face_labeling(model)
+  ref_topo = GridTopology(ref_grid)
+  #ref_labels = get_face_labeling(model)
+  ref_labels = FaceLabeling(ref_topo)
   #ref_labels = # Compute them from the original labels (This is perhaps the most tedious part)
-  ref_model = DiscreteModel(ref_grid,ref_topo,ref_labels)
+  ref_model = DiscreteModel(ref_grid, ref_topo, ref_labels)
   #ref_model
 end
