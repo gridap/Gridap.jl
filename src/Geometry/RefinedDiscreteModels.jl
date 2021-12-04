@@ -11,50 +11,28 @@ function shift_to_first(v::Vector, i::T) where {T <: Int}
 end
 
 # TODO: under construction for longest side in non-uniform mesh
-function sort_longest_side(node::Vector, elem::Matrix, NT, N)
+function sort_longest_side(node::Vector, elem::Matrix, NT)
     edgelength = zeros(NT, 3)
     node = [[v[1], v[2]] for v in node]
-    #@show node
     node = vcat(node'...)
-    #@show size(edgelength[:,1])
-    #@show elem[:,3]
-    #@show node[elem[:,3],1]-node[elem[:,2],1]
     for i = 1:NT
         elem_i = elem[i, :]
         for (j, e) in enumerate(elem_i)
             arr = filter(x -> x != e, elem_i)
-            #@show node[arr[1],:]
             diff = sqrt(sum((node[arr[1], :] - node[arr[2], :]).^2))
             edgelength[i, j] = diff
-            #if  != j
-            #    edgelength[i, j]
-            #end
         end
     end
-    #@show edgelength
     max_indices = findmax(edgelength, dims=2)[2]
     for i = 1:NT
         max_indices[i][2]
         elem[i,:] = shift_to_first(elem[i,:], max_indices[i][2])
     end
     elem
-    #@show edgelength[max_idx[2][:]]
-    #@show edgelength
-    #edgelength[:,1]=(node[elem[:,3],1]-node[elem[:,2],1]).^2
-    #               +(node[elem[:,3],2]-node[elem[:,2],2]).^2
-    #edgelength[:,2]=(node[elem[:,1],1]-node[elem[:,3],1]).^2
-    #               +(node[elem[:,1],2]-node[elem[:,3],2]).^2
-    #edgelength[:,3]=(node[elem[:,3],1]-node[elem[:,2],1]).^2
-    #               +(node[elem[:,3],2]-node[elem[:,2],2]).^2
-    #@show edgelength
-    #(temp,I)=max(edgelength,[],2)
-    #@show I
-    #elem[[I==2],[1 2 3]]=elem[[I==2], [2 3 1]]
-    #elem[[I==3],[1 2 3]]=elem[[I==3], [3 1 2]]
 end
 
 function setup_markers(NT, NE, node, elem, d2p, dualedge, θ)
-    # No estimator for now
+    # TODO: handle estimator
     η = fill(1, NT)
     total = sum(η)
     ix = sortperm(-η)
@@ -67,11 +45,8 @@ function setup_markers(NT, NE, node, elem, d2p, dualedge, θ)
         index=1
         ct=ix[t]
         while (index==1)
-            #@show elem[ct,2],elem[ct,3]
-            #@show elem[ct, :]
             base = d2p[elem[ct,2],elem[ct,3]]
             if marker[base]>0
-                #show marker[base]
                 index=0
             else
                 current = current + η[ct]
@@ -90,14 +65,13 @@ function setup_markers(NT, NE, node, elem, d2p, dualedge, θ)
 end
 
 function divide(elem,t,p)
-    #elem[size(elem,1)+1,:]=[p[4],p[3],p[1]]
     elem = [elem; [p[4] p[3] p[1]]]
     elem[t,:]=[p[4] p[1] p[2]]
     elem
 end
 
-function refine(d2p, elem, marker, NT)
-    # TODO: for now everything marked for refinement
+function bisect(d2p, elem, marker, NT)
+    # TODO: for now everything marked for bisection
     for t=1:NT
         base=d2p[elem[t,2],elem[t,3]]
         if (marker[base]>0)
@@ -127,7 +101,6 @@ function build_directed_dualedge(elem::Matrix{Ti}, N::T, NT::T) where {Ti, T <: 
         dualedge[elem[t,2],elem[t,3]]=t
         dualedge[elem[t,3],elem[t,1]]=t
     end
-    #@show nnz(dualedge)
     dualedge
 end
 
@@ -160,9 +133,7 @@ end
 function sort_ccw(cell_coords)
     midpoint = get_midpoint(cell_coords)
     offset_coords = cell_coords .- midpoint
-    #@show midpoint_zero = get_midpoint(offset_coords)
     sorted_perm = sortperm(offset_coords, by=atan)
-    #@show offset_coords[sorted_perm] .+ midpoint
     return sorted_perm
 end
 
@@ -185,7 +156,7 @@ function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_no
     #@show elem = vcat(cell_node_ids'...)
     elem = cell_node_ids
     NT = size(elem, 1)
-    elem = sort_longest_side(node_coords, elem, NT, N)
+    elem = sort_longest_side(node_coords, elem, NT)
     test_against_top(elem, top, 2)
     edge = build_edges(elem)
     NE = size(edge, 1)
@@ -194,36 +165,29 @@ function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_no
     test_against_top(edge, top, 1)
     ## TODO: Mark largest edge
     ##sort_elem_for_labeling(node_coords, elem)
-    node, marker = setup_markers(NT, NE, node_coords, elem, d2p, dualedge, 1)
+    node_coords, marker = setup_markers(NT, NE, node_coords, elem, d2p, dualedge, 1)
     #@show node
-    @show size(node, 1)
-    elem = refine(d2p, elem, marker, NT)
-    @show size(elem, 1)
-    #@show elem
-    #node_coords, cell_node_ids
+    @show size(node_coords, 1)
+    cell_node_ids_ref = bisect(d2p, elem, marker, NT)
+    @show size(cell_node_ids_ref, 1)
+    #@show cell_node_ids_ref
+    node_coords, cell_node_ids_ref
 end
 
-
-# setp 1
+# step 1
 function newest_vertex_bisection(grid::Grid, top::GridTopology, cell_mask::AbstractVector{<:Bool})
     #get_faces(top
     #@show cell_coords = get_cell_coordinates(grid)
     node_coords = get_node_coordinates(grid)
     cell_node_ids = get_cell_node_ids(grid)
     cell_node_ids_ccw = sort_cell_node_ids_ccw(cell_node_ids, node_coords)
-    # TODO: Modify node__coords and cell_node_ids
     typeof(node_coords)
+    # TODO: Modify node__coords and cell_node_ids
+    #node_coords, cell_node_ids = newest_vertex_bisection(top, node_coords, cell_node_ids_ccw)
     newest_vertex_bisection(top, node_coords, cell_node_ids_ccw)
     reffes = get_reffes(grid)
     cell_types = get_cell_type(grid)
     UnstructuredGrid(node_coords, cell_node_ids, reffes, cell_types)
-    #@show new_val = VectorValue{2, Float64}(1.5, 1.5, 1.5)
-    #new_val = LazyArray([VectorValue(1.5, 1.5), VectorValue(1.2, 2), VectorValue(3.2, 3.1)])
-    #@show new_val = lazy_map(get_midpoint, cell_coords[1:2], 0*cell_coords[1:2])
-    #@show new_val = lazy_map(get_midpoint, cell_coords[1:2], 0*cell_coords[1:2])
-    #cell_coords = lazy_append(cell_coords, new_val)
-  # tod
-  #ref_grid
 end
 
 # step 2
