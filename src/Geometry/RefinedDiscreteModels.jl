@@ -1,11 +1,6 @@
 using Gridap.Arrays
 using SparseArrays
 
-# TODO: could probably overload ^ from Base for VectorValue
-function sumsq(v::VectorValue)
-    return sum([v[i]^2 for i in 1:length(v)])
-end
-
 function shift_to_first(v::Vector, i::T) where {T <: Int}
     circshift(v, -(i - 1))
 end
@@ -139,6 +134,7 @@ end
 
 function sort_cell_node_ids_ccw(cell_node_ids, node_coords)
     cell_node_ids_ccw = vcat(cell_node_ids'...)
+    #cell_node_ids_ccw = cell_node_ids
     #@show cell_node_ids_ccw
     for (i, cell) in enumerate(cell_node_ids)
         cell_coords = node_coords[cell]
@@ -168,10 +164,10 @@ function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_no
     node_coords, marker = setup_markers(NT, NE, node_coords, elem, d2p, dualedge, 1)
     #@show node
     @show size(node_coords, 1)
-    cell_node_ids_ref = bisect(d2p, elem, marker, NT)
-    @show size(cell_node_ids_ref, 1)
+    cell_node_ids = bisect(d2p, elem, marker, NT)
+    @show size(cell_node_ids, 1)
     #@show cell_node_ids_ref
-    node_coords, cell_node_ids_ref
+    node_coords, cell_node_ids
 end
 
 # step 1
@@ -179,15 +175,23 @@ function newest_vertex_bisection(grid::Grid, top::GridTopology, cell_mask::Abstr
     #get_faces(top
     #@show cell_coords = get_cell_coordinates(grid)
     node_coords = get_node_coordinates(grid)
+    @show typeof(node_coords)
     cell_node_ids = get_cell_node_ids(grid)
+    @show cell_node_ids 
+    @show typeof(cell_node_ids)
     cell_node_ids_ccw = sort_cell_node_ids_ccw(cell_node_ids, node_coords)
     typeof(node_coords)
     # TODO: Modify node__coords and cell_node_ids
-    #node_coords, cell_node_ids = newest_vertex_bisection(top, node_coords, cell_node_ids_ccw)
-    newest_vertex_bisection(top, node_coords, cell_node_ids_ccw)
+    node_coords_ref, cell_node_ids_ref = newest_vertex_bisection(top, node_coords, cell_node_ids_ccw)
+    @show typeof(node_coords_ref)
+    @show cell_node_ids_ref = [c for c in eachrow(cell_node_ids_ref)]
+    @show typeof(cell_node_ids_ref)
+    #cell_node_ids_ref = Table(cell_node_ids_ref)
+    cell_node_ids_ref = Table(cell_node_ids_ref)
+    #newest_vertex_bisection(top, node_coords, cell_node_ids_ccw)
     reffes = get_reffes(grid)
     cell_types = get_cell_type(grid)
-    UnstructuredGrid(node_coords, cell_node_ids, reffes, cell_types)
+    UnstructuredGrid(node_coords_ref, cell_node_ids_ref, reffes, cell_types)
 end
 
 # step 2
@@ -195,9 +199,9 @@ function newest_vertex_bisection(model::DiscreteModel,cell_mask::AbstractVector{
   grid  = get_grid(model)
   top = get_grid_topology(model)
   ref_grid = newest_vertex_bisection(grid, top, cell_mask)
-  #ref_topo = GridTopology(grid)
-  #labels = get_face_labelling(model)
+  ref_topo = GridTopology(grid)
+  ref_labels = get_face_labeling(model)
   #ref_labels = # Compute them from the original labels (This is perhaps the most tedious part)
-  #ref_model = DiscreteModel(ref_grid,ref_topo,ref_labels)
+  ref_model = DiscreteModel(ref_grid,ref_topo,ref_labels)
   #ref_model
 end
