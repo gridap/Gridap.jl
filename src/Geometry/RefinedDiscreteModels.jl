@@ -33,7 +33,6 @@ function sort_longest_side(node::Vector, elem::Matrix, NT, N)
     end
     #@show edgelength
     max_indices = findmax(edgelength, dims=2)[2]
-    @show max_indices 
     for i = 1:NT
         max_indices[i][2]
         elem[i,:] = shift_to_first(elem[i,:], max_indices[i][2])
@@ -62,7 +61,6 @@ function setup_markers(NT, NE, node, elem, d2p, dualedge, θ)
     current = 0
     marker = zeros(Int32, NE,1)
     for t = 1:NT
-        @show t
         if (current > θ*total)
             break
         end
@@ -101,8 +99,6 @@ end
 function refine(d2p, elem, marker, NT)
     # TODO: for now everything marked for refinement
     for t=1:NT
-        @show t
-        @show elem
         base=d2p[elem[t,2],elem[t,3]]
         if (marker[base]>0)
             p = vcat(elem[t,:], marker[base])
@@ -147,8 +143,8 @@ function dual_to_primal(edge::Matrix{Ti}, NE::T, N::T) where {Ti, T <: Integer}
 end
 
 function test_against_top(face::Matrix{Ti}, top::GridTopology, d::T) where {Ti, T <: Integer}
-    @show face_vec = sort.([face[i,:] for i in 1:size(face,1)])
-    @show face_top = sort.(get_faces(top, d, 0))
+    face_vec = sort.([face[i,:] for i in 1:size(face,1)])
+    face_top = sort.(get_faces(top, d, 0))
     issetequal_bitvec = issetequal(face_vec, face_top)
     @assert all(issetequal_bitvec)
 end
@@ -189,11 +185,7 @@ function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_no
     #@show elem = vcat(cell_node_ids'...)
     elem = cell_node_ids
     NT = size(elem, 1)
-    println("elem before reorder longest side")
-    @show elem
     elem = sort_longest_side(node_coords, elem, NT, N)
-    println("elem after reorder longest side")
-    @show elem
     test_against_top(elem, top, 2)
     edge = build_edges(elem)
     NE = size(edge, 1)
@@ -203,9 +195,11 @@ function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_no
     ## TODO: Mark largest edge
     ##sort_elem_for_labeling(node_coords, elem)
     node, marker = setup_markers(NT, NE, node_coords, elem, d2p, dualedge, 1)
-    @show node
+    #@show node
+    @show size(node, 1)
     elem = refine(d2p, elem, marker, NT)
     @show size(elem, 1)
+    #@show elem
     #node_coords, cell_node_ids
 end
 
