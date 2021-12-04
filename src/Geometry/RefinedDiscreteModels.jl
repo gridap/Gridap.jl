@@ -1,29 +1,58 @@
 using Gridap.Arrays
 using SparseArrays
 
+# TODO: could probably overload ^ from Base for VectorValue
+function sumsq(v::VectorValue)
+    return sum([v[i]^2 for i in 1:length(v)])
+end
+
 # TODO: under construction for longest side in non-uniform mesh
-function sort_elem_for_labeling(node::Vector, elem::Matrix)
-    #@show node[elem[:,3],1]-node[elem[:,2],1].^2
-    #+[node[elem[:,3],2]-node[elem[:,2],2]].ˆ2
-    #edgelength[:,2]=[node[elem[:,1],1]-node[elem[:,3],1]].^2
-    #+[node[elem[:,1],2]-node[elem[:,3],2]].ˆ2
-    #edgelength[:,3]=[node[elem[:,3],1]-node[elem[:,2],1]].^2
-    #+[node[elem[:,3],2]-node[elem[:,2],2]].ˆ2
+function sort_elem_for_labeling(node::Vector, elem::Matrix, NT, N)
+    edgelength = zeros(NT, 3)
+    node = [[v[1], v[2]] for v in node]
+    @show elem
+    @show node
+    node = vcat(node'...)
+    #@show size(edgelength[:,1])
+    @show node
+    @show node[3,:]
+    #@show elem[:,3]
+    #@show node[elem[:,3],1]-node[elem[:,2],1]
+    for i = 1:NT
+        @show elem_i = elem[i, :]
+        for (j, e) in enumerate(elem_i)
+            arr = filter(x -> x != e, elem_i)
+            #@show node[arr[1],:]
+            diff = sqrt(sum((node[arr[1], :] - node[arr[2], :]).^2))
+            edgelength[i, j] = diff
+            #if  != j
+            #    edgelength[i, j]
+            #end
+        end
+    end
+    @show edgelength
+    edgelength[:,1]=(node[elem[:,3],1]-node[elem[:,2],1]).^2
+                   +(node[elem[:,3],2]-node[elem[:,2],2]).^2
+    edgelength[:,2]=(node[elem[:,1],1]-node[elem[:,3],1]).^2
+                   +(node[elem[:,1],2]-node[elem[:,3],2]).^2
+    edgelength[:,3]=(node[elem[:,3],1]-node[elem[:,2],1]).^2
+                   +(node[elem[:,3],2]-node[elem[:,2],2]).^2
+    @show edgelength
     #(temp,I)=max(edgelength,[],2)
+    #@show I
     #elem[[I==2],[1 2 3]]=elem[[I==2], [2 3 1]]
     #elem[[I==3],[1 2 3]]=elem[[I==3], [3 1 2]]
 end
 
 function setup_markers(NT, NE, node, elem, d2p, dualedge, θ)
     # No estimator for now
-    η = fill(1, NT)
+    #η = fill(1, NT)
+    @show η = [0, 0]
     @show total = sum(η)
     @show ix = sortperm(-η)
     current = 0
     @show NE
     marker = zeros(Int32, NE,1)
-    @show d2p
-    @show dualedge
     for t = 1:NT
         @show t
         if (current > θ*total)
@@ -33,17 +62,18 @@ function setup_markers(NT, NE, node, elem, d2p, dualedge, θ)
         ct=ix[t]
         while (index==1)
             #@show elem[ct,2],elem[ct,3]
-            @show base = d2p[elem[ct,2],elem[ct,3]]
+            @show elem[ct, :]
+            base = d2p[elem[ct,2],elem[ct,3]]
             if marker[base]>0
                 @show marker[base]
                 index=0
             else
-                current = current + η[ct];
+                current = current + η[ct]
                 N = size(node,1)+1;
                 marker[d2p[elem[ct,2],elem[ct,3]]] = N
-                node = [node; get_midpoint(node[elem[ct,[2 3],:]])]
-                @show elem[ct,3],elem[ct,2]
-                @show ct = dualedge[elem[ct,2],elem[ct,3]]
+                @show midpoint = get_midpoint(node[elem[ct,[2 3],:]])
+                node = [node; midpoint]
+                ct = dualedge[elem[ct,2],elem[ct,3]]
                 if ct==0
                     index=0
                 end
@@ -115,7 +145,6 @@ function test_against_top(face::Matrix{Ti}, top::GridTopology, d::T) where {Ti, 
     @assert all(issetequal_bitvec)
 end
 
-
 function get_midpoint(ngon)
     return sum(ngon)/length(ngon)
 end
@@ -153,18 +182,20 @@ function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_no
     #@show elem = vcat(cell_node_ids'...)
     elem = cell_node_ids
     NT = size(elem, 1)
-    test_against_top(elem, top, 2)
-    @show edge = build_edges(elem)
-    NE = size(edge, 1)
-    dualedge = build_directed_dualedge(elem, N, NT)
-    d2p = dual_to_primal(edge, NE, N)
-    test_against_top(edge, top, 1)
-    # TODO: Mark largest edge
-    #sort_elem_for_labeling(node_coords, elem)
-    node, marker = setup_markers(NT, NE, node_coords, elem, d2p, dualedge, 1)
-    elem = refine(d2p, elem, marker)
-    @show elem
-    node_coords, cell_node_ids
+    sort_elem_for_labeling(node_coords, elem, NT, N)
+    #test_against_top(elem, top, 2)
+    #@show edge = build_edges(elem)
+    #NE = size(edge, 1)
+    #dualedge = build_directed_dualedge(elem, N, NT)
+    #d2p = dual_to_primal(edge, NE, N)
+    #test_against_top(edge, top, 1)
+    ## TODO: Mark largest edge
+    ##sort_elem_for_labeling(node_coords, elem)
+    #node, marker = setup_markers(NT, NE, node_coords, elem, d2p, dualedge, 1)
+    #@show node
+    #elem = refine(d2p, elem, marker)
+    #@show elem
+    #node_coords, cell_node_ids
 end
 
 
