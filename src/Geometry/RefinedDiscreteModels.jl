@@ -14,7 +14,6 @@ end
 function sort_elem_for_labeling(node::Vector, elem::Matrix, NT, N)
     edgelength = zeros(NT, 3)
     node = [[v[1], v[2]] for v in node]
-    @show elem
     #@show node
     node = vcat(node'...)
     #@show size(edgelength[:,1])
@@ -36,9 +35,10 @@ function sort_elem_for_labeling(node::Vector, elem::Matrix, NT, N)
     max_indices = findmax(edgelength, dims=2)[2]
     @show max_indices 
     for i = 1:NT
-        @show max_indices[i][2]
-        @show shift_to_first(elem[i,:], max_indices[i][2])
+        max_indices[i][2]
+        elem[i,:] = shift_to_first(elem[i,:], max_indices[i][2])
     end
+    elem
     #@show edgelength[max_idx[2][:]]
     #@show edgelength
     #edgelength[:,1]=(node[elem[:,3],1]-node[elem[:,2],1]).^2
@@ -192,19 +192,20 @@ function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_no
     #@show elem = vcat(cell_node_ids'...)
     elem = cell_node_ids
     NT = size(elem, 1)
-    sort_elem_for_labeling(node_coords, elem, NT, N)
-    #test_against_top(elem, top, 2)
-    #@show edge = build_edges(elem)
-    #NE = size(edge, 1)
-    #dualedge = build_directed_dualedge(elem, N, NT)
-    #d2p = dual_to_primal(edge, NE, N)
-    #test_against_top(edge, top, 1)
+    elem = sort_elem_for_labeling(node_coords, elem, NT, N)
+    @show elem
+    test_against_top(elem, top, 2)
+    @show edge = build_edges(elem)
+    NE = size(edge, 1)
+    dualedge = build_directed_dualedge(elem, N, NT)
+    d2p = dual_to_primal(edge, NE, N)
+    test_against_top(edge, top, 1)
     ## TODO: Mark largest edge
     ##sort_elem_for_labeling(node_coords, elem)
-    #node, marker = setup_markers(NT, NE, node_coords, elem, d2p, dualedge, 1)
-    #@show node
-    #elem = refine(d2p, elem, marker)
-    #@show elem
+    node, marker = setup_markers(NT, NE, node_coords, elem, d2p, dualedge, 1)
+    @show node
+    elem = refine(d2p, elem, marker)
+    @show elem
     #node_coords, cell_node_ids
 end
 
