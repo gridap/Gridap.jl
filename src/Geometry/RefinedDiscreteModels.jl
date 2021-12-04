@@ -6,20 +6,22 @@ function sumsq(v::VectorValue)
     return sum([v[i]^2 for i in 1:length(v)])
 end
 
+function shift_to_first(v::Vector, i::T) where {T <: Int}
+    circshift(v, -(i - 1))
+end
+
 # TODO: under construction for longest side in non-uniform mesh
 function sort_elem_for_labeling(node::Vector, elem::Matrix, NT, N)
     edgelength = zeros(NT, 3)
     node = [[v[1], v[2]] for v in node]
     @show elem
-    @show node
+    #@show node
     node = vcat(node'...)
     #@show size(edgelength[:,1])
-    @show node
-    @show node[3,:]
     #@show elem[:,3]
     #@show node[elem[:,3],1]-node[elem[:,2],1]
     for i = 1:NT
-        @show elem_i = elem[i, :]
+        elem_i = elem[i, :]
         for (j, e) in enumerate(elem_i)
             arr = filter(x -> x != e, elem_i)
             #@show node[arr[1],:]
@@ -30,14 +32,22 @@ function sort_elem_for_labeling(node::Vector, elem::Matrix, NT, N)
             #end
         end
     end
-    @show edgelength
-    edgelength[:,1]=(node[elem[:,3],1]-node[elem[:,2],1]).^2
-                   +(node[elem[:,3],2]-node[elem[:,2],2]).^2
-    edgelength[:,2]=(node[elem[:,1],1]-node[elem[:,3],1]).^2
-                   +(node[elem[:,1],2]-node[elem[:,3],2]).^2
-    edgelength[:,3]=(node[elem[:,3],1]-node[elem[:,2],1]).^2
-                   +(node[elem[:,3],2]-node[elem[:,2],2]).^2
-    @show edgelength
+    #@show edgelength
+    max_indices = findmax(edgelength, dims=2)[2]
+    @show max_indices 
+    for i = 1:NT
+        @show max_indices[i][2]
+        @show shift_to_first(elem[i,:], max_indices[i][2])
+    end
+    #@show edgelength[max_idx[2][:]]
+    #@show edgelength
+    #edgelength[:,1]=(node[elem[:,3],1]-node[elem[:,2],1]).^2
+    #               +(node[elem[:,3],2]-node[elem[:,2],2]).^2
+    #edgelength[:,2]=(node[elem[:,1],1]-node[elem[:,3],1]).^2
+    #               +(node[elem[:,1],2]-node[elem[:,3],2]).^2
+    #edgelength[:,3]=(node[elem[:,3],1]-node[elem[:,2],1]).^2
+    #               +(node[elem[:,3],2]-node[elem[:,2],2]).^2
+    #@show edgelength
     #(temp,I)=max(edgelength,[],2)
     #@show I
     #elem[[I==2],[1 2 3]]=elem[[I==2], [2 3 1]]
