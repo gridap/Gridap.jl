@@ -129,17 +129,17 @@ end
   end
 end
 
-@inline function _update_states!(b,q,states,::Val{i}) where i
+function _update_states!(b,q,states,::Val{i}) where i
   _update_state!(b,q,states,Val{i}())
   _update_states!(b,q,states,Val{i-1}())
   nothing
 end
 
-@inline function _update_states!(b,q,states,::Val{0})
+function _update_states!(b,q,states,::Val{0})
   nothing
 end
 
-@inline function _update_state!(b,q,states,::Val{i}) where i
+function _update_state!(b,q,states,::Val{i}) where i
   b[i][q] = states[i]
   nothing
 end

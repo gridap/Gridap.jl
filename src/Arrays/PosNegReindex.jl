@@ -28,12 +28,12 @@ function return_cache(k::PosNegReindex,i::Integer)
   c_p, c_n
 end
 
-@inline function evaluate!(cache,k::PosNegReindex,i::Integer)
+function evaluate!(cache,k::PosNegReindex,i::Integer)
   c_p, c_n = cache
   i>0 ? getindex!(c_p,k.values_pos,i) : getindex!(c_n,k.values_neg,-i)
 end
 
-@inline function evaluate(k::PosNegReindex,i::Integer)
+function evaluate(k::PosNegReindex,i::Integer)
   i>0 ? k.values_pos[i] : k.values_neg[-i]
 end
 

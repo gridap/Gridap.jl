@@ -24,6 +24,7 @@ import Base: size
 import Base: getindex, setindex!
 import Base: similar
 import Base: IndexStyle
+import Base: unaliascopy
 
 # CachedArray
 

@@ -466,7 +466,7 @@ function Base.view(glue::FaceToFaceGlue,ids::AbstractArray)
     mface_to_tface = nothing
   else
     nmfaces = length(glue.mface_to_tface)
-    mface_to_tface = PosNegPartition(glue.tface_to_mface,Int32(nmfaces))
+    mface_to_tface = PosNegPartition(tface_to_mface,Int32(nmfaces))
   end
   FaceToFaceGlue(tface_to_mface,tface_to_mface_map,mface_to_tface)
 end

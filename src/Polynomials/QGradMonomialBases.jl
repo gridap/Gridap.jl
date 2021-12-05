@@ -17,10 +17,10 @@ struct QGradMonomialBasis{D,T} <: AbstractVector{Monomial}
   end
 end
 
-@inline Base.size(a::QGradMonomialBasis) = (_ndofs_qgrad(a),)
+Base.size(a::QGradMonomialBasis) = (_ndofs_qgrad(a),)
 # @santiagobadia : Not sure we want to create the monomial machinery
-@inline Base.getindex(a::QGradMonomialBasis,i::Integer) = Monomial()
-@inline Base.IndexStyle(::QGradMonomialBasis) = IndexLinear()
+Base.getindex(a::QGradMonomialBasis,i::Integer) = Monomial()
+Base.IndexStyle(::QGradMonomialBasis) = IndexLinear()
 
 """
     QGradMonomialBasis{D}(::Type{T},order::Int) where {D,T}

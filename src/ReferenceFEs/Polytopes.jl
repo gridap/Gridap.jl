@@ -278,7 +278,7 @@ function num_faces(p::Polytope,dim::Integer)
   _num_faces(p,dim)
 end
 
-@inline function _num_faces(p,dim)
+function _num_faces(p,dim)
   length(get_dimranges(p)[dim+1])
 end
 
@@ -291,7 +291,7 @@ function num_facets(p::Polytope)
   _num_facets(p)
 end
 
-@inline function _num_facets(p)
+function _num_facets(p)
   D = num_dims(p)
   if D > 0
     num_faces(p,D-1)
@@ -309,7 +309,7 @@ function num_edges(p::Polytope)
   _num_edges(p)
 end
 
-@inline function _num_edges(p)
+function _num_edges(p)
   D = num_dims(p)
   if D > 0
     num_faces(p,1)
@@ -328,7 +328,7 @@ function num_vertices(p::Polytope)
   _num_vertices(p)
 end
 
-@inline function _num_vertices(p)
+function _num_vertices(p)
   num_faces(p,0)
 end
 
@@ -359,7 +359,7 @@ function get_facedims(p::Polytope)
   _get_facedims(Int,p)
 end
 
-@inline function _get_facedims(::Type{T},p) where T
+function _get_facedims(::Type{T},p) where T
   n = num_faces(p)
   facedims = zeros(T,n)
   dimrange = get_dimranges(p)
@@ -395,7 +395,7 @@ function get_offsets(p::Polytope)
   _get_offsets(p)
 end
 
-@inline function _get_offsets(p)
+function _get_offsets(p)
   D = num_dims(p)
   dimrange = get_dimranges(p)
   offsets = zeros(Int,D+1)
@@ -418,7 +418,7 @@ function get_offset(p::Polytope,d::Integer)
   _get_offset(p,d)
 end
 
-@inline function _get_offset(p,d)
+function _get_offset(p,d)
   get_offsets(p)[d+1]
 end
 

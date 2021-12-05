@@ -28,8 +28,8 @@ struct TransformRTDofBasis{Dc,Dp} <: Map end ;
 
 function get_cell_dof_basis(model::DiscreteModel,
                             cell_reffe::AbstractArray{<:GenericRefFE{RaviartThomas}},
-                            ::DivConformity)
-    sign_flip = get_sign_flip(model, cell_reffe)
+                            ::DivConformity,
+                            sign_flip=get_sign_flip(model, cell_reffe))
     cell_map  = get_cell_map(Triangulation(model))
     phi       = cell_map[1]
     Jt        = lazy_map(Broadcasting(∇),cell_map)
@@ -46,8 +46,8 @@ end
 
 function get_cell_shapefuns(model::DiscreteModel,
                             cell_reffe::AbstractArray{<:GenericRefFE{RaviartThomas}},
-                            ::DivConformity)
-    sign_flip = get_sign_flip(model, cell_reffe)
+                            ::DivConformity,
+                            sign_flip=get_sign_flip(model, cell_reffe))
     cell_reffe_shapefuns=lazy_map(get_shapefuns,cell_reffe)
     k=ContraVariantPiolaMap()
     lazy_map(k,

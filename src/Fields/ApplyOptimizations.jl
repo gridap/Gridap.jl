@@ -310,8 +310,8 @@ Base.IndexStyle(::Type{MemoArray{T,N,A}}) where {T,N,A} = IndexStyle(A)
 Base.getindex(a::MemoArray,i::Integer) = a.parent[i]
 Base.getindex(a::MemoArray{T,N},i::Vararg{Integer,N}) where {T,N} = a.parent[i...]
 Arrays.array_cache(a::MemoArray) = array_cache(a.parent)
-@inline Arrays.getindex!(cache,a::MemoArray,i::Integer) = getindex!(cache,a.parent,i)
-@inline Arrays.getindex!(cache,a::MemoArray{T,N},i::Vararg{Integer,N}) where {T,N} = getindex!(cache,a.parent,i...)
+Arrays.getindex!(cache,a::MemoArray,i::Integer) = getindex!(cache,a.parent,i)
+Arrays.getindex!(cache,a::MemoArray{T,N},i::Vararg{Integer,N}) where {T,N} = getindex!(cache,a.parent,i...)
 Arrays.testitem(a::MemoArray) = testitem(a.parent)
 Arrays.get_array(a::MemoArray) = get_array(a.parent)
 
