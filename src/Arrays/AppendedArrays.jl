@@ -63,7 +63,8 @@ struct AppendedArray{T,A,B} <: AbstractVector{T}
     B = typeof(b)
     ai = testitem(a)
     bi = testitem(b)
-    T = eltype(collect((ai,bi)))
+    #T = eltype(collect((ai,bi)))
+    T = promote_type(typeof(ai),typeof(bi))
     new{T,A,B}(a,b)
   end
 end
