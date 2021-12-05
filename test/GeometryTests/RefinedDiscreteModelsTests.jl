@@ -11,34 +11,21 @@ using Gridap.Visualization
 domain = (0,1,0,1)
 partition = (1,1)
 model = CartesianDiscreteModel(domain,partition)
-model_ref = simplexify(model)
 cell_map = get_cell_map(get_triangulation(model))
 num_cells = length(cell_map)
 cell_mask = fill(true, num_cells)
-model_ref =  newest_vertex_bisection(model_ref, cell_mask, true)
-model_ref =  newest_vertex_bisection(model_ref, cell_mask, false)
-model_ref =  newest_vertex_bisection(model_ref, cell_mask, false)
-model_ref =  newest_vertex_bisection(model_ref, cell_mask, false)
-model_ref =  newest_vertex_bisection(model_ref, cell_mask, false)
-model_ref =  newest_vertex_bisection(model_ref, cell_mask, false)
-model_ref =  newest_vertex_bisection(model_ref, cell_mask, false)
-model_ref =  newest_vertex_bisection(model_ref, cell_mask, false)
-model_ref =  newest_vertex_bisection(model_ref, cell_mask, false)
-model_ref =  newest_vertex_bisection(model_ref, cell_mask, false)
-model_ref =  newest_vertex_bisection(model_ref, cell_mask, false)
-model_ref =  newest_vertex_bisection(model_ref, cell_mask, false)
-model_ref =  newest_vertex_bisection(model_ref, cell_mask, false)
-model_ref =  newest_vertex_bisection(model_ref, cell_mask, false)
-writevtk(Triangulation(model_ref), "refined6")
-#for i in 1:3
-#    @show i
-#    @show model_ref
-#    #writevtk(Triangulation(model_ref), "refined$(i)")
-#    model_ref = newest_vertex_bisection(model_ref, cell_mask, false)
-#end
+Nsteps = 20
+model_refs = Vector{DiscreteModel}(undef, Nsteps)
+model_refs[1] = simplexify(model)
+for i in 1:Nsteps-1
+    @show i
+    model_refs[i + 1] = newest_vertex_bisection(model_refs[i], cell_mask, true)
+end
+writevtk(Triangulation(model_refs[end]), "refined")
+
 #model_ref =  newest_vertex_bisection(model_ref, cell_mask, false)
 #model_ref =  newest_vertex_bisection(model_ref, cell_mask, false)
 #@show model_ref =  newest_vertex_bisection(model_ref, cell_mask, true)
 #@show model_ref =  newest_vertex_bisection(model_ref, cell_mask, true)
-@test model_ref isa DiscreteModel
+@test model_refs[end] isa DiscreteModel
 end # module

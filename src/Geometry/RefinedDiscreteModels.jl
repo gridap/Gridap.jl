@@ -39,7 +39,7 @@ function setup_markers(NT, NE, node, elem, d2p, dualedge, θ)
             break
         end
         index=1
-        @show ct=ix[t]
+        ct=ix[t]
         while (index==1)
             base = d2p[elem[ct,2],elem[ct,3]]
             if marker[base]>0
@@ -50,14 +50,13 @@ function setup_markers(NT, NE, node, elem, d2p, dualedge, θ)
                 marker[d2p[elem[ct,2],elem[ct,3]]] = N
                 midpoint = get_midpoint(node[elem[ct,[2 3],:]])
                 node = [node; midpoint]
-                @show ct = dualedge[elem[ct,3],elem[ct,2]]
+                ct = dualedge[elem[ct,3],elem[ct,2]]
                 if ct==0
                     index=0
                 end
             end
         end
     end
-    @show marker
     node, marker
 end
 
@@ -158,16 +157,13 @@ function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_no
     end
     test_against_top(elem, top, 2)
     edge = build_edges(elem)
-    @show edge
     NE = size(edge, 1)
     dualedge = build_directed_dualedge(elem, N, NT)
     d2p = dual_to_primal(edge, NE, N)
     test_against_top(edge, top, 1)
     node_coords, marker = setup_markers(NT, NE, node_coords, elem, d2p, dualedge, 0.2)
     #@show node
-    @show size(node_coords, 1)
     cell_node_ids = bisect(d2p, elem, marker, NT)
-    @show size(cell_node_ids, 1)
     #@show cell_node_ids_ref
     node_coords, cell_node_ids
 end
@@ -177,9 +173,9 @@ function newest_vertex_bisection(grid::Grid, top::GridTopology, cell_mask::Abstr
     node_coords = get_node_coordinates(grid)
     cell_node_ids = get_cell_node_ids(grid)
     if longest
-        @show cell_node_ids_ccw = sort_cell_node_ids_ccw(cell_node_ids, node_coords)
+        cell_node_ids_ccw = sort_cell_node_ids_ccw(cell_node_ids, node_coords)
     else
-        @show cell_node_ids_ccw = vcat(cell_node_ids'...)
+        cell_node_ids_ccw = vcat(cell_node_ids'...)
     end
     node_coords_ref, cell_node_ids_ref = newest_vertex_bisection(top, node_coords, cell_node_ids_ccw, longest)
     #node_coords_ref, cell_node_ids_ref = newest_vertex_bisection(top, node_coords_ref, cell_node_ids_ref, false)
