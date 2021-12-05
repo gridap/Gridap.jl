@@ -92,6 +92,8 @@ change_eltype(::VectorValue{D,T1},::Type{T2}) where {D,T1,T2} = change_eltype(Ve
 
 get_array(arg::VectorValue{D,T}) where {D,T} = convert(SVector{D,T}, arg)
 
+promote_rule(::Type{VectorValue{D,T1}}, ::Type{VectorValue{D,T2}}) where {D,T1,T2} = VectorValue{D,promote_type(T1,T2)}
+
 ###############################################################
 # Introspection (VectorValue)
 ###############################################################
