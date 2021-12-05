@@ -63,7 +63,7 @@ function Arrays.return_cache(k::AttachDirichletMap,matvec::Tuple,vals,mask)
   return_cache(k.muladd,mat,vals,vec)
 end
 
-@inline function Arrays.evaluate!(cache,k::AttachDirichletMap,matvec::Tuple,vals,mask)
+function Arrays.evaluate!(cache,k::AttachDirichletMap,matvec::Tuple,vals,mask)
   if mask
     mat, vec = matvec
     vec_with_bcs = evaluate!(cache,k.muladd,mat,vals,vec)
@@ -79,7 +79,7 @@ function Arrays.return_cache(k::AttachDirichletMap,mat,vals,mask)
   (cm,cv)
 end
 
-@inline function Arrays.evaluate!(cache,k::AttachDirichletMap,mat,vals,mask)
+function Arrays.evaluate!(cache,k::AttachDirichletMap,mat,vals,mask)
   cm, cv = cache
   if mask
     vec_with_bcs = evaluate!(cm,*,mat,vals)

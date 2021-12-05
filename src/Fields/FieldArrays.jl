@@ -1,7 +1,7 @@
 
 # Make arrays of field behave like Maps
 
-@inline function return_cache(f::AbstractArray{T},x::Point) where T<:Field
+function return_cache(f::AbstractArray{T},x::Point) where T<:Field
   S = return_type(testitem(f),x)
   cr = CachedArray(zeros(S,size(f)))
   if isconcretetype(T)
@@ -19,7 +19,7 @@ If the field vector has length `nf` and it is evaluated in one point, it
 returns an `nf` vector with the result. If the same array is applied to a
 vector of `np` points, it returns a matrix `np` x `nf`.
 """
-@inline function evaluate!(c,f::AbstractArray{T},x::Point) where T<:Field
+function evaluate!(c,f::AbstractArray{T},x::Point) where T<:Field
   cr, cf = c
   setsize!(cr,size(f))
   r = cr.array
@@ -110,15 +110,15 @@ function return_value(k::Broadcasting{typeof(∇∇)},a::AbstractArray{<:Field})
   evaluate(k,a)
 end
 
-@inline function evaluate!(cache,k::Broadcasting{typeof(∇)},a::AbstractArray{<:Field})
+function evaluate!(cache,k::Broadcasting{typeof(∇)},a::AbstractArray{<:Field})
   FieldGradientArray{1}(a)
 end
 
-@inline function evaluate!(cache,k::Broadcasting{typeof(∇)},a::FieldGradientArray{N}) where N
+function evaluate!(cache,k::Broadcasting{typeof(∇)},a::FieldGradientArray{N}) where N
   FieldGradientArray{N+1}(a.fa)
 end
 
-@inline function evaluate!(cache,k::Broadcasting{typeof(∇∇)},a::AbstractArray{<:Field})
+function evaluate!(cache,k::Broadcasting{typeof(∇∇)},a::AbstractArray{<:Field})
   FieldGradientArray{2}(a)
 end
 
@@ -140,12 +140,12 @@ function ∇∇(a::AbstractArray{<:Field})
   @unreachable msg
 end
 
-@inline Base.size(a::FieldGradientArray) = size(a.fa)
-@inline Base.axes(a::FieldGradientArray) = axes(a.fa)
-@inline Base.getindex(a::FieldGradientArray{Ng},i::Integer) where Ng = gradient(a.fa[i],Val(Ng))
-@inline Base.getindex(
+Base.size(a::FieldGradientArray) = size(a.fa)
+Base.axes(a::FieldGradientArray) = axes(a.fa)
+Base.getindex(a::FieldGradientArray{Ng},i::Integer) where Ng = gradient(a.fa[i],Val(Ng))
+Base.getindex(
    a::FieldGradientArray{Ng,A,T,N},i::Vararg{Integer,N}) where {Ng,A,T,N} = gradient(a.fa[i...],Val(Ng))
-@inline Base.IndexStyle(::Type{<:FieldGradientArray{Ng,A}}) where {Ng,A} = IndexStyle(A)
+Base.IndexStyle(::Type{<:FieldGradientArray{Ng,A}}) where {Ng,A} = IndexStyle(A)
 
 # Optimizing linear_combination.
 
@@ -172,7 +172,7 @@ for T in (:(Point),:(AbstractVector{<:Point}))
     cf, ck
   end
 
-  @inline function evaluate!(cache,a::LinearCombinationField,x::$T)
+  function evaluate!(cache,a::LinearCombinationField,x::$T)
     cf, ck = cache
     fx = evaluate!(cf,a.fields,x)
     v = a.values
@@ -230,7 +230,7 @@ for T in (:(Point),:(AbstractVector{<:Point}))
       cf, ck
     end
 
-    @inline function evaluate!(cache,a::LinearCombinationFieldVector,x::$T)
+    function evaluate!(cache,a::LinearCombinationFieldVector,x::$T)
       cf, ck = cache
       fx = evaluate!(cf,a.fields,x)
       v = a.values
@@ -261,7 +261,7 @@ struct LinearCombinationMap{T} <: Map
   LinearCombinationMap(column::Colon)  = new{typeof(column)}(column)
 end
 
-@inline function evaluate!(cache,k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::AbstractVector)
+function evaluate!(cache,k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::AbstractVector)
   z = zero(return_type(outer,testitem(fx),testitem(v)))
   @check length(fx) == size(v,1)
   @inbounds for i in eachindex(fx)
@@ -289,7 +289,7 @@ function return_cache(k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::Ab
   CachedArray(r)
 end
 
-@inline function evaluate!(cache,k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::AbstractMatrix)
+function evaluate!(cache,k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::AbstractMatrix)
   @check size(fx,2) == size(v,1)
   setsize!(cache,(size(fx,1),))
   r = cache.array
@@ -304,7 +304,7 @@ end
   r
 end
 
-@inline function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractVector,fx::AbstractVector)
+function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractVector,fx::AbstractVector)
   evaluate!(cache,LinearCombinationMap(1),v,fx)
 end
 
@@ -316,7 +316,7 @@ function return_cache(k::LinearCombinationMap{Colon},v::AbstractVector,fx::Abstr
   return_cache(LinearCombinationMap(1),v,fx)
 end
 
-@inline function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractVector,fx::AbstractMatrix)
+function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractVector,fx::AbstractMatrix)
   evaluate!(cache,LinearCombinationMap(1),v,fx)
 end
 
@@ -328,7 +328,7 @@ function return_cache(k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::Abstr
   CachedArray(r)
 end
 
-@inline function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractVector)
+function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractVector)
   @check length(fx) == size(v,1)
   setsize!(cache,(size(v,2),))
   r = cache.array
@@ -350,7 +350,7 @@ function return_cache(k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::Abstr
   CachedArray(r)
 end
 
-@inline function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractMatrix)
+function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractMatrix,fx::AbstractMatrix)
   @check size(fx,2) == size(v,1)
   setsize!(cache,(size(fx,1),size(v,2)))
   r = cache.array
@@ -380,8 +380,8 @@ function evaluate!(cache,k::Transpose{<:Field},x::AbstractVector{<:Point})
 end
 
 struct TransposeMap <: Map end
-@inline evaluate!(cache,k::TransposeMap,a::AbstractVector) = transpose(a)
-@inline evaluate!(cache,k::TransposeMap,a::AbstractMatrix) = TransposeFieldIndices(a)
+evaluate!(cache,k::TransposeMap,a::AbstractVector) = transpose(a)
+evaluate!(cache,k::TransposeMap,a::AbstractMatrix) = TransposeFieldIndices(a)
 
 """
 Given a matrix `np` x `nf1` x `nf2` result of the evaluation of a field vector
@@ -391,7 +391,7 @@ but more performant, since it does not involve allocations.
 """
 struct TransposeFieldIndices{A,T} <: AbstractArray{T,3}
   matrix::A
-  @inline function TransposeFieldIndices(matrix::AbstractMatrix{T}) where T
+  function TransposeFieldIndices(matrix::AbstractMatrix{T}) where T
     A = typeof(matrix)
     new{A,T}(matrix)
   end
@@ -400,13 +400,13 @@ end
 function TransposeFieldIndices{A,T}(::UndefInitializer,shape::NTuple{3,Integer}) where {A,T}
   TransposeFieldIndices(similar(A,(shape[1],shape[3])))
 end
-@inline Base.size(a::TransposeFieldIndices) = (size(a.matrix,1),1,size(a.matrix,2))
-@inline Base.axes(a::TransposeFieldIndices) = (axes(a.matrix,1),Base.OneTo(1),axes(a.matrix,2))
-@inline Base.IndexStyle(::Type{<:TransposeFieldIndices{A}}) where A = IndexStyle(A)
-@inline Base.getindex(a::TransposeFieldIndices,i::Integer,j::Integer,k::Integer) = a.matrix[i,k]
-@inline Base.getindex(a::TransposeFieldIndices,i::Integer) = a.matrix[i]
-@inline Base.setindex!(a::TransposeFieldIndices,v,i::Integer,j::Integer,k::Integer) = (a.matrix[i,k] = v)
-@inline Base.setindex!(a::TransposeFieldIndices,v,i::Integer) = (a.matrix[i] = v)
+Base.size(a::TransposeFieldIndices) = (size(a.matrix,1),1,size(a.matrix,2))
+Base.axes(a::TransposeFieldIndices) = (axes(a.matrix,1),Base.OneTo(1),axes(a.matrix,2))
+Base.IndexStyle(::Type{<:TransposeFieldIndices{A}}) where A = IndexStyle(A)
+Base.getindex(a::TransposeFieldIndices,i::Integer,j::Integer,k::Integer) = a.matrix[i,k]
+Base.getindex(a::TransposeFieldIndices,i::Integer) = a.matrix[i]
+Base.setindex!(a::TransposeFieldIndices,v,i::Integer,j::Integer,k::Integer) = (a.matrix[i,k] = v)
+Base.setindex!(a::TransposeFieldIndices,v,i::Integer) = (a.matrix[i] = v)
 
 
 # Integration
@@ -456,10 +456,10 @@ struct BroadcastOpFieldArray{O,T,N,A} <: AbstractArray{T,N}
   end
 end
 
-@inline Base.size(a::BroadcastOpFieldArray) = Base.Broadcast.broadcast_shape(map(size,a.args)...)
-@inline Base.axes(a::BroadcastOpFieldArray) = Base.Broadcast.broadcast_shape(map(axes,a.args)...)
-@inline Base.IndexStyle(::Type{<:BroadcastOpFieldArray}) = IndexLinear()
-@inline Base.getindex(a::BroadcastOpFieldArray,i::Integer) = broadcast(Operation(a.op),a.args...)[i]
+Base.size(a::BroadcastOpFieldArray) = Base.Broadcast.broadcast_shape(map(size,a.args)...)
+Base.axes(a::BroadcastOpFieldArray) = Base.Broadcast.broadcast_shape(map(axes,a.args)...)
+Base.IndexStyle(::Type{<:BroadcastOpFieldArray}) = IndexLinear()
+Base.getindex(a::BroadcastOpFieldArray,i::Integer) = broadcast(Operation(a.op),a.args...)[i]
 function testitem(a::BroadcastOpFieldArray)
   fs = map(testitem,a.args)
   return_value(Operation(a.op),fs...)
@@ -495,15 +495,15 @@ end
 
 return_value(a::BroadcastingFieldOpMap,args...) = return_value(Broadcasting(a.op),args...)
 return_cache(a::BroadcastingFieldOpMap,args...) = return_cache(Broadcasting(a.op),args...)
-@inline evaluate!(cache,a::BroadcastingFieldOpMap,args...) = evaluate!(cache,Broadcasting(a.op),args...)
+evaluate!(cache,a::BroadcastingFieldOpMap,args...) = evaluate!(cache,Broadcasting(a.op),args...)
 
 return_value(a::BroadcastingFieldOpMap,args::AbstractArray...) = return_value(Broadcasting(a.op),args...)
 return_cache(a::BroadcastingFieldOpMap,args::AbstractArray...) = return_cache(Broadcasting(a.op),args...)
-@inline evaluate!(cache,a::BroadcastingFieldOpMap,args::AbstractArray...) = evaluate!(cache,Broadcasting(a.op),args...)
+evaluate!(cache,a::BroadcastingFieldOpMap,args::AbstractArray...) = evaluate!(cache,Broadcasting(a.op),args...)
 
 # Follow optimizations are very important to achieve performance
 
-@inline function evaluate!(
+function evaluate!(
   cache,
   f::BroadcastingFieldOpMap,
   a::AbstractArray{T,N},
@@ -518,7 +518,7 @@ return_cache(a::BroadcastingFieldOpMap,args::AbstractArray...) = return_cache(Br
   r
 end
 
-@inline function evaluate!(
+function evaluate!(
   cache,
   f::BroadcastingFieldOpMap,
   a::AbstractMatrix,
@@ -541,7 +541,7 @@ end
   r
 end
 
-@inline function evaluate!(
+function evaluate!(
   cache,
   f::BroadcastingFieldOpMap,
   b::AbstractArray{S,3} where S,
@@ -564,7 +564,7 @@ end
   r
 end
 
-@inline function evaluate!(
+function evaluate!(
   cache,
   f::BroadcastingFieldOpMap,
   a::AbstractVector,
@@ -583,7 +583,7 @@ end
   r
 end
 
-@inline function evaluate!(
+function evaluate!(
   cache,
   f::BroadcastingFieldOpMap,
   b::AbstractMatrix,
@@ -602,7 +602,7 @@ end
   r
 end
 
-@inline function evaluate!(
+function evaluate!(
   cache,
   f::BroadcastingFieldOpMap,
   a::AbstractVector,
@@ -623,7 +623,7 @@ end
   r
 end
 
-@inline function evaluate!(
+function evaluate!(
   cache,
   f::BroadcastingFieldOpMap,
   b::AbstractArray{S,3} where S,

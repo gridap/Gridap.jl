@@ -18,10 +18,10 @@ struct MonomialBasis{D,T} <: AbstractVector{Monomial}
   end
 end
 
-@inline Base.size(a::MonomialBasis{D,T}) where {D,T} = (length(a.terms)*num_components(T),)
+Base.size(a::MonomialBasis{D,T}) where {D,T} = (length(a.terms)*num_components(T),)
 # @santiagobadia : Not sure we want to create the monomial machinery
-@inline Base.getindex(a::MonomialBasis,i::Integer) = Monomial()
-@inline Base.IndexStyle(::MonomialBasis) = IndexLinear()
+Base.getindex(a::MonomialBasis,i::Integer) = Monomial()
+Base.IndexStyle(::MonomialBasis) = IndexLinear()
 
 """
     MonomialBasis{D}(::Type{T}, orders::Tuple [, filter::Function]) where {D,T}
@@ -288,7 +288,7 @@ function _define_terms(filter,orders)
   [ ci for ci in cis if filter(Int[Tuple(ci-co)...],maxorder) ]
 end
 
-@inline function _evaluate_1d!(v::AbstractMatrix{T},x,order,d) where T
+function _evaluate_1d!(v::AbstractMatrix{T},x,order,d) where T
   n = order + 1
   z = one(T)
   @inbounds v[d,1] = z
@@ -346,7 +346,7 @@ function _evaluate_nd!(
 
 end
 
-@inline function _set_value!(v::AbstractVector{V},s::T,k) where {V,T}
+function _set_value!(v::AbstractVector{V},s::T,k) where {V,T}
   m = zero(Mutable(V))
   z = zero(T)
   js = eachindex(m)
@@ -361,7 +361,7 @@ end
   k
 end
 
-@inline function _set_value!(v::AbstractVector{<:Real},s,k)
+function _set_value!(v::AbstractVector{<:Real},s,k)
     @inbounds v[k] = s
     k+1
 end
@@ -413,14 +413,14 @@ function _gradient_nd!(
 
 end
 
-@inline function _set_gradient!(
+function _set_gradient!(
   v::AbstractVector{G},s,k,::Type{<:Real}) where G
 
   @inbounds v[k] = s
   k+1
 end
 
-@inline function _set_gradient!(
+function _set_gradient!(
   v::AbstractVector{G},s,k,::Type{V}) where {V,G}
 
   T = eltype(s)

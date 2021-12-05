@@ -46,11 +46,11 @@ end
 """
     grad2curl(∇f)
 """
-@inline function grad2curl(∇u::TensorValue{2})
+function grad2curl(∇u::TensorValue{2})
   ∇u[1,2] - ∇u[2,1]
 end
 
-@inline function grad2curl(∇u::TensorValue{3})
+function grad2curl(∇u::TensorValue{3})
   c1 = ∇u[2,3] - ∇u[3,2]
   c2 = ∇u[3,1] - ∇u[1,3]
   c3 = ∇u[1,2] - ∇u[2,1]

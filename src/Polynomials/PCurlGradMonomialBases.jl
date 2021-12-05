@@ -20,10 +20,10 @@ struct PCurlGradMonomialBasis{D,T} <: AbstractVector{Monomial}
   end
 end
 
-@inline Base.size(a::PCurlGradMonomialBasis) = (_ndofs_pgrad(a),)
+Base.size(a::PCurlGradMonomialBasis) = (_ndofs_pgrad(a),)
 # @santiagobadia : Not sure we want to create the monomial machinery
-@inline Base.getindex(a::PCurlGradMonomialBasis,i::Integer) = Monomial()
-@inline Base.IndexStyle(::PCurlGradMonomialBasis) = IndexLinear()
+Base.getindex(a::PCurlGradMonomialBasis,i::Integer) = Monomial()
+Base.IndexStyle(::PCurlGradMonomialBasis) = IndexLinear()
 
 """
 PCurlGradMonomialBasis{D}(::Type{T},order::Int) where {D,T}
