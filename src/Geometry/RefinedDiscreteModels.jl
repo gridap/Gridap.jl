@@ -28,8 +28,8 @@ end
 
 function setup_markers(NT, NE, node, elem, d2p, dualedge, θ)
     # TODO: handle estimator
-    η = fill(1, NT)
-    #η = rand(NT)
+    #η = fill(1, NT)
+    η = rand(NT)
     total = sum(η)
     ix = sortperm(-η)
     current = 0
