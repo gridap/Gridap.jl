@@ -257,10 +257,10 @@ function distance(polytope::ExtrusionPolytope, inv_cmap::Field, x::Point)
 end
 
 function _point_to_cell!(cache, x::Point)
-  m, kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map, table_cache = cache
+  searchmethod, kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map, table_cache = cache
 
   # Loop over the first m.num_nearest_vertex
-  for (id,dist) in zip(knn(kdtree, SVector(Tuple(x)), m.num_nearest_vertices, true)...)
+  for (id,dist) in zip(knn(kdtree, SVector(Tuple(x)), searchmethod.num_nearest_vertices, true)...)
 
     # Find all neighbouring cells
     cells = getindex!(table_cache,vertex_to_cells,id)
@@ -349,7 +349,7 @@ end
 # Efficient version:
 function evaluate!(cache,f::CellField,point_to_x::AbstractVector{<:Point})
   cache1,cache2 = cache
-  kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map = cache1
+  searchmethod, kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map = cache1
   cell_f_cache, f_cache, cell_f, f₀ = cache2
   @check f === f₀ "Wrong cache"
 
@@ -366,7 +366,8 @@ function evaluate!(cache,f::CellField,point_to_x::AbstractVector{<:Point})
 end
 
 function compute_cell_points_from_vector_of_points(xs::AbstractVector{<:Point}, trian::Triangulation, domain_style::PhysicalDomain)
-    cache1 = _point_to_cell_cache(trian)
+    searchmethod = KDTreeSearch()
+    cache1 = _point_to_cell_cache(searchmethod,trian)
     x_to_cell(x) = _point_to_cell!(cache1, x)
     point_to_cell = map(x_to_cell, xs)
     ncells = num_cells(trian)
@@ -808,6 +809,8 @@ end
 
 evaluate!(cache,a::Interpolable,x::Point) = evaluate!(cache,a.uh,x)
 
+return_cache(f::CellField,x::Point) = return_cache(Interpolable(f),x)
+
 function return_cache(a::Interpolable,x::Point)
   f = a.uh
   trian = get_triangulation(f)
@@ -822,7 +825,7 @@ function return_cache(a::Interpolable,x::Point)
   return cache1,cache2
 end
 
-function _point_to_cell_cache(m::KDTreeSearch,trian::Triangulation)
+function _point_to_cell_cache(searchmethod::KDTreeSearch,trian::Triangulation)
   model = get_background_model(trian)
   topo = get_grid_topology(model)
   vertex_coordinates = Geometry.get_vertex_coordinates(topo)
@@ -834,5 +837,5 @@ function _point_to_cell_cache(m::KDTreeSearch,trian::Triangulation)
   ctype_to_polytope = map(get_polytope, ctype_to_reffe)
   cell_map = get_cell_map(trian)
   table_cache = array_cache(vertex_to_cells)
-  cache1 = m, kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map, table_cache
+  cache1 = searchmethod, kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map, table_cache
 end
