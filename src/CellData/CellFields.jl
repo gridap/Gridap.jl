@@ -287,8 +287,8 @@ end
 function _point_to_cell!(cache, x::Point)
   kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map, table_cache = cache
 
-  # Loop over the first 3 nearest vertex
-  for (id,dist) in zip(knn(kdtree, SVector(Tuple(x)), 3, true)...)
+  # Loop over the first 5 nearest vertex
+  for (id,dist) in zip(knn(kdtree, SVector(Tuple(x)), 5, true)...)
 
     # Find all neighbouring cells
     cells = getindex!(table_cache,vertex_to_cells,id)
@@ -325,10 +325,8 @@ function _point_to_cell!(cache, x::Point)
 
   end
 
-  # Ensure the point is inside one of the cells, up to round-off errors
-  @check dist ≤ 1000eps(T) "Point $x is not inside any cell by a distance $dist"
-
-  return cell
+  # Output error message if cell not found
+  @check false "Point $x is not inside any cell"
 end
 
 function evaluate!(cache,f::CellField,x::Point)
