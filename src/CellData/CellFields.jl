@@ -256,39 +256,11 @@ function distance(polytope::ExtrusionPolytope, inv_cmap::Field, x::Point)
   end
 end
 
-function return_cache(f::CellField,x::Point)
-  trian = get_triangulation(f)
-  cache1 = _point_to_cell_cache(trian)
-
-  cell_f = get_array(f)
-  cell_f_cache = array_cache(cell_f)
-  cf = testitem(cell_f)
-  f_cache = return_cache(cf,x)
-  cache2 = cell_f_cache, f_cache, cell_f, f
-
-  return cache1,cache2
-end
-
-function _point_to_cell_cache(trian::Triangulation)
-  model = get_background_model(trian)
-  topo = get_grid_topology(model)
-  vertex_coordinates = Geometry.get_vertex_coordinates(topo)
-  kdtree = KDTree(map(nc -> SVector(Tuple(nc)), vertex_coordinates))
-  D = num_cell_dims(trian)
-  vertex_to_cells = get_faces(topo, 0, D)
-  cell_to_ctype = get_cell_type(trian)
-  ctype_to_reffe = get_reffes(trian)
-  ctype_to_polytope = map(get_polytope, ctype_to_reffe)
-  cell_map = get_cell_map(trian)
-  table_cache = array_cache(vertex_to_cells)
-  cache1 = kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map, table_cache
-end
-
 function _point_to_cell!(cache, x::Point)
-  kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map, table_cache = cache
+  m, kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map, table_cache = cache
 
-  # Loop over the first 5 nearest vertex
-  for (id,dist) in zip(knn(kdtree, SVector(Tuple(x)), 5, true)...)
+  # Loop over the first m.num_nearest_vertex
+  for (id,dist) in zip(knn(kdtree, SVector(Tuple(x)), m.num_nearest_vertices, true)...)
 
     # Find all neighbouring cells
     cells = getindex!(table_cache,vertex_to_cells,id)
@@ -818,7 +790,12 @@ function (a::SkeletonPair{<:CellField})(x)
 end
 
 # Interpolable struct
-struct KDTreeSearch end
+struct KDTreeSearch
+  num_nearest_vertices::Int
+  function KDTreeSearch(;num_nearest_vertices=1)
+    new(num_nearest_vertices)
+  end
+end
 
 struct Interpolable{M,A} <: Function
   uh::A
@@ -829,5 +806,33 @@ struct Interpolable{M,A} <: Function
   end
 end
 
-return_cache(a::Interpolable,x::Point) = return_cache(a.uh,x)
 evaluate!(cache,a::Interpolable,x::Point) = evaluate!(cache,a.uh,x)
+
+function return_cache(a::Interpolable,x::Point)
+  f = a.uh
+  trian = get_triangulation(f)
+  cache1 = _point_to_cell_cache(a.searchmethod,trian)
+
+  cell_f = get_array(f)
+  cell_f_cache = array_cache(cell_f)
+  cf = testitem(cell_f)
+  f_cache = return_cache(cf,x)
+  cache2 = cell_f_cache, f_cache, cell_f, f
+
+  return cache1,cache2
+end
+
+function _point_to_cell_cache(m::KDTreeSearch,trian::Triangulation)
+  model = get_background_model(trian)
+  topo = get_grid_topology(model)
+  vertex_coordinates = Geometry.get_vertex_coordinates(topo)
+  kdtree = KDTree(map(nc -> SVector(Tuple(nc)), vertex_coordinates))
+  D = num_cell_dims(trian)
+  vertex_to_cells = get_faces(topo, 0, D)
+  cell_to_ctype = get_cell_type(trian)
+  ctype_to_reffe = get_reffes(trian)
+  ctype_to_polytope = map(get_polytope, ctype_to_reffe)
+  cell_map = get_cell_map(trian)
+  table_cache = array_cache(vertex_to_cells)
+  cache1 = m, kdtree, vertex_to_cells, cell_to_ctype, ctype_to_polytope, cell_map, table_cache
+end
