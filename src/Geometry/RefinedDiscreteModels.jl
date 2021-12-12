@@ -2,12 +2,21 @@ using Gridap.Arrays
 using SparseArrays
 
 
+function random_estimator(ncells)
+    rand(ncells)
+end
+
+function constant_estimator(c, ncells)
+    fill(c, ncells)
+end
+
+
 function shift_to_first(v::Vector, i::T) where {T <: Int}
     circshift(v, -(i - 1))
 end
 
 # TODO: under construction for sort_flag side in non-uniform mesh
-function sort_sort_flag_side(node::Vector, elem, NT)
+function sort_longest_edge!(elem, node, NT)
     edgelength = zeros(NT, 3)
     node = [[v[1], v[2]] for v in node]
     node = vcat(node'...)
@@ -33,7 +42,7 @@ function setup_markers(NT, NE, node, elem, d2p, dualedge, η_arr, θ)
     total = sum(η_arr)
     ix = sortperm(-η_arr)
     current = 0
-    marker = zeros(Int32, NE)
+    marker = zeros(eltype(elem), NE)
     for t = 1:NT
         if (current > θ*total)
             break
@@ -90,7 +99,7 @@ function build_edges(elem)
 end
 
 function build_directed_dualedge(elem, N, NT)
-    dualedge = spzeros(Int64, N, N)
+    dualedge = spzeros(eltype(elem), N, N)
     for t=1:NT
         dualedge[elem[t,1],elem[t,2]]=t
         dualedge[elem[t,2],elem[t,3]]=t
@@ -100,7 +109,7 @@ function build_directed_dualedge(elem, N, NT)
 end
 
 function dual_to_primal(edge, NE, N)
-    d2p = spzeros(Int64, N, N)
+    d2p = spzeros(eltype(edge), N, N)
     for k=1:NE
         i=edge[k,1]
         j=edge[k,2]
@@ -110,7 +119,7 @@ function dual_to_primal(edge, NE, N)
     d2p
 end
 
-function test_against_top(face, top::GridTopology, d::T) where {Ti, T <: Integer}
+function test_against_top(face, top::GridTopology, d)
     face_vec = sort.([face[i,:] for i in 1:size(face,1)])
     face_top = sort.(get_faces(top, d, 0))
     issetequal_bitvec = issetequal(face_vec, face_top)
@@ -118,7 +127,7 @@ function test_against_top(face, top::GridTopology, d::T) where {Ti, T <: Integer
 end
 
 function get_midpoint(ngon)
-    return sum(ngon)/length(ngon)
+    sum(ngon)/length(ngon)
 end
 
 function Base.atan(v::VectorValue{2, T}) where {T <: AbstractFloat}
@@ -152,7 +161,7 @@ function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_no
     elem = cell_node_ids
     NT = size(elem, 1)
     if sort_flag
-        elem = sort_sort_flag_side(node_coords, elem, NT)
+        elem = sort_longest_edge!(elem, node_coords, NT)
     end
     test_against_top(elem, top, 2)
     edge = build_edges(elem)
