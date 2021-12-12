@@ -32,7 +32,7 @@ compute_estimator(est::ConstantEst, ncells) = fill(est.val, ncells)
 
 domain = (0,1,0,1)
 partition = (1,1) # Initial partition
-seed = 3 # Arbitrary
+seed = 4 # Arbitrary
 model = CartesianDiscreteModel(domain,partition)
 model = simplexify(model)
 cell_map = get_cell_map(get_triangulation(model))
@@ -43,7 +43,7 @@ est = RandomEst(seed)
 Nsteps = 14
 model_refs = Vector{DiscreteModel}(undef, Nsteps)
 sort_flag = true
-θ = 0.5
+θ = 0.6
 model_refs[1] = newest_vertex_bisection(model, η_arr; sort_flag=sort_flag, θ=θ)
 sort_flag = false
 for i in 1:Nsteps-1

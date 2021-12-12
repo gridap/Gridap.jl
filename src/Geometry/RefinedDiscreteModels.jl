@@ -7,30 +7,27 @@ function shift_to_first(v::Vector, i::T) where {T <: Int}
     circshift(v, -(i - 1))
 end
 
-# TODO: under construction for sort_flag side in non-uniform mesh
 function sort_longest_edge!(elem, node, NT)
     edgelength = zeros(NT, 3)
-    node = [[v[1], v[2]] for v in node]
-    node = vcat(node'...)
+    #node_v = [[v[1], v[2]] for v in node]
+    #node_v = vcat(node_v'...)
     for i = 1:NT
         elem_i = elem[i, :]
         for (j, e) in enumerate(elem_i)
             arr = filter(x -> x != e, elem_i)
-            diff = sqrt(sum((node[arr[1], :] - node[arr[2], :]).^2))
+            diff = sqrt(sum((node[arr[1]] - node[arr[2]]).^2))
+            #diff = sqrt(sum((node_v[arr[1], :] - node_v[arr[2], :]).^2))
             edgelength[i, j] = diff
         end
     end
     max_indices = findmax(edgelength, dims=2)[2]
     for i = 1:NT
-        max_indices[i][2]
         elem[i,:] = shift_to_first(elem[i,:], max_indices[i][2])
     end
     elem
 end
 
-function setup_markers(NT, NE, node, elem, d2p, dualedge, η_arr, θ)
-    # TODO: handle estimator
-    #@show η_arr
+function setup_markers_and_nodes!(node, elem, d2p, dualedge, NT, NE, η_arr, θ)
     total = sum(η_arr)
     ix = sortperm(-η_arr)
     current = 0
@@ -126,6 +123,10 @@ function Base.atan(v::VectorValue{2, T}) where {T <: AbstractFloat}
     atan(v[2], v[1])
 end
 
+function Base.:^(v::VectorValue{N, T}, r::Core.Integer)  where {T <: AbstractFloat, N}
+    VectorValue([v[i]^r for i = 1:N]...)
+end
+
 function sort_ccw(cell_coords)
     midpoint = get_midpoint(cell_coords)
     offset_coords = cell_coords .- midpoint
@@ -148,20 +149,32 @@ end
 """
 node_coords == node, cell_node_ids == elem in Long Chen's notation
 """
-function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_node_ids, η_arr, θ, sort_flag)
+function newest_vertex_bisection(
+    top::GridTopology,
+    node_coords::Vector,
+    cell_node_ids,
+    η_arr,
+    θ,
+    sort_flag,
+)
+    # Number of nodes
     N = size(node_coords, 1)
     elem = cell_node_ids
+    # Number of cells (triangles in 2D)
     NT = size(elem, 1)
     if sort_flag
         elem = sort_longest_edge!(elem, node_coords, NT)
     end
+    # Make sure elem is consistent with GridTopology
     test_against_top(elem, top, 2)
     edge = build_edges(elem)
     NE = size(edge, 1)
     dualedge = build_directed_dualedge(elem, N, NT)
     d2p = dual_to_primal(edge, NE, N)
+    # Make sure edge is consistent with GridTopology
     test_against_top(edge, top, 1)
-    node_coords, marker = setup_markers(NT, NE, node_coords, elem, d2p, dualedge, η_arr, θ)
+    node_coords, marker =
+        setup_markers_and_nodes!(node_coords, elem, d2p, dualedge, NT, NE, η_arr, θ)
     cell_node_ids = bisect(d2p, elem, marker, NT)
     node_coords, cell_node_ids
 end
@@ -197,7 +210,7 @@ end
 function newest_vertex_bisection(
     model::DiscreteModel,
     η_arr::AbstractVector{<:AbstractFloat};
-    θ = 1.0,
+    θ = 1.0, # corresponds to uniform refinement
     sort_flag = false,
 )
     grid = get_grid(model)
