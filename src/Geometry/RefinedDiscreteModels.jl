@@ -1,12 +1,13 @@
 using Gridap.Arrays
 using SparseArrays
 
+
 function shift_to_first(v::Vector, i::T) where {T <: Int}
     circshift(v, -(i - 1))
 end
 
-# TODO: under construction for longest side in non-uniform mesh
-function sort_longest_side(node::Vector, elem::Matrix, NT)
+# TODO: under construction for sort_flag side in non-uniform mesh
+function sort_sort_flag_side(node::Vector, elem::Matrix, NT)
     edgelength = zeros(NT, 3)
     node = [[v[1], v[2]] for v in node]
     node = vcat(node'...)
@@ -26,12 +27,11 @@ function sort_longest_side(node::Vector, elem::Matrix, NT)
     elem
 end
 
-function setup_markers(NT, NE, node, elem, d2p, dualedge, θ)
+function setup_markers(NT, NE, node, elem, d2p, dualedge, η_arr, θ)
     # TODO: handle estimator
-    #η = fill(1, NT)
-    η = rand(NT)
-    total = sum(η)
-    ix = sortperm(-η)
+    #@show η_arr
+    total = sum(η_arr)
+    ix = sortperm(-η_arr)
     current = 0
     marker = zeros(Int32, NE)
     for t = 1:NT
@@ -45,7 +45,7 @@ function setup_markers(NT, NE, node, elem, d2p, dualedge, θ)
             if marker[base]>0
                 index=0
             else
-                current = current + η[ct]
+                current = current + η_arr[ct]
                 N = size(node,1) + 1
                 marker[d2p[elem[ct,2],elem[ct,3]]] = N
                 midpoint = get_midpoint(node[elem[ct,[2 3],:]])
@@ -147,13 +147,13 @@ end
 """
 node_coords == node, cell_node_ids == elem in Long Chen's notation
 """
-function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_node_ids::Matrix, longest)
+function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_node_ids::Matrix, η_arr, θ, sort_flag)
     N = size(node_coords, 1)
     #@show elem = vcat(cell_node_ids'...)
     elem = cell_node_ids
     NT = size(elem, 1)
-    if longest
-        elem = sort_longest_side(node_coords, elem, NT)
+    if sort_flag
+        elem = sort_sort_flag_side(node_coords, elem, NT)
     end
     test_against_top(elem, top, 2)
     edge = build_edges(elem)
@@ -161,7 +161,7 @@ function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_no
     dualedge = build_directed_dualedge(elem, N, NT)
     d2p = dual_to_primal(edge, NE, N)
     test_against_top(edge, top, 1)
-    node_coords, marker = setup_markers(NT, NE, node_coords, elem, d2p, dualedge, 0.2)
+    node_coords, marker = setup_markers(NT, NE, node_coords, elem, d2p, dualedge, η_arr, θ)
     #@show node
     cell_node_ids = bisect(d2p, elem, marker, NT)
     #@show cell_node_ids_ref
@@ -169,15 +169,22 @@ function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_no
 end
 
 # step 1
-function newest_vertex_bisection(grid::Grid, top::GridTopology, cell_mask::AbstractVector{<:Bool}, longest)
+function newest_vertex_bisection(
+    grid::Grid,
+    top::GridTopology,
+    η_arr::AbstractVector{<:AbstractFloat},
+    θ,
+    sort_flag,
+)
     node_coords = get_node_coordinates(grid)
     cell_node_ids = get_cell_node_ids(grid)
-    if longest
+    if sort_flag
         cell_node_ids_ccw = sort_cell_node_ids_ccw(cell_node_ids, node_coords)
     else
         cell_node_ids_ccw = vcat(cell_node_ids'...)
     end
-    node_coords_ref, cell_node_ids_ref = newest_vertex_bisection(top, node_coords, cell_node_ids_ccw, longest)
+    node_coords_ref, cell_node_ids_ref =
+        newest_vertex_bisection(top, node_coords, cell_node_ids_ccw, η_arr, θ, sort_flag)
     #node_coords_ref, cell_node_ids_ref = newest_vertex_bisection(top, node_coords_ref, cell_node_ids_ref, false)
     # TODO: Should not convert to matrix and back to Table
     cell_node_ids_ref = Table([c for c in eachrow(cell_node_ids_ref)])
@@ -190,13 +197,18 @@ function newest_vertex_bisection(grid::Grid, top::GridTopology, cell_mask::Abstr
 end
 
 # step 2
-function newest_vertex_bisection(model::DiscreteModel,cell_mask::AbstractVector{<:Bool}, longest=false)
-  grid = get_grid(model)
-  top = get_grid_topology(model)
-  ref_grid = newest_vertex_bisection(grid, top, cell_mask, longest)
-  ref_topo = GridTopology(ref_grid)
-  #ref_labels = get_face_labeling(model)
-  ref_labels = FaceLabeling(ref_topo)
-  #ref_labels = # Compute them from the original labels (This is perhaps the most tedious part)
-  DiscreteModel(ref_grid, ref_topo, ref_labels)
+function newest_vertex_bisection(
+    model::DiscreteModel,
+    η_arr::AbstractVector{<:AbstractFloat};
+    θ = 1.0,
+    sort_flag = false,
+)
+    grid = get_grid(model)
+    top = get_grid_topology(model)
+    ref_grid = newest_vertex_bisection(grid, top, η_arr, θ, sort_flag)
+    ref_topo = GridTopology(ref_grid)
+    #ref_labels = get_face_labeling(model)
+    ref_labels = FaceLabeling(ref_topo)
+    #ref_labels = # Compute them from the original labels (This is perhaps the most tedious part)
+    DiscreteModel(ref_grid, ref_topo, ref_labels)
 end
