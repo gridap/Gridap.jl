@@ -2,14 +2,6 @@ using Gridap.Arrays
 using SparseArrays
 
 
-function random_estimator(ncells)
-    rand(ncells)
-end
-
-function constant_estimator(c, ncells)
-    fill(c, ncells)
-end
-
 
 function shift_to_first(v::Vector, i::T) where {T <: Int}
     circshift(v, -(i - 1))
