@@ -7,7 +7,7 @@ function shift_to_first(v::Vector, i::T) where {T <: Int}
 end
 
 # TODO: under construction for sort_flag side in non-uniform mesh
-function sort_sort_flag_side(node::Vector, elem::Matrix, NT)
+function sort_sort_flag_side(node::Vector, elem, NT)
     edgelength = zeros(NT, 3)
     node = [[v[1], v[2]] for v in node]
     node = vcat(node'...)
@@ -84,12 +84,12 @@ function bisect(d2p, elem, marker, NT)
     elem
 end
 
-function build_edges(elem::Matrix{T}) where {T <: Integer}
+function build_edges(elem)
     edge = [elem[:,[1,2]]; elem[:,[1,3]]; elem[:,[2,3]]]
     unique(sort!(edge, dims=2), dims=1)
 end
 
-function build_directed_dualedge(elem::Matrix{Ti}, N::T, NT::T) where {Ti, T <: Integer}
+function build_directed_dualedge(elem, N, NT)
     dualedge = spzeros(Int64, N, N)
     for t=1:NT
         dualedge[elem[t,1],elem[t,2]]=t
@@ -99,7 +99,7 @@ function build_directed_dualedge(elem::Matrix{Ti}, N::T, NT::T) where {Ti, T <: 
     dualedge
 end
 
-function dual_to_primal(edge::Matrix{Ti}, NE::T, N::T) where {Ti, T <: Integer}
+function dual_to_primal(edge, NE, N)
     d2p = spzeros(Int64, N, N)
     for k=1:NE
         i=edge[k,1]
@@ -110,7 +110,7 @@ function dual_to_primal(edge::Matrix{Ti}, NE::T, N::T) where {Ti, T <: Integer}
     d2p
 end
 
-function test_against_top(face::Matrix{Ti}, top::GridTopology, d::T) where {Ti, T <: Integer}
+function test_against_top(face, top::GridTopology, d::T) where {Ti, T <: Integer}
     face_vec = sort.([face[i,:] for i in 1:size(face,1)])
     face_top = sort.(get_faces(top, d, 0))
     issetequal_bitvec = issetequal(face_vec, face_top)
@@ -147,9 +147,8 @@ end
 """
 node_coords == node, cell_node_ids == elem in Long Chen's notation
 """
-function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_node_ids::Matrix, η_arr, θ, sort_flag)
+function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_node_ids, η_arr, θ, sort_flag)
     N = size(node_coords, 1)
-    #@show elem = vcat(cell_node_ids'...)
     elem = cell_node_ids
     NT = size(elem, 1)
     if sort_flag
@@ -162,9 +161,7 @@ function newest_vertex_bisection(top::GridTopology, node_coords::Vector, cell_no
     d2p = dual_to_primal(edge, NE, N)
     test_against_top(edge, top, 1)
     node_coords, marker = setup_markers(NT, NE, node_coords, elem, d2p, dualedge, η_arr, θ)
-    #@show node
     cell_node_ids = bisect(d2p, elem, marker, NT)
-    #@show cell_node_ids_ref
     node_coords, cell_node_ids
 end
 
@@ -185,7 +182,6 @@ function newest_vertex_bisection(
     end
     node_coords_ref, cell_node_ids_ref =
         newest_vertex_bisection(top, node_coords, cell_node_ids_ccw, η_arr, θ, sort_flag)
-    #node_coords_ref, cell_node_ids_ref = newest_vertex_bisection(top, node_coords_ref, cell_node_ids_ref, false)
     # TODO: Should not convert to matrix and back to Table
     cell_node_ids_ref = Table([c for c in eachrow(cell_node_ids_ref)])
     reffes = get_reffes(grid)
