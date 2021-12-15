@@ -1,5 +1,6 @@
 using Gridap.Arrays
 using SparseArrays
+#using TimerOutputs
 
 
 
@@ -28,7 +29,6 @@ function sort_longest_edge!(
     for i = 1:NT
       elem[i, :] = shift_to_first(elem[i, :], Ti(max_indices[i][2]))
     end
-    elem
 end
 
 function setup_markers_and_nodes!(
@@ -36,7 +36,6 @@ function setup_markers_and_nodes!(
     elem::Matrix{Ti},
     d2p::SparseMatrixCSC{Ti,Ti},
     dualedge::SparseMatrixCSC{Ti},
-    NT::Ti,
     NE::Ti,
     η_arr::Vector{<:AbstractFloat},
     θ::AbstractFloat,
@@ -80,7 +79,7 @@ function setup_markers_and_nodes!(
   node, marker
 end
 
-function divide(elem::Matrix{Ti}, t::Ti, p::Vector{Ti}) where {Ti <: Integer}
+function divide!(elem::Matrix{Ti}, t::Ti, p::Vector{Ti}) where {Ti <: Integer}
   elem = [elem; [p[4] p[3] p[1]]]
   elem[t, :] = [p[4] p[1] p[2]]
   elem
@@ -96,15 +95,15 @@ function bisect(
     base = d2p[elem[t, 2], elem[t, 3]]
     if (marker[base] > 0)
       p = vcat(elem[t, :], marker[base])
-      elem = divide(elem, t, p)
+      elem = divide!(elem, t, p)
       left = d2p[p[1], p[2]]
       right = d2p[p[3], p[1]]
       if (marker[right] > 0)
         cur_size::Ti = size(elem, 1)
-        elem = divide(elem, cur_size, [p[4], p[3], p[1], marker[right]])
+        elem = divide!(elem, cur_size, [p[4], p[3], p[1], marker[right]])
       end
       if (marker[left] > 0)
-        elem = divide(elem, t, [p[4], p[1], p[2], marker[left]])
+        elem = divide!(elem, t, [p[4], p[1], p[2], marker[left]])
       end
     end
   end
@@ -193,8 +192,9 @@ function newest_vertex_bisection(
   elem = cell_node_ids
   # Number of cells (triangles in 2D)
   NT::Ti = size(elem, 1)
+  @assert length(η_arr) == NT
   if sort_flag
-    elem = sort_longest_edge!(elem, node_coords, NT)
+    sort_longest_edge!(elem, node_coords, NT)
   end
   # Make sure elem is consistent with GridTopology
   test_against_top(elem, top, 2)
@@ -205,7 +205,7 @@ function newest_vertex_bisection(
   # Make sure edge is consistent with GridTopology
   test_against_top(edge, top, 1)
   node_coords, marker =
-    setup_markers_and_nodes!(node_coords, elem, d2p, dualedge, NT, NE, η_arr, θ)
+    setup_markers_and_nodes!(node_coords, elem, d2p, dualedge, NE, η_arr, θ)
   cell_node_ids = bisect(d2p, elem, marker, NT)
   node_coords, cell_node_ids
 end
