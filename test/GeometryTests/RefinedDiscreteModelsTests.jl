@@ -44,15 +44,23 @@ function refine_test(domain, partition, Nsteps, θ, est)
     writevtk(Triangulation(model_refs[i]), "refined$(i)")
     model_refs[i+1] = newest_vertex_bisection(model_refs[i], η_arr; sort_flag = false, θ = θ)
   end
-  model
+  model_refs[end]
 end
 
 domain = (0, 1, 0, 1)
 partition = (1, 1) # Initial partition
 seed = 5 # Arbitrary
-Nsteps = 10
+@show Nsteps = 9
   est = ConstantEst(1.0)
-θ = 0.5
+θ = 1.0
+# Uniform refinement
 model_ref = refine_test(domain, partition, Nsteps, θ, est)
+trian_ref = get_triangulation(model_ref)
+cell_map = get_cell_map(trian_ref)
+node_coords = get_node_coordinates(trian_ref)
+@show ncoords = length(node_coords)
+@show ncells = length(cell_map)
+@test ncells == 2^(Nsteps + 1)
+#@test ncoords == 
 @test model_ref isa DiscreteModel
 end
