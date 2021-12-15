@@ -3,31 +3,44 @@ using SparseArrays
 
 
 
-function shift_to_first(v::Vector, i::T) where {T<:Int}
+function shift_to_first(v::Vector{Ti}, i::Ti) where {Ti<:Integer}
   circshift(v, -(i - 1))
 end
 
-function sort_longest_edge!(elem, node, NT)
-  edgelength = zeros(NT, 3)
-  #node_v = [[v[1], v[2]] for v in node]
-  #node_v = vcat(node_v'...)
-  for i = 1:NT
-    elem_i = elem[i, :]
-    for (j, e) in enumerate(elem_i)
-      arr = filter(x -> x != e, elem_i)
-      diff = sqrt(sum((node[arr[1]] - node[arr[2]]) .^ 2))
-      #diff = sqrt(sum((node_v[arr[1], :] - node_v[arr[2], :]).^2))
-      edgelength[i, j] = diff
+function sort_longest_edge!(
+    elem::Matrix{Ti},
+    node::Vector{<:VectorValue},
+    NT::Ti,
+) where {Ti<:Integer}
+    edgelength = zeros(NT, 3)
+    #node_v = [[v[1], v[2]] for v in node]
+    #node_v = vcat(node_v'...)
+    for i = 1:NT
+        elem_i = elem[i, :]
+        for (j, e) in enumerate(elem_i)
+            arr = filter(x -> x != e, elem_i)
+            diff = sqrt(sum((node[arr[1]] - node[arr[2]]) .^ 2))
+            #diff = sqrt(sum((node_v[arr[1], :] - node_v[arr[2], :]).^2))
+            edgelength[i, j] = diff
+        end
     end
-  end
-  max_indices = findmax(edgelength, dims = 2)[2]
-  for i = 1:NT
-    elem[i, :] = shift_to_first(elem[i, :], max_indices[i][2])
-  end
-  elem
+    max_indices = findmax(edgelength, dims = 2)[2]
+    for i = 1:NT
+      elem[i, :] = shift_to_first(elem[i, :], Ti(max_indices[i][2]))
+    end
+    elem
 end
 
-function setup_markers_and_nodes!(node, elem, d2p, dualedge, NT, NE, η_arr, θ)
+function setup_markers_and_nodes!(
+    node::Vector{<:VectorValue},
+    elem::Matrix{Ti},
+    d2p::SparseMatrixCSC{Ti,Ti},
+    dualedge::SparseMatrixCSC{Ti},
+    NT::Ti,
+    NE::Ti,
+    η_arr::Vector{<:AbstractFloat},
+    θ::AbstractFloat,
+  ) where {Ti <: Integer}
   total = sum(η_arr)
   ix = sortperm(-η_arr)
   current = 0
@@ -58,14 +71,19 @@ function setup_markers_and_nodes!(node, elem, d2p, dualedge, NT, NE, η_arr, θ)
   node, marker
 end
 
-function divide(elem, t, p)
+function divide(elem::Matrix{Ti}, t::Ti, p::Vector{Ti}) where {Ti <: Integer}
   elem = [elem; [p[4] p[3] p[1]]]
   elem[t, :] = [p[4] p[1] p[2]]
   elem
 end
 
-function bisect(d2p, elem, marker, NT)
-  for t = 1:NT
+function bisect(
+    d2p::SparseMatrixCSC{Ti,Ti},
+    elem::Matrix{Ti},
+    marker::Vector{Ti},
+    NT::Ti,
+  ) where {Ti<:Integer}
+  for t = UnitRange{Ti}(1:NT)
     base = d2p[elem[t, 2], elem[t, 3]]
     if (marker[base] > 0)
       p = vcat(elem[t, :], marker[base])
@@ -73,7 +91,8 @@ function bisect(d2p, elem, marker, NT)
       left = d2p[p[1], p[2]]
       right = d2p[p[3], p[1]]
       if (marker[right] > 0)
-        elem = divide(elem, size(elem, 1), [p[4], p[3], p[1], marker[right]])
+        cur_size::Ti = size(elem, 1)
+        elem = divide(elem, cur_size, [p[4], p[3], p[1], marker[right]])
       end
       if (marker[left] > 0)
         elem = divide(elem, t, [p[4], p[1], p[2], marker[left]])
@@ -83,13 +102,13 @@ function bisect(d2p, elem, marker, NT)
   elem
 end
 
-function build_edges(elem)
+function build_edges(elem::Matrix{<:Integer})
   edge = [elem[:, [1, 2]]; elem[:, [1, 3]]; elem[:, [2, 3]]]
   unique(sort!(edge, dims = 2), dims = 1)
 end
 
-function build_directed_dualedge(elem, N, NT)
-  dualedge = spzeros(eltype(elem), N, N)
+function build_directed_dualedge(elem::Matrix{Ti}, N::Ti, NT::Ti) where {Ti <: Integer}
+  dualedge = spzeros(Ti, N, N)
   for t = 1:NT
     dualedge[elem[t, 1], elem[t, 2]] = t
     dualedge[elem[t, 2], elem[t, 3]] = t
@@ -98,8 +117,8 @@ function build_directed_dualedge(elem, N, NT)
   dualedge
 end
 
-function dual_to_primal(edge, NE, N)
-  d2p = spzeros(eltype(edge), N, N)
+function dual_to_primal(edge::Matrix{Ti}, NE::Ti, N::Ti) where {Ti <: Integer}
+  d2p = spzeros(Ti, Ti, N, N)
   for k = 1:NE
     i = edge[k, 1]
     j = edge[k, 2]
@@ -109,14 +128,14 @@ function dual_to_primal(edge, NE, N)
   d2p
 end
 
-function test_against_top(face, top::GridTopology, d)
+function test_against_top(face::Matrix{<:Integer}, top::GridTopology, d::Integer)
   face_vec = sort.([face[i, :] for i = 1:size(face, 1)])
   face_top = sort.(get_faces(top, d, 0))
   issetequal_bitvec = issetequal(face_vec, face_top)
   @assert all(issetequal_bitvec)
 end
 
-function get_midpoint(ngon)
+function get_midpoint(ngon::AbstractArray{<:VectorValue})
   sum(ngon) / length(ngon)
 end
 
@@ -124,18 +143,18 @@ function Base.atan(v::VectorValue{2,T}) where {T<:AbstractFloat}
   atan(v[2], v[1])
 end
 
-function Base.:^(v::VectorValue{N,T}, r::Core.Integer) where {T, N}
+function Base.:^(v::VectorValue{N,T}, r::Integer) where {T, N}
   VectorValue([v[i]^r for i = 1:N]...)
 end
 
-function sort_ccw(cell_coords)
+function sort_ccw(cell_coords::Vector{<:VectorValue})
   midpoint = get_midpoint(cell_coords)
   offset_coords = cell_coords .- midpoint
   sorted_perm = sortperm(offset_coords, by = atan)
   return sorted_perm
 end
 
-function sort_cell_node_ids_ccw(cell_node_ids, node_coords)
+function sort_cell_node_ids_ccw(cell_node_ids::Table{<:Integer}, node_coords::Vector{<:VectorValue})
   cell_node_ids_ccw = vcat(cell_node_ids'...)
   #cell_node_ids_ccw = cell_node_ids
   #@show cell_node_ids_ccw
@@ -153,23 +172,23 @@ node_coords == node, cell_node_ids == elem in Long Chen's notation
 function newest_vertex_bisection(
   top::GridTopology,
   node_coords::Vector,
-  cell_node_ids,
-  η_arr,
-  θ,
-  sort_flag,
-)
+  cell_node_ids::Matrix{Ti},
+  η_arr::Vector{<:AbstractFloat},
+  θ::AbstractFloat,
+  sort_flag::Bool,
+) where {Ti <: Integer}
   # Number of nodes
-  N = size(node_coords, 1)
+  N::Ti = size(node_coords, 1)
   elem = cell_node_ids
   # Number of cells (triangles in 2D)
-  NT = size(elem, 1)
+  NT::Ti = size(elem, 1)
   if sort_flag
     elem = sort_longest_edge!(elem, node_coords, NT)
   end
   # Make sure elem is consistent with GridTopology
   test_against_top(elem, top, 2)
   edge = build_edges(elem)
-  NE = size(edge, 1)
+  NE::Ti = size(edge, 1)
   dualedge = build_directed_dualedge(elem, N, NT)
   d2p = dual_to_primal(edge, NE, N)
   # Make sure edge is consistent with GridTopology
@@ -185,8 +204,8 @@ function newest_vertex_bisection(
   grid::Grid,
   top::GridTopology,
   η_arr::AbstractVector{<:AbstractFloat},
-  θ,
-  sort_flag,
+  θ::AbstractFloat,
+  sort_flag::Bool,
 )
   node_coords = get_node_coordinates(grid)
   cell_node_ids = get_cell_node_ids(grid)

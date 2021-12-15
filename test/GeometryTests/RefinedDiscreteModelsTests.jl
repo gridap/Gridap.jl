@@ -50,7 +50,7 @@ for i = 1:(Nsteps - 1)
   cell_map = get_cell_map(get_triangulation(model_refs[i]))
   ncells = length(cell_map)
   η_arr = compute_estimator(est, ncells)
-  #writevtk(Triangulation(model_refs[i]), "refined$(i)")
+  writevtk(Triangulation(model_refs[i]), "refined$(i)")
   model_refs[i + 1] =
     newest_vertex_bisection(model_refs[i], η_arr, sort_flag = sort_flag, θ = θ)
 end
