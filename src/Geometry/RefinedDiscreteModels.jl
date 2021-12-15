@@ -41,29 +41,38 @@ function setup_markers_and_nodes!(
     η_arr::Vector{<:AbstractFloat},
     θ::AbstractFloat,
   ) where {Ti <: Integer}
-  total = sum(η_arr)
-  ix = sortperm(-η_arr)
-  current = 0
-  marker = zeros(eltype(elem), NE)
-  for t = 1:NT
-    if (current > θ * total)
+  total_η = sum(η_arr)
+  partial_η = 0
+  sorted_η_idxs = sortperm(-η_arr)
+  marker = zeros(Ti, NE)
+  # Loop over global triangle indices
+  for t_idx = sorted_η_idxs
+    if (partial_η > θ * total_η)
       break
     end
-    index = 1
-    ct = ix[t]
-    while (index == 1)
-      base = d2p[elem[ct, 2], elem[ct, 3]]
+    need_to_mark = true
+    # Get triangle index with next largest error
+    #ct = sorted_η_idxs[t]
+    while (need_to_mark)
+      # Base point
+      base = d2p[elem[t_idx, 2], elem[t_idx, 3]]
+      # Already marked
       if marker[base] > 0
-        index = 0
+        need_to_mark = false
       else
-        current = current + η_arr[ct]
+        # Get the estimator contribution for the current triangle
+        partial_η = partial_η + η_arr[t_idx]
+        # Increase the number of nodes to add new midpoint
         N = size(node, 1) + 1
-        marker[d2p[elem[ct, 2], elem[ct, 3]]] = N
-        midpoint = get_midpoint(node[elem[ct, [2 3], :]])
-        node = [node; midpoint]
-        ct = dualedge[elem[ct, 3], elem[ct, 2]]
-        if ct == 0
-          index = 0
+        # The marker of the current elements is this node
+        marker[d2p[elem[t_idx, 2], elem[t_idx, 3]]] = N
+        # Coordinates of new node
+        midpoint = get_midpoint(node[elem[t_idx, [2 3], :]])
+        node = push!(node, midpoint)
+        t_idx = dualedge[elem[t_idx, 3], elem[t_idx, 2]]
+        # There is no dual edge here, go to next triangle index
+        if t_idx == 0
+          need_to_mark = false
         end
       end
     end
@@ -150,11 +159,13 @@ end
 function sort_ccw(cell_coords::Vector{<:VectorValue})
   midpoint = get_midpoint(cell_coords)
   offset_coords = cell_coords .- midpoint
-  sorted_perm = sortperm(offset_coords, by = atan)
-  return sorted_perm
+  sortperm(offset_coords, by = atan)
 end
 
-function sort_cell_node_ids_ccw(cell_node_ids::Table{<:Integer}, node_coords::Vector{<:VectorValue})
+function sort_cell_node_ids_ccw(
+    cell_node_ids::Table{<:Integer},
+    node_coords::Vector{<:VectorValue},
+  )
   cell_node_ids_ccw = vcat(cell_node_ids'...)
   #cell_node_ids_ccw = cell_node_ids
   #@show cell_node_ids_ccw
@@ -237,8 +248,7 @@ function newest_vertex_bisection(
   top = get_grid_topology(model)
   ref_grid = newest_vertex_bisection(grid, top, η_arr, θ, sort_flag)
   ref_topo = GridTopology(ref_grid)
-  #ref_labels = get_face_labeling(model)
-  ref_labels = FaceLabeling(ref_topo)
   #ref_labels = # Compute them from the original labels (This is perhaps the most tedious part)
+  ref_labels = FaceLabeling(ref_topo)
   DiscreteModel(ref_grid, ref_topo, ref_labels)
 end

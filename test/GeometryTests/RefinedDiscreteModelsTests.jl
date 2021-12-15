@@ -40,10 +40,10 @@ ncells = length(cell_map)
 est = RandomEst(seed)
 #est = ConstantEst(1.0)
 η_arr = compute_estimator(est, ncells)
-Nsteps = 14
+Nsteps = 15
 model_refs = Vector{DiscreteModel}(undef, Nsteps)
 sort_flag = true
-θ = 0.6
+θ = 0.7
 model_refs[1] = newest_vertex_bisection(model, η_arr; sort_flag = sort_flag, θ = θ)
 sort_flag = false
 for i = 1:(Nsteps - 1)
