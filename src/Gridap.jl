@@ -55,4 +55,8 @@ include("MultiField/MultiField.jl")
 
 include("Exports.jl")
 
+include("cell_boundary_draft.jl")
+using Gridap.Draft: CellBoundary
+export CellBoundary
+
 end # module

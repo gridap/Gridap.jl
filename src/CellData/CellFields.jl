@@ -2,15 +2,15 @@
 A single point or an array of points on the cells of a Triangulation
 CellField objects can be evaluated efficiently at CellPoint instances.
 """
-struct CellPoint{DS} <: CellDatum
-  cell_ref_point::AbstractArray{<:Union{Point,AbstractArray{<:Point}}}
-  cell_phys_point::AbstractArray{<:Union{Point,AbstractArray{<:Point}}}
-  trian::Triangulation
+struct CellPoint{DS,A,B,C} <: CellDatum
+  cell_ref_point::A
+  cell_phys_point::B
+  trian::C
   domain_style::DS
 end
 
 function CellPoint(
-  cell_ref_point::AbstractArray{<:Union{Point,AbstractArray{<:Point}}},
+  cell_ref_point::AbstractArray,
   trian::Triangulation,
   domain_style::ReferenceDomain)
 
@@ -20,7 +20,7 @@ function CellPoint(
 end
 
 function CellPoint(
-  cell_phys_point::AbstractArray{<:Union{Point,AbstractArray{<:Point}}},
+  cell_phys_point::AbstractArray,
   trian::Triangulation,
   domain_style::PhysicalDomain)
   cell_map = get_cell_map(trian)
@@ -38,7 +38,7 @@ function get_data(f::CellPoint)
 end
 
 get_triangulation(f::CellPoint) = f.trian
-DomainStyle(::Type{CellPoint{DS}}) where DS = DS()
+DomainStyle(::Type{<:CellPoint{DS}}) where DS = DS()
 
 function change_domain(a::CellPoint,::ReferenceDomain,::PhysicalDomain)
   CellPoint(a.cell_ref_point,a.cell_phys_point,a.trian,PhysicalDomain())

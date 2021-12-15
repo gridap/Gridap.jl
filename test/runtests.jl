@@ -2,6 +2,8 @@ module GridapRunTests
 
 using Test
 
+@time @testset "draft" begin include("cell_boundary_draft_tests.jl") end
+
 @time @testset "Helpers" begin include("HelpersTests/runtests.jl") end
 
 @time @testset "Io" begin include("IoTests/runtests.jl") end
