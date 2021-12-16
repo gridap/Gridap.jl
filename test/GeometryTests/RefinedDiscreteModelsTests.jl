@@ -14,14 +14,13 @@ using Gridap.Visualization
 domain = (0, 1, 0, 1)
 partition = (1, 1) # Initial partition
 Nsteps = 13
-Nsteps_arr = UnitRange(2:Nsteps)
 est = ConstantEst(1.0)
 θ = 1.0
-uniform_write_to_vtk = true
+uniform_write_to_vtk = false
 # Uniform refinement
 model_refs = build_refined_models(domain, partition, Nsteps, θ, est)
-for n = Nsteps_arr
-  trian_ref = get_triangulation(model_refs[n])
+for (n, model_ref) =  enumerate(model_refs)
+  trian_ref = get_triangulation(model_ref)
   if uniform_write_to_vtk
     writevtk(trian_ref, "uniform$(n)")
   end
@@ -39,14 +38,20 @@ for n = Nsteps_arr
   # Combinatorial checks for cells 
   @test ncells == 2^(n + 1)
 end
+# Nonuniform refinement. For now only visually checking conformity
 domain = (0, 1, 0, 1)
 partition = (1, 1) # Initial partition
 Nsteps = 13
-Nsteps_arr = UnitRange(2:Nsteps)
 seed = 5
 est = RandomEst(seed)
 θ = 0.5
 nonuniform_write_to_vtk = false
-# Nonuniform refinement
 model_refs = build_refined_models(domain, partition, Nsteps, θ, est)
+if nonuniform_write_to_vtk
+  for (n, model_ref) =  enumerate(model_refs)
+    trian_ref = get_triangulation(model_ref)
+    writevtk(trian_ref, "nonuniform$(n)")
+  end
+end
+
 end

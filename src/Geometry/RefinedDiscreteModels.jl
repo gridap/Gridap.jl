@@ -260,8 +260,10 @@ function newest_vertex_bisection(
   θ = 1.0, # corresponds to uniform refinement
   sort_flag = false,
 )
-  grid = get_grid(model)
-  top = get_grid_topology(model)
+  # Not sure if necessary to keep old model unchanged. For my tests I use this
+  model_c = deepcopy(model)
+  grid = get_grid(model_c)
+  top = get_grid_topology(model_c)
   ref_grid = newest_vertex_bisection(grid, top, η_arr, θ, sort_flag)
   ref_topo = GridTopology(ref_grid)
   #ref_labels = # Compute them from the original labels (This is perhaps the most tedious part)
