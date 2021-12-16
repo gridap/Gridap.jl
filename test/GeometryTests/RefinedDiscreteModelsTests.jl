@@ -13,18 +13,17 @@ using Gridap.Visualization
 
 domain = (0, 1, 0, 1)
 partition = (1, 1) # Initial partition
-seed = 5 # Arbitrary
 Nsteps = 13
 Nsteps_arr = UnitRange(2:Nsteps)
- est = ConstantEst(1.0)
+est = ConstantEst(1.0)
 θ = 1.0
-write_to_vtk = false
+uniform_write_to_vtk = true
 # Uniform refinement
 model_refs = build_refined_models(domain, partition, Nsteps, θ, est)
-for n = Nsteps
+for n = Nsteps_arr
   trian_ref = get_triangulation(model_refs[n])
-  if write_to_vtk
-    writevtk(trian_ref, "refined$(i)")
+  if uniform_write_to_vtk
+    writevtk(trian_ref, "uniform$(n)")
   end
   cell_map = get_cell_map(trian_ref)
   node_coords = get_node_coordinates(trian_ref)
@@ -40,4 +39,14 @@ for n = Nsteps
   # Combinatorial checks for cells 
   @test ncells == 2^(n + 1)
 end
+domain = (0, 1, 0, 1)
+partition = (1, 1) # Initial partition
+Nsteps = 13
+Nsteps_arr = UnitRange(2:Nsteps)
+seed = 5
+est = RandomEst(seed)
+θ = 0.5
+nonuniform_write_to_vtk = false
+# Nonuniform refinement
+model_refs = build_refined_models(domain, partition, Nsteps, θ, est)
 end
