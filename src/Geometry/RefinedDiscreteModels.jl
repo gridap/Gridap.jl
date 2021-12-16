@@ -1,8 +1,24 @@
 using Gridap.Arrays
 using SparseArrays
-#using TimerOutputs
+using Random
 
+# For testing only
+abstract type Estimator end
 
+struct ConstantEst <: Estimator
+  val::Float64
+end
+
+struct RandomEst <: Estimator
+  function RandomEst(seed)
+    Random.seed!(seed)
+    new()
+  end
+end
+
+# For testing only
+compute_estimator(est::RandomEst, ncells) = rand(ncells)
+compute_estimator(est::ConstantEst, ncells) = fill(est.val, ncells)
 
 function shift_to_first(v::Vector{Ti}, i::Ti) where {Ti<:Integer}
   circshift(v, -(i - 1))
@@ -251,4 +267,28 @@ function newest_vertex_bisection(
   #ref_labels = # Compute them from the original labels (This is perhaps the most tedious part)
   ref_labels = FaceLabeling(ref_topo)
   DiscreteModel(ref_grid, ref_topo, ref_labels)
+end
+
+function build_refined_models(
+  domain::Tuple,
+  partition::Tuple,
+  Nsteps::Integer,
+  θ::AbstractFloat,
+  est::Estimator,
+)
+  model = CartesianDiscreteModel(domain, partition)
+  model = simplexify(model)
+  model_refs = Vector{DiscreteModel}(undef, Nsteps)
+  cell_map = get_cell_map(get_triangulation(model))
+  ncells = length(cell_map)
+  η_arr = compute_estimator(est, ncells)
+  model_refs[1] = newest_vertex_bisection(model, η_arr; sort_flag = true, θ = θ)
+  for i = 1:(Nsteps - 1)
+    cell_map = get_cell_map(get_triangulation(model_refs[i]))
+    ncells = length(cell_map)
+    η_arr = compute_estimator(est, ncells)
+    model_refs[i + 1] =
+      newest_vertex_bisection(model_refs[i], η_arr; sort_flag = false, θ = θ)
+  end
+  model_refs
 end

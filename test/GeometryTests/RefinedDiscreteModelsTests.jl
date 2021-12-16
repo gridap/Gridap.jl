@@ -6,71 +6,38 @@ using Gridap.Arrays
 using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry
-using Gridap.Geometry: DiscreteModelMock
+using Gridap.Geometry: ConstantEst, RandomEst
+using Gridap.Geometry: build_refined_models
 using Gridap.Visualization
 #using TimerOutputs
-
-
-# For testing only
-abstract type Estimator end
-
-struct ConstantEst <: Estimator
-  val::Float64
-end
-
-struct RandomEst <: Estimator
-  function RandomEst(seed)
-    Random.seed!(seed)
-    new()
-  end
-end
-
-# For testing only
-compute_estimator(est::RandomEst, ncells) = rand(ncells)
-compute_estimator(est::ConstantEst, ncells) = fill(est.val, ncells)
-
-function refine_test(domain, partition, Nsteps, θ, est)
-  model = CartesianDiscreteModel(domain, partition)
-  model = simplexify(model)
-  model_refs = Vector{DiscreteModel}(undef, Nsteps)
-  cell_map = get_cell_map(get_triangulation(model))
-  ncells = length(cell_map)
-  η_arr = compute_estimator(est, ncells)
-  model_refs[1] = newest_vertex_bisection(model, η_arr; sort_flag = true, θ = θ)
-  for i = 1:Nsteps-1
-    cell_map = get_cell_map(get_triangulation(model_refs[i]))
-    ncells = length(cell_map)
-    η_arr = compute_estimator(est, ncells)
-    writevtk(Triangulation(model_refs[i]), "refined$(i)")
-    model_refs[i+1] = newest_vertex_bisection(model_refs[i], η_arr; sort_flag = false, θ = θ)
-  end
-  model_refs[end]
-end
 
 domain = (0, 1, 0, 1)
 partition = (1, 1) # Initial partition
 seed = 5 # Arbitrary
-@show Nsteps = UnitRange(2:13)
+Nsteps = 13
+Nsteps_arr = UnitRange(2:Nsteps)
  est = ConstantEst(1.0)
 θ = 1.0
+write_to_vtk = false
 # Uniform refinement
+model_refs = build_refined_models(domain, partition, Nsteps, θ, est)
 for n = Nsteps
-  model_ref = refine_test(domain, partition, n, θ, est)
-  trian_ref = get_triangulation(model_ref)
+  trian_ref = get_triangulation(model_refs[n])
+  if write_to_vtk
+    writevtk(trian_ref, "refined$(i)")
+  end
   cell_map = get_cell_map(trian_ref)
   node_coords = get_node_coordinates(trian_ref)
   ncoords = length(node_coords)
+  # Combinatorial checks for nodes
   if isodd(n)
     a = Integer.(2 * (4^((n-1)/2) + 2^((n-1)/2)) + 1)
-    #@show ncoords
-    #@show a
   else
     a = Integer.(2^(n/2) + 1)^2
   end
   ncells = length(cell_map)
   @test a == ncoords
+  # Combinatorial checks for cells 
   @test ncells == 2^(n + 1)
 end
-#@test ncoords == 
-#@test model_ref isa DiscreteModel
 end
