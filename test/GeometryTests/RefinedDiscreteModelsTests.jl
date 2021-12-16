@@ -50,17 +50,27 @@ end
 domain = (0, 1, 0, 1)
 partition = (1, 1) # Initial partition
 seed = 5 # Arbitrary
-@show Nsteps = 9
-  est = ConstantEst(1.0)
+@show Nsteps = UnitRange(2:13)
+ est = ConstantEst(1.0)
 θ = 1.0
 # Uniform refinement
-model_ref = refine_test(domain, partition, Nsteps, θ, est)
-trian_ref = get_triangulation(model_ref)
-cell_map = get_cell_map(trian_ref)
-node_coords = get_node_coordinates(trian_ref)
-@show ncoords = length(node_coords)
-@show ncells = length(cell_map)
-@test ncells == 2^(Nsteps + 1)
+for n = Nsteps
+  model_ref = refine_test(domain, partition, n, θ, est)
+  trian_ref = get_triangulation(model_ref)
+  cell_map = get_cell_map(trian_ref)
+  node_coords = get_node_coordinates(trian_ref)
+  ncoords = length(node_coords)
+  if isodd(n)
+    a = Integer.(2 * (4^((n-1)/2) + 2^((n-1)/2)) + 1)
+    #@show ncoords
+    #@show a
+  else
+    a = Integer.(2^(n/2) + 1)^2
+  end
+  ncells = length(cell_map)
+  @test a == ncoords
+  @test ncells == 2^(n + 1)
+end
 #@test ncoords == 
-@test model_ref isa DiscreteModel
+#@test model_ref isa DiscreteModel
 end
