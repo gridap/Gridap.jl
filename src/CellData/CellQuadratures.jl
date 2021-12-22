@@ -3,10 +3,10 @@
 
 """
 """
-struct CellQuadrature{DDS,IDS,A,B,C} <: CellDatum
-  cell_quad::A
-  cell_point::B
-  cell_weight::C
+struct CellQuadrature{DDS,IDS} <: CellDatum
+  cell_quad::AbstractArray{<:Quadrature}
+  cell_point::AbstractArray{<:AbstractArray{<:Point}}
+  cell_weight::AbstractArray{<:AbstractArray{<:Real}}
   trian::Triangulation
   data_domain_style::DDS
   integration_domain_style::IDS
@@ -14,9 +14,9 @@ end
 
 # Old constructor (for backward compatibility)
 function CellQuadrature(
-  cell_quad,
-  cell_point,
-  cell_weight,
+  cell_quad::AbstractArray{<:Quadrature},
+  cell_point::AbstractArray{<:AbstractArray{<:Point}},
+  cell_weight::AbstractArray{<:AbstractArray{<:Real}},
   trian::Triangulation,
   data_domain_style::DomainStyle)
   CellQuadrature(cell_quad,cell_point,cell_weight,trian,data_domain_style,PhysicalDomain())
