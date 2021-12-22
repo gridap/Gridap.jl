@@ -2,15 +2,18 @@
 A single point or an array of points on the cells of a Triangulation
 CellField objects can be evaluated efficiently at CellPoint instances.
 """
+
+const CPET=Union{Point,AbstractArray{<:Point},VectorBlock{<:AbstractArray{<:Point}}}
+
 struct CellPoint{DS} <: CellDatum
-  cell_ref_point::AbstractArray{<:Union{Point,AbstractArray{<:Point}}}
-  cell_phys_point::AbstractArray{<:Union{Point,AbstractArray{<:Point}}}
+  cell_ref_point::AbstractArray{<:CPET}
+  cell_phys_point::AbstractArray{<:CPET}
   trian::Triangulation
   domain_style::DS
 end
 
 function CellPoint(
-  cell_ref_point::AbstractArray{<:Union{Point,AbstractArray{<:Point}}},
+  cell_ref_point::AbstractArray{<:CPET},
   trian::Triangulation,
   domain_style::ReferenceDomain)
 
@@ -20,7 +23,7 @@ function CellPoint(
 end
 
 function CellPoint(
-  cell_phys_point::AbstractArray{<:Union{Point,AbstractArray{<:Point}}},
+  cell_phys_point::AbstractArray{<:CPET},
   trian::Triangulation,
   domain_style::PhysicalDomain)
   cell_map = get_cell_map(trian)
@@ -623,7 +626,7 @@ function _to_common_domain(a::CellField...)
     Cannote operate cellfields defined over more than 2 different
     triangulations at this moment.
     """
-    @notimplemented 
+    @notimplemented
   end
   map(i->change_domain(i,target_trian,target_domain),a)
 end
