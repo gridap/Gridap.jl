@@ -20,13 +20,13 @@ end
 compute_estimator(est::RandomEst, ncells) = rand(ncells)
 compute_estimator(est::ConstantEst, ncells) = fill(est.val, ncells)
 
-function shift_to_first(v::Vector{Ti}, i::Ti) where {Ti<:Integer}
+function shift_to_first(v::AbstractArray{Ti}, i::Ti) where {Ti<:Integer}
   circshift(v, -(i - 1))
 end
 
 function sort_longest_edge!(
     elem::Matrix{Ti},
-    node::Vector{<:VectorValue},
+    node::AbstractArray{<:VectorValue},
     NT::Ti,
 ) where {Ti<:Integer}
     edgelength = zeros(NT, 3)
@@ -48,12 +48,12 @@ function sort_longest_edge!(
 end
 
 function setup_markers_and_nodes!(
-    node::Vector{<:VectorValue},
+    node::AbstractArray{<:VectorValue},
     elem::Matrix{Ti},
     d2p::SparseMatrixCSC{Ti,Ti},
     dualedge::SparseMatrixCSC{Ti},
     NE::Ti,
-    η_arr::Vector{<:AbstractFloat},
+    η_arr::AbstractArray{<:AbstractFloat},
     θ::AbstractFloat,
   ) where {Ti <: Integer}
   total_η = sum(η_arr)
@@ -83,7 +83,7 @@ function setup_markers_and_nodes!(
         marker[d2p[elem[t_idx, 2], elem[t_idx, 3]]] = N
         # Coordinates of new node
         midpoint = get_midpoint(node[elem[t_idx, [2 3], :]])
-        node = push!(node, midpoint)
+        node = [node; midpoint]
         t_idx = dualedge[elem[t_idx, 3], elem[t_idx, 2]]
         # There is no dual edge here, go to next triangle index
         if t_idx == 0
@@ -95,7 +95,7 @@ function setup_markers_and_nodes!(
   node, marker
 end
 
-function divide!(elem::Matrix{Ti}, t::Ti, p::Vector{Ti}) where {Ti <: Integer}
+function divide!(elem::Matrix{Ti}, t::Ti, p::AbstractArray{Ti}) where {Ti <: Integer}
   elem = [elem; [p[4] p[3] p[1]]]
   elem[t, :] = [p[4] p[1] p[2]]
   elem
@@ -104,7 +104,7 @@ end
 function bisect(
     d2p::SparseMatrixCSC{Ti,Ti},
     elem::Matrix{Ti},
-    marker::Vector{Ti},
+    marker::AbstractArray{Ti},
     NT::Ti,
   ) where {Ti<:Integer}
   for t = UnitRange{Ti}(1:NT)
@@ -131,7 +131,7 @@ function build_edges(elem::Matrix{<:Integer})
   unique(sort!(edge, dims = 2), dims = 1)
 end
 
-function build_directed_dualedge(elem::Matrix{Ti}, N::Ti, NT::Ti) where {Ti <: Integer}
+function build_directed_dualedge(elem::Matrix{Ti}, N::Ti, NT::Ti) where {Ti<:Integer}
   dualedge = spzeros(Ti, N, N)
   for t = 1:NT
     dualedge[elem[t, 1], elem[t, 2]] = t
@@ -141,7 +141,7 @@ function build_directed_dualedge(elem::Matrix{Ti}, N::Ti, NT::Ti) where {Ti <: I
   dualedge
 end
 
-function dual_to_primal(edge::Matrix{Ti}, NE::Ti, N::Ti) where {Ti <: Integer}
+function dual_to_primal(edge::Matrix{Ti}, NE::Ti, N::Ti) where {Ti<:Integer}
   d2p = spzeros(Ti, Ti, N, N)
   for k = 1:NE
     i = edge[k, 1]
@@ -171,7 +171,7 @@ function Base.:^(v::VectorValue{N,T}, r::Integer) where {T, N}
   VectorValue([v[i]^r for i = 1:N]...)
 end
 
-function sort_ccw(cell_coords::Vector{<:VectorValue})
+function sort_ccw(cell_coords::AbstractArray{<:VectorValue})
   midpoint = get_midpoint(cell_coords)
   offset_coords = cell_coords .- midpoint
   sortperm(offset_coords, by = atan)
@@ -179,7 +179,7 @@ end
 
 function sort_cell_node_ids_ccw(
     cell_node_ids::Table{<:Integer},
-    node_coords::Vector{<:VectorValue},
+    node_coords::AbstractArray{<:VectorValue},
   )
   cell_node_ids_ccw = vcat(cell_node_ids'...)
   #cell_node_ids_ccw = cell_node_ids
@@ -197,9 +197,9 @@ node_coords == node, cell_node_ids == elem in Long Chen's notation
 """
 function newest_vertex_bisection(
   top::GridTopology,
-  node_coords::Vector,
+  node_coords::AbstractArray{<:VectorValue},
   cell_node_ids::Matrix{Ti},
-  η_arr::Vector{<:AbstractFloat},
+  η_arr::AbstractArray{<:AbstractFloat},
   θ::AbstractFloat,
   sort_flag::Bool,
 ) where {Ti <: Integer}
@@ -230,7 +230,7 @@ end
 function newest_vertex_bisection(
   grid::Grid,
   top::GridTopology,
-  η_arr::AbstractVector{<:AbstractFloat},
+  η_arr::AbstractArray{<:AbstractFloat},
   θ::AbstractFloat,
   sort_flag::Bool,
 )
@@ -249,14 +249,14 @@ function newest_vertex_bisection(
   cell_types = get_cell_type(grid)
   # TODO : Gracefully handle cell_types
   new_cell_types = fill(1, length(cell_node_ids_ref) - length(cell_node_ids))
-  append!(cell_types, new_cell_types)
+  cell_types = [cell_types; new_cell_types]
   UnstructuredGrid(node_coords_ref, cell_node_ids_ref, reffes, cell_types)
 end
 
 # step 2
 function newest_vertex_bisection(
   model::DiscreteModel,
-  η_arr::AbstractVector{<:AbstractFloat};
+  η_arr::AbstractArray{<:AbstractFloat};
   θ = 1.0, # corresponds to uniform refinement
   sort_flag = false,
 )
@@ -272,14 +272,11 @@ function newest_vertex_bisection(
 end
 
 function build_refined_models(
-  domain::Tuple,
-  partition::Tuple,
+  model::DiscreteModel,
   Nsteps::Integer,
   θ::AbstractFloat,
   est::Estimator,
 )
-  model = CartesianDiscreteModel(domain, partition)
-  model = simplexify(model)
   model_refs = Vector{DiscreteModel}(undef, Nsteps)
   cell_map = get_cell_map(get_triangulation(model))
   ncells = length(cell_map)
