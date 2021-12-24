@@ -455,22 +455,14 @@ function collect_cell_matrix_and_vector(
   biform::DomainContribution,liform::DomainContribution)
 
   matvec, mat, vec = _pair_contribution_when_possible(biform,liform)
-  matvecdata = _collect_cell_matvec(trial,test,matvec)
-  matdata = collect_cell_matrix(trial,test,mat)
-  vecdata = collect_cell_vector(test,vec)
-  (matvecdata, matdata, vecdata)
+  _collect_cell_matrix_and_vector(trial, test, matvec, mat, vec)
 end
 
 function collect_cell_matrix_and_vector(
   trial::FESpace,test::FESpace,
   biform::DomainContribution,liform::DomainContribution,uhd::FEFunction)
-
   matvec, mat, vec = _pair_contribution_when_possible(biform,liform,uhd)
-
-  matvecdata = _collect_cell_matvec(trial,test,matvec)
-  matdata = collect_cell_matrix(trial,test,mat)
-  vecdata = collect_cell_vector(test,vec)
-  (matvecdata, matdata, vecdata)
+  _collect_cell_matrix_and_vector(trial, test, matvec, mat, vec)
 end
 
 function _pair_contribution_when_possible(biform,liform)
@@ -494,19 +486,31 @@ end
 
 function _pair_contribution_when_possible(biform,liform,uhd)
   _matvec, _mat, _vec = _pair_contribution_when_possible(biform,liform)
-  matvec = DomainContribution()
-  mat = DomainContribution()
-  for (trian,t) in _matvec.dict
-    cellvals = get_cell_dof_values(uhd,trian)
-    cellmask = get_cell_is_dirichlet(uhd,trian)
-    matvec.dict[trian] = attach_dirichlet(t,cellvals,cellmask)
-  end
-  for (trian,t) in _mat.dict
-    cellvals = get_cell_dof_values(uhd,trian)
-    cellmask = get_cell_is_dirichlet(uhd,trian)
-    matvec.dict[trian] = attach_dirichlet(t,cellvals,cellmask)
-  end
+  matvec, mat = _attach_dirichlet(_matvec, _mat, uhd)
   matvec, mat, _vec
+end
+
+function _collect_cell_matrix_and_vector(trial, test, matvec, mat, vec)
+  matvecdata = _collect_cell_matvec(trial,test,matvec)
+  matdata = collect_cell_matrix(trial,test,mat)
+  vecdata = collect_cell_vector(test,vec)
+  (matvecdata, matdata, vecdata)
+end
+
+function _attach_dirichlet(matvec, mat, uhd)
+  _matvec = DomainContribution()
+  _mat = DomainContribution()
+  for (trian,t) in matvec.dict
+    cellvals = get_cell_dof_values(uhd,trian)
+    cellmask = get_cell_is_dirichlet(uhd,trian)
+    _matvec.dict[trian] = attach_dirichlet(t,cellvals,cellmask)
+  end
+  for (trian,t) in mat.dict
+    cellvals = get_cell_dof_values(uhd,trian)
+    cellmask = get_cell_is_dirichlet(uhd,trian)
+    _matvec.dict[trian] = attach_dirichlet(t,cellvals,cellmask)
+  end
+  _matvec, _mat
 end
 
 # allow linear forms like `l(v) = 0
