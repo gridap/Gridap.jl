@@ -1,3 +1,9 @@
+# This implementation of the newest vertex bisection algorithm is based on the
+# following article:
+
+# LONG CHEN (2008). SHORT IMPLEMENTATION OF BISECTION IN MATLAB.
+# In Recent Advances in Computational Sciences. WORLD SCIENTIFIC.
+# DOI: 10.1142/9789812792389_0020
 using Gridap.Arrays
 using SparseArrays
 using Random
@@ -61,32 +67,31 @@ function setup_markers_and_nodes!(
   sorted_η_idxs = sortperm(-η_arr)
   marker = zeros(Ti, NE)
   # Loop over global triangle indices
-  for t_idx = sorted_η_idxs
+  for t = sorted_η_idxs
+    # Döfler marking strategy: bulk chasing
     if (partial_η > θ * total_η)
       break
     end
     need_to_mark = true
-    # Get triangle index with next largest error
-    #ct = sorted_η_idxs[t]
     while (need_to_mark)
       # Base point
-      base = d2p[elem[t_idx, 2], elem[t_idx, 3]]
+      base = d2p[elem[t, 2], elem[t, 3]]
       # Already marked
       if marker[base] > 0
         need_to_mark = false
       else
         # Get the estimator contribution for the current triangle
-        partial_η = partial_η + η_arr[t_idx]
+        partial_η = partial_η + η_arr[t]
         # Increase the number of nodes to add new midpoint
         N = size(node, 1) + 1
         # The marker of the current elements is this node
-        marker[d2p[elem[t_idx, 2], elem[t_idx, 3]]] = N
+        marker[d2p[elem[t, 2], elem[t, 3]]] = N
         # Coordinates of new node
-        midpoint = get_midpoint(node[elem[t_idx, [2 3], :]])
+        midpoint = get_midpoint(node[elem[t, [2 3], :]])
         node = [node; midpoint]
-        t_idx = dualedge[elem[t_idx, 3], elem[t_idx, 2]]
+        t = dualedge[elem[t, 3], elem[t, 2]]
         # There is no dual edge here, go to next triangle index
-        if t_idx == 0
+        if t == 0
           need_to_mark = false
         end
       end
@@ -95,7 +100,7 @@ function setup_markers_and_nodes!(
   node, marker
 end
 
-function divide!(elem::Matrix{Ti}, t::Ti, p::AbstractArray{Ti}) where {Ti <: Integer}
+function divide(elem::Matrix{Ti}, t::Ti, p::AbstractArray{Ti}) where {Ti <: Integer}
   elem = [elem; [p[4] p[3] p[1]]]
   elem[t, :] = [p[4] p[1] p[2]]
   elem
@@ -111,15 +116,15 @@ function bisect(
     base = d2p[elem[t, 2], elem[t, 3]]
     if (marker[base] > 0)
       p = vcat(elem[t, :], marker[base])
-      elem = divide!(elem, t, p)
+      elem = divide(elem, t, p)
       left = d2p[p[1], p[2]]
       right = d2p[p[3], p[1]]
       if (marker[right] > 0)
         cur_size::Ti = size(elem, 1)
-        elem = divide!(elem, cur_size, [p[4], p[3], p[1], marker[right]])
+        elem = divide(elem, cur_size, [p[4], p[3], p[1], marker[right]])
       end
       if (marker[left] > 0)
-        elem = divide!(elem, t, [p[4], p[1], p[2], marker[left]])
+        elem = divide(elem, t, [p[4], p[1], p[2], marker[left]])
       end
     end
   end
