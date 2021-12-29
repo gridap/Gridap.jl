@@ -357,7 +357,7 @@ function _compute_linear_grid_coords_from_simplex(p::Polytope{3},n::Integer)
   v(n,i,j,k) = tet_num(n) - tet_num(n-i+1) + v(n-i+1,j,k)
   @assert is_simplex(p)
   D = 3
-  cube_to_tets = ((1,2,3,5),(2,4,3,6),(3,5,7,6),(2,3,5,6),(3,4,7,6),(4,5,7,8))
+  cube_to_tets = ((1,2,3,5),(2,4,3,6),(3,5,7,6),(2,3,5,6),(3,4,7,6),(4,6,7,8))
   cube = CartesianIndices( (0:1,0:1,0:1) )
   n_core_tets = length(cube_to_tets)-2
   Tp = eltype(get_vertex_coordinates(p))
