@@ -139,6 +139,24 @@ source_model = CartesianDiscreteModel((0,1,0,1),(2,2))
   for pt in pts
     @test gh(pt) ≈ fh(pt)
   end
+
+  # Deformed mesh
+  function map(x)
+    if x[1]≈1.0 && x[2]≈1.0
+      x = VectorValue(0.6,0.6)
+    end
+    x
+  end
+  model = CartesianDiscreteModel((0,1,0,1),(1,1),map=map) |> simplexify
+  reffe = ReferenceFE(lagrangian,Float64,1)
+  V = FESpace(model,reffe)
+  f(x) = x[1]+x[2]
+  u = interpolate_everywhere(f,V)
+  x = VectorValue(0.45,0.45)
+  @test_throws AssertionError u(x)
+  sm=KDTreeSearch(num_nearest_vertices=2)
+  ux = Interpolable(u;searchmethod=sm)(x)
+  @test ux == 0.9
 end
 
 @testset "Test interpolation RT" begin
@@ -162,4 +180,3 @@ end
 
 
 end # module
-
