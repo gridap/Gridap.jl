@@ -46,7 +46,7 @@ Nsteps = 13
 seed = 5
 est = RandomEst(seed)
 θ = 0.5
-nonuniform_write_to_vtk = true
+nonuniform_write_to_vtk = false
 model = simplexify(CartesianDiscreteModel(domain, partition))
 model_refs = build_refined_models(model, Nsteps, θ, est)
 if nonuniform_write_to_vtk
