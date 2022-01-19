@@ -49,6 +49,8 @@ import Gridap.Geometry: get_cell_node_ids
 
 export writevtk
 export createvtk
+export createpvd
+export savepvd
 export write_vtk_file
 #export print_op_tree
 export visualization_data
