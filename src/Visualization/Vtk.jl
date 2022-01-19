@@ -27,7 +27,7 @@ function createpvd(parts::Nothing,args...;kwargs...)
   createpvd(args...;kwargs...)
 end
 
-function createpvd(f,args...;kwargs...)
+function createpvd(f::Function,args...;kwargs...)
   pvd = createpvd(args...;kwargs...)
   try
     f(pvd)
@@ -36,7 +36,7 @@ function createpvd(f,args...;kwargs...)
   end
 end
 
-function createpvd(f,parts::Nothing,args...;kwargs...)
+function createpvd(f::Function,parts::Nothing,args...;kwargs...)
   pvd = createpvd(parts,args...;kwargs...)
   try
     f(pvd)
