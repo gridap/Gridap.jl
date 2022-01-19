@@ -163,13 +163,13 @@ f=joinpath(d,"pvdfile")
 pvd = createpvd(f)
 @test isa(pvd,WriteVTK.CollectionFile)
 savepvd(pvd)
-@test isfile(f)
+@test isfile(f*".pvd")
 
 f=joinpath(d,"pvdfile_parts")
 pvd = createpvd(nothing,f)
 @test isa(pvd,WriteVTK.CollectionFile)
 savepvd(pvd)
-@test isfile(f)
+@test isfile(f*".pvd")
 
 rm(d,recursive=true)
 
