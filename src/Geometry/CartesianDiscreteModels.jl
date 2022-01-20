@@ -69,6 +69,10 @@ function CartesianDiscreteModel(args...; kwargs...)
   CartesianDiscreteModel(desc)
 end
 
+# Introduced to mimic the API in GridapDistributed
+function CartesianDiscreteModel(parts::Nothing,args...;kwargs...)
+  CartesianDiscreteModel(args...;kwargs...)
+end
 
 """
     get_cartesian_descriptor(model::CartesianDiscreteModel)
