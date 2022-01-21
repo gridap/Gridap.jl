@@ -447,6 +447,7 @@ Base.iterate(m::MultiFieldFESpace,state) = iterate(m.spaces,state)
 
 Base.getindex(m::MultiFieldFESpace,field_id::Integer) = m.spaces[field_id]
 
+Base.length(m::MultiFieldFESpace) = length(m.spaces)
 
 # API for the ConsecutiveMultiFieldStyle
 import Gridap.FESpaces: interpolate
