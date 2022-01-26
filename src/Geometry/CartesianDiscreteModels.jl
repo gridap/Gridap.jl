@@ -48,14 +48,7 @@ struct CartesianDiscreteModel{D,T,F} <: DiscreteModel{D,D}
      subsizes = desc.sizes
      subdesc =
        CartesianDescriptor(Point(suborigin), subsizes, subpartition; map=desc.map, isperiodic=desc.isperiodic)
-
-     grid = CartesianGrid(subdesc)
-     _grid = UnstructuredGrid(grid)
-     topo = UnstructuredGridTopology(_grid)
-     nfaces = [num_faces(topo, d) for d = 0:num_cell_dims(topo)]
-     labels = FaceLabeling(nfaces)
-     _fill_subgrid_cartesian_face_labeling!(labels,topo,subdesc,desc,cmin)
-     new{D,T,F}(grid, topo, labels)
+     CartesianDiscreteModel(subdesc)
   end
 end
 

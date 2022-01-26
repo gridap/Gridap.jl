@@ -52,6 +52,32 @@ test_discrete_model(model2)
 model3 = CartesianDiscreteModel(desc,CartesianIndex(2,2,2),CartesianIndex(3,3,3))
 test_discrete_model(model3)
 
+domain = (0,1,0,1)
+partition = (4,4)
+desc = CartesianDescriptor(domain,partition;isperiodic=(true,true))
+model = CartesianDiscreteModel(desc)
+@test num_vertices(model) == 16
+model = CartesianDiscreteModel(desc,CartesianIndex(1,1),CartesianIndex(4,4))
+@test num_vertices(model) == 16
+
+desc = CartesianDescriptor(domain,partition;isperiodic=(true,false))
+model = CartesianDiscreteModel(desc)
+@test num_vertices(model) == 20
+model = CartesianDiscreteModel(desc,CartesianIndex(1,1),CartesianIndex(4,4))
+@test num_vertices(model) == 20
+
+desc = CartesianDescriptor(domain,partition;isperiodic=(false,true))
+model = CartesianDiscreteModel(desc)
+@test num_vertices(model) == 20
+model = CartesianDiscreteModel(desc,CartesianIndex(1,1),CartesianIndex(4,4))
+@test num_vertices(model) == 20
+
+desc = CartesianDescriptor(domain,partition;isperiodic=(false,false))
+model = CartesianDiscreteModel(desc)
+@test num_vertices(model) == 25
+model = CartesianDiscreteModel(desc,CartesianIndex(1,1),CartesianIndex(4,4))
+@test num_vertices(model) == 25
+
 #using Gridap.Visualization
 #writevtk(model2,"model2")
 
