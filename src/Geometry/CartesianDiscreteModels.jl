@@ -46,12 +46,21 @@ struct CartesianDiscreteModel{D,T,F} <: DiscreteModel{D,D}
      suborigin = Tuple(desc.origin) .+ (Tuple(cmin) .- 1) .* desc.sizes
      subpartition = Tuple(cmax) .- Tuple(cmin) .+ 1
      subsizes = desc.sizes
+     subisperiodic = map(subpartition,desc.partition,desc.isperiodic) do subn,n,p
+       # Periodic only make sense in dims in which we take the full span.
+       # Otherwise, we would artificially modify the periodicity period.
+       subn==n ? p : false
+     end
      subdesc =
-       CartesianDescriptor(Point(suborigin), subsizes, subpartition; map=desc.map, isperiodic=desc.isperiodic)
+       CartesianDescriptor(Point(suborigin), subsizes, subpartition; map=desc.map, isperiodic=subisperiodic)
 
      grid = CartesianGrid(subdesc)
      _grid = UnstructuredGrid(grid)
-     topo = UnstructuredGridTopology(_grid)
+     if any(subdesc.isperiodic)
+       topo = _cartesian_grid_topology_with_periodic_bcs(_grid, subdesc.isperiodic, subdesc.partition)
+     else
+       topo = UnstructuredGridTopology(_grid)
+     end
      nfaces = [num_faces(topo, d) for d = 0:num_cell_dims(topo)]
      labels = FaceLabeling(nfaces)
      _fill_subgrid_cartesian_face_labeling!(labels,topo,subdesc,desc,cmin)
@@ -267,7 +276,10 @@ end
 function _fill_subgrid_cartesian_entities!(labels, topo, subdesc, desc, cmin)
   D = num_cell_dims(topo)
   d_to_dface_to_entity = labels.d_to_dface_to_entity
-  gcis = CartesianIndices(desc.partition)
+  spans = map(desc.partition,subdesc.isperiodic) do n,p
+    p ? (0:(n+1)) : (1:n)
+  end
+  gcis = CartesianIndices(spans)
   subcis = CartesianIndices(subdesc.partition)
 
   polytope = first(get_polytopes(topo))
