@@ -13,13 +13,13 @@ using Gridap.Visualization
 
 domain = (0, 1, 0, 1)
 partition = (1, 1) # Initial partition
-Nsteps = 13
+Nsteps = 1
 est = ConstantEst(1.0)
 θ = 1.0
 uniform_write_to_vtk = false
 # Uniform refinement
 model = simplexify(CartesianDiscreteModel(domain, partition))
-model_refs = build_refined_models(model, Nsteps, θ, est)
+@time model_refs = build_refined_models(model, Nsteps, θ, est)
 for (n, model_ref) in enumerate(model_refs)
   trian_ref = get_triangulation(model_ref)
   if uniform_write_to_vtk
@@ -46,7 +46,7 @@ Nsteps = 13
 seed = 5
 est = RandomEst(seed)
 θ = 0.5
-nonuniform_write_to_vtk = false
+nonuniform_write_to_vtk = true
 model = simplexify(CartesianDiscreteModel(domain, partition))
 model_refs = build_refined_models(model, Nsteps, θ, est)
 if nonuniform_write_to_vtk
