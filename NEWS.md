@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Support for periodic conditions in `CartesianDiscreteModel`s build from `cmin`, `cmax`. Since PR [#738](https://github.com/gridap/Gridap.jl/pull/738).
+
 ## [0.17.7]- 2021-12-03
 
 ### Fixed
