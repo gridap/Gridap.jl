@@ -57,26 +57,44 @@ partition = (4,4)
 desc = CartesianDescriptor(domain,partition;isperiodic=(true,true))
 model = CartesianDiscreteModel(desc)
 @test num_vertices(model) == 16
+@test count(get_face_mask(get_face_labeling(model),"boundary",0)) == 0
 model = CartesianDiscreteModel(desc,CartesianIndex(1,1),CartesianIndex(4,4))
 @test num_vertices(model) == 16
+@test count(get_face_mask(get_face_labeling(model),"boundary",0)) == 0
+model = CartesianDiscreteModel(desc,CartesianIndex(2,2),CartesianIndex(4,4))
+@test num_vertices(model) == 16
+@test count(get_face_mask(get_face_labeling(model),"boundary",0)) == 7
 
 desc = CartesianDescriptor(domain,partition;isperiodic=(true,false))
 model = CartesianDiscreteModel(desc)
 @test num_vertices(model) == 20
+@test count(get_face_mask(get_face_labeling(model),"boundary",0)) == 8
 model = CartesianDiscreteModel(desc,CartesianIndex(1,1),CartesianIndex(4,4))
 @test num_vertices(model) == 20
+@test count(get_face_mask(get_face_labeling(model),"boundary",0)) == 8
+model = CartesianDiscreteModel(desc,CartesianIndex(2,2),CartesianIndex(4,4))
+@test num_vertices(model) == 16
+@test count(get_face_mask(get_face_labeling(model),"boundary",0)) == 7
 
 desc = CartesianDescriptor(domain,partition;isperiodic=(false,true))
 model = CartesianDiscreteModel(desc)
 @test num_vertices(model) == 20
 model = CartesianDiscreteModel(desc,CartesianIndex(1,1),CartesianIndex(4,4))
 @test num_vertices(model) == 20
+model = CartesianDiscreteModel(desc,CartesianIndex(2,2),CartesianIndex(4,4))
+@test num_vertices(model) == 16
+@test count(get_face_mask(get_face_labeling(model),"boundary",0)) == 7
 
 desc = CartesianDescriptor(domain,partition;isperiodic=(false,false))
 model = CartesianDiscreteModel(desc)
 @test num_vertices(model) == 25
+@test count(get_face_mask(get_face_labeling(model),"boundary",0)) == 16
 model = CartesianDiscreteModel(desc,CartesianIndex(1,1),CartesianIndex(4,4))
 @test num_vertices(model) == 25
+@test count(get_face_mask(get_face_labeling(model),"boundary",0)) == 16
+model = CartesianDiscreteModel(desc,CartesianIndex(2,2),CartesianIndex(4,4))
+@test num_vertices(model) == 16
+@test count(get_face_mask(get_face_labeling(model),"boundary",0)) == 7
 
 #using Gridap.Visualization
 #writevtk(model2,"model2")
