@@ -41,7 +41,8 @@ struct CartesianDiscreteModel{D,T,F} <: DiscreteModel{D,D}
   """
   function CartesianDiscreteModel(desc::CartesianDescriptor{D,T,F},
                                   cmin::CartesianIndex,
-                                  cmax::CartesianIndex) where {D,T,F}
+                                  cmax::CartesianIndex,
+                                  remove_boundary=map(i->false,desc.sizes)) where {D,T,F}
 
      suborigin = Tuple(desc.origin) .+ (Tuple(cmin) .- 1) .* desc.sizes
      subpartition = Tuple(cmax) .- Tuple(cmin) .+ 1
@@ -63,7 +64,7 @@ struct CartesianDiscreteModel{D,T,F} <: DiscreteModel{D,D}
      end
      nfaces = [num_faces(topo, d) for d = 0:num_cell_dims(topo)]
      labels = FaceLabeling(nfaces)
-     _fill_subgrid_cartesian_face_labeling!(labels,topo,subdesc,desc,cmin)
+     _fill_subgrid_cartesian_face_labeling!(labels,topo,subdesc,desc,cmin,remove_boundary)
      new{D,T,F}(grid, topo, labels)
   end
 end
@@ -268,16 +269,16 @@ function _fix_dface_geolabels!(
   end
 end
 
-function _fill_subgrid_cartesian_face_labeling!(labels,topo,subdesc,desc,cmin)
-   _fill_subgrid_cartesian_entities!(labels,topo,subdesc,desc,cmin)
+function _fill_subgrid_cartesian_face_labeling!(labels,topo,subdesc,desc,cmin,remove_boundary)
+   _fill_subgrid_cartesian_entities!(labels,topo,subdesc,desc,cmin,remove_boundary)
    _add_cartesian_tags!(labels,topo)
 end
 
-function _fill_subgrid_cartesian_entities!(labels, topo, subdesc, desc, cmin)
+function _fill_subgrid_cartesian_entities!(labels, topo, subdesc, desc, cmin,remove_boundary)
   D = num_cell_dims(topo)
   d_to_dface_to_entity = labels.d_to_dface_to_entity
-  spans = map(desc.partition,subdesc.isperiodic) do n,p
-    p ? (0:(n+1)) : (1:n)
+  spans = map(desc.partition,subdesc.isperiodic,remove_boundary) do n,p,r
+    (p || r) ? (0:(n+1)) : (1:n)
   end
   gcis = CartesianIndices(spans)
   subcis = CartesianIndices(subdesc.partition)
