@@ -218,7 +218,7 @@ include("GridPortions.jl")
 
 include("DiscreteModelPortions.jl")
 
-include("RefinedDiscreteModels.jl")
+include("NewestVertexBisection.jl")
 
 include("Triangulations.jl")
 

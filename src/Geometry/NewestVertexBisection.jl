@@ -9,6 +9,9 @@ using SparseArrays
 using TimerOutputs
 using Random
 
+# Create a TimerOutput, this is the main type that keeps track of everything.
+const to = TimerOutput()
+
 function shift_to_first(v::AbstractArray{Ti}, i::Ti) where {Ti<:Integer}
   circshift(v, -(i - 1))
 end
@@ -262,7 +265,7 @@ function newest_vertex_bisection(
   else
     cell_node_ids_ccw = cell_node_ids
   end
-  @timeit to "newest" node_coords_ref, cell_node_ids_ref =
+  node_coords_ref, cell_node_ids_ref =
     newest_vertex_bisection(top, node_coords, cell_node_ids_ccw, η_arr, θ, sort_flag)
   # TODO: Should not convert to matrix and back to Table
   #cell_node_ids_ref = Table([c for c in eachrow(cell_node_ids_ref)])
@@ -281,6 +284,8 @@ function newest_vertex_bisection(
   θ = 1.0, # corresponds to uniform refinement
   sort_flag = false,
 )
+  reset_timer!(to)
+  disable_timer!(to)
   # Not sure if necessary to keep old model unchanged. For my tests I use this
   model_c = deepcopy(model)
   grid = get_grid(model_c)

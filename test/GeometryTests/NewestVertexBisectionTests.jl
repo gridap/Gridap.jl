@@ -1,4 +1,4 @@
-module RefinedDiscreteModelsTests
+module NewestVertexBisectionTests
 
 using Test
 using Random
