@@ -6,11 +6,11 @@
 # DOI: 10.1142/9789812792389_0020
 using Gridap.Arrays
 using SparseArrays
-#using TimerOutputs
+using TimerOutputs
 using Random
 
 # Create a TimerOutput, this is the main type that keeps track of everything.
-#const to = TimerOutput()
+const to = TimerOutput()
 
 # For testing only
 abstract type Estimator end
@@ -110,27 +110,29 @@ function setup_markers_and_nodes!(
   node, marker
 end
 
-function divide!(elem::Table{Ti}, t::Ti, p::AbstractArray{Ti}) where {Ti <: Integer}
+function divide!(elem::AbstractArray, t::Ti, p::AbstractArray{Ti}) where {Ti <: Integer}
   new_row = [p[4], p[3], p[1]]
   update_row = [p[4], p[1], p[2]]
-  elem = append_tables_globally(elem, Table([new_row]))
-  for j = 1:3
-    elem.data[elem.ptrs[t] - 1 + j] = update_row[j]
-  end
+  push!(elem, new_row)
+  elem[t] = update_row
+  #elem = append_tables_globally(elem, Table([new_row]))
+  #for j = 1:3
+  #  elem.data[elem.ptrs[t] - 1 + j] = update_row[j]
+  #end
   #elem[t][:] = [p[4] p[1] p[2]]
   elem
 end
 
 function bisect(
     d2p::SparseMatrixCSC{Ti,Ti},
-    elem::Table{Ti},
+    elem::AbstractArray,
     marker::AbstractArray{Ti},
     NT::Ti,
   ) where {Ti<:Integer}
   for t = UnitRange{Ti}(1:NT)
     base = d2p[elem[t][2], elem[t][3]]
     if (marker[base] > 0)
-      p = push!(elem[t, :][1], marker[base])
+      p = vcat(elem[t][:], marker[base])
       elem = divide!(elem, t, p)
       left = d2p[p[1], p[2]]
       right = d2p[p[3], p[1]]
@@ -154,7 +156,6 @@ function build_edges(elem::Table{Ti}) where {Ti <: Integer}
     edge[off+2, :] = [elem[t][1] elem[t][3]]
     edge[off+3, :] = [elem[t][2] elem[t][3]]
   end
-  #edge = [elem[:, [1, 2]]; elem[:, [1, 3]]; elem[:, [2, 3]]]
   unique(sort!(edge, dims = 2), dims = 1)
 end
 
@@ -251,16 +252,19 @@ function newest_vertex_bisection(
     sort_longest_edge!(elem, node_coords, NT)
   end
   # Make sure elem is consistent with GridTopology
-  test_against_top(elem, top, 2)
-  edge = build_edges(elem)
+  #test_against_top(elem, top, 2)
+  @timeit to "edges" edge = build_edges(elem)
   NE::Ti = size(edge, 1)
-  dualedge = build_directed_dualedge(elem, N, NT)
+  @timeit to "dualedge" dualedge = build_directed_dualedge(elem, N, NT)
   d2p = dual_to_primal(edge, NE, N)
   # Make sure edge is consistent with GridTopology
-  test_against_top(edge, top, 1)
-  node_coords, marker =
+  #@timeit to "test" test_against_top(edge, top, 1)
+  @timeit to "markers" node_coords, marker =
     setup_markers_and_nodes!(node_coords, elem, d2p, dualedge, NE, η_arr, θ)
-  cell_node_ids = bisect(d2p, elem, marker, NT)
+  @timeit to "copy elem" elem = Vector{Vector}(elem)
+  @timeit to "bisect" cell_node_ids = bisect(d2p, elem, marker, NT)
+  #@show cell_node_ids
+  @timeit to "recreate" cell_node_ids = Table([c for c in cell_node_ids])
   node_coords, cell_node_ids
 end
 
@@ -279,7 +283,7 @@ function newest_vertex_bisection(
   else
     cell_node_ids_ccw = cell_node_ids
   end
-  node_coords_ref, cell_node_ids_ref =
+  @timeit to "newest" node_coords_ref, cell_node_ids_ref =
     newest_vertex_bisection(top, node_coords, cell_node_ids_ccw, η_arr, θ, sort_flag)
   # TODO: Should not convert to matrix and back to Table
   #cell_node_ids_ref = Table([c for c in eachrow(cell_node_ids_ref)])
@@ -315,6 +319,7 @@ function build_refined_models(
   θ::AbstractFloat,
   est::Estimator,
 )
+  reset_timer!(to)
   model_refs = Vector{DiscreteModel}(undef, Nsteps)
   cell_map = get_cell_map(get_triangulation(model))
   ncells = length(cell_map)
@@ -327,5 +332,6 @@ function build_refined_models(
     model_refs[i + 1] =
       newest_vertex_bisection(model_refs[i], η_arr; sort_flag = false, θ = θ)
   end
+  #@show to
   model_refs
 end
