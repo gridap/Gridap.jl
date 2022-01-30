@@ -10,6 +10,12 @@ using Test
 
 domain = (0,1,0,1,0,1)
 partition = (3,3,3)
+parts = nothing
+model = CartesianDiscreteModel(parts,domain,partition)
+test_discrete_model(model)
+
+domain = (0,1,0,1,0,1)
+partition = (3,3,3)
 model = CartesianDiscreteModel(domain,partition)
 test_discrete_model(model)
 @test is_oriented(get_grid(model)) == true

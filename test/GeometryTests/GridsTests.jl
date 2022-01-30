@@ -66,16 +66,28 @@ grid = Grid(ReferenceFE{3},WEDGE)
 # Test linear grid
 
 grid = compute_reference_grid(TRI,5)
-Ω = Triangulation(UnstructuredDiscreteModel(grid))
-dΩ = Measure(Ω,2)
+model = UnstructuredDiscreteModel(grid)
+f_to_c = get_faces(get_grid_topology(model),1,2)
+num_boundary_facets =  num_facets(TRI)*5
+
+@test count(isequal(1),map(length,f_to_c)) == num_boundary_facets
+
+Ω_tri = Triangulation(model)
+dΩ = Measure(Ω_tri,2)
 
 test_grid(grid)
 
 @test sum( ∫(1)dΩ ) ≈ 1/2
 
 grid = compute_reference_grid(TET,5)
-Ω = Triangulation(UnstructuredDiscreteModel(grid))
-dΩ = Measure(Ω,2)
+model = UnstructuredDiscreteModel(grid)
+f_to_c = get_faces(get_grid_topology(model),2,3)
+num_boundary_facets = num_facets(TET)*num_cells(Ω_tri)
+
+@test count(isequal(1),map(length,f_to_c)) == num_boundary_facets
+
+Ω_tet = Triangulation(model)
+dΩ = Measure(Ω_tet,2)
 
 test_grid(grid)
 

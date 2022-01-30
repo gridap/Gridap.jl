@@ -96,7 +96,7 @@ function FESpaces._change_argument(
 end
 
 function FESpaces._change_argument(
-  op::typeof(gradient),f,trian,uh::MultiFieldFEFunction)
+  op::Union{typeof(gradient),typeof(hessian)},f,trian,uh::MultiFieldFEFunction)
 
   U = get_fe_space(uh)
   function g(cell_u)
@@ -116,27 +116,34 @@ function FESpaces._change_argument(
   g
 end
 
-function Algebra.hessian(f::Function,uh::MultiFieldFEFunction)
-  @notimplemented
+function FESpaces._hessian(f,uh::MultiFieldFEFunction,fuh::DomainContribution)
+  terms = DomainContribution()
+  U = get_fe_space(uh)
+  for trian in get_domains(fuh)
+    g = FESpaces._change_argument(hessian,f,trian,uh)
+    cell_u = lazy_map(DensifyInnerMostBlockLevelMap(),get_cell_dof_values(uh))
+    cell_id = FESpaces._compute_cell_ids(uh,trian)
+    cell_grad = autodiff_array_hessian(g,cell_u,cell_id)
+    monolithic_result=cell_grad
+    blocks        = [] # TO-DO type unstable. How can I infer the type of its entries?
+    blocks_coords = Tuple{Int,Int}[]
+    nfields = length(U.spaces)
+    cell_dofs_field_offsets=_get_cell_dofs_field_offsets(uh)
+    for j=1:nfields
+      view_range_j=cell_dofs_field_offsets[j]:cell_dofs_field_offsets[j+1]-1
+      for i=1:nfields
+        view_range_i=cell_dofs_field_offsets[i]:cell_dofs_field_offsets[i+1]-1
+        # TO-DO: depending on the residual being differentiated, we may end with
+        #        blocks [i,j] full of zeros. I guess that it might desirable to early detect
+        #        these zero blocks and use a touch[i,j]==false block in ArrayBlock.
+        #        How can we detect that we have a zero block?
+        block=lazy_map(x->view(x,view_range_i,view_range_j),monolithic_result)
+        append!(blocks,[block])
+        append!(blocks_coords,[(i,j)])
+      end
+    end
+    cell_grad=lazy_map(BlockMap((nfields,nfields),blocks_coords),blocks...)
+    add_contribution!(terms,trian,cell_grad)
+  end
+  terms
 end
-
-#function FESpaces._change_argument(
-#  op::typeof(hessian),f,trian,uh::MultiFieldFEFunction)
-#
-#  U = get_fe_space(uh)
-#  function g(cell_u)
-#    single_fields = GenericCellField[]
-#    nfields = length(U.spaces)
-#    for i in 1:nfields
-#      cell_values_field = lazy_map(a->a.array[i],cell_u)
-#      cf = CellField(U.spaces[i],cell_values_field)
-#      cell_data = lazy_map(BlockMap((nfields,nfields),i),get_data(cf))
-#      uhi = GenericCellField(cell_data,get_triangulation(cf),DomainStyle(cf))
-#      push!(single_fields,uhi)
-#    end
-#    xh = MultiFieldCellField(single_fields)
-#    cell_grad = f(xh)
-#    get_contribution(cell_grad,trian)
-#  end
-#  g
-#end

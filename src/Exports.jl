@@ -174,6 +174,8 @@ using Gridap.CellData: ∫; export ∫
 
 @publish Visualization writevtk
 @publish Visualization createvtk
+@publish Visualization createpvd
+@publish Visualization savepvd
 
 # Deprecated / removed
 
