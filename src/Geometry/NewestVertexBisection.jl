@@ -9,18 +9,18 @@ using SparseArrays
 using TimerOutputs
 using Random
 
-# Create a TimerOutput, this is the main type that keeps track of everything.
+# Create a TmerOutput, this is the main type that keeps track of everything.
 const to = TimerOutput()
 
-function _shift_to_first(v::AbstractArray{Ti}, i::Ti) where {Ti<:Integer}
+function _shift_to_first(v::AbstractVector{T}, i::T) where {T<:Integer}
   circshift(v, -(i - 1))
 end
 
 function _sort_longest_edge!(
-    elem::Table{Ti},
-    node::AbstractArray{<:VectorValue},
-    NT::Ti,
-) where {Ti<:Integer}
+    elem::AbstractVector{<:AbstractVector{T}},
+    node::AbstractVector{<:VectorValue},
+    NT::T,
+) where {T<:Integer}
     edgelength = zeros(NT, 3)
     for t = 1:NT
       elem_t = elem[t][:]
@@ -32,7 +32,7 @@ function _sort_longest_edge!(
     end
     max_indices = findmax(edgelength, dims = 2)[2]
     for t = 1:NT
-      shifted = _shift_to_first(elem[t][:], Ti(max_indices[t][2]))
+      shifted = _shift_to_first(elem[t][:], T(max_indices[t][2]))
       for j = 1:3
         elem.data[elem.ptrs[t] + j - 1] = shifted[j]
       end
@@ -40,18 +40,18 @@ function _sort_longest_edge!(
 end
 
 function _setup_markers_and_nodes!(
-    node::AbstractArray{<:VectorValue},
-    elem::Table{Ti},
-    d2p::SparseMatrixCSC{Ti,Ti},
-    dualedge::SparseMatrixCSC{Ti},
-    NE::Ti,
-    η_arr::AbstractArray{<:AbstractFloat},
+    node::AbstractVector{<:VectorValue},
+    elem::AbstractVector{<:AbstractVector{T}},
+    d2p::SparseMatrixCSC{T, T},
+    dualedge::SparseMatrixCSC{T},
+    NE::T,
+    η_arr::AbstractVector{<:AbstractFloat},
     θ::AbstractFloat,
-  ) where {Ti <: Integer}
+  ) where {T <: Integer}
   total_η = sum(η_arr)
   partial_η = 0
   sorted_η_idxs = sortperm(-η_arr)
-  marker = zeros(Ti, NE)
+  marker = zeros(T, NE)
   # Loop over global triangle indices
   for t = sorted_η_idxs
     if (partial_η > θ * total_η)
@@ -89,7 +89,7 @@ function _setup_markers_and_nodes!(
   node, marker
 end
 
-function _divide!(elem::AbstractArray, t::Ti, p::AbstractArray{Ti}) where {Ti <: Integer}
+function _divide!(elem::AbstractVector, t::T, p::AbstractVector{T}) where {T <: Integer}
   new_row = [p[4], p[3], p[1]]
   update_row = [p[4], p[1], p[2]]
   push!(elem, new_row)
@@ -103,12 +103,12 @@ function _divide!(elem::AbstractArray, t::Ti, p::AbstractArray{Ti}) where {Ti <:
 end
 
 function _bisect(
-    d2p::SparseMatrixCSC{Ti,Ti},
-    elem::AbstractArray,
-    marker::AbstractArray{Ti},
-    NT::Ti,
-  ) where {Ti<:Integer}
-  for t = UnitRange{Ti}(1:NT)
+    d2p::SparseMatrixCSC{T, T},
+    elem::AbstractVector,
+    marker::AbstractVector{T},
+    NT::T,
+  ) where {T<:Integer}
+  for t = UnitRange{T}(1:NT)
     base = d2p[elem[t][2], elem[t][3]]
     if (marker[base] > 0)
       p = vcat(elem[t][:], marker[base])
@@ -116,7 +116,7 @@ function _bisect(
       left = d2p[p[1], p[2]]
       right = d2p[p[3], p[1]]
       if (marker[right] > 0)
-        cur_size::Ti = size(elem, 1)
+        cur_size::T = size(elem, 1)
         elem = _divide!(elem, cur_size, [p[4], p[3], p[1], marker[right]])
       end
       if (marker[left] > 0)
@@ -127,8 +127,8 @@ function _bisect(
   elem
 end
 
-function _build_edges(elem::Table{Ti}) where {Ti <: Integer}
-  edge = zeros(Ti, 3*length(elem), 2)
+function _build_edges(elem::AbstractVector{<:AbstractVector{T}}) where {T <: Integer}
+  edge = zeros(T, 3*length(elem), 2)
   for t = 1:length(elem)
     off = 3*(t-1)
     edge[off+1,:] = [elem[t][1] elem[t][2]]
@@ -138,8 +138,8 @@ function _build_edges(elem::Table{Ti}) where {Ti <: Integer}
   unique(sort!(edge, dims = 2), dims = 1)
 end
 
-function _build_directed_dualedge(elem::Table{Ti}, N::Ti, NT::Ti) where {Ti <: Integer}
-  dualedge = spzeros(Ti, N, N)
+function _build_directed_dualedge(elem::AbstractVector{<:AbstractVector{T}}, N::T, NT::T) where {T <: Integer}
+  dualedge = spzeros(T, N, N)
   for t = 1:NT
     dualedge[elem[t][1], elem[t][2]] = t
     dualedge[elem[t][2], elem[t][3]] = t
@@ -148,8 +148,8 @@ function _build_directed_dualedge(elem::Table{Ti}, N::Ti, NT::Ti) where {Ti <: I
   dualedge
 end
 
-function _dual_to_primal(edge::Matrix{Ti}, NE::Ti, N::Ti) where {Ti <: Integer}
-  d2p = spzeros(Ti, Ti, N, N)
+function _dual_to_primal(edge::Matrix{T}, NE::T, N::T) where {T <: Integer}
+  d2p = spzeros(T, T, N, N)
   for k = 1:NE
     i = edge[k, 1]
     j = edge[k, 2]
@@ -185,7 +185,7 @@ function Base.:^(v::VectorValue{N,T}, r::Integer) where {T, N}
   VectorValue([v[i]^r for i = 1:N]...)
 end
 
-function _sort_ccw(cell_coords::AbstractArray{<:VectorValue})
+function _sort_ccw(cell_coords::AbstractVector{<:VectorValue})
   midpoint = _get_midpoint(cell_coords)
   offset_coords = cell_coords .- midpoint
   sortperm(offset_coords, by = atan)
@@ -193,7 +193,7 @@ end
 
 function _sort_cell_node_ids_ccw!(
     cell_node_ids::Table{<:Integer},
-    node_coords::AbstractArray{<:VectorValue},
+    node_coords::AbstractVector{<:VectorValue},
   )
   #cell_node_ids_ccw = vcat(cell_node_ids'...)
   #@show cell_node_ids_ccw
@@ -214,16 +214,16 @@ node_coords == node, cell_node_ids == elem in Long Chen's notation
 function newest_vertex_bisection(
   top::GridTopology,
   node_coords::Vector,
-  cell_node_ids::Table{Ti},
-  η_arr::AbstractArray{<:AbstractFloat},
+  cell_node_ids::AbstractVector{<:AbstractVector{T}},
+  η_arr::AbstractVector{<:AbstractFloat},
   θ::AbstractFloat,
   sort_flag::Bool,
-) where {Ti <: Integer}
+) where {T <: Integer}
   # Number of nodes
-  N::Ti = size(node_coords, 1)
+  N::T = size(node_coords, 1)
   elem = cell_node_ids
   # Number of cells (triangles in 2D)
-  NT::Ti = size(elem, 1)
+  NT::T = size(elem, 1)
   @assert length(η_arr) == NT
   if sort_flag
     _sort_longest_edge!(elem, node_coords, NT)
@@ -231,7 +231,7 @@ function newest_vertex_bisection(
   # Make sure elem is consistent with GridTopology
   #test_against_top(elem, top, 2)
   @timeit to "_build_edges" edge = _build_edges(elem)
-  NE::Ti = size(edge, 1)
+  NE::T = size(edge, 1)
   @timeit to "build_dualedge" dualedge = _build_directed_dualedge(elem, N, NT)
   d2p = _dual_to_primal(edge, NE, N)
   # Make sure edge is consistent with GridTopology
@@ -249,7 +249,7 @@ end
 function newest_vertex_bisection(
   grid::Grid,
   top::GridTopology,
-  η_arr::AbstractArray{<:AbstractFloat},
+  η_arr::AbstractVector{<:AbstractFloat},
   θ::AbstractFloat,
   sort_flag::Bool,
 )
@@ -273,7 +273,7 @@ end
 # step 2
 function newest_vertex_bisection(
   model::DiscreteModel,
-  η_arr::AbstractArray{<:AbstractFloat};
+  η_arr::AbstractVector{<:AbstractFloat};
   θ = 1.0, # corresponds to uniform refinement
   sort_flag = false,
 )
