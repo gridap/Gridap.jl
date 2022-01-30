@@ -9,8 +9,6 @@ using Gridap.Geometry
 using Gridap.Visualization
 using TimerOutputs
 
-# Create a TimerOutput, this is the main type that keeps track of everything.
-const to = TimerOutput()
 
 # For testing only
 abstract type Estimator end
@@ -32,8 +30,6 @@ function build_refined_models(
   θ::AbstractFloat,
   est::Estimator,
 )
-  reset_timer!(to)
-  disable_timer!(to)
   model_refs = Vector{DiscreteModel}(undef, Nsteps)
   cell_map = get_cell_map(get_triangulation(model))
   ncells = length(cell_map)
@@ -59,7 +55,7 @@ partition = (1, 1) # Initial partition
 Nsteps = 5
 est = ConstantEst(1.0)
 θ = 1.0
-uniform_write_to_vtk = true
+uniform_write_to_vtk = false
 # Uniform refinement
 model = simplexify(CartesianDiscreteModel(domain, partition))
 model_refs = build_refined_models(model, Nsteps, θ, est)
@@ -83,20 +79,20 @@ for (n, model_ref) in enumerate(model_refs)
   @test ncells == 2^(n + 1)
 end
 # Nonuniform refinement. For now only visually checking conformity
-domain = (0, 1, 0, 1)
-partition = (1, 1) # Initial partition
-Nsteps = 18
-seed = 5
-est = RandomEst(seed)
-θ = 0.5
-nonuniform_write_to_vtk = true
-model = simplexify(CartesianDiscreteModel(domain, partition))
-model_refs = build_refined_models(model, Nsteps, θ, est)
-if nonuniform_write_to_vtk
-  for (n, model_ref) in enumerate(model_refs)
-    trian_ref = get_triangulation(model_ref)
-    writevtk(trian_ref, "nonuniform$(string(n, pad=2))")
-  end
-end
-
+#domain = (0, 1, 0, 1)
+#partition = (1, 1) # Initial partition
+#Nsteps = 18
+#seed = 5
+#est = RandomEst(seed)
+#θ = 0.5
+#nonuniform_write_to_vtk = true
+#model = simplexify(CartesianDiscreteModel(domain, partition))
+#model_refs = build_refined_models(model, Nsteps, θ, est)
+#if nonuniform_write_to_vtk
+#  for (n, model_ref) in enumerate(model_refs)
+#    trian_ref = get_triangulation(model_ref)
+#    writevtk(trian_ref, "nonuniform$(string(n, pad=2))")
+#  end
+#end
+#
 end
