@@ -9,27 +9,6 @@ using SparseArrays
 using TimerOutputs
 using Random
 
-# Create a TimerOutput, this is the main type that keeps track of everything.
-const to = TimerOutput()
-
-# For testing only
-abstract type Estimator end
-
-struct ConstantEst <: Estimator
-  val::Float64
-end
-
-struct RandomEst <: Estimator
-  function RandomEst(seed)
-    Random.seed!(seed)
-    new()
-  end
-end
-
-# For testing only
-compute_estimator(est::RandomEst, ncells) = rand(ncells)
-compute_estimator(est::ConstantEst, ncells) = fill(est.val, ncells)
-
 function shift_to_first(v::AbstractArray{Ti}, i::Ti) where {Ti<:Integer}
   circshift(v, -(i - 1))
 end
@@ -184,14 +163,14 @@ function test_against_top(face::Table{<:Integer}, top::GridTopology, d::Integer)
   face_vec = sort.([face[i][:] for i = 1:size(face, 1)])
   face_top = sort.(get_faces(top, d, 0))
   issetequal_bitvec = issetequal(face_vec, face_top)
-  @assert all(issetequal_bitvec)
+  @check all(issetequal_bitvec)
 end
 
 function test_against_top(face::Matrix{<:Integer}, top::GridTopology, d::Integer)
   face_vec = sort.([face[i, :] for i = 1:size(face, 1)])
   face_top = sort.(get_faces(top, d, 0))
   issetequal_bitvec = issetequal(face_vec, face_top)
-  #@assert all(issetequal_bitvec)
+  @check all(issetequal_bitvec)
 end
 
 function get_midpoint(ngon::AbstractArray{<:VectorValue})
@@ -253,9 +232,9 @@ function newest_vertex_bisection(
   end
   # Make sure elem is consistent with GridTopology
   #test_against_top(elem, top, 2)
-  @timeit to "edges" edge = build_edges(elem)
+  @timeit to "build_edges" edge = build_edges(elem)
   NE::Ti = size(edge, 1)
-  @timeit to "dualedge" dualedge = build_directed_dualedge(elem, N, NT)
+  @timeit to "build_dualedge" dualedge = build_directed_dualedge(elem, N, NT)
   d2p = dual_to_primal(edge, NE, N)
   # Make sure edge is consistent with GridTopology
   #@timeit to "test" test_against_top(edge, top, 1)
@@ -311,27 +290,4 @@ function newest_vertex_bisection(
   #ref_labels = # Compute them from the original labels (This is perhaps the most tedious part)
   ref_labels = FaceLabeling(ref_topo)
   DiscreteModel(ref_grid, ref_topo, ref_labels)
-end
-
-function build_refined_models(
-  model::DiscreteModel,
-  Nsteps::Integer,
-  θ::AbstractFloat,
-  est::Estimator,
-)
-  reset_timer!(to)
-  model_refs = Vector{DiscreteModel}(undef, Nsteps)
-  cell_map = get_cell_map(get_triangulation(model))
-  ncells = length(cell_map)
-  η_arr = compute_estimator(est, ncells)
-  model_refs[1] = newest_vertex_bisection(model, η_arr; sort_flag = true, θ = θ)
-  for i = 1:(Nsteps - 1)
-    cell_map = get_cell_map(get_triangulation(model_refs[i]))
-    ncells = length(cell_map)
-    η_arr = compute_estimator(est, ncells)
-    model_refs[i + 1] =
-      newest_vertex_bisection(model_refs[i], η_arr; sort_flag = false, θ = θ)
-  end
-  #@show to
-  model_refs
 end
