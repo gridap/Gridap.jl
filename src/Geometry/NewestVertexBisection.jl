@@ -254,6 +254,9 @@ function newest_vertex_bisection(
   sort_flag::Bool,
 )
   node_coords = get_node_coordinates(grid)
+  # Hack to make "un_lazy" version
+  node_coords = [v for v in node_coords]
+  @show typeof(node_coords)
   cell_node_ids = get_cell_node_ids(grid)
   if sort_flag
      _sort_cell_node_ids_ccw!(cell_node_ids, node_coords)
