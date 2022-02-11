@@ -25,7 +25,7 @@ j(xh,dx,dy) = jacobian(xh->r(xh,dy),xh)
 
 e((uh,ph)) = ∫( uh*uh + uh*ph + ph*ph )dΩ
 g(xh,dy) = gradient(xh->e(xh),xh)
-#h(xh,dx,dy) = hessian(xh->e(xh),xh)
+h(xh,dx,dy) = hessian(xh->e(xh),xh)
 
 dx = get_trial_fe_basis(Y)
 dy = get_fe_basis(Y)
@@ -43,6 +43,10 @@ xh = FEFunction(Y,rand(num_free_dofs(Y)))
 @test j(xh,dx,dy)[Ω][end][2,2] != nothing
 @test g(xh,dy)[Ω][end][1] != nothing
 @test g(xh,dy)[Ω][end][2] != nothing
+@test h(xh,dx,dy)[Ω][end][1,1] != nothing
+@test h(xh,dx,dy)[Ω][end][2,1] != nothing
+@test h(xh,dx,dy)[Ω][end][1,2] != nothing
+@test h(xh,dx,dy)[Ω][end][2,2] != nothing
 
 V1 = FESpace(model,ReferenceFE(lagrangian,Float64,2))
 V2 = FESpace(model,ReferenceFE(lagrangian,Float64,1))
@@ -58,13 +62,22 @@ xh = FEFunction(Y,rand(num_free_dofs(Y)))
 @test j(xh,dx,dy)[Ω][end][2,2] != nothing
 @test g(xh,dy)[Ω][end][1] != nothing
 @test g(xh,dy)[Ω][end][2] != nothing
+@test h(xh,dx,dy)[Ω][end][1,1] != nothing
+@test h(xh,dx,dy)[Ω][end][2,1] != nothing
+@test h(xh,dx,dy)[Ω][end][1,2] != nothing
+@test h(xh,dx,dy)[Ω][end][2,2] != nothing
 
 eu(uh) = ∫( uh*uh )dΩ
 ep(ph) = ∫( ph*ph )dΩ
+ez((uh,ph)) = ∫( 0*uh*ph )dΩ
 eup((uh,ph)) = ∫( uh*uh + ph*ph )dΩ
 geu(xh,dy) = gradient(xh->eu(xh),xh)
 gep(xh,dy) = gradient(xh->ep(xh),xh)
 geup(xh,dy) = gradient(xh->eup(xh),xh)
+heu(xh,dx,dy) = hessian(xh->eu(xh),xh)
+hep(xh,dx,dy) = hessian(xh->ep(xh),xh)
+hez(xh,dx,dy) = hessian(xh->ez(xh),xh)
+heup(xh,dx,dy) = hessian(xh->eup(xh),xh)
 
 uh,ph=xh
 geu_uh=geu(uh,dy)
@@ -78,6 +91,20 @@ c=geup_uh_ph[Ω]
 @test all(a .== map(x->x.array[1],c))
 @test all(b .== map(x->x.array[2],c))
 
+heu_uh=heu(uh,dy,dy)
+hep_ph=hep(ph,dy,dy)
+hez_uh=hez(xh,dy,dy)
+heup_uh_ph=heup(xh,dy,dy)
+
+a=heu_uh[Ω]
+b=hep_ph[Ω]
+c=hez_uh[Ω]
+d=heup_uh_ph[Ω]
+
+@test all(a .== map(x->x.array[1,1],d))
+@test all(b .== map(x->x.array[2,2],d))
+@test all(map(x->x.array[2,1],c) .== map(x->x.array[2,1],d))
+@test all(map(x->x.array[1,2],c) .== map(x->x.array[1,2],d))
 
 ru(uh,v) = ∫( v*uh*uh )dΩ
 rp(ph,q) = ∫( q*ph*ph )dΩ
