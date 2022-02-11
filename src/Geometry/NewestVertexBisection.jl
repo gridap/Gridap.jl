@@ -54,7 +54,7 @@ function _setup_markers_and_nodes!(
   marker = zeros(T, NE)
   # Loop over global triangle indices
   for t = sorted_η_idxs
-    if (partial_η > θ * total_η)
+    if (partial_η >= θ * total_η)
       break
     end
     need_to_mark = true
@@ -240,6 +240,9 @@ function newest_vertex_bisection(
     _setup_markers_and_nodes!(node_coords, elem, d2p, dualedge, NE, η_arr, θ)
   @timeit to "copy elem" elem = Vector{Vector}(elem)
   @timeit to "bisect" cell_node_ids = _bisect(d2p, elem, marker, NT)
+  #@show cell_node_ids
+  #@show cell_node_ids
+  #sort!.(cell_node_ids)
   #@show cell_node_ids
   @timeit to "recreate" cell_node_ids = Table([c for c in cell_node_ids])
   node_coords, cell_node_ids
