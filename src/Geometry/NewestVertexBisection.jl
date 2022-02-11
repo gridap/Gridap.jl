@@ -213,7 +213,7 @@ node_coords == node, cell_node_ids == elem in Long Chen's notation
 """
 function newest_vertex_bisection(
   top::GridTopology,
-  node_coords::Vector,
+  node_coords::AbstractVector{<:VectorValue},
   cell_node_ids::AbstractVector{<:AbstractVector{T}},
   η_arr::AbstractArray,
   θ::AbstractFloat,
