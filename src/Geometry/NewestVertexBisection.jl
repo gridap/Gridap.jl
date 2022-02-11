@@ -256,7 +256,7 @@ function newest_vertex_bisection(
   node_coords = get_node_coordinates(grid)
   # Hack to make "un_lazy" version
   node_coords = [v for v in node_coords]
-  @show typeof(node_coords)
+  #@show typeof(node_coords)
   cell_node_ids = get_cell_node_ids(grid)
   if sort_flag
      _sort_cell_node_ids_ccw!(cell_node_ids, node_coords)
@@ -267,6 +267,7 @@ function newest_vertex_bisection(
   #cell_node_ids_ref = Table([c for c in eachrow(cell_node_ids_ref)])
   reffes = get_reffes(grid)
   cell_types = get_cell_type(grid)
+  cell_types = [c for c in cell_types]
   # TODO : Gracefully handle cell_types
   new_cell_types = fill(1, length(cell_node_ids_ref) - length(cell_node_ids))
   append!(cell_types, new_cell_types)
