@@ -45,7 +45,7 @@ function _setup_markers_and_nodes!(
     d2p::SparseMatrixCSC{T, T},
     dualedge::SparseMatrixCSC{T},
     NE::T,
-    η_arr::AbstractVector{<:AbstractFloat},
+    η_arr::AbstractArray,
     θ::AbstractFloat,
   ) where {T <: Integer}
   total_η = sum(η_arr)
@@ -215,7 +215,7 @@ function newest_vertex_bisection(
   top::GridTopology,
   node_coords::Vector,
   cell_node_ids::AbstractVector{<:AbstractVector{T}},
-  η_arr::AbstractVector{<:AbstractFloat},
+  η_arr::AbstractArray,
   θ::AbstractFloat,
   sort_flag::Bool,
 ) where {T <: Integer}
@@ -249,7 +249,7 @@ end
 function newest_vertex_bisection(
   grid::Grid,
   top::GridTopology,
-  η_arr::AbstractVector{<:AbstractFloat},
+  η_arr::AbstractArray,
   θ::AbstractFloat,
   sort_flag::Bool,
 )
@@ -273,7 +273,7 @@ end
 # step 2
 function newest_vertex_bisection(
   model::DiscreteModel,
-  η_arr::AbstractVector{<:AbstractFloat};
+  η_arr::AbstractArray;
   θ = 1.0, # corresponds to uniform refinement
   sort_flag = false,
 )
