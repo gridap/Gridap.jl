@@ -11,6 +11,8 @@ cells = (10,10)
 model = CartesianDiscreteModel(domain,cells)
 Ω = Triangulation(model)
 test_triangulation(Ω)
+Ω_ = Triangulation(Ω)
+@test Ω_ === Ω
 
 @test model === get_background_model(Ω)
 @test model === get_active_model(Ω)
