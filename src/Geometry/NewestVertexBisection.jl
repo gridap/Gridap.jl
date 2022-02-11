@@ -242,7 +242,7 @@ function newest_vertex_bisection(
   @timeit to "bisect" cell_node_ids = _bisect(d2p, elem, marker, NT)
   #@show cell_node_ids
   #@show cell_node_ids
-  #sort!.(cell_node_ids)
+  sort!.(cell_node_ids)
   #@show cell_node_ids
   @timeit to "recreate" cell_node_ids = Table([c for c in cell_node_ids])
   node_coords, cell_node_ids
