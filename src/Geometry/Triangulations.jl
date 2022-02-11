@@ -219,6 +219,10 @@ function Triangulation(trian::Triangulation,args...;kwargs...)
   CompositeTriangulation(trian,dtrian)
 end
 
+function Triangulation(trian::Triangulation)
+  trian
+end
+
 function Triangulation(trian::Triangulation,x::AbstractArray{<:Integer})
   view(trian,x)
 end
