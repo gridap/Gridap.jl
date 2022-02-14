@@ -78,10 +78,10 @@ for (n, model_ref) in enumerate(model_refs)
   # Combinatorial checks for cells
   @test ncells == 2^(n + 1)
 end
-# Nonuniform refinement. For now only visually checking conformity
+## Nonuniform refinement. For now only visually checking conformity
 #domain = (0, 1, 0, 1)
 #partition = (1, 1) # Initial partition
-#Nsteps = 18
+#Nsteps = 20
 #seed = 5
 #est = RandomEst(seed)
 #θ = 0.5
@@ -94,5 +94,5 @@ end
 #    writevtk(trian_ref, "nonuniform$(string(n, pad=2))")
 #  end
 #end
-#
+
 end
