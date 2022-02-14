@@ -1,10 +1,4 @@
-# This implementation of the newest vertex bisection algorithm is based on the
-# following article:
-
-# LONG CHEN (2008). SHORT IMPLEMENTATION OF BISECTION IN MATLAB.
-# In Recent Advances in Computational Sciences. WORLD SCIENTIFIC.
-# DOI: 10.1142/9789812792389_0020
-using Gridap.Arrays
+# using Gridap.Arrays
 using SparseArrays
 using TimerOutputs
 using Random
@@ -228,27 +222,24 @@ function newest_vertex_bisection(
   if sort_flag
     _sort_longest_edge!(elem, node_coords, NT)
   end
-  # Make sure elem is consistent with GridTopology
-  #test_against_top(elem, top, 2)
+  # TODO: This is rather internal so not sure how to get the testing to be
+  # outside.
   @timeit to "_build_edges" edge = _build_edges(elem)
   NE::T = size(edge, 1)
   @timeit to "build_dualedge" dualedge = _build_directed_dualedge(elem, N, NT)
   d2p = _dual_to_primal(edge, NE, N)
-  # Make sure edge is consistent with GridTopology
+  # TODO: same
   #@timeit to "test" test_against_top(edge, top, 1)
   @timeit to "markers" node_coords, marker =
     _setup_markers_and_nodes!(node_coords, elem, d2p, dualedge, NE, η_arr, θ)
   @timeit to "copy elem" elem = Vector{Vector}(elem)
   @timeit to "bisect" cell_node_ids = _bisect(d2p, elem, marker, NT)
-  #@show cell_node_ids
-  #@show cell_node_ids
-  sort!.(cell_node_ids)
-  #@show cell_node_ids
+  # TODO: IMPORTANT: This appears to be necessary when instatianting the RT space
+  #sort!.(cell_node_ids)
   @timeit to "recreate" cell_node_ids = Table([c for c in cell_node_ids])
   node_coords, cell_node_ids
 end
 
-# step 1
 function newest_vertex_bisection(
   grid::Grid,
   top::GridTopology,
@@ -257,19 +248,17 @@ function newest_vertex_bisection(
   sort_flag::Bool,
 )
   node_coords = get_node_coordinates(grid)
-  # Hack to make "un_lazy" version
+  # TODO: Hack to make "un_lazy" version. Otherwise cannot grow dynamically
   node_coords = [v for v in node_coords]
-  #@show typeof(node_coords)
   cell_node_ids = get_cell_node_ids(grid)
   if sort_flag
      _sort_cell_node_ids_ccw!(cell_node_ids, node_coords)
   end
   node_coords_ref, cell_node_ids_ref =
     newest_vertex_bisection(top, node_coords, cell_node_ids, η_arr, θ, sort_flag)
-  # TODO: Should not convert to matrix and back to Table
-  #cell_node_ids_ref = Table([c for c in eachrow(cell_node_ids_ref)])
   reffes = get_reffes(grid)
   cell_types = get_cell_type(grid)
+  # TODO: Same: I need to do this because I can't append to LazyVector
   cell_types = [c for c in cell_types]
   # TODO : Gracefully handle cell_types
   new_cell_types = fill(1, length(cell_node_ids_ref) - length(cell_node_ids))
@@ -277,7 +266,29 @@ function newest_vertex_bisection(
   UnstructuredGrid(node_coords_ref, cell_node_ids_ref, reffes, cell_types)
 end
 
-# step 2
+"""
+The newest vertex bisection algorithm provides a method of local refinement
+without creating hanging nodes. For now, only 2D simplicial meshes are
+supported.
+
+This implementation is based on the following article:
+
+LONG CHEN (2008). SHORT IMPLEMENTATION OF BISECTION IN MATLAB.
+In Recent Advances in Computational Sciences. WORLD SCIENTIFIC.
+DOI: 10.1142/9789812792389_0020
+
+# Arguments
+
+ -`model::DiscreteModel`: The current DiscreteModel to be refined.
+
+ -`η_arr::AbstractArray`: The values of the estimator on each cell of the domain
+   ordered in a consistent way with Geometry.Gridap.get_faces.
+
+ -`θ::AbstractArray=1.0`: Dörfler marking parameter: 0 = no refinement,
+   1=uniform refinement.
+ -`sort_flag::Bool` Whether or not to sort the elements counter-clockwise by
+   their nodal positions in 2d.
+"""
 function newest_vertex_bisection(
   model::DiscreteModel,
   η_arr::AbstractArray;
