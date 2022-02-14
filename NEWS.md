@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Support for periodic conditions in `CartesianDiscreteModel`s built from `cmin`, `cmax`. Since PR [#738](https://github.com/gridap/Gridap.jl/pull/738).
+- Extra support for dual number propogation. Since PR [#653](https://github.com/gridap/Gridap.jl/pull/653)
 
 ## [0.17.7]- 2021-12-03
 
