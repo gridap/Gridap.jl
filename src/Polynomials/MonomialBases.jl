@@ -118,8 +118,9 @@ return_type(::MonomialBasis{D,T}) where {D,T} = T
 # Field implementation
 function return_cache(f::MonomialBasis{D,T},x::AbstractVector{<:Point}) where {D,T}
   @assert D == length(eltype(x)) "Incorrect number of point components"
-  xi = testitem(x)
-  Tp = typeof(zero(T)*zero(eltype(eltype(x))))
+  zT = zero(T)
+  zxi = zero(eltype(eltype(x)))
+  Tp = typeof( zT*zxi*zxi + zT*zxi*zxi  )
   np = length(x)
   ndof = length(f.terms)*num_components(T)
   n = 1 + _maximum(f.orders)
