@@ -811,9 +811,6 @@ end
 evaluate!(cache,a::Interpolable,x::Point) = evaluate!(cache,a.uh,x)
 return_cache(f::CellField,x::Point) = return_cache(Interpolable(f),x)
 
-# Alternative implementation in Connor's branch (commented out until clarification)
-# return_cache(a::Interpolable,x::Point) = return_cache(a.uh,x)
-
 function return_cache(a::Interpolable,x::Point)
   f = a.uh
   trian = get_triangulation(f)
