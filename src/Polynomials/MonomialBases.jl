@@ -182,7 +182,7 @@ function evaluate!(
   setsize!(g,(D,n))
   for i in 1:np
     @inbounds xi = x[i]
-    _gradient_nd!(v,xi,f.orders,f.terms,c,g,T)
+    _gradient_nd!(v,xi,f.orders,f.terms,c,g,T,Val(isbits(eltype(c))))
     for j in 1:ndof
       @inbounds r[i,j] = v[j]
     end
@@ -374,19 +374,13 @@ function _gradient_nd!(
   terms::AbstractVector{CartesianIndex{D}},
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
+  z::AbstractVector{T},
   ::Type{V}) where {G,T,D,V}
 
   dim = D
   for d in 1:dim
     _evaluate_1d!(c,x,orders[d],d)
     _gradient_1d!(g,x,orders[d],d)
-  end
-
-  #z = zero(Mutable(VectorValue{D,T}))
-  if isbitstype(T)
-    z = zero(Mutable(VectorValue{D,T}))
-  else 
-    z = zeros(T,D)
   end
   
   o = one(T)
@@ -412,6 +406,34 @@ function _gradient_nd!(
 
   end
 
+end
+
+function _gradient_nd!(
+  v::AbstractVector{G},
+  x,
+  orders,
+  terms::AbstractVector{CartesianIndex{D}},
+  c::AbstractMatrix{T},
+  g::AbstractMatrix{T},
+  ::Type{V},
+  ::Val{true}) where {G,T,D,V}
+
+  z = zero(Mutable(VectorValue{D,T}))
+  _gradient_nd!(v,x,orders,terms,c,g,z,T)
+end
+
+function _gradient_nd!(
+  v::AbstractVector{G},
+  x,
+  orders,
+  terms::AbstractVector{CartesianIndex{D}},
+  c::AbstractMatrix{T},
+  g::AbstractMatrix{T},
+  ::Type{V},
+  ::Val{false}) where {G,T,D,V}
+
+  z = zeros(T,D)
+  _gradient_nd!(v,x,orders,terms,c,g,z,T)
 end
 
 function _set_gradient!(
