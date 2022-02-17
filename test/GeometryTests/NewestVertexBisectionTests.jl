@@ -7,7 +7,6 @@ using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.Visualization
-using TimerOutputs
 
 
 # For testing only
@@ -24,7 +23,7 @@ struct RandomEst <: Estimator
   end
 end
 
-function build_refined_models(
+function make_nvb_levels(
   model::DiscreteModel,
   Nsteps::Integer,
   θ::AbstractFloat,
@@ -34,15 +33,14 @@ function build_refined_models(
   cell_map = get_cell_map(get_triangulation(model))
   ncells = length(cell_map)
   η_arr = compute_estimator(est, ncells)
-  model_refs[1] = newest_vertex_bisection(model, η_arr; sort_flag = true, θ = θ)
+  model_refs[1] = newest_vertex_bisection(model, η_arr; should_sort = true, θ = θ)
   for i = 1:(Nsteps - 1)
     cell_map = get_cell_map(get_triangulation(model_refs[i]))
     ncells = length(cell_map)
     η_arr = compute_estimator(est, ncells)
     model_refs[i + 1] =
-      newest_vertex_bisection(model_refs[i], η_arr; sort_flag = false, θ = θ)
+      newest_vertex_bisection(model_refs[i], η_arr; should_sort = false, θ = θ)
   end
-  #@show to
   model_refs
 end
 
@@ -52,17 +50,17 @@ compute_estimator(est::ConstantEst, ncells) = fill(est.val, ncells)
 
 domain = (0, 1, 0, 1)
 partition = (1, 1) # Initial partition
-Nsteps = 5
+Nsteps = 12
 est = ConstantEst(1.0)
 θ = 1.0
 uniform_write_to_vtk = false
 # Uniform refinement
 model = simplexify(CartesianDiscreteModel(domain, partition))
-model_refs = build_refined_models(model, Nsteps, θ, est)
+@time model_refs = make_nvb_levels(model, Nsteps, θ, est)
 for (n, model_ref) in enumerate(model_refs)
   trian_ref = get_triangulation(model_ref)
   if uniform_write_to_vtk
-    writevtk(trian_ref, "uniform$(n)")
+    writevtk(trian_ref, "uniform$(string(n, pad=2))")
   end
   cell_map = get_cell_map(trian_ref)
   node_coords = get_node_coordinates(trian_ref)
@@ -78,16 +76,16 @@ for (n, model_ref) in enumerate(model_refs)
   # Combinatorial checks for cells
   @test ncells == 2^(n + 1)
 end
-## Nonuniform refinement. For now only visually checking conformity
+# Nonuniform refinement. For now only visually checking conformity
 #domain = (0, 1, 0, 1)
 #partition = (1, 1) # Initial partition
 #Nsteps = 20
 #seed = 5
 #est = RandomEst(seed)
 #θ = 0.5
-#nonuniform_write_to_vtk = true
+#nonuniform_write_to_vtk = false
 #model = simplexify(CartesianDiscreteModel(domain, partition))
-#model_refs = build_refined_models(model, Nsteps, θ, est)
+#@time model_refs = make_nvb_levels(model, Nsteps, θ, est)
 #if nonuniform_write_to_vtk
 #  for (n, model_ref) in enumerate(model_refs)
 #    trian_ref = get_triangulation(model_ref)

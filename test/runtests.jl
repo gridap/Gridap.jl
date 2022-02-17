@@ -2,9 +2,6 @@ module GridapRunTests
 
 using Test
 
-# TODO: temporary for testing
-@time @testset "Refinement" begin include("GeometryTests/NewestVertexBisectionTests.jl") end
-
 @time @testset "Helpers" begin include("HelpersTests/runtests.jl") end
 
 @time @testset "Io" begin include("IoTests/runtests.jl") end
