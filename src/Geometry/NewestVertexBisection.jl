@@ -317,8 +317,10 @@ This is the highest level version of the function, it maps
  -`θ::AbstractArray=1.0`: Dörfler marking parameter: 0 = no refinement,
    1=uniform refinement.
 
- -`should_sort::Bool` Whether or not to sort the elements counter-clockwise by
-   their nodal positions in 2d.
+ -`should_sort::Bool` Whether or not to sort the elements
+   counter-clockwise by their nodal positions in 2d, and then subsequently so
+   that the node opposite the longest face is first in the cell_node_ids
+   `Vector`s.
 
 """
 function newest_vertex_bisection(
