@@ -292,7 +292,7 @@ function newest_vertex_bisection(
   buffer = (; cell_node_ids_ref, node_coords_ref, cell_types, reffes)
   # TODO: IMPORTANT: This appears to be necessary when instatianting the RT space
   sort!.(cell_node_ids_unsort)
-  cell_node_ids_ref = Table([c for c in cell_node_ids_ref])
+  cell_node_ids_ref = Table([c for c in cell_node_ids_unsort])
   grid_ref = UnstructuredGrid(node_coords_ref, cell_node_ids_ref, reffes, cell_types)
   grid_ref, buffer
 end

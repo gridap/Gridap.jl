@@ -54,7 +54,7 @@ compute_estimator(est::ConstantEst, ncells) = fill(est.val, ncells)
 
 domain = (0, 1, 0, 1)
 partition = (1, 1) # Initial partition
-Nsteps = 2
+Nsteps = 12
 est = ConstantEst(1.0)
 θ = 1.0
 uniform_write_to_vtk = false
@@ -63,6 +63,8 @@ model = simplexify(CartesianDiscreteModel(domain, partition))
 @time model_refs = make_nvb_levels(model, Nsteps, θ, est)
 for (n, model_ref) in enumerate(model_refs)
   trian_ref = get_triangulation(model_ref)
+  grid = get_grid(model)
+  cell_node_ids = get_cell_node_ids(model_ref)
   if uniform_write_to_vtk
     writevtk(trian_ref, "uniform$(string(n, pad=2))")
   end
