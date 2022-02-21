@@ -177,9 +177,6 @@ function evaluate!(
   ndof = length(f.terms) * num_components(T)
   n = 1 + _maximum(f.orders)
   TisbitsType = Val(isbitstype(eltype(c)))
-
-  #@show T 
-  #@show TisbitsType
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))
   setsize!(c,(D,n))
@@ -420,7 +417,7 @@ function _gradient_nd!(
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
   ::Type{V},
-  ::Val{true}) where {G,T,D,V}
+  TisbitsType::Val{true}) where {G,T,D,V}
 
   z = zero(Mutable(VectorValue{D,T}))
   _gradient_nd!(v,x,orders,terms,c,g,z,V)
@@ -435,11 +432,9 @@ function _gradient_nd!(
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
   ::Type{V},
-  ::Val{false}) where {G,T,D,V}
+  TisbitsType::Val{false}) where {G,T,D,V}
 
   z = zeros(T,D)
-  #@show typeof(z)
-  @show T
   _gradient_nd!(v,x,orders,terms,c,g,z,T)
 end
 
