@@ -29,9 +29,10 @@ function _sort_longest_edge!(
   max_indices = findmax(edgelength, dims = 2)[2]
   for t = 1:NT
     shifted = _shift_to_first(elem[t][:], T(max_indices[t][2]))
-    for j = 1:3
-      elem.data[elem.ptrs[t]+j-1] = shifted[j]
-    end
+    elem[t] = shifted
+    #for j = 1:3
+    #  elem.data[elem.ptrs[t]+j-1] = shifted[j]
+    #end
   end
 end
 
@@ -183,20 +184,21 @@ function _sort_ccw(cell_coords::AbstractVector{<:VectorValue})
   sortperm(offset_coords, by = v -> atan(v[2], v[1]))
 end
 
+# TODO: Figure out correct type AbstractVector{AbstractVector{T}}
 function _sort_cell_node_ids_ccw!(
-  cell_node_ids::Table{<:Integer},
-  node_coords::AbstractVector{<:VectorValue},
-)
+    cell_node_ids::AbstractVector{<:AbstractVector{T}},
+    node_coords::AbstractVector{<:VectorValue},
+) where {T <: Integer}
   #cell_node_ids_ccw = vcat(cell_node_ids'...)
   #@show cell_node_ids_ccw
   for (i, cell) in enumerate(cell_node_ids)
     cell_coords = node_coords[cell]
     perm = _sort_ccw(cell_coords)
-    #cell_node_ids_ccw[i][:] = cell[perm]
-    permed = cell[perm]
-    for j = 1:3
-      cell_node_ids.data[cell_node_ids.ptrs[i]+j-1] = permed[j]
-    end
+    cell_node_ids[i] = cell[perm]
+    #permed = cell[perm]
+    #for j = 1:3
+    #  cell_node_ids.data[cell_node_ids.ptrs[i]+j-1] = permed[j]
+    #end
   end
 end
 
@@ -240,12 +242,9 @@ function newest_vertex_bisection(
   d2p = _dual_to_primal(edge, NE, N)
   node_coords, marker =
     _setup_markers_and_nodes!(node_coords, elem, d2p, dualedge, NE, η_arr, θ)
-  # Convesion to Vector{Vector} to push!
+  # TODO: figure out why this constructor is necessary
   elem = Vector{Vector}(elem)
   cell_node_ids = _bisect(d2p, elem, marker, NT)
-  # TODO: IMPORTANT: This appears to be necessary when instatianting the RT space
-  #sort!.(cell_node_ids)
-  cell_node_ids = Table([c for c in cell_node_ids])
   node_coords, cell_node_ids
 end
 
@@ -281,12 +280,17 @@ function newest_vertex_bisection(
   # TODO: Need "un lazy" version for resize!
   node_coords = [v for v in node_coords]
   cell_node_ids = get_cell_node_ids(grid)
+  #cell_node_ids = Vector{Vector}(cell_node_ids)
+  cell_node_ids = [v for v in cell_node_ids]
   if should_sort
     _sort_cell_node_ids_ccw!(cell_node_ids, node_coords)
     _sort_longest_edge!(cell_node_ids, node_coords)
   end
   node_coords_ref, cell_node_ids_ref =
   newest_vertex_bisection(node_coords, cell_node_ids, η_arr, θ)
+  # TODO: IMPORTANT: This appears to be necessary when instatianting the RT space
+  #sort!.(cell_node_ids)
+  cell_node_ids_ref = Table([c for c in cell_node_ids_ref])
   reffes = get_reffes(grid)
   cell_types = get_cell_type(grid)
   # TODO: Same: I need to do this because I can't append! to LazyVector
@@ -330,8 +334,6 @@ function newest_vertex_bisection(
   should_sort = false,
 )
   @assert length(η_arr) == num_cells(model)
-  reset_timer!(to)
-  disable_timer!(to)
   # Not sure if necessary to keep old model unchanged. For my tests I use this
   grid = get_grid(model)
   ref_grid = newest_vertex_bisection(grid, η_arr, θ, should_sort)
