@@ -279,19 +279,20 @@ function newest_vertex_bisection(
   # Should always sort on the first iteration
   _sort_cell_node_ids_ccw!(cell_node_ids, node_coords)
   _sort_longest_edge!(cell_node_ids, node_coords)
-  node_coords_ref, cell_node_ids_ref =
+  node_coords_ref, cell_node_ids_unsort =
   newest_vertex_bisection(node_coords, cell_node_ids, η_arr, θ)
-  cell_node_ids_ref = Table([c for c in cell_node_ids_ref])
   reffes = get_reffes(grid)
   cell_types = get_cell_type(grid)
   # I need to do this because I can't append! to LazyVector
   cell_types = [c for c in cell_types]
   # TODO : Gracefully handle cell_types?
-  new_cell_types = fill(1, length(cell_node_ids_ref) - length(cell_node_ids))
+  new_cell_types = fill(1, length(cell_node_ids_unsort) - length(cell_node_ids))
   append!(cell_types, new_cell_types)
+  cell_node_ids_ref = Table([c for c in cell_node_ids_unsort])
   buffer = (; cell_node_ids_ref, node_coords_ref, cell_types, reffes)
   # TODO: IMPORTANT: This appears to be necessary when instatianting the RT space
-  sort!.(cell_node_ids_ref)
+  sort!.(cell_node_ids_unsort)
+  cell_node_ids_ref = Table([c for c in cell_node_ids_ref])
   grid_ref = UnstructuredGrid(node_coords_ref, cell_node_ids_ref, reffes, cell_types)
   grid_ref, buffer
 end
@@ -358,17 +359,18 @@ function newest_vertex_bisection(
 )
   node_coords = buffer.node_coords_ref
   cell_node_ids = buffer.cell_node_ids_ref
-  node_coords_ref, cell_node_ids_ref =
+  node_coords_ref, cell_node_ids_unsort =
   newest_vertex_bisection(node_coords, cell_node_ids, η_arr, θ)
-  cell_node_ids_ref = Table([c for c in cell_node_ids_ref])
   reffes = buffer.reffes
   cell_types = buffer.cell_types
   # TODO : Gracefully handle cell_types?
-  new_cell_types = fill(1, length(cell_node_ids_ref) - length(cell_node_ids))
+  new_cell_types = fill(1, length(cell_node_ids_unsort) - length(cell_node_ids))
   append!(cell_types, new_cell_types)
+  cell_node_ids_ref = Table([c for c in cell_node_ids_unsort])
   buffer = (; cell_node_ids_ref, node_coords_ref, cell_types, reffes)
   # TODO: IMPORTANT: This appears to be necessary when instatianting the RT space
-  sort!.(cell_node_ids_ref)
+  sort!.(cell_node_ids_unsort)
+  cell_node_ids_ref = Table([c for c in cell_node_ids_unsort])
   grid_ref = UnstructuredGrid(node_coords_ref, cell_node_ids_ref, reffes, cell_types)
   grid_ref, buffer
 end

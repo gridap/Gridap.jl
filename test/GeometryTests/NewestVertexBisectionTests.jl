@@ -36,6 +36,7 @@ function make_nvb_levels(
   model_refs[1], buffer = newest_vertex_bisection(model, η_arr; θ = θ)
   buffer = deepcopy(buffer)
   for i = 1:(Nsteps - 1)
+    @show i
     cell_map = get_cell_map(get_triangulation(model_refs[i]))
     ncells = length(cell_map)
     η_arr = compute_estimator(est, ncells)
@@ -53,7 +54,7 @@ compute_estimator(est::ConstantEst, ncells) = fill(est.val, ncells)
 
 domain = (0, 1, 0, 1)
 partition = (1, 1) # Initial partition
-Nsteps = 12
+Nsteps = 2
 est = ConstantEst(1.0)
 θ = 1.0
 uniform_write_to_vtk = false
