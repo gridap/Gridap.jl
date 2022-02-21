@@ -57,8 +57,8 @@ du = get_trial_fe_basis(V)
 cellmat = integrate( ∇(dv)⋅∇(du), quad )
 
 @test isa(cellmat,AppendedArray)
-@test isa(cellmat.a,Fill)
-@test isa(cellmat.b,Fill)
+#@test isa(cellmat.a,Fill)
+#@test isa(cellmat.b,Fill)
 
 dΩ = Measure(Ω,2)
 a(u,v) = ∫(u*v)dΩ
