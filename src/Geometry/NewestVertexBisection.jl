@@ -253,7 +253,7 @@ Middle level interface to the newest vertex bisection algorithm. This step
 takes places after unpacking the DiscreteModel and performs sorting if
 necessary. It maps
 
-`Grid -> Grid`
+`Grid -> Grid, buffer`
 
 # Arguments
 
@@ -264,41 +264,36 @@ necessary. It maps
  -`θ::AbstractArray`: Dörfler marking parameter: 0 = no refinement,
    1=uniform refinement.
 
- -`should_sort::Bool` Whether or not to sort the elements
-   counter-clockwise by their nodal positions in 2d, and then subsequently so
-   that the node opposite the longest face is first in the cell_node_ids
-   `Vector`s.
-
 """
 function newest_vertex_bisection(
   grid::Grid,
   η_arr::AbstractArray,
   θ::AbstractFloat,
-  should_sort::Bool,
 )
   node_coords = get_node_coordinates(grid)
-  # TODO: Need "un lazy" version for resize!
+  # Need "un lazy" version for resize!
   node_coords = [v for v in node_coords]
   cell_node_ids = get_cell_node_ids(grid)
-  #cell_node_ids = Vector{Vector}(cell_node_ids)
+  # Convert from Table to Vector{Vector}
   cell_node_ids = [v for v in cell_node_ids]
-  if should_sort
-    _sort_cell_node_ids_ccw!(cell_node_ids, node_coords)
-    _sort_longest_edge!(cell_node_ids, node_coords)
-  end
+  # Should always sort on the first iteration
+  _sort_cell_node_ids_ccw!(cell_node_ids, node_coords)
+  _sort_longest_edge!(cell_node_ids, node_coords)
   node_coords_ref, cell_node_ids_ref =
   newest_vertex_bisection(node_coords, cell_node_ids, η_arr, θ)
-  # TODO: IMPORTANT: This appears to be necessary when instatianting the RT space
-  #sort!.(cell_node_ids)
   cell_node_ids_ref = Table([c for c in cell_node_ids_ref])
   reffes = get_reffes(grid)
   cell_types = get_cell_type(grid)
-  # TODO: Same: I need to do this because I can't append! to LazyVector
+  # I need to do this because I can't append! to LazyVector
   cell_types = [c for c in cell_types]
   # TODO : Gracefully handle cell_types?
   new_cell_types = fill(1, length(cell_node_ids_ref) - length(cell_node_ids))
   append!(cell_types, new_cell_types)
-  UnstructuredGrid(node_coords_ref, cell_node_ids_ref, reffes, cell_types)
+  buffer = (; cell_node_ids_ref, node_coords_ref, cell_types, reffes)
+  # TODO: IMPORTANT: This appears to be necessary when instatianting the RT space
+  sort!.(cell_node_ids_ref)
+  grid_ref = UnstructuredGrid(node_coords_ref, cell_node_ids_ref, reffes, cell_types)
+  grid_ref, buffer
 end
 
 """
@@ -308,7 +303,7 @@ supported.
 
 This is the highest level version of the function, it maps
 
-`DiscreteModel -> DiscreteModel`
+`DiscreteModel -> DiscreteModel, buffer`
 
 
 # Arguments
@@ -321,24 +316,100 @@ This is the highest level version of the function, it maps
  -`θ::AbstractArray=1.0`: Dörfler marking parameter: 0 = no refinement,
    1=uniform refinement.
 
- -`should_sort::Bool` Whether or not to sort the elements
-   counter-clockwise by their nodal positions in 2d, and then subsequently so
-   that the node opposite the longest face is first in the cell_node_ids
-   `Vector`s.
-
 """
 function newest_vertex_bisection(
   model::DiscreteModel,
   η_arr::AbstractArray;
-  θ = 1.0, # corresponds to uniform refinement
-  should_sort = false,
+  θ = 1.0 # corresponds to uniform refinement
 )
   @assert length(η_arr) == num_cells(model)
   # Not sure if necessary to keep old model unchanged. For my tests I use this
   grid = get_grid(model)
-  ref_grid = newest_vertex_bisection(grid, η_arr, θ, should_sort)
-  ref_topo = GridTopology(ref_grid)
+  grid_ref, buffer = newest_vertex_bisection(grid, η_arr, θ)
+  topo_ref = GridTopology(grid_ref)
   #ref_labels = # Compute them from the original labels (This is perhaps the most tedious part)
-  ref_labels = FaceLabeling(ref_topo)
-  DiscreteModel(ref_grid, ref_topo, ref_labels)
+  ref_labels = FaceLabeling(topo_ref)
+  DiscreteModel(grid_ref, topo_ref, ref_labels), buffer
+end
+
+"""
+Middle level interface to the newest vertex bisection algorithm. This step
+takes places after unpacking the DiscreteModel and performs sorting if
+necessary. It maps
+
+`buffer -> Grid, buffer`
+
+# Arguments
+
+ -`buffer::NamedTuple`: The buffer providing all the itermediate information
+ between refinements. This is used in lieu of the the Grid from the previous
+ step for now.
+
+ -`η_arr::AbstractArray`: The values of the estimator on each cell of the domain
+
+ -`θ::AbstractArray`: Dörfler marking parameter: 0 = no refinement,
+   1=uniform refinement.
+
+"""
+function newest_vertex_bisection(
+  buffer::NamedTuple,
+  η_arr::AbstractArray,
+  θ::AbstractFloat,
+)
+  node_coords = buffer.node_coords_ref
+  cell_node_ids = buffer.cell_node_ids_ref
+  node_coords_ref, cell_node_ids_ref =
+  newest_vertex_bisection(node_coords, cell_node_ids, η_arr, θ)
+  cell_node_ids_ref = Table([c for c in cell_node_ids_ref])
+  reffes = buffer.reffes
+  cell_types = buffer.cell_types
+  # TODO : Gracefully handle cell_types?
+  new_cell_types = fill(1, length(cell_node_ids_ref) - length(cell_node_ids))
+  append!(cell_types, new_cell_types)
+  buffer = (; cell_node_ids_ref, node_coords_ref, cell_types, reffes)
+  # TODO: IMPORTANT: This appears to be necessary when instatianting the RT space
+  sort!.(cell_node_ids_ref)
+  grid_ref = UnstructuredGrid(node_coords_ref, cell_node_ids_ref, reffes, cell_types)
+  grid_ref, buffer
+end
+
+
+"""
+The newest vertex bisection algorithm provides a method of local refinement
+without creating hanging nodes. For now, only 2D simplicial meshes are
+supported.
+
+This is the highest level version of the function, it maps
+
+`DiscreteModel, buffer -> DiscreteModel, buffer`
+
+
+# Arguments
+
+ -`model::DiscreteModel`: The current DiscreteModel to be refined.
+ 
+ -`buffer::NamedTuple`: The buffer providing all the itermediate information
+ between refinements
+
+ -`η_arr::AbstractArray`: The values of the estimator on each cell of the domain
+ i.e. one should have `length(η_arr) == num_cells(model)`
+
+ -`θ::AbstractArray=1.0`: Dörfler marking parameter: 0 = no refinement,
+   1=uniform refinement.
+
+"""
+function newest_vertex_bisection(
+  model::DiscreteModel,
+  buffer::NamedTuple,
+  η_arr::AbstractArray;
+  θ = 1.0, # corresponds to uniform refinement
+)
+  @assert length(η_arr) == num_cells(model)
+  # Not sure if necessary to keep old model unchanged. For my tests I use this
+  grid_ref, buffer = newest_vertex_bisection(buffer, η_arr, θ)
+  topo_ref = GridTopology(grid_ref)
+  #ref_labels = # Compute them from the original labels (This is perhaps the most tedious part)
+  ref_labels = FaceLabeling(topo_ref)
+  model_ref = DiscreteModel(grid_ref, topo_ref, ref_labels)
+  model_ref, buffer
 end
