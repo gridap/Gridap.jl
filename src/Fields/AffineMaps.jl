@@ -93,3 +93,14 @@ function lazy_map(::typeof(∇),a::LazyArray{<:Fill{typeof(affine_map)}})
   lazy_map(constant_field,gradients)
 end
 
+Base.promote_rule(::Type{AffineMap{D1,D2,T1,L}},::Type{AffineMap{D1,D2,T2,L}}) where {D1,D2,T1,T2,L} = AffineMap{D1,D2,promote_type(T1,T2),L}
+
+function Base.convert(
+  ::Type{AffineMap{D1,D2,T1,L}},
+  arg::AffineMap{D1,D2,T2,L}) where {D1,D2,T1,T2,L}
+  
+  gradient_c = Base.convert(TensorValue{D1,D2,T1,L},arg.gradient)
+  origin_c = Base.convert(Point{D2,T1} ,arg.origin)
+
+  AffineMap(gradient_c,origin_c)
+end

@@ -61,12 +61,15 @@ struct AppendedArray{T,A,B} <: AbstractVector{T}
   function AppendedArray(a::AbstractArray,b::AbstractArray)
     ai = testitem(a)
     bi = testitem(b)
-    T = promote_type(typeof(ai),typeof(bi))
-    ac = convert.(T,a)
-    bc = convert.(T,b)
-    A = typeof(ac)
-    B = typeof(bc)
-    new{T,A,B}(ac,bc)
+    
+    T = eltype(collect((ai,bi)))
+    #T = promote_type(typeof(ai),typeof(bi))
+
+    #ac = convert.(T,a)
+    #bc = convert.(T,b)
+    A = typeof(a)
+    B = typeof(b)
+    new{T,A,B}(a,b)
   end
 end
 

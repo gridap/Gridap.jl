@@ -27,6 +27,7 @@ import LinearAlgebra: det, inv, transpose, tr, cross
 import LinearAlgebra: ⋅, dot
 
 import Base: +, -, *, /
+import Base: promote_rule, convert
 import Gridap.TensorValues: ⊗, ⊙, symmetric_part, outer, meas
 
 import Gridap.Arrays: IndexStyle
