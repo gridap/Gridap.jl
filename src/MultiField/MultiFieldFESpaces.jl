@@ -381,8 +381,15 @@ function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,trian::Triangulation,::C
   blockmask = [ is_change_possible(get_triangulation(Vi),trian) for Vi in f.spaces ]
   active_block_ids = findall(blockmask)
   active_block_data = Any[]
+  some_block = false
+  some_noblock = false
   for i in active_block_ids
     cell_dofs_i = get_cell_dof_ids(f.spaces[i],trian)
+    if eltype(cell_dofs_i) <: ArrayBlock
+      some_block = true
+    else
+      some_noblock = true
+    end
     if i == 1
       push!(active_block_data,cell_dofs_i)
     else
@@ -392,7 +399,26 @@ function FESpaces.get_cell_dof_ids(f::MultiFieldFESpace,trian::Triangulation,::C
       push!(active_block_data,cell_dofs_i_b)
     end
   end
-  lazy_map(BlockMap(nfields,active_block_ids),active_block_data...)
+  if some_block && some_noblock
+    _active_block_data = Any[]
+    for cell_dofs_i in active_block_data
+      if eltype(cell_dofs_i) <: ArrayBlock
+        mask = [true,true,false]
+        _cell_dofs_i = lazy_map(cell_dofs_i) do dofs_i
+          array = Vector{eltype(dofs_i.array)}(undef,3)
+          array[1] = dofs_i.array[1]
+          array[2] = dofs_i.array[2]
+          ArrayBlock(array,mask)
+        end
+      else
+        _cell_dofs_i = lazy_map(BlockMap(3,[3]),cell_dofs_i)
+      end
+      push!(_active_block_data,_cell_dofs_i)
+    end
+  else
+    _active_block_data = active_block_data
+  end
+  lazy_map(BlockMap(nfields,active_block_ids),_active_block_data...)
 end
 
 function _sum_if_first_positive(a,b)
