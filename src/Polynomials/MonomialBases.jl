@@ -148,28 +148,58 @@ function evaluate!(cache,f::MonomialBasis{D,T},x::AbstractVector{<:Point}) where
   r.array
 end
 
-function return_cache(
+function _return_cache(
   fg::FieldGradientArray{1,MonomialBasis{D,V}},
-  x::AbstractVector{<:Point}) where {D,V}
+  x::AbstractVector{<:Point},
+  ::Type{T},
+  TisbitsType::Val{true}) where {D,V,T}
 
   f = fg.fa
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = length(f.terms)*num_components(V)
-  xi = testitem(x)
-  T = gradient_type(V,xi)
   n = 1 + _maximum(f.orders)
   r = CachedArray(zeros(T,(np,ndof)))
   v = CachedArray(zeros(T,(ndof,)))
   c = CachedArray(zeros(eltype(T),(D,n)))
   g = CachedArray(zeros(eltype(T),(D,n)))
-  (r, v, c, g)
+  (r,v,c,g)
 end
 
-function evaluate!(
+function _return_cache(
+  fg::FieldGradientArray{1,MonomialBasis{D,V}},
+  x::AbstractVector{<:Point},
+  ::Type{T},
+  TisbitsType::Val{false}) where {D,V,T}
+
+  f = fg.fa
+  @assert D == length(eltype(x)) "Incorrect number of point components"
+  np = length(x)
+  ndof = length(f.terms)*num_components(V)
+  n = 1 + _maximum(f.orders)
+  r = CachedArray(zeros(T,(np,ndof)))
+  v = CachedArray(zeros(T,(ndof,)))
+  c = CachedArray(zeros(eltype(T),(D,n)))
+  g = CachedArray(zeros(eltype(T),(D,n)))
+  z = CachedArray(zeros(eltype(T),D))
+  (r,v,c,g,z)
+end
+
+function return_cache(
+  fg::FieldGradientArray{1,MonomialBasis{D,V}},
+  x::AbstractVector{<:Point}) where {D,V}
+
+  xi = testitem(x)
+  T = gradient_type(V,xi)
+  TisbitsType = Val(isbits(T))
+  _return_cache(fg,x,T,TisbitsType)
+end
+
+function _evaluate!(
   cache,
   fg::FieldGradientArray{1,MonomialBasis{D,T}},
-  x::AbstractVector{<:Point}) where {D,T}
+  x::AbstractVector{<:Point},
+  TisbitsType::Val{true}) where {D,T}
 
   f = fg.fa
   r, v, c, g = cache
@@ -189,6 +219,42 @@ function evaluate!(
     end
   end
   r.array
+end
+
+function _evaluate!(
+  cache,
+  fg::FieldGradientArray{1,MonomialBasis{D,T}},
+  x::AbstractVector{<:Point},
+  TisbitsType::Val{false}) where {D,T}
+
+  f = fg.fa
+  r, v, c, g, z = cache
+  np = length(x)
+  ndof = length(f.terms) * num_components(T)
+  n = 1 + _maximum(f.orders)
+  TisbitsType = Val(isbitstype(eltype(c)))
+  setsize!(r,(np,ndof))
+  setsize!(v,(ndof,))
+  setsize!(c,(D,n))
+  setsize!(g,(D,n))
+  for i in 1:np
+    @inbounds xi = x[i]
+    _gradient_nd!(v,xi,f.orders,f.terms,c,g,z,T,TisbitsType)
+    for j in 1:ndof
+      @inbounds r[i,j] = v[j]
+    end
+  end
+  r.array
+end
+
+function evaluate!(
+  cache,
+  fg::FieldGradientArray{1,MonomialBasis{D,T}},
+  x::AbstractVector{<:Point}) where {D,T}
+
+  r, v, c, g = cache
+  TisbitsType = Val(isbitstype(eltype(c)))
+  _evaluate!(cache,fg,x,TisbitsType)
 end
 
 function return_cache(
@@ -431,11 +497,11 @@ function _gradient_nd!(
   terms::AbstractVector{CartesianIndex{D}},
   c::AbstractMatrix{T},
   g::AbstractMatrix{T},
+  z::AbstractVector{T},
   ::Type{V},
   TisbitsType::Val{false}) where {G,T,D,V}
 
-  z = zeros(T,D)
-  _gradient_nd!(v,x,orders,terms,c,g,z,T)
+  _gradient_nd!(v,x,orders,terms,c,g,z,V)
 end
 
 function _set_gradient!(
