@@ -120,7 +120,7 @@ function get_grid(t::AppendedTriangulation)
   lazy_append(a,b)
 end
 
-function get_glue(t::AppendedTriangulation,::Val{D}) where D 
+function get_glue(t::AppendedTriangulation,::Val{D}) where D
   a = get_glue(t.a,Val(D))
   b = get_glue(t.b,Val(D))
   if a==nothing || b==nothing
@@ -129,11 +129,11 @@ function get_glue(t::AppendedTriangulation,::Val{D}) where D
   lazy_append(a,b)
 end
 
-function lazy_append(a::FaceToFaceGlue,b::FaceToFaceGlue)
+function lazy_append(a::FaceToFaceGlue{Dc},b::FaceToFaceGlue{Dc}) where {Dc}
   tface_to_mface = lazy_append(a.tface_to_mface,b.tface_to_mface)
   tface_to_mface_map = lazy_append(a.tface_to_mface_map,b.tface_to_mface_map)
   mface_to_tface = nothing
-  FaceToFaceGlue(tface_to_mface,tface_to_mface_map,mface_to_tface)
+  FaceToFaceGlue(Dc,tface_to_mface,tface_to_mface_map,mface_to_tface)
 end
 
 function get_cell_shapefuns(trian::AppendedTriangulation)

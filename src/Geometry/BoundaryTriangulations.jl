@@ -205,7 +205,7 @@ function get_glue(trian::BoundaryTriangulation,::Val{D},::Val{D}) where D
   face_s_q = lazy_map(linear_combination,face_to_q_vertex_coords,face_to_shapefuns)
   tface_to_mface_map = face_s_q
   mface_to_tface = nothing
-  FaceToFaceGlue(tface_to_mface,tface_to_mface_map,mface_to_tface)
+  FaceToFaceGlue(num_cell_dims(trian),tface_to_mface,tface_to_mface_map,mface_to_tface)
 end
 
 function get_facet_normal(trian::BoundaryTriangulation)

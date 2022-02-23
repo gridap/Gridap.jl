@@ -52,10 +52,18 @@ get_cell_reffe(trian::Triangulation) = get_cell_reffe(get_grid(trian))
 is_first_order(trian::Triangulation) = is_first_order(get_grid(trian))
 
 # This is the most used glue, but others are possible, see e.g. SkeletonGlue.
-struct FaceToFaceGlue{A,B,C}
+# Dc is the topological dimension of the cells of the Triangulation{Dc} from
+# which the FaceToFaceGlue object is created
+struct FaceToFaceGlue{Dc,A,B,C}
   tface_to_mface::A
   tface_to_mface_map::B
   mface_to_tface::C
+  function FaceToFaceGlue(Dc::Integer,
+                          tface_to_mface::A,
+                          tface_to_mface_map::B,
+                          mface_to_tface::C) where {A,B,C}
+    new{Dc,A,B,C}(tface_to_mface,tface_to_mface_map,mface_to_tface)
+  end
 end
 
 function is_change_possible(strian::Triangulation,ttrian::Triangulation)
@@ -155,7 +163,7 @@ function get_glue(trian::BodyFittedTriangulation{Dt},::Val{Dt}) where Dt
     nmfaces = num_faces(trian.model,Dt)
     mface_to_tface = PosNegPartition(tface_to_mface,Int32(nmfaces))
   end
-  FaceToFaceGlue(tface_to_mface,tface_to_mface_map,mface_to_tface)
+  FaceToFaceGlue(Dt,tface_to_mface,tface_to_mface_map,mface_to_tface)
 end
 
 #function get_glue(trian::BodyFittedTriangulation{Dt},::Val{Dm}) where {Dt,Dm}
@@ -389,7 +397,7 @@ function _compose_glues(rglue,dglue)
   nothing
 end
 
-function _compose_glues(rglue::FaceToFaceGlue,dglue::FaceToFaceGlue)
+function _compose_glues(rglue::FaceToFaceGlue{Dc},dglue::FaceToFaceGlue) where Dc
   rface_to_mface = rglue.tface_to_mface
   dface_to_rface = dglue.tface_to_mface
   dface_to_mface = collect(lazy_map(Reindex(rface_to_mface),dface_to_rface))
@@ -398,7 +406,7 @@ function _compose_glues(rglue::FaceToFaceGlue,dglue::FaceToFaceGlue)
   dface_to_mface_map1 = lazy_map(Reindex(rface_to_mface_map),dface_to_rface)
   dface_to_mface_map = lazy_map(∘,dface_to_mface_map1,dface_to_rface_map)
   mface_to_dface = nothing
-  FaceToFaceGlue(dface_to_mface,dface_to_mface_map,mface_to_dface)
+  FaceToFaceGlue(Dc,dface_to_mface,dface_to_mface_map,mface_to_dface)
 end
 
 struct GenericTriangulation{Dc,Dp,A,B,C} <: Triangulation{Dc,Dp}
@@ -463,7 +471,7 @@ function get_glue(t::TriangulationView,::Val{d}) where d
   view(parent,t.cell_to_parent_cell)
 end
 
-function Base.view(glue::FaceToFaceGlue,ids::AbstractArray)
+function Base.view(glue::FaceToFaceGlue{Dc},ids::AbstractArray) where Dc
   tface_to_mface = lazy_map(Reindex(glue.tface_to_mface),ids)
   tface_to_mface_map = lazy_map(Reindex(glue.tface_to_mface_map),ids)
   if glue.mface_to_tface === nothing
@@ -472,7 +480,7 @@ function Base.view(glue::FaceToFaceGlue,ids::AbstractArray)
     nmfaces = length(glue.mface_to_tface)
     mface_to_tface = PosNegPartition(tface_to_mface,Int32(nmfaces))
   end
-  FaceToFaceGlue(tface_to_mface,tface_to_mface_map,mface_to_tface)
+  FaceToFaceGlue(Dc,tface_to_mface,tface_to_mface_map,mface_to_tface)
 end
 
 function get_facet_normal(trian::TriangulationView)
