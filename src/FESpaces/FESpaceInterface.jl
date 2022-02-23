@@ -117,7 +117,7 @@ end
 """
 function Base.zero(f::FESpace)
   free_values = zero_free_values(f)
-  FEFunction(f,free_values)
+  EvaluationFunction(f,free_values)
 end
 
 function get_dof_value_type(f::FESpace)

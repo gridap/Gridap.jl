@@ -429,6 +429,14 @@ a = SymTensorValue(11,21,22)
 @test change_eltype(a,Float64) == SymTensorValue{2,Float64,3}
 @test isa(Tuple(a),Tuple)
 @test Tuple(a) == a.data
+b = Matrix{Int64}(undef,2,2)
+b[1,1] = a[1,1]
+b[1,2] = a[1,2]
+b[2,1] = a[2,1]
+b[2,2] = a[2,2]
+bt = SymTensorValue{2,Int64}(b)
+@test bt .== a
+
 
 a = SymFourthOrderTensorValue(1111,1121,1122, 2111,2121,2122, 2211,2221,2222)
 @test change_eltype(a,Float64) == SymFourthOrderTensorValue{2,Float64,9}

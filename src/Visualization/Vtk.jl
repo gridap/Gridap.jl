@@ -18,6 +18,26 @@ function createvtk(args...;kwargs...)
 end
 
 """
+"""
+function createpvd(args...;kwargs...)
+  paraview_collection(args...;kwargs...)
+end
+
+function createpvd(parts::Nothing,args...;kwargs...)
+  createpvd(args...;kwargs...)
+end
+
+function createpvd(f,parts::Nothing,args...;kwargs...)
+  createpvd(f,args...;kwargs...)
+end
+
+"""
+"""
+function savepvd(pvd::WriteVTK.CollectionFile)
+  vtk_save(pvd)
+end
+
+"""
 
     write_vtk_file(
       trian::Grid,

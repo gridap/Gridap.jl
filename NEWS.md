@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.8] - 2022-02-14
+
+### Added
+- Support for periodic conditions in `CartesianDiscreteModel`s built from `cmin`, `cmax`. Since PR [#738](https://github.com/gridap/Gridap.jl/pull/738).
+- Function `savepvd`. Since PR [#736](https://github.com/gridap/Gridap.jl/pull/736).
+- Support for passing `nothing` as the first argument of the `CartesianDiscreteModel` constructor to mimic the API of `GridapDistributed`. Since PR [#735](https://github.com/gridap/Gridap.jl/pull/735).
+
+### Fixed
+- Bug in `SymTensorValue`. Since PR [#740](https://github.com/gridap/Gridap.jl/pull/740).
+- Bug in interpolation at arbitrary points. Since PR [#729](https://github.com/gridap/Gridap.jl/pull/729).
+- Bug in `reference_grid(TET)`. Since PR [#734](https://github.com/gridap/Gridap.jl/pull/734).
+- Bug in computation of Hessian with AD for multi-field. Since PR [#731](https://github.com/gridap/Gridap.jl/pull/731).
+
 ## [0.17.7]- 2021-12-03
 
 ### Fixed

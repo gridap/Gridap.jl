@@ -119,6 +119,27 @@ paraview_collection(f) do pvd
     vtk_save(pvd)
 end
 
+# Paraview collections using createpvd
+f = joinpath(d,"createpvd")
+createpvd(f) do pvd
+    for i in 1:10
+        pvd[Float64(i)] = createvtk(trian, f*"_$i", celldata=["rnd"=>rand(num_cells(trian))], cellfields=["cf" => cf])
+        pvd[Float64(10+i)] = createvtk(x,f*"_$(10+i)",celldata=["cellid" => collect(1:num_cells(trian))], nodaldata = ["x" => x])
+    end
+end
+@test isfile(f*".pvd")
+
+# Paraview collections using createpvd and parts
+f = joinpath(d,"createpvd_parts")
+parts = nothing
+createpvd(parts,f) do pvd
+    for i in 1:10
+        pvd[Float64(i)] = createvtk(trian, f*"_$i", celldata=["rnd"=>rand(num_cells(trian))], cellfields=["cf" => cf])
+        pvd[Float64(10+i)] = createvtk(x,f*"_$(10+i)",celldata=["cellid" => collect(1:num_cells(trian))], nodaldata = ["x" => x])
+    end
+end
+@test isfile(f*".pvd")
+
 f = joinpath(d,"x")
 x = get_cell_points(CellQuadrature(trian,2))
 writevtk(x,f;cellfields=["cf"=>cf])
@@ -138,6 +159,17 @@ writevtk(x,f;cellfields=["cf"=>cf])
 #f = joinpath(d,"trian")
 #writevtk(trian,f)
 
+f=joinpath(d,"pvdfile")
+pvd = createpvd(f)
+@test isa(pvd,WriteVTK.CollectionFile)
+savepvd(pvd)
+@test isfile(f*".pvd")
+
+f=joinpath(d,"pvdfile_parts")
+pvd = createpvd(nothing,f)
+@test isa(pvd,WriteVTK.CollectionFile)
+savepvd(pvd)
+@test isfile(f*".pvd")
 
 rm(d,recursive=true)
 
