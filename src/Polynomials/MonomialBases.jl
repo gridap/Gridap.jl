@@ -172,17 +172,9 @@ function _return_cache(
   ::Type{T},
   TisbitsType::Val{false}) where {D,V,T}
 
-  f = fg.fa
-  @assert D == length(eltype(x)) "Incorrect number of point components"
-  np = length(x)
-  ndof = length(f.terms)*num_components(V)
-  n = 1 + _maximum(f.orders)
-  r = CachedArray(zeros(T,(np,ndof)))
-  v = CachedArray(zeros(T,(ndof,)))
-  c = CachedArray(zeros(eltype(T),(D,n)))
-  g = CachedArray(zeros(eltype(T),(D,n)))
-  z = CachedArray(zeros(eltype(T),D))
-  (r,v,c,g,z)
+  cache = _return_cache(fg,x,T,Val{true}())
+  z = CachedArray(zeros(eltype(T),D)) 
+  (cache...,z)
 end
 
 function return_cache(
@@ -203,6 +195,7 @@ function _evaluate!(
 
   f = fg.fa
   r, v, c, g = cache
+  z = zero(Mutable(VectorValue{D,eltype(T)}))
   np = length(x)
   ndof = length(f.terms) * num_components(T)
   n = 1 + _maximum(f.orders)
@@ -213,7 +206,7 @@ function _evaluate!(
   setsize!(g,(D,n))
   for i in 1:np
     @inbounds xi = x[i]
-    _gradient_nd!(v,xi,f.orders,f.terms,c,g,T,TisbitsType)
+    _gradient_nd!(v,xi,f.orders,f.terms,c,g,z,T)
     for j in 1:ndof
       @inbounds r[i,j] = v[j]
     end
@@ -232,14 +225,13 @@ function _evaluate!(
   np = length(x)
   ndof = length(f.terms) * num_components(T)
   n = 1 + _maximum(f.orders)
-  TisbitsType = Val(isbitstype(eltype(c)))
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))
   setsize!(c,(D,n))
   setsize!(g,(D,n))
   for i in 1:np
     @inbounds xi = x[i]
-    _gradient_nd!(v,xi,f.orders,f.terms,c,g,z,T,TisbitsType)
+    _gradient_nd!(v,xi,f.orders,f.terms,c,g,z,T)
     for j in 1:ndof
       @inbounds r[i,j] = v[j]
     end
@@ -473,35 +465,6 @@ function _gradient_nd!(
 
   end
 
-end
-
-function _gradient_nd!(
-  v::AbstractVector{G},
-  x,
-  orders,
-  terms::AbstractVector{CartesianIndex{D}},
-  c::AbstractMatrix{T},
-  g::AbstractMatrix{T},
-  ::Type{V},
-  TisbitsType::Val{true}) where {G,T,D,V}
-
-  z = zero(Mutable(VectorValue{D,T}))
-  _gradient_nd!(v,x,orders,terms,c,g,z,V)
- 
-end
-
-function _gradient_nd!(
-  v::AbstractVector{G},
-  x,
-  orders,
-  terms::AbstractVector{CartesianIndex{D}},
-  c::AbstractMatrix{T},
-  g::AbstractMatrix{T},
-  z::AbstractVector{T},
-  ::Type{V},
-  TisbitsType::Val{false}) where {G,T,D,V}
-
-  _gradient_nd!(v,x,orders,terms,c,g,z,V)
 end
 
 function _set_gradient!(
