@@ -199,7 +199,6 @@ function _evaluate!(
   np = length(x)
   ndof = length(f.terms) * num_components(T)
   n = 1 + _maximum(f.orders)
-  TisbitsType = Val(isbitstype(eltype(c)))
   setsize!(r,(np,ndof))
   setsize!(v,(ndof,))
   setsize!(c,(D,n))
