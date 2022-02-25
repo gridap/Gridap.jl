@@ -62,12 +62,7 @@ end
 function get_cell_coordinates(trian::AppendedGrid)
   a = get_cell_coordinates(trian.a)
   b = get_cell_coordinates(trian.b)
-  ai = testitem(a)
-  bi = testitem(b)
-  T = promote_type(typeof(ai),typeof(bi))
-  ac=lazy_map(a->convert(T,a),a)
-  bc=lazy_map(a->convert(T,a),b)
-  lazy_append(ac,bc)
+  lazy_append(a,b)
 end
 
 function get_cell_ref_coordinates(trian::AppendedGrid)
@@ -125,7 +120,7 @@ function get_grid(t::AppendedTriangulation)
   lazy_append(a,b)
 end
 
-function get_glue(t::AppendedTriangulation,::Val{D}) where D 
+function get_glue(t::AppendedTriangulation,::Val{D}) where D
   a = get_glue(t.a,Val(D))
   b = get_glue(t.b,Val(D))
   if a==nothing || b==nothing
@@ -150,12 +145,7 @@ end
 function get_cell_map(trian::AppendedTriangulation)
   a = get_cell_map(trian.a)
   b = get_cell_map(trian.b)
-  ai = testitem(a)
-  bi = testitem(b)
-  T = promote_type(typeof(ai),typeof(bi))
-  ac=lazy_map(a->convert(T,a),a)
-  bc=lazy_map(a->convert(T,a),b)
-  lazy_append(ac,bc)
+  lazy_append(a,b)
 end
 
 function get_facet_normal(trian::AppendedTriangulation)

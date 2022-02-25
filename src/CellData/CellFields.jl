@@ -16,9 +16,6 @@ function CellPoint(
 
   cell_map = get_cell_map(trian)
   cell_phys_point = lazy_map(evaluate,cell_map,cell_ref_point)
-
-  #@show typeof(cell_phys_point)
-  #@show isa(cell_phys_point,AbstractArray{<:Union{AbstractArray{<:VectorValue}, VectorValue}})
   CellPoint(cell_ref_point,cell_phys_point,trian,domain_style)
 end
 
@@ -57,8 +54,6 @@ end
 function get_cell_points(trian::Triangulation)
   cell_ref_coords = get_cell_ref_coordinates(trian)
   cell_phys_coords = get_cell_coordinates(trian)
-
-  #@show eltype(eltype(cell_phys_coords))
   CellPoint(cell_ref_coords,cell_phys_coords,trian,ReferenceDomain())
 end
 
