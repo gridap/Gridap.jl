@@ -38,7 +38,7 @@ function get_data(f::CellPoint)
 end
 
 get_triangulation(f::CellPoint) = f.trian
-DomainStyle(::Type{CellPoint{DS}}) where DS = DS()
+DomainStyle(::Type{CellPoint{DS,A,B,C}}) where {DS,A,B,C} = DS()
 
 function change_domain(a::CellPoint,::ReferenceDomain,::PhysicalDomain)
   CellPoint(a.cell_ref_point,a.cell_phys_point,a.trian,PhysicalDomain())
