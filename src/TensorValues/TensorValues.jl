@@ -74,7 +74,6 @@ import Base: LinearIndices
 import Base: adjoint
 import Base: transpose
 import Base: rand
-import Base: promote_rule
 
 import LinearAlgebra: det, inv, tr, cross, dot, norm
 # Reexport from LinearAlgebra (just for convenience)
