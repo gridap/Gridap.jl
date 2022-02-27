@@ -92,4 +92,3 @@ function lazy_map(::typeof(∇),a::LazyArray{<:Fill{typeof(affine_map)}})
   gradients = a.args[1]
   lazy_map(constant_field,gradients)
 end
-

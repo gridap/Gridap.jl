@@ -107,4 +107,3 @@ length(::VectorValue{D}) where {D} = length(VectorValue{D})
 
 num_components(::Type{<:VectorValue{D}}) where {D} = length(VectorValue{D})
 num_components(::VectorValue{D}) where {D} = num_components(VectorValue{D})
-
