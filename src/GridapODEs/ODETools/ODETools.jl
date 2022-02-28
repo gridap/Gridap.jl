@@ -11,6 +11,7 @@ using DocStringExtensions
 
 using ForwardDiff
 using LinearAlgebra: fillstored!
+using SparseArrays: issparse
 
 const ϵ = 100*eps()
 export ∂t

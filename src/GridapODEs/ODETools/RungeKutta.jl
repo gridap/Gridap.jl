@@ -175,7 +175,11 @@ function jacobian!(A::AbstractMatrix,op::RungeKuttaNonlinearOperator,x::Abstract
   vi = op.vi
   vi = (x-op.u0)/(op.a[op.i,op.i]*op.dt)
   z = zero(eltype(A))
-  fillstored!(A,z)
+  if issparse(A)
+    fillstored!(A,z)
+  else
+    fill!(A,z)
+  end
   jacobians!(A,op.odeop,op.ti,(ui,vi),(1.0,1.0/(op.a[op.i,op.i]*op.dt)),op.ode_cache)
 end
 
@@ -189,7 +193,11 @@ end
 
 function zero_initial_guess(op::RungeKuttaNonlinearOperator)
   x0 = similar(op.u0)
-  fillstored!(x0,zero(eltype(x0)))
+  if issparse(x0)
+    fillstored!(x0,zero(eltype(x0)))
+  else
+    fill!(x0,zero(eltype(x0)))
+  end
   x0
 end
 

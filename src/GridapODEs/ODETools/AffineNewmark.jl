@@ -97,7 +97,11 @@ function jacobian!(A::AbstractMatrix,op::NewmarkAffineOperator,x::AbstractVector
   a1 = 1.0/(op.β*op.dt^2)*(u1-u0) - 1.0/(op.β*op.dt)*v0 - (1-2*op.β)/(2*op.β)*a0
   v1 = op.γ/(op.β*op.dt)*(u1-u0) + (1-op.γ/op.β)*v0 + op.dt*(1-op.γ/(2*op.β))*a0
   z = zero(eltype(A))
-  fillstored!(A,z)
+  if issparse(A)
+    fillstored!(A,z)
+  else
+    fill!(A,z)
+  end
   jacobians!(A,op.odeop,op.t1,(u1,v1,a1),(1.0,op.γ/(op.β*op.dt),1.0/(op.β*op.dt^2)),cache)
 end
 
