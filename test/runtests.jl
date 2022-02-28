@@ -30,4 +30,6 @@ using Test
 
 @time @testset "MultiField" begin include("MultiFieldTests/runtests.jl") end
 
+@time @testset "GridapODEs" begin include("GridapODEsTests/runtests.jl") end
+
 end # module
