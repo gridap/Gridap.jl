@@ -66,7 +66,6 @@ pkg> add Gridap
 - [GridapMakie](https://github.com/gridap/GridapMakie.jl) Makie plotting recipies for Gridap.
 - [GridapPardiso](https://github.com/gridap/GridapPardiso.jl) Use the [Intel Pardiso MKL direct sparse solver](https://software.intel.com/en-us/mkl-developer-reference-fortran-intel-mkl-pardiso-parallel-direct-sparse-solver-interface) in Gridap.
 - [GridapPETSc](https://github.com/gridap/GridapPETSc.jl) Use [PETSc](https://petsc.org/) linear and nonlinear solvers in Gridap.
-- [GridapODEs](https://github.com/gridap/GridapODEs.jl) Gridap support for time-dependent PDEs.
 
 
 ## Examples
