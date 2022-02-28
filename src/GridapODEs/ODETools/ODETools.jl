@@ -10,7 +10,7 @@ using Test
 using DocStringExtensions
 
 using ForwardDiff
-using LinearAlgebra: fill!
+using LinearAlgebra: fillstored!
 
 const ϵ = 100*eps()
 export ∂t
