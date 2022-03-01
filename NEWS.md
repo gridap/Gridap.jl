@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- Restrict to the active model the evaluation of a FE function at arbitrary points. Since PR [#752](https://github.com/gridap/Gridap.jl/pull/752).
+
 ## [0.17.9] - 2022-02-28
 
 ### Added
