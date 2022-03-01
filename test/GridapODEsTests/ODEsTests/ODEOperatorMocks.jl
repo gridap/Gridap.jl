@@ -108,5 +108,5 @@ function allocate_jacobian(op::ODEOperatorMock,u::AbstractVector,cache)
 end
 
 allocate_cache(op::ODEOperatorMock) = nothing
-allocate_cache(op::ODEOperatorMock,v::AbstractVector,a::AbstractVector) = (v,a),nothing
+allocate_cache(op::ODEOperatorMock,v::AbstractVector,a::AbstractVector) = (v,a,nothing)
 update_cache!(cache,op::ODEOperatorMock,t::Real) = cache
