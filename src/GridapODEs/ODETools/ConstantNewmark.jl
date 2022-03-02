@@ -125,11 +125,7 @@ function jacobian!(A::AbstractMatrix,op::NewmarkConstantOperator,x::AbstractVect
   a1 = 1.0/(op.β*op.dt^2)*(u1-u0) - 1.0/(op.β*op.dt)*v0 - (1-2*op.β)/(2*op.β)*a0
   v1 = op.γ/(op.β*op.dt)*(u1-u0) + (1-op.γ/op.β)*v0 + op.dt*(1-op.γ/(2*op.β))*a0
   z = zero(eltype(A))
-  if issparse(A)
-    fillstored!(A,z)
-  else
-    fill!(A,z)
-  end
+  fillstored!(A,z)
   jacobians!(A,op.odeop,op.t1,(u1,v1,a1),(1.0,op.γ/(op.β*op.dt),1.0/(op.β*op.dt^2)),cache)
 end
 
@@ -140,11 +136,7 @@ function _mass_matrix!(A::AbstractMatrix,op::NewmarkConstantOperator,x::Abstract
   a1 = 1.0/(op.β*op.dt^2)*(u1-u0) - 1.0/(op.β*op.dt)*v0 - (1-2*op.β)/(2*op.β)*a0
   v1 = op.γ/(op.β*op.dt)*(u1-u0) + (1-op.γ/op.β)*v0 + op.dt*(1-op.γ/(2*op.β))*a0
   z = zero(eltype(A))
-  if issparse(A)
-    fillstored!(A,z)
-  else
-    fill!(A,z)
-  end
+  fillstored!(A,z)
   jacobian!(A,op.odeop,op.t1,(u1,v1,a1),3,1.0,cache)
 end
 
@@ -155,10 +147,6 @@ function _damping_matrix!(A::AbstractMatrix,op::NewmarkConstantOperator,x::Abstr
   a1 = 1.0/(op.β*op.dt^2)*(u1-u0) - 1.0/(op.β*op.dt)*v0 - (1-2*op.β)/(2*op.β)*a0
   v1 = op.γ/(op.β*op.dt)*(u1-u0) + (1-op.γ/op.β)*v0 + op.dt*(1-op.γ/(2*op.β))*a0
   z = zero(eltype(A))
-  if issparse(A)
-    fillstored!(A,z)
-  else
-    fill!(A,z)
-  end
+  fillstored!(A,z)
   jacobian!(A,op.odeop,op.t1,(u1,v1,a1),2,1.0,cache)
 end

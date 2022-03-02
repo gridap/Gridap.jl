@@ -73,10 +73,6 @@ end
 
 function zero_initial_guess(op::ForwardEulerNonlinearOperator)
   x0 = similar(op.u0)
-  if issparse(x0)
-    fillstored!(x0,zero(eltype(x0)))
-  else
-    fill!(x0,zero(eltype(x0)))
-  end
+  fill!(x0,zero(eltype(x0)))
   x0
 end

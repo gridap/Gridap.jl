@@ -60,7 +60,7 @@ end
 function solve!(x::AbstractVector,nls::NLSolverMock,nlop::NonlinearOperator,cache::Nothing)
   r = residual(nlop,x)
   J = jacobian(nlop,x)
-  dx = inv(J)*(-r)
+  dx = inv(Matrix(J))*(-r)
   x.= x.+dx
   cache = (r,J,dx)
 end
@@ -69,7 +69,7 @@ function solve!(x::AbstractVector,nls::NLSolverMock,nlop::NonlinearOperator,cach
   r, J, dx = cache
   residual!(r, nlop, x)
   jacobian!(J, nlop, x)
-  dx = inv(J)*(-r)
+  dx = inv(Matrix(J))*(-r)
   x.= x.+dx
 end
 

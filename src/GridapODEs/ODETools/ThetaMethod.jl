@@ -79,11 +79,7 @@ function jacobian!(A::AbstractMatrix,op::ThetaMethodNonlinearOperator,x::Abstrac
   vθ = op.vθ
   vθ = (x-op.u0)/op.dtθ
   z = zero(eltype(A))
-  if issparse(A)
-    fillstored!(A,z)
-  else
-    fill!(A,z)
-  end
+  fillstored!(A,z)
   jacobians!(A,op.odeop,op.tθ,(uF,vθ),(1.0,1/op.dtθ),op.ode_cache)
 end
 
@@ -97,10 +93,6 @@ end
 
 function zero_initial_guess(op::ThetaMethodNonlinearOperator)
   x0 = similar(op.u0)
-  if issparse(x0)
-    fillstored!(x0,zero(eltype(x0)))
-  else
-    fill!(x0,zero(eltype(x0)))
-  end
+  fill!(x0,zero(eltype(x0)))
   x0
 end

@@ -106,21 +106,13 @@ end
 
 function _matrix!(A,odeop,tθ,dtθ,u0,ode_cache,vθ)
   z = zero(eltype(A))
-  if issparse(A)
-    fillstored!(A,z)
-  else
-    fill!(A,z)
-  end
+  fillstored!(A,z)
   jacobians!(A,odeop,tθ,(vθ,vθ),(1.0,1/dtθ),ode_cache)
 end
 
 function _mass_matrix!(A,odeop,tθ,dtθ,u0,ode_cache,vθ)
   z = zero(eltype(A))
-  if issparse(A)
-    fillstored!(A,z)
-  else
-    fill!(A,z)
-  end
+  fillstored!(A,z)
   jacobian!(A,odeop,tθ,(vθ,vθ),2,(1/dtθ),ode_cache)
 end
 
@@ -151,11 +143,7 @@ function ThetaMethodConstantOperator(odeop::ConstantODEOperator,tθ::Float64,dt�
   residual!(b,odeop,tθ,(u0,vθ),ode_cache)
   b = -1*b
   z = zero(eltype(A))
-  if issparse(A)
-    fillstored!(A,z)
-  else
-    fill!(A,z)
-  end
+  fillstored!(A,z)
   jacobians!(A,odeop,tθ,(vθ,vθ),(1.0,1/dtθ),ode_cache)
   return A, b
 end
