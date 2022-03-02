@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+- Restrict to the active model the evaluation of a FE function at arbitrary points. Since PR [#752](https://github.com/gridap/Gridap.jl/pull/752).
+
+## [0.17.9] - 2022-02-28
+
+### Added
+- Extra support for dual number propagation. Since PR [#653](https://github.com/gridap/Gridap.jl/pull/653)
+- Added ODE tools to Gridap. [GridapODEs](https://github.com/gridap/GridapODEs.jl) has been merged into Gridap. Sice PR[#748](https://github.com/gridap/Gridap.jl/pull/748)
+
 ## [0.17.8] - 2022-02-14
 
 ### Added
