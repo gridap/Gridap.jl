@@ -4,11 +4,8 @@ using Gridap
 using ForwardDiff
 using LinearAlgebra
 using Test
-using Gridap.ODEs.ODETools
-using Gridap.ODEs.TransientFETools
 using Gridap.FESpaces: get_algebraic_operator
 
-import Gridap: ∇
 import Gridap.ODEs.TransientFETools: ∂t
 
 θ = 0.0

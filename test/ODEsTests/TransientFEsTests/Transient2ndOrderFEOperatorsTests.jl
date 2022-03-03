@@ -1,8 +1,6 @@
 module Transient2nOrderFEOperatorsTests
 
 using Gridap
-using Gridap.ODEs.ODETools
-using Gridap.ODEs.TransientFETools
 using Test
 
 # Analytical functions

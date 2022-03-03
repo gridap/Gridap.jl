@@ -2,8 +2,6 @@ module FreeSurfacePotentialFlowTests
 
 using Gridap
 using Gridap.Geometry
-using Gridap.ODEs.TransientFETools
-using Gridap.ODEs.ODETools
 using Test
 
 # Parameters

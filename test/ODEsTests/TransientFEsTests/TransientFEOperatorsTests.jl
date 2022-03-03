@@ -8,11 +8,6 @@ using Gridap.ODEs.ODETools
 using Gridap.ODEs.TransientFETools
 using Gridap.FESpaces: get_algebraic_operator
 
-# using Gridap.ODEs.ODETools: ThetaMethodLinear
-
-import Gridap: ∇
-import Gridap.ODEs.TransientFETools: ∂t
-
 θ = 0.4
 
 # Analytical functions

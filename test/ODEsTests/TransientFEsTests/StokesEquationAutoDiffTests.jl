@@ -4,14 +4,9 @@ using Gridap
 using ForwardDiff
 using LinearAlgebra
 using Test
-using Gridap.ODEs.ODETools
 using Gridap.ODEs.TransientFETools
 using Gridap.FESpaces
 using Gridap.Arrays: test_array
-
-# using Gridap.ODEs.ODETools: ThetaMethodLinear
-import Gridap: ∇
-import Gridap.ODEs.TransientFETools: ∂t
 
 θ = 0.5
 
