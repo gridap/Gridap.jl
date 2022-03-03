@@ -16,6 +16,7 @@ import Gridap.ODEs.ODETools: jacobian!
 import Gridap.ODEs.ODETools: jacobians!
 import Gridap.ODEs.ODETools: allocate_jacobian
 import Gridap.ODEs.ODETools: residual!
+using SparseArrays: spzeros
 
 struct ODEOperatorMock{T<:Real,C} <: ODEOperator{C}
   a::T
@@ -104,7 +105,7 @@ function jacobians!(
 end
 
 function allocate_jacobian(op::ODEOperatorMock,u::AbstractVector,cache)
-  zeros(2,2)
+  spzeros(2,2)
 end
 
 allocate_cache(op::ODEOperatorMock) = nothing

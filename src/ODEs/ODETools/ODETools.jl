@@ -10,7 +10,8 @@ using Test
 using DocStringExtensions
 
 using ForwardDiff
-using LinearAlgebra: fill!
+using LinearAlgebra: fillstored!
+using SparseArrays: issparse
 
 const ϵ = 100*eps()
 export ∂t

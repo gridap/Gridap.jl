@@ -79,7 +79,7 @@ function jacobian!(A::AbstractMatrix,op::ThetaMethodNonlinearOperator,x::Abstrac
   vθ = op.vθ
   vθ = (x-op.u0)/op.dtθ
   z = zero(eltype(A))
-  fill!(A,z)
+  fillstored!(A,z)
   jacobians!(A,op.odeop,op.tθ,(uF,vθ),(1.0,1/op.dtθ),op.ode_cache)
 end
 
