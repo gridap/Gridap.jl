@@ -53,11 +53,11 @@ for op in (:+,:-)
     end
 
     function ($op)(a::TensorValue,b::SymTensorValue)
-      @notimplemented
+      map(($op), a, TensorValue(get_array(b)))
     end
 
     function ($op)(a::SymTensorValue,b::TensorValue)
-      @notimplemented
+      map(($op), TensorValue(get_array(a)), b)
     end
 
   end

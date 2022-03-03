@@ -104,6 +104,20 @@ c = a + b
 r = SymTensorValue(6,8,10)
 @test c==r
 
+a = TensorValue(1,2,3,4)
+b = SymTensorValue(5,6,7)
+
+c = a + b
+r = TensorValue(6,8,9,11)
+@test c==r
+
+a = SymTensorValue(5,6,7)
+b = TensorValue(1,2,3,4)
+
+c = a - b
+r = TensorValue(4,4,3,3)
+@test c==r
+
 # Matrix Division
 
 a = VectorValue(1,2,3)
