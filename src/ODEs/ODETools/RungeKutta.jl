@@ -175,7 +175,7 @@ function jacobian!(A::AbstractMatrix,op::RungeKuttaNonlinearOperator,x::Abstract
   vi = op.vi
   vi = (x-op.u0)/(op.a[op.i,op.i]*op.dt)
   z = zero(eltype(A))
-  fill!(A,z)
+  fillstored!(A,z)
   jacobians!(A,op.odeop,op.ti,(ui,vi),(1.0,1.0/(op.a[op.i,op.i]*op.dt)),op.ode_cache)
 end
 
