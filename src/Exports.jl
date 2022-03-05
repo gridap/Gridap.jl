@@ -177,7 +177,7 @@ using Gridap.CellData: ∫; export ∫
 @publish Visualization createpvd
 @publish Visualization savepvd
 
-include("GridapODEs/Exports.jl")
+include("ODEs/Exports.jl")
 
 # Deprecated / removed
 
