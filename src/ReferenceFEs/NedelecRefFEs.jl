@@ -15,7 +15,13 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
   # @santiagobadia : Project, go to complex numbers
   D = num_dims(p)
 
-  prebasis = QGradMonomialBasis{D}(et,order)
+  if is_n_cube(p)
+    prebasis = QGradMonomialBasis{D}(et,order)
+  elseif is_simplex(p)
+    prebasis = Polynomials.NedelecPrebasisOnSimplex{D}(order)
+  else
+    @unreachable "Only implemented for n-cubes and simplices"
+  end
 
   nf_nodes, nf_moments = _Nedelec_nodes_and_moments(et,p,order)
 
@@ -70,7 +76,7 @@ end
 
 function _Nedelec_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) where et
 
-  @notimplementedif ! is_n_cube(p)
+  @notimplementedif !( is_n_cube(p) || (is_simplex(p) && order==0) )
 
   D = num_dims(p)
   ft = VectorValue{D,et}

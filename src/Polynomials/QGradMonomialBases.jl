@@ -247,11 +247,16 @@ struct NedelecPrebasisOnSimplex{D} <: AbstractVector{Monomial}
   end
 end
 
-function Base.size(a::NedelecPrebasisOnSimplex{D}) where D
+function Base.size(a::NedelecPrebasisOnSimplex{3})
   @notimplementedif a.order != 0
-  @notimplementedif D != 3
   (6,)
 end
+
+function Base.size(a::NedelecPrebasisOnSimplex{2})
+  @notimplementedif a.order != 0
+  (3,)
+end
+
 Base.getindex(a::NedelecPrebasisOnSimplex,i::Integer) = Monomial()
 Base.IndexStyle(::Type{<:NedelecPrebasisOnSimplex}) = IndexLinear()
 
@@ -261,7 +266,6 @@ get_order(f::NedelecPrebasisOnSimplex) = f.order
 function return_cache(
   f::NedelecPrebasisOnSimplex{D},x::AbstractVector{<:Point}) where D
   @notimplementedif f.order != 0
-  @notimplementedif D != 3
   np = length(x)
   ndofs = num_terms(f)
   V = eltype(x)
@@ -270,9 +274,8 @@ function return_cache(
 end
 
 function evaluate!(
-  cache,f::NedelecPrebasisOnSimplex{D},x::AbstractVector{<:Point}) where D
+  cache,f::NedelecPrebasisOnSimplex{3},x::AbstractVector{<:Point})
   @notimplementedif f.order != 0
-  @notimplementedif D != 3
   np = length(x)
   ndofs = num_terms(f)
   setsize!(cache,(np,ndofs))
@@ -292,12 +295,30 @@ function evaluate!(
   a
 end
 
+function evaluate!(
+  cache,f::NedelecPrebasisOnSimplex{2},x::AbstractVector{<:Point})
+  @notimplementedif f.order != 0
+  np = length(x)
+  ndofs = num_terms(f)
+  setsize!(cache,(np,ndofs))
+  a = cache.array
+  V = eltype(x)
+  T = eltype(V)
+  z = zero(T)
+  u = one(T)
+  for (ip,p) in enumerate(x)
+    a[ip,1] = VectorValue((u,z))
+    a[ip,2] = VectorValue((z,u))
+    a[ip,3] = VectorValue((-p[2],p[1]))
+  end
+  a
+end
+
 function return_cache(
   g::FieldGradientArray{1,<:NedelecPrebasisOnSimplex{D}},
   x::AbstractVector{<:Point}) where D
   f = g.fa
   @notimplementedif f.order != 0
-  @notimplementedif D != 3
   np = length(x)
   ndofs = num_terms(f)
   xi = testitem(x)
@@ -309,11 +330,10 @@ end
 
 function evaluate!(
   cache,
-  g::FieldGradientArray{1,<:NedelecPrebasisOnSimplex{D}},
-  x::AbstractVector{<:Point}) where D
+  g::FieldGradientArray{1,<:NedelecPrebasisOnSimplex{3}},
+  x::AbstractVector{<:Point})
   f = g.fa
   @notimplementedif f.order != 0
-  @notimplementedif D != 3
   np = length(x)
   ndofs = num_terms(f)
   setsize!(cache,(np,ndofs))
@@ -327,6 +347,27 @@ function evaluate!(
     a[ip,4] = TensorValue((z,-u,z, u,z,z, z,z,z))
     a[ip,5] = TensorValue((z,z,-u, z,z,z, u,z,z))
     a[ip,6] = TensorValue((z,z,z, z,z,-u, z,u,z))
+  end
+  a
+end
+
+function evaluate!(
+  cache,
+  g::FieldGradientArray{1,<:NedelecPrebasisOnSimplex{2}},
+  x::AbstractVector{<:Point})
+  f = g.fa
+  @notimplementedif f.order != 0
+  np = length(x)
+  ndofs = num_terms(f)
+  setsize!(cache,(np,ndofs))
+  a = cache.array
+  fill!(a,zero(eltype(a)))
+  V = eltype(x)
+  T = eltype(V)
+  z = zero(T)
+  u = one(T)
+  for (ip,p) in enumerate(x)
+    a[ip,3] = TensorValue((z,-u, u,z))
   end
   a
 end
