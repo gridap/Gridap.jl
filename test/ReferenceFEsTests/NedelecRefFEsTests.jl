@@ -69,11 +69,6 @@ test_reference_fe(reffe)
 @test num_dofs(reffe) == 3
 @test Conformity(reffe) == CurlConformity()
 dof_basis = get_dof_basis(reffe)
-display(dof_basis.nodes)
-display(dof_basis.face_nodes)
-display(dof_basis.face_moments)
-display(get_face_own_dofs(reffe))
-display(get_dimranges(get_polytope(reffe)))
 
 #using Gridap.Geometry
 #using Gridap.Visualization

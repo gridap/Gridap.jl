@@ -24,8 +24,6 @@ function RaviartThomasRefFE(::Type{et},p::Polytope,order::Integer) where et
   end
 
   nf_nodes, nf_moments = _RT_nodes_and_moments(et,p,order,GenericField(identity))
-  display(nf_nodes)
-  display(nf_moments)
 
   face_own_dofs = _face_own_dofs_from_moments(nf_moments)
 
