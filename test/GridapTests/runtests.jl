@@ -20,6 +20,8 @@ using Test
 
 @time @testset "PeriodicDarcy" begin include("PeriodicDarcyTests.jl") end
 
+@time @testset "HCurl" begin include("HCurlTests.jl") end
+
 @time @testset "SurfaceCoupling" begin include("SurfaceCouplingTests.jl") end
 
 @time @testset "IsotropicDamage" begin include("IsotropicDamageTests.jl") end
