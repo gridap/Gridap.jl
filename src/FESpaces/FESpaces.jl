@@ -194,6 +194,8 @@ include("ConformingFESpaces.jl")
 
 include("DivConformingFESpaces.jl")
 
+include("CurlConformingFESpaces.jl")
+
 include("FESpaceFactories.jl")
 
 include("PhysicalFEs.jl")

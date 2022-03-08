@@ -229,3 +229,42 @@ function _broadcast_extend(::Type{T},Tm,b) where T
   return c
 end
 
+struct CoVariantPiolaMap <: Map end
+
+function evaluate!(
+  cache,
+  ::Broadcasting{typeof(∇)},
+  a::Fields.BroadcastOpFieldArray{CoVariantPiolaMap})
+  v, Jt = a.args
+  # Assuming J comes from an affine map
+  ∇v = Broadcasting(∇)(v)
+  k = CoVariantPiolaMap()
+  Broadcasting(Operation(k))(∇v,Jt)
+end
+
+function lazy_map(
+  ::Broadcasting{typeof(gradient)},
+  a::LazyArray{<:Fill{Broadcasting{Operation{CoVariantPiolaMap}}}})
+  v, Jt = a.args
+  ∇v = lazy_map(Broadcasting(∇),v)
+  k = CoVariantPiolaMap()
+  lazy_map(Broadcasting(Operation(k)),∇v,Jt)
+end
+
+function evaluate!(cache,::CoVariantPiolaMap,v::Number,Jt::Number)
+  v⋅transpose(inv(Jt)) # we multiply by the right side to compute the gradient correctly
+end
+
+function evaluate!(cache,k::CoVariantPiolaMap,v::AbstractVector{<:Field},phi::Field)
+  Jt = ∇(phi)
+  Broadcasting(Operation(k))(v,Jt)
+end
+
+function lazy_map(
+  k::CoVariantPiolaMap,
+  cell_ref_shapefuns::AbstractArray{<:AbstractArray{<:Field}},
+  cell_map::AbstractArray{<:Field})
+
+  cell_Jt = lazy_map(∇,cell_map)
+  lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_Jt)
+end
