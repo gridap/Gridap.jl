@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Implemented addition/subtraction between a `TensorValue` and a `SymTensorValue`. Since PR [#755](https://github.com/gridap/Gridap.jl/pull/755).
+- Nédélec elements on simplices (lowest order interpolation for the moment).
 
 ### Fixed
 - Restrict to the active model the evaluation of a FE function at arbitrary points. Since PR [#752](https://github.com/gridap/Gridap.jl/pull/752).
