@@ -15,7 +15,13 @@ function NedelecRefFE(::Type{et},p::Polytope,order::Integer) where et
   # @santiagobadia : Project, go to complex numbers
   D = num_dims(p)
 
-  prebasis = QGradMonomialBasis{D}(et,order)
+  if is_n_cube(p)
+    prebasis = QGradMonomialBasis{D}(et,order)
+  elseif is_simplex(p)
+    prebasis = Polynomials.NedelecPrebasisOnSimplex{D}(order)
+  else
+    @unreachable "Only implemented for n-cubes and simplices"
+  end
 
   nf_nodes, nf_moments = _Nedelec_nodes_and_moments(et,p,order)
 
@@ -70,7 +76,7 @@ end
 
 function _Nedelec_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) where et
 
-  @notimplementedif ! is_n_cube(p)
+  @notimplementedif !( is_n_cube(p) || (is_simplex(p) && order==0) )
 
   D = num_dims(p)
   ft = VectorValue{D,et}
@@ -221,4 +227,44 @@ function _broadcast_extend(::Type{T},Tm,b) where T
     c[ii] = T(Tm*[i...])
   end
   return c
+end
+
+struct CoVariantPiolaMap <: Map end
+
+function evaluate!(
+  cache,
+  ::Broadcasting{typeof(∇)},
+  a::Fields.BroadcastOpFieldArray{CoVariantPiolaMap})
+  v, Jt = a.args
+  # Assuming J comes from an affine map
+  ∇v = Broadcasting(∇)(v)
+  k = CoVariantPiolaMap()
+  Broadcasting(Operation(k))(∇v,Jt)
+end
+
+function lazy_map(
+  ::Broadcasting{typeof(gradient)},
+  a::LazyArray{<:Fill{Broadcasting{Operation{CoVariantPiolaMap}}}})
+  v, Jt = a.args
+  ∇v = lazy_map(Broadcasting(∇),v)
+  k = CoVariantPiolaMap()
+  lazy_map(Broadcasting(Operation(k)),∇v,Jt)
+end
+
+function evaluate!(cache,::CoVariantPiolaMap,v::Number,Jt::Number)
+  v⋅transpose(inv(Jt)) # we multiply by the right side to compute the gradient correctly
+end
+
+function evaluate!(cache,k::CoVariantPiolaMap,v::AbstractVector{<:Field},phi::Field)
+  Jt = ∇(phi)
+  Broadcasting(Operation(k))(v,Jt)
+end
+
+function lazy_map(
+  k::CoVariantPiolaMap,
+  cell_ref_shapefuns::AbstractArray{<:AbstractArray{<:Field}},
+  cell_map::AbstractArray{<:Field})
+
+  cell_Jt = lazy_map(∇,cell_map)
+  lazy_map(Broadcasting(Operation(k)),cell_ref_shapefuns,cell_Jt)
 end
