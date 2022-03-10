@@ -14,7 +14,10 @@ model = CartesianDiscreteModel(domain,cells)
 f = CellField(1,Ω1)
 x = get_cell_points(Ω2)
 arr = f(x)
-@test arr.maps.value.values_pos.value == [1,1,1,1]
-@test arr.maps.value.values_neg.value == [0,0,0,0]
+
+#print_op_tree(arr)
+
+@test arr.maps.value.values_pos.values[1] == [1,1,1,1]
+@test arr.maps.value.values_neg.values[1] == [0,0,0,0]
 
 end # module
