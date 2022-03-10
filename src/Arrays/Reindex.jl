@@ -69,6 +69,30 @@ function lazy_map(k::Reindex{<:LazyArray{<:Fill{<:PosNegReindex}}},::Type{T},j_t
   end
 end
 
+function _lazy_map_evaluate_posneg(i_to_jposneg::LazyArray{<:Fill{<:Reindex}},::Type{T},i_a,i_x) where T
+
+  # Align a with the background model
+  jpos_a = i_a.maps.value.values_pos
+  jneg_a = i_a.maps.value.values_neg
+  j_jposneg = i_to_jposneg.maps.value.values
+  j_a = lazy_map(PosNegReindex(jpos_a,jneg_a),j_jposneg)
+
+  # Align x with the background model
+  i_j = i_to_jposneg.args[1]
+  j_i = fill(Int32(-1),length(j_jposneg))
+  j_i[i_j] .= 1:length(i_j)
+  j_x = lazy_map(PosNegReindex(i_x,Fill(testitem(i_x),1)),j_i)
+
+  # Evaluate in the background model
+  j_b = lazy_map(evaluate,j_a,j_x)
+
+  # Reindex to the current triangulation
+  i_b = lazy_map(Reindex(j_b),i_j)
+
+  i_b
+end
+
+
 function lazy_map(k::Reindex{<:LazyArray{<:Fill{<:PosNegReindex}}},::Type{T},indices::IdentityVector) where T
   @check length(k.values) == length(indices)
   k.values

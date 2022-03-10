@@ -38,4 +38,6 @@ using Test
 
 @time @testset "Issue743" begin include("issue_743.jl") end
 
+@time @testset "Issue760" begin include("issue_760.jl") end
+
 end # module
