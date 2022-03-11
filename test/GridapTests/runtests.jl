@@ -30,6 +30,8 @@ using Test
 
 @time @testset "PoissonLagrangeMultiplier" begin include("PoissonLagrangeMultiplierTests.jl") end
 
+@time @testset "EmptyDomains" begin include("EmptyDomainsTests.jl") end
+
 @time @testset "Issue614" begin include("issue_614.jl") end
 
 @time @testset "Issue689" begin include("issue_689.jl") end
