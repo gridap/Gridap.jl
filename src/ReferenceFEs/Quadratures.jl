@@ -78,6 +78,7 @@ end
     struct GenericQuadrature{D,T} <: Quadrature{D,T}
       coordinates::Vector{Point{D,T}}
       weights::Vector{T}
+      name::String
     end
 """
 struct GenericQuadrature{D,T} <: Quadrature{D,T}
@@ -99,7 +100,7 @@ get_weights(q::GenericQuadrature) = q.weights
 get_name(q::GenericQuadrature) = q.name
 
 function GenericQuadrature(a::Quadrature)
-  GenericQuadrature(get_coordinates(q),get_weights(a),get_name(q))
+  GenericQuadrature(get_coordinates(a),get_weights(a),get_name(a))
 end
 
 function GenericQuadrature(a::GenericQuadrature)
@@ -141,4 +142,3 @@ function Quadrature(p::Polytope,degree)
   end
   quad
 end
-
