@@ -180,13 +180,28 @@ function return_value(f::Broadcasting,x::Number...)
   return_value(f.f,x...)
 end
 
-function return_value(f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
-  return_cache(f,x...).array
-end
-
 function return_cache(f::Broadcasting,x::Number...)
   nothing
 end
+
+function return_value(f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
+  s = map(_size_zero,x)
+  bs = Base.Broadcast.broadcast_shape(s...)
+  T = return_type(f.f,map(testitem,x)...)
+  r = fill(testvalue(T),bs)
+  r
+end
+
+function _size_zero(a)
+  s = size(a)
+  if length(a) == 0
+    r = map(i-> (i==0 ? 1 : i) ,s)
+  else
+    r = s
+  end
+  r
+end
+_size_zero(a::Number) = (1,)
 
 function return_cache(f::Broadcasting,x::Union{Number,AbstractArray{<:Number}}...)
   s = map(_size,x)

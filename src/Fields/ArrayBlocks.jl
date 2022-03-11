@@ -434,6 +434,19 @@ function integrate(f::ArrayBlock{A,N} where A,args...) where N
   ArrayBlock(g,f.touched)
 end
 
+function return_value(
+  k::IntegrationMap,fx::ArrayBlock{A,N} where A,args...) where N
+  fxi = testitem(fx)
+  ufxi = return_value(k,fxi,args...)
+  g = Array{typeof(ufxi),N}(undef,size(fx.array))
+  for i in eachindex(fx.array)
+    if fx.touched[i]
+      g[i] = return_value(k,fx.array[i],args...)
+    end
+  end
+  ArrayBlock(g,fx.touched)
+end
+
 function return_cache(
   k::IntegrationMap,fx::ArrayBlock{A,N} where A,args...) where N
   fxi = testitem(fx)
@@ -460,8 +473,16 @@ function evaluate!(cache,k::IntegrationMap,fx::ArrayBlock,args...)
   g
 end
 
-function return_value(k::Broadcasting,f::ArrayBlock)
-  evaluate(k,f)
+function return_value(k::Broadcasting,f::ArrayBlock{A,N}) where {A,N}
+  fi = testitem(f)
+  fix = return_value(k,fi)
+  g = Array{typeof(fix),N}(undef,size(f.array))
+  for i in eachindex(f.array)
+    if f.touched[i]
+      g[i] = return_value(k,f.array[i])
+    end
+  end
+  ArrayBlock(g,f.touched)
 end
 
 function return_cache(k::Broadcasting,f::ArrayBlock{A,N}) where {A,N}
@@ -489,8 +510,16 @@ function evaluate!(cache,k::Broadcasting,f::ArrayBlock)
   g
 end
 
-function return_value(k::Broadcasting{typeof(∘)},f::ArrayBlock,h::Field)
-  evaluate(k,f,h)
+function return_value(k::Broadcasting{typeof(∘)},f::ArrayBlock{A,N},h::Field) where {A,N}
+  fi = testitem(f)
+  fix = return_value(k,fi,h)
+  g = Array{typeof(fix),N}(undef,size(f.array))
+  for i in eachindex(f.array)
+    if f.touched[i]
+      g[i] = return_value(k,f.array[i],h)
+    end
+  end
+  ArrayBlock(g,f.touched)
 end
 
 function return_cache(k::Broadcasting{typeof(∘)},f::ArrayBlock{A,N},h::Field) where {A,N}
@@ -518,8 +547,16 @@ function evaluate!(cache,k::Broadcasting{typeof(∘)},f::ArrayBlock,h::Field)
   g
 end
 
-function return_value(k::Broadcasting{<:Operation},f::ArrayBlock,h::Field)
-  evaluate(k,f,h)
+function return_value(k::Broadcasting{<:Operation},f::ArrayBlock{A,N},h::Field) where {A,N}
+  fi = testitem(f)
+  fix = return_value(k,fi,h)
+  g = Array{typeof(fix),N}(undef,size(f.array))
+  for i in eachindex(f.array)
+    if f.touched[i]
+      g[i] = return_value(k,f.array[i],h)
+    end
+  end
+  ArrayBlock(g,f.touched)
 end
 
 function return_cache(k::Broadcasting{<:Operation},f::ArrayBlock{A,N},h::Field) where {A,N}
@@ -547,8 +584,16 @@ function evaluate!(cache,k::Broadcasting{<:Operation},f::ArrayBlock,h::Field)
   g
 end
 
-function return_value(k::Broadcasting{<:Operation},h::Field,f::ArrayBlock)
-  evaluate(k,h,f)
+function return_value(k::Broadcasting{<:Operation},h::Field,f::ArrayBlock{A,N}) where {A,N}
+  fi = testitem(f)
+  fix = return_value(li,k,h,fi)
+  g = Array{typeof(fix),N}(undef,size(f.array))
+  for i in eachindex(f.array)
+    if f.touched[i]
+      g[i] = return_value(k,h,f.array[i])
+    end
+  end
+  ArrayBlock(g,f.touched)
 end
 
 function return_cache(k::Broadcasting{<:Operation},h::Field,f::ArrayBlock{A,N}) where {A,N}
@@ -588,8 +633,16 @@ function evaluate!(cache,k::Broadcasting{<:Operation},h::ArrayBlock,f::ArrayBloc
   @notimplemented
 end
 
-function return_value(k::BroadcastingFieldOpMap,f::ArrayBlock,g::AbstractArray)
-  evaluate(k,f,g)
+function return_value(k::BroadcastingFieldOpMap,f::ArrayBlock{A,N},g::AbstractArray) where {A,N}
+  fi = testitem(f)
+  fix = return_value(k,fi,g)
+  h = Array{typeof(fix),N}(undef,size(f.array))
+  for i in eachindex(f.array)
+    if f.touched[i]
+      h[i] = return_value(k,f.array[i],g)
+    end
+  end
+  ArrayBlock(h,f.touched)
 end
 
 function return_cache(
@@ -618,8 +671,16 @@ function evaluate!(cache,k::BroadcastingFieldOpMap,f::ArrayBlock,g::AbstractArra
   h
 end
 
-function return_value(k::BroadcastingFieldOpMap,g::AbstractArray,f::ArrayBlock)
-  evaluate(k,g,f)
+function return_value(k::BroadcastingFieldOpMap,g::AbstractArray,f::ArrayBlock{A,N}) where {A,N}
+  fi = testitem(f)
+  fix = return_value(k,g,fi)
+  h = Array{typeof(fix),N}(undef,size(f.array))
+  for i in eachindex(f.array)
+    if f.touched[i]
+      h[i] = return_value(k,g,f.array[i])
+    end
+  end
+  ArrayBlock(h,f.touched)
 end
 
 function return_cache(
@@ -652,7 +713,7 @@ for op in (:+,:-,:*)
   @eval begin
 
     function return_value(k::Broadcasting{typeof($op)},f::ArrayBlock,g::ArrayBlock)
-      evaluate(k,f,g)
+      return_value(BroadcastingFieldOpMap($op),f,g)
     end
 
     function return_cache(k::Broadcasting{typeof($op)},f::ArrayBlock,g::ArrayBlock)
@@ -667,7 +728,15 @@ for op in (:+,:-,:*)
 end
 
 function return_value(k::Broadcasting{typeof(*)},f::Number,g::ArrayBlock)
-  evaluate(k,f,g)
+  gi = testitem(g)
+  hi = return_value(ci,k,f,gi)
+  array = Array{typeof(hi),ndims(g.array)}(undef,size(g.array))
+  for i in eachindex(g.array)
+    if g.touched[i]
+      array[i] = return_value(k,f,g.array[i])
+    end
+  end
+  ArrayBlock(array,g.touched)
 end
 
 function return_cache(k::Broadcasting{typeof(*)},f::Number,g::ArrayBlock)
@@ -716,6 +785,16 @@ end
 
 function evaluate!(cache,k::BroadcastingFieldOpMap,f::ArrayBlock,g::ArrayBlock)
   @notimplemented
+end
+
+function return_value(
+  k::BroadcastingFieldOpMap,f::ArrayBlock{A,N},g::ArrayBlock{B,N}) where {A,B,N}
+  fi = testvalue(A)
+  gi = testvalue(B)
+  hi = return_value(k,fi,gi)
+  a = Array{typeof(hi),N}(undef,size(f.array))
+  fill!(a,hi)
+  ArrayBlock(a,f.touched)
 end
 
 function return_cache(
@@ -968,6 +1047,15 @@ end
 
 function Base.:*(a::ArrayBlock,b::Number)
   b*a
+end
+
+function return_value(::typeof(*),a::ArrayBlock{A,2},b::ArrayBlock{B,1}) where {A,B}
+  ai = testvalue(A)
+  bi = testvalue(B)
+  ri = return_value(*,ai,bi)
+  array = Vector{typeof(ri)}(undef,size(a.array,1))
+  touched = fill(false,size(a.array,1))
+  ArrayBlock(array,touched)
 end
 
 function Base.:*(a::ArrayBlock{A,2},b::ArrayBlock{B,1}) where {A,B}
