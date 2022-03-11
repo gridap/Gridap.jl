@@ -1264,6 +1264,11 @@ function  _setsize_as!(d,a::ArrayBlock)
   d
 end
 
+function return_value(k::MulAddMap,a::ArrayBlock,b::ArrayBlock,c::ArrayBlock)
+  x = return_value(*,a,b)
+  return_value(+,x,c)
+end
+
 function return_cache(k::MulAddMap,a::ArrayBlock,b::ArrayBlock,c::ArrayBlock)
   c1 = CachedArray(a*b+c)
   c2 = return_cache(unwrap_cached_array,c1)
