@@ -729,7 +729,7 @@ end
 
 function return_value(k::Broadcasting{typeof(*)},f::Number,g::ArrayBlock)
   gi = testitem(g)
-  hi = return_value(ci,k,f,gi)
+  hi = return_value(k,f,gi)
   array = Array{typeof(hi),ndims(g.array)}(undef,size(g.array))
   for i in eachindex(g.array)
     if g.touched[i]
