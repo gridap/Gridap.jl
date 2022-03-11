@@ -586,7 +586,7 @@ end
 
 function return_value(k::Broadcasting{<:Operation},h::Field,f::ArrayBlock{A,N}) where {A,N}
   fi = testitem(f)
-  fix = return_value(li,k,h,fi)
+  fix = return_value(k,h,fi)
   g = Array{typeof(fix),N}(undef,size(f.array))
   for i in eachindex(f.array)
     if f.touched[i]
