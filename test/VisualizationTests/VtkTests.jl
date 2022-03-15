@@ -9,6 +9,7 @@ using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.Visualization
+using Gridap.Visualization: create_pvtk_file
 using Gridap.CellData
 using WriteVTK
 
@@ -170,6 +171,24 @@ pvd = createpvd(nothing,f)
 @test isa(pvd,WriteVTK.CollectionFile)
 savepvd(pvd)
 @test isfile(f*".pvd")
+
+# Empty meshes
+cells = (10,10)
+domain = (0,1,0,1)
+model = CartesianDiscreteModel(domain,cells)
+
+# Domains and measures
+Ω1 = Interior(model)
+Ω2 = Interior(model,Int[])
+
+f=joinpath(d,"empty")
+
+write_vtk_file(Ω2,f,celldata=["u"=>rand(num_cells(Ω2))])
+pvtk = create_pvtk_file(Ω1,f; part=1, nparts=2,celldata=["u"=>rand(num_cells(Ω1))])
+vtk_save(pvtk)
+pvtk = create_pvtk_file(Ω2,f; part=2, nparts=2,celldata=["u"=>rand(num_cells(Ω2))])
+vtk_save(pvtk)
+
 
 rm(d,recursive=true)
 
