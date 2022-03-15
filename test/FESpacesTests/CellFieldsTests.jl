@@ -150,8 +150,8 @@ source_model = CartesianDiscreteModel((0,1,0,1),(2,2))
   model = CartesianDiscreteModel((0,1,0,1),(1,1),map=map) |> simplexify
   reffe = ReferenceFE(lagrangian,Float64,1)
   V = FESpace(model,reffe)
-  f(x) = x[1]+x[2]
-  u = interpolate_everywhere(f,V)
+  f2(x) = x[1]+x[2]
+  u = interpolate_everywhere(f2,V)
   x = VectorValue(0.45,0.45)
   @test_throws AssertionError u(x)
   sm=KDTreeSearch(num_nearest_vertices=2)
