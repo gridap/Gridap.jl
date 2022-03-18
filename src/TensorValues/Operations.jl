@@ -205,6 +205,21 @@ end
   Meta.parse("TensorValue{$D1,$D2}($str)")
 end
 
+# a_ijl = b_ijk*c_kl
+@generated function dot(a::A, b::B) where {A<:MultiValue{Tuple{D1,D2,D3}},B<:MultiValue{Tuple{D3,D4}}} where {D1,D2,D3,D4}
+  ss = String[]
+  for l in 1:D4
+    for j in 1:D2
+      for i in 1:D1
+        s = join([ "a[$i,$j,$k]*b[$k,$l]+" for k in 1:D3])
+        push!(ss,s[1:(end-1)]*", ")
+      end
+    end
+  end
+  str = join(ss)
+  Meta.parse("ThirdOrderTensorValue{$D1,$D2,$D4}($str)")
+end
+
 # a_ij = c_k*b_kij
 @generated function dot(a::A, b::B) where {A<:MultiValue{Tuple{D1}},B<:MultiValue{Tuple{D1,D2,D3}}} where {D1,D2,D3}
   ss = String[]

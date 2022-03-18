@@ -252,6 +252,8 @@ b1 = VectorValue(1,2)
 t1 = ThirdOrderTensorValue{2,2,1}(1,2,3,4)
 t2 = TensorValue(1,0,0,1)
 t3 = TensorValue(1,2,0,0)
+t4 = ThirdOrderTensorValue{2,2,2}(1,2,3,4,5,6,7,8)
+t5 = TensorValue{2,1}(1,2)
 
 c = a1 ⋅ t1
 @test isa(c,TensorValue{2,1,Int})
@@ -271,6 +273,16 @@ r = ThirdOrderTensorValue{2,2,1}(1,2,3,4)
 c = t3 ⋅ t1
 @test isa(c,ThirdOrderTensorValue{2,2,1,Int,4})
 r = ThirdOrderTensorValue{2,2,1}(1,2,3,6)
+@test c == r
+
+c = t4 ⋅ t3
+@test isa(c,ThirdOrderTensorValue{2,2,2,Int,8})
+r = ThirdOrderTensorValue{2,2,2}(11,14,17,20,0,0,0,0)
+@test c == r
+
+c = t4 ⋅ t5
+@test isa(c,ThirdOrderTensorValue{2,2,1,Int,4})
+r = ThirdOrderTensorValue{2,2,1}(11,14,17,20)
 @test c == r
 
 x = VectorValue{0,Float64}()
