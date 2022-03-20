@@ -7,6 +7,7 @@
 
 using SparseArrays
 using Random
+include("binarytree_core.jl")
 
 function _shift_to_first(v::AbstractVector{T}, i::T) where {T<:Integer}
   circshift(v, -(i - 1))
@@ -45,6 +46,7 @@ function _setup_markers_and_nodes!(
   η_arr::AbstractArray,
   θ::AbstractFloat,
 ) where {T<:Integer}
+  #@show d2p
   total_η = sum(η_arr)
   partial_η = 0
   sorted_η_idxs = sortperm(-η_arr)
@@ -105,22 +107,39 @@ function _bisect(
   marker::AbstractVector{T},
   NT::T,
 ) where {T<:Integer}
+	forest = Vector{BinaryNode}();
+  #@show [node.data for node in Leaves(cell_to_cell_root)]
   for t in UnitRange{T}(1:NT)
     base = d2p[elem[t][2], elem[t][3]]
     if (marker[base] > 0)
+			newnode = BinaryNode(t)
       p = vcat(elem[t][:], marker[base])
       elem = _divide!(elem, t, p)
+			cur_size::T = size(elem, 1)
+			l = leftchild(t, newnode)
+			r = rightchild(cur_size, newnode)
       left = d2p[p[1], p[2]]
       right = d2p[p[3], p[1]]
       if (marker[right] > 0)
-        cur_size::T = size(elem, 1)
+        cur_size = size(elem, 1)
+        leftchild(t, r)
+        rightchild(cur_size+1, r)
         elem = _divide!(elem, cur_size, [p[4], p[3], p[1], marker[right]])
       end
       if (marker[left] > 0)
+        #leftchild(t, l)
+        rightchild(cur_size+1, l)
         elem = _divide!(elem, t, [p[4], p[1], p[2], marker[left]])
       end
+      push!(forest, newnode)
     end
   end
+  #num_leaves = 0
+	#for root in forest
+	#	#print_tree(root)
+  #  num_leaves += length(collect(Leaves(root)))
+	#end
+  #@show num_leaves
   elem
 end
 
@@ -174,9 +193,7 @@ function _is_against_top(face::Matrix{<:Integer}, top::GridTopology, d::Integer)
   all(issetequal_bitvec)
 end
 
-function _get_midpoint(ngon::AbstractArray{<:VectorValue})
-  sum(ngon) / length(ngon)
-end
+_get_midpoint(ngon::AbstractArray{<:VectorValue}) = sum(ngon) / length(ngon)
 
 function _sort_ccw(cell_coords::AbstractVector{<:VectorValue})
   midpoint = _get_midpoint(cell_coords)
@@ -242,6 +259,7 @@ function newest_vertex_bisection(
   d2p = _dual_to_primal(edge, NE, N)
   node_coords, marker =
     _setup_markers_and_nodes!(node_coords, elem, d2p, dualedge, NE, η_arr, θ)
+  #@show marker
   # TODO: figure out why this constructor is necessary
   elem = Vector{Vector}(elem)
   cell_node_ids = _bisect(d2p, elem, marker, NT)
@@ -273,6 +291,7 @@ function newest_vertex_bisection(
   node_coords = get_node_coordinates(grid)
   # Need "un lazy" version for resize!
   node_coords = [v for v in node_coords]
+  #@show cell_node_ids = get_cell_node_ids(grid)
   cell_node_ids = get_cell_node_ids(grid)
   # Convert from Table to Vector{Vector}
   cell_node_ids = [v for v in cell_node_ids]
@@ -358,6 +377,7 @@ function newest_vertex_bisection(
   θ::AbstractFloat,
 )
   node_coords = buffer.node_coords_ref
+  #@show cell_node_ids = buffer.cell_node_ids_ref
   cell_node_ids = buffer.cell_node_ids_ref
   node_coords_ref, cell_node_ids_unsort =
   newest_vertex_bisection(node_coords, cell_node_ids, η_arr, θ)

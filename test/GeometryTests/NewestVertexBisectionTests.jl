@@ -54,12 +54,13 @@ compute_estimator(est::ConstantEst, ncells) = fill(est.val, ncells)
 
 domain = (0, 1, 0, 1)
 partition = (1, 1) # Initial partition
-Nsteps = 12
+Nsteps = 5
 est = ConstantEst(1.0)
 θ = 1.0
 uniform_write_to_vtk = false
 # Uniform refinement
 model = simplexify(CartesianDiscreteModel(domain, partition))
+writevtk(Triangulation(model), "init_mesh")
 @time model_refs = make_nvb_levels(model, Nsteps, θ, est)
 for (n, model_ref) in enumerate(model_refs)
   trian_ref = get_triangulation(model_ref)
@@ -81,7 +82,7 @@ for (n, model_ref) in enumerate(model_refs)
   #@show ncoords
   @test ncoords_true == ncoords
   # Combinatorial checks for cells
-  #@test ncells == 2^(n + 1)
+  @test ncells == 2^(n + 1)
 end
 # Nonuniform refinement. For now only visually checking conformity
 #domain = (0, 1, 0, 1)
@@ -90,7 +91,7 @@ end
 #seed = 5
 #est = RandomEst(seed)
 #θ = 0.5
-#nonuniform_write_to_vtk = false
+#nonuniform_write_to_vtk = true
 #model = simplexify(CartesianDiscreteModel(domain, partition))
 #@time model_refs = make_nvb_levels(model, Nsteps, θ, est)
 #if nonuniform_write_to_vtk
