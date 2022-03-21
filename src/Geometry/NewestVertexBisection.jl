@@ -21,53 +21,85 @@ function _print_forest(forest::AbstractArray{<:BinaryNode})
   @show num_leaves
 end
 
-function _deliniate_new_edges_(
+function _set_d_to_dface_to_old_edge!(
+  d_to_dface_to_oldid::AbstractArray{<:AbstractArray},
+  d_to_dface_to_olddim::AbstractArray{<:AbstractArray},
   forest::AbstractArray{<:BinaryNode},
   topo::GridTopology,
   topo_ref::GridTopology,
   vertices::AbstractArray{<:VectorValue},
 )
-  # vertex_to_edge = get_faces(top, 0, 1)
-  #vertex_to_cell = get_faces(top, 0, 2)
   edge_to_node_ref = get_faces(topo_ref, 1, 0)
-  #edge_to_cell = get_faces(top, 1, 2)
-  #cell_to_node = get_faces(topo, 2, 0)
+  push!(d_to_dface_to_oldid, Vector{}(undef, length(edge_to_node_ref)))
+  push!(d_to_dface_to_olddim, Vector{}(undef, length(edge_to_node_ref)))
   cell_to_node = get_faces(topo, 2, 0)
   cell_to_edge = get_faces(topo, 2, 1)
   edge_to_node = get_faces(topo, 1, 0)
   cell_to_edge_ref = get_faces(topo_ref, 2, 1)
   for root_cell in forest
-    #root_edges = cell_to_edge[root_cell.data]
-    @show root_nodes = cell_to_node[root_cell.data]
+    root_nodes = cell_to_node[root_cell.data]
     root_edges = cell_to_edge[root_cell.data]
-    println()
+    #println()
     for leaf_cell in Leaves(root_cell)
       # Set because of possible repeats for new cells that are neighbors
       leaf_edges = Set(cell_to_edge_ref[leaf_cell.data])
       for leaf_edge in leaf_edges
         leaf_edge_nodes = edge_to_node_ref[leaf_edge]
         found = false
-        # Leaf_edge_nodes ∩  root_nodes != ∅
+        # Leaf_edge_nodes ∩  root_nodes != ∅ ⟹   must bisect
         if !isempty(intersect(leaf_edge_nodes, root_nodes))
           # We need to check if this edge is parallel to any of the
-          # other edges in the old cell
+          # other edges in the old cell to see if it doesn't bisect
           for root_edge in root_edges
             root_edge_nodes = edge_to_node[root_edge]
             root_edge_vector = vertices[root_edge_nodes[2]] - vertices[root_edge_nodes[1]]
             leaf_edge_vector = vertices[leaf_edge_nodes[2]] - vertices[leaf_edge_nodes[1]]
             if _are_parallel(root_edge_vector, leaf_edge_vector)
-              #parent[leaf_edge] =  root_edge
-              println("parent of edge $(edge_to_node_ref[leaf_edge]) is edge $(edge_to_node[root_edge])")
+              #println(
+              #  "parent of edge $(edge_to_node_ref[leaf_edge]) is edge $(edge_to_node[root_edge])",
+              #)
+              d_to_dface_to_oldid[2][leaf_edge] = root_edge
+              d_to_dface_to_olddim[2][leaf_edge] = 1
               found = true
             end
           end
         end
+        # Default case that this edge bisects an element
         if !found
-              println("parent of edge $(edge_to_node_ref[leaf_edge]) is cell $(cell_to_node[root_cell.data])")
+          #println(
+          #  "parent of edge $(edge_to_node_ref[leaf_edge]) is cell $(cell_to_node[root_cell.data])",
+          #)
+          d_to_dface_to_oldid[2][leaf_edge] = root_cell.data
+          d_to_dface_to_olddim[2][leaf_edge] = 2
         end
       end
     end
   end
+end
+
+function _create_d_to_dface_to_old(
+  forest::AbstractArray{<:BinaryNode},
+  topo::GridTopology,
+  topo_ref::GridTopology,
+  vertices::AbstractArray{<:VectorValue},
+  markers::AbstractArray{<:Integer},
+)
+  d_to_dface_to_oldid = Vector{Vector}()
+  d_to_dface_to_olddim = Vector{Vector}()
+  #_print_forest(forest)
+  # TODO: nodes
+  push!(d_to_dface_to_oldid, [])
+  push!(d_to_dface_to_olddim, [])
+  _set_d_to_dface_to_old_edge!(
+    d_to_dface_to_oldid,
+    d_to_dface_to_olddim,
+    forest,
+    topo,
+    topo_ref,
+    vertices,
+  )
+  @test undef ∉ d_to_dface_to_oldid[2]
+  @test undef ∉ d_to_dface_to_olddim[2]
 end
 
 function _shift_to_first(v::AbstractVector{T}, i::T) where {T<:Integer}
@@ -111,7 +143,7 @@ function _setup_markers_and_nodes!(
   total_η = sum(η_arr)
   partial_η = 0
   sorted_η_idxs = sortperm(-η_arr)
-  marker = zeros(T, NE)
+  markers = zeros(T, NE)
   # Loop over global triangle indices
   for t in sorted_η_idxs
     if (partial_η >= θ * total_η)
@@ -124,15 +156,15 @@ function _setup_markers_and_nodes!(
       # Base point
       base = d2p[elem[t][2], elem[t][3]]
       # Already marked
-      if marker[base] > 0
+      if markers[base] > 0
         need_to_mark = false
       else
         # Get the estimator contribution for the current triangle
         partial_η = partial_η + η_arr[t]
         # Increase the number of nodes to add new midpoint
         N = size(node, 1) + 1
-        # The marker of the current elements is this node
-        marker[d2p[elem[t][2], elem[t][3]]] = N
+        # The markers of the current elements is this node
+        markers[d2p[elem[t][2], elem[t][3]]] = N
         # Coordinates of new node
         elem2 = elem[t][2]
         elem3 = elem[t][3]
@@ -146,7 +178,7 @@ function _setup_markers_and_nodes!(
       end
     end
   end
-  node, marker
+  node, markers
 end
 
 function _divide!(elem::AbstractVector, t::T, p::AbstractVector{T}) where {T<:Integer}
@@ -165,33 +197,35 @@ end
 function _bisect(
   d2p::SparseMatrixCSC{T,T},
   elem::AbstractVector,
-  marker::AbstractVector{T},
+  markers::AbstractVector{T},
   NT::T,
 ) where {T<:Integer}
   forest = Vector{BinaryNode}()
   #@show [node.data for node in Leaves(cell_to_cell_root)]
   for t in UnitRange{T}(1:NT)
     base = d2p[elem[t][2], elem[t][3]]
-    if (marker[base] > 0)
+    if (markers[base] > 0)
       newnode = BinaryNode(t)
-      p = vcat(elem[t][:], marker[base])
+      p = vcat(elem[t][:], markers[base])
       elem = _divide!(elem, t, p)
       cur_size::T = size(elem, 1)
       l = leftchild(t, newnode)
       r = rightchild(cur_size, newnode)
       left = d2p[p[1], p[2]]
       right = d2p[p[3], p[1]]
-      if (marker[right] > 0)
+      if (markers[right] > 0)
         leftchild(cur_size, r)
         rightchild(cur_size + 1, r)
-        elem = _divide!(elem, cur_size, [p[4], p[3], p[1], marker[right]])
+        elem = _divide!(elem, cur_size, [p[4], p[3], p[1], markers[right]])
       end
-      if (marker[left] > 0)
+      if (markers[left] > 0)
         leftchild(t, l)
         rightchild(cur_size + 1, l)
-        elem = _divide!(elem, t, [p[4], p[1], p[2], marker[left]])
+        elem = _divide!(elem, t, [p[4], p[1], p[2], markers[left]])
       end
       push!(forest, newnode)
+    else
+      push!(forest, BinaryNode(t))
     end
   end
   elem, forest
@@ -307,18 +341,16 @@ function newest_vertex_bisection(
   NT::T = size(elem, 1)
   @assert length(η_arr) == NT
   edge = _build_edges(elem)
-  @show edge
   NE::T = size(edge, 1)
   dualedge = _build_directed_dualedge(elem, N, NT)
   d2p = _dual_to_primal(edge, NE, N)
-  node_coords, marker =
+  node_coords, markers =
     _setup_markers_and_nodes!(node_coords, elem, d2p, dualedge, NE, η_arr, θ)
   #@show marker
   # TODO: figure out why this constructor is necessary
   elem = Vector{Vector}(elem)
-  cell_node_ids, forest = _bisect(d2p, elem, marker, NT)
-  _print_forest(forest)
-  node_coords, cell_node_ids, forest
+  cell_node_ids, forest = _bisect(d2p, elem, markers, NT)
+  node_coords, cell_node_ids, forest, markers
 end
 
 """
@@ -349,7 +381,7 @@ function newest_vertex_bisection(grid::Grid, η_arr::AbstractArray, θ::Abstract
   # Should always sort on the first iteration
   _sort_cell_node_ids_ccw!(cell_node_ids, node_coords)
   _sort_longest_edge!(cell_node_ids, node_coords)
-  node_coords_ref, cell_node_ids_unsort, forest =
+  node_coords_ref, cell_node_ids_unsort, forest, markers =
     newest_vertex_bisection(node_coords, cell_node_ids, η_arr, θ)
   reffes = get_reffes(grid)
   cell_types = get_cell_type(grid)
@@ -364,7 +396,7 @@ function newest_vertex_bisection(grid::Grid, η_arr::AbstractArray, θ::Abstract
   sort!.(cell_node_ids_unsort)
   cell_node_ids_ref = Table([c for c in cell_node_ids_unsort])
   grid_ref = UnstructuredGrid(node_coords_ref, cell_node_ids_ref, reffes, cell_types)
-  grid_ref, buffer, forest
+  grid_ref, buffer, forest, markers
 end
 
 """
@@ -397,9 +429,9 @@ function newest_vertex_bisection(
   # Not sure if necessary to keep old model unchanged. For my tests I use this
   grid = get_grid(model)
   topo = GridTopology(grid)
-  grid_ref, buffer, forest = newest_vertex_bisection(grid, η_arr, θ)
+  grid_ref, buffer, forest, markers = newest_vertex_bisection(grid, η_arr, θ)
   topo_ref = GridTopology(grid_ref)
-  _deliniate_new_edges_(forest, topo, topo_ref, get_node_coordinates(grid_ref))
+  _create_d_to_dface_to_old(forest, topo, topo_ref, get_node_coordinates(grid_ref), markers)
   #ref_labels = # Compute them from the original labels (This is perhaps the most tedious part)
   ref_labels = FaceLabeling(topo_ref)
   DiscreteModel(grid_ref, topo_ref, ref_labels), buffer
@@ -428,7 +460,7 @@ function newest_vertex_bisection(buffer::NamedTuple, η_arr::AbstractArray, θ::
   node_coords = buffer.node_coords_ref
   #@show cell_node_ids = buffer.cell_node_ids_ref
   cell_node_ids = buffer.cell_node_ids_ref
-  node_coords_ref, cell_node_ids_unsort, forest =
+  node_coords_ref, cell_node_ids_unsort, forest, markers =
     newest_vertex_bisection(node_coords, cell_node_ids, η_arr, θ)
   reffes = buffer.reffes
   cell_types = buffer.cell_types
@@ -441,7 +473,7 @@ function newest_vertex_bisection(buffer::NamedTuple, η_arr::AbstractArray, θ::
   sort!.(cell_node_ids_unsort)
   cell_node_ids_ref = Table([c for c in cell_node_ids_unsort])
   grid_ref = UnstructuredGrid(node_coords_ref, cell_node_ids_ref, reffes, cell_types)
-  grid_ref, buffer, forest
+  grid_ref, buffer, forest, markers
 end
 
 
@@ -479,9 +511,9 @@ function newest_vertex_bisection(
   grid = get_grid(model)
   topo = GridTopology(grid)
   # Not sure if necessary to keep old model unchanged. For my tests I use this
-  grid_ref, buffer, forest = newest_vertex_bisection(buffer, η_arr, θ)
+  grid_ref, buffer, forest, markers = newest_vertex_bisection(buffer, η_arr, θ)
   topo_ref = GridTopology(grid_ref)
-  _deliniate_new_edges_(forest, topo, topo_ref, get_node_coordinates(grid_ref))
+  _create_d_to_dface_to_old(forest, topo, topo_ref, get_node_coordinates(grid_ref), markers)
   #ref_labels = # Compute them from the original labels (This is perhaps the most tedious part)
   ref_labels = FaceLabeling(topo_ref)
   model_ref = DiscreteModel(grid_ref, topo_ref, ref_labels)
