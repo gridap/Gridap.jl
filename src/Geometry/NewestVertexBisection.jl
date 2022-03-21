@@ -9,6 +9,9 @@ using SparseArrays
 using Random
 include("binarytree_core.jl")
 
+
+_are_parallel(v, w) = v[1] * w[2] == v[2] * w[1]
+
 function _print_forest(forest::AbstractArray{<:BinaryNode})
   num_leaves = 0
   for root_cell in forest
@@ -30,19 +33,37 @@ function _deliniate_new_edges_(
   #edge_to_cell = get_faces(top, 1, 2)
   #cell_to_node = get_faces(topo, 2, 0)
   cell_to_node = get_faces(topo, 2, 0)
+  cell_to_edge = get_faces(topo, 2, 1)
+  edge_to_node = get_faces(topo, 1, 0)
   cell_to_edge_ref = get_faces(topo_ref, 2, 1)
   for root_cell in forest
     #root_edges = cell_to_edge[root_cell.data]
-    root_nodes = cell_to_node[root_cell.data]
+    @show root_nodes = cell_to_node[root_cell.data]
+    root_edges = cell_to_edge[root_cell.data]
     println()
-    @show root_nodes
     for leaf_cell in Leaves(root_cell)
-      leaf_edges = cell_to_edge_ref[leaf_cell.data]
+      # Set because of possible repeats for new cells that are neighbors
+      leaf_edges = Set(cell_to_edge_ref[leaf_cell.data])
       for leaf_edge in leaf_edges
         leaf_edge_nodes = edge_to_node_ref[leaf_edge]
-        # Leaf_edge ∩  root_nodes != ∅
-        if isempty(intersect(leaf_edge_nodes, root_nodes))
-          @show leaf_vertices = vertices[leaf_edge_nodes]
+        found = false
+        # Leaf_edge_nodes ∩  root_nodes != ∅
+        if !isempty(intersect(leaf_edge_nodes, root_nodes))
+          # We need to check if this edge is parallel to any of the
+          # other edges in the old cell
+          for root_edge in root_edges
+            root_edge_nodes = edge_to_node[root_edge]
+            root_edge_vector = vertices[root_edge_nodes[2]] - vertices[root_edge_nodes[1]]
+            leaf_edge_vector = vertices[leaf_edge_nodes[2]] - vertices[leaf_edge_nodes[1]]
+            if _are_parallel(root_edge_vector, leaf_edge_vector)
+              #parent[leaf_edge] =  root_edge
+              println("parent of edge $(edge_to_node_ref[leaf_edge]) is edge $(edge_to_node[root_edge])")
+              found = true
+            end
+          end
+        end
+        if !found
+              println("parent of edge $(edge_to_node_ref[leaf_edge]) is cell $(cell_to_node[root_cell.data])")
         end
       end
     end
