@@ -30,8 +30,9 @@ function _set_d_to_dface_to_old_edge!(
   vertices::AbstractArray{<:VectorValue},
 )
   edge_to_node_ref = get_faces(topo_ref, 1, 0)
-  push!(d_to_dface_to_oldid, Vector{}(undef, length(edge_to_node_ref)))
-  push!(d_to_dface_to_olddim, Vector{}(undef, length(edge_to_node_ref)))
+  num_edges = length(edge_to_node_ref)
+  push!(d_to_dface_to_oldid, Vector{}(undef, num_edges))
+  push!(d_to_dface_to_olddim, Vector{}(undef, num_edges))
   cell_to_node = get_faces(topo, 2, 0)
   cell_to_edge = get_faces(topo, 2, 1)
   edge_to_node = get_faces(topo, 1, 0)
@@ -77,6 +78,29 @@ function _set_d_to_dface_to_old_edge!(
   end
 end
 
+function _set_d_to_dface_to_old_node!(
+  d_to_dface_to_oldid::AbstractArray{<:AbstractArray},
+  d_to_dface_to_olddim::AbstractArray{<:AbstractArray},
+  topo_ref::GridTopology,
+  markers::AbstractArray{<:Integer},
+)
+
+  node_to_edge_ref = get_faces(topo_ref, 0, 1)
+  num_nodes = length(node_to_edge_ref)
+  push!(d_to_dface_to_oldid, Vector{}(undef, num_nodes))
+  push!(d_to_dface_to_olddim, Vector{}(undef, num_nodes))
+  for node_id = 1:num_nodes
+    if (edge_index = findfirst(i -> i == node_id, markers)) != nothing
+      @show edge_index
+      d_to_dface_to_oldid[1][node_id] = edge_index 
+      d_to_dface_to_olddim[1][node_id] = 2
+    else
+      d_to_dface_to_oldid[1][node_id] = node_id
+      d_to_dface_to_olddim[1][node_id] = 1
+    end
+  end
+end
+
 function _create_d_to_dface_to_old(
   forest::AbstractArray{<:BinaryNode},
   topo::GridTopology,
@@ -87,9 +111,13 @@ function _create_d_to_dface_to_old(
   d_to_dface_to_oldid = Vector{Vector}()
   d_to_dface_to_olddim = Vector{Vector}()
   #_print_forest(forest)
-  # TODO: nodes
-  push!(d_to_dface_to_oldid, [])
-  push!(d_to_dface_to_olddim, [])
+  # The order is important here! node, edge, cell
+   _set_d_to_dface_to_old_node!(
+    d_to_dface_to_oldid,
+    d_to_dface_to_olddim,
+    topo_ref,
+    markers
+  )
   _set_d_to_dface_to_old_edge!(
     d_to_dface_to_oldid,
     d_to_dface_to_olddim,
@@ -98,8 +126,15 @@ function _create_d_to_dface_to_old(
     topo_ref,
     vertices,
   )
-  @test undef ∉ d_to_dface_to_oldid[2]
-  @test undef ∉ d_to_dface_to_olddim[2]
+  d = 2
+  # TODO: cells: go up to d + 1
+  for i in 1:d
+    @show i
+    @test undef ∉ d_to_dface_to_oldid[i]
+    @test undef ∉ d_to_dface_to_olddim[i]
+    @show d_to_dface_to_olddim[i]
+    @show d_to_dface_to_oldid[i]
+  end
 end
 
 function _shift_to_first(v::AbstractVector{T}, i::T) where {T<:Integer}
