@@ -9,13 +9,53 @@ using SparseArrays
 using Random
 include("binarytree_core.jl")
 
+function _print_forest(forest::AbstractArray{<:BinaryNode})
+  num_leaves = 0
+  for root_cell in forest
+    print_tree(root_cell)
+    num_leaves += length(collect(Leaves(root_cell)))
+  end
+  @show num_leaves
+end
+
+function _deliniate_new_edges_(
+  forest::AbstractArray{<:BinaryNode},
+  topo::GridTopology,
+  topo_ref::GridTopology,
+  vertices::AbstractArray{<:VectorValue},
+)
+  # vertex_to_edge = get_faces(top, 0, 1)
+  #vertex_to_cell = get_faces(top, 0, 2)
+  edge_to_node_ref = get_faces(topo_ref, 1, 0)
+  #edge_to_cell = get_faces(top, 1, 2)
+  #cell_to_node = get_faces(topo, 2, 0)
+  cell_to_node = get_faces(topo, 2, 0)
+  cell_to_edge_ref = get_faces(topo_ref, 2, 1)
+  for root_cell in forest
+    #root_edges = cell_to_edge[root_cell.data]
+    root_nodes = cell_to_node[root_cell.data]
+    println()
+    @show root_nodes
+    for leaf_cell in Leaves(root_cell)
+      leaf_edges = cell_to_edge_ref[leaf_cell.data]
+      for leaf_edge in leaf_edges
+        leaf_edge_nodes = edge_to_node_ref[leaf_edge]
+        # Leaf_edge ∩  root_nodes != ∅
+        if isempty(intersect(leaf_edge_nodes, root_nodes))
+          @show leaf_vertices = vertices[leaf_edge_nodes]
+        end
+      end
+    end
+  end
+end
+
 function _shift_to_first(v::AbstractVector{T}, i::T) where {T<:Integer}
   circshift(v, -(i - 1))
 end
 
 function _sort_longest_edge!(
   elem::AbstractVector{<:AbstractVector{T}},
-  node::AbstractVector{<:VectorValue}
+  node::AbstractVector{<:VectorValue},
 ) where {T<:Integer}
   NT = length(elem)
   edgelength = zeros(NT, 3)
@@ -107,40 +147,33 @@ function _bisect(
   marker::AbstractVector{T},
   NT::T,
 ) where {T<:Integer}
-	forest = Vector{BinaryNode}();
+  forest = Vector{BinaryNode}()
   #@show [node.data for node in Leaves(cell_to_cell_root)]
   for t in UnitRange{T}(1:NT)
     base = d2p[elem[t][2], elem[t][3]]
     if (marker[base] > 0)
-			newnode = BinaryNode(t)
+      newnode = BinaryNode(t)
       p = vcat(elem[t][:], marker[base])
       elem = _divide!(elem, t, p)
-			cur_size::T = size(elem, 1)
-			l = leftchild(t, newnode)
-			r = rightchild(cur_size, newnode)
+      cur_size::T = size(elem, 1)
+      l = leftchild(t, newnode)
+      r = rightchild(cur_size, newnode)
       left = d2p[p[1], p[2]]
       right = d2p[p[3], p[1]]
       if (marker[right] > 0)
-        cur_size = size(elem, 1)
-        leftchild(t, r)
-        rightchild(cur_size+1, r)
+        leftchild(cur_size, r)
+        rightchild(cur_size + 1, r)
         elem = _divide!(elem, cur_size, [p[4], p[3], p[1], marker[right]])
       end
       if (marker[left] > 0)
-        #leftchild(t, l)
-        rightchild(cur_size+1, l)
+        leftchild(t, l)
+        rightchild(cur_size + 1, l)
         elem = _divide!(elem, t, [p[4], p[1], p[2], marker[left]])
       end
       push!(forest, newnode)
     end
   end
-  #num_leaves = 0
-	#for root in forest
-	#	#print_tree(root)
-  #  num_leaves += length(collect(Leaves(root)))
-	#end
-  #@show num_leaves
-  elem
+  elem, forest
 end
 
 function _build_edges(elem::AbstractVector{<:AbstractVector{T}}) where {T<:Integer}
@@ -201,11 +234,10 @@ function _sort_ccw(cell_coords::AbstractVector{<:VectorValue})
   sortperm(offset_coords, by = v -> atan(v[2], v[1]))
 end
 
-# TODO: Figure out correct type AbstractVector{AbstractVector{T}}
 function _sort_cell_node_ids_ccw!(
-    cell_node_ids::AbstractVector{<:AbstractVector{T}},
-    node_coords::AbstractVector{<:VectorValue},
-) where {T <: Integer}
+  cell_node_ids::AbstractVector{<:AbstractVector{T}},
+  node_coords::AbstractVector{<:VectorValue},
+) where {T<:Integer}
   #cell_node_ids_ccw = vcat(cell_node_ids'...)
   #@show cell_node_ids_ccw
   for (i, cell) in enumerate(cell_node_ids)
@@ -245,7 +277,7 @@ function newest_vertex_bisection(
   node_coords::AbstractVector{<:VectorValue},
   cell_node_ids::AbstractVector{<:AbstractVector{T}},
   η_arr::AbstractArray,
-  θ::AbstractFloat
+  θ::AbstractFloat,
 ) where {T<:Integer}
   # Number of nodes
   N::T = size(node_coords, 1)
@@ -254,6 +286,7 @@ function newest_vertex_bisection(
   NT::T = size(elem, 1)
   @assert length(η_arr) == NT
   edge = _build_edges(elem)
+  @show edge
   NE::T = size(edge, 1)
   dualedge = _build_directed_dualedge(elem, N, NT)
   d2p = _dual_to_primal(edge, NE, N)
@@ -262,8 +295,9 @@ function newest_vertex_bisection(
   #@show marker
   # TODO: figure out why this constructor is necessary
   elem = Vector{Vector}(elem)
-  cell_node_ids = _bisect(d2p, elem, marker, NT)
-  node_coords, cell_node_ids
+  cell_node_ids, forest = _bisect(d2p, elem, marker, NT)
+  _print_forest(forest)
+  node_coords, cell_node_ids, forest
 end
 
 """
@@ -283,11 +317,7 @@ necessary. It maps
    1=uniform refinement.
 
 """
-function newest_vertex_bisection(
-  grid::Grid,
-  η_arr::AbstractArray,
-  θ::AbstractFloat,
-)
+function newest_vertex_bisection(grid::Grid, η_arr::AbstractArray, θ::AbstractFloat)
   node_coords = get_node_coordinates(grid)
   # Need "un lazy" version for resize!
   node_coords = [v for v in node_coords]
@@ -298,8 +328,8 @@ function newest_vertex_bisection(
   # Should always sort on the first iteration
   _sort_cell_node_ids_ccw!(cell_node_ids, node_coords)
   _sort_longest_edge!(cell_node_ids, node_coords)
-  node_coords_ref, cell_node_ids_unsort =
-  newest_vertex_bisection(node_coords, cell_node_ids, η_arr, θ)
+  node_coords_ref, cell_node_ids_unsort, forest =
+    newest_vertex_bisection(node_coords, cell_node_ids, η_arr, θ)
   reffes = get_reffes(grid)
   cell_types = get_cell_type(grid)
   # I need to do this because I can't append! to LazyVector
@@ -313,7 +343,7 @@ function newest_vertex_bisection(
   sort!.(cell_node_ids_unsort)
   cell_node_ids_ref = Table([c for c in cell_node_ids_unsort])
   grid_ref = UnstructuredGrid(node_coords_ref, cell_node_ids_ref, reffes, cell_types)
-  grid_ref, buffer
+  grid_ref, buffer, forest
 end
 
 """
@@ -340,13 +370,15 @@ This is the highest level version of the function, it maps
 function newest_vertex_bisection(
   model::DiscreteModel,
   η_arr::AbstractArray;
-  θ = 1.0 # corresponds to uniform refinement
+  θ = 1.0, # corresponds to uniform refinement
 )
   @assert length(η_arr) == num_cells(model)
   # Not sure if necessary to keep old model unchanged. For my tests I use this
   grid = get_grid(model)
-  grid_ref, buffer = newest_vertex_bisection(grid, η_arr, θ)
+  topo = GridTopology(grid)
+  grid_ref, buffer, forest = newest_vertex_bisection(grid, η_arr, θ)
   topo_ref = GridTopology(grid_ref)
+  _deliniate_new_edges_(forest, topo, topo_ref, get_node_coordinates(grid_ref))
   #ref_labels = # Compute them from the original labels (This is perhaps the most tedious part)
   ref_labels = FaceLabeling(topo_ref)
   DiscreteModel(grid_ref, topo_ref, ref_labels), buffer
@@ -371,16 +403,12 @@ necessary. It maps
    1=uniform refinement.
 
 """
-function newest_vertex_bisection(
-  buffer::NamedTuple,
-  η_arr::AbstractArray,
-  θ::AbstractFloat,
-)
+function newest_vertex_bisection(buffer::NamedTuple, η_arr::AbstractArray, θ::AbstractFloat)
   node_coords = buffer.node_coords_ref
   #@show cell_node_ids = buffer.cell_node_ids_ref
   cell_node_ids = buffer.cell_node_ids_ref
-  node_coords_ref, cell_node_ids_unsort =
-  newest_vertex_bisection(node_coords, cell_node_ids, η_arr, θ)
+  node_coords_ref, cell_node_ids_unsort, forest =
+    newest_vertex_bisection(node_coords, cell_node_ids, η_arr, θ)
   reffes = buffer.reffes
   cell_types = buffer.cell_types
   # TODO : Gracefully handle cell_types?
@@ -392,7 +420,7 @@ function newest_vertex_bisection(
   sort!.(cell_node_ids_unsort)
   cell_node_ids_ref = Table([c for c in cell_node_ids_unsort])
   grid_ref = UnstructuredGrid(node_coords_ref, cell_node_ids_ref, reffes, cell_types)
-  grid_ref, buffer
+  grid_ref, buffer, forest
 end
 
 
@@ -409,7 +437,7 @@ This is the highest level version of the function, it maps
 # Arguments
 
  -`model::DiscreteModel`: The current DiscreteModel to be refined.
- 
+
  -`buffer::NamedTuple`: The buffer providing all the itermediate information
  between refinements
 
@@ -427,9 +455,12 @@ function newest_vertex_bisection(
   θ = 1.0, # corresponds to uniform refinement
 )
   @assert length(η_arr) == num_cells(model)
+  grid = get_grid(model)
+  topo = GridTopology(grid)
   # Not sure if necessary to keep old model unchanged. For my tests I use this
-  grid_ref, buffer = newest_vertex_bisection(buffer, η_arr, θ)
+  grid_ref, buffer, forest = newest_vertex_bisection(buffer, η_arr, θ)
   topo_ref = GridTopology(grid_ref)
+  _deliniate_new_edges_(forest, topo, topo_ref, get_node_coordinates(grid_ref))
   #ref_labels = # Compute them from the original labels (This is perhaps the most tedious part)
   ref_labels = FaceLabeling(topo_ref)
   model_ref = DiscreteModel(grid_ref, topo_ref, ref_labels)
