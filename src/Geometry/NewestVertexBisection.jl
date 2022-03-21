@@ -21,6 +21,29 @@ function _print_forest(forest::AbstractArray{<:BinaryNode})
   @show num_leaves
 end
 
+function _set_d_to_dface_to_old_node!(
+  d_to_dface_to_oldid::AbstractArray{<:AbstractArray},
+  d_to_dface_to_olddim::AbstractArray{<:AbstractArray},
+  topo_ref::GridTopology,
+  markers::AbstractArray{<:Integer},
+)
+
+  node_to_edge_ref = get_faces(topo_ref, 0, 1)
+  num_nodes = length(node_to_edge_ref)
+  push!(d_to_dface_to_oldid, Vector{}(undef, num_nodes))
+  push!(d_to_dface_to_olddim, Vector{}(undef, num_nodes))
+  for node_id = 1:num_nodes
+    if (edge_index = findfirst(i -> i == node_id, markers)) != nothing
+      @show edge_index
+      d_to_dface_to_oldid[1][node_id] = edge_index 
+      d_to_dface_to_olddim[1][node_id] = 2
+    else
+      d_to_dface_to_oldid[1][node_id] = node_id
+      d_to_dface_to_olddim[1][node_id] = 1
+    end
+  end
+end
+
 function _set_d_to_dface_to_old_edge!(
   d_to_dface_to_oldid::AbstractArray{<:AbstractArray},
   d_to_dface_to_olddim::AbstractArray{<:AbstractArray},
@@ -78,28 +101,26 @@ function _set_d_to_dface_to_old_edge!(
   end
 end
 
-function _set_d_to_dface_to_old_node!(
+function _set_d_to_dface_to_old_cell!(
   d_to_dface_to_oldid::AbstractArray{<:AbstractArray},
   d_to_dface_to_olddim::AbstractArray{<:AbstractArray},
+  forest::AbstractArray{<:BinaryNode},
   topo_ref::GridTopology,
-  markers::AbstractArray{<:Integer},
 )
-
-  node_to_edge_ref = get_faces(topo_ref, 0, 1)
-  num_nodes = length(node_to_edge_ref)
-  push!(d_to_dface_to_oldid, Vector{}(undef, num_nodes))
-  push!(d_to_dface_to_olddim, Vector{}(undef, num_nodes))
-  for node_id = 1:num_nodes
-    if (edge_index = findfirst(i -> i == node_id, markers)) != nothing
-      @show edge_index
-      d_to_dface_to_oldid[1][node_id] = edge_index 
-      d_to_dface_to_olddim[1][node_id] = 2
-    else
-      d_to_dface_to_oldid[1][node_id] = node_id
-      d_to_dface_to_olddim[1][node_id] = 1
+  cell_to_node_ref = get_faces(topo_ref, 2, 0)
+  num_cells = length(cell_to_node_ref)
+  push!(d_to_dface_to_oldid, Vector{}(undef, num_cells))
+  push!(d_to_dface_to_olddim, Vector{}(undef, num_cells))
+  for root_cell in forest
+    root_id = root_cell.data
+    for leaf_cell in Leaves(root_cell)
+      leaf_id = leaf_cell.data
+      d_to_dface_to_oldid[3][leaf_id] = root_id
+      d_to_dface_to_olddim[3][leaf_id] = 3
     end
   end
 end
+
 
 function _create_d_to_dface_to_old(
   forest::AbstractArray{<:BinaryNode},
@@ -126,9 +147,15 @@ function _create_d_to_dface_to_old(
     topo_ref,
     vertices,
   )
+  _set_d_to_dface_to_old_cell!(
+    d_to_dface_to_oldid,
+    d_to_dface_to_olddim,
+    forest,
+    topo_ref,
+  )
   d = 2
   # TODO: cells: go up to d + 1
-  for i in 1:d
+  for i in 1:d + 1
     @show i
     @test undef ∉ d_to_dface_to_oldid[i]
     @test undef ∉ d_to_dface_to_olddim[i]
