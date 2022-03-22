@@ -97,11 +97,19 @@ function _hessian(f,uh,fuh::DomainContribution)
 end
 
 function _change_argument(op,f,trian,uh::SingleFieldFEFunction)
-  U = get_fe_space(uh)
+  #U = get_fe_space(uh)
+
   function g(cell_u)
-    cf = CellField(U,cell_u)
-    cell_grad = f(cf)
-    get_contribution(cell_grad,trian)
+    #cf = CellField(U,cell_u)
+    #cell_grad = f(cf)
+    cell_grad = f(cell_u)
+#    get_contribution(cell_grad,trian)
+
+    #@show cell_grad.dict[first(get_domains(cell_grad)) ]
+    cell_grad.dict[first(get_domains(cell_grad)) ]
+
+    #get_contribution(cell_grad,trian)
+
   end
   g
 end

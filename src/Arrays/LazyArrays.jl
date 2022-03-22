@@ -241,6 +241,8 @@ Base.size(a::LazyArray{G,T,1} where {G,T}) = (length(a.maps),)
 
 function Base.sum(a::LazyArray)
   cache = array_cache(a)
+  #@code_warntype _sum_lazy_array(cache,a)
+  #@show typeof(cache)
   _sum_lazy_array(cache,a)
 end
 

@@ -59,6 +59,7 @@ export AffineMap
 export affine_map
 
 export gradient
+export _gradient
 export ∇
 export ∇∇
 export gradient_type

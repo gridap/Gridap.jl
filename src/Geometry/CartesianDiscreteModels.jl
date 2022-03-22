@@ -14,6 +14,7 @@ struct CartesianDiscreteModel{D,T,F} <: DiscreteModel{D,D}
   Inner constructor
   """
   function CartesianDiscreteModel(desc::CartesianDescriptor{D,T,F}) where {D,T,F}
+    @show F
     grid = CartesianGrid(desc)
     _grid = UnstructuredGrid(grid)
     if any(desc.isperiodic)
