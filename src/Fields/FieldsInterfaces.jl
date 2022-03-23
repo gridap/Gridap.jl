@@ -739,7 +739,7 @@ function _zero_size(a::VoidBasis{T,1} where T)
 end
 
 function _zero_size(a::VoidBasis{T,2} where T)
-  @check size(a,1) == 1
+  @check size(a,1) in (0,1)
   (1,0)
 end
 

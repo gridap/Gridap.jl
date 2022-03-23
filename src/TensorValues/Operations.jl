@@ -234,18 +234,18 @@ end
 end
 
 # a_ilm = b_ij*c_jlm
-@generated function dot(a::A,b::B) where {A<:MultiValue{Tuple{D,D}},B<:ThirdOrderTensorValue{D,D,L}} where {D,L}
+@generated function dot(a::A,b::B) where {A<:MultiValue{Tuple{D1,D2}},B<:ThirdOrderTensorValue{D2,D3,D4}} where {D1,D2,D3,D4}
   ss = String[]
-  for m in 1:L
-    for l in 1:D
-      for i in 1:D
-        s = join([ "a[$i,$j]*b[$j,$l,$m]+" for j in 1:D])
+  for m in 1:D4
+    for l in 1:D3
+      for i in 1:D1
+        s = join([ "a[$i,$j]*b[$j,$l,$m]+" for j in 1:D2])
         push!(ss,s[1:(end-1)]*", ")
       end
     end
   end
   str = join(ss)
-  Meta.parse("ThirdOrderTensorValue{$D,$D,$L}($str)")
+  Meta.parse("ThirdOrderTensorValue{$D1,$D3,$D4}($str)")
 end
 
 const ⋅¹ = dot
