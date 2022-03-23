@@ -12,6 +12,8 @@ include("binarytree_core.jl")
 
 _are_parallel(v, w) = v[1] * w[2] == v[2] * w[1]
 
+_get_midpoint(ngon::AbstractArray{<:VectorValue}) = sum(ngon) / length(ngon)
+
 function _print_forest(forest::AbstractArray{<:BinaryNode})
   num_leaves = 0
   println("_____________________")
@@ -127,12 +129,6 @@ function _set_d_to_dface_to_old_cell!(
       d_to_dface_to_olddim[3][leaf_id] = 2
     end
   end
-  all_leaves = sort!(collect(Set(leaf_ids)))
-  #for i = 1:maximum(all_leaves)
-  #  if i ∉ all_leaves
-  #    @show i
-  #  end
-  #end
 end
 
 function _create_d_to_dface_to_old(
@@ -172,9 +168,11 @@ end
 function _propogate_labeling!(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
   labels = get_face_labeling(model)
   labels_ref = FaceLabeling(length.(d_to_dface_to_oldid))
-  for entity in labels.tag_to_entities
-    push!(labels_ref.tag_to_entities, entity)
+  @test isempty(labels_ref.tag_to_entities)
+  for entities in labels.tag_to_entities
+    push!(labels_ref.tag_to_entities, copy(entities))
   end
+  @test isempty(labels_ref.tag_to_name)
   for name in labels.tag_to_name
     push!(labels_ref.tag_to_name, name)
   end
@@ -377,8 +375,6 @@ function _is_against_top(face::Matrix{<:Integer}, top::GridTopology, d::Integer)
   issetequal_bitvec = issetequal(face_vec, face_top)
   all(issetequal_bitvec)
 end
-
-_get_midpoint(ngon::AbstractArray{<:VectorValue}) = sum(ngon) / length(ngon)
 
 function _sort_ccw(cell_coords::AbstractVector{<:VectorValue})
   midpoint = _get_midpoint(cell_coords)
