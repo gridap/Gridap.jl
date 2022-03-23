@@ -183,7 +183,7 @@ function return_cache(
 
   xi = testitem(x)
   T = gradient_type(V,xi)
-  TisbitsType = Val(isbits(T))
+  TisbitsType = Val(isbitstype(T))
   _return_cache(fg,x,T,TisbitsType)
 end
 
@@ -195,7 +195,7 @@ function _evaluate!(
 
   f = fg.fa
   r, v, c, g = cache
-  z = zero(Mutable(VectorValue{D,eltype(T)}))
+  z = zero(Mutable(eltype(x)))       ##VectorValue{D,eltype(T)}))
   np = length(x)
   ndof = length(f.terms) * num_components(T)
   n = 1 + _maximum(f.orders)

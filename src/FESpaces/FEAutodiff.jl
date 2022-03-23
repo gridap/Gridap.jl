@@ -97,18 +97,35 @@ function _hessian(f,uh,fuh::DomainContribution)
 end
 
 function _change_argument(op,f,trian,uh::SingleFieldFEFunction)
+
   #U = get_fe_space(uh)
 
   function g(cell_u)
+
     #cf = CellField(U,cell_u)
     #cell_grad = f(cf)
     cell_grad = f(cell_u)
-#    get_contribution(cell_grad,trian)
-
-    #@show cell_grad.dict[first(get_domains(cell_grad)) ]
-    cell_grad.dict[first(get_domains(cell_grad)) ]
-
     #get_contribution(cell_grad,trian)
+    #@show cell_grad.dict[first(get_domains(cell_grad)) ]
+    
+    #cell_grad.dict[first(get_domains(cell_grad)) ]
+
+    # because the trian has been perturned, it thinks its different ? 
+    #trian_dual = find_equivalent_trian(trian)
+    
+
+    
+    for trian_cg in get_domains(cell_grad)
+      println("tryn..")
+      if get_cell_node_ids(trian_cg) == get_cell_node_ids(trian)
+        println("ispos")
+        return get_contribution(cell_grad,trian_cg)
+      end
+      println("no compat trian....")
+    end
+     
+
+#    get_contribution(cell_grad,trian)
 
   end
   g
