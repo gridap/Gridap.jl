@@ -37,9 +37,9 @@ function _set_d_to_dface_to_old_node!(
     # then it's index is the index of the edge that it is the midpoint
     # of.
     if (edge_index = findfirst(i -> i == node_id, markers)) != nothing
-      d_to_dface_to_oldid[1][node_id] = edge_index 
+      d_to_dface_to_oldid[1][node_id] = edge_index
       d_to_dface_to_olddim[1][node_id] = 2
-    # If not, it existed already so we take the id of the old node.
+      # If not, it existed already so we take the id of the old node.
     else
       d_to_dface_to_oldid[1][node_id] = node_id
       d_to_dface_to_olddim[1][node_id] = 1
@@ -71,7 +71,7 @@ function _set_d_to_dface_to_old_edge!(
       leaf_edges = Set(cell_to_edge_ref[leaf_cell.data])
       for leaf_edge in leaf_edges
         leaf_edge_nodes = edge_to_node_ref[leaf_edge]
-        found = false
+        is_on_top_of_former_edge = false
         # Leaf_edge_nodes ∩  root_nodes != ∅ ⟹   must bisect
         if !isempty(intersect(leaf_edge_nodes, root_nodes))
           # We need to check if this edge is parallel to any of the
@@ -86,12 +86,12 @@ function _set_d_to_dface_to_old_edge!(
               #)
               d_to_dface_to_oldid[2][leaf_edge] = root_edge
               d_to_dface_to_olddim[2][leaf_edge] = 1
-              found = true
+              is_on_top_of_former_edge = true
             end
           end
         end
         # Default case that this edge bisects an element
-        if !found
+        if !is_on_top_of_former_edge
           #println(
           #  "parent of edge $(edge_to_node_ref[leaf_edge]) is cell $(cell_to_node[root_cell.data])",
           #)
@@ -136,12 +136,7 @@ function _create_d_to_dface_to_old(
   d_to_dface_to_olddim = Vector{Vector}()
   #_print_forest(forest)
   # The order is important here! node, edge, cell
-   _set_d_to_dface_to_old_node!(
-    d_to_dface_to_oldid,
-    d_to_dface_to_olddim,
-    topo_ref,
-    markers
-  )
+  _set_d_to_dface_to_old_node!(d_to_dface_to_oldid, d_to_dface_to_olddim, topo_ref, markers)
   _set_d_to_dface_to_old_edge!(
     d_to_dface_to_oldid,
     d_to_dface_to_olddim,
@@ -150,21 +145,39 @@ function _create_d_to_dface_to_old(
     topo_ref,
     vertices,
   )
-  _set_d_to_dface_to_old_cell!(
-    d_to_dface_to_oldid,
-    d_to_dface_to_olddim,
-    forest,
-    topo_ref,
-  )
+  _set_d_to_dface_to_old_cell!(d_to_dface_to_oldid, d_to_dface_to_olddim, forest, topo_ref)
   # HARDCODED FOR 2D
   d = 2
-  for i in 1:d + 1
-    @show i
+  for i = 1:d+1
     @test undef ∉ d_to_dface_to_oldid[i]
     @test undef ∉ d_to_dface_to_olddim[i]
+    @test length(d_to_dface_to_olddim[i]) == length(d_to_dface_to_olddim[i])
+    @show i
     @show d_to_dface_to_olddim[i]
     @show d_to_dface_to_oldid[i]
   end
+  d_to_dface_to_olddim, d_to_dface_to_oldid
+end
+
+function _propogate_labeling!(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
+  labels = get_face_labeling(model)
+  labels_ref = FaceLabeling(length.(d_to_dface_to_oldid))
+  #@test length(labels.tag_to_entities) == length(labels.tag_to_name)
+  for entity in labels.tag_to_entities
+    push!(labels_ref.tag_to_entities, entity)
+  end
+  for name in labels.tag_to_name
+    push!(labels_ref.tag_to_name, name)
+  end
+  @show labels_ref.tag_to_name
+  @show labels_ref.tag_to_entities
+  #for d = 0:(num_dims(model)-1)
+  #  facet_ids = get_face_nodes(model, d)
+  #  for (j, facet_id) in enumerate(facet_ids)
+  #    cur_entity = labels.d_to_dface_to_entity[d+1][j]
+  #    labels.d_to_dface_to_entity[d+1][j] = entity_id
+  #  end
+  #end
 end
 
 function _shift_to_first(v::AbstractVector{T}, i::T) where {T<:Integer}
@@ -496,7 +509,15 @@ function newest_vertex_bisection(
   topo = GridTopology(grid)
   grid_ref, buffer, forest, markers = newest_vertex_bisection(grid, η_arr, θ)
   topo_ref = GridTopology(grid_ref)
-  _create_d_to_dface_to_old(forest, topo, topo_ref, get_node_coordinates(grid_ref), markers)
+  d_to_dface_to_olddim, d_to_dface_to_oldid = _create_d_to_dface_to_old(
+    forest,
+    topo,
+    topo_ref,
+    get_node_coordinates(grid_ref),
+    markers,
+  )
+  labels_ref = _propogate_labeling!(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
+  @show labels_ref
   #ref_labels = # Compute them from the original labels (This is perhaps the most tedious part)
   ref_labels = FaceLabeling(topo_ref)
   DiscreteModel(grid_ref, topo_ref, ref_labels), buffer
