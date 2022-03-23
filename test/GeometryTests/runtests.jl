@@ -36,6 +36,6 @@ using Test
 
 @testset "CompressedCellArrays" begin include("CompressedCellArraysTests.jl") end
 
-@time @testset "Refinement" begin include("GeometryTests/NewestVertexBisectionTests.jl") end
+@time @testset "Refinement" begin include("NewestVertexBisectionTests.jl") end
 
 end # module

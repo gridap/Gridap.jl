@@ -165,7 +165,7 @@ function _create_d_to_dface_to_old(
   d_to_dface_to_olddim, d_to_dface_to_oldid
 end
 
-function _propogate_labeling!(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
+function _propogate_labeling(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
   labels = get_face_labeling(model)
   labels_ref = FaceLabeling(length.(d_to_dface_to_oldid))
   @test isempty(labels_ref.tag_to_entities)
@@ -531,7 +531,7 @@ function newest_vertex_bisection(
     get_node_coordinates(grid_ref),
     markers,
   )
-  labels_ref = _propogate_labeling!(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
+  labels_ref = _propogate_labeling(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
   #ref_labels = # Compute them from the original labels (This is perhaps the most tedious part)
   #ref_labels = FaceLabeling(topo_ref)
   DiscreteModel(grid_ref, topo_ref, labels_ref), buffer
@@ -620,7 +620,7 @@ function newest_vertex_bisection(
     get_node_coordinates(grid_ref),
     markers,
   )
-  labels_ref = _propogate_labeling!(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
+  labels_ref = _propogate_labeling(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
   #ref_labels = # Compute them from the original labels (This is perhaps the most tedious part)
   #ref_labels = FaceLabeling(topo_ref)
   model_ref = DiscreteModel(grid_ref, topo_ref, labels_ref)
