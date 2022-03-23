@@ -2,15 +2,15 @@
 A single point or an array of points on the cells of a Triangulation
 CellField objects can be evaluated efficiently at CellPoint instances.
 """
-struct CellPoint{DS} <: CellDatum
-  cell_ref_point::AbstractArray{<:Union{Point,AbstractArray{<:Point}}}
-  cell_phys_point::AbstractArray{<:Union{Point,AbstractArray{<:Point}}}
-  trian::Triangulation
+struct CellPoint{DS,A,B,C} <: CellDatum
+  cell_ref_point::A
+  cell_phys_point::B
+  trian::C
   domain_style::DS
 end
 
 function CellPoint(
-  cell_ref_point::AbstractArray{<:Union{Point,AbstractArray{<:Point}}},
+  cell_ref_point::AbstractArray,
   trian::Triangulation,
   domain_style::ReferenceDomain)
 
@@ -20,7 +20,7 @@ function CellPoint(
 end
 
 function CellPoint(
-  cell_phys_point::AbstractArray{<:Union{Point,AbstractArray{<:Point}}},
+  cell_phys_point::AbstractArray,
   trian::Triangulation,
   domain_style::PhysicalDomain)
   cell_map = get_cell_map(trian)
@@ -38,7 +38,7 @@ function get_data(f::CellPoint)
 end
 
 get_triangulation(f::CellPoint) = f.trian
-DomainStyle(::Type{CellPoint{DS}}) where DS = DS()
+DomainStyle(::Type{CellPoint{DS,A,B,C}}) where {DS,A,B,C} = DS()
 
 function change_domain(a::CellPoint,::ReferenceDomain,::PhysicalDomain)
   CellPoint(a.cell_ref_point,a.cell_phys_point,a.trian,PhysicalDomain())
@@ -298,7 +298,7 @@ function _point_to_cell!(cache, x::Point)
   end
 
   # Output error message if cell not found
-  @check false "Point $x is not inside any cell"
+  @check false "Point $x is not inside any active cell"
 end
 
 function evaluate!(cache,f::CellField,x::Point)
@@ -826,7 +826,7 @@ function return_cache(a::Interpolable,x::Point)
 end
 
 function _point_to_cell_cache(searchmethod::KDTreeSearch,trian::Triangulation)
-  model = get_background_model(trian)
+  model = get_active_model(trian)
   topo = get_grid_topology(model)
   vertex_coordinates = Geometry.get_vertex_coordinates(topo)
   kdtree = KDTree(map(nc -> SVector(Tuple(nc)), vertex_coordinates))

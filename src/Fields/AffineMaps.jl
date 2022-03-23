@@ -52,13 +52,29 @@ function push_∇∇(∇∇a::Field,ϕ::AffineMap)
   Operation(push_∇∇)(∇∇a, Jt_inv)
 end
 
-function push_∇∇(∇∇a::Number,Jt_inv::MultiValue{Tuple{D,D}} where D)
-  #Jt_inv⋅Jt_inv⋅∇∇a
-  Jt_inv⋅∇∇a⋅transpose(Jt_inv)
-end
+#function push_∇∇(∇∇a::Number,Jt_inv::MultiValue{Tuple{D,D}} where D)
+#  #Jt_inv⋅Jt_inv⋅∇∇a
+#  Jt_inv⋅∇∇a⋅transpose(Jt_inv)
+#end
 
 function push_∇∇(∇∇a::Number,Jt_inv::MultiValue{Tuple{D1,D2}} where {D1,D2})
-  Jt_inv⋅∇∇a⋅transpose(Jt_inv)
+  _permdims_for_∇∇(Jt_inv⋅_permdims_for_∇∇(∇∇a)⋅transpose(Jt_inv))
+end
+
+function _permdims_for_∇∇(a::MultiValue{Tuple{D1,D2}}) where {D1,D2}
+  a
+end
+@generated function _permdims_for_∇∇(a::MultiValue{Tuple{D1,D2,D3}}) where {D1,D2,D3}
+  ss = String[]
+  for k in 1:D2
+    for j in 1:D3
+      for i in 1:D1
+        push!(ss,"a[$i,$k,$j],")
+      end
+    end
+  end
+  str =  join(ss)
+  Meta.parse("ThirdOrderTensorValue{$D1,$D3,$D2}($str)")
 end
 
 function lazy_map(
@@ -92,4 +108,3 @@ function lazy_map(::typeof(∇),a::LazyArray{<:Fill{typeof(affine_map)}})
   gradients = a.args[1]
   lazy_map(constant_field,gradients)
 end
-

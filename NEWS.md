@@ -4,10 +4,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.17.11] - 2022-03-16
+
+### Fixed
+- Miscellaneous bugs associated with empty meshes. Since PR [#765](https://github.com/gridap/Gridap.jl/pull/765) and [#766](https://github.com/gridap/Gridap.jl/pull/766).
+
+## [0.17.10] - 2022-03-10
+
+### Added
+- Implemented addition/subtraction between a `TensorValue` and a `SymTensorValue`. Since PR [#755](https://github.com/gridap/Gridap.jl/pull/755).
+- Nédélec elements on simplices (lowest order interpolation for the moment). Since PR [#758](https://github.com/gridap/Gridap.jl/pull/758).
+
+### Fixed
+- Restrict to the active model the evaluation of a FE function at arbitrary points. Since PR [#752](https://github.com/gridap/Gridap.jl/pull/752).
+- Renamed `GridapODEs` to `ODEs`. Since PR [#756](https://github.com/gridap/Gridap.jl/pull/756)
+
+## [0.17.9] - 2022-02-28
+
+### Added
+- Extra support for dual number propagation. Since PR [#653](https://github.com/gridap/Gridap.jl/pull/653)
+- Added ODE tools to Gridap. [GridapODEs](https://github.com/gridap/GridapODEs.jl) has been merged into Gridap. Sice PR[#748](https://github.com/gridap/Gridap.jl/pull/748)
+
+## [0.17.8] - 2022-02-14
 
 ### Added
 - Support for periodic conditions in `CartesianDiscreteModel`s built from `cmin`, `cmax`. Since PR [#738](https://github.com/gridap/Gridap.jl/pull/738).
+- Function `savepvd`. Since PR [#736](https://github.com/gridap/Gridap.jl/pull/736).
+- Support for passing `nothing` as the first argument of the `CartesianDiscreteModel` constructor to mimic the API of `GridapDistributed`. Since PR [#735](https://github.com/gridap/Gridap.jl/pull/735).
+
+### Fixed
+- Bug in `SymTensorValue`. Since PR [#740](https://github.com/gridap/Gridap.jl/pull/740).
+- Bug in interpolation at arbitrary points. Since PR [#729](https://github.com/gridap/Gridap.jl/pull/729).
+- Bug in `reference_grid(TET)`. Since PR [#734](https://github.com/gridap/Gridap.jl/pull/734).
+- Bug in computation of Hessian with AD for multi-field. Since PR [#731](https://github.com/gridap/Gridap.jl/pull/731).
 
 ## [0.17.7]- 2021-12-03
 

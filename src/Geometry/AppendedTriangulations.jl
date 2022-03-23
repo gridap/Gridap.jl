@@ -120,7 +120,7 @@ function get_grid(t::AppendedTriangulation)
   lazy_append(a,b)
 end
 
-function get_glue(t::AppendedTriangulation,::Val{D}) where D 
+function get_glue(t::AppendedTriangulation,::Val{D}) where D
   a = get_glue(t.a,Val(D))
   b = get_glue(t.b,Val(D))
   if a==nothing || b==nothing

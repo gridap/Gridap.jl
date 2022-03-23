@@ -61,7 +61,7 @@ SymTensorValue{D,T1,L}(data::Number...) where {D,T1,L} = SymTensorValue{D,T1}(da
   str = ""
   for i in 1:D
     for j in i:D
-      str *= "data[i,j], "
+      str *= "data[$i,$j], "
     end
   end
   Meta.parse("($str)")
@@ -154,4 +154,3 @@ length(::SymTensorValue{D}) where {D} = length(SymTensorValue{D})
 
 num_components(::Type{<:SymTensorValue{D}}) where {D} = length(SymTensorValue{D})
 num_components(::SymTensorValue{D}) where {D} = num_components(SymTensorValue{D})
-

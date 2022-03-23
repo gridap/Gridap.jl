@@ -19,6 +19,7 @@ The module is structured in the following sub-modules:
 - [`Gridap.Visualization`](@ref)
 - [`Gridap.FESpaces`](@ref)
 - [`Gridap.MultiField`](@ref)
+- [`Gridap.ODEs`](@ref)
 
 The exported names are:
 $(EXPORTS)
@@ -52,6 +53,8 @@ include("Visualization/Visualization.jl")
 include("FESpaces/FESpaces.jl")
 
 include("MultiField/MultiField.jl")
+
+include("ODEs/ODEs.jl")
 
 include("Exports.jl")
 
