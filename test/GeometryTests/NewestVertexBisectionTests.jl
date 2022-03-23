@@ -54,7 +54,7 @@ compute_estimator(est::ConstantEst, ncells) = fill(est.val, ncells)
 
 domain = (0, 1, 0, 1)
 partition = (1, 1) # Initial partition
-Nsteps = 5
+Nsteps = 10
 est = ConstantEst(1.0)
 θ = 1.0
 uniform_write_to_vtk = false
@@ -90,7 +90,7 @@ writevtk(Triangulation(model), "init_mesh")
 # Nonuniform refinement. For now only visually checking conformity
 domain = (0, 1, 0, 1)
 partition = (1, 1) # Initial partition
-Nsteps = 3
+Nsteps = 10
 seed = 5
 est = RandomEst(seed)
 θ = 0.5

@@ -14,10 +14,12 @@ _are_parallel(v, w) = v[1] * w[2] == v[2] * w[1]
 
 function _print_forest(forest::AbstractArray{<:BinaryNode})
   num_leaves = 0
+  println("_____________________")
   for root_cell in forest
     print_tree(root_cell)
     num_leaves += length(collect(Leaves(root_cell)))
   end
+  println("_____________________")
   @show num_leaves
 end
 
@@ -115,14 +117,22 @@ function _set_d_to_dface_to_old_cell!(
   push!(d_to_dface_to_olddim, Vector{}(undef, num_cells))
   # Can basically just use the forest. All new cells should point
   # to the root of their tree
+  leaf_ids = Int32[]
   for root_cell in forest
     root_id = root_cell.data
     for leaf_cell in Leaves(root_cell)
       leaf_id = leaf_cell.data
+      push!(leaf_ids, leaf_id)
       d_to_dface_to_oldid[3][leaf_id] = root_id
       d_to_dface_to_olddim[3][leaf_id] = 2
     end
   end
+  all_leaves = sort!(collect(Set(leaf_ids)))
+  #for i = 1:maximum(all_leaves)
+  #  if i ∉ all_leaves
+  #    @show i
+  #  end
+  #end
 end
 
 function _create_d_to_dface_to_old(
@@ -148,20 +158,20 @@ function _create_d_to_dface_to_old(
   _set_d_to_dface_to_old_cell!(d_to_dface_to_oldid, d_to_dface_to_olddim, forest, topo_ref)
   # HARDCODED FOR 2D
   for d = 0:2
+    #@show d
+    #@show d_to_dface_to_olddim[d+1]
+    #@show length(d_to_dface_to_olddim[d+1])
+    #@show d_to_dface_to_oldid[d+1]
     @test undef ∉ d_to_dface_to_oldid[d+1]
     @test undef ∉ d_to_dface_to_olddim[d+1]
     @test length(d_to_dface_to_olddim[d+1]) == length(d_to_dface_to_olddim[d+1])
-    #@show d
-    #@show d_to_dface_to_olddim[d+1]
-    #@show d_to_dface_to_oldid[d+1]
-  end
+      end
   d_to_dface_to_olddim, d_to_dface_to_oldid
 end
 
 function _propogate_labeling!(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
   labels = get_face_labeling(model)
   labels_ref = FaceLabeling(length.(d_to_dface_to_oldid))
-  @show labels.d_to_dface_to_entity
   for entity in labels.tag_to_entities
     push!(labels_ref.tag_to_entities, entity)
   end
@@ -179,7 +189,7 @@ function _propogate_labeling!(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
       labels_ref.d_to_dface_to_entity[d+1][i] = old_entity_id
     end
   end
-  labels_ref.d_to_dface_to_entity
+  labels_ref
 end
 
 function _shift_to_first(v::AbstractVector{T}, i::T) where {T<:Integer}
@@ -295,7 +305,14 @@ function _bisect(
       right = d2p[p[3], p[1]]
       if (markers[right] > 0)
         leftchild(cur_size, r)
-        rightchild(cur_size + 1, r)
+        # Need to handle edge case where both markers are positive.
+        # In this case, we have to offset by 2 because the other branch
+        # already took the next index.
+        if markers[left] > 0
+          rightchild(cur_size + 2, r)
+        else
+          rightchild(cur_size + 1, r)
+        end
         elem = _divide!(elem, cur_size, [p[4], p[3], p[1], markers[right]])
       end
       if (markers[left] > 0)
@@ -519,10 +536,9 @@ function newest_vertex_bisection(
     markers,
   )
   labels_ref = _propogate_labeling!(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
-  @show labels_ref
   #ref_labels = # Compute them from the original labels (This is perhaps the most tedious part)
-  ref_labels = FaceLabeling(topo_ref)
-  DiscreteModel(grid_ref, topo_ref, ref_labels), buffer
+  #ref_labels = FaceLabeling(topo_ref)
+  DiscreteModel(grid_ref, topo_ref, labels_ref), buffer
 end
 
 """
@@ -601,9 +617,16 @@ function newest_vertex_bisection(
   # Not sure if necessary to keep old model unchanged. For my tests I use this
   grid_ref, buffer, forest, markers = newest_vertex_bisection(buffer, η_arr, θ)
   topo_ref = GridTopology(grid_ref)
-  _create_d_to_dface_to_old(forest, topo, topo_ref, get_node_coordinates(grid_ref), markers)
+  d_to_dface_to_olddim, d_to_dface_to_oldid = _create_d_to_dface_to_old(
+    forest,
+    topo,
+    topo_ref,
+    get_node_coordinates(grid_ref),
+    markers,
+  )
+  labels_ref = _propogate_labeling!(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
   #ref_labels = # Compute them from the original labels (This is perhaps the most tedious part)
-  ref_labels = FaceLabeling(topo_ref)
-  model_ref = DiscreteModel(grid_ref, topo_ref, ref_labels)
+  #ref_labels = FaceLabeling(topo_ref)
+  model_ref = DiscreteModel(grid_ref, topo_ref, labels_ref)
   model_ref, buffer
 end
