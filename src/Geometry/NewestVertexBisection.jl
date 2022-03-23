@@ -38,11 +38,11 @@ function _set_d_to_dface_to_old_node!(
     # of.
     if (edge_index = findfirst(i -> i == node_id, markers)) != nothing
       d_to_dface_to_oldid[1][node_id] = edge_index
-      d_to_dface_to_olddim[1][node_id] = 2
+      d_to_dface_to_olddim[1][node_id] = 1
       # If not, it existed already so we take the id of the old node.
     else
       d_to_dface_to_oldid[1][node_id] = node_id
-      d_to_dface_to_olddim[1][node_id] = 1
+      d_to_dface_to_olddim[1][node_id] = 0
     end
   end
 end
@@ -120,7 +120,7 @@ function _set_d_to_dface_to_old_cell!(
     for leaf_cell in Leaves(root_cell)
       leaf_id = leaf_cell.data
       d_to_dface_to_oldid[3][leaf_id] = root_id
-      d_to_dface_to_olddim[3][leaf_id] = 3
+      d_to_dface_to_olddim[3][leaf_id] = 2
     end
   end
 end
@@ -147,14 +147,13 @@ function _create_d_to_dface_to_old(
   )
   _set_d_to_dface_to_old_cell!(d_to_dface_to_oldid, d_to_dface_to_olddim, forest, topo_ref)
   # HARDCODED FOR 2D
-  d = 2
-  for i = 1:d+1
-    @test undef ∉ d_to_dface_to_oldid[i]
-    @test undef ∉ d_to_dface_to_olddim[i]
-    @test length(d_to_dface_to_olddim[i]) == length(d_to_dface_to_olddim[i])
-    @show i
-    @show d_to_dface_to_olddim[i]
-    @show d_to_dface_to_oldid[i]
+  for d = 0:2
+    @test undef ∉ d_to_dface_to_oldid[d+1]
+    @test undef ∉ d_to_dface_to_olddim[d+1]
+    @test length(d_to_dface_to_olddim[d+1]) == length(d_to_dface_to_olddim[d+1])
+    #@show d
+    #@show d_to_dface_to_olddim[d+1]
+    #@show d_to_dface_to_oldid[d+1]
   end
   d_to_dface_to_olddim, d_to_dface_to_oldid
 end
@@ -162,22 +161,25 @@ end
 function _propogate_labeling!(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
   labels = get_face_labeling(model)
   labels_ref = FaceLabeling(length.(d_to_dface_to_oldid))
-  #@test length(labels.tag_to_entities) == length(labels.tag_to_name)
+  @show labels.d_to_dface_to_entity
   for entity in labels.tag_to_entities
     push!(labels_ref.tag_to_entities, entity)
   end
   for name in labels.tag_to_name
     push!(labels_ref.tag_to_name, name)
   end
-  @show labels_ref.tag_to_name
-  @show labels_ref.tag_to_entities
-  #for d = 0:(num_dims(model)-1)
-  #  facet_ids = get_face_nodes(model, d)
-  #  for (j, facet_id) in enumerate(facet_ids)
-  #    cur_entity = labels.d_to_dface_to_entity[d+1][j]
-  #    labels.d_to_dface_to_entity[d+1][j] = entity_id
-  #  end
-  #end
+  for d = 0:num_dims(model)
+    oldid_d = d_to_dface_to_oldid[d+1]
+    olddim_d = d_to_dface_to_olddim[d+1]
+    @test length(oldid_d)  == length(olddim_d)
+    for i in 1:length(oldid_d)
+      old_id = oldid_d[i]
+      old_dim = olddim_d[i]
+      old_entity_id = labels.d_to_dface_to_entity[old_dim+1][old_id]
+      labels_ref.d_to_dface_to_entity[d+1][i] = old_entity_id
+    end
+  end
+  labels_ref.d_to_dface_to_entity
 end
 
 function _shift_to_first(v::AbstractVector{T}, i::T) where {T<:Integer}
