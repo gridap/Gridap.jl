@@ -183,7 +183,7 @@ function return_cache(
 
   xi = testitem(x)
   T = gradient_type(V,xi)
-  TisbitsType = Val(isbits(T))
+  TisbitsType = Val(isbitstype(T))
   _return_cache(fg,x,T,TisbitsType)
 end
 
