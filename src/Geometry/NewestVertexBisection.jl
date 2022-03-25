@@ -161,7 +161,6 @@ function _create_d_to_dface_to_old(
   for d = 0:2
     #@show d
     #@show d_to_dface_to_olddim[d+1]
-    #@show length(d_to_dface_to_olddim[d+1])
     #@show d_to_dface_to_oldid[d+1]
     @test undef ∉ d_to_dface_to_oldid[d+1]
     @test undef ∉ d_to_dface_to_olddim[d+1]
@@ -502,7 +501,8 @@ function newest_vertex_bisection(grid::Grid, η_arr::AbstractArray, θ::Abstract
   new_cell_types = fill(1, length(cell_node_ids_unsort) - length(cell_node_ids))
   append!(cell_types, new_cell_types)
   cell_node_ids_ref = Table([c for c in cell_node_ids_unsort])
-  buffer = (; cell_node_ids_ref, node_coords_ref, cell_types, reffes)
+  grid_ref_unsort = UnstructuredGrid(node_coords_ref, cell_node_ids_ref, reffes, cell_types)
+  buffer = (; grid_ref_unsort)
   # TODO: IMPORTANT: This appears to be necessary when instatianting the RT space
   sort!.(cell_node_ids_unsort)
   cell_node_ids_ref = Table([c for c in cell_node_ids_unsort])
@@ -556,46 +556,6 @@ function newest_vertex_bisection(
 end
 
 """
-Middle level interface to the newest vertex bisection algorithm. This step
-takes places after unpacking the DiscreteModel and performs sorting if
-necessary. It maps
-
-`buffer -> Grid, buffer`
-
-# Arguments
-
- -`buffer::NamedTuple`: The buffer providing all the itermediate information
- between refinements. This is used in lieu of the the Grid from the previous
- step for now.
-
- -`η_arr::AbstractArray`: The values of the estimator on each cell of the domain
-
- -`θ::AbstractArray`: Dörfler marking parameter: 0 = no refinement,
-   1=uniform refinement.
-
-"""
-function newest_vertex_bisection(buffer::NamedTuple, η_arr::AbstractArray, θ::AbstractFloat)
-  node_coords = buffer.node_coords_ref
-  #@show cell_node_ids = buffer.cell_node_ids_ref
-  cell_node_ids = buffer.cell_node_ids_ref
-  node_coords_ref, cell_node_ids_unsort, forest, node_to_bis_edge =
-    newest_vertex_bisection(node_coords, cell_node_ids, η_arr, θ)
-  reffes = buffer.reffes
-  cell_types = buffer.cell_types
-  # TODO : Gracefully handle cell_types?
-  new_cell_types = fill(1, length(cell_node_ids_unsort) - length(cell_node_ids))
-  append!(cell_types, new_cell_types)
-  cell_node_ids_ref = Table([c for c in cell_node_ids_unsort])
-  buffer = (; cell_node_ids_ref, node_coords_ref, cell_types, reffes)
-  # TODO: IMPORTANT: This appears to be necessary when instatianting the RT space
-  sort!.(cell_node_ids_unsort)
-  cell_node_ids_ref = Table([c for c in cell_node_ids_unsort])
-  grid_ref = UnstructuredGrid(node_coords_ref, cell_node_ids_ref, reffes, cell_types)
-  grid_ref, buffer, forest, node_to_bis_edge
-end
-
-
-"""
 The newest vertex bisection algorithm provides a method of local refinement
 without creating hanging nodes. For now, only 2D simplicial meshes are
 supported.
@@ -627,9 +587,10 @@ function newest_vertex_bisection(
 )
   @assert length(η_arr) == num_cells(model)
   grid = get_grid(model)
+  grid_ref_unsort = buffer.grid_ref_unsort
   topo = GridTopology(grid)
   # Not sure if necessary to keep old model unchanged. For my tests I use this
-  grid_ref, buffer, forest, node_to_bis_edge = newest_vertex_bisection(buffer, η_arr, θ)
+  grid_ref, buffer, forest, node_to_bis_edge = newest_vertex_bisection(grid_ref_unsort, η_arr, θ)
   topo_ref = GridTopology(grid_ref)
   d_to_dface_to_olddim, d_to_dface_to_oldid = _create_d_to_dface_to_old(
     forest,
