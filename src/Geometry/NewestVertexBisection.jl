@@ -191,7 +191,6 @@ function _propogate_labeling(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
       labels_ref.d_to_dface_to_entity[d+1][i] = old_entity_id
     end
   end
-  @show labels_ref.d_to_dface_to_entity
   labels_ref
 end
 
