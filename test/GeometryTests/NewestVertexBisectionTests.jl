@@ -58,39 +58,39 @@ Nsteps = 10
 est = ConstantEst(1.0)
 θ = 1.0
 uniform_write_to_vtk = false
-# Uniform refinement
-model = simplexify(CartesianDiscreteModel(domain, partition))
-writevtk(Triangulation(model), "init_mesh")
-@time model_refs = make_nvb_levels(model, Nsteps, θ, est)
-for (n, model_ref) in enumerate(model_refs)
-  trian_ref = get_triangulation(model_ref)
-  grid = get_grid(model)
-  cell_node_ids = get_cell_node_ids(model_ref)
-  if uniform_write_to_vtk
-    writevtk(trian_ref, "uniform$(string(n, pad=2))")
-  end
-  cell_map = get_cell_map(trian_ref)
-  node_coords = get_node_coordinates(trian_ref)
-  ncoords = length(node_coords)
-  # Combinatorial checks for nodes
-  if isodd(n)
-    ncoords_true = Integer.(2 * (4^((n - 1) / 2) + 2^((n - 1) / 2)) + 1)
-  else
-    ncoords_true = Integer.(2^(n / 2) + 1)^2
-  end
-  ncells = length(cell_map)
-  #@show ncoords
-  @test ncoords_true == ncoords
-  # Combinatorial checks for cells
-  @test ncells == 2^(n + 1)
-end
+## Uniform refinement
+#model = simplexify(CartesianDiscreteModel(domain, partition))
+#writevtk(Triangulation(model), "init_mesh")
+#@time model_refs = make_nvb_levels(model, Nsteps, θ, est)
+#for (n, model_ref) in enumerate(model_refs)
+#  trian_ref = get_triangulation(model_ref)
+#  grid = get_grid(model)
+#  cell_node_ids = get_cell_node_ids(model_ref)
+#  if uniform_write_to_vtk
+#    writevtk(trian_ref, "uniform$(string(n, pad=2))")
+#  end
+#  cell_map = get_cell_map(trian_ref)
+#  node_coords = get_node_coordinates(trian_ref)
+#  ncoords = length(node_coords)
+#  # Combinatorial checks for nodes
+#  if isodd(n)
+#    ncoords_true = Integer.(2 * (4^((n - 1) / 2) + 2^((n - 1) / 2)) + 1)
+#  else
+#    ncoords_true = Integer.(2^(n / 2) + 1)^2
+#  end
+#  ncells = length(cell_map)
+#  #@show ncoords
+#  @test ncoords_true == ncoords
+#  # Combinatorial checks for cells
+#  @test ncells == 2^(n + 1)
+#end
 
 
 
 # Nonuniform refinement. For now only visually checking conformity
 domain = (0, 1, 0, 1)
 partition = (1, 1) # Initial partition
-Nsteps = 10
+Nsteps = 3
 seed = 5
 est = RandomEst(seed)
 θ = 0.5

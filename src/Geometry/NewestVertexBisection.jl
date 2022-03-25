@@ -28,22 +28,20 @@ end
 function _set_d_to_dface_to_old_node!(
   d_to_dface_to_oldid::AbstractArray{<:AbstractArray},
   d_to_dface_to_olddim::AbstractArray{<:AbstractArray},
-  topo_ref::GridTopology,
-  markers::AbstractArray{<:Integer},
+  topo::GridTopology,
+  node_to_bis_edge::Dict,
+  num_nodes::Integer,
 )
 
-  node_to_edge_ref = get_faces(topo_ref, 0, 1)
-  num_nodes = length(node_to_edge_ref)
+  edge_to_node = get_faces(topo, 1, 0)
   push!(d_to_dface_to_oldid, Vector{}(undef, num_nodes))
   push!(d_to_dface_to_olddim, Vector{}(undef, num_nodes))
   for node_id = 1:num_nodes
-    # Check if this node is in the marked list of edges. If so,
-    # then it's index is the index of the edge that it is the midpoint
-    # of.
-    if (edge_index = findfirst(i -> i == node_id, markers)) != nothing
-      d_to_dface_to_oldid[1][node_id] = edge_index
+    if node_id in keys(node_to_bis_edge)
+      bis_edge = node_to_bis_edge[node_id]
+      bis_edge_index = findfirst(edge -> edge == bis_edge, edge_to_node)
+      d_to_dface_to_oldid[1][node_id] = bis_edge_index
       d_to_dface_to_olddim[1][node_id] = 1
-      # If not, it existed already so we take the id of the old node.
     else
       d_to_dface_to_oldid[1][node_id] = node_id
       d_to_dface_to_olddim[1][node_id] = 0
@@ -136,13 +134,20 @@ function _create_d_to_dface_to_old(
   topo::GridTopology,
   topo_ref::GridTopology,
   vertices::AbstractArray{<:VectorValue},
-  markers::AbstractArray{<:Integer},
+  node_to_bis_edge::Dict,
 )
   d_to_dface_to_oldid = Vector{Vector}()
   d_to_dface_to_olddim = Vector{Vector}()
+  num_nodes = length(vertices)
   #_print_forest(forest)
   # The order is important here! node, edge, cell
-  _set_d_to_dface_to_old_node!(d_to_dface_to_oldid, d_to_dface_to_olddim, topo_ref, markers)
+  _set_d_to_dface_to_old_node!(
+    d_to_dface_to_oldid,
+    d_to_dface_to_olddim,
+    topo,
+    node_to_bis_edge,
+    num_nodes
+  )
   _set_d_to_dface_to_old_edge!(
     d_to_dface_to_oldid,
     d_to_dface_to_olddim,
@@ -161,7 +166,7 @@ function _create_d_to_dface_to_old(
     @test undef ∉ d_to_dface_to_oldid[d+1]
     @test undef ∉ d_to_dface_to_olddim[d+1]
     @test length(d_to_dface_to_olddim[d+1]) == length(d_to_dface_to_olddim[d+1])
-      end
+  end
   d_to_dface_to_olddim, d_to_dface_to_oldid
 end
 
@@ -179,14 +184,15 @@ function _propogate_labeling(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
   for d = 0:num_dims(model)
     oldid_d = d_to_dface_to_oldid[d+1]
     olddim_d = d_to_dface_to_olddim[d+1]
-    @test length(oldid_d)  == length(olddim_d)
-    for i in 1:length(oldid_d)
+    @test length(oldid_d) == length(olddim_d)
+    for i = 1:length(oldid_d)
       old_id = oldid_d[i]
       old_dim = olddim_d[i]
       old_entity_id = labels.d_to_dface_to_entity[old_dim+1][old_id]
       labels_ref.d_to_dface_to_entity[d+1][i] = old_entity_id
     end
   end
+  @show labels_ref.d_to_dface_to_entity
   labels_ref
 end
 
@@ -334,7 +340,7 @@ function _build_edges(elem::AbstractVector{<:AbstractVector{T}}) where {T<:Integ
     edge[off+2, :] = [elem[t][1] elem[t][3]]
     edge[off+3, :] = [elem[t][2] elem[t][3]]
   end
-  unique(sort!(edge, dims = 2), dims = 1)
+  edge = unique(sort!(edge, dims = 2), dims = 1)
 end
 
 function _build_directed_dualedge(
@@ -399,6 +405,17 @@ function _sort_cell_node_ids_ccw!(
   end
 end
 
+function _markers_to_node_to_bis_edge(markers, edge)
+  node_to_bis_edge = Dict()
+  for (i, marker) in enumerate(markers)
+    # Edge was bisected
+    if marker != 0
+      node_to_bis_edge[marker] = edge[i, :]
+    end
+  end
+  node_to_bis_edge
+end
+
 """
 Lowest level interface to the newest vertex bisection algorithm. This step
 takes places after unpacking the Grid. It also uses the `should_sort` to
@@ -443,7 +460,8 @@ function newest_vertex_bisection(
   # TODO: figure out why this constructor is necessary
   elem = Vector{Vector}(elem)
   cell_node_ids, forest = _bisect(d2p, elem, markers, NT)
-  node_coords, cell_node_ids, forest, markers
+  node_to_bis_edge = _markers_to_node_to_bis_edge(markers, edge)
+  node_coords, cell_node_ids, forest, node_to_bis_edge
 end
 
 """
@@ -474,7 +492,7 @@ function newest_vertex_bisection(grid::Grid, η_arr::AbstractArray, θ::Abstract
   # Should always sort on the first iteration
   _sort_cell_node_ids_ccw!(cell_node_ids, node_coords)
   _sort_longest_edge!(cell_node_ids, node_coords)
-  node_coords_ref, cell_node_ids_unsort, forest, markers =
+  node_coords_ref, cell_node_ids_unsort, forest, node_to_bis_edge =
     newest_vertex_bisection(node_coords, cell_node_ids, η_arr, θ)
   reffes = get_reffes(grid)
   cell_types = get_cell_type(grid)
@@ -489,7 +507,7 @@ function newest_vertex_bisection(grid::Grid, η_arr::AbstractArray, θ::Abstract
   sort!.(cell_node_ids_unsort)
   cell_node_ids_ref = Table([c for c in cell_node_ids_unsort])
   grid_ref = UnstructuredGrid(node_coords_ref, cell_node_ids_ref, reffes, cell_types)
-  grid_ref, buffer, forest, markers
+  grid_ref, buffer, forest, node_to_bis_edge
 end
 
 """
@@ -522,14 +540,14 @@ function newest_vertex_bisection(
   # Not sure if necessary to keep old model unchanged. For my tests I use this
   grid = get_grid(model)
   topo = GridTopology(grid)
-  grid_ref, buffer, forest, markers = newest_vertex_bisection(grid, η_arr, θ)
+  grid_ref, buffer, forest, node_to_bis_edge = newest_vertex_bisection(grid, η_arr, θ)
   topo_ref = GridTopology(grid_ref)
   d_to_dface_to_olddim, d_to_dface_to_oldid = _create_d_to_dface_to_old(
     forest,
     topo,
     topo_ref,
     get_node_coordinates(grid_ref),
-    markers,
+    node_to_bis_edge,
   )
   labels_ref = _propogate_labeling(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
   #ref_labels = # Compute them from the original labels (This is perhaps the most tedious part)
@@ -560,7 +578,7 @@ function newest_vertex_bisection(buffer::NamedTuple, η_arr::AbstractArray, θ::
   node_coords = buffer.node_coords_ref
   #@show cell_node_ids = buffer.cell_node_ids_ref
   cell_node_ids = buffer.cell_node_ids_ref
-  node_coords_ref, cell_node_ids_unsort, forest, markers =
+  node_coords_ref, cell_node_ids_unsort, forest, node_to_bis_edge =
     newest_vertex_bisection(node_coords, cell_node_ids, η_arr, θ)
   reffes = buffer.reffes
   cell_types = buffer.cell_types
@@ -573,7 +591,7 @@ function newest_vertex_bisection(buffer::NamedTuple, η_arr::AbstractArray, θ::
   sort!.(cell_node_ids_unsort)
   cell_node_ids_ref = Table([c for c in cell_node_ids_unsort])
   grid_ref = UnstructuredGrid(node_coords_ref, cell_node_ids_ref, reffes, cell_types)
-  grid_ref, buffer, forest, markers
+  grid_ref, buffer, forest, node_to_bis_edge
 end
 
 
@@ -611,14 +629,14 @@ function newest_vertex_bisection(
   grid = get_grid(model)
   topo = GridTopology(grid)
   # Not sure if necessary to keep old model unchanged. For my tests I use this
-  grid_ref, buffer, forest, markers = newest_vertex_bisection(buffer, η_arr, θ)
+  grid_ref, buffer, forest, node_to_bis_edge = newest_vertex_bisection(buffer, η_arr, θ)
   topo_ref = GridTopology(grid_ref)
   d_to_dface_to_olddim, d_to_dface_to_oldid = _create_d_to_dface_to_old(
     forest,
     topo,
     topo_ref,
     get_node_coordinates(grid_ref),
-    markers,
+    node_to_bis_edge,
   )
   labels_ref = _propogate_labeling(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
   #ref_labels = # Compute them from the original labels (This is perhaps the most tedious part)
