@@ -126,4 +126,13 @@ partition = (3,3,3)
 oldmodel = CartesianDiscreteModel(domain,partition)
 oldstrian = SkeletonTriangulation(oldmodel)
 
+domain = (0,1,0,1)
+partition = (2,2)
+model = CartesianDiscreteModel(domain,partition)
+Ω1 = Interior(model,[2])
+Ω2 = Interior(model,[4])
+Γ12 = Interface(Ω1,Ω2)
+@test num_cells(Γ12) == 1
+
+
 end # module

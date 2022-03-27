@@ -20,6 +20,8 @@ using Test
 
 @time @testset "PeriodicDarcy" begin include("PeriodicDarcyTests.jl") end
 
+@time @testset "HCurl" begin include("HCurlTests.jl") end
+
 @time @testset "SurfaceCoupling" begin include("SurfaceCouplingTests.jl") end
 
 @time @testset "IsotropicDamage" begin include("IsotropicDamageTests.jl") end
@@ -28,6 +30,8 @@ using Test
 
 @time @testset "PoissonLagrangeMultiplier" begin include("PoissonLagrangeMultiplierTests.jl") end
 
+@time @testset "EmptyDomains" begin include("EmptyDomainsTests.jl") end
+
 @time @testset "Issue614" begin include("issue_614.jl") end
 
 @time @testset "Issue689" begin include("issue_689.jl") end
@@ -35,5 +39,9 @@ using Test
 @time @testset "Issue722" begin include("issue_722.jl") end
 
 @time @testset "Issue743" begin include("issue_743.jl") end
+
+@time @testset "Issue760" begin include("issue_760.jl") end
+
+@time @testset "Issue770" begin include("issue_770.jl") end
 
 end # module

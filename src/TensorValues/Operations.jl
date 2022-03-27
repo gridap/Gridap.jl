@@ -53,11 +53,11 @@ for op in (:+,:-)
     end
 
     function ($op)(a::TensorValue,b::SymTensorValue)
-      @notimplemented
+      map(($op), a, TensorValue(get_array(b)))
     end
 
     function ($op)(a::SymTensorValue,b::TensorValue)
-      @notimplemented
+      map(($op), TensorValue(get_array(a)), b)
     end
 
   end
@@ -205,6 +205,21 @@ end
   Meta.parse("TensorValue{$D1,$D2}($str)")
 end
 
+# a_ijl = b_ijk*c_kl
+@generated function dot(a::A, b::B) where {A<:MultiValue{Tuple{D1,D2,D3}},B<:MultiValue{Tuple{D3,D4}}} where {D1,D2,D3,D4}
+  ss = String[]
+  for l in 1:D4
+    for j in 1:D2
+      for i in 1:D1
+        s = join([ "a[$i,$j,$k]*b[$k,$l]+" for k in 1:D3])
+        push!(ss,s[1:(end-1)]*", ")
+      end
+    end
+  end
+  str = join(ss)
+  Meta.parse("ThirdOrderTensorValue{$D1,$D2,$D4}($str)")
+end
+
 # a_ij = c_k*b_kij
 @generated function dot(a::A, b::B) where {A<:MultiValue{Tuple{D1}},B<:MultiValue{Tuple{D1,D2,D3}}} where {D1,D2,D3}
   ss = String[]
@@ -219,18 +234,18 @@ end
 end
 
 # a_ilm = b_ij*c_jlm
-@generated function dot(a::A,b::B) where {A<:MultiValue{Tuple{D,D}},B<:ThirdOrderTensorValue{D,D,L}} where {D,L}
+@generated function dot(a::A,b::B) where {A<:MultiValue{Tuple{D1,D2}},B<:ThirdOrderTensorValue{D2,D3,D4}} where {D1,D2,D3,D4}
   ss = String[]
-  for m in 1:L
-    for l in 1:D
-      for i in 1:D
-        s = join([ "a[$i,$j]*b[$j,$l,$m]+" for j in 1:D])
+  for m in 1:D4
+    for l in 1:D3
+      for i in 1:D1
+        s = join([ "a[$i,$j]*b[$j,$l,$m]+" for j in 1:D2])
         push!(ss,s[1:(end-1)]*", ")
       end
     end
   end
   str = join(ss)
-  Meta.parse("ThirdOrderTensorValue{$D,$D,$L}($str)")
+  Meta.parse("ThirdOrderTensorValue{$D1,$D3,$D4}($str)")
 end
 
 const ⋅¹ = dot

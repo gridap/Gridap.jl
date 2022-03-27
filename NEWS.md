@@ -4,10 +4,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [0.17.12] - 2022-03-24
+
+### Fixed
+- Bugs related with 2nd order derivatives. Since PR [#769](https://github.com/gridap/Gridap.jl/pull/769) and [#771](https://github.com/gridap/Gridap.jl/pull/771).
+
+## [0.17.11] - 2022-03-16
+
+### Fixed
+- Miscellaneous bugs associated with empty meshes. Since PR [#765](https://github.com/gridap/Gridap.jl/pull/765) and [#766](https://github.com/gridap/Gridap.jl/pull/766).
+
+## [0.17.10] - 2022-03-10
+
+### Added
+- Implemented addition/subtraction between a `TensorValue` and a `SymTensorValue`. Since PR [#755](https://github.com/gridap/Gridap.jl/pull/755).
+- Nédélec elements on simplices (lowest order interpolation for the moment). Since PR [#758](https://github.com/gridap/Gridap.jl/pull/758).
 
 ### Fixed
 - Restrict to the active model the evaluation of a FE function at arbitrary points. Since PR [#752](https://github.com/gridap/Gridap.jl/pull/752).
+- Renamed `GridapODEs` to `ODEs`. Since PR [#756](https://github.com/gridap/Gridap.jl/pull/756)
 
 ## [0.17.9] - 2022-02-28
 

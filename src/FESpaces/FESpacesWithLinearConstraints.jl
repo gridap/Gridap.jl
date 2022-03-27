@@ -519,7 +519,7 @@ function return_cache(k::LinearConstraintsMap,lmdof_to_mdof,ldof_to_dof,mat)
   @assert n_ldofs == size(mat,1)
   m1 = CachedArray(zeros(n_lmdofs,n_ldofs))
   m2 = CachedArray(zeros(n_lmdofs,n_ludofs))
-  mDOF_to_lmdof = zeros(Int8,k.n_mDOFs)
+  mDOF_to_lmdof = zeros(Int16,k.n_mDOFs)
   m1, m2, mDOF_to_lmdof
 end
 
