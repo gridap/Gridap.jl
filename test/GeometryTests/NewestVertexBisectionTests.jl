@@ -36,7 +36,6 @@ function make_nvb_levels(
   model_refs[1], buffer = newest_vertex_bisection(model, η_arr; θ = θ)
   buffer = deepcopy(buffer)
   for i = 1:(Nsteps - 1)
-    @show i
     cell_map = get_cell_map(get_triangulation(model_refs[i]))
     ncells = length(cell_map)
     η_arr = compute_estimator(est, ncells)
@@ -47,6 +46,14 @@ function make_nvb_levels(
   end
   model_refs
 end
+
+function d_get_num_boundary_labels(labels, d)
+  entities = labels.d_to_dface_to_entity[d + 1]
+  names = labels.tag_to_name[entities]
+  bdry_names = filter(name -> name != "interior", names)
+  length(bdry_names)
+end
+
 
 # For testing only
 compute_estimator(est::RandomEst, ncells) = rand(ncells)
@@ -60,43 +67,43 @@ est = ConstantEst(1.0)
 uniform_write_to_vtk = false
 # Uniform refinement
 let model = simplexify(CartesianDiscreteModel(domain, partition))
-  writevtk(Triangulation(model), "init_mesh")
-  @time model_refs = make_nvb_levels(model, Nsteps, θ, est)
+  model_refs = make_nvb_levels(model, Nsteps, θ, est)
   for (n, model_ref) in enumerate(model_refs)
     trian_ref = get_triangulation(model_ref)
-    grid = get_grid(model)
-    cell_node_ids = get_cell_node_ids(model_ref)
     if uniform_write_to_vtk
       writevtk(trian_ref, "uniform$(string(n, pad=2))")
     end
-    cell_map = get_cell_map(trian_ref)
-    node_coords = get_node_coordinates(trian_ref)
-    ncoords = length(node_coords)
-    # Combinatorial checks for nodes
-    if isodd(n)
-      ncoords_true = Integer.(2 * (4^((n - 1) / 2) + 2^((n - 1) / 2)) + 1)
-    else
-      ncoords_true = Integer.(2^(n / 2) + 1)^2
-    end
-    ncells = length(cell_map)
-    #@show ncoords
-    @test ncoords_true == ncoords
     # Combinatorial checks for cells
-    @test ncells == 2^(n + 1)
-    # Test labels are propogating properly
-    let labels = get_face_labeling(model_ref)
-      let node_entitiies = labels.d_to_dface_to_entity[1]
-        node_names = labels.tag_to_name[node_entitiies]
-        bdry_node_names = filter(node_name -> node_name != "interior", node_names)
-        @test Int(4*2^(floor(n / 2))) == length(bdry_node_names)
+    let cell_map = get_cell_map(trian_ref)
+      ncells = length(cell_map)
+      @test ncells == 2^(n + 1)
+    end
+    # Combinatorial checks for nodes
+    let node_coords = get_node_coordinates(trian_ref)
+      ncoords = length(node_coords)
+      if isodd(n)
+        ncoords_true = Int(2 * (4^((n - 1) / 2) + 2^((n - 1) / 2)) + 1)
+      else
+        ncoords_true = Int(2^(n / 2) + 1)^2
       end
-      #@show length(bdry_node_names)
-      #@test length(bdry_node_names) == 4*n
+      @test ncoords_true == ncoords
+    end
+    let labels = get_face_labeling(model_ref)
+      # Test labels are propogating properly
+      let d = 0
+        @test Int(4*2^(floor(n / 2))) == d_get_num_boundary_labels(labels, d)
+      end
+      # Combinatorial check for face_labels (edge)
+      let d = 1
+        @test Int(4*2^(floor(n / 2))) == d_get_num_boundary_labels(labels, d)
+      end
+      # Combinatorial check for cell labels
+      let d = 2
+        @test 0 == d_get_num_boundary_labels(labels, d)
+      end
     end
   end
 end
-
-
 
 # Nonuniform refinement. For now only visually checking conformity
 #domain = (0, 1, 0, 1)
