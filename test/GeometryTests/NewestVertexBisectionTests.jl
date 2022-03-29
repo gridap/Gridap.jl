@@ -88,8 +88,8 @@ let model = simplexify(CartesianDiscreteModel(domain, partition))
       end
       @test ncoords_true == ncoords
     end
+    # Test labels are propogating properly
     let labels = get_face_labeling(model_ref)
-      # Test labels are propogating properly
       let d = 0
         @test Int(4*2^(floor(n / 2))) == d_get_num_boundary_labels(labels, d)
       end
