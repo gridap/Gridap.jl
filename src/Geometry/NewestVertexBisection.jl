@@ -57,6 +57,8 @@ _are_parallel(v, w) = v[1] * w[2] == v[2] * w[1]
 
 _get_midpoint(ngon::AbstractArray{<:VectorValue}) = sum(ngon) / length(ngon)
 
+_shift_to_first(v::AbstractVector{T}, i::T) where {T<:Integer} = circshift(v, -(i - 1))
+
 function _print_forest(forest::AbstractArray{<:BinaryNode})
   num_leaves = 0
   println("_____________________")
@@ -111,10 +113,12 @@ function _set_d_to_dface_to_old_edge!(
   # Topological mappings for the old mesh
   cell_to_edge = get_faces(topo, 2, 1)
   edge_to_node = get_faces(topo, 1, 0)
+  cell_to_node = get_faces(topo, 2, 0)
   push!(d_to_dface_to_oldid, Vector{}(undef, num_edges))
   push!(d_to_dface_to_olddim, Vector{}(undef, num_edges))
   for root_cell in forest
     root_edges = cell_to_edge[root_cell.data]
+    root_nodes = cell_to_node[root_cell.data]
     for leaf_cell in Leaves(root_cell)
       # Set because of possible repeats for new cells that are neighbors
       leaf_edges = Set(cell_to_edge_ref[leaf_cell.data])
@@ -124,14 +128,16 @@ function _set_d_to_dface_to_old_edge!(
         # We need to check if this edge is parallel to any of the
         # other edges in the old cell to see if it is on top of a former
         # edge
-        for root_edge in root_edges
-          root_edge_nodes = edge_to_node[root_edge]
-          root_edge_vector = vertices[root_edge_nodes[2]] - vertices[root_edge_nodes[1]]
-          leaf_edge_vector = vertices[leaf_edge_nodes[2]] - vertices[leaf_edge_nodes[1]]
-          if _are_parallel(root_edge_vector, leaf_edge_vector)
-            d_to_dface_to_oldid[2][leaf_edge] = root_edge
-            d_to_dface_to_olddim[2][leaf_edge] = 1
-            is_on_top_of_former_edge = true
+        if !isempty(intersect(leaf_edge_nodes, root_nodes))
+          for root_edge in root_edges
+            root_edge_nodes = edge_to_node[root_edge]
+            root_edge_vector = vertices[root_edge_nodes[2]] - vertices[root_edge_nodes[1]]
+            leaf_edge_vector = vertices[leaf_edge_nodes[2]] - vertices[leaf_edge_nodes[1]]
+            if _are_parallel(root_edge_vector, leaf_edge_vector)
+              d_to_dface_to_oldid[2][leaf_edge] = root_edge
+              d_to_dface_to_olddim[2][leaf_edge] = 1
+              is_on_top_of_former_edge = true
+            end
           end
         end
         # Default case: this edge bisects a cell, i.e. not on top of
@@ -238,10 +244,6 @@ function _propogate_labeling(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
     end
   end
   labels_ref
-end
-
-function _shift_to_first(v::AbstractVector{T}, i::T) where {T<:Integer}
-  circshift(v, -(i - 1))
 end
 
 function _sort_longest_edge!(
