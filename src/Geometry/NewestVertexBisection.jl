@@ -583,7 +583,8 @@ function newest_vertex_bisection(
     get_node_coordinates(grid_ref),
     node_to_bis_edge,
   )
-  labels_ref = _propogate_labeling(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
+  #labels_ref = _propogate_labeling(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
+  labels_ref = FaceLabeling(topo_ref)
   DiscreteModel(grid_ref, topo_ref, labels_ref), buffer
 end
 
@@ -632,7 +633,8 @@ function newest_vertex_bisection(
     get_node_coordinates(grid_ref),
     node_to_bis_edge,
   )
-  labels_ref = _propogate_labeling(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
+  labels_ref = FaceLabeling(topo_ref)
+  #labels_ref = _propogate_labeling(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
   model_ref = DiscreteModel(grid_ref, topo_ref, labels_ref)
   model_ref, buffer
 end
