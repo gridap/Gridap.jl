@@ -382,6 +382,22 @@ function compute_shapefuns(dofs,prebasis)
   linear_combination(change,prebasis)
 end
 
+"""
+    compute_dofs(predofs,shapefuns)
+
+Helper function used to compute the dof basis
+associated with the dof basis `predofs` and the basis `shapefuns`.
+
+It is equivalent to
+
+    change = inv(evaluate(predofs,shapefuns))
+    linear_combination(change,predofs) # i.e. transpose(change)*predofs
+"""
+function compute_dofs(predofs,shapefuns)
+  change = inv(evaluate(predofs,shapefuns))
+  linear_combination(change,predofs)
+end
+
 # Concrete implementation
 
 """
@@ -434,6 +450,40 @@ struct GenericRefFE{T,D} <: ReferenceFE{D}
       ndofs,
       polytope,
       prebasis,
+      dofs,
+      conformity,
+      metadata,
+      face_dofs,
+      shapefuns)
+  end
+  @doc """
+        GenericRefFE{T}(
+        ndofs::Int,
+        polytope::Polytope{D},
+        prebasis::AbstractVector{<:Field},
+        predofs::AbstractVector{<:Dof},
+        conformity::Conformity,
+        metadata,
+        face_dofs::Vector{Vector{Int}},
+        shapefuns::AbstractVector{<:Field},
+        dofs::AbstractVector{<:Dof}=compute_dofs(predofs,shapefuns)) where {T,D}
+
+  Constructs a `GenericRefFE` object with the provided data.
+  """
+  function GenericRefFE{T}(
+    ndofs::Int,
+    polytope::Polytope{D},
+    predofs::AbstractVector{<:Dof},
+    conformity::Conformity,
+    metadata,
+    face_dofs::Vector{Vector{Int}},
+    shapefuns::AbstractVector{<:Field},
+    dofs::AbstractVector{<:Dof}=compute_dofs(predofs,shapefuns)) where {T,D}
+
+    new{T,D}(
+      ndofs,
+      polytope,
+      shapefuns,
       dofs,
       conformity,
       metadata,

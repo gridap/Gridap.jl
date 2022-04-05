@@ -17,6 +17,10 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
 
+using Gridap.Polynomials: _q_filter, _s_filter_mc0
+using Gridap.Polynomials: _compute_filter_mask
+using Gridap.Polynomials: _define_terms, _sort_by_nfaces!
+
 using QuadGK: gauss
 using FastGaussQuadrature: gaussjacobi
 using FastGaussQuadrature: gausslegendre
@@ -146,6 +150,9 @@ export MomentBasedDofBasis
 export get_face_own_nodes
 export get_face_nodes
 
+export linear_combination
+export compute_cell_to_modalC0_reffe
+
 export VERTEX1
 export SEG2
 export TRI3
@@ -168,16 +175,19 @@ export SerendipityRefFE
 export RaviartThomasRefFE
 export NedelecRefFE
 export BezierRefFE
+export ModalC0RefFE
 
 export Lagrangian
 export RaviartThomas
 export Nedelec
 export Bezier
+export ModalC0
 
 export lagrangian
 export raviart_thomas
 export nedelec
 export bezier
+export modalC0
 
 export Quadrature
 export QuadratureName
@@ -228,6 +238,8 @@ include("NedelecRefFEs.jl")
 include("MockDofs.jl")
 
 include("BezierRefFEs.jl")
+
+include("ModalC0RefFEs.jl")
 
 include("LinearCombinationDofVectors.jl")
 

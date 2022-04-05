@@ -1,11 +1,11 @@
-struct AgFEMModalC0 <: Field end
+struct ModalC0BasisFunction <: Field end
 
-struct AgFEMModalC0Basis{D,T,V} <: AbstractVector{AgFEMModalC0}
+struct ModalC0Basis{D,T,V} <: AbstractVector{ModalC0BasisFunction}
   orders::NTuple{D,Int}
   terms::Vector{CartesianIndex{D}}
   a::Vector{Point{D,V}}
   b::Vector{Point{D,V}}
-  function AgFEMModalC0Basis{D}(
+  function ModalC0Basis{D}(
     ::Type{T},
     orders::NTuple{D,Int},
     terms::Vector{CartesianIndex{D}},
@@ -15,11 +15,11 @@ struct AgFEMModalC0Basis{D,T,V} <: AbstractVector{AgFEMModalC0}
   end
 end
 
-@inline Base.size(a::AgFEMModalC0Basis{D,T,V}) where {D,T,V} = (length(a.terms)*num_components(T),)
-@inline Base.getindex(a::AgFEMModalC0Basis,i::Integer) = AgFEMModalC0()
-@inline Base.IndexStyle(::AgFEMModalC0Basis) = IndexLinear()
+@inline Base.size(a::ModalC0Basis{D,T,V}) where {D,T,V} = (length(a.terms)*num_components(T),)
+@inline Base.getindex(a::ModalC0Basis,i::Integer) = ModalC0BasisFunction()
+@inline Base.IndexStyle(::ModalC0Basis) = IndexLinear()
 
-function AgFEMModalC0Basis{D}(
+function ModalC0Basis{D}(
   ::Type{T},
   orders::NTuple{D,Int},
   a::Vector{Point{D,V}},
@@ -28,10 +28,10 @@ function AgFEMModalC0Basis{D}(
   sort!::Function=_sort_by_nfaces!) where {D,T,V}
 
   terms = _define_terms_mc0(filter, sort!, orders)
-  AgFEMModalC0Basis{D}(T,orders,terms,a,b)
+  ModalC0Basis{D}(T,orders,terms,a,b)
 end
 
-function AgFEMModalC0Basis{D}(
+function ModalC0Basis{D}(
   ::Type{T},
   orders::NTuple{D,Int},
   sa::Point{D,V},
@@ -42,10 +42,10 @@ function AgFEMModalC0Basis{D}(
   terms = _define_terms_mc0(filter, sort!, orders)
   a = fill(sa,length(terms))
   b = fill(sb,length(terms))
-  AgFEMModalC0Basis{D}(T,orders,terms,a,b)
+  ModalC0Basis{D}(T,orders,terms,a,b)
 end
 
-function AgFEMModalC0Basis{D}(
+function ModalC0Basis{D}(
   ::Type{T},
   orders::NTuple{D,Int};
   filter::Function=_q_filter,
@@ -53,10 +53,10 @@ function AgFEMModalC0Basis{D}(
 
   sa = Point{D,eltype(T)}(tfill(zero(eltype(T)),Val{D}()))
   sb = Point{D,eltype(T)}(tfill(one(eltype(T)),Val{D}()))
-  AgFEMModalC0Basis{D}(T,orders,sa,sb,filter=filter,sort! = sort!)
+  ModalC0Basis{D}(T,orders,sa,sb,filter=filter,sort! = sort!)
 end
 
-function AgFEMModalC0Basis{D}(
+function ModalC0Basis{D}(
   ::Type{T},
   order::Int,
   a::Vector{Point{D,V}},
@@ -65,40 +65,40 @@ function AgFEMModalC0Basis{D}(
   sort!::Function=_sort_by_nfaces!) where {D,T,V}
 
   orders = tfill(order,Val{D}())
-  AgFEMModalC0Basis{D}(T,orders,a,b,filter=filter,sort! = sort!)
+  ModalC0Basis{D}(T,orders,a,b,filter=filter,sort! = sort!)
 end
 
-function AgFEMModalC0Basis{D}(
+function ModalC0Basis{D}(
   ::Type{T},
   order::Int;
   filter::Function=_q_filter,
   sort!::Function=_sort_by_nfaces!) where {D,T}
 
   orders = tfill(order,Val{D}())
-  AgFEMModalC0Basis{D}(T,orders,filter=filter,sort! = sort!)
+  ModalC0Basis{D}(T,orders,filter=filter,sort! = sort!)
 end
 
 # API
 
 """
-    get_order(b::AgFEMModalC0Basis)
+    get_order(b::ModalC0Basis)
 """
-function get_order(b::AgFEMModalC0Basis)
+function get_order(b::ModalC0Basis)
   maximum(b.orders)
 end
 
 """
-    get_orders(b::AgFEMModalC0Basis)
+    get_orders(b::ModalC0Basis)
 """
-function get_orders(b::AgFEMModalC0Basis)
+function get_orders(b::ModalC0Basis)
   b.orders
 end
 
-return_type(::AgFEMModalC0Basis{D,T,V}) where {D,T,V} = T
+return_type(::ModalC0Basis{D,T,V}) where {D,T,V} = T
 
 # Field implementation
 
-function return_cache(f::AgFEMModalC0Basis{D,T,V},x::AbstractVector{<:Point}) where {D,T,V}
+function return_cache(f::ModalC0Basis{D,T,V},x::AbstractVector{<:Point}) where {D,T,V}
   @assert D == length(eltype(x)) "Incorrect number of point components"
   np = length(x)
   ndof = length(f.terms)*num_components(T)
@@ -109,7 +109,7 @@ function return_cache(f::AgFEMModalC0Basis{D,T,V},x::AbstractVector{<:Point}) wh
   (r, v, c)
 end
 
-function evaluate!(cache,f::AgFEMModalC0Basis{D,T,V},x::AbstractVector{<:Point}) where {D,T,V}
+function evaluate!(cache,f::ModalC0Basis{D,T,V},x::AbstractVector{<:Point}) where {D,T,V}
   r, v, c = cache
   np = length(x)
   ndof = length(f.terms)*num_components(T)
@@ -119,7 +119,7 @@ function evaluate!(cache,f::AgFEMModalC0Basis{D,T,V},x::AbstractVector{<:Point})
   setsize!(c,(D,n))
   for i in 1:np
     @inbounds xi = x[i]
-    _evaluate_nd_amc0!(v,xi,f.a,f.b,f.orders,f.terms,c)
+    _evaluate_nd_mc0!(v,xi,f.a,f.b,f.orders,f.terms,c)
     for j in 1:ndof
       @inbounds r[i,j] = v[j]
     end
@@ -128,7 +128,7 @@ function evaluate!(cache,f::AgFEMModalC0Basis{D,T,V},x::AbstractVector{<:Point})
 end
 
 function return_cache(
-  fg::FieldGradientArray{1,AgFEMModalC0Basis{D,V,W}},
+  fg::FieldGradientArray{1,ModalC0Basis{D,V,W}},
   x::AbstractVector{<:Point}) where {D,V,W}
 
   f = fg.fa
@@ -147,7 +147,7 @@ end
 
 function evaluate!(
   cache,
-  fg::FieldGradientArray{1,AgFEMModalC0Basis{D,T,V}},
+  fg::FieldGradientArray{1,ModalC0Basis{D,T,V}},
   x::AbstractVector{<:Point}) where {D,T,V}
 
   f = fg.fa
@@ -161,7 +161,7 @@ function evaluate!(
   setsize!(g,(D,n))
   for i in 1:np
     @inbounds xi = x[i]
-    _gradient_nd_amc0!(v,xi,f.a,f.b,f.orders,f.terms,c,g,T)
+    _gradient_nd_mc0!(v,xi,f.a,f.b,f.orders,f.terms,c,g,T)
     for j in 1:ndof
       @inbounds r[i,j] = v[j]
     end
@@ -170,7 +170,7 @@ function evaluate!(
 end
 
 function return_cache(
-  fg::FieldGradientArray{2,AgFEMModalC0Basis{D,V,W}},
+  fg::FieldGradientArray{2,ModalC0Basis{D,V,W}},
   x::AbstractVector{<:Point}) where {D,V,W}
 
   f = fg.fa
@@ -190,7 +190,7 @@ end
 
 function evaluate!(
   cache,
-  fg::FieldGradientArray{2,AgFEMModalC0Basis{D,T,V}},
+  fg::FieldGradientArray{2,ModalC0Basis{D,T,V}},
   x::AbstractVector{<:Point}) where {D,T,V}
 
   f = fg.fa
@@ -205,7 +205,7 @@ function evaluate!(
   setsize!(h,(D,n))
   for i in 1:np
     @inbounds xi = x[i]
-    _hessian_nd_amc0!(v,xi,f.a,f.b,f.orders,f.terms,c,g,h,T)
+    _hessian_nd_mc0!(v,xi,f.a,f.b,f.orders,f.terms,c,g,h,T)
     for j in 1:ndof
       @inbounds r[i,j] = v[j]
     end
@@ -214,6 +214,8 @@ function evaluate!(
 end
 
 # Helpers
+
+_s_filter_mc0(e,o) = ( sum( [ i for i in e if i>1 ] ) <= o )
 
 _sort_by_tensor_prod!(terms,orders) = terms
 
@@ -263,7 +265,7 @@ function _define_terms_mc0(filter,sort!,orders)
   collect(lazy_map(Reindex(terms),mask))
 end
 
-function _evaluate_1d_amc0!(v::AbstractMatrix{T},x,a,b,order,d) where T
+function _evaluate_1d_mc0!(v::AbstractMatrix{T},x,a,b,order,d) where T
   @assert order > 0
   n = order + 1
   z = one(T)
@@ -277,7 +279,7 @@ function _evaluate_1d_amc0!(v::AbstractMatrix{T},x,a,b,order,d) where T
   end
 end
 
-function _gradient_1d_amc0!(v::AbstractMatrix{T},x,a,b,order,d) where T
+function _gradient_1d_mc0!(v::AbstractMatrix{T},x,a,b,order,d) where T
   @assert order > 0
   n = order + 1
   z = one(T)
@@ -294,7 +296,7 @@ function _gradient_1d_amc0!(v::AbstractMatrix{T},x,a,b,order,d) where T
   end
 end
 
-function _hessian_1d_amc0!(v::AbstractMatrix{T},x,a,b,order,d) where T
+function _hessian_1d_mc0!(v::AbstractMatrix{T},x,a,b,order,d) where T
   @assert order > 0
   n = order + 1
   y = zero(T)
@@ -315,7 +317,7 @@ function _hessian_1d_amc0!(v::AbstractMatrix{T},x,a,b,order,d) where T
   end
 end
 
-function _evaluate_nd_amc0!(
+function _evaluate_nd_mc0!(
   v::AbstractVector{V},
   x,
   a::Vector{Point{D,T}},
@@ -332,7 +334,7 @@ function _evaluate_nd_amc0!(
   for (i,ci) in enumerate(terms)
 
     for d in 1:dim
-      _evaluate_1d_amc0!(c,x,a[i],b[i],orders[d],d)
+      _evaluate_1d_mc0!(c,x,a[i],b[i],orders[d],d)
     end
 
     s = o
@@ -366,7 +368,7 @@ end
   k+1
 end
 
-function _gradient_nd_amc0!(
+function _gradient_nd_mc0!(
   v::AbstractVector{G},
   x,
   a::Vector{Point{D,T}},
@@ -386,8 +388,8 @@ function _gradient_nd_amc0!(
   for (i,ci) in enumerate(terms)
 
     for d in 1:dim
-      _evaluate_1d_amc0!(c,x,a[i],b[i],orders[d],d)
-      _gradient_1d_amc0!(g,x,a[i],b[i],orders[d],d)
+      _evaluate_1d_mc0!(c,x,a[i],b[i],orders[d],d)
+      _gradient_1d_mc0!(g,x,a[i],b[i],orders[d],d)
     end
 
     s = z
@@ -437,7 +439,7 @@ end
   k+1
 end
 
-function _hessian_nd_amc0!(
+function _hessian_nd_mc0!(
   v::AbstractVector{G},
   x,
   a::Vector{Point{D,T}},
@@ -458,9 +460,9 @@ function _hessian_nd_amc0!(
   for (i,ci) in enumerate(terms)
 
     for d in 1:dim
-      _evaluate_1d_amc0!(c,x,a[i],b[i],orders[d],d)
-      _gradient_1d_amc0!(g,x,a[i],b[i],orders[d],d)
-      _hessian_1d_amc0!(h,x,a[i],b[i],orders[d],d)
+      _evaluate_1d_mc0!(c,x,a[i],b[i],orders[d],d)
+      _gradient_1d_mc0!(g,x,a[i],b[i],orders[d],d)
+      _hessian_1d_mc0!(h,x,a[i],b[i],orders[d],d)
     end
 
     s = z
