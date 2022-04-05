@@ -26,6 +26,7 @@ import Gridap.Arrays: evaluate!
 import Gridap.Arrays: return_type
 import Gridap.Fields: evaluate
 import Gridap.Fields: lazy_map
+import Gridap.Fields: linear_combination
 import Gridap.Polynomials: MonomialBasis
 
 import Gridap.Polynomials: get_order
@@ -227,5 +228,7 @@ include("NedelecRefFEs.jl")
 include("MockDofs.jl")
 
 include("BezierRefFEs.jl")
+
+include("LinearCombinationDofVectors.jl")
 
 end # module

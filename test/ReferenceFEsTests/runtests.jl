@@ -38,4 +38,6 @@ using Test
 
 @testset "BezierRefFEs" begin include("BezierRefFEsTests.jl") end
 
+@testset "LinearCombinationDofVectors" begin include("LinearCombinationDofVectorsTests.jl") end
+
 end # module
