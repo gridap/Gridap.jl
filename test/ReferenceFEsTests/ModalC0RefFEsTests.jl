@@ -9,14 +9,6 @@ using Gridap.CellData
 
 # using BenchmarkTools
 
-# # Degenerated case
-# order = 0
-# reffe = ReferenceFE(QUAD,modalC0,Float64,order)
-
-# # Error if create on simplices
-# order = 1
-# reffe = ReferenceFE(TRI,modalC0,Float64,order)
-
 order = 1
 p = QUAD
 T = VectorValue{2,Float64}
@@ -35,9 +27,7 @@ test_reference_fe(m)
 # partition = (2,2)
 # model = CartesianDiscreteModel(domain,partition)
 
-function test_function_interpolation(::Type{T},order,C,u,bboxes,R) where T
-  reffe = ReferenceFE(modalC0,T,order,bboxes,reffe_type=R)
-  V = FESpace(model,reffe,conformity=C)
+function _test_function_interpolation(order,u,V)
   test_single_field_fe_space(V)
   uh = interpolate(u,V)
   Ω = Triangulation(model)
@@ -62,6 +52,18 @@ function test_function_interpolation(::Type{T},order,C,u,bboxes,R) where T
   # writevtk(Ω,"shape_13",nsubcells=20,cellfields=["s13"=>uh])
 end
 
+function test_function_interpolation(::Type{T},order,C,u) where T
+  reffe = ReferenceFE(modalC0,T,order)
+  V = FESpace(model,reffe,conformity=C)
+  _test_function_interpolation(order,u,V)
+end
+
+function test_function_interpolation(::Type{T},order,C,u,bboxes,space) where T
+  reffe = ReferenceFE(modalC0,T,order,bboxes,space=space)
+  V = FESpace(model,reffe,conformity=C)
+  _test_function_interpolation(order,u,V)
+end
+
 domain = (0,1)
 partition = (1,)
 model = CartesianDiscreteModel(domain,partition)
@@ -70,7 +72,7 @@ trian = Triangulation(model)
 T = Float64; order = 3; C = :H1; u(x) = x[1]^3
 bboxes = [Point(0.0),Point(1.0),Point(0.0),Point(1.0),Point(-3.0),Point(1.0)]
 bboxes = CellPoint(fill(bboxes,1),trian,PhysicalDomain())
-test_function_interpolation(T,order,C,u,bboxes.cell_ref_point,lagrangian)
+test_function_interpolation(T,order,C,u,bboxes.cell_ref_point,:Q)
 
 domain = (0,1)
 partition = (4,)
@@ -81,7 +83,7 @@ bboxes = [ [Point(0.0),Point(1.0),Point(0.0),Point(1.0),Point(-1.0),Point(3.0)],
            [Point(0.0),Point(1.0),Point(0.0),Point(1.0),Point(-1.5),Point(3.2)],
            [Point(0.0),Point(1.0),Point(0.0),Point(1.0),Point(-0.2),Point(1.0)],
            [Point(0.0),Point(1.0),Point(0.0),Point(1.0),Point(-1.2),Point(2.0)] ]
-test_function_interpolation(T,order,C,u,bboxes,lagrangian)
+test_function_interpolation(T,order,C,u,bboxes,:Q)
 
 domain = (0,4)
 partition = (4,)
@@ -92,7 +94,7 @@ bboxes = [ [Point(0.0),Point(1.0),Point(0.0),Point(1.0),Point(-1.0),Point(3.0)],
            [Point(0.0),Point(1.0),Point(0.0),Point(1.0),Point(-1.5),Point(3.2)],
            [Point(0.0),Point(1.0),Point(0.0),Point(1.0),Point(-0.2),Point(1.0)],
            [Point(0.0),Point(1.0),Point(0.0),Point(1.0),Point(-1.2),Point(2.0)] ]
-test_function_interpolation(T,order,C,u,bboxes,lagrangian)
+test_function_interpolation(T,order,C,u,bboxes,:Q)
 
 domain = (0,1,0,1)
 partition = (2,2,)
@@ -107,31 +109,31 @@ bboxes = reshape( [Point(0.0,0.0),Point(1.0,1.0),Point(0.0,0.0),
                    Point(-1.0,-1.0),Point(-1.0,1.25),Point(-1.0,-1.0),
                    Point(-1.0,1.25),Point(0.0,0.0),Point(1.0,1.0)], 18 )
 bboxes = CellPoint(fill(bboxes,4),trian,PhysicalDomain())
-test_function_interpolation(T,order,C,u,bboxes.cell_ref_point,lagrangian)
+test_function_interpolation(T,order,C,u,bboxes.cell_ref_point,:Q)
 
-# T = Float64; order = 5; C = :H1; u(x) = (x[1]+x[2])^5
-# bboxes = reshape( [Point(0.0,0.0),Point(1.0,1.0),Point(0.0,0.0),
-#                    Point(1.0,1.0),Point(0.0,0.0),Point(1.0,1.0),
-#                    Point(0.0,0.0),Point(1.0,1.0),Point(-0.5,2.5),
-#                    Point(2.5,2.5),Point(-0.5,2.5),Point(2.5,2.5),
-#                    Point(-1.0,-1.0),Point(-1.0,1.25),Point(-1.0,-1.0),
-#                    Point(-1.0,1.25),Point(0.0,0.0),Point(1.0,1.0)], 18 )
-# bboxes = CellPoint(fill(bboxes,4),trian,PhysicalDomain())
-# test_function_interpolation(T,order,C,u,bboxes.cell_ref_point,serendipitylagrangian)
+T = Float64; order = 5; C = :H1; u(x) = (x[1]+x[2])^5
+bboxes = reshape( [Point(0.0,0.0),Point(1.0,1.0),Point(0.0,0.0),
+                   Point(1.0,1.0),Point(0.0,0.0),Point(1.0,1.0),
+                   Point(0.0,0.0),Point(1.0,1.0),Point(-0.5,2.5),
+                   Point(2.5,2.5),Point(-0.5,2.5),Point(2.5,2.5),
+                   Point(-1.0,-1.0),Point(-1.0,1.25),Point(-1.0,-1.0),
+                   Point(-1.0,1.25),Point(0.0,0.0),Point(1.0,1.0)], 18 )
+bboxes = CellPoint(fill(bboxes,4),trian,PhysicalDomain())
+test_function_interpolation(T,order,C,u,bboxes.cell_ref_point,:S)
 
-# order = 1; T = Float64; C = :L2; u(x) = x[1]+x[2]
-# test_function_interpolation(T,order,C,u)
+order = 1; T = Float64; C = :L2; u(x) = x[1]+x[2]
+test_function_interpolation(T,order,C,u)
 
-# order = 1; T = VectorValue{2,Float64}; C = :H1
-# u(x) = VectorValue(x[1]+x[2],x[2])
-# test_function_interpolation(T,order,C,u)
+order = 1; T = VectorValue{2,Float64}; C = :H1
+u(x) = VectorValue(x[1]+x[2],x[2])
+test_function_interpolation(T,order,C,u)
 
-# domain = (0,1,0,1,0,1)
-# partition = (2,2,2)
-# model = CartesianDiscreteModel(domain,partition)
+domain = (0,1,0,1,0,1)
+partition = (2,2,2)
+model = CartesianDiscreteModel(domain,partition)
 
-# order = 1; T = Float64; C = :H1; u(x) = x[1]+x[2]+x[3]
-# test_function_interpolation(T,order,C,u)
+order = 1; T = Float64; C = :H1; u(x) = x[1]+x[2]+x[3]
+test_function_interpolation(T,order,C,u)
 
 # Inspect operator matrix to check if L2-scalar product of
 # gradients of bubble functions satisfy Kronecker's delta

@@ -35,6 +35,8 @@ import Gridap.Polynomials: MonomialBasis
 
 import Gridap.Polynomials: get_order
 import Gridap.Polynomials: get_orders
+import Gridap.Polynomials: _compute_filter_mask
+import Gridap.Polynomials: _define_terms, _sort_by_nfaces!
 
 import Gridap.Io: to_dict
 import Gridap.Io: from_dict
