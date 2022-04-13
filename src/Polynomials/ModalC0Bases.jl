@@ -215,7 +215,7 @@ end
 
 # Optimizing evaluation at a single point
 
-function return_cache(f::AbstractVector{ModalC0},x::Point)
+function return_cache(f::AbstractVector{ModalC0BasisFunction},x::Point)
   xs = [x]
   cf = return_cache(f,xs)
   v = evaluate!(cf,f,xs)
@@ -223,7 +223,7 @@ function return_cache(f::AbstractVector{ModalC0},x::Point)
   r, cf, xs
 end
 
-function evaluate!(cache,f::AbstractVector{ModalC0},x::Point)
+function evaluate!(cache,f::AbstractVector{ModalC0BasisFunction},x::Point)
   r, cf, xs = cache
   xs[1] = x
   v = evaluate!(cf,f,xs)
@@ -235,7 +235,7 @@ function evaluate!(cache,f::AbstractVector{ModalC0},x::Point)
 end
 
 function return_cache(
-  f::FieldGradientArray{N,<:AbstractVector{ModalC0}}, x::Point) where {N}
+  f::FieldGradientArray{N,<:AbstractVector{ModalC0BasisFunction}}, x::Point) where {N}
   xs = [x]
   cf = return_cache(f,xs)
   v = evaluate!(cf,f,xs)
@@ -244,7 +244,7 @@ function return_cache(
 end
 
 function evaluate!(
-  cache, f::FieldGradientArray{N,<:AbstractVector{ModalC0}}, x::Point) where {N}
+  cache, f::FieldGradientArray{N,<:AbstractVector{ModalC0BasisFunction}}, x::Point) where {N}
   r, cf, xs = cache
   xs[1] = x
   v = evaluate!(cf,f,xs)
