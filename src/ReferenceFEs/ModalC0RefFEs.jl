@@ -69,7 +69,7 @@ function ModalC0RefFE(
 end
 
 function get_orders(reffe::GenericRefFE{ModalC0,D}) where{D}
-  get_orders(get_shapefuns(reffe))
+  get_orders(reffe.prebasis)
 end
 
 function compute_reffe_data(::Type{T},

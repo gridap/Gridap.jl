@@ -488,7 +488,7 @@ struct GenericRefFE{T,D} <: ReferenceFE{D}
       conformity,
       metadata,
       face_dofs,
-      shapefuns)
+      linear_combination(Eye{Int}(ndofs),shapefuns)) # Trick to be able to eval dofs af shapefuns
   end
 end
 
