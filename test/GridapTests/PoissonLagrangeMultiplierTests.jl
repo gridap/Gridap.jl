@@ -24,6 +24,7 @@ model = CartesianDiscreteModel(domain,partition)
 Γrface_Γface = findall(!,Γface_mask)
 Γl = Triangulation(Γ,Γlface_Γface)
 Γr = Triangulation(Γ,Γrface_Γface)
+Θ = Interface(Γl,Γr)
 
 get_glue(Ω,Val(0))
 get_glue(Γ,Val(0))
