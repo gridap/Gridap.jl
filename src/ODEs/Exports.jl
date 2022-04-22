@@ -11,6 +11,7 @@ end
 @publish_gridapodes ODETools ThetaMethod
 @publish_gridapodes ODETools RungeKutta
 @publish_gridapodes ODETools Newmark
+@publish_gridapodes ODETools GeneralizedAlpha
 @publish_gridapodes ODETools ∂t
 @publish_gridapodes ODETools ∂tt
 

@@ -68,6 +68,7 @@ export MidPoint
 export ThetaMethod
 export RungeKutta
 export Newmark
+export GeneralizedAlpha
 
 export ODESolution
 export test_ode_solution
