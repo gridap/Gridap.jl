@@ -4,7 +4,12 @@ function gradient(f::Function,uh::FEFunction)
   fuh = f(uh)
   _gradient(f,uh,fuh)
 end
-
+#=
+function gradient(f::Function,cell_u::Vector{Vector{T}}) where T
+  fcell_u = f(cell_u)
+  _gradient(f,cell_u,fcell_u)
+end
+=#
 function _gradient(f,uh,fuh::AbstractArray)
   @unreachable """\n
   In order to perform AD on a Function taking a FEFunction as argument, such Function
@@ -19,7 +24,18 @@ function _gradient(f,uh,fuh::DomainContribution)
   for trian in get_domains(fuh)
     g = _change_argument(gradient,f,trian,uh)
     cell_u = get_cell_dof_values(uh)
-    glue = get_glue(trian,Val(num_cell_dims(get_triangulation(uh))))
+    cell_id = _compute_cell_ids(uh,trian)
+    cell_grad = autodiff_array_gradient(g,cell_u,cell_id)
+    add_contribution!(terms,trian,cell_grad)
+  end
+  terms
+end
+
+function _gradient2(f,uh,fuh::DomainContribution)
+  terms = DomainContribution()
+  for trian in get_domains(fuh)
+    g = _change_argument2(f,trian)
+    cell_u = get_cell_dof_values(uh)
     cell_id = _compute_cell_ids(uh,trian)
     cell_grad = autodiff_array_gradient(g,cell_u,cell_id)
     add_contribution!(terms,trian,cell_grad)
@@ -97,36 +113,28 @@ function _hessian(f,uh,fuh::DomainContribution)
 end
 
 function _change_argument(op,f,trian,uh::SingleFieldFEFunction)
-
-  #U = get_fe_space(uh)
-
+  U = get_fe_space(uh)
   function g(cell_u)
+    cf = CellField(U,cell_u)
+    cell_grad = f(cf)
+    get_contribution2(cell_grad,trian)
+  end
+  g
+end
 
-    #cf = CellField(U,cell_u)
-    #cell_grad = f(cf)
+function _change_argument2(f,trian)
+  function g(cell_u)
     cell_grad = f(cell_u)
-    #get_contribution(cell_grad,trian)
-    #@show cell_grad.dict[first(get_domains(cell_grad)) ]
-    
-    #cell_grad.dict[first(get_domains(cell_grad)) ]
-
-    # because the trian has been perturned, it thinks its different ? 
-    #trian_dual = find_equivalent_trian(trian)
-    
-
-    
-    for trian_cg in get_domains(cell_grad)
-      println("tryn..")
-      if get_cell_node_ids(trian_cg) == get_cell_node_ids(trian)
-        println("ispos")
-        return get_contribution(cell_grad,trian_cg)
-      end
-      println("no compat trian....")
-    end
-     
-
-#    get_contribution(cell_grad,trian)
+    get_contribution2(cell_grad,trian)
 
   end
   g
+end
+
+function get_contribution2(cell_grad,trian)
+  for trian_cg in get_domains(cell_grad)
+    if get_cell_node_ids(trian_cg) == get_cell_node_ids(trian)
+      return get_contribution(cell_grad,trian_cg)
+    end
+  end
 end
