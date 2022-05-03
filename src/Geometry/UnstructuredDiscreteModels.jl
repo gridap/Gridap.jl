@@ -116,22 +116,101 @@ function from_dict(T::Type{UnstructuredDiscreteModel},dict::Dict{Symbol,Any})
 end
 
 function simplexify(model::UnstructuredDiscreteModel)
-
   grid = get_grid(model)
   grid_topology = get_grid_topology(model)
+  cell_vertices = get_cell_vertices(grid_topology)
+  cell_nodes = get_cell_node_ids(grid)
+  nnodes = num_nodes(grid)
+  nvertices = num_vertices(grid_topology)
   labels = get_face_labeling(model)
-
   tgrid = simplexify(grid)
-  tgrid_topology = GridTopology(tgrid)
-
+  cell_ctype = get_cell_type(grid)
+  tcell_nodes = get_cell_node_ids(tgrid)
+  tcell_tctype = get_cell_type(tgrid)
+  function get_lvertex_lnodes(reffe)
+    face_nodes = get_face_own_nodes(reffe)
+    poly = get_polytope(reffe)
+    first.(face_nodes[get_dimrange(poly,0)])
+  end
   reffes = get_reffes(grid)
+  ctype_lvertex_lnode = map(get_lvertex_lnodes,reffes)
+  treffes = get_reffes(tgrid)
+  tctype_ltvertex_ltnode = map(get_lvertex_lnodes,treffes)
+  tcell_vertices, vertex_node = _preapre_tvertices(
+    cell_vertices,
+    cell_nodes,
+    nvertices,
+    nnodes,
+    ctype_lvertex_lnode,
+    cell_ctype,
+    tcell_nodes,
+    tctype_ltvertex_ltnode,
+    tcell_tctype)
+  tgrid_topology = GridTopology(tgrid, tcell_vertices, vertex_node)
   tfacelabels = _generate_tfacelabels(grid_topology, tgrid_topology, reffes, labels)
-
   UnstructuredDiscreteModel(tgrid,tgrid_topology,tfacelabels)
-
 end
 
 const UNSET_ID = Int32(0)
+
+function _preapre_tvertices(
+  cell_vertices,
+  cell_nodes,
+  nvertices,
+  nnodes,
+  ctype_lvertex_lnode,
+  cell_ctype,
+  tcell_nodes,
+  tctype_ltvertex_ltnode,
+  tcell_tctype)
+
+  vertex_node = fill(UNSET_ID,nvertices)
+  node_vertex = fill(UNSET_ID,nnodes)
+  c1 = array_cache(cell_vertices)
+  c2 = array_cache(cell_nodes)
+  ncells = length(cell_nodes)
+  for cell in 1:ncells
+    ctype = cell_ctype[cell]
+    lvertex_lnode = ctype_lvertex_lnode[ctype]
+    vertices = getindex!(c1,cell_vertices,cell)
+    nodes = getindex!(c2,cell_nodes,cell)
+    for (lvertex,lnode) in enumerate(lvertex_lnode)
+      v = vertices[lvertex]
+      n = nodes[lnode]
+      #if vertex_node[v] != UNSET_ID
+      vertex_node[v] = n
+      #end
+      node_vertex[n] = v
+    end
+  end
+
+  ntcells = length(tcell_nodes)
+  tcell_vertices_ptrs = zeros(Int32,ntcells+1)
+  for tcell in 1:ntcells
+    tctype = tcell_tctype[tcell]
+    ltvertex_ltnode = tctype_ltvertex_ltnode[tctype]
+    tcell_vertices_ptrs[tcell+1] = length(ltvertex_ltnode)
+  end
+  length_to_ptrs!(tcell_vertices_ptrs)
+  ndata = tcell_vertices_ptrs[end]-1
+  tcell_vertices_data = zeros(Int32,ndata)
+  c3 = array_cache(tcell_nodes)
+  for tcell in 1:ntcells
+    nodes = getindex!(c3,tcell_nodes,tcell)
+    tctype = tcell_tctype[tcell]
+    ltvertex_ltnode = tctype_ltvertex_ltnode[tctype]
+    pini = tcell_vertices_ptrs[tcell]-1
+    for (ltvertex,ltnode) in enumerate(ltvertex_ltnode)
+      n = nodes[ltnode]
+      v = node_vertex[n]
+      p = pini + ltvertex
+      tcell_vertices_data[p] = v
+    end
+  end
+
+  tcell_vertices = Table(tcell_vertices_data,tcell_vertices_ptrs)
+  tcell_vertices, vertex_node
+end
 
 function _generate_tfacelabels(grid_topology, tgrid_topology, reffes, facelabels)
 
