@@ -76,7 +76,7 @@ end
 
 function _Nedelec_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) where et
 
-  @notimplementedif !( is_n_cube(p) || (is_simplex(p) && order==0) )
+  @notimplementedif !( is_n_cube(p) || (is_simplex(p) ) )
 
   D = num_dims(p)
   ft = VectorValue{D,et}
@@ -92,14 +92,19 @@ function _Nedelec_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) whe
 
   if ( num_dims(p) == 3 && order > 0)
 
-    fcips, fmoments = _Nedelec_face_values(p,et,order)
+    if is_n_cube(p)
+      fcips, fmoments = _Nedelec_face_values(p,et,order)
+    else
+      fcips, fmoments = _Nedelec_face_values_simplex(p,et,order)
+    end
+
     frange = get_dimrange(p,D-1)
     nf_nodes[frange] = fcips
     nf_moments[frange] = fmoments
 
   end
 
-  if (order > 0)
+  if ( is_n_cube(p) && order > 0) || ( is_simplex(p) && order > 1)
 
     ccips, cmoments = _Nedelec_cell_values(p,et,order)
     crange = get_dimrange(p,D)
@@ -151,7 +156,7 @@ end
 function _Nedelec_face_values(p,et,order)
 
   # Reference facet
-  @assert is_simplex(p) || is_n_cube(p) "We are assuming that all n-faces of the same n-dim are the same."
+  @assert is_n_cube(p) "We are assuming that all n-faces of the same n-dim are the same."
   fp = Polytope{num_dims(p)-1}(p,1)
 
   # geomap from ref face to polytope faces
@@ -194,6 +199,58 @@ function _Nedelec_face_moments(p, fshfs, c_fips, fcips, fwips)
   return cvals
 end
 
+function _Nedelec_face_values_simplex(p,et,order)
+
+  # Reference facet
+  @assert is_simplex(p) "We are assuming that all n-faces of the same n-dim are the same."
+  fp = Polytope{num_dims(p)-1}(p,1)
+
+  # geomap from ref face to polytope faces
+  fgeomap = _ref_face_to_faces_geomap(p,fp)
+
+  # Compute integration points at all polynomial edges
+  degree = (order+1)*2
+  fquad = Quadrature(fp,degree)
+  fips = get_coordinates(fquad)
+  wips = get_weights(fquad)
+
+  c_fips, fcips, fwips, fJtips = _nfaces_evaluation_points_weights_with_jac(p, fgeomap, fips, wips)
+
+  Df = num_dims(fp)
+  fshfs = MonomialBasis{Df}(VectorValue{Df,et},order-1,(e,k)->sum(e)<=k)
+
+  fmoments = _Nedelec_face_moments_simplex(p, fshfs, c_fips, fcips, fwips, fJtips)
+
+  return fcips, fmoments
+
+end
+
+function _nfaces_evaluation_points_weights_with_jac(p, fgeomap, fips, wips)
+  nc = length(fgeomap)
+  c_fips = fill(fips,nc)
+  c_wips = fill(wips,nc)
+  pquad = lazy_map(evaluate,fgeomap,c_fips)
+  # Must account for diagonals in simplex discretizations to get the correct
+  # scaling
+  Jt1 = lazy_map(∇,fgeomap)
+  Jt1_ips = lazy_map(evaluate,Jt1,c_fips)
+  det_J = lazy_map(Broadcasting(meas),Jt1_ips)
+  c_detwips = collect(lazy_map(Broadcasting(*),c_wips,det_J))
+  c_fips, pquad, c_detwips, Jt1_ips
+end
+
+function _Nedelec_face_moments_simplex(p, fshfs, c_fips, fcips, fwips, fJtips)
+  nc = length(c_fips)
+  cfshfs = fill(fshfs, nc)
+  cfshfs_fips = lazy_map(evaluate,cfshfs,c_fips)
+  function weigth(qij,Jti)
+    Ji = transpose(Jti)
+    Ji⋅qij
+  end
+  cvals = map(Broadcasting(weigth),cfshfs_fips,fJtips)
+  return cvals
+end
+
 # It provides for every cell the nodes and the moments arrays
 function _Nedelec_cell_values(p,et,order)
 
@@ -204,7 +261,12 @@ function _Nedelec_cell_values(p,et,order)
   cwips = get_weights(iquad)
 
   # Cell moments, i.e., M(C)_{ab} = q_C^a(xgp_C^b) w_C^b ⋅ ()
-  cbasis = QCurlGradMonomialBasis{num_dims(p)}(et,order-1)
+  if is_n_cube(p)
+    cbasis = QCurlGradMonomialBasis{num_dims(p)}(et,order-1)
+  else
+    D = num_dims(p)
+    cbasis = MonomialBasis{D}(VectorValue{D,et},order-2,(e,k)->sum(e)<=k)
+  end
   cmoments = _Nedelec_cell_moments(p, cbasis, ccips, cwips )
 
   return [ccips], [cmoments]
