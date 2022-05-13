@@ -1,6 +1,7 @@
 module NedelecRefFEsTest
 
 using Test
+using Gridap.Arrays
 using Gridap.Polynomials
 using Gridap.Fields
 using Gridap.TensorValues
@@ -57,6 +58,35 @@ test_reference_fe(reffe)
 @test num_dofs(reffe) == 6
 @test Conformity(reffe) == CurlConformity()
 
+#using Gridap.Geometry
+#p = TRI
+#D = num_dims(p)
+#et = Float64
+#order = 0
+#reffe = NedelecRefFE(et,p,order)
+#grid = compute_reference_grid(p,4)
+#x = get_node_coordinates(grid)
+#shapes = get_prebasis(reffe)
+#shapes = Broadcasting(∇)(shapes)
+#ux = evaluate(shapes,x)
+#for i in 8#1:size(ux,1)
+#  @show i
+#  @show x[i]
+#  display(ux[i,:])
+#end
+
+#using Gridap.Geometry
+#using Gridap.Visualization
+#grid = compute_reference_grid(p,10)
+#x = get_node_coordinates(grid)
+#shapes = get_shapefuns(reffe)
+#gshapes = Broadcasting(∇)(shapes)
+#ux = evaluate(shapes,x)
+#gux = evaluate(gshapes,x)
+#ndat = ["s$i"=>ux[:,i] for i in 1:num_dofs(reffe)]
+#gndat = ["g$i"=>gux[:,i] for i in 1:num_dofs(reffe)]
+#writevtk(grid,"nede_tet",nodaldata=vcat(ndat,gndat))
+
 p = TRI
 D = num_dims(p)
 et = Float64
@@ -75,9 +105,12 @@ dof_basis = get_dof_basis(reffe)
 #grid = compute_reference_grid(p,10)
 #x = get_node_coordinates(grid)
 #shapes = get_shapefuns(reffe)
+#gshapes = Broadcasting(∇)(shapes)
 #ux = evaluate(shapes,x)
-#writevtk(grid,"nede",nodaldata=["s$i"=>ux[:,i] for i in 1:num_dofs(reffe)])
-
+#gux = evaluate(gshapes,x)
+#ndat = ["s$i"=>ux[:,i] for i in 1:num_dofs(reffe)]
+#gndat = ["g$i"=>gux[:,i] for i in 1:num_dofs(reffe)]
+#writevtk(grid,"nede_tri",nodaldata=vcat(ndat,gndat))
 
 # Factory function
 reffe = ReferenceFE(QUAD,nedelec,0)
