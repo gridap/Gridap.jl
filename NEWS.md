@@ -4,8 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
 ### Added
 - Generalized-α method for 1st order ODEs. Since PR [#781](https://github.com/gridap/Gridap.jl/pull/781) 
+- Implemented (generalised) ModalC0 Polynomial bases and reference FEs. Since PR [#777](https://github.com/gridap/Gridap.jl/pull/777)
+- Serendipity reference FEs for any dimension and order. Since PR [#777](https://github.com/gridap/Gridap.jl/pull/777)
 
 ## [0.17.12] - 2022-03-24
 

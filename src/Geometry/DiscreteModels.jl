@@ -388,6 +388,12 @@ function ReferenceFE(model::DiscreteModel,args...;kwargs...)
   cell_to_reffe
 end
 
+function ReferenceFE(model::DiscreteModel,basis::ModalC0,args...;kwargs...)
+  ctype_to_polytope = get_polytopes(model)
+  @assert length(ctype_to_polytope) == 1 "Only one polytope expected"
+  compute_cell_to_modalC0_reffe(ctype_to_polytope[1],num_cells(model),args...;kwargs...)
+end
+
 # IO
 
 function to_dict(model::DiscreteModel)
