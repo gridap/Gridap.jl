@@ -24,6 +24,11 @@ function allocate_cache(op::ODEOpFromFEOp)
   ode_cache
 end
 
+function allocate_cache(op::ODEOpFromFEOp,v::AbstractVector)
+  ode_cache = allocate_cache(op)
+  (v, ode_cache)
+end
+
 function allocate_cache(op::ODEOpFromFEOp,v::AbstractVector,a::AbstractVector)
   ode_cache = allocate_cache(op)
   (v,a, ode_cache)
