@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### Added
+- Vertex bisection algorithm for refinement of triangular meshes in 2D. Since PR [#733](https://github.com/gridap/Gridap.jl/pull/733)
 - Generalized-α method for 1st order ODEs. Since PR [#781](https://github.com/gridap/Gridap.jl/pull/781) 
 - Implemented (generalised) ModalC0 Polynomial bases and reference FEs. Since PR [#777](https://github.com/gridap/Gridap.jl/pull/777)
 - Serendipity reference FEs for any dimension and order. Since PR [#777](https://github.com/gridap/Gridap.jl/pull/777)
