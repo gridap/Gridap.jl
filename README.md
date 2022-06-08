@@ -101,7 +101,7 @@ Want to help? We have a number of [issues waiting for help](https://github.com/g
 
 ## How to cite Gridap
 
-In order to give credit to the `Gridap` contributors, we simply ask you to cite the reference below in any publication in which you have made use of the `Gridap` project. If you are using other `Gridap` sub-packages, please cite them as indicated in their repositories.
+In order to give credit to the `Gridap` contributors, we simply ask you to cite the references below in any publication in which you have made use of the `Gridap` project. If you are using other `Gridap` sub-packages, please cite them as indicated in their repositories.
 
 ```
 @article{Badia2020,
