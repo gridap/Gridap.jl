@@ -116,6 +116,19 @@ In order to give credit to the `Gridap` contributors, we simply ask you to cite 
   title = {Gridap: An extensible Finite Element toolbox in Julia},
   journal = {Journal of Open Source Software}
 }
+
+@article{Verdugo2022,
+  doi = {10.1016/j.cpc.2022.108341},
+  url = {https://doi.org/10.1016/j.cpc.2022.108341},
+  year = {2022},
+  month = jul,
+  publisher = {Elsevier {BV}},
+  volume = {276},
+  pages = {108341},
+  author = {Francesc Verdugo and Santiago Badia},
+  title = {The software design of Gridap: A Finite Element package based on the Julia {JIT} compiler},
+  journal = {Computer Physics Communications}
+}
 ```
 
 ## Contact
