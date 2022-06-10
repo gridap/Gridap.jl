@@ -106,3 +106,49 @@ function evaluate!(result,k::AutoDiffMap,ydual,x,cfg::ForwardDiff.JacobianConfig
   ForwardDiff.extract_value!(T, result, ydual)
   return result
 end
+
+# overloads for AD of SkeletonTriangulation DomainContribution
+
+# earlier the dispatch of autodiff_array_gradient for Skeleton terms was
+# based on the SkeletonPair (which is intuitive as it has fields plus and minus)
+# autodiff_array_gradient(a,i_to_x,j_to_i::SkeletonPair)
+# but src/Arrays/ can import SkeletonPair for the above dispatch due to
+# circular dependency of modules
+# so now we just tuple instead of SkeletonPair, where the first entry of the
+# tuple corresponds to plus side and the second to minus
+
+function autodiff_array_gradient(
+  a, i_to_x, j_to_i::T) where T <: NTuple{2,<:Vector{<:Integer}}
+
+  i_to_xdual = lazy_map(DualizeMap(ForwardDiff.gradient),i_to_x)
+
+  # dual output of both sides at once
+  j_to_ydual_plus, j_to_ydual_minus = a(i_to_xdual)
+
+  # Work for plus side
+  j_to_x_plus = lazy_map(Reindex(i_to_x),j_to_i[1])
+  j_to_cfg_plus = lazy_map(ConfigMap(ForwardDiff.gradient),j_to_x_plus)
+  j_to_result_plus = lazy_map(AutoDiffMap(ForwardDiff.gradient),
+                              j_to_ydual_plus,j_to_x_plus,j_to_cfg_plus)
+
+  # Work for minus side
+  j_to_x_minus = lazy_map(Reindex(i_to_x),j_to_i[2])
+  j_to_cfg_minus = lazy_map(ConfigMap(ForwardDiff.gradient),j_to_x_minus)
+  j_to_result_minus = lazy_map(AutoDiffMap(ForwardDiff.gradient),
+                               j_to_ydual_minus,j_to_x_minus,j_to_cfg_minus)
+
+  # Assemble on SkeletonTriangulation expects an array of interior of facets
+  # where each entry is a 2-block BlockVector with the first block being the
+  # contribution of the plus side and the second, the one of the minus side
+  lazy_map(BlockMap(2,[1,2]),j_to_result_plus,j_to_result_minus)
+end
+
+function autodiff_array_jacobian(
+  a,i_to_x,j_to_i::T) where T <: NTuple{2,<:Vector{<:Integer}}
+  @notimplemented
+end
+
+function autodiff_array_hessian(
+  a,i_to_x,i_to_j::T) where T <: NTuple{2,<:Vector{<:Integer}}
+  @notimplemented
+end

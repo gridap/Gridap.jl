@@ -104,3 +104,47 @@ function _change_argument(op,f,trian,uh::SingleFieldFEFunction)
   end
   g
 end
+
+#= AD for DomainContribution involving SkeletonTriangulation
+
+- Following are the constructs for performing gradient of DomainContribution
+  involving integrations over SkeletonTriangulation (Λ)
+- The current approach followed to achieve the above is performing the Gridap
+  way of AD for plus and minus sides of the FEFunction occuring at Λ separately,
+  and combining the result. So as to Dualize only either plus side or minus
+  side of CellField/FEFunction we introduce the SkeletonCellFieldPair, which
+  stores two CellFields, one of which in the use case here is the dualized
+  version of the other.
+- Currently, Jacobian and hence Hessian are not yet fully implemented and work-
+  in-progress.
+- AD for integration over SkeletonTriangulation has not yet been implemented
+  for the MultiField case
+
+=#
+
+function _change_argument(
+  op,f,
+  trian::SkeletonTriangulation,
+  uh::SingleFieldFEFunction)
+
+  U = get_fe_space(uh)
+  function g(cell_u)
+    uh_dual = CellField(U,cell_u)
+    scfp_plus = SkeletonCellFieldPair(uh_dual, uh, trian)
+    scfp_minus = SkeletonCellFieldPair(uh, uh_dual, trian)
+    cell_grad_plus = f(scfp_plus)
+    cell_grad_minus = f(scfp_minus)
+    get_contribution(cell_grad_plus,trian), get_contribution(cell_grad_minus,trian)
+  end
+  g
+end
+
+# In the earlier version, SkeletonPair was returned. Although this is a perfect
+# fit for this situation, the dispatch based on SkeletonPair is not possible as
+# it is not imported into src/Arrays/ due to circula dependency situation
+function _compute_cell_ids(uh,ttrian::SkeletonTriangulation)
+  tcells_plus  = _compute_cell_ids(uh,ttrian.plus)
+  tcells_minus = _compute_cell_ids(uh,ttrian.minus)
+  # SkeletonPair(tcells_plus,tcells_minus)
+  (tcells_plus, tcells_minus)
+end

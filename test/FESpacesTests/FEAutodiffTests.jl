@@ -9,6 +9,7 @@ using Gridap.Geometry
 using Gridap.TensorValues
 using Gridap.CellData
 using Gridap.ReferenceFEs
+using ForwardDiff
 
 domain = (0,1,0,1)
 partition = (2,2)
@@ -91,5 +92,50 @@ cell_j = get_array(jac(uh,du,dv))
 cell_j_auto = get_array(jacobian(u->res(u,dv),uh))
 
 test_array(cell_j_auto,cell_j,≈)
+
+# comparing AD of integration over Skeleton faces with ForwardDiff results
+
+model = CartesianDiscreteModel((0.,1.,0.,1.),(3,3))
+Ω = Triangulation(model)
+Γ = BoundaryTriangulation(model)
+Λ = SkeletonTriangulation(model)
+
+dΩ = Measure(Ω,2)
+dΓ = Measure(Γ,2)
+dΛ = Measure(Λ,2)
+
+n_Γ = get_normal_vector(Γ)
+n_Λ = get_normal_vector(Λ)
+
+reffe = ReferenceFE(lagrangian,Float64,2)
+V = TestFESpace(model,reffe,conformity=:L2)
+
+u(x) = sin(norm(x))
+U = TrialFESpace(V)
+
+uh = FEFunction(U,rand(num_free_dofs(U)))
+
+f_Λ(uh) = ∫(mean(uh))*dΛ
+a_Λ(u) = ∫( - jump(u*n_Λ)⊙mean(∇(u))
+            - mean(∇(u))⊙jump(u*n_Λ)
+            + jump(u*n_Λ)⊙jump(u*n_Λ) )dΛ
+
+function f_uh_free_dofs(f,uh,θ)
+  dir = similar(uh.dirichlet_values,eltype(θ))
+  uh = FEFunction(U,θ,dir)
+  sum(f(uh))
+end
+
+f_Λ_(θ) = f_uh_free_dofs(f_Λ,uh,θ)
+a_Λ_(θ) = f_uh_free_dofs(a_Λ,uh,θ)
+θ = get_free_dof_values(uh)
+
+gridapgradf = assemble_vector(Gridap.gradient(f_Λ,uh),U)
+fdgradf = ForwardDiff.gradient(f_Λ_,θ)
+test_array(gridapgradf,fdgradf,≈)
+
+gridapgrada = assemble_vector(Gridap.gradient(a_Λ,uh),U)
+fdgrada = ForwardDiff.gradient(a_Λ_,θ)
+test_array(gridapgrada,fdgrada,≈)
 
 end # module
