@@ -78,6 +78,21 @@ function get_triangulation(a::SkeletonCellFieldPair)
   a.trian
 end
 
+#=
+The below change_domain has been overloaded for SkeletonCellFieldPair
+to work without errors for integrations over other triangulation - Ω
+(BodyFittedTriangulation) and Γ (BoundaryTriangulation).
+
+We arbitrarily choose plus side of SkeletonCellFieldPair for evaluations, as
+we don't use the DomainContributions associated with Ω and Γ while performing
+the sensitivities for SkeletonTriangulation (Λ) DomainContribution. This
+fix is for error free evaluation of the functional when a SkeletonCellFieldPair
+is passed into it. Ideally, if we could parse and extract only the Skeleton
+integration terms from the functional's julia function form, this fix is not
+required, but this is not trivial to do. On the positive side, since the
+evaluations are all lazy and not used, this doesn't put any noticable memory
+or computational overhead.
+=#
 function change_domain(a::SkeletonCellFieldPair,target_trian::Triangulation,target_domain::DomainStyle)
   change_domain(a.plus,DomainStyle(a),target_trian,target_domain)
 end
