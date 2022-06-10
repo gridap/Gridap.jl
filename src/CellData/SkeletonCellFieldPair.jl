@@ -8,9 +8,18 @@
   so as to restrict the interaction between the dual numbers.
 
   It takes in two CellFields and stores plus version of CellFieldAt
-  for the first CellField and minus version of CellFieldAt for the
-  second the CellField. SkeletonCellFieldPair is associated with the
-  same triangulations as the CellFields
+  of the first CellField and minus version of CellFieldAt of the
+  second the CellField. SkeletonCellFieldPair is associated with
+  same triangulation as that of the CellFields (we check if the
+  triangulations of both CellFields match)
+
+  SkeletonCellFieldPair is an internal convenience artifact/construct
+  to aid in dualizing plus and minus side around a Skeleton face separately
+  to perform the sensitivity of degrees of freedom of cells sharing the
+  Skeleton face, without the interaction dual numbers of the two cells.
+  The user doesn't have to deal with this construct anywhere when
+  performing AD of functionals involving integration over Skeleton faces
+  using the public API.
 """
 struct SkeletonCellFieldPair{
   P<:CellField, M<:CellField, T<:Triangulation} <: CellField
