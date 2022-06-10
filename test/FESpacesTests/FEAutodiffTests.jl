@@ -130,11 +130,11 @@ f_Λ_(θ) = f_uh_free_dofs(f_Λ,uh,θ)
 a_Λ_(θ) = f_uh_free_dofs(a_Λ,uh,θ)
 θ = get_free_dof_values(uh)
 
-gridapgradf = assemble_vector(Gridap.gradient(f_Λ,uh),U)
+gridapgradf = assemble_vector(gradient(f_Λ,uh),U)
 fdgradf = ForwardDiff.gradient(f_Λ_,θ)
 test_array(gridapgradf,fdgradf,≈)
 
-gridapgrada = assemble_vector(Gridap.gradient(a_Λ,uh),U)
+gridapgrada = assemble_vector(gradient(a_Λ,uh),U)
 fdgrada = ForwardDiff.gradient(a_Λ_,θ)
 test_array(gridapgrada,fdgrada,≈)
 
