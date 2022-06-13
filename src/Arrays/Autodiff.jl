@@ -106,3 +106,13 @@ function evaluate!(result,k::AutoDiffMap,ydual,x,cfg::ForwardDiff.JacobianConfig
   ForwardDiff.extract_value!(T, result, ydual)
   return result
 end
+
+
+
+# earlier the dispatch of autodiff_array_gradient for Skeleton terms was
+# based on the SkeletonPair (which is intuitive as it has fields plus and minus)
+# autodiff_array_gradient(a,i_to_x,j_to_i::SkeletonPair)
+# but src/Arrays/ can import SkeletonPair for the above dispatch due to
+# circular dependency of modules
+# so now we just tuple instead of SkeletonPair, where the first entry of the
+# tuple corresponds to plus side and the second to minus

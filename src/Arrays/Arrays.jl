@@ -110,6 +110,11 @@ export AppendedArray
 export lazy_append
 export lazy_split
 
+export Reindex
+
+export ConfigMap
+export DualizeMap
+export AutoDiffMap
 export autodiff_array_gradient
 export autodiff_array_jacobian
 export autodiff_array_hessian
