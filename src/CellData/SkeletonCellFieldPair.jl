@@ -21,35 +21,34 @@
   performing AD of functionals involving integration over Skeleton faces
   using the public API.
 """
-struct SkeletonCellFieldPair{
-  P<:CellField, M<:CellField, T<:Triangulation} <: CellField
-
+struct SkeletonCellFieldPair{P<:CellFieldAt, M<:CellFieldAt} <: CellField
   cf_plus::P
   cf_minus::M
-  trian::T # Background Triangulation to which CellFields belong to
 
-  function SkeletonCellFieldPair(
-    cf_plus::CellField,
-    cf_minus::CellField,
-    strian::SkeletonTriangulation)
-
-    @check DomainStyle(cf_plus) == DomainStyle(cf_minus)
-    cf_plus_trian = get_triangulation(cf_plus)
-    cf_minus_trian =  get_triangulation(cf_plus)
-    @notimplementedif !(cf_plus_trian ===  cf_minus_trian)
-
-    @check num_dims(cf_plus_trian) == num_dims(strian) + 1
-    @check get_background_model(cf_plus_trian) === get_background_model(strian)
-
-    cf_plus_plus  = cf_plus.plus
-    cf_minus_minus = cf_minus.minus
-
+  function SkeletonCellFieldPair(cf_plus_plus,cf_minus_minus)
     P = typeof(cf_plus_plus)
     M = typeof(cf_minus_minus)
-    T = typeof(cf_plus_trian) # same as cf_minus_trian as the check passed!
-
-    new{P,M,T}(cf_plus_plus,cf_minus_minus,cf_plus_trian)
+    new{P,M}(cf_plus_plus, cf_minus_minus)
   end
+end
+
+function SkeletonCellFieldPair(
+  cf_plus::CellField,
+  cf_minus::CellField,
+  strian::SkeletonTriangulation)
+
+  @check DomainStyle(cf_plus) == DomainStyle(cf_minus)
+  cf_plus_trian = get_triangulation(cf_plus)
+  cf_minus_trian =  get_triangulation(cf_minus)
+  @notimplementedif !(cf_plus_trian ===  cf_minus_trian)
+
+  @check num_dims(cf_plus_trian) == num_dims(strian) + 1
+  @check get_background_model(cf_plus_trian) === get_background_model(strian)
+
+  cf_plus_plus  = cf_plus.plus
+  cf_minus_minus = cf_minus.minus
+
+  SkeletonCellFieldPair(cf_plus_plus,cf_minus_minus)
 end
 
 function Base.getproperty(a::SkeletonCellFieldPair,sym::Symbol)
@@ -67,7 +66,7 @@ function DomainStyle(a::SkeletonCellFieldPair)
 end
 
 function get_triangulation(a::SkeletonCellFieldPair)
-  getfield(a,:trian)
+  get_triangulation(getfield(a,:cf_plus))
 end
 
 #=
@@ -102,13 +101,11 @@ end
 function gradient(a::SkeletonCellFieldPair)
   grad_cf_plus_plus = gradient(getfield(a,:cf_plus))
   grad_cf_minus_minus = gradient(getfield(a,:cf_minus))
-  SkeletonCellFieldPair(
-    grad_cf_plus_plus,grad_cf_minus_minus,getfield(a,:trian))
+  SkeletonCellFieldPair(grad_cf_plus_plus,grad_cf_minus_minus)
 end
 
 function ∇∇(a::SkeletonCellFieldPair)
   hess_cf_plus_plus = ∇∇(getfield(a,:cf_plus))
   hess_cf_minus_minus = ∇∇(getfield(a,:cf_minus))
-  SkeletonCellFieldPair(
-    hess_cf_plus_plus,hess_cf_minus_minus,getfield(a,:trian))
+  SkeletonCellFieldPair(hess_cf_plus_plus,hess_cf_minus_minus)
 end
