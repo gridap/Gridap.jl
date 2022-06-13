@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
-- Added functionality to take gradient of functional involving integration (`DomainContribution`) over Skeleton faces, with respect to the degrees of freedom `FEFunction`.  The interface remains the same - `gradient(fuh,uh)`. Since PR [#797](https://github.com/gridap/Gridap.jl/pull/797)
+- Added functionality to take gradient of functional involving integration (`DomainContribution`) over Skeleton faces, with respect to the degrees of freedom `FEFunction`.  The interface remains the same - `gradient(f,uh)`. Since PR [#797](https://github.com/gridap/Gridap.jl/pull/797)
 
 ## [0.17.13] - 2022-05-31
 
