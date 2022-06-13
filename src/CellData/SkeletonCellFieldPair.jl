@@ -21,20 +21,25 @@
   performing AD of functionals involving integration over Skeleton faces
   using the public API.
 """
-struct SkeletonCellFieldPair{P<:CellFieldAt, M<:CellFieldAt} <: CellField
+struct SkeletonCellFieldPair{
+  P<:CellFieldAt, M<:CellFieldAt, T<:Triangulation} <: CellField
+
   cf_plus::P
   cf_minus::M
+  trian::T
 
-  function SkeletonCellFieldPair(cf_plus_plus,cf_minus_minus)
-    
+  function SkeletonCellFieldPair(
+    cf_plus_plus::CellFieldAt, cf_minus_minus::CellFieldAt)
+
     @check DomainStyle(cf_plus_plus) == DomainStyle(cf_minus_minus)
-    cf_plus_trian = get_triangulation(cf_plus.plus)
-    cf_minus_trian =  get_triangulation(cf_minus.minus)
+    cf_plus_trian = get_triangulation(cf_plus_plus)
+    cf_minus_trian =  get_triangulation(cf_minus_minus)
     @notimplementedif !(cf_plus_trian ===  cf_minus_trian)
 
     P = typeof(cf_plus_plus)
     M = typeof(cf_minus_minus)
-    new{P,M}(cf_plus_plus, cf_minus_minus)
+    T = typeof(cf_plus_trian)
+    new{P,M,T}(cf_plus_plus, cf_minus_minus, cf_plus_trian)
   end
 end
 
@@ -59,7 +64,7 @@ function DomainStyle(a::SkeletonCellFieldPair)
 end
 
 function get_triangulation(a::SkeletonCellFieldPair)
-  get_triangulation(getfield(a,:cf_plus))
+  getfield(a,:trian)
 end
 
 #=

@@ -3,6 +3,7 @@ module SkeletonCellFieldPairTests
 using Test
 using FillArrays
 using Gridap.Arrays
+using Gridap.FESpaces
 using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.ReferenceFEs
@@ -22,12 +23,15 @@ dΛ = Measure(Λ,2)
 n_Γ = get_normal_vector(Γ)
 n_Λ = get_normal_vector(Λ)
 
+order = 2
 u(x) = sin(norm(x))
+reffe = ReferenceFE(lagrangian,Float64,order)
+V = TestFESpace(model,reffe,conformity=:L2)
 U = TrialFESpace(V)
 uh = FEFunction(U,rand(num_free_dofs(U)))
 
 cellu = get_cell_dof_values(uh)
-cellu_dual = lazy_map(Gridap.Arrays.DualizeMap(ForwardDiff.gradient),cellu)
+cellu_dual = lazy_map(DualizeMap(ForwardDiff.gradient),cellu)
 uh_dual = CellField(U,cellu_dual)
 @test eltype(cellu_dual[1]) <: ForwardDiff.Dual
 
