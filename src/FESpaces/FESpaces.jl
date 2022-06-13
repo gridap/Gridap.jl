@@ -20,7 +20,13 @@ using Gridap.Geometry
 using Gridap.CellData
 using Gridap.TensorValues
 
+using Gridap.Arrays: Reindex, ConfigMap, DualizeMap, AutoDiffMap, lazy_map
+
 using Gridap.Fields: ArrayBlock, BlockMap
+
+using Gridap.Geometry: SkeletonPair
+
+using Gridap.CellData: SkeletonCellFieldPair
 
 import Gridap.Fields: gradient
 import Gridap.Fields: ∇∇
@@ -29,6 +35,9 @@ import Gridap.Arrays: array_cache
 import Gridap.Arrays: getindex!
 import Gridap.Arrays: return_cache
 import Gridap.Arrays: evaluate!
+import Gridap.Arrays: autodiff_array_gradient # overloaded for Skeleton terms
+import Gridap.Arrays: autodiff_array_jacobian
+import Gridap.Arrays: autodiff_array_hessian
 import Gridap.Geometry: get_triangulation
 import Gridap.Geometry: get_cell_shapefuns
 import Gridap.CellData: attach_constraints_rows
@@ -39,7 +48,6 @@ import Gridap.CellData: DomainStyle
 import Gridap.CellData: change_domain
 import Gridap.CellData: change_domain_ref_ref
 import Gridap.CellData: change_domain_phys_phys
-import Gridap.CellData: SkeletonCellFieldPair
 
 import Gridap.Algebra: allocate_residual
 import Gridap.Algebra: allocate_jacobian

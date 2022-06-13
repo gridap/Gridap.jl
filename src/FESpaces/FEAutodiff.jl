@@ -139,12 +139,64 @@ function _change_argument(
   g
 end
 
-# In the earlier version, SkeletonPair was returned. Although this is a perfect
-# fit for this situation, the dispatch based on SkeletonPair is not possible as
-# it is not imported into src/Arrays/ due to circula dependency situation
 function _compute_cell_ids(uh,ttrian::SkeletonTriangulation)
   tcells_plus  = _compute_cell_ids(uh,ttrian.plus)
   tcells_minus = _compute_cell_ids(uh,ttrian.minus)
-  # SkeletonPair(tcells_plus,tcells_minus)
-  (tcells_plus, tcells_minus)
+  SkeletonPair(tcells_plus,tcells_minus)
+end
+
+## overloads for AD of SkeletonTriangulation DomainContribution ##
+
+#= Notes regarding the placement of below AD functions for Skeleton Integration
+
+- Earlier, the autodiff_array_### family of functions have been placed in the
+  `src/Arrays/Autodiff.jl`, but as below we are leveraging `BlockMap` for the
+  construction derivatives of Skeleton integration terms, this cannot be
+  placed in `Arrays/Autodiff.jl` due to circular dependency, this is due to the
+  fact that `BlockMap` belongs to Gridap.Fields which uses/imports functions
+  and constructs from Gridap.Arrays, so using `BlockMap` in Gridap.Arrays would
+  create a circular dependency.
+- So as to have everything working we will need `use` some of the constructs
+  from Gridap.Arrays, `Gridap.Geometry.SkeletonPair` and
+  `Gridap.CellData.SkeletonCellFieldPair`
+- This comes with an added advantage of being able use `SkeletonPair` in
+  `_compute_cell_ids` for `SkeletonTriangulation`
+- we need to also think if all of AD can be moved into a separate module in
+  Gridap, where we can use or import required functionalities from other
+  modules without any circular dependency
+=#
+function autodiff_array_gradient(
+  a, i_to_x, j_to_i::SkeletonPair)
+
+  i_to_xdual = lazy_map(DualizeMap(ForwardDiff.gradient),i_to_x)
+
+  # dual output of both sides at once
+  j_to_ydual_plus, j_to_ydual_minus = a(i_to_xdual)
+
+  # Work for plus side
+  j_to_x_plus = lazy_map(Reindex(i_to_x),j_to_i.plus)
+  j_to_cfg_plus = lazy_map(ConfigMap(ForwardDiff.gradient),j_to_x_plus)
+  j_to_result_plus = lazy_map(AutoDiffMap(ForwardDiff.gradient),
+                              j_to_ydual_plus,j_to_x_plus,j_to_cfg_plus)
+
+  # Work for minus side
+  j_to_x_minus = lazy_map(Reindex(i_to_x),j_to_i.minus)
+  j_to_cfg_minus = lazy_map(ConfigMap(ForwardDiff.gradient),j_to_x_minus)
+  j_to_result_minus = lazy_map(AutoDiffMap(ForwardDiff.gradient),
+                               j_to_ydual_minus,j_to_x_minus,j_to_cfg_minus)
+
+  # Assemble on SkeletonTriangulation expects an array of interior of facets
+  # where each entry is a 2-block BlockVector with the first block being the
+  # contribution of the plus side and the second, the one of the minus side
+  lazy_map(BlockMap(2,[1,2]),j_to_result_plus,j_to_result_minus)
+end
+
+function autodiff_array_jacobian(
+  a,i_to_x,j_to_i::SkeletonPair)
+  @notimplemented
+end
+
+function autodiff_array_hessian(
+  a,i_to_x,i_to_j::SkeletonPair)
+  @notimplemented
 end
