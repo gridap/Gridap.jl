@@ -67,7 +67,7 @@ function DomainStyle(a::SkeletonCellFieldPair)
 end
 
 function get_triangulation(a::SkeletonCellFieldPair)
-  a.trian
+  getfield(a,:trian)
 end
 
 #=
