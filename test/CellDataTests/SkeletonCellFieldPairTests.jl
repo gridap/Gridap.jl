@@ -31,8 +31,8 @@ cellu_dual = lazy_map(Gridap.Arrays.DualizeMap(ForwardDiff.gradient),cellu)
 uh_dual = CellField(U,cellu_dual)
 @test eltype(cellu_dual[1]) <: ForwardDiff.Dual
 
-scfp = SkeletonCellFieldPair(uh,uh,Λ) # non-dualized version
-scfp_dualplus = SkeletonCellFieldPair(uh_dual,uh,Λ)
+scfp = SkeletonCellFieldPair(uh,uh) # non-dualized version
+scfp_dualplus = SkeletonCellFieldPair(uh_dual,uh)
 
 # construction tests
 @test get_triangulation(scfp) === get_triangulation(uh)

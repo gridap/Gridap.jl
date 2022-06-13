@@ -26,28 +26,21 @@ struct SkeletonCellFieldPair{P<:CellFieldAt, M<:CellFieldAt} <: CellField
   cf_minus::M
 
   function SkeletonCellFieldPair(cf_plus_plus,cf_minus_minus)
+    
+    @check DomainStyle(cf_plus_plus) == DomainStyle(cf_minus_minus)
+    cf_plus_trian = get_triangulation(cf_plus.plus)
+    cf_minus_trian =  get_triangulation(cf_minus.minus)
+    @notimplementedif !(cf_plus_trian ===  cf_minus_trian)
+
     P = typeof(cf_plus_plus)
     M = typeof(cf_minus_minus)
     new{P,M}(cf_plus_plus, cf_minus_minus)
   end
 end
 
-function SkeletonCellFieldPair(
-  cf_plus::CellField,
-  cf_minus::CellField,
-  strian::SkeletonTriangulation)
-
-  @check DomainStyle(cf_plus) == DomainStyle(cf_minus)
-  cf_plus_trian = get_triangulation(cf_plus)
-  cf_minus_trian =  get_triangulation(cf_minus)
-  @notimplementedif !(cf_plus_trian ===  cf_minus_trian)
-
-  @check num_dims(cf_plus_trian) == num_dims(strian) + 1
-  @check get_background_model(cf_plus_trian) === get_background_model(strian)
-
+function SkeletonCellFieldPair(cf_plus::CellField, cf_minus::CellField)
   cf_plus_plus  = cf_plus.plus
   cf_minus_minus = cf_minus.minus
-
   SkeletonCellFieldPair(cf_plus_plus,cf_minus_minus)
 end
 
