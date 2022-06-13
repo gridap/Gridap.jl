@@ -31,6 +31,8 @@ import Gridap.Arrays: return_cache
 import Gridap.Arrays: evaluate!
 import Gridap.Geometry: get_triangulation
 import Gridap.Geometry: get_cell_shapefuns
+import Gridap.Geometry: MappedGrid
+import Gridap.Geometry: MappedDiscreteModel
 import Gridap.CellData: attach_constraints_rows
 import Gridap.CellData: attach_constraints_cols
 import Gridap.CellData: CellField
@@ -229,6 +231,8 @@ include("DirichletFESpaces.jl")
 #include("ExtendedFESpaces.jl")
 
 include("FESpacesWithLinearConstraints.jl")
+
+include("FEMappedDiscreteModels.jl")
 
 export get_free_values
 function get_free_values(args...)
