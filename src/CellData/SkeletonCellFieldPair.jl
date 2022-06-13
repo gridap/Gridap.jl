@@ -29,35 +29,27 @@ struct SkeletonCellFieldPair{
   trian::T # Background Triangulation to which CellFields belong to
 
   function SkeletonCellFieldPair(
-    cf_plus_plus::CellFieldAt,
-    cf_minus_minus::CellFieldAt,
-    trian::Triangulation)
+    cf_plus::CellField,
+    cf_minus::CellField,
+    strian::SkeletonTriangulation)
+
+    @check DomainStyle(cf_plus) == DomainStyle(cf_minus)
+    cf_plus_trian = get_triangulation(cf_plus)
+    cf_minus_trian =  get_triangulation(cf_plus)
+    @notimplementedif !(cf_plus_trian ===  cf_minus_trian)
+
+    @check num_dims(cf_plus_trian) == num_dims(strian) + 1
+    @check get_background_model(cf_plus_trian) === get_background_model(strian)
+
+    cf_plus_plus  = cf_plus.plus
+    cf_minus_minus = cf_minus.minus
 
     P = typeof(cf_plus_plus)
     M = typeof(cf_minus_minus)
-    T = typeof(trian)
+    T = typeof(cf_plus_trian) # same as cf_minus_trian as the check passed!
 
-    new{P,M,T}(cf_plus_plus,cf_minus_minus,trian)
+    new{P,M,T}(cf_plus_plus,cf_minus_minus,cf_plus_trian)
   end
-end
-
-function SkeletonCellFieldPair(
-  cf_plus::CellField,
-  cf_minus::CellField,
-  strian::SkeletonTriangulation)
-
-  @check DomainStyle(cf_plus) == DomainStyle(cf_minus)
-  cf_plus_trian = get_triangulation(cf_plus)
-  cf_minus_trian =  get_triangulation(cf_plus)
-  @notimplementedif !(cf_plus_trian ===  cf_minus_trian)
-
-  @check num_dims(cf_plus_trian) == num_dims(strian) + 1
-  @check get_background_model(cf_plus_trian) === get_background_model(strian)
-
-  cf_plus_plus  = cf_plus.plus
-  cf_minus_minus = cf_minus.minus
-
-  SkeletonCellFieldPair(cf_plus_plus,cf_minus_minus,cf_plus_trian)
 end
 
 function Base.getproperty(a::SkeletonCellFieldPair,sym::Symbol)
