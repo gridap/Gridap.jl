@@ -18,6 +18,8 @@ using Gridap.Fields
 using Gridap.FESpaces: FEBasis, TestBasis, TrialBasis, get_cell_dof_values
 using Gridap.FESpaces: SingleFieldFEBasis, TestBasis, TrialBasis
 using Gridap.CellData: CellFieldAt
+using Gridap.CellData: SkeletonCellFieldPair
+
 import Gridap.Fields: gradient, DIV, ∇∇
 
 using ForwardDiff
