@@ -9,6 +9,7 @@ using Gridap.Fields
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.CellData
+using Gridap.MultiField
 using ForwardDiff
 
 model = CartesianDiscreteModel((0.,1.,0.,1.),(3,3))
@@ -87,5 +88,89 @@ scfp_dualplus = SkeletonCellFieldPair(uh_dual,uh)
 @test sum(∫(jump(∇(scfp_dualplus)))*dΛ)[1].value == sum(∫(jump(∇(uh)))*dΛ)[1]
 
 # AD of Integrals over Skeleton faces tested in FESpaces -> FEAutodiffTests.jl
+
+# testing the MultiField SkeletonCellFieldPair (SCFP)
+# this uses some low-level API to construct MultiFieldCellFields with SCFP
+
+Q = TestFESpace(model,reffe,conformity=:L2)
+P = TrialFESpace(Q)
+
+Y = MultiFieldFESpace([V, Q])
+X = MultiFieldFESpace([U, P])
+
+xh = FEFunction(X,rand(num_free_dofs(X)))
+uh,ph = xh
+
+cellu = lazy_map(DensifyInnerMostBlockLevelMap(),get_cell_dof_values(xh))
+cellu_dual = lazy_map(DualizeMap(ForwardDiff.gradient),cellu)
+single_fields_plus = SkeletonCellFieldPair[]
+single_fields = SkeletonCellFieldPair[]
+single_fields_dual = GenericCellField[]
+U = xh.fe_space
+nfields = length(U.spaces)
+cell_dofs_field_offsets = MultiField._get_cell_dofs_field_offsets(xh)
+
+for i in 1:nfields
+  view_range = cell_dofs_field_offsets[i]:cell_dofs_field_offsets[i+1]-1
+  cell_values_field = lazy_map(a->view(a,view_range),cellu_dual)
+  cf_dual = CellField(U.spaces[i],cell_values_field)
+  scfp_plus = SkeletonCellFieldPair(cf_dual, xh[i])
+  scfp = SkeletonCellFieldPair(xh[i], xh[i])
+  push!(single_fields_dual,cf_dual)
+  push!(single_fields_plus,scfp_plus)
+  push!(single_fields,scfp)
+end
+
+xh_scfp = MultiFieldCellField(single_fields)
+uh_scfp, ph_scfp = xh_scfp
+
+xh_scfp_dual_plus = MultiFieldCellField(single_fields_plus)
+uh_scfp_dual_plus, ph_scfp_dual_plus = xh_scfp_dual_plus
+
+xh_dual = MultiFieldCellField(single_fields_dual)
+uh_dual, ph_dual = xh_dual
+
+g_Λ((uh,ph)) = ∫( mean(uh) + mean(ph) + mean(uh)*mean(ph) )dΛ
+a_Λ((uh,ph)) = ∫( - jump(uh*n_Λ)⊙mean(∇(ph))
+                  - mean(∇(uh))⊙jump(ph*n_Λ)
+                  + jump(uh*n_Λ)⊙jump(ph*n_Λ) )dΛ
+
+# few basic tests if integrations on trians are done fine
+@test sum(∫(uh_scfp*ph_scfp)*dΓ) == sum(∫(uh*ph)*dΓ)
+@test sum(∫(uh_scfp - ph_scfp)*dΓ) == sum(∫(uh - ph)*dΓ)
+@test sum(∫(uh_scfp*ph_scfp)*dΩ) == sum(∫(uh*ph)*dΩ)
+@test sum(∫(uh_scfp - ph_scfp)*dΩ) == sum(∫(uh - ph)*dΩ)
+
+# integrations involving SkeletonCellFieldPair derivative terms
+@test sum(∫(ph_scfp*∇(uh_scfp))*dΩ) == sum(∫(ph*∇(uh))*dΩ)
+@test sum(∫(uh_scfp*∇(ph_scfp))*dΩ) == sum(∫(uh*∇(ph))*dΩ)
+@test sum(∫(uh_scfp*∇(ph_scfp)⋅n_Γ)*dΓ) == sum(∫(uh*∇(ph)⋅n_Γ)*dΓ)
+@test sum(∫(ph_scfp*∇(uh_scfp)⋅n_Γ)*dΓ) == sum(∫(ph*∇(uh)⋅n_Γ)*dΓ)
+
+# dualized tests
+
+# few basic tests if integrations on trians are done fine
+@test sum(∫(uh_scfp_dual_plus*ph_scfp_dual_plus)*dΓ).value == sum(∫(uh*ph)*dΓ)
+@test sum(∫(uh_scfp_dual_plus*ph_scfp_dual_plus)*dΓ).partials == sum(∫(uh_dual*ph_dual)*dΓ).partials
+@test sum(∫(uh_scfp_dual_plus - ph_scfp_dual_plus)*dΓ).value == sum(∫(uh - ph)*dΓ)
+@test sum(∫(uh_scfp_dual_plus - ph_scfp_dual_plus)*dΓ).partials == sum(∫(uh_dual - ph_dual)*dΓ).partials
+@test sum(∫(uh_scfp_dual_plus*ph_scfp_dual_plus)*dΩ).value == sum(∫(uh*ph)*dΩ)
+@test sum(∫(uh_scfp_dual_plus*ph_scfp_dual_plus)*dΩ).partials == sum(∫(uh_dual*ph_dual)*dΩ).partials
+@test sum(∫(uh_scfp_dual_plus - ph_scfp_dual_plus)*dΩ).value == sum(∫(uh - ph)*dΩ)
+@test sum(∫(uh_scfp_dual_plus - ph_scfp_dual_plus)*dΩ).partials == sum(∫(uh_dual - ph_dual)*dΩ).partials
+
+# integrations involving SkeletonCellFieldPair derivative terms
+@test sum(∫(ph_scfp_dual_plus*∇(uh_scfp_dual_plus))*dΩ)[1].value == sum(∫(ph*∇(uh))*dΩ)[1]
+@test sum(∫(ph_scfp_dual_plus*∇(uh_scfp_dual_plus))*dΩ)[1].partials == sum(∫(ph_dual*∇(uh_dual))*dΩ)[1].partials
+@test sum(∫(uh_scfp_dual_plus*∇(ph_scfp_dual_plus))*dΩ)[1].value == sum(∫(uh*∇(ph))*dΩ)[1]
+@test sum(∫(uh_scfp_dual_plus*∇(ph_scfp_dual_plus))*dΩ)[1].partials == sum(∫(uh_dual*∇(ph_dual))*dΩ)[1].partials
+@test sum(∫(uh_scfp_dual_plus*∇(ph_scfp_dual_plus)⋅n_Γ)*dΓ).value == sum(∫(uh*∇(ph)⋅n_Γ)*dΓ)
+@test sum(∫(uh_scfp_dual_plus*∇(ph_scfp_dual_plus)⋅n_Γ)*dΓ).partials == sum(∫(uh_dual*∇(ph_dual)⋅n_Γ)*dΓ).partials
+@test sum(∫(ph_scfp_dual_plus*∇(uh_scfp_dual_plus)⋅n_Γ)*dΓ).value == sum(∫(ph*∇(uh)⋅n_Γ)*dΓ)
+@test sum(∫(ph_scfp_dual_plus*∇(uh_scfp_dual_plus)⋅n_Γ)*dΓ).partials == sum(∫(ph_dual*∇(uh_dual)⋅n_Γ)*dΓ).partials
+
+# test for SkeletonTriangulation
+@test sum(g_Λ((uh_scfp_dual_plus,ph_scfp_dual_plus))).value == sum(g_Λ((uh,ph)))
+@test sum(a_Λ((uh_scfp_dual_plus,ph_scfp_dual_plus))).value == sum(a_Λ((uh,ph)))
 
 end # module
