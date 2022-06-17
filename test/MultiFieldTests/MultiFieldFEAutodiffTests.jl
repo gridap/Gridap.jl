@@ -156,7 +156,7 @@ dΛ = Measure(Λ,2)
 n_Λ = get_normal_vector(Λ)
 
 g_Λ((uh,ph)) = ∫( mean(uh) + mean(ph) + mean(uh)*mean(ph) )dΛ
-# f_Λ((uh,ph)) = ∫( mean(uh*uh) + mean(uh*ph) + mean(ph*ph) )dΛ
+f_Λ((uh,ph)) = ∫( mean(uh*uh) + mean(uh*ph) + mean(ph*ph) )dΛ
 a_Λ((uh,ph)) = ∫( - jump(uh*n_Λ)⊙mean(∇(ph))
                   - mean(∇(uh))⊙jump(ph*n_Λ)
                   + jump(uh*n_Λ)⊙jump(ph*n_Λ) )dΛ
@@ -175,13 +175,13 @@ end
 # can also do the above by constructing a MultiFieldCellField
 
 g_Λ_(θ) = f_uh_free_dofs(g_Λ,xh,θ)
-# f_Λ_(θ) = f_uh_free_dofs(f_Λ,xh,θ)
+f_Λ_(θ) = f_uh_free_dofs(f_Λ,xh,θ)
 a_Λ_(θ) = f_uh_free_dofs(a_Λ,xh,θ)
 
 θ = get_free_dof_values(xh)
 
 # check if the evaluations are working
-# @test sum(f_Λ(xh)) == f_Λ_(θ)
+@test sum(f_Λ(xh)) == f_Λ_(θ)
 @test sum(a_Λ(xh)) == a_Λ_(θ)
 @test sum(g_Λ(xh)) == g_Λ_(θ)
 
@@ -190,6 +190,10 @@ f_Ω_(θ) = f_uh_free_dofs(f_Ω,xh,θ)
 gridapgradf_Ω = assemble_vector(gradient(f_Ω,xh),X)
 fdgradf_Ω = ForwardDiff.gradient(f_Ω_,θ)
 test_array(gridapgradf_Ω,fdgradf_Ω,≈)
+
+gridapgradf = assemble_vector(gradient(f_Λ,xh),X)
+fdgradf = ForwardDiff.gradient(f_Λ_,θ)
+test_array(gridapgradf,fdgradf,≈)
 
 gridapgradg = assemble_vector(gradient(g_Λ,xh),X)
 fdgradg = ForwardDiff.gradient(g_Λ_,θ)

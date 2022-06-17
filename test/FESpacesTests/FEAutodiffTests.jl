@@ -1,5 +1,6 @@
 module FEAutodiffTests
 
+using Test
 using LinearAlgebra
 using Gridap.Algebra
 using Gridap.FESpaces
@@ -120,6 +121,13 @@ a_Λ(u) = ∫( - jump(u*n_Λ)⊙mean(∇(u))
             - mean(∇(u))⊙jump(u*n_Λ)
             + jump(u*n_Λ)⊙jump(u*n_Λ) )dΛ
 
+# functionals having mean and jump of products of FEFunctions/CellFields
+g_Λ(uh) = ∫(mean(uh*uh))*dΛ
+h_Λ(uh) = ∫(jump(uh*uh*n_Λ)⋅jump(uh*uh*n_Λ))*dΛ
+j_Λ(uh) = ∫(mean(∇(uh)*uh)⋅jump((∇(uh)⋅∇(uh))*n_Λ))*dΛ
+
+@test sum(∫(mean(uh*uh))*dΛ) == 0.5*sum(∫(uh.plus*uh.plus + uh.minus*uh.minus)*dΛ)
+
 function f_uh_free_dofs(f,uh,θ)
   dir = similar(uh.dirichlet_values,eltype(θ))
   uh = FEFunction(U,θ,dir)
@@ -137,5 +145,21 @@ test_array(gridapgradf,fdgradf,≈)
 gridapgrada = assemble_vector(gradient(a_Λ,uh),U)
 fdgrada = ForwardDiff.gradient(a_Λ_,θ)
 test_array(gridapgrada,fdgrada,≈)
+
+g_Λ_(θ) = f_uh_free_dofs(g_Λ,uh,θ)
+h_Λ_(θ) = f_uh_free_dofs(h_Λ,uh,θ)
+j_Λ_(θ) = f_uh_free_dofs(j_Λ,uh,θ)
+
+gridapgradg = assemble_vector(gradient(g_Λ,uh),U)
+fdgradg = ForwardDiff.gradient(g_Λ_,θ)
+test_array(gridapgradg,fdgradg,≈)
+
+gridapgradh = assemble_vector(gradient(h_Λ,uh),U)
+fdgradh = ForwardDiff.gradient(h_Λ_,θ)
+test_array(gridapgradh,fdgradh,≈)
+
+gridapgradj = assemble_vector(gradient(j_Λ,uh),U)
+fdgradj = ForwardDiff.gradient(j_Λ_,θ)
+test_array(gridapgradj,fdgradj,≈)
 
 end # module
