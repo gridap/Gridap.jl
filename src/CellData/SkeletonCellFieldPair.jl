@@ -80,11 +80,38 @@ is passed into it. Ideally, if we could parse and extract only the Skeleton
 integration terms from the functional's julia function form, this fix is not
 required, but this is not trivial to do. On the positive side, since the
 evaluations are all lazy and not used, this doesn't put any noticable memory
-or computational overhead.
+or computational overhead. Ofcourse, it is made sure that the such plus side
+pick doesn't happen when the integration over the SkeletonTriangulation
 =#
-function change_domain(a::SkeletonCellFieldPair,target_trian::Triangulation,target_domain::DomainStyle)
-  change_domain(a.plus,DomainStyle(a),target_trian,target_domain)
+# function change_domain(a::SkeletonCellFieldPair,target_trian::Triangulation,target_domain::DomainStyle)
+#   change_domain(a.plus,DomainStyle(a),target_trian,target_domain)
+# end
+#=
+The above is not good because it converts a SkeletonCellFieldPair involved
+in an operation inside mean or jump, for example the one resulting from the
+expression mean(uh*uh), into its plus side, as the change_domain acts while
+building the internal operation tree, in the example for * operator and this
+gives wrong result as it chooses plus even for the case of Skeleton integration
+=#
+
+# If SkeletonCellFieldPair is evaluated we just pick the plus side parent
+function evaluate!(cache,f::SkeletonCellFieldPair,x::CellPoint)
+  _f, _x = _to_common_domain(f.plus.parent,x)
+  cell_field = get_data(_f)
+  cell_point = get_data(_x)
+  lazy_map(evaluate,cell_field,cell_point)
 end
+
+# fix for CellFieldAt{T}(parent::OperationCellField) giving right output
+# or else it chooses the SkeletonCellFieldPair directly as the parent
+# resulting in errors and it not the intended behaviour to have the parent
+# as SkeletonCellFieldPair and is not consistent with our getproperty rules
+function CellFieldAt{T}(parent::SkeletonCellFieldPair) where T
+  getproperty(parent,T)
+end
+
+# to handle the evaluation of SkeletonCellFieldPair at BoundaryTriangulation
+get_data(a::SkeletonCellFieldPair) = get_data(a.plus)
 
 function Base.propertynames(a::SkeletonCellFieldPair, private::Bool=false)
   (fieldnames(typeof(a))...,:⁺,:plus,:⁻,:minus)
