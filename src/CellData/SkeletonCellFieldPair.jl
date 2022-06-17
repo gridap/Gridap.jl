@@ -87,15 +87,23 @@ function evaluate!(cache,f::SkeletonCellFieldPair,x::CellPoint)
   lazy_map(evaluate,cell_field,cell_point)
 end
 
-# fix for CellFieldAt{T}(parent::OperationCellField) giving right output
-# or else it chooses the SkeletonCellFieldPair directly as the parent
-# resulting in errors and it not the intended behaviour to have the parent
-# as SkeletonCellFieldPair and is not consistent with our getproperty rules
+#=
+Fix for CellFieldAt{T}(parent::OperationCellField) for OperationCellField involving args which are not FEFunctions. It creates a problem with SkeletonCellFieldPair giving the wrong output or errors as it chooses the SkeletonCellFieldPair directly as the parent rather the parent CellField of the side of choice. In code terms it is the following:
+
+CellFieldAt{T}(OperationCellField) results in calling CellFieldAt{T}(operands).
+Without this override, CellFieldAt{T}(a::SkeletonCellField) results in the CellFieldAt structure with parent as SkeletonCellField and not a.T side CellField, which is not correct! This resulting in errors and is not the intended behaviour to have the parent as SkeletonCellFieldPair and is not consistent with our getproperty rules.
+=#
 function CellFieldAt{T}(parent::SkeletonCellFieldPair) where T
   getproperty(parent,T)
 end
 
 # to handle the evaluation of SkeletonCellFieldPair at BoundaryTriangulation
+# making it consistent with plus side choice of direct evaluation of SCFP
+# in general this is the case when trian of CellField is not the same as
+# that of the quadrature
+# But we are protected from inconsistent behaviour at SkeletonTriangulation
+# as it fails due to the ambiguity as the CellField at the SkeletonTrian
+# for direct evaluations
 get_data(a::SkeletonCellFieldPair) = get_data(a.plus)
 
 function Base.propertynames(a::SkeletonCellFieldPair, private::Bool=false)
