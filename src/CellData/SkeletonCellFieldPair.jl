@@ -68,10 +68,6 @@ function get_triangulation(a::SkeletonCellFieldPair)
 end
 
 #=
-The below change_domain has been overloaded for SkeletonCellFieldPair
-to work without errors for integrations over other triangulation - Ω
-(BodyFittedTriangulation) and Γ (BoundaryTriangulation).
-
 We arbitrarily choose plus side of SkeletonCellFieldPair for evaluations, as
 we don't use the DomainContributions associated with Ω and Γ while performing
 the sensitivities for SkeletonTriangulation (Λ) DomainContribution. This
@@ -83,17 +79,6 @@ evaluations are all lazy and not used, this doesn't put any noticable memory
 or computational overhead. Ofcourse, it is made sure that the such plus side
 pick doesn't happen when the integration over the SkeletonTriangulation
 =#
-# function change_domain(a::SkeletonCellFieldPair,target_trian::Triangulation,target_domain::DomainStyle)
-#   change_domain(a.plus,DomainStyle(a),target_trian,target_domain)
-# end
-#=
-The above is not good because it converts a SkeletonCellFieldPair involved
-in an operation inside mean or jump, for example the one resulting from the
-expression mean(uh*uh), into its plus side, as the change_domain acts while
-building the internal operation tree, in the example for * operator and this
-gives wrong result as it chooses plus even for the case of Skeleton integration
-=#
-
 # If SkeletonCellFieldPair is evaluated we just pick the plus side parent
 function evaluate!(cache,f::SkeletonCellFieldPair,x::CellPoint)
   _f, _x = _to_common_domain(f.plus.parent,x)
