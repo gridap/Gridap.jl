@@ -51,7 +51,7 @@ test_triangulation(Tₕ)
 
 # FE problem test
 
-u = 2*x
+u(x) = 2*x
 domain = (0,1)
 partition = (2)
 model = CartesianDiscreteModel(domain,partition)
