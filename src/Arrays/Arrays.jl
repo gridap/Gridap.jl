@@ -78,6 +78,8 @@ export PosNegPartition
 
 export FilterMap
 
+export KeyToVal
+
 export MulAddMap
 
 export Table
@@ -149,6 +151,8 @@ include("IdentityVectors.jl")
 include("PosNegReindex.jl")
 
 include("Reindex.jl")
+
+include("KeyToVal.jl")
 
 include("FilteredArrays.jl")
 
