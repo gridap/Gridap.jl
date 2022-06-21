@@ -230,12 +230,13 @@ function _nfaces_evaluation_points_weights_with_jac(p, fgeomap, fips, wips)
   c_fips = fill(fips,nc)
   c_wips = fill(wips,nc)
   pquad = lazy_map(evaluate,fgeomap,c_fips)
-  # Must account for diagonals in simplex discretizations to get the correct
-  # scaling
+  ## Must account for diagonals in simplex discretizations to get the correct
+  ## scaling
   Jt1 = lazy_map(∇,fgeomap)
   Jt1_ips = lazy_map(evaluate,Jt1,c_fips)
-  det_J = lazy_map(Broadcasting(meas),Jt1_ips)
-  c_detwips = collect(lazy_map(Broadcasting(*),c_wips,det_J))
+  #det_J = lazy_map(Broadcasting(meas),Jt1_ips)
+  #c_detwips = collect(lazy_map(Broadcasting(*),c_wips,det_J))
+  c_detwips = c_wips
   c_fips, pquad, c_detwips, Jt1_ips
 end
 
@@ -243,11 +244,11 @@ function _Nedelec_face_moments_simplex(p, fshfs, c_fips, fcips, fwips, fJtips)
   nc = length(c_fips)
   cfshfs = fill(fshfs, nc)
   cfshfs_fips = lazy_map(evaluate,cfshfs,c_fips)
-  function weigth(qij,Jti)
+  function weigth(qij,Jti,wi)
     Ji = transpose(Jti)
-    Ji⋅qij
+    Ji⋅qij*wi
   end
-  cvals = map(Broadcasting(weigth),cfshfs_fips,fJtips)
+  cvals = map(Broadcasting(weigth),cfshfs_fips,fJtips,fwips)
   return cvals
 end
 
