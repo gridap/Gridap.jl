@@ -193,11 +193,11 @@ function autodiff_array_jacobian(a,i_to_x,j_to_i::SkeletonPair)
   i_to_xdual = lazy_map(DualizeMap(ForwardDiff.jacobian),i_to_x)
   j_to_ydual_plus, j_to_ydual_minus = a(i_to_xdual)
 
-  # bilinear form tested with test basis functions dv results in
-  # DomainContribution containing vector of vector blocks of 2 vectors
-  # coming from plus side and minus side of dv
-  # so we densify each of them into plain vectors and construct
-  # construct back the jacobian contributions into a MatrixBlock
+  # Bilinear form when tested with test basis functions dv results in
+  # DomainContribution containing vector of 2-block `VectorBlock{Vector}`
+  # each block coming from plus side and minus side of dv.
+  # So we densify each of the `VectorBlock`` into plain vectors and construct
+  # back the jacobian contributions into a MatrixBlock
 
   densify = DensifyInnerMostBlockLevelMap()
   j_to_ydual_plus_dense  = lazy_map(densify, j_to_ydual_plus)
@@ -233,9 +233,8 @@ function autodiff_array_jacobian(a,i_to_x,j_to_i::SkeletonPair)
   J_22 = lazy_map((x,b)->view(x, b+1:size(x,1),:),
                   j_to_result_minus_dense,num_dofs_x_face_and_cell_minus)
 
-  # Assembly on SkeletonTriangulation expects an array of interior of facets
-  # where each entry is a 2x2-block MatrixBlock with the blocks of the Jacobian
-  # matrix
+  # Assembly on SkeletonTriangulation expects an array of facets where each
+  # entry is a 2x2-block MatrixBlock with the blocks of the Jacobian matrix
   bm_jacobian = BlockMap((2,2),[(1,1),(2,1),(1,2),(2,2)])
   lazy_map(bm_jacobian, J_11, J_21, J_12, J_22)
 end

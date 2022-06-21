@@ -7,8 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
-- Added functionality to take gradient of functional involving integration (`DomainContribution`) over Skeleton faces, with respect to the degrees-of-freedom `FEFunction`.  The interface remains the same - `gradient(f,uh)`. Since PR [#797](https://github.com/gridap/Gridap.jl/pull/797)
+- Added functionality to take gradient of functional involving integration (`DomainContribution`) over Skeleton faces, with respect to the degrees-of-freedom of `FEFunction`.  The interface remains the same - `gradient(f,uh)`. Since PR [#797](https://github.com/gridap/Gridap.jl/pull/797)
 - Extended the `MultiField` functional gradient (with respect to degrees-of-freedom of `MultiFieldFEFunction`) to functionals involving Skeleton integration. The interface remains the same `gradient(f,xh)`. Since PR [#799](https://github.com/gridap/Gridap.jl/pull/799)
+- Added functionality to take jacobian of functional involving integration (`DomainContribution`) over Skeleton faces (obtained from testing bilinear form with the whole set of test `fe_basis`), with respect to the degrees-of-freedom of `FEFunction`.  The interface remains the same - `jacobian(f,uh)`. Since PR [#803](https://github.com/gridap/Gridap.jl/pull/803)
 
 ### Fixed
 - Fixed the behavior of `gradient` for functionals involving operations of `CellFields` inside `mean` and `jump` terms of Skeleton Integration terms. Since PR [#800](https://github.com/gridap/Gridap.jl/pull/800)

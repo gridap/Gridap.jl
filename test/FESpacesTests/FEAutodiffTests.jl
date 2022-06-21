@@ -180,6 +180,16 @@ g(uh,vh) = ∫(mean(uh*vh))*dΛ
 h(uh,vh) = ∫(jump(uh*vh*n_Λ)⊙jump(vh*vh*n_Λ))*dΛ
 j(uh,vh) = ∫(mean(∇(vh)*uh)⊙jump((∇(vh)⊙∇(uh))*n_Λ))*dΛ
 
+# We use the strongly-typed lowel-level interface of SparseMatrixCSC{T,Int} here
+# as ForwardDiff doesn't work directly through `assemble_vector``, this is due
+# to the typing of SparseMatrixCSC{T,Int} and Vector{T} inside high-level
+# `assemble_vector` API (via the `SparseMatrixAssembler`) using the type T of
+# the eltype of FESpace U, which remains Float even though Dual numbers are
+# passed into θ.
+# So as to mitigate this problem, low-level interface of assemble_vector is
+# being used with SparseMatrixCSC{T,Int} and Vector{T} constructed by hand with
+# types of θ which can be dual numbers when using ForwardDiff or even #
+# ReverseDiff types, when using ReverseDiff! This is just for testing purposes
 function _change_input(f,θ,uh)
   dir = similar(uh.dirichlet_values,eltype(θ))
   U = uh.fe_space
