@@ -47,14 +47,23 @@ struct ConfigMap{F} <: Map
  f::F
 end
 
+# Adding a dummy function for the tag in ForwardDiff configs generated below.
+# This is to fix the tag ordering problem for mixed spatial and DOF based
+# derivatives when the tag is set to `nothing`.
+# see the MWE in the issue: https://github.com/gridap/Gridap.jl/issues/805
+function _gridap_forwarddiff_tag()
+  throw("This function is not for evaluation but only to extract the name for the ForwardDiff config tags in Gridap!")
+  nothing
+end
+
 # TODO Prescribing long chunk size can lead to slow compilation times!
 function return_cache(k::ConfigMap{typeof(ForwardDiff.gradient)},x)
-  cfg = ForwardDiff.GradientConfig(nothing,x,ForwardDiff.Chunk{length(x)}())
+  cfg = ForwardDiff.GradientConfig(_gridap_forwarddiff_tag,x,ForwardDiff.Chunk{length(x)}())
   cfg
 end
 
 function return_cache(k::ConfigMap{typeof(ForwardDiff.jacobian)},x)
-  cfg = ForwardDiff.JacobianConfig(nothing,x,ForwardDiff.Chunk{length(x)}())
+  cfg = ForwardDiff.JacobianConfig(_gridap_forwarddiff_tag,x,ForwardDiff.Chunk{length(x)}())
   cfg
 end
 
