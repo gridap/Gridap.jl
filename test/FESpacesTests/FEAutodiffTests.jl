@@ -11,6 +11,7 @@ using Gridap.TensorValues
 using Gridap.CellData
 using Gridap.ReferenceFEs
 using ForwardDiff
+using SparseArrays
 
 domain = (0,1,0,1)
 partition = (2,2)
@@ -94,9 +95,9 @@ cell_j_auto = get_array(jacobian(u->res(u,dv),uh))
 
 test_array(cell_j_auto,cell_j,≈)
 
-# comparing AD of integration over Skeleton faces with ForwardDiff results
+## comparing AD of integration over Skeleton faces with ForwardDiff results ##
 
-model = CartesianDiscreteModel((0.,1.,0.,1.),(3,3))
+model = CartesianDiscreteModel((0.,1.,0.,1.),(2,2))
 Ω = Triangulation(model)
 Γ = BoundaryTriangulation(model)
 Λ = SkeletonTriangulation(model)
@@ -108,7 +109,7 @@ dΛ = Measure(Λ,2)
 n_Γ = get_normal_vector(Γ)
 n_Λ = get_normal_vector(Λ)
 
-reffe = ReferenceFE(lagrangian,Float64,2)
+reffe = ReferenceFE(lagrangian,Float64,1)
 V = TestFESpace(model,reffe,conformity=:L2)
 
 u(x) = sin(norm(x))
@@ -118,7 +119,7 @@ uh = FEFunction(U,rand(num_free_dofs(U)))
 
 f_Λ(uh) = ∫(mean(uh))*dΛ
 a_Λ(u) = ∫( - jump(u*n_Λ)⊙mean(∇(u))
-            - mean(∇(u))⊙jump(u*n_Λ)
+            - mean(Δ(u))
             + jump(u*n_Λ)⊙jump(u*n_Λ) )dΛ
 
 # functionals having mean and jump of products of FEFunctions/CellFields
@@ -137,6 +138,8 @@ end
 f_Λ_(θ) = f_uh_free_dofs(f_Λ,uh,θ)
 a_Λ_(θ) = f_uh_free_dofs(a_Λ,uh,θ)
 θ = get_free_dof_values(uh)
+
+# testing gradients of functionals involving Skeleton integration terms
 
 gridapgradf = assemble_vector(gradient(f_Λ,uh),U)
 fdgradf = ForwardDiff.gradient(f_Λ_,θ)
@@ -161,5 +164,76 @@ test_array(gridapgradh,fdgradh,≈)
 gridapgradj = assemble_vector(gradient(j_Λ,uh),U)
 fdgradj = ForwardDiff.gradient(j_Λ_,θ)
 test_array(gridapgradj,fdgradj,≈)
+
+# testing jacobians of functionals involving Skeleton inetgration terms
+uh = FEFunction(U,rand(num_free_dofs(U)))
+θ = get_free_dof_values(uh)
+dv = get_fe_basis(V)
+du = get_trial_fe_basis(U)
+
+a(uh,vh) = ∫(mean(uh)*mean(vh))*dΛ
+# b(uh,vh) = ∫(-jump(uh*n_Λ)⊙mean(∇(vh)) +
+#               jump(vh*n_Λ)⊙mean(∇(uh)) +
+#               mean(Δ(uh))*mean(Δ(vh))  +
+#               jump(uh*n_Λ)⊙jump(vh*n_Λ))*dΛ
+# g(uh,vh) = ∫(mean(uh*vh))*dΛ
+h(uh,vh) = ∫(jump(uh*vh*n_Λ)⊙jump(vh*vh*n_Λ))*dΛ
+# j(uh,vh) = ∫(mean(∇(vh)*uh)⊙jump((∇(vh)⊙∇(uh))*n_Λ))*dΛ
+
+# We use the strongly-typed lowel-level interface of SparseMatrixCSC{T,Int} here
+# as ForwardDiff doesn't work directly through `assemble_vector``, this is due
+# to the typing of SparseMatrixCSC{T,Int} and Vector{T} inside high-level
+# `assemble_vector` API (via the `SparseMatrixAssembler`) using the type T of
+# the eltype of FESpace U, which remains Float even though Dual numbers are
+# passed into θ.
+# So as to mitigate this problem, low-level interface of assemble_vector is
+# being used with SparseMatrixCSC{T,Int} and Vector{T} constructed by hand with
+# types of θ which can be dual numbers when using ForwardDiff or even #
+# ReverseDiff types, when using ReverseDiff! This is just for testing purposes
+function _change_input(f,θ,uh)
+  dir = similar(uh.dirichlet_values,eltype(θ))
+  U = uh.fe_space
+  uh = FEFunction(U,θ,dir)
+  T = eltype(θ)
+  matrix_type = SparseMatrixCSC{T,Int}
+  vector_type = Vector{T}
+  assem = SparseMatrixAssembler(matrix_type,vector_type,U,U)
+  assemble_vector(f(uh),assem,U)
+end
+
+function _assemble_jacobian(f,uh)
+  assemble_matrix(jacobian(f,uh),U,V)
+end
+
+f(uh) = a(uh,dv)
+jac_gridap_a = _assemble_jacobian(f,uh)
+collect(get_array(jacobian(f,uh))) # just to check the working
+f_(θ) = _change_input(f,θ,uh)
+jac_forwdiff_a = ForwardDiff.jacobian(f_,θ)
+test_array(jac_gridap_a,jac_forwdiff_a,≈)
+
+# f(uh) = b(uh,dv)
+# jac_gridap_b = _assemble_jacobian(f,uh)
+# f_(θ) = _change_input(f,θ,uh)
+# jac_forwdiff_b = ForwardDiff.jacobian(f_,θ)
+# test_array(jac_gridap_b,jac_forwdiff_b,≈)
+
+# f(uh) = g(uh,dv)
+# jac_gridap_g = _assemble_jacobian(f,uh)
+# f_(θ) = _change_input(f,θ,uh)
+# jac_forwdiff_g = ForwardDiff.jacobian(f_,θ)
+# test_array(jac_gridap_g,jac_forwdiff_g,≈)
+
+f(uh) = h(uh,dv)
+jac_gridap_h = _assemble_jacobian(f,uh)
+f_(θ) = _change_input(f,θ,uh)
+jac_forwdiff_h = ForwardDiff.jacobian(f_,θ)
+test_array(jac_gridap_h,jac_forwdiff_h,≈)
+
+# f(uh) = j(uh,dv)
+# jac_gridap_j = _assemble_jacobian(f,uh)
+# f_(θ) = _change_input(f,θ,uh)
+# jac_forwdiff_j = ForwardDiff.jacobian(f_,θ)
+# test_array(jac_gridap_j,jac_forwdiff_j,≈)
 
 end # module

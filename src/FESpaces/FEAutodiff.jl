@@ -165,9 +165,7 @@ end
   Gridap, where we can use or import required functionalities from other
   modules without any circular dependency
 =#
-function autodiff_array_gradient(
-  a, i_to_x, j_to_i::SkeletonPair)
-
+function autodiff_array_gradient(a, i_to_x, j_to_i::SkeletonPair)
   i_to_xdual = lazy_map(DualizeMap(ForwardDiff.gradient),i_to_x)
 
   # dual output of both sides at once
@@ -191,12 +189,56 @@ function autodiff_array_gradient(
   lazy_map(BlockMap(2,[1,2]),j_to_result_plus,j_to_result_minus)
 end
 
-function autodiff_array_jacobian(
-  a,i_to_x,j_to_i::SkeletonPair)
-  @notimplemented
+function autodiff_array_jacobian(a,i_to_x,j_to_i::SkeletonPair)
+  i_to_xdual = lazy_map(DualizeMap(ForwardDiff.jacobian),i_to_x)
+  j_to_ydual_plus, j_to_ydual_minus = a(i_to_xdual)
+
+  # Bilinear form when tested with test basis functions dv results in
+  # DomainContribution containing vector of 2-block `VectorBlock{Vector}`
+  # each block coming from plus side and minus side of dv.
+  # So we densify each of the `VectorBlock`` into plain vectors and construct
+  # back the jacobian contributions into a MatrixBlock
+
+  densify = DensifyInnerMostBlockLevelMap()
+  j_to_ydual_plus_dense  = lazy_map(densify, j_to_ydual_plus)
+  j_to_ydual_minus_dense = lazy_map(densify, j_to_ydual_minus)
+
+  # Work for plus side
+  j_to_x_plus = lazy_map(Reindex(i_to_x),j_to_i.plus)
+  j_to_cfg_plus = lazy_map(ConfigMap(ForwardDiff.jacobian),j_to_x_plus)
+  j_to_result_plus_dense = lazy_map(AutoDiffMap(ForwardDiff.jacobian),
+                                    j_to_ydual_plus_dense,j_to_x_plus,j_to_cfg_plus)
+
+  # Work for minus side
+  j_to_x_minus = lazy_map(Reindex(i_to_x),j_to_i.minus)
+  j_to_cfg_minus = lazy_map(ConfigMap(ForwardDiff.jacobian),j_to_x_minus)
+  j_to_result_minus_dense = lazy_map(AutoDiffMap(ForwardDiff.jacobian),
+                                     j_to_ydual_minus_dense,j_to_x_minus,j_to_cfg_minus)
+
+  # j_to_result_plus_dense/j_to_result_minus_dense can be (and must be)
+  # laid out into 2x2 block matrices
+  num_dofs_x_cell = lazy_map(length,i_to_x)
+  num_dofs_x_face_and_cell_plus  = lazy_map(Reindex(num_dofs_x_cell),j_to_i.plus)
+  num_dofs_x_face_and_cell_minus = lazy_map(Reindex(num_dofs_x_cell),j_to_i.minus)
+
+  J_11 = lazy_map((x,b)->view(x, 1:b,:),
+                  j_to_result_plus_dense,num_dofs_x_face_and_cell_plus)
+
+  J_21 = lazy_map((x,b)->view(x, b+1:size(x,1),:),
+                  j_to_result_plus_dense,num_dofs_x_face_and_cell_minus)
+
+  J_12 = lazy_map((x,b)->view(x, 1:b,:),
+                  j_to_result_minus_dense,num_dofs_x_face_and_cell_plus)
+
+  J_22 = lazy_map((x,b)->view(x, b+1:size(x,1),:),
+                  j_to_result_minus_dense,num_dofs_x_face_and_cell_minus)
+
+  # Assembly on SkeletonTriangulation expects an array of facets where each
+  # entry is a 2x2-block MatrixBlock with the blocks of the Jacobian matrix
+  bm_jacobian = BlockMap((2,2),[(1,1),(2,1),(1,2),(2,2)])
+  lazy_map(bm_jacobian, J_11, J_21, J_12, J_22)
 end
 
-function autodiff_array_hessian(
-  a,i_to_x,i_to_j::SkeletonPair)
+function autodiff_array_hessian(a,i_to_x,i_to_j::SkeletonPair)
   @notimplemented
 end
