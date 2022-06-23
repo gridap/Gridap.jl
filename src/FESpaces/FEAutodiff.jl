@@ -166,20 +166,21 @@ end
   modules without any circular dependency
 =#
 function autodiff_array_gradient(a, i_to_x, j_to_i::SkeletonPair)
-  i_to_xdual = lazy_map(DualizeMap(ForwardDiff.gradient),i_to_x)
+  dummy_forwarddiff_tag = ()->()
+  i_to_xdual = lazy_map(DualizeMap(ForwardDiff.gradient,dummy_forwarddiff_tag),i_to_x)
 
   # dual output of both sides at once
   j_to_ydual_plus, j_to_ydual_minus = a(i_to_xdual)
 
   # Work for plus side
   j_to_x_plus = lazy_map(Reindex(i_to_x),j_to_i.plus)
-  j_to_cfg_plus = lazy_map(ConfigMap(ForwardDiff.gradient),j_to_x_plus)
+  j_to_cfg_plus = lazy_map(ConfigMap(ForwardDiff.gradient,dummy_forwarddiff_tag),j_to_x_plus)
   j_to_result_plus = lazy_map(AutoDiffMap(ForwardDiff.gradient),
                               j_to_ydual_plus,j_to_x_plus,j_to_cfg_plus)
 
   # Work for minus side
   j_to_x_minus = lazy_map(Reindex(i_to_x),j_to_i.minus)
-  j_to_cfg_minus = lazy_map(ConfigMap(ForwardDiff.gradient),j_to_x_minus)
+  j_to_cfg_minus = lazy_map(ConfigMap(ForwardDiff.gradient,dummy_forwarddiff_tag),j_to_x_minus)
   j_to_result_minus = lazy_map(AutoDiffMap(ForwardDiff.gradient),
                                j_to_ydual_minus,j_to_x_minus,j_to_cfg_minus)
 
@@ -190,7 +191,8 @@ function autodiff_array_gradient(a, i_to_x, j_to_i::SkeletonPair)
 end
 
 function autodiff_array_jacobian(a,i_to_x,j_to_i::SkeletonPair)
-  i_to_xdual = lazy_map(DualizeMap(ForwardDiff.jacobian),i_to_x)
+  dummy_forwarddiff_tag = ()->()
+  i_to_xdual = lazy_map(DualizeMap(ForwardDiff.jacobian,dummy_forwarddiff_tag),i_to_x)
   j_to_ydual_plus, j_to_ydual_minus = a(i_to_xdual)
 
   # Bilinear form when tested with test basis functions dv results in
@@ -205,13 +207,13 @@ function autodiff_array_jacobian(a,i_to_x,j_to_i::SkeletonPair)
 
   # Work for plus side
   j_to_x_plus = lazy_map(Reindex(i_to_x),j_to_i.plus)
-  j_to_cfg_plus = lazy_map(ConfigMap(ForwardDiff.jacobian),j_to_x_plus)
+  j_to_cfg_plus = lazy_map(ConfigMap(ForwardDiff.jacobian,dummy_forwarddiff_tag),j_to_x_plus)
   j_to_result_plus_dense = lazy_map(AutoDiffMap(ForwardDiff.jacobian),
                                     j_to_ydual_plus_dense,j_to_x_plus,j_to_cfg_plus)
 
   # Work for minus side
   j_to_x_minus = lazy_map(Reindex(i_to_x),j_to_i.minus)
-  j_to_cfg_minus = lazy_map(ConfigMap(ForwardDiff.jacobian),j_to_x_minus)
+  j_to_cfg_minus = lazy_map(ConfigMap(ForwardDiff.jacobian,dummy_forwarddiff_tag),j_to_x_minus)
   j_to_result_minus_dense = lazy_map(AutoDiffMap(ForwardDiff.jacobian),
                                      j_to_ydual_minus_dense,j_to_x_minus,j_to_cfg_minus)
 
