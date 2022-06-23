@@ -1,15 +1,17 @@
 
 function autodiff_array_gradient(a,i_to_x)
-  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,a),i_to_x)
-  i_to_xdual = lazy_map(DualizeMap(ForwardDiff.gradient,a),i_to_x)
+  dummy_forwarddiff_tag = ()->()
+  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,dummy_forwarddiff_tag),i_to_x)
+  i_to_xdual = lazy_map(DualizeMap(ForwardDiff.gradient,dummy_forwarddiff_tag),i_to_x)
   i_to_ydual = a(i_to_xdual)
   i_to_result = lazy_map(AutoDiffMap(ForwardDiff.gradient),i_to_ydual,i_to_x,i_to_cfg)
   i_to_result
 end
 
 function autodiff_array_jacobian(a,i_to_x)
-  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,a),i_to_x)
-  i_to_xdual = lazy_map(DualizeMap(ForwardDiff.jacobian,a),i_to_x)
+  dummy_forwarddiff_tag = ()->()
+  i_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,dummy_forwarddiff_tag),i_to_x)
+  i_to_xdual = lazy_map(DualizeMap(ForwardDiff.jacobian,dummy_forwarddiff_tag),i_to_x)
   i_to_ydual = a(i_to_xdual)
   i_to_result = lazy_map(AutoDiffMap(ForwardDiff.jacobian),i_to_ydual,i_to_x,i_to_cfg)
   i_to_result
@@ -21,19 +23,21 @@ function autodiff_array_hessian(a,i_to_x)
 end
 
 function autodiff_array_gradient(a,i_to_x,j_to_i)
-  i_to_xdual = lazy_map(DualizeMap(ForwardDiff.gradient,a),i_to_x)
+  dummy_forwarddiff_tag = ()->()
+  i_to_xdual = lazy_map(DualizeMap(ForwardDiff.gradient,dummy_forwarddiff_tag),i_to_x)
   j_to_ydual = a(i_to_xdual)
   j_to_x = lazy_map(Reindex(i_to_x),j_to_i)
-  j_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,a),j_to_x)
+  j_to_cfg = lazy_map(ConfigMap(ForwardDiff.gradient,dummy_forwarddiff_tag),j_to_x)
   j_to_result = lazy_map(AutoDiffMap(ForwardDiff.gradient),j_to_ydual,j_to_x,j_to_cfg)
   j_to_result
 end
 
 function autodiff_array_jacobian(a,i_to_x,j_to_i)
-  i_to_xdual = lazy_map(DualizeMap(ForwardDiff.jacobian,a),i_to_x)
+  dummy_forwarddiff_tag = ()->()
+  i_to_xdual = lazy_map(DualizeMap(ForwardDiff.jacobian,dummy_forwarddiff_tag),i_to_x)
   j_to_ydual = a(i_to_xdual)
   j_to_x = lazy_map(Reindex(i_to_x),j_to_i)
-  j_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,a),j_to_x)
+  j_to_cfg = lazy_map(ConfigMap(ForwardDiff.jacobian,dummy_forwarddiff_tag),j_to_x)
   j_to_result = lazy_map(AutoDiffMap(ForwardDiff.jacobian),j_to_ydual,j_to_x,j_to_cfg)
   j_to_result
 end
