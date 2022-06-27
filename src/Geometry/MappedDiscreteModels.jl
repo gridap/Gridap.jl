@@ -1,28 +1,19 @@
-# module ModelWithFEMaps
-
-# using Gridap
-# using Gridap.Arrays
-# using Gridap.Fields
-# using Gridap.ReferenceFEs
-# using Gridap.Geometry
-# using Gridap.CellData
-# using Gridap.FESpaces
-
-# import Gridap.ReferenceFEs.get_node_coordinates
-# import Gridap.Geometry.get_cell_node_ids
-# import Gridap.Geometry.get_reffes
-# import Gridap.Geometry.get_cell_type
-# import Gridap.Geometry.Grid
-
-# import Gridap.Geometry.get_cell_map
-# import Gridap.Geometry.get_grid
-# import Gridap.Geometry.get_grid_topology
-# import Gridap.Geometry.get_face_labeling
+function _cell_vector_to_dof_vector!(dof_vector,cell_node_ids, cell_vector)
+  cache_cell_node_ids = array_cache(cell_node_ids)
+  cache_cell_vector   = array_cache(cell_vector)
+  for k=1:length(cell_node_ids)
+    current_node_ids = getindex!(cache_cell_node_ids,cell_node_ids,k)
+    current_values   = getindex!(cache_cell_vector,cell_vector,k)
+    for (i,id) in enumerate(current_node_ids)
+      dof_vector[current_node_ids[i]]=current_values[i]
+    end
+  end
+end
 
 # """
 #     MappedGrid
 
-# Reprepresent a grid with a geometrical map that is the composition of
+# Represent a grid with a geometrical map that is the composition of
 # a reference to a physical space map (standard)
 # and a (vector-valued) map from physical space to physical space. E.g.,
 # it can be used to include a high order map implemented by any map that is
@@ -37,18 +28,6 @@ struct MappedGrid{Dc,Dp,T,M,L} <: Grid{Dc,Dp}
 
     @assert length(phys_map) == num_cells(grid)
     @assert eltype(phys_map) <: Field
-
-    function _cell_vector_to_dof_vector!(dof_vector,cell_node_ids, cell_vector)
-      cache_cell_node_ids = array_cache(cell_node_ids)
-      cache_cell_vector   = array_cache(cell_vector)
-      for k=1:length(cell_node_ids)
-        current_node_ids = getindex!(cache_cell_node_ids,cell_node_ids,k)
-        current_values   = getindex!(cache_cell_vector,cell_vector,k)
-        for (i,id) in enumerate(current_node_ids)
-          dof_vector[current_node_ids[i]]=current_values[i]
-        end
-      end
-    end
 
     function _compute_node_coordinates(grid,phys_map)
       cell_node_ids = get_cell_node_ids(grid)
@@ -80,7 +59,7 @@ get_cell_type(grid::MappedGrid) = get_cell_type(grid.grid)
 """
 MappedDiscreteModel
 
-Reprepresent a model with a `MappedGrid` grid.
+Represent a model with a `MappedGrid` grid.
 See also [`MappedGrid`](@ref).
 """
 struct MappedDiscreteModel{Dc,Dp} <: DiscreteModel{Dc,Dp}
@@ -100,5 +79,3 @@ get_face_labeling(model::MappedDiscreteModel) = get_face_labeling(model.model)
 function Grid(::Type{ReferenceFE{d}},model::MappedDiscreteModel) where {d}
   get_grid(model)
 end
-
-# end # module

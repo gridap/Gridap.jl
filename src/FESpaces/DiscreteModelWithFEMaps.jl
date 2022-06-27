@@ -1,7 +1,7 @@
 """
 Given a Discrete Model and a reffe, builds a new grid in which the geometrical
-is a `FEFunction`. This is useful when considering geometrical maps that are the
-result of a FE problem (mesh displacement).
+map is a `FEFunction`. This is useful when considering geometrical maps that are
+the result of a FE problem (mesh displacement).
 """
 struct GridWithFEMap{Dc,Dp,A,B,C,D,E,F} <: Grid{Dc,Dp}
   grid::Grid{Dc,Dp}
@@ -20,31 +20,16 @@ function GridWithFEMap(model,reffe::ReferenceFE; kwargs...)
   GridWithFEMap(model,cell_type,reffes; kwargs...)
 end
 
-function _cell_vector_to_dof_vector!(dof_vector,cell_node_ids, cell_vector)
-  cache_cell_node_ids = array_cache(cell_node_ids)
-  cache_cell_vector   = array_cache(cell_vector)
-  for k=1:length(cell_node_ids)
-    current_node_ids = getindex!(cache_cell_node_ids,cell_node_ids,k)
-    current_values   = getindex!(cache_cell_vector,cell_vector,k)
-    for (i,id) in enumerate(current_node_ids)
-      dof_vector[current_node_ids[i]]=current_values[i]
-    end
-  end
-end
-
 function GridWithFEMap(model,cell_type,reffes::AbstractArray{<:ReferenceFE}; kwargs...)
 
   # Create a FESpace for the geometrical description
   # The FEFunction that describes the coordinate field
   # or displacement can be a interpolation or a solution
   # of a mesh displacement problem
-  T = eltype(get_node_coordinates(model))
-
   Vₕ = FESpace(model,reffes;conformity=:H1,kwargs...)
 
-  Ts = eltype(T)
-  os = get_order.(reffes)
-  ps = get_polytope.(reffes)
+  os = lazy_map(get_order,reffes)
+  ps = lazy_map(get_polytope,reffes)
   f(a,b) = LagrangianRefFE(Float64,a,b)
   s_reffes = lazy_map(f,ps,os)
   Vₕ_scal = FESpace(model,s_reffes;conformity=:H1)
@@ -66,7 +51,6 @@ function GridWithFEMap(model,cell_type,reffes::AbstractArray{<:ReferenceFE}; kwa
   c_nodes = lazy_map(get_nodes,get_data(c_dofs))
 
   xh = zero(Vₕ)
-  nc = get_node_coordinates(model)
   c_dofv = lazy_map(evaluate,dof_basis,geo_map)
 
   Uₕ = TrialFESpace(Vₕ)
@@ -80,7 +64,7 @@ function GridWithFEMap(model,cell_type,reffes::AbstractArray{<:ReferenceFE}; kwa
 
 
   nodes_coords = Vector{eltype(eltype(c_xh))}(undef,num_free_dofs(Vₕ_scal))
-  _cell_vector_to_dof_vector!(nodes_coords,c_scal_ids,c_xh)
+  Geometry._cell_vector_to_dof_vector!(nodes_coords,c_scal_ids,c_xh)
 
   GridWithFEMap(grid, Vₕ, Vₕ_scal, xh, nodes_coords, reffes, cell_type)
 end
@@ -93,7 +77,7 @@ function _compute_node_coordinates(grid,xh)
   c_scal_ids = get_cell_dof_ids(grid.scal_fe_sp)
 
   nodes_coords = grid.node_coords
-  _cell_vector_to_dof_vector!(nodes_coords,c_scal_ids,c_xh)
+  Geometry._cell_vector_to_dof_vector!(nodes_coords,c_scal_ids,c_xh)
 
   return nodes_coords
 end

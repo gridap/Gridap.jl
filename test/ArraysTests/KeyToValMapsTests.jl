@@ -1,4 +1,4 @@
-module KeyToValArraysTests
+module KeyToValMapsTests
 
 using Test
 using Gridap.Arrays
@@ -10,7 +10,7 @@ using FillArrays
 keys = [1,2,3,4,5]
 key_to_val(i) = i*ones(10)
 
-m = KeyToVal(key_to_val)
+m = KeyToValMap(key_to_val)
 r = lazy_map(m,keys)
 
 r[1]
@@ -20,10 +20,9 @@ _r = key_to_val.(keys)
 @test all(_r .== collect(r))
 
 
-reffe = LagrangianRefFE(Float64,HEX,10)
 key_to_val(i) = LagrangianRefFE(Float64,HEX,i)
 
-m = KeyToVal(key_to_val)
+m = KeyToValMap(key_to_val)
 keys = [1,2,3,4,5,4,3,2,1]
 r = lazy_map(m,keys)
 _r = key_to_val.(keys)

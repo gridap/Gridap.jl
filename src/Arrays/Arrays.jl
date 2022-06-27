@@ -78,7 +78,7 @@ export PosNegPartition
 
 export FilterMap
 
-export KeyToVal
+export KeyToValMap
 
 export MulAddMap
 
@@ -152,7 +152,7 @@ include("PosNegReindex.jl")
 
 include("Reindex.jl")
 
-include("KeyToVal.jl")
+include("KeyToValMaps.jl")
 
 include("FilteredArrays.jl")
 

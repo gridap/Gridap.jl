@@ -20,7 +20,7 @@ using Test
 
 @testset "Reindex" begin include("ReindexTests.jl") end
 
-@testset "KeyToVal" begin include("KeyToValTests.jl") end
+@testset "KeyToValMapsTests" begin include("KeyToValMapsTests.jl") end
 
 @testset "PosNegReindex" begin include("PosNegReindexTests.jl") end
 
