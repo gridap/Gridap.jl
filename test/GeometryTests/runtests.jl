@@ -16,6 +16,8 @@ using Test
 
 @testset "DiscreteModels" begin include("DiscreteModelsTests.jl") end
 
+@testset "MappedDiscreteModels" begin include("MappedDiscreteModelsTests.jl") end
+
 @testset "UnstructuredDiscreteModels" begin include("UnstructuredDiscreteModelsTests.jl") end
 
 @testset "CartesianDiscreteModels" begin include("CartesianDiscreteModelsTests.jl") end

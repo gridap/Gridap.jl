@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.17.13] - 2022-05-31
 
 ### Added
+- `KeyToValMap` lazy map that dinamically creates a `Dict` with the outputs of a function over an array of inputs. Since PR [#801](https://github.com/gridap/Gridap.jl/pull/801)
+- `MappedDiscreteModel` and `MappedGrid`, which are geometrical models with one extra geo map in the physical space. Since PR [#801](https://github.com/gridap/Gridap.jl/pull/801)
+- `GridWithFEMap`, which has a geometrical map defined by a FE function. Since PR [#801](https://github.com/gridap/Gridap.jl/pull/801)
 - Vertex bisection algorithm for refinement of triangular meshes in 2D. Since PR [#733](https://github.com/gridap/Gridap.jl/pull/733)
 - Generalized-α method for 1st order ODEs. Since PR [#781](https://github.com/gridap/Gridap.jl/pull/781) 
 - Implemented (generalised) ModalC0 Polynomial bases and reference FEs. Since PR [#777](https://github.com/gridap/Gridap.jl/pull/777)

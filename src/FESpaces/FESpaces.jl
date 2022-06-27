@@ -41,6 +41,15 @@ import Gridap.Arrays: autodiff_array_jacobian
 import Gridap.Arrays: autodiff_array_hessian
 import Gridap.Geometry: get_triangulation
 import Gridap.Geometry: get_cell_shapefuns
+import Gridap.Geometry: get_cell_type
+import Gridap.Geometry: MappedGrid
+import Gridap.Geometry: MappedDiscreteModel
+import Gridap.Geometry: get_node_coordinates
+import Gridap.Geometry: get_reffes
+import Gridap.Geometry: get_cell_node_ids
+import Gridap.Geometry: OrientationStyle
+import Gridap.Geometry: RegularityStyle
+import Gridap.Geometry: get_facet_normal
 import Gridap.CellData: attach_constraints_rows
 import Gridap.CellData: attach_constraints_cols
 import Gridap.CellData: CellField
@@ -194,6 +203,11 @@ export FESpaceWithLinearConstraints
 
 export FiniteElements
 
+export DiscreteModelWithFEMap
+export GridWithFEMap
+export add_mesh_displacement!
+export update_coordinates!
+
 include("FESpaceInterface.jl")
 
 include("SingleFieldFESpaces.jl")
@@ -239,6 +253,8 @@ include("DirichletFESpaces.jl")
 #include("ExtendedFESpaces.jl")
 
 include("FESpacesWithLinearConstraints.jl")
+
+include("DiscreteModelWithFEMaps.jl")
 
 export get_free_values
 function get_free_values(args...)
