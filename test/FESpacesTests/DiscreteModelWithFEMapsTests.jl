@@ -34,7 +34,11 @@ Uₕ = TrialFESpace(Vₕ,d)
 dh = interpolate_everywhere(d,Uₕ)
 
 grid = get_grid(model)
-@test add_mesh_displacement!(grid_map,dh)  ≈ 3.0*get_node_coordinates(grid)
-@test update_coordinates!(grid_map,dh) ≈ 2.0*get_node_coordinates(grid)
+
+add_mesh_displacement!(grid_map,dh)
+@test get_node_coordinates(grid_map)  ≈ 3.0*get_node_coordinates(grid)
+
+update_coordinates!(grid_map,dh)
+@test get_node_coordinates(grid_map) ≈ 2.0*get_node_coordinates(grid)
 
 end #module
