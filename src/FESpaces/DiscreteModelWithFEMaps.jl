@@ -3,34 +3,41 @@ Given a Discrete Model and a reffe, builds a new grid in which the geometrical
 map is a `FEFunction`. This is useful when considering geometrical maps that are
 the result of a FE problem (mesh displacement).
 """
-struct GridWithFEMap{Dc,Dp,A,B,C,D,E,F} <: Grid{Dc,Dp}
+struct GridWithFEMap{Dc,Dp,A,B,C,D,E} <: Grid{Dc,Dp}
   grid::Grid{Dc,Dp}
   fe_sp::A
   scal_fe_sp::B
   fe_map::C
   node_coords::D
   reffes::E
-  cell_type::F
 end
 
-function GridWithFEMap(model,reffe::ReferenceFE; kwargs...)
-  cell_type = Fill(1,num_cells(model))
-  _reffes = [reffe]
-  reffes = lazy_map(Reindex(_reffes),cell_type)
-  GridWithFEMap(model,cell_type,reffes; kwargs...)
+function GridWithFEMap(model,order; kwargs...)
+  orders = Fill(order,num_cells(model))
+  # _reffes = [reffe]
+  # reffes = lazy_map(Reindex(_reffes),cell_type)
+  GridWithFEMap(model,orders; kwargs...)
 end
 
-function GridWithFEMap(model,cell_type,reffes::AbstractArray{<:ReferenceFE}; kwargs...)
+function GridWithFEMap(model,orders::AbstractArray; kwargs...)
 
   # Create a FESpace for the geometrical description
   # The FEFunction that describes the coordinate field
   # or displacement can be a interpolation or a solution
   # of a mesh displacement problem
-  Vₕ = FESpace(model,reffes;conformity=:H1,kwargs...)
+  T = eltype(get_node_coordinates(model))
+  Ts = eltype(T)
 
   os = lazy_map(get_order,reffes)
-  ps = lazy_map(get_polytope,reffes)
-  f(a,b) = LagrangianRefFE(Float64,a,b)
+  _ps = get_polytopes(model)
+  ct = get_cell_type(model)
+  ps = lazy_map(Reindex(_ps), ct)
+
+  f(a,b) = LagrangianRefFE(T,a,b)
+  reffes = lazy_map(f,ps,os)
+  Vₕ = FESpace(model,reffes;conformity=:H1,kwargs...)
+
+  fs(a,b) = LagrangianRefFE(Ts,a,b)
   s_reffes = lazy_map(f,ps,os)
   Vₕ_scal = FESpace(model,s_reffes;conformity=:H1)
 
@@ -66,7 +73,7 @@ function GridWithFEMap(model,cell_type,reffes::AbstractArray{<:ReferenceFE}; kwa
   nodes_coords = Vector{eltype(eltype(c_xh))}(undef,num_free_dofs(Vₕ_scal))
   Geometry._cell_vector_to_dof_vector!(nodes_coords,c_scal_ids,c_xh)
 
-  GridWithFEMap(grid, Vₕ, Vₕ_scal, xh, nodes_coords, reffes, cell_type)
+  GridWithFEMap(grid, Vₕ, Vₕ_scal, xh, nodes_coords, reffes)
 end
 
 function _compute_node_coordinates(grid,xh)
@@ -113,7 +120,7 @@ end
 get_node_coordinates(grid::GridWithFEMap) = grid.node_coords
 get_cell_node_ids(grid::GridWithFEMap) = get_cell_dof_ids(grid.scal_fe_sp)
 get_reffes(grid::GridWithFEMap) = grid.reffes
-get_cell_type(grid::GridWithFEMap) = grid.cell_type
+get_cell_type(grid::GridWithFEMap) = get_cell_type(grid.grid)
 OrientationStyle(grid::GridWithFEMap) = OrientationStyle(grid.grid)
 RegularityStyle(grid::GridWithFEMap) = RegularityStyle(grid.grid)
 # santiagobadia: To think (does it make sense here, I think it is for surface problems)
@@ -129,12 +136,12 @@ struct DiscreteModelWithFEMap{Dc,Dp} <: DiscreteModel{Dc,Dp}
   end
 end
 
-function DiscreteModelWithFEMap(model::DiscreteModel,reffe::ReferenceFE; kwargs...)
-  mapped_grid = GridWithFEMap(model,reffe;kwargs...)
+function DiscreteModelWithFEMap(model::DiscreteModel,order; kwargs...)
+  mapped_grid = GridWithFEMap(model,order;kwargs...)
   MappedDiscreteModel(model,mapped_grid)
 end
 
-function DiscreteModelWithFEMap(model,cell_type,reffes::AbstractArray{<:ReferenceFE}; kwargs...)
-  mapped_grid = GridWithFEMap(model,cell_type,reffes;kwargs...)
+function DiscreteModelWithFEMap(model,orders::AbstractArray; kwargs...)
+  mapped_grid = GridWithFEMap(model,orders;kwargs...)
   MappedDiscreteModel(model,mapped_grid)
 end

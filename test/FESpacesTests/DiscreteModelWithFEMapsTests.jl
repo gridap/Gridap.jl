@@ -15,6 +15,12 @@ domain = (0,1)
 partition = (5,)
 model = CartesianDiscreteModel(domain,partition)
 
+_polys = get_polytopes(model)
+ct = get_cell_type(model)
+
+ps = lazy_map(Reindex(_polys), ct)
+
+
 T = eltype(get_node_coordinates(model)) #T = VectorValue{1,Float64};
 order = 1; pol = Polytope(HEX_AXIS...)
 
