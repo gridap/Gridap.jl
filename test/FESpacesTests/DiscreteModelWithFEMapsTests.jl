@@ -1,4 +1,4 @@
-module GridWithFEMapsTests
+module DiscreteModelWithFEMapsTests
 
 using Test
 using Gridap
@@ -23,6 +23,7 @@ grid_map = GridWithFEMap(model,orders)
 
 @test get_node_coordinates(grid_map) ≈ get_node_coordinates(model)
 
+T = eltype(get_node_coordinates(model))
 pol = Polytope(HEX_AXIS...)
 reffe = LagrangianRefFE(T,pol,order)
 Vₕ = FESpace(model,reffe;conformity=:H1)
