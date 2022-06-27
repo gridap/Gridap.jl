@@ -28,7 +28,7 @@ function GridWithFEMap(model,orders::AbstractArray; kwargs...)
   T = eltype(get_node_coordinates(model))
   Ts = eltype(T)
 
-  os = lazy_map(get_order,reffes)
+  os = orders
   _ps = get_polytopes(model)
   ct = get_cell_type(model)
   ps = lazy_map(Reindex(_ps), ct)
@@ -127,14 +127,14 @@ RegularityStyle(grid::GridWithFEMap) = RegularityStyle(grid.grid)
 get_facet_normal(grid::GridWithFEMap) = get_facet_normal(grid.grid)
 
 
-struct DiscreteModelWithFEMap{Dc,Dp} <: DiscreteModel{Dc,Dp}
-  model::DiscreteModel{Dc,Dp}
-  mapped_grid::GridWithFEMap{Dc,Dp}
-  function DiscreteModelWithFEMap(model::DiscreteModel{Dc,Dp},phys_map) where {Dc,Dp}
-    mapped_grid = GridWithFEMap(get_grid(model),phys_map)
-    new{Dc,Dp}(model,mapped_grid)
-  end
-end
+# struct DiscreteModelWithFEMap{Dc,Dp} <: DiscreteModel{Dc,Dp}
+#   model::DiscreteModel{Dc,Dp}
+#   mapped_grid::GridWithFEMap{Dc,Dp}
+#   function DiscreteModelWithFEMap(model::DiscreteModel{Dc,Dp},phys_map) where {Dc,Dp}
+#     mapped_grid = GridWithFEMap(get_grid(model),phys_map)
+#     new{Dc,Dp}(model,mapped_grid)
+#   end
+# end
 
 function DiscreteModelWithFEMap(model::DiscreteModel,order; kwargs...)
   mapped_grid = GridWithFEMap(model,order;kwargs...)
