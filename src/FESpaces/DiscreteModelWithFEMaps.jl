@@ -76,19 +76,6 @@ function GridWithFEMap(model,orders::AbstractArray; kwargs...)
   GridWithFEMap(grid, Vₕ, Vₕ_scal, xh, nodes_coords, reffes)
 end
 
-function _compute_node_coordinates(grid,xh)
-  c_dofs = get_fe_dof_basis(grid.fe_sp)
-  c_nodes = lazy_map(get_nodes,get_data(c_dofs))
-
-  c_xh = lazy_map(evaluate,get_data(xh),c_nodes)
-  c_scal_ids = get_cell_dof_ids(grid.scal_fe_sp)
-
-  nodes_coords = grid.node_coords
-  Geometry._cell_vector_to_dof_vector!(nodes_coords,c_scal_ids,c_xh)
-
-  return nodes_coords
-end
-
 function add_mesh_displacement!(grid::GridWithFEMap,dh::FEFunction)
 
   Xh = grid.fe_map
@@ -99,7 +86,6 @@ function add_mesh_displacement!(grid::GridWithFEMap,dh::FEFunction)
   Xh_fv .= Xh_fv .+ get_free_dof_values(dh)
   Xh_dv .= Xh_dv .+ get_dirichlet_dof_values(get_fe_space(dh))
 
-  _compute_node_coordinates(grid,Xh)
 end
 
 function update_coordinates!(grid::GridWithFEMap,dh::FEFunction)
@@ -111,8 +97,6 @@ function update_coordinates!(grid::GridWithFEMap,dh::FEFunction)
 
   Xh_fv .= get_free_dof_values(dh)
   Xh_dv .= get_dirichlet_dof_values(get_fe_space(dh))
-
-  _compute_node_coordinates(grid,Xh)
 
 end
 
