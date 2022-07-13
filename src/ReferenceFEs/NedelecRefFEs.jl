@@ -104,7 +104,7 @@ function _Nedelec_nodes_and_moments(::Type{et}, p::Polytope, order::Integer) whe
 
   end
 
-  if ( is_n_cube(p) && order > 0) || ( is_simplex(p) && order > 1)
+  if ( is_n_cube(p) && order > 0) || ( is_simplex(p) && order > D-2)
 
     ccips, cmoments = _Nedelec_cell_values(p,et,order)
     crange = get_dimrange(p,D)
@@ -266,7 +266,7 @@ function _Nedelec_cell_values(p,et,order)
     cbasis = QCurlGradMonomialBasis{num_dims(p)}(et,order-1)
   else
     D = num_dims(p)
-    cbasis = MonomialBasis{D}(VectorValue{D,et},order-2,(e,k)->sum(e)<=k)
+    cbasis = MonomialBasis{D}(VectorValue{D,et},order-D+1,(e,k)->sum(e)<=k)
   end
   cmoments = _Nedelec_cell_moments(p, cbasis, ccips, cwips )
 

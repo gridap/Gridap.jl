@@ -43,6 +43,30 @@ dΩ = Measure(Ω,order)
 el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
 @test el2 < 1.0e-10
 
+order = 1
+reffe = ReferenceFE(nedelec,order)
+V = TestFESpace(model,reffe,dirichlet_tags = "boundary")
+test_single_field_fe_space(V)
+U = TrialFESpace(V,u)
+uh = interpolate(u,U)
+e = u - uh
+Ω = Triangulation(model)
+dΩ = Measure(Ω,order)
+el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
+@test el2 < 1.0e-10
+
+order = 2
+reffe = ReferenceFE(nedelec,order,TRI)
+V = TestFESpace(model,reffe,dirichlet_tags = "boundary")
+test_single_field_fe_space(V)
+U = TrialFESpace(V,u)
+uh = interpolate(u,U)
+e = u - uh
+Ω = Triangulation(model)
+dΩ = Measure(Ω,order)
+el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
+@test el2 < 1.0e-10
+
 domain =(0,1,0,1,0,1)
 partition = (3,3,3)
 model = CartesianDiscreteModel(domain,partition) |> simplexify
