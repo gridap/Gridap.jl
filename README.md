@@ -1,4 +1,4 @@
-# <img src="https://github.com/gridap/Gridap.jl/blob/master/images/color-text.png" width="250" title="Gridap logo">
+# <img src="https://github.com/gridap/Gridap.jl/blob/master/images/color-text-sticker.png" width="250" title="Gridap logo">
 
 
 | **Documentation** |
@@ -16,7 +16,7 @@
 Gridap provides a set of tools for the grid-based approximation of partial differential equations (PDEs) written in the
 [Julia programming language](https://julialang.org/). The library currently supports linear and nonlinear PDE systems for scalar and vector fields, single and multi-field problems, conforming and nonconforming finite element (FE) discretizations, on structured and unstructured meshes of simplices and n-cubes. It also provides methods for time integration. Gridap is extensible and modular. One can implement new FE spaces, new reference elements, use external mesh generators, linear solvers, post-processing tools, etc. See, e.g., the list of available [Gridap plugins](https://github.com/gridap/Gridap.jl#plugins).
 
-Gridap has a very expressive API allowing one to solve complex PDEs with very few lines of code. The user can write the underlying weak form with a syntax almost 1:1 to the mathematical notation, and Gridap generates an efficient FE assembly loop automatically by leveraging the Julia JIT compiler. For instance, the weak form for an interior penalty DG method for the Poisson equation can be simply specified as: 
+Gridap has a very expressive API allowing one to solve complex PDEs with very few lines of code. The user can write the underlying weak form with a syntax almost 1:1 to the mathematical notation, and Gridap generates an efficient FE assembly loop automatically by leveraging the Julia JIT compiler. For instance, the weak form for an interior penalty DG method for the Poisson equation can be simply specified as:
 ```julia
 a(u,v) =
   ∫( ∇(v)⋅∇(u) )*dΩ +
@@ -80,7 +80,7 @@ These are some popular PDEs solved with the Gridap library. Examples taken from 
 
 ## Known issues
 
-Since Julia 1.6 ownwards we have noticed large first call latencies of Gridap.jl codes with the default compiler optimization level (i.e., `-O2`). 
+Since Julia 1.6 ownwards we have noticed large first call latencies of Gridap.jl codes with the default compiler optimization level (i.e., `-O2`).
 In general, while developing code, but specially if you are noting high first call latencies, we recommend to run `julia` with the `-O1` flag. For production runs use `-O2` or `-O3`.  
 
  ## Gridap community
@@ -135,4 +135,3 @@ In order to give credit to the `Gridap` contributors, we simply ask you to cite 
 
 
 Please, contact the project administrators, [Santiago Badia](mailto:santiago.badia@monash.edu), [Francesc Verdugo](mailto:fverdugo@cimne.upc.edu), and [Alberto F. Martin](mailto:alberto.martin@monash.edu)  for further questions about licenses and terms of use.
-
