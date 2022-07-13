@@ -56,7 +56,7 @@ el2 = sqrt(sum( ∫( e⋅e )*dΩ ))
 @test el2 < 1.0e-10
 
 order = 2
-reffe = ReferenceFE(nedelec,order,TRI)
+reffe = ReferenceFE(nedelec,order)
 V = TestFESpace(model,reffe,dirichlet_tags = "boundary")
 test_single_field_fe_space(V)
 U = TrialFESpace(V,u)
