@@ -190,6 +190,8 @@ function autodiff_array_gradient(a, i_to_x, j_to_i::SkeletonPair)
   lazy_map(BlockMap(2,[1,2]),j_to_result_plus,j_to_result_minus)
 end
 
+_length_1st_vector_vectorblock(a::VectorBlock{<:Vector}) = length(a.array[1])
+
 function autodiff_array_jacobian(a,i_to_x,j_to_i::SkeletonPair)
   dummy_forwarddiff_tag = ()->()
   i_to_xdual = lazy_map(DualizeMap(ForwardDiff.jacobian,dummy_forwarddiff_tag),i_to_x)
@@ -219,21 +221,21 @@ function autodiff_array_jacobian(a,i_to_x,j_to_i::SkeletonPair)
 
   # j_to_result_plus_dense/j_to_result_minus_dense can be (and must be)
   # laid out into 2x2 block matrices
-  num_dofs_x_cell = lazy_map(length,i_to_x)
-  num_dofs_x_face_and_cell_plus  = lazy_map(Reindex(num_dofs_x_cell),j_to_i.plus)
-  num_dofs_x_face_and_cell_minus = lazy_map(Reindex(num_dofs_x_cell),j_to_i.minus)
+
+  lengths_1st_vector_vectorblocks_plus = lazy_map(_length_1st_vector_vectorblock,j_to_ydual_plus)
+  lengths_1st_vector_vectorblocks_minus = lazy_map(_length_1st_vector_vectorblock,j_to_ydual_minus)
 
   J_11 = lazy_map((x,b)->view(x, 1:b,:),
-                  j_to_result_plus_dense,num_dofs_x_face_and_cell_plus)
+                  j_to_result_plus_dense,lengths_1st_vector_vectorblocks_plus)
 
   J_21 = lazy_map((x,b)->view(x, b+1:size(x,1),:),
-                  j_to_result_plus_dense,num_dofs_x_face_and_cell_minus)
+                  j_to_result_plus_dense,lengths_1st_vector_vectorblocks_plus)
 
   J_12 = lazy_map((x,b)->view(x, 1:b,:),
-                  j_to_result_minus_dense,num_dofs_x_face_and_cell_plus)
+                  j_to_result_minus_dense,lengths_1st_vector_vectorblocks_minus)
 
   J_22 = lazy_map((x,b)->view(x, b+1:size(x,1),:),
-                  j_to_result_minus_dense,num_dofs_x_face_and_cell_minus)
+                  j_to_result_minus_dense,lengths_1st_vector_vectorblocks_minus)
 
   # Assembly on SkeletonTriangulation expects an array of facets where each
   # entry is a 2x2-block MatrixBlock with the blocks of the Jacobian matrix
