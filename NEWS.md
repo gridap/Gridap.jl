@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed the behavior `SkeletonCellFieldPair` at the Boundary integration terms. Since PR [#800](https://github.com/gridap/Gridap.jl/pull/800)
 - Fixed `push_normal` for rectangular Jacobians. Since PR[#809](https://github.com/gridap/Gridap.jl/pull/809)
 - Fixed Nedelec FEs with triangles. Since PR [#813](https://github.com/gridap/Gridap.jl/pull/813)
+- Fixed Gridap.jacobian for Skeleton integration terms, in the case of general test basis where dim not same as trial basis. Since PR [#815](https://github.com/gridap/Gridap.jl/pull/815)
 
 ## [0.17.13] - 2022-05-31
 
