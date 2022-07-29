@@ -4,22 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [0.17.14] - 2022-07-29
 
 ### Added
-- Added functionality to take gradient of functional involving integration (`DomainContribution`) over Skeleton faces, with respect to the degrees-of-freedom of `FEFunction`.  The interface remains the same - `gradient(f,uh)`. Since PR [#797](https://github.com/gridap/Gridap.jl/pull/797)
+- Functionality to take gradient of functional involving integration (`DomainContribution`) over Skeleton faces, with respect to the degrees-of-freedom of `FEFunction`.  The interface remains the same - `gradient(f,uh)`. Since PR [#797](https://github.com/gridap/Gridap.jl/pull/797)
 - Extended the `MultiField` functional gradient (with respect to degrees-of-freedom of `MultiFieldFEFunction`) to functionals involving Skeleton integration. The interface remains the same `gradient(f,xh)`. Since PR [#799](https://github.com/gridap/Gridap.jl/pull/799)
-- Added functionality to take jacobian of functional involving integration (`DomainContribution`) over Skeleton faces (obtained from testing bilinear form with the whole set of test `fe_basis`), with respect to the degrees-of-freedom of `FEFunction`.  The interface remains the same - `jacobian(f,uh)`. Since PR [#803](https://github.com/gridap/Gridap.jl/pull/803)
-
-### Changed 
-- Added a dummy tag for ForwardDiff configs being constructed in Gridap at `src/Arrays/Autodiff.jl` to fix issue [#805](https://github.com/gridap/Gridap.jl/issues/805). Since PR [#806](https://github.com/gridap/Gridap.jl/pull/806)
+- Functionality to take jacobian of functional involving integration (`DomainContribution`) over Skeleton faces (obtained from testing bilinear form with the whole set of test `fe_basis`), with respect to the degrees-of-freedom of `FEFunction`.  The interface remains the same - `jacobian(f,uh)`. Since PR [#803](https://github.com/gridap/Gridap.jl/pull/803)
+- A dummy tag for ForwardDiff configs being constructed in Gridap at `src/Arrays/Autodiff.jl` to fix issue [#805](https://github.com/gridap/Gridap.jl/issues/805). Since PR [#806](https://github.com/gridap/Gridap.jl/pull/806)
 
 ### Fixed
-- Fixed the behavior of `gradient` for functionals involving operations of `CellFields` inside `mean` and `jump` terms of Skeleton Integration terms. Since PR [#800](https://github.com/gridap/Gridap.jl/pull/800)
-- Fixed the behavior `SkeletonCellFieldPair` at the Boundary integration terms. Since PR [#800](https://github.com/gridap/Gridap.jl/pull/800)
-- Fixed `push_normal` for rectangular Jacobians. Since PR[#809](https://github.com/gridap/Gridap.jl/pull/809)
-- Fixed Nedelec FEs with triangles. Since PR [#813](https://github.com/gridap/Gridap.jl/pull/813)
-- Fixed Gridap.jacobian for Skeleton integration terms, in the case of general test basis where dim not same as trial basis. Since PR [#815](https://github.com/gridap/Gridap.jl/pull/815)
+- The behavior of `gradient` for functionals involving operations of `CellFields` inside `mean` and `jump` terms of Skeleton Integration terms. Since PR [#800](https://github.com/gridap/Gridap.jl/pull/800)
+- The behavior of `SkeletonCellFieldPair` at the Boundary integration terms. Since PR [#800](https://github.com/gridap/Gridap.jl/pull/800)
+- `push_normal` for rectangular Jacobians. Since PR[#809](https://github.com/gridap/Gridap.jl/pull/809)
+- Nedelec FEs with triangles. Since PR [#813](https://github.com/gridap/Gridap.jl/pull/813)
+- `Gridap.jacobian` for Skeleton integration terms, in the case of general test basis where dim not same as trial basis. Since PR [#815](https://github.com/gridap/Gridap.jl/pull/815)
 
 ## [0.17.13] - 2022-05-31
 
