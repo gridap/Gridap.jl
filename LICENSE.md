@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2019 [Santiago Badia](mailto:santiago.badia@monash.edu) and [Francesc Verdugo](mailto:fverdugo@cimne.upc.edu) and [Alberto F. Martin](mailto:alberto.martin@monash.edu)
+Copyright (c) 2019 [Santiago Badia](mailto:santiago.badia@monash.edu) and [Francesc Verdugo](mailto:f.verdugo.rojano@vu.nl) and [Alberto F. Martin](mailto:alberto.martin@monash.edu)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
