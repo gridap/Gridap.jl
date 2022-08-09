@@ -281,6 +281,14 @@ function return_value(k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::Ab
   end
 end
 
+function return_value(k::LinearCombinationMap{<:Integer},v::AbstractVector,fx::AbstractVector)
+  Ta = eltype(v)
+  Tb = eltype(fx)
+  za = zero(Ta)
+  zb = zero(Tb)
+  zero( zb⊗za + zb⊗za )
+end
+
 function return_cache(k::LinearCombinationMap{<:Integer},v::AbstractArray,fx::AbstractMatrix)
   vf = testitem(fx)
   vv = testitem(v)
@@ -309,6 +317,10 @@ function evaluate!(cache,k::LinearCombinationMap{Colon},v::AbstractVector,fx::Ab
 end
 
 function return_value(k::LinearCombinationMap{Colon},v::AbstractVector,fx::AbstractMatrix)
+  return_value(LinearCombinationMap(1),v,fx)
+end
+
+function return_value(k::LinearCombinationMap{Colon},v::AbstractVector,fx::AbstractVector)
   return_value(LinearCombinationMap(1),v,fx)
 end
 
