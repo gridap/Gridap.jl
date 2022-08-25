@@ -181,6 +181,7 @@ export BezierRefFE
 export ModalC0RefFE
 
 export Lagrangian
+export DivConforming
 export RaviartThomas
 export BDM
 export Nedelec

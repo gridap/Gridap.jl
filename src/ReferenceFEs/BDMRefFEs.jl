@@ -1,4 +1,4 @@
-struct BDM <: ReferenceFEName end
+struct BDM <: DivConforming end
 
 const bdm = BDM()
 
@@ -13,8 +13,11 @@ function BDMRefFE(::Type{et},p::Polytope,order::Integer) where et
 
   D = num_dims(p)
 
+  vet = VectorValue{num_dims(p),et}
+
   if is_simplex(p)
-    prebasis = MonomialBasis{D}(et,order)
+    prebasis = MonomialBasis(vet,p,order)
+    # prebasis = MonomialBasis{D}(vet,order,_p_filter)
     # prebasis = PCurlGradMonomialBasis{D}(et,order)
   else
     @notimplemented "BDM Reference FE only available for simplices"
@@ -85,7 +88,7 @@ function Conformity(reffe::GenericRefFE{BDM},sym::Symbol)
     nf_nodes[frange] = fcips
     nf_moments[frange] = fmoments
 
-    if (order > 0)
+    if (order > 1)
       ccips, cmoments = _BDM_cell_values(p,et,order,phi)
       crange = get_dimrange(p,D)
       nf_nodes[crange] = ccips
@@ -196,8 +199,6 @@ function Conformity(reffe::GenericRefFE{BDM},sym::Symbol)
     return cwips.⋅ishfs_iips
   end
 
-  # _p_filter(e,order) = (sum(e) <= order)
-
   # It provides for every cell the nodes and the moments arrays
   function _BDM_cell_values(p,et,order,phi)
     # Compute integration points at interior
@@ -211,7 +212,7 @@ function Conformity(reffe::GenericRefFE{BDM},sym::Symbol)
     if is_simplex(p)
       T = VectorValue{num_dims(p),et}
       # cbasis = GradMonomialBasis{num_dims(p)}(T,order-1)
-      cbasis = Polynomials.NedelecPrebasisOnSimplex{num_dims(p)}(order-1)
+      cbasis = Polynomials.NedelecPrebasisOnSimplex{num_dims(p)}(order-2)
       # @santiagobadia : Check this basis
     else
       @notimplemented
@@ -231,6 +232,8 @@ function Conformity(reffe::GenericRefFE{BDM},sym::Symbol)
     return [ccips], [cmoments]
 
   end
+
+  # _p_filter(e,order) = (sum(e) <= order)
 
   # function _face_own_dofs_from_moments(f_moments)
   #   face_dofs = Vector{Int}[]

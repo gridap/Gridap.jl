@@ -1,6 +1,6 @@
 # This source file is though to put that code required in order to
 # customize ConformingFESpaces.jl to H(div)-conforming global FE Spaces built
-# out of RaviartThomas FEs. In particular, this customization is in the
+# out of DivConforming FEs. In particular, this customization is in the
 # definition of the shape functions (get_cell_shapefuns) and the DoFs
 # (get_cell_dof_basis) of the **global** FE space, which requires a sign flip
 # for those sitting on facets of the slave cell of the facet.
@@ -29,7 +29,7 @@ struct TransformRTDofBasis{Dc,Dp} <: Map end ;
 # @santiagobadia: I think it should apply verbatim for bdm
 
 function get_cell_dof_basis(model::DiscreteModel,
-                            cell_reffe::AbstractArray{<:GenericRefFE{RaviartThomas}},
+                            cell_reffe::AbstractArray{<:GenericRefFE{DivConforming}},
                             ::DivConformity,
                             sign_flip=get_sign_flip(model, cell_reffe))
     cell_map  = get_cell_map(Triangulation(model))
@@ -47,7 +47,7 @@ function get_cell_dof_basis(model::DiscreteModel,
 end
 
 function get_cell_shapefuns(model::DiscreteModel,
-                            cell_reffe::AbstractArray{<:GenericRefFE{RaviartThomas}},
+                            cell_reffe::AbstractArray{<:GenericRefFE{DivConforming}},
                             ::DivConformity,
                             sign_flip=get_sign_flip(model, cell_reffe))
     cell_reffe_shapefuns=lazy_map(get_shapefuns,cell_reffe)
@@ -118,14 +118,14 @@ function evaluate!(cache,k::SignFlipMap,reffe,cell_id)
 end
 
 function get_sign_flip(model::DiscreteModel,
-                       cell_reffe::AbstractArray{<:GenericRefFE{RaviartThomas}})
+                       cell_reffe::AbstractArray{<:GenericRefFE{DivConforming}})
     lazy_map(SignFlipMap(model),
             cell_reffe,
             IdentityVector(Int32(num_cells(model))))
 end
 
 function return_cache(::TransformRTDofBasis{Dc,Dp},
-                      reffe::GenericRefFE{RaviartThomas},
+                      reffe::GenericRefFE{DivConforming},
                       Jtx,
                       ::AbstractVector{Bool}) where {Dc,Dp}
   p = get_polytope(reffe)
@@ -145,7 +145,7 @@ end
 
 function evaluate!(cache,
                    ::TransformRTDofBasis,
-                   reffe::GenericRefFE{RaviartThomas},
+                   reffe::GenericRefFE{DivConforming},
                    Jt_q,
                    sign_flip::AbstractVector{Bool})
   nodes, nf_nodes, nf_moments, face_moments = cache

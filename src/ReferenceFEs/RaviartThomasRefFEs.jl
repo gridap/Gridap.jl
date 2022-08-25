@@ -1,6 +1,8 @@
 struct DivConformity <: Conformity end
 
-struct RaviartThomas <: ReferenceFEName end
+abstract type DivConforming <: ReferenceFEName end
+
+struct RaviartThomas <: DivConforming end
 
 const raviart_thomas = RaviartThomas()
 
