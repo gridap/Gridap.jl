@@ -26,6 +26,8 @@
 
 struct TransformRTDofBasis{Dc,Dp} <: Map end ;
 
+# @santiagobadia: I think it should apply verbatim for bdm
+
 function get_cell_dof_basis(model::DiscreteModel,
                             cell_reffe::AbstractArray{<:GenericRefFE{RaviartThomas}},
                             ::DivConformity,

@@ -202,6 +202,7 @@ function Conformity(reffe::GenericRefFE{BDM},sym::Symbol)
   function _BDM_cell_values(p,et,order,phi)
     # Compute integration points at interior
     degree = 2*(order+1)
+    # @santiagobadia: Check the degrees everywhere
     iquad = Quadrature(p,degree)
     ccips = get_coordinates(iquad)
     cwips = get_weights(iquad)
@@ -209,7 +210,8 @@ function Conformity(reffe::GenericRefFE{BDM},sym::Symbol)
     # Cell moments, i.e., M(C)_{ab} = q_C^a(xgp_C^b) w_C^b ⋅ ()
     if is_simplex(p)
       T = VectorValue{num_dims(p),et}
-      cbasis = GradMonomialBasis{num_dims(p)}(T,order-1)
+      # cbasis = GradMonomialBasis{num_dims(p)}(T,order-1)
+      cbasis = Polynomials.NedelecPrebasisOnSimplex{num_dims(p)}(order-1)
       # @santiagobadia : Check this basis
     else
       @notimplemented

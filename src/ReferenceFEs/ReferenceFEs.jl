@@ -175,18 +175,21 @@ export CDConformity
 
 export SerendipityRefFE
 export RaviartThomasRefFE
+export BDMRefFE
 export NedelecRefFE
 export BezierRefFE
 export ModalC0RefFE
 
 export Lagrangian
 export RaviartThomas
+export BDM
 export Nedelec
 export Bezier
 export ModalC0
 
 export lagrangian
 export raviart_thomas
+export bdm
 export nedelec
 export bezier
 export modalC0
@@ -234,6 +237,8 @@ include("DuffyQuadratures.jl")
 include("StrangQuadratures.jl")
 
 include("RaviartThomasRefFEs.jl")
+
+include("BDMRefFEs.jl")
 
 include("NedelecRefFEs.jl")
 
