@@ -87,6 +87,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish ReferenceFEs ReferenceFE
 @publish ReferenceFEs Lagrangian
 @publish ReferenceFEs RaviartThomas
+@publish ReferenceFEs BDM
 @publish ReferenceFEs Nedelec
 @publish ReferenceFEs ModalC0
 @publish ReferenceFEs lagrangian
