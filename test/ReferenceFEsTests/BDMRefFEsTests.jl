@@ -1,4 +1,4 @@
-module RaviartThomasRefFEsTest
+module BDMRefFEsTest
 
 using Test
 using Gridap.Polynomials
@@ -14,27 +14,17 @@ using Gridap.Visualization
 using Gridap
 using Gridap.FESpaces
 
-p = QUAD
-D = num_dims(QUAD)
-et = Float64
-order = 0
-
-reffe = RaviartThomasRefFE(et,p,order)
-test_reference_fe(reffe)
-@test num_terms(get_prebasis(reffe)) == 4
-@test get_order(get_prebasis(reffe)) == 0
-@test num_dofs(reffe) == 4
-@test Conformity(reffe) == DivConformity()
-p = QUAD
-D = num_dims(QUAD)
+p = TRI
+D = num_dims(TRI)
 et = Float64
 order = 1
 
-reffe = RaviartThomasRefFE(et,p,order)
-test_reference_fe(reffe)
-@test num_terms(get_prebasis(reffe)) == 12
-@test num_dofs(reffe) == 12
+reffe = BDMRefFE(et,p,order)
+
+@test length(get_prebasis(reffe)) == 6
 @test get_order(get_prebasis(reffe)) == 1
+@test num_dofs(reffe) == 6
+@test Conformity(reffe) == DivConformity()
 
 prebasis = get_prebasis(reffe)
 dof_basis = get_dof_basis(reffe)
@@ -50,37 +40,17 @@ cache = return_cache(dof_basis,prebasis)
 r = evaluate!(cache, dof_basis, prebasis)
 test_dof_array(dof_basis,prebasis,r)
 
-###
-
-order = 0
-p = TRI
-D = num_dims(TRI)
-et = Float64
-
-reffe = RaviartThomasRefFE(et,p,order)
-
-dofs = get_dof_basis(reffe)
-nodes, nf_nodes, nf_moments =  get_nodes(dofs),
-                               get_face_nodes_dofs(dofs),
-                               get_face_moments(dofs)
-nodes
-nf_nodes
-nf_moments
-
-###
-
-
 
 p = TET
 D = num_dims(TET)
 et = Float64
-order = 0
+order = 1
 
-reffe = RaviartThomasRefFE(et,p,order)
+reffe = BDMRefFE(et,p,order)
 test_reference_fe(reffe)
-@test num_terms(get_prebasis(reffe)) == 4
-@test num_dofs(reffe) == 4
-@test get_order(get_prebasis(reffe)) == 0
+@test length(get_prebasis(reffe)) == 12
+@test num_dofs(reffe) == 12
+@test get_order(get_prebasis(reffe)) == 1
 @test Conformity(reffe) == DivConformity()
 
 p = TET
@@ -88,10 +58,10 @@ D = num_dims(p)
 et = Float64
 order = 2
 
-reffe = RaviartThomasRefFE(et,p,order)
+reffe = BDMRefFE(et,p,order)
 test_reference_fe(reffe)
-@test num_terms(get_prebasis(reffe)) == 36
-@test num_dofs(reffe) == 36
+@test length(get_prebasis(reffe)) == 30
+@test num_dofs(reffe) == 30
 @test get_order(get_prebasis(reffe)) == 2
 @test Conformity(reffe) == DivConformity()
 
@@ -110,22 +80,22 @@ r = evaluate!(cache, dof_basis, prebasis)
 test_dof_array(dof_basis,prebasis,r)
 
 # Factory function
-reffe = ReferenceFE(QUAD,raviart_thomas,0)
-@test num_terms(get_prebasis(reffe)) == 4
-@test get_order(get_prebasis(reffe)) == 0
-@test num_dofs(reffe) == 4
+reffe = ReferenceFE(TET,bdm,1)
+@test length(get_prebasis(reffe)) == 12
+@test get_order(get_prebasis(reffe)) == 1
+@test num_dofs(reffe) == 12
 @test Conformity(reffe) == DivConformity()
 
-reffe = ReferenceFE(QUAD,raviart_thomas,Float64,0)
-@test num_terms(get_prebasis(reffe)) == 4
-@test get_order(get_prebasis(reffe)) == 0
-@test num_dofs(reffe) == 4
+reffe = ReferenceFE(TET,bdm,Float64,1)
+@test length(get_prebasis(reffe)) == 12
+@test get_order(get_prebasis(reffe)) == 1
+@test num_dofs(reffe) == 12
 @test Conformity(reffe) == DivConformity()
 
 @test Conformity(reffe,:L2) == L2Conformity()
 @test Conformity(reffe,:Hdiv) == DivConformity()
 @test Conformity(reffe,:HDiv) == DivConformity()
 
-@test RaviartThomas() == raviart_thomas
+@test BDM() == bdm
 
 end # module

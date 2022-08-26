@@ -178,5 +178,30 @@ end
   end
 end
 
+p = TRI
+D = num_dims(TRI)
+et = Float64
+source_model = CartesianDiscreteModel((0,1,0,1),(2,2)) |> simplexify
+
+
+@testset "Test interpolation BDM" begin
+  # BDM Space -> BDM Space
+
+  f(x) = VectorValue([x[1], x[2]])
+  reffe = BDMRefFE(et, p, 1)
+  V₁ = FESpace(source_model, reffe, conformity=:HDiv)
+  fh = interpolate_everywhere(f, V₁);
+  # Target RT Space
+  reffe = RaviartThomasRefFE(et, p, 1)
+  model = CartesianDiscreteModel((0,1,0,1),(40,40)) |> simplexify
+  V₂ = FESpace(model, reffe, conformity=:HDiv)
+
+  ifh = Interpolable(fh)
+  gh = interpolate_everywhere(ifh, V₂)
+  pts = [VectorValue(rand(2)) for i=1:10]
+  for pt in pts
+    @test gh(pt) ≈ fh(pt)
+  end
+end
 
 end # module

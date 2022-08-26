@@ -126,7 +126,7 @@ function _Nedelec_edge_values(p,et,order)
   egeomap = _ref_face_to_faces_geomap(p,ep)
 
   # Compute integration points at all polynomial edges
-  degree = (order+1)*2
+  degree = (order)*2
   equad = Quadrature(ep,degree)
   cips = get_coordinates(equad)
   wips = get_weights(equad)
@@ -163,7 +163,7 @@ function _Nedelec_face_values(p,et,order)
   fgeomap = _ref_face_to_faces_geomap(p,fp)
 
   # Compute integration points at all polynomial edges
-  degree = (order+1)*2
+  degree = (order)*2
   fquad = Quadrature(fp,degree)
   fips = get_coordinates(fquad)
   wips = get_weights(fquad)
@@ -209,7 +209,7 @@ function _Nedelec_face_values_simplex(p,et,order)
   fgeomap = _ref_face_to_faces_geomap(p,fp)
 
   # Compute integration points at all polynomial edges
-  degree = (order+1)*2
+  degree = (order)*2
   fquad = Quadrature(fp,degree)
   fips = get_coordinates(fquad)
   wips = get_weights(fquad)
@@ -256,7 +256,7 @@ end
 function _Nedelec_cell_values(p,et,order)
 
   # Compute integration points at interior
-  degree = 2*(order+1)
+  degree = 2*(order)
   iquad = Quadrature(p,degree)
   ccips = get_coordinates(iquad)
   cwips = get_weights(iquad)
