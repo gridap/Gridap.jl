@@ -92,6 +92,7 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish ReferenceFEs ModalC0
 @publish ReferenceFEs lagrangian
 @publish ReferenceFEs raviart_thomas
+@publish ReferenceFEs bdm
 @publish ReferenceFEs nedelec
 @publish ReferenceFEs modalC0
 
