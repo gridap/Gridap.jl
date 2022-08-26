@@ -239,7 +239,7 @@ include("StrangQuadratures.jl")
 
 include("RaviartThomasRefFEs.jl")
 
-# include("BDMRefFEs.jl")
+include("BDMRefFEs.jl")
 
 include("NedelecRefFEs.jl")
 

@@ -50,6 +50,26 @@ cache = return_cache(dof_basis,prebasis)
 r = evaluate!(cache, dof_basis, prebasis)
 test_dof_array(dof_basis,prebasis,r)
 
+###
+
+order = 0
+p = TRI
+D = num_dims(TRI)
+et = Float64
+
+reffe = RaviartThomasRefFE(et,p,order)
+
+dofs = get_dof_basis(reffe)
+nodes, nf_nodes, nf_moments =  get_nodes(dofs),
+                               get_face_nodes_dofs(dofs),
+                               get_face_moments(dofs)
+nodes
+nf_nodes
+nf_moments
+
+###
+
+
 
 p = TET
 D = num_dims(TET)

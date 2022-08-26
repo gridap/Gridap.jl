@@ -26,8 +26,10 @@
 
 struct TransformRTDofBasis{Dc,Dp} <: Map end ;
 
+# DivConforming = Union{RaviartThomas,BDM}
+
 function get_cell_dof_basis(model::DiscreteModel,
-                            cell_reffe::AbstractArray{<:GenericRefFE{RaviartThomas}},
+                            cell_reffe::AbstractArray{<:GenericRefFE{<:DivConforming}},
                             ::DivConformity,
                             sign_flip=get_sign_flip(model, cell_reffe))
     cell_map  = get_cell_map(Triangulation(model))
@@ -37,7 +39,8 @@ function get_cell_dof_basis(model::DiscreteModel,
     Jtx       = lazy_map(evaluate,Jt,x)
     reffe     = cell_reffe[1]
     Dc        = num_dims(reffe)
-    et        = return_type(get_prebasis(reffe))
+    # @santiagobadia: A hack here, for RT returns Float64 and for BDM VectorValue{Float64}
+    et        = eltype(return_type(get_prebasis(reffe)))
     pt        = Point{Dc,et}
     Dp        = first(size(return_type(phi,zero(pt))))
     k         = TransformRTDofBasis{Dc,Dp}()
@@ -45,7 +48,7 @@ function get_cell_dof_basis(model::DiscreteModel,
 end
 
 function get_cell_shapefuns(model::DiscreteModel,
-                            cell_reffe::AbstractArray{<:GenericRefFE{RaviartThomas}},
+                            cell_reffe::AbstractArray{<:GenericRefFE{<:DivConforming}},
                             ::DivConformity,
                             sign_flip=get_sign_flip(model, cell_reffe))
     cell_reffe_shapefuns=lazy_map(get_shapefuns,cell_reffe)
@@ -116,20 +119,21 @@ function evaluate!(cache,k::SignFlipMap,reffe,cell_id)
 end
 
 function get_sign_flip(model::DiscreteModel,
-                       cell_reffe::AbstractArray{<:GenericRefFE{RaviartThomas}})
+                       cell_reffe::AbstractArray{<:GenericRefFE{<:DivConforming}})
     lazy_map(SignFlipMap(model),
             cell_reffe,
             IdentityVector(Int32(num_cells(model))))
 end
 
 function return_cache(::TransformRTDofBasis{Dc,Dp},
-                      reffe::GenericRefFE{RaviartThomas},
+                      reffe::GenericRefFE{<:DivConforming},
                       Jtx,
                       ::AbstractVector{Bool}) where {Dc,Dp}
   p = get_polytope(reffe)
   prebasis = get_prebasis(reffe)
   order = get_order(prebasis)
-  et = return_type(prebasis)
+  # @santiagobadia: Hack as above
+  et = eltype(return_type(prebasis))
   dofs = get_dof_basis(reffe)
   nodes, nf_nodes, nf_moments =  get_nodes(dofs),
                                  get_face_nodes_dofs(dofs),
@@ -143,7 +147,7 @@ end
 
 function evaluate!(cache,
                    ::TransformRTDofBasis,
-                   reffe::GenericRefFE{RaviartThomas},
+                   reffe::GenericRefFE{<:DivConforming},
                    Jt_q,
                    sign_flip::AbstractVector{Bool})
   nodes, nf_nodes, nf_moments, face_moments = cache
