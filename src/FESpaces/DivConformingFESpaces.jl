@@ -26,8 +26,6 @@
 
 struct TransformRTDofBasis{Dc,Dp} <: Map end ;
 
-# DivConforming = Union{RaviartThomas,BDM}
-
 function get_cell_dof_basis(model::DiscreteModel,
                             cell_reffe::AbstractArray{<:GenericRefFE{<:DivConforming}},
                             ::DivConformity,
