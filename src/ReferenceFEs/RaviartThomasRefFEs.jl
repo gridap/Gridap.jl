@@ -178,7 +178,7 @@ function _RT_face_values(p,et,order,phi)
   # the one of the points in the polytope after applying the geopmap
   # (fcips), and the weights for these nodes (fwips, a constant cell array)
   # Nodes (fcips)
-  degree = (order+1)*2
+  degree = (order)*2
   fquad = Quadrature(fp,degree)
   fips = get_coordinates(fquad)
   wips = get_weights(fquad)
@@ -207,7 +207,7 @@ _p_filter(e,order) = (sum(e) <= order)
 # It provides for every cell the nodes and the moments arrays
 function _RT_cell_values(p,et,order,phi)
   # Compute integration points at interior
-  degree = 2*(order+1)
+  degree = 2*(order)
   iquad = Quadrature(p,degree)
   ccips = get_coordinates(iquad)
   cwips = get_weights(iquad)
