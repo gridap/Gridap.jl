@@ -4,11 +4,6 @@ abstract type DivConforming <: ReferenceFEName end
 
 struct RaviartThomas <: DivConforming end
 
-# struct RaviartThomas <: ReferenceFEName end
-# struct BDM <: ReferenceFEName end
-
-# const DivConforming = RaviartThomas
-
 const raviart_thomas = RaviartThomas()
 
 """

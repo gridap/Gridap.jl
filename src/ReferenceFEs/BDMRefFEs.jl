@@ -1,5 +1,4 @@
 struct BDM <: DivConforming end
-# struct BDM <: ReferenceFEName end
 
 const bdm = BDM()
 
@@ -18,8 +17,6 @@ function BDMRefFE(::Type{et},p::Polytope,order::Integer) where et
 
   if is_simplex(p)
     prebasis = MonomialBasis(vet,p,order)
-    # prebasis = MonomialBasis{D}(vet,order,_p_filter)
-    # prebasis = PCurlGradMonomialBasis{D}(et,order)
   else
     @notimplemented "BDM Reference FE only available for simplices"
   end
@@ -99,43 +96,6 @@ function Conformity(reffe::GenericRefFE{BDM},sym::Symbol)
     nf_nodes, nf_moments
   end
 
-  # # Ref FE to faces geomaps
-  # function _ref_face_to_faces_geomap(p,fp)
-  #   cfvs = get_face_coordinates(p,num_dims(fp))
-  #   nc = length(cfvs)
-  #   freffe = LagrangianRefFE(Float64,fp,1)
-  #   fshfs = get_shapefuns(freffe)
-  #   cfshfs = fill(fshfs, nc)
-  #   fgeomap = lazy_map(linear_combination,cfvs,cfshfs)
-  # end
-
-  # function _nfaces_evaluation_points_weights(p, fgeomap, fips, wips)
-  #   nc = length(fgeomap)
-  #   c_fips = fill(fips,nc)
-  #   c_wips = fill(wips,nc)
-  #   pquad = lazy_map(evaluate,fgeomap,c_fips)
-
-  #   # if is_simplex(p)
-  #   # Must account for diagonals in simplex discretizations to get the correct
-  #   # scaling
-  #   Jt1 = lazy_map(∇,fgeomap)
-  #   Jt1_ips = lazy_map(evaluate,Jt1,c_fips)
-  #   det_J = lazy_map(Broadcasting(meas),Jt1_ips)
-
-  #   c_detwips = collect(lazy_map(Broadcasting(*),c_wips,det_J))
-  #   # end
-
-  #   c_fips, pquad, c_detwips
-  # end
-
-  # function _broadcast(::Type{T},n,b) where T
-  #   c = Array{T}(undef,size(b))
-  #   for (ii, i) in enumerate(b)
-  #     c[ii] = i⋅n
-  #   end
-  #   return c
-  # end
-
   function _BDM_face_moments(p, fshfs, c_fips, fcips, fwips,phi)
     nc = length(c_fips)
     cfshfs = fill(fshfs, nc)
@@ -175,7 +135,7 @@ function Conformity(reffe::GenericRefFE{BDM},sym::Symbol)
     # the one of the points in the polytope after applying the geopmap
     # (fcips), and the weights for these nodes (fwips, a constant cell array)
     # Nodes (fcips)
-    degree = (order+1)*2
+    degree = (order)*2
     fquad = Quadrature(fp,degree)
     fips = get_coordinates(fquad)
     wips = get_weights(fquad)
@@ -185,7 +145,6 @@ function Conformity(reffe::GenericRefFE{BDM},sym::Symbol)
     # Moments (fmoments)
     # The BDM prebasis is expressed in terms of shape function
     fshfs = MonomialBasis(et,fp,order)
-    # @santiagobadia : Check this basis
 
     # Face moments, i.e., M(Fi)_{ab} = q_RF^a(xgp_RFi^b) w_Fi^b n_Fi ⋅ ()
     fmoments = _BDM_face_moments(p, fshfs, c_fips, fcips, fwips, phi)
@@ -203,8 +162,7 @@ function Conformity(reffe::GenericRefFE{BDM},sym::Symbol)
   # It provides for every cell the nodes and the moments arrays
   function _BDM_cell_values(p,et,order,phi)
     # Compute integration points at interior
-    degree = 2*(order+1)
-    # @santiagobadia: Check the degrees everywhere
+    degree = 2*(order)
     iquad = Quadrature(p,degree)
     ccips = get_coordinates(iquad)
     cwips = get_weights(iquad)
@@ -214,7 +172,6 @@ function Conformity(reffe::GenericRefFE{BDM},sym::Symbol)
       T = VectorValue{num_dims(p),et}
       # cbasis = GradMonomialBasis{num_dims(p)}(T,order-1)
       cbasis = Polynomials.NedelecPrebasisOnSimplex{num_dims(p)}(order-2)
-      # @santiagobadia : Check this basis
     else
       @notimplemented
     end
@@ -233,17 +190,3 @@ function Conformity(reffe::GenericRefFE{BDM},sym::Symbol)
     return [ccips], [cmoments]
 
   end
-
-  # _p_filter(e,order) = (sum(e) <= order)
-
-  # function _face_own_dofs_from_moments(f_moments)
-  #   face_dofs = Vector{Int}[]
-  #   o = 1
-  #   for moments in f_moments
-  #     ndofs = size(moments,2)
-  #     dofs = collect(o:(o+ndofs-1))
-  #     push!(face_dofs,dofs)
-  #     o += ndofs
-  #   end
-  #   face_dofs
-  # end
