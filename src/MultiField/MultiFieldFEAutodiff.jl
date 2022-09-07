@@ -86,7 +86,7 @@ function FESpaces._change_argument(
     end
     xh = MultiFieldCellField(single_fields)
     cell_grad = f(xh)
-    cell_grad_cont_block=get_contribution(cell_grad,trian)
+    cell_grad_cont_block=get_contribution2(cell_grad,trian)
     bs = [cell_dofs_field_offsets[i+1]-cell_dofs_field_offsets[i] for i=1:nfields]
     lazy_map(DensifyInnerMostBlockLevelMap(),
              Fill(bs,length(cell_grad_cont_block)),
@@ -111,7 +111,7 @@ function FESpaces._change_argument(
     end
     xh = MultiFieldCellField(single_fields)
     cell_grad = f(xh)
-    get_contribution(cell_grad,trian)
+    get_contribution2(cell_grad,trian)
   end
   g
 end
@@ -146,4 +146,12 @@ function FESpaces._hessian(f,uh::MultiFieldFEFunction,fuh::DomainContribution)
     add_contribution!(terms,trian,cell_grad)
   end
   terms
+end
+
+function get_contribution2(cell_grad,trian)
+  for trian_cg in get_domains(cell_grad)
+    if get_cell_node_ids(trian_cg) == get_cell_node_ids(trian)
+      return get_contribution(cell_grad,trian_cg)
+    end
+  end
 end
