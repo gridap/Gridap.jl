@@ -375,9 +375,9 @@ end
 """
     simplexify(model::DiscreteModel)
 """
-function simplexify(model::DiscreteModel)
+function simplexify(model::DiscreteModel;kwargs...)
   umodel = UnstructuredDiscreteModel(model)
-  simplexify(umodel)
+  simplexify(umodel;kwargs...)
 end
 
 function ReferenceFE(model::DiscreteModel,args...;kwargs...)

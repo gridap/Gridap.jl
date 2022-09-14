@@ -115,7 +115,7 @@ function from_dict(T::Type{UnstructuredDiscreteModel},dict::Dict{Symbol,Any})
   UnstructuredDiscreteModel(grid,topo,labeling)
 end
 
-function simplexify(model::UnstructuredDiscreteModel)
+function simplexify(model::UnstructuredDiscreteModel;kwargs...)
   grid = get_grid(model)
   grid_topology = get_grid_topology(model)
   cell_vertices = get_cell_vertices(grid_topology)
@@ -123,7 +123,7 @@ function simplexify(model::UnstructuredDiscreteModel)
   nnodes = num_nodes(grid)
   nvertices = num_vertices(grid_topology)
   labels = get_face_labeling(model)
-  tgrid = simplexify(grid)
+  tgrid = simplexify(grid;kwargs...)
   cell_ctype = get_cell_type(grid)
   tcell_nodes = get_cell_node_ids(tgrid)
   tcell_tctype = get_cell_type(tgrid)
@@ -147,7 +147,7 @@ function simplexify(model::UnstructuredDiscreteModel)
     tctype_ltvertex_ltnode,
     tcell_tctype)
   tgrid_topology = GridTopology(tgrid, tcell_vertices, vertex_node)
-  tfacelabels = _generate_tfacelabels(grid_topology, tgrid_topology, reffes, labels)
+  tfacelabels = _generate_tfacelabels(grid_topology, tgrid_topology, reffes, labels; kwargs... )
   UnstructuredDiscreteModel(tgrid,tgrid_topology,tfacelabels)
 end
 
@@ -212,12 +212,12 @@ function _preapre_tvertices(
   tcell_vertices, vertex_node
 end
 
-function _generate_tfacelabels(grid_topology, tgrid_topology, reffes, facelabels)
+function _generate_tfacelabels(grid_topology, tgrid_topology, reffes, facelabels; kwargs... )
 
   @notimplementedif length(reffes) != 1
   reffe = first(reffes)
   p = get_polytope(reffe)
-  ltcell_to_lnodes, simplex = simplexify(p)
+  ltcell_to_lnodes, simplex = simplexify(p;kwargs...)
 
   D = num_cell_dims(grid_topology)
 

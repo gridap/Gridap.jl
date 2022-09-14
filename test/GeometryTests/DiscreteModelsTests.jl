@@ -85,6 +85,14 @@ model = CartesianDiscreteModel(domain,partition)
 tmodel = simplexify(model)
 test_discrete_model(tmodel)
 
+otmodel = simplexify(model,oriented=true)
+test_discrete_model(otmodel)
+
+Jk = lazy_map(∇,get_cell_map(otmodel))
+J0k = lazy_map(evaluate,Jk,Fill(Point(0,0,0),num_cells(otmodel)))
+oriented = lazy_map(isone∘sign∘det,J0k)
+@test all(oriented)
+
 model2 = DiscreteModel(grid,topo,labeling)
 test_discrete_model(model2)
 

@@ -102,6 +102,9 @@ grid = CartesianGrid(domain,partition)
 tgrid = simplexify(grid)
 test_grid(tgrid)
 
+otgrid = simplexify(grid,oriented=true)
+test_grid(otgrid)
+
 grid = compute_reference_grid(HEX8,4)
 test_grid(grid)
 

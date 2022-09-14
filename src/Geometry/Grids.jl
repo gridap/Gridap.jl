@@ -405,8 +405,8 @@ function Grid(::Type{ReferenceFE{d}},p::Polytope) where d
 end
 
 """
-    simplexify(grid::Grid)
+    simplexify(grid::Grid;kwargs...)
 """
-function simplexify(grid::Grid)
-  simplexify(UnstructuredGrid(grid))
+function simplexify(grid::Grid;kwargs...)
+  simplexify(UnstructuredGrid(grid);kwargs...)
 end
