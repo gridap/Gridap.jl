@@ -20,6 +20,8 @@ using Test
 
 @testset "Reindex" begin include("ReindexTests.jl") end
 
+@testset "KeyToValMapsTests" begin include("KeyToValMapsTests.jl") end
+
 @testset "PosNegReindex" begin include("PosNegReindexTests.jl") end
 
 @testset "IdentityVectors" begin include("IdentityVectorsTests.jl") end

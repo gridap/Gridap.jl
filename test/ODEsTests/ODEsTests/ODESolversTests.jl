@@ -5,6 +5,7 @@ using Gridap.ODEs.ODETools: GenericODESolution
 using Gridap.ODEs.ODETools: BackwardEuler
 using Gridap.ODEs.ODETools: RungeKutta
 using Gridap.ODEs.ODETools: ThetaMethodNonlinearOperator
+using Gridap.ODEs.ODETools: GeneralizedAlpha
 using Gridap.ODEs.ODETools: solve!
 using Gridap.ODEs
 using Gridap.ODEs.ODETools
@@ -171,5 +172,26 @@ aᵦ = 2*β*af .+ (1-2*β)*a0
 @test tf==t0+dt
 @test all(vf .≈ (v0 + dt*aᵧ))
 @test all(uf .≈ (u0 + dt*v0 + 0.5*dt^2*aᵦ))
+
+# GeneralizedAlpha test
+
+op = ODEOperatorMock{Float64,Nonlinear}(1.0,0.0,1.0,1)
+ls = LUSolver()
+ρ∞ = 1.0 # Equivalent to θ-method with θ=0.5
+αf = 1.0/(1.0 + ρ∞)
+αm = 0.5 * (3-ρ∞) / (1+ρ∞)
+γ = 0.5 + αm - αf
+odesolα = GeneralizedAlpha(ls,dt,ρ∞)
+odesolθ = ThetaMethod(ls,dt,0.5)
+ufα = copy(u0)
+ufθ = copy(u0)
+v0 = 0.0*ones(2)
+ufα.=1.0
+ufθ.=1.0
+(ufα, vf), tf, cache = solve_step!((ufα,v0),odesolα,op,(u0,v0),t0,nothing)
+ufθ, tf, cache = solve_step!(ufθ,odesolθ,op,u0,t0,nothing)
+@test tf==t0+dt
+@test all(ufα.≈ufθ)
+@test all(vf.≈ 1/(γ*dt) * (ufα-u0) + (1-1/γ)*v0)
 
 # end #module

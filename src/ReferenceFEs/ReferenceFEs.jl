@@ -17,6 +17,10 @@ using Gridap.TensorValues
 using Gridap.Fields
 using Gridap.Polynomials
 
+using Gridap.Polynomials: _q_filter, _s_filter_mc0
+using Gridap.Polynomials: _compute_filter_mask
+using Gridap.Polynomials: _define_terms, _sort_by_nfaces!
+
 using QuadGK: gauss
 using FastGaussQuadrature: gaussjacobi
 using FastGaussQuadrature: gausslegendre
@@ -26,10 +30,13 @@ import Gridap.Arrays: evaluate!
 import Gridap.Arrays: return_type
 import Gridap.Fields: evaluate
 import Gridap.Fields: lazy_map
+import Gridap.Fields: linear_combination
 import Gridap.Polynomials: MonomialBasis
 
 import Gridap.Polynomials: get_order
 import Gridap.Polynomials: get_orders
+import Gridap.Polynomials: _compute_filter_mask
+import Gridap.Polynomials: _define_terms, _sort_by_nfaces!
 
 import Gridap.Io: to_dict
 import Gridap.Io: from_dict
@@ -145,6 +152,9 @@ export MomentBasedDofBasis
 export get_face_own_nodes
 export get_face_nodes
 
+export linear_combination
+export compute_cell_to_modalC0_reffe
+
 export VERTEX1
 export SEG2
 export TRI3
@@ -165,18 +175,25 @@ export CDConformity
 
 export SerendipityRefFE
 export RaviartThomasRefFE
+export BDMRefFE
 export NedelecRefFE
 export BezierRefFE
+export ModalC0RefFE
 
 export Lagrangian
+export DivConforming
 export RaviartThomas
+export BDM
 export Nedelec
 export Bezier
+export ModalC0
 
 export lagrangian
 export raviart_thomas
+export bdm
 export nedelec
 export bezier
+export modalC0
 
 export Quadrature
 export QuadratureName
@@ -222,10 +239,16 @@ include("StrangQuadratures.jl")
 
 include("RaviartThomasRefFEs.jl")
 
+include("BDMRefFEs.jl")
+
 include("NedelecRefFEs.jl")
 
 include("MockDofs.jl")
 
 include("BezierRefFEs.jl")
+
+include("ModalC0RefFEs.jl")
+
+include("LinearCombinationDofVectors.jl")
 
 end # module

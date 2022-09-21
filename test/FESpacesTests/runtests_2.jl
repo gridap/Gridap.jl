@@ -24,4 +24,6 @@ using Test
 
 @testset "AppendedTriangulations" begin include("AppendedTriangulationsTests.jl") end
 
+@testset "DiscreteModelWithFEMapsTests" begin include("DiscreteModelWithFEMapsTests.jl") end
+
 end # module

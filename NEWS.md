@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.14] - 2022-07-29
+
+### Added
+- Functionality to take gradient of functional involving integration (`DomainContribution`) over Skeleton faces, with respect to the degrees-of-freedom of `FEFunction`.  The interface remains the same - `gradient(f,uh)`. Since PR [#797](https://github.com/gridap/Gridap.jl/pull/797)
+- Extended the `MultiField` functional gradient (with respect to degrees-of-freedom of `MultiFieldFEFunction`) to functionals involving Skeleton integration. The interface remains the same `gradient(f,xh)`. Since PR [#799](https://github.com/gridap/Gridap.jl/pull/799)
+- Functionality to take jacobian of functional involving integration (`DomainContribution`) over Skeleton faces (obtained from testing bilinear form with the whole set of test `fe_basis`), with respect to the degrees-of-freedom of `FEFunction`.  The interface remains the same - `jacobian(f,uh)`. Since PR [#803](https://github.com/gridap/Gridap.jl/pull/803)
+- A dummy tag for ForwardDiff configs being constructed in Gridap at `src/Arrays/Autodiff.jl` to fix issue [#805](https://github.com/gridap/Gridap.jl/issues/805). Since PR [#806](https://github.com/gridap/Gridap.jl/pull/806)
+
+### Fixed
+- The behavior of `gradient` for functionals involving operations of `CellFields` inside `mean` and `jump` terms of Skeleton Integration terms. Since PR [#800](https://github.com/gridap/Gridap.jl/pull/800)
+- The behavior of `SkeletonCellFieldPair` at the Boundary integration terms. Since PR [#800](https://github.com/gridap/Gridap.jl/pull/800)
+- `push_normal` for rectangular Jacobians. Since PR[#809](https://github.com/gridap/Gridap.jl/pull/809)
+- Nedelec FEs with triangles. Since PR [#813](https://github.com/gridap/Gridap.jl/pull/813)
+- `Gridap.jacobian` for Skeleton integration terms, in the case of general test basis where dim not same as trial basis. Since PR [#815](https://github.com/gridap/Gridap.jl/pull/815)
+
+## [0.17.13] - 2022-05-31
+
+### Added
+- `KeyToValMap` lazy map that dinamically creates a `Dict` with the outputs of a function over an array of inputs. Since PR [#801](https://github.com/gridap/Gridap.jl/pull/801)
+- `MappedDiscreteModel` and `MappedGrid`, which are geometrical models with one extra geo map in the physical space. Since PR [#801](https://github.com/gridap/Gridap.jl/pull/801)
+- `GridWithFEMap`, which has a geometrical map defined by a FE function. Since PR [#801](https://github.com/gridap/Gridap.jl/pull/801)
+- Vertex bisection algorithm for refinement of triangular meshes in 2D. Since PR [#733](https://github.com/gridap/Gridap.jl/pull/733)
+- Generalized-α method for 1st order ODEs. Since PR [#781](https://github.com/gridap/Gridap.jl/pull/781) 
+- Implemented (generalised) ModalC0 Polynomial bases and reference FEs. Since PR [#777](https://github.com/gridap/Gridap.jl/pull/777)
+- Serendipity reference FEs for any dimension and order. Since PR [#777](https://github.com/gridap/Gridap.jl/pull/777)
+
 ## [0.17.12] - 2022-03-24
 
 ### Fixed

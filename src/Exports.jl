@@ -87,10 +87,14 @@ using Gridap.TensorValues: ⊗; export ⊗
 @publish ReferenceFEs ReferenceFE
 @publish ReferenceFEs Lagrangian
 @publish ReferenceFEs RaviartThomas
+@publish ReferenceFEs BDM
 @publish ReferenceFEs Nedelec
+@publish ReferenceFEs ModalC0
 @publish ReferenceFEs lagrangian
 @publish ReferenceFEs raviart_thomas
+@publish ReferenceFEs bdm
 @publish ReferenceFEs nedelec
+@publish ReferenceFEs modalC0
 
 @publish Geometry get_triangulation
 @publish Geometry num_cells
