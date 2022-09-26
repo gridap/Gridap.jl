@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `lastindex` for `MultiValue`s for consistent usage of `[end]` as per `length`. Since PR [#834](https://github.com/gridap/Gridap.jl/pull/834)
+- BDM (Brezzi-Douglas-Marini) ReferenceFEs in PR [#823](https://github.com/gridap/Gridap.jl/pull/823)
 
 ## [0.17.14] - 2022-07-29
 
