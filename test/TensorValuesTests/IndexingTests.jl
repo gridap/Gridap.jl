@@ -13,6 +13,7 @@ v = VectorValue{4}(a)
 
 @test size(v) == (4,)
 @test length(v) == 4
+@test lastindex(v) == length(v)
 
 for (k,i) in enumerate(eachindex(v))
   @test v[i] == a[k]
@@ -22,6 +23,7 @@ t = TensorValue{2}(a)
 
 @test size(t) == (2,2)
 @test length(t) == 4
+@test lastindex(t) == length(t)
 
 for (k,i) in enumerate(eachindex(t))
   @test t[i] == a[k]
@@ -40,6 +42,7 @@ t = TensorValue(convert(SMatrix{2,2,Int},s))
 
 @test size(s) == (2,2)
 @test length(s) == 4
+@test lastindex(s) == length(s)
 
 for (k,i) in enumerate(eachindex(t))
     @test s[i] == t[k]

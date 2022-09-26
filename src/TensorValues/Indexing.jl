@@ -1,6 +1,8 @@
 
 eachindex(arg::MultiValue) = eachindex(1:prod(size(arg)))
 
+lastindex(arg::MultiValue) = length(arg)
+
 CartesianIndices(arg::MultiValue) = CartesianIndices(size(arg))
 
 LinearIndices(arg::MultiValue) = LinearIndices(size(arg))
@@ -78,4 +80,3 @@ function _4d_sym_tensor_linear_index(D,i,j,k,l)
   index=(block_index-1)*block_length+element_index
   index
 end
-
