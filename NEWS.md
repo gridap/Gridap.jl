@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `lastindex` for `MultiValue`s for consistent usage of `[end]` as per `length`. Since PR [#834](https://github.com/gridap/Gridap.jl/pull/834)
 - BDM (Brezzi-Douglas-Marini) ReferenceFEs in PR [#823](https://github.com/gridap/Gridap.jl/pull/823)
+- Implemented `ConstantFESpace`. This space allows, e.g., to impose the mean value of the pressure via an additional unknown/equation (a Lagrange multiplier). Since PR [#836](https://github.com/gridap/Gridap.jl/pull/836)
 
 ## [0.17.14] - 2022-07-29
 
