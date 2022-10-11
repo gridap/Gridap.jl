@@ -27,8 +27,11 @@ function build_refined_model()
   return model
 end
 
-# Get mockup model
+# Get refined model and triangulation
 model = build_refined_model()
+test_discrete_model(model)
+trian = Triangulation(model)
+test_triangulation(trian)
 
 # Get members
 fmodel = get_model(model)
