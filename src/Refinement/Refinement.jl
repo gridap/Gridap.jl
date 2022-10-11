@@ -10,8 +10,9 @@ using Gridap.ReferenceFEs
 using Gridap.CellData
 using Gridap.Visualization
 
-import Gridap.Geometry: get_glue
-import Gridap.Geometry: Triangulation, is_change_possible, best_target
+import Base: view
+import Gridap.Geometry: get_grid, get_grid_topology, get_face_labeling
+import Gridap.Geometry: Triangulation, is_change_possible, best_target, get_glue, get_background_model
 
 include("RefinedDiscreteModels.jl")
 include("RefinedTriangulations.jl")

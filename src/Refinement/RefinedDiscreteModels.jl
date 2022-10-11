@@ -55,9 +55,9 @@ struct RefinedDiscreteModel{Dc,Dp,A,B} <: DiscreteModel{Dc,Dp}
 end
 
 # DiscreteModel API
-get_grid(model::RefinedDiscreteModel)          = get_grid(model.model)
-get_grid_topology(model::RefinedDiscreteModel) = get_grid_topology(model.model)
-get_face_labeling(model::RefinedDiscreteModel) = get_face_labeling(model.model)
+Geometry.get_grid(model::RefinedDiscreteModel)          = get_grid(model.model)
+Geometry.get_grid_topology(model::RefinedDiscreteModel) = get_grid_topology(model.model)
+Geometry.get_face_labeling(model::RefinedDiscreteModel) = get_face_labeling(model.model)
 
 # Other getters
 get_model(model::RefinedDiscreteModel)  = model.model

@@ -1,4 +1,4 @@
-module RefinedDiscreteModelsTests
+#module RefinedDiscreteModelsTests
 
 using Test
 using Gridap
@@ -32,6 +32,8 @@ model = build_refined_model()
 test_discrete_model(model)
 trian = Triangulation(model)
 test_triangulation(trian)
+test_triangulation(trian.trian)
+@test typeof(trian) <: RefinedTriangulation
 
 # Get members
 fmodel = get_model(model)
@@ -54,4 +56,4 @@ v_f = map(p -> cf_f(p), pts) # Values by Fine CellField
 @test v_r ≈ v_c
 @test v_r ≈ v_f
 
-end
+#end
