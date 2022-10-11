@@ -32,4 +32,6 @@ using Test
 
 @time @testset "ODEs" begin include("ODEsTests/runtests.jl") end
 
+@time @testset "Refinement" begin include("RefinementTests/runtests.jl") end
+
 end # module
