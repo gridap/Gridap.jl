@@ -47,7 +47,7 @@ pvec = [p,π*p]
 δ = DiracDelta(pvec,model)
 @test sum(δ(v)) == sum(v(pvec))
 
-# below passes but cannot import FESpace and FEFunction here
+# below passes but cannot use FESpace and FEFunction here
 # reffe = ReferenceFE(lagrangian,Float64,3)
 # V = FESpace(model,reffe,conformity=:L2)
 # uh = FEFunction(V,rand(num_free_dofs(V)))

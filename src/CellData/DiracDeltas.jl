@@ -88,11 +88,9 @@ end
 # For handling DiracDelta at a generic Point in the domain #
 
 function DiracDelta(x::Point{D,T}, model::DiscreteModel{D}) where {D,T}
-  # check if the point is inside an active cell, as it wouldn't be caught for
-  # user-defined functions (i.e. which are not CellFields)
   trian = Triangulation(model)
   cache1 = _point_to_cell_cache(KDTreeSearch(),trian)
-  cell = _point_to_cell!(cache1, x) # throws error if Point not in domain
+  cell = _point_to_cell!(cache1, x)
   point_grid = UnstructuredGrid([x])
   point_model = UnstructuredDiscreteModel(point_grid)
   point_trian = Triangulation(point_model)
@@ -101,11 +99,9 @@ function DiracDelta(x::Point{D,T}, model::DiscreteModel{D}) where {D,T}
 end
 
 function DiracDelta(v::Vector{Point{D,T}},model::DiscreteModel{D}) where {D,T}
-  # check if the points are inside an active cell
   trian = Triangulation(model)
   cache1 = _point_to_cell_cache(KDTreeSearch(),trian)
   cell = map(x -> _point_to_cell!(cache1, x), v)
-  # throws error if any Point not in domain
   point_grid = UnstructuredGrid(v)
   point_model = UnstructuredDiscreteModel(point_grid)
   point_trian = Triangulation(point_model)
