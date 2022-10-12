@@ -47,7 +47,7 @@ ctrian = Triangulation(cmodel)
 # CellField: Coarse -> Fine
 func(x) = x[1] + x[2]
 cf_c = change_domain(CellField(func,ctrian),PhysicalDomain(),ReferenceDomain())
-cf_f = change_domain_c2f(cf_c, ftrian, model)
+cf_f = change_domain_c2f(cf_c, trian)
 
 pts = map(x->VectorValue(rand(2)),1:10)
 v_r = map(p-> func(p), pts)  # Real values

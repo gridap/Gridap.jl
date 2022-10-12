@@ -67,29 +67,3 @@ get_glue(model::RefinedDiscreteModel)   = model.glue
 function refine(model::DiscreteModel) :: RefinedDiscreteModel
   @abstractmethod
 end
-
-"""
-  Given a RefinedDiscreteModel and a CellField defined on the parent(coarse) mesh, 
-  returns an equivalent CellField on the fine mesh.
-  # TODO: I think in the long run we should not be asking for both model and ftrian... How to solve? 
-"""
-function change_domain_c2f(f_coarse, ftrian, model::RefinedDiscreteModel{Dc,Dp}) where {Dc,Dp}
-  glue   = get_glue(model)
-  if (num_cells(ftrian) != 0)
-    # Coarse field but with fine indexing, i.e 
-    #   f_f2c[i_fine] = f_coarse[coarse_parent(i_fine)]
-    fcell_to_ccell = glue.f2c_faces_map[Dc+1]
-    m = Reindex(get_data(f_coarse))
-    f_f2c = lazy_map(m,fcell_to_ccell)
-
-    # Fine to coarse coordinate map: x_coarse = Φ^(-1)(x_fine)
-    ref_coord_map = get_f2c_ref_coordinate_map(glue)
-
-    # Final map: f_fine(x_fine) = f_f2c ∘ Φ^(-1)(x_fine) = f_coarse(x_coarse)
-    f_fine = lazy_map(∘,f_f2c,ref_coord_map)
-    return GenericCellField(f_fine,ftrian,ReferenceDomain())
-  else
-    f_fine = Fill(Gridap.Fields.ConstantField(0.0),num_cells(ftrian))
-    return GenericCellField(f_fine,ftrian,ReferenceDomain())
-  end
-end
