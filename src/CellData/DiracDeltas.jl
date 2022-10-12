@@ -87,10 +87,6 @@ end
 
 # For handling DiracDelta at a generic Point in the domain #
 
-function DiracDelta(x::Point{D}, model::DiscreteModel{D}) where D
-  DiracDelta(x, model)
-end
-
 function DiracDelta(x::Point{D,T}, model::DiscreteModel{D}) where {D,T}
   # check if the point is inside an active cell, as it wouldn't be caught for
   # user-defined functions (i.e. which are not CellFields)
