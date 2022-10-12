@@ -62,7 +62,7 @@ function RefinementTransferOperator(from::FESpace,to::FESpace; qdegree=1)
   # Prepare system. TODO: Choosing the projection method should be left to the user. 
   sysmat = assemble_mass_matrix(Ω_to,to,to.space,qdegree)
   sysvec = zeros(size(sysmat,1))
-  assem  = SparseMatrixAssembler(to,from.space)
+  assem  = SparseMatrixAssembler(to,to.space)
   rhs(uh,vh) = ∫(vh⋅uh) * dΩ
 
   cache = sysmat, sysvec, rhs, assem, Ω, dΩ, U, V, vh

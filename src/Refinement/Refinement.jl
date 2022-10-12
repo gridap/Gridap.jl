@@ -13,6 +13,7 @@ using Gridap.Visualization
 import Base: view
 import Gridap.Geometry: get_grid, get_grid_topology, get_face_labeling
 import Gridap.Geometry: Triangulation, is_change_possible, best_target, get_glue, get_background_model
+import Gridap.CellData: change_domain
 
 include("RefinedDiscreteModels.jl")
 include("RefinedTriangulations.jl")
@@ -25,6 +26,6 @@ export get_model, get_parent, get_glue
 
 export RefinedTriangulation
 export Triangulation, is_change_possible, best_target, get_refined_model
-export change_domain_c2f
+export change_domain_c2f, change_domain
 
 end # module

@@ -1,4 +1,4 @@
-#module RefinedDiscreteModelsTests
+module RefinedGeometryTests
 
 using Test
 using Gridap
@@ -44,16 +44,4 @@ glue   = get_glue(model)
 ftrian = Triangulation(fmodel)
 ctrian = Triangulation(cmodel)
 
-# CellField: Coarse -> Fine
-func(x) = x[1] + x[2]
-cf_c = change_domain(CellField(func,ctrian),PhysicalDomain(),ReferenceDomain())
-cf_f = change_domain_c2f(cf_c, trian)
-
-pts = map(x->VectorValue(rand(2)),1:10)
-v_r = map(p-> func(p), pts)  # Real values
-v_c = map(p -> cf_c(p), pts) # Values by Coarse CellField
-v_f = map(p -> cf_f(p), pts) # Values by Fine CellField
-@test v_r ≈ v_c
-@test v_r ≈ v_f
-
-#end
+end

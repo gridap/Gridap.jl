@@ -56,6 +56,7 @@ end
 #       we might want to change this in the future when doing hybrid methods etc...
 
 function Geometry.is_change_possible(strian::RefinedTriangulation,ttrian::RefinedTriangulation)
+  (strian === ttrian) && (return true)
   smodel = get_refined_model(strian)
   tmodel = get_refined_model(ttrian)
   a = get_model(smodel) === get_parent(tmodel) # tmodel = refine(smodel)
@@ -66,7 +67,9 @@ end
 function Geometry.is_change_possible(strian::RefinedTriangulation,ttrian::T) where {T <: Triangulation}
   smodel = get_refined_model(strian)
   tmodel = get_background_model(ttrian)
-  return get_parent(smodel) === tmodel # smodel = refine(tmodel)
+  a = get_model(smodel) === tmodel
+  b = get_parent(smodel) === tmodel # smodel = refine(tmodel)
+  return a || b
 end
 
 function Geometry.is_change_possible(strian::T,ttrian::RefinedTriangulation) where {T <: Triangulation}
@@ -111,3 +114,14 @@ function change_domain_c2f(f_coarse, ftrian::RefinedTriangulation{Dc,Dp}) where 
     return GenericCellField(f_fine,ftrian,ReferenceDomain())
   end
 end
+
+
+function CellData.change_domain(a::CellField,ttrian::RefinedTriangulation)
+  strian = get_triangulation(a)
+  if strian === ttrian
+    return a
+  end
+  @assert is_change_possible(strian,ttrian)
+  change_domain_c2f(a,ttrian)
+end
+
