@@ -76,3 +76,33 @@ end
 function get_triangulation(d::DiracDelta)
   d.Γ
 end
+
+# For handling DiracDelta at a generic Point in the domain #
+
+#=
+The idea would be to use the existing structure of DiracDelta.
+In place of triangulation, we need something similar for Measure
+it should be in PhysicalSpace to not repeat integration
+reuse the cache from KDTree , if possible.
+
+we also need to add the contribution to the respective cell, which apparently
+was not done in the existing implementation of DiracDelta. One way to this is
+to add the contribution to the respective cell where the point belongs to!
+So that there is no problem with AD happening cell wise
+=#
+function DiracDelta(x::Point)
+  DiracDelta{0}(x)
+end
+
+function DiracDelta{0}(x::Point{D,T}) where {D,T}
+  desc = CartesianDescriptor(x, ntuple(i->zero(T),Val(D)), ntuple(i->1,Val(D)))
+  point_model = CartesianDiscreteModel(desc)
+  point_Ω = Triangulation(point_model)
+  point_Γ = BoundaryTriangulation(point_model)
+  quad = GenericQuadrature([x],ones(T,1),"DiracDelta point node")
+  cell_quad = CellQuadrature(SA[quad],SA[quad.coordinates],SA[quad.weights],point_Ω, PhysicalDomain(),PhysicalDomain())
+  dx = Measure(cell_quad)
+  DiracDelta{0}(point_Γ,dx)
+end
+
+# goal is to build a DiscreteModel of just a single Point 
