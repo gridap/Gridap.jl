@@ -37,6 +37,22 @@ degree = 2
 δ = DiracDelta{0}(model,tags=[2,4])
 @test sum(δ(v)) ≈ 5
 
+# Tests for DiracDelta at a generic Point in the domain #
+
+p = VectorValue(0.2,0.3)
+δ = DiracDelta(p,model)
+@test sum(δ(v)) == v(p)
+
+pvec = [p,π*p]
+δ = DiracDelta(pvec,model)
+@test sum(δ(v)) == sum(v(pvec))
+
+# below passes but cannot import FESpace and FEFunction here
+# reffe = ReferenceFE(lagrangian,Float64,3)
+# V = FESpace(model,reffe,conformity=:L2)
+# uh = FEFunction(V,rand(num_free_dofs(V)))
+# @test sum(d(uh)) == uh(p)
+
 #using Gridap
 #
 #order = 2

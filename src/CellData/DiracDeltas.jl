@@ -1,7 +1,15 @@
+abstract type DiracDeltaSupportType <: GridapType end
+struct IsGridEntity <: DiracDeltaSupportType end
+struct NotGridEntity <: DiracDeltaSupportType end
 
-struct DiracDelta{D} <: GridapType
+const _is_grid_entity = IsGridEntity()
+const _not_grid_entity = NotGridEntity()
+
+
+struct DiracDelta{D,S<:DiracDeltaSupportType} <: GridapType
   Γ::Triangulation{D}
   dΓ::Measure
+  supp::S
 end
 
 function DiracDelta{D}(
@@ -24,7 +32,7 @@ function DiracDelta{D}(
   trian = BodyFittedTriangulation(model,face_grid,face_to_bgface)
   Γ = BoundaryTriangulation(trian,glue)
   dΓ = Measure(Γ,degree)
-  DiracDelta(Γ,dΓ)
+  DiracDelta(Γ,dΓ,_is_grid_entity)
 end
 
 function DiracDelta{D}(
@@ -79,19 +87,13 @@ end
 
 # For handling DiracDelta at a generic Point in the domain #
 
-#= TO DO
-We also need to add the contribution to the respective cell, which apparently
-was not done in the existing implementation of DiracDelta. One way to this is
-to add the contribution to the respective cell where the point belongs to!
-So that there is no problem with AD happening cell wise.
-=#
 function DiracDelta(x::Point{D}, model::DiscreteModel{D}) where D
-  DiracDelta{0}(x, model)
+  DiracDelta(x, model)
 end
 
-function DiracDelta{0}(x::Point{D,T}, model::DiscreteModel{D}) where {D,T}
-  # check if the point is inside an active cell and save the caches and cell
-  # as wouldn't be caught for user-defined functions (i.e. not CellFields)
+function DiracDelta(x::Point{D,T}, model::DiscreteModel{D}) where {D,T}
+  # check if the point is inside an active cell, as it wouldn't be caught for
+  # user-defined functions (i.e. which are not CellFields)
   trian = Triangulation(model)
   cache1 = _point_to_cell_cache(KDTreeSearch(),trian)
   cell = _point_to_cell!(cache1, x) # throws error if Point not in domain
@@ -99,5 +101,24 @@ function DiracDelta{0}(x::Point{D,T}, model::DiscreteModel{D}) where {D,T}
   point_model = UnstructuredDiscreteModel(point_grid)
   point_trian = Triangulation(point_model)
   dx = Measure(point_trian,1)
-  DiracDelta{0}(point_trian,dx)
+  DiracDelta(point_trian,dx,_not_grid_entity)
+end
+
+function DiracDelta(v::Vector{Point{D,T}},model::DiscreteModel{D}) where {D,T}
+  # check if the points are inside an active cell
+  trian = Triangulation(model)
+  cache1 = _point_to_cell_cache(KDTreeSearch(),trian)
+  cell = map(x -> _point_to_cell!(cache1, x), v)
+  # throws error if any Point not in domain
+  point_grid = UnstructuredGrid(v)
+  point_model = UnstructuredDiscreteModel(point_grid)
+  point_trian = Triangulation(point_model)
+  dx = Measure(point_trian,1)
+  DiracDelta(point_trian,dx,_not_grid_entity)
+end
+
+function evaluate!(cache,d::DiracDelta{0,NotGridEntity},f::CellField)
+  eval = lazy_map(f,d.Γ.grid.node_coordinates)
+  dc = DomainContribution()
+  add_contribution!(dc, d.Γ, eval)
 end
