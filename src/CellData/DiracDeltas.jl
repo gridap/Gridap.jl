@@ -79,30 +79,25 @@ end
 
 # For handling DiracDelta at a generic Point in the domain #
 
-#=
-The idea would be to use the existing structure of DiracDelta.
-In place of triangulation, we need something similar for Measure
-it should be in PhysicalSpace to not repeat integration
-reuse the cache from KDTree , if possible.
-
-we also need to add the contribution to the respective cell, which apparently
+#= TO DO
+We also need to add the contribution to the respective cell, which apparently
 was not done in the existing implementation of DiracDelta. One way to this is
 to add the contribution to the respective cell where the point belongs to!
-So that there is no problem with AD happening cell wise
+So that there is no problem with AD happening cell wise.
 =#
-function DiracDelta(x::Point)
-  DiracDelta{0}(x)
+function DiracDelta(x::Point{D}, model::DiscreteModel{D}) where D
+  DiracDelta{0}(x, model)
 end
 
-function DiracDelta{0}(x::Point{D,T}) where {D,T}
-  desc = CartesianDescriptor(x, ntuple(i->zero(T),Val(D)), ntuple(i->1,Val(D)))
-  point_model = CartesianDiscreteModel(desc)
-  point_Ω = Triangulation(point_model)
-  point_Γ = BoundaryTriangulation(point_model)
-  quad = GenericQuadrature([x],ones(T,1),"DiracDelta point node")
-  cell_quad = CellQuadrature(SA[quad],SA[quad.coordinates],SA[quad.weights],point_Ω, PhysicalDomain(),PhysicalDomain())
-  dx = Measure(cell_quad)
-  DiracDelta{0}(point_Γ,dx)
+function DiracDelta{0}(x::Point{D,T}, model::DiscreteModel{D}) where {D,T}
+  # check if the point is inside an active cell and save the caches and cell
+  # as wouldn't be caught for user-defined functions (i.e. not CellFields)
+  trian = Triangulation(model)
+  cache1 = _point_to_cell_cache(KDTreeSearch(),trian)
+  cell = _point_to_cell!(cache1, x) # throws error if Point not in domain
+  point_grid = UnstructuredGrid([x])
+  point_model = UnstructuredDiscreteModel(point_grid)
+  point_trian = Triangulation(point_model)
+  dx = Measure(point_trian,1)
+  DiracDelta{0}(point_trian,dx)
 end
-
-# goal is to build a DiscreteModel of just a single Point 
