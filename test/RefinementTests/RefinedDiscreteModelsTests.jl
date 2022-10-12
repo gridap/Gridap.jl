@@ -33,7 +33,7 @@ test_discrete_model(model)
 trian = Triangulation(model)
 test_triangulation(trian)
 test_triangulation(trian.trian)
-@test typeof(trian) <: RefinedTriangulation
+@test isa(trian, RefinedTriangulation)
 
 # Get members
 fmodel = get_model(model)
