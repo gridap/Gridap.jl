@@ -2,14 +2,9 @@ abstract type DiracDeltaSupportType <: GridapType end
 struct IsGridEntity <: DiracDeltaSupportType end
 struct NotGridEntity <: DiracDeltaSupportType end
 
-const _is_grid_entity = IsGridEntity()
-const _not_grid_entity = NotGridEntity()
-
-
 struct DiracDelta{D,S<:DiracDeltaSupportType} <: GridapType
   Γ::Triangulation{D}
   dΓ::Measure
-  supp::S
 end
 
 function DiracDelta{D}(
@@ -32,7 +27,7 @@ function DiracDelta{D}(
   trian = BodyFittedTriangulation(model,face_grid,face_to_bgface)
   Γ = BoundaryTriangulation(trian,glue)
   dΓ = Measure(Γ,degree)
-  DiracDelta(Γ,dΓ,_is_grid_entity)
+  DiracDelta{D,IsGridEntity}(Γ,dΓ)
 end
 
 function DiracDelta{D}(
@@ -95,7 +90,7 @@ function DiracDelta(x::Point{D,T}, model::DiscreteModel{D}) where {D,T}
   point_model = UnstructuredDiscreteModel(point_grid)
   point_trian = Triangulation(point_model)
   dx = Measure(point_trian,1)
-  DiracDelta(point_trian,dx,_not_grid_entity)
+  DiracDelta{0,NotGridEntity}(point_trian,dx)
 end
 
 function DiracDelta(v::Vector{Point{D,T}},model::DiscreteModel{D}) where {D,T}
@@ -106,11 +101,11 @@ function DiracDelta(v::Vector{Point{D,T}},model::DiscreteModel{D}) where {D,T}
   point_model = UnstructuredDiscreteModel(point_grid)
   point_trian = Triangulation(point_model)
   dx = Measure(point_trian,1)
-  DiracDelta(point_trian,dx,_not_grid_entity)
+  DiracDelta{0,NotGridEntity}(point_trian,dx)
 end
 
 function evaluate!(cache,d::DiracDelta{0,NotGridEntity},f::CellField)
-  eval = lazy_map(f,d.Γ.grid.node_coordinates)
+  d_f = lazy_map(f,d.Γ.grid.node_coordinates)
   dc = DomainContribution()
-  add_contribution!(dc, d.Γ, eval)
+  add_contribution!(dc, d.Γ, d_f)
 end
