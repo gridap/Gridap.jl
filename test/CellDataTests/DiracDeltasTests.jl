@@ -8,6 +8,10 @@ using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.CellData
 
+using Gridap.Fields
+using Gridap.FESpaces
+using Gridap.ReferenceFEs
+
 domain = (0,1,0,1)
 cells = (30,30)
 model = CartesianDiscreteModel(domain,cells)
@@ -39,19 +43,37 @@ degree = 2
 
 # Tests for DiracDelta at a generic Point in the domain #
 
-p = VectorValue(0.2,0.3)
+p = Point(0.2,0.3)
 δ = DiracDelta(p,model)
-@test sum(δ(v)) == v(p)
+@test sum(δ(v)) ≈ v(p)
 
 pvec = [p,π*p]
 δ = DiracDelta(pvec,model)
-@test sum(δ(v)) == sum(v(pvec))
+@test sum(δ(v)) ≈ sum(v(pvec))
 
-# below passes but cannot use FESpace and FEFunction here
-# reffe = ReferenceFE(lagrangian,Float64,3)
-# V = FESpace(model,reffe,conformity=:L2)
-# uh = FEFunction(V,rand(num_free_dofs(V)))
-# @test sum(d(uh)) == uh(p)
+p = Point(0.2,0.3)
+δ = DiracDelta(p,model)
+reffe = ReferenceFE(lagrangian,Float64,3)
+V = FESpace(model,reffe,conformity=:L2)
+V0 = TestFESpace(model,reffe,conformity=:H1,dirichlet_tags="boundary")
+U0 = TrialFESpace(V0)
+uh = FEFunction(U0,rand(num_free_dofs(U0)))
+vh = FEFunction(V,rand(num_free_dofs(V)))
+fe_basis = get_fe_basis(U0)
+dg_basis = get_fe_basis(V)
+
+@test sum(δ(uh)) ≈ uh(p)
+@test sum(δ(vh)) ≈ vh(p)
+@test norm(sum(δ(fe_basis)) .- fe_basis(p)) ≈ 0
+@test norm(sum(δ(dg_basis)) .- dg_basis(p)) ≈ 0
+
+pvec = [p,π*p]
+δ = DiracDelta(pvec,model)
+
+@test sum(δ(uh)) ≈ sum(map(uh,pvec))
+@test sum(δ(vh)) ≈ sum(map(vh,pvec))
+@test norm(sum(δ(fe_basis)) .- sum(map(fe_basis,pvec))) ≈ 0
+@test norm(sum(δ(dg_basis)) .- sum(map(dg_basis,pvec))) ≈ 0
 
 #using Gridap
 #
