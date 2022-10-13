@@ -67,3 +67,42 @@ get_glue(model::RefinedDiscreteModel)   = model.glue
 function refine(model::DiscreteModel) :: RefinedDiscreteModel
   @abstractmethod
 end
+
+
+# Cartesian builder 
+
+function RefinedCartesianDiscreteModel(domain::Tuple,nC::Int,ref::Int)
+  nF = 2*nC
+  # Models
+  parent = CartesianDiscreteModel(domain,(nC,nC))
+  child  = CartesianDiscreteModel(domain,(nF,nF))
+
+  # Glue 
+  faces_map      = [Int[],Int[],_create_f2c_cell_map(nC,ref)]
+  fcell_child_id = _create_child_map(nC,ref)
+  reffe          = LagrangianRefFE(Float64,QUAD,1)
+  ref_cell_map   = get_f2c_ref_cell_map(reffe)
+  glue = RefinementGlue(faces_map,fcell_child_id,ref_cell_map)
+
+  # RefinedModel
+  model = RefinedDiscreteModel(child,parent,glue)
+  return model
+end
+
+function _create_f2c_cell_map(nC::Int,ref::Int)
+  nF = nC*ref
+
+  idx = Tuple.(CartesianIndices((nF,nF)))
+  a = map((i,j)->(1+(i-1)÷ref,1+(j-1)÷ref),first.(idx),last.(idx))
+  b = map((i,j)->(i-1)*nC+j,first.(a),last.(a))
+  return Array(reshape(transpose(b),nF*nF))
+end
+
+function _create_child_map(nC::Int,ref::Int)
+  nF = nC*ref
+  elem = reshape(collect(1:ref*ref),(ref,ref))
+  slice = transpose(repeat(elem,nC))
+  mat = repeat(slice,nC)
+  return Array(reshape(transpose(mat),nF*nF))
+end
+

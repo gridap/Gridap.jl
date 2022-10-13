@@ -23,6 +23,7 @@ export get_f2c_ref_cell_map, get_f2c_ref_coordinate_map
 
 export RefinedDiscreteModel
 export get_model, get_parent, get_glue
+export RefinedCartesianDiscreteModel
 
 export RefinedTriangulation
 export Triangulation, is_change_possible, best_target, get_refined_model
