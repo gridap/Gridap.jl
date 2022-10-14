@@ -64,17 +64,36 @@ vec_f   = assemble_vector(assem_f,vecdata)
 # Assembly of c2f feb + c2f fefunc into Ω_f
 assem_c2f = SparseMatrixAssembler(U_c,V_c)
 contr_c2f = bil(uh_f,feb_c2f,dΩ_f)
+contr_c2f2c = Refinement.merge_contr_cells(contr_c2f,trian,ctrian)
+vecdata = collect_cell_vector(V_c,contr_c2f2c)
+vec_c2f = assemble_vector(assem_c2f,vecdata)
 
-contr_c2f2c = Refinement.merge_contr_cells(contr_c2f,trian,trianc)
+@test vec_c ≈ vec_c2f
 
-vecdata = collect_cell_vector(V_f,contr_f)
-vec_f   = assemble_vector(assem_c2f,vecdata)
+# Coarse FEFunction -> Fine FEFunction
+op_c2f = RefinementTransferOperator(U_c,U_f)
+x = randn(num_free_dofs(U_c))
+y = zeros(num_free_dofs(U_f))
+uh_c = FEFunction(U_c,x)
+mul!(y,op_c2f,copy(x))
+uh_f = FEFunction(U_f,y)
 
+pts = map(x -> VectorValue(rand(2)),1:10)
+v_c = map(p -> uh_c(p), pts)
+v_f = map(p -> uh_f(p), pts)
+@test v_c ≈ v_f
 
-display(vec_c)
-display(vec_f)
+# Fine FEFunction -> Coarse FEFunction
+op_f2c = RefinementTransferOperator(U_f,U_c)
+x = randn(num_free_dofs(U_f))
+y = zeros(num_free_dofs(U_c))
+uh_f = FEFunction(U_f,x)
+mul!(y,op_f2c,copy(x))
+uh_c = FEFunction(U_c,y)
 
-# CoarseFEFunction -> Fine FEFunction
-
+pts = map(x -> VectorValue(rand(2)),1:10)
+v_c = map(p -> uh_c(p), pts)
+v_f = map(p -> uh_f(p), pts)
+@test v_c ≈ v_f
 
 #end

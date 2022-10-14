@@ -23,13 +23,6 @@ Thoughts on this implementation:
   the most elegant option, but is it the most efficient? 
 """
 
-"""
-TODOs: 
-  - Implement change_domain(FEFunction,RefinedTriangulation)
-  - Implement change_domain(FEBasis,RefinedTriangulation)
-  - Implement a choice for the projection
-"""
-
 struct RefinementTransferOperator{T,A,B,C} <: AbstractMatrix{T}
   from   ::A
   to     ::B
@@ -72,6 +65,7 @@ end
 # Solves the problem (uh,vh)_to = (uh_from,vh)_Ω for all vh in Vh_to
 function mul!(y,A::RefinementTransferOperator,x)
   sysmat, sysvec, rhs, assem, Ω, dΩ, U, V , vh_Ω = A.cache
+  Ω_to = get_triangulation(A.to)
 
   # Bring uh to the integration domain
   uh_from = FEFunction(A.from,x)
@@ -79,6 +73,9 @@ function mul!(y,A::RefinementTransferOperator,x)
 
   # Assemble rhs vector
   contr   = rhs(vh_Ω,uh_Ω)
+  if Ω !== Ω_to
+    contr = merge_contr_cells(contr,Ω,Ω_to)
+  end
   vecdata = collect_cell_vector(A.to.space,contr)
   assemble_vector!(sysvec,assem,vecdata)
 
