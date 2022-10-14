@@ -125,3 +125,43 @@ function CellData.change_domain(a::CellField,ttrian::RefinedTriangulation)
   change_domain_c2f(a,ttrian)
 end
 
+
+function merge_contr_cells(a::DomainContribution,rtrian::RefinedTriangulation,trianc)
+  b = DomainContribution()
+  for strian in get_domains(a)
+    scell_vec = get_contribution(a,strian)
+    cell_vec, trian = move_contributions(scell_vec,strian)
+    res = f2c_cell_contrs(rtrian,cell_vec)
+    add_contribution!(b,trianc,res)
+  end
+  return b
+end
+
+function f2c_cell_contrs(trian::RefinedTriangulation{Dc,Dp},cell_vec) where {Dc,Dp}
+  @check num_cells(trian) == length(cell_vec)
+
+  model = get_refined_model(trian)
+  glue = get_glue(model)
+
+  # Invert fcell_to_ccell
+  fcell_to_ccell = glue.f2c_faces_map[Dc+1]
+  ccell_to_fcell = [fill(-1,4) for i in 1:num_cells(get_parent(model))]
+  cidx = fill(1,num_cells(get_parent(model)))
+  for iF in 1:length(fcell_to_ccell)
+    iC = fcell_to_ccell[iF]
+    ccell_to_fcell[iC][cidx[iC]] = iF
+    cidx[iC] += 1
+  end
+
+  # TODO: Replace this by a lazy solution
+  elem = similar(cell_vec[1])
+  res = [zeros(size(elem)) for i in 1:num_cells(get_parent(model))]
+  for iC in 1:num_cells(get_parent(model))
+    for iF in ccell_to_fcell[iC]
+      res[iC] .+= cell_vec[iF] 
+    end
+  end
+
+  return res
+end
+

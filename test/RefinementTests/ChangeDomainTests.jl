@@ -46,18 +46,30 @@ uh_f = change_domain(uh_c,trian)
 
 # Coarse FEBasis -> Fine CellField
 feb_c = get_fe_basis(V_c)
-feb_f = change_domain(feb_c,trian)
+feb_f = get_fe_basis(V_f)
+feb_c2f = change_domain(feb_c,trian)
 
-# Check assembly
-assem   = SparseMatrixAssembler(U_c,V_c)
+# Coarse assembly
+assem_c = SparseMatrixAssembler(U_c,V_c)
 contr_c = bil(uh_c,feb_c,dΩ_c)
-contr_f = bil(uh_f,feb_f,dΩ_f)
-
 vecdata = collect_cell_vector(V_c,contr_c)
-vec_c = assemble_vector(assem,vecdata)
+vec_c   = assemble_vector(assem_c,vecdata)
 
-vecdata = collect_cell_vector(V_c,contr_f)
-vec_f = assemble_vector(assem,vecdata)
+# Assembly of fine feb + c2f fefunc into Ω_f
+assem_f = SparseMatrixAssembler(U_f,V_f)
+contr_f = bil(uh_f,feb_f,dΩ_f)
+vecdata = collect_cell_vector(V_f,contr_f)
+vec_f   = assemble_vector(assem_f,vecdata)
+
+# Assembly of c2f feb + c2f fefunc into Ω_f
+assem_c2f = SparseMatrixAssembler(U_c,V_c)
+contr_c2f = bil(uh_f,feb_c2f,dΩ_f)
+
+contr_c2f2c = Refinement.merge_contr_cells(contr_c2f,trian,trianc)
+
+vecdata = collect_cell_vector(V_f,contr_f)
+vec_f   = assemble_vector(assem_c2f,vecdata)
+
 
 display(vec_c)
 display(vec_f)
