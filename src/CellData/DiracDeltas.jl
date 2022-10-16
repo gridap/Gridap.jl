@@ -1,11 +1,13 @@
 abstract type DiracDeltaSupportType <: GridapType end
-struct IsGridEntity <: DiracDeltaSupportType end
-struct NotGridEntity <: DiracDeltaSupportType end
+abstract type IsGridEntity <: DiracDeltaSupportType end
+abstract type NotGridEntity <: DiracDeltaSupportType end
 
-struct DiracDelta{D,S<:DiracDeltaSupportType} <: GridapType
-  Γ::Triangulation{D}
+struct GenericDiracDelta{D,Dt,S<:DiracDeltaSupportType} <: GridapType
+  Γ::Triangulation{Dt}
   dΓ::Measure
 end
+
+const DiracDelta{D} = GenericDiracDelta{D,D,IsGridEntity}
 
 function DiracDelta{D}(
   model::DiscreteModel,
@@ -27,7 +29,7 @@ function DiracDelta{D}(
   trian = BodyFittedTriangulation(model,face_grid,face_to_bgface)
   Γ = BoundaryTriangulation(trian,glue)
   dΓ = Measure(Γ,degree)
-  DiracDelta{D,IsGridEntity}(Γ,dΓ)
+  DiracDelta{D}(Γ,dΓ)
 end
 
 function DiracDelta{D}(
@@ -68,44 +70,64 @@ function DiracDelta{0}(model::DiscreteModel;tags)
   DiracDelta{0}(model,degree;tags=tags)
 end
 
-function (d::DiracDelta)(f)
+function (d::GenericDiracDelta)(f)
   evaluate(d,f)
 end
 
-function evaluate!(cache,d::DiracDelta,f)
+function evaluate!(cache,d::GenericDiracDelta,f)
   ∫(f)*d.dΓ
 end
 
-function get_triangulation(d::DiracDelta)
+function get_triangulation(d::GenericDiracDelta)
   d.Γ
 end
 
 # For handling DiracDelta at a generic Point in the domain #
 
-function DiracDelta(x::Point{D,T}, model::DiscreteModel{D}) where {D,T}
-  trian = Triangulation(model)
-  cache1 = _point_to_cell_cache(KDTreeSearch(),trian)
-  cell = _point_to_cell!(cache1, x)
-  point_grid = UnstructuredGrid([x])
-  point_model = UnstructuredDiscreteModel(point_grid)
-  point_trian = Triangulation(point_model)
-  dx = Measure(point_trian,1)
-  DiracDelta{0,NotGridEntity}(point_trian,dx)
+function _cell_to_pindex(pvec::Vector{<:Point},trian::Triangulation)
+  cache = _point_to_cell_cache(KDTreeSearch(),trian)
+  cell_to_pindex = Dict{Int, Vector{Int32}}()
+  for i in 1:length(pvec)
+    cell = _point_to_cell!(cache, pvec[i])
+    push!(get!(() -> valtype(cell_to_pindex)[], cell_to_pindex, cell), i)
+  end
+  cell_to_pindex
 end
 
-function DiracDelta(v::Vector{Point{D,T}},model::DiscreteModel{D}) where {D,T}
+function DiracDelta(p::Point{D,T}, model::DiscreteModel{D}) where {D,T}
   trian = Triangulation(model)
-  cache1 = _point_to_cell_cache(KDTreeSearch(),trian)
-  cell = map(x -> _point_to_cell!(cache1, x), v)
-  point_grid = UnstructuredGrid(v)
-  point_model = UnstructuredDiscreteModel(point_grid)
-  point_trian = Triangulation(point_model)
-  dx = Measure(point_trian,1)
-  DiracDelta{0,NotGridEntity}(point_trian,dx)
+  cache = _point_to_cell_cache(KDTreeSearch(),trian)
+  cell = _point_to_cell!(cache, p)
+  trianv = TriangulationView(trian,[cell])
+  pquad = GenericQuadrature([p],[one(T)])
+  pmeas = Measure(CellQuadrature([pquad],[[p]],[[one(T)]],trianv,PhysicalDomain(),PhysicalDomain()))
+  GenericDiracDelta{0,D,NotGridEntity}(trianv,pmeas)
 end
 
-function evaluate!(cache,d::DiracDelta{0,NotGridEntity},f::CellField)
-  d_f = lazy_map(f,d.Γ.grid.node_coordinates)
-  dc = DomainContribution()
-  add_contribution!(dc, d.Γ, d_f)
+function DiracDelta(pvec::Vector{Point{D,T}}, model::DiscreteModel{D}) where {D,T}
+  trian = Triangulation(model)
+  cell_to_pindices = _cell_to_pindex(pvec,trian)
+  cell_ids = collect(keys(cell_to_pindices))
+  cell_points = collect(values(cell_to_pindices))
+  points = map(i->pvec[cell_points[i]], 1:length(cell_ids))
+  weights_x_cell = collect.(Fill.(one(T),length.(cell_points)))
+  pquad = map(i -> GenericQuadrature(pvec[cell_points[i]],weights_x_cell[i]), 1:length(cell_ids))
+  trianv = Triangulation(trian,cell_ids)
+  pmeas = Measure(CellQuadrature(pquad,points,weights_x_cell,trianv,PhysicalDomain(),PhysicalDomain()))
+  GenericDiracDelta{0,D,NotGridEntity}(trianv,pmeas)
 end
+
+# TO DO: point_to_cell search cache needs to reused somehow
+# for Finite Element Function build using a fixed FE basis
+# since the basis remain fixed for each cell unless p or h
+# adapted, we can pre-compute them for given DiracDelta and
+# store them in cache. But for this we have to diverge from
+# the current Struct and add more attributes - like cache
+
+# GenericQuadrature doesn't taken FillArrays only Vectors
+# would be good to add this, as it would be useful here
+# The question is if it creates a problem down somewhere?
+# ofcourse excluding the tests which taken into account the types
+# like test_quadrature functions
+# if type independent problems exist for this generalization then
+# this is a more important problem

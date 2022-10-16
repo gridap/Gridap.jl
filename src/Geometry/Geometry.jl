@@ -102,6 +102,7 @@ export compress_ids
 export UnstructuredGridTopology
 
 export Triangulation
+export TriangulationView
 export get_reffes
 export get_cell_coordinates
 export get_cell_ref_coordinates
