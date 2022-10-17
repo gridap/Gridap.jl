@@ -84,7 +84,7 @@ end
 
 # For handling DiracDelta at a generic Point in the domain #
 
-function _cell_to_pindex(pvec::Vector{<:Point},trian::Triangulation)
+function _cell_to_pindices(pvec::Vector{<:Point},trian::Triangulation)
   cache = _point_to_cell_cache(KDTreeSearch(),trian)
   cell_to_pindex = Dict{Int, Vector{Int32}}()
   for i in 1:length(pvec)
@@ -106,7 +106,7 @@ end
 
 function DiracDelta(model::DiscreteModel{D}, pvec::Vector{Point{D,T}}) where {D,T}
   trian = Triangulation(model)
-  cell_to_pindices = _cell_to_pindex(pvec,trian)
+  cell_to_pindices = _cell_to_pindices(pvec,trian)
   cell_ids = collect(keys(cell_to_pindices))
   cell_points = collect(values(cell_to_pindices))
   points = map(i->pvec[cell_points[i]], 1:length(cell_ids))
@@ -115,4 +115,18 @@ function DiracDelta(model::DiscreteModel{D}, pvec::Vector{Point{D,T}}) where {D,
   trianv = Triangulation(trian,cell_ids)
   pmeas = Measure(CellQuadrature(pquad,points,weights_x_cell,trianv,PhysicalDomain(),PhysicalDomain()))
   GenericDiracDelta{0,D,NotGridEntity}(trianv,pmeas)
+end
+
+function evaluate!(cache,d::GenericDiracDelta{0,Dt,NotGridEntity},f::Function) where Dt
+  dc = DomainContribution()
+  quad_points = d.dΓ.quad.cell_point
+  weights = d.dΓ.quad.cell_weight
+  dc_Γ = zeros(eltype(eltype(weights)), length(weights))
+  for i in eachindex(weights)
+    for j in eachindex(weights[i])
+      @inbounds dc_Γ[i] += f(quad_points[i][j])*weights[i][j]
+    end
+  end
+  add_contribution!(dc,d.Γ,dc_Γ)
+  dc
 end
