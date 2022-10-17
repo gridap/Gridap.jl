@@ -25,4 +25,12 @@ glue   = get_glue(model)
 ftrian = Triangulation(fmodel)
 ctrian = Triangulation(cmodel)
 
+# Choosing targets
+aux = RefinedCartesianDiscreteModel((0,1,0,1),8,2)
+model2 = RefinedDiscreteModel(get_model(aux),model,get_glue(aux))
+trian2 = Triangulation(model2)
+@test best_target(trian,ftrian) === trian
+@test best_target(trian,ctrian) === trian
+@test best_target(trian,trian2) === trian2
+
 end
