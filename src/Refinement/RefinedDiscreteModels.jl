@@ -26,8 +26,8 @@ end
 Ref coordinate map from fcell ref coords to ccell ref coords.
 Size -> Number of children per coarse cell.
 """
-function get_f2c_ref_cell_map(reffe)
-  ref_grid = Geometry.UnstructuredGrid(Visualization.compute_reference_grid(reffe,2))
+function get_f2c_ref_cell_map(reffe,ref)
+  ref_grid = Geometry.UnstructuredGrid(Visualization.compute_reference_grid(reffe,ref))
   return get_cell_map(ref_grid)
 end
 
@@ -80,7 +80,7 @@ end
 # Cartesian builder 
 
 function RefinedCartesianDiscreteModel(domain::Tuple,nC::Int,ref::Int)
-  nF = 2*nC
+  nF = ref*nC
   # Models
   parent = CartesianDiscreteModel(domain,(nC,nC))
   child  = CartesianDiscreteModel(domain,(nF,nF))
@@ -89,7 +89,7 @@ function RefinedCartesianDiscreteModel(domain::Tuple,nC::Int,ref::Int)
   faces_map      = [Int[],Int[],_create_f2c_cell_map(nC,ref)]
   fcell_child_id = _create_child_map(nC,ref)
   reffe          = LagrangianRefFE(Float64,QUAD,1)
-  ref_cell_map   = get_f2c_ref_cell_map(reffe)
+  ref_cell_map   = get_f2c_ref_cell_map(reffe,ref)
   glue = RefinementGlue(faces_map,fcell_child_id,ref_cell_map)
 
   # RefinedModel
