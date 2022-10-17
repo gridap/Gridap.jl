@@ -94,7 +94,7 @@ function Base.display(op::RefinementTransferOperator{T,A,B,C}) where {T,A,B,C}
   println("$(s[1])x$(s[2])  RefinementTransferOperator{$(T)}")
 end
 
-function assemble_lhs(Π, Ω,Uh,Vh,qdegree)
+function assemble_lhs(Π,Ω,Uh,Vh,qdegree)
   dΩ = Measure(Ω,qdegree)
   uh_dir = FEFunction(Uh,zero_free_values(Uh),get_dirichlet_dof_values(Uh))
   a(u,v) = Π(u,v,dΩ)
@@ -104,6 +104,47 @@ function assemble_lhs(Π, Ω,Uh,Vh,qdegree)
   sysvec = assemble_vector(b,Vh)
   return sysmat, -sysvec
 end
+
+function merge_contr_cells(a::DomainContribution,rtrian::RefinedTriangulation,ctrian)
+  b = DomainContribution()
+  for trian in get_domains(a)
+    cell_vec = get_contribution(a,trian)
+    res = f2c_cell_contrs(rtrian,cell_vec)
+    add_contribution!(b,ctrian,res)
+  end
+  return b
+end
+
+function f2c_cell_contrs(trian::RefinedTriangulation{Dc,Dp},cell_vec) where {Dc,Dp}
+  @check num_cells(trian) == length(cell_vec)
+
+  model = get_refined_model(trian)
+  glue = get_glue(model)
+  nF = num_cells(trian)
+  nC = num_cells(get_parent(model))
+
+  # Invert fcell_to_ccell
+  fcell_to_ccell = glue.f2c_faces_map[Dc+1]
+  ccell_to_fcell = [fill(-1,4) for i in 1:nC]
+  cidx = fill(1,nC)
+  for iF in 1:nF
+    iC = fcell_to_ccell[iF]
+    ccell_to_fcell[iC][cidx[iC]] = iF
+    cidx[iC] += 1
+  end
+
+  # TODO: Replace this by a lazy solution
+  elem = similar(cell_vec[1])
+  res = [zeros(size(elem)) for i in 1:nC]
+  for iC in 1:nC
+    for iF in ccell_to_fcell[iC]
+      res[iC] .+= cell_vec[iF] 
+    end
+  end
+
+  return res
+end
+
 
 """
 """
