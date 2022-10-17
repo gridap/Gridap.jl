@@ -112,7 +112,7 @@ function DiracDelta(model::DiscreteModel{D}, pvec::Vector{Point{D,T}}) where {D,
   cell_ids = collect(keys(cell_to_pindices))
   cell_points = collect(values(cell_to_pindices))
   points = map(i->pvec[cell_points[i]], 1:length(cell_ids))
-  weights_x_cell = collect.(Fill.(one(T),length.(cell_points)))
+  weights_x_cell = Fill.(one(T),length.(cell_points))
   pquad = map(i -> GenericQuadrature(points[i],weights_x_cell[i]), 1:length(cell_ids))
   trianv = view(trian,cell_ids)
   pmeas = Measure(CellQuadrature(pquad,points,weights_x_cell,trianv,PhysicalDomain(),PhysicalDomain()))

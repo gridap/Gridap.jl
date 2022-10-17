@@ -62,8 +62,8 @@ num_dims(::Type{<:Quadrature{D}}) where D = D
 function test_quadrature(q::Quadrature{D,T}) where {D,T}
   x = get_coordinates(q)
   w = get_weights(q)
-  @test isa(x,Vector{Point{D,T}})
-  @test isa(w,Vector{T})
+  @test isa(x,AbstractVector{Point{D,T}})
+  @test isa(w,AbstractVector{T})
   @test length(x) == num_points(q)
   @test length(w) == num_points(q)
   @test D == num_dims(q)
@@ -75,20 +75,20 @@ end
 # Generic concrete implementation
 
 """
-    struct GenericQuadrature{D,T} <: Quadrature{D,T}
+    struct GenericQuadrature{D,T,C <: AbstractVector{Point{D,T}},W <: AbstractVector{T}} <: Quadrature{D,T}
       coordinates::Vector{Point{D,T}}
       weights::Vector{T}
       name::String
     end
 """
-struct GenericQuadrature{D,T} <: Quadrature{D,T}
-  coordinates::Vector{Point{D,T}}
-  weights::Vector{T}
+struct GenericQuadrature{D,T,C <: AbstractVector{Point{D,T}},W <: AbstractVector{T}} <: Quadrature{D,T}
+  coordinates::C
+  weights::W
   name::String
 end
 
 function GenericQuadrature(
-  coordinates::Vector{Point{D,T}}, weights::Vector{T}) where {D,T}
+  coordinates::AbstractVector{Point{D,T}}, weights::AbstractVector{T}) where {D,T}
   name = "Unknown"
   GenericQuadrature(coordinates,weights,name)
 end
