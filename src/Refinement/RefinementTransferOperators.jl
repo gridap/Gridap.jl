@@ -133,16 +133,8 @@ function f2c_cell_contrs(trian::RefinedTriangulation{Dc,Dp},cell_vec) where {Dc,
     cidx[iC] += 1
   end
 
-  # TODO: Replace this by a lazy solution
-  elem = similar(cell_vec[1])
-  res = [zeros(size(elem)) for i in 1:nC]
-  for iC in 1:nC
-    for iF in ccell_to_fcell[iC]
-      res[iC] .+= cell_vec[iF] 
-    end
-  end
-
-  return res
+  # Map that sums fine contributions for each coarse cell
+  return lazy_map((I,V)->sum(V[I]),ccell_to_fcell,Fill(cell_vec,nC))
 end
 
 

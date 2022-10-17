@@ -3,6 +3,7 @@
 """
 module Refinement
 
+using FillArrays
 using LinearAlgebra
 using IterativeSolvers
 using Gridap.Helpers
