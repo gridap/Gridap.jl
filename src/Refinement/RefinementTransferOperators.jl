@@ -70,7 +70,7 @@ function LinearAlgebra.mul!(y,A::RefinementTransferOperator,x)
   # Bring uh to the integration domain
   uh_from = FEFunction(A.from,x)
   uh_Ω    = change_domain(uh_from,Ω)
-  
+
   # Assemble rhs vector
   contr   = rhs(uh_Ω,vh_Ω)
   if Ω !== Ω_to

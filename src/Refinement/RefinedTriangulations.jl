@@ -160,7 +160,7 @@ function f2c_cell_contrs(trian::RefinedTriangulation{Dc,Dp},cell_vec) where {Dc,
   # TODO: Replace this by a lazy solution
   elem = similar(cell_vec[1])
   res = [zeros(size(elem)) for i in 1:nC]
-  for iC in 1:num_cells(get_parent(model))
+  for iC in 1:nC
     for iF in ccell_to_fcell[iC]
       res[iC] .+= cell_vec[iF] 
     end

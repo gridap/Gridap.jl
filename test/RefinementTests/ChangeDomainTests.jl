@@ -73,11 +73,11 @@ vec_c2f = assemble_vector(assem_c2f,vecdata)
 
 # Coarse FEFunction -> Fine FEFunction
 op_c2f = RefinementTransferOperator(U_c,U_f)
-x = copy(x_c)
-y = zeros(num_free_dofs(U_f))
-uh_c = FEFunction(U_c,x)
-mul!(y,op_c2f,copy(x))
-uh_f = FEFunction(U_f,y)
+#x = copy(x_c)
+y_f = zeros(num_free_dofs(U_f))
+uh_c = FEFunction(U_c,x_c)
+mul!(y_f,op_c2f,copy(x_c))
+uh_f = FEFunction(U_f,y_f)
 
 pts = map(x -> VectorValue(rand(2)),1:10)
 v_c = map(p -> uh_c(p), pts)
@@ -86,11 +86,12 @@ v_f = map(p -> uh_f(p), pts)
 
 # Fine FEFunction -> Coarse FEFunction
 op_f2c = RefinementTransferOperator(U_f,U_c)
-x = randn(num_free_dofs(U_f))
-y = zeros(num_free_dofs(U_c))
-uh_f = FEFunction(U_f,x)
-mul!(y,op_f2c,copy(x))
-uh_c = FEFunction(U_c,y)
+x_f = copy(y_f)
+y_c = zeros(num_free_dofs(U_c))
+uh_f = FEFunction(U_f,x_f)
+mul!(y_c,op_f2c,copy(x_f))
+uh_c = FEFunction(U_c,y_c)
+@test y_c ≈ x_c
 
 pts = map(x -> VectorValue(rand(2)),1:10)
 v_c = map(p -> uh_c(p), pts)
