@@ -114,7 +114,7 @@ function DiracDelta(model::DiscreteModel{D}, pvec::Vector{Point{D,T}}) where {D,
   points = map(i->pvec[cell_points[i]], 1:length(cell_ids))
   weights_x_cell = collect.(Fill.(one(T),length.(cell_points)))
   pquad = map(i -> GenericQuadrature(points[i],weights_x_cell[i]), 1:length(cell_ids))
-  trianv = Triangulation(trian,cell_ids)
+  trianv = TriangulationView(trian,cell_ids)
   pmeas = Measure(CellQuadrature(pquad,points,weights_x_cell,trianv,PhysicalDomain(),PhysicalDomain()))
   GenericDiracDelta{0,D,NotGridEntity}(trianv,pmeas)
 end
