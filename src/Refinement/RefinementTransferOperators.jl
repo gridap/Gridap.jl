@@ -119,13 +119,14 @@ function f2c_cell_contrs(trian::RefinedTriangulation{Dc,Dp},cell_vec) where {Dc,
   @check num_cells(trian) == length(cell_vec)
 
   model = get_refined_model(trian)
-  glue = get_glue(model)
-  nF = num_cells(trian)
-  nC = num_cells(get_parent(model))
+  glue  = get_glue(model)
+  nF    = num_cells(trian)
+  nC    = num_cells(get_parent(model))
+  nChildren = 4 # Num fine cells per coarse cell
 
   # Invert fcell_to_ccell
   fcell_to_ccell = glue.f2c_faces_map[Dc+1]
-  ccell_to_fcell = [fill(-1,4) for i in 1:nC]
+  ccell_to_fcell = [fill(-1,nChildren) for i in 1:nC]
   cidx = fill(1,nC)
   for iF in 1:nF
     iC = fcell_to_ccell[iF]

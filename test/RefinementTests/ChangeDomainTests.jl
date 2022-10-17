@@ -1,4 +1,4 @@
-#module ChangeDomainTests
+module ChangeDomainTests
 
 using Test
 using Gridap
@@ -112,4 +112,4 @@ v_c = map(p -> uh_c2(p), pts)
 v_f = map(p -> uh_f2(p), pts)
 @test v_c ≈ v_f
 
-#end
+end
