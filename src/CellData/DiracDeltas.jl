@@ -118,17 +118,3 @@ function DiracDelta(model::DiscreteModel{D}, pvec::Vector{Point{D,T}}) where {D,
   pmeas = Measure(CellQuadrature(pquad,points,weights_x_cell,trianv,PhysicalDomain(),PhysicalDomain()))
   GenericDiracDelta{0,D,NotGridEntity}(trianv,pmeas)
 end
-
-function evaluate!(cache,d::GenericDiracDelta{0,Dt,NotGridEntity},f::Function) where Dt
-  dc = DomainContribution()
-  quad_points = d.dΓ.quad.cell_point
-  weights = d.dΓ.quad.cell_weight
-  dc_Γ = zeros(eltype(eltype(weights)), length(weights))
-  for i in eachindex(weights)
-    for j in eachindex(weights[i])
-      @inbounds dc_Γ[i] += f(quad_points[i][j])*weights[i][j]
-    end
-  end
-  add_contribution!(dc,d.Γ,dc_Γ)
-  dc
-end
