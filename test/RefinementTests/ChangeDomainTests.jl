@@ -24,7 +24,7 @@ dΩ_c   = Measure(ctrian,2)
 
 # FESpaces
 reffe = ReferenceFE(lagrangian,Float64,1)
-V_f = TestFESpace(get_model(model),reffe;conformity=:H1,dirichlet_tags="boundary")
+V_f = TestFESpace(model,reffe;conformity=:H1,dirichlet_tags="boundary")
 U_f = TrialFESpace(V_f,sol)
 V_c = TestFESpace(get_parent(model),reffe;conformity=:H1,dirichlet_tags="boundary")
 U_c = TrialFESpace(V_c,sol)
@@ -41,7 +41,8 @@ v_f = map(p -> cf_f(p), pts) # Values by Fine CellField
 @test v_r ≈ v_f
 
 # Coarse FEFunction -> Fine CellField
-uh_c = FEFunction(U_c,randn(num_free_dofs(U_c)))
+x_c = randn(num_free_dofs(U_c))
+uh_c = FEFunction(U_c,x_c)
 uh_f = change_domain(uh_c,trian)
 
 # Coarse FEBasis -> Fine CellField
@@ -72,7 +73,7 @@ vec_c2f = assemble_vector(assem_c2f,vecdata)
 
 # Coarse FEFunction -> Fine FEFunction
 op_c2f = RefinementTransferOperator(U_c,U_f)
-x = randn(num_free_dofs(U_c))
+x = copy(x_c)
 y = zeros(num_free_dofs(U_f))
 uh_c = FEFunction(U_c,x)
 mul!(y,op_c2f,copy(x))

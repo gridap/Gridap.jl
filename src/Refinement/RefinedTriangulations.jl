@@ -88,6 +88,11 @@ function Geometry.best_target(strian::RefinedTriangulation,ttrian::T) where {T <
   return strian
 end
 
+function Geometry.best_target(strian::T,ttrian::RefinedTriangulation) where {T <: Triangulation}
+  @check is_change_possible(strian,ttrian)
+  return ttrian
+end
+
 
 """
   Given a RefinedTriangualtion and a CellField defined on the parent(coarse) mesh, 
@@ -127,7 +132,7 @@ end
 function merge_contr_cells(a::DomainContribution,rtrian::RefinedTriangulation,ctrian)
   b = DomainContribution()
   for trian in get_domains(a)
-    cell_vec = get_contribution(a,strian)
+    cell_vec = get_contribution(a,trian)
     res = f2c_cell_contrs(rtrian,cell_vec)
     add_contribution!(b,ctrian,res)
   end

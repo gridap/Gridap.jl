@@ -36,7 +36,7 @@ struct RefinementTransferOperator{T,A,B,C} <: AbstractMatrix{T}
   end
 end
 
-function RefinementTransferOperator(from::FESpace,to::FESpace; qdegree=1)
+function RefinementTransferOperator(from::FESpace,to::FESpace; qdegree=3)
   @assert isa(from,TrialFESpace)
   @assert isa(to,TrialFESpace)
 
@@ -50,11 +50,11 @@ function RefinementTransferOperator(from::FESpace,to::FESpace; qdegree=1)
   dΩ = Measure(Ω,qdegree)
   U  = (Ω === Ω_from) ? from : to
   V  = U.space
-  vh = change_domain(get_fe_basis(V),Ω)
+  vh_to = get_fe_basis(to.space)
+  vh = change_domain(vh_to,Ω)
 
   # Prepare system. TODO: Choosing the projection method should be left to the user. 
-  sysmat = assemble_mass_matrix(Ω_to,to,to.space,qdegree)
-  sysvec = zeros(size(sysmat,1))
+  sysmat, sysvec = assemble_mass_matrix(Ω_to,to,to.space,qdegree)
   assem  = SparseMatrixAssembler(to,to.space)
   rhs(uh,vh) = ∫(vh⋅uh) * dΩ
 
@@ -63,30 +63,54 @@ function RefinementTransferOperator(from::FESpace,to::FESpace; qdegree=1)
 end
 
 # Solves the problem (uh,vh)_to = (uh_from,vh)_Ω for all vh in Vh_to
-function mul!(y,A::RefinementTransferOperator,x)
-  sysmat, sysvec, rhs, assem, Ω, dΩ, U, V , vh_Ω = A.cache
+function LinearAlgebra.mul!(y,A::RefinementTransferOperator,x)
+  sysmat, sysvec, rhs, assem, Ω, dΩ, U, V , vh_Ω = A.caches
   Ω_to = get_triangulation(A.to)
 
   # Bring uh to the integration domain
   uh_from = FEFunction(A.from,x)
   uh_Ω    = change_domain(uh_from,Ω)
-
+  
   # Assemble rhs vector
-  contr   = rhs(vh_Ω,uh_Ω)
+  contr   = rhs(uh_Ω,vh_Ω)
   if Ω !== Ω_to
     contr = merge_contr_cells(contr,Ω,Ω_to)
   end
   vecdata = collect_cell_vector(A.to.space,contr)
-  assemble_vector!(sysvec,assem,vecdata)
+  assemble_vector_add!(sysvec,assem,vecdata)
 
   # Solve projection
-  cg!(y,sysmat,sysvec)
+  IterativeSolvers.cg!(y,sysmat,sysvec)
 
   return y
 end
 
+function Base.size(A::RefinementTransferOperator)
+  (num_free_dofs(A.to),num_free_dofs(A.from))
+end
+
+function Base.size(A::RefinementTransferOperator,i::Int)
+  if i == 1
+    return num_free_dofs(A.to)
+  elseif i == 2
+    return num_free_dofs(A.from)
+  else
+    return nothing
+  end
+end
+
+function Base.display(op::RefinementTransferOperator{T,A,B,C}) where {T,A,B,C}
+  s = size(op)
+  println("$(s[1])x$(s[2])  RefinementTransferOperator{$(T)}")
+end
+
 function assemble_mass_matrix(Ω,Uh,Vh,qdegree)
   dΩ = Measure(Ω,qdegree)
+  uh_dir = FEFunction(Uh,zero_free_values(Uh),get_dirichlet_dof_values(Uh))
   a(u,v) = ∫(v⋅u)*dΩ
-  return assemble_matrix(a,Uh,Vh)
+  b(v)   = a(uh_dir,v)
+
+  sysmat = assemble_matrix(a,Uh,Vh)
+  sysvec = assemble_vector(b,Vh)
+  return sysmat, -sysvec
 end

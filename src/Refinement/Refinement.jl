@@ -4,6 +4,7 @@
 module Refinement
 
 using LinearAlgebra
+using IterativeSolvers
 using Gridap.Helpers
 using Gridap.Arrays
 using Gridap.Geometry
