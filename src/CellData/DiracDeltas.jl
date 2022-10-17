@@ -99,8 +99,10 @@ function DiracDelta(model::DiscreteModel{D}, p::Point{D,T}) where {D,T}
   cache = _point_to_cell_cache(KDTreeSearch(),trian)
   cell = _point_to_cell!(cache, p)
   trianv = TriangulationView(trian,[cell])
-  pquad = GenericQuadrature([p],[one(T)])
-  pmeas = Measure(CellQuadrature([pquad],[[p]],[[one(T)]],trianv,PhysicalDomain(),PhysicalDomain()))
+  point = [p]
+  weight = [one(T)]
+  pquad = GenericQuadrature(point,weight)
+  pmeas = Measure(CellQuadrature([pquad],[pquad.coordinates],[pquad.weights],trianv,PhysicalDomain(),PhysicalDomain()))
   GenericDiracDelta{0,D,NotGridEntity}(trianv,pmeas)
 end
 
@@ -111,7 +113,7 @@ function DiracDelta(model::DiscreteModel{D}, pvec::Vector{Point{D,T}}) where {D,
   cell_points = collect(values(cell_to_pindices))
   points = map(i->pvec[cell_points[i]], 1:length(cell_ids))
   weights_x_cell = collect.(Fill.(one(T),length.(cell_points)))
-  pquad = map(i -> GenericQuadrature(pvec[cell_points[i]],weights_x_cell[i]), 1:length(cell_ids))
+  pquad = map(i -> GenericQuadrature(points[i],weights_x_cell[i]), 1:length(cell_ids))
   trianv = Triangulation(trian,cell_ids)
   pmeas = Measure(CellQuadrature(pquad,points,weights_x_cell,trianv,PhysicalDomain(),PhysicalDomain()))
   GenericDiracDelta{0,D,NotGridEntity}(trianv,pmeas)

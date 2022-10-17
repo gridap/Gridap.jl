@@ -146,6 +146,12 @@ uh_tag = solve(op)
 err = uh_p - uh_tag
 @test sum(∫(err*err)*dΩ) < eps()
 
+# testing the faster and direct functional evalulation method
+
+f(x) = sin(norm(x))
+fcf = CellField(f,Ω)
+@test sum(δ_p(f)) ≈ sum(δ_p(fcf))
+
 
 #using Gridap
 #
