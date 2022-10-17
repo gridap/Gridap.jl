@@ -94,7 +94,7 @@ function _cell_to_pindex(pvec::Vector{<:Point},trian::Triangulation)
   cell_to_pindex
 end
 
-function DiracDelta(p::Point{D,T}, model::DiscreteModel{D}) where {D,T}
+function DiracDelta(model::DiscreteModel{D}, p::Point{D,T}) where {D,T}
   trian = Triangulation(model)
   cache = _point_to_cell_cache(KDTreeSearch(),trian)
   cell = _point_to_cell!(cache, p)
@@ -104,7 +104,7 @@ function DiracDelta(p::Point{D,T}, model::DiscreteModel{D}) where {D,T}
   GenericDiracDelta{0,D,NotGridEntity}(trianv,pmeas)
 end
 
-function DiracDelta(pvec::Vector{Point{D,T}}, model::DiscreteModel{D}) where {D,T}
+function DiracDelta(model::DiscreteModel{D}, pvec::Vector{Point{D,T}}) where {D,T}
   trian = Triangulation(model)
   cell_to_pindices = _cell_to_pindex(pvec,trian)
   cell_ids = collect(keys(cell_to_pindices))
@@ -116,18 +116,3 @@ function DiracDelta(pvec::Vector{Point{D,T}}, model::DiscreteModel{D}) where {D,
   pmeas = Measure(CellQuadrature(pquad,points,weights_x_cell,trianv,PhysicalDomain(),PhysicalDomain()))
   GenericDiracDelta{0,D,NotGridEntity}(trianv,pmeas)
 end
-
-# TO DO: point_to_cell search cache needs to reused somehow
-# for Finite Element Function build using a fixed FE basis
-# since the basis remain fixed for each cell unless p or h
-# adapted, we can pre-compute them for given DiracDelta and
-# store them in cache. But for this we have to diverge from
-# the current Struct and add more attributes - like cache
-
-# GenericQuadrature doesn't taken FillArrays only Vectors
-# would be good to add this, as it would be useful here
-# The question is if it creates a problem down somewhere?
-# ofcourse excluding the tests which taken into account the types
-# like test_quadrature functions
-# if type independent problems exist for this generalization then
-# this is a more important problem
