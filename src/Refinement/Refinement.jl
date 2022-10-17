@@ -34,7 +34,7 @@ export RefinedTriangulation
 export Triangulation, is_change_possible, best_target, get_refined_model
 export change_domain_c2f, change_domain
 
-export RefinementTransferOperator
+export RefinementTransferOperator, RefinementTransferMap
 export mul!
 
 

@@ -1,27 +1,3 @@
-"""
-Thoughts on this implementation: 
-
-- In order to be able to dispatch on the choice of integration space, we could 
-  use a Val{Symbol} as a emplate parameter. For instance 
-
-    struct Myobj{A}
-      function Myobj(sym::Symbol)
-        A = typeof(Val(sym))
-        new{A}()
-      end
-    end
-
-    and then dispatch mul!() depending on the symbol (:from/:to).
-
-- However, this might be limiting / not general enough. For instance, when we do 
-  not have uniform refinement (some cells get refined, other get coarsened) we will
-  have an integration space which is a combination of 'from' and 'to'. 
-  We could solve this with a third symbol dispatch like :mixed, but it is not very elegant. 
-
-- Another solution would be to always apply 'change_domain' to both the FEFunction and the 
-  test FEBasis. This is general since all changes are done in the background. This might be 
-  the most elegant option, but is it the most efficient? 
-"""
 
 struct RefinementTransferOperator{T,A,B,C} <: AbstractMatrix{T}
   from   ::A
@@ -81,7 +57,6 @@ function LinearAlgebra.mul!(y,A::RefinementTransferOperator,x)
 
   # Solve projection
   IterativeSolvers.cg!(y,sysmat,sysvec)
-
   return y
 end
 
@@ -113,4 +88,33 @@ function assemble_mass_matrix(Ω,Uh,Vh,qdegree)
   sysmat = assemble_matrix(a,Uh,Vh)
   sysvec = assemble_vector(b,Vh)
   return sysmat, -sysvec
+end
+
+
+
+"""
+RefinementTransferMap
+"""
+struct RefinementTransferMap{A<:FESpace,B<:FESpace,C<:RefinementTransferOperator} <: Map
+  from ::A
+  to   ::B
+  op   ::C
+end
+
+function RefinementTransferMap(from::FESpace,to::FESpace; qdegree=3)
+  op = RefinementTransferOperator(from,to; qdegree=qdegree)
+  return RefinementTransferMap(from,to,op)
+end
+
+function Arrays.return_cache(m::RefinementTransferMap,uh::FEFunction)
+  y = zeros(size(m.op,1))
+  return y
+end
+
+function Arrays.evaluate!(cache,m::RefinementTransferMap,uh::FEFunction)
+  @check get_fe_space(uh) === m.from
+  y = cache
+  x = get_free_dof_values(uh)
+  mul!(y,m.op,x)
+  return FEFunction(m.to,y)
 end
