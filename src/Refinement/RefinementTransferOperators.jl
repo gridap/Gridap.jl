@@ -1,4 +1,17 @@
 
+"""
+  RefinementTransferOperator
+
+  Matrix-like operator providing a transfer between two `FESpaces`
+  defined in child-parent refined grids. 
+
+  The dofs are transfered by iteratively solving a projection problem 
+
+        (uh_to,vh_to)_to = (uh_from,vh_to)_Ω
+
+  where Ω is always chosen as the finest grid (i.e the RHS is
+  always integrated without loss of accuracy). 
+"""
 struct RefinementTransferOperator{T,A,B,C} <: AbstractMatrix{T}
   from   ::A
   to     ::B
@@ -93,7 +106,6 @@ end
 
 
 """
-RefinementTransferMap
 """
 struct RefinementTransferMap{A<:FESpace,B<:FESpace,C<:RefinementTransferOperator} <: Map
   from ::A

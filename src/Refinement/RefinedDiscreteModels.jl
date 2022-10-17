@@ -42,6 +42,14 @@ end
 
 #################################################################
 
+"""
+  RefinedDiscreteModel
+
+  `DiscreteModel` created by refining another `DiscreteModel`. 
+  The hierarchy is stored, allowing for the transfer of dofs 
+  between `FESpaces` defined on this model and its parent using a 
+  `RefinementTransferoperator`. 
+"""
 struct RefinedDiscreteModel{Dc,Dp,A,B} <: DiscreteModel{Dc,Dp}
   model  ::A
   parent ::B
