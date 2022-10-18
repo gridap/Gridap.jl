@@ -73,7 +73,7 @@ for (uh_tn, tn) in sol_t
   @test el2 < tol
 end
 
-@test length( [uht for uht in sol_t] ) == (tF - t0)/dt
+@test length( [uht for uht in sol_t] ) == ceil((tF - t0)/dt)
 
 #
 
