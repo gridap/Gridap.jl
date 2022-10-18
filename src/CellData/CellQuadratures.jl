@@ -33,12 +33,12 @@ function CellQuadrature(trian::Triangulation,quad::Tuple{<:QuadratureName,Any,An
   CellQuadrature(trian,cell_quad,ids)
 end
 
-function CellQuadrature(trian::Triangulation,degree::Integer)
-  CellQuadrature(trian,degree,PhysicalDomain())
+function CellQuadrature(trian::Triangulation,degree::Integer;kwargs...)
+  CellQuadrature(trian,degree,PhysicalDomain();kwargs...)
 end
 
-function CellQuadrature(trian::Triangulation,degree::Integer,ids::DomainStyle)
-  cell_quad = Quadrature(trian,degree)
+function CellQuadrature(trian::Triangulation,degree::Integer,ids::DomainStyle;kwargs...)
+  cell_quad = Quadrature(trian,degree;kwargs...)
   CellQuadrature(trian,cell_quad,ids)
 end
 

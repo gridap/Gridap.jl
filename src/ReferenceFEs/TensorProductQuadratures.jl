@@ -3,24 +3,24 @@ struct TensorProduct <: QuadratureName end
 
 const tensor_product = TensorProduct()
 
-function Quadrature(p::Polytope,::TensorProduct,degrees)
+function Quadrature(p::Polytope,::TensorProduct,degrees;fptype::Type{<:AbstractFloat}=Float64)
   @assert is_n_cube(p) """\n
   Tensor product quadrature rule only for n-cubes.
   """
   @assert length(degrees) == num_dims(p)
-  _tensor_product_legendre(degrees)
+  _tensor_product_legendre(degrees;T=fptype)
 end
 
-function Quadrature(p::Polytope,name::TensorProduct,degree::Integer)
+function Quadrature(p::Polytope,name::TensorProduct,degree::Integer;fptype::Type{<:AbstractFloat}=Float64)
   degrees = ntuple(i->degree,Val(num_dims(p)))
-  Quadrature(p,name,degrees)
+  Quadrature(p,name,degrees,fptype=fptype)
 end
 
 # Low level constructor
 
-function _tensor_product_legendre(degrees)
+function _tensor_product_legendre(degrees;T::Type{<:AbstractFloat}=Float64)
     D = length(degrees)
-    T = Float64
+    # T = Float64
     npoints = [ ceil(Int,(degrees[i]+1.0)/2.0) for i in 1:D ]
     quads = [ gauss( eltype(Point{D,T}), npoints[i] ) for i in 1:D ]
     for i in 1:D

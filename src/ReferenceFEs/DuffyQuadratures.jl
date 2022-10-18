@@ -3,21 +3,21 @@ struct Duffy <: QuadratureName end
 
 const duffy = Duffy()
 
-function Quadrature(p::Polytope,name::Duffy,degree::Integer)
+function Quadrature(p::Polytope,name::Duffy,degree::Integer;fptype::Type{<:AbstractFloat}=Float64)
   @assert is_simplex(p)
   D = num_dims(p)
-  x,w = _duffy_quad_data(degree,D)
+  x,w = _duffy_quad_data(degree,D,fptype=fptype)
   msg = "Simplex quadrature of degree $degree obtained with Duffy transformation and tensor product of 1d Gauss-Jacobi and Gauss-Legendre rules."
   GenericQuadrature(x,w,msg)
 end
 
-function _duffy_quad_data(order::Integer,D::Int)
+function _duffy_quad_data(order::Integer,D::Int;fptype::Type{<:AbstractFloat}=Float64)
 
   beta = 0
   dim_to_quad_1d = [
-    _gauss_jacobi_in_0_to_1(order,(D-1)-(d-1),beta) for d in 1:(D-1) ]
+    _gauss_jacobi_in_0_to_1(order,(D-1)-(d-1),beta;fptype=fptype) for d in 1:(D-1) ]
 
-  quad_1d = _gauss_legendre_in_0_to_1(order)
+  quad_1d = _gauss_legendre_in_0_to_1(order;fptype=fptype)
   push!(dim_to_quad_1d,quad_1d)
 
   x_pos = 1
@@ -52,22 +52,24 @@ end
 
 _duffy_map(q::Point{1,T}) where T = q
 
-function _gauss_jacobi_in_0_to_1(order,alpha,beta)
+function _gauss_jacobi_in_0_to_1(order,alpha,beta;fptype::Type{<:AbstractFloat}=Float64)
   n = _npoints_from_order(order)
   x,w = gaussjacobi(n,alpha,beta)
-  _map_to(0,1,x,w)
+  _map_to(0,1,x,w;T=fptype)
 end
 
-function _gauss_legendre_in_0_to_1(order)
+function _gauss_legendre_in_0_to_1(order;fptype::Type{<:AbstractFloat}=Float64)
   n = _npoints_from_order(order)
   x,w = gausslegendre(n)
-  _map_to(0,1,x,w)
+  _map_to(0,1,x,w;T=fptype)
 end
 
 # Transforms a 1-D quadrature from `[-1,1]` to `[a,b]`, with `a<b`.
-function _map_to(a,b,points,weights)
-  points_ab = 0.5*(b-a)*points .+ 0.5*(a+b)
-  weights_ab = 0.5*(b-a)*weights
+function _map_to(a,b,points,weights;T::Type{<:AbstractFloat}=Float64)
+  points_ab = Vector{T}(undef,length(points))
+  weights_ab = Vector{T}(undef,length(weights))
+  points_ab .= 0.5*(b-a)*points .+ 0.5*(a+b)
+  weights_ab .= 0.5*(b-a)*weights
   (points_ab, weights_ab)
 end
 
@@ -110,6 +112,3 @@ function _tensor_product_duffy!(
     k += 1
   end
 end
-
-
-
