@@ -12,7 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implemented `ConstantFESpace`. This space allows, e.g., to impose the mean value of the pressure via an additional unknown/equation (a Lagrange multiplier). Since PR [#836](https://github.com/gridap/Gridap.jl/pull/836)
 - Methods to construct `DiracDelta` at generic `Point`(s) in the domain. Since PR [#837](https://github.com/gridap/Gridap.jl/pull/837)
 - some key missing `lastindex` and `end` tests belonging to PR [#834]. Since PR [#837](https://github.com/gridap/Gridap.jl/pull/837)
-
+- `AbstractVector` support to weights and `Point`s of GenericQuadrature, in particular for `FillArray` usage. Since PR [#839](https://github.com/gridap/Gridap.jl/pull/839)
+- Using the above generalization of `GenericQuadrature`, made the weights of quadrature of `DiracDelta` for generic points to be a `Fill` vector. Since PR [#839](https://github.com/gridap/Gridap.jl/pull/839)
+ 
 ## [0.17.14] - 2022-07-29
 
 ### Added
