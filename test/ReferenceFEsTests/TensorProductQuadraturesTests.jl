@@ -9,9 +9,17 @@ quad = Quadrature(QUAD,tensor_product,degrees)
 test_quadrature(quad)
 @test sum(get_weights(quad)) ≈ 1
 
+quad = Quadrature(QUAD,tensor_product,degrees,fptype=Float32)
+test_quadrature(quad)
+@test sum(get_weights(quad)) ≈ 1
+
 D = 2
 degree = 3
 quad = Quadrature(QUAD,tensor_product,degree)
+test_quadrature(quad)
+@test sum(get_weights(quad)) ≈ 1
+
+quad = Quadrature(QUAD,tensor_product,degree,fptype=Float32)
 test_quadrature(quad)
 @test sum(get_weights(quad)) ≈ 1
 
