@@ -20,9 +20,8 @@ end
 
 function _tensor_product_legendre(degrees;T::Type{<:AbstractFloat}=Float64)
     D = length(degrees)
-    # T = Float64
     npoints = [ ceil(Int,(degrees[i]+1.0)/2.0) for i in 1:D ]
-    quads = [ gauss( eltype(Point{D,T}), npoints[i] ) for i in 1:D ]
+    quads = [ gauss(T, npoints[i]) for i in 1:D ]
     for i in 1:D
       quads[i][1] .+= 1;
       quads[i][1] .*= 1.0/2.0
