@@ -42,7 +42,7 @@ function RefinementTransferOperator(from::FESpace,to::FESpace; Π=Π_l2, qdegree
   dΩ = Measure(Ω,qdegree)
   U  = (Ω === Ω_from) ? from : to
   V  = U.space
-  vh_to = get_fe_basis(to.space)
+  vh_to = get_fe_basis(to)
   vh = change_domain(vh_to,Ω)
 
   # Prepare system

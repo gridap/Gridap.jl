@@ -1,14 +1,8 @@
 
 
-struct RefinedTriangulation{Dc,Dp,A<:Triangulation,B<:RefinedDiscreteModel} <: Triangulation{Dc,Dp}
+struct RefinedTriangulation{Dc,Dp,A<:Triangulation{Dc,Dp},B<:RefinedDiscreteModel} <: Triangulation{Dc,Dp}
   trian::A
   model::B
-
-  function RefinedTriangulation(trian::Triangulation{Dc,Dp},model) where {Dc,Dp}
-    A = typeof(trian)
-    B = typeof(model)
-    return new{Dc,Dp,A,B}(trian,model)
-  end
 end
 
 function get_refined_model(t::RefinedTriangulation)
@@ -97,7 +91,7 @@ end
 
 
 """
-  Given a RefinedTriangualtion and a CellField defined on the parent(coarse) mesh, 
+  Given a RefinedTriangulation and a CellField defined on the parent(coarse) mesh, 
   returns an equivalent CellField on the fine mesh.
 """
 function change_domain_c2f(f_coarse, ftrian::RefinedTriangulation{Dc,Dp}) where {Dc,Dp}

@@ -50,16 +50,10 @@ end
   between `FESpaces` defined on this model and its parent using a 
   `RefinementTransferoperator`. 
 """
-struct RefinedDiscreteModel{Dc,Dp,A,B} <: DiscreteModel{Dc,Dp}
+struct RefinedDiscreteModel{Dc,Dp,A<:DiscreteModel{Dc,Dp},B<:DiscreteModel{Dc,Dp},C<:RefinementGlue} <: DiscreteModel{Dc,Dp}
   model  ::A
   parent ::B
-  glue   ::RefinementGlue
-
-  function RefinedDiscreteModel(model::DiscreteModel{Dc,Dp},parent::DiscreteModel{Dc,Dp},glue) where {Dc,Dp}
-    A = typeof(model)
-    B = typeof(parent)
-    return new{Dc,Dp,A,B}(model,parent,glue)
-  end
+  glue   ::C
 end
 
 # DiscreteModel API
