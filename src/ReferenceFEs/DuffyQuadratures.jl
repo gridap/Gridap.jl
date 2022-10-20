@@ -25,11 +25,11 @@ function _duffy_quad_data(order::Integer,D::Int;fptype::Type{<:AbstractFloat}=Fl
   dim_to_xs_1d = [quad_1d[x_pos] for quad_1d in dim_to_quad_1d]
   dim_to_ws_1d = [quad_1d[w_pos] for quad_1d in dim_to_quad_1d]
 
-  a = 0.5
+  a = fptype(0.5)
   for d in (D-1):-1:1
     ws_1d = dim_to_ws_1d[d]
     ws_1d[:] *= a
-    a *= 0.5
+    a *= fptype(0.5)
   end
 
   x,w = _tensor_product_duffy(dim_to_xs_1d,dim_to_ws_1d)
@@ -96,8 +96,9 @@ end
 function _tensor_product_duffy!(
   xs,ws,dim_to_xs_1d,dim_to_ws_1d,cis::CartesianIndices{D},m) where D
   k = 1
+  T = eltype(ws)
   for ci in cis
-    w = 1.0
+    w = one(T)
     for d in 1:D
       xs_1d = dim_to_xs_1d[d]
       ws_1d = dim_to_ws_1d[d]

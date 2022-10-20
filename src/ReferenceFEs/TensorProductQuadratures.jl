@@ -52,11 +52,12 @@ end
 
 function _tensor_product!(quads,coords,weights,cis)
   p = zero(Mutable(eltype(coords)))
+  T = eltype(weights)
   D = length(p)
   lis = LinearIndices(cis)
   for ci in cis
     p[:] = 0.0
-    w = 1.0
+    w = one(T)
     for d in 1:D
       xi = quads[d][1][ci[d]]
       wi = quads[d][2][ci[d]]
