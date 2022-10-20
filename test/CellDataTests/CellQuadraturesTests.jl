@@ -61,7 +61,7 @@ s = ∫( x->1 )*quad_N
 @test sum(s) ≈ 6
 @test ∑(s) ≈ 6
 
-quad_N = CellQuadrature(trian_N,degree,fptype=Float32)
+quad_N = CellQuadrature(trian_N,degree,T=Float32)
 @test eltype(quad_N.cell_point) == Vector{Point{num_dims(trian_N),Float32}}
 @test eltype(quad_N.cell_weight) == Vector{Float32}
 

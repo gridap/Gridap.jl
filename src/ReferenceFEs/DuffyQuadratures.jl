@@ -3,21 +3,21 @@ struct Duffy <: QuadratureName end
 
 const duffy = Duffy()
 
-function Quadrature(p::Polytope,name::Duffy,degree::Integer;fptype::Type{<:AbstractFloat}=Float64)
+function Quadrature(p::Polytope,name::Duffy,degree::Integer;T::Type{<:AbstractFloat}=Float64)
   @assert is_simplex(p)
   D = num_dims(p)
-  x,w = _duffy_quad_data(degree,D,fptype=fptype)
+  x,w = _duffy_quad_data(degree,D,T=T)
   msg = "Simplex quadrature of degree $degree obtained with Duffy transformation and tensor product of 1d Gauss-Jacobi and Gauss-Legendre rules."
   GenericQuadrature(x,w,msg)
 end
 
-function _duffy_quad_data(order::Integer,D::Int;fptype::Type{<:AbstractFloat}=Float64)
+function _duffy_quad_data(order::Integer,D::Int;T::Type{<:AbstractFloat}=Float64)
 
   beta = 0
   dim_to_quad_1d = [
-    _gauss_jacobi_in_0_to_1(order,(D-1)-(d-1),beta;fptype=fptype) for d in 1:(D-1) ]
+    _gauss_jacobi_in_0_to_1(order,(D-1)-(d-1),beta;T=T) for d in 1:(D-1) ]
 
-  quad_1d = _gauss_legendre_in_0_to_1(order;fptype=fptype)
+  quad_1d = _gauss_legendre_in_0_to_1(order;T=T)
   push!(dim_to_quad_1d,quad_1d)
 
   x_pos = 1
@@ -25,11 +25,11 @@ function _duffy_quad_data(order::Integer,D::Int;fptype::Type{<:AbstractFloat}=Fl
   dim_to_xs_1d = [quad_1d[x_pos] for quad_1d in dim_to_quad_1d]
   dim_to_ws_1d = [quad_1d[w_pos] for quad_1d in dim_to_quad_1d]
 
-  a = fptype(0.5)
+  a = T(0.5)
   for d in (D-1):-1:1
     ws_1d = dim_to_ws_1d[d]
     ws_1d[:] *= a
-    a *= fptype(0.5)
+    a *= T(0.5)
   end
 
   x,w = _tensor_product_duffy(dim_to_xs_1d,dim_to_ws_1d)
@@ -52,16 +52,16 @@ end
 
 _duffy_map(q::Point{1,T}) where T = q
 
-function _gauss_jacobi_in_0_to_1(order,alpha,beta;fptype::Type{<:AbstractFloat}=Float64)
+function _gauss_jacobi_in_0_to_1(order,alpha,beta;T::Type{<:AbstractFloat}=Float64)
   n = _npoints_from_order(order)
   x,w = gaussjacobi(n,alpha,beta)
-  _map_to(0,1,x,w;T=fptype)
+  _map_to(0,1,x,w;T=T)
 end
 
-function _gauss_legendre_in_0_to_1(order;fptype::Type{<:AbstractFloat}=Float64)
+function _gauss_legendre_in_0_to_1(order;T::Type{<:AbstractFloat}=Float64)
   n = _npoints_from_order(order)
   x,w = gausslegendre(n)
-  _map_to(0,1,x,w;T=fptype)
+  _map_to(0,1,x,w;T=T)
 end
 
 # Transforms a 1-D quadrature from `[-1,1]` to `[a,b]`, with `a<b`.

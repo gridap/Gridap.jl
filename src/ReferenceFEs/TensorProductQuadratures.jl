@@ -3,17 +3,17 @@ struct TensorProduct <: QuadratureName end
 
 const tensor_product = TensorProduct()
 
-function Quadrature(p::Polytope,::TensorProduct,degrees;fptype::Type{<:AbstractFloat}=Float64)
+function Quadrature(p::Polytope,::TensorProduct,degrees;T::Type{<:AbstractFloat}=Float64)
   @assert is_n_cube(p) """\n
   Tensor product quadrature rule only for n-cubes.
   """
   @assert length(degrees) == num_dims(p)
-  _tensor_product_legendre(degrees;T=fptype)
+  _tensor_product_legendre(degrees;T=T)
 end
 
-function Quadrature(p::Polytope,name::TensorProduct,degree::Integer;fptype::Type{<:AbstractFloat}=Float64)
+function Quadrature(p::Polytope,name::TensorProduct,degree::Integer;T::Type{<:AbstractFloat}=Float64)
   degrees = ntuple(i->degree,Val(num_dims(p)))
-  Quadrature(p,name,degrees,fptype=fptype)
+  Quadrature(p,name,degrees,T=T)
 end
 
 # Low level constructor

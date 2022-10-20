@@ -52,9 +52,9 @@ dΩ = Measure(Ω,quad)
 s = ∫(1)dΩ
 @test sum(s) ≈ 1
 
-dΩ = Measure(Ω,degree,fptype=Float32)
-dΓ = Measure(Γ,degree,fptype=Float32)
-dΛ = Measure(Λ,degree,fptype=Float32)
+dΩ = Measure(Ω,degree,T=Float32)
+dΓ = Measure(Γ,degree,T=Float32)
+dΛ = Measure(Λ,degree,T=Float32)
 
 a = ∫(1)*dΩ + ∫(1)*dΓ
 @test isapprox(sum(a), 5, atol=1e-6)
@@ -70,7 +70,7 @@ a = ∫(jump(u))*dΛ
 a = ∫( (n_Λ.⁺⋅∇(v.⁻))*jump(n_Λ⋅∇(u)) )*dΛ
 @test sum(a) + 1 ≈ 1
 
-quad = Quadrature(duffy,2,fptype=Float32)
+quad = Quadrature(duffy,2,T=Float32)
 dΩ = Measure(Ω,quad)
 s = ∫(1)dΩ
 @test sum(s) ≈ 1

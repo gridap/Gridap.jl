@@ -2,16 +2,16 @@
 struct Strang <: QuadratureName end
 const strang = Strang()
 
-function Quadrature(p::Polytope,::Strang,degree::Integer;fptype::Type{<:AbstractFloat}=Float64)
+function Quadrature(p::Polytope,::Strang,degree::Integer;T::Type{<:AbstractFloat}=Float64)
   msg = """\n
   `strang` quadrature rule only available for simplices.
   Use `tensor_product` for n-cubes.
   """
   @assert is_simplex(p) msg
   if num_dims(p) == 2
-    quad = _strang_quad_tri(degree;T=fptype)
+    quad = _strang_quad_tri(degree;T=T)
   elseif num_dims(p) == 3
-    quad = _strang_quad_tet(degree,T=fptype)
+    quad = _strang_quad_tet(degree,T=T)
   else
     msg = """\n
     `strang` quadrature rule only available for tris and tets.
