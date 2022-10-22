@@ -122,9 +122,9 @@ Quadrature(name::QuadratureName,args...;kwargs...) = (name, args, kwargs)
 """
     Quadrature(polytope::Polytope{D},degree) where D
 """
-function Quadrature(p::Polytope,degree)
+function Quadrature(p::Polytope,degree;T::Type{<:AbstractFloat}=Float64)
   if is_n_cube(p)
-    quad = Quadrature(p,tensor_product,degree)
+    quad = Quadrature(p,tensor_product,degree;T=T)
   elseif is_simplex(p)
     D = num_dims(p)
     #if (D==2 && degree in keys(_strang_tri_k2n)) ||
@@ -133,9 +133,9 @@ function Quadrature(p::Polytope,degree)
     # there are some 2d strang quadratures that are not accurate
     # as implemented here (to investigate why)
     if (D==3 && degree in keys(_strang_tet_k2n))
-      quad = Quadrature(p,strang,degree)
+      quad = Quadrature(p,strang,degree;T=T)
     else
-      quad = Quadrature(p,duffy,degree)
+      quad = Quadrature(p,duffy,degree,T=T)
     end
   else
     @notimplemented "Quadratures only implemented for n-cubes and simplices"
