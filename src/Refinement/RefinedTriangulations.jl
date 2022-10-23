@@ -3,6 +3,13 @@
 struct RefinedTriangulation{Dc,Dp,A<:Triangulation{Dc,Dp},B<:RefinedDiscreteModel} <: Triangulation{Dc,Dp}
   trian::A
   model::B
+
+  function RefinedTriangulation(trian::Triangulation{Dc,Dp},model::RefinedDiscreteModel{Dc2,Dp}) where {Dc,Dc2,Dp}
+    @check Dc <= Dc2
+    A = typeof(trian)
+    B = typeof(model)
+    return new{Dc,Dp,A,B}(trian,model)
+  end
 end
 
 function get_refined_model(t::RefinedTriangulation)
@@ -27,7 +34,7 @@ function Base.view(t::RefinedTriangulation,ids::AbstractArray)
   return RefinedTriangulation(v,t.model)
 end
 
-# Wrap constructors for RefinedDiscreteModel
+# Wrap constructors
 function Geometry.Triangulation(
   ::Type{ReferenceFE{d}},model::RefinedDiscreteModel,filter::AbstractArray) where d
   
