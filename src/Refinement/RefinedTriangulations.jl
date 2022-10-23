@@ -49,7 +49,7 @@ function Geometry.Triangulation(
 end
 
 function Geometry.Triangulation(trian::RefinedTriangulation,args...;kwargs...)
-  return RefinedTriangulation(Triangulation(trian.trian),trian.model)
+  return RefinedTriangulation(Triangulation(trian.trian,args...;kwargs...),trian.model)
 end
 
 # Domain changes
