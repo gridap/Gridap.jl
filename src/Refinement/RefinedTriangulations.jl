@@ -5,6 +5,7 @@ struct RefinedTriangulation{Dc,Dp,A<:Triangulation{Dc,Dp},B<:RefinedDiscreteMode
   model::B
 
   function RefinedTriangulation(trian::Triangulation{Dc,Dp},model::RefinedDiscreteModel{Dc2,Dp}) where {Dc,Dc2,Dp}
+    @check !isa(trian,RefinedTriangulation)
     @check Dc <= Dc2
     A = typeof(trian)
     B = typeof(model)
@@ -52,40 +53,75 @@ function Geometry.Triangulation(trian::RefinedTriangulation,args...;kwargs...)
   return RefinedTriangulation(Triangulation(trian.trian,args...;kwargs...),trian.model)
 end
 
-# Domain changes
-# TODO: This assumes we have the same type of triangulation on both refinement levels!
-#       we might want to change this in the future when doing hybrid methods etc...
 
 function Geometry.is_change_possible(strian::RefinedTriangulation,ttrian::RefinedTriangulation)
+  # A) Both Triangulations are exactly the same
   (strian === ttrian) && (return true)
-  (strian.trian === ttrian.trian) && (return true)
-  
-  smodel = get_refined_model(strian)
-  tmodel = get_refined_model(ttrian)
-  a = get_parent(tmodel) === smodel # tmodel = refine(smodel)
-  b = get_parent(smodel) === tmodel # smodel = refine(tmodel)
-  return a || b
+
+  # B) Same background model -> Default change of Triangulation
+  if (get_background_model(strian) === get_background_model(ttrian))
+    return is_change_possible(strian.trian,ttrian.trian)
+  end
+
+  # C) Different background model, but same type of Triangulation (Skeleton, BodyFitted, View, ...)
+  if typeof(strian.trian) == typeof(ttrian.trian) # Is this too restrictive???
+    smodel = get_refined_model(strian)
+    tmodel = get_refined_model(ttrian)
+    a = get_parent(tmodel) === smodel # tmodel = refine(smodel)
+    b = get_parent(smodel) === tmodel # smodel = refine(tmodel)
+    return a || b
+  end
+
+  # D) Different background model AND different type of triangulation
+  @notimplemented
+  return false
 end
 
 function Geometry.is_change_possible(strian::RefinedTriangulation,ttrian::Triangulation)
-  smodel = get_refined_model(strian)
-  tmodel = get_background_model(ttrian)
-  a = get_model(smodel) === tmodel  # It is fundamentally the same model
-  b = get_parent(smodel) === tmodel # smodel = refine(tmodel)
-  return a || b
+  # A) Same background model -> Default change of Triangulation
+  if (get_background_model(strian) === get_background_model(ttrian))
+    return is_change_possible(strian.trian,ttrian.trian)
+  end
+  
+  # B) Different background model, but same type of Triangulation (Skeleton, BodyFitted, View, ...)
+  if typeof(strian.trian) == typeof(trian)
+    smodel = get_refined_model(strian)
+    tmodel = get_background_model(ttrian)
+    return get_parent(smodel) === tmodel # smodel = refine(tmodel)
+  end
+
+  # C) Different background model AND different type of triangulation
+  @notimplemented
+  return false
 end
 
+# TODO: Are we sure this is symmetric?
 function Geometry.is_change_possible(strian::Triangulation,ttrian::RefinedTriangulation)
   return is_change_possible(ttrian,strian)
 end
 
 function Geometry.best_target(strian::RefinedTriangulation,ttrian::RefinedTriangulation)
   @check is_change_possible(strian,ttrian)
-  smodel = get_refined_model(strian)
-  tmodel = get_refined_model(ttrian)
-  a = get_parent(tmodel) === get_model(smodel) # tmodel = refine(smodel)
-  b = get_parent(tmodel) === smodel            # tmodel = refine(smodel)
-  (a || b) ? ttrian : strian
+
+  # A) Both Triangulations are exactly the same
+  (strian === ttrian) && (return ttrian)
+
+  # B) Same background model -> Default change of Triangulation
+  if (get_background_model(strian) === get_background_model(ttrian))
+    return best_target(strian,ttrian)
+  end
+
+  # C) Different background model, but same type of Triangulation (Skeleton, BodyFitted, View, ...)
+  if typeof(strian.trian) == typeof(ttrian.trian)
+    smodel = get_refined_model(strian)
+    tmodel = get_refined_model(ttrian)
+    a = get_parent(tmodel) === get_model(smodel) # tmodel = refine(smodel)
+    a ? ttrian : strian
+  end
+
+  # D) Different background model AND different type of triangulation
+  @notimplemented
+  return nothing
 end
 
 function Geometry.best_target(strian::RefinedTriangulation,ttrian::Triangulation)
@@ -125,11 +161,30 @@ function change_domain_c2f(f_coarse, ftrian::RefinedTriangulation{Dc,Dp}) where 
   end
 end
 
-function CellData.change_domain(a::CellField,ttrian::RefinedTriangulation)
+function CellData.change_domain(a::CellField,ttrian::RefinedTriangulation,::ReferenceDomain)
   strian = get_triangulation(a)
   if strian === ttrian
     return a
   end
   @assert is_change_possible(strian,ttrian)
-  change_domain_c2f(a,ttrian)
+
+  if (get_background_model(strian) === get_background_model(ttrian))
+    return change_domain(a,ttrian.trian,ReferenceDomain())
+  end
+  
+  return change_domain_c2f(a,ttrian)
+end
+
+function CellData.change_domain(a::CellField,ttrian::RefinedTriangulation,::PhysicalDomain)
+  strian = get_triangulation(a)
+  if strian === ttrian
+    return a
+  end
+  @assert is_change_possible(strian,ttrian)
+
+  if (get_background_model(strian) === get_background_model(ttrian))
+    return change_domain(a,ttrian.trian,PhysicalDomain())
+  end
+
+  @notimplemented
 end

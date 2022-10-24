@@ -86,7 +86,7 @@ function refine(model::RefinedDiscreteModel,args...;kwargs...)
   return RefinedDiscreteModel(ref_model.model,model,ref_model.glue)
 end
 
-# Cartesian builder 
+# Cartesian builder
 
 function RefinedCartesianDiscreteModel(domain::Tuple,nC::Int,ref::Int)
   nF = ref*nC
@@ -94,7 +94,7 @@ function RefinedCartesianDiscreteModel(domain::Tuple,nC::Int,ref::Int)
   parent = CartesianDiscreteModel(domain,(nC,nC))
   child  = CartesianDiscreteModel(domain,(nF,nF))
 
-  # Glue 
+  # Glue
   faces_map      = [Int[],Int[],_create_f2c_cell_map(nC,ref)]
   fcell_child_id = _create_child_map(nC,ref)
   reffe          = LagrangianRefFE(Float64,QUAD,1)
