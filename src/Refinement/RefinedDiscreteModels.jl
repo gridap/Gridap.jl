@@ -46,14 +46,24 @@ end
   RefinedDiscreteModel
 
   `DiscreteModel` created by refining another `DiscreteModel`. 
-  The hierarchy is stored, allowing for the transfer of dofs 
-  between `FESpaces` defined on this model and its parent using a 
-  `RefinementTransferoperator`. 
+  The refinement hierarchy can be traced backwards by following the 
+  `parent` pointer chain. This allows the transfer of dofs 
+  between `FESpaces` defined on this model and its ancestors using a 
+  `RefinementTransferOperator`.
+
 """
 struct RefinedDiscreteModel{Dc,Dp,A<:DiscreteModel{Dc,Dp},B<:DiscreteModel{Dc,Dp},C<:RefinementGlue} <: DiscreteModel{Dc,Dp}
   model  ::A
   parent ::B
   glue   ::C
+
+  function RefinedDiscreteModel(model::DiscreteModel{Dc,Dp},parent,glue) where {Dc,Dp}
+    @check !isa(model,RefinedDiscreteModel)
+    A = typeof(model)
+    B = typeof(parent)
+    C = typeof(glue)
+    return new{Dc,Dp,A,B,C}(model,parent,glue)
+  end
 end
 
 # DiscreteModel API
@@ -64,12 +74,17 @@ Geometry.get_face_labeling(model::RefinedDiscreteModel) = get_face_labeling(mode
 # Other getters
 get_model(model::RefinedDiscreteModel)  = model.model
 get_parent(model::RefinedDiscreteModel) = model.parent
+get_parent(model::RefinedDiscreteModel{A,B<:RefinedDiscreteModel,C}) = get_model(model.parent)
 get_glue(model::RefinedDiscreteModel)   = model.glue
 
-function refine(model::DiscreteModel) :: RefinedDiscreteModel
+function refine(model::DiscreteModel,args...;kwargs...) :: RefinedDiscreteModel
   @abstractmethod
 end
 
+function refine(model::RefinedDiscreteModel,args...;kwargs...)
+  ref_model = refine(model.model,args...;kwargs...)
+  return RefinedDiscreteModel(ref_model.model,model,ref_model.glue)
+end
 
 # Cartesian builder 
 
