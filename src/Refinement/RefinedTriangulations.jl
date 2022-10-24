@@ -58,6 +58,8 @@ end
 
 function Geometry.is_change_possible(strian::RefinedTriangulation,ttrian::RefinedTriangulation)
   (strian === ttrian) && (return true)
+  (strian.trian === ttrian.trian) && (return true)
+  
   smodel = get_refined_model(strian)
   tmodel = get_refined_model(ttrian)
   a = get_parent(tmodel) === smodel # tmodel = refine(smodel)
@@ -65,7 +67,7 @@ function Geometry.is_change_possible(strian::RefinedTriangulation,ttrian::Refine
   return a || b
 end
 
-function Geometry.is_change_possible(strian::RefinedTriangulation,ttrian::T) where {T <: Triangulation}
+function Geometry.is_change_possible(strian::RefinedTriangulation,ttrian::Triangulation)
   smodel = get_refined_model(strian)
   tmodel = get_background_model(ttrian)
   a = get_model(smodel) === tmodel  # It is fundamentally the same model
@@ -73,7 +75,7 @@ function Geometry.is_change_possible(strian::RefinedTriangulation,ttrian::T) whe
   return a || b
 end
 
-function Geometry.is_change_possible(strian::T,ttrian::RefinedTriangulation) where {T <: Triangulation}
+function Geometry.is_change_possible(strian::Triangulation,ttrian::RefinedTriangulation)
   return is_change_possible(ttrian,strian)
 end
 
@@ -81,17 +83,17 @@ function Geometry.best_target(strian::RefinedTriangulation,ttrian::RefinedTriang
   @check is_change_possible(strian,ttrian)
   smodel = get_refined_model(strian)
   tmodel = get_refined_model(ttrian)
-  a = get_model(smodel) === get_parent(tmodel)
-  b = get_parent(tmodel) === smodel # tmodel = refine(smodel)
-  a || b ? ttrian : strian
+  a = get_parent(tmodel) === get_model(smodel) # tmodel = refine(smodel)
+  b = get_parent(tmodel) === smodel            # tmodel = refine(smodel)
+  (a || b) ? ttrian : strian
 end
 
-function Geometry.best_target(strian::RefinedTriangulation,ttrian::T) where {T <: Triangulation}
+function Geometry.best_target(strian::RefinedTriangulation,ttrian::Triangulation)
   @check is_change_possible(strian,ttrian)
   return strian
 end
 
-function Geometry.best_target(strian::T,ttrian::RefinedTriangulation) where {T <: Triangulation}
+function Geometry.best_target(strian::Triangulation,ttrian::RefinedTriangulation)
   @check is_change_possible(strian,ttrian)
   return ttrian
 end
