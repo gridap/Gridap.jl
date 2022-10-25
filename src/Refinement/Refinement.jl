@@ -5,7 +5,6 @@ module Refinement
 
 using FillArrays
 using LinearAlgebra
-using IterativeSolvers
 using Gridap.Helpers
 using Gridap.Algebra
 using Gridap.Arrays
@@ -24,7 +23,7 @@ import Gridap.CellData: change_domain
 
 include("RefinedDiscreteModels.jl")
 include("RefinedTriangulations.jl")
-include("ProjectionTransferOperators.jl")
+include("GridTransferOperators.jl")
 
 export RefinementGlue
 export get_f2c_ref_cell_map, get_f2c_ref_coordinate_map

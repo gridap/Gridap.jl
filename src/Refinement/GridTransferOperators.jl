@@ -30,7 +30,7 @@ end
 # L2 projection (default for the transfer ops)
 Π_l2(u,v,dΩ) = ∫(v⋅u)*dΩ
 
-function ProjectionTransferOperator(from::FESpace,to::FESpace; Π=Π_l2, qdegree=3)
+function ProjectionTransferOperator(from::FESpace,to::FESpace; solver::LinearSolver=BackslashSolver(), Π::Function=Π_l2, qdegree::Int=3)
   @assert isa(from,TrialFESpace)
   @assert isa(to,TrialFESpace)
 
@@ -51,13 +51,17 @@ function ProjectionTransferOperator(from::FESpace,to::FESpace; Π=Π_l2, qdegree
   sysmat, sysvec = assemble_lhs(Π,Ω_to,to,to.space,qdegree)
   assem  = SparseMatrixAssembler(to,to.space)
 
-  cache = sysmat, sysvec, Π, assem, Ω, dΩ, U, V, vh
+  # Prepare solver
+  ss = symbolic_setup(solver,sysmat)
+  ns = numerical_setup(ss,sysmat)
+
+  cache = ns, sysmat, sysvec, Π, assem, Ω, dΩ, U, V, vh
   return ProjectionTransferOperator(eltype(sysmat),from,to,cache)
 end
 
 # Solves the problem Π(uh,vh)_to = Π(uh_from,vh)_Ω for all vh in Vh_to
 function LinearAlgebra.mul!(y,A::ProjectionTransferOperator,x)
-  sysmat, sysvec, Π, assem, Ω, dΩ, U, V , vh_Ω = A.caches
+  ns, sysmat, sysvec, Π, assem, Ω, dΩ, U, V , vh_Ω = A.caches
   Ω_to = get_triangulation(A.to)
 
   # Bring uh to the integration domain
@@ -73,7 +77,7 @@ function LinearAlgebra.mul!(y,A::ProjectionTransferOperator,x)
   assemble_vector_add!(sysvec,assem,vecdata)
 
   # Solve projection
-  IterativeSolvers.cg!(y,sysmat,sysvec)
+  solve!(y,ns,sysvec)
   return y
 end
 
@@ -149,8 +153,8 @@ struct RefinementTransferMap{A<:FESpace,B<:FESpace,C<:ProjectionTransferOperator
   op   ::C
 end
 
-function RefinementTransferMap(from::FESpace,to::FESpace; Π=Π_l2, qdegree=3)
-  op = ProjectionTransferOperator(from,to;Π=Π,qdegree=qdegree)
+function RefinementTransferMap(from::FESpace,to::FESpace;solver::LinearSolver=BackslashSolver(), Π::Function=Π_l2, qdegree::Int=3)
+  op = ProjectionTransferOperator(from,to;solver=solver,Π=Π,qdegree=qdegree)
   return RefinementTransferMap(from,to,op)
 end
 

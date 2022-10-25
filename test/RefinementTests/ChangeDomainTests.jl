@@ -2,15 +2,50 @@ module ChangeDomainTests
 
 using Test
 using Gridap
+using Gridap.Algebra
 using Gridap.Geometry
 using Gridap.CellData
 using Gridap.Refinement
 using Gridap.ReferenceFEs
 using Gridap.FESpaces
 using FillArrays
+using IterativeSolvers
 
+# Solutions and weakform
 sol(x) = x[1] + x[2]
 bil(uh,vh,dΩ) = ∫(uh⋅vh)*dΩ
+
+# Conjugate Gradient wrapper
+struct CGLinearSolver <: LinearSolver end
+
+struct CGSymbolicSetup{A} <: SymbolicSetup
+  solver::A
+end
+
+struct CGNumericalSetup{A,B,C} <: NumericalSetup 
+  ss :: A
+  mat:: B
+  caches:: C
+end
+
+function Gridap.Algebra.symbolic_setup(s::CGLinearSolver,mat::AbstractMatrix)
+  CGSymbolicSetup(s)
+end
+
+function Gridap.Algebra.numerical_setup(ss::CGSymbolicSetup,mat::AbstractMatrix)
+  caches = CG_get_caches(mat)
+  CGNumericalSetup(ss,mat,caches)
+end
+
+function CG_get_caches(mat)
+ return nothing
+end
+
+function Gridap.Algebra.solve!(x::AbstractVector,ns::CGNumericalSetup,b::AbstractVector)
+  cg!(x,ns.mat,b)
+end
+
+solver = CGLinearSolver()
 
 # Get refined model and triangulation
 cart_model = CartesianDiscreteModel((0,1,0,1),(4,4))
@@ -73,7 +108,7 @@ vec_c2f = assemble_vector(assem_c2f,vecdata)
 @test vec_c ≈ vec_c2f
 
 # Coarse FEFunction -> Fine FEFunction using ProjectionTransferOperator
-op_c2f = ProjectionTransferOperator(U_c,U_f)
+op_c2f = ProjectionTransferOperator(U_c,U_f;solver=solver)
 y_f = zeros(num_free_dofs(U_f))
 uh_c = FEFunction(U_c,x_c)
 mul!(y_f,op_c2f,copy(x_c))
@@ -85,7 +120,7 @@ v_f = map(p -> uh_f(p), pts)
 @test v_c ≈ v_f
 
 # Fine FEFunction -> Coarse FEFunction using ProjectionTransferOperator
-op_f2c = ProjectionTransferOperator(U_f,U_c)
+op_f2c = ProjectionTransferOperator(U_f,U_c;solver=solver)
 x_f = copy(y_f)
 y_c = zeros(num_free_dofs(U_c))
 uh_f = FEFunction(U_f,x_f)
@@ -99,8 +134,8 @@ v_f = map(p -> uh_f(p), pts)
 @test v_c ≈ v_f
 
 # Same but using RefinementTransferMap
-m_f2c = RefinementTransferMap(U_f,U_c)
-m_c2f = RefinementTransferMap(U_c,U_f)
+m_f2c = RefinementTransferMap(U_f,U_c;solver=solver)
+m_c2f = RefinementTransferMap(U_c,U_f;solver=solver)
 
 cache = return_cache(m_f2c,uh_f)
 uh_c2 = evaluate!(cache,m_f2c,uh_f)
