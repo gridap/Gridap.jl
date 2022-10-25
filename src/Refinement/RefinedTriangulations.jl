@@ -67,8 +67,8 @@ function Geometry.is_change_possible(strian::RefinedTriangulation,ttrian::Refine
   if typeof(strian.trian) == typeof(ttrian.trian) # Is this too restrictive???
     smodel = get_refined_model(strian)
     tmodel = get_refined_model(ttrian)
-    a = get_parent(tmodel) === smodel # tmodel = refine(smodel)
-    b = get_parent(smodel) === tmodel # smodel = refine(tmodel)
+    a = get_parent(tmodel) === get_model(smodel) # tmodel = refine(smodel)
+    b = get_parent(smodel) === get_model(tmodel) # smodel = refine(tmodel)
     return a || b
   end
 
@@ -116,7 +116,7 @@ function Geometry.best_target(strian::RefinedTriangulation,ttrian::RefinedTriang
     smodel = get_refined_model(strian)
     tmodel = get_refined_model(ttrian)
     a = get_parent(tmodel) === get_model(smodel) # tmodel = refine(smodel)
-    a ? ttrian : strian
+    a ? (return ttrian) : (return strian)
   end
 
   # D) Different background model AND different type of triangulation

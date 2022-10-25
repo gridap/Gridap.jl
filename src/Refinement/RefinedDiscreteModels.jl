@@ -73,8 +73,8 @@ Geometry.get_face_labeling(model::RefinedDiscreteModel) = get_face_labeling(mode
 
 # Other getters
 get_model(model::RefinedDiscreteModel)  = model.model
-get_parent(model::RefinedDiscreteModel) = model.parent
-get_parent(model::RefinedDiscreteModel{A,<:RefinedDiscreteModel,C}) where {A,C} = get_model(model.parent)
+get_parent(model::RefinedDiscreteModel{Dc,Dp,A,<:RefinedDiscreteModel}) where {Dc,Dp,A} = get_model(model.parent)
+get_parent(model::RefinedDiscreteModel{Dc,Dp,A,B}) where {Dc,Dp,A,B} = model.parent
 get_refinement_glue(model::RefinedDiscreteModel) = model.glue
 
 function refine(model::DiscreteModel,args...;kwargs...) :: RefinedDiscreteModel
