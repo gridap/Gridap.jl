@@ -126,19 +126,8 @@ function f2c_cell_contrs(trian::RefinedTriangulation{Dc,Dp},cell_vec) where {Dc,
 
   model = get_refined_model(trian)
   glue  = get_refinement_glue(model)
-  nF    = num_cells(trian)
   nC    = num_cells(get_parent(model))
-  nChildren = 4 # Num fine cells per coarse cell
-
-  # Invert fcell_to_ccell
-  fcell_to_ccell = glue.f2c_faces_map[Dc+1]
-  ccell_to_fcell = [fill(-1,nChildren) for i in 1:nC]
-  cidx = fill(1,nC)
-  for iF in 1:nF
-    iC = fcell_to_ccell[iF]
-    ccell_to_fcell[iC][cidx[iC]] = iF
-    cidx[iC] += 1
-  end
+  ccell_to_fcell = glue.c2f_faces_map
 
   # Map that sums fine contributions for each coarse cell
   return lazy_map((I,V)->sum(V[I]),ccell_to_fcell,Fill(cell_vec,nC))

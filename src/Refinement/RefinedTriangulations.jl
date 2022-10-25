@@ -152,7 +152,7 @@ function change_domain_c2f(f_coarse, ftrian::RefinedTriangulation{Dc,Dp}) where 
     f_f2c = lazy_map(m,fcell_to_ccell)
 
     # Fine to coarse coordinate map: x_coarse = Φ^(-1)(x_fine)
-    ref_coord_map = get_f2c_ref_coordinate_map(glue)
+    ref_coord_map = get_f2c_reference_coordinate_map(glue)
 
     # Final map: f_fine(x_fine) = f_f2c ∘ Φ^(-1)(x_fine) = f_coarse(x_coarse)
     f_fine = lazy_map(∘,f_f2c,ref_coord_map)

@@ -7,18 +7,22 @@ Refinement glue between two nested triangulations
 - `f2c_ref_cell_map`  : Ref coordinate map between the fcells and their parent ccell, i.e 
                           for each fine cell defines Φ st. x_c = Φ(x_f)
 """
-struct RefinementGlue{A,B,C} <: GridapType
-  f2c_faces_map::A
-  fcell_to_child_id::B
-  f2c_ref_cell_map::C
+struct RefinementGlue{A,B,C,D} <: GridapType
+  f2c_faces_map           :: A
+  fcell_to_child_id       :: B
+  f2c_reference_cell_map  :: C
+  c2f_faces_map           :: D
 
   function RefinementGlue(f2c_faces_map,
                           fcell_to_child_id,
-                          f2c_ref_cell_map)
+                          f2c_reference_cell_map)
+    c2f_faces_map = get_c2f_faces_map(f2c_faces_map[end],f2c_reference_cell_map)
+
     A = typeof(f2c_faces_map)
     B = typeof(fcell_to_child_id)
-    C = typeof(f2c_ref_cell_map)
-    new{A,B,C}(f2c_faces_map,fcell_to_child_id,f2c_ref_cell_map)
+    C = typeof(f2c_reference_cell_map)
+    D = typeof(c2f_faces_map)
+    new{A,B,C,D}(f2c_faces_map,fcell_to_child_id,f2c_reference_cell_map,c2f_faces_map)
   end
 end
 
@@ -26,7 +30,7 @@ end
 Ref coordinate map from fcell ref coords to ccell ref coords.
 Size -> Number of children per coarse cell.
 """
-function get_f2c_ref_cell_map(reffe,ref)
+function get_f2c_reference_cell_map(reffe,ref)
   ref_grid = Geometry.UnstructuredGrid(Visualization.compute_reference_grid(reffe,ref))
   return get_cell_map(ref_grid)
 end
@@ -35,9 +39,25 @@ end
 Ref coordinate map between fine and coarse cells. 
 Size -> Number of fine cells. 
 """
-function get_f2c_ref_coordinate_map(g::RefinementGlue)
-  m = Reindex(g.f2c_ref_cell_map)
+function get_f2c_reference_coordinate_map(g::RefinementGlue)
+  m = Reindex(g.f2c_reference_cell_map)
   return lazy_map(m,g.fcell_to_child_id)
+end
+
+function get_c2f_faces_map(fcell_to_ccell,f2c_reference_cell_map)
+  nC = maximum(fcell_to_ccell)
+  nF = length(fcell_to_ccell)
+  nChildren = length(f2c_reference_cell_map) # TODO: This can be modified for different number of children per cell
+
+  ccell_to_fcell = [fill(-1,nChildren) for i in 1:nC]
+  cidx = fill(1,nC)
+  for iF in 1:nF
+    iC = fcell_to_ccell[iF]
+    ccell_to_fcell[iC][cidx[iC]] = iF
+    cidx[iC] += 1
+  end
+
+  return ccell_to_fcell
 end
 
 #################################################################
@@ -104,7 +124,7 @@ function refine(model::CartesianDiscreteModel; num_refinements::Int=2)
   faces_map      = [Int[],Int[],_create_f2c_cell_map(nC,ref)]
   fcell_child_id = _create_child_map(nC,ref)
   reffe          = LagrangianRefFE(Float64,QUAD,1)
-  ref_cell_map   = get_f2c_ref_cell_map(reffe,ref)
+  ref_cell_map   = get_f2c_reference_cell_map(reffe,ref)
   glue = RefinementGlue(faces_map,fcell_child_id,ref_cell_map)
 
   # RefinedModel
