@@ -24,7 +24,7 @@ import Gridap.CellData: change_domain
 
 include("RefinedDiscreteModels.jl")
 include("RefinedTriangulations.jl")
-include("RefinementTransferOperators.jl")
+include("ProjectionTransferOperators.jl")
 
 export RefinementGlue
 export get_f2c_ref_cell_map, get_f2c_ref_coordinate_map
@@ -37,7 +37,7 @@ export RefinedTriangulation
 export Triangulation, is_change_possible, best_target, get_refined_model
 export change_domain_c2f, change_domain
 
-export RefinementTransferOperator, RefinementTransferMap
+export ProjectionTransferOperator, RefinementTransferMap
 export mul!
 
 

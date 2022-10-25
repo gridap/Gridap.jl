@@ -49,7 +49,7 @@ end
   The refinement hierarchy can be traced backwards by following the 
   `parent` pointer chain. This allows the transfer of dofs 
   between `FESpaces` defined on this model and its ancestors using a 
-  `RefinementTransferOperator`.
+  `ProjectionTransferOperator`.
 
 """
 struct RefinedDiscreteModel{Dc,Dp,A<:DiscreteModel{Dc,Dp},B<:DiscreteModel{Dc,Dp},C<:RefinementGlue} <: DiscreteModel{Dc,Dp}

@@ -72,8 +72,8 @@ vec_c2f = assemble_vector(assem_c2f,vecdata)
 
 @test vec_c ≈ vec_c2f
 
-# Coarse FEFunction -> Fine FEFunction using RefinementTransferOperator
-op_c2f = RefinementTransferOperator(U_c,U_f)
+# Coarse FEFunction -> Fine FEFunction using ProjectionTransferOperator
+op_c2f = ProjectionTransferOperator(U_c,U_f)
 y_f = zeros(num_free_dofs(U_f))
 uh_c = FEFunction(U_c,x_c)
 mul!(y_f,op_c2f,copy(x_c))
@@ -84,8 +84,8 @@ v_c = map(p -> uh_c(p), pts)
 v_f = map(p -> uh_f(p), pts)
 @test v_c ≈ v_f
 
-# Fine FEFunction -> Coarse FEFunction using RefinementTransferOperator
-op_f2c = RefinementTransferOperator(U_f,U_c)
+# Fine FEFunction -> Coarse FEFunction using ProjectionTransferOperator
+op_f2c = ProjectionTransferOperator(U_f,U_c)
 x_f = copy(y_f)
 y_c = zeros(num_free_dofs(U_c))
 uh_f = FEFunction(U_f,x_f)

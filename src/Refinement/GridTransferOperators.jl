@@ -1,6 +1,8 @@
 
+abstract type GridTransferOperator <: GridapType end
+
 """
-  RefinementTransferOperator
+  ProjectionTransferOperator
 
   Matrix-like operator providing a transfer between two `FESpaces`
   defined in child-parent refined grids. 
@@ -12,12 +14,12 @@
   where Ω is always chosen as the finest grid (i.e the RHS is
   always integrated without loss of accuracy). 
 """
-struct RefinementTransferOperator{T,A,B,C} <: AbstractMatrix{T}
+struct ProjectionTransferOperator{T,A,B,C} <: GridTransferOperator
   from   ::A
   to     ::B
   caches ::C
 
-  function RefinementTransferOperator(T,from,to,caches)
+  function ProjectionTransferOperator(T,from,to,caches)
     A = typeof(from)
     B = typeof(to)
     C = typeof(caches)
@@ -28,7 +30,7 @@ end
 # L2 projection (default for the transfer ops)
 Π_l2(u,v,dΩ) = ∫(v⋅u)*dΩ
 
-function RefinementTransferOperator(from::FESpace,to::FESpace; Π=Π_l2, qdegree=3)
+function ProjectionTransferOperator(from::FESpace,to::FESpace; Π=Π_l2, qdegree=3)
   @assert isa(from,TrialFESpace)
   @assert isa(to,TrialFESpace)
 
@@ -50,11 +52,11 @@ function RefinementTransferOperator(from::FESpace,to::FESpace; Π=Π_l2, qdegree
   assem  = SparseMatrixAssembler(to,to.space)
 
   cache = sysmat, sysvec, Π, assem, Ω, dΩ, U, V, vh
-  return RefinementTransferOperator(eltype(sysmat),from,to,cache)
+  return ProjectionTransferOperator(eltype(sysmat),from,to,cache)
 end
 
 # Solves the problem Π(uh,vh)_to = Π(uh_from,vh)_Ω for all vh in Vh_to
-function LinearAlgebra.mul!(y,A::RefinementTransferOperator,x)
+function LinearAlgebra.mul!(y,A::ProjectionTransferOperator,x)
   sysmat, sysvec, Π, assem, Ω, dΩ, U, V , vh_Ω = A.caches
   Ω_to = get_triangulation(A.to)
 
@@ -75,11 +77,11 @@ function LinearAlgebra.mul!(y,A::RefinementTransferOperator,x)
   return y
 end
 
-function Base.size(A::RefinementTransferOperator)
+function Base.size(A::ProjectionTransferOperator)
   (num_free_dofs(A.to),num_free_dofs(A.from))
 end
 
-function Base.size(A::RefinementTransferOperator,i::Int)
+function Base.size(A::ProjectionTransferOperator,i::Int)
   if i == 1
     return num_free_dofs(A.to)
   elseif i == 2
@@ -89,9 +91,9 @@ function Base.size(A::RefinementTransferOperator,i::Int)
   end
 end
 
-function Base.display(op::RefinementTransferOperator{T,A,B,C}) where {T,A,B,C}
+function Base.display(op::ProjectionTransferOperator{T,A,B,C}) where {T,A,B,C}
   s = size(op)
-  println("$(s[1])x$(s[2])  RefinementTransferOperator{$(T)}")
+  println("$(s[1])x$(s[2])  ProjectionTransferOperator{$(T)}")
 end
 
 function assemble_lhs(Π,Ω,Uh,Vh,qdegree)
@@ -141,14 +143,14 @@ end
 
 """
 """
-struct RefinementTransferMap{A<:FESpace,B<:FESpace,C<:RefinementTransferOperator} <: Map
+struct RefinementTransferMap{A<:FESpace,B<:FESpace,C<:ProjectionTransferOperator} <: Map
   from ::A
   to   ::B
   op   ::C
 end
 
 function RefinementTransferMap(from::FESpace,to::FESpace; Π=Π_l2, qdegree=3)
-  op = RefinementTransferOperator(from,to;Π=Π,qdegree=qdegree)
+  op = ProjectionTransferOperator(from,to;Π=Π,qdegree=qdegree)
   return RefinementTransferMap(from,to,op)
 end
 
