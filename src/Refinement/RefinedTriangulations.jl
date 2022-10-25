@@ -140,6 +140,8 @@ end
   returns an equivalent CellField on the fine mesh.
 """
 function change_domain_c2f(f_coarse, ftrian::RefinedTriangulation{Dc,Dp}) where {Dc,Dp}
+  @nonimplementedif num_dims(get_triangulation(f_coarse)) != Dc
+
   model  = get_refined_model(ftrian)
   glue   = get_refinement_glue(model)
   if (num_cells(ftrian) != 0)
