@@ -9,12 +9,12 @@ using Gridap.Refinement
 using Gridap.ReferenceFEs
 using Gridap.FESpaces
 using FillArrays
-using IterativeSolvers
 
 # Solutions and weakform
 sol(x) = x[1] + x[2]
 bil(uh,vh,dΩ) = ∫(uh⋅vh)*dΩ
 
+"""
 # Conjugate Gradient wrapper
 struct CGLinearSolver <: LinearSolver end
 
@@ -44,8 +44,9 @@ end
 function Gridap.Algebra.solve!(x::AbstractVector,ns::CGNumericalSetup,b::AbstractVector)
   cg!(x,ns.mat,b)
 end
+"""
 
-solver = CGLinearSolver()
+solver = BackslashSolver()
 
 # Get refined model and triangulation
 cart_model = CartesianDiscreteModel((0,1,0,1),(4,4))
