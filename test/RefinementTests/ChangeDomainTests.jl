@@ -13,7 +13,8 @@ sol(x) = x[1] + x[2]
 bil(uh,vh,dΩ) = ∫(uh⋅vh)*dΩ
 
 # Get refined model and triangulation
-model = RefinedCartesianDiscreteModel((0,1,0,1),4,2)
+cart_model = CartesianDiscreteModel((0,1,0,1),(4,4))
+model = refine(cart_model; num_refinements=2)
 trian = Triangulation(model)
 
 # Triangulations
@@ -31,7 +32,7 @@ U_c = TrialFESpace(V_c,sol)
 
 # CellField: Coarse -> Fine
 cf_c = change_domain(CellField(sol,ctrian),PhysicalDomain(),ReferenceDomain())
-cf_f = change_domain(cf_c, trian)
+cf_f = change_domain(cf_c, trian, ReferenceDomain())
 
 pts = map(x -> VectorValue(rand(2)),1:10)
 v_r = map(p -> sol(p) , pts) # Real values
@@ -43,12 +44,12 @@ v_f = map(p -> cf_f(p), pts) # Values by Fine CellField
 # Coarse FEFunction -> Fine CellField
 x_c = randn(num_free_dofs(U_c))
 uh_c = FEFunction(U_c,x_c)
-uh_f = change_domain(uh_c,trian)
+uh_f = change_domain(uh_c,trian,ReferenceDomain())
 
 # Coarse FEBasis -> Fine CellField
 feb_c = get_fe_basis(V_c)
 feb_f = get_fe_basis(V_f)
-feb_c2f = change_domain(feb_c,trian)
+feb_c2f = change_domain(feb_c,trian,ReferenceDomain())
 
 # Coarse assembly
 assem_c = SparseMatrixAssembler(U_c,V_c)

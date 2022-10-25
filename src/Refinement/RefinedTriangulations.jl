@@ -177,6 +177,20 @@ function CellData.change_domain(a::CellField,ttrian::RefinedTriangulation,::Refe
   return change_domain_c2f(a,ttrian)
 end
 
+function CellData.change_domain(a::CellData.OperationCellField,ttrian::RefinedTriangulation,::ReferenceDomain)
+  strian = get_triangulation(a)
+  if strian === ttrian
+    return a
+  end
+  @assert is_change_possible(strian,ttrian)
+
+  if (get_background_model(strian) === get_background_model(ttrian))
+    return change_domain(a,ttrian.trian,ReferenceDomain())
+  end
+  
+  return change_domain_c2f(a,ttrian)
+end
+
 function CellData.change_domain(a::CellField,ttrian::RefinedTriangulation,::PhysicalDomain)
   strian = get_triangulation(a)
   if strian === ttrian

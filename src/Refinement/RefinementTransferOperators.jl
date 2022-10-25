@@ -43,7 +43,7 @@ function RefinementTransferOperator(from::FESpace,to::FESpace; Π=Π_l2, qdegree
   U  = (Ω === Ω_from) ? from : to
   V  = U.space
   vh_to = get_fe_basis(to)
-  vh = change_domain(vh_to,Ω)
+  vh = change_domain(vh_to,Ω,ReferenceDomain())
 
   # Prepare system
   sysmat, sysvec = assemble_lhs(Π,Ω_to,to,to.space,qdegree)
@@ -60,7 +60,7 @@ function LinearAlgebra.mul!(y,A::RefinementTransferOperator,x)
 
   # Bring uh to the integration domain
   uh_from = FEFunction(A.from,x)
-  uh_Ω    = change_domain(uh_from,Ω)
+  uh_Ω    = change_domain(uh_from,Ω,ReferenceDomain())
 
   # Assemble rhs vector
   contr   = Π(uh_Ω,vh_Ω,dΩ)
