@@ -48,20 +48,21 @@ function ProjectionTransferOperator(from::FESpace,to::FESpace; solver::LinearSol
   vh = change_domain(vh_to,Ω,ReferenceDomain())
 
   # Prepare system
-  sysmat, sysvec = assemble_lhs(Π,Ω_to,to,to.space,qdegree)
-  assem  = SparseMatrixAssembler(to,to.space)
+  lhs_mat, lhs_vec = assemble_lhs(Π,Ω_to,to,to.space,qdegree)
+  rhs_vec = similar(lhs_vec)
+  assem   = SparseMatrixAssembler(to,to.space)
 
   # Prepare solver
   ss = symbolic_setup(solver,sysmat)
   ns = numerical_setup(ss,sysmat)
 
-  cache = ns, sysmat, sysvec, Π, assem, Ω, dΩ, U, V, vh
-  return ProjectionTransferOperator(eltype(sysmat),from,to,cache)
+  caches = ns, lhs_vec, rhs_vec, Π, assem, Ω, dΩ, U, V, vh
+  return ProjectionTransferOperator(eltype(sysmat),from,to,caches)
 end
 
 # Solves the problem Π(uh,vh)_to = Π(uh_from,vh)_Ω for all vh in Vh_to
 function LinearAlgebra.mul!(y,A::ProjectionTransferOperator,x)
-  ns, sysmat, sysvec, Π, assem, Ω, dΩ, U, V , vh_Ω = A.caches
+  ns, lhs_vec, rhs_vec, Π, assem, Ω, dΩ, U, V , vh_Ω = A.caches
   Ω_to = get_triangulation(A.to)
 
   # Bring uh to the integration domain
@@ -74,7 +75,8 @@ function LinearAlgebra.mul!(y,A::ProjectionTransferOperator,x)
     contr = merge_contr_cells(contr,Ω,Ω_to)
   end
   vecdata = collect_cell_vector(A.to.space,contr)
-  assemble_vector_add!(sysvec,assem,vecdata)
+  assemble_vector!(rhs_vec,assem,vecdata)
+  rhs_vec .-= lhs_vec
 
   # Solve projection
   solve!(y,ns,sysvec)
@@ -101,14 +103,14 @@ function Base.display(op::ProjectionTransferOperator{T,A,B,C}) where {T,A,B,C}
 end
 
 function assemble_lhs(Π,Ω,Uh,Vh,qdegree)
-  dΩ = Measure(Ω,qdegree)
-  uh_dir = FEFunction(Uh,zero_free_values(Uh),get_dirichlet_dof_values(Uh))
-  a(u,v) = Π(u,v,dΩ)
-  b(v)   = a(uh_dir,v)
+  dΩ      = Measure(Ω,qdegree)
+  uh_dir  = FEFunction(Uh,zero_free_values(Uh),get_dirichlet_dof_values(Uh))
+  a(u,v)  = Π(u,v,dΩ)
+  b(v)    = a(uh_dir,v)
 
-  sysmat = assemble_matrix(a,Uh,Vh)
-  sysvec = assemble_vector(b,Vh)
-  return sysmat, -sysvec
+  lhs_mat = assemble_matrix(a,Uh,Vh)
+  lhs_vec = assemble_vector(b,Vh)
+  return lhs_mat, lhs_vec
 end
 
 function merge_contr_cells(a::DomainContribution,rtrian::RefinedTriangulation,ctrian)
