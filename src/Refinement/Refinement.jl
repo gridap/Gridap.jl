@@ -17,7 +17,7 @@ using Gridap.Visualization
 import Base: view
 import LinearAlgebra: mul!
 import Gridap.Geometry: get_grid, get_grid_topology, get_face_labeling
-import Gridap.Geometry: Triangulation, is_change_possible, best_target, get_glue, get_background_model
+import Gridap.Geometry: Triangulation, is_change_possible, best_target, get_background_model
 import Gridap.CellData: change_domain
 
 include("RefinedDiscreteModels.jl")
@@ -28,7 +28,7 @@ export RefinementGlue
 export get_f2c_ref_cell_map, get_f2c_ref_coordinate_map
 
 export RefinedDiscreteModel
-export get_model, get_parent, get_glue
+export get_model, get_parent, get_refinement_glue
 export RefinedCartesianDiscreteModel
 
 export RefinedTriangulation

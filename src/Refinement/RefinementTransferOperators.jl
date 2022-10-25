@@ -119,7 +119,7 @@ function f2c_cell_contrs(trian::RefinedTriangulation{Dc,Dp},cell_vec) where {Dc,
   @check num_cells(trian) == length(cell_vec)
 
   model = get_refined_model(trian)
-  glue  = get_glue(model)
+  glue  = get_refinement_glue(model)
   nF    = num_cells(trian)
   nC    = num_cells(get_parent(model))
   nChildren = 4 # Num fine cells per coarse cell
