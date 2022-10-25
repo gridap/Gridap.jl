@@ -86,13 +86,19 @@ function refine(model::RefinedDiscreteModel,args...;kwargs...)
   return RefinedDiscreteModel(ref_model.model,model,ref_model.glue)
 end
 
-# Cartesian builder
+# Cartesian Mesh refining
 
-function RefinedCartesianDiscreteModel(domain::Tuple,nC::Int,ref::Int)
-  nF = ref*nC
-  # Models
-  parent = CartesianDiscreteModel(domain,(nC,nC))
-  child  = CartesianDiscreteModel(domain,(nF,nF))
+function refine(model::CartesianDiscreteModel; num_refinements::Int=2)
+  @check num_refinements >= 2
+  ref  = num_refinements
+  desc = Geometry.get_cartesian_descriptor(model)
+  nC   = desc.partition
+
+  @notimplementedif length(nC) != 2
+  @notimplementedif any(map(nCi -> nCi != nC[1],nC))
+
+  domain    = _get_cartesian_domain(desc)
+  model_ref = CartesianDiscreteModel(domain,ref*nC)
 
   # Glue
   faces_map      = [Int[],Int[],_create_f2c_cell_map(nC,ref)]
@@ -102,24 +108,35 @@ function RefinedCartesianDiscreteModel(domain::Tuple,nC::Int,ref::Int)
   glue = RefinementGlue(faces_map,fcell_child_id,ref_cell_map)
 
   # RefinedModel
-  model = RefinedDiscreteModel(child,parent,glue)
-  return model
+  return RefinedDiscreteModel(model_ref,model,glue)
 end
 
-function _create_f2c_cell_map(nC::Int,ref::Int)
-  nF = nC*ref
+function _get_cartesian_domain(desc::CartesianDescriptor{D}) where D
+  origin = desc.origin
+  corner = origin + VectorValue(desc.sizes .* desc.partition)
+  domain = Vector{Int}(undef,2*D)
+  for d in 1:D
+    domain[d*2-1] = origin[d]
+    domain[d*2]   = corner[d]
+  end
+  return Tuple(domain)
+end
+
+function _create_f2c_cell_map(nC::Tuple,ref::Int)
+  D  = length(nC)
+  nF = nC[1]*ref
 
   idx = Tuple.(CartesianIndices((nF,nF)))
   a = map((i,j)->(1+(i-1)÷ref,1+(j-1)÷ref),first.(idx),last.(idx))
-  b = map((i,j)->(i-1)*nC+j,first.(a),last.(a))
+  b = map((i,j)->(i-1)*nC[1]+j,first.(a),last.(a))
   return Array(reshape(transpose(b),nF*nF))
 end
 
-function _create_child_map(nC::Int,ref::Int)
-  nF = nC*ref
+function _create_child_map(nC::Tuple,ref::Int)
+  nF = nC[1]*ref
   elem = reshape(collect(1:ref*ref),(ref,ref))
-  slice = transpose(repeat(elem,nC))
-  mat = repeat(slice,nC)
+  slice = transpose(repeat(elem,nC[1]))
+  mat = repeat(slice,nC[1])
   return Array(reshape(transpose(mat),nF*nF))
 end
 
