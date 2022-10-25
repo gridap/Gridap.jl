@@ -80,11 +80,11 @@ end
 function Geometry.is_change_possible(strian::RefinedTriangulation,ttrian::Triangulation)
   # A) Same background model -> Default change of Triangulation
   if (get_background_model(strian) === get_background_model(ttrian))
-    return is_change_possible(strian.trian,ttrian.trian)
+    return is_change_possible(strian.trian,ttrian)
   end
   
   # B) Different background model, but same type of Triangulation (Skeleton, BodyFitted, View, ...)
-  if typeof(strian.trian) == typeof(trian)
+  if typeof(strian.trian) == typeof(ttrian)
     smodel = get_refined_model(strian)
     tmodel = get_background_model(ttrian)
     return get_parent(smodel) === tmodel # smodel = refine(tmodel)
@@ -140,7 +140,7 @@ end
   returns an equivalent CellField on the fine mesh.
 """
 function change_domain_c2f(f_coarse, ftrian::RefinedTriangulation{Dc,Dp}) where {Dc,Dp}
-  @nonimplementedif num_dims(get_triangulation(f_coarse)) != Dc
+  @notimplementedif num_dims(get_triangulation(f_coarse)) != Dc
 
   model  = get_refined_model(ftrian)
   glue   = get_refinement_glue(model)

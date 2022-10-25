@@ -7,11 +7,13 @@ using FillArrays
 using LinearAlgebra
 using IterativeSolvers
 using Gridap.Helpers
+using Gridap.Algebra
 using Gridap.Arrays
 using Gridap.Geometry
 using Gridap.FESpaces
 using Gridap.ReferenceFEs
 using Gridap.CellData
+using Gridap.TensorValues
 using Gridap.Visualization
 
 import Base: view
@@ -29,7 +31,7 @@ export get_f2c_ref_cell_map, get_f2c_ref_coordinate_map
 
 export RefinedDiscreteModel
 export get_model, get_parent, get_refinement_glue
-export RefinedCartesianDiscreteModel
+export refine
 
 export RefinedTriangulation
 export Triangulation, is_change_possible, best_target, get_refined_model

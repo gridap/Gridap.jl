@@ -74,7 +74,7 @@ Geometry.get_face_labeling(model::RefinedDiscreteModel) = get_face_labeling(mode
 # Other getters
 get_model(model::RefinedDiscreteModel)  = model.model
 get_parent(model::RefinedDiscreteModel) = model.parent
-get_parent(model::RefinedDiscreteModel{A,B<:RefinedDiscreteModel,C}) = get_model(model.parent)
+get_parent(model::RefinedDiscreteModel{A,<:RefinedDiscreteModel,C}) where {A,C} = get_model(model.parent)
 get_refinement_glue(model::RefinedDiscreteModel) = model.glue
 
 function refine(model::DiscreteModel,args...;kwargs...) :: RefinedDiscreteModel
@@ -98,7 +98,7 @@ function refine(model::CartesianDiscreteModel; num_refinements::Int=2)
   @notimplementedif any(map(nCi -> nCi != nC[1],nC))
 
   domain    = _get_cartesian_domain(desc)
-  model_ref = CartesianDiscreteModel(domain,ref*nC)
+  model_ref = CartesianDiscreteModel(domain,ref.*nC)
 
   # Glue
   faces_map      = [Int[],Int[],_create_f2c_cell_map(nC,ref)]
