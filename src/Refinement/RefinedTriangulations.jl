@@ -2,7 +2,7 @@
 
 struct RefinedTriangulation{Dc,Dp,A<:Triangulation{Dc,Dp},B<:RefinedDiscreteModel} <: Triangulation{Dc,Dp}
   trian::A
-  model::B
+  refined_model::B
 
   function RefinedTriangulation(trian::Triangulation{Dc,Dp},model::RefinedDiscreteModel{Dc2,Dp}) where {Dc,Dc2,Dp}
     @check !isa(trian,RefinedTriangulation)
@@ -14,7 +14,7 @@ struct RefinedTriangulation{Dc,Dp,A<:Triangulation{Dc,Dp},B<:RefinedDiscreteMode
 end
 
 function get_refined_model(t::RefinedTriangulation)
-  return t.model
+  return t.refined_model
 end
 
 # Wrap Triangulation API
@@ -141,7 +141,7 @@ end
 """
 function change_domain_c2f(f_coarse, ftrian::RefinedTriangulation{Dc,Dp}) where {Dc,Dp}
   model  = get_refined_model(ftrian)
-  glue   = get_glue(model)
+  glue   = get_refinement_glue(model)
   if (num_cells(ftrian) != 0)
     # Coarse field but with fine indexing, i.e 
     #   f_f2c[i_fine] = f_coarse[coarse_parent(i_fine)]
