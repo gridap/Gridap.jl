@@ -53,11 +53,11 @@ function ProjectionTransferOperator(from::FESpace,to::FESpace; solver::LinearSol
   assem   = SparseMatrixAssembler(to,to.space)
 
   # Prepare solver
-  ss = symbolic_setup(solver,sysmat)
-  ns = numerical_setup(ss,sysmat)
+  ss = symbolic_setup(solver,lhs_mat)
+  ns = numerical_setup(ss,lhs_mat)
 
   caches = ns, lhs_vec, rhs_vec, Π, assem, Ω, dΩ, U, V, vh
-  return ProjectionTransferOperator(eltype(sysmat),from,to,caches)
+  return ProjectionTransferOperator(eltype(lhs_mat),from,to,caches)
 end
 
 # Solves the problem Π(uh,vh)_to = Π(uh_from,vh)_Ω for all vh in Vh_to
@@ -79,7 +79,7 @@ function LinearAlgebra.mul!(y,A::ProjectionTransferOperator,x)
   rhs_vec .-= lhs_vec
 
   # Solve projection
-  solve!(y,ns,sysvec)
+  solve!(y,ns,rhs_vec)
   return y
 end
 
