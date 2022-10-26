@@ -1,8 +1,13 @@
+abstract type DiracDeltaSupportType <: GridapType end
+abstract type IsGridEntity <: DiracDeltaSupportType end
+abstract type NotGridEntity <: DiracDeltaSupportType end
 
-struct DiracDelta{D} <: GridapType
-  Γ::Triangulation{D}
+struct GenericDiracDelta{D,Dt,S<:DiracDeltaSupportType} <: GridapType
+  Γ::Triangulation{Dt}
   dΓ::Measure
 end
+
+const DiracDelta{D} = GenericDiracDelta{D,D,IsGridEntity}
 
 function DiracDelta{D}(
   model::DiscreteModel,
@@ -24,7 +29,7 @@ function DiracDelta{D}(
   trian = BodyFittedTriangulation(model,face_grid,face_to_bgface)
   Γ = BoundaryTriangulation(trian,glue)
   dΓ = Measure(Γ,degree)
-  DiracDelta(Γ,dΓ)
+  DiracDelta{D}(Γ,dΓ)
 end
 
 function DiracDelta{D}(
@@ -65,14 +70,51 @@ function DiracDelta{0}(model::DiscreteModel;tags)
   DiracDelta{0}(model,degree;tags=tags)
 end
 
-function (d::DiracDelta)(f)
+function (d::GenericDiracDelta)(f)
   evaluate(d,f)
 end
 
-function evaluate!(cache,d::DiracDelta,f)
+function evaluate!(cache,d::GenericDiracDelta,f)
   ∫(f)*d.dΓ
 end
 
-function get_triangulation(d::DiracDelta)
+function get_triangulation(d::GenericDiracDelta)
   d.Γ
+end
+
+# For handling DiracDelta at a generic Point in the domain #
+
+function _cell_to_pindices(pvec::Vector{<:Point},trian::Triangulation)
+  cache = _point_to_cell_cache(KDTreeSearch(),trian)
+  cell_to_pindex = Dict{Int, Vector{Int32}}()
+  for i in 1:length(pvec)
+    cell = _point_to_cell!(cache, pvec[i])
+    push!(get!(() -> valtype(cell_to_pindex)[], cell_to_pindex, cell), i)
+  end
+  cell_to_pindex
+end
+
+function DiracDelta(model::DiscreteModel{D}, p::Point{D,T}) where {D,T}
+  trian = Triangulation(model)
+  cache = _point_to_cell_cache(KDTreeSearch(),trian)
+  cell = _point_to_cell!(cache, p)
+  trianv = view(trian,[cell])
+  point = [p]
+  weight = [one(T)]
+  pquad = GenericQuadrature(point,weight)
+  pmeas = Measure(CellQuadrature([pquad],[pquad.coordinates],[pquad.weights],trianv,PhysicalDomain(),PhysicalDomain()))
+  GenericDiracDelta{0,D,NotGridEntity}(trianv,pmeas)
+end
+
+function DiracDelta(model::DiscreteModel{D}, pvec::Vector{Point{D,T}}) where {D,T}
+  trian = Triangulation(model)
+  cell_to_pindices = _cell_to_pindices(pvec,trian)
+  cell_ids = collect(keys(cell_to_pindices))
+  cell_points = collect(values(cell_to_pindices))
+  points = map(i->pvec[cell_points[i]], 1:length(cell_ids))
+  weights_x_cell = Fill.(one(T),length.(cell_points))
+  pquad = map(i -> GenericQuadrature(points[i],weights_x_cell[i]), 1:length(cell_ids))
+  trianv = view(trian,cell_ids)
+  pmeas = Measure(CellQuadrature(pquad,points,weights_x_cell,trianv,PhysicalDomain(),PhysicalDomain()))
+  GenericDiracDelta{0,D,NotGridEntity}(trianv,pmeas)
 end

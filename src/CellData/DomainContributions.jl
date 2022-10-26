@@ -119,7 +119,7 @@ end
 
 get_cell_points(a::Measure) = get_cell_points(a.quad)
 
-Measure(args...) = Measure(CellQuadrature(args...))
+Measure(args...;kwargs...) = Measure(CellQuadrature(args...;kwargs...))
 
 function integrate(f,b::Measure)
   c = integrate(f,b.quad)

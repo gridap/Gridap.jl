@@ -61,6 +61,21 @@ s = ∫( x->1 )*quad_N
 @test sum(s) ≈ 6
 @test ∑(s) ≈ 6
 
+quad_N = CellQuadrature(trian_N,degree,T=Float32)
+@test eltype(quad_N.cell_point) == Vector{Point{num_dims(trian_N),Float32}}
+@test eltype(quad_N.cell_weight) == Vector{Float32}
+
+s = ∫( ∇(v)⋅∇(u) )*quad_N
+test_array(s,collect(s))
+
+s = ∫(1)*quad_N
+@test sum(s) ≈ 6
+@test ∑(s) ≈ 6
+
+s = ∫( x->1 )*quad_N
+@test sum(s) ≈ 6
+@test ∑(s) ≈ 6
+
 cell_measure = get_cell_measure(trian)
 cell_measure_N = get_cell_measure(trian_N,trian)
 @test length(cell_measure) == num_cells(model)

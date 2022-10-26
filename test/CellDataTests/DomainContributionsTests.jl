@@ -52,4 +52,27 @@ dΩ = Measure(Ω,quad)
 s = ∫(1)dΩ
 @test sum(s) ≈ 1
 
+dΩ = Measure(Ω,degree,T=Float32)
+dΓ = Measure(Γ,degree,T=Float32)
+dΛ = Measure(Λ,degree,T=Float32)
+
+a = ∫(1)*dΩ + ∫(1)*dΓ
+@test isapprox(sum(a), 5, atol=1e-6)
+@test isapprox(sum(2*a), 10, atol=1e-6)
+@test isapprox(sum(a*2), 10, atol=1e-6)
+
+u = CellField(x->2*x[1],Ω)
+v = CellField(x->3*x[2],Ω)
+
+a = ∫(jump(u))*dΛ
+@test sum(a) + 1 ≈ 1
+
+a = ∫( (n_Λ.⁺⋅∇(v.⁻))*jump(n_Λ⋅∇(u)) )*dΛ
+@test sum(a) + 1 ≈ 1
+
+quad = Quadrature(duffy,2,T=Float32)
+dΩ = Measure(Ω,quad)
+s = ∫(1)dΩ
+@test sum(s) ≈ 1
+
 end # module
