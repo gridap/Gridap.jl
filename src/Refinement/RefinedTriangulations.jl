@@ -53,6 +53,25 @@ function Geometry.Triangulation(trian::RefinedTriangulation,args...;kwargs...)
   return RefinedTriangulation(Triangulation(trian.trian,args...;kwargs...),trian.model)
 end
 
+function Geometry.BoundaryTriangulation(model::RefinedDiscreteModel,args...;kwargs...)
+  trian = BoundaryTriangulation(get_model(model),args...;kwargs...)
+  return RefinedTriangulation(trian,model)
+end
+
+function Geometry.SkeletonTriangulation(model::RefinedDiscreteModel,face_to_mask::AbstractVector{Bool})
+  trian = SkeletonTriangulation(get_model(model),face_to_mask)
+  return RefinedTriangulation(trian,model)
+end
+
+function Geometry.InterfaceTriangulation(model::RefinedDiscreteModel, cell_to_is_in::Vector{Bool})
+  trian = InterfaceTriangulation(get_model(model),cell_to_is_in)
+  return RefinedTriangulation(trian,model)
+end
+
+function Geometry.InterfaceTriangulation(model::RefinedDiscreteModel,cell_to_inout::AbstractVector{<:Integer})
+  trian = InterfaceTriangulation(get_model(model),cell_to_inout)
+  return RefinedTriangulation(trian,model)
+end
 
 function Geometry.is_change_possible(strian::RefinedTriangulation,ttrian::RefinedTriangulation)
   # A) Both Triangulations are exactly the same
@@ -95,9 +114,22 @@ function Geometry.is_change_possible(strian::RefinedTriangulation,ttrian::Triang
   return false
 end
 
-# TODO: Are we sure this is symmetric?
 function Geometry.is_change_possible(strian::Triangulation,ttrian::RefinedTriangulation)
-  return is_change_possible(ttrian,strian)
+  # A) Same background model -> Default change of Triangulation
+  if (get_background_model(strian) === get_background_model(ttrian))
+    return is_change_possible(strian,ttrian.trian)
+  end
+  
+  # B) Different background model, but same type of Triangulation (Skeleton, BodyFitted, View, ...)
+  if typeof(strian) == typeof(ttrian.trian)
+    smodel = get_background_model(strian)
+    tmodel = get_refined_model(ttrian)
+    return get_parent(tmodel) === smodel # tmodel = refine(smodel)
+  end
+
+  # C) Different background model AND different type of triangulation
+  @notimplemented
+  return false
 end
 
 function Geometry.best_target(strian::RefinedTriangulation,ttrian::RefinedTriangulation)
