@@ -106,6 +106,173 @@ function refine(model::RefinedDiscreteModel,args...;kwargs...)
   return RefinedDiscreteModel(ref_model.model,model,ref_model.glue)
 end
 
+
+# UnstructuredDiscreteModelRefining
+
+function refine(model::UnstructuredDiscreteModel)
+  
+  # Create new model
+  topo = _refine_unstructured_topology(model.grid_topology)
+  grid = UnstructuredGrid(topo)
+  nfaces = [num_faces(topo,d) for d in 0:num_cell_dims(topo)]
+  labels = FaceLabeling(nfaces)
+  ref_model = UnstructuredDiscreteModel(grid,topo,labels)
+
+  # Create ref glue
+  glue = _get_refinement_glue(topo,model.grid_topology)
+
+  return RefinedDiscreteModel(ref_model,model,glue)
+end
+
+_refine_unstructured_topology(topo::UnstructuredGridTopology) = @notimplemented
+
+function _refine_unstructured_topology(topo::UnstructuredGridTopology{Dc,2}) where Dc
+  # In dimension D=2, we allow mix and match of TRI and QUAD cells
+  @notimplementedif !all(map(p -> p ∈ [QUAD,TRI],topo.polytopes))
+
+  coords_new  = _get_refined_vertex_coordinates(topo)
+  c2n_map_new = _get_refined_cell_to_vertex_map(topo)
+
+  nC_old = num_faces(topo,2)
+  nC_new = length(c2n_map_new)
+  cell_types_new = Vector{Int}(undef,nC_new)
+  k = 1
+  for iC = 1:nC_old
+    p = topo.polytopes[topo.cell_type[iC]]
+    range = k:k+num_children(p)
+    cell_types[range] = topo.cell_type[iC]
+    k += num_children(p)
+  end
+  
+  topo_new = UnstructuredGridTopology(coords_new,c2n_map_new,cell_types_new,topo.polytopes)
+end
+
+function _get_refined_vertex_coordinates(topo::UnstructuredGridTopology{Dc,2}) where Dc
+  @notimplementedif !all(map(p -> p ∈ [QUAD,TRI],topo.polytopes))
+  coords    = topo.vertex_coordinates
+
+  # Old sizes
+  nN_old = num_faces(topo,0) # Nodes
+  nE_old = num_faces(topo,1) # Edges
+
+  # Number of refined nodes: nN_new = nN + nE + nQUADS
+  iQUAD     = findfirst(p -> p == QUAD, topo.polytopes)
+  quad_mask = map(i -> i == iQUAD, topo.cell_type)
+  nN_new    = nN_old + nE_old + count(quad_mask)
+
+  # Create new coordinates
+  coords_new = Vector{eltype(coords)}(undef,nN_new)
+  coords_new[1:nN_old] .= coords
+  coords_new[nN_old+1:nN_old+nE_old] .= map(pts -> sum(coords[pts])/length(pts), e2n_map)
+  coords_new[nN_old+nE_old+1:nN_new] .= map(pts -> sum(coords[pts])/length(pts), c2n_map[quad_mask])
+  return coords_new
+end
+
+function _get_refined_cell_to_vertex_map(topo::UnstructuredGridTopology{Dc,2}) where Dc
+  @notimplementedif !all(map(p -> p ∈ [QUAD,TRI],topo.polytopes))
+  N2M_maps  = topo.n_m_to_nface_to_mfaces
+
+  # Allocate map ptr and data arrays
+  nC_new    = sum(ct -> num_children(topo.polytopes[ct]), topo.cell_type)
+  nData_new = sum(ct -> num_refined_faces(topo.polytopes[ct]), topo.cell_type)
+
+  ptrs_new  = Vector{Int}(undef,nC_new+1)
+  data_new  = Vector{Int}(undef,nData_new)
+
+  # Old sizes
+  nN_old = num_faces(topo,0) # Nodes
+  nE_old = num_faces(topo,1) # Edges
+  nC_old = num_faces(topo,2) # Cells
+
+  k = 1
+  ptrs_new[1] = 1
+  for iC = 1:nC_old
+    p = topo.polytopes[topo.cell_type[iC]]
+
+    # New Node ids from old N,E,C ids
+    N = N2M_maps[3,1][iC]
+    E = N2M_maps[3,2][iC] .+ nN_old
+    C = iC + nN_old + nE_old
+    new_nodes_ids = get_refined_vertex_ids(p,[N,E,C])
+    
+    nChild = length(new_nodes_ids)
+    for iChild = 1:nChild
+      ptrs_new[k+1] = ptrs_new[k] + length(new_nodes_ids[iChild])
+      data_new[ptrs_new[k]:ptrs_new[k+1]-1] .= new_nodes_ids[iChild]
+      k = k+1
+    end
+  end
+
+  return Table(data_new,ptrs_new)
+end
+
+function _get_refinement_glue(ftopo::T,ctopo::T) where {Dc,T<:UnstructuredGridTopology{Dc,2}}
+  nC_old = num_faces(ctopo,2)
+  nC_new = num_faces(ftopo,2)
+
+  f2c_cell_map      = Vector{Int}(undef,nC_new)
+  fcell_to_child_id = Vector{Int}(undef,nC_new)
+
+  k = 1
+  for iC = 1:nC_old
+    p = topo.polytopes[ctopo.cell_type[iC]]
+    range = k:k+num_children(p)
+    f2c_cell_map[range] .= iC
+    fcell_to_child_id[range] .= collect(1:num_children(p))
+    k += num_children(p)
+  end
+
+  reffe = LagrangianRefFE(QUAD)
+  f2c_reference_cell_map = get_f2c_reference_cell_map(reffe,2)
+
+  f2c_faces_map = Int[[],[],f2c_cell_map]
+  return RefinementGlue(f2c_faces_map,fcell_to_child_id,f2c_reference_cell_map)
+end
+
+function num_children(p::Polytope{2})
+  (p == QUAD || p == TRI) && (return 4)
+  @notimplemented
+end
+
+function num_children(p::Polytope{3})
+  (p == HEX || p == TET) && (return 8)
+  @notimplemented
+end
+
+function num_refined_faces(p::Polytope{2})
+  (p == QUAD) && (return 9)
+  (p == TRI)  && (return 6)
+  @notimplemented
+end
+
+function num_refined_faces(p::Polytope{3})
+  @notimplemented
+end
+
+function get_refined_children(p::Polytope{2}, face_ids)
+  N,E,C = face_ids... # Node, Edge and Cell global ids
+
+  if p == QUAD 
+    ids = [[N[1],E[1],E[3],C],
+           [E[1],N[2],C,E[4]],
+           [E[3],C,N[3],E[2]],
+           [C,E[4],E[2],N[4]]]
+    return (ids,QUAD)
+  elseif p == TRI
+    ids = [[N[1],E[1],E[2]],
+           [E[1],N[2],E[3]],
+           [E[1],E[2],E[3]],
+           [E[2],E[3],N[3]]]
+    return (ids,TRI)
+  end
+  @notimplemented
+end
+
+function get_refined_children(p::Polytope{3}, face_ids)
+  @notimplemented
+end
+
+
 # Cartesian Mesh refining
 
 function refine(model::CartesianDiscreteModel; num_refinements::Int=2)
