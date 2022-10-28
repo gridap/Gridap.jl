@@ -70,4 +70,9 @@ test_triangulation(it)
 @test !is_change_possible(it,t)
 @test !is_change_possible(it,rt)
 
+# UnstructuredDiscreteModel refinement
+cart_model = CartesianDiscreteModel((0,1,0,1),(2,2))
+unst_model = UnstructuredDiscreteModel(cart_model)
+umodel1 = refine(unst_model)
+
 end
