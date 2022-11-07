@@ -140,7 +140,7 @@ function Geometry.best_target(strian::RefinedTriangulation,ttrian::RefinedTriang
 
   # B) Same background model -> Default change of Triangulation
   if (get_background_model(strian) === get_background_model(ttrian))
-    return best_target(strian,ttrian)
+    return best_target(strian.trian,ttrian.trian)
   end
 
   # C) Different background model, but same type of Triangulation (Skeleton, BodyFitted, View, ...)

@@ -107,7 +107,7 @@ function refine(model::RefinedDiscreteModel,args...;kwargs...)
 end
 
 
-# UnstructuredDiscreteModelRefining
+# UnstructuredDiscreteModel Refining
 
 function refine(model::UnstructuredDiscreteModel{Dc,Dp}) where {Dc,Dp}
   
