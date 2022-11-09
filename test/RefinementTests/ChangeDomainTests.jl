@@ -1,4 +1,4 @@
-#module ChangeDomainTests
+module ChangeDomainTests
 
 using Test
 using Gridap
@@ -138,10 +138,10 @@ v_f = map(p -> uh_f(p), pts)
 uh_f_inter = interpolate(uh_c,U_f)
 
 # Fine to Coarse, using interpolate()
-uh_c_inter = interpolate(uh_f,U_c)
+# uh_c_inter = interpolate(uh_f,U_c)
 
 # Integrating with high-level API Coarse to Fine
-dΩ_cf = CompositeMeasure(ctrian,trian,1)
+dΩ_cf = Measure(ctrian,trian,1)
 vh_c = get_fe_basis(U_c)
 vh_f = get_fe_basis(U_f)
 
@@ -163,4 +163,4 @@ vecdata = collect_cell_vector(U_c,contr_cf_c)
 vec_c = assemble_vector(assem_c2f,vecdata)
 
 
-#end
+end
