@@ -1,19 +1,19 @@
 
 
 """
-Refinement glue between two nested triangulations
+Adaptivity glue between two nested triangulations
 - `f2c_faces_map`     : Given a fine face gid, returns the gid of the coarse face containing it. 
 - `fcell_to_child_id` : Given a fine cell gid, returns the local child id within the coarse cell containing it.
 - `f2c_ref_cell_map`  : Ref coordinate map between the fcells and their parent ccell, i.e 
                           for each fine cell defines Φ st. x_c = Φ(x_f)
 """
-struct RefinementGlue{A,B,C,D} <: GridapType
+struct AdaptivityGlue{A,B,C,D} <: GridapType
   f2c_faces_map           :: A
   fcell_to_child_id       :: B
   f2c_reference_cell_map  :: C
   c2f_faces_map           :: D
 
-  function RefinementGlue(f2c_faces_map,
+  function AdaptivityGlue(f2c_faces_map,
                           fcell_to_child_id,
                           f2c_reference_cell_map)
     c2f_faces_map = get_c2f_faces_map(f2c_faces_map[end],f2c_reference_cell_map)
@@ -39,7 +39,7 @@ end
 Ref coordinate map between fine and coarse cells. 
 Size -> Number of fine cells. 
 """
-function get_f2c_reference_coordinate_map(g::RefinementGlue)
+function get_f2c_reference_coordinate_map(g::AdaptivityGlue)
   m = Reindex(g.f2c_reference_cell_map)
   return lazy_map(m,g.fcell_to_child_id)
 end
@@ -63,22 +63,22 @@ end
 #################################################################
 
 """
-  RefinedDiscreteModel
+  AdaptedDiscreteModel
 
-  `DiscreteModel` created by refining another `DiscreteModel`. 
-  The refinement hierarchy can be traced backwards by following the 
+  `DiscreteModel` created by refining/coarsening another `DiscreteModel`. 
+  The refinement/coarsening hierarchy can be traced backwards by following the 
   `parent` pointer chain. This allows the transfer of dofs 
   between `FESpaces` defined on this model and its ancestors using a 
   `ProjectionTransferOperator`.
 
 """
-struct RefinedDiscreteModel{Dc,Dp,A<:DiscreteModel{Dc,Dp},B<:DiscreteModel{Dc,Dp},C<:RefinementGlue} <: DiscreteModel{Dc,Dp}
+struct AdaptedDiscreteModel{Dc,Dp,A<:DiscreteModel{Dc,Dp},B<:DiscreteModel{Dc,Dp},C<:AdaptivityGlue} <: DiscreteModel{Dc,Dp}
   model  ::A
   parent ::B
   glue   ::C
 
-  function RefinedDiscreteModel(model::DiscreteModel{Dc,Dp},parent,glue) where {Dc,Dp}
-    @check !isa(model,RefinedDiscreteModel)
+  function AdaptedDiscreteModel(model::DiscreteModel{Dc,Dp},parent,glue) where {Dc,Dp}
+    @check !isa(model,AdaptedDiscreteModel)
     A = typeof(model)
     B = typeof(parent)
     C = typeof(glue)
@@ -87,23 +87,23 @@ struct RefinedDiscreteModel{Dc,Dp,A<:DiscreteModel{Dc,Dp},B<:DiscreteModel{Dc,Dp
 end
 
 # DiscreteModel API
-Geometry.get_grid(model::RefinedDiscreteModel)          = get_grid(model.model)
-Geometry.get_grid_topology(model::RefinedDiscreteModel) = get_grid_topology(model.model)
-Geometry.get_face_labeling(model::RefinedDiscreteModel) = get_face_labeling(model.model)
+Geometry.get_grid(model::AdaptedDiscreteModel)          = get_grid(model.model)
+Geometry.get_grid_topology(model::AdaptedDiscreteModel) = get_grid_topology(model.model)
+Geometry.get_face_labeling(model::AdaptedDiscreteModel) = get_face_labeling(model.model)
 
 # Other getters
-get_model(model::RefinedDiscreteModel)  = model.model
-get_parent(model::RefinedDiscreteModel{Dc,Dp,A,<:RefinedDiscreteModel}) where {Dc,Dp,A} = get_model(model.parent)
-get_parent(model::RefinedDiscreteModel{Dc,Dp,A,B}) where {Dc,Dp,A,B} = model.parent
-get_refinement_glue(model::RefinedDiscreteModel) = model.glue
+get_model(model::AdaptedDiscreteModel)  = model.model
+get_parent(model::AdaptedDiscreteModel{Dc,Dp,A,<:AdaptedDiscreteModel}) where {Dc,Dp,A} = get_model(model.parent)
+get_parent(model::AdaptedDiscreteModel{Dc,Dp,A,B}) where {Dc,Dp,A,B} = model.parent
+get_adaptivity_glue(model::AdaptedDiscreteModel) = model.glue
 
-function refine(model::DiscreteModel,args...;kwargs...) :: RefinedDiscreteModel
+function refine(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
   @abstractmethod
 end
 
-function refine(model::RefinedDiscreteModel,args...;kwargs...)
+function refine(model::AdaptedDiscreteModel,args...;kwargs...)
   ref_model = refine(model.model,args...;kwargs...)
-  return RefinedDiscreteModel(ref_model.model,model,ref_model.glue)
+  return AdaptedDiscreteModel(ref_model.model,model,ref_model.glue)
 end
 
 
@@ -121,7 +121,7 @@ function refine(model::UnstructuredDiscreteModel{Dc,Dp}) where {Dc,Dp}
   # Create ref glue
   glue = _get_refinement_glue(topo,model.grid_topology)
 
-  return RefinedDiscreteModel(ref_model,model,glue)
+  return AdaptedDiscreteModel(ref_model,model,glue)
 end
 
 _refine_unstructured_topology(topo::UnstructuredGridTopology) = @notimplemented
@@ -157,7 +157,7 @@ function _get_refined_vertex_coordinates(topo::UnstructuredGridTopology{Dc,2}) w
   nN_old = num_faces(topo,0) # Nodes
   nE_old = num_faces(topo,1) # Edges
 
-  # Number of refined nodes: nN_new = nN + nE + nQUADS
+  # Number of Adapted nodes: nN_new = nN + nE + nQUADS
   iQUAD     = findfirst(p -> p == QUAD, topo.polytopes)
   quad_mask = map(i -> i == iQUAD, topo.cell_type)
   nN_new    = nN_old + nE_old + count(quad_mask)
@@ -229,7 +229,7 @@ function _get_refinement_glue(ftopo::T,ctopo::T) where {Dc,T<:UnstructuredGridTo
   f2c_reference_cell_map = get_f2c_reference_cell_map(reffe,2)
 
   f2c_faces_map = [Int[],Int[],f2c_cell_map]
-  return RefinementGlue(f2c_faces_map,fcell_to_child_id,f2c_reference_cell_map)
+  return AdaptivityGlue(f2c_faces_map,fcell_to_child_id,f2c_reference_cell_map)
 end
 
 function num_children(p::Polytope{2})
@@ -292,10 +292,9 @@ function refine(model::CartesianDiscreteModel; num_refinements::Int=2)
   fcell_child_id = _create_child_map(nC,ref)
   reffe          = LagrangianRefFE(Float64,QUAD,1)
   ref_cell_map   = get_f2c_reference_cell_map(reffe,ref)
-  glue = RefinementGlue(faces_map,fcell_child_id,ref_cell_map)
+  glue = AdaptivityGlue(faces_map,fcell_child_id,ref_cell_map)
 
-  # RefinedModel
-  return RefinedDiscreteModel(model_ref,model,glue)
+  return AdaptedDiscreteModel(model_ref,model,glue)
 end
 
 function _get_cartesian_domain(desc::CartesianDescriptor{D}) where D

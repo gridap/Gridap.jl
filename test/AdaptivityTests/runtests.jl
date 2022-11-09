@@ -2,8 +2,8 @@ module RefinementTests
 
 using Test
 
-@testset "RefinedGeometry" begin
-  include("RefinedGeometryTests.jl")
+@testset "AdaptedGeometry" begin
+  include("AdaptedGeometryTests.jl")
 end
 
 @testset "ChangeDomain" begin

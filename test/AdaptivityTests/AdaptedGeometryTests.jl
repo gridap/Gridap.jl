@@ -1,10 +1,10 @@
-module RefinedGeometryTests
+module AdaptedGeometryTests
 
 using Test
 using Gridap
 using Gridap.Geometry
 using Gridap.CellData
-using Gridap.Refinement
+using Gridap.Adaptivity
 using Gridap.ReferenceFEs
 using FillArrays
 
@@ -20,12 +20,12 @@ trian2 = Triangulation(model2)
 test_triangulation(trian1)
 test_triangulation(trian2)
 test_triangulation(trian1.trian)
-@test isa(trian1, RefinedTriangulation)
+@test isa(trian1, AdaptedTriangulation)
 
 # Get members
 fmodel = get_model(model1)
 cmodel = get_parent(model1)
-glue   = get_refinement_glue(model1)
+glue   = get_adaptivity_glue(model1)
 @test cmodel === cart_model
 @test fmodel === get_parent(model2)
 
@@ -41,7 +41,7 @@ t   = Triangulation(get_model(model1))
 rt  = Triangulation(model1)
 
 bt  = BoundaryTriangulation(model1)
-@test isa(bt,RefinedTriangulation)
+@test isa(bt,AdaptedTriangulation)
 test_triangulation(bt)
 @test is_change_possible(t,bt)
 @test is_change_possible(rt,bt)
@@ -49,7 +49,7 @@ test_triangulation(bt)
 @test !is_change_possible(bt,rt)
 
 st  = SkeletonTriangulation(model1)
-@test isa(st,RefinedTriangulation)
+@test isa(st,AdaptedTriangulation)
 test_triangulation(st)
 @test is_change_possible(t,st)
 @test is_change_possible(rt,st)
@@ -63,7 +63,7 @@ st2 = SkeletonTriangulation(bt)
 cell_to_inout = fill(true,num_cells(model1))
 cell_to_inout[1:15] .= false
 it  = InterfaceTriangulation(model1,cell_to_inout)
-@test isa(it,RefinedTriangulation)
+@test isa(it,AdaptedTriangulation)
 test_triangulation(it)
 @test is_change_possible(t,it)
 @test is_change_possible(rt,it)

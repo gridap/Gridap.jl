@@ -1,7 +1,7 @@
 """
 
 """
-module Refinement
+module Adaptivity
 
 using FillArrays
 using LinearAlgebra
@@ -22,25 +22,25 @@ import Gridap.Geometry: Triangulation, is_change_possible, best_target, get_back
 import Gridap.Geometry: move_contributions
 import Gridap.CellData: change_domain
 
-include("RefinedDiscreteModels.jl")
-include("RefinedTriangulations.jl")
+include("AdaptedDiscreteModels.jl")
+include("AdaptedTriangulations.jl")
 include("CompositeMeasures.jl")
 include("GridTransferOperators.jl")
 
-export RefinementGlue
+export AdaptivityGlue
 export get_f2c_ref_cell_map, get_f2c_ref_coordinate_map
 
-export RefinedDiscreteModel
-export get_model, get_parent, get_refinement_glue
+export AdaptedDiscreteModel
+export get_model, get_parent, get_adaptivity_glue
 export refine
 
-export RefinedTriangulation
-export Triangulation, is_change_possible, best_target, get_refined_model
+export AdaptedTriangulation
+export Triangulation, is_change_possible, best_target, get_adapted_model
 export change_domain_c2f, change_domain, move_contributions
 
 export CompositeMeasure, integrate
 
-export ProjectionTransferOperator, RefinementTransferMap
+export ProjectionTransferOperator
 export mul!
 
 

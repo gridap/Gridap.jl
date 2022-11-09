@@ -36,18 +36,3 @@ function (*)(a::CellData.Integrand,b::CompositeMeasure)
 end
 
 (*)(b::CompositeMeasure,a::CellData.Integrand) = a*b
-
-function Geometry.move_contributions(scell_to_val::AbstractArray, strian::RefinedTriangulation, ttrian::Triangulation)
-  smodel = get_refined_model(strian)
-  @check get_parent(smodel) === get_background_model(ttrian)
-
-  tcell_to_val = move_contributions(scell_to_val,get_refinement_glue(smodel))
-  return tcell_to_val
-end
-
-function Geometry.move_contributions(scell_to_val::AbstractArray, glue::RefinementGlue)
-  tcell_to_scells = glue.c2f_faces_map
-  k = Geometry.CombineContributionsMap(scell_to_val)
-  tcell_to_val = lazy_map(k,tcell_to_scells)
-  return tcell_to_val
-end

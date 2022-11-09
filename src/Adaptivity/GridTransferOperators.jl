@@ -5,7 +5,7 @@ abstract type GridTransferOperator <: GridapType end
   ProjectionTransferOperator
 
   Matrix-like operator providing a transfer between two `FESpaces`
-  defined in child-parent refined grids. 
+  defined in child-parent adapted grids. 
 
   The dofs are transfered by iteratively solving a projection problem 
 
@@ -36,7 +36,7 @@ function ProjectionTransferOperator(from::FESpace,to::FESpace; solver::LinearSol
 
   Ω_from = get_triangulation(from)
   Ω_to   = get_triangulation(to)
-  @assert isa(Ω_from,RefinedTriangulation) || isa(Ω_to,RefinedTriangulation)
+  @assert isa(Ω_from,AdaptedTriangulation) || isa(Ω_to,AdaptedTriangulation)
   @assert is_change_possible(Ω_from,Ω_to)
 
   # Choose integration space
@@ -116,7 +116,7 @@ end
 
 # These two functions can actually be rewritten by overloading
 # CombineContributionsMap & move_contributions() 
-function merge_contr_cells(a::DomainContribution,rtrian::RefinedTriangulation,ctrian)
+function merge_contr_cells(a::DomainContribution,rtrian::AdaptedTriangulation,ctrian)
   b = DomainContribution()
   for trian in get_domains(a)
     cell_vec = get_contribution(a,trian)
@@ -126,41 +126,14 @@ function merge_contr_cells(a::DomainContribution,rtrian::RefinedTriangulation,ct
   return b
 end
 
-function f2c_cell_contrs(trian::RefinedTriangulation{Dc,Dp},cell_vec) where {Dc,Dp}
+function f2c_cell_contrs(trian::AdaptedTriangulation{Dc,Dp},cell_vec) where {Dc,Dp}
   @check num_cells(trian) == length(cell_vec)
 
-  model = get_refined_model(trian)
-  glue  = get_refinement_glue(model)
+  model = get_adapted_model(trian)
+  glue  = get_adaptivity_glue(model)
   nC    = num_cells(get_parent(model))
   ccell_to_fcell = glue.c2f_faces_map
 
   # Map that sums fine contributions for each coarse cell
   return lazy_map((I,V)->sum(V[I]),ccell_to_fcell,Fill(cell_vec,nC))
-end
-
-
-"""
-"""
-struct RefinementTransferMap{A<:FESpace,B<:FESpace,C<:ProjectionTransferOperator} <: Map
-  from ::A
-  to   ::B
-  op   ::C
-end
-
-function RefinementTransferMap(from::FESpace,to::FESpace;solver::LinearSolver=BackslashSolver(), Π::Function=Π_l2, qdegree::Int=3)
-  op = ProjectionTransferOperator(from,to;solver=solver,Π=Π,qdegree=qdegree)
-  return RefinementTransferMap(from,to,op)
-end
-
-function Arrays.return_cache(m::RefinementTransferMap,uh::FEFunction)
-  y = zeros(size(m.op,1))
-  return y
-end
-
-function Arrays.evaluate!(cache,m::RefinementTransferMap,uh::FEFunction)
-  @check get_fe_space(uh) === m.from
-  y = cache
-  x = get_free_dof_values(uh)
-  mul!(y,m.op,x)
-  return FEFunction(m.to,y)
 end

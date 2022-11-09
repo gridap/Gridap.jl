@@ -5,7 +5,7 @@ using Gridap
 using Gridap.Algebra
 using Gridap.Geometry
 using Gridap.CellData
-using Gridap.Refinement
+using Gridap.Adaptivity
 using Gridap.ReferenceFEs
 using Gridap.FESpaces
 using FillArrays
@@ -102,7 +102,7 @@ vec_f   = assemble_vector(assem_f,vecdata)
 # Assembly of c2f feb + fine fefunc into Ω_c
 assem_c2f = SparseMatrixAssembler(U_c,V_c)
 contr_c2f = bil(uh_f,feb_c2f,dΩ_f)
-contr_c2f2c = Refinement.merge_contr_cells(contr_c2f,trian,ctrian)
+contr_c2f2c = Adaptivity.merge_contr_cells(contr_c2f,trian,ctrian)
 vecdata = collect_cell_vector(V_c,contr_c2f2c)
 vec_c2f = assemble_vector(assem_c2f,vecdata)
 
