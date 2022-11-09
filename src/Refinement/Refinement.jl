@@ -15,14 +15,16 @@ using Gridap.CellData
 using Gridap.TensorValues
 using Gridap.Visualization
 
-import Base: view
+import Base: view, *
 import LinearAlgebra: mul!
 import Gridap.Geometry: get_grid, get_grid_topology, get_face_labeling
 import Gridap.Geometry: Triangulation, is_change_possible, best_target, get_background_model
+import Gridap.Geometry: move_contributions
 import Gridap.CellData: change_domain
 
 include("RefinedDiscreteModels.jl")
 include("RefinedTriangulations.jl")
+include("CompositeMeasures.jl")
 include("GridTransferOperators.jl")
 
 export RefinementGlue
@@ -34,7 +36,9 @@ export refine
 
 export RefinedTriangulation
 export Triangulation, is_change_possible, best_target, get_refined_model
-export change_domain_c2f, change_domain
+export change_domain_c2f, change_domain, move_contributions
+
+export CompositeMeasure, integrate
 
 export ProjectionTransferOperator, RefinementTransferMap
 export mul!

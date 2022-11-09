@@ -1,4 +1,4 @@
-module ChangeDomainTests
+#module ChangeDomainTests
 
 using Test
 using Gridap
@@ -99,7 +99,7 @@ contr_f = bil(uh_f,feb_f,dΩ_f)
 vecdata = collect_cell_vector(V_f,contr_f)
 vec_f   = assemble_vector(assem_f,vecdata)
 
-# Assembly of c2f feb + c2f fefunc into Ω_f
+# Assembly of c2f feb + fine fefunc into Ω_c
 assem_c2f = SparseMatrixAssembler(U_c,V_c)
 contr_c2f = bil(uh_f,feb_c2f,dΩ_f)
 contr_c2f2c = Refinement.merge_contr_cells(contr_c2f,trian,ctrian)
@@ -134,19 +134,33 @@ v_c = map(p -> uh_c(p), pts)
 v_f = map(p -> uh_f(p), pts)
 @test v_c ≈ v_f
 
-# Same but using RefinementTransferMap
-m_f2c = RefinementTransferMap(U_f,U_c;solver=solver)
-m_c2f = RefinementTransferMap(U_c,U_f;solver=solver)
+# Coarse to Fine, using interpolate()
+uh_f_inter = interpolate(uh_c,U_f)
 
-cache = return_cache(m_f2c,uh_f)
-uh_c2 = evaluate!(cache,m_f2c,uh_f)
+# Fine to Coarse, using interpolate()
+uh_c_inter = interpolate(uh_f,U_c)
 
-cache = return_cache(m_c2f,uh_c)
-uh_f2 = evaluate!(cache,m_c2f,uh_c)
+# Integrating with high-level API Coarse to Fine
+dΩ_cf = CompositeMeasure(ctrian,trian,1)
+vh_c = get_fe_basis(U_c)
+vh_f = get_fe_basis(U_f)
 
-pts = map(x -> VectorValue(rand(2)),1:10)
-v_c = map(p -> uh_c2(p), pts)
-v_f = map(p -> uh_f2(p), pts)
-@test v_c ≈ v_f
+integrand_fc = vh_f ⋅ uh_c
+contr_fc_f = ∫(integrand_fc)*dΩ_f
+vecdata = collect_cell_vector(U_f,contr_fc_f)
+vec_f = assemble_vector(assem_f,vecdata)
 
-end
+integrand_cf = vh_c ⋅ uh_f
+contr_cf_f = ∫(integrand_cf)*dΩ_f
+vecdata = collect_cell_vector(U_f,contr_cf_f)
+
+# Integrating with high-level API Fine to Coarse
+contr_fc_c = ∫(integrand_fc)*dΩ_cf
+vecdata = collect_cell_vector(U_c,contr_fc_c)
+
+contr_cf_c = ∫(integrand_fc)*dΩ_cf
+vecdata = collect_cell_vector(U_c,contr_cf_c)
+vec_c = assemble_vector(assem_c2f,vecdata)
+
+
+#end

@@ -113,6 +113,9 @@ function assemble_lhs(Π,Ω,Uh,Vh,qdegree)
   return lhs_mat, lhs_vec
 end
 
+
+# These two functions can actually be rewritten by overloading
+# CombineContributionsMap & move_contributions() 
 function merge_contr_cells(a::DomainContribution,rtrian::RefinedTriangulation,ctrian)
   b = DomainContribution()
   for trian in get_domains(a)
