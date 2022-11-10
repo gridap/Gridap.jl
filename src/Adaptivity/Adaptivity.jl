@@ -1,5 +1,10 @@
 """
+  Mesh Adaptivity for Gridap
 
+  Note: Despite the name, this module currently 
+        ONLY SUPPORTS HOMOGENEOUS MESH REFINEMENT!
+        The support for non-homogeneous refinement and coarsening, 
+        i.e full AMR, will be added in the future.
 """
 module Adaptivity
 

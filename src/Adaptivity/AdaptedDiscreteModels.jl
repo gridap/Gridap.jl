@@ -1,7 +1,8 @@
 
 
 """
-Adaptivity glue between two nested triangulations
+Adaptivity glue between two nested triangulations:
+
 - `f2c_faces_map`     : Given a fine face gid, returns the gid of the coarse face containing it. 
 - `fcell_to_child_id` : Given a fine cell gid, returns the local child id within the coarse cell containing it.
 - `f2c_ref_cell_map`  : Ref coordinate map between the fcells and their parent ccell, i.e 
@@ -68,8 +69,7 @@ end
   `DiscreteModel` created by refining/coarsening another `DiscreteModel`. 
   The refinement/coarsening hierarchy can be traced backwards by following the 
   `parent` pointer chain. This allows the transfer of dofs 
-  between `FESpaces` defined on this model and its ancestors using a 
-  `ProjectionTransferOperator`.
+  between `FESpaces` defined on this model and its ancestors.
 
 """
 struct AdaptedDiscreteModel{Dc,Dp,A<:DiscreteModel{Dc,Dp},B<:DiscreteModel{Dc,Dp},C<:AdaptivityGlue} <: DiscreteModel{Dc,Dp}
