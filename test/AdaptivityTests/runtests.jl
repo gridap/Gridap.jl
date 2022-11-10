@@ -6,8 +6,8 @@ using Test
   include("AdaptedGeometryTests.jl")
 end
 
-@testset "ChangeDomain" begin
-  include("ChangeDomainTests.jl")
+@testset "GridTransfer" begin
+  include("GridTransferTests.jl")
 end
 
 end # module
