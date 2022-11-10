@@ -75,7 +75,7 @@ v_f_pr = map(p -> uh_f_pr(p), pts)
 
 # Fine FEFunction -> Coarse FEFunction, by projection
 ac(u,v) = ∫(v⋅u)*dΩ_c
-lc(v)   = ∫(v⋅uh_f)*dΩ_cf
+lc(v)   = ∫(v⋅uh_f_inter)*dΩ_cf
 opc     = AffineFEOperator(ac,lc,U_c,V_c)
 uh_c_pr = solve(opc)
 
