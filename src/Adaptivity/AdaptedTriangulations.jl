@@ -41,7 +41,7 @@ end
 
 function Base.view(t::AdaptedTriangulation,ids::AbstractArray)
   v = view(t.trian,ids)
-  return AdaptedTriangulation(v,t.model)
+  return AdaptedTriangulation(v,t.adapted_model)
 end
 
 # Wrap constructors

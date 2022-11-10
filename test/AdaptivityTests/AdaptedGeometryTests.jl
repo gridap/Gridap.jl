@@ -22,6 +22,8 @@ test_triangulation(trian2)
 test_triangulation(trian1.trian)
 @test isa(trian1, AdaptedTriangulation)
 
+vtrian = view(trian1,[2,3,4])
+
 # Get members
 fmodel = get_model(model1)
 cmodel = get_parent(model1)

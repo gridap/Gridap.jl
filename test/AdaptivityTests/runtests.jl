@@ -1,4 +1,4 @@
-module RefinementTests
+module AdaptivityTests
 
 using Test
 
