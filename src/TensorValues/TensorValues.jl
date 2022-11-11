@@ -65,7 +65,7 @@ import Base: zero, one
 import Base: +, -, *, /, \, ==, ≈, isless
 import Base: conj
 import Base: sum, maximum, minimum
-import Base: getindex, iterate, eachindex
+import Base: getindex, iterate, eachindex, lastindex
 import Base: size, length, eltype
 import Base: reinterpret
 import Base: convert
