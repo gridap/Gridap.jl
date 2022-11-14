@@ -17,7 +17,7 @@ struct AdaptivityGlue{A,B,C,D} <: GridapType
   function AdaptivityGlue(f2c_faces_map,
                           fcell_to_child_id,
                           f2c_reference_cell_map)
-    c2f_faces_map = get_c2f_faces_map(f2c_faces_map[end],f2c_reference_cell_map)
+    c2f_faces_map = get_c2f_faces_map(f2c_faces_map[end])
 
     A = typeof(f2c_faces_map)
     B = typeof(fcell_to_child_id)
@@ -45,19 +45,28 @@ function get_f2c_reference_coordinate_map(g::AdaptivityGlue)
   return lazy_map(m,g.fcell_to_child_id)
 end
 
-function get_c2f_faces_map(fcell_to_ccell,f2c_reference_cell_map)
+function get_c2f_faces_map(fcell_to_ccell::Vector{T}) where {T<:Int}
+  (length(fcell_to_ccell) == 0) && (return Table(T[],T[]))
+
   nC = maximum(fcell_to_ccell)
   nF = length(fcell_to_ccell)
-  nChildren = length(f2c_reference_cell_map) # TODO: This can be modified for different number of children per cell
 
-  ccell_to_fcell = [fill(-1,nChildren) for i in 1:nC]
-  cidx = fill(1,nC)
+  ptrs = fill(0,nC+1)
   for iF in 1:nF
     iC = fcell_to_ccell[iF]
-    ccell_to_fcell[iC][cidx[iC]] = iF
-    cidx[iC] += 1
+    ptrs[iC+1] += 1
+  end
+  length_to_ptrs!(ptrs)
+
+  cnts = fill(0,nC)
+  data = fill(zero(T),ptrs[end])
+  for iF in 1:nF
+    iC = fcell_to_ccell[iF]
+    data[ptrs[iC]+cnts[iC]] = iF
+    cnts[iC] += 1
   end
 
+  ccell_to_fcell = Table(data,ptrs)
   return ccell_to_fcell
 end
 
