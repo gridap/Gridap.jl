@@ -92,14 +92,21 @@ function pinvJt(Jt::MultiValue{Tuple{D1,D2}}) where {D1,D2}
 end
 
 function push_∇∇(∇∇a::Field,ϕ::Field)
-  @notimplemented """\n
-  Second order derivatives of quantities defined in the reference domain not implemented yet.
-
-  This is a feature that we want to have at some point in Gridap.
-  If you are ready to help with this implementation, please contact the
-  Gridap administrators.
-  """
+  #my_implementation
+  println("computing laplacian")
+  s = pinvJt(∇(ϕ))
+  tr(s⋅s⋅∇∇a)
 end
+
+# function push_∇∇(∇∇a::Field,ϕ::Field)
+#   @notimplemented """\n
+#   Second order derivatives of quantities defined in the reference domain not implemented yet.
+
+#   This is a feature that we want to have at some point in Gridap.
+#   If you are ready to help with this implementation, please contact the
+#   Gridap administrators.
+#   """
+# end
 
 """
     gradient_type(::Type{T},x::Point) where T
