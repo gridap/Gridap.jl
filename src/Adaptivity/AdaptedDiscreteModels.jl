@@ -45,7 +45,7 @@ function get_f2c_reference_coordinate_map(g::AdaptivityGlue)
   return lazy_map(m,g.fcell_to_child_id)
 end
 
-function get_c2f_faces_map(fcell_to_ccell::Vector{T}) where {T<:Int}
+function get_c2f_faces_map(fcell_to_ccell::Vector{T}) where {T<:Integer}
   (length(fcell_to_ccell) == 0) && (return Table(T[],T[]))
 
   nC = maximum(fcell_to_ccell)
