@@ -28,7 +28,6 @@ import Gridap.CellData: change_domain
 
 include("AdaptedDiscreteModels.jl")
 include("AdaptedTriangulations.jl")
-include("CompositeMeasures.jl")
 
 export AdaptivityGlue
 export get_f2c_ref_cell_map, get_f2c_ref_coordinate_map
@@ -39,8 +38,6 @@ export refine
 
 export AdaptedTriangulation
 export Triangulation, is_change_possible, best_target, get_adapted_model
-export change_domain_c2f, change_domain, move_contributions
-
-export CompositeMeasure, integrate
+export change_domain, move_contributions
 
 end # module
