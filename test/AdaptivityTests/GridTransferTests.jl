@@ -35,15 +35,28 @@ V_c = TestFESpace(get_parent(model),reffe;conformity=:H1,dirichlet_tags="boundar
 U_c = TrialFESpace(V_c,sol)
 
 # CellField: Coarse -> Fine
-cf_c = change_domain(CellField(sol,ctrian),PhysicalDomain(),ReferenceDomain())
-cf_f = change_domain(cf_c, trian, ReferenceDomain())
+cf_c_phy = CellField(sol,ctrian)
+cf_c_ref = change_domain(cf_c_phy,PhysicalDomain(),ReferenceDomain())
+cf_f_ref_ref = change_domain(cf_c_ref, trian, ReferenceDomain())
+cf_f_ref_phy = change_domain(cf_c_ref, trian, PhysicalDomain())
+cf_f_phy_ref = change_domain(cf_c_phy, trian, ReferenceDomain())
+cf_f_phy_phy = change_domain(cf_c_phy, trian, PhysicalDomain())
 
 pts = map(x -> VectorValue(rand(2)),1:10)
-v_r = map(p -> sol(p) , pts) # Real values
-v_c = map(p -> cf_c(p), pts) # Values by Coarse CellField
-v_f = map(p -> cf_f(p), pts) # Values by Fine CellField
+v_r = map(p -> sol(p) , pts)
+v_c = map(p -> cf_c_ref(p), pts)
+v_f_ref_ref = map(p -> cf_f_ref_ref(p), pts)
+v_f_ref_phy = map(p -> cf_f_ref_phy(p), pts)
+v_f_phy_ref = map(p -> cf_f_phy_ref(p), pts)
+v_f_phy_phy = map(p -> cf_f_phy_phy(p), pts)
 @test v_r ≈ v_c
-@test v_r ≈ v_f
+@test v_r ≈ v_f_ref_ref
+@test v_r ≈ v_f_ref_phy
+@test v_r ≈ v_f_phy_ref
+@test v_r ≈ v_f_phy_phy
+
+# CellField: Fine -> Coarse
+# NOT IMPLEMENTED YET
 
 # Coarse FEFunction -> Fine CellField
 uh_c = interpolate(sol,U_c)
@@ -62,6 +75,7 @@ v_f_inter = map(p -> uh_f_inter(p), pts)
 @test v_r ≈ v_f_inter
 
 # Fine FEFunction -> Coarse FEFunction, by interpolation
+# NOT IMPLEMENTED YET
 # uh_c_inter = interpolate(uh_f,U_c)
 
 # Coarse FEFunction -> Fine FEFunction, by projection
