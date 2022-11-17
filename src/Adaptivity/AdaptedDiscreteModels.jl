@@ -106,6 +106,22 @@ get_parent(model::AdaptedDiscreteModel{Dc,Dp,A,<:AdaptedDiscreteModel}) where {D
 get_parent(model::AdaptedDiscreteModel{Dc,Dp,A,B}) where {Dc,Dp,A,B} = model.parent
 get_adaptivity_glue(model::AdaptedDiscreteModel) = model.glue
 
+# Relationships
+function is_child(m1::AdaptedDiscreteModel,m2::DiscreteModel)
+  return get_parent(m1) === m2 # m1 = refine(m2)
+end
+
+function is_child(m1::AdaptedDiscreteModel,m2::AdaptedDiscreteModel)
+  return get_parent(m1) === get_model(m2) # m1 = refine(m2)
+end
+
+is_child(m1::DiscreteModel,m2::AdaptedDiscreteModel) = false
+
+is_related(m1::AdaptedDiscreteModel,m2::DiscreteModel) = is_child(m1,m2)
+is_related(m1::DiscreteModel,m2::AdaptedDiscreteModel) = is_child(m2,m1)
+is_related(m1::AdaptedDiscreteModel,m2::AdaptedDiscreteModel) = is_child(m1,m2) || is_child(m2,m1)
+
+# Model Refining
 function refine(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
   @abstractmethod
 end

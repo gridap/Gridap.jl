@@ -26,9 +26,25 @@ function get_adapted_model(t::AdaptedTriangulation)
   return t.adapted_model
 end
 
+# Relationships
+function is_child(t1::AdaptedTriangulation,t2::Triangulation)
+  return is_child(get_adapted_model(t1),get_background_model(t2))
+end
+
+function is_child(t1::AdaptedTriangulation,t2::AdaptedTriangulation)
+  return is_child(get_adapted_model(t1),get_adapted_model(t2))
+end
+
+is_child(t1::Triangulation,t2::AdaptedTriangulation) = false
+
+is_related(t1::AdaptedTriangulation,t2::Triangulation) = is_child(t1,t2)
+is_related(t1::Triangulation,t2::AdaptedTriangulation) = is_child(t2,t1)
+is_related(t1::AdaptedTriangulation,t2::AdaptedTriangulation) = is_child(t1,t2) || is_child(t2,t1)
+
+
 # Wrap Triangulation API
 function Geometry.get_background_model(t::AdaptedTriangulation)
-  get_background_model(t.trian)
+  get_background_model(t.trian) # === get_model(get_adapted_model(t))
 end
 
 function Geometry.get_grid(t::AdaptedTriangulation)
@@ -93,11 +109,7 @@ function Geometry.is_change_possible(strian::AdaptedTriangulation,ttrian::Adapte
 
   # C) Different background model, but same type of Triangulation (Skeleton, BodyFitted, View, ...)
   if typeof(strian.trian) == typeof(ttrian.trian) # Is this too restrictive???
-    smodel = get_adapted_model(strian)
-    tmodel = get_adapted_model(ttrian)
-    a = get_parent(tmodel) === get_model(smodel) # tmodel = refine(smodel)
-    b = get_parent(smodel) === get_model(tmodel) # smodel = refine(tmodel)
-    return a || b
+    return is_related(strian,ttrian)
   end
 
   # D) Different background model AND different type of triangulation
@@ -113,9 +125,7 @@ function Geometry.is_change_possible(strian::AdaptedTriangulation,ttrian::Triang
   
   # B) Different background model, but same type of Triangulation (Skeleton, BodyFitted, View, ...)
   if typeof(strian.trian) == typeof(ttrian)
-    smodel = get_adapted_model(strian)
-    tmodel = get_background_model(ttrian)
-    return get_parent(smodel) === tmodel # smodel = refine(tmodel)
+    return is_related(strian,ttrian)
   end
 
   # C) Different background model AND different type of triangulation
@@ -131,9 +141,7 @@ function Geometry.is_change_possible(strian::Triangulation,ttrian::AdaptedTriang
   
   # B) Different background model, but same type of Triangulation (Skeleton, BodyFitted, View, ...)
   if typeof(strian) == typeof(ttrian.trian)
-    smodel = get_background_model(strian)
-    tmodel = get_adapted_model(ttrian)
-    return get_parent(tmodel) === smodel # tmodel = refine(smodel)
+    return is_related(strian,ttrian)
   end
 
   # C) Different background model AND different type of triangulation
@@ -154,10 +162,7 @@ function Geometry.best_target(strian::AdaptedTriangulation,ttrian::AdaptedTriang
 
   # C) Different background model, but same type of Triangulation (Skeleton, BodyFitted, View, ...)
   if typeof(strian.trian) == typeof(ttrian.trian)
-    smodel = get_adapted_model(strian)
-    tmodel = get_adapted_model(ttrian)
-    a = get_parent(tmodel) === get_model(smodel) # tmodel = refine(smodel)
-    a ? (return ttrian) : (return strian)
+    is_child(ttrian,strian) ? (return ttrian) : (return strian)
   end
 
   # D) Different background model AND different type of triangulation
@@ -204,46 +209,54 @@ function change_domain_c2f(f_coarse, ftrian::AdaptedTriangulation{Dc,Dp}) where 
   end
 end
 
-function CellData.change_domain(a::CellField,ttrian::AdaptedTriangulation,::ReferenceDomain)
-  strian = get_triangulation(a)
-  if strian === ttrian
-    return a
-  end
-  @assert is_change_possible(strian,ttrian)
-
-  if (get_background_model(strian) === get_background_model(ttrian))
-    return change_domain(a,ttrian.trian,ReferenceDomain())
-  end
-  
-  return change_domain_c2f(a,ttrian)
-end
-
-function CellData.change_domain(a::CellData.OperationCellField,ttrian::AdaptedTriangulation,::ReferenceDomain)
-  strian = get_triangulation(a)
-  if strian === ttrian
-    return a
-  end
-  @assert is_change_possible(strian,ttrian)
-
-  if (get_background_model(strian) === get_background_model(ttrian))
-    return change_domain(a,ttrian.trian,ReferenceDomain())
-  end
-  
-  return change_domain_c2f(a,ttrian)
-end
-
-function CellData.change_domain(a::CellField,ttrian::AdaptedTriangulation,::PhysicalDomain)
-  strian = get_triangulation(a)
-  if strian === ttrian
-    return a
-  end
-  @assert is_change_possible(strian,ttrian)
-
-  if (get_background_model(strian) === get_background_model(ttrian))
-    return change_domain(a,ttrian.trian,PhysicalDomain())
-  end
-
+function change_domain_f2c(f_fine, ftrian::AdaptedTriangulation{Dc,Dp}) where {Dc,Dp}
   @notimplemented
+end
+
+function CellData.change_domain(a::CellField,strian::Triangulation,::ReferenceDomain,ttrian::AdaptedTriangulation,::ReferenceDomain)
+  if strian === ttrian
+    return a
+  end
+  @assert is_change_possible(strian,ttrian)
+
+  if (get_background_model(strian) === get_background_model(ttrian))
+    return change_domain(a,strian,ReferenceDomain(),ttrian.trian,ReferenceDomain())
+  end
+  
+  return change_domain_c2f(a,ttrian)
+end
+
+function CellData.change_domain(a::CellField,strian::AdaptedTriangulation,::ReferenceDomain,ttrian::Triangulation,::ReferenceDomain)
+  if strian === ttrian
+    return a
+  end
+  @assert is_change_possible(strian,ttrian)
+
+  if (get_background_model(strian) === get_background_model(ttrian))
+    return change_domain(a,strian.trian,ReferenceDomain(),ttrian,ReferenceDomain())
+  end
+  
+  return change_domain_f2c(a,ttrian)
+end
+
+function CellData.change_domain(a::CellField,strian::AdaptedTriangulation,::ReferenceDomain,ttrian::AdaptedTriangulation,::ReferenceDomain)
+  if is_child(strian,ttrian) # fine to coarse
+    return change_domain(a,strian,ReferenceDomain(),ttrian.trian,ReferenceDomain())
+  else # coarse to fine
+    return change_domain(a,strian.trian,ReferenceDomain(),ttrian,ReferenceDomain())
+  end
+end
+
+for sdomain in [:ReferenceDomain,:PhysicalDomain]
+  for (stype,ttype) in [(:AdaptedTriangulation,:AdaptedTriangulation),(:AdaptedTriangulation,:Triangulation),(:Triangulation,:AdaptedTriangulation)]
+    @eval begin
+      function CellData.change_domain(a::CellField,strian::$stype,::$sdomain,ttrian::$ttype,::PhysicalDomain)
+        a_ref  = change_domain(a,ReferenceDomain())
+        atrian = change_domain(a_ref,strian,ReferenceDomain(),ttrian,ReferenceDomain())
+        return change_domain(atrian,PhysicalDomain())
+      end
+    end
+  end
 end
 
 function Geometry.move_contributions(scell_to_val::AbstractArray, strian::AdaptedTriangulation, ttrian::Triangulation)

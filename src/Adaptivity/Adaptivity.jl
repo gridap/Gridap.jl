@@ -34,6 +34,7 @@ export get_f2c_ref_cell_map, get_f2c_ref_coordinate_map
 
 export AdaptedDiscreteModel
 export get_model, get_parent, get_adaptivity_glue
+export is_child, is_related
 export refine
 
 export AdaptedTriangulation
