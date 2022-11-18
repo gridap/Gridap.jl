@@ -195,7 +195,7 @@ ufθ, tf, cache = solve_step!(ufθ,odesolθ,op,u0,t0,nothing)
 @test all(vf.≈ 1/(γ*dt) * (ufα-u0) + (1-1/γ)*v0)
 
 
-## GeneralizedAlpha ∂tt test
+# GeneralizedAlpha ∂tt test
 println("GeneralizedAlpha ∂tt test")
 ufα = nothing; vfα = nothing; afα = nothing
 u0 = ones(2)*2
@@ -205,7 +205,7 @@ ls = LUSolver()
 β = 0.25
 ρ∞ = 1.0 # Equivalent to Newmark(0.5, 0.25)
 odesolN = Newmark(ls,dt,γ,β)
-odesolα = GeneralizedAlphaDtt(ls, dt, ρ∞)
+odesolα = GeneralizedAlpha(ls, dt, ρ∞)
 ufN = copy(u0)
 ufα = copy(u0)
 v0 = ones(2)*1.0
