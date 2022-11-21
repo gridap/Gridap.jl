@@ -14,6 +14,7 @@ using Gridap.Helpers
 using Gridap.Algebra
 using Gridap.Arrays
 using Gridap.Geometry
+using Gridap.Fields
 using Gridap.FESpaces
 using Gridap.ReferenceFEs
 using Gridap.CellData
@@ -26,11 +27,16 @@ import Gridap.Geometry: Triangulation, is_change_possible, best_target, get_back
 import Gridap.Geometry: move_contributions
 import Gridap.CellData: change_domain
 
+include("RefinementRules.jl")
+include("AdaptivityGlues.jl")
 include("AdaptedDiscreteModels.jl")
 include("AdaptedTriangulations.jl")
 
+export RefinementRule
+export get_cell_map, get_inverse_cell_map
+
 export AdaptivityGlue
-export get_f2c_ref_cell_map, get_f2c_ref_coordinate_map
+export get_n2o_reference_coordinate_map
 
 export AdaptedDiscreteModel
 export get_model, get_parent, get_adaptivity_glue

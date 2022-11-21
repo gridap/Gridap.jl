@@ -26,6 +26,10 @@ function get_adapted_model(t::AdaptedTriangulation)
   return t.adapted_model
 end
 
+function get_adaptivity_glue(t::AdaptedTriangulation)
+  return get_adaptivity_glue(get_adapted_model(t))
+end
+
 # Relationships
 function is_child(t1::AdaptedTriangulation,t2::Triangulation)
   return is_child(get_adapted_model(t1),get_background_model(t2))
@@ -180,39 +184,6 @@ function Geometry.best_target(strian::Triangulation,ttrian::AdaptedTriangulation
   return ttrian
 end
 
-
-"""
-  Given a AdaptedTriangulation and a CellField defined on the parent(coarse) mesh, 
-  returns an equivalent CellField on the fine mesh.
-"""
-function change_domain_c2f(f_coarse, ftrian::AdaptedTriangulation{Dc,Dp}) where {Dc,Dp}
-  @notimplementedif num_dims(get_triangulation(f_coarse)) != Dc
-
-  model  = get_adapted_model(ftrian)
-  glue   = get_adaptivity_glue(model)
-  if (num_cells(ftrian) != 0)
-    # Coarse field but with fine indexing, i.e 
-    #   f_f2c[i_fine] = f_coarse[coarse_parent(i_fine)]
-    fcell_to_ccell = glue.f2c_faces_map[Dc+1]
-    m = Reindex(get_data(f_coarse))
-    f_f2c = lazy_map(m,fcell_to_ccell)
-
-    # Fine to coarse coordinate map: x_coarse = Φ^(-1)(x_fine)
-    ref_coord_map = get_f2c_reference_coordinate_map(glue)
-
-    # Final map: f_fine(x_fine) = f_f2c ∘ Φ^(-1)(x_fine) = f_coarse(x_coarse)
-    f_fine = lazy_map(∘,f_f2c,ref_coord_map)
-    return GenericCellField(f_fine,ftrian,ReferenceDomain())
-  else
-    f_fine = Fill(Gridap.Fields.ConstantField(0.0),num_cells(ftrian))
-    return GenericCellField(f_fine,ftrian,ReferenceDomain())
-  end
-end
-
-function change_domain_f2c(f_fine, ftrian::AdaptedTriangulation{Dc,Dp}) where {Dc,Dp}
-  @notimplemented
-end
-
 function CellData.change_domain(a::CellField,strian::Triangulation,::ReferenceDomain,ttrian::AdaptedTriangulation,::ReferenceDomain)
   if strian === ttrian
     return a
@@ -223,7 +194,7 @@ function CellData.change_domain(a::CellField,strian::Triangulation,::ReferenceDo
     return change_domain(a,strian,ReferenceDomain(),ttrian.trian,ReferenceDomain())
   end
   
-  return change_domain_c2f(a,ttrian)
+  return change_domain_o2n(a,ttrian)
 end
 
 function CellData.change_domain(a::CellField,strian::AdaptedTriangulation,::ReferenceDomain,ttrian::Triangulation,::ReferenceDomain)
@@ -236,7 +207,7 @@ function CellData.change_domain(a::CellField,strian::AdaptedTriangulation,::Refe
     return change_domain(a,strian.trian,ReferenceDomain(),ttrian,ReferenceDomain())
   end
   
-  return change_domain_f2c(a,ttrian)
+  return change_domain_n2o(a,ttrian)
 end
 
 function CellData.change_domain(a::CellField,strian::AdaptedTriangulation,::ReferenceDomain,ttrian::AdaptedTriangulation,::ReferenceDomain)
@@ -268,8 +239,65 @@ function Geometry.move_contributions(scell_to_val::AbstractArray, strian::Adapte
 end
 
 function Geometry.move_contributions(scell_to_val::AbstractArray, glue::AdaptivityGlue)
-  tcell_to_scells = glue.c2f_faces_map
+  tcell_to_scells = glue.o2n_faces_map
   k = Geometry.CombineContributionsMap(scell_to_val)
   tcell_to_val = lazy_map(k,tcell_to_scells)
   return tcell_to_val
+end
+
+function change_domain_o2n(f_old, new_trian::AdaptedTriangulation{Dc,Dp}) where {Dc,Dp}
+  @notimplementedif num_dims(get_triangulation(f_old)) != Dc
+  glue = get_adaptivity_glue(new_trian)
+  return change_domain_o2n(f_old,new_trian,glue)
+end
+
+function change_domain_n2o(f_new, old_trian::Triangulation{Dc,Dp}) where {Dc,Dp}
+  new_trian = get_triangulation(f_new)
+  @notimplementedif num_dims(new_trian) != Dc
+  @check isa(new_trian,AdaptedTriangulation)
+  glue = get_adaptivity_glue(new_trian)
+  return change_domain_n2o(f_new,old_trian,glue)
+end
+
+"""
+  Given a AdaptivityGlue and a CellField defined on the parent(old) mesh, 
+  returns an equivalent CellField on the child(new) mesh.
+"""
+function change_domain_o2n(f_old,new_trian::AdaptedTriangulation,glue::AdaptivityGlue)
+  @notimplemented
+end
+
+function change_domain_o2n(f_coarse,ftrian::AdaptedTriangulation{Dc},glue::AdaptivityGlue{<:RefinementGlue,Dc}) where Dc
+  ctrian = get_triangulation(f_coarse)
+  @notimplementedif num_dims(ctrian) != Dc
+
+  if (num_cells(ctrian) != 0)
+    # Coarse field but with fine indexing, i.e 
+    #   f_f2c[i_fine] = f_coarse[coarse_parent(i_fine)]
+    fcell_to_ccell = glue.n2o_faces_map[Dc+1]
+    m = Reindex(get_data(f_coarse))
+    f_f2c = lazy_map(m,fcell_to_ccell)
+
+    # Fine to coarse coordinate map: x_coarse = Φ^(-1)(x_fine)
+    ref_coord_map = get_n2o_reference_coordinate_map(glue)
+
+    # Final map: f_fine(x_fine) = f_f2c ∘ Φ^(-1)(x_fine) = f_coarse(x_coarse)
+    f_fine = lazy_map(∘,f_f2c,ref_coord_map)
+    return GenericCellField(f_fine,ftrian,ReferenceDomain())
+  else
+    f_fine = Fill(Gridap.Fields.ConstantField(0.0),num_cells(ftrian))
+    return GenericCellField(f_fine,ftrian,ReferenceDomain())
+  end
+end
+
+"""
+  Given a AdaptivityGlue and a CellField defined on the child(new) mesh, 
+  returns an equivalent CellField on the parent(old) mesh.
+"""
+function change_domain_n2o(f_new,old_trian::Triangulation,glue::AdaptivityGlue)
+  @notimplemented
+end
+
+function change_domain_n2o(f_fine,ctrian::Triangulation{Dc},glue::AdaptivityGlue{<:RefinementGlue,Dc}) where Dc
+  @notimplemented
 end
