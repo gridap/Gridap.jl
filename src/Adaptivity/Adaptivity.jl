@@ -31,6 +31,7 @@ include("RefinementRules.jl")
 include("AdaptivityGlues.jl")
 include("AdaptedDiscreteModels.jl")
 include("AdaptedTriangulations.jl")
+include("CompositeQuadratures.jl")
 
 export RefinementRule
 export get_cell_map, get_inverse_cell_map
