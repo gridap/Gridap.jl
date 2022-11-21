@@ -266,6 +266,14 @@ function compute_reference_grid(reffe::LagrangianRefFE, nelems::Integer)
 end
 
 """
+    compute_reference_grid(p::LagrangianRefFE, partition::NTuple{D,Integer})
+"""
+function compute_reference_grid(reffe::LagrangianRefFE{D}, partition::NTuple{D,Integer}) where D
+  p = get_polytope(reffe)
+  compute_reference_grid(p,partition)
+end
+
+"""
     compute_reference_grid(p::Polytope,nelems)
 """
 function compute_reference_grid(p::Polytope,nelems)
