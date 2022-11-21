@@ -10,4 +10,8 @@ end
   include("GridTransferTests.jl")
 end
 
+@testset "CompositeQuadratures" begin
+  include("CompositeQuadratureTests.jl")
+end
+
 end # module
