@@ -1,10 +1,11 @@
 
-struct RefinementRule{T,A,B,C,D}
+struct RefinementRule{T,A,B,C,D,E}
   reffe::T
   ref_grid::A
   f2c_cell_map::B
   c2f_cell_map::C
   measures::D
+  x_to_cell::E
 end
 
 function RefinementRule(reffe::LagrangianRefFE{D},nrefs::Integer; kwargs...) where D
@@ -22,12 +23,16 @@ function RefinementRule(reffe::LagrangianRefFE{D},partition::NTuple{D,Integer}; 
   M = sum(measures)
   measures /= M
 
-  return RefinementRule(reffe,ref_grid,f2c_cell_map,c2f_cell_map,measures)
+  p2c_cache    = CellData._point_to_cell_cache(CellData.KDTreeSearch(),ref_trian)
+  x_to_cell(x) = CellData._point_to_cell!(p2c_cache, x)
+
+  return RefinementRule(reffe,ref_grid,f2c_cell_map,c2f_cell_map,measures,x_to_cell)
 end
 
 ReferenceFEs.get_polytope(rr::RefinementRule) = ReferenceFEs.get_polytope(rr.reffe)
 get_ref_grid(rr::RefinementRule) = rr.ref_grid
 get_measures(rr::RefinementRule) = rr.measures
+num_subcells(rr::RefinementRule) = length(rr.measures)
 
 function Geometry.get_cell_map(rr::RefinementRule)
   return rr.f2c_cell_map
@@ -35,4 +40,39 @@ end
 
 function get_inverse_cell_map(rr::RefinementRule)
   return rr.c2f_cell_map
+end
+
+# FineToCoarseFields
+
+struct FineToCoarseField{A<:AbstractArray{<:Field},B<:RefinementRule} <: Field
+  fine_fields :: A
+  rrule       :: B
+  function FineToCoarseField(fine_fields::AbstractArray{<:Field},rrule::RefinementRule)
+    @check length(fine_fields) == num_subcells(rrule)
+    A = typeof(fine_fields)
+    B = typeof(rrule)
+    new{A,B}(fine_fields,rrule)
+  end
+end
+
+function Geometry.return_cache(a::FineToCoarseField,x::Point)
+  fields, cmaps = a.fine_fields, a.rrule.c2f_cell_map
+
+  fi_cache = array_cache(fields)
+  cm_cache = array_cache(cmaps)
+  xi_cache = Fields.return_cache(first(cmaps),x)
+  yi_cache = Fields.return_cache(first(fields),x)
+  return fi_cache, cm_cache, xi_cache, yi_cache
+end
+
+function Geometry.evaluate!(cache,a::FineToCoarseField,x::Point)
+  fi_cache, cm_cache, xi_cache, yi_cache = cache
+  fields, x_to_cell, cmaps = a.fine_fields, a.rrule.x_to_cell, a.rrule.c2f_cell_map
+
+  child_id = x_to_cell(x) # Find correct subcell
+  fi = getindex!(fi_cache,fields,child_id)
+  mi = getindex!(cm_cache,cmaps,child_id)
+  xi = Fields.evaluate!(xi_cache,mi,x)  # xc -> xf
+  yi = Fields.evaluate!(yi_cache,fi,xi) # xf -> yf
+  return yi
 end
