@@ -66,7 +66,8 @@ function residual!(b::AbstractVector,op::GeneralizedAlphaNonlinearOperator,x::Ab
   uαf = x
   u0, v0 = op.x0
   vαm, cache = op.ode_cache
-  vαm = (1 - op.αm/op.γ ) * v0 + op.αm/(op.γ*op.αf*op.dt) * (uαf - u0)
+  #vαm = (1 - op.αm/op.γ ) * v0 + op.αm/(op.γ*op.αf*op.dt) * (uαf - u0)
+  vαm = (1 + op.αm/op.γ ) * v0 + op.αm/(op.γ*op.αm*op.dt) * (uαf - u0)
   residual!(b,op.odeop,op.tαf,(uαf,vαm),cache)
 end
 
@@ -74,10 +75,11 @@ function jacobian!(A::AbstractMatrix,op::GeneralizedAlphaNonlinearOperator,x::Ab
   uαf = x
   u0, v0 = op.x0
   vαm, cache = op.ode_cache
-  vαm = (1 - op.αm/op.γ ) * v0 + op.αm/(op.γ*op.αf*op.dt) * (uαf - u0)
+  #vαm = (1 - op.αm/op.γ ) * v0 + op.αm/(op.γ*op.αf*op.dt) * (uαf - u0)
+  vαm = (1 + op.αm/op.γ ) * v0 + op.αm/(op.γ*op.αm*op.dt) * (uαf - u0)
   z = zero(eltype(A))
   fillstored!(A,z)
-  jacobians!(A,op.odeop,op.tαf,(uαf,vαm),(1.0,op.αm/(op.αf*op.γ*op.dt)),cache)
+  jacobians!(A,op.odeop,op.tαf,(uαf,vαm),(1.0,op.αm/(op.αm*op.γ*op.dt)),cache)
 end
 
 function allocate_residual(op::GeneralizedAlphaNonlinearOperator,x::AbstractVector)

@@ -376,4 +376,70 @@ test_field(vf,x,v(x),grad=∇(v)(x))
 test_field(vt,x,zero.(v(x)),grad=zero.(∇(v)(x)),gradgrad=zero.(∇∇(v)(x)))
 test_field(vf,x,v(x),grad=∇(v)(x),gradgrad=∇∇(v)(x))
 
+
+# Second order derivatives
+using Gridap
+using Gridap.FESpaces
+using Gridap.ReferenceFEs
+using Gridap.Arrays
+using Gridap.Geometry
+using Gridap.Fields
+using Gridap.CellData
+using FillArrays
+using Test
+using InteractiveUtils
+D = 2
+order = 2
+
+model = CartesianDiscreteModel((0, 2, 0, 2), (4,4))
+
+pol = Polytope(Fill(HEX_AXIS,D)...)
+reffe_g = LagrangianRefFE(Float64,pol,2)
+
+Jt = lazy_map(Broadcasting(∇), ξₖ)
+
+
+Tₕ = Triangulation(model)
+ξₖ = get_cell_map(Tₕ)
+
+cell_q_x = get_cell_map(Tₕ)
+cell_q_Jt = lazy_map(∇,cell_q_x)
+cell_q_invJt = lazy_map(Operation(pinvJt),cell_q_Jt)
+
+  #First order
+ϕr                   = get_shapefuns(reffe_g)
+∇ϕr                  = Broadcasting(∇)(ϕr)
+
+
+
+∇ϕrₖ                 = Fill(∇ϕr,num_cells(Tₕ))
+manual_grad_dv_array = lazy_map(Broadcasting(push_∇),∇ϕrₖ,ξₖ)
+#
+∇ϕrᵀ                 = Broadcasting(∇)(transpose(ϕr))
+∇ϕrₖᵀ                = Fill(∇ϕrᵀ,num_cells(Tₕ))
+manual_grad_du_array = lazy_map(Broadcasting(push_∇),∇ϕrₖᵀ,ξₖ)
+
+#Second order
+∇∇ϕr                  = Broadcasting(∇)(∇ϕr)
+∇∇ϕrₖ                 = Fill(∇∇ϕr ,num_cells(Tₕ))
+
+evaluate(∇∇ϕr[1], Point(0.3, 0.5))
+
+manual_lapl_dv_tensor = lazy_map(Broadcasting(push_∇∇),∇∇ϕrₖ,ξₖ)
+manual_lapl_dv_array = lazy_map(Broadcasting(tr),manual_lapl_dv_tensor)
+
+evaluate(manual_lapl_dv_array[1], Point(0.3,0.5))[1]
+evaluate(manual_lapl_dv_tensor[1], Point(0.3,0.5))[1]
+
+lapl_PHYS2(x,y,h) = (8 * (x.^2 + y.^2) -12 * (x+y) +8) ./h^2
+lapl_PHYS(x,y,h) = (8 * (x.^2 + y.^2)./h^2 -12 * (x+y)./h +8) ./h^2
+lapl_REF(x,y) = lapl_PHYS(x,y,1)
+
+lapl_PHYS(0.3,0.5,0.5)
+lapl_PHYS2(0.3,0.5,0.5)
+
+
+evaluate(Δ(ϕr[1]), Point(0.5, 0.4))
+lapl_REF(0.3,0.5)
+
 end # module
