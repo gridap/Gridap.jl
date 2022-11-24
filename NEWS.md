@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+- Implemented `RefinementRule` and `AdaptivityGlue`, which encode the mapping between the old and new cells in an adapted model. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
+- Implemented `AdaptedDiscreteModel` and `AdaptedTriangulation`, representing respectively a model and triangulation produced by adapting a parent model. This types mostly wrap around `DiscreteModel` and `Triangulation`, with some added features necessary to keep track of the adaptive hierarchy. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
+- Implemented tools to be able to transfer `CellDatum`s back and forth between parent and child grids. These include changes to `change_domain` and a new type of `CompositeMeasure` which allows the integration `Triangulation` to be different from the `Triangulation` of the resulting `DomainContribution`. To accomodate `CompositeMeasure`, `Measure` has been made abstract type and a `GenericMeasure` has been created to replace the old type. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
+- Implemented `CompositeQuadrature`, a quadrature for a cell that has been refined using a `RefinementRule`. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
+
+### Fixed
+- Fixes to `array_cache(a::Table)`: Now does not use the `zero(T,N)` function, but instead creates new empty vector using the general allocator `Vector{T}(undef,N)`. This allows `Table` to work with complex composite types which don't have an easy `zero(T)` function defined. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
+
 ## [0.17.15] - 2022-11-10 
 
 ### Added
