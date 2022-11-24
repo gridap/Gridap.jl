@@ -27,12 +27,6 @@ import Gridap.Geometry: Triangulation, is_change_possible, best_target, get_back
 import Gridap.Geometry: move_contributions
 import Gridap.CellData: change_domain
 
-include("RefinementRules.jl")
-include("AdaptivityGlues.jl")
-include("AdaptedDiscreteModels.jl")
-include("AdaptedTriangulations.jl")
-include("CompositeQuadratures.jl")
-
 export RefinementRule
 export get_cell_map, get_inverse_cell_map
 
@@ -47,5 +41,11 @@ export refine
 export AdaptedTriangulation
 export Triangulation, is_change_possible, best_target, get_adapted_model
 export change_domain, move_contributions
+
+include("RefinementRules.jl")
+include("AdaptivityGlues.jl")
+include("AdaptedDiscreteModels.jl")
+include("AdaptedTriangulations.jl")
+include("CompositeQuadratures.jl")
 
 end # module

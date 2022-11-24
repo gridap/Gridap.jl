@@ -274,9 +274,7 @@ function change_domain_o2n(f_coarse,ftrian::AdaptedTriangulation{Dc},glue::Adapt
   if (num_cells(ctrian) != 0)
     # Coarse field but with fine indexing, i.e 
     #   f_f2c[i_fine] = f_coarse[coarse_parent(i_fine)]
-    fcell_to_ccell = glue.n2o_faces_map[Dc+1]
-    m = Reindex(get_data(f_coarse))
-    f_f2c = lazy_map(m,fcell_to_ccell)
+    f_f2c = c2f_reindex(f_coarse,glue)
 
     # Fine to coarse coordinate map: x_coarse = Φ^(-1)(x_fine)
     ref_coord_map = get_n2o_reference_coordinate_map(glue)
@@ -299,5 +297,16 @@ function change_domain_n2o(f_new,old_trian::Triangulation,glue::AdaptivityGlue)
 end
 
 function change_domain_n2o(f_fine,ctrian::Triangulation{Dc},glue::AdaptivityGlue{<:RefinementGlue,Dc}) where Dc
-  @notimplemented
+  @notimplementedif num_dims(ctrian) != Dc
+  if (num_cells(ctrian) != 0)
+    # f_c2f[i_coarse] = [f_fine[i_fine_1], ..., f_fine[i_fine_nChildren]]
+    f_c2f = f2c_reindex(f_fine,glue)
+
+    rrules   = get_old_cell_refinement_rules(glue)
+    f_coarse = lazy_map(FineToCoarseField,f_c2f,rrules)
+    return GenericCellField(f_coarse,ctrian,ReferenceDomain())
+  else
+    f_coarse = Fill(Gridap.Fields.ConstantField(0.0),num_cells(ftrian))
+    return GenericCellField(f_coarse,ctrian,ReferenceDomain())
+  end
 end

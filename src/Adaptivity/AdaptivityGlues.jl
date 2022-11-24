@@ -12,7 +12,7 @@ Adaptivity glue between two nested triangulations:
 - `n2o_cell_to_child_id`: Given a new cell gid, returns 
                               A) if fine, the local child id within the (old) coarse cell containing it.
                               B) if coarse, -1
-- `refinement_rules`    : Set of refinement rules used for each new cell.
+- `refinement_rules`    : RefinementRule used for each new cell.
 """
 struct AdaptivityGlue{GT,Dc,A,B,C,D,E} <: GridapType
   n2o_faces_map        :: A
@@ -93,3 +93,57 @@ function get_o2n_faces_map(ncell_to_ocell::Vector{T}) where {T<:Integer}
   ocell_to_ncell = Table(data,ptrs)
   return ocell_to_ncell
 end
+
+function get_new_cell_refinement_rules(g::AdaptivityGlue)
+  return g.refinement_rules
+end
+
+function get_old_cell_refinement_rules(g::AdaptivityGlue)
+  n2o_rrules = g.refinement_rules
+  ocell_to_ncells = g.o2n_faces_map
+  return lazy_map(cells->n2o_rrules[first(cells)],ocell_to_ncells)
+end
+
+# Data re-indexing
+
+function f2c_reindex(fine_data,g::AdaptivityGlue)
+  ccell_to_fcell = g.o2n_faces_map
+  return _reindex(fine_data,ccell_to_fcell)
+end
+
+function c2f_reindex(coarse_data,g::AdaptivityGlue{GT,Dc}) where {GT,Dc}
+  fcell_to_ccell = g.n2o_faces_map[Dc+1]
+  return _reindex(coarse_data,fcell_to_ccell)
+end
+
+f2c_reindex(a::CellDatum,g::AdaptivityGlue) = f2c_reindex(CellData.get_data(a),g::AdaptivityGlue)
+c2f_reindex(a::CellDatum,g::AdaptivityGlue) = c2f_reindex(CellData.get_data(a),g::AdaptivityGlue)
+
+function _reindex(data,idx::Table)
+  m = Reindex(data)
+  return Table(lazy_map(m,idx.data),idx.ptrs)
+end
+
+function _reindex(data,idx::Vector)
+  m = Reindex(data)
+  return lazy_map(m,idx)
+end
+
+
+"""
+# TODO: Using Tables with complex types
+#   1) Is it necessary to overload these two functions? Should we be 
+#      overloading zero(::Type{<Field}) instead? 
+#   2) In case this is indeed necessary, is the implemented solution 
+#      the most efficient/elegant? 
+#   3) Finally, would it be interesting to expand this solution for 
+#      all GridapType structures? 
+
+Arrays.array_cache(a::Table{<:Field}) = nothing
+
+function Arrays.getindex!(c,a::Table{<:Field},i::Integer)
+  @inbounds pini = a.ptrs[i]
+  @inbounds pend = a.ptrs[i+1]-1
+  return Arrays.SubVector(a.data,pini,pend)
+end
+"""
