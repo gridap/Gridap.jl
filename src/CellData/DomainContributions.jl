@@ -166,7 +166,10 @@ struct CompositeMeasure{A<:Triangulation,B<:Triangulation,C<:CellQuadrature} <: 
   quad   :: C
 end
 
-Measure(ttrian::Triangulation,itrian::Triangulation,q::CellQuadrature) = CompositeMeasure(ttrian,itrian,q)
+function Measure(ttrian::Triangulation,itrian::Triangulation,q::CellQuadrature)
+  @check get_triangulation(q) === itrian
+  return CompositeMeasure(ttrian,itrian,q)
+end
 
 Measure(ttrian::Triangulation,itrian::Triangulation,args...;kwargs...) = CompositeMeasure(ttrian,itrian,args...;kwargs...)
 

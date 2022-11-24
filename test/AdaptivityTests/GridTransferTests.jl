@@ -23,9 +23,14 @@ trian = Triangulation(model)
 # Triangulations
 ftrian = Triangulation(get_model(model))
 ctrian = Triangulation(get_parent(model))
+
+# Measures
 dΩ_f   = Measure(ftrian,2)
 dΩ_c   = Measure(ctrian,2)
 dΩ_cf  = Measure(ctrian,trian,1)
+
+cell_quad = Gridap.CellData.get_cell_quadrature(dΩ_cf)
+dΩ_cf_bis = Measure(ctrian,trian,cell_quad)
 
 # FESpaces
 reffe = ReferenceFE(lagrangian,Float64,1)
