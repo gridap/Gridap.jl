@@ -56,7 +56,25 @@ v_f_phy_phy = map(p -> cf_f_phy_phy(p), pts)
 @test v_r ≈ v_f_phy_phy
 
 # CellField: Fine -> Coarse
-# NOT IMPLEMENTED YET
+cf_f_phy = CellField(sol,trian)
+cf_f_ref = change_domain(cf_f_phy,PhysicalDomain(),ReferenceDomain())
+cf_c_ref_ref = change_domain(cf_f_ref, ctrian, ReferenceDomain())
+cf_c_ref_phy = change_domain(cf_f_ref, ctrian, PhysicalDomain())
+cf_c_phy_ref = change_domain(cf_f_phy, ctrian, ReferenceDomain())
+cf_c_phy_phy = change_domain(cf_f_phy, ctrian, PhysicalDomain())
+
+pts = map(x -> VectorValue(rand(2)),1:10)
+v_r = map(p -> sol(p) , pts)
+v_f = map(p -> cf_f_ref(p), pts)
+v_c_ref_ref = map(p -> cf_c_ref_ref(p), pts)
+v_c_ref_phy = map(p -> cf_c_ref_phy(p), pts)
+v_c_phy_ref = map(p -> cf_c_phy_ref(p), pts)
+v_c_phy_phy = map(p -> cf_c_phy_phy(p), pts)
+@test v_r ≈ v_f
+@test v_r ≈ v_c_ref_ref
+@test v_r ≈ v_c_ref_phy
+@test v_r ≈ v_c_phy_ref
+@test v_r ≈ v_c_phy_phy
 
 # Coarse FEFunction -> Fine CellField
 uh_c = interpolate(sol,U_c)
