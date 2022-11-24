@@ -93,8 +93,11 @@ v_f_inter = map(p -> uh_f_inter(p), pts)
 @test v_r ≈ v_f_inter
 
 # Fine FEFunction -> Coarse FEFunction, by interpolation
-# NOT IMPLEMENTED YET
-# uh_c_inter = interpolate(uh_f,U_c)
+uh_f = interpolate(sol,U_f)
+uh_c_inter = interpolate(uh_f,U_c)
+
+v_c_inter = map(p -> uh_c_inter(p), pts)
+@test v_r ≈ v_c_inter
 
 # Coarse FEFunction -> Fine FEFunction, by projection
 af(u,v)  = ∫(v⋅u)*dΩ_f
