@@ -246,7 +246,7 @@ function refine(model::CartesianDiscreteModel; num_refinements::Int=2)
   faces_map      = [Int[],Int[],_create_f2c_cell_map(nC,ref)]
   fcell_child_id = _create_child_map(nC,ref)
   reffe          = LagrangianRefFE(Float64,QUAD,1)
-  rrules         = Fill(RefinementRule(reffe,num_refinements),length(fcell_child_id))
+  rrules         = RefinementRule(reffe,num_refinements)
   glue = AdaptivityGlue(faces_map,fcell_child_id,rrules)
 
   return AdaptedDiscreteModel(model_ref,model,glue)

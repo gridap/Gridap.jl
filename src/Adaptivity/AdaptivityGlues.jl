@@ -128,22 +128,3 @@ function _reindex(data,idx::Vector)
   m = Reindex(data)
   return lazy_map(m,idx)
 end
-
-
-"""
-# TODO: Using Tables with complex types
-#   1) Is it necessary to overload these two functions? Should we be 
-#      overloading zero(::Type{<Field}) instead? 
-#   2) In case this is indeed necessary, is the implemented solution 
-#      the most efficient/elegant? 
-#   3) Finally, would it be interesting to expand this solution for 
-#      all GridapType structures? 
-
-Arrays.array_cache(a::Table{<:Field}) = nothing
-
-function Arrays.getindex!(c,a::Table{<:Field},i::Integer)
-  @inbounds pini = a.ptrs[i]
-  @inbounds pend = a.ptrs[i+1]-1
-  return Arrays.SubVector(a.data,pini,pend)
-end
-"""
