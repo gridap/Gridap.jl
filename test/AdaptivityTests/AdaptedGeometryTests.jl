@@ -15,14 +15,18 @@ model2 = refine(model1; num_refinements=2)
 test_discrete_model(model1)
 test_discrete_model(model2)
 
-trian1  = Triangulation(model1)
+ctrian = Triangulation(cart_model)
+trian1 = Triangulation(model1)
 trian2 = Triangulation(model2)
 test_triangulation(trian1)
 test_triangulation(trian2)
 test_triangulation(trian1.trian)
 @test isa(trian1, AdaptedTriangulation)
+@test Gridap.Adaptivity.is_child(trian1,ctrian) == true
+@test Gridap.Adaptivity.is_child(ctrian,trian1) == false
 
 vtrian = view(trian1,[2,3,4])
+rtrian = Triangulation(trian1)
 
 # Get members
 fmodel = get_model(model1)

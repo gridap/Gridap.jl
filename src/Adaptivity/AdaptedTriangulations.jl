@@ -79,7 +79,7 @@ function Geometry.Triangulation(
 end
 
 function Geometry.Triangulation(trian::AdaptedTriangulation,args...;kwargs...)
-  return AdaptedTriangulation(Triangulation(trian.trian,args...;kwargs...),trian.model)
+  return AdaptedTriangulation(Triangulation(trian.trian,args...;kwargs...),trian.adapted_model)
 end
 
 function Geometry.BoundaryTriangulation(model::AdaptedDiscreteModel,args...;kwargs...)
