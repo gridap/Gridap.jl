@@ -1,7 +1,7 @@
 
-abstract type AdaptiveGlueType end
-struct RefinementGlue <: AdaptiveGlueType end
-struct MixedGlue <: AdaptiveGlueType end
+abstract type AdaptivityGlueType end
+struct RefinementGlue <: AdaptivityGlueType end
+struct MixedGlue <: AdaptivityGlueType end
 
 """
 Adaptivity glue between two nested triangulations:
