@@ -35,7 +35,7 @@ function RefinementRule(poly::Polytope{D},partition::NTuple{D,Integer};cell_maps
   c2f_cell_map = lazy_map(Fields.inverse_map,f2c_cell_map)
 
   ref_trian = Triangulation(UnstructuredDiscreteModel(ref_grid))
-  measures  = get_cell_measure(ref_trian)
+  measures  = get_cell_measure(ref_trian) # This is only valid if the cell_maps are affine! 
   M = sum(measures)
   measures /= M
 
@@ -91,4 +91,43 @@ function Geometry.evaluate!(cache,a::FineToCoarseField,x::Point)
   xi = Fields.evaluate!(xi_cache,mi,x)  # xc -> xf
   yi = Fields.evaluate!(yi_cache,fi,xi) # xf -> yf
   return yi
+end
+
+function Geometry.return_cache(a::FineToCoarseField,x::AbstractArray{<:Point})
+  fields, x_to_cell, cmaps = a.fine_fields, a.rrule.x_to_cell, a.rrule.c2f_cell_map
+
+  xi_cache = array_cache(x)
+  fi_cache = array_cache(fields)
+  mi_cache = array_cache(cmaps)
+
+  xi = getindex!(xi_cache,x,1)
+  child_id = x_to_cell(xi)
+  mi = getindex!(mi_cache,cmaps,child_id)
+  fi = getindex!(fi_cache,fields,child_id)
+
+  zi_cache = Fields.return_cache(mi,xi)
+  zi = evaluate!(zi_cache,mi,xi)
+
+  yi_type  = Fields.return_type(fi,zi)
+  yi_cache = Fields.return_cache(fi,zi)
+  y_cache  = Arrays.CachedArray(yi_type,1)
+
+  return fi_cache, mi_cache, xi_cache, zi_cache, yi_cache, y_cache
+end
+
+function Geometry.evaluate!(cache,a::FineToCoarseField,x::AbstractArray{<:Point})
+  fi_cache, mi_cache, xi_cache, zi_cache, yi_cache, y_cache = cache
+  fields, x_to_cell, cmaps = a.fine_fields, a.rrule.x_to_cell, a.rrule.c2f_cell_map
+
+  Arrays.setsize!(y_cache, size(x))
+
+  for i in eachindex(x)
+    xi = getindex!(xi_cache,x,i)
+    child_id = x_to_cell(xi)
+    fi = getindex!(fi_cache,fields,child_id)
+    mi = getindex!(mi_cache,cmaps,child_id)
+    zi = Fields.evaluate!(zi_cache,mi,xi)
+    y_cache.array[i] = Fields.evaluate!(yi_cache,fi,zi)
+  end
+  return y_cache.array
 end

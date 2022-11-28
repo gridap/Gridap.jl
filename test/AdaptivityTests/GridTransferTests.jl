@@ -113,6 +113,9 @@ uh_f_pr = solve(opf)
 v_f_pr = map(p -> uh_f_pr(p), pts)
 @test v_r ≈ v_f_pr
 
+eh = sum(∫(uh_f-uh_f_pr)*dΩ_f)
+@test eh < 1.e8
+
 # Fine FEFunction -> Coarse FEFunction, by projection
 ac(u,v) = ∫(v⋅u)*dΩ_c
 lc(v)   = ∫(v⋅uh_f_inter)*dΩ_cf
@@ -121,5 +124,8 @@ uh_c_pr = solve(opc)
 
 v_c_pr = map(p -> uh_c_pr(p), pts)
 @test v_c_pr ≈ v_r
+
+eh = sum(∫(uh_f_inter-uh_c_pr)*dΩ_c)
+@test eh < 1.e8
 
 end
