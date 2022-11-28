@@ -92,17 +92,25 @@ feb_c = get_fe_basis(V_c)
 feb_c2f = change_domain(feb_c,trian,ReferenceDomain())
 
 # Coarse FEFunction -> Fine FEFunction, by interpolation
-uh_f_inter = interpolate(uh_c,U_f)
+uh_f_inter  = interpolate(uh_c,U_f)
+uh_f_inter2 = interpolate_everywhere(uh_c,U_f)
+uh_f_inter3 = interpolate_dirichlet(uh_c,U_f)
 
-v_f_inter = map(p -> uh_f_inter(p), pts)
+v_f_inter  = map(p -> uh_f_inter(p), pts)
+v_f_inter2 = map(p -> uh_f_inter2(p), pts)
 @test v_r ≈ v_f_inter
+@test v_r ≈ v_f_inter2
 
 # Fine FEFunction -> Coarse FEFunction, by interpolation
 uh_f = interpolate(sol,U_f)
-uh_c_inter = interpolate(uh_f,U_c)
+uh_c_inter  = interpolate(uh_f,U_c)
+uh_c_inter2 = interpolate_everywhere(uh_f,U_c)
+uh_c_inter3 = interpolate_dirichlet(uh_f,U_c)
 
-v_c_inter = map(p -> uh_c_inter(p), pts)
+v_c_inter  = map(p -> uh_c_inter(p), pts)
+v_c_inter2 = map(p -> uh_c_inter2(p), pts)
 @test v_r ≈ v_c_inter
+@test v_r ≈ v_c_inter2
 
 # Coarse FEFunction -> Fine FEFunction, by projection
 af(u,v)  = ∫(v⋅u)*dΩ_f
