@@ -27,9 +27,8 @@ for (k,poly) in enumerate([QUAD,TRI,HEX,TET])
   V     = TestFESpace(model,reffe;conformity=:H1,dirichlet_tags="boundary")
   U     = TrialFESpace(V,sol)
 
-  D = num_dims(model)
-  rr1    = RefinementRule(reffe,Tuple(fill(2,D)))
-  rr2    = RefinementRule(reffe,Tuple(fill(3,D)))
+  rr1    = RefinementRule(poly,2)
+  rr2    = RefinementRule(reffe,3)
   rrules = CompressedArray([rr1,rr2],rand([1,2],ncells))
 
   quad_order = 2*order + 1

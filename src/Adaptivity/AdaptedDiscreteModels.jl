@@ -62,7 +62,6 @@ end
 # UnstructuredDiscreteModel Refining
 
 function refine(model::UnstructuredDiscreteModel{Dc,Dp}) where {Dc,Dp}
-  
   # Create new model
   topo = _refine_unstructured_topology(model.grid_topology)
   grid = UnstructuredGrid(get_vertex_coordinates(topo),get_faces(topo,Dc,0),get_reffes(model.grid),get_cell_type(topo),OrientationStyle(topo))
@@ -202,7 +201,6 @@ function num_refined_faces(p::Polytope)
   (p == TRI)  && (return num_children(p)*num_faces(p,0))
   @notimplemented
 end
-
 
 function get_refined_children(p::Polytope{2}, face_ids)
   N,E,C = face_ids # Node, Edge and Cell global ids

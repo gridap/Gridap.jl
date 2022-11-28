@@ -36,12 +36,12 @@ function ReferenceFEs.Quadrature(p::Polytope,::CompositeQuadrature,rr::Refinemen
   coordinates = Vector{CT}(undef,npts)
   k = 1
   for (iq,q) in enumerate(quads)
-  n = num_points(q)
-  w = get_weights(q)
-  c = get_coordinates(q)
-  weights[k:k+n-1] .= w .* measures[iq]
-  coordinates[k:k+n-1] .= (cellmap[iq])(c)
-  k = k+n
+    n = num_points(q)
+    w = get_weights(q)
+    c = get_coordinates(q)
+    weights[k:k+n-1] .= w .* measures[iq]
+    coordinates[k:k+n-1] .= (cellmap[iq])(c)
+    k = k+n
   end
 
   name = "Composite quadrature"
