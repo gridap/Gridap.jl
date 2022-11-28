@@ -298,6 +298,10 @@ end
 
 function change_domain_n2o(f_fine,ctrian::Triangulation{Dc},glue::AdaptivityGlue{<:RefinementGlue,Dc}) where Dc
   @notimplementedif num_dims(ctrian) != Dc
+  msg = "Evaluating a fine CellField in the coarse mesh is costly! If you are using this feature 
+         to integrate, consider using a CompositeMeasure instead (see test/AdaptivityTests/GridTransferTests.jl)."
+  @warn msg
+
   if (num_cells(ctrian) != 0)
     # f_c2f[i_coarse] = [f_fine[i_fine_1], ..., f_fine[i_fine_nChildren]]
     f_c2f = f2c_reindex(f_fine,glue)
