@@ -14,4 +14,8 @@ end
   include("CompositeQuadratureTests.jl")
 end
 
+@testset "MultiFields" begin
+  include("MultifieldGridTransferTests.jl")
+end
+
 end # module
