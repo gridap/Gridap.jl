@@ -17,15 +17,12 @@ f₂(x) = x[1]
 cart_model = CartesianDiscreteModel((0,1,0,1),(4,4))
 model = refine(cart_model; num_refinements=2)
 trian = Triangulation(model)
-
-# Triangulations
-ftrian = Triangulation(get_model(model))
 ctrian = Triangulation(get_parent(model))
 
 # Measures
-dΩ_f   = Measure(ftrian,2)
-dΩ_c   = Measure(ctrian,2)
-dΩ_cf  = Measure(ctrian,trian,1)
+dΩh   = Measure(trian,2)
+dΩH   = Measure(ctrian,2)
+dΩHh  = Measure(ctrian,trian,1)
 
 # Coarse FESpace
 et = Float64
@@ -44,7 +41,6 @@ uh    = interpolate([f₁, f₂], V₂²)
 uHi = interpolate(uh, V₁²)
 uhi = interpolate(uH, V₂²)
 
-# Test values
 pts = [VectorValue(rand(2)) for i=1:10]
 uHi₁,uHi₂ = uHi
 uhi₁,uhi₂ = uhi
@@ -54,5 +50,12 @@ for pt in pts
   @test uHi₁(pt) ≈ f₁(pt)
   @test uHi₂(pt) ≈ f₂(pt)
 end
+
+# Integration
+a((u,p),(v,q),dΩ) = ∫( v*u + p*u - q*p - v*4 + q )*dΩ
+a_ref(dΩ) = a([f₁, f₂],uh,dΩ)
+@test sum(a(uH,uH,dΩh)) ≈ sum(a(uh,uh,dΩh))
+@test sum(a(uh,uH,dΩH)) ≈ sum(a(uH,uH,dΩH))
+@test sum(a(uH,uH,dΩHh)) ≈ sum(a(uh,uh,dΩHh))
 
 end
