@@ -1,21 +1,73 @@
 
-struct RefinementRule{T,A,B,C,D,E}
-  poly         :: T
+abstract type RefinementRuleType end
+struct GenericRefinement <: RefinementRuleType end
+
+struct RefinementRule{P,T,A,B,C}
+  poly         :: P
   ref_grid     :: A
   f2c_cell_map :: B
-  c2f_cell_map :: C
-  measures     :: D
-  x_to_cell    :: E
+  x_to_cell    :: C
+
+  function RefinementRule{T}(poly         ::Polytope,
+                             ref_grid     ::Grid,
+                             f2c_cell_map ::AbstractVector,
+                             x_to_cell    ::Function) where T <: RefinementRuleType
+    P = typeof(poly)
+    A = typeof(ref_grid)
+    B = typeof(f2c_cell_map)
+    C = typeof(x_to_cell)
+    new{P,T,A,B,C}(poly,ref_grid,f2c_cell_map,x_to_cell)
+  end
 end
+
+ReferenceFEs.get_polytope(rr::RefinementRule) = rr.poly
+get_ref_grid(rr::RefinementRule) = rr.ref_grid
+num_subcells(rr::RefinementRule) = num_cells(rr.ref_grid)
+
+function Geometry.get_cell_map(rr::RefinementRule)
+  return rr.f2c_cell_map
+end
+
+function get_inverse_cell_map(rr::RefinementRule)
+  return lazy_map(Fields.inverse_map,rr.f2c_cell_map)
+end
+
+function get_cell_measures(rr::RefinementRule)
+  ref_grid  = get_ref_grid(rr)
+  ref_trian = Triangulation(UnstructuredDiscreteModel(ref_grid))
+  measures  = get_cell_measure(ref_trian)
+  M = sum(measures)
+  measures /= M
+  return measures
+end
+
+function RefinementRule(::T,poly::Polytope, ref_grid::Grid; cell_maps=nothing, x_to_cell_id=nothing) where T <: RefinementRuleType
+  if (cell_maps === nothing)
+    f2c_cell_map = Geometry.get_cell_map(ref_grid)
+  else
+    @check length(cell_maps) == num_cells(ref_grid)
+    f2c_cell_map = cell_maps
+  end
+
+  if x_to_cell_id === nothing
+    ref_trian    = Triangulation(UnstructuredDiscreteModel(ref_grid))
+    p2c_cache    = CellData._point_to_cell_cache(CellData.KDTreeSearch(),ref_trian)
+    x_to_cell(x) = CellData._point_to_cell!(p2c_cache, x)
+  else
+    x_to_cell = x_to_cell_id
+  end
+
+  return RefinementRule{T}(poly,ref_grid,f2c_cell_map,x_to_cell)
+end
+
+# GenericRefinement Rule
 
 function RefinementRule(reffe::LagrangianRefFE{D},nrefs::Integer;kwargs...) where D
   partition = tfill(nrefs,Val{D}())
-  return RefinementRule(reffe,partition;kwargs...)
+  return RefinementRule(get_polytope(reffe),partition;kwargs...)
 end
 
-function RefinementRule(reffe::LagrangianRefFE{D},partition::NTuple{D,Integer}) where D
-  ref_grid  = UnstructuredGrid(compute_reference_grid(reffe,partition))
-  cell_maps = Geometry.get_cell_map(ref_grid)
+function RefinementRule(reffe::LagrangianRefFE{D},partition::NTuple{D,Integer};kwargs...) where D
   return RefinementRule(get_polytope(reffe),partition;cell_maps=cell_maps)
 end
 
@@ -24,38 +76,9 @@ function RefinementRule(poly::Polytope{D},nrefs::Integer;kwargs...) where D
   return RefinementRule(poly,partition;kwargs...)
 end
 
-function RefinementRule(poly::Polytope{D},partition::NTuple{D,Integer};cell_maps=nothing) where D
+function RefinementRule(poly::Polytope{D},partition::NTuple{D,Integer};kwargs...) where D
   ref_grid = UnstructuredGrid(compute_reference_grid(poly,partition))
-  if (cell_maps === nothing)
-    f2c_cell_map = Geometry.get_cell_map(ref_grid)
-  else
-    @check length(cell_maps) == num_cells(ref_grid)
-    f2c_cell_map = cell_maps
-  end
-  c2f_cell_map = lazy_map(Fields.inverse_map,f2c_cell_map)
-
-  ref_trian = Triangulation(UnstructuredDiscreteModel(ref_grid))
-  measures  = get_cell_measure(ref_trian) # This is only valid if the cell_maps are affine! 
-  M = sum(measures)
-  measures /= M
-
-  p2c_cache    = CellData._point_to_cell_cache(CellData.KDTreeSearch(),ref_trian)
-  x_to_cell(x) = CellData._point_to_cell!(p2c_cache, x)
-
-  return RefinementRule(poly,ref_grid,f2c_cell_map,c2f_cell_map,measures,x_to_cell)
-end
-
-ReferenceFEs.get_polytope(rr::RefinementRule) = rr.poly
-get_ref_grid(rr::RefinementRule) = rr.ref_grid
-get_measures(rr::RefinementRule) = rr.measures
-num_subcells(rr::RefinementRule) = length(rr.measures)
-
-function Geometry.get_cell_map(rr::RefinementRule)
-  return rr.f2c_cell_map
-end
-
-function get_inverse_cell_map(rr::RefinementRule)
-  return rr.c2f_cell_map
+  return RefinementRule(GenericRefinement(),poly,ref_grid;kwargs...)
 end
 
 # FineToCoarseFields
