@@ -10,6 +10,8 @@ module Adaptivity
 
 using FillArrays
 using LinearAlgebra
+using DataStructures
+
 using Gridap.Helpers
 using Gridap.Algebra
 using Gridap.Arrays

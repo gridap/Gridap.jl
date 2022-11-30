@@ -62,9 +62,9 @@ end
 
 # UnstructuredDiscreteModel Refining
 
-function refine(model::UnstructuredDiscreteModel{Dc,Dp}) where {Dc,Dp}
+function refine(model::UnstructuredDiscreteModel{Dc,Dp};cells_to_refine=nothing) where {Dc,Dp}
   # Create new model
-  topo = _refine_unstructured_topology(model.grid_topology)
+  topo = _refine_unstructured_topology(model.grid_topology,cells_to_refine)
   grid = UnstructuredGrid(get_vertex_coordinates(topo),get_faces(topo,Dc,0),get_reffes(model.grid),get_cell_type(topo),OrientationStyle(topo))
   nfaces = [num_faces(topo,d) for d in 0:num_cell_dims(topo)]
   labels = FaceLabeling(nfaces)
@@ -76,7 +76,7 @@ function refine(model::UnstructuredDiscreteModel{Dc,Dp}) where {Dc,Dp}
   return AdaptedDiscreteModel(ref_model,model,glue)
 end
 
-_refine_unstructured_topology(topo::UnstructuredGridTopology) = @notimplemented
+_refine_unstructured_topology(topo::UnstructuredGridTopology,cells_to_refine) = @notimplemented
 
 function _refine_unstructured_topology(topo::UnstructuredGridTopology{Dc,2}) where Dc
   # In dimension D=2, we allow mix and match of TRI and QUAD cells
@@ -144,7 +144,7 @@ function _get_refined_cell_to_vertex_map(topo::UnstructuredGridTopology{Dc,2}) w
   for iC = 1:nC_old
     p = topo.polytopes[topo.cell_type[iC]]
 
-    # New Node ids from old N,E,C ids
+    # New Node gids from old N,E,C lids
     N = c2n_map[iC]
     E = c2e_map[iC] .+ nN_old
     C = iC + nN_old + nE_old

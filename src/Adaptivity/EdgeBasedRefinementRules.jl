@@ -16,7 +16,7 @@ function RedRefinementRule(p::Polytope{2})
   polys, cell_types, conn = _get_red_refined_connectivity(p)
   reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
 
-  ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types)
+  ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(coords,conn,reffes,cell_types))
   return RefinementRule(RedRefinement(),p,ref_grid)
 end
 
@@ -52,7 +52,7 @@ function GreenRefinementRule(p::Polytope{2},ref_edge::Integer)
   polys, cell_types, conn = _get_green_refined_connectivity(p,ref_edge)
   reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
 
-  ref_grid = UnstructuredGrid(coords,conn,reffes,cell_types)
+  ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(coords,conn,reffes,cell_types))
   return RefinementRule(GreenRefinement{ref_edge}(),p,ref_grid)
 end
 
@@ -110,6 +110,45 @@ function _get_new_coordinates_from_faces(p::Union{Polytope{D},GridTopology{D,Dp}
   end
 
   return coords_new
+end
+
+function _flag_redgreen_cells(topo::UnstructuredGridTopology{Dc},cells_to_refine::Vector{<:Integer})
+  nC = num_cells(topo)
+  nE = num_faces(topo,1)
+  c2e_map = get_faces(topo,Dc,0)
+  e2c_map = get_faces(topo,0,Dc)
+
+  WHITE, GREEN, RED = Int8(0), Int8(1), Int8(2)
+  cell_color  = fill(WHITE,nC)
+  is_refined  = fill(false,nE)
+
+  # Flag initial red cells and edges
+  cell_color[cells_to_refine] .= RED
+  map!(c->is_refined[c2e_map[c]].=true,cells_to_refine)
+
+  # Propagate red/green flags
+  # Queue invariant: Cells in queue are RED, every RED cell is only touched once
+  q = Queue{Int}()
+  map!(c->enqueue!(q,c),cells_to_refine)
+  while !isempty(q)
+    c = dequeue!(q)
+    edges = c2e_map[c]
+
+    # For each non-red nboring cell
+    nbors = filter(n->cell_color[n]!=RED,map(e->first(filter(x->x!=c,e2c_map[e])),edges))
+    for nbor in nbors
+      n_ref_edges = count(is_refined[c2e_map[nbor]])
+      if n_ref_edges == 1
+        cell_color[nbor] = GREEN
+      else # n_ref_edges > 1, can't be 0
+        cell_color[nbor] = RED
+        is_refined[c2e_map[nbor]] .= true
+        enqueue!(q,nbor)
+      end
+    end
+  end
+
+  return cell_color, is_refined
 end
 
 """
