@@ -26,7 +26,7 @@ function ReferenceFEs.Quadrature(p::Polytope,::CompositeQuadrature,rr::Refinemen
   @check p === ReferenceFEs.get_polytope(rr)
   subgrid  = get_ref_grid(rr)
   cellmap  = get_cell_map(rr)
-  measures = get_measures(rr)
+  measures = get_cell_measures(rr)
   quads    = ReferenceFEs.Quadrature(subgrid,degree;kwargs...)
 
   npts = sum(map(num_points,quads))
