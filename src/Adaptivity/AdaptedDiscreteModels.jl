@@ -64,168 +64,110 @@ end
 
 function refine(model::UnstructuredDiscreteModel{Dc,Dp};cells_to_refine=nothing) where {Dc,Dp}
   # Create new model
-  topo = _refine_unstructured_topology(model.grid_topology,cells_to_refine)
-  grid = UnstructuredGrid(get_vertex_coordinates(topo),get_faces(topo,Dc,0),get_reffes(model.grid),get_cell_type(topo),OrientationStyle(topo))
-  nfaces = [num_faces(topo,d) for d in 0:num_cell_dims(topo)]
-  labels = FaceLabeling(nfaces)
+  rrules, faces_list = _setup_redgreen_coloring(model.grid_topology,cells_to_refine)
+  topo   = _refine_unstructured_topology(model.grid_topology,rrules, faces_list)
+  grid   = UnstructuredGrid(get_vertex_coordinates(topo),get_faces(topo,Dc,0),get_reffes(model.grid),get_cell_type(topo),OrientationStyle(topo))
+  labels = FaceLabeling([num_faces(topo,d) for d in 0:num_cell_dims(topo)])
   ref_model = UnstructuredDiscreteModel(grid,topo,labels)
 
   # Create ref glue
-  glue = _get_refinement_glue(topo,model.grid_topology)
+  glue = _get_refinement_glue(topo,model.grid_topology,rrules)
 
   return AdaptedDiscreteModel(ref_model,model,glue)
 end
 
-_refine_unstructured_topology(topo::UnstructuredGridTopology,cells_to_refine) = @notimplemented
+_refine_unstructured_topology(topo::UnstructuredGridTopology,rrules::AbstractVector{RefinementRule}) = @notimplemented
 
-function _refine_unstructured_topology(topo::UnstructuredGridTopology{Dc,2}) where Dc
+function _refine_unstructured_topology(topo::UnstructuredGridTopology{Dc,2},
+                                       rrules::AbstractVector{RefinementRule},
+                                       faces_list::Tuple) where Dc
   # In dimension D=2, we allow mix and match of TRI and QUAD cells
   @notimplementedif !all(map(p -> p ∈ [QUAD,TRI],topo.polytopes))
 
-  coords_new  = _get_refined_vertex_coordinates(topo)
-  c2n_map_new = _get_refined_cell_to_vertex_map(topo)
+  coords_new  = _get_new_coordinates_from_faces(topo,faces_list)
+  c2n_map_new = _get_refined_cell_to_vertex_map(topo,rrules,faces_list)
 
   nC_old = num_faces(topo,2)
   nC_new = length(c2n_map_new)
-  cell_type_new = Vector{Int}(undef,nC_new)
+  cell_type_new = Vector{Int8}(undef,nC_new)
+  polys = unique(lazy_map(rr->first(get_polytopes(rr.ref_grid)), rrules))
   k = 1
   for iC = 1:nC_old
-    p = topo.polytopes[topo.cell_type[iC]]
-    range = k:k+num_children(p)-1
-    cell_type_new[range] .= topo.cell_type[iC]
-    k += num_children(p)
+    rr = rrules[iC]
+    p  = first(get_polytopes(rr.ref_grid))
+    range = k:k+num_subcells(rr)-1
+    cell_type_new[range] .= findfirst(x->x==p,polys)
+    k += num_subcells(rr)
   end
   
-  return UnstructuredGridTopology(coords_new,c2n_map_new,cell_type_new,topo.polytopes,topo.orientation_style)
+  return UnstructuredGridTopology(coords_new,c2n_map_new,cell_type_new,polys,topo.orientation_style)
 end
 
-function _get_refined_vertex_coordinates(topo::UnstructuredGridTopology{Dc,2}) where Dc
+function _get_refined_cell_to_vertex_map(topo::UnstructuredGridTopology{Dc,2},
+                                         rrules::AbstractVector{RefinementRule},
+                                         faces_list::Tuple) where Dc
   @notimplementedif !all(map(p -> p ∈ [QUAD,TRI],topo.polytopes))
-  coords    = topo.vertex_coordinates
-  e2n_map   = get_faces(topo,1,0)
-  c2n_map   = get_faces(topo,2,0)
-
-  # Old sizes
-  nN_old = num_faces(topo,0) # Nodes
-  nE_old = num_faces(topo,1) # Edges
-
-  # Number of Adapted nodes: nN_new = nN + nE + nQUADS
-  iQUAD     = findfirst(p -> p == QUAD, topo.polytopes)
-  quad_mask = map(i -> i == iQUAD, topo.cell_type)
-  nN_new    = nN_old + nE_old + count(quad_mask)
-
-  # Create new coordinates
-  coords_new = Vector{eltype(coords)}(undef,nN_new)
-  coords_new[1:nN_old] .= coords
-  coords_new[nN_old+1:nN_old+nE_old] .= map(pts -> sum(coords[pts])/length(pts), e2n_map)
-  coords_new[nN_old+nE_old+1:nN_new] .= map(pts -> sum(coords[pts])/length(pts), c2n_map[findall(quad_mask)])
-  return coords_new
-end
-
-function _get_refined_cell_to_vertex_map(topo::UnstructuredGridTopology{Dc,2}) where Dc
-  @notimplementedif !all(map(p -> p ∈ [QUAD,TRI],topo.polytopes))
+  nN_old  = num_faces(topo,0) # Nodes
+  nE_old  = num_faces(topo,1) # Edges
+  nC_old  = num_faces(topo,2) # Cells
   c2n_map = get_faces(topo,2,0)
   c2e_map = get_faces(topo,2,1)
+  ref_edges = faces_list[2]
 
   # Allocate map ptr and data arrays
-  nC_new    = sum(ct -> num_children(topo.polytopes[ct]), topo.cell_type)
-  nData_new = sum(ct -> num_refined_faces(topo.polytopes[ct]), topo.cell_type)
+  nC_new    = sum(rr -> num_subcells(rr), rrules)
+  nData_new = sum(rr -> num_ref_faces(rr,0), rrules)
 
   ptrs_new  = Vector{Int}(undef,nC_new+1)
   data_new  = Vector{Int}(undef,nData_new)
 
-  # Old sizes
-  nN_old = num_faces(topo,0) # Nodes
-  nE_old = num_faces(topo,1) # Edges
-  nC_old = num_faces(topo,2) # Cells
+  if all(lazy_map(rr->RefinementRuleType(rr)<:RedRefinement,rrules))
+    edges_reindexing = 1:nE_old
+  else
+    edges_reindexing = lazy_map(Reindex(find_inverse_index_map(ref_edges)),1:nE_old)
+  end
 
   k = 1
   ptrs_new[1] = 1
+  C = nN_old + length(ref_edges) + 1
   for iC = 1:nC_old
-    p = topo.polytopes[topo.cell_type[iC]]
+    rr = rrules[iC]
 
     # New Node gids from old N,E,C lids
     N = c2n_map[iC]
-    E = c2e_map[iC] .+ nN_old
-    C = iC + nN_old + nE_old
-    new_nodes_ids, p_children = get_refined_children(p,[N,E,C])
+    E = edges_reindexing[c2e_map[iC]] .+ nN_old
+    sub_conn = get_relabeled_connectivity(rr,(N,E,[C]))
     
-    nChild = length(new_nodes_ids)
-    for iChild = 1:nChild
-      ptrs_new[k+1] = ptrs_new[k] + length(new_nodes_ids[iChild])
-      data_new[ptrs_new[k]:ptrs_new[k+1]-1] .= new_nodes_ids[iChild]
-      k = k+1
-    end
+    nChild = length(sub_conn)
+    ptrs_new[k:k+1+nChild] .= ptrs_new[k] .+ sub_conn.ptrs - 1
+    data_new[ptrs_new[k]:ptrs_new[k+1+nChild]-1] .= sub_conn.data
+    k = k+nChild
+
+    _has_interior_point(rr) && (C += 1)
   end
 
   return Table(data_new,ptrs_new)
 end
 
-function _get_refinement_glue(ftopo::T,ctopo::T) where {Dc,T<:UnstructuredGridTopology{Dc,2}}
+function _get_refinement_glue(ftopo::T,ctopo::T,rrules) where {Dc,T<:UnstructuredGridTopology{Dc,2}}
   nC_old = num_faces(ctopo,2)
   nC_new = num_faces(ftopo,2)
-  polys  = ctopo.polytopes
 
   f2c_cell_map      = Vector{Int}(undef,nC_new)
   fcell_to_child_id = Vector{Int}(undef,nC_new)
 
   k = 1
   for iC = 1:nC_old
-    p = polys[ctopo.cell_type[iC]]
-    range = k:k+num_children(p)-1
+    rr = rrules[iC]
+    range = k:k+num_subcells(rr)-1
     f2c_cell_map[range] .= iC
-    fcell_to_child_id[range] .= collect(1:num_children(p))
-    k += num_children(p)
+    fcell_to_child_id[range] .= collect(1:num_subcells(rr))
+    k += num_subcells(rr)
   end
-
-  nP        = length(polys)
-  reffes    = map(LagrangianRefFE,Fill(Float64,nP),polys,Fill(1,nP))
-  rrules    = map(RefinementRule,reffes,Fill(2,nP))
-  fine_to_rrules = lazy_map(Reindex(rrules),ftopo.cell_type)
 
   f2c_faces_map = [Int[],Int[],f2c_cell_map]
-  return AdaptivityGlue(f2c_faces_map,fcell_to_child_id,fine_to_rrules)
+  return AdaptivityGlue(f2c_faces_map,fcell_to_child_id,rrules)
 end
-
-function num_children(p::Polytope{2})
-  (p == QUAD || p == TRI) && (return 4)
-  @notimplemented
-end
-
-function num_children(p::Polytope{3})
-  (p == HEX || p == TET) && (return 8)
-  @notimplemented
-end
-
-function num_refined_faces(p::Polytope)
-  (p == QUAD) && (return num_children(p)*num_faces(p,0))
-  (p == TRI)  && (return num_children(p)*num_faces(p,0))
-  @notimplemented
-end
-
-function get_refined_children(p::Polytope{2}, face_ids)
-  N,E,C = face_ids # Node, Edge and Cell global ids
-
-  if p == QUAD 
-    ids = [[N[1],E[1],E[3],C],
-           [E[1],N[2],C,E[4]],
-           [E[3],C,N[3],E[2]],
-           [C,E[4],E[2],N[4]]]
-    return (ids,QUAD)
-  elseif p == TRI
-    ids = [[N[1],E[1],E[2]],
-           [E[1],N[2],E[3]],
-           [E[1],E[2],E[3]],
-           [E[2],E[3],N[3]]]
-    return (ids,TRI)
-  end
-  @notimplemented
-end
-
-function get_refined_children(p::Polytope{3}, face_ids)
-  @notimplemented
-end
-
 
 # Cartesian Mesh refining
 
