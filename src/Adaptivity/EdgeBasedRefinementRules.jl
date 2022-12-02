@@ -62,7 +62,7 @@ function GreenRefinementRule(p::Polytope{2},ref_edge::Integer)
 end
 
 function _get_green_refined_connectivity(p::Polytope{2},ref_edge)
-  P = _get_green_permutation(p,ref_edge)
+  P = _get_green_vertex_permutation(p,ref_edge)
   if p == TRI
     polys     = [TRI]
     cell_type = [1,1]
@@ -82,15 +82,16 @@ function _get_green_refined_connectivity(p::Polytope{2},ref_edge)
   @notimplemented
 end
 
-function _get_green_permutation(p::Polytope{2},ref_edge)
-  e2n_map = get_faces(p,1,0)
-  Ve = e2n_map[ref_edge]
-  Vf = filter(x-> x ∉ Ve,collect(1:num_faces(p,0)))
+function _get_green_vertex_permutation(p::Polytope{2},ref_edge)
 
   if p == TRI
-    perm = [Vf[1],Ve[1],Ve[2]]
+    perm = circshift([1,2,3],3-ref_edge)
   elseif p == QUAD
-    perm = [Vf[1],Vf[2],Ve[1],Ve[2]]
+    # Vertices and edges are not circularly labeled in QUAD, so 
+    # we have to be inventive:
+    nodes = [1,2,4,3]  # Vertices in circular order
+    nperm = [2,0,-1,1] # Number of perms depending on ref edge
+    perm  = circshift(nodes,nperm[ref_edge])[nodes]
   else
     @notimplemented
   end
@@ -119,18 +120,24 @@ function _get_new_coordinates_from_faces(p::Union{Polytope{D},GridTopology{D,Dp}
   return coords_new
 end
 
+function _setup_redgreen_coloring(topo::UnstructuredGridTopology{Dc},::Nothing) where Dc
+  rrules     = lazy_map(p->RedRefinementRule(p),CompressedArray(topo.polytopes,topo.cell_type))
+  faces_list = _redgreen_refined_faces_list(topo,rrules,[true])
+  return rrules, faces_list
+end
+
 function _setup_redgreen_coloring(topo::UnstructuredGridTopology{Dc},cells_to_refine::Vector{<:Integer}) where Dc
   nC = num_cells(topo)
   nE = num_faces(topo,1)
-  c2e_map     = get_faces(topo,Dc,0)
-  e2c_map     = get_faces(topo,0,Dc)
+  c2e_map     = get_faces(topo,Dc,1)
+  e2c_map     = get_faces(topo,1,Dc)
   polys       = topo.polytopes
   cell_types  = topo.cell_type
   nP          = length(polys)
 
   # Color pointers/offsets
   WHITE, RED, GREEN = Int8(1), Int8(1+nP), Int8(1+nP+nP)
-  green_offsets = counts_to_ptrs(map(num_faces(p,1),polys))
+  green_offsets = counts_to_ptrs(map(p->num_faces(p,1),polys))
 
   cell_color  = copy(cell_types) # WHITE
   is_red      = fill(false,nC)
@@ -138,7 +145,7 @@ function _setup_redgreen_coloring(topo::UnstructuredGridTopology{Dc},cells_to_re
 
   # Flag initial red cells and edges
   for c in cells_to_refine
-    cell_color[c] .= RED + Int8(cell_types[c]-1)
+    cell_color[c] = RED + Int8(cell_types[c]-1)
     is_red[c] = true
     is_refined[c2e_map[c]] .= true
   end
@@ -146,19 +153,20 @@ function _setup_redgreen_coloring(topo::UnstructuredGridTopology{Dc},cells_to_re
   # Propagate red/green flags
   # Queue invariant: Cells in queue are RED, every RED cell is only touched once
   q = Queue{Int}()
-  map!(c->enqueue!(q,c),cells_to_refine)
+  map(c->enqueue!(q,c),cells_to_refine)
   while !isempty(q)
     c = dequeue!(q)
     c_edges = c2e_map[c]
 
     # For each non-red neighboring cell
-    nbors = filter(n->!is_red[n],map(e->first(filter(x->x!=c,e2c_map[e])),c_edges))
+    nbors = map(first,filter(n->n!=[] && !is_red[n[1]],map(e->filter(x->x!=c,e2c_map[e]),c_edges)))
     for nbor in nbors
       nbor_edges = c2e_map[nbor]
       nbor_ref_edges = findall(is_refined[nbor_edges])
       if length(nbor_ref_edges) == 1
+        p = cell_types[nbor]
         ref_edge = nbor_ref_edges[1]
-        cell_color[nbor] = GREEN + Int8(green_offsets[ref_edge]+ref_edge-1)
+        cell_color[nbor] = GREEN + Int8(green_offsets[p]-1+ref_edge-1)
       else # > 1, can't be 0
         cell_color[nbor] = RED + Int8(cell_types[nbor]-1)
         is_refined[nbor_edges] .= true
@@ -167,14 +175,17 @@ function _setup_redgreen_coloring(topo::UnstructuredGridTopology{Dc},cells_to_re
     end
   end
 
+  display(cell_color)
+
   # Create RefinementRules
-  num_rr = 1 + nP + green_offsets[nP+1]-1 # WHITE+RED+GREEN
+  num_rr = nP + nP + green_offsets[nP+1]-1 # WHITE+RED+GREEN
   color_rrules = Vector{RefinementRule}(undef,num_rr)
   for (k,p) in enumerate(polys)
     color_rrules[WHITE+k-1] = WhiteRefinementRule(p)
     color_rrules[RED+k-1]   = RedRefinementRule(p)
     for e in 1:num_faces(p,1)
-      color_rrules[GREEN+green_offsets[k]+e-1] = GreenRefinementRule(p,e)
+      println(GREEN+green_offsets[k]-1+e-1)
+      color_rrules[GREEN+green_offsets[k]-1+e-1] = GreenRefinementRule(p,e)
     end
   end
   rrules = CompressedArray(color_rrules,cell_color)
@@ -187,9 +198,13 @@ end
 
 function _redgreen_refined_faces_list(topo::UnstructuredGridTopology{2},rrules,edge_is_refined)
   ref_nodes = 1:num_faces(topo,0)
-  ref_edges = findall(edge_is_refined)
+  ref_edges = all(edge_is_refined) ? (1:num_faces(topo,1)) : findall(edge_is_refined)
   ref_cells = findall(lazy_map(_has_interior_point,rrules))
   return (ref_nodes,ref_edges,ref_cells)
+end
+
+function _has_interior_point(rr::RefinementRule{P,T}) where {P,T<:WithoutRefinement}
+  return false
 end
 
 function _has_interior_point(rr::RefinementRule{P,T}) where {P,T<:RedRefinement}
@@ -204,6 +219,13 @@ function _has_interior_point(rr::RefinementRule{P,T}) where {P,T<:GreenRefinemen
   return false
 end
 
+function get_relabeled_connectivity(rr::RefinementRule{P,T},faces_gids) where {P<:Polytope{2},T<:WithoutRefinement}
+  conn = rr.ref_grid.grid.cell_node_ids
+  gids = faces_gids[1]
+  new_data = lazy_map(Reindex(gids),conn.data)
+  return Table(new_data,conn.ptrs)
+end
+
 function get_relabeled_connectivity(rr::RefinementRule{P,T},faces_gids) where {P<:Polytope{2},T<:RedRefinement}
   conn = rr.ref_grid.grid.cell_node_ids
   gids = [faces_gids[1]...,faces_gids[2]...,faces_gids[3]...]
@@ -216,6 +238,16 @@ function get_relabeled_connectivity(rr::RefinementRule{P,T},faces_gids) where {N
   gids = [faces_gids[1]...,faces_gids[2][N]]
   new_data = lazy_map(Reindex(gids),conn.data)
   return Table(new_data,conn.ptrs)
+end
+
+function counts_to_ptrs(counts)
+  n = length(counts)
+  ptrs = Vector{Int32}(undef,n+1)
+  @inbounds for i in 1:n
+    ptrs[i+1] = counts[i]
+  end
+  length_to_ptrs!(ptrs)
+  ptrs
 end
 
 """
