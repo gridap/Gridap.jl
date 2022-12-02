@@ -415,7 +415,7 @@ function DiscreteModelFromFile(filename::AbstractString)
 end
 
 function DiscreteModelFromFile(filename::AbstractString,::Any)
-  error("File type unknown (did you forget to load GridapGmsh?)")
+  error("File type unknown (you may need to load a package, for instance GridapGmsh)")
 end
 
 function DiscreteModelFromFile(filename::AbstractString,::Val{:json})
