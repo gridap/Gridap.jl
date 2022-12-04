@@ -3,7 +3,7 @@ abstract type RefinementRuleType end
 struct GenericRefinement <: RefinementRuleType end
 struct WithoutRefinement <: RefinementRuleType end
 
-struct RefinementRule{P,T,A,B,C}
+struct RefinementRule{T,P,A,B,C}
   poly         :: P
   ref_grid     :: A
   f2c_cell_map :: B
@@ -17,7 +17,7 @@ struct RefinementRule{P,T,A,B,C}
     A = typeof(ref_grid)
     B = typeof(f2c_cell_map)
     C = typeof(x_to_cell)
-    new{P,T,A,B,C}(poly,ref_grid,f2c_cell_map,x_to_cell)
+    new{T,P,A,B,C}(poly,ref_grid,f2c_cell_map,x_to_cell)
   end
 end
 
@@ -25,7 +25,7 @@ ReferenceFEs.get_polytope(rr::RefinementRule) = rr.poly
 get_ref_grid(rr::RefinementRule) = rr.ref_grid
 num_subcells(rr::RefinementRule) = num_cells(rr.ref_grid)
 num_ref_faces(rr::RefinementRule,d::Int) = num_faces(rr.ref_grid,d)
-RefinementRuleType(rr::RefinementRule{P,T}) where {P,T} = T
+RefinementRuleType(::RefinementRule{T}) where T = T
 
 function Geometry.get_cell_map(rr::RefinementRule)
   return rr.f2c_cell_map

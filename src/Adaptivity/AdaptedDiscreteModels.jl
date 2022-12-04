@@ -64,93 +64,22 @@ end
 
 function refine(model::UnstructuredDiscreteModel{Dc,Dp};cells_to_refine=nothing) where {Dc,Dp}
   # Create new model
-  rrules, faces_list = _setup_redgreen_coloring(model.grid_topology,cells_to_refine)
-  topo   = _refine_unstructured_topology(model.grid_topology,rrules,faces_list)
+  rrules, faces_list = setup_edge_based_rrules(model.grid_topology,cells_to_refine)
+  topo   = refine_unstructured_topology(model.grid_topology,rrules,faces_list)
   reffes = map(p->LagrangianRefFE(Float64,p,1),get_polytopes(topo))
   grid   = UnstructuredGrid(get_vertex_coordinates(topo),get_faces(topo,Dc,0),reffes,get_cell_type(topo),OrientationStyle(topo))
   labels = FaceLabeling([num_faces(topo,d) for d in 0:num_cell_dims(topo)])
   ref_model = UnstructuredDiscreteModel(grid,topo,labels)
 
   # Create ref glue
-  glue = _get_refinement_glue(topo,model.grid_topology,rrules)
+  glue = get_refinement_glue(topo,model.grid_topology,rrules)
 
   return AdaptedDiscreteModel(ref_model,model,glue)
 end
 
-_refine_unstructured_topology(topo::UnstructuredGridTopology,rrules,faces_list) = @notimplemented
-
-function _refine_unstructured_topology(topo::UnstructuredGridTopology{Dc,2},
-                                       rrules::AbstractVector{<:RefinementRule},
-                                       faces_list::Tuple) where Dc
-  # In dimension D=2, we allow mix and match of TRI and QUAD cells
-  @notimplementedif !all(map(p -> p ∈ [QUAD,TRI],topo.polytopes))
-
-  coords_new  = _get_new_coordinates_from_faces(topo,faces_list)
-  c2n_map_new = _get_refined_cell_to_vertex_map(topo,rrules,faces_list)
-
-  nC_old = num_faces(topo,2)
-  nC_new = length(c2n_map_new)
-  cell_type_new = Vector{Int8}(undef,nC_new)
-  polys = unique(lazy_map(rr->first(get_polytopes(rr.ref_grid)), rrules))
-  k = 1
-  for iC = 1:nC_old
-    rr = rrules[iC]
-    p  = first(get_polytopes(rr.ref_grid))
-    range = k:k+num_subcells(rr)-1
-    cell_type_new[range] .= findfirst(x->x==p,polys)
-    k += num_subcells(rr)
-  end
-  
-  return UnstructuredGridTopology(coords_new,c2n_map_new,cell_type_new,polys,topo.orientation_style)
-end
-
-function _get_refined_cell_to_vertex_map(topo::UnstructuredGridTopology{Dc,2},
-                                         rrules::AbstractVector{<:RefinementRule},
-                                         faces_list::Tuple) where Dc
-  @notimplementedif !all(map(p -> p ∈ [QUAD,TRI],topo.polytopes))
-  nN_old,nE_old,nC_old  = num_faces(topo,0),num_faces(topo,1),num_faces(topo,2)
-  c2n_map = get_faces(topo,2,0)
-  c2e_map = get_faces(topo,2,1)
-  ref_edges = faces_list[2]
-
-  # Allocate map ptr and data arrays
-  nC_new    = sum(rr -> num_subcells(rr), rrules)
-  nData_new = sum(rr -> sum(ids->length(ids),rr.ref_grid.grid.cell_node_ids), rrules)
-
-  ptrs_new  = Vector{Int}(undef,nC_new+1)
-  data_new  = Vector{Int}(undef,nData_new)
-
-  if all(lazy_map(rr->RefinementRuleType(rr)<:RedRefinement,rrules))
-    edges_reindexing = 1:nE_old
-  else
-    edges_reindexing = lazy_map(Reindex(find_inverse_index_map(ref_edges,nE_old)),1:nE_old)
-  end
-
-  k = 1
-  ptrs_new[1] = 1
-  C = nN_old + length(ref_edges) + 1
-  for iC = 1:nC_old
-    rr = rrules[iC]
-
-    # New Node gids from old N,E,C lids
-    N = c2n_map[iC]
-    E = edges_reindexing[c2e_map[iC]] .+ nN_old
-    sub_conn = get_relabeled_connectivity(rr,(N,E,[C]))
-    
-    nChild = length(sub_conn)
-    ptrs_new[k:k+nChild] .=  sub_conn.ptrs .+ (ptrs_new[k] - 1)
-    data_new[ptrs_new[k]:ptrs_new[k+nChild]-1] .= sub_conn.data
-    k = k+nChild
-
-    _has_interior_point(rr) && (C += 1)
-  end
-
-  return Table(data_new,ptrs_new)
-end
-
-function _get_refinement_glue(ftopo::T,ctopo::T,rrules) where {Dc,T<:UnstructuredGridTopology{Dc,2}}
-  nC_old = num_faces(ctopo,2)
-  nC_new = num_faces(ftopo,2)
+function get_refinement_glue(ftopo::T,ctopo::T,rrules::AbstractVector{<:RefinementRule}) where {Dc,T<:UnstructuredGridTopology{Dc}}
+  nC_old = num_faces(ctopo,Dc)
+  nC_new = num_faces(ftopo,Dc)
 
   f2c_cell_map      = Vector{Int}(undef,nC_new)
   fcell_to_child_id = Vector{Int}(undef,nC_new)
@@ -164,7 +93,7 @@ function _get_refinement_glue(ftopo::T,ctopo::T,rrules) where {Dc,T<:Unstructure
     k += num_subcells(rr)
   end
 
-  f2c_faces_map = [Int[],Int[],f2c_cell_map]
+  f2c_faces_map = [(d==Dc) ? f2c_cell_map : Int[] for d in 0:Dc]
   return AdaptivityGlue(f2c_faces_map,fcell_to_child_id,rrules)
 end
 
