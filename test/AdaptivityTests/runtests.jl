@@ -4,6 +4,7 @@ using Test
 
 @testset "AdaptedGeometry" begin
   include("AdaptedGeometryTests.jl")
+  include("EdgeBasedRefinementTests.jl")
 end
 
 @testset "GridTransfer" begin

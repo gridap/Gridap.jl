@@ -169,6 +169,7 @@ function _setup_redgreen_coloring(topo::UnstructuredGridTopology{Dc},cells_to_re
         cell_color[nbor] = GREEN + Int8(green_offsets[p]-1+ref_edge-1)
       else # > 1, can't be 0
         cell_color[nbor] = RED + Int8(cell_types[nbor]-1)
+        is_red[nbor] = true
         is_refined[nbor_edges] .= true
         enqueue!(q,nbor)
       end
