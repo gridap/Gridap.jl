@@ -115,6 +115,10 @@ assem = SparseMatrixAssembler(U2,V)
 data = collect_cell_matrix(U2,V,mat_contribs)
 A2 = assemble_matrix(assem,data)
 @test size(A2) == (num_free_dofs(V), num_free_dofs(U2))
+A2,b2 = assemble_matrix_and_vector(a2(du2,dv),ℓ(dv),U2,V)
+@test size(A2) == (num_free_dofs(V), num_free_dofs(U2))
+A2,b2 = assemble_matrix_and_vector(a2(du2,dv),0,U2,V)
+@test size(A2) == (num_free_dofs(V), num_free_dofs(U2))
 
 V = TestFESpace(
   model,
