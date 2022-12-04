@@ -98,7 +98,8 @@ struct FineToCoarseField{A<:AbstractArray{<:Field},B<:RefinementRule} <: Field
 end
 
 function Geometry.return_cache(a::FineToCoarseField,x::Point)
-  fields, cmaps = a.fine_fields, a.rrule.c2f_cell_map
+  fields = a.fine_fields
+  cmaps = get_inverse_cell_map(a.rrule)
 
   fi_cache = array_cache(fields)
   cm_cache = array_cache(cmaps)
@@ -109,7 +110,8 @@ end
 
 function Geometry.evaluate!(cache,a::FineToCoarseField,x::Point)
   fi_cache, cm_cache, xi_cache, yi_cache = cache
-  fields, x_to_cell, cmaps = a.fine_fields, a.rrule.x_to_cell, a.rrule.c2f_cell_map
+  fields, x_to_cell = a.fine_fields, a.rrule.x_to_cell
+  cmaps = get_inverse_cell_map(a.rrule)
 
   child_id = x_to_cell(x) # Find correct subcell
   fi = getindex!(fi_cache,fields,child_id)
@@ -120,7 +122,8 @@ function Geometry.evaluate!(cache,a::FineToCoarseField,x::Point)
 end
 
 function Geometry.return_cache(a::FineToCoarseField,x::AbstractArray{<:Point})
-  fields, x_to_cell, cmaps = a.fine_fields, a.rrule.x_to_cell, a.rrule.c2f_cell_map
+  fields, x_to_cell = a.fine_fields, a.rrule.x_to_cell
+  cmaps = get_inverse_cell_map(a.rrule)
 
   xi_cache = array_cache(x)
   fi_cache = array_cache(fields)
@@ -143,7 +146,8 @@ end
 
 function Geometry.evaluate!(cache,a::FineToCoarseField,x::AbstractArray{<:Point})
   fi_cache, mi_cache, xi_cache, zi_cache, yi_cache, y_cache = cache
-  fields, x_to_cell, cmaps = a.fine_fields, a.rrule.x_to_cell, a.rrule.c2f_cell_map
+  fields, x_to_cell = a.fine_fields, a.rrule.x_to_cell
+  cmaps = get_inverse_cell_map(a.rrule)
 
   Arrays.setsize!(y_cache, size(x))
 
