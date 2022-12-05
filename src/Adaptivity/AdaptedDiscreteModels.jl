@@ -47,7 +47,7 @@ end
 
 is_child(m1::DiscreteModel,m2::AdaptedDiscreteModel) = false
 
-is_related(m1::DiscreteModel,m2::DiscreteModel) = is_child(m1,m2) || is_parent(m1,m2)
+is_related(m1::DiscreteModel,m2::DiscreteModel) = is_child(m1,m2) || is_child(m2,m1)
 
 # Model Refining
 function refine(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel

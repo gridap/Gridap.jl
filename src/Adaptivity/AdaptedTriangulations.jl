@@ -42,9 +42,7 @@ end
 
 is_child(t1::Triangulation,t2::AdaptedTriangulation) = false
 
-is_related(t1::AdaptedTriangulation,t2::Triangulation) = is_child(t1,t2)
-is_related(t1::Triangulation,t2::AdaptedTriangulation) = is_child(t2,t1)
-is_related(t1::AdaptedTriangulation,t2::AdaptedTriangulation) = is_child(t1,t2) || is_child(t2,t1)
+is_related(t1::Triangulation,t2::Triangulation) = is_child(t1,t2) || is_child(t2,t1)
 
 
 # Wrap Triangulation API
