@@ -15,6 +15,7 @@ struct AdaptedTriangulation{Dc,Dp,A<:Triangulation{Dc,Dp},B<:AdaptedDiscreteMode
 
   function AdaptedTriangulation(trian::Triangulation{Dc,Dp},model::AdaptedDiscreteModel{Dc2,Dp}) where {Dc,Dc2,Dp}
     @check !isa(trian,AdaptedTriangulation)
+    @check get_background_model(trian) === get_model(model)
     @check Dc <= Dc2
     A = typeof(trian)
     B = typeof(model)
