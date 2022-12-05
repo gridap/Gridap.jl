@@ -59,6 +59,14 @@ function refine(model::AdaptedDiscreteModel,args...;kwargs...)
   return AdaptedDiscreteModel(ref_model.model,model,ref_model.glue)
 end
 
+function adapt(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
+  @abstractmethod
+end
+
+function adapt(model::AdaptedDiscreteModel,args...;kwargs...)
+  adapted_model = adapt(model.model,args...;kwargs...)
+  return AdaptedDiscreteModel(adapted_model.model,model,ref_model.glue)
+end
 
 # UnstructuredDiscreteModel Refining
 
