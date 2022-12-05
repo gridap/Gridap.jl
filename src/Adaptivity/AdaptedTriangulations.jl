@@ -101,93 +101,49 @@ function Geometry.InterfaceTriangulation(model::AdaptedDiscreteModel,cell_to_ino
   return AdaptedTriangulation(trian,model)
 end
 
-function Geometry.is_change_possible(strian::AdaptedTriangulation,ttrian::AdaptedTriangulation)
-  # A) Both Triangulations are exactly the same
-  (strian === ttrian) && (return true)
+for (stype,ttype) in [(:AdaptedTriangulation,:AdaptedTriangulation),(:AdaptedTriangulation,:Triangulation),(:Triangulation,:AdaptedTriangulation)]
+  sstrian = (stype==:AdaptedTriangulation) ? :(strian.trian) : :(strian)
+  tttrian = (ttype==:AdaptedTriangulation) ? :(ttrian.trian) : :(ttrian)
+  @eval begin
+    function CellData.is_change_possible(strian::$stype,ttrian::$ttype)
+      (strian === ttrian) && (return true)
 
-  # B) Same background model -> Default change of Triangulation
-  if (get_background_model(strian) === get_background_model(ttrian))
-    return is_change_possible(strian.trian,ttrian.trian)
+      if (get_background_model(strian) === get_background_model(ttrian))
+        return is_change_possible($sstrian,$tttrian)
+      end
+      
+      if typeof($sstrian) == typeof($tttrian)
+        return is_related(strian,ttrian)
+      end
+
+      return false
+    end
   end
-
-  # C) Different background model, but same type of Triangulation (Skeleton, BodyFitted, View, ...)
-  if typeof(strian.trian) == typeof(ttrian.trian) # Is this too restrictive???
-    return is_related(strian,ttrian)
+  @eval begin
+    function Geometry.best_target(strian::$stype,ttrian::$ttype)
+      @check is_change_possible(strian,ttrian)
+    
+      (strian === ttrian) && (return ttrian)
+    
+      if (get_background_model(strian) === get_background_model(ttrian))
+        return best_target($sstrian,$tttrian)
+      end
+    
+      if typeof($sstrian) == typeof($tttrian)
+        is_child(ttrian,strian) ? (return ttrian) : (return strian)
+      end
+    
+      @notimplemented
+      return nothing
+    end
   end
-
-  # D) Different background model AND different type of triangulation
-  @notimplemented
-  return false
-end
-
-function Geometry.is_change_possible(strian::AdaptedTriangulation,ttrian::Triangulation)
-  # A) Same background model -> Default change of Triangulation
-  if (get_background_model(strian) === get_background_model(ttrian))
-    return is_change_possible(strian.trian,ttrian)
-  end
-  
-  # B) Different background model, but same type of Triangulation (Skeleton, BodyFitted, View, ...)
-  if typeof(strian.trian) == typeof(ttrian)
-    return is_related(strian,ttrian)
-  end
-
-  # C) Different background model AND different type of triangulation
-  @notimplemented
-  return false
-end
-
-function Geometry.is_change_possible(strian::Triangulation,ttrian::AdaptedTriangulation)
-  # A) Same background model -> Default change of Triangulation
-  if (get_background_model(strian) === get_background_model(ttrian))
-    return is_change_possible(strian,ttrian.trian)
-  end
-  
-  # B) Different background model, but same type of Triangulation (Skeleton, BodyFitted, View, ...)
-  if typeof(strian) == typeof(ttrian.trian)
-    return is_related(strian,ttrian)
-  end
-
-  # C) Different background model AND different type of triangulation
-  @notimplemented
-  return false
-end
-
-function Geometry.best_target(strian::AdaptedTriangulation,ttrian::AdaptedTriangulation)
-  @check is_change_possible(strian,ttrian)
-
-  # A) Both Triangulations are exactly the same
-  (strian === ttrian) && (return ttrian)
-
-  # B) Same background model -> Default change of Triangulation
-  if (get_background_model(strian) === get_background_model(ttrian))
-    return best_target(strian.trian,ttrian.trian)
-  end
-
-  # C) Different background model, but same type of Triangulation (Skeleton, BodyFitted, View, ...)
-  if typeof(strian.trian) == typeof(ttrian.trian)
-    is_child(ttrian,strian) ? (return ttrian) : (return strian)
-  end
-
-  # D) Different background model AND different type of triangulation
-  @notimplemented
-  return nothing
-end
-
-function Geometry.best_target(strian::AdaptedTriangulation,ttrian::Triangulation)
-  @check is_change_possible(strian,ttrian)
-  return strian
-end
-
-function Geometry.best_target(strian::Triangulation,ttrian::AdaptedTriangulation)
-  @check is_change_possible(strian,ttrian)
-  return ttrian
 end
 
 function CellData.change_domain(a::CellField,strian::Triangulation,::ReferenceDomain,ttrian::AdaptedTriangulation,::ReferenceDomain)
   if strian === ttrian
     return a
   end
-  @assert is_change_possible(strian,ttrian)
+  @check is_change_possible(strian,ttrian)
 
   if (get_background_model(strian) === get_background_model(ttrian))
     return change_domain(a,strian,ReferenceDomain(),ttrian.trian,ReferenceDomain())
@@ -200,7 +156,7 @@ function CellData.change_domain(a::CellField,strian::AdaptedTriangulation,::Refe
   if strian === ttrian
     return a
   end
-  @assert is_change_possible(strian,ttrian)
+  @check is_change_possible(strian,ttrian)
 
   if (get_background_model(strian) === get_background_model(ttrian))
     return change_domain(a,strian.trian,ReferenceDomain(),ttrian,ReferenceDomain())

@@ -38,7 +38,6 @@ glue   = get_adaptivity_glue(model1)
 # Choosing targets
 ftrian = Triangulation(fmodel)
 ctrian = Triangulation(cmodel)
-@test best_target(trian1,ftrian) === trian1
 @test best_target(trian1,ctrian) === trian1
 @test best_target(trian1,trian2) === trian2
 
