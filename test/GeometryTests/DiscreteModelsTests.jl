@@ -4,6 +4,7 @@ using Test
 using Gridap.Arrays
 using Gridap.Fields
 using Gridap.ReferenceFEs
+using Gridap.TensorValues: det
 using Gridap.Geometry
 using Gridap.Geometry: DiscreteModelMock
 using Gridap.Io
@@ -85,8 +86,13 @@ model = CartesianDiscreteModel(domain,partition)
 tmodel = simplexify(model)
 test_discrete_model(tmodel)
 
-otmodel = simplexify(model,oriented=true)
-test_discrete_model(otmodel)
+ptmodel = simplexify(model,positive=true)
+test_discrete_model(ptmodel)
+
+Jtk = lazy_map(∇,get_cell_map(ptmodel))
+X0k = lazy_map(first,get_cell_coordinates(ptmodel))
+Jt0k = lazy_map(evaluate,Jtk,X0k)
+@test all(>(0),lazy_map(det,Jt0k))
 
 model2 = DiscreteModel(grid,topo,labeling)
 test_discrete_model(model2)

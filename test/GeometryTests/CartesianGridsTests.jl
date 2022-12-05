@@ -6,6 +6,7 @@ using Test
 using Gridap.Helpers
 using Gridap.Arrays
 using Gridap.TensorValues
+using Gridap.TensorValues: det
 using Gridap.Fields
 using Gridap.Geometry
 using Gridap.ReferenceFEs
@@ -102,8 +103,13 @@ grid = CartesianGrid(domain,partition)
 tgrid = simplexify(grid)
 test_grid(tgrid)
 
-otgrid = simplexify(grid,oriented=true)
-test_grid(otgrid)
+ptgrid = simplexify(grid,positive=true)
+test_grid(ptgrid)
+
+Jtk = lazy_map(∇,get_cell_map(ptgrid))
+X0k = lazy_map(first,get_cell_coordinates(ptgrid))
+Jt0k = lazy_map(evaluate,Jtk,X0k)
+@test all(>(0),lazy_map(det,Jt0k))
 
 grid = compute_reference_grid(HEX8,4)
 test_grid(grid)

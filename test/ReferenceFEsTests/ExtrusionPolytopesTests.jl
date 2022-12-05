@@ -157,7 +157,7 @@ for dim in 0:5
     @test is_simplex(p)
 
     if dim <= 3
-      vss,p = simplexify(QD,oriented=true)
+      vss,p = simplexify(QD,positive=true)
       @test length(vss) == factorial(dim)
       for vs in vss
           @test allunique(vs)

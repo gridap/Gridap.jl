@@ -233,9 +233,9 @@ function simplexify(p::ExtrusionPolytope{1};kwargs...)
   [[1,2],], Polytope(TET_AXIS)
 end
 
-function simplexify(p::ExtrusionPolytope{2};oriented=false)
+function simplexify(p::ExtrusionPolytope{2};positive=false)
   if p == QUAD
-    simplices = simplexify_hypercube(2,oriented)
+    simplices = simplexify_hypercube(2,positive)
     (simplices, TRI)
   elseif p == TRI
     ([[1,2,3],], TRI)
@@ -244,9 +244,9 @@ function simplexify(p::ExtrusionPolytope{2};oriented=false)
   end
 end
 
-function simplexify(p::ExtrusionPolytope{3};oriented=false)
+function simplexify(p::ExtrusionPolytope{3};positive=false)
   if p == HEX
-    simplices = simplexify_hypercube(3,oriented)
+    simplices = simplexify_hypercube(3,positive)
     (simplices, TET)
   elseif p == TET
     simplices = [[1,2,3,4],]
@@ -256,11 +256,11 @@ function simplexify(p::ExtrusionPolytope{3};oriented=false)
   end
 end
 
-function simplexify(p::ExtrusionPolytope{D};oriented=false) where {D}
+function simplexify(p::ExtrusionPolytope{D};positive=false) where {D}
   # This function works for all dimensions. It could replace the
   # special cases above, but this might change the shape and order of
   # simplices.
-  @notimplementedif oriented
+  @notimplementedif positive
   SD = Polytope(ntuple(d->TET_AXIS, Val{D}() ))
   QD = Polytope(ntuple(d->HEX_AXIS, Val{D}() ))
   if p == QD
@@ -274,27 +274,26 @@ function simplexify(p::ExtrusionPolytope{D};oriented=false) where {D}
   end
 end
 
-function simplexify_hypercube(dim::Integer,oriented::Bool)
-  if oriented
-    oriented_simplexify_hypercube(dim)
+function simplexify_hypercube(dim::Integer,positive::Bool)
+  if positive
+    positive_simplexify_hypercube(dim)
   else
-    sorted_simplexify_hypercube(dim)
+    oriented_simplexify_hypercube(dim)
   end
 end
 
-function sorted_simplexify_hypercube(dim::Integer)
+function oriented_simplexify_hypercube(dim::Integer)
   if dim == 2
     [[1,2,3],[2,3,4]]
   elseif dim == 3
     [[1,2,3,7], [1,2,5,7], [2,3,4,7],
     [2,4,7,8], [2,5,6,7], [2,6,7,8]]
   else
-    @show dim
     @notimplemented
   end
 end
 
-function oriented_simplexify_hypercube(dim::Integer)
+function positive_simplexify_hypercube(dim::Integer)
   if dim == 2
     [[1,2,3],[2,4,3]]
   elseif dim == 3
