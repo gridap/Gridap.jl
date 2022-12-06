@@ -130,24 +130,25 @@ end
 
 # Cartesian Mesh refining
 
-function refine(model::CartesianDiscreteModel; num_refinements::Int=2)
-  @check num_refinements >= 2
-  ref  = num_refinements
+function refine(model::CartesianDiscreteModel{Dc}, cell_partition::Int=2) where Dc
+  partition = Tuple(fill(cell_partition,Dc))
+  return refine(model,partition)
+end
+
+function refine(model::CartesianDiscreteModel, cell_partition::Tuple)
   desc = Geometry.get_cartesian_descriptor(model)
   nC   = desc.partition
 
-  @notimplementedif length(nC) != 2
-  @notimplementedif any(map(nCi -> nCi != nC[1],nC))
-
+  # Refined model
   domain    = _get_cartesian_domain(desc)
-  model_ref = CartesianDiscreteModel(domain,ref.*nC)
+  model_ref = CartesianDiscreteModel(domain,cell_partition.*nC)
 
   # Glue
-  faces_map      = [Int[],Int[],_create_f2c_cell_map(nC,ref)]
-  fcell_child_id = _create_child_map(nC,ref)
+  f2c_cell_map, fcell_to_child_id = _create_cartesian_f2c_maps(nC,cell_partition)
+  faces_map      = [Int[],Int[],f2c_cell_map]
   reffe          = LagrangianRefFE(Float64,QUAD,1)
-  rrules         = RefinementRule(reffe,num_refinements)
-  glue = AdaptivityGlue(faces_map,fcell_child_id,rrules)
+  rrules         = RefinementRule(reffe,cell_partition)
+  glue = AdaptivityGlue(faces_map,fcell_to_child_id,rrules)
 
   return AdaptedDiscreteModel(model_ref,model,glue)
 end
@@ -163,21 +164,34 @@ function _get_cartesian_domain(desc::CartesianDescriptor{D}) where D
   return Tuple(domain)
 end
 
-function _create_f2c_cell_map(nC::Tuple,ref::Int)
-  D  = length(nC)
-  nF = nC[1]*ref
-
-  idx = Tuple.(CartesianIndices((nF,nF)))
-  a = map((i,j)->(1+(i-1)÷ref,1+(j-1)÷ref),first.(idx),last.(idx))
-  b = map((i,j)->(i-1)*nC[1]+j,first.(a),last.(a))
-  return Array(reshape(transpose(b),nF*nF))
+@generated function _c2v(idx::Union{NTuple{N,T},CartesianIndex{N}},sizes::NTuple{N,T}) where {N,T}    
+  res = :(idx[1])
+  for d in 1:N-1
+    ik = :((idx[$(d+1)]-1))
+    for k in 1:d
+        ik = :($ik * sizes[$k])
+    end
+    res = :($res + $ik) 
+  end
+  return res
 end
 
-function _create_child_map(nC::Tuple,ref::Int)
-  nF = nC[1]*ref
-  elem = reshape(collect(1:ref*ref),(ref,ref))
-  slice = transpose(repeat(elem,nC[1]))
-  mat = repeat(slice,nC[1])
-  return Array(reshape(transpose(mat),nF*nF))
-end
+@generated function _create_cartesian_f2c_maps(nC::NTuple{N,T},ref::NTuple{N,T}) where {N,T}
+  J_f2c   = Meta.parse(prod(["(",["1+(I[$k]-1)÷ref[$k]," for k in 1:N]...,")"]))
+  J_child = Meta.parse(prod(["(",["1+(I[$k]-1)%ref[$k]," for k in 1:N]...,")"]))
+  
+  return :(begin
+    nF = nC .* ref
+    f2c_map   = Vector{Int}(undef,prod(nF))
+    child_map = Vector{Int}(undef,prod(nF))
 
+    for (i,I) in enumerate(CartesianIndices(nF))
+      J_f2c   = $J_f2c
+      J_child = $J_child
+      f2c_map[i] = _c2v(J_f2c,nC)
+      child_map[i] = _c2v(J_child,ref)
+    end
+        
+    return f2c_map, child_map
+  end)
+end

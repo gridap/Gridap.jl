@@ -15,7 +15,7 @@ f₂(x) = x[1]
 
 # Get refined model and triangulation
 cart_model = CartesianDiscreteModel((0,1,0,1),(4,4))
-model = refine(cart_model; num_refinements=2)
+model = refine(cart_model,2)
 trian = Triangulation(model)
 ctrian = Triangulation(get_parent(model))
 
