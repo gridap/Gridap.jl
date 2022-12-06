@@ -125,7 +125,7 @@ function _has_interior_point(::RefinementRule{T}) where {T<:GreenRefinement}
   return false
 end
 
-function get_new_coordinates_from_faces(p::Union{Polytope{D},GridTopology{D,Dp}},faces_list::Tuple) where {D,Dp}
+function get_new_coordinates_from_faces(p::Union{Polytope{D},GridTopology{D}},faces_list::Tuple) where {D}
   @check length(faces_list) == D+1
 
   nN_new     = sum(x->length(x),faces_list)
@@ -137,8 +137,7 @@ function get_new_coordinates_from_faces(p::Union{Polytope{D},GridTopology{D,Dp}}
     if length(dfaces) > 0
       nf = length(dfaces)
       d2n_map = get_faces(p,d-1,0)
-      nn = length(first(d2n_map))
-      coords_new[n:n+nf-1] .= map(f -> sum(coords_old[d2n_map[f]])/nn, dfaces)
+      coords_new[n:n+nf-1] .= map(f -> sum(coords_old[d2n_map[f]])/length(d2n_map[f]), dfaces)
       n += nf
     end
   end
@@ -239,34 +238,9 @@ function _redgreen_refined_faces_list(topo::UnstructuredGridTopology{2},rrules,e
   return (ref_nodes,ref_edges,ref_cells)
 end
 
-function refine_unstructured_topology(topo::UnstructuredGridTopology{Dc,2},
-                                      rrules::AbstractVector{<:RefinementRule},
-                                      faces_list::Tuple) where {Dc}
-  # In dimension D=2, we allow mix and match of TRI and QUAD cells
-  @notimplementedif !all(map(p -> p ∈ [QUAD,TRI],topo.polytopes))
-
-  coords_new  = get_new_coordinates_from_faces(topo,faces_list)
-  c2n_map_new = get_refined_cell_to_vertex_map(topo,rrules,faces_list)
-
-  nC_old = num_faces(topo,2)
-  nC_new = length(c2n_map_new)
-  cell_type_new = Vector{Int8}(undef,nC_new)
-  polys = unique(lazy_map(rr->first(get_polytopes(rr.ref_grid)), rrules))
-  k = 1
-  for iC = 1:nC_old
-    rr = rrules[iC]
-    p  = first(get_polytopes(rr.ref_grid))
-    range = k:k+num_subcells(rr)-1
-    cell_type_new[range] .= findfirst(x->x==p,polys)
-    k += num_subcells(rr)
-  end
-
-  return UnstructuredGridTopology(coords_new,c2n_map_new,cell_type_new,polys,topo.orientation_style)
-end
-
-function get_refined_cell_to_vertex_map(topo::UnstructuredGridTopology{Dc,2},
+function get_refined_cell_to_vertex_map(topo::UnstructuredGridTopology{2},
                                         rrules::AbstractVector{<:RefinementRule},
-                                        faces_list::Tuple) where {Dc}
+                                        faces_list::Tuple)
   @notimplementedif !all(map(p -> p ∈ [QUAD,TRI],topo.polytopes))
   nN_old,nE_old,nC_old  = num_faces(topo,0),num_faces(topo,1),num_faces(topo,2)
   c2n_map = get_faces(topo,2,0)
