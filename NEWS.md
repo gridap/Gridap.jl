@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Fixes to `array_cache(a::Table)`: Now does not use the `zero(T,N)` function, but instead creates new empty vector using the general allocator `Vector{T}(undef,N)`. This allows `Table` to work with complex composite types which don't have an easy `zero(T)` function defined. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
+- Fixed a bug in function `collect_cell_matrix_and_vector`. Since PR [#849](https://github.com/gridap/Gridap.jl/pull/849)
 
 ## [0.17.15] - 2022-11-10 
 

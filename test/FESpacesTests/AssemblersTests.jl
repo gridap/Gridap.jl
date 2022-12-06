@@ -100,6 +100,26 @@ assemble_matrix_and_vector!(a(du,dv),ℓ(dv),A22,b22,U,V)
 @test norm(A22-A2) < tol
 @test norm(b22-b2) < tol
 
+# Rectangular matrix
+a2(u,v) = ∫(u⋅∇(v))*dΩ
+V2 = TestFESpace(
+  model,
+  ReferenceFE(lagrangian,VectorValue{2,Float64},1))
+U2 = TrialFESpace(V2)
+
+du2 = get_trial_fe_basis(U2)
+mat_contribs = a2(du2,dv)
+vec_contribs = ℓ(dv)
+
+assem = SparseMatrixAssembler(U2,V)
+data = collect_cell_matrix(U2,V,mat_contribs)
+A2 = assemble_matrix(assem,data)
+@test size(A2) == (num_free_dofs(V), num_free_dofs(U2))
+A2,b2 = assemble_matrix_and_vector(a2(du2,dv),ℓ(dv),U2,V)
+@test size(A2) == (num_free_dofs(V), num_free_dofs(U2))
+A2,b2 = assemble_matrix_and_vector(a2(du2,dv),0,U2,V)
+@test size(A2) == (num_free_dofs(V), num_free_dofs(U2))
+
 V = TestFESpace(
   model,
   ReferenceFE(lagrangian,Float64,1),
