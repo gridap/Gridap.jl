@@ -109,13 +109,13 @@ function evaluate!(result,k::AutoDiffMap,ydual,x,cfg::ForwardDiff.GradientConfig
   return result
 end
 
-function return_cache(k::AutoDiffMap,ydual,x,cfg::ForwardDiff.JacobianConfig{T,V,N}) where {F,T,V,N}
+function return_cache(k::AutoDiffMap,ydual,x,cfg::ForwardDiff.JacobianConfig{T,V,N}) where {T,V,N}
   ydual isa AbstractArray || throw(ForwardDiff.JACOBIAN_ERROR)
   result = similar(ydual, ForwardDiff.valtype(eltype(ydual)), length(ydual), N)
   result
 end
 
-function evaluate!(result,k::AutoDiffMap,ydual,x,cfg::ForwardDiff.JacobianConfig{T,V,N}) where {F,T,V,N}
+function evaluate!(result,k::AutoDiffMap,ydual,x,cfg::ForwardDiff.JacobianConfig{T,V,N}) where {T,V,N}
   @notimplementedif ForwardDiff.chunksize(cfg) != length(x)
   @notimplementedif size(result,2) != length(x)
   ForwardDiff.extract_jacobian!(T, result, ydual, N)
