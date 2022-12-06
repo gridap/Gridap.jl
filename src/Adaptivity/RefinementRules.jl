@@ -71,7 +71,7 @@ function RefinementRule(reffe::LagrangianRefFE{D},nrefs::Integer;kwargs...) wher
 end
 
 function RefinementRule(reffe::LagrangianRefFE{D},partition::NTuple{D,Integer};kwargs...) where D
-  return RefinementRule(get_polytope(reffe),partition;cell_maps=cell_maps)
+  return RefinementRule(get_polytope(reffe),partition;kwargs...)
 end
 
 function RefinementRule(poly::Polytope{D},nrefs::Integer;kwargs...) where D
