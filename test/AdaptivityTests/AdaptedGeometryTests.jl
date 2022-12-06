@@ -10,10 +10,12 @@ using FillArrays
 
 # Get refined model and triangulation
 cart_model = CartesianDiscreteModel((0,1,0,1),(4,4))
-model1 = refine(cart_model; num_refinements=2)
-model2 = refine(model1; num_refinements=2)
+model1 = refine(cart_model,2)
+model2 = refine(model1,(3,2))
+model3 = refine(model2,(1,1))
 test_discrete_model(model1)
 test_discrete_model(model2)
+test_discrete_model(model3)
 
 ctrian = Triangulation(cart_model)
 trian1 = Triangulation(model1)
