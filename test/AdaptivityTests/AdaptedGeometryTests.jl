@@ -8,78 +8,78 @@ using Gridap.Adaptivity
 using Gridap.ReferenceFEs
 using FillArrays
 
-# Get refined model and triangulation
-cart_model = CartesianDiscreteModel((0,1,0,1),(4,4))
-model1 = refine(cart_model,2)
-model2 = refine(model1,(3,2))
-model3 = refine(model2,(1,1))
-test_discrete_model(model1)
-test_discrete_model(model2)
-test_discrete_model(model3)
+for D = 1:4
+  domain = Tuple(repeat([0,1],D))
 
-ctrian = Triangulation(cart_model)
-trian1 = Triangulation(model1)
-trian2 = Triangulation(model2)
-test_triangulation(trian1)
-test_triangulation(trian2)
-test_triangulation(trian1.trian)
-@test isa(trian1, AdaptedTriangulation)
-@test Gridap.Adaptivity.is_child(trian1,ctrian) == true
-@test Gridap.Adaptivity.is_child(ctrian,trian1) == false
+  cart_model = CartesianDiscreteModel(domain,Tuple(fill(4,D)))
+  model1 = refine(cart_model,2)
+  model2 = refine(model1,Tuple(collect(2:D+1)))
+  model3 = refine(model2,Tuple(fill(1,D)))
+  test_discrete_model(model1)
+  test_discrete_model(model2)
+  test_discrete_model(model3)
 
-vtrian = view(trian1,[2,3,4])
-rtrian = Triangulation(trian1)
+  ctrian = Triangulation(cart_model)
+  trian1 = Triangulation(model1)
+  trian2 = Triangulation(model2)
+  test_triangulation(trian1)
+  test_triangulation(trian2)
+  test_triangulation(trian1.trian)
+  @test isa(trian1, AdaptedTriangulation)
+  @test Gridap.Adaptivity.is_child(trian1,ctrian) == true
+  @test Gridap.Adaptivity.is_child(ctrian,trian1) == false
 
-# Get members
-fmodel = get_model(model1)
-cmodel = get_parent(model1)
-glue   = get_adaptivity_glue(model1)
-@test cmodel === cart_model
-@test fmodel === get_parent(model2)
+  vtrian = view(trian1,[2,3,4])
+  rtrian = Triangulation(trian1)
 
-# Choosing targets
-ftrian = Triangulation(fmodel)
-ctrian = Triangulation(cmodel)
-@test best_target(trian1,ctrian) === trian1
-@test best_target(trian1,trian2) === trian2
+  # Get members
+  fmodel = get_model(model1)
+  cmodel = get_parent(model1)
+  glue   = get_adaptivity_glue(model1)
+  @test cmodel === cart_model
+  @test fmodel === get_parent(model2)
 
-# Checking compatibility with other types of Triangulations
-t   = Triangulation(get_model(model1))
-rt  = Triangulation(model1)
+  # Choosing targets
+  ftrian = Triangulation(fmodel)
+  ctrian = Triangulation(cmodel)
+  @test best_target(trian1,ctrian) === trian1
+  @test best_target(trian1,trian2) === trian2
 
-bt  = BoundaryTriangulation(model1)
-@test isa(bt,AdaptedTriangulation)
-test_triangulation(bt)
-@test is_change_possible(t,bt)
-@test is_change_possible(rt,bt)
-@test !is_change_possible(bt,t)
-@test !is_change_possible(bt,rt)
+  # Checking compatibility with other types of Triangulations
+  t   = Triangulation(get_model(model1))
+  rt  = Triangulation(model1)
 
-st  = SkeletonTriangulation(model1)
-@test isa(st,AdaptedTriangulation)
-test_triangulation(st)
-@test is_change_possible(t,st)
-@test is_change_possible(rt,st)
-@test !is_change_possible(st,t)
-@test !is_change_possible(st,rt)
+  bt  = BoundaryTriangulation(model1)
+  @test isa(bt,AdaptedTriangulation)
+  test_triangulation(bt)
+  @test is_change_possible(t,bt)
+  @test is_change_possible(rt,bt)
+  @test !is_change_possible(bt,t)
+  @test !is_change_possible(bt,rt)
 
-st2 = SkeletonTriangulation(bt)
-@test is_change_possible(rt,st2)
-@test is_change_possible(bt,st2)
+  if D >= 2
+    st  = SkeletonTriangulation(model1)
+    @test isa(st,AdaptedTriangulation)
+    test_triangulation(st)
+    @test is_change_possible(t,st)
+    @test is_change_possible(rt,st)
+    @test !is_change_possible(st,t)
+    @test !is_change_possible(st,rt)
 
-cell_to_inout = fill(true,num_cells(model1))
-cell_to_inout[1:15] .= false
-it  = InterfaceTriangulation(model1,cell_to_inout)
-@test isa(it,AdaptedTriangulation)
-test_triangulation(it)
-@test is_change_possible(t,it)
-@test is_change_possible(rt,it)
-@test !is_change_possible(it,t)
-@test !is_change_possible(it,rt)
+    st2 = SkeletonTriangulation(bt)
+    @test is_change_possible(rt,st2)
+    @test is_change_possible(bt,st2)
 
-# UnstructuredDiscreteModel refinement
-cart_model = CartesianDiscreteModel((0,1,0,1),(2,2))
-unst_model = UnstructuredDiscreteModel(cart_model)
-umodel1 = refine(unst_model)
+    cell_to_inout = fill(true,num_cells(model1))
+    cell_to_inout[1:10] .= false
+    it  = InterfaceTriangulation(model1,cell_to_inout)
+    @test isa(it,AdaptedTriangulation)
+    test_triangulation(it)
+    @test is_change_possible(t,it)
+    @test is_change_possible(rt,it)
+    @test !is_change_possible(it,t)
+    @test !is_change_possible(it,rt)
+  end
+end
 
 end
