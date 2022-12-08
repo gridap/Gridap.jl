@@ -236,7 +236,7 @@ end
 """
     simplexify(p::Polytope) -> Tuple{Vector{Vector{Int}},Polytope}
 """
-function simplexify(p::Polytope)
+function simplexify(p::Polytope;kwargs...)
   @abstractmethod
 end
 
