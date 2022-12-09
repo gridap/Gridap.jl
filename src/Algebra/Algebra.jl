@@ -9,6 +9,7 @@ using NLsolve
 using DocStringExtensions
 using SparseArrays
 using LinearAlgebra
+using IterativeSolvers
 using Test
 using SparseMatricesCSR
 
