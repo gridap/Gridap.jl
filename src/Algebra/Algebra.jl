@@ -60,6 +60,7 @@ export test_linear_solver
 
 export LUSolver
 export BackslashSolver
+export GmresSolver
 
 export NonlinearOperator
 export residual!
