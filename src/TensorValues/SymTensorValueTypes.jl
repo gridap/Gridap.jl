@@ -20,7 +20,7 @@ end
 # Empty SymTensorValue constructor
 
 SymTensorValue()                   = SymTensorValue{0,Int}(NTuple{0,Int}())
-SymTensorValue{0}() where {T}      = SymTensorValue{0,Int}(NTuple{0,Int}())
+SymTensorValue{0}()                = SymTensorValue{0,Int}(NTuple{0,Int}())
 SymTensorValue{0,T}() where {T}    = SymTensorValue{0,T}(NTuple{0,T}())
 SymTensorValue(data::NTuple{0})    = SymTensorValue{0,Int}(data)
 SymTensorValue{0}(data::NTuple{0}) = SymTensorValue{0,Int}(data)

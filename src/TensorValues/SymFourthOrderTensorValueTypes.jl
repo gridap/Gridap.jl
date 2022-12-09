@@ -20,7 +20,7 @@ end
 # Empty SymTensorValue constructor
 
 SymFourthOrderTensorValue()                   = SymFourthOrderTensorValue{0,Int}(NTuple{0,Int}())
-SymFourthOrderTensorValue{0}() where {T}      = SymFourthOrderTensorValue{0,Int}(NTuple{0,Int}())
+SymFourthOrderTensorValue{0}()                = SymFourthOrderTensorValue{0,Int}(NTuple{0,Int}())
 SymFourthOrderTensorValue{0,T}() where {T}    = SymFourthOrderTensorValue{0,T}(NTuple{0,T}())
 SymFourthOrderTensorValue(data::NTuple{0})    = SymFourthOrderTensorValue{0,Int}(data)
 SymFourthOrderTensorValue{0}(data::NTuple{0}) = SymFourthOrderTensorValue{0,Int}(data)

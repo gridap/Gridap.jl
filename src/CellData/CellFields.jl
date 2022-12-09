@@ -466,21 +466,13 @@ struct OperationCellField{DS} <: CellField
     @check all( map(i->DomainStyle(i)==domain_style,args) )
     #@check all( map(i->get_triangulation(i)===trian,args) )
 
+    # This is only to catch errors in user code
+    # as soon as possible.
     if num_cells(trian)>0
       x = _get_cell_points(args...)
-      try
-         ax = map(i->i(x),args)
-         axi = map(first,ax)
-         r = Fields.BroadcastingFieldOpMap(op.op)(axi...)
-      catch
-        @unreachable """\n
-        It is not possible to perform the operation "$(op.op)" on the given cell fields.
-
-        See the caught error for more information. (If you are using the Visual
-          Studio Code REPL you might not see the caught error, please use the
-          command-line REPL instead).
-        """
-      end
+      ax = map(i->i(x),args)
+      axi = map(first,ax)
+      r = Fields.BroadcastingFieldOpMap(op.op)(axi...)
     end
 
     new{typeof(domain_style)}(op,args,trian,domain_style,Dict())

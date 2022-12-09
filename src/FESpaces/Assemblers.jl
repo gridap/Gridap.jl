@@ -522,11 +522,11 @@ function collect_cell_matrix_and_vector(
   trial::FESpace,test::FESpace,mat_contributions::DomainContribution,l::Number)
   @notimplementedif l != 0
   vec_contributions = DomainContribution()
-  collect_cell_matrix_and_vector(test,trial,mat_contributions,vec_contributions)
+  collect_cell_matrix_and_vector(trial,test,mat_contributions,vec_contributions)
 end
 
 function collect_cell_matrix_and_vector(
   trial::FESpace,test::FESpace,biform::DomainContribution,l::Number,uhd::FEFunction)
   liform = DomainContribution()
-  collect_cell_matrix_and_vector(test,trial,biform,liform,uhd)
+  collect_cell_matrix_and_vector(trial,test,biform,liform,uhd)
 end
