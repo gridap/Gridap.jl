@@ -313,7 +313,7 @@ struct GmresSolver <: LinearSolver end
 
 struct GmresSymbolicSetup <: SymbolicSetup end
 
-mutable struct GmersNumericalSetup{T<:AbstractMatrix} <: NumericalSetup
+mutable struct GmresNumericalSetup{T<:AbstractMatrix} <: NumericalSetup
   A::T
 end
 
@@ -326,6 +326,6 @@ function numerical_setup!(ns::GmresNumericalSetup, mat::AbstractMatrix)
 end
 
 function solve!(
-  x::AbstractVector,ns::GmersNumericalSetup,b::AbstractVector)
+  x::AbstractVector,ns::GmresNumericalSetup,b::AbstractVector)
   IterativeSolvers.gmres!(x, ns.A, b)
 end
