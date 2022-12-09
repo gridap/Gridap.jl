@@ -59,6 +59,18 @@ include("ODEs/ODEs.jl")
 
 include("Adaptivity/Adaptivity.jl")
 
+
+using .FESpaces
+using .Geometry 
+using .ReferenceFEs
+using .Helpers
+using .Fields
+using .Arrays
+using .CellData
+using .Adaptivity
+using FillArrays
+include("LinearizedFESpaces.jl")
+
 include("Exports.jl")
 
 end # module
