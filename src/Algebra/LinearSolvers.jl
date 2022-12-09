@@ -301,3 +301,31 @@ function solve!(
   x::AbstractVector,ns::BackslashNumericalSetup,b::AbstractVector)
   copy_entries!(x, ns.A\b)
 end
+
+
+
+"""
+    struct GmresSolver <: LinearSolver end
+
+Wrapper of the gmres solver available in IterativeSolvers
+"""
+struct GmresSolver <: LinearSolver end
+
+struct GmresSymbolicSetup <: SymbolicSetup end
+
+mutable struct GmersNumericalSetup{T<:AbstractMatrix} <: NumericalSetup
+  A::T
+end
+
+symbolic_setup(::GmresSolver,mat::AbstractMatrix) = GmresSymbolicSetup()
+
+numerical_setup(::GmresNumericalSetup,mat::AbstractMatrix) = GmresNumericalSetup(mat)
+
+function numerical_setup!(ns::GmresNumericalSetup, mat::AbstractMatrix)
+  ns.A = mat
+end
+
+function solve!(
+  x::AbstractVector,ns::GmersNumericalSetup,b::AbstractVector)
+  IterativeSolvers.gmres!(x, ns.A, b)
+end
