@@ -319,7 +319,7 @@ end
 
 symbolic_setup(::GmresSolver,mat::AbstractMatrix) = GmresSymbolicSetup()
 
-numerical_setup(::GmresNumericalSetup,mat::AbstractMatrix) = GmresNumericalSetup(mat)
+numerical_setup(::GmresSymbolicSetup,mat::AbstractMatrix) = GmresNumericalSetup(mat)
 
 function numerical_setup!(ns::GmresNumericalSetup, mat::AbstractMatrix)
   ns.A = mat
@@ -328,4 +328,5 @@ end
 function solve!(
   x::AbstractVector,ns::GmresNumericalSetup,b::AbstractVector)
   IterativeSolvers.gmres!(x, ns.A, b)
+  x
 end
