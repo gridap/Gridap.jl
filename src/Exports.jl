@@ -18,6 +18,7 @@ export det, inv, tr, cross, dot, norm, ×, ⋅
 @publish Algebra numerical_setup!
 @publish Algebra LUSolver
 @publish Algebra BackslashSolver
+@publish Algebra GmresSolver
 @publish Algebra zero_initial_guess
 @publish Algebra NLSolver
 @publish Algebra get_matrix
