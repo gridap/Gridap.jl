@@ -309,17 +309,28 @@ end
 
 Wrapper of the gmres solver available in IterativeSolvers
 """
-struct GmresSolver <: LinearSolver end
+struct GmresSolver <: LinearSolver 
+  abstol::Float64
+  restart::Int64
+  maxiter::Int64
+end
 
-struct GmresSymbolicSetup <: SymbolicSetup end
+function GmresSolver(; abstol = 1e-6, restart = 30, maxiter = 1000)
+  GmresSolver(abstol, restart, maxiter)
+end
+
+struct GmresSymbolicSetup <: SymbolicSetup 
+ls::GmresSolver
+end
 
 mutable struct GmresNumericalSetup{T<:AbstractMatrix} <: NumericalSetup
+  ss::GmresSymbolicSetup
   A::T
 end
 
-symbolic_setup(::GmresSolver,mat::AbstractMatrix) = GmresSymbolicSetup()
+symbolic_setup(ls::GmresSolver, mat::AbstractMatrix) = GmresSymbolicSetup(ls)
 
-numerical_setup(::GmresSymbolicSetup,mat::AbstractMatrix) = GmresNumericalSetup(mat)
+numerical_setup(ss::GmresSymbolicSetup, mat::AbstractMatrix) = GmresNumericalSetup(ss, mat)
 
 function numerical_setup!(ns::GmresNumericalSetup, mat::AbstractMatrix)
   ns.A = mat
@@ -327,6 +338,14 @@ end
 
 function solve!(
   x::AbstractVector,ns::GmresNumericalSetup,b::AbstractVector)
-  IterativeSolvers.gmres!(x, ns.A, b)
+  IterativeSolvers.gmres!(x, ns.A, b; abstol = ns.ss.ls.abstol, restart = ns.ss.ls.restart, maxiter = ns.ss.ls.maxiter)
+  x
+end
+
+
+
+function solve!(
+  x::AbstractVector,ns::GmresNumericalSetup,b::AbstractVector)
+  IterativeSolvers.gmres!(x, ns.A, b; absol = ns.ss.ls.absol, restart = ns.ss.ls.restart, maxiter = ns.ss.ls.maxiter)
   x
 end

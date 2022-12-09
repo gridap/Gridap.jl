@@ -6,7 +6,7 @@ using Gridap.Algebra: NonlinearOperatorMock
 
 using LinearAlgebra
 using SparseArrays
-
+using IterativeSolvers
 
 diff1(M) = [ [1.0 zeros(1,M-1)]; diagm(1=>ones(M-1)) - Matrix(1.0I,M,M) ]
 
@@ -40,6 +40,35 @@ b = A*x
 
 ls = BackslashSolver()
 test_linear_solver(ls,A,b,x)
+
+
+n = 10
+A = Laplacian(n,n,1,1)
+x = rand(n^2)
+b = A*x
+
+ls = GmresSolver()
+@test ls.abstol === 1e-6
+@test ls.maxiter === 1000
+@test ls.restart === 30
+
+ls = GmresSolver(; restart = 2)
+@test ls.abstol === 1e-6
+@test ls.maxiter === 1000
+@test ls.restart === 2
+
+ls = GmresSolver(; maxiter = 50)
+@test ls.abstol === 1e-6
+@test ls.maxiter === 50
+@test ls.restart === 30
+
+ls = GmresSolver(; abstol = 1e-9)
+@test ls.abstol === 1e-9
+@test ls.maxiter === 1000
+@test ls.restart === 30
+
+test_linear_solver(ls,A,b,x)
+
 
 nls = NLSolver(show_trace=false,method=:newton)
 x0 = zeros(length(x))
