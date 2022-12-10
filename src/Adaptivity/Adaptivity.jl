@@ -46,6 +46,7 @@ export change_domain, move_contributions
 
 include("RefinementRules.jl")
 include("EdgeBasedRefinementRules.jl")
+include("FineToCoarseFields.jl")
 include("AdaptivityGlues.jl")
 include("AdaptedDiscreteModels.jl")
 include("AdaptedTriangulations.jl")
