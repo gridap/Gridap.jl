@@ -18,7 +18,6 @@ function LinearizedFESpace(model::CartesianDiscreteModel{Dc},
                            reffe::Tuple{<:Lagrangian,Any,Any}; kwargs...) where Dc 
   reffe_linearized=_linearize_reffe(reffe)
   ncells_x_dim=_num_cells_x_dim(reffe)
-  println("xxx: $(ncells_x_dim)")
   ref_model=Adaptivity.refine(model,ncells_x_dim)
   linear_fe_space=FESpace(ref_model,reffe_linearized;kwargs...)
   polytopes=get_polytopes(model)
@@ -183,10 +182,12 @@ end
 function FESpaces.get_fe_basis(f::LinearizedFESpace)
   fe_basis = get_fe_basis(f.linear_fe_space)
   num_cells=length(f.refined_model.glue.refinement_rules)
-  cell_array=lazy_map(FineToCoarseBasis,
-                      Adaptivity.f2c_reindex(fe_basis,f.refined_model.glue),
-                      Fill(f.ref_dofs_grid,num_cells),
-                      f.refined_model.glue.refinement_rules)
+  
+  a=Adaptivity.f2c_reindex(fe_basis,f.refined_model.glue)[1]
+  b=f.ref_dofs_grid
+  c=f.refined_model.glue.refinement_rules[1]
+  f2cb=FineToCoarseBasis(a,b,c)
+  cell_array=Fill(f2cb,length(f.refined_model.glue.refinement_rules))
   FESpaces.SingleFieldFEBasis(cell_array,get_triangulation(f),FESpaces.TestBasis(),ReferenceDomain())
 end
 
@@ -258,4 +259,65 @@ function Geometry.evaluate!(cache,a::FineToCoarseBasis{<:AbstractArray{<:Abstrac
      y_cache.array[i,cell_node_ids[child_id]] = Fields.evaluate!(yi_cache,fi,zi)
   end
   return y_cache.array
+end
+
+struct FineToCoarseBasisGradient{A<:FineToCoarseBasis} <: AbstractVector{Field}
+  f2cb :: A
+end
+
+unction Geometry.return_cache(a::FineToCoarseBasis,x::AbstractArray{<:Point})
+  fields, x_to_cell = a.fine_fields, a.rrule.x_to_cell
+  cmaps = Adaptivity.get_inverse_cell_map(a.rrule)
+
+  xi_cache = array_cache(x)
+  fi_cache = array_cache(fields)
+  mi_cache = array_cache(cmaps)
+
+  xi = getindex!(xi_cache,x,1)
+  child_id = x_to_cell(xi)
+  mi = getindex!(mi_cache,cmaps,child_id)
+  fi = getindex!(fi_cache,fields,child_id)
+
+  zi_cache = Fields.return_cache(mi,xi)
+  zi = evaluate!(zi_cache,mi,xi)
+
+  yi_type  = Fields.return_type(fi,zi)
+  yi_cache = Fields.return_cache(fi,zi)
+  y_cache  = Arrays.CachedArray(eltype(yi_type),2)
+
+  return fi_cache, mi_cache, xi_cache, zi_cache, yi_cache, y_cache
+end
+
+function Geometry.evaluate!(cache,a::FineToCoarseBasis{<:AbstractArray{<:AbstractArray{<:Field}}},x::AbstractArray{<:Point})
+  fi_cache, mi_cache, xi_cache, zi_cache, yi_cache, y_cache = cache
+  fields, x_to_cell = a.fine_fields, a.rrule.x_to_cell
+  cmaps = get_inverse_cell_map(a.rrule)
+
+  Arrays.setsize!(y_cache, (length(x),Geometry.num_nodes(a.ref_dofs_grid)))
+  
+  y_cache.array .= 0.0 
+
+  cell_node_ids = Geometry.get_cell_node_ids(a.ref_dofs_grid)
+  for i in eachindex(x)
+     xi = getindex!(xi_cache,x,i)
+     child_id = x_to_cell(xi)
+     fi = getindex!(fi_cache,fields,child_id)
+     mi = getindex!(mi_cache,cmaps,child_id)
+     zi = Fields.evaluate!(zi_cache,mi,xi)
+     y_cache.array[i,cell_node_ids[child_id]] = Fields.evaluate!(yi_cache,fi,zi)
+  end
+  return y_cache.array
+end
+
+
+
+function Gridap.Arrays.evaluate!(cache,k::Broadcasting{typeof(∇)},a::FineToCoarseBasis)
+  
+end
+
+function Gridap.Arrays.lazy_map(
+  g::Broadcasting{typeof(∇)}, a::Fill{<:FineToCoarseBasis})
+  f2cb=a.value
+  gf2cb=g(f2cb)
+  Fill(gf2cb,length(a))
 end

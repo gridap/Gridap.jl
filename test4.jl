@@ -1,5 +1,8 @@
 using Gridap
 using FillArrays
+using Test 
+
+f(x)=x[1]^2+x[2]
 
 modelH=CartesianDiscreteModel((0,1,0,1),(1,1))
 modelh=Gridap.Adaptivity.refine(modelH,2)
@@ -22,27 +25,20 @@ Vh=Gridap.LinearizedFESpace(modelH,reffeH;
                                     
 Uh=TrialFESpace(Vh,0.0)
 
-duH=get_trial_fe_basis(UH)
-dvh=get_fe_basis(Vh)
-
-dvh_data=Gridap.CellData.get_data(dvh)
-lazy_map(evaluate,dvh_data,Fill([Point(0.0,0.75)],1))[1]
-
 Ωh   = Triangulation(modelh)
 dΩh  = Measure(Ωh,2*order)
 ΩH   = Triangulation(modelH)
 dΩH  = Measure(ΩH,2*order)
 
-xH=Gridap.CellData.get_cell_points(dΩH.quad)
-dΩHh=Measure(ΩH,Ωh,2*order)
+dΩHh = Measure(ΩH,Ωh,2*order)
 
 adΩHh(UH,vh)=∫(UH*vh)dΩHh
-AdΩHh=assemble_matrix(a,UH,Vh)
+AdΩHh=assemble_matrix(adΩHh,UH,Vh)
 
 adΩH(UH,vh)=∫(UH*vh)dΩH
-AdΩH=assemble_matrix(a,UH,Vh)
+AdΩH=assemble_matrix(adΩH,UH,Vh)
 
-AdΩH-AdΩHh
+norm(AdΩH-AdΩHh) # High error with the "wrong" measure
 
 l(vh)=∫(1.0*vh)dΩHh
 b1ΩHh=assemble_vector(l,Vh)
@@ -57,10 +53,37 @@ Vhl   = TestFESpace(modelh,reffe; conformity=:H1)#,dirichlet_tags="boundary")
 l(vh)=∫(1.0*vh)dΩh
 b2=assemble_vector(l,Vhl)
 
-norm(b1ΩHh-b2)
-norm(b1ΩH-b2) # High error with the "wrong" measure
+norm(b1ΩHh-b2) # Eps error in the "right" measure
+norm(b1ΩH-b2)  # High error with the "wrong" measure
 
-using LinearAlgebra
-eigvals(Array(A))
+# Test L2-projection
+adΩHh(UH,vh)=∫(UH*vh)dΩHh
+lΩHh(vh)    =∫(f*vh)dΩHh
+op=AffineFEOperator(adΩHh,lΩHh,UH,Vh)
+fh=solve(op)
+f(x)=x[1]^2+x[2]
+eh=sum(∫((f-fh)*(f-fh))dΩHh)
+@test eh < 1.0e-12
 
+uH=get_trial_fe_basis(UH)
+∇(uH)
+
+vH=get_fe_basis(VH)
+∇(vH)
+
+
+vh=get_fe_basis(Vh)
+grad_vh=∇(vh)
+grad_vh_data=Gridap.CellData.get_data(grad_vh)
+lazy_map(evaluate,grad_vh_data,Fill([Point(0.0,0.0)],4))
+
+vhl=get_fe_basis(Vhl)
+grad_vhl=∇(vhl)
+grad_vhl_data=Gridap.CellData.get_data(grad_vhl)
+lazy_map(evaluate,grad_vhl_data,Fill([Point(0.0,0.0)],4))
+
+
+adΩHh(UH,vh)=∫(∇(UH)⋅∇(vh))dΩHh
+lΩHh(vh)    =∫(f*vh)dΩHh
+op=AffineFEOperator(adΩHh,lΩHh,UH,Vh)
 
