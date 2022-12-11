@@ -8,12 +8,12 @@ using Gridap.Adaptivity
 using Gridap.ReferenceFEs
 using FillArrays
 
-for D = 1:4
+for D = 1:3
   domain = Tuple(repeat([0,1],D))
 
-  cart_model = CartesianDiscreteModel(domain,Tuple(fill(4,D)))
-  model1 = refine(cart_model,2)
-  model2 = refine(model1,Tuple(collect(2:D+1)))
+  cart_model = CartesianDiscreteModel(domain,Tuple(fill(2,D)))
+  model1 = refine(cart_model,4)
+  model2 = refine(model1,Tuple(collect(1:D)))
   model3 = refine(model2,Tuple(fill(1,D)))
   test_discrete_model(model1)
   test_discrete_model(model2)
