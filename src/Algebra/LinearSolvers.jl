@@ -346,6 +346,6 @@ end
 
 function solve!(
   x::AbstractVector,ns::GmresNumericalSetup,b::AbstractVector)
-  IterativeSolvers.gmres!(x, ns.A, b; absol = ns.ss.ls.absol, restart = ns.ss.ls.restart, maxiter = ns.ss.ls.maxiter)
+  IterativeSolvers.gmres!(x, ns.A, b; abstol = ns.ss.ls.abstol, restart = ns.ss.ls.restart, maxiter = ns.ss.ls.maxiter)
   x
 end
