@@ -36,9 +36,25 @@ pvtk = Visualization.create_pvtk_file(
   celldata=["cellid"=>cell_ids,"centers"=>cell_center])
 vtk_save(pvtk)
 
+write_vtk_file(
+  trian,f,
+  nodaldata=["nodeid"=>node_ids],
+  celldata=["cellid"=>cell_ids,"centers"=>cell_center],
+  ascii=true)
+
+pvtk = Visualization.create_pvtk_file(
+  trian,f; part=1, nparts=1,
+  nodaldata=["nodeid"=>node_ids],
+  celldata=["cellid"=>cell_ids,"centers"=>cell_center],
+  ascii=true)
+vtk_save(pvtk)
+
 reffe = LagrangianRefFE(VectorValue{3,Float64},WEDGE,(3,3,4))
 f = joinpath(d,"reffe")
 writevtk(reffe,f)
+
+f = joinpath(d,"reffe_ascii")
+writevtk(reffe,f,ascii=true)
 
 reffe = LagrangianRefFE(VectorValue{2,Float64},QUAD,(2,0))
 f = joinpath(d,"reffe")
@@ -116,6 +132,17 @@ paraview_collection(f) do pvd
     for i in 1:10
         pvd[Float64(i)] = createvtk(trian, f*"_$i", celldata=["rnd"=>rand(num_cells(trian))], cellfields=["cf" => cf])
         pvd[Float64(10+i)] = createvtk(x,f*"_$(10+i)",celldata=["cellid" => collect(1:num_cells(trian))], nodaldata = ["x" => x])
+    end
+    vtk_save(pvd)
+end
+
+model = DiscreteModelMock()
+trian = Triangulation(model)
+f = joinpath(d,"collection_ascii")
+paraview_collection(f) do pvd
+    for i in 1:10
+        pvd[Float64(i)] = createvtk(trian, f*"_$i", celldata=["rnd"=>rand(num_cells(trian))], cellfields=["cf" => cf],ascii=true)
+        pvd[Float64(10+i)] = createvtk(x,f*"_$(10+i)",celldata=["cellid" => collect(1:num_cells(trian))], nodaldata = ["x" => x],ascii=true)
     end
     vtk_save(pvd)
 end

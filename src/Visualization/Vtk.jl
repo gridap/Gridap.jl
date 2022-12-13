@@ -1,20 +1,22 @@
 """
 """
-function writevtk(args...;kwargs...)
+function writevtk(args...;ascii=false,append=!ascii,kwargs...)
   map(visualization_data(args...;kwargs...)) do visdata
     write_vtk_file(
-    visdata.grid,visdata.filebase,celldata=visdata.celldata,nodaldata=visdata.nodaldata)
+      visdata.grid,visdata.filebase;
+      celldata=visdata.celldata,nodaldata=visdata.nodaldata,ascii,append)
   end
 end
 
 """
 """
-function createvtk(args...;kwargs...)
+function createvtk(args...;ascii=false,append=!ascii,kwargs...)
   v = visualization_data(args...;kwargs...)
   @notimplementedif length(v) != 1
   visdata = first(v)
   create_vtk_file(
-    visdata.grid,visdata.filebase,celldata=visdata.celldata,nodaldata=visdata.nodaldata)
+    visdata.grid,visdata.filebase;
+    celldata=visdata.celldata,nodaldata=visdata.nodaldata,ascii,append)
 end
 
 """
@@ -49,8 +51,8 @@ Low level entry point to vtk. Other vtk-related routines in Gridap eventually ca
 
 """
 function write_vtk_file(
-  trian::Grid, filebase; celldata=Dict(), nodaldata=Dict())
-  vtkfile = create_vtk_file(trian, filebase, celldata=celldata, nodaldata=nodaldata)
+  trian::Grid, filebase; celldata=Dict(), nodaldata=Dict(), kwargs... )
+  vtkfile = create_vtk_file(trian, filebase; celldata, nodaldata, kwargs...)
   outfiles = vtk_save(vtkfile)
 end
 
@@ -67,11 +69,12 @@ This function only creates the vtkFile, without writing to disk.
 
 """
 function create_vtk_file(
-  trian::Grid, filebase; celldata=Dict(), nodaldata=Dict())
+  trian::Grid, filebase;
+  celldata=Dict(), nodaldata=Dict(), ascii=false, append=!ascii)
 
   points = _vtkpoints(trian)
   cells = _vtkcells(trian)
-  vtkfile = vtk_grid(filebase, points, cells, compress=false)
+  vtkfile = vtk_grid(filebase, points, cells; compress=false, ascii, append)
 
   if num_cells(trian)>0
     for (k,v) in celldata
@@ -87,12 +90,13 @@ end
 
 function create_pvtk_file(
   trian::Grid, filebase;
-  part, nparts, ismain=(part==1), celldata=Dict(), nodaldata=Dict())
+  part, nparts, ismain=(part==1), celldata=Dict(), nodaldata=Dict(),
+  ascii=false, append=!ascii)
 
   points = _vtkpoints(trian)
   cells = _vtkcells(trian)
-  vtkfile = pvtk_grid(filebase, points, cells, compress=false;
-                      part=part, nparts=nparts, ismain=ismain)
+  vtkfile = pvtk_grid(filebase, points, cells;
+                      compress=false, part, nparts, ismain, ascii, append)
 
   if num_cells(trian) > 0
     for (k, v) in celldata
