@@ -72,5 +72,50 @@ module LinearizedFESpacesTests
     uh=solve(op)
     eh=sum(∫((u-uh)*(u-uh))dΩHh)
     @test eh < 1.0e-12
+
+    # Testing weak residual assembly when LinearizedFESpace is NOT
+    # based on the refinement governed by TrialFESpace order, such
+    # that the count and positions of DOFs in TrialFESpace and the
+    # LinearizedFESpace do not remains the same
+
+    aH(u,v) = ∫(∇(u)⋅∇(v))*dΩH
+    lH(v) = ∫(f*v)*dΩH
+
+    function weak_res(uH, Vh::Gridap.LinearizedFESpace, dΩ)
+      grad_vh = Gridap.get_gradient_fe_basis(Vh)
+      vh_basis = Gridap.get_fe_basis(Vh)
+      ∫(∇(uH)⋅grad_vh)*dΩ - ∫(f*vh_basis)*dΩ
+    end
+
+    function weak_res(uH, VH, dΩ)
+      vh_basis = Gridap.get_fe_basis(VH)
+      ∫(∇(uH)⋅∇(vh_basis))*dΩ - ∫(f*vh_basis)*dΩ
+    end
+
+    for orderTrial in 1:2
+      reffeH = ReferenceFE(lagrangian,Float64,orderTrial)
+      VH = TestFESpace(modelH,reffeH; conformity=:H1, dirichlet_tags="boundary")
+      UH = TrialFESpace(VH,u)
+      ΩH = Triangulation(modelH)
+      dΩH = Measure(ΩH,2*orderTrial+1)
+
+      op = AffineFEOperator(aH,lH,UH,VH)
+      uH = solve(op)
+      rH = weak_res(uH, VH, dΩH)
+      ref_rnorm = norm(assemble_vector(rH,VH))
+
+      for orderLinearFERefine in 1:4
+        reffeh = ReferenceFE(lagrangian,Float64,orderLinearFERefine)
+        Vh = Gridap.LinearizedFESpace(modelH,reffeh; conformity=:H1, dirichlet_tags="boundary")
+        order = max(orderTrial, orderLinearFERefine)
+        Ωh = Triangulation(Vh.refined_model)
+        dΩh = Measure(Ωh,2*orderLinearFERefine+1)
+        dΩHh = Measure(ΩH,Ωh,2*order+1)
+        rh = weak_res(uH, Vh, dΩHh)
+        rh_vec = assemble_vector(rh,Vh)
+        @test length(rh_vec) == num_free_dofs(Vh)
+      end
+    end
+
   end
 end
