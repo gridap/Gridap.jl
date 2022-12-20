@@ -19,7 +19,7 @@ module LinearizedFESpacesTests
     end
     modelH=CartesianDiscreteModel(Tuple(domain),Tuple(partition))
 
-    order  = 2
+    order  = 4
     I(x)   = x[1]^order
     u,f=generate_analytical_functions(order)
 
@@ -29,42 +29,23 @@ module LinearizedFESpacesTests
                         dirichlet_tags="boundary")
     UH     = TrialFESpace(VH,u)
 
-    duH=get_trial_fe_basis(UH)
 
     Vh=Gridap.LinearizedFESpace(modelH,reffeH;
                                 conformity=:H1,
                                 dirichlet_tags="boundary")
 
     Uh=TrialFESpace(Vh,u)
+    Ωh=get_triangulation(Vh)
 
-    ΩH   = Triangulation(modelH)
-    Ωh   = Triangulation(Vh.refined_model)
-    dΩH  = Measure(ΩH,2*order+1)
-    dΩh  = Measure(Ωh,2*order+1)
-    dΩHh = Measure(ΩH,Ωh,2*order+1)
-
-    ldΩHh(vh)=∫(1.0*vh)dΩHh
-    b1ΩHh=assemble_vector(ldΩHh,Vh)
-
-    ldΩH(vh)=∫(1.0*vh)dΩH
-    b1ΩH=assemble_vector(ldΩH,Vh)
-
-    println("norm(b1ΩHh-b1ΩH)=",norm(b1ΩHh-b1ΩH)) # High error with the "wrong" measure
-
-    reffe = ReferenceFE(lagrangian,Float64,1)
-    Vhl   = TestFESpace(Vh.refined_model,reffe; conformity=:H1,dirichlet_tags="boundary")
-    l(vh)=∫(1.0*vh)dΩh
-    b2=assemble_vector(l,Vhl)
-
-    @test norm(b1ΩHh-b2) < 1.0e-12 # Eps error in the "right" measure
-    println("norm(b1ΩH-b2)=",norm(b1ΩH-b2)) # High error with the "wrong" measure
-
+    Ωh       = Triangulation(Vh.refined_model)
+    dΩh      = Measure(Ωh,order+1)
+    
     # Test L2-projection
-    aL2dΩHh(UH,vh)=∫(UH*vh)dΩHh
-    lL2ΩHh(vh)    =∫(I*vh)dΩHh
-    op=AffineFEOperator(aL2dΩHh,lL2ΩHh,UH,Vh)
+    aL2dΩh(UH,vh)=∫(UH*vh)dΩh
+    lL2Ωh(vh)    =∫(I*vh)dΩh
+    op=AffineFEOperator(aL2dΩh,lL2Ωh,UH,Vh)
     Ih=solve(op)
-    eh=sum(∫((I-Ih)*(I-Ih))dΩHh)
+    eh=sum(∫((I-Ih)*(I-Ih))dΩh)
     @test eh < 1.0e-12
 
     function generate_bilinear_form(dΩH)
@@ -73,14 +54,6 @@ module LinearizedFESpacesTests
 
     function generate_linear_form(f,dΩH)
       lH(v) = ∫(f*v)*dΩH
-    end 
-
-    function generate_weak_residual_form(Vh::Gridap.LinearizedFESpace)
-      function weak_res(uH, dΩ, f)
-        grad_vh = Gridap.get_gradient_fe_basis(Vh)
-        vh_basis = Gridap.get_fe_basis(Vh)
-        ∫(grad_vh⋅∇(uH))*dΩ - ∫(f*vh_basis)*dΩ
-      end
     end 
 
     function generate_weak_residual_form(Vh)
@@ -113,30 +86,26 @@ module LinearizedFESpacesTests
       @test ref_rnorm < 1.0e-12
 
       for orderLinearFERefine in 1:4
-        reffeh = ReferenceFE(lagrangian,Float64,orderLinearFERefine)
-        Vh = Gridap.LinearizedFESpace(modelH,reffeh; conformity=:H1, dirichlet_tags="boundary")
-        order = max(orderTrial, orderLinearFERefine)
-        Ωh = Triangulation(Vh.refined_model)
-        dΩHh = Measure(ΩH,Ωh,2*order+1)
+        reffeh   = ReferenceFE(lagrangian,Float64,orderLinearFERefine)
+        Vh       = Gridap.LinearizedFESpace(modelH,reffeh; conformity=:H1, dirichlet_tags="boundary")
+        Ωh       = Triangulation(Vh.refined_model)
+        dΩh      = Measure(Ωh,2*orderTrial+1)
         weak_res = generate_weak_residual_form(Vh)
-        ## VERY IMPORTANT: gradient of LinearizedFESpace basis MUST NOT BE computed
-        #                  as gradient(vh). We need this specialized method.
-        grad_vh=Gridap.get_gradient_fe_basis(Vh)
-        adΩHh(UH,vh)=∫(∇(UH)⋅grad_vh)dΩHh
-        lΩHh(vh)    =∫(f*vh)dΩHh
+        adΩHh(UH,vh)=∫(∇(UH)⋅∇(vh))dΩh
+        lΩHh(vh)    =∫(f*vh)dΩh
         if orderTrial == orderLinearFERefine
           # Test laplacian (Petrov-Galerkin)
           op=AffineFEOperator(adΩHh,lΩHh,UH,Vh)
           uh=solve(op)
-          eh=sum(∫((u-uh)*(u-uh))dΩHh)
+          eh=sum(∫((u-uh)*(u-uh))dΩh)
           @test eh < 1.0e-12
-          rh = weak_res(uh, dΩHh, f)
+          rh = weak_res(uh, dΩh, f)
           rh_vec = assemble_vector(rh,Vh)
           @test norm(rh_vec) < 1.0e-12
         else 
           # Test Galerkin solution against LinearizedFESpace
           # 1. Using weak residual form 
-          rh = weak_res(uH, dΩHh, f)
+          rh = weak_res(uH, dΩh, f)
           rh_vec = assemble_vector(rh,Vh)
           @test norm(rh_vec) < 1.0e-12
 
