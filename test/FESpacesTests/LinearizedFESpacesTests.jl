@@ -121,6 +121,35 @@ module LinearizedFESpacesTests
         end
       end
     end
-  end   
+  end 
+  
+  û(x) = sin(3.2 * x[1]^2) * cos(x[1]) + sin(4.6 * x[1]) * cos(5.2 * x[1])
+  ŝ(x) = exp(x[1] / 2) + 2
+  k̂(x) = 2 + sin(x[1])
+  
+  q(x) = k̂(x) * ∇(û)(x)
+  f(x) = -(∇ ⋅ q)(x) + ŝ(x) * û(x)
+  
+  ncells = 10
+  order = 5
+  degree = 2 * order + 1
+  reffe = ReferenceFE(lagrangian, Float64, order)
+  model = CartesianDiscreteModel((0, 1), (ncells,))
+  
+  V0 = TestFESpace(model, reffe; dirichlet_tags="boundary")
+  Ug = TrialFESpace(V0, û)
+  Vl = Gridap.LinearizedFESpace(model, ReferenceFE(lagrangian, Float64, order); dirichlet_tags="boundary")
+  Ω = Triangulation(Vl.refined_model)
+  dΩ = Measure(Ω, degree)
+  dv = Gridap.get_fe_basis(Vl)
+  a(u, v) = ∫(∇(dv) ⋅ (k̂ * ∇(u)) + ŝ * u * dv)dΩ
+  l(v) = ∫(f * dv)dΩ
+  ũh = solve(AffineFEOperator(a, l, Ug, Vl))
+  
+  jac = Gridap.jacobian(u -> a(u, dv) - l(dv), ũh)
+  A1=assemble_matrix(jac, Ug, Vl) 
+  A2=assemble_matrix(a,Ug,Vl)
+  @assert norm(A1-A2) < 1.0e-12
 end
- 
+
+

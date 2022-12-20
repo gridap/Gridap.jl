@@ -105,3 +105,50 @@ function _get_cell_fe_data(sface_to_data, strian::AdaptedTriangulation, ttrian::
   Gridap.Helpers.@check get_background_model(strian)===get_background_model(ttrian)
   _get_cell_fe_data_trian_trian_body(sface_to_data, strian, ttrian)
 end
+
+
+function Gridap.FESpaces._compute_cell_ids(uh,ttrian)
+  strian = get_triangulation(uh)
+  Gridap.FESpaces._compute_cell_ids(uh, strian, ttrian)
+end
+
+function Gridap.FESpaces._compute_cell_ids(uh, strian::Triangulation, ttrian::Triangulation)
+  if strian === ttrian
+    return collect(IdentityVector(Int32(num_cells(strian))))
+  end
+  @check is_change_possible(strian,ttrian)
+  D = num_cell_dims(strian)
+  sglue = get_glue(strian,Val(D))
+  tglue = get_glue(ttrian,Val(D))
+  @notimplementedif !isa(sglue,FaceToFaceGlue)
+  @notimplementedif !isa(tglue,FaceToFaceGlue)
+  scells = IdentityVector(Int32(num_cells(strian)))
+  mcells = extend(scells,sglue.mface_to_tface)
+  tcells = lazy_map(Reindex(mcells),tglue.tface_to_mface)
+  collect(tcells)
+end
+
+function Gridap.FESpaces._compute_cell_ids(uh, strian::Triangulation, ttrian::AdaptedTriangulation)
+  Gridap.Helpers.@check get_background_model(strian) === get_parent(get_adapted_model(ttrian))
+  return collect(IdentityVector(Int32(num_cells(ttrian))))
+end
+
+function Gridap.FESpaces._compute_cell_ids(uh, strian::AdaptedTriangulation, ttrian::Triangulation)
+  Gridap.Helpers.@notimplemented
+end
+
+function Gridap.FESpaces._compute_cell_ids(uh, strian::AdaptedTriangulation, ttrian::AdaptedTriangulation)
+  Gridap.Helpers.@notimplemented
+end
+
+function Gridap.FESpaces._jacobian(f,uh,fuh::DomainContribution)
+  terms = DomainContribution()
+  for trian in get_domains(fuh)
+    g = Gridap.FESpaces._change_argument(jacobian,f,trian,uh)
+    cell_u = get_cell_dof_values(uh,trian)
+    cell_id = Gridap.FESpaces._compute_cell_ids(uh,trian)
+    cell_grad = Gridap.FESpaces.autodiff_array_jacobian(g,cell_u,cell_id)
+    Gridap.CellData.add_contribution!(terms,trian,cell_grad)
+  end
+  terms
+end
