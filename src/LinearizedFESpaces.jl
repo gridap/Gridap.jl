@@ -65,8 +65,8 @@ end
 # The following defitions are required to support the correct execution
 # of the collect_cell_matrix(trial::FESpace,test::FESpace,a::DomainContribution)
 # function for different combinations of regular and adapted triangulations
-# corresponding to FESpace's triangulation and domain of integration 
-# Please, use with care, they are only valid for the most obvious cases. 
+# corresponding to FESpace's triangulation and domain of integration
+# Please, use with care, they are only valid for the most obvious cases.
 function Gridap.FESpaces.get_cell_fe_data(fun,f,ttrian)
   sface_to_data = fun(f)
   strian = get_triangulation(f)
@@ -77,7 +77,7 @@ end
 # ttrian: triangulation of the Measure
 function _get_cell_fe_data(sface_to_data, strian::Triangulation, ttrian::Triangulation)
   _get_cell_fe_data_trian_trian_body(sface_to_data, strian, ttrian)
-end 
+end
 
 function _get_cell_fe_data_trian_trian_body(sface_to_data, strian, ttrian)
   if strian === ttrian
@@ -88,14 +88,14 @@ function _get_cell_fe_data_trian_trian_body(sface_to_data, strian, ttrian)
   sglue = get_glue(strian,Val(D))
   tglue = get_glue(ttrian,Val(D))
   Gridap.FESpaces.get_cell_fe_data(sface_to_data,sglue,tglue)
-end 
+end
 
 function _get_cell_fe_data(sface_to_data, strian::AdaptedTriangulation, ttrian::Triangulation)
   _get_cell_fe_data_trian_trian_body(sface_to_data, strian, ttrian)
  end
 
-# strian coarse 
-# ttrian refined 
+# strian coarse
+# ttrian refined
 function _get_cell_fe_data(sface_to_data, strian::Triangulation, ttrian::AdaptedTriangulation)
   Gridap.Helpers.@check get_background_model(strian) === get_parent(get_adapted_model(ttrian))
   Gridap.Adaptivity.c2f_reindex(sface_to_data,get_adapted_model(ttrian).glue)
@@ -113,6 +113,10 @@ function Gridap.FESpaces._compute_cell_ids(uh,ttrian)
 end
 
 function Gridap.FESpaces._compute_cell_ids(uh, strian::Triangulation, ttrian::Triangulation)
+  _compute_cell_ids_body(uh,strian,ttrian)
+end
+
+function _compute_cell_ids_body(uh, strian, ttrian)
   if strian === ttrian
     return collect(IdentityVector(Int32(num_cells(strian))))
   end
@@ -137,8 +141,10 @@ function Gridap.FESpaces._compute_cell_ids(uh, strian::AdaptedTriangulation, ttr
   Gridap.Helpers.@notimplemented
 end
 
-function Gridap.FESpaces._compute_cell_ids(uh, strian::AdaptedTriangulation, ttrian::AdaptedTriangulation)
-  Gridap.Helpers.@notimplemented
+function Gridap.FESpaces._compute_cell_ids(uh,
+                                           strian::AdaptedTriangulation,
+                                           ttrian::AdaptedTriangulation)
+  _compute_cell_ids_body(uh, strian, ttrian)
 end
 
 function Gridap.FESpaces._jacobian(f,uh,fuh::DomainContribution)
