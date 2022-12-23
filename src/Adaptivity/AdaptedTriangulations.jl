@@ -167,7 +167,8 @@ end
 
 function CellData.change_domain(a::CellField,strian::AdaptedTriangulation,::ReferenceDomain,ttrian::AdaptedTriangulation,::ReferenceDomain)
   if is_child(strian,ttrian) # fine to coarse
-    return change_domain(a,strian,ReferenceDomain(),ttrian.trian,ReferenceDomain())
+    b = change_domain(a,strian,ReferenceDomain(),ttrian.trian,ReferenceDomain())
+    return CellData.similar_cell_field(b,get_data(b),ttrian,ReferenceDomain())
   else # coarse to fine
     return change_domain(a,strian.trian,ReferenceDomain(),ttrian,ReferenceDomain())
   end
