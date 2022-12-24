@@ -63,6 +63,11 @@ X = MultiFieldFESpace([U,P])
 dv, dq = get_fe_basis(Y)
 du, dp = get_trial_fe_basis(X)
 
+@test dv === copy(dv)
+@test dq === copy(dq)
+@test du === copy(du)
+@test dp === copy(dp)
+
 n = VectorValue(1,2)
 
 cellmat = integrate( (n⋅dv)*dp + dq*dp, quad)
@@ -151,11 +156,17 @@ source_model = CartesianDiscreteModel((0,1,0,1),(10,10))
 
   gh = interpolate_everywhere([ifh₁,ifh₂], V₂²)
 
+  ghc = copy(gh)
+  @test gh !== ghc
+
   pts = [VectorValue(rand(2)) for i=1:10]
   gh₁,gh₂ = gh
+  gc₁,gc₂ = ghc
   for pt in pts
     @test gh₁(pt) ≈ fh₁(pt)
     @test gh₂(pt) ≈ fh₂(pt)
+    @test gc₁(pt) ≈ fh₁(pt)
+    @test gc₂(pt) ≈ fh₂(pt)
   end
 end
 

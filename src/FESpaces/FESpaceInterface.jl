@@ -206,6 +206,8 @@ get_data(f::SingleFieldFEBasis) = f.cell_basis
 get_triangulation(f::SingleFieldFEBasis) = f.trian
 BasisStyle(::Type{SingleFieldFEBasis{BS,DS}}) where {BS,DS} = BS()
 DomainStyle(::Type{SingleFieldFEBasis{BS,DS}}) where {BS,DS} = DS()
+# Do not copy discretisation data
+Base.copy(f::SingleFieldFEBasis) = f
 function CellData.similar_cell_field(f::SingleFieldFEBasis,cell_data,trian,ds::DomainStyle)
   SingleFieldFEBasis(cell_data,trian,BasisStyle(f),ds)
 end

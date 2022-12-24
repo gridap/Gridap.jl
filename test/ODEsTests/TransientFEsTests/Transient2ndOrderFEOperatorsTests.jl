@@ -87,6 +87,10 @@ for (uh_tn, tn) in sol_t
   @test el2 < tol
 end
 
+all_sol = [ (copy(uh_tn), tn) for (uh_tn, tn) in sol_t ]
+all_el2 = [ sqrt(sum( ∫(l2( u(tn) - uhc_tn ))dΩ )) for (uhc_tn,tn) in all_sol ]
+@test all( all_el2 .< tol )
+
 _t_n = t0
 for (uh_tn, tn) in sol_affine_t
   global _t_n
@@ -96,6 +100,10 @@ for (uh_tn, tn) in sol_affine_t
   el2 = sqrt(sum( ∫(l2(e))dΩ ))
   @test el2 < tol
 end
+
+all_sol = [ (copy(uh_tn), tn) for (uh_tn, tn) in sol_affine_t ]
+all_el2 = [ sqrt(sum( ∫(l2( u(tn) - uhc_tn ))dΩ )) for (uhc_tn,tn) in all_sol ]
+@test all( all_el2 .< tol )
 
 _t_n = t0
 for (uh_tn, tn) in sol_const_t
@@ -107,6 +115,10 @@ for (uh_tn, tn) in sol_const_t
   @test el2 < tol
 end
 
+all_sol = [ (copy(uh_tn), tn) for (uh_tn, tn) in sol_const_t ]
+all_el2 = [ sqrt(sum( ∫(l2( u_const(tn) - uhc_tn ))dΩ )) for (uhc_tn,tn) in all_sol ]
+@test all( all_el2 .< tol )
+
 _t_n = t0
 for (uh_tn, tn) in sol_const_mat_t
   global _t_n
@@ -116,5 +128,9 @@ for (uh_tn, tn) in sol_const_mat_t
   el2 = sqrt(sum( ∫(l2(e))dΩ ))
  @test el2 < tol
 end
+
+all_sol = [ (copy(uh_tn), tn) for (uh_tn, tn) in sol_const_mat_t ]
+all_el2 = [ sqrt(sum( ∫(l2( u(tn) - uhc_tn ))dΩ )) for (uhc_tn,tn) in all_sol ]
+@test all( all_el2 .< tol )
 
 end

@@ -99,6 +99,14 @@ function test_operator(op)
     @test error_ϕ <= tol
     @test error_η <= tol
   end
+
+  all_sol = [ ((copy(ϕn), copy(ηn)), tn) for ((ϕn,ηn),tn) in sol_t ]
+  all_E   = [ E_kin(ϕn) + E_pot(ηn) for ((ϕn,ηn),tn) in all_sol ]
+  all_eϕ  = [ l2_Ω(ϕn-ϕₑ(tn)) for ((ϕn,_),tn) in all_sol ]
+  all_eη  = [ l2_Γ(ηn-ηₑ(tn)) for ((_,ηn),tn) in all_sol ]
+  @test all( @. abs(all_E/Eₑ-1.0) < tol )
+  @test all(              all_eϕ .< tol )
+  @test all(              all_eη .< tol )
 end
 
 test_operator(op_const)

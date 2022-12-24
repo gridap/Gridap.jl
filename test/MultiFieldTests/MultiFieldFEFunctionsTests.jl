@@ -33,6 +33,10 @@ xh = FEFunction(X,free_values)
 test_fe_function(xh)
 uh, ph = xh
 
+xhc = copy(xh)
+test_fe_function(xhc)
+uhc, phc = xhc
+
 cell_values = get_cell_dof_values(xh,trian)
 @test isa(cell_values[1],ArrayBlock)
 

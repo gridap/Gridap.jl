@@ -40,6 +40,9 @@ end
 get_triangulation(f::CellPoint) = f.trian
 DomainStyle(::Type{CellPoint{DS,A,B,C}}) where {DS,A,B,C} = DS()
 
+# Do not copy geometric data
+Base.copy(f::CellPoint) = f
+
 function change_domain(a::CellPoint,::ReferenceDomain,::PhysicalDomain)
   CellPoint(a.cell_ref_point,a.cell_phys_point,a.trian,PhysicalDomain())
 end
@@ -224,6 +227,7 @@ DomainStyle(::Type{GenericCellField{DS}}) where DS = DS()
 function similar_cell_field(f::GenericCellField,cell_data,trian,ds)
   GenericCellField(cell_data,trian,ds)
 end
+Base.copy(f::GenericCellField) = GenericCellField(copy(f.cell_field), f.trian, f.domain_style)
 
 """
    dist = distance(polytope::ExtrusionPolytope,
@@ -477,6 +481,14 @@ struct OperationCellField{DS} <: CellField
 
     new{typeof(domain_style)}(op,args,trian,domain_style,Dict())
   end
+
+  """
+  Copy constructor
+  """
+  function OperationCellField(f::OperationCellField{DS}) where DS
+      argscopy = (copy(c) for c in f.args)
+      new{DS}(f.op, argscopy, f.trian, f.domain_style, f.memo)
+  end
 end
 
 function _get_cell_points(args::CellField...)
@@ -518,6 +530,7 @@ function get_data(f::OperationCellField)
 end
 get_triangulation(f::OperationCellField) = f.trian
 DomainStyle(::Type{OperationCellField{DS}}) where DS = DS()
+Base.copy(f::OperationCellField) = OperationCellField(f);
 
 function evaluate!(cache,f::OperationCellField,x::CellPoint)
   #key = (:evaluate,objectid(x))
@@ -685,6 +698,7 @@ end
 get_data(f::CellFieldAt) = get_data(f.parent)
 get_triangulation(f::CellFieldAt) = get_triangulation(f.parent)
 DomainStyle(::Type{CellFieldAt{T,F}}) where {T,F} = DomainStyle(F)
+Base.copy(f::CellFieldAt{T}) where T = CellFieldAt{T}(copy(f.parent))
 gradient(a::CellFieldAt{P}) where P = CellFieldAt{P}(gradient(a.parent))
 ∇∇(a::CellFieldAt{P}) where P = CellFieldAt{P}(∇∇(a.parent))
 function similar_cell_field(f::CellFieldAt{T},cell_data,trian,ds) where T

@@ -29,6 +29,12 @@ end
 CellData.get_data(f::MultiFieldFEFunction) = get_data(f.multi_cell_field)
 CellData.get_triangulation(f::MultiFieldFEFunction) = get_triangulation(f.multi_cell_field)
 CellData.DomainStyle(::Type{MultiFieldFEFunction{T}}) where T = DomainStyle(T)
+function Base.copy(f::MultiFieldFEFunction{T}) where T
+  sfef_copy = [ copy(ff) for ff in f.single_fe_functions ]
+  fv_copy = copy(f.free_values)
+  f_copy = MultiFieldFEFunction(fv_copy, f.fe_space, sfef_copy)
+  f_copy::MultiFieldFEFunction{T}
+end
 FESpaces.get_free_dof_values(f::MultiFieldFEFunction) = f.free_values
 FESpaces.get_fe_space(f::MultiFieldFEFunction) = f.fe_space
 

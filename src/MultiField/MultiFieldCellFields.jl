@@ -15,6 +15,14 @@ struct MultiFieldCellField{DS<:DomainStyle} <: CellField
 
     new{typeof(domain_style)}(single_fields,domain_style)
   end
+
+  """
+  Copy constructor
+  """
+  function MultiFieldCellField(f::MultiFieldCellField{DS}) where DS
+      single_fields_copy = [copy(cf) for cf in f.single_fields]
+      new{DS}(single_fields_copy, f.domain_style)
+  end
 end
 
 function CellData.get_data(f::MultiFieldCellField)
@@ -35,6 +43,7 @@ function CellData.get_triangulation(f::MultiFieldCellField)
   trian
 end
 CellData.DomainStyle(::Type{MultiFieldCellField{DS}}) where DS = DS()
+Base.copy(f::MultiFieldCellField) = MultiFieldCellField(f)
 num_fields(a::MultiFieldCellField) = length(a.single_fields)
 Base.getindex(a::MultiFieldCellField,i::Integer) = a.single_fields[i]
 Base.iterate(a::MultiFieldCellField)  = iterate(a.single_fields)

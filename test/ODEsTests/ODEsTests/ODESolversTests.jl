@@ -67,6 +67,8 @@ uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,nothing)
 uf
 @test tf==t0+dt
 @test all(uf.≈x)
+ufc = copy(uf)
+@test all(ufc.≈x)
 
 # ODESolutions
 
@@ -76,6 +78,8 @@ current, state = Base.iterate(sol)
 uf, tf = current
 @test tf==t0+dt
 @test all(uf.≈x)
+ufc = copy(uf)
+@test all(ufc.≈x)
 
 # BackwardEulerNonlinearOperator tests
 
@@ -106,6 +110,8 @@ cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
 @test all(uf.≈1+11/9)
+ufc = copy(uf)
+@test all(ufc.≈1+11/9)
 
 @test test_ode_solver(odesol,op,u0,t0,tf)
 test_ode_solver(odesol,op,u0,t0,tf)
@@ -117,12 +123,16 @@ cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
 @test all(uf.≈1+11/9)
+ufc = copy(uf)
+@test all(ufc.≈1+11/9)
 
 op = ODEOperatorMock{Float64,Affine}(1.0,0.0,1.0,1)
 cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
 @test all(uf.≈1+11/9)
+ufc = copy(uf)
+@test all(ufc.≈1+11/9)
 
 # RK tests
 
@@ -135,6 +145,8 @@ cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
 @test all(uf.≈1+11/9)
+ufc = copy(uf)
+@test all(ufc.≈1+11/9)
 # SDIRK 2nd order
 odesol = RungeKutta(ls,dt,:SDIRK_2_1_2)
 uf = copy(u0)
@@ -143,6 +155,8 @@ cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
 @test all(uf.≈u0*(1.0+dt/(2*(1-dt))+dt*(1-2*dt)/(2*(1-dt)^2)))
+ufc = copy(uf)
+@test all(ufc.≈u0*(1.0+dt/(2*(1-dt))+dt*(1-2*dt)/(2*(1-dt)^2)))
 # TRBDF (2nd order with some 0 on the diagonal)
 odesol = RungeKutta(ls,dt,:TRBDF2_3_3_2)
 uf.=1.0
@@ -150,6 +164,8 @@ cache = nothing
 uf, tf, cache = solve_step!(uf,odesol,op,u0,t0,cache)
 @test tf==t0+dt
 @test all(uf.≈u0*1.105215241)
+ufc = copy(uf)
+@test all(ufc.≈u0*1.105215241)
 
 @test test_ode_solver(odesol,op,u0,t0,tf)
 test_ode_solver(odesol,op,u0,t0,tf)
@@ -172,6 +188,10 @@ aᵦ = 2*β*af .+ (1-2*β)*a0
 @test tf==t0+dt
 @test all(vf .≈ (v0 + dt*aᵧ))
 @test all(uf .≈ (u0 + dt*v0 + 0.5*dt^2*aᵦ))
+vfc = copy(vf)
+ufc = copy(uf)
+@test all(vfc .≈ (v0 + dt*aᵧ))
+@test all(ufc .≈ (u0 + dt*v0 + 0.5*dt^2*aᵦ))
 
 # GeneralizedAlpha test
 
@@ -193,6 +213,12 @@ ufθ, tf, cache = solve_step!(ufθ,odesolθ,op,u0,t0,nothing)
 @test tf==t0+dt
 @test all(ufα.≈ufθ)
 @test all(vf.≈ 1/(γ*dt) * (ufα-u0) + (1-1/γ)*v0)
+ufαc = copy(ufα)
+ufθc = copy(ufθ)
+vfc  = copy(vf)
+@test all(ufθc.≈ufθ)
+@test all(ufαc.≈ufθc)
+@test all(vfc.≈ 1/(γ*dt) * (ufα-u0) + (1-1/γ)*v0)
 
 
 # GeneralizedAlpha ∂tt test

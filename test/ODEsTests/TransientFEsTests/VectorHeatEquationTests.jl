@@ -81,4 +81,9 @@ for (xh_tn, tn) in sol_t
   @test el2 < tol
 end
 
+#copy test
+all_sol = [ (copy(xh_tn[1]), tn) for (xh_tn, tn) in sol_t ]
+all_el2 = [ sqrt(sum( ∫(l2( u(tn) - uhc_tn ))dΩ )) for (uhc_tn,tn) in all_sol ]
+@test all( all_el2 .< tol )
+
 end #module

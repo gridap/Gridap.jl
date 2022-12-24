@@ -98,9 +98,16 @@ for (xh_tn, tn) in sol_t
   ph_tn = xh_tn[2]
   e = u(tn) - uh_tn
   el2 = sqrt(sum( ∫(l2(e))dΩ ))
+  @test el2 < tol
   e = p(tn) - ph_tn
   el2 = sqrt(sum( ∫(l2(e))dΩ ))
   @test el2 < tol
 end
+
+all_sol  = [ (copy(xh_tn), tn) for (xh_tn, tn) in sol_t ]
+all_el2u = [ sqrt(sum( ∫(l2( u(tn) - xhc_tn[1] ))dΩ )) for (xhc_tn,tn) in all_sol ]
+all_el2p = [ sqrt(sum( ∫(l2( p(tn) - xhc_tn[2] ))dΩ )) for (xhc_tn,tn) in all_sol ]
+@test all( all_el2u .< tol )
+@test all( all_el2p .< tol )
 
 end #module

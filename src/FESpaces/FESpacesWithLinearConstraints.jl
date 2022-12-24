@@ -2,7 +2,7 @@
 # Background:
 #
 # We build a novel fe space form a given fe space plus a set of linear constraints.
-# We accept any single field fe space as input.  In particular, the given fe space can also be defied
+# We accept any single field fe space as input.  In particular, the given fe space can also be defined
 # via constraints.
 #
 # Assumptions:

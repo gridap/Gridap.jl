@@ -97,4 +97,15 @@ tol = 1.0e-9
 @test e1_l2 < tol
 @test e2_l2 < tol
 
+uhc = copy(uh)
+uc1, uc2 = uhc
+ec1 = u1 - uc1
+ec2 = u2 - uc2
+
+ec1_l2 = sqrt(sum(∫(ec1*ec1)*dΩ))
+ec2_l2 = sqrt(sum(∫(ec2*ec2)*dΩ))
+
+@test ec1_l2 < tol
+@test ec2_l2 < tol
+
 end # module

@@ -24,6 +24,12 @@ end
 
 get_triangulation(f::TransientMultiFieldCellField) = get_triangulation(f.cellfield)
 DomainStyle(::Type{TransientMultiFieldCellField{A}}) where A = DomainStyle(A)
+
+function Base.copy(f::TransientMultiFieldCellField)
+  tsf_copy = [ copy(tsf) for tsf in f.transient_single_fields ]
+  TransientMultiFieldCellField(copy(f.cellfield), f.derivatives, tsf_copy)
+end
+
 num_fields(f::TransientMultiFieldCellField) = length(f.cellfield)
 gradient(f::TransientMultiFieldCellField) = gradient(f.cellfield)
 ∇∇(f::TransientMultiFieldCellField) = ∇∇(f.cellfield)

@@ -25,6 +25,7 @@ end
 get_data(f::TransientSingleFieldCellField) = get_data(f.cellfield)
 get_triangulation(f::TransientSingleFieldCellField) = get_triangulation(f.cellfield)
 DomainStyle(::Type{<:TransientSingleFieldCellField{A}}) where A = DomainStyle(A)
+Base.copy(f::TransientSingleFieldCellField) = TransientSingleFieldCellField(copy(f.cellfield), f.derivatives)
 gradient(f::TransientSingleFieldCellField) = gradient(f.cellfield)
 ∇∇(f::TransientSingleFieldCellField) = ∇∇(f.cellfield)
 change_domain(f::TransientSingleFieldCellField,trian::Triangulation,target_domain::DomainStyle) = change_domain(f.cellfield,trian,target_domain)
@@ -61,6 +62,8 @@ get_data(f::TransientFEBasis) = get_data(f.febasis)
 get_triangulation(f::TransientFEBasis) = get_triangulation(f.febasis)
 DomainStyle(::Type{<:TransientFEBasis{A}}) where A = DomainStyle(A)
 BasisStyle(::Type{<:TransientFEBasis{A}}) where A = BasisStyle(A)
+# Do not copy discretisation data
+Base.copy(f::TransientFEBasis) = f
 gradient(f::TransientFEBasis) = gradient(f.febasis)
 ∇∇(f::TransientFEBasis) = ∇∇(f.febasis)
 change_domain(f::TransientFEBasis,trian::Triangulation,target_domain::DomainStyle) = change_domain(f.febasis,trian,target_domain)

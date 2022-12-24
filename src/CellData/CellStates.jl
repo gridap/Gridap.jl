@@ -51,6 +51,7 @@ end
 
 get_triangulation(f::CellState) = get_triangulation(f.points)
 DomainStyle(::Type{CellState{T,P}}) where {T,P} = DomainStyle(P)
+Base.copy(f::CellState) = CellState(f.points, copy(f.values))
 
 function evaluate!(cache,f::CellState,x::CellPoint)
   if f.points === x

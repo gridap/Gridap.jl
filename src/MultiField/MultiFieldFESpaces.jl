@@ -113,6 +113,8 @@ CellData.get_data(f::MultiFieldFEBasisComponent) = f.cell_basis
 CellData.get_triangulation(f::MultiFieldFEBasisComponent) = get_triangulation(f.single_field)
 FESpaces.BasisStyle(::Type{<:MultiFieldFEBasisComponent{B}}) where B = BasisStyle(B)
 CellData.DomainStyle(::Type{<:MultiFieldFEBasisComponent{B}}) where B = DomainStyle(B)
+# Do not copy discretisation data
+Base.copy(f::MultiFieldFEBasisComponent) = f
 function FESpaces.CellData.similar_cell_field(
   f::MultiFieldFEBasisComponent,cell_data,trian,ds::DomainStyle)
   @notimplemented

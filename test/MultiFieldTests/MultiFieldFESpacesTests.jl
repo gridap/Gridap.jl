@@ -60,6 +60,13 @@ uh, ph = xh
 @test isa(uh,FEFunction)
 @test isa(ph,FEFunction)
 
+xhc = copy(xh)
+test_fe_function(xhc)
+@test isa(xhc,FEFunction)
+uh, ph = xhc
+@test isa(uh,FEFunction)
+@test isa(ph,FEFunction)
+
 cell_isconstr = get_cell_isconstrained(X,trian)
 @test cell_isconstr == Fill(false,num_cells(model))
 

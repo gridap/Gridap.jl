@@ -41,6 +41,13 @@ struct SkeletonCellFieldPair{
     T = typeof(cf_plus_trian)
     new{P,M,T}(cf_plus_plus, cf_minus_minus, cf_plus_trian)
   end
+
+  """
+  Copy constructor
+  """
+  function SkeletonCellFieldPair(a::SkeletonCellFieldPair{P,M,T}) where {P,M,T}
+      new{P,M,T}(copy(a.cf_plus), copy(a.cf_minus), a.trian)
+  end
 end
 
 function SkeletonCellFieldPair(cf_plus::CellField, cf_minus::CellField)
@@ -62,6 +69,8 @@ end
 function DomainStyle(a::SkeletonCellFieldPair)
   DomainStyle(getfield(a,:cf_plus))
 end
+
+Base.copy(a::SkeletonCellFieldPair) = SkeletonCellFieldPair(a)
 
 function get_triangulation(a::SkeletonCellFieldPair)
   getfield(a,:trian)

@@ -9,6 +9,7 @@ end
 get_data(f::CellDof) = f.cell_dof
 get_triangulation(f::CellDof) = f.trian
 DomainStyle(::Type{CellDof{DS}}) where DS = DS()
+Base.copy(f::CellDof{DS}) where DS = CellDof{DS}(copy(f.cell_dof), f.trian, f.domain_style)
 
 function change_domain(a::CellDof,::ReferenceDomain,::PhysicalDomain)
   @notimplemented

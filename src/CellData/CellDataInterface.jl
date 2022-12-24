@@ -35,6 +35,11 @@ change_domain(a::CellDatum,target_domain::DomainStyle) = change_domain(a,DomainS
 change_domain(a::CellDatum,input_domain::T,target_domain::T) where T<: DomainStyle = a
 change_domain(a::CellDatum,input_domain::DomainStyle,target_domain::DomainStyle) = @abstractmethod
 
+"""
+Copies all fields data but not model and geometric data
+"""
+Base.copy(a::CellDatum) = @abstractmethod
+
 # Tester
 """
 """
