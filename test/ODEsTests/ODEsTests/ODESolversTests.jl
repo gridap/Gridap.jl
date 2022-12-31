@@ -196,7 +196,6 @@ ufθ, tf, cache = solve_step!(ufθ,odesolθ,op,u0,t0,nothing)
 
 
 # GeneralizedAlpha ∂tt test
-println("GeneralizedAlpha ∂tt test")
 ufα = nothing; vfα = nothing; afα = nothing
 u0 = ones(2)*2
 op = ODEOperatorMock{Float64,Nonlinear}(0.0,0.0,0.0,2)
@@ -212,13 +211,10 @@ v0 = ones(2)*1.0
 a0 = 0.0*ones(2)
 ufN .= 1.0
 ufα .= 1.0
-println(t0,u0,v0,a0)
-(ufN, vfN, afN), tfN, cache = 
+(ufN, vfN, afN), tfN, cache =
     solve_step!((ufN,v0,a0),odesolN,op,(u0,v0,a0),t0,nothing)
-(ufα, vfα, afα), tfα, cache = 
+(ufα, vfα, afα), tfα, cache =
     solve_step!((ufα,v0,a0),odesolα,op,(u0,v0,a0),t0,nothing)
-println(tfN, ufN, vfN, afN)
-println(tfα, ufα, vfα, afα)
 @test tfα==tfN
 @test sqrt(sum(abs2.(ufα - ufN))) < 1.0e-10
 @test sqrt(sum(abs2.(vfα - vfN))) < 1.0e-10
