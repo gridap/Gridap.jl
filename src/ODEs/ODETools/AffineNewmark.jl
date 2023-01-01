@@ -34,7 +34,7 @@ function solve_step!(
   A,b,l_cache = affOp_cache
 
   # Define Newmark operator
-  newmark_affOp = NewmarkAffineOperator(op,t1,dt,γ,β,(u0,v0,a0),newmark_cache)
+  newmark_affOp = NewmarkAffineOperator(op,t1,dt,γ,β,x0,newmark_cache)
 
   # Fill matrix and vector
   _matrix_and_vector!(A,b,newmark_affOp,u1)
