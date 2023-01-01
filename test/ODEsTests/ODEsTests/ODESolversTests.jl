@@ -194,9 +194,10 @@ odesolθ = ThetaMethod(ls,dt,0.5)
 ufα = copy(u0)
 ufθ = copy(u0)
 v0 = 0.0*ones(2)
+vf = copy(v0)
 ufα.=1.0
 ufθ.=1.0
-(ufα, vf), tf, cache = solve_step!((ufα,v0),odesolα,op,(u0,v0),t0,nothing)
+(ufα, vf), tf, cache = solve_step!((ufα,vf),odesolα,op,(u0,v0),t0,nothing)
 ufθ, tf, cache = solve_step!(ufθ,odesolθ,op,u0,t0,nothing)
 @test tf==t0+dt
 @test all(ufα.≈ufθ)
@@ -204,8 +205,6 @@ ufθ, tf, cache = solve_step!(ufθ,odesolθ,op,u0,t0,nothing)
 
 
 # GeneralizedAlpha ∂tt test
-ufα = nothing; vfα = nothing; afα = nothing
-u0 = ones(2)*2
 op = ODEOperatorMock{Float64,Nonlinear}(0.0,0.0,0.0,2)
 ls = LUSolver()
 γ = 0.5
@@ -213,16 +212,24 @@ ls = LUSolver()
 ρ∞ = 1.0 # Equivalent to Newmark(0.5, 0.25)
 odesolN = Newmark(ls,dt,γ,β)
 odesolα = GeneralizedAlpha(ls, dt, ρ∞)
-ufN = copy(u0)
-ufα = copy(u0)
-v0 = ones(2)*1.0
+u0 = ones(2)*2
+v0 = 0.0*ones(2)
 a0 = 0.0*ones(2)
+ufN = copy(u0)
 ufN .= 1.0
-ufα .= 1.0
+vfN = copy(v0)
+afN = copy(a0)
 (ufN, vfN, afN), tfN, cache =
-    solve_step!((ufN,v0,a0),odesolN,op,(u0,v0,a0),t0,nothing)
+    solve_step!((ufN,vfN,afN),odesolN,op,(u0,v0,a0),t0,nothing)
+u0 = ones(2)*2
+v0 = 0.0*ones(2)
+a0 = 0.0*ones(2)
+ufα = copy(u0)
+ufα .= 1.0
+vfα = copy(v0)
+afα = copy(a0)
 (ufα, vfα, afα), tfα, cache =
-    solve_step!((ufα,v0,a0),odesolα,op,(u0,v0,a0),t0,nothing)
+    solve_step!((ufα,vfα,afα),odesolα,op,(u0,v0,a0),t0,nothing)
 @test tfα==tfN
 @test sqrt(sum(abs2.(ufα - ufN))) < 1.0e-10
 @test sqrt(sum(abs2.(vfα - vfN))) < 1.0e-10
