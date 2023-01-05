@@ -157,7 +157,7 @@ The method returns a vector of Red/Green refinement rules, as well a the list of
 vertices, edges and cells which correspond to new vertices in the refined topology.
 """
 function setup_edge_based_rrules(topo::UnstructuredGridTopology{Dc},::Nothing) where Dc
-  rrules     = lazy_map(p->RedRefinementRule(p),CompressedArray(topo.polytopes,topo.cell_type))
+  rrules     = lazy_map(RedRefinementRule,CompressedArray(topo.polytopes,topo.cell_type))
   faces_list = _redgreen_refined_faces_list(topo,rrules,[true])
   return rrules, faces_list
 end

@@ -149,8 +149,7 @@ function refine(model::CartesianDiscreteModel{Dc}, cell_partition::Tuple) where 
 
   # Glue
   f2c_cell_map, fcell_to_child_id = _create_cartesian_f2c_maps(nC,cell_partition)
-  faces_map      = [Int[] for i=1:Dc]
-  push!(faces_map,f2c_cell_map)
+  faces_map      = [(d==Dc) ? f2c_cell_map : Int[] for d in 0:Dc]
   reffe          = LagrangianRefFE(Float64,first(get_polytopes(model)),1)
   rrules         = RefinementRule(reffe,cell_partition)
   glue = AdaptivityGlue(faces_map,fcell_to_child_id,rrules)
