@@ -77,7 +77,7 @@ function solve_step!(uf::AbstractVector,
   l_cache = solve!(uf,solver.nls,afop,l_cache,newmatrix)
 
   if 0.0 < solver.θ < 1.0
-    uf = uf*(1.0/solver.θ)-u0*((1-solver.θ)/solver.θ)
+    @. uf = uf * (1.0/solver.θ) - u0 * ((1-solver.θ)/solver.θ)
   end
 
   cache = (ode_cache, _u0, vθ, A, b, M, l_cache)
@@ -141,7 +141,7 @@ function ThetaMethodConstantOperator(odeop::ConstantODEOperator,tθ::Float64,dt�
   b = allocate_residual(odeop,u0,ode_cache)
   A = allocate_jacobian(odeop,u0,ode_cache)
   residual!(b,odeop,tθ,(u0,vθ),ode_cache)
-  b = -1*b
+  @. b = -1.0 * b
   z = zero(eltype(A))
   fillstored!(A,z)
   jacobians!(A,odeop,tθ,(vθ,vθ),(1.0,1/dtθ),ode_cache)

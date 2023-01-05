@@ -37,7 +37,7 @@ function solve_step!(
     _damping_matrix!(C,newmark_affOp,u1)
 
     # Create affine operator cache
-    affOp_cache = (A,b,M,C,newmark_affOp,nothing)
+    affOp_cache = (A,b,b1,M,C,newmark_affOp,nothing)
   else
     newmark_cache, affOp_cache = cache
     newmatrix = false
@@ -46,12 +46,12 @@ function solve_step!(
   # Unpack and update caches
   (v,a, ode_cache) = newmark_cache
   ode_cache = update_cache!(ode_cache,op,t1)
-  A,b,M,C,newmark_affOp,l_cache = affOp_cache
+  A,b,b1,M,C,newmark_affOp,l_cache = affOp_cache
 
   # Update RHS
   _vector!(b,newmark_affOp,u1)
-  b1 = b + ( M*(1.0/(β*dt^2)) + C*(γ/(β*dt)) )*u0 +
-           ( M*(1.0/(β*dt)) - C*(1-γ/β) )*v0 +
+  b1 .= b .+ ( M*(1.0/(β*dt^2)) + C*(γ/(β*dt)) )*u0 .+
+           ( M*(1.0/(β*dt)) - C*(1-γ/β) )*v0 .+
            ( M*(1-2*β)/(2*β) - C*(dt*(1-γ/(2*β))) )*a0
 
   # Create affine operator with updated RHS
@@ -63,7 +63,7 @@ function solve_step!(
   a1 = 1.0/(β*dt^2)*(u1-u0) - 1.0/(β*dt)*v0 - (1-2*β)/(2*β)*a0
 
   # Pack caches
-  affOp_cache = A,b,M,C,newmark_affOp,l_cache
+  affOp_cache = A,b,b1,M,C,newmark_affOp,l_cache
   cache = (newmark_cache, affOp_cache)
   x1 = (u1,v1,a1)
 
@@ -112,8 +112,8 @@ function residual!(b::AbstractVector,op::NewmarkConstantOperator,x::AbstractVect
   u1 = x
   u0, v0, a0 = op.x0
   v1, a1, cache = op.ode_cache
-  a1 = 1.0/(op.β*op.dt^2)*(u1-u0) - 1.0/(op.β*op.dt)*v0 - (1-2*op.β)/(2*op.β)*a0
-  v1 = op.γ/(op.β*op.dt)*(u1-u0) + (1-op.γ/op.β)*v0 + op.dt*(1-op.γ/(2*op.β))*a0
+  @. a1 = 1.0/(op.β*op.dt^2)*(u1-u0) - 1.0/(op.β*op.dt)*v0 - (1-2*op.β)/(2*op.β)*a0
+  @. v1 = op.γ/(op.β*op.dt)*(u1-u0) + (1-op.γ/op.β)*v0 + op.dt*(1-op.γ/(2*op.β))*a0
   residual!(b,op.odeop,op.t1,(u1,v1,a1),cache)
   b .*= -1.0
 end
@@ -122,8 +122,8 @@ function jacobian!(A::AbstractMatrix,op::NewmarkConstantOperator,x::AbstractVect
   u1 = x
   u0, v0, a0 = op.x0
   v1, a1, cache = op.ode_cache
-  a1 = 1.0/(op.β*op.dt^2)*(u1-u0) - 1.0/(op.β*op.dt)*v0 - (1-2*op.β)/(2*op.β)*a0
-  v1 = op.γ/(op.β*op.dt)*(u1-u0) + (1-op.γ/op.β)*v0 + op.dt*(1-op.γ/(2*op.β))*a0
+  @. a1 = 1.0/(op.β*op.dt^2)*(u1-u0) - 1.0/(op.β*op.dt)*v0 - (1-2*op.β)/(2*op.β)*a0
+  @. v1 = op.γ/(op.β*op.dt)*(u1-u0) + (1-op.γ/op.β)*v0 + op.dt*(1-op.γ/(2*op.β))*a0
   z = zero(eltype(A))
   fillstored!(A,z)
   jacobians!(A,op.odeop,op.t1,(u1,v1,a1),(1.0,op.γ/(op.β*op.dt),1.0/(op.β*op.dt^2)),cache)
@@ -133,8 +133,8 @@ function _mass_matrix!(A::AbstractMatrix,op::NewmarkConstantOperator,x::Abstract
   u1 = x
   u0, v0, a0 = op.x0
   v1, a1, cache = op.ode_cache
-  a1 = 1.0/(op.β*op.dt^2)*(u1-u0) - 1.0/(op.β*op.dt)*v0 - (1-2*op.β)/(2*op.β)*a0
-  v1 = op.γ/(op.β*op.dt)*(u1-u0) + (1-op.γ/op.β)*v0 + op.dt*(1-op.γ/(2*op.β))*a0
+  @. a1 = 1.0/(op.β*op.dt^2)*(u1-u0) - 1.0/(op.β*op.dt)*v0 - (1-2*op.β)/(2*op.β)*a0
+  @. v1 = op.γ/(op.β*op.dt)*(u1-u0) + (1-op.γ/op.β)*v0 + op.dt*(1-op.γ/(2*op.β))*a0
   z = zero(eltype(A))
   fillstored!(A,z)
   jacobian!(A,op.odeop,op.t1,(u1,v1,a1),3,1.0,cache)
@@ -144,8 +144,8 @@ function _damping_matrix!(A::AbstractMatrix,op::NewmarkConstantOperator,x::Abstr
   u1 = x
   u0, v0, a0 = op.x0
   v1, a1, cache = op.ode_cache
-  a1 = 1.0/(op.β*op.dt^2)*(u1-u0) - 1.0/(op.β*op.dt)*v0 - (1-2*op.β)/(2*op.β)*a0
-  v1 = op.γ/(op.β*op.dt)*(u1-u0) + (1-op.γ/op.β)*v0 + op.dt*(1-op.γ/(2*op.β))*a0
+  @. a1 = 1.0/(op.β*op.dt^2)*(u1-u0) - 1.0/(op.β*op.dt)*v0 - (1-2*op.β)/(2*op.β)*a0
+  @. v1 = op.γ/(op.β*op.dt)*(u1-u0) + (1-op.γ/op.β)*v0 + op.dt*(1-op.γ/(2*op.β))*a0
   z = zero(eltype(A))
   fillstored!(A,z)
   jacobian!(A,op.odeop,op.t1,(u1,v1,a1),2,1.0,cache)
