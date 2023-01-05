@@ -11,7 +11,6 @@ function CellData.CellQuadrature(trian::Triangulation,
                                  degree::Integer,
                                  ids::DomainStyle;
                                  kwargs...)
-  nc = num_cells(trian)
   cell_quad = lazy_map(rr -> Quadrature(rr,degree;kwargs...),rrules)
   return CellData.CellQuadrature(trian,cell_quad,ids)
 end

@@ -180,10 +180,10 @@ end
 
 get_cell_quadrature(a::CompositeMeasure) = a.quad
 
-function CellData.integrate(f,b::CompositeMeasure)
-  ic = CellData.integrate(f,b.quad)
+function integrate(f,b::CompositeMeasure)
+  ic   = integrate(f,b.quad)
   cont = DomainContribution()
-  tc = move_contributions(ic,b.itrian,b.ttrian)
+  tc   = move_contributions(ic,b.itrian,b.ttrian)
   add_contribution!(cont,b.ttrian,tc)
-  cont
+  return cont
 end
