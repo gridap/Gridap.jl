@@ -133,3 +133,44 @@ function Geometry.evaluate!(cache,a::FineToCoarseField,x::Table{<:Point})
   end
   return y_cache.array
 end
+
+function Geometry.return_cache(a::FineToCoarseField,x::AbstractArray{<:Point},child_ids::AbstractArray{Integer})
+  fields = a.fine_fields
+  cmaps = get_inverse_cell_map(a.rrule)
+
+  xi_cache = array_cache(x)
+  fi_cache = array_cache(fields)
+  mi_cache = array_cache(cmaps)
+  id_cache = array_cache(child_ids)
+
+  xi = getindex!(xi_cache,x,1)
+  id = getindex!(id_cache,child_ids,1)
+  mi = getindex!(mi_cache,cmaps,id)
+  fi = getindex!(fi_cache,fields,id)
+
+  zi_cache = Fields.return_cache(mi,xi)
+  zi = evaluate!(zi_cache,mi,xi)
+
+  yi_type  = Fields.return_type(fi,zi)
+  yi_cache = Fields.return_cache(fi,zi)
+  y_cache  = Arrays.CachedArray(yi_type,1)
+
+  return cmaps, fi_cache, mi_cache, xi_cache, id_cache, zi_cache, yi_cache, y_cache
+end
+
+function Geometry.evaluate!(cache,a::FineToCoarseField,x::AbstractArray{<:Point},child_ids::AbstractArray{Integer})
+  cmaps, fi_cache, mi_cache, xi_cache, id_cache, zi_cache, yi_cache, y_cache = cache
+  fields = a.fine_fields
+
+  Arrays.setsize!(y_cache, size(x))
+
+  for i in eachindex(x)
+    xi = getindex!(xi_cache,x,i)
+    id = getindex!(id_cache,child_ids,i)
+    fi = getindex!(fi_cache,fields,id)
+    mi = getindex!(mi_cache,cmaps,id)
+    zi = Fields.evaluate!(zi_cache,mi,xi)
+    y_cache.array[i] = Fields.evaluate!(yi_cache,fi,zi)
+  end
+  return y_cache.array
+end
