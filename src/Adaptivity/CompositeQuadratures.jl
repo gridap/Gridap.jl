@@ -15,13 +15,23 @@ function CellData.CellQuadrature(trian::Triangulation,
   return CellData.CellQuadrature(trian,cell_quad,ids)
 end
 
+struct BundleQuadrature{D,T,C <: Table{Point{D,T}},W <: AbstractVector{T}} <: Quadrature{D,T}
+  coordinates::C
+  weights::W
+  name::String
+end
+
+get_coordinates(q::BundleQuadrature) = q.coordinates
+get_weights(q::BundleQuadrature) = q.weights
+get_name(q::BundleQuadrature) = q.name
+
 struct CompositeQuadrature <: QuadratureName end
 
 function ReferenceFEs.Quadrature(rr::RefinementRule,degree::Integer;kwargs...)
   return ReferenceFEs.Quadrature(ReferenceFEs.get_polytope(rr),CompositeQuadrature(),rr,degree;kwargs...)
 end
 
-function ReferenceFEs.Quadrature(p::Polytope,::CompositeQuadrature,rr::RefinementRule,degree::Integer;kwargs...)
+function ReferenceFEs.Quadrature(p::Polytope,::CompositeQuadrature,rr::RefinementRule,degree::Integer;bundle_points::Bool=false,kwargs...)
   @check p === ReferenceFEs.get_polytope(rr)
   subgrid  = get_ref_grid(rr)
   cellmap  = get_cell_map(rr)
@@ -33,6 +43,7 @@ function ReferenceFEs.Quadrature(p::Polytope,::CompositeQuadrature,rr::Refinemen
   CT = eltype(get_coordinates(first(quads)))
   weights     = Vector{WT}(undef,npts)
   coordinates = Vector{CT}(undef,npts)
+  ptrs = Vector{Int}(undef,length(quads)+1); ptrs[1] = 1;
   k = 1
   for (iq,q) in enumerate(quads)
     n = num_points(q)
@@ -40,9 +51,15 @@ function ReferenceFEs.Quadrature(p::Polytope,::CompositeQuadrature,rr::Refinemen
     c = get_coordinates(q)
     weights[k:k+n-1] .= w .* measures[iq]
     coordinates[k:k+n-1] .= (cellmap[iq])(c)
+    ptrs[iq+1] = ptrs[iq] + n
     k = k+n
   end
 
   name = "Composite quadrature"
-  return GenericQuadrature(coordinates,weights,name)
+  if bundle_points
+    coordinates = Table(coordinates,ptrs)
+    return BundleQuadrature(coordinates,weights,name)
+  else
+    return GenericQuadrature(coordinates,weights,name)
+  end
 end

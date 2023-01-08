@@ -44,6 +44,22 @@ function get_cell_measures(rr::RefinementRule)
   return measures
 end
 
+function bundle_points_by_subcell(rr::RefinementRule,x::AbstractArray{<:Point})
+  x_to_cell = rr.x_to_cell
+  npts      = length(x)
+  nchildren = num_subcells(rr)
+
+  child_ids = map(x_to_cell,x)
+  ptrs      = fill(0,nchildren+1)
+  for i in 1:npts
+    ptrs[child_ids[i]+1] += 1
+  end
+  ptrs[1] = 1
+  
+  data = lazy_map(Reindex(x),sortperm(child_ids))
+  return Table(data,ptrs)
+end
+
 function RefinementRule(::T,poly::Polytope, ref_grid::Grid; cell_maps=nothing, x_to_cell_id=nothing) where T <: RefinementRuleType
   if (cell_maps === nothing)
     f2c_cell_map = Geometry.get_cell_map(ref_grid)
