@@ -2,6 +2,7 @@ module FineToCoarseFieldsTests
 
 using Test
 using Gridap
+using Gridap.Arrays
 using Gridap.Algebra
 using Gridap.Geometry
 using Gridap.CellData
@@ -9,6 +10,8 @@ using Gridap.Adaptivity
 using Gridap.ReferenceFEs
 using Gridap.FESpaces
 using FillArrays
+
+sol(x) = x[1] + x[2]
 
 D = 2
 order  = 1
@@ -24,15 +27,16 @@ ctrian = Triangulation(parent)
 glue = get_adaptivity_glue(model)
 rrules = Adaptivity.get_old_cell_refinement_rules(glue)
 
-cell_quad = lazy_map(rr -> Quadrature(rr,qorder;bundle_points=true),rrules)
+reffes = lazy_map(rr -> ReferenceFE(get_polytope(rr),rr,lagrangian,Float64,order),rrules)
+V_c    = TestFESpace(parent,reffes;conformity=:H1)
+U_c    = TrialFESpace(V_c,sol)
 
-dΩ_comp = Measure(ctrian,rrules,qorder;bundle_points=true)
+reffe  = ReferenceFE(lagrangian,Float64,order)
+V_f    = TestFESpace(model,reffe;conformity=:H1)
+U_f    = TrialFESpace(V_f,sol)
 
-reffe = ReferenceFE(lagrangian,Float64,order)
-V_f = TestFESpace(model,reffe;conformity=:H1,dirichlet_tags="boundary")
-U_f = TrialFESpace(V_f,sol)
-V_c = TestFESpace(parent,reffe;conformity=:H1,dirichlet_tags="boundary")
-U_c = TrialFESpace(V_c,sol)
+u_f = interpolate(sol,U_f)
+u_fc = interpolate(u_f,U_c)
 
 # Fine FEFunction -> Coarse FEFunction, by projection
 ac(u,v) = ∫(v⋅u)*dΩ_c
