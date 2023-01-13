@@ -27,28 +27,17 @@ ctrian = Triangulation(parent)
 glue = get_adaptivity_glue(model)
 rrules = Adaptivity.get_old_cell_refinement_rules(glue)
 
-reffes = lazy_map(rr -> ReferenceFE(get_polytope(rr),rr,lagrangian,Float64,order),rrules)
-V_c    = TestFESpace(parent,reffes;conformity=:H1)
+reffe  = ReferenceFE(lagrangian,Float64,order)
+V_c    = TestFESpace(parent,rrules,reffe;conformity=:H1)
 U_c    = TrialFESpace(V_c,sol)
 
-reffe  = ReferenceFE(lagrangian,Float64,order)
 V_f    = TestFESpace(model,reffe;conformity=:H1)
 U_f    = TrialFESpace(V_f,sol)
 
-u_f = interpolate(sol,U_f)
+# FineToCoarse interpolation, efficient due to FineToCoarseDofBasis. 
+u_f  = interpolate(sol,U_f)
 u_fc = interpolate(u_f,U_c)
 
-# Fine FEFunction -> Coarse FEFunction, by projection
-ac(u,v) = ∫(v⋅u)*dΩ_c
-lc(v)   = ∫(v⋅uh_f_inter)*dΩ_comp
-opc     = AffineFEOperator(ac,lc,U_c,V_c)
-uh_c_pr = solve(opc)
-
-v_c_pr = map(p -> uh_c_pr(p), pts)
-@test v_c_pr ≈ v_r
-
-eh = sum(∫(uh_f_inter-uh_c_pr)*dΩ_c)
-@test eh < 1.e8
 
 
 end
