@@ -4,16 +4,15 @@ struct RedRefinement <: EdgeBasedRefinement end
 struct GreenRefinement{P} <: EdgeBasedRefinement end
 
 
+_has_interior_point(rr::RefinementRule) = _has_interior_point(rr,RefinementRuleType(rr))
+_has_interior_point(rr::RefinementRule,::RefinementRuleType) = false
+
 """
 RefinementRule representing a non-refined cell.
 """
 function WhiteRefinementRule(p::Polytope)
   ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(LagrangianRefFE(Float64,p,1)))
   return RefinementRule(WithoutRefinement(),p,ref_grid)
-end
-
-function _has_interior_point(::RefinementRule{T}) where {T<:WithoutRefinement}
-  return false
 end
 
 """
@@ -60,7 +59,7 @@ function _get_red_refined_connectivity(p::Polytope{2})
   @notimplemented
 end
 
-function _has_interior_point(rr::RefinementRule{T}) where {T<:RedRefinement}
+function _has_interior_point(rr::RefinementRule,::RedRefinement)
   p = get_polytope(rr)
   if p == QUAD
     return true
@@ -119,10 +118,6 @@ function _get_green_vertex_permutation(p::Polytope{2},ref_edge::Integer)
     @notimplemented
   end
   return perm
-end
-
-function _has_interior_point(::RefinementRule{T}) where {T<:GreenRefinement}
-  return false
 end
 
 function get_new_coordinates_from_faces(p::Union{Polytope{D},GridTopology{D}},faces_list::Tuple) where {D}
@@ -214,7 +209,8 @@ function setup_edge_based_rrules(topo::UnstructuredGridTopology{Dc},cells_to_ref
 
   # Create RefinementRules
   num_rr = nP + nP + green_offsets[nP+1]-1 # WHITE+RED+GREEN
-  color_rrules = Vector{RefinementRule}(undef,num_rr)
+  T = typeof(WhiteRefinementRule(first(polys))) # Needed to make eltype(color_rrules) concrete
+  color_rrules = Vector{T}(undef,num_rr)
   for (k,p) in enumerate(polys)
     color_rrules[WHITE+k-1] = WhiteRefinementRule(p)
     color_rrules[RED+k-1]   = RedRefinementRule(p)
@@ -254,7 +250,7 @@ function get_refined_cell_to_vertex_map(topo::UnstructuredGridTopology{2},
   ptrs_new  = Vector{Int}(undef,nC_new+1)
   data_new  = Vector{Int}(undef,nData_new)
 
-  if all(lazy_map(rr->RefinementRuleType(rr)<:RedRefinement,rrules))
+  if all(lazy_map(rr->isa(RefinementRuleType(rr),RedRefinement),rrules))
     edges_reindexing = 1:nE_old
   else
     edges_reindexing = lazy_map(Reindex(find_inverse_index_map(ref_edges,nE_old)),1:nE_old)
@@ -287,28 +283,34 @@ Provided the gids of the coarse cell faces as a Tuple(vertices,edges,cell) and t
 edge-based RefinementRule we want to apply, returns the connectivity of all the refined 
 children cells. 
 """
-function get_relabeled_connectivity(rr::RefinementRule{T,P},faces_gids) where {P<:Polytope{2},T<:WithoutRefinement}
+function get_relabeled_connectivity(rr::RefinementRule,faces_gids)
+  return get_relabeled_connectivity(RefinementRuleType(rr),rr,faces_gids)
+end
+
+get_relabeled_connectivity(::RefinementRuleType,::RefinementRule,faces_gids) = @notimplemented
+
+function get_relabeled_connectivity(::WithoutRefinement,rr::RefinementRule{P},faces_gids) where P<:Polytope{2}
   conn = rr.ref_grid.grid.cell_node_ids
   gids = faces_gids[1]
   new_data = lazy_map(Reindex(gids),conn.data)
   return Table(new_data,conn.ptrs)
 end
 
-function get_relabeled_connectivity(rr::RefinementRule{T,P},faces_gids) where {P<:Polytope{2},T<:RedRefinement}
+function get_relabeled_connectivity(::RedRefinement,rr::RefinementRule{P},faces_gids) where P<:Polytope{2}
   conn = rr.ref_grid.grid.cell_node_ids
   gids = [faces_gids[1]...,faces_gids[2]...,faces_gids[3]...]
   new_data = lazy_map(Reindex(gids),conn.data)
   return Table(new_data,conn.ptrs)
 end
 
-function get_relabeled_connectivity(rr::RefinementRule{T,P},faces_gids) where {N,P<:Polytope{2},T<:GreenRefinement{N}}
+function get_relabeled_connectivity(::GreenRefinement{N},rr::RefinementRule{P},faces_gids) where {N,P<:Polytope{2}}
   conn = rr.ref_grid.grid.cell_node_ids
   gids = [faces_gids[1]...,faces_gids[2][N]]
   new_data = lazy_map(Reindex(gids),conn.data)
   return Table(new_data,conn.ptrs)
 end
 
-function counts_to_ptrs(counts)
+function counts_to_ptrs(counts::Vector{<:Integer})
   n = length(counts)
   ptrs = Vector{Int32}(undef,n+1)
   @inbounds for i in 1:n

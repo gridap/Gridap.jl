@@ -1,19 +1,18 @@
 
 """
-@JordiManyer - Note: We cannot save the original RefinementRule within the FineToCoarseDofBasis.
-                     If we do, arrays of basis in mixed-rrule meshes have non-concrete eltypes, 
-                     which would cause all sorts of problems.
 """
-struct FineToCoarseDofBasis{T,A,B} <: AbstractVector{T}
+struct FineToCoarseDofBasis{T,A,B,C} <: AbstractVector{T}
   dof_basis :: A
-  child_ids :: B
+  rrule     :: B
+  child_ids :: C
 
   function FineToCoarseDofBasis(dof_basis::AbstractVector{T},rrule::RefinementRule) where {T<:Dof}
-    child_ids = map(rrule.x_to_cell,dof_basis.nodes)
+    child_ids = map(x -> x_to_cell(rrule,x),dof_basis.nodes)
 
     A = typeof(dof_basis)
-    B = typeof(child_ids)
-    new{T,A,B}(dof_basis,child_ids)
+    B = typeof(rrule)
+    C = typeof(child_ids)
+    new{T,A,B,C}(dof_basis,rrule,child_ids)
   end
 end
 
@@ -124,9 +123,10 @@ end
 
 # FESpaces constructors
 
-function FESpaces.TestFESpace(model::DiscreteModel,rrules::AbstractVector{<:RefinementRule},args...;kwargs...)
+function FESpaces.TestFESpace(model::DiscreteModel,rrules::AbstractVector{<:RefinementRule},reffe::Tuple{<:ReferenceFEName,Any,Any};kwargs...)
   @check num_cells(model) == length(rrules)
   @check all(CompressedArray(get_polytopes(model),get_cell_type(model)) .== lazy_map(get_polytope,rrules))
-  reffes = lazy_map(rr -> ReferenceFE(get_polytope(rr),rr,lagrangian,Float64,order),rrules)
-  return TestFESpace(model,reffes,args...;kwargs...)
+  basis, reffe_args, reffe_kwargs = reffe
+  reffes = lazy_map(rr -> ReferenceFE(get_polytope(rr),rr,basis,reffe_args...;reffe_kwargs...),rrules)
+  return TestFESpace(model,reffes;kwargs...)
 end

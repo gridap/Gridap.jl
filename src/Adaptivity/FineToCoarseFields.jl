@@ -39,9 +39,9 @@ end
 
 function Geometry.evaluate!(cache,a::FineToCoarseField,x::Point)
   cmaps, fi_cache, cm_cache, xi_cache, yi_cache = cache
-  fields, x_to_cell = a.fine_fields, a.rrule.x_to_cell
+  fields, rr = a.fine_fields, a.rrule
 
-  child_id = x_to_cell(x) # Find correct subcell
+  child_id = x_to_cell(rr,x) # Find correct subcell
   fi = getindex!(fi_cache,fields,child_id)
   mi = getindex!(cm_cache,cmaps,child_id)
   xi = Fields.evaluate!(xi_cache,mi,x)  # xc -> xf
@@ -50,7 +50,7 @@ function Geometry.evaluate!(cache,a::FineToCoarseField,x::Point)
 end
 
 function Geometry.return_cache(a::FineToCoarseField,x::AbstractArray{<:Point})
-  fields, x_to_cell = a.fine_fields, a.rrule.x_to_cell
+  fields, rr = a.fine_fields, a.rrule
   cmaps = get_inverse_cell_map(a.rrule)
 
   xi_cache = array_cache(x)
@@ -58,7 +58,7 @@ function Geometry.return_cache(a::FineToCoarseField,x::AbstractArray{<:Point})
   mi_cache = array_cache(cmaps)
 
   xi = getindex!(xi_cache,x,1)
-  child_id = x_to_cell(xi)
+  child_id = x_to_cell(rr,xi)
   mi = getindex!(mi_cache,cmaps,child_id)
   fi = getindex!(fi_cache,fields,child_id)
 
@@ -74,13 +74,13 @@ end
 
 function Geometry.evaluate!(cache,a::FineToCoarseField,x::AbstractArray{<:Point})
   cmaps, fi_cache, mi_cache, xi_cache, zi_cache, yi_cache, y_cache = cache
-  fields, x_to_cell = a.fine_fields, a.rrule.x_to_cell
+  fields, rr = a.fine_fields, a.rrule
 
   Arrays.setsize!(y_cache, size(x))
 
   for i in eachindex(x)
     xi = getindex!(xi_cache,x,i)
-    child_id = x_to_cell(xi)
+    child_id = x_to_cell(rr,xi)
     fi = getindex!(fi_cache,fields,child_id)
     mi = getindex!(mi_cache,cmaps,child_id)
     zi = Fields.evaluate!(zi_cache,mi,xi)
@@ -94,7 +94,7 @@ end
 # skipped entirely. 
 function Geometry.return_cache(a::FineToCoarseField,x::Table{<:Point})
   @check length(x) == num_subcells(a.rrule)
-  fields = a.fine_fields
+  fields, rr = a.fine_fields, a.rrule
   cmaps = get_inverse_cell_map(a.rrule)
 
   xi_cache = array_cache(x.data)
@@ -102,7 +102,7 @@ function Geometry.return_cache(a::FineToCoarseField,x::Table{<:Point})
   mi_cache = array_cache(cmaps)
 
   xi = getindex!(xi_cache,x.data,1)
-  child_id = x_to_cell(xi)
+  child_id = x_to_cell(rr,xi)
   mi = getindex!(mi_cache,cmaps,child_id)
   fi = getindex!(fi_cache,fields,child_id)
 
