@@ -55,7 +55,7 @@ It provides A(t,u,∂tu,...,∂t^Nu) for a given (t,u,∂tu,...,∂t^Nu)
 function residual!(
   r::AbstractVector,
   op::ODEOperator,
-  t::Real,
+  t::Union{Real, AbstractVector},
   u::Union{AbstractVector,Tuple{Vararg{AbstractVector}}},
   ode_cache)
   @abstractmethod
@@ -81,7 +81,7 @@ Note that for i=0, γ_i=1.0.
 function jacobian!(
   J::AbstractMatrix,
   op::ODEOperator,
-  t::Real,
+  t::Union{Real, AbstractVector},
   u::Tuple{Vararg{AbstractVector}},
   i::Integer,
   γᵢ::Real,
@@ -96,7 +96,7 @@ Add the contribution of all jacobians ,i.e., ∑ᵢ γ_i*[∂A/∂(∂t^iu)](t,u
 function jacobians!(
   J::AbstractMatrix,
   op::ODEOperator,
-  t::Real,
+  t::Union{Real, AbstractVector},
   u::Tuple{Vararg{AbstractVector}},
   γ::Tuple{Vararg{Real}},
   ode_cache)
@@ -116,7 +116,7 @@ Allocates the cache data required by the `ODESolution` for a given `ODEOperator`
 allocate_cache(op::ODEOperator) = @abstractmethod
 
 #@fverdugo to be used as `cache = update_cache!(cache,op,t)`
-update_cache!(cache,op::ODEOperator,t::Real) = @abstractmethod
+update_cache!(cache,op::ODEOperator,t::Union{Real, AbstractVector}) = @abstractmethod
 
 """
 Tests the interface of `ODEOperator` specializations

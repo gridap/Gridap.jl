@@ -100,7 +100,7 @@ end
 
 # Define the TransientTrialFESpace interface for stationary spaces
 
-function evaluate!(Ut::FESpace,U::FESpace,t::Real)
+function evaluate!(Ut::FESpace,U::FESpace,t::Union{Real, AbstractVector})
   U
 end
 
@@ -108,7 +108,7 @@ function allocate_trial_space(U::FESpace)
   U
 end
 
-function evaluate(U::FESpace,t::Real)
+function evaluate(U::FESpace,t::Union{Real, AbstractVector})
   U
 end
 
@@ -144,6 +144,12 @@ function evaluate!(Ut::T,U::TransientMultiFieldTrialFESpace,t::Real) where T
   MultiFieldFESpace(spaces_at_t)
 end
 
+function evaluate!(Ut::T,U::TransientMultiFieldTrialFESpace,t::AbstractVector) where T
+  spaces_at_t = [evaluate!(Uti,Ui,ti) for (Uti,Ui,ti) in zip(Ut,U,t)]
+  MultiFieldFESpace(spaces_at_t)
+end
+
+
 function allocate_trial_space(U::TransientMultiFieldTrialFESpace)
   spaces = allocate_trial_space.(U.spaces)
   MultiFieldFESpace(spaces)
@@ -153,6 +159,12 @@ function evaluate(U::TransientMultiFieldTrialFESpace,t::Real)
   Ut = allocate_trial_space(U)
   evaluate!(Ut,U,t)
   Ut
+end
+
+function evaluate(U::TransientMultiFieldTrialFESpace,t::AbstractVector)
+  Ut = allocate_trial_space(U)
+  spaces_at_t = [evaluate!(Uti, Ui,ti) for (Uti, Ui,ti) in zip(Ut, U,t)]
+  MultiFieldFESpace(spaces_at_t)
 end
 
 function evaluate(U::TransientMultiFieldTrialFESpace,t::Nothing)

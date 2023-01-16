@@ -34,7 +34,7 @@ function allocate_cache(op::ODEOpFromFEOp,v::AbstractVector,a::AbstractVector)
   (v,a, ode_cache)
 end
 
-function update_cache!(ode_cache,op::ODEOpFromFEOp,t::Real)
+function update_cache!(ode_cache,op::ODEOpFromFEOp, t::Union{Real, AbstractVector})
   _Us,Uts,fecache = ode_cache
   Us = ()
   for i in 1:get_order(op)+1
@@ -62,7 +62,7 @@ It provides A(t,uh,∂tuh,...,∂t^Nuh) for a given (t,uh,∂tuh,...,∂t^Nuh)
 function residual!(
   b::AbstractVector,
   op::ODEOpFromFEOp,
-  t::Real,
+  t::Union{Real, AbstractVector},
   xhF::Tuple{Vararg{AbstractVector}},
   ode_cache)
   Xh, = ode_cache
@@ -86,7 +86,7 @@ Note that for i=0, γ_i=1.0.
 function jacobian!(
   A::AbstractMatrix,
   op::ODEOpFromFEOp,
-  t::Real,
+  t::Union{Real, AbstractVector},
   xhF::Tuple{Vararg{AbstractVector}},
   i::Integer,
   γᵢ::Real,
@@ -106,7 +106,7 @@ Add the contribution of all jacobians ,i.e., ∑ᵢ γ_i*[∂A/∂(∂t^iuh)](t,
 function jacobians!(
   J::AbstractMatrix,
   op::ODEOpFromFEOp,
-  t::Real,
+  t::Union{Real, AbstractVector},
   xhF::Tuple{Vararg{AbstractVector}},
   γ::Tuple{Vararg{Real}},
   ode_cache)

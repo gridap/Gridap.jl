@@ -31,7 +31,7 @@ Idem as `residual!` of `ODEOperator`
 function residual!(
   b::AbstractVector,
   op::TransientFEOperator,
-  t::Real,
+  t::Union{Real, AbstractVector},
   xh::Union{AbstractVector,Tuple{Vararg{AbstractVector}}},
   cache)
   @abstractmethod
@@ -43,7 +43,7 @@ Idem as `jacobian!` of `ODEOperator`
 function jacobian!(
   A::AbstractMatrix,
   op::TransientFEOperator,
-  t::Real,
+  t::Union{Real, AbstractVector},
   xh::Union{AbstractVector,Tuple{Vararg{AbstractVector}}},
   i::Int,
   γᵢ::Real,
@@ -57,7 +57,7 @@ Idem as `jacobians!` of `ODEOperator`
 function jacobians!(
   A::AbstractMatrix,
   op::TransientFEOperator,
-  t::Real,
+  t::Union{Real, AbstractVector},
   x::Tuple{Vararg{AbstractVector}},
   γ::Tuple{Vararg{Real}},
   cache)
@@ -92,7 +92,7 @@ function allocate_cache(op::TransientFEOperator)
   nothing
 end
 
-function update_cache!(cache::Nothing,op::TransientFEOperator,t::Real)
+function update_cache!(cache::Nothing,op::TransientFEOperator,t::Union{Real, AbstractVector})
   nothing
 end
 
@@ -247,7 +247,7 @@ end
 function residual!(
   b::AbstractVector,
   op::TransientFEOperatorFromWeakForm,
-  t::Real,
+  t::Union{Real, AbstractVector},
   xh::T,
   cache) where T
   V = get_test(op)
@@ -269,7 +269,7 @@ end
 function jacobian!(
   A::AbstractMatrix,
   op::TransientFEOperatorFromWeakForm,
-  t::Real,
+  t::Union{Real, AbstractVector},
   xh::T,
   i::Integer,
   γᵢ::Real,
@@ -282,7 +282,7 @@ end
 function jacobians!(
   A::AbstractMatrix,
   op::TransientFEOperatorFromWeakForm,
-  t::Real,
+  t::Union{Real, AbstractVector},
   xh::TransientCellField,
   γ::Tuple{Vararg{Real}},
   cache)
@@ -307,7 +307,7 @@ end
 
 function fill_jacobians(
   op::TransientFEOperatorFromWeakForm,
-  t::Real,
+  t::Union{Real, AbstractVector},
   xh::T,
   γ::Tuple{Vararg{Real}}) where T
   _matdata = ()
@@ -338,7 +338,7 @@ end
 
 function _matdata_jacobian(
   op::TransientFEOperatorFromWeakForm,
-  t::Real,
+  t::Union{Real, AbstractVector},
   xh::T,
   i::Integer,
   γᵢ::Real) where T
