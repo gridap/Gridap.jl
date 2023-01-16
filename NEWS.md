@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Fixed
+- Using broadcasting through in `ODESolver` vector operations. Since PR [#860](https://github.com/gridap/Gridap.jl/pull/860)
+
+## [0.17.16] - 2022-12-22 
+
+### Fixed
 - Fixed a bug in function `collect_cell_matrix_and_vector`. Since PR [#849](https://github.com/gridap/Gridap.jl/pull/849)
 
 ## [0.17.15] - 2022-11-10 
