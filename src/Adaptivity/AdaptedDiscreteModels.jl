@@ -80,7 +80,7 @@ function refine(model::UnstructuredDiscreteModel{Dc,Dp};cells_to_refine=nothing)
   topo   = refine_unstructured_topology(model.grid_topology,rrules,faces_list)
   reffes = map(p->LagrangianRefFE(Float64,p,1),get_polytopes(topo))
   grid   = UnstructuredGrid(get_vertex_coordinates(topo),get_faces(topo,Dc,0),reffes,get_cell_type(topo),OrientationStyle(topo))
-  labels = FaceLabeling([num_faces(topo,d) for d in 0:num_cell_dims(topo)])
+  labels = FaceLabeling(topo)
   ref_model = UnstructuredDiscreteModel(grid,topo,labels)
 
   # Create ref glue

@@ -45,4 +45,10 @@ ref_model6 = refine(model2;cells_to_refine=[1,6,16])
 trian6 = Triangulation(ref_model6.model)
 visualize && writevtk(trian6,"test/AdaptivityTests/ref_model6")
 
+# Testing FESpaces
+sol(x) = x[1] + x[2]
+reffe = ReferenceFE(lagrangian,Float64,1)
+V = TestFESpace(ref_model6,reffe;conformity=:H1,dirichlet_tags="boundary")
+U = TrialFESpace(V,sol)
+
 end
