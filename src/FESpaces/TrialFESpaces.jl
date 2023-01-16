@@ -120,3 +120,12 @@ gather_dirichlet_values!(dv,f::TrialFESpace,cv) = gather_dirichlet_values!(dv,f.
 gather_free_values(f::TrialFESpace,cv) = gather_free_values(f.space,cv)
 
 gather_free_values!(fv,f::TrialFESpace,cv) = gather_free_values!(fv,f.space,cv)
+
+#Base Interface 
+function Base.:(==)(a::TrialFESpace,b::TrialFESpace)
+  if a.dirichlet_values == b.dirichlet_values && a.space == b.space
+      return true
+  else
+      false
+  end
+end

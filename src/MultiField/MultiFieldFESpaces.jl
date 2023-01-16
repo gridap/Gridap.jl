@@ -449,6 +449,17 @@ Base.getindex(m::MultiFieldFESpace,field_id::Integer) = m.spaces[field_id]
 
 Base.length(m::MultiFieldFESpace) = length(m.spaces)
 
+function Base.:(==)(a::MultiFieldFESpace,b::MultiFieldFESpace)
+
+  for (A,B) in zip(a, b)
+      if A != B
+          return false
+      end
+      return true
+  end
+  
+end
+
 # API for the ConsecutiveMultiFieldStyle
 import Gridap.FESpaces: interpolate
 import Gridap.FESpaces: interpolate_everywhere
