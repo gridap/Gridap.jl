@@ -21,9 +21,9 @@ struct BundleQuadrature{D,T,C <: Table{Point{D,T}},W <: AbstractVector{T}} <: Qu
   name::String
 end
 
-get_coordinates(q::BundleQuadrature) = q.coordinates
-get_weights(q::BundleQuadrature) = q.weights
-get_name(q::BundleQuadrature) = q.name
+ReferenceFEs.get_coordinates(q::BundleQuadrature) = q.coordinates
+ReferenceFEs.get_weights(q::BundleQuadrature) = q.weights
+ReferenceFEs.get_name(q::BundleQuadrature) = q.name
 
 struct CompositeQuadrature <: QuadratureName end
 
