@@ -1,4 +1,4 @@
-module GridTransferTests
+module MultifieldGridTransferTests
 
 using Test
 using Gridap
