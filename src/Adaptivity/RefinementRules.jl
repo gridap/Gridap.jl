@@ -1,3 +1,4 @@
+abstract type AdaptivityMethod end
 
 abstract type RefinementRuleType end
 struct GenericRefinement <: RefinementRuleType end
@@ -11,8 +12,8 @@ struct RefinementRule{P,A}
 end
 
 function RefinementRule(T::RefinementRuleType,poly::Polytope,ref_grid::Grid)
-  ref_trian    = Triangulation(UnstructuredDiscreteModel(ref_grid))
-  p2c_cache    = CellData._point_to_cell_cache(CellData.KDTreeSearch(),ref_trian)
+  ref_trian = Triangulation(UnstructuredDiscreteModel(ref_grid))
+  p2c_cache = CellData._point_to_cell_cache(CellData.KDTreeSearch(),ref_trian)
   return RefinementRule(T,poly,ref_grid,p2c_cache)
 end
 
@@ -44,6 +45,13 @@ function get_cell_measures(rr::RefinementRule)
   M = sum(measures)
   measures /= M
   return measures
+end
+
+function get_cell_polytopes(rr::RefinementRule)
+  ref_grid   = get_ref_grid(rr)
+  polys      = get_polytopes(ref_grid)
+  cell_types = get_cell_type(ref_grid)
+  return CompressedArray(polys,cell_types)
 end
 
 x_to_cell(rr::RefinementRule,x::Point) = CellData._point_to_cell!(rr.p2c_cache,x)

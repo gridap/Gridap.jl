@@ -1,10 +1,5 @@
 """
   Mesh Adaptivity for Gridap
-
-  Note: Despite the name, this module currently 
-        ONLY SUPPORTS HOMOGENEOUS MESH REFINEMENT!
-        The support for non-homogeneous refinement and coarsening, 
-        i.e full AMR, will be added in the future.
 """
 module Adaptivity
 
@@ -45,10 +40,10 @@ export Triangulation, is_change_possible, best_target, get_adapted_model
 export change_domain, move_contributions
 
 include("RefinementRules.jl")
-include("EdgeBasedRefinementRules.jl")
 include("FineToCoarseFields.jl")
 include("FineToCoarseReferenceFEs.jl")
 include("AdaptivityGlues.jl")
+include("EdgeBasedRefinement.jl")
 include("AdaptedDiscreteModels.jl")
 include("AdaptedTriangulations.jl")
 include("CompositeQuadratures.jl")

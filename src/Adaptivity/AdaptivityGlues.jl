@@ -7,11 +7,11 @@ struct MixedGlue <: AdaptivityGlueType end
 Adaptivity glue between two nested triangulations:
 
 - `n2o_faces_map`       : Given a new face gid, returns 
-                              A) if fine, the gid of the old face containing it.
-                              B) if coarse, the gids of its children (in child order)
+        A) if fine, the gid of the old face containing it.
+        B) if coarse, the gids of its children (in child order)
 - `n2o_cell_to_child_id`: Given a new cell gid, returns 
-                              A) if fine, the local child id within the (old) coarse cell containing it.
-                              B) if coarse, -1
+        A) if fine, the local child id within the (old) coarse cell containing it.
+        B) if coarse, -1
 - `refinement_rules`    : RefinementRule used for each coarse cell.
 """
 struct AdaptivityGlue{GT,Dc,A,B,C,D,E} <: GridapType
