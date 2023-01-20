@@ -5,7 +5,7 @@ Note on RefinementRules and Orientation of the refined grids:
   we want for div- and curl-conforming discretisations), we need to guarantee 
   for simplices that each fine cell has it's vertex gids sorted in increasing 
   order.
-  
+
   In the case of refined meshes, this has an additional constraint: the sorting 
   of the gids CANNOT be done after the refinement. This would make the glue 
   inconsistent. This is an attempt to explain why: 
@@ -60,7 +60,13 @@ function refine_unstructured_topology(topo::UnstructuredGridTopology{Dc},
   c2n_map_new = get_refined_cell_to_vertex_map(topo,rrules,faces_list)
   polys_new, cell_type_new = get_refined_polytopes(rrules)
 
-  return UnstructuredGridTopology(coords_new,c2n_map_new,cell_type_new,polys_new,OrientationStyle(topo))
+  # We can guarantee the new topology is oriented if
+  #   1 - the old topology was oriented
+  #   2 - we have a single type of polytope (i.e new topo is not mixed)
+  orientation = OrientationStyle(topo)
+  (length(polys_new) > 1) && (orientation = false)
+
+  return UnstructuredGridTopology(coords_new,c2n_map_new,cell_type_new,polys_new,orientation)
 end
 
 function get_refined_polytopes(rrules::AbstractArray{<:RefinementRule})
