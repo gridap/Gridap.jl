@@ -8,6 +8,25 @@ using Gridap.Adaptivity
 using Gridap.ReferenceFEs
 using FillArrays
 
+"""
+  If OrientationStyle(topo)==true, checks if the topology is indeed oriented.
+  If OrientationStyle(topo)==false or the topology is not oriented, returns false.
+"""
+function test_grid_topology_orientation(topo::GridTopology{Dc,Dp}) where {Dc,Dp}
+  orientation = OrientationStyle(topo)
+  isa(orientation,NonOriented) && (return false)
+
+  nC = num_faces(topo,Dc)
+  c2n_map     = get_faces(topo,Dc,0)
+  is_oriented = true; iC = 1
+  while(is_oriented && iC <= nC)
+    nodes = c2n_map[iC]
+    is_oriented = (is_oriented && issorted(nodes))
+    iC += 1
+  end
+  return is_oriented
+end
+
 visualize = false
 
 # Refining meshes of QUADs
@@ -51,7 +70,7 @@ model  = ref_model6
 
 topo = get_grid_topology(model)
 @test isa(OrientationStyle(topo),Oriented)
-@test Gridap.Geometry.test_grid_topology_orientation(topo) == true
+@test test_grid_topology_orientation(topo) == true
 
 u((x,y)) = 2*VectorValue(-y,x)
 reffe = ReferenceFE(nedelec,Float64,1)
