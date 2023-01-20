@@ -82,7 +82,9 @@ function get_refined_polytopes(rrules::AbstractArray{<:RefinementRule})
   return polys_new, cell_type_new
 end
 
-function get_refinement_glue(ftopo::T,ctopo::T,rrules::AbstractVector{<:RefinementRule}) where {Dc,T<:UnstructuredGridTopology{Dc}}
+function get_refinement_glue(ftopo ::UnstructuredGridTopology{Dc},
+                             ctopo ::UnstructuredGridTopology{Dc},
+                             rrules::AbstractVector{<:RefinementRule}) where {Dc}
   nC_old = num_faces(ctopo,Dc)
   nC_new = num_faces(ftopo,Dc)
 
