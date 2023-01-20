@@ -1,3 +1,33 @@
+"""
+Note on RefinementRules and Orientation of the refined grids: 
+
+  In order to guarantee that the refined grid is Oriented (which is something
+  we want for div- and curl-conforming discretisations), we need to guarantee 
+  for simplices that each fine cell has it's vertex gids sorted in increasing 
+  order.
+  
+  In the case of refined meshes, this has an additional constraint: the sorting 
+  of the gids CANNOT be done after the refinement. This would make the glue 
+  inconsistent. This is an attempt to explain why: 
+  If we change the order of the gids of a fine cell, we are basically applying a 
+  rotation(+symmetry) to the reference space of that cell. The mesh itself will be 
+  aware of this rotation, but the RefinementRule will not. So the reference space 
+  corresponding to that fine cell within the RefinementRule will NOT be rotated 
+  accordingly. This creates an inconsistency, and the fine-to-coarse/coarse-to-fine
+  mesh transfers will therefore be broken (the glue is no longer valid). 
+
+  How to fix this in the future? The glue should probably keep a record of the 
+  cell-wise rotations. This could be an auxiliary cell_map that maps the reference 
+  space of the fine cell within the fine mesh to the reference space of the fine cell 
+  within the refinement rule.
+  For instance: 
+    - Φ: Cell_map given by the RefinementRule, going from the fine reference space
+         to the coarse reference space.
+    - β: Cell_map encoding the rotation from the reference space of the fine mesh to
+         the reference space of the RefinementRule.
+  then we would have 
+      X_coarse = Φ∘β(X_fine)
+"""
 
 struct EdgeBasedRefinement <: AdaptivityMethod end
 
@@ -30,7 +60,7 @@ function refine_unstructured_topology(topo::UnstructuredGridTopology{Dc},
   c2n_map_new = get_refined_cell_to_vertex_map(topo,rrules,faces_list)
   polys_new, cell_type_new = get_refined_polytopes(rrules)
 
-  return UnstructuredGridTopology(coords_new,c2n_map_new,cell_type_new,polys_new,topo.orientation_style)
+  return UnstructuredGridTopology(coords_new,c2n_map_new,cell_type_new,polys_new,OrientationStyle(topo))
 end
 
 function get_refined_polytopes(rrules::AbstractArray{<:RefinementRule})
@@ -228,6 +258,7 @@ function get_refined_cell_to_vertex_map(topo::UnstructuredGridTopology{2},
   return Table(data_new,ptrs_new)
 end
 
+###############################################################################
 # EdgeBasedRefinementRules
 
 abstract type EdgeBasedRefinementRule <: RefinementRuleType end
@@ -271,9 +302,9 @@ function _get_red_refined_connectivity(p::Polytope{2})
     polys     = [TRI]
     cell_type = [1,1,1,1]
     conn_data = [1,4,5,
-                4,2,6,
-                5,6,3,
-                6,5,4]
+                2,4,6,
+                3,5,6,
+                4,5,6]
     conn_ptrs = [1,4,7,10,13]
     return polys, cell_type, Table(conn_data,conn_ptrs)
   elseif p == QUAD
@@ -315,20 +346,23 @@ function GreenRefinementRule(p::Polytope{2},ref_edge::Integer)
 end
 
 function _get_green_refined_connectivity(p::Polytope{2},ref_edge)
+  # Note: Sorting is necessary in order to guarantee that the gids
+  #       of the refined mesh are sorted (and therefore that the fine 
+  #       grid is Oriented). See the note at top of the file. 
   P = _get_green_vertex_permutation(p,ref_edge)
   if p == TRI
     polys     = [TRI]
     cell_type = [1,1]
-    conn_data = [4,P[1],P[2],
-                 4,P[3],P[1]]
+    conn_data = [sort([4,P[1],P[2]])...,
+                 sort([4,P[3],P[1]])...]
     conn_ptrs = [1,4,7]
     return polys, cell_type, Table(conn_data,conn_ptrs)
   elseif p == QUAD
     polys     = [TRI]
     cell_type = [1,1,1]
-    conn_data = [P[1],P[2],5,
-                 P[3],P[1],5,
-                 P[4],5,P[2]]
+    conn_data = [sort([P[1],P[2],5])...,
+                 sort([P[3],P[1],5])...,
+                 sort([P[4],5,P[2]])...]
     conn_ptrs = [1,4,7,10]
     return polys, cell_type, Table(conn_data,conn_ptrs)
   end
