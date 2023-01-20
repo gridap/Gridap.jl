@@ -64,7 +64,7 @@ function refine_unstructured_topology(topo::UnstructuredGridTopology{Dc},
   #   1 - the old topology was oriented
   #   2 - we have a single type of polytope (i.e new topo is not mixed)
   orientation = OrientationStyle(topo)
-  (length(polys_new) > 1) && (orientation = false)
+  (length(polys_new) > 1) && (orientation = NonOriented())
 
   return UnstructuredGridTopology(coords_new,c2n_map_new,cell_type_new,polys_new,orientation)
 end
