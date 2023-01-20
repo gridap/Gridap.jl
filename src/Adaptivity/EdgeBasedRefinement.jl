@@ -1,11 +1,6 @@
 
 struct EdgeBasedRefinement <: AdaptivityMethod end
 
-# This will be the default for UnstructuredDiscreteModels
-function refine(model::UnstructuredDiscreteModel,args...;refinement_method=EdgeBasedRefinement(),kwargs...)
-  return refine(refinement_method,model,args...;kwargs...)
-end
-
 function refine(::EdgeBasedRefinement,model::UnstructuredDiscreteModel{Dc,Dp};cells_to_refine=nothing) where {Dc,Dp}
   # cells_to_refine can be 
   #    a) nothing -> All cells get refined

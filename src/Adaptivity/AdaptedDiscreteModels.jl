@@ -75,8 +75,14 @@ end
 
 # UnstructuredDiscreteModel refining
 
-function refine(::AdaptivityMethod,model::UnstructuredDiscreteModel,args...;kwargs...)
-  @notimplemented
+abstract type AdaptivityMethod end
+
+function refine(model::UnstructuredDiscreteModel,::AdaptivityMethod,args...;kwargs...)
+  @abstractmethod
+end
+
+function refine(model::UnstructuredDiscreteModel,args...;refinement_method=EdgeBasedRefinement(),kwargs...)
+  return refine(refinement_method,model,args...;kwargs...)
 end
 
 # CartesianDiscreteModel refining

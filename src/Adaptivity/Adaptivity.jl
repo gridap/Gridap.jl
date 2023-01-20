@@ -43,9 +43,10 @@ include("RefinementRules.jl")
 include("FineToCoarseFields.jl")
 include("FineToCoarseReferenceFEs.jl")
 include("AdaptivityGlues.jl")
-include("EdgeBasedRefinement.jl")
 include("AdaptedDiscreteModels.jl")
 include("AdaptedTriangulations.jl")
 include("CompositeQuadratures.jl")
+
+include("EdgeBasedRefinement.jl")
 
 end # module

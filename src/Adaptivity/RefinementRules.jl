@@ -1,4 +1,3 @@
-abstract type AdaptivityMethod end
 
 abstract type RefinementRuleType end
 struct GenericRefinement <: RefinementRuleType end
