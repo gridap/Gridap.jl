@@ -9,6 +9,7 @@ end
 
 @testset "GridTransfer" begin
   include("GridTransferTests.jl")
+  include("FineToCoarseFieldsTests.jl")
 end
 
 @testset "CompositeQuadratures" begin

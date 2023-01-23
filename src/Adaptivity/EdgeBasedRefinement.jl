@@ -41,24 +41,24 @@ function refine(::EdgeBasedRefinement,model::UnstructuredDiscreteModel{Dc,Dp};ce
 
   # Create new model
   rrules, faces_list = setup_edge_based_rrules(model.grid_topology,cells_to_refine)
-  topo   = refine_unstructured_topology(model.grid_topology,rrules,faces_list)
+  topo   = _refine_unstructured_topology(model.grid_topology,rrules,faces_list)
   reffes = map(p->LagrangianRefFE(Float64,p,1),get_polytopes(topo))
   grid   = UnstructuredGrid(get_vertex_coordinates(topo),get_faces(topo,Dc,0),reffes,get_cell_type(topo),OrientationStyle(topo))
   labels = FaceLabeling(topo)
   ref_model = UnstructuredDiscreteModel(grid,topo,labels)
 
   # Create ref glue
-  glue = get_refinement_glue(topo,model.grid_topology,rrules)
+  glue = _get_refinement_glue(topo,model.grid_topology,rrules)
 
   return AdaptedDiscreteModel(ref_model,model,glue)
 end
 
-function refine_unstructured_topology(topo::UnstructuredGridTopology{Dc},
+function _refine_unstructured_topology(topo::UnstructuredGridTopology{Dc},
                                       rrules::AbstractVector{<:RefinementRule},
                                       faces_list::Tuple) where {Dc}
   coords_new  = get_new_coordinates_from_faces(topo,faces_list)
   c2n_map_new = get_refined_cell_to_vertex_map(topo,rrules,faces_list)
-  polys_new, cell_type_new = get_refined_polytopes(rrules)
+  polys_new, cell_type_new = get_cell_polytopes(rrules)
 
   # We can guarantee the new topology is oriented if
   #   1 - the old topology was oriented
@@ -69,22 +69,9 @@ function refine_unstructured_topology(topo::UnstructuredGridTopology{Dc},
   return UnstructuredGridTopology(coords_new,c2n_map_new,cell_type_new,polys_new,orientation)
 end
 
-function get_refined_polytopes(rrules::AbstractArray{<:RefinementRule})
-  rr_polys = lazy_map(rr->get_polytopes(rr.ref_grid),rrules)
-
-  # NOTE: The innermost `unique` is to optimize for CompressedArrays
-  polys_new = unique(reduce(vcat,unique(rr_polys)))
-
-  rr_cell_type = lazy_map(rr->get_cell_type(rr.ref_grid),rrules)
-  rr2new_cell_type  = lazy_map(vp->map(p->findfirst(x->x==p,polys_new),vp),rr_polys)
-  cell_type_new = reduce(vcat,lazy_map((gids,lids)->lazy_map(Reindex(gids),lids),rr2new_cell_type,rr_cell_type))
-
-  return polys_new, cell_type_new
-end
-
-function get_refinement_glue(ftopo ::UnstructuredGridTopology{Dc},
-                             ctopo ::UnstructuredGridTopology{Dc},
-                             rrules::AbstractVector{<:RefinementRule}) where {Dc}
+function _get_refinement_glue(ftopo ::UnstructuredGridTopology{Dc},
+                              ctopo ::UnstructuredGridTopology{Dc},
+                              rrules::AbstractVector{<:RefinementRule}) where {Dc}
   nC_old = num_faces(ctopo,Dc)
   nC_new = num_faces(ftopo,Dc)
 
@@ -166,7 +153,7 @@ function setup_edge_based_rrules(topo::UnstructuredGridTopology{Dc},cells_to_ref
         p = cell_types[nbor]
         ref_edge = nbor_ref_edges[1]
         cell_color[nbor] = GREEN + Int8(green_offsets[p]-1+ref_edge-1)
-      else # > 1, can't be 0
+      else # > 1, can't be 0 (queue invariant)
         cell_color[nbor] = RED + Int8(cell_types[nbor]-1)
         is_red[nbor] = true
         is_refined[nbor_edges] .= true

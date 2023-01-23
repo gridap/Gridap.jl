@@ -53,6 +53,19 @@ function get_cell_polytopes(rr::RefinementRule)
   return CompressedArray(polys,cell_types)
 end
 
+function get_cell_polytopes(rrules::AbstractArray{<:RefinementRule})
+  rr_polys = lazy_map(rr->get_polytopes(rr.ref_grid),rrules)
+
+  # NOTE: The innermost `unique` is to optimize for CompressedArrays
+  polys_new = unique(reduce(vcat,unique(rr_polys)))
+
+  rr_cell_type = lazy_map(rr->get_cell_type(rr.ref_grid),rrules)
+  rr2new_cell_type  = lazy_map(vp->map(p->findfirst(x->x==p,polys_new),vp),rr_polys)
+  cell_type_new = reduce(vcat,lazy_map((gids,lids)->lazy_map(Reindex(gids),lids),rr2new_cell_type,rr_cell_type))
+
+  return polys_new, cell_type_new
+end
+
 x_to_cell(rr::RefinementRule,x::Point) = CellData._point_to_cell!(rr.p2c_cache,x)
 
 function bundle_points_by_subcell(rr::RefinementRule,x::AbstractArray{<:Point})
