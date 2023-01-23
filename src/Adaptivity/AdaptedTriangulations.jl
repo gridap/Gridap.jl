@@ -112,10 +112,13 @@ for (stype,ttype) in [(:AdaptedTriangulation,:AdaptedTriangulation),(:AdaptedTri
         return is_change_possible($sstrian,$tttrian)
       end
       
-      if typeof($sstrian) == typeof($tttrian)
+      if isa($sstrian,BodyFittedTriangulation) && isa($tttrian,BodyFittedTriangulation)
         return is_related(strian,ttrian)
       end
 
+      # Support for Boundary, Skeletton, ... triangulations is not yet implemented
+      # unless they are based on the same background model.
+      @notimplemented
       return false
     end
   end
@@ -129,10 +132,12 @@ for (stype,ttype) in [(:AdaptedTriangulation,:AdaptedTriangulation),(:AdaptedTri
         return best_target($sstrian,$tttrian)
       end
     
-      if typeof($sstrian) == typeof($tttrian)
+      if isa($sstrian,BodyFittedTriangulation) && isa($tttrian,BodyFittedTriangulation)
         is_child(ttrian,strian) ? (return ttrian) : (return strian)
       end
     
+      # Support for Boundary, Skeletton, ... triangulations is not yet implemented
+      # unless they are based on the same background model.
       @notimplemented
       return nothing
     end
