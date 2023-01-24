@@ -366,7 +366,7 @@ end
 
 function _get_green_vertex_permutation(p::Polytope{2},ref_edge::Integer)
   if p == TRI
-    perm = circshift([1,2,3],3-ref_edge)
+    perm = circshift([1,2,3],ref_edge-3)
   elseif p == QUAD
     # Vertices and edges are not circularly labeled in QUAD, so 
     # we have to be inventive:

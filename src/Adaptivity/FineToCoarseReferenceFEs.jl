@@ -7,7 +7,8 @@ struct FineToCoarseDofBasis{T,A,B,C} <: AbstractVector{T}
   child_ids :: C
 
   function FineToCoarseDofBasis(dof_basis::AbstractVector{T},rrule::RefinementRule) where {T<:Dof}
-    child_ids = map(x -> x_to_cell(rrule,x),dof_basis.nodes)
+    nodes = get_nodes(dof_basis)
+    child_ids = map(x -> x_to_cell(rrule,x),nodes)
 
     A = typeof(dof_basis)
     B = typeof(rrule)
@@ -27,8 +28,8 @@ ReferenceFEs.get_nodes(a::FineToCoarseDofBasis) = get_nodes(a.dof_basis)
 Arrays.return_cache(b::FineToCoarseDofBasis,field) = return_cache(b.dof_basis,field)
 Arrays.evaluate!(cache,b::FineToCoarseDofBasis,field) = evaluate!(cache,b.dof_basis,field)
 
-# Spetialised behaviour
-function Arrays.return_cache(s::FineToCoarseDofBasis{<:LagrangianDofBasis},field::FineToCoarseField)
+# Spetialized behaviour
+function Arrays.return_cache(s::FineToCoarseDofBasis{T,<:LagrangianDofBasis},field::FineToCoarseField) where T
   b     = s.dof_basis
   cf    = return_cache(field,b.nodes,s.child_ids)
   vals  = evaluate!(cf,field,b.nodes,s.child_ids)
@@ -38,13 +39,13 @@ function Arrays.return_cache(s::FineToCoarseDofBasis{<:LagrangianDofBasis},field
   return (c, cf)
 end
 
-function Arrays.evaluate!(cache,s::FineToCoarseDofBasis{<:LagrangianDofBasis},field::FineToCoarseField)
+function Arrays.evaluate!(cache,s::FineToCoarseDofBasis{T,<:LagrangianDofBasis},field::FineToCoarseField) where T
   c, cf = cache
   b     = s.dof_basis
   vals  = evaluate!(cf,field,b.nodes,s.child_ids)
   ndofs = length(b.dof_to_node)
-  T = eltype(vals)
-  ncomps = num_components(T)
+  T2    = eltype(vals)
+  ncomps = num_components(T2)
   @check ncomps == num_components(eltype(b.node_and_comp_to_dof)) """\n
   Unable to evaluate LagrangianDofBasis. The number of components of the
   given Field does not match with the LagrangianDofBasis.
@@ -58,7 +59,7 @@ function Arrays.evaluate!(cache,s::FineToCoarseDofBasis{<:LagrangianDofBasis},fi
   ReferenceFEs._evaluate_lagr_dof!(c,vals,b.node_and_comp_to_dof,ndofs,ncomps)
 end
 
-function Arrays.return_cache(s::FineToCoarseDofBasis{<:MomentBasedDofBasis},field::FineToCoarseField)
+function Arrays.return_cache(s::FineToCoarseDofBasis{T,<:MomentBasedDofBasis},field::FineToCoarseField) where T
   b     = s.dof_basis
   cf    = return_cache(field,b.nodes,s.child_ids)
   vals  = evaluate!(cf,field,b.nodes,s.child_ids)
@@ -68,7 +69,7 @@ function Arrays.return_cache(s::FineToCoarseDofBasis{<:MomentBasedDofBasis},fiel
   return (c, cf)
 end
 
-function Arrays.evaluate!(cache,s::FineToCoarseDofBasis{<:MomentBasedDofBasis},field)
+function Arrays.evaluate!(cache,s::FineToCoarseDofBasis{T,<:MomentBasedDofBasis},field::FineToCoarseField) where T
   c, cf = cache
   b     = s.dof_basis
   vals  = evaluate!(cf,field,b.nodes,s.child_ids)
@@ -101,6 +102,8 @@ ReferenceFEs.Conformity(reffe::FineToCoarseRefFE)    = Conformity(reffe.reffe)
 ReferenceFEs.get_face_dofs(reffe::FineToCoarseRefFE) = get_face_dofs(reffe.reffe)
 ReferenceFEs.get_shapefuns(reffe::FineToCoarseRefFE) = get_shapefuns(reffe.reffe)
 ReferenceFEs.get_metadata(reffe::FineToCoarseRefFE)  = get_metadata(reffe.reffe)
+ReferenceFEs.get_orders(reffe::FineToCoarseRefFE)    = get_orders(reffe.reffe)
+ReferenceFEs.get_order(reffe::FineToCoarseRefFE)     = get_order(reffe.reffe)
 
 ReferenceFEs.Conformity(reffe::FineToCoarseRefFE,sym::Symbol) = Conformity(reffe.reffe,sym)
 ReferenceFEs.get_face_own_dofs(reffe::FineToCoarseRefFE,conf::Conformity) = get_face_own_dofs(reffe.reffe,conf)

@@ -34,12 +34,13 @@ function Geometry.return_cache(a::FineToCoarseField,x::Point)
   cm_cache = array_cache(cmaps)
   xi_cache = Fields.return_cache(first(cmaps),x)
   yi_cache = Fields.return_cache(first(fields),x)
-  return cmaps, fi_cache, cm_cache, xi_cache, yi_cache
+  return fi_cache, cm_cache, xi_cache, yi_cache
 end
 
 function Geometry.evaluate!(cache,a::FineToCoarseField,x::Point)
-  cmaps, fi_cache, cm_cache, xi_cache, yi_cache = cache
+  fi_cache, cm_cache, xi_cache, yi_cache = cache
   fields, rr = a.fine_fields, a.rrule
+  cmaps = get_inverse_cell_map(rr)
 
   child_id = x_to_cell(rr,x) # Find correct subcell
   fi = getindex!(fi_cache,fields,child_id)
@@ -69,12 +70,13 @@ function Geometry.return_cache(a::FineToCoarseField,x::AbstractArray{<:Point})
   yi_cache = Fields.return_cache(fi,zi)
   y_cache  = Arrays.CachedArray(yi_type,1)
 
-  return cmaps, fi_cache, mi_cache, xi_cache, zi_cache, yi_cache, y_cache
+  return fi_cache, mi_cache, xi_cache, zi_cache, yi_cache, y_cache
 end
 
 function Geometry.evaluate!(cache,a::FineToCoarseField,x::AbstractArray{<:Point})
-  cmaps, fi_cache, mi_cache, xi_cache, zi_cache, yi_cache, y_cache = cache
+  fi_cache, mi_cache, xi_cache, zi_cache, yi_cache, y_cache = cache
   fields, rr = a.fine_fields, a.rrule
+  cmaps = get_inverse_cell_map(rr)
 
   Arrays.setsize!(y_cache, size(x))
 
@@ -113,12 +115,13 @@ function Geometry.return_cache(a::FineToCoarseField,x::Table{<:Point})
   yi_cache = Fields.return_cache(fi,zi)
   y_cache  = Arrays.CachedArray(yi_type,1)
 
-  return cmaps, fi_cache, mi_cache, xi_cache, zi_cache, yi_cache, y_cache
+  return fi_cache, mi_cache, xi_cache, zi_cache, yi_cache, y_cache
 end
 
 function Geometry.evaluate!(cache,a::FineToCoarseField,x::Table{<:Point})
   @check length(x) == num_subcells(a.rrule)
-  cmaps, fi_cache, mi_cache, xi_cache, zi_cache, yi_cache, y_cache = cache
+  fi_cache, mi_cache, xi_cache, zi_cache, yi_cache, y_cache = cache
+  cmaps  = get_inverse_cell_map(a.rrule)
   fields = a.fine_fields
 
   Arrays.setsize!(y_cache, size(x.data))
@@ -134,7 +137,7 @@ function Geometry.evaluate!(cache,a::FineToCoarseField,x::Table{<:Point})
   return y_cache.array
 end
 
-function Geometry.return_cache(a::FineToCoarseField,x::AbstractArray{<:Point},child_ids::AbstractArray{Integer})
+function Geometry.return_cache(a::FineToCoarseField,x::AbstractArray{<:Point},child_ids::AbstractArray{<:Integer})
   fields = a.fine_fields
   cmaps = get_inverse_cell_map(a.rrule)
 
@@ -155,11 +158,12 @@ function Geometry.return_cache(a::FineToCoarseField,x::AbstractArray{<:Point},ch
   yi_cache = Fields.return_cache(fi,zi)
   y_cache  = Arrays.CachedArray(yi_type,1)
 
-  return cmaps, fi_cache, mi_cache, xi_cache, id_cache, zi_cache, yi_cache, y_cache
+  return fi_cache, mi_cache, xi_cache, id_cache, zi_cache, yi_cache, y_cache
 end
 
-function Geometry.evaluate!(cache,a::FineToCoarseField,x::AbstractArray{<:Point},child_ids::AbstractArray{Integer})
-  cmaps, fi_cache, mi_cache, xi_cache, id_cache, zi_cache, yi_cache, y_cache = cache
+function Geometry.evaluate!(cache,a::FineToCoarseField,x::AbstractArray{<:Point},child_ids::AbstractArray{<:Integer})
+  fi_cache, mi_cache, xi_cache, id_cache, zi_cache, yi_cache, y_cache = cache
+  cmaps  = get_inverse_cell_map(a.rrule)
   fields = a.fine_fields
 
   Arrays.setsize!(y_cache, size(x))
