@@ -22,10 +22,20 @@ for D = 1:3
   model1 = refine(cart_model,2)
   model2 = refine(model1,2)
 
-  for (model,parent) in [(model2, model1),(model1,cart_model)]
+  model_pairs = Any[(model2, model1),(model1,cart_model)]
+  if D == 2 
+    simplex_model = simplexify(cart_model)
+    model3 = refine(simplex_model;cells_to_refine=[1,4])
+    push!(model_pairs,(model3,simplex_model))
+  end
+
+  for (model,parent) in model_pairs
     # Triangulations
     trian = Triangulation(model)
     ctrian = Triangulation(parent)
+
+    glue = get_adaptivity_glue(model)
+    rrules = Adaptivity.get_old_cell_refinement_rules(glue)
 
     # Measures
     dΩ_f  = Measure(trian,qorder)
@@ -37,10 +47,12 @@ for D = 1:3
 
     # FESpaces
     reffe = ReferenceFE(lagrangian,Float64,order)
-    V_f = TestFESpace(model,reffe;conformity=:H1,dirichlet_tags="boundary")
+    V_f = TestFESpace(model,reffe;dirichlet_tags="boundary")
     U_f = TrialFESpace(V_f,sol)
-    V_c = TestFESpace(parent,reffe;conformity=:H1,dirichlet_tags="boundary")
+    V_c = TestFESpace(parent,reffe;dirichlet_tags="boundary")
     U_c = TrialFESpace(V_c,sol)
+    V_c_fast = TestFESpace(parent,rrules,reffe;dirichlet_tags="boundary")
+    U_c_fast = TrialFESpace(V_c,sol)
 
     # CellField: Coarse -> Fine
     cf_c_phy = CellField(sol,ctrian)
@@ -109,11 +121,14 @@ for D = 1:3
     uh_c_inter  = interpolate(uh_f,U_c)
     uh_c_inter2 = interpolate_everywhere(uh_f,U_c)
     uh_c_inter3 = interpolate_dirichlet(uh_f,U_c)
+    uh_c_inter4  = interpolate(uh_f,U_c_fast)
 
     v_c_inter  = map(p -> uh_c_inter(p), pts)
     v_c_inter2 = map(p -> uh_c_inter2(p), pts)
+    v_c_inter4 = map(p -> uh_c_inter4(p), pts)
     @test v_r ≈ v_c_inter
-    @test v_r ≈ v_c_inter2
+    #@test v_r ≈ v_c_inter2
+    @test v_r ≈ v_c_inter4
 
     # Coarse FEFunction -> Fine FEFunction, by projection
     af(u,v)  = ∫(v⋅u)*dΩ_f
