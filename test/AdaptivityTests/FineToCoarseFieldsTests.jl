@@ -18,9 +18,6 @@ order  = 1
 qorder = order*2+1
 domain = Tuple(repeat([0,1],D))
 
-#parent = simplexify(CartesianDiscreteModel(domain,Tuple(fill(4,D))))
-#model = refine(parent;cells_to_refine=[5,12])
-
 parent = UnstructuredDiscreteModel(CartesianDiscreteModel(domain,Tuple(fill(2,D))))
 model = refine(parent;cells_to_refine=[1,3])
 
@@ -30,6 +27,7 @@ ctrian = Triangulation(parent)
 qorder = order*2+1
 dΩ_c = Measure(ctrian,qorder)
 dΩ_f = Measure(trian,qorder)
+dΩ_cf = Measure(ctrian,trian,qorder)
 
 glue = get_adaptivity_glue(model)
 rrules = Adaptivity.get_old_cell_refinement_rules(glue)
@@ -46,64 +44,23 @@ U_c    = TrialFESpace(V_c,sol)
 V_f    = TestFESpace(model,reffe;conformity=:H1,dirichlet_tags="boundary")
 U_f    = TrialFESpace(V_f,sol)
 
-V_c2    = TestFESpace(parent,reffe;conformity=:H1,dirichlet_tags="boundary")
-U_c2    = TrialFESpace(V_c2,sol)
-
 test_fe_space(U_c)
 test_fe_space(U_f)
-test_fe_space(U_c2)
 
 # FineToCoarse interpolation, efficient due to FineToCoarseDofBasis.
-u_c  = interpolate_everywhere(sol,U_c2)
+u_c = interpolate_everywhere(sol,U_c)
 u_f = interpolate_everywhere(sol,U_f)
 
-u_f2 = Gridap.CellData.change_domain(u_c,trian,ReferenceDomain())
-u_c2 = Gridap.CellData.change_domain(u_f,ctrian,ReferenceDomain())
-
-u_fc = interpolate(u_f,U_c2)
-u_fc2 = interpolate_everywhere(u_f,U_c2)
+u_fc = interpolate(u_f,U_c)
+u_fc2 = interpolate_everywhere(u_f,U_c)
 
 eh = u_c - u_f
-e = sum(∫(eh⋅eh)*dΩ_c)
+@test sum(∫(eh⋅eh)*dΩ_f) < 1.e-12
 
-eh2 = u_c - u_fc 
-e2 = sum(∫(eh2⋅eh2)*dΩ_c)
+eh2 = u_c - u_fc
+@test sum(∫(eh2⋅eh2)*dΩ_c) < 1.e-12
 
-af(u,v) = ∫(v⋅u)*dΩ_f
-lf(v)   = ∫(v⋅u_c)*dΩ_f
-opf     = AffineFEOperator(af,lf,U_f,V_f)
-u_f_pr  = solve(opf)
-
-eh3 = u_f_pr - u_c
-e3 = sum(∫(eh3⋅eh3)*dΩ_c)
-
-sum(∫(u_f_pr)*dΩ_f)
-sum(∫(u_f)*dΩ_f)
-sum(∫(u_fc)*dΩ_c)
-
-
-Z = collect(0.0:0.05:1.0)
-for x in Z
-  for y in Z
-    X = VectorValue(x,y)
-    print(X)
-    Y = u_f(X)
-    println(" -> ",Y, " - " , Y ≈ sol(X))
-  end
-end
-
-M = model.model
-G = M.grid
-
-cell_coords = map(ids->G.node_coordinates[ids],G.cell_node_ids)
-
-cv_ref = FESpaces._cell_vals(U_c,sol)
-cv = FESpaces._cell_vals(U_c,u_f)
-
-I = findall(map((a,b)->!(a≈b),cv_ref,cv))
-cv[I]
-
-i = first(I)
-rr = rrules[2]
+eh3 = u_c - u_fc2 
+@test sum(∫(eh3⋅eh3)*dΩ_c) < 1.e-12
 
 end

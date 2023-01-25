@@ -3,6 +3,7 @@
 """
 module Adaptivity
 
+using Test
 using FillArrays
 using LinearAlgebra
 using DataStructures

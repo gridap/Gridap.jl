@@ -58,13 +58,12 @@ function _refine_unstructured_topology(topo::UnstructuredGridTopology{Dc},
                                       faces_list::Tuple) where {Dc}
   coords_new  = get_new_coordinates_from_faces(topo,faces_list)
   c2n_map_new = get_refined_cell_to_vertex_map(topo,rrules,faces_list)
-  polys_new, cell_type_new = get_cell_polytopes(rrules)
+  polys_new, cell_type_new = _get_cell_polytopes(rrules)
 
   # We can guarantee the new topology is oriented if
   #   1 - the old topology was oriented
   #   2 - we have a single type of polytope (i.e new topo is not mixed)
-  orientation = OrientationStyle(topo)
-  (length(polys_new) > 1) && (orientation = NonOriented())
+  orientation = NonOriented()
 
   return UnstructuredGridTopology(coords_new,c2n_map_new,cell_type_new,polys_new,orientation)
 end

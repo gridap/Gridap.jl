@@ -3,14 +3,19 @@ abstract type RefinementRuleType end
 struct GenericRefinement <: RefinementRuleType end
 struct WithoutRefinement <: RefinementRuleType end
 
-struct RefinementRule{P,A}
-  T            :: RefinementRuleType
-  poly         :: P
-  ref_grid     :: A
-  p2c_cache    :: Tuple
+struct RefinementRule{P,A<:DiscreteModel}
+  T         :: RefinementRuleType
+  poly      :: P
+  ref_grid  :: A
+  p2c_cache :: Tuple
 end
 
 function RefinementRule(T::RefinementRuleType,poly::Polytope,ref_grid::Grid)
+  ref_model = UnstructuredDiscreteModel(ref_grid)
+  return RefinementRule(T,poly,ref_model)
+end
+
+function RefinementRule(T::RefinementRuleType,poly::Polytope,ref_grid::DiscreteModel)
   ref_trian = Triangulation(UnstructuredDiscreteModel(ref_grid))
   p2c_cache = CellData._point_to_cell_cache(CellData.KDTreeSearch(),ref_trian)
   return RefinementRule(T,poly,ref_grid,p2c_cache)
@@ -29,12 +34,20 @@ RefinementRuleType(rr::RefinementRule) :: RefinementRuleType = rr.T
 
 function Geometry.get_cell_map(rr::RefinementRule)
   ref_grid = get_ref_grid(rr)
-  return Geometry.get_cell_map(ref_grid)
+  return collect(Geometry.get_cell_map(ref_grid))
 end
 
 function get_inverse_cell_map(rr::RefinementRule)
-  f2c_cell_map = get_cell_map(rr)
-  return lazy_map(Fields.inverse_map,f2c_cell_map)
+  # Getting the underlying grid is important, otherwise we would not get affine maps for
+  # simplicial meshes. For non-simplicial meshes we will still get LinearCombinationFields.
+  # Note that this implies that (potentially)
+  #            inverse_map(get_cell_map(rr)) != get_inverse_cell_map(rr)
+  # This is on purpose, so that we may keep type stability in mixed-polytope meshes 
+  # when only using the cell_maps. Using the inverse cell_maps in mixed meshes may 
+  # result in type instabilities (only during fine-to-coarse transfers). 
+  ref_grid = get_grid(get_ref_grid(rr))
+  f2c_cell_map = collect(Geometry.get_cell_map(ref_grid))
+  return map(Fields.inverse_map,f2c_cell_map)
 end
 
 function get_cell_measures(rr::RefinementRule)
@@ -46,20 +59,28 @@ function get_cell_measures(rr::RefinementRule)
   return measures
 end
 
-function get_cell_polytopes(rr::RefinementRule)
+function get_cell_polytopes(rr::Union{RefinementRule,AbstractArray{<:RefinementRule}})
+  polys, cell_type = _get_cell_polytopes(rr)
+  return CompressedArray(polys,cell_type)
+end
+
+function _get_cell_polytopes(rr::RefinementRule)
   ref_grid   = get_ref_grid(rr)
   polys      = get_polytopes(ref_grid)
   cell_types = get_cell_type(ref_grid)
-  return CompressedArray(polys,cell_types)
+  return polys, cell_types
 end
 
-function get_cell_polytopes(rrules::AbstractArray{<:RefinementRule})
+function _get_cell_polytopes(rrules::AbstractArray{<:RefinementRule})
   rr_polys = lazy_map(rr->get_polytopes(rr.ref_grid),rrules)
+  rr_cell_type = lazy_map(rr->get_cell_type(rr.ref_grid),rrules)
 
   # NOTE: The innermost `unique` is to optimize for CompressedArrays
   polys_new = unique(reduce(vcat,unique(rr_polys)))
 
-  rr_cell_type = lazy_map(rr->get_cell_type(rr.ref_grid),rrules)
+  # This assumes that new subcells born from a RefinementRule have consecutive gids, such 
+  # that the numbering of the new cells is 
+  #           gid_new_cell = gid_RefRule_old_cell + child_id_new_cell
   rr2new_cell_type  = lazy_map(vp->map(p->findfirst(x->x==p,polys_new),vp),rr_polys)
   cell_type_new = reduce(vcat,lazy_map((gids,lids)->lazy_map(Reindex(gids),lids),rr2new_cell_type,rr_cell_type))
 
@@ -104,3 +125,36 @@ function RefinementRule(poly::Polytope{D},partition::NTuple{D,Integer};kwargs...
   return RefinementRule(GenericRefinement(),poly,ref_grid;kwargs...)
 end
 
+
+# Tests 
+
+function test_refinement_rule(rr::RefinementRule; debug=false)
+  poly = get_polytope(rr)
+  D = num_dims(poly)
+
+  cmaps = get_cell_map(rr)
+  inv_cmaps = Adaptivity.get_inverse_cell_map(rr)
+
+  pts = map(x -> VectorValue(rand(D)),1:10)
+  if Geometry.is_simplex(poly)
+    filter!(p -> sum(p) < 1.0, pts)
+  end
+
+  # Checking that inv_cmaps ∘ cmaps = identity
+  for p in pts
+    ichild = Adaptivity.x_to_cell(rr,p)
+    m = cmaps[ichild]
+    m_inv = inv_cmaps[ichild]
+
+    y = evaluate(m,p)
+    z = evaluate(m_inv,y)
+    @test p ≈ z
+    debug && println(ichild, " :: ", p," -> ",y, " -> ", z, " - ", p ≈ z)
+  end
+
+  pts_bundled = bundle_points_by_subcell(rr,pts)
+  cell_measures = get_cell_measures(rr)
+  cell_polys = get_cell_polytopes(rr)
+
+  return nothing
+end
