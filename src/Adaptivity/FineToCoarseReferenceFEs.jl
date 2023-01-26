@@ -74,7 +74,7 @@ function Arrays.evaluate!(cache,s::FineToCoarseDofBasis{T,<:MomentBasedDofBasis}
   b     = s.dof_basis
   vals  = evaluate!(cf,field,b.nodes,s.child_ids)
   dofs  = c.array
-  RefrenceFEs._eval_moment_dof_basis!(dofs,vals,b)
+  ReferenceFEs._eval_moment_dof_basis!(dofs,vals,b)
   dofs
 end
 
