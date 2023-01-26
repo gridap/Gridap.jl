@@ -18,7 +18,7 @@ end
 end
 
 @testset "MultiFields" begin
-  include("MultifieldGridTransferTests.jl")
+  include("MultifieldRefinementTests.jl")
 end
 
 end # module

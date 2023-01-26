@@ -10,8 +10,14 @@ using Gridap.ReferenceFEs
 using Gridap.FESpaces
 using FillArrays
 
-function test_grid_transfers(D,model,parent)
+function l2_error(u1,u2,dΩ)
+  eh = u1-u2
+  return sum(∫(eh⋅eh)*dΩ)
+end
+
+function test_grid_transfers(D,model,parent,order)
   sol(x) = sum(x)
+  qorder = 2*order+1
 
   # Triangulations
   trian = Triangulation(model)
@@ -35,7 +41,7 @@ function test_grid_transfers(D,model,parent)
   V_c = TestFESpace(parent,reffe;dirichlet_tags="boundary")
   U_c = TrialFESpace(V_c,sol)
   V_c_fast = TestFESpace(parent,rrules,reffe;dirichlet_tags="boundary")
-  U_c_fast = TrialFESpace(V_c,sol)
+  U_c_fast = TrialFESpace(V_c_fast,sol)
 
   # CellField: Coarse -> Fine
   cf_c_phy = CellField(sol,ctrian)
@@ -45,19 +51,6 @@ function test_grid_transfers(D,model,parent)
   cf_f_phy_ref = change_domain(cf_c_phy, trian, ReferenceDomain())
   cf_f_phy_phy = change_domain(cf_c_phy, trian, PhysicalDomain())
 
-  pts = map(x -> VectorValue(rand(D)),1:10)
-  v_r = map(p -> sol(p) , pts)
-  v_c = map(p -> cf_c_ref(p), pts)
-  v_f_ref_ref = map(p -> cf_f_ref_ref(p), pts)
-  v_f_ref_phy = map(p -> cf_f_ref_phy(p), pts)
-  v_f_phy_ref = map(p -> cf_f_phy_ref(p), pts)
-  v_f_phy_phy = map(p -> cf_f_phy_phy(p), pts)
-  @test v_r ≈ v_c
-  @test v_r ≈ v_f_ref_ref
-  @test v_r ≈ v_f_ref_phy
-  @test v_r ≈ v_f_phy_ref
-  @test v_r ≈ v_f_phy_phy
-
   # CellField: Fine -> Coarse
   cf_f_phy = CellField(sol,trian)
   cf_f_ref = change_domain(cf_f_phy,PhysicalDomain(),ReferenceDomain())
@@ -66,38 +59,21 @@ function test_grid_transfers(D,model,parent)
   cf_c_phy_ref = change_domain(cf_f_phy, ctrian, ReferenceDomain())
   cf_c_phy_phy = change_domain(cf_f_phy, ctrian, PhysicalDomain())
 
-  pts = map(x -> VectorValue(rand(D)),1:10)
-  v_r = map(p -> sol(p) , pts)
-  v_f = map(p -> cf_f_ref(p), pts)
-  v_c_ref_ref = map(p -> cf_c_ref_ref(p), pts)
-  v_c_ref_phy = map(p -> cf_c_ref_phy(p), pts)
-  v_c_phy_ref = map(p -> cf_c_phy_ref(p), pts)
-  v_c_phy_phy = map(p -> cf_c_phy_phy(p), pts)
-  @test v_r ≈ v_f
-  @test v_r ≈ v_c_ref_ref
-  @test v_r ≈ v_c_ref_phy
-  @test v_r ≈ v_c_phy_ref
-  @test v_r ≈ v_c_phy_phy
+  @test l2_error(cf_f_ref_ref,cf_f_ref,dΩ_f) < 1.e-8
+  @test l2_error(cf_f_ref_phy,cf_f_phy,dΩ_f) < 1.e-8
+  @test l2_error(cf_f_phy_ref,cf_f_ref,dΩ_f) < 1.e-8
+  @test l2_error(cf_f_phy_phy,cf_f_phy,dΩ_f) < 1.e-8
 
-  # Coarse FEFunction -> Fine CellField
-  uh_c = interpolate(sol,U_c)
-  cf_f2 = change_domain(uh_c,trian,ReferenceDomain())
-  v_f2 = map(p -> cf_f2(p), pts)
-  @test v_r ≈ v_f2
-
-  # Coarse FEBasis -> Fine CellField
-  feb_c = get_fe_basis(V_c)
-  feb_c2f = change_domain(feb_c,trian,ReferenceDomain())
+  @test l2_error(cf_c_ref_ref,cf_c_ref,dΩ_c) < 1.e-8
+  @test l2_error(cf_c_ref_phy,cf_c_phy,dΩ_c) < 1.e-8
+  @test l2_error(cf_c_phy_ref,cf_c_ref,dΩ_c) < 1.e-8
+  @test l2_error(cf_c_phy_phy,cf_c_phy,dΩ_c) < 1.e-8
 
   # Coarse FEFunction -> Fine FEFunction, by interpolation
+  uh_c = interpolate(sol,U_c)
   uh_f_inter  = interpolate(uh_c,U_f)
   uh_f_inter2 = interpolate_everywhere(uh_c,U_f)
   uh_f_inter3 = interpolate_dirichlet(uh_c,U_f)
-
-  v_f_inter  = map(p -> uh_f_inter(p), pts)
-  v_f_inter2 = map(p -> uh_f_inter2(p), pts)
-  @test v_r ≈ v_f_inter
-  @test v_r ≈ v_f_inter2
 
   # Fine FEFunction -> Coarse FEFunction, by interpolation
   uh_f = interpolate(sol,U_f)
@@ -106,49 +82,38 @@ function test_grid_transfers(D,model,parent)
   uh_c_inter3 = interpolate_dirichlet(uh_f,U_c)
   uh_c_inter4  = interpolate(uh_f,U_c_fast)
 
-  v_c_inter  = map(p -> uh_c_inter(p), pts)
-  v_c_inter2 = map(p -> uh_c_inter2(p), pts)
-  v_c_inter4 = map(p -> uh_c_inter4(p), pts)
-  @test v_r ≈ v_c_inter
-  @test v_r ≈ v_c_inter2
-  @test v_r ≈ v_c_inter4
+  @test l2_error(uh_f,uh_f_inter,dΩ_f) < 1.e-8
+  @test l2_error(uh_f,uh_f_inter2,dΩ_f) < 1.e-8
+
+  @test l2_error(uh_c,uh_c_inter,dΩ_c) < 1.e-8
+  @test l2_error(uh_c,uh_c_inter2,dΩ_c) < 1.e-8
+  @test l2_error(uh_c,uh_c_inter4,dΩ_c) < 1.e-8
 
   # Coarse FEFunction -> Fine FEFunction, by projection
   af(u,v)  = ∫(v⋅u)*dΩ_f
   lf(v)    = ∫(v⋅uh_c)*dΩ_f
   opf      = AffineFEOperator(af,lf,U_f,V_f)
   uh_f_pr = solve(opf)
-
-  v_f_pr = map(p -> uh_f_pr(p), pts)
-  @test v_r ≈ v_f_pr
-
-  eh = sum(∫(uh_f-uh_f_pr)*dΩ_f)
-  @test eh < 1.e8
+  @test l2_error(uh_f,uh_f_pr,dΩ_f) < 1.e-8
 
   # Fine FEFunction -> Coarse FEFunction, by projection
   ac(u,v) = ∫(v⋅u)*dΩ_c
   lc(v)   = ∫(v⋅uh_f_inter)*dΩ_cf
   opc     = AffineFEOperator(ac,lc,U_c,V_c)
   uh_c_pr = solve(opc)
-
-  v_c_pr = map(p -> uh_c_pr(p), pts)
-  @test v_c_pr ≈ v_r
-
-  eh = sum(∫(uh_f_inter-uh_c_pr)*dΩ_c)
-  @test eh < 1.e8
+  @test l2_error(uh_c,uh_c_pr,dΩ_c) < 1.e-8
 end
 
 for D = 1:3
   order  = 1
-  qorder = order*2+1
   domain = Tuple(repeat([0,1],D))
 
   cart_model = CartesianDiscreteModel(domain,Tuple(fill(4,D)))
   model1 = refine(cart_model,2)
   model2 = refine(model1,2)
   
-  test_grid_transfers(D,model1,cart_model)
-  test_grid_transfers(D,model2,model1)
+  test_grid_transfers(D,model1,cart_model,order)
+  test_grid_transfers(D,model2,model1,order)
 end
 
 end
