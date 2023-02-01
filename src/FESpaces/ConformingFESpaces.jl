@@ -524,7 +524,7 @@ end
 struct CellDofsNonOriented <:AbstractVector{Vector{Int32}}
   cell_to_faces::Table{Int32,Vector{Int32},Vector{Int32}}
   cell_to_lface_to_pindex::Table{Int8,Vector{Int8},Vector{Int32}}
-  cell_to_ctype::Vector{Int8}
+  cell_to_ctype::Vector{Int32}
   ctype_to_lface_to_own_ldofs::Vector{Vector{Vector{Int}}}
   ctype_to_num_dofs::Vector{Int}
   face_to_own_dofs::Table{Int32,Vector{Int32},Vector{Int32}}
