@@ -16,6 +16,8 @@ using Test
 
 @testset "DiscreteModels" begin include("DiscreteModelsTests.jl") end
 
+@testset "MappedDiscreteModels" begin include("MappedDiscreteModelsTests.jl") end
+
 @testset "UnstructuredDiscreteModels" begin include("UnstructuredDiscreteModelsTests.jl") end
 
 @testset "CartesianDiscreteModels" begin include("CartesianDiscreteModelsTests.jl") end
@@ -35,5 +37,7 @@ using Test
 @testset "AppendedTriangulations" begin include("AppendedTriangulationsTests.jl") end
 
 @testset "CompressedCellArrays" begin include("CompressedCellArraysTests.jl") end
+
+@time @testset "Refinement" begin include("NewestVertexBisectionTests.jl") end
 
 end # module

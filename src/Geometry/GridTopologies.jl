@@ -558,7 +558,7 @@ end
 
 function generate_cells_around(
   cell_to_faces::Table,
-  nfaces::Integer = maximum(cell_to_faces.data))
+  nfaces::Integer = length(cell_to_faces.data)==0 ? 0 : maximum(cell_to_faces.data))
 
   data, ptrs = _face_to_cells(cell_to_faces.data,cell_to_faces.ptrs,nfaces)
   Table(data,ptrs)

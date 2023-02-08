@@ -58,6 +58,12 @@ struct AttachDirichletMap <: Map
   AttachDirichletMap() = new(MulAddMap(-1,1))
 end
 
+function Arrays.return_value(k::AttachDirichletMap,matvec::Tuple,vals,mask)
+  mat, vec = matvec
+  vec_with_bcs = return_value(k.muladd,mat,vals,vec)
+  (mat, vec_with_bcs)
+end
+
 function Arrays.return_cache(k::AttachDirichletMap,matvec::Tuple,vals,mask)
   mat, vec = matvec
   return_cache(k.muladd,mat,vals,vec)
@@ -71,6 +77,11 @@ function Arrays.evaluate!(cache,k::AttachDirichletMap,matvec::Tuple,vals,mask)
   else
     matvec
   end
+end
+
+function Arrays.return_value(k::AttachDirichletMap,mat,vals,mask)
+  cv = return_value(ZeroVectorMap(),mat)
+  (mat,cv)
 end
 
 function Arrays.return_cache(k::AttachDirichletMap,mat,vals,mask)

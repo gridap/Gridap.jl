@@ -73,11 +73,13 @@ function create_vtk_file(
   cells = _vtkcells(trian)
   vtkfile = vtk_grid(filebase, points, cells, compress=false)
 
-  for (k,v) in celldata
-    vtk_cell_data(vtkfile, _prepare_data(v), k)
-  end
-  for (k,v) in nodaldata
-    vtk_point_data(vtkfile, _prepare_data(v), k)
+  if num_cells(trian)>0
+    for (k,v) in celldata
+      vtk_cell_data(vtkfile, _prepare_data(v), k)
+    end
+    for (k,v) in nodaldata
+      vtk_point_data(vtkfile, _prepare_data(v), k)
+    end
   end
 
   return vtkfile
@@ -92,13 +94,14 @@ function create_pvtk_file(
   vtkfile = pvtk_grid(filebase, points, cells, compress=false;
                       part=part, nparts=nparts, ismain=ismain)
 
-  for (k,v) in celldata
-    vtkfile[k,VTKCellData()] = _prepare_data(v)
+  if num_cells(trian) > 0
+    for (k, v) in celldata
+      vtkfile[k, VTKCellData()] = _prepare_data(v)
+    end
+    for (k, v) in nodaldata
+      vtkfile[k, VTKPointData()] = _prepare_data(v)
+    end
   end
-  for (k,v) in nodaldata
-    vtkfile[k,VTKPointData()] = _prepare_data(v)
-  end
-
   return vtkfile
 end
 

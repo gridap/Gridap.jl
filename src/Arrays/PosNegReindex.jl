@@ -62,15 +62,23 @@ function lazy_map(::typeof(evaluate),::Type{T},a::LazyArray{<:Fill{<:PosNegReind
 end
 
 function lazy_map(::typeof(evaluate),::Type{T},a::LazyArray{<:Fill{<:PosNegReindex}},x::AbstractArray) where T
+  i_to_iposneg = a.args[1]
+  _lazy_map_evaluate_posneg(i_to_iposneg,T,a,x)
+end
+
+function _lazy_map_evaluate_posneg(i_to_iposneg,::Type{T},a,x) where T
   apos = a.maps.value.values_pos
   aneg = a.maps.value.values_neg
-  i_to_iposneg = a.args[1]
-  ipos_to_i, ineg_to_i = pos_and_neg_indices(i_to_iposneg)
-  xpos = lazy_map(Reindex(x),ipos_to_i)
-  xneg = lazy_map(Reindex(x),ineg_to_i)
-  cpos = lazy_map(evaluate,apos,xpos)
-  cneg = lazy_map(evaluate,aneg,xneg)
-  lazy_map(PosNegReindex(cpos,cneg),T,i_to_iposneg)
+  if is_exhaustive(i_to_iposneg)
+    ipos_to_i, ineg_to_i = pos_and_neg_indices(i_to_iposneg)
+    xpos = lazy_map(Reindex(x),ipos_to_i)
+    xneg = lazy_map(Reindex(x),ineg_to_i)
+    cpos = lazy_map(evaluate,apos,xpos)
+    cneg = lazy_map(evaluate,aneg,xneg)
+    lazy_map(PosNegReindex(cpos,cneg),T,i_to_iposneg)
+  else
+    LazyArray(T,a,x)
+  end
 end
 
 function lazy_map(::typeof(evaluate),::Type{T},b::Fill,a::LazyArray{<:Fill{<:PosNegReindex}}...) where T

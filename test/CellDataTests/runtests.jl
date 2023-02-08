@@ -18,4 +18,6 @@ using Test
 
 @testset "AttachConstraints" begin include("AttachConstraintsTests.jl") end
 
+@testset "SkeletonCellFieldPair" begin include("SkeletonCellFieldPairTests.jl") end
+
 end # module

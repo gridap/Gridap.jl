@@ -564,6 +564,12 @@ function evaluate!(cache,k::IntegrationMap,aq::AbstractArray,w,jq::AbstractVecto
   r
 end
 
+function return_value(k::IntegrationMap,aq::AbstractArray{S,3} where S,w,jq::AbstractVector)
+  T = typeof( testitem(aq)*testitem(w)*meas(testitem(jq)) + testitem(aq)*testitem(w)*meas(testitem(jq)) )
+  r = zeros(T,size(aq)[2:end])
+  r
+end
+
 function return_cache(k::IntegrationMap,aq::AbstractArray{S,3} where S,w,jq::AbstractVector)
   T = typeof( testitem(aq)*testitem(w)*meas(testitem(jq)) + testitem(aq)*testitem(w)*meas(testitem(jq)) )
   r = zeros(T,size(aq)[2:end])
@@ -733,7 +739,7 @@ function _zero_size(a::VoidBasis{T,1} where T)
 end
 
 function _zero_size(a::VoidBasis{T,2} where T)
-  @check size(a,1) == 1
+  @check size(a,1) in (0,1)
   (1,0)
 end
 

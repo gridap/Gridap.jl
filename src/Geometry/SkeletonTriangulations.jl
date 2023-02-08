@@ -230,7 +230,7 @@ function Interface(args...;kwargs...)
 end
 
 function InterfaceTriangulation(model::DiscreteModel,cells_in,cells_out)
-  cell_to_inout = fill(Int8(OUT),num_cells(model))
+  cell_to_inout = fill(Int8(0),num_cells(model))
   cell_to_inout[cells_in] .= IN
   cell_to_inout[cells_out] .= OUT
   InterfaceTriangulation(model,cell_to_inout)

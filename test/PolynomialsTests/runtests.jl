@@ -10,6 +10,8 @@ using Test
 
 @testset "PCurlGradMonomialBases" begin include("PCurlGradMonomialBasesTests.jl") end
 
+@testset "ModalC0Bases" begin include("ModalC0BasesTests.jl") end
+
 #@testset "ChangeBasis" begin include("ChangeBasisTests.jl") end
 
 end # module

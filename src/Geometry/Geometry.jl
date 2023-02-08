@@ -124,6 +124,7 @@ export compute_reference_grid
 
 export GridPortion
 export UnstructuredGrid
+export MappedGrid
 
 export CartesianGrid
 export CartesianDescriptor
@@ -156,6 +157,7 @@ export compute_vertex_node
 export get_node_face_owner
 export compute_node_face_owner
 export get_triangulation
+export newest_vertex_bisection
 
 export UnstructuredDiscreteModel
 export CartesianDiscreteModel
@@ -163,6 +165,7 @@ export CartesianDiscreteModel
 export GenericTriangulation
 export BoundaryTriangulation
 export DiscreteModelPortion
+export MappedDiscreteModel
 
 export Interior
 export Boundary
@@ -213,9 +216,13 @@ include("UnstructuredDiscreteModels.jl")
 
 include("CartesianDiscreteModels.jl")
 
+include("MappedDiscreteModels.jl")
+
 include("GridPortions.jl")
 
 include("DiscreteModelPortions.jl")
+
+include("NewestVertexBisection.jl")
 
 include("Triangulations.jl")
 

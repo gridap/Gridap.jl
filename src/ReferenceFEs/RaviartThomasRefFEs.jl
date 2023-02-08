@@ -310,13 +310,13 @@ end
 
 function _moment_dof_basis_cache(vals::AbstractVector,ndofs)
   T = eltype(vals)
-  r = zeros(eltype(T),ndofs)
+  r = fill(zero(eltype(T))*0.,ndofs)
 end
 
 function _moment_dof_basis_cache(vals::AbstractMatrix,ndofs)
   _, npdofs = size(vals)
   T = eltype(vals)
-  r = zeros(eltype(T),ndofs,npdofs)
+  r = fill(zero(eltype(T))*0.,ndofs,npdofs)
 end
 
 function evaluate!(cache,b::MomentBasedDofBasis,field)

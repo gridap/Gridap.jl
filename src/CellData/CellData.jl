@@ -84,6 +84,8 @@ export update_state!
 
 export DiracDelta
 
+export SkeletonCellFieldPair 
+
 include("CellDataInterface.jl")
 
 include("CellFields.jl")
@@ -101,5 +103,7 @@ include("CellDofs.jl")
 include("AttachDirichlet.jl")
 
 include("AttachConstraints.jl")
+
+include("SkeletonCellFieldPair.jl")
 
 end # module
