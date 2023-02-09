@@ -242,10 +242,10 @@ function change_domain_o2n(f_coarse,ftrian::AdaptedTriangulation{Dc},glue::Adapt
 
     # Final map: f_fine(x_fine) = f_f2c ∘ Φ^(-1)(x_fine) = f_coarse(x_coarse)
     f_fine = lazy_map(∘,f_f2c,ref_coord_map)
-    return GenericCellField(f_fine,ftrian,ReferenceDomain())
+    return CellData.similar_cell_field(f_coarse,f_fine,ftrian,ReferenceDomain())
   else
     f_fine = Fill(Gridap.Fields.ConstantField(0.0),num_cells(ftrian))
-    return GenericCellField(f_fine,ftrian,ReferenceDomain())
+    return CellData.similar_cell_field(f_coarse,f_fine,ftrian,ReferenceDomain())
   end
 end
 
@@ -269,9 +269,9 @@ function change_domain_n2o(f_fine,ctrian::Triangulation{Dc},glue::AdaptivityGlue
 
     rrules   = get_old_cell_refinement_rules(glue)
     f_coarse = lazy_map(FineToCoarseField,f_c2f,rrules)
-    return GenericCellField(f_coarse,ctrian,ReferenceDomain())
+    return CellData.similar_cell_field(f_fine,f_coarse,ctrian,ReferenceDomain())
   else
     f_coarse = Fill(Gridap.Fields.ConstantField(0.0),num_cells(ftrian))
-    return GenericCellField(f_coarse,ctrian,ReferenceDomain())
+    return CellData.similar_cell_field(f_fine,f_coarse,ctrian,ReferenceDomain())
   end
 end
