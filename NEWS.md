@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Using broadcasting through in `ODESolver` vector operations. Since PR [#860](https://github.com/gridap/Gridap.jl/pull/860)
 - Fixes to `array_cache(a::Table)`: Now does not use the `zero(T,N)` function, but instead creates new empty vector using the general allocator `Vector{T}(undef,N)`. This allows `Table` to work with complex composite types which don't have an easy `zero(T)` function defined. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
 - Added `get_metadata` to all the instances of `ReferenceFE`. This makes the abstract type more consistent, which is necessary for the new type `FineToCoarseReferenceFE`. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
+- `ConstantFESpace` is now properly exported. Since PR [#872](https://github.com/gridap/Gridap.jl/pull/872).
 
 ## [0.17.16] - 2022-12-22 
 
