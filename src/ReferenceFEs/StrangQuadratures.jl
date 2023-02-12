@@ -2,16 +2,16 @@
 struct Strang <: QuadratureName end
 const strang = Strang()
 
-function Quadrature(p::Polytope,::Strang,degree::Integer)
+function Quadrature(p::Polytope,::Strang,degree::Integer;T::Type{<:AbstractFloat}=Float64)
   msg = """\n
   `strang` quadrature rule only available for simplices.
   Use `tensor_product` for n-cubes.
   """
   @assert is_simplex(p) msg
   if num_dims(p) == 2
-    quad = _strang_quad_tri(degree)
+    quad = _strang_quad_tri(degree;T=T)
   elseif num_dims(p) == 3
-    quad = _strang_quad_tet(degree)
+    quad = _strang_quad_tet(degree,T=T)
   else
     msg = """\n
     `strang` quadrature rule only available for tris and tets.
@@ -24,7 +24,7 @@ end
 
 const _strang_tri_k2n = Dict(1=>1,2=>3,3=>4,4=>6,5=>7,7=>13,9=>19,11=>28)
 
-function _strang_quad_tri(degree)
+function _strang_quad_tri(degree;T::Type{<:AbstractFloat}=Float64)
   if ! haskey(_strang_tri_k2n,degree)
     msg = """\n
       `strang` quadrature rule not implemented for degree = $degree on a triangle.
@@ -34,8 +34,8 @@ function _strang_quad_tri(degree)
     error(msg)
   end
   n = _strang_tri_k2n[degree]
-  x = Vector{VectorValue{2,Float64}}(undef,n)
-  w = Vector{Float64}(undef,n)
+  x = Vector{VectorValue{2,T}}(undef,n)
+  w = Vector{T}(undef,n)
   if degree == 1
     a = 1.0/3.0
     b = 1.0/2.0
@@ -72,7 +72,7 @@ function _strang_quad_tri(degree)
     et2 = 0.445948490915965
     ez2 = 0.445948490915965
     a = 0.054975870996713638
-    b = 0.1116907969117165    
+    b = 0.1116907969117165
     x[1] = (et1,ez1)
     x[2] = (ez2,ex2)
     x[3] = (ex1,et1)
@@ -294,7 +294,7 @@ end
 
 const _strang_tet_k2n = Dict(1=>1,2=>4,3=>5,4=>11,5=>14)
 
-function _strang_quad_tet(degree)
+function _strang_quad_tet(degree;T::Type{<:AbstractFloat}=Float64)
   if ! haskey(_strang_tet_k2n,degree)
     msg = """\n
       `strang` quadrature rule not implemented for degree = $degree on a tet.
@@ -304,8 +304,8 @@ function _strang_quad_tet(degree)
     error(msg)
   end
   n = _strang_tet_k2n[degree]
-  x = Vector{VectorValue{3,Float64}}(undef,n)
-  w = Vector{Float64}(undef,n)
+  x = Vector{VectorValue{3,T}}(undef,n)
+  w = Vector{T}(undef,n)
   if degree==1
     a = 1.0/4.0
     b = 1.0/6.0

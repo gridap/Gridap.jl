@@ -208,6 +208,8 @@ export GridWithFEMap
 export add_mesh_displacement!
 export update_coordinates!
 
+export ConstantFESpace
+
 include("FESpaceInterface.jl")
 
 include("SingleFieldFESpaces.jl")
@@ -255,6 +257,8 @@ include("DirichletFESpaces.jl")
 include("FESpacesWithLinearConstraints.jl")
 
 include("DiscreteModelWithFEMaps.jl")
+
+include("ConstantFESpaces.jl")
 
 export get_free_values
 function get_free_values(args...)

@@ -237,6 +237,20 @@ function InterfaceTriangulation(model::DiscreteModel,cells_in,cells_out)
 end
 
 function InterfaceTriangulation(trian_in::Triangulation,trian_out::Triangulation)
+  d = num_cell_dims(trian_in)
+  @assert d == num_cell_dims(trian_out)
+  model = get_background_model(trian_in)
+  D = num_cell_dims(model)
+  if d == D
+    _interface_between_volumes(trian_in,trian_out)
+  elseif d+1 == D
+    _interface_between_surfaces(trian_in,trian_out)
+  else
+    error("Not implemented")
+  end
+end
+
+function _interface_between_volumes(trian_in,trian_out)
   D = num_cell_dims(trian_in)
   @assert D == num_cell_dims(trian_out)
   glue_in = get_glue(trian_in,Val(D))
@@ -247,6 +261,27 @@ function InterfaceTriangulation(trian_in::Triangulation,trian_out::Triangulation
   @check model === get_background_model(trian_out)
   @notimplementedif D != num_cell_dims(model) "Not implemented, but it should be easy to implement."
   InterfaceTriangulation(model,cells_in,cells_out)
+end
+
+function _interface_between_surfaces(trian_in,trian_out)
+  d = num_cell_dims(trian_in)
+  @assert d == num_cell_dims(trian_out)
+  glue_in = get_glue(trian_in,Val(d))
+  glue_out = get_glue(trian_out,Val(d))
+  faces_in = glue_in.tface_to_mface
+  faces_out = glue_out.tface_to_mface
+  faces = vcat(faces_in,faces_out)
+  model = get_background_model(trian_in)
+  D = num_cell_dims(model)
+  @assert D == d+1 "Not implemented"
+  rtrian = Boundary(model,faces) # TODO we take the first local cell around
+  rmodel = get_active_model(rtrian)
+  rfaces_in = collect(Int32,1:length(faces_in))
+  rfaces_out = collect(Int32,length(faces_in) .+ (1:length(faces_out)))
+  rtrian_in = Triangulation(rmodel,rfaces_in)
+  rtrian_out = Triangulation(rmodel,rfaces_out)
+  dtrian = InterfaceTriangulation(rtrian_in,rtrian_out)
+  CompositeTriangulation(rtrian,dtrian)
 end
 
 function InterfaceTriangulation(model::DiscreteModel,cell_to_inout::AbstractVector{<:Integer})

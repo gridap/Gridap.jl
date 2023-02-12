@@ -49,7 +49,7 @@ function ModalC0RefFE(
   ::Type{T},
   p::Polytope{D},
   orders;
-  space::Symbol=_default_space(p) ) where {T,D,V}
+  space::Symbol=_default_space(p) ) where {T,D}
 
   @notimplementedif ! is_n_cube(p)
   @notimplementedif minimum(orders) < one(eltype(orders))

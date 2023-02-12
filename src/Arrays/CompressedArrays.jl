@@ -101,3 +101,7 @@ end
 function same_branch(a::CompressedArray,b::CompressedArray)
   a.ptrs === b.ptrs && a.values == b.values
 end
+
+function Base.unique(a::CompressedArray)
+  unique(a.values)
+end

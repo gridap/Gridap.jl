@@ -33,12 +33,12 @@ function CellQuadrature(trian::Triangulation,quad::Tuple{<:QuadratureName,Any,An
   CellQuadrature(trian,cell_quad,ids)
 end
 
-function CellQuadrature(trian::Triangulation,degree::Integer)
-  CellQuadrature(trian,degree,PhysicalDomain())
+function CellQuadrature(trian::Triangulation,degree::Integer;kwargs...)
+  CellQuadrature(trian,degree,PhysicalDomain();kwargs...)
 end
 
-function CellQuadrature(trian::Triangulation,degree::Integer,ids::DomainStyle)
-  cell_quad = Quadrature(trian,degree)
+function CellQuadrature(trian::Triangulation,degree::Integer,ids::DomainStyle;kwargs...)
+  cell_quad = Quadrature(trian,degree;kwargs...)
   CellQuadrature(trian,cell_quad,ids)
 end
 
@@ -66,22 +66,22 @@ function CellQuadrature(trian::Triangulation,
   CellQuadrature(cell_quad,cell_point,cell_weight,trian,ReferenceDomain(),ids)
 end
 
-function CellQuadrature(trian::AppendedTriangulation,degree1,degree2)
-  CellQuadrature(trian,degree1,degree2,PhysicalDomain())
+function CellQuadrature(trian::AppendedTriangulation,degree1,degree2;kwargs...)
+  CellQuadrature(trian,degree1,degree2,PhysicalDomain();kwargs...)
 end
 
-function CellQuadrature(trian::AppendedTriangulation,degree1,degree2,ids::DomainStyle)
-  quad1 = CellQuadrature(trian.a,degree1,ids)
-  quad2 = CellQuadrature(trian.b,degree2,ids)
+function CellQuadrature(trian::AppendedTriangulation,degree1,degree2,ids::DomainStyle;kwargs...)
+  quad1 = CellQuadrature(trian.a,degree1,ids;kwargs...)
+  quad2 = CellQuadrature(trian.b,degree2,ids;kwargs...)
   lazy_append(quad1,quad2,trian)
 end
 
-function CellQuadrature(trian::AppendedTriangulation,degree::Integer)
-  CellQuadrature(trian,degree,degree,PhysicalDomain())
+function CellQuadrature(trian::AppendedTriangulation,degree::Integer;kwargs...)
+  CellQuadrature(trian,degree,degree,PhysicalDomain();kwargs...)
 end
 
-function CellQuadrature(trian::AppendedTriangulation,degree::Integer,ids::DomainStyle)
-  CellQuadrature(trian,degree,degree,ids)
+function CellQuadrature(trian::AppendedTriangulation,degree::Integer,ids::DomainStyle;kwargs...)
+  CellQuadrature(trian,degree,degree,ids;kwargs...)
 end
 
 function CellQuadrature(trian::AppendedTriangulation,
@@ -130,7 +130,7 @@ function get_cell_points(a::CellQuadrature)
   CellPoint(a.cell_point,a.trian,a.data_domain_style)
 end
 
-function integrate(f::CellField,quad::CellQuadrature) where DDS
+function integrate(f::CellField,quad::CellQuadrature)
   trian_f = get_triangulation(f)
   trian_x = get_triangulation(quad)
 

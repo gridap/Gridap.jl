@@ -100,6 +100,8 @@ function Base.iterate(sol::TransientFESolution, state)
 
 end
 
+Base.IteratorSize(::Type{TransientFESolution}) = Base.SizeUnknown()
+
 function test_transient_fe_solution(fesol::TransientFESolution)
   for (uhn,tn) in fesol
     @test isa(uhn,FEFunction)

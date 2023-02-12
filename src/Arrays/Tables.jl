@@ -77,7 +77,7 @@ function array_cache(a::Table)
   end
   T = eltype(a.data)
   l = pend - pini
-  r = zeros(T,l)
+  r = Vector{T}(undef,l)
   CachedArray(r)
 end
 

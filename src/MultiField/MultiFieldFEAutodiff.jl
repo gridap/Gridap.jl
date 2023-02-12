@@ -87,7 +87,7 @@ function FESpaces._change_argument(
     cell_dofs_field_offsets=_get_cell_dofs_field_offsets(uh)
     for i in 1:nfields
       view_range=cell_dofs_field_offsets[i]:cell_dofs_field_offsets[i+1]-1
-      cell_values_field = lazy_map(a->view(a,view_range),cell_u)
+      cell_values_field = lazy_map(a->a[view_range],cell_u)
       cf = CellField(U.spaces[i],cell_values_field)
       push!(single_fields,cf)
     end

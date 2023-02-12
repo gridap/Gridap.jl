@@ -205,14 +205,14 @@ function from_dict(::Type{UnstructuredGrid},dict::Dict{Symbol,Any})
     O ? Oriented() : NonOriented())
 end
 
-function simplexify(grid::UnstructuredGrid)
+function simplexify(grid::UnstructuredGrid;kwargs...)
   reffes = get_reffes(grid)
   @notimplementedif length(reffes) != 1
   reffe = first(reffes)
   order = 1
   @notimplementedif get_order(reffe) != order
   p = get_polytope(reffe)
-  ltcell_to_lpoints, simplex = simplexify(p)
+  ltcell_to_lpoints, simplex = simplexify(p;kwargs...)
   cell_to_points = get_cell_node_ids(grid)
   tcell_to_points = _refine_grid_connectivity(cell_to_points, ltcell_to_lpoints)
   ctype_to_reffe = [LagrangianRefFE(Float64,simplex,order),]

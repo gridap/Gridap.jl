@@ -21,7 +21,7 @@ function solve_step!(
     (v,a, ode_cache) = newmark_cache
 
     # Define Newmark operator
-    newmark_affOp = NewmarkConstantMatrixOperator(op,t1,dt,γ,β,(u0,v0,a0),newmark_cache)
+    newmark_affOp = NewmarkConstantMatrixOperator(op,t1,dt,γ,β,x0,newmark_cache)
 
     # Allocate matrices and vectors
     A, b = _allocate_matrix_and_vector(op,x0,ode_cache)
@@ -35,7 +35,7 @@ function solve_step!(
   end
 
   # Unpack and update caches
-  (v,a, ode_cache) = newmark_cache
+  v,a,ode_cache = newmark_cache
   ode_cache = update_cache!(ode_cache,op,t1)
   A,b,newmark_affOp,l_cache = affOp_cache
 
@@ -48,9 +48,9 @@ function solve_step!(
   l_cache = solve!(u1,solver.nls,affOp,l_cache,newmatrix)
 
   # Update auxiliar variables
-  u1 = u1 + u0
-  v1 = γ/(β*dt)*(u1-u0) + (1-γ/β)*v0 + dt*(1-γ/(2*β))*a0
-  a1 = 1.0/(β*dt^2)*(u1-u0) - 1.0/(β*dt)*v0 - (1-2*β)/(2*β)*a0
+  @. u1 = u1 + u0
+  @. v1 = γ/(β*dt)*(u1-u0) + (1-γ/β)*v0 + dt*(1-γ/(2*β))*a0
+  @. a1 = 1.0/(β*dt^2)*(u1-u0) - 1.0/(β*dt)*v0 - (1-2*β)/(2*β)*a0
 
   # Pack caches
   affOp_cache = A,b,newmark_affOp,l_cache
@@ -79,8 +79,8 @@ function residual!(b::AbstractVector,op::NewmarkConstantMatrixOperator,x::Abstra
   u1 = x
   u0, v0, a0 = op.x0
   v1, a1, cache = op.ode_cache
-  a1 = 1.0/(op.β*op.dt^2)*(u1-u0) - 1.0/(op.β*op.dt)*v0 - (1-2*op.β)/(2*op.β)*a0
-  v1 = op.γ/(op.β*op.dt)*(u1-u0) + (1-op.γ/op.β)*v0 + op.dt*(1-op.γ/(2*op.β))*a0
+  @. a1 = 1.0/(op.β*op.dt^2)*(u1-u0) - 1.0/(op.β*op.dt)*v0 - (1-2*op.β)/(2*op.β)*a0
+  @. v1 = op.γ/(op.β*op.dt)*(u1-u0) + (1-op.γ/op.β)*v0 + op.dt*(1-op.γ/(2*op.β))*a0
   residual!(b,op.odeop,op.t1,(u1,v1,a1),cache)
   b .*= -1.0
 end
@@ -89,8 +89,8 @@ function jacobian!(A::AbstractMatrix,op::NewmarkConstantMatrixOperator,x::Abstra
   u1 = x
   u0, v0, a0 = op.x0
   v1, a1, cache = op.ode_cache
-  a1 = 1.0/(op.β*op.dt^2)*(u1-u0) - 1.0/(op.β*op.dt)*v0 - (1-2*op.β)/(2*op.β)*a0
-  v1 = op.γ/(op.β*op.dt)*(u1-u0) + (1-op.γ/op.β)*v0 + op.dt*(1-op.γ/(2*op.β))*a0
+  @. a1 = 1.0/(op.β*op.dt^2)*(u1-u0) - 1.0/(op.β*op.dt)*v0 - (1-2*op.β)/(2*op.β)*a0
+  @. v1 = op.γ/(op.β*op.dt)*(u1-u0) + (1-op.γ/op.β)*v0 + op.dt*(1-op.γ/(2*op.β))*a0
   z = zero(eltype(A))
   fillstored!(A,z)
   jacobians!(A,op.odeop,op.t1,(u1,v1,a1),(1.0,op.γ/(op.β*op.dt),1.0/(op.β*op.dt^2)),cache)

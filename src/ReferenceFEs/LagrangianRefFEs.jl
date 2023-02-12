@@ -370,3 +370,4 @@ get_face_dofs(reffe::GenericLagrangianRefFE) = get_face_dofs(reffe.reffe)
 
 get_shapefuns(reffe::GenericLagrangianRefFE) = get_shapefuns(reffe.reffe)
 
+get_metadata(reffe::GenericLagrangianRefFE) = get_metadata(reffe.reffe)
