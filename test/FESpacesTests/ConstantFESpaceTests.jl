@@ -2,7 +2,6 @@
 module ConstantFESpacesTests
 
 using Gridap
-using GridapBiotElasticity
 using Test
 
 domain = (0,1,0,1)
