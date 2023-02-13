@@ -112,14 +112,9 @@ for (stype,ttype) in [(:AdaptedTriangulation,:AdaptedTriangulation),(:AdaptedTri
         return is_change_possible($sstrian,$tttrian)
       end
       
-      #if isa($sstrian,BodyFittedTriangulation) && isa($tttrian,BodyFittedTriangulation)
-        return is_related(strian,ttrian)
-      #end
-
-      # Support for Boundary, Skeletton, ... triangulations is not yet implemented
-      # unless they are based on the same background model.
-      @notimplemented
-      return false
+      strian_is_cell_wise = (num_cell_dims(strian) == num_point_dims(strian))
+      trians_are_related  = is_related(strian,ttrian)
+      return strian_is_cell_wise && trians_are_related
     end
   end
   @eval begin
@@ -131,13 +126,17 @@ for (stype,ttype) in [(:AdaptedTriangulation,:AdaptedTriangulation),(:AdaptedTri
       if (get_background_model(strian) === get_background_model(ttrian))
         return best_target($sstrian,$tttrian)
       end
+
+      ttrian_is_cell_wise = (num_cell_dims(ttrian) == num_point_dims(ttrian))
+      strian_is_cell_wise = (num_cell_dims(strian) == num_point_dims(strian))
     
-      if isa($sstrian,BodyFittedTriangulation) && isa($tttrian,BodyFittedTriangulation)
+      if strian_is_cell_wise && ttrian_is_cell_wise
+        # Choose the child mesh, both ways are possible
         is_child(ttrian,strian) ? (return ttrian) : (return strian)
+      elseif strian_is_cell_wise
+        return strian
       end
-    
-      # Support for Boundary, Skeletton, ... triangulations is not yet implemented
-      # unless they are based on the same background model.
+
       @notimplemented
       return nothing
     end
@@ -145,9 +144,6 @@ for (stype,ttype) in [(:AdaptedTriangulation,:AdaptedTriangulation),(:AdaptedTri
 end
 
 function CellData.change_domain(a::CellField,strian::Triangulation,::ReferenceDomain,ttrian::AdaptedTriangulation,::ReferenceDomain)
-  if strian === ttrian
-    return a
-  end
   @check is_change_possible(strian,ttrian)
 
   if (get_background_model(strian) === get_background_model(ttrian))
@@ -159,9 +155,6 @@ function CellData.change_domain(a::CellField,strian::Triangulation,::ReferenceDo
 end
 
 function CellData.change_domain(a::CellField,strian::AdaptedTriangulation,::ReferenceDomain,ttrian::Triangulation,::ReferenceDomain)
-  if strian === ttrian
-    return a
-  end
   @check is_change_possible(strian,ttrian)
 
   if (get_background_model(strian) === get_background_model(ttrian))
@@ -172,6 +165,10 @@ function CellData.change_domain(a::CellField,strian::AdaptedTriangulation,::Refe
 end
 
 function CellData.change_domain(a::CellField,strian::AdaptedTriangulation,::ReferenceDomain,ttrian::AdaptedTriangulation,::ReferenceDomain)
+  if strian === ttrian
+    return a
+  end
+
   if is_child(strian,ttrian) # fine to coarse
     b = change_domain(a,strian,ReferenceDomain(),ttrian.trian,ReferenceDomain())
     return CellData.similar_cell_field(b,get_data(b),ttrian,ReferenceDomain())
@@ -228,6 +225,7 @@ function change_domain_o2n(f_old,old_trian::Triangulation,new_trian::AdaptedTria
 end
 
 function change_domain_o2n(f_coarse,ctrian::Triangulation{Dc},ftrian::AdaptedTriangulation,glue::AdaptivityGlue{<:RefinementGlue}) where Dc
+  @notimplementedif num_point_dims(ctrian) != Dc
   cglue = get_glue(ctrian,Val(Dc))
   fglue = get_glue(ftrian,Val(Dc))
 
@@ -267,6 +265,7 @@ function change_domain_n2o(f_new,new_trian::AdaptedTriangulation,old_trian::Tria
 end
 
 function change_domain_n2o(f_fine,ftrian::AdaptedTriangulation{Dc},ctrian::Triangulation,glue::AdaptivityGlue{<:RefinementGlue}) where Dc
+  @notimplementedif num_point_dims(ftrian) != Dc
   cglue = get_glue(ctrian,Val(Dc))
   fglue = get_glue(ftrian,Val(Dc))
 
