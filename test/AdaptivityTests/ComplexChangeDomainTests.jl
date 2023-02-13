@@ -1,4 +1,4 @@
-module ExtendingChangeDomainTests
+module ComplexChangeDomainTests
 
 using Test
 using Gridap
