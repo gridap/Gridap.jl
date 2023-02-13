@@ -155,7 +155,7 @@ function CellData.change_domain(a::CellField,strian::Triangulation,::ReferenceDo
     return CellData.similar_cell_field(b,get_data(b),ttrian,ReferenceDomain())
   end
   
-  return change_domain_o2n(a,ttrian)
+  return change_domain_o2n(a,strian,ttrian)
 end
 
 function CellData.change_domain(a::CellField,strian::AdaptedTriangulation,::ReferenceDomain,ttrian::Triangulation,::ReferenceDomain)
@@ -168,7 +168,7 @@ function CellData.change_domain(a::CellField,strian::AdaptedTriangulation,::Refe
     return change_domain(a,strian.trian,ReferenceDomain(),ttrian,ReferenceDomain())
   end
   
-  return change_domain_n2o(a,ttrian)
+  return change_domain_n2o(a,strian,ttrian)
 end
 
 function CellData.change_domain(a::CellField,strian::AdaptedTriangulation,::ReferenceDomain,ttrian::AdaptedTriangulation,::ReferenceDomain)
@@ -207,35 +207,29 @@ function Geometry.move_contributions(scell_to_val::AbstractArray, glue::Adaptivi
   return tcell_to_val
 end
 
-function change_domain_o2n(f_old,new_trian::AdaptedTriangulation{Dc,Dp}) where {Dc,Dp}
-  #@notimplementedif num_dims(get_triangulation(f_old)) != Dc
+# Change domain o2n/n2o
+
+function change_domain_o2n(f_old,old_trian::Triangulation,new_trian::AdaptedTriangulation)
   glue = get_adaptivity_glue(new_trian)
-  return change_domain_o2n(f_old,new_trian,glue)
+  return change_domain_o2n(f_old,old_trian,new_trian,glue)
 end
 
-function change_domain_n2o(f_new,old_trian::Triangulation{Dc,Dp}) where {Dc,Dp}
-  new_trian = get_triangulation(f_new)
-  #@notimplementedif num_dims(new_trian) != Dc
-  @check isa(new_trian,AdaptedTriangulation)
+function change_domain_n2o(f_new,new_trian::AdaptedTriangulation,old_trian::Triangulation)
   glue = get_adaptivity_glue(new_trian)
-  return change_domain_n2o(f_new,old_trian,glue)
+  return change_domain_n2o(f_new,new_trian,old_trian,glue)
 end
 
 """
   Given a AdaptivityGlue and a CellField defined on the parent(old) mesh, 
   returns an equivalent CellField on the child(new) mesh.
 """
-function change_domain_o2n(f_old,new_trian::AdaptedTriangulation,glue::AdaptivityGlue)
+function change_domain_o2n(f_old,old_trian::Triangulation,new_trian::AdaptedTriangulation,glue::AdaptivityGlue)
   @notimplemented
 end
 
-function change_domain_o2n(f_coarse,ftrian::AdaptedTriangulation{Dc},glue::AdaptivityGlue{<:RefinementGlue}) where Dc
-  ctrian = get_triangulation(f_coarse)
-  #@notimplementedif num_dims(ctrian) != Dc
-
-  D = num_cell_dims(ctrian)
-  cglue = get_glue(ctrian,Val(D))
-  fglue = get_glue(ftrian,Val(D))
+function change_domain_o2n(f_coarse,ctrian::Triangulation{Dc},ftrian::AdaptedTriangulation,glue::AdaptivityGlue{<:RefinementGlue}) where Dc
+  cglue = get_glue(ctrian,Val(Dc))
+  fglue = get_glue(ftrian,Val(Dc))
 
   if (num_cells(ctrian) != 0)
     ### Old Triangulation -> Old Model
@@ -268,20 +262,13 @@ end
   Given a AdaptivityGlue and a CellField defined on the child(new) mesh, 
   returns an equivalent CellField on the parent(old) mesh.
 """
-function change_domain_n2o(f_new,old_trian::Triangulation,glue::AdaptivityGlue)
+function change_domain_n2o(f_new,new_trian::AdaptedTriangulation,old_trian::Triangulation,glue::AdaptivityGlue)
   @notimplemented
 end
 
-function change_domain_n2o(f_fine,ctrian::Triangulation{Dc},glue::AdaptivityGlue{<:RefinementGlue}) where Dc
-  ftrian = get_triangulation(f_fine)
-  #@notimplementedif num_dims(ftrian) != Dc
-  msg = "Evaluating a fine CellField in the coarse mesh is costly! If you are using this feature 
-         to integrate, consider using a CompositeMeasure instead (see test/AdaptivityTests/GridTransferTests.jl)."
-  @warn msg
-
-  D = num_cell_dims(ftrian)
-  cglue = get_glue(ctrian,Val(D))
-  fglue = get_glue(ftrian,Val(D))
+function change_domain_n2o(f_fine,ftrian::AdaptedTriangulation{Dc},ctrian::Triangulation,glue::AdaptivityGlue{<:RefinementGlue}) where Dc
+  cglue = get_glue(ctrian,Val(Dc))
+  fglue = get_glue(ftrian,Val(Dc))
 
   if (num_cells(ctrian) != 0)
     ### New Triangulation -> New Model
@@ -305,3 +292,41 @@ function change_domain_n2o(f_fine,ctrian::Triangulation{Dc},glue::AdaptivityGlue
     return CellData.similar_cell_field(f_fine,f_coarse,ctrian,ReferenceDomain())
   end
 end
+
+
+# Specialisation for Skeleton Pairs
+
+function change_domain_o2n(f_old,old_trian::Triangulation,new_trian::AdaptedTriangulation{Dc,Dp,<:SkeletonTriangulation}) where {Dc,Dp}
+  @check isa(CellData.get_data(f_old),Fill)
+  new_trian_plus = AdaptedTriangulation(new_trian.trian.plus,new_trian.adapted_model)
+  return change_domain_o2n(f_old,old_trian,new_trian_plus)
+end
+
+function change_domain_n2o(f_new,new_trian::AdaptedTriangulation,old_trian::SkeletonTriangulation)
+  @check isa(CellData.get_data(f_new),Fill)
+  return change_domain_n2o(f_new,new_trian,old_trian.plus)
+end
+
+function change_domain_o2n(f_old::CellData.CellFieldAt,old_trian::Triangulation,new_trian::AdaptedTriangulation{Dc,Dp,<:SkeletonTriangulation}) where {Dc,Dp}
+  if isa(f_old,CellData.CellFieldAt{:plus})
+    _new_trian = AdaptedTriangulation(new_trian.trian.plus,new_trian.adapted_model)
+  elseif isa(f_old,CellData.CellFieldAt{:minus})
+    _new_trian = AdaptedTriangulation(new_trian.trian.minus,new_trian.adapted_model)
+  else
+    @unreachable
+  end
+  return change_domain_o2n(f_old,old_trian,_new_trian)
+end
+
+function change_domain_n2o(f_new::CellData.CellFieldAt,new_trian::AdaptedTriangulation,old_trian::SkeletonTriangulation)
+  if isa(f_new,CellData.CellFieldAt{:plus})
+    _old_trian = old_trian.plus
+  elseif isa(f_new,CellData.CellFieldAt{:minus})
+    _old_trian = old_trian.minus
+  else
+    @unreachable
+  end
+  return change_domain_n2o(f_new,new_trian,_old_trian)
+end
+
+

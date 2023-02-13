@@ -74,18 +74,18 @@ v_Γc = change_domain(v_Ωc,Γc,ReferenceDomain())
   Not currently working, we need to treat SkeletonPairs separately....
 """
 
-"""
 Λc = Skeleton(cmodel)
 Λf = Skeleton(fmodel)
 
-v_Ωc = interpolate(sol,Vc).plus
-v_Ωf = interpolate(sol,Vf).plus
+for sign in [:plus,:minus]
+  v_Ωc = getproperty(interpolate(sol,Vc),sign)
+  v_Ωf = getproperty(interpolate(sol,Vf),sign)
 
-v_Λf = change_domain(v_Ωf,Λf,ReferenceDomain())
-v_Λc = change_domain(v_Ωc,Λc,ReferenceDomain())
+  v_Λf = change_domain(v_Ωf,Λf,ReferenceDomain())
+  v_Λc = change_domain(v_Ωc,Λc,ReferenceDomain())
 
-@test norm2(v_Ωf,Λc) ≈ norm2(v_Λc,Λc)
-@test norm2(v_Ωc,Λf) ≈ norm2(v_Λf,Λf)
-"""
+  @test norm2(v_Ωf,Λc) ≈ norm2(v_Λc,Λc)
+  @test norm2(v_Ωc,Λf) ≈ norm2(v_Λf,Λf)
+end
 
 end
