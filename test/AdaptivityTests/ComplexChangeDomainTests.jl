@@ -8,6 +8,8 @@ using Gridap.Adaptivity
 using Gridap.ReferenceFEs
 using FillArrays
 
+dot_prod(u,v,Ω::Triangulation) = sum(∫(v⋅u)*Measure(Ω,qorder))
+dot_prod(u,v,dΩ::Measure) = sum(∫(v⋅u)*dΩ)
 norm2(u,Ω::Triangulation) = sum(∫(u⋅u)*Measure(Ω,qorder))
 norm2(u,dΩ::Measure) = sum(∫(u⋅u)*dΩ)
 
@@ -53,6 +55,10 @@ v_Ωf_view_view = change_domain(v_Ωc_view,Ωf_view,ReferenceDomain())
 @test norm2(v_Ωc_view,Ωf_view) ≈ norm2(v_Ωf_view,Ωf_view)
 @test norm2(v_Ωf_view,Ωc_view) ≈ norm2(v_Ωc_view,Ωc_view)
 
+# Integrate over Ωc_view by integrating first in Ωf and then moving contributions
+dΩ_fc = Measure(Ωc_view,Ωf,qorder)
+@test dot_prod(v_Ωf,v_Ωc,dΩ_fc) ≈ dot_prod(v_Ωf,v_Ωc,Ωc_view)
+
 """
   BodyFitted -> Boundary
 """
@@ -67,6 +73,10 @@ v_Γc = change_domain(v_Ωc,Γc,ReferenceDomain())
 
 @test norm2(v_Ωf,Γc) ≈ norm2(v_Γc,Γc)
 @test norm2(v_Ωc,Γf) ≈ norm2(v_Γf,Γf)
+
+# Integrate in Γf then add contributions for each coarse cell
+dΩ_fc = Measure(Ωc,Γf,qorder)
+@test dot_prod(v_Ωf,v_Ωc,dΩ_fc) ≈ dot_prod(v_Ωf,v_Ωc,Γf)
 
 """
   BodyFitted -> Skeleton

@@ -189,12 +189,36 @@ for sdomain in [:ReferenceDomain,:PhysicalDomain]
   end
 end
 
-function Geometry.move_contributions(scell_to_val::AbstractArray, strian::AdaptedTriangulation, ttrian::Triangulation)
+function Geometry.move_contributions(scell_to_val::AbstractArray, strian::AdaptedTriangulation, ttrian::Triangulation{Dc}) where Dc
+  # Default Gridap 
+  if get_background_model(strian) === get_background_model(ttrian)
+    return move_contributions(scell_to_val,strian.trian,ttrian)
+  end
+  
+  # Else 
   smodel = get_adapted_model(strian)
   @check get_parent(smodel) === get_background_model(ttrian)
 
-  tcell_to_val = move_contributions(scell_to_val,get_adaptivity_glue(smodel))
-  return tcell_to_val
+  return move_contributions_f2c(scell_to_val,strian,ttrian)
+end
+
+function move_contributions_f2c(fine_tface_to_val::AbstractArray, ftrian::AdaptedTriangulation, ctrian::Triangulation{Dc}) where Dc
+  glue  = get_adaptivity_glue(ftrian)
+  fglue = get_glue(ftrian,Val(Dc))
+  cglue = get_glue(ctrian,Val(Dc))
+
+  # Fine Triangulation -> Fine Model
+  fmodel = get_background_model(ftrian)
+  cell_ftrian = Triangulation(ReferenceFE{Dc},fmodel)
+  fine_mface_to_val = move_contributions(fine_tface_to_val,ftrian.trian,cell_ftrian)
+
+  # Fine model -> Coarse Model
+  coarse_mface_to_val = move_contributions(fine_mface_to_val,glue)
+
+  # Coarse Model -> Coarse Triangulation
+  coarse_tface_to_val = lazy_map(Reindex(coarse_mface_to_val),cglue.tface_to_mface)
+
+  return coarse_tface_to_val
 end
 
 function Geometry.move_contributions(scell_to_val::AbstractArray, glue::AdaptivityGlue)
@@ -225,9 +249,11 @@ function change_domain_o2n(f_old,old_trian::Triangulation,new_trian::AdaptedTria
 end
 
 function change_domain_o2n(f_coarse,ctrian::Triangulation{Dc},ftrian::AdaptedTriangulation,glue::AdaptivityGlue{<:RefinementGlue}) where Dc
-  @notimplementedif num_point_dims(ctrian) != Dc
   cglue = get_glue(ctrian,Val(Dc))
   fglue = get_glue(ftrian,Val(Dc))
+
+  @notimplementedif num_point_dims(ctrian) != Dc
+  @notimplementedif isa(fglue,Nothing)
 
   if (num_cells(ctrian) != 0)
     ### Old Triangulation -> Old Model
@@ -265,9 +291,11 @@ function change_domain_n2o(f_new,new_trian::AdaptedTriangulation,old_trian::Tria
 end
 
 function change_domain_n2o(f_fine,ftrian::AdaptedTriangulation{Dc},ctrian::Triangulation,glue::AdaptivityGlue{<:RefinementGlue}) where Dc
-  @notimplementedif num_point_dims(ftrian) != Dc
-  cglue = get_glue(ctrian,Val(Dc))
   fglue = get_glue(ftrian,Val(Dc))
+  cglue = get_glue(ctrian,Val(Dc))
+
+  @notimplementedif num_point_dims(ftrian) != Dc
+  @notimplementedif isa(cglue,Nothing)
 
   if (num_cells(ctrian) != 0)
     ### New Triangulation -> New Model
