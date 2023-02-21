@@ -29,7 +29,7 @@ function isless(a::MultiValue{Tuple{L}},b::MultiValue{Tuple{L}}) where L
   false
 end
 
-isless(a::Number,b::MultiValue) where {D,T} = all(isless.(a, b.data))
+isless(a::Number,b::MultiValue) = all(isless.(a, b.data))
 
 ###############################################################
 # Addition / subtraction

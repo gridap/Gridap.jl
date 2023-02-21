@@ -78,7 +78,7 @@ function get_faces(g::GridTopologyMock,dimfrom::Integer,dimto::Integer)
   end
 end
 
-function get_polytopes(g::GridTopologyMock) where d
+function get_polytopes(g::GridTopologyMock)
   [QUAD, TRI]
 end
 

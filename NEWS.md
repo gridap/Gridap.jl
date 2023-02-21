@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
+- Implemented `RefinementRule` and `AdaptivityGlue`, which encode the mapping between the old and new cells in an adapted model. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
+- Implemented `AdaptedDiscreteModel` and `AdaptedTriangulation`, representing respectively a model and triangulation produced by adapting a parent model. This types mostly wrap around `DiscreteModel` and `Triangulation`, with some added features necessary to keep track of the adaptive hierarchy. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
+- Implemented tools to be able to transfer `CellDatum`s back and forth between parent and child grids. These include changes to `change_domain` (which now takes the source `Triangulation` as argument) and a new type of `Measure` called `CompositeMeasure`, which allows the integration `Triangulation` to be different from the `Triangulation` of the resulting `DomainContribution`. To accomodate `CompositeMeasure`, `Measure` has been made abstract type and a `GenericMeasure` has been created to replace the old type. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
+- For the fine-to-coarse transfer of `CellField`s, the new `FineToCoarseField` has been implemented. This new structure bundles several fields defined on the fine mesh to create a single field on the coarse mesh. To enable fast interpolation of this type of field, we have also implemented `FineToCoarseReferenceFE` and `FineToCoarseDofBasis`. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
+- Implemented `CompositeQuadrature`, a quadrature for a cell that has been refined using a `RefinementRule`. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
+- Implemented simple refinement strategies for Cartesian discrete models in 2&3D as well as Unstructured discrete models in 2D. The latter is implemented by red-green refinement. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
+- Added optimization when calling `unique` for a `CompressedArray`. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
+
+### Fixed
+- Using broadcasting through in `ODESolver` vector operations. Since PR [#860](https://github.com/gridap/Gridap.jl/pull/860)
+- Fixes to `array_cache(a::Table)`: Now does not use the `zero(T,N)` function, but instead creates new empty vector using the general allocator `Vector{T}(undef,N)`. This allows `Table` to work with complex composite types which don't have an easy `zero(T)` function defined. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
+- Added `get_metadata` to all the instances of `ReferenceFE`. This makes the abstract type more consistent, which is necessary for the new type `FineToCoarseReferenceFE`. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
+- `ConstantFESpace` is now properly exported. Since PR [#872](https://github.com/gridap/Gridap.jl/pull/872).
+
+## [0.17.16] - 2022-12-22 
+
+### Fixed
+- Fixed a bug in function `collect_cell_matrix_and_vector`. Since PR [#849](https://github.com/gridap/Gridap.jl/pull/849)
+
+## [0.17.15] - 2022-11-10 
+
+### Added
 - `lastindex` for `MultiValue`s for consistent usage of `[end]` as per `length`. Since PR [#834](https://github.com/gridap/Gridap.jl/pull/834)
 - BDM (Brezzi-Douglas-Marini) ReferenceFEs in PR [#823](https://github.com/gridap/Gridap.jl/pull/823)
 - Implemented `ConstantFESpace`. This space allows, e.g., to impose the mean value of the pressure via an additional unknown/equation (a Lagrange multiplier). Since PR [#836](https://github.com/gridap/Gridap.jl/pull/836)

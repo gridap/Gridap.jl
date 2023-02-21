@@ -375,9 +375,9 @@ end
 """
     simplexify(model::DiscreteModel)
 """
-function simplexify(model::DiscreteModel)
+function simplexify(model::DiscreteModel;kwargs...)
   umodel = UnstructuredDiscreteModel(model)
-  simplexify(umodel)
+  simplexify(umodel;kwargs...)
 end
 
 function ReferenceFE(model::DiscreteModel,args...;kwargs...)
@@ -415,12 +415,11 @@ function DiscreteModelFromFile(filename::AbstractString)
 end
 
 function DiscreteModelFromFile(filename::AbstractString,::Any)
-  @notimplemented
+  error("File type unknown (you may need to load a package, for instance GridapGmsh)")
 end
 
 function DiscreteModelFromFile(filename::AbstractString,::Val{:json})
-  model = from_json_file(DiscreteModel,filename)
-  model
+  from_json_file(DiscreteModel,filename)
 end
 
 # GenericDiscreteModel

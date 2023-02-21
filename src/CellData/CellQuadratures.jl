@@ -130,7 +130,7 @@ function get_cell_points(a::CellQuadrature)
   CellPoint(a.cell_point,a.trian,a.data_domain_style)
 end
 
-function integrate(f::CellField,quad::CellQuadrature) where DDS
+function integrate(f::CellField,quad::CellQuadrature)
   trian_f = get_triangulation(f)
   trian_x = get_triangulation(quad)
 
