@@ -30,7 +30,7 @@ function _gradient(f,uh,fuh::DomainContribution)
   end
   terms
 end
-
+#=
 function _gradient2(f,uh,fuh::DomainContribution)
   terms = DomainContribution()
   for trian in get_domains(fuh)
@@ -42,6 +42,7 @@ function _gradient2(f,uh,fuh::DomainContribution)
   end
   terms
 end
+=#
 
 function _compute_cell_ids(uh,ttrian)
   strian = get_triangulation(uh)
@@ -117,27 +118,38 @@ function _change_argument(op,f,trian,uh::SingleFieldFEFunction)
   function g(cell_u)
     cf = CellField(U,cell_u)
     cell_grad = f(cf)
-    get_contribution2(cell_grad,trian)
+    get_contribution(cell_grad,trian)
   end
   g
 end
 
+#=
 function _change_argument2(f,trian)
   function g(cell_u)
     cell_grad = f(cell_u)
     get_contribution2(cell_grad,trian)
-
+    @show ddd
   end
   g
 end
+=#
 
+#=
 function get_contribution2(cell_grad,trian)
   for trian_cg in get_domains(cell_grad)
-    if get_cell_node_ids(trian_cg) == get_cell_node_ids(trian)
+    if isequivtrian(trian,trian_cg)#get_cell_node_ids(trian_cg) == get_cell_node_ids(trian)
       return get_contribution(cell_grad,trian_cg)
     end
   end
 end
+
+function isequivtrian(trian1::AppendedTriangulation,trian2::AppendedTriangulation) 
+  sc1 = trian1.a.subcells
+  sc2 = trian2.a.subcells
+  return (sc1.cell_to_points == sc2.cell_to_points && sc1.cell_to_bgcell == sc2.cell_to_bgcell && sc1.point_to_coords == sc2.point_to_coords && sc1.point_to_rcoords == sc2.point_to_rcoords )
+end
+=#
+
 #= AD for DomainContribution involving SkeletonTriangulation
 
 - Following are the constructs for performing gradient of DomainContribution

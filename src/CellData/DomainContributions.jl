@@ -13,12 +13,23 @@ get_domains(a::DomainContribution) = keys(a.dict)
 
 function get_contribution(a::DomainContribution,trian::Triangulation)
   if haskey(a.dict,trian)
-     return a.dict[trian]
-  else
+    return a.dict[trian]
+  else 
+    for trian_a in get_domains(a) 
+      if isequivtrian(trian,trian_a)
+        return get_contribution(a,trian_a)
+      end
+    end
     @unreachable """\n
     There is not contribution associated with the given mesh in this DomainContribution object.
     """
   end
+end
+
+function isequivtrian(trian1::AppendedTriangulation,trian2::AppendedTriangulation) 
+  sc1 = trian1.a.subcells
+  sc2 = trian2.a.subcells
+  return (sc1.cell_to_points == sc2.cell_to_points && sc1.cell_to_bgcell == sc2.cell_to_bgcell && sc1.point_to_coords == sc2.point_to_coords && sc1.point_to_rcoords == sc2.point_to_rcoords )
 end
 
 Base.getindex(a::DomainContribution,trian::Triangulation) = get_contribution(a,trian)
