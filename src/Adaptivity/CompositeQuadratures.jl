@@ -12,7 +12,7 @@ function CellData.CellQuadrature(trian::Triangulation,
                                  ids::DomainStyle;
                                  kwargs...)
   cell_quad = lazy_map(rr -> Quadrature(rr,degree;kwargs...),rrules)
-  return CellData.CellQuadrature(trian,cell_quad,ids)
+  return CellData.CellQuadrature(trian,cell_quad,integration_domain_style=ids)
 end
 
 struct BundleQuadrature{D,T,C <: Table{Point{D,T}},W <: AbstractVector{T}} <: Quadrature{D,T}
