@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [0.17.17] - 2023-02-24
 
 ### Added
 - Implemented `RefinementRule` and `AdaptivityGlue`, which encode the mapping between the old and new cells in an adapted model. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implemented `CompositeQuadrature`, a quadrature for a cell that has been refined using a `RefinementRule`. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
 - Implemented simple refinement strategies for Cartesian discrete models in 2&3D as well as Unstructured discrete models in 2D. The latter is implemented by red-green refinement. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
 - Added optimization when calling `unique` for a `CompressedArray`. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
+- Added support for changing domain between adapted triangulations in cases where the target triangulation is a view, a `BoundaryTriangulation` or a `SkeletonTriangulation`. Since PR [#868](https://github.com/gridap/Gridap.jl/pull/868).
 
 ### Fixed
 - Using broadcasting through in `ODESolver` vector operations. Since PR [#860](https://github.com/gridap/Gridap.jl/pull/860)

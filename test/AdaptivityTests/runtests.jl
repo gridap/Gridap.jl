@@ -9,6 +9,7 @@ end
 
 @testset "Refinement" begin
   include("CartesianRefinementTests.jl")
+  include("ComplexChangeDomainTests.jl")
   include("EdgeBasedRefinementTests.jl")
   include("FineToCoarseFieldsTests.jl")
 end
