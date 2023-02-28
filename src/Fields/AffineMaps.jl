@@ -99,7 +99,7 @@ end
 function inverse_map(f::AffineMap)
   Jt = f.gradient
   y0 = f.origin
-  invJt = inv(Jt)
+  invJt = pinvJt(Jt)
   x0 = -y0⋅invJt
   AffineMap(invJt,x0)
 end
