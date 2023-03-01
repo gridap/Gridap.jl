@@ -14,15 +14,25 @@ get_domains(a::DomainContribution) = keys(a.dict)
 function get_contribution(a::DomainContribution,trian::Triangulation)
   if haskey(a.dict,trian)
     return a.dict[trian]
-  else 
+  else
     for trian_a in get_domains(a) 
-      if isequivtrian(trian,trian_a)
-        return get_contribution(a,trian_a)
+      if get_cell_node_ids(trian_a) == get_cell_node_ids(trian)
+        if hasproperty(trian,:a)
+          if hasproperty(trian.a,:subcells)
+              if isequivtrian(trian,trian_a)
+                return get_contribution(a,trian_a)
+              end
+          end
+        elseif hasproperty(trian,:subfacets)
+            if isequivtrian_subfacet(trian,trian_a)
+              return get_contribution(a,trian_a)
+            end
+        end
       end
     end
-    @unreachable """\n
-    There is not contribution associated with the given mesh in this DomainContribution object.
-    """
+  @unreachable """\n
+  There is not contribution associated with the given mesh in this DomainContribution object.
+  """
   end
 end
 
@@ -30,6 +40,12 @@ function isequivtrian(trian1::AppendedTriangulation,trian2::AppendedTriangulatio
   sc1 = trian1.a.subcells
   sc2 = trian2.a.subcells
   return (sc1.cell_to_points == sc2.cell_to_points && sc1.cell_to_bgcell == sc2.cell_to_bgcell && sc1.point_to_coords == sc2.point_to_coords && sc1.point_to_rcoords == sc2.point_to_rcoords )
+end
+
+function isequivtrian_subfacet(trian1,trian2) 
+  sf1 = trian1.subfacets
+  sf2 = trian2.subfacets
+  return (sf1.facet_to_points == sf2.facet_to_points && sf1.facet_to_normal == sf2.facet_to_normal && sf1.point_to_coords == sf2.point_to_coords && sf1.point_to_rcoords == sf2.point_to_rcoords )
 end
 
 Base.getindex(a::DomainContribution,trian::Triangulation) = get_contribution(a,trian)
