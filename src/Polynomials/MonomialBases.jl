@@ -195,7 +195,7 @@ function _evaluate!(
 
   f = fg.fa
   r, v, c, g = cache
-  z = zero(Mutable(eltype(x)))       ##VectorValue{D,eltype(T)}))
+  z = zero(Mutable(eltype(x)))
   np = length(x)
   ndof = length(f.terms) * num_components(T)
   n = 1 + _maximum(f.orders)

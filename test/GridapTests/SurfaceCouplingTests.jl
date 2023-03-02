@@ -97,11 +97,7 @@ l((v,q)) =
 
 # FE problem
 
-jac((u,p),(du,dp),(v,q)) = a((du,dp),(v,q))
-
-#op = AffineFEOperator(a,l,X,Y)
-op = FEOperator(a,jac,X,Y)
-
+op = AffineFEOperator(a,l,X,Y)
 uh, ph = solve(op)
 
 # Visualization

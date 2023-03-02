@@ -70,8 +70,7 @@ l((v,q)) =
   ∫( (γ/h)*v⋅u - (n_Γ⋅∇(v))⋅u + (q*n_Γ)⋅u )*dΓ + ∫( s0⋅v )*dΓ0
 
 # Define the FEOperator
-#op = AffineFEOperator(a,l,X,X)
-op = FEOperator(a,X,X)
+op = AffineFEOperator(a,l,X,X)
 
 # Solve!
 xh = solve(op)

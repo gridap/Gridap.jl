@@ -326,14 +326,7 @@ Equivalent to
 
     [a[i] for in 1:length(a)]
 """
-function collect1d(a) 
-  #@show a
-  #b = collect(Base.Iterators.Flatten(a)) #
-  [a[i] for i in 1:length(a)]
-  #@show b
-  #b
-end
-
+collect1d(a) = [a[i] for i in 1:length(a)]
 
 function lazy_map(::typeof(getindex),a::Table,b::AbstractArray{<:Integer})
   LocalItemFromTable(a,b)
