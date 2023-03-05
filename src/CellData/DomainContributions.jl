@@ -31,7 +31,7 @@ function add_contribution!(a::DomainContribution,trian::Triangulation,b::Abstrac
     You are trying to add a contribution with eltype $(S).
     Only cell-wise matrices, vectors, or numbers are accepted.
 
-    Make sure that you are defining the terms in your weak form correclty.
+    Make sure that you are defining the terms in your weak form correctly.
     """
   end
 
@@ -42,21 +42,21 @@ function add_contribution!(a::DomainContribution,trian::Triangulation,b::Abstrac
       You are trying to add a contribution with eltype $(S) to a DomainContribution that
       stores cell-wise matrices.
 
-      Make sure that you are defining the terms in your weak form correclty.
+      Make sure that you are defining the terms in your weak form correctly.
       """
     elseif T <: AbstractVector || S<:(ArrayBlock{A,1} where A)
       @assert S<:AbstractVector || S<:(ArrayBlock{A,1} where A) """\n
       You are trying to add a contribution with eltype $(S) to a DomainContribution that
       stores cell-wise vectors.
 
-      Make sure that you are defining the terms in your weak form correclty.
+      Make sure that you are defining the terms in your weak form correctly.
       """
     elseif T <: Number
       @assert S<:Number """\n
       You are trying to add a contribution with eltype $(S) to a DomainContribution that
       stores cell-wise numbers.
 
-      Make sure that you are defining the terms in your weak form correclty.
+      Make sure that you are defining the terms in your weak form correctly.
       """
     end
   end
