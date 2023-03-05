@@ -53,7 +53,7 @@ function Arrays.evaluate!(cache,s::FineToCoarseDofBasis{T,<:LagrangianDofBasis},
   If you are trying to interpolate a function on a FESpace make sure that
   both objects have the same value type.
 
-  For instance, trying to interpolate a vector-valued funciton on a scalar-valued FE space
+  For instance, trying to interpolate a vector-valued function on a scalar-valued FE space
   would raise this error.
   """
   ReferenceFEs._evaluate_lagr_dof!(c,vals,b.node_and_comp_to_dof,ndofs,ncomps)
@@ -80,7 +80,7 @@ end
 
 
 """
-  Wrapper for a ReferenceFE which is spetialised for 
+  Wrapper for a ReferenceFE which is specialised for 
   efficiently evaluating FineToCoarseFields. 
 """
 struct FineToCoarseRefFE{T,D,A} <: ReferenceFE{D}
