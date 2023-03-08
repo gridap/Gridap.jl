@@ -70,7 +70,7 @@ for D = 1:3
 
     st2 = SkeletonTriangulation(bt)
     test_triangulation(st2)
-    st2_normal = get_normal_vector(bt)
+    st2_normal = get_normal_vector(st2)
     @test is_change_possible(rt,st2)
     @test is_change_possible(bt,st2)
 
