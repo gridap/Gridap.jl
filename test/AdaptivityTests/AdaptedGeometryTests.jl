@@ -52,6 +52,7 @@ for D = 1:3
   bt  = BoundaryTriangulation(model1)
   @test isa(bt,AdaptedTriangulation)
   test_triangulation(bt)
+  bt_normal = get_normal_vector(bt)
   @test is_change_possible(t,bt)
   @test is_change_possible(rt,bt)
   @test !is_change_possible(bt,t)
@@ -61,12 +62,15 @@ for D = 1:3
     st  = SkeletonTriangulation(model1)
     @test isa(st,AdaptedTriangulation)
     test_triangulation(st)
+    st_normal = get_normal_vector(st)
     @test is_change_possible(t,st)
     @test is_change_possible(rt,st)
     @test !is_change_possible(st,t)
     @test !is_change_possible(st,rt)
 
     st2 = SkeletonTriangulation(bt)
+    test_triangulation(st2)
+    st2_normal = get_normal_vector(st2)
     @test is_change_possible(rt,st2)
     @test is_change_possible(bt,st2)
 
