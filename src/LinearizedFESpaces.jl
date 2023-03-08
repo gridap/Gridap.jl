@@ -70,16 +70,16 @@ end
 function Gridap.FESpaces.get_cell_fe_data(fun,f,ttrian::AdaptedTriangulation)
   sface_to_data = fun(f)
   strian = get_triangulation(f)
-  _get_cell_fe_data(sface_to_data, strian, ttrian)
+  _get_cell_fe_data(fun,sface_to_data, strian, ttrian)
 end
 
 # strian: triangulation of the FESpace, cell-wise related data (e.g., cell_dof_ids)
 # ttrian: triangulation of the Measure
-function _get_cell_fe_data(sface_to_data, strian::Triangulation, ttrian::Triangulation)
-  _get_cell_fe_data_trian_trian_body(sface_to_data, strian, ttrian)
+function _get_cell_fe_data(fun, sface_to_data, strian::Triangulation, ttrian::Triangulation)
+  _get_cell_fe_data_trian_trian_body(fun, sface_to_data, strian, ttrian)
 end
 
-function _get_cell_fe_data_trian_trian_body(sface_to_data, strian, ttrian)
+function _get_cell_fe_data_trian_trian_body(fun, sface_to_data, strian, ttrian)
   if strian === ttrian
     return sface_to_data
   end
@@ -87,23 +87,23 @@ function _get_cell_fe_data_trian_trian_body(sface_to_data, strian, ttrian)
   D = num_cell_dims(strian)
   sglue = get_glue(strian,Val(D))
   tglue = get_glue(ttrian,Val(D))
-  Gridap.FESpaces.get_cell_fe_data(sface_to_data,sglue,tglue)
+  Gridap.FESpaces.get_cell_fe_data(fun,sface_to_data,sglue,tglue)
 end
 
-function _get_cell_fe_data(sface_to_data, strian::AdaptedTriangulation, ttrian::Triangulation)
-  _get_cell_fe_data_trian_trian_body(sface_to_data, strian, ttrian)
+function _get_cell_fe_data(fun,sface_to_data, strian::AdaptedTriangulation, ttrian::Triangulation)
+  _get_cell_fe_data_trian_trian_body(fun,sface_to_data, strian, ttrian)
  end
 
 # strian coarse
 # ttrian refined
-function _get_cell_fe_data(sface_to_data, strian::Triangulation, ttrian::AdaptedTriangulation)
+function _get_cell_fe_data(fun, sface_to_data, strian::Triangulation, ttrian::AdaptedTriangulation)
   Gridap.Helpers.@check get_background_model(strian) === get_parent(get_adapted_model(ttrian))
   Gridap.Adaptivity.c2f_reindex(sface_to_data,get_adapted_model(ttrian).glue)
 end
 
-function _get_cell_fe_data(sface_to_data, strian::AdaptedTriangulation, ttrian::AdaptedTriangulation)
+function _get_cell_fe_data(fun, sface_to_data, strian::AdaptedTriangulation, ttrian::AdaptedTriangulation)
   Gridap.Helpers.@check get_background_model(strian)===get_background_model(ttrian)
-  _get_cell_fe_data_trian_trian_body(sface_to_data, strian, ttrian)
+  _get_cell_fe_data_trian_trian_body(fun, sface_to_data, strian, ttrian)
 end
 
 
