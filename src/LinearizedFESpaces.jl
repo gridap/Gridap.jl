@@ -67,7 +67,7 @@ end
 # function for different combinations of regular and adapted triangulations
 # corresponding to FESpace's triangulation and domain of integration
 # Please, use with care, they are only valid for the most obvious cases.
-function Gridap.FESpaces.get_cell_fe_data(fun,f,ttrian)
+function Gridap.FESpaces.get_cell_fe_data(fun,f,ttrian::AdaptedTriangulation)
   sface_to_data = fun(f)
   strian = get_triangulation(f)
   _get_cell_fe_data(sface_to_data, strian, ttrian)
