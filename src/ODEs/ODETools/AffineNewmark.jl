@@ -34,7 +34,7 @@ function solve_step!(
   A,b,l_cache = affOp_cache
 
   # Define Newmark operator
-  newmark_affOp = NewmarkAffineOperator(op,t1,dt,γ,β,(u0,v0,a0),newmark_cache)
+  newmark_affOp = NewmarkAffineOperator(op,t1,dt,γ,β,x0,newmark_cache)
 
   # Fill matrix and vector
   _matrix_and_vector!(A,b,newmark_affOp,u1)
@@ -44,9 +44,9 @@ function solve_step!(
   l_cache = solve!(u1,solver.nls,affOp,l_cache,newmatrix)
 
   # Update auxiliar variables
-  u1 = u1 + u0
-  v1 = γ/(β*dt)*(u1-u0) + (1-γ/β)*v0 + dt*(1-γ/(2*β))*a0
-  a1 = 1.0/(β*dt^2)*(u1-u0) - 1.0/(β*dt)*v0 - (1-2*β)/(2*β)*a0
+  @. u1 = u1 + u0
+  @. v1 = γ/(β*dt)*(u1-u0) + (1-γ/β)*v0 + dt*(1-γ/(2*β))*a0
+  @. a1 = 1.0/(β*dt^2)*(u1-u0) - 1.0/(β*dt)*v0 - (1-2*β)/(2*β)*a0
 
   # Pack caches
   affOp_cache = A,b,l_cache
@@ -84,8 +84,8 @@ function residual!(b::AbstractVector,op::NewmarkAffineOperator,x::AbstractVector
   u1 = x
   u0, v0, a0 = op.x0
   v1, a1, cache = op.ode_cache
-  a1 = 1.0/(op.β*op.dt^2)*(u1-u0) - 1.0/(op.β*op.dt)*v0 - (1-2*op.β)/(2*op.β)*a0
-  v1 = op.γ/(op.β*op.dt)*(u1-u0) + (1-op.γ/op.β)*v0 + op.dt*(1-op.γ/(2*op.β))*a0
+  @. a1 = (1.0/(op.β*op.dt^2)) * (u1 - u0) - (1.0/(op.β*op.dt)) * v0 - ((1.0-2.0*op.β)/(2.0*op.β)) * a0
+  @. v1 = op.γ/(op.β*op.dt)*(u1-u0) + (1-op.γ/op.β)*v0 + op.dt*(1-op.γ/(2*op.β))*a0
   residual!(b,op.odeop,op.t1,(u1,v1,a1),cache)
   b .*= -1.0
 end
@@ -94,8 +94,8 @@ function jacobian!(A::AbstractMatrix,op::NewmarkAffineOperator,x::AbstractVector
   u1 = x
   u0, v0, a0 = op.x0
   v1, a1, cache = op.ode_cache
-  a1 = 1.0/(op.β*op.dt^2)*(u1-u0) - 1.0/(op.β*op.dt)*v0 - (1-2*op.β)/(2*op.β)*a0
-  v1 = op.γ/(op.β*op.dt)*(u1-u0) + (1-op.γ/op.β)*v0 + op.dt*(1-op.γ/(2*op.β))*a0
+  @. a1 = 1.0/(op.β*op.dt^2)*(u1-u0) - 1.0/(op.β*op.dt)*v0 - (1-2*op.β)/(2*op.β)*a0
+  @. v1 = op.γ/(op.β*op.dt)*(u1-u0) + (1-op.γ/op.β)*v0 + op.dt*(1-op.γ/(2*op.β))*a0
   z = zero(eltype(A))
   fillstored!(A,z)
   jacobians!(A,op.odeop,op.t1,(u1,v1,a1),(1.0,op.γ/(op.β*op.dt),1.0/(op.β*op.dt^2)),cache)

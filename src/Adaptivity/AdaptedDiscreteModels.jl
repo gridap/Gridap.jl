@@ -50,6 +50,7 @@ is_child(m1::DiscreteModel,m2::AdaptedDiscreteModel) = false
 is_related(m1::DiscreteModel,m2::DiscreteModel) = is_child(m1,m2) || is_child(m2,m1)
 
 # Model Adaptation
+
 function refine(model::DiscreteModel,args...;kwargs...) :: AdaptedDiscreteModel
   @abstractmethod
 end
@@ -72,67 +73,19 @@ function adapt(model::AdaptedDiscreteModel,args...;kwargs...)
   return AdaptedDiscreteModel(adapted_model.model,model,adapted_model.glue)
 end
 
-# UnstructuredDiscreteModel Refining
+# UnstructuredDiscreteModel refining
 
-function refine(model::UnstructuredDiscreteModel{Dc,Dp};cells_to_refine=nothing) where {Dc,Dp}
-  # Create new model
-  rrules, faces_list = setup_edge_based_rrules(model.grid_topology,cells_to_refine)
-  topo   = refine_unstructured_topology(model.grid_topology,rrules,faces_list)
-  reffes = map(p->LagrangianRefFE(Float64,p,1),get_polytopes(topo))
-  grid   = UnstructuredGrid(get_vertex_coordinates(topo),get_faces(topo,Dc,0),reffes,get_cell_type(topo),OrientationStyle(topo))
-  labels = FaceLabeling([num_faces(topo,d) for d in 0:num_cell_dims(topo)])
-  ref_model = UnstructuredDiscreteModel(grid,topo,labels)
+abstract type AdaptivityMethod end
 
-  # Create ref glue
-  glue = get_refinement_glue(topo,model.grid_topology,rrules)
-
-  return AdaptedDiscreteModel(ref_model,model,glue)
+function refine(model::UnstructuredDiscreteModel,::AdaptivityMethod,args...;kwargs...)
+  @abstractmethod
 end
 
-function refine_unstructured_topology(topo::UnstructuredGridTopology{Dc},
-                                      rrules::AbstractVector{<:RefinementRule},
-                                      faces_list::Tuple) where {Dc}
-  coords_new  = get_new_coordinates_from_faces(topo,faces_list)
-  c2n_map_new = get_refined_cell_to_vertex_map(topo,rrules,faces_list)
-  polys_new, cell_type_new = get_refined_polytopes(rrules)
-
-  return UnstructuredGridTopology(coords_new,c2n_map_new,cell_type_new,polys_new,topo.orientation_style)
+function refine(model::UnstructuredDiscreteModel,args...;refinement_method=EdgeBasedRefinement(),kwargs...)
+  return refine(refinement_method,model,args...;kwargs...)
 end
 
-function get_refined_polytopes(rrules::AbstractArray{<:RefinementRule})
-  rr_polys = lazy_map(rr->get_polytopes(rr.ref_grid),rrules)
-
-  # NOTE: The innermost `unique` is to optimize for CompressedArrays
-  polys_new = unique(reduce(vcat,unique(rr_polys)))
-
-  rr_cell_type = lazy_map(rr->get_cell_type(rr.ref_grid),rrules)
-  rr2new_cell_type  = lazy_map(vp->map(p->findfirst(x->x==p,polys_new),vp),rr_polys)
-  cell_type_new = reduce(vcat,lazy_map((gids,lids)->lazy_map(Reindex(gids),lids),rr2new_cell_type,rr_cell_type))
-
-  return polys_new, cell_type_new
-end
-
-function get_refinement_glue(ftopo::T,ctopo::T,rrules::AbstractVector{<:RefinementRule}) where {Dc,T<:UnstructuredGridTopology{Dc}}
-  nC_old = num_faces(ctopo,Dc)
-  nC_new = num_faces(ftopo,Dc)
-
-  f2c_cell_map      = Vector{Int}(undef,nC_new)
-  fcell_to_child_id = Vector{Int}(undef,nC_new)
-
-  k = 1
-  for iC = 1:nC_old
-    rr = rrules[iC]
-    range = k:k+num_subcells(rr)-1
-    f2c_cell_map[range] .= iC
-    fcell_to_child_id[range] .= collect(1:num_subcells(rr))
-    k += num_subcells(rr)
-  end
-
-  f2c_faces_map = [(d==Dc) ? f2c_cell_map : Int[] for d in 0:Dc]
-  return AdaptivityGlue(f2c_faces_map,fcell_to_child_id,rrules)
-end
-
-# Cartesian Mesh refining
+# CartesianDiscreteModel refining
 
 function refine(model::CartesianDiscreteModel{Dc}, cell_partition::Int=2) where Dc
   partition = Tuple(fill(cell_partition,Dc))
@@ -149,8 +102,7 @@ function refine(model::CartesianDiscreteModel{Dc}, cell_partition::Tuple) where 
 
   # Glue
   f2c_cell_map, fcell_to_child_id = _create_cartesian_f2c_maps(nC,cell_partition)
-  faces_map      = [Int[] for i=1:Dc]
-  push!(faces_map,f2c_cell_map)
+  faces_map      = [(d==Dc) ? f2c_cell_map : Int[] for d in 0:Dc]
   reffe          = LagrangianRefFE(Float64,first(get_polytopes(model)),1)
   rrules         = RefinementRule(reffe,cell_partition)
   glue = AdaptivityGlue(faces_map,fcell_to_child_id,rrules)

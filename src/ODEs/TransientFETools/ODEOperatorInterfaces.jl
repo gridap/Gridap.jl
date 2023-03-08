@@ -26,12 +26,15 @@ end
 
 function allocate_cache(op::ODEOpFromFEOp,v::AbstractVector)
   ode_cache = allocate_cache(op)
-  (v, ode_cache)
+  _v = similar(v)
+  (_v, ode_cache)
 end
 
 function allocate_cache(op::ODEOpFromFEOp,v::AbstractVector,a::AbstractVector)
   ode_cache = allocate_cache(op)
-  (v,a, ode_cache)
+  _v = similar(v)
+  _a = similar(a)
+  (_v,_a, ode_cache)
 end
 
 function update_cache!(ode_cache,op::ODEOpFromFEOp,t::Real)

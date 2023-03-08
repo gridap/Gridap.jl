@@ -7,12 +7,12 @@ struct MixedGlue <: AdaptivityGlueType end
 Adaptivity glue between two nested triangulations:
 
 - `n2o_faces_map`       : Given a new face gid, returns 
-                              A) if fine, the gid of the old face containing it.
-                              B) if coarse, the gids of its children (in child order)
+        A) if fine, the gid of the old face containing it.
+        B) if coarse, the gids of its children (in child order)
 - `n2o_cell_to_child_id`: Given a new cell gid, returns 
-                              A) if fine, the local child id within the (old) coarse cell containing it.
-                              B) if coarse, -1
-- `refinement_rules`    : RefinementRule used for each new cell.
+        A) if fine, the local child id within the (old) coarse cell containing it.
+        B) if coarse, -1
+- `refinement_rules`    : RefinementRule used for each coarse cell.
 """
 struct AdaptivityGlue{GT,Dc,A,B,C,D,E} <: GridapType
   n2o_faces_map        :: A
@@ -40,8 +40,8 @@ struct AdaptivityGlue{GT,Dc,A,B,C,D,E} <: GridapType
 end
 
 function AdaptivityGlue(n2o_faces_map,n2o_cell_to_child_id,refinement_rule::RefinementRule)
-  n_new  = length(n2o_faces_map[end])
-  rrules = Fill(refinement_rule,n_new)
+  n_old  = maximum(n2o_faces_map[end])
+  rrules = Fill(refinement_rule,n_old)
   return AdaptivityGlue(n2o_faces_map,n2o_cell_to_child_id,rrules)
 end
 
@@ -52,7 +52,8 @@ select_refined_cells(n2o_cell_map::Table) = map(x -> length(x) == 1, n2o_cell_ma
 For each fine cell, returns Φ st. x_coarse = ϕ(x_fine)
 """
 function get_n2o_reference_coordinate_map(g::AdaptivityGlue{RefinementGlue})
-  cell_maps = lazy_map(Geometry.get_cell_map,g.refinement_rules)
+  rrules    = get_new_cell_refinement_rules(g)
+  cell_maps = lazy_map(Geometry.get_cell_map,rrules)
   return lazy_map(getindex,cell_maps,g.n2o_cell_to_child_id)
 end
 
@@ -95,13 +96,13 @@ function get_o2n_faces_map(ncell_to_ocell::Vector{T}) where {T<:Integer}
 end
 
 function get_new_cell_refinement_rules(g::AdaptivityGlue)
-  return g.refinement_rules
+  old_rrules = g.refinement_rules
+  n2o_faces_map = g.n2o_faces_map[end]
+  return lazy_map(Reindex(old_rrules),n2o_faces_map)
 end
 
 function get_old_cell_refinement_rules(g::AdaptivityGlue)
-  n2o_rrules = g.refinement_rules
-  ocell_to_ncells = g.o2n_faces_map
-  return lazy_map(cells->n2o_rrules[first(cells)],ocell_to_ncells)
+  return g.refinement_rules
 end
 
 # Data re-indexing

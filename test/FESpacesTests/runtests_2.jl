@@ -26,4 +26,6 @@ using Test
 
 @testset "DiscreteModelWithFEMapsTests" begin include("DiscreteModelWithFEMapsTests.jl") end
 
+@testset "ConstantFESpaceTests" begin include("ConstantFESpaceTests.jl") end
+
 end # module

@@ -1,11 +1,13 @@
-module EdgeBasedRefinementTests
+module CartesianRefinementTests
 
 using Test
 using Gridap
+using Gridap.Algebra
 using Gridap.Geometry
 using Gridap.CellData
 using Gridap.Adaptivity
 using Gridap.ReferenceFEs
+using Gridap.FESpaces
 using FillArrays
 
 function l2_error(u1,u2,dΩ)
@@ -13,7 +15,7 @@ function l2_error(u1,u2,dΩ)
   return sum(∫(eh⋅eh)*dΩ)
 end
 
-function test_grid_transfers(D,parent,model,order)
+function test_grid_transfers(D,model,parent,order)
   sol(x) = sum(x)
   qorder = 2*order+1
 
@@ -102,48 +104,16 @@ function test_grid_transfers(D,parent,model,order)
   @test l2_error(uh_c,uh_c_pr,dΩ_c) < 1.e-8
 end
 
-visualize = false
+for D = 1:3
+  order  = 1
+  domain = Tuple(repeat([0,1],D))
 
-# Refining meshes of QUADs
-cart_model = CartesianDiscreteModel((0,1,0,1),(4,4))
-model1     = UnstructuredDiscreteModel(cart_model)
-
-## Homogeneous refinement
-ref_model1 = refine(model1)
-trian1 = Triangulation(ref_model1.model)
-visualize && writevtk(trian1,"test/AdaptivityTests/ref_model1")
-test_grid_transfers(2,model1,ref_model1,1)
-
-## Propagate to all-red
-ref_model2 = refine(model1;cells_to_refine=[1,6,11,16])
-trian2 = Triangulation(ref_model2.model)
-visualize && writevtk(trian2,"test/AdaptivityTests/ref_model2")
-test_grid_transfers(2,model1,ref_model2,1)
-
-## Red-Green refinement
-ref_model3 = refine(model1;cells_to_refine=[1,6,16])
-trian3 = Triangulation(ref_model3.model)
-visualize && writevtk(trian3,"test/AdaptivityTests/ref_model3")
-#test_grid_transfers(2,model1,ref_model3,1)
-
-ref_model4 = refine(model1;cells_to_refine=[6,7,10,11])
-trian4 = Triangulation(ref_model4.model)
-visualize && writevtk(trian4,"test/AdaptivityTests/ref_model4")
-#test_grid_transfers(2,model1,ref_model4,1)
-
-# Refining meshes of TRIans
-model2 = simplexify(model1)
-visualize && writevtk(Triangulation(model2),"test/AdaptivityTests/base_model2")
-
-ref_model5 = refine(model2)
-trian5 = Triangulation(ref_model5.model)
-visualize && writevtk(trian5,"test/AdaptivityTests/ref_model5")
-test_grid_transfers(2,model2,ref_model5,1)
-
-ref_model6 = refine(model2;cells_to_refine=[1,6,16])
-trian6 = Triangulation(ref_model6.model)
-visualize && writevtk(trian6,"test/AdaptivityTests/ref_model6")
-test_grid_transfers(2,model2,ref_model6,1)
-
+  cart_model = CartesianDiscreteModel(domain,Tuple(fill(4,D)))
+  model1 = refine(cart_model,2)
+  model2 = refine(model1,2)
+  
+  test_grid_transfers(D,model1,cart_model,order)
+  test_grid_transfers(D,model2,model1,order)
+end
 
 end

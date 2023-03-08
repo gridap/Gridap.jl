@@ -3,12 +3,15 @@ module AdaptivityTests
 using Test
 
 @testset "AdaptedGeometry" begin
+  include("RefinementRulesTests.jl")
   include("AdaptedGeometryTests.jl")
-  include("EdgeBasedRefinementTests.jl")
 end
 
-@testset "GridTransfer" begin
-  include("GridTransferTests.jl")
+@testset "Refinement" begin
+  include("CartesianRefinementTests.jl")
+  include("ComplexChangeDomainTests.jl")
+  include("EdgeBasedRefinementTests.jl")
+  include("FineToCoarseFieldsTests.jl")
 end
 
 @testset "CompositeQuadratures" begin
@@ -16,7 +19,7 @@ end
 end
 
 @testset "MultiFields" begin
-  include("MultifieldGridTransferTests.jl")
+  include("MultifieldRefinementTests.jl")
 end
 
 end # module

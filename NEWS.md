@@ -4,16 +4,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.17.16] - 2022-12-22 
+## [0.17.17] - 2023-02-24
 
 ### Added
 - Implemented `RefinementRule` and `AdaptivityGlue`, which encode the mapping between the old and new cells in an adapted model. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
 - Implemented `AdaptedDiscreteModel` and `AdaptedTriangulation`, representing respectively a model and triangulation produced by adapting a parent model. This types mostly wrap around `DiscreteModel` and `Triangulation`, with some added features necessary to keep track of the adaptive hierarchy. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
-- Implemented tools to be able to transfer `CellDatum`s back and forth between parent and child grids. These include changes to `change_domain` and a new type of `CompositeMeasure` which allows the integration `Triangulation` to be different from the `Triangulation` of the resulting `DomainContribution`. To accomodate `CompositeMeasure`, `Measure` has been made abstract type and a `GenericMeasure` has been created to replace the old type. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
+- Implemented tools to be able to transfer `CellDatum`s back and forth between parent and child grids. These include changes to `change_domain` (which now takes the source `Triangulation` as argument) and a new type of `Measure` called `CompositeMeasure`, which allows the integration `Triangulation` to be different from the `Triangulation` of the resulting `DomainContribution`. To accomodate `CompositeMeasure`, `Measure` has been made abstract type and a `GenericMeasure` has been created to replace the old type. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
+- For the fine-to-coarse transfer of `CellField`s, the new `FineToCoarseField` has been implemented. This new structure bundles several fields defined on the fine mesh to create a single field on the coarse mesh. To enable fast interpolation of this type of field, we have also implemented `FineToCoarseReferenceFE` and `FineToCoarseDofBasis`. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
 - Implemented `CompositeQuadrature`, a quadrature for a cell that has been refined using a `RefinementRule`. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
+- Implemented simple refinement strategies for Cartesian discrete models in 2&3D as well as Unstructured discrete models in 2D. The latter is implemented by red-green refinement. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
+- Added optimization when calling `unique` for a `CompressedArray`. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
+- Added support for changing domain between adapted triangulations in cases where the target triangulation is a view, a `BoundaryTriangulation` or a `SkeletonTriangulation`. Since PR [#868](https://github.com/gridap/Gridap.jl/pull/868).
 
 ### Fixed
+- Using broadcasting through in `ODESolver` vector operations. Since PR [#860](https://github.com/gridap/Gridap.jl/pull/860)
 - Fixes to `array_cache(a::Table)`: Now does not use the `zero(T,N)` function, but instead creates new empty vector using the general allocator `Vector{T}(undef,N)`. This allows `Table` to work with complex composite types which don't have an easy `zero(T)` function defined. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
+- Added `get_metadata` to all the instances of `ReferenceFE`. This makes the abstract type more consistent, which is necessary for the new type `FineToCoarseReferenceFE`. Since PR [#838](https://github.com/gridap/Gridap.jl/pull/838).
+- `ConstantFESpace` is now properly exported. Since PR [#872](https://github.com/gridap/Gridap.jl/pull/872).
+
+## [0.17.16] - 2022-12-22 
+
+### Fixed
 - Fixed a bug in function `collect_cell_matrix_and_vector`. Since PR [#849](https://github.com/gridap/Gridap.jl/pull/849)
 
 ## [0.17.15] - 2022-11-10 
@@ -46,7 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.17.13] - 2022-05-31
 
 ### Added
-- `KeyToValMap` lazy map that dinamically creates a `Dict` with the outputs of a function over an array of inputs. Since PR [#801](https://github.com/gridap/Gridap.jl/pull/801)
+- `KeyToValMap` lazy map that dynamically creates a `Dict` with the outputs of a function over an array of inputs. Since PR [#801](https://github.com/gridap/Gridap.jl/pull/801)
 - `MappedDiscreteModel` and `MappedGrid`, which are geometrical models with one extra geo map in the physical space. Since PR [#801](https://github.com/gridap/Gridap.jl/pull/801)
 - `GridWithFEMap`, which has a geometrical map defined by a FE function. Since PR [#801](https://github.com/gridap/Gridap.jl/pull/801)
 - Vertex bisection algorithm for refinement of triangular meshes in 2D. Since PR [#733](https://github.com/gridap/Gridap.jl/pull/733)
@@ -135,7 +146,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Laplacian `Δ` operator on unstructured linear grids for quantities defined in the reference space (i.e. shape funcitons in standard FEM). Since PR [#691](https://github.com/gridap/Gridap.jl/pull/691).
+- Laplacian `Δ` operator on unstructured linear grids for quantities defined in the reference space (i.e. shape functions in standard FEM). Since PR [#691](https://github.com/gridap/Gridap.jl/pull/691).
 - Laplacian `Δ` operator on triangulations using `GridView` (e.g., when interpolating functions in a sub-domain or on the boundary). Since PR [#691](https://github.com/gridap/Gridap.jl/pull/691).
 - Fixed typo in , function `solve! of `LinearSolvers.jl`. Since PR [#692](https://github.com/gridap/Gridap.jl/pull/692).
 
@@ -271,7 +282,7 @@ This version is a major (backwards-incompatible) refactoring of the project whic
 - Added additional tensor operations and new double contraction notation `⋅²`. Implemented a `zero` constructor for `ThirdOrderTensorValues` to allow integration of 3-tensors. Since PR [#415](https://github.com/gridap/Gridap.jl/pull/415/).
 
 ### Fixed
- - Bug-fix for 32-bit Julia: Replace all occurences of Int64 by Int. Since PR [#445](https://github.com/gridap/Gridap.jl/pull/445).
+ - Bug-fix for 32-bit Julia: Replace all occurrences of Int64 by Int. Since PR [#445](https://github.com/gridap/Gridap.jl/pull/445).
  - Bug-fix for 32-bit Julia. Using inttype=Int keyword argument for JSON parsing. Since PR [#456](https://github.com/gridap/Gridap.jl/pull/456).
 
 ## [0.14.1] - 2020-09-17
@@ -419,7 +430,7 @@ This version is a major (backwards-incompatible) refactoring of the project whic
     - The operator `*` is not allowed for expressing the dot product anymore. Use `LinearAlgebra.dot`
   function aka `⋅` (\cdot).
     - The syntax `∇*u` is not allowed anymore.  Use `∇⋅u` instead.
-    - Gridap re-exports `dot`, `⋅`, and other names from LinearAlbegra that are used
+    - Gridap re-exports `dot`, `⋅`, and other names from LinearAlgebra that are used
   often in Gridap code.
     - Function `n_components` is renamed to `num_components`.
   - The `SingleFieldFESpace` interface has changed. The function `gather_free_and_dirichlet_values!`
@@ -561,7 +572,7 @@ This version is a major refactoring of the project which is not summarized here 
 ### Added
 - New `GenericRefFE`. Since commit [876ef1e](https://github.com/gridap/Gridap.jl/commit/c3c9010177432b8f07aaecf4a0baa4b93876ef1e)
 - New `NedelecRefFE` constructor that generates Nedelec FEs of arbitrary order in 2D and 3D on hex. Since commit [876ef1e](https://github.com/gridap/Gridap.jl/commit/c3c9010177432b8f07aaecf4a0baa4b93876ef1e)
-- New keyword argument `map` in the constructor of `CartesianModel`, which allows one to transform the original domain, by defaut [0,1]^d to a new domain through a homeomorphic map. Since commit [30cc4bc](https://github.com/gridap/Gridap.jl/commit/1c51b18f7e21c4915c0b379585dc5d98130cc4bc)
+- New keyword argument `map` in the constructor of `CartesianModel`, which allows one to transform the original domain, by default [0,1]^d to a new domain through a homeomorphic map. Since commit [30cc4bc](https://github.com/gridap/Gridap.jl/commit/1c51b18f7e21c4915c0b379585dc5d98130cc4bc)
 - New keyword argument `map` in the constructor of `CartesianGrid` and a new `map` attribute in this structure, since commit [30cc4bc](https://github.com/gridap/Gridap.jl/commit/1c51b18f7e21c4915c0b379585dc5d98130cc4bc)
 - `CartesianGridPoints` has new attribute `map` since commit [30cc4bc](https://github.com/gridap/Gridap.jl/commit/1c51b18f7e21c4915c0b379585dc5d98130cc4bc)
 - Added [`SparseMatricesCSR`](https://github.com/gridap/SparseMatricesCSR.jl) support to `SparseMatrixAssembler` and `MultiSparseMatrixAssembler` in [PR #118](https://github.com/gridap/Gridap.jl/pull/118#).
@@ -591,13 +602,13 @@ This version is a major refactoring of the project which is not summarized here 
 - Added the corresponding DOF basis for Raviart-Thomas reference FEs for interpolation of fields [60b9021](https://github.com/gridap/Gridap.jl/commit/60b9021b6d4b5e66a9ec4fe2067aa8278f8ccb52)
 - Added an arbitrary order div-conforming Raviart-Thomas reference FE of arbitrary order on quads in commit
 [60b9021](https://github.com/gridap/Gridap.jl/commit/60b9021b6d4b5e66a9ec4fe2067aa8278f8ccb52)
-- Now, the `tags` argument is optional when constucting `SkeletonTriangulation` and `BoundaryTriangulation` objects from a `DiscreteModel`. Since commit [e6424a3](https://github.com/gridap/Gridap.jl/commit/e6424a304feb38547241e86de07a821e26344a7e).
+- Now, the `tags` argument is optional when constructing `SkeletonTriangulation` and `BoundaryTriangulation` objects from a `DiscreteModel`. Since commit [e6424a3](https://github.com/gridap/Gridap.jl/commit/e6424a304feb38547241e86de07a821e26344a7e).
 - Added `mean` operator for quantities restricted to a `SkeletonTriangulation`. Since commit [83798b4](https://github.com/gridap/Gridap.jl/commit/83798b4f38aaf482b968ffd0359eb75c79a21385).
 - Extended `NormalVector` to `SkeletonTriangulations`. Since commit [5fb8487](https://github.com/gridap/Gridap.jl/commit/5fb84871128c4388559cc5052d9ff00f0be19462).
 - Now, `TrialFESpaces` can be constructed from values instead of functions if the corresponding Dirichlet conditions are constant. Since commit [bae237e](https://github.com/gridap/Gridap.jl/commit/bae237e881db6569622f3559f82bcc3999560526).
 - Added the possibility of adding new tags to a `FaceLabels` object via the function `add_tag_from_tags!` and using it to construct FE spaces. Since commit [e9dfac4](https://github.com/gridap/Gridap.jl/commit/e9dfac4489047c0b7e1c62507f4335e9fc76dfd8).
 - Added `BackslashSolver` to facilitate the usage in Gridap of the build-in Julia backslash linear solver. Since commit [8e3a9b7](https://github.com/gridap/Gridap.jl/commit/8e3a9b71c64b032c5a572a7ef696f4cbf875190b).
-- Added `NLSolver` to facilitat the usage in Gridap of the non-linear solvers available in the official Julia package `NLsolve`. Introduced in commit [e5a933f](https://github.com/gridap/Gridap.jl/commit/e5a933f3093faea221a50bdd796d7f02113ed52c) as `JuliaNLSolver`. Renamed to `NLSolver` in  PR [#108](https://github.com/gridap/Gridap.jl/pull/108).
+- Added `NLSolver` to facilitate the usage in Gridap of the non-linear solvers available in the official Julia package `NLsolve`. Introduced in commit [e5a933f](https://github.com/gridap/Gridap.jl/commit/e5a933f3093faea221a50bdd796d7f02113ed52c) as `JuliaNLSolver`. Renamed to `NLSolver` in  PR [#108](https://github.com/gridap/Gridap.jl/pull/108).
 
 ### Changed
 - The Signature of `solve!` for `NumericalSetup` objects. The argument for the system matrix has been removed. The information about the matrix is already in the `NumericalSetup` object. Since commit  [ac212d3](https://github.com/gridap/Gridap.jl/commit/ac212d30205700a919a37f9abf9dac6cbde03e38).
@@ -621,7 +632,7 @@ This version is a major refactoring of the project which is not summarized here 
 - Now the built-in simplicial grids are oriented. Since commit [cbefe9b](https://github.com/gridap/Gridap.jl/commit/cbefe9bbea83d00e7f6ccbef50396ddc7dc49b80).
 - Added binary operations between `FEFuntion` and `Number`, and `FEBasis` and `Number`.  Since PR [#88](https://github.com/gridap/Gridap.jl/pull/88).
 - Added `PDiscRefFE`, `DiscFESpace`, and `ConstrainedFESpace`. Since PR [#88](https://github.com/gridap/Gridap.jl/pull/88).
-- Now its possible to pass a `CellNumer` or an `Array` of numbers into a constitutive law. Usefull to identify which is the material of the current Gauss point in multi-material problems. Since commit [62cb2c3](https://github.com/gridap/Gridap.jl/commit/62cb2c354e2a09c556324a4fe9861329989299f4).
+- Now its possible to pass a `CellNumer` or an `Array` of numbers into a constitutive law. Useful to identify which is the material of the current Gauss point in multi-material problems. Since commit [62cb2c3](https://github.com/gridap/Gridap.jl/commit/62cb2c354e2a09c556324a4fe9861329989299f4).
 - `LinearFESolver` is now optional for solving a `LinearFEOperator`. Since commit [5c1caa8](https://github.com/gridap/Gridap.jl/commit/5c1caa8c92b260db72f5902e778ec5c0eb88728b).
 - `Assembler` is now optional to build `FEOperator` objects. Since commit [b1bf517](https://github.com/gridap/Gridap.jl/commit/b1bf5172955b940f6b3c9d027bd4a839c6486199).
 - Binary operations between `Function` and `FEFunction`. Since commit [a7f22f5](https://github.com/gridap/Gridap.jl/commit/a7f22f5ac1f45d9e8f53906472257aa582726e87).
@@ -645,8 +656,8 @@ This version is a major refactoring of the project which is not summarized here 
 ## [0.3.0] - 2019-08-06
 ### Added
 - `CurlGradMonomialBasis` spanning the polynomial space needed for RT elements on n-cubes.
-- `CLagrangianFESpace` and `DLagrangianFESpace` types providing an efficient implementation for continuous and discontinuous Lagrangian FE spaces respectivelly. In contrast to `ConfirmingFESpace`, the new types allow to select which are the components that are actually prescribed on the Dirichlet boundary. Since PR [#64](https://github.com/gridap/Gridap.jl/pull/64).
-- `simplexify` funciton to convert `Grid` and `DiscreteModel` objects made of n-cubes to the corresponding counterparts made of n-simplices. Since PR [#62](https://github.com/gridap/Gridap.jl/pull/62).
+- `CLagrangianFESpace` and `DLagrangianFESpace` types providing an efficient implementation for continuous and discontinuous Lagrangian FE spaces respectively. In contrast to `ConfirmingFESpace`, the new types allow to select which are the components that are actually prescribed on the Dirichlet boundary. Since PR [#64](https://github.com/gridap/Gridap.jl/pull/64).
+- `simplexify` function to convert `Grid` and `DiscreteModel` objects made of n-cubes to the corresponding counterparts made of n-simplices. Since PR [#62](https://github.com/gridap/Gridap.jl/pull/62).
 - Duffy transformation based integration for n-simplices of arbitrary dimension. Since PR [#61](https://github.com/gridap/Gridap.jl/pull/61).
 - `NormalVector` to construct the outward normal vector to a given `BoundaryTriangulation`. Since PR [#60](https://github.com/gridap/Gridap.jl/pull/60).
 - Support for tensor-valued FE computations. Since PR [#57](https://github.com/gridap/Gridap.jl/pull/57).
