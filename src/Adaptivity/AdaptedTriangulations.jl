@@ -58,6 +58,10 @@ function Geometry.get_glue(t::AdaptedTriangulation,::Val{d}) where d
   get_glue(t.trian,Val(d))
 end
 
+function Geometry.get_facet_normal(trian::AdaptedTriangulation)
+  get_facet_normal(trian.trian)
+end
+
 function Base.view(t::AdaptedTriangulation,ids::AbstractArray)
   v = view(t.trian,ids)
   return AdaptedTriangulation(v,t.adapted_model)
