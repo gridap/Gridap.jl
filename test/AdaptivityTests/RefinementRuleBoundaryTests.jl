@@ -6,6 +6,12 @@ using Gridap.Adaptivity
 using Gridap.Geometry
 using Gridap.ReferenceFEs
 
+function _get_terms(poly::Polytope,orders)
+  _nodes, facenodes = Gridap.ReferenceFEs._compute_nodes(poly,orders)
+  terms = Gridap.ReferenceFEs._coords_to_terms(_nodes,orders)
+  return terms
+end
+
 poly = QUAD
 rr = RefinementRule(QUAD,(2,2))
 
@@ -49,6 +55,25 @@ for cE in 1:4 # For each coarse edge
   fine_dofs   = c2f_edge_to_fine_dof[cE]
   println(coarse_dofs, " <==> ",fine_dofs)
 end
+
+coarse_terms = _get_terms(SEGMENT,[4])
+fine_terms = _get_terms(SEGMENT,[2])
+
+coarse_dofs_above_fine_dofs = copy(c2f_edge_to_fine_dof)
+for cE in 1:4
+  coarse_dofs = c_edge_to_coarse_dof[cE]
+  fine_dofs   = coarse_dofs_above_fine_dofs[cE]
+
+  reordered_coarse_dofs = copy(coarse_dofs)
+  reordered_coarse_dofs[coarse_terms] = coarse_dofs
+  println(coarse_dofs)
+  println(reordered_coarse_dofs)
+  println(repeat('-',30))
+
+  fine_dofs[1][fine_terms] = reordered_coarse_dofs[1:3]
+  fine_dofs[2][fine_terms] = reordered_coarse_dofs[3:5]
+end
+
 
 
 end
