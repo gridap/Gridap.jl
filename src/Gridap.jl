@@ -56,6 +56,8 @@ include("MultiField/MultiField.jl")
 
 include("ODEs/ODEs.jl")
 
+include("Adaptivity/Adaptivity.jl")
+
 include("Exports.jl")
 
 end # module

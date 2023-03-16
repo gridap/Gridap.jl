@@ -173,6 +173,7 @@ using Gridap.CellData: ∫; export ∫
 @publish FESpaces FESolver
 @publish FESpaces SparseMatrixAssembler
 @publish FESpaces FiniteElements
+@publish FESpaces ConstantFESpace
 
 @publish MultiField MultiFieldFESpace
 @publish MultiField num_fields

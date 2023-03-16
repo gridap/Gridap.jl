@@ -505,3 +505,5 @@ Conformity(reffe::GenericRefFE) = reffe.conformity
 get_face_dofs(reffe::GenericRefFE) = reffe.face_dofs
 
 get_shapefuns(reffe::GenericRefFE) = reffe.shapefuns
+
+get_metadata(reffe::GenericRefFE) = reffe.metadata
