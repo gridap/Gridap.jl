@@ -31,7 +31,7 @@ function add_contribution!(a::DomainContribution,trian::Triangulation,b::Abstrac
     You are trying to add a contribution with eltype $(S).
     Only cell-wise matrices, vectors, or numbers are accepted.
 
-    Make sure that you are defining the terms in your weak form correclty.
+    Make sure that you are defining the terms in your weak form correctly.
     """
   end
 
@@ -42,21 +42,21 @@ function add_contribution!(a::DomainContribution,trian::Triangulation,b::Abstrac
       You are trying to add a contribution with eltype $(S) to a DomainContribution that
       stores cell-wise matrices.
 
-      Make sure that you are defining the terms in your weak form correclty.
+      Make sure that you are defining the terms in your weak form correctly.
       """
     elseif T <: AbstractVector || S<:(ArrayBlock{A,1} where A)
       @assert S<:AbstractVector || S<:(ArrayBlock{A,1} where A) """\n
       You are trying to add a contribution with eltype $(S) to a DomainContribution that
       stores cell-wise vectors.
 
-      Make sure that you are defining the terms in your weak form correclty.
+      Make sure that you are defining the terms in your weak form correctly.
       """
     elseif T <: Number
       @assert S<:Number """\n
       You are trying to add a contribution with eltype $(S) to a DomainContribution that
       stores cell-wise numbers.
 
-      Make sure that you are defining the terms in your weak form correclty.
+      Make sure that you are defining the terms in your weak form correctly.
       """
     end
   end
@@ -113,19 +113,19 @@ function get_array(a::DomainContribution)
   a.dict[first(keys(a.dict))]
 end
 
-struct Measure <: GridapType
-  quad::CellQuadrature
-end
-
-get_cell_points(a::Measure) = get_cell_points(a.quad)
-
-Measure(args...;kwargs...) = Measure(CellQuadrature(args...;kwargs...))
+abstract type Measure <: GridapType end
 
 function integrate(f,b::Measure)
-  c = integrate(f,b.quad)
-  cont = DomainContribution()
-  add_contribution!(cont,b.quad.trian,c)
-  cont
+  @abstractmethod
+end
+
+function get_cell_quadrature(b::Measure)
+  @abstractmethod
+end
+
+function get_cell_points(a::Measure)
+  quad = get_cell_quadrature(a)
+  return get_cell_points(quad)
 end
 
 function (*)(a::Integrand,b::Measure)
@@ -133,3 +133,57 @@ function (*)(a::Integrand,b::Measure)
 end
 
 (*)(b::Measure,a::Integrand) = a*b
+
+struct GenericMeasure <: Measure
+  quad::CellQuadrature
+end
+
+Measure(q::CellQuadrature) = GenericMeasure(q)
+
+Measure(args...;kwargs...) = GenericMeasure(CellQuadrature(args...;kwargs...))
+
+get_cell_quadrature(a::GenericMeasure) = a.quad
+
+function integrate(f,b::GenericMeasure)
+  c = integrate(f,b.quad)
+  cont = DomainContribution()
+  add_contribution!(cont,b.quad.trian,c)
+  cont
+end
+
+"""
+  Composite Measure
+
+  Measure such that the integration and target triangulations are different. 
+
+  - ttrian: Target triangulation, where the domain contribution lives.
+  - itrian: Integration triangulation, where the integration takes place.
+  - quad  : CellQuadrature, defined in itrian
+"""
+struct CompositeMeasure{A<:Triangulation,B<:Triangulation,C<:CellQuadrature} <: Measure
+  ttrian :: A
+  itrian :: B
+  quad   :: C
+end
+
+function Measure(ttrian::Triangulation,itrian::Triangulation,q::CellQuadrature)
+  @check get_triangulation(q) === itrian
+  return CompositeMeasure(ttrian,itrian,q)
+end
+
+Measure(ttrian::Triangulation,itrian::Triangulation,args...;kwargs...) = CompositeMeasure(ttrian,itrian,args...;kwargs...)
+
+function CompositeMeasure(ttrian::Triangulation,itrian::Triangulation,args...;kwargs...)
+  quad = CellQuadrature(itrian,args...;kwargs...)
+  return CompositeMeasure(ttrian,itrian,quad)
+end
+
+get_cell_quadrature(a::CompositeMeasure) = a.quad
+
+function integrate(f,b::CompositeMeasure)
+  ic   = integrate(f,b.quad)
+  cont = DomainContribution()
+  tc   = move_contributions(ic,b.itrian,b.ttrian)
+  add_contribution!(cont,b.ttrian,tc)
+  return cont
+end

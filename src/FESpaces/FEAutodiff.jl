@@ -110,7 +110,7 @@ end
 - Following are the constructs for performing gradient of DomainContribution
   involving integrations over SkeletonTriangulation (Λ)
 - The current approach followed to achieve the above is performing the Gridap
-  way of AD for plus and minus sides of the FEFunction occuring at Λ separately,
+  way of AD for plus and minus sides of the FEFunction occurring at Λ separately,
   and combining the result. So as to Dualize only either plus side or minus
   side of CellField/FEFunction we introduce the SkeletonCellFieldPair, which
   stores two CellFields, one of which in the use case here is the dualized
