@@ -4,10 +4,20 @@ function solve_step!(uf::AbstractVector,
                      u0::AbstractVector,
                      t0::Real,
                      cache) # -> (uF,tF)
+  println("here not const")
 
   dt = solver.dt
-  solver.θ == 0.0 ? dtθ = dt : dtθ = dt*solver.θ
-  tθ = t0+dtθ
+  if typeof(solver.θ) <: AbstractVector
+    θ, θ_vec, dtθ, dtθ_vec = solver.θ
+  else
+    solver.θ == 0.0 ? dtθ = dt : dtθ = dt*solver.θ
+    θ = solver.θ
+    θ_vec = θ
+    dtθ_vec = dtθ
+  end
+
+  tθ = t0 .+ dtθ
+ 
 
   if cache === nothing
     ode_cache = allocate_cache(op)
@@ -28,8 +38,8 @@ function solve_step!(uf::AbstractVector,
   l_cache = solve!(uf,solver.nls,afop,l_cache,newmatrix)
 
   uf = uf + u0
-  if 0.0 < solver.θ < 1.0
-    uf = uf*(1.0/solver.θ)-u0*((1-solver.θ)/solver.θ)
+  if 0.0 < θ[1] < 1.0
+    @. uf = uf * (1.0 /θ_vec) - u0 * ((1 -θ_vec) /θ_vec)
   end
 
   cache = (ode_cache, vθ, A, b, l_cache)
@@ -45,7 +55,7 @@ function solve_step!(uf::AbstractVector,
                      u0::AbstractVector,
                      t0::Real,
                      cache) # -> (uF,tF)
-
+println("here const")
   dt = solver.dt
   solver.θ == 0.0 ? dtθ = dt : dtθ = dt*solver.θ
   tθ = t0+dtθ
@@ -107,7 +117,7 @@ end
 function _matrix!(A,odeop,tθ,dtθ,u0,ode_cache,vθ)
   z = zero(eltype(A))
   fillstored!(A,z)
-  jacobians!(A,odeop,tθ,(vθ,vθ),(1.0,1/dtθ),ode_cache)
+  jacobians!(A,odeop,tθ,(vθ,vθ),(1.0,1/minimum(dtθ)),ode_cache)
 end
 
 function _mass_matrix!(A,odeop,tθ,dtθ,u0,ode_cache,vθ)
