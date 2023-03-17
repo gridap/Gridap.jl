@@ -163,8 +163,8 @@ end
 
 function evaluate(U::TransientMultiFieldTrialFESpace,t::AbstractVector)
   Ut = allocate_trial_space(U)
-  spaces_at_t = [evaluate!(Uti, Ui,ti) for (Uti, Ui,ti) in zip(Ut, U,t)]
-  MultiFieldFESpace(spaces_at_t)
+  evaluate!(Ut, U, t)
+  Ut
 end
 
 function evaluate(U::TransientMultiFieldTrialFESpace,t::Nothing)

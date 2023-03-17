@@ -54,7 +54,7 @@ function solve_step!(uf::AbstractVector,
   nl_cache = solve!(uf,solver.nls,nlop,nl_cache)
 
   if 0.0 < θ[1] < 1.0
-    @. uf = uf .* (1.0 ./θ_vec) .- u0 .* ((1 .-θ_vec) ./θ_vec)
+    @. uf = uf * (1.0 /θ_vec) - u0 * ((1 -θ_vec) /θ_vec)
   end
 
   cache = (ode_cache, vθ, nl_cache)
@@ -81,14 +81,14 @@ end
 function residual!(b::AbstractVector,op::ThetaMethodNonlinearOperator,x::AbstractVector)
   uθ = x
   vθ = op.vθ
-  @. vθ = (x-op.u0)./(op.dtθ)
+  @. vθ = (x-op.u0)/(op.dtθ)
   residual!(b,op.odeop,op.tθ,(uθ,vθ),op.ode_cache)
 end
 
 function jacobian!(A::AbstractMatrix,op::ThetaMethodNonlinearOperator,x::AbstractVector)
   uF = x
   vθ = op.vθ
-  @. vθ = (x-op.u0)./(op.dtθ)
+  @. vθ = (x-op.u0)/(op.dtθ)
   z = zero(eltype(A))
   fillstored!(A,z)
   jacobians!(A,op.odeop,op.tθ,(uF,vθ),(1.0, 1/minimum(op.dtθ)),op.ode_cache)
