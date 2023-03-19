@@ -117,31 +117,76 @@ function get_d_to_face_to_child_faces(::RefinementRule,::RefinementRuleType)
 end
 
 function _get_terms(poly::Polytope,orders)
-  _nodes, facenodes = Gridap.ReferenceFEs._compute_nodes(poly,orders)
-  terms = Gridap.ReferenceFEs._coords_to_terms(_nodes,orders)
+  _nodes, facenodes = ReferenceFEs._compute_nodes(poly,orders)
+  terms = ReferenceFEs._coords_to_terms(_nodes,orders)
   return terms
+end
+
+function _get_face_orders(p::Polytope{Dc},D::Int,orders::Tuple) where Dc
+  @check length(orders) == Dc
+  @check 1 <= D < Dc
+  @check is_n_cube(p)
+
+  if D == 1 # Edges (2D, 3D)
+    tangents = get_edge_tangent(p)
+    face_orders = map(tangents) do t
+      axis = findfirst(i -> abs(t[i]) > 0.5 ,1:Dc)
+      return [orders[axis]]
+    end
+  elseif D == Dc-1 # Faces (3D)
+    normals = get_facet_normal(p)
+    face_orders = map(normals) do n
+      mask = map(i -> abs(n[i]) < 1.e-3,1:Dc)
+      return [orders[mask]...]
+    end
+  else
+    @notimplemented
+  end
+
+  return face_orders
 end
 
 function coarse_nodes_above_fine_nodes(rr::RefinementRule{ExtrusionPolytope{Dc}},
                                        fine_orders::NTuple{Dc,<:Integer},
                                        D::Int) where Dc
-  poly = get_polytope(rr)
-  @notimplementedif D != Dc-1
-  @notimplementedif poly ∉ [QUAD]
-
-  model = get_ref_grid(rr)
-  topo  = get_grid_topology(model)
-  face_to_mask   = get_isboundary_face(topo,D)
-  boundary_faces = findall(face_to_mask)
-  face_grid = Grid(ReferenceFE{D-1},model)
-
+  poly  = get_polytope(rr)
   coarse_orders = 2 .* fine_orders
-  coarse_reffe = ReferenceFE(poly,lagrangian,Float64,fine_orders)
-  fine_reffe   = ReferenceFE(poly,lagrangian,Float64,coarse_orders)
+  coarse_reffe  = ReferenceFE(poly,lagrangian,Float64,coarse_orders)
+  coarse_face_polys = CompressedArray(ReferenceFEs._compute_reffaces_and_face_types(poly,Val(D))...)
+  c_edge_to_coarse_dof = coarse_reffe.face_nodes[get_dimranges(poly)[D+1]]
+  
+  model = get_ref_grid(rr)
+  fine_face_grid = Grid(ReferenceFE{D},model)
+  fine_face_polys = CompressedArray(map(get_polytope,get_reffes(fine_face_grid)),get_cell_type(fine_face_grid))
+  
+  d_to_face_to_child_faces = get_d_to_face_to_child_faces(rr)
+  face_to_child_faces = d_to_face_to_child_faces[D+1]
+  
+  coarse_face_orders = _get_face_orders(poly,D,coarse_orders)
+  fine_face_orders = _get_face_orders(poly,D,fine_orders)
+  
+  num_coarse_faces = num_faces(coarse_reffe,D)
+  coarse_dofs_above_fine_dofs = Vector{Vector{Vector{Int32}}}(undef,num_coarse_faces)
+  for cF in 1:num_coarse_faces
+    coarse_face_poly = coarse_face_polys[cF]
+    coarse_terms = _get_terms(coarse_face_poly,coarse_face_orders[cF])
+    coarse_dofs  = zeros(Int32,Tuple(maximum(coarse_terms)))
+    coarse_dofs[coarse_terms] .= c_edge_to_coarse_dof[cF]
+  
+    child_faces = face_to_child_faces[cF]
+    fine_dofs = Vector{Vector{Int32}}(undef,length(child_faces))
+    for (i,fF) in enumerate(child_faces)
+      fine_face_poly = fine_face_polys[fF]
+      fine_terms = _get_terms(fine_face_poly,fine_face_orders[cF])
+  
+      local_dof_range = map(o->(i-1)*o+1:i*o+1,fine_face_orders[cF])
+      local_coarse_dofs = view(coarse_dofs,local_dof_range...)
+      fine_dofs[i] = map(Reindex(local_coarse_dofs),fine_terms)
+    end
+    coarse_dofs_above_fine_dofs[cF] = fine_dofs
+  end
 
-  coarse_terms = _get_terms(SEGMENT,fine_orders)
-  fine_terms   = _get_terms(SEGMENT,coarse_orders)
-
+  return coarse_dofs_above_fine_dofs
 end
 
 

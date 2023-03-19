@@ -68,10 +68,10 @@ fine_face_orders = _get_face_orders(poly,D,fine_orders)
 num_coarse_faces = num_faces(coarse_reffe,D)
 coarse_dofs_above_fine_dofs = Vector{Vector{Vector{Int32}}}(undef,num_coarse_faces)
 for cF in 1:num_coarse_faces
-#cF = 1
   coarse_face_poly = coarse_face_polys[cF]
   coarse_terms = _get_terms(coarse_face_poly,coarse_face_orders[cF])
-  coarse_dofs = lazy_map(Reindex(c_edge_to_coarse_dof[cF]),coarse_terms)
+  coarse_dofs  = zeros(Int32,Tuple(maximum(coarse_terms)))
+  coarse_dofs[coarse_terms] .= c_edge_to_coarse_dof[cF]
 
   child_faces = face_to_child_faces[cF]
   fine_dofs = Vector{Vector{Int32}}(undef,length(child_faces))
@@ -86,5 +86,9 @@ for cF in 1:num_coarse_faces
   coarse_dofs_above_fine_dofs[cF] = fine_dofs
 end
 
+
+# Test the final function
+
+res = Adaptivity.coarse_nodes_above_fine_nodes(rr,(2,2),1)
 
 end
