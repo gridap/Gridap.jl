@@ -322,6 +322,20 @@ function _has_interior_point(rr::RefinementRule,::RedRefinement)
   return false
 end
 
+# [Face dimension][Coarse Face id] -> [Fine faces]
+function get_d_to_face_to_child_faces(rr::RefinementRule,::RedRefinement)
+  p = get_polytope(rr)
+  if p == QUAD
+    return [
+      [Int32[1],Int32[2],Int32[3],Int32[4]],           # [Coarse Node] -> [Fine Node]
+      [Int32[1,5],Int32[8,11],Int32[3,9],Int32[7,12]], # [Coarse Edge] -> [Fine Edge]
+      [Int32[1,2,3,4]]                                 # [Coarse Cell] -> [Fine Cells]
+    ]
+  else
+    @notimplemented
+  end
+end
+
 """
 Edge-based RefinementRule where a new vertex is added to 
 a single edge of the original Polytope.

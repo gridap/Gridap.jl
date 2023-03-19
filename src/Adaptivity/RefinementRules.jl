@@ -104,6 +104,47 @@ function bundle_points_by_subcell(rr::RefinementRule,x::AbstractArray{<:Point})
   return Table(data,ptrs)
 end
 
+
+# Faces to child faces, dof maps
+
+# [Face dimension][Coarse Face id] -> [Fine faces]
+function get_d_to_face_to_child_faces(rr::RefinementRule) 
+  get_d_to_face_to_child_faces(rr,RefinementRuleType(rr))
+end
+
+function get_d_to_face_to_child_faces(::RefinementRule,::RefinementRuleType)
+  @notimplemented
+end
+
+function _get_terms(poly::Polytope,orders)
+  _nodes, facenodes = Gridap.ReferenceFEs._compute_nodes(poly,orders)
+  terms = Gridap.ReferenceFEs._coords_to_terms(_nodes,orders)
+  return terms
+end
+
+function coarse_nodes_above_fine_nodes(rr::RefinementRule{ExtrusionPolytope{Dc}},
+                                       fine_orders::NTuple{Dc,<:Integer},
+                                       D::Int) where Dc
+  poly = get_polytope(rr)
+  @notimplementedif D != Dc-1
+  @notimplementedif poly ∉ [QUAD]
+
+  model = get_ref_grid(rr)
+  topo  = get_grid_topology(model)
+  face_to_mask   = get_isboundary_face(topo,D)
+  boundary_faces = findall(face_to_mask)
+  face_grid = Grid(ReferenceFE{D-1},model)
+
+  coarse_orders = 2 .* fine_orders
+  coarse_reffe = ReferenceFE(poly,lagrangian,Float64,fine_orders)
+  fine_reffe   = ReferenceFE(poly,lagrangian,Float64,coarse_orders)
+
+  coarse_terms = _get_terms(SEGMENT,fine_orders)
+  fine_terms   = _get_terms(SEGMENT,coarse_orders)
+
+end
+
+
 # GenericRefinement Rule
 
 function RefinementRule(reffe::LagrangianRefFE{D},nrefs::Integer;kwargs...) where D
