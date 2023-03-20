@@ -4,8 +4,6 @@ function solve_step!(uf::AbstractVector,
                      u0::AbstractVector,
                      t0::Real,
                      cache) # -> (uF,tF)
-  println("here not const")
-
   dt = solver.dt
   if typeof(solver.θ) <: AbstractVector
     θ, θ_vec, dtθ, dtθ_vec = solver.θ
@@ -55,7 +53,6 @@ function solve_step!(uf::AbstractVector,
                      u0::AbstractVector,
                      t0::Real,
                      cache) # -> (uF,tF)
-println("here const")
   dt = solver.dt
   solver.θ == 0.0 ? dtθ = dt : dtθ = dt*solver.θ
   tθ = t0+dtθ
