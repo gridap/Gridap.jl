@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   was using default, it's now using the spetialized implementation for the underlying triangulation type.
   Since PR [#884](https://github.com/gridap/Gridap.jl/pull/884).
 
+- Fixed `cell_dof_ids` for the case of vectorial `ConstantFESpace`. Since PR [#888](https://github.com/gridap/Gridap.jl/pull/888)
+
 ## [0.17.17] - 2023-02-24
 
 ### Added
