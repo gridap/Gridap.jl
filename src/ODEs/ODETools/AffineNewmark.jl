@@ -20,7 +20,7 @@ function solve_step!(
     (v,a, ode_cache) = newmark_cache
 
     # Allocate matrices and vectors
-    A, b = _allocate_matrix_and_vector(op,x0,ode_cache)
+    A, b = _allocate_matrix_and_vector(op,t0,x0,ode_cache)
 
     # Create affine operator cache
     affOp_cache = (A,b,nothing)
@@ -101,14 +101,14 @@ function jacobian!(A::AbstractMatrix,op::NewmarkAffineOperator,x::AbstractVector
   jacobians!(A,op.odeop,op.t1,(u1,v1,a1),(1.0,op.γ/(op.β*op.dt),1.0/(op.β*op.dt^2)),cache)
 end
 
-function _allocate_matrix(odeop::ODEOperator,x::Tuple{Vararg{AbstractVector}},ode_cache)
-  A = allocate_jacobian(odeop,x[1],ode_cache)
+function _allocate_matrix(odeop::ODEOperator,t0::Real,x::Tuple{Vararg{AbstractVector}},ode_cache)
+  A = allocate_jacobian(odeop,t0,x[1],ode_cache)
   return A
 end
 
-function _allocate_matrix_and_vector(odeop::ODEOperator,x::Tuple{Vararg{AbstractVector}},ode_cache)
-  b = allocate_residual(odeop,x[1],ode_cache)
-  A = allocate_jacobian(odeop,x[1],ode_cache)
+function _allocate_matrix_and_vector(odeop::ODEOperator,t0::Real,x::Tuple{Vararg{AbstractVector}},ode_cache)
+  b = allocate_residual(odeop,t0,x[1],ode_cache)
+  A = allocate_jacobian(odeop,t0,x[1],ode_cache)
   return A, b
 end
 
