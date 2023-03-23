@@ -1,4 +1,3 @@
-using Pkg; Pkg.activate(".")
 module ConstantFESpacesTests
 
 using Gridap
