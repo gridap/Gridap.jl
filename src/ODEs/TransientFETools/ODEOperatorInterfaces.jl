@@ -56,7 +56,7 @@ end
 function allocate_jacobian(op::ODEOpFromFEOp,t0::Real,uhF::AbstractVector,ode_cache)
   Us,Uts,fecache = ode_cache
   uh = EvaluationFunction(Us[1],uhF)
-  allocate_jacobian(op.feop,t0::Real,uh,fecache)
+  allocate_jacobian(op.feop,t0,uh,fecache)
 end
 
 """

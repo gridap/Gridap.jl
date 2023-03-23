@@ -65,6 +65,7 @@ end
 """
 function allocate_residual(
   op::ODEOperator,
+  t0::Real,
   u::Union{AbstractVector,Tuple{Vararg{AbstractVector}}},
   ode_cache)
   @abstractmethod
@@ -106,7 +107,7 @@ end
 
 """
 """
-function allocate_jacobian(op::ODEOperator,u::AbstractVector,ode_cache)
+function allocate_jacobian(op::ODEOperator,t0::Real,u::AbstractVector,ode_cache)
   @abstractmethod
 end
 

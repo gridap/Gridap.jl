@@ -137,9 +137,9 @@ Affine operator that represents the θ-method affine operator at a
 given time step, i.e., M(t)(u_n+θ-u_n)/dt + K(t)u_n+θ + b(t)
 """
 function ThetaMethodConstantOperator(odeop::ConstantODEOperator,tθ::Float64,dtθ::Float64,
-                                   u0::AbstractVector,ode_cache,vθ::AbstractVector)
-  b = allocate_residual(odeop,u0,ode_cache)
-  A = allocate_jacobian(odeop,u0,ode_cache)
+                                     u0::AbstractVector,ode_cache,vθ::AbstractVector)
+  b = allocate_residual(odeop,tθ,u0,ode_cache)
+  A = allocate_jacobian(odeop,tθ,u0,ode_cache)
   residual!(b,odeop,tθ,(u0,vθ),ode_cache)
   @. b = -1.0 * b
   z = zero(eltype(A))
