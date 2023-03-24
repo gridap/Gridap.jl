@@ -116,6 +116,17 @@ function get_d_to_face_to_child_faces(::RefinementRule,::RefinementRuleType)
   @notimplemented
 end
 
+# Returns (1,2) with 
+# 1 - [Face dimension][Fine Face id] -> [Parent Face]
+# 2 - [Face dimension][Fine Face id] -> [Parent Face Dimension]
+function get_d_to_face_to_parent_face(rr::RefinementRule)
+  get_d_to_face_to_parent_face(rr,RefinementRuleType(rr))
+end
+
+function get_d_to_face_to_parent_face(::RefinementRule,::RefinementRuleType)
+  @notimplemented
+end
+
 function _get_terms(poly::Polytope,orders)
   _nodes, facenodes = ReferenceFEs._compute_nodes(poly,orders)
   terms = ReferenceFEs._coords_to_terms(_nodes,orders)

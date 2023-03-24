@@ -331,9 +331,47 @@ function get_d_to_face_to_child_faces(rr::RefinementRule,::RedRefinement)
       [Int32[1,5],Int32[8,11],Int32[3,9],Int32[7,12]], # [Coarse Edge] -> [Fine Edge]
       [Int32[1,2,3,4]]                                 # [Coarse Cell] -> [Fine Cells]
     ]
+  elseif p == TRI
+    return [
+      [Int32[1],Int32[2],Int32[3]],       # [Coarse Node] -> [Fine Node]
+      [Int32[1,4],Int32[2,7],Int32[5,8]], # [Coarse Edge] -> [Fine Edge]
+      [Int32[1,2,3]]                      # [Coarse Cell] -> [Fine Cells]
+    ]
   else
     @notimplemented
   end
+end
+
+# 1 - [Face dimension][Fine Face id] -> [Parent Face]
+# 2 - [Face dimension][Fine Face id] -> [Parent Face Dimension]
+function get_d_to_face_to_parent_face(rr::RefinementRule,::RedRefinement)
+  p = get_polytope(rr)
+  if p == QUAD
+    parent_faces = [
+      Int32[1,2,3,4,1,2,3,4,1],       # [Fine node] -> [Coarse face]
+      Int32[1,1,3,1,1,1,4,2,3,1,2,4], # [Fine edge] -> [Coarse face]
+      Int32[1,1,1,1]                  # [Fine cell] -> [Coarse face]
+    ]
+    parent_dims  = [
+      Int32[0,0,0,0,1,1,1,1,2],       # [Fine node] -> [Coarse face dim]
+      Int32[1,2,1,2,1,2,1,1,1,2,1,1], # [Fine edge] -> [Coarse face dim]
+      Int32[2,2,2,2]                  # [Fine cell] -> [Coarse face dim]
+    ]
+  elseif p == TRI
+    parent_faces = [
+      Int32[1,2,3,1,2,3,1],           # [Fine node] -> [Coarse face]
+      Int32[1,2,1,1,3,1,2,3,1],       # [Fine edge] -> [Coarse face]
+      Int32[1,1,1,1]                  # [Fine cell] -> [Coarse face]
+    ]
+    parent_dims  = [
+      Int32[0,0,0,1,1,1,2],           # [Fine node] -> [Coarse face dim]
+      Int32[1,1,2,1,1,2,1,1,2],       # [Fine edge] -> [Coarse face dim]
+      Int32[2,2,2,2]                  # [Fine cell] -> [Coarse face dim]
+    ]
+  else
+    @notimplemented
+  end
+  return parent_faces, parent_dims
 end
 
 """
