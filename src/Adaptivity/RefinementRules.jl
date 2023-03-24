@@ -146,9 +146,9 @@ function _get_face_orders(p::Polytope{Dc},D::Int,orders::Tuple) where Dc
   return face_orders
 end
 
-function coarse_nodes_above_fine_nodes(rr::RefinementRule{ExtrusionPolytope{Dc}},
-                                       fine_orders::NTuple{Dc,<:Integer},
-                                       D::Int) where Dc
+function get_face_subface_ldof_to_cell_ldof(rr::RefinementRule{ExtrusionPolytope{Dc}},
+                                            fine_orders::NTuple{Dc,<:Integer},
+                                            D::Int) where Dc
   poly  = get_polytope(rr)
   coarse_orders = 2 .* fine_orders
   coarse_reffe  = ReferenceFE(poly,lagrangian,Float64,coarse_orders)

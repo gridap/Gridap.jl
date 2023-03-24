@@ -89,6 +89,6 @@ end
 
 # Test the final function
 
-res = Adaptivity.coarse_nodes_above_fine_nodes(rr,(2,2),1)
+res = Adaptivity.get_face_subface_ldof_to_cell_ldof(rr,(2,2),1)
 
 end
