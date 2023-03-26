@@ -36,4 +36,6 @@ bottom_corners_by_tags = findall(get_face_mask(fine_labeling,"bottom_corners",0)
 bottom_corners_by_coords = findall(p->(abs(p[2]) < 1.e-3) && ((abs(p[1]) < 1.e-3) || (abs(p[1]-1.0) < 1.e-3)),d_to_centroid[1])
 @test sort(bottom_corners_by_tags) == sort(bottom_corners_by_coords)
 
+
+
 end

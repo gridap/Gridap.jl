@@ -107,7 +107,13 @@ end
 
 # Faces to child faces, dof maps
 
-# [Face dimension][Coarse Face id] -> [Fine faces]
+"
+Given a `RefinementRule`, returns for each parent/coarse face the child/fine faces of the 
+same dimension that it contains. Therefore, only fine faces at the coarse cell boundary are 
+listed in the returned structure.
+
+Returns: [Face dimension][Coarse Face id] -> [Fine faces]
+"
 function get_d_to_face_to_child_faces(rr::RefinementRule) 
   get_d_to_face_to_child_faces(rr,RefinementRuleType(rr))
 end
@@ -116,9 +122,14 @@ function get_d_to_face_to_child_faces(::RefinementRule,::RefinementRuleType)
   @notimplemented
 end
 
-# Returns (1,2) with 
-# 1 - [Face dimension][Fine Face id] -> [Parent Face]
-# 2 - [Face dimension][Fine Face id] -> [Parent Face Dimension]
+"""
+Given a `RefinementRule`, returns for each fine/child face the parent/coarse face
+containing it. The parent face can have higher dimension. 
+
+Returns the tuple (A,B) with 
+ - A = [Face dimension][Fine Face id] -> [Parent Face]
+ - B = [Face dimension][Fine Face id] -> [Parent Face Dimension]
+"""
 function get_d_to_face_to_parent_face(rr::RefinementRule)
   get_d_to_face_to_parent_face(rr,RefinementRuleType(rr))
 end
@@ -157,6 +168,15 @@ function _get_face_orders(p::Polytope{Dc},D::Int,orders::Tuple) where Dc
   return face_orders
 end
 
+"""
+Given a `RefinementRule` of dimension Dc and a Dc-Tuple `fine_orders` of approximation orders, 
+returns a map between the fine nodal dofs of order `fine_orders` in the reference grid and the 
+coarse nodal dofs of order `2⋅fine_orders` in the coarse parent cell. 
+
+The result is given for each coarse/parent face of dimension `D` as a list of the corresponding 
+fine dof lids, i.e 
+- [coarse face][coarse dof lid] -> fine dof lid
+"""
 function get_face_subface_ldof_to_cell_ldof(rr::RefinementRule{ExtrusionPolytope{Dc}},
                                             fine_orders::NTuple{Dc,<:Integer},
                                             D::Int) where Dc

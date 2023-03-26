@@ -137,9 +137,14 @@ function get_d_to_fface_to_cface(::AdaptivityGlue,::GridTopology,::GridTopology)
   @notimplemented
 end
 
-# Returns two arrays: 
-#  A) [dimension][fine face gid] -> coarse parent face gid
-#  B) [dimension][fine face gid] -> coarse parent face dimension
+"
+ For each child/fine face, returns the parent/coarse face containing it. The parent 
+ face might have higher dimension. 
+
+ Returns two arrays: 
+  - [dimension][fine face gid] -> coarse parent face gid
+  - [dimension][fine face gid] -> coarse parent face dimension
+"
 function get_d_to_fface_to_cface(glue::AdaptivityGlue{<:RefinementGlue},
                                  ctopo::GridTopology{Dc},
                                  ftopo::GridTopology{Dc}) where Dc
@@ -161,18 +166,22 @@ function get_d_to_fface_to_cface(glue::AdaptivityGlue{<:RefinementGlue},
   for ccell in 1:num_cells(ctopo)
     local_d_to_fface_to_parent_face,
       local_d_to_fface_to_parent_dim = ccell_to_d_to_fface_to_parent_face[ccell]
-    # For each fine subcell (child)
-    for (child,fcell) in enumerate(ccell_to_fcell[ccell])
-      # For each fine face on the fine subcell
+    # For each fine subcell:
+    # child_id -> Local Id of the fine cell within the refinement rule (ccell)
+    for (child_id,fcell) in enumerate(ccell_to_fcell[ccell])
+      # For each fine face on the fine subcell: 
+      # d     -> Dimension of the fine face
+      # iF    -> Local Id of the fine face within the fine cell
+      # fface -> Global Id of the fine face 
       for d in 0:Dc
         for (iF,fface) in enumerate(d_to_fcell_to_fface[d+1][fcell])
           # Local Id of the fine face within the refinement rule
-          fface_coarse_id = ccell_to_d_to_faces[ccell][d+1][child][iF]
+          fface_child_id = ccell_to_d_to_faces[ccell][d+1][child_id][iF]
           # Local Id of the coarse parent face within the coarse cell
-          parent    = local_d_to_fface_to_parent_face[d+1][fface_coarse_id]
+          parent    = local_d_to_fface_to_parent_face[d+1][fface_child_id]
 
           # Global Id of the coarse parent face, and it's dimension
-          cface_dim = local_d_to_fface_to_parent_dim[d+1][fface_coarse_id]
+          cface_dim = local_d_to_fface_to_parent_dim[d+1][fface_child_id]
           cface     = d_to_ccell_to_cface[cface_dim+1][ccell][parent]
           d_to_fface_to_cface[d+1][fface] = cface
           d_to_fface_to_cface_dim[d+1][fface] = cface_dim
