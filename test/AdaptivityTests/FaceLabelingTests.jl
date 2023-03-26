@@ -6,7 +6,7 @@ using Gridap.Geometry
 using Gridap.Adaptivity
 
 Dc = 2
-model  = UnstructuredDiscreteModel(CartesianDiscreteModel((0,1,0,1),(1,1)))
+model  = UnstructuredDiscreteModel(CartesianDiscreteModel((0,1,0,1),(2,2)))
 ctopo = get_grid_topology(model)
 
 coarse_labeling = get_face_labeling(model)

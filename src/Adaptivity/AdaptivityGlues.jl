@@ -172,8 +172,8 @@ function get_d_to_fface_to_cface(glue::AdaptivityGlue{<:RefinementGlue},
           parent    = local_d_to_fface_to_parent_face[d+1][fface_coarse_id]
 
           # Global Id of the coarse parent face, and it's dimension
-          cface     = d_to_ccell_to_cface[d+1][ccell][parent]
           cface_dim = local_d_to_fface_to_parent_dim[d+1][fface_coarse_id]
+          cface     = d_to_ccell_to_cface[cface_dim+1][ccell][parent]
           d_to_fface_to_cface[d+1][fface] = cface
           d_to_fface_to_cface_dim[d+1][fface] = cface_dim
         end
@@ -211,6 +211,7 @@ function _refine_face_labeling(coarse_labeling::FaceLabeling,
     for fface in 1:nF
       cface = d_to_fface_to_cface[d+1][fface]
       cface_dim = d_to_fface_to_cface_dim[d+1][fface]
+
       cface_entity = coarse_labeling.d_to_dface_to_entity[cface_dim+1][cface]
       dface_to_entity[fface] = cface_entity
     end
