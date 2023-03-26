@@ -152,3 +152,10 @@ end
     return f2c_map, child_map
   end)
 end
+
+function get_d_to_fface_to_cface(model::AdaptedDiscreteModel)
+  ftopo = get_grid_topology(get_model(model))
+  ctopo = get_grid_topology(get_parent(model))
+  glue  = get_adaptivity_glue(model)
+  return get_d_to_fface_to_cface(glue,ctopo,ftopo)
+end

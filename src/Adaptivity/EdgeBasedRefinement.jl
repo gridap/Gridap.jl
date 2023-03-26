@@ -37,18 +37,20 @@ function refine(::EdgeBasedRefinement,model::UnstructuredDiscreteModel{Dc,Dp};ce
   #    b) AbstractArray{<:Bool} of size num_cells(model) 
   #            -> Only cells such that cells_to_refine[iC] == true get refined
   #    c) AbstractArray{<:Integer} 
-  #            -> Cells for which gid ∈ cells_to_refine get refined 
+  #            -> Cells for which gid ∈ cells_to_refine get refined
+  ctopo = get_grid_topology(model)
+  coarse_labels = get_face_labeling(model)
 
   # Create new model
-  rrules, faces_list = setup_edge_based_rrules(model.grid_topology,cells_to_refine)
-  topo   = _refine_unstructured_topology(model.grid_topology,rrules,faces_list)
+  rrules, faces_list = setup_edge_based_rrules(ctopo,cells_to_refine)
+  topo   = _refine_unstructured_topology(ctopo,rrules,faces_list)
   reffes = map(p->LagrangianRefFE(Float64,p,1),get_polytopes(topo))
   grid   = UnstructuredGrid(get_vertex_coordinates(topo),get_faces(topo,Dc,0),reffes,get_cell_type(topo),OrientationStyle(topo))
-  labels = FaceLabeling(topo)
-  ref_model = UnstructuredDiscreteModel(grid,topo,labels)
-
-  # Create ref glue
+  
   glue = _get_refinement_glue(topo,model.grid_topology,rrules)
+  
+  labels = _refine_face_labeling(coarse_labels,glue,model.grid_topology,topo)
+  ref_model = UnstructuredDiscreteModel(grid,topo,labels)
 
   return AdaptedDiscreteModel(ref_model,model,glue)
 end

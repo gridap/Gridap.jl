@@ -129,3 +129,94 @@ function _reindex(data,idx::Vector)
   m = Reindex(data)
   return lazy_map(m,idx)
 end
+
+
+# New to old face glues 
+
+function get_d_to_fface_to_cface(::AdaptivityGlue,::GridTopology,::GridTopology)
+  @notimplemented
+end
+
+# Returns two arrays: 
+#  A) [dimension][fine face gid] -> coarse parent face gid
+#  B) [dimension][fine face gid] -> coarse parent face dimension
+function get_d_to_fface_to_cface(glue::AdaptivityGlue{<:RefinementGlue},
+                                 ctopo::GridTopology{Dc},
+                                 ftopo::GridTopology{Dc}) where Dc
+
+  # Local data for each coarse cell, at the RefinementRule level
+  rrules = Adaptivity.get_old_cell_refinement_rules(glue)
+  ccell_to_d_to_faces = lazy_map(rr->map(d->Geometry.get_faces(get_grid_topology(rr.ref_grid),Dc,d),0:Dc),rrules)
+  ccell_to_d_to_fface_to_parent_face = lazy_map(get_d_to_face_to_parent_face,rrules)
+
+  # Global data, concerning the complete meshes
+  ccell_to_fcell = glue.o2n_faces_map
+  d_to_ccell_to_cface = map(d->Geometry.get_faces(ctopo,Dc,d),0:Dc)
+  d_to_fcell_to_fface = map(d->Geometry.get_faces(ftopo,Dc,d),0:Dc)
+
+  d_to_fface_to_cface = [fill(Int32(0),num_faces(ftopo,d)) for d in 0:Dc]
+  d_to_fface_to_cface_dim = [fill(Int32(0),num_faces(ftopo,d)) for d in 0:Dc]
+
+  # For each coarse cell
+  for ccell in 1:num_cells(ctopo)
+    local_d_to_fface_to_parent_face,
+      local_d_to_fface_to_parent_dim = ccell_to_d_to_fface_to_parent_face[ccell]
+    # For each fine subcell (child)
+    for (child,fcell) in enumerate(ccell_to_fcell[ccell])
+      # For each fine face on the fine subcell
+      for d in 0:Dc
+        for (iF,fface) in enumerate(d_to_fcell_to_fface[d+1][fcell])
+          # Local Id of the fine face within the refinement rule
+          fface_coarse_id = ccell_to_d_to_faces[ccell][d+1][child][iF]
+          # Local Id of the coarse parent face within the coarse cell
+          parent    = local_d_to_fface_to_parent_face[d+1][fface_coarse_id]
+
+          # Global Id of the coarse parent face, and it's dimension
+          cface     = d_to_ccell_to_cface[d+1][ccell][parent]
+          cface_dim = local_d_to_fface_to_parent_dim[d+1][fface_coarse_id]
+          d_to_fface_to_cface[d+1][fface] = cface
+          d_to_fface_to_cface_dim[d+1][fface] = cface_dim
+        end
+      end
+    end
+  end
+
+  return (d_to_fface_to_cface,d_to_fface_to_cface_dim)
+end
+
+# FaceLabeling refinement
+
+function _refine_face_labeling(coarse_labeling::FaceLabeling,
+                               glue  :: AdaptivityGlue,
+                               ctopo :: GridTopology,
+                               ftopo :: GridTopology)
+  d_to_fface_to_cface,
+    d_to_fface_to_cface_dim = get_d_to_fface_to_cface(glue,ctopo,ftopo)
+
+  return _refine_face_labeling(coarse_labeling,d_to_fface_to_cface,d_to_fface_to_cface_dim)
+end
+
+function _refine_face_labeling(coarse_labeling::FaceLabeling,
+                               d_to_fface_to_cface,
+                               d_to_fface_to_cface_dim)
+  tag_to_name = copy(coarse_labeling.tag_to_name)
+  tag_to_entities = copy(coarse_labeling.tag_to_entities)
+  
+  Dc = num_dims(coarse_labeling)
+  d_to_dface_to_entity = Vector{Vector{Int32}}(undef,Dc+1)
+  for d in 0:Dc
+    nF = length(d_to_fface_to_cface[d+1])
+    dface_to_entity = Vector{Int32}(undef,nF)
+  
+    for fface in 1:nF
+      cface = d_to_fface_to_cface[d+1][fface]
+      cface_dim = d_to_fface_to_cface_dim[d+1][fface]
+      cface_entity = coarse_labeling.d_to_dface_to_entity[cface_dim+1][cface]
+      dface_to_entity[fface] = cface_entity
+    end
+  
+    d_to_dface_to_entity[d+1] = dface_to_entity
+  end
+  
+  return Geometry.FaceLabeling(d_to_dface_to_entity,tag_to_entities,tag_to_name)  
+end
