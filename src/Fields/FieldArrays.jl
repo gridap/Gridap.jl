@@ -90,7 +90,7 @@ end
 
 """
 A wrapper that represents the broadcast of `gradient` over an array of fields.
-Ng is the number of times the gradient is applyed
+Ng is the number of times the gradient is applied
 """
 struct FieldGradientArray{Ng,A,T,N} <: AbstractArray{T,N}
   fa::A

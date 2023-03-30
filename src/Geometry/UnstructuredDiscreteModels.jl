@@ -77,7 +77,7 @@ function check_dict(::Type{UnstructuredDiscreteModel},dict::Dict{Symbol,Any})
     @unreachable """\n
     Cannot convert Dict to UnstructuredDiscreteModel for outdated format $(dict[:version]).
     The required format is $version. Regenerate your dictiorary (typically a json file)
-    holding the DiscreteModel with the Gridap version you are currenlty using.
+    holding the DiscreteModel with the Gridap version you are currently using.
     """
   end
 
@@ -136,7 +136,7 @@ function simplexify(model::UnstructuredDiscreteModel;kwargs...)
   ctype_lvertex_lnode = map(get_lvertex_lnodes,reffes)
   treffes = get_reffes(tgrid)
   tctype_ltvertex_ltnode = map(get_lvertex_lnodes,treffes)
-  tcell_vertices, vertex_node = _preapre_tvertices(
+  tcell_vertices, vertex_node = _prepare_tvertices(
     cell_vertices,
     cell_nodes,
     nvertices,
@@ -153,7 +153,7 @@ end
 
 const UNSET_ID = Int32(0)
 
-function _preapre_tvertices(
+function _prepare_tvertices(
   cell_vertices,
   cell_nodes,
   nvertices,

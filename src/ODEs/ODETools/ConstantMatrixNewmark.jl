@@ -47,7 +47,7 @@ function solve_step!(
   affOp = AffineOperator(A,b)
   l_cache = solve!(u1,solver.nls,affOp,l_cache,newmatrix)
 
-  # Update auxiliar variables
+  # Update auxiliary variables
   @. u1 = u1 + u0
   @. v1 = γ/(β*dt)*(u1-u0) + (1-γ/β)*v0 + dt*(1-γ/(2*β))*a0
   @. a1 = 1.0/(β*dt^2)*(u1-u0) - 1.0/(β*dt)*v0 - (1-2*β)/(2*β)*a0

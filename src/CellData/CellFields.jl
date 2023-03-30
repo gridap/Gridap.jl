@@ -566,7 +566,7 @@ function _to_common_domain(a::CellField...)
   Make sure that all CellField objects are defined on the background triangulation
   or that the number of different sub-triangulations is equal to one.
 
-  For instace:
+  For instance:
 
   - 3 cell fields 2, two them on the same Neumann boundary and the other on the background mesh is OK.
 
