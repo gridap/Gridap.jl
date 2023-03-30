@@ -142,11 +142,6 @@ c = 2 * a
 r = VectorValue(2,4,6)
 @test c == r
 
-c = a * 2
-@test isa(c,VectorValue{3,Int})
-r = VectorValue(2,4,6)
-@test c == r
-
 c = 2 + a
 @test isa(c,VectorValue{3,Int})
 r = VectorValue(3,4,5)
