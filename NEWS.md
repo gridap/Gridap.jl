@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- ODE operators cache linear system at initial time or the time stored by the operator. Before, the linear system was cached at time `t = 0.0`, which cannot be done if the operator is not well-defined at `t = 0.0`. Since PR [#891](https://github.com/gridap/Gridap.jl/pull/891).
 - Fixed the method `get_normal_vector` for `AdaptedTriangulation`. The method `get_facet_normal`
   was using default, it's now using the spetialized implementation for the underlying triangulation type.
   Since PR [#884](https://github.com/gridap/Gridap.jl/pull/884).
