@@ -17,7 +17,6 @@ x3 = Point(1.0)
 V = Float64
 G = gradient_type(V,x1)
 H = gradient_type(G,x1)
-order = 12
 
 order = 3
 a = fill(Point(-0.5),order+1)
