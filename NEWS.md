@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Jacobi polynomial bases. Since PR [#896](https://github.com/gridap/Gridap.jl/pull/896).
+
 ### Fixed
 
 - Fixed the method `get_normal_vector` for `AdaptedTriangulation`. The method `get_facet_normal`
