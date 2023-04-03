@@ -217,7 +217,7 @@ function _create_d_to_dface_to_old(
   d_to_dface_to_olddim, d_to_dface_to_oldid
 end
 
-function _propogate_labeling(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
+function _propagate_labeling(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
   labels = get_face_labeling(model)
   labels_ref = FaceLabeling(length.(d_to_dface_to_oldid))
   @test isempty(labels_ref.tag_to_entities)
@@ -583,7 +583,7 @@ function newest_vertex_bisection(
     get_node_coordinates(grid_ref),
     node_to_bis_edge,
   )
-  labels_ref = _propogate_labeling(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
+  labels_ref = _propagate_labeling(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
   DiscreteModel(grid_ref, topo_ref, labels_ref), buffer
 end
 
@@ -632,7 +632,7 @@ function newest_vertex_bisection(
     get_node_coordinates(grid_ref),
     node_to_bis_edge,
   )
-  labels_ref = _propogate_labeling(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
+  labels_ref = _propagate_labeling(model, d_to_dface_to_olddim, d_to_dface_to_oldid)
   model_ref = DiscreteModel(grid_ref, topo_ref, labels_ref)
   model_ref, buffer
 end

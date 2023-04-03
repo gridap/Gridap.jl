@@ -14,7 +14,7 @@ end
 function get_data(f::TransientMultiFieldCellField)
   s = """
   Function get_data is not implemented for TransientMultiFieldCellField at this moment.
-  You need to extract the individual fields and then evaluate them separatelly.
+  You need to extract the individual fields and then evaluate them separately.
 
   If ever implement this, evaluating a `MultiFieldCellField` directly would provide,
   at each evaluation point, a tuple with the value of the different fields.
