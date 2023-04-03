@@ -2,7 +2,7 @@
 ## In the code related with FEOperators we cannot
 #qualify u with ::FEFunction since it would prevent to
 # reuse this code in GridapDistributed because of lack
-# of multiple inheritence in Julia. We just use duck typing.
+# of multiple inheritance in Julia. We just use duck typing.
 
 """
     abstract type FEOperator <: GridapType

@@ -432,7 +432,7 @@ dimension `dimto` on its boundary.
 For `dimfrom < dimto` returns a vector that for each face of `dimfrom`
 stores a vector of the face ids of faces of dimension `dimto` that touch it.
 
-The numerations used in this funcitons are the ones restricted to each dimension.
+The numerations used in this function are the ones restricted to each dimension.
 
 ```jldoctest
 using Gridap.ReferenceFEs
