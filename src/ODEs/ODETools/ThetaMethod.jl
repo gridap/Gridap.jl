@@ -84,11 +84,11 @@ function jacobian!(A::AbstractMatrix,op::ThetaMethodNonlinearOperator,x::Abstrac
 end
 
 function allocate_residual(op::ThetaMethodNonlinearOperator,x::AbstractVector)
-  allocate_residual(op.odeop,x,op.ode_cache)
+  allocate_residual(op.odeop,op.tθ,x,op.ode_cache)
 end
 
 function allocate_jacobian(op::ThetaMethodNonlinearOperator,x::AbstractVector)
-  allocate_jacobian(op.odeop,x,op.ode_cache)
+  allocate_jacobian(op.odeop,op.tθ,x,op.ode_cache)
 end
 
 function zero_initial_guess(op::ThetaMethodNonlinearOperator)
