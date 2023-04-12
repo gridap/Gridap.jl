@@ -41,7 +41,7 @@ function make_nvb_levels(
     η_arr = compute_estimator(est, ncells)
     model_refs[i + 1], buffer =
       newest_vertex_bisection(model_refs[i], buffer, η_arr; θ = θ)
-  # Necessary to have each level stored seperately
+  # Necessary to have each level stored separately
   buffer = deepcopy(buffer)
   end
   model_refs
@@ -88,7 +88,7 @@ let model = simplexify(CartesianDiscreteModel(domain, partition))
       end
       @test ncoords_true == ncoords
     end
-    # Test labels are propogating properly
+    # Test labels are propagating properly
     let labels = get_face_labeling(model_ref)
       let d = 0
         @test Int(4*2^(floor(n / 2))) == d_get_num_boundary_labels(labels, d)

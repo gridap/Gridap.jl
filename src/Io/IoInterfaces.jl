@@ -15,7 +15,7 @@ end
     check_dict(::Type{T},dict::Dict) where T
 
 Check validity of a dictionary `dict` for an object of type `T`.
-It runs succesfully if the dictionary is valid for a particular 
+It runs successfully if the dictionary is valid for a particular 
 type or throws an error in any other case.
 """
 function check_dict(::Type{T},dict::Dict) where T

@@ -65,6 +65,7 @@ end
 """
 function allocate_residual(
   op::ODEOperator,
+  t0::Real,
   u::Union{AbstractVector,Tuple{Vararg{AbstractVector}}},
   ode_cache)
   @abstractmethod
@@ -106,7 +107,7 @@ end
 
 """
 """
-function allocate_jacobian(op::ODEOperator,u::AbstractVector,ode_cache)
+function allocate_jacobian(op::ODEOperator,t0::Real,u::AbstractVector,ode_cache)
   @abstractmethod
 end
 
@@ -124,9 +125,9 @@ Tests the interface of `ODEOperator` specializations
 function test_ode_operator(op::ODEOperator,t::Real,u::AbstractVector,u_t::AbstractVector)
   cache = allocate_cache(op)
   cache = update_cache!(cache,op,0.0)
-  r = allocate_residual(op,u,cache)
+  r = allocate_residual(op,0.0,u,cache)
   residual!(r,op,t,(u,u_t),cache)
-  J = allocate_jacobian(op,u,cache)
+  J = allocate_jacobian(op,0.0,u,cache)
   jacobian!(J,op,t,(u,u_t),1,1.0,cache)
   jacobian!(J,op,t,(u,u_t),2,1.0,cache)
   jacobians!(J,op,t,(u,u_t),(1.0,1.0),cache)

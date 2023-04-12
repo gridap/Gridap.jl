@@ -64,11 +64,11 @@ function jacobian!(A::AbstractMatrix,op::ForwardEulerNonlinearOperator,x::Abstra
 end
 
 function allocate_residual(op::ForwardEulerNonlinearOperator,x::AbstractVector)
-  allocate_residual(op.odeop,x,op.ode_cache)
+  allocate_residual(op.odeop,op.tf,x,op.ode_cache)
 end
 
 function allocate_jacobian(op::ForwardEulerNonlinearOperator,x::AbstractVector)
-  allocate_jacobian(op.odeop,x,op.ode_cache)
+  allocate_jacobian(op.odeop,op.tf,x,op.ode_cache)
 end
 
 function zero_initial_guess(op::ForwardEulerNonlinearOperator)

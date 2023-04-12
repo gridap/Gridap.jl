@@ -14,7 +14,7 @@ function solve_step!(
   u1, v1, a1 = x1
 
   if cache === nothing
-    # Auxiliar variables
+    # Auxiliary variables
     newmatrix = true
 
     # Allocate caches
@@ -22,9 +22,9 @@ function solve_step!(
     (v,a, ode_cache) = newmark_cache
 
     # Allocate matrices and vectors
-    A, b = _allocate_matrix_and_vector(op,x0,ode_cache)
-    M = _allocate_matrix(op,x0,ode_cache)
-    C = _allocate_matrix(op,x0,ode_cache)
+    A, b = _allocate_matrix_and_vector(op,t0,x0,ode_cache)
+    M = _allocate_matrix(op,t0,x0,ode_cache)
+    C = _allocate_matrix(op,t0,x0,ode_cache)
     b1 = similar(b)
     b1 .= 0.0
 
@@ -58,7 +58,7 @@ function solve_step!(
   affOp = AffineOperator(A,b1)
   l_cache = solve!(u1,solver.nls,affOp,l_cache,newmatrix)
 
-  # Update auxiliar variables
+  # Update auxiliary variables
   v1 = γ/(β*dt)*(u1-u0) + (1-γ/β)*v0 + dt*(1-γ/(2*β))*a0
   a1 = 1.0/(β*dt^2)*(u1-u0) - 1.0/(β*dt)*v0 - (1-2*β)/(2*β)*a0
 

@@ -81,12 +81,12 @@ end
 
 function allocate_residual(op::NewmarkNonlinearOperator,x::AbstractVector)
   v1, a1, cache = op.ode_cache
-  allocate_residual(op.odeop,x,cache)
+  allocate_residual(op.odeop,op.t1,x,cache)
 end
 
 function allocate_jacobian(op::NewmarkNonlinearOperator,x::AbstractVector)
   v1, a1, cache = op.ode_cache
-  allocate_jacobian(op.odeop,x,cache)
+  allocate_jacobian(op.odeop,op.t1,x,cache)
 end
 
 function zero_initial_guess(op::NewmarkNonlinearOperator)

@@ -135,12 +135,12 @@ end
 
 function allocate_residual(op::GeneralizedAlphaNonlinearOperator,x::AbstractVector)
   vαm, cache = op.ode_cache
-  allocate_residual(op.odeop,x,cache)
+  allocate_residual(op.odeop,op.tαf,x,cache)
 end
 
 function allocate_jacobian(op::GeneralizedAlphaNonlinearOperator,x::AbstractVector)
   vαm, cache = op.ode_cache
-  allocate_jacobian(op.odeop,x,cache)
+  allocate_jacobian(op.odeop,op.tαf,x,cache)
 end
 
 function zero_initial_guess(op::GeneralizedAlphaNonlinearOperator)
@@ -214,13 +214,13 @@ end
 
 function allocate_residual(op::GeneralizedAlphaDttNonlinearOperator,x::AbstractVector)
   vαf, aαm, cache = op.ode_cache
-  allocate_residual(op.odeop,x,cache)
+  allocate_residual(op.odeop,op.tαf,x,cache)
 end
 
 
 function allocate_jacobian(op::GeneralizedAlphaDttNonlinearOperator,x::AbstractVector)
   vαf, aαm, cache = op.ode_cache
-  allocate_jacobian(op.odeop,x,cache)
+  allocate_jacobian(op.odeop,op.tαf,x,cache)
 end
 
 
