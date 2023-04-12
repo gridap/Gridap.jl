@@ -177,7 +177,7 @@ The result is given for each coarse/parent face of dimension `D` as a list of th
 fine dof lids, i.e 
 - [coarse face][coarse dof lid] -> fine dof lid
 """
-function get_face_subface_ldof_to_cell_ldof(rr::RefinementRule{ExtrusionPolytope{Dc}},
+function get_face_subface_ldof_to_cell_ldof(rr::RefinementRule{<:ExtrusionPolytope{Dc}},
                                             fine_orders::NTuple{Dc,<:Integer},
                                             D::Int) where Dc
   poly  = get_polytope(rr)
