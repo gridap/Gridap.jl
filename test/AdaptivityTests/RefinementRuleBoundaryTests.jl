@@ -15,5 +15,6 @@ res = Adaptivity.get_face_subface_ldof_to_cell_ldof(rr,(2,2),1)
 # Test the final function in 3D
 rr = Gridap.Adaptivity.RedRefinementRule(HEX)
 res = Adaptivity.get_face_subface_ldof_to_cell_ldof(rr,(2,2,2),1)
+res = Adaptivity.get_face_subface_ldof_to_cell_ldof(rr,(2,2,2),2)
 
 end

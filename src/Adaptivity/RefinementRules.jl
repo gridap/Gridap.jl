@@ -168,6 +168,18 @@ function _get_face_orders(p::Polytope{Dc},D::Int,orders::Tuple) where Dc
   return face_orders
 end
 
+function _get_local_dof_ranges(p::Polytope{Dc},orders) where Dc
+  @check length(orders) == Dc
+  @check is_n_cube(p)
+  idx = CartesianIndices(Tuple(fill(2,Dc)))
+  ranges = map(idx) do ii
+    map(Tuple(ii),orders) do i,o
+      (i-1)*o+1:i*o+1
+    end
+  end
+  return ranges
+end
+
 """
 Given a `RefinementRule` of dimension Dc and a Dc-Tuple `fine_orders` of approximation orders, 
 returns a map between the fine nodal dofs of order `fine_orders` in the reference grid and the 
@@ -189,12 +201,12 @@ function get_face_subface_ldof_to_cell_ldof(rr::RefinementRule{<:ExtrusionPolyto
   model = get_ref_grid(rr)
   fine_face_grid = Grid(ReferenceFE{D},model)
   fine_face_polys = CompressedArray(map(get_polytope,get_reffes(fine_face_grid)),get_cell_type(fine_face_grid))
-  
+
   d_to_face_to_child_faces = get_d_to_face_to_child_faces(rr)
   face_to_child_faces = d_to_face_to_child_faces[D+1]
   
   coarse_face_orders = _get_face_orders(poly,D,coarse_orders)
-  fine_face_orders = _get_face_orders(poly,D,fine_orders)
+  fine_face_orders   = _get_face_orders(poly,D,fine_orders)
   
   num_coarse_faces = num_faces(coarse_reffe,D)
   coarse_dofs_above_fine_dofs = Vector{Vector{Vector{Int32}}}(undef,num_coarse_faces)
@@ -203,14 +215,15 @@ function get_face_subface_ldof_to_cell_ldof(rr::RefinementRule{<:ExtrusionPolyto
     coarse_terms = _get_terms(coarse_face_poly,coarse_face_orders[cF])
     coarse_dofs  = zeros(Int32,Tuple(maximum(coarse_terms)))
     coarse_dofs[coarse_terms] .= c_edge_to_coarse_dof[cF]
+    fine_face_to_dof_range = _get_local_dof_ranges(coarse_face_poly,fine_face_orders[cF])
   
     child_faces = face_to_child_faces[cF]
     fine_dofs = Vector{Vector{Int32}}(undef,length(child_faces))
     for (i,fF) in enumerate(child_faces)
       fine_face_poly = fine_face_polys[fF]
       fine_terms = _get_terms(fine_face_poly,fine_face_orders[cF])
-  
-      local_dof_range = map(o->(i-1)*o+1:i*o+1,fine_face_orders[cF])
+
+      local_dof_range = fine_face_to_dof_range[i]
       local_coarse_dofs = view(coarse_dofs,local_dof_range...)
       fine_dofs[i] = map(Reindex(local_coarse_dofs),fine_terms)
     end
