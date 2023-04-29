@@ -71,7 +71,6 @@ function NVBStrategy(model::UnstructuredDiscreteModel{Dc,Dp}) where {Dc, Dp}
   #cell_node_ids = [v for v in cell_node_ids]
   #_sort_longest_edge!(cell_node_ids, node_coords)
   longest_idxs = _get_longest_edge_index_in_cell(c2e_map, e2n_map, node_coords)
-  @exfiltrate
   NVBStrategy(longest_idxs)
 end
 
@@ -92,8 +91,8 @@ function refine(::EdgeBasedRefinement,model::UnstructuredDiscreteModel{Dc,Dp};ce
     strategy = RedGreenStrategy()
   end
   @show strategy
-  rrules = setup_edge_based_rrules(strategy, model.grid_topology,cells_to_refine)
   rrules, faces_list = setup_edge_based_rrules(strategy, model.grid_topology,cells_to_refine)
+  #rrules, faces_list = setup_edge_based_rrules(strategy, model.grid_topology,cells_to_refine)
   topo   = _refine_unstructured_topology(model.grid_topology,rrules,faces_list)
   reffes = map(p->LagrangianRefFE(Float64,p,1),get_polytopes(topo))
   grid   = UnstructuredGrid(get_vertex_coordinates(topo),get_faces(topo,Dc,0),reffes,get_cell_type(topo),OrientationStyle(topo))
@@ -166,6 +165,8 @@ end
 
 _shift_to_first(v::AbstractVector{T}, i::T) where {T<:Integer} = circshift(v, -(i - 1))
 
+map_pair_to_1d_array(a::Int, b::Int, m::Int) = (a-1)*m + (b-1)
+
 function setup_edge_based_rrules(strat::NVBStrategy, topo::UnstructuredGridTopology{Dc},cells_to_refine::AbstractArray{<:Integer}) where Dc
   println("enter NVB")
   nC = num_cells(topo)
@@ -180,30 +181,29 @@ function setup_edge_based_rrules(strat::NVBStrategy, topo::UnstructuredGridTopol
   #WHITE, GREEN, BLUE = Int8(1), Int8(1 + nP), Int8(1 + nP + nP)
   # Hardcoded for TRI
   WHITE, GREEN, BLUE = Int8(1), Int8(2), Int8(5)
+  BLUE_dict = Dict((1,2) => 1, (1, 3) => 2, (2, 1) => 3, (2, 3) => 4, (3, 1) => 5, (3, 2) => 6)
   #WHITE, RED, GREEN = Int8(1), Int8(1+nP), Int8(1+nP+nP)
   #green_offsets = counts_to_ptrs(map(p->num_faces(p,1),polys))
   green_offset = 3
   blue_offset = 3*2
-  c_to_longest_edge_id = strat.longest_face_index_in_cell
-  @show c_to_longest_edge_id
+  c_to_longest_edge_gid = strat.longest_face_index_in_cell
+  @show c_to_longest_edge_gid
   is_refined = falses(nE)
   # Mark the edges to refine
   for c in cells_to_refine
     @show c
-    e_longest = c_to_longest_edge_id[c]
+    e_longest = c_to_longest_edge_gid[c]
     @show e_longest
     # Has to terminate because an edge is marked each iteration or we skip an
     # iteration due to a boundary cell
     while !is_refined[e_longest]
       is_refined[e_longest] = true
-      c_nbor_idx = findfirst(c′ -> c′ != c, e2c_map[e_longest])
-      if isnothing(c_nbor_idx) # We've reach the boundary
+      c_nbor_lid = findfirst(c′ -> c′ != c, e2c_map[e_longest])
+      if isnothing(c_nbor_lid) # We've reach the boundary
         continue
       else
-        c_nbor = e2c_map[e_longest][c_nbor_idx]
-        @show c_nbor
-        e_longest = c_to_longest_edge_id[c_nbor]
-        @show e_longest
+        c_nbor_gid = e2c_map[e_longest][c_nbor_lid]
+        e_longest = c_to_longest_edge_gid[c_nbor_gid]
       end
     end
   end
@@ -212,18 +212,29 @@ function setup_edge_based_rrules(strat::NVBStrategy, topo::UnstructuredGridTopol
   T = typeof(WhiteRefinementRule(first(polys))) # Needed to make eltype(color_rrules) concrete
   # Loop over cells and refine based on marked edges
   color_rrules = Vector{T}(undef,num_rr)
+  @show is_refined
   for (c, c_edges) in enumerate(c2e_map)
-    #@show is_refined[c_edges]
-    refined_edge_ids = findall(is_refined[c_edges])
-    #@show refined_edge_ids
+    refined_edge_lids = findall(is_refined[c_edges])
+    @show c_edges
     # GREEN refinement becasue only one edge should be bisected
-    if length(refined_edge_ids) == 1
-      ref_edge = refined_edge_ids[1]
-      #@show c_to_longest_edge_id[c]
+    if length(refined_edge_lids) == 1
+      ref_edge = refined_edge_lids[1]
+      #@show c_to_longest_edge_gid[c]
       p = cell_types[c]
       cell_color[c] = GREEN + Int8(ref_edge-1)
-    elseif length(refined_edge_ids) > 1
-      @show refined_edge_ids
+      # BLUE refinement: two biseceted
+    elseif length(refined_edge_lids) > 1
+      long_ref_edge_gid = c_to_longest_edge_gid[c]
+      c_ref_edge_gids = c_edges[refined_edge_lids]
+      short_ref_edge_gid = setdiff(c_ref_edge_gids, long_ref_edge_gid)[1]
+      long_ref_edge_lid = findfirst(i -> i == long_ref_edge_gid, c_ref_edge_gids)
+      short_ref_edge_lid =findfirst(i -> i == short_ref_edge_gid, c_ref_edge_gids)
+      blue_idx = BLUE_dict[(long_ref_edge_lid, short_ref_edge_lid)]
+      @show blue_idx
+      cell_color[c] = BLUE + blue_idx - 1
+      #@show long_ref_edge_gid
+      #@show short_ref_edge_gid
+      #cell_color[c] = BLUE + ref_edge + 
     end
   end
   #for (k,p) in enumerate(polys)
@@ -233,20 +244,22 @@ function setup_edge_based_rrules(strat::NVBStrategy, topo::UnstructuredGridTopol
     #@show GREEN+green_offsets[k]-1+e-1
     color_rrules[GREEN+e-1] = GreenRefinementRule(p,e)
   end
-  blue_idx = 0
+  blue_idx = 1
   for e1 in 1:num_faces(p, 1)
     for e2 in 1:num_faces(p, 1)
       if e1 != e2
-        color_rrules[BLUE + blue_idx] = BlueRefinementRule(p, e1, e2)
+        @show e1
+        @show e2
+        @show blue_idx
+        color_rrules[BLUE + blue_idx - 1] = BlueRefinementRule(p, e1, e2)
         blue_idx += 1
       end
     end
   end
   #end
-  @exfiltrate
+  @show cell_color
   rrules = CompressedArray(color_rrules,cell_color)
   face_list = _redgreen_refined_faces_list(topo, rrules, is_refined)
-  #@exfiltrate
   #println("finish")
   return rrules, face_list
 end
@@ -528,13 +541,11 @@ function BlueRefinementRule(p::Polytope{2}, long_ref_edge::Integer, short_ref_ed
 
   faces_list = (collect(1:num_faces(p,0)),[long_ref_edge, short_ref_edge],[])
   coords = get_new_coordinates_from_faces(p,faces_list)
-  @show coords
   polys, cell_types, conn = _get_blue_refined_connectivity(p,long_ref_edge, short_ref_edge)
   reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
 
   ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(coords,conn,reffes,cell_types))
   writevtk(Triangulation(ref_grid), "test/AdaptivityTests/BlueRefTest")
-  @exfiltrate
   return RefinementRule(BlueRefinement{long_ref_edge, short_ref_edge}(),p,ref_grid)
 end
 
@@ -556,10 +567,8 @@ function _get_blue_refined_connectivity(p::Polytope{2}, long_ref_edge, short_ref
     #             P[1], P[2], 4]
     #
     unmarked_edge = setdiff([1,2,3], [long_ref_edge, short_ref_edge])[1]
-    @show unmarked_edge
     edge_to_op_node = Dict(1 => 3, 2 => 2, 3 => 1)
     e2on = edge_to_op_node 
-    conn_data = nothing
     #if long_ref_edge == 3 && short_ref_edge == 2
     #  conn_data = [3, 4, 5,
     #               1, 4, 5,
@@ -631,12 +640,12 @@ function get_relabeled_connectivity(::GreenRefinement{N},rr::RefinementRule{P},f
   return Table(new_data,conn.ptrs)
 end
 
-function get_relabeled_connectivity(::BlueRefinement{N, M},rr::RefinementRule{P},faces_gids) where {N, M, P<:Polytope{2}}
-  conn = rr.ref_grid.grid.cell_node_ids
-  gids = [faces_gids[1]...,faces_gids[2][N]]
-  new_data = lazy_map(Reindex(gids),conn.data)
-  return Table(new_data,conn.ptrs)
-end
+#function get_relabeled_connectivity(::BlueRefinement{N, M},rr::RefinementRule{P},faces_gids) where {N, M, P<:Polytope{2}}
+#  conn = rr.ref_grid.grid.cell_node_ids
+#  gids = [faces_gids[1]...,faces_gids[2][N]]
+#  new_data = lazy_map(Reindex(gids),conn.data)
+#  return Table(new_data,conn.ptrs)
+#end
 
 function counts_to_ptrs(counts::Vector{<:Integer})
   n = length(counts)
