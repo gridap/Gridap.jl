@@ -1,31 +1,31 @@
 """
-Note on RefinementRules and Orientation of the refined grids: 
+Note on RefinementRules and Orientation of the refined grids:
 
   In order to guarantee that the refined grid is Oriented (which is something
-  we want for div- and curl-conforming discretisations), we need to guarantee 
-  for simplices that each fine cell has it's vertex gids sorted in increasing 
+  we want for div- and curl-conforming discretisations), we need to guarantee
+  for simplices that each fine cell has it's vertex gids sorted in increasing
   order.
 
-  In the case of refined meshes, this has an additional constraint: the sorting 
-  of the gids CANNOT be done after the refinement. This would make the glue 
-  inconsistent. This is an attempt to explain why: 
-  If we change the order of the gids of a fine cell, we are basically applying a 
-  rotation(+symmetry) to the reference space of that cell. The mesh itself will be 
-  aware of this rotation, but the RefinementRule will not. So the reference space 
-  corresponding to that fine cell within the RefinementRule will NOT be rotated 
+  In the case of refined meshes, this has an additional constraint: the sorting
+  of the gids CANNOT be done after the refinement. This would make the glue
+  inconsistent. This is an attempt to explain why:
+  If we change the order of the gids of a fine cell, we are basically applying a
+  rotation(+symmetry) to the reference space of that cell. The mesh itself will be
+  aware of this rotation, but the RefinementRule will not. So the reference space
+  corresponding to that fine cell within the RefinementRule will NOT be rotated
   accordingly. This creates an inconsistency, and the fine-to-coarse/coarse-to-fine
-  mesh transfers will therefore be broken (the glue is no longer valid). 
+  mesh transfers will therefore be broken (the glue is no longer valid).
 
-  How to fix this in the future? The glue should probably keep a record of the 
-  cell-wise rotations. This could be an auxiliary cell_map that maps the reference 
-  space of the fine cell within the fine mesh to the reference space of the fine cell 
+  How to fix this in the future? The glue should probably keep a record of the
+  cell-wise rotations. This could be an auxiliary cell_map that maps the reference
+  space of the fine cell within the fine mesh to the reference space of the fine cell
   within the refinement rule.
-  For instance: 
+  For instance:
     - Φ: Cell_map given by the RefinementRule, going from the fine reference space
          to the coarse reference space.
     - β: Cell_map encoding the rotation from the reference space of the fine mesh to
          the reference space of the RefinementRule.
-  then we would have 
+  then we would have
       X_coarse = Φ∘β(X_fine)
 """
 
@@ -78,12 +78,12 @@ end
 struct RedGreenStrategy <: RefinementStrategy end
 
 function refine(::EdgeBasedRefinement,model::UnstructuredDiscreteModel{Dc,Dp};cells_to_refine=nothing, should_use_nvb=false) where {Dc,Dp}
-  # cells_to_refine can be 
+  # cells_to_refine can be
   #    a) nothing -> All cells get refined
-  #    b) AbstractArray{<:Bool} of size num_cells(model) 
+  #    b) AbstractArray{<:Bool} of size num_cells(model)
   #            -> Only cells such that cells_to_refine[iC] == true get refined
-  #    c) AbstractArray{<:Integer} 
-  #            -> Cells for which gid ∈ cells_to_refine get refined 
+  #    c) AbstractArray{<:Integer}
+  #            -> Cells for which gid ∈ cells_to_refine get refined
 
   # Create new model
   if should_use_nvb
@@ -144,14 +144,14 @@ function _get_refinement_glue(ftopo ::UnstructuredGridTopology{Dc},
 end
 
 """
-Given an UnstructuredTopology and a list of cells_to_refine, provides an edge-based coloring 
-for the topology: 
+Given an UnstructuredTopology and a list of cells_to_refine, provides an edge-based coloring
+for the topology:
 
   - If a cell is completely refined, it is colored RED
   - If a cell touches more than one refined (RED) cell, it becomes RED.
   - If a cell touches a single refined (RED) cell, it is colored GREEN.
 
-The method returns a vector of Red/Green refinement rules, as well a the list of 
+The method returns a vector of Red/Green refinement rules, as well a the list of
 vertices, edges and cells which correspond to new vertices in the refined topology.
 """
 function setup_edge_based_rrules(::RefinementStrategy, topo::UnstructuredGridTopology{Dc},::Nothing) where Dc
@@ -177,13 +177,17 @@ function setup_edge_based_rrules(strat::NVBStrategy, topo::UnstructuredGridTopol
   nP          = length(polys)
 
   cell_color  = copy(cell_types) # WHITE
-  WHITE, GREEN, BLUE = Int8(1), Int8(1 + nP), Int8(1 + nP + nP + nP)
+  #WHITE, GREEN, BLUE = Int8(1), Int8(1 + nP), Int8(1 + nP + nP)
+  # Hardcoded for TRI
+  WHITE, GREEN, BLUE = Int8(1), Int8(2), Int8(5)
   #WHITE, RED, GREEN = Int8(1), Int8(1+nP), Int8(1+nP+nP)
-  green_offsets = counts_to_ptrs(map(p->num_faces(p,1),polys))
+  #green_offsets = counts_to_ptrs(map(p->num_faces(p,1),polys))
+  green_offset = 3
+  blue_offset = 3*2
   c_to_longest_edge_id = strat.longest_face_index_in_cell
   @show c_to_longest_edge_id
-  # Mark the edges to refine
   is_refined = falses(nE)
+  # Mark the edges to refine
   for c in cells_to_refine
     @show c
     e_longest = c_to_longest_edge_id[c]
@@ -203,8 +207,8 @@ function setup_edge_based_rrules(strat::NVBStrategy, topo::UnstructuredGridTopol
       end
     end
   end
-  @exfiltrate
-  num_rr =  nP  + green_offsets[nP+1]-1 # WHITE+RED+GREEN
+  num_rr =  1 + green_offset + blue_offset # WHITE+GREEN+BLUE
+  @show num_rr
   T = typeof(WhiteRefinementRule(first(polys))) # Needed to make eltype(color_rrules) concrete
   # Loop over cells and refine based on marked edges
   color_rrules = Vector{T}(undef,num_rr)
@@ -217,18 +221,29 @@ function setup_edge_based_rrules(strat::NVBStrategy, topo::UnstructuredGridTopol
       ref_edge = refined_edge_ids[1]
       #@show c_to_longest_edge_id[c]
       p = cell_types[c]
-      cell_color[c] = GREEN + Int8(green_offsets[p]-1+ref_edge-1)
+      cell_color[c] = GREEN + Int8(ref_edge-1)
     elseif length(refined_edge_ids) > 1
       @show refined_edge_ids
     end
   end
-  for (k,p) in enumerate(polys)
-    color_rrules[WHITE+k-1] = WhiteRefinementRule(p)
-    for e in 1:num_faces(p,1)
-      #@show GREEN+green_offsets[k]-1+e-1
-      color_rrules[GREEN+green_offsets[k]-1+e-1] = GreenRefinementRule(p,e)
+  #for (k,p) in enumerate(polys)
+  p = polys[1] # Hardcoded for TRI
+  color_rrules[WHITE] = WhiteRefinementRule(p)
+  for e in 1:num_faces(p,1)
+    #@show GREEN+green_offsets[k]-1+e-1
+    color_rrules[GREEN+e-1] = GreenRefinementRule(p,e)
+  end
+  blue_idx = 0
+  for e1 in 1:num_faces(p, 1)
+    for e2 in 1:num_faces(p, 1)
+      if e1 != e2
+        color_rrules[BLUE + blue_idx] = BlueRefinementRule(p,e1, e2)
+        blue_idx += 1
+      end
     end
   end
+  #end
+  @exfiltrate
   rrules = CompressedArray(color_rrules,cell_color)
   face_list = _redgreen_refined_faces_list(topo, rrules, is_refined)
   #@exfiltrate
@@ -382,7 +397,7 @@ end
 
 abstract type EdgeBasedRefinementRule <: RefinementRuleType end
 struct RedRefinement <: EdgeBasedRefinementRule end
-abstract type BlueRefinement{P, Q} <: EdgeBasedRefinementRule end
+struct BlueRefinement{P, Q} <: EdgeBasedRefinementRule end
 struct GreenRefinement{P} <: EdgeBasedRefinementRule end
 
 _has_interior_point(rr::RefinementRule) = _has_interior_point(rr,RefinementRuleType(rr))
@@ -397,8 +412,8 @@ function WhiteRefinementRule(p::Polytope)
 end
 
 """
-Edge-based RefinementRule where a new vertex is added to 
-each edge of the original Polytope. 
+Edge-based RefinementRule where a new vertex is added to
+each edge of the original Polytope.
 """
 function RedRefinementRule(p::Polytope{2})
   @notimplementedif (p ∉ [TRI,QUAD])
@@ -449,7 +464,7 @@ function _has_interior_point(rr::RefinementRule,::RedRefinement)
 end
 
 """
-Edge-based RefinementRule where a new vertex is added to 
+Edge-based RefinementRule where a new vertex is added to
 a single edge of the original Polytope.
 """
 function GreenRefinementRule(p::Polytope{2},ref_edge::Integer)
@@ -467,8 +482,8 @@ end
 
 function _get_green_refined_connectivity(p::Polytope{2},ref_edge)
   # Note: Sorting is necessary in order to guarantee that the gids
-  #       of the refined mesh are sorted (and therefore that the fine 
-  #       grid is Oriented). See the note at top of the file. 
+  #       of the refined mesh are sorted (and therefore that the fine
+  #       grid is Oriented). See the note at top of the file.
   P = _get_green_vertex_permutation(p,ref_edge)
   if p == TRI
     polys     = [TRI]
@@ -493,7 +508,7 @@ function _get_green_vertex_permutation(p::Polytope{2},ref_edge::Integer)
   if p == TRI
     perm = circshift([1,2,3],ref_edge-3)
   elseif p == QUAD
-    # Vertices and edges are not circularly labeled in QUAD, so 
+    # Vertices and edges are not circularly labeled in QUAD, so
     # we have to be inventive:
     nodes = [1,2,4,3]  # Vertices in circular order
     nperm = [2,0,-1,1] # Number of perms depending on ref edge
@@ -505,9 +520,65 @@ function _get_green_vertex_permutation(p::Polytope{2},ref_edge::Integer)
 end
 
 """
-Provided the gids of the coarse cell faces as a Tuple(vertices,edges,cell) and the 
-edge-based RefinementRule we want to apply, returns the connectivity of all the refined 
-children cells. 
+Edge-based RefinementRule where two vertex edges are added,
+where the long edge is bisected first
+"""
+function BlueRefinementRule(p::Polytope{2}, long_ref_edge::Integer, short_ref_edge::Integer)
+  @notimplementedif (p ∉ [TRI])
+
+  faces_list = (collect(1:num_faces(p,0)),[long_ref_edge],[])
+  coords = get_new_coordinates_from_faces(p,faces_list)
+
+  polys, cell_types, conn = _get_blue_refined_connectivity(p,long_ref_edge, long_ref_edge)
+  reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
+
+  ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(coords,conn,reffes,cell_types))
+  return RefinementRule(BlueRefinement{long_ref_edge, short_ref_edge}(),p,ref_grid)
+end
+
+function _get_blue_refined_connectivity(p::Polytope{2}, long_ref_edge, short_ref_edge)
+  # Note: Sorting is necessary in order to guarantee that the gids
+  #       of the refined mesh are sorted (and therefore that the fine
+  #       grid is Oriented). See the note at top of the file.
+  P = _get_blue_vertex_permutation(p,long_ref_edge)
+  if p == TRI
+    polys     = [TRI]
+    cell_type = [1,1]
+    conn_data = [sort([4,P[1],P[2]])...,
+                 sort([4,P[3],P[1]])...]
+    conn_ptrs = [1,4,7]
+    return polys, cell_type, Table(conn_data,conn_ptrs)
+  elseif p == QUAD
+    polys     = [TRI]
+    cell_type = [1,1,1]
+    conn_data = [sort([P[1],P[2],5])...,
+                 sort([P[3],P[1],5])...,
+                 sort([P[4],5,P[2]])...]
+    conn_ptrs = [1,4,7,10]
+    return polys, cell_type, Table(conn_data,conn_ptrs)
+  end
+  @notimplemented
+end
+
+function _get_blue_vertex_permutation(p::Polytope{2},ref_edge::Integer)
+  if p == TRI
+    perm = circshift([1,2,3],ref_edge-3)
+  elseif p == QUAD
+    # Vertices and edges are not circularly labeled in QUAD, so
+    # we have to be inventive:
+    nodes = [1,2,4,3]  # Vertices in circular order
+    nperm = [2,0,-1,1] # Number of perms depending on ref edge
+    perm  = circshift(nodes,nperm[ref_edge])[nodes]
+  else
+    @notimplemented
+  end
+  return perm
+end
+
+"""
+Provided the gids of the coarse cell faces as a Tuple(vertices,edges,cell) and the
+edge-based RefinementRule we want to apply, returns the connectivity of all the refined
+children cells.
 """
 function get_relabeled_connectivity(rr::RefinementRule,faces_gids)
   return get_relabeled_connectivity(RefinementRuleType(rr),rr,faces_gids)
