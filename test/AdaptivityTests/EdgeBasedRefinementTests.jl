@@ -7,7 +7,9 @@ using Gridap.CellData
 using Gridap.Adaptivity
 using Gridap.ReferenceFEs
 using FillArrays
+using JLD2
 
+let
 function l2_error(u1,u2,dΩ)
   eh = u1-u2
   return sum(∫(eh⋅eh)*dΩ)
@@ -105,8 +107,12 @@ end
 visualize = true
 
 # Refining meshes of QUADs
-cart_model = CartesianDiscreteModel((0,1,0,1),(4,4))
-model1     = UnstructuredDiscreteModel(cart_model) |> simplexify
+#cart_model = CartesianDiscreteModel((0,1,0,1),(4,4))
+#model1     = UnstructuredDiscreteModel(cart_model) |> simplexify
+#
+model1 = load("Lshapedmesh.jld2")["model"] |> UnstructuredDiscreteModel
+
+visualize && writevtk(Triangulation(model1),"test/AdaptivityTests/model")
 
 ## Homogeneous refinement
 #ref_model1 = refine(model1)
@@ -115,9 +121,11 @@ model1     = UnstructuredDiscreteModel(cart_model) |> simplexify
 #test_grid_transfers(2,model1,ref_model1,1)
 
 ## Propagate to all-red
-ref_model2 = refine(model1; should_use_nvb=true, cells_to_refine=[1,6,11,16])
-trian2 = Triangulation(ref_model2.model)
-visualize && writevtk(trian2,"test/AdaptivityTests/ref_model2")
+ref_model2 = refine(model1; should_use_nvb=true, cells_to_refine=[5,8])
+visualize && writevtk(Triangulation(ref_model2),"test/AdaptivityTests/ref_model2")
+ref_model3 = refine(ref_model2; should_use_nvb=true, cells_to_refine=[5])
+visualize && writevtk(Triangulation(ref_model3),"test/AdaptivityTests/ref_model3")
+
 #test_grid_transfers(2,model1,ref_model2,1)
 
 ## Red-Green refinement
@@ -147,3 +155,4 @@ visualize && writevtk(trian2,"test/AdaptivityTests/ref_model2")
 
 
 #end
+end

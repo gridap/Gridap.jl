@@ -177,28 +177,34 @@ function setup_edge_based_rrules(strat::NVBStrategy, topo::UnstructuredGridTopol
   nP          = length(polys)
 
   cell_color  = copy(cell_types) # WHITE
-  #WHITE, GREEN, BLUE = Int8(1), Int8(1 +nP), Int8(1 + nP + nP + nP)
-  WHITE, RED, GREEN = Int8(1), Int8(1+nP), Int8(1+nP+nP)
+  WHITE, GREEN, BLUE = Int8(1), Int8(1 + nP), Int8(1 + nP + nP + nP)
+  #WHITE, RED, GREEN = Int8(1), Int8(1+nP), Int8(1+nP+nP)
   green_offsets = counts_to_ptrs(map(p->num_faces(p,1),polys))
   c_to_longest_edge_id = strat.longest_face_index_in_cell
+  @show c_to_longest_edge_id
   # Mark the edges to refine
   is_refined = falses(nE)
   for c in cells_to_refine
+    @show c
     e_longest = c_to_longest_edge_id[c]
+    @show e_longest
     # Has to terminate because an edge is marked each iteration or we skip an
     # iteration due to a boundary cell
     while !is_refined[e_longest]
       is_refined[e_longest] = true
-      c_nbor = findfirst(c′ -> c′ != c, e2c_map[e_longest])
-      if isnothing(c_nbor) # We've reach the boundary
+      c_nbor_idx = findfirst(c′ -> c′ != c, e2c_map[e_longest])
+      if isnothing(c_nbor_idx) # We've reach the boundary
         continue
       else
+        c_nbor = e2c_map[e_longest][c_nbor_idx]
+        @show c_nbor
         e_longest = c_to_longest_edge_id[c_nbor]
+        @show e_longest
       end
     end
   end
-  num_rr =  nP + nP  + green_offsets[nP+1]-1 # WHITE+RED+GREEN
-  @show num_rr
+  @exfiltrate
+  num_rr =  nP  + green_offsets[nP+1]-1 # WHITE+RED+GREEN
   T = typeof(WhiteRefinementRule(first(polys))) # Needed to make eltype(color_rrules) concrete
   # Loop over cells and refine based on marked edges
   color_rrules = Vector{T}(undef,num_rr)
@@ -212,18 +218,17 @@ function setup_edge_based_rrules(strat::NVBStrategy, topo::UnstructuredGridTopol
       #@show c_to_longest_edge_id[c]
       p = cell_types[c]
       cell_color[c] = GREEN + Int8(green_offsets[p]-1+ref_edge-1)
+    elseif length(refined_edge_ids) > 1
+      @show refined_edge_ids
     end
   end
   for (k,p) in enumerate(polys)
     color_rrules[WHITE+k-1] = WhiteRefinementRule(p)
-    color_rrules[RED+k-1]   = RedRefinementRule(p)
     for e in 1:num_faces(p,1)
       #@show GREEN+green_offsets[k]-1+e-1
       color_rrules[GREEN+green_offsets[k]-1+e-1] = GreenRefinementRule(p,e)
     end
   end
-  @show color_rrules
-  @show cell_color
   rrules = CompressedArray(color_rrules,cell_color)
   face_list = _redgreen_refined_faces_list(topo, rrules, is_refined)
   #@exfiltrate
@@ -303,7 +308,6 @@ end
 function _redgreen_refined_faces_list(topo::UnstructuredGridTopology{2},rrules,edge_is_refined)
   ref_nodes = 1:num_faces(topo,0)
   ref_edges = all(edge_is_refined) ? (1:num_faces(topo,1)) : findall(edge_is_refined)
-  @exfiltrate
   ref_cells = findall(lazy_map(_has_interior_point,rrules))
   return (ref_nodes,ref_edges,ref_cells)
 end
