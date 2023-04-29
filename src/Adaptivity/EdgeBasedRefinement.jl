@@ -237,7 +237,7 @@ function setup_edge_based_rrules(strat::NVBStrategy, topo::UnstructuredGridTopol
   for e1 in 1:num_faces(p, 1)
     for e2 in 1:num_faces(p, 1)
       if e1 != e2
-        color_rrules[BLUE + blue_idx] = BlueRefinementRule(p,e1, e2)
+        color_rrules[BLUE + blue_idx] = BlueRefinementRule(p, e1, e2)
         blue_idx += 1
       end
     end
@@ -526,13 +526,15 @@ where the long edge is bisected first
 function BlueRefinementRule(p::Polytope{2}, long_ref_edge::Integer, short_ref_edge::Integer)
   @notimplementedif (p ∉ [TRI])
 
-  faces_list = (collect(1:num_faces(p,0)),[long_ref_edge],[])
+  faces_list = (collect(1:num_faces(p,0)),[long_ref_edge, short_ref_edge],[])
   coords = get_new_coordinates_from_faces(p,faces_list)
-
-  polys, cell_types, conn = _get_blue_refined_connectivity(p,long_ref_edge, long_ref_edge)
+  @show coords
+  polys, cell_types, conn = _get_blue_refined_connectivity(p,long_ref_edge, short_ref_edge)
   reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
 
   ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(coords,conn,reffes,cell_types))
+  writevtk(Triangulation(ref_grid), "test/AdaptivityTests/BlueRefTest")
+  @exfiltrate
   return RefinementRule(BlueRefinement{long_ref_edge, short_ref_edge}(),p,ref_grid)
 end
 
@@ -543,18 +545,46 @@ function _get_blue_refined_connectivity(p::Polytope{2}, long_ref_edge, short_ref
   P = _get_blue_vertex_permutation(p,long_ref_edge)
   if p == TRI
     polys     = [TRI]
-    cell_type = [1,1]
-    conn_data = [sort([4,P[1],P[2]])...,
-                 sort([4,P[3],P[1]])...]
-    conn_ptrs = [1,4,7]
-    return polys, cell_type, Table(conn_data,conn_ptrs)
-  elseif p == QUAD
-    polys     = [TRI]
-    cell_type = [1,1,1]
-    conn_data = [sort([P[1],P[2],5])...,
-                 sort([P[3],P[1],5])...,
-                 sort([P[4],5,P[2]])...]
-    conn_ptrs = [1,4,7,10]
+    cell_type = [1, 1, 1]
+    #conn_data = [sort([4,P[1],P[2]])...,
+    #             sort([4,P[3],P[1]])...]
+    #conn_ptrs = [1,4,7]
+    # 4 is at the midpoint of the long edge
+    # 5 is at the midpoint of the short edge
+    #conn_data = [P[1], 4, 5,
+    #             P[3], 4, 5,
+    #             P[1], P[2], 4]
+    #
+    unmarked_edge = setdiff([1,2,3], [long_ref_edge, short_ref_edge])[1]
+    @show unmarked_edge
+    edge_to_op_node = Dict(1 => 3, 2 => 2, 3 => 1)
+    e2on = edge_to_op_node 
+    conn_data = nothing
+    #if long_ref_edge == 3 && short_ref_edge == 2
+    #  conn_data = [3, 4, 5,
+    #               1, 4, 5,
+    #               1, 2, 4]
+    #elseif long_ref_edge == 2 && short_ref_edge == 3
+    #  conn_data = [3, 4, 5,
+    #               2, 4, 5,
+    #               1, 2, 4]
+    #elseif long_ref_edge == 1 && short_ref_edge == 3
+    #  conn_data = [3, 4, 5,
+    #               2, 4, 5,
+    #               1, 3, 4]
+    #elseif long_ref_edge == 1 && short_ref_edge == 2
+    #  conn_data = [3, 4, 5,
+    #               1, 4, 5,
+    #               2, 3, 4]
+    #elseif long_ref_edge == 3 && short_ref_edge == 1
+    #  conn_data = [2, 4, 5,
+    #               1, 4, 5,
+    #               1, 3, 4]
+    #else
+    conn_data = [e2on[long_ref_edge], 4, 5,
+                 e2on[unmarked_edge], 4, 5,
+                 sort([e2on[long_ref_edge], e2on[short_ref_edge], 4])...]
+    conn_ptrs = [1, 4, 7, 10]
     return polys, cell_type, Table(conn_data,conn_ptrs)
   end
   @notimplemented
@@ -563,12 +593,6 @@ end
 function _get_blue_vertex_permutation(p::Polytope{2},ref_edge::Integer)
   if p == TRI
     perm = circshift([1,2,3],ref_edge-3)
-  elseif p == QUAD
-    # Vertices and edges are not circularly labeled in QUAD, so
-    # we have to be inventive:
-    nodes = [1,2,4,3]  # Vertices in circular order
-    nperm = [2,0,-1,1] # Number of perms depending on ref edge
-    perm  = circshift(nodes,nperm[ref_edge])[nodes]
   else
     @notimplemented
   end
@@ -601,6 +625,13 @@ function get_relabeled_connectivity(::RedRefinement,rr::RefinementRule{P},faces_
 end
 
 function get_relabeled_connectivity(::GreenRefinement{N},rr::RefinementRule{P},faces_gids) where {N,P<:Polytope{2}}
+  conn = rr.ref_grid.grid.cell_node_ids
+  gids = [faces_gids[1]...,faces_gids[2][N]]
+  new_data = lazy_map(Reindex(gids),conn.data)
+  return Table(new_data,conn.ptrs)
+end
+
+function get_relabeled_connectivity(::BlueRefinement{N, M},rr::RefinementRule{P},faces_gids) where {N, M, P<:Polytope{2}}
   conn = rr.ref_grid.grid.cell_node_ids
   gids = [faces_gids[1]...,faces_gids[2][N]]
   new_data = lazy_map(Reindex(gids),conn.data)
