@@ -29,9 +29,55 @@ Note on RefinementRules and Orientation of the refined grids:
       X_coarse = Φ∘β(X_fine)
 """
 
+using Infiltrator
+
 struct EdgeBasedRefinement <: AdaptivityMethod end
 
-function refine(::EdgeBasedRefinement,model::UnstructuredDiscreteModel{Dc,Dp};cells_to_refine=nothing) where {Dc,Dp}
+abstract type RefinementStrategy end
+
+struct NVBStrategy{T} <: RefinementStrategy
+  #longest_edge_sorted_cell_node_ids::Vector{<:Vector}
+  longest_face_index_in_cell::Vector{T}
+end
+
+_calculate_edge_length(node_coords, nodes) = norm(node_coords[nodes[1]] - node_coords[nodes[2]])
+
+# Create a Vector containing the longest edge
+function _get_longest_edge_index_in_cell(c2e_map, e2n_map, node_coords)
+  longest_idxs = Vector{eltype(eltype(c2e_map))}(undef, length(c2e_map))
+  # Loop over cells
+  for (c, es) in enumerate(c2e_map)
+    e_length_max = 0.0
+    e_id_max = -1 # Longest edge index must be found
+    for e in es
+      ns = e2n_map[e]
+      # For now only edges
+      e_length = _calculate_edge_length(node_coords, ns)
+      if e_length > e_length_max
+        e_length_max = e_length
+        e_id_max = e
+      end
+    end
+    longest_idxs[c] = e_id_max
+  end
+  return longest_idxs
+end
+
+function NVBStrategy(model::UnstructuredDiscreteModel{Dc,Dp}) where {Dc, Dp}
+  topo = model.grid_topology
+  c2e_map     = get_faces(topo,Dc,1)
+  e2n_map     = get_faces(topo,1,0)
+  node_coords = get_node_coordinates(model)
+  #cell_node_ids = [v for v in cell_node_ids]
+  #_sort_longest_edge!(cell_node_ids, node_coords)
+  longest_idxs = _get_longest_edge_index_in_cell(c2e_map, e2n_map, node_coords)
+  @exfiltrate
+  NVBStrategy(longest_idxs)
+end
+
+struct RedGreenStrategy <: RefinementStrategy end
+
+function refine(::EdgeBasedRefinement,model::UnstructuredDiscreteModel{Dc,Dp};cells_to_refine=nothing, should_use_nvb=false) where {Dc,Dp}
   # cells_to_refine can be 
   #    a) nothing -> All cells get refined
   #    b) AbstractArray{<:Bool} of size num_cells(model) 
@@ -40,14 +86,21 @@ function refine(::EdgeBasedRefinement,model::UnstructuredDiscreteModel{Dc,Dp};ce
   #            -> Cells for which gid ∈ cells_to_refine get refined 
 
   # Create new model
-  rrules, faces_list = setup_edge_based_rrules(model.grid_topology,cells_to_refine)
+  if should_use_nvb
+    strategy = NVBStrategy(model)
+  else
+    strategy = RedGreenStrategy()
+  end
+  @show strategy
+  rrules = setup_edge_based_rrules(strategy, model.grid_topology,cells_to_refine)
+  rrules, faces_list = setup_edge_based_rrules(strategy, model.grid_topology,cells_to_refine)
   topo   = _refine_unstructured_topology(model.grid_topology,rrules,faces_list)
   reffes = map(p->LagrangianRefFE(Float64,p,1),get_polytopes(topo))
   grid   = UnstructuredGrid(get_vertex_coordinates(topo),get_faces(topo,Dc,0),reffes,get_cell_type(topo),OrientationStyle(topo))
   labels = FaceLabeling(topo)
   ref_model = UnstructuredDiscreteModel(grid,topo,labels)
 
-  # Create ref glue
+  ## Create ref glue
   glue = _get_refinement_glue(topo,model.grid_topology,rrules)
 
   return AdaptedDiscreteModel(ref_model,model,glue)
@@ -101,17 +154,84 @@ for the topology:
 The method returns a vector of Red/Green refinement rules, as well a the list of 
 vertices, edges and cells which correspond to new vertices in the refined topology.
 """
-function setup_edge_based_rrules(topo::UnstructuredGridTopology{Dc},::Nothing) where Dc
+function setup_edge_based_rrules(::RefinementStrategy, topo::UnstructuredGridTopology{Dc},::Nothing) where Dc
   rrules     = lazy_map(RedRefinementRule,CompressedArray(topo.polytopes,topo.cell_type))
   faces_list = _redgreen_refined_faces_list(topo,rrules,[true])
   return rrules, faces_list
 end
 
-function setup_edge_based_rrules(topo::UnstructuredGridTopology{Dc},cells_to_refine::AbstractArray{<:Bool}) where Dc
+function setup_edge_based_rrules(::RefinementStrategy,topo::UnstructuredGridTopology{Dc},cells_to_refine::AbstractArray{<:Bool}) where Dc
   return setup_edge_based_rrules(topo,findall(cells_to_refine))
 end
 
-function setup_edge_based_rrules(topo::UnstructuredGridTopology{Dc},cells_to_refine::AbstractArray{<:Integer}) where Dc
+_shift_to_first(v::AbstractVector{T}, i::T) where {T<:Integer} = circshift(v, -(i - 1))
+
+function setup_edge_based_rrules(strat::NVBStrategy, topo::UnstructuredGridTopology{Dc},cells_to_refine::AbstractArray{<:Integer}) where Dc
+  println("enter NVB")
+  nC = num_cells(topo)
+  nE = num_faces(topo,1)
+  c2e_map     = get_faces(topo,Dc,1)
+  e2c_map     = get_faces(topo,1,Dc)
+  polys       = topo.polytopes
+  cell_types  = topo.cell_type
+  nP          = length(polys)
+
+  cell_color  = copy(cell_types) # WHITE
+  #WHITE, GREEN, BLUE = Int8(1), Int8(1 +nP), Int8(1 + nP + nP + nP)
+  WHITE, RED, GREEN = Int8(1), Int8(1+nP), Int8(1+nP+nP)
+  green_offsets = counts_to_ptrs(map(p->num_faces(p,1),polys))
+  c_to_longest_edge_id = strat.longest_face_index_in_cell
+  # Mark the edges to refine
+  is_refined = falses(nE)
+  for c in cells_to_refine
+    e_longest = c_to_longest_edge_id[c]
+    # Has to terminate because an edge is marked each iteration or we skip an
+    # iteration due to a boundary cell
+    while !is_refined[e_longest]
+      is_refined[e_longest] = true
+      c_nbor = findfirst(c′ -> c′ != c, e2c_map[e_longest])
+      if isnothing(c_nbor) # We've reach the boundary
+        continue
+      else
+        e_longest = c_to_longest_edge_id[c_nbor]
+      end
+    end
+  end
+  num_rr =  nP + nP  + green_offsets[nP+1]-1 # WHITE+RED+GREEN
+  @show num_rr
+  T = typeof(WhiteRefinementRule(first(polys))) # Needed to make eltype(color_rrules) concrete
+  # Loop over cells and refine based on marked edges
+  color_rrules = Vector{T}(undef,num_rr)
+  for (c, c_edges) in enumerate(c2e_map)
+    #@show is_refined[c_edges]
+    refined_edge_ids = findall(is_refined[c_edges])
+    #@show refined_edge_ids
+    # GREEN refinement becasue only one edge should be bisected
+    if length(refined_edge_ids) == 1
+      ref_edge = refined_edge_ids[1]
+      #@show c_to_longest_edge_id[c]
+      p = cell_types[c]
+      cell_color[c] = GREEN + Int8(green_offsets[p]-1+ref_edge-1)
+    end
+  end
+  for (k,p) in enumerate(polys)
+    color_rrules[WHITE+k-1] = WhiteRefinementRule(p)
+    color_rrules[RED+k-1]   = RedRefinementRule(p)
+    for e in 1:num_faces(p,1)
+      #@show GREEN+green_offsets[k]-1+e-1
+      color_rrules[GREEN+green_offsets[k]-1+e-1] = GreenRefinementRule(p,e)
+    end
+  end
+  @show color_rrules
+  @show cell_color
+  rrules = CompressedArray(color_rrules,cell_color)
+  face_list = _redgreen_refined_faces_list(topo, rrules, is_refined)
+  #@exfiltrate
+  #println("finish")
+  return rrules, face_list
+end
+
+function setup_edge_based_rrules(::RedGreenStrategy, topo::UnstructuredGridTopology{Dc},cells_to_refine::AbstractArray{<:Integer}) where Dc
   nC = num_cells(topo)
   nE = num_faces(topo,1)
   c2e_map     = get_faces(topo,Dc,1)
@@ -183,6 +303,7 @@ end
 function _redgreen_refined_faces_list(topo::UnstructuredGridTopology{2},rrules,edge_is_refined)
   ref_nodes = 1:num_faces(topo,0)
   ref_edges = all(edge_is_refined) ? (1:num_faces(topo,1)) : findall(edge_is_refined)
+  @exfiltrate
   ref_cells = findall(lazy_map(_has_interior_point,rrules))
   return (ref_nodes,ref_edges,ref_cells)
 end
@@ -257,6 +378,7 @@ end
 
 abstract type EdgeBasedRefinementRule <: RefinementRuleType end
 struct RedRefinement <: EdgeBasedRefinementRule end
+abstract type BlueRefinement{P, Q} <: EdgeBasedRefinementRule end
 struct GreenRefinement{P} <: EdgeBasedRefinementRule end
 
 _has_interior_point(rr::RefinementRule) = _has_interior_point(rr,RefinementRuleType(rr))
