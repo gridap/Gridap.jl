@@ -93,8 +93,9 @@ function refine(::EdgeBasedRefinement,model::UnstructuredDiscreteModel{Dc,Dp};ce
   #            -> Cells for which gid ∈ cells_to_refine get refined
 
   # Create new model
-  strategy = NVBStrategy(model)
-  if !should_use_nvb
+  if should_use_nvb
+    strategy = NVBStrategy(model)
+  else
     strategy = RedGreenStrategy()
   end
   rrules, faces_list = setup_edge_based_rrules(strategy, model.grid_topology,cells_to_refine)
@@ -104,7 +105,6 @@ function refine(::EdgeBasedRefinement,model::UnstructuredDiscreteModel{Dc,Dp};ce
   grid   = UnstructuredGrid(get_vertex_coordinates(topo),get_faces(topo,Dc,0),reffes,get_cell_type(topo),OrientationStyle(topo))
   labels = FaceLabeling(topo)
   ref_model = UnstructuredDiscreteModel(grid,topo,labels)
-
   ## Create ref glue
   glue = _get_refinement_glue(topo,model.grid_topology,rrules)
 
@@ -210,14 +210,10 @@ function setup_edge_based_rrules(strat::NVBStrategy, topo::UnstructuredGridTopol
     while !is_refined[e_longest]
       is_refined[e_longest] = true
       c_nbor_lid = findfirst(c′ -> c′ != c, e2c_map[e_longest])
-      #@show c_nbor_lid
       if isnothing(c_nbor_lid) # We've reach the boundary
-        #@show c
-        #@show e_longest
         continue
       else
         c_nbor_gid = e2c_map[e_longest][c_nbor_lid]
-        #@show c_nbor_gid
         e_longest = c_to_longest_edge_gid[c_nbor_gid]
         c = c_nbor_gid
       end
@@ -241,7 +237,6 @@ function setup_edge_based_rrules(strat::NVBStrategy, topo::UnstructuredGridTopol
       blue_idx = BLUE_dict[(long_ref_edge_lid, short_ref_edge_lid)]
       cell_color[c] = BLUE + Int8(blue_idx - 1)
     elseif length(refined_edge_lids) == 3
-      println("3 edges marked")
       long_ref_edge_lid = c_to_longest_edge_lid[c]
       cell_color[c] = BLUE_DOUBLE + Int(long_ref_edge_lid - 1)
     end
@@ -565,43 +560,12 @@ function _get_blue_refined_connectivity(p::Polytope{2}, long_ref_edge, short_ref
   # Note: Sorting is necessary in order to guarantee that the gids
   #       of the refined mesh are sorted (and therefore that the fine
   #       grid is Oriented). See the note at top of the file.
-  P = _get_blue_vertex_permutation(p,long_ref_edge)
   if p == TRI
     polys     = [TRI]
     cell_type = [1, 1, 1]
-    #conn_data = [sort([4,P[1],P[2]])...,
-    #             sort([4,P[3],P[1]])...]
-    #conn_ptrs = [1,4,7]
-    # 4 is at the midpoint of the long edge
-    # 5 is at the midpoint of the short edge
-    #conn_data = [P[1], 4, 5,
-    #             P[3], 4, 5,
-    #             P[1], P[2], 4]
-    #
     unmarked_edge = setdiff([1,2,3], [long_ref_edge, short_ref_edge])[1]
     edge_to_oppostie_node = Dict(1 => 3, 2 => 2, 3 => 1)
     e2on = edge_to_oppostie_node
-    #if long_ref_edge == 3 && short_ref_edge == 2
-    #  conn_data = [3, 4, 5,
-    #               1, 4, 5,
-    #               1, 2, 4]
-    #elseif long_ref_edge == 2 && short_ref_edge == 3
-    #  conn_data = [3, 4, 5,
-    #               2, 4, 5,
-    #               1, 2, 4]
-    #elseif long_ref_edge == 1 && short_ref_edge == 3
-    #  conn_data = [3, 4, 5,
-    #               2, 4, 5,
-    #               1, 3, 4]
-    #elseif long_ref_edge == 1 && short_ref_edge == 2
-    #  conn_data = [3, 4, 5,
-    #               1, 4, 5,
-    #               2, 3, 4]
-    #elseif long_ref_edge == 3 && short_ref_edge == 1
-    #  conn_data = [2, 4, 5,
-    #               1, 4, 5,
-    #               1, 3, 4]
-    #else
     conn_data = [e2on[long_ref_edge], 4, 5,
                  e2on[unmarked_edge], 4, 5,
                  sort([e2on[long_ref_edge], e2on[short_ref_edge], 4])...]
@@ -633,10 +597,7 @@ function BlueDoubleRefinementRule(p::Polytope{2}, long_ref_edge::Integer)
   reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
 
   ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(coords,conn,reffes,cell_types))
-  #topo = ref_grid.grid_topology
-  #e2cs =  get_faces(topo, 2, 1)
-  #@show [e2c .- 1  for e2c in e2cs]
-  writevtk(Triangulation(ref_grid), "test/AdaptivityTests/DoubleBlueRefTest$long_ref_edge")
+  #writevtk(Triangulation(ref_grid), "test/AdaptivityTests/DoubleBlueRefTest$long_ref_edge")
   return RefinementRule(BlueDoubleRefinement{long_ref_edge}(),p,ref_grid)
 end
 
