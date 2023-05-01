@@ -217,22 +217,23 @@ function setup_edge_based_rrules(strat::NVBStrategy, topo::UnstructuredGridTopol
   is_refined = falses(nE)
   # Mark the edges to refine
   @show cells_to_refine
+  # TODO: maybe use queue here?
   for i in 1:length(cells_to_refine)
-    @show c = cells_to_refine[i]
+    c = cells_to_refine[i]
     e_longest = c_to_longest_edge_gid[c]
     # Has to terminate because an edge is marked each iteration or we skip an
     # iteration due to a boundary cell
     while !is_refined[e_longest]
       is_refined[e_longest] = true
       c_nbor_lid = findfirst(c′ -> c′ != c, e2c_map[e_longest])
-      @show c_nbor_lid
+      #@show c_nbor_lid
       if isnothing(c_nbor_lid) # We've reach the boundary
-        @show c
-        @show e_longest
+        #@show c
+        #@show e_longest
         continue
       else
         c_nbor_gid = e2c_map[e_longest][c_nbor_lid]
-        @show c_nbor_gid
+        #@show c_nbor_gid
         e_longest = c_to_longest_edge_gid[c_nbor_gid]
         c = c_nbor_gid
       end
@@ -251,27 +252,12 @@ function setup_edge_based_rrules(strat::NVBStrategy, topo::UnstructuredGridTopol
       cell_color[c] = GREEN + Int8(ref_edge-1)
       # BLUE refinement: two biseceted
     elseif length(refined_edge_lids) == 2
-      long_ref_edge_gid = c_to_longest_edge_gid[c]
-      c_ref_edge_gids = c_edges[refined_edge_lids]
-      short_ref_edge_gid = setdiff(c_ref_edge_gids, long_ref_edge_gid)
-      #@assert length(short_ref_edge_gid) == 1
-      short_ref_edge_gid  = short_ref_edge_gid[1]
-      long_ref_edge_lid = findfirst(i -> i == long_ref_edge_gid, c_ref_edge_gids)
-      #long_ref_edge_lid = c_to_longest_edge_lid[c]
-      #@assert long_ref_edge_lid == c_to_longest_edge_lid[c]
-      if long_ref_edge_lid != c_to_longest_edge_lid[c]
-        @show c
-        @show long_ref_edge_lid
-        @show c_to_longest_edge_lid[c]
-      end
-      #@assert long_ref_edge_lid == c_to_longest_edge_lid[c]
-      #short_ref_edge_lid =findfirst(i -> i == short_ref_edge_gid, c_ref_edge_gids)
+      long_ref_edge_lid = c_to_longest_edge_lid[c]
       short_ref_edge_lid = setdiff(refined_edge_lids, long_ref_edge_lid)[1]
       blue_idx = BLUE_dict[(long_ref_edge_lid, short_ref_edge_lid)]
       cell_color[c] = BLUE + Int8(blue_idx - 1)
-      #@show long_ref_edge_gid
-      #@show short_ref_edge_gid
-      #cell_color[c] = BLUE + ref_edge +
+    elseif length(refined_edge_lids) == 3
+      println("3 edges marked")
     end
   end
   #for (k,p) in enumerate(polys)
