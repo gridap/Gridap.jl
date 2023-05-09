@@ -109,7 +109,8 @@ visualize = true
 # Refining meshes of QUADs
 cart_model = CartesianDiscreteModel((0,1,0,1),(2,2))
 model1     = UnstructuredDiscreteModel(cart_model) |> simplexify
-model1 = refine(model1, should_use_nvb = true, cells_to_refine=1:num_cells(model1))
+should_use_nvb = true
+#model1 = refine(model1, should_use_nvb = should_use_nvb, cells_to_refine=1:num_cells(model1))
 #
 #model1 = load("Lshapedmesh.jld2")["model"] |> UnstructuredDiscreteModel
 #model1 = load("Lshaped_unstructured.jld2")["model"] |> UnstructuredDiscreteModel
@@ -118,40 +119,43 @@ model1 = refine(model1, should_use_nvb = true, cells_to_refine=1:num_cells(model
 visualize && writevtk(Triangulation(model1),"test/AdaptivityTests/model")
 
 ## Homogeneous refinement
-ref_model1 = refine(model1, should_use_nvb = true,cells_to_refine = [2])
+ref_model1 = refine(model1, should_use_nvb = should_use_nvb ,cells_to_refine = [2])
 trian1 = Triangulation(ref_model1.model)
 visualize && writevtk(trian1,"test/AdaptivityTests/ref_model1")
 #test_grid_transfers(2,model1,ref_model1,1)
 
 ## Propagate to all-red
-ref_model2 = refine(ref_model1; should_use_nvb=true, cells_to_refine=[2])
+ref_model2 = refine(ref_model1; should_use_nvb=should_use_nvb, cells_to_refine=[2])
 visualize && writevtk(Triangulation(ref_model2),"test/AdaptivityTests/ref_model2")
-#
-ref_model3 = refine(ref_model2; should_use_nvb=true, cells_to_refine=[6])
+#test_grid_transfers(2, model1,ref_model1,1)
+##
+ref_model3 = refine(ref_model2; should_use_nvb=should_use_nvb, cells_to_refine=[6])
 visualize && writevtk(Triangulation(ref_model3),"test/AdaptivityTests/ref_model3")
-
-#cells_to_refine = [4, 6, 3, 9, 10, 8, 5, 1, 2, 7]
-cells_to_refine = [3, 4, 6, 9, 10]
-ref_model4 = refine(ref_model3; should_use_nvb=true, cells_to_refine=cells_to_refine)
+#test_grid_transfers(2,model1,ref_model3,1)
+#
+cells_to_refine = [4, 6, 3, 9, 10, 8, 5, 1, 2, 7]
+ref_model4 = refine(ref_model3; should_use_nvb=should_use_nvb, cells_to_refine=cells_to_refine)
 visualize && writevtk(Triangulation(ref_model4),"test/AdaptivityTests/ref_model4")
+#test_grid_transfers(2, ref_model3, ref_model4, 1)
 
-#cells_to_refine=[4, 1, 2, 10, 8, 5, 3]
-#ref_model5 = refine(ref_model4; should_use_nvb=true, cells_to_refine=[2])
-#visualize && writevtk(Triangulation(ref_model5),"test/AdaptivityTests/ref_model5")
-
+cells_to_refine=[4, 1, 2, 10, 8, 5, 3]
+ref_model5 = refine(ref_model4; should_use_nvb=should_use_nvb, cells_to_refine=[2])
+visualize && writevtk(Triangulation(ref_model5),"test/AdaptivityTests/ref_model5")
+test_grid_transfers(2,ref_model4,ref_model5,1)
 
 #ref_model3 = refine(ref_model3; should_use_nvb=true, cells_to_refine=[11])
 #visualize && writevtk(Triangulation(ref_model3),"test/AdaptivityTests/ref_model3")
 
 
-ref_model = ref_model3
-Random.seed!(1234)
-for i = 1:7
-  cells_to_refine = unique(Int32.(rand(1:10, num_cells(ref_model2))))
-  @show cells_to_refine
-  ref_model = refine(ref_model; should_use_nvb=true, cells_to_refine=cells_to_refine)
-  visualize && writevtk(Triangulation(ref_model),"test/AdaptivityTests/ref_model$(i + 3)")
-end
+#ref_model = ref_model3
+#Random.seed!(1234)
+#for i = 1:30
+#  @show i
+#  cells_to_refine = unique(Int32.(rand(1:10, num_cells(ref_model2))))
+#  @show cells_to_refine
+#  @time ref_model = refine(ref_model; should_use_nvb=true, cells_to_refine=cells_to_refine)
+#end
+#visualize && writevtk(Triangulation(ref_model),"test/AdaptivityTests/ref_modeln")
 
 
 #test_grid_transfers(2,model1,ref_model2,1)

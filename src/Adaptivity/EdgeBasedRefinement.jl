@@ -177,7 +177,6 @@ end
 _shift_to_first(v::AbstractVector{T}, i::T) where {T<:Integer} = circshift(v, -(i - 1))
 
 function setup_edge_based_rrules(strat::NVBStrategy, topo::UnstructuredGridTopology{Dc},cells_to_refine::AbstractArray{<:Integer}) where Dc
-  println("enter NVB")
   nC = num_cells(topo)
   nE = num_faces(topo,1)
   c2e_map     = get_faces(topo,Dc,1)
@@ -190,18 +189,16 @@ function setup_edge_based_rrules(strat::NVBStrategy, topo::UnstructuredGridTopol
   #WHITE, GREEN, BLUE = Int8(1), Int8(1 + nP), Int8(1 + nP + nP)
   # Hardcoded for TRI
   WHITE, GREEN, BLUE, BLUE_DOUBLE = Int8(1), Int8(2), Int8(5), Int(11)
+  # Create the inverse mapping from long/short edge pairs to unique indices
   BLUE_dict = Dict((1,2) => 1, (1, 3) => 2, (2, 1) => 3, (2, 3) => 4, (3, 1) => 5, (3, 2) => 6)
-  #WHITE, RED, GREEN = Int8(1), Int8(1+nP), Int8(1+nP+nP)
-  #green_offsets = counts_to_ptrs(map(p->num_faces(p,1),polys))
   green_offset = 3
   blue_offset = 3*2
   blue_double_offset = 3
   c_to_longest_edge_gid = strat.cell_to_longest_edge_gid
   c_to_longest_edge_lid = strat.cell_to_longest_edge_lid
   is_refined = falses(nE)
-  # Mark the edges to refine
-  @show cells_to_refine
   # TODO: maybe use queue here?
+  # Loop over cells and mark edges to refine i.e. is_refined
   for i in 1:length(cells_to_refine)
     c = cells_to_refine[i]
     e_longest = c_to_longest_edge_gid[c]
@@ -213,16 +210,15 @@ function setup_edge_based_rrules(strat::NVBStrategy, topo::UnstructuredGridTopol
       if isnothing(c_nbor_lid) # We've reach the boundary
         continue
       else
+        # Get the longest edge of the neighbor
         c_nbor_gid = e2c_map[e_longest][c_nbor_lid]
         e_longest = c_to_longest_edge_gid[c_nbor_gid]
+        # Set the current cell gid to that of the neighbor
         c = c_nbor_gid
       end
     end
   end
-  num_rr =  1 + green_offset + blue_offset  + blue_double_offset # WHITE+GREEN+BLUE
-  T = typeof(WhiteRefinementRule(first(polys))) # Needed to make eltype(color_rrules) concrete
   # Loop over cells and refine based on marked edges
-  color_rrules = Vector{T}(undef,num_rr)
   for (c, c_edges) in enumerate(c2e_map)
     refined_edge_lids = findall(is_refined[c_edges])
     # GREEN refinement becasue only one edge should be bisected
@@ -236,11 +232,16 @@ function setup_edge_based_rrules(strat::NVBStrategy, topo::UnstructuredGridTopol
       short_ref_edge_lid = setdiff(refined_edge_lids, long_ref_edge_lid)[1]
       blue_idx = BLUE_dict[(long_ref_edge_lid, short_ref_edge_lid)]
       cell_color[c] = BLUE + Int8(blue_idx - 1)
+      # DOUBLE BLUE refinement: three biseceted edges (somehwat rare)
     elseif length(refined_edge_lids) == 3
       long_ref_edge_lid = c_to_longest_edge_lid[c]
       cell_color[c] = BLUE_DOUBLE + Int(long_ref_edge_lid - 1)
     end
   end
+  # Setup color_rrules for the CompressedArray
+  num_rr =  1 + green_offset + blue_offset + blue_double_offset # GREEN+BLUE+DOUBLE_BLUE
+  T = typeof(WhiteRefinementRule(first(polys))) # Needed to make eltype(color_rrules) concrete
+  color_rrules = Vector{T}(undef,num_rr)
   #for (k,p) in enumerate(polys)
   p = polys[1] # Hardcoded for TRI
   color_rrules[WHITE] = WhiteRefinementRule(p)
@@ -248,6 +249,7 @@ function setup_edge_based_rrules(strat::NVBStrategy, topo::UnstructuredGridTopol
     #@show GREEN+green_offsets[k]-1+e-1
     color_rrules[GREEN+e-1] = GreenRefinementRule(p,e)
   end
+  # blue_idx corresponds to offset into BLUE_dict
   blue_idx = 0
   for e1 in 1:num_faces(p, 1)
     for e2 in 1:num_faces(p, 1)
@@ -260,10 +262,8 @@ function setup_edge_based_rrules(strat::NVBStrategy, topo::UnstructuredGridTopol
   for e in 1:num_faces(p, 1)
     color_rrules[BLUE_DOUBLE + e - 1] = BlueDoubleRefinementRule(p, e)
   end
-  #end
   rrules = CompressedArray(color_rrules,cell_color)
   face_list = _redgreen_refined_faces_list(topo, rrules, is_refined)
-  #println("finish")
   return rrules, face_list
 end
 
@@ -557,15 +557,14 @@ function BlueRefinementRule(p::Polytope{2}, long_ref_edge::Integer, short_ref_ed
 end
 
 function _get_blue_refined_connectivity(p::Polytope{2}, long_ref_edge, short_ref_edge)
-  # Note: Sorting is necessary in order to guarantee that the gids
-  #       of the refined mesh are sorted (and therefore that the fine
-  #       grid is Oriented). See the note at top of the file.
+  # Only implemented for triangles
   if p == TRI
     polys     = [TRI]
     cell_type = [1, 1, 1]
     unmarked_edge = setdiff([1,2,3], [long_ref_edge, short_ref_edge])[1]
-    edge_to_oppostie_node = Dict(1 => 3, 2 => 2, 3 => 1)
-    e2on = edge_to_oppostie_node
+    # Correspondence between an edge and the vertex opposite it
+    edge_to_opposite_vertex = Dict(1 => 3, 2 => 2, 3 => 1)
+    e2on = edge_to_opposite_vertex
     conn_data = [e2on[long_ref_edge], 4, 5,
                  e2on[unmarked_edge], 4, 5,
                  sort([e2on[long_ref_edge], e2on[short_ref_edge], 4])...]
@@ -605,9 +604,7 @@ function _get_blue_double_refined_connectivity(p::Polytope{2}, long_ref_edge)
   if p == TRI
     polys     = [TRI]
     cell_type = [1, 1, 1, 1]
-    #unmarked_edge = setdiff([1,2,3], [long_ref_edge, short_ref_edge])[1]
-    edge_to_oppostie_node = Dict(1 => 3, 2 => 2, 3 => 1)
-    e2on = edge_to_oppostie_node
+    # Hardcoded since there are only three cases
     if long_ref_edge == 3
       conn_data = [3, 5, 6,
                    1, 5, 6,
@@ -629,16 +626,6 @@ function _get_blue_double_refined_connectivity(p::Polytope{2}, long_ref_edge)
   end
   @notimplemented
 end
-
-function _get_blue_vertex_permutation(p::Polytope{2},ref_edge::Integer)
-  if p == TRI
-    perm = circshift([1,2,3],ref_edge-3)
-  else
-    @notimplemented
-  end
-  return perm
-end
-
 
 """
 Provided the gids of the coarse cell faces as a Tuple(vertices,edges,cell) and the
@@ -681,6 +668,7 @@ end
 
 function get_relabeled_connectivity(::BlueDoubleRefinement{N},rr::RefinementRule{P},faces_gids) where {N, P<:Polytope{2}}
   conn = rr.ref_grid.grid.cell_node_ids
+  # Sort needed for non-longest edge gids
   other_ids = setdiff(collect(1:3), N) |> sort
   gids = [faces_gids[1]..., faces_gids[2][other_ids]..., faces_gids[2][N]]
   new_data = lazy_map(Reindex(gids),conn.data)
