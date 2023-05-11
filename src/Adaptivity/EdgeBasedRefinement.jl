@@ -29,8 +29,6 @@ Note on RefinementRules and Orientation of the refined grids:
       X_coarse = Φ∘β(X_fine)
 """
 
-using Infiltrator
-
 struct EdgeBasedRefinement <: AdaptivityMethod end
 
 abstract type RefinementStrategy end
