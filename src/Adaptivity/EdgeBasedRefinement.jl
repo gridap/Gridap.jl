@@ -110,10 +110,6 @@ function _refine_unstructured_topology(topo::UnstructuredGridTopology{Dc},
                                       faces_list::Tuple) where {Dc}
   coords_new  = get_new_coordinates_from_faces(topo,faces_list)
   c2n_map_new = get_refined_cell_to_vertex_map(topo,rrules,faces_list)
-  #for (i, c2n) in enumerate(c2n_map_new)
-  #  println(i, ": ", c2n)
-  #  println(i, ": ", coords_new[c2n])
-  #end
   polys_new, cell_type_new = _get_cell_polytopes(rrules)
 
   # We can guarantee the new topology is oriented if
