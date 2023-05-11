@@ -36,17 +36,17 @@ struct EdgeBasedRefinement <: AdaptivityMethod end
 abstract type RefinementStrategy end
 
 struct NVBStrategy{T} <: RefinementStrategy
-  #longest_edge_sorted_cell_node_ids::Vector{<:Vector}
   cell_to_longest_edge_lid::Vector{T}
   cell_to_longest_edge_gid::Vector{T}
 end
 
 _calculate_edge_length(node_coords, nodes) = norm(node_coords[nodes[1]] - node_coords[nodes[2]])
 
-# Create a Vector containing the longest edge
+# Create Vectors containing the longest edge gids and lids
 function _get_longest_edge_ids(c2e_map, e2n_map, node_coords)
-  longest_edge_gids = Vector{eltype(eltype(c2e_map))}(undef, length(c2e_map))
-  longest_edge_lids = Vector{eltype(eltype(c2e_map))}(undef, length(c2e_map))
+  nC = length(c2e_map)
+  longest_edge_gids = Vector{eltype(eltype(c2e_map))}(undef, nC)
+  longest_edge_lids = Vector{eltype(eltype(c2e_map))}(undef, nC)
   # Loop over cells
   for (c, es) in enumerate(c2e_map)
     e_length_max = 0.0
@@ -54,7 +54,6 @@ function _get_longest_edge_ids(c2e_map, e2n_map, node_coords)
     e_lid_max = -1 # Longest edge index must be found
     for (e_lid, e_gid) in enumerate(es)
       ns = e2n_map[e_gid]
-      # For now only edges
       e_length = _calculate_edge_length(node_coords, ns)
       if e_length > e_length_max
         e_length_max = e_length
@@ -71,15 +70,10 @@ end
 function NVBStrategy(model::UnstructuredDiscreteModel{Dc,Dp}) where {Dc, Dp}
   topo = model.grid_topology
   c2e_map     = get_faces(topo,Dc,1)
-  e2n_map     = get_faces(topo,1,0)
-  c2n_map = get_faces(topo, 2, 0)
+  e2n_map     = get_faces(topo,1 ,0)
   node_coords = get_node_coordinates(model)
-  println()
-  println()
-  #cell_node_ids = [v for v in cell_node_ids]
-  #_sort_longest_edge!(cell_node_ids, node_coords)
   longest_edge_lids, longest_edge_gids = _get_longest_edge_ids(c2e_map, e2n_map, node_coords)
-  NVBStrategy(longest_edge_lids, longest_edge_gids )
+  NVBStrategy(longest_edge_lids, longest_edge_gids)
 end
 
 struct RedGreenStrategy <: RefinementStrategy end
@@ -177,14 +171,11 @@ end
 _shift_to_first(v::AbstractVector{T}, i::T) where {T<:Integer} = circshift(v, -(i - 1))
 
 function setup_edge_based_rrules(strat::NVBStrategy, topo::UnstructuredGridTopology{Dc},cells_to_refine::AbstractArray{<:Integer}) where Dc
-  nC = num_cells(topo)
   nE = num_faces(topo,1)
   c2e_map     = get_faces(topo,Dc,1)
   e2c_map     = get_faces(topo,1,Dc)
   polys       = topo.polytopes
   cell_types  = topo.cell_type
-  nP          = length(polys)
-
   cell_color  = copy(cell_types) # WHITE
   #WHITE, GREEN, BLUE = Int8(1), Int8(1 + nP), Int8(1 + nP + nP)
   # Hardcoded for TRI
@@ -199,6 +190,8 @@ function setup_edge_based_rrules(strat::NVBStrategy, topo::UnstructuredGridTopol
   is_refined = falses(nE)
   # TODO: maybe use queue here?
   # Loop over cells and mark edges to refine i.e. is_refined
+  # The reason to not loop directly on c is that we need to change c within
+  # a given iteration of the for loop
   for i in 1:length(cells_to_refine)
     c = cells_to_refine[i]
     e_longest = c_to_longest_edge_gid[c]
@@ -224,7 +217,6 @@ function setup_edge_based_rrules(strat::NVBStrategy, topo::UnstructuredGridTopol
     # GREEN refinement becasue only one edge should be bisected
     if length(refined_edge_lids) == 1
       ref_edge = refined_edge_lids[1]
-      #@show c_to_longest_edge_gid[c]
       cell_color[c] = GREEN + Int8(ref_edge-1)
       # BLUE refinement: two biseceted
     elseif length(refined_edge_lids) == 2
@@ -246,7 +238,6 @@ function setup_edge_based_rrules(strat::NVBStrategy, topo::UnstructuredGridTopol
   p = polys[1] # Hardcoded for TRI
   color_rrules[WHITE] = WhiteRefinementRule(p)
   for e in 1:num_faces(p,1)
-    #@show GREEN+green_offsets[k]-1+e-1
     color_rrules[GREEN+e-1] = GreenRefinementRule(p,e)
   end
   # blue_idx corresponds to offset into BLUE_dict
@@ -549,9 +540,6 @@ function BlueRefinementRule(p::Polytope{2}, long_ref_edge::Integer, short_ref_ed
   reffes = map(x->LagrangianRefFE(Float64,x,1),polys)
 
   ref_grid = UnstructuredDiscreteModel(UnstructuredGrid(coords,conn,reffes,cell_types))
-  #topo = ref_grid.grid_topology
-  #e2cs =  get_faces(topo, 2, 1)
-  #@show [e2c .- 1  for e2c in e2cs]
   #writevtk(Triangulation(ref_grid), "test/AdaptivityTests/BlueRefTest$long_ref_edge$short_ref_edge")
   return RefinementRule(BlueRefinement{long_ref_edge, short_ref_edge}(),p,ref_grid)
 end
