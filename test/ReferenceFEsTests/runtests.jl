@@ -34,6 +34,8 @@ using Test
 
 @testset "NedelecRefFEs" begin include("NedelecRefFEsTests.jl") end
 
+rm("nede_tet_1.vtu", force=true)
+
 @testset "CDLagrangianRefFEs" begin include("CDLagrangianRefFEsTests.jl") end
 
 @testset "BezierRefFEs" begin include("BezierRefFEsTests.jl") end
