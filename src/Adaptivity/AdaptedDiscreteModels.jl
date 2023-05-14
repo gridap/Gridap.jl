@@ -81,7 +81,13 @@ function refine(model::UnstructuredDiscreteModel,::AdaptivityMethod,args...;kwar
   @abstractmethod
 end
 
-function refine(model::UnstructuredDiscreteModel,args...;refinement_method=EdgeBasedRefinement(),kwargs...)
+function refine(model::UnstructuredDiscreteModel,args...;should_use_nvb=false,kwargs...)
+  # These types are defined in EdgeBasedRefinement.jl
+  if should_use_nvb
+    refinement_method = NVBRefinement(model)
+  else
+    refinement_method = RedGreenRefinement()
+  end
   return refine(refinement_method,model,args...;kwargs...)
 end
 
