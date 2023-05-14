@@ -53,7 +53,6 @@ function _get_longest_edge_ids(c2e_map, e2n_map, node_coords)
     e_gid_max = -1 # Longest edge index must be found
     e_lid_max = -1 # Longest edge index must be found
     for (e_lid, e_gid) in enumerate(es)
-      #ns = e2n_map[e_gid]
       ns = getindex!(e2n_map_cache, e2n_map, e_gid)
       e_length = _calculate_edge_length(node_coords, ns)
       if e_length > e_length_max
@@ -147,7 +146,7 @@ for the topology:
   - If a cell touches more than one refined (RED) cell, it becomes RED.
   - If a cell touches a single refined (RED) cell, it is colored GREEN.
 
-The method returns a vector of Red/Green refinement rules, as well a the list of
+The method returns a vector of Red/Green refinement rules, as well the list of
 vertices, edges and cells which correspond to new vertices in the refined topology.
 """
 function setup_edge_based_rrules(::EdgeBasedRefinement, topo::UnstructuredGridTopology{Dc},::Nothing) where Dc
@@ -167,11 +166,9 @@ function setup_edge_based_rrules(method::NVBRefinement, topo::UnstructuredGridTo
   c2e_map       = get_faces(topo,Dc,1)
   c2e_map_cache = array_cache(c2e_map)
   e2c_map       = get_faces(topo,1,Dc)
-  e2c_map_cache = array_cache(e2c_map)
   polys       = topo.polytopes
   cell_types  = topo.cell_type
   cell_color  = copy(cell_types) # WHITE
-  #WHITE, GREEN, BLUE = Int8(1), Int8(1 + nP), Int8(1 + nP + nP)
   # Hardcoded for TRI
   WHITE, GREEN, BLUE, BLUE_DOUBLE = Int8(1), Int8(2), Int8(5), Int(11)
   # Create the inverse mapping from long/short edge pairs to unique indices
@@ -208,7 +205,7 @@ function setup_edge_based_rrules(method::NVBRefinement, topo::UnstructuredGridTo
   for c in 1:length(c2e_map)
     c_edges = getindex!(c2e_map_cache, c2e_map, c)
     refined_edge_lids = findall(is_refined[c_edges])
-    # GREEN refinement becasue only one edge should be bisected
+    # GREEN refinement because only one edge should be bisected
     if length(refined_edge_lids) == 1
       ref_edge = refined_edge_lids[1]
       cell_color[c] = GREEN + Int8(ref_edge-1)
@@ -218,7 +215,7 @@ function setup_edge_based_rrules(method::NVBRefinement, topo::UnstructuredGridTo
       short_ref_edge_lid = setdiff(refined_edge_lids, long_ref_edge_lid)[1]
       blue_idx = BLUE_dict[(long_ref_edge_lid, short_ref_edge_lid)]
       cell_color[c] = BLUE + Int8(blue_idx - 1)
-      # DOUBLE BLUE refinement: three biseceted edges (somehwat rare)
+      # DOUBLE BLUE refinement: three biseceted edges (somewhat rare)
     elseif length(refined_edge_lids) == 3
       long_ref_edge_lid = c_to_longest_edge_lid[c]
       cell_color[c] = BLUE_DOUBLE + Int(long_ref_edge_lid - 1)
@@ -228,7 +225,6 @@ function setup_edge_based_rrules(method::NVBRefinement, topo::UnstructuredGridTo
   num_rr =  1 + green_offset + blue_offset + blue_double_offset # GREEN+BLUE+DOUBLE_BLUE
   T = typeof(WhiteRefinementRule(first(polys))) # Needed to make eltype(color_rrules) concrete
   color_rrules = Vector{T}(undef,num_rr)
-  #for (k,p) in enumerate(polys)
   p = polys[1] # Hardcoded for TRI
   color_rrules[WHITE] = WhiteRefinementRule(p)
   for e in 1:num_faces(p,1)
