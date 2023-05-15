@@ -5,7 +5,7 @@ is a `Field` defined in the domain and constructed by a set of fields defined on
 the subparts of the covering partition.
 The refined cover is represented by a `RefinementRule`. 
 """
-struct FineToCoarseField{A<:AbstractArray{<:Field},B<:RefinementRule} <: Field
+struct FineToCoarseField{A,B} <: Field
   fine_fields :: A
   rrule       :: B
   function FineToCoarseField(fine_fields::AbstractArray{<:Field},rrule::RefinementRule)

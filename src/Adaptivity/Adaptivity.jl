@@ -49,4 +49,6 @@ include("AdaptedTriangulations.jl")
 include("CompositeQuadratures.jl")
 include("EdgeBasedRefinement.jl")
 
+include("GluedTriangulations.jl")
+
 end # module
