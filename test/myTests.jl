@@ -82,10 +82,16 @@ dΓ = Measure(Γf, 3)
 
 tr_Γf(λ) = change_domain(λ,Γf,DomainStyle(λ))
 
+g = CellField(3.0,Γf)
+
 α = 1.e-2
 aΩ((u,λ),(v,μ)) = ∫(u*v)*dΩ
 aΓ((u,λ),(v,μ)) = ∫(tr_Γf(λ*μ) - α*(u*tr_Γf(μ) + v*tr_Γf(λ)))*dΓ
 a((u,λ),(v,μ))  = aΩ((u,λ),(v,μ)) + aΓ((u,λ),(v,μ))
 
-A = assemble_matrix(a,X,Y)
+l((v,μ)) = ∫(tr_Γf(μ)⋅g)*dΓ
 
+A = assemble_matrix(a,X,Y)
+b = assemble_vector(l,Y)
+
+op = AffineFEOperator(a,l,X,Y)

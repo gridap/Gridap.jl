@@ -168,15 +168,15 @@ function move_contributions_f2c(fine_tface_to_val::AbstractArray, ftrian::GluedT
   return coarse_tface_to_val
 end
 
-# get_cell_dof_ids 
+# get_cell_fe_data
 
-function FESpaces.get_cell_dof_ids(f::FESpaces.SingleFieldFESpace,ttrian::Adaptivity.GluedTriangulation)
+function FESpaces.get_cell_fe_data(fun,f,ttrian::GluedTriangulation)
   strian = get_triangulation(f)
   if strian == ttrian.parent_trian
-    coarse_dof_ids = get_cell_dof_ids(f)
-    return Adaptivity.c2f_reindex(coarse_dof_ids,ttrian.glue)
+    coarse_fe_data = FESpaces.get_cell_fe_data(fun,f,strian)
+    return c2f_reindex(coarse_fe_data,ttrian.glue)
   else
-    return get_cell_dof_ids(f,ttrian.trian)
+    return FESpaces.get_cell_fe_data(fun,f,ttrian.trian)
   end
 end
 
