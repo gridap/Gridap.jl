@@ -81,14 +81,15 @@ function refine(model::UnstructuredDiscreteModel,::AdaptivityMethod,args...;kwar
   @abstractmethod
 end
 
-function refine(model::UnstructuredDiscreteModel,args...;should_use_nvb=false,kwargs...)
-  # These types are defined in EdgeBasedRefinement.jl
-  if should_use_nvb
-    refinement_method = NVBRefinement(model)
-  else
-    refinement_method = RedGreenRefinement()
-  end
-  return refine(refinement_method,model,args...;kwargs...)
+# Handle the user's requested choice for refinement
+function string_to_refinement(refinement_method::String, model)
+  refinement_method == "red_green" && return RedGreenRefinement()
+  refinement_method == "nvb" && return NVBRefinement(model)
+  error("refinement_method $refinement_method not recognized")
+end
+
+function refine(model::UnstructuredDiscreteModel,args...;refinement_method="red_green",kwargs...)
+  return refine(string_to_refinement(refinement_method, model),model,args...;kwargs...)
 end
 
 # CartesianDiscreteModel refining

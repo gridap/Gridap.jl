@@ -67,14 +67,17 @@ function _get_longest_edge_ids(c2e_map, e2n_map, node_coords)
   return longest_edge_lids, longest_edge_gids
 end
 
-function NVBRefinement(model::UnstructuredDiscreteModel{Dc,Dp}) where {Dc, Dp}
+function NVBRefinement(model::DiscreteModel{Dc,Dp}) where {Dc, Dp}
   topo = model.grid_topology
+  @check all(p->p==TRI,get_polytopes(topo))
   c2e_map     = get_faces(topo,Dc,1)
   e2n_map     = get_faces(topo,1 ,0)
   node_coords = get_node_coordinates(model)
   longest_edge_lids, longest_edge_gids = _get_longest_edge_ids(c2e_map, e2n_map, node_coords)
   NVBRefinement(longest_edge_lids, longest_edge_gids)
 end
+
+NVBRefinement(model::AdaptedDiscreteModel) = NVBRefinement(model.model)
 
 struct RedGreenRefinement <: EdgeBasedRefinement end
 
@@ -88,7 +91,6 @@ function refine(method::EdgeBasedRefinement,model::UnstructuredDiscreteModel{Dc,
 
   # Create new model
   rrules, faces_list = setup_edge_based_rrules(method, model.grid_topology,cells_to_refine)
-  #rrules, faces_list = setup_edge_based_rrules(strategy, model.grid_topology,cells_to_refine)
   topo   = _refine_unstructured_topology(model.grid_topology,rrules,faces_list)
   reffes = map(p->LagrangianRefFE(Float64,p,1),get_polytopes(topo))
   grid   = UnstructuredGrid(get_vertex_coordinates(topo),get_faces(topo,Dc,0),reffes,get_cell_type(topo),OrientationStyle(topo))

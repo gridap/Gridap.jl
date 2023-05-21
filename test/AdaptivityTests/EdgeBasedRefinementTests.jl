@@ -1,4 +1,4 @@
-#module EdgeBasedRefinementTests
+module EdgeBasedRefinementTests
 
 using Test
 using Gridap
@@ -7,8 +7,6 @@ using Gridap.CellData
 using Gridap.Adaptivity
 using Gridap.ReferenceFEs
 using FillArrays
-
-let
 
 function l2_error(u1,u2,dΩ)
   eh = u1-u2
@@ -148,15 +146,20 @@ visualize && writevtk(trian6,"test/AdaptivityTests/ref_model6")
 test_grid_transfers(2,model2,ref_model6,1)
 
 # Test newest vertex bisection i.e. longest edge bisection
-ref_model7 = refine(model2, should_use_nvb=true)
+# Refine all edges using NVB
+ref_model7 = refine(model2, refinement_method = "nvb")
 trian7 = Triangulation(ref_model7.model)
-visualize && writevtk(trian7,"test/AdaptivityTests/ref_model7")
-test_grid_transfers(2,model2,ref_model7,1)
+visualize && writevtk(trian7, "test/AdaptivityTests/ref_model7")
+test_grid_transfers(2, model2, ref_model7, 1)
 
-ref_model8 = refine(model2, should_use_nvb=true, cells_to_refine=[1,6,16])
-trian8 = Triangulation(ref_model8.model)
-visualize && writevtk(trian8,"test/AdaptivityTests/ref_model8")
-test_grid_transfers(2,model2,ref_model8,1)
-
+# Refine all edges using NVB
+# Mark edges such that blue, and double_blue refinement are triggered
+ref_model8 = refine(model2, refinement_method = "nvb", cells_to_refine = [4, 9])
+trian8 = Triangulation(ref_model8)
+visualize && writevtk(trian8, "test/AdaptivityTests/ref_model8")
+ref_model9 = refine(ref_model8, refinement_method = "nvb", cells_to_refine = [1, 3, 4, 11])
+trian9 = Triangulation(ref_model9.model)
+visualize && writevtk(trian9, "test/AdaptivityTests/ref_model9")
+test_grid_transfers(2, ref_model8, ref_model9, 1)
 
 end
