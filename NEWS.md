@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Jacobi polynomial bases. Since PR [#896](https://github.com/gridap/Gridap.jl/pull/896).
 
+- Replaced newest vertex bisection mesh adaptation in
+  `src/Geometry/NewestVertexBisection.jl` with appropriate changes to
+  `src/Adaptivity/EdgeBasedRefinement.jl`. see PR
+  [#901](https://github.com/gridap/Gridap.jl/pull/901).
+
 ### Fixed
 
 - ODE operators cache linear system at initial time or the time stored by the operator. Before, the linear system was cached at time `t = 0.0`, which cannot be done if the operator is not well-defined at `t = 0.0`. Since PR [#891](https://github.com/gridap/Gridap.jl/pull/891).
