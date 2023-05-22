@@ -211,13 +211,13 @@ function setup_edge_based_rrules(method::NVBRefinement, topo::UnstructuredGridTo
     if length(refined_edge_lids) == 1
       ref_edge = refined_edge_lids[1]
       cell_color[c] = GREEN + Int8(ref_edge-1)
-      # BLUE refinement: two biseceted
+      # BLUE refinement: two bisected
     elseif length(refined_edge_lids) == 2
       long_ref_edge_lid = c_to_longest_edge_lid[c]
       short_ref_edge_lid = setdiff(refined_edge_lids, long_ref_edge_lid)[1]
       blue_idx = BLUE_dict[(long_ref_edge_lid, short_ref_edge_lid)]
       cell_color[c] = BLUE + Int8(blue_idx - 1)
-      # DOUBLE BLUE refinement: three biseceted edges (somewhat rare)
+      # DOUBLE BLUE refinement: three bisected edges (somewhat rare)
     elseif length(refined_edge_lids) == 3
       long_ref_edge_lid = c_to_longest_edge_lid[c]
       cell_color[c] = BLUE_DOUBLE + Int(long_ref_edge_lid - 1)
