@@ -78,7 +78,7 @@ function _find_compressed_ones(g)
 end
 
 function _lazy_map_compressed(g::CompressedArray...)
-  vals = map(evaluate, map(gi->gi.values,g)...)
+  vals = lazy_map(evaluate, map(gi->gi.values,g)...)
   ptrs = first(g).ptrs
   CompressedArray(vals,ptrs)
 end
