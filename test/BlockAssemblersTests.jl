@@ -87,13 +87,7 @@ function Gridap.FESpaces.assemble_matrix(ba::BlockSparseMatrixAssembler,matdata)
                   map(y->lazy_map(x->getindex(x,i),y),matdata[2]),
                   map(y->lazy_map(x->getindex(x,j),y),matdata[3])
                   )
-
-      m1 = nz_counter(get_matrix_builder(a),(get_rows(a),get_cols(a)))
-      symbolic_loop_matrix!(m1,a,_matdata)
-      m2 = nz_allocation(m1)
-      numeric_loop_matrix!(m2,a,_matdata)
-      m3 = create_from_nz(m2)
-      A[Block(i,j)] = m3
+      A[Block(i,j)] = assemble_matrix(a,_matdata)
     end
   end
 
