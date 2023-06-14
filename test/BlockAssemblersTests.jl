@@ -71,6 +71,10 @@ for fun in [:get_rows,:get_cols,:get_matrix_builder,:get_vector_builder,:get_ass
   end
 end
 
+"""
+  TODO: We need to detect inactive blocks and avoid assembling them.
+  Otherwise, we allocate unnecessary memory.
+"""
 function Gridap.FESpaces.assemble_matrix(ba::BlockSparseMatrixAssembler,matdata)
 
   rows = get_rows(ba.glob_assembler)
