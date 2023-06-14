@@ -37,6 +37,7 @@ matdata = collect_cell_matrix(X,Y,biform(u,v))
 struct BlockSparseMatrixAssembler <: Gridap.FESpaces.SparseMatrixAssembler
   glob_assembler   :: SparseMatrixAssembler
   block_assemblers :: AbstractArray{<:SparseMatrixAssembler}
+
   function BlockSparseMatrixAssembler(X::MultiFieldFESpace,Y::MultiFieldFESpace)
     nblocks = length(X)
     Gridap.Helpers.@check nblocks == length(Y)
@@ -44,6 +45,9 @@ struct BlockSparseMatrixAssembler <: Gridap.FESpaces.SparseMatrixAssembler
 
     row_offsets = [0,get_rows(glob_assembler).lasts...]
     col_offsets = [0,get_cols(glob_assembler).lasts...]
+
+    mat_builder = get_matrix_builder(glob_assembler)
+    vec_builder = get_vector_builder(glob_assembler)
 
     block_assemblers = Matrix{SparseMatrixAssembler}(undef,nblocks,nblocks)
     for i in 1:nblocks
@@ -53,10 +57,8 @@ struct BlockSparseMatrixAssembler <: Gridap.FESpaces.SparseMatrixAssembler
         row_mask(row) = true
         col_mask(col) = true
         strategy = GenericAssemblyStrategy(row_map,col_map,row_mask,col_mask)
-        T = get_dof_value_type(X[i])
-        matrix_type = SparseMatrixCSC{T,Int}
-        vector_type = Vector{T}
-        block_assemblers[i,j] = SparseMatrixAssembler(matrix_type,vector_type,X[i],Y[j],strategy)
+
+        block_assemblers[i,j] = SparseMatrixAssembler(mat_builder,vec_builder,X[i],Y[j],strategy)
       end
     end
     new{}(glob_assembler,block_assemblers)
@@ -76,7 +78,6 @@ end
   Otherwise, we allocate unnecessary memory.
 """
 function Gridap.FESpaces.assemble_matrix(ba::BlockSparseMatrixAssembler,matdata)
-
   rows = get_rows(ba.glob_assembler)
   cols = get_cols(ba.glob_assembler)
   r = rows.lasts .- [0,rows.lasts[1:end-1]...]
