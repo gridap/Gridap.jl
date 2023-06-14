@@ -74,15 +74,15 @@ for fun in [:get_rows,:get_cols,:get_matrix_builder,:get_vector_builder,:get_ass
   end
 end
 
-function allocate_block_vector(ba::BlockSparseMatrixAssembler)
-  rows = get_rows(ba.glob_assembler)
+function allocate_block_vector(a::BlockSparseMatrixAssembler)
+  rows = get_rows(a.glob_assembler)
   r = rows.lasts .- [0,rows.lasts[1:end-1]...]
   BlockVector{Float64}(undef_blocks,r)
 end
 
-function allocate_block_matrix(ba::BlockSparseMatrixAssembler)
-  rows = get_rows(ba.glob_assembler)
-  cols = get_cols(ba.glob_assembler)
+function allocate_block_matrix(a::BlockSparseMatrixAssembler)
+  rows = get_rows(a.glob_assembler)
+  cols = get_cols(a.glob_assembler)
   r = rows.lasts .- [0,rows.lasts[1:end-1]...]
   c = cols.lasts .- [0,cols.lasts[1:end-1]...]
   BlockMatrix{Float64}(undef_blocks,r,c)
@@ -92,36 +92,36 @@ end
   TODO: We need to detect inactive blocks and avoid assembling them.
   Otherwise, we allocate unnecessary memory.
 """
-function Gridap.FESpaces.assemble_matrix(ba::BlockSparseMatrixAssembler,matdata)
-  m = allocate_block_matrix(ba)
-  block_assemblers = ba.block_assemblers
-  for i in 1:blocksize(A,1)
-    for j in 1:blocksize(A,2)
-      a = block_assemblers[i,j]
+function Gridap.FESpaces.assemble_matrix(a::BlockSparseMatrixAssembler,matdata)
+  m = allocate_block_matrix(a)
+  block_assemblers = a.block_assemblers
+  for i in 1:blocksize(m,1)
+    for j in 1:blocksize(m,2)
+      _a = block_assemblers[i,j]
       _matdata = (map(y->lazy_map(x->getindex(x,i,j),y),matdata[1]),
                   map(y->lazy_map(x->getindex(x,i),y),matdata[2]),
                   map(y->lazy_map(x->getindex(x,j),y),matdata[3]))
-      A[Block(i,j)] = assemble_matrix(a,_matdata)
+      A[Block(i,j)] = assemble_matrix(_a,_matdata)
     end
   end
   return m
 end
 
-function Gridap.FESpaces.assemble_vector(ba::BlockSparseMatrixAssembler,vecdata)
-  v = allocate_block_vector(ba)
-  block_assemblers = ba.block_assemblers
+function Gridap.FESpaces.assemble_vector(a::BlockSparseMatrixAssembler,vecdata)
+  v = allocate_block_vector(a)
+  block_assemblers = a.block_assemblers
   for i in 1:blocksize(v,1)
-    a = block_assemblers[i,1] #! Is this correct?
+    _a = block_assemblers[i,1] #! Is this correct?
     _vecdata = (map(y->lazy_map(x->getindex(x,i),y),vecdata[1]),
                 map(y->lazy_map(x->getindex(x,i),y),vecdata[2]))
-    v[Block(i)] = assemble_vector(a,_vecdata)
+    v[Block(i)] = assemble_vector(_a,_vecdata)
   end
   return v
 end
 
-ba = BlockSparseMatrixAssembler(X,Y)
-mat_blocks = assemble_matrix(ba,matdata)
-vec_blocks = assemble_vector(ba,vecdata)
+assem = BlockSparseMatrixAssembler(X,Y)
+mat_blocks = assemble_matrix(assem,matdata)
+vec_blocks = assemble_vector(assem,vecdata)
 
 #! This does not work... maybe because it does not do the multiplication per blocks? 
 y = similar(vec_blocks)
