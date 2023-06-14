@@ -4,7 +4,7 @@ using Gridap.FESpaces, Gridap.Geometry, Gridap.CellData, Gridap.ReferenceFEs, Gr
 import Gridap.FESpaces: nz_counter, nz_allocation, create_from_nz
 import Gridap.FESpaces: map_cell_cols, map_cell_rows
 
-using BlockArrays, SparseArrays
+using BlockArrays, SparseArrays, LinearAlgebra
 
 ############################################################################################
 
@@ -30,9 +30,10 @@ op = AffineFEOperator(biform,liform,X,Y)
 
 u = get_trial_fe_basis(X)
 v = get_fe_basis(Y)
+
 data = collect_cell_matrix_and_vector(X,Y,biform(u,v),liform(v))
 matdata = collect_cell_matrix(X,Y,biform(u,v))
-
+vecdata = collect_cell_vector(Y,liform(v))  
 
 struct BlockSparseMatrixAssembler <: Gridap.FESpaces.SparseMatrixAssembler
   glob_assembler   :: SparseMatrixAssembler
@@ -73,32 +74,55 @@ for fun in [:get_rows,:get_cols,:get_matrix_builder,:get_vector_builder,:get_ass
   end
 end
 
+function allocate_block_vector(ba::BlockSparseMatrixAssembler)
+  rows = get_rows(ba.glob_assembler)
+  r = rows.lasts .- [0,rows.lasts[1:end-1]...]
+  BlockVector{Float64}(undef_blocks,r)
+end
+
+function allocate_block_matrix(ba::BlockSparseMatrixAssembler)
+  rows = get_rows(ba.glob_assembler)
+  cols = get_cols(ba.glob_assembler)
+  r = rows.lasts .- [0,rows.lasts[1:end-1]...]
+  c = cols.lasts .- [0,cols.lasts[1:end-1]...]
+  BlockMatrix{Float64}(undef_blocks,r,c)
+end
+
 """
   TODO: We need to detect inactive blocks and avoid assembling them.
   Otherwise, we allocate unnecessary memory.
 """
 function Gridap.FESpaces.assemble_matrix(ba::BlockSparseMatrixAssembler,matdata)
-  rows = get_rows(ba.glob_assembler)
-  cols = get_cols(ba.glob_assembler)
-  r = rows.lasts .- [0,rows.lasts[1:end-1]...]
-  c = cols.lasts .- [0,cols.lasts[1:end-1]...]
-  A = BlockMatrix{Float64}(undef_blocks,r,c)
-
+  m = allocate_block_matrix(ba)
   block_assemblers = ba.block_assemblers
-  for i in 1:length(r)
-    for j in 1:length(c)
+  for i in 1:blocksize(A,1)
+    for j in 1:blocksize(A,2)
       a = block_assemblers[i,j]
       _matdata = (map(y->lazy_map(x->getindex(x,i,j),y),matdata[1]),
                   map(y->lazy_map(x->getindex(x,i),y),matdata[2]),
-                  map(y->lazy_map(x->getindex(x,j),y),matdata[3])
-                  )
+                  map(y->lazy_map(x->getindex(x,j),y),matdata[3]))
       A[Block(i,j)] = assemble_matrix(a,_matdata)
     end
   end
-
-  return A
+  return m
 end
 
+function Gridap.FESpaces.assemble_vector(ba::BlockSparseMatrixAssembler,vecdata)
+  v = allocate_block_vector(ba)
+  block_assemblers = ba.block_assemblers
+  for i in 1:blocksize(v,1)
+    a = block_assemblers[i,1] #! Is this correct?
+    _vecdata = (map(y->lazy_map(x->getindex(x,i),y),vecdata[1]),
+                map(y->lazy_map(x->getindex(x,i),y),vecdata[2]))
+    v[Block(i)] = assemble_vector(a,_vecdata)
+  end
+  return v
+end
 
 ba = BlockSparseMatrixAssembler(X,Y)
 mat_blocks = assemble_matrix(ba,matdata)
+vec_blocks = assemble_vector(ba,vecdata)
+
+#! This does not work... maybe because it does not do the multiplication per blocks? 
+y = similar(vec_blocks)
+mul!(y,mat_blocks,vec_blocks)
