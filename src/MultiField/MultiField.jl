@@ -37,6 +37,8 @@ export MultiFieldFEFunction
 export MultiFieldStyle
 export ConsecutiveMultiFieldStyle
 
+export BlockSparseMatrixAssembler
+
 include("MultiFieldCellFields.jl")
 
 include("MultiFieldFESpaces.jl")
@@ -44,5 +46,7 @@ include("MultiFieldFESpaces.jl")
 include("MultiFieldFEFunctions.jl")
 
 include("MultiFieldFEAutodiff.jl")
+
+include("BlockSparseMatrixAssemblers.jl")
 
 end # module
